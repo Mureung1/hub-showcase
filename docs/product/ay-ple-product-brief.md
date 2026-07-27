@@ -8,7 +8,7 @@
 
 성숙도: 채택
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), [개발 백로그](ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), [개발 백로그](ay-ple-development-backlog.md)
 
 ## 한 줄 요약
 
@@ -50,8 +50,8 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 
 | 순서 | 사용자 경험 | 소유자 |
 | --- | --- | --- |
-| 1 | 사용자가 한 학기 Git repository를 SemesterWorkspace로 선택한다. | App은 active path를 기록하고 Codex의 exact `cwd`로 연결한다. |
-| 2 | Init Skill이 필요한 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 Git 준비를 돕는다. | AY·Skill이 일반 file·Git 도구를 사용하고 설치 결과를 workspace history에 남긴다. |
+| 1 | 사용자가 App 실행 전 Codex CLI에서 Init Skill을 실행해 한 학기 Git repository를 준비한다. | AY·Skill이 일반 file·Git 도구를 사용하고 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 설치 결과를 workspace history에 남긴다. |
+| 2 | 사용자가 prepared root로 AY-PLE을 시작한다. | App은 exact Git root와 required Interaction MCP를 검증한 뒤 active path를 기록하고 Codex의 고정 `cwd`로 연결한다. |
 | 3 | 사용자가 AY에게 새 과제를 찾아 정리해 달라고 요청한다. | AY가 실제 공지와 계획서를 읽고 작업을 계획한다. |
 | 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 AY Chat의 inline Review card로 투영한다. |
 | 5 | 사용자가 수락·수정 요청·거절한다. | Pending 동안 composer·steer는 닫고 전체 Turn interrupt만 별도 control로 유지한다. App은 `accept | revise | reject`와 feedback을 같은 MCP call에 반환하고 해당 card를 read-only outcome으로 남긴다. |
@@ -68,7 +68,7 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | --- | --- | --- |
 | 사용자 | SemesterWorkspace 선택, App UI에서의 최종 판단, 학기 자료의 의미 | Native protocol과 correlation |
 | AY·Skill | 작업 계획, 파일 읽기·수정, interaction 요청 시점, 결과 해석과 Git checkpoint | Browser UI lifecycle |
-| AY-PLE App | Workspace 선택·registry, Runtime host, capability-specific UI와 interaction round trip | 학업 workflow, app-owned file copy, accepted result의 대리 적용 |
+| AY-PLE App | Prepared-root resolution·registry, Runtime host, capability-specific UI와 interaction round trip | Bootstrap·학업 workflow, app-owned file copy, accepted result의 대리 적용 |
 | Interaction MCP Module | Typed request/result, Turn binding, pending·failure·disconnect lifecycle | SemesterWorkspace file mutation |
 | Codex Runtime | Thread·Turn, Skills, MCP와 native permission | 학기 SSOT와 AY-PLE UI 의미 |
 | SemesterWorkspace | 실제 학기 파일, 선택적인 구조화 snapshot, Git history | Runtime secret과 pending interaction |
@@ -122,15 +122,14 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 
 채택한 목표 lifecycle은 다음과 같다.
 
-1. 사용자의 기존 `~/.codex/` account readiness를 확인한다.
-2. Active workspace가 없으면 App이 `hub/` cwd의 일시적인 Bootstrap Runtime·thread를 연다.
-3. 사용자가 기존 또는 새 학기 directory를 명시적으로 선택한다.
-4. 새 directory라면 hub에서 native discovery한 Bootstrap Skill이 그 자리에서 Git·최소 workspace file, 선택한 `.agents/skills/` copy와 정적인 `.codex/config.toml`을 준비한다.
-5. 사용자가 명시적으로 activation을 요청하면 App이 Bootstrap Runtime·thread를 종료한다.
-6. App이 준비된 Git root를 project root와 고정 `cwd`로 쓰는 새 Workspace Runtime·thread를 `workspace-write`로 연다. Native App Server가 trust 미지정 exact Git root를 기록하고 project config를 reload한다.
-7. 새 Runtime이 준비되면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. 명시적 `untrusted`는 덮어쓰지 않고, 하위 directory는 작업 대상일 뿐 별도 cwd가 아니며, Bootstrap thread나 다른 학기 thread를 이 root로 이동시키지 않는다.
+1. 사용자가 `hub/`를 연 Codex CLI 같은 native client에서 `semester-workspace-init`을 직접 실행한다.
+2. Skill이 existing bytes와 dirty tree를 존중하면서 Git root, 최소 workspace file, 선택한 `.agents/skills/` copy와 정적인 `.codex/config.toml`을 준비하고 checkpoint를 남긴다.
+3. Bootstrap 성공 뒤 사용자가 첫 open·학기 변경에는 `--workspace <absolute-prepared-git-root>`로 App을 시작한다. 이후 일반 실행은 `WorkspaceRegistry`의 active pointer를 사용한다.
+4. App은 exact Git root와 v4 identity를 fresh 검증하고 shared listener·Interaction Broker binding을 먼저 준비한다.
+5. App이 exact root를 project root와 고정 `cwd`로 쓰는 fresh Workspace Runtime·thread를 `workspace-write`로 연다. Native App Server가 trust 미지정 exact Git root를 기록하고 project config를 reload한다.
+6. Authenticated Adapter handshake와 required MCP readiness가 성공하면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. 명시적 `untrusted`는 덮어쓰지 않고, 하위 directory와 다른 학기 thread를 이 root의 별도 identity로 사용하지 않는다.
 
-App은 두 Runtime phase와 active pointer 전환만 소유한다. Git repository 생성·cleanliness·commit 정책을 별도 subsystem으로 구현하지 않으며, Bootstrap과 AY가 일반 file·Git 도구 및 `AGENTS.md`의 간단한 지침에 따라 작업한다.
+App은 prepared root validation, Workspace Runtime·Interaction readiness와 active pointer만 소유한다. Git repository 생성·cleanliness·commit 정책, Bootstrap Runtime·candidate·init Turn을 별도 subsystem으로 구현하지 않으며, native Bootstrap과 AY가 일반 file·Git 도구 및 `AGENTS.md`의 간단한 지침에 따라 작업한다.
 
 ## 현재 구현과 채택한 목표
 
@@ -156,7 +155,7 @@ RawMaterial registry
 | 포함 | 완료 의미 |
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
-| `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Authenticated Broker handshake가 없으면 activation이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
+| `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Authenticated Broker handshake가 없으면 prepared-workspace startup이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
@@ -184,7 +183,7 @@ RawMaterial registry
 | App의 차별화 | 일반 채팅보다 나은 capability-specific 판단 UI를 제공하는가? |
 | 왕복 완결성 | 한 MCP call 안에서 요청·UI·사용자 선택·structured result 반환이 끝나는가? |
 | 근거 정직성 | Evidence가 active workspace의 exact content version과 일치할 때만 card 전체가 표시되는가? |
-| Runtime 정직성 | Required Interaction MCP가 Broker와 연결되지 않으면 workspace activation이 성공하지 않는가? |
+| Runtime 정직성 | Required Interaction MCP가 Broker와 연결되지 않으면 prepared-workspace startup이 성공하지 않는가? |
 | 경계의 깊이 | Skill이 correlation·Browser lifecycle·revision을 알지 않아도 되는가? |
 | AY의 자율성 | Skill과 AY가 workflow와 실제 file apply를 소유하는가? |
 | 사용자 통제 | Review 전에는 제안된 file mutation이 적용되지 않는가? |

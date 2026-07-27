@@ -6,7 +6,7 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 Canonical product 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. 제거된 public-preview Account→Setup→Ready composition, managed Browser OAuth route와 v3 setup adapter는 Server의 실행·export·test graph에 남지 않는다. [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 v3 kernel은 현재 Server consumer가 없는 package-private 기반이며 current product authority가 아니다.
 
-User-owned Git target의 internal `workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. 이 Module과 package의 v4 identity codec은 current graph 옆에 구현됐지만 아직 public route, `SemesterWorkspaceController` 또는 Runtime activation에 연결되지 않았다.
+User-owned Git target의 internal `workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. 이 Module과 package의 v4 identity codec은 current graph 옆에 구현됐지만 아직 public route, `SemesterWorkspaceController` 또는 prepared-workspace startup에 연결되지 않았다.
 
 ## Canonical 시작과 root 소유권
 
@@ -54,9 +54,9 @@ Materializer가 발급한 ownership marker가 있는 exact leaf만 재생성할 
 
 Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 지원한다. [ADR 0013](../../docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 이 format을 첫 durable compatibility baseline으로 채택한다.
 
-Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 adopted target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 한다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
+Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. Historical [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 당시 target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 했다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
 
-ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. Candidate lifecycle과 required Runtime activation이 연결되기 전에는 internal target seam이며 current public workspace authority는 계속 아래 v2 aggregate다.
+ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. 함께 구현된 generic operation coordinator는 survivor지만 candidate/bootstrap lifecycle union은 [ADR 0020](../../docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md) 이후 correction residue다. Prepared-root validation과 required Runtime readiness가 연결되기 전에는 internal seam이며 current public workspace authority는 계속 아래 v2 aggregate다.
 
 | 영역 | Current behavior |
 | --- | --- |

@@ -6,13 +6,13 @@
 
 성숙도: 채택
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
 이 문서는 AY의 MCP 요청을 AY-PLE의 typed UI로 바꾸고, 사용자의 structured result를 같은 Codex Turn에 반환하는 long-lived seam을 설명한다. 제품 가치와 MVP 범위는 Product Brief, 결정의 이유는 ADR 0019, 현재 코드의 강결합 topology와 gap은 구현 지도가 소유한다.
 
-Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합친 deep Module이다. Physical code boundary는 private workspace package `@ay-ple/interaction-mcp`와 `apps/server`에 걸친다. Package는 stable executable·typed capability contract·private transport를, Server는 Broker runtime과 Browser projection을 소유한다. Bootstrap이 설치한 project MCP declaration으로 Adapter를 native discovery하고, App Runtime이 environment로 현재 Broker binding을 공급한다.
+Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합친 deep Module이다. Physical code boundary는 private workspace package `@ay-ple/interaction-mcp`와 `apps/server`에 걸친다. Package는 stable executable·typed capability contract·private transport를, Server는 Broker runtime과 Browser projection을 소유한다. App 실행 전 native Bootstrap이 설치한 project MCP declaration으로 Adapter를 native discovery하고, App Runtime이 environment로 현재 Broker binding을 공급한다.
 
 - Tracked `.codex/config.toml`과 process-local environment binding의 분리
 - Runtime·Thread·Turn과 MCP tool server의 결합
@@ -70,7 +70,7 @@ Production Browser Adapter와 in-memory test Adapter는 Interaction MCP Module�
 
 ## MCP discovery와 Runtime binding
 
-Bootstrap은 SemesterWorkspace의 Git-tracked `.codex/config.toml`에 정적인 MCP declaration을 설치한다.
+App 실행 전 native Bootstrap은 SemesterWorkspace의 Git-tracked `.codex/config.toml`에 정적인 MCP declaration을 설치한다.
 
 ```toml
 [mcp_servers.ay_ple_interaction]
@@ -88,7 +88,7 @@ Bootstrap output은 `tool_timeout_sec`을 의도적으로 생략하고 current p
 
 따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load된다. Bootstrap은 global trust를 수정하지 않고, exact Git root와 `workspace-write`를 요청하는 정상 thread start가 current pinned App Server의 native trust write와 same-start config reload를 사용한다. 명시적 `untrusted`는 보존한다.
 
-`required = true`는 단순히 STDIO process가 spawn됐다는 뜻이 아니다. Adapter는 current Broker endpoint·token·Runtime binding을 검증하고 authenticated handshake를 완료한 뒤 MCP initialize에 성공한다. App activation은 effective MCP status에서 expected server와 handshake도 확인하므로 explicit `untrusted` 때문에 project declaration 전체가 무시된 경우까지 실패한다. App은 MCP 없는 degraded mode로 계속하지 않는다.
+`required = true`는 단순히 STDIO process가 spawn됐다는 뜻이 아니다. Adapter는 current Broker endpoint·token·Runtime binding을 검증하고 authenticated handshake를 완료한 뒤 MCP initialize에 성공한다. Prepared-workspace startup은 effective MCP status에서 expected server와 handshake도 확인하므로 explicit `untrusted` 때문에 project declaration 전체가 무시된 경우까지 실패한다. App은 MCP 없는 degraded mode로 계속하지 않는다.
 
 ## Adapter↔Broker HTTP transport
 
@@ -129,7 +129,7 @@ WebSocket, Unix domain socket, inherited extra file descriptor, 별도 private H
 | Failure is not a result | Turn interrupt, `busy`, timeout, disconnect와 Runtime terminal은 `accept | revise | reject` union에 들어가지 않고 MCP failure path로 정산한다. |
 | Capability-specific UI | 자료 preview, diff, evidence처럼 해당 결정에 필요한 UI를 제공한다. Arbitrary schema renderer를 만들지 않는다. |
 
-App 자체가 소유하는 state를 바꾸는 capability는 예외가 아니라 같은 규칙의 별도 tool이다. 예를 들어 workspace 선택 tool은 App의 `WorkspaceRegistry` mutation을 수행할 수 있지만, 학기 파일을 어떻게 정리할지는 AY에 돌려준다.
+App 자체가 소유하는 state를 바꾸는 future capability도 같은 규칙의 별도 tool이어야 한다. 다만 ADR 0020의 initial workspace 선택·Bootstrap은 App interaction이 아니라 pre-App native flow이므로 current capability catalog에 workspace selection tool을 두지 않는다.
 
 ## Review UI composition
 
@@ -205,7 +205,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | 상태 | Durable owner | App의 역할 |
 | --- | --- | --- |
 | 실제 학기 파일 | SemesterWorkspace Git repository | 선택한 root를 exact `cwd`로 연결한다. |
-| 정적 Interaction MCP declaration | SemesterWorkspace의 tracked `.codex/config.toml` | Bootstrap·Update가 설치하며 App Runtime은 직접 rewrite하지 않고 native project loading을 사용한다. |
+| 정적 Interaction MCP declaration | SemesterWorkspace의 tracked `.codex/config.toml` | Pre-App native Bootstrap·Update가 설치하며 App Runtime은 직접 rewrite하지 않고 native project loading을 사용한다. |
 | MCP endpoint·token·Runtime binding | App Runtime environment | Workspace나 global config에 persist하지 않는다. |
 | 구조화된 학기 snapshot | SemesterWorkspace의 tracked file | Capability UI에 필요한 경우 읽어 표시할 수 있지만 mutation authority를 소유하지 않는다. |
 | 장기 변경 이력 | Git history | 별도 academic event ledger를 만들지 않는다. |

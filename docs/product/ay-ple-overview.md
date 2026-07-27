@@ -94,7 +94,7 @@ year-2-semester-2/
   .git/
 ```
 
-App은 별도 복사본이나 normalized child workspace를 만들지 않는다. 새 workspace의 Git과 최소 파일 준비는 사용자가 요청한 init Skill과 AY가 일반 도구로 수행한다. `workspace-state.json`은 학기 identity와 필요한 구조화 snapshot을 둘 수 있지만, pending interaction이나 native execution event log는 담지 않는다.
+App은 별도 복사본이나 normalized child workspace를 만들지 않는다. 새 workspace의 Git과 최소 파일 준비는 App을 시작하기 전에 사용자가 native Codex client에서 요청한 init Skill과 AY가 일반 도구로 수행한다. `workspace-state.json`은 학기 identity와 필요한 구조화 snapshot을 둘 수 있지만, pending interaction이나 native execution event log는 담지 않는다.
 
 여러 workspace의 경로와 현재 선택은 sibling `../.ay-ple/`의 `WorkspaceRegistry`가 소유한다. Runtime payload·cache도 그곳에 두고, Codex account·config·session은 사용자의 기존 `~/.codex/`를 사용한다.
 

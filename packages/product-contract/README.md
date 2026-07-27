@@ -7,7 +7,7 @@ Canonical product Server가 만드는 `/api/product/*` JSON·NDJSON과 Browser�
 | 소유하는 내용 | 소유하지 않는 내용 |
 | --- | --- |
 | Account Readiness, coarse `operationStatus(active | idle)`, workspace·Course·RawMaterial, workspace recovery, settled history와 material preview·refresh outcome의 exact public type·decoder | workspace store format/version, physical path, migration과 domain transaction |
-| User-owned Git target의 `TargetProductBootstrap`, `ProductWorkspaceLifecycle`, Browser-safe workspace/candidate summary와 `activeOperation` exact decoder | Candidate path, registry bytes, transition execution과 Runtime lease |
+| User-owned Git lifecycle용으로 확장된 `TargetProductBootstrap`, `ProductWorkspaceLifecycle`, Browser-safe workspace/candidate summary와 `activeOperation` exact decoder | Candidate path, registry bytes, transition execution과 Runtime lease. Candidate/bootstrap branch는 ADR 0020 이후 correction residue |
 | Current Assignment action·explicit retry, product Chat, Browser-safe Codex model catalog·Turn 설정, old 세 갈래 Review 옆의 semantic Review request/result/frame, 일반 interaction answer/cancel과 interrupt request·response literal | Express route composition, Origin guard, HTTP status와 byte framing |
 | Closed `ProductOperationFrame`, public `StatePatch`·question, Review replacement·resolution·recovery projection과 pure exact decoder | native App Server event, raw JSON-RPC identity, MCP credential·complete payload와 cross-frame lifecycle reducer |
 | First Assignment의 public Recipe version·arguments, advertised model·reasoning·`default`/`fast` Turn 선택과 `16 KiB` JSON envelope bound | managed `SKILL.md` path·digest, raw model provider/config와 private MCP binding |
@@ -16,7 +16,7 @@ Decoder는 missing·extra·unknown field와 Review decision/outcome·continuatio
 
 새 semantic Review codec은 domain-neutral before/after change와 bounded evidence preview의 optional-field presence·array order를 보존한다. `review.requested | review.resolved | review.failed`만 받고 token·Runtime binding, native identity, patch·revision과 raw MCP locator를 거절한다. 이 expand contract는 current public operation frame과 old Review contract를 제거하거나 전환하지 않는다.
 
-User-owned Git target lifecycle은 `decodeTargetProductBootstrap`으로 current public bootstrap 옆에 expand한다. `ProductWorkspaceLifecycle`은 `bootstrap | active | transitioning | recovery_required | registry_incompatible`를 exact-key union으로 구분하고 v4와 같은 workspace·semester identity bound, path 없는 safe label, candidate/init operation binding과 transition target cross-field invariant를 검증한다. Current `ProductBootstrap`은 `CurrentProductBootstrap`의 compatibility alias이고 `decodeProductBootstrap`·`isProductOperationId`의 action/chat 의미는 joint cutover 전까지 바뀌지 않는다.
+User-owned Git lifecycle을 위해 `decodeTargetProductBootstrap`을 current public bootstrap 옆에 expand한 구현이 있다. `ProductWorkspaceLifecycle`은 `bootstrap | active | transitioning | recovery_required | registry_incompatible`를 exact-key union으로 구분하고 v4와 같은 workspace·semester identity bound, path 없는 safe label, candidate/init operation binding과 transition target cross-field invariant를 검증한다. [ADR 0020](../../docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md)은 App-owned candidate/init lifecycle을 폐기했으므로 이 candidate branch는 adopted target이 아니며 후속 contract 대상이다. Current `ProductBootstrap`은 `CurrentProductBootstrap`의 compatibility alias이고 `decodeProductBootstrap`·`isProductOperationId`의 action/chat 의미는 joint cutover 전까지 바뀌지 않는다.
 
 ## 소비 경계
 

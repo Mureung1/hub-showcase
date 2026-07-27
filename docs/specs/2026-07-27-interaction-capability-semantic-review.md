@@ -31,7 +31,7 @@ AY가 active workspace의 실제 file을 읽음
 
 Private `@ay-ple/interaction-mcp` package는 Codex-facing STDIO Adapter, capability request/result codec과 private Adapter↔Broker wire를 소유한다. `apps/server`는 Runtime credential, one-active-Turn lease, pending slot, evidence resolution과 Browser projection을 소유한다. `@ay-ple/product-contract`와 Chat Shell은 Browser-safe frame과 capability-specific card만 안다. `@ay-ple/codex-chat-runtime`은 capability 이름을 모르고 generic child environment와 MCP readiness만 제공한다.
 
-이 Spec은 InteractionCapability Module과 product Review vertical을 소유한다. Canonical workspace 선택, Git 초기화, `WorkspaceRegistry`, project config 설치와 Bootstrap→Workspace Runtime activation은 [User-owned SemesterWorkspace lifecycle Spec](./2026-07-27-user-owned-semester-workspace-lifecycle.md)이 소유한다. Interaction Module은 temporary Git workspace fixture에서 먼저 독립 검증하고, production hard cutover는 두 Spec의 activation gate가 합류한 뒤 수행한다.
+이 Spec은 InteractionCapability Module과 product Review vertical을 소유한다. Pre-App native Bootstrap, canonical prepared-root handoff, Git 초기화, `WorkspaceRegistry`, project config 설치와 Workspace Runtime startup은 [User-owned SemesterWorkspace lifecycle Spec](./2026-07-27-user-owned-semester-workspace-lifecycle.md)이 소유한다. Interaction Module은 prepared temporary Git workspace fixture에서 먼저 독립 검증하고, production hard cutover는 두 Spec의 required-readiness gate가 합류한 뒤 수행한다.
 
 ## User Stories
 
@@ -65,7 +65,7 @@ Private `@ay-ple/interaction-mcp` package는 Codex-facing STDIO Adapter, capabil
 - [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md)가 long-lived Module mapping을 소유한다.
 - [ADR 0018](../adr/0018-adopt-user-owned-git-semester-workspaces.md)은 actual file과 Git history의 durable authority를 소유한다. 이 Spec은 그 root를 host input으로 소비할 뿐 선택·초기화하지 않는다.
 - Current First Assignment Spec과 완료 ticket은 round trip·native lifecycle·Browser failure의 characterization donor다. Durable patch/apply와 replacement semantics는 target assertion이 아니다.
-- Interaction foundation slice는 workspace lifecycle과 병렬로 구현할 수 있다. Production activation은 이 Spec의 built Adapter·Broker·readiness가 먼저 green이어야 하고, 이 Spec의 final public cutover는 sibling Spec의 active Git workspace가 green이어야 한다. `/to-tickets`가 이 cross-spec blocking edge를 기록한다.
+- Interaction foundation slice는 workspace lifecycle과 병렬로 구현할 수 있다. Production prepared-workspace startup은 이 Spec의 built Adapter·Broker·readiness가 먼저 green이어야 하고, 이 Spec의 final public cutover는 sibling Spec의 active Git workspace가 green이어야 한다. `/to-tickets`가 이 cross-spec blocking edge를 기록한다.
 
 ## Implementation Contract
 
@@ -103,7 +103,7 @@ required = true
 - Built executable은 Node shebang과 executable mode를 가진 `packages/interaction-mcp/dist/stdio.js`다.
 - Declaration에는 `cwd`, `tool_timeout_sec`, `args`, static `env`, endpoint·token·binding value와 native identity를 쓰지 않는다.
 - Relative `command`는 Workspace Runtime의 exact Git root `cwd`에서 resolve한다. Absolute path, `npx`, global install, appData copy와 symlink를 사용하지 않는다.
-- Workspace init·update가 declaration을 설치·수정하는 정책은 sibling workspace Spec이 소유한다. 이 Spec의 standalone actual test는 같은 shape를 temporary Git fixture에 준비한다.
+- Pre-App native Bootstrap·Update가 declaration을 설치·수정하는 정책은 sibling workspace Spec이 소유한다. 이 Spec의 standalone actual test는 같은 shape를 prepared temporary Git fixture에 준비한다.
 - Current pinned native MCP timeout `300`초를 사용한다. App countdown·연장·keepalive·자동 retry를 만들지 않는다.
 
 Runtime의 public seam은 capability-neutral하다.
@@ -208,7 +208,7 @@ Error envelope는 `{ protocolVersion: 1, kind: "error", code, displayMessage }`�
 
 - Runtime generation마다 pending slot 하나만 둔다. 두 번째 call은 Browser projection·queue·preemption 없이 immediate `busy`다.
 - Startup handshake 외에 capability call 하나는 held HTTP POST 하나다. `202`, poll, callback, WebSocket, Unix socket, durable outbox와 replay가 없다.
-- Workspace Spec이 소유하는 하나의 process-local `ProductOperationCoordinator`가 workspace transition과 product Turn admission을 atomic하게 직렬화한다. Broker는 별도 Turn lock을 claim하지 않는다.
+- Workspace Spec이 보존하는 하나의 process-local `ProductOperationCoordinator`가 active product Turn admission을 atomic하게 직렬화한다. Prepared-workspace startup은 product operation lease가 아니며, Runtime replacement·shutdown은 active lease를 native terminal 또는 completed close authority까지 보존해 정산한다. Obsolete candidate eligibility를 다시 만들지 않고 Broker도 별도 Turn lock을 claim하지 않는다.
 - Broker는 same generation의 active `product_turn` lease가 있을 때만 call을 받고 slot에 coordinator-issued `operation_[0-9a-f]{32}`와 internal thread identity를 capture한다. Caller-supplied operation identity는 금지한다.
 - Adapter HTTP abort와 Browser disconnect는 current pending call만 failure로 정산하고 native Turn interrupt를 요청한다. Runtime-generation token·binding은 유지하며 이 call-level event만으로 outer product-turn lease를 해제하지 않는다.
 - STDIO EOF는 required Adapter loss이므로 Broker intake를 닫고 pending call을 failure로 정산해 token·binding을 폐기한 뒤 Workspace Runtime teardown을 필수로 요청한다.
@@ -298,7 +298,7 @@ type ProductReviewFrame =
 2. Host가 exact Git workspace Runtime을 three-value child environment로 시작한다.
 3. Native project config가 built Adapter를 시작하고 handshake 뒤 initialize를 성공시킨다.
 4. Runtime readiness port가 exact server·tool roster를 확인한다.
-5. Workspace lifecycle owner가 이 readiness를 activation commit의 required input으로 사용한다.
+5. Workspace lifecycle owner가 이 readiness를 prepared root의 registry active commit에 필요한 input으로 사용한다.
 
 #### Review round trip
 
@@ -317,7 +317,7 @@ type ProductReviewFrame =
 
 | Failure | Required behavior |
 | --- | --- |
-| Listener/Broker preparation failure | Runtime child 0; activation owner에 failure 반환 |
+| Listener/Broker preparation failure | Runtime child 0; prepared-workspace startup owner에 failure 반환 |
 | Missing/stale Adapter, ignored config, env·handshake·roster mismatch | Required readiness failure; degraded success 없음 |
 | Invalid token/binding | `forbidden`, no Browser projection·credential detail |
 | No active Turn lease | `runtime_inactive`, caller identity 합성 없음 |
@@ -338,8 +338,8 @@ type ProductReviewFrame =
 1. Current First Assignment round trip을 characterization test로 고정하되 durable patch/apply, replacement와 double confirmation은 target assertion에서 제외한다.
 2. Interaction package, codec, Broker와 in-memory UI Adapter를 current graph 옆에 추가한다.
 3. Generic child env·MCP readiness와 active Turn lease를 추가하고 temporary Git workspace의 project config로 real Adapter startup을 검증한다.
-4. Sibling workspace Spec이 canonical Workspace Runtime과 required activation을 연결한다.
-5. Joint product gate가 green이면 sibling Workspace Spec이 준비한 target `ProductBootstrap`·workspace lifecycle routes/UI와 이 Spec의 inline Review를 public composition에 atomic하게 hard cutover한다. App-owned `Course`, material refresh·selection·preview routes/types/UI, First Assignment action/retry, `RawMaterial`, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`, revision-bound apply와 old current MCP override를 compatibility alias 없이 제거한다.
+4. Sibling workspace Spec이 pre-App native Bootstrap과 canonical prepared-root Workspace Runtime·required readiness를 연결한다.
+5. Joint product gate가 green이면 sibling Workspace Spec의 active prepared-workspace surface와 이 Spec의 inline Review를 public composition에 atomic하게 hard cutover한다. Candidate/init routes나 Browser chooser를 중간 compatibility surface로 추가하지 않는다. App-owned `Course`, material refresh·selection·preview routes/types/UI, First Assignment action/retry, `RawMaterial`, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`, revision-bound apply와 old current MCP override를 compatibility alias 없이 제거한다.
 
 Workspace v2/v3 bytes, registry, Runtime payload와 canonical root cleanup은 이 Spec이 바꾸지 않는다. Joint cutover 전 rollback은 current source와 matching current store/runtime graph를 한 단위로 사용한다.
 
@@ -364,7 +364,7 @@ Workspace v2/v3 bytes, registry, Runtime payload와 canonical root cleanup은 �
 
 가장 높은 반복 가능한 seam은 **real `@ay-ple/interaction-mcp` codec + real Server Broker + in-memory UI Adapter**다. Valid request 하나가 evidence preflight 뒤 UI projection 하나를 만들고, one user action이 같은 held request의 exact result로 돌아가며, busy·interrupt·disconnect·terminal은 normal result 없이 실패해야 한다.
 
-그 위의 product seam은 **real Chromium → Vite → shared listener → deterministic Runtime/Broker → temporary Git workspace**다. Sibling W3의 operation coordinator, W6의 native project context와 W12의 checkpoint policy를 소비하되, candidate lifecycle과 required activation 대신 fixture가 exact root와 project config를 공급한다.
+그 위의 product seam은 **real Chromium → Vite → shared listener → deterministic Runtime/Broker → prepared temporary Git workspace**다. Sibling의 generic operation coordinator, native project context와 checkpoint policy를 소비하고 fixture는 pre-App Bootstrap 결과와 같은 exact root·project config를 공급한다.
 
 ### Required proof
 
@@ -382,9 +382,9 @@ Implementation 완료 시 `npm test`, `npm run typecheck`, `npm run build`, Chat
 ## Out of Scope
 
 - Canonical appData/Runtime root migration
-- `workspace-state.json` v4, `WorkspaceRegistry`, directory chooser와 Bootstrap lifecycle
+- `workspace-state.json` v4, `WorkspaceRegistry`, pre-App native Bootstrap과 launch-time prepared-root selection
 - Init Skill, `AGENTS.md`, Skill copy와 project config merge/update policy
-- Native project trust·discovery와 candidate writable-root policy
+- Native project trust·discovery와 exact-root permission policy
 - Git status/history UI, auto-commit hook와 clean-tree gate
 - Multiple simultaneous Review, queue·priority·preemption과 replay
 - Modal·dedicated approval page, arbitrary schema renderer와 generic App event bus
@@ -399,21 +399,12 @@ None.
 
 ## Further Notes
 
-두 Spec은 backlog의 같은 상위 capability 아래에서 한 번의 `/to-tickets` input set으로 처리하고 다음 blocking graph를 보존한다.
+두 Spec은 backlog의 같은 상위 capability 아래에서 하나의 dependency graph로 처리한다. 이미 완료된 Interaction foundation과 workspace roots·registry·generic coordinator 결과는 보존하고, `/to-tickets`는 미완료 ticket의 edge만 prepared-root startup에 맞게 교정한다.
 
-| Slice | Observable outcome | Depends on | Blocks |
-| --- | --- | --- | --- |
-| I0 Donor characterization | Current round trip의 보존·폐기 assertion이 tests로 고정됨 | — | I1 |
-| I1 Capability codecs | Public MCP, private wire와 Browser frame exact codecs·bounds가 green | I0 | I2, I3, I4, I6, I7, sibling W9 |
-| I2 Built STDIO Adapter | Executable·env validation·handshake·held call mapping이 green | I1 | I5, I8 |
-| I3 Broker transport core | Authenticated binding, in-memory coordinator/UI ports, single slot과 once-only failure가 green | I1 | I7, I8, sibling W13 |
-| I4 Evidence resolver | Root-bound atomic preflight와 bounded Browser projection이 green | I1 | I7, I8 |
-| I5 Runtime-neutral MCP seam | Generic child env, project-config-only Workspace path와 readiness port가 green | I2, sibling W6 | I8, sibling W13 |
-| I6 First Assignment Skill source | `hub/skills/ay-ple-first-assignment/` workflow와 contract test가 green | I1 | I8, sibling W9, sibling W12 |
-| I7 Inline Review surface | NDJSON card, `204` answer endpoint, pending lock과 failure UI가 green | I3, I4 | I8 |
-| I8 Temporary-workspace product trace | Review→actual file edit→meaningful Git checkpoint가 green | I2, I3, I4, I5, I6, I7, sibling W3, sibling W6, sibling W12 | I9 |
-| I9 Joint public cutover | Target Workspace lifecycle와 inline Review가 public composition에 atomic 전환됨 | I8, sibling W11, sibling W13, sibling W14 | I10 |
-| I10 Academic public-surface contraction | App-owned Course/material/action/retry routes·types·UI가 제거됨 | I9 | I11 |
-| I11 Academic persistence/runtime contraction | RawMaterial·Run·patch·confirmation·apply store와 old MCP override가 제거됨 | I10 | sibling W15 |
+Cross-spec gate는 다음 세 가지뿐이다.
 
-One-call held response와 once-only settlement를 horizontal transport/UI tickets로 찢지 않는다.
+1. Runtime-neutral MCP seam은 exact Git-root native context를 소비한다.
+2. Prepared-workspace startup은 built Adapter·Broker와 required MCP readiness를 소비한다.
+3. Joint public cutover는 prepared-root reopen/recovery와 temporary-workspace Interaction trace가 모두 green이어야 한다.
+
+One-call held response와 once-only settlement를 horizontal transport/UI tickets로 찢지 않고, obsolete candidate/init lifecycle을 새 Interaction ticket으로 옮기지 않는다.

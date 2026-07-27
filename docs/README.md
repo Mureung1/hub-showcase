@@ -90,6 +90,7 @@ Root companion docs:
 | Product-only cutover·durable v2 ADR | [adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md](adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | public caller를 product path로 단일화하고 current v2 store를 첫 durable compatibility baseline으로 채택한 결정 |
 | User-owned Git SemesterWorkspace ADR | [adr/0018-adopt-user-owned-git-semester-workspaces.md](adr/0018-adopt-user-owned-git-semester-workspaces.md) | 기존 Git working tree를 직접 workspace·actual-file 작업 경계로 채택한 결정 |
 | InteractionCapability ADR | [adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md](adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) | Typed MCP interaction을 AY와 App의 deep-module seam으로 채택한 결정 |
+| Pre-App native Bootstrap ADR | [adr/0020-bootstrap-semester-workspaces-before-app-startup.md](adr/0020-bootstrap-semester-workspaces-before-app-startup.md) | SemesterWorkspace 준비를 native client가 App 시작 전에 소유하고 App은 prepared root만 여는 결정 |
 | Public repository clean snapshot ADR | [adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, first-party license와 trust·export authority 결정 |
 
 ### 기술 참고
@@ -162,7 +163,7 @@ Root companion docs:
 | 채택한 기술·제품 결정 | 해당 [ADR](adr/) | architecture·제품 문서는 결정의 결과만 설명하고 ADR을 연결 |
 | AY↔App typed interaction의 기술 mapping | [AY–App Interaction Capability 아키텍처](architecture/ay-app-interaction-capabilities.md) | 제품 문서는 사용자 의미, 구현 지도는 current 지원 여부만 설명 |
 | runtime root의 소유권 불변 조건 | [ADR 0006](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 다른 문서는 결정 결과만 요약하고 ADR을 연결 |
-| SemesterWorkspace admission과 Git working tree authority | [ADR 0018](adr/0018-adopt-user-owned-git-semester-workspaces.md) | 제품·architecture·package 문서는 current 구현 또는 사용자 결과만 요약하고 Git mutation·checkpoint 세부를 먼저 확정된 것처럼 쓰지 않음 |
+| SemesterWorkspace admission과 Git working tree authority | [ADR 0018](adr/0018-adopt-user-owned-git-semester-workspaces.md)과 [ADR 0020](adr/0020-bootstrap-semester-workspaces-before-app-startup.md) | 제품·architecture·package 문서는 current 구현 또는 사용자 결과만 요약하고 App-internal Bootstrap이나 Git mutation·checkpoint 세부를 다시 정의하지 않음 |
 | InteractionCapability와 AY·App 역할 경계 | [ADR 0019](adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) | 소비 문서는 App-owned academic workflow나 durable interaction entity를 다시 도입하지 않고 결과만 요약 |
 | Public repository lineage·canonical source·first-party license와 trust authority | [ADR 0015](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | 제품·release 문서는 public 진입 결과만 요약하고 allowlist·cutover·legal policy를 재정의하지 않음 |
 | 제거한 public preview의 Codex account mode·credential authority·product token boundary | [ADR 0017](adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | 현재 account authority는 구현 지도와 Runtime 격리 문서가 소유하고, ADR은 historical 결정만 보존함 |

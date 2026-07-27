@@ -2,7 +2,7 @@
 
 Current active directory의 TXT 자료와 Official OpenAI Codex Python SDK 기반 product operation을 함께 사용하는 desktop AY-PLE workbench다. 왼쪽 source explorer, 중앙 bounded 원문 preview, 오른쪽 toggleable AY Chat의 3-pane을 제공한다. Product transcript는 tab memory에만 유지하고, 확인된 Assignment와 settled confirmation·apply outcome은 authoritative bootstrap에서 다시 연다.
 
-현재 Browser는 chooser·development materializer가 넘긴 current-v2 directory의 post-activation workbench만 구현한다. OAuth/setup wizard, app-owned scaffold, `WorkspaceManifest`, durable active registry와 `Semester Ready` 화면은 아직 없다. 아래 `ready workspace`는 current wire state이며 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않다. Adopted workspace target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
+현재 Browser는 chooser·development materializer가 넘긴 current-v2 directory의 post-activation workbench만 구현한다. OAuth/setup wizard, app-owned scaffold, `WorkspaceManifest`, durable active registry와 `Semester Ready` 화면은 아직 없다. 아래 `ready workspace`는 current wire state이며 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않다. Adopted workspace target은 [ADR 0018](../../docs/adr/0018-adopt-user-owned-git-semester-workspaces.md)과 [ADR 0020](../../docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md)이 소유한다.
 
 ## 현재 구현
 

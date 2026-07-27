@@ -87,6 +87,7 @@ npm run demo
 | ADR | [0015. Reviewed clean snapshot public repository](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, Apache-2.0 first-party license와 trust·export authority |
 | ADR | [0018. User-owned Git SemesterWorkspace](docs/adr/0018-adopt-user-owned-git-semester-workspaces.md) | 기존 Git working tree를 직접 workspace·actual-file 작업 경계로 채택한 결정 |
 | ADR | [0019. MCP InteractionCapability를 AY–App seam으로 사용](docs/adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) | Typed MCP request/result와 App UI round trip의 역할 경계 결정 |
+| ADR | [0020. Pre-App native SemesterWorkspace Bootstrap](docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md) | Native client가 App 시작 전에 SemesterWorkspace를 준비하고 App은 prepared root만 여는 결정 |
 
 ### 기술 참고 문서
 
