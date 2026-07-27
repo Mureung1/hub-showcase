@@ -13,6 +13,8 @@ const apiRecord = {
   emotionText: "오늘 하루를 위로받은 기분",
   recordDate: "2026-07-16",
   createdAt: "2026-07-16T10:30:00.000Z",
+  liked: false,
+  likeCount: 0,
 };
 
 const spotifyTrack = {

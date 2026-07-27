@@ -48,7 +48,15 @@ create policy "authenticated_users_can_read_records"
 on public.music_records
 for select
 to authenticated
-using (user_id is not null);
+using (
+  user_id = (select auth.uid())
+  or exists (
+    select 1
+    from public.follows
+    where follower_id = (select auth.uid())
+      and following_id = music_records.user_id
+  )
+);
 
 drop policy if exists "music_records_can_be_created" on public.music_records;
 drop policy if exists "authenticated_users_can_create_owned_records" on public.music_records;

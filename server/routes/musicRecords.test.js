@@ -31,11 +31,22 @@ function createAuthClient({ user = authenticatedUser, error = null, calls = [] }
   };
 }
 
-function createSupabaseQuery(result, calls = []) {
+function createSupabaseQuery(
+  result,
+  calls = [],
+  likesResult = { data: [], error: null },
+  likeCountsResult = { data: [{ record_id: 1, like_count: 0 }], error: null },
+) {
+  let activeTable = "";
   const query = {
     from(table) {
       calls.push(["from", table]);
+      activeTable = table;
       return query;
+    },
+    rpc(name, parameters) {
+      calls.push(["rpc", name, parameters]);
+      return Promise.resolve(likeCountsResult);
     },
     select(columns) {
       calls.push(["select", columns]);
@@ -43,6 +54,10 @@ function createSupabaseQuery(result, calls = []) {
     },
     eq(column, value) {
       calls.push(["eq", column, value]);
+      return query;
+    },
+    in(column, values) {
+      calls.push(["in", column, values]);
       return query;
     },
     order(column, options) {
@@ -58,7 +73,8 @@ function createSupabaseQuery(result, calls = []) {
       return Promise.resolve(result);
     },
     then(resolve) {
-      return Promise.resolve(result).then(resolve);
+      const activeResult = activeTable === "likes" ? likesResult : result;
+      return Promise.resolve(activeResult).then(resolve);
     },
   };
   return query;
@@ -95,6 +111,8 @@ const apiRecord = {
   emotionText: "오늘 하루를 위로받은 기분",
   recordDate: "2026-07-16",
   createdAt: "2026-07-16T10:30:00.000Z",
+  liked: false,
+  likeCount: 0,
   author: {
     id: "user-1",
     nickname: "고요한수영",
@@ -162,6 +180,33 @@ describe("SWIM API", () => {
     ]);
   });
 
+  it("includes only the authenticated user's persisted like state", async () => {
+    const calls = [];
+    const query = createSupabaseQuery(
+      { data: [databaseRecord], error: null },
+      calls,
+      { data: [{ record_id: 1 }], error: null },
+      { data: [{ record_id: 1, like_count: 3 }], error: null },
+    );
+    const baseUrl = await startApp(createAuthenticatedOptions(query));
+
+    const response = await fetch(`${baseUrl}/api/music-records`, { headers: authHeaders });
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.data[0].liked, true);
+    assert.equal(body.data[0].likeCount, 3);
+    assert.deepEqual(
+      calls.filter(([name, column]) => name === "eq" && column === "user_id").at(-1),
+      ["eq", "user_id", "user-1"],
+    );
+    assert.ok(calls.some((call) => (
+      call[0] === "in"
+      && call[1] === "record_id"
+      && JSON.stringify(call[2]) === JSON.stringify([1])
+    )));
+  });
+
   it("returns an empty data array for an authenticated user without records", async () => {
     const query = createSupabaseQuery({ data: [], error: null });
     const baseUrl = await startApp(createAuthenticatedOptions(query));
@@ -169,6 +214,25 @@ describe("SWIM API", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { data: [] });
+  });
+
+  it("does not return a partial record response when aggregate lookup fails", async () => {
+    const query = createSupabaseQuery(
+      { data: [databaseRecord], error: null },
+      [],
+      { data: [], error: null },
+      { data: null, error: new Error("aggregate unavailable") },
+    );
+    const baseUrl = await startApp(createAuthenticatedOptions(query));
+    const response = await fetch(`${baseUrl}/api/music-records`, { headers: authHeaders });
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), {
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "음악 기록 조회 중 오류가 발생했습니다.",
+      },
+    });
   });
 
   it("creates a trimmed record using only the authenticated user's id", async () => {

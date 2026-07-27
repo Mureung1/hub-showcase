@@ -93,6 +93,10 @@ describe("app authentication flow", () => {
         return Promise.resolve(response({ data: [] }));
       }
 
+      if (url.endsWith("/api/feed")) {
+        return Promise.resolve(response({ data: [], meta: { followingCount: 0 } }));
+      }
+
       if (url.includes("/api/spotify/")) {
         return Promise.resolve(response([spotifyTrack]));
       }
@@ -133,5 +137,59 @@ describe("app authentication flow", () => {
     fireEvent.click(await screen.findByRole("button", { name: "로그아웃" }));
     await waitFor(() => expect(authMocks.signOut).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole("heading", { name: "로그인" })).toBeInTheDocument();
+  });
+
+  it("persists a like from the authenticated user's music card", async () => {
+    authMocks.getCurrentSession.mockResolvedValue(session);
+    authMocks.getProfile.mockResolvedValue({
+      id: "user-1",
+      nickname: "고요한수영",
+      bio: "",
+      avatarUrl: null,
+    });
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/api/feed")) {
+        return Promise.resolve(response({ data: [], meta: { followingCount: 0 } }));
+      }
+      if (url.endsWith("/api/users")) {
+        return Promise.resolve(response({ data: [] }));
+      }
+      if (url.endsWith("/api/music-records/7/likes")) {
+        return Promise.resolve(response({
+          data: { recordId: "7", liked: true, likeCount: 1 },
+        }));
+      }
+      return Promise.resolve(response({ data: [] }));
+    }));
+
+    render(<App initialRecords={[{
+      id: 7,
+      spotifyTrackId: "track-1",
+      songTitle: "Ditto",
+      artistName: "NewJeans",
+      albumName: "OMG",
+      albumImageUrl: null,
+      externalUrl: null,
+      emotion: "오늘의 마음",
+      recordDate: "2026-07-27",
+      liked: false,
+      likeCount: 0,
+      author: { nickname: "고요한수영", avatarUrl: null },
+    }]} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Ditto 기억하기" }));
+
+    expect(await screen.findByRole("button", { name: "Ditto 기억 취소" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:3000/api/music-records/7/likes",
+      {
+        method: "POST",
+        headers: { Authorization: "Bearer valid-access-token" },
+      },
+    );
   });
 });
