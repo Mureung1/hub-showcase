@@ -28,10 +28,14 @@ class EntryLabel(StrEnum):
 class EntrySegment(StrEnum):
     """지표의 대상군 축.
 
+    `ALL` 은 대상군으로 제한하지 않은 모집단 전체다. 대상군별 행과 분모가 다른 별개의
+    행이며, 대상군별 값을 더하거나 평균해 만들지 않는다.
+
     `unspecified` 를 신입·주니어에 합치지 않는다. 표기가 없는 공고를 신입 기준선에
     넣으면 기준선이 실제보다 높아진다.
     """
 
+    ALL = "all"
     ENTRY_JUNIOR = "entry_junior"
     EXPERIENCED = "experienced"
     UNSPECIFIED = "unspecified"
@@ -45,12 +49,19 @@ _LABEL_TO_SEGMENT: dict[EntryLabel, EntrySegment] = {
     EntryLabel.UNSPECIFIED: EntrySegment.UNSPECIFIED,
 }
 
-PRIMARY_SEGMENT: EntrySegment = EntrySegment.ENTRY_JUNIOR
-"""제품의 주 대상군. 표시 순서의 기준이며 다른 대상군을 배제하지 않는다.
+PRIMARY_SEGMENT: EntrySegment = EntrySegment.ALL
+"""화면과 해석 이후 단계가 기준선으로 쓰는 대상군.
 
-표본이 충분한 대상군은 함께 표시한다. 신입·주니어 기준선만 보면 지금 무엇을
-준비할지는 알아도 어디로 가는지는 알 수 없다.
+신입·주니어 표기 공고가 드물어 그 대상군만으로는 분모가 서지 않는다. 전체를 기준선으로
+두고, 표본이 충분해진 대상군은 함께 표시한다.
 """
+
+SEGMENTED: tuple[EntrySegment, ...] = (
+    EntrySegment.ENTRY_JUNIOR,
+    EntrySegment.EXPERIENCED,
+    EntrySegment.UNSPECIFIED,
+)
+"""`entry_label` 에서 접히는 대상군. `ALL` 은 여기에 들어가지 않는다."""
 
 SEGMENT_ONLY_FAMILIES: frozenset[str] = frozenset(
     {"entry_label_advanced_signal_rate"}

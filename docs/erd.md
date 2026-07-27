@@ -826,7 +826,7 @@ PRIMARY KEY (taxonomy_version_id, dimension_id, metric_family)
 | `metric_policy_version` | `text` | NOT NULL, FK → `metric_policy_versions` |
 | `scope_level` | `text` | NOT NULL. `CHECK IN ('overall','cluster','posting')` |
 | `scope_id` | `text` | NOT NULL |
-| `entry_segment` | `text` | NOT NULL. `CHECK IN ('entry_junior','experienced','unspecified')` |
+| `entry_segment` | `text` | NOT NULL. `CHECK IN ('all','entry_junior','experienced','unspecified')` |
 | `period_id` | `text` | NOT NULL, FK → `periods` |
 | `dimension_id` | `text` | FK → `requirement_dimensions` |
 | `secondary_dimension_id` | `text` | FK → `requirement_dimensions` |
@@ -851,7 +851,7 @@ CREATE INDEX ON statistics_facts
 CREATE INDEX ON statistics_facts (dimension_id);
 ```
 
-`entry_segment`는 지표의 대상군 축이다. 정의와 `entry_label` 대응은 [지표 명세](metric-spec.md) 2.7에 있다. 마지막 `CHECK`는 분모에 이미 대상군이 반영된 지표가 다른 대상군으로 저장되는 것을 막는다.
+`entry_segment`는 지표의 대상군 축이다. `all`은 대상군으로 제한하지 않은 모집단 전체이며 화면의 기준선이다. 정의와 `entry_label` 대응은 [지표 명세](metric-spec.md) 2.7에 있다. 마지막 `CHECK`는 분모에 이미 대상군이 반영된 지표가 다른 대상군으로 저장되는 것을 막는다.
 
 `numerator`와 `denominator`는 정수 카운트만 담는다. `cluster_contrast`처럼 비율에서 파생하는 지표는 `measure`를 나눠 저장하고 `numerator`·`denominator`에는 원본 카운트를 담는다. 수식은 [지표 명세](metric-spec.md)에 있다.
 
@@ -866,7 +866,7 @@ CREATE INDEX ON statistics_facts (dimension_id);
 | `taxonomy_version_id` | `text` | NOT NULL, FK → `requirement_taxonomy_versions` |
 | `scope_level` | `text` | NOT NULL. `CHECK IN ('overall','cluster','posting')` |
 | `scope_id` | `text` | NOT NULL |
-| `entry_segment` | `text` | NOT NULL. `CHECK IN ('entry_junior','experienced','unspecified')` |
+| `entry_segment` | `text` | NOT NULL. `CHECK IN ('all','entry_junior','experienced','unspecified')` |
 | `period_id` | `text` | NOT NULL, FK → `periods` |
 | `depth_distribution` | `jsonb` | NOT NULL. 등급별 비율 |
 | `expected_depth` | `text` | NOT NULL. `CHECK IN ('foundation','application','tradeoff')` |
