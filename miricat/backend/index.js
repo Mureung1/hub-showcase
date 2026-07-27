@@ -100,13 +100,24 @@ app.get('/api/stations', async (req, res) => {
   const data = await r.json();
   const err = odsayError(data);
   if (err) return res.status(502).json({ error: err });        // 502 = 우리 잘못 아니고 위쪽(ODsay) 문제
-  const stations = (data.result?.station ?? []).slice(0, 8).map((s) => ({
-    name: s.stationName,
-    x: s.x,                                  // 경도(lng)
-    y: s.y,                                  // 위도(lat)
-    arsID: s.arsID,                          // 정류장 고유번호 (버스 안내판에 붙은 그 번호)
-    region: [s.do, s.gu].filter(Boolean).join(' '),   // "대전광역시 유성구" — 동명 정류장 구분용
-  }));
+  // 같은 이름 정류장이 승강장별로 여러 행(건너편·방면) — 경로 탐색엔 어느 승강장이든
+  // 결과가 사실상 같으므로(도보 포함 최적화) 이름+지역 기준 대표 1개만 남긴다.
+  const seen = new Set();
+  const stations = [];
+  for (const s of data.result?.station ?? []) {
+    const region = [s.do, s.gu].filter(Boolean).join(' ');
+    const key = `${s.stationName}|${region}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    stations.push({
+      name: s.stationName,
+      x: s.x,                                // 경도(lng)
+      y: s.y,                                // 위도(lat)
+      arsID: s.arsID,                        // 정류장 고유번호 (버스 안내판에 붙은 그 번호)
+      region,                                // "대전광역시 유성구" — 동명 정류장 구분용
+    });
+    if (stations.length >= 8) break;
+  }
   res.json({ stations });
 });
 
