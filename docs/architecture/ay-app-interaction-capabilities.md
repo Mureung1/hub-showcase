@@ -17,7 +17,7 @@ Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합�
 - Tracked `.codex/config.toml`과 process-local environment binding의 분리
 - Runtime·Thread·Turn과 MCP tool server의 결합
 - Browser projection과 capability별 UI lifecycle
-- 한 번만 응답하기, 취소, disconnect와 terminal 정산
+- 한 번만 응답하기, UI dismiss·disconnect와 MCP failure 정산
 - Runtime generation별 pending slot 하나와 명시적인 `busy` rejection
 - 내부 correlation과 native request identity
 - 사용자 result의 검증과 같은 MCP call로의 반환
@@ -56,7 +56,7 @@ App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 �
 | Skill·AY workflow | `<SemesterWorkspace>/.agents/skills/` | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
 | Workspace MCP declaration | `<SemesterWorkspace>/.codex/config.toml` | Workspace-root-relative STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
 | Capability contract·STDIO Adapter | `packages/interaction-mcp` | Built executable, capability별 typed MCP request/result와 authenticated Broker transport | Project config loading, MCP wire와 process environment |
-| App-side Interaction Broker | `apps/server` | Package의 server-side Interface와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle과 cancellation |
+| App-side Interaction Broker | `apps/server` | Package의 server-side Interface와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle과 failure settlement |
 | Browser wire | `packages/product-contract` | Capability별 Browser-safe request·result projection | Raw MCP와 private Broker transport |
 | UI Adapter | `apps/chat-shell` | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
 | Codex Runtime Adapter | `packages/codex-chat-runtime` | Generic child environment 전달과 native MCP readiness | Capability schema, Broker protocol, `threadId`·`turnId`·`requestId` |
@@ -66,7 +66,7 @@ Dependency direction은 `apps/server`가 `@ay-ple/interaction-mcp`, `@ay-ple/cod
 
 Production Browser Adapter와 in-memory test Adapter는 Interaction MCP Module의 같은 Interface를 구현한다. 이 seam의 핵심 contract test는 다음 한 문장으로 표현한다.
 
-> 빈 slot에 들어온 유효한 capability request가 UI에 정확히 투영되고 한 번의 user result 또는 cancel이 같은 MCP call의 정확한 result로 돌아가며, slot이 찬 동안의 후속 request는 UI에 나타나지 않고 `busy`로 끝난다.
+> 빈 slot에 들어온 유효한 capability request가 UI에 정확히 투영되고 한 번의 `accept | revise | reject`가 같은 MCP call의 정확한 정상 result로 돌아가며, UI dismiss·continuity loss와 slot이 찬 동안의 후속 request는 정상 result 없이 MCP failure로 끝난다.
 
 ## MCP discovery와 Runtime binding
 
@@ -80,7 +80,7 @@ enabled_tools = ["propose_state_patch"]
 required = true
 ```
 
-Bootstrap output은 `tool_timeout_sec`을 의도적으로 생략하고 current pinned Codex의 native MCP tool timeout 300초를 초기 제품 동작으로 사용한다. App은 별도 countdown·연장·keepalive·자동 retry 상태를 만들지 않으며, timeout은 현재 interaction을 terminal failure·cancellation으로 정산한다.
+Bootstrap output은 `tool_timeout_sec`을 의도적으로 생략하고 current pinned Codex의 native MCP tool timeout 300초를 초기 제품 동작으로 사용한다. App은 별도 countdown·연장·keepalive·자동 retry 상태를 만들지 않으며, timeout은 정상 result 없이 현재 interaction을 MCP failure로 정산한다.
 
 이 예시의 `../../hub/`는 canonical sibling layout에서 Bootstrap이 **exact SemesterWorkspace root를 기준으로** 계산한 값이다. `.codex/` directory 기준의 고정 문자열이 아니며, 다른 위치의 existing repository를 채택하면 실제 두 root 사이의 상대경로를 계산한다. Current pinned local STDIO launcher는 MCP server `cwd`가 없을 때 Runtime fallback `cwd`에서 relative `command`를 resolve하므로 declaration에는 `cwd`를 쓰지 않고 Workspace Runtime의 exact Git root를 그대로 사용한다.
 
@@ -103,10 +103,11 @@ Adapter는 Browser API와 같은 App HTTP listener의 Server-private route로 Br
 | Capability call | MCP call 하나마다 private HTTP POST 하나를 보내고 Broker가 Browser projection을 만든 뒤 terminal result까지 response를 유지한다. 중간 `202`, poll cursor, callback과 separate result fetch를 두지 않는다. |
 | Concurrency | Runtime generation마다 pending slot은 하나다. Slot이 찼을 때의 후속 authenticated request는 Browser projection 없이 즉시 `busy` error로 끝내며 queue·priority·preemption을 만들지 않는다. `busy`를 fresh call로 재시도할지는 AY가 판단한다. |
 | Browser correlation | Browser에는 opaque App interaction identity만 보낸다. Answer는 현재 pending response 하나를 once-only settle하며 MCP caller가 이 identity를 조립하거나 되돌려 보내지 않는다. |
-| Continuity loss | MCP cancel·STDIO EOF·HTTP abort, Browser disconnect, Runtime terminal·replacement와 App shutdown은 pending call을 cancellation 또는 error로 terminal 정산한다. Duplicate·late answer는 result를 다시 만들지 않는다. |
+| Outcome boundary | 정상 result는 `accept | revise | reject`뿐이다. UI dismiss와 `busy`는 MCP error로 반환하고, caller cancellation·STDIO EOF·HTTP abort·Browser disconnect·Runtime terminal처럼 response continuity가 없는 경우도 MCP failure path로 끝낸다. |
+| Continuity loss | MCP cancellation·STDIO EOF·HTTP abort, Browser disconnect, Runtime terminal·replacement와 App shutdown은 정상 result를 만들지 않고 pending call을 terminal 정산한다. Duplicate·late answer는 result를 다시 만들지 않는다. |
 | Teardown | Runtime replacement·close와 App shutdown은 새 Broker intake를 닫고 pending interaction을 terminal 정산한 뒤 token·binding을 폐기한다. Stale request는 새 generation으로 재결합하지 않는다. |
 | Replay | Terminal response 전달 여부가 불명확하면 성공으로 추정하거나 replay하지 않는다. Fresh MCP call만 새 interaction을 만들며 App은 lost result를 근거로 workspace를 apply하지 않는다. |
-| Native timeout | Project declaration은 `tool_timeout_sec`을 생략하고 current pin의 native default 300초를 사용한다. Timeout은 pending call을 terminal 정산하며 retry는 fresh capability call이다. Codex pin upgrade 때 default를 재검증하고 실제 5분 초과 요구가 확인될 때만 override를 검토한다. |
+| Native timeout | Project declaration은 `tool_timeout_sec`을 생략하고 current pin의 native default 300초를 사용한다. Timeout은 정상 result 없이 pending call을 MCP failure로 정산하며 retry는 fresh capability call이다. Codex pin upgrade 때 default를 재검증하고 실제 5분 초과 요구가 확인될 때만 override를 검토한다. |
 | Private surface | Exact route, header, env 이름과 HTTP codec은 `@ay-ple/interaction-mcp` implementation contract이며 workspace config나 Browser wire contract가 아니다. |
 
 WebSocket, Unix domain socket, inherited extra file descriptor, 별도 private HTTP server, poll·callback과 durable response journal은 현재 contract에 포함하지 않는다.
@@ -122,10 +123,10 @@ WebSocket, Unix domain socket, inherited extra file descriptor, 별도 private H
 | Closed result | `accept | revise | reject`처럼 Skill이 exhaustively 해석할 수 있는 result union을 반환한다. |
 | Host-owned binding | Workspace·Turn·Browser correlation은 caller field가 아니라 host가 process environment와 Broker session에서 주입한다. |
 | Required connection | Adapter와 current App Broker의 authenticated handshake가 완료되지 않으면 Workspace Runtime을 정상 상태로 열지 않는다. |
-| One call, one response | Capability request 하나는 held Broker POST와 terminal MCP result 하나다. Intermediate acknowledgement나 external result lookup으로 나누지 않는다. |
+| One call, one outcome | Capability request 하나는 held Broker POST 하나와 terminal MCP result 또는 failure 하나다. Intermediate acknowledgement나 external result lookup으로 나누지 않는다. |
 | One pending decision | Runtime generation마다 사용자 결정을 하나만 열고 후속 request는 `busy` error로 반환한다. App queue나 여러 동시 Review 화면을 만들지 않는다. |
 | Transient lifecycle | Pending request와 user result는 interaction 수명 동안만 존재한다. Durable 학기 이력을 만들지 않는다. |
-| Explicit cancellation | User cancel, Browser disconnect, Runtime terminal을 서로 구분된 result 또는 error로 정산한다. |
+| Failure is not a result | UI dismiss, `busy`, timeout, disconnect와 Runtime terminal은 `accept | revise | reject` union에 들어가지 않고 MCP failure path로 정산한다. |
 | Capability-specific UI | 자료 preview, diff, evidence처럼 해당 결정에 필요한 UI를 제공한다. Arbitrary schema renderer를 만들지 않는다. |
 
 App 자체가 소유하는 state를 바꾸는 capability는 예외가 아니라 같은 규칙의 별도 tool이다. 예를 들어 workspace 선택 tool은 App의 `WorkspaceRegistry` mutation을 수행할 수 있지만, 학기 파일을 어떻게 정리할지는 AY에 돌려준다.
@@ -149,13 +150,14 @@ Exact JSON field name, cardinality와 길이 제한은 implementation spec이 �
 
 ### AY가 받는 의미
 
-| result | 의미 |
+| outcome | 의미 |
 | --- | --- |
 | `accept` | 제안한 방향으로 AY가 실제 file mutation을 진행할 수 있다. |
 | `revise` | feedback을 반영해 AY가 내용을 다시 검토하고 필요하면 새 capability request를 보낸다. |
 | `reject` | 제안을 적용하지 않고 workflow를 계속하거나 끝낸다. |
-| cancel/error | 사용자 취소 또는 interaction continuity loss다. 학기 파일을 적용했다는 뜻이 아니다. |
-| `busy` error | 같은 Runtime generation에 이미 사용자 결정 하나가 pending이다. 사용자 result가 아니며 기존 call을 바꾸거나 queue하지 않는다. |
+| UI dismiss MCP error | 사용자가 정상 결정을 제출하지 않고 Review를 닫았다. `reject`가 아니며 학기 파일을 적용했다는 뜻도 아니다. |
+| `busy` MCP error | 같은 Runtime generation에 이미 사용자 결정 하나가 pending이다. 기존 call을 바꾸거나 queue하지 않는다. |
+| Continuity MCP failure | Timeout, disconnect, Runtime terminal 등으로 정상 result를 전달할 수 없다. 성공으로 추정하거나 `cancel` result로 바꾸지 않는다. |
 
 App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않는다. AY가 요청 전 이미 파일을 바꿔 놓고 승인 뒤 되돌리는 방식도 기본 contract가 아니다. Skill은 Review가 필요한 변경을 먼저 제안하고 result를 받은 뒤 실제 파일을 변경한다.
 
@@ -213,3 +215,4 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - Interaction MCP 없이 정상으로 보이는 degraded AY-PLE Workspace Runtime
 - Rich Review와 built-in `request_user_input`의 이중 confirmation
 - Broker-managed interaction queue, priority·preemption 또는 여러 동시 Review 화면
+- `accept | revise | reject`와 UI dismiss·continuity failure를 섞는 네 번째 `cancel` result
