@@ -15,6 +15,9 @@ const MAX_REPOS = 12; // GraphQL 일괄 조회 1쿼리에 담는 상한
 const MAX_ITEMS_PER_REPO = 2; // 한 레포가 추천 목록을 도배하지 않게
 const MAX_ITEMS = 10;
 
+// 재추천 다양화 — 일 단위(UTC) githubId당 추천 요청 상한 (2026-07-27 결정, checklist Week4)
+const DAILY_RECOMMENDATION_LIMIT = 3;
+
 // 난이도 → 이슈 라벨 필터. hard = enhancement(기능 구현급) 이슈로 정의 (2026-07-20 결정)
 const DIFFICULTY_ISSUE_LABELS = {
     easy: ['good first issue'],
@@ -206,6 +209,21 @@ function cacheReposAndIssues(repos) {
     }
 }
 
+function startOfUtcDay(date = new Date()) {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+// 재추천 다양화 — 이 사용자가 과거에 받은 (repoFullName#issueNumber) 집합.
+// preferences 일치 여부와 무관하게 githubId 전체 이력을 대상으로 한다 — Json 비교 없이 기존 인덱스만으로 조회되고,
+// "이미 본 이슈"라는 사용자 체감과도 preferences 단위 구분보다 더 맞는다 (2026-07-27 결정)
+async function getSeenIssueKeys(githubId) {
+    const seenItems = await prisma.recommendationItem.findMany({
+        where: { recommendation: { githubId } },
+        select: { repoFullName: true, issueNumber: true },
+    });
+    return new Set(seenItems.map((item) => `${item.repoFullName}#${item.issueNumber}`));
+}
+
 // 동점 구간만 언어별 라운드로빈으로 재배치 (스타 tie-break만 쓰면 TS 등 인플레 생태계가 독식)
 // 입력은 (matchScore desc, repoStars desc) 정렬 전제
 function interleaveEqualScores(items) {
@@ -266,8 +284,10 @@ async function rerankTopItems(items, analysis) {
         return { ...item, matchScore: Math.min(100, Math.max(0, item.matchScore + result.adjustment)), reason: result.reason };
     });
 
-    // 점수가 바뀌었으니 동점 그룹도 달라진다 — 정렬·언어 인터리브를 재적용
-    reranked.sort((a, b) => b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+    // 점수가 바뀌었으니 동점 그룹도 달라진다 — 정렬·언어 인터리브를 재적용.
+    // isSeen 우선순위도 여기서 다시 지켜야 한다 — 안 그러면 LLM 재순위가 다양화로 밀어둔 순서를 덮어써버린다
+    reranked.sort((a, b) =>
+        (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.matchScore - a.matchScore || b.repoStars - a.repoStars);
     return interleaveEqualScores(reranked).map((item, index) => ({ ...item, position: index }));
 }
 
@@ -405,6 +425,17 @@ export async function createRecommendation(githubId, preferences) {
     // 분석 이력 없으면 getAnalysis가 404(ANALYSIS_NOT_FOUND) 던짐
     const analysis = await getAnalysis(githubId);
 
+    const requestsToday = await prisma.recommendation.count({
+        where: { githubId: analysis.githubId, createdAt: { gte: startOfUtcDay() } },
+    });
+    if (requestsToday >= DAILY_RECOMMENDATION_LIMIT) {
+        const limitExceeded = new Error('오늘 재추천 횟수를 다 사용했어요. 내일 다시 시도해주세요.');
+        limitExceeded.status = 429;
+        limitExceeded.code = 'RECOMMENDATION_LIMIT_EXCEEDED';
+        throw limitExceeded;
+    }
+
+    const seenKeys = await getSeenIssueKeys(analysis.githubId);
     const candidateNames = await collectCandidateRepos(preferences);
     const repos = await fetchReposWithIssues(candidateNames, DIFFICULTY_ISSUE_LABELS[preferences.difficulty]);
     cacheReposAndIssues(repos);
@@ -432,13 +463,18 @@ export async function createRecommendation(githubId, preferences) {
                 difficulty,
                 matchScore: score,
                 reason,
+                isSeen: seenKeys.has(`${repo.fullName}#${issue.number}`),
             });
         }
     }
-    // 동점은 스타 수로 1차 정렬 후 언어 인터리브 → 여기서 확정된 MAX_ITEMS건만 LLM 재순위 대상이 된다
-    items.sort((a, b) => b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+    // 재추천 다양화: 안 본 이슈 그룹을 먼저 배치 → 그 안에서 기존처럼 점수·스타 정렬.
+    // 그룹으로 먼저 나누기 때문에 동점 인터리브도 같은 그룹 안에서만 일어나 안 본/본 이슈가 섞이지 않는다.
+    // 완전히 제외하지 않는 이유: 후보가 적으면(mock처럼) 안 본 이슈가 부족해도 빈 결과 대신 이전 이슈로 자연스럽게 채워지게 하기 위함
+    items.sort((a, b) =>
+        (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.matchScore - a.matchScore || b.repoStars - a.repoStars);
     const trimmedItems = interleaveEqualScores(items).slice(0, MAX_ITEMS);
-    const topItems = await rerankTopItems(trimmedItems, analysis);
+    const rerankedItems = await rerankTopItems(trimmedItems, analysis);
+    const topItems = rerankedItems.map(({ isSeen: _isSeen, ...item }) => item);
 
     const saved = await prisma.recommendation.create({
         data: {
