@@ -404,11 +404,9 @@
 .recommendation-error p { flex: 1 1 320px; margin: 0; color: #7f1d35; }
 .recommendation-error button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 11px; color: #fff; background: var(--warning); font-weight: 800; }
 .recommendation-error small { flex-basis: 100%; color: var(--muted); }
-.recommendation-cache-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; text-align: right; }
 .recommendation-footer { margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 16px; color: var(--muted); font-size: 13px; }
 .recommendation-footer button { min-height: 42px; padding: 0 20px; border: 0; border-radius: 13px; color: #fff; background: var(--secondary); font-weight: 900; }
 .recommendation-footer button:disabled { cursor: wait; opacity: .65; }
-.recommendation-footer strong { color: var(--primary); }
 .recipe-card > button,
 .empty-recipe-state button,
 .special-recipe-section .recommendation-section-heading > button { min-height: 42px; border: 0; border-radius: 13px; color: #fff; background: var(--secondary); font-weight: 900; }

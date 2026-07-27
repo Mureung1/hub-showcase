@@ -407,7 +407,9 @@ function App() {
           <button type="button">서비스 소개</button>
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} aria-current={activeMainTab === id ? "page" : undefined} onClick={() => (id === "recommend" ? showRecommendations() : setActiveMainTab(id))}>{label}</button>)}
         </nav>
-        {activeMainTab !== "fridge" && <button className="header-cta" type="button" onClick={openIngredientForm}>재료 등록하기</button>}
+        <button className="header-cta" type="button" onClick={activeMainTab === "fridge" ? showRecommendations : openIngredientForm}>
+          {activeMainTab === "fridge" ? "레시피 추천" : "재료 등록하기"}
+        </button>
       </header>
 
       <main>
@@ -560,9 +562,7 @@ function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingM
       {!isLoading && error && <RecommendationError message={error} hasRecipes={recipes.length > 0} onRetry={onRetry} />}
       {!isLoading && recipes.length > 0 && <div className="recipe-recommendation-grid">{recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} label="오늘 추천" isSaved={isRecipeSaved(recipe, savedRecipes)} onSelect={() => onSelectRecipe(recipe)} onToggleSaved={() => onToggleSaved(recipe)} />)}</div>}
       {!isLoading && !error && recipes.length === 0 && <EmptyRecipeState onShowOneMissing={() => setMissingIngredientLimit(1)} />}
-      {!isLoading && recipes.length > 0 && <div className="recommendation-footer"><span>{recipes.length}/{maxRecipes}개 추천</span>{canLoadMore ? <button type="button" onClick={onLoadMore} disabled={isLoadingMore}>{isLoadingMore ? "다른 추천을 찾고 있어요..." : "다른 추천 보기"}</button> : <strong>오늘의 추천을 모두 확인했어요.</strong>}</div>}
-      {!isLoading && meta?.stopReason === "qualityLimit" && <p className="recommendation-cache-note">억지로 개수를 채우지 않고 품질 기준을 통과한 메뉴만 보여드려요.</p>}
-      {!isLoading && meta?.source === "cache" && <p className="recommendation-cache-note">오늘 생성한 추천을 다시 불러왔어요.</p>}
+      {!isLoading && canLoadMore && <div className="recommendation-footer"><button type="button" onClick={onLoadMore} disabled={isLoadingMore}>{isLoadingMore ? "다른 추천을 찾고 있어요..." : "다른 추천 보기"}</button></div>}
     </section>
   </WorkspaceShell>;
 }
