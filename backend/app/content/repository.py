@@ -10,6 +10,26 @@ from app.content.models import PlannedItem
 from app.infrastructure.supabase import create_admin_client
 
 
+def fetch_collectable_source_ids() -> list[str]:
+    """RSS 수집 대상 source ID를 id 오름차순으로 반환한다."""
+    client = create_admin_client()
+    result = (
+        client.table("sources")
+        .select("id")
+        .eq("active", True)
+        .eq("collection_method", "rss")
+        .eq("language", "ko")
+        .eq("default_exposure", "primary")
+        .in_("trust_level", ["high", "medium"])
+        .eq("paywall_risk", "low")
+        .not_.is_("feed_url", "null")
+        .neq("feed_url", "")
+        .order("id")
+        .execute()
+    )
+    return [str(row["id"]) for row in (result.data or [])]
+
+
 def fetch_source_row(source_id: str) -> dict | None:
     """sources 행 하나를 dict로. 없으면 None."""
     client = create_admin_client()
