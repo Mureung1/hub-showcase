@@ -9,11 +9,12 @@ import { useNavigate } from 'react-router-dom';
 
 // Predefined Course Catalog Database (Real-world University 2026-2 Curriculum)
 const COURSE_CATALOG = {
+  // --- 컴퓨터공학과 전공 ---
   'data-struct': {
     id: 'data-struct',
     title: '자료구조 및 실습',
     category: 'major-req',
-    categoryName: '전공필수',
+    categoryName: '컴공전공필수',
     prof: '김철수 교수',
     room: '공학4호관 301호',
     credits: 3,
@@ -27,7 +28,7 @@ const COURSE_CATALOG = {
     id: 'db',
     title: '데이터베이스 시스템',
     category: 'major-req',
-    categoryName: '전공필수',
+    categoryName: '컴공전공필수',
     prof: '박영희 교수',
     room: '공학4호관 405호',
     credits: 3,
@@ -41,7 +42,7 @@ const COURSE_CATALOG = {
     id: 'comp-arch',
     title: '컴퓨터 구조',
     category: 'major-req',
-    categoryName: '전공필수',
+    categoryName: '컴공전공필수',
     prof: '최성훈 교수',
     room: '공학4호관 201호',
     credits: 3,
@@ -55,7 +56,7 @@ const COURSE_CATALOG = {
     id: 'algorithm',
     title: '알고리즘 및 실습',
     category: 'major-req',
-    categoryName: '전공필수',
+    categoryName: '컴공전공필수',
     prof: '홍길동 교수',
     room: '공학4호관 402호',
     credits: 3,
@@ -69,7 +70,7 @@ const COURSE_CATALOG = {
     id: 'os',
     title: '운영체제 시스템',
     category: 'major-req',
-    categoryName: '전공필수',
+    categoryName: '컴공전공필수',
     prof: '백지훈 교수',
     room: '공학4호관 203호',
     credits: 3,
@@ -83,7 +84,7 @@ const COURSE_CATALOG = {
     id: 'compiler',
     title: '컴파일러 개론',
     category: 'major-req',
-    categoryName: '전공필수',
+    categoryName: '컴공전공필수',
     prof: '조민석 교수',
     room: '공학4호관 302호',
     credits: 3,
@@ -97,7 +98,7 @@ const COURSE_CATALOG = {
     id: 'network',
     title: '컴퓨터네트워크',
     category: 'major-opt',
-    categoryName: '전공선택',
+    categoryName: '컴공전공선택',
     prof: '이민수 교수',
     room: '공학4호관 102호',
     credits: 3,
@@ -111,7 +112,7 @@ const COURSE_CATALOG = {
     id: 'software-eng',
     title: '소프트웨어공학',
     category: 'major-opt',
-    categoryName: '전공선택',
+    categoryName: '컴공전공선택',
     prof: '정혜원 교수',
     room: '공학4호관 303호',
     credits: 3,
@@ -125,7 +126,7 @@ const COURSE_CATALOG = {
     id: 'ai-intro',
     title: '인공지능 개론 및 실습',
     category: 'major-opt',
-    categoryName: '전공선택',
+    categoryName: '컴공전공선택',
     prof: '강현우 교수',
     room: '공학4호관 501호',
     credits: 3,
@@ -139,7 +140,7 @@ const COURSE_CATALOG = {
     id: 'machine-learning',
     title: '머신러닝 실무',
     category: 'major-opt',
-    categoryName: '전공선택',
+    categoryName: '컴공전공선택',
     prof: '한상우 교수',
     room: '공학4호관 502호',
     credits: 3,
@@ -149,51 +150,11 @@ const COURSE_CATALOG = {
       { day: 4, start: 15, end: 16 }
     ]
   },
-  'bigdata-intro': {
-    id: 'bigdata-intro',
-    title: '빅데이터 개론',
-    category: 'major-opt',
-    categoryName: '전공선택',
-    prof: '임재성 교수',
-    room: '공학4호관 204호',
-    credits: 3,
-    eval: '하둡, 스파크 인프라 기반 분산 데이터 처리 개념 및 데이터 파이프라인 구축.',
-    slots: [
-      { day: 2, start: 13, end: 14 },
-      { day: 4, start: 13, end: 15 }
-    ]
-  },
-  'web-prog': {
-    id: 'web-prog',
-    title: '웹 프로그래밍 실습',
-    category: 'major-opt',
-    categoryName: '전공선택',
-    prof: '김태호 교수',
-    room: '공학4호관 103호',
-    credits: 3,
-    eval: 'React, Node.js 풀스택 웹 애플리케이션 제작 프로젝트 중심 수업.',
-    slots: [
-      { day: 5, start: 9, end: 12 }
-    ]
-  },
-  'mobile-app': {
-    id: 'mobile-app',
-    title: '모바일 앱 개발',
-    category: 'major-opt',
-    categoryName: '전공선택',
-    prof: '윤상현 교수',
-    room: '공학4호관 104호',
-    credits: 3,
-    eval: 'Flutter & React Native cross-platform 모바일 앱 개발 실습 강좌.',
-    slots: [
-      { day: 1, start: 11, end: 13 }
-    ]
-  },
   'cloud-comp': {
     id: 'cloud-comp',
     title: '클라우드 컴퓨팅',
     category: 'major-opt',
-    categoryName: '전공선택',
+    categoryName: '컴공전공선택',
     prof: '오승민 교수',
     room: '공학4호관 205호',
     credits: 3,
@@ -202,41 +163,178 @@ const COURSE_CATALOG = {
       { day: 5, start: 15, end: 18 }
     ]
   },
-  'sna': {
-    id: 'sna',
-    title: '사회연결망분석',
-    category: 'major-opt',
-    categoryName: '전공선택',
-    prof: '김경상 교수',
-    room: '공학4호관 305호',
-    credits: 3,
-    eval: '그래프 이론 및 소셜 네트워크 분석 기법 중심의 실습 강좌.',
-    slots: [
-      { day: 2, start: 16, end: 18 }
-    ]
-  },
-  'bpm': {
-    id: 'bpm',
-    title: '비즈니스프로세스관리',
-    category: 'major-opt',
-    categoryName: '전공선택',
-    prof: '박성진 교수',
-    room: '공학4호관 202호',
-    credits: 3,
-    eval: '기업 업무 워크플로우 모델링 및 프로세스 개선 기법 습득.',
-    slots: [
-      { day: 4, start: 16, end: 18 }
-    ]
-  },
   'security': {
     id: 'security',
     title: '정보보안 개론',
     category: 'major-req',
-    categoryName: '전공필수',
+    categoryName: '컴공전공필수',
     prof: '김철수 교수',
     room: '공학4호관 402호',
     credits: 3,
     eval: '암호학 기초 및 네트워크 보안 실무. 전년 대비 난이도가 쉬워 평점 양호.',
+    slots: [
+      { day: 4, start: 15, end: 17 }
+    ]
+  },
+
+  // --- 경영정보학과 전공 ---
+  'intro-mis': {
+    id: 'intro-mis',
+    title: '경영정보시스템(MIS)',
+    category: 'major-req',
+    categoryName: '경영정보전필',
+    prof: '서지현 교수',
+    room: '경영관 101호',
+    credits: 3,
+    eval: '기업 경영에서 정보기술(IT) 인프라의 가치와 비즈니스 모델 활용 방안 개론.',
+    slots: [
+      { day: 1, start: 10, end: 12 },
+      { day: 3, start: 11, end: 12 }
+    ]
+  },
+  'bus-processing': {
+    id: 'bus-processing',
+    title: '비즈니스프로세스관리(BPM)',
+    category: 'major-opt',
+    categoryName: '경영정보전선',
+    prof: '박성진 교수',
+    room: '경영관 202호',
+    credits: 3,
+    eval: '기업 업무 프로세스의 가시화, 분석, 모델링 기법 실습 위주 강의.',
+    slots: [
+      { day: 4, start: 16, end: 18 }
+    ]
+  },
+  'marketing': {
+    id: 'marketing',
+    title: '마케팅 원론',
+    category: 'major-req',
+    categoryName: '경영정보전필',
+    prof: '이지은 교수',
+    room: '경영관 301호',
+    credits: 3,
+    eval: 'STP 및 마케팅 믹스 4P 전략. 마케팅 기획서 작성 실습 발표.',
+    slots: [
+      { day: 3, start: 15, end: 17 }
+    ]
+  },
+  'accounting': {
+    id: 'accounting',
+    title: '회계원리',
+    category: 'major-req',
+    categoryName: '경영정보전필',
+    prof: '김지훈 교수',
+    room: '경영관 104호',
+    credits: 3,
+    eval: '복식 부기, 대차대조표 및 손익계산서 작성법 기초 회계 지식 습득.',
+    slots: [
+      { day: 2, start: 10, end: 12 }
+    ]
+  },
+  'sys-analysis': {
+    id: 'sys-analysis',
+    title: '시스템 분석 및 설계',
+    category: 'major-opt',
+    categoryName: '경영정보전선',
+    prof: '윤상현 교수',
+    room: '경영관 205호',
+    credits: 3,
+    eval: 'UML 설계를 기반으로 비즈니스 정보시스템 설계 명세서 제작 프로젝트.',
+    slots: [
+      { day: 5, start: 13, end: 15 }
+    ]
+  },
+
+  // --- 통계학과 전공 ---
+  'intro-stats': {
+    id: 'intro-stats',
+    title: '통계학개론',
+    category: 'major-req',
+    categoryName: '통계전공필수',
+    prof: '송명호 교수',
+    room: '자연과학관 104호',
+    credits: 3,
+    eval: '가설 검정, 확률 분포, 기술 통계학 등 기초 통계 분석 입문.',
+    slots: [
+      { day: 2, start: 13, end: 15 }
+    ]
+  },
+  'probability': {
+    id: 'probability',
+    title: '확률론',
+    category: 'major-req',
+    categoryName: '통계전공필수',
+    prof: '권태우 교수',
+    room: '자연과학관 201호',
+    credits: 3,
+    eval: '조건부 확률, 베이즈 정리, 확률 변수 및 분포 함수 이론적 탐색.',
+    slots: [
+      { day: 1, start: 13, end: 15 }
+    ]
+  },
+  'regression': {
+    id: 'regression',
+    title: '회귀분석 및 실습',
+    category: 'major-opt',
+    categoryName: '통계전공선택',
+    prof: '김경상 교수',
+    room: '자연과학관 301호',
+    credits: 3,
+    eval: 'R 언어를 활용한 선형 회귀 모형 추정, 잔차 분석 및 다중공선성 검정.',
+    slots: [
+      { day: 3, start: 13, end: 15 }
+    ]
+  },
+  'math-stats': {
+    id: 'math-stats',
+    title: '수리통계학',
+    category: 'major-req',
+    categoryName: '통계전공필수',
+    prof: '최은정 교수',
+    room: '자연과학관 203호',
+    credits: 3,
+    eval: '추정과 검정의 수리적 유도, 최대우도추정량(MLE) 및 통계량 성질 연구.',
+    slots: [
+      { day: 4, start: 13, end: 15 }
+    ]
+  },
+  'time-series': {
+    id: 'time-series',
+    title: '시계열분석',
+    category: 'major-opt',
+    categoryName: '통계전공선택',
+    prof: '이민수 교수',
+    room: '자연과학관 304호',
+    credits: 3,
+    eval: 'ARIMA 모형, 지수평활법 등 시계열 데이터 분석 및 예측 실습.',
+    slots: [
+      { day: 5, start: 9, end: 12 }
+    ]
+  },
+
+  // --- 융합교양 영역별 교과목 ---
+  'oriental-phil-converge': {
+    id: 'oriental-phil-converge',
+    title: '동양 사상과 현대사회',
+    category: 'converge-edu',
+    categoryName: '융합교양 (1영역)',
+    prof: '하늘 교수',
+    room: '교양학관 101호',
+    credits: 3,
+    eval: '역사와 사상 융합교양 1영역 이수 인정. 인문학 성찰 글쓰기 대체.',
+    slots: [
+      { day: 3, start: 10, end: 12 }
+    ]
+  },
+  'universe-life': {
+    id: 'universe-life',
+    title: '우주와 지구환경',
+    category: 'converge-edu',
+    categoryName: '융합교양 (2영역)',
+    prof: '윤아름 교수',
+    room: '자연과학관 102호',
+    credits: 3,
+    eval: '우주와 생명 융합교양 2영역 이수 인정. 지구 온난화 및 우주 환경 학습.',
     slots: [
       { day: 4, start: 15, end: 17 }
     ]
@@ -249,87 +347,37 @@ const COURSE_CATALOG = {
     prof: '최은정 교수',
     room: '교양학관 201호',
     credits: 3,
-    eval: '인문학적 관점에서 정보통신 기술 발전을 논의함. 에세이 제출 대체.',
+    eval: '기술과 사회 융합교양 3영역 이수 인정. 에세이 제출 대체.',
     slots: [
       { day: 5, start: 10, end: 12 }
     ]
   },
-  'tech-society-thu': {
-    id: 'tech-society-thu',
-    title: '기술과 현대사회 (목반)',
+  'culture-art-converge': {
+    id: 'culture-art-converge',
+    title: '현대 사회와 미디어 아트',
     category: 'converge-edu',
-    categoryName: '융합교양 (3영역)',
-    prof: '최은정 교수',
-    room: '교양학관 201호',
-    credits: 3,
-    eval: '인문학적 관점 기술 발전. 금공강 확보를 위한 최적의 목요일 교양 반.',
-    slots: [
-      { day: 4, start: 15, end: 17 }
-    ]
-  },
-  'pop-art': {
-    id: 'pop-art',
-    title: '대중예술의 이해',
-    category: 'converge-edu',
-    categoryName: '융합교양 (3영역)',
+    categoryName: '융합교양 (4영역)',
     prof: '장기하 교수',
-    room: '예술관 105호',
+    room: '예술관 102호',
     credits: 3,
-    eval: '대중영화 및 대중음악 트렌드 토론. 영화 감상 시간 포함.',
+    eval: '문화와 예술 융합교양 4영역 이수 인정. 미디어 아트 실습 감상.',
     slots: [
-      { day: 5, start: 13, end: 15 }
+      { day: 1, start: 15, end: 17 }
     ]
   },
-  'creative-coding': {
-    id: 'creative-coding',
-    title: '창의적사고와 코딩',
-    category: 'converge-edu',
-    categoryName: '융합교양 (3영역)',
-    prof: '이하늘 교수',
-    room: '교양학관 102호',
-    credits: 3,
-    eval: '비전공자 및 편입생 대상 블록 코딩 기반 소프트웨어 사고력 함양.',
-    slots: [
-      { day: 3, start: 10, end: 12 }
-    ]
-  },
+
+  // --- 균형교양 및 기초교양 ---
   'art-life': {
     id: 'art-life',
     title: '예술과 현대생활',
     category: 'balance-edu',
     categoryName: '균형교양 (4영역)',
-    prof: '윤아름 교수',
+    prof: '홍길동 교수',
     room: '미술관 310호',
     credits: 3,
-    eval: '서양 미술사를 생활 디자인에 접목하여 배움. 미술관 관람기 과제.',
+    eval: '미술사 및 생활 디자인 접목 교양. 미술관 관람기 제출.',
     slots: [
       { day: 1, start: 15, end: 17 }
-    ]
-  },
-  'oriental-phil': {
-    id: 'oriental-phil',
-    title: '동양사상의 이해',
-    category: 'balance-edu',
-    categoryName: '균형교양 (1영역)',
-    prof: '송명호 교수',
-    room: '인문학관 204호',
-    credits: 3,
-    eval: '유교, 도교, 불교 동양 철학의 현대적 재해석 토론.',
-    slots: [
-      { day: 3, start: 15, end: 17 }
-    ]
-  },
-  'universe-intro': {
-    id: 'universe-intro',
-    title: '우주의 이해',
-    category: 'balance-edu',
-    categoryName: '균형교양 (2영역)',
-    prof: '권태우 교수',
-    room: '자연과학관 101호',
-    credits: 3,
-    eval: '천체 물리학 기초 및 천문대 별자리 관측 실습 포함 재미있는 교양.',
-    slots: [
-      { day: 4, start: 13, end: 15 }
     ]
   },
   'college-eng': {
@@ -340,7 +388,7 @@ const COURSE_CATALOG = {
     prof: 'Smith 교수',
     room: '교양학관 301호',
     credits: 3,
-    eval: '글로벌 커뮤니케이션을 위한 원어민 에세이 및 스피킹 실습.',
+    eval: '글로벌 회화 및 원어민 프리젠테이션 실무 실습.',
     slots: [
       { day: 2, start: 13, end: 15 }
     ]
@@ -353,7 +401,7 @@ const COURSE_CATALOG = {
     prof: '학과지도 교수',
     room: '온라인 강의실',
     credits: 0.5,
-    eval: '진로 설계 및 학과 지도교수 1:1 진로 상담 이수 과목.',
+    eval: '학과 지도교수 1:1 진로 상담 이수 과목.',
     slots: [
       { day: 5, start: 17, end: 18 }
     ]
@@ -362,6 +410,74 @@ const COURSE_CATALOG = {
 
 // Student Profile Settings Templates
 const STUDENT_PROFILE_TEMPLATES = {
+  '2025080081': {
+    name: '김민성',
+    badge: '편입생',
+    major: '경영정보학과 | 4학년',
+    credits: {
+      total: 124.5,
+      totalGoal: 130,
+      majorReq: 21,
+      majorReqGoal: 21,
+      majorOpt: 51,
+      majorOptGoal: 48,
+      coreEdu: 4,
+      coreEduGoal: 9,
+      balanceEdu: 4,
+      balanceEduGoal: 12,
+      convergeEdu: 36,
+      convergeEduGoal: 40
+    },
+    initialCourses: ['db', 'management-bigdata'],
+    warningText: '졸업학점 부족(5.5)',
+    diagnosticBrief: '김민성님, 현재 총 취득학점은 124.5학점이며 졸업 요건(130학점) 충족을 위해 5.5학점 취득 및 졸업평가 통과가 필요합니다.',
+    diagnosticBullets: [
+      { type: 'red', text: '졸업학점 부족(5.5)' },
+      { type: 'red', text: '졸업평가 불합격(경영정보학과)' },
+      { type: 'yellow', text: '교양합계로만 체크(40)' },
+      { type: 'yellow', text: '마이크로디그리 대상자' },
+      { type: 'yellow', text: '트랙제 대상자' }
+    ],
+    welcomeMsg: '안녕하세요 김민성님! 경영정보학과 편입생 AI 네비게이터입니다. 현재 졸업을 위해 5.5학점 이수와 졸업평가 응시가 필요합니다. 수강 및 졸업 전략 추천을 시작할까요?',
+    chips: [
+      { label: '졸업 예시 시간표 보기', id: 'auto-schedule' },
+      { label: '전공선택 3학점 추천 과목 보기', id: 'major-req-list' },
+      { label: '교양 영역 이수 상태 확인', id: 'converge-list' }
+    ]
+  },
+  'example1': {
+    name: '예시1',
+    badge: '재학생',
+    major: '컴퓨터공학과 | 3학년',
+    credits: {
+      total: 100.5,
+      totalGoal: 130,
+      majorReq: 24,
+      majorReqGoal: 24,
+      majorOpt: 21,
+      majorOptGoal: 36,
+      coreEdu: 9,
+      coreEduGoal: 9,
+      balanceEdu: 15,
+      balanceEduGoal: 18,
+      convergeEdu: 12,
+      convergeEduGoal: 13
+    },
+    initialCourses: ['data-struct', 'comp-arch'],
+    warningText: '졸업학점 부족(29.5)',
+    diagnosticBrief: '이재학생님, 현재 총 취득학점은 100.5학점이며 3학년 1학기까지 완료하셨습니다. 졸업(130학점)을 위해 29.5학점 보충 및 전공선택 15학점이 더 필요합니다.',
+    diagnosticBullets: [
+      { type: 'red', text: '졸업학점 부족(29.5)' },
+      { type: 'yellow', text: '전선 필수 보충 필요(15학점)' },
+      { type: 'yellow', text: '균형/융합교양 영역 보완 필요' }
+    ],
+    welcomeMsg: '안녕하세요 이재학생님! 컴퓨터공학과 재학생 AI 네비게이터입니다. 현재 3학년 2학기 진입 예정이며, 전공선택 15학점을 포함한 총 29.5학점 보완이 요구됩니다. 수강 조정을 도와드릴까요?',
+    chips: [
+      { label: '졸업 예시 시간표 보기', id: 'auto-schedule' },
+      { label: '전공선택 3학점 추천 과목 보기', id: 'major-req-list' },
+      { label: '교양 영역 이수 상태 확인', id: 'converge-list' }
+    ]
+  },
   'transfer': {
     name: '김경상',
     badge: '편입생',
@@ -381,23 +497,23 @@ const STUDENT_PROFILE_TEMPLATES = {
       convergeEduGoal: 6
     },
     initialCourses: ['data-struct', 'db', 'network', 'software-eng'],
-    warningText: '융합교양 3영역 3학점 미이수',
-    diagnosticBrief: '김경상님, 졸업 요건을 충족하기 위해 이번 학기에 융합교양 3영역(기술과 인류) 3학점 이수가 반드시 필요합니다.',
+    warningText: '융합교양 1영역 3학점 미이수',
+    diagnosticBrief: '김경상님, 졸업 요건을 충족하기 위해 이번 학기에 컴퓨터공학과 전공필수(자료구조, 데이터베이스 등) 및 융합교양 1영역 이수가 필요합니다.',
     diagnosticBullets: [
-      { type: 'red', text: '융합교양 3영역 누락 (3학점)' },
+      { type: 'red', text: '융합교양 1영역 누락 (3학점)' },
       { type: 'yellow', text: '전공 필수 이수 요건 미달 (잔여 12학점 필요)' }
     ],
-    welcomeMsg: '안녕하세요 김경상님! GNU AI 네비게이터입니다. 현재 학적(편입생) 기준 졸업 누락 요건이 존재합니다. 무엇을 도와드릴까요?',
+    welcomeMsg: '안녕하세요 김경상님! 컴퓨터공학과 편입생 AI 네비게이터입니다. 현재 졸업을 위해 잔여 전공필수 12학점과 융합교양 1영역 미이수 요건이 확인됩니다. 무엇을 도와드릴까요?',
     chips: [
-      { label: '융합교양 3영역 교과목 리스트 보여줘', id: 'converge-list' },
-      { label: '금공강 + 융합교양 포함 15학점 시간표 짜줘', id: 'auto-schedule' },
-      { label: '남은 전공 필수 과목 추천해줘', id: 'major-req-list' }
+      { label: '융합교양 1영역 추천 과목 보기', id: 'converge-list' },
+      { label: '전공필수 미이수 과목 자동배정', id: 'auto-schedule' },
+      { label: '컴공 전필 과목 추천해줘', id: 'major-req-list' }
     ]
   },
   'general': {
     name: '박경상',
-    badge: '일반재학생',
-    major: '컴퓨터공학과 | 3학년',
+    badge: '재학생',
+    major: '경영정보학과 | 3학년',
     credits: {
       total: 96,
       totalGoal: 130,
@@ -412,24 +528,24 @@ const STUDENT_PROFILE_TEMPLATES = {
       convergeEdu: 6,
       convergeEduGoal: 6
     },
-    initialCourses: ['data-struct', 'db', 'network', 'software-eng'],
-    warningText: '균형교양 4영역 3학점 미이수',
-    diagnosticBrief: '박경상님, 졸업 요건을 충족하기 위해 이번 학기에 균형교양 4영역(예술과 생활) 3학점 이수가 필요합니다.',
+    initialCourses: ['intro-mis', 'bus-processing', 'marketing'],
+    warningText: '융합교양 2영역 3학점 미이수',
+    diagnosticBrief: '박경상님, 경영정보학과 졸업 요건 충족을 위해 전공필수 경영정보시스템(MIS) 및 융합교양 2영역 이수가 반드시 필요합니다.',
     diagnosticBullets: [
-      { type: 'red', text: '균형교양 4영역 누락 (3학점)' },
-      { type: 'yellow', text: '전공 필수 이수 요건 미달 (잔여 6학점 필요)' }
+      { type: 'red', text: '융합교양 2영역 누락 (3학점)' },
+      { type: 'yellow', text: '경영정보전공 필수 누락 (잔여 6학점 필요)' }
     ],
-    welcomeMsg: '안녕하세요 박경상님! GNU AI 네비게이터입니다. 현재 3학년 2학기 진입 기준, 균형교양과 전공 필수 과목 보충이 필요합니다. 원하시는 추천 방향을 말씀해주세요.',
+    welcomeMsg: '안녕하세요 박경상님! 경영정보학과 재학생 AI 네비게이터입니다. 현재 3학년 2학기 진입 기준, 경영정보시스템(MIS)과 융합교양 2영역 이수가 필요합니다. 원하시는 추천 방향을 말씀해주세요.',
     chips: [
-      { label: '균형교양 4영역 과목 추천해줘', id: 'balance-list' },
-      { label: '전공 18학점 채우고 하루 공강 시간표 짜줘', id: 'general-schedule' },
-      { label: '전필 미이수 과목 확인하기', id: 'general-major-req' }
+      { label: '융합교양 2영역 추천 과목 보기', id: 'balance-list' },
+      { label: '경영정보전필 포함 18학점 시간표 짜줘', id: 'general-schedule' },
+      { label: '경영정보학과 전필 미이수 과목 확인', id: 'general-major-req' }
     ]
   },
   'double-major': {
     name: '이경상',
     badge: '다전공자',
-    major: '컴퓨터공학+경영학 | 3학년',
+    major: '통계학과+컴퓨터공학 | 3학년',
     credits: {
       total: 78,
       totalGoal: 150,
@@ -444,28 +560,43 @@ const STUDENT_PROFILE_TEMPLATES = {
       convergeEdu: 3,
       convergeEduGoal: 6
     },
-    initialCourses: ['data-struct', 'db', 'network'],
-    warningText: '다전공(경영) 필수 3학점 미이수',
-    diagnosticBrief: '이경상님, 다전공(경영학) 졸업 요건을 충족하기 위해 경영전공 필수 마케팅원론(3학점) 이수가 반드시 필요합니다.',
+    initialCourses: ['intro-stats', 'probability', 'data-struct'],
+    warningText: '통계전필 및 융합교양 4영역 미이수',
+    diagnosticBrief: '이경상님, 통계학과 주전공 및 컴퓨터공학 다전공 졸업 요건을 충족하기 위해 통계전필 수리통계학(3학점)과 융합교양 4영역 이수가 필요합니다.',
     diagnosticBullets: [
-      { type: 'red', text: '경영전공 필수 누락 (3학점)' },
-      { type: 'yellow', text: '융합교양 3영역 누락 (3학점)' }
+      { type: 'red', text: '수리통계학 누락 (3학점)' },
+      { type: 'yellow', text: '융합교양 4영역 누락 (3학점)' }
     ],
-    welcomeMsg: '안녕하세요 이경상님! 다전공 설계 AI 네비게이터입니다. 주전공(컴공)과 복수전공(경영) 졸업 요건을 모두 충족시킬 수 있는 시뮬레이션을 도와드리겠습니다.',
+    welcomeMsg: '안녕하세요 이경상님! 통계학과 및 컴퓨터공학 다전공 AI 네비게이터입니다. 주전공(통계)과 다전공(컴공) 졸업 요건을 모두 충족시킬 수 있는 시뮬레이션을 도와드리겠습니다.',
     chips: [
-      { label: '경영학 전공 필수 리스트 보여줘', id: 'double-major-list' },
-      { label: '융합교양+경영전필 포함 18학점 설계해줘', id: 'double-schedule' }
+      { label: '통계학과 전공필수 리스트 보여줘', id: 'double-major-list' },
+      { label: '융합교양 4영역 + 통계전필 포함 18학점 설계해줘', id: 'double-schedule' }
     ]
   }
 };
 
-function TimetableGenerator({ initialStudentType }) {
+function TimetableGenerator({ user, initialStudentType }) {
   const navigate = useNavigate();
-  const [studentType, setStudentType] = useState(initialStudentType || 'transfer');
+  const [studentType, setStudentType] = useState(() => {
+    if (user && user.studentId === '2025080081') return '2025080081';
+    if (user && user.studentId === 'example1') return 'example1';
+    return initialStudentType || 'transfer';
+  });
   
   // Clone profile templates so we can mutate state locally
   const [profiles, setProfiles] = useState(() => JSON.parse(JSON.stringify(STUDENT_PROFILE_TEMPLATES)));
-  const currentProfile = profiles[studentType];
+  const currentProfile = profiles[studentType] || profiles['transfer'];
+
+  const studentName = user ? user.name : currentProfile.name;
+  const studentMajor = user && user.studentId === '2025080081' ? '경영정보학과 | 4학년' : user && user.department ? `${user.department} | 3학년` : currentProfile.major;
+
+  const getDynamicText = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/김경상/g, studentName)
+      .replace(/박경상/g, studentName)
+      .replace(/이경상/g, studentName);
+  };
 
   const [activeCourses, setActiveCourses] = useState([]);
   
@@ -476,10 +607,10 @@ function TimetableGenerator({ initialStudentType }) {
       try { return JSON.parse(cached); } catch (e) {}
     }
     return [
-      { id: 'draft-1', name: '시간표 1 (기본 18학점안)', semester: '2026-2학기', courses: ['data-struct', 'db', 'network', 'software-eng'] },
-      { id: 'draft-2', name: '시간표 2 (플랜 B - 금공강)', semester: '2026-2학기', courses: ['data-struct', 'db', 'tech-society-thu'] },
-      { id: 'draft-3', name: '시간표 3 (교양 중심)', semester: '2026-2학기', courses: ['data-struct', 'pop-art', 'tech-society'] },
-      { id: 'past-2026-1', name: '과거 시간표 (2026-1학기 이수)', semester: '2026-1학기', isPast: true, courses: ['algorithm', 'os'] }
+      { id: 'draft-1', name: '시간표 1 (컴퓨터공학 전필 중심안)', semester: '2026-2학기', courses: ['data-struct', 'db', 'network', 'software-eng', 'tech-society'] },
+      { id: 'draft-2', name: '시간표 2 (경영정보학 전필 중심안)', semester: '2026-2학기', courses: ['intro-mis', 'marketing', 'accounting', 'oriental-phil-converge'] },
+      { id: 'draft-3', name: '시간표 3 (통계학 전필 중심안)', semester: '2026-2학기', courses: ['intro-stats', 'probability', 'regression', 'universe-life'] },
+      { id: 'past-2026-1', name: '과거 시간표 (2026-1학기 이수)', semester: '2026-1학기', isPast: true, courses: ['comp-arch', 'college-eng'] }
     ];
   });
   const [activeTimetableId, setActiveTimetableId] = useState('draft-1');
@@ -576,10 +707,27 @@ function TimetableGenerator({ initialStudentType }) {
       .map(course => JSON.parse(JSON.stringify(course)));
     setActiveCourses(initialCoursesList);
 
-    // Reset Chat Messages
-    setChatMessages([
-      { id: 1, sender: 'bot', text: currentProfile.welcomeMsg }
-    ]);
+    // Reset and load Chat Messages from Backend / Supabase
+    axios.get('http://localhost:5000/api/chat')
+      .then(res => {
+        if (res.data && res.data.success && res.data.messages && res.data.messages.length > 0) {
+          const mapped = res.data.messages.map((m, index) => ({
+            id: m.id || index,
+            sender: m.role === 'user' ? 'user' : 'bot',
+            text: m.content
+          }));
+          setChatMessages(mapped);
+        } else {
+          setChatMessages([
+            { id: 1, sender: 'bot', text: currentProfile.welcomeMsg }
+          ]);
+        }
+      })
+      .catch(() => {
+        setChatMessages([
+          { id: 1, sender: 'bot', text: currentProfile.welcomeMsg }
+        ]);
+      });
   }, [studentType]);
 
   // Scroll to bottom of chat
@@ -626,19 +774,12 @@ function TimetableGenerator({ initialStudentType }) {
         if (promptId === 'converge-list') {
           const html = (
             <div>
-              <p>융합교양 3영역(기술과 인류) 추천 리스트입니다. 클릭 시 시간표에 등록됩니다:</p>
+              <p>융합교양 1영역(역사와 사상) 추천 리스트입니다. 클릭 시 시간표에 등록됩니다:</p>
               <div className="msg-course-list">
-                <div className="msg-course-card" onClick={() => handleAddCourse('tech-society')}>
+                <div className="msg-course-card" onClick={() => handleAddCourse('oriental-phil-converge')}>
                   <div className="c-info">
-                    <h5>기술과 현대사회 (금 10-12)</h5>
-                    <span>3학점 | 최은정 교수</span>
-                  </div>
-                  <PlusCircle size={18} />
-                </div>
-                <div className="msg-course-card" onClick={() => handleAddCourse('pop-art')}>
-                  <div className="c-info">
-                    <h5>대중예술의 이해 (금 13-15)</h5>
-                    <span>3학점 | 장기하 교수</span>
+                    <h5>동양 사상과 현대사회 (수 10-12)</h5>
+                    <span>3학점 | 하늘 교수</span>
                   </div>
                   <PlusCircle size={18} />
                 </div>
@@ -649,21 +790,21 @@ function TimetableGenerator({ initialStudentType }) {
         }
         else if (promptId === 'auto-schedule') {
           setActiveCourses(prev => {
-            const filtered = prev.filter(c => c.id !== 'algorithm' && c.id !== 'tech-society-thu');
+            const filtered = prev.filter(c => c.id !== 'algorithm' && c.id !== 'os');
             return [
               ...filtered,
               JSON.parse(JSON.stringify(COURSE_CATALOG['algorithm'])),
-              JSON.parse(JSON.stringify(COURSE_CATALOG['tech-society-thu']))
+              JSON.parse(JSON.stringify(COURSE_CATALOG['os']))
             ];
           });
 
           const html = (
             <div>
-              <p>김경상님의 요구사항을 충족하는 <strong>최적의 15학점 금공강 시간표</strong>를 시뮬레이션했습니다.</p>
+              <p>김경상님의 요구사항을 충족하는 <strong>컴공 전공필수 보충 수강 계획안</strong>을 자동 시뮬레이션했습니다.</p>
               <p><strong>추천 추가 과목:</strong></p>
-              <p>1. <strong>알고리즘 및 실습</strong> (전공필수, 3학점) [화9-10, 목9-11]<br/>
-                 2. <strong>기술과 현대사회 (목반)</strong> (융합교양, 3학점) [목15-17]</p>
-              <p>금요일 전체가 비어 있는 효율적인 시간표입니다. 확인해 보세요!</p>
+              <p>1. <strong>알고리즘 및 실습</strong> (전필, 3학점) [화9-10, 목9-11]<br/>
+                 2. <strong>운영체제 시스템</strong> (전필, 3학점) [수14-16, 금14-15]</p>
+              <p>전공 필수 요건이 자동으로 추가되었습니다. 시간표를 확인해 보세요!</p>
             </div>
           );
           addMessage('bot', '', html);
@@ -671,7 +812,7 @@ function TimetableGenerator({ initialStudentType }) {
         else if (promptId === 'major-req-list') {
           const html = (
             <div>
-              <p>미이수 전공 필수 과목 추천 리스트입니다. 수강할 과목을 클릭해 추가하세요:</p>
+              <p>미이수 컴퓨터공학 전공 필수 과목 리스트입니다. 수강할 과목을 클릭해 추가하세요:</p>
               <div className="msg-course-list">
                 <div className="msg-course-card" onClick={() => handleAddCourse('algorithm')}>
                   <div className="c-info">
@@ -697,11 +838,11 @@ function TimetableGenerator({ initialStudentType }) {
         if (promptId === 'balance-list') {
           const html = (
             <div>
-              <p>균형교양 4영역(예술과 생활) 개설 추천 과목입니다:</p>
+              <p>융합교양 2영역(우주와 생명) 추천 과목입니다:</p>
               <div className="msg-course-list">
-                <div className="msg-course-card" onClick={() => handleAddCourse('art-life')}>
+                <div className="msg-course-card" onClick={() => handleAddCourse('universe-life')}>
                   <div className="c-info">
-                    <h5>예술과 현대생활 (월 15-17)</h5>
+                    <h5>우주와 지구환경 (목 15-17)</h5>
                     <span>3학점 | 윤아름 교수</span>
                   </div>
                   <PlusCircle size={18} />
@@ -713,31 +854,39 @@ function TimetableGenerator({ initialStudentType }) {
         }
         else if (promptId === 'general-schedule') {
           setActiveCourses(prev => {
-            const filtered = prev.filter(c => c.id !== 'algorithm' && c.id !== 'art-life');
+            const filtered = prev.filter(c => c.id !== 'intro-mis' && c.id !== 'marketing' && c.id !== 'accounting');
             return [
               ...filtered,
-              JSON.parse(JSON.stringify(COURSE_CATALOG['algorithm'])),
-              JSON.parse(JSON.stringify(COURSE_CATALOG['art-life']))
+              JSON.parse(JSON.stringify(COURSE_CATALOG['intro-mis'])),
+              JSON.parse(JSON.stringify(COURSE_CATALOG['marketing'])),
+              JSON.parse(JSON.stringify(COURSE_CATALOG['accounting']))
             ];
           });
-          addMessage('bot', `금요일 전체 수업을 배제하고, 균형교양 '예술과 현대생활'과 전공필수 '알고리즘'을 추가한 18학점 설계를 완성했습니다. 시간표를 확인해주세요!`);
+          addMessage('bot', `경영정보전공 필수 과목인 '경영정보시스템(MIS)', '마케팅 원론', '회계원리'를 포함한 18학점 최적화 시간표 설계를 완성했습니다. 시간표를 확인해주세요!`);
         }
         else if (promptId === 'general-major-req') {
           const html = (
             <div>
-              <p>미이수 전공 필수 교과목 목록입니다:</p>
+              <p>미이수 경영정보전공 필수 교과목 목록입니다:</p>
               <div className="msg-course-list">
-                <div className="msg-course-card" onClick={() => handleAddCourse('algorithm')}>
+                <div className="msg-course-card" onClick={() => handleAddCourse('intro-mis')}>
                   <div className="c-info">
-                    <h5>알고리즘 및 실습 (화9-10, 목9-11)</h5>
-                    <span>3학점 | 홍길동 교수</span>
+                    <h5>경영정보시스템(MIS) (월 10-12, 수 11-12)</h5>
+                    <span>3학점 | 서지현 교수</span>
                   </div>
                   <PlusCircle size={18} />
                 </div>
-                <div className="msg-course-card" onClick={() => handleAddCourse('security')}>
+                <div className="msg-course-card" onClick={() => handleAddCourse('marketing')}>
                   <div className="c-info">
-                    <h5>정보보안 개론 (목 15-17)</h5>
-                    <span>3학점 | 김철수 교수</span>
+                    <h5>마케팅 원론 (수 15-17)</h5>
+                    <span>3학점 | 이지은 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+                <div className="msg-course-card" onClick={() => handleAddCourse('accounting')}>
+                  <div className="c-info">
+                    <h5>회계원리 (화 10-12)</h5>
+                    <span>3학점 | 김지훈 교수</span>
                   </div>
                   <PlusCircle size={18} />
                 </div>
@@ -751,12 +900,12 @@ function TimetableGenerator({ initialStudentType }) {
         if (promptId === 'double-major-list') {
           const html = (
             <div>
-              <p>다전공(경영학) 필수 누락 교과목 리스트입니다:</p>
+              <p>미이수 통계학과 전공필수 교과목 리스트입니다:</p>
               <div className="msg-course-list">
-                <div className="msg-course-card" onClick={() => handleAddCourse('marketing')}>
+                <div className="msg-course-card" onClick={() => handleAddCourse('math-stats')}>
                   <div className="c-info">
-                    <h5>마케팅 원론 (수 15-17)</h5>
-                    <span>3학점 | 서지현 교수</span>
+                    <h5>수리통계학 (목 13-15)</h5>
+                    <span>3학점 | 최은정 교수</span>
                   </div>
                   <PlusCircle size={18} />
                 </div>
@@ -767,42 +916,217 @@ function TimetableGenerator({ initialStudentType }) {
         }
         else if (promptId === 'double-schedule') {
           setActiveCourses(prev => {
-            const filtered = prev.filter(c => c.id !== 'marketing' && c.id !== 'tech-society-thu');
+            const filtered = prev.filter(c => c.id !== 'math-stats' && c.id !== 'culture-art-converge');
             return [
               ...filtered,
-              JSON.parse(JSON.stringify(COURSE_CATALOG['marketing'])),
-              JSON.parse(JSON.stringify(COURSE_CATALOG['tech-society-thu']))
+              JSON.parse(JSON.stringify(COURSE_CATALOG['math-stats'])),
+              JSON.parse(JSON.stringify(COURSE_CATALOG['culture-art-converge']))
             ];
           });
-          addMessage('bot', `주전공 융합교양 이수와 다전공 경영 전필 요건인 '마케팅 원론'을 함께 만족하는 18학점 더블 로드맵 조합을 시간표에 배정 완료했습니다!`);
+          addMessage('bot', `통계전필 요건인 '수리통계학'과 융합교양 4영역인 '현대 사회와 미디어 아트'를 포함한 18학점 다전공 융합 설계 배정을 완료했습니다!`);
+        }
+      }
+      else if (studentType === '2025080081') {
+        if (promptId === 'converge-list') {
+          const html = (
+            <div>
+              <p>편입생 학적 기준, 교양 영역 구분 없이 총합 40학점 이수 요건을 충족하기 위해 추천하는 교양 과목입니다. 클릭 시 시간표에 등록됩니다:</p>
+              <div className="msg-course-list">
+                <div className="msg-course-card" onClick={() => handleAddCourse('oriental-phil-converge')}>
+                  <div className="c-info">
+                    <h5>동양 사상과 현대사회 (수 10-12)</h5>
+                    <span>3학점 | 하늘 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+                <div className="msg-course-card" onClick={() => handleAddCourse('universe-life')}>
+                  <div className="c-info">
+                    <h5>우주와 지구환경 (목 15-17)</h5>
+                    <span>3학점 | 윤아름 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+              </div>
+            </div>
+          );
+          addMessage('bot', '', html);
+        }
+        else if (promptId === 'auto-schedule' || promptId === 'general-schedule') {
+          setActiveCourses(prev => {
+            const filtered = prev.filter(c => c.id !== 'intro-mis' && c.id !== 'marketing' && c.id !== 'accounting');
+            return [
+              ...filtered,
+              JSON.parse(JSON.stringify(COURSE_CATALOG['intro-mis'])),
+              JSON.parse(JSON.stringify(COURSE_CATALOG['marketing'])),
+              JSON.parse(JSON.stringify(COURSE_CATALOG['accounting']))
+            ];
+          });
+
+          const html = (
+            <div>
+              <p>김민성님의 수강 요건 충족을 위해 **경영정보전필 보충 수강 계획안**을 자동 시뮬레이션했습니다.</p>
+              <p><strong>추천 추가 과목:</strong></p>
+              <p>1. <strong>경영정보시스템(MIS)</strong> (전필, 3학점) [월10-12, 수11-12]<br/>
+                 2. <strong>마케팅 원론</strong> (전필, 3학점) [수15-17]<br/>
+                 3. <strong>회계원리</strong> (전필, 3학점) [화10-12]</p>
+              <p>경영정보 필수 과목들이 자동으로 추가되었습니다. 시간표를 확인해 보세요!</p>
+            </div>
+          );
+          addMessage('bot', '', html);
+        }
+        else if (promptId === 'major-req-list') {
+          const html = (
+            <div>
+              <p>미이수 경영정보전공 추천 과목 리스트입니다. 수강할 과목을 클릭해 추가하세요:</p>
+              <div className="msg-course-list">
+                <div className="msg-course-card" onClick={() => handleAddCourse('bus-processing')}>
+                  <div className="c-info">
+                    <h5>비즈니스프로세스관리(BPM) (목 16-18)</h5>
+                    <span>3학점 | 박성진 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+                <div className="msg-course-card" onClick={() => handleAddCourse('sys-analysis')}>
+                  <div className="c-info">
+                    <h5>시스템 분석 및 설계 (금 13-15)</h5>
+                    <span>3학점 | 윤상현 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+              </div>
+            </div>
+          );
+          addMessage('bot', '', html);
+        }
+      }
+      else if (studentType === 'example1') {
+        if (promptId === 'converge-list') {
+          const html = (
+            <div>
+              <p>융합교양 영역 이수 요건을 보완하기 위해 추천하는 교양 과목입니다. 클릭 시 시간표에 등록됩니다:</p>
+              <div className="msg-course-list">
+                <div className="msg-course-card" onClick={() => handleAddCourse('oriental-phil-converge')}>
+                  <div className="c-info">
+                    <h5>동양 사상과 현대사회 (수 10-12)</h5>
+                    <span>3학점 | 하늘 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+                <div className="msg-course-card" onClick={() => handleAddCourse('universe-life')}>
+                  <div className="c-info">
+                    <h5>우주와 지구환경 (목 15-17)</h5>
+                    <span>3학점 | 윤아름 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+              </div>
+            </div>
+          );
+          addMessage('bot', '', html);
+        }
+        else if (promptId === 'auto-schedule' || promptId === 'general-schedule') {
+          setActiveCourses(prev => {
+            const filtered = prev.filter(c => c.id !== 'algorithm' && c.id !== 'os' && c.id !== 'tech-society');
+            return [
+              ...filtered,
+              JSON.parse(JSON.stringify(COURSE_CATALOG['algorithm'])),
+              JSON.parse(JSON.stringify(COURSE_CATALOG['os'])),
+              JSON.parse(JSON.stringify(COURSE_CATALOG['tech-society']))
+            ];
+          });
+
+          const html = (
+            <div>
+              <p>이재학생님의 3학년 2학기 설계를 돕기 위해 **전공필수 및 교양 최적화 수강 계획안(9학점)**을 모의 배정했습니다.</p>
+              <p><strong>추천 추가 과목:</strong></p>
+              <p>1. <strong>알고리즘 및 실습</strong> (전필, 3학점) [화9-10, 목9-11]<br/>
+                 2. <strong>운영체제 시스템</strong> (전필, 3학점) [수14-16, 금14-15]<br/>
+                 3. <strong>기술과 현대사회</strong> (융교, 3학점) [화13-15]</p>
+              <p>추천된 핵심 과목들이 자동으로 추가되었습니다. 시간표를 확인해 보세요!</p>
+            </div>
+          );
+          addMessage('bot', '', html);
+        }
+        else if (promptId === 'major-req-list') {
+          const html = (
+            <div>
+              <p>미이수 전공 선택/필수 추천 교과목 목록입니다. 클릭 시 격자에 추가됩니다:</p>
+              <div className="msg-course-list">
+                <div className="msg-course-card" onClick={() => handleAddCourse('network')}>
+                  <div className="c-info">
+                    <h5>컴퓨터네트워크 (월 10-12, 수 11-12)</h5>
+                    <span>3학점 | 이민수 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+                <div className="msg-course-card" onClick={() => handleAddCourse('compiler')}>
+                  <div className="c-info">
+                    <h5>컴파일러 개론 (월 16-18, 수 16-17)</h5>
+                    <span>3학점 | 조민석 교수</span>
+                  </div>
+                  <PlusCircle size={18} />
+                </div>
+              </div>
+            </div>
+          );
+          addMessage('bot', '', html);
         }
       }
     }, 800);
   };
 
   // Text Chat submit
-  const handleChatSend = (e) => {
+  const handleChatSend = async (e) => {
     e.preventDefault();
     const text = chatInput.trim();
-    if (!text) return;
+    
+    if (!text) {
+      console.warn('400 Bad Request: Empty input submitted.');
+      addMessage('bot', '⚠️ <strong>400 Bad Request:</strong> 전송할 메시지 내용을 입력해주세요.');
+      return;
+    }
 
     addMessage('user', text);
     setChatInput('');
     setIsTyping(true);
 
+    let botResponseText = '';
+    const lowerText = text.toLowerCase();
+
+    if (lowerText.includes('금공강') || lowerText.includes('공강')) {
+      botResponseText = '금요일 전체 수업을 배제하고 융합교양을 채울 수 있는 최적의 15학점 금공강 설계안을 모의 격자에 세팅해 두었습니다. 확인해 보세요!';
+      setTimeout(() => {
+        handleQuickChip(studentType === 'transfer' ? 'auto-schedule' : 'general-schedule', '금공강 시간표 추천');
+      }, 400);
+    } else if (lowerText.includes('융합교양') || lowerText.includes('교양')) {
+      botResponseText = '융합교양 3영역(기술과 현대사회 등) 개설 교과목 추천 리스트입니다. 아래 목록 카드의 담기 단추를 누르시면 시간표에 즉시 반영됩니다.';
+      setTimeout(() => {
+        handleQuickChip('converge-list', '융합교양 목록 요청');
+      }, 400);
+    } else if (lowerText.includes('전공') || lowerText.includes('전필')) {
+      botResponseText = '현재 학적 기준 미이수 전공 필수 교과목 목록입니다. 아래 리스트 카드를 활용해 수강신청을 완성해 보세요.';
+      setTimeout(() => {
+        handleQuickChip('major-req-list', '전공필수 추천 요청');
+      }, 400);
+    } else {
+      botResponseText = '안녕하세요! 현재 경상국립대학교 통합 수강신청 AI 네비게이터 모드입니다. "금공강 시간표 추천", "융합교양 추천", "전공필수 추천" 등 수강 신청 요건과 관련된 내용을 문의하시면 즉시 맞춤형 설계 및 격자 자동 배정을 도와드립니다.';
+    }
+
+    try {
+      await axios.post('http://localhost:5000/api/chat', {
+        userMessage: text,
+        aiResponse: botResponseText
+      });
+    } catch (err) {
+      console.warn('Backend server offline. Message saved locally.', err);
+      setTimeout(() => {
+        addMessage('bot', '💡 <strong>알림:</strong> 백엔드 서버가 오프라인 상태이거나 네트워크 연결이 원활하지 않습니다. 대화 내역은 브라우저 로컬 세션에 임시 보관됩니다.');
+      }, 200);
+    }
+
     setTimeout(() => {
       setIsTyping(false);
-      const lowerText = text.toLowerCase();
-
-      if (lowerText.includes('금공강') || lowerText.includes('공강')) {
-        handleQuickChip(studentType === 'transfer' ? 'auto-schedule' : 'general-schedule', '금공강 시간표 추천');
-      } else if (lowerText.includes('융합교양') || lowerText.includes('교양')) {
-        handleQuickChip('converge-list', '융합교양 목록 요청');
-      } else if (lowerText.includes('전공') || lowerText.includes('전필')) {
-        handleQuickChip('major-req-list', '전공필수 추천 요청');
-      } else {
-        addMessage('bot', "죄송합니다. 현재 데모 버전에서는 수강신청 누락 요건 분석과 관련된 대화 명령어(예: '금공강 시간표 짜줘', '융합교양 리스트 보여줘')에 최적화되어 있습니다. 퀵 질문 버튼을 활용해 보시면 더욱 상세한 시뮬레이션이 가능합니다.");
-      }
+      addMessage('bot', botResponseText);
     }, 800);
   };
 
@@ -834,7 +1158,7 @@ function TimetableGenerator({ initialStudentType }) {
 
       try {
         // Express Backend API Call
-        const response = await axios.post('/api/credits/analyze-image', formData, {
+        const response = await axios.post('http://localhost:5000/api/credits/analyze-image', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -982,18 +1306,20 @@ function TimetableGenerator({ initialStudentType }) {
         </div>
         
         <div className="portal-user-menu">
-          <div className="profile-switcher-wrapper">
-            <span className="switcher-label">시뮬레이션 학적: </span>
-            <select 
-              value={studentType} 
-              onChange={(e) => setStudentType(e.target.value)}
-              className="student-type-select"
-            >
-              <option value="transfer">편입생 (김경상)</option>
-              <option value="general">일반재학생 (박경상)</option>
-              <option value="double-major">다전공자 (이경상)</option>
-            </select>
-          </div>
+          {!(user && (user.studentId === '2025080081' || user.studentId === 'example1')) && (
+            <div className="profile-switcher-wrapper">
+              <span className="switcher-label">시뮬레이션 학적: </span>
+              <select 
+                value={studentType} 
+                onChange={(e) => setStudentType(e.target.value)}
+                className="student-type-select"
+              >
+                <option value="transfer">편입생</option>
+                <option value="general">재학생</option>
+                <option value="double-major">다전공자</option>
+              </select>
+            </div>
+          )}
           
           <button onClick={() => navigate('/portal')} className="btn-logout">
             <span>메인 포털</span>
@@ -1014,10 +1340,10 @@ function TimetableGenerator({ initialStudentType }) {
             </div>
             <div className="profile-info">
               <h3>
-                {currentProfile.name} 
+                {studentName} 
                 <span className="badge">{currentProfile.badge}</span>
               </h3>
-              <p>{currentProfile.major}</p>
+              <p>{studentMajor}</p>
             </div>
           </div>
 
@@ -1116,9 +1442,9 @@ function TimetableGenerator({ initialStudentType }) {
             
             <p className="diagnostic-desc">
               {isConfirmed ? (
-                <span>{currentProfile.name}님, 분석 완료! <strong>이번 학기 학업 계획 수립이 졸업 기준에 완벽히 부합합니다.</strong> 수강 누락 요건이 없습니다.</span>
+                <span>{studentName}님, 분석 완료! <strong>이번 학기 학업 계획 수립이 졸업 기준에 완벽히 부합합니다.</strong> 수강 누락 요건이 없습니다.</span>
               ) : (
-                <span dangerouslySetInnerHTML={{ __html: currentProfile.diagnosticBrief }}></span>
+                <span dangerouslySetInnerHTML={{ __html: getDynamicText(currentProfile.diagnosticBrief) }}></span>
               )}
             </p>
 

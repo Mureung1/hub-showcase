@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus, Key, Mail, User, BookOpen, GraduationCap, AlertCircle } from 'lucide-react';
+import axios from 'axios';
 
 function Login({ onLogin }) {
   const navigate = useNavigate();
@@ -13,11 +14,12 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [studentType, setStudentType] = useState('transfer'); // default to 'transfer' (김경상)
+  const [department, setDepartment] = useState('컴퓨터공학과');
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -39,29 +41,66 @@ function Login({ onLogin }) {
 
     setLoading(true);
 
-    // Simulate network authentication delay
-    setTimeout(() => {
-      setLoading(false);
-      
-      // Setup mock logged-in student info
-      // Map names based on chosen profile key if they signed up, or use defaults
-      let profileName = name;
-      if (!profileName) {
-        if (studentType === 'transfer') profileName = '김경상';
-        else if (studentType === 'general') profileName = '박경상';
-        else if (studentType === 'double-major') profileName = '이경상';
+    try {
+      let response;
+      const backendUrl = 'http://localhost:5000';
+
+      if (isSignUp) {
+        response = await axios.post(`${backendUrl}/api/auth/signup`, {
+          studentId,
+          name,
+          password,
+          studentType,
+          department,
+          email
+        });
+      } else {
+        response = await axios.post(`${backendUrl}/api/auth/login`, {
+          studentId,
+          password
+        });
       }
 
-      const userData = {
-        studentId,
-        name: profileName,
-        email: email || `${studentId}@gnu.ac.kr`,
-        studentType,
-      };
+      setLoading(false);
+      if (response.data && response.data.success) {
+        onLogin(response.data.user);
+        navigate('/portal');
+      } else {
+        setError(response.data.error || '인증에 실패했습니다.');
+      }
+    } catch (err) {
+      console.warn('Backend server offline or DB connection failed. Falling back to local offline mode.', err);
+      
+      // Setup client-side offline mode fallback
+      setTimeout(() => {
+        setLoading(false);
+        
+        let profileName = name;
+        if (!profileName) {
+          if (studentType === 'transfer') profileName = '김경상';
+          else if (studentType === 'general') profileName = '박경상';
+          else if (studentType === 'double-major') profileName = '이경상';
+        }
 
-      onLogin(userData);
-      navigate('/portal');
-    }, 1000);
+        const userData = {
+          studentId,
+          name: profileName,
+          email: email || `${studentId}@gnu.ac.kr`,
+          studentType,
+          department: department,
+          isOfflineMode: true
+        };
+
+        // Notice the user that the server is offline but we logged them in locally
+        setError('💡 서버가 오프라인 상태입니다. 로컬 오프라인 모드로 자동 연결되었습니다.');
+        
+        // Let them log in after a short delay so they can read the notice
+        setTimeout(() => {
+          onLogin(userData);
+          navigate('/portal');
+        }, 1200);
+      }, 1000);
+    }
   };
 
   const handleToggleMode = () => {
@@ -137,9 +176,26 @@ function Login({ onLogin }) {
                     onChange={(e) => setStudentType(e.target.value)}
                     required
                   >
-                    <option value="transfer">편입생 (김경상)</option>
-                    <option value="general">일반재학생 (박경상)</option>
-                    <option value="double-major">다전공자 (이경상)</option>
+                    <option value="transfer">편입생</option>
+                    <option value="general">재학생</option>
+                    <option value="double-major">다전공자</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="input-group animate-fade-in-up">
+                <label htmlFor="department">소속 학과</label>
+                <div className="input-wrapper">
+                  <GraduationCap className="input-icon" size={18} />
+                  <select
+                    id="department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    required
+                  >
+                    <option value="컴퓨터공학과">컴퓨터공학과</option>
+                    <option value="경영정보학과">경영정보학과</option>
+                    <option value="통계학과">통계학과</option>
                   </select>
                 </div>
               </div>

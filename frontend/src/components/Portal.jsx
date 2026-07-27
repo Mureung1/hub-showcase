@@ -9,7 +9,7 @@ function Portal({ user, onLogout }) {
   const getStudentTypeLabel = (type) => {
     switch (type) {
       case 'transfer': return '편입생';
-      case 'general': return '일반재학생';
+      case 'general': return '재학생';
       case 'double-major': return '다전공자';
       default: return '학생';
     }
@@ -27,7 +27,7 @@ function Portal({ user, onLogout }) {
         <div className="portal-user-menu">
           <div className="user-profile-badge">
             <span className={`status-dot animate-pulse`}></span>
-            <span className="profile-name">{user?.name || '김경상'}</span>
+            <span className="profile-name">{user?.name || '김경상'} ({user?.department || '컴퓨터공학과'})</span>
             <span className="profile-tag">{getStudentTypeLabel(user?.studentType)}</span>
           </div>
           <button onClick={onLogout} className="btn-logout" title="로그아웃">
@@ -40,7 +40,7 @@ function Portal({ user, onLogout }) {
       {/* Main Content */}
       <main className="portal-main">
         <section className="welcome-banner animate-fade-in-up">
-          <h2>안녕하세요, {user?.name || '김경상'}님!</h2>
+          <h2>안녕하세요, {user?.department || '컴퓨터공학과'} {user?.name || '김경상'}님!</h2>
           <p>GNU AI 네비게이터 포털에 오신 것을 환영합니다. 원하시는 학업 도구를 선택하세요.</p>
         </section>
 
