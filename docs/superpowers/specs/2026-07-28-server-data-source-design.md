@@ -44,9 +44,10 @@ Git Lab의 완료 레벨은 별도 브라우저 키로 저장하지 않고 `pass
 ```txt
 GET /api/profile
 PUT /api/profile
+DELETE /api/profile
 ```
 
-`GET`은 `{ profile: LearnerProfile | null }`, `PUT`은 검증된 `{ profile: LearnerProfile }`을 반환한다. 단일 사용자 행의 고정 ID는 `primary`를 사용한다.
+`GET`은 `{ profile: LearnerProfile | null }`, `PUT`은 검증된 `{ profile: LearnerProfile }`을 반환한다. `DELETE`는 단일 프로필을 삭제하고 `{ profile: null }`을 반환한다. 단일 사용자 행의 고정 ID는 `primary`를 사용한다.
 
 Backend에는 in-memory, SQLite, Supabase profile repository를 추가한다. Supabase migration은 `learner_profiles` 테이블을 생성하고 `primary` 행을 upsert할 수 있게 한다. 서버 전용 secret key 경계는 유지한다.
 
