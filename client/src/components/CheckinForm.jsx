@@ -1,7 +1,23 @@
 import MoodPicker from './MoodPicker'
 import PhotoUpload from './PhotoUpload'
 
-function CheckinForm({ rawText, onTextChange, mood, onMoodChange, photoFile, onPhotoChange, onSubmit, isOrganizing }) {
+function CheckinForm({
+  rawText,
+  onTextChange,
+  mood,
+  onMoodChange,
+  photoFile,
+  onPhotoChange,
+  onSubmit,
+  onSaveWithoutAi,
+  isOrganizing,
+  isSaving,
+  aiConsent,
+  onAiConsentChange,
+  storageMode,
+}) {
+  const isGuest = storageMode === 'guest'
+
   return (
     <form className="input-panel" onSubmit={onSubmit}>
       <p className="date-label">
@@ -25,13 +41,46 @@ function CheckinForm({ rawText, onTextChange, mood, onMoodChange, photoFile, onP
         <span>한두 문장이어도 충분해요.</span>
         <span>{rawText.length} / 2000</span>
       </div>
-      <PhotoUpload file={photoFile} onChange={onPhotoChange} />
+      {isGuest && <PhotoUpload file={photoFile} onChange={onPhotoChange} />}
+      <div className="guest-storage-note">
+        <span aria-hidden="true">{isGuest ? '🔒' : '☁️'}</span>
+        <div>
+          <strong>
+            {isGuest
+              ? '기록과 사진은 이 기기에만 저장돼요.'
+              : '기록은 내 Supabase 계정에 저장돼요.'}
+          </strong>
+          <span>
+            {isGuest
+              ? '브라우저 데이터를 삭제하면 기록도 함께 사라질 수 있어요.'
+              : '사진 클라우드 동기화는 준비 중이라 지금은 첨부할 수 없어요.'}
+          </span>
+        </div>
+      </div>
+      <button
+        className="button button-secondary save-without-ai"
+        type="button"
+        disabled={!rawText.trim() || isSaving || isOrganizing}
+        onClick={onSaveWithoutAi}
+      >
+        {isSaving
+          ? '저장하는 중…'
+          : `AI 없이 ${isGuest ? '기기에' : '클라우드에'} 저장`}
+      </button>
+      <label className="ai-consent">
+        <input
+          type="checkbox"
+          checked={aiConsent}
+          onChange={(event) => onAiConsentChange(event.target.checked)}
+        />
+        <span>AI 정리를 위해 작성한 내용이 서버로 전송되는 것에 동의해요.</span>
+      </label>
       <button
         className="button button-primary"
         type="submit"
-        disabled={!rawText.trim() || isOrganizing}
+        disabled={!rawText.trim() || !aiConsent || isOrganizing}
       >
-        {isOrganizing ? '정리하는 중…' : '정리하기'}
+        {isOrganizing ? '정리하는 중…' : '동의하고 AI로 정리'}
       </button>
     </form>
   )

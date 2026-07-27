@@ -3,6 +3,7 @@ import multer from 'multer'
 import { getCheckins, createCheckin, deleteCheckin } from '../services/checkinService.js'
 import { createSummary } from '../services/summaryService.js'
 import { uploadCheckinPhoto } from '../services/storageService.js'
+import { isDemoMode } from '../config/runtimeMode.js'
 
 const router = Router()
 
@@ -28,6 +29,19 @@ function asyncHandler(handler) {
       next(err)
     }
   }
+}
+
+function requireDemoStorage(req, res, next) {
+  if (!isDemoMode()) {
+    const error = new Error(
+      '로그인 기록은 Supabase Auth와 RLS를 통해 직접 처리합니다.',
+    )
+    error.status = 410
+    next(error)
+    return
+  }
+
+  next()
 }
 
 const MOODS = ['😌', '🙂', '😐', '😞', '😢']
@@ -58,7 +72,7 @@ function getRawText(body) {
   return rawText.trim()
 }
 
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', requireDemoStorage, asyncHandler(async (req, res) => {
   const checkins = await getCheckins()
   res.json(checkins)
 }))
@@ -70,7 +84,7 @@ router.post('/preview', asyncHandler(async (req, res) => {
   res.json({ rawText, ...summary })
 }))
 
-router.post('/photo', upload.single('photo'), asyncHandler(async (req, res) => {
+router.post('/photo', requireDemoStorage, upload.single('photo'), asyncHandler(async (req, res) => {
   if (!req.file) {
     const error = new Error('업로드할 사진이 없습니다.')
     error.status = 400
@@ -81,7 +95,7 @@ router.post('/photo', upload.single('photo'), asyncHandler(async (req, res) => {
   res.status(201).json({ imageUrl })
 }))
 
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', requireDemoStorage, asyncHandler(async (req, res) => {
   const rawText = getRawText(req.body)
   const mood = getMood(req.body)
   const checkin = await createCheckin({
@@ -92,7 +106,7 @@ router.post('/', asyncHandler(async (req, res) => {
   res.status(201).json(checkin)
 }))
 
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', requireDemoStorage, asyncHandler(async (req, res) => {
   await deleteCheckin(req.params.id)
   res.status(204).end()
 }))

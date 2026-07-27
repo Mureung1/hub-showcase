@@ -1,14 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import CheckinForm from './components/CheckinForm'
 import FlipCard from './components/FlipCard'
 import RecordCard from './components/RecordCard'
 import RecordDetail from './pages/RecordDetail'
 import CalendarView from './pages/CalendarView'
+import EntryScreen from './components/EntryScreen'
+import { createGuestCheckinRepository, fileToDataUrl } from './services/guestCheckinRepository'
+import { createSupabaseCheckinRepository } from './services/supabaseCheckinRepository'
+import { isSupabaseConfigured, supabase } from './lib/supabase'
 import hero from './assets/hero.png'
 import './App.css'
 
 const EMPTY_SUMMARY = { emotion: '', cause: '', action: '' }
 const EMPTY_REASONS = { emotion: '', cause: '', action: '' }
+const STORAGE_MODE_KEY = 'haru-checkout-storage-mode'
 
 const SUMMARY_FIELDS = [
   { key: 'emotion', icon: '🙂', title: '오늘의 감정' },
@@ -27,10 +32,17 @@ async function requestJson(url, options) {
   return body
 }
 
+const guestRepository = createGuestCheckinRepository()
+const cloudRepository = createSupabaseCheckinRepository(supabase)
+
 function App() {
+  const [storageMode, setStorageMode] = useState(
+    () => window.localStorage.getItem(STORAGE_MODE_KEY) || '',
+  )
   const [rawText, setRawText] = useState('')
   const [mood, setMood] = useState('')
   const [photoFile, setPhotoFile] = useState(null)
+  const [aiConsent, setAiConsent] = useState(false)
   const [summary, setSummary] = useState(EMPTY_SUMMARY)
   const [reasons, setReasons] = useState(EMPTY_REASONS)
   const [summarySource, setSummarySource] = useState('')
@@ -40,30 +52,115 @@ function App() {
   const [selectedCheckin, setSelectedCheckin] = useState(null)
   const [isOrganizing, setIsOrganizing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isLoadingRecords, setIsLoadingRecords] = useState(true)
+  const [isLoadingRecords, setIsLoadingRecords] = useState(Boolean(storageMode))
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [session, setSession] = useState(null)
+  const [isAuthReady, setIsAuthReady] = useState(!supabase)
+  const [guestRecordsForSync, setGuestRecordsForSync] = useState([])
+  const [isSyncing, setIsSyncing] = useState(false)
+  const activeRepository = storageMode === 'cloud' ? cloudRepository : guestRepository
 
-  async function loadCheckins() {
+  useEffect(() => {
+    if (!supabase) {
+      return undefined
+    }
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      if (storageMode === 'cloud' && !data.session) {
+        window.localStorage.removeItem(STORAGE_MODE_KEY)
+        setStorageMode('')
+      }
+      setIsAuthReady(true)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [storageMode])
+
+  const loadCheckins = useCallback(async () => {
+    if (!storageMode || (storageMode === 'cloud' && !session)) {
+      return
+    }
+
     setIsLoadingRecords(true)
     try {
-      const records = await requestJson('/api/checkins')
+      const records = await activeRepository.getCheckins()
       setCheckins(records)
     } catch (requestError) {
       setError(requestError.message)
     } finally {
       setIsLoadingRecords(false)
     }
-  }
+  }, [activeRepository, session, storageMode])
 
   useEffect(() => {
     loadCheckins()
-  }, [])
+  }, [loadCheckins])
+
+  useEffect(() => {
+    if (storageMode !== 'cloud' || !session) {
+      setGuestRecordsForSync([])
+      return
+    }
+
+    guestRepository.getCheckins()
+      .then(setGuestRecordsForSync)
+      .catch(() => setGuestRecordsForSync([]))
+  }, [session, storageMode])
+
+  function startGuestMode() {
+    window.localStorage.setItem(STORAGE_MODE_KEY, 'guest')
+    setError('')
+    setNotice('')
+    setStorageMode('guest')
+
+    if (navigator.storage?.persist) {
+      navigator.storage.persist().catch(() => {})
+    }
+  }
+
+  function startCloudMode(nextSession) {
+    window.localStorage.setItem(STORAGE_MODE_KEY, 'cloud')
+    setSession(nextSession)
+    setStorageMode('cloud')
+    setError('')
+    setNotice('')
+  }
+
+  async function showStorageOptions() {
+    if (storageMode === 'cloud' && supabase) {
+      await supabase.auth.signOut()
+    }
+    window.localStorage.removeItem(STORAGE_MODE_KEY)
+    setStorageMode('')
+    setRawText('')
+    setMood('')
+    setPhotoFile(null)
+    setAiConsent(false)
+    setSummary(EMPTY_SUMMARY)
+    setReasons(EMPTY_REASONS)
+    setSummarySource('')
+    setSelectedCheckin(null)
+    setScreen('input')
+    setError('')
+    setNotice('')
+  }
 
   async function handleOrganize(event) {
     event.preventDefault()
     setError('')
     setNotice('')
+
+    if (!aiConsent) {
+      setError('AI 정리를 사용하려면 서버 전송 안내를 확인해 주세요.')
+      return
+    }
+
     setIsOrganizing(true)
 
     try {
@@ -91,34 +188,37 @@ function App() {
     }
   }
 
-  async function handleSave() {
+  async function saveCheckin(summaryToSave) {
     setError('')
     setNotice('')
     setIsSaving(true)
 
     try {
-      let imageUrl
-      if (photoFile) {
-        const formData = new FormData()
-        formData.append('photo', photoFile)
-        // Content-Type 헤더는 지정하지 않는다 — 브라우저가 multipart boundary를 붙여야 함
-        const uploaded = await requestJson('/api/checkins/photo', {
-          method: 'POST',
-          body: formData,
+      const checkin = {
+        rawText,
+        mood: mood || undefined,
+        ...summaryToSave,
+      }
+      let saved
+
+      if (storageMode === 'guest') {
+        const imageUrl = await fileToDataUrl(photoFile)
+        saved = await guestRepository.createCheckin({
+          ...checkin,
+          imageUrl,
         })
-        imageUrl = uploaded.imageUrl
+      } else {
+        saved = await activeRepository.createCheckin(checkin)
       }
 
-      const saved = await requestJson('/api/checkins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText, mood: mood || undefined, imageUrl, ...summary }),
-      })
       setCheckins((current) => [saved, ...current])
-      setNotice('오늘의 체크아웃을 저장했어요.')
+      setNotice(storageMode === 'guest'
+        ? '오늘의 체크아웃을 이 기기에 저장했어요.'
+        : '오늘의 체크아웃을 클라우드에 저장했어요.')
       setRawText('')
       setMood('')
       setPhotoFile(null)
+      setAiConsent(false)
       setSummary(EMPTY_SUMMARY)
       setReasons(EMPTY_REASONS)
       setSummarySource('')
@@ -160,10 +260,62 @@ function App() {
     setError('')
     setNotice('')
     try {
-      await requestJson(`/api/checkins/${id}`, { method: 'DELETE' })
+      await activeRepository.deleteCheckin(id)
       setCheckins((current) => current.filter((c) => c.id !== id))
       setNotice('기록을 삭제했어요.')
       backToList()
+    } catch (requestError) {
+      setError(requestError.message)
+    }
+  }
+
+  function handleSave() {
+    return saveCheckin(summary)
+  }
+
+  function handleSaveWithoutAi() {
+    return saveCheckin(EMPTY_SUMMARY)
+  }
+
+  async function handleSyncGuestRecords() {
+    if (!guestRecordsForSync.length) {
+      return
+    }
+
+    const shouldSync = window.confirm(
+      `이 기기의 기록 ${guestRecordsForSync.length}개를 클라우드에 복사할까요?\n사진은 기기에만 남고, 원문·기분·AI 정리 결과만 복사돼요.`,
+    )
+    if (!shouldSync) {
+      return
+    }
+
+    setError('')
+    setNotice('')
+    setIsSyncing(true)
+    try {
+      await cloudRepository.syncGuestCheckins(guestRecordsForSync)
+      await loadCheckins()
+      setNotice(`기기 기록 ${guestRecordsForSync.length}개를 클라우드에 복사했어요. 원본은 이 기기에 그대로 남아 있어요.`)
+      setGuestRecordsForSync([])
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  async function handleClearCheckins() {
+    if (!window.confirm('이 기기에 저장된 기록을 모두 삭제할까요? 삭제하면 되돌릴 수 없어요.')) {
+      return
+    }
+
+    setError('')
+    setNotice('')
+    try {
+      await activeRepository.clearCheckins()
+      setCheckins([])
+      setSelectedCheckin(null)
+      setNotice('이 기기의 기록을 모두 삭제했어요.')
     } catch (requestError) {
       setError(requestError.message)
     }
@@ -186,6 +338,21 @@ function App() {
 
   const canSave = SUMMARY_FIELDS.every(({ key }) => summary[key].trim())
 
+  if (!isAuthReady) {
+    return <main className="entry-shell"><p>로그인 상태를 확인하는 중이에요…</p></main>
+  }
+
+  if (!storageMode || (storageMode === 'cloud' && !session)) {
+    return (
+      <EntryScreen
+        onStartGuest={startGuestMode}
+        onAuthenticated={startCloudMode}
+        supabaseClient={supabase}
+        isSupabaseConfigured={isSupabaseConfigured}
+      />
+    )
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -195,6 +362,18 @@ function App() {
           <h1>하루 체크아웃</h1>
         </div>
       </header>
+
+      <div className="storage-status">
+        <span>
+          <span aria-hidden="true">{storageMode === 'guest' ? '🔒' : '☁️'}</span>{' '}
+          {storageMode === 'guest'
+            ? '게스트 · 이 기기에 저장'
+            : `${session.user.email} · Supabase 동기화`}
+        </span>
+        <button type="button" onClick={showStorageOptions}>
+          {storageMode === 'guest' ? '저장 방식 변경' : '로그아웃'}
+        </button>
+      </div>
 
       <nav className="tab-nav" aria-label="화면 전환">
         <button
@@ -210,6 +389,18 @@ function App() {
       </nav>
 
       <section className="workspace" aria-live="polite">
+        {storageMode === 'cloud' && guestRecordsForSync.length > 0 && (
+          <div className="sync-banner">
+            <div>
+              <strong>이 기기에 게스트 기록 {guestRecordsForSync.length}개가 있어요.</strong>
+              <span>자동 업로드하지 않아요. 원할 때 텍스트 기록만 복사할 수 있어요.</span>
+            </div>
+            <button type="button" onClick={handleSyncGuestRecords} disabled={isSyncing}>
+              {isSyncing ? '복사 중…' : '클라우드에 복사'}
+            </button>
+          </div>
+        )}
+
         {screen === 'input' && (
           <CheckinForm
             rawText={rawText}
@@ -219,7 +410,12 @@ function App() {
             photoFile={photoFile}
             onPhotoChange={handlePhotoChange}
             onSubmit={handleOrganize}
+            onSaveWithoutAi={handleSaveWithoutAi}
             isOrganizing={isOrganizing}
+            isSaving={isSaving}
+            aiConsent={aiConsent}
+            onAiConsentChange={setAiConsent}
+            storageMode={storageMode}
           />
         )}
 
@@ -262,7 +458,12 @@ function App() {
             <CalendarView checkins={checkins} onSelectCheckin={openDetail} />
             <div className="records-head">
               <span className="section-label">최근 기록</span>
-              <button className="refresh-button" type="button" onClick={loadCheckins} disabled={isLoadingRecords}>새로고침</button>
+              <div className="record-tools">
+                {storageMode === 'guest' && checkins.length > 0 && (
+                  <button className="clear-button" type="button" onClick={handleClearCheckins}>전체 삭제</button>
+                )}
+                <button className="refresh-button" type="button" onClick={loadCheckins} disabled={isLoadingRecords}>새로고침</button>
+              </div>
             </div>
             {isLoadingRecords ? (
               <p className="empty-state">기록을 불러오는 중이에요…</p>
