@@ -1256,6 +1256,7 @@ label {
 }
 
 .manager-select-window {
+  left: 50%;
   top: 56px;
   width: min(640px, calc(100vw - 40px));
   transform: translateX(-50%);
@@ -1356,6 +1357,7 @@ label {
 .created-card .desktop-pet-sprite {
   width: 102px;
   height: 102px;
+  transform: translateY(-12px);
 }
 
 .created-card strong {

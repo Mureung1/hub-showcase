@@ -68,6 +68,7 @@
 
 - 2026-07-23 꼬마비로드갯민숭달팽이 `hanging`은 한쪽 귀로 대롱대롱 매달리는 v2, `climbing`은 엉덩이만 보이는 정후면 대신 긴 등면이 보이는 rear 3/4 top-back v2로 재생성하고 review set을 v2 파일로 연결
 - 2026-07-24 계란후라이 해파리 Stage 2 production candidate motion sheet 10종을 생성하고 review set에 연결: `public/assets/lumi/fried-egg-jellyfish-stage-2-production-candidates/fried-egg-jellyfish-stage-2-*-sheet-v1.png`, contact sheet `public/assets/_review/fried-egg-jellyfish-stage-2-production-candidates-contact.png`
+- 2026-07-24 Costasiella kuroshimae Stage 2 production candidate motion sheet 10종을 생성하고 review set에 연결: `public/assets/lumi/costasiella-kuroshimae-stage-2-production-candidates/costasiella-kuroshimae-stage-2-*-sheet-v1.png`, contact sheet `public/assets/_review/costasiella-kuroshimae-stage-2-production-candidates-contact.png`. 1차 눈검수상 `walk`는 오른쪽 방향 통일 v2 후보 가능성 있음
 - 2026-07-24 창 내부 상호작용 오브젝트용 사다리/플랫폼 tile-repeat PNG를 생성하고 manifest metadata를 추가: `public/assets/interaction-objects/ladder/`, `public/assets/interaction-objects/platform/`, review contact `public/assets/_review/interaction-object-tiles-contact.png`
 - 2026-07-23 TDD 우선 확장 도메인 규칙 추가: 성장/보상/능력치, stage 해금/회귀, interaction object rect/resize/progress, pet locomotion, pixelizer plan, blink/sound policy, public quest/gesture policy를 RED -> GREEN 흐름으로 테스트화
 - 2026-07-23 Pet Behavior State Machine 추가: 상황 기반 후보 생성, deterministic weighted behavior selection, persona별 weight 조정, behavior state -> animation state mapping을 테스트로 고정
@@ -81,6 +82,8 @@
 - 2026-07-24 창 밖 transition 1차 연결: 임시 조건으로 기록 노트 실행 시 blink focus가 발동하고, Lumi가 화면 왼쪽/오른쪽 끝에서 `hiding`을 연출한 뒤 `walk`로 들판 영역에 진입하고 `free_roam` 상태에서 walk/run/jump/climbing 후보를 확률적으로 순환
 - 2026-07-24 사다리/평지 오브젝트를 XP 창 안으로 전환: 기존 absolute object와 화살표 resize를 제거하고, 사다리는 세로 창 resize, 평지는 가로 창 resize로 조정되며 interaction rect는 창 위치/크기에서 파생되도록 연결
 - 2026-07-24 `managerRuntimeState` 상위 모델 도입: manager mood, window edge interaction, outside transition/free roam, sprite animation 우선순위를 하나의 runtime view model로 묶고, 창 밖 free roam 후보 선택을 `petBehaviorStateMachine` 도메인 규칙에 연결
+- 2026-07-27 `T-709/T-711` 1순위 연결: `ManagerBehaviorIntent`와 `ManagerBehaviorAdapter`를 React outside free roam runtime에 rule fallback으로 연결하고, 매니저 선택/말투/성공·실패 streak가 제한된 persona behaviorStyle과 behavior bias로 반영되도록 정리
+- 2026-07-27 Persona 범위 재정의: 현재 sprite motion 수가 제한적이므로 Persona의 핵심은 응원 문구, 피드백 방식, 퀘스트 제안 성향으로 두고, animation은 공통 motion set에 약한 behavior bias만 주는 구조로 정리
 - 2026-07-24 창 밖 `returning` phase 추가: Lumi가 free roam 이후 가까운 화면 끝으로 걸어가며 `hiding`을 연출하고 manager window 상태로 복귀할 수 있게 했으며, reduced-motion 설정은 behavior animation mapping에 반영
 - 2026-07-24 매니저 선택 flow 추가: 첫 실행 시 `Manager.exe 선택` 창에서 pink-manager/glass-frog/planaria를 고른 뒤 설치 마법사로 이어지고, 시작 메뉴의 `다시 시작`으로 profile/manager/log flow를 초기화해 다시 선택할 수 있음
 
@@ -130,12 +133,11 @@
 
 ## 다음 작업
 
-- 1순위: 캐릭터 생동감 후속 작업. `T-713` cyber-purr 사운드 후보를 정리하고, TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 React Lumi animation state와 연결
-- 2순위: 성장/보상 구조 연결. TDD로 만든 `T-703`, `T-717`, `T-712` 성장/보상 도메인 규칙을 Quest Event metadata, 기록 노트, 매니저 상태, 외형 선택 UI와 연결하고 `T-718` Supabase 정규화 기준을 확정
-- 3순위 후속: 브라우저에서 사다리/평지 창의 드래그/resize 조작감, 들판 rect, Lumi walk/run/jump/climbing 위치를 수동 검수하고 pixel-art 오브젝트 품질을 조정
-- 3순위 후속: `managerRuntimeState`를 기준으로 outside behavior debug/readout, LLM intent bias 연결, 사다리/평지 창 polish를 분리해서 진행
-- 4순위: 월드/실험 기능 prototype. `T-708`, `T-721`, `T-722`, `T-723` 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증
-- 후속 검수: `T-724` Single-plane Pepper projection mode는 기본 flow가 연결되어 있으므로 브라우저에서 projection 화면 품질과 front/back 자동 회전 v1.5 필요 여부만 추가 판단
+- 최종 목표 1순위: `T-709`, `T-711` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결. TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 `managerRuntimeState`와 React Lumi animation state에 연결하고, 실제 LLM API 없이 rule fallback으로 검증한다.
+- 최종 목표 2순위: `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반. 퀘스트 능력치 growth, 외적 성장 보상, cyber-purr 사운드 후보를 Quest Event metadata, 기록 노트, 매니저 상태와 연결한다.
+- 최종 목표 3순위: `T-721`, `T-724`, `T-725` Pixel TV 묶음. 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 flow로 정리한다.
+- 최종 목표 4순위: `T-708` 하루의 흐름 Web theme. 현실 시간 기반 해/달 asset, 빛의 강도/색상, XP desktop 배경 상태를 연결한다.
+- 공통 flow 정돈: 첫 진입, 매니저 선택, 퀘스트 실행, 기록 노트, Pixel TV, 시작 메뉴 재시작 흐름이 자연스럽게 이어지는지 계속 수동 검수한다.
 - React 화면은 이미 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 중심으로 분리되어 있고, 다음 분리는 UI 파일 추가보다 `useQuestFlow`, `useQuestLogSync`, `usePixelTvMode` 같은 상태 hook 단위가 우선
 - 기록 노트 API 로딩/빈 상태/실패 상태 polish
 - 정적 HTML 기준으로 남은 UI 시각 차이 수동 점검 및 우선순위화
