@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import {
   applyToSubstituteRequest,
+  approveSubstituteRequest,
   createStoreSubstituteRequest,
-  listStoreSubstituteRequests
+  listStoreSubstituteRequests,
+  rejectSubstituteRequest
 } from "./substituteRequests.service";
 
 const createSubstituteRequestSchema = z.object({
@@ -15,6 +17,13 @@ const createSubstituteRequestSchema = z.object({
     .max(200, "대타 요청 사유는 200자 이하로 입력해주세요.")
 });
 const requestIdSchema = z.string().uuid("대타 요청 ID를 확인해주세요.");
+const rejectSubstituteRequestSchema = z.object({
+  rejectReason: z
+    .string()
+    .trim()
+    .min(1, "거절 사유를 입력해주세요.")
+    .max(200, "거절 사유는 200자 이하로 입력해주세요.")
+});
 
 function getStringParam(value: string | string[] | undefined) {
   if (!value || Array.isArray(value)) {
@@ -115,6 +124,84 @@ export async function applySubstituteRequestController(req: Request, res: Respon
   const response = await applyToSubstituteRequest({
     requestId: requestIdResult.data,
     actorUserId: req.authUser.id
+  });
+
+  res.status(200).json(response);
+}
+
+export async function approveSubstituteRequestController(req: Request, res: Response) {
+  const requestId = getStringParam(req.params.requestId);
+
+  if (!requestId) {
+    res.status(400).json({
+      message: "대타 요청 ID가 필요합니다."
+    });
+    return;
+  }
+
+  const requestIdResult = requestIdSchema.safeParse(requestId);
+
+  if (!requestIdResult.success) {
+    res.status(400).json({
+      message: requestIdResult.error.issues[0]?.message ?? "대타 요청 ID를 확인해주세요."
+    });
+    return;
+  }
+
+  if (!req.authUser) {
+    res.status(401).json({
+      message: "인증 정보가 없습니다."
+    });
+    return;
+  }
+
+  const response = await approveSubstituteRequest({
+    requestId: requestIdResult.data,
+    actorUserId: req.authUser.id
+  });
+
+  res.status(200).json(response);
+}
+
+export async function rejectSubstituteRequestController(req: Request, res: Response) {
+  const requestId = getStringParam(req.params.requestId);
+
+  if (!requestId) {
+    res.status(400).json({
+      message: "대타 요청 ID가 필요합니다."
+    });
+    return;
+  }
+
+  const requestIdResult = requestIdSchema.safeParse(requestId);
+
+  if (!requestIdResult.success) {
+    res.status(400).json({
+      message: requestIdResult.error.issues[0]?.message ?? "대타 요청 ID를 확인해주세요."
+    });
+    return;
+  }
+
+  if (!req.authUser) {
+    res.status(401).json({
+      message: "인증 정보가 없습니다."
+    });
+    return;
+  }
+
+  const result = rejectSubstituteRequestSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res.status(400).json({
+      message: result.error.issues[0]?.message ?? "거절 사유를 확인해주세요."
+    });
+    return;
+  }
+
+  const response = await rejectSubstituteRequest({
+    requestId: requestIdResult.data,
+    actorUserId: req.authUser.id,
+    rejectReason: result.data.rejectReason
   });
 
   res.status(200).json(response);

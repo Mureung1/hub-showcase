@@ -76,6 +76,12 @@ export type UpdateScheduleRepositoryInput = {
   memo: string | null;
 };
 
+export type TransferScheduleToSubstituteRepositoryInput = {
+  scheduleId: string;
+  currentWorkerId: string;
+  nextWorkerId: string;
+};
+
 export type UpdateScheduleResponse = {
   schedule: ScheduleResponse;
 };

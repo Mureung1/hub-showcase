@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthProvider";
-import { applySubstituteRequest, createSubstituteRequest, getSubstituteRequests } from "./substituteApi";
-import { CreateSubstituteRequestInput } from "./substituteTypes";
+import {
+  applySubstituteRequest,
+  approveSubstituteRequest,
+  createSubstituteRequest,
+  getSubstituteRequests,
+  rejectSubstituteRequest
+} from "./substituteApi";
+import { CreateSubstituteRequestInput, RejectSubstituteRequestInput } from "./substituteTypes";
 
 export function useSubstituteRequests(storeId: string | null) {
   const { session } = useAuth();
@@ -38,6 +44,45 @@ export function useApplySubstituteRequest() {
 
   return useMutation({
     mutationFn: (requestId: string) => applySubstituteRequest(accessToken ?? "", requestId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["substituteRequests"]
+      });
+    }
+  });
+}
+
+export function useApproveSubstituteRequest() {
+  const { session } = useAuth();
+  const accessToken = session?.access_token;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (requestId: string) => approveSubstituteRequest(accessToken ?? "", requestId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["substituteRequests"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["schedules"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["payrollSummary"]
+        })
+      ]);
+    }
+  });
+}
+
+export function useRejectSubstituteRequest() {
+  const { session } = useAuth();
+  const accessToken = session?.access_token;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { requestId: string; values: RejectSubstituteRequestInput }) =>
+      rejectSubstituteRequest(accessToken ?? "", input.requestId, input.values),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["substituteRequests"]
