@@ -183,7 +183,11 @@ export class ControlledRuntime implements CodexWorkspaceRuntime {
   }
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
-    return { state: 'ready' }
+    throw new CodexChatRuntimeError({
+      code: 'runtime_unavailable',
+      displayMessage: 'The controlled test Runtime is unavailable.',
+      unknownOutcome: false,
+    })
   }
 
   async readModelCatalog(): Promise<CodexModelCatalog> {
