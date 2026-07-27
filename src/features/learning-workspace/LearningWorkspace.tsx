@@ -24,6 +24,7 @@ import {
   useLearningProgressStore,
   type LearningActivityItem,
   type LearningRunState,
+  type LearningTestResult,
 } from '../learning-progress/model/useLearningProgressStore'
 import { useLearningProfileStore } from '../profile/model/useLearningProfileStore'
 import styles from './LearningWorkspace.module.css'
