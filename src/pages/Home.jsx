@@ -125,10 +125,11 @@ function Home() {
         <TopNav />
       </div>
 
-      <main className={forceLoading ? '' : 'mx-auto max-w-[960px] pb-8'}>
-        {forceLoading ? (
-          // 개발용 로딩 화면(?loading=1) — 배너·필터·전체 둘러보기 없이 로딩 표시만 확인
-          <LoadingIndicator fullScreen />
+      <main className={status === 'loading' ? '' : 'mx-auto max-w-[960px] pb-8'}>
+        {status === 'loading' ? (
+          // forceLoading(개발용 ?loading=1)이든 실제 fetch 중이든, 끝날 때까지 전체화면 로딩만 보여주고
+          // 배너·필터·추천 리스트는 로딩이 끝난 뒤에야 나타난다.
+          <LoadingIndicator />
         ) : (
           <>
         <PromoBanner />
@@ -159,8 +160,6 @@ function Home() {
             </button>
           </div>
         </div>
-
-        {status === 'loading' && <LoadingIndicator />}
 
         {status === 'done' && !hasAnyMatch && closestRecipes.length === 0 && (
           <section className="mt-4 px-8">
