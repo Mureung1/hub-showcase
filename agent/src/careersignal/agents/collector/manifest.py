@@ -22,6 +22,23 @@ from careersignal.domain.segment import EntryLabel
 from careersignal.domain.source_policy import AllowedUse, SourceTier
 
 
+class ManifestPosition(BaseModel):
+    """출처 하나가 담는 모집분야 하나.
+
+    한 출처가 모집분야를 여럿 담으면 분야마다 공고가 하나씩 나온다. 규칙은
+    docs/metric-spec.md 2.8이다. 분야별 요구사항 본문이 분리된 출처에만 쓴다.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    position_name: str
+    job_role_ids: tuple[str, ...] = ("backend",)
+    job_role_raw: str | None = None
+    platform_bound: bool = False
+    entry_label_raw: str | None = None
+    entry_label: EntryLabel | None = None
+
+
 class ManifestEntry(BaseModel):
     """수집 대상 하나의 기록.
 
@@ -61,6 +78,19 @@ class ManifestEntry(BaseModel):
     collected_on: date | None = None
     content_file: str | None = None
     note: str | None = None
+
+    positions: tuple[ManifestPosition, ...] = ()
+    """출처가 담는 모집분야 목록. 비어 있으면 이 항목 자체가 공고 하나다."""
+
+    def posting_count(self) -> int:
+        """이 출처에서 나오는 공고 수."""
+        return len(self.positions) or 1
+
+    def entry_labels(self) -> tuple[EntryLabel, ...]:
+        """이 출처가 만드는 공고들의 대상군 표기. 판정하지 못한 값은 빼고 돌려준다."""
+        if self.positions:
+            return tuple(p.entry_label for p in self.positions if p.entry_label is not None)
+        return (self.entry_label,) if self.entry_label is not None else ()
 
     def to_target(self) -> CollectionTarget:
         return CollectionTarget(
@@ -109,14 +139,17 @@ class SourceManifest(BaseModel):
     def by_cluster(self, cluster_id: str) -> tuple[ManifestEntry, ...]:
         return tuple(e for e in self.entries if e.cluster_id == cluster_id)
 
+    def posting_count(self) -> int:
+        """매니페스트가 만드는 공고 수. 출처 수와 다르다."""
+        return sum(e.posting_count() for e in self.entries)
+
     def segment_counts(self) -> dict[str, int]:
-        """대상군 분포. 기준선을 낼 수 있는지 판단하는 값이다."""
+        """대상군 분포. 기준선을 낼 수 있는지 판단하는 값이며 공고 단위로 센다."""
         from careersignal.domain.segment import segment_of
 
         counts: dict[str, int] = {}
         for entry in self.entries:
-            if entry.entry_label is None:
-                continue
-            key = str(segment_of(entry.entry_label))
-            counts[key] = counts.get(key, 0) + 1
+            for label in entry.entry_labels():
+                key = str(segment_of(label))
+                counts[key] = counts.get(key, 0) + 1
         return counts
