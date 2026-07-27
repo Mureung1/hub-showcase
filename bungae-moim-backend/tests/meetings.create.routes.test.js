@@ -203,4 +203,31 @@ describe('POST /api/meetings', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('regionSido가 목록에 없으면 400 VALIDATION_ERROR', async () => {
+    const agent = await loginAgent();
+    const res = await agent
+      .post('/api/meetings')
+      .send({ ...validFlashBody, regionSido: '없는도', regionSigungu: '없는구' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('regionSigungu가 해당 시도 하위가 아니면 400 VALIDATION_ERROR', async () => {
+    const agent = await loginAgent();
+    // 서울특별시 + 수원시(경기 소속) 조합은 무효
+    const res = await agent
+      .post('/api/meetings')
+      .send({ ...validFlashBody, regionSido: '서울특별시', regionSigungu: '수원시' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('세종특별자치시는 시군구=세종특별자치시로 통과한다', async () => {
+    const agent = await loginAgent();
+    const res = await agent
+      .post('/api/meetings')
+      .send({ ...validSmallBody, regionSido: '세종특별자치시', regionSigungu: '세종특별자치시' });
+    expect(res.status).toBe(201);
+  });
 });

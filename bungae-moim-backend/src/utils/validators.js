@@ -1,4 +1,5 @@
 const ApiError = require('./apiError');
+const { isValidRegion } = require('./regions');
 
 // 카카오 오픈채팅 링크 패턴만 검증한다 (기획서 11번 — 그 이상 유효성은 확인하지 않음).
 const OPEN_CHAT_URL_PATTERN = /^https?:\/\/open\.kakao\.com\//;
@@ -51,6 +52,9 @@ function validateCreateMeeting(body = {}) {
   }
   const regionSido = requireString(body.regionSido, 'regionSido');
   const regionSigungu = requireString(body.regionSigungu, 'regionSigungu');
+  if (!isValidRegion(regionSido, regionSigungu)) {
+    throw new ApiError('VALIDATION_ERROR', 'regionSido/regionSigungu가 유효한 지역이 아닙니다');
+  }
   const openChatUrl = requireString(body.openChatUrl, 'openChatUrl');
 
   if (!OPEN_CHAT_URL_PATTERN.test(openChatUrl)) {
