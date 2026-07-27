@@ -39,6 +39,7 @@ erDiagram
         int capacity
         boolean adult_only
         text open_chat_url
+        text apply_question
         varchar status
         timestamp created_at
     }
@@ -49,6 +50,7 @@ erDiagram
         varchar status
         timestamp applied_at
         timestamp responded_at
+        text apply_answer
     }
     REPORTS {
         bigint id PK
@@ -102,6 +104,7 @@ erDiagram
 | capacity | int | NULL 허용 | 번개모임은 필수, 소모임은 NULL(무제한) — 기획서 6.1 |
 | adult_only | boolean | NOT NULL, DEFAULT false | "성인만 참여 가능" 옵션 |
 | open_chat_url | text | NOT NULL | 등록 시 `open.kakao.com` 패턴만 형식 검증 (기획서 11번) |
+| apply_question | text | NULL 허용 | 신청 시 한마디(B) 가입 질문. **소모임만** 의미가 있고 번개모임은 항상 NULL. 길이 상한(200자)은 앱(`validators.js`)에서만 강제 |
 | status | varchar(15) | NOT NULL, DEFAULT 'recruiting' | `recruiting`(모집중) \| `closed`(마감) \| `finished`(종료) \| `cancelled`(취소) |
 | created_at | timestamp | NOT NULL, DEFAULT now() | |
 
@@ -122,6 +125,7 @@ erDiagram
 | status | varchar(15) | NOT NULL | `confirmed`(확정) \| `pending`(대기) \| `approved`(승인) \| `rejected`(거절) \| `cancelled`(취소) |
 | applied_at | timestamp | NOT NULL, DEFAULT now() | |
 | responded_at | timestamp | NULL 허용 | 모임장이 승인/거절한 시각 |
+| apply_answer | text | NULL 허용 | 신청 시 한마디(B) 답변. `meetings.apply_question`이 설정된 모임에서만 값이 들어가며, 질문이 없으면 NULL. 길이 상한(500자)은 앱에서만 강제 |
 
 - **UNIQUE (meeting_id, user_id)** — 같은 모임에 중복 신청 방지. (서로 다른 모임에 동시 신청하는 건 기획서 11번 "중복 신청" 결정대로 허용하므로 이 제약에 안 걸림)
 - 번개모임 신청: `status = 'confirmed'`로 즉시 insert (기획서 5번 참여 방식)
