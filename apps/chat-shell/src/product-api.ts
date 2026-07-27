@@ -12,7 +12,9 @@ import {
   decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
   decodeProductOperationFrame,
+  decodeProductReviewFrame,
   decodeProductReviewRequest,
+  decodeProductReviewResult,
   decodeProductReviewResponse,
   decodeProductWorkspaceActivationResponse,
   decodeProductWorkspaceResponse,
@@ -28,8 +30,10 @@ import {
   type ProductMaterialPreview,
   type ProductMaterialRefreshResponse,
   type ProductOperationFrame,
+  type ProductReviewFrame,
   type ProductRawMaterial,
   type ProductReviewRequest,
+  type ProductReviewResult,
   type ProductReviewResponse,
   type ProductWorkspaceActivationResponse,
   type ReadyProductWorkspace,
@@ -53,9 +57,11 @@ export type {
   ProductMaterialRefreshResponse,
   ProductMaterialSelection,
   ProductOperationFrame,
+  ProductReviewFrame,
   ProductQuestion,
   ProductRawMaterial,
   ProductReviewRequest,
+  ProductReviewResult,
   ProductReviewResponse,
   ProductSettledHistory,
   ProductSettledModelingRun,
@@ -66,6 +72,8 @@ export type {
   ProductWorkspaceActivationResponse,
   ReadyProductWorkspace,
 } from '@ay-ple/product-contract'
+
+export type ProductStreamFrame = ProductOperationFrame | ProductReviewFrame
 
 const maxProductNdjsonLineBytes = 1024 * 1024
 const productSettlementPollMs = 100
@@ -181,7 +189,7 @@ export async function fetchProductMaterialPreview(
 
 export async function streamFirstAssignment(
   input: FirstAssignmentRequest,
-  onFrame: (frame: ProductOperationFrame) => void,
+  onFrame: (frame: ProductStreamFrame) => void,
   signal?: AbortSignal,
 ): Promise<void> {
   await streamProductOperation(
@@ -194,7 +202,7 @@ export async function streamFirstAssignment(
 
 export async function streamFirstAssignmentRetry(
   input: FirstAssignmentRetryRequest,
-  onFrame: (frame: ProductOperationFrame) => void,
+  onFrame: (frame: ProductStreamFrame) => void,
   signal?: AbortSignal,
 ): Promise<void> {
   await streamProductOperation(
@@ -207,7 +215,7 @@ export async function streamFirstAssignmentRetry(
 
 export async function streamProductChat(
   input: ProductChatRequest,
-  onFrame: (frame: ProductOperationFrame) => void,
+  onFrame: (frame: ProductStreamFrame) => void,
   signal?: AbortSignal,
 ): Promise<void> {
   await streamProductOperation(
@@ -231,6 +239,19 @@ export async function submitProductReview(
     signal,
   )
   return parseJsonResponse(response, decodeProductReviewResponse)
+}
+
+export async function submitProductSemanticReview(
+  interactionId: string,
+  result: ProductReviewResult,
+  signal?: AbortSignal,
+): Promise<void> {
+  requireInteractionId(interactionId)
+  await postNoContentResponse(
+    `/api/product/reviews/${encodeURIComponent(interactionId)}`,
+    decodeShared(decodeProductReviewResult, result),
+    signal,
+  )
 }
 
 export async function answerProductInteraction(
@@ -275,7 +296,7 @@ export async function interruptProductOperation(
 
 export async function consumeProductOperationResponse(
   response: Response,
-  onFrame: (frame: ProductOperationFrame) => void,
+  onFrame: (frame: ProductStreamFrame) => void,
 ): Promise<void> {
   if (!response.ok) throw await toProductApiError(response)
   const contentType = response.headers.get('content-type')?.split(';', 1)[0]
@@ -289,7 +310,7 @@ export async function consumeProductOperationResponse(
 
 export async function* decodeProductOperationNdjson(
   stream: ReadableStream<Uint8Array>,
-): AsyncGenerator<ProductOperationFrame> {
+): AsyncGenerator<ProductStreamFrame> {
   const reader = stream.getReader()
   const decoder = new TextDecoder('utf-8', { fatal: true })
   let pending = ''
@@ -336,7 +357,7 @@ export async function* decodeProductOperationNdjson(
 async function streamProductOperation(
   url: string,
   body: FirstAssignmentRequest | ProductChatRequest,
-  onFrame: (frame: ProductOperationFrame) => void,
+  onFrame: (frame: ProductStreamFrame) => void,
   signal?: AbortSignal,
 ): Promise<void> {
   const response = await fetch(url, {
@@ -380,11 +401,28 @@ async function postEmptyResponse(
   }
 }
 
-function decodeProductLine(line: string): ProductOperationFrame {
+async function postNoContentResponse(
+  url: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await postJson(url, body, signal)
+  if (response.status !== 204 || (await response.text()) !== '') {
+    throw invalidResponse()
+  }
+}
+
+function decodeProductLine(line: string): ProductStreamFrame {
   requireBoundedProductLine(line)
   if (line.length === 0) throw new ProductStreamError()
   try {
-    return decodeProductOperationFrame(JSON.parse(line) as unknown)
+    const value = JSON.parse(line) as unknown
+    try {
+      return decodeProductReviewFrame(value)
+    } catch (error) {
+      if (!(error instanceof ProductContractError)) throw error
+      return decodeProductOperationFrame(value)
+    }
   } catch {
     throw new ProductStreamError()
   }

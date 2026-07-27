@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   activateProductWorkspace,
+  decodeProductOperationNdjson,
   fetchProductBootstrap,
   fetchProductCodexSettings,
   fetchProductMaterialPreview,
@@ -12,8 +13,85 @@ import {
   refreshProductMaterials,
   streamFirstAssignmentRetry,
   streamProductChat,
+  submitProductSemanticReview,
   submitProductReview,
 } from './product-api.js'
+
+test('decodes semantic Review frames on the current Product Turn NDJSON channel', async () => {
+  const operationId = `operation_${'a'.repeat(32)}`
+  const interactionId = `interaction_${'b'.repeat(32)}`
+  const frames = [
+    {
+      type: 'review.requested',
+      operationId,
+      interactionId,
+      review: {
+        summary: '마감 정보를 정리합니다.',
+        question: '이 방향으로 변경할까요?',
+        changes: [
+          {
+            label: '마감',
+            description: '강의계획서의 마감을 반영합니다.',
+            before: '미정',
+            after: '8월 3일',
+          },
+        ],
+      },
+    },
+    {
+      type: 'review.resolved',
+      operationId,
+      interactionId,
+      result: { outcome: 'accept' },
+    },
+  ] as const
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(
+        new TextEncoder().encode(
+          `${frames.map((frame) => JSON.stringify(frame)).join('\n')}\n`,
+        ),
+      )
+      controller.close()
+    },
+  })
+
+  const decoded = []
+  for await (const frame of decodeProductOperationNdjson(stream)) {
+    decoded.push(frame)
+  }
+  assert.deepEqual(decoded, frames)
+})
+
+test('submits one exact semantic Review result as a bodyless 204', async (t) => {
+  const interactionId = `interaction_${'c'.repeat(32)}`
+  const requests: Array<{ readonly url: string; readonly body: unknown }> = []
+  t.mock.method(globalThis, 'fetch', async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    requests.push({
+      url: String(input),
+      body: JSON.parse(String(init?.body)) as unknown,
+    })
+    return new Response(null, { status: 204 })
+  })
+
+  await submitProductSemanticReview(interactionId, {
+    outcome: 'revise',
+    feedback: '마감 근거를 한 번 더 확인해 주세요.',
+  })
+
+  assert.deepEqual(requests, [
+    {
+      url: `/api/product/reviews/${interactionId}`,
+      body: {
+        outcome: 'revise',
+        feedback: '마감 근거를 한 번 더 확인해 주세요.',
+      },
+    },
+  ])
+})
 
 test('decodes a ready product snapshot without persistence metadata', async (t) => {
   const workspace = {

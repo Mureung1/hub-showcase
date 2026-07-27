@@ -15,6 +15,7 @@ import {
   streamFirstAssignment,
   streamFirstAssignmentRetry,
   streamProductChat,
+  submitProductSemanticReview,
   submitProductReview,
   type ProductAccountReadiness,
   type ProductBootstrap,
@@ -24,6 +25,7 @@ import {
   type ProductMaterialSelection,
   type ProductRawMaterial,
   type ProductReviewRequest,
+  type ProductReviewResult,
   type ProductReviewResponse,
   type ProductSettledModelingRun,
   type ReadyProductWorkspace,
@@ -31,6 +33,7 @@ import {
 import {
   canRespondToProductClarification,
   canRespondToProductReview,
+  canRespondToProductSemanticReview,
   createInitialProductChatState,
   isProductOperationActive,
   reduceProductChatState,
@@ -38,6 +41,7 @@ import {
   type ProductChatFailure,
   type ProductClarificationBinding,
   type ProductReviewBinding,
+  type ProductSemanticReviewBinding,
 } from './product-chat-model.js'
 
 export function useProductChat(options: {
@@ -269,6 +273,64 @@ export function useProductChat(options: {
       decisionKey: review.decisionKey,
       decision: 'reject',
     })
+  }
+
+  async function acceptSemanticReview(review: ProductSemanticReviewBinding) {
+    await respondToSemanticReview(review, { outcome: 'accept' })
+  }
+
+  async function reviseSemanticReview(
+    review: ProductSemanticReviewBinding,
+    feedback: string,
+  ) {
+    await respondToSemanticReview(review, {
+      outcome: 'revise',
+      feedback: feedback.trim(),
+    })
+  }
+
+  async function rejectSemanticReview(
+    review: ProductSemanticReviewBinding,
+    feedback: string,
+  ) {
+    const trimmed = feedback.trim()
+    await respondToSemanticReview(review, {
+      outcome: 'reject',
+      ...(trimmed.length === 0 ? {} : { feedback: trimmed }),
+    })
+  }
+
+  async function respondToSemanticReview(
+    review: ProductSemanticReviewBinding,
+    result: ProductReviewResult,
+  ) {
+    if (
+      responsePendingRef.current ||
+      !canRespondToProductSemanticReview(stateRef.current, review)
+    ) {
+      return
+    }
+    transition({ type: 'operation.control-cleared' })
+    const pending = {
+      type: 'semantic-review',
+      interactionId: review.interactionId,
+      decision: result.outcome,
+    } as const satisfies ProductResponsePending
+    responsePendingRef.current = pending
+    setResponsePending(pending)
+    try {
+      await submitProductSemanticReview(review.interactionId, result)
+    } catch (error) {
+      transition({
+        type: 'operation.control-failed',
+        failure: safeFailure(
+          error,
+          'Semantic Review 응답을 전달하지 못했습니다. 현재 card를 다시 확인해 주세요.',
+        ),
+      })
+    } finally {
+      releaseResponsePending(pending)
+    }
   }
 
   async function respondToReview(
@@ -610,6 +672,9 @@ export function useProductChat(options: {
     acceptReview,
     reviseReview,
     rejectReview,
+    acceptSemanticReview,
+    reviseSemanticReview,
+    rejectSemanticReview,
     answerClarification,
     cancelClarification,
     interrupt,
@@ -667,6 +732,11 @@ type ProductResponsePending =
       readonly type: 'review'
       readonly interactionId: string
       readonly decision: ProductReviewRequest['decision']
+    }
+  | {
+      readonly type: 'semantic-review'
+      readonly interactionId: string
+      readonly decision: ProductReviewResult['outcome']
     }
   | { readonly type: 'clarification'; readonly interactionId: string }
 

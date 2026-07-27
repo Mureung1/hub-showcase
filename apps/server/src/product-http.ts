@@ -15,6 +15,7 @@ import {
   decodeProductChatRequest,
   decodeProductInteractionAnswerRequest,
   decodeProductReviewRequest,
+  decodeProductReviewResult,
   isProductDigest,
   isProductInteractionId,
   isProductMaterialId,
@@ -47,6 +48,7 @@ import {
   type ProductOperationSink,
 } from './product-operation-coordinator.js'
 import { writeNdjsonLine } from './http-ndjson.js'
+import type { InlineSemanticReviewVertical } from './inline-semantic-review-vertical.js'
 import { isLoopbackAddress } from './codex-chat-config.js'
 import {
   SemesterWorkspaceError,
@@ -156,6 +158,7 @@ export function createProductRouter(
   writeDrainMs = defaultProductWriteDrainMs,
   readAccountReadiness?: ProductAccountReadinessSource,
   readCodexSettings?: ProductCodexSettingsSource,
+  inlineSemanticReview?: InlineSemanticReviewVertical,
 ): Router {
   const router = express.Router()
 
@@ -332,7 +335,10 @@ export function createProductRouter(
       response,
       writeDrainMs,
       (options) => productOperations.startAssignment(input, options),
-      (operationId) => productOperations.disconnect(operationId),
+      (operationId) => {
+        void inlineSemanticReview?.browserDisconnected()
+        productOperations.disconnect(operationId)
+      },
     ).catch((error: unknown) => sendProductOperationError(response, error))
   })
 
@@ -351,7 +357,10 @@ export function createProductRouter(
       response,
       writeDrainMs,
       (options) => productOperations.startAssignment(input, options),
-      (operationId) => productOperations.disconnect(operationId),
+      (operationId) => {
+        void inlineSemanticReview?.browserDisconnected()
+        productOperations.disconnect(operationId)
+      },
     ).catch((error: unknown) => sendProductOperationError(response, error))
   })
 
@@ -370,11 +379,56 @@ export function createProductRouter(
       response,
       writeDrainMs,
       (options) => productOperations.sendChat(input, options),
-      (operationId) => productOperations.disconnect(operationId),
+      (operationId) => {
+        void inlineSemanticReview?.browserDisconnected()
+        productOperations.disconnect(operationId)
+      },
     ).catch((error: unknown) => sendProductOperationError(response, error))
   })
 
   router.post('/reviews/:interactionId', async (request, response) => {
+    const semanticResult = tryDecode(
+      decodeProductReviewResult,
+      request.body,
+    )
+    if (semanticResult) {
+      if (
+        !inlineSemanticReview ||
+        !isProductInteractionId(request.params.interactionId)
+      ) {
+        sendError(response, 400, 'invalid_request', safeInvalidRequest)
+        return
+      }
+      try {
+        await inlineSemanticReview.settle(
+          request.params.interactionId,
+          semanticResult,
+        )
+        response.status(204).end()
+      } catch {
+        sendError(
+          response,
+          409,
+          'review_invalid',
+          '검토 요청이 더 이상 활성 상태가 아닙니다.',
+        )
+      }
+      return
+    }
+    if (
+      inlineSemanticReview &&
+      typeof request.body === 'object' &&
+      request.body !== null &&
+      Object.hasOwn(request.body, 'outcome')
+    ) {
+      sendError(
+        response,
+        409,
+        'review_invalid',
+        '검토 응답을 확인하지 못했습니다.',
+      )
+      return
+    }
     if (!productOperations) {
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
@@ -506,7 +560,11 @@ export function createProductRouter(
         return
       }
       try {
-        await productOperations.interrupt(request.params.operationId)
+        const interruptedPendingReview =
+          (await inlineSemanticReview?.turnInterrupted()) ?? false
+        if (!interruptedPendingReview) {
+          await productOperations.interrupt(request.params.operationId)
+        }
         response.status(202).end()
       } catch (error) {
         sendProductOperationError(response, error)

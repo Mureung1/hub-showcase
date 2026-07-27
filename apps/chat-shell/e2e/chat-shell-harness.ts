@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { once } from 'node:events'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import {
@@ -56,6 +57,7 @@ export type ChatScenario =
   | 'fail-closed-oracle'
   | 'reload-before-interrupt-settlement'
   | 'post-review-clarification'
+  | 'semantic-review'
 
 type ProductRuntimeScenario = Exclude<ChatScenario, 'unavailable'>
 
@@ -118,6 +120,11 @@ export type ChatShellHarness = {
   releaseInterruptResponse(): void
   releaseInterruptSettlement(): void
   releaseLateInteraction(): void
+  releaseSemanticTurn(): void
+  requestSemanticReview(summary?: string): Promise<{
+    readonly status: number
+    readonly body: unknown
+  }>
   restartServer(): Promise<void>
   stopServer(): Promise<void>
   close(): Promise<void>
@@ -272,6 +279,9 @@ export async function startChatShellHarness(
   const requests: string[] = []
   const assignmentStreams = new Set<ServerResponse>()
   const runtimeGenerations: ProductE2eRuntime[] = []
+  let interactionCredentials:
+    | { readonly token: string; readonly binding: string }
+    | undefined
   const ownsSemesterWorkspace = options.semesterWorkspace === undefined
 
   try {
@@ -325,6 +335,19 @@ export async function startChatShellHarness(
             createRuntime: async () => nextRuntime!,
           },
           semesterWorkspace: semesterWorkspaceBootstrap,
+          ...(scenario === 'semantic-review'
+            ? {
+                internalInteractionTarget: {
+                  workspaceRoot: activeSemesterWorkspace.workspaceRoot,
+                  onReady(credentials: {
+                    readonly token: string
+                    readonly binding: string
+                  }) {
+                    interactionCredentials = credentials
+                  },
+                },
+              }
+            : {}),
         })
       }
 
@@ -487,6 +510,84 @@ export async function startChatShellHarness(
         if (!runtime) throw new Error('E2E product runtime is unavailable')
         runtime.releaseLateInteraction()
       },
+      releaseSemanticTurn() {
+        if (!runtime) throw new Error('E2E product runtime is unavailable')
+        runtime.releaseSemanticTurn()
+      },
+      async requestSemanticReview(
+        summary = '마감 정보를 정리합니다.',
+      ): Promise<{ readonly status: number; readonly body: unknown }> {
+        if (!interactionCredentials) {
+          throw new Error('Interaction target credentials are unavailable')
+        }
+        const headers = {
+          'content-type': 'application/json',
+          authorization: `Bearer ${interactionCredentials.token}`,
+          'x-ay-ple-runtime-binding': interactionCredentials.binding,
+        }
+        const evidenceBytes = await readFile(
+          path.join(
+            activeSemesterWorkspace.workspaceRoot,
+            'problem-solving-syllabus.txt',
+          ),
+        )
+        const evidenceDigest = createHash('sha256')
+          .update(evidenceBytes)
+          .digest('hex')
+        const handshake = await fetch(
+          `${apiUrl}/api/_private/interaction-mcp/`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              protocolVersion: 1,
+              kind: 'handshake',
+              serverName: 'ay_ple_interaction',
+              capabilities: ['propose_state_patch'],
+            }),
+          },
+        )
+        assert.equal(handshake.status, 200)
+        const response = await fetch(
+          `${apiUrl}/api/_private/interaction-mcp/`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              protocolVersion: 1,
+              kind: 'capability_call',
+              capability: 'propose_state_patch',
+              request: {
+                summary,
+                question: '이 변경 방향을 반영할까요?',
+                changes: [
+                  {
+                    label: '마감',
+                    description: '강의계획서의 마감을 반영합니다.',
+                    before: '미정',
+                    after: '2026-08-03 23:59',
+                    evidence: [
+                      {
+                        relativePath: 'problem-solving-syllabus.txt',
+                        contentDigest: evidenceDigest,
+                        locator: {
+                          type: 'text_quote',
+                          quote: 'LMS 과제함 업로드',
+                          occurrence: 1,
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            }),
+          },
+        )
+        return {
+          status: response.status,
+          body: await response.json(),
+        }
+      },
       releaseReviewContinuation() {
         if (!runtime) throw new Error('E2E product runtime is unavailable')
         runtime.releaseReviewContinuation()
@@ -599,6 +700,7 @@ class ProductE2eRuntime implements CodexWorkspaceRuntime {
   private reviewContinuationPaused = false
   private recoveryConflictInjected = false
   private turnOrdinal = 0
+  private readonly semanticTurnReleased = deferred<void>()
 
   constructor(
     private readonly readiness: CodexAccountReadiness,
@@ -749,6 +851,7 @@ class ProductE2eRuntime implements CodexWorkspaceRuntime {
     this.interruptSettlementReleased.resolve()
     this.lateInteractionReleased.resolve()
     this.reviewContinuationReleased.resolve()
+    this.semanticTurnReleased.resolve()
     for (const pending of this.pendingInteractions.values()) {
       pending.settlement.resolve({ resolution: 'cancelled' })
     }
@@ -774,6 +877,10 @@ class ProductE2eRuntime implements CodexWorkspaceRuntime {
 
   releaseInterruptSettlement(): void {
     this.interruptSettlementReleased.resolve()
+  }
+
+  releaseSemanticTurn(): void {
+    this.semanticTurnReleased.resolve()
   }
 
   private trackTurn(
@@ -1058,6 +1165,8 @@ class ProductE2eRuntime implements CodexWorkspaceRuntime {
     const wasInterrupted = this.wasInterrupted.bind(this)
     const acknowledgedInterruptResponseLoss =
       this.scenario === 'acknowledged-interrupt-response-loss'
+    const semanticReview = this.scenario === 'semantic-review'
+    const semanticTurnReleased = this.semanticTurnReleased.promise
     const interruptObserved = this.interruptObserved.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
     const interactionId = `interaction-general-${this.turnOrdinal}`
@@ -1071,6 +1180,37 @@ class ProductE2eRuntime implements CodexWorkspaceRuntime {
           turnId,
           itemId: `plan-private-${turnId}`,
           text: '자료를 살펴볼 순서를 함께 정합니다.',
+        }
+        if (semanticReview) {
+          await semanticTurnReleased
+          if (wasInterrupted(turnId)) {
+            yield {
+              type: 'turn.interrupt_acknowledged',
+              threadId: input.threadId,
+              turnId,
+            }
+            yield {
+              type: 'turn.completed',
+              threadId: input.threadId,
+              turnId,
+              status: 'interrupted',
+            }
+            return
+          }
+          yield {
+            type: 'agent_message.completed',
+            threadId: input.threadId,
+            turnId,
+            itemId: `agent-private-${turnId}`,
+            text: 'Semantic Review 결과를 바탕으로 정리했습니다.',
+          }
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId,
+            status: 'completed',
+          }
+          return
         }
         if (acknowledgedInterruptResponseLoss) {
           await interruptObserved

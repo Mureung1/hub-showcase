@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -32,9 +33,11 @@ import type {
 import {
   canRespondToProductClarification,
   canRespondToProductReview,
+  canRespondToProductSemanticReview,
   type ProductChatState,
   type ProductClarificationBinding,
   type ProductReviewBinding,
+  type ProductSemanticReviewBinding,
   type ProductTranscriptEntry,
 } from './product-chat-model.js'
 import type { ProductEvidenceFocus } from './use-source-workbench.js'
@@ -137,6 +140,9 @@ export function ProductChatDock({
                 key={`${entry.kind}:${index}`}
                 entry={entry}
                 activeReview={controller.state.activeOperation?.review}
+                activeSemanticReview={
+                  controller.state.activeOperation?.semanticReview
+                }
                 activeInteraction={
                   controller.state.activeOperation?.interaction
                 }
@@ -148,9 +154,18 @@ export function ProductChatDock({
                   canRespondToCurrentReview(controller.state) &&
                   controller.responsePending === undefined
                 }
+                semanticReviewResponseEnabled={
+                  canRespondToCurrentSemanticReview(controller.state) &&
+                  controller.responsePending === undefined
+                }
                 responsePendingId={controller.responsePending?.interactionId}
                 reviewPendingDecision={
                   controller.responsePending?.type === 'review'
+                    ? controller.responsePending.decision
+                    : undefined
+                }
+                semanticReviewPendingDecision={
+                  controller.responsePending?.type === 'semantic-review'
                     ? controller.responsePending.decision
                     : undefined
                 }
@@ -158,6 +173,9 @@ export function ProductChatDock({
                 onAccept={controller.acceptReview}
                 onRevise={controller.reviseReview}
                 onReject={controller.rejectReview}
+                onAcceptSemantic={controller.acceptSemanticReview}
+                onReviseSemantic={controller.reviseSemanticReview}
+                onRejectSemantic={controller.rejectSemanticReview}
                 onAnswer={controller.answerClarification}
                 onCancel={controller.cancelClarification}
                 onNavigateEvidence={onNavigateEvidence}
@@ -335,6 +353,16 @@ function canRespondToCurrentClarification(state: ProductChatState): boolean {
 function canRespondToCurrentReview(state: ProductChatState): boolean {
   const review = state.activeOperation?.review
   return review !== undefined && canRespondToProductReview(state, review)
+}
+
+function canRespondToCurrentSemanticReview(
+  state: ProductChatState,
+): boolean {
+  const review = state.activeOperation?.semanticReview
+  return (
+    review !== undefined &&
+    canRespondToProductSemanticReview(state, review)
+  )
 }
 
 function ProductPhasePill({
@@ -543,26 +571,39 @@ function SettledAssignments({
 function ProductTranscriptRow({
   entry,
   activeReview,
+  activeSemanticReview,
   activeInteraction,
   clarificationResponseEnabled,
   reviewResponseEnabled,
+  semanticReviewResponseEnabled,
   responsePendingId,
   reviewPendingDecision,
+  semanticReviewPendingDecision,
   materials,
   onAccept,
   onRevise,
   onReject,
+  onAcceptSemantic,
+  onReviseSemantic,
+  onRejectSemantic,
   onAnswer,
   onCancel,
   onNavigateEvidence,
 }: {
   readonly entry: ProductTranscriptEntry
   readonly activeReview: ProductReviewBinding | undefined
+  readonly activeSemanticReview: ProductSemanticReviewBinding | undefined
   readonly activeInteraction: ProductClarificationBinding | undefined
   readonly clarificationResponseEnabled: boolean
   readonly reviewResponseEnabled: boolean
+  readonly semanticReviewResponseEnabled: boolean
   readonly responsePendingId: string | undefined
   readonly reviewPendingDecision:
+    | 'accept'
+    | 'revise'
+    | 'reject'
+    | undefined
+  readonly semanticReviewPendingDecision:
     | 'accept'
     | 'revise'
     | 'reject'
@@ -574,6 +615,17 @@ function ProductTranscriptRow({
     feedback: string,
   ) => Promise<void>
   readonly onReject: (review: ProductReviewBinding) => Promise<void>
+  readonly onAcceptSemantic: (
+    review: ProductSemanticReviewBinding,
+  ) => Promise<void>
+  readonly onReviseSemantic: (
+    review: ProductSemanticReviewBinding,
+    feedback: string,
+  ) => Promise<void>
+  readonly onRejectSemantic: (
+    review: ProductSemanticReviewBinding,
+    feedback: string,
+  ) => Promise<void>
   readonly onAnswer: ProductChatController['answerClarification']
   readonly onCancel: ProductChatController['cancelClarification']
   readonly onNavigateEvidence: (focus: ProductEvidenceFocus) => void
@@ -685,6 +737,29 @@ function ProductTranscriptRow({
       </li>
     )
   }
+  if (entry.kind === 'semantic-review') {
+    const active =
+      activeSemanticReview?.operationId === entry.operationId &&
+      activeSemanticReview.interactionId === entry.interactionId
+    return (
+      <li>
+        <SemanticReviewCard
+          review={entry}
+          active={active}
+          responseEnabled={semanticReviewResponseEnabled}
+          pending={responsePendingId === entry.interactionId}
+          pendingDecision={
+            responsePendingId === entry.interactionId
+              ? semanticReviewPendingDecision
+              : undefined
+          }
+          onAccept={onAcceptSemantic}
+          onRevise={onReviseSemantic}
+          onReject={onRejectSemantic}
+        />
+      </li>
+    )
+  }
   if (entry.kind === 'notice') {
     return (
       <li className="product-activity-card is-notice">
@@ -791,6 +866,243 @@ const reviewPresentationByState = {
     } | null
   }
 >
+
+function SemanticReviewCard({
+  review,
+  active,
+  responseEnabled,
+  pending,
+  pendingDecision,
+  onAccept,
+  onRevise,
+  onReject,
+}: {
+  readonly review: Extract<
+    ProductTranscriptEntry,
+    { readonly kind: 'semantic-review' }
+  >
+  readonly active: boolean
+  readonly responseEnabled: boolean
+  readonly pending: boolean
+  readonly pendingDecision: 'accept' | 'revise' | 'reject' | undefined
+  readonly onAccept: (review: ProductSemanticReviewBinding) => Promise<void>
+  readonly onRevise: (
+    review: ProductSemanticReviewBinding,
+    feedback: string,
+  ) => Promise<void>
+  readonly onReject: (
+    review: ProductSemanticReviewBinding,
+    feedback: string,
+  ) => Promise<void>
+}) {
+  const [feedback, setFeedback] = useState('')
+  const acceptButton = useRef<HTMLButtonElement>(null)
+  const feedbackBytes = utf8Bytes(feedback)
+  const feedbackValid =
+    feedback.trim().length > 0 &&
+    feedbackBytes <= PRODUCT_REVIEW_FEEDBACK_MAX_BYTES
+  const status = semanticReviewStatus(review)
+  useEffect(() => {
+    if (active && responseEnabled) acceptButton.current?.focus()
+  }, [active, responseEnabled])
+
+  return (
+    <section
+      className="review-card semantic-review-card"
+      aria-label={status.label}
+    >
+      <header>
+        <span className={`state-badge ${status.badgeClass}`}>
+          {status.label}
+        </span>
+        <strong>Semantic Review</strong>
+      </header>
+      <p>{review.review.summary}</p>
+      <strong className="semantic-review-question">
+        {review.review.question}
+      </strong>
+      <ol className="semantic-change-list">
+        {review.review.changes.map((change, index) => (
+          <li key={`${change.label}:${index}`}>
+            <header>
+              <strong>{change.label}</strong>
+              <span>{change.description}</span>
+            </header>
+            <dl className="semantic-before-after">
+              {change.before === undefined ? null : (
+                <>
+                  <dt>변경 전</dt>
+                  <dd>{change.before}</dd>
+                </>
+              )}
+              {change.after === undefined ? null : (
+                <>
+                  <dt>변경 후</dt>
+                  <dd>{change.after}</dd>
+                </>
+              )}
+            </dl>
+            {change.evidence?.map((evidence) => (
+              <figure
+                className="semantic-evidence"
+                key={`${evidence.relativePath}:${evidence.occurrence}:${evidence.contentDigest}`}
+              >
+                <figcaption>
+                  {evidence.relativePath} · occurrence {evidence.occurrence}
+                </figcaption>
+                <blockquote>
+                  {evidence.contextBefore}
+                  <mark>{evidence.quote}</mark>
+                  {evidence.contextAfter}
+                </blockquote>
+              </figure>
+            ))}
+          </li>
+        ))}
+      </ol>
+      {status.resolution ? (
+        <div className="review-resolution">
+          {status.icon === 'x' ? <X size={15} /> : <Check size={15} />}
+          <span>
+            {status.resolution}
+            {review.result && 'feedback' in review.result
+              ? ` ${review.result.feedback}`
+              : ''}
+          </span>
+        </div>
+      ) : active ? (
+        <div className="review-controls">
+          <label
+            className="review-feedback"
+            htmlFor={`semantic-review-feedback-${review.interactionId}`}
+          >
+            수정 요청 또는 거절 의견
+            <textarea
+              id={`semantic-review-feedback-${review.interactionId}`}
+              value={feedback}
+              rows={3}
+              disabled={pending || !responseEnabled}
+              aria-describedby={`semantic-review-feedback-limit-${review.interactionId}`}
+              onChange={(event) => setFeedback(event.target.value)}
+            />
+          </label>
+          <span
+            id={`semantic-review-feedback-limit-${review.interactionId}`}
+            className={`review-feedback-limit ${
+              feedbackBytes > PRODUCT_REVIEW_FEEDBACK_MAX_BYTES ? 'is-over' : ''
+            }`}
+          >
+            수정 요청에는 내용이 필요하며 최대{' '}
+            {PRODUCT_REVIEW_FEEDBACK_MAX_BYTES.toLocaleString()} bytes입니다.
+          </span>
+          <div className="review-actions">
+            <button
+              ref={acceptButton}
+              className="accept-review-button"
+              type="button"
+              disabled={pending || !responseEnabled}
+              onClick={() => void onAccept(review)}
+            >
+              {pendingDecision === 'accept' ? (
+                <Clock3 className="spinning-icon" size={15} />
+              ) : (
+                <Check size={15} />
+              )}
+              {pendingDecision === 'accept' ? '응답 전달 중' : '수락'}
+            </button>
+            <button
+              className="revise-review-button"
+              type="button"
+              disabled={pending || !responseEnabled || !feedbackValid}
+              onClick={() => void onRevise(review, feedback)}
+            >
+              {pendingDecision === 'revise' ? (
+                <Clock3 className="spinning-icon" size={15} />
+              ) : (
+                <Pencil size={15} />
+              )}
+              {pendingDecision === 'revise' ? '응답 전달 중' : '수정 요청'}
+            </button>
+            <button
+              className="reject-review-button"
+              type="button"
+              disabled={
+                pending ||
+                !responseEnabled ||
+                feedbackBytes > PRODUCT_REVIEW_FEEDBACK_MAX_BYTES
+              }
+              onClick={() => void onReject(review, feedback)}
+            >
+              {pendingDecision === 'reject' ? (
+                <Clock3 className="spinning-icon" size={15} />
+              ) : (
+                <X size={15} />
+              )}
+              {pendingDecision === 'reject' ? '응답 전달 중' : '거절'}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function semanticReviewStatus(
+  review: Extract<
+    ProductTranscriptEntry,
+    { readonly kind: 'semantic-review' }
+  >,
+): {
+  readonly label: string
+  readonly badgeClass: 'is-pending' | 'is-applied' | 'is-revised' | 'is-rejected'
+  readonly icon: 'check' | 'x'
+  readonly resolution: string | null
+} {
+  if (review.failureReason) {
+    const reason = {
+      turn_interrupted: '작업 중단으로 검토가 종료되었습니다.',
+      timed_out: '응답 시간이 지나 검토가 종료되었습니다.',
+      runtime_terminated: 'AY 연결이 종료되어 검토가 실패했습니다.',
+      transport_failed: '연결이 끊겨 검토가 실패했습니다.',
+    }[review.failureReason]
+    return {
+      label: '검토 실패',
+      badgeClass: 'is-rejected',
+      icon: 'x',
+      resolution: reason,
+    }
+  }
+  if (!review.result) {
+    return {
+      label: '검토 대기',
+      badgeClass: 'is-pending',
+      icon: 'check',
+      resolution: null,
+    }
+  }
+  if (review.result.outcome === 'accept') {
+    return {
+      label: '수락됨',
+      badgeClass: 'is-applied',
+      icon: 'check',
+      resolution: '수락 응답을 AY에 전달했습니다.',
+    }
+  }
+  if (review.result.outcome === 'revise') {
+    return {
+      label: '수정 요청됨',
+      badgeClass: 'is-revised',
+      icon: 'check',
+      resolution: '수정 요청을 전달했습니다. 새 제안을 기다립니다.',
+    }
+  }
+  return {
+    label: '거절됨',
+    badgeClass: 'is-rejected',
+    icon: 'x',
+    resolution: '거절 응답을 AY에 전달했습니다.',
+  }
+}
 
 function ReviewCard({
   review,

@@ -8,6 +8,7 @@ import type {
 import {
   canRespondToProductClarification,
   canRespondToProductReview,
+  canRespondToProductSemanticReview,
   createInitialProductChatState,
   reduceProductChatState,
   type ProductChatState,
@@ -40,6 +41,9 @@ const replacementDecisionKey = `decision_${'a'.repeat(32)}`
 const replacementPatchId = `patch_${'b'.repeat(32)}`
 const replacementActivityId = `activity_${'c'.repeat(32)}`
 const questionId = `question_${'4'.repeat(32)}`
+const targetOperationId = `operation_${'5'.repeat(32)}`
+const semanticInteractionId = `interaction_${'6'.repeat(32)}`
+const replacementSemanticInteractionId = `interaction_${'7'.repeat(32)}`
 const noticeMaterial = {
   id: `material_${'5'.repeat(32)}`,
   digest: '6'.repeat(64),
@@ -48,6 +52,83 @@ const syllabusMaterial = {
   id: `material_${'7'.repeat(32)}`,
   digest: '8'.repeat(64),
 }
+
+test('appends fresh semantic Reviews and settles only from exact Review frames', () => {
+  let state = acceptedChatState()
+  state = reduceProductChatState(state, {
+    type: 'operation.frame',
+    frame: semanticReviewRequested(semanticInteractionId),
+  })
+  const first = state.activeOperation?.semanticReview
+  assert.ok(first)
+  assert.equal(state.phase, 'awaiting-review')
+  assert.equal(canRespondToProductSemanticReview(state, first), true)
+
+  state = reduceProductChatState(state, {
+    type: 'operation.frame',
+    frame: {
+      type: 'review.resolved',
+      operationId: targetOperationId,
+      interactionId: semanticInteractionId,
+      result: {
+        outcome: 'revise',
+        feedback: '마감 근거를 다시 확인해 주세요.',
+      },
+    },
+  })
+  assert.equal(state.phase, 'running')
+  assert.equal(state.activeOperation?.semanticReview, undefined)
+  assert.equal(canRespondToProductSemanticReview(state, first), false)
+
+  state = reduceProductChatState(state, {
+    type: 'operation.frame',
+    frame: semanticReviewRequested(replacementSemanticInteractionId),
+  })
+  const reviews = state.transcript.filter(
+    (entry) => entry.kind === 'semantic-review',
+  )
+  assert.equal(reviews.length, 2)
+  assert.equal(reviews[0]?.kind, 'semantic-review')
+  if (reviews[0]?.kind === 'semantic-review') {
+    assert.deepEqual(reviews[0].result, {
+      outcome: 'revise',
+      feedback: '마감 근거를 다시 확인해 주세요.',
+    })
+  }
+  assert.equal(reviews[1]?.kind, 'semantic-review')
+  if (reviews[1]?.kind === 'semantic-review') {
+    assert.equal(reviews[1].result, undefined)
+    assert.equal(reviews[1].failureReason, undefined)
+  }
+})
+
+test('leaves a control-free semantic Review card after continuity failure', () => {
+  let state = acceptedChatState()
+  state = reduceProductChatState(state, {
+    type: 'operation.frame',
+    frame: semanticReviewRequested(semanticInteractionId),
+  })
+  state = reduceProductChatState(state, {
+    type: 'operation.frame',
+    frame: {
+      type: 'review.failed',
+      operationId: targetOperationId,
+      interactionId: semanticInteractionId,
+      reason: 'turn_interrupted',
+    },
+  })
+
+  assert.equal(state.phase, 'running')
+  assert.equal(state.activeOperation?.semanticReview, undefined)
+  const review = state.transcript.find(
+    (entry) => entry.kind === 'semantic-review',
+  )
+  assert.equal(review?.kind, 'semantic-review')
+  if (review?.kind === 'semantic-review') {
+    assert.equal(review.result, undefined)
+    assert.equal(review.failureReason, 'turn_interrupted')
+  }
+})
 
 test('reconciles the cumulative Assignment activity and exact pending Review binding', () => {
   let state = createInitialProductChatState()
@@ -1086,6 +1167,36 @@ function reviewRequested(): ProductOperationFrame {
     decisionKey,
     patch: assignmentPatch(),
     questions: [],
+  }
+}
+
+function semanticReviewRequested(interactionId: string) {
+  return {
+    type: 'review.requested' as const,
+    operationId: targetOperationId,
+    interactionId,
+    review: {
+      summary: '마감 정보를 정리합니다.',
+      question: '이 변경 방향을 반영할까요?',
+      changes: [
+        {
+          label: '마감',
+          description: '강의계획서의 마감을 반영합니다.',
+          before: '미정',
+          after: '8월 3일',
+          evidence: [
+            {
+              relativePath: 'materials/syllabus.txt',
+              contentDigest: 'a'.repeat(64),
+              quote: '8월 3일까지 제출',
+              occurrence: 1,
+              contextBefore: '과제는 ',
+              contextAfter: '입니다.',
+            },
+          ],
+        },
+      ],
+    },
   }
 }
 

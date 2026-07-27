@@ -16,6 +16,7 @@ import {
   type ProductInteractionAnswerRequest,
   type ProductOperationFrame,
   type ProductQuestion,
+  type ProductReviewFrame,
   type ProductStatePatch,
   type ProductCodexTurnSettings,
 } from '@ay-ple/product-contract'
@@ -87,7 +88,7 @@ type NativeProductQuestion = Extract<
 >['questions'][number]
 
 export interface ProductOperationSink {
-  write(frame: ProductOperationFrame): Promise<boolean>
+  write(frame: ProductOperationFrame | ProductReviewFrame): Promise<boolean>
   end(): void
 }
 
@@ -97,6 +98,7 @@ export type ProductOperationCoordinator = {
   interruptInteractionProductTurn(
     turn: ActiveInteractionProductTurn,
   ): Promise<void>
+  publishInteractionReview(frame: ProductReviewFrame): Promise<void>
   startAssignment(
     input: AssignmentActionRequest,
     options: ProductOperationOptions,
@@ -124,6 +126,7 @@ type ActiveProductOperationBase = {
   readonly operationId: string
   readonly lease: ProductOperationLease
   readonly turnLease: ProductTurnLease
+  readonly productSink: ProductOperationSink
   readonly reviewBindings: Map<string, AssignmentReviewBinding>
   readonly reviewOutcomes: Map<
     string,
@@ -218,7 +221,10 @@ export function createProductOperationCoordinator(options: {
     },
   })
 
-  const reserveBase = (operationId: string): ActiveProductOperationBase => {
+  const reserveBase = (
+    operationId: string,
+    productSink: ProductOperationSink,
+  ): ActiveProductOperationBase => {
     if (shuttingDown) throw unavailable()
     if (active) {
       throw new ProductOperationError(
@@ -246,6 +252,7 @@ export function createProductOperationCoordinator(options: {
       operationId,
       lease,
       turnLease,
+      productSink,
       reviewBindings: new Map(),
       reviewOutcomes: new Map(),
       reviewSubmissions: new Map(),
@@ -257,9 +264,10 @@ export function createProductOperationCoordinator(options: {
   const reserveAssignment = (
     operationId: string,
     recipe: ManagedAssignmentRecipe,
+    productSink: ProductOperationSink,
   ): ActiveAssignmentOperation => {
     const operation = {
-      ...reserveBase(operationId),
+      ...reserveBase(operationId, productSink),
       kind: 'assignment',
       assignment: { recipe },
     } satisfies ActiveAssignmentOperation
@@ -267,9 +275,12 @@ export function createProductOperationCoordinator(options: {
     return operation
   }
 
-  const reserveChat = (operationId: string): ActiveChatOperation => {
+  const reserveChat = (
+    operationId: string,
+    productSink: ProductOperationSink,
+  ): ActiveChatOperation => {
     const operation = {
-      ...reserveBase(operationId),
+      ...reserveBase(operationId, productSink),
       kind: 'chat',
       chat: {
         guardPrepared: false,
@@ -779,6 +790,23 @@ export function createProductOperationCoordinator(options: {
       await options.service.interruptProductTurn(activeTurn)
     },
 
+    async publishInteractionReview(frame) {
+      const operation = active
+      const turn = operation?.turn
+      const lease = turnCoordinator.activeOperation()
+      if (
+        !operation ||
+        !turn ||
+        !lease ||
+        lease.operationId !== frame.operationId
+      ) {
+        throw unavailable()
+      }
+      if (!(await operation.productSink.write(frame))) {
+        throw unavailable()
+      }
+    },
+
     async startAssignment(input, operationOptions) {
       assertAssignmentRequest(input)
       options.controller.nativeCwd()
@@ -802,7 +830,11 @@ export function createProductOperationCoordinator(options: {
         )
       })
       const actionId = `action_${randomUUID().replaceAll('-', '')}`
-      const operation = reserveAssignment(actionId, recipe)
+      const operation = reserveAssignment(
+        actionId,
+        recipe,
+        operationOptions.sink,
+      )
       operation.redactionValues.push(operationOptions.mcpUrl)
       let streamOpened = false
       try {
@@ -1117,7 +1149,7 @@ export function createProductOperationCoordinator(options: {
     async sendChat(input, operationOptions) {
       assertChatRequest(input)
       const operationId = `chat_${randomUUID().replaceAll('-', '')}`
-      const operation = reserveChat(operationId)
+      const operation = reserveChat(operationId, operationOptions.sink)
       operation.redactionValues.push(operationOptions.mcpUrl)
       let streamOpened = false
       try {

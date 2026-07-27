@@ -149,6 +149,187 @@ test('course-free Product Chat starts before ModelingRun and reuses one native T
   }
 })
 
+test('internal target carries one semantic Review round trip on the current Product Turn NDJSON stream', async () => {
+  const fixture = await createChatFixture()
+  const runtime = new ProductChatRuntime()
+  runtime.holdAfterPlan = true
+  let credentials:
+    | { readonly token: string; readonly binding: string }
+    | undefined
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+        internalInteractionTarget: {
+          workspaceRoot: fixture.workspaceRoot,
+          onReady(value) {
+            credentials = value
+          },
+        },
+      },
+      async (baseUrl, application) => {
+        const activation = await application.semesterWorkspace?.activate()
+        assert.equal(activation?.status, 'activated')
+        assert.ok(credentials)
+        const headers = {
+          authorization: `Bearer ${credentials.token}`,
+          'x-ay-ple-runtime-binding': credentials.binding,
+        }
+        const streamResponse = await postJson(
+          `${baseUrl}/api/product/chat/messages`,
+          { text: '마감 정보를 정리해 줘.', materials: [] },
+        )
+        assert.equal(streamResponse.status, 200)
+        assert.ok(streamResponse.body)
+        const trace = new NdjsonTrace(streamResponse.body.getReader())
+        await trace.until((frame) => frame.type === 'operation.accepted')
+
+        const handshake = await postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          {
+            protocolVersion: 1,
+            kind: 'handshake',
+            serverName: 'ay_ple_interaction',
+            capabilities: ['propose_state_patch'],
+          },
+          headers,
+        )
+        assert.equal(handshake.status, 200)
+
+        const capabilityCall = {
+          protocolVersion: 1,
+          kind: 'capability_call',
+          capability: 'propose_state_patch',
+          request: {
+            summary: '마감 정보를 정리합니다.',
+            question: '이 변경 방향을 반영할까요?',
+            changes: [
+              {
+                label: '마감',
+                description: '강의계획서의 마감을 반영합니다.',
+                before: '미정',
+                after: '8월 3일',
+              },
+            ],
+          },
+        } as const
+        const heldCall = postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          capabilityCall,
+          headers,
+        )
+        const requested = await trace.until(
+          (frame) => frame.type === 'review.requested' && 'review' in frame,
+        )
+        assert.match(String(requested.operationId), /^operation_[0-9a-f]{32}$/u)
+        const interactionId = String(requested.interactionId)
+
+        const answer = postJson(
+          `${baseUrl}/api/product/reviews/${interactionId}`,
+          {
+            outcome: 'revise',
+            feedback: '근거 문구를 함께 보여 주세요.',
+          },
+        )
+        const heldResponse = await heldCall
+        assert.equal(heldResponse.status, 200)
+        assert.deepEqual(await heldResponse.json(), {
+          protocolVersion: 1,
+          kind: 'capability_result',
+          capability: 'propose_state_patch',
+          result: {
+            outcome: 'revise',
+            feedback: '근거 문구를 함께 보여 주세요.',
+          },
+        })
+        assert.equal((await answer).status, 204)
+        const resolved = await trace.until(
+          (frame) =>
+            frame.type === 'review.resolved' &&
+            frame.interactionId === interactionId &&
+            'result' in frame,
+        )
+        assert.deepEqual(resolved.result, {
+          outcome: 'revise',
+          feedback: '근거 문구를 함께 보여 주세요.',
+        })
+
+        const freshCall = postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          {
+            ...capabilityCall,
+            request: {
+              ...capabilityCall.request,
+              summary: '근거를 보강한 마감 정보를 정리합니다.',
+            },
+          },
+          headers,
+        )
+        const freshRequested = await trace.until(
+          (frame) =>
+            frame.type === 'review.requested' &&
+            'review' in frame &&
+            frame.interactionId !== interactionId,
+        )
+        const freshInteractionId = String(freshRequested.interactionId)
+        assert.notEqual(freshInteractionId, interactionId)
+
+        const freshAnswer = postJson(
+          `${baseUrl}/api/product/reviews/${freshInteractionId}`,
+          { outcome: 'accept' },
+        )
+        assert.deepEqual(await (await freshCall).json(), {
+          protocolVersion: 1,
+          kind: 'capability_result',
+          capability: 'propose_state_patch',
+          result: { outcome: 'accept' },
+        })
+        assert.equal((await freshAnswer).status, 204)
+        await trace.until(
+          (frame) =>
+            frame.type === 'review.resolved' &&
+            frame.interactionId === freshInteractionId &&
+            'result' in frame,
+        )
+
+        const duplicate = await postJson(
+          `${baseUrl}/api/product/reviews/${interactionId}`,
+          { outcome: 'reject' },
+        )
+        assert.equal(duplicate.status, 409)
+        const invalid = await postJson(
+          `${baseUrl}/api/product/reviews/${interactionId}`,
+          { outcome: 'revise', feedback: '   ' },
+        )
+        assert.equal(invalid.status, 409)
+
+        runtime.releaseHeldTurn()
+        const frames = await trace.rest()
+        assert.equal(
+          frames.filter(
+            (frame) =>
+              frame.type === 'review.resolved' &&
+              (frame.interactionId === interactionId ||
+                frame.interactionId === freshInteractionId),
+          ).length,
+          2,
+        )
+        assert.equal(frames.at(-1)?.type, 'operation.terminal')
+        const browserTrace = JSON.stringify(frames)
+        assert.equal(browserTrace.includes(credentials.token), false)
+        assert.equal(browserTrace.includes(credentials.binding), false)
+        assert.equal(browserTrace.includes(fixture.workspaceRoot), false)
+        assert.equal(browserTrace.includes('thread-private-chat'), false)
+        assert.equal(browserTrace.includes('turn-private-chat-1'), false)
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('rejects Codex Turn settings that are absent from the advertised catalog', async () => {
   const fixture = await createChatFixture()
   const runtime = new ProductChatRuntime()
@@ -725,12 +906,14 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
   readonly answerInputs: AnswerUserInput[] = []
   readonly cancelInputs: CancelUserInput[] = []
   generalInteraction = false
+  holdAfterPlan = false
   generalAnswerError?: CodexChatRuntimeError
   proposal?: (input: StartProductTurnInput) => Record<string, unknown>
   private readonly answer = deferred<void>()
   private readonly answerAcknowledged = deferred<void>()
   private readonly generalSettlement = deferred<'answered' | 'cancelled'>()
   private readonly generalSettlementAcknowledged = deferred<void>()
+  private readonly heldTurn = deferred<void>()
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
     return { state: 'ready' }
@@ -785,6 +968,7 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
           itemId: `private-plan-item-${ordinal}`,
           text: `계획을 준비했습니다: ${runtime.threadInputs[0]?.workspace} ${input.threadId} ${turnId}`,
         }
+        if (runtime.holdAfterPlan) await runtime.heldTurn.promise
         if (runtime.generalInteraction) {
           yield {
             type: 'user_input.requested',
@@ -885,6 +1069,10 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
 
   settleGeneralInteraction(resolution: 'answered' | 'cancelled'): void {
     this.generalSettlement.resolve(resolution)
+  }
+
+  releaseHeldTurn(): void {
+    this.heldTurn.resolve()
   }
 
   private async callProposalTool(input: StartProductTurnInput): Promise<void> {

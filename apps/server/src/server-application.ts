@@ -12,6 +12,11 @@ import {
 } from './codex-chat.js'
 import { createProductRouter } from './product-http.js'
 import { createProductOperationCoordinator } from './product-operation-coordinator.js'
+import {
+  createInlineSemanticReviewVertical,
+  type InlineSemanticReviewVertical,
+} from './inline-semantic-review-vertical.js'
+import type { InteractionBrokerCredentials } from './interaction-broker.js'
 import type {
   ServerStartupCleanup,
   ServerStartupCleanupInput,
@@ -29,6 +34,12 @@ export type CreateServerAppOptions = {
   productRuntime?: ProductRuntimeBootstrap
   productRuntimeWorkspaceRoot?: string
   semesterWorkspace?: SemesterWorkspaceBootstrap
+  internalInteractionTarget?: {
+    readonly workspaceRoot: string
+    readonly onReady?: (
+      credentials: InteractionBrokerCredentials,
+    ) => void
+  }
 }
 
 export type SemesterWorkspaceBootstrap = {
@@ -101,21 +112,41 @@ export async function createServerApplication(
           service: codexChat.service,
         })
       : undefined
+  if (options.internalInteractionTarget && !productOperations) {
+    throw new TypeError(
+      'The internal interaction target requires product operations',
+    )
+  }
+  const inlineSemanticReview =
+    options.internalInteractionTarget && productOperations
+      ? await createInlineSemanticReviewVertical({
+          workspaceRoot: options.internalInteractionTarget.workspaceRoot,
+          productOperations,
+        })
+      : undefined
+  if (inlineSemanticReview && options.internalInteractionTarget?.onReady) {
+    options.internalInteractionTarget.onReady(
+      inlineSemanticReview.credentials(),
+    )
+  }
   const app = createServerExpressApp(
     codexChat,
     semesterWorkspace,
     productOperations,
     assignmentMcpHost,
     options.codexChat?.httpWriteDrainMs,
+    inlineSemanticReview,
   )
   let applicationClosePromise: Promise<void> | undefined
   const closeApplication: CloseServerApplication = ({ signal }) => {
+    const interactionClose = inlineSemanticReview?.appShutdown()
     productOperations?.beginShutdown()
     codexChat.beginShutdown()
     if (applicationClosePromise) return applicationClosePromise
     const attempt = closeServerApplication(
       codexChat,
       assignmentMcpHost,
+      interactionClose,
     )
     applicationClosePromise = attempt
     void attempt.catch(() => {
@@ -239,10 +270,14 @@ function createServerExpressApp(
     | undefined,
   assignmentMcpHost: AssignmentMcpHost | undefined,
   productWriteDrainMs: number | undefined,
+  inlineSemanticReview: InlineSemanticReviewVertical | undefined,
 ): Express {
   const app = express()
   if (assignmentMcpHost) {
     app.use('/api/product-mcp', assignmentMcpHost.router)
+  }
+  if (inlineSemanticReview) {
+    app.use('/api/_private/interaction-mcp', inlineSemanticReview.router)
   }
   app.use(
     '/api/product',
@@ -271,6 +306,7 @@ function createServerExpressApp(
             }
           }
         : undefined,
+      inlineSemanticReview,
     ),
   )
   return app
@@ -279,6 +315,8 @@ function createServerExpressApp(
 async function closeServerApplication(
   codexChat: CodexChatComposition,
   assignmentMcpHost: AssignmentMcpHost | undefined,
+  interactionClose: Promise<void> | undefined,
 ): Promise<void> {
+  await interactionClose
   await codexChat.close().finally(() => assignmentMcpHost?.close())
 }

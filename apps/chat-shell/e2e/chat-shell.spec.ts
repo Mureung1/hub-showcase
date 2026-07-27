@@ -200,6 +200,109 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
   await expect(reloadedChat.getByText('자료와 함께 시작해 보세요')).toBeVisible()
 })
 
+test.describe('internal inline Semantic Review target', () => {
+  test.use({ scenario: 'semantic-review' })
+
+  test('keeps semantic cards chronological across revise, accept, reject, and interrupt', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await sendMessage(page, '마감 정보를 정리해 줘.')
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'running',
+    )
+
+    const revisedCall = chatHarness.requestSemanticReview()
+    const first = page.getByRole('region', { name: '검토 대기' })
+    await expect(first).toBeVisible()
+    await expect(first).toContainText('마감 정보를 정리합니다.')
+    await expect(first).toContainText('2026-08-03 23:59')
+    await expect(first).toContainText('problem-solving-syllabus.txt')
+    await expect(first).toContainText('LMS 과제함 업로드')
+    await expect(page.getByRole('textbox', { name: '메시지' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: '작업 중단' })).toBeVisible()
+    await expect(first.getByRole('button', { name: '수락' })).toBeFocused()
+    const feedback = first.getByRole('textbox', {
+      name: '수정 요청 또는 거절 의견',
+    })
+    await feedback.fill('근거 문구를 더 분명하게 보여 주세요.')
+    const reviseRequest = page.waitForRequest((request) =>
+      new URL(request.url()).pathname.startsWith('/api/product/reviews/'),
+    )
+    await first.getByRole('button', { name: '수정 요청' }).click()
+    expect((await reviseRequest).postDataJSON()).toEqual({
+      outcome: 'revise',
+      feedback: '근거 문구를 더 분명하게 보여 주세요.',
+    })
+    expect(await revisedCall).toEqual({
+      status: 200,
+      body: {
+        protocolVersion: 1,
+        kind: 'capability_result',
+        capability: 'propose_state_patch',
+        result: {
+          outcome: 'revise',
+          feedback: '근거 문구를 더 분명하게 보여 주세요.',
+        },
+      },
+    })
+    const revised = page.getByRole('region', { name: '수정 요청됨' })
+    await expect(revised).toBeVisible()
+    await expect(revised.getByRole('button')).toHaveCount(0)
+
+    await page.setViewportSize({ width: 1920, height: 1080 })
+    const acceptedCall = chatHarness.requestSemanticReview(
+      '근거를 보강한 마감 정보를 정리합니다.',
+    )
+    const second = page.getByRole('region', { name: '검토 대기' })
+    await expect(second).toContainText('근거를 보강한 마감 정보를 정리합니다.')
+    await second.getByRole('button', { name: '수락' }).click()
+    expect((await acceptedCall).body).toMatchObject({
+      result: { outcome: 'accept' },
+    })
+    await expect(page.getByRole('region', { name: '수락됨' })).toBeVisible()
+    await expect(revised).toBeVisible()
+
+    const rejectedCall = chatHarness.requestSemanticReview(
+      '마지막 확인 제안입니다.',
+    )
+    const third = page.getByRole('region', { name: '검토 대기' })
+    await third
+      .getByRole('textbox', { name: '수정 요청 또는 거절 의견' })
+      .fill('이번에는 반영하지 않습니다.')
+    await third.getByRole('button', { name: '거절' }).click()
+    expect((await rejectedCall).body).toMatchObject({
+      result: {
+        outcome: 'reject',
+        feedback: '이번에는 반영하지 않습니다.',
+      },
+    })
+    await expect(page.getByRole('region', { name: '거절됨' })).toBeVisible()
+
+    const interruptedCall = chatHarness.requestSemanticReview(
+      '중단될 제안입니다.',
+    )
+    const fourth = page.getByRole('region', { name: '검토 대기' })
+    await expect(fourth).toContainText('중단될 제안입니다.')
+    await page.getByRole('button', { name: '작업 중단' }).click()
+    const failed = page.getByRole('region', { name: '검토 실패' })
+    await expect(failed).toContainText('작업 중단으로 검토가 종료되었습니다.')
+    await expect(failed.getByRole('button')).toHaveCount(0)
+    expect((await interruptedCall).status).toBe(503)
+
+    chatHarness.releaseSemanticTurn()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'interrupted',
+    )
+    expect(
+      chatHarness.calls().filter((call) => call.operation === 'interrupt'),
+    ).toHaveLength(1)
+  })
+})
+
 test('reopens confirmed Assignment history after a same-root Server restart without restoring an unanswered Review', async ({
   chatHarness,
   chatPage: page,

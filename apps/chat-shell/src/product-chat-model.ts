@@ -3,7 +3,10 @@ import type {
   ProductMaterialSelection,
   ProductOperationFrame,
   ProductQuestion,
+  ProductReviewFrame,
+  ProductReviewResult,
   ProductStatePatch,
+  ProductStreamFrame,
 } from './product-api.js'
 
 export type ProductChatPhase =
@@ -42,6 +45,15 @@ export type ProductReviewBinding = {
   readonly questions: readonly ProductQuestion[]
 }
 
+export type ProductSemanticReviewBinding = Extract<
+  ProductReviewFrame,
+  { readonly type: 'review.requested' }
+> extends infer Requested
+  ? Requested extends { readonly type: 'review.requested' }
+    ? Omit<Requested, 'type'>
+    : never
+  : never
+
 export type ProductInterrupt = {
   readonly operationId: string
   readonly state: 'requesting' | 'acknowledged'
@@ -75,6 +87,7 @@ export type ProductActiveOperation = {
   readonly accepted: boolean
   readonly interaction?: ProductClarificationBinding
   readonly review?: ProductReviewBinding
+  readonly semanticReview?: ProductSemanticReviewBinding
   readonly interrupt?: ProductInterrupt
 }
 
@@ -114,6 +127,14 @@ export type ProductTranscriptEntry =
       ProductReviewBinding & {
         readonly outcome?: 'accepted' | 'revised' | 'rejected' | 'cancelled'
       })
+  | ({ readonly kind: 'semantic-review' } &
+      ProductSemanticReviewBinding & {
+        readonly result?: ProductReviewResult
+        readonly failureReason?: Extract<
+          ProductReviewFrame,
+          { readonly type: 'review.failed' }
+        >['reason']
+      })
   | {
       readonly kind: 'notice'
       readonly code: string
@@ -151,7 +172,7 @@ export type ProductChatAction =
       readonly materials: readonly ProductMaterialSelection[]
       readonly text?: string
     }
-  | { readonly type: 'operation.frame'; readonly frame: ProductOperationFrame }
+  | { readonly type: 'operation.frame'; readonly frame: ProductStreamFrame }
   | { readonly type: 'operation.stream-ended' }
   | { readonly type: 'operation.stream-failed' }
   | {
@@ -271,6 +292,8 @@ export function reduceProductChatState(
         stage:
           active.review !== undefined
             ? 'awaiting-review'
+            : active.semanticReview !== undefined
+              ? 'awaiting-review'
             : active.interaction !== undefined
               ? 'awaiting-clarification'
               : 'running',
@@ -323,6 +346,19 @@ export function canRespondToProductReview(
   )
 }
 
+export function canRespondToProductSemanticReview(
+  state: ProductChatState,
+  expected: ProductSemanticReviewBinding,
+): boolean {
+  const current = state.activeOperation?.semanticReview
+  return (
+    state.phase === 'awaiting-review' &&
+    state.activeOperation?.stage === 'awaiting-review' &&
+    current?.operationId === expected.operationId &&
+    current.interactionId === expected.interactionId
+  )
+}
+
 export function productInteractionAnswers(
   questionId: string,
   answer: string,
@@ -330,10 +366,111 @@ export function productInteractionAnswers(
   return { answers: { [questionId]: [answer] } }
 }
 
+function isSemanticReviewFrame(
+  frame: ProductStreamFrame,
+): frame is ProductReviewFrame {
+  return (
+    (frame.type === 'review.requested' && 'review' in frame) ||
+    (frame.type === 'review.resolved' && 'result' in frame) ||
+    frame.type === 'review.failed'
+  )
+}
+
+function reduceSemanticReviewFrame(
+  state: ProductChatState,
+  frame: ProductReviewFrame,
+): ProductChatState {
+  const active = state.activeOperation
+  if (!active?.accepted) return invalidStream(state)
+
+  if (frame.type === 'review.requested') {
+    if (
+      active.interaction ||
+      active.review ||
+      active.semanticReview ||
+      state.transcript.some(
+        (entry) =>
+          entry.kind === 'semantic-review' &&
+          entry.interactionId === frame.interactionId,
+      )
+    ) {
+      return invalidStream(state)
+    }
+    const semanticReview: ProductSemanticReviewBinding = {
+      operationId: frame.operationId,
+      interactionId: frame.interactionId,
+      review: cloneSemanticReview(frame.review),
+    }
+    const nextStage = stagePreservingStop(active, 'awaiting-review')
+    return {
+      ...state,
+      phase: nextStage,
+      transcript: [
+        ...state.transcript,
+        { kind: 'semantic-review', ...semanticReview },
+      ],
+      activeOperation: {
+        ...active,
+        stage: nextStage,
+        semanticReview,
+      },
+    }
+  }
+
+  const semanticReview = active.semanticReview
+  const matchingEntry = state.transcript.find(
+    (entry) =>
+      entry.kind === 'semantic-review' &&
+      entry.operationId === frame.operationId &&
+      entry.interactionId === frame.interactionId,
+  )
+  if (
+    !semanticReview &&
+    matchingEntry?.kind === 'semantic-review' &&
+    (frame.type === 'review.resolved'
+      ? matchingEntry.result !== undefined
+      : matchingEntry.failureReason === frame.reason)
+  ) {
+    return state
+  }
+  if (
+    !semanticReview ||
+    semanticReview.operationId !== frame.operationId ||
+    semanticReview.interactionId !== frame.interactionId ||
+    matchingEntry?.kind !== 'semantic-review' ||
+    matchingEntry.result !== undefined ||
+    matchingEntry.failureReason !== undefined
+  ) {
+    return invalidStream(state)
+  }
+  const nextStage = stagePreservingStop(active, 'running')
+  return {
+    ...state,
+    phase: nextStage,
+    transcript: state.transcript.map((entry) =>
+      entry.kind === 'semantic-review' &&
+      entry.operationId === frame.operationId &&
+      entry.interactionId === frame.interactionId
+        ? frame.type === 'review.resolved'
+          ? { ...entry, result: cloneReviewResult(frame.result) }
+          : { ...entry, failureReason: frame.reason }
+        : entry,
+    ),
+    activeOperation: {
+      ...active,
+      stage: nextStage,
+      semanticReview: undefined,
+    },
+  }
+}
+
 function reduceProductFrame(
   state: ProductChatState,
-  frame: ProductOperationFrame,
+  frame: ProductStreamFrame,
 ): ProductChatState {
+  if (isSemanticReviewFrame(frame)) {
+    return reduceSemanticReviewFrame(state, frame)
+  }
   const active = state.activeOperation
 
   if (frame.type === 'operation.recovery') {
@@ -392,7 +529,8 @@ function reduceProductFrame(
   if (frame.type === 'operation.terminal') {
     if (
       !matchesRun(active, frame) ||
-      !isAllowedTerminalSettlement(active, frame.status)
+      !isAllowedTerminalSettlement(active, frame.status) ||
+      active.semanticReview !== undefined
     ) {
       return invalidStream(state)
     }
@@ -496,7 +634,9 @@ function reduceProductFrame(
   }
 
   if (frame.type === 'interaction.requested') {
-    if (active.interaction || active.review) return invalidStream(state)
+    if (active.interaction || active.review || active.semanticReview) {
+      return invalidStream(state)
+    }
     const nextStage = stagePreservingStop(
       active,
       'awaiting-clarification',
@@ -525,6 +665,7 @@ function reduceProductFrame(
     if (
       active.interaction ||
       active.review ||
+      active.semanticReview ||
       state.transcript.some(
         (entry) =>
           entry.kind === 'review' &&
@@ -560,6 +701,7 @@ function reduceProductFrame(
     if (
       active.interaction ||
       active.review ||
+      active.semanticReview ||
       replacedReview?.kind !== 'review' ||
       replacedReview.outcome !== 'revised' ||
       replacedReview.operationId !== frame.operationId ||
@@ -1089,6 +1231,26 @@ function cloneQuestion(question: ProductQuestion): ProductQuestion {
   }
 }
 
+function cloneSemanticReview(
+  review: ProductSemanticReviewBinding['review'],
+): ProductSemanticReviewBinding['review'] {
+  return {
+    ...review,
+    changes: review.changes.map((change) => ({
+      ...change,
+      ...(change.evidence === undefined
+        ? {}
+        : {
+            evidence: change.evidence.map((evidence) => ({ ...evidence })),
+          }),
+    })),
+  }
+}
+
+function cloneReviewResult(result: ProductReviewResult): ProductReviewResult {
+  return { ...result }
+}
+
 function stopStreamingEntries(
   transcript: readonly ProductTranscriptEntry[],
 ): readonly ProductTranscriptEntry[] {
@@ -1119,7 +1281,7 @@ function invalidStream(state: ProductChatState): ProductChatState {
 function phaseForActiveOperation(
   operation: ProductActiveOperation,
 ): ProductChatPhase {
-  if (operation.review) return 'awaiting-review'
+  if (operation.review || operation.semanticReview) return 'awaiting-review'
   if (operation.interaction) return 'awaiting-clarification'
   return 'running'
 }

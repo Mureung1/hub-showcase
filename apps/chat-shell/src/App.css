@@ -1235,6 +1235,79 @@
   line-height: 1.5;
 }
 
+.semantic-review-question {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.semantic-change-list {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.semantic-change-list > li {
+  padding: 9px;
+  border: 1px solid rgba(242, 184, 75, 0.28);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.semantic-change-list > li > header {
+  display: grid;
+  gap: 2px;
+}
+
+.semantic-change-list > li > header span,
+.semantic-evidence figcaption {
+  color: var(--muted);
+  font-size: var(--chat-font-min);
+}
+
+.semantic-before-after {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 4px 8px;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.semantic-before-after dt {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.semantic-before-after dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.semantic-evidence {
+  margin: 8px 0 0;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.semantic-evidence blockquote {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--chat-font-min);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.semantic-evidence mark {
+  padding: 1px 2px;
+  color: inherit;
+  background: rgba(242, 184, 75, 0.3);
+}
+
 .review-actions button,
 .clarification-actions button {
   min-height: 33px;
