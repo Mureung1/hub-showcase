@@ -47,7 +47,11 @@ describe("sendPush", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { code: "subscription_not_found", message: expect.any(String) },
+      error: {
+        code: "subscription_not_found",
+        message: expect.any(String),
+        classification: "permanent",
+      },
     });
     expect(webpush.sendNotification).not.toHaveBeenCalled();
   });
@@ -82,11 +86,11 @@ describe("sendPush", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { code: "push_failed", message: "Gone", statusCode: 410 },
+      error: { code: "push_failed", message: "Gone", statusCode: 410, classification: "permanent" },
     });
   });
 
-  it("WebPushError가 아닌 예외도 push_failed로 반환한다 (경계)", async () => {
+  it("WebPushError가 아닌 예외도 push_failed로 반환하고 temporary로 분류한다 (경계)", async () => {
     vi.mocked(prisma.pushSubscription.findUnique).mockResolvedValue(SUBSCRIPTION);
     vi.mocked(webpush.sendNotification).mockRejectedValue(new Error("network down"));
 
@@ -94,7 +98,37 @@ describe("sendPush", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { code: "push_failed", message: "network down" },
+      error: { code: "push_failed", message: "network down", classification: "temporary" },
     });
   });
+
+  it.each([
+    [404, "permanent"],
+    [401, "config"],
+    [403, "config"],
+    [429, "rate_limited"],
+    [500, "temporary"],
+    [503, "temporary"],
+    [400, "unknown"],
+  ] as const)(
+    "WebPushError statusCode %i는 classification %s로 분류한다 (#58)",
+    async (statusCode, classification) => {
+      vi.mocked(prisma.pushSubscription.findUnique).mockResolvedValue(SUBSCRIPTION);
+      vi.mocked(webpush.sendNotification).mockRejectedValue(
+        new WebPushError("실패", statusCode, {}, "", SUBSCRIPTION.endpoint),
+      );
+
+      const result = await sendPush("sub-1", { title: "제목", body: "본문" });
+
+      expect(result).toEqual({
+        ok: false,
+        error: {
+          code: "push_failed",
+          message: "실패",
+          statusCode,
+          classification,
+        },
+      });
+    },
+  );
 });

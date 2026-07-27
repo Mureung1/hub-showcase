@@ -27,7 +27,12 @@ export async function broadcastLevelUpPush(task: Task): Promise<void> {
     }
     if (result.value.ok) continue;
 
-    console.error("[broadcastLevelUpPush] 발송 실패:", result.value.error);
+    // #58: 재시도는 하지 않는다(응답 지연 트레이드오프 때문에 스코프 제외) — 대신
+    // classification으로 일시적/영구/설정 문제 실패를 구분해 로그에서 바로 원인을 알 수 있게 한다.
+    console.error(
+      `[broadcastLevelUpPush] 발송 실패(classification=${result.value.error.classification}):`,
+      result.value.error,
+    );
 
     // 410(Gone)/404(Not Found)는 푸시 서비스가 이 구독을 더 이상 인정하지 않는다는
     // 뜻이라 영구적으로 무효하다 — 다음 발송에서 같은 실패가 반복되지 않도록 지운다.
