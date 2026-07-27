@@ -33,6 +33,19 @@ class SourceRepository(Repository):
             (source_id, digest),
         )
 
+    def latest_snapshot(self, source_id: str) -> dict[str, Any] | None:
+        """가장 최근 스냅샷. 새 내용이 오면 이 스냅샷을 대체한다."""
+        return self.unit.fetch_one(
+            """
+            SELECT snapshot_id, content_hash, fetched_at
+            FROM source_snapshots
+            WHERE source_id = %s
+            ORDER BY fetched_at DESC, snapshot_id DESC
+            LIMIT 1
+            """,
+            (source_id,),
+        )
+
     def add_snapshot(
         self,
         snapshot_id: str,

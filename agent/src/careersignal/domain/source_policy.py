@@ -18,6 +18,25 @@ class SourceTier(StrEnum):
     UNVERIFIED = "E"
 
 
+class FetchStatus(StrEnum):
+    """수집 시도의 결과. `source_observations.fetch_status` 의 값 집합이다."""
+
+    OK = "ok"
+    NOT_FOUND = "not_found"
+    FORBIDDEN = "forbidden"
+    TIMEOUT = "timeout"
+    CHANGED = "changed"
+    PARSE_ERROR = "parse_error"
+
+
+RETRIEVED: frozenset[FetchStatus] = frozenset({FetchStatus.OK, FetchStatus.CHANGED})
+"""내용을 얻은 결과. 나머지는 스냅샷을 만들지 않는다."""
+
+
+def retrieved(status: FetchStatus) -> bool:
+    return status in RETRIEVED
+
+
 class AllowedUse(StrEnum):
     STATISTICS = "statistics"
     INTERPRETATION_CONTEXT = "interpretation_context"
