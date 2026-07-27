@@ -98,6 +98,55 @@ class VerificationRepository(Repository):
             (analysis_version,),
         )
 
+    # ------------------------------------------------------------ 검사 입력
+    # 검증은 전 테이블을 읽는다. 정의는 docs/permission-matrix.md 4장이다.
+
+    def mention_with_chunk(self, mention_id: str) -> dict[str, Any] | None:
+        """근거 위치 검사의 입력. `chunk_id` 는 외래키라 없을 수 없다."""
+        return self.unit.fetch_one(
+            """
+            SELECT m.mention_id, m.raw_expression, m.chunk_id,
+                   m.evidence_span_start, m.evidence_span_end,
+                   c.text AS chunk_text
+            FROM requirement_mentions m
+            JOIN source_chunks c ON c.chunk_id = m.chunk_id
+            WHERE m.mention_id = %s
+            """,
+            (mention_id,),
+        )
+
+    def evidence_count(self, claim_id: str) -> int:
+        return self.unit.fetch_value(
+            "SELECT count(*) FROM analysis_claim_evidence WHERE claim_id = %s",
+            (claim_id,),
+        )
+
+    def unresolved_supports(self, claim_id: str) -> list[dict[str, Any]]:
+        """어느 표로도 해소되지 않는 근거.
+
+        `support_id` 는 `support_type` 에 따라 가리키는 표가 넷으로 갈리는 다형
+        참조라 외래키를 걸 수 없다. 데이터베이스가 막지 못하는 구간을 여기서 막는다.
+        """
+        return self.unit.fetch_all(
+            """
+            SELECT e.support_type, e.support_id, e.relation
+            FROM analysis_claim_evidence e
+            WHERE e.claim_id = %s
+              AND NOT (
+                (e.support_type = 'chunk' AND EXISTS (
+                    SELECT 1 FROM source_chunks t WHERE t.chunk_id = e.support_id))
+             OR (e.support_type = 'statistic_fact' AND EXISTS (
+                    SELECT 1 FROM statistics_facts t WHERE t.fact_id = e.support_id))
+             OR (e.support_type = 'graph_path' AND EXISTS (
+                    SELECT 1 FROM graph_paths t WHERE t.path_id = e.support_id))
+             OR (e.support_type = 'wiki_revision' AND EXISTS (
+                    SELECT 1 FROM wiki_revisions t WHERE t.revision_id = e.support_id))
+              )
+            ORDER BY e.support_type, e.support_id
+            """,
+            (claim_id,),
+        )
+
     # ------------------------------------------------------------ 수리 지시
     def add_repair_order(
         self, agent_run_id: str, order: RepairOrder, order_id: str | None = None

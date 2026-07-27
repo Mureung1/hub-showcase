@@ -28,6 +28,12 @@ from careersignal.domain.source_policy import SourceTier
 from careersignal.repositories.base import Unit
 from careersignal.repositories.verification import VerificationRepository
 from careersignal.verification import CheckContext, CheckRegistry, CheckRunner, passed
+from careersignal.verification.checks import (
+    TARGET_CLAIM,
+    TARGET_MENTION,
+    citation_span_check,
+    schema_check,
+)
 
 from .conftest import requires_db
 
@@ -35,6 +41,10 @@ pytestmark = requires_db
 
 ANALYSIS_VERSION = "an_verify_test"
 RUN_ID = "run_verify_test"
+
+CHUNK_TEXT = "우리 팀은 대규모 트랜잭션 무결성과 분산 캐시 운영 경험을 중요하게 봅니다."
+SPAN_START = CHUNK_TEXT.index("트랜잭션 무결성")
+SPAN_END = SPAN_START + len("트랜잭션 무결성")
 
 SEED = """
 INSERT INTO dataset_versions (dataset_version, job_role_id, as_of_date)
@@ -67,6 +77,52 @@ INSERT INTO analysis_claims (
 );
 """
 
+EXPRESSION = "트랜잭션 무결성"
+
+# psycopg 는 파라미터를 쓰면 한 번에 한 문장만 실행한다. 시드는 값을 문자열에 넣는다.
+# 여기 쓰는 값은 모두 테스트 상수이며 작은따옴표를 포함하지 않는다.
+SEED_CITATION = f"""
+INSERT INTO companies (company_id, display_name)
+  VALUES ('co_verify_test', '검증 테스트 회사');
+INSERT INTO sources (source_id, source_type, url, first_seen_at)
+  VALUES ('src_verify_test', 'job_posting', 'https://example.test/verify', now());
+INSERT INTO source_snapshots (snapshot_id, source_id, content_hash, raw_content,
+                              fetched_at, dataset_version)
+  VALUES ('snap_verify_test', 'src_verify_test', repeat('b', 64), '{CHUNK_TEXT}',
+          now(), 'ds_verify_test');
+INSERT INTO source_chunks (chunk_id, snapshot_id, ordinal, text, context,
+                           embedding_text, token_count, dataset_version)
+  VALUES ('chunk_verify_test', 'snap_verify_test', 1, '{CHUNK_TEXT}', '{{}}'::jsonb,
+          '{CHUNK_TEXT}', 30, 'ds_verify_test');
+INSERT INTO postings (posting_id, source_id, company_id, job_role_id)
+  VALUES ('post_verify_test', 'src_verify_test', 'co_verify_test', 'backend');
+INSERT INTO posting_versions (posting_version_id, posting_id, snapshot_id, title,
+                              entry_label, dataset_version)
+  VALUES ('pv_verify_test', 'post_verify_test', 'snap_verify_test', '백엔드 신입',
+          'entry_junior', 'ds_verify_test');
+
+-- 오프셋이 원문과 맞는 mention
+INSERT INTO requirement_mentions (mention_id, posting_version_id, snapshot_id, chunk_id,
+                                  raw_expression, evidence_span_start, evidence_span_end,
+                                  stated_requiredness, extraction_run_id, dataset_version)
+  VALUES ('men_verify_test', 'pv_verify_test', 'snap_verify_test', 'chunk_verify_test',
+          '{EXPRESSION}', {SPAN_START}, {SPAN_END}, '중요하게 봅니다',
+          'run_verify_test', 'ds_verify_test');
+
+-- 오프셋이 두 칸 밀린 mention
+INSERT INTO requirement_mentions (mention_id, posting_version_id, snapshot_id, chunk_id,
+                                  raw_expression, evidence_span_start, evidence_span_end,
+                                  stated_requiredness, extraction_run_id, dataset_version)
+  VALUES ('men_shifted_test', 'pv_verify_test', 'snap_verify_test', 'chunk_verify_test',
+          '{EXPRESSION}', {SPAN_START + 2}, {SPAN_END + 2}, '중요하게 봅니다',
+          'run_verify_test', 'ds_verify_test');
+
+-- 해소되는 근거와 해소되지 않는 근거
+INSERT INTO analysis_claim_evidence (claim_id, support_type, support_id, relation)
+  VALUES ('claim_42', 'chunk', 'chunk_verify_test', 'supports'),
+         ('claim_42', 'chunk', 'chunk_does_not_exist', 'supports');
+"""
+
 
 @pytest.fixture
 def verify_unit(rollback_conn: psycopg.Connection) -> Unit:
@@ -77,11 +133,14 @@ def verify_unit(rollback_conn: psycopg.Connection) -> Unit:
     """
     with rollback_conn.cursor() as cur:
         cur.execute(SEED)
+        cur.execute(SEED_CITATION)
         cur.execute('SET LOCAL ROLE "cs_pipe_verify"')
     return Unit(rollback_conn, Component.PIPE_VERIFY)
 
 
-def _context() -> CheckContext:
+def _context(
+    target_type: str = "analysis_claim", target_id: str = "claim_42"
+) -> CheckContext:
     return CheckContext(
         run=RunContext(
             agent_run_id=RUN_ID,
@@ -91,8 +150,8 @@ def _context() -> CheckContext:
             scope_level=ScopeLevel.OVERALL,
             as_of_date=date(2026, 7, 27),
         ),
-        target_type="analysis_claim",
-        target_id="claim_42",
+        target_type=target_type,
+        target_id=target_id,
     )
 
 
@@ -270,6 +329,61 @@ def test_verify_pipeline_cannot_change_request_status(verify_unit: Unit) -> None
             " WHERE request_id = 'req_verify_test'"
         )
     assert "permission denied" in str(exc.value).lower()
+
+
+# ============================================================ 검사 3 입력
+def test_citation_span_check_passes_on_a_matching_mention(verify_unit: Unit) -> None:
+    """저장된 오프셋으로 원문을 자르면 표현과 같다. 오프셋은 문자 단위다."""
+    check = citation_span_check(VerificationRepository(verify_unit))
+    outcome = check(_context(TARGET_MENTION, "men_verify_test"))
+
+    assert outcome.verdict is CheckVerdict.PASS
+
+
+def test_citation_span_check_detects_a_shifted_span(verify_unit: Unit) -> None:
+    check = citation_span_check(VerificationRepository(verify_unit))
+    outcome = check(_context(TARGET_MENTION, "men_shifted_test"))
+
+    assert outcome.verdict is CheckVerdict.FAIL
+    assert outcome.detail["expected"] == "트랜잭션 무결성"
+
+
+def test_missing_mention_is_reported(verify_unit: Unit) -> None:
+    assert VerificationRepository(verify_unit).mention_with_chunk("men_absent") is None
+
+
+def test_registered_checks_reduce_the_unregistered_count(verify_unit: Unit) -> None:
+    """4-2가 여덟 종 중 둘을 채운다. 나머지는 미등록으로 남는다."""
+    repository = VerificationRepository(verify_unit)
+    registry = CheckRegistry()
+    registry.register(CheckName.SCHEMA, schema_check())
+    registry.register(CheckName.CITATION_SPAN, citation_span_check(repository))
+
+    report = CheckRunner(registry).run(_context(TARGET_MENTION, "men_verify_test"))
+    repository.record_results(ANALYSIS_VERSION, report.results)
+
+    assert len(report.unregistered) == 5
+    assert report.complete is False
+
+    stored = repository.results_for(ANALYSIS_VERSION, TARGET_MENTION, "men_verify_test")
+    by_check = {row["check_name"]: row["verdict"] for row in stored}
+    assert by_check["citation_span_validator"] == "pass"
+    assert by_check["schema_validator"] == "skip"
+    assert by_check["cross_model_sample_audit"] == "skip"
+
+
+def test_unresolved_support_is_detected(verify_unit: Unit) -> None:
+    """존재하지 않는 청크를 근거로 달아도 데이터베이스는 막지 못한다."""
+    repository = VerificationRepository(verify_unit)
+    assert repository.evidence_count("claim_42") == 2
+
+    unresolved = repository.unresolved_supports("claim_42")
+    assert [r["support_id"] for r in unresolved] == ["chunk_does_not_exist"]
+
+    check = citation_span_check(repository)
+    outcome = check(_context(TARGET_CLAIM, "claim_42"))
+    assert outcome.verdict is CheckVerdict.FAIL
+    assert outcome.repair_action is RepairAction.SWAP_EVIDENCE
 
 
 # ============================================================ 쓰기 범위
