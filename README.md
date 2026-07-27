@@ -103,6 +103,18 @@ npm run server
 
 Supabase 환경변수와 스키마 설정은 [Supabase 설정 문서](docs/supabase-setup.md)를 따릅니다. API 주소가 기본값과 다르면 공개 환경변수 `VITE_API_BASE_URL`을 설정합니다. Supabase 비밀키에는 `VITE_` 접두사를 사용하지 않습니다.
 
+루트의 `.env.example`을 `.env`로 복사한 뒤 필요한 값만 설정합니다. 다음 서버 설정은
+생략하면 안전한 개발 기본값을 사용합니다.
+
+| 환경변수 | 기본값 | 용도 |
+|---|---:|---|
+| `PORT` | `3000` | Express 서버 포트 |
+| `CLIENT_URL` | 로컬 Vite 주소 2개 | 쉼표로 구분한 CORS 허용 출처 |
+| `API_RATE_LIMIT_WINDOW_MS` | `900000` | API 요청 제한 시간 범위 |
+| `API_RATE_LIMIT_MAX` | `100` | 시간 범위 내 IP별 최대 요청 수 |
+| `JSON_BODY_LIMIT` | `100kb` | JSON 요청 본문 최대 크기 |
+| `VITE_API_BASE_URL` | `http://127.0.0.1:3000` | 브라우저에서 호출할 공개 API 주소 |
+
 ## 주요 기능
 
 * 최대 500자의 상황 입력
@@ -232,7 +244,7 @@ npm run build
 
 최근 검증 결과:
 
-* Vitest: 테스트 파일 17개, 테스트 47개 통과
+* Vitest: 테스트 파일 19개, 테스트 52개 통과
 * Mock 감정 분석: 대표 시나리오 4개 통과
 * Vite 프로덕션 빌드 성공
 * 실제 Supabase 연결 및 `emotion_analyses` 읽기 통과
@@ -308,6 +320,13 @@ Tests       1 passed (1)
 * [대표 이미지](showcase/thumbnail.webp)
 * 화면 이미지: [평소](showcase/screenshots/home2.webp), [긴장](showcase/screenshots/home3.webp), [피곤](showcase/screenshots/home1.webp)
 
+## 문서 안내
+
+* [프로젝트 기획 이력](docs/project-history.md)
+* [감정 분석 API](docs/emotion-analysis-api.md)
+* [Supabase 설정](docs/supabase-setup.md)
+* [통합 테스트 계획](docs/test-plan.md)
+
 ## 프로젝트 폴더 구조
 
 ```
@@ -335,11 +354,8 @@ hub/
 │  └─ supabase-schema.sql
 │
 ├─ docs/
-│  ├─ codex-prompt.md
 │  ├─ emotion-analysis-api.md
-│  ├─ github-issues.md
-│  ├─ mvp-scope.md
-│  ├─ project-brief.md
+│  ├─ project-history.md
 │  ├─ supabase-setup.md
 │  └─ test-plan.md
 │
@@ -459,8 +475,6 @@ hub/
 │     │  └─ openai.yaml
 │     └─ SKILL.md
 │
-├─ .github/
-│  └─ pull_request_template.md
 ├─ AGENTS.md
 ├─ index.html
 ├─ package.json

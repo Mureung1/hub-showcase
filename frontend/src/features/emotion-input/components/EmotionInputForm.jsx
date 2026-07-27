@@ -104,7 +104,9 @@ export default function EmotionInputForm({
       <div className="situation-input">
         <div className="field-heading">
           <label htmlFor="situation-text">지금 겪고 있는 상황</label>
-          <span aria-live="polite">{situationText.length}/500자</span>
+          <span aria-live="polite">
+            {situationText.length}/{EMOTION_ANALYSIS_LIMITS.situationTextLength}자
+          </span>
         </div>
         <textarea
           id="situation-text"

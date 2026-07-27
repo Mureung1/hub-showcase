@@ -7,6 +7,7 @@ import {
   isSupabaseConfigured,
   SupabaseConfigurationError
 } from "./backend/config/supabaseClient.js";
+import { createServerConfig } from "./backend/config/serverConfig.js";
 import {
   createEmotionAnalysisRouter
 } from "./backend/features/emotion-analyses/emotionAnalysisRoutes.js";
@@ -15,19 +16,8 @@ import { SupabaseRepositoryError } from "./backend/repositories/emotionAnalysisR
 
 dotenv.config({ quiet: true });
 
-const requestedPort = Number.parseInt(
-  process.env.PORT ?? process.env.SERVER_PORT ?? "",
-  10
-);
-const port = Number.isInteger(requestedPort) && requestedPort > 0 ? requestedPort : 3000;
-const allowedOrigins = new Set([
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  ...(process.env.CLIENT_URL ?? "")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-]);
+const serverConfig = createServerConfig(process.env);
+const allowedOrigins = new Set(serverConfig.allowedOrigins);
 
 export function createApp({
   createAnalysis,
@@ -36,8 +26,8 @@ export function createApp({
 } = {}) {
   const app = express();
   const apiRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 100,
+    windowMs: serverConfig.rateLimitWindowMs,
+    limit: serverConfig.rateLimitMaximum,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     handler(request, response) {
@@ -54,7 +44,7 @@ export function createApp({
 
   app.disable("x-powered-by");
   app.use(helmet());
-  app.use(express.json({ limit: "100kb" }));
+  app.use(express.json({ limit: serverConfig.jsonBodyLimit }));
   app.use(
   "/api",
   cors({
@@ -170,8 +160,8 @@ export function createApp({
 const app = createApp();
 
 if (process.env.NODE_ENV !== "test") {
-  app.listen(port, () => {
-    console.log(`Express server listening on http://localhost:${port}`);
+  app.listen(serverConfig.port, () => {
+    console.log(`Express server listening on http://localhost:${serverConfig.port}`);
     console.log(
       `Supabase configuration: ${isSupabaseConfigured() ? "ready" : "not configured"}`
     );
