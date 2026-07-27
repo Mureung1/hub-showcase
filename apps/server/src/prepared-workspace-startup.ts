@@ -32,6 +32,11 @@ type PreparedWorkspaceActiveLifecycle = Extract<
   { readonly state: 'active' }
 >
 
+type PreparedWorkspaceRecoveryLifecycle = Extract<
+  ProductWorkspaceLifecycle,
+  { readonly state: 'recovery_required' }
+>
+
 export type PreparedWorkspaceSharedListener = {
   readonly port: number
   close(): Promise<void>
@@ -63,9 +68,7 @@ export type PreparedWorkspaceRuntimeGeneration = {
 
 export type PreparedWorkspaceStartupPorts = {
   bindSharedListener(input: {
-    readonly readActiveLifecycle: () =>
-      | PreparedWorkspaceActiveLifecycle
-      | undefined
+    readonly readLifecycle: () => ProductWorkspaceLifecycle
   }): Promise<PreparedWorkspaceSharedListener>
   prepareBrokerGeneration(input: {
     readonly canonicalRoot: string
@@ -79,6 +82,7 @@ export type PreparedWorkspaceStartupPorts = {
 
 export type PreparedWorkspaceActiveSession = {
   readonly lifecycle: PreparedWorkspaceActiveLifecycle
+  readLifecycle(): ProductWorkspaceLifecycle
   adapterLost(): Promise<void>
   close(): Promise<void>
 }
@@ -86,10 +90,7 @@ export type PreparedWorkspaceActiveSession = {
 export class PreparedWorkspaceStartupError extends Error {
   readonly stage: PreparedWorkspaceStartupStage
   readonly launchFailure: PreparedWorkspaceLaunchFailure | undefined
-  readonly lifecycle: Extract<
-    ProductWorkspaceLifecycle,
-    { readonly state: 'recovery_required' }
-  > | undefined
+  readonly lifecycle: PreparedWorkspaceRecoveryLifecycle | undefined
 
   constructor(input: {
     readonly stage: PreparedWorkspaceStartupStage
@@ -104,16 +105,7 @@ export class PreparedWorkspaceStartupError extends Error {
     this.stage = input.stage
     this.launchFailure = input.launchFailure
     this.lifecycle = input.workspace
-      ? {
-          state: 'recovery_required',
-          workspace: {
-            availability: 'available',
-            ...workspaceSummary(input.workspace),
-          },
-          reason: 'runtime_unavailable',
-          displayMessage:
-            'The workspace Runtime is unavailable. Restart AY-PLE after checking the prepared workspace.',
-        }
+      ? runtimeUnavailableLifecycle(input.workspace)
       : launchFailureLifecycle(input.launchFailure)
   }
 }
@@ -134,7 +126,10 @@ export async function startPreparedWorkspace(options: {
   let listener: PreparedWorkspaceSharedListener | undefined
   let broker: PreparedWorkspaceBrokerGeneration | undefined
   let runtime: PreparedWorkspaceRuntimeGeneration | undefined
-  let activeLifecycle: PreparedWorkspaceActiveLifecycle | undefined
+  let lifecycle: ProductWorkspaceLifecycle = {
+    state: 'starting',
+    workspace: workspaceSummary(selection.workspace),
+  }
   let runtimeTerminated = false
   let cleanupPromise: Promise<void> | undefined
 
@@ -172,12 +167,13 @@ export async function startPreparedWorkspace(options: {
 
   const onRuntimeTerminal = (): void => {
     runtimeTerminated = true
+    lifecycle = runtimeUnavailableLifecycle(selection.workspace)
     void cleanup('runtime_terminal').catch(() => undefined)
   }
 
   try {
     listener = await options.ports.bindSharedListener({
-      readActiveLifecycle: () => activeLifecycle,
+      readLifecycle: () => lifecycle,
     })
 
     stage = 'broker_generation'
@@ -227,13 +223,13 @@ export async function startPreparedWorkspace(options: {
     )
     if (runtimeTerminated) throw new RuntimeTerminatedDuringStartup()
 
-    const lifecycle = {
+    const activeLifecycle = {
       state: 'active',
       workspace: workspaceSummary(fresh.workspace),
     } satisfies PreparedWorkspaceActiveLifecycle
     const acceptCommit = (): boolean => {
       if (runtimeTerminated) return false
-      activeLifecycle = lifecycle
+      lifecycle = activeLifecycle
       return true
     }
 
@@ -248,11 +244,16 @@ export async function startPreparedWorkspace(options: {
     )
 
     return Object.freeze({
-      lifecycle,
-      adapterLost: () => cleanup('adapter_lost'),
+      lifecycle: activeLifecycle,
+      readLifecycle: () => lifecycle,
+      adapterLost: () => {
+        lifecycle = runtimeUnavailableLifecycle(selection.workspace)
+        return cleanup('adapter_lost')
+      },
       close: () => cleanup('shutdown'),
     })
   } catch (cause) {
+    lifecycle = runtimeUnavailableLifecycle(selection.workspace)
     let failureCause = cause
     try {
       await cleanup('shutdown')
@@ -380,12 +381,24 @@ function safeWorkspaceLabel(
   }`
 }
 
+function runtimeUnavailableLifecycle(
+  workspace: SemesterWorkspaceStateV4,
+): PreparedWorkspaceRecoveryLifecycle {
+  return {
+    state: 'recovery_required',
+    workspace: {
+      availability: 'available',
+      ...workspaceSummary(workspace),
+    },
+    reason: 'runtime_unavailable',
+    displayMessage:
+      'The workspace Runtime is unavailable. Restart AY-PLE after checking the prepared workspace.',
+  }
+}
+
 function launchFailureLifecycle(
   failure: PreparedWorkspaceLaunchFailure | undefined,
-): Extract<
-  ProductWorkspaceLifecycle,
-  { readonly state: 'recovery_required' }
-> | undefined {
+): PreparedWorkspaceRecoveryLifecycle | undefined {
   if (failure?.code === 'prepared_workspace_required') {
     return {
       state: 'recovery_required',
@@ -402,6 +415,19 @@ function launchFailureLifecycle(
       reason: 'registry_incompatible',
       displayMessage:
         'The workspace registry is incompatible and was preserved.',
+    }
+  }
+  if (failure?.code === 'registered_workspace_unavailable') {
+    return {
+      state: 'recovery_required',
+      workspace: {
+        availability: 'unavailable',
+        workspaceId: failure.workspaceId,
+        label: '등록된 학기 작업공간',
+      },
+      reason: 'workspace_unavailable',
+      displayMessage:
+        'The registered SemesterWorkspace is unavailable. Check the prepared workspace before restarting AY-PLE.',
     }
   }
   return undefined

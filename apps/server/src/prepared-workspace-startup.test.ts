@@ -16,6 +16,7 @@ import test from 'node:test'
 import {
   INTERACTION_BROKER_PROTOCOL_VERSION,
 } from '@ay-ple/interaction-mcp'
+import type { ProductWorkspaceLifecycle } from '@ay-ple/product-contract'
 import {
   createInitialSemesterWorkspaceStateV4,
   encodeSemesterWorkspaceStateV4,
@@ -58,16 +59,11 @@ const registryRelativePath = path.join(
 test('real shared listener and Broker authenticate one generation before active publication', async () => {
   const fixture = await createFixture()
   const terminal = deferred<void>()
-  let readActiveLifecycle: () => unknown = () => undefined
+  let readLifecycle: () => unknown = () => undefined
   try {
     const app = express()
     app.get('/api/product/workspace-lifecycle', (_request, response) => {
-      const activeLifecycle = readActiveLifecycle()
-      if (!activeLifecycle) {
-        response.status(503).end()
-        return
-      }
-      response.json(activeLifecycle)
+      response.json(readLifecycle())
     })
     const listener = await bindServerApplicationListener({
       host: '127.0.0.1',
@@ -76,7 +72,7 @@ test('real shared listener and Broker authenticate one generation before active 
     })
     const ports: PreparedWorkspaceStartupPorts = {
       async bindSharedListener(input) {
-        readActiveLifecycle = input.readActiveLifecycle
+        readLifecycle = input.readLifecycle
         return {
           port: listener.port,
           async close() {
@@ -202,7 +198,7 @@ test('opens the active surface only after the exact required startup order and r
       fixture.store,
       harness.events,
       () => {
-        assert.equal(harness.readActiveLifecycle?.(), undefined)
+        assert.equal(harness.readLifecycle?.().state, 'starting')
       },
     )
     const session = await startPreparedWorkspace({
@@ -211,7 +207,7 @@ test('opens the active surface only after the exact required startup order and r
       ports: harness.ports,
       registryStore: registry,
     })
-    assert.deepEqual(harness.readActiveLifecycle?.(), session.lifecycle)
+    assert.deepEqual(harness.readLifecycle?.(), session.lifecycle)
 
     assert.deepEqual(harness.events, [
       'listener.bind',
@@ -281,7 +277,7 @@ test('Runtime terminal during the registry transaction restores the previous poi
         error.stage === 'registry_transaction',
     )
     await waitFor(() => harness.events.includes('listener.close'))
-    assert.equal(harness.readActiveLifecycle?.(), undefined)
+    assert.equal(harness.readLifecycle?.().state, 'recovery_required')
     assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
   } finally {
     await fixture.cleanup()
@@ -313,11 +309,79 @@ test('explicit first open and registry reopen pass the same readiness gate with 
       reopened.childEnvironment.AY_PLE_INTERACTION_BROKER_TOKEN,
       first.childEnvironment.AY_PLE_INTERACTION_BROKER_TOKEN,
     )
+    assert.notEqual(reopened.threadId, first.threadId)
     assert.equal(
       reopened.runtimeInput?.canonicalRoot,
       fixture.targetRoot,
     )
     await reopenedSession.close()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a failed explicit relaunch preserves the previous pointer for a fresh no-argument reopen', async () => {
+  const fixture = await createFixture()
+  try {
+    const before = await registryBytes(fixture.appDataRoot)
+    const failed = createHarness({ fault: 'roster' })
+    await assert.rejects(
+      startPreparedWorkspace({
+        appDataRoot: fixture.appDataRoot,
+        explicitWorkspaceRoot: fixture.targetRoot,
+        ports: failed.ports,
+      }),
+      PreparedWorkspaceStartupError,
+    )
+    assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
+
+    const reopened = createHarness({ expectedWorkspaceId: previousWorkspaceId })
+    const session = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      ports: reopened.ports,
+    })
+    assert.equal(reopened.runtimeInput?.canonicalRoot, fixture.previousRoot)
+    assert.equal(session.lifecycle.workspace.workspaceId, previousWorkspaceId)
+    assert.notEqual(reopened.threadId, failed.threadId)
+    assert.notEqual(
+      reopened.childEnvironment.AY_PLE_INTERACTION_BROKER_TOKEN,
+      failed.childEnvironment.AY_PLE_INTERACTION_BROKER_TOKEN,
+    )
+    await session.close()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('an unavailable registered root projects path-free workspace recovery before any Runtime start', async () => {
+  const fixture = await createFixture()
+  try {
+    await rm(fixture.previousRoot, { recursive: true })
+    const harness = createHarness()
+    await assert.rejects(
+      startPreparedWorkspace({
+        appDataRoot: fixture.appDataRoot,
+        ports: harness.ports,
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof PreparedWorkspaceStartupError)
+        assert.equal(error.stage, 'prepared_root_validation')
+        assert.deepEqual(error.lifecycle, {
+          state: 'recovery_required',
+          workspace: {
+            availability: 'unavailable',
+            workspaceId: previousWorkspaceId,
+            label: '등록된 학기 작업공간',
+          },
+          reason: 'workspace_unavailable',
+          displayMessage:
+            'The registered SemesterWorkspace is unavailable. Check the prepared workspace before restarting AY-PLE.',
+        })
+        assert.equal(JSON.stringify(error.lifecycle).includes(fixture.root), false)
+        return true
+      },
+    )
+    assert.deepEqual(harness.events, [])
   } finally {
     await fixture.cleanup()
   }
@@ -476,7 +540,7 @@ test('identity replacement at the registry compare boundary preserves the previo
         error.stage === 'registry_transaction',
     )
     assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
-    assert.equal(harness.readActiveLifecycle?.(), undefined)
+    assert.equal(harness.readLifecycle?.().state, 'recovery_required')
   } finally {
     await fixture.cleanup()
   }
@@ -535,6 +599,18 @@ test('Runtime terminal, Adapter loss, and shutdown revoke one generation and bou
         await session.close()
       }
 
+      if (reason !== 'shutdown') {
+        assert.deepEqual(session.readLifecycle(), {
+          state: 'recovery_required',
+          workspace: {
+            availability: 'available',
+            ...session.lifecycle.workspace,
+          },
+          reason: 'runtime_unavailable',
+          displayMessage:
+            'The workspace Runtime is unavailable. Restart AY-PLE after checking the prepared workspace.',
+        })
+      }
       const brokerEvent =
         reason === 'runtime_terminal'
           ? 'broker.runtime-terminal'
@@ -596,13 +672,15 @@ function createHarness(
     readonly rosterReason?: string
     readonly afterRoster?: () => void | Promise<void>
     readonly hangBrokerCleanup?: boolean
+    readonly expectedWorkspaceId?: string
   } = {},
 ): {
   readonly events: string[]
   readonly ports: PreparedWorkspaceStartupPorts
   readonly terminal: Deferred<void>
   readonly childEnvironment: Record<string, string>
-  readActiveLifecycle?: () => unknown
+  readonly threadId: string
+  readLifecycle?: () => ProductWorkspaceLifecycle
   runtimeInput?: {
     readonly canonicalRoot: string
   }
@@ -619,17 +697,19 @@ function createHarness(
     AY_PLE_INTERACTION_RUNTIME_BINDING:
       `runtime_${generation.padEnd(32, '0').slice(0, 32)}`,
   }
+  const threadId = `thread/${generation}`
   const result: ReturnType<typeof createHarness> = {
     events,
     terminal,
     childEnvironment,
+    threadId,
     ports: {
       async bindSharedListener(input) {
         events.push('listener.bind')
         if (options.fault === 'listener') throw new Error('listener fault')
-        result.readActiveLifecycle = () => {
-          const lifecycle = input.readActiveLifecycle()
-          if (lifecycle) events.push('surface.active')
+        result.readLifecycle = () => {
+          const lifecycle = input.readLifecycle()
+          if (lifecycle.state === 'active') events.push('surface.active')
           return lifecycle
         }
         return {
@@ -645,7 +725,7 @@ function createHarness(
         return {
           childEnvironment,
           async runtimeTerminal() {
-            result.readActiveLifecycle?.()
+            result.readLifecycle?.()
             events.push('broker.runtime-terminal')
             if (options.hangBrokerCleanup) await never()
           },
@@ -677,7 +757,7 @@ function createHarness(
             if (options.fault === 'handshake') {
               throw new Error('handshake fault')
             }
-            return { threadId: 'thread/native' }
+            return { threadId }
           },
           async waitForRequiredMcp(input) {
             events.push('roster.ready')
@@ -694,9 +774,12 @@ function createHarness(
           },
           async confirmThreadContext(input) {
             events.push('context.confirm')
-            assert.equal(input.threadId, 'thread/native')
+            assert.equal(input.threadId, threadId)
             assert.equal(input.canonicalRoot, result.runtimeInput?.canonicalRoot)
-            assert.equal(input.workspaceId, targetWorkspaceId)
+            assert.equal(
+              input.workspaceId,
+              options.expectedWorkspaceId ?? targetWorkspaceId,
+            )
             if (options.fault === 'context') {
               throw new Error('context fault')
             }
