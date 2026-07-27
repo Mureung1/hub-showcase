@@ -13,8 +13,8 @@ const PLATFORM_IDENTITY_ID = "21000000-0000-4000-8000-000000000003";
 
 function requireDevelopmentPassword(name: string): string {
   const password = process.env[name];
-  if (!password || password.length < 12) {
-    throw new Error(`${name}은 12자 이상의 개발용 비밀번호로 설정해야 합니다.`);
+  if (!password || password.length < 8) {
+    throw new Error(`${name}은 8자 이상의 개발용 비밀번호로 설정해야 합니다.`);
   }
   return password;
 }
@@ -39,7 +39,7 @@ async function seedDevelopment(): Promise<void> {
         VALUES
           (
             '00000000-0000-0000-0000-000000000000', $1, 'authenticated',
-            'authenticated', 'patient@baro-jinryo.local',
+            'authenticated', 'patient@admin',
             crypt($4, gen_salt('bf')), now(),
             '', '', '', '',
             '{"provider":"email","providers":["email"]}'::jsonb,
@@ -48,7 +48,7 @@ async function seedDevelopment(): Promise<void> {
           ),
           (
             '00000000-0000-0000-0000-000000000000', $2, 'authenticated',
-            'authenticated', 'staff@baro-jinryo.local',
+            'authenticated', 'staff@admin',
             crypt($5, gen_salt('bf')), now(),
             '', '', '', '',
             '{"provider":"email","providers":["email"]}'::jsonb,
@@ -57,7 +57,7 @@ async function seedDevelopment(): Promise<void> {
           ),
           (
             '00000000-0000-0000-0000-000000000000', $3, 'authenticated',
-            'authenticated', 'platform@baro-jinryo.local',
+            'authenticated', 'platform@admin',
             crypt($6, gen_salt('bf')), now(),
             '', '', '', '',
             '{"provider":"email","providers":["email"]}'::jsonb,
@@ -94,17 +94,17 @@ async function seedDevelopment(): Promise<void> {
         VALUES
           (
             $1::uuid, $2::uuid, $2::text,
-            jsonb_build_object('sub', $2::text, 'email', 'patient@baro-jinryo.local'),
+            jsonb_build_object('sub', $2::text, 'email', 'patient@admin'),
             'email', now(), now(), now()
           ),
           (
             $3::uuid, $4::uuid, $4::text,
-            jsonb_build_object('sub', $4::text, 'email', 'staff@baro-jinryo.local'),
+            jsonb_build_object('sub', $4::text, 'email', 'staff@admin'),
             'email', now(), now(), now()
           ),
           (
             $5::uuid, $6::uuid, $6::text,
-            jsonb_build_object('sub', $6::text, 'email', 'platform@baro-jinryo.local'),
+            jsonb_build_object('sub', $6::text, 'email', 'platform@admin'),
             'email', now(), now(), now()
           )
         ON CONFLICT (provider_id, provider) DO UPDATE

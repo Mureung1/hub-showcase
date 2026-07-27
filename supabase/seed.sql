@@ -1,7 +1,7 @@
 -- Local development fixtures. Never reuse these credentials in production.
--- patient@baro-jinryo.local / Patient123!
--- staff@baro-jinryo.local   / Staff123!
--- platform@baro-jinryo.local / Platform123!
+-- patient@admin  / admin123!
+-- staff@admin    / admin123!
+-- platform@admin / admin123!
 
 insert into auth.users (
   instance_id,
@@ -26,8 +26,8 @@ values
     '20000000-0000-4000-8000-000000000001',
     'authenticated',
     'authenticated',
-    'patient@baro-jinryo.local',
-    crypt('Patient123!', gen_salt('bf')),
+    'patient@admin',
+    crypt('admin123!', gen_salt('bf')),
     now(),
     '',
     '',
@@ -43,8 +43,8 @@ values
     '20000000-0000-4000-8000-000000000002',
     'authenticated',
     'authenticated',
-    'staff@baro-jinryo.local',
-    crypt('Staff123!', gen_salt('bf')),
+    'staff@admin',
+    crypt('admin123!', gen_salt('bf')),
     now(),
     '',
     '',
@@ -60,8 +60,8 @@ values
     '20000000-0000-4000-8000-000000000003',
     'authenticated',
     'authenticated',
-    'platform@baro-jinryo.local',
-    crypt('Platform123!', gen_salt('bf')),
+    'platform@admin',
+    crypt('admin123!', gen_salt('bf')),
     now(),
     '',
     '',
@@ -99,7 +99,7 @@ values
     '21000000-0000-4000-8000-000000000001',
     '20000000-0000-4000-8000-000000000001',
     '20000000-0000-4000-8000-000000000001',
-    '{"sub":"20000000-0000-4000-8000-000000000001","email":"patient@baro-jinryo.local"}'::jsonb,
+    '{"sub":"20000000-0000-4000-8000-000000000001","email":"patient@admin"}'::jsonb,
     'email',
     now(),
     now(),
@@ -109,7 +109,7 @@ values
     '21000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000002',
-    '{"sub":"20000000-0000-4000-8000-000000000002","email":"staff@baro-jinryo.local"}'::jsonb,
+    '{"sub":"20000000-0000-4000-8000-000000000002","email":"staff@admin"}'::jsonb,
     'email',
     now(),
     now(),
@@ -119,7 +119,7 @@ values
     '21000000-0000-4000-8000-000000000003',
     '20000000-0000-4000-8000-000000000003',
     '20000000-0000-4000-8000-000000000003',
-    '{"sub":"20000000-0000-4000-8000-000000000003","email":"platform@baro-jinryo.local"}'::jsonb,
+    '{"sub":"20000000-0000-4000-8000-000000000003","email":"platform@admin"}'::jsonb,
     'email',
     now(),
     now(),
