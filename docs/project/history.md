@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-27 · BE-RECIPE-005 · 완료
+
+- 결과: 인증된 `PATCH /api/recipes/:recipeId`가 현재 사용자가 소유한 활성 `OWNED`, `EXTERNAL` 레시피의 편집 가능한 7개 필드와 하위 데이터를 전체 교체한다. 출처 유무로 유형을 다시 결정하고, `RECEIVED`는 `RECIPE_NOT_EDITABLE`, 없는·타인 소유·삭제·잘못된 ID는 `RECIPE_NOT_FOUND`로 처리한다.
+- 결정: 생성 API의 전체 본문·안전한 URL 검증을 재사용하고, 소유권·활성 상태를 확인한 레시피 행을 잠근 뒤 부모·재료·단계·출처 교체와 수정 시각 갱신을 한 트랜잭션으로 처리한다. 개인 메모와 공유 상태는 변경하지 않는다.
+- 시행착오: 집중 테스트가 업데이트 서비스 모듈 부재로 `ERR_MODULE_NOT_FOUND` Red를 반환하는 것을 확인한 뒤 최소 서비스와 라우트 구현으로 Green으로 전환했다.
+- 검증: Red에서 기존 47개는 통과하고 신규 테스트 파일 1개가 모듈 부재로 실패했다. Green에서 `npm test -- src/services/recipeUpdate.service.test.ts`와 전체 `npm test` 54개 테스트, `npm run type-check`, `npm run build`, `git diff --check`를 통과했다. 실제 Firebase 토큰과 PostgreSQL을 사용한 HTTP 요청은 수행하지 않았다.
+- 후속: `FE-RECIPE-006`
+- 반복 패턴: `transactional-recipe-aggregate-write`
+
 ## 2026-07-27 · FE-AUTH-004 · 완료
 
 - 결과: 데스크톱·태블릿 가죽 사이드바 하단과 모바일 가죽 헤더 우측에서 Firebase 로그아웃을 실행한다. 성공하면 로그인 화면으로 교체 이동하고, 처리 중에는 두 반응형 버튼의 중복 실행을 함께 막으며, 실패하면 현재 레시피북과 입력 상태를 유지한 채 접근 가능한 오류와 재시도를 제공한다.

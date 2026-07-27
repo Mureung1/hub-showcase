@@ -215,7 +215,7 @@ async function normalizeSource(value: unknown): Promise<RecipeSource | null> {
   };
 }
 
-async function normalizeRequest(
+export async function normalizeCreateRecipeRequest(
   value: unknown,
 ): Promise<CreateRecipeRequest> {
   if (!isRecord(value) || !hasExactKeys(value, REQUEST_KEYS)) {
@@ -268,7 +268,7 @@ export async function createRecipe(
   firebaseUser: FirebaseRecipeUser,
   requestBody: unknown,
 ): Promise<CreateRecipeResult> {
-  const request = await normalizeRequest(requestBody);
+  const request = await normalizeCreateRecipeRequest(requestBody);
   const type: RecipeType = request.source === null ? "OWNED" : "EXTERNAL";
   const recipeId = randomUUID();
   const client = await pool.connect();

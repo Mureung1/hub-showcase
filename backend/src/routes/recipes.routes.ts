@@ -8,6 +8,11 @@ import {
   getRecipeDetail,
   RecipeNotFoundError,
 } from "../services/recipeDetail.service.js";
+import {
+  RecipeNotEditableError,
+  RecipeUpdateValidationError,
+  updateRecipe,
+} from "../services/recipeUpdate.service.js";
 import { UrlContentError } from "../services/urlContent.service.js";
 
 type RecipeType = "OWNED" | "EXTERNAL" | "RECEIVED";
@@ -130,6 +135,77 @@ router.get("/:recipeId", async (req: Request, res: Response) => {
       data: recipe,
     });
   } catch (error) {
+    if (error instanceof RecipeNotFoundError) {
+      return res.status(404).json({
+        error: {
+          code: "RECIPE_NOT_FOUND",
+          message: "레시피를 찾을 수 없습니다.",
+        },
+      });
+    }
+
+    throw error;
+  }
+});
+
+router.patch("/:recipeId", async (req: Request, res: Response) => {
+  const firebaseUser = req.firebaseUser;
+
+  if (!firebaseUser) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHORIZED",
+        message: "로그인이 필요합니다.",
+      },
+    });
+  }
+
+  try {
+    const recipeId =
+      typeof req.params.recipeId === "string"
+        ? req.params.recipeId
+        : "";
+    const recipe = await updateRecipe(
+      databasePool,
+      firebaseUser.uid,
+      recipeId,
+      req.body,
+    );
+
+    return res.status(200).json({
+      data: recipe,
+    });
+  } catch (error) {
+    if (error instanceof RecipeUpdateValidationError) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "입력값을 확인해 주세요.",
+        },
+      });
+    }
+
+    if (error instanceof UrlContentError) {
+      return res.status(400).json({
+        error: {
+          code: error.code,
+          message:
+            error.code === "INVALID_URL"
+              ? "URL 형식을 확인해 주세요."
+              : "접근할 수 없는 URL입니다.",
+        },
+      });
+    }
+
+    if (error instanceof RecipeNotEditableError) {
+      return res.status(403).json({
+        error: {
+          code: "RECIPE_NOT_EDITABLE",
+          message: "전달받은 레시피의 원본은 수정할 수 없습니다.",
+        },
+      });
+    }
+
     if (error instanceof RecipeNotFoundError) {
       return res.status(404).json({
         error: {
