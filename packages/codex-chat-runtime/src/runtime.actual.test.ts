@@ -153,50 +153,35 @@ test('projects unsupported native account state as authentication-required', asy
   }
 })
 
-test('fails a malformed account read safely and reaps the process tree', async () => {
-  const { harness, processJournalPath } = await startSyntheticHarness(
-    'account-read-malformed',
-    'malformed-output',
-  )
+test('settles failed account reads safely and reaps each process tree', async (t) => {
+  for (const [label, scenario, code] of [
+    ['malformed output', 'malformed-output', 'bridge_protocol_failed'],
+    ['response timeout', 'response-hang', 'runtime_response_timeout'],
+    ['process loss', 'pending-eof', 'runtime_lost'],
+  ] as const) {
+    await t.test(label, async () => {
+      const { harness, processJournalPath } = await startSyntheticHarness(
+        `account-read-${scenario}`,
+        scenario,
+      )
 
-  await assert.rejects(
-    within(harness.runtime.readAccountReadiness()),
-    (error: unknown) =>
-      error instanceof CodexChatRuntimeError &&
-      error.code === 'bridge_protocol_failed' &&
-      !error.unknownOutcome,
-  )
-  assert.equal((await harness.terminal).code, 'bridge_protocol_failed')
-  await harness.closed
-  const processJournal = await readProcessJournal(processJournalPath)
-  assert.deepEqual(
-    processJournal.commands.map((command) => command.command),
-    ['read_account'],
-  )
-  await waitForProcessGroupExit(processJournal.processGroupId)
-})
-
-test('bounds a stalled account readiness read and reaps the process tree', async () => {
-  const { harness, processJournalPath } = await startSyntheticHarness(
-    'account-read-timeout',
-    'response-hang',
-  )
-
-  await assert.rejects(
-    within(harness.runtime.readAccountReadiness()),
-    (error: unknown) =>
-      error instanceof CodexChatRuntimeError &&
-      error.code === 'runtime_response_timeout' &&
-      !error.unknownOutcome,
-  )
-  assert.equal((await harness.terminal).code, 'runtime_response_timeout')
-  await harness.closed
-  const processJournal = await readProcessJournal(processJournalPath)
-  assert.deepEqual(
-    processJournal.commands.map((command) => command.command),
-    ['read_account'],
-  )
-  await waitForProcessGroupExit(processJournal.processGroupId)
+      await assert.rejects(
+        within(harness.runtime.readAccountReadiness()),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === code &&
+          !error.unknownOutcome,
+      )
+      assert.equal((await harness.terminal).code, code)
+      await harness.closed
+      const processJournal = await readProcessJournal(processJournalPath)
+      assert.deepEqual(
+        processJournal.commands.map((command) => command.command),
+        ['read_account'],
+      )
+      await waitForProcessGroupExit(processJournal.processGroupId)
+    })
+  }
 })
 
 test('settles an account read once when Runtime close wins the race', async () => {
@@ -221,29 +206,6 @@ test('settles an account read once when Runtime close wins the race', async () =
   assert.deepEqual(
     processJournal.commands.map((command) => command.command),
     ['read_account', 'close'],
-  )
-  await waitForProcessGroupExit(processJournal.processGroupId)
-})
-
-test('settles an account read safely after child process loss', async () => {
-  const { harness, processJournalPath } = await startSyntheticHarness(
-    'account-read-process-loss',
-    'pending-eof',
-  )
-
-  await assert.rejects(
-    within(harness.runtime.readAccountReadiness()),
-    (error: unknown) =>
-      error instanceof CodexChatRuntimeError &&
-      error.code === 'runtime_lost' &&
-      !error.unknownOutcome,
-  )
-  assert.equal((await harness.terminal).code, 'runtime_lost')
-  await harness.closed
-  const processJournal = await readProcessJournal(processJournalPath)
-  assert.deepEqual(
-    processJournal.commands.map((command) => command.command),
-    ['read_account'],
   )
   await waitForProcessGroupExit(processJournal.processGroupId)
 })
