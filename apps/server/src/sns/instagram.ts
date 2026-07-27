@@ -30,7 +30,13 @@ export interface InstagramConfig {
 export interface InstagramDeps {
   config?: InstagramConfig;
   fetchImpl?: FetchLike;
+  /** 컨테이너 대기 간격 주입(테스트가 실제로 기다리지 않게). 기본은 setTimeout. */
+  sleepImpl?: (ms: number) => Promise<void>;
 }
+
+/** 컨테이너 준비 폴링 — IG는 보통 1~3초면 FINISHED가 된다. */
+const CONTAINER_POLL_ATTEMPTS = 12;
+const CONTAINER_POLL_INTERVAL_MS = 1000;
 
 export interface PublishParams {
   caption: string;
@@ -83,6 +89,44 @@ interface IgIdResponse {
 interface IgPermalinkResponse {
   permalink?: string;
 }
+interface IgStatusResponse {
+  /** IN_PROGRESS | FINISHED | ERROR | EXPIRED | PUBLISHED */
+  status_code?: string;
+}
+
+/**
+ * 컨테이너가 게시 가능(FINISHED)해질 때까지 기다린다.
+ *
+ * IG는 image_url을 **자기 서버로 가져와 처리**한 뒤에야 게시를 허용한다. 그전에
+ * media_publish를 부르면 `400 Media ID is not available`이 떨어진다.
+ * 이미지가 이미 IG 쪽에 캐시돼 있으면 생성 직후 바로 FINISHED라 폴링 없이도 우연히
+ * 성공한다 — 그래서 **이미지를 새로 바꾼 날에만 터지는 간헐 버그**가 된다. 반드시 기다린다.
+ */
+async function waitForContainer(
+  apiBase: string,
+  creationId: string,
+  accessToken: string,
+  doFetch: FetchLike,
+  sleep: (ms: number) => Promise<void>,
+): Promise<{ ok: boolean; error?: string }> {
+  const url = `${apiBase}/${creationId}?fields=status_code&access_token=${encodeURIComponent(accessToken)}`;
+
+  for (let i = 0; i < CONTAINER_POLL_ATTEMPTS; i += 1) {
+    const res = await doFetch(url, { method: "GET" });
+    const json = (await res.json().catch(() => ({}))) as IgStatusResponse;
+    const status = json.status_code;
+
+    if (status === "FINISHED") return { ok: true };
+    if (status === "ERROR" || status === "EXPIRED") {
+      return { ok: false, error: `컨테이너 처리 실패(${status}) — 이미지 URL·형식 확인` };
+    }
+    // IN_PROGRESS(또는 조회 실패)면 잠깐 기다렸다 다시 본다.
+    await sleep(CONTAINER_POLL_INTERVAL_MS);
+  }
+
+  const waitedSec = (CONTAINER_POLL_ATTEMPTS * CONTAINER_POLL_INTERVAL_MS) / 1000;
+  return { ok: false, error: `컨테이너 준비 시간 초과(${waitedSec}s)` };
+}
 
 /**
  * 게시된 미디어의 permalink를 조회한다(best-effort — 실패해도 게시 성공은 유지).
@@ -110,9 +154,10 @@ async function fetchPermalink(
 
 /**
  * 인스타그램에 캡션+이미지를 게시한다(또는 미게시로 강등).
- * 1) POST /{ig-user-id}/media       (image_url + caption)  → creation_id
- * 2) POST /{ig-user-id}/media_publish (creation_id)         → media_id
- * 3) GET  /{media-id}?fields=permalink (best-effort)
+ * 1) POST /{ig-user-id}/media           (image_url + caption) → creation_id
+ * 2) GET  /{creation-id}?fields=status_code 가 FINISHED 될 때까지 대기
+ * 3) POST /{ig-user-id}/media_publish   (creation_id)         → media_id
+ * 4) GET  /{media-id}?fields=permalink  (best-effort)
  */
 export async function publishToInstagram(
   params: PublishParams,
@@ -120,6 +165,8 @@ export async function publishToInstagram(
 ): Promise<InstagramResult> {
   const config = deps.config ?? readInstagramConfig();
   const doFetch: FetchLike = deps.fetchImpl ?? (globalThis.fetch as unknown as FetchLike);
+  const sleep =
+    deps.sleepImpl ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const imageUrl = params.imageUrl ?? config.imageUrl;
 
   if (!isInstagramLive(config)) {
@@ -146,7 +193,13 @@ export async function publishToInstagram(
       return { posted: false, error: `컨테이너 생성 실패(${createRes.status}): ${createJson.error?.message ?? "unknown"}` };
     }
 
-    // 2) 게시
+    // 2) 컨테이너가 준비될 때까지 대기 — 건너뛰면 400 "Media ID is not available"
+    const ready = await waitForContainer(apiBase, createJson.id, token, doFetch, sleep);
+    if (!ready.ok) {
+      return { posted: false, error: ready.error };
+    }
+
+    // 3) 게시
     const pubRes = await doFetch(`${base}/media_publish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

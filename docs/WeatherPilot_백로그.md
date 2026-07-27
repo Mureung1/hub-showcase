@@ -97,7 +97,7 @@
 | 3-4 | 야간 발송 시 scheduled 저장 (예약 전환) | P1 | ✅ |
 | 3-5 | 쿠폰 코드 발급 + `POST /coupons/:code/redeem` | P0 | ✅ |
 | 3-6 | 추적 화면 폴링으로 실데이터 표시 (귀속 매출) | P0 | ✅ |
-| 3-7 | Instagram 본인 계정 실게시(Content Publishing dev-mode, 서버 `sns/instagram.ts`) → 미설정·실패 시 "문구 복사" 폴백(FE SentView). 타인 계정은 App Review 필요로 모의 유지. **7/27 실게시 검증 완료** — `@cafe_kimsajang`, [게시물](https://www.instagram.com/p/DbSCTJfEjCB/) | P2 | ✅ |
+| 3-7 | Instagram 본인 계정 실게시(Content Publishing dev-mode, 서버 `sns/instagram.ts`) → 미설정·실패 시 "문구 복사" 폴백(FE SentView). 타인 계정은 App Review 필요로 모의 유지. **7/27 실게시 검증 완료** — `@cafe_kimsajang`, [게시물](https://www.instagram.com/p/DbSE6HDkmpB/) | P2 | ✅ |
 | 3-8 | **임계 발동 시 사장님 아침 알림 문자** — 예상 하락 −20%↑인 날, "오늘 강수 많음·매출 −N% 예상, 방어 마케팅 준비" 알림. 사장님 본인 번호로 보내는 **운영 알림**이라 `(광고)`·수신동의 대상 아님(단골 광고 문자와 구분) | P1 | ✅ |
 
 ---
