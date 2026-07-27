@@ -9,8 +9,20 @@ type StoreDensityHeatmapProps = {
   visible: boolean;
 };
 
+type StoreDensityFeatureCollection = {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: { id: string };
+    geometry: {
+      type: "Point";
+      coordinates: [number, number];
+    };
+  }>;
+};
+
 export function StoreDensityHeatmap({ stores, visible }: StoreDensityHeatmapProps) {
-  const data = useMemo<GeoJSON.FeatureCollection<GeoJSON.Point>>(
+  const data = useMemo<StoreDensityFeatureCollection>(
     () => ({
       type: "FeatureCollection",
       features: stores.map((store) => ({
