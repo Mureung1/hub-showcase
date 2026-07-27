@@ -28,6 +28,7 @@ export type LibraryPageProps = {
   onCategoryChange: (category: string) => void;
   onDeleteInsight: (insightId: string) => Promise<InsightMutationResult>;
   onManageCategories?: () => void;
+  onOpenImport: () => void;
   onOpenSave: () => void;
   onQueryChange: (value: string) => void;
   onRetryLoad: () => void;
@@ -53,6 +54,7 @@ export function LibraryPage({
   onCategoryChange,
   onDeleteInsight,
   onManageCategories,
+  onOpenImport,
   onOpenSave,
   onQueryChange,
   onRetryLoad,
@@ -88,6 +90,17 @@ export function LibraryPage({
           </p>
         </div>
         <span className="library-page__count">{insights.length}개</span>
+        {hasLibraryInsights && !loading && !unavailable ? (
+          <Button
+            className="library-page__import-action"
+            hierarchy="secondary"
+            onClick={onOpenImport}
+            size="small"
+            type="button"
+          >
+            내 저장물 가져오기
+          </Button>
+        ) : null}
       </header>
 
       <div className="library-page__work-area">
@@ -150,6 +163,8 @@ export function LibraryPage({
             actionLabel="링크 저장"
             description="아직 저장한 링크가 없습니다. 새 링크를 저장하면 이곳에서 다시 찾을 수 있어요."
             onAction={onOpenSave}
+            onSecondaryAction={onOpenImport}
+            secondaryActionLabel="내 저장물 가져오기"
             title="저장된 링크가 없어요"
           />
         ) : insights.length > 0 ? (

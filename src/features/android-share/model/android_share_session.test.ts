@@ -149,7 +149,7 @@ describe('Android 공유 메모리 세션', () => {
 
     expect(transition.session.state).toEqual({
       status: 'error',
-      message: '지금은 저장하지 못했어요.',
+      message: '저장하지 못했어요.',
       retry: 'save',
       pending: {
         share,

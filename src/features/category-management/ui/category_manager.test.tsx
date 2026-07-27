@@ -184,9 +184,7 @@ describe('CategoryManager', () => {
       '저장하지 못했습니다.'
     );
     expect(
-      screen
-        .getByRole('button', { name: '삭제하기' })
-        .hasAttribute('disabled')
+      screen.getByRole('button', { name: '삭제하기' }).hasAttribute('disabled')
     ).toBe(false);
   });
 });

@@ -30,6 +30,8 @@
 - [기술 스택 및 라이브러리](docs/tech-stack.md) - 라이브러리 선정 이유와 연결 상태
 - [코딩/커밋 컨벤션](docs/coding-commit-conventions.md) - 코드 스타일, 브랜치와 커밋 규칙
 - [에이전트 작업 지침](AGENTS.md) - 저장소 작업 규칙
+- [범용 가져오기 승인 설계](docs/superpowers/specs/2026-07-25-universal-insight-import-design.md) - 파일·Notion 범위와 보안 결정
+- [범용 가져오기 구현 계획](docs/superpowers/plans/2026-07-25-universal-insight-import.md) - 증분 구현 순서와 검증 기준
 
 ### 참고
 

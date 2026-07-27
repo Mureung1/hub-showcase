@@ -1,0 +1,42 @@
+[
+  {
+    "block": {
+      "object": "block",
+      "id": "block-id",
+      "type": "bookmark",
+      "bookmark": {
+        "url": "https://example.com/bookmark",
+        "caption": [{ "plain_text": "아키텍처 문서", "href": null }]
+      }
+    },
+    "collectionPath": ["업무 자료", "개발"]
+  },
+  {
+    "block": {
+      "object": "block",
+      "id": "paragraph-id",
+      "type": "paragraph",
+      "paragraph": {
+        "rich_text": [
+          {
+            "plain_text": "관련 https://example.org/plain",
+            "href": "https://example.net/href"
+          }
+        ]
+      }
+    },
+    "collectionPath": ["업무 자료", "개발"]
+  },
+  {
+    "block": {
+      "object": "block",
+      "id": "image-id",
+      "type": "image",
+      "image": {
+        "external": { "url": "https://example.com/image.png" },
+        "caption": [{ "plain_text": "https://example.com/caption" }]
+      }
+    },
+    "collectionPath": ["업무 자료", "개발"]
+  }
+]

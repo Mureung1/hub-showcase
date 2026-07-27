@@ -7,6 +7,12 @@ const JWT_PATTERN =
   /\b[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]+\b/gu;
 const SECRET_ENV_NAME_PATTERN =
   /(?:SECRET|SERVICE_ROLE|ACCESS_TOKEN|CLIENT_SECRET)/iu;
+const SERVER_SECRET_NAMES = [
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'NOTION_CLIENT_SECRET',
+  'IMPORT_TOKEN_ENCRYPTION_KEY',
+  'CRON_SECRET',
+] as const;
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -54,10 +60,18 @@ export function findClientBundleSecrets(
     }
   }
 
+  for (const name of SERVER_SECRET_NAMES) {
+    if (source.includes(name)) {
+      findings.add(`서버 비밀 설정 ${name}`);
+    }
+  }
+
   for (const [name, value] of Object.entries(environment)) {
     if (
-      name.startsWith('VITE_') &&
-      SECRET_ENV_NAME_PATTERN.test(name) &&
+      ((name.startsWith('VITE_') && SECRET_ENV_NAME_PATTERN.test(name)) ||
+        SERVER_SECRET_NAMES.includes(
+          name as (typeof SERVER_SECRET_NAMES)[number]
+        )) &&
       value &&
       source.includes(value)
     ) {

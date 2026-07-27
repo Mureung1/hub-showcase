@@ -66,7 +66,7 @@ const UNSUPPORTED_PROTOCOL_MESSAGE = 'http 또는 https 링크만 저장할 수 
 const AUTHENTICATION_FAILED_MESSAGE = '로그인을 완료하지 못했어요.';
 const SHARE_MEMORY_LOST_MESSAGE =
   '로그인은 완료됐지만 링크를 다시 받아야 해요.';
-const CAPTURE_FAILED_MESSAGE = '지금은 저장하지 못했어요.';
+const CAPTURE_FAILED_MESSAGE = '저장하지 못했어요.';
 const RECENT_SHARE_ID_LIMIT = 32;
 
 export function createAndroidShareSession(): AndroidShareSession {

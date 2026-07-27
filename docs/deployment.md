@@ -12,6 +12,9 @@
 - 상태 확인 진입점: `api/health.ts`
 - 캡처 진입점: `api/insights/capture.ts`
 - 메모 진입점: `api/insights/[insightId]/memo.ts`
+- Notion OAuth callback: `api/imports/notion/callback.ts`
+- Notion 연결·분석: `api/imports/notion/`
+- 가져오기 만료 정리: `api/cron/import-cleanup.ts`
 
 `vercel.json`의 SPA 폴백은 `/api/*`를 제외한다. API 경로는 Express 함수가 처리하고 나머지 브라우저 경로만 `index.html`로 보낸다.
 
@@ -26,9 +29,45 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
+다음 값은 Development, Preview, Production 각각의 Sensitive 환경 변수로 둔다. 실제 값은 저장소·문서·빌드 출력에 기록하지 않는다.
+
+```text
+IMPORT_APP_ORIGIN
+IMPORT_TOKEN_ENCRYPTION_KEY
+NOTION_CLIENT_ID
+NOTION_CLIENT_SECRET
+NOTION_REDIRECT_URI
+SUPABASE_SERVICE_ROLE_KEY
+CRON_SECRET
+```
+
+`IMPORT_TOKEN_ENCRYPTION_KEY`는 base64로 표현한 32바이트 키다. `IMPORT_APP_ORIGIN`은 각 환경의 고정 HTTPS origin이고 `NOTION_REDIRECT_URI`는 같은 환경의 `${안정주소}/api/imports/notion/callback`과 정확히 일치해야 한다. 위 값에 `VITE_` 접두사를 붙이지 않는다.
+
 GitHub Packages의 `@wanteddev/*`를 설치하기 위한 npm 설정 전체는 Preview와 Production의 Sensitive 환경 변수 `NPM_RC`로 둔다. 이 값에는 공식 npm 레지스트리, `@wanteddev` 레지스트리와 GitHub Packages 읽기 전용 토큰이 포함되며 저장소, 웹 번들, 로그에는 기록하지 않는다. service role key, Google OAuth secret, Supabase access token도 Vercel이나 저장소의 `VITE_*` 변수에 넣지 않는다.
 
 웹 빌드는 시작 전에 Supabase URL과 공개 키 형식을 검증하고, 빌드 뒤에는 `scripts/verify_client_bundle.ts`가 secret key와 service-role JWT가 산출물에 없는지 다시 검사한다. 안전하지 않은 `VITE_*` 값은 배포 산출물을 만들기 전에 실패한다.
+
+## Notion Public Connection
+
+Notion Creator Dashboard의 Build > Public connections에서 다음 설정을 사용한다.
+
+- Installation scope: `Any workspace`
+- Content capabilities: `Read content`만 활성화
+- `Update content`, `Insert content`, 사용자 이메일, 댓글 권한: 비활성화
+- Redirect URI: 배포 환경의 `NOTION_REDIRECT_URI` 한 건을 정확히 등록
+- Preview 검증 전 해당 Preview callback URL을 명시적으로 추가하고, 검증 뒤 불필요한 URI는 제거
+
+사용자는 Notion 공식 page picker에서 공유할 페이지를 직접 선택한다. Marketplace listing은 Public Connection의 OAuth 사용과 별도이며 이번 출시 조건이 아니다. 설정 근거는 [Notion Public connections](https://developers.notion.com/guides/get-started/public-connections), [Connection capabilities](https://developers.notion.com/reference/capabilities), [Marketplace listing](https://developers.notion.com/guides/get-started/marketplace-listing)을 따른다.
+
+## 가져오기 API 제한과 만료 정리
+
+Vercel Firewall에는 `/api/imports/`의 `start`, `analyze`, `cancel`, `complete` 요청을 IP·리전당 60초 30회로 제한하는 규칙을 둔다. OAuth callback은 단일 사용 state 검증, `/api/cron/import-cleanup`은 `CRON_SECRET` Bearer 검증을 사용하므로 이 사용자 요청 제한에서 제외한다.
+
+`vercel.json`은 `/api/cron/import-cleanup`을 `10 18 * * *`로 매일 호출한다. Vercel은 `CRON_SECRET`을 `Authorization: Bearer ...` 헤더로 자동 전달하며 서버는 timing-safe 비교 뒤에만 정리를 실행한다. Hobby plan에서는 지정 시각부터 같은 한 시간 안에 실행될 수 있으므로 정확한 분 단위 삭제를 약속하지 않는다. 만료 여부는 Cron 실행 시각이 아니라 DB의 `expires_at` timestamp로 판정한다. 자세한 동작은 [Vercel Cron 관리](https://vercel.com/docs/cron-jobs/manage-cron-jobs)와 [요금제별 정밀도](https://vercel.com/docs/cron-jobs/usage-and-pricing)를 따른다.
+
+연결 생성 24시간 뒤 삭제 대상이 되는 것은 암호화한 Notion access·refresh token과 nonce·인증 tag, 연결 row의 workspace·state 정보, 미완료 작업(`analyzing`, `ready`, `failed`)의 Provider cursor·후보·오류·컬렉션이다. 이 값들은 24시간이 되는 즉시 삭제되는 것이 아니라 다음 일일 Vercel Cron에서 삭제되므로, 현재 일정과 Hobby plan 정밀도에서는 만료 후 최대 약 25시간이 더 걸릴 수 있다.
+
+가져오기를 완료하면 URL·제목·메모 후보와 출처 위치를 포함한 전체 후보 항목은 commit 트랜잭션에서 즉시 삭제한다. 되돌리기를 위해 작업 ID, 사용자 ID, 생성된 인사이트 ID와 반영 직후 수정 시각만 24시간 동안 별도로 저장한다. Supabase Cron은 이 ID와 시각을 1분마다 확인해 만료된 행을 삭제하므로 물리 삭제는 만료 뒤 다음 실행에서 이루어진다. 예약 작업이 지연되어도 Undo RPC는 DB 시각 기준 완료 후 24시간이 지난 요청을 거부한다. 생성된 인사이트와 `completed`·`undone` 요약 기록은 자동 정리 대상이 아니다.
 
 ## 공개 저장 API 요청 제한
 
@@ -100,6 +139,26 @@ gh run view <run-id> --log-failed
 - Chrome 확장 Redirect URL: `https://plajiifgmookjagiandpdagekoaimkgk.chromiumapp.org/auth`
 - Google OAuth Callback URL: `https://hbztpfdzwyqwcmuwcezk.supabase.co/auth/v1/callback`
 
+## Notion 가져오기 Preview 검증
+
+승인된 테스트 계정과 Preview callback을 등록한 뒤 다음을 수동 확인한다.
+
+1. 390px 빈 보관함에서 `링크 저장`과 `내 저장물 가져오기`가 함께 보인다.
+2. URL 붙여넣기 분석 전에는 `insights`가 바뀌지 않는다.
+3. Chrome bookmark HTML, CSV, JSON, Markdown, ZIP의 집계와 모음 경로가 맞다.
+4. Network 요청의 `/api`와 Supabase body에 원본 파일이 없다.
+5. 기존 URL의 제목·메모·카테고리는 commit 뒤에도 유지된다.
+6. Notion에서 선택한 두 page와 한 data source 하위 링크만 후보가 된다.
+7. 권한 거부, 브라우저 닫기, 429, 네트워크 단절 뒤 입력과 보관함을 유지한 복구 안내가 나온다.
+8. 완료·취소 뒤 암호화 token 열이 null이고 revoke endpoint가 호출된다.
+9. 완료 직후 원본 후보 항목은 사라지고 요약, 생성 인사이트 ID와 반영 시각만 남는다.
+10. 24시간 안에 가져온 인사이트 하나를 수정한 뒤 Undo하면 수정 항목은 남고 나머지만 삭제된다.
+11. 24시간이 지나면 Undo action 대신 만료 안내가 표시되고, 기록 삭제 뒤에도 인사이트는 남는다.
+12. 긴 제목·20단계 경로가 1280px, 768px, 390px에서 가로 overflow 없이 표시되고 키보드만으로 전체 흐름을 완료할 수 있다.
+13. Android 시스템 브라우저 승인 뒤 `com.ppre1ude.amadda://import/notion`으로 돌아와 분석을 이어간다.
+
+배포 권한이 있는 담당자는 Sensitive 변수의 로그·build output 비노출, Firewall 게시 상태, Notion 관련 migration 적용 순서, Cron Jobs 활성화, 안정 주소의 token 교환·분석·revoke 성공을 함께 확인한다.
+
 ## Chrome 확장 운영 빌드
 
 셸 또는 CI의 환경 변수가 `.env.local`보다 우선한다. 공개 Supabase 설정을 `.env.local`에 둔 상태에서 운영 API 주소를 주입해 ZIP을 만든다.
@@ -142,6 +201,8 @@ npm run package:extension
 - [Vercel Express 배포](https://vercel.com/docs/frameworks/backend/express)
 - [Vercel Functions](https://vercel.com/docs/functions/runtimes)
 - [Vercel WAF 요청 제한](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
+- [Vercel Cron 관리](https://vercel.com/docs/cron-jobs/manage-cron-jobs)
+- [Vercel Cron 사용량과 정밀도](https://vercel.com/docs/cron-jobs/usage-and-pricing)
 - [Vercel Firewall CLI](https://vercel.com/docs/cli/firewall)
 - [Vercel 비공개 패키지](https://vercel.com/docs/builds/build-features)
 - [Supabase GitHub 연동](https://supabase.com/docs/guides/deployment/branching/github-integration)
@@ -149,3 +210,6 @@ npm run package:extension
 - [Supabase 데이터베이스 테스트](https://supabase.com/docs/guides/database/testing)
 - [Supabase Redirect URL](https://supabase.com/docs/guides/auth/redirect-urls)
 - [Supabase Google 로그인](https://supabase.com/docs/guides/auth/social-login/auth-google)
+- [Notion Public connections](https://developers.notion.com/guides/get-started/public-connections)
+- [Notion Connection capabilities](https://developers.notion.com/reference/capabilities)
+- [Notion token revoke](https://developers.notion.com/reference/revoke-token)

@@ -207,6 +207,54 @@ describe('useCategoryWorkspace', () => {
     expect(result.current.isMutating).toBe(false);
   });
 
+  it('재조회는 가장 늦게 시작한 요청 결과만 반영한다', async () => {
+    const firstReload =
+      createDeferred<Awaited<ReturnType<CategoryRepository['list']>>>();
+    const secondReload =
+      createDeferred<Awaited<ReturnType<CategoryRepository['list']>>>();
+    const latestCategory = createCategory({
+      id: 'latest-category',
+      name: '최신 분류',
+    });
+    const list = vi
+      .fn<CategoryRepository['list']>()
+      .mockResolvedValueOnce({
+        categories: [DEVELOPMENT_CATEGORY],
+        warnings: [],
+      })
+      .mockReturnValueOnce(firstReload.promise)
+      .mockReturnValueOnce(secondReload.promise);
+    const repository = createRepository({ list });
+    const { result } = await renderReadyWorkspace(repository);
+    let firstRequest!: Promise<void>;
+    let secondRequest!: Promise<void>;
+
+    act(() => {
+      firstRequest = result.current.reloadCategories();
+      secondRequest = result.current.reloadCategories();
+    });
+
+    await act(async () => {
+      secondReload.resolve({
+        categories: [latestCategory],
+        warnings: [],
+      });
+      await secondRequest;
+    });
+    expect(result.current.categories).toEqual([latestCategory]);
+
+    await act(async () => {
+      firstReload.resolve({
+        categories: [FRONTEND_CATEGORY],
+        warnings: [],
+      });
+      await firstRequest;
+    });
+
+    expect(result.current.categories).toEqual([latestCategory]);
+    expect(list).toHaveBeenCalledTimes(3);
+  });
+
   it('저장소가 바뀌면 새 목록만 반영한다', async () => {
     const oldList =
       createDeferred<Awaited<ReturnType<CategoryRepository['list']>>>();
