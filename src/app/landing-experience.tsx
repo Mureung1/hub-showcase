@@ -366,17 +366,16 @@ export function LandingExperience() {
         <div className={styles.heroGrid}>
           <div className={styles.heroCopy} data-hero="content">
             <p className={styles.eyebrow} data-intro="eyebrow">
-              <span className={styles.liveDot} /> 30-DAY SURVIVAL PROTOCOL
+              <span className={styles.liveDot} /> DAILY FOCUS · PROOF · STREAK
             </p>
-            <h1 className={styles.heroTitle} aria-label="오늘을 증명하고, 끝까지 이어가세요.">
-              <span className={styles.titleClip}><span data-intro="word">오늘을</span></span>
-              <span className={styles.titleClip}><span data-intro="word">증명하고</span></span>
-              <span className={styles.titleClip}><span data-intro="word">끝까지</span></span>
-              <span className={`${styles.titleClip} ${styles.titleAccent}`}><span data-intro="word">이어가세요.</span></span>
+            <h1 className={styles.heroTitle} aria-label="매일 30분, 끝까지 살아남는 공부.">
+              <span className={styles.titleClip}><span data-intro="word">매일 30분,</span></span>
+              <span className={styles.titleClip}><span data-intro="word">끝까지 살아남는</span></span>
+              <span className={`${styles.titleClip} ${styles.titleAccent}`}><span data-intro="word">공부.</span></span>
             </h1>
             <p className={styles.heroBody} data-intro="copy">
-              의지에 기대지 않는 학습. 매일의 목표, 30분의 몰입, 한 번의 인증이
-              끊기지 않는 생존 루프가 됩니다.
+              목표를 정하고 30분간 몰입한 뒤 오늘의 학습을 인증하세요.
+              함께 쌓은 생존 기록이 포인트와 배지, 다음 몰입으로 이어집니다.
             </p>
             <div className={styles.heroActions} data-intro="actions">
               <Link
@@ -385,64 +384,44 @@ export function LandingExperience() {
                 onPointerMove={handleMagnet}
                 onPointerLeave={resetMagnet}
               >
-                생존 챌린지 입장 <ArrowIcon />
+                30일 챌린지 시작하기 <ArrowIcon />
               </Link>
-              <a href="#system" className={styles.textCta}>어떻게 작동하나요 <span aria-hidden="true">↓</span></a>
+              <a href="#system" className={styles.textCta}>진행 방식 보기 <span aria-hidden="true">↓</span></a>
             </div>
           </div>
 
           <div ref={coreWrapRef} className={styles.coreWrap} data-intro="core" aria-hidden="true">
             <canvas ref={canvasRef} className={styles.coreCanvas} />
-            <div className={`${styles.orbitLabel} ${styles.orbitLabelTop}`}>FOCUS / 030</div>
+            <div className={`${styles.orbitLabel} ${styles.orbitLabelTop}`}>DAY 12 / 30</div>
+            <div className={styles.coreReadout}>
+              <span>SAMPLE PROTOCOL</span>
+              <strong>12<small>/30 DAYS</small></strong>
+              <div className={styles.coreProgress}><i /></div>
+              <p><b>ALIVE</b><span>12 DAY STREAK</span></p>
+            </div>
             <div className={`${styles.orbitLabel} ${styles.orbitLabelBottom}`}>
-              <span>CORE STATUS</span><strong>ALIVE</strong>
+              <span>TODAY&apos;S FOCUS</span><strong>00:00 / 30:00</strong>
             </div>
             <div className={styles.coreHalo} />
           </div>
 
           <div className={styles.heroMeta} data-intro="actions">
-            <div><span>PROTOCOL</span><strong>30 DAYS</strong></div>
-            <div><span>DAILY MISSION</span><strong>30 MIN</strong></div>
-            <div><span>MODE</span><strong>PROOF-BASED</strong></div>
+            <div><span><i className={styles.doneDot} />01 · GOAL</span><strong>SET</strong></div>
+            <div><span><i className={styles.readyDot} />02 · FOCUS</span><strong>30 MIN</strong></div>
+            <div><span><i className={styles.waitDot} />03 · PROOF</span><strong>WAITING</strong></div>
+            <div><span><i className={styles.aliveDot} />04 · REWARD</span><strong>STREAK +1</strong></div>
           </div>
         </div>
-        <a className={styles.scrollCue} href="#statement" aria-label="다음 섹션으로 이동">
-          <span>SCROLL TO SURVIVE</span><i />
+        <a className={styles.scrollCue} href="#system" aria-label="진행 방식 섹션으로 이동">
+          <span>SEE THE PROTOCOL</span><i />
         </a>
       </section>
 
-      <section id="statement" className={styles.statement} data-section="statement">
-        <div className={styles.sectionIndex}>01 / MANIFESTO</div>
-        <div className={styles.statementText}>
-          <div className={styles.statementClip}><p data-statement="line">완벽한 계획보다</p></div>
-          <div className={styles.statementClip}><p data-statement="line"><em>끊기지 않는 하루.</em></p></div>
-          <div className={styles.statementClip}><p data-statement="line">혼자만의 의지보다</p></div>
-          <div className={styles.statementClip}><p data-statement="line"><em>함께 지키는 약속.</em></p></div>
-        </div>
-        <div className={styles.statementFoot} data-reveal>
-          <span className={styles.roundGlyph}>↳</span>
-          <p>Survive Study는 공부를 ‘해야 하는 일’에서<br />매일 통과하고 싶은 게임으로 바꿉니다.</p>
-        </div>
-      </section>
-
-      <div className={styles.ribbon} aria-hidden="true">
-        <div>
-          <span>SET THE GOAL</span><i />
-          <span>START THE CLOCK</span><i />
-          <span>LEAVE THE PROOF</span><i />
-          <span>STAY ALIVE</span><i />
-          <span>SET THE GOAL</span><i />
-          <span>START THE CLOCK</span><i />
-          <span>LEAVE THE PROOF</span><i />
-          <span>STAY ALIVE</span><i />
-        </div>
-      </div>
-
       <section id="system" className={styles.system} data-section="system">
         <div className={styles.systemIntro} data-reveal>
-          <div className={styles.sectionIndex}>02 / THE LOOP</div>
-          <h2>의지를 시스템으로<br />바꾸는 네 번의 움직임</h2>
-          <p>매일 같은 흐름을 반복할수록 시작은 가벼워지고, 기록은 단단해집니다.</p>
+          <div className={styles.sectionIndex}>01 / DAILY PROTOCOL</div>
+          <h2>오늘의 공부를<br />완료하는 네 단계</h2>
+          <p>목표부터 보상까지 한 화면에서 이어집니다. 매일 같은 흐름을 반복할수록 시작은 가벼워지고 기록은 단단해집니다.</p>
         </div>
 
         <div className={styles.systemLayout}>
@@ -478,7 +457,7 @@ export function LandingExperience() {
       </section>
 
       <section className={styles.challengeFeature} data-section="challenge">
-        <div className={styles.sectionIndex}>03 / OFFICIAL CHALLENGE</div>
+        <div className={styles.sectionIndex}>02 / OFFICIAL CHALLENGE</div>
         <div className={styles.featureCard} data-reveal>
           <div className={styles.featureCopy}>
             <p className={styles.featureKicker}><span /> NEXT DROP · AUG 01</p>
@@ -506,7 +485,7 @@ export function LandingExperience() {
       </section>
 
       <section className={styles.stats} data-section="stats">
-        <div className={styles.sectionIndex}>04 / RULES OF SURVIVAL</div>
+        <div className={styles.sectionIndex}>03 / RULES OF SURVIVAL</div>
         <div className={styles.statsGrid}>
           <div data-stat><strong>30</strong><span>days<br />in one season</span></div>
           <div data-stat><strong>01</strong><span>clear goal<br />per day</span></div>
@@ -515,6 +494,33 @@ export function LandingExperience() {
         </div>
         <p className={styles.statsNote} data-reveal>거창함은 필요 없습니다.<br /><em>오늘도 이어졌다는 사실</em>이면 충분합니다.</p>
       </section>
+
+      <section id="statement" className={styles.statement} data-section="statement">
+        <div className={styles.sectionIndex}>04 / MANIFESTO</div>
+        <div className={styles.statementText}>
+          <div className={styles.statementClip}><p data-statement="line">완벽한 계획보다</p></div>
+          <div className={styles.statementClip}><p data-statement="line"><em>끊기지 않는 하루.</em></p></div>
+          <div className={styles.statementClip}><p data-statement="line">혼자만의 의지보다</p></div>
+          <div className={styles.statementClip}><p data-statement="line"><em>함께 지키는 약속.</em></p></div>
+        </div>
+        <div className={styles.statementFoot} data-reveal>
+          <span className={styles.roundGlyph}>↳</span>
+          <p>Survive Study는 공부를 ‘해야 하는 일’에서<br />매일 통과하고 싶은 게임으로 바꿉니다.</p>
+        </div>
+      </section>
+
+      <div className={styles.ribbon} aria-hidden="true">
+        <div>
+          <span>SET THE GOAL</span><i />
+          <span>START THE CLOCK</span><i />
+          <span>LEAVE THE PROOF</span><i />
+          <span>STAY ALIVE</span><i />
+          <span>SET THE GOAL</span><i />
+          <span>START THE CLOCK</span><i />
+          <span>LEAVE THE PROOF</span><i />
+          <span>STAY ALIVE</span><i />
+        </div>
+      </div>
 
       <section className={styles.finalCta} data-section="final">
         <div className={styles.finalNoise} aria-hidden="true" />
