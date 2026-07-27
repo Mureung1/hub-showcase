@@ -3,7 +3,7 @@ import type { MapRef } from "react-map-gl/maplibre";
 
 import type { AnalysisMoveMode } from "../analysis/types";
 import type { MapMode } from "../market/types";
-import { shouldShowBaseBuildings } from "./baseMap";
+import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import {
   doesMapBoundsIntersectReadyOverlay,
   findReadyOverlayRegion,
@@ -11,16 +11,17 @@ import {
 } from "./supportedRegions";
 
 export function useMapViewport(initialCenter: [number, number], preventOverlayCollisions = true) {
-  const [mapMode, setMapMode] = useState<MapMode>("localtwin");
-  const [prefabMode, setPrefabMode] = useState(true);
+  const [presentationMode, setPresentationModeState] = useState<MapPresentationMode>("analysis");
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
-  const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
   const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialCenter);
   const [draftCenter, setDraftCenter] = useState<[number, number] | null>(null);
   const [analysisMoveMode, setAnalysisMoveMode] = useState<AnalysisMoveMode>("idle");
   const [visibleMapCenter, setVisibleMapCenter] = useState<[number, number]>(initialCenter);
   const [visibleMapBounds, setVisibleMapBounds] = useState<MapBounds | null>(null);
   const mapRef = useRef<MapRef>(null);
+  const profile = getMapPresentationProfile(presentationMode);
+  const mapMode: MapMode = presentationMode === "flat" ? "original" : "localtwin";
+  const prefabMode = presentationMode === "storefront3d";
   const visibleSupportedRegion = useMemo(
     () => findReadyOverlayRegion(visibleMapCenter),
     [visibleMapCenter],
@@ -37,6 +38,25 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
     [preventOverlayCollisions, visibleMapBounds, visibleSupportedRegion],
   );
 
+  function moveCamera(mode: MapPresentationMode, duration = 500) {
+    const camera = getMapPresentationProfile(mode).camera;
+    mapRef.current?.easeTo({ ...camera, duration, essential: true });
+  }
+
+  function setPresentationMode(mode: MapPresentationMode) {
+    setPresentationModeState(mode);
+    moveCamera(mode);
+  }
+
+  function setMapMode(mode: MapMode) {
+    setPresentationMode(mode === "original" ? "flat" : "analysis");
+  }
+
+  function setPrefabMode(next: boolean | ((current: boolean) => boolean)) {
+    const enabled = typeof next === "function" ? next(prefabMode) : next;
+    setPresentationMode(enabled ? "storefront3d" : "analysis");
+  }
+
   function commitDraftCenter() {
     if (!draftCenter || !draftSupportedRegion) return false;
     setCommittedCenter(draftCenter);
@@ -47,27 +67,26 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
 
   return {
     mapRef,
+    presentationMode,
+    presentationProfile: profile,
+    setPresentationMode,
     mapMode,
     setMapMode,
     prefabMode,
     setPrefabMode,
     storefront3dUnavailable,
     setStorefront3dUnavailable,
-    baseBuildingsVisible,
-    setBaseBuildingsVisible,
-    baseBuildingsRendered: shouldShowBaseBuildings(
-      baseBuildingsVisible,
-      mapMode,
-      hasVisibleLocalTwinOverlay,
-    ),
+    baseBuildingsVisible: profile.coloredBuildingsVisible,
+    setBaseBuildingsVisible: () => undefined,
+    baseBuildingsRendered:
+      profile.fallbackBuildingsVisible && !hasVisibleLocalTwinOverlay,
     committedCenter,
     focusCenter: (center: [number, number], store: boolean) => {
       setCommittedCenter(center);
       mapRef.current?.flyTo({
         center,
         zoom: store ? 16.8 : 15.4,
-        pitch: 52,
-        bearing: -24,
+        ...profile.camera,
         duration: 900,
         essential: true,
       });
@@ -93,17 +112,15 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
     },
     commitDraftCenter,
     resetViewport: (center: [number, number]) => {
-      setMapMode("localtwin");
-      setPrefabMode(true);
-      setBaseBuildingsVisible(true);
+      const mode: MapPresentationMode = "analysis";
+      setPresentationModeState(mode);
       setCommittedCenter(center);
       setDraftCenter(null);
       setAnalysisMoveMode("idle");
       mapRef.current?.easeTo({
         center,
         zoom: 15.4,
-        pitch: 52,
-        bearing: -24,
+        ...getMapPresentationProfile(mode).camera,
         duration: 650,
         essential: true,
       });
