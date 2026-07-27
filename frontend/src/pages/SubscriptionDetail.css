@@ -166,9 +166,62 @@
   gap: var(--space-inline-gap);
 }
 
+.toss-transfer-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  color: var(--color-on-primary);
+  background: var(--color-accent-toss);
+  text-decoration: none;
+}
+
 .settlement-current-actions .toss-transfer-btn {
   flex: 3;
   padding: 10px;
+}
+
+.settlement-current-actions .settlement-transfer-pending-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 3;
+}
+
+.settlement-transfer-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-inline-gap);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.settlement-transfer-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-inline-gap);
+}
+
+.toss-transfer-qr {
+  display: block;
+  width: 160px;
+  height: 160px;
+  border-radius: var(--radius-md);
+}
+
+.settlement-transfer-pending-message,
+.settlement-transfer-fallback-message {
+  text-align: center;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  margin: 0;
 }
 
 .confirm-request-btn {

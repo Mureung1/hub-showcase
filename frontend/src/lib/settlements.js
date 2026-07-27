@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 import { getToken } from './auth'
 
 export function settlementStatusLabel(status, reportedAt) {
@@ -20,6 +22,49 @@ export function billingMonthLabel(billingMonth) {
 export function billingMonthShortLabel(billingMonth) {
   const [, month] = billingMonth.split('-')
   return `${Number(month)}월`
+}
+
+// transferLink가 주어지면 QR코드 데이터 URL을 생성. null/undefined면 빈 문자열.
+export function useTossQrCode(transferLink) {
+  const [qrDataUrl, setQrDataUrl] = useState('')
+
+  useEffect(() => {
+    if (!transferLink) return
+    QRCode.toDataURL(transferLink)
+      .then(setQrDataUrl)
+      .catch(() => {})
+  }, [transferLink])
+
+  return transferLink ? qrDataUrl : ''
+}
+
+// 딥링크 이동을 시도한 뒤, 일정 시간 안에 페이지를 벗어나지 않으면(=앱이 안 열리면) QR코드로 대체 안내
+export function useTossTransferFallback(transferLink, status) {
+  const [showFallback, setShowFallback] = useState(false)
+
+  useEffect(() => {
+    if (!transferLink || status !== 'pending') return
+
+    let fallbackTimer
+    const handleVisibilityChange = () => {
+      if (document.hidden) clearTimeout(fallbackTimer)
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    window.location.href = transferLink
+    fallbackTimer = setTimeout(() => {
+      if (!document.hidden) setShowFallback(true)
+    }, 1500)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      clearTimeout(fallbackTimer)
+    }
+  }, [transferLink, status])
+
+  const qrDataUrl = useTossQrCode(showFallback ? transferLink : null)
+
+  return { showFallback, qrDataUrl }
 }
 
 export async function createSettlement(id) {

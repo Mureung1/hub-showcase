@@ -8,6 +8,7 @@ import {
   getSettlements,
   reportSettlementMember,
   settlementStatusLabel,
+  useTossQrCode,
 } from '../lib/settlements'
 import { getServiceColor } from '../lib/serviceColor'
 import RoleBadge from '../components/RoleBadge'
@@ -34,6 +35,12 @@ const SubscriptionDetail = () => {
   const [createErrorMessage, setCreateErrorMessage] = useState('')
   const [reportStatus, setReportStatus] = useState('idle')
   const [reportErrorMessage, setReportErrorMessage] = useState('')
+
+  const latestSettlement =
+    subscription && subscription.role !== 'owner' && settlements.length > 0 ? settlements[0] : null
+  const qrDataUrl = useTossQrCode(
+    latestSettlement?.myStatus === 'pending' ? latestSettlement.myTransferLink : null,
+  )
 
   const handleDelete = async () => {
     setDeleteErrorMessage('')
@@ -169,7 +176,6 @@ const SubscriptionDetail = () => {
     content = <p className="subscription-detail-message">{errorMessage}</p>
   } else {
     const { serviceName, subAmount, billingDay, memberCount, myAmount, role, bankAccount, joinUrl } = subscription
-    const latestSettlement = role !== 'owner' && settlements.length > 0 ? settlements[0] : null
 
     content = (
       <>
@@ -257,6 +263,14 @@ const SubscriptionDetail = () => {
                   >
                     {latestSettlement.myReportedAt ? '확인 요청 완료' : '이체 확인 요청'}
                   </button>
+                </div>
+              )}
+              {latestSettlement.myStatus === 'pending' && qrDataUrl && (
+                <div className="settlement-transfer-qr">
+                  <img src={qrDataUrl} alt="토스 송금 QR코드" className="toss-transfer-qr" />
+                  <p className="settlement-transfer-fallback-message">
+                    QR코드를 스캔해서 토스로 이체할 수 있어요.
+                  </p>
                 </div>
               )}
             </div>

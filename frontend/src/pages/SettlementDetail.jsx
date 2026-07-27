@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import QRCode from 'qrcode'
 import {
   billingMonthLabel,
   billingMonthShortLabel,
@@ -9,6 +8,7 @@ import {
   settlementOwnerStatusLabel,
   settlementStatusLabel,
   updateSettlementMemberStatus,
+  useTossTransferFallback,
 } from '../lib/settlements'
 import { getSubscription } from '../lib/subscriptions'
 import LoginRequired from '../components/LoginRequired'
@@ -28,10 +28,11 @@ const SettlementDetail = () => {
   const [reportStatus, setReportStatus] = useState('idle')
   const [reportErrorMessage, setReportErrorMessage] = useState('')
 
-  const [showTransferFallback, setShowTransferFallback] = useState(false)
-  const [qrDataUrl, setQrDataUrl] = useState('')
-
   const myMember = settlement && settlement.role !== 'owner' ? settlement.members[0] : null
+  const { showFallback: showTransferFallback, qrDataUrl } = useTossTransferFallback(
+    myMember?.transferLink,
+    myMember?.status,
+  )
 
   useEffect(() => {
     getSettlementDetail(id, settlementId)
@@ -53,33 +54,6 @@ const SettlementDetail = () => {
       .then((data) => setServiceName(data.serviceName))
       .catch(() => {})
   }, [id])
-
-  useEffect(() => {
-    if (!myMember || myMember.status !== 'pending') return
-
-    let fallbackTimer
-    const handleVisibilityChange = () => {
-      if (document.hidden) clearTimeout(fallbackTimer)
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    window.location.href = myMember.transferLink
-    fallbackTimer = setTimeout(() => {
-      if (!document.hidden) setShowTransferFallback(true)
-    }, 1500)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      clearTimeout(fallbackTimer)
-    }
-  }, [myMember?.id, myMember?.status, myMember?.transferLink])
-
-  useEffect(() => {
-    if (!showTransferFallback || !myMember) return
-    QRCode.toDataURL(myMember.transferLink)
-      .then(setQrDataUrl)
-      .catch(() => {})
-  }, [showTransferFallback, myMember?.transferLink])
 
   const handleKakaoShare = () => {
     if (!window.Kakao?.isInitialized()) return
