@@ -7,8 +7,10 @@
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
-    "screenshots/meeting-detail.webp",
-    "screenshots/mypage.webp"
+    "screenshots/meetings.webp",
+    "screenshots/meeting-create.webp",
+    "screenshots/mypage.webp",
+    "screenshots/login.webp"
   ],
   "problem": "동네에서 즉흥적으로 함께 운동하거나 취미를 즐길 사람을 구하기 어렵습니다.",
   "targetUsers": [
@@ -37,7 +39,7 @@
   "techHighlights": [
     "동시 신청 경쟁을 트랜잭션·행 잠금과 조건부 UPDATE로 직렬화해 정원과 승인 정합성을 지킵니다.",
     "참여 가능 여부(성인 여부·정원·상태)를 서버가 판정해 내려주고, 프론트는 그 값으로만 버튼을 결정합니다.",
-    "187개의 백엔드 테스트로 인증·참여·승인 흐름을 검증합니다."
+    "217개의 백엔드 테스트로 인증·참여·승인 흐름을 검증합니다."
   ],
   "developmentWithAI": "저는 문제와 기능 범위를 정하고 매일 그날의 설계·계획 문서를 먼저 확정했습니다. AI(Claude Code)는 요구사항을 태스크로 나누고 TDD로 코드를 구현했으며, 저는 결과를 실행·검토하고 리뷰 피드백을 반영해 수정했습니다.",
   "agent": {
