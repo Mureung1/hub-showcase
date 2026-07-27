@@ -279,6 +279,22 @@
   background: linear-gradient(to bottom, transparent, var(--personal-background) 34%);
 }
 
+.personal-type-form__status,
+.personal-type-form__error {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.personal-type-form__status {
+  color: #557a57;
+}
+
+.personal-type-form__error {
+  color: #b4473d;
+}
+
 .personal-type-form__actions button {
   width: 100%;
   min-height: 54px;

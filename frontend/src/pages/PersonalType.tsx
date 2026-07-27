@@ -70,20 +70,26 @@ type PersonalTypeProps = {
   compact?: boolean
   values?: TastePreferences
   submitLabel?: string
+  submittingLabel?: string
   isSubmitting?: boolean
   onChange?: (preferences: TastePreferences) => void
   onBack?: () => void
   onSubmit?: (preferences: TastePreferences) => void | Promise<void>
+  statusMessage?: string
+  errorMessage?: string
 }
 
 function PersonalType({
   compact = false,
   values,
   submitLabel = '이 취향으로 시작하기',
+  submittingLabel = '가입 중...',
   isSubmitting = false,
   onChange,
   onBack,
   onSubmit,
+  statusMessage = '',
+  errorMessage = '',
 }: PersonalTypeProps) {
   const navigate = useNavigate()
   const [localPreferences, setLocalPreferences] =
@@ -180,8 +186,14 @@ function PersonalType({
           </div>
 
           <div className="personal-type-form__actions">
+            {statusMessage && (
+              <p className="personal-type-form__status" role="status">{statusMessage}</p>
+            )}
+            {errorMessage && (
+              <p className="personal-type-form__error" role="alert">{errorMessage}</p>
+            )}
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? '가입 중...' : submitLabel}
+              {isSubmitting ? submittingLabel : submitLabel}
             </button>
           </div>
         </form>
