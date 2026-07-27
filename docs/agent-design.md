@@ -298,6 +298,18 @@ flowchart LR
 }
 ```
 
+검사별 `verdict`는 세 값을 갖는다.
+
+| `verdict` | 의미 |
+| --- | --- |
+| `pass` | 검사를 실행하고 통과했다 |
+| `fail` | 검사를 실행하고 위반을 찾았다 |
+| `skip` | 검사의 적용 대상이 아니어서 실행하지 않았다 |
+
+`skip`은 적용 대상이 아닌 검사와 누락된 검사를 구분한다. 검사 6은 9.1의 위험 조건에 해당하지 않는 산출물에 `skip`으로 기록한다.
+
+경고 수준은 `verdict`가 아니라 `severity`가 담는다. `severity`가 `blocking`인 `fail`만 공개를 차단하고, `warning`인 `fail`은 판정을 `verified_with_warning`으로 만든다.
+
 ### 9.3 판정 유형
 
 | 판정 | 의미 |
@@ -348,8 +360,11 @@ flowchart LR
 | `lower_confidence` | 신뢰도 하향 |
 | `recompute_stat` | 수치 재계산 |
 | `fix_identifier` | 식별자 정정 |
+| `request_research` | 외부 근거 확보 요청 발행 |
 
 `lower_confidence`는 근거가 약한 조언으로 표현할 수 있는 주장에만 적용한다. 통계 오류와 근거 없는 기업 요구사항은 낮은 신뢰도로 유지하지 않고 폐기한다.
+
+`request_research`는 `missing_evidence`에 필요한 자료 계층·회사·주제를 담는다. 저장소 안에서 해결할 수 없는 실패만 이 동작을 갖는다.
 
 수리 반복은 봉투의 `max_repair_rounds`로 제한한다.
 
