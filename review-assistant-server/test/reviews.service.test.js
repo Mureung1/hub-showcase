@@ -90,6 +90,32 @@ describe('analyzeReviews', () => {
   })
 })
 
+describe('analyzeReviews — keywords enum 가드', () => {
+  it('스키마 밖 키워드는 "일반"으로 대체된다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['불편'] })
+    const [result] = await analyzeReviews(['별로였어요'])
+    expect(result.keywords).toEqual(['일반'])
+  })
+
+  it('스키마 안 키워드는 그대로 유지되고, 밖의 값만 대체된다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['대기시간', '불편함'] })
+    const [result] = await analyzeReviews(['너무 오래 기다렸고 불편했어요'])
+    expect(result.keywords).toEqual(['대기시간', '일반'])
+  })
+
+  it('대체 후 "일반"이 중복되면 하나로 합친다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['불편', '불편함'] })
+    const [result] = await analyzeReviews(['별로였어요'])
+    expect(result.keywords).toEqual(['일반'])
+  })
+
+  it('점수 계산은 대체·중복 제거된 키워드 개수를 기준으로 한다', async () => {
+    stubClaudeResponse({ sentiment: 'negative', keywords: ['불편', '불편함'] })
+    const [result] = await analyzeReviews(['별로였어요'])
+    expect(result.score).toBe(70)
+  })
+})
+
 describe('suggestionForKeyword', () => {
   it('매칭되는 키워드가 없으면 일반 제안을 반환한다', () => {
     expect(suggestionForKeyword('존재하지않는키워드')).toBe(suggestionForKeyword('일반'))

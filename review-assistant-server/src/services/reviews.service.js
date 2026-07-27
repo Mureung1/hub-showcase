@@ -76,11 +76,20 @@ function buildReviewAnalysisPrompt(text) {
   return `너는 소상공인 사장님이 손님 리뷰에 답글을 달 때 쓰는 초안을 대신 써주는 도우미야. 다음 손님 리뷰를 분석하고, submit_review_analysis 도구의 replyDrafts 스키마에 적힌 톤별 지침을 지켜 답변 초안 3개를 각각 다르게 써서 제출해줘. 같은 문장을 어미만 바꿔 재사용하지 말고, 톤마다 실제로 다르게 느껴지게 써줘.\n\n리뷰: "${text}"`
 }
 
+// tool-use 스키마의 enum은 Claude API가 서버 측에서 강제해주지 않는다 — 실제로
+// "불편"처럼 6개 카테고리 밖의 값을 그대로 반환하는 경우가 확인돼(#37 재검증),
+// 여기서 한 번 더 걸러서 스키마 밖 값은 "일반"으로 대체하고 중복은 제거한다.
+function sanitizeKeywords(rawKeywords) {
+  const cleaned = rawKeywords.map((keyword) => (KEYWORD_CATEGORIES.includes(keyword) ? keyword : '일반'))
+  return [...new Set(cleaned)]
+}
+
 async function analyzeOne(text, index) {
-  const { sentiment, keywords, replyDrafts } = await callClaudeTool({
+  const { sentiment, keywords: rawKeywords, replyDrafts } = await callClaudeTool({
     tool: REVIEW_ANALYSIS_TOOL,
     userMessage: buildReviewAnalysisPrompt(text),
   })
+  const keywords = sanitizeKeywords(rawKeywords)
 
   return {
     reviewId: `r_${String(index + 1).padStart(2, '0')}`,
