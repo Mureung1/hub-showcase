@@ -68,8 +68,6 @@ function toRecurringScheduleRuleResponse(rule: RecurringScheduleRuleRecord): Rec
     endTime: rule.end_time,
     startDate: rule.start_date,
     endDate: rule.end_date,
-    position: rule.position,
-    memo: rule.memo,
     createdAt: rule.created_at,
     updatedAt: rule.updated_at
   };

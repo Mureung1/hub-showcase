@@ -7,6 +7,7 @@ import {
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMe } from "../features/auth";
+import { usePayrollSummary } from "../features/payroll";
 import {
   useCreateRecurringSchedules,
   getCalendarDateRange,
@@ -36,6 +37,8 @@ const weekdayOptions = [
   { value: 6, label: "토요일" }
 ];
 
+const currencyFormatter = new Intl.NumberFormat("ko-KR");
+
 type RecurringScheduleFormState = {
   workerId: string;
   weekday: string;
@@ -44,7 +47,6 @@ type RecurringScheduleFormState = {
   startTime: string;
   endTime: string;
   position: string;
-  memo: string;
 };
 
 function getMonthPath(date: Date) {
@@ -59,6 +61,10 @@ function getInputTimeValue(time: string | null) {
   return time ? time.slice(0, 5) : "";
 }
 
+function getCurrencyLabel(amount: number) {
+  return `${currencyFormatter.format(amount)}원`;
+}
+
 function getDefaultRecurringFormState(currentMonth: Date): RecurringScheduleFormState {
   return {
     workerId: "",
@@ -67,8 +73,7 @@ function getDefaultRecurringFormState(currentMonth: Date): RecurringScheduleForm
     endDate: format(endOfMonth(currentMonth), "yyyy-MM-dd"),
     startTime: "",
     endTime: "",
-    position: "",
-    memo: ""
+    position: ""
   };
 }
 
@@ -85,7 +90,14 @@ export function SchedulePage() {
   );
   const [recurringMessage, setRecurringMessage] = useState<string | null>(null);
   const { calendarDays, calendarEnd, calendarStart, fromDate, toDate } = getCalendarDateRange(currentMonth);
+  const payrollFromDate = format(currentMonth, "yyyy-MM-dd");
+  const payrollToDate = format(endOfMonth(currentMonth), "yyyy-MM-dd");
   const { data, error, isLoading } = useSchedules(selectedStoreId, fromDate, toDate);
+  const {
+    data: payrollSummary,
+    error: payrollError,
+    isLoading: isPayrollLoading
+  } = usePayrollSummary(selectedStoreId, payrollFromDate, payrollToDate);
   const { data: workersData, error: workersError, isLoading: isWorkersLoading } = useWorkers(selectedStoreId, isOwner);
   const createRecurringSchedulesMutation = useCreateRecurringSchedules(selectedStoreId);
   const schedules = data?.schedules ?? [];
@@ -101,6 +113,13 @@ export function SchedulePage() {
   const upcomingSchedules = sortMonthlySchedules(currentMonthSchedules.filter((schedule) => schedule.workDate >= todayKey));
   const sideSchedules =
     upcomingSchedules.length > 0 ? upcomingSchedules.slice(0, 4) : sortMonthlySchedules(currentMonthSchedules).slice(0, 4);
+  const payrollDescription = payrollError
+    ? "급여 계산 실패"
+    : payrollSummary?.missingWageCount
+      ? `시급 미등록 ${payrollSummary.missingWageCount}건 포함`
+      : payrollSummary?.scope === "STORE"
+        ? `${payrollSummary.scheduleCount}건 · 매장 전체`
+        : `${getHoursLabel(payrollSummary?.totalHours ?? 0)} · 내 근무`;
 
   useEffect(() => {
     setRecurringFormState((current) => ({
@@ -145,8 +164,7 @@ export function SchedulePage() {
         endDate: recurringFormState.endDate,
         startTime: recurringFormState.startTime,
         endTime: recurringFormState.endTime,
-        position: recurringFormState.position.trim() || null,
-        memo: recurringFormState.memo.trim() || null
+        position: recurringFormState.position.trim() || null
       },
       {
         onSuccess: (response) => {
@@ -183,8 +201,8 @@ export function SchedulePage() {
         </article>
         <article className="metric-card highlight">
           <span>예상 급여</span>
-          <strong>0원</strong>
-          <p>{format(currentMonth, "M월")} 근무 기준</p>
+          <strong>{isPayrollLoading ? "계산 중" : getCurrencyLabel(payrollSummary?.estimatedPay ?? 0)}</strong>
+          <p>{payrollDescription}</p>
         </article>
       </section>
 
@@ -427,22 +445,6 @@ export function SchedulePage() {
                       }
                       placeholder="오픈, 미들, 마감"
                       value={recurringFormState.position}
-                    />
-                  </label>
-
-                  <label>
-                    <span>메모</span>
-                    <textarea
-                      maxLength={200}
-                      onChange={(event) =>
-                        setRecurringFormState((current) => ({
-                          ...current,
-                          memo: event.target.value
-                        }))
-                      }
-                      placeholder="매주 반복 근무"
-                      rows={3}
-                      value={recurringFormState.memo}
                     />
                   </label>
 
