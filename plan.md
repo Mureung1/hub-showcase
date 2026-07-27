@@ -81,6 +81,24 @@ Task 0 (프로젝트 셋업)
 
 ---
 
+### Week 4 상세 계획 (07/27 월 ~ 07/31 금, 마지막 주)
+
+> **코스 요구사항**: 데모 핵심 흐름 완성 + React/Express 외부 배포(Vercel/Render) + 배포 환경 검증 + 5분 미만 데모 영상 제출(수요일 22:00 마감) + Agent 협업 워크플로우 문서화.
+> 데모 핵심 흐름 = **회원가입 → 로그인 → 오늘의 챌린지 → 사진+메모 기록** (이미 완성). 캘린더(Task 4)는 이번 주 범위에서 제외.
+> **일정 변경**: 원래 월요일부터 배포 준비를 시작할 계획이었으나, 친구 방(Task 5)이 더 급해져서 우선순위를 바꿈 — 친구 방을 월~화 오전에 먼저 만들고, 배포는 화요일에 몰아서 진행. **수요일 22:00 영상 제출은 코스 고정 마감이라 화요일 안에 배포·검증까지 반드시 끝나야 함** (버퍼가 거의 없는 빡빡한 일정).
+
+| 날짜 | 작업 | 관련 이슈 |
+|---|---|---|
+| 07/27 (월) | 친구 방 백엔드(Room·RoomMember 모델, 생성/참여 API, 방 오늘 상태 API) + 배포 코드 준비(FE `BASE_URL` 환경변수화, BE CORS 다중 origin 허용 — 소요 적어 같은 날 처리) | [#40](https://github.com/parkjihyoun/hub/issues/40), [#41](https://github.com/parkjihyoun/hub/issues/41), [#34](https://github.com/parkjihyoun/hub/issues/34), [#35](https://github.com/parkjihyoun/hub/issues/35) |
+| 07/28 (화) | 오전: 친구 방 화면(목록/생성/참여, 상세) 마무리. 오후~저녁: Supabase 배포 연결 확인 → Render(BE)·Vercel(FE) 배포 → 배포 환경 통합 검증(인증+챌린지+기록+친구 방 전체) 및 오류 수정 | [#42](https://github.com/parkjihyoun/hub/issues/42), [#43](https://github.com/parkjihyoun/hub/issues/43), [#36](https://github.com/parkjihyoun/hub/issues/36), [#37](https://github.com/parkjihyoun/hub/issues/37), [#38](https://github.com/parkjihyoun/hub/issues/38), [#39](https://github.com/parkjihyoun/hub/issues/39) |
+| 07/29 (수) | 영상 대본 작성·촬영(서비스 설명/시연/기술적 특징/문제해결/Agent 활용), `showcase.json`에 `demoVideoUrl` 추가, PR 제출 — **22:00 마감** | — |
+| 07/30 (목) | 데모 시연 순서 확정, Agent·Skill·규칙 문서 사용 관계 다이어그램, 캠프 이후에도 쓸 배포 워크플로우 문서화 | — |
+| 07/31 (금) | 데모 리허설, `checklist.md` 최종 정리, 발표 준비 | — |
+
+**금요일 완료 기준**: 배포된 URL에서 핵심 흐름(회원가입~기록, 가능하면 친구 방까지)이 실제로 동작, 영상 제출 완료, 재사용 가능한 워크플로우 문서 완성
+
+---
+
 ## Task 0 — 프로젝트 셋업 (P0)
 
 **목표**: Vite + React 개발 환경과 문서 기반을 갖춘다.
