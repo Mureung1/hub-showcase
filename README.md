@@ -13,12 +13,15 @@ CareerSignal은 여러 채용공고의 반복 요구를 통계로 정리하고, 
 
 - 화면: 직무 선택, 통계 분석, 채용공고 해석, 합격 전략, 준비 로드맵
 - 분석 범위: 직무 전체, 기업군, 개별 공고
-- 실행 방식: 데이터 갱신 시 다섯 에이전트가 분석 결과를 생성·검증해 Supabase에 저장
+- 실행 계층: 오케스트레이터, 여섯 도메인 에이전트, 결정적 helper 파이프라인
+- 실행 방식: 데이터 갱신 시 에이전트가 분석 결과를 생성하고 검증을 통과한 버전만 활성화
+- 요구 분류: 직무별 요구 차원을 자료에서 발견하고 검증·승격한 뒤 결정적으로 집계
 - 일반 조회: React가 Express를 통해 활성 분석 버전을 조회
 - 체크 상태: 준비 현황과 프로젝트 로드맵·학습 전략만 규칙으로 재조합
-- 검색 구조: 키워드·벡터 검색과 지식 그래프를 결합한 Hybrid RAG·GraphRAG
+- 검색 구조: 키워드·벡터 검색의 순위 융합과 지식 그래프 탐색
+- 근거 추적: 모든 주장이 원문 청크까지 이어지는 계보를 가짐
 
-발표용 전체 구조와 흐름은 [아키텍처](docs/architecture.md), 에이전트별 입출력과 내부 단계는 [에이전트 설계](docs/agent-design.md)에서 확인할 수 있습니다.
+전체 구조와 흐름은 [아키텍처](docs/architecture.md), 에이전트의 입출력과 내부 루프는 [에이전트 설계](docs/agent-design.md), 데이터 계층과 저장 구조는 [지식·저장 구조](docs/knowledge-schema.md)에서 확인할 수 있습니다.
 
 ## 프로젝트 구조
 
@@ -30,6 +33,7 @@ hub/
   server/          product 전용 Express API
   agent/           FastAPI·LangGraph 에이전트 서비스
   docs/            기획·아키텍처·데이터·에이전트·디자인 문서
+  showcase/        챌린지 쇼케이스 메타데이터
 ```
 
 각 디렉터리는 독립 실행 환경이며 코드와 `node_modules`를 공유하지 않습니다.
@@ -40,7 +44,7 @@ hub/
 - Backend: Express
 - Agent: Python, FastAPI, LangChain, LangGraph
 - Database: Supabase Postgres, pgvector
-- LLM: OpenAI API, 공개 YouTube 보강용 Gemini API
+- LLM: OpenAI API(생성·임베딩·웹 검색), 공개 영상 보강용 Gemini API, 평가 교차검증용 NVIDIA Build API
 
 ## 로컬 실행
 
@@ -58,7 +62,7 @@ Vite 개발 서버는 `/api` 요청을 `http://localhost:4000`의 Express로 전
 
 ### Express 서버
 
-`server/.env`에 Supabase와 에이전트 주소를 설정합니다.
+`server/.env`에 Supabase 접속 정보와 에이전트 주소를 설정합니다. 생성 모델 키는 Express가 보유하지 않습니다.
 
 ```powershell
 cd server
@@ -68,6 +72,8 @@ npm.cmd start
 
 ### FastAPI 에이전트 서비스
 
+`agent/.env`에 Supabase 접속 정보와 생성 모델 키를 설정합니다.
+
 ```powershell
 cd agent
 python -m venv .venv
@@ -75,6 +81,8 @@ python -m venv .venv
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
+
+데이터베이스 스키마의 기준은 `agent/migrations/`입니다.
 
 `server/`나 `agent/` 코드를 변경하면 해당 프로세스를 재시작합니다.
 
@@ -86,18 +94,30 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
+Express의 통계 집계 규칙은 vitest로 검증합니다.
+
+```powershell
+cd server
+npm.cmd test
+```
+
 Express의 통계 집계는 `server/data/backend-postings.sample.json`을 Supabase에 적재한 뒤 `/api/stats?job=backend`에서 확인합니다.
 
 ## 문서
 
+각 문서는 하나의 주제에 대한 기준 문서입니다. 다른 문서는 같은 내용을 반복하지 않고 기준 문서를 링크합니다.
+
 - [기획서](docs/plan.md): 문제·사용자·핵심 기능·화면 흐름
-- [아키텍처](docs/architecture.md): 전체 구조·데이터 갱신·런타임·버전
-- [에이전트 설계](docs/agent-design.md): 다섯 에이전트의 입출력·도구·내부 흐름
-- [데이터 전략](docs/data-strategy.md): 자료 계층·출처·획득·신뢰도·평가 세트
+- [아키텍처](docs/architecture.md): 실행 계층·구성요소 경계·버전 활성화·계측
+- [에이전트 설계](docs/agent-design.md): 공통 루프·도구·검증·신뢰도·종료
+- [지식·저장 구조](docs/knowledge-schema.md): 데이터 계층·테이블·지식 그래프·Wiki·권한
+- [통계 모델](docs/statistics-model.md): 요구 차원 발견과 승격·지표 정의·표본 정책
+- [데이터 전략](docs/data-strategy.md): 자료 계층·출처·허용 용도·평가 세트
 - [디자인 컨셉](docs/design-concept.md): 화면 구조와 정보 위계
 - [디자인 토큰](docs/design-tokens.md): 색상·레이아웃·컴포넌트 규칙
-- [개발 백로그](docs/backlog.md): 주차별 이니셔티브·우선순위·완료 조건
-- [릴리스 체크리스트](docs/checklist.md): MVP·최종 결과물 수용 기준
+- [개발 백로그](docs/backlog.md): 개발 순서·이니셔티브·완료 조건
+- [검증 체크리스트](docs/checklist.md): 활성화·배포·최종 결과물 수용 기준
+- [결정 기록](docs/adr/): 주요 설계 결정의 맥락과 근거
 - [GitHub Projects](https://github.com/users/joo-hyun/projects/2): Issue 실행 상태와 일정
 - [Wiki](https://github.com/joo-hyun/hub/wiki)
 

@@ -67,7 +67,7 @@ app.get('/api/stats', async (req, res) => {
 // 프론트는 Express 하나만 바라보고, 에이전트 교체·오류 처리는 여기서 담당한다.
 const AGENT_URL = process.env.AGENT_URL || 'http://localhost:8000'
 
-// 채용공고 해설 중계: 통계 items를 계산해 첨부하고 에이전트에 전달한다.
+// 채용공고 해석 중계: 통계 items를 계산해 첨부하고 에이전트에 전달한다.
 app.post('/api/reverse', async (req, res) => {
   const { job, scope } = req.body || {}
   if (job !== 'backend') {
@@ -113,7 +113,7 @@ app.post('/api/reverse', async (req, res) => {
   }
 })
 
-// 합격 전략 중계: 공고 해설 출력을 만들어(통계→공고 해설 사슬) 합격 전략 에이전트의 입력으로 전달한다.
+// 합격 전략 중계: 공고 해석 출력을 만들어(통계→공고 해석 사슬) 합격 전략 에이전트의 입력으로 전달한다.
 app.post('/api/conditions', async (req, res) => {
   const { job, scope } = req.body || {}
   if (job !== 'backend') {
@@ -142,7 +142,7 @@ app.post('/api/conditions', async (req, res) => {
       body: JSON.stringify({ job, scope, items, baseline: [] }),
     })
     if (!reverseRes.ok) {
-      return res.status(502).json({ job, error: { code: 'AGENT_ERROR', message: '공고 해설 단계에서 오류가 발생했습니다' } })
+      return res.status(502).json({ job, error: { code: 'AGENT_ERROR', message: '공고 해석 단계에서 오류가 발생했습니다' } })
     }
     const reverse = await reverseRes.json()
     const r = await fetch(`${AGENT_URL}/conditions`, {
@@ -167,7 +167,7 @@ app.post('/api/conditions', async (req, res) => {
   }
 })
 
-// 준비 로드맵 중계: 통계→공고 해설→합격 전략 사슬을 거친 결과와 체크 상태를 전달한다.
+// 준비 로드맵 중계: 통계→공고 해석→합격 전략 사슬을 거친 결과와 체크 상태를 전달한다.
 app.post('/api/roadmap', async (req, res) => {
   const { job, scope, checks } = req.body || {}
   if (job !== 'backend') {
@@ -196,7 +196,7 @@ app.post('/api/roadmap', async (req, res) => {
       body: JSON.stringify({ job, scope, items, baseline: [] }),
     })
     if (!reverseRes.ok) {
-      return res.status(502).json({ job, error: { code: 'AGENT_ERROR', message: '공고 해설 단계에서 오류가 발생했습니다' } })
+      return res.status(502).json({ job, error: { code: 'AGENT_ERROR', message: '공고 해석 단계에서 오류가 발생했습니다' } })
     }
     const reverse = await reverseRes.json()
     const condRes = await fetch(`${AGENT_URL}/conditions`, {

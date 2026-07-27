@@ -1695,7 +1695,7 @@ button.view-tab { font-weight: 750; }
 /* 편차 카드와 "편차 없음" 소제목 사이 간격 */
 .section-title--sub { margin-top: 16px; }
 
-/* 개별 공고: 원문·해설 같은 폭 */
+/* 개별 공고: 원문·해석 같은 폭 */
 .posting-layout { grid-template-columns: 1fr 1fr; }
 
 /* ===== 합격 전략 슬라이스 ===== */
@@ -1775,7 +1775,7 @@ button.view-tab { font-weight: 750; }
 .panel--orders .section-title { margin-bottom: 8px; }
 .panel--orders .panel-note { margin-top: 8px; }
 
-/* ===== 역산 개별 공고: 해설집 주석 ===== */
+/* ===== 역산 개별 공고: 해석집 주석 ===== */
 
 .raw-line { margin-bottom: 8px; }
 .raw-line > p { margin: 0; }
@@ -1801,7 +1801,7 @@ button.view-tab { font-weight: 750; }
   border-radius: 0 8px 8px 8px;
 }
 
-/* ===== 개별 공고 해설: 세 종류 주석 + 탭 ===== */
+/* ===== 개별 공고 해석: 세 종류 주석 + 탭 ===== */
 
 .posting-raw mark.mark--dev { background: #FEF08A; }
 .posting-raw mark.mark--dev sup { color: #B45309; }

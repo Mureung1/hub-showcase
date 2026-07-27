@@ -1,7 +1,7 @@
 # CareerSignal 에이전트 서비스 (FastAPI) — 뼈대 슬라이스
 #
 # 지금 단계의 역할: "에이전트 자리" 만들기.
-# POST /extract 는 입출력 계약(설계 문서 11장)만 지키는 고정(fixture) 응답을 준다.
+# POST /extract 는 입출력 계약(docs/architecture.md 10~11장)만 지키는 고정(fixture) 응답을 준다.
 # 3b 슬라이스에서 이 고정 응답이 실제 LLM 추출(LangChain)로 교체된다 — 계약은 그대로.
 #
 # 실행: agent 폴더에서
@@ -80,7 +80,7 @@ class Deviation(BaseModel):
     baseline: str      # baseline 수준
     deviation: str     # 더 높거나 추가로 요구되는 것
     evidence: str      # 근거 인용
-    explanation: str   # 이 편차가 왜 중요한가 (해설)
+    explanation: str   # 이 편차가 왜 중요한가 (해석)
     confidence: str    # high | mid | low
     ratio: str         # 같은 직군 내 등장 비율
     related_stat: str | None = None  # 통계 화면의 근거 블록 앵커 (예: "#items")
@@ -89,15 +89,15 @@ class Deviation(BaseModel):
 class UnchangedItem(BaseModel):
     item_id: str
     title: str
-    note: str  # 편차 없음 한 줄 해설
+    note: str  # 편차 없음 한 줄 해석
 
 
 class RawLine(BaseModel):
     text: str
-    mark_n: int | None = None    # 편차 번호 — 노랑 하이라이트, 편차 해설 카드와 짝
-    base_n: int | None = None    # baseline 번호 — 하이라이트 없음, 베이스라인 해설 카드와 짝
+    mark_n: int | None = None    # 편차 번호 — 노랑 하이라이트, 편차 해석 카드와 짝
+    base_n: int | None = None    # baseline 번호 — 하이라이트 없음, 베이스라인 해석 카드와 짝
     base_ref: str | None = None  # 대응하는 baseline 항목 제목(라벨)
-    note_n: int | None = None    # 신호 번호 — 파란 하이라이트, 나머지 해설 카드와 짝
+    note_n: int | None = None    # 신호 번호 — 파란 하이라이트, 나머지 해석 카드와 짝
 
 
 class BaselineNote(BaseModel):
@@ -123,7 +123,7 @@ class SourceRef(BaseModel):
 
 
 class Interpretation(BaseModel):
-    n: int | None = None  # 원문 하이라이트 번호. None이면 종합 해설
+    n: int | None = None  # 원문 하이라이트 번호. None이면 종합 해석
     title: str
     body: str
     confidence: str
@@ -135,11 +135,11 @@ class PostingView(BaseModel):
     posting_id: str
     company: str
     title: str
-    summary: Interpretation           # 종합 해설 (이 공고가 찾는 사람)
+    summary: Interpretation           # 종합 해석 (이 공고가 찾는 사람)
     raw_sections: list[RawSection]    # 원문 (세 종류 주석 번호 포함)
-    interpretations: list[Interpretation]  # 편차 해설 (mark_n과 짝)
-    baseline_notes: list[BaselineNote]     # 베이스라인 해설 (base_n과 짝)
-    signal_notes: list[SignalNote]         # 나머지 해설 (note_n과 짝)
+    interpretations: list[Interpretation]  # 편차 해석 (mark_n과 짝)
+    baseline_notes: list[BaselineNote]     # 베이스라인 해석 (base_n과 짝)
+    signal_notes: list[SignalNote]         # 나머지 해석 (note_n과 짝)
     unchanged_note: str
 
 
@@ -203,7 +203,7 @@ def reverse(req: ReverseRequest):
             company="A 핀테크사",
             title="백엔드 개발자 신입 채용",
             summary=Interpretation(
-                n=None, title="종합 해설 — 이 공고가 찾는 사람",
+                n=None, title="종합 해석 — 이 공고가 찾는 사람",
                 body="기능을 만드는 사람보다 돈이 새지 않게 지키는 사람을 찾습니다. baseline 7개 항목 중 5개는 공통 기대치 그대로이고, 트랜잭션 정합성과 장애 대응 두 축이 이 공고의 실질 변별점입니다.",
                 confidence="high", ratio="편차 3건 · baseline 일치 5건",
                 sources=[SourceRef(type="posting")],
@@ -267,7 +267,7 @@ def reverse(req: ReverseRequest):
                                body="신입·주니어 공고에서 이 문장은 실무 경험 증명보다, 부하가 어디서 생기고 어떻게 측정하는지 이해하고 토이 수준이라도 시도해 봤는지를 묻는 신호로 읽는 것이 합리적입니다.",
                                confidence="mid", ratio="같은 직군 18%", sources=[SourceRef(type="posting")]),
             ],
-            unchanged_note="읽는 법 — 회색 번호는 백엔드 개발자 공통 기대치, 파란 하이라이트는 문장 뒤에 숨은 의미, 노란 하이라이트는 이 회사가 유독 원하는 것입니다. 탭을 눌러 각 해설을 확인하세요.",
+            unchanged_note="읽는 법 — 회색 번호는 백엔드 개발자 공통 기대치, 파란 하이라이트는 문장 뒤에 숨은 의미, 노란 하이라이트는 이 회사가 유독 원하는 것입니다. 탭을 눌러 각 해석을 확인하세요.",
         )
     return ReverseResponse(
         job=req.job, scope=req.scope,
@@ -280,7 +280,7 @@ def reverse(req: ReverseRequest):
 class ConditionsRequest(BaseModel):
     job: str
     scope: ReverseScope
-    reverse: dict  # 채용공고 해설 응답 전체 — 합격 전략의 유일한 분석 입력
+    reverse: dict  # 채용공고 해석 응답 전체 — 합격 전략의 유일한 분석 입력
 
 
 class CheckItem(BaseModel):

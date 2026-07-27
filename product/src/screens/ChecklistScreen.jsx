@@ -5,7 +5,7 @@ import { SUPPORTED_JOB } from '../data/mock'
 
 // 04 합격 전략 화면.
 // 범위(전체/기업군/개별 공고)에 따라 체크리스트·포폴·자소서·면접 전략이 바뀐다.
-// 데이터는 POST /api/conditions 실통신(통계→공고 해설→합격 전략 사슬 + fixture 전략)으로 받는다.
+// 데이터는 POST /api/conditions 실통신(통계→공고 해석→합격 전략 사슬 + fixture 전략)으로 받는다.
 
 const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
 const CH_LABEL = { essay: '자소서', portfolio: '포트폴리오', interview: '면접' }
@@ -53,7 +53,7 @@ function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
   if (status === 'error') {
     return (
       <>
-        <TopBar step={4} label="합격 전략" job={SUPPORTED_JOB} backTo="reverse" backLabel="공고 해설" go={go} />
+        <TopBar step={4} label="합격 전략" job={SUPPORTED_JOB} backTo="reverse" backLabel="공고 해석" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">합격 전략 서버에 연결하지 못했습니다. server(4000)와 agent(8000)를 확인해 주세요.</p>
         </main>
@@ -69,13 +69,13 @@ function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
 
   return (
     <>
-      <TopBar step={4} label="합격 전략" job={SUPPORTED_JOB} backTo="reverse" backLabel="공고 해설" go={go} />
+      <TopBar step={4} label="합격 전략" job={SUPPORTED_JOB} backTo="reverse" backLabel="공고 해석" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
-            <span className="eyebrow">공고 해설 결과 → 자소서·포트폴리오·면접 배정</span>
+            <span className="eyebrow">공고 해석 결과 → 자소서·포트폴리오·면접 배정</span>
             <h1>준비할 것을 아는 데서 멈추지 않고, 어디에 어떻게 보여줄지까지 정합니다.</h1>
-            <p>공고 해설의 각 요구 항목을 증명하기 좋은 곳으로 배정했습니다. 보유 여부를 체크하면 미보유 항목이 준비 로드맵으로 넘어갑니다.</p>
+            <p>공고 해석의 각 요구 항목을 증명하기 좋은 곳으로 배정했습니다. 보유 여부를 체크하면 미보유 항목이 준비 로드맵으로 넘어갑니다.</p>
             <div className="cluster-chips">
               <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => changeScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{SUPPORTED_JOB} 전체 기준</button>
               {CLUSTERS.map((c) => (
@@ -240,7 +240,7 @@ function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
               </section>
 
               <div className="nav-actions nav-actions--captioned">
-                <button className="btn btn-secondary" onClick={() => go('reverse')}>← 공고 해설 다시 보기</button>
+                <button className="btn btn-secondary" onClick={() => go('reverse')}>← 공고 해석 다시 보기</button>
                 <div className="nav-go">
                   <button className="btn btn-primary" onClick={() => go('roadmap')}>준비 로드맵 보기 ({reqMissing + prefMissing}개 항목) →</button>
                   <p className="nav-caption">선택한 범위와 체크 상태를 기준으로 로드맵을 만듭니다</p>
