@@ -41,3 +41,8 @@ export const Subtitle = styled.p`
   ${({ theme }) => theme.typography.caption};
   color: ${({ theme }) => theme.colors.text.placeholder};
 `
+
+export const MetaText = styled.p`
+  ${({ theme }) => theme.typography.caption};
+  color: ${({ theme }) => theme.colors.text.placeholder};
+`
