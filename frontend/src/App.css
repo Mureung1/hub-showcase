@@ -1755,10 +1755,10 @@ select:focus-visible {
 .ingredient-tile {
   position: relative;
   display: flex;
-  min-height: 330px;
+  min-height: 238px;
   height: 100%;
   flex-direction: column;
-  padding: 20px;
+  padding: 16px;
   border-left: 4px solid transparent;
   background: #fff;
 }
@@ -1779,7 +1779,7 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
 }
 
 .ingredient-emoji {
@@ -1869,9 +1869,11 @@ select:focus-visible {
 }
 
 .quantity-text {
-  color: #7b746e;
-  font-size: 13px;
-  font-weight: 900;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -1923,12 +1925,11 @@ select:focus-visible {
 
 .ingredient-labels {
   display: flex;
-  min-height: 58px;
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 6px;
-  margin-top: 18px;
-  padding-top: 15px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
 }
 
@@ -1951,7 +1952,7 @@ select:focus-visible {
 .find-recipe-button {
   width: 100%;
   min-height: 40px;
-  margin-top: auto;
+  margin-top: 14px;
   border: 1px solid rgba(0, 109, 54, 0.15);
   border-radius: 12px;
   color: var(--primary);
