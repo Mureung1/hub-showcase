@@ -44,6 +44,9 @@ todos:
   - id: issue-82
     content: D-day 배지가 상시/소진시까지 공고에서 D-9999로 표시되는 문제 수정
     status: completed
+  - id: issue-84
+    content: 마감일 구분자가 "."인 날짜 범위가 파싱 안 되는 문제 수정
+    status: in_progress
 isProject: false
 ---
 
@@ -74,6 +77,10 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 발견 — dday 데이터 자체(`deadline` 필드)는 정상이고 배지 렌더링만 sentinel 값을 처리하지
 않는 게 원인임을 확인해 별도 이슈(#82)로 등록·수정했다.
 
+#82 머지 후 사용자가 또 다른 세부 케이스를 리포트 — 마감일 구분자가 "-"가 아니라 "."인 날짜
+범위("2020.01.01 ~ 2026.12.31")가 있는데 이 경우도 날짜 범위로 인식돼야 함. 운영 DB 직접
+조회 결과 실제로 1건(`PBLN_000000000092578`) 확인, 별도 이슈(#84)로 등록·수정했다.
+
 ## 진행 현황
 
 | 이슈 | 제목 | 상태 |
@@ -91,6 +98,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 | [#77](https://github.com/syd348/hub/issues/77) | subsidies에 atch_file_id 컬럼 추가 | 완료 (2026-07-27) — #67 리뷰 중 발견한 조인 불가 문제, [`week4/issue-77-atch-file-id-plan.md`](week4/issue-77-atch-file-id-plan.md) |
 | [#80](https://github.com/syd348/hub/issues/80) | K-Startup·소상공인24 크롤링 소스 추가 | 등록 완료 (2026-07-27) — 소상공인 매칭 정확도 조사에서 파생, [`week4/issue-80-data-source-expansion-plan.md`](week4/issue-80-data-source-expansion-plan.md) |
 | [#82](https://github.com/syd348/hub/issues/82) | D-day 배지가 상시/소진시까지 공고에서 D-9999로 표시됨 | 완료 (2026-07-27) — `NO_DEADLINE_DDAY` shared 승격, 중립색 배지 도입, [`week4/issue-82-dday-no-deadline-label-plan.md`](week4/issue-82-dday-no-deadline-label-plan.md) |
+| [#84](https://github.com/syd348/hub/issues/84) | 마감일 "." 구분자 날짜 범위 파싱 안 됨 | 진행 중 (2026-07-27) — 정규식 수정·테스트 완료, 운영 DB 1건 보정 대기, [`week4/issue-84-dot-date-range-parsing-plan.md`](week4/issue-84-dot-date-range-parsing-plan.md) |
 
 ## 리스크 / 결정 필요
 
