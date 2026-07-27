@@ -21,7 +21,13 @@ Obtain these values from the user before running the bootstrap:
 
 ## Workflow
 
-1. Run the bundled script from the current AY-PLE hub:
+1. Build the tracked Interaction MCP executable from the current AY-PLE hub:
+
+   ```bash
+   npm run build -w @ay-ple/interaction-mcp
+   ```
+
+2. Run the bundled script:
 
    ```bash
    node --import tsx .agents/skills/semester-workspace-init/scripts/bootstrap.mts \
@@ -33,18 +39,18 @@ Obtain these values from the user before running the bootstrap:
 
    Append one `--baseline "<workspace-relative-path>"` for each material path
    the user explicitly approved.
-2. Use the native client's normal file and Git command approval. Do not broaden
+3. Use the native client's normal file and Git command approval. Do not broaden
    permissions, add an App permission profile, or treat a dirty tree as a
    blocker.
-3. If the script reports a conflict, show the supplied actionable diff or
+4. If the script reports a conflict, show the supplied actionable diff or
    reason. Preserve the original bytes and stop; do not improvise an overwrite,
    recursive parent creation, symlink, extra Runtime root, or broad Git stage.
-4. On success, report the canonical prepared root, checkpoint result, and the
+5. On success, report the canonical prepared root, checkpoint results, and the
    exact `npm run dev -- --workspace "<absolute-prepared-root>"` guidance printed
    by the script. Do not start the App unless the user separately asks, and do
    not claim that final text changed the WorkspaceRegistry.
 
-Re-running the same command is an update check. Exact managed resources produce
-no byte change and no empty commit. Only an otherwise exact managed MCP block
-whose root-relative adapter command became stale may be refreshed
-automatically; other managed-byte differences require explicit resolution.
+Treat a rerun of the same command as an update check. Leave exact managed
+resources unchanged and do not create an empty commit. Refresh only an
+otherwise exact managed MCP block whose root-relative adapter command became
+stale. Require explicit resolution for every other managed-byte difference.

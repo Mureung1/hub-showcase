@@ -13,7 +13,9 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { promisify } from 'node:util'
+import { isDeepStrictEqual, promisify } from 'node:util'
+
+import { parse as parseToml } from 'smol-toml'
 
 import {
   classifySemesterWorkspaceRootStateBytes,
@@ -64,7 +66,8 @@ export async function bootstrapSemesterWorkspace(
   input: Arguments,
 ): Promise<{
   readonly canonicalRoot: string
-  readonly checkpoint: 'created' | 'updated' | 'no-op'
+  readonly scaffoldCheckpoint: 'created' | 'updated' | 'no-op'
+  readonly baselineCheckpoint: 'created' | 'no-op' | 'not-requested'
 }> {
   const target = await inspectTarget(input.target)
   await assertBuiltSources()
@@ -72,10 +75,21 @@ export async function bootstrapSemesterWorkspace(
   await assertManagedDirectories(target)
   const plannedFiles = await planManagedFiles(target, input)
   const gitignore = await planGitignore(target, gitMode)
+  const skillDestination = path.join(
+    target.canonicalRoot,
+    '.agents/skills',
+    builtInSkillName,
+  )
+  const installSkill = !(await pathExists(skillDestination))
+  const managedWrites = [
+    ...plannedFiles.map((file) => file.relativePath),
+    ...(installSkill ? [`.agents/skills/${builtInSkillName}`] : []),
+    ...(gitignore === undefined ? [] : ['.gitignore']),
+  ]
   await assertManagedWritePathsClean(
     target,
     gitMode,
-    plannedFiles.map((file) => file.relativePath),
+    managedWrites,
   )
 
   if (!target.exists) await mkdir(target.canonicalRoot)
@@ -88,12 +102,7 @@ export async function bootstrapSemesterWorkspace(
     await mkdir(path.dirname(destination), { recursive: true })
     await writeFile(destination, file.bytes)
   }
-  const skillDestination = path.join(
-    target.canonicalRoot,
-    '.agents/skills',
-    builtInSkillName,
-  )
-  if (!(await pathExists(skillDestination))) {
+  if (installSkill) {
     await mkdir(path.dirname(skillDestination), { recursive: true })
     await cp(builtInSkillSource, skillDestination, {
       recursive: true,
@@ -105,55 +114,37 @@ export async function bootstrapSemesterWorkspace(
     await writeFile(path.join(target.canonicalRoot, '.gitignore'), gitignore)
   }
 
-  const scaffoldPaths = [
-    'workspace-state.json',
-    'AGENTS.md',
-    `.agents/skills/${builtInSkillName}`,
-    '.codex/config.toml',
-    ...(gitignore === undefined ? [] : ['.gitignore']),
-  ]
-  const changed = await changedPaths(target.canonicalRoot, scaffoldPaths)
-  let checkpoint: 'created' | 'updated' | 'no-op' = 'no-op'
+  const changed = await changedPaths(target.canonicalRoot, managedWrites)
+  let scaffoldCheckpoint: 'created' | 'updated' | 'no-op' = 'no-op'
   if (changed.length > 0) {
     await commitPaths(target.canonicalRoot, changed, scaffoldCommitMessage)
-    checkpoint = gitMode === 'fresh' ? 'created' : 'updated'
+    scaffoldCheckpoint = gitMode === 'fresh' ? 'created' : 'updated'
   }
-  if (input.baselinePaths.length > 0) {
-    await commitBaseline(target.canonicalRoot, input.baselinePaths)
-  }
+  const baselineCreated =
+    input.baselinePaths.length > 0
+      ? await commitBaseline(target.canonicalRoot, input.baselinePaths)
+      : undefined
 
   return {
     canonicalRoot: await realpath(target.canonicalRoot),
-    checkpoint,
+    scaffoldCheckpoint,
+    baselineCheckpoint:
+      baselineCreated === undefined
+        ? 'not-requested'
+        : baselineCreated
+          ? 'created'
+          : 'no-op',
   }
 }
 
 async function assertManagedWritePathsClean(
   target: Target,
   gitMode: 'fresh' | 'existing',
-  plannedFiles: readonly string[],
+  managedWrites: readonly string[],
 ): Promise<void> {
   if (gitMode === 'fresh') return
-  const skillDestination = path.join(
-    target.canonicalRoot,
-    '.agents/skills',
-    builtInSkillName,
-  )
-  const managedWrites = [
-    ...plannedFiles,
-    ...((await pathExists(skillDestination))
-      ? []
-      : [`.agents/skills/${builtInSkillName}`]),
-  ]
   for (const relativePath of managedWrites) {
-    const status = await git(target.canonicalRoot, [
-      'status',
-      '--porcelain=v1',
-      '--untracked-files=all',
-      '--',
-      relativePath,
-    ])
-    if (status.stdout.trim().length > 0) {
+    if ((await gitPathStatus(target.canonicalRoot, relativePath)).length > 0) {
       throw new Error(
         `Refusing to write because managed path has existing Git changes: ${relativePath}`,
       )
@@ -265,7 +256,7 @@ async function planManagedFiles(
       classification.state.semester.term.displayName !== input.termDisplayName
     ) {
       throw new Error(
-        'workspace-state.json conflicts with the requested v4 semester; original bytes were preserved.',
+        describeStateConflict(classification, input),
       )
     }
   } else {
@@ -306,8 +297,12 @@ async function planManagedFiles(
       skillDestination,
     )
     if (difference !== undefined) {
+      const differenceOutput = await treeDifference(
+        skillDestination,
+        builtInSkillSource,
+      )
       throw new Error(
-        `Built-in Skill conflict at ${difference}; workspace bytes were preserved.`,
+        `Built-in Skill conflict at ${difference}; workspace bytes were preserved.\n${differenceOutput}`,
       )
     }
   }
@@ -321,7 +316,6 @@ async function planManagedFiles(
     })
   } else {
     await assertRegularFile(configPath, '.codex/config.toml')
-    await assertTomlParses(configPath)
     const current = decodeUtf8(
       await readFile(configPath),
       '.codex/config.toml is not valid UTF-8.',
@@ -338,20 +332,42 @@ async function planManagedFiles(
   return files
 }
 
-async function assertTomlParses(configPath: string): Promise<void> {
-  try {
-    await execFileAsync(
-      'python3',
-      [
-        '-c',
-        'import sys\ntry:\n import tomllib\nexcept ModuleNotFoundError:\n import tomli as tomllib\ntomllib.load(open(sys.argv[1], "rb"))',
-        configPath,
-      ],
-      {
-        encoding: 'utf8',
-        maxBuffer: 1024 * 1024,
+function describeStateConflict(
+  classification: ReturnType<
+    typeof classifySemesterWorkspaceRootStateBytes
+  >,
+  input: Arguments,
+): string {
+  const existing =
+    classification.status === 'current_v4'
+      ? JSON.stringify(
+          {
+            workspaceId: classification.state.workspaceId,
+            semester: classification.state.semester,
+          },
+          null,
+          2,
+        )
+      : classification.status
+  const requested = JSON.stringify(
+    {
+      semester: {
+        yearLevel: input.yearLevel,
+        term: {
+          key: input.termKey,
+          displayName: input.termDisplayName,
+        },
       },
-    )
+    },
+    null,
+    2,
+  )
+  return `workspace-state.json conflicts with the requested v4 semester; original bytes were preserved.\n--- existing\n${existing}\n--- requested\n${requested}`
+}
+
+function parseProjectToml(source: string): Readonly<Record<string, unknown>> {
+  try {
+    return parseToml(source)
   } catch {
     throw new Error(
       '.codex/config.toml is unsafe or malformed; original bytes were preserved.',
@@ -398,27 +414,74 @@ ${managedConfigEnd}`
 
 function updateManagedConfig(current: string, desiredBlock: string): string {
   assertSafeTomlSurface(current)
+  const currentConfig = parseProjectToml(current)
+  const desiredConfig = parseProjectToml(desiredBlock)
+  const currentServer = interactionServer(currentConfig)
+  const desiredServer = interactionServer(desiredConfig)
   const start = current.indexOf(managedConfigStart)
   const end = current.indexOf(managedConfigEnd)
   if (start === -1 && end === -1) {
-    if (/\[mcp_servers\.ay_ple_interaction\]/.test(current)) {
+    if (currentServer !== undefined) {
       throw new Error(
         'Unmanaged ay_ple_interaction TOML table conflicts with the required declaration.',
       )
     }
-    return `${current}${current.length === 0 || current.endsWith('\n') ? '' : '\n'}${current.length === 0 ? '' : '\n'}${desiredBlock}\n`
+    const updated = `${current}${current.length === 0 || current.endsWith('\n') ? '' : '\n'}${current.length === 0 ? '' : '\n'}${desiredBlock}\n`
+    parseProjectToml(updated)
+    return updated
   }
   if (start === -1 || end === -1 || end < start) {
     throw new Error('Unsafe or incomplete AY-PLE managed TOML markers.')
   }
   const endAfterMarker = end + managedConfigEnd.length
   const currentBlock = current.slice(start, endAfterMarker)
+  if (
+    currentServer === undefined ||
+    desiredServer === undefined ||
+    !managedServerMatchesExceptCommand(currentServer, desiredServer)
+  ) {
+    throw new Error(
+      `Managed MCP declaration differs from the required shape.\n--- existing\n${currentBlock}\n--- required\n${desiredBlock}`,
+    )
+  }
   if (currentBlock === desiredBlock) return current
   if (normalizeManagedCommand(currentBlock) === normalizeManagedCommand(desiredBlock)) {
-    return `${current.slice(0, start)}${desiredBlock}${current.slice(endAfterMarker)}`
+    const updated = `${current.slice(0, start)}${desiredBlock}${current.slice(endAfterMarker)}`
+    parseProjectToml(updated)
+    return updated
   }
   throw new Error(
     `Managed MCP declaration differs from the required bytes.\n--- existing\n${currentBlock}\n--- required\n${desiredBlock}`,
+  )
+}
+
+function interactionServer(
+  config: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> | undefined {
+  const servers = config.mcp_servers
+  if (
+    typeof servers !== 'object' ||
+    servers === null ||
+    Array.isArray(servers)
+  ) {
+    return undefined
+  }
+  const server = (servers as Readonly<Record<string, unknown>>)
+    .ay_ple_interaction
+  return typeof server === 'object' &&
+    server !== null &&
+    !Array.isArray(server)
+    ? (server as Readonly<Record<string, unknown>>)
+    : undefined
+}
+
+function managedServerMatchesExceptCommand(
+  current: Readonly<Record<string, unknown>>,
+  desired: Readonly<Record<string, unknown>>,
+): boolean {
+  return isDeepStrictEqual(
+    { ...current, command: '<root-relative-command>' },
+    { ...desired, command: '<root-relative-command>' },
   )
 }
 
@@ -515,6 +578,21 @@ async function firstTreeDifference(
   return undefined
 }
 
+async function treeDifference(
+  existing: string,
+  required: string,
+): Promise<string> {
+  const result = await git(
+    hubRoot,
+    ['diff', '--no-index', '--no-ext-diff', '--', existing, required],
+    { allowFailure: true },
+  )
+  const output = result.stdout.trim()
+  return output.length > 0
+    ? output.slice(0, 64 * 1024)
+    : 'No textual diff is available; inspect the conflicting entry type.'
+}
+
 async function commitPaths(
   root: string,
   relativePaths: readonly string[],
@@ -532,7 +610,7 @@ async function commitPaths(
 async function commitBaseline(
   root: string,
   relativePaths: readonly string[],
-): Promise<void> {
+): Promise<boolean> {
   const unique = [...new Set(relativePaths)]
   for (const relativePath of unique) {
     if (
@@ -554,7 +632,9 @@ async function commitBaseline(
   const changed = await changedPaths(root, unique)
   if (changed.length > 0) {
     await commitPaths(root, changed, 'chore: baseline semester materials')
+    return true
   }
+  return false
 }
 
 async function changedPaths(
@@ -563,13 +643,25 @@ async function changedPaths(
 ): Promise<readonly string[]> {
   const changed: string[] = []
   for (const relativePath of relativePaths) {
-    const result = await git(
-      root,
-      ['status', '--porcelain=v1', '--untracked-files=all', '--', relativePath],
-    )
-    if (result.stdout.trim().length > 0) changed.push(relativePath)
+    if ((await gitPathStatus(root, relativePath)).length > 0) {
+      changed.push(relativePath)
+    }
   }
   return changed
+}
+
+async function gitPathStatus(
+  root: string,
+  relativePath: string,
+): Promise<string> {
+  const result = await git(root, [
+    'status',
+    '--porcelain=v1',
+    '--untracked-files=all',
+    '--',
+    relativePath,
+  ])
+  return result.stdout.trim()
 }
 
 async function discoverGitTopLevel(cwd: string): Promise<string | undefined> {
@@ -693,7 +785,8 @@ async function main(): Promise<void> {
     parseArguments(process.argv.slice(2)),
   )
   console.log(`Prepared SemesterWorkspace: ${result.canonicalRoot}`)
-  console.log(`Checkpoint: ${result.checkpoint}`)
+  console.log(`Scaffold checkpoint: ${result.scaffoldCheckpoint}`)
+  console.log(`Material baseline: ${result.baselineCheckpoint}`)
   console.log(
     `Launch AY-PLE: npm run dev -- --workspace ${JSON.stringify(result.canonicalRoot)}`,
   )

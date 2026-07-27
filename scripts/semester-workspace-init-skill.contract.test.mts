@@ -26,13 +26,24 @@ const skillPath = path.join(
   repositoryRoot,
   '.agents/skills/semester-workspace-init/SKILL.md',
 )
+const fixtureGitEnvironment = {
+  GIT_AUTHOR_EMAIL: 'fixture@example.com',
+  GIT_AUTHOR_NAME: 'Fixture Author',
+  GIT_COMMITTER_EMAIL: 'fixture@example.com',
+  GIT_COMMITTER_NAME: 'Fixture Committer',
+}
 
 test('Bootstrap Skill delegates only the pre-App native preparation flow', async () => {
   const skill = await readFile(skillPath, 'utf8')
   assert.match(skill, /^name: semester-workspace-init$/m)
   assert.match(skill, /native client's normal file and Git command approval/)
   assert.match(skill, /do\s+not start the App unless the user separately asks/i)
-  assert.match(skill, /no byte change and no empty commit/)
+  assert.match(skill, /npm run build -w @ay-ple\/interaction-mcp/)
+  assert.ok(
+    skill.indexOf('npm run build -w @ay-ple/interaction-mcp') <
+      skill.indexOf('node --import tsx'),
+  )
+  assert.match(skill, /do not create an empty commit/)
   assert.doesNotMatch(
     skill,
     /Browser command|persistent grant|working tree clean|skills\/extraRoots\/set|WorkspaceRegistry.*write/i,
@@ -68,6 +79,8 @@ test('fresh target becomes a reviewable independent SemesterWorkspace', async ()
       first.stdout,
       new RegExp(`Prepared SemesterWorkspace: ${escapeRegex(canonicalTarget)}`),
     )
+    assert.match(first.stdout, /Scaffold checkpoint: created/)
+    assert.match(first.stdout, /Material baseline: not-requested/)
     assert.match(
       first.stdout,
       new RegExp(
@@ -200,6 +213,11 @@ test('existing dirty repository preserves history, remote, and exact rerun bytes
       '?? unrelated.txt',
     ].join('\n'))
     const managedBefore = await readManagedBytes(target)
+    await writeFile(
+      path.join(target, 'AGENTS.md'),
+      '# User instructions\n\nDirty user change stays uncommitted.\n',
+    )
+    const dirtyManagedBefore = await readManagedBytes(target)
 
     const rerun = await runBootstrap([
       '--target',
@@ -212,13 +230,15 @@ test('existing dirty repository preserves history, remote, and exact rerun bytes
       '봄 학기',
     ])
 
-    assert.match(rerun.stdout, /Checkpoint: no-op/)
+    assert.match(rerun.stdout, /Scaffold checkpoint: no-op/)
+    assert.match(rerun.stdout, /Material baseline: not-requested/)
     assert.equal(await git(target, ['rev-parse', 'HEAD']), bootstrapHead)
-    assert.deepEqual(await readManagedBytes(target), managedBefore)
-    assert.equal(await git(target, ['status', '--short']), [
-      'M  notes.md',
-      '?? unrelated.txt',
-    ].join('\n'))
+    assert.notDeepEqual(dirtyManagedBefore, managedBefore)
+    assert.deepEqual(await readManagedBytes(target), dirtyManagedBefore)
+    const rerunStatus = await git(target, ['status', '--short'])
+    assert.match(rerunStatus, /M AGENTS\.md/)
+    assert.match(rerunStatus, /M  notes\.md/)
+    assert.match(rerunStatus, /\?\? unrelated\.txt/)
     await assert.rejects(readFile(path.join(target, '.gitignore')))
   })
 })
@@ -238,7 +258,7 @@ test('managed-resource conflicts preserve original bytes and Git history', async
             '{"formatVersion":4,"broken":true}\n',
           )
         },
-        error: /workspace-state\.json conflicts/,
+        error: /workspace-state\.json conflicts[\s\S]*--- existing[\s\S]*--- requested/,
       },
       {
         name: 'divergent built-in Skill',
@@ -250,7 +270,7 @@ test('managed-resource conflicts preserve original bytes and Git history', async
           await mkdir(destination, { recursive: true })
           await writeFile(path.join(destination, 'SKILL.md'), 'user version\n')
         },
-        error: /Built-in Skill conflict/,
+        error: /Built-in Skill conflict[\s\S]*diff --git/,
       },
       {
         name: 'unmanaged Interaction table',
@@ -259,6 +279,17 @@ test('managed-resource conflicts preserve original bytes and Git history', async
           await writeFile(
             path.join(target, '.codex/config.toml'),
             '[mcp_servers.ay_ple_interaction]\ncommand = "custom"\n',
+          )
+        },
+        error: /Unmanaged ay_ple_interaction TOML table/,
+      },
+      {
+        name: 'quoted unmanaged Interaction table',
+        async arrange(target) {
+          await mkdir(path.join(target, '.codex'))
+          await writeFile(
+            path.join(target, '.codex/config.toml'),
+            '[mcp_servers."ay_ple_interaction"]\ncommand = "custom"\n',
           )
         },
         error: /Unmanaged ay_ple_interaction TOML table/,
@@ -403,12 +434,14 @@ test('user-approved material baseline is a separate explicit-pathspec commit', a
     await mkdir(path.join(target, 'legacy'))
     await writeFile(path.join(target, 'legacy/state'), 'legacy\n')
 
-    await runBootstrap([
+    const result = await runBootstrap([
       ...defaultArguments(target),
       '--baseline',
       'notes.md',
     ])
 
+    assert.match(result.stdout, /Scaffold checkpoint: created/)
+    assert.match(result.stdout, /Material baseline: created/)
     assert.deepEqual(
       (await git(target, ['log', '--reverse', '--format=%s'])).split('\n'),
       [
@@ -429,6 +462,33 @@ test('user-approved material baseline is a separate explicit-pathspec commit', a
     const tracked = (await git(target, ['ls-files'])).split('\n')
     assert.equal(tracked.includes('.env'), false)
     assert.equal(tracked.includes('legacy/state'), false)
+  })
+})
+
+test('a later material baseline reports its checkpoint when scaffold is no-op', async () => {
+  await withFixture(async (fixtureRoot) => {
+    const target = path.join(fixtureRoot, 'later-baseline-workspace')
+    await mkdir(target)
+    await runBootstrap(defaultArguments(target))
+    await writeFile(path.join(target, 'late-notes.md'), 'later material\n')
+
+    const result = await runBootstrap([
+      ...defaultArguments(target),
+      '--baseline',
+      'late-notes.md',
+    ])
+
+    assert.match(result.stdout, /Scaffold checkpoint: no-op/)
+    assert.match(result.stdout, /Material baseline: created/)
+    assert.equal(
+      await git(target, [
+        'show',
+        '--pretty=format:',
+        '--name-only',
+        'HEAD',
+      ]),
+      'late-notes.md',
+    )
   })
 })
 
@@ -454,7 +514,8 @@ ${initial.replace(/^command = ".*"$/m, 'command = "../old-hub/dist/stdio.js"')}`
 
     const result = await runBootstrap(defaultArguments(target))
 
-    assert.match(result.stdout, /Checkpoint: updated/)
+    assert.match(result.stdout, /Scaffold checkpoint: updated/)
+    assert.match(result.stdout, /Material baseline: not-requested/)
     assert.equal(await git(target, ['rev-parse', 'HEAD^']), oldHead)
     const updated = await readFile(configPath, 'utf8')
     assert.match(
@@ -477,10 +538,7 @@ async function runBootstrap(arguments_: readonly string[]): Promise<{
       cwd: repositoryRoot,
       env: {
         ...process.env,
-        GIT_AUTHOR_EMAIL: 'fixture@example.com',
-        GIT_AUTHOR_NAME: 'Fixture Author',
-        GIT_COMMITTER_EMAIL: 'fixture@example.com',
-        GIT_COMMITTER_NAME: 'Fixture Committer',
+        ...fixtureGitEnvironment,
       },
       encoding: 'utf8',
     },
@@ -498,10 +556,7 @@ async function git(
     env: options.gitIdentity
       ? {
           ...process.env,
-          GIT_AUTHOR_EMAIL: 'fixture@example.com',
-          GIT_AUTHOR_NAME: 'Fixture Author',
-          GIT_COMMITTER_EMAIL: 'fixture@example.com',
-          GIT_COMMITTER_NAME: 'Fixture Committer',
+          ...fixtureGitEnvironment,
         }
       : process.env,
   })
