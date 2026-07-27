@@ -10,6 +10,7 @@ import RestSuggestion from "./components/RestSuggestion";
 import ReasonChips from "./components/ReasonChips";
 import ProposalCard from "./components/ProposalCard";
 import TimerConfirm from "./components/TimerConfirm";
+import PauseScreen from "./components/PauseScreen";
 
 // "input" -> "preview" -> "focus" -> "timer" -> "timer-confirm" -> (완료: "complete") / (연장: "timer")
 // "focus" 중 "나 지금 힘들어" -> "reason" -> "proposal" -> (수락 시 tool별로 분기) / (거절 시 "proposal" 재판단)
@@ -64,6 +65,13 @@ export default function Home() {
   const [isSplitting, setIsSplitting] = useState(false);
   const [splitError, setSplitError] = useState(null);
   const [completeError, setCompleteError] = useState(null);
+  // T14: Brain Dump 기한 확인 멀티턴. followUpQuestion이 있으면 "input" 화면이 그 질문을
+  // 보여주고, 다음 제출은 새 Brain Dump가 아니라 그 질문에 대한 답으로 처리된다.
+  const [followUpQuestion, setFollowUpQuestion] = useState(null);
+  const [pendingText, setPendingText] = useState(null);
+  const [clarifications, setClarifications] = useState([]);
+  const [brainDumpTurn, setBrainDumpTurn] = useState(0);
+  const [brainDumpNotice, setBrainDumpNotice] = useState(null);
 
   const [reasonChip, setReasonChip] = useState(null);
   const [rejectedTools, setRejectedTools] = useState([]);
@@ -88,6 +96,12 @@ export default function Home() {
   const [extendReason, setExtendReason] = useState(null);
   const [extendLoading, setExtendLoading] = useState(false);
   const [extendError, setExtendError] = useState(null);
+  // T20: 타이머 일시정지 + 재개 사유 기록. pausedAt은 멈춘 시각(다시 시작할 때 멈춘 시간만큼
+  // stepStartedAt을 뒤로 미는 데 씀), pauseCount/pauseReasons는 이 스텝에서 쌓여서 완료 시
+  // 한 번에 Notion에 보낸다(S7).
+  const [pausedAt, setPausedAt] = useState(null);
+  const [pauseCount, setPauseCount] = useState(0);
+  const [pauseReasons, setPauseReasons] = useState([]);
 
   // 서버는 항상 "input"만 렌더링하므로(localStorage 접근 불가), 클라이언트도 마운트가
   // 끝나기 전까지는 위에서 복원한 값과 무관하게 "input"을 그린다 - 그렇지 않으면 서버가 그린
@@ -117,23 +131,60 @@ export default function Home() {
     );
   }, [step, currentIndex, microsteps, stepStartedAt]);
 
-  async function handleSubmit(text) {
+  // 최초 Brain Dump 제출과, 기한을 되물었을 때의 답변 제출을 모두 처리한다(T14).
+  // followUpQuestion이 떠 있는 상태면 이번 입력은 새 Brain Dump가 아니라 그 질문의 답이다.
+  async function handleSubmit(inputText) {
     setIsSplitting(true);
     setSplitError(null);
+    setBrainDumpNotice(null);
+
+    const isAnswering = followUpQuestion !== null;
+    const textForApi = isAnswering ? pendingText : inputText;
+    const turnForApi = isAnswering ? brainDumpTurn : 0;
+    const clarificationsForApi = isAnswering ? [...clarifications, inputText] : [];
 
     try {
       const response = await fetch("/api/brain-dump", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text: textForApi,
+          turn: turnForApi,
+          clarifications: clarificationsForApi,
+        }),
       });
 
       if (!response.ok) throw new Error("할 일을 쪼개는 데 실패했어요, 다시 시도해줘");
+
+      const data = await response.json();
+
+      if (data.followUpQuestion) {
+        // 아직 확정 안 됨: 화면은 "input"에 그대로 머물고 질문만 바뀐다.
+        setPendingText(textForApi);
+        setClarifications(clarificationsForApi);
+        setBrainDumpTurn(turnForApi + 1);
+        setFollowUpQuestion(data.followUpQuestion);
+        return;
+      }
+
+      // 확정됨: 다음 Brain Dump를 위해 멀티턴 상태를 리셋한다.
+      setFollowUpQuestion(null);
+      setPendingText(null);
+      setClarifications([]);
+      setBrainDumpTurn(0);
 
       // 방금 응답을 그대로 쓰지 않고, Notion에 실제로 저장된 목록을 다시 읽어온다
       // (완료 처리에 필요한 Notion 페이지 id가 이 목록에만 있음).
       const stepsResponse = await fetch("/api/steps");
       const { steps } = await stepsResponse.json();
+
+      if (steps.length === 0) {
+        // 확정된 기한이 전부 오늘 이후라 오늘 목록엔 하나도 안 잡히는 경우(T14가 처음 만드는
+        // 상황) - preview로 넘어가면 currentStep이 없어 깨지므로, 입력 화면에 안내만 띄운다.
+        setBrainDumpNotice("오늘 할 일은 없어요, 정한 날짜가 되면 다시 보여줄게");
+        return;
+      }
+
       setMicrosteps(steps);
       setCurrentIndex(0);
       setStep("preview");
@@ -163,6 +214,8 @@ export default function Home() {
           startedAt: stepStartedAt?.toISOString() ?? null,
           completedAt: completedAt.toISOString(),
           actualMinutes,
+          pauseCount,
+          pauseReasons,
         }),
       });
       if (!response.ok) throw new Error("완료 처리에 실패했어요, 다시 시도해줘");
@@ -179,10 +232,12 @@ export default function Home() {
   // 완료 처리 없이(미루기 등) 그냥 다음 스텝으로 넘어갈 때 재사용.
   function advanceToNextStep() {
     const nextIndex = currentIndex + 1;
-    // 다음 스텝은 연장 이력과 무관하게 새로 시작한다(T15).
+    // 다음 스텝은 연장·일시정지 이력과 무관하게 새로 시작한다(T15, T20).
     setExtendCount(0);
     setTimerDurationMinutes(null);
     setExtendReason(null);
+    setPauseCount(0);
+    setPauseReasons([]);
     if (nextIndex < microsteps.length) {
       setCurrentIndex(nextIndex);
       setStep("preview");
@@ -194,6 +249,23 @@ export default function Home() {
   // 타이머가 0이 됐을 때 바로 완료 처리하지 않고, 먼저 확인 화면으로 간다(T15, C15).
   function handleTimerFinish() {
     setStep("timer-confirm");
+  }
+
+  // 일시정지 버튼 클릭(T20). 할 일 자체와 무관한 이유로 잠깐 멈출 때를 위한 것.
+  function handlePause() {
+    setPausedAt(new Date());
+    setStep("timer-paused");
+  }
+
+  // 다시 시작: 멈춘 시간만큼 stepStartedAt을 뒤로 밀어서, 남은 시간 계산에서 그 시간이
+  // 빠지게 한다(T04의 startedAt 재계산 방식 재사용).
+  function handleResume(reason) {
+    const pauseDurationMs = Date.now() - pausedAt.getTime();
+    setStepStartedAt((prev) => new Date(prev.getTime() + pauseDurationMs));
+    setPauseCount((count) => count + 1);
+    setPauseReasons((reasons) => [...reasons, reason]);
+    setPausedAt(null);
+    setStep("timer");
   }
 
   // 확인 화면에서 "아니, 더 필요해" 선택 시 Agent(Solar)에게 연장 분을 판단받는다(S6).
@@ -230,6 +302,12 @@ export default function Home() {
     setCurrentIndex(0);
     setStep("input");
     localStorage.removeItem(STORAGE_KEY);
+    // T14 되묻기 도중이었다면 그 상태도 같이 지운다(안 지우면 홈으로 와도 질문이 남아있음).
+    setFollowUpQuestion(null);
+    setPendingText(null);
+    setClarifications([]);
+    setBrainDumpTurn(0);
+    setBrainDumpNotice(null);
   }
 
   function resetStruggleState() {
@@ -420,12 +498,15 @@ export default function Home() {
         onSubmit={handleSubmit}
         isLoading={isSplitting}
         error={splitError}
+        prompt={followUpQuestion ?? undefined}
+        notice={brainDumpNotice}
+        onGoHome={followUpQuestion ? goHome : undefined}
       />
     );
   }
 
   if (effectiveStep === "preview") {
-    return <TaskPreview task={task} onReady={() => setStep("focus")} />;
+    return <TaskPreview task={task} onReady={() => setStep("focus")} onGoHome={goHome} />;
   }
 
   if (effectiveStep === "focus") {
@@ -484,8 +565,14 @@ export default function Home() {
         startedAt={stepStartedAt}
         onFinish={handleTimerFinish}
         caption={extendReason}
+        onPause={handlePause}
       />
     );
+  }
+
+  // 일시정지 화면(T20) - 할 일 자체와 무관한 이유로 잠깐 멈췄다가 다시 시작할 때.
+  if (effectiveStep === "timer-paused") {
+    return <PauseScreen onResume={handleResume} />;
   }
 
   // 타이머가 0이 됐을 때 뜨는 확인 화면(T15, C15) - "응, 다 했어"는 기존 완료 처리로,
@@ -522,7 +609,7 @@ export default function Home() {
   }
 
   if (effectiveStep === "complete") {
-    return <CompleteScreen task={task} />;
+    return <CompleteScreen task={task} onGoHome={goHome} />;
   }
 
   if (effectiveStep === "rest") {

@@ -1,8 +1,10 @@
 import Character from "./Character";
+import HomeButton from "./HomeButton";
 
 // task: 화면에 보여줄 마이크로 스텝 텍스트 (지금은 mock 데이터)
 // onReady: "타이머 세팅, 준비하기" 버튼을 눌렀을 때 다음 화면으로 넘어가라고 알리는 함수
-export default function TaskPreview({ task, onReady }) {
+// onGoHome: 있으면 홈으로 돌아가는 버튼을 보여준다.
+export default function TaskPreview({ task, onReady, onGoHome }) {
   return (
     <main
       style={{
@@ -35,6 +37,7 @@ export default function TaskPreview({ task, onReady }) {
       >
         타이머 세팅, 준비하기
       </button>
+      {onGoHome && <HomeButton onClick={onGoHome} />}
       <Character closed />
     </main>
   );

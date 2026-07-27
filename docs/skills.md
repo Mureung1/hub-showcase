@@ -14,11 +14,12 @@
 ## S1 — Brain Dump 분할
 
 - **경로**: `POST /api/brain-dump`
-- **입력**: `{ text: string }` (비어있으면 400)
-- **출력**: `{ microsteps: MicroStep[] }`, `MicroStep = { title: string, estimatedMinutes: int(1..25), category: task_category, scheduledDate: date }`
-- **제약**: `microsteps.length >= 1`. 각 스텝은 바로 실행 가능한 한 문장. 순서 = 실행 순서. `category`는 고정 셋 중 하나(`z.enum` 강제). `scheduledDate`는 생성 시점 오늘 날짜가 기본값이며, 모델이 판단하지 않고 서버에서 채운다(`postpone_task` 실행 시에만 갱신됨, S2 참고).
-- **모델**: Solar (`solar-pro2`) via `generateObject`.
-- **확장(T14, 미구현)**: 입력에 기한이 없는 항목이 있으면, 응답에 `followUpQuestion: string | null`을 추가로 반환할 수 있다. 값이 있으면 사용자에게 그 질문을 보여주고 답변을 다시 S1에 넣어 재호출한다. 최대 2턴까지만 허용(3턴째부터는 질문 없이 기본값으로 확정). 확정된 기한/우선순위는 `scheduledDate`에 반영.
+- **입력**: `{ text: string, turn?: number, clarifications?: string[] }` (`text`가 비어있으면 400). `turn`은 지금까지 되물은 횟수(기본 0), `clarifications`는 그 질문들에 대한 사용자 답변을 순서대로 담은 배열(기본 []). 최초 제출은 `turn:0, clarifications:[]`.
+- **출력**: `{ microsteps: MicroStep[] | null, followUpQuestion: string | null }`, `MicroStep = { title: string, estimatedMinutes: int(1..25), category: task_category, scheduledDate: date }`
+  - `followUpQuestion`이 값이 있으면 `microsteps`는 `null`이고 아직 Notion에 저장되지 않은 상태다. 클라이언트는 이 질문을 사용자에게 보여주고, 답을 받아 `clarifications`에 추가하고 `turn`을 1 늘려 같은 `text`로 재호출한다.
+  - `followUpQuestion`이 `null`이면 `microsteps`가 채워져 있고 이미 Notion에 저장 완료된 상태다(기존과 동일한 저장 시점).
+- **제약**: `microsteps.length >= 1`(저장되는 경우). 각 스텝은 바로 실행 가능한 한 문장. 순서 = 실행 순서. `category`는 고정 셋 중 하나(`z.enum` 강제). `scheduledDate`는 서버가 계산해서 채운다 — 입력에 기한이 명확하면(첫 호출부터든 답변으로든) 그 날짜, 불명확하고 `turn < 2`면 모델이 되묻고, `turn >= 2`(질문을 이미 2번 한 뒤)면 더 묻지 않고 오늘 날짜를 기본값으로 강제 확정한다(`postpone_task` 실행 시에도 갱신됨, S2 참고).
+- **모델**: Solar (`solar-pro2`) via `generateObject`. 마이크로스텝 분할과 기한 판단(명확한지, 불명확하면 되물을 질문·명확하면 오늘로부터 며칠 뒤인지)을 한 번의 호출로 같이 판단한다.
 
 ## S2 — "힘들어" 루프 판단
 
@@ -74,3 +75,11 @@
 - **출력**: `{ extendMinutes: int(1..25), reason: string }`
 - **제약**: `extendMinutes`는 고정 계단이 아니라 모델이 `extendCount`·`estimatedMinutes` 등을 보고 직접 판단(`suggest_break`과 동일 패턴). `reason`은 한 줄, 사용자에게 보이는 판단 근거.
 - **비고**: S2("힘들어" 루프)와 트리거가 다르다(타이머 종료 vs 사용자의 명시적 "힘들어" 액션). `agent-design.md`(Feat-4 동결 설계)는 이 스킬의 근거로 삼지 않는다.
+
+## S7 — 스텝 완료 시 일시정지 기록
+
+- **경로**: `POST /api/steps/complete`(기존 경로 확장)
+- **입력 추가분**: `pauseCount: number`(이 스텝에서 일시정지한 횟수), `pauseReasons: string[]`(각 일시정지에 적은 이유, 안 적었으면 빈 문자열)
+- **제약**: 판단이 필요 없는 순수 기록이라 모델 호출 없음. `pauseReasons`는 `pauseCount`와 길이가 같지 않아도 된다(이유 없이 넘어간 일시정지가 있을 수 있음) — 서버는 빈 문자열이 아닌 것만 이어붙여 Notion에 저장한다.
+- **Notion Steps DB 추가 속성**: `PauseCount`(Number), `PauseReasons`(Text, 이유들을 " / "로 이어붙인 문자열)
+- **비고**: Agent 판단이 아니라 사용자 행동을 그대로 기록하는 것이라 AgentLog(S3)나 `agent-design.md`와는 무관하다.

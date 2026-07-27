@@ -1,7 +1,9 @@
 import Character from "./Character";
+import HomeButton from "./HomeButton";
 
 // task: 방금 끝낸 할 일 텍스트
-export default function CompleteScreen({ task }) {
+// onGoHome: 새 Brain Dump를 시작하러 홈으로 돌아가는 버튼
+export default function CompleteScreen({ task, onGoHome }) {
   return (
     <main
       style={{
@@ -33,6 +35,7 @@ export default function CompleteScreen({ task }) {
       </div>
       <p style={{ color: "var(--ink-soft)" }}>{task}</p>
       <h1 style={{ fontSize: "24px" }}>오늘도 해냈다</h1>
+      {onGoHome && <HomeButton onClick={onGoHome} label="새 할 일 적으러 가기" />}
       <Character />
     </main>
   );

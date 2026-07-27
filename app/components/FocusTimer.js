@@ -11,7 +11,9 @@ import SpeechBubble from "./SpeechBubble";
 // onFinish: 시간이 다 됐을 때 호출
 // caption: 있으면 캐릭터 위 말풍선으로 보여준다(T15: 연장 판단 이유 표시용). BrainDumpInput의
 // SpeechBubble과 같은 위치(bottom: 225px)를 써서 캐릭터와의 배치가 화면마다 일관되게 한다.
-export default function FocusTimer({ durationMinutes = 25, startedAt, onFinish, caption }) {
+// onPause: 있으면 오른쪽 위에 일시정지 버튼을 보여준다(T20). 할 일 자체와 무관한 이유로
+// 잠깐 멈출 때를 위한 것이라, 이 버튼은 focus/timer 흐름 안에서만 예외적으로 노출한다.
+export default function FocusTimer({ durationMinutes = 25, startedAt, onFinish, caption, onPause }) {
   const [remainingSeconds, setRemainingSeconds] = useState(durationMinutes * 60);
 
   useEffect(() => {
@@ -81,6 +83,32 @@ export default function FocusTimer({ durationMinutes = 25, startedAt, onFinish, 
           {minutes}:{seconds}
         </span>
       </div>
+      {onPause && (
+        <button
+          onClick={onPause}
+          aria-label="일시정지"
+          title="일시정지"
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            border: "1px solid var(--cream-line)",
+            background: "var(--white)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            fontSize: "16px",
+            color: "var(--ink-soft)",
+            zIndex: 10,
+          }}
+        >
+          ⏸
+        </button>
+      )}
       {caption && (
         <SpeechBubble
           style={{
