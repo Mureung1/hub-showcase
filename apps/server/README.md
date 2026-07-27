@@ -121,10 +121,13 @@ Existing Playwright harness의 same-root durability trace는 실제 Express `Ser
 
 ```bash
 npm run test:first-assignment-product-actual -w @ay-ple/server
+npm run test:prepared-workspace-product-actual
 npm run trace:first-assignment-live -w @ay-ple/server -- --codex-home /absolute/path/to/isolated-auth-seed
 ```
 
 Product actual은 verified production Runtime·exact local Responses provider·managed Recipe·real Server HTTP·private MCP host를 통과한다. Active internal-ready fixture directory의 exact `cwd`, selected source, representative Python/command, `auto_review + workspace_write`, proposal→Plan→Review revision→replacement→accept→same-Turn terminal, durable outcome과 process-group disappearance를 검증한다.
+
+Prepared-workspace product actual은 native Bootstrap Skill의 exact CLI를 fresh temporary Git root에서 실행한 뒤, 그 root의 tracked v4 identity·`AGENTS.md`·project MCP declaration과 installed First Assignment Skill을 사용한다. 같은 root를 real shared listener·Interaction Broker와 built STDIO Adapter에 직접 공급해 handshake·exact tool roster, evidence-bound inline Review, revise→fresh card, accept 전 bytes·index 불변, accept 뒤 AY 역할의 explicit-path checkpoint와 unrelated dirty·untracked 보존을 한 trace로 검증한다. Reject, digest·quote·path·symlink evidence failure, busy, Turn interrupt, Browser disconnect와 Runtime·Adapter loss는 normal result·file mutation·Git checkpoint 없이 정산하며 production startup resolver·registry와 public composition은 이 command가 바꾸지 않는다.
 
 Live gate는 caller가 명시한 owner-only auth seed만 fresh `CODEX_HOME`으로 복사하고 disjoint `HOME`·SQLite·temp·appDataRoot·workspace를 사용한다. Credential content·token·digest를 출력하지 않는다. Prerequisite 부재는 `blocked`, product mismatch는 `failed`로 구분한다. Isolated live evidence는 complete Assignment action·Review·confirmed outcome과 clean shutdown을 통과했지만 external credential은 mandatory product cutover gate가 아니다.
 

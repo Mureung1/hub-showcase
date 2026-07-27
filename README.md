@@ -161,6 +161,7 @@ Materialized exact runtime이 필요한 provider-free native·process gate는 �
 npm run verify:production-runtime -w @ay-ple/codex-chat-runtime
 npm run test:local-provider -w @ay-ple/codex-chat-runtime
 npm run test:first-assignment-product-actual -w @ay-ple/server
+npm run test:prepared-workspace-product-actual
 ```
 
 아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 채택한 target에서 App은 typed InteractionCapability와 workspace registry를, AY와 Skill은 workflow·실제 file mutation·Git checkpoint를, SemesterWorkspace는 학기 자료와 history를 소유합니다. 현재 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.
