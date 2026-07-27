@@ -287,6 +287,105 @@ describe("RecipeDraftForm", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("수정 모드에서 출처를 편집하고 빈 URL은 출처 없음으로 제출한다", () => {
+    const onSubmit = vi.fn();
+    const sourcedDraft = {
+      ...draft,
+      source: {
+        url: "https://example.com/recipe",
+        title: "김치찌개 만들기",
+        author: "레시피 작성자",
+      },
+    };
+
+    render(
+      <RecipeDraftForm
+        initialDraft={sourcedDraft}
+        warnings={[]}
+        onCancel={vi.fn()}
+        onSubmit={onSubmit}
+        isSourceEditable
+      />,
+    );
+
+    expect(screen.getByLabelText("출처 URL")).toHaveValue(
+      "https://example.com/recipe",
+    );
+    expect(screen.getByLabelText("출처 제목")).toHaveValue(
+      "김치찌개 만들기",
+    );
+    expect(screen.getByLabelText("출처 작성자 또는 채널명")).toHaveValue(
+      "레시피 작성자",
+    );
+
+    fireEvent.change(screen.getByLabelText("출처 URL"), {
+      target: { value: " https://example.com/updated-recipe " },
+    });
+    fireEvent.change(screen.getByLabelText("출처 제목"), {
+      target: { value: " 수정한 원본 " },
+    });
+    fireEvent.change(screen.getByLabelText("출처 작성자 또는 채널명"), {
+      target: { value: " 새 작성자 " },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "저장하기" }).closest("form"),
+    );
+
+    expect(onSubmit).toHaveBeenLastCalledWith({
+      ...sourcedDraft,
+      source: {
+        url: "https://example.com/updated-recipe",
+        title: "수정한 원본",
+        author: "새 작성자",
+      },
+    });
+
+    fireEvent.change(screen.getByLabelText("출처 URL"), {
+      target: { value: "   " },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "저장하기" }).closest("form"),
+    );
+
+    expect(onSubmit).toHaveBeenLastCalledWith({
+      ...sourcedDraft,
+      source: null,
+    });
+  });
+
+  it("수정 모드에서 출처가 없는 레시피에 출처를 추가한다", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <RecipeDraftForm
+        initialDraft={draft}
+        warnings={[]}
+        onCancel={vi.fn()}
+        onSubmit={onSubmit}
+        isSourceEditable
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("출처 URL"), {
+      target: { value: "https://example.com/new-source" },
+    });
+    fireEvent.change(screen.getByLabelText("출처 제목"), {
+      target: { value: "새 출처" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "저장하기" }).closest("form"),
+    );
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      ...draft,
+      source: {
+        url: "https://example.com/new-source",
+        title: "새 출처",
+        author: null,
+      },
+    });
+  });
+
   it("재료를 추가·삭제한 뒤 순서를 1부터 다시 맞춘다", () => {
     const onSubmit = vi.fn();
     const draftWithTwoIngredients = {

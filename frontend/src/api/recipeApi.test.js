@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createRecipe, structureRecipe, getRecipeDetail } from "./recipeApi";
+import {
+  createRecipe,
+  structureRecipe,
+  getRecipeDetail,
+  updateRecipe,
+} from "./recipeApi";
 
 describe("structureRecipe", () => {
   afterEach(() => {
@@ -168,5 +173,54 @@ describe("getRecipeDetail", () => {
     expect(request.headers.get("Authorization")).toBe(
       "Bearer firebase-token",
     );
+  });
+});
+
+describe("updateRecipe", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("Firebase ID 토큰과 편집 가능한 전체 본문으로 레시피 수정 API를 호출한다", async () => {
+    const recipeRequest = {
+      title: "수정한 김치찌개",
+      description: "돼지고기를 넣은 김치찌개",
+      servings: "3인분",
+      cookingTimeMinutes: 35,
+      ingredients: [
+        { name: "김치", amount: "250", unit: "g", order: 1 },
+      ],
+      steps: [{ order: 1, description: "김치를 충분히 볶는다." }],
+      source: {
+        url: "https://example.com/updated-recipe",
+        title: "수정한 원본",
+        author: "요리 연구가",
+      },
+    };
+    const updatedRecipe = {
+      id: "recipe-id",
+      type: "EXTERNAL",
+      updatedAt: "2026-07-27T10:00:00.000Z",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: updatedRecipe }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      updateRecipe("firebase-token", "recipe-id", recipeRequest),
+    ).resolves.toEqual(updatedRecipe);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [path, request] = fetchMock.mock.calls[0];
+    expect(path).toBe("/api/recipes/recipe-id");
+    expect(request.method).toBe("PATCH");
+    expect(request.headers.get("Authorization")).toBe(
+      "Bearer firebase-token",
+    );
+    expect(JSON.parse(request.body)).toEqual(recipeRequest);
   });
 });

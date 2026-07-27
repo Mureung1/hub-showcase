@@ -5,7 +5,7 @@
 | 패턴 키 | 설명 | 횟수 | 근거 티켓 | 상태 |
 | --- | --- | ---: | --- | --- |
 | `external-provider-boundary` | 외부 AI/API 제공자를 환경 변수 비밀 관리, timeout·무재시도, 안정적인 오류 변환, 응답 검증과 mock 테스트 경계로 연결한다. | 2 | `BE-AI-001`, `BE-AI-005` | 제안 필요 |
-| `authenticated-form-submit` | 인증 토큰 기반 폼 요청에 처리 중 중복 차단, 오류 표시, 입력 유지와 성공 이동을 적용하고 focused 테스트로 성공·실패 경계를 검증한다. | 5 | `FE-AI-001`, `FE-RECIPE-003`, `FE-SHARE-002`, `FE-SHARE-003`, `FE-SHARE-004` | 승인됨 |
+| `authenticated-form-submit` | 인증 토큰 기반 폼 요청에 처리 중 중복 차단, 오류 표시, 입력 유지와 성공 이동을 적용하고 focused 테스트로 성공·실패 경계를 검증한다. | 6 | `FE-AI-001`, `FE-RECIPE-003`, `FE-SHARE-002`, `FE-SHARE-003`, `FE-SHARE-004`, `FE-RECIPE-006` | 승인됨 |
 | `database-migration-validation` | 문서의 물리 모델에 맞춘 순차 SQL 마이그레이션을 추가하고 실제 PostgreSQL에 적용·재실행한 뒤 카탈로그에서 컬럼, 제약과 인덱스를 검증한다. | 3 | `DB-CORE-001`, `DB-AUDIT-001`, `DB-SHARE-002` | 승인됨 |
 | `transactional-recipe-aggregate-write` | 전체 레시피 계약과 안전한 출처를 검증하고 부모·재료·단계·출처를 한 PostgreSQL 트랜잭션으로 저장하며 하위 실패 롤백을 mock 테스트로 확인한다. | 2 | `BE-RECIPE-003`, `BE-RECIPE-005` | 거절됨 |
 

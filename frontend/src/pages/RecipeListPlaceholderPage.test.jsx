@@ -147,6 +147,19 @@ function renderRecipeDetail({
   return { fetchMock, user };
 }
 
+async function openTransferShare() {
+  const detailRegion = await screen.findByRole("region", {
+    name: "레시피 상세",
+  });
+
+  fireEvent.click(
+    within(detailRegion).getByRole("button", { name: "⋯ 관리" }),
+  );
+  fireEvent.click(
+    within(detailRegion).getByRole("button", { name: "전달 공유" }),
+  );
+}
+
 describe("RecipeListPlaceholderPage", () => {
   it("Firebase 로그아웃 성공 후 로그인 화면으로 이동한다", async () => {
     signOutMock.mockResolvedValue();
@@ -415,6 +428,66 @@ describe("RecipeListPlaceholderPage", () => {
     ).not.toBeInTheDocument();
     expect(
       within(detailRegion).queryByRole("button"),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["OWNED", true],
+    ["EXTERNAL", false],
+  ])(
+    "%s 레시피의 관리 목록에 원본 수정과 허용된 전달 공유만 표시한다",
+    async (type, canTransfer) => {
+      renderRecipeDetail({ type });
+      const detailRegion = await screen.findByRole("region", {
+        name: "레시피 상세",
+      });
+      const manageButton = within(detailRegion).getByRole("button", {
+        name: "⋯ 관리",
+      });
+
+      expect(manageButton).toHaveAttribute("aria-expanded", "false");
+      expect(
+        within(detailRegion).queryByRole("link", { name: "원본 수정" }),
+      ).not.toBeInTheDocument();
+
+      fireEvent.click(manageButton);
+
+      expect(manageButton).toHaveAttribute("aria-expanded", "true");
+      expect(
+        within(detailRegion).getByRole("list", { name: "관리 작업" }),
+      ).toBeInTheDocument();
+      expect(
+        within(detailRegion).getByRole("link", { name: "원본 수정" }),
+      ).toHaveAttribute("href", "/recipes/recipe-id/edit");
+      expect(
+        within(detailRegion).queryByRole("button", { name: "삭제" }),
+      ).not.toBeInTheDocument();
+      const transferButton = within(detailRegion).queryByRole("button", {
+        name: "전달 공유",
+      });
+
+      if (canTransfer) {
+        expect(transferButton).toBeInTheDocument();
+      } else {
+        expect(transferButton).not.toBeInTheDocument();
+      }
+    },
+  );
+
+  it("RECEIVED 레시피에는 원본 관리 진입점을 표시하지 않는다", async () => {
+    renderRecipeDetail({ type: "RECEIVED" });
+    const detailRegion = await screen.findByRole("region", {
+      name: "레시피 상세",
+    });
+
+    expect(
+      within(detailRegion).queryByRole("button", { name: "⋯ 관리" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailRegion).queryByRole("link", { name: "원본 수정" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailRegion).queryByRole("button", { name: "전달 공유" }),
     ).not.toBeInTheDocument();
   });
 
@@ -789,6 +862,7 @@ describe("RecipeListPlaceholderPage", () => {
 
     expect(cookingModeSwitch).not.toBeChecked();
 
+    await openTransferShare();
     fireEvent.click(
       within(detailRegion).getByRole("button", {
         name: "전달 초대 만들기",
@@ -868,6 +942,7 @@ describe("RecipeListPlaceholderPage", () => {
     vi.stubGlobal("navigator", { clipboard: { writeText } });
     renderRecipeDetail();
 
+    await openTransferShare();
     fireEvent.click(
       await screen.findByRole("button", {
         name: "전달 초대 만들기",
@@ -927,6 +1002,7 @@ describe("RecipeListPlaceholderPage", () => {
     const { fetchMock } = renderRecipeDetail({
       createInvitation: () => invitationResponse,
     });
+    await openTransferShare();
     const createButton = await screen.findByRole("button", {
       name: "전달 초대 만들기",
     });
@@ -1016,6 +1092,7 @@ describe("RecipeListPlaceholderPage", () => {
           );
         },
       });
+      await openTransferShare();
       const createButton = await screen.findByRole("button", {
         name: "전달 초대 만들기",
       });
@@ -1050,6 +1127,7 @@ describe("RecipeListPlaceholderPage", () => {
     });
     renderRecipeDetail();
 
+    await openTransferShare();
     fireEvent.click(
       await screen.findByRole("button", {
         name: "전달 초대 만들기",

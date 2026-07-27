@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import RecipeDraftPage from "./pages/RecipeDraftPage";
 import RecipeDraftRoute from "./components/RecipeDraftRoute";
 import TransferInvitationPage from "./pages/TransferInvitationPage";
+import RecipeEditPage from "./pages/RecipeEditPage";
 
 function App() {
   return (
@@ -49,6 +50,14 @@ function App() {
         element={
           <ProtectedRoute>
             <RecipeListPlaceholderPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recipes/:recipeId/edit"
+        element={
+          <ProtectedRoute>
+            <RecipeEditPage />
           </ProtectedRoute>
         }
       />

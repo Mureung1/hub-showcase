@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-27 · FE-RECIPE-006 · 부분 완료
+
+- 결과: `OWNED`, `EXTERNAL` 상세의 `⋯ 관리` 텍스트 목록에서 전용 원본 수정 화면을 열고, 서버 상세를 기존 초안 폼에 채워 편집 가능한 7개 필드 전체를 인증된 `PATCH`로 저장한 뒤 응답 ID의 상세로 돌아간다. 출처는 추가·수정·제거할 수 있고 실패 후 입력을 유지하며, `RECEIVED`는 상세 진입점과 직접 URL 폼을 모두 차단한다. `OWNED`의 기존 전달 공유는 관리 목록에서 열고 생성·복사 상태를 유지하며 삭제는 노출하지 않는다.
+- 결정: 수정 폼을 복제하지 않고 `RecipeDraftForm`의 기본 AI 출처 읽기 전용 동작을 유지하는 출처 편집 모드만 추가했다. 상세 관리 동작은 유형별 텍스트 목록에 모으고 수정은 `/recipes/:recipeId/edit` 보호 경로를 사용한다.
+- 시행착오: 집중 테스트에서 기존 47개는 통과하고 수정 API 함수, 출처 편집 모드, 수정 페이지와 관리 목록이 없는 신규 경계만 실패하는 Red를 확인했다. 로컬 Vite 서버는 실행했지만 연결 가능한 브라우저가 없어 실제 화면과 Firebase 세션 검증은 진행하지 못했다.
+- 검증: 집중 4개 파일 60개 테스트, 전체 `npm test` 9개 파일 82개 테스트, `npm run lint`, `npm run build`, `git diff --check`를 통과했다. 실제 Firebase ID 토큰·Express·PostgreSQL을 사용한 두 유형 수정과 모바일·키보드 화면 확인은 수행하지 않아 티켓 검증과 상위 체크는 열어 두었다.
+- 후속: 연결 가능한 브라우저와 실제 로컬 API로 `OWNED`, `EXTERNAL` 저장·실패·취소, `RECEIVED` 진입 차단과 관리 목록 키보드 동작을 확인한 뒤 `FE-RECIPE-006`을 완료한다.
+- 반복 패턴: `authenticated-form-submit`
+
 ## 2026-07-27 · BE-RECIPE-005 · 완료
 
 - 결과: 인증된 `PATCH /api/recipes/:recipeId`가 현재 사용자가 소유한 활성 `OWNED`, `EXTERNAL` 레시피의 편집 가능한 7개 필드와 하위 데이터를 전체 교체한다. 출처 유무로 유형을 다시 결정하고, `RECEIVED`는 `RECIPE_NOT_EDITABLE`, 없는·타인 소유·삭제·잘못된 ID는 `RECIPE_NOT_FOUND`로 처리한다.

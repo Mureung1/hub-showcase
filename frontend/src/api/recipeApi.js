@@ -26,3 +26,11 @@ export function getRecipeDetail(idToken, recipeId) {
     idToken,
   });
 }
+
+export function updateRecipe(idToken, recipeId, recipeRequest) {
+  return apiRequest(`/api/recipes/${recipeId}`, {
+    method: "PATCH",
+    idToken,
+    body: recipeRequest,
+  });
+}

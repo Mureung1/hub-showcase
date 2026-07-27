@@ -13,6 +13,7 @@ function RecipeDraftForm({
   onCancel,
   isSubmitting = false,
   submitError = "",
+  isSourceEditable = false,
 }) {
   const [draft, setDraft] = useState({
     ...initialDraft,
@@ -153,6 +154,19 @@ function RecipeDraftForm({
     }));
   }
 
+  function handleSourceChange(field, value) {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      source: {
+        url: "",
+        title: null,
+        author: null,
+        ...currentDraft.source,
+        [field]: value,
+      },
+    }));
+  }
+
   function handleAddStep() {
     setDraft((currentDraft) => ({
       ...currentDraft,
@@ -259,6 +273,17 @@ function RecipeDraftForm({
       return;
     }
 
+    const sourceUrl = normalizeOptionalText(draft.source?.url);
+    const source = isSourceEditable
+      ? sourceUrl
+        ? {
+            url: sourceUrl,
+            title: normalizeOptionalText(draft.source?.title),
+            author: normalizeOptionalText(draft.source?.author),
+          }
+        : null
+      : draft.source;
+
     onSubmit({
       ...draft,
       title: draft.title.trim(),
@@ -278,6 +303,7 @@ function RecipeDraftForm({
         description: step.description.trim(),
         order: index + 1,
       })),
+      source,
     });
   }
 
@@ -583,7 +609,50 @@ function RecipeDraftForm({
           조리 단계 추가
         </button>
       </fieldset>
-      {draft.source ? (
+      {isSourceEditable ? (
+        <fieldset className="mt-8 border-t border-[#d8cfbd] pt-6">
+          <legend className="pr-3 text-lg font-semibold tracking-[0.02em] text-[#272923]">
+            출처
+          </legend>
+          <p className="mt-2 text-xs leading-5 text-[#777368]">
+            URL을 비우면 직접 작성한 레시피로 저장됩니다.
+          </p>
+          <label className={`${labelClassName} mt-4`}>
+            출처 URL
+            <input
+              className={fieldClassName}
+              name="sourceUrl"
+              type="url"
+              value={draft.source?.url ?? ""}
+              onChange={(event) =>
+                handleSourceChange("url", event.target.value)
+              }
+            />
+          </label>
+          <label className={`${labelClassName} mt-5`}>
+            출처 제목
+            <input
+              className={fieldClassName}
+              name="sourceTitle"
+              value={draft.source?.title ?? ""}
+              onChange={(event) =>
+                handleSourceChange("title", event.target.value)
+              }
+            />
+          </label>
+          <label className={`${labelClassName} mt-5`}>
+            출처 작성자 또는 채널명
+            <input
+              className={fieldClassName}
+              name="sourceAuthor"
+              value={draft.source?.author ?? ""}
+              onChange={(event) =>
+                handleSourceChange("author", event.target.value)
+              }
+            />
+          </label>
+        </fieldset>
+      ) : draft.source ? (
         <aside
           className="mt-8 border-t border-[#d8cfbd] pt-6"
           aria-labelledby="recipe-source-heading"

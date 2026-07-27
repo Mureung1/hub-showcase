@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import TransferInvitationShareSection from "./TransferInvitationShareSection";
 
@@ -15,6 +16,11 @@ function RecipeDetailView({
   recipeId,
   user,
 }) {
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const [isTransferShareOpen, setIsTransferShareOpen] = useState(false);
+  const canEditOriginal =
+    recipeDetail.type === "OWNED" || recipeDetail.type === "EXTERNAL";
+
   return (
     <div className="h-full overflow-y-auto p-[50px_42px_38px] max-[1100px]:p-[38px_42px] max-[700px]:p-[25px_22px_24px] short-screen:p-[30px_34px_24px]">
       <section aria-label="레시피 상세">
@@ -39,16 +45,61 @@ function RecipeDetailView({
               {recipeDetail.description}
             </p>
           ) : null}
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#626157]">
-            {recipeDetail.servings ? (
-              <span className="rounded-full border border-[#d8cfbd] px-2.5 py-1">
-                {recipeDetail.servings}
-              </span>
-            ) : null}
-            {recipeDetail.cookingTimeMinutes !== null ? (
-              <span className="rounded-full border border-[#d8cfbd] px-2.5 py-1">
-                {recipeDetail.cookingTimeMinutes}분
-              </span>
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <div className="flex min-w-0 flex-wrap gap-2 text-xs text-[#626157]">
+              {recipeDetail.servings ? (
+                <span className="shrink-0 whitespace-nowrap rounded-full border border-[#d8cfbd] px-2.5 py-1">
+                  {recipeDetail.servings}
+                </span>
+              ) : null}
+              {recipeDetail.cookingTimeMinutes !== null ? (
+                <span className="shrink-0 whitespace-nowrap rounded-full border border-[#d8cfbd] px-2.5 py-1">
+                  {recipeDetail.cookingTimeMinutes}분
+                </span>
+              ) : null}
+            </div>
+            {!isCookingMode && canEditOriginal ? (
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  className="min-h-8 rounded-lg border border-[#b8aa8f] px-3 text-sm font-semibold text-[#55544d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a]"
+                  aria-controls="recipe-management-actions"
+                  aria-expanded={isManagementOpen}
+                  onClick={() => setIsManagementOpen((isOpen) => !isOpen)}
+                >
+                  ⋯
+                </button>
+                {isManagementOpen ? (
+                  <ul
+                    id="recipe-management-actions"
+                    aria-label="관리 작업"
+                    className="absolute right-0 top-12 z-10 min-w-36 overflow-hidden rounded-lg border border-[#c9bea7] bg-[#fbf8ef] py-1 shadow-lg"
+                  >
+                    <li>
+                      <Link
+                        className="flex min-h-11 items-center px-4 text-sm text-[#31523d] hover:bg-[#eee7d9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#15332a]"
+                        to={`/recipes/${recipeId}/edit`}
+                      >
+                        원본 수정
+                      </Link>
+                    </li>
+                    {recipeDetail.type === "OWNED" ? (
+                      <li>
+                        <button
+                          type="button"
+                          className="min-h-11 w-full px-4 text-left text-sm text-[#31523d] hover:bg-[#eee7d9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#15332a]"
+                          onClick={() => {
+                            setIsTransferShareOpen(true);
+                            setIsManagementOpen(false);
+                          }}
+                        >
+                          전달 공유
+                        </button>
+                      </li>
+                    ) : null}
+                  </ul>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </header>
@@ -117,7 +168,7 @@ function RecipeDetailView({
         ) : null}
 
         {recipeDetail.type === "OWNED" ? (
-          <div hidden={isCookingMode}>
+          <div hidden={isCookingMode || !isTransferShareOpen}>
             <TransferInvitationShareSection
               recipeId={recipeId}
               user={user}
