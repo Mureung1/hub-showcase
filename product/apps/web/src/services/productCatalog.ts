@@ -1,5 +1,5 @@
 import type { AnalysisRadius } from "../features/analysis/types";
-import type { Category, MarketKey } from "../features/market/types";
+import type { AnalysisCategory, Category, MarketKey } from "../features/market/types";
 import { apiUrl } from "./api";
 
 export type SupportedMarket = {
@@ -10,10 +10,21 @@ export type SupportedMarket = {
   center: [number, number];
 };
 
+export type ProductCategory = {
+  name: Category;
+  codes: string[];
+  coverage?: "full" | "partial";
+  analysis_category?: AnalysisCategory | null;
+  rank?: number | null;
+  store_count?: number | null;
+  market_count?: number | null;
+};
+
 export type ProductCatalog = {
   markets: SupportedMarket[];
-  categories: Array<{ name: Category; codes: string[] }>;
+  categories: ProductCategory[];
   radii: AnalysisRadius[];
+  ranking_basis?: "supported_market_unique_store_count" | "bootstrap";
 };
 
 export const DEMO_ANALYSIS_PERIOD = "20251";
@@ -42,12 +53,17 @@ export const DEMO_MARKETS: SupportedMarket[] = [
   },
 ];
 
-// Keep the stable product support contract available while the free API instance wakes up.
-// The API response remains authoritative and replaces this bootstrap snapshot in the background.
+// Stable fallback while the free API instance wakes up. The remote API replaces
+// this list with the data-ranked Top 7 when the runtime database is available.
 export const PRODUCT_CATALOG_BOOTSTRAP: ProductCatalog = {
   markets: DEMO_MARKETS,
   categories: [
-    { name: "카페", codes: ["CS100010"] },
+    {
+      name: "카페",
+      codes: ["CS100010"],
+      coverage: "full",
+      analysis_category: "카페",
+    },
     {
       name: "음식점",
       codes: [
@@ -60,11 +76,24 @@ export const PRODUCT_CATALOG_BOOTSTRAP: ProductCatalog = {
         "CS100008",
         "CS100009",
       ],
+      coverage: "full",
+      analysis_category: "음식점",
     },
-    { name: "베이커리", codes: ["CS100005"] },
-    { name: "편의점", codes: ["CS300002"] },
+    {
+      name: "베이커리",
+      codes: ["CS100005"],
+      coverage: "full",
+      analysis_category: "베이커리",
+    },
+    {
+      name: "편의점",
+      codes: ["CS300002"],
+      coverage: "full",
+      analysis_category: "편의점",
+    },
   ],
   radii: [100, 300, 500],
+  ranking_basis: "bootstrap",
 };
 
 export async function loadProductCatalog(signal: AbortSignal): Promise<ProductCatalog> {
