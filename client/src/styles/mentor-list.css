@@ -176,6 +176,7 @@
 }
 
 .mentor-filter-field select.field {
+  height: var(--field-height);
   cursor: pointer;
 }
 

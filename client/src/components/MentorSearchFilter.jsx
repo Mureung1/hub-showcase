@@ -102,6 +102,7 @@ function MentorSearchFilter({
 
             <label className="mentor-filter-field">
               <span>상담 분야</span>
+              <small aria-hidden="true">&nbsp;</small>
               <select className="field" name="counselingField" onChange={updateFilter} value={filters.counselingField}>
                 <option value="">전체</option>
                 {counselingOptions.map((option) => (
@@ -124,6 +125,7 @@ function MentorSearchFilter({
 
             <label className="mentor-filter-field">
               <span>학적</span>
+              <small aria-hidden="true">&nbsp;</small>
               <select className="field" name="academicStatus" onChange={updateFilter} value={filters.academicStatus}>
                 <option value="">전체</option>
                 {academicStatusOptions.map((option) => (
