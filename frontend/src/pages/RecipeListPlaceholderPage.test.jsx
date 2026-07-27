@@ -81,6 +81,23 @@ function renderRecipeDetail({
         },
       ),
     ),
+  deleteResponse = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "recipe-id",
+            type,
+            deletedAt: "2026-07-27T10:00:00.000Z",
+            restoreUntil: "2026-08-26T10:00:00.000Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    ),
 } = {}) {
   const recipeSummary = {
     id: "recipe-id",
@@ -101,12 +118,19 @@ function renderRecipeDetail({
     memo: null,
     updatedAt: "2026-07-26T12:30:00.000Z",
   };
-  const fetchMock = vi.fn().mockImplementation((path) => {
+  const fetchMock = vi.fn().mockImplementation((path, request) => {
     if (
       path ===
       "/api/recipes/recipe-id/transfer-invitations"
     ) {
       return createInvitation();
+    }
+
+    if (
+      path === "/api/recipes/recipe-id" &&
+      request.method === "DELETE"
+    ) {
+      return deleteResponse();
     }
 
     return Promise.resolve(
@@ -139,12 +163,36 @@ function renderRecipeDetail({
             path="/recipes/:recipeId"
             element={<RecipeListPlaceholderPage />}
           />
+          <Route
+            path="/recipes"
+            element={<RecipeListPlaceholderPage />}
+          />
         </Routes>
       </MemoryRouter>
     </AuthContext.Provider>,
   );
 
   return { fetchMock, user };
+}
+
+async function openDeleteDialog(type = "OWNED") {
+  const detailRegion = await screen.findByRole("region", {
+    name: "레시피 상세",
+  });
+
+  fireEvent.click(
+    within(detailRegion).getByRole("button", { name: "⋯ 관리" }),
+  );
+  fireEvent.click(
+    within(detailRegion).getByRole("button", {
+      name:
+        type === "RECEIVED"
+          ? "내 레시피북에서 제거"
+          : "레시피 삭제",
+    }),
+  );
+
+  return screen.findByRole("dialog");
 }
 
 async function openTransferShare() {
@@ -460,8 +508,10 @@ describe("RecipeListPlaceholderPage", () => {
         within(detailRegion).getByRole("link", { name: "원본 수정" }),
       ).toHaveAttribute("href", "/recipes/recipe-id/edit");
       expect(
-        within(detailRegion).queryByRole("button", { name: "삭제" }),
-      ).not.toBeInTheDocument();
+        within(detailRegion).getByRole("button", {
+          name: "레시피 삭제",
+        }),
+      ).toBeInTheDocument();
       const transferButton = within(detailRegion).queryByRole("button", {
         name: "전달 공유",
       });
@@ -474,22 +524,243 @@ describe("RecipeListPlaceholderPage", () => {
     },
   );
 
-  it("RECEIVED 레시피에는 원본 관리 진입점을 표시하지 않는다", async () => {
+  it("RECEIVED 레시피에는 제거만 관리 동작으로 표시한다", async () => {
     renderRecipeDetail({ type: "RECEIVED" });
     const detailRegion = await screen.findByRole("region", {
       name: "레시피 상세",
     });
+    const manageButton = within(detailRegion).getByRole("button", {
+      name: "⋯ 관리",
+    });
 
-    expect(
-      within(detailRegion).queryByRole("button", { name: "⋯ 관리" }),
-    ).not.toBeInTheDocument();
+    fireEvent.click(manageButton);
+
     expect(
       within(detailRegion).queryByRole("link", { name: "원본 수정" }),
     ).not.toBeInTheDocument();
     expect(
       within(detailRegion).queryByRole("button", { name: "전달 공유" }),
     ).not.toBeInTheDocument();
+    expect(
+      within(detailRegion).getByRole("button", {
+        name: "내 레시피북에서 제거",
+      }),
+    ).toBeInTheDocument();
   });
+
+  it.each([
+    ["OWNED", "레시피 삭제", "레시피를 삭제할까요?"],
+    ["EXTERNAL", "레시피 삭제", "레시피를 삭제할까요?"],
+    [
+      "RECEIVED",
+      "내 레시피북에서 제거",
+      "내 레시피북에서 제거할까요?",
+    ],
+  ])(
+    "%s 레시피에 유형별 확인 모달을 표시한다",
+    async (type, actionLabel, dialogName) => {
+      renderRecipeDetail({ type });
+
+      const dialog = await openDeleteDialog(type);
+
+      expect(dialog).toHaveAttribute("aria-modal", "true");
+      expect(dialog).toHaveAccessibleName(dialogName);
+      expect(
+        within(dialog).getByRole("button", { name: actionLabel }),
+      ).toBeInTheDocument();
+
+      if (type === "RECEIVED") {
+        expect(dialog).toHaveTextContent(
+          "원 작성자의 레시피와 다른 사용자의 레시피에는 영향을 주지 않습니다.",
+        );
+      }
+    },
+  );
+
+  it("삭제 확인을 취소하면 요청하지 않고 상세를 유지한다", async () => {
+    const { fetchMock } = renderRecipeDetail();
+    const dialog = await openDeleteDialog();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "취소" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "레시피 상세" }),
+    ).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(
+        ([path, request]) =>
+          path === "/api/recipes/recipe-id" &&
+          request.method === "DELETE",
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("확인 모달의 취소 버튼으로 초점을 옮기고 Escape 후 삭제 트리거로 돌려보낸다", async () => {
+    renderRecipeDetail();
+    const detailRegion = await screen.findByRole("region", {
+      name: "레시피 상세",
+    });
+
+    fireEvent.click(
+      within(detailRegion).getByRole("button", { name: "⋯ 관리" }),
+    );
+    const deleteTrigger = within(detailRegion).getByRole("button", {
+      name: "레시피 삭제",
+    });
+    fireEvent.click(deleteTrigger);
+
+    const dialog = await screen.findByRole("dialog");
+    const cancelButton = within(dialog).getByRole("button", {
+      name: "취소",
+    });
+    await waitFor(() => {
+      expect(cancelButton).toHaveFocus();
+    });
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(deleteTrigger).toHaveFocus();
+  });
+
+  it("삭제 처리 중에는 Escape로 확인 모달을 닫지 않는다", async () => {
+    const deleteResponse = new Promise(() => {});
+    renderRecipeDetail({
+      deleteResponse: () => deleteResponse,
+    });
+    const dialog = await openDeleteDialog();
+    const deleteButton = within(dialog).getByRole("button", {
+      name: "레시피 삭제",
+    });
+
+    fireEvent.click(deleteButton);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    expect(dialog).toBeInTheDocument();
+    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toHaveAttribute("aria-busy", "true");
+  });
+
+  it.each(["OWNED", "EXTERNAL", "RECEIVED"])(
+    "%s 삭제·제거 처리 중 중복 요청을 막고 성공 후 목록으로 이동한다",
+    async (type) => {
+      let resolveDelete;
+      const deleteResponse = new Promise((resolve) => {
+        resolveDelete = resolve;
+      });
+      const { fetchMock } = renderRecipeDetail({
+        type,
+        deleteResponse: () => deleteResponse,
+      });
+      const dialog = await openDeleteDialog(type);
+      const deleteButton = within(dialog).getByRole("button", {
+        name:
+          type === "RECEIVED"
+            ? "내 레시피북에서 제거"
+            : "레시피 삭제",
+      });
+
+      fireEvent.click(deleteButton);
+      fireEvent.click(deleteButton);
+
+      expect(deleteButton).toBeDisabled();
+      expect(deleteButton).toHaveAttribute("aria-busy", "true");
+      await waitFor(() => {
+        expect(
+          fetchMock.mock.calls.filter(
+            ([path, request]) =>
+              path === "/api/recipes/recipe-id" &&
+              request.method === "DELETE",
+          ),
+        ).toHaveLength(1);
+      });
+
+      resolveDelete(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "recipe-id",
+              type,
+              deletedAt: "2026-07-27T10:00:00.000Z",
+              restoreUntil: "2026-08-26T10:00:00.000Z",
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      );
+
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      });
+    },
+  );
+
+  it("삭제 성공 후 목록에서 삭제한 레시피 카드를 제거한다", async () => {
+    renderRecipeDetail();
+    const dialog = await openDeleteDialog();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "레시피 삭제" }),
+    );
+
+    expect(
+      await screen.findByText("아직 레시피가 없습니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /김치찌개/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [404, "RECIPE_NOT_FOUND", "레시피를 찾을 수 없습니다."],
+    [500, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."],
+  ])(
+    "삭제 %i 실패 후 상세와 오류를 유지하고 재시도한다",
+    async (status, code, message) => {
+      let requestCount = 0;
+      renderRecipeDetail({
+        deleteResponse: () => {
+          requestCount += 1;
+
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ error: { code, message } }),
+              {
+                status,
+                headers: { "Content-Type": "application/json" },
+              },
+            ),
+          );
+        },
+      });
+      const dialog = await openDeleteDialog();
+      const deleteButton = within(dialog).getByRole("button", {
+        name: "레시피 삭제",
+      });
+
+      fireEvent.click(deleteButton);
+
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        message,
+      );
+      expect(
+        screen.getByRole("region", { name: "레시피 상세" }),
+      ).toBeInTheDocument();
+      expect(deleteButton).toBeEnabled();
+
+      fireEvent.click(deleteButton);
+
+      await waitFor(() => {
+        expect(requestCount).toBe(2);
+      });
+    },
+  );
 
   it("전달받은 레시피 상세에 관계와 기억 정보를 표시한다", async () => {
     const receivedInfo = {

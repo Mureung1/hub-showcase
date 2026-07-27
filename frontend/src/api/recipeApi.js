@@ -34,3 +34,10 @@ export function updateRecipe(idToken, recipeId, recipeRequest) {
     body: recipeRequest,
   });
 }
+
+export function deleteRecipe(idToken, recipeId) {
+  return apiRequest(`/api/recipes/${recipeId}`, {
+    method: "DELETE",
+    idToken,
+  });
+}

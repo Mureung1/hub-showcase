@@ -8,6 +8,7 @@ import {
 } from "react-router";
 import { useAuth } from "../auth/authContext";
 import {
+  deleteRecipe,
   getRecipeDetail,
   getRecipes,
   structureRecipe,
@@ -201,6 +202,19 @@ function RecipeListPlaceholderPage() {
     });
   }
 
+  async function handleDeleteRecipe() {
+    if (!user) {
+      throw new Error("로그인 정보를 확인할 수 없습니다.");
+    }
+
+    const idToken = await user.getIdToken();
+    await deleteRecipe(idToken, recipeId);
+    setRecipes((currentRecipes) =>
+      currentRecipes.filter((recipe) => recipe.id !== recipeId),
+    );
+    navigate("/recipes", { replace: true });
+  }
+
   return (
     <main className="grid h-dvh grid-rows-[minmax(0,1fr)] place-items-stretch overflow-hidden bg-[radial-gradient(circle_at_50%_30%,#faf9f4,#e8e7e2_55%,#d7d6d1)] p-2.5 font-[Noto_Serif_KR,Nanum_Myeongjo,Malgun_Gothic,serif] text-[#272923] max-[700px]:flex max-[700px]:flex-col max-[700px]:p-0">
       <header
@@ -325,7 +339,6 @@ function RecipeListPlaceholderPage() {
                 <h1 className="mb-3.25 text-[31px] font-semibold tracking-[0.09em] max-[700px]:mb-2 max-[700px]:text-[25px] short-screen:mb-2 short-screen:text-[26px]">
                   {user?.displayName ?? "나"}의 레시피북
                 </h1>
-                <p className="text-[13px] text-[#626157]">차분히 모..아 둔 나만의 레시피를 확인하세요.</p>
               </header>
 
               <div className="mt-4.25 hidden gap-1.5 overflow-x-auto max-[700px]:flex" aria-label="레시피 필터">
@@ -463,6 +476,7 @@ function RecipeListPlaceholderPage() {
                     nextCookingMode ? recipeDetail : null,
                   )
                 }
+                onDelete={handleDeleteRecipe}
                 recipeDetail={recipeDetail}
                 recipeId={recipeId}
                 user={user}

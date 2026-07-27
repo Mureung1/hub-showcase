@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createRecipe,
+  deleteRecipe,
   structureRecipe,
   getRecipeDetail,
   updateRecipe,
@@ -222,5 +223,39 @@ describe("updateRecipe", () => {
       "Bearer firebase-token",
     );
     expect(JSON.parse(request.body)).toEqual(recipeRequest);
+  });
+});
+
+describe("deleteRecipe", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("Firebase ID 토큰으로 레시피 삭제 API를 호출하고 결과를 반환한다", async () => {
+    const deletedRecipe = {
+      id: "recipe-id",
+      type: "RECEIVED",
+      deletedAt: "2026-07-27T10:00:00.000Z",
+      restoreUntil: "2026-08-26T10:00:00.000Z",
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: deletedRecipe }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      deleteRecipe("firebase-token", "recipe-id"),
+    ).resolves.toEqual(deletedRecipe);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [path, request] = fetchMock.mock.calls[0];
+    expect(path).toBe("/api/recipes/recipe-id");
+    expect(request.method).toBe("DELETE");
+    expect(request.headers.get("Authorization")).toBe(
+      "Bearer firebase-token",
+    );
   });
 });
