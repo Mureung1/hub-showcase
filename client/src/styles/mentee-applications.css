@@ -214,6 +214,12 @@
   font-size: 17px;
 }
 
+.application-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-lg);
+}
+
 .application-questionnaire {
   margin-top: var(--space-lg);
   border: 1px solid var(--color-border-light);

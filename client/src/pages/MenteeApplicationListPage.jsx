@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getApplications } from "../api/applications";
+import { completeApplication, getApplications } from "../api/applications";
 import { markMessagesAsRead } from "../api/messages";
 import ApplicationCard from "../components/ApplicationCard";
 import { useAuth } from "../context/AuthContext";
@@ -23,30 +23,42 @@ function MenteeApplicationListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [openChatApplicationId, setOpenChatApplicationId] = useState(null);
+  const [completingApplicationId, setCompletingApplicationId] = useState(null);
+
+  const loadApplications = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const response = await getApplications();
+      setApplications(response.data);
+      return true;
+    } catch (error) {
+      setErrorMessage(error.message);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let isCurrent = true;
-
-    const loadApplications = async () => {
-      setIsLoading(true);
-      setErrorMessage("");
-
-      try {
-        const response = await getApplications();
-        if (isCurrent) setApplications(response.data);
-      } catch (error) {
-        if (isCurrent) setErrorMessage(error.message);
-      } finally {
-        if (isCurrent) setIsLoading(false);
-      }
-    };
-
     loadApplications();
+  }, [loadApplications]);
 
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
+  const handleComplete = async (applicationId) => {
+    setCompletingApplicationId(applicationId);
+    setErrorMessage("");
+
+    try {
+      await completeApplication({ applicationId });
+      const hasReloaded = await loadApplications();
+      if (hasReloaded) setActiveStatus("completed");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setCompletingApplicationId(null);
+    }
+  };
 
   const filteredApplications = useMemo(
     () => applications.filter((application) => application.status === activeStatus),
@@ -152,8 +164,10 @@ function MenteeApplicationListPage() {
                 <ApplicationCard
                   application={application}
                   isChatOpen={openChatApplicationId === application.id}
+                  isCompleting={completingApplicationId === application.id}
                   key={application.id}
                   onCloseChat={handleCloseChat}
+                  onComplete={handleComplete}
                   onMeetingUpdated={handleMeetingUpdated}
                   onOpenChat={handleOpenChat}
                 />

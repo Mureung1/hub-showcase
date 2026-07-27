@@ -55,7 +55,15 @@ function QuestionnaireDetails({ questionnaire }) {
   );
 }
 
-function ApplicationCard({ application, isChatOpen, onCloseChat, onMeetingUpdated, onOpenChat }) {
+function ApplicationCard({
+  application,
+  isChatOpen,
+  isCompleting,
+  onCloseChat,
+  onComplete,
+  onMeetingUpdated,
+  onOpenChat,
+}) {
   const hasAgreedMeeting = agreedStatuses.has(application.status);
   const applicationMentors = application.mentors ?? [];
   const visibleMentors = hasAgreedMeeting
@@ -119,9 +127,11 @@ function ApplicationCard({ application, isChatOpen, onCloseChat, onMeetingUpdate
         <strong>{application.questionnaire.preferredTime}</strong>
       </div>
 
+      <QuestionnaireDetails questionnaire={application.questionnaire} />
+
       {hasAgreedMeeting && application.meeting && (
         <section className="application-meeting" aria-labelledby={`meeting-${application.id}`}>
-          <h3 id={`meeting-${application.id}`}>합의된 면담 정보</h3>
+          <h3 id={`meeting-${application.id}`}>면담 약속 정보</h3>
           <MeetingScheduleEditor
             meeting={application.meeting}
             onUpdated={(updatedMeeting) => onMeetingUpdated(application.id, updatedMeeting)}
@@ -129,7 +139,18 @@ function ApplicationCard({ application, isChatOpen, onCloseChat, onMeetingUpdate
         </section>
       )}
 
-      <QuestionnaireDetails questionnaire={application.questionnaire} />
+      {isConfirmed && (
+        <div className="application-actions application-complete-actions">
+          <button
+            className="button button-primary application-complete-button"
+            disabled={isCompleting}
+            onClick={() => onComplete(application.id)}
+            type="button"
+          >
+            {isCompleting ? "완료 처리 중..." : "면담 완료"}
+          </button>
+        </div>
+      )}
     </article>
   );
 }

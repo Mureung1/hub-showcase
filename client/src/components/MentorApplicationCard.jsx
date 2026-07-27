@@ -28,11 +28,9 @@ function MentorApplicationCard({
   application,
   isAccepting,
   isChatOpen,
-  isCompleting,
   isRejecting,
   onAccept,
   onCloseChat,
-  onComplete,
   onMeetingUpdated,
   onOpenChat,
   onReject,
@@ -149,19 +147,6 @@ function MentorApplicationCard({
             onUpdated={(updatedMeeting) => onMeetingUpdated(application.id, updatedMeeting)}
           />
         </section>
-      )}
-
-      {visibleStatus === "confirmed" && (
-        <div className="mentor-application-actions mentor-complete-actions">
-          <button
-            className="button button-primary mentor-complete-button"
-            disabled={isCompleting}
-            onClick={() => onComplete(application.id)}
-            type="button"
-          >
-            {isCompleting ? "완료 처리 중..." : "면담 완료"}
-          </button>
-        </div>
       )}
     </article>
   );

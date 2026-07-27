@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   acceptApplication,
-  completeApplication,
   getApplications,
   rejectApplication,
 } from "../api/applications";
@@ -27,7 +26,6 @@ function MentorHomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [acceptingApplicationId, setAcceptingApplicationId] = useState(null);
   const [rejectingApplicationId, setRejectingApplicationId] = useState(null);
-  const [completingApplicationId, setCompletingApplicationId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [openChatApplicationId, setOpenChatApplicationId] = useState(null);
 
@@ -85,21 +83,6 @@ function MentorHomePage() {
       setErrorMessage(error.message);
     } finally {
       setRejectingApplicationId(null);
-    }
-  };
-
-  const handleComplete = async (applicationId) => {
-    setCompletingApplicationId(applicationId);
-    setErrorMessage("");
-
-    try {
-      await completeApplication({ applicationId });
-      const hasReloaded = await loadApplications();
-      if (hasReloaded) setActiveStatus("completed");
-    } catch (error) {
-      setErrorMessage(error.message);
-    } finally {
-      setCompletingApplicationId(null);
     }
   };
 
@@ -216,12 +199,10 @@ function MentorHomePage() {
                   application={application}
                   isAccepting={acceptingApplicationId === application.id}
                   isChatOpen={openChatApplicationId === application.id}
-                  isCompleting={completingApplicationId === application.id}
                   isRejecting={rejectingApplicationId === application.id}
                   key={application.id}
                   onAccept={handleAccept}
                   onCloseChat={handleCloseChat}
-                  onComplete={handleComplete}
                   onMeetingUpdated={handleMeetingUpdated}
                   onOpenChat={handleOpenChat}
                   onReject={handleReject}

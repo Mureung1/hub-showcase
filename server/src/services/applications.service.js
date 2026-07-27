@@ -366,7 +366,7 @@ const rejectApplication = async (mentorId, applicationId) => {
   };
 };
 
-const completeApplication = async (mentorId, applicationId) => {
+const completeApplication = async (menteeId, applicationId) => {
   const application = await fetchApplicationRow(applicationId);
 
   if (application.status !== 'confirmed') {
@@ -379,7 +379,7 @@ const completeApplication = async (mentorId, applicationId) => {
     );
   }
 
-  if (application.accepted_mentor_id !== mentorId) {
+  if (application.mentee_id !== menteeId) {
     throw new ForbiddenError('이 면담 신청을 완료 처리할 권한이 없습니다.');
   }
 
@@ -398,7 +398,7 @@ const completeApplication = async (mentorId, applicationId) => {
     .from('application_mentors')
     .update({ status: 'completed' })
     .eq('application_id', applicationId)
-    .eq('mentor_id', mentorId);
+    .eq('mentor_id', application.accepted_mentor_id);
 
   if (updateLinkError) throw updateLinkError;
 

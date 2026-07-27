@@ -115,8 +115,8 @@ const rejectApplication = async (req, res) => {
 };
 
 const completeApplication = async (req, res) => {
-  if (req.user.role !== 'mentor') {
-    return sendError(res, 403, 'FORBIDDEN', '멘토만 면담을 완료 처리할 수 있습니다.');
+  if (req.user.role !== 'mentee') {
+    return sendError(res, 403, 'FORBIDDEN', '멘티만 면담을 완료 처리할 수 있습니다.');
   }
 
   try {
