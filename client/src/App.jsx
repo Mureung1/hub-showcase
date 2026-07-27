@@ -4,6 +4,7 @@ import { InviteCompose } from './screens/scr0/InviteCompose.jsx'
 import { InviteShare } from './screens/scr0/InviteShare.jsx'
 import { InviteJoin } from './screens/scr0/InviteJoin.jsx'
 import { ParticipantsStatus } from './screens/scr0/ParticipantsStatus.jsx'
+import { CoordinateConfirm } from './screens/scr3/CoordinateConfirm.jsx'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Route path="/scr0/share" element={<InviteShare />} />
       <Route path="/scr0/join" element={<InviteJoin />} />
       <Route path="/scr0/status" element={<ParticipantsStatus />} />
+      <Route path="/scr3/confirm" element={<CoordinateConfirm />} />
       <Route path="*" element={<Navigate to="/scr0" replace />} />
     </Routes>
   )
