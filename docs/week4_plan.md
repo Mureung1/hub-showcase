@@ -47,6 +47,9 @@ todos:
   - id: issue-84
     content: 마감일 구분자가 "."인 날짜 범위가 파싱 안 되는 문제 수정
     status: completed
+  - id: issue-87
+    content: dday 계산이 UTC 기준이라 KST 자정 전후 마감 지난 공고가 D-0으로 노출되는 문제 수정
+    status: completed
 isProject: false
 ---
 
@@ -81,6 +84,12 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 범위("2020.01.01 ~ 2026.12.31")가 있는데 이 경우도 날짜 범위로 인식돼야 함. 운영 DB 직접
 조회 결과 실제로 1건(`PBLN_000000000092578`) 확인, 별도 이슈(#84)로 등록·수정했다.
 
+#84 작업 직후 사용자가 "여전히 D-0으로 마감 지난 공고가 뜬다"며 "크롤링을 KST 자정 넘어서
+진행해야 한다"고 제안 — 조사 결과 크론 시각이 아니라 `parseDeadline`/`recomputeDday`의
+"오늘" 계산이 실행 서버(GitHub Actions, UTC) 타임존을 쓰는 게 근본 원인임을 확인. 사용자
+제안대로 크론만 옮기면 오히려 매번 오차가 발생함을 실측으로 보여주고, "날짜 계산 KST
+명시화 + 크론 이동" 둘 다 하는 것으로 합의해 별도 이슈(#87)로 등록·수정했다.
+
 ## 진행 현황
 
 | 이슈 | 제목 | 상태 |
@@ -99,6 +108,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 | [#80](https://github.com/syd348/hub/issues/80) | K-Startup·소상공인24 크롤링 소스 추가 | 등록 완료 (2026-07-27) — 소상공인 매칭 정확도 조사에서 파생, [`week4/issue-80-data-source-expansion-plan.md`](week4/issue-80-data-source-expansion-plan.md) |
 | [#82](https://github.com/syd348/hub/issues/82) | D-day 배지가 상시/소진시까지 공고에서 D-9999로 표시됨 | 완료 (2026-07-27) — `NO_DEADLINE_DDAY` shared 승격, 중립색 배지 도입, [`week4/issue-82-dday-no-deadline-label-plan.md`](week4/issue-82-dday-no-deadline-label-plan.md) |
 | [#84](https://github.com/syd348/hub/issues/84) | 마감일 "." 구분자 날짜 범위 파싱 안 됨 | 완료 (2026-07-27, PR #85) — 정규식 수정 + 운영 DB 1건(`PBLN_000000000092578`) 수동 보정, [`week4/issue-84-dot-date-range-parsing-plan.md`](week4/issue-84-dot-date-range-parsing-plan.md) |
+| [#87](https://github.com/syd348/hub/issues/87) | dday 계산이 UTC 기준이라 D-0 노출 지속 | 완료 (2026-07-27) — `kstToday()` 도입, 크론 KST 자정 직후로 이동, [`week4/issue-87-kst-dday-timezone-plan.md`](week4/issue-87-kst-dday-timezone-plan.md) |
 
 ## 리스크 / 결정 필요
 

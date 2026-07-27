@@ -44,6 +44,12 @@ describe('recomputeDday', () => {
   it('파싱 실패한 원문 그대로(예: 하이픈이 아닌 다른 구분자)도 null을 반환한다', () => {
     expect(recomputeDday('2020.01.01 ~ 2026.12.31', NOW)).toBeNull()
   })
+
+  it('KST 자정 직후(UTC 기준 "오늘"이 하루 뒤처지는 시각)에도 마감을 정확히 지난 것으로 계산한다 (이슈 #87)', () => {
+    // 2026-07-26T15:00:00Z = 2026-07-27 00:00 KST
+    const kstMidnightRollover = new Date(Date.UTC(2026, 6, 26, 15, 0, 0))
+    expect(recomputeDday('2026. 7. 26', kstMidnightRollover)).toBe(-1)
+  })
 })
 
 describe('sweepExpired', () => {
