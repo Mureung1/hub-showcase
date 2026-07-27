@@ -59,6 +59,8 @@ test("프롬프트에 허용 재료만 포함하고 만료 재료는 포함하�
   assert.doesNotMatch(prompt, /상한 두부/);
   assert.match(prompt, /무난한 한 끼/);
   assert.match(prompt, /불 사용 여부와 관계없이/);
+  assert.match(prompt, /인스턴트와 가공식품을 함께 쓰는 메뉴/);
+  assert.match(prompt, /부족 재료로 포함/);
   assert.match(prompt, /mealSet/);
   assert.match(prompt, /억지/);
 });

@@ -43,6 +43,7 @@ const INGREDIENT_NAME_TAGS = {
   "냉동 새우": ["nutrition:protein"],
   "참치 통조림": ["nutrition:protein", "processing:processed"],
   "햄 통조림": ["nutrition:protein", "processing:processed"],
+  "스팸": ["nutrition:protein", "processing:processed"],
   "제육볶음": ["nutrition:protein", "processing:processed"],
   "냉동만두": ["nutrition:carb", "nutrition:protein", "processing:processed"],
   "슬라이스 치즈": ["nutrition:protein", "nutrition:fat"],

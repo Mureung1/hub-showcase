@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, expect, test } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import App from "../frontend/src/App.jsx";
 
@@ -60,6 +60,7 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
   expect(screen.getByRole("button", { name: "재료 등록하기" })).toBeInTheDocument();
   await screen.findAllByRole("button", { name: "레시피 보기" });
+  expect(screen.getAllByRole("link", { name: "대파 구매하기" })).toHaveLength(3);
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /무난하게 먹고 싶어요/ }));
   await waitFor(() => expect(requestedModes).toContain("quick"));
@@ -83,4 +84,43 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
 
   fireEvent.click(screen.getByRole("button", { name: /레시피 저장/ }));
   expect(await screen.findByRole("button", { name: /저장됨/ })).toBeInTheDocument();
+});
+
+test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 이동한다", async () => {
+  const instantProcessedRecipe = {
+    ...recipe,
+    id: "recipe-spam-ramen",
+    fingerprint: "e".repeat(64),
+    name: "스팸 김치라면",
+    requiredIngredients: [
+      { name: "라면", amount: 1, unit: "개" },
+      { name: "스팸", amount: 0.5, unit: "캔" },
+      { name: "계란", amount: 1, unit: "개" },
+    ],
+    missingIngredients: ["계란"],
+  };
+  globalThis.fetch = async (url) => {
+    if (url === "/api/ingredients") return new Response(JSON.stringify({ ingredients: [] }));
+    if (url === "/api/recommendations") return new Response(JSON.stringify({
+      recipes: [instantProcessedRecipe],
+      meta: { source: "gemini", maxRecipes: 15, batchNumber: 1, maxBatches: 5 },
+    }));
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
+
+  const recipeHeading = await screen.findByRole("heading", { name: "스팸 김치라면" });
+  const recipeCard = recipeHeading.closest("article");
+  expect(within(recipeCard).getByRole("link", { name: "계란 구매하기" })).toHaveAttribute(
+    "href",
+    expect.stringContaining("query=%EA%B3%84%EB%9E%80"),
+  );
+  fireEvent.click(within(recipeCard).getByRole("button", { name: "레시피 보기" }));
+
+  expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "조금 더 든든하게 먹어볼까요?" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "원래 선택 계속하기" }));
+  expect(await screen.findByRole("heading", { name: "스팸 김치라면" })).toBeInTheDocument();
 });

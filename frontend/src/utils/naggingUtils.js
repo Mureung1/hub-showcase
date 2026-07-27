@@ -1,4 +1,4 @@
-import { getIngredientTags } from "../../../shared/ingredientTags.js";
+import { getIngredientTags, getTagsForIngredientName } from "../../../shared/ingredientTags.js";
 import {
   DEFAULT_NAGGING_TONE,
   mockInstantNaggingMessages,
@@ -13,21 +13,20 @@ function findMatchingRule(trigger, selectedIngredient) {
     .find((rule) => rule.trigger === trigger && (!rule.conditions.isInstant || isInstant));
 }
 
-function getSuggestedIngredients(ingredients, selectedIngredient) {
+function getSuggestedIngredients(ingredients, excludedIngredientNames = []) {
+  const excludedNames = new Set(excludedIngredientNames.map((name) => name.trim()));
   return ingredients
-    .filter((ingredient) => ingredient.id !== selectedIngredient.id)
+    .filter((ingredient) => !excludedNames.has(ingredient.name?.trim()))
     .map((ingredient) => ({ ingredient, tags: getIngredientTags(ingredient) }))
-    .filter(({ tags }) => tags.includes("nutrition:vegetable") || tags.includes("nutrition:protein"))
+    .filter(({ tags }) => (tags.includes("nutrition:vegetable") || tags.includes("nutrition:protein"))
+      && !tags.includes("processing:instant")
+      && !tags.includes("processing:processed"))
     .sort((a, b) => Number(b.tags.includes("nutrition:vegetable")) - Number(a.tags.includes("nutrition:vegetable")))
     .map(({ ingredient }) => ingredient)
     .slice(0, 2);
 }
 
-export function getNaggingMessage({ trigger, selectedIngredient, ingredients, tone = DEFAULT_NAGGING_TONE }) {
-  const rule = findMatchingRule(trigger, selectedIngredient);
-  if (!rule) return null;
-
-  const suggestedIngredients = getSuggestedIngredients(ingredients, selectedIngredient);
+function createNaggingMessage({ targetId, tone, suggestedIngredients }) {
   const suggestionNames = suggestedIngredients.map((ingredient) => ingredient.name);
   const suggestionLabel = suggestionNames.join("·");
   const messages = mockInstantNaggingMessages[tone] ?? mockInstantNaggingMessages[DEFAULT_NAGGING_TONE];
@@ -38,7 +37,7 @@ export function getNaggingMessage({ trigger, selectedIngredient, ingredients, to
 
   return {
     triggerType: "instantSelected",
-    targetIngredientId: selectedIngredient.id,
+    targetIngredientId: targetId,
     tone,
     title: titles[tone] ?? titles.gentle,
     message,
@@ -52,4 +51,29 @@ export function getNaggingMessage({ trigger, selectedIngredient, ingredients, to
       action: "continueOriginalSelection",
     },
   };
+}
+
+export function getNaggingMessage({ trigger, selectedIngredient, ingredients, tone = DEFAULT_NAGGING_TONE }) {
+  const rule = findMatchingRule(trigger, selectedIngredient);
+  if (!rule) return null;
+
+  return createNaggingMessage({
+    targetId: selectedIngredient.id,
+    tone,
+    suggestedIngredients: getSuggestedIngredients(ingredients, [selectedIngredient.name]),
+  });
+}
+
+export function getRecipeNaggingMessage({ recipe, ingredients, tone = DEFAULT_NAGGING_TONE }) {
+  const requiredNames = (recipe?.requiredIngredients ?? []).map((ingredient) => ingredient.name);
+  const requiredTags = requiredNames.flatMap((name) => getTagsForIngredientName(name, ingredients));
+  const hasInstant = requiredTags.includes("processing:instant");
+  const hasProcessed = requiredTags.includes("processing:processed");
+  if (!hasInstant || !hasProcessed) return null;
+
+  return createNaggingMessage({
+    targetId: recipe.id,
+    tone,
+    suggestedIngredients: getSuggestedIngredients(ingredients, requiredNames),
+  });
 }

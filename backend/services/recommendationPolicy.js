@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import { sanitizeIngredientTags } from "../../shared/ingredientTags.js";
+import { getTagsForIngredientName, sanitizeIngredientTags } from "../../shared/ingredientTags.js";
 
 export const ASSUMED_PANTRY_INGREDIENTS = [
   "물",
@@ -239,6 +239,23 @@ export function validateGeneratedRecipes(generated, request, ingredientContext) 
     }
     if (missingIngredients.length > request.maxMissingIngredients) {
       violations.push(`MISSING_INGREDIENT_LIMIT: recipes.${index}의 부족 재료가 ${request.maxMissingIngredients}개를 초과합니다.`);
+    }
+    const requiredTagSets = recipe.requiredIngredients.map((ingredient) => {
+      const ownedIngredient = ownedByName.get(normalizeIngredientName(ingredient.name));
+      return ownedIngredient?.tags?.length
+        ? ownedIngredient.tags
+        : getTagsForIngredientName(ingredient.name);
+    });
+    const hasInstantIngredient = requiredTagSets.some((tags) => tags.includes("processing:instant"));
+    const hasProcessedIngredient = requiredTagSets.some((tags) => tags.includes("processing:processed"));
+    const hasBalancingIngredient = requiredTagSets.some((tags) => (
+      tags.includes("nutrition:vegetable")
+      || (tags.includes("nutrition:protein")
+        && !tags.includes("processing:instant")
+        && !tags.includes("processing:processed"))
+    ));
+    if (hasInstantIngredient && hasProcessedIngredient && !hasBalancingIngredient) {
+      violations.push(`PROCESSING_BALANCE_REQUIRED: recipes.${index}의 인스턴트·가공식품 조합에는 채소 또는 가공되지 않은 단백질 필수 재료가 필요합니다.`);
     }
     if (recipe.servingStyle === "mealSet" && recipe.dishType !== "mealSet") {
       violations.push(`SERVING_STYLE_MISMATCH: recipes.${index}의 한 상 구성은 dishType도 mealSet이어야 합니다.`);

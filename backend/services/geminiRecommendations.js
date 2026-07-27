@@ -65,6 +65,7 @@ export function buildRecommendationPrompt({ request, ingredientContext, policyFe
     "primaryIngredients에는 메뉴의 정체성을 결정하는 필수 재료만 넣고 requiredIngredients에도 같은 이름을 포함하세요.",
     "components의 ingredientNames에는 requiredIngredients 또는 optionalIngredients에 실제로 기재한 재료만 넣으세요.",
     "보유량과 단위가 명확할 때는 필요한 양이 보유량을 넘지 않도록 조정하세요. 넘는다면 그 재료는 부족 재료로 이해될 수 있게 설명하세요.",
+    "인스턴트와 가공식품을 함께 쓰는 메뉴에는 채소 또는 가공되지 않은 단백질 재료를 필수 재료로 최소 1개 포함하세요. 보유하지 않았다면 maxMissingIngredients 범위 안에서 부족 재료로 포함하고, 범위를 지킬 수 없다면 그 메뉴를 추천하지 마세요.",
     "영양 정보는 허용된 nutritionTags와 정성적인 nutritionSummary만 작성하고 열량이나 영양소 수치를 추정하지 마세요.",
     "substitutions에는 맛과 조리법을 크게 해치지 않는 재료 대체만 안내하고, 대체가 적절하지 않으면 빈 배열을 반환하세요. 알레르기·식품 안전과 관련된 대체를 단정하지 마세요.",
     "모든 재료 사용량은 1인분 기준의 양수와 명확한 단위로 작성하세요.",

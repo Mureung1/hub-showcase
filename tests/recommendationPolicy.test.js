@@ -238,6 +238,64 @@ test("일반 추천에서는 소비기한 우선 재료를 강제로 사용하�
   assert.equal(recipes[0].name, "양파볶음");
 });
 
+test("인스턴트와 가공식품 조합에는 균형 보완 필수 재료가 필요하다", () => {
+  const context = buildIngredientContext([
+    {
+      ...rows[0],
+      name: "라면",
+      category: "instant",
+      tags: ["nutrition:carb", "processing:instant"],
+      quantity: 1,
+      unit: "개",
+    },
+    {
+      ...rows[0],
+      name: "스팸",
+      category: "canned",
+      tags: ["nutrition:protein", "processing:processed"],
+      quantity: 1,
+      unit: "캔",
+    },
+  ], { today: "2026-07-22" });
+  const request = {
+    mode: "quick",
+    maxMissingIngredients: 1,
+    batchNumber: 1,
+    excludedRecipeFingerprints: [],
+  };
+  const unbalanced = {
+    recipes: [recipe({
+      name: "스팸 라면",
+      primaryIngredients: ["라면", "스팸"],
+      requiredIngredients: [
+        { name: "라면", amount: 1, unit: "개" },
+        { name: "스팸", amount: 0.5, unit: "캔" },
+      ],
+    })],
+  };
+
+  assert.throws(
+    () => validateGeneratedRecipes(unbalanced, request, context),
+    (error) => error instanceof RecommendationPolicyError
+      && error.violations.some((violation) => violation.startsWith("PROCESSING_BALANCE_REQUIRED")),
+  );
+
+  const balanced = {
+    recipes: [recipe({
+      name: "계란 스팸 라면",
+      primaryIngredients: ["라면", "스팸"],
+      requiredIngredients: [
+        { name: "라면", amount: 1, unit: "개" },
+        { name: "스팸", amount: 0.5, unit: "캔" },
+        { name: "계란", amount: 1, unit: "개" },
+      ],
+    })],
+  };
+  const recipes = validateGeneratedRecipes(balanced, request, context);
+
+  assert.deepEqual(recipes[0].missingIngredients, ["계란"]);
+});
+
 test("한국 시간 기준 다음 자정을 UTC 시각으로 계산한다", () => {
   const expiresAt = getNextKstMidnight(new Date("2026-07-22T06:00:00Z"));
   assert.equal(expiresAt.toISOString(), "2026-07-22T15:00:00.000Z");

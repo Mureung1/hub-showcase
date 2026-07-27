@@ -18,7 +18,7 @@ import {
   formatIngredientQuantity,
   getIngredientExpirationPresentation,
 } from "./utils/ingredientUtils";
-import { getNaggingMessage } from "./utils/naggingUtils";
+import { getNaggingMessage, getRecipeNaggingMessage } from "./utils/naggingUtils";
 import { getCoachingTone, readMealChoiceHistory } from "./utils/mealChoiceHistory";
 import { isPantryIngredientName } from "./utils/pantry";
 import {
@@ -98,6 +98,7 @@ function App() {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
+  const [pendingRecipe, setPendingRecipe] = useState(null);
   const [naggingMessage, setNaggingMessage] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -369,11 +370,13 @@ function App() {
   const closeNaggingMessage = () => {
     setNaggingMessage(null);
     setSelectedIngredient(null);
+    setPendingRecipe(null);
   };
 
   const continueFromNagging = (mode) => {
     setNaggingMessage(null);
     setSelectedIngredient(null);
+    setPendingRecipe(null);
     setSelectedMood(mode);
     setMissingIngredientLimit(1);
     setSelectedRecipe(null);
@@ -381,6 +384,27 @@ function App() {
   };
 
   const handleRecipeSelect = (recipe) => {
+    const nextNaggingMessage = getRecipeNaggingMessage({
+      recipe,
+      ingredients: managedIngredients,
+      tone: getCoachingTone(readMealChoiceHistory(), { includeCurrentChoice: true }),
+    });
+    if (nextNaggingMessage) {
+      setPendingRecipe(recipe);
+      setNaggingMessage(nextNaggingMessage);
+      return;
+    }
+    selectMenu(recipe);
+  };
+
+  const continueOriginalFromNagging = () => {
+    if (!pendingRecipe) {
+      continueFromNagging("quick");
+      return;
+    }
+    const recipe = pendingRecipe;
+    setNaggingMessage(null);
+    setPendingRecipe(null);
     selectMenu(recipe);
   };
 
@@ -433,7 +457,7 @@ function App() {
         <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onTagToggle={handleTagToggle} onApplySuggestedDate={applySuggestedDate} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
       </IngredientFormModal>}
       {confirmAction && <ConfirmDialog action={confirmAction} isSubmitting={isSubmitting} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
-      {naggingMessage && selectedIngredient && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={() => continueFromNagging("quick")} onClose={closeNaggingMessage} />}
+      {naggingMessage && (selectedIngredient || pendingRecipe) && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={continueOriginalFromNagging} onClose={closeNaggingMessage} />}
     </div>
   );
 }
@@ -572,7 +596,7 @@ function RecipeCard({ recipe, label, isSaved, onSelect, onToggleSaved }) {
     <div className="recipe-card-top"><span className="recipe-type-chip">{label}</span><button className="save-recipe-button" type="button" aria-pressed={isSaved} onClick={onToggleSaved}>{isSaved ? "저장됨" : "저장"}</button></div>
     <h3>{recipe.name}</h3>
     <p className="recipe-meta">{recipe.cookingTime}분 · {recipeDifficultyLabels[recipe.difficulty]} · {cookingMethodLabels[recipe.cookingMethod]}</p>
-    <div className="recipe-missing"><strong>부족한 재료</strong>{recipe.missingIngredients.length > 0 ? <div className="chip-list missing">{recipe.missingIngredients.map((item) => <em key={item}>{item}</em>)}</div> : <p>없음</p>}</div>
+    <div className="recipe-missing"><strong>부족한 재료</strong>{recipe.missingIngredients.length > 0 ? <div className="chip-list missing">{recipe.missingIngredients.map((item) => <a key={item} href={createShoppingSearchUrl(item)} target="_blank" rel="noreferrer" aria-label={`${item} 구매하기`}><em>{item} <span aria-hidden="true">↗</span></em></a>)}</div> : <p>없음</p>}</div>
     <button type="button" onClick={onSelect}>레시피 보기</button>
   </article>;
 }

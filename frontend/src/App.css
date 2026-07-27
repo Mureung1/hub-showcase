@@ -388,6 +388,7 @@
 .recipe-meta { color: var(--muted); font-size: 13px; }
 .availability-copy { min-height: 48px; margin-top: 14px; color: #3f352f; font-weight: 800; }
 .recipe-card .chip-list { margin-top: 4px; }
+.recipe-card .chip-list a { text-decoration: none; }
 .detail-reasons { margin: 9px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.65; }
 .recipe-missing { min-height: 76px; margin: 18px 0; padding-top: 16px; border-top: 1px solid #eee6e1; }
 .recipe-missing strong { display: block; font-size: 13px; }
