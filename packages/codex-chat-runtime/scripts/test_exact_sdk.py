@@ -334,7 +334,6 @@ class ManifestTests(unittest.TestCase):
                     "0006-plan-user-input-seam",
                     "0007-thread-start-settings",
                     "0008-standalone-skill-extra-roots",
-                    "0009-managed-chatgpt-login",
                 ],
             )
             self.assertEqual(
@@ -351,10 +350,12 @@ class ManifestTests(unittest.TestCase):
             self.assertEqual(
                 set(patched_manifest["patches"][-1]["changed_files"]),
                 {
-                    "sdk/python/src/openai_codex/_login.py",
+                    "sdk/python/scripts/update_sdk_artifacts.py",
+                    "sdk/python/src/openai_codex/api.py",
+                    "sdk/python/src/openai_codex/async_client.py",
                     "sdk/python/src/openai_codex/client.py",
-                    "sdk/python/tests/test_client_rpc_methods.py",
                     "sdk/python/tests/test_public_api_runtime_behavior.py",
+                    "sdk/python/tests/test_public_api_signatures.py",
                 },
             )
             for before_patch, after_patch in zip(

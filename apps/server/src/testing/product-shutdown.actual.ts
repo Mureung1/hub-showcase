@@ -114,15 +114,20 @@ test('Product bootstrap recovers Runtime readiness after activating a valid work
   )
   const packageRoot = path.join(testRoot, 'package')
   const appDataRoot = path.join(testRoot, 'app-data')
+  const codexHome = path.join(testRoot, 'global-codex-home')
   const incompatibleWorkspace = path.join(testRoot, 'incompatible-workspace')
   const readyWorkspace = path.join(testRoot, 'ready-workspace')
   const choices = [incompatibleWorkspace, readyWorkspace]
 
   try {
     await Promise.all(
-      [packageRoot, appDataRoot, incompatibleWorkspace, readyWorkspace].map(
-        (root) => mkdir(root),
-      ),
+      [
+        packageRoot,
+        appDataRoot,
+        codexHome,
+        incompatibleWorkspace,
+        readyWorkspace,
+      ].map((root) => mkdir(root)),
     )
     const productStateRoot = path.join(incompatibleWorkspace, '.ay-ple')
     await mkdir(productStateRoot)
@@ -136,10 +141,11 @@ test('Product bootstrap recovers Runtime readiness after activating a valid work
       {
         productRuntime: {
           appDataRoot,
+          packageRoot,
           runtimeRoot: RUNTIME_ROOT,
           environment: {
             home: path.join(appDataRoot, 'runtime/home'),
-            codexHome: path.join(appDataRoot, 'runtime/codex-home'),
+            codexHome,
             codexSqliteHome: path.join(
               appDataRoot,
               'runtime/codex-sqlite-home',

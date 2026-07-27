@@ -1,8 +1,10 @@
 # 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다
 
-분류: 활성
+분류: 완료·역사 기록
 
-성숙도: 채택
+성숙도: 구현됨
+
+현재 상태: 개인용 hard cutover와 후속 Runtime pruning에서 이 결정의 구현 surface를 current executable graph에서 제거했다. 현재 topology와 account authority는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유하며, 이 문서는 중단한 public preview의 당시 결정과 구현 근거만 보존한다.
 
 관련 결정: [ADR 0006 — package·app data·SemesterWorkspace root를 분리한다](0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0011 — Official Codex Python SDK를 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md), [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md), [ADR 0016 — Exact npx application과 verified Runtime release를 분리한다](0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)
 
@@ -62,10 +64,8 @@ Exact Browser state enum·DTO·endpoint, native correlation, callback port, SDK 
 
 ## 결과
 
-첫 public preview 구현은 current read-only Account Readiness를 login·cancel·logout·reauth와 pre-workspace Runtime transition까지 확장해야 한다. Product tests는 Browser-safe account lifecycle Module의 observable state를, Runtime tests는 official SDK integration·process generation·credential isolation을 각각 같은 seam에서 검증한다. AY-PLE은 credential migration utility나 자체 OAuth service를 만들지 않는다.
+첫 public preview 구현은 당시 read-only Account Readiness를 login·cancel·logout·reauth와 pre-workspace Runtime transition까지 확장했고, Product tests는 Browser-safe account lifecycle Module의 observable state를, Runtime tests는 official SDK integration·process generation·credential isolation을 각각 같은 seam에서 검증했다. AY-PLE은 credential migration utility나 자체 OAuth service를 만들지 않았다.
 
 `appDataRoot` 손실은 reconnect와 registry recovery를 요구할 수 있지만 `SemesterWorkspace`와 확인된 학업 상태의 손실을 뜻하지 않는다. Explicit logout도 workspace를 삭제하지 않는다. Public privacy 설명은 local-first가 provider 통신 없는 offline app이라는 뜻이 아니며, official OAuth와 Codex 실행의 OpenAI 전송 경계를 함께 알린다.
 
-이 ADR의 Runtime-level primitive는 구현됐다. Current `CodexManagedRuntime`은 official SDK 기반 managed account read·login·attempt status·cancel·release·logout과 immutable `auth-only | workspace` role을 제공하고, auth-only role은 workspace operation을 native write 전에 거절한다. Credential bytes·raw provider error와 native correlation은 private bridge 안에 남는다.
-
-아직 구현되지 않은 부분은 Server의 app-wide account transition lease, auth-only→workspace process generation 교체, setup route·Browser-safe projection과 `Semester Ready` commit이다. 따라서 current dogfood helper는 계속 외부 device-auth login을 안내한다. 정확한 current gap과 검증 결과는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 기술 mapping은 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), 작업 순서와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
+이 ADR의 Runtime-level primitive와 Server·Browser composition은 한때 구현됐지만 current executable graph에서는 제거됐다. Official SDK snapshot 내부의 upstream login API는 당시 source 그대로 보존하며 현재 구현 결과는 위 current owner 문서와 package README가 설명한다.

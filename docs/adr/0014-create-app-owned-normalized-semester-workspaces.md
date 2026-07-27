@@ -1,14 +1,16 @@
 # SemesterWorkspace를 app-owned normalized scaffold로 생성한다
 
-분류: 활성
+분류: 완료·역사 기록
 
 성숙도: 채택
+
+대체한 결정: [ADR 0018 — 사용자가 선택한 Git working tree를 SemesterWorkspace로 채택한다](0018-adopt-user-owned-git-semester-workspaces.md). 이 문서는 public preview를 위해 app-owned scaffold와 `ImportSource` 반입 경계를 채택했던 당시 판단과 구현 근거만 보존한다.
 
 부분 대체한 결정: [ADR 0006 — 제품 실행에서 패키지, 앱 데이터, 학기 작업공간의 루트를 분리한다](0006-separate-package-app-data-and-semester-workspace-roots.md)의 사용자가 고른 기존 폴더를 `workspaceRoot`로 직접 채택하는 admission·identity 의미
 
 보존하는 결정: ADR 0006의 `packageRoot`·`appDataRoot`·`workspaceRoot` 분리, [ADR 0013 — Product-only public surface와 durable v2 store baseline을 채택한다](0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 current v2 bytes 보존·explicit migration 원칙
 
-관련 account 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 `Semester Ready`의 workspace scaffold·identity 조건을, ADR 0017은 account 연결과 pre-workspace Runtime 조건을 소유한다.
+역사적 account 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 `Semester Ready`의 workspace scaffold·identity 조건을 계속 소유하지만 ADR 0017의 account 연결·pre-workspace Runtime 조건은 current product target이 아니다. 현재 account authority는 Codex Runtime 격리 문서가 소유한다.
 
 ## 맥락
 
@@ -40,4 +42,6 @@
 
 ## 결과
 
-First-run setup과 ready-relaunch는 `WorkspaceManifest` 생성·validation, workspace instruction/Skill bundle·effective native context 검증, active registry pointer와 incomplete scaffold recovery를 제품 상태로 다뤄야 한다. `Semester Ready`는 이 setup과 workspace Runtime의 fresh account 확인이 끝났다는 뜻이며 Course·`RawMaterial`·학업 action 완료를 뜻하지 않는다. 구체적인 first-preview 설정 범위는 Product Brief가 소유한다. 현재 chooser/current-v2 vertical은 구현 증거로 유지되지만 이 결정의 public admission contract를 구현한 것으로 보지 않는다.
+First-run setup과 ready-relaunch는 `WorkspaceManifest` 생성·validation, workspace instruction/Skill bundle·effective native context 검증, active registry pointer와 incomplete scaffold recovery를 제품 상태로 다뤄야 한다. `Semester Ready`는 workspace-side setup이 끝났다는 뜻이며 Course·`RawMaterial`·학업 action 완료를 뜻하지 않는다. 구체적인 제품 연결 범위는 Product Brief가 소유한다.
+
+이 adopted target을 위한 package primitive가 구현돼 있어도 명시적인 product composition 전에는 app-owned workspace capability로 주장하지 않는다. Current consumer와 package behavior는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [semester-workspace README](../../packages/semester-workspace/README.md)가 소유한다.

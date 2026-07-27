@@ -274,6 +274,37 @@ test('keeps desktop panes distinct and exposes keyboard-visible source controls'
     wideChatBox.x,
   )
 
+  const undersizedChatText = await chat.locator('*').evaluateAll((elements) =>
+    elements.flatMap((element) => {
+      const style = element.ownerDocument.defaultView?.getComputedStyle(element)
+      if (!style) return []
+      const hasDirectText = [...element.childNodes].some(
+        (node) =>
+          node.nodeType === 3 &&
+          node.textContent?.trim(),
+      )
+      const isTextControl = element.matches(
+        'button, input, option, select, textarea',
+      )
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        (!hasDirectText && !isTextControl) ||
+        Number.parseFloat(style.fontSize) >= 12
+      ) {
+        return []
+      }
+      return [
+        {
+          element: element.tagName.toLowerCase(),
+          fontSize: style.fontSize,
+          text: element.textContent?.trim().slice(0, 80) ?? '',
+        },
+      ]
+    }),
+  )
+  expect(undersizedChatText).toEqual([])
+
   const firstMaterial = materials.getByRole('checkbox').first()
   await firstMaterial.focus()
   await expect(firstMaterial).toBeFocused()
@@ -344,8 +375,16 @@ test('distinguishes product loading, inactive workspace, no Course, empty materi
   mode = 'empty'
   await page.reload()
   await expect(page.getByText('과목이 아직 없습니다', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('과목 이름')).toHaveValue('')
+  await expect(page.getByRole('button', { name: '만들기' })).toBeDisabled()
   await expect(
     page.getByText('등록할 수 있는 TXT 자료가 없습니다', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('자료를 선택해 내용을 확인하세요', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('자료를 선택하세요', { exact: true }),
   ).toBeVisible()
 
   mode = 'error'

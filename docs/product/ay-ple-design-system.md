@@ -1,18 +1,20 @@
 # AY-PLE Design System Direction
 
+> 2026-07-24 범위 정정: 공식 Public Landing은 현재 제품 surface에서 제외했고 구현 workspace도 제거했다. 아래 Landing 관련 지침은 2026-07-23까지의 historical design context이며 local app의 현재 시각 기준으로 적용하지 않는다. Personal/local 앱의 다음 화면 방향은 기존 구현 감사와 별도 대화 뒤 정한다.
+
 작성일: 2026-07-08
 
-최종 업데이트: 2026-07-22
+최종 업데이트: 2026-07-27
 
 분류: 활성
 
 성숙도: 초안
 
-관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Review Workspace Scenario](ay-ple-review-workspace-scenario.md)
+관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [historical Review Workspace Scenario](ay-ple-review-workspace-scenario.md)
 
 ## 방향
 
-AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 학업 워크스페이스**를 따른다. 학생이 매일 자료를 읽고, AY의 제안을 확인하고, 과제 상태를 믿고 반영하는 앱이므로 화면은 개발자 도구보다 노트, 자료함, 조용한 생산성 앱에 가까워야 한다.
+AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 학업 워크스페이스**를 따른다. 학생이 실제 학기 자료를 읽고 AY의 interaction 요청을 판단하는 앱이므로 화면은 개발자 도구보다 노트, 자료함, 조용한 생산성 앱에 가까워야 한다.
 
 | 원칙 | 설명 |
 | --- | --- |
@@ -26,10 +28,7 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 
 | 표면 | 역할 | 표현 방향 |
 | --- | --- | --- |
-| Public Landing | AY-PLE의 product homepage이자 repository·Docs·public 실행 흐름의 공식 entrypoint | `한 학기를 함께 관리하는 AY`라는 가치를 먼저 보여주고, 바로 아래 public `npx` 명령에서 local 제품으로 이어진다. 제품 경험·작동 방식·지원 환경과 Docs·GitHub·license/trust를 짧고 탐색 가능하게 구성한다. |
-| Local app workbench | setup, 자료 반입, 학업 action과 Review가 일어나는 실제 제품 공간 | calm productivity와 source-grounded 정보 구조를 유지하며 marketing layout보다 현재 작업·상태·다음 행동을 우선한다. |
-
-Landing과 local app은 같은 브랜드를 사용하지만 같은 화면 hierarchy를 강제하지 않는다. [Remotion](https://www.remotion.dev/)은 개별 section이나 시각 요소의 donor가 아니라 product homepage를 repository와 public 실행의 entrypoint로 운영하는 방식의 benchmark다. Preview prerequisite와 limitation은 숨기지 않되 Hero를 경고문으로 대체하지 않고 install command 주변과 compatibility·trust surface에서 확인하게 한다.
+| Local app workbench | Workspace 선택, AY 작업과 capability-specific Review가 일어나는 실제 제품 공간 | calm productivity와 source-grounded 정보 구조를 유지하며 marketing layout보다 현재 작업·사용자 판단·다음 행동을 우선한다. |
 
 ## 색상
 
@@ -57,11 +56,9 @@ Landing과 local app은 같은 브랜드를 사용하지만 같은 화면 hierar
 | Activity bar | 앱 구조를 보조하는 낮은 대비의 아이콘 rail로 둔다. IDE chrome처럼 어둡게 만들지 않는다. |
 | Source explorer | 자료함처럼 보이게 하고, 선택 상태는 green/teal 계열로 표시한다. |
 | Source preview | 가장 넓고 밝은 종이 surface로 둔다. 원본을 읽는 화면이라는 감각이 우선이다. |
-| AY chat dock | side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. |
-| Change proposal | `검토 대기`는 honey, `반영됨`은 green으로 구분한다. 내부 상태명은 노출하지 않는다. |
+| AY chat dock | Side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. Pending Review 중에는 free-form composer와 steer를 잠그고 전체 Turn interrupt만 유지한다. |
+| Change proposal | AY Chat transcript의 inline card로 둔다. AY가 응답을 기다리는 `검토 대기`는 honey로, settled `수락됨`, `수정 요청됨`, `거절됨`은 control 없는 read-only outcome으로 구분한다. `수락됨`을 App이 file 반영까지 확인했다는 뜻으로 쓰지 않는다. Fresh proposal은 새 card로 아래에 append하고 이전 card를 교체·재개하지 않는다. Modal·별도 approval page·card dismiss를 만들거나 내부 correlation을 노출하지 않는다. |
 | Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
-
-Public Landing의 Hero는 제품 가치를, install command는 즉시 실행 가능한 entrypoint를 소유한다. Demo와 작동 방식은 완성된 제품 비전과 현재 public preview capability를 구분하고, Docs·GitHub·license/trust link는 검증 가능한 정보로 이어져야 한다. Exact public command와 application↔Runtime distribution은 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), macOS-first 제품·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), public source·license·trust authority는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)가 소유한다. 출시별 Node/npm·browser version matrix와 표시 copy는 release-owned compatibility surface와 Landing implementation에서 고정한다.
 
 ## 피해야 할 것
 
@@ -70,8 +67,9 @@ Public Landing의 Hero는 제품 가치를, install command는 즉시 실행 가
 | Dark IDE default | 개발자 도구처럼 보여서 전체 대학생 대상 제품과 맞지 않는다. |
 | Terminal/log styling | AY의 작업이 시스템 로그처럼 느껴진다. |
 | Purple-blue tech gradient | 흔한 AI SaaS 느낌이 강하고 AY-PLE 브랜드 자산과 맞지 않는다. |
-| Local app workbench 안의 marketing hero | 실제 setup·Review workflow보다 홍보 메시지가 앞서면 현재 작업과 상태를 찾기 어렵다. Public Landing의 제품 Hero에는 적용하지 않는다. |
+| Local app workbench 안의 marketing hero | 실제 setup·Review workflow보다 홍보 메시지가 앞서면 현재 작업과 상태를 찾기 어렵다. |
 | Cute-only mascot UI | 학업 자료와 마감 관리를 믿고 맡기는 생산성 앱 신뢰도가 떨어진다. |
+| Review modal·별도 approval page | AY의 요청 맥락과 사용자 결정을 transcript에서 분리하고 불필요한 navigation·focus lifecycle을 만든다. |
 
 ## 검증 적용 위치
 

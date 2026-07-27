@@ -16,8 +16,8 @@ import {
   type CodexAccountReadiness,
   type CodexChatRuntimeError,
   type CodexProductActivity,
-  type CodexProductCapableRuntime,
   type CodexProductTurn,
+  type CodexWorkspaceRuntime,
   type InterruptTurnInput,
   type ReleaseThreadInput,
   type StartProductTurnInput,
@@ -580,7 +580,7 @@ type PendingInteractionSettlement =
     }
   | { readonly resolution: 'cancelled' }
 
-class ProductE2eRuntime implements CodexProductCapableRuntime {
+class ProductE2eRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   private readonly callLog: ProductRuntimeCall[] = []
   private readonly failClosedProposalCaseLog: FailClosedProposalCase[] = []
@@ -627,6 +627,42 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
     this.callLog.push({ operation: 'readAccountReadiness' })
     return { ...this.readiness }
+  }
+
+  async readModelCatalog() {
+    return {
+      models: [
+        {
+          model: 'gpt-e2e',
+          displayName: 'GPT E2E',
+          description: 'Deterministic E2E model',
+          isDefault: true,
+          defaultReasoningEffort: 'medium',
+          supportedReasoningEfforts: [
+            { reasoningEffort: 'low', description: 'Quick' },
+            { reasoningEffort: 'medium', description: 'Balanced' },
+          ],
+          serviceTiers: ['fast'],
+        },
+      ],
+    }
+  }
+
+  async readEffectiveConfig(input: {
+    readonly signal: AbortSignal
+  }) {
+    input.signal.throwIfAborted()
+    return {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+    }
+  }
+
+  async listEffectiveSkills(input: {
+    readonly signal: AbortSignal
+  }) {
+    input.signal.throwIfAborted()
+    return []
   }
 
   async startThread(input?: StartThreadInput) {

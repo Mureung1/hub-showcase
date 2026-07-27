@@ -1,8 +1,10 @@
 # 첫 public preview를 exact npx launcher와 verified Runtime release로 배포한다
 
-분류: 활성
+분류: 완료·역사 기록
 
 성숙도: 채택
+
+현재 판정: 2026-07-24 public `npx` release lane을 중단했다. 이 ADR은 당시 채택한 distribution 경계와 구현 증거를 보존하지만 현재 제품 목표나 backlog를 정하지 않는다. 이 lane에서 구현된 비배포 capability의 존치 여부는 별도 구현 감사 전까지 확정하지 않는다.
 
 관련 결정: [ADR 0006 — package·app data·SemesterWorkspace root를 분리한다](0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0009 — macOS-first local web app 제품 경로를 사용한다](0009-use-a-macos-first-local-web-app-product-path.md), [ADR 0011 — Official Codex Python SDK를 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md), [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md), [ADR 0015 — Reviewed clean snapshot으로 public repository를 시작한다](0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)
 

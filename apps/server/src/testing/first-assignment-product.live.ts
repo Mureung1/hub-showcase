@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 import {
   createCodexChatRuntime,
   verifyCodexChatRuntimeBundle,
-  type CodexProductCapableRuntime,
+  type CodexWorkspaceRuntime,
 } from '@ay-ple/codex-chat-runtime'
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
@@ -170,7 +170,7 @@ async function runLiveTrace(
   let materialized:
     | Awaited<ReturnType<typeof materializeE2eSemesterWorkspace>>
     | undefined
-  let runtime: CodexProductCapableRuntime | undefined
+  let runtime: CodexWorkspaceRuntime | undefined
   try {
     await chmod(commandRoot, 0o700)
     materialized = await materializeE2eSemesterWorkspace()

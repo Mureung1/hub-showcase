@@ -172,16 +172,6 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_public_api_signatures.py",
         ),
     ),
-    (
-        "0009-managed-chatgpt-login",
-        PATCH_ROOT / "0009-managed-chatgpt-login.patch",
-        (
-            "sdk/python/src/openai_codex/_login.py",
-            "sdk/python/src/openai_codex/client.py",
-            "sdk/python/tests/test_client_rpc_methods.py",
-            "sdk/python/tests/test_public_api_runtime_behavior.py",
-        ),
-    ),
 )
 _stable_python: str | None = None
 

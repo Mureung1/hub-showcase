@@ -76,24 +76,21 @@ Root companion docs:
 | --- | --- | --- |
 | AY-PLE는 어떤 앱인가 | [product/ay-ple-overview.md](product/ay-ple-overview.md) | 제품 소개와 대표 사용 흐름 |
 | AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 경계 |
-| Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | 자료 선택부터 Review까지의 사용자 시나리오 |
 | AY-PLE Design System Direction | [product/ay-ple-design-system.md](product/ay-ple-design-system.md) | 브랜드와 데스크톱 UI 기준 |
 | AY-PLE 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | 날짜 없는 계층형 task list와 작업 순서·완료 조건 |
-| Codex-native product composition | [architecture/codex-native-product-composition.md](architecture/codex-native-product-composition.md) | `ModelingRecipe → ModelingInvocation → ModelingRun`과 native Codex의 mapping |
+| AY–App Interaction Capability 아키텍처 | [architecture/ay-app-interaction-capabilities.md](architecture/ay-app-interaction-capabilities.md) | MCP request→typed UI→user result→같은 Turn 반환의 long-lived seam |
 | Codex Runtime 격리 | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | runtime, app data, SemesterWorkspace 실행 경계 |
 | Codex Chat 구현 지도 | [architecture/codex-chat-implementation-map.md](architecture/codex-chat-implementation-map.md) | survivor runtime·Server·Chat Shell의 현재 topology와 구현 gap |
 | Academic object model ADR | [adr/0002-use-first-class-academic-objects-with-derived-operational-views.md](adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam과 derived view 결정 |
 | Codex 우선 사용 ADR | [adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md](adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP 실행 엔진과 protocol isolation 결정 |
 | 제품 실행 경로 분리 ADR | [adr/0006-separate-package-app-data-and-semester-workspace-roots.md](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경계 |
-| Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 | macOS-first local web app ADR | [adr/0009-use-a-macos-first-local-web-app-product-path.md](adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
 | Codex Chat Shell runtime ADR | [adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md](adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official Python SDK direct reuse와 supervised Node bridge 결정 |
 | Codex Chat-only cutover ADR | [adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md](adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | maintained Runtime을 단일화하고 legacy executable surface와 compatibility alias를 제거한 결정. Chat-only public surface 결과는 ADR 0013이 대체함 |
 | Product-only cutover·durable v2 ADR | [adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md](adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | public caller를 product path로 단일화하고 current v2 store를 첫 durable compatibility baseline으로 채택한 결정 |
-| App-owned SemesterWorkspace ADR | [adr/0014-create-app-owned-normalized-semester-workspaces.md](adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
+| User-owned Git SemesterWorkspace ADR | [adr/0018-adopt-user-owned-git-semester-workspaces.md](adr/0018-adopt-user-owned-git-semester-workspaces.md) | 기존 Git working tree를 직접 workspace·actual-file 작업 경계로 채택한 결정 |
+| InteractionCapability ADR | [adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md](adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) | Typed MCP interaction을 AY와 App의 deep-module seam으로 채택한 결정 |
 | Public repository clean snapshot ADR | [adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, first-party license와 trust·export authority 결정 |
-| Public npx distribution ADR | [adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md](adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | Exact application package와 immutable verified Runtime release의 binding·cache·rollback 경계 결정 |
-| Codex-managed product account ADR | [adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md](adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | Managed ChatGPT Browser OAuth, app-scoped credential authority와 pre-workspace Runtime lifecycle 결정 |
 
 ### 기술 참고
 
@@ -109,9 +106,15 @@ Root companion docs:
 
 | 문서 | 위치 | 기록 |
 | --- | --- | --- |
+| Review Workspace Scenario | [product/ay-ple-review-workspace-scenario.md](product/ay-ple-review-workspace-scenario.md) | First Assignment의 자료 선택·Review UI와 app-owned workflow 가설 |
+| Codex-native product composition | [architecture/codex-native-product-composition.md](architecture/codex-native-product-composition.md) | ADR 0019가 대체한 Recipe·Invocation·Run과 Review mapping |
+| Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | Native primitive 재사용 원칙은 유지하고 app-owned workflow 경계는 ADR 0019가 대체 |
 | Runtime Harness Foundation Spec | [specs/2026-07-09-runtime-harness-codex-adapter-foundation.md](specs/2026-07-09-runtime-harness-codex-adapter-foundation.md) | 구현 완료 · 1주차 기준선 |
 | Runtime Harness Hardening Spec | [specs/2026-07-10-runtime-harness-hardening.md](specs/2026-07-10-runtime-harness-hardening.md) | 구현 완료 · tickets 001–005 완료 |
 | Codex-native Chat Shell Spec | [specs/2026-07-16-codex-native-chat-shell.md](specs/2026-07-16-codex-native-chat-shell.md) | 구현 완료 · official SDK 기반 첫 production tracer와 conformance 기록 |
+| Public npx distribution ADR | [adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md](adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 중단한 public release lane의 application↔Runtime binding·cache·rollback 결정 |
+| Codex-managed product account ADR | [adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md](adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | 제거한 public preview의 managed Browser OAuth·app-scoped credential 결정 |
+| App-owned SemesterWorkspace ADR | [adr/0014-create-app-owned-normalized-semester-workspaces.md](adr/0014-create-app-owned-normalized-semester-workspaces.md) | ADR 0018이 대체한 normalized scaffold·복사 기반 `ImportSource` 결정 |
 | AY-PLE 4주 제출 백로그 | [archive/2026-07-ay-ple-4-week-submission-backlog.md](archive/2026-07-ay-ple-4-week-submission-backlog.md) | 최초 캠프 제출 일정과 당시 우선순위 보존 |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | 실행 완료 · 당시 범위와 성공 기준 |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
@@ -154,15 +157,15 @@ Root companion docs:
 | --- | --- | --- |
 | 도메인 용어와 의미 | [CONTEXT.md](../CONTEXT.md) | 사용자 맥락에 필요한 한 줄 요약과 glossary 링크 |
 | 제품 문제, 가치와 MVP 범위 | [AY-PLE Product Brief](product/ay-ple-product-brief.md) | 소개·Scenario·Backlog에서 필요한 범위만 요약 |
-| 사용자 흐름과 화면 의미 | [Review Workspace Scenario](product/ay-ple-review-workspace-scenario.md) | 구현 문서에서는 UI 결과만 참조 |
+| 대표 제품 경험과 MVP 사용자 흐름 | [AY-PLE Product Brief](product/ay-ple-product-brief.md) | Overview는 입문 요약만, historical Scenario는 새 target의 정본으로 사용하지 않음 |
 | 브랜드와 시각 표현 기준 | [Design System](product/ay-ple-design-system.md) | Scenario·구현 문서에서는 필요한 표현 결과만 참조 |
 | 채택한 기술·제품 결정 | 해당 [ADR](adr/) | architecture·제품 문서는 결정의 결과만 설명하고 ADR을 연결 |
-| 제품 작업의 Codex mapping | [Codex-native product composition](architecture/codex-native-product-composition.md) | 제품 문서는 사용자 의미, 구현 문서는 현재 지원 여부만 설명 |
+| AY↔App typed interaction의 기술 mapping | [AY–App Interaction Capability 아키텍처](architecture/ay-app-interaction-capabilities.md) | 제품 문서는 사용자 의미, 구현 지도는 current 지원 여부만 설명 |
 | runtime root의 소유권 불변 조건 | [ADR 0006](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 다른 문서는 결정 결과만 요약하고 ADR을 연결 |
-| SemesterWorkspace admission·identity와 `WorkspaceManifest` authority | [ADR 0014](adr/0014-create-app-owned-normalized-semester-workspaces.md) | 제품·architecture·package 문서는 현재 구현 또는 사용자 결과만 요약하고 exact schema를 재정의하지 않음 |
+| SemesterWorkspace admission과 Git working tree authority | [ADR 0018](adr/0018-adopt-user-owned-git-semester-workspaces.md) | 제품·architecture·package 문서는 current 구현 또는 사용자 결과만 요약하고 Git mutation·checkpoint 세부를 먼저 확정된 것처럼 쓰지 않음 |
+| InteractionCapability와 AY·App 역할 경계 | [ADR 0019](adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) | 소비 문서는 App-owned academic workflow나 durable interaction entity를 다시 도입하지 않고 결과만 요약 |
 | Public repository lineage·canonical source·first-party license와 trust authority | [ADR 0015](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | 제품·release 문서는 public 진입 결과만 요약하고 allowlist·cutover·legal policy를 재정의하지 않음 |
-| Public npm application↔Runtime release binding·integrity·rollback authority | [ADR 0016](adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 제품 문서는 사용자 결과, architecture·implementation 문서는 필요한 resolver consequence만 설명하고 distribution 결정을 재정의하지 않음 |
-| Public preview의 Codex account mode·credential authority·product token boundary | [ADR 0017](adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | Product Brief는 사용자 결과, Runtime 문서는 기술 mapping, 구현 지도는 current gap, Backlog는 작업 조건만 설명함 |
+| 제거한 public preview의 Codex account mode·credential authority·product token boundary | [ADR 0017](adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | 현재 account authority는 구현 지도와 Runtime 격리 문서가 소유하고, ADR은 historical 결정만 보존함 |
 | runtime 격리의 현재·목표·후속 기술 배치 | [Codex Runtime 격리](architecture/codex-runtime-isolation.md) | 구현 문서는 현재 동작만, Backlog는 후속 일정만 설명 |
 | Codex Chat의 횡단 topology와 gap | [Codex Chat 구현 지도](architecture/codex-chat-implementation-map.md) | 제품 문서는 구현 여부만 짧게 요약 |
 | package별 현재 동작과 명령 | 관련 package README, 코드와 테스트 | 구현 지도와 소비 문서는 필요한 사실만 요약하고 package 문서를 연결 |

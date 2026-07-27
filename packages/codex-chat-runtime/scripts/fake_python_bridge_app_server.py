@@ -65,6 +65,13 @@ def _model(model: str, reasoning_effort: str, *, is_default: bool) -> dict[str, 
         "id": model,
         "isDefault": is_default,
         "model": model,
+        "serviceTiers": [
+            {
+                "description": "Faster fake processing",
+                "id": "fast",
+                "name": "Fast",
+            }
+        ],
         "supportedReasoningEfforts": [
             {
                 "description": f"Fake {reasoning_effort} effort",
@@ -94,25 +101,9 @@ class FakeAppServer:
         self._pending_user_inputs: dict[str, dict[str, str]] = {}
         self._deferred_user_input_resolutions: dict[str, dict[str, str]] = {}
         self._opt_out_notification_methods: set[str] = set()
-        self._login_count = 0
-        self._active_login_id: str | None = None
-        self._login_lock = threading.Lock()
 
     def _record(self, message: dict[str, Any]) -> None:
-        recorded = message
-        if message.get("method") == "account/login/cancel":
-            params = message.get("params")
-            recorded = {
-                "id": message.get("id"),
-                "method": "account/login/cancel",
-                "params": {
-                    "loginIdPresent": (
-                        isinstance(params, dict)
-                        and isinstance(params.get("loginId"), str)
-                    )
-                },
-            }
-        self._messages.append(recorded)
+        self._messages.append(message)
         staged = self._journal_path.with_suffix(self._journal_path.suffix + ".new")
         staged.write_text(
             json.dumps(
@@ -161,177 +152,6 @@ class FakeAppServer:
         if not path.is_file():
             return "unsupported"
         return path.read_text(encoding="utf-8").strip()
-
-    def _set_account_state(self, state: str) -> None:
-        (self._journal_path.parent / "account-state").write_text(
-            state,
-            encoding="utf-8",
-        )
-
-    def _complete_login(
-        self,
-        login_id: str,
-        *,
-        success: bool,
-        error: str | None,
-    ) -> None:
-        with self._login_lock:
-            if self._active_login_id != login_id:
-                return
-            if success:
-                self._set_account_state("chatgpt")
-            self._active_login_id = None
-        self._notify(
-            {
-                "method": "account/login/completed",
-                "params": {
-                    "error": error,
-                    "loginId": login_id,
-                    "success": success,
-                },
-            }
-        )
-
-    def _watch_login_completion(self, login_id: str, mode: str) -> None:
-        trigger = self._journal_path.parent / "complete-login"
-        while True:
-            with self._login_lock:
-                if self._active_login_id != login_id:
-                    return
-            if trigger.is_file():
-                trigger.unlink()
-                self._complete_login(
-                    login_id,
-                    success=mode == "delayed-success",
-                    error=None if mode == "delayed-success" else "raw-provider-secret",
-                )
-                return
-            time.sleep(0.01)
-
-    def _force_exit_after_login_start(self) -> None:
-        time.sleep(0.2)
-        os._exit(42)
-
-    def _emit_login_start_response(
-        self,
-        request_id: object,
-        login_id: str,
-    ) -> None:
-        root = self._journal_path.parent
-        release = root / "release-login-start"
-        if (root / "defer-login-start").is_file():
-            while not release.is_file():
-                time.sleep(0.005)
-            release.unlink()
-        outcome_path = root / "login-start-outcome"
-        outcome = (
-            outcome_path.read_text(encoding="utf-8").strip()
-            if outcome_path.is_file()
-            else "success"
-        )
-        if outcome == "forced-eof":
-            os._exit(42)
-        if outcome == "failure":
-            with self._login_lock:
-                if self._active_login_id == login_id:
-                    self._active_login_id = None
-            _write(
-                {
-                    "id": request_id,
-                    "error": {
-                        "code": -32602,
-                        "message": "raw-login-start-provider-secret",
-                    },
-                }
-            )
-            return
-        auth_url = (
-            "https://attacker.invalid/raw-auth-capability"
-            if outcome == "unsafe-url"
-            else "https://auth.openai.com/codex/test-login"
-        )
-        _write(
-            {
-                "id": request_id,
-                "result": {
-                    "authUrl": auth_url,
-                    "loginId": login_id,
-                    "type": "chatgpt",
-                },
-            }
-        )
-        mode_path = root / "login-mode"
-        mode = (
-            mode_path.read_text(encoding="utf-8").strip()
-            if mode_path.is_file()
-            else "cancelled"
-        )
-        if mode in {"delayed-success", "delayed-failure"}:
-            threading.Thread(
-                target=self._watch_login_completion,
-                args=(login_id, mode),
-                daemon=True,
-            ).start()
-        elif mode == "forced-eof":
-            threading.Thread(
-                target=self._force_exit_after_login_start,
-                daemon=True,
-            ).start()
-
-    def _emit_login_cancel_response(
-        self,
-        request_id: object,
-        login_id: str,
-        mode: str,
-    ) -> None:
-        root = self._journal_path.parent
-        if (root / "defer-login-cancel-completion").is_file():
-            _write({"id": request_id, "result": {"status": "canceled"}})
-            release = root / "release-login-cancel-completion"
-            while not release.is_file():
-                time.sleep(0.005)
-            if mode == "cancel-race-success":
-                self._complete_login(login_id, success=True, error=None)
-            else:
-                self._complete_login(
-                    login_id,
-                    success=False,
-                    error="raw-provider-secret",
-                )
-            return
-        if (root / "defer-login-cancel").is_file():
-            release = root / "release-login-cancel"
-            while not release.is_file():
-                time.sleep(0.005)
-        outcome_path = root / "login-cancel-outcome"
-        outcome = (
-            outcome_path.read_text(encoding="utf-8").strip()
-            if outcome_path.is_file()
-            else "success"
-        )
-        if outcome == "failure":
-            _write(
-                {
-                    "id": request_id,
-                    "error": {
-                        "code": -32602,
-                        "message": "raw-login-cancel-provider-secret",
-                    },
-                }
-            )
-            (root / "login-cancel-response-emitted").touch()
-            return
-        if outcome == "forced-eof":
-            os._exit(42)
-        if mode == "cancel-race-success":
-            self._complete_login(login_id, success=True, error=None)
-        else:
-            self._complete_login(
-                login_id,
-                success=False,
-                error="raw-provider-secret",
-            )
-        _write({"id": request_id, "result": {"status": "canceled"}})
 
     def _inject_response(self, request: dict[str, Any]) -> bool:
         injection_path = self._journal_path.parent / "injected-response.json"
@@ -469,21 +289,8 @@ class FakeAppServer:
                 "reasoning_effort": "medium",
             },
         }
-        expected_sandbox = {
-            "excludeSlashTmp": False,
-            "excludeTmpdirEnvVar": False,
-            "networkAccess": False,
-            "type": "workspaceWrite",
-            "writableRoots": [],
-        }
         if params.get("input") != expected_input:
             raise RuntimeError(f"product input mismatch: {params.get('input')!r}")
-        if params.get("approvalPolicy") != "on-request":
-            raise RuntimeError("product approval policy mismatch")
-        if params.get("approvalsReviewer") != "auto_review":
-            raise RuntimeError("product approval reviewer mismatch")
-        if params.get("sandboxPolicy") != expected_sandbox:
-            raise RuntimeError("product sandbox mismatch")
         if params.get("collaborationMode") != expected_collaboration:
             raise RuntimeError("product collaboration mode mismatch")
 
@@ -732,59 +539,6 @@ class FakeAppServer:
                 raise RuntimeError("invalid skill extra roots")
             _write({"id": message["id"], "result": {}})
             return
-        if method == "account/login/start":
-            params = message.get("params")
-            if (
-                not isinstance(params, dict)
-                or params.get("type") != "chatgpt"
-                or params.get("appBrand") != "codex"
-                or params.get("useHostedLoginSuccessPage") is not True
-            ):
-                raise RuntimeError("managed ChatGPT login options are required")
-            self._login_count += 1
-            login_id = f"native-login-secret-{self._login_count}"
-            with self._login_lock:
-                if self._active_login_id is not None:
-                    raise RuntimeError("fake permits one native login at a time")
-                self._active_login_id = login_id
-            if (self._journal_path.parent / "defer-login-start").is_file():
-                threading.Thread(
-                    target=self._emit_login_start_response,
-                    args=(message["id"], login_id),
-                    daemon=True,
-                ).start()
-            else:
-                self._emit_login_start_response(message["id"], login_id)
-            return
-        if method == "account/login/cancel":
-            params = message.get("params")
-            login_id = params.get("loginId") if isinstance(params, dict) else None
-            with self._login_lock:
-                found = isinstance(login_id, str) and self._active_login_id == login_id
-            if not found:
-                _write({"id": message["id"], "result": {"status": "notFound"}})
-                return
-            mode_path = self._journal_path.parent / "login-mode"
-            mode = (
-                mode_path.read_text(encoding="utf-8").strip()
-                if mode_path.is_file()
-                else "cancelled"
-            )
-            if (self._journal_path.parent / "defer-login-cancel").is_file() or (
-                self._journal_path.parent / "defer-login-cancel-completion"
-            ).is_file():
-                threading.Thread(
-                    target=self._emit_login_cancel_response,
-                    args=(message["id"], login_id, mode),
-                    daemon=True,
-                ).start()
-            else:
-                self._emit_login_cancel_response(
-                    message["id"],
-                    login_id,
-                    mode,
-                )
-            return
         if method == "thread/start":
             if (self._journal_path.parent / "hold-thread-start").is_file():
                 return
@@ -848,10 +602,6 @@ class FakeAppServer:
                     },
                 }
             )
-            return
-        if method == "account/logout":
-            self._set_account_state("signed_out")
-            _write({"id": message["id"], "result": {}})
             return
         if method == "model/list":
             if message.get("params") != {"includeHidden": True}:

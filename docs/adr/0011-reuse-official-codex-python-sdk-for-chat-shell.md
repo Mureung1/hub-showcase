@@ -6,7 +6,9 @@
 
 대체한 결정: 기존 `HeadlessCodexClientHost` 제품 seam과 community TypeScript fork 기반 자체 runtime 계획
 
-관련 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유하고, managed account authority와 product lifecycle은 ADR 0017이 소유한다.
+역사적 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유한다. ADR 0017의 public-preview managed account lifecycle은 제거됐고 현재 dev·dogfood의 account authority는 전역 `CODEX_HOME`이다.
+
+후속 제품 interaction 결정: [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md). 이 ADR은 native permission과 Runtime mechanics를 계속 소유하고, AY-PLE Review·result·file apply 경계는 ADR 0019가 소유한다.
 
 ## 맥락
 
@@ -36,13 +38,15 @@ Exact `MessageRouter`의 login, active turn, pending turn과 global notification
 
 현재 Chat tracer는 trusted exact App Server에 `ApprovalMode.deny_all + Sandbox.read_only`를 명시하고 effective policy를 검증한다. 이는 첫 tracer의 고정 구현값이지 first vertical이나 장기 제품의 권한 profile 결정이 아니다. `deny_all`은 escalation prompt를 만들지 않는다는 뜻이지 모든 command나 Python interpreter를 비활성화한다는 뜻은 아니다.
 
-Codex approval은 command·file·network 같은 실행 권한에 대한 native Codex 결정이고, sandbox는 그 실행에 기술적으로 허용되는 capability 경계다. AY-PLE Review·`UserConfirmation`은 `StatePatch`를 확인된 `SemesterModel`로 반영할지에 대한 학업 제품 결정이다. 어느 한쪽의 승인이 다른 쪽을 승인하거나 대체하지 않으며, 두 UI도 같은 approval로 합치지 않는다.
+Codex approval은 command·file·network 같은 실행 권한에 대한 native Codex 결정이고, sandbox는 그 실행에 기술적으로 허용되는 capability 경계다. AY-PLE InteractionCapability의 Review result는 사용자의 학업 판단을 같은 AY Turn에 돌려준다. 어느 한쪽의 승인이 다른 쪽을 승인하거나 대체하지 않으며, 두 UI도 같은 approval로 합치지 않는다.
 
-첫 vertical의 `read-only extraction`은 Review·`UserConfirmation` 전까지 제안을 `StatePatch`로 유지하고 사용자 자료와 확인된 `SemesterModel`을 바꾸지 않는다는 제품 효과다. 이 문구만으로 Codex `Sandbox.read_only`, network 차단 또는 예상 밖 request의 client-side reject를 채택하지 않는다. 실제 action에 필요한 native permission profile, 설정 소유자와 request projection은 Codex semantics와 public SDK seam을 먼저 따른 뒤 action별로 명시한다.
+현재 First Assignment의 `read-only extraction`은 app-owned Review가 끝나기 전까지 confirmed store를 바꾸지 않는다는 당시 제품 효과다. Target에서는 AY가 InteractionCapability result를 받은 뒤 실제 workspace file을 변경한다. 어느 경우도 이 문구만으로 Codex `Sandbox.read_only`, network 차단 또는 예상 밖 request의 client-side reject를 채택하지 않는다. 실제 action에 필요한 native permission profile, 설정 소유자와 request projection은 Codex semantics와 public SDK seam을 먼저 따른 뒤 action별로 명시한다.
 
-Exact SDK의 high-level `thread_start` 기본값은 `ApprovalMode.auto_review`, `sandbox=None`이고, current bridge가 이를 `deny_all + read_only`로 override한다. Low-level default handler는 command/file approval request에 `accept`를 반환하며 synthetic harness가 이를 관찰했다. 이는 실행 권한 disposition의 입력이지 AY-PLE 제품 확인 실패나 즉시 patch할 blocker가 아니다. Ordered patch `0001`–`0005`는 routing·settlement·notification 동작만 바꾸며 approval handler나 policy를 수정하지 않는다. Native 설정과 public seam을 검토한 뒤에도 실제 제품 action에 필요한 gap이 확인될 때만 upstream extension 또는 좁은 port를 검토하고, monkey patch나 private override는 production 대안으로 취급하지 않는다.
+Exact SDK의 high-level `thread_start` 기본값은 `ApprovalMode.auto_review`, `sandbox=None`이고, current bridge가 이를 `deny_all + read_only`로 override한다. Low-level default handler는 command/file approval request에 `accept`를 반환하며 synthetic harness가 이를 관찰했다. 이는 실행 권한 disposition의 입력이지 AY-PLE 제품 확인 실패나 즉시 patch할 blocker가 아니다. Current maintained patch stack은 direct reuse blocker와 adopted product seam만 좁게 보완하고 approval handler·policy나 AY-PLE managed account lifecycle을 추가하지 않는다. Exact ordered roster와 current package behavior는 [runtime package README](../../packages/codex-chat-runtime/README.md)가 소유한다. Native 설정과 public seam을 검토한 뒤에도 실제 제품 action에 필요한 gap이 확인될 때만 upstream extension 또는 좁은 port를 검토하고, monkey patch나 private override는 production 대안으로 취급하지 않는다.
 
-First Assignment modeling의 product-capable runtime operation은 이 원칙에 따라 별도 profile을 채택한다. Caller가 `startProductTurn`을 명시적으로 선택할 때 runtime package가 exact native Turn에 `ApprovalMode.auto_review + Sandbox.workspace_write`를 전달하며, 기존 text `startTurn`의 `deny_all + read_only` tracer profile은 final cutover 전까지 그대로 유지한다. Native command·file permission 처리는 Codex와 official SDK가 소유하고 Browser-safe product projection은 Plan `request_user_input`만 answer/cancel 가능한 interaction으로 노출한다. 이 interaction은 AY-PLE `UserConfirmation`을 승인하지 않으며, Server·Browser가 product operation을 호출하는 admission과 Review 반영 경계는 후속 integration이 소유한다. 이 profile은 First Assignment modeling action에 한정되고 다른 action의 권한이나 request UX를 자동으로 결정하지 않는다.
+Product-capable runtime operation은 action별 permission profile을 반드시 명시한다. Current First Assignment와 Course-bound guarded Chat은 `permissionProfile: workspace_write`로 `ApprovalMode.auto_review + Sandbox.workspace_write`를 사용한다. Current source-free 일반 Chat은 `permissionProfile: read_only`로 exact native Turn을 `ApprovalMode.deny_all + Sandbox.read_only`로 시작한다. Native command·file permission 처리는 Codex와 official SDK가 소유한다. Built-in `request_user_input`은 일반 clarification에 사용할 수 있고, capability-specific rich Review는 ADR 0019의 custom MCP가 소유한다. 어느 interaction result도 native permission을 승인하지 않는다.
+
+개인 product UI는 official `model/list`의 visible catalog를 Browser-safe하게 projection하고, 사용자가 고른 model·advertised reasoning effort와 `default | fast` service tier를 다음 Product Turn의 public SDK override로 전달한다. 선택이 없으면 native thread의 effective model·reasoning을 유지한다. Catalog order와 지원 조합은 App Server가 소유하며 app은 모델명을 하드코딩하거나 전역 `config.toml`을 쓰지 않는다.
 
 ## Runtime baseline과 배포 packaging 책임
 
@@ -64,11 +68,11 @@ Safe live gate를 실행할 명시적 provider/auth가 없으면 `blocked`로 �
 | --- | --- | --- |
 | Community TypeScript client를 계속 fork한다 | 거절 | Official external client가 같은 mechanics와 native conversation API를 이미 소유하며 기존 fork에는 production consumer가 없다. |
 | Protocol에서 TypeScript runtime을 새로 설계한다 | 거절 | First-party behavior를 다시 발명하고 기존 theoretical contract가 upstream semantics를 제약한다. |
-| Low-level default `accept` 관찰만으로 SDK를 fork하거나 reject layer를 추가한다 | 거절 | 먼저 native permission profile과 실제 product action을 정하고 public SDK seam을 확인해야 하며, AY-PLE Review·`UserConfirmation`은 이 실행 권한 경계를 대신하지 않는다. |
+| Low-level default `accept` 관찰만으로 SDK를 fork하거나 reject layer를 추가한다 | 거절 | 먼저 native permission profile과 실제 product action을 정하고 public SDK seam을 확인해야 하며, AY-PLE InteractionCapability result는 이 실행 권한 경계를 대신하지 않는다. |
 | 기존 Host를 새 Chat Shell 계약으로 확장한다 | 거절 | 현재 generation ref와 global event state machine을 native identity·stream 위에 다시 새긴다. |
 
 ## 결과
 
 Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 runtime·Server·UI tracer로 확장한다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
 
-Legacy cutover 결정은 첫 tracer 완료만으로 자동 추론한 결과가 아니라 consumer·survivor·recovery 경계를 별도로 검토한 ADR 0012가 소유한다. Assignment, `ModelingRun`, Review Workspace, multi-thread sidebar, `thread/read`·`thread/resume`, First Assignment modeling 외 action의 Codex 실행 권한 profile·request UX, disposable-auth automation과 packaging은 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.
+Legacy cutover 결정은 첫 tracer 완료만으로 자동 추론한 결과가 아니라 consumer·survivor·recovery 경계를 별도로 검토한 ADR 0012가 소유한다. InteractionCapability 전환, multi-thread sidebar, `thread/read`·`thread/resume`, 다른 action의 Codex 실행 권한 profile·request UX, disposable-auth automation과 packaging은 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.

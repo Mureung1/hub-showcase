@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import * as productContract from '@ay-ple/product-contract'
-import * as productContractTesting from '@ay-ple/product-contract/testing'
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
@@ -12,6 +11,8 @@ import {
   decodeFirstAssignmentRetryRequest,
   decodeProductBootstrap,
   decodeProductChatRequest,
+  decodeProductCodexSettings,
+  decodeProductCodexTurnSettings,
   decodeProductError,
   decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
@@ -33,6 +34,8 @@ test('package root exposes the exact runtime contract surface', () => {
     'decodeFirstAssignmentRetryRequest',
     'decodeProductBootstrap',
     'decodeProductChatRequest',
+    'decodeProductCodexSettings',
+    'decodeProductCodexTurnSettings',
     'decodeProductError',
     'decodeProductInteractionAnswerRequest',
     'decodeProductMaterialPreview',
@@ -45,12 +48,6 @@ test('package root exposes the exact runtime contract surface', () => {
     'decodeProductWorkspace',
     'decodeProductWorkspaceActivationResponse',
     'decodeProductWorkspaceResponse',
-    'decodePublicPreviewAccountProjection',
-    'decodePublicPreviewBootstrap',
-    'decodePublicPreviewCommand',
-    'decodePublicPreviewError',
-    'decodePublicPreviewResponse',
-    'decodePublicPreviewSetupProjection',
     'isProductDecisionKey',
     'isProductDigest',
     'isProductInteractionId',
@@ -58,17 +55,6 @@ test('package root exposes the exact runtime contract surface', () => {
     'isProductOperationId',
     'isProductPatchId',
     'isProductQuestionId',
-  ])
-})
-
-test('public preview fixtures are available only from the testing subpath', () => {
-  assert.deepEqual(Object.keys(productContractTesting).sort(), [
-    'PUBLIC_PREVIEW_ACCOUNT_FIXTURES',
-    'PUBLIC_PREVIEW_COMMAND_FIXTURES',
-    'PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES',
-    'PUBLIC_PREVIEW_RESPONSE_FIXTURES',
-    'PUBLIC_PREVIEW_SCENARIO_FIXTURES',
-    'PUBLIC_PREVIEW_SETUP_FIXTURES',
   ])
 })
 
@@ -508,8 +494,24 @@ test('request decoders keep the current literal and JSON envelope closed', () =>
 
   assert.deepEqual(decodeFirstAssignmentRequest(assignment), assignment)
   assert.deepEqual(
-    decodeProductChatRequest({ text: '자료를 비교해 줘', materials: [] }),
-    { text: '자료를 비교해 줘', materials: [] },
+    decodeProductChatRequest({
+      text: '자료를 비교해 줘',
+      materials: [],
+      codexSettings: {
+        model: 'gpt-current',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast',
+      },
+    }),
+    {
+      text: '자료를 비교해 줘',
+      materials: [],
+      codexSettings: {
+        model: 'gpt-current',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast',
+      },
+    },
   )
   for (const invalid of [
     { ...assignment, extra: true },
@@ -520,6 +522,59 @@ test('request decoders keep the current literal and JSON envelope closed', () =>
     { text: '질문', materials: [], model: 'private-model' },
   ]) {
     assert.throws(() => decodeRequest(invalid), ProductContractError)
+  }
+})
+
+test('Codex settings decoder keeps the advertised order and fast availability', () => {
+  const settings = {
+    models: [
+      {
+        model: 'gpt-current',
+        displayName: 'GPT Current',
+        description: 'Current model',
+        isDefault: true,
+        defaultReasoningEffort: 'medium',
+        supportedReasoningEfforts: [
+          { reasoningEffort: 'low', description: 'Quick' },
+          { reasoningEffort: 'medium', description: 'Balanced' },
+        ],
+        fastModeAvailable: true,
+        fastModeDefault: false,
+      },
+    ],
+  } as const
+  assert.deepEqual(decodeProductCodexSettings(settings), settings)
+  assert.throws(
+    () =>
+      decodeProductCodexSettings({
+        models: [
+          {
+            ...settings.models[0],
+            defaultReasoningEffort: 'high',
+          },
+        ],
+      }),
+    ProductContractError,
+  )
+})
+
+test('Codex Turn settings decoder bounds private Runtime identifiers', () => {
+  const settings = {
+    model: 'gpt-current',
+    reasoningEffort: 'medium',
+    serviceTier: 'default',
+  } as const
+  assert.deepEqual(decodeProductCodexTurnSettings(settings), settings)
+  for (const invalid of [
+    { ...settings, model: 'm'.repeat(257) },
+    { ...settings, model: '가'.repeat(86) },
+    { ...settings, reasoningEffort: 'e'.repeat(65) },
+    { ...settings, reasoningEffort: '가'.repeat(22) },
+  ]) {
+    assert.throws(
+      () => decodeProductCodexTurnSettings(invalid),
+      ProductContractError,
+    )
   }
 })
 

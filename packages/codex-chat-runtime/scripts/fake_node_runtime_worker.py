@@ -119,6 +119,19 @@ def main() -> None:
         for _message in _iter_commands(journal, commands):
             pass
         return
+    if args.scenario == "account-read-close":
+        commands = _start_scenario(journal)
+        account_read = _read_command(journal, commands)
+        close = _read_command(journal, commands)
+        if account_read is None or close is None:
+            return
+        _write(
+            {
+                "type": "close_ack",
+                "bridgeRequestId": close["bridgeRequestId"],
+            }
+        )
+        return
     if args.scenario == "close-ack-followed-by-result":
         commands = _start_scenario(journal)
         start_thread = _read_command(journal, commands)

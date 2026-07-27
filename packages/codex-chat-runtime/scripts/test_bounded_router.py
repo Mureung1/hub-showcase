@@ -48,7 +48,7 @@ EXPECTED_STEPS = [
     "initialized",
     "thread-a-started",
     "thread-b-started",
-    "managed-login-completed",
+    "login-completed",
     "unrelated-login-completion-preserved",
     "login-started",
     "turn-b-response",
@@ -153,7 +153,7 @@ class BoundedRouterActualChildTests(unittest.TestCase):
             )
             self.assertEqual(result["first_stalled_method"], "turn/started")
             self.assertEqual(
-                result["managed_login_completion"],
+                result["login_completion"],
                 {
                     "error": None,
                     "login_id": "login-managed-completed",

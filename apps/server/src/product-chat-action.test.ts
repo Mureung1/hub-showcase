@@ -22,7 +22,7 @@ import { configuredBootstrap, postJson } from './testing/codex-chat-test-support
 import { withTestServer } from './testing/test-server.js'
 import { materializeE2eSemesterWorkspace } from '../../../scripts/semester-workspace-materializer.mjs'
 
-test('Run-free Product Chat cleans its durable guard and reuses one native Thread across sequential Turns', async () => {
+test('course-free Product Chat starts before ModelingRun and reuses one native Thread across sequential Turns', async () => {
   const fixture = await createChatFixture()
   const runtime = new ProductChatRuntime()
 
@@ -33,13 +33,19 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
         semesterWorkspace: fixture.bootstrap,
       },
       async (baseUrl, application) => {
-        await activateCourse(application)
+        const activation = await application.semesterWorkspace?.activate()
+        assert.equal(activation?.status, 'activated')
         const traces: Record<string, unknown>[][] = []
 
         for (const text of ['이번 주 할 일을 요약해 줘.', '그중 첫 항목을 더 설명해 줘.']) {
           const response = await postJson(`${baseUrl}/api/product/chat/messages`, {
             text,
             materials: [],
+            codexSettings: {
+              model: 'gpt-current',
+              reasoningEffort: 'high',
+              serviceTier: 'fast',
+            },
           })
           assert.equal(response.status, 200)
           assert.equal(
@@ -76,14 +82,21 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
         assert.equal(runtime.productInputs[0]?.threadId, 'thread-private-chat')
         assert.equal(runtime.productInputs[1]?.threadId, 'thread-private-chat')
         assert.equal(runtime.productInputs.every((input) => input.skill === undefined), true)
+        assert.equal(
+          runtime.productInputs.every(
+            (input) => input.permissionProfile === 'read_only',
+          ),
+          true,
+        )
+        assert.deepEqual(runtime.productInputs[0]?.settings, {
+          model: 'gpt-current',
+          reasoningEffort: 'high',
+          serviceTier: 'fast',
+        })
         for (const input of runtime.productInputs) {
           assert.equal('plan' in input, false)
           assert.ok(Buffer.byteLength(input.text, 'utf8') <= 128 * 1024)
-          const scratchPath = requireMatch(
-            input.text,
-            /Use scratch only for transient writes: ([^\n]+)/,
-          )
-          await assert.rejects(access(scratchPath))
+          assert.doesNotMatch(input.text, /Use scratch only for transient writes:/)
         }
 
         assertSafeTrace(traces.flat(), [
@@ -97,6 +110,43 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
           'private-agent-item-1',
           'private-agent-item-2',
         ])
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('rejects Codex Turn settings that are absent from the advertised catalog', async () => {
+  const fixture = await createChatFixture()
+  const runtime = new ProductChatRuntime()
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const activation = await application.semesterWorkspace?.activate()
+        assert.equal(activation?.status, 'activated')
+
+        const response = await postJson(`${baseUrl}/api/product/chat/messages`, {
+          text: '지원하지 않는 설정이야.',
+          materials: [],
+          codexSettings: {
+            model: 'gpt-unknown',
+            reasoningEffort: 'high',
+            serviceTier: 'fast',
+          },
+        })
+
+        assert.equal(response.status, 400)
+        assert.deepEqual(await response.json(), {
+          code: 'action_invalid',
+          displayMessage: '현재 Codex 모델 설정을 다시 선택해 주세요.',
+        })
+        assert.equal(runtime.productInputs.length, 0)
       },
     )
   } finally {
@@ -652,6 +702,25 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
     return { state: 'ready' }
+  }
+
+  async readModelCatalog() {
+    return {
+      models: [
+        {
+          model: 'gpt-current',
+          displayName: 'GPT Current',
+          description: 'Current model',
+          isDefault: true,
+          defaultReasoningEffort: 'medium',
+          supportedReasoningEfforts: [
+            { reasoningEffort: 'medium', description: 'Balanced' },
+            { reasoningEffort: 'high', description: 'Deep' },
+          ],
+          serviceTiers: ['fast'],
+        },
+      ],
+    }
   }
 
   async startThread(input?: StartThreadInput) {

@@ -4,7 +4,11 @@ import type { AddressInfo } from 'node:net'
 import test from 'node:test'
 
 import express from 'express'
-import { decodeProductBootstrap } from '@ay-ple/product-contract'
+import {
+  decodeProductBootstrap,
+  decodeProductCodexSettings,
+  type ProductCodexSettings,
+} from '@ay-ple/product-contract'
 
 import { createProductRouter } from './product-http.js'
 import type { ProductOperationCoordinator } from './product-operation-coordinator.js'
@@ -142,6 +146,40 @@ test('bootstrap reads coarse operation status before projecting settled-only sta
       statusRead = true
       return 'active'
     },
+  )
+})
+
+test('Codex settings returns the Browser-safe advertised model controls', async () => {
+  const settings = {
+    models: [
+      {
+        model: 'gpt-current',
+        displayName: 'GPT Current',
+        description: 'Current model',
+        isDefault: true,
+        defaultReasoningEffort: 'medium',
+        supportedReasoningEfforts: [
+          { reasoningEffort: 'medium', description: 'Balanced' },
+        ],
+        fastModeAvailable: true,
+        fastModeDefault: false,
+      },
+    ],
+  } as const satisfies ProductCodexSettings
+  await withProductRouter(
+    productSnapshotController(),
+    async () => ({ state: 'ready' }),
+    async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/product/codex-settings`)
+      assert.equal(response.status, 200)
+      assert.equal(response.headers.get('cache-control'), 'no-store')
+      assert.deepEqual(
+        decodeProductCodexSettings(await response.json()),
+        settings,
+      )
+    },
+    () => 'idle',
+    async () => settings,
   )
 })
 
@@ -383,6 +421,7 @@ async function withProductRouter(
   >,
   run: (baseUrl: string) => Promise<void>,
   readOperationStatus: () => 'active' | 'idle' = () => 'idle',
+  readCodexSettings?: () => Promise<ProductCodexSettings>,
 ): Promise<void> {
   const app = express()
   app.use(
@@ -395,6 +434,7 @@ async function withProductRouter(
       } as ProductOperationCoordinator,
       undefined,
       readAccountReadiness,
+      readCodexSettings,
     ),
   )
   const server = createServer(app)

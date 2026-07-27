@@ -3,9 +3,18 @@ import { request as httpRequest, type IncomingMessage } from 'node:http'
 
 import {
   CodexChatRuntimeError,
+  type AnswerUserInput,
+  type CancelUserInput,
+  type CodexAccountReadiness,
   type CodexChatEvent,
-  type CodexChatRuntime,
   type CodexChatTurn,
+  type CodexEffectiveConfig,
+  type CodexEffectiveSkill,
+  type CodexModelCatalog,
+  type CodexProductTurn,
+  type CodexWorkspaceRuntime,
+  type StartProductTurnInput,
+  type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 
 import type { CodexChatBootstrap } from '../codex-chat.js'
@@ -16,7 +25,7 @@ export const codexChatIdentity = {
 } as const
 
 export function configuredBootstrap(
-  runtime: CodexChatRuntime,
+  runtime: CodexWorkspaceRuntime,
   options: {
     readonly origin?: string
     readonly disconnectDrainMs?: number
@@ -91,7 +100,7 @@ export function createDeferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
-export class ControlledRuntime implements CodexChatRuntime {
+export class ControlledRuntime implements CodexWorkspaceRuntime {
   private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
   readonly terminal = this.terminalDeferred.promise
   private readonly eventQueue: Array<
@@ -162,16 +171,62 @@ export class ControlledRuntime implements CodexChatRuntime {
     return { threadId: 'thread-A' }
   }
 
-  async startTurn(): Promise<CodexChatTurn> {
+  async startTurn(input?: StartTurnInput): Promise<CodexChatTurn> {
     this.startTurnCalls += 1
     this.dispatched.resolve()
     await this.startTurnGate?.promise
     if (this.startTurnError) throw this.startTurnError
     return {
-      threadId: 'thread-A',
+      threadId: input?.threadId ?? 'thread-A',
       turnId: 'turn-A1',
       events: this.events(),
     }
+  }
+
+  async readAccountReadiness(): Promise<CodexAccountReadiness> {
+    throw new CodexChatRuntimeError({
+      code: 'runtime_unavailable',
+      displayMessage: 'The controlled test Runtime is unavailable.',
+      unknownOutcome: false,
+    })
+  }
+
+  async readModelCatalog(): Promise<CodexModelCatalog> {
+    return { models: [] }
+  }
+
+  async readEffectiveConfig(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexEffectiveConfig> {
+    input.signal.throwIfAborted()
+    return {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+    }
+  }
+
+  async listEffectiveSkills(input: {
+    readonly signal: AbortSignal
+  }): Promise<readonly CodexEffectiveSkill[]> {
+    input.signal.throwIfAborted()
+    return []
+  }
+
+  async startProductTurn(
+    input: StartProductTurnInput,
+  ): Promise<CodexProductTurn> {
+    return this.startTurn({
+      threadId: input.threadId,
+      text: input.text,
+    })
+  }
+
+  async answerUserInput(_input: AnswerUserInput): Promise<void> {
+    throw interactionNotPendingError()
+  }
+
+  async cancelUserInput(_input: CancelUserInput): Promise<void> {
+    throw interactionNotPendingError()
   }
 
   async interrupt(): Promise<void> {
@@ -275,6 +330,14 @@ export class ControlledRuntime implements CodexChatRuntime {
     this.eventWaiters.push(waiter)
     return waiter.promise
   }
+}
+
+function interactionNotPendingError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'interaction_not_pending',
+    displayMessage: 'The user-input interaction is not pending.',
+    unknownOutcome: false,
+  })
 }
 
 export class BackpressuredResponse extends EventEmitter {

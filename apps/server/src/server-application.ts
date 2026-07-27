@@ -12,24 +12,12 @@ import {
 } from './codex-chat.js'
 import { createProductRouter } from './product-http.js'
 import { createProductOperationCoordinator } from './product-operation-coordinator.js'
-import {
-  createPublicPreviewFeatureComposition,
-  type PublicPreviewFeatureComposition,
-  type PublicPreviewServerBootstrap,
-} from './public-preview-composition.js'
 import type {
   ServerStartupCleanup,
   ServerStartupCleanupInput,
   ServerStartupCleanupResult,
 } from './server-startup-cleanup.js'
 
-export type {
-  PublicPreviewServerBootstrap,
-  PublicPreviewSetupBootstrap,
-} from './public-preview-composition.js'
-export type {
-  PublicPreviewWorkspaceTargetGuard,
-} from './public-preview-command-adapter.js'
 import {
   createSemesterWorkspaceController,
   type SemesterWorkspaceController,
@@ -39,7 +27,7 @@ import {
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
   productRuntime?: ProductRuntimeBootstrap
-  publicPreview?: PublicPreviewServerBootstrap
+  productRuntimeWorkspaceRoot?: string
   semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
@@ -89,48 +77,18 @@ const serverApplicationLifecycles = new WeakMap<
 export async function createServerApplication(
   options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
-  return createServerApplicationWithDependencies(options, {
-    createPublicPreviewFeature: createPublicPreviewFeatureComposition,
-  })
-}
-
-export function createServerApplicationForTesting(
-  options: CreateServerAppOptions,
-  dependencies: {
-    readonly createPublicPreviewFeature: typeof createPublicPreviewFeatureComposition
-  },
-): Promise<ServerApplication> {
-  return createServerApplicationWithDependencies(options, dependencies)
-}
-
-async function createServerApplicationWithDependencies(
-  options: CreateServerAppOptions,
-  dependencies: {
-    readonly createPublicPreviewFeature: typeof createPublicPreviewFeatureComposition
-  },
-): Promise<ServerApplication> {
-  if (
-    options.publicPreview &&
-    (options.codexChat ||
-      options.productRuntime ||
-      options.semesterWorkspace)
-  ) {
-    throw new TypeError(
-      'Public preview cannot share legacy workspace or Runtime authority',
-    )
-  }
-  const publicPreview = options.publicPreview
-    ? await dependencies.createPublicPreviewFeature(options.publicPreview)
-    : undefined
   const semesterWorkspace = options.semesterWorkspace
     ? createSemesterWorkspaceController(options.semesterWorkspace)
     : undefined
+  const productRuntimeWorkspaceRoot = options.productRuntimeWorkspaceRoot
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
     productRuntime: options.productRuntime,
     workspace: semesterWorkspace
       ? () => semesterWorkspace.nativeCwd()
-      : undefined,
+      : productRuntimeWorkspaceRoot
+        ? () => productRuntimeWorkspaceRoot
+        : undefined,
   })
   const assignmentMcpHost = semesterWorkspace
     ? createAssignmentMcpHost()
@@ -149,19 +107,15 @@ async function createServerApplicationWithDependencies(
     productOperations,
     assignmentMcpHost,
     options.codexChat?.httpWriteDrainMs,
-    publicPreview,
   )
   let applicationClosePromise: Promise<void> | undefined
   const closeApplication: CloseServerApplication = ({ signal }) => {
     productOperations?.beginShutdown()
-    publicPreview?.beginShutdown()
     codexChat.beginShutdown()
     if (applicationClosePromise) return applicationClosePromise
     const attempt = closeServerApplication(
       codexChat,
       assignmentMcpHost,
-      publicPreview,
-      signal,
     )
     applicationClosePromise = attempt
     void attempt.catch(() => {
@@ -285,26 +239,38 @@ function createServerExpressApp(
     | undefined,
   assignmentMcpHost: AssignmentMcpHost | undefined,
   productWriteDrainMs: number | undefined,
-  publicPreview: PublicPreviewFeatureComposition | undefined,
 ): Express {
   const app = express()
   if (assignmentMcpHost) {
     app.use('/api/product-mcp', assignmentMcpHost.router)
   }
-  if (publicPreview) {
-    app.use('/api/product/public-preview', publicPreview.router)
-  }
   app.use(
     '/api/product',
     createProductRouter(
       semesterWorkspace,
-      publicPreview?.origin ?? codexChat.origin,
+      codexChat.origin,
       productOperations,
       productWriteDrainMs,
       productOperations
         ? () => codexChat.service.readProductAccountReadiness()
         : undefined,
-      publicPreview === undefined,
+      productOperations
+        ? async () => {
+            const catalog = await codexChat.service.readProductModelCatalog()
+            return {
+              models: catalog.models.map((model) => ({
+                model: model.model,
+                displayName: model.displayName,
+                description: model.description,
+                isDefault: model.isDefault,
+                defaultReasoningEffort: model.defaultReasoningEffort,
+                supportedReasoningEfforts: model.supportedReasoningEfforts,
+                fastModeAvailable: model.serviceTiers.includes('fast'),
+                fastModeDefault: model.defaultServiceTier === 'fast',
+              })),
+            }
+          }
+        : undefined,
     ),
   )
   return app
@@ -313,26 +279,6 @@ function createServerExpressApp(
 async function closeServerApplication(
   codexChat: CodexChatComposition,
   assignmentMcpHost: AssignmentMcpHost | undefined,
-  publicPreview: PublicPreviewFeatureComposition | undefined,
-  signal: AbortSignal,
 ): Promise<void> {
-  let publicPreviewResult:
-    | { readonly status: 'closed'; readonly processTreeGone: true }
-    | { readonly status: 'ambiguous'; readonly processTreeGone: false }
-    = { status: 'closed', processTreeGone: true }
-  try {
-    if (publicPreview) {
-      publicPreviewResult = await publicPreview.close({
-        signal,
-      })
-    }
-  } finally {
-    await codexChat.close().finally(() => assignmentMcpHost?.close())
-  }
-  if (
-    publicPreviewResult.status !== 'closed' ||
-    !publicPreviewResult.processTreeGone
-  ) {
-    throw new Error('Public preview Runtime close was ambiguous')
-  }
+  await codexChat.close().finally(() => assignmentMcpHost?.close())
 }

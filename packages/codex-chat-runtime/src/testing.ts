@@ -14,24 +14,16 @@ import type {
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexManagedRuntime,
+  CodexModelCatalog,
   CodexProductTurn,
+  CodexWorkspaceRuntime,
   StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
 import type {
-  CodexAccountFailure,
-  CodexAccountReadResult,
-  CodexBrowserLoginAttempt,
-  CodexBrowserLoginCancellation,
-  CodexBrowserLoginRelease,
-  CodexBrowserLoginStartResult,
   CodexEffectiveConfig,
   CodexEffectiveSkill,
-  CodexLogoutResult,
-  CodexRuntimeCloseResult,
-  CodexRuntimeRole,
-} from './account-contract.js'
+} from './native-context-contract.js'
 import {
   CodexChatRuntimeError,
   INTERACTION_NOT_PENDING_MESSAGE,
@@ -51,27 +43,7 @@ export {
 
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }
-  | { readonly operation: 'readAccount' }
-  | {
-      readonly operation: 'startBrowserLogin'
-      readonly input: {
-        readonly attemptId: string
-        readonly expiresAt: string
-      }
-    }
-  | {
-      readonly operation: 'readBrowserLoginAttempt'
-      readonly input: { readonly attemptId: string }
-    }
-  | {
-      readonly operation: 'cancelBrowserLogin'
-      readonly input: { readonly attemptId: string }
-    }
-  | {
-      readonly operation: 'releaseBrowserLoginAttempt'
-      readonly input: { readonly attemptId: string }
-    }
-  | { readonly operation: 'logout' }
+  | { readonly operation: 'readModelCatalog' }
   | { readonly operation: 'readEffectiveConfig' }
   | { readonly operation: 'listEffectiveSkills' }
   | { readonly operation: 'startThread'; readonly input?: StartThreadInput }
@@ -100,7 +72,6 @@ export type DeterministicCodexChatRuntimeCall =
       readonly input: ReleaseThreadInput
     }
   | { readonly operation: 'close' }
-  | { readonly operation: 'closeAccount' }
 
 function interactionNotPendingError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
@@ -123,14 +94,9 @@ export type DeterministicCodexProductTurn = {
 }
 
 export type DeterministicCodexChatRuntimeOptions = {
-  readonly role?: CodexRuntimeRole
+  readonly workspace?: string
   readonly accountReadiness?: readonly CodexAccountReadiness[]
-  readonly accountReads?: readonly DeterministicValue<CodexAccountReadResult>[]
-  readonly browserLoginStarts?: readonly DeterministicValue<CodexBrowserLoginStartResult>[]
-  readonly browserLoginAttempts?: readonly DeterministicValue<CodexBrowserLoginAttempt>[]
-  readonly browserLoginCancellations?: readonly DeterministicValue<CodexBrowserLoginCancellation>[]
-  readonly browserLoginReleases?: readonly DeterministicValue<CodexBrowserLoginRelease>[]
-  readonly logouts?: readonly DeterministicValue<CodexLogoutResult>[]
+  readonly modelCatalogs?: readonly CodexModelCatalog[]
   readonly effectiveConfigs?: readonly DeterministicValue<CodexEffectiveConfig>[]
   readonly effectiveSkills?: readonly DeterministicValue<
     readonly CodexEffectiveSkill[]
@@ -161,17 +127,12 @@ type DeterministicPendingInteraction = {
   settled: boolean
 }
 
-export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
+export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
   private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
   readonly terminal = this.terminalDeferred.promise
-  readonly role: CodexRuntimeRole
+  private readonly workspace: string
   private readonly accountReadiness: CodexAccountReadiness[]
-  private readonly accountReads: DeterministicValue<CodexAccountReadResult>[]
-  private readonly browserLoginStarts: DeterministicValue<CodexBrowserLoginStartResult>[]
-  private readonly browserLoginAttempts: DeterministicValue<CodexBrowserLoginAttempt>[]
-  private readonly browserLoginCancellations: DeterministicValue<CodexBrowserLoginCancellation>[]
-  private readonly browserLoginReleases: DeterministicValue<CodexBrowserLoginRelease>[]
-  private readonly logouts: DeterministicValue<CodexLogoutResult>[]
+  private readonly modelCatalogs: CodexModelCatalog[]
   private readonly effectiveConfigs: DeterministicValue<CodexEffectiveConfig>[]
   private readonly effectiveSkills: DeterministicValue<
     readonly CodexEffectiveSkill[]
@@ -190,23 +151,9 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
   private closed = false
 
   constructor(options: DeterministicCodexChatRuntimeOptions = {}) {
-    this.role = Object.freeze(
-      options.role === undefined
-        ? {
-            role: 'workspace',
-            workspaceRoot: '/deterministic/workspace',
-          }
-        : { ...options.role },
-    )
+    this.workspace = options.workspace ?? '/deterministic/workspace'
     this.accountReadiness = [...(options.accountReadiness ?? [])]
-    this.accountReads = [...(options.accountReads ?? [])]
-    this.browserLoginStarts = [...(options.browserLoginStarts ?? [])]
-    this.browserLoginAttempts = [...(options.browserLoginAttempts ?? [])]
-    this.browserLoginCancellations = [
-      ...(options.browserLoginCancellations ?? []),
-    ]
-    this.browserLoginReleases = [...(options.browserLoginReleases ?? [])]
-    this.logouts = [...(options.logouts ?? [])]
+    this.modelCatalogs = [...structuredClone(options.modelCatalogs ?? [])]
     this.effectiveConfigs = [...(options.effectiveConfigs ?? [])]
     this.effectiveSkills = [...(options.effectiveSkills ?? [])]
     this.threadIds = [...(options.threadIds ?? [])]
@@ -233,122 +180,15 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     if (readiness !== undefined) {
       return { ...readiness }
     }
-    const result = await this.nextAccountValue(
-      this.accountReads,
-      'account read',
-    )
-    if (result.status === 'error') {
-      throw accountFailureError(result.error)
-    }
-    return result.account.state === 'chatgpt'
-      ? { state: 'ready' }
-      : { state: 'not_ready', reason: 'authentication_required' }
+    throw new Error('No deterministic account readiness remains')
   }
 
-  async readAccount(input: {
-    readonly refreshToken: true
-    readonly signal: AbortSignal
-  }): Promise<CodexAccountReadResult> {
-    this.callLog.push({ operation: 'readAccount' })
-    return this.runAccountValue(
-      this.accountReads,
-      'account read',
-      input.signal,
-      () => ({ status: 'error', error: runtimeClosingFailure() }),
-    )
-  }
-
-  async startBrowserLogin(input: {
-    readonly attemptId: string
-    readonly expiresAt: string
-    readonly signal: AbortSignal
-  }): Promise<CodexBrowserLoginStartResult> {
-    const recordedInput = {
-      attemptId: input.attemptId,
-      expiresAt: input.expiresAt,
-    }
-    this.callLog.push({ operation: 'startBrowserLogin', input: recordedInput })
-    return this.runAccountValue(
-      this.browserLoginStarts,
-      'browser login start',
-      input.signal,
-      () => ({ status: 'error', error: runtimeClosingFailure() }),
-    )
-  }
-
-  async readBrowserLoginAttempt(input: {
-    readonly attemptId: string
-    readonly signal: AbortSignal
-  }): Promise<CodexBrowserLoginAttempt> {
-    const recordedInput = { attemptId: input.attemptId }
-    this.callLog.push({
-      operation: 'readBrowserLoginAttempt',
-      input: recordedInput,
-    })
-    return this.runAccountValue(
-      this.browserLoginAttempts,
-      'browser login attempt',
-      input.signal,
-      () => ({
-        status: 'failed',
-        attemptId: input.attemptId,
-        error: runtimeClosingFailure(),
-      }),
-    )
-  }
-
-  async cancelBrowserLogin(input: {
-    readonly attemptId: string
-    readonly signal: AbortSignal
-  }): Promise<CodexBrowserLoginCancellation> {
-    const recordedInput = { attemptId: input.attemptId }
-    this.callLog.push({
-      operation: 'cancelBrowserLogin',
-      input: recordedInput,
-    })
-    return this.runAccountValue(
-      this.browserLoginCancellations,
-      'browser login cancellation',
-      input.signal,
-      () => ({
-        status: 'error',
-        attemptId: input.attemptId,
-        error: runtimeClosingFailure(),
-      }),
-    )
-  }
-
-  async releaseBrowserLoginAttempt(input: {
-    readonly attemptId: string
-    readonly signal: AbortSignal
-  }): Promise<CodexBrowserLoginRelease> {
-    const recordedInput = { attemptId: input.attemptId }
-    this.callLog.push({
-      operation: 'releaseBrowserLoginAttempt',
-      input: recordedInput,
-    })
-    return this.runAccountValue(
-      this.browserLoginReleases,
-      'browser login release',
-      input.signal,
-      () => ({
-        status: 'error',
-        attemptId: input.attemptId,
-        error: runtimeClosingFailure(),
-      }),
-    )
-  }
-
-  async logout(input: {
-    readonly signal: AbortSignal
-  }): Promise<CodexLogoutResult> {
-    this.callLog.push({ operation: 'logout' })
-    return this.runAccountValue(
-      this.logouts,
-      'logout',
-      input.signal,
-      () => ({ status: 'error', error: runtimeClosingFailure() }),
-    )
+  async readModelCatalog(): Promise<CodexModelCatalog> {
+    this.callLog.push({ operation: 'readModelCatalog' })
+    this.requireOpen()
+    const catalog = this.modelCatalogs.shift()
+    if (!catalog) throw new Error('No deterministic model catalog remains')
+    return structuredClone(catalog)
   }
 
   async readEffectiveConfig(input: {
@@ -356,7 +196,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
   }): Promise<CodexEffectiveConfig> {
     this.callLog.push({ operation: 'readEffectiveConfig' })
     this.requireOpen()
-    this.requireWorkspaceRole()
     return this.runNativeContextValue(
       this.effectiveConfigs,
       'effective config read',
@@ -369,7 +208,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
   }): Promise<readonly CodexEffectiveSkill[]> {
     this.callLog.push({ operation: 'listEffectiveSkills' })
     this.requireOpen()
-    this.requireWorkspaceRole()
     return this.runNativeContextValue(
       this.effectiveSkills,
       'effective Skill list',
@@ -383,11 +221,9 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
       ...(input === undefined ? {} : { input: cloneStartThreadInput(input) }),
     })
     this.requireOpen()
-    this.requireWorkspaceRole()
     if (
       input !== undefined &&
-      this.role.role === 'workspace' &&
-      input.workspace !== this.role.workspaceRoot
+      input.workspace !== this.workspace
     ) {
       throw workspaceRootMismatchError()
     }
@@ -403,7 +239,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'startTurn', input: recordedInput })
     this.requireOpen()
-    this.requireWorkspaceRole()
     if (!this.liveThreads.has(input.threadId)) {
       throw new Error('Deterministic turn references an unknown thread')
     }
@@ -454,7 +289,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     const recordedInput = cloneProductTurnInput(input)
     this.callLog.push({ operation: 'startProductTurn', input: recordedInput })
     this.requireOpen()
-    this.requireWorkspaceRole()
     this.requireTurnAdmission(input.threadId)
     const scripted = this.productTurns[0]
     if (
@@ -488,7 +322,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     const recordedInput = cloneAnswerUserInput(input)
     this.callLog.push({ operation: 'answerUserInput', input: recordedInput })
     this.requireOpen()
-    this.requireWorkspaceRole()
     await this.settleInteraction(input.interactionId, 'answered')
   }
 
@@ -496,7 +329,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'cancelUserInput', input: recordedInput })
     this.requireOpen()
-    this.requireWorkspaceRole()
     await this.settleInteraction(input.interactionId, 'cancelled')
   }
 
@@ -504,7 +336,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'interrupt', input: recordedInput })
     this.requireOpen()
-    this.requireWorkspaceRole()
     if (this.activeTurns.get(input.threadId) !== input.turnId) {
       throw new Error('Deterministic interrupt references an inactive turn')
     }
@@ -515,7 +346,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'releaseThread', input: recordedInput })
     this.requireOpen()
-    this.requireWorkspaceRole()
     if (!this.liveThreads.has(input.threadId)) {
       throw new Error('Deterministic release references an unknown thread')
     }
@@ -525,84 +355,16 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     this.liveThreads.delete(input.threadId)
   }
 
-  close(): Promise<void>
-  close(input: {
-    readonly signal: AbortSignal
-  }): Promise<CodexRuntimeCloseResult>
-  async close(input?: {
-    readonly signal: AbortSignal
-  }): Promise<void | CodexRuntimeCloseResult> {
-    this.callLog.push({
-      operation: input === undefined ? 'close' : 'closeAccount',
-    })
+  async close(): Promise<void> {
+    this.callLog.push({ operation: 'close' })
     this.clearAllInteractions()
     this.activeTurns.clear()
     this.closed = true
-    if (input !== undefined) {
-      return { status: 'closed', processTreeGone: true }
-    }
   }
 
   private requireOpen(): void {
     if (this.failed) throw new Error('Deterministic Codex chat runtime failed')
     if (this.closed) throw new Error('Deterministic Codex chat runtime is closed')
-  }
-
-  private requireWorkspaceRole(): void {
-    if (this.role.role === 'workspace') return
-    throw runtimeRoleDeniedError()
-  }
-
-  private async nextAccountValue<T>(
-    values: DeterministicValue<T>[],
-    description: string,
-  ): Promise<T> {
-    const scripted = values.shift()
-    if (scripted === undefined) {
-      throw new Error(`No deterministic ${description} remains`)
-    }
-    return structuredClone(await scripted)
-  }
-
-  private async runAccountValue<T>(
-    values: DeterministicValue<T>[],
-    description: string,
-    signal: AbortSignal,
-    abortedValue: () => T,
-  ): Promise<T> {
-    if (signal.aborted) {
-      this.closeForAccountAbort()
-      return abortedValue()
-    }
-    this.requireOpen()
-    const scripted = values.shift()
-    if (scripted === undefined) {
-      throw new Error(`No deterministic ${description} remains`)
-    }
-    let resolveAbort!: () => void
-    const aborted = new Promise<{ readonly kind: 'aborted' }>((resolve) => {
-      resolveAbort = () => resolve({ kind: 'aborted' })
-    })
-    const onAbort = () => {
-      this.closeForAccountAbort()
-      resolveAbort()
-    }
-    signal.addEventListener('abort', onAbort, { once: true })
-    if (signal.aborted) onAbort()
-    try {
-      const outcome = await Promise.race([
-        Promise.resolve(scripted).then((value) => ({
-          kind: 'value' as const,
-          value: structuredClone(value),
-        })),
-        aborted,
-      ])
-      return outcome.kind === 'aborted'
-        ? abortedValue()
-        : outcome.value
-    } finally {
-      signal.removeEventListener('abort', onAbort)
-    }
   }
 
   private async runNativeContextValue<T>(
@@ -630,12 +392,6 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     } finally {
       signal.removeEventListener('abort', onAbort)
     }
-  }
-
-  private closeForAccountAbort(): void {
-    this.clearAllInteractions()
-    this.activeTurns.clear()
-    this.closed = true
   }
 
   private requireTurnAdmission(threadId: CodexThreadId): void {
@@ -806,6 +562,10 @@ function cloneProductTurnInput(
   return {
     threadId: input.threadId,
     ...(input.skill === undefined ? {} : { skill: { ...input.skill } }),
+    permissionProfile: input.permissionProfile,
+    ...(input.settings === undefined
+      ? {}
+      : { settings: { ...input.settings } }),
     text: input.text,
   }
 }
@@ -818,6 +578,10 @@ function sameProductTurnInput(
     left.threadId === right.threadId &&
     left.skill?.name === right.skill?.name &&
     left.skill?.path === right.skill?.path &&
+    left.permissionProfile === right.permissionProfile &&
+    left.settings?.model === right.settings?.model &&
+    left.settings?.reasoningEffort === right.settings?.reasoningEffort &&
+    left.settings?.serviceTier === right.settings?.serviceTier &&
     left.text === right.text
   )
 }
@@ -847,10 +611,6 @@ function cloneProductActivity(
   return structuredClone(activity)
 }
 
-function runtimeClosingFailure(): CodexAccountFailure {
-  return { code: 'runtime_closing', retryable: true }
-}
-
 function nativeContextAbortedError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
     code: 'native_context_aborted',
@@ -859,26 +619,9 @@ function nativeContextAbortedError(): CodexChatRuntimeError {
   })
 }
 
-function accountFailureError(failure: CodexAccountFailure): CodexChatRuntimeError {
-  return new CodexChatRuntimeError({
-    code: failure.code,
-    displayMessage: 'The Codex account operation could not be completed.',
-    unknownOutcome: false,
-  })
-}
-
-function runtimeRoleDeniedError(): CodexChatRuntimeError {
-  return new CodexChatRuntimeError({
-    code: 'runtime_role_denied',
-    displayMessage:
-      'The auth-only Codex runtime does not allow workspace operations.',
-    unknownOutcome: false,
-  })
-}
-
 function workspaceRootMismatchError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
-    code: 'runtime_role_denied',
+    code: 'workspace_mismatch',
     displayMessage:
       'The requested workspace does not match this Codex runtime.',
     unknownOutcome: false,

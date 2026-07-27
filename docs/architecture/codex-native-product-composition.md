@@ -2,13 +2,15 @@
 
 작성일: 2026-07-11
 
-분류: 활성
+분류: 완료·역사 기록
 
-성숙도: 채택
+성숙도: 구현됨
+
+부분 대체·보완됨: [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)와 [AY–App Interaction Capability 아키텍처](ay-app-interaction-capabilities.md)가 current target을 소유한다. 이 문서는 First Assignment vertical의 app-owned Recipe·Invocation·Run·Review mapping을 구현 당시 기록으로 보존한다.
 
 ## 목적
 
-이 문서는 AY-PLE의 제품 기능을 official SDK 기반 Codex App Server 경로에 어떻게 얇게 연결하는지 설명한다. 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 조합 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), workspace admission은 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public cutover와 store compatibility는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)을 따른다. AY-PLE는 별도 Agent workflow engine을 만들지 않고 native Codex 입력과 제어를 조합하며, 앱은 학기 상태와 검토 권한을 소유한다.
+이 문서는 First Assignment vertical이 AY-PLE 제품 기능을 official SDK 기반 Codex App Server 경로에 연결했던 방식을 설명한다. Native Codex 입력과 제어를 재사용하고 별도 workflow runtime을 만들지 않는 원칙은 유지되지만, App이 학기 workflow·상태 apply를 소유하는 아래 mapping은 current target이 아니다. 정확한 현재 코드 사실은 [Codex Chat 구현 지도](codex-chat-implementation-map.md)를 우선한다.
 
 ## 경계
 

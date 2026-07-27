@@ -56,9 +56,6 @@ RUNTIME_BINARY_VERSION = f"codex-cli {exact_sdk.RUNTIME_VERSION}"
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = PACKAGE_ROOT.parents[1]
 MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "production-runtime-darwin-arm64.json"
-ARTIFACTS_ROOT = PACKAGE_ROOT / ".artifacts"
-ARTIFACT_ROOT = ARTIFACTS_ROOT / "production-runtime-darwin-arm64"
-CACHE_ROOT = ARTIFACTS_ROOT / "production-runtime-cache"
 UNPATCHED_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "unpatched.json"
 PATCHED_SOURCE_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "patched-source.json"
 BRIDGE_SOURCE_ROOT = PACKAGE_ROOT / "python" / "bridge"
@@ -321,25 +318,26 @@ def _guard_managed_path(
     path: Path,
     *,
     package_root: Path = PACKAGE_ROOT,
-    managed_root: Path = ARTIFACTS_ROOT,
+    managed_root: Path,
 ) -> None:
-    """Reject symlinked or escaping package-local artifact paths."""
+    """Reject symlinked, overlapping, or escaping external artifact paths."""
 
     package = package_root.absolute()
     managed = managed_root.absolute()
     candidate = path.absolute()
     try:
-        managed.relative_to(package)
         candidate.relative_to(managed)
     except ValueError as error:
-        raise BundleError(
-            f"managed artifact path escapes the package: {path}"
-        ) from error
+        raise BundleError(f"managed artifact path escapes app data: {path}") from error
 
-    cursor = package
+    if _paths_overlap(package, managed):
+        raise BundleError("package and app data roots must not overlap")
+    if package.is_symlink():
+        raise BundleError(f"package root is a symlink: {package}")
+    cursor = managed
     if cursor.is_symlink():
         raise BundleError(f"managed artifact ancestor is a symlink: {cursor}")
-    for part in candidate.relative_to(package).parts:
+    for part in candidate.relative_to(managed).parts:
         cursor = cursor / part
         if cursor.is_symlink():
             raise BundleError(f"managed artifact ancestor is a symlink: {cursor}")
@@ -348,12 +346,24 @@ def _guard_managed_path(
     managed_real = managed.resolve(strict=False)
     candidate_real = candidate.resolve(strict=False)
     try:
-        managed_real.relative_to(package_real)
         candidate_real.relative_to(managed_real)
     except ValueError as error:
-        raise BundleError(
-            f"managed artifact path escapes the package: {path}"
-        ) from error
+        raise BundleError(f"managed artifact path escapes app data: {path}") from error
+    if _paths_overlap(package_real, managed_real):
+        raise BundleError("canonical package and app data roots must not overlap")
+
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    try:
+        left.relative_to(right)
+        return True
+    except ValueError:
+        pass
+    try:
+        right.relative_to(left)
+        return True
+    except ValueError:
+        return False
 
 
 def _relative_file(package_root: Path, relative: str, *, label: str) -> Path:
@@ -924,10 +934,10 @@ def _source_evidence() -> dict[str, Any]:
     }
 
 
-def _prepare_build_backend(work_root: Path) -> Path:
-    _guard_managed_path(CACHE_ROOT)
-    CACHE_ROOT.mkdir(parents=True, exist_ok=True)
-    cached = CACHE_ROOT / BUILD_BACKEND_WHEEL.filename
+def _prepare_build_backend(work_root: Path, *, cache_root: Path) -> Path:
+    _guard_managed_path(cache_root, managed_root=cache_root.parents[1])
+    cache_root.mkdir(parents=True, exist_ok=True)
+    cached = cache_root / BUILD_BACKEND_WHEEL.filename
     _download(
         BUILD_BACKEND_WHEEL.url,
         cached,
@@ -1022,10 +1032,16 @@ def _copy_bridge_source(destination: Path) -> dict[str, dict[str, Any]]:
     return records
 
 
-def _download_inputs(seed_root: Path, sdk_wheel: Path, build_backend: Path) -> None:
-    _guard_managed_path(CACHE_ROOT)
-    CACHE_ROOT.mkdir(parents=True, exist_ok=True)
-    cpython_cache = CACHE_ROOT / PYTHON_ARTIFACT
+def _download_inputs(
+    seed_root: Path,
+    sdk_wheel: Path,
+    build_backend: Path,
+    *,
+    cache_root: Path,
+) -> None:
+    _guard_managed_path(cache_root, managed_root=cache_root.parents[1])
+    cache_root.mkdir(parents=True, exist_ok=True)
+    cpython_cache = cache_root / PYTHON_ARTIFACT
     _download(
         PYTHON_URL,
         cpython_cache,
@@ -1039,7 +1055,7 @@ def _download_inputs(seed_root: Path, sdk_wheel: Path, build_backend: Path) -> N
     )
     _copy_exact(sdk_wheel, seed_root / "wheels" / sdk_wheel.name)
     for wheel in EXTERNAL_WHEELS:
-        cached = CACHE_ROOT / wheel.filename
+        cached = cache_root / wheel.filename
         _download(wheel.url, cached, bytes=wheel.bytes, sha256=wheel.sha256)
         _copy_exact(cached, seed_root / "wheels" / wheel.filename)
 
@@ -1270,7 +1286,7 @@ def _publish_artifact(
     target: Path,
     *,
     package_root: Path = PACKAGE_ROOT,
-    managed_root: Path = ARTIFACTS_ROOT,
+    managed_root: Path,
     replace: Callable[[Path, Path], Any] = os.replace,
 ) -> None:
     """Publish with a same-filesystem backup and immediate rollback on failure."""
@@ -1367,7 +1383,7 @@ def _publish_manifest_and_artifact(
     *,
     write_manifest: bool,
     manifest_path: Path = MANIFEST_PATH,
-    artifact_root: Path = ARTIFACT_ROOT,
+    artifact_root: Path,
     publish: Callable[[Path, Path], None] | None = None,
 ) -> None:
     previous_manifest = manifest_path.read_bytes() if manifest_path.is_file() else None
@@ -1402,20 +1418,29 @@ def _publish_manifest_and_artifact(
         raise
 
 
-def materialize(*, write_manifest: bool = False) -> dict[str, Any]:
+def materialize(*, app_data_root: Path, write_manifest: bool = False) -> dict[str, Any]:
     _platform_gate()
     tracked_before = _tracked_package_records()
-    _guard_managed_path(ARTIFACTS_ROOT)
-    ARTIFACTS_ROOT.mkdir(exist_ok=True)
+    artifact_root, cache_root = _runtime_paths(app_data_root)
+    _guard_managed_path(app_data_root, managed_root=app_data_root)
+    app_data_root.mkdir(parents=True, exist_ok=True)
     # Keep patch application outside the enclosing repository. ``git apply``
     # otherwise discovers the outer worktree and no longer treats the copied
     # snapshot as an independent patch root.
     with tempfile.TemporaryDirectory(prefix="production-runtime-work-") as temp:
         work_root = Path(temp)
-        build_backend = _prepare_build_backend(work_root / "build-inputs")
+        build_backend = _prepare_build_backend(
+            work_root / "build-inputs",
+            cache_root=cache_root,
+        )
         sdk_wheel = _build_patched_wheel_pair(work_root / "build", build_backend)
         seed_root = work_root / "seed"
-        _download_inputs(seed_root, sdk_wheel, build_backend)
+        _download_inputs(
+            seed_root,
+            sdk_wheel,
+            build_backend,
+            cache_root=cache_root,
+        )
         first_root = work_root / "first"
         second_root = work_root / "second"
         first = _assemble_once(seed_root, first_root)
@@ -1431,6 +1456,12 @@ def materialize(*, write_manifest: bool = False) -> dict[str, Any]:
             first_root,
             first_bytes,
             write_manifest=write_manifest,
+            artifact_root=artifact_root,
+            publish=lambda candidate, target: _publish_artifact(
+                candidate,
+                target,
+                managed_root=app_data_root,
+            ),
         )
 
     tracked_after = _tracked_package_records()
@@ -1440,7 +1471,10 @@ def materialize(*, write_manifest: bool = False) -> dict[str, Any]:
         tracked_after.pop(manifest_relative, None)
     if tracked_before != tracked_after:
         raise BundleError("materialize unexpectedly modified tracked package files")
-    return verify_bundle()
+    return verify_bundle(
+        artifact_root=artifact_root,
+        managed_root=app_data_root,
+    )
 
 
 def _manifest_wheel_roster(manifest: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
@@ -1603,11 +1637,21 @@ def _verify_manifest_static_contract(manifest: Mapping[str, Any]) -> None:
         raise BundleError("production manifest materialization contract drift")
 
 
+def _runtime_paths(app_data_root: Path) -> tuple[Path, Path]:
+    if not app_data_root.is_absolute():
+        raise BundleError("app data root must be absolute")
+    artifact_root = app_data_root / "runtime" / "production-runtime-darwin-arm64"
+    cache_root = app_data_root / "cache" / "production-runtime"
+    _guard_managed_path(artifact_root, managed_root=app_data_root)
+    _guard_managed_path(cache_root, managed_root=app_data_root)
+    return artifact_root, cache_root
+
+
 def verify_bundle(
     *,
-    artifact_root: Path = ARTIFACT_ROOT,
+    artifact_root: Path,
+    managed_root: Path,
     package_root: Path = PACKAGE_ROOT,
-    managed_root: Path = ARTIFACTS_ROOT,
 ) -> dict[str, Any]:
     _guard_managed_path(
         artifact_root,
@@ -1774,7 +1818,7 @@ def verify_bundle(
     if before != after:
         raise BundleError("verify unexpectedly mutated the materialized runtime")
     result = {
-        "artifact_root": ARTIFACT_ROOT.relative_to(PACKAGE_ROOT).as_posix(),
+        "artifact_root": str(artifact_root),
         "bundle_roster_sha256": bundle["roster_sha256"],
         "clean_materializations": manifest["materialization"]["clean_runs"],
         "native_version": manifest["runtime"]["binary_version"],
@@ -1791,21 +1835,46 @@ def _parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     materialize_parser = subparsers.add_parser("materialize")
     materialize_parser.add_argument(
+        "--app-data-root",
+        required=True,
+        help="external AY-PLE app data root, resolved relative to the repository",
+    )
+    materialize_parser.add_argument(
         "--write-manifest",
         action="store_true",
         help="intentionally replace the tracked canonical manifest after review",
     )
-    subparsers.add_parser("verify")
+    verify_parser = subparsers.add_parser("verify")
+    verify_parser.add_argument(
+        "--app-data-root",
+        required=True,
+        help="external AY-PLE app data root, resolved relative to the repository",
+    )
     return parser
+
+
+def _resolve_app_data_root(value: str) -> Path:
+    selected = Path(value).expanduser()
+    if not selected.is_absolute():
+        selected = REPOSITORY_ROOT / selected
+    return selected.absolute()
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        app_data_root = _resolve_app_data_root(str(args.app_data_root))
+        artifact_root, _cache_root = _runtime_paths(app_data_root)
         if args.command == "materialize":
-            materialize(write_manifest=bool(args.write_manifest))
+            materialize(
+                app_data_root=app_data_root,
+                write_manifest=bool(args.write_manifest),
+            )
         else:
-            verify_bundle()
+            verify_bundle(
+                artifact_root=artifact_root,
+                managed_root=app_data_root,
+            )
     except (BundleError, exact_sdk.ExactSdkError) as error:
         print(f"production runtime error: {error}", file=sys.stderr)
         return 1
