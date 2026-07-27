@@ -8,7 +8,7 @@
 
 보존하는 결정: [ADR 0011 — Official Codex Python SDK를 Chat Shell runtime baseline으로 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md), ADR 0012의 single maintained Runtime graph와 no-alias hard cutover 원칙
 
-후속 결정과의 관계: [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md)는 public workspace admission을 새로 정하지만 이 ADR의 current v2 bytes 보존과 explicit migration 원칙을 대체하지 않는다.
+후속 결정과의 관계: [ADR 0018 — 사용자가 선택한 Git working tree를 SemesterWorkspace로 채택한다](0018-adopt-user-owned-git-semester-workspaces.md)와 [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)가 장기 workspace·interaction target을 대체한다. 이 ADR은 전환 전 current v2 original bytes 보존과 explicit schema transition 원칙을 계속 소유한다. [ADR 0014](0014-create-app-owned-normalized-semester-workspaces.md)는 historical 결정이다.
 
 ## 맥락
 
@@ -22,7 +22,7 @@ Workspace-local product store도 cutover 전까지는 pre-release current-only f
 
 - Canonical local app의 public Server surface는 `/api/product/*` 하나다. 네 `/api/codex-chat/*` route, tracer status, legacy Browser Chat owner와 `dev:chat-only`는 compatibility alias, redirect 또는 별도 supported entrypoint 없이 제거한다.
 - Root `npm run dev`가 유일한 supported local composition entrypoint다. 이 command는 persistent profile과 existing workspace를 한 composition에 결합한다. Composition은 `packageRoot`에서 verified Runtime artifact를 찾고 profile의 `appDataRoot` 아래에서 app-managed `HOME`, `CODEX_SQLITE_HOME`, temporary/runtime state를 계산하되 Codex account는 caller의 전역 `CODEX_HOME`을 사용한다. Caller가 여섯 `CODEX_CHAT_*` path를 조립하지 않으며 별도 dogfood entrypoint, auth profile이나 compatibility topology를 만들지 않는다. Exact current defaults와 override 사용법은 [Server README](../../apps/server/README.md)가 소유한다.
-- Current product native `cwd`는 controller가 internal `ready`로 연 current directory의 canonical root와 정확히 같다. `CODEX_CHAT_WORKSPACE`는 manual development materializer의 caller-owned directory selection override로만 남으며 Runtime root, 별도 `cwd` authority 또는 장기 product identity가 아니다. Public `SemesterWorkspace` admission과 identity는 ADR 0014가 후속 결정한다.
+- Current product native `cwd`는 controller가 internal `ready`로 연 current directory의 canonical root와 정확히 같다. `CODEX_CHAT_WORKSPACE`는 manual development materializer의 caller-owned directory selection override로만 남으며 Runtime root, 별도 `cwd` authority 또는 장기 product identity가 아니다. 장기 `SemesterWorkspace` selection·identity는 ADR 0018이 소유한다.
 - Official Python SDK direct reuse, exact native bundle, ordered patch stack, private bridge, one supervised Runtime graph와 bounded process cleanup은 유지한다. `CodexChatService`는 Account Readiness, product thread·Turn, interaction·interrupt, Runtime terminal observation·recycle·close를 캡슐화하는 product lifecycle Module로 유지한다. 내부 text operation과 regression oracle은 product lifecycle 검증에 필요하면 남길 수 있지만 public HTTP·Browser compatibility surface가 아니다.
 - First Assignment product Turn은 검증된 `auto_review + workspace_write` permission을 사용하며 Codex execution permission과 AY-PLE `UserConfirmation`은 계속 별도 authority다. 제거한 fixed tracer copy를 제품 permission 계약으로 계승하지 않는다.
 - Cutover 시점의 exact current canonical `formatVersion: 2` workspace store를 첫 durable compatibility baseline으로 채택한다. 이 store가 보존하는 confirmed state와 settled history는 app version rollback, Server restart 또는 public-surface cutover 때문에 삭제·reset하지 않는다.
@@ -45,6 +45,6 @@ Workspace-local product store도 cutover 전까지는 pre-release current-only f
 
 Current public topology, exact endpoint와 process gate는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. Runtime artifact·process의 package 계약은 [runtime README](../../packages/codex-chat-runtime/README.md), Server startup·store의 exact current behavior는 [Server README](../../apps/server/README.md), Browser behavior는 [Chat Shell README](../../apps/chat-shell/README.md)가 소유한다.
 
-App-owned `WorkspaceManifest`와 scaffold의 adopted target은 ADR 0014가 소유한다. 현재 chooser/current-v2 workspace를 그 target으로 이관하는 구현이 생기기 전에는 current bytes를 그대로 보존하며, public setup 성공이나 `Semester Ready`로 합성하지 않는다.
+User-owned Git workspace와 root `workspace-state.json` target은 ADR 0018, transient interaction request/result와 AY-owned apply는 ADR 0019가 소유한다. Current chooser/current-v2 store를 그 target으로 전환하기 전에는 current bytes를 그대로 보존하며, app-owned scaffold나 새 InteractionCapability 구현이 끝난 것으로 합성하지 않는다.
 
 ADR 0012가 제거한 legacy Runtime graph와 no-alias hard cutover는 계속 유효하다. 이 결정은 ADR 0012의 Chat-only public-surface 결과만 product-only surface로 교체하며, 삭제한 graph·local residue를 복구하거나 두 번째 engine abstraction을 도입하지 않는다. 후속 conversation persistence, multi-client isolation, interactive Codex approval, recent-workspace registry와 packaged Desktop lifecycle의 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.

@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -7,31 +15,51 @@ import test from 'node:test'
 import {
   resolveCodexChatRuntimeSource,
 } from './codex-chat-config.js'
-import {
-  ProductDevelopmentBootstrapError,
-  resolveProductDevelopmentBootstrap,
-} from './product-development.js'
+import { resolveProductDevelopmentBootstrap } from './product-development.js'
 import {
   createServerApplication,
   startConfiguredServerApplication,
 } from './server.js'
 
-test('product development bootstrap fails closed without explicit appDataRoot', () => {
-  assert.throws(
-    () =>
-      resolveProductDevelopmentBootstrap({
-        AY_PLE_PRODUCT_MODE: '1',
-        AY_PLE_PACKAGE_ROOT: '/explicit/package',
-        AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
-        CODEX_CHAT_RUNTIME_HOME: '/must/not/be/reused',
-      }),
-    (error: unknown) =>
-      error instanceof ProductDevelopmentBootstrapError &&
-      error.code === 'product_app_data_root_required',
-  )
+test('product development defaults to sibling app data without selecting an ambient workspace', async () => {
+  const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-product-dev-test-'))
+  const packageRoot = path.join(testRoot, 'hub')
+  const globalCodexHome = path.join(testRoot, 'global-codex-home')
+  try {
+    await Promise.all([mkdir(packageRoot), mkdir(globalCodexHome)])
+    const product = await resolveProductDevelopmentBootstrap({
+      AY_PLE_PRODUCT_MODE: '1',
+      AY_PLE_PACKAGE_ROOT: packageRoot,
+      CODEX_CHAT_RUNTIME_HOME: '/must/not/be/reused',
+      CODEX_CHAT_WORKSPACE: '/must/not/be-selected',
+      CODEX_HOME: globalCodexHome,
+    })
+
+    assert.ok(product)
+    const canonicalTestRoot = await realpath(testRoot)
+    assert.equal(
+      product.runtimeWorkspaceRoot,
+      path.join(canonicalTestRoot, 'hub'),
+    )
+    assert.equal(product.selectedWorkspaceRoot, undefined)
+    assert.equal(product.semesterWorkspace, undefined)
+    assert.equal(
+      product.runtime.appDataRoot,
+      path.join(canonicalTestRoot, '.ay-ple'),
+    )
+    assert.equal(
+      product.runtime.runtimeRoot,
+      path.join(
+        canonicalTestRoot,
+        '.ay-ple/runtime/production-runtime-darwin-arm64',
+      ),
+    )
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
 
   assert.equal(
-    resolveProductDevelopmentBootstrap({
+    await resolveProductDevelopmentBootstrap({
       CODEX_CHAT_RUNTIME_HOME: '/chat-only/runtime-home',
       CODEX_CHAT_WORKSPACE: '/chat-only/workspace',
     }),
@@ -50,7 +78,7 @@ test('product development bootstrap activates and reports its explicit selected 
     await Promise.all(
       [packageRoot, appDataRoot, workspaceRoot].map((root) => mkdir(root)),
     )
-    const product = resolveProductDevelopmentBootstrap({
+    const product = await resolveProductDevelopmentBootstrap({
       AY_PLE_PRODUCT_MODE: '1',
       AY_PLE_PACKAGE_ROOT: packageRoot,
       AY_PLE_APP_DATA_ROOT: appDataRoot,
@@ -65,19 +93,22 @@ test('product development bootstrap activates and reports its explicit selected 
       }).kind,
       'candidate',
     )
-    assert.equal(product.selectedWorkspaceRoot, workspaceRoot)
+    assert.equal(product.selectedWorkspaceRoot, await realpath(workspaceRoot))
     assert.deepEqual(product.runtime, {
-      appDataRoot,
-      packageRoot,
+      appDataRoot: await realpath(appDataRoot),
+      packageRoot: await realpath(packageRoot),
       runtimeRoot: path.join(
-        packageRoot,
-        'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64',
+        await realpath(appDataRoot),
+        'runtime/production-runtime-darwin-arm64',
       ),
       environment: {
-        home: path.join(appDataRoot, 'runtime/home'),
-        codexHome,
-        codexSqliteHome: path.join(appDataRoot, 'runtime/codex-sqlite-home'),
-        tempDirectory: path.join(appDataRoot, 'runtime/temp'),
+        home: path.join(await realpath(appDataRoot), 'state/runtime/home'),
+        codexHome: path.join(await realpath(testRoot), 'global-codex-home'),
+        codexSqliteHome: path.join(
+          await realpath(testRoot),
+          'global-codex-home',
+        ),
+        tempDirectory: path.join(await realpath(appDataRoot), 'temp'),
       },
       origin: 'http://127.0.0.1:4173',
     })
@@ -106,60 +137,95 @@ test('product development bootstrap activates and reports its explicit selected 
   }
 })
 
-test('product development rejects a global Codex home inside the package root', () => {
-  const product = resolveProductDevelopmentBootstrap({
-    AY_PLE_PRODUCT_MODE: '1',
-    AY_PLE_PACKAGE_ROOT: '/explicit/package',
-    AY_PLE_APP_DATA_ROOT: '/explicit/app-data',
-    AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
-    CODEX_HOME: '/explicit/package/.codex',
-  })
-  assert.ok(product)
-
-  assert.deepEqual(
-    resolveCodexChatRuntimeSource({
-      productRuntime: product.runtime,
-      workspace: () => product.selectedWorkspaceRoot,
-    }),
-    {
-      kind: 'unavailable',
-      reason: 'invalid_configuration',
-    },
-  )
+test('product development rejects a global Codex home inside the package root before app data creation', async () => {
+  const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-product-dev-test-'))
+  const packageRoot = path.join(testRoot, 'hub')
+  try {
+    await mkdir(path.join(packageRoot, '.codex'), { recursive: true })
+    await assert.rejects(
+      resolveProductDevelopmentBootstrap({
+        AY_PLE_PRODUCT_MODE: '1',
+        AY_PLE_PACKAGE_ROOT: packageRoot,
+        CODEX_HOME: path.join(packageRoot, '.codex'),
+      }),
+      /roots must not overlap/,
+    )
+    await assert.rejects(lstat(path.join(testRoot, '.ay-ple')), {
+      code: 'ENOENT',
+    })
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
 })
 
-test('product development bootstrap ignores legacy runtime path authorities', () => {
-  const product = resolveProductDevelopmentBootstrap({
-    AY_PLE_PRODUCT_MODE: '1',
-    AY_PLE_PACKAGE_ROOT: '/explicit/package',
-    AY_PLE_APP_DATA_ROOT: '/explicit/app-data',
-    AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
-    CODEX_HOME: '/global/codex-home',
-    CODEX_CHAT_RUNTIME_ROOT: '/legacy/runtime',
-    CODEX_CHAT_RUNTIME_HOME: '/legacy/home',
-    CODEX_CHAT_CODEX_HOME: '/legacy/codex-home',
-    CODEX_CHAT_SQLITE_HOME: '/legacy/sqlite-home',
-    CODEX_CHAT_TEMP_DIR: '/legacy/temp',
-  })
+test('product development bootstrap ignores legacy runtime path authorities', async () => {
+  const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-product-dev-test-'))
+  const packageRoot = path.join(testRoot, 'hub')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const codexHome = path.join(testRoot, 'global-codex-home')
+  try {
+    await Promise.all([
+      mkdir(packageRoot),
+      mkdir(appDataRoot),
+      mkdir(codexHome),
+    ])
+    const product = await resolveProductDevelopmentBootstrap({
+      AY_PLE_PRODUCT_MODE: '1',
+      AY_PLE_PACKAGE_ROOT: packageRoot,
+      AY_PLE_APP_DATA_ROOT: appDataRoot,
+      CODEX_HOME: codexHome,
+      CODEX_CHAT_RUNTIME_ROOT: '/legacy/runtime',
+      CODEX_CHAT_RUNTIME_HOME: '/legacy/home',
+      CODEX_CHAT_CODEX_HOME: '/legacy/codex-home',
+      CODEX_CHAT_SQLITE_HOME: '/legacy/sqlite-home',
+      CODEX_CHAT_TEMP_DIR: '/legacy/temp',
+    })
+    const canonicalAppDataRoot = await realpath(appDataRoot)
+    const canonicalCodexHome = await realpath(codexHome)
 
-  assert.equal(
-    product?.runtime.runtimeRoot,
-    '/explicit/package/packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64',
-  )
-  assert.equal(product?.runtime.environment.home, '/explicit/app-data/runtime/home')
-  assert.equal(product?.runtime.environment.codexHome, '/global/codex-home')
+    assert.equal(
+      product?.runtime.runtimeRoot,
+      path.join(
+        canonicalAppDataRoot,
+        'runtime/production-runtime-darwin-arm64',
+      ),
+    )
+    assert.equal(
+      product?.runtime.environment.home,
+      path.join(canonicalAppDataRoot, 'state/runtime/home'),
+    )
+    assert.equal(product?.runtime.environment.codexHome, canonicalCodexHome)
+    assert.equal(
+      product?.runtime.environment.codexSqliteHome,
+      canonicalCodexHome,
+    )
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
 })
 
-test('product development bootstrap falls back to the user-global Codex home', () => {
-  const product = resolveProductDevelopmentBootstrap({
-    AY_PLE_PRODUCT_MODE: '1',
-    AY_PLE_PACKAGE_ROOT: '/explicit/package',
-    AY_PLE_APP_DATA_ROOT: '/explicit/app-data',
-    AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
-    HOME: '/global/home',
-  })
+test('product development bootstrap falls back to the user-global Codex home', async () => {
+  const testRoot = await mkdtemp(path.join(tmpdir(), 'ay-ple-product-dev-test-'))
+  const packageRoot = path.join(testRoot, 'hub')
+  const globalHome = path.join(testRoot, 'global-home')
+  try {
+    await Promise.all([
+      mkdir(packageRoot),
+      mkdir(path.join(globalHome, '.codex'), { recursive: true }),
+    ])
+    const product = await resolveProductDevelopmentBootstrap({
+      AY_PLE_PRODUCT_MODE: '1',
+      AY_PLE_PACKAGE_ROOT: packageRoot,
+      HOME: globalHome,
+    })
 
-  assert.equal(product?.runtime.environment.codexHome, '/global/home/.codex')
+    assert.equal(
+      product?.runtime.environment.codexHome,
+      await realpath(path.join(globalHome, '.codex')),
+    )
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
 })
 
 test('canonical product startup preserves caller-owned bytes and serves an incompatible snapshot', async () => {

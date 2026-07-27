@@ -4,6 +4,7 @@ import {
   access,
   lstat,
   mkdir,
+  rename,
   realpath,
   stat,
 } from 'node:fs/promises'
@@ -60,6 +61,7 @@ type ProductRoots = {
   readonly appDataRoot: string
   readonly codexHome: string
   readonly poisonRoot: string
+  readonly profileRoot: string
   readonly semesterWorkspace: E2eSemesterWorkspace
   readonly workspaceRoot: string
 }
@@ -103,12 +105,14 @@ async function main(): Promise<void> {
 async function prepareProductRoots(): Promise<ProductRoots> {
   const semesterWorkspace = await materializeE2eSemesterWorkspace()
   const runRoot = semesterWorkspace.runRoot
-  const appDataRoot = path.join(runRoot, 'app-data')
+  const profileRoot = path.join(runRoot, 'canonical-profile')
+  const appDataRoot = path.join(profileRoot, 'app-data')
   const codexHome = path.join(runRoot, 'global-codex-home')
   await mkdir(codexHome, { mode: 0o700 })
   return {
     appDataRoot,
     codexHome,
+    profileRoot,
     workspaceRoot: semesterWorkspace.workspaceRoot,
     poisonRoot: path.join(runRoot, 'legacy-path-poison'),
     semesterWorkspace,
@@ -122,6 +126,7 @@ async function prepareDurableProductBaseline(
     semesterWorkspace: roots.semesterWorkspace,
   })
   let browser: Browser | undefined
+  let confirmed: ProductBootstrap | undefined
   try {
     browser = await chromium.launch({ headless: true })
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
@@ -129,7 +134,7 @@ async function prepareDurableProductBaseline(
       waitUntil: 'domcontentloaded',
       timeout: readinessTimeoutMs,
     })
-    return await prepareDurableRestartBaseline(page)
+    confirmed = await prepareDurableRestartBaseline(page)
   } finally {
     try {
       await harness.stopServer()
@@ -141,6 +146,13 @@ async function prepareDurableProductBaseline(
       }
     }
   }
+  await mkdir(roots.profileRoot, { mode: 0o700 })
+  await rename(
+    path.join(roots.semesterWorkspace.runRoot, 'app-data'),
+    roots.appDataRoot,
+  )
+  assert.ok(confirmed)
+  return confirmed
 }
 
 async function runCanonicalProductCase(
@@ -150,7 +162,16 @@ async function runCanonicalProductCase(
 ): Promise<ProductBootstrap> {
   const child = spawn(
     'npm',
-    ['run', 'dev', '--', '--app-data-root', roots.appDataRoot],
+    [
+      'run',
+      'dev',
+      '--',
+      '--root',
+      roots.profileRoot,
+      '--workspace',
+      roots.workspaceRoot,
+      '--adopt-existing',
+    ],
     {
       cwd: repositoryRoot,
       detached: true,
@@ -179,7 +200,7 @@ async function runCanonicalProductCase(
       assert.equal(
         initial.accountReadiness.state,
         'not_ready',
-        'verified product Runtime must report fresh app-managed account state',
+        'verified product Runtime must report fresh global account state',
       )
       assert.equal(initial.operationStatus, 'idle')
       assertDurableProductBootstrap(initial, confirmed)
@@ -199,7 +220,7 @@ async function runCanonicalProductCase(
         'legacy CODEX_CHAT_* path poison root',
       )
       await assertProductOwnershipOutput(output, roots)
-      await assertCanonicalProcessGraph(child.pid, roots.appDataRoot)
+      await assertCanonicalProcessGraph(child.pid, roots)
       reopened = initial
     },
   })
@@ -390,10 +411,12 @@ async function assertProductOwnershipOutput(
   output: { readonly stderr: string; readonly stdout: string },
   roots: ProductRoots,
 ): Promise<void> {
+  const expectedProfile = `Local profile: ${roots.profileRoot}`
   const expectedWorkspace = `SemesterWorkspace: ${roots.workspaceRoot} (caller-owned)`
   const expectedAppData = `Product app data: ${roots.appDataRoot}`
   const ready = await waitFor(
     async () =>
+      output.stdout.includes(expectedProfile) &&
       output.stdout.includes(expectedWorkspace) &&
       output.stdout.includes(expectedAppData),
     shutdownTimeoutMs,
@@ -442,7 +465,7 @@ function controlledEnvironment(
 
 async function assertCanonicalProcessGraph(
   rootPid: number | undefined,
-  appDataRoot: string,
+  roots: ProductRoots,
 ): Promise<void> {
   assert.ok(rootPid, 'npm run dev must expose a process id')
   const ready = await waitFor(async () => {
@@ -468,14 +491,14 @@ async function assertCanonicalProcessGraph(
     true,
     `unexpected canonical root command: ${root.command}`,
   )
-  assert.equal(rootCommand.includes('--app-data-root'), true)
-  assert.equal(rootCommand.includes(appDataRoot), true)
+  assertCommandUsesProductRoots(rootCommand, roots)
 
   const productBootstrap = requireDeepestProcess(
     processes,
     ({ command }) => isProductBootstrap(command),
-    'product development bootstrap',
+    'local product composition',
   )
+  assertCommandUsesProductRoots(productBootstrap.command, roots)
   requireSingleProcess(
     processes,
     ({ command }) => isServerWatcher(command),
@@ -545,7 +568,18 @@ async function assertCanonicalProcessGraph(
 }
 
 function isProductBootstrap(command: string): boolean {
-  return command.includes('scripts/product-development-bootstrap.mts')
+  return command.includes('scripts/product-local.mts')
+}
+
+function assertCommandUsesProductRoots(
+  command: string,
+  roots: ProductRoots,
+): void {
+  const normalized = normalizeCommand(command)
+  assert.equal(normalized.includes('--root'), true)
+  assert.equal(normalized.includes(roots.profileRoot), true)
+  assert.equal(normalized.includes('--workspace'), true)
+  assert.equal(normalized.includes(roots.workspaceRoot), true)
 }
 
 function isServerWatcher(command: string): boolean {

@@ -27,6 +27,7 @@ import {
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
   productRuntime?: ProductRuntimeBootstrap
+  productRuntimeWorkspaceRoot?: string
   semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
@@ -79,12 +80,15 @@ export async function createServerApplication(
   const semesterWorkspace = options.semesterWorkspace
     ? createSemesterWorkspaceController(options.semesterWorkspace)
     : undefined
+  const productRuntimeWorkspaceRoot = options.productRuntimeWorkspaceRoot
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
     productRuntime: options.productRuntime,
     workspace: semesterWorkspace
       ? () => semesterWorkspace.nativeCwd()
-      : undefined,
+      : productRuntimeWorkspaceRoot
+        ? () => productRuntimeWorkspaceRoot
+        : undefined,
   })
   const assignmentMcpHost = semesterWorkspace
     ? createAssignmentMcpHost()

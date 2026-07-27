@@ -5,9 +5,9 @@ import path from 'node:path'
 import {
   createCodexChatRuntime,
   verifyCodexChatRuntimeBundle,
-  type CodexChatRuntime,
   type CodexChatRuntimeEnvironment,
   type CodexChatRuntimeEvidence,
+  type CodexWorkspaceRuntime,
 } from '@ay-ple/codex-chat-runtime'
 
 import { rootsAreDisjoint } from './root-isolation.js'
@@ -18,7 +18,7 @@ export type CodexChatUnavailableReason =
   | 'runtime_missing'
 
 export type CodexChatPreparedRuntime = CodexChatRuntimeEvidence & {
-  readonly createRuntime: () => Promise<CodexChatRuntime>
+  readonly createRuntime: () => Promise<CodexWorkspaceRuntime>
 }
 
 export type CodexChatRuntimeSource =
@@ -49,7 +49,7 @@ export type CodexChatRuntimeSource =
 
 export interface CodexChatBootstrap extends CodexChatRuntimeEvidence {
   readonly origin?: string
-  readonly createRuntime: () => Promise<CodexChatRuntime>
+  readonly createRuntime: () => Promise<CodexWorkspaceRuntime>
   /** Test-only operational override. Production uses the five-second bound. */
   readonly disconnectDrainMs?: number
   /** Test-only HTTP writer override. Production uses the five-second bound. */
@@ -194,8 +194,11 @@ async function ensureManagedRuntimeDirectories(
   await validateDirectory(productRuntime.environment.codexHome, true)
   for (const directory of [
     productRuntime.environment.home,
-    productRuntime.environment.codexSqliteHome,
     productRuntime.environment.tempDirectory,
+    ...(productRuntime.environment.codexSqliteHome ===
+    productRuntime.environment.codexHome
+      ? []
+      : [productRuntime.environment.codexSqliteHome]),
   ]) {
     const relative = path.relative(productRuntime.appDataRoot, directory)
     if (
@@ -244,7 +247,7 @@ async function validateRuntimePaths(
     return rootsAreDisjoint([
       canonicalPackage,
       canonicalWorkspace,
-      ...controlled,
+      ...new Set(controlled),
     ])
   } catch {
     return false

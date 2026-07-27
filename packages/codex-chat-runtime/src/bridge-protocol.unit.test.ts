@@ -102,117 +102,30 @@ test('decodes exact command-specific results and rejects extra wire fields', () 
   )
 })
 
-test('decodes every strict account result without widening private identity', () => {
-  const frames = [
-    {
-      line: {
-        type: 'result',
-        bridgeRequestId: 'account',
-        command: 'read_account',
-        account: { state: 'chatgpt' },
-      },
-      expected: {
-        type: 'result',
-        bridgeRequestId: 'account',
-        command: 'read_account',
-        account: { state: 'chatgpt' },
-      },
-    },
-    {
-      line: {
-        type: 'result',
-        bridgeRequestId: 'start',
-        command: 'start_browser_login',
-        status: 'pending',
-        attemptId: 'attempt-safe',
-        authUrl: 'https://auth.openai.com/codex/test-login',
-      },
-      expected: {
-        type: 'result',
-        bridgeRequestId: 'start',
-        command: 'start_browser_login',
-        status: 'pending',
-        attemptId: 'attempt-safe',
-        authUrl: 'https://auth.openai.com/codex/test-login',
-      },
-    },
-    {
-      line: {
-        type: 'result',
-        bridgeRequestId: 'status',
-        command: 'read_browser_login_attempt',
-        status: 'failed',
-        attemptId: 'attempt-safe',
-        error: { code: 'login_failed', retryable: true },
-      },
-      expected: {
-        type: 'result',
-        bridgeRequestId: 'status',
-        command: 'read_browser_login_attempt',
-        status: 'failed',
-        attemptId: 'attempt-safe',
-        error: { code: 'login_failed', retryable: true },
-      },
-    },
-    {
-      line: {
-        type: 'result',
-        bridgeRequestId: 'cancel',
-        command: 'cancel_browser_login',
-        status: 'already_settled',
-        attemptId: 'attempt-safe',
-      },
-      expected: {
-        type: 'result',
-        bridgeRequestId: 'cancel',
-        command: 'cancel_browser_login',
-        status: 'already_settled',
-        attemptId: 'attempt-safe',
-      },
-    },
-    {
-      line: {
-        type: 'result',
-        bridgeRequestId: 'release',
-        command: 'release_browser_login_attempt',
-        status: 'already_released',
-        attemptId: 'attempt-safe',
-      },
-      expected: {
-        type: 'result',
-        bridgeRequestId: 'release',
-        command: 'release_browser_login_attempt',
-        status: 'already_released',
-        attemptId: 'attempt-safe',
-      },
-    },
-    {
-      line: {
-        type: 'result',
-        bridgeRequestId: 'logout',
-        command: 'logout',
-        status: 'signed_out',
-      },
-      expected: {
-        type: 'result',
-        bridgeRequestId: 'logout',
-        command: 'logout',
-        status: 'signed_out',
-      },
-    },
-  ] as const
-
-  for (const { line, expected } of frames) {
-    assert.deepEqual(
-      decodeBridgeOutputFrame(
-        Buffer.from(`${JSON.stringify(line)}\n`),
+test('decodes the retained strict account-read result', () => {
+  assert.deepEqual(
+    decodeBridgeOutputFrame(
+      Buffer.from(
+        '{"type":"result","bridgeRequestId":"account","command":"read_account","account":{"state":"chatgpt"}}\n',
       ),
-      expected,
-    )
-  }
+    ),
+    {
+      type: 'result',
+      bridgeRequestId: 'account',
+      command: 'read_account',
+      account: { state: 'chatgpt' },
+    },
+  )
 })
 
-test('rejects account frames with private, unsafe, or non-exact fields', () => {
+test('rejects removed account lifecycle frames and unsafe account reads', () => {
+  const removedCommands = [
+    ['start', 'browser', 'login'].join('_'),
+    ['read', 'browser', 'login', 'attempt'].join('_'),
+    ['cancel', 'browser', 'login'].join('_'),
+    ['release', 'browser', 'login', 'attempt'].join('_'),
+    ['log', 'out'].join(''),
+  ]
   const invalid = [
     {
       type: 'result',
@@ -223,57 +136,12 @@ test('rejects account frames with private, unsafe, or non-exact fields', () => {
         email: 'student-private@example.com',
       },
     },
-    {
+    ...removedCommands.map((command) => ({
       type: 'result',
-      bridgeRequestId: 'start',
-      command: 'start_browser_login',
+      bridgeRequestId: 'removed-account-operation',
+      command,
       status: 'pending',
-      attemptId: 'attempt-safe',
-      authUrl: 'https://attacker.invalid/raw-capability',
-    },
-    {
-      type: 'result',
-      bridgeRequestId: 'start',
-      command: 'start_browser_login',
-      status: 'pending',
-      attemptId: 'attempt-safe',
-      authUrl: 'https://auth.openai.com:443/codex/test-login',
-    },
-    {
-      type: 'result',
-      bridgeRequestId: 'start',
-      command: 'start_browser_login',
-      status: 'pending',
-      attemptId: 'attempt-safe',
-      authUrl: ' https://auth.openai.com:444/codex/test-login',
-    },
-    {
-      type: 'result',
-      bridgeRequestId: 'status',
-      command: 'read_browser_login_attempt',
-      status: 'failed',
-      attemptId: 'attempt-safe',
-      error: {
-        code: 'login_failed',
-        retryable: true,
-        raw: 'raw-provider-secret',
-      },
-    },
-    {
-      type: 'result',
-      bridgeRequestId: 'cancel',
-      command: 'cancel_browser_login',
-      status: 'cancelled',
-      attemptId: 'attempt-safe',
-      loginId: 'native-login-secret',
-    },
-    {
-      type: 'result',
-      bridgeRequestId: 'logout',
-      command: 'logout',
-      status: 'signed_out',
-      requestId: 'native-request-secret',
-    },
+    })),
   ]
 
   for (const frame of invalid) {

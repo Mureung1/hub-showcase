@@ -7,9 +7,9 @@
 
 ## 문서 목적
 
-이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
+이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. Current First Assignment의 interaction round trip은 보존하되, app-owned academic workflow는 user-owned Git SemesterWorkspace와 InteractionCapability seam으로 교체한다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), product-only cutover와 durable v2 store 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), app-owned workspace admission·identity는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)을 따른다. Current account authority는 전역 `CODEX_HOME`이며 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다. 제거한 public distribution·managed account 결정은 historical [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)·[ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)에 보존한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), AY↔App mapping은 [Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md)가 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), current durable v2 보존 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), user-owned workspace는 [ADR 0018](../adr/0018-adopt-user-owned-git-semester-workspaces.md), InteractionCapability 경계는 [ADR 0019](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)을 따른다. Current account와 root 배치는 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다. 제거한 app-owned workspace·public distribution·managed account 결정은 historical ADR 0014·0016·0017에 보존한다.
 
 ## 운영 규칙
 
@@ -31,6 +31,8 @@
 - UI 변경은 데스크톱 workspace에서 정보 밀도, loading·empty·error 상태와 핵심 상호작용을 직접 확인한다.
 
 ## 작업 목록
+
+완료 항목은 당시 구현과 검증 증거를 보존한다. ADR 0018·0019가 대체한 app-owned workspace·Recipe/Run·durable patch/confirmation을 current target contract로 다시 해석하지 않는다.
 
 - [x] 제품·Codex 실행 기반을 준비한다.
   - [x] 제품 문제, 핵심 사용자와 MVP 경계를 [Product Brief](ay-ple-product-brief.md)로 정리하고, 자료 선택부터 Review까지의 사용자 흐름을 [prototype scenario](ay-ple-review-workspace-scenario.md)로 검증했다.
@@ -91,16 +93,44 @@
   - [x] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
   - [x] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증했다.
 
-- [ ] 2026-07-23 public release lane에서 추가된 구현을 감사하고 현재 제품에 필요한 범위를 다시 판정한다.
-  - [ ] Landing처럼 확정적으로 제거할 surface, 학업 kernel에 재사용할 기반, historical evidence로만 보존할 artifact를 구분한다.
+- [x] public release lane에서 추가된 구현을 감사하고 현재 제품에 필요한 범위를 다시 판정한다.
+  - [x] Landing·public host·managed account lifecycle은 제거하고, v3 `SemesterWorkspace` kernel은 adopted future workspace authority로 유지하며, 관련 ADR·Spec·ticket·Wayfinder는 historical evidence로 보존한다고 분류했다.
   - [x] Runtime resolver와 public application host는 repository-local 실행의 consumer가 없음을 확인하고 tracked graph에서 제거했다.
   - [x] Current dev·dogfood의 isolated Codex auth profile을 제거하고 caller의 전역 `CODEX_HOME`을 항상 재사용한다.
   - [x] Public-preview Server·Browser graph, Account coordinator, OAuth/setup UI와 shared wire contract를 제거하고 `/api/product/*` current-v2 product graph만 남겼다.
-  - [ ] Current executable consumer가 없는 Runtime managed account·auth-only primitive와 `@ay-ple/semester-workspace` v3 admission·setup kernel은 별도 pruning에서 `keep | remove`를 판정한다.
+  - [x] Runtime managed account·`auth-only` primitive는 제거하고 fresh Account Readiness만 workspace Runtime에 유지했다. 당시 `@ay-ple/semester-workspace` v3 admission·setup kernel은 ADR 0014 target의 구현 증거로 남겼고, 이후 ADR 0018이 그 target을 대체했다.
   - [x] 감사 결과를 구현 지도, Runtime 격리 문서와 이 backlog에 반영했다.
 
-- [ ] 확인된 사용자 필요에 따라 post-Ready capability를 순서대로 추가한다.
-  - [ ] 기존 폴더와 자료 묶음을 `ImportSource`로 분석하고 mapping·반입 제안을 사용자 검토 뒤 app-owned `SemesterWorkspace`의 Course·`RawMaterial`로 만드는 첫 자료 가져오기 여정을 추가한다. 임의의 기존 폴더를 workspace로 직접 열지 않는다.
+- [ ] User-owned Git SemesterWorkspace에서 InteractionCapability 기반 First Assignment vertical을 완성한다.
+  - [ ] [InteractionCapability 기반 Semantic Review Spec](../specs/2026-07-27-interaction-capability-semantic-review.md)에 따라 app-neutral Review seam과 joint cutover를 완성한다.
+    - [ ] Current First Assignment의 MCP→Browser Review→same-Turn continuation을 characterization test로 고정하고, app-owned academic apply와 결합된 부분을 target contract로 승격하지 않는다.
+    - [ ] Private workspace package `@ay-ple/interaction-mcp`를 추가해 built STDIO executable, `InteractionCapability<Request, Result>` schema·codec와 authenticated Adapter↔Broker transport contract를 소유하게 한다. `apps/server`는 package의 server-side Interface로 production Broker·Browser Adapter를 조합하고 in-memory Adapter로 exact binding, correlation, generation별 단일 pending slot, once-only answer, Turn interrupt·disconnect·terminal MCP failure settlement를 독립 검증한다.
+    - [ ] `@ay-ple/codex-chat-runtime`은 generic child environment 전달과 native MCP readiness만 제공하고 `@ay-ple/interaction-mcp`, capability schema나 Broker lifecycle에 의존하지 않게 한다. Browser는 계속 `@ay-ple/product-contract`만 사용하고 raw MCP·private transport를 받지 않는다.
+    - [ ] Browser API와 같은 pre-bound loopback HTTP listener에 Server-private Broker route를 두고 Workspace Runtime generation마다 fresh token·opaque binding을 발급한다. Loopback peer·constant-time token·active binding을 모두 검사하고 route·credential을 Browser contract와 log에서 제외하며 별도 listener·port·daemon, WebSocket과 Unix domain socket을 만들지 않는다.
+    - [ ] Adapter startup의 짧은 authenticated handshake 뒤 capability call 하나를 Broker HTTP POST 하나로 유지해 Browser의 once-only result를 같은 MCP call에 반환한다. Runtime generation마다 pending slot 하나만 두고 후속 authenticated request는 Browser projection·queue·preemption 없이 즉시 `busy` MCP error로 끝낸다. Adapter HTTP abort·STDIO EOF, Turn interrupt와 MCP·Browser·Runtime interruption은 정상 result가 아닌 MCP failure path로 terminal 정산하고, duplicate·late answer, `202`+poll, callback, durable outbox·response replay를 만들지 않으며 delivery ambiguity를 성공이나 workspace apply로 추정하지 않는다.
+    - [ ] `propose_state_patch` input에서 caller-supplied `requestKey`, workspace·Course identity, store revision과 native identity를 제거하고, 설명·순서 있는 semantic before/after change·선택적 evidence만 받는 도메인 중립 capability contract로 축소한다. Assignment schema와 raw Git diff를 공개 contract에 넣지 않는다.
+    - [ ] `hub/skills/ay-ple-first-assignment/`에 actual file read, pre-mutation Review, result 해석과 AY-owned next action을 지시하는 built-in Skill source를 만든다. Workspace 설치·update는 lifecycle Spec이 소유한다.
+    - [ ] Optional `EvidenceRef`를 active Runtime binding의 exact SemesterWorkspace에서 workspace-relative path로만 on-demand resolve한다. Root containment·regular file·bounded read·exact digest·locator를 Browser projection 전에 atomic preflight하고 하나라도 invalid면 partial card 없이 MCP call 전체를 실패시킨다. Browser에는 bounded safe projection만 전달하고 `RawMaterial` registry, source copy·reusable cache·snapshot과 durable evidence history를 만들지 않는다.
+    - [ ] Review UI를 AY Chat transcript의 inline card 하나로 표시하고 pending 동안 composer·새 Turn·steer를 잠근다. Card에는 `accept | revise | reject`와 optional feedback만 두어 custom MCP call 하나의 closed normal result로 반환하고, 전체 Turn interrupt만 별도 native control로 유지한다. Settled card는 control 없는 read-only outcome으로 남기고 `revise` 뒤 fresh proposal은 새 call·새 card로 append하며 이전 card를 교체·reopen하지 않는다. Modal·별도 approval page·card dismiss·입력 queue와 App-owned settled Review ledger를 만들지 않으며 interrupt, `busy`, timeout, disconnect와 Runtime terminal은 네 번째 `cancel` result가 아니라 MCP failure path로 끝내고, 같은 결정을 built-in `request_user_input`에 다시 걸지 않는다.
+    - [ ] Interaction result 뒤 App은 accepted result를 대신 적용하지 않고 AY가 같은 Turn에서 actual file action을 소유하게 한다.
+    - [ ] App-owned `Course`, material refresh·selection·preview, First Assignment action/retry, `RawMaterial` registry·snapshot, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 revision-bound academic apply transaction을 current product contract와 persistence에서 제거한다.
+    - [ ] Capability contract test, deterministic Browser E2E와 exact local-provider trace로 inline card pending 중 composer·새 Turn·steer가 닫히고 accept·revise·reject만 정상 result이며 Adapter abort·STDIO EOF, Turn interrupt·disconnect·timeout·Runtime terminal과 concurrent request의 `busy`는 MCP failure임을 고정한다. Valid evidence 전체가 한 card에 투영되고 path escape·missing·oversized·digest/locator drift가 Browser projection 전에 whole-call failure가 되는지 검증한다. Settled card의 control이 사라지고 revise→fresh call이 기존 card mutation 없이 새 card를 append하는지, partial Review·Modal·별도 page·card dismiss·App Review ledger·허위 apply·duplicate result·숨은 queue가 없는지도 검증한다.
+  - [ ] [User-owned SemesterWorkspace lifecycle과 canonical local roots Spec](../specs/2026-07-27-user-owned-semester-workspace-lifecycle.md)에 따라 workspace lifecycle, required activation과 Git authority를 완성한다.
+    - [ ] Active workspace가 없을 때 canonical `hub/` cwd의 Bootstrap Runtime·thread를 열고, 명시적 activation 뒤 이를 종료한 다음 exact SemesterWorkspace Git root에서 새 Workspace Runtime·thread를 시작한다. Bootstrap thread를 resume하거나 cwd만 바꾸지 않는다.
+    - [ ] Sibling `../.ay-ple/`에 activation이 끝난 known·active repository path만 소유하는 durable `WorkspaceRegistry`를 두고, 사용자가 선택한 한 학기 Git root를 Codex project root와 thread의 고정 `cwd`로 전환한다. Descendant cwd를 별도 identity로 만들지 않고 workspace 전환 때 recorded thread cwd를 일치시킨다. Initial Browser에는 current active workspace와 process-local candidate만 투영하고, 다른 학기는 directory chooser로 다시 선택한다.
+    - [ ] Process-local `ProductOperationCoordinator` 하나가 workspace transition과 Chat/init Turn admission을 같은 critical section에서 직렬화하게 한다. Interaction Broker는 active product-turn lease를 소비할 뿐 별도 outer lock을 만들지 않는다.
+    - [ ] Runtime의 fixed `project_root_markers=[]`와 process-wide managed Skill override를 제거하고, exact Git root의 native project config·`AGENTS.md`·Skill discovery를 사용한다. Persistent Runtime과 context probe가 같은 effective project boundary를 관측하는지 검증한다.
+    - [ ] 초기 Bootstrap Skill은 repository 개발 harness와 함께 `hub/.agents/skills/`에 두어 hub-rooted Codex가 native discovery하게 하고, AY-PLE built-in Skill source catalog는 `hub/skills/`에 둔다. Bootstrap·Update가 선택한 source directory를 SemesterWorkspace의 Git-tracked `.agents/skills/`로 복사하고, symlink나 Runtime `extraRoots` 없이 native discovery되는지 검증한다.
+    - [ ] Bootstrap이 exact SemesterWorkspace root에서 built Adapter까지 계산한 relative command와 Interaction Spec 소유의 env 이름·capability allowlist·`required = true` declaration을 `.codex/config.toml`에 no-clobber로 설치한다. MCP server `cwd`와 `tool_timeout_sec`은 생략하고 new Workspace Runtime path는 endpoint·token·binding value를 child environment로만 공급하며 thread-start MCP override를 사용하지 않는다.
+    - [ ] Current pinned local STDIO launcher가 server `cwd` 미지정 시 exact Workspace Runtime `cwd`에서 relative command를 resolve하는 동작을 regression test로 고정한다. Absolute user path, `npx`·global install과 appData Adapter copy를 만들지 않고, root 이동 시 Bootstrap Update가 path를 재계산해 Git checkpoint를 남긴다.
+    - [ ] Shared listener와 Interaction Broker 준비 뒤에만 Workspace Runtime을 spawn하고 sibling readiness port가 exact server·tool roster를 확인한 뒤에만 active registry pointer를 commit한다. Broker 준비·Runtime start·readiness 또는 ignored project config failure는 Interaction-owned settlement detail을 재정의하지 않고 activation을 fail closed하며 MCP 없는 degraded AY-PLE mode를 만들지 않는다.
+    - [ ] Current pinned App Server에서 exact Git-root `cwd`와 `workspace-write` thread start가 unset trust를 native user config에 기록하고 같은 start에서 project MCP를 reload하며, explicit `untrusted`와 parent-only trust를 덮어쓰거나 상속하지 않는지 regression test로 고정한다. Missing Interaction MCP fail behavior는 별도로 고정한다.
+    - [ ] Instruction-based init Skill로 Git 초기화, 최소 `AGENTS.md`, root `workspace-state.json`, 선택한 Skill copy, `.codex/config.toml`과 첫 checkpoint를 준비한다. Existing bytes와 dirty working tree를 존중하고 별도 scaffold script는 deterministic 필요가 확인될 때만 추가한다.
+    - [ ] AY가 actual file을 직접 변경하고 의미 있는 checkpoint에서 Git commit하게 한다. App은 Git command를 실행하거나 clean working tree를 activation 선행조건으로 요구하지 않는다.
+    - [ ] Runtime payload를 verified `../.ay-ple/runtime/`에서 시작하고 workspace별 transient operation state를 Git 밖 `../.ay-ple/state/workspaces/<workspaceId>/`에 둔다.
+    - [ ] 새 canonical layout의 Runtime·global Codex account·active workspace·InteractionCapability smoke가 성공한 뒤에만 legacy dogfood appData, managed development workspace와 package-local Runtime artifact를 scoped cleanup한다.
+
+- [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.
   - [ ] 여러 대화를 다시 찾고 이어가는 행동이 확인되면 workspace-scoped `thread/list`·`thread/read`·`thread/resume`, 선택 상태와 최소 catalog UX를 추가한다. Rename·archive·pagination은 각각의 need가 있을 때만 포함한다.
   - [ ] Accepted work의 Browser disconnect가 실제 product journey를 막으면 native status·read를 우선 사용해 honest unknown-outcome 또는 rejoin을 추가한다. Snapshot·cursor·replay journal은 관찰된 gap 없이는 만들지 않는다.
   - [ ] 같은 local companion을 여러 Browser client가 동시에 제어해야 하는 사용 흐름이 확인되면 client ownership·isolation을 별도 capability로 검증한다.
@@ -109,11 +139,11 @@
   - [x] 개인 사용에서 확인된 Model 선택 필요에 따라 Browser-session→다음 Product Turn 경계의 설정 UX를 추가했다. Official `model/list`의 visible catalog와 advertised reasoning effort 순서를 사용하고 지원 모델에만 Fast를 노출하며 Chat·Assignment·retry가 같은 선택을 재사용한다. 새로고침은 catalog default로 돌아가고 `config/read`·`config/value/write`나 전역 `config.toml` mutation은 도입하지 않았다.
   - [ ] 즉시 정정이 새 turn보다 나은 대표 case와 correlation 규칙을 확인하면 active turn 정정 UX를 추가한다. raw 후보: `turn/steer`.
   - [ ] 실제 context 부족이나 history 편집 case를 확인하면 manual compact와 fork를 각각 평가한다. raw 후보: `thread/compact/start`, `thread/fork`. Deprecated `thread/rollback`은 지원되는 대체 method가 생길 때까지 제외한다.
-  - [ ] PDF text extraction과 page/range 근거를 지원하고, Assignment 계약을 재사용하는 Exam `ModelingRecipe`를 추가한다.
-  - [ ] 확인된 `SemesterModel`이 안정되면 `MarkdownProjection`, derived timeline, 학생 할 일 표면과 학기 상태 질의를 source of truth와 분리해 추가한다.
-  - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 native conversation이나 제거된 개발자 진단 기록을 재사용하지 않는 `WorkspaceHistory`를 설계한다.
+  - [ ] PDF text extraction과 page/range 근거를 지원하고, Assignment 전략을 재사용하는 Exam Skill을 추가한다.
+  - [ ] Workspace-local 구조화 snapshot이 안정되면 `MarkdownProjection`, derived timeline, 학생 할 일 표면과 학기 상태 질의를 source of truth와 분리해 추가한다.
+  - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 Git history를 이해하기 쉬운 `WorkspaceHistory` UI로 투영한다.
   - [ ] 실제 자료에서 필요성이 확인되면 HWP/HWPX parsing과 OCR을 추가한다.
-  - [ ] 여러 workspace를 반복해서 바꾸는 사용 흐름이 확인되면 current chooser 경계에서 최근 workspace 목록과 명시적 전환 UX를 설계한다.
+  - [ ] 여러 workspace를 반복해서 바꾸는 사용 흐름이 확인되면 current chooser 경계에서 registry-backed 최근 workspace 목록과 one-click 전환 UX를 설계한다.
   - [ ] macOS packaged Desktop App을 채택하면 bundled native payload의 third-party notice를 감사하고 signing·notarization, atomic update/rollback과 clean-machine packaging smoke를 완료한다. Windows·Linux 지원은 별도 사용자 필요와 artifact·QA 범위를 승인한 뒤에만 추가한다.
   - [ ] Runtime·bridge diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
   - [ ] Native `TextInput`·`SkillInput` 조합으로 해결되지 않고 resource mention 필요성이 확인되면 `MentionInput`을 먼저 검증한다. 그 뒤에도 남는 구체적인 case에만 exact official SDK/native contract의 experimental context delivery, background terminal, realtime과 기타 raw capability를 별도로 검증한다.
@@ -127,7 +157,7 @@
 - ACP adapter 또는 다른 Agent engine과의 동작 일치, 범용 engine 분류와 선택 UI
 - API key 입력, external token host, device-code·Bedrock login과 여러 account 전환 UI
 - 모든 App Server event를 제품에 노출하는 범용 event bus·router와 raw item의 1:1 UI 재현
-- `Semester`, `Course`, `ModelingRun`에 고정된 Codex thread topology
+- `SemesterWorkspace`·`Course`별 고정 Codex thread topology와 native Turn을 복제하는 별도 run ledger
 - 외부 memory framework 또는 AY-PLE 전용 memory engine
 - Codex UI와 동일한 Git diff·review, background terminal, Goals, plugin·MCP 관리 화면
 - Raw prompt, JSON-RPC payload와 runtime·bridge 진단 evidence를 제품 감사 기록이나 `SemesterModel`의 source of truth로 사용하는 방식

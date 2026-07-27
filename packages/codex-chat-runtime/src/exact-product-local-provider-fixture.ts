@@ -28,7 +28,7 @@ import {
   type CodexChatRuntimeEnvironment,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
-import type { CodexProductCapableRuntime } from './runtime-contract.js'
+import type { CodexWorkspaceRuntime } from './runtime-contract.js'
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -83,7 +83,7 @@ export interface ExactProductProviderEvidence {
 }
 
 export interface ExactProductLocalProviderFixture {
-  readonly runtime: CodexProductCapableRuntime
+  readonly runtime: CodexWorkspaceRuntime
   readonly runtimeFallbackWorkspace: string
   readonly processGroupId: number
   readonly closed: Promise<void>

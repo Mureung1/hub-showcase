@@ -17,7 +17,7 @@ TURN_B_ID = "turn-bounded-b"
 TURN_STALLED_ID = "turn-bounded-stalled"
 ITEM_B_ID = "item-bounded-b"
 COMPLETED_LOGIN_ID = "login-managed-completed"
-COMPLETED_LOGIN_URL = "https://example.invalid/managed-login"
+COMPLETED_LOGIN_URL = "https://example.invalid/login-completed"
 LOGIN_ID = "login-bounded"
 LOGIN_URL = "https://example.invalid/codex-login"
 TURN_ITEM_LIMIT = 4_096
@@ -53,14 +53,10 @@ def _require_request(method: str) -> dict[str, Any]:
     return message
 
 
-def _require_managed_login_start() -> dict[str, Any]:
+def _require_login_start() -> dict[str, Any]:
     request = _require_request("account/login/start")
-    if request.get("params") != {
-        "appBrand": "codex",
-        "type": "chatgpt",
-        "useHostedLoginSuccessPage": True,
-    }:
-        raise RuntimeError(f"managed login contract mismatch: {request!r}")
+    if request.get("params") != {"type": "chatgpt"}:
+        raise RuntimeError(f"official login contract mismatch: {request!r}")
     return request
 
 
@@ -212,7 +208,7 @@ def main() -> None:
     _respond_thread_start(thread_b, THREAD_B_ID)
     steps.append("thread-b-started")
 
-    completed_login_start = _require_managed_login_start()
+    completed_login_start = _require_login_start()
     _write_message(
         {
             "id": completed_login_start["id"],
@@ -243,10 +239,10 @@ def main() -> None:
             },
         }
     )
-    steps.append("managed-login-completed")
+    steps.append("login-completed")
     steps.append("unrelated-login-completion-preserved")
 
-    login_start = _require_managed_login_start()
+    login_start = _require_login_start()
     _write_message(
         {
             "id": login_start["id"],

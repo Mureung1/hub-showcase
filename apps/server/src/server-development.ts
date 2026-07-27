@@ -24,14 +24,17 @@ export async function startConfiguredServerApplication(
 ): Promise<StartedServerApplication> {
   const environment = options.environment ?? process.env
   const log = options.log ?? console.log
-  const productDevelopment = resolveProductDevelopmentBootstrap(environment)
+  const productDevelopment = await resolveProductDevelopmentBootstrap(
+    environment,
+  )
   const application = await createServerApplication({
     productRuntime: productDevelopment?.runtime,
+    productRuntimeWorkspaceRoot: productDevelopment?.runtimeWorkspaceRoot,
     semesterWorkspace: productDevelopment?.semesterWorkspace,
   })
   let ownedApplication = application
   try {
-    if (productDevelopment) {
+    if (productDevelopment?.semesterWorkspace) {
       const activation = await application.semesterWorkspace?.activate()
       if (activation?.status !== 'activated') {
         throw new Error('Product SemesterWorkspace activation was cancelled.')

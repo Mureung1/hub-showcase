@@ -7,10 +7,7 @@ import type {
   CodexThreadId,
   CodexTurnId,
 } from './contract.js'
-import type {
-  CodexAccountLifecycle,
-  CodexNativeContextPort,
-} from './account-contract.js'
+import type { CodexNativeContextPort } from './native-context-contract.js'
 
 export type CodexProductSkillInput = {
   readonly name: string
@@ -93,8 +90,7 @@ export interface CodexModelCatalogRuntime {
   readModelCatalog(): Promise<CodexModelCatalog>
 }
 
-export type CodexManagedRuntime =
-  CodexProductCapableRuntime &
-  CodexModelCatalogRuntime &
-  CodexAccountLifecycle &
-  CodexNativeContextPort
+export interface CodexWorkspaceRuntime
+  extends CodexProductCapableRuntime,
+    CodexModelCatalogRuntime,
+    CodexNativeContextPort {}

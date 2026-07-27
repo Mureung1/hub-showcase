@@ -4,19 +4,19 @@
 
 최종 업데이트: 2026-07-22
 
-분류: 활성
+분류: 완료·역사 기록
 
-성숙도: 초안
+성숙도: 구현됨
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [ADR 0002](../adr/0002-use-first-class-academic-objects-with-derived-operational-views.md), [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)
+관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)
 
 ## 목적
 
-이 문서는 existing current-v2 workspace에서 실행하는 첫 학업 action의 사용자 시나리오와 검토 화면 구조를 정리한다. 핵심 방향은 **원본 자료와 변경 제안을 함께 보고, 학생이 확인한 내용만 학기 정보에 반영하는 작업공간**이다.
+이 문서는 existing current-v2 workspace에 구현했던 첫 학업 action의 사용자 시나리오와 검토 화면 구조를 역사적 증거로 보존한다. 핵심 UX 가설인 **원본 자료와 변경 제안을 함께 보고, 학생의 선택을 같은 AY 작업으로 돌려주는 경험**은 ADR 0019의 첫 InteractionCapability로 이어진다.
 
-이 시나리오는 학생용 화면을 검증한다. Runtime과 native Codex mapping을 다시 정의하지 않으며, 화면의 action과 자료 선택은 ModelingInvocation의 제품 입력으로 사용되고 결과는 `StatePatch`로 검토된다.
+본문의 app-owned `RawMaterial`, `ModelingInvocation`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 Server-owned apply는 당시 구현을 설명하며 current target domain model이 아니다. 현재 제품 경계는 Product Brief와 InteractionCapability 아키텍처를 우선한다.
 
-Landing·public command·Browser OAuth·새 workspace setup 여정은 제거됐다. 이 문서는 현재 개인 dogfood에서 유지하는 자료 선택·Course·Assignment Review 경험만 다룬다.
+Landing·public command·Browser OAuth·새 workspace setup 여정은 제거됐다. 이 문서는 현재 작업 순서나 새 구현 계약을 정하지 않는다.
 
 학생이 이해해야 할 한 문장은 다음과 같다.
 

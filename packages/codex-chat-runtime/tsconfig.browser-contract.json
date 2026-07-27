@@ -4,6 +4,6 @@
     "noEmit": true,
     "rootDir": "."
   },
-  "include": ["src", "type-tests/browser-contract.ts"],
+  "include": ["src", "type-tests/*.ts"],
   "exclude": ["src/**/*.test.ts"]
 }
