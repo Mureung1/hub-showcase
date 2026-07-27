@@ -1,5 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Home, CalendarClock, CircleUser, Upload } from "lucide-react";
+
+const API_BASE = "http://localhost:3000";
 
 // 베이지 배경(#F3EEE4)과 겹치지 않는 파스텔 팔레트
 // bg: 카드 전체 배경 / iconBg: 아이콘 원(칩 테두리) / text: 텍스트·화살표 색
@@ -14,7 +16,6 @@ const PASTEL_PALETTE = [
   { bg: "#FDEAD9", iconBg: "#F8D3B0", text: "#C97A3D" }, // 피치
 ];
 
-// 이름(키워드명 또는 월 이름)을 기준으로 항상 같은 색을 골라주는 함수
 function getPastelColor(name) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -23,9 +24,38 @@ function getPastelColor(name) {
   const index = Math.abs(hash) % PASTEL_PALETTE.length;
   return PASTEL_PALETTE[index];
 }
-// 여러 이름을 한 번에 받아서, 인접한 항목끼리 색이 겹치지 않게 조정해주는 함수
 function getDistinctColors(names) {
   return names.map((_, i) => PASTEL_PALETTE[i % PASTEL_PALETTE.length]);
+}
+
+// 날짜 문자열(YYYY-MM-DD)을 "오늘/N일 전/N주 전/N개월 전"으로 변환
+function formatRelativeDate(dateStr) {
+  if (!dateStr) return "";
+  const target = new Date(dateStr);
+  const today = new Date();
+  const diffMs = today.setHours(0, 0, 0, 0) - target.setHours(0, 0, 0, 0);
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) return "오늘";
+  if (diffDays < 7) return `${diffDays}일 전`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+  return `${Math.floor(diffDays / 30)}개월 전`;
+}
+
+// weekStart(YYYY-MM-DD) 기준으로 "N월 M주차" 라벨 계산
+function formatWeekSub(weekStartStr) {
+  const d = new Date(weekStartStr);
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const weekNum = Math.ceil(day / 7);
+  return `${month}월 ${weekNum}주차`;
+}
+
+// weekStart~weekEnd(YYYY-MM-DD)를 "M.D~M.D" 형태로 변환
+function formatWeekDate(weekStartStr, weekEndStr) {
+  const s = new Date(weekStartStr);
+  const e = new Date(weekEndStr);
+  return `${s.getMonth() + 1}.${s.getDate()}~${e.getMonth() + 1}.${e.getDate()}`;
 }
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
@@ -37,6 +67,7 @@ const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Manro
 .arrow-btn{ transition: background-color .15s ease, color .15s ease; }
 `;
 
+// 월별 기록(월별 기록 모달)은 아직 monthly_records API가 없어서 더미 데이터 유지
 const monthData = {
   m07: {
     title: "2026년 7월",
@@ -58,107 +89,16 @@ const monthData = {
   },
 };
 
-const timelinePeriods = [
-  {
-    id: "p1",
-    label: "5.2",
-    sub: "5월 2주차",
-    date: "5.4~5.10",
-    title: "반복되는 야근에 지쳐가고 있었어요",
-    desc: "체력적으로 힘든 날이 많았어요.",
-    count: "2회 언급",
-    focus: "쉬는 것보다 일을 쳐내는 데 급급했어요.",
-    emo: [{ n: "지침", p: "45%" }, { n: "무기력", p: "30%" }],
-  },
-  {
-    id: "p2",
-    label: "5.4",
-    sub: "5월 4주차",
-    date: "5.18~5.24",
-    title: "이대로 계속 다녀야 하나 싶었어요",
-    desc: "특별한 계기 없이 그냥 지쳐있었어요.",
-    count: "2회 언급",
-    focus: "무기력하게 하루하루를 보내고 있었어요.",
-    emo: [{ n: "무기력", p: "40%" }, { n: "지침", p: "25%" }],
-  },
-  {
-    id: "p3",
-    label: "6.1",
-    sub: "6월 1주차",
-    date: "6.1~6.7",
-    title: "다른 회사들은 어떤지 슬쩍 찾아보기 시작했어요",
-    desc: "당장 뭘 하려는 건 아니었지만 궁금해졌어요.",
-    count: "3회 언급",
-    focus: "지금 회사와 다른 곳들을 비교해보기 시작했어요.",
-    emo: [{ n: "자각", p: "33%" }, { n: "불안", p: "20%" }],
-  },
-  {
-    id: "p4",
-    label: "6.2",
-    sub: "6월 2주차",
-    date: "6.8~6.14",
-    title: "몇 군데 채용 공고를 눈여겨보기 시작했어요",
-    desc: "아직 지원할 용기는 없었어요.",
-    count: "2회 언급",
-    focus: "괜찮아 보이는 곳들을 조용히 저장해두는 정도였어요.",
-    emo: [{ n: "불안", p: "30%" }, { n: "긴장", p: "22%" }],
-  },
-  {
-    id: "p5",
-    label: "6.3",
-    sub: "6월 3주차",
-    date: "6.15~6.21",
-    title: "이직을 진지하게 고민하기 시작했어요",
-    desc: "지금 회사에 대한 막막한 불안이 계기가 됐어요.",
-    count: "3회 언급",
-    focus: "답을 찾기보다, 지금 이대로 괜찮은 건지 스스로에게 질문을 던지는 데 대부분의 시간을 썼어요.",
-    emo: [{ n: "불안", p: "47%" }, { n: "무기력", p: "21%" }],
-  },
-  {
-    id: "p6",
-    label: "7.1",
-    sub: "7월 1주차",
-    date: "6.29~7.5",
-    title: "진짜 문제는 준비 부족이라는 걸 자각했어요",
-    desc: "면접에서 말이 막힌 경험이 계기가 됐어요.",
-    count: "4회 언급",
-    focus: "무엇을 해야 할지 몰라 흔들리던 데서 벗어나, 부족한 부분을 구체적으로 짚어보는 데 집중했어요.",
-    emo: [{ n: "당황", p: "38%" }, { n: "자각", p: "26%" }],
-  },
-  {
-    id: "p7",
-    label: "7.2",
-    sub: "7월 2주차",
-    date: "7.6~7.12",
-    title: "면접 스터디에 합류했어요",
-    desc: "피드백을 받으며 조금씩 자신감을 회복하기 시작했어요.",
-    count: "3회 언급",
-    focus: "혼자 고민하던 것을 내려놓고, 사람들과 부딪히며 실제로 준비하는 것에 집중했어요.",
-    emo: [{ n: "안정", p: "34%" }, { n: "긴장", p: "29%" }],
-  },
-  {
-    id: "p8",
-    label: "NOW",
-    sub: "지금 · 7월 13일",
-    date: "7.13",
-    title: "3곳에 지원해 2곳 서류를 통과했어요",
-    desc: "다음 주 첫 면접을 앞두고 있어요.",
-    count: "2회 언급",
-    focus: "결과를 조급해하기보다, 다음 면접에서 무슨 말을 하고 싶은지 정리하는 데 집중했어요.",
-    emo: [{ n: "안정", p: "42%" }, { n: "답답함", p: "23%" }],
-  },
-];
-
 const EMO_STYLE = {
-  안정: { color: "#BFDCC2", face: "calm" },      // peaceful
-  답답함: { color: "#E2A2A2", face: "stress" },   // stress
-  불안: { color: "#B7ACDE", face: "anxious" },    // anxiety
-  무기력: { color: "#C9C7C2", face: "tired" },    // tired
-  지침: { color: "#B9D1E6", face: "sleepy" },     // sleepy
-  무감정: { color: "#E7C6CE", face: "numb" },     // numbness
-  당황: { color: "#E8DD8C", face: "flutter" },    // flutter
-  자각: { color: "#CDE0D9", face: "calm" },       // normal/realization
-  긴장: { color: "#AEB7DE", face: "anxious" },    // nervous
+  안정: { color: "#BFDCC2", face: "calm" },
+  답답함: { color: "#E2A2A2", face: "stress" },
+  불안: { color: "#B7ACDE", face: "anxious" },
+  무기력: { color: "#C9C7C2", face: "tired" },
+  지침: { color: "#B9D1E6", face: "sleepy" },
+  무감정: { color: "#E7C6CE", face: "numb" },
+  당황: { color: "#E8DD8C", face: "flutter" },
+  자각: { color: "#CDE0D9", face: "calm" },
+  긴장: { color: "#AEB7DE", face: "anxious" },
 };
 
 function EmoBlob({ name, size = 40 }) {
@@ -229,26 +169,19 @@ function EmoBlob({ name, size = 40 }) {
 function CatAvatar({ size = 40 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      {/* 꼬리 */}
       <path d="M76 68 Q94 66 90 50 Q88 43 79 46" stroke="#1E1E1E" strokeWidth="9" fill="none" strokeLinecap="round" />
-      {/* 귀 */}
       <path d="M27 38 L21 14 L42 30 Z" fill="#1E1E1E" />
       <path d="M64 30 L72 12 L79 36 Z" fill="#1E1E1E" />
-      {/* 통통한 몸/얼굴 */}
       <ellipse cx="50" cy="60" rx="36" ry="30" fill="#1E1E1E" />
-      {/* 눈(노란 동그라미) */}
       <circle cx="38" cy="54" r="12" fill="#F5C842" />
       <circle cx="62" cy="54" r="12" fill="#F5C842" />
       <circle cx="38" cy="56" r="5.5" fill="#1E1E1E" />
       <circle cx="62" cy="56" r="5.5" fill="#1E1E1E" />
       <circle cx="35.5" cy="52" r="1.6" fill="#FFFFFF" />
       <circle cx="59.5" cy="52" r="1.6" fill="#FFFFFF" />
-      {/* 코 */}
       <path d="M46 66 L54 66 L50 71 Z" fill="#E9A8A8" />
-      {/* 입 */}
       <path d="M50 71 Q50 75 46 75" stroke="#3A332C" strokeWidth="1.4" fill="none" strokeLinecap="round" />
       <path d="M50 71 Q50 75 54 75" stroke="#3A332C" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-      {/* 수염 */}
       <line x1="10" y1="62" x2="27" y2="60" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
       <line x1="10" y1="70" x2="27" y2="68" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
       <line x1="90" y1="62" x2="73" y2="60" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
@@ -261,11 +194,86 @@ export default function RetrospectApp() {
   const [tab, setTab] = useState("home");
   const [openMonth, setOpenMonth] = useState<string | null>(null);
   const [showOlder, setShowOlder] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState("p8");
-  const [selectedKeyword, setSelectedKeyword] = useState("#취업고민");
   const scrollRef = useRef(null);
   const cardRefs = useRef({});
   const [highlightedCard, setHighlightedCard] = useState(null);
+
+  // ===== API 연결: 키워드 목록 (홈 화면 칩) =====
+  const [keywords, setKeywords] = useState([]);
+  const [keywordsLoading, setKeywordsLoading] = useState(true);
+  const [keywordsError, setKeywordsError] = useState(null);
+
+  // ===== API 연결: 선택된 키워드의 타임라인 =====
+  const [selectedKeywordId, setSelectedKeywordId] = useState(null);
+  const [selectedKeyword, setSelectedKeyword] = useState("");
+  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  const [timelinePeriods, setTimelinePeriods] = useState([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineError, setTimelineError] = useState(null);
+
+  // 키워드 목록 불러오기 (홈 화면 마운트 시 + 업로드 완료 후 재사용)
+  const fetchKeywords = async () => {
+    try {
+      setKeywordsLoading(true);
+      const res = await fetch(`${API_BASE}/api/keywords`);
+      const json = await res.json();
+      if (json.success) {
+        setKeywords(json.data);
+        if (json.data.length > 0 && selectedKeywordId === null) {
+          setSelectedKeywordId(json.data[0].id);
+          setSelectedKeyword("#" + json.data[0].name);
+        }
+      } else {
+        setKeywordsError(json.error || "키워드를 불러오지 못했어요.");
+      }
+    } catch (err) {
+      setKeywordsError("서버에 연결하지 못했어요. (서버가 켜져 있는지 확인해주세요)");
+    } finally {
+      setKeywordsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchKeywords();
+  }, []);
+
+  // 선택된 키워드가 바뀔 때마다 타임라인 불러오기
+  useEffect(() => {
+    if (selectedKeywordId === null) return;
+
+    async function fetchTimeline() {
+      try {
+        setTimelineLoading(true);
+        setTimelineError(null);
+        const res = await fetch(`${API_BASE}/api/timeline/${selectedKeywordId}`);
+        const json = await res.json();
+        if (json.success) {
+          const mapped = json.data.map((row) => ({
+            id: row.weekStart,
+            label: formatWeekSub(row.weekStart),
+            sub: formatWeekSub(row.weekStart),
+            date: formatWeekDate(row.weekStart, row.weekEnd),
+            title: row.title,
+            desc: row.description,
+            focus: row.focusText,
+            emo: [
+              row.emotion1 ? { n: row.emotion1, p: `${row.emotion1Percent}%` } : null,
+              row.emotion2 ? { n: row.emotion2, p: `${row.emotion2Percent}%` } : null,
+            ].filter(Boolean),
+          }));
+          setTimelinePeriods(mapped);
+          if (mapped.length > 0) setSelectedPeriod(mapped[mapped.length - 1].id);
+        } else {
+          setTimelineError(json.error || "타임라인을 불러오지 못했어요.");
+        }
+      } catch (err) {
+        setTimelineError("서버에 연결하지 못했어요. (서버가 켜져 있는지 확인해주세요)");
+      } finally {
+        setTimelineLoading(false);
+      }
+    }
+    fetchTimeline();
+  }, [selectedKeywordId]);
 
   const jumpToCard = (id) => {
     setSelectedPeriod(id);
@@ -279,13 +287,40 @@ export default function RetrospectApp() {
   const fileInputRef = useRef(null);
   const [uploadedFile, setUploadedFile] = useState(null);
 
-  const handleFileChange = (evt) => {
-    const file = evt.target.files && evt.target.files[0];
-    if (file) {
-      setUploadedFile(file.name);
-      setTimeout(() => setUploadedFile(null), 3500);
-    }
-  };
+  const handleFileChange = async (evt) => {
+      const file = evt.target.files && evt.target.files[0];
+      if (!file) return;
+
+      setUploadedFile(`${file.name} 분석 중이에요... (시간이 좀 걸릴 수 있어요)`);
+
+      try {
+        const text = await file.text();
+        const conversations = JSON.parse(text);
+
+        const response = await fetch(`${API_BASE}/api/upload-conversations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversations }),
+        });
+        const json = await response.json();
+
+        if (json.success) {
+          const { newConversations, savedCount, skippedCount } = json.data;
+          if (newConversations === 0) {
+            setUploadedFile("이미 다 처리된 대화들이에요.");
+          } else {
+            setUploadedFile(`${newConversations}개 대화에서 ${savedCount}개 저장, ${skippedCount}개는 정보성 질문이라 건너뛰었어요.`);
+          }
+          fetchKeywords(); // 홈 화면 키워드 목록 새로고침
+        } else {
+          setUploadedFile(`업로드 실패: ${json.error}`);
+        }
+      } catch (err) {
+        setUploadedFile("파일을 처리하지 못했어요. JSON 형식을 확인해주세요.");
+      }
+
+      setTimeout(() => setUploadedFile(null), 6000);
+    };
 
   const paper = "#F3EEE4";
   const ink = "#362F2A";
@@ -293,11 +328,6 @@ export default function RetrospectApp() {
   const inkFaint = "#B7AEA0";
   const thread = "#5F7A5C";
   const threadSoft = "#DCE4D6";
-  const grayBox = "#F4F2EC";
-  const pinkBox = "#FBE9E7";
-  const pinkText = "#C4626B";
-  const greenBox = "#E4EFE1";
-  const greenText = "#4F8F62";
   const orange = "#EFA24A";
 
   const fontFamily = "'Manrope','Noto Sans KR',sans-serif";
@@ -313,8 +343,8 @@ export default function RetrospectApp() {
       >
         <div className="flex items-center gap-8">
           <span style={{ color: ink, fontWeight: 800, fontSize: 16, display: "flex", alignItems: "center", gap: 6 }}>
-  <CatAvatar size={20} /> 민지의 기록
-</span>
+            <CatAvatar size={20} /> 민지의 기록
+          </span>
           <nav className="hidden sm:flex items-center gap-1">
             <button
               onClick={() => setTab("home")}
@@ -340,7 +370,6 @@ export default function RetrospectApp() {
         </button>
       </div>
 
-      {/* mobile nav (below sm breakpoint) */}
       <div className="flex sm:hidden items-center gap-1 px-6 py-2" style={{ borderBottom: "1px solid #E7DFCF" }}>
         <button
           onClick={() => setTab("home")}
@@ -362,16 +391,14 @@ export default function RetrospectApp() {
       <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
         {tab === "home" && (
           <div>
-            {/* layered header block */}
             <div className="rounded-3xl px-6 py-7" style={{ background: threadSoft }}>
               <div className="flex items-center gap-3">
                 <div
-                className="rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ width: 48, height: 48, background: threadSoft }}
+                  className="rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ width: 48, height: 48, background: threadSoft }}
                 >
-                <CatAvatar size={34} />
+                  <CatAvatar size={34} />
                 </div>
-                
                 <div>
                   <div style={{ color: inkSoft, fontSize: 12 }}>2026년 7월 13일</div>
                   <h1 style={{ color: ink, fontWeight: 800, fontSize: 24 }}>Hi 민지</h1>
@@ -382,7 +409,6 @@ export default function RetrospectApp() {
               </p>
             </div>
 
-            {/* AI summary card — layered, overlapping header */}
             <div
               className="bg-white rounded-2xl px-5 pt-5 pb-5 -mt-6 mx-4 relative z-10"
               style={{ boxShadow: "0 10px 24px rgba(54,47,42,0.10)" }}
@@ -399,40 +425,45 @@ export default function RetrospectApp() {
               </p>
             </div>
 
-            {/* keyword chips */}
+            {/* keyword chips - API 연결됨 */}
             <div className="flex items-center justify-between mt-9 mb-3">
               <span style={{ color: ink, fontWeight: 700, fontSize: 14.5 }}>이어지고 있는 이야기</span>
               <span style={{ color: thread, fontSize: 12.5, fontWeight: 600 }}>모두 보기</span>
             </div>
-            {(() => {
-              const keywords = [
-                { name: "취업고민", count: "12회 · 오늘" },
-                { name: "운동습관", count: "6회 · 3일 전" },
-                { name: "인간관계", count: "4회 · 2주 전" },
-                { name: "자취", count: "3회 · 1개월 전" },
-              ];
-              const colors = getDistinctColors(keywords.map((k) => k.name));
 
-              return (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {keywords.map((kw, i) => (
-                    <button
-                      key={kw.name}
-                      onClick={() => { setSelectedKeyword("#" + kw.name); setTab("timeline"); }}
-                      className="kw-chip rounded-2xl px-4 py-3.5 text-left"
-                      style={{ background: colors[i].bg, border: `1.5px solid ${colors[i].iconBg}`, boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
-                    >
-                      <div style={{ color: colors[i].text, fontWeight: 700, fontSize: 15 }}>#{kw.name}</div>
-                      <div style={{ color: colors[i].text, opacity: 0.75, fontSize: 11, marginTop: 4 }}>{kw.count}</div>
-                    </button>
-                  ))}
-                </div>
-              );
-              })()}
-                    
-            
+            {keywordsLoading && (
+              <div style={{ color: inkFaint, fontSize: 13, padding: "12px 4px" }}>불러오는 중...</div>
+            )}
+            {keywordsError && (
+              <div style={{ color: "#C4626B", fontSize: 13, padding: "12px 4px" }}>{keywordsError}</div>
+            )}
+            {!keywordsLoading && !keywordsError && (
+              (() => {
+                const colors = getDistinctColors(keywords.map((k) => k.name));
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {keywords.map((kw, i) => (
+                      <button
+                        key={kw.id}
+                        onClick={() => {
+                          setSelectedKeywordId(kw.id);
+                          setSelectedKeyword("#" + kw.name);
+                          setTab("timeline");
+                        }}
+                        className="kw-chip rounded-2xl px-4 py-3.5 text-left"
+                        style={{ background: colors[i].bg, border: `1.5px solid ${colors[i].iconBg}`, boxShadow: "0 4px 14px rgba(54,47,42,0.06)" }}
+                      >
+                        <div style={{ color: colors[i].text, fontWeight: 700, fontSize: 15 }}>#{kw.name}</div>
+                        <div style={{ color: colors[i].text, opacity: 0.75, fontSize: 11, marginTop: 4 }}>
+                          {kw.count}회 · {formatRelativeDate(kw.lastMentioned)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()
+            )}
 
-            {/* monthly ledger */}
             <div style={{ color: ink, fontWeight: 700, fontSize: 14.5, marginTop: 30, marginBottom: 12 }}>
               월별 기록
             </div>
@@ -475,106 +506,120 @@ export default function RetrospectApp() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span style={{ fontSize: 16 }}>📅</span>
-                <h1 style={{ color: ink, fontWeight: 800, fontSize: 21 }}>{selectedKeyword}</h1>
+                <h1 style={{ color: ink, fontWeight: 800, fontSize: 21 }}>{selectedKeyword || "키워드를 선택해주세요"}</h1>
               </div>
               <span style={{ color: thread, fontSize: 13, fontWeight: 700 }}>지금</span>
             </div>
 
-            {/* period selector — click arrows to move, centered */}
-            <div className="flex items-center justify-between gap-2">
-              <button
-                className="arrow-btn flex items-center justify-center rounded-full flex-shrink-0"
-                style={{ width: 32, height: 32, background: "#fff", color: inkSoft, boxShadow: "0 4px 12px rgba(54,47,42,0.08)" }}
-                onClick={() => scrollRef.current && scrollRef.current.scrollBy({ left: -108, behavior: "smooth" })}
-                aria-label="이전 날짜"
-              >
-                ‹
-              </button>
-              <div
-                ref={scrollRef}
-                className="flex bg-white rounded-2xl overflow-x-auto flex-1"
-                style={{ boxShadow: "0 4px 16px rgba(54,47,42,0.06)", scrollbarWidth: "none" }}
-              >
-                {timelinePeriods.map((p, i) => {
-                  const active = selectedPeriod === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => jumpToCard(p.id)}
-                      className="flex-shrink-0 flex items-center justify-center py-3.5 px-4"
-                      style={{ borderLeft: i === 0 ? "none" : "1px solid #EEE7D9", width: 108 }}
-                    >
-                      <span
-                        className="flex flex-col items-center justify-center rounded-xl px-3 py-1.5"
-                        style={{
-                          fontWeight: 700,
-                          whiteSpace: "nowrap",
-                          background: active ? thread : "transparent",
-                          color: active ? "#fff" : ink,
-                        }}
-                      >
-                        <span style={{ fontSize: 11.5 }}>{p.sub}</span>
-                        <span style={{ fontSize: 9.5, opacity: 0.75, marginTop: 1 }}>{p.date}</span>
-                      </span>
-                    </button>
-                  );
-                })}
+            {timelineLoading && (
+              <div style={{ color: inkFaint, fontSize: 13, padding: "20px 4px" }}>불러오는 중...</div>
+            )}
+            {timelineError && (
+              <div style={{ color: "#C4626B", fontSize: 13, padding: "20px 4px" }}>{timelineError}</div>
+            )}
+            {!timelineLoading && !timelineError && timelinePeriods.length === 0 && (
+              <div style={{ color: inkFaint, fontSize: 13, padding: "20px 4px" }}>
+                아직 이 키워드에 대한 주간 요약이 없어요.
               </div>
-              <button
-                className="arrow-btn flex items-center justify-center rounded-full flex-shrink-0"
-                style={{ width: 32, height: 32, background: "#fff", color: inkSoft, boxShadow: "0 4px 12px rgba(54,47,42,0.08)" }}
-                onClick={() => scrollRef.current && scrollRef.current.scrollBy({ left: 108, behavior: "smooth" })}
-                aria-label="다음 날짜"
-              >
-                ›
-              </button>
-            </div>
+            )}
 
-            {/* agenda-style cards */}
-            <div className="mt-6 flex flex-col gap-4">
-              {timelinePeriods.map((p) => {
-                const isHighlighted = highlightedCard === p.id;
-                return (
-                <div key={p.id} ref={(el) => (cardRefs.current[p.id] = el)}>
-                  <div className="flex items-center justify-between mb-1.5 px-1">
-                    <span style={{ color: orange, fontWeight: 700, fontSize: 12 }}>{p.sub}</span>
-                    <span style={{ color: inkFaint, fontSize: 11 }}>{p.count}</span>
+            {!timelineLoading && !timelineError && timelinePeriods.length > 0 && (
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    className="arrow-btn flex items-center justify-center rounded-full flex-shrink-0"
+                    style={{ width: 32, height: 32, background: "#fff", color: inkSoft, boxShadow: "0 4px 12px rgba(54,47,42,0.08)" }}
+                    onClick={() => scrollRef.current && scrollRef.current.scrollBy({ left: -108, behavior: "smooth" })}
+                    aria-label="이전 날짜"
+                  >
+                    ‹
+                  </button>
+                  <div
+                    ref={scrollRef}
+                    className="flex bg-white rounded-2xl overflow-x-auto flex-1"
+                    style={{ boxShadow: "0 4px 16px rgba(54,47,42,0.06)", scrollbarWidth: "none" }}
+                  >
+                    {timelinePeriods.map((p, i) => {
+                      const active = selectedPeriod === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => jumpToCard(p.id)}
+                          className="flex-shrink-0 flex items-center justify-center py-3.5 px-4"
+                          style={{ borderLeft: i === 0 ? "none" : "1px solid #EEE7D9", width: 108 }}
+                        >
+                          <span
+                            className="flex flex-col items-center justify-center rounded-xl px-3 py-1.5"
+                            style={{
+                              fontWeight: 700,
+                              whiteSpace: "nowrap",
+                              background: active ? thread : "transparent",
+                              color: active ? "#fff" : ink,
+                            }}
+                          >
+                            <span style={{ fontSize: 11.5 }}>{p.sub}</span>
+                            <span style={{ fontSize: 9.5, opacity: 0.75, marginTop: 1 }}>{p.date}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="flex">
-                    <div className="rounded-full" style={{ width: 4, background: orange, marginRight: 12 }} />
-                    <div
-                      className="flex-1 bg-white rounded-2xl px-5 py-4"
-                      style={{
-                        boxShadow: isHighlighted
-                          ? "0 0 0 3px #EFA24A, 0 4px 16px rgba(54,47,42,0.06)"
-                          : "0 4px 16px rgba(54,47,42,0.06)",
-                        transition: "box-shadow .3s ease",
-                      }}
-                    >
-                      <div style={{ color: ink, fontWeight: 700, fontSize: 15 }}>{p.title}</div>
-                      <div style={{ color: inkSoft, fontSize: 13, marginTop: 4, lineHeight: 1.55 }}>{p.desc}</div>
-                      <div className="mt-3 pt-3" style={{ borderTop: "1px solid #F0ECE1" }}>
-                        <div style={{ color: inkFaint, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                          이 시기에 집중했던 것
+                  <button
+                    className="arrow-btn flex items-center justify-center rounded-full flex-shrink-0"
+                    style={{ width: 32, height: 32, background: "#fff", color: inkSoft, boxShadow: "0 4px 12px rgba(54,47,42,0.08)" }}
+                    onClick={() => scrollRef.current && scrollRef.current.scrollBy({ left: 108, behavior: "smooth" })}
+                    aria-label="다음 날짜"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-4">
+                  {timelinePeriods.map((p) => {
+                    const isHighlighted = highlightedCard === p.id;
+                    return (
+                      <div key={p.id} ref={(el) => (cardRefs.current[p.id] = el)}>
+                        <div className="flex items-center justify-between mb-1.5 px-1">
+                          <span style={{ color: orange, fontWeight: 700, fontSize: 12 }}>{p.sub}</span>
+                          <span style={{ color: inkFaint, fontSize: 11 }}>{p.date}</span>
                         </div>
-                        <div style={{ color: ink, fontSize: 13, lineHeight: 1.6 }}>{p.focus}</div>
-                        <div className="flex items-center gap-4 mt-2">
-                          {p.emo.map((em, i) => (
-                            <div key={i} className="flex items-center gap-1.5">
-                              <EmoBlob name={em.n} size={26} />
-                              <span style={{ color: thread, fontSize: 12, fontWeight: 600 }}>
-                                {em.n} {em.p}
-                              </span>
+                        <div className="flex">
+                          <div className="rounded-full" style={{ width: 4, background: orange, marginRight: 12 }} />
+                          <div
+                            className="flex-1 bg-white rounded-2xl px-5 py-4"
+                            style={{
+                              boxShadow: isHighlighted
+                                ? "0 0 0 3px #EFA24A, 0 4px 16px rgba(54,47,42,0.06)"
+                                : "0 4px 16px rgba(54,47,42,0.06)",
+                              transition: "box-shadow .3s ease",
+                            }}
+                          >
+                            <div style={{ color: ink, fontWeight: 700, fontSize: 15 }}>{p.title}</div>
+                            <div style={{ color: inkSoft, fontSize: 13, marginTop: 4, lineHeight: 1.55 }}>{p.desc}</div>
+                            <div className="mt-3 pt-3" style={{ borderTop: "1px solid #F0ECE1" }}>
+                              <div style={{ color: inkFaint, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
+                                이 시기에 집중했던 것
+                              </div>
+                              <div style={{ color: ink, fontSize: 13, lineHeight: 1.6 }}>{p.focus}</div>
+                              <div className="flex items-center gap-4 mt-2">
+                                {p.emo.map((em, i) => (
+                                  <div key={i} className="flex items-center gap-1.5">
+                                    <EmoBlob name={em.n} size={26} />
+                                    <span style={{ color: thread, fontSize: 12, fontWeight: 600 }}>
+                                      {em.n} {em.p}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-                );
-              })}
-            </div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -693,9 +738,10 @@ export default function RetrospectApp() {
             color: "#fff",
             fontSize: 13,
             boxShadow: "0 10px 24px rgba(0,0,0,0.25)",
+            maxWidth: "90vw",
           }}
         >
-          📄 {uploadedFile} 업로드됐어요. 대화를 분석하고 있어요…
+          📄 {uploadedFile}
         </div>
       )}
     </div>
