@@ -97,8 +97,9 @@ function validateStudyPlanInput(requestBody) {
   };
 }
 
-function toStudyPlanDatabaseRow(studyPlan) {
+function toStudyPlanDatabaseRow(studyPlan, userId) {
   return {
+    user_id: userId,
     exam_type: studyPlan.examType,
     is_first_attempt: studyPlan.isFirstAttempt,
     current_score: studyPlan.currentScore,

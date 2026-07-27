@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+﻿import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import ProjectIntro from './ProjectIntro'
@@ -14,6 +14,26 @@ const savedStudyPlan = {
   examDate: '2026-08-31',
   dailyStudyMinutes: 120,
   createdAt: '2026-07-20T00:00:00.000Z',
+}
+
+const dailyStudyRecord = {
+  id: '223e4567-e89b-12d3-a456-426614174001',
+  studyPlanId: SAVED_STUDY_PLAN_ID,
+  studyDate: '2026-07-27',
+  examType: 'TOEFL',
+  generatedTasks: [
+    { id: 'reading-1', area: 'Reading', title: 'Reading 지문 독해', minutes: 30 },
+    { id: 'speaking-1', area: 'Speaking', title: 'Speaking 답변 녹음', minutes: 20 },
+  ],
+  completedTaskIds: ['reading-1'],
+  actualStudyEntries: [
+    { id: 'actual-1', area: 'Speaking', title: '독립형 답변 추가 연습', minutes: 15 },
+  ],
+  difficultArea: 'Speaking',
+  nextPriorityArea: 'Reading',
+  reflectionNote: '말하기에서 멈칫했다.',
+  createdAt: '2026-07-27T09:00:00.000Z',
+  updatedAt: '2026-07-27T10:00:00.000Z',
 }
 
 function jsonResponse(body, ok = true) {
@@ -70,10 +90,25 @@ async function saveForm(user) {
   await user.click(screen.getByRole('button', { name: '학습 계획 생성하기' }))
 }
 
+async function createToeicPlanAndOpenToday(user, fetchMock, renderProps = {}) {
+  mockSuccessfulSave(fetchMock)
+  vi.stubGlobal('fetch', fetchMock)
+
+  render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} {...renderProps} />)
+
+  await goToInfo(user)
+  await user.type(screen.getByLabelText('목표 점수'), '850')
+  await fillCommonFields(user)
+  await saveForm(user)
+  await screen.findByRole('heading', { name: '학습 계획' })
+  await user.click(screen.getByRole('button', { name: '오늘의 학습 보기' }))
+}
+
 function mockSuccessfulSave(fetchMock, planOverrides = {}) {
   fetchMock
     .mockResolvedValueOnce(jsonResponse({ data: { id: SAVED_STUDY_PLAN_ID } }))
     .mockResolvedValueOnce(jsonResponse({ data: { ...savedStudyPlan, ...planOverrides } }))
+    .mockResolvedValueOnce(jsonResponse({ data: null }))
 }
 
 async function openExamSelection(user) {
@@ -104,7 +139,7 @@ describe('ProjectIntro exam selection next action', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await openExamSelection(user)
     await user.click(getToeicExamCard())
@@ -120,7 +155,7 @@ describe('ProjectIntro exam selection next action', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await openExamSelection(user)
 
@@ -133,7 +168,7 @@ describe('ProjectIntro exam selection next action', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await openExamSelection(user)
     await user.click(getToeicExamCard())
@@ -145,7 +180,7 @@ describe('ProjectIntro exam selection next action', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await openExamSelection(user)
     await user.click(getToeicExamCard())
@@ -158,7 +193,7 @@ describe('ProjectIntro exam selection next action', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await openExamSelection(user)
     const toeicCard = getToeicExamCard()
@@ -172,7 +207,7 @@ describe('ProjectIntro exam selection next action', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await openExamSelection(user)
     const toeflCard = screen.getByRole('button', { name: /TOEFL/ })
@@ -187,7 +222,7 @@ describe('ProjectIntro exam selection next action', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await openExamSelection(user)
     await user.click(getToeicExamCard())
@@ -211,15 +246,17 @@ describe('ProjectIntro saved study plan restore', () => {
     vi.restoreAllMocks()
   })
 
-  test('restores a saved study plan on first render when localStorage has a study plan id', async () => {
+  test('restores the latest saved study plan for the signed-in user on first render', async () => {
     localStorage.setItem('studyPlanId', SAVED_STUDY_PLAN_ID)
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: savedStudyPlan }))
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" />)
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(`/api/study-plans/${SAVED_STUDY_PLAN_ID}`)
+      expect(fetchMock).toHaveBeenCalledWith('/api/study-plans/me/latest', {
+        headers: { Authorization: 'Bearer test-token' },
+      })
     })
 
     expect(await screen.findByText('850')).toBeInTheDocument()
@@ -227,7 +264,7 @@ describe('ProjectIntro saved study plan restore', () => {
     expect(screen.getByText(SAVED_STUDY_PLAN_ID)).toBeInTheDocument()
   })
 
-  test('removes the saved id and shows a message when saved study plan lookup fails', async () => {
+  test('keeps the initial state when the signed-in user has no saved study plan', async () => {
     localStorage.setItem('studyPlanId', SAVED_STUDY_PLAN_ID)
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse(
@@ -242,9 +279,29 @@ describe('ProjectIntro saved study plan restore', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" />)
 
-    expect(await screen.findByText('저장된 학습 계획을 찾을 수 없습니다.')).toBeInTheDocument()
+    expect(await screen.findByText('선택 시험: 선택 전')).toBeInTheDocument()
+    expect(screen.getByText('STEP 1/5')).toBeInTheDocument()
+    expect(localStorage.getItem('studyPlanId')).toBeNull()
+  })
+
+  test('treats a non-JSON latest-plan 404 as no saved plan and keeps the exam selection screen', async () => {
+    localStorage.setItem('studyPlanId', SAVED_STUDY_PLAN_ID)
+    const fetchMock = vi.fn().mockResolvedValue(textResponse('<html>not found</html>', false))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" />)
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/study-plans/me/latest', {
+        headers: { Authorization: 'Bearer test-token' },
+      })
+    })
+
+    expect(screen.getByText('STEP 1/5')).toBeInTheDocument()
+    expect(screen.getByText('선택 시험: 선택 전')).toBeInTheDocument()
+    expect(screen.queryByText('서버 응답을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.')).not.toBeInTheDocument()
     expect(localStorage.getItem('studyPlanId')).toBeNull()
   })
 
@@ -254,7 +311,7 @@ describe('ProjectIntro saved study plan restore', () => {
     mockSuccessfulSave(fetchMock)
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('현재 점수'), '650')
@@ -268,7 +325,7 @@ describe('ProjectIntro saved study plan restore', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/study-plans', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         examType: 'TOEIC',
         isFirstAttempt: false,
@@ -278,7 +335,9 @@ describe('ProjectIntro saved study plan restore', () => {
         dailyStudyMinutes: 120,
       }),
     })
-    expect(fetchMock).toHaveBeenNthCalledWith(2, `/api/study-plans/${SAVED_STUDY_PLAN_ID}`)
+    expect(fetchMock).toHaveBeenNthCalledWith(2, `/api/study-plans/${SAVED_STUDY_PLAN_ID}`, {
+      headers: { Authorization: 'Bearer test-token' },
+    })
     expect(await screen.findByText(SAVED_STUDY_PLAN_ID)).toBeInTheDocument()
   })
 
@@ -300,7 +359,7 @@ describe('ProjectIntro saved study plan restore', () => {
       )
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('현재 점수'), '650')
@@ -316,7 +375,7 @@ describe('ProjectIntro saved study plan restore', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await user.click(getToeicExamCard())
     await user.click(screen.getByRole('button', { name: '취약 영역' }))
@@ -346,7 +405,7 @@ describe('ProjectIntro saved study plan restore', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await user.click(screen.getByRole('button', { name: '시험 선택' }))
     await user.click(screen.getByRole('button', { name: /TOEFL/ }))
@@ -371,7 +430,7 @@ describe('ProjectIntro saved study plan restore', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await user.click(getToeicExamCard())
     await user.click(screen.getByRole('button', { name: '취약 영역' }))
@@ -408,7 +467,7 @@ describe('ProjectIntro score validation', () => {
     mockSuccessfulSave(fetchMock, { currentScore: null, targetScore: '850' })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('목표 점수'), '850')
@@ -429,7 +488,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('목표 점수'), '995')
@@ -445,7 +504,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('목표 점수'), '852')
@@ -462,7 +521,7 @@ describe('ProjectIntro score validation', () => {
     mockSuccessfulSave(fetchMock, { examType: 'TOEFL', targetScore: score })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'TOEFL')
     await user.type(screen.getByLabelText('목표 점수'), score)
@@ -470,7 +529,7 @@ describe('ProjectIntro score validation', () => {
     await saveForm(user)
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(fetchMock).toHaveBeenCalledTimes(3)
     })
   })
 
@@ -479,7 +538,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'TOEFL')
     await user.type(screen.getByLabelText('목표 점수'), '3.2')
@@ -496,7 +555,7 @@ describe('ProjectIntro score validation', () => {
     mockSuccessfulSave(fetchMock, { examType: 'TOEFL', targetScore: '6' })
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'TOEFL')
     await user.type(screen.getByLabelText('현재 점수'), '5.5')
@@ -505,7 +564,7 @@ describe('ProjectIntro score validation', () => {
     await saveForm(user)
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(fetchMock).toHaveBeenCalledTimes(3)
     })
 
     cleanup()
@@ -515,7 +574,7 @@ describe('ProjectIntro score validation', () => {
     vi.stubGlobal('fetch', failingFetchMock)
     const failingUser = userEvent.setup()
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(failingUser, 'TOEFL')
     await failingUser.type(screen.getByLabelText('목표 점수'), '4.3')
@@ -531,7 +590,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'TOEFL')
     await user.click(screen.getByRole('button', { name: '0~120 점수' }))
@@ -548,7 +607,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'OPIc')
     await user.click(within(screen.getByRole('group', { name: '현재 등급' })).getByRole('button', { name: 'IM2' }))
@@ -564,7 +623,7 @@ describe('ProjectIntro score validation', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'OPIc')
     const currentGradeGroup = screen.getByRole('group', { name: '현재 등급' })
@@ -582,7 +641,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'TOEIC Speaking')
     await user.type(screen.getByLabelText('목표 점수'), '155')
@@ -598,7 +657,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('현재 점수'), '850')
@@ -614,7 +673,7 @@ describe('ProjectIntro score validation', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('현재 점수'), '650')
@@ -632,7 +691,7 @@ describe('ProjectIntro score validation', () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToExam(user, 'TOEFL')
     await user.type(screen.getByLabelText('현재 점수'), '5.5')
@@ -648,7 +707,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn().mockResolvedValue(textResponse('', false))
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('목표 점수'), '850')
@@ -663,7 +722,7 @@ describe('ProjectIntro score validation', () => {
     const fetchMock = vi.fn().mockResolvedValue(textResponse('<html>error</html>', false))
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<ProjectIntro />)
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
 
     await goToInfo(user)
     await user.type(screen.getByLabelText('목표 점수'), '850')
@@ -673,3 +732,349 @@ describe('ProjectIntro score validation', () => {
     expect(await screen.findByText('서버 응답을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.')).toBeInTheDocument()
   })
 })
+
+describe('ProjectIntro today study records', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    cleanup()
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  test('adds and deletes an actual study entry from the today screen', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+
+    await createToeicPlanAndOpenToday(user, fetchMock)
+
+    await user.selectOptions(screen.getByLabelText('영역 선택'), 'RC')
+    await user.type(screen.getByLabelText('학습 내용'), 'Part 5 오답 복습')
+    await user.type(screen.getByLabelText('실제 공부 시간(분)'), '25')
+    await user.click(screen.getByRole('button', { name: '추가하기' }))
+
+    expect(screen.getByText('Part 5 오답 복습')).toBeInTheDocument()
+    expect(screen.getByText('25분')).toBeInTheDocument()
+    expect(screen.getByLabelText('학습 내용')).toHaveValue('')
+    expect(screen.getByLabelText('실제 공부 시간(분)')).toHaveValue(null)
+
+    await user.click(screen.getByRole('button', { name: '삭제' }))
+
+    expect(screen.queryByText('Part 5 오답 복습')).not.toBeInTheDocument()
+    expect(screen.getByText('추가된 학습 기록이 없습니다.')).toBeInTheDocument()
+  })
+
+  test('blocks adding an actual study entry without content or at least one minute', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+
+    await createToeicPlanAndOpenToday(user, fetchMock)
+
+    await user.click(screen.getByRole('button', { name: '추가하기' }))
+
+    expect(screen.getByText('학습 영역, 내용, 1분 이상의 시간을 입력해 주세요.')).toBeInTheDocument()
+    expect(screen.getByText('추가된 학습 기록이 없습니다.')).toBeInTheDocument()
+  })
+
+  test('keeps reflection fields after saving today study records', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+
+    await createToeicPlanAndOpenToday(user, fetchMock)
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { id: 'daily-record-1' } }))
+
+    await user.selectOptions(screen.getByLabelText('오늘 가장 어려웠던 영역'), 'LC')
+    await user.selectOptions(screen.getByLabelText('내일 더 공부하고 싶은 영역'), 'RC')
+    await user.type(screen.getByLabelText('오늘의 메모'), '집중력이 후반에 떨어졌다.')
+    await user.click(screen.getByRole('button', { name: '오늘 학습 기록 저장하기' }))
+
+    expect(screen.getByLabelText('오늘 가장 어려웠던 영역')).toHaveValue('LC')
+    expect(screen.getByLabelText('내일 더 공부하고 싶은 영역')).toHaveValue('RC')
+    expect(screen.getByLabelText('오늘의 메모')).toHaveValue('집중력이 후반에 떨어졌다.')
+    expect(await screen.findByText('오늘의 학습 기록을 저장했습니다.')).toBeInTheDocument()
+  })
+
+  test('saves today study records with authorization for signed-in users', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockSuccessfulSave(fetchMock)
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { id: 'daily-record-1' } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
+
+    await goToInfo(user)
+    await user.type(screen.getByLabelText('목표 점수'), '850')
+    await fillCommonFields(user)
+    await saveForm(user)
+    await screen.findByRole('heading', { name: '학습 계획' })
+    await user.click(screen.getByRole('button', { name: '오늘의 학습 보기' }))
+    await user.click(screen.getAllByRole('checkbox')[0])
+    await user.selectOptions(screen.getByLabelText('영역 선택'), 'RC')
+    await user.type(screen.getByLabelText('학습 내용'), 'Part 5 오답 복습')
+    await user.type(screen.getByLabelText('실제 공부 시간(분)'), '25')
+    await user.click(screen.getByRole('button', { name: '추가하기' }))
+    await user.selectOptions(screen.getByLabelText('오늘 가장 어려웠던 영역'), 'LC')
+    await user.selectOptions(screen.getByLabelText('내일 더 공부하고 싶은 영역'), 'RC')
+    await user.type(screen.getByLabelText('오늘의 메모'), '집중력이 후반에 떨어졌다.')
+    await user.click(screen.getByRole('button', { name: '오늘 학습 기록 저장하기' }))
+
+    expect(fetchMock).toHaveBeenNthCalledWith(4, '/api/daily-study-records', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+      body: expect.any(String),
+    })
+
+    const requestBody = JSON.parse(fetchMock.mock.calls[3][1].body)
+    expect(requestBody.studyPlanId).toBe(SAVED_STUDY_PLAN_ID)
+    expect(requestBody.recordDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(requestBody.generatedTasks.length).toBeGreaterThan(0)
+    expect(requestBody.completedTaskIds).toHaveLength(1)
+    expect(requestBody.actualStudyEntries).toEqual([
+      expect.objectContaining({ area: 'RC', title: 'Part 5 오답 복습', minutes: 25 }),
+    ])
+    expect(requestBody.difficultArea).toBe('LC')
+    expect(requestBody.nextPriorityArea).toBe('RC')
+    expect(requestBody.reflectionNote).toBe('집중력이 후반에 떨어졌다.')
+    expect(await screen.findByText('오늘의 학습 기록을 저장했습니다.')).toBeInTheDocument()
+  })
+
+  test('shows a session-expired message when today study record save returns 401', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockSuccessfulSave(fetchMock)
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, false),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
+
+    await goToInfo(user)
+    await user.type(screen.getByLabelText('목표 점수'), '850')
+    await fillCommonFields(user)
+    await saveForm(user)
+    await screen.findByRole('heading', { name: '학습 계획' })
+    await user.click(screen.getByRole('button', { name: '오늘의 학습 보기' }))
+    await user.click(screen.getByRole('button', { name: '오늘 학습 기록 저장하기' }))
+
+    expect(await screen.findByText('로그인이 만료되었습니다. 다시 로그인해 주세요.')).toBeInTheDocument()
+  })
+
+  test('asks guests to log in when they try to save today study records', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    const onAuthRequired = vi.fn()
+
+    vi.stubGlobal('fetch', fetchMock)
+    render(
+      <ProjectIntro
+        accessToken=""
+        isAuthenticated={false}
+        onAuthRequired={onAuthRequired}
+        restoreLatestPlan={false}
+      />,
+    )
+
+    await goToInfo(user)
+    await user.type(screen.getByLabelText('목표 점수'), '850')
+    await fillCommonFields(user)
+    await saveForm(user)
+    await user.click(screen.getByRole('button', { name: '오늘의 학습 보기' }))
+    await user.click(screen.getByRole('button', { name: '오늘 학습 기록 저장하기' }))
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(onAuthRequired).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('ProjectIntro daily study record history', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    cleanup()
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  test('shows the study record menu only for signed-in users', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+
+    const { rerender } = render(<ProjectIntro accessToken="" isAuthenticated={false} restoreLatestPlan={false} />)
+
+    expect(screen.queryByRole('button', { name: '학습 기록' })).not.toBeInTheDocument()
+
+    rerender(<ProjectIntro accessToken="test-token" isAuthenticated restoreLatestPlan={false} />)
+
+    expect(screen.getByRole('button', { name: '학습 기록' })).toBeInTheDocument()
+  })
+
+  test('renders record list calculations for signed-in users', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: [dailyStudyRecord] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" isAuthenticated restoreLatestPlan={false} />)
+
+    await user.click(screen.getByRole('button', { name: '학습 기록' }))
+
+    expect(await screen.findByText('2026.07.27 · TOEFL')).toBeInTheDocument()
+    expect(screen.getByText('1/2개 완료 · 달성률 50%')).toBeInTheDocument()
+    expect(screen.getByText('계획 50분 · 추가 학습 15분')).toBeInTheDocument()
+    expect(screen.getByText('어려웠던 영역 Speaking')).toBeInTheDocument()
+    expect(screen.getByText('다음 우선 영역 Reading')).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith('/api/daily-study-records', {
+      headers: { Authorization: 'Bearer test-token' },
+    })
+  })
+
+  test('shows an empty state when there are no daily records', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ data: [] })))
+
+    render(<ProjectIntro accessToken="test-token" isAuthenticated restoreLatestPlan={false} />)
+
+    await user.click(screen.getByRole('button', { name: '학습 기록' }))
+
+    expect(await screen.findByText('아직 저장된 학습 기록이 없습니다. 오늘의 학습을 완료하고 첫 기록을 남겨 보세요.')).toBeInTheDocument()
+  })
+
+  test('opens record detail and returns to the list', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ data: [dailyStudyRecord] }))
+      .mockResolvedValueOnce(jsonResponse({ data: dailyStudyRecord }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" isAuthenticated restoreLatestPlan={false} />)
+
+    await user.click(screen.getByRole('button', { name: '학습 기록' }))
+    await user.click(await screen.findByRole('button', { name: '자세히 보기' }))
+
+    expect(await screen.findByRole('heading', { name: '2026.07.27 · TOEFL' })).toBeInTheDocument()
+    expect(screen.getByText('Reading 지문 독해')).toBeInTheDocument()
+    expect(screen.getByText('완료')).toBeInTheDocument()
+    expect(screen.getByText('Speaking 답변 녹음')).toBeInTheDocument()
+    expect(screen.getByText('미완료')).toBeInTheDocument()
+    expect(screen.getByText('독립형 답변 추가 연습')).toBeInTheDocument()
+    expect(screen.getByText('말하기에서 멈칫했다.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '목록으로 돌아가기' }))
+
+    expect(screen.getByText('2026.07.27 · TOEFL')).toBeInTheDocument()
+  })
+
+  test('shows session and server error messages while loading records', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, false),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" isAuthenticated restoreLatestPlan={false} />)
+
+    await user.click(screen.getByRole('button', { name: '학습 기록' }))
+
+    expect(await screen.findByText('로그인이 만료되었습니다. 다시 로그인해 주세요.')).toBeInTheDocument()
+
+    cleanup()
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      jsonResponse({ error: { code: 'DATABASE_ERROR', message: 'Database failed' } }, false),
+    ))
+
+    render(<ProjectIntro accessToken="test-token" isAuthenticated restoreLatestPlan={false} />)
+
+    await user.click(screen.getByRole('button', { name: '학습 기록' }))
+
+    expect(await screen.findByText('학습 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.')).toBeInTheDocument()
+  })
+})
+
+describe('ProjectIntro adaptive study plan', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    cleanup()
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  test('loads the latest previous record and shows an adaptive plan for signed-in users', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ data: { ...savedStudyPlan, examType: 'TOEFL', dailyStudyMinutes: 120 } }))
+      .mockResolvedValueOnce(jsonResponse({
+        data: {
+          ...dailyStudyRecord,
+          studyDate: '2026-07-26',
+          examType: 'TOEFL',
+          difficultArea: 'Speaking',
+          nextPriorityArea: 'Reading',
+          generatedTasks: [
+            { id: 'reading-1', area: 'Reading', title: 'Reading 지문 독해', minutes: 30 },
+            { id: 'reading-2', area: 'Reading', title: 'Reading 오답 정리', minutes: 30 },
+            { id: 'speaking-1', area: 'Speaking', title: 'Speaking 답변 녹음', minutes: 30 },
+          ],
+          completedTaskIds: ['speaking-1'],
+        },
+      }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" isAuthenticated />)
+
+    expect(await screen.findByText('이전 학습 기록 반영')).toBeInTheDocument()
+    expect(await screen.findByText(/2026-07-26 기록에서 Reading 미완료 항목이 많고 다음 우선 영역으로 선택되어/)).toBeInTheDocument()
+    expect(screen.getByText('이전 기록 반영')).toBeInTheDocument()
+    expect(screen.getByText('2026.07.26')).toBeInTheDocument()
+    expect(screen.getAllByText('Reading').length).toBeGreaterThan(0)
+    expect(fetchMock).toHaveBeenCalledWith(`/api/daily-study-records/latest-before-today?studyPlanId=${SAVED_STUDY_PLAN_ID}`, {
+      headers: { Authorization: 'Bearer test-token' },
+    })
+  })
+
+  test('uses the basic plan message when there is no previous record', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+
+    mockSuccessfulSave(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="test-token" restoreLatestPlan={false} />)
+
+    await goToInfo(user)
+    await user.type(screen.getByLabelText('목표 점수'), '850')
+    await fillCommonFields(user)
+    await saveForm(user)
+
+    expect(await screen.findByText('저장된 이전 기록이 없어 선택한 취약 영역을 기준으로 계획을 만들었습니다.')).toBeInTheDocument()
+    expect(screen.getByText('기본 계획')).toBeInTheDocument()
+  })
+
+  test('does not request previous records for guest plans', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    const onAuthRequired = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ProjectIntro accessToken="" isAuthenticated={false} onAuthRequired={onAuthRequired} restoreLatestPlan={false} />)
+
+    await goToInfo(user)
+    await user.type(screen.getByLabelText('목표 점수'), '850')
+    await fillCommonFields(user)
+    await saveForm(user)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(await screen.findByText('저장된 이전 기록이 없어 선택한 취약 영역을 기준으로 계획을 만들었습니다.')).toBeInTheDocument()
+  })
+})
+
+
