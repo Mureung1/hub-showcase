@@ -28,24 +28,31 @@ SOURCES = [
     },
     {
         "id": "daejeon_city",
-        "name": "대전광역시 교통·시정 공지",
-        "active": False,                    # 확인 필요 → 목요일 확장 때 검증 후 켜기
+        "name": "대전광역시 공지",
+        "active": True,                     # 2026-07-27 검증 완료 (목록·본문·필터)
         "list_url": "https://www.daejeon.go.kr/drh/board/boardNormalList.do"
                     "?boardId=normal_0189&menuSeq=6825",
-        "list_pattern": None,               # 확인 필요: 목록 셀렉터
+        "list_pattern": r'ntatcSeq=(\d+)[^>]*>\s*([^<]{5,60})',
         "view_url": "https://www.daejeon.go.kr/drh/board/boardNormalView.do"
                     "?boardId=normal_0189&menuSeq=6825&ntatcSeq={id}",
-        "note": "robots.txt Disallow:/ — 인지하고 학습용 저빈도로 진행. "
-                "교통 전용 아니라 시정 소식 섞임 → 교통 키워드(우회/통제/노선/버스) 필터 필요.",
+        "body_selector": ".board_view",
+        # 시정 소식이 대부분 — 교통 관련 제목만 통과시킨다
+        "title_filter": r"우회|통제|노선|버스|시간표|운행|교통|도로|정류장|BRT",
+        "note": "robots.txt Disallow:/ — 인지하고 학습용 저빈도(하루 1회·5건)로 진행. "
+                "시정 보도자료 위주라 title_filter 필수 (교통 공지 밀도 낮음, 0건인 날 많음).",
     },
     {
         "id": "sejong_sctc",
         "name": "세종도시교통공사 공지사항",
-        "active": False,                    # 확인 필요 → 목요일 확장 때
+        "active": True,                     # 2026-07-27 검증 완료 (목록·본문)
         "list_url": "https://www.sctc.kr/bbs/BBSS1612021757537630",
-        "list_pattern": None,               # 확인 필요: 글 식별자가 쿼리가 아니라 URL 경로(BBSW...)
+        # 글 식별자가 쿼리가 아니라 URL 경로(BBSW…) — 버스조합과 패턴 구조가 다름
+        "list_pattern": r'/bbs/view/BBSS1612021757537630/([A-Z0-9]+)[^>]*>\s*([^<]{5,60})',
         "view_url": "https://www.sctc.kr/bbs/view/BBSS1612021757537630/{id}/",
-        "note": "정적 HTML. 확인 필요: 이 보드에 노선 변경/우회 공고가 실제로 실리는지 "
-                "(정찰 시 일반 안내글 위주였음). BIS(bis.sejong)는 JS라 제외.",
+        "body_selector": ".bbs-body-view",
+        # "교통"은 기관명(세종도시교통공사)에 걸려 오탐 → 세종 키워드에서 제외
+        "title_filter": r"우회|통제|노선|버스|시간표|운행|도로|정류장|BRT",
+        "note": "정적 HTML. 노선 공지 실림 확인(예: 1004번 운행 변경). 공모전·안내글 섞여 title_filter 적용. "
+                "BIS(bis.sejong)는 JS라 제외.",
     },
 ]
