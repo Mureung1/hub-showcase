@@ -5,9 +5,8 @@ ShowUp provides a risk‑warning service for small‑business owners to track cu
 
 ## 2. User Obligations
 - Provide accurate phone numbers and personal information.
-- Do not submit false or defamatory incident records. The system includes a mandatory "Fact‑only" memo guideline.\n- Respect the prohibition of the term **"blacklist"**; use only "reference‑client" or "risk indicator" in UI and documentation.
-
-## ics://  ---  -  Placeholder  --- 
+- Do not submit false or defamatory incident records. The system includes a mandatory "Fact‑only" memo guideline.
+- The term **"blacklist"** is prohibited; use only "reference‑client" or "risk indicator" in UI and documentation.
 
 ## 3. Data Use
 - Collected data is used solely for risk scoring and display within the owner's store dashboard. No data is shared between stores or with third parties.

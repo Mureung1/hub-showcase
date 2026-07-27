@@ -131,7 +131,10 @@ const IncidentModal = ({ isOpen, onClose, onSubmit }: IncidentModalProps) => {
             <p className="mt-1 text-sm text-red-600">{errors.memo.message}</p>
           )}
           <p className="mt-1 text-xs text-gray-500">
-            ⚠️ 허위 기록 시 법적 책임이 발생할 수 있습니다.
+            <span className="inline-flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3l9 16H3L12 3z" /></svg>
+              허위 기록 시 법적 책임이 발생할 수 있습니다.
+            </span>
           </p>
         </div>
       </form>

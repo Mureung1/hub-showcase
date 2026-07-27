@@ -34,4 +34,21 @@
 
 ## 8. Compliance Check – "Blacklist" Term
 - Search the codebase for the string `blacklist`.
-- Expected: No occurrences; ensure the term is replaced with "risk indicator" or similar.
+- Expected: No occurrences in code/UI; the term is replaced with "risk indicator" or similar.
+- **13일차 (7/27) 최종 재확인**: 코드/화면 0건, 보안 문서 내 금지 규정 언급 2건만 존재.
+
+## 9. Owner UID Spoofing on Customer Update
+- Attempt to update a customer's `phoneLast4` without also updating `phone`.
+- Expected: **Permission denied** — `phoneLast4` must be accompanied by `phone` in the same update.
+
+## 10. Reservation Status Validation
+- Submit a reservation with `status` = `blacklist` (not in the whitelist).
+- Expected: **Permission denied** by rule validation.
+
+## 11. Customer Create Field Validation
+- Submit a customer document missing `name` or `phoneLast4`.
+- Expected: **Permission denied** — all three fields (`name`, `phone`, `phoneLast4`) are required.
+
+## 12. Normal Owner CRUD
+- Authenticated owner performs full CRUD on their own store's data.
+- Expected: All operations succeed (store, customer, reservation, incident create/update).

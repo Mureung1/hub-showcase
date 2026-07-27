@@ -54,3 +54,4 @@ apps/showup/security/**/*.mjs
 
 # Cloud Functions build output
 apps/showup/functions/lib/
+.aider*

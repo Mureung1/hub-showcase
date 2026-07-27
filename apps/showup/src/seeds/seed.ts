@@ -109,7 +109,17 @@ const reservationInputs: {
   { customerIndex: 8, date: '2026-06-28', time: '11:30', status: 'visited' },
 
   // 강동원: pending 예약 (오늘)
-  { customerIndex: 9, date: '2026-07-07', time: '10:00', status: 'pending' },
+  { customerIndex: 9, date: '2026-07-27', time: '10:00', status: 'pending' },
+
+  // === 데모용 오늘(7/27) 예약 ===
+  // 김철수: pending 오늘 — RiskAlertBanner 시연용 (주의 고객)
+  { customerIndex: 0, date: '2026-07-27', time: '14:00', status: 'pending' },
+  // 최수진: visited 오늘 — 정상 방문 시연용 (안심 고객)
+  { customerIndex: 3, date: '2026-07-27', time: '12:00', status: 'visited' },
+
+  // === 데모용 내일(7/28) 예약 ===
+  // 박준호: pending 내일 — 예정 예약 시연용
+  { customerIndex: 2, date: '2026-07-28', time: '13:00', status: 'pending' },
 ];
 
 export const demoReservations: Reservation[] = reservationInputs.map((input) => ({
@@ -124,7 +134,7 @@ export const demoReservations: Reservation[] = reservationInputs.map((input) => 
 
 export const reservationIds = demoReservations.map((_, index) => `reservation-${String(index + 1).padStart(3, '0')}`);
 
-const incidentInputs: {
+export const incidentInputs: {
   customerIndex: number;
   type: Incident['type'];
   memo: string;
