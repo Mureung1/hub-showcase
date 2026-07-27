@@ -38,6 +38,9 @@ todos:
   - id: issue-74
     content: 크롤러 fetch 재시도 이중 안전망(코드 레벨 + 워크플로우 레벨)
     status: completed
+  - id: issue-80
+    content: K-Startup·소상공인24 크롤링 소스 추가로 소상공인 매칭 커버리지 개선
+    status: pending
 isProject: false
 ---
 
@@ -59,6 +62,11 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 2026-07-26 새벽 크론 실행이 네트워크 커넥트 타임아웃으로 실패한 것을 계기로, 크롤러에 재시도
 로직이 전혀 없다는 걸 확인해 별도 이슈(#74)로 등록했다.
 
+2026-07-27 사용자가 배포된 서비스를 직접 써보며 소상공인 매칭 정확도가 낮다고 판단 — 실제
+데이터 조사 결과 bizinfo의 "소상공인" 명시 비율(7.5%)과 업종 카테고리 매칭률(6.2%)이 모두
+낮음을 확인. K-Startup·소상공인24 등 4개 후보 사이트를 조사해 두 곳(K-Startup, 소상공인24)을
+크롤링 소스로 추가하기로 결정, 별도 이슈(#80)로 등록했다.
+
 ## 진행 현황
 
 | 이슈 | 제목 | 상태 |
@@ -74,6 +82,7 @@ Week 3 마일스톤(#28~#32, #40, #43, #44) 완료 후 발견된 개별 작업(#
 | [#67](https://github.com/syd348/hub/issues/67) | 첨부파일 AI 구조화 추출 | 완료 (2026-07-26, PR #76) — Claude→Gemini 전환, HWP 지원 보류 결정, [`week4/issue-67-ai-document-extraction-plan.md`](week4/issue-67-ai-document-extraction-plan.md) |
 | [#74](https://github.com/syd348/hub/issues/74) | 크롤러 fetch 재시도 이중 안전망 | 완료 (2026-07-27) — 코드 레벨(withRetry) + 워크플로우 레벨(nick-fields/retry), [`week4/issue-74-crawler-retry-plan.md`](week4/issue-74-crawler-retry-plan.md) |
 | [#77](https://github.com/syd348/hub/issues/77) | subsidies에 atch_file_id 컬럼 추가 | 완료 (2026-07-27) — #67 리뷰 중 발견한 조인 불가 문제, [`week4/issue-77-atch-file-id-plan.md`](week4/issue-77-atch-file-id-plan.md) |
+| [#80](https://github.com/syd348/hub/issues/80) | K-Startup·소상공인24 크롤링 소스 추가 | 등록 완료 (2026-07-27) — 소상공인 매칭 정확도 조사에서 파생, [`week4/issue-80-data-source-expansion-plan.md`](week4/issue-80-data-source-expansion-plan.md) |
 
 ## 리스크 / 결정 필요
 
