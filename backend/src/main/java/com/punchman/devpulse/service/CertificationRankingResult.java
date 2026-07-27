@@ -10,6 +10,7 @@ public record CertificationRankingResult(
         int essentialMentionCount,
         int preferredMentionCount,
         int rank,
-        double topRelativeRatio
+        double topRelativeRatio,
+        boolean llmAssisted
 ) {
 }

@@ -13,7 +13,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * 원문을 JobPosting으로 저장하고, 룰 기반 최소 정규화(CertificationTextMatcher)로
- * certification_mention을 재계산한다. LLM 기반 정규화(FR-2 원안)는 범위 밖.
+ * certification_mention을 재계산한다. LLM 기반 정규화(Issue 16)는 이 실시간 Kafka 경로에는
+ * 들어오지 않음 — 완전히 분리된 별도 엔드포인트(CertificationLlmNormalizationController)에서만
+ * 배치로 호출된다("실시간 스트리밍 금지" 원칙).
  */
 @Component
 @RequiredArgsConstructor

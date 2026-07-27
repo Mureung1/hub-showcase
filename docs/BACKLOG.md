@@ -398,13 +398,51 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 
 ---
 
+## Issue 16. LLM 기반 정규화 도입
+
+**요구사항**
+`CertificationTextMatcher`는 순수 리터럴 매칭이라 동의어/축약형 표기를 놓친다. 원래 기획 FR-2("룰 기반 1차 매칭 + 애매한 표현만 LLM 배치 정규화")의 마지막 조각 — Issue 8/13에서 반복적으로 스코프 밖으로 미뤄뒀던 항목.
+
+**실측 확인(진행 여부 판단 근거)**: 85건 공고 중 75건이 규칙 매칭 0건, 그중 자격증 관련 일반 키워드(자격/면허/기사/기능사) 포함은 51건. 샘플 8건을 직접 읽어본 결과 대부분 범용 문구("관련 자격증소지자 우대")이거나 무관 자격증(운전면허 등)이었고 우리 7종의 숨은 동의어는 없었음 — 이번 데이터셋 규모에서 신규 매칭 효과는 제한적일 수 있음. 사용자 확인 후 그럼에도 전체 구현 진행(FR-2 완성 자체가 목적, 데이터가 늘어나면 실제 효과를 낼 구조).
+
+**범위 결정 — planner 검토 + 사용자 확인(AskUserQuestion 3건)**
+- **배치 트리거 아키텍처**: 기존 Kafka 컨슈머(`JobPostingCollectedConsumer`)가 메시지 1건마다 즉시 `recalculate()`하는 구조에 LLM 호출을 얹으면 "실시간 스트리밍 금지"/"LLM은 배치 호출만" 원칙을 직접 위반함을 사전에 발견 — **완전히 분리된 신규 엔드포인트**(`POST /api/certification-mentions/normalize-llm?jobTitle=`)로 해결. Kafka/컨슈머/`AlioJobPostingCollectorService`는 전혀 무변경
+- **LLM 제공자**: Groq(OpenAI 호환 chat completions, vanilla feign-core로 `AlioClientConfig`와 동일 패턴). 실제 키 테스트는 사용자가 로컬에서 — ALIO 키와 동일 원칙(대화에 실키 안 씀)
+- **저장 모델**: essential/preferred(문맥 축, Issue 13)와 충돌 안 하게 컬럼을 늘리는 대신 `certification_llm_match` 원장 테이블 신설(공고×자격증 단위, LLM이 새로 찾아낸 것만 기록) — `CertificationMentionRecalculationService.recalculate()`가 규칙 매칭 실패 시 이 원장도 확인해 essential/preferred에 반영(규칙이 이미 잡은 조합은 원장에 없으므로 이중 집계 없음)
+
+**작업 단계**
+- [x] `V6__certification_llm_match.sql`, `domain/CertificationLlmMatch`, `repository/jpa/CertificationLlmMatchRepository`
+- [x] `collector/groq` 패키지 — `GroqChatClient`(vanilla feign-core), `GroqClientConfig`, `application.yml`에 `devpulse.groq.api-key`/`devpulse.groq.model`(`DEVPULSE_GROQ_API_KEY`/`DEVPULSE_GROQ_MODEL` 환경변수, 모델명은 Groq 무료 tier 로스터가 바뀔 수 있어 오버라이드 가능하게)
+- [x] `normalizer/LlmNormalizationCandidateSelector` — 규칙 매칭 7종 전부 실패 + 자격증 관련 키워드(자격/면허/기사/기능사) 포함 공고만 LLM 후보로 선별(전체 텍스트를 매번 LLM에 넘기지 않는다는 원칙의 핵심 장치)
+- [x] `normalizer/GroqNormalizationPrompt`/`GroqNormalizationResult`/`GroqNormalizationResponseParser` — 우리 7종 정확한 명칭 목록을 프롬프트에 포함, "목록에 없으면 언급하지 말 것"/"확실하지 않으면 빈 배열" 지시로 할루시네이션 방지, JSON 모드 강제. 파싱은 개별 항목 단위로 방어적(목록에 없는 자격증명·잘못된 필드는 그 항목만 버리고 나머지는 정상 처리)
+- [x] `service/CertificationLlmNormalizationService` — 후보 선별 → 프롬프트 생성 → Groq 호출(실패 시 예외를 잡아 0건으로 안전 처리) → 원장 저장(중복 방지) → `recalculate()` 재호출
+- [x] `api/CertificationLlmNormalizationController` — `POST /api/certification-mentions/normalize-llm?jobTitle=`
+- [x] `CertificationMentionRecalculationService.recalculate()` 확장 — 규칙 매칭이 `NONE`일 때만 원장 조회로 보충
+- [x] 신뢰도 표시(요청 3번) — `CertificationMentionMapper` SQL에 `EXISTS` 서브쿼리로 `llmAssisted` 컬럼 추가, `CertificationMentionAggregateRow`/`CertificationRankingResult`/`CertificationRankingResponse`까지 관통(기존 essential/preferred 확장과 동일한 패턴)
+- [x] 테스트 17종 신규 — 후보 선별 3, 응답 파서 5, 정규화 서비스 5(할루시네이션 방지·중복 방지·Groq 실패 방어 포함), 재계산 확장 3, 랭킹 서비스 llmAssisted 통과 1
+
+**완료 기준**
+- [x] `./gradlew test` 84개 전체 통과(기존 67 + 신규 17)
+- [x] 실제 서버 기동 후 `POST /api/certification-mentions/normalize-llm?jobTitle=` 실호출 — 실키 없이도 `https://api.groq.com/openai/v1/chat/completions`까지 실제 도달해 `401 Unauthorized`를 받는 것으로 엔드포인트/헤더/요청 바디 구조가 맞다는 것 확인(404·연결 실패가 아니라 인증 실패라는 게 핵심 — ALIO 때와 동일한 "실제 호출로 확정" 원칙), 예외가 안전하게 처리돼 500 없이 `{"newMatchCount":0}` 정상 응답
+- [x] 후보 선별 로직이 실제로 후보를 찾음(로그로 "안전"/"반도체 품질관리" 둘 다 Groq 호출까지 도달 확인, "후보 없음" 조기 종료가 아니었음)
+- [x] 기존 랭킹/재계산 경로 회귀 없음
+
+**이번엔 하지 않은 것**
+- 실제 Groq 응답 스키마 최종 확정 — JSON 모드 파라미터명, 실제 무료 모델 로스터는 사용자가 실키로 로컬 검증 필요(가정: OpenAI 호환 `response_format: {"type": "json_object"}`, 기본 모델 `llama-3.3-70b-versatile`, 환경변수로 오버라이드 가능)
+- LLM 신뢰도(`llmAssisted`)의 프론트 화면 표시 — API까지만, 카드 UI 반영은 후속
+- 대량 후보 시 여러 배치로 분할하는 로직 — 현재 데이터 규모(공고당 후보 수십 건)에서는 한 번의 배치 호출로 충분, 필요해지면 재검토
+
+---
+
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
 |---|---|---|---|---|
 | ALIO Collector | Feign 클라이언트, 채용공고 실제 수집 + Kafka 프로듀서/컨슈머 원문 저장. **주의**: MyBatis 집계 쿼리가 `total_posting_count=0`일 때 division-by-zero(500)를 던짐 — 실 데이터 수집 전 방어 로직 필요 (Issue 8 참고) | P0 | - | Done (Issue 11) |
 | `recrutPbancTtl` 검색 파라미터 재확인 | 원인 규명 완료 — ALIO 검색 폼이 요구하는 15개 필드 중 9개를 키째로 누락해서 발생. `AlioJobPostingCollectorService`에 반영 완료, 실제 공고 41건 수집 검증 | P0 | - | Done (Issue 11) |
-| 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화, `JobPostingCollectedConsumer`(Issue 11)의 `preferenceDetail`(prefCn 원문) 파싱 + 전용 DTO 정의 | P0 | 다음 슬라이스 | Todo |
+| 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화(Groq), 완전 분리된 신규 엔드포인트로 구현 | P0 | - | Done (Issue 16) |
+| Groq 응답 스키마 실키 검증 | JSON 모드 파라미터명/무료 모델 로스터를 사용자 로컬 실키 테스트로 최종 확정 필요 | P0 | 다음 슬라이스 | Todo |
+| `llmAssisted` 신뢰도 프론트 표시 | API 필드는 노출 완료(Issue 16), 카드 UI에 "LLM 추정 포함" 등 반영은 후속 | P2 | 다음 슬라이스 | Todo |
 | 강조도 분류 (필수/우대) | 문맥 기반(자격요건 vs 우대사항 필드) 분류 로직 구현, `certification_mention`에 essential/preferred 카운트 저장 | P1 | - | Done (Issue 13) |
 | MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 | P1 | - | Done (Issue 8) |
 | Kafka 파이프라인 분리 | `jobposting.collected` 토픽·컨슈머 뼈대, docker-compose 인프라 | P1 | - | Done (Issue 10) |

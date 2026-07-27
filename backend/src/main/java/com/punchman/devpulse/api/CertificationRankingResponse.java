@@ -12,7 +12,8 @@ public record CertificationRankingResponse(
         int essentialMentionCount,
         int preferredMentionCount,
         int rank,
-        double topRelativePercent
+        double topRelativePercent,
+        boolean llmAssisted
 ) {
 
     public static CertificationRankingResponse from(CertificationRankingResult result) {
@@ -28,7 +29,8 @@ public record CertificationRankingResponse(
                 result.essentialMentionCount(),
                 result.preferredMentionCount(),
                 result.rank(),
-                roundedTopRelativePercent
+                roundedTopRelativePercent,
+                result.llmAssisted()
         );
     }
 }

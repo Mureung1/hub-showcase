@@ -41,7 +41,8 @@ public class CertificationRankingService {
                 row.essentialMentionCount(),
                 row.preferredMentionCount(),
                 rank,
-                topRelativeRatio(row.mentionCount(), topMentionCount)
+                topRelativeRatio(row.mentionCount(), topMentionCount),
+                row.llmAssisted()
         );
     }
 

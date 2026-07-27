@@ -7,6 +7,7 @@ public record CertificationMentionAggregateRow(
         int totalPostingCount,
         double mentionRate,
         int essentialMentionCount,
-        int preferredMentionCount
+        int preferredMentionCount,
+        boolean llmAssisted
 ) {
 }

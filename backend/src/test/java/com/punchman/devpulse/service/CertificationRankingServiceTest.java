@@ -91,6 +91,13 @@ class CertificationRankingServiceTest {
     }
 
     @Test
+    void llmAssistedFlagPassesThroughUnchanged() {
+        CertificationRankingResult result = rankSingleRow(row("A", 100, 0, 1, true));
+
+        assertThat(result.llmAssisted()).isTrue();
+    }
+
+    @Test
     void emptyRankingThrowsNotFound() {
         when(certificationMentionMapper.findRankingByJobTitle("존재하지않는직무")).thenReturn(List.of());
 
@@ -109,9 +116,15 @@ class CertificationRankingServiceTest {
 
     private CertificationMentionAggregateRow row(String certificationName, int totalPostingCount,
             int essential, int preferred) {
+        return row(certificationName, totalPostingCount, essential, preferred, false);
+    }
+
+    private CertificationMentionAggregateRow row(String certificationName, int totalPostingCount,
+            int essential, int preferred, boolean llmAssisted) {
         int mentionCount = essential + preferred;
         double mentionRate = totalPostingCount == 0 ? 0.0 : (double) mentionCount / totalPostingCount;
         return new CertificationMentionAggregateRow(
-                certificationName, "테스트발급기관", mentionCount, totalPostingCount, mentionRate, essential, preferred);
+                certificationName, "테스트발급기관", mentionCount, totalPostingCount, mentionRate, essential, preferred,
+                llmAssisted);
     }
 }
