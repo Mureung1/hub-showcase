@@ -44,7 +44,17 @@ const ingredientInputSchema = z.object({
     context.addIssue({
       code: "custom",
       path: ["unit"],
-      message: "정확한 수량을 관리할 때는 개, g, 팩 중 하나의 단위가 필요합니다.",
+      message: "정확한 수량을 관리할 때는 개 또는 g 단위가 필요합니다.",
+    });
+  }
+  if (ingredient.quantity_mode === "exact"
+    && ingredient.unit === "개"
+    && Number.isFinite(ingredient.quantity)
+    && !Number.isInteger(ingredient.quantity)) {
+    context.addIssue({
+      code: "custom",
+      path: ["quantity"],
+      message: "개 단위 수량은 정수여야 합니다.",
     });
   }
   const storageRule = SHELF_LIFE_RULES[ingredient.category];
@@ -71,6 +81,15 @@ const ingredientConsumptionSchema = z.object({
       message: "같은 재료를 중복 차감할 수 없습니다.",
     });
   }
+  items.forEach((item, index) => {
+    if (item.unit === "개" && !Number.isInteger(item.amount)) {
+      context.addIssue({
+        code: "custom",
+        path: ["items", index, "amount"],
+        message: "개 단위 차감량은 정수여야 합니다.",
+      });
+    }
+  });
 });
 
 function addDays(dateString, days) {

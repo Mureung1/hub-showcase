@@ -69,12 +69,12 @@ describe("재료 수량 입력", () => {
     expect(quantityInput.validity.valid).toBe(true);
   });
 
-  test("수량 단위 선택지는 개, g, 팩으로 통일한다", () => {
+  test("수량 단위 선택지는 개와 g으로 통일한다", () => {
     renderForm();
 
     const unitSelect = screen.getByLabelText("수량 단위");
     expect(unitSelect).toHaveDisplayValue("개");
     expect(within(unitSelect).getAllByRole("option").map((option) => option.value))
-      .toEqual(["개", "g", "팩"]);
+      .toEqual(["개", "g"]);
   });
 });

@@ -17,5 +17,5 @@ test("표준 g 단위로 생성된 액체류도 이름을 기준으로 차감 �
 test("고체 재료는 표준 단위에 따라 차감한다", () => {
   assert.equal(isLiquidIngredient({ name: "양파", unit: "개" }), false);
   assert.equal(isLiquidIngredient({ name: "돼지고기", unit: "g" }), false);
-  assert.equal(isLiquidIngredient({ name: "두부", unit: "팩" }), false);
+  assert.equal(isLiquidIngredient({ name: "두부", unit: "개" }), false);
 });

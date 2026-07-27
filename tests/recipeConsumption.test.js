@@ -10,7 +10,7 @@ const recipe = {
   missingIngredients: ["대파"],
   requiredIngredients: [
     { name: "계란", amount: 2, unit: "개" },
-    { name: "두부", amount: 0.5, unit: "모" },
+    { name: "두부", amount: 1, unit: "모" },
     { name: "대파", amount: 1, unit: "대" },
     { name: "간장", amount: 1, unit: "큰술" },
     { name: "우유", amount: 100, unit: "g" },
@@ -39,7 +39,7 @@ test("레시피 필수 재료는 기본 선택하고 부족·기본 양념·선�
   ]);
   assert.deepEqual(getConsumptionRequestItems(rows), [
     { id: "egg", amount: 2, unit: "개" },
-    { id: "tofu", amount: 0.5, unit: "팩" },
+    { id: "tofu", amount: 1, unit: "개" },
   ]);
 });
 

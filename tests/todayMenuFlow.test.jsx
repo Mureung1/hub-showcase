@@ -169,7 +169,7 @@ test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 �
           id: "ingredient-tofu",
           name: "두부",
           amount: 1,
-          unit: "팩",
+          unit: "개",
           remainingQuantity: 1,
           removed: false,
         }],
@@ -186,11 +186,11 @@ test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 �
 
   expect(await screen.findByRole("dialog")).toBeInTheDocument();
   expect(screen.getByRole("checkbox", { name: /두부/ })).toBeChecked();
-  expect(screen.getByText("남음 1팩")).toBeInTheDocument();
+  expect(screen.getByText("남음 1개")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "1개 재료 차감하기" }));
 
   await screen.findByRole("button", { name: "✓ 재료 차감 완료" });
   expect(consumedRequest).toEqual({
-    items: [{ id: "ingredient-tofu", amount: 1, unit: "팩" }],
+    items: [{ id: "ingredient-tofu", amount: 1, unit: "개" }],
   });
 });

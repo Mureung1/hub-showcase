@@ -14,15 +14,15 @@ test("기존 개수 단위를 개로 통일한다", () => {
   });
 });
 
-test("기존 포장 단위를 팩으로 통일한다", () => {
-  assert.deepEqual(convertQuantityToStandard(0.5, "모"), {
-    quantity: 0.5,
-    unit: "팩",
+test("기존 포장 단위를 개로 통일한다", () => {
+  assert.deepEqual(convertQuantityToStandard(1, "모"), {
+    quantity: 1,
+    unit: "개",
     factor: 1,
   });
   assert.deepEqual(convertQuantityToStandard(1, "캔"), {
     quantity: 1,
-    unit: "팩",
+    unit: "개",
     factor: 1,
   });
 });

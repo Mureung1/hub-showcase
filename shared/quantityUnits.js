@@ -1,4 +1,4 @@
-export const STANDARD_QUANTITY_UNITS = ["개", "g", "팩"];
+export const STANDARD_QUANTITY_UNITS = ["개", "g"];
 
 const UNIT_DEFINITIONS = new Map([
   ["개", { unit: "개", factor: 1 }],
@@ -19,11 +19,11 @@ const UNIT_DEFINITIONS = new Map([
   ["큰술", { unit: "g", factor: 15 }],
   ["작은술", { unit: "g", factor: 5 }],
   ["컵", { unit: "g", factor: 200 }],
-  ["팩", { unit: "팩", factor: 1 }],
-  ["봉", { unit: "팩", factor: 1 }],
-  ["봉지", { unit: "팩", factor: 1 }],
-  ["캔", { unit: "팩", factor: 1 }],
-  ["모", { unit: "팩", factor: 1 }],
+  ["팩", { unit: "개", factor: 1 }],
+  ["봉", { unit: "개", factor: 1 }],
+  ["봉지", { unit: "개", factor: 1 }],
+  ["캔", { unit: "개", factor: 1 }],
+  ["모", { unit: "개", factor: 1 }],
 ]);
 
 function normalizeUnitName(unit) {

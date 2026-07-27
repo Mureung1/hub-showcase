@@ -81,7 +81,7 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
             {STANDARD_QUANTITY_UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
           </select>
         </div>
-        <p className="field-hint" id="quantity-hint">낱개는 ‘개’, 무게는 ‘g’, 포장된 재료는 ‘팩’으로 입력해 주세요.</p>
+        <p className="field-hint" id="quantity-hint">낱개와 포장된 재료는 ‘개’, 무게는 ‘g’으로 입력해 주세요.</p>
         {errors.quantity && <p className="field-error" id="quantity-error">{errors.quantity}</p>}
       </div>
 
