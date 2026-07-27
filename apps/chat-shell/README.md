@@ -4,6 +4,8 @@ Current active directory의 TXT 자료와 Official OpenAI Codex Python SDK 기�
 
 현재 Browser는 chooser·development materializer가 넘긴 current-v2 directory의 post-activation workbench만 구현한다. OAuth/setup wizard, app-owned scaffold, `WorkspaceManifest`, durable active registry와 `Semester Ready` 화면은 아직 없다. 아래 `ready workspace`는 current wire state이며 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않다. Adopted workspace target은 [ADR 0018](../../docs/adr/0018-adopt-user-owned-git-semester-workspaces.md)과 [ADR 0020](../../docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md)이 소유한다.
 
+Target expand에는 `WorkspaceLifecycleView`가 추가돼 Browser-safe `starting | active | recovery_required`만 표시한다. Workspace/Runtime/registry recovery, no-root 안내와 failed explicit relaunch 뒤 previous-workspace reopen을 1440px·1920px desktop Chromium에서 검증하며 chooser, activate/change/restart control과 absolute path를 만들지 않는다. 이 component는 joint public cutover 전까지 current default workbench를 교체하지 않는다.
+
 ## 현재 구현
 
 | 영역 | 현재 동작 |
