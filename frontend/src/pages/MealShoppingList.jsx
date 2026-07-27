@@ -14,7 +14,12 @@ export default function MealShoppingList() {
           {items.length ? items.map((it, i) => (
             <div className="shop-row" key={i} style={i === items.length - 1 ? { borderBottom: 'none' } : undefined}>
               <input type="checkbox" defaultChecked />
-              <div className="nm">{it.label}<small>{it.uses.join(' · ')}</small></div>
+              <div className="nm">
+                {it.label}<small>{it.uses.join(' · ')}</small>
+                {it.actualCost < it.price && (
+                  <small style={{ color: 'var(--sub)' }}>실제 쓰는 양은 약 {it.actualCost.toLocaleString()}원어치, 나머지는 마트 최소 판매 단위(1팩) 때문에 같이 사는 거예요</small>
+                )}
+              </div>
               <span className="pr">{it.price.toLocaleString()}원</span>
             </div>
           )) : (

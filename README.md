@@ -9,10 +9,11 @@
 - [알고리즘 설계](docs/algorithms.md) — 식단 추천·장보기 최적화 알고리즘
 - [백로그](docs/backlog.md) — 완료 작업 요약, 남은 작업, Day별 진행 기록(이 저장소엔 13일차 시점까지만 반영 — 최신 진행 상황은 이슈 #19 참고)
 - [2주차 계획수립](docs/2주차%20계획수립.md) — Day 1~10 초기 로드맵(참고용 — 최신 진행 상황은 backlog.md 참고)
+- [쇼케이스](showcase/showcase.json) — 포트폴리오 제출용 프로젝트 요약(문제정의·핵심기능·기술스택·AI 에이전트 활용 내역)
 
 ## 개발 계획 / 로드맵
 
-`fridge-recipe-app` 폴더 기준으로는 12일차(2026-07-21)까지 진행되었습니다. 현재 진행 중인 작업과 우선순위는 GitHub Issues에서 관리합니다. (`fridge-recipe-app` 폴더의 `backend`/`frontend` 코드 변경분과 `docs/` 문서는 아직 이 저장소 브랜치에 반영 전 — 이슈 #19에 최신 진행 상황과 남은 작업으로 기록)
+`fridge-recipe-app` 폴더 기준으로는 15일차(2026-07-24)까지 진행되었습니다. 현재 진행 중인 작업과 우선순위는 GitHub Issues에서 관리합니다. (`fridge-recipe-app` 폴더의 `backend`/`frontend` 코드 변경분과 `docs/` 문서는 아직 이 저장소 브랜치에 반영 전 — 이슈 #19에 최신 진행 상황과 남은 작업으로 기록). 이번 브랜치(day15)에는 포트폴리오 제출용 `showcase/showcase.json`을 추가했습니다(썸네일·스크린샷 이미지는 추후 추가 예정).
 
 - 📋 **[통합 개발 백로그 (#19)](https://github.com/baejh3333-del/hub/issues/19)** — 진행 중 / 다음 작업 / 백로그로 정리된 전체 작업 체크리스트
 - 🗂 **[전체 이슈 목록](https://github.com/baejh3333-del/hub/issues)** — 각 작업의 상세 구현 가이드(현재 상태 · 구현 방향 · 주의할 점 · 테스트 방법)

@@ -6,18 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 자취생 냉장고 레시피 앱. 서로 독립된 npm 프로젝트 두 개(`frontend/` React+Vite, `backend/` Express)로 구성된 웹 서비스 저장소입니다. 개발 참고 문서는 `docs/`에 있습니다:
 
-- [docs/기획서.md](docs/기획서.md) — 페르소나·문제정의·MVP 범위 등 제품 요구사항 원본
-- [docs/api-design.md](docs/api-design.md) — 엔드포인트별 요청/응답 계약, DB 스키마 설계
-- [docs/backlog.md](docs/backlog.md) — 남은 작업 목록(우선순위별), 완료된 작업 요약
-- [docs/2주차 계획수립.md](docs/2주차%20계획수립.md) — Day 1~10 진행 계획(FE 안정화 → BE 수정 → DB/API 연동 → 데이터 수집 → 통합)
+- [docs/product.md](docs/product.md) — 페르소나·문제정의·MVP 범위 등 제품 요구사항 원본
+- [docs/api.md](docs/api.md) — 엔드포인트별 요청/응답 계약, DB 스키마 설계
+- [docs/algorithms.md](docs/algorithms.md) — 일주일 식단 v2 / 최소 구매 / 임박 구출 세트 알고리즘 단일 소스
+- [docs/backlog.md](docs/backlog.md) — 남은 작업 목록(우선순위별), 완료된 작업 요약 및 12일차 세부 작업 기록
+- [docs/3주차 계획수립.md](docs/3주차%20계획수립.md) — Day 11~15 진행 계획 및 완료 현황
+- [docs/4주차 계획수립.md](docs/4주차%20계획수립.md) — Day 16~20 진행 계획(코드 검토·OCR 실연동·농산물 API 보강·배포)
 
 > 발표자료·Windows 런처·구버전 정적 프로토타입처럼 웹 서비스 코드도 개발 문서도 아닌 것들은
 > 저장소 밖(`C:\Users\user\Desktop\에이전트 실습 관련 자료 파일\`)에 따로 있습니다.
 
-**참고**: 이 폴더(`fridge-recipe-app`)는 git 저장소가 아닙니다. 실제 GitHub 저장소는
-`baejh3333-del/hub`(로컬 경로: `Desktop\깃허브 공유 파일\hub`)이며, 2026-07-09 이후 이 폴더에서
-진행된 버그 수정·기능 추가가 아직 반영되지 않았습니다 — 공유/배포 전에 동기화가 필요합니다
-([docs/backlog.md](docs/backlog.md) P2 참고).
+**참고**: 이 폴더(`fridge-recipe-app`)는 이제 자체 GitHub 저장소(`baejh3333-del/fridge-recipe-app`)를 가진
+git 저장소입니다(16일차부터 — 이전엔 git 저장소가 아니었음). 별도로 `baejh3333-del/hub`
+(로컬 경로: `Desktop\깃허브 공유 파일\hub`)에도 이 프로젝트의 미러가 있으며, 2026-07-09 이후
+이 폴더에서 진행된 버그 수정·기능 추가가 그쪽엔 아직 반영되지 않았습니다 — 공유/배포 전에
+동기화가 필요합니다([docs/backlog.md](docs/backlog.md) P2, [docs/4주차 계획수립.md](docs/4주차%20계획수립.md) Day20 참고).
 
 ## 커맨드
 
@@ -35,8 +38,9 @@ npm run preview
 npm install
 npm run dev       # nodemon src/server.js — 자동 재시작, 기본 포트 3001 ($PORT로 재정의 가능)
 npm start         # node src/server.js — watch 없이 1회 실행
+npm run lint      # oxlint (backend/.oxlintrc.json 기반)
+npm test          # node --test (pure functions 단위 테스트 20건 수행)
 ```
-`npm test`는 아직 `npm init`이 만든 placeholder만 있고 실제 테스트는 없습니다.
 
 ### 로컬에서 FE+BE 같이 띄우기
 frontend-dev(5174)와 backend-dev(3001)를 각각 별도 터미널로 띄웁니다(`.claude/launch.json`에 두 설정 모두 등록됨). 포트가 다르므로 브라우저가 기본적으로 CORS를 막는데, `backend/src/app.js`에서 `cors()`를 전체 허용으로 열어뒀습니다.
@@ -58,10 +62,12 @@ frontend-dev(5174)와 backend-dev(3001)를 각각 별도 터미널로 띄웁니�
 `backend/src/data/ingredients.js`가 재료의 불변 속성(emoji, name, category, defaultUnitLabels, avgShelfLifeDays, role/tip)을 담는 "마스터"이고, `backend/src/data/initialFridge.js`는 시점에 따라 변하는 "재고" 상태만(level 인덱스, 구매일, 유통기한, imminent 플래그) 담습니다. `store.js`의 `enrichFridgeItem()`/`buildFridgeView()`가 이 둘을 합쳐 프론트가 기대하는 평평한 모양(`{id, emoji, name, levels, level, purchased, expiry, imminent, role, tip, ...}`)을 만듭니다. `fridge[id].emoji`처럼 raw `fridge` 맵을 직접 읽는 코드를 새로 추가하지 말고 반드시 `buildFridgeView()`를 거쳐야 합니다.
 
 ### frontend ↔ backend 데이터 중복
-`frontend/src/data/*.js`와 `frontend/src/logic/fridgeLogic.js`는 `backend/src/` 아래 동명 파일의 복사본입니다(모노레포 공유 패키지가 아직 없어서 의도적으로 그렇게 함). frontend 쪽 복사본은 `mockServer.js`(백엔드 없이 UI만 확인할 때 쓰는 폴백)가 사용하고, backend 쪽 복사본은 실제 API가 사용합니다. 레시피/재료 데이터나 공용 순수 로직(`fridgeAvailable`, `ingHave`, `recipeRatio` 등)을 고칠 때는 두 곳 다 수정해야 합니다.
+`frontend/src/data/*.js`와 `frontend/src/logic/fridgeLogic.js`는 `backend/src/` 아래 동명 파일의 복사본입니다(모노레포 공유 패키지가 아직 없어서 의도적으로 그렇게 함). frontend 쪽 복사본은 `AppContext.jsx`·`Fridge.jsx`·`Home.jsx`·`AddItem.jsx`·`ExpiryCheck.jsx`가 클라이언트 쪽 필터링/표시 계산(`fridgeAvailable` 등)에 직접 쓰고, backend 쪽 복사본은 실제 API(`store.js`)가 씁니다. 레시피/재료 데이터나 공용 순수 로직을 고칠 때는 두 곳 다 수정해야 합니다.
 
-### 프론트엔드: 하나의 인터페이스 뒤에 API 백엔드 두 개
-`frontend/src/api/index.js`가 `mockServer.js`(인메모리, 백엔드 불필요)와 `httpClient.js`(실제 Express 백엔드에 fetch, `VITE_API_BASE_URL` 환경변수 사용·기본값 `http://localhost:3001`) 중 하나를 재export합니다. 다른 프론트 코드는 전부 `mockServer.js`/`httpClient.js`를 직접 import하지 않고 `api/index.js`를 통해서만 호출하므로, 백엔드 전환은 그 파일의 한 줄만 바꾸면 됩니다. `mockServer.js` · `httpClient.js` · 실제 백엔드 컨트롤러 이 세 곳은 "같은 API 계약"을 각자 독립적으로 구현한 것이라 타입 체크 없이 조용히 어긋날 수 있습니다 — 함수 시그니처(이름·인자·응답 모양)를 셋 다 맞춰 유지하세요.
+> 이전엔 프론트 복사본을 `mockServer.js`(백엔드 없이 UI만 보는 인메모리 폴백)가 썼지만, 그 파일은 이제 저장소에 없습니다 — 프론트는 항상 실제 백엔드(`httpClient.js`)가 필요합니다.
+
+### 프론트엔드 API 호출은 `api/index.js`를 통해서만
+`frontend/src/api/index.js`가 `httpClient.js`(실제 Express 백엔드에 fetch, `VITE_API_BASE_URL` 환경변수 사용·기본값 `http://localhost:3001`)를 재export합니다. 다른 프론트 코드는 전부 `httpClient.js`를 직접 import하지 않고 `api/index.js`를 통해서만 호출합니다. `httpClient.js`와 실제 백엔드 컨트롤러는 "같은 API 계약"을 각자 독립적으로 구현한 것이라 타입 체크 없이 조용히 어긋날 수 있습니다 — 함수 시그니처(이름·인자·응답 모양)를 맞춰 유지하세요.
 
 ### 단일 전역 React 컨텍스트 + 커스텀 네비게이션 스택
 `frontend/src/context/AppContext.jsx` 하나가 화면을 넘나드는 모든 상태(냉장고, 현재 화면+백스택, 조리 흐름, 영수증 흐름, 식단 흐름)를 들고 있습니다 — 화면 대부분이 같은 진행 중 상태를 여러 스크린에 걸쳐 공유해야 하기 때문입니다. 네비게이션은 react-router가 아니라 직접 만든 `go(id)`/`back()`/`tab(id)` 스택입니다: `go()`는 현재 화면을 스택에 쌓고 전환, `tab()`은 스택을 비우고 전환(하단 탭 5개가 사용), `back()`은 스택에서 pop. 화면은 URL이 아니라 문자열 id이며 `App.jsx`의 `SCREENS` 객체에서 컴포넌트로 매핑됩니다.

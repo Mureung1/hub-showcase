@@ -17,6 +17,15 @@ const TAB_ROOTS = {
   'shopping-sets': 'tab-shop', 'etc-menu': 'tab-etc',
 };
 
+// 느린 응답이 나중에 도착해 화면을 덮어쓰지 않도록, 가장 마지막에 시작한 호출만 유효로 친다
+// (useAsyncData의 stale 응답 무시 패턴 재사용).
+function useLatestGuard() {
+  const seq = useRef(0);
+  const start = useCallback(() => ++seq.current, []);
+  const isCurrent = useCallback((id) => seq.current === id, []);
+  return [start, isCurrent];
+}
+
 function getInitialMultiplier() {
   const saved = localStorage.getItem('servingMultiplier');
   return saved ? parseFloat(saved) : 1.0;
@@ -110,16 +119,20 @@ export function AppProvider({ children }) {
   // ── 영수증 촬영 → 인식 → 확정 ──
   const [receipt, setReceipt] = useState(null);
   const [expiryOverrides, setExpiryOverrides] = useState({});
+  const [startReceipt, isLatestReceipt] = useLatestGuard();
   const shootReceipt = useCallback(async (file) => {
+    const myId = startReceipt();
     try {
       const r = await api.uploadReceipt(file);
+      if (!isLatestReceipt(myId)) return;
       setReceipt(r);
       setExpiryOverrides({});
       go('receipt-result');
     } catch (err) {
+      if (!isLatestReceipt(myId)) return;
       alert(err.message);
     }
-  }, [go]);
+  }, [go, startReceipt, isLatestReceipt]); // start/isLatest는 useCallback([])로 항상 동일한 참조
   const setExpiryOverride = useCallback((id, expiry) => {
     setExpiryOverrides((prev) => ({ ...prev, [id]: expiry }));
   }, []);
@@ -141,16 +154,21 @@ export function AppProvider({ children }) {
   const [deductionState, setDeductionState] = useState([]);
   const [editingDeduction, setEditingDeduction] = useState(false);
 
+  const [startRecipeDetail, isLatestRecipeDetail] = useLatestGuard();
   const openRecipeDetail = useCallback(async (id) => {
+    const myId = startRecipeDetail();
+    setCurrentRecipeId(id);
+    setCheckedAddonIds([]);
     try {
-      setCurrentRecipeId(id);
-      setCheckedAddonIds([]);
-      setRecipeDetail(await api.getRecipeDetail(id, servingMultiplier));
+      const detail = await api.getRecipeDetail(id, servingMultiplier);
+      if (!isLatestRecipeDetail(myId)) return;
+      setRecipeDetail(detail);
       go('recipe-detail');
     } catch (err) {
+      if (!isLatestRecipeDetail(myId)) return;
       alert(err.message);
     }
-  }, [go, servingMultiplier]);
+  }, [go, servingMultiplier, startRecipeDetail, isLatestRecipeDetail]);
   const toggleAddon = useCallback((id) => {
     setCheckedAddonIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }, []);
@@ -217,25 +235,35 @@ export function AppProvider({ children }) {
     });
   }, [weekPlanType]);
   
+  const [startMealPlan, isLatestMealPlan] = useLatestGuard();
   const buildMealPlan = useCallback(async () => {
+    const myId = startMealPlan();
     try {
-      setWeekPlan(await api.buildWeeklyPlan(pickedDishes, weekPlanDifficulty, weekPlanType));
+      const plan = await api.buildWeeklyPlan(pickedDishes, weekPlanDifficulty, weekPlanType);
+      if (!isLatestMealPlan(myId)) return;
+      setWeekPlan(plan);
       go('meal-plan');
     } catch (err) {
+      if (!isLatestMealPlan(myId)) return;
       alert(err.message);
     }
-  }, [pickedDishes, weekPlanDifficulty, weekPlanType, go]);
+  }, [pickedDishes, weekPlanDifficulty, weekPlanType, go, startMealPlan, isLatestMealPlan]);
+  const [startMealShoppingList, isLatestMealShoppingList] = useLatestGuard();
   const openMealShoppingList = useCallback(async () => {
     if (!weekPlan || !weekPlan.days || weekPlan.days.length === 0) return;
     const ids = weekPlan.days.map((d) => d.recipe?.id).filter(Boolean);
     if (ids.length === 0) return;
+    const myId = startMealShoppingList();
     try {
-      setMealShoppingList(await api.getMealShoppingList(ids, servingMultiplier));
+      const list = await api.getMealShoppingList(ids, servingMultiplier);
+      if (!isLatestMealShoppingList(myId)) return;
+      setMealShoppingList(list);
       go('meal-shopping-list');
     } catch (err) {
+      if (!isLatestMealShoppingList(myId)) return;
       alert(err.message);
     }
-  }, [weekPlan, go, servingMultiplier]);
+  }, [weekPlan, go, servingMultiplier, startMealShoppingList, isLatestMealShoppingList]);
 
   const clearMealPlan = useCallback(() => {
     setWeekPlan(null);

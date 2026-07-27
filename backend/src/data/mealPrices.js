@@ -82,6 +82,29 @@ export const mealPriceTable = {
   bread: 2800,        // 식빵 1봉
   kimchi: 4500,       // 포기김치 소포장 — KNOWN_INGREDIENTS엔 있지만 가격표에 빠져 있던 표준 id
 
+  // 양념/조미료 20종 — CATEGORY_FALLBACKS 정규식이 한글 키워드 기준이라 영문 id(gochujang 등)엔
+  // 하나도 안 걸려 전부 DEFAULT_FALLBACK_PRICE(2,200원)로 떨어지던 것을 표로 직접 채움 (4주차 Day19)
+  soy: 3500,          // 진간장 500ml
+  salt: 2000,         // 꽃소금 1kg
+  sugar: 2500,        // 백설탕 1kg
+  sesameOil: 8900,    // 참기름 250ml
+  gochugaru: 9900,    // 고춧가루 500g
+  gochujang: 5900,    // 고추장 500g
+  doenjang: 4900,     // 된장 500g
+  garlicMinced: 3500, // 다진마늘 200g
+  oil: 4500,          // 식용유 900ml
+  vinegar: 2000,      // 식초 500ml
+  pepperPowder: 3000, // 후춧가루 50g
+  cookingWine: 3500,  // 맛술 500ml
+  oysterSauce: 4500,  // 굴소스 255g
+  plumSyrup: 5900,    // 매실청 500ml
+  cornSyrup: 3500,    // 물엿 700g
+  honey: 9900,        // 꿀 500g
+  mayonnaise: 3500,   // 마요네즈 300g
+  ketchup: 3000,      // 케첩 300g
+  ssamjang: 4500,     // 쌈장 500g
+  mustard: 3500,      // 머스타드 185g
+
   // ── 실제 재료 데이터(537개 레시피) 빈도 분석 기반 — 표준 id로 매핑되지 않는 한글 재료명 ──
   // 상위 빈도순으로 실가격을 채운 목록. 여기 없는 나머지는 resolvePrice()의 카테고리 폴백을 탄다.
   '파': 2850, '홍고추': 2000, '쇠고기': 14500, '청고추': 1800, '미나리': 2500,

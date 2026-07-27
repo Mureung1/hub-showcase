@@ -1,6 +1,5 @@
 import { AppProvider, useApp } from './context/AppContext';
 import RoughenFilter from './components/RoughenFilter';
-import PhoneFrame from './components/PhoneFrame';
 import BottomTabBar from './components/BottomTabBar';
 import IngredientSheet from './components/IngredientSheet';
 import TipSheet from './components/TipSheet';
@@ -59,12 +58,12 @@ export default function App() {
   return (
     <AppProvider>
       <RoughenFilter />
-      <PhoneFrame>
+      <div className="phone">
         <Screen />
         <IngredientSheet />
         <TipSheet />
         <BottomTabBar />
-      </PhoneFrame>
+      </div>
     </AppProvider>
   );
 }

@@ -1,10 +1,5 @@
-// fridge/recipes 상태를 다루는 순수 함수 모음 — index.html 프로토타입의 계산 로직을 그대로 옮김.
-// mockServer(BE 역할)와 프론트 컴포넌트 양쪽에서 재사용한다.
-//
-// amt 파싱/포맷 함수(parseAmt~formatAmtText)는 store.js·fetchRecipes.js·mockServer.js
-// 세 곳에 각각 따로 구현돼 있다가 한 곳(store.js)만 고쳐지고 나머지 두 곳엔 예전 버그
-// (parseInt(...) || 150 — "0.2g"처럼 정상 파싱된 값이 falsy라 기본값으로 덮어써지는 문제)가
-// 남아있던 걸 여기 하나로 합쳤다. store.js와 mockServer.js 둘 다 이 파일에서 import해서 쓴다.
+// fridge/recipes 상태를 다루는 순수 함수 모음.
+
 
 import { ingredientMap } from '../data/ingredients.js';
 import { resolvePrice, resolvePackSize } from '../data/mealPrices.js';
@@ -50,6 +45,13 @@ export function recipeRatio(fridge, recipes, id) {
 
 export function recipeHasImminentBadge(fridge, recipes, id) {
   return recipes[id].ingredients.some((ing) => ing.id && fridge[ing.id]?.imminent && fridgeAvailable(fridge, ing.id));
+}
+
+export function ddayValue(label) {
+  if (!label || typeof label !== 'string') return 999;
+  const n = parseInt(label.slice(2), 10);
+  if (Number.isNaN(n)) return 999;
+  return label.startsWith('D-') ? n : -n;
 }
 
 export function imminentIds(fridge) {
@@ -152,7 +154,10 @@ export function formatAmtText(qty, isGram, originalAmt) {
 // 거의 모든 레시피의 부족 품목으로 잡혀, 이걸 세면 어떤 조합을 골라도 품목 수 차이가 안 난다.
 export const PANTRY_STAPLES = [
   '물', '소금', '설탕', '후춧가루', '후추', '흰후추', '식용유', '참기름', '들기름',
-  '올리브오일', '올리브유', '다진마늘', '맛술', '청주', '통깨', '참깨',
+  '올리브오일', '올리브유', '다진마늘', '맛술', '청주', '술', '통깨', '참깨',
+  '간장', '진간장', '국간장', '양조간장', '고추장', '된장', '쌈장', '고춧가루',
+  '굴소스', '식초', '케첩', '마요네즈', '꿀', '물엿', '올리고당', '카레가루', '와사비',
+  '육수', '멸치육수', '다시마',
 ];
 
 // 이름 정규화용 수식어 — fetchRecipes.js의 PREP_MODIFIERS와 같은 목록.
@@ -165,6 +170,8 @@ const NAME_MODIFIERS = [
 export function normalizeIngredientKey(ing) {
   if (ing.id) return ing.id;
   let name = (ing.name || '').replace(/\s+/g, '');
+  if (name === '다진파') return 'pa';
+  if (name === '다진마늘') return 'garlic';
   for (const w of NAME_MODIFIERS) {
     if (name.startsWith(w) && name.length > w.length) { name = name.slice(w.length); break; }
   }
@@ -215,6 +222,11 @@ export function getMissingInfo(view, recipe, multiplier = 1) {
   return map;
 }
 
+// g/ml류(계량 가능한 연속량)만 소수 단위로 나눠 쓸 수 있고, 그 외(개/알/모/마리 등)는
+// 봉지·낱개 단위로만 거래되는 "더 쪼갤 수 없는" 단위다 — buildDeductionState/planDeduction이
+// 레시피가 "1/2컵"처럼 요구해도 개수 재고를 0.5개로 쪼개 차감하지 않도록 이 기준을 공유한다.
+export const CONTINUOUS_UNITS = ['g', 'ml', 'g 직접입력'];
+
 // 재고가 거의 다 떨어진(자투리만 남은) 재료 id 목록 — g/ml류는 150 이하, 개수류는 1 이하.
 // getExpiryAlerts(수량 부족 알림)와 buildWeeklyPlan(일요일 냉장고 털이 슬롯)이 같은 기준을
 // 공유해야 "알림에서 부족하다고 뜬 재료"와 "냉장고 털이가 노리는 재료"가 서로 어긋나지 않는다.
@@ -224,7 +236,7 @@ export function lowStockIdsOf(view) {
     if (!f.items || f.items.length === 0) return false;
     const unit = f.items[0].qtyUnit || '';
     const totalAmount = f.items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 1), 0);
-    if (['g', 'ml', 'g 직접입력'].includes(unit)) return totalAmount <= 150;
+    if (CONTINUOUS_UNITS.includes(unit)) return totalAmount <= 150;
     return totalAmount <= 1;
   });
 }
@@ -272,6 +284,118 @@ export function estimateBuyCost(needMaps) {
   return cost;
 }
 
+// §7 — 임박 재료 구출 세트: 최소 끼니 수(최소 요리 개수 k)로 임박 재료 전량 소진을 최우선하는 Set Cover 알고리즘
+export function generateImminentRescueSet(view, recipes, thresholdOrRecipeOrder = 3, maxK = 3) {
+  let threshold = 3;
+  let kMax = 3;
+
+  if (typeof thresholdOrRecipeOrder === 'number') {
+    threshold = thresholdOrRecipeOrder;
+    if (typeof maxK === 'number') kMax = maxK;
+  }
+
+  // 1. 유통기한 D-day <= threshold 이거나 imminent 플래그가 세팅된 유효 임박 재료 id 추려내기
+  const targetIds = Object.keys(view).filter((id) => {
+    const f = view[id];
+    if (!f || !fridgeAvailable(view, id)) return false;
+    const expiry = f.expiry || f.items?.[0]?.expiry;
+    const imminent = f.imminent ?? f.items?.[0]?.imminent;
+
+    if (expiry) {
+      return ddayValue(expiry) <= threshold;
+    }
+    return !!imminent;
+  });
+
+  if (targetIds.length === 0) {
+    return {
+      recipeIds: [],
+      coveredIds: [],
+      uncoveredIds: [],
+      message: '임박한 재료가 없어요 👍',
+    };
+  }
+
+  // 2. 임박 재료를 1개 이상 쓰는 레시피 후보 필터링
+  const recipeKeys = Object.keys(recipes);
+  const cand = recipeKeys.filter((rid) => {
+    const r = recipes[rid];
+    return r.ingredients.some((ing) => (ing.id ? targetIds.includes(ing.id) : false));
+  });
+
+  if (cand.length === 0) {
+    return {
+      recipeIds: [],
+      coveredIds: [],
+      uncoveredIds: targetIds,
+      message: '임박 재료를 활용할 레시피가 없습니다.',
+    };
+  }
+
+  // 3. 최소 끼니 수(k = 1..kMax) 오름차순으로 조합 탐색 (Set Cover)
+  let best = null;
+  const targetSet = new Set(targetIds);
+
+  const isBetter = (candItem, curBest) => {
+    if (!curBest) return true;
+    if (candItem.covered.size > curBest.covered.size) return true;
+    if (candItem.covered.size < curBest.covered.size) return false;
+    if (candItem.missingCount < curBest.missingCount) return true;
+    if (candItem.missingCount > curBest.missingCount) return false;
+    return candItem.ids.length < curBest.ids.length;
+  };
+
+  for (let k = 1; k <= Math.min(kMax, cand.length); k++) {
+    let fullCoverFound = false;
+
+    const walk = (start, acc) => {
+      if (acc.length === k) {
+        const covered = new Set();
+        let missingCount = 0;
+
+        acc.forEach((rid) => {
+          recipes[rid].ingredients.forEach((ing) => {
+            if (ing.id && targetSet.has(ing.id)) covered.add(ing.id);
+            if (!ingHave(view, ing) && !ing.untracked) missingCount++;
+          });
+        });
+
+        const candItem = { ids: acc.slice(), covered, missingCount };
+        if (isBetter(candItem, best)) {
+          best = candItem;
+        }
+
+        if (covered.size === targetIds.length) {
+          fullCoverFound = true;
+        }
+        return;
+      }
+
+      for (let i = start; i < cand.length; i++) {
+        acc.push(cand[i]);
+        walk(i + 1, acc);
+        acc.pop();
+      }
+    };
+
+    walk(0, []);
+    if (fullCoverFound) break; // 최소 끼니 수로 전량 커버 발견 시 탐색 완료
+  }
+
+  const recipeIds = best ? best.ids : [];
+  const coveredIds = best ? Array.from(best.covered) : [];
+  const uncoveredIds = targetIds.filter((t) => !coveredIds.includes(t));
+
+  return {
+    recipeIds,
+    coveredIds,
+    uncoveredIds,
+    message: uncoveredIds.length === 0
+      ? `임박 재료 ${coveredIds.length}가지를 ${recipeIds.length}개 요리로 전량 소진할 수 있어요!`
+      : `임박 재료 ${coveredIds.length}가지를 소진하는 추천 조합입니다.`,
+  };
+}
+
 // §6 Step 1 — 한계 이득(marginal gain) 탐욕 선정: 이미 앞 요리가 커버한 임박 재료는 제외하고,
 // 남은 임박 재료를 가장 많이 쓰는 레시피를 다음 슬롯에 배치한다. 단순 "임박 포함 수 정렬"은
 // 같은 재료(두부)를 쓰는 요리 2개가 뽑혀 다른 임박 재료(돼지고기)를 방치할 수 있다.
@@ -309,7 +433,7 @@ export function shortlistCandidates(view, recipes, poolIds, fixedKeys, missingMa
       const haveCount = r.ingredients.filter((ing) => ingHave(view, ing)).length;
       let overlap = 0, fresh = 0;
       (missingMap.get(id) ?? new Map()).forEach((_, k) => { if (fixedKeys.has(k)) overlap++; else fresh++; });
-      return { id, score: haveCount * 2 + overlap - fresh * 3 };
+      return { id, score: haveCount * 3 + overlap * 6 - fresh * 10 };
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, K)
@@ -347,60 +471,6 @@ export function searchMinPurchaseCombo3(fixedNeeds, candidates) {
   return best ?? candidates.slice(0, 3).map((c) => c.id);
 }
 
-// §7 — 임박 재료 구출 세트: 요리 수 k를 1부터 올려가며 임박 재료 전량 커버 조합을 찾는
-// Set Cover 브루트포스. k≤3 고정이라 정확해가 나온다. 전량 커버가 불가능하면 최대 커버
-// 조합과 함께 uncoveredIds를 돌려줘 "△△는 소진하지 못해요" 안내에 쓴다.
-export function generateImminentRescueSet(view, recipes, recipeOrder, immIds, missingMap, { kMax = 3, candM = 30 } = {}) {
-  const targets = immIds.filter((id) => stockQtyOf(view, id) > 0);
-  if (targets.length === 0) return { recipeIds: [], coveredIds: [], uncoveredIds: [] };
-
-  const usesImm = (rid) =>
-    recipes[rid].ingredients.filter((ing) => ing.id && targets.includes(ing.id)).map((ing) => ing.id);
-
-  const cand = recipeOrder
-    .filter((rid) => usesImm(rid).length > 0)
-    .sort((a, b) =>
-      usesImm(b).length - usesImm(a).length
-      || (missingMap.get(a)?.size ?? 0) - (missingMap.get(b)?.size ?? 0))
-    .slice(0, candM);
-  if (cand.length === 0) return { recipeIds: [], coveredIds: [], uncoveredIds: targets };
-
-  const covMap = new Map(cand.map((rid) => [rid, new Set(usesImm(rid))]));
-
-  let best = null;
-  const consider = (ids) => {
-    const covered = new Set();
-    ids.forEach((rid) => covMap.get(rid).forEach((x) => covered.add(x)));
-    const missKeys = new Set();
-    ids.forEach((rid) => (missingMap.get(rid) ?? new Map()).forEach((_, k) => missKeys.add(k)));
-    if (!best
-      || covered.size > best.covered.size
-      || (covered.size === best.covered.size && ids.length < best.ids.length)
-      || (covered.size === best.covered.size && ids.length === best.ids.length && missKeys.size < best.missingCount)) {
-      best = { ids: ids.slice(), covered, missingCount: missKeys.size };
-    }
-  };
-
-  for (let k = 1; k <= Math.min(kMax, cand.length); k++) {
-    const walk = (start, acc) => {
-      if (acc.length === k) { consider(acc); return; }
-      for (let i = start; i < cand.length; i++) {
-        acc.push(cand[i]);
-        walk(i + 1, acc);
-        acc.pop();
-      }
-    };
-    walk(0, []);
-    if (best && best.covered.size === targets.length) break; // 전량 커버를 달성한 최소 k에서 종료
-  }
-
-  return {
-    recipeIds: best.ids,
-    coveredIds: [...best.covered],
-    uncoveredIds: targets.filter((t) => !best.covered.has(t)),
-  };
-}
-
 // 조리 완료 시 실제로 차감될 재료 미리보기 목록 계산
 export function buildDeductionState(fridge, recipe, checkedAddonIds) {
   const state = [];
@@ -412,9 +482,14 @@ export function buildDeductionState(fridge, recipe, checkedAddonIds) {
     const remain = f.items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 0), 0);
     if (remain <= 0) return; // 이미 소진된 재료는 차감할 게 없음
 
-    const use = amtStr ? parseAmt(amtStr).val : 1;
+    const unit = f.items[0]?.qtyUnit || '';
+    let use = amtStr ? parseAmt(amtStr).val : 1;
+    // "1/2컵"·"4공기"처럼 요리 분량으로 적힌 레시피 요구량을, 봉지/낱개로만 파는 개수 재고
+    // (즉석밥 1개 등)에 그대로 소수로 적용하면 "2.5개"처럼 실존할 수 없는 재고가 남는다 —
+    // 개수 단위는 항상 올림해서 최소 1개 단위로 차감한다.
+    if (!CONTINUOUS_UNITS.includes(unit)) use = Math.ceil(use);
 
-    state.push({ id, use, max: remain, fixed: false, addon: !!addon, unit: f.items[0]?.qtyUnit });
+    state.push({ id, use, max: remain, fixed: false, addon: !!addon, unit });
   }
   recipe.ingredients.forEach((ing) => { if (!ing.untracked && ing.id) pushEntry(ing.id, false, ing.amt); });
   recipe.addons.forEach((a) => { if (checkedAddonIds.includes(a.id)) pushEntry(a.id, true, a.label); });
@@ -529,4 +604,3 @@ export function calculateRecipeDifficulty(recipe) {
     return { level: 'expert', levelLabel: '🔴 어려움' };
   }
 }
-

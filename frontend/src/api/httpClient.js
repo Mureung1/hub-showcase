@@ -1,5 +1,4 @@
 // 실제 Express 백엔드(backend/)를 호출하는 API 클라이언트.
-// mockServer.js와 함수 시그니처를 동일하게 맞춰서, src/api/index.js의 한 줄만 바꾸면 서로 교체된다.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 async function request(method, path, body) {
@@ -60,3 +59,6 @@ export const getPrices = () => request('GET', '/api/prices');
 export const getMealPlanCandidates = () => request('GET', '/api/meal-plan/candidates');
 export const buildWeeklyPlan = (pickedIds, difficulty = 'all', type = 'meal') => request('POST', '/api/meal-plan/weekly', { pickedIds, difficulty, type });
 export const getMealShoppingList = (weekPlanIds, multiplier = 1.0) => request('POST', '/api/meal-plan/shopping-list', { weekPlanIds, multiplier });
+
+export const getPushPublicKey = () => request('GET', '/api/push/public-key');
+export const subscribePush = (subscription) => request('POST', '/api/push/subscribe', subscription);
