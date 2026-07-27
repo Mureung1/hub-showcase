@@ -95,7 +95,7 @@ def test_interpret_role_cannot_write_statistics(rollback_conn) -> None:
         " metric_policy_version, scope_level, scope_id, entry_segment, period_id,"
         " measure, sample_size, sample_status) VALUES"
         " ('fact_x','an_x','posting_prevalence','mp_v1_prevalence','overall','backend',"
-        " 'entry_junior','recent_12m','ratio',1,'analysis_ready')",
+        " 'entry_junior','y2026','ratio',1,'analysis_ready')",
     )
     assert "permission denied" in message.lower()
 
@@ -167,7 +167,7 @@ def test_numerator_cannot_exceed_denominator(rollback_conn) -> None:
         " metric_policy_version, scope_level, scope_id, entry_segment, period_id,"
         " measure, numerator, denominator, sample_size, sample_status)"
         " VALUES ('fact_x','an_x','posting_prevalence','mp_v1_prevalence','overall',"
-        " 'backend','entry_junior','recent_12m','ratio', 20, 10, 10, 'analysis_ready')",
+        " 'backend','entry_junior','y2026','ratio', 20, 10, 10, 'analysis_ready')",
     )
     assert "numerator_within" in message or "check constraint" in message.lower()
 
