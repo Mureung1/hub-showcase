@@ -21,7 +21,21 @@
 | `CTX-018` | 활성 | MVP AI 구조화는 OpenAI Responses API와 `gpt-5.6-luna`를 사용한다. 구조화 출력은 서버에서 다시 검증하고, AI 결과는 자동 저장하지 않으며 사용자가 수정한 저장 요청을 별도로 검증한다. | `COMMON-AI-001` |
 | `CTX-019` | 대체됨 | 직접 입력 전용 AI 구조화와 `sourceUrl` 거부 정책은 `BE-AI-002` 완료로 종료됐다. 대체 결정은 `CTX-020`이다. | `BE-AI-001`, `BE-AI-002` |
 | `CTX-020` | 활성 | AI 구조화는 직접 입력, 안전하게 수집한 URL과 두 입력의 조합을 지원한다. URL 출처는 AI가 아닌 서버가 검증된 제출 URL과 수집한 제목·작성자로 설정하며, 직접 입력만 사용하면 `source`는 `null`이다. `warnings[].field` 검증 규칙은 계속 유지한다. | `BE-AI-001`, `BE-AI-002`, `FE-AI-001` |
-| `CTX-021` | 활성 | 임의의 공개 제3자 YouTube 영상 자막은 MVP에서 자동 수집하지 않는다. 공식 YouTube Data API 메타데이터는 레시피 원문을 제공하지 않고 자막에는 OAuth 및 영상 편집자 권한이 필요하므로 비공식 스크래핑·내부 엔드포인트를 채택하지 않는다. YouTube URL 수집 실패는 기존 `URL_FETCH_FAILED` 422와 직접 입력 안내를 사용하며 새 OAuth, API 키, 환경 변수와 오류 코드를 추가하지 않는다. | `COMMON-AI-002` |
+| `CTX-021` | 대체됨 | 공개 YouTube 영상 자막 자동 수집을 지원하지 않는 정책은 `BE-AI-005` 예정 정책으로 대체됐다. | `COMMON-AI-002`, `BE-AI-005` |
+| `CTX-022` | 활성 | 공개 `youtube.com`, `youtu.be` 영상은 YouTube Data API에서 제목·채널명을 조회하고 `youtube-transcript-api`로 공개 또는 자동 생성 자막을 한 번 조회한다. 자막 조회 실패 시 `gemini-3.6-flash`가 원본 URL·제목·채널명을 분석하고, 어느 경로든 기존 OpenAI가 최종 `RecipeDraft`를 구조화·검증한다. 프록시·쿠키·계정 인증·차단 우회와 영상·자막·썸네일 저장은 사용하지 않으며, 실패는 `URL_FETCH_FAILED` 422와 직접 입력 안내로 처리한다. | `BE-AI-005` |
+| `CTX-023` | 대체됨 | 레시피 저장 성공 시 상세 API·화면이 준비되기 전까지 `/recipes`로 이동하며 `location.state.createdRecipeId`에 생성 ID를 보존한다. 대체 결정은 `CTX-024`다. | `FE-RECIPE-003`, `FE-RECIPE-004` |
+| `CTX-024` | 활성 | 목록 카드 선택과 레시피 저장 성공은 `/recipes/:recipeId`로 이동하고, 상세는 기존 책형 `RecipeListPlaceholderPage`의 오른쪽 페이지를 사용한다. 1100px 이하에서는 상세 단일 페이지와 `← 목록` 링크를 제공한다. | `FE-RECIPE-004` |
+| `CTX-025` | 활성 | 현재 MVP/P0의 URL 성공 범위는 지원 가능한 일반 공개 웹페이지와 공개 `youtube.com`, `youtu.be`다. `blog.naver.com`과 하위 도메인은 전용 수집 없이 외부 요청 전에 `URL_FETCH_FAILED` 422와 직접 입력 안내로 처리한다. `COMMON-AI-003`과 `BE-AI-004`는 구현 완료가 아니라 이 범위 제외 결정으로 종료했으며 `QA-CORE-001`은 네이버 블로그 성공을 선행 조건으로 두지 않는다. | `COMMON-AI-003`, `BE-AI-004`, `QA-CORE-001` |
+| `CTX-026` | 활성 | 감사와 전달 공유 관계를 보존하기 위해 `recipe_audit_events`, `transfer_invitations`, `received_recipe_details`의 FK는 `ON DELETE RESTRICT`를 사용한다. MVP는 Recipe를 soft delete하며, 향후 영구 삭제는 관계 데이터의 보존·정리 순서를 별도 정책과 트랜잭션으로 명시해야 한다. | `DB-AUDIT-001`, `DB-SHARE-002` |
+| `CTX-027` | 활성 | 전달 링크·코드 미리보기와 수락에는 로그인이 필요하다. 비로그인 링크 접근은 로그인 후 같은 초대 경로로 복귀한다. 링크 토큰은 SHA-256, 초대 코드는 32자 이상의 백엔드 전용 `TRANSFER_INVITATION_CODE_SECRET`을 사용한 HMAC-SHA-256 해시로만 저장한다. | `BE-SHARE-002` |
+| `CTX-028` | 활성 | 전달 초대 수락은 초대 행을 잠근 단일 트랜잭션에서 `RECEIVED` 레시피·하위 데이터·관계 정보 생성과 `used_at` 갱신을 처리한다. 수락자는 개인 메모만 변경할 수 있고 원본 수정과 모든 재공유가 금지되며, 목록·상세의 `receivedInfo`에는 원 저장자 표시·전해준 사람·관계·받은 날짜만 제공한다. | `BE-SHARE-003` |
+| `CTX-029` | 활성 | 초대 코드는 `/transfer-invitations` 경로에서 기존 레시피북 위의 접근 가능한 종이 모달로 입력하고, 외부 전달 링크는 `/transfer-invitations/:linkToken` 독립 미리보기로 연다. 두 경로 모두 보호 라우트와 공통 미리보기 컴포넌트를 사용한다. | `FE-SHARE-002` |
+| `CTX-030` | 활성 | 전달 미리보기의 수락은 서버 상태를 즉시 바꾸지 않고 전해준 사람·관계 라벨·선택 메모 입력 단계로 전환한다. 저장 성공은 `/recipes/:recipeId`로 이동하며 받은 관계와 개인 메모를 기존 상세 화면의 `전달받은 기억` 영역에 표시한다. | `FE-SHARE-003` |
+| `CTX-031` | 활성 | 레시피 원본 수정은 `PATCH /api/recipes/:recipeId`에 편집 가능한 본문·출처 전체를 보내 한 트랜잭션으로 교체한다. 개인 메모와 공유 상태는 전용 API로만 변경하며, `OWNED`·`EXTERNAL` 소유자의 활성 레시피만 허용하고 `RECEIVED`는 `RECIPE_NOT_EDITABLE`로 차단한다. | `COMMON-API-002` |
+| `CTX-032` | 활성 | 세 레시피 유형은 soft delete 후 30일이 지나기 전까지만 휴지통 조회·복원이 가능하다. 30일 경과 레코드는 휴지통에서 제외하고 보존 중인 레코드의 복원은 `RECIPE_RESTORE_EXPIRED`로 거부한다. MVP에는 영구 삭제 API·휴지통 비우기·자동 purge가 없으며 물리 삭제와 관계·감사 보존은 후속 운영·데이터 보존 결정으로 미룬다. | `COMMON-API-002` |
+| `CTX-033` | 활성 | 열람 공유의 정책·계약과 `DB-SHARE-001`·`BE-SHARE-001`·`FE-SHARE-001` 티켓은 유지하지만 가치와 필요성을 다시 검토할 P3 연기 후보로 둔다. 활성 MVP·디자인 감사·QA·출시의 선행 조건에서는 제외하며 전달 공유는 계속 활성 범위다. | `COMMON-API-002` |
+| `CTX-034` | 활성 | 발표 전 추가 구현은 Firebase 로그아웃, 저장된 `OWNED`·`EXTERNAL` 원본 수정과 세 유형의 soft delete로 제한한다. 개인 메모와 휴지통·복원은 발표 후 프로젝트 완성 단계로 미루고, 열람 공유는 발표 후 가치를 재검토한다. 기능 정책과 API 계약은 취소하지 않는다. | `COMMON-DOCS-003` |
+| `CTX-035` | 활성 | 저장된 레시피 원본 수정은 초안 폼을 재사용하는 `/recipes/:recipeId/edit` 전용 화면에서 처리한다. 상세의 원본 수정과 전달 공유 진입점은 접근 가능한 `⋯ 관리` 텍스트 목록에 모으며, 후속 삭제도 별도 노출하지 않고 이 관리 목록의 유형별 정책을 확장한다. | `FE-RECIPE-006` |
 
 ## 알려진 문제
 
@@ -30,7 +44,7 @@
 | `CTX-006` | 해결됨 | `apiClient`에 헤더 변수 오타와 AbortError 비교 오류가 있고 로그인 컴포넌트가 직접 `fetch`를 사용한다. | `COMMON-API-001` |
 | `CTX-007` | 해결됨 | 로그인 버튼이 존재하지 않는 `leather-texture-tile.png`를 참조한다. | `COMMON-ASSET-001` |
 | `CTX-008` | 해결됨 | 로그인 흐름에 `setRecipes` 미정의와 화면에 표시되지 않는 오류 상태가 남아 있었다. | `FE-AUTH-002` |
-| `CTX-009` | 활성 | 목록 API는 PostgreSQL과 공통 계약으로 전환되었지만 상세·생성 임시 경로에는 메모리 프로토타입이 남아 있다. `BE-RECIPE-003`, `BE-RECIPE-004`에서 실제 DB 경로로 교체한다. | `BE-RECIPE-001`, `BE-RECIPE-003`, `BE-RECIPE-004` |
+| `CTX-009` | 해결됨 | 목록·생성·상세 API의 메모리 프로토타입을 PostgreSQL 경로로 교체했다. 상세 조회는 Firebase UID 소유권과 활성 상태를 DB에서 함께 검사한다. | `BE-RECIPE-001`, `BE-RECIPE-003`, `BE-RECIPE-004` |
 | `CTX-010` | 해결됨 | 인증, 조리 팁, 파일 입력과 ERD에 관한 문서가 서로 일치하지 않는다. | `COMMON-DOCS-002` |
 | `CTX-011` | 활성 | 현재 실행 환경에서 `.agents/skills` 생성·수정은 추가 승인이 필요할 수 있고, Windows에서 스킬 메타데이터는 UTF-8 인코딩을 확인해야 한다. | `COMMON-SETUP-003` |
 

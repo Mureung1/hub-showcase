@@ -1,12 +1,54 @@
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { createRecipe } from "../api/recipeApi";
+import { useAuth } from "../auth/authContext";
 import RecipeDraftForm from "../components/RecipeDraftForm";
 
-function RecipeDraftPage({ onSubmit = () => { } }) {
+function RecipeDraftPage() {
+  const { user } = useAuth();
   const { state } = useLocation();
   const navigate = useNavigate();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const isSavingRef = useRef(false);
 
   function handleCancel() {
     navigate("/recipes/new");
+  }
+
+  async function handleSave(draft) {
+    if (isSavingRef.current) {
+      return;
+    }
+
+    isSavingRef.current = true;
+    setIsSaving(true);
+    setSaveError("");
+
+    try {
+      if (!user) {
+        throw new Error("로그인 정보를 확인할 수 없습니다.");
+      }
+
+      const idToken = await user.getIdToken();
+      const createdRecipe = await createRecipe(idToken, {
+        ...draft,
+        memo: null,
+      });
+
+      navigate(`/recipes/${createdRecipe.id}`, {
+        replace: true,
+      });
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "레시피를 저장하지 못했습니다.",
+      );
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -29,7 +71,9 @@ function RecipeDraftPage({ onSubmit = () => { } }) {
           initialDraft={state.draft}
           warnings={state.warnings}
           onCancel={handleCancel}
-          onSubmit={onSubmit}
+          onSubmit={handleSave}
+          isSubmitting={isSaving}
+          submitError={saveError}
         />
       </section>
     </main>

@@ -6,7 +6,15 @@ function normalizeOptionalText(value) {
   return normalizedValue ? normalizedValue : null;
 }
 
-function RecipeDraftForm({ initialDraft, warnings, onSubmit, onCancel }) {
+function RecipeDraftForm({
+  initialDraft,
+  warnings,
+  onSubmit,
+  onCancel,
+  isSubmitting = false,
+  submitError = "",
+  isSourceEditable = false,
+}) {
   const [draft, setDraft] = useState({
     ...initialDraft,
     description: initialDraft.description ?? "",
@@ -146,6 +154,19 @@ function RecipeDraftForm({ initialDraft, warnings, onSubmit, onCancel }) {
     }));
   }
 
+  function handleSourceChange(field, value) {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      source: {
+        url: "",
+        title: null,
+        author: null,
+        ...currentDraft.source,
+        [field]: value,
+      },
+    }));
+  }
+
   function handleAddStep() {
     setDraft((currentDraft) => ({
       ...currentDraft,
@@ -205,6 +226,10 @@ function RecipeDraftForm({ initialDraft, warnings, onSubmit, onCancel }) {
   function handleSubmit(event) {
     event.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
+
     if (!draft.title.trim()) {
       setTitleError("음식 이름을 입력해주세요.");
       titleInputRef.current?.focus();
@@ -248,6 +273,17 @@ function RecipeDraftForm({ initialDraft, warnings, onSubmit, onCancel }) {
       return;
     }
 
+    const sourceUrl = normalizeOptionalText(draft.source?.url);
+    const source = isSourceEditable
+      ? sourceUrl
+        ? {
+            url: sourceUrl,
+            title: normalizeOptionalText(draft.source?.title),
+            author: normalizeOptionalText(draft.source?.author),
+          }
+        : null
+      : draft.source;
+
     onSubmit({
       ...draft,
       title: draft.title.trim(),
@@ -267,11 +303,17 @@ function RecipeDraftForm({ initialDraft, warnings, onSubmit, onCancel }) {
         description: step.description.trim(),
         order: index + 1,
       })),
+      source,
     });
   }
 
   return (
-    <form className="mt-8" noValidate onSubmit={handleSubmit}>
+    <form
+      className="mt-8"
+      noValidate
+      aria-busy={isSubmitting}
+      onSubmit={handleSubmit}
+    >
       <label className={labelClassName}>
         음식 이름
         <input
@@ -567,7 +609,50 @@ function RecipeDraftForm({ initialDraft, warnings, onSubmit, onCancel }) {
           조리 단계 추가
         </button>
       </fieldset>
-      {draft.source ? (
+      {isSourceEditable ? (
+        <fieldset className="mt-8 border-t border-[#d8cfbd] pt-6">
+          <legend className="pr-3 text-lg font-semibold tracking-[0.02em] text-[#272923]">
+            출처
+          </legend>
+          <p className="mt-2 text-xs leading-5 text-[#777368]">
+            URL을 비우면 직접 작성한 레시피로 저장됩니다.
+          </p>
+          <label className={`${labelClassName} mt-4`}>
+            출처 URL
+            <input
+              className={fieldClassName}
+              name="sourceUrl"
+              type="url"
+              value={draft.source?.url ?? ""}
+              onChange={(event) =>
+                handleSourceChange("url", event.target.value)
+              }
+            />
+          </label>
+          <label className={`${labelClassName} mt-5`}>
+            출처 제목
+            <input
+              className={fieldClassName}
+              name="sourceTitle"
+              value={draft.source?.title ?? ""}
+              onChange={(event) =>
+                handleSourceChange("title", event.target.value)
+              }
+            />
+          </label>
+          <label className={`${labelClassName} mt-5`}>
+            출처 작성자 또는 채널명
+            <input
+              className={fieldClassName}
+              name="sourceAuthor"
+              value={draft.source?.author ?? ""}
+              onChange={(event) =>
+                handleSourceChange("author", event.target.value)
+              }
+            />
+          </label>
+        </fieldset>
+      ) : draft.source ? (
         <aside
           className="mt-8 border-t border-[#d8cfbd] pt-6"
           aria-labelledby="recipe-source-heading"
@@ -593,19 +678,26 @@ function RecipeDraftForm({ initialDraft, warnings, onSubmit, onCancel }) {
           ) : null}
         </aside>
       ) : null}
-      <div className="mt-8 grid grid-cols-[auto_minmax(0,1fr)] gap-2.5 border-t border-[#d8cfbd] pt-5 sm:flex sm:justify-end">
+      {submitError ? (
+        <p className={`${errorClassName} mt-8`} role="alert">
+          {submitError}
+        </p>
+      ) : null}
+      <div className={`${submitError ? "mt-4" : "mt-8"} grid grid-cols-[auto_minmax(0,1fr)] gap-2.5 border-t border-[#d8cfbd] pt-5 sm:flex sm:justify-end`}>
         <button
-          className="min-h-11 rounded-lg border border-[#b8aa8f] px-4 text-sm font-semibold text-[#55544d] transition-colors hover:bg-[#efe7d5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8bd78]"
+          className="min-h-11 rounded-lg border border-[#b8aa8f] px-4 text-sm font-semibold text-[#55544d] transition-colors hover:bg-[#efe7d5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8bd78] disabled:cursor-not-allowed disabled:opacity-50"
           type="button"
+          disabled={isSubmitting}
           onClick={onCancel}
         >
           취소
         </button>
         <button
-          className="min-h-11 rounded-lg border border-[#061c16] bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-[length:220px] px-5 text-sm font-semibold text-[#f3e1b4] shadow-sm transition-colors hover:bg-[#1d4035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8bd78] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f5eb] sm:min-w-32"
+          className="min-h-11 rounded-lg border border-[#061c16] bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-[length:220px] px-5 text-sm font-semibold text-[#f3e1b4] shadow-sm transition-colors hover:bg-[#1d4035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8bd78] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f5eb] disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-32"
           type="submit"
+          disabled={isSubmitting}
         >
-          저장하기
+          {isSubmitting ? "저장 중…" : "저장하기"}
         </button>
       </div>
     </form>

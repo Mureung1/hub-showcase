@@ -458,9 +458,9 @@ POST /api/transfer-invitations/:invitationId/accept
 
 ### 제공자와 운영 기준
 
-* 백엔드는 `OPENAI_API_KEY`와 `OPENAI_MODEL`을 사용하며 프론트엔드에 비밀 키를 전달하지 않는다.
+* 백엔드는 `OPENAI_API_KEY`, `OPENAI_MODEL`과 YouTube 처리용 `YOUTUBE_DATA_API_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`을 사용하며 프론트엔드에 비밀 키를 전달하지 않는다. YouTube 분석의 MVP 모델은 `gemini-3.6-flash`다.
 * MVP 모델은 `gpt-5.6-luna`이며 모델 변경은 비용과 품질을 다시 확인한 뒤 문서에 반영한다.
-* OpenAI 요청에는 15초 Timeout을 적용하고 자동으로 재시도하지 않는다.
+* OpenAI와 Gemini 요청에는 각각 15초 Timeout을 적용하고 자동으로 재시도하지 않는다.
 * 공백을 제거한 직접 입력은 최대 20,000자까지 허용한다.
 * 인증된 사용자별 AI 구조화 요청은 10분에 10회로 제한한다.
 * 요청 원문, AI 응답 전문과 API 키를 로그에 남기지 않는다.
@@ -500,8 +500,9 @@ URL과 직접 입력이 함께 있으면 직접 입력을 사용자의 보완 �
 ### URL 처리
 
 * `http`, `https`만 허용한다.
-* 임의의 공개 제3자 YouTube 영상은 자막 자동 수집을 지원하지 않는다. 공식 YouTube Data API의 메타데이터만으로는 레시피 원문을 얻을 수 없고 자막에는 OAuth 및 영상 편집자 권한이 필요하므로, 비공식 스크래핑이나 내부 엔드포인트를 사용하지 않는다.
-* YouTube URL 수집 실패는 기존 `URL_FETCH_FAILED`로 반환하고 사용자가 직접 입력으로 계속할 수 있도록 안내한다. 이 정책을 위해 별도 OAuth, API 키, 환경 변수나 오류 코드를 추가하지 않는다.
+* 공개 `youtube.com`, `youtu.be` 영상은 YouTube Data API로 제목·채널명을 조회한 뒤 자막 기반 경로를 우선 사용한다. `youtube-transcript-api`는 공개 또는 자동 생성 자막을 한 번만 조회하며 프록시, 쿠키, 계정 인증이나 차단 우회를 사용하지 않는다.
+* 자막 조회에 실패하면 Gemini `GEMINI_MODEL`로 원본 URL·제목·채널명을 분석하고, 자막 또는 Gemini 결과는 기존 OpenAI 구조화·검증 단계로 전달한다. 모든 YouTube 조회·분석이 실패하면 기존 `URL_FETCH_FAILED`로 반환하고 사용자가 직접 입력으로 계속할 수 있도록 안내한다.
+* YouTube 영상·자막 원문·썸네일은 저장하거나 로그에 남기지 않는다. 출처에는 원본 URL, 영상 제목과 채널명만 저장한다.
 * localhost와 사설 IP 접근을 차단한다.
 * 요청 Timeout을 적용한다.
 * 응답 크기와 본문 길이를 제한한다.

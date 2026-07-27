@@ -11,3 +11,33 @@ export function structureRecipe(idToken, recipeInput) {
     body: recipeInput,
   });
 }
+
+export function createRecipe(idToken, recipeRequest) {
+  return apiRequest("/api/recipes", {
+    method: "POST",
+    idToken,
+    body: recipeRequest,
+  });
+}
+
+export function getRecipeDetail(idToken, recipeId) {
+  return apiRequest(`/api/recipes/${recipeId}`, {
+    method: "GET",
+    idToken,
+  });
+}
+
+export function updateRecipe(idToken, recipeId, recipeRequest) {
+  return apiRequest(`/api/recipes/${recipeId}`, {
+    method: "PATCH",
+    idToken,
+    body: recipeRequest,
+  });
+}
+
+export function deleteRecipe(idToken, recipeId) {
+  return apiRequest(`/api/recipes/${recipeId}`, {
+    method: "DELETE",
+    idToken,
+  });
+}

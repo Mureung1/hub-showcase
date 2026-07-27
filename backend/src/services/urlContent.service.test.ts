@@ -71,6 +71,34 @@ test("허용하지 않는 프로토콜과 로컬 주소를 차단한다", () => 
   }
 });
 
+test("지원하는 일반 공개 웹페이지와 YouTube URL은 유지한다", () => {
+  assert.equal(
+    parseSourceUrl("https://example.com/recipe").hostname,
+    "example.com",
+  );
+  assert.equal(
+    parseSourceUrl("https://www.youtube.com/watch?v=abcdefghijk")
+      .hostname,
+    "www.youtube.com",
+  );
+});
+
+test("MVP에서 네이버 블로그 URL은 직접 입력 안내 실패로 처리한다", () => {
+  const unsupportedUrls = [
+    "https://blog.naver.com/recipe/123",
+    "https://m.blog.naver.com/recipe/123",
+  ];
+
+  for (const sourceUrl of unsupportedUrls) {
+    assert.throws(
+      () => parseSourceUrl(sourceUrl),
+      (error) =>
+        error instanceof UrlContentError &&
+        error.code === "URL_FETCH_FAILED",
+    );
+  }
+});
+
 test("공개 IP와 차단 IP를 구분한다", () => {
   assert.equal(isPublicIpAddress("8.8.8.8"), true);
   assert.equal(isPublicIpAddress("10.0.0.1"), false);

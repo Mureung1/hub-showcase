@@ -47,6 +47,7 @@ function extractOutputText(value: unknown): string | null {
 export async function structureRecipe(
   rawText: string,
   recipeSource: RecipeSource | null = null,
+  fetchImpl: typeof fetch = fetch,
 ): Promise<StructureRecipeResult> {
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -59,7 +60,7 @@ export async function structureRecipe(
   const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetchImpl("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
