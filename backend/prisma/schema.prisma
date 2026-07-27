@@ -279,3 +279,26 @@ model TeamInvite {
 
   @@map("team_invites")
 }
+
+// ==========================================
+// 11. match_requests - 과팅 이성 팀 매칭 신청 (관심 보내기)
+//     matches 테이블은 궁합 계산 기록용이라 신청 방향성을 담을 수 없어 별도 테이블로 분리함.
+//     Match 모델과 동일하게 fromTeamId/toTeamId는 relation 없이 plain BigInt로 둔다.
+// ==========================================
+enum MatchRequestStatus {
+  pending
+  accepted
+  rejected
+}
+
+model MatchRequest {
+  requestId       BigInt             @id @default(autoincrement()) @map("request_id")
+  fromTeamId      BigInt             @map("from_team_id")
+  toTeamId        BigInt             @map("to_team_id")
+  similarityScore Float              @map("similarity_score")
+  status          MatchRequestStatus @default(pending)
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  @@unique([fromTeamId, toTeamId])
+  @@map("match_requests")
+}

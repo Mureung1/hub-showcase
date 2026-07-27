@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import './TeamSizeSelectPage.css'
@@ -43,15 +43,49 @@ export default function TeamSizeSelectPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  // 이미 recruiting 상태로 소속된 팀이 있다면 그 팀의 인원수. 없으면 null(전부 선택 가능)
+  const [lockedTeamSize, setLockedTeamSize] = useState(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function fetchExistingTeam() {
+      try {
+        const response = await apiClient.get('/dating-teams/me')
+        // teamId가 있어야 실제로 구성 중인 팀이다. null이면 아직 인원수만 골라둔 상태라 잠그지 않는다
+        if (isMounted && response.data.teamId != null) {
+          setLockedTeamSize(response.data.teamSize)
+        }
+      } catch (err) {
+        console.error(err)
+        // 조회 실패 시에는 안전하게 카드 3개 전부 선택 가능한 상태로 둔다
+      }
+    }
+
+    fetchExistingTeam()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const handleSelect = async (teamSize) => {
     if (isSubmitting) return
+
+    if (lockedTeamSize != null && teamSize !== lockedTeamSize) {
+      setSubmitError('이미 진행 중인 팀이 있어요.')
+      return
+    }
 
     setIsSubmitting(true)
     setSubmitError('')
     try {
       await apiClient.patch('/users/me/team-size', { teamSize })
-      navigate('/matching/dating-same', { state: { teamSize } })
+      if (teamSize === 1) {
+        navigate('/team-setup')
+      } else {
+        navigate('/matching/dating-same', { state: { teamSize } })
+      }
     } catch (err) {
       setSubmitError(
         err.response?.data?.message ?? '저장 중 오류가 발생했습니다. 다시 시도해주세요.',
@@ -65,27 +99,31 @@ export default function TeamSizeSelectPage() {
       <h1 className="team-size-select-title">과팅 인원을 선택해주세요</h1>
 
       <div className="team-size-select-card-row">
-        {TEAM_SIZE_OPTIONS.map((option) => (
-          <button
-            type="button"
-            key={option.teamSize}
-            className="team-size-select-card"
-            onClick={() => handleSelect(option.teamSize)}
-            disabled={isSubmitting}
-          >
-            <div className="team-size-select-icon-row">
-              {Array.from({ length: option.teamSize }).map((_, i) => (
-                <PersonIcon key={`left-${i}`} />
-              ))}
-              <HeartIcon />
-              {Array.from({ length: option.teamSize }).map((_, i) => (
-                <PersonIcon key={`right-${i}`} />
-              ))}
-            </div>
-            <div className="team-size-select-ratio">{option.ratio}</div>
-            <div className="team-size-select-desc">{option.description}</div>
-          </button>
-        ))}
+        {TEAM_SIZE_OPTIONS.map((option) => {
+          const isLocked = lockedTeamSize != null && option.teamSize !== lockedTeamSize
+
+          return (
+            <button
+              type="button"
+              key={option.teamSize}
+              className={`team-size-select-card${isLocked ? ' team-size-select-card-disabled' : ''}`}
+              onClick={() => handleSelect(option.teamSize)}
+              disabled={isSubmitting}
+            >
+              <div className="team-size-select-icon-row">
+                {Array.from({ length: option.teamSize }).map((_, i) => (
+                  <PersonIcon key={`left-${i}`} />
+                ))}
+                <HeartIcon />
+                {Array.from({ length: option.teamSize }).map((_, i) => (
+                  <PersonIcon key={`right-${i}`} />
+                ))}
+              </div>
+              <div className="team-size-select-ratio">{option.ratio}</div>
+              <div className="team-size-select-desc">{option.description}</div>
+            </button>
+          )
+        })}
       </div>
 
       {submitError && <p className="team-size-select-error">{submitError}</p>}

@@ -1,0 +1,84 @@
+.invite-code-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 46, 34, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.invite-code-modal {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-cream);
+  border-radius: 24px;
+  padding: 32px 28px 28px;
+  box-shadow: 0 16px 32px rgba(74, 46, 34, 0.2);
+  position: relative;
+  text-align: center;
+}
+
+.invite-code-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-warm-gray);
+  cursor: pointer;
+}
+
+.invite-code-modal-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin: 0 0 18px;
+}
+
+.invite-code-modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--card-white);
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 4px 10px rgba(74, 46, 34, 0.08);
+  padding: 14px 18px;
+  font-size: 14px;
+  font-family: inherit;
+  text-align: center;
+  color: var(--text-brown-dark);
+}
+
+.invite-code-modal-input::placeholder {
+  color: var(--text-warm-gray);
+}
+
+.invite-code-modal-error {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--coral-primary);
+  margin: 12px 0 0;
+}
+
+.invite-code-modal-submit {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--coral-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.invite-code-modal-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

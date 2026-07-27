@@ -1,0 +1,124 @@
+.dating-opposite-results-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-cream);
+  padding: 48px 40px;
+}
+
+.dating-opposite-results-notification-bell {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+}
+
+.dating-opposite-results-eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-warm-gray);
+  margin-bottom: 8px;
+}
+
+.dating-opposite-results-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin: 0 0 8px;
+}
+
+.dating-opposite-results-subtitle {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-warm-gray);
+  margin: 0 0 32px;
+}
+
+.dating-opposite-results-status {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-warm-gray);
+  text-align: center;
+  margin: 24px 0;
+}
+
+.dating-opposite-results-status-error {
+  color: var(--coral-primary);
+}
+
+.dating-opposite-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 880px;
+}
+
+.dating-opposite-results-card {
+  background: var(--card-white);
+  border-radius: 20px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 6px 16px rgba(74, 46, 34, 0.08);
+}
+
+.dating-opposite-results-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--dating-pink);
+}
+
+.dating-opposite-results-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dating-opposite-results-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin-bottom: 6px;
+}
+
+.dating-opposite-results-percent {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c15d82;
+}
+
+.dating-opposite-results-detail-button {
+  flex-shrink: 0;
+  border: 1.5px solid var(--dating-pink);
+  color: #c15d82;
+  background: transparent;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dating-opposite-results-detail-button:hover {
+  background: var(--dating-pink);
+  color: var(--text-brown-dark);
+}
+
+@media (max-width: 720px) {
+  .dating-opposite-results-page {
+    padding: 24px 16px;
+  }
+
+  .dating-opposite-results-card {
+    flex-wrap: wrap;
+    padding: 16px 18px;
+  }
+}
