@@ -5,11 +5,12 @@ import type { LoginResponse } from '../api/auth';
 
 interface AuthFormProps {
   onLoggedIn: (result: LoginResponse) => void;
+  notice?: string | null;
 }
 
 type Mode = 'login' | 'signup';
 
-export function AuthForm({ onLoggedIn }: AuthFormProps) {
+export function AuthForm({ onLoggedIn, notice }: AuthFormProps) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,6 +42,7 @@ export function AuthForm({ onLoggedIn }: AuthFormProps) {
 
   return (
     <div style={{ margin: 'auto 0', display: 'flex', flexDirection: 'column', gap: 14, width: '100%' }}>
+      {notice && <div className="warn-box">{notice}</div>}
       <div
         className="card"
         style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', textAlign: 'center' }}

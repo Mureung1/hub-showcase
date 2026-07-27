@@ -3,12 +3,14 @@ import type { FormEvent } from 'react';
 import { updateProfile } from '../api/profile';
 import type { AuthUser } from '../api/auth';
 import type { Gender } from '../types';
+import { ApiError } from '../api/ApiError';
 
 interface OnboardingProps {
   token: string;
   initialUser?: AuthUser;
   onComplete: (user: AuthUser) => void;
   onCancel?: () => void;
+  onAuthError: () => void;
 }
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
@@ -16,7 +18,7 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'male', label: '남성' },
 ];
 
-export function Onboarding({ token, initialUser, onComplete, onCancel }: OnboardingProps) {
+export function Onboarding({ token, initialUser, onComplete, onCancel, onAuthError }: OnboardingProps) {
   const isEditMode = initialUser != null;
   const [gender, setGender] = useState<Gender | ''>(initialUser?.gender ?? '');
   const [birthYear, setBirthYear] = useState(initialUser?.birthYear?.toString() ?? '');
@@ -33,7 +35,7 @@ export function Onboarding({ token, initialUser, onComplete, onCancel }: Onboard
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!isValid || gender === '') return;
+    if (gender === '' || birthYear.trim() === '' || heightCm.trim() === '' || weightKg.trim() === '') return;
     setError(null);
     setLoading(true);
     try {
@@ -46,6 +48,10 @@ export function Onboarding({ token, initialUser, onComplete, onCancel }: Onboard
       });
       onComplete(user);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        onAuthError();
+        return;
+      }
       setError(err instanceof Error ? err.message : '요청에 실패했습니다.');
     } finally {
       setLoading(false);

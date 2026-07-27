@@ -1,5 +1,7 @@
 import type { AuthUser } from './auth';
 import type { Gender } from '../types';
+import { ApiError } from './ApiError';
+import { API_BASE_URL } from './config';
 
 export interface ProfileInput {
   gender: Gender;
@@ -14,7 +16,7 @@ interface ErrorResponse {
 }
 
 export async function updateProfile(token: string, data: ProfileInput): Promise<AuthUser> {
-  const res = await fetch('/profile', {
+  const res = await fetch(`${API_BASE_URL}/profile`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -24,7 +26,7 @@ export async function updateProfile(token: string, data: ProfileInput): Promise<
   });
   const result = (await res.json()) as AuthUser | ErrorResponse;
   if (!res.ok) {
-    throw new Error((result as ErrorResponse).error ?? '요청에 실패했습니다.');
+    throw new ApiError((result as ErrorResponse).error ?? '요청에 실패했습니다.', res.status);
   }
   return result as AuthUser;
 }

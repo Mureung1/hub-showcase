@@ -10,6 +10,9 @@ export const SYMPTOM_ID_BY_NAME: Record<string, number> = {
   스트레스: 6,
   '면역력 저하': 7,
   '피부 트러블': 8,
+  두통: 9,
+  '빈혈·어지러움': 10,
+  '탈모·모발 손상': 11,
 };
 
 export const INGREDIENT_ICONS: Record<string, ChipIconName> = {

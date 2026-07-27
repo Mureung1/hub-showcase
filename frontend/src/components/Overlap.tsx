@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react';
 import { ChipIcon } from '../chipIcons';
 import { checkOverlap } from '../api/overlap';
 import type { OverlapResult } from '../api/overlap';
+import { ApiError } from '../api/ApiError';
 
 interface OverlapProps {
   supplements: string[];
   token: string;
   onNext: () => void;
+  onAuthError: () => void;
 }
 
-export function Overlap({ supplements, token, onNext }: OverlapProps) {
+export function Overlap({ supplements, token, onNext, onAuthError }: OverlapProps) {
   const [results, setResults] = useState<OverlapResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +25,15 @@ export function Overlap({ supplements, token, onNext }: OverlapProps) {
     setLoading(true);
     checkOverlap(supplements, token)
       .then(setResults)
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          onAuthError();
+          return;
+        }
+        setError(err.message);
+      })
       .finally(() => setLoading(false));
-  }, [supplements, token]);
+  }, [supplements, token, onAuthError]);
 
   const exceededResults = results.filter((r) => r.isExceeded);
   const okResults = results.filter((r) => !r.isExceeded);

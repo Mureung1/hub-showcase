@@ -11,6 +11,9 @@ const SYMPTOM_OPTIONS: { label: string; icon: ChipIconName }[] = [
   { label: '스트레스', icon: 'zigzag' },
   { label: '면역력 저하', icon: 'shield' },
   { label: '피부 트러블', icon: 'droplet' },
+  { label: '두통', icon: 'zigzag' },
+  { label: '빈혈·어지러움', icon: 'droplet' },
+  { label: '탈모·모발 손상', icon: 'hair' },
 ];
 
 const LIFE_PATTERN_OPTIONS: { label: string; icon: ChipIconName }[] = [
@@ -21,6 +24,9 @@ const LIFE_PATTERN_OPTIONS: { label: string; icon: ChipIconName }[] = [
   { label: '임신·수유 중', icon: 'heart' },
   { label: '채식 위주 식단', icon: 'leaf' },
   { label: '규칙적 운동 부족', icon: 'dumbbell' },
+  { label: '불규칙한 식사', icon: 'stomach' },
+  { label: '스마트폰·모니터 사용 과다', icon: 'eye' },
+  { label: '카페인 과다 섭취', icon: 'battery' },
 ];
 
 interface HomeProps {

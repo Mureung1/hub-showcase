@@ -8,6 +8,9 @@ import { Overlap } from './components/Overlap';
 import { Recommend } from './components/Recommend';
 import { Detail } from './components/Detail';
 import type { AuthUser, LoginResponse } from './api/auth';
+import { saveDiagnosis } from './api/diagnoses';
+import { ApiError } from './api/ApiError';
+import { SYMPTOM_ID_BY_NAME } from './mockData';
 import type { Product, Screen } from './types';
 
 const STORAGE_KEY = 'gc_auth';
@@ -57,6 +60,7 @@ function loadStoredFlow(): StoredFlow {
 function App() {
   const [auth, setAuth] = useState<StoredAuth | null>(loadStoredAuth);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>(() => loadStoredFlow().screen);
   const [symptoms, setSymptoms] = useState<string[]>(() => loadStoredFlow().symptoms);
   const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>(
@@ -75,6 +79,7 @@ function App() {
   function handleLoggedIn(result: LoginResponse) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
     setAuth(result);
+    setAuthErrorMessage(null);
   }
 
   function handleProfileComplete(updatedUser: AuthUser) {
@@ -100,6 +105,11 @@ function App() {
     setSelectedProduct(null);
   }
 
+  function handleAuthError() {
+    setAuthErrorMessage('로그인이 만료되었습니다. 다시 로그인해주세요.');
+    handleLogout();
+  }
+
   function handleStart(startedSymptoms: string[]) {
     setSymptoms(startedSymptoms);
     setScreen('analysis');
@@ -109,6 +119,17 @@ function App() {
     setRecommendedIngredientIds(ingredientIds);
     setSupplements(enteredSupplements);
     setScreen('overlap');
+
+    if (auth) {
+      const symptomIds = symptoms.map((name) => SYMPTOM_ID_BY_NAME[name]).filter(Boolean);
+      saveDiagnosis(symptomIds, ingredientIds, auth.token).catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          handleAuthError();
+          return;
+        }
+        console.error('진단 결과 저장 실패:', err);
+      });
+    }
   }
 
   function handleSelectProduct(product: Product) {
@@ -133,7 +154,7 @@ function App() {
   return (
     <div className={auth && auth.user.gender != null ? 'phone' : 'phone center-screen'}>
       {auth && auth.user.gender == null ? (
-        <Onboarding token={auth.token} onComplete={handleProfileComplete} />
+        <Onboarding token={auth.token} onComplete={handleProfileComplete} onAuthError={handleAuthError} />
       ) : auth ? (
         <>
           <Header
@@ -149,6 +170,7 @@ function App() {
                 initialUser={auth.user}
                 onComplete={handleProfileEditComplete}
                 onCancel={() => setEditingProfile(false)}
+                onAuthError={handleAuthError}
               />
             ) : (
               <>
@@ -157,10 +179,20 @@ function App() {
                   <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
                 )}
                 {screen === 'overlap' && (
-                  <Overlap supplements={supplements} token={auth.token} onNext={() => setScreen('recommend')} />
+                  <Overlap
+                    supplements={supplements}
+                    token={auth.token}
+                    onNext={() => setScreen('recommend')}
+                    onAuthError={handleAuthError}
+                  />
                 )}
                 {screen === 'recommend' && (
-                  <Recommend ingredientIds={recommendedIngredientIds} token={auth.token} onSelect={handleSelectProduct} />
+                  <Recommend
+                    ingredientIds={recommendedIngredientIds}
+                    token={auth.token}
+                    onSelect={handleSelectProduct}
+                    onAuthError={handleAuthError}
+                  />
                 )}
                 {screen === 'detail' && (
                   <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
@@ -170,7 +202,7 @@ function App() {
           </div>
         </>
       ) : (
-        <AuthForm onLoggedIn={handleLoggedIn} />
+        <AuthForm onLoggedIn={handleLoggedIn} notice={authErrorMessage} />
       )}
     </div>
   );

@@ -37,6 +37,7 @@ interface MatchedProductRow {
   name: string;
   company_name: string | null;
   price: number | null;
+  description: string | null;
   haccp_certified: boolean;
   smartstore_url: string | null;
   test_report_url: string | null;
@@ -67,7 +68,7 @@ productsRouter.get("/match", requireAuth, async (req, res) => {
   const { gender, age, isPregnantOrLactating } = await getUserNutritionProfile(req.user!.userId);
 
   const result = await pool.query<MatchedProductRow>(
-    `SELECT p.id, p.name, p.company_name, p.price, p.haccp_certified, p.smartstore_url, p.test_report_url,
+    `SELECT p.id, p.name, p.company_name, p.price, p.description, p.haccp_certified, p.smartstore_url, p.test_report_url,
             COUNT(*) AS match_count,
             array_agg(DISTINCT i.name) AS matched_ingredient_names,
             bool_or(pi.amount_mg IS NOT NULL AND pi.amount_mg > COALESCE(u.upper_limit_mg, i.upper_limit_mg))
@@ -82,7 +83,7 @@ productsRouter.get("/match", requireAuth, async (req, res) => {
        AND $3 >= u.min_age
        AND (u.max_age IS NULL OR $3 <= u.max_age)
      WHERE pi.ingredient_id = ANY($1::int[])
-     GROUP BY p.id, p.name, p.company_name, p.price, p.haccp_certified, p.smartstore_url, p.test_report_url
+     GROUP BY p.id, p.name, p.company_name, p.price, p.description, p.haccp_certified, p.smartstore_url, p.test_report_url
      ORDER BY exceeds_personal_limit ASC, pregnancy_caution ASC, match_count DESC
      LIMIT 10`,
     [ingredientIds, gender, age, isPregnantOrLactating]
@@ -93,6 +94,7 @@ productsRouter.get("/match", requireAuth, async (req, res) => {
     name: row.name,
     companyName: row.company_name,
     price: row.price,
+    description: row.description,
     haccpCertified: row.haccp_certified,
     smartstoreUrl: row.smartstore_url,
     testReportUrl: row.test_report_url,

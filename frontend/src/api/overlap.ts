@@ -1,3 +1,6 @@
+import { ApiError } from './ApiError';
+import { API_BASE_URL } from './config';
+
 export interface OverlapResult {
   ingredientId: number;
   ingredientName: string;
@@ -8,7 +11,7 @@ export interface OverlapResult {
 }
 
 export async function checkOverlap(productNames: string[], token: string): Promise<OverlapResult[]> {
-  const res = await fetch('/products/check-overlap', {
+  const res = await fetch(`${API_BASE_URL}/products/check-overlap`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -18,7 +21,7 @@ export async function checkOverlap(productNames: string[], token: string): Promi
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error ?? '중복 체크에 실패했습니다.');
+    throw new ApiError(data.error ?? '중복 체크에 실패했습니다.', res.status);
   }
   return data.overlapResults;
 }
