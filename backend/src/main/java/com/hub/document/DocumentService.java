@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.context.ApplicationEventPublisher;
 import java.util.List;
 
 /**
@@ -25,6 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DocumentService {
 
+    private final ApplicationEventPublisher events;
     private final GeneratedDocRepository docRepository;
     private final CredentialRepository credentialRepository;
     private final MatchingService matchingService;
@@ -39,15 +40,15 @@ public class DocumentService {
                 .type(req.type())
                 .build());
 
-        runAsync(doc.getId(), userId);      // 트랜잭션 커밋 후 별도 스레드에서 실행
+        events.publishEvent(new DocGenerationRequested(doc.getId(), userId));   // ← 이걸로
+        // 트랜잭션 커밋 후 별도 스레드에서 실행
         return new DocumentDto.JobResponse(doc.getId(), doc.getStatus());
     }
 
     /** llmExecutor 풀에서 돈다. 실패해도 요청 흐름에는 영향이 없다. */
-    @Async("llmExecutor")
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void runAsync(Long docId, Long userId) {
-        GeneratedDoc doc = docRepository.findById(docId).orElseThrow();
+    @Async("llmExecutor")                                    // ← 삭제
+    @Transactional(propagation = Propagation.REQUIRES_NEW)   // ← 삭제
+    public void runGeneration(Long docId, Long userId) {        GeneratedDoc doc = docRepository.findById(docId).orElseThrow();
 
         try {
             doc.start();

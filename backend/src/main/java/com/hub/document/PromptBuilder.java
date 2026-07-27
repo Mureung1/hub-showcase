@@ -22,7 +22,8 @@ final class PromptBuilder {
         String requirements = position.requirements().stream()
                 .map(r -> "- %s (%s, 가중치 %.2f) → 내 충족도 %.0f%%: %s".formatted(
                         r.name(), r.required() ? "필수" : "우대",
-                        r.weight(), r.fulfillment() * 100, r.evidence()))
+                        r.weight(), r.fulfillment() * 100, // evidence 가 null 이면 "관련 이력 없음" 으로 대체
+                        r.evidence() == null ? "관련 이력 없음" : r.evidence()))
                 .collect(Collectors.joining("\n"));
 
         String direction = String.join("\n", position.advice());

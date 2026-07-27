@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import com.hub.security.CurrentUser;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -12,6 +14,12 @@ public class AuthController {
 
     private final AuthService authService;
 
+
+    /** GET /api/auth/me — 현재 사용자 + 이력 완성도 */
+    @GetMapping("/me")
+    public AuthDto.MeResponse me() {
+        return authService.me(CurrentUser.id());
+    }
     /** POST /api/auth/signup */
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)

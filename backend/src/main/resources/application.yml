@@ -1,3 +1,4 @@
+
 spring:
   application:
     name: hub
@@ -13,11 +14,19 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+
+
 server:
   port: 8080
 
 # JWT / LLM 키는 application-local.yml 에 둔다 (커밋 금지)
 app:
+  llm:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: claude-sonnet-4-6
+    base-url: https://api.anthropic.com
+    max-tokens: 2000
+
   jwt:
     issuer: hub
     access-token-ttl: PT1H
@@ -27,3 +36,4 @@ app:
     thresholds: { high: 85, mid: 60, low: 40 }
   cors:
     allowed-origins: http://localhost:3000
+

@@ -15,6 +15,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final com.hub.credential.CredentialService credentialService;   // ← 추가
+
+    @Transactional(readOnly = true)
+    public AuthDto.MeResponse me(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> ApiException.notFound("사용자"));
+        int completeness = credentialService.completeness(userId).percentage();
+        return new AuthDto.MeResponse(
+                user.getId(), user.getEmail(), user.getName(), completeness);
+    }
 
     @Transactional
     public AuthDto.TokenResponse signUp(AuthDto.SignUpRequest req) {

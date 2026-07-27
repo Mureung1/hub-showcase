@@ -12,8 +12,20 @@ import * as mock from "./mock";
  */
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "1";
 
+/* 포지션 */
 export const listPositions = USE_MOCK ? mock.listPositions : api.listPositions;
 export const getPosition = USE_MOCK ? mock.getPosition : api.getPosition;
 export const recalculate = USE_MOCK ? mock.recalculate : api.recalculate;
+
+/* 이력 · 사용자 */
+export const getMe = USE_MOCK ? mock.getMe : api.getMe;
+export const listCredentials = USE_MOCK ? mock.listCredentials : api.listCredentials;
+export const createCredential = USE_MOCK ? mock.createCredential : api.createCredential;
+export const deleteCredential = USE_MOCK ? mock.deleteCredential : api.deleteCredential;
+
+/* 문서 */
+export const generateDoc = USE_MOCK ? mock.generateDoc : api.generateDoc;
+export const pollDoc = USE_MOCK ? mock.pollDoc : api.pollDoc;
+export const saveDoc = USE_MOCK ? mock.saveDoc : api.saveDoc;
 
 export { ApiError } from "./api";
