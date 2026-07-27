@@ -1,5 +1,5 @@
 // FirstPR DB 스키마 (Supabase PostgreSQL)
-// - 테이블 6개: analyses / repo_cache / issue_cache / recommendations / recommendation_items / api_usage
+// - 테이블 7개: analyses / repo_cache / issue_cache / recommendations / recommendation_items / api_usage / favorites
 // - 캐시 테이블(analyses, repo_cache, issue_cache)의 만료는 TTL 대신 조회 시 fetchedAt/analyzedAt 검사로 처리
 // - 설계 근거: docs/decisions.md "DB 전환(2026-07-13)", 응답 형태: docs/openapi.yaml
 
@@ -121,4 +121,18 @@ model ApiUsage {
 
   @@unique([tokenKey, date])
   @@map("api_usage")
+}
+
+// 즐겨찾기 — 재검색으로 순위가 밀려도 계속 보고 싶은 이슈 표시 (githubId 문자열 기준, 로그인 없음)
+model Favorite {
+  id           String   @id @default(uuid()) @db.Uuid
+  githubId     String   @map("github_id")
+  repoFullName String   @map("repo_full_name")
+  issueNumber  Int      @map("issue_number")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([githubId, repoFullName, issueNumber])
+  @@index([githubId])
+  @@map("favorites")
 }

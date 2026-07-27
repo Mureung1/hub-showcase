@@ -52,6 +52,26 @@
   width: 16px;
   height: 16px;
 }
+.flow-history {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  transition: 0.15s;
+}
+.flow-history:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.flow-history svg {
+  width: 15px;
+  height: 15px;
+}
 
 /* ── 진행 스텝퍼 ────────────────────────── */
 .flow-stepper {
@@ -497,11 +517,18 @@ h1.hero {
 .r-head {
   margin-bottom: 20px;
 }
+.r-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
 .r-head h1 {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  margin: 0 0 6px;
+  margin: 0;
 }
 .r-head p {
   margin: 0;
@@ -519,6 +546,8 @@ h1.hero {
   margin: 16px 0 8px;
 }
 .filter {
+  border: 0;
+  font-family: inherit;
   font-size: 14px;
   font-weight: var(--weight-semibold);
   color: var(--color-text-secondary);
@@ -527,11 +556,39 @@ h1.hero {
   padding: 8px 15px;
   box-shadow: var(--shadow-card);
 }
+button.filter {
+  cursor: pointer;
+}
 .filter-active {
   color: var(--color-text-on-primary);
   background: var(--color-primary);
 }
+.r-refetch-btn {
+  flex: none;
+  height: 34px;
+  padding: 0 14px 0 12px;
+  font-size: var(--text-caption);
+}
+.r-refetch-icon {
+  transition: transform 0.15s;
+}
+.r-refetch-icon.spin {
+  animation: flow-spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .r-refetch-icon.spin {
+    animation: none;
+  }
+}
+.r-refetch-error {
+  text-align: center;
+  color: var(--color-danger);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  margin: -10px 0 20px;
+}
 .card {
+  position: relative;
   background: var(--color-surface);
   border-radius: var(--radius-xl);
   padding: 22px 24px;
@@ -544,6 +601,26 @@ h1.hero {
 .card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-modal);
+}
+.fav-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-tertiary);
+  transition: 0.15s;
+}
+.fav-btn:hover {
+  background: var(--color-surface-sunken-hover);
+}
+.fav-btn-on {
+  color: var(--color-primary);
 }
 .card-top {
   display: flex;
@@ -677,6 +754,25 @@ h1.hero {
 .why b {
   color: var(--color-primary-hover);
   font-weight: var(--weight-bold);
+}
+
+/* ── 전체 검색 이력(History) — 페이지네이션 ── */
+.h-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 12px 0 20px;
+}
+.h-pagination .btn {
+  height: 38px;
+  padding: 0 18px;
+  font-size: var(--text-caption);
+}
+.h-pagination-label {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
 }
 
 /* ── 상세 ───────────────────────────────── */

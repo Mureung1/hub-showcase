@@ -1,6 +1,5 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
 import { createRecommendation } from '../api/index.js'
 import { buildDefaultPreferences } from '../utils/preferences.js'
 
@@ -41,26 +40,33 @@ function IssueSearch() {
     [preferences, analysis],
   )
 
-  const { mutate, error } = useMutation({
-    mutationFn: () => createRecommendation(analysis.githubId, effectivePreferences),
-  })
+  const [error, setError] = useState(null)
+
+  // 같은 조건으로 이미 요청을 보냈는지 추적 — StrictMode(개발 모드)가 effect를 두 번 실행하거나
+  // 리렌더로 effect가 다시 돌아도 실제 요청이 중복 발사되지 않게 막는다(하루 재추천 상한을 검색 한 번에
+  // 다 써버리는 버그로 발견, 2026-07-27). 이 ref로 "응답이 최신 요청에 대한 것인지"도 함께 판정한다.
+  // useMutation의 mutate(vars, { onSuccess }) 콜백은 이 StrictMode 상황에서 응답이 와도 호출되지
+  // 않는 현상이 Analyze.jsx에서 실측으로 확인돼(네트워크 탭 200, onSuccess/onError 둘 다 미발생),
+  // 라이브러리 콜백에 기대지 않고 Promise를 직접 처리하는 방식으로 우회했다
+  const requestedKeyRef = useRef(null)
 
   useEffect(() => {
     if (!analysis || !effectivePreferences) return
-    let cancelled = false
-    // analysis/preferences가 바뀌어 이 effect가 다시 실행되기 전에 응답이 오면 무시 — 늦게 도착한
-    // 이전 요청이 최신 상태를 덮어쓰고 엉뚱한 화면으로 넘기는 걸 막는다
-    mutate(undefined, {
-      onSuccess: (recommendation) => {
-        if (cancelled) return
+    const requestKey = JSON.stringify([analysis.githubId, effectivePreferences])
+    if (requestedKeyRef.current === requestKey) return
+    requestedKeyRef.current = requestKey
+
+    createRecommendation(analysis.githubId, effectivePreferences)
+      .then((recommendation) => {
+        if (requestedKeyRef.current !== requestKey) return
         setRecommendation(recommendation)
         navigate('/result')
-      },
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [analysis, effectivePreferences, mutate, setRecommendation, navigate])
+      })
+      .catch((err) => {
+        if (requestedKeyRef.current !== requestKey) return
+        setError(err)
+      })
+  }, [analysis, effectivePreferences, setRecommendation, navigate])
 
   if (!analysis) {
     return <Navigate to="/input" replace />

@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Playwright E2E 산출물 (frontend/e2e)
+test-results
+playwright-report
+
 # .claude: 로컬 설정은 무시하되 공유용 스킬은 커밋 (포트폴리오/재사용 목적)
 .claude/*
 !.claude/skills/

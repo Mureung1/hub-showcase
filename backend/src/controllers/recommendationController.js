@@ -1,8 +1,5 @@
-import { createRecommendation, getRecommendationById } from '../services/recommendationService.js';
-import { isValidGithubId, isValidUuid, isValidPreferences } from '../utils/validators.js';
-
-// #6 이슈 분석 focus 파라미터 검증용 — owner/repo 형식 (githubService.fetchIssueBody의 split('/') 전제와 일치)
-const REPO_FULL_NAME_PATTERN = /^[^/]+\/[^/]+$/;
+import { createRecommendation, getRecommendationById, listRecommendationHistory } from '../services/recommendationService.js';
+import { isValidGithubId, isValidUuid, isValidPreferences, isValidRepoFullName, isValidIssueNumber } from '../utils/validators.js';
 
 // GET /api/recommendations/:id의 선택적 repoFullName/issueNumber 쿼리 → focus 객체.
 // 둘 다 없으면 null(캐시값만 병합, LLM 미호출). 하나만 있거나 형식이 안 맞으면 false(400 대상)
@@ -12,8 +9,7 @@ function parseFocus(query) {
         return null;
     }
     const parsedIssueNumber = Number(issueNumber);
-    if (typeof repoFullName !== 'string' || !REPO_FULL_NAME_PATTERN.test(repoFullName)
-        || !Number.isInteger(parsedIssueNumber) || parsedIssueNumber <= 0) {
+    if (!isValidRepoFullName(repoFullName) || !isValidIssueNumber(parsedIssueNumber)) {
         return false;
     }
     return { repoFullName, issueNumber: parsedIssueNumber };
@@ -37,6 +33,25 @@ export async function requestRecommendation(req, res, next) {
             topics: preferences.topics ?? [],
         });
         res.status(200).json(recommendation);
+    } catch (error) {
+        next(error);
+    }
+}
+
+// GET /api/recommendations?githubId= — 이 사용자가 지금까지 검색한 전체 이력(세션별 배열)
+export async function getRecommendationHistory(req, res, next) {
+    const { githubId } = req.query;
+
+    if (!isValidGithubId(githubId)) {
+        res.status(400).json({
+            error: { code: 'VALIDATION_ERROR', message: '올바른 GitHub 사용자명을 입력해주세요.' },
+        });
+        return;
+    }
+
+    try {
+        const history = await listRecommendationHistory(githubId);
+        res.status(200).json(history);
     } catch (error) {
         next(error);
     }

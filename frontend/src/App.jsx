@@ -7,6 +7,7 @@ import Profile from './components/Profile.jsx'
 import IssueSearch from './components/IssueSearch.jsx'
 import Result from './components/Result.jsx'
 import Detail from './components/Detail.jsx'
+import History from './components/History.jsx'
 
 // 화면 흐름(프로토타입 기준):
 // 랜딩 → ID입력 → 분석중 → 프로필결과 → 조건검색 → 추천목록 → 상세
@@ -21,6 +22,7 @@ function App() {
         <Route path="/search" element={<IssueSearch />} />
         <Route path="/result" element={<Result />} />
         <Route path="/detail" element={<Detail />} />
+        <Route path="/history" element={<History />} />
       </Route>
     </Routes>
   )

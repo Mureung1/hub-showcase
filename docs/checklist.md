@@ -81,22 +81,25 @@
 - [x] **[FE] mock → 실제 API 교체** — `axios` + `@tanstack/react-query`, 로딩/에러 상태 연결
       - DoD: 전 화면이 실제 백엔드 응답으로 동작 ✅ 2026-07-22 (추천 API mock 제거, Analyze/IssueSearch를 useMutation으로 전환, #9)
       - 참고: [decisions](decisions.md) TanStack Query
-- [ ] **[FE/BE] E2E 통합 테스트** — 랜딩→상세 7화면 흐름 전체 검증
-      - DoD: 실제 GitHub ID로 끝까지 흐름 성공
+- [x] **[FE/BE] E2E 통합 테스트** — 랜딩→상세 7화면 흐름 전체 검증
+      - DoD: 실제 GitHub ID로 끝까지 흐름 성공 ✅ 2026-07-27 (Playwright 도입, `frontend/e2e/full-flow.spec.js`, mock 없이 실제 GitHub/LLM API로 kimsunho2000 계정 통과 확인. 참고: [testing.md](testing.md) §5)
 - [ ] **[BE] rate limit / 엣지케이스 대응** — 비인증 60회 제한, 캐시 만료, 빈 결과 처리
       - DoD: rate limit 초과·빈 추천 상황에서 정상 폴백/안내
       - 참고: plan §6 GitHub API 제약, ApiUsage
 - [ ] **[FE/BE] 버그 디버깅 + 필터/재조회 마감** — 조건 변경 재추천
       - DoD: 조건 바꿔 재추천 동작, 알려진 버그 정리
       - 참고: plan §7 재조회/필터링
-- [ ] **[FE] 프론트 배포** (github.io 등) — 프로토타입 데모 포함
-      - DoD: 공개 URL 접속 가능
-- [ ] **[BE] 백엔드 배포** — API 서버 + 환경변수(GitHub 토큰) 설정
-      - DoD: 배포된 API로 프론트 연동 성공
+- [x] **[FE] 프론트 배포** (github.io 등) — 프로토타입 데모 포함
+      - DoD: 공개 URL 접속 가능 ✅ `kimsunho2000.github.io/hub/` (`npm run deploy`)
+- [x] **[BE] 백엔드 배포** — API 서버 + 환경변수(GitHub 토큰) 설정
+      - DoD: 배포된 API로 프론트 연동 성공 ✅ 2026-07-27 Render(`https://firstpr-backend.onrender.com`) 배포, `VITE_API_BASE_URL`로 프론트 연결 후 재배포 완료. `render.yaml` buildCommand에 `npm test` 게이트 추가
 - [x] **[공통] architecture.md 최종 확정** — 폴더구조/API/DB/배포/데이터흐름 기록
       - DoD: [architecture.md](architecture.md) 6개 섹션 채움 ✅ 2026-07-24 (프론트엔드/백엔드 섹션 채움, 인프라/배포는 다음 주로 미뤄 스텁만 남김)
 
-## Week 4 — 스텁 (내일 정리 예정)
-- [ ] **[FE/BE] 재추천 다양화** — 같은 조건으로 다시 요청 시 새 이슈 위주로(중복 방지), 주기당 2~3회 상한
-      - DoD: 미정 (내일 세부 설계 — 중복 제외 저장 위치, 상한 카운트 단위 결정 후 착수)
-      - 참고: 2026-07-23 논의
+## Week 4
+- [x] **[FE/BE] 재추천 다양화** — 같은 조건으로 다시 요청 시 새 이슈 위주로(중복 방지), 주기당 2~3회 상한
+      - DoD: ✅ 2026-07-27 매칭 점수 1순위 + 동점 시 안 본 이슈 우선(`compareForDiversification`), 하루(UTC) 동일 조건 3회 상한 도달 시 에러 대신 캐시된 결과 반환
+      - 참고: 2026-07-23 논의, [decisions](decisions.md)
+- [x] **[FE/BE] 즐겨찾기 + 전체 검색 이력** — 로드맵 항목 조기 착수
+      - DoD: ✅ 2026-07-27 `Favorite` 모델, `/history` 화면(언어 필터·정렬·페이지네이션), `GET /api/recommendations` 이력 조회
+      - 참고: [architecture.md](architecture.md)

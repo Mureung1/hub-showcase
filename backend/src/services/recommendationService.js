@@ -2,6 +2,7 @@ import prisma from '../config/prisma.js';
 import { getAnalysis } from './analysisService.js';
 import { searchRepos, fetchReposWithIssues, fetchIssueBody, fetchContributingGuide } from './githubService.js';
 import { analyzeIssue, rerankItems } from './llmService.js';
+import { getFavoriteKeys } from './favoriteService.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('recommendationService');
@@ -14,6 +15,10 @@ const MAX_LANGUAGES = 3; // 검색 호출 수 상한 (언어당 REST 1~2회)
 const MAX_REPOS = 12; // GraphQL 일괄 조회 1쿼리에 담는 상한
 const MAX_ITEMS_PER_REPO = 2; // 한 레포가 추천 목록을 도배하지 않게
 const MAX_ITEMS = 10;
+
+// 재추천 다양화 — 일 단위(UTC) githubId+동일 조건당 "새로 계산"하는 상한 (2026-07-27 결정, checklist Week4).
+// 도달하면 에러가 아니라 오늘 만든 마지막 결과를 그대로 반환한다(재계산·GitHub/LLM 호출만 아낌)
+const DAILY_RECOMMENDATION_LIMIT = 3;
 
 // 난이도 → 이슈 라벨 필터. hard = enhancement(기능 구현급) 이슈로 정의 (2026-07-20 결정)
 const DIFFICULTY_ISSUE_LABELS = {
@@ -206,6 +211,55 @@ function cacheReposAndIssues(repos) {
     }
 }
 
+function startOfUtcDay(date = new Date()) {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+// preferences 비교용 정규화 키 — 언어/토픽 대소문자·순서 차이를 흡수해 "같은 조건"을 판정한다.
+// 이게 없으면 언어 배열 순서만 다른 요청이 서로 다른 조건으로 오판돼 상한을 우회할 수 있다
+function normalizePreferences(preferences) {
+    return JSON.stringify({
+        languages: [...preferences.languages].map((language) => language.toLowerCase()).sort(),
+        difficulty: preferences.difficulty,
+        topics: [...(preferences.topics ?? [])].map((topic) => topic.toLowerCase()).sort(),
+    });
+}
+
+// 재추천 다양화 — 오늘(UTC) 이 githubId가 "동일 조건"으로 만든 추천을 최신순으로 전부 가져온다.
+// 조건을 바꾼 탐색까지 상한에 걸리면 정상적인 탐색을 막게 되므로, 상한은 같은 preferences로의
+// 반복 재요청에만 적용한다(2026-07-27 결정 보완 — 최초의 "githubId 전체 기준"은 상한 대신 다양화 범위에만 유지).
+// 상한 도달 시 에러 대신 [0](가장 최근 것)을 그대로 재사용해서, "새로 계산은 안 하되 결과 없이 막지는
+// 않는다"는 캐시처럼 동작하게 한다 — 처음엔 에러로 막았는데, 이미 오늘 만들어둔 결과가 있는데도
+// 그냥 실패로 끝나는 게 어색하다는 피드백을 받아 바꿨다(2026-07-27)
+async function findTodaysSameConditionRecommendations(githubId, preferences) {
+    const todaysRecommendations = await prisma.recommendation.findMany({
+        where: { githubId, createdAt: { gte: startOfUtcDay() } },
+        include: { items: { orderBy: { position: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+    });
+    const targetKey = normalizePreferences(preferences);
+    return todaysRecommendations.filter((rec) => normalizePreferences(rec.preferences) === targetKey);
+}
+
+// 재추천 다양화 — 이 사용자가 과거에 받은 (repoFullName#issueNumber) 집합.
+// preferences 일치 여부와 무관하게 githubId 전체 이력을 대상으로 한다 — Json 비교 없이 기존 인덱스만으로 조회되고,
+// "이미 본 이슈"라는 사용자 체감과도 preferences 단위 구분보다 더 맞는다 (2026-07-27 결정)
+async function getSeenIssueKeys(githubId) {
+    const seenItems = await prisma.recommendationItem.findMany({
+        where: { recommendation: { githubId } },
+        select: { repoFullName: true, issueNumber: true },
+    });
+    return new Set(seenItems.map((item) => `${item.repoFullName}#${item.issueNumber}`));
+}
+
+// 재추천 다양화 정렬 규칙 — matchScore가 1순위(화면에 그대로 노출되므로 점수보다 다양화를 우선하면
+// "정렬이 안 맞는다"로 보임), isSeen(안 본 이슈 우선)은 동점일 때만 적용되는 타이브레이커.
+// 1차 정렬(candidateItems)과 LLM 재순위 후 재정렬(rerankTopItems) 두 곳에서 똑같이 써야 해서
+// 하나로 뽑아둔다 — 따로 두면 한쪽만 고쳤을 때 조용히 어긋난다(2026-07-27 코드리뷰 발견)
+function compareForDiversification(a, b) {
+    return b.matchScore - a.matchScore || (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.repoStars - a.repoStars;
+}
+
 // 동점 구간만 언어별 라운드로빈으로 재배치 (스타 tie-break만 쓰면 TS 등 인플레 생태계가 독식)
 // 입력은 (matchScore desc, repoStars desc) 정렬 전제
 function interleaveEqualScores(items) {
@@ -267,12 +321,15 @@ async function rerankTopItems(items, analysis) {
     });
 
     // 점수가 바뀌었으니 동점 그룹도 달라진다 — 정렬·언어 인터리브를 재적용
-    reranked.sort((a, b) => b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+    reranked.sort(compareForDiversification);
     return interleaveEqualScores(reranked).map((item, index) => ({ ...item, position: index }));
 }
 
-// recommendations 레코드 → 명세(Recommendation 스키마) 응답 형태
-function toRecommendationResponse(record) {
+// recommendations 레코드 → 명세(Recommendation 스키마) 응답 형태.
+// isNewByKey가 주어지면(POST 응답 전용) 다양화 배지용 isNew 필드를 함께 채운다 — 이건 "생성 시점"에만
+// 의미 있는 스냅샷이라 GET 재조회(isNewByKey 없음)에서는 필드 자체를 응답에 넣지 않는다.
+// isFavoritedByKey가 주어지면 즐겨찾기 여부를 채운다 — 이건 조회 시점 최신 상태라 POST/GET 모두에서 채운다
+function toRecommendationResponse(record, { isNewByKey = null, isFavoritedByKey = null } = {}) {
     return {
         id: record.id,
         githubId: record.githubId,
@@ -294,6 +351,10 @@ function toRecommendationResponse(record) {
             issueSummary: null,
             requiredSkills: null,
             guide: null,
+            ...(isNewByKey ? { isNew: isNewByKey.get(`${item.repoFullName}#${item.issueNumber}`) ?? true } : {}),
+            ...(isFavoritedByKey
+                ? { isFavorited: isFavoritedByKey.has(`${item.repoFullName}#${item.issueNumber}`) }
+                : {}),
         })),
         createdAt: record.createdAt.toISOString(),
     };
@@ -383,7 +444,8 @@ export async function getRecommendationById(id, focus = null) {
         throw notFound;
     }
 
-    const response = toRecommendationResponse(record);
+    const isFavoritedByKey = await getFavoriteKeys(record.githubId);
+    const response = toRecommendationResponse(record, { isFavoritedByKey });
     response.items = await enrichWithCachedAnalysis(response.items);
 
     if (focus) {
@@ -405,6 +467,28 @@ export async function createRecommendation(githubId, preferences) {
     // 분석 이력 없으면 getAnalysis가 404(ANALYSIS_NOT_FOUND) 던짐
     const analysis = await getAnalysis(githubId);
 
+    // 알려진 한계(2026-07-27 코드리뷰 발견, 의도적으로 미수정): 이 확인과 아래 prisma.recommendation.create
+    // 사이에 GitHub/LLM 호출(수 초)이 끼어 있어 "확인 후 실행" 경쟁 조건이 있다 — 같은 githubId+조건 요청이
+    // 그 시간差 안에 동시에 들어오면 상한(3회)을 넘겨 저장될 수 있다. DB advisory lock으로 완전히 막을 수
+    // 있지만 GitHub/LLM 호출 내내 커넥션을 붙잡아야 해서 비용이 크고, 정상 경로(같은 탭)에서는 프론트가
+    // 이미 재검색 버튼을 disabled 처리해 중복 요청 자체가 안 나가므로(Result.jsx) 멀티탭/직접 API 호출
+    // 같은 드문 경우에만 해당한다. 소프트 캡이라 이 정도 위험은 감수하기로 함
+    const sameConditionToday = await findTodaysSameConditionRecommendations(analysis.githubId, preferences);
+    if (sameConditionToday.length >= DAILY_RECOMMENDATION_LIMIT) {
+        logger.info('재추천 상한 도달 — 새로 계산하지 않고 오늘 마지막 결과를 그대로 반환', {
+            githubId: analysis.githubId,
+            recommendationId: sameConditionToday[0].id,
+        });
+        const isFavoritedByKey = await getFavoriteKeys(analysis.githubId);
+        return toRecommendationResponse(sameConditionToday[0], { isFavoritedByKey });
+    }
+
+    // 서로 다른 테이블(RecommendationItem/Favorite)을 조회하는 독립 쿼리라 순서대로 기다릴 이유가 없다
+    // — 둘 다 동시에 시작해서 느린 쪽 하나만큼만 기다리면 된다(2026-07-27 코드리뷰 발견)
+    const [seenKeys, isFavoritedByKey] = await Promise.all([
+        getSeenIssueKeys(analysis.githubId),
+        getFavoriteKeys(analysis.githubId),
+    ]);
     const candidateNames = await collectCandidateRepos(preferences);
     const repos = await fetchReposWithIssues(candidateNames, DIFFICULTY_ISSUE_LABELS[preferences.difficulty]);
     cacheReposAndIssues(repos);
@@ -432,13 +516,17 @@ export async function createRecommendation(githubId, preferences) {
                 difficulty,
                 matchScore: score,
                 reason,
+                isSeen: seenKeys.has(`${repo.fullName}#${issue.number}`),
             });
         }
     }
-    // 동점은 스타 수로 1차 정렬 후 언어 인터리브 → 여기서 확정된 MAX_ITEMS건만 LLM 재순위 대상이 된다
-    items.sort((a, b) => b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+    // 완전히 제외하지 않는 이유: 후보가 적으면(mock처럼) 안 본 이슈가 부족해도 빈 결과 대신 이전 이슈로 자연스럽게 채워지게 하기 위함
+    items.sort(compareForDiversification);
     const trimmedItems = interleaveEqualScores(items).slice(0, MAX_ITEMS);
-    const topItems = await rerankTopItems(trimmedItems, analysis);
+    const rerankedItems = await rerankTopItems(trimmedItems, analysis);
+    const isNewByKey = new Map(
+        rerankedItems.map((item) => [`${item.repoFullName}#${item.issueNumber}`, !item.isSeen]));
+    const topItems = rerankedItems.map(({ isSeen: _isSeen, ...item }) => item);
 
     const saved = await prisma.recommendation.create({
         data: {
@@ -454,7 +542,22 @@ export async function createRecommendation(githubId, preferences) {
         recommendationId: saved.id,
         candidates: candidateNames.length,
         items: topItems.length,
+        newItems: [...isNewByKey.values()].filter(Boolean).length,
     });
 
-    return toRecommendationResponse(saved);
+    return toRecommendationResponse(saved, { isNewByKey, isFavoritedByKey });
+}
+
+// 전체 검색 이력 (GET /api/recommendations?githubId=) — 이 githubId가 지금까지 생성한 모든 추천을
+// 최신순으로 반환한다. Recommendation은 재조회/필터링용으로 삭제 없이 계속 쌓이므로(decisions.md DB 설계
+// 이유) 새 저장·집계 없이 그대로 나열하면 된다. 각 세션(=한 번의 검색)이 배열의 원소 하나 — 프론트는
+// createdAt/preferences를 세션 그룹 헤더로 쓴다
+export async function listRecommendationHistory(githubId) {
+    const isFavoritedByKey = await getFavoriteKeys(githubId);
+    const records = await prisma.recommendation.findMany({
+        where: { githubId },
+        include: { items: { orderBy: { position: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+    });
+    return records.map((record) => toRecommendationResponse(record, { isFavoritedByKey }));
 }

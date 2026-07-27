@@ -1,0 +1,27 @@
+# Render 블루프린트 — 백엔드(backend/)만 배포한다. 프론트는 GitHub Pages(kimsunho2000.github.io/hub/)에 이미 배포됨.
+# 사용 방법: Render 대시보드 → New → Blueprint → 이 저장소 선택 → DATABASE_URL/GITHUB_TOKEN/GEMINI_API_KEY 입력.
+#
+# buildCommand의 `npm test`가 테스트 게이트 — 통합테스트가 vitest.config.js가 정의한 프로세스 안에서
+# 실제 Supabase(DATABASE_URL)를 호출하므로 여기서도 통과해야 한다(GitHub/LLM은 항상 mock되므로
+# GITHUB_TOKEN/GEMINI_API_KEY는 빌드 단계에 필요 없음). 테스트가 하나라도 실패하면 buildCommand 전체가
+# 비정상 종료돼 Render가 배포를 진행하지 않는다 — .github/workflows(대회 운영용, 손대지 않음) 없이도
+# "테스트 통과해야 배포"를 만족한다. prisma generate가 먼저 와야 하는 이유: 테스트 코드가 실제로
+# Prisma Client를 import해서 쓰기 때문에, 생성 전에 테스트부터 돌리면 import 자체가 실패한다
+services:
+  - type: web
+    name: firstpr-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm test
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://kimsunho2000.github.io

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { ChevronLeftIcon, LogoMark } from './icons.jsx'
+import { ChevronLeftIcon, LogoMark, HistoryIcon } from './icons.jsx'
 import './AppFlow.css'
 
 // 스텝퍼 노드 (프로토타입 기준) — 경로별 진행 상태 매핑
@@ -25,12 +25,21 @@ const BACK_TARGET = {
   '/search': '/profile',
   '/result': '/search',
   '/detail': '/result',
+  '/history': '/result',
 }
+
+// githubId만 localStorage에 남긴다 — 새로고침/직접 URL 진입(예: /history) 시에도 "누구 이력인지"를
+// 복원할 수 있어야 함. 다른 state(analysis/recommendation 등)는 매번 새로 요청하는 게 맞아 그대로 둔다
+const GITHUB_ID_STORAGE_KEY = 'firstpr:githubId'
 
 function AppFlowLayout() {
   const { pathname } = useLocation()
   // 화면 흐름 간 공유 상태 — 각 화면은 useOutletContext()로 읽고 쓴다
-  const [githubId, setGithubId] = useState('')
+  const [githubId, setGithubIdState] = useState(() => localStorage.getItem(GITHUB_ID_STORAGE_KEY) ?? '')
+  function setGithubId(value) {
+    setGithubIdState(value)
+    localStorage.setItem(GITHUB_ID_STORAGE_KEY, value)
+  }
   const [analysis, setAnalysis] = useState(null)
   const [preferences, setPreferences] = useState(null)
   const [recommendation, setRecommendation] = useState(null)
@@ -52,6 +61,10 @@ function AppFlowLayout() {
             <LogoMark />
           </span>
           <span>FirstPR</span>
+        </Link>
+        <Link to="/history" className="flow-history" aria-label="전체 검색 이력">
+          <HistoryIcon />
+          <span>이력</span>
         </Link>
       </div>
 

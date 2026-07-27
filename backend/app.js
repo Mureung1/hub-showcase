@@ -12,6 +12,7 @@ import config from './src/config/index.js';
 import healthRoutes from './src/routes/healthRoutes.js';
 import analysisRoutes from './src/routes/analysisRoutes.js';
 import recommendationRoutes from './src/routes/recommendationRoutes.js';
+import favoriteRoutes from './src/routes/favoriteRoutes.js';
 import { notFound, errorHandler } from './src/middlewares/errorHandler.js';
 import { createLogger } from './src/utils/logger.js';
 
@@ -41,6 +42,7 @@ app.use(express.json());
 app.use('/health', healthRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/favorites', favoriteRoutes);
 if (openapiDocument) {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiDocument));
 }

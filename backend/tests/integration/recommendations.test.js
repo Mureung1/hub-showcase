@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 
 // GitHub 호출은 mock, DB는 실제 Supabase에 연결한다 (docs/testing.md 정책)
@@ -44,6 +44,7 @@ vi.mock('../../src/services/llmService.js', () => ({
 const { default: app } = await import('../../app.js');
 const { default: prisma } = await import('../../src/config/prisma.js');
 const { analyzeIssue, rerankItems } = await import('../../src/services/llmService.js');
+const { fetchReposWithIssues } = await import('../../src/services/githubService.js');
 
 const TEST_GITHUB_ID = 'vitest-test-user';
 const createdRecommendationIds = [];
@@ -71,10 +72,19 @@ beforeAll(async () => {
     });
 });
 
+// 재추천 다양화(하루 상한 3회)가 기존 테스트들의 누적 POST 횟수에 걸리지 않도록,
+// 매 테스트 시작 전 이 사용자의 추천 이력을 비운다 — 테스트 간 상한/다양화 상태도 함께 격리된다
+beforeEach(async () => {
+    await prisma.recommendation.deleteMany({ where: { githubId: TEST_GITHUB_ID } });
+});
+
 afterAll(async () => {
     await prisma.recommendation.deleteMany({ where: { id: { in: createdRecommendationIds } } });
     await prisma.analysis.deleteMany({ where: { githubId: TEST_GITHUB_ID } });
-    await prisma.issueCache.deleteMany({ where: { repoFullName: MOCK_REPO_FULL_NAME, issueNumber: MOCK_ISSUE_NUMBER } });
+    await prisma.issueCache.deleteMany({
+        where: { repoFullName: MOCK_REPO_FULL_NAME, issueNumber: { in: [MOCK_ISSUE_NUMBER, 101, 102] } },
+    });
+    await prisma.favorite.deleteMany({ where: { githubId: TEST_GITHUB_ID } });
     await prisma.$disconnect();
 });
 
@@ -303,5 +313,205 @@ describe('GET /api/recommendations/:id — #6 이슈 분석(지연 생성)', () 
 
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+});
+
+describe('POST /api/recommendations — 재추천 다양화', () => {
+    const preferences = { languages: ['JavaScript'], difficulty: 'easy', topics: [] };
+
+    it('같은 githubId로 하루 3회를 초과해 요청하면 4번째부터는 새로 계산하지 않고 오늘 마지막 결과를 그대로 반환한다', async () => {
+        let lastId;
+        for (let i = 0; i < 3; i += 1) {
+            const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+            expect(res.status).toBe(200);
+            createdRecommendationIds.push(res.body.id);
+            lastId = res.body.id;
+        }
+
+        const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+
+        expect(res.status).toBe(200);
+        expect(res.body.id).toBe(lastId); // 새 레코드를 만들지 않고 3번째(가장 최근) 결과를 그대로 재사용
+    });
+
+    it('매칭 점수가 같은 이슈들 사이에서는 안 본 이슈를 먼저 배치한다 (점수 자체는 항상 1순위 정렬 기준)', async () => {
+        // 1차: 이슈 101(good first issue, easy 일치 → 규칙 점수 높음) 하나만 후보로 줘서 "이미 본 이슈"로 만든다
+        fetchReposWithIssues.mockResolvedValueOnce([
+            {
+                fullName: MOCK_REPO_FULL_NAME,
+                description: 'mock repo',
+                url: 'https://github.com/octocat/Hello-World',
+                stars: 500,
+                primaryLanguage: 'JavaScript',
+                languages: ['JavaScript'],
+                topics: [],
+                goodFirstIssueCount: 3,
+                helpWantedIssueCount: 1,
+                pushedAt: new Date().toISOString(),
+                issues: [
+                    { number: 101, title: 'seen issue', url: 'https://github.com/octocat/Hello-World/issues/101', labels: ['good first issue'] },
+                ],
+            },
+        ]);
+        const first = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        expect(first.status).toBe(200);
+        createdRecommendationIds.push(first.body.id);
+
+        // 2차: 이슈 101(이미 본 이슈)과 이슈 102(새 이슈) 둘 다 라벨이 같아(good first issue) 규칙 점수가 동점이다
+        fetchReposWithIssues.mockResolvedValueOnce([
+            {
+                fullName: MOCK_REPO_FULL_NAME,
+                description: 'mock repo',
+                url: 'https://github.com/octocat/Hello-World',
+                stars: 500,
+                primaryLanguage: 'JavaScript',
+                languages: ['JavaScript'],
+                topics: [],
+                goodFirstIssueCount: 3,
+                helpWantedIssueCount: 1,
+                pushedAt: new Date().toISOString(),
+                issues: [
+                    { number: 101, title: 'seen issue', url: 'https://github.com/octocat/Hello-World/issues/101', labels: ['good first issue'] },
+                    { number: 102, title: 'new issue', url: 'https://github.com/octocat/Hello-World/issues/102', labels: ['good first issue'] },
+                ],
+            },
+        ]);
+        const second = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        expect(second.status).toBe(200);
+        createdRecommendationIds.push(second.body.id);
+
+        // 동점이라 점수만으로는 순서가 안 갈리지만, 새 이슈 102가 타이브레이커로 먼저 나온다
+        expect(second.body.items[0].matchScore).toBe(second.body.items[1].matchScore);
+        expect(second.body.items[0].issueNumber).toBe(102);
+
+        // isNew로도 신규/기존 이슈를 구분할 수 있어야 한다 (POST 응답 전용 필드)
+        const item101 = second.body.items.find((item) => item.issueNumber === 101);
+        const item102 = second.body.items.find((item) => item.issueNumber === 102);
+        expect(item101.isNew).toBe(false);
+        expect(item102.isNew).toBe(true);
+        expect(first.body.items[0].isNew).toBe(true); // 최초 추천은 전부 새 이슈
+
+        // GET 재조회 응답에는 isNew가 포함되지 않는다 (생성 시점 스냅샷일 뿐 재조회 때마다 계산하지 않음)
+        const refetched = await request(app).get(`/api/recommendations/${second.body.id}`);
+        expect(refetched.body.items[0].isNew).toBeUndefined();
+    });
+
+    it('규칙 점수가 다르면 안 본 이슈라도 점수 순서를 뒤집지 않는다 (다양화가 매칭 점수 정렬을 깨면 안 됨)', async () => {
+        // 1차: 이슈 201(good first issue, 규칙 점수 높음) 하나만 후보로 줘서 "이미 본 이슈"로 만든다
+        fetchReposWithIssues.mockResolvedValueOnce([
+            {
+                fullName: MOCK_REPO_FULL_NAME,
+                description: 'mock repo',
+                url: 'https://github.com/octocat/Hello-World',
+                stars: 500,
+                primaryLanguage: 'JavaScript',
+                languages: ['JavaScript'],
+                topics: [],
+                goodFirstIssueCount: 3,
+                helpWantedIssueCount: 1,
+                pushedAt: new Date().toISOString(),
+                issues: [
+                    { number: 201, title: 'seen, high score', url: 'https://github.com/octocat/Hello-World/issues/201', labels: ['good first issue'] },
+                ],
+            },
+        ]);
+        const first = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(first.body.id);
+
+        // 2차: 201(이미 본 이슈, 규칙 점수 높음)과 202(라벨 없음 → hard 판정, 규칙 점수 낮음, 새 이슈)를 함께 준다
+        fetchReposWithIssues.mockResolvedValueOnce([
+            {
+                fullName: MOCK_REPO_FULL_NAME,
+                description: 'mock repo',
+                url: 'https://github.com/octocat/Hello-World',
+                stars: 500,
+                primaryLanguage: 'JavaScript',
+                languages: ['JavaScript'],
+                topics: [],
+                goodFirstIssueCount: 3,
+                helpWantedIssueCount: 1,
+                pushedAt: new Date().toISOString(),
+                issues: [
+                    { number: 201, title: 'seen, high score', url: 'https://github.com/octocat/Hello-World/issues/201', labels: ['good first issue'] },
+                    { number: 202, title: 'new, low score', url: 'https://github.com/octocat/Hello-World/issues/202', labels: [] },
+                ],
+            },
+        ]);
+        const second = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(second.body.id);
+
+        // 매칭 점수가 높은 201이 새 이슈(202)보다 항상 먼저 나와야 한다 — 목록이 화면에 "매칭 점수" 순으로 보이기 때문
+        expect(second.body.items[0].issueNumber).toBe(201);
+        expect(second.body.items[0].matchScore).toBeGreaterThan(second.body.items[1].matchScore);
+    });
+
+    it('조건(preferences)을 바꾼 요청은 동일 조건 상한과 무관하게 새로 계산된다', async () => {
+        let lastId;
+        for (let i = 0; i < 3; i += 1) {
+            const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+            expect(res.status).toBe(200);
+            createdRecommendationIds.push(res.body.id);
+            lastId = res.body.id;
+        }
+        // 같은 조건 4번째는 상한 도달 — 새로 계산하지 않고 캐시된 결과를 그대로 반환
+        const cached = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        expect(cached.status).toBe(200);
+        expect(cached.body.id).toBe(lastId);
+
+        // 조건을 바꾸면(difficulty: medium) 새로 계산되어야 한다 — 상한은 "동일 조건" 재요청에만 걸린다
+        const differentConditions = { ...preferences, difficulty: 'medium' };
+        const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences: differentConditions });
+        expect(res.status).toBe(200);
+        expect(res.body.id).not.toBe(lastId);
+        createdRecommendationIds.push(res.body.id);
+    });
+});
+
+describe('GET /api/recommendations — 전체 검색 이력', () => {
+    const preferences = { languages: ['JavaScript'], difficulty: 'easy', topics: [] };
+
+    it('여러 세션을 최신순으로 반환한다', async () => {
+        const first = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(first.body.id);
+        const second = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(second.body.id);
+
+        const res = await request(app).get('/api/recommendations').query({ githubId: TEST_GITHUB_ID });
+
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(2);
+        expect(res.body[0].id).toBe(second.body.id); // 최신(두 번째 요청)이 배열 맨 앞
+        expect(res.body[1].id).toBe(first.body.id);
+        expect(res.body[0].items.length).toBeGreaterThan(0);
+    });
+
+    it('즐겨찾기한 이슈는 isFavorited: true, 나머지는 false로 표시된다', async () => {
+        const created = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(created.body.id);
+        const favoriteItem = created.body.items[0];
+
+        await request(app)
+            .post('/api/favorites')
+            .send({ githubId: TEST_GITHUB_ID, repoFullName: favoriteItem.repoFullName, issueNumber: favoriteItem.issueNumber });
+
+        const res = await request(app).get('/api/recommendations').query({ githubId: TEST_GITHUB_ID });
+
+        expect(res.status).toBe(200);
+        const session = res.body.find((rec) => rec.id === created.body.id);
+        const item = session.items.find(
+            (i) => i.repoFullName === favoriteItem.repoFullName && i.issueNumber === favoriteItem.issueNumber);
+        expect(item.isFavorited).toBe(true);
+        const others = session.items.filter((i) => i !== item);
+        expect(others.every((i) => i.isFavorited === false)).toBe(true);
+    });
+
+    it('githubId 쿼리가 없거나 형식이 잘못되면 400 VALIDATION_ERROR를 반환한다', async () => {
+        const missing = await request(app).get('/api/recommendations');
+        expect(missing.status).toBe(400);
+        expect(missing.body.error.code).toBe('VALIDATION_ERROR');
+
+        const invalid = await request(app).get('/api/recommendations').query({ githubId: '../etc' });
+        expect(invalid.status).toBe(400);
+        expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
     });
 });
