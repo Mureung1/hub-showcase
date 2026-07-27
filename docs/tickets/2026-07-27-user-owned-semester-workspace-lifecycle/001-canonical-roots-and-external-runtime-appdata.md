@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -31,28 +31,41 @@ AY-PLE이 `hub/`, sibling `../.ay-ple/`, global `~/.codex`와 선택된 Semester
 
 ## Acceptance Criteria
 
-- [ ] Root resolver가 package, appData, global Codex home, controlled child state와 workspace의 canonical location·ownership을 한 contract로 반환한다.
-- [ ] Same-path, ancestor overlap, symlink, unreadable/non-directory와 package-local fallback이 mutation 전에 거절된다.
-- [ ] Runtime materializer가 external appData Runtime root와 cache를 만들고 tracked manifest에 대해 strict verify하며 package-local `.artifacts/`를 runtime authority로 사용하지 않는다.
-- [ ] Product startup이 external verified Runtime, controlled `HOME`·temp와 caller-global `CODEX_HOME`을 사용하고 separate `CODEX_SQLITE_HOME`을 만들지 않는다.
-- [ ] Default startup은 hardcoded SemesterWorkspace나 `CODEX_CHAT_WORKSPACE`를 active selection authority로 요구하지 않는다.
-- [ ] Repeated materialize/start/verify가 target Runtime bytes와 existing workspace·legacy root를 임의 변경하지 않는다.
+- [x] Root resolver가 package, appData, global Codex home, controlled child state와 workspace의 canonical location·ownership을 한 contract로 반환한다.
+- [x] Same-path, ancestor overlap, symlink, unreadable/non-directory와 package-local fallback이 mutation 전에 거절된다.
+- [x] Runtime materializer가 external appData Runtime root와 cache를 만들고 tracked manifest에 대해 strict verify하며 package-local `.artifacts/`를 runtime authority로 사용하지 않는다.
+- [x] Product startup이 external verified Runtime, controlled `HOME`·temp와 caller-global `CODEX_HOME`을 사용하고 separate `CODEX_SQLITE_HOME`을 만들지 않는다.
+- [x] Default startup은 hardcoded SemesterWorkspace나 `CODEX_CHAT_WORKSPACE`를 active selection authority로 요구하지 않는다.
+- [x] Repeated materialize/start/verify가 target Runtime bytes와 existing workspace·legacy root를 임의 변경하지 않는다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm run test:production-runtime -w @ay-ple/codex-chat-runtime`
-  - `npm run test:node-unit -w @ay-ple/codex-chat-runtime`
-  - `npm run test:local`
-  - `npm test -w @ay-ple/server`
+  - `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` — 25개 test green
+  - `npm run test:node-unit -w @ay-ple/codex-chat-runtime` — 130개 test green
+  - `npm run test:node-actual -w @ay-ple/codex-chat-runtime` — 83개 test green
+  - `npm run test:local` — canonical·legacy 7개 test green
+  - `npm test -w @ay-ple/server` — 140개 test green
+  - `npm run check:bridge -w @ay-ple/codex-chat-runtime` — Ruff check·format green
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
-  - `npm run build`
-  - `npm run lint -w @ay-ple/chat-shell`
-  - `npm run check:docs-links`
+  - `npm test` — green
+  - `npm run typecheck` — green
+  - `npm run build` — green
+  - `npm run lint -w @ay-ple/chat-shell` — green
+  - `npm run check:docs-links` — active 28개와 historical banner 2개 green
+  - `git diff --check` — green
 - Manual or live smoke:
-  - External appData temporary root에 Runtime을 materialize·verify한 뒤 canonical product startup을 실행하고 package tree와 unrelated sentinel이 동일한지 확인한다.
+  - External temporary appData에 Runtime을 두 번 materialize한 결과가 같은 roster SHA-256 `02772072955c17202736221e035eb2129d8939ab84361c02187cf06f5401c68f`로 strict verify됐다.
+  - 그 Runtime과 explicit temporary workspace로 canonical `npm run dev`를 실행해 Chat Shell, `/api/product/bootstrap`, `/api/product/codex-settings`가 모두 HTTP 200이고 global account readiness가 `ready`임을 확인했다.
+  - 종료 뒤 Runtime strict verify와 listener close를 다시 확인했다. Package-local `.artifacts/` metadata digest와 unrelated sentinel digest는 전후 동일했고 임시 root는 정리했다.
+
+## Result
+
+`resolveCanonicalProductRoots()`가 package, sibling external appData, global Codex home, controlled Runtime state와 optional workspace를 한 ownership contract로 반환한다. 모든 independent root와 appData 아래 Runtime·cache·state descendant를 mutation 전에 canonical preflight하고 controlled directory는 segment별 no-symlink 검증으로만 만든다.
+
+Production Runtime materializer·verifier는 explicit external appData의 Runtime과 cache만 사용한다. Root `npm run dev`는 canonical appData를 기본으로 사용하고 workspace를 자동 선택하지 않으며, explicit workspace를 준 경우에만 transitional current-v2 composition을 연다. Runtime child는 controlled `HOME`·temp와 caller-global Codex/SQLite authority를 사용한다.
+
+구현 commit은 `84b538c94` (`feat: adopt canonical external runtime roots`), `18a21428a` (`fix: allow global Codex SQLite authority`), `57486615e` (`fix: reject unsafe product root descendants`)다.
 
 ## Blocked By
 
