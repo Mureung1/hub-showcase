@@ -106,6 +106,14 @@ create table if not exists public.reactions (
 create index if not exists reactions_document_type_idx
   on public.reactions (document_id, type);
 
+-- 챌린지 제출작 AI 자동 채점 점수(0~100). 랭킹·정렬용. 채점 스크립트/발행 AI만 채운다.
+-- (클라이언트 쓰기 경로 toDbRow는 이 값을 받지 않는다 — likes처럼 서버 전용.)
+alter table public.documents
+  add column if not exists ai_score integer;
+
+create index if not exists documents_ai_score_idx
+  on public.documents (ai_score desc);
+
 -- 문서 분류(둘러보기 필터용 고정 어휘). systemTag 는 "스타포스 강화"처럼 구체적인 이름이라
 -- 문서 수만큼 값이 늘어난다 → 필터는 category 라는 통제 어휘로 건다.
 -- 값 목록은 frontend/src/data/gameSystems.js 의 categories.

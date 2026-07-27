@@ -3,10 +3,12 @@ import { supabase } from '../lib/supabase.js'
 import { toApiDoc, toDbRow, buildDbComment, mapCommentToApi } from '../lib/documents-mapper.js'
 import { optionalAuth, requireAuth } from '../middleware/requireAuth.js'
 import { hashPassword, verifyPassword } from '../lib/password.js'
-import { generateAiFeedback } from '../lib/aiFeedback.js'
+import { generateAiFeedback, formatScoreComment } from '../lib/aiFeedback.js'
 
 // AI 자동 피드백: 문서 전체 총평을 담는 특수 코멘트의 sectionId.
 const OVERALL_SECTION_ID = '__overall__'
+// AI 자동 채점(챌린지 제출작): 총점·항목별·근거를 담는 특수 코멘트의 sectionId.
+const SCORE_SECTION_ID = '__score__'
 // 유저당 일일 AI 호출 제한(기획서 §3.4).
 // 비용이 드는 건 "저장"이 아니라 "호출"이므로 발행 피드백과 미리보기를 합산해 센다.
 const AI_DAILY_LIMIT = 10
@@ -214,6 +216,7 @@ router.post('/:id/ai-feedback', requireAuth, async (req, res) => {
     key: s.id,
     heading: s.heading,
     content: s.content,
+    fields: s.fields,
     guide: guideById.get(s.id),
   }))
 
@@ -221,6 +224,11 @@ router.post('/:id/ai-feedback', requireAuth, async (req, res) => {
     title: req.body?.title,
     gameTag: req.body?.gameTag,
     templateName: req.body?.templateName,
+    kind: req.body?.kind,
+    // 장르 렌즈 — 그 장르에서 특히 봐야 할 관점으로 피드백·채점하게 한다.
+    genreLens: req.body?.genreLens,
+    // 챌린지 제출이면 채점 기준(rubric)을 실어 보내 자동 채점을 받는다.
+    criteria: req.body?.criteria,
   })
 
   const aiComments = [
@@ -229,9 +237,32 @@ router.post('/:id/ai-feedback', requireAuth, async (req, res) => {
     ),
     buildDbComment({ sectionId: OVERALL_SECTION_ID, isAi: true, content: feedback.overall }),
   ]
+  // 채점 결과가 있으면 "AI 채점" 특수 코멘트로 함께 저장하고, 총점은 정렬용 컬럼에.
+  if (feedback.score) {
+    aiComments.push(
+      buildDbComment({
+        sectionId: SCORE_SECTION_ID,
+        isAi: true,
+        content: formatScoreComment(feedback.score, req.body?.criteria),
+      }),
+    )
+  }
 
   const nextComments = [...(doc.comments ?? []), ...aiComments]
-  unwrap(await supabase.from('documents').update({ comments: nextComments }).eq('id', id))
+  const hasScore = feedback.score && Number.isFinite(feedback.score.total)
+
+  if (hasScore) {
+    // ai_score 컬럼이 아직 없어도(마이그레이션 전) 피드백은 반드시 저장되게 방어한다.
+    const { error } = await supabase
+      .from('documents')
+      .update({ comments: nextComments, ai_score: feedback.score.total })
+      .eq('id', id)
+    if (error) {
+      unwrap(await supabase.from('documents').update({ comments: nextComments }).eq('id', id))
+    }
+  } else {
+    unwrap(await supabase.from('documents').update({ comments: nextComments }).eq('id', id))
+  }
   unwrap(await supabase.from('ai_feedback_logs').insert({ user_id: req.user.id, document_id: id }))
 
   res.status(201).json(aiComments.map(mapCommentToApi))
@@ -306,6 +337,7 @@ router.post('/ai-feedback/preview', requireAuth, async (req, res) => {
     key: s.key,
     heading: s.heading,
     content: s.content,
+    fields: s.fields,
     guide: s.guide,
   }))
   if (sections.length === 0) return res.json([])
@@ -319,6 +351,8 @@ router.post('/ai-feedback/preview', requireAuth, async (req, res) => {
     title: req.body?.title,
     gameTag: req.body?.gameTag,
     templateName: req.body?.templateName,
+    kind: req.body?.kind,
+    genreLens: req.body?.genreLens,
   })
   unwrap(await supabase.from('ai_feedback_logs').insert({ user_id: req.user.id }))
 
