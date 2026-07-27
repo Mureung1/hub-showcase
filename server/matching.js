@@ -31,3 +31,19 @@ export function describeActivity(lastSeenAt, now = new Date()) {
 
   return { isActive: false, label: `${diffMinutes}분 전 활동` }
 }
+
+const BOARDING_GRACE_MINUTES = 5
+
+export function classifyBoarding(desiredTime, referenceDate, boardedAt) {
+  const [hours, minutes, seconds] = desiredTime.split(':').map(Number)
+  const scheduled = new Date(referenceDate)
+  scheduled.setUTCHours(hours, minutes, seconds ?? 0, 0)
+
+  const diffMinutes = Math.round((boardedAt - scheduled) / 60000)
+
+  if (diffMinutes <= BOARDING_GRACE_MINUTES) {
+    return { status: 'on_time', minutesLate: Math.max(0, diffMinutes) }
+  }
+
+  return { status: 'late', minutesLate: diffMinutes }
+}

@@ -1,9 +1,25 @@
 import { useState } from "react";
+import { API_BASE } from "./apiBase";
 
 const SCHOOL_HUBS = ["정문", "북문"];
-const CITY_HUBS = ["대구역", "동대구역", "동성로", "대구공항", "서부정류장", "반월당", "기타"];
-const TIME_OPTIONS = ["20:30", "21:00", "21:30"];
+const CITY_HUBS = ["대구역", "동대구역", "동성로", "대구공항", "서부정류장", "반월당"];
 const ARRIVAL_OPTIONS = ["5분 이내", "10분 이내", "15분 이내"];
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTE_OPTIONS = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+
+function selectStyle() {
+  return {
+    flex: 1,
+    padding: "12px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(36,21,18,0.12)",
+    fontSize: 14,
+    fontFamily: "inherit",
+    color: "#241512",
+    background: "#fff",
+    boxSizing: "border-box",
+  };
+}
 const STORAGE_KEY = "ridesplit_last_route";
 
 function loadSavedRoute() {
@@ -32,7 +48,7 @@ function RegisterScreen({ userId, onBack, onSubmit }) {
   const [direction, setDirection] = useState(saved?.direction ?? "from_school");
   const [departureHub, setDepartureHub] = useState(saved?.departureHub ?? "정문");
   const [destHub, setDestHub] = useState(saved?.destHub ?? "대구역");
-  const [time, setTime] = useState(saved?.time ?? TIME_OPTIONS[0]);
+  const [time, setTime] = useState(saved?.time ?? "20:00");
   const [arrival, setArrival] = useState(saved?.arrival ?? ARRIVAL_OPTIONS[0]);
   const [genderOnly, setGenderOnly] = useState(saved?.genderOnly ?? false);
   const [saving, setSaving] = useState(false);
@@ -40,6 +56,11 @@ function RegisterScreen({ userId, onBack, onSubmit }) {
 
   const departureOptions = direction === "from_school" ? SCHOOL_HUBS : CITY_HUBS;
   const destOptions = direction === "from_school" ? CITY_HUBS : SCHOOL_HUBS;
+  const [hour, minute] = time.split(":");
+
+  function updateTime(nextHour, nextMinute) {
+    setTime(`${nextHour}:${nextMinute}`);
+  }
 
   function switchDirection(next) {
     setDirection(next);
@@ -53,7 +74,7 @@ function RegisterScreen({ userId, onBack, onSubmit }) {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:4000/api/requests", {
+      const res = await fetch(`${API_BASE}/api/requests`, {
         method: "POST", // 어떤 요청인가
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -124,12 +145,24 @@ function RegisterScreen({ userId, onBack, onSubmit }) {
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>희망 출발 시간</div>
         <div style={{ display: "flex", gap: 8 }}>
-          {TIME_OPTIONS.map((t) => (
-            <button key={t} style={chipStyle(time === t)} onClick={() => setTime(t)}>
-              {t}
-            </button>
-          ))}
+          <select value={hour} onChange={(e) => updateTime(e.target.value, minute)} style={selectStyle()}>
+            {HOUR_OPTIONS.map((h) => (
+              <option key={h} value={h}>
+                {h}시
+              </option>
+            ))}
+          </select>
+          <select value={minute} onChange={(e) => updateTime(hour, e.target.value)} style={selectStyle()}>
+            {MINUTE_OPTIONS.map((m) => (
+              <option key={m} value={m}>
+                {m}분
+              </option>
+            ))}
+          </select>
         </div>
+        <p style={{ fontSize: 11, color: "#8A7A76", margin: "6px 0 0" }}>
+          이 시간 앞뒤 10분 이내로 등록한 학생을 찾아드려요
+        </p>
       </div>
 
       <div style={{ marginBottom: 18 }}>

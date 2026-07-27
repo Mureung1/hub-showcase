@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import { supabase } from '../supabaseClient.js'
-import { passesGenderFilter, sortByArrivalPriority, describeActivity } from '../matching.js'
+import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding } from '../matching.js'
 
 const router = Router()
 
@@ -82,7 +82,7 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: '알 수 없는 거점 이름입니다' })
     }
 
-    const [lower, upper] = timeWindow(time, 15)
+    const [lower, upper] = timeWindow(time, 10)
 
     query = query
       .eq('departure_hub_id', departureHubId)
@@ -387,6 +387,65 @@ router.post('/:id/respond', async (req, res) => {
   }
 
   res.json({ members, groupCount: members.filter((m) => m.status === 'matched').length })
+})
+
+router.post('/:id/board', async (req, res) => {
+  const { id } = req.params
+
+  const { data: target, error: fetchError } = await supabase
+    .from('matching_requests')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) {
+    return res.status(404).json({ error: '요청을 찾을 수 없어요' })
+  }
+
+  const boardedAt = new Date()
+  const result = classifyBoarding(target.desired_time, new Date(target.created_at), boardedAt)
+
+  const { error: updateError } = await supabase
+    .from('matching_requests')
+    .update({ boarded_at: boardedAt.toISOString() })
+    .eq('id', id)
+
+  if (updateError) {
+    return res.status(500).json({ error: updateError.message })
+  }
+
+  res.json(result)
+})
+
+router.post('/:id/rating', async (req, res) => {
+  const { id } = req.params
+  const { stars, noshow } = req.body
+
+  if (!stars || stars < 1 || stars > 5) {
+    return res.status(400).json({ error: '별점을 선택해주세요' })
+  }
+
+  const { data: target, error: fetchError } = await supabase
+    .from('matching_requests')
+    .select('group_id')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) {
+    return res.status(404).json({ error: '요청을 찾을 수 없어요' })
+  }
+
+  const { data, error } = await supabase
+    .from('ratings')
+    .insert({ request_id: id, group_id: target.group_id, stars, noshow_reported: !!noshow })
+    .select()
+    .single()
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  res.status(201).json(data)
 })
 
 export default router

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import TaxiLoader from "./TaxiLoader";
+import { API_BASE } from "./apiBase";
+import { fareTiersFor } from "./describeCost";
 
 const AVATAR_COLORS = ["#C8102E", "#2F8F5B", "#C98A1F", "#5B6472"];
 
@@ -14,6 +16,9 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
   const [joinedId, setJoinedId] = useState(null);
   const [joinError, setJoinError] = useState(null);
 
+  const cityHub = myRequest.direction === "from_school" ? myRequest.destHub : myRequest.departureHub;
+  const fareTiers = fareTiersFor(cityHub);
+
   useEffect(() => {
     if (!myRequest) return;
 
@@ -24,7 +29,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
       myRequestId: myRequest.id,
     });
 
-    fetch(`http://localhost:4000/api/requests?${params}`)
+    fetch(`${API_BASE}/api/requests?${params}`)
       .then((res) => {
         if (!res.ok) throw new Error("후보를 불러오지 못했어요");
         return res.json();
@@ -40,7 +45,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
     if (!myRequest) return;
 
     function sendHeartbeat() {
-      fetch(`http://localhost:4000/api/requests/${myRequest.id}/heartbeat`, { method: "POST" }).catch(() => {});
+      fetch(`${API_BASE}/api/requests/${myRequest.id}/heartbeat`, { method: "POST" }).catch(() => {});
     }
 
     sendHeartbeat();
@@ -53,7 +58,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
     setJoinError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/requests/${myRequest.id}/create-room`, {
+      const res = await fetch(`${API_BASE}/api/requests/${myRequest.id}/create-room`, {
         method: "POST",
       });
       const body = await res.json();
@@ -69,6 +74,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
         groupCount: 1,
         myRequestId: myRequest.id,
         pending: false,
+        cityHub,
       });
     } catch {
       setJoinError("방 만들기에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
@@ -80,7 +86,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
     setJoinError(null);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/requests/${c.id}/join`, {
+      const res = await fetch(`${API_BASE}/api/requests/${c.id}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ myRequestId: myRequest.id }),
@@ -99,6 +105,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
         groupCount: body.groupCount,
         myRequestId: myRequest.id,
         pending: body.pending,
+        cityHub,
       });
     } catch {
       setJoinError("신청에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
@@ -115,9 +122,17 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
           ‹ 이전
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>매칭 후보</h1>
-        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 16px" }}>
+        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 12px" }}>
           같은 방향 · 희망 시간 ±15분 이내로 조회된 실제 등록 데이터예요
         </p>
+        <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          {fareTiers.map((tier) => (
+            <span key={tier.headcount} style={{ fontSize: 11, color: "#8A7A76", display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 14 }}>{tier.icon}</span>
+              {tier.headcount}인 {tier.won.toLocaleString()}원
+            </span>
+          ))}
+        </div>
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 20px" }}>

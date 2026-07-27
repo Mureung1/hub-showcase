@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "./apiBase";
 
 function Stars({ value, onChange }) {
   return (
@@ -19,6 +20,35 @@ function Stars({ value, onChange }) {
 function RatingScreen({ candidate, onFinish }) {
   const [rating, setRating] = useState(0);
   const [noshow, setNoshow] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit() {
+    if (rating < 1) {
+      setError("별점을 선택해주세요.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/requests/${candidate.myRequestId}/rating`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stars: rating, noshow }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.error ?? "저장에 실패했어요.");
+        return;
+      }
+      onFinish();
+    } catch {
+      setError("저장에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
@@ -43,8 +73,13 @@ function RatingScreen({ candidate, onFinish }) {
         </div>
       </div>
 
+      {error && (
+        <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 8px", textAlign: "center" }}>{error}</p>
+      )}
+
       <button
-        onClick={onFinish}
+        onClick={handleSubmit}
+        disabled={saving}
         className="btn-primary"
         style={{
           width: "100%",
@@ -55,11 +90,12 @@ function RatingScreen({ candidate, onFinish }) {
           borderRadius: 999,
           fontSize: 15,
           fontWeight: 700,
-          cursor: "pointer",
+          cursor: saving ? "default" : "pointer",
+          opacity: saving ? 0.7 : 1,
           marginTop: "auto",
         }}
       >
-        완료
+        {saving ? "저장 중..." : "완료"}
       </button>
     </div>
   );
