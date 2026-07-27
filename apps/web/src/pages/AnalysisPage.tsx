@@ -12,8 +12,8 @@ type AnalysisPageProps = {
 
 export function AnalysisPage({ result, reflectionDraft, onBackToWorkspace }: AnalysisPageProps) {
   return (
-    <section className="analysis-page-shell" aria-label="Repository 분석 결과 페이지">
-      <button className="result-back-button" type="button" onClick={onBackToWorkspace}>
+    <section className="min-h-screen" aria-label="Repository 분석 결과 페이지">
+      <button className="mb-6 inline-flex min-h-10 items-center gap-2 rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-ink transition hover:-translate-y-px hover:border-ptop-mint-dark" type="button" onClick={onBackToWorkspace}>
         <span aria-hidden="true">←</span>
         작업실로 돌아가기
       </button>
