@@ -34,7 +34,7 @@ input → preview → focus ─┬─ (집중 시작) → timer → timer-confir
 |---|---|---|
 | `BrainDumpInput` | — | `onSubmit(text)` → `preview` |
 | `TaskPreview` | `task` | `onReady()` → `focus` |
-| `OneFocusView` | `task` | `onStart()` → `timer`, `onStruggle()` → `reason` |
+| `OneFocusView` | `task`, `deadlineExtraMinutes`, `onExtendDeadline`(T19: 마감 표시+연장) | `onStart()` → `timer`, `onStruggle()` → `reason` |
 | `FocusTimer` | `durationMinutes`, `startedAt`, `caption`(연장 이유, 선택) | `onFinish()` → `timer-confirm` |
 | `TimerConfirm` | `isLoading`, `error` | `onYes()` → 완료 처리(`complete`/다음 `preview`), `onNo()` → Agent 연장 판단 후 `timer` |
 | `CompleteScreen` | `task` | (없음, 종착 화면) |

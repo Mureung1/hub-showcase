@@ -47,11 +47,12 @@ function getServerMountedSnapshot() {
   return false;
 }
 
-function minutesUntilMidnight() {
+// T19: 마감(기본 자정)까지 남은 분. extraMinutes만큼 연장 버튼으로 뒤로 미룰 수 있다.
+function minutesUntilDeadline(extraMinutes = 0) {
   const now = new Date();
   const midnight = new Date(now);
   midnight.setHours(24, 0, 0, 0);
-  return Math.round((midnight - now) / 60000);
+  return Math.round((midnight - now) / 60000) + extraMinutes;
 }
 
 export default function Home() {
@@ -102,6 +103,9 @@ export default function Home() {
   const [pausedAt, setPausedAt] = useState(null);
   const [pauseCount, setPauseCount] = useState(0);
   const [pauseReasons, setPauseReasons] = useState([]);
+  // T19: 연장 버튼으로 자정 마감을 뒤로 미룬 분. 재판단 시간 게이트(T07)의 remainingTimeMinutes
+  // 계산에도 그대로 반영된다.
+  const [deadlineExtraMinutes, setDeadlineExtraMinutes] = useState(0);
 
   // 서버는 항상 "input"만 렌더링하므로(localStorage 접근 불가), 클라이언트도 마운트가
   // 끝나기 전까지는 위에서 복원한 값과 무관하게 "input"을 그린다 - 그렇지 않으면 서버가 그린
@@ -308,6 +312,12 @@ export default function Home() {
     setClarifications([]);
     setBrainDumpTurn(0);
     setBrainDumpNotice(null);
+    setDeadlineExtraMinutes(0);
+  }
+
+  // 연장 버튼(T19). 누를 때마다 오늘 마감을 1시간씩 뒤로 미룬다.
+  function extendDeadline() {
+    setDeadlineExtraMinutes((minutes) => minutes + 60);
   }
 
   function resetStruggleState() {
@@ -331,7 +341,7 @@ export default function Home() {
           currentStep: microsteps[currentIndex],
           remainingSteps: microsteps.slice(currentIndex + 1),
           rejectedTools: rejected,
-          remainingTimeMinutes: minutesUntilMidnight(),
+          remainingTimeMinutes: minutesUntilDeadline(deadlineExtraMinutes),
         }),
       });
       if (!response.ok) throw new Error("판단 요청에 실패했어요, 다시 시도해줘");
@@ -518,6 +528,8 @@ export default function Home() {
           setStep("timer");
         }}
         onStruggle={() => setStep("reason")}
+        deadlineExtraMinutes={deadlineExtraMinutes}
+        onExtendDeadline={extendDeadline}
       />
     );
   }
