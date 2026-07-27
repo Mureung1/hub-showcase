@@ -9,9 +9,229 @@ const skillUrl = new URL(
   import.meta.url,
 )
 
-test('First Assignment Skill owns proposal-before-mutation and result handling', async () => {
+test('First Assignment Skill defines the AY-owned Review contract', async () => {
   const skill = await readFile(skillUrl, 'utf8')
 
+  assertInstructionOrder(skill)
+  assert.deepEqual(parseInstructionContract(skill), {
+    outcomes: {
+      accept: { file: 'apply', next: 'stop' },
+      revise: { file: 'unchanged', next: 'fresh-call' },
+      reject: { file: 'unchanged', next: 'stop' },
+    },
+    fileAuthority: 'native',
+    gitAuthority: 'native',
+    permissionBeforeWrite: true,
+    checkpointOnlyWhenMeaningful: true,
+  })
+  for (const field of [
+    'relativePath',
+    'contentDigest',
+    'text_quote',
+    'occurrence',
+  ]) {
+    assert.match(skill, new RegExp(`\\\`${field}\\\``))
+  }
+  assert.doesNotMatch(
+    skill,
+    /requestKey|workspaceId|workspace ID|courseId|Course ID|baseRevision|RawMaterial|StatePatch|UserConfirmation|request_user_input|scratch|revision-bound/i,
+  )
+})
+
+test('accept applies the reviewed bytes through native authority after Review', async () => {
+  await withActualFile(async (actualPath) => {
+    const fixture = createFixture(actualPath, [{ outcome: 'accept' }])
+
+    const result = await executeInstructions({
+      contract: await loadInstructionContract(),
+      initialProposal: 'reviewed assignment',
+      meaningfulCheckpoint: true,
+      ports: fixture.ports,
+    })
+
+    assert.equal(result.outcome, 'accept')
+    assert.equal(await readFile(actualPath, 'utf8'), 'reviewed assignment')
+    assert.deepEqual(fixture.observation.proposalFileBytes, [
+      'original assignment',
+    ])
+    assert.deepEqual(fixture.observation.reviewIds, ['review_1'])
+    assert.deepEqual(fixture.observation.app, {
+      fileWrites: 0,
+      gitCommands: 0,
+    })
+    assert.deepEqual(fixture.observation.native, {
+      fileWrites: 1,
+      gitCommands: 1,
+    })
+  })
+})
+
+test('revise keeps bytes unchanged until a fresh proposal and card settle', async () => {
+  await withActualFile(async (actualPath) => {
+    const fixture = createFixture(actualPath, [
+      { outcome: 'revise', feedback: 'include the submission method' },
+      { outcome: 'accept' },
+    ])
+
+    const result = await executeInstructions({
+      contract: await loadInstructionContract(),
+      initialProposal: 'first proposal',
+      meaningfulCheckpoint: false,
+      ports: fixture.ports,
+    })
+
+    assert.equal(result.outcome, 'accept')
+    assert.deepEqual(fixture.observation.proposalFileBytes, [
+      'original assignment',
+      'original assignment',
+    ])
+    assert.deepEqual(fixture.observation.reviewIds, ['review_1', 'review_2'])
+    assert.deepEqual(fixture.observation.proposals, [
+      'first proposal',
+      'first proposal\nRevision feedback: include the submission method',
+    ])
+    assert.equal(
+      await readFile(actualPath, 'utf8'),
+      'first proposal\nRevision feedback: include the submission method',
+    )
+    assert.deepEqual(fixture.observation.app, {
+      fileWrites: 0,
+      gitCommands: 0,
+    })
+    assert.deepEqual(fixture.observation.native, {
+      fileWrites: 1,
+      gitCommands: 0,
+    })
+  })
+})
+
+test('reject leaves the actual file and Git history unchanged', async () => {
+  await withActualFile(async (actualPath) => {
+    const fixture = createFixture(actualPath, [{ outcome: 'reject' }])
+
+    const result = await executeInstructions({
+      contract: await loadInstructionContract(),
+      initialProposal: 'rejected proposal',
+      meaningfulCheckpoint: true,
+      ports: fixture.ports,
+    })
+
+    assert.equal(result.outcome, 'reject')
+    assert.equal(await readFile(actualPath, 'utf8'), 'original assignment')
+    assert.deepEqual(fixture.observation.app, {
+      fileWrites: 0,
+      gitCommands: 0,
+    })
+    assert.deepEqual(fixture.observation.native, {
+      fileWrites: 0,
+      gitCommands: 0,
+    })
+  })
+})
+
+test('accept cannot substitute for native file permission', async () => {
+  await withActualFile(async (actualPath) => {
+    const fixture = createFixture(actualPath, [{ outcome: 'accept' }], false)
+
+    await assert.rejects(
+      executeInstructions({
+        contract: await loadInstructionContract(),
+        initialProposal: 'reviewed assignment',
+        meaningfulCheckpoint: true,
+        ports: fixture.ports,
+      }),
+      /native permission required/,
+    )
+    assert.equal(await readFile(actualPath, 'utf8'), 'original assignment')
+    assert.deepEqual(fixture.observation.app, {
+      fileWrites: 0,
+      gitCommands: 0,
+    })
+    assert.deepEqual(fixture.observation.native, {
+      fileWrites: 0,
+      gitCommands: 0,
+    })
+  })
+})
+
+type Outcome = 'accept' | 'revise' | 'reject'
+type OutcomeRule = {
+  readonly file: 'apply' | 'unchanged'
+  readonly next: 'fresh-call' | 'stop'
+}
+type InstructionContract = {
+  readonly outcomes: Record<Outcome, OutcomeRule>
+  readonly fileAuthority: 'app' | 'native'
+  readonly gitAuthority: 'app' | 'native'
+  readonly permissionBeforeWrite: boolean
+  readonly checkpointOnlyWhenMeaningful: boolean
+}
+type ScriptedResult =
+  | { readonly outcome: 'accept' }
+  | { readonly outcome: 'revise'; readonly feedback: string }
+  | { readonly outcome: 'reject' }
+
+function parseInstructionContract(skill: string): InstructionContract {
+  const bodies = Object.fromEntries(
+    [
+      ...skill.matchAll(
+        /- On `(accept|revise|reject)`,([\s\S]*?)(?=\n   - On|\n5\.)/g,
+      ),
+    ].map(([, outcome, body]) => [outcome, body]),
+  ) as Partial<Record<Outcome, string>>
+
+  return {
+    outcomes: {
+      accept: inferOutcomeRule('accept', bodies.accept),
+      revise: inferOutcomeRule('revise', bodies.revise),
+      reject: inferOutcomeRule('reject', bodies.reject),
+    },
+    fileAuthority: /apply only the reviewed changes with native file tools/.test(
+      bodies.accept ?? '',
+    )
+      ? 'native'
+      : 'app',
+    gitAuthority:
+      /never ask or expect it to edit\s+a SemesterWorkspace file or run Git/.test(
+        skill,
+      )
+        ? 'native'
+        : 'app',
+    permissionBeforeWrite:
+      /obtain any required native file permission[\s\S]*apply only the reviewed/.test(
+        bodies.accept ?? '',
+      ),
+    checkpointOnlyWhenMeaningful:
+      /When the change is a meaningful\s+checkpoint/.test(skill),
+  }
+}
+
+function inferOutcomeRule(
+  outcome: Outcome,
+  body: string | undefined,
+): OutcomeRule {
+  assert.ok(body, `Skill must define an explicit ${outcome} instruction`)
+  const file = /apply only the reviewed/.test(body)
+    ? 'apply'
+    : /keep the actual file unchanged/.test(body)
+      ? 'unchanged'
+      : undefined
+  assert.ok(file, `${outcome} must define its actual-file authority`)
+
+  const next = /fresh `propose_state_patch` call/.test(body)
+    ? 'fresh-call'
+    : /verify the resulting file|stop applying this/.test(body)
+      ? 'stop'
+      : undefined
+  assert.ok(next, `${outcome} must define fresh-call or stop behavior`)
+
+  return {
+    file,
+    next,
+  }
+}
+
+function assertInstructionOrder(skill: string): void {
   const orderedInstructions = [
     'Read the actual target file',
     'Draft the proposed final content',
@@ -25,190 +245,113 @@ test('First Assignment Skill owns proposal-before-mutation and result handling',
     assert.ok(index > previousIndex, `${instruction} must appear in order`)
     previousIndex = index
   }
-
-  assert.deepEqual(parseOutcomeRules(skill), {
-    accept: { file: 'apply', next: 'stop' },
-    revise: { file: 'unchanged', next: 'fresh-call' },
-    reject: { file: 'unchanged', next: 'stop' },
-  })
-  assert.match(skill, /`relativePath`/)
-  assert.match(skill, /`contentDigest`/)
-  assert.match(skill, /`text_quote`/)
-  assert.match(skill, /`occurrence`/)
-  assert.match(
-    skill,
-    /does not edit a SemesterWorkspace file\s+or run Git/,
-  )
-  assert.match(skill, /independent from native execution\s+approval/)
-  assert.doesNotMatch(
-    skill,
-    /requestKey|workspaceId|workspace ID|courseId|Course ID|baseRevision|RawMaterial|StatePatch|UserConfirmation|request_user_input|scratch|revision-bound/i,
-  )
-})
-
-test('scripted Review results preserve proposal bytes and keep apply authority native', async () => {
-  const skill = await readFile(skillUrl, 'utf8')
-  const rules = parseOutcomeRules(skill)
-
-  await withActualFile(async (actualPath) => {
-    const observation = await runScriptedReview({
-      actualPath,
-      app: createObservedApp(),
-      nativePermission: true,
-      proposals: ['reviewed assignment'],
-      results: [{ outcome: 'accept' }],
-      rules,
-    })
-
-    assert.deepEqual(observation.proposalFileBytes, ['original assignment'])
-    assert.equal(await readFile(actualPath, 'utf8'), 'reviewed assignment')
-    assert.deepEqual(observation.native, { fileWrites: 1, checkpoints: 1 })
-    assert.deepEqual(observation.app, { fileWrites: 0, gitCommands: 0 })
-  })
-
-  await withActualFile(async (actualPath) => {
-    const observation = await runScriptedReview({
-      actualPath,
-      app: createObservedApp(),
-      nativePermission: true,
-      proposals: ['first proposal', 'revised proposal'],
-      results: [
-        { outcome: 'revise', feedback: 'include the submission method' },
-        { outcome: 'accept' },
-      ],
-      rules,
-    })
-
-    assert.deepEqual(observation.proposalFileBytes, [
-      'original assignment',
-      'original assignment',
-    ])
-    assert.equal(await readFile(actualPath, 'utf8'), 'revised proposal')
-    assert.deepEqual(observation.native, { fileWrites: 1, checkpoints: 1 })
-    assert.deepEqual(observation.app, { fileWrites: 0, gitCommands: 0 })
-  })
-
-  await withActualFile(async (actualPath) => {
-    const observation = await runScriptedReview({
-      actualPath,
-      app: createObservedApp(),
-      nativePermission: true,
-      proposals: ['rejected proposal'],
-      results: [{ outcome: 'reject' }],
-      rules,
-    })
-
-    assert.deepEqual(observation.proposalFileBytes, ['original assignment'])
-    assert.equal(await readFile(actualPath, 'utf8'), 'original assignment')
-    assert.deepEqual(observation.native, { fileWrites: 0, checkpoints: 0 })
-    assert.deepEqual(observation.app, { fileWrites: 0, gitCommands: 0 })
-  })
-})
-
-test('accept does not substitute for native mutation permission', async () => {
-  const skill = await readFile(skillUrl, 'utf8')
-  const actualRoot = await mkdtemp(
-    path.join(tmpdir(), 'ay-ple-first-assignment-permission-'),
-  )
-  const actualPath = path.join(actualRoot, 'assignment.md')
-  await writeFile(actualPath, 'original assignment')
-
-  try {
-    await assert.rejects(
-      runScriptedReview({
-        actualPath,
-        app: createObservedApp(),
-        nativePermission: false,
-        proposals: ['reviewed assignment'],
-        results: [{ outcome: 'accept' }],
-        rules: parseOutcomeRules(skill),
-      }),
-      /native permission required/,
-    )
-    assert.equal(await readFile(actualPath, 'utf8'), 'original assignment')
-  } finally {
-    await rm(actualRoot, { force: true, recursive: true })
-  }
-})
-
-type Outcome = 'accept' | 'revise' | 'reject'
-type OutcomeRule = {
-  readonly file: 'apply' | 'unchanged'
-  readonly next: 'fresh-call' | 'stop'
 }
 
-function parseOutcomeRules(skill: string): Record<Outcome, OutcomeRule> {
-  const bodies = Object.fromEntries(
-    [...skill.matchAll(/- On `(accept|revise|reject)`,([\s\S]*?)(?=\n   - On|\n5\.)/g)].map(
-      ([, outcome, body]) => [outcome, body],
-    ),
-  ) as Partial<Record<Outcome, string>>
+async function loadInstructionContract(): Promise<InstructionContract> {
+  return parseInstructionContract(await readFile(skillUrl, 'utf8'))
+}
 
-  assert.match(bodies.accept ?? '', /apply only the reviewed/)
-  assert.match(bodies.revise ?? '', /keep the actual file unchanged/)
-  assert.match(bodies.revise ?? '', /fresh `propose_state_patch` call/)
-  assert.match(bodies.reject ?? '', /keep the actual file unchanged/)
+type Observation = {
+  readonly proposalFileBytes: string[]
+  readonly proposals: string[]
+  readonly reviewIds: string[]
+  readonly app: { fileWrites: number; gitCommands: number }
+  readonly native: { fileWrites: number; gitCommands: number }
+}
+type FixturePorts = {
+  readonly review: (proposal: string) => Promise<ScriptedResult>
+  readonly requestNativeFilePermission: () => Promise<void>
+  readonly writeActualFile: Record<
+    InstructionContract['fileAuthority'],
+    (content: string) => Promise<void>
+  >
+  readonly runGitCheckpoint: Record<
+    InstructionContract['gitAuthority'],
+    () => Promise<void>
+  >
+}
 
+function createFixture(
+  actualPath: string,
+  results: readonly ScriptedResult[],
+  nativePermission = true,
+): { readonly ports: FixturePorts; readonly observation: Observation } {
+  const scriptedResults = [...results]
+  const observation: Observation = {
+    proposalFileBytes: [],
+    proposals: [],
+    reviewIds: [],
+    app: { fileWrites: 0, gitCommands: 0 },
+    native: { fileWrites: 0, gitCommands: 0 },
+  }
   return {
-    accept: { file: 'apply', next: 'stop' },
-    revise: { file: 'unchanged', next: 'fresh-call' },
-    reject: { file: 'unchanged', next: 'stop' },
+    observation,
+    ports: {
+      async review(proposal) {
+        const result = scriptedResults.shift()
+        assert.ok(result, 'every fresh Review needs one scripted result')
+        observation.proposalFileBytes.push(await readFile(actualPath, 'utf8'))
+        observation.proposals.push(proposal)
+        observation.reviewIds.push(`review_${observation.reviewIds.length + 1}`)
+        return result
+      },
+      async requestNativeFilePermission() {
+        if (!nativePermission) throw new Error('native permission required')
+      },
+      writeActualFile: {
+        async app(content) {
+          observation.app.fileWrites += 1
+          await writeFile(actualPath, content)
+        },
+        async native(content) {
+          observation.native.fileWrites += 1
+          await writeFile(actualPath, content)
+        },
+      },
+      runGitCheckpoint: {
+        async app() {
+          observation.app.gitCommands += 1
+        },
+        async native() {
+          observation.native.gitCommands += 1
+        },
+      },
+    },
   }
 }
 
-type ScriptedResult =
-  | { readonly outcome: 'accept' }
-  | { readonly outcome: 'revise'; readonly feedback: string }
-  | { readonly outcome: 'reject' }
+async function executeInstructions(input: {
+  readonly contract: InstructionContract
+  readonly initialProposal: string
+  readonly meaningfulCheckpoint: boolean
+  readonly ports: FixturePorts
+}): Promise<{ readonly outcome: 'accept' | 'reject' }> {
+  let proposal = input.initialProposal
 
-type ObservedApp = {
-  readonly calls: { fileWrites: number; gitCommands: number }
-}
-
-function createObservedApp(): ObservedApp {
-  return { calls: { fileWrites: 0, gitCommands: 0 } }
-}
-
-async function runScriptedReview(input: {
-  readonly actualPath: string
-  readonly app: ObservedApp
-  readonly nativePermission: boolean
-  readonly proposals: readonly string[]
-  readonly results: readonly ScriptedResult[]
-  readonly rules: Record<Outcome, OutcomeRule>
-}) {
-  const proposalFileBytes: string[] = []
-  const native = { fileWrites: 0, checkpoints: 0 }
-
-  for (let index = 0; index < input.results.length; index += 1) {
-    const proposal = input.proposals[index]
-    const result = input.results[index]
-    assert.ok(proposal)
-    assert.ok(result)
-    proposalFileBytes.push(await readFile(input.actualPath, 'utf8'))
-
-    const rule = input.rules[result.outcome]
+  while (true) {
+    const result = await input.ports.review(proposal)
+    const rule = input.contract.outcomes[result.outcome]
     if (rule.file === 'apply') {
-      if (!input.nativePermission) {
-        throw new Error('native permission required')
+      if (input.contract.permissionBeforeWrite) {
+        await input.ports.requestNativeFilePermission()
       }
-      await writeFile(input.actualPath, proposal)
-      native.fileWrites += 1
-      native.checkpoints += 1
+      await input.ports.writeActualFile[input.contract.fileAuthority](proposal)
+      if (
+        !input.contract.checkpointOnlyWhenMeaningful ||
+        input.meaningfulCheckpoint
+      ) {
+        await input.ports.runGitCheckpoint[input.contract.gitAuthority]()
+      }
     }
     if (rule.next === 'fresh-call') {
       assert.equal(result.outcome, 'revise')
-      assert.ok(result.feedback.trim())
-      assert.ok(input.results[index + 1], 'revise requires a fresh result')
+      proposal = `${proposal}\nRevision feedback: ${result.feedback}`
       continue
     }
-    assert.equal(index, input.results.length - 1)
-  }
-
-  return {
-    proposalFileBytes,
-    native,
-    app: { ...input.app.calls },
+    if (result.outcome === 'revise') {
+      throw new Error('revise must require a fresh Review call')
+    }
+    return { outcome: result.outcome }
   }
 }
 

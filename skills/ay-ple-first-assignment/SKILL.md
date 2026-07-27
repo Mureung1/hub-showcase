@@ -21,20 +21,22 @@ description: Identify or update a first Assignment from actual SemesterWorkspace
    still has the bytes used to prepare the proposal, then call
    `propose_state_patch` before changing any actual file.
 4. Treat the structured result as the decision about this proposal:
-   - On `accept`, re-read the target to detect drift, apply only the reviewed
-     changes to the actual file, and verify the resulting file.
+   - On `accept`, obtain any required native file permission, re-read the target
+     to detect drift, apply only the reviewed changes with native file tools,
+     and verify the resulting file.
    - On `revise`, keep the actual file unchanged. Incorporate the feedback,
      re-read the current file, and make a fresh `propose_state_patch` call.
-     The fresh call is a new Review; do not replace or reopen the settled one.
+     Start a new Review for the fresh call; do not replace or reopen the settled
+     one.
    - On `reject`, keep the actual file unchanged and stop applying this
      proposal.
 5. After an accepted file change, follow the active SemesterWorkspace
    `AGENTS.md` and native permission policy. When the change is a meaningful
    checkpoint, inspect the exact diff and commit only the intended paths.
 
-The App returns the Review result; it does not edit a SemesterWorkspace file
-or run Git for AY. A Review result is also independent from native execution
-approval: obtain any required file or Git permission through the native
-execution flow. Do not seek the same semantic decision through a second
-interaction channel. If the Review call fails or its result is unavailable,
-do not infer an outcome and do not apply the proposed mutation.
+Rely on the App only to return the Review result; never ask or expect it to edit
+a SemesterWorkspace file or run Git for AY. Keep a Review result independent
+from native execution approval, and obtain any required file or Git permission
+through the native execution flow. Do not seek the same semantic decision
+through a second interaction channel. If the Review call fails or its result is
+unavailable, do not infer an outcome or apply the proposed mutation.
