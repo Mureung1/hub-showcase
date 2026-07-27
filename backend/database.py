@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import (
-    create_engine, Column, BigInteger, Integer, String, Text, Enum, JSON, DateTime, ForeignKey, func,
+    create_engine, Column, BigInteger, Integer, String, Text, Enum, JSON, DateTime, ForeignKey, Float,
+    UniqueConstraint, func,
 )
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
@@ -22,11 +23,18 @@ class MyStore(Base):
 
 class Competitor(Base):
     __tablename__ = "competitors"
+    __table_args__ = (
+        UniqueConstraint("name", "source_store_name", name="uq_competitor_name_source"),
+    )
 
     id = Column(BigInteger, primary_key=True, index=True)
-    name = Column(String(100), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)
     category = Column(String(50), nullable=True)
     address = Column(String(255), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    distance_km = Column(Float, nullable=True)
+    source_store_name = Column(String(255), nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     reviews = relationship("Review", back_populates="competitor", cascade="all, delete-orphan")

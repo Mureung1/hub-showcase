@@ -9,8 +9,10 @@ import requests
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "")
+KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
 
 BLOG_SEARCH_URL = "https://openapi.naver.com/v1/search/blog.json"
+KAKAO_LOCAL_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
 
 # API 키가 없을 때 사용할 폴백 더미 데이터 (MVP 검증용)
 FALLBACK_REVIEWS = [
@@ -65,3 +67,47 @@ def fetch_reviews(store_name: str, count: int = 5) -> dict:
         return {"source": "fallback_dummy", "texts": FALLBACK_REVIEWS}
 
     return {"source": "naver_blog", "texts": texts}
+
+
+def search_local_kakao(query: str, x: float = None, y: float = None,
+                        radius: int = None, size: int = 15, return_meta: bool = False):
+    """
+    카카오 로컬 API(키워드 검색)로 장소를 검색해 리턴.
+    x/y(중심 좌표)와 radius(미터)를 함께 주면 반경 내 검색 + 거리순 정렬까지 API가 처리해줌.
+    반환: [{"name", "address", "category", "latitude", "longitude", "distance_km"}, ...]
+    return_meta=True면 (결과 리스트, meta.total_count) 튜플을 반환.
+    """
+    if not KAKAO_REST_API_KEY:
+        raise RuntimeError("KAKAO_REST_API_KEY가 설정되지 않았습니다.")
+
+    params = {"query": query, "size": min(size, 15)}
+    if x is not None and y is not None:
+        params["x"] = x
+        params["y"] = y
+        params["sort"] = "distance"
+    if radius is not None:
+        params["radius"] = min(radius, 20000)
+
+    resp = requests.get(
+        KAKAO_LOCAL_URL,
+        headers={"Authorization": f"KakaoAK {KAKAO_REST_API_KEY}"},
+        params=params,
+        timeout=10,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    docs = data.get("documents", [])
+
+    results = [{
+        "name": d["place_name"],
+        "address": d.get("road_address_name") or d.get("address_name") or "",
+        "category": d.get("category_name", ""),
+        "latitude": float(d["y"]),
+        "longitude": float(d["x"]),
+        "distance_km": round(float(d["distance"]) / 1000, 2) if d.get("distance") else None,
+    } for d in docs]
+
+    if return_meta:
+        total_count = data.get("meta", {}).get("total_count", len(results))
+        return results, total_count
+    return results
