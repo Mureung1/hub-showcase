@@ -143,7 +143,7 @@ export function createPreparedProductOperationCoordinator(options: {
     let turnLease: ProductTurnLease
     try {
       turnLease = turnCoordinator.claimProductTurn({
-        operationId: targetOperationId(),
+        operationId,
       })
     } catch {
       throw unavailable()

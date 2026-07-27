@@ -302,6 +302,12 @@ function reduceFrame(
   frame: PreparedProductFrame,
 ): PreparedChatState {
   if (state.terminal) throw invalidStream()
+  if (
+    state.operationId !== undefined &&
+    frame.operationId !== state.operationId
+  ) {
+    throw invalidStream()
+  }
   if (frame.type === 'review.requested') {
     if (!state.accepted || state.semanticReview || state.clarification) {
       throw invalidStream()
@@ -344,12 +350,6 @@ function reduceFrame(
     }
   }
 
-  if (
-    state.operationId !== undefined &&
-    frame.operationId !== state.operationId
-  ) {
-    throw invalidStream()
-  }
   switch (frame.type) {
     case 'operation.preparing':
       if (state.operationId || state.accepted) throw invalidStream()

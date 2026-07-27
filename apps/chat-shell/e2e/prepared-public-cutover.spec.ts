@@ -101,11 +101,27 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     expect(runtime.threadInputs).toEqual([undefined])
     expect(runtime.productInputs[0]?.permissionProfile).toBe('workspace_write')
     expect(runtime.productInputs[0]?.skill).toBeUndefined()
+    const activeBootstrap = (await (
+      await fetch(`${apiUrl}/api/product/bootstrap`)
+    ).json()) as {
+      readonly activeOperation: {
+        readonly operationId: string
+      } | null
+    }
+    const operationId = activeBootstrap.activeOperation?.operationId
+    if (!operationId) throw new Error('Active product operation is missing')
+    expect(operationId).toMatch(/^operation_[0-9a-f]{32}$/u)
 
     const clarification = page.getByRole('region', { name: 'AY 질문' })
     await expect(clarification).toContainText('학기 확인')
     await clarification.getByRole('textbox').fill('2학기')
+    const answerRequest = page.waitForRequest((request) =>
+      request.url().endsWith('/answer'),
+    )
     await clarification.getByRole('button', { name: '답변' }).click()
+    expect(new URL((await answerRequest).url()).pathname).toContain(
+      `/operations/${operationId}/`,
+    )
     await expect(
       page.getByRole('region', { name: '질문 응답 완료' }),
     ).toContainText('학기 확인')
@@ -239,7 +255,13 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
       '불필요한 과제 파일 변경',
     )
 
+    const interruptRequest = page.waitForRequest((request) =>
+      request.url().endsWith('/interrupt'),
+    )
     await page.getByRole('button', { name: '작업 중단' }).click()
+    expect(new URL((await interruptRequest).url()).pathname).toBe(
+      `/api/product/operations/${operationId}/interrupt`,
+    )
     await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
       'data-product-operation-phase',
       'interrupted',
