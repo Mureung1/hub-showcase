@@ -184,8 +184,10 @@ paths:
         재추천 다양화: 목록은 항상 매칭 점수(matchScore) 내림차순이 1순위 정렬 기준이다. 이 githubId가 과거에
         받은 이슈는 완전히 배제하지 않고, 점수가 동점인 항목들 사이에서만 안 본 이슈를 먼저 배치한다
         (점수가 다르면 순위가 절대 뒤집히지 않는다 — 각 아이템의 `isNew`로 신규 여부를 구분할 수 있다).
-        상한: 같은 githubId가 **동일한 preferences**로 하루(UTC 기준) 4번째 요청하면 429. 조건을 바꾼 요청은
-        이 상한과 무관하게 처리된다 — preferences는 languages/topics 대소문자·순서를 정규화해 비교한다.
+        상한: 같은 githubId가 **동일한 preferences**로 하루(UTC 기준) 4번째부터는 새로 계산하지 않고
+        오늘 만든 마지막 추천을 그대로 200으로 반환한다(에러 아님 — GitHub/LLM 재호출만 아낀다).
+        조건을 바꾼 요청은 이 상한과 무관하게 처리된다 — preferences는 languages/topics 대소문자·순서를
+        정규화해 비교한다.
       operationId: createRecommendation
       requestBody:
         required: true
@@ -242,16 +244,7 @@ paths:
                   code: ANALYSIS_NOT_FOUND
                   message: 분석 이력이 없습니다. 먼저 분석을 실행해주세요.
         '429':
-          description: GitHub rate limit(`RATE_LIMITED`) 또는 하루 재추천 상한 초과(`RECOMMENDATION_LIMIT_EXCEEDED`)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                githubRateLimited:
-                  $ref: '#/components/examples/RateLimitedExample'
-                recommendationLimitExceeded:
-                  $ref: '#/components/examples/RecommendationLimitExceededExample'
+          $ref: '#/components/responses/RateLimited'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -680,7 +673,6 @@ components:
                 - ANALYSIS_NOT_FOUND
                 - RECOMMENDATION_NOT_FOUND
                 - RATE_LIMITED
-                - RECOMMENDATION_LIMIT_EXCEEDED
                 - INTERNAL_ERROR
               example: VALIDATION_ERROR
             message:
@@ -727,9 +719,3 @@ components:
         error:
           code: RATE_LIMITED
           message: 요청이 많아 잠시 후 다시 시도해주세요.
-    RecommendationLimitExceededExample:
-      summary: 하루 재추천 상한(3회) 초과
-      value:
-        error:
-          code: RECOMMENDATION_LIMIT_EXCEEDED
-          message: 오늘 재추천 횟수를 다 사용했어요. 내일 다시 시도해주세요.

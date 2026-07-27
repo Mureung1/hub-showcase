@@ -319,17 +319,19 @@ describe('GET /api/recommendations/:id — #6 이슈 분석(지연 생성)', () 
 describe('POST /api/recommendations — 재추천 다양화', () => {
     const preferences = { languages: ['JavaScript'], difficulty: 'easy', topics: [] };
 
-    it('같은 githubId로 하루 3회를 초과해 요청하면 4번째부터 429 RECOMMENDATION_LIMIT_EXCEEDED를 반환한다', async () => {
+    it('같은 githubId로 하루 3회를 초과해 요청하면 4번째부터는 새로 계산하지 않고 오늘 마지막 결과를 그대로 반환한다', async () => {
+        let lastId;
         for (let i = 0; i < 3; i += 1) {
             const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
             expect(res.status).toBe(200);
             createdRecommendationIds.push(res.body.id);
+            lastId = res.body.id;
         }
 
         const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
 
-        expect(res.status).toBe(429);
-        expect(res.body.error.code).toBe('RECOMMENDATION_LIMIT_EXCEEDED');
+        expect(res.status).toBe(200);
+        expect(res.body.id).toBe(lastId); // 새 레코드를 만들지 않고 3번째(가장 최근) 결과를 그대로 재사용
     });
 
     it('매칭 점수가 같은 이슈들 사이에서는 안 본 이슈를 먼저 배치한다 (점수 자체는 항상 1순위 정렬 기준)', async () => {
@@ -443,20 +445,24 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
         expect(second.body.items[0].matchScore).toBeGreaterThan(second.body.items[1].matchScore);
     });
 
-    it('조건(preferences)을 바꾼 요청은 동일 조건 상한과 무관하게 처리된다', async () => {
+    it('조건(preferences)을 바꾼 요청은 동일 조건 상한과 무관하게 새로 계산된다', async () => {
+        let lastId;
         for (let i = 0; i < 3; i += 1) {
             const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
             expect(res.status).toBe(200);
             createdRecommendationIds.push(res.body.id);
+            lastId = res.body.id;
         }
-        // 같은 조건 4번째는 상한 초과
-        const blocked = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
-        expect(blocked.status).toBe(429);
+        // 같은 조건 4번째는 상한 도달 — 새로 계산하지 않고 캐시된 결과를 그대로 반환
+        const cached = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        expect(cached.status).toBe(200);
+        expect(cached.body.id).toBe(lastId);
 
-        // 조건을 바꾸면(difficulty: medium) 여전히 성공해야 한다 — 상한은 "동일 조건" 재요청에만 걸린다
+        // 조건을 바꾸면(difficulty: medium) 새로 계산되어야 한다 — 상한은 "동일 조건" 재요청에만 걸린다
         const differentConditions = { ...preferences, difficulty: 'medium' };
         const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences: differentConditions });
         expect(res.status).toBe(200);
+        expect(res.body.id).not.toBe(lastId);
         createdRecommendationIds.push(res.body.id);
     });
 });

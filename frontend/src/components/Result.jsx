@@ -6,8 +6,6 @@ import IssueCard from './IssueCard.jsx'
 import { DIFFICULTY_META } from '../utils/format.js'
 import { TOPIC_OPTIONS } from '../utils/preferences.js'
 
-const LIMIT_EXCEEDED_MESSAGE = '오늘 재추천 횟수를 다 사용했어요. 내일 다시 시도해주세요.'
-
 // 5 · 추천 결과 목록
 function Result() {
   const { recommendation, setRecommendation, setSelectedItem } = useOutletContext()
@@ -78,13 +76,7 @@ function Result() {
         </div>
       </div>
 
-      {refetchError && (
-        <p className="r-refetch-error">
-          {refetchError.code === 'RECOMMENDATION_LIMIT_EXCEEDED'
-            ? LIMIT_EXCEEDED_MESSAGE
-            : refetchError.message}
-        </p>
-      )}
+      {refetchError && <p className="r-refetch-error">{refetchError.message}</p>}
 
       {isRefetching && (
         <div className="panel">

@@ -16,7 +16,8 @@ const MAX_REPOS = 12; // GraphQL 일괄 조회 1쿼리에 담는 상한
 const MAX_ITEMS_PER_REPO = 2; // 한 레포가 추천 목록을 도배하지 않게
 const MAX_ITEMS = 10;
 
-// 재추천 다양화 — 일 단위(UTC) githubId당 추천 요청 상한 (2026-07-27 결정, checklist Week4)
+// 재추천 다양화 — 일 단위(UTC) githubId+동일 조건당 "새로 계산"하는 상한 (2026-07-27 결정, checklist Week4).
+// 도달하면 에러가 아니라 오늘 만든 마지막 결과를 그대로 반환한다(재계산·GitHub/LLM 호출만 아낌)
 const DAILY_RECOMMENDATION_LIMIT = 3;
 
 // 난이도 → 이슈 라벨 필터. hard = enhancement(기능 구현급) 이슈로 정의 (2026-07-20 결정)
@@ -224,16 +225,20 @@ function normalizePreferences(preferences) {
     });
 }
 
-// 재추천 다양화 — 오늘(UTC) 이 githubId가 "동일 조건"으로 요청한 횟수.
+// 재추천 다양화 — 오늘(UTC) 이 githubId가 "동일 조건"으로 만든 추천을 최신순으로 전부 가져온다.
 // 조건을 바꾼 탐색까지 상한에 걸리면 정상적인 탐색을 막게 되므로, 상한은 같은 preferences로의
-// 반복 재요청에만 적용한다(2026-07-27 결정 보완 — 최초의 "githubId 전체 기준"은 상한 대신 다양화 범위에만 유지)
-async function countTodaysSameConditionRequests(githubId, preferences) {
+// 반복 재요청에만 적용한다(2026-07-27 결정 보완 — 최초의 "githubId 전체 기준"은 상한 대신 다양화 범위에만 유지).
+// 상한 도달 시 에러 대신 [0](가장 최근 것)을 그대로 재사용해서, "새로 계산은 안 하되 결과 없이 막지는
+// 않는다"는 캐시처럼 동작하게 한다 — 처음엔 에러로 막았는데, 이미 오늘 만들어둔 결과가 있는데도
+// 그냥 실패로 끝나는 게 어색하다는 피드백을 받아 바꿨다(2026-07-27)
+async function findTodaysSameConditionRecommendations(githubId, preferences) {
     const todaysRecommendations = await prisma.recommendation.findMany({
         where: { githubId, createdAt: { gte: startOfUtcDay() } },
-        select: { preferences: true },
+        include: { items: { orderBy: { position: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
     });
     const targetKey = normalizePreferences(preferences);
-    return todaysRecommendations.filter((rec) => normalizePreferences(rec.preferences) === targetKey).length;
+    return todaysRecommendations.filter((rec) => normalizePreferences(rec.preferences) === targetKey);
 }
 
 // 재추천 다양화 — 이 사용자가 과거에 받은 (repoFullName#issueNumber) 집합.
@@ -456,12 +461,14 @@ export async function createRecommendation(githubId, preferences) {
     // 분석 이력 없으면 getAnalysis가 404(ANALYSIS_NOT_FOUND) 던짐
     const analysis = await getAnalysis(githubId);
 
-    const sameConditionRequestsToday = await countTodaysSameConditionRequests(analysis.githubId, preferences);
-    if (sameConditionRequestsToday >= DAILY_RECOMMENDATION_LIMIT) {
-        const limitExceeded = new Error('오늘 재추천 횟수를 다 사용했어요. 내일 다시 시도해주세요.');
-        limitExceeded.status = 429;
-        limitExceeded.code = 'RECOMMENDATION_LIMIT_EXCEEDED';
-        throw limitExceeded;
+    const sameConditionToday = await findTodaysSameConditionRecommendations(analysis.githubId, preferences);
+    if (sameConditionToday.length >= DAILY_RECOMMENDATION_LIMIT) {
+        logger.info('재추천 상한 도달 — 새로 계산하지 않고 오늘 마지막 결과를 그대로 반환', {
+            githubId: analysis.githubId,
+            recommendationId: sameConditionToday[0].id,
+        });
+        const isFavoritedByKey = await getFavoriteKeys(analysis.githubId);
+        return toRecommendationResponse(sameConditionToday[0], { isFavoritedByKey });
     }
 
     const seenKeys = await getSeenIssueKeys(analysis.githubId);
