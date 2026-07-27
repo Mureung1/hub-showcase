@@ -154,8 +154,10 @@ export function buildFastAnalysisPrompt(paragraphs, title) {
   const xmlParagraphs = xmlWrapParagraphs(paragraphs)
   // 상한을 절대값(4)으로 고정하면 긴 기사일수록 선별 커버리지가 떨어진다.
   // 문단 수에 비례해 상한을 늘리되, sentences는 verbatim 에코 비용이 있어
-  // fast lane 응답 지연에 직결되므로 6개로 다시 상한을 둔다.
-  const maxSentences = Math.min(6, Math.max(4, Math.ceil(paragraphs.length / 2)))
+  // fast lane 응답 지연에 직결되므로 8개로 다시 상한을 둔다(2026-07-27:
+  // 실사용 확인 후 6→8로 상향 — 22문단 CNBC 실기사에서 손실 없이 6개까지
+  // 나오는 걸 확인해 상한을 더 올려도 안전할 여지가 있다고 판단).
+  const maxSentences = Math.min(8, Math.max(4, Math.ceil(paragraphs.length / 2)))
 
   return `당신은 영문 뉴스 기반 해외 주식 모의투자 학습 서비스의 AI 어시스턴트입니다. 아래는 기사 제목과 원문 문단입니다. 각 문단은 <paragraph> 태그로 감싸져 있습니다.
 
