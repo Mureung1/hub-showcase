@@ -3,12 +3,10 @@ import {
   type AnswerUserInput,
   type CancelUserInput,
   type CodexAccountReadiness,
-  type CodexChatRuntime,
   type CodexModelCatalog,
-  type CodexModelCatalogRuntime,
   type CodexProductActivity,
-  type CodexProductCapableRuntime,
   type CodexProductTurn,
+  type CodexWorkspaceRuntime,
   type StartProductTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 
@@ -79,9 +77,9 @@ export class CodexChatService {
   private preparation?: Promise<void>
   private prepared?: CodexChatPreparedRuntime
   private unavailableReason?: CodexChatUnavailableReason
-  private runtime?: CodexChatRuntime
-  private runtimePromise?: Promise<CodexChatRuntime>
-  private observedRuntime?: CodexChatRuntime
+  private runtime?: CodexWorkspaceRuntime
+  private runtimePromise?: Promise<CodexWorkspaceRuntime>
+  private observedRuntime?: CodexWorkspaceRuntime
   private runtimeClosePromise?: Promise<void>
   private runtimeRecyclePromise?: Promise<void>
   private runtimeFailureCode?: string
@@ -225,7 +223,7 @@ export class CodexChatService {
       this.activeTurn = reservation
     }
     try {
-      const runtime = requireProductRuntime(await this.getRuntime())
+      const runtime = await this.getRuntime()
       if (reservation.disconnected || disconnected()) {
         this.finishTurn(reservation)
         return undefined
@@ -333,7 +331,7 @@ export class CodexChatService {
   }
 
   async answerProductUserInput(input: AnswerUserInput): Promise<void> {
-    const runtime = requireProductRuntime(this.requireStartedRuntime())
+    const runtime = this.requireStartedRuntime()
     try {
       await runtime.answerUserInput(input)
     } catch (error) {
@@ -343,7 +341,7 @@ export class CodexChatService {
   }
 
   async cancelProductUserInput(input: CancelUserInput): Promise<void> {
-    const runtime = requireProductRuntime(this.requireStartedRuntime())
+    const runtime = this.requireStartedRuntime()
     try {
       await runtime.cancelUserInput(input)
     } catch (error) {
@@ -400,7 +398,7 @@ export class CodexChatService {
 
   private async readProductAccountReadinessOnce(): Promise<CodexAccountReadiness> {
     try {
-      const runtime = requireProductRuntime(await this.getRuntime())
+      const runtime = await this.getRuntime()
       return await runtime.readAccountReadiness()
     } catch (error) {
       await this.handleUnknownOutcome(error)
@@ -416,7 +414,7 @@ export class CodexChatService {
 
   private async readProductModelCatalogOnce(): Promise<CodexModelCatalog> {
     try {
-      const runtime = requireModelCatalogRuntime(await this.getRuntime())
+      const runtime = await this.getRuntime()
       return await runtime.readModelCatalog()
     } catch (error) {
       await this.handleUnknownOutcome(error)
@@ -474,7 +472,7 @@ export class CodexChatService {
     this.unavailableReason = result.reason
   }
 
-  private async getRuntime(): Promise<CodexChatRuntime> {
+  private async getRuntime(): Promise<CodexWorkspaceRuntime> {
     this.requireAvailable()
     await this.ensurePrepared()
     this.requireAvailable()
@@ -504,7 +502,7 @@ export class CodexChatService {
   }
 
   private async ensureProductThread(
-    runtime: CodexProductCapableRuntime,
+    runtime: CodexWorkspaceRuntime,
     profile: ProductThreadProfile,
   ): Promise<string> {
     const profileKey = productThreadProfileKey(profile)
@@ -531,7 +529,7 @@ export class CodexChatService {
     return thread.threadId
   }
 
-  private requireStartedRuntime(): CodexChatRuntime {
+  private requireStartedRuntime(): CodexWorkspaceRuntime {
     this.requireAvailable()
     if (!this.runtime) throw stateError('codex_chat_unavailable')
     return this.runtime
@@ -617,7 +615,7 @@ export class CodexChatService {
     await this.settleAutonomousClose()
   }
 
-  private observeRuntime(runtime: CodexChatRuntime): void {
+  private observeRuntime(runtime: CodexWorkspaceRuntime): void {
     if (this.observedRuntime === runtime) return
     this.observedRuntime = runtime
     void runtime.terminal.then((error) =>
@@ -626,7 +624,7 @@ export class CodexChatService {
   }
 
   private async handleRuntimeTerminal(
-    runtime: CodexChatRuntime,
+    runtime: CodexWorkspaceRuntime,
     error: CodexChatRuntimeError,
   ): Promise<void> {
     if (this.runtime !== runtime) return
@@ -671,31 +669,6 @@ function stateError(code: CodexChatServiceErrorCode): CodexChatServiceError {
 
 function safeFailureCode(code: string): string {
   return /^[a-z][a-z0-9_]{0,63}$/.test(code) ? code : 'runtime_failed'
-}
-
-function requireProductRuntime(
-  runtime: CodexChatRuntime,
-): CodexProductCapableRuntime {
-  const candidate = runtime as Partial<CodexProductCapableRuntime>
-  if (
-    typeof candidate.readAccountReadiness !== 'function' ||
-    typeof candidate.startProductTurn !== 'function' ||
-    typeof candidate.answerUserInput !== 'function' ||
-    typeof candidate.cancelUserInput !== 'function'
-  ) {
-    throw stateError('codex_chat_unavailable')
-  }
-  return candidate as CodexProductCapableRuntime
-}
-
-function requireModelCatalogRuntime(
-  runtime: CodexChatRuntime,
-): CodexModelCatalogRuntime {
-  const candidate = runtime as Partial<CodexModelCatalogRuntime>
-  if (typeof candidate.readModelCatalog !== 'function') {
-    throw stateError('codex_chat_unavailable')
-  }
-  return candidate as CodexModelCatalogRuntime
 }
 
 function productThreadProfileKey(profile: ProductThreadProfile): string {

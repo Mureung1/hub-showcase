@@ -75,7 +75,7 @@ Assignment action은 selected source를 appDataRoot staging에 byte-preserving s
 
 Private `propose_state_patch` MCP는 selected source·base revision·exact quote를 검증한 pending `StatePatch`만 만든다. Exact Plan question이 active patch와 bind될 때만 product Review가 된다. Accept/reject는 product transaction을 native answer보다 먼저 commit하고, revise는 `UserConfirmation` 없이 bounded feedback·fresh private request key로 replacement를 기다린다. General Plan clarification은 별도 ephemeral binding으로 answer/cancel하며 academic state를 바꾸지 않는다.
 
-`CodexChatService`는 Account Readiness, product thread·active Turn, interaction·interrupt, terminal observation, Runtime recycle와 bounded close를 캡슐화하는 deep product lifecycle Module다. Public tracer route가 사라져도 이 lifecycle owner와 Runtime의 internal text regression은 이름만으로 분해·제거하지 않는다.
+`CodexChatService`는 account lifecycle이나 Runtime role이 없는 `CodexWorkspaceRuntime`을 받아 Account Readiness, model catalog, product thread·active Turn, interaction·interrupt, native context, terminal observation, Runtime recycle와 bounded close를 캡슐화하는 deep product lifecycle Module다. Public tracer route가 사라져도 이 lifecycle owner와 Runtime의 internal text regression은 이름만으로 분해·제거하지 않는다.
 
 ## Public product API
 

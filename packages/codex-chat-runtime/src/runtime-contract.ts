@@ -93,8 +93,11 @@ export interface CodexModelCatalogRuntime {
   readModelCatalog(): Promise<CodexModelCatalog>
 }
 
+export interface CodexWorkspaceRuntime
+  extends CodexProductCapableRuntime,
+    CodexModelCatalogRuntime,
+    CodexNativeContextPort {}
+
 export type CodexManagedRuntime =
-  CodexProductCapableRuntime &
-  CodexModelCatalogRuntime &
-  CodexAccountLifecycle &
-  CodexNativeContextPort
+  CodexWorkspaceRuntime &
+  CodexAccountLifecycle

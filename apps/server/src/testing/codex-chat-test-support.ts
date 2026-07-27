@@ -3,9 +3,17 @@ import { request as httpRequest, type IncomingMessage } from 'node:http'
 
 import {
   CodexChatRuntimeError,
+  type AnswerUserInput,
+  type CancelUserInput,
+  type CodexAccountReadiness,
   type CodexChatEvent,
-  type CodexChatRuntime,
   type CodexChatTurn,
+  type CodexEffectiveConfig,
+  type CodexEffectiveSkill,
+  type CodexModelCatalog,
+  type CodexProductTurn,
+  type CodexWorkspaceRuntime,
+  type StartProductTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 
 import type { CodexChatBootstrap } from '../codex-chat.js'
@@ -16,7 +24,7 @@ export const codexChatIdentity = {
 } as const
 
 export function configuredBootstrap(
-  runtime: CodexChatRuntime,
+  runtime: CodexWorkspaceRuntime,
   options: {
     readonly origin?: string
     readonly disconnectDrainMs?: number
@@ -91,7 +99,7 @@ export function createDeferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
-export class ControlledRuntime implements CodexChatRuntime {
+export class ControlledRuntime implements CodexWorkspaceRuntime {
   private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
   readonly terminal = this.terminalDeferred.promise
   private readonly eventQueue: Array<
@@ -172,6 +180,45 @@ export class ControlledRuntime implements CodexChatRuntime {
       turnId: 'turn-A1',
       events: this.events(),
     }
+  }
+
+  async readAccountReadiness(): Promise<CodexAccountReadiness> {
+    return { state: 'ready' }
+  }
+
+  async readModelCatalog(): Promise<CodexModelCatalog> {
+    return { models: [] }
+  }
+
+  async readEffectiveConfig(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexEffectiveConfig> {
+    input.signal.throwIfAborted()
+    return {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+    }
+  }
+
+  async listEffectiveSkills(input: {
+    readonly signal: AbortSignal
+  }): Promise<readonly CodexEffectiveSkill[]> {
+    input.signal.throwIfAborted()
+    return []
+  }
+
+  async startProductTurn(
+    _input: StartProductTurnInput,
+  ): Promise<CodexProductTurn> {
+    throw new Error('ControlledRuntime does not script product Turns')
+  }
+
+  async answerUserInput(_input: AnswerUserInput): Promise<void> {
+    throw new Error('ControlledRuntime does not script user-input answers')
+  }
+
+  async cancelUserInput(_input: CancelUserInput): Promise<void> {
+    throw new Error('ControlledRuntime does not script user-input cancellation')
   }
 
   async interrupt(): Promise<void> {

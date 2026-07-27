@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최근 갱신: 2026-07-24
+최근 갱신: 2026-07-27
 
 분류: 활성
 
@@ -22,7 +22,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | --- | --- | --- | --- |
 | Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | Repository-local 실행은 이 package-local verified bundle을 그대로 사용한다. 별도 release resolver와 production host는 유지하지 않는다. | Runtime pin upgrade가 실제로 필요할 때의 별도 검증 |
 | Runtime state | Canonical composition이 explicit `appDataRoot` 아래 app-managed `HOME`, `CODEX_SQLITE_HOME`, temp/runtime state를 계산·준비하고 caller의 전역 `CODEX_HOME`을 결합한다. | 개인용 실행은 기존 Codex 인증·설정을 재사용하고 AY-PLE 전용 auth profile을 만들지 않는다. | macOS 기본 app data path와 runtime state rollover 정책 |
-| Account lifecycle | Current dev·dogfood는 caller의 `CODEX_HOME`, 또는 미설정 시 `~/.codex`에서 fresh account를 읽는다. 별도 auth profile·device-auth helper·credential copy·Browser OAuth UI는 없다. Public-preview Server·Browser graph는 제거됐다. | 개인용 실행에서는 전역 Codex account를 단일 authority로 사용한다. | Consumer가 없는 Runtime managed account primitive의 별도 pruning 여부 |
+| Account lifecycle | Current dev·dogfood는 role-free `CodexWorkspaceRuntime`을 통해 caller의 `CODEX_HOME`, 또는 미설정 시 `~/.codex`에서 fresh account를 읽는다. 별도 auth profile·device-auth helper·credential copy·Browser OAuth UI는 없다. Public-preview Server·Browser graph는 제거됐고 low-level managed primitive는 current caller와 compile-time으로 분리됐다. | 개인용 실행에서는 전역 Codex account를 단일 authority로 사용한다. | Consumer가 없는 Runtime managed account primitive의 별도 pruning 여부 |
 | 작업 `cwd` | Root startup·Browser activation이 chooser·development override로 연 current-v2 directory를 internal `ready`로 판정해 product thread의 exact native `cwd`로 사용한다. `CODEX_CHAT_WORKSPACE`는 manual-development selection override다. | App이 생성하고 `WorkspaceManifest` validation을 통과한 active `SemesterWorkspace`만 `cwd`가 된다. 사용자는 학기 정보와 생성 위치를 고르며 identity는 `WorkspaceManifest`가 소유한다. | Scaffold·admission 전환과 durable active workspace registry |
 | 학기 제품 상태 | Workspace current canonical v2 store가 stable workspace ID·한 Course, confirmed state·settled history·execution guard를 original-byte authority와 compare-before-rename으로 보존한다. Invalid·unsupported bytes는 `incompatible/readOnly`로 연다. | `WorkspaceManifest`가 workspace·Course identity와 관계를 단독 소유하고, app data 손실·Server restart·rollback에도 workspace만으로 확인된 상태를 다시 연다. | Current v2 identity의 explicit version transition, backup/restore·signature 정책 |
 | Native context | Runtime의 persistent bridge와 one-shot official App Server sidecar가 모두 fixed `project_root_markers=[]`, exact workspace `cwd`와 controlled environment를 사용한다. Sidecar의 `config/read`·`skills/list` raw protocol은 Runtime-private이고 Server는 atomic high-level snapshot만 소비한다. `@ay-ple/semester-workspace`의 bundle verifier와 Server native boundary는 static·effective conflict를 검사하지만 current action/setup composition에는 아직 연결되지 않았다. | Fresh setup이 workspace instruction/Skill bundle을 설치·검증하고 effective native context gate를 통과한 뒤에만 Codex action을 연다. Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | Memory 활성화·consent·rollover UX |

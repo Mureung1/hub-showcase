@@ -2,7 +2,7 @@
 
 작성일: 2026-07-17
 
-최근 검증: 2026-07-24
+최근 검증: 2026-07-27
 
 분류: 활성
 
@@ -35,7 +35,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`, `/api/codex-chat/
 | 위치 | 책임 | 공개 경계 |
 | --- | --- | --- |
 | `packages/product-contract` | Product bootstrap·workspace recovery·settled history·material preview, Assignment·retry·Chat·Review·interaction·interrupt request/response와 closed operation frame의 dependency-free exact type·decoder | Browser-safe `.` 하나. HTTP framing, persistence, Server domain과 native Runtime protocol은 포함하지 않음 |
-| `packages/codex-chat-runtime` | Exact bundle verification, official SDK, private Node↔Python bridge, native conversation·Plan·MCP·interaction projection, one-shot native-context probe·atomic coordinator, deadline·bound·fatal settlement과 process-group reap | Package root, Server·Runtime regression용 `./contract`, test-only `./testing`. Low-level managed account primitive는 current Browser·Server product surface가 아님 |
+| `packages/codex-chat-runtime` | Exact bundle verification, official SDK, private Node↔Python bridge, role-free `CodexWorkspaceRuntime`, native conversation·Plan·MCP·interaction projection, one-shot native-context probe·atomic coordinator, deadline·bound·fatal settlement과 process-group reap | Package root, Server·Runtime regression용 `./contract`, test-only `./testing`. Current Server와 product conformance fixture는 workspace-only factory result만 사용하며 low-level managed account primitive는 current product caller가 아님 |
 | `packages/semester-workspace` | Current v2 compatibility decoder와 consumer 없는 v3 admission·setup kernel | Current Server는 test-only v2 parity와 decoder만 소비하며 v3 setup을 composition하지 않음 |
 | `apps/server` | Current-v2 product graph, Account Readiness, Course·material·Assignment·Chat·Review HTTP, private MCP, neutral NDJSON writer와 listener·Runtime close ordering | Side-effect-free `@ay-ple/server` root의 `createServerApplication()`, `listenToServerApplication()`, `bindServerApplicationListener()`와 `/api/product/*` |
 | `apps/chat-shell` | Source-centered 3-pane workbench, cumulative Assignment·Chat activity, evidence-linked Review·replacement, explicit retry·workspace recovery, clarification·interrupt와 settled-only hydration | `@ay-ple/product-contract`를 strict decode하는 fetch/NDJSON adapter와 cross-frame reducer |

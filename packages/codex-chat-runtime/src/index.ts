@@ -1,4 +1,7 @@
-import type { CodexManagedRuntime } from './runtime-contract.js'
+import type {
+  CodexManagedRuntime,
+  CodexWorkspaceRuntime,
+} from './runtime-contract.js'
 import {
   startVerifiedCodexChatRuntime,
   type CodexChatRuntimeEnvironment,
@@ -58,6 +61,7 @@ export type {
   CodexProductTurnSettings,
   CodexProductSkillInput,
   CodexProductTurn,
+  CodexWorkspaceRuntime,
   StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
@@ -79,7 +83,7 @@ export interface CreateCodexChatRuntimeOptions {
   readonly environment: CodexChatRuntimeEnvironment
 }
 
-export interface LegacyCreateCodexChatRuntimeOptions {
+export interface CreateCodexChatWorkspaceRuntimeOptions {
   readonly runtimeRoot: string
   readonly workspace: string
   readonly environment: CodexChatRuntimeEnvironment
@@ -103,14 +107,13 @@ export async function verifyCodexChatRuntimeBundle(
 export function createCodexChatRuntime(
   options: CreateCodexChatRuntimeOptions,
 ): Promise<CodexManagedRuntime>
-/** Compatibility overload for the current workspace-only Server caller. */
 export function createCodexChatRuntime(
-  options: LegacyCreateCodexChatRuntimeOptions,
-): Promise<CodexManagedRuntime>
+  options: CreateCodexChatWorkspaceRuntimeOptions,
+): Promise<CodexWorkspaceRuntime>
 export async function createCodexChatRuntime(
   options:
     | CreateCodexChatRuntimeOptions
-    | LegacyCreateCodexChatRuntimeOptions,
+    | CreateCodexChatWorkspaceRuntimeOptions,
 ): Promise<CodexManagedRuntime> {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
   const spawned =
