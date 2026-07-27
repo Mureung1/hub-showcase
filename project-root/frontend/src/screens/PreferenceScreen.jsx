@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./PreferenceScreen.css";
 import PrimaryButton from "../components/PrimaryButton";
-import { fetchLectures } from "../api/lectures";
+import { fetchLectures, reportRequiredCourse } from "../api/lectures";
 import { parseFreeTextConditions } from "../api/preferences";
 import { CURRENT_YEAR, CURRENT_SEMESTER } from "../config/semester";
 
@@ -31,6 +31,7 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
   const [aiParseStatus, setAiParseStatus] = useState("idle"); // idle | loading | error
   const [majorSubjects, setMajorSubjects] = useState([]);
   const [majorSubjectsError, setMajorSubjectsError] = useState(false);
+  const [reportedNames, setReportedNames] = useState(new Set());
   const uniqueMajorSubjects = useMemo(() => dedupeByName(majorSubjects), [majorSubjects]);
 
   useEffect(() => {
@@ -55,6 +56,16 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
 
   function toggleCompleted(id) {
     setCompletedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+  }
+
+  // 학교 API/수기 큐레이션이 전공필수로 못 잡은 과목을 사용자가 직접 신고(크라우드소싱).
+  async function handleReportRequired(courseName) {
+    try {
+      await reportRequiredCourse({ department, courseName });
+      setReportedNames((prev) => new Set(prev).add(courseName));
+    } catch (err) {
+      console.error("전공필수 신고 실패:", err);
+    }
   }
 
   // 자유 텍스트를 AI로 해석해 같은 모양의 카테고리 폼 값으로 반영한다.
@@ -206,14 +217,26 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
           )}
           <div className="checkbox-list">
             {uniqueMajorSubjects.map((s) => (
-              <label key={s.id} className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={completedIds.includes(s.id)}
-                  onChange={() => toggleCompleted(s.id)}
-                />
-                <span>{s.name}</span>
-              </label>
+              <div key={s.id} className="checkbox-item">
+                <label className="checkbox-item__label">
+                  <input
+                    type="checkbox"
+                    checked={completedIds.includes(s.id)}
+                    onChange={() => toggleCompleted(s.id)}
+                  />
+                  <span>{s.name}</span>
+                </label>
+                <button
+                  type="button"
+                  className={`checkbox-item__report${
+                    reportedNames.has(s.name) ? " checkbox-item__report--done" : ""
+                  }`}
+                  onClick={() => handleReportRequired(s.name)}
+                  disabled={reportedNames.has(s.name)}
+                >
+                  {reportedNames.has(s.name) ? "제보 완료" : "전공필수예요"}
+                </button>
+              </div>
             ))}
           </div>
         </div>

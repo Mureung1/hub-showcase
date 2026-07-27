@@ -2,12 +2,13 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PreferenceScreen from "./PreferenceScreen";
-import { fetchLectures } from "../api/lectures";
+import { fetchLectures, reportRequiredCourse } from "../api/lectures";
 import { parseFreeTextConditions } from "../api/preferences";
 
 // parseFreeTextConditions는 아직 없지만, outside-in TDD이므로 화면 쪽부터 먼저 만든다.
 vi.mock("../api/lectures", () => ({
   fetchLectures: vi.fn(),
+  reportRequiredCourse: vi.fn(),
 }));
 vi.mock("../api/preferences", () => ({
   parseFreeTextConditions: vi.fn(),
@@ -81,5 +82,29 @@ describe("PreferenceScreen - AI로 조건 분석하기", () => {
     expect(
       await screen.findByText("조건을 분석하지 못했어요. 잠시 후 다시 시도해주세요.")
     ).toBeInTheDocument();
+  });
+});
+
+describe("PreferenceScreen - 전공필수 신고", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchLectures.mockResolvedValue([
+      { id: 1, name: "전공영어", credit: 3, category: "전공선택", department: "컴퓨터학부" },
+    ]);
+  });
+
+  it("신고 버튼을 누르면 reportRequiredCourse를 호출하고 완료 상태로 바뀐다", async () => {
+    reportRequiredCourse.mockResolvedValue({ ok: true });
+    const user = userEvent.setup();
+    render(<PreferenceScreen />);
+
+    const reportButton = await screen.findByRole("button", { name: "전공필수예요" });
+    await user.click(reportButton);
+
+    expect(reportRequiredCourse).toHaveBeenCalledWith({
+      department: "컴퓨터학부",
+      courseName: "전공영어",
+    });
+    expect(await screen.findByRole("button", { name: "제보 완료" })).toBeDisabled();
   });
 });

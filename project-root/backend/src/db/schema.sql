@@ -71,6 +71,20 @@ CREATE TABLE IF NOT EXISTS timetable_recommend (
 );
 
 -- ============================================
+-- required_course_report: 학교 API가 전공필수/전공선택 구분을 주지 않는 학과를 위해,
+-- 사용자가 "이 과목은 우리 학과 전공필수예요"라고 직접 신고한 기록.
+-- (department, course_name) unique 제약으로 같은 신고가 중복 쌓이지 않게 한다.
+-- 첫 신고를 그대로 확정으로 취급한다 (투표/모더레이션은 이번 범위 밖).
+-- ============================================
+CREATE TABLE IF NOT EXISTS required_course_report (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  department TEXT NOT NULL,
+  course_name TEXT NOT NULL,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
 -- 인덱스
 -- ============================================
 CREATE UNIQUE INDEX IF NOT EXISTS idx_lecture_crse_no_unique ON lecture(year, semester, crse_no);
@@ -81,3 +95,4 @@ CREATE INDEX IF NOT EXISTS idx_lecture_time_lecture_id ON lecture_time(lecture_i
 CREATE UNIQUE INDEX IF NOT EXISTS idx_timetable_user_semester ON timetable(user_id, year, semester);
 CREATE INDEX IF NOT EXISTS idx_timetable_lecture_timetable_id ON timetable_lecture(timetable_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_timetable_recommend_unique ON timetable_recommend(timetable_id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_required_course_report_unique ON required_course_report(department, course_name);
