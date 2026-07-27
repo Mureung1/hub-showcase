@@ -4,7 +4,7 @@
 
 성숙도: 구현됨
 
-현재 상태: 2026-07-24 개인용 hard cutover에서 public-preview Server·Browser graph와 app-scoped credential composition을 제거했고, 후속 Runtime pruning에서 AY-PLE-owned managed login·logout primitive와 `auth-only` role도 제거했다. Current dev·dogfood는 workspace-only Runtime과 caller의 전역 `CODEX_HOME`, 또는 미설정 시 `~/.codex`를 사용하며 fresh Account Readiness만 읽는다. 이 문서는 중단한 public preview의 당시 결정과 구현 근거만 보존한다.
+현재 상태: 개인용 hard cutover와 후속 Runtime pruning에서 이 결정의 구현 surface를 current executable graph에서 제거했다. 현재 topology와 account authority는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유하며, 이 문서는 중단한 public preview의 당시 결정과 구현 근거만 보존한다.
 
 관련 결정: [ADR 0006 — package·app data·SemesterWorkspace root를 분리한다](0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0011 — Official Codex Python SDK를 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md), [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md), [ADR 0016 — Exact npx application과 verified Runtime release를 분리한다](0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)
 
@@ -68,4 +68,4 @@ Exact Browser state enum·DTO·endpoint, native correlation, callback port, SDK 
 
 `appDataRoot` 손실은 reconnect와 registry recovery를 요구할 수 있지만 `SemesterWorkspace`와 확인된 학업 상태의 손실을 뜻하지 않는다. Explicit logout도 workspace를 삭제하지 않는다. Public privacy 설명은 local-first가 provider 통신 없는 offline app이라는 뜻이 아니며, official OAuth와 Codex 실행의 OpenAI 전송 경계를 함께 알린다.
 
-이 ADR의 Runtime-level primitive와 Server·Browser composition은 한때 구현됐지만 current executable graph에서는 Server coordinator·route, Browser UI·fetch adapter, shared public-preview contract와 AY-PLE-owned Runtime login·logout·`auth-only` surface를 hard-delete했다. Official SDK snapshot 내부의 upstream login API는 historical source 그대로지만 current Node contract, private bridge command와 exact patch stack에는 account mutation capability가 없다. 현재 topology와 전역 account authority는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다.
+이 ADR의 Runtime-level primitive와 Server·Browser composition은 한때 구현됐지만 current executable graph에서는 제거됐다. Official SDK snapshot 내부의 upstream login API는 당시 source 그대로 보존하며 현재 구현 결과는 위 current owner 문서와 package README가 설명한다.

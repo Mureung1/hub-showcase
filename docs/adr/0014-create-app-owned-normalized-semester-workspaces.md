@@ -42,4 +42,4 @@
 
 First-run setup과 ready-relaunch는 `WorkspaceManifest` 생성·validation, workspace instruction/Skill bundle·effective native context 검증, active registry pointer와 incomplete scaffold recovery를 제품 상태로 다뤄야 한다. `Semester Ready`는 workspace-side setup이 끝났다는 뜻이며 Course·`RawMaterial`·학업 action 완료를 뜻하지 않는다. 구체적인 제품 연결 범위는 Product Brief가 소유한다.
 
-`@ay-ple/semester-workspace` v3 codec·admission·bundle·context·durable setup kernel은 이 adopted target의 기반으로 유지한다. Current Server는 current-v2 compatibility decoder·parity만 소비하고 v3 kernel을 composition하지 않으므로, 현재 chooser/current-v2 vertical이나 package primitive 자체를 app-owned workspace capability로 주장하지 않는다.
+이 adopted target을 위한 package primitive가 구현돼 있어도 명시적인 product composition 전에는 app-owned workspace capability로 주장하지 않는다. Current consumer와 package behavior는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [semester-workspace README](../../packages/semester-workspace/README.md)가 소유한다.

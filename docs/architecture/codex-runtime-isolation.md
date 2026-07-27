@@ -101,7 +101,6 @@ chooser-selected-directory/
 
 ```text
 user-app-data/
-  <runtime-cache>/           # versioned verified Runtime generation·retained archive
   <runtime-home>/            # app-managed HOME·CODEX_SQLITE_HOME·temp, workspace 밖
   <workspace-registry>/      # active·recent pointer, identity authority가 아님
 

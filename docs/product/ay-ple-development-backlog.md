@@ -99,8 +99,9 @@
   - [x] Runtime managed account·`auth-only` primitive는 제거하고 fresh Account Readiness만 workspace Runtime에 유지했다. `@ay-ple/semester-workspace` v3 admission·setup kernel은 ADR 0014의 adopted target 기반으로 유지하되 current executable capability로 주장하지 않는다.
   - [x] 감사 결과를 구현 지도, Runtime 격리 문서와 이 backlog에 반영했다.
 
-- [ ] 확인된 사용자 필요에 따라 post-Ready capability를 순서대로 추가한다.
-  - [ ] 기존 폴더와 자료 묶음을 `ImportSource`로 분석하고 mapping·반입 제안을 사용자 검토 뒤 app-owned `SemesterWorkspace`의 Course·`RawMaterial`로 만드는 첫 자료 가져오기 여정을 추가한다. 임의의 기존 폴더를 workspace로 직접 열지 않는다.
+- [ ] 기존 폴더와 자료 묶음을 `ImportSource`로 분석하고 mapping·반입 제안을 사용자 검토 뒤 app-owned `SemesterWorkspace`의 Course·`RawMaterial`로 만드는 첫 자료 가져오기 여정을 추가한다. 임의의 기존 폴더를 workspace로 직접 열지 않는다.
+
+- [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.
   - [ ] 여러 대화를 다시 찾고 이어가는 행동이 확인되면 workspace-scoped `thread/list`·`thread/read`·`thread/resume`, 선택 상태와 최소 catalog UX를 추가한다. Rename·archive·pagination은 각각의 need가 있을 때만 포함한다.
   - [ ] Accepted work의 Browser disconnect가 실제 product journey를 막으면 native status·read를 우선 사용해 honest unknown-outcome 또는 rejoin을 추가한다. Snapshot·cursor·replay journal은 관찰된 gap 없이는 만들지 않는다.
   - [ ] 같은 local companion을 여러 Browser client가 동시에 제어해야 하는 사용 흐름이 확인되면 client ownership·isolation을 별도 capability로 검증한다.
