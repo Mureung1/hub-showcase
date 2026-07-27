@@ -1,8 +1,9 @@
 ---
 hypothesis_set: 01_supportive
 trap: "happy path — 지지 근거가 명확한 경우. 환각 없이도 유력함이 잘 나오는지 확인하는 기준선(baseline) 케이스."
+label_source: "AI 초안 판단 (사람 검수 전, 2026-07-27) - 자기참조 위험 있음"
 expected_status:
-  a1b1c1d1-0001-4a01-8001-000000000001: "TODO(사람이 전사문을 읽고 직접 판단)"
+  a1b1c1d1-0001-4a01-8001-000000000001: "유력함"
 min_tags:
   a1b1c1d1-0001-4a01-8001-000000000001: 3
 max_tags:

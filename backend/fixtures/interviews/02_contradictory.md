@@ -1,8 +1,9 @@
 ---
 hypothesis_set: 02_contradictory
 trap: "반박 근거가 지지 근거보다 우세한 경우. 확증 편향 방어 검증 — 지지 발언이 먼저 나와도 suggested_status가 '수정 필요'로 뒤집히는지 확인."
+label_source: "AI 초안 판단 (사람 검수 전, 2026-07-27) - 자기참조 위험 있음"
 expected_status:
-  a1b1c1d1-0002-4a02-8002-000000000002: "TODO(사람이 전사문을 읽고 직접 판단)"
+  a1b1c1d1-0002-4a02-8002-000000000002: "수정 필요"
 min_tags:
   a1b1c1d1-0002-4a02-8002-000000000002: 4
 max_tags:
