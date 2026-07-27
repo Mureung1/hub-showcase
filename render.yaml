@@ -1,0 +1,20 @@
+# Render 블루프린트 — 백엔드(backend/)만 배포한다. 프론트는 GitHub Pages(kimsunho2000.github.io/hub/)에 이미 배포됨.
+# 사용 방법: Render 대시보드 → New → Blueprint → 이 저장소 선택 → DATABASE_URL/GITHUB_TOKEN/GEMINI_API_KEY 입력.
+services:
+  - type: web
+    name: firstpr-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://kimsunho2000.github.io
