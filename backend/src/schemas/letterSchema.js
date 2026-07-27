@@ -6,7 +6,7 @@ export const createLetterSchema = z.object({
   title: z.string().max(100, '제목은 100자 이내로 적어주세요.').optional(),
   content: z
     .string()
-    .min(1, '편지 내용을 입력해주세요.')
+    .min(100, '편지 내용은 100자 이상 적어주세요.')
     .max(5000, '편지는 5000자를 넘을 수 없어요.'),
   envelope: z.enum(['basic', 'lined', 'wax'], {
     message: '봉투 종류를 선택해주세요.',

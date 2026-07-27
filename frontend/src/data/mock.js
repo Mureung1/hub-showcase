@@ -1,17 +1,8 @@
 // 목데이터 — 백엔드 연동 전까지 화면을 채우는 더미 콘텐츠.
 // 색상/배지 스타일은 여기서 정하지 않고 status 값만 담아 컴포넌트(css module + tokens.css)에서 매핑한다.
 
-export const RECOMMEND_LETTER = {
-  serialNo: 'BR-2024-0488',
-  from: '모음소의 누군가',
-  topic: '새로운 시작',
-  title: '이 계절의 문턱에서',
-  body: `요즘 저는 자주 새로운 시작을 생각합니다. 익숙했던 자리를 떠나는 일은 여전히 두렵지만, 그 두려움 뒤에 작은 기대가 숨어 있다는 걸 요즘에서야 알아가는 중입니다.
-
-당신도 지금 어떤 문턱 앞에 서 있을까요. 만약 그렇다면, 너무 서두르지 않았으면 합니다. 시작은 한 번에 완성되지 않아도 괜찮으니까요.`,
-}
-
 // '내가 쓴 편지'는 백엔드 실데이터(GET /api/letters)로 대체됨 — MINE_LETTERS 제거.
+// 추천 편지(RECOMMEND_LETTER)도 백엔드 실데이터(POST /api/letters/:id/recommendations)로 대체됨.
 
 // status: 'unread' | 'read' | 'passed'
 export const RECEIVED_LETTERS = [

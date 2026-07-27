@@ -39,3 +39,26 @@ export function fetchMyLetters() {
 export function fetchLetterById(id) {
   return request(`/api/letters/${id}`)
 }
+
+// 현재 유효한 추천 조회만 (부수효과 없음, AI 호출 없음)
+export function fetchCurrentRecommendation(letterId) {
+  return request(`/api/letters/${letterId}/recommendations/current`)
+}
+
+// 추천 생성 — 유효 캐시가 있으면 그걸 반환(멱등), 없으면 새로 생성. 폴링해도 안전하다.
+export function createRecommendation(letterId) {
+  return request(`/api/letters/${letterId}/recommendations`, { method: 'POST' })
+}
+
+// 기존 추천을 dismiss하고 새로 생성 ("다른 편지 보기")
+export function refreshRecommendation(letterId) {
+  return request(`/api/letters/${letterId}/recommendations/refresh`, { method: 'POST' })
+}
+
+// 매칭 상태 전이 (opened/dismissed)
+export function patchMatch(matchId, status) {
+  return request(`/api/matches/${matchId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+}

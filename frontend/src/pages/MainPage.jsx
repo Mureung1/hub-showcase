@@ -2,6 +2,10 @@ import { useAppState } from '../state/useAppState'
 import { charCount, dateStr, SERIAL_NO } from '../lib/format'
 import styles from './MainPage.module.css'
 
+// "직접 쓰는 편지"라는 취지로 붙여넣기를 막아둔 것 — 매칭 품질 테스트 때만
+// frontend/.env의 VITE_ALLOW_PASTE=true로 풀 수 있다. 기본은 금지.
+const ALLOW_PASTE = import.meta.env.VITE_ALLOW_PASTE === 'true'
+
 export default function MainPage() {
   const { state, actions } = useAppState()
 
@@ -55,7 +59,9 @@ export default function MainPage() {
           placeholder="친애하는 누군가에게…"
           value={state.letter}
           onChange={(e) => actions.setLetter(e.target.value)}
-          onPaste={(e) => e.preventDefault()}
+          onPaste={(e) => {
+            if (!ALLOW_PASTE) e.preventDefault()
+          }}
         />
 
         <footer className={styles.footer}>

@@ -1,9 +1,9 @@
 // 편지 본문 검증 함수의 테스트 (red 단계: 아직 통과하는 코드가 없다)
 import { test, expect } from 'vitest'
-import { validateLetterContent, MAX_LETTER_LENGTH } from './validateLetter'
+import { validateLetterContent, MIN_LETTER_LENGTH, MAX_LETTER_LENGTH } from './validateLetter'
 
 test('정상 본문은 통과한다', () => {
-  expect(validateLetterContent('안녕')).toBe(true)
+  expect(validateLetterContent('가'.repeat(MIN_LETTER_LENGTH))).toBe(true)
 })
 
 test('빈 문자열은 거절한다', () => {
@@ -12,6 +12,14 @@ test('빈 문자열은 거절한다', () => {
 
 test('공백만 있으면 거절한다', () => {
   expect(validateLetterContent('   ')).toBe(false)
+})
+
+test('최소 길이(100자) 미만이면 거절한다', () => {
+  expect(validateLetterContent('가'.repeat(MIN_LETTER_LENGTH - 1))).toBe(false)
+})
+
+test('최소 길이(100자)면 통과한다', () => {
+  expect(validateLetterContent('가'.repeat(MIN_LETTER_LENGTH))).toBe(true)
 })
 
 test('최대 길이(5000자)는 통과한다', () => {

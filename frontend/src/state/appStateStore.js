@@ -16,6 +16,8 @@ export const initialState = {
   waitSecs: WAIT_SECS_INITIAL,
   showFeedback: false,
   feedback: '',
+  currentLetterId: null, // 방금 보낸 편지의 id — 추천 조회/생성 API에 쓴다
+  recommendation: null, // 백엔드가 준 추천 응답 {has_match, match_id, matched_letter, reason, ...} 또는 {has_match:false, reason_code}
 }
 
 export function reducer(state, action) {
@@ -44,12 +46,15 @@ export function reducer(state, action) {
         envelope: null,
       }
     case 'TICK': {
+      // 실제 "도착" 판정은 서버가 하고(폴링), 이 카운트다운은 화면 표시용일 뿐이라 0에서 멈춘다.
       if (state.phase !== 'waiting') return state
-      const next = state.waitSecs - 1
-      return next <= 0 ? { ...state, waitSecs: 0, phase: 'arrived' } : { ...state, waitSecs: next }
+      return { ...state, waitSecs: Math.max(0, state.waitSecs - 1) }
     }
-    case 'FAST_FORWARD':
-      return { ...state, phase: 'arrived', waitSecs: 0 }
+    case 'SET_CURRENT_LETTER_ID':
+      return { ...state, currentLetterId: action.value }
+    case 'RECOMMENDATION_ARRIVED':
+      // 폴링/조회 결과가 "확정된" 상태(추천 있음, 위기, 후보없음)일 때만 이 액션이 온다.
+      return { ...state, phase: 'arrived', recommendation: action.value }
     case 'RESET_RECOMMEND':
       return { ...state, opened: false }
     case 'UNFOLD':
@@ -78,6 +83,8 @@ export function reducer(state, action) {
         feedback: '',
         phase: 'idle',
         waitSecs: WAIT_SECS_INITIAL,
+        currentLetterId: null,
+        recommendation: null,
       }
     default:
       return state

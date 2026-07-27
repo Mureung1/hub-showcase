@@ -2,6 +2,7 @@
 import { Router } from 'express'
 import { getLetter, getMyLetters, postLetter } from '../controllers/lettersController.js'
 import { requireAuth } from '../middleware/requireAuth.js'
+import { recommendationsRouter } from './recommendations.js'
 
 export const lettersRouter = Router()
 
@@ -9,3 +10,6 @@ export const lettersRouter = Router()
 lettersRouter.post('/', requireAuth, postLetter)
 lettersRouter.get('/', requireAuth, getMyLetters)
 lettersRouter.get('/:id', requireAuth, getLetter)
+
+// /api/letters/:id/recommendations, /current, /refresh
+lettersRouter.use('/:id/recommendations', requireAuth, recommendationsRouter)

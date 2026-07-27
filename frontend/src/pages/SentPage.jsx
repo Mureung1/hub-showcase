@@ -29,8 +29,8 @@ export default function SentPage() {
       <Envelope variant="basic" floating width={160} height={110} label="발송한 편지" />
       <p className={styles.promptLabel}>Next letter prompt</p>
       <p className={styles.countdown}>{fmt(state.waitSecs)}</p>
-      <button type="button" className={styles.fastForward} onClick={actions.fastForward}>
-        24시간 빨리감기 (데모)
+      <button type="button" className={styles.fastForward} onClick={actions.checkRecommendationNow}>
+        지금 도착했는지 확인 (데모)
       </button>
     </div>
   )
