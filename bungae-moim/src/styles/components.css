@@ -183,8 +183,44 @@
   font-size: 13px;
 }
 
+/* 밴드 색. 흰 배경(라이트 테마 헤더·카드)과 어두운 배경(다크 테마 헤더·카드,
+   card--dark)의 요구 명도가 서로 반대라 값 하나로는 양쪽 다 4.5:1을 못 채운다
+   (계산 결과는 task-4-report.md 참고). 그래서 라이트 테마 기본값 + 다크
+   테마/card--dark 전용 값을 분리했다 — tokens.css의 --ink-mute와 동일한 패턴. */
+.trust-badge--low strong { color: #d54141; }   /* 우는 얼굴 — 낮음 */
+.trust-badge--mid strong { color: #7f7566; }   /* 무표정 — 보통 */
+.trust-badge--high strong { color: #288647; }  /* 웃음 — 높음 */
+.trust-badge--top strong { color: #9a6f18; }   /* 하트 — 최상(골드) */
+
+.card--dark .trust-badge--low strong,
+:root[data-theme='dark'] .trust-badge--low strong {
+  color: #db5c5c;
+}
+
+.card--dark .trust-badge--mid strong,
+:root[data-theme='dark'] .trust-badge--mid strong {
+  color: #a89d89;
+}
+
+.card--dark .trust-badge--high strong,
+:root[data-theme='dark'] .trust-badge--high strong {
+  color: #2f9e54;
+}
+
+.card--dark .trust-badge--top strong,
+:root[data-theme='dark'] .trust-badge--top strong {
+  color: #c8901f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .trust-badge--low strong { color: #db5c5c; }
+  :root:not([data-theme='light']) .trust-badge--mid strong { color: #a89d89; }
+  :root:not([data-theme='light']) .trust-badge--high strong { color: #2f9e54; }
+  :root:not([data-theme='light']) .trust-badge--top strong { color: #c8901f; }
+}
+
 .card--dark .trust-badge {
-  color: var(--cream-mute);
+  color: var(--cream);
 }
 
 /* ---- Form fields ---- */
