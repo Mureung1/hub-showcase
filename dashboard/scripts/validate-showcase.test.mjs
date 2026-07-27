@@ -30,11 +30,10 @@ test('올바른 showcase 자료를 허용한다', () => {
   assert.equal(result.ok, true);
 });
 
-test('제목이 없으면 거부한다', () => {
+test('제목이 없어도 다른 내용이 있으면 허용한다', () => {
   const { title, ...withoutTitle } = validShowcase;
   const result = validateShowcase(withoutTitle);
-  assert.equal(result.ok, false);
-  assert.match(result.errors.join('\n'), /title/);
+  assert.equal(result.ok, true);
 });
 
 test('상위 폴더를 가리키는 이미지 경로를 거부한다', () => {

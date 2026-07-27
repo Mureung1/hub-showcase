@@ -253,6 +253,13 @@ a,
   gap: 8px;
 }
 
+.card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
 .project-category {
   color: #16885a;
   font-size: 11px;
@@ -264,6 +271,16 @@ a,
   border: 1px solid #c9d2ce;
   border-radius: 999px;
   color: #66736f;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.warning-badge {
+  padding: 3px 7px;
+  border: 1px solid #e7c98a;
+  border-radius: 999px;
+  background: #fff8e8;
+  color: #8b641e;
   font-size: 10px;
   font-weight: 700;
 }

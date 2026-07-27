@@ -87,3 +87,54 @@ test('잘못된 showcase 자료가 있어도 더미 자료로 계속 만든다',
     await rm(outputDir, { recursive: true, force: true });
   }
 });
+
+test('일부 내용과 이미지가 없어도 프로젝트를 표시하고 뒤로 보낸다', async () => {
+  const outputDir = await mkdtemp(path.join(os.tmpdir(), 'showcase-partial-'));
+  try {
+    const complete = { ...showcase, title: '내용이 충분한 프로젝트' };
+    const partial = {
+      schemaVersion: 1,
+      title: '이미지가 없는 프로젝트',
+      summary: '이미지 없이도 내용은 표시합니다.',
+      features: [],
+      featureTags: [],
+      techStack: [],
+      thumbnail: 'missing.webp',
+    };
+    const files = new Map([
+      ['complete:showcase/showcase.json', Buffer.from(JSON.stringify(complete))],
+      ['complete:showcase/thumbnail.webp', Buffer.from('thumbnail')],
+      ['partial:showcase/showcase.json', Buffer.from(JSON.stringify(partial))],
+    ]);
+
+    const result = await collectLocalShowcases({
+      branches: ['complete', 'partial'],
+      outputDir,
+      readBranchFile: async (branch, filePath) => files.get(`${branch}:${filePath}`) ?? null,
+    });
+
+    assert.equal(result.realProjectCount, 2);
+    assert.equal(result.projects[0].sourceBranch, 'complete');
+    assert.equal(result.projects[1].sourceBranch, 'partial');
+    assert.equal(result.projects[1].thumbnailUrl, './dummy-thumbnail.svg');
+    assert.deepEqual(result.projects[1].dataWarnings, ['대표 이미지 확인 필요']);
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});
+
+test('내용이 전혀 없는 JSON은 표시하지 않는다', async () => {
+  const outputDir = await mkdtemp(path.join(os.tmpdir(), 'showcase-empty-'));
+  try {
+    const result = await collectLocalShowcases({
+      branches: ['empty-project'],
+      outputDir,
+      readBranchFile: async () => Buffer.from('{}'),
+    });
+
+    assert.equal(result.realProjectCount, 0);
+    assert.equal(result.skippedInvalid, 1);
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});

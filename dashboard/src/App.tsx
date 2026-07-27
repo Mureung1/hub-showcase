@@ -74,6 +74,8 @@ export type Project = {
   demoUrl?: string;
   demoVideoUrl?: string;
   sourceBranch?: string | null;
+  dataWarnings?: string[];
+  qualityScore?: number;
   agent?: {
     summary?: string;
     agentTools?: Array<{ type: 'agent' | 'skill'; name: string; purpose: string }>;
@@ -205,7 +207,10 @@ export default function App({ projects }: AppProps) {
               <div className="card-content">
                 <div className="card-meta">
                   <span className="project-category">{categoryLabelFor(project)}</span>
-                  {project.isDummy && <span className="dummy-badge">더미</span>}
+                  <div className="card-badges">
+                    {project.dataWarnings && project.dataWarnings.length > 0 && <span className="warning-badge">자료 확인 필요</span>}
+                    {project.isDummy && <span className="dummy-badge">더미</span>}
+                  </div>
                 </div>
                 <h2>{project.title}</h2>
                 <p className="summary">{project.summary}</p>
@@ -262,7 +267,10 @@ export default function App({ projects }: AppProps) {
             <div className="detail-content">
               <div className="card-meta">
                 <span className="project-category">{categoryLabelFor(selectedProject)}</span>
-                {selectedProject.isDummy && <span className="dummy-badge">더미</span>}
+                <div className="card-badges">
+                  {selectedProject.dataWarnings && selectedProject.dataWarnings.length > 0 && <span className="warning-badge">자료 확인 필요</span>}
+                  {selectedProject.isDummy && <span className="dummy-badge">더미</span>}
+                </div>
               </div>
               <h2>{selectedProject.title}</h2>
               <p className="detail-summary">{selectedProject.summary}</p>

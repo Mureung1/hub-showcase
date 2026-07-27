@@ -25,6 +25,113 @@ function branchSlug(branch) {
   return branch.replaceAll('/', '-').replace(/[^A-Za-z0-9._-]/g, '-');
 }
 
+function text(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function textList(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim());
+}
+
+function normalizeAgent(agent) {
+  if (!agent || typeof agent !== 'object' || Array.isArray(agent)) {
+    return { summary: '', agentTools: [], workflows: [] };
+  }
+
+  const agentTools = [];
+  const addTools = (items, type) => {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+      if (typeof item === 'string' && item.trim()) {
+        agentTools.push({ type, name: item.trim(), purpose: '' });
+      } else if (item && typeof item === 'object') {
+        const name = text(item.name);
+        const purpose = text(item.purpose);
+        if (name) agentTools.push({ type, name, purpose });
+      }
+    }
+  };
+
+  addTools(agent.agentTools, 'agent');
+  addTools(agent.agents, 'agent');
+  addTools(agent.skills, 'skill');
+
+  const workflows = [];
+  if (Array.isArray(agent.workflows)) {
+    for (const workflow of agent.workflows) {
+      if (typeof workflow === 'string' && workflow.trim()) {
+        workflows.push({ name: '개발 Workflow', steps: [workflow.trim()] });
+      } else if (workflow && typeof workflow === 'object') {
+        const name = text(workflow.name) || '개발 Workflow';
+        const steps = textList(workflow.steps);
+        if (steps.length > 0) workflows.push({ name, steps });
+      }
+    }
+  }
+
+  return {
+    summary: text(agent.summary),
+    agentTools,
+    workflows,
+  };
+}
+
+function normalizeShowcase(input, branch) {
+  const parsedAgent = normalizeAgent(input.agent);
+  const providedTitle = text(input.title);
+  const normalized = {
+    schemaVersion: 1,
+    title: providedTitle || `${branch} 프로젝트`,
+    summary: text(input.summary),
+    problem: text(input.problem),
+    targetUsers: textList(input.targetUsers),
+    features: textList(input.features),
+    featureTags: textList(input.featureTags),
+    techStack: textList(input.techStack),
+    techHighlights: textList(input.techHighlights),
+    githubUser: text(input.githubUser),
+    demoUrl: text(input.demoUrl),
+    demoVideoUrl: text(input.demoVideoUrl),
+    thumbnail: text(input.thumbnail),
+    screenshots: textList(input.screenshots),
+    agent: parsedAgent,
+    developmentWithAI: text(input.developmentWithAI),
+  };
+
+  const hasContent = [
+    providedTitle,
+    normalized.summary,
+    normalized.problem,
+    ...normalized.features,
+    ...normalized.featureTags,
+    ...normalized.techStack,
+    normalized.agent.summary,
+    ...normalized.agent.agentTools.map((tool) => `${tool.name}${tool.purpose}`),
+    ...normalized.agent.workflows.flatMap((workflow) => [workflow.name, ...workflow.steps]),
+    normalized.developmentWithAI,
+  ].some(Boolean);
+
+  if (!hasContent) return null;
+  return normalized;
+}
+
+function qualityScore(project) {
+  let score = 0;
+  if (project.title) score += 2;
+  if (project.summary) score += 2;
+  if (project.problem) score += 2;
+  if (project.features.length > 0) score += 2;
+  if (project.featureTags.length > 0) score += 1;
+  if (project.techStack.length > 0) score += 1;
+  if (project.techHighlights.length > 0) score += 1;
+  if (project.githubUser) score += 1;
+  if (project.thumbnailUrl !== './dummy-thumbnail.svg') score += 1;
+  if (project.agent.summary || project.agent.agentTools.length > 0 || project.agent.workflows.length > 0) score += 2;
+  if (project.developmentWithAI) score += 1;
+  return score;
+}
+
 function safeImagePath(relativePath) {
   if (
     typeof relativePath !== 'string' ||
@@ -111,38 +218,57 @@ export async function collectLocalShowcases({ branches, outputDir, readBranchFil
 
     try {
       const parsed = JSON.parse(metadata.toString('utf8'));
-      const validated = validateShowcase(parsed);
-      if (!validated.ok) {
-        throw new Error(validated.errors.join('\n'));
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('showcase.json은 객체 형식이어야 합니다.');
       }
 
+      const normalized = normalizeShowcase(parsed, branch);
+      if (!normalized) throw new Error('표시할 프로젝트 내용이 없습니다.');
+
+      const warnings = [];
+      const validated = validateShowcase(parsed);
+      if (!validated.ok) warnings.push('showcase.json 형식 확인 필요');
+
       const slug = branchSlug(branch);
-      const thumbnailUrl = await copyImage({
-        branch,
-        relativePath: parsed.thumbnail,
-        outputDir,
-        slug,
-        readBranchFile,
-      });
+      let thumbnailUrl = './dummy-thumbnail.svg';
+      if (normalized.thumbnail) {
+        try {
+          thumbnailUrl = await copyImage({
+            branch,
+            relativePath: normalized.thumbnail,
+            outputDir,
+            slug,
+            readBranchFile,
+          });
+        } catch {
+          warnings.push('대표 이미지 확인 필요');
+        }
+      } else {
+        warnings.push('대표 이미지 확인 필요');
+      }
+
       const screenshotUrls = [];
-      for (const screenshot of parsed.screenshots ?? []) {
-        screenshotUrls.push(
-          await copyImage({
+      for (const screenshot of normalized.screenshots) {
+        try {
+          screenshotUrls.push(await copyImage({
             branch,
             relativePath: screenshot,
             outputDir,
             slug,
             readBranchFile,
-          }),
-        );
+          }));
+        } catch {
+          warnings.push('추가 화면 일부 확인 필요');
+        }
       }
 
       projects.push({
-        ...parsed,
+        ...normalized,
         id: slug,
         sourceBranch: branch,
         thumbnailUrl,
         screenshotUrls,
+        dataWarnings: [...new Set(warnings)],
       });
     } catch (error) {
       skippedInvalid += 1;
@@ -150,8 +276,12 @@ export async function collectLocalShowcases({ branches, outputDir, readBranchFil
     }
   }
 
-  const realProjectCount = projects.length;
-  const displayProjects = fillWithDummyProjects(projects);
+  const rankedProjects = projects
+    .map((project, index) => ({ project, index, score: qualityScore(project) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(({ project, score }) => ({ ...project, qualityScore: score }));
+  const realProjectCount = rankedProjects.length;
+  const displayProjects = fillWithDummyProjects(rankedProjects);
   const result = {
     generatedAt: new Date().toISOString(),
     projectCount: displayProjects.length,

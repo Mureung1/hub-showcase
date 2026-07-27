@@ -1,19 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": [
-    "schemaVersion",
-    "title",
-    "summary",
-    "problem",
-    "features",
-    "featureTags",
-    "techStack",
-    "githubUser",
-    "thumbnail",
-    "agent",
-    "developmentWithAI"
-  ],
+  "required": [],
   "properties": {
     "schemaVersion": { "const": 1 },
     "title": { "type": "string", "minLength": 1, "maxLength": 80 },
@@ -21,29 +9,22 @@
     "problem": { "type": "string", "minLength": 1, "maxLength": 1000 },
     "targetUsers": {
       "type": "array",
-      "maxItems": 5,
       "items": { "type": "string", "minLength": 1, "maxLength": 80 }
     },
     "features": {
       "type": "array",
-      "minItems": 1,
-      "maxItems": 5,
       "items": { "type": "string", "minLength": 1, "maxLength": 160 }
     },
     "featureTags": {
       "type": "array",
-      "minItems": 1,
-      "maxItems": 3,
       "items": { "type": "string", "minLength": 1, "maxLength": 30 }
     },
     "techStack": {
       "type": "array",
-      "maxItems": 10,
       "items": { "type": "string", "minLength": 1, "maxLength": 40 }
     },
     "techHighlights": {
       "type": "array",
-      "maxItems": 3,
       "items": { "type": "string", "minLength": 1, "maxLength": 160 }
     },
     "githubUser": { "type": "string", "minLength": 1, "maxLength": 80 },
@@ -55,7 +36,6 @@
     },
     "screenshots": {
       "type": "array",
-      "maxItems": 3,
       "items": {
         "type": "string",
         "pattern": "^(?!/)(?!.*\\.\\.)(?!.*\\\\).+\\.(webp|png|jpg|jpeg)$"
@@ -63,7 +43,7 @@
     },
     "agent": {
       "type": "object",
-      "required": ["summary", "agentTools", "workflows"],
+      "required": [],
       "properties": {
         "summary": { "type": "string", "maxLength": 1000 },
         "agentTools": {
@@ -89,7 +69,6 @@
               "steps": {
                 "type": "array",
                 "minItems": 1,
-                "maxItems": 10,
                 "items": { "type": "string", "minLength": 1, "maxLength": 100 }
               }
             },
