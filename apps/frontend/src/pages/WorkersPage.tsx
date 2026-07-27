@@ -111,6 +111,7 @@ function WorkerSettingsForm({ accessToken, storeId, worker }: WorkerSettingsForm
         defaultWorkEndTime: toOptionalTime(values.defaultWorkEndTime)
       });
       await queryClient.invalidateQueries({ queryKey: ["workers", storeId] });
+      await queryClient.invalidateQueries({ queryKey: ["payrollSummary", storeId] });
       setMessage("저장되었습니다.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "알바생 정보 수정에 실패했습니다.");
@@ -180,6 +181,7 @@ export function WorkersPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["workers", selectedStoreId] });
+      await queryClient.invalidateQueries({ queryKey: ["payrollSummary", selectedStoreId] });
     }
   });
 

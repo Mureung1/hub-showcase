@@ -47,7 +47,7 @@ const optionalTextSchema = (maxLength: number) =>
     .string()
     .trim()
     .max(maxLength, `${maxLength}자 이하로 입력해주세요.`)
-    .optional()
+    .nullish()
     .transform((value) => (value ? value : null));
 
 const createScheduleSchema = z
@@ -89,8 +89,15 @@ const updateOptionalTextSchema = (maxLength: number) =>
     .string()
     .trim()
     .max(maxLength, `${maxLength}자 이하로 입력해주세요.`)
-    .transform((value) => (value ? value : null))
-    .optional();
+    .nullable()
+    .optional()
+    .transform((value) => {
+      if (value === undefined) {
+        return undefined;
+      }
+
+      return value ? value : null;
+    });
 
 const updateScheduleSchema = z
   .object({

@@ -47,8 +47,6 @@ export type RecurringScheduleRule = {
   endTime: string;
   startDate: string;
   endDate: string | null;
-  position: string | null;
-  memo: string | null;
   createdAt: string;
   updatedAt: string;
 };

@@ -11,7 +11,7 @@ import {
 const SCHEDULE_COLUMNS =
   "id,store_id,worker_id,work_date,start_time,end_time,position,memo,source,created_at,updated_at,profiles(id,name)";
 const RECURRING_SCHEDULE_RULE_COLUMNS =
-  "id,store_id,worker_id,weekday,start_time,end_time,start_date,end_date,position,memo,created_at,updated_at";
+  "id,store_id,worker_id,weekday,start_time,end_time,start_date,end_date,created_at,updated_at";
 
 type ScheduleQueryRecord = Omit<ScheduleRecord, "profiles"> & {
   profiles: ScheduleRecord["profiles"] | ScheduleRecord["profiles"][] | null;
@@ -171,9 +171,7 @@ export async function insertRecurringScheduleRule(input: CreateRecurringSchedule
       start_time: input.startTime,
       end_time: input.endTime,
       start_date: input.startDate,
-      end_date: input.endDate,
-      position: input.position,
-      memo: input.memo
+      end_date: input.endDate
     })
     .select(RECURRING_SCHEDULE_RULE_COLUMNS)
     .single<RecurringScheduleRuleRecord>();

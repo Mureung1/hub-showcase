@@ -45,6 +45,9 @@ export function useCreateSchedule(storeId: string | null) {
       await queryClient.invalidateQueries({
         queryKey: ["schedules"]
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["payrollSummary"]
+      });
     }
   });
 }
@@ -59,6 +62,9 @@ export function useCreateRecurringSchedules(storeId: string | null) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["schedules"]
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["payrollSummary"]
       });
     }
   });
@@ -76,6 +82,9 @@ export function useUpdateSchedule() {
       await queryClient.invalidateQueries({
         queryKey: ["schedules"]
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["payrollSummary"]
+      });
     }
   });
 }
@@ -90,6 +99,9 @@ export function useDeleteSchedule() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["schedules"]
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["payrollSummary"]
       });
     }
   });
