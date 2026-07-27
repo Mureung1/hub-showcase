@@ -13,6 +13,7 @@ KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
 
 BLOG_SEARCH_URL = "https://openapi.naver.com/v1/search/blog.json"
 KAKAO_LOCAL_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
+KAKAO_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json"
 
 # API 키가 없을 때 사용할 폴백 더미 데이터 (MVP 검증용)
 FALLBACK_REVIEWS = [
@@ -111,3 +112,45 @@ def search_local_kakao(query: str, x: float = None, y: float = None,
         total_count = data.get("meta", {}).get("total_count", len(results))
         return results, total_count
     return results
+
+
+def geocode_region(region: str):
+    """
+    지역 문자열(예: '장전동', '강남구')을 좌표로 변환.
+    1) 카카오 주소 검색 API로 시도 (행정동/지번/도로명 주소에 정확)
+    2) 실패하면 키워드 검색(search_local_kakao)의 첫 결과 좌표로 폴백
+       (예: '부산대'처럼 행정구역은 아니지만 실존 장소인 경우 대비)
+    반환: (longitude, latitude) 튜플. 둘 다 실패하면 None — 예외를 던지지 않고
+    호출부가 안전하게 기존 방식으로 폴백할 수 있게 한다.
+    """
+    if not KAKAO_REST_API_KEY:
+        return None
+
+    region = region.strip()
+
+    try:
+        resp = requests.get(
+            KAKAO_ADDRESS_URL,
+            headers={"Authorization": f"KakaoAK {KAKAO_REST_API_KEY}"},
+            params={"query": region, "size": 5},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        docs = resp.json().get("documents", [])
+        # 카카오 주소 검색은 행정구역 접미사(동/리 등)를 무시하고 느슨하게 매칭할 때가 있다
+        # (예: '장전동' 검색 시 무관한 '...남양읍 장전리'가 1순위로 뜨고 실제 '부산 금정구
+        # 장전동'은 그 다음 순위로 밀림). 주소명이 검색어로 정확히 끝나는 문서만 신뢰한다.
+        exact_docs = [d for d in docs if d.get("address_name", "").endswith(region)]
+        if exact_docs:
+            return float(exact_docs[0]["x"]), float(exact_docs[0]["y"])
+    except requests.RequestException:
+        pass
+
+    try:
+        results = search_local_kakao(region, size=1)
+        if results:
+            return results[0]["longitude"], results[0]["latitude"]
+    except (RuntimeError, requests.RequestException):
+        pass
+
+    return None

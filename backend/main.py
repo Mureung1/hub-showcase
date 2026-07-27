@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from langchain_google_genai import ChatGoogleGenerativeAI
 from database import init_db, get_db, Competitor, Review, MyStore
-from collector import fetch_reviews, search_local_kakao
+from collector import fetch_reviews, search_local_kakao, geocode_region
 
 # ── 목(Mock) 모드 설정 ────────────────────────────────────────
 # .env에 USE_MOCK=true 를 넣으면 LLM 호출 없이 고정 데이터 반환 (Gemini 할당량과 무관하게 화면 작업 가능)
@@ -299,9 +299,17 @@ def search_store(req: SearchStoreRequest):
     if not name:
         raise HTTPException(status_code=400, detail="가게 이름을 입력하세요.")
     region = req.region.strip()
-    query = f"{name} {region}" if region else name
+    coords = geocode_region(region) if region else None
+
     try:
-        raw_candidates, total_count = search_local_kakao(query, size=15, return_meta=True)
+        if coords:
+            x, y = coords
+            raw_candidates, total_count = search_local_kakao(
+                name, x=x, y=y, radius=3000, size=15, return_meta=True
+            )
+        else:
+            query = f"{name} {region}" if region else name
+            raw_candidates, total_count = search_local_kakao(query, size=15, return_meta=True)
     except (RuntimeError, requests.RequestException) as e:
         raise HTTPException(status_code=502, detail=f"카카오 API 호출에 실패했습니다: {e}")
     if not raw_candidates:
