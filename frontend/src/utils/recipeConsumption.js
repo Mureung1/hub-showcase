@@ -1,4 +1,6 @@
 import { isPantryIngredientName } from "./pantry.js";
+import { convertQuantityToStandard } from "../../../shared/quantityUnits.js";
+import { isLiquidIngredient } from "./deductibleIngredients.js";
 
 const INGREDIENT_ALIASES = new Map([
   ["달걀", "계란"],
@@ -14,10 +16,6 @@ function normalizeIngredientName(name) {
   return INGREDIENT_ALIASES.get(normalized) ?? normalized;
 }
 
-function normalizeUnit(unit) {
-  return String(unit ?? "").trim().replaceAll(" ", "").toLowerCase();
-}
-
 export function buildRecipeConsumptionRows(recipe, ingredients) {
   const missingNames = new Set((recipe?.missingIngredients ?? []).map(normalizeIngredientName));
   const ownedByName = new Map(ingredients.map((ingredient) => [
@@ -30,17 +28,19 @@ export function buildRecipeConsumptionRows(recipe, ingredients) {
   ];
 
   return recipeIngredients
-    .filter((ingredient) => !isPantryIngredientName(ingredient.name))
+    .filter((ingredient) => !isPantryIngredientName(ingredient.name) && !isLiquidIngredient(ingredient))
     .map((ingredient) => {
       const normalizedName = normalizeIngredientName(ingredient.name);
       const ownedIngredient = ownedByName.get(normalizedName);
+      const ownedQuantity = convertQuantityToStandard(ownedIngredient?.quantity, ownedIngredient?.unit);
+      const recipeQuantity = convertQuantityToStandard(ingredient.amount, ingredient.unit);
       const isMissing = missingNames.has(normalizedName) || !ownedIngredient;
-      const unitsMatch = ownedIngredient
-        && normalizeUnit(ownedIngredient.unit) === normalizeUnit(ingredient.unit);
+      const unitsMatch = Boolean(ownedQuantity && recipeQuantity
+        && ownedQuantity.unit === recipeQuantity.unit);
       const hasTrackedQuantity = ownedIngredient?.quantityMode === "exact"
-        && Number.isFinite(ownedIngredient.quantity);
+        && Boolean(ownedQuantity);
       const hasEnough = hasTrackedQuantity && unitsMatch
-        && ownedIngredient.quantity >= ingredient.amount;
+        && ownedQuantity.quantity >= recipeQuantity.quantity;
       const status = isMissing
         ? "missing"
         : !hasTrackedQuantity
@@ -56,10 +56,10 @@ export function buildRecipeConsumptionRows(recipe, ingredients) {
         ingredientId: ownedIngredient?.id ?? null,
         name: ingredient.name,
         ownedName: ownedIngredient?.name ?? null,
-        amount: ingredient.amount,
-        unit: ingredient.unit,
-        availableQuantity: ownedIngredient?.quantity ?? null,
-        availableUnit: ownedIngredient?.unit ?? null,
+        amount: recipeQuantity?.quantity ?? ingredient.amount,
+        unit: recipeQuantity?.unit ?? ingredient.unit,
+        availableQuantity: ownedQuantity?.quantity ?? ownedIngredient?.quantity ?? null,
+        availableUnit: ownedQuantity?.unit ?? ownedIngredient?.unit ?? null,
         optional: ingredient.optional,
         selected: status === "ready" && !ingredient.optional,
         status,
@@ -76,4 +76,3 @@ export function getConsumptionRequestItems(rows) {
       unit: row.unit,
     }));
 }
-

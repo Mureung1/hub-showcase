@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STANDARD_QUANTITY_UNITS } from "../../shared/quantityUnits.js";
 
 export const RECOMMENDATION_MODES = ["expiryFirst", "quick", "balanced"];
 export const DISH_TYPES = [
@@ -64,7 +65,7 @@ export const recommendationRequestSchema = z.object({
 export const generatedIngredientSchema = z.object({
   name: z.string().trim().min(1).max(100),
   amount: z.number().positive().max(100_000),
-  unit: z.string().trim().min(1).max(30),
+  unit: z.enum(STANDARD_QUANTITY_UNITS),
 }).strict();
 
 export const generatedSubstitutionSchema = z.object({
@@ -174,7 +175,7 @@ const ingredientJsonSchema = {
   properties: {
     name: stringSchema("재료 이름"),
     amount: { type: "number", description: "1인분에 사용하는 양" },
-    unit: stringSchema("g, ml, 개, 대, 큰술 같은 사용량 단위"),
+    unit: { type: "string", enum: STANDARD_QUANTITY_UNITS, description: "개, g, 팩 중 하나인 표준 사용량 단위" },
   },
   required: ["name", "amount", "unit"],
 };

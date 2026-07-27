@@ -58,7 +58,7 @@ export default function RecipeConsumptionModal({
           <div className="consumption-amount">
             {row.status === "ready" ? <>
               <span>보유 {row.availableQuantity}{row.availableUnit}</span>
-              <label><span>사용</span><input type="number" min="0.001" max={row.availableQuantity} step="any" value={row.amount} disabled={!row.selected || isSubmitting} onChange={(event) => updateRow(row.id, { amount: event.target.value })} /><em>{row.unit}</em></label>
+              <label><span>사용</span><input type="number" min={row.unit === "개" ? "1" : "0.001"} max={row.availableQuantity} step={row.unit === "개" ? "1" : "any"} inputMode={row.unit === "개" ? "numeric" : "decimal"} value={row.amount} disabled={!row.selected || isSubmitting} onChange={(event) => updateRow(row.id, { amount: event.target.value })} /><em>{row.unit}</em></label>
               <strong>남음 {Math.max(0, row.availableQuantity - Number(row.amount || 0))}{row.availableUnit}</strong>
             </> : <>
               <span>{statusMessages[row.status]}</span>

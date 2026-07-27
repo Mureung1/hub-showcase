@@ -5,6 +5,11 @@ import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { INGREDIENT_TAGS } from "../../shared/ingredientTags.js";
 import { SHELF_LIFE_RULES } from "../../shared/shelfLifeRules.js";
+import {
+  convertQuantityToStandard,
+  convertStandardQuantityToUnit,
+  STANDARD_QUANTITY_UNITS,
+} from "../../shared/quantityUnits.js";
 
 export const ingredientsRouter = Router();
 
@@ -15,7 +20,7 @@ const ingredientInputSchema = z.object({
   subcategory: z.string().trim().max(50).nullable().default(null),
   tags: z.array(z.enum(INGREDIENT_TAGS)).max(INGREDIENT_TAGS.length).default([]),
   quantity: z.number().nonnegative().nullable(),
-  unit: z.string().trim().max(30).nullable(),
+  unit: z.enum(STANDARD_QUANTITY_UNITS).nullable(),
   quantity_mode: z.enum(["exact", "notTracked"]),
   storage: z.enum(["fridge", "freezer", "room"]),
   expiration_type: z.enum(["relative", "absolute", "longTerm"]),
@@ -35,6 +40,13 @@ const ingredientInputSchema = z.object({
       message: "정확한 수량을 관리할 때는 수량이 필요합니다.",
     });
   }
+  if (ingredient.quantity_mode === "exact" && ingredient.unit === null) {
+    context.addIssue({
+      code: "custom",
+      path: ["unit"],
+      message: "정확한 수량을 관리할 때는 개, g, 팩 중 하나의 단위가 필요합니다.",
+    });
+  }
   const storageRule = SHELF_LIFE_RULES[ingredient.category];
   if (storageRule && !Number.isInteger(storageRule[ingredient.storage])) {
     context.addIssue({
@@ -49,7 +61,7 @@ const ingredientConsumptionSchema = z.object({
   items: z.array(z.object({
     id: z.string().trim().min(1).max(100),
     amount: z.number().positive().max(100_000),
-    unit: z.string().trim().min(1).max(30),
+    unit: z.enum(STANDARD_QUANTITY_UNITS),
   }).strict()).min(1).max(15),
 }).strict().superRefine(({ items }, context) => {
   if (new Set(items.map(({ id }) => id)).size !== items.length) {
@@ -76,9 +88,11 @@ function getDueDate(ingredient) {
 }
 
 function hasSameInventoryIdentity(candidate, ingredient) {
+  const candidateUnit = convertQuantityToStandard(0, candidate.unit)?.unit ?? candidate.unit ?? null;
+  const ingredientUnit = convertQuantityToStandard(0, ingredient.unit)?.unit ?? ingredient.unit ?? null;
   return candidate.name === ingredient.name
     && candidate.storage === ingredient.storage
-    && (candidate.unit ?? null) === (ingredient.unit || null)
+    && candidateUnit === ingredientUnit
     && getDueDate(candidate) === getDueDate(ingredient);
 }
 
@@ -93,10 +107,6 @@ function normalizeIngredientInput(ingredient) {
 function getWritableIngredient(ingredient) {
   const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...writableIngredient } = ingredient;
   return writableIngredient;
-}
-
-function normalizeUnit(unit) {
-  return String(unit ?? "").trim().replaceAll(" ", "").toLowerCase();
 }
 
 function sendIngredientNotFound(res) {
@@ -165,7 +175,9 @@ ingredientsRouter.post("/consume", async (req, res, next) => {
           },
         });
       }
-      if (normalizeUnit(ingredient.unit) !== normalizeUnit(requested.unit)) {
+      const ownedQuantity = convertQuantityToStandard(ingredient.quantity, ingredient.unit);
+      const requestedQuantity = convertQuantityToStandard(requested.amount, requested.unit);
+      if (!ownedQuantity || !requestedQuantity || ownedQuantity.unit !== requestedQuantity.unit) {
         return res.status(409).json({
           error: {
             code: "INGREDIENT_UNIT_MISMATCH",
@@ -173,7 +185,7 @@ ingredientsRouter.post("/consume", async (req, res, next) => {
           },
         });
       }
-      if (ingredient.quantity < requested.amount) {
+      if (ownedQuantity.quantity < requestedQuantity.quantity) {
         return res.status(409).json({
           error: {
             code: "INGREDIENT_QUANTITY_INSUFFICIENT",
@@ -188,9 +200,12 @@ ingredientsRouter.post("/consume", async (req, res, next) => {
     try {
       for (const ingredient of ingredients) {
         const requested = requestedById.get(ingredient.id);
-        const remainingQuantity = ingredient.quantity - requested.amount;
+        const ownedQuantity = convertQuantityToStandard(ingredient.quantity, ingredient.unit);
+        const requestedQuantity = convertQuantityToStandard(requested.amount, requested.unit);
+        const remainingStandardQuantity = ownedQuantity.quantity - requestedQuantity.quantity;
+        const remainingQuantity = convertStandardQuantityToUnit(remainingStandardQuantity, ingredient.unit);
         let result;
-        if (remainingQuantity <= Number.EPSILON) {
+        if (remainingStandardQuantity <= Number.EPSILON) {
           result = await supabase
             .from("ingredients")
             .delete()
@@ -218,9 +233,9 @@ ingredientsRouter.post("/consume", async (req, res, next) => {
           id: ingredient.id,
           name: ingredient.name,
           amount: requested.amount,
-          unit: requested.unit,
-          remainingQuantity: remainingQuantity <= Number.EPSILON ? 0 : remainingQuantity,
-          removed: remainingQuantity <= Number.EPSILON,
+          unit: requestedQuantity.unit,
+          remainingQuantity: remainingStandardQuantity <= Number.EPSILON ? 0 : remainingStandardQuantity,
+          removed: remainingStandardQuantity <= Number.EPSILON,
         });
       }
     } catch (error) {
@@ -279,9 +294,16 @@ ingredientsRouter.post("/", async (req, res, next) => {
       const matchingIngredient = candidates.find((candidate) => hasSameInventoryIdentity(candidate, ingredient));
 
       if (matchingIngredient) {
+        const matchingQuantity = convertQuantityToStandard(
+          matchingIngredient.quantity,
+          matchingIngredient.unit,
+        );
         const { data, error } = await supabase
           .from("ingredients")
-          .update({ quantity: matchingIngredient.quantity + ingredient.quantity })
+          .update({
+            quantity: matchingQuantity.quantity + ingredient.quantity,
+            unit: matchingQuantity.unit,
+          })
           .eq("id", matchingIngredient.id)
           .select("*")
           .single();
@@ -346,9 +368,13 @@ ingredientsRouter.patch("/:id", async (req, res, next) => {
       const matchingIngredient = candidates.find((candidate) => hasSameInventoryIdentity(candidate, ingredient));
 
       if (matchingIngredient) {
+        const matchingQuantity = convertQuantityToStandard(
+          matchingIngredient.quantity,
+          matchingIngredient.unit,
+        );
         const mergedIngredient = {
           ...ingredient,
-          quantity: matchingIngredient.quantity + ingredient.quantity,
+          quantity: matchingQuantity.quantity + ingredient.quantity,
         };
         const { data, error: mergeError } = await supabase
           .from("ingredients")

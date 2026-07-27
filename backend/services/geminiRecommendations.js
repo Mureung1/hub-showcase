@@ -68,7 +68,9 @@ export function buildRecommendationPrompt({ request, ingredientContext, policyFe
     "인스턴트와 가공식품을 함께 쓰는 메뉴에는 채소 또는 가공되지 않은 단백질 재료를 필수 재료로 최소 1개 포함하세요. 보유하지 않았다면 maxMissingIngredients 범위 안에서 부족 재료로 포함하고, 범위를 지킬 수 없다면 그 메뉴를 추천하지 마세요.",
     "영양 정보는 허용된 nutritionTags와 정성적인 nutritionSummary만 작성하고 열량이나 영양소 수치를 추정하지 마세요.",
     "substitutions에는 맛과 조리법을 크게 해치지 않는 재료 대체만 안내하고, 대체가 적절하지 않으면 빈 배열을 반환하세요. 알레르기·식품 안전과 관련된 대체를 단정하지 마세요.",
-    "모든 재료 사용량은 1인분 기준의 양수와 명확한 단위로 작성하세요.",
+    "모든 재료 사용량은 1인분 기준의 양수로 작성하고 단위는 반드시 개, g, 팩 중 하나만 사용하세요.",
+    "낱개로 세는 재료는 개, 무게나 액체 재료는 g, 모·캔·봉지처럼 포장 단위로 세는 재료는 팩으로 환산하세요.",
+    "액체류와 기본 양념은 레시피 설명에는 포함할 수 있지만 재고 차감 대상이 아니므로 보유량과의 단위 일치를 전제로 추천하지 마세요.",
     "safetyNotes는 꼭 필요한 경우에만 짧게 작성하세요. 소비기한 당일 재료는 조리 전에 상태를 확인하라는 정도로만 안내하세요.",
     request.allergens.length || request.excludedIngredients.length || request.dietaryPreferences.length
       ? "reservedPreferences의 제한을 반드시 준수하세요."

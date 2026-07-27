@@ -3,9 +3,9 @@ import { INGREDIENT_CATEGORIES } from "../data/ingredientDefaults";
 import { getAllowedStorageOptions, getSuggestedShelfLifeDays, getSuggestedUseByDate, isCheckDateCategory } from "../data/shelfLifeRules";
 import { getTodayDateString } from "../utils/expiration";
 import { INGREDIENT_TAG_LABELS, INGREDIENT_TAGS } from "../../../shared/ingredientTags";
+import { STANDARD_QUANTITY_UNITS } from "../../../shared/quantityUnits";
 
 const categoryOptions = Object.entries(INGREDIENT_CATEGORIES);
-const quantityUnits = ["개", "g", "kg", "ml", "L", "팩", "캔", "모", "대"];
 
 function getQuantityInputRules(unit) {
   return unit === "개"
@@ -78,10 +78,10 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
           />
           <button type="button" aria-label="수량 1 증가" onClick={() => changeQuantityBy(1)}>＋</button>
           <select name="unit" aria-label="수량 단위" value={formValues.unit} onChange={onChange}>
-            {quantityUnits.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+            {STANDARD_QUANTITY_UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
           </select>
         </div>
-        <p className="field-hint" id="quantity-hint">개수는 기본 단위인 ‘개’를 사용하고, 무게나 부피가 필요하면 단위를 바꿔주세요.</p>
+        <p className="field-hint" id="quantity-hint">낱개는 ‘개’, 무게는 ‘g’, 포장된 재료는 ‘팩’으로 입력해 주세요.</p>
         {errors.quantity && <p className="field-error" id="quantity-error">{errors.quantity}</p>}
       </div>
 

@@ -1,4 +1,5 @@
 import { createApiUrl } from "../config/api";
+import { convertQuantityToStandard } from "../../../shared/quantityUnits";
 
 const INGREDIENTS_API_URL = createApiUrl("/api/ingredients");
 
@@ -13,14 +14,17 @@ async function parseResponse(response, fallbackMessage) {
 }
 
 export function convertIngredientFromApi(row) {
+  const standardQuantity = row.quantity_mode === "exact"
+    ? convertQuantityToStandard(row.quantity, row.unit)
+    : null;
   return {
     id: row.id,
     name: row.name,
     category: row.category,
     subcategory: row.subcategory ?? null,
     tags: row.tags ?? [],
-    quantity: row.quantity,
-    unit: row.unit,
+    quantity: standardQuantity?.quantity ?? row.quantity,
+    unit: standardQuantity?.unit ?? row.unit,
     quantityMode: row.quantity_mode,
     storage: row.storage,
     expirationType: row.expiration_type,

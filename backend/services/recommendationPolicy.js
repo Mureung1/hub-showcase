@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { getTagsForIngredientName, sanitizeIngredientTags } from "../../shared/ingredientTags.js";
+import { convertQuantityToStandard } from "../../shared/quantityUnits.js";
 
 export const ASSUMED_PANTRY_INGREDIENTS = [
   "물",
@@ -112,13 +113,16 @@ export function buildIngredientContext(rows, { today = getKstDateString() } = {}
     const tags = sanitizeIngredientTags(row.tags);
     const expirationDate = getExpirationDate(row);
     const daysRemaining = getDaysRemaining(expirationDate, today);
+    const standardQuantity = row.quantity_mode === "exact"
+      ? convertQuantityToStandard(row.quantity, row.unit)
+      : null;
     const ingredient = {
       name: row.name,
       category: row.category,
       subcategory: row.subcategory ?? null,
       tags,
-      quantity: row.quantity ?? null,
-      unit: row.unit ?? null,
+      quantity: standardQuantity?.quantity ?? row.quantity ?? null,
+      unit: standardQuantity?.unit ?? row.unit ?? null,
       quantityMode: row.quantity_mode,
       storage: row.storage,
       expirationType: row.expiration_type,
@@ -178,15 +182,12 @@ export function createRecipeFingerprint(recipe) {
   return createHash("sha256").update(JSON.stringify(fingerprintSource)).digest("hex");
 }
 
-function normalizeUnit(unit) {
-  return String(unit ?? "").trim().replaceAll(" ", "").toLowerCase();
-}
-
 function isOwnedQuantityInsufficient(ownedIngredient, requiredIngredient) {
   if (!ownedIngredient || ownedIngredient.quantityMode !== "exact") return false;
-  if (!Number.isFinite(ownedIngredient.quantity) || !Number.isFinite(requiredIngredient.amount)) return false;
-  if (normalizeUnit(ownedIngredient.unit) !== normalizeUnit(requiredIngredient.unit)) return false;
-  return requiredIngredient.amount > ownedIngredient.quantity;
+  const ownedQuantity = convertQuantityToStandard(ownedIngredient.quantity, ownedIngredient.unit);
+  const requiredQuantity = convertQuantityToStandard(requiredIngredient.amount, requiredIngredient.unit);
+  if (!ownedQuantity || !requiredQuantity || ownedQuantity.unit !== requiredQuantity.unit) return false;
+  return requiredQuantity.quantity > ownedQuantity.quantity;
 }
 
 function getPrimaryIngredientSet(recipe) {

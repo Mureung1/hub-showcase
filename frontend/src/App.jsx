@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getDefaultIngredientTags, getIngredientTags, INGREDIENT_TAG_LABELS } from "../../shared/ingredientTags";
+import { convertQuantityToStandard } from "../../shared/quantityUnits";
 import "./App.css";
 import IngredientForm from "./components/IngredientForm";
 import NaggingMessage from "./components/NaggingMessage";
@@ -651,14 +652,23 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onCo
 
   const generatedMissingNames = new Set(menu.missingIngredients ?? []);
   const recipeSteps = Array.isArray(menu.steps) ? menu.steps : [];
-  const requiredIngredients = menu.requiredIngredients.map((ingredient) => ({
-    ...ingredient,
-    status: generatedMissingNames.has(ingredient.name) ? "missing" : "owned",
-  }));
-  const optionalIngredients = (menu.optionalIngredients ?? []).map((ingredient) => ({
-    ...ingredient,
-    status: "optional",
-  }));
+  const standardizeIngredient = (ingredient, status) => {
+    const standardQuantity = convertQuantityToStandard(ingredient.amount, ingredient.unit);
+    return {
+      ...ingredient,
+      amount: standardQuantity?.quantity ?? ingredient.amount,
+      unit: standardQuantity?.unit ?? ingredient.unit,
+      status,
+    };
+  };
+  const requiredIngredients = menu.requiredIngredients.map((ingredient) => standardizeIngredient(
+    ingredient,
+    generatedMissingNames.has(ingredient.name) ? "missing" : "owned",
+  ));
+  const optionalIngredients = (menu.optionalIngredients ?? []).map((ingredient) => standardizeIngredient(
+    ingredient,
+    "optional",
+  ));
   const reasons = menu.recommendationReasons ?? [];
   const substitutions = menu.substitutions ?? [];
   const safetyNotes = menu.safetyNotes ?? [];

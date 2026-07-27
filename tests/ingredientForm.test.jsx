@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import IngredientForm from "../frontend/src/components/IngredientForm";
 
@@ -60,12 +60,21 @@ describe("재료 수량 입력", () => {
   });
 
   test("무게 단위는 소수 입력을 허용한다", () => {
-    renderForm({ quantity: "0.5", unit: "kg" });
+    renderForm({ quantity: "0.5", unit: "g" });
 
     const quantityInput = screen.getByLabelText("수량");
     expect(quantityInput).toHaveAttribute("min", "0.001");
     expect(quantityInput).toHaveAttribute("step", "any");
     expect(quantityInput).toHaveAttribute("inputmode", "decimal");
     expect(quantityInput.validity.valid).toBe(true);
+  });
+
+  test("수량 단위 선택지는 개, g, 팩으로 통일한다", () => {
+    renderForm();
+
+    const unitSelect = screen.getByLabelText("수량 단위");
+    expect(unitSelect).toHaveDisplayValue("개");
+    expect(within(unitSelect).getAllByRole("option").map((option) => option.value))
+      .toEqual(["개", "g", "팩"]);
   });
 });
