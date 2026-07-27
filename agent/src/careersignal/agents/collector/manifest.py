@@ -117,6 +117,13 @@ class SourceManifest(BaseModel):
     unreachable: tuple[dict[str, str], ...] = Field(default_factory=tuple)
     """접근하지 못한 출처. 왜 못 했는지를 남겨 다음 수집이 같은 시도를 반복하지 않는다."""
 
+    access_notes: tuple[dict[str, str], ...] = Field(default_factory=tuple)
+    """출처별 접근 방법.
+
+    접근 방법은 직무와 무관하다. 직무를 확장할 때 `unreachable` 과 함께 직무별
+    파일에서 공용 파일로 분리한다. 분리 시점은 docs/backlog.md 의 Phase 28이다.
+    """
+
     @classmethod
     def load(cls, path: Path) -> SourceManifest:
         return cls.model_validate_json(path.read_text(encoding="utf-8"))
