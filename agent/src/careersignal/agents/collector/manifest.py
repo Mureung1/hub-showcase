@@ -45,6 +45,12 @@ class ManifestEntry(BaseModel):
     job_role_raw: str | None = None
     """직무 판정에 사용한 원문 표기. 판정 규칙은 docs/metric-spec.md 2.8이다."""
 
+    platform_bound: bool = False
+    """패키지나 SaaS 플랫폼 위에서 서버 로직을 구현하는 공고인가.
+
+    모집단에는 들어가되 요구 차원의 성격이 다르다. 정의는 docs/metric-spec.md 2.8이다.
+    """
+
     entry_label_raw: str | None = None
     entry_label: EntryLabel | None = None
     posted_at: date | None = None
