@@ -50,7 +50,7 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 | `.artifacts/production-runtime-cache/` | reviewed external artifact의 package-local ignored download cache |
 | `.artifacts/production-runtime-darwin-arm64/` | verified standalone Python, wheelhouse, offline-installed SDK/runtime과 digest-pinned `bundle/bridge/worker.py` |
 
-Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007 → 0008 → 0009`를 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config를 Python public config에 추가하고, 0005는 malformed correlated response를 waiter release 전에 검증한다. 0006은 typed Plan `collaborationMode`와 deferred `request_user_input`을 public async high-level API에 추가하되 raw request ID와 generic server-request surface는 숨긴다. 0007은 native `thread/start` response의 effective model·reasoning effort를 high-level Thread에 보존하고, 0008은 process-wide standalone Skill root를 typed sync/async API로 교체한다. 0009는 typed sync·async managed ChatGPT login이 hosted-success와 `codex` brand를 전달하고, managed client만 caller의 notification opt-out에서 matching login completion을 예약하게 한다. Request-local answer/cancel은 response write 뒤 matching native `serverRequest/resolved`와 그 뒤의 nonterminal same-Turn continuation evidence를 모두 기다린다. Native notification만으로 client response와 lifecycle cleanup을 구분할 수 없으므로 terminal이 다음 evidence면 `interaction_not_pending`으로 끝난다. Patch의 1,024-entry resolution tracker는 exact source가 notification을 발행하는 `item/commandExecution/requestApproval`, `item/fileChange/requestApproval`, `item/tool/requestUserInput`, `mcpServer/elicitation/request`, `item/permissions/requestApproval`만 admission한다. Matching notification은 내부에서 소비하고 `item/tool/call`, auth refresh, attestation, current-time과 legacy family는 tracker capacity를 쓰지 않는다. Bridge는 well-formed `JsonRpcError`만 known `sdk_request_failed`로 분류하며, malformed response와 result schema validation failure는 process-fatal `sdk_operation_failed`로 수렴한다.
+Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007 → 0008`을 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config를 Python public config에 추가하고, 0005는 malformed correlated response를 waiter release 전에 검증한다. 0006은 typed Plan `collaborationMode`와 deferred `request_user_input`을 public async high-level API에 추가하되 raw request ID와 generic server-request surface는 숨긴다. 0007은 native `thread/start` response의 effective model·reasoning effort를 high-level Thread에 보존하고, 0008은 process-wide standalone Skill root를 typed sync/async API로 교체한다. Request-local answer/cancel은 response write 뒤 matching native `serverRequest/resolved`와 그 뒤의 nonterminal same-Turn continuation evidence를 모두 기다린다. Native notification만으로 client response와 lifecycle cleanup을 구분할 수 없으므로 terminal이 다음 evidence면 `interaction_not_pending`으로 끝난다. Patch의 1,024-entry resolution tracker는 exact source가 notification을 발행하는 `item/commandExecution/requestApproval`, `item/fileChange/requestApproval`, `item/tool/requestUserInput`, `mcpServer/elicitation/request`, `item/permissions/requestApproval`만 admission한다. Matching notification은 내부에서 소비하고 `item/tool/call`, auth refresh, attestation, current-time과 legacy family는 tracker capacity를 쓰지 않는다. Bridge는 well-formed `JsonRpcError`만 known `sdk_request_failed`로 분류하며, malformed response와 result schema validation failure는 process-fatal `sdk_operation_failed`로 수렴한다.
 
 ## Standalone production bundle
 
@@ -58,15 +58,15 @@ Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다.
 
 Canonical manifest는 다음을 서로 연결한다.
 
-- exact source commit, immutable unpatched manifest와 아홉 단계 complete ordered patch stack `2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd`
-- source-only `manifests/patched-source.json` SHA-256 `9ef9d9111fbe4383104ec34069911dde0e9f7ef7a8a06fa5a16851a584388d5c`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `896729ef139bb0c994ff10deefe08402a4bdc7938558dce306ac70841a751bb1`
+- exact source commit, immutable unpatched manifest와 여덟 단계 complete ordered patch stack `ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9`
+- source-only `manifests/patched-source.json` SHA-256 `db9f0644155f9ab8f396b5263e3539a778e5ca7a49e3b8e49b14be7c32a71f98`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `45088932d88042486c5d0533f3ddbf27520b3defae6c49d452ec1f204033b0b4`
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
-- patched SDK wheel `a4590fe5dff6a58e9042b37aad682bf8f50f413a111cc6b42ed64a30019a7a94`
+- patched SDK wheel `9259319c79132ffa16e1ba46d3e20a88be3b5851501f8ab7812bfb42ce6427aa`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
 - tracked `python/bridge` 5-file roster와 installed `bundle/bridge` roster·entrypoint
-- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `ff65a20ea5d44e9b532babc4875a2dc32675c25ee8173ddd7382f7f841b0eca6`
+- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `02772072955c17202736221e035eb2129d8939ab84361c02187cf06f5401c68f`
 
 이 package의 current production manifest v1과 ignored materialization은 repository-local SDK·bridge non-regression authority다. 중단한 public release lane의 recipient manifest assembler, download·archive·cache resolver와 production host는 2026-07-24 tracked graph에서 제거했다. 당시 public recipient contract와 구현 증거는 historical ADR·Spec·ticket에만 보존한다.
 
@@ -95,7 +95,7 @@ Product Turn은 선택이 없을 때 pinned first-party client가 native `thread
 | `release_thread` | `bridgeRequestId`, `threadId` | idle local handle만 제거 |
 | `close` | `bridgeRequestId` | accepted work와 SDK close를 정산한 뒤 마지막 `close_ack` |
 
-Node command encoder·result decoder와 tracked Python worker source는 account-related family에서 `read_account`만 허용한다. Removed command는 tracked source actual-child에서 `unknown_command` fatal로 fail closed하며 App Server account lifecycle method를 호출하지 않는다. Canonical manifest와 ignored materialized bundle은 Ticket 004 전까지 기존 nine-patch·stale-bridge identity를 유지하므로, 이 중간 상태를 reduced production artifact 완료로 해석하지 않는다.
+Node command encoder·result decoder와 tracked Python worker source는 account-related family에서 `read_account`만 허용한다. Removed command는 tracked source actual-child에서 `unknown_command` fatal로 fail closed하며 App Server account lifecycle method를 호출하지 않는다. Canonical manifest와 ignored materialized bundle은 exact eight-patch stack과 이 tracked bridge source를 함께 가리키며, 이전 patch 또는 bridge identity는 verification에서 fail closed한다.
 
 SDK initialize가 끝나면 worker가 첫 private `ready` frame을 한 번 보낸다. 그 뒤 출력은 `result`, `event`, correlated `error`, uncorrelated process-wide `fatal`, `close_ack` 중 하나다. `bridgeRequestId`는 이 private transport correlation에만 존재하며 projected event 내부나 browser contract로 이동하지 않는다.
 
