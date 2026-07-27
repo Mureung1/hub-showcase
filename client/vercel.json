@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "comment": "SPA 폴백. /api는 제외한다 — 포함하면 API 호출에 index.html이 200으로 반환돼, 앱이 JSON 대신 HTML을 받고 .map()에서 죽는다(흰 화면).",
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
