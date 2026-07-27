@@ -130,6 +130,58 @@
   cursor: pointer;
 }
 
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.member-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-inline-gap);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.member-info {
+  min-width: 0;
+}
+
+.member-name {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 2px;
+}
+
+.member-joined-at {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  margin: 0;
+}
+
+.member-remove-btn {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-card-suggest);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.member-list-message {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
 .subscription-detail-message {
   padding: var(--space-section-gap) 4px;
   color: var(--color-text-muted);

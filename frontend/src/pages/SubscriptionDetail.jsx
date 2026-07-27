@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { deleteSubscription, getSubscription } from '../lib/subscriptions'
+import { getMembers, deleteMember } from '../lib/partyMembers'
 import { getServiceColor } from '../lib/serviceColor'
 import RoleBadge from '../components/RoleBadge'
 import LoginRequired from '../components/LoginRequired'
@@ -16,6 +17,10 @@ const SubscriptionDetail = () => {
   const [copied, setCopied] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteErrorMessage, setDeleteErrorMessage] = useState('')
+  const [members, setMembers] = useState([])
+  const [membersStatus, setMembersStatus] = useState('idle')
+  const [memberToRemove, setMemberToRemove] = useState(null)
+  const [removeErrorMessage, setRemoveErrorMessage] = useState('')
 
   const handleDelete = async () => {
     setDeleteErrorMessage('')
@@ -34,6 +39,17 @@ const SubscriptionDetail = () => {
       setTimeout(() => setCopied(false), 1500)
     } catch {
       // 클립보드 접근이 막힌 환경 — 화면에 보이는 링크 텍스트로 수동 복사 가능
+    }
+  }
+
+  const handleRemoveMember = async () => {
+    setRemoveErrorMessage('')
+    try {
+      await deleteMember(id, memberToRemove.id)
+      setMembers((prev) => prev.filter((member) => member.id !== memberToRemove.id))
+      setMemberToRemove(null)
+    } catch (error) {
+      setRemoveErrorMessage(error.message)
     }
   }
 
@@ -73,6 +89,19 @@ const SubscriptionDetail = () => {
         }
       })
   }, [id])
+
+  useEffect(() => {
+    if (status !== 'success' || subscription.role !== 'owner') return
+
+    getMembers(id)
+      .then((items) => {
+        setMembers(items)
+        setMembersStatus('success')
+      })
+      .catch(() => {
+        setMembersStatus('error')
+      })
+  }, [id, status, subscription?.role])
 
   let content
 
@@ -148,6 +177,38 @@ const SubscriptionDetail = () => {
             </div>
           </div>
         )}
+
+        {role === 'owner' && (
+          <div className="subscription-detail-card">
+            <p className="detail-section-title">파티원 ({members.length}명)</p>
+            {membersStatus === 'idle' && <p className="member-list-message">불러오는 중...</p>}
+            {membersStatus === 'error' && <p className="member-list-message">파티원 목록을 불러오지 못했어요.</p>}
+            {membersStatus === 'success' && members.length === 0 && (
+              <p className="member-list-message">아직 가입한 파티원이 없어요.</p>
+            )}
+            {membersStatus === 'success' && members.length > 0 && (
+              <ul className="member-list">
+                {members.map((member) => (
+                  <li key={member.id} className="member-list-item">
+                    <div className="member-info">
+                      <p className="member-name">{member.name}</p>
+                      <p className="member-joined-at">
+                        {new Date(member.joinedAt).toLocaleDateString()} 가입
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="member-remove-btn"
+                      onClick={() => setMemberToRemove(member)}
+                    >
+                      내보내기
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </>
     )
   }
@@ -179,6 +240,18 @@ const SubscriptionDetail = () => {
           errorMessage={deleteErrorMessage}
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {memberToRemove && (
+        <ConfirmDialog
+          message={`${memberToRemove.name}님을 파티에서 내보낼까요?`}
+          confirmLabel="내보내기"
+          errorMessage={removeErrorMessage}
+          onConfirm={handleRemoveMember}
+          onCancel={() => {
+            setMemberToRemove(null)
+            setRemoveErrorMessage('')
+          }}
         />
       )}
     </div>
