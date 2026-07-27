@@ -1,5 +1,5 @@
 import { ChevronRight, Coffee, Target, UsersRound } from "lucide-react";
-import { lazy, Suspense, useEffect, useState, type RefObject } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
 
 import { categoryClass, isTestEnvironment } from "../market/model";
@@ -12,6 +12,7 @@ import {
 } from "./baseMap";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
+import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
 import type { MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
@@ -48,6 +49,7 @@ type MarketMapCanvasProps = {
   presentationMode: MapPresentationMode;
   baseBuildingsRendered: boolean;
   layer: LayerMode;
+  selectedCategoryName: string;
   boundaryVisible: boolean;
   storesVisible: boolean;
   storefrontBuildings3d: SelectedStorefront[];
@@ -126,6 +128,7 @@ export function MarketMapCanvas({
   presentationMode,
   baseBuildingsRendered,
   layer,
+  selectedCategoryName,
   boundaryVisible,
   storesVisible,
   storefrontBuildings3d,
@@ -145,6 +148,14 @@ export function MarketMapCanvas({
   const visibleStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
   const [readyStorefrontIds, setReadyStorefrontIds] = useState<Set<string>>(() => new Set());
   const storefrontKey = `${presentationMode}:${visibleStorefronts.map((store) => store.id).join(",")}`;
+  const densityStores = useMemo(
+    () =>
+      mapStores.filter(
+        (store) =>
+          store.category === selectedCategoryName || store.category.includes(selectedCategoryName),
+      ),
+    [mapStores, selectedCategoryName],
+  );
 
   useEffect(() => {
     setReadyStorefrontIds(new Set());
@@ -203,6 +214,10 @@ export function MarketMapCanvas({
             hiddenBuildingIds={hiddenOverlayBuildingIds}
           />
         )}
+        <StoreDensityHeatmap
+          stores={densityStores}
+          visible={presentationMode === "analysis" && layer === "density" && storesVisible}
+        />
         {boundaryVisible && <SelectedMarketBoundary marketId={marketId} />}
         {storesVisible && visibleStorefronts.length > 0 && (
           <Suspense fallback={null}>
