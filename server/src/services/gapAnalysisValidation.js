@@ -1,4 +1,4 @@
-import { EDUCATION_RANK } from './gapAnalysisService.js'
+import { EDUCATION_RANK, OPIC_RANK } from './gapAnalysisService.js'
 
 function invalid(message) {
   const err = new Error(message)
@@ -38,8 +38,15 @@ export function validateGapAnalysisRequest({ filters, spec }) {
   if (spec.foreign_lang_test !== undefined && typeof spec.foreign_lang_test !== 'string') {
     throw invalid('spec.foreign_lang_test는 문자열이어야 합니다.')
   }
-  if (spec.foreign_lang_score !== undefined && !isNonNegativeNumber(spec.foreign_lang_score)) {
-    throw invalid('spec.foreign_lang_score는 0 이상의 숫자여야 합니다.')
+  // OPIc은 숫자 점수가 아니라 등급(NL~AL)이라 다른 시험과 검증 규칙이 다르다.
+  if (spec.foreign_lang_score !== undefined) {
+    if (spec.foreign_lang_test === 'OPIc') {
+      if (!(spec.foreign_lang_score in OPIC_RANK)) {
+        throw invalid(`spec.foreign_lang_score(OPIc 등급) 값이 올바르지 않습니다: ${spec.foreign_lang_score}`)
+      }
+    } else if (!isNonNegativeNumber(spec.foreign_lang_score)) {
+      throw invalid('spec.foreign_lang_score는 0 이상의 숫자여야 합니다.')
+    }
   }
   if (spec.has_computer_skill !== undefined && typeof spec.has_computer_skill !== 'boolean') {
     throw invalid('spec.has_computer_skill은 boolean이어야 합니다.')

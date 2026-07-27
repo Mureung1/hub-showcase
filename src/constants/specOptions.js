@@ -57,3 +57,6 @@ export const CERT_OPTIONS = [
 ]
 
 export const FOREIGN_LANG_TEST_OPTIONS = ['TOEIC', 'TOEIC Speaking', 'TOEFL', 'OPIc']
+
+// OPIc은 숫자 점수가 아니라 등급(낮음→높음) — 서버(gapAnalysisService.js)의 OPIC_RANK와 값이 같아야 한다.
+export const OPIC_GRADE_OPTIONS = ['NL', 'NM', 'NH', 'IL', 'IM1', 'IM2', 'IM3', 'IH', 'AL']

@@ -147,6 +147,8 @@ describe('POST /api/bookmarks/evaluate', () => {
     expect(res.body.jobList[0].job.job_id).toBe(realJobId)
     expect(res.body.jobList[0]).toHaveProperty('checks')
     expect(res.body.jobList[0]).toHaveProperty('overallMatch')
+    expect(res.body.stats.total).toBe(1)
+    expect(res.body.stats).toHaveProperty('improvementRanking')
   })
 
   it('북마크가 없으면 빈 jobList를 응답한다', async () => {

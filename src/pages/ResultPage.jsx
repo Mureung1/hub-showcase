@@ -211,12 +211,12 @@ function ResultPage() {
 
           <div className="chart-card">
             <div className="title">지원 가능 비율</div>
-            <DonutChart ratio={stats.ratio} matched={stats.matched} total={stats.total} />
+            <DonutChart ratio={stats.ratio} matched={stats.matched} total={stats.total} animate={!showInsight} />
           </div>
 
           <div className="chart-card">
             <div className="title">보완 시 늘어나는 공고 수</div>
-            <PriorityBarChart ranking={stats.improvementRanking} />
+            <PriorityBarChart ranking={stats.improvementRanking} animate={!showInsight} />
           </div>
         </aside>
 

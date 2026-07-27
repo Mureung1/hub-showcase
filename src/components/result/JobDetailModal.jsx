@@ -1,5 +1,6 @@
 import { JOB_CATEGORY_STYLE, DEFAULT_CATEGORY_STYLE, STATUS_STYLE } from '../../constants/resultDisplay'
 import { describeComputerSkill } from '../../lib/gapAnalysis'
+import { getReferenceLink, getReferenceCaption } from '../../constants/referenceLinks'
 
 function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
   if (!job) return null
@@ -45,17 +46,29 @@ function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
         {job.checklist && (
           <>
             <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>항목별 충족 여부</p>
-            {job.checklist.map((c) => (
-              <div className="checklist-row" key={c.category}>
-                <div className="checklist-main">
-                  <span className="checklist-label">{c.label}</span>
-                  <span className={c.ok ? 'ok' : 'no'} style={{ fontSize: 14 }}>
-                    {c.ok ? '✓' : '✕'}
-                  </span>
+            {job.checklist.map((c) => {
+              const referenceLink = c.ok ? undefined : getReferenceLink(c.category, c.requirementValue)
+              const referenceCaption = referenceLink ? getReferenceCaption(c.category) : undefined
+              return (
+                <div className="checklist-row" key={c.category}>
+                  <div className="checklist-main">
+                    <span className="checklist-label">{c.label}</span>
+                    <span className={c.ok ? 'ok' : 'no'} style={{ fontSize: 14 }}>
+                      {c.ok ? '✓' : '✕'}
+                    </span>
+                  </div>
+                  <p className={`checklist-detail mono${c.ok ? '' : ' checklist-detail-fail'}`}>{c.detail}</p>
+                  {referenceLink && (
+                    <div className="checklist-reflink">
+                      <a href={referenceLink} target="_blank" rel="noopener noreferrer">
+                        관련 사이트 바로가기 →
+                      </a>
+                      {referenceCaption && <p className="checklist-reflink-caption">{referenceCaption}</p>}
+                    </div>
+                  )}
                 </div>
-                <p className={`checklist-detail mono${c.ok ? '' : ' checklist-detail-fail'}`}>{c.detail}</p>
-              </div>
-            ))}
+              )
+            })}
           </>
         )}
         {job.has_computer_skill !== undefined && (

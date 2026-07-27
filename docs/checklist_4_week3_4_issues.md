@@ -59,6 +59,8 @@
 
 **완료 (2026-07-23)**. 코드 준비(커밋 `868e06c`: API base URL 환경변수화, CORS 환경변수화, 서버 시작 시 자동 시드)는 별도 세션에서 먼저 끝냈고, 이번엔 사용자가 직접 Render/Vercel 계정 생성부터 실제 배포까지 진행 — Render(백엔드) 배포 → Vercel(프론트) 배포 시 `VITE_API_BASE_URL`에 Render URL 연결 → Render의 `ALLOWED_ORIGIN`에 Vercel URL 추가, 순서로 진행. 첫 시도에서 브라우저 콘솔에 CORS 에러가 떴는데, 이는 `ALLOWED_ORIGIN` 저장 직후 Render가 재배포되기 전 타이밍이었던 것으로 확인 — 잠시 후 재확인하니 실제 preflight 응답에 올바른 `Access-Control-Allow-Origin` 헤더가 붙어 있었고 갭 분석/로그인/북마크 전부 정상 동작.
 
+**추가 수정 (2026-07-27)**: `/bookmarks`에 직접 접근(새로고침/북마크/주소창 입력)하면 Vercel이 `404 NOT_FOUND`를 반환하는 걸 발견 — `vercel.json`이 아예 없어서 SPA(React Router 클라이언트 라우팅) 경로에 대한 rewrite 규칙이 없었음. 지금까지 프로덕션 테스트가 전부 홈에서 클릭으로만 이동(클라이언트 사이드 네비게이션, 서버에 새 요청 안 감)했던 탓에 이 구멍이 안 드러났던 것 — `/filter`/`/spec`/`/result`/`/login` 등 다른 라우트도 직접 접근하면 동일하게 404였을 가능성이 높음(#25 작업 중 북마크 페이지를 새로고침하며 처음 발견). `vercel.json`(신규, 커밋 `939ac72`)에 `{ rewrites: [{ source: "/(.*)", destination: "/index.html" }] }` 추가해서 모든 경로를 `index.html`로 rewrite, React Router가 클라이언트에서 라우팅하도록 함.
+
 ---
 
 ## #18 — 반응형 레이아웃 & 모달 접근성 폴리싱 [P2, 시간 남으면]
@@ -176,12 +178,105 @@
 **설명**: `checklist_2.md` 0/1단계에 있던 "합성 데이터 고지 문구"가 README 어디에도 없다 (실제 862건 공고 + 규칙 기반 합성 스펙 필드라는 사실을 명시해야 함 — `checklist_2.md`의 확정 사항). API 문서화도 아직 없어 `POST/GET /api/gap-analysis`, `/api/bookmarks`(`#20`) 등 엔드포인트를 파악하려면 라우트 코드를 직접 읽어야 하는 상태. (`#19`는 Supabase Auth로 결정되면서 — 2026-07-21 — Express `/api/auth/*` 라우트 자체가 없어졌으니 여기서 문서화할 대상이 아니다. 대신 프론트가 Supabase를 직접 호출한다는 사실 자체는 README나 `docs/api.md`에 한 줄 언급 필요.)
 
 **완료 기준**
-- [ ] README에 합성 데이터 고지 문구 추가 ("JOB-ALIO 실제 862건 공고 + 규칙 기반 합성 스펙 필드" 명시)
-- [ ] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#20`은 확장 트랙이라 미착수 시 해당 부분은 생략) + 인증은 Supabase Auth를 쓴다는 사실과 필요한 프론트 환경변수 한 줄 언급
+- [x] README에 합성 데이터 고지 문구 추가 ("JOB-ALIO 실제 862건 공고 + 규칙 기반 합성 스펙 필드" 명시)
+- [x] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#20`은 확장 트랙이라 미착수 시 해당 부분은 생략) + 인증은 Supabase Auth를 쓴다는 사실과 필요한 프론트 환경변수 한 줄 언급
+
+**완료 (2026-07-27)**. 합성 데이터 고지 문구는 README 상단(프로젝트 소개 직후)에 인용 블록으로 추가. `docs/api.md`(신규) — `/api/health`, `/api/gap-analysis`(POST/GET), `/api/bookmarks`(POST/DELETE/GET/evaluate) 6개 엔드포인트 전부를 실제 라우트 코드(`gapAnalysis.routes.js`/`bookmarks.routes.js`/`gapAnalysisValidation.js`) 기준으로 문서화 — 요청/응답 예시, 검증 규칙, 인증 방식(`requireSupabaseAuth`가 매 요청마다 Supabase에 토큰 검증을 위임한다는 점) 포함. README의 Tech Stack 섹션도 실제와 맞게 갱신(Recharts→커스텀 SVG, "Backend (예정)"→Express, DB에 Supabase Postgres/Auth 추가, Vercel/Render 실제 배포 URL 추가).
+
+---
+
+## #25 — 공고 상세 모달에 항목별 참고링크 추가 [확장 기능]
+
+**설명**: 공고 상세 모달(`JobDetailModal`)에서 미충족 항목을 볼 때, 그 항목을 준비할 수 있는 외부 사이트로 바로 이동할 수 있는 참고링크를 추가한다. 대상은 **어학·경력·자격증 3개 항목만**이고, 학력·전공은 "준비할 수 있는 외부 사이트"라는 개념 자체가 성립하지 않으므로 제외한다. 판정 로직(`evaluateJob`/`checks`)에는 관여하지 않는다 — `#23` 때와 같은 원칙.
+
+**완료 기준**
+- [x] `buildJobDisplay`(`src/lib/gapAnalysis.js`)의 checklist 항목에 카테고리별 원본 요구값(예: `foreignLanguage`의 `job.foreign_lang_test`)을 함께 실어서 노출 — 현재 checklist 항목은 `{category, label, ok, detail}`뿐이라 `detail`은 사람이 읽는 한글 문장이라 이걸 재파싱해서 시험명을 뽑는 방식은 문구가 바뀌면 깨지므로 채택하지 않음
+- [x] 어학 미충족 시 → 시험 종류별(TOEIC / TOEFL / OPIc / TOEIC Speaking, 데이터셋에 존재하는 4종 전부) 공식 사이트 링크 매핑 테이블 작성, 위에서 노출한 원본 요구 시험명 기준으로 정확한 링크 연결
+- [x] 경력 미충족 시 → 사람인(saramin.co.kr) 채용정보 페이지로 고정 링크
+- [x] 자격증 미충족 시 → 큐넷(Q-net, 한국산업인력공단) 단일 링크로 고정. 링크 바로 옆에 "정확한 시행기관은 자격증마다 다를 수 있음"을 작은 캡션(muted 톤)으로 표시 — 27종 전부가 큐넷 소관은 아니라는 걸 사용자가 알 수 있게
+- [x] 학력·전공 항목에는 참고링크 자체를 렌더링하지 않음 (학력무관/전공무관처럼 조건이 없는 케이스 포함)
+- [x] 이미 충족(✓)된 항목에는 참고링크를 노출하지 않음 — 미충족(✕) 항목에만 표시
+- [x] 참고링크는 새 탭으로 열림 (`target="_blank" rel="noopener noreferrer"`)
+- [x] 링크 URL에 사용자의 스펙 값(학력·경력·자격증 등 개인 입력값)이 쿼리 파라미터로 들어가지 않음 — 고정 URL만 사용
+- [x] 기존 `.checklist-detail`/`.checklist-detail-fail` 레이아웃 안에 자연스럽게 들어가도록 배치, 별도 팝업이나 모달을 새로 만들지 않음
+- [x] 결과 화면과 마이페이지(북마크) 상세 모달 양쪽 진입점에서 동일하게 동작 (`JobDetailModal` 하나를 공유하므로 자연히 만족됨)
+- [ ] 데스크톱·모바일 뷰포트 양쪽에서 링크 클릭 영역·줄바꿈이 깨지지 않는지 확인 — 사용자 브라우저 확인 대기
+- [x] 862건 공고를 순회해 어학 4종 각각 최소 1건, 경력 미충족 케이스, 자격증 미충족 케이스에서 링크가 각각 올바른 대상으로 연결되는지 확인
+
+**진행 상황 (2026-07-27)**: 구현 완료, 마지막 뷰포트 확인만 남음. `src/constants/referenceLinks.js`(신규) — `getReferenceLink(category, requirementValue)`. 링크는 WebSearch로 공식 사이트 직접 확인: TOEIC `exam.ybmnet.co.kr/toeic`, TOEIC Speaking `toeicswt.co.kr`, TOEFL `kr.ets.org/toefl.html`, OPIc `opic.or.kr`, 경력 `saramin.co.kr`, 자격증 `q-net.or.kr`. `buildJobDisplay`의 checklist 항목에 `requirementValue`(foreignLanguage만 `job.foreign_lang_test`, 나머지는 `undefined`) 추가. `JobDetailModal.jsx`가 `!c.ok`인 항목에서만 `getReferenceLink` 호출, 자격증 항목에만 시행기관 안내 캡션 추가. 실제 시드 DB(862건) 기준 검증: TOEIC/TOEFL/OPIc/TOEIC Speaking 4종 전부 실존(23/25/31/31건), 경력 미충족·자격증 미충족 케이스 각각 실제 공고로 `evaluateJob` 통과시켜 checks=false + 올바른 링크 확인. FE lint/test 회귀 없음(15/15 통과). 사용자가 브라우저에서 로컬 확인 완료("잘 만들어진 것 같다").
+
+**범위 추가 (2026-07-27, 같은 세션)**: 원래 완료 기준은 학력·전공 둘 다 "준비할 수 있는 외부 사이트 개념이 성립하지 않는다"며 제외했었는데, 사용자가 학력은 실제로 올릴 방법(학점은행제)이 있지 않냐고 물어봄 — 확인해보니 맞음. **학력만** 추가: 국가평생교육진흥원 학점은행제(`cb.or.kr`, WebSearch로 확인) 고정 링크 추가, 경력/자격증과 달리 학위 취득은 학기 단위로 걸리는 일이라 캡션 문구도 "정확한 시행기관은 다를 수 있음" 대신 "학위 취득에는 보통 학기 단위의 기간이 걸려요"로 다르게 작성. **전공은 그대로 제외 유지** — 전공을 바꾸는 것은 재입학/편입 수준이라 링크 하나로 해결될 개념이 아니고, 전공무관/관련전공 케이스는 이미 통과 처리되므로 실제 미충족 전공 공고는 애초에 그 학위 자체가 필요한 경우라 외부 사이트가 의미 없다는 논리로 사용자와 합의.
+
+**후속 기능 추가 (2026-07-27, 같은 세션): 북마크 페이지 전용 "필요 사이트 모아보기" 팝업**. 사용자 요청: 북마크한 공고는 이미 관심 있는 공고만 모아둔 것이므로 상세 모달을 열지 않고도 카드에서 바로 참고링크에 접근할 수 있게 강조해달라는 요청. 상세 모달을 새로 만들지 않는다는 완료 기준 취지를 지키기 위해 상세 모달과는 별개로, 그 항목에 미충족+링크가 있는 것만 모아서 보여주는 전용 팝업을 추가. 여러 차례 사용자 피드백을 받아 반복 수정:
+- `src/constants/referenceLinks.js`에 `getReferenceCaption(category)`/`collectJobReferenceLinks(checklist)` 추가 — `JobDetailModal`의 캡션 로직도 이걸로 통합해 문구 중복 제거.
+- `src/components/result/ReferenceLinksModal.jsx`(신규) — 미충족+링크 있는 항목만 나열, 없으면 "보완이 필요한 항목이 없어요" 안내. 다른 모달보다 크게 보이게 `.reflinks-modal` 클래스로 폭/패딩/폰트 전부 별도로 키움(다른 모달엔 영향 없음).
+- 처음엔 `JobCard` 내부(별 아이콘 옆)에 작은 버튼으로 넣었다가, 사용자 피드백("버튼이 안 보인다") 반영해 `BookmarksPage.jsx`에서 `JobCard` 오른쪽에 별도의 큰 버튼(`.reflinks-btn-large`)으로 분리 — 이때는 카드와 버튼이 각자 테두리/그림자를 가진 별개 박스라 "이 공고 전용"이라는 느낌이 안 든다는 피드백을 다시 받음. 최종적으로 `.bookmark-job-row`(카드+버튼을 감싸는 줄) 하나에만 테두리/그림자/hover를 걸고 내부 두 요소는 이어 붙여서(구분선만 `border-left`) 하나의 카드처럼 보이게 병합 — `JobCard.jsx`는 이 과정에서 결국 원래 모습(#25 이전)으로 되돌아갔고, 버튼은 `BookmarksPage.jsx`가 직접 렌더링.
+- 버튼 색: 라이트 모드는 공고 카드와 동일한 배경/글자색(`:root[data-theme='light'] .reflinks-btn-large`), 다크 모드는 기존 accent 색상 유지(사용자가 다크모드 디자인은 그대로 두라고 요청).
+- 결과 화면(`ResultPage`)에는 이 버튼이 없음 — 북마크 페이지 전용으로 의도적으로 한정.
+- 검증: 매 반복마다 FE lint/test 회귀 없음(15/15) 확인, 사용자가 로컬 브라우저에서 최종본 확인 완료("확인했는데 좋아").
+
+**검토 메모 (2026-07-27)**: 원안은 "`detail`에 표시된 요구 시험명 기준으로" 링크를 고르는 방식이었으나, `detail`은 표시용 한글 문장이라 이를 파싱하는 대신 `buildJobDisplay` 단계에서 원본 요구값을 checklist 항목에 함께 실어 보내는 쪽으로 완료 기준을 수정함. 나머지 항목은 코드 확인 결과 그대로 유효.
+
+**추가 기능 (2026-07-27, 같은 세션): 북마크 페이지에도 인사이트 배너 추가**. 사용자 아이디어: 결과 화면처럼 팝업으로 한 번 뜨고 닫으면 사라지는 게 아니라, 북마크 목록 맨 위에 항상 보이는 배너로 "경력을 보완하면 N건 더 지원할 수 있어요!" 같은 안내를 띄우자는 것. 백엔드에 통계 계산이 없던 부분을 채움:
+- `server/src/services/gapAnalysisService.js` — `runGapAnalysis`가 인라인으로 하던 통계 계산(total/matched/ratio/improvementRanking)을 `buildStats(jobList)`로 뽑아내서 재사용 가능하게 함(로직 중복 없음).
+- `server/src/routes/bookmarks.routes.js`의 `POST /api/bookmarks/evaluate` 응답에 `stats: buildStats(jobList)` 추가 — **북마크한 공고만 대상으로** 계산된 통계(결과 화면의 통계는 필터링된 862건 전체 대상이라 서로 다른 집합).
+- `src/components/result/BookmarkInsightBanner.jsx`(신규) — `InsightModal`과 같은 분기(전부 충족/1건 보완/복합 미충족) 로직을 팝업이 아닌 상시 배너로. "북마크 없음" 분기는 다루지 않음(그 경우는 이미 별도 `EmptyState`가 처리).
+- `BookmarksPage.jsx`에 `stats` 상태 추가, `CATEGORY_LABELS`로 라벨 매핑(백엔드는 category 키만 내려주므로 `ResultPage.jsx`와 동일한 방식) 후 배너에 전달.
+- 검증: 백엔드 59/59(새 assertion 추가), FE lint/test 15/15 회귀 없음. 실제 시드 DB로 `buildStats` 직접 호출해 통계 형태 확인.
+
+**배너 문구/클릭 이동 보완 (2026-07-27, 같은 세션)**: 사용자가 결과 화면 팝업과 문구가 완전히 같아서 "같은 결과를 또 보는 느낌"이라고 피드백. 두 가지 개선:
+- 문구를 "~만 채우면 +N건 늘어나요"(결과 화면과 동일)에서 "{항목}부터 먼저 보완하는 걸 추천해요!"로 변경 — "부터"는 조사 활용(을/를, 은/는)과 달리 받침 유무와 무관하게 항상 동일한 형태라 라벨(학력/경력/자격증/면허/전공/외국어 성적)이 뭐든 문법이 깨지지 않음.
+- 배너 자체를 클릭하면 그 항목의 참고 사이트로 바로 이동(새 탭) — `hasTip`이고 링크가 있을 때만 `<a>`로 렌더링, 마우스를 올리면 "누르면 신청 사이트로 넘어갈 수 있어요." 툴팁. `src/constants/referenceLinks.js`에 `getTopTipLink(jobList, category)` 추가 — 어학은 통계에 시험 종류 정보가 없어서 북마크한 공고 중 미충족+가장 많이 요구되는 시험 종류를 직접 집계해서 그 시험 사이트로 연결(실제 데이터로 검증: 샘플 10건 중 OPIc 5건 → OPIc 사이트로 정확히 연결). 전공은 애초에 링크가 없어 클릭 불가(정보성 배너로만 표시).
+
+---
+
+## #26 — 로그인/회원가입 이메일 형식 검증 강화 [P2, 버그성 개선]
+
+**설명**: 현재 회원가입·로그인 폼(`LoginPage`/`SignupPage`)은 `<input type="email">`의 브라우저 네이티브 검증에만 의존한다. 이 네이티브 검증은 도메인에 `.`(최상위도메인)을 요구하지 않아 `abc@abc`처럼 실제로는 잘못된 형식도 통과한다. 프론트엔드에 정규식 기반 이메일 형식 검사를 추가해, 명백히 잘못된 형식은 Supabase Auth 호출 전에 걸러낸다.
+
+**완료 기준**
+- [ ] 이메일 정규식 검증 추가 (`로컬파트@도메인.최상위도메인` 형태, 예: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`) — `LoginPage`/`SignupPage` 제출 시 클라이언트 단에서 우선 확인
+- [ ] 형식이 맞지 않으면 Supabase Auth 호출 자체를 하지 않고, 기존 에러 메시지 영역에 "올바른 이메일 형식이 아닙니다" 안내
+- [ ] `student@university.ac.kr`처럼 흔한 정상 형식은 회귀 없이 그대로 통과 (정규식이 너무 빡빡해서 정상 이메일까지 막지 않는지 케이스별 확인)
+- [ ] Supabase Auth 자체 검증에만 기대지 않고 클라이언트에서 즉시 피드백 (네트워크 왕복 없이 바로 안내)
+- [ ] 기존 로그인/회원가입 정상 케이스, 게스트 플로우 회귀 없음 확인
+
+---
+
+## #27 — 비밀번호 찾기 (재설정 이메일) [확장 기능, #19 연장선]
+
+**설명**: 확장 가능성 슬라이드에서 언급했던 비밀번호 재설정 기능. Supabase Auth의 `resetPasswordForEmail` API로 재설정 이메일을 보내고, 이메일의 링크를 클릭하면 새 비밀번호를 입력하는 페이지로 이어지는 흐름을 추가한다.
+
+**완료 기준**
+- [ ] `LoginPage`에 "비밀번호를 잊으셨나요?" 진입점 추가
+- [ ] 이메일 입력 → `supabase.auth.resetPasswordForEmail(email, { redirectTo: ... })` 호출 → 발송 완료 안내. 계정 존재 여부와 무관하게 동일한 안내 문구 표시 (가입 여부가 외부에 노출되지 않도록)
+- [ ] 재설정 이메일의 링크로 들어오면 Supabase가 세션을 심어주는 리다이렉트 경로(`/reset-password` 등) 신설, 새 비밀번호 입력 폼 제공
+- [ ] `supabase.auth.updateUser({ password })`로 실제 비밀번호 변경 처리
+- [ ] 변경 완료 후 로그인 페이지로 이동 (또는 자동 로그인 상태로 전환 — 택 1, 구현 전 확정)
+- [ ] 기존 로그인 플로우·게스트 플로우 회귀 없음 확인
+- [ ] Playwright e2e에 비밀번호 재설정 플로우 테스트 추가 (`e2e/`) — `#19`엔 자동화 테스트 스위트가 없음(당시 사용자 브라우저 확인 + curl로 Supabase 설정만 검증), 새로 추가하는 것이 맞음
+
+**검토 메모 (2026-07-27)**: 원안의 "인증 API 테스트 통과 (`#19` 테스트 스위트에 추가)"는 실제로 존재하지 않는 스위트를 가리키고 있어 "Playwright e2e에 신규 추가"로 정정함. 구현 시 주의사항(문서에는 반영하지 않지만 기록): Supabase 대시보드의 Redirect URLs 허용목록에 `localhost:5173`과 배포 URL(`specfit-six.vercel.app`)이 둘 다 등록돼 있어야 `redirectTo`가 동작하며, `#19` 때의 `mailer_autoconfirm` 사례처럼 대시보드 토글이 조용히 안 저장되는 경우가 있었으니 실제 이메일 발송/링크 클릭으로 직접 검증할 것.
+
+---
+
+## #28 — 어학 성적 데이터 품질 수정 (OPIc 등급화 + TOEFL/TOEIC Speaking 실제 범위) [버그 수정]
+
+**설명**: 사용자가 결과 화면에서 발견 — 어학 시험 4종(TOEIC/TOEFL/OPIc/TOEIC Speaking) 전부 `foreign_lang_score`가 시험 구분 없이 600/650/700/750/800 5단계로 합성돼 있었음. TOEIC(0~990)은 그럭저럭 말이 되지만 TOEFL(0~120)/TOEIC Speaking(0~200)은 범위 밖이고, OPIc은 원래 등급(NL~AL) 체계라 숫자 점수 자체가 성립하지 않음. 원본 합성 스크립트(`synthesize_specs.py`)가 저장소에 없어 재실행 불가 — 시드 시점 재매핑 + 기존 DB 보정으로 처리. 완료 기준:
+
+- [x] `server/src/db/seed.js`에 `normalizeForeignLangScore(test, rawScore)` 추가 — OPIc은 600~800→IM1~AL 등급 문자열로, TOEFL은 80~110로, TOEIC Speaking은 110~170로 재매핑(TOEIC은 그대로). 시드 시점(CSV insert)에 적용
+- [x] `fixForeignLangScoresIfNeeded()` 추가, `index.js`에서 서버 시작 시마다 실행 — 이미 옛 값으로 시드된 기존 DB(로컬/배포)도 자동 보정. idempotent(이미 고쳐진 값은 매핑 테이블에 없어 그대로 반환)
+- [x] `gapAnalysisService.js`에 `OPIC_RANK`(NL~AL 순서) 추가, `compareForeignLanguage`가 OPIc일 때만 등급 순서로 비교(그 외는 기존 숫자 비교 그대로)
+- [x] `gapAnalysisValidation.js` — OPIc이면 `foreign_lang_score`가 `OPIC_RANK`에 있는 등급 문자열인지 검증, 그 외는 기존처럼 0 이상 숫자 검증
+- [x] `SpecPage.jsx` — 어학 시험을 OPIc으로 선택하면 숫자 입력 대신 등급 선택 `<select>`로 전환(`OPIC_GRADE_OPTIONS`, 신규). 시험 종류를 바꾸면 이전 점수/등급 값 초기화
+- [x] `src/lib/gapAnalysis.js`의 `describeRequirement` — OPIc은 "IM2 등급 이상", 그 외는 "700점 이상"으로 표기 구분(`formatForeignLangScore` 헬퍼)
+- [x] 검증: 백엔드 64/64(OPIc 등급 비교 3케이스 + 검증 2케이스 신규), FE lint/test 15/15, e2e 6/6 전부 회귀 없음. 실제 로컬 DB에 마이그레이션 적용 확인(OPIc 5종 전부 문자열 등급으로 저장됨), 실제 서버에 `POST /api/gap-analysis`로 OPIc spec 보내서 등급 비교가 실제로 동작하는 것 확인, SpecPage/JobDetailModal 실제 화면 스크린샷으로 등급 select·문구 확인
+
+**참고**: 프로덕션(Render) DB는 서버가 재시작/재배포될 때 `fixForeignLangScoresIfNeeded()`가 자동으로 실행되므로 별도 수동 작업 없이 다음 배포 때 반영됨.
 
 ---
 
 ## 의존관계 요약
 
 핵심 트랙: `#15` → `#21` → `#16`(단, "홈 vs 초기화" 검증 항목만 `#21` 이후) · `#17` · `#22` · `#24`는 순서 제약 없이 병행 가능.
-확장 트랙: `#19` → `#20`. `#18`/`#23`은 순서 제약 없음.
+확장 트랙: `#19` → `#20` → `#27`(비밀번호 재설정은 로그인 기능이 있어야 의미가 있음). `#18`/`#23`/`#25`/`#26`은 순서 제약 없음.

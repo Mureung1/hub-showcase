@@ -10,6 +10,7 @@ import ResultPage from './pages/ResultPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import BookmarksPage from './pages/BookmarksPage'
+import GuidePage from './pages/GuidePage'
 import './styles/tokens.css'
 import './App.css'
 
@@ -29,6 +30,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
+            <Route path="/guide" element={<GuidePage />} />
           </Routes>
         </main>
         <Footer />

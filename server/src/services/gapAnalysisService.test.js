@@ -131,6 +131,22 @@ describe('evaluateJob', () => {
       const job = { ...baseJob, foreign_lang_test: 'TOEIC', foreign_lang_score: 700 }
       expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'TOEIC', foreign_lang_score: 700 }).checks.foreignLanguage).toBe(true)
     })
+
+    // OPIc은 숫자 점수가 아니라 등급(NL~AL)이라 EDUCATION_RANK처럼 순서 비교가 필요하다.
+    it('OPIc은 등급 순서로 비교한다 — 미달 등급이면 미충족', () => {
+      const job = { ...baseJob, foreign_lang_test: 'OPIc', foreign_lang_score: 'IH' }
+      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM2' }).checks.foreignLanguage).toBe(false)
+    })
+
+    it('OPIc은 등급 순서로 비교한다 — 기준 이상 등급이면 통과', () => {
+      const job = { ...baseJob, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM2' }
+      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IH' }).checks.foreignLanguage).toBe(true)
+    })
+
+    it('OPIc은 정확히 같은 등급이면 통과', () => {
+      const job = { ...baseJob, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM3' }
+      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM3' }).checks.foreignLanguage).toBe(true)
+    })
   })
 
   it('컴퓨터활용능력(computer_skill)은 job/spec에 있어도 판정에 영향을 주지 않는다', () => {

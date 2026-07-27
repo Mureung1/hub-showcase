@@ -3,9 +3,12 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { evaluateBookmarks, removeBookmark } from '../api/bookmarks'
 import { useAuth } from '../context/AuthContext'
 import { apiSpecFromForm, useAppState } from '../context/AppStateContext'
-import { buildJobDisplay } from '../lib/gapAnalysis'
+import { buildJobDisplay, CATEGORY_LABELS } from '../lib/gapAnalysis'
+import { collectJobReferenceLinks, getTopTipLink } from '../constants/referenceLinks'
 import JobCard from '../components/result/JobCard'
 import JobDetailModal from '../components/result/JobDetailModal'
+import ReferenceLinksModal from '../components/result/ReferenceLinksModal'
+import BookmarkInsightBanner from '../components/result/BookmarkInsightBanner'
 import EmptyState from '../components/result/EmptyState'
 
 // 북마크한 공고는 "북마크했을 때의 스펙"이 아니라 Context에 지금 저장된 최신 스펙 기준으로 매번 재평가한다.
@@ -17,8 +20,10 @@ function BookmarksPage() {
   const { spec } = useAppState()
 
   const [jobList, setJobList] = useState([])
+  const [stats, setStats] = useState(null)
   const [status, setStatus] = useState('loading')
   const [selectedJobId, setSelectedJobId] = useState(null)
+  const [referenceLinksJobId, setReferenceLinksJobId] = useState(null)
 
   useEffect(() => {
     if (!user) return
@@ -28,6 +33,7 @@ function BookmarksPage() {
       .then((res) => {
         if (cancelled) return
         setJobList(res.jobList)
+        setStats(res.stats)
         setStatus('done')
       })
       .catch(() => {
@@ -39,6 +45,21 @@ function BookmarksPage() {
   }, [user, spec])
 
   const displayJobs = useMemo(() => jobList.map((entry) => buildJobDisplay(entry, spec)), [jobList, spec])
+
+  // 백엔드는 improvementRanking에 category 키만 내려주고 한글 라벨은 안 붙여준다 — ResultPage와 동일한 이유로 여기서 붙인다.
+  const displayStats = useMemo(() => {
+    if (!stats) return null
+    return {
+      ...stats,
+      improvementRanking: stats.improvementRanking.map((r) => ({ ...r, label: CATEGORY_LABELS[r.category] })),
+    }
+  }, [stats])
+
+  const topTipLink = useMemo(() => {
+    const topTip = stats?.improvementRanking[0]
+    if (!topTip || topTip.count === 0) return undefined
+    return getTopTipLink(jobList, topTip.category)
+  }, [stats, jobList])
 
   if (authLoading) return null
   if (!user) return <Navigate to="/login?redirect=/bookmarks" replace />
@@ -77,15 +98,31 @@ function BookmarksPage() {
         />
       )}
 
+      {status === 'done' && displayJobs.length > 0 && (
+        <BookmarkInsightBanner stats={displayStats} topTipLink={topTipLink} />
+      )}
+
       {status === 'done' &&
         displayJobs.map((job) => (
-          <JobCard
-            key={job.job_id}
-            job={job}
-            onClick={() => setSelectedJobId(job.job_id)}
-            bookmarked
-            onToggleBookmark={() => handleRemove(job.job_id)}
-          />
+          <div className="bookmark-job-row" key={job.job_id}>
+            <JobCard
+              job={job}
+              onClick={() => setSelectedJobId(job.job_id)}
+              bookmarked
+              onToggleBookmark={() => handleRemove(job.job_id)}
+            />
+            {collectJobReferenceLinks(job.checklist).length > 0 && (
+              <button
+                type="button"
+                className="reflinks-btn-large"
+                onClick={() => setReferenceLinksJobId(job.job_id)}
+                title="해당 공고에 필요한 사이트만 모아둡니다 🙂"
+                aria-label="필요한 사이트 모아보기"
+              >
+                <span>🔗</span>
+              </button>
+            )}
+          </div>
         ))}
 
       {selectedJobId && (
@@ -97,6 +134,13 @@ function BookmarksPage() {
             handleRemove(selectedJobId)
             setSelectedJobId(null)
           }}
+        />
+      )}
+
+      {referenceLinksJobId && (
+        <ReferenceLinksModal
+          job={displayJobs.find((job) => job.job_id === referenceLinksJobId)}
+          onClose={() => setReferenceLinksJobId(null)}
         />
       )}
     </div>

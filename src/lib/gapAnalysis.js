@@ -47,13 +47,20 @@ export function describeRequirement(category, job, spec) {
   }
   if (category === 'foreignLanguage') {
     if (!job.foreign_lang_test) return '외국어 성적 불필요'
-    if (!spec.foreign_lang_test) return `요구: ${job.foreign_lang_test} ${job.foreign_lang_score}점 이상 · 보유: 미입력`
+    const requiredScore = formatForeignLangScore(job.foreign_lang_test, job.foreign_lang_score)
+    if (!spec.foreign_lang_test) return `요구: ${job.foreign_lang_test} ${requiredScore} 이상 · 보유: 미입력`
     if (spec.foreign_lang_test !== job.foreign_lang_test) {
-      return `요구: ${job.foreign_lang_test} ${job.foreign_lang_score}점 이상 · 보유: ${spec.foreign_lang_test} 성적만 있음 (${job.foreign_lang_test} 성적 없음)`
+      return `요구: ${job.foreign_lang_test} ${requiredScore} 이상 · 보유: ${spec.foreign_lang_test} 성적만 있음 (${job.foreign_lang_test} 성적 없음)`
     }
-    return `요구: ${job.foreign_lang_test} ${job.foreign_lang_score}점 이상 · 보유: ${spec.foreign_lang_score ?? 0}점`
+    const heldScore = formatForeignLangScore(spec.foreign_lang_test, spec.foreign_lang_score ?? 0)
+    return `요구: ${job.foreign_lang_test} ${requiredScore} 이상 · 보유: ${heldScore}`
   }
   return ''
+}
+
+// OPIc은 등급(NL~AL) 문자열이라 "700점"처럼 숫자+점으로 표시하면 말이 안 된다 — "등급"으로 표기.
+function formatForeignLangScore(test, score) {
+  return test === 'OPIc' ? `${score} 등급` : `${score}점`
 }
 
 // 컴퓨터활용능력은 판정에 반영되지 않는 참고 항목이라 별도 라벨만 변환한다 (#23).
@@ -79,6 +86,9 @@ export function buildJobDisplay({ job, checks, overallMatch }, spec) {
       label: CATEGORY_LABELS[category],
       ok: checks[category],
       detail: describeRequirement(category, job, spec),
+      // 참고링크(#25)가 어학 시험 종류별로 다른 링크를 골라야 해서 원본 요구값을 함께 실어 보낸다 —
+      // detail은 표시용 한글 문장이라 이걸 재파싱해서 시험명을 뽑는 방식은 채택하지 않았다.
+      requirementValue: category === 'foreignLanguage' ? job.foreign_lang_test : undefined,
     })),
   }
 }

@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { createApp } from './app.js'
-import { seedJobsIfEmpty } from './db/seed.js'
+import { seedJobsIfEmpty, fixForeignLangScoresIfNeeded } from './db/seed.js'
 
 const port = process.env.PORT || 4000
 
@@ -9,6 +9,13 @@ const port = process.env.PORT || 4000
 const seedResult = seedJobsIfEmpty()
 if (seedResult.seeded) {
   console.log(`jobs 테이블이 비어있어 서버 시작 시 자동으로 시드했습니다 (${seedResult.total}건).`)
+}
+
+// 어학 성적 척도 보정(OPIc 등급화/TOEFL·TOEIC Speaking 실제 범위) — 이미 옛 값으로 시드된 기존
+// DB에도 매번 적용해서 고쳐준다. idempotent라 이미 고쳐졌으면 아무 것도 하지 않는다.
+const langFixResult = fixForeignLangScoresIfNeeded()
+if (langFixResult.fixed > 0) {
+  console.log(`어학 성적 척도를 시험별로 보정했습니다 (${langFixResult.fixed}건).`)
 }
 
 const app = createApp()

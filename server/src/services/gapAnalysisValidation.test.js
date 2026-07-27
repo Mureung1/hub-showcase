@@ -65,6 +65,18 @@ describe('validateGapAnalysisRequest', () => {
     ).toThrow(expect.objectContaining({ status: 400 }))
   })
 
+  it('OPIc은 등급 문자열이면 통과한다', () => {
+    const spec = { ...validSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM2' }
+    expect(() => validateGapAnalysisRequest({ filters: undefined, spec })).not.toThrow()
+  })
+
+  it('OPIc인데 foreign_lang_score가 등급 문자열이 아니면 던진다', () => {
+    const spec = { ...validSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 700 }
+    expect(() => validateGapAnalysisRequest({ filters: undefined, spec })).toThrow(
+      expect.objectContaining({ status: 400 }),
+    )
+  })
+
   it('filters.job_category가 문자열이 아니면 던진다', () => {
     expect(() =>
       validateGapAnalysisRequest({ filters: { job_category: 123 }, spec: validSpec }),

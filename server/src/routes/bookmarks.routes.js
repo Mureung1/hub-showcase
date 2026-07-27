@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { db } from '../db/connection.js'
 import { supabaseAdmin } from '../db/supabaseAdmin.js'
 import { requireSupabaseAuth } from '../middleware/requireSupabaseAuth.js'
-import { evaluateJob } from '../services/gapAnalysisService.js'
+import { evaluateJob, buildStats } from '../services/gapAnalysisService.js'
 import { validateGapAnalysisRequest } from '../services/gapAnalysisValidation.js'
 
 export const bookmarksRouter = Router()
@@ -71,11 +71,12 @@ bookmarksRouter.get('/bookmarks', async (req, res) => {
 // 북마크한 공고를 "북마크했을 때의 스펙"이 아니라 "지금 저장된 최신 스펙" 기준으로 재평가한다 —
 // evaluateJob은 gapAnalysisService.js의 runGapAnalysis가 쓰는 것과 동일한 함수라, 결과 화면과
 // 완전히 같은 모양({ job, checks, overallMatch })을 돌려주므로 FE는 기존 buildJobDisplay를 그대로 재사용할 수 있다.
+// stats(개선 우선순위 등)도 buildStats로 같은 로직을 재사용 — 대상이 "북마크한 공고만"이라는 점만 다르다(#25 인사이트 배너).
 bookmarksRouter.post('/bookmarks/evaluate', async (req, res) => {
   validateGapAnalysisRequest({ filters: null, spec: req.body?.spec })
 
   const ids = await fetchBookmarkedIds(req.userId)
   const jobs = selectJobsByIds(ids)
   const jobList = jobs.map((job) => evaluateJob(job, req.body.spec))
-  res.status(200).json({ jobList })
+  res.status(200).json({ jobList, stats: buildStats(jobList) })
 })

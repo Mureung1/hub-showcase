@@ -8,6 +8,19 @@
 
 SpecFit은 사용자의 학력, 경력, 자격증, 전공, 외국어 등의 정보를 기반으로 채용공고와 비교하여 현재 지원 가능한 공고 비율을 분석하고 어떤 역량을 보완하면 더 많은 공고에 지원할 수 있는지를 시각적으로 제공합니다. :contentReference[oaicite:1]{index=1}
 
+> ⚠️ **데이터 고지**: 채용공고 데이터는 JOB-ALIO에 실제 게시된 862건(회사명/제목/등록일/마감일/상태)을 사용하고, 학력·경력·자격증·전공·외국어·컴퓨터활용능력 등 스펙 관련 필드는 규칙 기반으로 합성한 값입니다. 실제 공고의 자격 요건과 다를 수 있습니다.
+
+---
+
+## 🌐 배포
+
+| | URL |
+|---|---|
+| 프론트엔드 (Vercel) | https://specfit-six.vercel.app |
+| 백엔드 API (Render) | https://specfit-62w2.onrender.com |
+
+Render 무료 인스턴스는 일정 시간 요청이 없으면 슬립 상태가 되어 첫 요청 응답이 몇십 초 걸릴 수 있습니다.
+
 ---
 
 ## ✨ 주요 기능
@@ -23,20 +36,24 @@ SpecFit은 사용자의 학력, 경력, 자격증, 전공, 외국어 등의 정�
 ## 🛠️ Tech Stack
 
 ### Frontend
-- React
-- Vite
-- Recharts
+- React (Vite)
+- React Router
+- 커스텀 SVG 차트 (도넛/바 차트, Recharts 등 외부 차트 라이브러리 미사용)
+- Vitest + Testing Library (유닛/컴포넌트), Playwright (E2E)
 
 ### Backend
-- Node.js / Express (예정)
-- 또는 Python / FastAPI
+- Node.js / Express
+- better-sqlite3 (동기 API, ORM 미사용)
+- Vitest + Supertest
 
-### Database
-- SQLite
+### Database & Auth
+- SQLite (`jobs`, `analysis_results` — 공고 데이터/갭 분석 이력)
+- Supabase Postgres (`bookmarks` — 로그인 사용자의 북마크만, RLS 적용)
+- Supabase Auth (회원가입/로그인/세션 — 프론트가 직접 호출, Express는 거치지 않음)
 
 ### Deployment
-- Vercel
-- Render 또는 Railway :contentReference[oaicite:3]{index=3}
+- Vercel (프론트엔드)
+- Render (백엔드) :contentReference[oaicite:3]{index=3}
 
 ---
 
@@ -138,6 +155,12 @@ flowchart LR
 ```
 
 DB가 두 곳(Supabase Postgres의 `bookmarks` + 로컬 SQLite의 `jobs`)으로 쪼개져 있어 진짜 SQL join이 불가능하고, 서버 코드가 두 DB를 순서대로 조회해 조합합니다. `requireSupabaseAuth`는 모든 북마크 요청 앞단에서 토큰을 매번 Supabase에 검증 위임합니다.
+
+---
+
+## 📚 API 문서
+
+엔드포인트별 요청/응답 스키마는 [`docs/api.md`](docs/api.md)에 정리되어 있습니다.
 
 ---
 

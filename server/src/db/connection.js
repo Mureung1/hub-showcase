@@ -35,6 +35,8 @@ db.exec(`
     certificates TEXT,
     major TEXT,
     foreign_lang_test TEXT,
+    -- OPIc은 등급 문자열(IL~AL)을 담으므로 실제로는 TEXT/INTEGER가 섞인다 — SQLite는 선언한
+    -- 타입을 강제하지 않고(dynamic typing), 이 컬럼에 대한 비교는 전부 JS에서 하므로 문제없다.
     foreign_lang_score INTEGER,
     computer_skill TEXT
   )

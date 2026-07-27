@@ -13,6 +13,9 @@ export const EDUCATION_RANK = {
 // checklist_2.md 확정 사항: 전공 placeholder 3종은 전공무관과 동일하게 항상 통과 처리
 const MAJOR_ANY_VALUES = new Set(['전공무관', '관련 전공(공고별 상이)', '해당 교과 전공'])
 
+// OPIc은 숫자 점수가 아니라 등급(낮은→높은 순)이라 EDUCATION_RANK와 같은 방식으로 순서를 매겨서 비교한다.
+export const OPIC_RANK = { NL: 0, NM: 1, NH: 2, IL: 3, IM1: 4, IM2: 5, IM3: 6, IH: 7, AL: 8 }
+
 function compareEducation(job, spec) {
   if (job.education === '학력무관') return true
   return EDUCATION_RANK[spec.education] >= EDUCATION_RANK[job.education]
@@ -37,6 +40,9 @@ function compareMajor(job, spec) {
 function compareForeignLanguage(job, spec) {
   if (!job.foreign_lang_test) return true
   if (spec.foreign_lang_test !== job.foreign_lang_test) return false
+  if (job.foreign_lang_test === 'OPIc') {
+    return (OPIC_RANK[spec.foreign_lang_score] ?? -1) >= OPIC_RANK[job.foreign_lang_score]
+  }
   return (spec.foreign_lang_score ?? 0) >= job.foreign_lang_score
 }
 
@@ -83,19 +89,24 @@ function buildImprovementRanking(counts) {
   return CATEGORIES.map((category) => ({ category, count: counts[category] })).sort((a, b) => b.count - a.count)
 }
 
+// evaluateJob이 이미 돌려진 jobList(공고 전체든, 북마크한 것만이든) 하나를 받아 통계를 계산한다 —
+// runGapAnalysis(#4/#5)와 북마크 재평가(#20/#25 인사이트)가 대상 집합만 다르고 통계 계산 자체는 같아서 공유한다.
+export function buildStats(jobList) {
+  const total = jobList.length
+  const matched = jobList.filter((entry) => entry.overallMatch).length
+  const ratio = total === 0 ? 0 : matched / total
+  const improvementRanking = buildImprovementRanking(countSingleGapImprovements(jobList))
+  return { total, matched, ratio, improvementRanking }
+}
+
 // 필터 적용 → 대상 공고 전체에 evaluateJob 반복 → 통계 + 보완 우선순위 계산.
 // 가중치 없는 단순 개수 기반 점수화(checklist_2.md 확정 사항).
 export function runGapAnalysis(jobs, filters, spec) {
   const targetJobs = applyFilters(jobs, filters)
   const jobList = targetJobs.map((job) => evaluateJob(job, spec))
 
-  const total = jobList.length
-  const matched = jobList.filter((entry) => entry.overallMatch).length
-  const ratio = total === 0 ? 0 : matched / total
-  const improvementRanking = buildImprovementRanking(countSingleGapImprovements(jobList))
-
   return {
-    stats: { total, matched, ratio, improvementRanking },
+    stats: buildStats(jobList),
     jobList,
   }
 }
