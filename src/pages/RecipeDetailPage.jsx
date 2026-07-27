@@ -6,6 +6,7 @@ import { loadFridgeSelection } from '../data/fridgeStorage'
 import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
 import { buildNaverSearchUrl, buildCoupangSearchUrl, fetchNaverProducts } from '../utils/purchaseLinks'
 import { apiUrl } from '../utils/apiBaseUrl'
+import { PAGE_BACKGROUND_STYLE } from '../utils/pageBackground'
 import CookingSteps from '../components/CookingSteps'
 import IngredientList from '../components/IngredientList'
 import PurchaseLinkPanel from '../components/PurchaseLinkPanel'
@@ -73,7 +74,7 @@ function RecipeDetailPage() {
     return (
       <>
         <TopNav />
-        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary">
+        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary" style={PAGE_BACKGROUND_STYLE}>
           요리를 찾을 수 없어요.{' '}
           <Link to="/home" className="text-primary-text underline">
             홈으로
@@ -87,7 +88,7 @@ function RecipeDetailPage() {
     return (
       <>
         <TopNav />
-        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary">불러오는 중...</main>
+        <main className="min-h-screen bg-bg-page px-4 py-10 text-center text-text-secondary" style={PAGE_BACKGROUND_STYLE}>불러오는 중...</main>
       </>
     )
   }
@@ -167,7 +168,7 @@ function RecipeDetailPage() {
   return (
     <>
       <TopNav />
-      <main className="min-h-screen bg-bg-page px-4 py-8">
+      <main className="min-h-screen bg-bg-page px-4 py-8" style={PAGE_BACKGROUND_STYLE}>
       <div className={videoAspectRatio < 1 ? 'mx-auto max-w-5xl' : 'mx-auto max-w-2xl'}>
         {/* 제목/부제 — 영상보다 위, 페이지 맨 위에 항상 고정 (레이아웃·영상 방향과 무관).
             부족 재료 개수 배지는 없앰 — 바로 아래 "있는 재료"/"없는 재료" 카드가 같은 정보를 더 정확히 보여줌. */}

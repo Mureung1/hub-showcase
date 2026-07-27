@@ -15,6 +15,7 @@ import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredie
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
 import { apiUrl } from '../utils/apiBaseUrl'
+import { PAGE_BACKGROUND_STYLE } from '../utils/pageBackground'
 import TopNav from '../components/TopNav'
 import RecipeGrid from '../components/RecipeGrid'
 import LoadingIndicator from '../components/LoadingIndicator'
@@ -137,7 +138,7 @@ function Home() {
   const quickRecipes = status === 'done' && !hasAnyMatch && closestRecipes.length === 0 ? getQuickRecipes(filteredAll, 3) : []
 
   return (
-    <div className="min-h-screen bg-bg-cream">
+    <div className="min-h-screen bg-bg-cream" style={PAGE_BACKGROUND_STYLE}>
       <div className="sticky top-0 z-10">
         <TopNav />
       </div>
