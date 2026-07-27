@@ -2,6 +2,7 @@ import { Building2, Coffee, MapPinned, Store, X } from "lucide-react";
 
 import { MapLayerControls } from "./MapLayerControls";
 import { NearbyStoreList } from "./NearbyStoreList";
+import { TermHelp } from "./TermHelp";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
 import type {
   AnalysisTopic,
@@ -123,7 +124,7 @@ export function MarketFilters({
   return (
     <aside className="filter-panel">
       <div className="panel-heading">
-        <p>분석 범위</p>
+        <p>어디를 볼까요?</p>
         <div className="panel-heading-actions">
           <button type="button" className="text-button" onClick={onReset}>
             초기화
@@ -139,7 +140,13 @@ export function MarketFilters({
         </div>
       </div>
       <label className="select-label">
-        상권 선택
+        <>
+          상권 선택
+          <TermHelp
+            term="상권"
+            description="사람들이 쇼핑하거나 식사하는 등 가게를 이용하는 생활·상업 범위입니다. 행정구역과 꼭 일치하지는 않습니다."
+          />
+        </>
         <select
           value={marketKey}
           onChange={(event) => onMarketChange(event.target.value as MarketKey)}
@@ -155,16 +162,23 @@ export function MarketFilters({
         <div className="filter-section-heading">
           <span>1</span>
           <div>
-            <p className="filter-label">분석 기준</p>
+            <p className="filter-label">
+              분석 기준
+              <TermHelp term="분석 기준" description="현재 화면의 숫자를 어떤 범위와 자료를 기준으로 계산했는지 알려주는 설명입니다." />
+            </p>
             <small>서울시 공식 상권 경계로 집계</small>
           </div>
         </div>
         <p className="filter-help">
           선택한 상권 polygon 안의 점포와 공식 상권 지표를 함께 보여줍니다.
+          <TermHelp term="polygon" description="지도에서 여러 점을 이어 만든 닫힌 경계선입니다. 여기서는 상권의 분석 범위를 뜻합니다." />
         </p>
       </div>
       <div className="filter-group">
-        <p className="filter-label">업종</p>
+        <p className="filter-label">
+          어떤 가게인가요?
+          <TermHelp term="업종" description="카페, 음식점처럼 가게가 제공하는 상품이나 서비스의 종류입니다." />
+        </p>
         <div className="category-list">
           <CategoryOptions
             categories={supportedCategories}
@@ -190,7 +204,7 @@ export function MarketFilters({
         <div className="filter-section-heading">
           <span>2</span>
           <div>
-            <p className="filter-label">분석 주제</p>
+            <p className="filter-label">무엇을 확인할까요?</p>
             <small>무엇을 확인할지 선택</small>
           </div>
         </div>

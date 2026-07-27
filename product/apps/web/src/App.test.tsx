@@ -238,26 +238,30 @@ describe("App", () => {
     expect(screen.getByText("서울시 공식 상권 경계로 집계")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "시간대 수요" }));
-    expect(screen.getByRole("button", { name: /현재: .*시간대 수요 · 경쟁 밀도 보기/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "시간대 수요" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText("시간대 유동 수요")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "전체 상권 보기" }));
     expect(screen.getByRole("dialog", { name: "상권 비교" })).toBeInTheDocument();
   });
 
-  it("switches between the LocalTwin and original map presentations", () => {
+  it("switches between the map presentation modes", () => {
     render(<App />);
 
-    const localTwinMode = screen.getByRole("button", { name: "LocalTwin" });
+    const densityMode = screen.getByRole("button", { name: /점포 밀도/ });
     const originalMode = screen.getByRole("button", { name: "실제 지도" });
     const buildings = screen.getByRole("button", { name: "건물 레이어 표시" });
     const prefabs = screen.getByRole("button", { name: "3D" });
 
-    expect(localTwinMode).toHaveAttribute("aria-pressed", "true");
+    expect(densityMode).toHaveAttribute("aria-pressed", "true");
     expect(originalMode).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByText(/LocalTwin map data/)).toBeInTheDocument();
 
     fireEvent.click(originalMode);
-    expect(localTwinMode).toHaveAttribute("aria-pressed", "false");
+    expect(densityMode).toHaveAttribute("aria-pressed", "false");
     expect(originalMode).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/OpenFreeMap/)).toBeInTheDocument();
 

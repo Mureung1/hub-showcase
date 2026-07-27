@@ -1,5 +1,6 @@
 import { MarketFilters } from "../market/MarketFilters";
 import { MarketInspector } from "../market/MarketInspector";
+import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
 import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
 import { MarketSearch } from "../search/MarketSearch";
@@ -70,31 +71,40 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           />
         }
         mapBody={
-          <MarketMapCanvas
-            market={market}
-            marketId={catalogState.marketIdByKey[selection.marketKey]}
-            mapRef={viewport.mapRef}
-            onVisibleCenterChange={viewport.updateVisibleCenter}
-            onVisibleBoundsChange={viewport.updateVisibleBounds}
-            mapMode={viewport.mapMode}
-            baseBuildingsVisible={viewport.baseBuildingsVisible}
-            baseBuildingsRendered={viewport.baseBuildingsRendered}
-            layer={selection.layer}
-            boundaryVisible={selection.boundaryVisible}
-            storesVisible={selection.storesVisible}
-            selectedStorefront3d={storefronts.selectedStorefront3d}
-            onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
-            flowPeople={storefronts.flowPeople}
-            activeHour={selection.activeHour}
-            activeDemandLabel={storefronts.activeDemandLabel}
-            mapStores={storefronts.mapStores}
-            selected={storefronts.storeSelection.selected}
-            score={storefronts.score}
-            prefabMode={viewport.prefabMode}
-            onSelectStore={actions.chooseListedStore}
-            visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
-            onEvidenceOpen={() => panels.setEvidenceOpen(true)}
-          />
+          <>
+            <MarketMapCanvas
+              market={market}
+              marketId={catalogState.marketIdByKey[selection.marketKey]}
+              mapRef={viewport.mapRef}
+              onVisibleCenterChange={viewport.updateVisibleCenter}
+              onVisibleBoundsChange={viewport.updateVisibleBounds}
+              mapMode={viewport.mapMode}
+              baseBuildingsVisible={viewport.baseBuildingsVisible}
+              baseBuildingsRendered={viewport.baseBuildingsRendered}
+              layer={selection.layer}
+              boundaryVisible={selection.boundaryVisible}
+              storesVisible={selection.storesVisible}
+              storefrontBuildings3d={storefronts.storefrontBuildings3d}
+              onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
+              flowPeople={storefronts.flowPeople}
+              activeHour={selection.activeHour}
+              activeDemandLabel={storefronts.activeDemandLabel}
+              mapStores={storefronts.mapStores}
+              selected={storefronts.storeSelection.selected}
+              score={storefronts.score}
+              sameCategoryCount={storefronts.sameCategoryCount}
+              prefabMode={viewport.prefabMode}
+              onSelectStore={actions.chooseListedStore}
+              visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
+              onEvidenceOpen={() => panels.setEvidenceOpen(true)}
+            />
+            <MarketQuickMetrics
+              market={market}
+              categorySelection={selection.categorySelection}
+              analysis={marketAnalysis.analysis}
+              analysisState={marketAnalysis.analysisState}
+            />
+          </>
         }
         market={market}
         mapMode={viewport.mapMode}
@@ -109,6 +119,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
         mapRef={viewport.mapRef}
         prefabMode={viewport.prefabMode}
         onPrefabToggle={actions.togglePrefabMode}
+        onPrefabModeChange={viewport.setPrefabMode}
         onCompareOpen={() => panels.setCompareOpen(true)}
         comparisonEnabled={selection.categorySelection.coverage === "full"}
         filtersOpen={panels.filtersOpen}
@@ -128,6 +139,8 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           activeHour={selection.activeHour}
           sameCategoryCount={storefronts.sameCategoryCount}
           analysis={marketAnalysis.analysis}
+          storeTrend={marketAnalysis.storeTrend}
+          storeTrendState={marketAnalysis.storeTrendState}
           background={marketAnalysis.background}
           backgroundState={marketAnalysis.backgroundState}
           analysisState={marketAnalysis.analysisState}
