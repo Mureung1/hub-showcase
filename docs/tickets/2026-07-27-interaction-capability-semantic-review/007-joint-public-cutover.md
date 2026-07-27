@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,19 +33,36 @@
 
 ## Acceptance Criteria
 
-- [ ] Production entrypoint와 default Browser route가 pre-App prepared Workspace startup·normal AY Chat·inline Semantic Review composition만 연다.
-- [ ] Registry active pointer commit은 exact project MCP declaration, authenticated Adapter handshake와 required `propose_state_patch` readiness가 모두 green일 때만 발생한다.
-- [ ] Browser에서 proposal → accept/revise/reject → same Turn result → AY-owned actual file mutation behavior가 ticket 006과 동일하게 동작한다.
-- [ ] Missing/stale Adapter, ignored project config, wrong roster, Broker offline과 Runtime terminal이 degraded success나 false active state 없이 target recovery로 나타난다.
-- [ ] Public Browser가 old Course/material/First Assignment action/retry와 patch/revision Review wire를 target path와 함께 사용하지 않는다.
-- [ ] Registry reopen·explicit prepared-root relaunch, Browser disconnect와 App shutdown이 cross-workspace thread, stale credential, pending call과 orphan process를 남기지 않는다.
-- [ ] Atomic cutover 전후의 rollback boundary와 current code의 후속 contraction 대상이 implementation map 또는 owning package 문서에 정확히 기록된다.
+- [x] Production entrypoint와 default Browser route가 pre-App prepared Workspace startup·normal AY Chat·inline Semantic Review composition만 연다.
+- [x] Registry active pointer commit은 exact project MCP declaration, authenticated Adapter handshake와 required `propose_state_patch` readiness가 모두 green일 때만 발생한다.
+- [x] Browser에서 proposal → accept/revise/reject → same Turn result → AY-owned actual file mutation behavior가 ticket 006과 동일하게 동작한다.
+- [x] Missing/stale Adapter, ignored project config, wrong roster, Broker offline과 Runtime terminal이 degraded success나 false active state 없이 target recovery로 나타난다.
+- [x] Public Browser가 old Course/material/First Assignment action/retry와 patch/revision Review wire를 target path와 함께 사용하지 않는다.
+- [x] Registry reopen·explicit prepared-root relaunch, Browser disconnect와 App shutdown이 cross-workspace thread, stale credential, pending call과 orphan process를 남기지 않는다.
+- [x] Atomic cutover 전후의 rollback boundary와 current code의 후속 contraction 대상이 implementation map 또는 owning package 문서에 정확히 기록된다.
 
 ## Verification
 
-- Targeted test or command: Target Server composition tests와 `npm run test:e2e -w @ay-ple/chat-shell`을 실행한다.
-- Repository checks: `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime && npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test && npm run test:e2e && npm run check:docs-links`
-- Manual or live smoke: 실제 development entrypoint에서 registry reopen, explicit prepared-root relaunch, Review 세 outcome과 Adapter readiness failure를 desktop Browser로 확인한다.
+| 구분 | 결과 |
+| --- | --- |
+| Target contract·Server·Browser | `npm test -w @ay-ple/product-contract` 23개, `npm test -w @ay-ple/server` 195개, `npm test -w @ay-ple/chat-shell` 48개 통과. 각 workspace typecheck와 Chat Shell lint 통과 |
+| Target desktop E2E | `prepared-public-cutover.spec.ts`, `workspace-lifecycle-target.spec.ts`와 donor entry 1개를 함께 실행해 accept·revise·reject, recovery, registry reopen·explicit relaunch를 1440px desktop에서 확인. 전체 `npm run test:e2e`는 Chat Shell 36개와 camp demo 8개 통과 |
+| Actual·process smoke | `npm run test:prepared-workspace-product-actual`이 Bootstrap Git root→built Adapter/Broker→Review→AY-owned checkpoint를 통과. `npm run test:product-entrypoint`가 canonical `npm run dev`의 deliberate missing Adapter `adapter_handshake` recovery, registry non-commit, target Browser, legacy route 차단, SIGINT process-group·port cleanup을 통과 |
+| Production bundle exclusion | build 결과에서 old academic route, Review identity, private Broker credential과 `materials` Chat field가 없음을 확인 |
+| Repository gate | `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime && npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test && npm run test:e2e && npm run check:docs-links` 최종 재실행 통과. 직전 실행의 local-provider cleanup deadline 1회 transient failure는 해당 gate 단독 재실행과 전체 명령 재실행에서 모두 통과 |
+| Code review | fixed point `50c0ed212ad758a268cabeb4fd0a48407cf08a1f` 기준 Standards·Spec 병렬 review와 수정 후 재검토에서 actionable finding 없음 |
+
+## Result
+
+Prepared Workspace startup/reopen과 InteractionCapability vertical을 canonical Server·Browser·Runtime public graph로 함께 전환했다. Default Browser는 target-only Chat·Semantic Review contract만 사용하고 old academic graph는 별도 donor HTML entry로 격리했다. Canonical host는 Runtime·Adapter failure 뒤에도 listener-backed recovery를 유지하며 registry authority를 readiness 이후에만 commit하고, target Chat wire는 material-free exact contract를 사용한다. Rollback unit과 후속 academic contraction 경계는 owning README와 implementation map에 기록했다.
+
+구현 commit:
+
+- `df8ba94d163d6d83ef63b92e2cb37881611d5cdd` — `feat: cut over prepared workspace product path`
+- `8bdfffe2351ee9bda77754202fe209ca61e546c6` — `docs: record prepared workspace public cutover`
+- `d83dabed74925e9663e8a0bd7fc41abe0221deb5` — `fix: isolate prepared public product graph`
+- `941b3fdf8be4e269c0576bdeab4ea316a6ebe3e3` — `docs: clarify prepared cutover boundaries`
+- `f53d82bf0cc761fecb8fe2abe664c53fef24c3df` — `test: verify prepared entrypoint recovery`
 
 ## Blocked By
 
