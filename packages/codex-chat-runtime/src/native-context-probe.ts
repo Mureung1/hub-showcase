@@ -11,7 +11,7 @@ import path from 'node:path'
 import type {
   CodexEffectiveConfig,
   CodexEffectiveSkill,
-} from './account-contract.js'
+} from './native-context-contract.js'
 import {
   BoundedStderrCapture,
   type BoundedStderrSnapshot,

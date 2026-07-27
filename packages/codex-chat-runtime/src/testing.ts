@@ -23,7 +23,7 @@ import type {
 import type {
   CodexEffectiveConfig,
   CodexEffectiveSkill,
-} from './account-contract.js'
+} from './native-context-contract.js'
 import {
   CodexChatRuntimeError,
   INTERACTION_NOT_PENDING_MESSAGE,

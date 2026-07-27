@@ -2,7 +2,7 @@ import type {
   CodexEffectiveConfig,
   CodexEffectiveSkill,
   CodexNativeContextPort,
-} from './account-contract.js'
+} from './native-context-contract.js'
 import {
   RUNTIME_CLEANUP_FAILED_MESSAGE,
   RUNTIME_CLOSED_MESSAGE,

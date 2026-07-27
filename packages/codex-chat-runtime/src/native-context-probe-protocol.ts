@@ -6,7 +6,7 @@ import { TextDecoder } from 'node:util'
 import type {
   CodexEffectiveConfig,
   CodexEffectiveSkill,
-} from './account-contract.js'
+} from './native-context-contract.js'
 
 type JsonObject = Record<string, unknown>
 

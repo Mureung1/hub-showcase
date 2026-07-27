@@ -7,7 +7,7 @@ import type {
   CodexThreadId,
   CodexTurnId,
 } from './contract.js'
-import type { CodexNativeContextPort } from './account-contract.js'
+import type { CodexNativeContextPort } from './native-context-contract.js'
 
 export type CodexProductSkillInput = {
   readonly name: string

@@ -9,7 +9,7 @@ export type {
   CodexEffectiveConfig,
   CodexEffectiveSkill,
   CodexNativeContextPort,
-} from './account-contract.js'
+} from './native-context-contract.js'
 export type {
   CodexChatEvent,
   CodexAccountReadiness,

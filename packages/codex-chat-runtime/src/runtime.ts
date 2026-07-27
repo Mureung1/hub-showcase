@@ -25,7 +25,7 @@ import {
 import {
   type CodexEffectiveConfig,
   type CodexEffectiveSkill,
-} from './account-contract.js'
+} from './native-context-contract.js'
 import type {
   AnswerUserInput,
   CancelUserInput,

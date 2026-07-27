@@ -119,6 +119,13 @@ test('decodes the retained strict account-read result', () => {
 })
 
 test('rejects removed account lifecycle frames and unsafe account reads', () => {
+  const removedCommands = [
+    ['start', 'browser', 'login'].join('_'),
+    ['read', 'browser', 'login', 'attempt'].join('_'),
+    ['cancel', 'browser', 'login'].join('_'),
+    ['release', 'browser', 'login', 'attempt'].join('_'),
+    ['log', 'out'].join(''),
+  ]
   const invalid = [
     {
       type: 'result',
@@ -129,14 +136,12 @@ test('rejects removed account lifecycle frames and unsafe account reads', () => 
         email: 'student-private@example.com',
       },
     },
-    {
+    ...removedCommands.map((command) => ({
       type: 'result',
-      bridgeRequestId: 'start',
-      command: 'mutate_account',
+      bridgeRequestId: 'removed-account-operation',
+      command,
       status: 'pending',
-      attemptId: 'attempt-safe',
-      loginId: 'native-login-secret',
-    },
+    })),
   ]
 
   for (const frame of invalid) {
