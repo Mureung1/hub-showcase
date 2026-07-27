@@ -5,11 +5,22 @@ AI Decision Support System(DSS)
 
 ---
 
+## Roadmap
+
+- ✅ v1.0 Deployable Foundation — Docker, CI, CORS, 보안 정리
+- 🚧 v2.0 Postgres Migration
+- 🚧 v3.0 Rule Engine
+- 🚧 v4.0 Multi-Store SaaS
+
+---
+
 ## 📄 Documents
 
 - [Project Plan](docs/PROJECT_PLAN.md)
 - [Discussion](docs/DISCUSSION.md)
 - [User Flow](docs/USER_FLOW.md)
+- [Architecture](docs/architecture.md)
+- [Deployment](docs/deployment.md)
 
 ---
 

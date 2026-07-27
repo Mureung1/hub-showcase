@@ -1,13 +1,26 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import UploadPage from './pages/upload/UploadPage';
 import AnalysisPage from './pages/analysis/AnalysisPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import FinancialPage from './pages/financial/FinancialPage';
+import { sendPageview } from './services/telemetryService';
+
+function RouteTelemetry() {
+  const location = useLocation();
+
+  useEffect(() => {
+    sendPageview(location.pathname);
+  }, [location.pathname]);
+
+  return null;
+}
 
 function App() {
   return (
     <BrowserRouter>
+      <RouteTelemetry />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/upload" element={<UploadPage />} />

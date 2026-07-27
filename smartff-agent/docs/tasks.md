@@ -373,6 +373,13 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - [ ] 폐기 요일/시간대 패턴 실데이터 연동 — 판매 패턴은 2026-07-22 연동 완료(위 Milestone 3 참고). 폐기(waste)의 요일/시간대 원본 자체는 여전히 없어 보류
   - **2026-07-23 부수 개선**: `pattern_parser.py`의 "06월 4주 평균" 하드코딩은 제거함 — `data/raw/{weekday,hourly}_sales`에 실제 존재하는 월·주차를 스캔해 처리하도록 일반화(월~일 기준 분할 시 5주차까지 유동 허용). 이 항목 자체(폐기 패턴 연동)는 여전히 미완료, 파서 구조만 다월 지원 가능하게 준비된 상태
 
+- [ ] **배송편(1편/2편) 데이터 모델 확장 검토** (2026-07-24 논의, v2 Rule Engine 범위)
+  - GS25 자동발주 화면·발주 원본 데이터 재검토 결과, 상품마다 "1편"/"2편"(배송편) 개념이 존재하며 원본 상품명 접미사로 그대로 남아있음 확인 (예: `참치마요듬뿍김밥1편`, `NEW기본김밥2편`)
+  - 현재 파이프라인 조사 결과: `sales_parser.py`/`waste_parser.py`는 상품명을 가공 없이 저장해 `data/master/sales.csv`/`waste.csv`에는 접미사가 남아있지만, `master_dataset_builder.py`의 `groupby(['month','category'])` 집계 단계에서 배송편 정보가 완전히 소실됨 — `merged_dataset.csv`엔 category+month 단위만 존재
+  - `RecommendationService.ts`는 `category`를 그룹핑 키(dimension)로 취급하는 구조라, `${category}|${batch}` 복합키로 바꾸는 정도로 비교적 쉽게 확장 가능할 것으로 보임. 다만 `patternService.ts`(요일/시간대 패턴)는 원본 자체가 카테고리 단위 사전집계라 배송편 분리 불가 — 필요 시 원본 재수집부터 시작해야 함
+  - v2 착수 시 손댈 지점: `sales_parser.py`/`waste_parser.py`(상품명에서 `delivery_batch` 분리), `master_dataset_builder.py`(groupby key 확장), `financial.ts`(`FinancialRecord`에 필드 추가), `RecommendationService.ts`(그룹핑 키 확장), 스펙 문서(`MASTER_DATASET_SPEC.md` 등) 갱신
+  - v1 Rule Engine은 지금 변경하지 않기로 결정 — 현재는 판매 추세/폐기 추세/수익성/카테고리 추천까지만 유지
+
 - [ ] 발주 데이터 활용 — 발주·판매 괴리(발주량 대비 실판매) + 폐기율 교차 규칙 추가 (2026-07-23 논의)
   - `orders_MMDD.xlsx`(날짜별 1파일, 상품명 단위)와 06월 `sales.csv` 상품명 매칭률을 일회성 스크립트로 조사한 결과 **전체 85.9%**(도시락 90.9%/김밥 89.5%/주먹밥 90.9%/햄버거샌드위치 79.6%)로, 3주차 waste↔inventory 매칭 실패 사례(13~42%)와 달리 상품 단위 매칭이 실제로 잘 작동함을 확인
   - 매칭 안 된 상품은 대부분 6월엔 없던 신상품으로 보여 진짜 매칭 실패가 아닐 가능성 높음
@@ -383,6 +390,11 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
 - [x] FinancialService Cache Reload (V2) — 2026-07-22 "Upload → ETL 자동화" 작업에 포함되어 완료. `financialService.reloadData()` 구현, `uploadAutomationService`가 ETL 성공 시 호출. Recommendation은 캐시가 없어 자동 최신화됨
+- [ ] **Dashboard '운영 브리핑' 재설계** (2026-07-24 논의, `docs/discussion.md` Discussion 8 참고)
+  - 현재 AI 제안/위험 신호/KPI 구성 대신, 점주 업무 흐름(오늘 발주 → 내일 입고 → 내일 판매)에 맞춘 운영 브리핑 형태(이번 주 전략 / 내일 발주 체크포인트 / 위험 신호 / KPI 요약 / 데이터 기준일)로 재정의하기로 논의함
+  - 직접적인 발주 수량 추천은 하지 않음(현재 데이터 주기로는 근거 부족), 전략 수준 제안만 제공
+  - 배송편(1편/2편) 활용 편별 체크포인트는 위 "배송편 데이터 모델 확장 검토" 항목과 함께 v2 이후로 이월
+  - 아직 코드 변경 없음 — 제품 방향 논의만 기록된 상태, 착수 시 `DashboardPage.tsx`/`AIBriefCard`/`RiskAlertCard` 재구성 필요
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동) — 배포 시점에 "접속 비밀번호" 수준 경량 보호부터 우선 검토하기로 결정 (2026-07-22)
 - [ ] 프론트엔드 번들 코드 스플리팅 — `npm run build` 시 메인 청크 667KB 경고(2026-07-22 validation-agent 지적). 지금 당장 문제는 아니지만 페이지별 `React.lazy()` 분리 고려

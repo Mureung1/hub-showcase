@@ -10,27 +10,29 @@ import InsightStrip from '../../components/analysis/InsightStrip';
 import PatternBarChart from '../../components/analysis/PatternBarChart';
 import TrendLineChart from '../../components/analysis/TrendLineChart';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 async function fetchCategoryTrend(category: Category): Promise<FinancialRecord[]> {
-  const res = await fetch(`/api/financial/summary?categories=${encodeURIComponent(category)}`);
+  const res = await fetch(`${API_BASE_URL}/api/financial/summary?categories=${encodeURIComponent(category)}`);
   if (!res.ok) throw new Error(`API Error: ${res.status}`);
   const data: FinancialSummary = await res.json();
   return [...data.data].sort((a, b) => a.month - b.month);
 }
 
 async function fetchWeekdayPattern(category: Category): Promise<WeekdayPatternResponse> {
-  const res = await fetch(`/api/patterns/weekday?category=${encodeURIComponent(category)}`);
+  const res = await fetch(`${API_BASE_URL}/api/patterns/weekday?category=${encodeURIComponent(category)}`);
   if (!res.ok) throw new Error(`API Error: ${res.status}`);
   return res.json();
 }
 
 async function fetchHourlyPattern(category: Category): Promise<HourlyPatternResponse> {
-  const res = await fetch(`/api/patterns/hourly?category=${encodeURIComponent(category)}`);
+  const res = await fetch(`${API_BASE_URL}/api/patterns/hourly?category=${encodeURIComponent(category)}`);
   if (!res.ok) throw new Error(`API Error: ${res.status}`);
   return res.json();
 }
 
 async function fetchRecommendations(): Promise<RecommendationResponse> {
-  const res = await fetch('/api/recommendations');
+  const res = await fetch(`${API_BASE_URL}/api/recommendations`);
   if (!res.ok) throw new Error(`Recommendation API Error: ${res.status}`);
   return res.json();
 }

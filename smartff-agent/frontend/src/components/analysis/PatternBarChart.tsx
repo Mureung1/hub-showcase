@@ -34,9 +34,21 @@ export default function PatternBarChart({
 
   return (
     <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '18px', padding: '24px 26px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>{title}</span>
-        <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '28px' }}>
+        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          {title}
+        </span>
+        <span
+          style={{
+            fontSize: '12px',
+            color: '#94A3B8',
+            fontWeight: '600',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            minWidth: 0,
+          }}
+        >
           {subtitle}
         </span>
       </div>
@@ -47,7 +59,7 @@ export default function PatternBarChart({
           const isBest = rank === 0;
           return (
             <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '100%', height: `${barHeight(h)}px`, background: barColor(rank), borderRadius: '6px 6px 0 0' }} />
+              <div style={{ width: '100%', height: `${Math.min(barHeight(h), MAX_BAR_HEIGHT - 4)}px`, background: barColor(rank), borderRadius: '6px 6px 0 0' }} />
               <span
                 style={{
                   fontSize: '11px',
