@@ -117,6 +117,9 @@ export function MarketMapPanel({
   onFiltersOpen,
   onInspectorOpen,
 }: MarketMapPanelProps) {
+  const storefront3dSelected = mapMode === "localtwin" && prefabMode;
+  const flatMapSelected = mapMode === "original";
+
   return (
     <section className="map-panel" aria-label="지도와 상권 분포">
       <div className="map-toolbar">
@@ -125,16 +128,16 @@ export function MarketMapPanel({
           <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
             <button
               type="button"
-              className={mapMode === "original" ? "is-selected" : ""}
-              aria-pressed={mapMode === "original"}
+              className={flatMapSelected ? "is-selected" : ""}
+              aria-pressed={flatMapSelected}
               onClick={() => onMapModeChange("original")}
             >
               <MapPinned size={15} /> <span>실제 지도</span>
             </button>
             <button
               type="button"
-              className={mapMode === "localtwin" && layer === "density" ? "is-selected" : ""}
-              aria-pressed={mapMode === "localtwin" && layer === "density"}
+              className={mapMode === "localtwin" && layer === "density" && !prefabMode ? "is-selected" : ""}
+              aria-pressed={mapMode === "localtwin" && layer === "density" && !prefabMode}
               onClick={() => {
                 onMapModeChange("localtwin");
                 onLayerChange("density");
@@ -144,12 +147,9 @@ export function MarketMapPanel({
             </button>
             <button
               type="button"
-              className={prefabMode ? "is-selected" : ""}
-              aria-pressed={prefabMode}
-              onClick={() => {
-                onMapModeChange("localtwin");
-                onPrefabModeChange(true);
-              }}
+              className={storefront3dSelected ? "is-selected" : ""}
+              aria-pressed={storefront3dSelected}
+              onClick={() => onPrefabModeChange(true)}
             >
               <Building2 size={15} /> <span>3D 점포</span>
             </button>
@@ -217,8 +217,8 @@ export function MarketMapPanel({
             mapRef.current?.flyTo({
               center: market.center,
               zoom: 15.4,
-              pitch: 38,
-              bearing: -18,
+              pitch: flatMapSelected ? 0 : 38,
+              bearing: flatMapSelected ? 0 : -18,
               essential: true,
             })
           }
@@ -228,9 +228,10 @@ export function MarketMapPanel({
         <button
           type="button"
           className={baseBuildingsVisible ? "is-active" : ""}
-          title="건물 레이어 표시"
+          title={flatMapSelected ? "실제 지도에서는 3D 건물을 표시하지 않습니다" : "건물 레이어 표시"}
           aria-label="건물 레이어 표시"
           aria-pressed={baseBuildingsVisible}
+          disabled={flatMapSelected}
           onClick={() => onBaseBuildingsVisibleChange((current) => !current)}
         >
           <Building2 size={17} />
@@ -243,8 +244,9 @@ export function MarketMapPanel({
         </button>
         <button
           type="button"
-          className={prefabMode ? "three-d is-active" : "three-d"}
-          aria-pressed={prefabMode}
+          className={storefront3dSelected ? "three-d is-active" : "three-d"}
+          aria-pressed={storefront3dSelected}
+          disabled={flatMapSelected}
           onClick={onPrefabToggle}
         >
           3D

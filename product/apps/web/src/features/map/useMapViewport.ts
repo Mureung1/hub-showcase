@@ -12,7 +12,7 @@ import {
 
 export function useMapViewport(initialCenter: [number, number], preventOverlayCollisions = true) {
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
-  const [prefabMode, setPrefabMode] = useState(true);
+  const [prefabMode, setPrefabMode] = useState(false);
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
   const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialCenter);
@@ -94,7 +94,7 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
     commitDraftCenter,
     resetViewport: (center: [number, number]) => {
       setMapMode("localtwin");
-      setPrefabMode(true);
+      setPrefabMode(false);
       setBaseBuildingsVisible(true);
       setCommittedCenter(center);
       setDraftCenter(null);
@@ -102,8 +102,8 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
       mapRef.current?.easeTo({
         center,
         zoom: 15.4,
-        pitch: 52,
-        bearing: -24,
+        pitch: 38,
+        bearing: -18,
         duration: 650,
         essential: true,
       });

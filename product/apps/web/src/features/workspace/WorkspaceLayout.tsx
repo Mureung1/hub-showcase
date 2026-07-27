@@ -4,6 +4,7 @@ import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
 import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
 import { MarketSearch } from "../search/MarketSearch";
+import type { MapMode } from "../market/types";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 
 export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
@@ -19,6 +20,32 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
     apiReadiness,
   } = model;
   const { market, nearby, marketAnalysis } = marketData;
+
+  function changeMapMode(mode: MapMode) {
+    viewport.setMapMode(mode);
+    viewport.setPrefabMode(false);
+    viewport.setBaseBuildingsVisible(mode === "localtwin");
+    viewport.mapRef.current?.easeTo({
+      pitch: mode === "original" ? 0 : 38,
+      bearing: mode === "original" ? 0 : -18,
+      duration: 500,
+      essential: true,
+    });
+  }
+
+  function changePrefabMode(enabled: boolean) {
+    viewport.setPrefabMode(enabled);
+    if (enabled) {
+      viewport.setMapMode("localtwin");
+      viewport.setBaseBuildingsVisible(true);
+    }
+    viewport.mapRef.current?.easeTo({
+      pitch: enabled ? 56 : 38,
+      bearing: enabled ? -24 : -18,
+      duration: 650,
+      essential: true,
+    });
+  }
 
   return (
     <section
@@ -108,7 +135,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
         }
         market={market}
         mapMode={viewport.mapMode}
-        onMapModeChange={viewport.setMapMode}
+        onMapModeChange={changeMapMode}
         layer={selection.layer}
         onLayerChange={actions.chooseLayer}
         densityLabel={storefronts.densityLabel}
@@ -118,8 +145,8 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
         onBaseBuildingsVisibleChange={viewport.setBaseBuildingsVisible}
         mapRef={viewport.mapRef}
         prefabMode={viewport.prefabMode}
-        onPrefabToggle={actions.togglePrefabMode}
-        onPrefabModeChange={viewport.setPrefabMode}
+        onPrefabToggle={() => changePrefabMode(!viewport.prefabMode)}
+        onPrefabModeChange={changePrefabMode}
         onCompareOpen={() => panels.setCompareOpen(true)}
         comparisonEnabled={selection.categorySelection.coverage === "full"}
         filtersOpen={panels.filtersOpen}
