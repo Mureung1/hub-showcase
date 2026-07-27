@@ -36,3 +36,5 @@ src/.env
 src/.env.*
 !.env.example
 !src/.env.example
+
+.worktrees/

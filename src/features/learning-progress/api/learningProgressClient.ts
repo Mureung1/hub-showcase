@@ -1,4 +1,4 @@
-import type { LearningMissionProgress, LearningRunState } from '../model/useLearningProgressStore'
+import type { LearningMissionProgress, LearningRunState, LearningTestResult } from '../model/useLearningProgressStore'
 
 export type LearningProgressResponse = {
   missions: Record<string, LearningMissionProgress>
@@ -10,6 +10,7 @@ export type SaveLearningProgressRequest = {
   activeStepOffset: number
   completedAt?: string | null
   activityLog: LearningMissionProgress['activityLog']
+  lastTestResult?: LearningTestResult | null
 }
 
 export type SaveLearningProgressResponse = {

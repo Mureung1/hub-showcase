@@ -8,6 +8,7 @@ export function createMissionProgress(missionId, input = {}) {
     activeStepOffset: normalizeNumber(input.activeStepOffset, 0),
     completedAt: typeof input.completedAt === 'string' ? input.completedAt : null,
     activityLog: normalizeActivityLog(input.activityLog),
+    lastTestResult: normalizeTestResult(input.lastTestResult),
   }
 }
 
@@ -18,6 +19,7 @@ export function normalizeMissionProgressInput(missionId, input = {}) {
     activeStepOffset: input.activeStepOffset,
     completedAt: input.completedAt,
     activityLog: input.activityLog,
+    lastTestResult: input.lastTestResult,
   })
 }
 
@@ -44,4 +46,16 @@ function normalizeActivityLog(value) {
 
     return id && title ? [{ id, time, title, detail }] : []
   }).slice(0, 5)
+}
+
+function normalizeTestResult(value) {
+  if (!value || typeof value !== 'object') return null
+
+  const passed = normalizeNumber(value.passed, null)
+  const total = normalizeNumber(value.total, null)
+  const ranAt = typeof value.ranAt === 'string' ? value.ranAt : null
+
+  if (passed === null || total === null || !ranAt) return null
+
+  return { passed, total, ranAt }
 }

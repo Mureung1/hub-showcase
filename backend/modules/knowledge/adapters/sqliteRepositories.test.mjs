@@ -20,6 +20,7 @@ describe('SQLite repositories', () => {
       activeStepOffset: 1,
       completedAt: '2026-07-20T10:00:00.000Z',
       activityLog: [{ id: 'a1', time: '10:00', title: 'Run passed', detail: 'All checks passed' }],
+      lastTestResult: { passed: 2, total: 3, ranAt: '2026-07-20T10:00:00.000Z' },
     })
 
     expect(repository.listMissions()).toMatchObject({
@@ -28,6 +29,7 @@ describe('SQLite repositories', () => {
         runAttemptCount: 2,
         activeStepOffset: 1,
         activityLog: [{ id: 'a1', title: 'Run passed' }],
+        lastTestResult: { passed: 2, total: 3, ranAt: '2026-07-20T10:00:00.000Z' },
       },
     })
 

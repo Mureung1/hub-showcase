@@ -26,6 +26,7 @@ export function initializeSqliteSchema(database) {
       active_step_offset INTEGER NOT NULL,
       completed_at TEXT,
       activity_log_json TEXT NOT NULL,
+      last_test_result_json TEXT,
       updated_at TEXT NOT NULL
     );
 
@@ -68,4 +69,10 @@ export function initializeSqliteSchema(database) {
     CREATE INDEX IF NOT EXISTS idx_generated_curriculums_updated_at
       ON generated_curriculums(updated_at DESC);
   `)
+
+  try {
+    database.exec('ALTER TABLE learning_progress ADD COLUMN last_test_result_json TEXT')
+  } catch {
+    // Column already exists (fresh DB created with the DDL above, or already migrated).
+  }
 }

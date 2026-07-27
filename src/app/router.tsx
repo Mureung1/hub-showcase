@@ -4,7 +4,7 @@ import { GitLabPage } from '../features/git-lab'
 import { LearningWorkspace } from '../features/learning-workspace'
 import { AddMistakeNotePage, MistakeNotesPage } from '../features/mistake-notes'
 import { ProfileSetup } from '../features/profile'
-import { TodayLearningHub } from '../features/today-learning'
+import { TodayLearningHub, TodayLearningGoalPage } from '../features/today-learning'
 import { CurriculumHistoryPage } from '../features/curriculum'
 import IntroPage from '../pages/IntroPage'
 
@@ -23,6 +23,10 @@ export const router = createBrowserRouter([
       {
         path: '/today',
         element: <TodayLearningHub />,
+      },
+      {
+        path: '/today/goal',
+        element: <TodayLearningGoalPage />,
       },
       {
         path: '/curriculum/history',

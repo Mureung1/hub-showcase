@@ -36,6 +36,7 @@ const savedMission: LearningMissionProgress = {
   activeStepOffset: 1,
   completedAt: '2026-07-14T12:00:00.000Z',
   activityLog,
+  lastTestResult: { passed: 2, total: 3, ranAt: '2026-07-14T11:59:00.000Z' },
 }
 
 describe('useLearningProgressStore', () => {
@@ -124,6 +125,97 @@ describe('useLearningProgressStore', () => {
     expect(progress?.activeStepOffset).toBe(2)
     expect(progress?.completedAt).toBe('2026-07-14T12:30:00.000Z')
     vi.useRealTimers()
+  })
+
+  it('stores lastTestResult from a run and keeps it on a later step advance without a new result', async () => {
+    const localStorage = createLocalStorage()
+    const useLearningProgressStore = await importStore(localStorage)
+
+    useLearningProgressStore.getState().recordRunResult({
+      missionId: 'counter-mission',
+      runState: 'passed',
+      runAttemptCount: 1,
+      activeStepOffset: 1,
+      activityLog,
+      lastTestResult: { passed: 4, total: 4, ranAt: '2026-07-14T12:00:00.000Z' },
+    })
+
+    expect(
+      useLearningProgressStore.getState().getMissionProgress('counter-mission')?.lastTestResult,
+    ).toEqual({ passed: 4, total: 4, ranAt: '2026-07-14T12:00:00.000Z' })
+
+    useLearningProgressStore.getState().recordRunResult({
+      missionId: 'counter-mission',
+      runState: 'passed',
+      runAttemptCount: 1,
+      activeStepOffset: 2,
+      activityLog,
+    })
+
+    expect(
+      useLearningProgressStore.getState().getMissionProgress('counter-mission')?.lastTestResult,
+    ).toEqual({ passed: 4, total: 4, ranAt: '2026-07-14T12:00:00.000Z' })
+  })
+
+  it('collapses a malformed lastTestResult with a non-number passed value to null', async () => {
+    const localStorage = createLocalStorage({
+      [storageKey]: JSON.stringify({
+        missions: {
+          'counter-mission': {
+            missionId: 'counter-mission',
+            runState: 'passed',
+            runAttemptCount: 1,
+            activeStepOffset: 1,
+            completedAt: null,
+            activityLog,
+            lastTestResult: { passed: 'not-a-number', total: 3, ranAt: '2026-07-14T12:00:00.000Z' },
+          },
+        },
+      }),
+    })
+    const useLearningProgressStore = await importStore(localStorage)
+
+    expect(
+      useLearningProgressStore.getState().getMissionProgress('counter-mission')?.lastTestResult,
+    ).toBeNull()
+  })
+
+  it('collapses a malformed lastTestResult missing ranAt to null', async () => {
+    const localStorage = createLocalStorage()
+    const useLearningProgressStore = await importStore(localStorage)
+
+    useLearningProgressStore.getState().upsertMissionProgress({
+      missionId: 'counter-mission',
+      runState: 'passed',
+      runAttemptCount: 1,
+      activeStepOffset: 1,
+      completedAt: null,
+      activityLog,
+      lastTestResult: { passed: 2, total: 3 } as unknown as LearningMissionProgress['lastTestResult'],
+    })
+
+    expect(
+      useLearningProgressStore.getState().getMissionProgress('counter-mission')?.lastTestResult,
+    ).toBeNull()
+  })
+
+  it('collapses a non-object lastTestResult value to null', async () => {
+    const localStorage = createLocalStorage()
+    const useLearningProgressStore = await importStore(localStorage)
+
+    useLearningProgressStore.getState().upsertMissionProgress({
+      missionId: 'counter-mission',
+      runState: 'passed',
+      runAttemptCount: 1,
+      activeStepOffset: 1,
+      completedAt: null,
+      activityLog,
+      lastTestResult: 'not-an-object' as unknown as LearningMissionProgress['lastTestResult'],
+    })
+
+    expect(
+      useLearningProgressStore.getState().getMissionProgress('counter-mission')?.lastTestResult,
+    ).toBeNull()
   })
 
   it('clears persisted progress when resetting all progress', async () => {

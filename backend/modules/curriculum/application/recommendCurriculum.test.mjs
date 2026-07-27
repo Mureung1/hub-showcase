@@ -103,4 +103,59 @@ describe('recommendCurriculum use case', () => {
       recommendCurriculum({ goal: ' ', tracks, config: {}, recommendationProvider: vi.fn() }),
     ).rejects.toThrow('Curriculum goal is required')
   })
+
+  it('boosts knowledge chunks whose topic matches the inferred track for the goal', async () => {
+    const recommendationProvider = vi.fn(async () => recommendation)
+
+    await recommendCurriculum({
+      goal: 'FastAPI 백엔드 서버 만들기',
+      tracks,
+      config: { apiKey: 'test-key' },
+      recommendationProvider,
+      knowledgeChunks: [
+        {
+          id: 'react-1',
+          sourceType: 'official-doc',
+          topic: 'react',
+          docTitle: 'React Quick Start',
+          sectionHeading: 'Components',
+          url: 'https://ko.react.dev/learn',
+          chunkText: 'React 컴포넌트를 만들고 중첩하는 방법을 배웁니다.',
+        },
+        {
+          id: 'backend-1',
+          sourceType: 'official-doc',
+          topic: 'backend',
+          docTitle: 'FastAPI Path Parameters',
+          sectionHeading: 'Path Parameters',
+          url: 'https://fastapi.tiangolo.com/tutorial/path-params/',
+          chunkText: 'FastAPI 경로 매개변수를 사용해 URL 경로에서 값을 추출하는 방법을 배웁니다.',
+        },
+      ],
+    })
+
+    expect(recommendationProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        knowledgeContext: [expect.objectContaining({ id: 'backend-1' })],
+      }),
+    )
+  })
+
+  it('does not crash when no knowledge chunks exist for the inferred track', async () => {
+    const recommendationProvider = vi.fn(async () => recommendation)
+
+    await expect(
+      recommendCurriculum({
+        goal: '자료구조와 알고리즘 기초 다지기',
+        tracks,
+        config: { apiKey: 'test-key' },
+        recommendationProvider,
+        knowledgeChunks: [],
+      }),
+    ).resolves.toBeDefined()
+
+    expect(recommendationProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ knowledgeContext: [] }),
+    )
+  })
 })

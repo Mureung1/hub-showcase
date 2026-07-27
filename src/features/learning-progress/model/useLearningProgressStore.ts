@@ -9,6 +9,12 @@ export type LearningActivityItem = {
   detail: string
 }
 
+export type LearningTestResult = {
+  passed: number
+  total: number
+  ranAt: string
+}
+
 export type LearningMissionProgress = {
   missionId: string
   runState: LearningRunState
@@ -16,6 +22,7 @@ export type LearningMissionProgress = {
   activeStepOffset: number
   completedAt: string | null
   activityLog: LearningActivityItem[]
+  lastTestResult: LearningTestResult | null
 }
 
 type PersistedLearningProgress = {
@@ -29,6 +36,7 @@ type MissionProgressInput = {
   activeStepOffset: number
   completedAt?: string | null
   activityLog: LearningActivityItem[]
+  lastTestResult?: LearningTestResult | null
 }
 
 type MissionActivityInput = {
@@ -68,7 +76,25 @@ function createMissionProgress(
     activeStepOffset: Number.isFinite(input.activeStepOffset) ? input.activeStepOffset ?? 0 : 0,
     completedAt: typeof input.completedAt === 'string' ? input.completedAt : null,
     activityLog: Array.isArray(input.activityLog) ? input.activityLog.slice(0, 5) : [],
+    lastTestResult: normalizeTestResult(input.lastTestResult),
   }
+}
+
+function normalizeTestResult(value: unknown): LearningTestResult | null {
+  if (!value || typeof value !== 'object') return null
+
+  const record = value as Partial<LearningTestResult>
+  const passed = typeof record.passed === 'number' && Number.isFinite(record.passed)
+    ? Math.round(record.passed)
+    : null
+  const total = typeof record.total === 'number' && Number.isFinite(record.total)
+    ? Math.round(record.total)
+    : null
+  const ranAt = typeof record.ranAt === 'string' ? record.ranAt : null
+
+  if (passed === null || total === null || !ranAt) return null
+
+  return { passed, total, ranAt }
 }
 
 function normalizeMissions(
@@ -136,6 +162,7 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
     activeStepOffset,
     completedAt,
     activityLog,
+    lastTestResult,
   }) => {
     set((state) => {
       const current = state.missions[missionId]
@@ -148,6 +175,7 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
           activeStepOffset,
           completedAt: completedAt ?? current?.completedAt ?? null,
           activityLog,
+          lastTestResult: lastTestResult ?? current?.lastTestResult ?? null,
         }),
       }
 

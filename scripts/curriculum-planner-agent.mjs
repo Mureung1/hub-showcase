@@ -12,6 +12,7 @@ import {
   runCurriculumPlannerAgent,
 } from '../backend/modules/curriculum/adapters/geminiCurriculumRecommendationProvider.mjs'
 import { createAgentConfig, loadEnvFiles, parseCliArgs } from '../backend/shared/env.mjs'
+import { inferTrackTopics } from '../backend/modules/curriculum/domain/trackTopicKeywords.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -21,10 +22,12 @@ async function main() {
   const args = parseCliArgs(process.argv.slice(2))
   const tracks = loadCurriculumTracks({ fs, path, repoRoot })
   const knowledgeChunks = loadKnowledgeChunks({ fs, path, repoRoot })
+  const preferredTopics = inferTrackTopics(args.goal)
   const knowledgeContext = searchKnowledgeChunks({
     chunks: knowledgeChunks,
     query: args.goal,
     limit: 5,
+    preferredTopics,
   })
   const config = createAgentConfig()
 
