@@ -555,6 +555,56 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_bucketplace_be_commerce",
+      "url": "https://bucketplace.career.greetinghr.com/ko/o/167227",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 버킷플레이스",
+      "company_id": "co_bucketplace",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Senior Backend Engineer, Tech Lead & Manager, Commerce",
+      "job_role_raw": "직군: 개발 / 제목: Backend Engineer",
+      "entry_label_raw": "경력 13년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27"
+    },
+    {
+      "source_id": "src_linepay_be_server",
+      "url": "https://careers.linecorp.com/ko/jobs/3007/",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "라인페이플러스",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "LINE Pay Server Engineer",
+      "job_role_raw": "직군: Engineering / 제목: Server Engineer",
+      "entry_label_raw": "3년 이상의 서버 개발 경험 또는 이에 준하는 역량을 갖추신 분",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /ko/2021_1st, /en/2021_1st",
+      "collected_on": "2026-07-27"
     }
   ],
   "unreachable": [
@@ -613,6 +663,22 @@
     {
       "source": "hancom.career.greetinghr.com",
       "reason": "채용 사이트가 내려갔다"
+    },
+    {
+      "source": "career.woowahan.com Tech 신입",
+      "reason": "연차 필터 신입 결과가 0건이다"
+    },
+    {
+      "source": "careers.nexon.com Game Programming 신입",
+      "reason": "지원 구분 신입 결과가 0건이다"
+    },
+    {
+      "source": "echomarketing.career.greetinghr.com",
+      "reason": "검색에 색인된 공고 식별자가 404를 반환한다"
+    },
+    {
+      "source": "blog.greetinghr.com 채용 홈페이지 모음집",
+      "reason": "개인정보 제공에 동의해야 내려받는다"
     }
   ],
   "access_notes": [
@@ -643,6 +709,18 @@
     {
       "source": "*.career.greetinghr.com 상세 경로",
       "method": "오래된 공고 식별자도 본문 전문과 함께 열린다. 마감 공고 수집 경로로 쓴다"
+    },
+    {
+      "source": "careers.nexon.com 마감 공고",
+      "method": "없는 공고 식별자는 목록으로 리다이렉트한다. 마감 공고 URL이 남지 않는다"
+    },
+    {
+      "source": "bucketplace.career.greetinghr.com",
+      "method": "목록 경로가 404를 반환하고 상세만 열린다. 공고 식별자를 검색으로 찾는다"
+    },
+    {
+      "source": "careers.linecorp.com",
+      "method": "정적 렌더링. 직군 필터 ca=Engineering 으로 거른다"
     }
   ]
 }
