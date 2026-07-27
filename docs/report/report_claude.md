@@ -137,3 +137,9 @@
 - 검증: `npm run verify` 통과(lint+build). 이번 세션엔 브라우저 자동화 도구가 없어 새로고침 동작 자체는 사용자가 직접 dev 서버에서 확인함 — 타이머 도중 새로고침해도 화면이 유지되고 남은 시간이 실제 경과 시간만큼 정확히 줄어있음, 하이드레이션 오류 없음, 타이머 종료 후 다음 스텝/완료 화면 전이도 정상 확인. `docs/checklist.md` C04 2개 전부 체크, `docs/backlog.md` T04 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
 - 미결: 없음
 - 확인: [ ]
+
+## 2026-07-27 | T15 | 타이머 종료 시 완료 확인 + Agent 판단 연장
+- 작업: `app/api/timer-extend/route.js` 신규(S6) — `{currentStep, extendCount}`를 받아 Solar가 연장 분(1~25 정수)과 이유를 직접 판단해 반환, `suggest_break`과 같은 패턴(고정 계단이 아니라 모델이 직접 분 단위를 정함). `app/components/TimerConfirm.js` 신규 — 타이머 종료 시 뜨는 "이 스텝 다 끝났어?" 확인 화면. `app/page.js`의 `FocusTimer.onFinish`가 바로 완료 처리로 가지 않고 "timer-confirm" 화면을 거치도록 변경, "아니, 더 필요해" 선택 시 `/api/timer-extend`를 호출해 받은 분만큼 `stepStartedAt`을 재설정하고 타이머를 재시작한다. `extendCount`/`timerDurationMinutes`/`extendReason`은 다음 스텝으로 넘어갈 때(`advanceToNextStep`) 초기화. 연장 판단 이유는 `FocusTimer`에 캐릭터 위 말풍선(`SpeechBubble`, `BrainDumpInput`과 같은 위치)으로 표시 — 처음엔 시계 아래 텍스트로 뒀다가 사용자가 캐릭터에 가려져 안 보인다고 확인해줘서 위치를 바꿈. `docs/etc/component-tree.md`가 T08(이유칩/제안카드)·T04(새로고침 내구성) 반영이 안 된 채 낡아있던 걸 이번에 같이 최신화했다.
+- 검증: `npm run verify` 통과(lint+build). `/api/timer-extend`를 실제 Solar 호출로 직접 확인(정수 `extendMinutes`, 자연스러운 한국어 `reason` 반환). 화면 클릭 흐름(타이머 종료 → 확인 화면 → "다 했어"로 정상 완료 전이, "더 필요해"로 연장된 시간만큼 타이머 재시작 + 말풍선 표시)은 사용자가 직접 브라우저에서 확인. `docs/checklist.md` C15 3개 전부 체크, `docs/backlog.md` T15 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
+- 미결: 타이머 연장 도중 새로고침하면 연장된 시간(`timerDurationMinutes`)은 저장되지 않아 원래 예상 시간 기준으로 복원된다(C04/C15 어느 쪽에도 명시된 요구사항은 아니라 지금은 그대로 둠). T04·T15는 사용자 요청에 따라 GPT 리뷰를 한 번에 묶어 받을 예정(아직 리뷰 전).
+- 확인: [ ]
