@@ -114,8 +114,7 @@ chooser-selected-directory/
 
 ```text
 hub/
-  .agents/skills/             # hub repository 개발용 Agent harness
-  skills/                     # AY-PLE 제품 Skill source catalog
+  .agents/skills/             # 개발 harness와 AY-PLE 제품 Skill source catalog
   node_modules/               # rebuildable npm dependency
   **/dist/                    # rebuildable output
 
@@ -136,7 +135,7 @@ hub/
   <actual-semester-files>
 ```
 
-`hub/.agents/skills/`는 repository 개발 harness이고 `hub/skills/`가 AY-PLE 제품 Skill의 tracked source catalog다. Init·Update Skill은 선택한 source directory를 workspace의 `.agents/skills/`로 복사하며 symlink를 만들지 않는다. Workspace copy가 exact Git root에서 Codex가 native discovery하는 실행 authority이고 Git이 실제 사용 byte를 기록한다. Source catalog 변경은 명시적인 Update와 workspace diff 없이 기존 학기를 바꾸지 않는다.
+Personal local target에서는 `hub/.agents/skills/`가 repository 개발 harness와 AY-PLE 제품 Skill의 tracked source catalog를 함께 맡는다. Init·Update Skill은 그중 선택한 source directory를 workspace의 `.agents/skills/`로 복사하며 symlink를 만들지 않는다. Workspace copy가 exact Git root에서 Codex가 native discovery하는 실행 authority이고 Git이 실제 사용 byte를 기록한다. Source catalog 변경은 명시적인 Update와 workspace diff 없이 기존 학기를 바꾸지 않는다. Public distribution 요구 전에는 별도 `hub/skills/`나 package·plugin 계층을 만들지 않는다.
 
 Target workspace의 `AGENTS.md`와 Skills는 App-owned exact bundle이 아니다. Init Skill은 existing bytes를 존중하면서 최소 지침과 Skill copy를 준비하고, AY는 exact Git root에서 Codex의 native project config·instruction·Skill discovery를 사용한다. Current Runtime의 fixed `project_root_markers=[]`, process-wide managed Skill root와 one-shot `config/read`·`skills/list` probe는 현재 구현 사실이다. Target은 fixed marker와 managed Skill override를 제거하되 effective context 관측 seam은 필요한 범위에서 유지하며, consumer 없는 v3 bundle verifier가 target workspace contents를 소유하거나 drift를 이유로 일반 사용자 파일을 막지 않는다.
 
@@ -160,7 +159,7 @@ Workspace-local file과 Git은 app data나 native session과 다른 durable auth
 | 이력 중복 | Git history와 `statePatches`·`userConfirmations`·`modelingRuns` 배열이 같은 변경을 서로 다른 방식으로 기록하면 rollback 의미가 갈린다. | Workspace SSOT는 current confirmed snapshot만 저장하고 장기 변경 이력은 Git checkpoint 하나로 통일한다. |
 | Evidence self-reference | `workspace-state.json`을 포함하는 commit SHA를 같은 JSON에 넣으면 commit identity를 계산할 수 없다. | `EvidenceRef`는 relative path, exact content digest와 locator를 저장하고 Git history는 해당 content version을 찾는 수단으로만 사용한다. |
 | Workspace instruction drift | Init Skill이 기존 `AGENTS.md`를 덮어쓰거나 지나치게 상세한 policy를 만들면 사용자 지침과 AY의 판단 공간을 잃는다. | 기존 bytes를 존중하고 commit checkpoint 같은 짧은 원칙만 두며 App code가 exact instruction bundle을 소유하지 않는다. |
-| Skill version drift | `hub/skills/`의 변경이 기존 학기의 실행 동작을 암묵적으로 바꾸면 Git history와 실제 AY behavior가 어긋난다. | Workspace에 real directory를 복사하고 명시적인 Update와 Git diff·checkpoint를 거쳐서만 바꾼다. Symlink와 Runtime `extraRoots` 주입을 사용하지 않는다. |
+| Skill version drift | `hub/.agents/skills/`의 변경이 기존 학기의 실행 동작을 암묵적으로 바꾸면 Git history와 실제 AY behavior가 어긋난다. | Workspace에 real directory를 복사하고 명시적인 Update와 Git diff·checkpoint를 거쳐서만 바꾼다. Symlink와 Runtime `extraRoots` 주입을 사용하지 않는다. |
 | Native context 오해 | Workspace의 `AGENTS.override.md`, project `.codex/`와 Skills는 AY behavior를 바꿀 수 있다. | App-owned exact bundle로 덮어쓰거나 일반 사용자 context를 drift로 차단하지 않는다. Init Skill은 existing bytes를 존중하고 Runtime은 실제 effective context를 관측 가능한 범위에서 표시한다. |
 | Ancestor native context 혼입 | SemesterWorkspace가 독립 Git root가 아니거나 Runtime이 descendant·parent를 cwd로 사용하면 다른 project의 `AGENTS.md`, `.codex/`와 Skills를 읽을 수 있다. | 선택한 canonical directory가 한 학기 전용 Git root임을 확인하고 persistent bridge·one-shot probe·thread가 모두 그 exact root를 cwd로 사용한다. Native `.git` boundary의 effective config·Skill 결과를 provider-free smoke로 검증한다. |
 | 기존 자료 손실 | Existing Git workspace를 app-owned scaffold로 정규화하거나 복사하면 실제 사용자 자료와 history가 갈라질 수 있다. | 사용자가 선택한 repository를 그 자리에서 채택하고 init Skill과 AY가 일반 Git 안전 원칙을 따른다. |
