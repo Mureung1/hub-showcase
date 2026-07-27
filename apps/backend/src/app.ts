@@ -8,8 +8,10 @@ import { errorHandler } from "./common/middlewares/errorHandler";
 import { authRouter, meRouter } from "./modules/auth/auth.routes";
 import { healthRouter } from "./modules/health/health.routes";
 import { invitationsRouter, storeInvitationsRouter } from "./modules/invitations/invitations.routes";
+import { payrollRouter } from "./modules/payroll";
 import { storesRouter } from "./modules/stores/stores.routes";
-import { schedulesRouter } from "./modules/schedules/schedules.routes";
+import { recurringSchedulesRouter, scheduleItemRouter, schedulesRouter } from "./modules/schedules/schedules.routes";
+import { substituteRequestItemRouter, substituteRequestsRouter } from "./modules/substituteRequests";
 import { workersRouter } from "./modules/workers/workers.routes";
 
 export function createApp() {
@@ -36,8 +38,13 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/me", meRouter);
   app.use("/api/health", healthRouter);
+  app.use("/api/schedules", scheduleItemRouter);
+  app.use("/api/substitute-requests", substituteRequestItemRouter);
   app.use("/api/stores/:storeId/invitations", storeInvitationsRouter);
+  app.use("/api/stores/:storeId/recurring-schedules", recurringSchedulesRouter);
   app.use("/api/stores/:storeId/schedules", schedulesRouter);
+  app.use("/api/stores/:storeId/payroll", payrollRouter);
+  app.use("/api/stores/:storeId/substitute-requests", substituteRequestsRouter);
   app.use("/api/stores/:storeId/workers", workersRouter);
   app.use("/api/invitations", invitationsRouter);
   app.use("/api/stores", storesRouter);

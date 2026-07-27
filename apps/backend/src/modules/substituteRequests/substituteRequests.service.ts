@@ -1,0 +1,216 @@
+import { HttpError } from "../../common/errors/HttpError";
+import { findStoreMembership } from "../../common/repositories/storeMembership.repository";
+import { findOverlappingWorkerSchedules, findScheduleById } from "../schedules/schedules.repository";
+import {
+  findActiveSubstituteRequestByScheduleId,
+  findSubstituteApplication,
+  findSubstituteRequestById,
+  findOpenSubstituteRequestsByStoreId,
+  findSubstituteRequestProfiles,
+  findSubstituteRequestSchedules,
+  insertSubstituteApplication,
+  insertSubstituteRequest,
+  updateSubstituteRequestCandidate
+} from "./substituteRequests.repository";
+import {
+  ApplySubstituteRequestInput,
+  CreateSubstituteRequestInput,
+  ListSubstituteRequestsInput,
+  SubstituteRequestRecord,
+  SubstituteRequestScheduleRecord,
+  SubstituteRequestListItemResponse,
+  SubstituteRequestResponse,
+  SubstituteRequestStatus
+} from "./substituteRequests.types";
+
+const ACTIVE_SUBSTITUTE_REQUEST_STATUSES: SubstituteRequestStatus[] = ["OPEN", "PENDING_APPROVAL", "APPROVED"];
+
+function toSubstituteRequestResponse(request: SubstituteRequestRecord): SubstituteRequestResponse {
+  return {
+    id: request.id,
+    storeId: request.store_id,
+    scheduleId: request.schedule_id,
+    requesterId: request.requester_id,
+    candidateWorkerId: request.candidate_worker_id,
+    status: request.status,
+    reason: request.reason,
+    rejectReason: request.reject_reason,
+    createdAt: request.created_at,
+    updatedAt: request.updated_at
+  };
+}
+
+function toSubstituteRequestListItemResponse(input: {
+  request: SubstituteRequestRecord;
+  requesterName: string;
+  schedule: SubstituteRequestScheduleRecord;
+}): SubstituteRequestListItemResponse {
+  return {
+    ...toSubstituteRequestResponse(input.request),
+    requesterName: input.requesterName,
+    workerId: input.schedule.worker_id,
+    workDate: input.schedule.work_date,
+    startTime: input.schedule.start_time,
+    endTime: input.schedule.end_time,
+    position: input.schedule.position,
+    memo: input.schedule.memo
+  };
+}
+
+function getTodayDateText() {
+  const parts = new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Seoul",
+    year: "numeric"
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+
+  return `${year}-${month}-${day}`;
+}
+
+export async function listStoreSubstituteRequests(input: ListSubstituteRequestsInput) {
+  const requests = await findOpenSubstituteRequestsByStoreId(input.storeId);
+  const scheduleIds = [...new Set(requests.map((request) => request.schedule_id))];
+  const requesterIds = [...new Set(requests.map((request) => request.requester_id))];
+  const schedules = await findSubstituteRequestSchedules(scheduleIds);
+  const profiles = await findSubstituteRequestProfiles(requesterIds);
+  const scheduleMap = new Map(schedules.map((schedule) => [schedule.id, schedule]));
+  const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+  const todayDate = getTodayDateText();
+  const substituteRequests = requests
+    .map((request) => {
+      const schedule = scheduleMap.get(request.schedule_id);
+
+      if (!schedule || schedule.work_date < todayDate) {
+        return null;
+      }
+
+      if (input.actorRole === "WORKER" && request.requester_id === input.actorUserId) {
+        return null;
+      }
+
+      return toSubstituteRequestListItemResponse({
+        request,
+        requesterName: profileMap.get(request.requester_id)?.name ?? "알바생",
+        schedule
+      });
+    })
+    .filter((request): request is SubstituteRequestListItemResponse => request !== null)
+    .sort((first, second) => {
+      const dateCompare = first.workDate.localeCompare(second.workDate);
+
+      if (dateCompare !== 0) {
+        return dateCompare;
+      }
+
+      return first.startTime.localeCompare(second.startTime);
+    });
+
+  return {
+    substituteRequests
+  };
+}
+
+export async function createStoreSubstituteRequest(input: CreateSubstituteRequestInput) {
+  const schedule = await findScheduleById(input.scheduleId);
+
+  if (!schedule) {
+    throw new HttpError(404, "근무 일정을 찾을 수 없습니다.", "SCHEDULE_NOT_FOUND");
+  }
+
+  if (schedule.store_id !== input.storeId) {
+    throw new HttpError(400, "선택한 근무 일정이 현재 매장에 속하지 않습니다.", "SCHEDULE_STORE_MISMATCH");
+  }
+
+  if (schedule.worker_id !== input.requesterId) {
+    throw new HttpError(403, "본인 근무에 대해서만 대타 요청을 등록할 수 있습니다.", "SCHEDULE_OWNER_REQUIRED");
+  }
+
+  if (schedule.work_date < getTodayDateText()) {
+    throw new HttpError(400, "지난 근무 일정은 대타 요청을 등록할 수 없습니다.", "PAST_SCHEDULE_NOT_ALLOWED");
+  }
+
+  const activeRequest = await findActiveSubstituteRequestByScheduleId(
+    input.scheduleId,
+    ACTIVE_SUBSTITUTE_REQUEST_STATUSES
+  );
+
+  if (activeRequest) {
+    throw new HttpError(409, "이미 진행 중인 대타 요청이 있는 근무입니다.", "ACTIVE_SUBSTITUTE_REQUEST_EXISTS");
+  }
+
+  const substituteRequest = await insertSubstituteRequest(input);
+
+  return {
+    substituteRequest: toSubstituteRequestResponse(substituteRequest)
+  };
+}
+
+export async function applyToSubstituteRequest(input: ApplySubstituteRequestInput) {
+  const request = await findSubstituteRequestById(input.requestId);
+
+  if (!request) {
+    throw new HttpError(404, "대타 요청을 찾을 수 없습니다.", "SUBSTITUTE_REQUEST_NOT_FOUND");
+  }
+
+  if (request.status !== "OPEN") {
+    throw new HttpError(409, "이미 다른 알바생이 신청한 요청입니다.", "SUBSTITUTE_REQUEST_NOT_OPEN");
+  }
+
+  if (request.requester_id === input.actorUserId) {
+    throw new HttpError(403, "본인이 등록한 대타 요청에는 신청할 수 없습니다.", "CANNOT_APPLY_OWN_REQUEST");
+  }
+
+  const membership = await findStoreMembership(request.store_id, input.actorUserId);
+
+  if (!membership || membership.role !== "WORKER") {
+    throw new HttpError(403, "같은 매장 알바생만 대타 요청에 신청할 수 있습니다.", "WORKER_ROLE_REQUIRED");
+  }
+
+  const schedule = await findScheduleById(request.schedule_id);
+
+  if (!schedule) {
+    throw new HttpError(404, "근무 일정을 찾을 수 없습니다.", "SCHEDULE_NOT_FOUND");
+  }
+
+  if (schedule.store_id !== request.store_id) {
+    throw new HttpError(400, "대타 요청과 근무 일정의 매장이 일치하지 않습니다.", "SCHEDULE_STORE_MISMATCH");
+  }
+
+  if (schedule.work_date < getTodayDateText()) {
+    throw new HttpError(400, "지난 근무의 대타 요청에는 신청할 수 없습니다.", "PAST_SCHEDULE_NOT_ALLOWED");
+  }
+
+  const existingApplication = await findSubstituteApplication(input.requestId, input.actorUserId);
+
+  if (existingApplication) {
+    throw new HttpError(409, "이미 신청한 대타 요청입니다.", "SUBSTITUTE_APPLICATION_EXISTS");
+  }
+
+  const overlappingSchedules = await findOverlappingWorkerSchedules({
+    storeId: request.store_id,
+    workerId: input.actorUserId,
+    workDate: schedule.work_date,
+    startTime: schedule.start_time,
+    endTime: schedule.end_time
+  });
+
+  if (overlappingSchedules.length > 0) {
+    throw new HttpError(409, "같은 시간에 이미 등록된 근무가 있어 신청할 수 없습니다.", "SCHEDULE_TIME_OVERLAP");
+  }
+
+  const updatedRequest = await updateSubstituteRequestCandidate(input);
+
+  if (!updatedRequest) {
+    throw new HttpError(409, "이미 다른 알바생이 신청한 요청입니다.", "SUBSTITUTE_REQUEST_NOT_OPEN");
+  }
+
+  await insertSubstituteApplication(input);
+
+  return {
+    substituteRequest: toSubstituteRequestResponse(updatedRequest)
+  };
+}

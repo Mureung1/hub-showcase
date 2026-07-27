@@ -111,6 +111,7 @@ function WorkerSettingsForm({ accessToken, storeId, worker }: WorkerSettingsForm
         defaultWorkEndTime: toOptionalTime(values.defaultWorkEndTime)
       });
       await queryClient.invalidateQueries({ queryKey: ["workers", storeId] });
+      await queryClient.invalidateQueries({ queryKey: ["payrollSummary", storeId] });
       setMessage("저장되었습니다.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "알바생 정보 수정에 실패했습니다.");
@@ -180,6 +181,7 @@ export function WorkersPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["workers", selectedStoreId] });
+      await queryClient.invalidateQueries({ queryKey: ["payrollSummary", selectedStoreId] });
     }
   });
 
@@ -200,6 +202,7 @@ export function WorkersPage() {
         defaultWorkEndTime: toOptionalTime(values.defaultWorkEndTime)
       });
       await queryClient.invalidateQueries({ queryKey: ["workers", selectedStoreId] });
+      await queryClient.invalidateQueries({ queryKey: ["payrollSummary", selectedStoreId] });
       reset();
       setInviteSuccessMessage("초대를 등록했습니다.");
     } catch (error) {
@@ -243,6 +246,13 @@ export function WorkersPage() {
     );
   }
 
+  const workers = workersQuery.data?.workers ?? [];
+  const invitations = workersQuery.data?.invitations ?? [];
+  const wageRegisteredCount = workers.filter((worker) => worker.hourlyWage !== null).length;
+  const defaultTimeRegisteredCount = workers.filter(
+    (worker) => worker.defaultWorkStartTime !== null && worker.defaultWorkEndTime !== null
+  ).length;
+
   return (
     <main className="dashboard workers-dashboard">
       <section className="page-panel workers-panel">
@@ -250,6 +260,24 @@ export function WorkersPage() {
           <p className="label">WORKERS</p>
           <h1>알바생 관리</h1>
         </div>
+
+        <section className="metric-grid worker-metric-grid" aria-label="알바생 관리 요약">
+          <article className="metric-card">
+            <span>소속 알바생</span>
+            <strong>{workers.length}명</strong>
+            <p>매장 근무 등록 대상</p>
+          </article>
+          <article className="metric-card">
+            <span>시급 등록</span>
+            <strong>{wageRegisteredCount}명</strong>
+            <p>기본 시간 {defaultTimeRegisteredCount}명</p>
+          </article>
+          <article className="metric-card highlight">
+            <span>대기 중 초대</span>
+            <strong>{invitations.length}건</strong>
+            <p>수락 전 초대</p>
+          </article>
+        </section>
 
         <form className="worker-invite-form" onSubmit={onInviteSubmit}>
           <label>
@@ -293,9 +321,9 @@ export function WorkersPage() {
 
         <section className="worker-section" aria-labelledby="worker-list-title">
           <h2 id="worker-list-title">소속 알바생</h2>
-          {workersQuery.data?.workers.length ? (
+          {workers.length ? (
             <div className="worker-list">
-              {workersQuery.data.workers.map((worker) => (
+              {workers.map((worker) => (
                 <article className="worker-card" key={worker.userId}>
                   <div className="worker-card-head">
                     <div>
@@ -318,9 +346,9 @@ export function WorkersPage() {
 
         <section className="worker-section" aria-labelledby="invitation-list-title">
           <h2 id="invitation-list-title">대기 중 초대</h2>
-          {workersQuery.data?.invitations.length ? (
+          {invitations.length ? (
             <div className="worker-list">
-              {workersQuery.data.invitations.map((invitation) => (
+              {invitations.map((invitation) => (
                 <article className="invitation-card" key={invitation.id}>
                   <div>
                     <strong>{invitation.inviteeEmail}</strong>
