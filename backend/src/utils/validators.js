@@ -11,6 +11,17 @@ export function isValidUuid(id) {
     return typeof id === 'string' && UUID_PATTERN.test(id);
 }
 
+// owner/repo 형식 (githubService.fetchIssueBody의 split('/') 전제와 일치)
+const REPO_FULL_NAME_PATTERN = /^[^/]+\/[^/]+$/;
+
+export function isValidRepoFullName(repoFullName) {
+    return typeof repoFullName === 'string' && REPO_FULL_NAME_PATTERN.test(repoFullName);
+}
+
+export function isValidIssueNumber(issueNumber) {
+    return Number.isInteger(issueNumber) && issueNumber > 0;
+}
+
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 // GitHub 언어명에 실제로 쓰이는 문자만 허용 (C++, C#, Objective-C, Jupyter Notebook 등)

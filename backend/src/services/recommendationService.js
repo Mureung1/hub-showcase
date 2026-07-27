@@ -2,6 +2,7 @@ import prisma from '../config/prisma.js';
 import { getAnalysis } from './analysisService.js';
 import { searchRepos, fetchReposWithIssues, fetchIssueBody, fetchContributingGuide } from './githubService.js';
 import { analyzeIssue, rerankItems } from './llmService.js';
+import { getFavoriteKeys } from './favoriteService.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('recommendationService');
@@ -315,8 +316,9 @@ async function rerankTopItems(items, analysis) {
 
 // recommendations 레코드 → 명세(Recommendation 스키마) 응답 형태.
 // isNewByKey가 주어지면(POST 응답 전용) 다양화 배지용 isNew 필드를 함께 채운다 — 이건 "생성 시점"에만
-// 의미 있는 스냅샷이라 GET 재조회(isNewByKey 없음)에서는 필드 자체를 응답에 넣지 않는다
-function toRecommendationResponse(record, isNewByKey = null) {
+// 의미 있는 스냅샷이라 GET 재조회(isNewByKey 없음)에서는 필드 자체를 응답에 넣지 않는다.
+// isFavoritedByKey가 주어지면 즐겨찾기 여부를 채운다 — 이건 조회 시점 최신 상태라 POST/GET 모두에서 채운다
+function toRecommendationResponse(record, { isNewByKey = null, isFavoritedByKey = null } = {}) {
     return {
         id: record.id,
         githubId: record.githubId,
@@ -339,6 +341,9 @@ function toRecommendationResponse(record, isNewByKey = null) {
             requiredSkills: null,
             guide: null,
             ...(isNewByKey ? { isNew: isNewByKey.get(`${item.repoFullName}#${item.issueNumber}`) ?? true } : {}),
+            ...(isFavoritedByKey
+                ? { isFavorited: isFavoritedByKey.has(`${item.repoFullName}#${item.issueNumber}`) }
+                : {}),
         })),
         createdAt: record.createdAt.toISOString(),
     };
@@ -428,7 +433,8 @@ export async function getRecommendationById(id, focus = null) {
         throw notFound;
     }
 
-    const response = toRecommendationResponse(record);
+    const isFavoritedByKey = await getFavoriteKeys(record.githubId);
+    const response = toRecommendationResponse(record, { isFavoritedByKey });
     response.items = await enrichWithCachedAnalysis(response.items);
 
     if (focus) {
@@ -459,6 +465,7 @@ export async function createRecommendation(githubId, preferences) {
     }
 
     const seenKeys = await getSeenIssueKeys(analysis.githubId);
+    const isFavoritedByKey = await getFavoriteKeys(analysis.githubId);
     const candidateNames = await collectCandidateRepos(preferences);
     const repos = await fetchReposWithIssues(candidateNames, DIFFICULTY_ISSUE_LABELS[preferences.difficulty]);
     cacheReposAndIssues(repos);
@@ -519,5 +526,19 @@ export async function createRecommendation(githubId, preferences) {
         newItems: [...isNewByKey.values()].filter(Boolean).length,
     });
 
-    return toRecommendationResponse(saved, isNewByKey);
+    return toRecommendationResponse(saved, { isNewByKey, isFavoritedByKey });
+}
+
+// 전체 검색 이력 (GET /api/recommendations?githubId=) — 이 githubId가 지금까지 생성한 모든 추천을
+// 최신순으로 반환한다. Recommendation은 재조회/필터링용으로 삭제 없이 계속 쌓이므로(decisions.md DB 설계
+// 이유) 새 저장·집계 없이 그대로 나열하면 된다. 각 세션(=한 번의 검색)이 배열의 원소 하나 — 프론트는
+// createdAt/preferences를 세션 그룹 헤더로 쓴다
+export async function listRecommendationHistory(githubId) {
+    const isFavoritedByKey = await getFavoriteKeys(githubId);
+    const records = await prisma.recommendation.findMany({
+        where: { githubId },
+        include: { items: { orderBy: { position: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+    });
+    return records.map((record) => toRecommendationResponse(record, { isFavoritedByKey }));
 }

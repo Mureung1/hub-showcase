@@ -17,6 +17,8 @@ tags:
     description: GitHub 프로필 분석
   - name: recommendations
     description: 레포/이슈 추천
+  - name: favorites
+    description: 즐겨찾기 (재검색으로 순위가 밀려도 계속 보고 싶은 이슈 표시)
   - name: system
     description: 서버 상태
 
@@ -253,6 +255,37 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+    get:
+      tags: [recommendations]
+      summary: 전체 검색 이력 조회
+      description: |
+        이 githubId가 지금까지 생성한 모든 추천을 최신순으로 반환한다(배열의 원소 하나 = 한 번의 검색 세션).
+        `Recommendation`은 재조회/필터링용으로 삭제 없이 계속 쌓이므로, 즐겨찾기 안 한 이슈도 여기서 항상 볼 수 있다.
+        각 아이템의 `isFavorited`로 즐겨찾기 여부를 구분한다. "즐겨찾기만 보기" 같은 필터는 별도 API 없이
+        이 응답을 클라이언트에서 필터링해서 구현한다.
+      operationId: listRecommendationHistory
+      parameters:
+        - name: githubId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
+          example: kimsunho2000
+      responses:
+        '200':
+          description: 검색 이력 (최신순)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /api/recommendations/{id}:
     get:
       tags: [recommendations]
@@ -304,6 +337,60 @@ paths:
                 error:
                   code: RECOMMENDATION_NOT_FOUND
                   message: 추천 결과를 찾을 수 없습니다.
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/favorites:
+    post:
+      tags: [favorites]
+      summary: 즐겨찾기 추가
+      description: 이미 즐겨찾기돼 있어도 에러 없이 200을 반환한다(idempotent).
+      operationId: createFavorite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteRequest'
+      responses:
+        '200':
+          description: 즐겨찾기 추가 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favorited:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [favorites]
+      summary: 즐겨찾기 삭제
+      description: 즐겨찾기돼 있지 않아도 에러 없이 200을 반환한다(idempotent).
+      operationId: deleteFavorite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteRequest'
+      responses:
+        '200':
+          description: 즐겨찾기 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favorited:
+                    type: boolean
+                    example: false
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '500':
           $ref: '#/components/responses/InternalError'
 
@@ -529,6 +616,27 @@ components:
             재추천 다양화: 이 이슈가 이 githubId에게 처음 추천되는 것인지 여부(생성 시점 스냅샷).
             POST /api/recommendations 응답에만 포함되고, GET 재조회 응답에는 포함되지 않는다.
           example: true
+        isFavorited:
+          type: boolean
+          description: 이 githubId가 즐겨찾기했는지 여부(조회 시점 최신 상태). POST/GET 응답 모두에 포함된다.
+          example: false
+
+    FavoriteRequest:
+      type: object
+      description: 즐겨찾기 추가/삭제 요청 바디 (POST·DELETE /api/favorites 공용)
+      required: [githubId, repoFullName, issueNumber]
+      properties:
+        githubId:
+          type: string
+          pattern: '^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
+          example: kimsunho2000
+        repoFullName:
+          type: string
+          description: owner/repo 형식
+          example: facebook/react
+        issueNumber:
+          type: integer
+          example: 31245
 
     Recommendation:
       type: object

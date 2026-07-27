@@ -84,6 +84,7 @@ afterAll(async () => {
     await prisma.issueCache.deleteMany({
         where: { repoFullName: MOCK_REPO_FULL_NAME, issueNumber: { in: [MOCK_ISSUE_NUMBER, 101, 102] } },
     });
+    await prisma.favorite.deleteMany({ where: { githubId: TEST_GITHUB_ID } });
     await prisma.$disconnect();
 });
 
@@ -457,5 +458,54 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
         const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences: differentConditions });
         expect(res.status).toBe(200);
         createdRecommendationIds.push(res.body.id);
+    });
+});
+
+describe('GET /api/recommendations — 전체 검색 이력', () => {
+    const preferences = { languages: ['JavaScript'], difficulty: 'easy', topics: [] };
+
+    it('여러 세션을 최신순으로 반환한다', async () => {
+        const first = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(first.body.id);
+        const second = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(second.body.id);
+
+        const res = await request(app).get('/api/recommendations').query({ githubId: TEST_GITHUB_ID });
+
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(2);
+        expect(res.body[0].id).toBe(second.body.id); // 최신(두 번째 요청)이 배열 맨 앞
+        expect(res.body[1].id).toBe(first.body.id);
+        expect(res.body[0].items.length).toBeGreaterThan(0);
+    });
+
+    it('즐겨찾기한 이슈는 isFavorited: true, 나머지는 false로 표시된다', async () => {
+        const created = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(created.body.id);
+        const favoriteItem = created.body.items[0];
+
+        await request(app)
+            .post('/api/favorites')
+            .send({ githubId: TEST_GITHUB_ID, repoFullName: favoriteItem.repoFullName, issueNumber: favoriteItem.issueNumber });
+
+        const res = await request(app).get('/api/recommendations').query({ githubId: TEST_GITHUB_ID });
+
+        expect(res.status).toBe(200);
+        const session = res.body.find((rec) => rec.id === created.body.id);
+        const item = session.items.find(
+            (i) => i.repoFullName === favoriteItem.repoFullName && i.issueNumber === favoriteItem.issueNumber);
+        expect(item.isFavorited).toBe(true);
+        const others = session.items.filter((i) => i !== item);
+        expect(others.every((i) => i.isFavorited === false)).toBe(true);
+    });
+
+    it('githubId 쿼리가 없거나 형식이 잘못되면 400 VALIDATION_ERROR를 반환한다', async () => {
+        const missing = await request(app).get('/api/recommendations');
+        expect(missing.status).toBe(400);
+        expect(missing.body.error.code).toBe('VALIDATION_ERROR');
+
+        const invalid = await request(app).get('/api/recommendations').query({ githubId: '../etc' });
+        expect(invalid.status).toBe(400);
+        expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
     });
 });
