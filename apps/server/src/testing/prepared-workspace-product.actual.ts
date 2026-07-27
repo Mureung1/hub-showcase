@@ -225,13 +225,13 @@ async function prepareWorkspace(): Promise<WorkspaceFixture> {
     await gitText(workspaceRoot, ['rev-parse', 'HEAD']),
     initialScaffoldHead,
   )
-  const assignmentSkill = await loadInstalledFirstAssignmentSkill(workspaceRoot)
+  await assertInstalledFirstAssignmentSkillContract(workspaceRoot)
   return {
     root,
     workspaceRoot,
     initialScaffoldHead,
     syllabusDigest: sha256(Buffer.from(syllabus)),
-    assignmentSkill,
+    assignmentSkill: createFirstAssignmentSkillDriver(),
     cleanup: () => rm(root, { recursive: true, force: true }),
   }
 }
@@ -326,9 +326,9 @@ async function assertBootstrapOutput(fixture: WorkspaceFixture): Promise<void> {
   )
 }
 
-async function loadInstalledFirstAssignmentSkill(
+async function assertInstalledFirstAssignmentSkillContract(
   workspaceRoot: string,
-): Promise<FirstAssignmentSkillDriver> {
+): Promise<void> {
   const source = await readFile(
     path.join(
       workspaceRoot,
@@ -346,6 +346,9 @@ async function loadInstalledFirstAssignmentSkill(
   ]) {
     assert.match(source, new RegExp(escapeRegex(requiredInstruction)))
   }
+}
+
+function createFirstAssignmentSkillDriver(): FirstAssignmentSkillDriver {
   return Object.freeze({
     propose(contentDigest, revisionFeedback) {
       const proposal = reviewRequest(contentDigest)
@@ -891,6 +894,8 @@ type JsonRpcResponse = {
   readonly error?: unknown
 }
 
+// This product trace consumes only the built Adapter's public STDIO surface.
+// Package-level JSON-RPC test helpers intentionally stay behind that boundary.
 type AdapterClient = {
   callTool(request: ProposeStatePatchRequest): Promise<JsonRpcResponse>
   initialize(): Promise<void>
