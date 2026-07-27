@@ -1,21 +1,24 @@
-import type { Credential, DocType, Position, PositionDetail } from "./types";
+import type {
+  Credential,
+  CredentialInput,
+  CredentialType,
+  DocType,
+  Me,
+  Position,
+  PositionDetail,
+} from "./types";
 
 /**
  * 백엔드(Spring Boot :8080) 연동 클라이언트.
- *
- * mock.ts 와 같은 시그니처를 갖는다. 화면 컴포넌트는 어느 쪽을 쓰든 그대로다.
- * 목업 → 실연동 전환은 페이지의 import 한 줄만 바꾸면 된다.
- *
- *   - import { listPositions } from "@/lib/mock";
- *   + import { listPositions } from "@/lib/api";
+ * 화면은 이 파일을 직접 import 하지 않는다 — lib/data.ts 가 목업과 교체한다.
  */
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
 export class ApiError extends Error {
   constructor(
-    public status: number,
-    message: string,
+      public status: number,
+      message: string,
   ) {
     super(message);
   }
@@ -33,12 +36,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    // 백엔드 GlobalExceptionHandler 가 { code, message } 로 내려준다
     const body = await res.json().catch(() => ({ message: "요청에 실패했습니다." }));
     throw new ApiError(res.status, body.message);
   }
 
-  // 202/204 등 본문 없는 응답도 안전하게 처리
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
 }
@@ -53,8 +54,8 @@ function authHeader(): Record<string, string> {
 
 export async function signUp(email: string, password: string, name: string) {
   const res = await request<{ accessToken: string; refreshToken: string; userId: number }>(
-    "/auth/signup",
-    { method: "POST", body: JSON.stringify({ email, password, name }) },
+      "/auth/signup",
+      { method: "POST", body: JSON.stringify({ email, password, name }) },
   );
   window.localStorage.setItem("accessToken", res.accessToken);
   return res;
@@ -62,25 +63,34 @@ export async function signUp(email: string, password: string, name: string) {
 
 export async function login(email: string, password: string) {
   const res = await request<{ accessToken: string; refreshToken: string; userId: number }>(
-    "/auth/login",
-    { method: "POST", body: JSON.stringify({ email, password }) },
+      "/auth/login",
+      { method: "POST", body: JSON.stringify({ email, password }) },
   );
   window.localStorage.setItem("accessToken", res.accessToken);
   return res;
 }
 
+/** 현재 사용자 + 이력 완성도. 이름은 로그인 응답에 없어 이걸로 받는다. */
+export const getMe = () => request<Me>("/auth/me");
+
 /* ── F2 이력 ── */
 
-export const listCredentials = () => request<Credential[]>("/credentials");
+export const listCredentials = async () => {
+  const list = await request<Credential[]>("/credentials");
+  return list.map((c) => ({ ...c, type: c.type.toLowerCase() as CredentialType }));
+};
 
-export const createCredential = (body: Omit<Credential, "id">) =>
-  request<Credential>("/credentials", { method: "POST", body: JSON.stringify(body) });
+export const createCredential = (body: CredentialInput) =>
+    request<Credential>("/credentials", {
+      method: "POST",
+      body: JSON.stringify({ ...body, type: body.type.toUpperCase() }),
+    });
 
-export const deleteCredential = (id: string) =>
-  request<void>(`/credentials/${id}`, { method: "DELETE" });
+export const deleteCredential = (id: number) =>
+    request<void>(`/credentials/${id}`, { method: "DELETE" });
 
 export const getCompleteness = () =>
-  request<{ percentage: number; missing: string[] }>("/credentials/completeness");
+    request<{ percentage: number; missing: string[] }>("/credentials/completeness");
 
 /* ── F4·F5 포지션 ── */
 
@@ -100,20 +110,15 @@ interface DocJob {
   errorMessage?: string;
 }
 
-/** 잡을 만들고 id만 받는다. 즉시 반환된다. */
 export const generateDoc = (postingId: number, type: DocType) =>
-  request<DocJob>("/documents", {
-    method: "POST",
-    body: JSON.stringify({
-      postingId,
-      type: type === "resume" ? "RESUME" : "COVER_LETTER",
-    }),
-  });
+    request<DocJob>("/documents", {
+      method: "POST",
+      body: JSON.stringify({
+        postingId,
+        type: type === "resume" ? "RESUME" : "COVER_LETTER",
+      }),
+    });
 
-/**
- * DONE 이 될 때까지 폴링. DocEditor 의 regenerate() 가 이걸 부른다.
- * LLM 호출이 수십 초 걸리므로 화면은 그동안 스켈레톤을 띄운다.
- */
 export async function pollDoc(id: number, timeoutMs = 90_000): Promise<string> {
   const deadline = Date.now() + timeoutMs;
 
@@ -130,7 +135,7 @@ export async function pollDoc(id: number, timeoutMs = 90_000): Promise<string> {
 }
 
 export const saveDoc = (id: number, content: string) =>
-  request<DocJob>(`/documents/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ content }),
-  });
+    request<DocJob>(`/documents/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ content }),
+    });
