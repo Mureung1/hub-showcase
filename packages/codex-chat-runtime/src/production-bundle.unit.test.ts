@@ -11,7 +11,7 @@ import {
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
-  'e9bee416c02ff419dc961f092de85df54b40e7456a304d62470ac19ff64f7a8b'
+  '570c4325dd19b6d1ad0997ddb7530f638ae54b348f2d3b52a17d25fdd8f4bec1'
 const PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
@@ -20,6 +20,7 @@ const PATCH_IDS = [
   '0005-strict-response-classification',
   '0006-plan-user-input-seam',
   '0007-thread-start-settings',
+  '0008-thread-mcp-status',
 ] as const
 const BUNDLE_ROSTER_SHA256 =
   '72f3c18b81c3441ca8ddea2d2bef3ef844fc4270edde878edf183d4361a53e78'

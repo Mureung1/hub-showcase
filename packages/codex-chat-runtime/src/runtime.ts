@@ -50,7 +50,6 @@ import {
   RUNTIME_LOST_MESSAGE,
   MCP_SERVER_NOT_READY_MESSAGE,
   MCP_SERVER_TOOLS_MISMATCH_MESSAGE,
-  RUNTIME_OPERATION_ABORTED_MESSAGE,
   RUNTIME_RESPONSE_TIMEOUT_MESSAGE,
   RUNTIME_START_FAILED_MESSAGE,
   RUNTIME_START_TIMEOUT_MESSAGE,
@@ -69,6 +68,11 @@ import {
   NativeContextGenerationCoordinator,
   type NativeContextProbeRunner,
 } from './native-context-coordinator.js'
+import {
+  abortableMcpReadinessOperation,
+  mcpReadinessAbortedError,
+  requireMcpReadinessInput,
+} from './mcp-readiness.js'
 import type { VerifiedProductionBundle } from './production-bundle.js'
 import { SerializedBridgeWriter } from './serialized-writer.js'
 
@@ -577,7 +581,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
   ): Promise<void> {
     requireMcpReadinessInput(input)
     if (input.signal.aborted) {
-      return Promise.reject(runtimeOperationAbortedError())
+      return Promise.reject(mcpReadinessAbortedError())
     }
     const operation = this.sendOperation(
       'wait_for_mcp_server_ready',
@@ -594,7 +598,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
         }
       },
     )
-    return abortableRuntimeOperation(operation, input.signal)
+    return abortableMcpReadinessOperation(operation, input.signal)
   }
 
   readEffectiveConfig(input: {
@@ -1884,57 +1888,6 @@ function workspaceRootMismatchError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
     code: 'workspace_mismatch',
     displayMessage: WORKSPACE_ROOT_MISMATCH_MESSAGE,
-    unknownOutcome: false,
-  })
-}
-
-function requireMcpReadinessInput(
-  input: Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
-): void {
-  requireExactInputKeys(
-    input,
-    ['expectedTools', 'serverName', 'signal'],
-    'MCP readiness input',
-  )
-  requireBoundedString(input.serverName, 'MCP server name', 256)
-  if (
-    !Array.isArray(input.expectedTools) ||
-    input.expectedTools.length === 0 ||
-    input.expectedTools.length > 128
-  ) {
-    throw new TypeError('MCP expected tool roster is invalid')
-  }
-  for (const tool of input.expectedTools) {
-    requireBoundedString(tool, 'MCP tool name', 256)
-  }
-  if (new Set(input.expectedTools).size !== input.expectedTools.length) {
-    throw new TypeError('MCP expected tool roster is invalid')
-  }
-  requireAbortSignal(input.signal)
-}
-
-async function abortableRuntimeOperation<T>(
-  operation: Promise<T>,
-  signal: AbortSignal,
-): Promise<T> {
-  let rejectAbort!: (error: CodexChatRuntimeError) => void
-  const aborted = new Promise<never>((_resolve, reject) => {
-    rejectAbort = reject
-  })
-  const onAbort = () => rejectAbort(runtimeOperationAbortedError())
-  signal.addEventListener('abort', onAbort, { once: true })
-  if (signal.aborted) onAbort()
-  try {
-    return await Promise.race([operation, aborted])
-  } finally {
-    signal.removeEventListener('abort', onAbort)
-  }
-}
-
-function runtimeOperationAbortedError(): CodexChatRuntimeError {
-  return new CodexChatRuntimeError({
-    code: 'runtime_operation_aborted',
-    displayMessage: RUNTIME_OPERATION_ABORTED_MESSAGE,
     unknownOutcome: false,
   })
 }

@@ -349,6 +349,43 @@ test('deterministic MCP readiness aborts without consuming the next status snaps
   })
 })
 
+test('deterministic MCP readiness validates the public input shape before consuming status', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    mcpServerStatuses: [
+      [
+        {
+          state: 'ready',
+          serverName: 'ay_ple_interaction',
+          tools: ['propose_state_patch'],
+        },
+      ],
+    ],
+  })
+  const input = {
+    serverName: 'ay_ple_interaction',
+    expectedTools: ['propose_state_patch'],
+    signal: new AbortController().signal,
+  } as const
+
+  await assert.rejects(
+    () =>
+      runtime.waitForMcpServerReady({
+        ...input,
+        unexpected: true,
+      } as typeof input),
+    /MCP readiness input fields are invalid/,
+  )
+  await assert.rejects(
+    () =>
+      runtime.waitForMcpServerReady({
+        ...input,
+        signal: {} as AbortSignal,
+      }),
+    /Abort signal is invalid/,
+  )
+  await runtime.waitForMcpServerReady(input)
+})
+
 test('deterministic runtime preserves native turn identity and event FIFO', async () => {
   const events = [
     {
