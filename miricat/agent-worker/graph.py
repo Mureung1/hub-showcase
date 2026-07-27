@@ -11,6 +11,7 @@ LangGraph 뼈대(State/노드/엣지/compile/invoke)를 익히기 위한 최소 
 import requests
 import os
 import pathlib
+from db import find_notice
 from typing import Optional, TypedDict
 from scout import fetch_list, fetch_body
 from sources import SOURCES
@@ -112,6 +113,7 @@ def reporter_node(state: State) -> dict:
 
     # 메시지 재료: 원문 URL + 내 경로와 겹친 사건들
     source_url = state["source"]["view_url"].format(id=state["seq"])
+    found = find_notice(source_url)
     matched_names = {m["event_name"] for m in analysis.get("matched", [])}
     fields = []
     for ev in (state.get("extraction") or {}).get("events", []):
@@ -124,12 +126,14 @@ def reporter_node(state: State) -> dict:
             "value": f"기간: {ev.get('period') or '-'}\n영향 노선: {lines}\n정류장: {stops}",
         })
 
+    fields.append({"name": "원문 공지", "value": source_url})
+    report_base = os.environ.get("REPORT_BASE_URL", "http://localhost:5173")
     embed = {
         "title": "🚨 경보 — 내 출근 경로에 영향 공지",
-        "url": source_url,               # 제목 클릭 = 원문으로 (출처 원칙)
-        "color": 0xE4572E,               # 미리캣 경보 빨강
+        "url": f"{report_base}/report/{found['id']}" if found else source_url,             # 제목 클릭 = 원문으로 (출처 원칙)
+        "color": 0xE4572E,            # 미리캣 경보 빨강
         "fields": fields,
-        "footer": {"text": "미리캣 · 제목을 눌러 원문 공지를 확인하세요"},
+        "footer": {"text": "제목을 눌러 미리캣 리포트를 확인하세요"},
     }
     try:
         r = requests.post(webhook, json={"embeds": [embed]}, timeout=10)

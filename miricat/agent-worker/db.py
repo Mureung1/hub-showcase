@@ -22,6 +22,11 @@ def save_notice(source, source_url, title, raw_text, extraction):
     res = _sb.table("notices").upsert(row, on_conflict="source_url").execute()
     return res.data
 
+def find_notice(source_url):
+    """source_url로 공지 1건 조회. 없으면 None."""
+    res = _sb.table("notices").select("*").eq("source_url", source_url).execute()
+    return res.data[0] if res.data else None
+
 if __name__ == "__main__":
     saved = save_notice(
         source="test",
