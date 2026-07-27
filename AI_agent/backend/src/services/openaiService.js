@@ -77,6 +77,7 @@ const submissionFeedbackSchema = {
   type: "object",
   additionalProperties: false,
   required: [
+    "missionFit",
     "overall",
     "strengths",
     "improvements",
@@ -84,6 +85,30 @@ const submissionFeedbackSchema = {
     "portfolioPoints",
   ],
   properties: {
+    missionFit: {
+      type: "object",
+      additionalProperties: false,
+      required: ["level", "label", "canCreatePortfolio", "reasons"],
+      properties: {
+        level: {
+          type: "string",
+          enum: ["high", "medium", "low"],
+        },
+        label: {
+          type: "string",
+          enum: ["높음", "보통", "낮음"],
+        },
+        canCreatePortfolio: {
+          type: "boolean",
+        },
+        reasons: {
+          type: "array",
+          minItems: 1,
+          maxItems: 4,
+          items: { type: "string" },
+        },
+      },
+    },
     overall: {
       type: "string",
     },
@@ -188,6 +213,12 @@ const createSubmissionFeedbackContent = ({ submission, artifactEvidence = [] }) 
             submittedDescription: submission.submittedDescription,
             submittedFileName: submission.submittedFileName,
             submittedFileType: submission.submittedFileType,
+          },
+          missionFitPolicy: {
+            high: "결과물이 미션 요구사항을 대부분 충족하고 포트폴리오 반영이 가능함",
+            medium: "일부 요구사항은 충족하지만 보완 후 포트폴리오 반영이 더 적합함",
+            low: "결과물이 미션 주제 또는 필수 산출물과 맞지 않아 다시 제출해야 함",
+            canCreatePortfolio: "low일 때만 false",
           },
           artifactEvidence: metadataEvidence,
           fileFeedbackEnabled: env.openaiFileFeedbackEnabled,

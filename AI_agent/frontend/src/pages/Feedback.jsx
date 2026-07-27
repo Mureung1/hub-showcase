@@ -54,6 +54,12 @@ function Feedback() {
     };
   }, []);
 
+  const missionFit = feedback?.missionFit;
+  const isLowMissionFit = missionFit?.level === "low";
+  const uploadPath = submission?.missionId
+    ? `${routes.upload}?missionId=${submission.missionId}`
+    : routes.upload;
+
   return (
     <main className="feedback-page">
       <style>{styles}</style>
@@ -90,6 +96,19 @@ function Feedback() {
           />
         ) : (
           <div className="feedback-grid">
+            {missionFit && (
+              <section className={`feedback-fit feedback-fit-${missionFit.level}`}>
+                <div>
+                  <span>미션 적합도</span>
+                  <strong>{missionFit.label}</strong>
+                </div>
+                <ul>
+                  {missionFit.reasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <section className="feedback-card feedback-wide">
               <span>전체 평가</span>
               <p>{feedback.overall}</p>
@@ -99,12 +118,18 @@ function Feedback() {
             <FeedbackList title="수정 제안" items={feedback.revisions} />
             <FeedbackList title="포트폴리오 반영 포인트" items={feedback.portfolioPoints} wide />
             <div className="feedback-actions">
-              <button type="button" className="cm-button cm-button-secondary" onClick={() => navigate(routes.upload)}>
+              <button type="button" className="cm-button cm-button-secondary" onClick={() => navigate(uploadPath)}>
                 다시 제출
               </button>
+              {isLowMissionFit ? (
+                <span className="feedback-blocked-message">
+                  미션 적합도가 낮아 포트폴리오 반영 전 다시 제출해야 합니다.
+                </span>
+              ) : (
               <button type="button" className="cm-button cm-button-primary" onClick={() => navigate(routes.portfolio)}>
                 포트폴리오로 이동
               </button>
+              )}
             </div>
           </div>
         )}
@@ -196,6 +221,7 @@ const styles = `
 }
 
 .feedback-card,
+.feedback-fit,
 .feedback-summary {
   min-width: 0;
   padding: 22px;
@@ -207,6 +233,50 @@ const styles = `
 
 .feedback-wide {
   grid-column: 1 / -1;
+}
+
+.feedback-fit {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.feedback-fit-low {
+  border-color: rgba(239, 68, 68, 0.32);
+  background: linear-gradient(180deg, rgba(254, 242, 242, 0.92), rgba(255, 255, 255, 0.82));
+}
+
+.feedback-fit-medium {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.92), rgba(255, 255, 255, 0.82));
+}
+
+.feedback-fit-high {
+  border-color: rgba(34, 197, 94, 0.32);
+  background: linear-gradient(180deg, rgba(240, 253, 244, 0.92), rgba(255, 255, 255, 0.82));
+}
+
+.feedback-fit span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.feedback-fit strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+}
+
+.feedback-fit ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: #475569;
+  line-height: 1.6;
 }
 
 .feedback-summary {
@@ -254,9 +324,22 @@ const styles = `
   gap: 10px;
 }
 
+.feedback-blocked-message {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 800;
+}
+
 @media (max-width: 860px) {
   .feedback-heading,
-  .feedback-grid {
+  .feedback-grid,
+  .feedback-fit {
     grid-template-columns: 1fr;
   }
 }
