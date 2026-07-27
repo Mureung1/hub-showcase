@@ -47,3 +47,11 @@ export async function saveDocument(
   await writeJson(file, record);
   return record;
 }
+
+export async function getDocument(stepId: number | string): Promise<DocumentRecord | null> {
+  try {
+    return await readJson<DocumentRecord>(dataPath("documents", `${stepId}.json`));
+  } catch {
+    return null;
+  }
+}

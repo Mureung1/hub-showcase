@@ -1,12 +1,12 @@
 import { Router } from "express";
 import path from "path";
-import { writeJson } from "../utils/jsonStore";
+import { readJson, writeJson } from "../utils/jsonStore";
 import { dataPath, ANALYZER_DIR } from "../utils/paths";
 import { runAnalyzer } from "../utils/analyzer";
 import { runJscpd } from "../utils/jscpd";
 import { findRefactorTargets } from "../utils/refactorTargets";
 import { generateAnalysisReport } from "../utils/geminiReport";
-import { saveDocument } from "../utils/documents";
+import { saveDocument, getDocument } from "../utils/documents";
 
 const router = Router();
 
@@ -23,12 +23,27 @@ interface StartAnalysisRequest {
   preset?: string;
 }
 
+interface AnalysisStats {
+  dependencyCount: number;
+  duplicateCount: number;
+  refactorTargetCount: number;
+}
+
 interface StoredProject {
   repo_url: string;
   branch: string;
   analysis_preset: string;
   connected_at: string;
-  status: "queued";
+  status: "queued" | "completed" | "failed";
+  stats?: AnalysisStats;
+}
+
+async function readProjectSafely(): Promise<StoredProject | null> {
+  try {
+    return await readJson<StoredProject>(PROJECT_FILE);
+  } catch {
+    return null;
+  }
 }
 
 router.post("/start", async (req, res) => {
@@ -38,7 +53,7 @@ router.post("/start", async (req, res) => {
     return res.status(400).json({ error: "repoId, branch, and preset are all required." });
   }
 
-  const project: StoredProject = {
+  let project: StoredProject = {
     repo_url: `https://github.com/${repoId}`,
     branch,
     analysis_preset: preset,
@@ -55,13 +70,46 @@ router.post("/start", async (req, res) => {
 
     await saveDocument(ANALYSIS_STEP_ID, "docs/00_Analysis_Report.md", report);
 
+    const stats: AnalysisStats = {
+      dependencyCount: classes.reduce((sum, c) => sum + c.baseTypes.length + c.referencedTypes.length, 0),
+      duplicateCount: duplicates.length,
+      refactorTargetCount: refactorTargets.length,
+    };
+    project = { ...project, status: "completed", stats };
+    await writeJson(PROJECT_FILE, project);
+
     res.json({ ...project, classes, duplicates, refactorTargets, report });
   } catch (err) {
+    project = { ...project, status: "failed" };
+    await writeJson(PROJECT_FILE, project);
+
     res.status(500).json({
       ...project,
       error: err instanceof Error ? err.message : String(err),
     });
   }
+});
+
+router.get("/project", async (_req, res) => {
+  const project = await readProjectSafely();
+  if (!project) {
+    return res.status(404).json({ error: "No project connected yet." });
+  }
+  res.json({ repo_url: project.repo_url, branch: project.branch });
+});
+
+router.get("/report", async (_req, res) => {
+  const project = await readProjectSafely();
+  if (!project || project.status !== "completed" || !project.stats) {
+    return res.status(404).json({ error: "No completed analysis report available." });
+  }
+
+  const doc = await getDocument(ANALYSIS_STEP_ID);
+  if (!doc) {
+    return res.status(404).json({ error: "No completed analysis report available." });
+  }
+
+  res.json({ stats: project.stats, report: doc.content, updated_at: doc.updated_at });
 });
 
 export default router;

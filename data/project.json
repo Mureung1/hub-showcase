@@ -1,7 +1,12 @@
 {
   "repo_url": "https://github.com/TheNamul/about-me",
-  "branch": "main",
+  "branch": "TheNamul",
   "analysis_preset": "standard",
-  "connected_at": "2026-07-22T13:02:40.225Z",
-  "status": "queued"
+  "connected_at": "2026-07-26T02:37:18.027Z",
+  "status": "completed",
+  "stats": {
+    "dependencyCount": 26,
+    "duplicateCount": 0,
+    "refactorTargetCount": 0
+  }
 }

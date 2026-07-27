@@ -12,3 +12,26 @@ export interface RepoSummary {
   private: boolean;
   default_branch: string;
 }
+
+export interface Step {
+  id: number;
+  name: string;
+  status: "pending" | "active" | "done";
+  progress_pct: number;
+  agent_name: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  from: "user" | "agent";
+  text: string;
+  created_at: string;
+}
+
+export interface DocumentRecord {
+  path: string;
+  content: string;
+  version: number;
+  updated_at: string;
+  history: { content: string; version: number; updated_at: string }[];
+}
