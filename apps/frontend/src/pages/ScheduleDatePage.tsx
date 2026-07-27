@@ -128,6 +128,7 @@ export function ScheduleDatePage() {
   const currentUserId = me?.profile.id;
   const mySchedules = currentUserId ? schedules.filter((schedule) => schedule.workerId === currentUserId) : [];
   const totalHours = schedules.reduce((total, schedule) => total + getScheduleDuration(schedule), 0);
+  const myTotalHours = mySchedules.reduce((total, schedule) => total + getScheduleDuration(schedule), 0);
   const firstStartTime = schedules[0]?.startTime;
   const lastEndTime = schedules.reduce<string | null>((latest, schedule) => {
     if (!latest || schedule.endTime > latest) {
@@ -136,6 +137,16 @@ export function ScheduleDatePage() {
 
     return latest;
   }, null);
+  const timelineTitle = isOwner ? `${schedules.length}건 근무` : `내 근무 ${mySchedules.length}건`;
+  const timelineDescription = isOwner
+    ? `${getHoursLabel(totalHours)} · 내 근무 ${mySchedules.length}건`
+    : `${getHoursLabel(myTotalHours)} · 매장 전체 ${schedules.length}건`;
+  const daySummaryTitle = isOwner ? getHoursLabel(totalHours) : getHoursLabel(myTotalHours);
+  const daySummaryDescription = isOwner
+    ? `${schedules.length}건 · 내 근무 ${mySchedules.length}건`
+    : mySchedules.length > 0
+      ? `${mySchedules.length}건 · 내 근무 기준`
+      : "내 근무 없음";
 
   function handleWorkerChange(workerId: string) {
     const selectedWorker = workers.find((worker) => worker.userId === workerId);
@@ -284,11 +295,9 @@ export function ScheduleDatePage() {
           <div className="card-head">
             <div>
               <p className="label">TIMELINE</p>
-              <h2>{schedules.length}건 근무</h2>
+              <h2>{timelineTitle}</h2>
             </div>
-            <p className="daily-summary">
-              {getHoursLabel(totalHours)} · 내 근무 {mySchedules.length}건
-            </p>
+            <p className="daily-summary">{timelineDescription}</p>
           </div>
 
           {isLoading ? (
@@ -505,10 +514,8 @@ export function ScheduleDatePage() {
         <aside className="side-stack" aria-label="일간 근무 요약">
           <section className="side-card today-card">
             <p className="label">DAY SUMMARY</p>
-            <h2>{getHoursLabel(totalHours)}</h2>
-            <span>
-              {schedules.length}건 · 내 근무 {mySchedules.length}건
-            </span>
+            <h2>{daySummaryTitle}</h2>
+            <span>{daySummaryDescription}</span>
             <div className="daily-summary-grid">
               <div>
                 <span>첫 시작</span>

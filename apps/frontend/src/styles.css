@@ -725,6 +725,10 @@ p {
   background: var(--color-surface-soft);
 }
 
+.request-list a {
+  display: block;
+}
+
 .request-list strong {
   display: block;
   font-size: 14px;
@@ -986,6 +990,10 @@ p {
   max-width: none;
 }
 
+.worker-metric-grid {
+  margin-bottom: 0;
+}
+
 .worker-invite-form,
 .worker-settings-form {
   display: grid;
@@ -1086,11 +1094,34 @@ p {
   font-size: 12px;
 }
 
-@media (max-width: 880px) {
+@media (max-width: 1180px) {
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 18px 24px;
+  }
+
+  .topnav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .topnav a {
+    min-width: max-content;
+  }
+
+  .top-actions {
+    margin-left: auto;
+  }
+
   .content-grid {
     grid-template-columns: 1fr;
   }
+}
 
+@media (max-width: 880px) {
   .hero-row {
     align-items: flex-start;
     flex-direction: column;
@@ -1119,5 +1150,75 @@ p {
   .invitation-card {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 720px) {
+  .stage {
+    padding: 0;
+  }
+
+  .app-shell {
+    width: 100vw;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .topbar {
+    padding: 16px;
+  }
+
+  .top-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+
+  .store-button,
+  .profile-chip {
+    flex: 1;
+  }
+
+  .dashboard {
+    padding: 24px 16px 30px;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-card,
+  .side-card,
+  .metric-card,
+  .page-panel {
+    padding: 18px;
+  }
+
+  .calendar-grid {
+    gap: 6px;
+  }
+
+  .day {
+    min-height: 82px;
+    padding: 10px;
+  }
+
+  .card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .month-pills {
+    width: 100%;
+  }
+
+  .month-pills a {
+    flex: 1;
+  }
+
+  .schedule-time-row,
+  .daily-summary-grid {
+    grid-template-columns: 1fr;
   }
 }

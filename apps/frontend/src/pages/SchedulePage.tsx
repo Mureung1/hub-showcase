@@ -109,10 +109,24 @@ export function SchedulePage() {
     currentMonth,
     currentUserId
   );
+  const totalMonthHours = currentMonthSchedules.reduce((total, schedule) => total + getScheduleDuration(schedule), 0);
   const todayKey = format(new Date(), "yyyy-MM-dd");
-  const upcomingSchedules = sortMonthlySchedules(currentMonthSchedules.filter((schedule) => schedule.workDate >= todayKey));
+  const sideSourceSchedules = isOwner ? currentMonthSchedules : myMonthSchedules;
+  const upcomingSchedules = sortMonthlySchedules(sideSourceSchedules.filter((schedule) => schedule.workDate >= todayKey));
   const sideSchedules =
-    upcomingSchedules.length > 0 ? upcomingSchedules.slice(0, 4) : sortMonthlySchedules(currentMonthSchedules).slice(0, 4);
+    upcomingSchedules.length > 0 ? upcomingSchedules.slice(0, 4) : sortMonthlySchedules(sideSourceSchedules).slice(0, 4);
+  const sideScheduleTitle = isOwner ? "다가오는 매장 근무" : "다가오는 내 근무";
+  const sideSummaryLabel = isOwner ? "STORE SUMMARY" : "MY SUMMARY";
+  const sideSummaryTitle = isOwner
+    ? `${currentMonthSchedules.length}건`
+    : myMonthSchedules.length > 0
+      ? getHoursLabel(myMonthHours)
+      : "근무 없음";
+  const sideSummaryDescription = isOwner
+    ? `${getHoursLabel(totalMonthHours)} · ${activeWorkDays}일 운영`
+    : myMonthSchedules.length > 0
+      ? `${myMonthSchedules.length}회 예정`
+      : "이번 달 내 근무 일정";
   const payrollDescription = payrollError
     ? "급여 계산 실패"
     : payrollSummary?.missingWageCount
@@ -189,16 +203,33 @@ export function SchedulePage() {
       </section>
 
       <section className="metric-grid" aria-label="이번 달 요약">
-        <article className="metric-card">
-          <span>이번 달 내 근무</span>
-          <strong>{myMonthSchedules.length}회</strong>
-          <p>{getHoursLabel(myMonthHours)} 예정</p>
-        </article>
-        <article className="metric-card">
-          <span>매장 근무일</span>
-          <strong>{activeWorkDays}일</strong>
-          <p>{currentMonthSchedules.length}건 등록</p>
-        </article>
+        {isOwner ? (
+          <>
+            <article className="metric-card">
+              <span>이번 달 근무</span>
+              <strong>{currentMonthSchedules.length}건</strong>
+              <p>{getHoursLabel(totalMonthHours)} 등록</p>
+            </article>
+            <article className="metric-card">
+              <span>매장 근무일</span>
+              <strong>{activeWorkDays}일</strong>
+              <p>{format(currentMonth, "M월")} 운영 기준</p>
+            </article>
+          </>
+        ) : (
+          <>
+            <article className="metric-card">
+              <span>이번 달 내 근무</span>
+              <strong>{myMonthSchedules.length}회</strong>
+              <p>{getHoursLabel(myMonthHours)} 예정</p>
+            </article>
+            <article className="metric-card">
+              <span>내 근무 시간</span>
+              <strong>{getHoursLabel(myMonthHours)}</strong>
+              <p>{format(currentMonth, "M월")} 확정 근무</p>
+            </article>
+          </>
+        )}
         <article className="metric-card highlight">
           <span>예상 급여</span>
           <strong>{isPayrollLoading ? "계산 중" : getCurrencyLabel(payrollSummary?.estimatedPay ?? 0)}</strong>
@@ -265,18 +296,19 @@ export function SchedulePage() {
 
         <aside className="side-stack" aria-label="근무 요약">
           <section className="side-card today-card">
-            <p className="label">SUMMARY</p>
-            <h2>{myMonthSchedules.length > 0 ? getHoursLabel(myMonthHours) : "근무 없음"}</h2>
-            <span>{myMonthSchedules.length > 0 ? `${myMonthSchedules.length}회 예정` : "이번 달 내 근무 일정"}</span>
+            <p className="label">{sideSummaryLabel}</p>
+            <h2>{sideSummaryTitle}</h2>
+            <span>{sideSummaryDescription}</span>
             <div className="mini-people">
-              <strong>{selectedStore?.role ?? "STORE"}</strong>
+              <strong>{isOwner ? "매장 관리" : "내 근무"}</strong>
               <strong>{format(currentMonth, "yyyy.MM")}</strong>
+              <strong>{isPayrollLoading ? "급여 계산 중" : getCurrencyLabel(payrollSummary?.estimatedPay ?? 0)}</strong>
             </div>
           </section>
 
           <section className="side-card">
             <div className="card-head compact">
-              <h3>다가오는 근무</h3>
+              <h3>{sideScheduleTitle}</h3>
             </div>
             {sideSchedules.length > 0 ? (
               <div className="request-list">
@@ -297,7 +329,7 @@ export function SchedulePage() {
             ) : (
               <div className="empty-state">
                 <strong>등록된 근무 없음</strong>
-                <span>{format(currentMonth, "M월")} 근무 일정이 없습니다.</span>
+                <span>{isOwner ? `${format(currentMonth, "M월")} 매장 근무 일정이 없습니다.` : `${format(currentMonth, "M월")} 내 근무 일정이 없습니다.`}</span>
               </div>
             )}
           </section>
