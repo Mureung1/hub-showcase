@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  ALLOWED_RESULT_VERBS,
   DEFAULT_GEMINI_MODEL,
   GEMINI_TIMEOUT_MS,
   LV3_PROMPT_VERSION,
@@ -7,9 +8,9 @@ import {
   createGeminiMicrotaskCacheKey,
   generateGeminiMicrotask,
   generateGeminiLv3Microtask,
-  isValidLv3MicrotaskQuality,
+  isValidMicrotaskQuality,
   resetGeminiMicrotaskCacheForTests,
-  validateLv3MicrotaskQuality,
+  validateMicrotaskQuality,
   type GeminiLv3MicrotaskInput,
   type GeminiMicrotaskInput,
 } from "./geminiMicrotask.js";
@@ -87,10 +88,10 @@ describe("generateGeminiMicrotask", () => {
   it("공식 v1 Interactions 요청 필드와 구조화 출력 형식을 사용한다", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(geminiResponse("문서 파일을 열고 제목을 입력하기"));
+      .mockResolvedValue(geminiResponse("문서 파일에 제목 한 줄 입력하기"));
 
     await expect(generateGeminiMicrotask(INPUT)).resolves.toBe(
-      "문서 파일을 열고 제목을 입력하기",
+      "문서 파일에 제목 한 줄 입력하기",
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -116,6 +117,47 @@ describe("generateGeminiMicrotask", () => {
       "x-goog-api-key": "test-secret-key",
     });
   });
+
+  it("Lv2 프롬프트에도 허용 동사·금지 동사·준비/결과 분리 지시가 들어간다", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+    await generateGeminiMicrotask(INPUT);
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).toContain("열기, 읽기, 보기, 확인하기");
+    expect(body.input).toContain(
+      "준비 동작과 결과 동작을 한 문장에 섞지 말고",
+    );
+    expect(body.input).toContain("행동 문장은 반드시 다음 동사 중 하나로 끝나야 합니다");
+    for (const verb of ALLOWED_RESULT_VERBS) {
+      expect(body.input).toContain(verb);
+    }
+    expect(body.input).toContain("피하기: 문서를 열고 핵심 주장 한 문장 쓰기");
+    expect(body.input).toContain("권장: 문서에 핵심 주장 한 문장 쓰기");
+  });
+
+  it.each([
+    ["교재를 펼치고 첫 문제의 조건 읽기", "quality_chained_action"],
+    ["첫 슬라이드의 핵심 문장 선택", "quality_result_verb_missing"],
+    ["발표 핵심을 작성하기", "quality_bounded_scope_missing"],
+  ] as const)(
+    "Lv2도 품질 기준을 통과하지 못한 응답을 %s로 거부한다",
+    async (microTask, rule) => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        geminiResponse(microTask),
+      );
+
+      await expect(generateGeminiMicrotask(INPUT)).rejects.toMatchObject({
+        code: "invalid_provider_response",
+        validationStage: "quality",
+        validationRule: rule,
+        parsed: true,
+      });
+    },
+  );
 
   it("동일한 동시 요청은 in-flight Promise와 Gemini 호출을 공유한다", async () => {
     let resolveFetch!: (value: Response) => void;
@@ -476,22 +518,22 @@ describe("generateGeminiMicrotask", () => {
     ["가장 쉬운 문제 1개 풀기", true],
     ["가장 쉬운 문제 한 개의 풀이 첫 줄 쓰기", true],
     ["첫 슬라이드에 발표 핵심 한 문장 입력하기", true],
-  ])("Lv3 행동 품질을 검사한다: %s", (microTask, expected) => {
-    expect(isValidLv3MicrotaskQuality(microTask)).toBe(expected);
+  ])("Lv2/Lv3 공용 행동 품질을 검사한다: %s", (microTask, expected) => {
+    expect(isValidMicrotaskQuality(microTask)).toBe(expected);
   });
 
   it.each([
     ["문서를 열고 핵심 주장 한 문장 쓰기", "quality_chained_action"],
     ["첫 슬라이드의 핵심 문장 선택", "quality_result_verb_missing"],
     ["발표 핵심을 작성하기", "quality_bounded_scope_missing"],
-  ] as const)("Lv3 품질 실패 규칙을 구분한다: %s", (microTask, rule) => {
-    expect(validateLv3MicrotaskQuality(microTask)).toEqual({
+  ] as const)("품질 실패 규칙을 구분한다: %s", (microTask, rule) => {
+    expect(validateMicrotaskQuality(microTask)).toEqual({
       valid: false,
       rule,
     });
   });
 
-  it("9개 유형별 fallback이 모두 Lv3 행동 품질 검사를 통과한다", () => {
+  it("9개 유형별 fallback이 모두 행동 품질 검사를 통과한다", () => {
     const fallbacks = [
       "문서에 핵심 주장 한 문장 쓰기",
       "가장 쉬운 문제 한 개의 풀이 첫 줄 쓰기",
@@ -506,7 +548,7 @@ describe("generateGeminiMicrotask", () => {
 
     expect(fallbacks).toHaveLength(9);
     for (const fallback of fallbacks) {
-      expect(isValidLv3MicrotaskQuality(fallback)).toBe(true);
+      expect(isValidMicrotaskQuality(fallback)).toBe(true);
     }
   });
 
