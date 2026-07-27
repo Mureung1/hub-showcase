@@ -72,6 +72,72 @@
     return item;
   }
 
+  /**
+   * 논문 목록 하나(제목 + 사유)를 만든다. picked와 excluded가 같은 모양을 쓴다.
+   *
+   * 제외 목록에도 **반드시 사유가 붙는다.** 제목만 나열하면 "놓치지 않기"라는
+   * 이 서비스의 핵심 가치가 증명되지 않는다 — 연구자는 무엇을 골랐는지가 아니라
+   * 무엇을 왜 버렸는지를 보고 신뢰한다.
+   */
+  function buildPaperList(papers) {
+    const list = document.createElement("ul");
+    list.className = "paper-list";
+
+    for (const paper of papers) {
+      const item = document.createElement("li");
+
+      const title = document.createElement("span");
+      title.className = "paper-list__title";
+      title.textContent = paper.title;
+
+      const reason = document.createElement("span");
+      reason.className = "paper-list__reason";
+      reason.textContent = paper.reason;
+
+      item.append(title, reason);
+      list.appendChild(item);
+    }
+    return list;
+  }
+
+  /**
+   * `judge` — 이 서비스의 하이라이트 1. 과정 로그가 아니라 강조 블록이다.
+   *
+   * picked는 펼친 상태로, excluded는 "제외된 N편 보기"로 접어서 보여준다.
+   * 펼침은 `<details>`로 충분하다 — JS 토글을 새로 발명하지 않는다.
+   */
+  function appendJudge(event) {
+    const item = appendEntry("entry--judge");
+    const excludedCount = event.total - event.selected;
+
+    const heading = document.createElement("p");
+    heading.className = "judge__heading";
+    heading.textContent = "중요도 판단";
+
+    const count = document.createElement("p");
+    count.className = "judge__count";
+    count.textContent =
+      `${event.total}편 중 ${event.selected}편 선별 · ${excludedCount}편 제외`;
+
+    item.append(heading, count);
+
+    if (event.picked.length > 0) {
+      item.appendChild(buildPaperList(event.picked));
+    }
+
+    // 0편이면 "제외된 0편 보기"라는 빈 버튼이 되므로 아예 만들지 않는다.
+    if (event.excluded.length > 0) {
+      const details = document.createElement("details");
+      details.className = "disclosure judge__excluded";
+
+      const summary = document.createElement("summary");
+      summary.textContent = `제외된 ${event.excluded.length}편 보기 — 제외 사유 포함`;
+
+      details.append(summary, buildPaperList(event.excluded));
+      item.appendChild(details);
+    }
+  }
+
   /** 사용자의 스크롤이 사실상 맨 아래에 있는가. */
   function isPinnedToBottom() {
     const gap =
@@ -115,7 +181,7 @@
 
       // ── 아래는 분기만 뚫어둔다 ────────────────────────────────────
       case "judge":
-        // TODO(8-4 · #72): 강조 블록 + "제외된 N편 보기" 펼침
+        appendJudge(event);
         break;
 
       case "paper_done":
