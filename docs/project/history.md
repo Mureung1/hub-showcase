@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-27 · BE-RECIPE-007 · 완료
+
+- 결과: 인증된 `DELETE /api/recipes/:recipeId`가 현재 사용자가 소유한 활성 `OWNED`, `EXTERNAL`, `RECEIVED` 레시피의 `deleted_at`과 `updated_at`을 같은 DB 시각으로 갱신한다. 본문·출처·초대·받은 관계는 물리 삭제하지 않으며, 삭제 시각과 정확히 30일 뒤 `restoreUntil`을 반환한다.
+- 결정: 소유자 내부 사용자 ID와 유형을 행 잠금으로 조회한 뒤 Recipe 갱신과 `DELETED` 감사 이벤트를 한 트랜잭션으로 처리한다. 없는·타인 소유·이미 삭제된 레시피와 잘못된 UUID는 모두 `RECIPE_NOT_FOUND`로 숨긴다.
+- 시행착오: 집중 테스트를 먼저 추가한 최초 실행은 삭제 서비스 모듈 부재로 `ERR_MODULE_NOT_FOUND` Red를 반환했고 기존 54개 테스트는 통과했다. 이후 기존 `pg` 트랜잭션과 공통 not-found 오류 패턴을 재사용한 최소 구현으로 Green으로 전환했다.
+- 검증: 집중 `npx tsx --test src/services/recipeDelete.service.test.ts` 7개 테스트와 전체 `npm test` 61개 테스트, `npm run type-check`, `npm run build`, `git diff --check`를 통과했다. 실제 Firebase ID 토큰·Express·PostgreSQL을 연결한 HTTP 삭제는 안전한 전용 fixture가 없어 실행하지 않았다.
+- 후속: `FE-RECIPE-008`, `BE-RECIPE-008`
+- 반복 패턴: 없음
+
 ## 2026-07-27 · FE-RECIPE-006 · 부분 완료
 
 - 결과: `OWNED`, `EXTERNAL` 상세의 `⋯ 관리` 텍스트 목록에서 전용 원본 수정 화면을 열고, 서버 상세를 기존 초안 폼에 채워 편집 가능한 7개 필드 전체를 인증된 `PATCH`로 저장한 뒤 응답 ID의 상세로 돌아간다. 출처는 추가·수정·제거할 수 있고 실패 후 입력을 유지하며, `RECEIVED`는 상세 진입점과 직접 URL 폼을 모두 차단한다. `OWNED`의 기존 전달 공유는 관리 목록에서 열고 생성·복사 상태를 유지하며 삭제는 노출하지 않는다.

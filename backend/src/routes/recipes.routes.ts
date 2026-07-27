@@ -4,6 +4,7 @@ import {
   createRecipe,
   RecipeCreateValidationError,
 } from "../services/recipeCreate.service.js";
+import { deleteRecipe } from "../services/recipeDelete.service.js";
 import {
   getRecipeDetail,
   RecipeNotFoundError,
@@ -206,6 +207,46 @@ router.patch("/:recipeId", async (req: Request, res: Response) => {
       });
     }
 
+    if (error instanceof RecipeNotFoundError) {
+      return res.status(404).json({
+        error: {
+          code: "RECIPE_NOT_FOUND",
+          message: "레시피를 찾을 수 없습니다.",
+        },
+      });
+    }
+
+    throw error;
+  }
+});
+
+router.delete("/:recipeId", async (req: Request, res: Response) => {
+  const firebaseUser = req.firebaseUser;
+
+  if (!firebaseUser) {
+    return res.status(401).json({
+      error: {
+        code: "UNAUTHORIZED",
+        message: "로그인이 필요합니다.",
+      },
+    });
+  }
+
+  try {
+    const recipeId =
+      typeof req.params.recipeId === "string"
+        ? req.params.recipeId
+        : "";
+    const recipe = await deleteRecipe(
+      databasePool,
+      firebaseUser.uid,
+      recipeId,
+    );
+
+    return res.status(200).json({
+      data: recipe,
+    });
+  } catch (error) {
     if (error instanceof RecipeNotFoundError) {
       return res.status(404).json({
         error: {
