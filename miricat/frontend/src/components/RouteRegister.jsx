@@ -1,46 +1,111 @@
-import Field from "./Field";
-import RouteOption from "./RouteOption";
+import { api } from "../lib/api";
 import { useState } from "react";
+import Field from "./Field";
+import StationPicker from "./StationPicker";
+import RouteOption from "./RouteOption";
 
+// 경로 등록: 출발/도착을 고르면 미리캣이 실제 경로 후보를 찾아온다.
+// 대중교통은 노선·정류장, 자가용은 경유 도로명이 저장돼 이후 공지 매칭의 근거가 된다.
 export default function RouteRegister({ onSaved }) {
-    const [selectedId, setSelectedId] = useState("a"); const [origin, setOrigin] = useState(""); const [dest, setDest] = useState(""); const [departTime, setDepartTime] = useState("");
+  const [mode, setMode] = useState("transit");        // transit | driving
+  const [origin, setOrigin] = useState(null);         // 정류장 객체 {name,x,y,region}
+  const [dest, setDest] = useState(null);
+  const [departTime, setDepartTime] = useState("");
+  const [candidates, setCandidates] = useState(null); // null=조회 전
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [finding, setFinding] = useState(false);
   const [saved, setSaved] = useState(null);
-  const candidates = [
-  { id: "a", name: "경로 A", durationMin: 43, lineBadge: "B1", road: "갑천도시고속도로", stationCount: 12 },
-  { id: "b", name: "경로 B", durationMin: 51, lineBadge: "급행2", road: "한밭대로", stationCount: 15 },
-];
+  const [formKey, setFormKey] = useState(0);   // 저장 후 픽커를 통째로 리마운트(검색 잔상 제거)
 
-  // "보초 세우기" 클릭 시: 입력값을 백엔드 POST /api/routes 로 보내 저장.
+  // 출발/도착/이동수단이 바뀌면 이전 후보는 무효 — 파생 데이터는 원본과 함께 비운다
+  function pickOrigin(s) { setOrigin(s); setCandidates(null); }
+  function pickDest(s) { setDest(s); setCandidates(null); }
+  function switchMode(m) { setMode(m); setCandidates(null); }
+
+  async function findCandidates() {
+    if (!origin || !dest || finding) return;
+    setFinding(true);
+    try {
+      const res = await fetch(
+        api(`/api/route-candidates?mode=${mode}&sx=${origin.x}&sy=${origin.y}&ex=${dest.x}&ey=${dest.y}`)
+      );
+      const data = await res.json();
+      setCandidates(data.candidates ?? []);
+      setSelectedIdx(0);
+    } finally {
+      setFinding(false);
+    }
+  }
+
   async function handleSubmit() {
-    const chosen = candidates.find((c) => c.id === selectedId);   // 고른 후보의 노선을 경로에 저장 → 공지 매칭 근거
-    const res = await fetch("/api/routes", {
+    const chosen = candidates?.[selectedIdx];
+    if (!chosen) return;
+    const res = await fetch(api("/api/routes"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        origin_name: origin, dest_name: dest, depart_time: departTime,
-        lines: chosen?.lineBadge ?? "", stops: "",
+        origin_name: origin.name,
+        dest_name: dest.name,
+        depart_time: departTime,
+        lines: chosen.lines.join(", "),          // 매칭 1층 재료 (대중교통)
+        stops: chosen.stops.join(", "),          // 매칭 2층 재료 (대중교통)
+        roads: (chosen.roads ?? []).join(", "),  // 매칭 3층 재료 (자가용)
+        path: chosen.points ?? null,             // 좌표열 — 리포트 실지도용
       }),
     });
     const data = await res.json();
     if (res.ok) {
       setSaved(data.route);
-      onSaved?.();   // 저장 성공 → 부모(App)에게 알려 목록 자동 갱신
+      onSaved?.();   // 저장 성공 → 부모에게 알려 목록 자동 갱신
+      // 다음 등록을 위해 폼 초기화 (저장됨 메시지는 남긴다)
+      setOrigin(null); setDest(null); setDepartTime(""); setCandidates(null);
+      setFormKey((k) => k + 1);   // key가 바뀌면 React가 픽커를 새 컴포넌트로 갈아끼움 → 내부 상태(검색어·결과)도 초기화
     } else {
       setSaved({ error: data.error ?? "저장 실패" });
     }
   }
 
+  const stationLabel = mode === "driving" ? "(가까운 정류장 기준)" : "정류장";
+
   return (
     <div className="reg-side">
-      <Field label="출발지" value={origin}     onChange={(e) => setOrigin(e.target.value)}     placeholder="예: 유성구 우리집" />
-      <Field label="도착지" value={dest}       onChange={(e) => setDest(e.target.value)}       placeholder="예: 대덕구 회사" />
+      {/* 이동수단 선택 — 후보 조회 API와 저장되는 매칭 재료가 달라진다 */}
+      <div className="mode-toggle">
+        <button className={mode === "transit" ? "on" : ""} onClick={() => switchMode("transit")}>🚌 대중교통</button>
+        <button className={mode === "driving" ? "on" : ""} onClick={() => switchMode("driving")}>🚗 자가용</button>
+      </div>
+
+      <StationPicker key={`o${formKey}`} label={`출발 ${stationLabel}`} station={origin} onSelect={pickOrigin} />
+      <StationPicker key={`d${formKey}`} label={`도착 ${stationLabel}`} station={dest} onSelect={pickDest} />
       <Field label="시간대" value={departTime} onChange={(e) => setDepartTime(e.target.value)} placeholder="예: 08:00" />
 
-      <div className="opt-label">경로 후보 — 평소 다니는 길을 고르세요</div>
+      {origin && dest && candidates === null && (
+        <button className="btn-primary" onClick={findCandidates}>
+          {finding ? "미리캣이 길을 찾는 중…" : "경로 후보 찾기"}
+        </button>
+      )}
 
-      {candidates.map((candidate) => (<RouteOption key={candidate.id} candidate={candidate} selected={candidate.id === selectedId} onSelect={() => setSelectedId(candidate.id)} />))}
+      {candidates && (
+        <>
+          <div className="opt-label">
+            {candidates.length === 0
+              ? "두 지점 사이의 경로를 찾지 못했어요."
+              : "경로 후보 — 평소 다니는 길을 고르세요"}
+          </div>
+          {candidates.map((candidate, i) => (
+            <RouteOption
+              key={i}
+              candidate={candidate}
+              selected={i === selectedIdx}
+              onSelect={() => setSelectedIdx(i)}
+            />
+          ))}
+          {candidates.length > 0 && (
+            <button className="btn-primary" onClick={handleSubmit}>이 경로에 보초 세우기 →</button>
+          )}
+        </>
+      )}
 
-      <button className="btn-primary" onClick={handleSubmit}>이 경로에 보초 세우기 →</button>
       {saved && (saved.error
         ? <p style={{ color: "#E4572E" }}>⚠️ {saved.error}</p>
         : <p style={{ color: "#5B8A5A" }}>✅ 저장됨: {saved.name}</p>)}

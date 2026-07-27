@@ -21,6 +21,8 @@ alter table routes add column if not exists dest_lng    double precision;
 alter table routes add column if not exists depart_time text;   -- 시간대 예: "08:00"
 alter table routes add column if not exists lines text;         -- 이용 노선(쉼표 구분) 예: "B1" — 공지 매칭용
 alter table routes add column if not exists stops text;         -- 경유 정류장(쉼표 구분) — 공지 매칭용
+alter table routes add column if not exists roads text;         -- 경유 도로명(쉼표 구분, 자가용) — 매칭 3층용
+alter table routes add column if not exists path jsonb;         -- 경로 좌표열 [{name?, x, y}] — 리포트 실지도용
 
 -- ─────────────────────────────────────────────────────────────
 -- 2) route_candidates — 경로 후보 (선택 + 안 고른 대안). 등록 1 : N 후보.
@@ -62,8 +64,10 @@ create table if not exists notices (
   title       text,
   raw_text    text,                       -- 본문 전문
   extraction  jsonb,                      -- 추출 결과 {events: [...]}
-  collected_at timestamptz default now()
+  collected_at timestamptz default now(),
+  alerted_at  timestamptz                 -- 경보 보낸 시각 (null = 아직 안 알림) — 재경보 방지
 );
+-- 기존 테이블에 컬럼 추가할 때: alter table notices add column if not exists alerted_at timestamptz;
 
 create index if not exists idx_notices_source on notices(source);
 

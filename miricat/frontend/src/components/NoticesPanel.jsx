@@ -1,70 +1,7 @@
+import { api } from "../lib/api";
 import { useState, useEffect } from "react";
-
-// 소스 id → 사람이 읽는 이름 (화면엔 개발용 id 대신 이 라벨)
-const SOURCE_LABEL = {
-  daejeon_bus: "대전 버스조합",
-  daejeon_city: "대전광역시",
-  sejong_sctc: "세종교통공사",
-};
-
-function fmtDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}.${d.getDate()}`;
-}
-
-// ── 매칭 규칙: agent-worker/analyst.py 와 동일 (노선/정류장 문자열 겹침) ──
-function norm(s) {
-  return (s || "").toLowerCase().replace(/노선/g, "").replace(/[\s번]/g, "");
-}
-function hit(value, token) {
-  const a = norm(value), b = norm(token);
-  return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
-}
-// ── 시간 유효성: analyst.py의 _is_current 미러 (끝난 사건은 경보 제외) ──
-const DATE_RE = /(\d{4})[.\-]\s*(\d{1,2})[.\-]\s*(\d{1,2})/;
-const MD_RE = /(\d{1,2})[.\-]\s*(\d{1,2})/;
-function eventEnd(period) {
-  const tail = (period || "").split("~").pop().trim();   // '~' 뒤 = 종료쪽
-  let y, mo, d;
-  const m = tail.match(DATE_RE);
-  if (m) {
-    [y, mo, d] = [+m[1], +m[2], +m[3]];
-  } else {
-    const md = tail.match(MD_RE);           // 종료쪽이 'M.D'뿐이면 시작 연도 빌림
-    const start = (period || "").match(DATE_RE);
-    if (!md || !start) return null;         // 종료일 못 정함 (열린 기간 등)
-    [y, mo, d] = [+start[1], +md[1], +md[2]];
-  }
-  const dt = new Date(y, mo - 1, d);
-  return Number.isNaN(dt.getTime()) ? null : dt;
-}
-function isCurrent(period) {
-  if (!period) return true;
-  const end = eventEnd(period);
-  if (!end) return true;                    // 불명·열린 기간 → 보수적 유지
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return end >= today;                      // 아직 안 끝났으면 유효(다가올 것 포함)
-}
-// 경로 lines/stops("B1, 급행2") → 토큰 배열
-function routeTokens(route) {
-  if (!route) return [];
-  return [route.lines, route.stops]
-    .filter(Boolean)
-    .flatMap((s) => s.split(",").map((t) => t.trim()))
-    .filter(Boolean);
-}
-// 이 공지가 내 경로와 겹치나 + 겹친 값들(강조용)
-function matchNotice(notice, tokens) {
-  const hits = new Set();
-  for (const ev of notice.extraction?.events ?? []) {
-    if (!isCurrent(ev.period)) continue;   // 끝난 사건은 매칭에서 뺀다
-    for (const v of [...(ev.affected_lines || []), ...(ev.affected_stops || [])]) {
-      for (const t of tokens) if (hit(v, t)) hits.add(v);
-    }
-  }
-  return hits; // 비었으면 영향 없음
-}
+import { Link } from "react-router-dom";
+import { SOURCE_LABEL, fmtDate, matchNotice, routeTokens } from "../lib/matching";
 
 function Chips({ items, color, hits }) {
   if (!items || items.length === 0) return null;
@@ -91,7 +28,7 @@ function Chips({ items, color, hits }) {
   );
 }
 
-function NoticeCard({ n, hits, alertMode }) {
+function NoticeCard({ n, hits, alertMode, routeId }) {
   const events = n.extraction?.events ?? [];
   return (
     <div
@@ -131,14 +68,23 @@ function NoticeCard({ n, hits, alertMode }) {
         </div>
       )}
 
-      <a
-        href={n.source_url}
-        target="_blank"
-        rel="noreferrer"
-        style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "#3E7CB1" }}
-      >
-        공지 원문 보기 →
-      </a>
+      <div style={{ display: "flex", gap: 14, marginTop: 10 }}>
+        {/* 리포트 = 앱 안 이동(Link) / 원문 = 외부 사이트(a) */}
+        <Link
+          to={`/report/${n.id}${routeId ? `?route=${routeId}` : ""}`}
+          style={{ fontSize: 13, fontWeight: 600, color: "#3E7CB1", textDecoration: "none" }}
+        >
+          미리캣 리포트 보기 →
+        </Link>
+        <a
+          href={n.source_url}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 13, color: "#8B7863" }}
+        >
+          공지 원문 →
+        </a>
+      </div>
     </div>
   );
 }
@@ -152,7 +98,7 @@ export default function NoticesPanel({ routes = [] }) {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/notices");
+      const res = await fetch(api("/api/notices"));
       const data = await res.json();
       setNotices(data.notices ?? []);
     } finally {
@@ -166,7 +112,7 @@ export default function NoticesPanel({ routes = [] }) {
   const tokens = routeTokens(selected);
 
   // 선택 경로 기준으로 각 공지에 매칭 결과를 붙이고 경보/확인함으로 가른다
-  const withHits = notices.map((n) => ({ n, hits: matchNotice(n, tokens) }));
+  const withHits = notices.map((n) => ({ n, hits: matchNotice(n, selected) }));
   const alerts = withHits.filter((x) => x.hits.size > 0);
   const clears = withHits.filter((x) => x.hits.size === 0);
 
@@ -206,7 +152,7 @@ export default function NoticesPanel({ routes = [] }) {
             {tokens.length > 0 ? (
               <>🚌 <b>{selected.name}</b> 기준 · 이용 {tokens.join(", ")} · 미리캣이 대조해 판정</>
             ) : (
-              <>⚠️ 이 경로엔 이용 노선 정보가 없어요. 경로를 등록할 때 후보(B1/급행2)를 골라 저장하면 매칭돼요.</>
+              <>⚠️ 이 경로엔 이용 노선 정보가 없어요. 경로를 새로 등록하면 이용 노선·정류장으로 매칭돼요.</>
             )}
           </div>
 
@@ -220,7 +166,7 @@ export default function NoticesPanel({ routes = [] }) {
             </p>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
-              {alerts.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode />)}
+              {alerts.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode routeId={selected?.id} />)}
             </div>
           )}
 
@@ -229,7 +175,7 @@ export default function NoticesPanel({ routes = [] }) {
             확인함 · 이 경로 영향 없음 ({clears.length})
           </div>
           <div style={{ display: "grid", gap: 12 }}>
-            {clears.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode={false} />)}
+            {clears.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode={false} routeId={selected?.id} />)}
           </div>
         </>
       )}
