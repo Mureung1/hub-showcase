@@ -8,6 +8,9 @@ import { Overlap } from './components/Overlap';
 import { Recommend } from './components/Recommend';
 import { Detail } from './components/Detail';
 import type { AuthUser, LoginResponse } from './api/auth';
+import { saveDiagnosis } from './api/diagnoses';
+import { ApiError } from './api/ApiError';
+import { SYMPTOM_ID_BY_NAME } from './mockData';
 import type { Product, Screen } from './types';
 
 const STORAGE_KEY = 'gc_auth';
@@ -116,6 +119,17 @@ function App() {
     setRecommendedIngredientIds(ingredientIds);
     setSupplements(enteredSupplements);
     setScreen('overlap');
+
+    if (auth) {
+      const symptomIds = symptoms.map((name) => SYMPTOM_ID_BY_NAME[name]).filter(Boolean);
+      saveDiagnosis(symptomIds, ingredientIds, auth.token).catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          handleAuthError();
+          return;
+        }
+        console.error('진단 결과 저장 실패:', err);
+      });
+    }
   }
 
   function handleSelectProduct(product: Product) {

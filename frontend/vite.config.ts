@@ -10,6 +10,7 @@ export default defineConfig({
       '/ingredients': 'http://localhost:3000',
       '/products': 'http://localhost:3000',
       '/profile': 'http://localhost:3000',
+      '/diagnoses': 'http://localhost:3000',
     },
   },
 })

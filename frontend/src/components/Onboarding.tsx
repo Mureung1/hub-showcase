@@ -35,7 +35,7 @@ export function Onboarding({ token, initialUser, onComplete, onCancel, onAuthErr
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!isValid || gender === '') return;
+    if (gender === '' || birthYear.trim() === '' || heightCm.trim() === '' || weightKg.trim() === '') return;
     setError(null);
     setLoading(true);
     try {
