@@ -407,9 +407,9 @@ function App() {
           <button type="button">서비스 소개</button>
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} aria-current={activeMainTab === id ? "page" : undefined} onClick={() => (id === "recommend" ? showRecommendations() : setActiveMainTab(id))}>{label}</button>)}
         </nav>
-        <button className="header-cta" type="button" onClick={activeMainTab === "fridge" ? showRecommendations : openIngredientForm}>
+        {!selectedRecipe && <button className="header-cta" type="button" onClick={activeMainTab === "fridge" ? showRecommendations : openIngredientForm}>
           {activeMainTab === "fridge" ? "레시피 추천" : "재료 등록하기"}
-        </button>
+        </button>}
       </header>
 
       <main>
@@ -610,7 +610,6 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved }) {
       <p className="eyebrow">TODAY&apos;S RECIPE</p>
       <h1>{menu.name ?? "메뉴 상세"}</h1>
       <div className="recipe-hero-chips"><span>{cookingMethodLabels[menu.cookingMethod]}</span><span>{menu.cookingTime}분</span><span>{recipeDifficultyLabels[menu.difficulty]}</span><span>{menu.servings}인분</span>{generatedMissingNames.size > 0 && <span className="missing">부족 재료 {generatedMissingNames.size}개</span>}</div>
-      <p className="recipe-hero-description">{description}</p>
     </header>
 
     <div className="recipe-detail-body">

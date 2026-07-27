@@ -75,6 +75,8 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   fireEvent.click(recipeButton);
 
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });
+  expect(screen.queryByRole("button", { name: "재료 등록하기" })).not.toBeInTheDocument();
+  expect(screen.getAllByText(recipe.description)).toHaveLength(1);
   expect(screen.getByRole("heading", { name: "레시피 소개" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "대체 재료 안내" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /구매하기/ })).toHaveAttribute("href", expect.stringContaining("query=%EB%8C%80%ED%8C%8C"));

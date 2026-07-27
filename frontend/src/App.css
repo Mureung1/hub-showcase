@@ -81,13 +81,6 @@
   background: #ffe2d1;
 }
 
-.recipe-hero-description {
-  max-width: 640px;
-  margin: 22px 0 0;
-  color: rgba(255, 255, 255, 0.86);
-  line-height: 1.72;
-}
-
 .recipe-detail-body {
   padding: 8px 34px 40px;
 }
