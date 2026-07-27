@@ -16,14 +16,26 @@ from careersignal.verification.checks.schema import (
     rules_for,
     schema_check,
 )
+from careersignal.verification.checks.source_policy import (
+    CLAIM_TYPE_USE,
+    TARGET_WIKI,
+    WIKI_FIELD_USE,
+    SourcePolicyReader,
+    source_policy_check,
+)
 
 __all__ = [
+    "CLAIM_TYPE_USE",
     "SCHEMA_RULES",
     "TARGET_CLAIM",
     "TARGET_MENTION",
+    "TARGET_WIKI",
+    "WIKI_FIELD_USE",
     "CitationReader",
     "SchemaRule",
+    "SourcePolicyReader",
     "citation_span_check",
     "rules_for",
     "schema_check",
+    "source_policy_check",
 ]

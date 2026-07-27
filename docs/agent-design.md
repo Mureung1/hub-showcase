@@ -282,6 +282,21 @@ flowchart LR
 
 후자는 `support_type`에 따라 대상 표가 갈리는 다형 참조라 외래키로 강제할 수 없다. 근거 연결이 없는 주장은 이 검사의 대상이 아니며 필수 슬롯 판정이 다룬다.
 
+검사 2의 대상도 두 가지이며 근거의 용도를 정하는 값이 다르다.
+
+| 대상 | 용도를 정하는 값 |
+| --- | --- |
+| `analysis_claim` | `claim_type` |
+| `wiki_revision` | `wiki_evidence.field_name` |
+
+`claim_type`이 `statistic`이면 `statistics`, `strategy`면 `strategy`, 나머지는 `interpretation_context`를 요구한다. Wiki 필드와 `wiki_*` 용도는 [데이터 전략](data-strategy.md) 3.1에 따라 일대일로 대응한다.
+
+평가가 없는 스냅샷은 계층을 알 수 없으므로 통과시키지 않는다. 스냅샷에 평가가 여러 버전이면 최신 평가를 적용한다.
+
+검사 2는 `relation`이 `supports`인 근거만 본다. 정책은 주장의 근거로 쓰는 것을 제한하며 반례 확보를 막지 않는다. 상충 근거는 검사 7이 다룬다.
+
+시간 적합성은 근거 스냅샷의 수집 시각과 실행 봉투의 `as_of_date`를 비교한다. 기준일 이후에 수집한 자료를 근거로 쓰면 같은 봉투로 재실행해도 같은 자료 범위를 얻지 못한다.
+
 ### 9.1 위험 기반 표본
 
 | 조건 | 교차 판정 |

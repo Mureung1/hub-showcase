@@ -147,6 +147,65 @@ class VerificationRepository(Repository):
             (claim_id,),
         )
 
+    # ------------------------------------------------------------ 자료 정책
+    # 스냅샷에 평가가 여러 버전이면 최신 평가를 적용한다. 평가가 없으면 계층을
+    # 알 수 없으므로 행은 돌려주되 평가 컬럼이 비어 있다.
+
+    _LATEST_ASSESSMENT = """
+        LEFT JOIN LATERAL (
+            SELECT a.source_tier, a.allowed_uses, a.assessment_version
+            FROM source_assessments a
+            WHERE a.snapshot_id = s.snapshot_id
+            ORDER BY a.assessed_at DESC, a.assessment_version DESC
+            LIMIT 1
+        ) a ON true
+    """
+
+    def claim_type(self, claim_id: str) -> str | None:
+        return self.unit.fetch_value(
+            "SELECT claim_type FROM analysis_claims WHERE claim_id = %s", (claim_id,)
+        )
+
+    def claim_source_policy(self, claim_id: str) -> list[dict[str, Any]]:
+        """주장을 지지하는 청크 근거의 자료 계층과 허용 용도.
+
+        반박 근거는 제외한다. 정책은 주장의 근거로 쓰는 것을 제한하며,
+        반례 확보까지 막지 않는다. 상충 근거는 검사 7이 다룬다.
+        """
+        return self.unit.fetch_all(
+            f"""
+            SELECT e.support_id AS chunk_id, s.snapshot_id,
+                   s.published_at, s.fetched_at,
+                   a.source_tier, a.allowed_uses, a.assessment_version
+            FROM analysis_claim_evidence e
+            JOIN source_chunks c ON c.chunk_id = e.support_id
+            JOIN source_snapshots s ON s.snapshot_id = c.snapshot_id
+            {self._LATEST_ASSESSMENT}
+            WHERE e.claim_id = %s
+              AND e.support_type = 'chunk'
+              AND e.relation = 'supports'
+            ORDER BY e.support_id
+            """,
+            (claim_id,),
+        )
+
+    def wiki_source_policy(self, revision_id: str) -> list[dict[str, Any]]:
+        """Wiki 개정판의 필드별 근거. 필드가 허용 용도와 일대일로 대응한다."""
+        return self.unit.fetch_all(
+            f"""
+            SELECT w.field_name, w.chunk_id, s.snapshot_id,
+                   s.published_at, s.fetched_at,
+                   a.source_tier, a.allowed_uses, a.assessment_version
+            FROM wiki_evidence w
+            JOIN source_chunks c ON c.chunk_id = w.chunk_id
+            JOIN source_snapshots s ON s.snapshot_id = c.snapshot_id
+            {self._LATEST_ASSESSMENT}
+            WHERE w.revision_id = %s
+            ORDER BY w.field_name, w.chunk_id
+            """,
+            (revision_id,),
+        )
+
     # ------------------------------------------------------------ 수리 지시
     def add_repair_order(
         self, agent_run_id: str, order: RepairOrder, order_id: str | None = None
