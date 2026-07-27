@@ -16,11 +16,6 @@ import { promisify } from 'node:util'
 
 import type { UserInputRequestedEvent } from '@ay-ple/codex-chat-runtime/contract'
 import {
-  PRODUCT_REVIEW_FEEDBACK_MAX_BYTES,
-  type ProductMaterialRefreshResponse,
-} from '@ay-ple/product-contract'
-
-import {
   continuationLossForSettledDecision,
   hasSameInvocationSnapshot,
   isRetryableModelingRun,
@@ -135,9 +130,11 @@ export type SemesterWorkspaceRecovery = {
 }
 
 export type MaterialRefreshResult = {
-  readonly outcome: ProductMaterialRefreshResponse['outcome']
+  readonly outcome: 'refreshed' | 'source_rebaselined'
   readonly workspace: ReadySemesterWorkspaceSnapshot
 }
+
+const productReviewFeedbackMaxBytes = 8 * 1024
 
 export type IncompatibleSemesterWorkspaceSnapshot = {
   readonly state: 'incompatible'
@@ -3049,7 +3046,7 @@ function requestAssignmentReviewRevision(
     typeof input.feedback !== 'string' ||
     input.feedback.trim().length === 0 ||
     Buffer.byteLength(input.feedback, 'utf8') >
-      PRODUCT_REVIEW_FEEDBACK_MAX_BYTES
+      productReviewFeedbackMaxBytes
   ) {
     throw new StatePatchReviewError(
       'review_conflict',

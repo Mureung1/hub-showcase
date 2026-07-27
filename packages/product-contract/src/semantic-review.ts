@@ -1,8 +1,8 @@
 import {
   invalidContract,
   isExactObject,
+  isProductOperationId,
   isRecord,
-  isTargetProductOperationId,
   utf8Bytes,
 } from './contract-values.js'
 
@@ -137,7 +137,7 @@ export function decodeProductReviewResult(value: unknown): ProductReviewResult {
 export function decodeProductReviewFrame(value: unknown): ProductReviewFrame {
   if (
     !isRecord(value) ||
-    !isTargetProductOperationId(value.operationId) ||
+    !isProductOperationId(value.operationId) ||
     !isSemanticReviewInteractionId(value.interactionId)
   ) {
     throw invalidContract()

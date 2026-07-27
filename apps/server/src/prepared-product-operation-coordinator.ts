@@ -8,9 +8,9 @@ import {
 import type {
   ProductCodexTurnSettings,
   ProductInteractionAnswerRequest,
-  ProductOperationFrame,
-  ProductQuestion,
   ProductReviewFrame,
+  TargetProductOperationFrame,
+  TargetProductQuestion,
 } from '@ay-ple/product-contract'
 
 import {
@@ -27,7 +27,9 @@ import {
 } from './product-turn-coordinator.js'
 
 export type PreparedProductOperationSink = {
-  write(frame: ProductOperationFrame | ProductReviewFrame): Promise<boolean>
+  write(
+    frame: TargetProductOperationFrame | ProductReviewFrame,
+  ): Promise<boolean>
   end(): void
 }
 
@@ -208,7 +210,7 @@ export function createPreparedProductOperationCoordinator(options: {
   async function projectActivity(
     operation: ActiveOperation,
     activity: CodexProductActivity,
-  ): Promise<ProductOperationFrame | undefined> {
+  ): Promise<TargetProductOperationFrame | undefined> {
     const base = { operationId: operation.operationId }
     switch (activity.type) {
       case 'agent_message.delta':
@@ -549,7 +551,7 @@ function projectQuestion(
   },
   id: string,
   redactions: readonly string[],
-): ProductQuestion {
+): TargetProductQuestion {
   return {
     id,
     header: sanitize(question.header, redactions),

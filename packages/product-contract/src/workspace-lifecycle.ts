@@ -4,13 +4,13 @@ import {
   isNonEmptyString,
   isProductWorkspaceId,
   isRecord,
-  isTargetProductOperationId,
+  isProductOperationId,
   utf8Bytes,
 } from './contract-values.js'
 import {
   decodeProductAccountReadiness,
   type ProductAccountReadiness,
-} from './workspace.js'
+} from './account-readiness.js'
 
 const termKeyMaxBytes = 64
 const termDisplayNameMaxBytes = 128
@@ -263,7 +263,7 @@ function decodeActiveOperation(
   if (value === null) return null
   if (
     !isExactObject(value, ['kind', 'operationId']) ||
-    !isTargetProductOperationId(value.operationId) ||
+    !isProductOperationId(value.operationId) ||
     value.kind !== 'product_turn'
   ) {
     throw invalidContract()

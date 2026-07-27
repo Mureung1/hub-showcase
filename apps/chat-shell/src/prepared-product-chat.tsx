@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react'
 
-import type { ProductQuestion } from '@ay-ple/product-contract'
+import type { TargetProductQuestion } from '@ay-ple/product-contract'
 
 import {
   type PreparedClarificationEntry,
@@ -367,7 +367,7 @@ function QuestionInput({
   disabled,
   onChange,
 }: {
-  readonly question: ProductQuestion
+  readonly question: TargetProductQuestion
   readonly value: string
   readonly disabled: boolean
   readonly onChange: (value: string) => void

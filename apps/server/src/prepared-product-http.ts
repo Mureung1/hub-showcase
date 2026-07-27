@@ -17,8 +17,8 @@ import {
   type ProductAccountReadiness,
   type ProductCodexSettings,
   type ProductError,
-  type ProductOperationFrame,
   type ProductReviewFrame,
+  type TargetProductOperationFrame,
   type TargetProductBootstrap,
   type ProductWorkspaceLifecycle,
 } from '@ay-ple/product-contract'
@@ -280,7 +280,7 @@ async function runProductStream(options: {
   request.socket.once('close', disconnect)
   response.once('close', onClose)
   const sink: PreparedProductOperationSink = {
-    async write(frame: ProductOperationFrame | ProductReviewFrame) {
+    async write(frame: TargetProductOperationFrame | ProductReviewFrame) {
       operationId ??= frame.operationId
       if (disconnected) options.disconnect(frame.operationId)
       if (!streamStarted) {

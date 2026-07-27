@@ -3,6 +3,7 @@ import {
   isExactObject,
   isNonEmptyString,
   isProductInteractionId,
+  isProductOperationId,
   isProductQuestionId,
   isRecord,
   utf8Bytes,
@@ -71,8 +72,7 @@ export function decodeTargetProductOperationFrame(
 ): TargetProductOperationFrame {
   if (
     !isRecord(value) ||
-    typeof value.operationId !== 'string' ||
-    !/^chat_[0-9a-f]{32}$/u.test(value.operationId) ||
+    !isProductOperationId(value.operationId) ||
     typeof value.type !== 'string'
   ) {
     throw invalidContract()

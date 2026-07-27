@@ -103,7 +103,7 @@ Canonical `createPreparedServerApplication()`은 Broker Router를 같은 loopbac
 
 Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. MCP host는 loopback과 per-process high-entropy token을 모두 검증한다. Token, native identity, absolute path, complete MCP payload와 traceback은 Browser contract에 없다. Old `/api/product/workspaces/activate`, Course/material/First Assignment/retry, academic Review compatibility route, `/api/product-mcp`, `/api/runtime/*`와 `/api/codex-chat/*`는 canonical composition에서 Express `404`로 닫힌다.
 
-Public cutover 전 rollback unit은 current-v2 Browser·Server router·store·private Runtime/MCP graph 전체였다. Cutover 뒤에는 prepared-workspace Browser·target Router·Broker·generic Runtime child environment·project Skill/MCP graph 전체가 한 unit이며 양쪽을 섞는 half-state는 지원하지 않는다. Old academic source와 v2 persistence, old Browser workbench·Review alias의 물리 제거는 후속 contraction 범위다.
+Public cutover 전 rollback unit은 current-v2 Browser·Server router·store·private Runtime/MCP graph 전체였다. Cutover 뒤에는 prepared-workspace Browser·target Router·Broker·generic Runtime child environment·project Skill/MCP graph 전체가 한 unit이며 양쪽을 섞는 half-state는 지원하지 않는다. Old Browser workbench, public academic Router/action adapter와 shared contract는 제거됐다. Consumer 없는 old Server persistence·private MCP·managed Recipe와 Runtime override는 bytes를 보존한 채 후속 physical contraction 범위로 남는다.
 
 ## NDJSON과 shutdown
 

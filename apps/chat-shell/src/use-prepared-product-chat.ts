@@ -3,8 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   BrowserSafeSemanticReview,
   ProductAccountReadiness,
-  ProductQuestion,
   ProductReviewResult,
+  TargetProductQuestion,
   TargetProductBootstrap,
 } from '@ay-ple/product-contract'
 
@@ -32,7 +32,7 @@ export type PreparedClarificationEntry = {
   readonly kind: 'clarification'
   readonly operationId: string
   readonly interactionId: string
-  readonly questions: readonly ProductQuestion[]
+  readonly questions: readonly TargetProductQuestion[]
   readonly resolution?: 'answered' | 'cancelled'
 }
 
