@@ -12,8 +12,9 @@
 
 이 문서는 AY의 MCP 요청을 AY-PLE의 typed UI로 바꾸고, 사용자의 structured result를 같은 Codex Turn에 반환하는 long-lived seam을 설명한다. 제품 가치와 MVP 범위는 Product Brief, 결정의 이유는 ADR 0019, 현재 코드의 강결합 topology와 gap은 구현 지도가 소유한다.
 
-Interaction MCP Module은 작은 Interface 뒤에 다음 복잡성을 숨기는 deep Module이다.
+Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합친 deep Module이다. Bootstrap이 설치한 project MCP declaration으로 Adapter를 native discovery하고, App Runtime이 environment로 현재 Broker binding을 공급한다.
 
+- Tracked `.codex/config.toml`과 process-local environment binding의 분리
 - Runtime·Thread·Turn과 MCP tool server의 결합
 - Browser projection과 capability별 UI lifecycle
 - 한 번만 응답하기, 취소, disconnect와 terminal 정산
@@ -28,35 +29,55 @@ Skill과 AY는 이 복잡성을 알지 않고 capability의 typed request와 res
 sequenceDiagram
     participant U as User
     participant UI as AY-PLE UI Adapter
-    participant M as Interaction MCP Module
+    participant B as App Interaction Broker
+    participant M as MCP STDIO Adapter
     participant AY as AY / Skill
     participant W as SemesterWorkspace
 
     AY->>M: capability request
-    M->>UI: typed UI projection
+    M->>B: typed request
+    B->>UI: typed UI projection
     UI->>U: 자료·비교·선택지 표시
     U->>UI: 선택 또는 feedback
-    UI->>M: validated user result
+    UI->>B: validated user result
+    B-->>M: structured result
     M-->>AY: structured MCP result
     AY->>W: 실제 파일 변경
     AY->>W: 의미 있는 Git checkpoint
 ```
 
-App은 네 번째 단계까지의 interaction round trip을 소유한다. 다섯 번째 단계 이후 결과 해석과 workspace mutation은 AY와 Skill이 소유한다. 이 선은 App이 풍부한 UI를 제공하면서도 학업 workflow와 file format에 불필요하게 결합되지 않게 한다.
+App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 결과를 돌려주는 interaction round trip을 소유한다. 그 결과의 해석과 이후 workspace mutation은 AY와 Skill이 소유한다. 이 선은 App이 풍부한 UI를 제공하면서도 학업 workflow와 file format에 불필요하게 결합되지 않게 한다.
 
 ## 모듈 경계
 
 | Module | Interface | 숨기는 것 |
 | --- | --- | --- |
 | Skill·AY workflow | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
-| Interaction MCP Module | Capability별 typed request/result | Turn binding, correlation, pending lifecycle, cancellation, transport |
+| Workspace MCP declaration | STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
+| Interaction MCP STDIO Adapter | Capability별 typed MCP request/result와 Broker transport | Project config loading, MCP wire와 process environment |
+| App-side Interaction Broker | Typed capability request/result | Runtime binding, correlation, pending lifecycle, cancellation, Browser transport |
 | UI Adapter | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
-| Codex Runtime Adapter | Turn에 MCP server를 연결하고 tool result를 복귀 | Native protocol, `threadId`·`turnId`·`requestId` |
+| Codex Runtime Adapter | App binding env를 공급하고 native project MCP를 시작 | Native protocol, `threadId`·`turnId`·`requestId` |
 | SemesterWorkspace | 일반 file·Git interface | 실제 학기 자료와 선택적인 구조화 snapshot의 형식 |
 
 Production Browser Adapter와 in-memory test Adapter는 Interaction MCP Module의 같은 Interface를 구현한다. 이 seam의 핵심 contract test는 다음 한 문장으로 표현한다.
 
 > 유효한 capability request가 UI에 정확히 투영되고, 한 번의 user result 또는 cancel이 같은 MCP call의 정확한 result로 돌아간다.
+
+## MCP discovery와 Runtime binding
+
+Bootstrap은 SemesterWorkspace의 Git-tracked `.codex/config.toml`에 정적인 MCP declaration을 설치한다.
+
+```toml
+[mcp_servers.ay_ple_interaction]
+command = "<hub-owned-stdio-entrypoint>"
+env_vars = ["<endpoint-env>", "<token-env>", "<runtime-binding-env>"]
+enabled_tools = ["propose_state_patch"]
+```
+
+이 예시는 ownership을 보여주며 exact path·env 이름·startup policy는 implementation spec이 소유한다. Config에는 secret이나 process-local 값을 넣지 않는다. AY-PLE이 Codex child를 시작할 때 current App endpoint·token·Runtime binding을 environment로 주입하고, Codex가 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다.
+
+따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load되므로 activation lifecycle은 native trust를 명시적으로 다뤄야 한다.
 
 ## Capability 설계 규칙
 
@@ -67,7 +88,7 @@ Production Browser Adapter와 in-memory test Adapter는 Interaction MCP Module�
 | 구체적인 이름 | `propose_state_patch`처럼 사용자 경험 하나를 표현한다. `emit_event` 같은 범용 이름을 쓰지 않는다. |
 | Self-contained request | UI에 필요한 표시 정보와 허용 응답을 요청 하나에 담는다. App-owned workflow ID를 caller에게 요구하지 않는다. |
 | Closed result | `accept | revise | reject`처럼 Skill이 exhaustively 해석할 수 있는 result union을 반환한다. |
-| Host-owned binding | Workspace·Turn·Browser correlation은 host가 현재 execution context에서 주입한다. |
+| Host-owned binding | Workspace·Turn·Browser correlation은 caller field가 아니라 host가 process environment와 Broker session에서 주입한다. |
 | Transient lifecycle | Pending request와 user result는 interaction 수명 동안만 존재한다. Durable 학기 이력을 만들지 않는다. |
 | Explicit cancellation | User cancel, Browser disconnect, Runtime terminal을 서로 구분된 result 또는 error로 정산한다. |
 | Capability-specific UI | 자료 preview, diff, evidence처럼 해당 결정에 필요한 UI를 제공한다. Arbitrary schema renderer를 만들지 않는다. |
@@ -118,10 +139,12 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | 상태 | Durable owner | App의 역할 |
 | --- | --- | --- |
 | 실제 학기 파일 | SemesterWorkspace Git repository | 선택한 root를 exact `cwd`로 연결한다. |
+| 정적 Interaction MCP declaration | SemesterWorkspace의 tracked `.codex/config.toml` | 직접 rewrite하지 않고 native project loading을 사용한다. |
+| MCP endpoint·token·Runtime binding | App Runtime environment | Workspace나 global config에 persist하지 않는다. |
 | 구조화된 학기 snapshot | SemesterWorkspace의 tracked file | Capability UI에 필요한 경우 읽어 표시할 수 있지만 mutation authority를 소유하지 않는다. |
 | 장기 변경 이력 | Git history | 별도 academic event ledger를 만들지 않는다. |
 | Known·active workspace | `../.ay-ple/`의 `WorkspaceRegistry` | App이 직접 소유한다. |
-| Pending interaction | Interaction MCP Module memory | Turn 수명을 넘는 academic record로 승격하지 않는다. |
+| Pending interaction | App-side Interaction Broker memory | Turn 수명을 넘는 academic record로 승격하지 않는다. |
 | Native conversation | Codex Runtime | Browser-safe projection만 제공한다. |
 
 `RawMaterial`, `ModelingRun`, durable `StatePatch`와 durable `UserConfirmation`은 target App domain model에 포함하지 않는다. Workspace file, native Turn, transient capability request/result가 각각 그 책임을 맡는다.
@@ -130,6 +153,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 
 | 영역 | 현재 구현 | 채택한 목표 |
 | --- | --- | --- |
+| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 hub-owned STDIO Adapter를 선언하고 Runtime은 dynamic env만 공급한다. |
 | Review 시작 | `propose_state_patch`가 Server-private key와 academic binding을 요구한다. | 표시할 proposal만 보내며 host binding은 Module 내부다. |
 | 사용자 응답 | 별도 `/reviews/:interactionId`와 built-in `request_user_input`을 함께 사용한다. | MCP call 하나가 UI 응답을 기다렸다가 closed result를 반환한다. |
 | Apply | Server가 durable patch·confirmation transaction으로 `SemesterModel`을 갱신한다. | AY가 result를 해석해 실제 workspace file을 변경한다. |
@@ -147,4 +171,5 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - Assignment·Course schema 또는 raw Git diff에 결합된 `propose_state_patch`
 - App-owned academic event sourcing 또는 duplicate Codex Turn ledger
 - MCP caller가 host correlation과 store revision을 조립하는 protocol
+- Endpoint·token을 담은 tracked MCP config 또는 App의 broad config override
 - Rich Review와 built-in `request_user_input`의 이중 confirmation

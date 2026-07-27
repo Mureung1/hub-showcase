@@ -17,6 +17,10 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 ## 결정
 
 - AY-PLE App은 **InteractionCapability**를 제공하는 MCP Module을 소유한다. 이 Module의 Interface는 “AY가 표시할 내용과 허용할 응답을 요청하면, 사용자가 App UI에서 결정하고, 구조화된 결과가 같은 Codex Turn으로 반환된다”는 한 번의 round trip이다.
+- MCP Module은 `hub/`가 소유하는 Codex-facing STDIO Adapter와 App-side Interaction Broker로 나눈다. Adapter는 표준 MCP request/result를 운반하고 Broker는 현재 Runtime binding, Browser projection, pending lifecycle과 사용자 result 반환을 숨긴다.
+- Bootstrap Skill은 Git-tracked `<SemesterWorkspace>/.codex/config.toml`에 AY-PLE Interaction MCP의 정적 project declaration을 설치한다. 이 declaration은 hub-owned STDIO entrypoint, 전달할 environment variable 이름, capability allowlist와 startup policy만 표현한다. Exact command path, env 이름과 required policy는 implementation spec이 고정한다.
+- Project config에는 endpoint, token, native identity나 다른 secret·process-local 값을 기록하지 않는다. AY-PLE Runtime은 Codex child environment에 현재 App instance의 endpoint·token·Runtime binding을 넣고, MCP declaration의 `env_vars`가 이를 STDIO Adapter에 전달한다.
+- App은 Interaction MCP를 연결하기 위해 thread-start config, `--config`나 equivalent high-precedence overlay로 project MCP configuration을 다시 만들지 않는다. Global·project config layering과 trusted-project loading은 Codex native behavior를 따르며, App-owned dynamic binding만 process environment로 공급한다.
 - Skill과 AY는 workflow의 순서, interaction을 요청할 시점, 응답의 해석과 다음 행동을 소유한다. App은 학업 workflow engine, prompt sequence 또는 결과 적용기를 소유하지 않는다.
 - AY는 interaction 결과에 따라 SemesterWorkspace의 실제 파일을 일반 file tool로 변경하고, [ADR 0018](0018-adopt-user-owned-git-semester-workspaces.md)의 Git 지침에 따라 의미 있는 checkpoint를 commit한다. App은 수락 결과를 대신 `workspace-state.json`에 적용하거나 Git commit을 만들지 않는다.
 - 각 MCP tool은 하나의 구체적인 사용자 capability를 typed input과 closed result union으로 표현한다. 하나의 범용 event bus, 임의 schema renderer 또는 모든 App event를 운반하는 `ProductInteraction` envelope은 만들지 않는다.
@@ -33,7 +37,8 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 | --- | --- | --- |
 | 사용자 | App UI에서의 최종 선택과 학기 자료의 의미 | MCP correlation, native protocol |
 | AY·Skill | 작업 계획, interaction 요청 시점, 결과 해석, 실제 파일 변경과 Git checkpoint | App UI lifecycle, Browser transport |
-| Interaction MCP Module | Typed capability Interface, Turn binding, correlation, 취소·disconnect, 결과 반환 | 학업 workflow 순서, workspace file apply |
+| Interaction MCP STDIO Adapter | Project config로 발견되는 typed MCP Interface와 Broker transport | App UI lifecycle, 학업 workflow 순서 |
+| App-side Interaction Broker | Runtime binding, correlation, 취소·disconnect, UI projection과 결과 반환 | Workspace file apply, Skill workflow |
 | AY-PLE UI Adapter | Capability별 화면 projection과 사용자 입력 수집 | Agent의 다음 행동, 학기 SSOT |
 | SemesterWorkspace | 실제 학기 파일, 선택적인 구조화 snapshot과 Git history | Runtime correlation, pending UI interaction |
 | Codex Runtime | Thread·Turn 실행, MCP 연결과 native permission | AY-PLE 제품 UI의 의미, 학기 SSOT |
@@ -46,10 +51,11 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 | 일반 Codex Chat만 제공하고 custom MCP를 제거 | 거절 | Agent 의도를 domain-rich UI로 바꾸고 사용자 선택을 다시 Agent에게 돌려주는 AY-PLE의 핵심 가치를 잃는다. |
 | 모든 상호작용을 하나의 generic event/schema protocol로 통합 | 거절 | 작은 Interface 뒤에 복잡성을 숨기지 못하고 UI·workflow·transport variation을 caller에게 떠넘긴다. |
 | 모든 사용자 질문을 built-in `request_user_input`으로 처리 | 거절 | 일반 clarification에는 적합하지만 원본 preview, diff, evidence와 capability-specific action을 표현하는 AY-PLE UI를 제공하지 못한다. |
+| App이 매 thread마다 전체 MCP config를 override | 거절 | Project-native declaration과 사용자 config precedence를 우회하고 App이 Skill·MCP discovery까지 소유하게 한다. Dynamic endpoint·secret은 config가 아니라 Runtime environment로 결합할 수 있다. |
 
 ## 결과
 
-현재 First Assignment 구현은 interaction round trip의 유효한 증거지만 채택한 경계의 구현은 아니다. Server의 app-owned `RawMaterial` registry, `ModelingRun` receipt, durable `StatePatch`·`UserConfirmation`, revision-bound apply transaction과 MCP+`request_user_input` 이중 흐름은 contraction 대상이다.
+현재 First Assignment 구현은 interaction round trip의 유효한 증거지만 채택한 경계의 구현은 아니다. Server의 app-owned `RawMaterial` registry, `ModelingRun` receipt, durable `StatePatch`·`UserConfirmation`, revision-bound apply transaction, MCP+`request_user_input` 이중 흐름과 thread-start private MCP config injection은 contraction 대상이다.
 
 새 interaction을 추가할 때는 “App이 이 workflow를 얼마나 알아야 하는가”가 아니라 “사용자에게 어떤 typed 선택 경험을 제공하고 AY에 어떤 closed result를 돌려줄 것인가”를 설계한다. App 자체 설정이나 workspace 선택처럼 App state를 바꾸는 capability도 별도 MCP tool로 만들 수 있지만, 그 tool은 자신이 소유한 App mutation만 수행하고 AY의 학업 workflow를 소유하지 않는다.
 

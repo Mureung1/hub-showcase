@@ -35,7 +35,7 @@ Current product startup·Runtime command는 전역 `CODEX_HOME`을 의도적으�
 | 레이어 | 채택한 경계 | 보장하지 않는 것 |
 | --- | --- | --- |
 | Runtime/version | `@ay-ple/codex-chat-runtime`의 tracked canonical manifest와 complete-tree verifier를 통과한 Python·SDK·native bundle만 사용한다. Current package-local bundle은 canonical `../.ay-ple/runtime/`으로 전환한다. | Codex state, auth와 session 분리 |
-| Runtime environment | Inherited environment 대신 explicit `HOME`, Codex homes, temp와 fixed executable path를 전달 | Container, VM 또는 별도 OS user 수준 격리 |
+| Runtime environment | Inherited environment 대신 explicit `HOME`, Codex homes, temp, fixed executable path와 current Interaction Broker endpoint·token·Runtime binding을 전달한다. Project MCP declaration의 `env_vars`가 dynamic binding만 STDIO Adapter로 forward한다. | Container, VM 또는 별도 OS user 수준 격리 |
 | Runtime state roots | Global Codex authority `~/.codex`와 AY-PLE appData `../.ay-ple/`의 Runtime payload·registry·cache·temp를 명시적으로 구분 | Codex 전역 config·Skill·memory의 AY-PLE 전용 격리 |
 | Account lifecycle | 전역 `CODEX_HOME`의 fresh Account Readiness만 Server가 Browser-safe `ready | not_ready | unavailable`로 투영 | In-app login·logout·account switching, 모든 official Browser URL의 무토큰성 |
 | Workspace | Bootstrap candidate는 setup interaction에만 두고, activation 뒤 사용자가 선택한 한 학기 Git repository를 active `SemesterWorkspace`와 exact native `cwd`로 전달 | Auth·Runtime state 저장소 격리, AY의 file operation 정확성 |
@@ -132,6 +132,7 @@ hub/
 ../workspace/<semester>/      # one semester, one Git repository
   AGENTS.md                   # init Skill이 준비하는 간단한 workspace 지침
   .agents/skills/             # source catalog에서 복사한 Git-tracked 실행 Skill
+  .codex/config.toml          # Git-safe한 Interaction MCP project declaration
   workspace-state.json        # Git-tracked workspace-local JSON authority
   <actual-semester-files>
 ```
@@ -141,6 +142,8 @@ hub/
 Active SemesterWorkspace가 없을 때는 Runtime·context probe를 canonical `hub/` cwd로 시작해 Bootstrap Skill을 native discovery한다. Bootstrap이 candidate directory를 준비하면 activation transition이 이 Runtime과 thread를 종료하고, exact Git root를 cwd로 쓰는 Workspace Runtime을 새로 시작한다. 새 Runtime이 준비된 뒤에만 candidate를 durable active workspace로 기록한다. Hub thread를 resume하거나 cwd만 갈아 끼우지 않으며, 두 phase는 caller의 같은 전역 Codex account를 재사용하지만 project instruction·Skill context와 thread identity는 공유하지 않는다.
 
 Target workspace의 `AGENTS.md`와 Skills는 App-owned exact bundle이 아니다. Init Skill은 existing bytes를 존중하면서 최소 지침과 Skill copy를 준비하고, AY는 exact Git root에서 Codex의 native project config·instruction·Skill discovery를 사용한다. Current Runtime의 fixed `project_root_markers=[]`, process-wide managed Skill root와 one-shot `config/read`·`skills/list` probe는 현재 구현 사실이다. Target은 fixed marker와 managed Skill override를 제거하되 effective context 관측 seam은 필요한 범위에서 유지하며, consumer 없는 v3 bundle verifier가 target workspace contents를 소유하거나 drift를 이유로 일반 사용자 파일을 막지 않는다.
+
+Bootstrap이 설치하는 `.codex/config.toml`은 hub-owned Interaction MCP STDIO Adapter의 정적 command, forwarded env 이름과 capability allowlist만 담는다. App endpoint·token·Runtime binding은 Codex child의 process environment에만 존재하고 STDIO Adapter로 allowlist 전달된다. Current thread-start private MCP config injection은 제거하며, project config가 load되지 않는 untrusted workspace에서는 Interaction MCP를 사용할 수 있으리라 가정하지 않는다.
 
 사용자가 선택한 Git root의 실제 자료는 별도 import·registration 없이 AY의 작업 대상이다. App은 자료를 `RawMaterial`로 승격하거나 snapshot해야만 native `cwd`에서 읽을 수 있게 하는 admission layer를 두지 않는다. Codex-managed state의 내부 file roster도 product contract로 고정하지 않는다.
 
@@ -164,6 +167,8 @@ Workspace-local file과 Git은 app data나 native session과 다른 durable auth
 | Evidence self-reference | `workspace-state.json`을 포함하는 commit SHA를 같은 JSON에 넣으면 commit identity를 계산할 수 없다. | `EvidenceRef`는 relative path, exact content digest와 locator를 저장하고 Git history는 해당 content version을 찾는 수단으로만 사용한다. |
 | Workspace instruction drift | Init Skill이 기존 `AGENTS.md`를 덮어쓰거나 지나치게 상세한 policy를 만들면 사용자 지침과 AY의 판단 공간을 잃는다. | 기존 bytes를 존중하고 commit checkpoint 같은 짧은 원칙만 두며 App code가 exact instruction bundle을 소유하지 않는다. |
 | Skill version drift | `hub/skills/`의 변경이 기존 학기의 실행 동작을 암묵적으로 바꾸면 Git history와 실제 AY behavior가 어긋난다. | Workspace에 real directory를 복사하고 명시적인 Bootstrap·Update와 Git diff·checkpoint를 거쳐서만 바꾼다. Symlink와 Runtime `extraRoots` 주입을 사용하지 않는다. |
+| MCP secret의 Git 혼입 | Project config에 App endpoint·token이나 Runtime binding value를 쓰면 학기 history에 process-local secret이 남는다. | Config에는 env 이름과 정적 entrypoint만 두고 값은 Runtime child environment로 공급한다. |
+| Untrusted project config 무시 | Codex는 신뢰하지 않은 project의 `.codex/config.toml`을 읽지 않으므로 Interaction MCP가 조용히 사라질 수 있다. | Activation에서 native trust와 effective MCP discovery를 확인한다. Exact trust UX와 fail behavior는 후속 lifecycle 결정이 소유한다. |
 | Native context 오해 | Workspace의 `AGENTS.override.md`, project `.codex/`와 Skills는 AY behavior를 바꿀 수 있다. | App-owned exact bundle로 덮어쓰거나 일반 사용자 context를 drift로 차단하지 않는다. Init Skill은 existing bytes를 존중하고 Runtime은 실제 effective context를 관측 가능한 범위에서 표시한다. |
 | Ancestor native context 혼입 | SemesterWorkspace가 독립 Git root가 아니거나 Runtime이 descendant·parent를 cwd로 사용하면 다른 project의 `AGENTS.md`, `.codex/`와 Skills를 읽을 수 있다. | 선택한 canonical directory가 한 학기 전용 Git root임을 확인하고 persistent bridge·one-shot probe·thread가 모두 그 exact root를 cwd로 사용한다. Native `.git` boundary의 effective config·Skill 결과를 provider-free smoke로 검증한다. |
 | 기존 자료 손실 | Existing Git workspace를 app-owned scaffold로 정규화하거나 복사하면 실제 사용자 자료와 history가 갈라질 수 있다. | 사용자가 선택한 repository를 그 자리에서 채택하고 init Skill과 AY가 일반 Git 안전 원칙을 따른다. |

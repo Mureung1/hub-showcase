@@ -105,6 +105,8 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 | Initial Bootstrap Skill과 repository 개발 harness | `hub/.agents/skills/` |
 | AY-PLE built-in Skill source catalog | `hub/skills/` |
 | 해당 학기에서 실행하는 Skill byte | SemesterWorkspace의 Git-tracked `.agents/skills/` |
+| Interaction MCP의 정적 project declaration | SemesterWorkspace의 Git-tracked `.codex/config.toml` |
+| Interaction MCP endpoint·token·Runtime binding | App이 공급하는 process environment |
 | Codex account·config·session | 사용자의 기존 `~/.codex/` |
 | Pending InteractionCapability | 현재 Turn에 결합된 Interaction MCP Module memory |
 
@@ -119,7 +121,7 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 1. 사용자의 기존 `~/.codex/` account readiness를 확인한다.
 2. Active workspace가 없으면 App이 `hub/` cwd의 일시적인 Bootstrap Runtime·thread를 연다.
 3. 사용자가 기존 또는 새 학기 directory를 명시적으로 선택한다.
-4. 새 directory라면 hub에서 native discovery한 Bootstrap Skill이 그 자리에서 Git·최소 workspace file과 선택한 `.agents/skills/` copy를 준비한다.
+4. 새 directory라면 hub에서 native discovery한 Bootstrap Skill이 그 자리에서 Git·최소 workspace file, 선택한 `.agents/skills/` copy와 정적인 `.codex/config.toml`을 준비한다.
 5. 사용자가 명시적으로 activation을 요청하면 App이 Bootstrap Runtime·thread를 종료한다.
 6. App이 준비된 Git root를 project root와 고정 `cwd`로 쓰는 새 Workspace Runtime·thread를 연다.
 7. 새 Runtime이 준비되면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. 하위 directory는 작업 대상일 뿐 별도 cwd가 아니며, Bootstrap thread나 다른 학기 thread를 이 root로 이동시키지 않는다.
@@ -150,7 +152,7 @@ RawMaterial registry
 | 포함 | 완료 의미 |
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
-| `propose_state_patch` MCP | Host binding 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
+| `propose_state_patch` MCP | Tracked project declaration과 process-local env binding으로 연결되고, host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, 선택적인 evidence와 세 action을 데스크톱 화면에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
