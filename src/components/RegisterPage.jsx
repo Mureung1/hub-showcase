@@ -105,6 +105,7 @@ function RegisterPage() {
               className="field-input"
               id="title"
               type="text"
+              placeholder="예: 자료구조 복습"
               value={title}
               // e.target.value만 꺼내서 이 필드의 setter에만 넘긴다 — 다른 state는 건드리지 않는다
               onChange={(e) => setTitle(e.target.value)}
