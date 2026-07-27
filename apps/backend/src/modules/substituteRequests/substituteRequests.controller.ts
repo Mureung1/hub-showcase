@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { createStoreSubstituteRequest } from "./substituteRequests.service";
+import { createStoreSubstituteRequest, listStoreSubstituteRequests } from "./substituteRequests.service";
 
 const createSubstituteRequestSchema = z.object({
   scheduleId: z.string().uuid("근무 일정을 선택해주세요."),
@@ -53,4 +53,30 @@ export async function createSubstituteRequestController(req: Request, res: Respo
   });
 
   res.status(201).json(response);
+}
+
+export async function listSubstituteRequestsController(req: Request, res: Response) {
+  const storeId = getStringParam(req.params.storeId);
+
+  if (!storeId) {
+    res.status(400).json({
+      message: "매장 ID가 필요합니다."
+    });
+    return;
+  }
+
+  if (!req.authUser || !req.storeMembership) {
+    res.status(401).json({
+      message: "인증 정보가 없습니다."
+    });
+    return;
+  }
+
+  const response = await listStoreSubstituteRequests({
+    storeId,
+    actorUserId: req.authUser.id,
+    actorRole: req.storeMembership.role
+  });
+
+  res.status(200).json(response);
 }

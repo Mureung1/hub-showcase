@@ -26,11 +26,46 @@ export type SubstituteRequestResponse = {
   updatedAt: string;
 };
 
+export type SubstituteRequestScheduleRecord = {
+  id: string;
+  worker_id: string;
+  work_date: string;
+  start_time: string;
+  end_time: string;
+  position: string | null;
+  memo: string | null;
+};
+
+export type SubstituteRequestProfileRecord = {
+  id: string;
+  name: string;
+};
+
+export type SubstituteRequestListItemResponse = SubstituteRequestResponse & {
+  requesterName: string;
+  workerId: string;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+  position: string | null;
+  memo: string | null;
+};
+
+export type SubstituteRequestsResponse = {
+  substituteRequests: SubstituteRequestListItemResponse[];
+};
+
 export type CreateSubstituteRequestInput = {
   storeId: string;
   scheduleId: string;
   requesterId: string;
   reason: string;
+};
+
+export type ListSubstituteRequestsInput = {
+  storeId: string;
+  actorUserId: string;
+  actorRole: "OWNER" | "WORKER";
 };
 
 export type CreateSubstituteRequestResponse = {

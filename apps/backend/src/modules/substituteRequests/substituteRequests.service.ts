@@ -1,9 +1,18 @@
 import { HttpError } from "../../common/errors/HttpError";
 import { findScheduleById } from "../schedules/schedules.repository";
-import { findActiveSubstituteRequestByScheduleId, insertSubstituteRequest } from "./substituteRequests.repository";
+import {
+  findActiveSubstituteRequestByScheduleId,
+  findOpenSubstituteRequestsByStoreId,
+  findSubstituteRequestProfiles,
+  findSubstituteRequestSchedules,
+  insertSubstituteRequest
+} from "./substituteRequests.repository";
 import {
   CreateSubstituteRequestInput,
+  ListSubstituteRequestsInput,
   SubstituteRequestRecord,
+  SubstituteRequestScheduleRecord,
+  SubstituteRequestListItemResponse,
   SubstituteRequestResponse,
   SubstituteRequestStatus
 } from "./substituteRequests.types";
@@ -25,6 +34,23 @@ function toSubstituteRequestResponse(request: SubstituteRequestRecord): Substitu
   };
 }
 
+function toSubstituteRequestListItemResponse(input: {
+  request: SubstituteRequestRecord;
+  requesterName: string;
+  schedule: SubstituteRequestScheduleRecord;
+}): SubstituteRequestListItemResponse {
+  return {
+    ...toSubstituteRequestResponse(input.request),
+    requesterName: input.requesterName,
+    workerId: input.schedule.worker_id,
+    workDate: input.schedule.work_date,
+    startTime: input.schedule.start_time,
+    endTime: input.schedule.end_time,
+    position: input.schedule.position,
+    memo: input.schedule.memo
+  };
+}
+
 function getTodayDateText() {
   const parts = new Intl.DateTimeFormat("en", {
     day: "2-digit",
@@ -37,6 +63,49 @@ function getTodayDateText() {
   const day = parts.find((part) => part.type === "day")?.value ?? "01";
 
   return `${year}-${month}-${day}`;
+}
+
+export async function listStoreSubstituteRequests(input: ListSubstituteRequestsInput) {
+  const requests = await findOpenSubstituteRequestsByStoreId(input.storeId);
+  const scheduleIds = [...new Set(requests.map((request) => request.schedule_id))];
+  const requesterIds = [...new Set(requests.map((request) => request.requester_id))];
+  const schedules = await findSubstituteRequestSchedules(scheduleIds);
+  const profiles = await findSubstituteRequestProfiles(requesterIds);
+  const scheduleMap = new Map(schedules.map((schedule) => [schedule.id, schedule]));
+  const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+  const todayDate = getTodayDateText();
+  const substituteRequests = requests
+    .map((request) => {
+      const schedule = scheduleMap.get(request.schedule_id);
+
+      if (!schedule || schedule.work_date < todayDate) {
+        return null;
+      }
+
+      if (input.actorRole === "WORKER" && request.requester_id === input.actorUserId) {
+        return null;
+      }
+
+      return toSubstituteRequestListItemResponse({
+        request,
+        requesterName: profileMap.get(request.requester_id)?.name ?? "알바생",
+        schedule
+      });
+    })
+    .filter((request): request is SubstituteRequestListItemResponse => request !== null)
+    .sort((first, second) => {
+      const dateCompare = first.workDate.localeCompare(second.workDate);
+
+      if (dateCompare !== 0) {
+        return dateCompare;
+      }
+
+      return first.startTime.localeCompare(second.startTime);
+    });
+
+  return {
+    substituteRequests
+  };
 }
 
 export async function createStoreSubstituteRequest(input: CreateSubstituteRequestInput) {
