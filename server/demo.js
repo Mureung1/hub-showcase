@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import process from "node:process";
 import { z } from "zod";
 import { createGroupBuyRepository } from "./group-buy-repository.js";
 import { createSupabaseAdmin } from "./supabase.js";
@@ -7,6 +8,12 @@ import { createSupabaseAdmin } from "./supabase.js";
 const app = express();
 const supabase = createSupabaseAdmin();
 const groupBuyRepository = createGroupBuyRepository(supabase);
+const port = Number(process.env.PORT) || 3001;
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 const stages = ["모집 중", "결제 대기", "주문 완료", "배송 중", "수령 가능", "정산 완료"];
 const origins = { "생활관 1동": [12, 72], "생활관 3동": [22, 82], "공학관": [72, 34], "인문관": [36, 28], "경영관": [57, 20], "중앙도서관": [48, 48], "학생회관": [38, 60], "정문": [78, 74] };
 const meetingSpots = [{ name: "중앙도서관 앞", x: 48, y: 50 }, { name: "학생회관 1층", x: 39, y: 59 }, { name: "중앙광장 편의점 앞", x: 55, y: 57 }, { name: "공학관 1층 로비", x: 70, y: 36 }, { name: "생활관 커뮤니티 라운지", x: 20, y: 76 }, { name: "인문관 카페 앞", x: 37, y: 31 }];
@@ -30,7 +37,7 @@ const present = (item, request) => {
 const withRuntimeFields = (item) => ({ ...item, participants: item.participants ?? [], votes: item.votes ?? {}, voterChoices: item.voterChoices ?? {}, pickupCandidates: candidatesFor(item.participants ?? []) });
 const databaseFailure = (response, error) => { console.error("Supabase request failed:", error.message); return response.status(500).json({ error: "데이터베이스 요청을 처리하지 못했습니다." }); };
 
-app.use(cors({ origin: ["http://localhost:5173", "http://127.0.0.1:5173"], allowedHeaders: ["Authorization", "Content-Type"] }));
+app.use(cors({ origin: allowedOrigins, allowedHeaders: ["Authorization", "Content-Type"] }));
 app.use(express.json());
 app.use(async (request, response, next) => {
   const token = request.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -126,4 +133,4 @@ app.patch("/api/group-buys/:id/stage", requireUser, async (request, response) =>
   } catch (error) { return databaseFailure(response, error); }
 });
 app.delete("/api/group-buys/:id", requireUser, async (request, response) => { try { const existing = await groupBuyRepository.findById(request.params.id); if (!existing) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (existing.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 삭제할 수 있습니다." }); await groupBuyRepository.remove(existing.id); return response.status(204).end(); } catch (error) { return databaseFailure(response, error); } });
-app.listen(3001, () => console.log("CampusCart API: http://localhost:3001 (Supabase storage)"));
+app.listen(port, () => console.log(`CampusCart API running on port ${port} (Supabase storage)`));
