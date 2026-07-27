@@ -1452,6 +1452,13 @@ test('constructs a controlled child environment without ambient authority', asyn
       bundle,
       workspace,
       environment,
+      childEnvironment: {
+        AY_PLE_INTERACTION_BROKER_TOKEN: 'runtime-token',
+        AY_PLE_INTERACTION_BROKER_URL:
+          'http://127.0.0.1:43127/api/_private/interaction-mcp',
+        AY_PLE_INTERACTION_RUNTIME_BINDING:
+          'runtime_0123456789abcdef0123456789abcdef',
+      },
       launchArgsOverride: [
         bundle.pythonExecutable,
         '-B',
@@ -1466,6 +1473,11 @@ test('constructs a controlled child environment without ambient authority', asyn
       environment: Record<string, unknown>
     }
     assert.deepEqual(journal.environment, {
+      AY_PLE_INTERACTION_BROKER_TOKEN: 'runtime-token',
+      AY_PLE_INTERACTION_BROKER_URL:
+        'http://127.0.0.1:43127/api/_private/interaction-mcp',
+      AY_PLE_INTERACTION_RUNTIME_BINDING:
+        'runtime_0123456789abcdef0123456789abcdef',
       CODEX_HOME: environment.codexHome,
       CODEX_SQLITE_HOME: environment.codexSqliteHome,
       HOME: environment.home,
@@ -1474,6 +1486,7 @@ test('constructs a controlled child environment without ambient authority', asyn
       PATH: [
         bundle.codexPathDirectory,
         dirname(bundle.pythonExecutable),
+        dirname(process.execPath),
         '/usr/bin',
         '/bin',
         '/usr/sbin',
@@ -1481,6 +1494,9 @@ test('constructs a controlled child environment without ambient authority', asyn
       ].join(':'),
       TMPDIR: environment.tempDirectory,
       keys: [
+        'AY_PLE_INTERACTION_BROKER_TOKEN',
+        'AY_PLE_INTERACTION_BROKER_URL',
+        'AY_PLE_INTERACTION_RUNTIME_BINDING',
         'CODEX_HOME',
         'CODEX_SQLITE_HOME',
         'HOME',
@@ -1509,6 +1525,44 @@ test('rejects invalid operational options before spawning any child', async (t) 
   for (const [label, overrides] of [
     ['budget', { budgets: { operationMaxFrames: 0 } }],
     ['deadline', { deadlines: { responseMs: 0 } }],
+    ['entry-count', {
+      childEnvironment: Object.fromEntries(
+        Array.from({ length: 17 }, (_value, index) => [
+          `AY_PLE_TEST_${index}`,
+          'value',
+        ]),
+      ),
+    }],
+    ['invalid-key', { childEnvironment: { 'invalid-key': 'value' } }],
+    ['value-bytes', {
+      childEnvironment: { AY_PLE_TEST_VALUE: '가'.repeat(2_731) },
+    }],
+    ['aggregate-bytes', {
+      childEnvironment: Object.fromEntries(
+        Array.from({ length: 9 }, (_value, index) => [
+          `AY_PLE_TEST_${index}`,
+          'x'.repeat(8 * 1024),
+        ]),
+      ),
+    }],
+    ['protected-home', { childEnvironment: { HOME: '/tmp/override' } }],
+    ['protected-codex-home', {
+      childEnvironment: { CODEX_HOME: '/tmp/override' },
+    }],
+    ['protected-codex-sqlite-home', {
+      childEnvironment: { CODEX_SQLITE_HOME: '/tmp/override' },
+    }],
+    ['protected-temp', { childEnvironment: { TMPDIR: '/tmp/override' } }],
+    ['protected-path', { childEnvironment: { PATH: '/tmp/override' } }],
+    ['protected-python', {
+      childEnvironment: { PYTHONPATH: '/tmp/override' },
+    }],
+    ['protected-dynamic-loader', {
+      childEnvironment: { DYLD_LIBRARY_PATH: '/tmp/override' },
+    }],
+    ['protected-runtime-key', {
+      childEnvironment: { LANG: 'ko_KR.UTF-8' },
+    }],
   ] as const) {
     await t.test(label, async () => {
       const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-invalid-${label}-`))

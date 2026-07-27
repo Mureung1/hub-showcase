@@ -14,6 +14,8 @@ export type CodexProductSkillInput = {
   readonly path: string
 }
 
+export type CodexChildEnvironment = Readonly<Record<string, string>>
+
 export type CodexPrivateMcpServerInput = {
   readonly url: string
   readonly token: string

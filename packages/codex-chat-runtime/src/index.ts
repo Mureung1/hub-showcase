@@ -34,6 +34,7 @@ export type {
 export type {
   AnswerUserInput,
   CancelUserInput,
+  CodexChildEnvironment,
   CodexPrivateMcpServerInput,
   CodexProductCapableRuntime,
   CodexProductPermissionProfile,
@@ -59,6 +60,7 @@ export interface CreateCodexChatWorkspaceRuntimeOptions {
   readonly runtimeRoot: string
   readonly workspace: string
   readonly environment: CodexChatRuntimeEnvironment
+  readonly childEnvironment?: import('./runtime-contract.js').CodexChildEnvironment
 }
 
 export type { CodexChatRuntimeEnvironment } from './runtime.js'
@@ -81,6 +83,7 @@ export async function createCodexChatRuntime(
     bundle,
     workspace: options.workspace,
     environment: options.environment,
+    childEnvironment: options.childEnvironment,
   })
   return spawned.runtime
 }

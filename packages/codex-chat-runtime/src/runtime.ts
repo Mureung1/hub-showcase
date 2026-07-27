@@ -31,6 +31,7 @@ import {
 import type {
   AnswerUserInput,
   CancelUserInput,
+  CodexChildEnvironment,
   CodexModelCatalog,
   CodexProductTurn,
   CodexWorkspaceRuntime,
@@ -84,6 +85,23 @@ const execFileAsync = promisify(execFile)
 const GIT_EXECUTABLE = '/usr/bin/git'
 const GIT_ROOT_PROBE_TIMEOUT_MS = 5_000
 const GIT_ROOT_PROBE_MAX_BYTES = 4 * 1024
+const CHILD_ENVIRONMENT_MAX_ENTRIES = 16
+const CHILD_ENVIRONMENT_MAX_VALUE_BYTES = 8 * 1024
+const CHILD_ENVIRONMENT_MAX_AGGREGATE_BYTES = 64 * 1024
+const CHILD_ENVIRONMENT_KEY_PATTERN = /^[A-Z_][A-Z0-9_]*$/u
+const PROTECTED_CHILD_ENVIRONMENT_KEYS = new Set([
+  'CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG',
+  'CODEX_HOME',
+  'CODEX_SQLITE_HOME',
+  'HOME',
+  'LANG',
+  'LC_ALL',
+  'LIBPATH',
+  'PATH',
+  'SHLIB_PATH',
+  'TMPDIR',
+  '__CF_USER_TEXT_ENCODING',
+])
 
 const BRIDGE_OPERATION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   account_read_failed: 'The Codex account could not be read.',
@@ -161,6 +179,7 @@ interface ChildCloseStatus {
 interface StartVerifiedCodexChatRuntimeCommonOptions {
   readonly bundle: VerifiedProductionBundle
   readonly environment: CodexChatRuntimeEnvironment
+  readonly childEnvironment?: CodexChildEnvironment
   /** Package-private operational limits; production callers use defaults. */
   readonly budgets?: Partial<NodeRuntimeBudgets>
   /** Package-private actual-child seam; production callers omit this. */
@@ -257,6 +276,9 @@ export async function startVerifiedCodexChatRuntime(
 ): Promise<SpawnedCodexChatRuntime> {
   const budgets = resolveRuntimeBudgets(options.budgets)
   const deadlines = resolveRuntimeDeadlines(options.deadlines)
+  const childEnvironment = normalizeChildEnvironment(
+    options.childEnvironment,
+  )
   const workspace = await validateWorkspace(options.workspace)
   const environment = await validateEnvironment(options.environment)
   requireDisjointRuntimeRoots(workspace, environment)
@@ -294,6 +316,7 @@ export async function startVerifiedCodexChatRuntime(
     env: createChildEnvironment(
       options.bundle,
       environment,
+      childEnvironment,
       options.disableManagedConfigForTest,
     ),
   }
@@ -1611,11 +1634,13 @@ function validateApplicationIdentity(
 function createChildEnvironment(
   bundle: VerifiedProductionBundle,
   environment: CodexChatRuntimeEnvironment,
+  childEnvironment: CodexChildEnvironment,
   disableManagedConfigForTest: true | undefined,
 ): NodeJS.ProcessEnv {
   const pathDirectories = [
     bundle.codexPathDirectory,
     path.dirname(bundle.pythonExecutable),
+    path.dirname(process.execPath),
     '/usr/bin',
     '/bin',
     '/usr/sbin',
@@ -1629,6 +1654,7 @@ function createChildEnvironment(
     throw new TypeError('Codex runtime PATH contains an invalid directory')
   }
   return {
+    ...childEnvironment,
     ...(disableManagedConfigForTest
       ? { CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG: '1' }
       : {}),
@@ -1644,6 +1670,50 @@ function createChildEnvironment(
     PYTHONUNBUFFERED: '1',
     TMPDIR: environment.tempDirectory,
   }
+}
+
+function normalizeChildEnvironment(
+  value: CodexChildEnvironment | undefined,
+): CodexChildEnvironment {
+  if (value === undefined) return Object.freeze({})
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new TypeError('Codex child environment must be an object')
+  }
+  const entries = Object.entries(value)
+  if (entries.length > CHILD_ENVIRONMENT_MAX_ENTRIES) {
+    throw new TypeError('Codex child environment has too many entries')
+  }
+  let aggregateBytes = 0
+  for (const [key, entryValue] of entries) {
+    if (!CHILD_ENVIRONMENT_KEY_PATTERN.test(key)) {
+      throw new TypeError('Codex child environment key is invalid')
+    }
+    if (isProtectedChildEnvironmentKey(key)) {
+      throw new TypeError('Codex child environment key is protected')
+    }
+    if (typeof entryValue !== 'string' || entryValue.includes('\0')) {
+      throw new TypeError('Codex child environment value is invalid')
+    }
+    const valueBytes = Buffer.byteLength(entryValue, 'utf8')
+    if (valueBytes > CHILD_ENVIRONMENT_MAX_VALUE_BYTES) {
+      throw new TypeError('Codex child environment value is too large')
+    }
+    aggregateBytes += Buffer.byteLength(key, 'utf8') + valueBytes
+    if (aggregateBytes > CHILD_ENVIRONMENT_MAX_AGGREGATE_BYTES) {
+      throw new TypeError('Codex child environment is too large')
+    }
+  }
+  return Object.freeze(Object.fromEntries(entries))
+}
+
+function isProtectedChildEnvironmentKey(key: string): boolean {
+  return (
+    PROTECTED_CHILD_ENVIRONMENT_KEYS.has(key) ||
+    key.startsWith('PYTHON') ||
+    key.startsWith('DYLD_') ||
+    key.startsWith('LD_') ||
+    key.startsWith('_RLD_')
+  )
 }
 
 function resolveRuntimeBudgets(

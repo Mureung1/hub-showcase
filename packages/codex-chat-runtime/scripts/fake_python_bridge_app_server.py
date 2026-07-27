@@ -110,6 +110,15 @@ class FakeAppServer:
                 {
                     "launchArgs": self._launch_args,
                     "environment": {
+                        "AY_PLE_INTERACTION_BROKER_TOKEN": os.environ.get(
+                            "AY_PLE_INTERACTION_BROKER_TOKEN"
+                        ),
+                        "AY_PLE_INTERACTION_BROKER_URL": os.environ.get(
+                            "AY_PLE_INTERACTION_BROKER_URL"
+                        ),
+                        "AY_PLE_INTERACTION_RUNTIME_BINDING": os.environ.get(
+                            "AY_PLE_INTERACTION_RUNTIME_BINDING"
+                        ),
                         "CODEX_HOME": os.environ.get("CODEX_HOME"),
                         "CODEX_SQLITE_HOME": os.environ.get("CODEX_SQLITE_HOME"),
                         "HOME": os.environ.get("HOME"),
