@@ -42,7 +42,7 @@ router.post('/:id/settlements', requireAuth, async (req, res, next) => {
     })
 
     if (existing) {
-      const err = new Error('이번 달 정산이 이미 생성되어 있습니다.')
+      const err = new Error('이번 달 정산이 이미 존재합니다.')
       err.status = 409
       return next(err)
     }
@@ -153,6 +153,13 @@ router.get('/:id/settlements', requireAuth, async (req, res, next) => {
         billingMonth: settlement.billingMonth,
         myAmount: settlement.members[0].amount,
         myStatus: settlement.members[0].status,
+        myReportedAt: settlement.members[0].reportedAt,
+        mySettlementMemberId: settlement.members[0].id,
+        myTransferLink: buildTransferLink({
+          amount: settlement.members[0].amount,
+          bankName: subscription.bankName,
+          accountNumber: subscription.accountNumber,
+        }),
         createdAt: settlement.createdAt,
       })),
     })
@@ -273,13 +280,13 @@ router.post('/:id/settlements/:settlementId/members/:settlementMemberId/report',
     }
 
     if (settlementMember.userId !== req.user.id) {
-      const err = new Error('본인 항목만 신고할 수 있습니다.')
+      const err = new Error('본인 항목만 요청할 수 있습니다.')
       err.status = 403
       return next(err)
     }
 
     if (settlementMember.status === 'done') {
-      const err = new Error('이미 정산완료 처리된 항목입니다.')
+      const err = new Error('이미 이체 확인 처리된 항목입니다.')
       err.status = 409
       return next(err)
     }

@@ -1,0 +1,25 @@
+.toss-transfer-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  color: var(--color-on-primary);
+  background: var(--color-accent-toss);
+  text-decoration: none;
+}
+
+.settlement-member-note {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  margin: 0;
+}
+
+.settlement-member-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-inline-gap);
+  flex-shrink: 0;
+}
