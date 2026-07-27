@@ -53,6 +53,14 @@ describe('parseDeadline', () => {
     expect(result.deadline).toBe('2026. 12. 31')
     expect(result.dday).toBe(162) // 2026-07-22 -> 2026-12-31
   })
+
+  it('KST 자정 직후(UTC 기준 "오늘"이 하루 뒤처지는 시각)에도 마감일을 정확히 지난 것으로 계산한다 (이슈 #87)', () => {
+    // 2026-07-26T15:00:00Z = 2026-07-27 00:00 KST. 실행 서버(UTC)가 "오늘"을 07-26으로 오인하면
+    // 마감일 07-26을 dday=0("오늘까지")으로 잘못 계산해 이미 지난 공고가 계속 노출된다.
+    const kstMidnightRollover = new Date(Date.UTC(2026, 6, 26, 15, 0, 0))
+    const result = parseDeadline('2026-07-20 ~ 2026-07-26', kstMidnightRollover)
+    expect(result.dday).toBe(-1)
+  })
 })
 
 describe('inferMethod', () => {

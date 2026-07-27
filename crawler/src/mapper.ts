@@ -1,5 +1,6 @@
 import { NO_DEADLINE_DDAY, REGIONS, type Subsidy } from '@hub/shared'
 import type { BizinfoAnnouncement } from './bizinfo-client.js'
+import { kstToday } from './kst.js'
 
 const FALLBACK_QUALIFICATION = '공고문 원문에서 확인해주세요'
 const FALLBACK_DOCUMENT = '공고문 원문에서 확인해주세요'
@@ -38,7 +39,7 @@ export function parseDeadline(reqstBeginEndDe: string, now: Date): ParsedDeadlin
 
   const [, , , , endYear, endMonth, endDay] = match
   const endDate = new Date(Number(endYear), Number(endMonth) - 1, Number(endDay))
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const today = kstToday(now)
   const dday = Math.round((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
   return {

@@ -1,3 +1,4 @@
+import { kstToday } from './kst.js'
 import { SUBSIDIES_TABLE, supabase } from './supabase.js'
 
 /**
@@ -18,7 +19,7 @@ export function recomputeDday(deadline: string, now: Date): number | null {
 
   const [, year, month, day] = match
   const endDate = new Date(Number(year), Number(month) - 1, Number(day))
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const today = kstToday(now)
   return Math.round((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 }
 
