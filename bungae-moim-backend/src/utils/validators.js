@@ -7,6 +7,11 @@ const OPEN_CHAT_URL_PATTERN = /^https?:\/\/open\.kakao\.com\//;
 // 카테고리 화이트리스트. '전체'는 목록 필터 전용 값이므로 등록 허용값이 아니다.
 const ALLOWED_CATEGORIES = ['운동', '스터디', '취미', '식사'];
 
+// 가입 질문/답변 길이 상한. DB는 text라 제한이 없으므로 앱에서만 건다.
+// 이모지가 2로 세이지 않도록 [...str].length(코드포인트)로 센다 — varchar 검증과 같은 이유.
+const MAX_APPLY_QUESTION = 200;
+const MAX_APPLY_ANSWER = 500;
+
 // 마이그레이션의 varchar 한도와 같은 값을 앱에서도 강제한다. 앱이 먼저 막지 않으면
 // Postgres가 거절하면서 500 + DB 에러 원문("character varying(100) 자료형에 너무 긴
 // 자료를...")이 그대로 클라이언트까지 나간다. 컬럼 길이를 바꾸면 여기도 같이 바꿔야 한다.
@@ -61,6 +66,32 @@ function validateCreateMeeting(body = {}) {
     throw new ApiError('VALIDATION_ERROR', 'openChatUrl은 카카오 오픈채팅 링크여야 합니다');
   }
 
+  // 가입 질문(B). 소모임만 지원한다 — flash는 신청 즉시 확정이라 모임장이 판단할 여지가 없다.
+  // 값이 와도 무시하고 null로 저장한다(capacity/endAt을 type별로 무시하는 것과 같은 방식).
+  //
+  // 반환값 undefined는 "요청에 이 키가 없었다"는 신호다. E4(updateMeeting)가 이걸 보고 기존
+  // 값을 유지한다 — full-replace가 새 필드를 조용히 지우는 사고(읍/면/동, 2026-07-27)를 막는다.
+  // null은 "명시적으로 지워라"라서 undefined와 구분해야 한다.
+  let applyQuestion;
+  if (type !== 'small') {
+    applyQuestion = null;
+  } else if (body.applyQuestion === undefined) {
+    applyQuestion = undefined;
+  } else if (body.applyQuestion === null) {
+    applyQuestion = null;
+  } else if (typeof body.applyQuestion !== 'string') {
+    throw new ApiError('VALIDATION_ERROR', 'applyQuestion은 문자열이어야 합니다');
+  } else {
+    const trimmed = body.applyQuestion.trim();
+    if (trimmed === '') {
+      applyQuestion = null;
+    } else if ([...trimmed].length > MAX_APPLY_QUESTION) {
+      throw new ApiError('VALIDATION_ERROR', `applyQuestion은 ${MAX_APPLY_QUESTION}자를 넘을 수 없습니다`);
+    } else {
+      applyQuestion = trimmed;
+    }
+  }
+
   const startAt = body.startAt ? new Date(body.startAt) : null;
   if (!startAt || Number.isNaN(startAt.getTime())) {
     throw new ApiError('VALIDATION_ERROR', 'startAt이 올바른 날짜가 아닙니다');
@@ -102,6 +133,7 @@ function validateCreateMeeting(body = {}) {
     capacity,
     adultOnly: body.adultOnly === true,
     openChatUrl,
+    applyQuestion,
   };
 }
 

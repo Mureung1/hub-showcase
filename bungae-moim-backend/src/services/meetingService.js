@@ -37,6 +37,7 @@ function normalizeMeeting(row) {
     capacity: row.capacity === null ? null : Number(row.capacity),
     adultOnly: row.adult_only,
     openChatUrl: row.open_chat_url,
+    applyQuestion: row.apply_question ?? null,
     status: row.status,
     createdAt: row.created_at,
   };
@@ -55,8 +56,8 @@ async function createMeeting(hostId, fields) {
     `INSERT INTO meetings
        (host_id, type, title, category, description,
         region_sido, region_sigungu, region_eupmyeondong,
-        start_at, end_at, capacity, adult_only, open_chat_url)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        start_at, end_at, capacity, adult_only, open_chat_url, apply_question)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      RETURNING *`,
     [
       hostId,
@@ -72,6 +73,8 @@ async function createMeeting(hostId, fields) {
       fields.capacity,
       fields.adultOnly,
       fields.openChatUrl,
+      // 등록에서는 "미제공(undefined)"과 "빈 값"을 구분할 이유가 없다 — 둘 다 질문 없음.
+      fields.applyQuestion ?? null,
     ]
   );
 

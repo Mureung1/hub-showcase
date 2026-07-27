@@ -281,4 +281,14 @@ describe('GET /api/meetings/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.isPast).toBe(true);
   });
+
+  it('상세 응답에 applyQuestion이 포함된다', async () => {
+    const host = await createUser('detail-q-host');
+    const meetingId = await insertMeeting(host, { type: 'small', endAt: '2030-01-01T12:00:00+09:00', capacity: null });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+
+    const res = await request(app).get(`/api/meetings/${meetingId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.applyQuestion).toBe('왜 참여하나요');
+  });
 });

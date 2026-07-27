@@ -230,4 +230,38 @@ describe('POST /api/meetings', () => {
       .send({ ...validSmallBody, regionSido: '세종특별자치시', regionSigungu: '세종특별자치시' });
     expect(res.status).toBe(201);
   });
+
+  it('소모임은 applyQuestion을 저장하고 응답에 담는다', async () => {
+    const agent = await loginAgent('q-1');
+    const res = await agent
+      .post('/api/meetings')
+      .send({ ...validSmallBody, applyQuestion: '참여 동기를 알려주세요' });
+    expect(res.status).toBe(201);
+    expect(res.body.data.applyQuestion).toBe('참여 동기를 알려주세요');
+  });
+
+  it('번개모임은 applyQuestion을 보내도 무시하고 null로 저장한다', async () => {
+    const agent = await loginAgent('q-2');
+    const res = await agent
+      .post('/api/meetings')
+      .send({ ...validFlashBody, applyQuestion: '무시돼야 한다' });
+    expect(res.status).toBe(201);
+    expect(res.body.data.applyQuestion).toBeNull();
+  });
+
+  it('applyQuestion이 200자를 넘으면 400 VALIDATION_ERROR', async () => {
+    const agent = await loginAgent('q-3');
+    const res = await agent
+      .post('/api/meetings')
+      .send({ ...validSmallBody, applyQuestion: '가'.repeat(201) });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('applyQuestion을 안 보내면 null로 저장된다', async () => {
+    const agent = await loginAgent('q-4');
+    const res = await agent.post('/api/meetings').send(validSmallBody);
+    expect(res.status).toBe(201);
+    expect(res.body.data.applyQuestion).toBeNull();
+  });
 });
