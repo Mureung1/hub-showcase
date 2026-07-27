@@ -129,6 +129,14 @@ describe("StaffQueuePage 알림 발송 이력", () => {
 });
 
 describe("StaffQueuePage 운영 설정", () => {
+  it("운영 중인 대기열에는 원격 웨이팅 종료 버튼을 표시한다", () => {
+    renderPage();
+
+    expect(
+      screen.getByRole("button", { name: "원격 웨이팅 종료" }),
+    ).toBeInTheDocument();
+  });
+
   it("평균 진료시간과 알림 기준, 원격 접수 한도를 저장한다", async () => {
     const onSaveQueueSettings = vi.fn(async () => undefined);
     renderPage(

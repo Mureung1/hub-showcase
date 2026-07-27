@@ -255,6 +255,14 @@ button:disabled {
   outline: 0;
 }
 
+.auth-input input::placeholder {
+  color: var(--bj-color-text-disabled);
+}
+
+.auth-input input:focus::placeholder {
+  color: transparent;
+}
+
 .auth-panel > .primary-button {
   width: 100%;
   margin-top: var(--bj-space-5);
