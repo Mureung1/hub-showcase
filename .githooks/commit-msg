@@ -37,6 +37,54 @@ EOF
   exit 1
 fi
 
+docs_impact_count="$(grep -Ec '^docs-impact: ' "$commit_msg_file" || true)"
+
+if [ "$docs_impact_count" -ne 1 ]; then
+  cat <<'EOF'
+Commit message must include exactly one "docs-impact:" line.
+
+Use one of:
+  docs-impact: none
+  docs-impact: README.md
+  docs-impact: docs/features/market-analysis.md
+  docs-impact: .harness/tasks/MARKET-001.md
+  docs-impact: https://github.com/<owner>/<repo>/issues/<number>
+
+Use "none" only when the change does not affect an API contract, DB schema or
+data pipeline, user flow or major feature, deployment or operations, security,
+or an architecture decision.
+EOF
+  exit 1
+fi
+
+docs_impact="$(sed -n 's/^docs-impact: //p' "$commit_msg_file")"
+
+if [ "$docs_impact" != "none" ]; then
+  if ! printf '%s' "$docs_impact" | grep -Eq '^(README\.md|docs/.+|\.harness/.+|https://github\.com/[^/]+/[^/]+/issues/[0-9]+)$'; then
+    cat <<'EOF'
+Invalid "docs-impact:" value.
+
+Use "none", one staged README/docs/.harness path, or one GitHub Issue URL.
+EOF
+    exit 1
+  fi
+
+  case "$docs_impact" in
+    http://*|https://*) ;;
+    *)
+      if ! git diff --cached --name-only --diff-filter=ACMR | grep -Fxq "$docs_impact"; then
+        cat <<EOF
+The docs-impact target must be staged in this commit:
+  $docs_impact
+
+Update one existing document or work record, or reference one GitHub Issue.
+EOF
+        exit 1
+      fi
+      ;;
+  esac
+fi
+
 if ! grep -Eq '^verify:' "$commit_msg_file"; then
   cat <<'EOF'
 Commit message must include a "verify:" section.

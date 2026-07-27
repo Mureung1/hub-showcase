@@ -65,21 +65,6 @@ EOF
 fi
 
 source_files="$(printf '%s\n' "$staged_files" | grep -E '\.(py|js|jsx|ts|tsx|css|html|sql)$|^(product/(apps|scripts)/|api|app|backend|frontend|web|src|packages)/' | grep -Ev '^(docs/|scripts/check_|scripts/check\.ps1|\.harness/)' || true)"
-doc_files="$(printf '%s\n' "$staged_files" | grep -E '^(README\.md|docs/|\.harness/)' || true)"
-
-if [ -n "$source_files" ] && [ -z "$doc_files" ]; then
-  cat <<EOF
-Source changes require a documentation sync.
-
-Changed source-like files:
-$source_files
-
-LocalTwin policy:
-  - code changes must update docs, README, or .harness task/run notes in the same commit
-  - if no public docs changed, stage the relevant task packet or run report explaining why
-EOF
-  exit 1
-fi
 
 if [ -n "$source_files" ]; then
   python scripts/check_code_structure.py --root . || exit 1
