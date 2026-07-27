@@ -167,7 +167,10 @@ ${xmlParagraphs}
 
 위 원문을 바탕으로 아래 2가지 작업을 한 번에 수행하세요.
 
-1. sentences — 영어 문장 구조상 초보 학습자가 읽기 어려운 문장을 2~${maxSentences}개 선별합니다. 예: 길게 이어진 주어+동격구/분사구문, 'A rather than B' 같은 비교 구문, 삽입절 등 구조가 복잡한 문장.
+1. sentences — 영어 문장 구조상 초보 학습자가 읽기 어려운 문장을 엄선하여 최대 ${maxSentences}개 선별합니다. (기사가 짧거나 복잡한 문장이 적다면 1~2개만 선별해도 무방합니다.)
+   - 예시 기준 1 (구조적 복잡성): 길게 이어진 주어+동격구/분사구문, 'A rather than B' 같은 비교 구문, 삽입절, 도치 구문.
+   - 예시 기준 2 (경제 기사 특성): 주가 등락의 원인이나 시장 전망을 다루는 복잡한 인과관계 문장 (예: driven by, fueled by 등이 여러 번 얽힌 경우).
+   - 예시 기준 3 (정보 밀도): 긴 복합명사구가 쓰였거나, 여러 수치/비율/기간이 쉼표와 함께 나열되어 주어와 동사를 한눈에 파악하기 힘든 문장.
    - "text" 필드는 반드시 위 원문에서 글자 하나, 공백 하나, 문장부호 하나까지 정확히 그대로 복사한 값이어야 합니다. 절대로 다시 타이핑하거나, 의역하거나, 요약하거나, 일부 단어만 잘라내거나, 여러 문장을 이어붙이지 마세요.
    - 곧은따옴표(", ')를 스마트따옴표(", ", ', ')로 바꾸지 마세요. 원문에 있는 그대로 유지하세요.
    - 문장 안에 큰따옴표(")가 포함되어 있다면, 그 앞에 반드시 백슬래시를 붙여 \\" 로 이스케이프하세요(JSON 문자열 규칙을 지키기 위한 이스케이프이며, 문장 내용을 바꾸는 것이 아닙니다). 이스케이프를 빠뜨리면 JSON 파싱이 깨집니다.
@@ -336,7 +339,10 @@ export async function computeFastAnalysis(paragraphs, title) {
   }
 
   const prompt = buildFastAnalysisPrompt(paragraphs, title)
-  const response = await callClaude(prompt, { maxTokens: 2048 })
+  // sentences 상한을 8개로 올리면서 문장당 verbatim 원문+번역+이유까지 합쳐
+  // 2048 토큰으로는 응답이 중간에 잘려 JSON 파싱 자체가 깨지는 경우가
+  // 실사용 중 재현됐다(SyntaxError: Unterminated string). 여유를 두고 4096으로 상향.
+  const response = await callClaude(prompt, { maxTokens: 4096 })
   try {
     return parseFastAnalysisResponse(response, paragraphs)
   } catch (err) {
