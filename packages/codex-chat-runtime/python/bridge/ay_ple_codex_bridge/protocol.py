@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-import ipaddress
 import json
-import os
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal, TypeAlias
-from urllib.parse import urlsplit
 
 
 MIB = 1024 * 1024
@@ -47,16 +44,8 @@ class WaitForMcpServerReadyCommand:
 
 
 @dataclass(frozen=True, slots=True)
-class PrivateMcpServer:
-    url: str
-    token: str = field(repr=False)
-
-
-@dataclass(frozen=True, slots=True)
 class StartThreadCommand:
     bridge_request_id: str
-    workspace: str | None = None
-    private_mcp: PrivateMcpServer | None = None
     command: Literal["start_thread"] = "start_thread"
 
 
@@ -72,8 +61,6 @@ class StartTurnCommand:
 class StartProductTurnCommand:
     bridge_request_id: str
     thread_id: str
-    skill_name: str | None
-    skill_path: str | None
     permission_profile: Literal["read_only", "workspace_write"]
     model: str | None
     reasoning_effort: str | None
@@ -243,41 +230,6 @@ def _require_tool_roster(value: object) -> tuple[str, ...]:
     return tools
 
 
-def _require_absolute_path(value: object) -> str:
-    path = _require_bounded_string(value, max_bytes=16 * 1024)
-    if not os.path.isabs(path):
-        raise ProtocolViolation("invalid_command")
-    return path
-
-
-def _require_private_mcp(value: object) -> PrivateMcpServer:
-    if not isinstance(value, dict):
-        raise ProtocolViolation("invalid_command")
-    _require_exact_fields(value, {"url", "token"})
-    url = _require_bounded_string(value.get("url"), max_bytes=4 * 1024)
-    try:
-        parsed = urlsplit(url)
-        hostname = parsed.hostname
-        address = ipaddress.ip_address(hostname) if hostname is not None else None
-        parsed.port
-    except ValueError as exc:
-        raise ProtocolViolation("invalid_command") from exc
-    if (
-        parsed.scheme != "http"
-        or not parsed.netloc
-        or parsed.username is not None
-        or parsed.password is not None
-        or parsed.fragment
-        or address is None
-        or not address.is_loopback
-    ):
-        raise ProtocolViolation("invalid_command")
-    token = _require_bounded_string(value.get("token"), max_bytes=4 * 1024)
-    if "\r" in token or "\n" in token:
-        raise ProtocolViolation("invalid_command")
-    return PrivateMcpServer(url=url, token=token)
-
-
 def decode_command_line(line: bytes) -> BridgeCommand:
     if len(line) > MAX_FRAME_BYTES:
         raise ProtocolViolation("frame_too_large")
@@ -320,16 +272,8 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             _require_tool_roster(value.get("expectedTools")),
         )
     if command == "start_thread":
-        legacy_fields = {"bridgeRequestId", "command"}
-        isolated_fields = legacy_fields | {"workspace", "mcp"}
-        if set(value) == legacy_fields:
-            return StartThreadCommand(request_id)
-        _require_exact_fields(value, isolated_fields)
-        return StartThreadCommand(
-            request_id,
-            workspace=_require_absolute_path(value.get("workspace")),
-            private_mcp=_require_private_mcp(value.get("mcp")),
-        )
+        _require_exact_fields(value, {"bridgeRequestId", "command"})
+        return StartThreadCommand(request_id)
     if command == "start_turn":
         _require_exact_fields(
             value,
@@ -347,26 +291,15 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             "threadId",
             "text",
         }
-        skill_fields = {"skillName", "skillPath"}
         permission_fields = {"permissionProfile"}
         settings_fields = {"model", "reasoningEffort", "serviceTier"}
         fields = set(value)
         allowed_fields = (
             base_fields | permission_fields,
-            base_fields | skill_fields | permission_fields,
             base_fields | permission_fields | settings_fields,
-            base_fields | skill_fields | permission_fields | settings_fields,
         )
         if fields not in allowed_fields:
             raise ProtocolViolation("invalid_command")
-        if fields & skill_fields:
-            skill_name = _require_bounded_string(value.get("skillName"), max_bytes=256)
-            skill_path = _require_absolute_path(value.get("skillPath"))
-            if os.path.basename(skill_path) != "SKILL.md":
-                raise ProtocolViolation("invalid_command")
-        else:
-            skill_name = None
-            skill_path = None
         if fields & settings_fields:
             model = _require_bounded_string(value.get("model"), max_bytes=256)
             reasoning_effort = _require_bounded_string(
@@ -385,8 +318,6 @@ def decode_command_line(line: bytes) -> BridgeCommand:
         return StartProductTurnCommand(
             request_id,
             _require_nonempty_string(value.get("threadId")),
-            skill_name,
-            skill_path,
             permission_profile,
             model,
             reasoning_effort,

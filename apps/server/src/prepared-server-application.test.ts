@@ -14,7 +14,6 @@ import type {
   InterruptTurnInput,
   ReleaseThreadInput,
   StartProductTurnInput,
-  StartThreadInput,
   StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 
@@ -105,9 +104,9 @@ test('prepared public composition uses project discovery and exposes only AY Cha
       ),
       /^operation_[0-9a-f]{32}$/u,
     )
-    assert.deepEqual(runtime.threadInputs, [undefined])
+    assert.equal(runtime.startThreadCalls, 1)
     assert.equal(runtime.productInputs[0]?.permissionProfile, 'workspace_write')
-    assert.equal(runtime.productInputs[0]?.skill, undefined)
+    assert.equal(Object.hasOwn(runtime.productInputs[0] ?? {}, 'skill'), false)
 
     const headers = {
       authorization: `Bearer ${target.credentials.token}`,
@@ -184,7 +183,7 @@ test('prepared public composition uses project discovery and exposes only AY Cha
 
 class PreparedRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
-  readonly threadInputs: Array<StartThreadInput | undefined> = []
+  startThreadCalls = 0
   readonly productInputs: StartProductTurnInput[] = []
   private readonly turnGate = deferred<void>()
 
@@ -210,8 +209,8 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
     })
   }
 
-  async startThread(input?: StartThreadInput) {
-    this.threadInputs.push(input)
+  async startThread() {
+    this.startThreadCalls += 1
     return { threadId: 'thread-prepared' }
   }
 

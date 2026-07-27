@@ -276,20 +276,7 @@ class FakeAppServer:
     ) -> None:
         params = request.get("params", {})
         text = _input_text(params)
-        if text == "Continue the product conversation.":
-            expected_input = [{"type": "text", "text": text}]
-        else:
-            expected_input = [
-                {
-                    "type": "skill",
-                    "name": "assignment-modeling",
-                    "path": "/managed/assignment-modeling/SKILL.md",
-                },
-                {
-                    "type": "text",
-                    "text": "Review staged Markdown at /staged/assignment.md",
-                },
-            ]
+        expected_input = [{"type": "text", "text": text}]
         expected_collaboration = {
             "mode": "plan",
             "settings": {

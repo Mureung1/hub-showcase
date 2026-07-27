@@ -143,28 +143,6 @@ test('parses only the curated product activity allowlist', () => {
       text: '자료를 검증한다.',
     },
     {
-      type: 'mcp_call.started',
-      threadId: 'thread-native-A',
-      turnId: 'turn-native-A1',
-      itemId: 'item-mcp',
-      tool: 'propose_state_patch',
-    },
-    {
-      type: 'mcp_call.completed',
-      threadId: 'thread-native-A',
-      turnId: 'turn-native-A1',
-      itemId: 'item-mcp',
-      tool: 'propose_state_patch',
-    },
-    {
-      type: 'mcp_call.failed',
-      threadId: 'thread-native-A',
-      turnId: 'turn-native-A1',
-      itemId: 'item-mcp',
-      tool: 'propose_state_patch',
-      displayMessage: 'The product proposal tool failed.',
-    },
-    {
       type: 'turn.interrupt_acknowledged',
       threadId: 'thread-native-A',
       turnId: 'turn-native-A1',
@@ -176,7 +154,7 @@ test('parses only the curated product activity allowlist', () => {
   }
   assert.throws(() =>
     parseCodexProductActivity({
-      ...activities[2],
+      ...activities[0],
       arguments: { sourcePath: '/private/staged/source.md' },
     }),
   )

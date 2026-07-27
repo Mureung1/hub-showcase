@@ -236,51 +236,25 @@ class ProtocolUnitTests(unittest.TestCase):
                         json.dumps(value, separators=(",", ":")).encode() + b"\n"
                     )
 
-    def test_decodes_legacy_and_isolated_thread_start_without_exposing_token(
-        self,
-    ) -> None:
-        legacy = decode_command_line(
-            b'{"bridgeRequestId":"legacy","command":"start_thread"}\n'
+    def test_decodes_project_thread_start_and_rejects_removed_overrides(self) -> None:
+        command = decode_command_line(
+            b'{"bridgeRequestId":"project","command":"start_thread"}\n'
         )
-        self.assertIsNone(legacy.workspace)
-        self.assertIsNone(legacy.private_mcp)
+        self.assertEqual(command.bridge_request_id, "project")
 
-        token = "private-mcp-token"
-        isolated = {
-            "bridgeRequestId": "isolated",
+        removed = {
+            "bridgeRequestId": "removed",
             "command": "start_thread",
             "workspace": "/workspace/semester-a",
             "mcp": {
                 "url": "http://127.0.0.1:43127/mcp",
-                "token": token,
+                "token": "private-mcp-token",
             },
         }
-        command = decode_command_line(
-            json.dumps(isolated, separators=(",", ":")).encode() + b"\n"
-        )
-        self.assertEqual(command.workspace, isolated["workspace"])
-        self.assertEqual(command.private_mcp.url, isolated["mcp"]["url"])
-        self.assertEqual(command.private_mcp.token, token)
-        self.assertNotIn(token, str(command))
-
         invalid = (
-            {**isolated, "workspace": "relative/workspace"},
-            {
-                **isolated,
-                "mcp": {
-                    **isolated["mcp"],
-                    "url": "https://127.0.0.1:43127/mcp",
-                },
-            },
-            {
-                **isolated,
-                "mcp": {
-                    **isolated["mcp"],
-                    "url": "http://example.com:43127/mcp",
-                },
-            },
-            {**isolated, "mcp": {"url": "http://127.0.0.1:43127/mcp"}},
-            {**isolated, "extra": True},
+            removed,
+            {**removed, "mcp": None},
+            {**removed, "extra": True},
         )
         for value in invalid:
             with self.subTest(value=value):
@@ -293,29 +267,16 @@ class ProtocolUnitTests(unittest.TestCase):
             "bridgeRequestId": "product",
             "command": "start_product_turn",
             "threadId": "thread-1",
-            "skillName": "assignment-modeling",
-            "skillPath": "/managed/assignment-modeling/SKILL.md",
             "permissionProfile": "workspace_write",
             "text": "Review staged Markdown",
         }
         command = decode_command_line(
             json.dumps(product, separators=(",", ":")).encode() + b"\n"
         )
-        self.assertEqual(command.skill_name, "assignment-modeling")
-        self.assertEqual(command.skill_path, product["skillPath"])
-
-        text_only = dict(product)
-        text_only.pop("skillName")
-        text_only.pop("skillPath")
-        command = decode_command_line(
-            json.dumps(text_only, separators=(",", ":")).encode() + b"\n"
-        )
-        self.assertIsNone(command.skill_name)
-        self.assertIsNone(command.skill_path)
         self.assertEqual(command.permission_profile, "workspace_write")
 
         read_only = {
-            **text_only,
+            **product,
             "permissionProfile": "read_only",
         }
         command = decode_command_line(
@@ -356,17 +317,20 @@ class ProtocolUnitTests(unittest.TestCase):
         self.assertEqual(answer.answers, {"decision": ("Accept",)})
 
         invalid = (
-            {**product, "skillPath": "relative/SKILL.md"},
-            {**product, "skillPath": "/managed/assignment-modeling/OTHER.md"},
-            {key: value for key, value in product.items() if key != "skillName"},
+            {**product, "skillName": "assignment-modeling"},
+            {
+                **product,
+                "skillName": "assignment-modeling",
+                "skillPath": "/managed/assignment-modeling/SKILL.md",
+            },
             {**product, "planModel": "legacy-model"},
             {**product, "reasoningEffort": "medium"},
             {
                 key: value
-                for key, value in text_only.items()
+                for key, value in product.items()
                 if key != "permissionProfile"
             },
-            {**text_only, "permissionProfile": "danger_full_access"},
+            {**product, "permissionProfile": "danger_full_access"},
             {**configured, "serviceTier": "priority"},
             {
                 "bridgeRequestId": "mcp",

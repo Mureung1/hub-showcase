@@ -17,7 +17,6 @@ import type {
   InterruptTurnInput,
   ReleaseThreadInput,
   StartProductTurnInput,
-  StartThreadInput,
   StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 import type { ProductWorkspaceLifecycle } from '@ay-ple/product-contract'
@@ -98,9 +97,9 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
       .fill('과제 파일을 정리해 줘.')
     await page.getByRole('button', { name: '메시지 보내기' }).click()
     await expect(page.getByText('workspace를 확인했습니다.')).toBeVisible()
-    expect(runtime.threadInputs).toEqual([undefined])
+    expect(runtime.startThreadCalls).toBe(1)
     expect(runtime.productInputs[0]?.permissionProfile).toBe('workspace_write')
-    expect(runtime.productInputs[0]?.skill).toBeUndefined()
+    expect(Object.hasOwn(runtime.productInputs[0] ?? {}, 'skill')).toBe(false)
     const activeBootstrap = (await (
       await fetch(`${apiUrl}/api/product/bootstrap`)
     ).json()) as {
@@ -294,7 +293,7 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
 
 class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
-  readonly threadInputs: Array<StartThreadInput | undefined> = []
+  startThreadCalls = 0
   readonly productInputs: StartProductTurnInput[] = []
   readonly answers: AnswerUserInput[] = []
   readonly interrupts: InterruptTurnInput[] = []
@@ -324,8 +323,8 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
     })
   }
 
-  async startThread(input?: StartThreadInput) {
-    this.threadInputs.push(input)
+  async startThread() {
+    this.startThreadCalls += 1
     return { threadId: 'thread-prepared-browser' }
   }
 

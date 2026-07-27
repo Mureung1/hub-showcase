@@ -298,10 +298,6 @@ export function createPreparedProductOperationCoordinator(options: {
           ),
           willRetry: activity.willRetry,
         }
-      case 'skill.requested':
-      case 'mcp_call.started':
-      case 'mcp_call.completed':
-      case 'mcp_call.failed':
       case 'runtime.failed':
       case 'turn.completed':
         return undefined

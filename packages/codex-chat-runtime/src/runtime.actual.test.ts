@@ -809,117 +809,10 @@ test('rejects unprepared, indirect, and noncanonical Git roots before spawn', as
   }
 })
 
-test('validates isolated product thread inputs before native mutation', async () => {
-  const harness = await startHarness('isolated-thread-validation')
-  try {
-    const token = 'private-token-must-not-leak'
-    const invalid = [
-      {
-        workspace: 'relative/workspace',
-        mcp: { url: 'http://127.0.0.1:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: { url: 'https://127.0.0.1:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: { url: 'http://example.com:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: { url: 'http://127.evil.example:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: {
-          url: 'http://127.0.0.1:43127/mcp',
-          token: `${token}\nunsafe`,
-        },
-      },
-    ]
-
-    for (const input of invalid) {
-      assert.throws(
-        () => harness.runtime.startThread(input),
-        (error: unknown) => {
-          assert.ok(error instanceof TypeError)
-          assert.equal(error.message.includes(token), false)
-          return true
-        },
-      )
-    }
-
-    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
-      messages: readonly { readonly method?: string }[]
-    }
-    assert.equal(
-      journal.messages.some(({ method }) => method === 'thread/start'),
-      false,
-    )
-  } finally {
-    await harness.runtime.close()
-  }
-})
-
-test('binds isolated thread cwd to the exact workspace before native mutation', async () => {
-  const harness = await startHarness('isolated-thread-workspace-binding')
-  try {
-    const workspace = await realpath(dirname(harness.journalPath))
-    const mcp = {
-      url: 'http://127.0.0.1:43127/mcp',
-      token: 'private-mcp-token',
-    } as const
-
-    for (const deniedWorkspace of [
-      join(dirname(workspace), 'sibling-workspace'),
-      `${workspace}/../${basename(workspace)}`,
-      '/wrong/workspace',
-    ]) {
-      await assert.rejects(
-        () =>
-          harness.runtime.startThread({
-            workspace: deniedWorkspace,
-            mcp,
-          }),
-        (error: unknown) => {
-          assert.ok(error instanceof CodexChatRuntimeError)
-          assert.equal(error.code, 'workspace_mismatch')
-          assert.equal(
-            error.displayMessage,
-            'The requested workspace does not match this Codex runtime.',
-          )
-          assert.equal(error.displayMessage.includes(deniedWorkspace), false)
-          assert.equal(error.unknownOutcome, false)
-          return true
-        },
-      )
-    }
-
-    const before = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
-      messages: readonly { readonly method?: string }[]
-    }
-    assert.equal(
-      before.messages.some(({ method }) => method === 'thread/start'),
-      false,
-    )
-    assert.deepEqual(
-      await harness.runtime.startThread({ workspace, mcp }),
-      { threadId: 'thread-1' },
-    )
-  } finally {
-    await harness.runtime.close()
-  }
-})
-
-test('forwards fixed workspace cwd and private MCP config and supports a text-only product turn', async () => {
+test('forwards the fixed project cwd without thread-start overrides and supports a text-only product turn', async () => {
   const harness = await startHarness('isolated-product-thread')
   try {
     const workspace = await realpath(dirname(harness.journalPath))
-    const mcp = {
-      url: 'http://127.0.0.1:43127/mcp',
-      token: 'private-mcp-token',
-    } as const
     assert.deepEqual(await harness.runtime.readModelCatalog(), {
       models: [
         {
@@ -952,10 +845,7 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
         },
       ],
     })
-    const { threadId } = await harness.runtime.startThread({
-      workspace,
-      mcp,
-    })
+    const { threadId } = await harness.runtime.startThread()
 
     const chat = await harness.runtime.startTurn({
       threadId,
@@ -975,14 +865,11 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
     })
     const iterator = product.events[Symbol.asyncIterator]()
     const { requested, events } = await readUntilUserInput(iterator)
-    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
     const cancelled = harness.runtime.cancelUserInput({
       interactionId: requested.interactionId,
     })
     events.push(...(await collectIterator(iterator)))
     await cancelled
-    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
-    assert.equal(JSON.stringify(events).includes(mcp.token), false)
 
     const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
       messages: readonly {
@@ -996,20 +883,7 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
     assert.equal(threadStart?.params?.cwd, workspace)
     assert.equal(threadStart?.params?.approvalPolicy, 'on-request')
     assert.equal(threadStart?.params?.sandbox, 'workspace-write')
-    assert.deepEqual(threadStart?.params?.config, {
-      features: { fast_mode: true },
-      mcp_servers: {
-        ay_ple: {
-          default_tools_approval_mode: 'approve',
-          enabled_tools: ['propose_state_patch'],
-          http_headers: {
-            'X-AY-PLE-MCP-Token': mcp.token,
-          },
-          required: true,
-          url: mcp.url,
-        },
-      },
-    })
+    assert.equal(Object.hasOwn(threadStart?.params ?? {}, 'config'), false)
     const turnStarts = journal.messages.filter(
       ({ method }) => method === 'turn/start',
     )
@@ -1053,8 +927,8 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
   }
 })
 
-test('rejects a non-SKILL.md product skill path before native turn mutation', async () => {
-  const harness = await startHarness('product-skill-path-validation')
+test('rejects removed managed Skill input before native turn mutation', async () => {
+  const harness = await startHarness('product-skill-input-validation')
   try {
     const { threadId } = await harness.runtime.startThread()
     assert.throws(
@@ -1065,18 +939,16 @@ test('rejects a non-SKILL.md product skill path before native turn mutation', as
         } as StartProductTurnInput),
       /permission profile/i,
     )
-    assert.throws(
-      () =>
-        harness.runtime.startProductTurn({
-          threadId,
-          skill: {
-            name: 'assignment-modeling',
-            path: '/managed/assignment-modeling/OTHER.md',
-          },
-          permissionProfile: 'workspace_write',
-          text: 'Review staged Markdown at /staged/assignment.md',
-        }),
-      TypeError,
+    assert.throws(() =>
+      harness.runtime.startProductTurn({
+        threadId,
+        skill: {
+          name: 'assignment-modeling',
+          path: '/managed/assignment-modeling/SKILL.md',
+        },
+        permissionProfile: 'workspace_write',
+        text: 'Review staged Markdown at /staged/assignment.md',
+      } as StartProductTurnInput),
     )
     const journal = JSON.parse(
       await readFile(harness.journalPath, 'utf8'),
@@ -1146,17 +1018,13 @@ test('runs a structured product turn through one pending native interaction', as
       if (next.done) break
       events.push(next.value)
     }
-    assert.equal(events[0]?.type, 'skill.requested')
     assert.deepEqual(
       [...events.map(({ type }) => type)].sort(),
       [
         'agent_message.completed',
         'agent_message.delta',
-        'mcp_call.completed',
-        'mcp_call.started',
         'plan.completed',
         'plan.delta',
-        'skill.requested',
         'turn.completed',
         'user_input.requested',
         'user_input.resolved',
@@ -3192,10 +3060,6 @@ async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {
 function productTurnInput(threadId: string) {
   return {
     threadId,
-    skill: {
-      name: 'assignment-modeling',
-      path: '/managed/assignment-modeling/SKILL.md',
-    },
     permissionProfile: 'workspace_write' as const,
     text: 'Review staged Markdown at /staged/assignment.md',
   }

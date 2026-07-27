@@ -25,17 +25,7 @@ type ActiveTurn = {
   drainDeadline?: NodeJS.Timeout
 }
 
-export type ProductThreadProfile = {
-  readonly workspace: string
-  readonly mcp: {
-    readonly url: string
-    readonly token: string
-  }
-}
-
-export type ProductTurnInput = Omit<StartProductTurnInput, 'threadId'> & {
-  readonly profile?: ProductThreadProfile
-}
+export type ProductTurnInput = Omit<StartProductTurnInput, 'threadId'>
 
 export type ProductOperationLease = {
   readonly operationId: string
@@ -82,7 +72,6 @@ export class CodexChatService {
   private runtimeRecyclePromise?: Promise<void>
   private runtimeFailureCode?: string
   private currentThreadId?: string
-  private currentThreadProfile?: string
   private accountReadPromise?: Promise<CodexAccountReadiness>
   private modelCatalogReadPromise?: Promise<CodexModelCatalog>
   private activeTurn?: ActiveTurn
@@ -225,7 +214,7 @@ export class CodexChatService {
         this.finishTurn(reservation)
         return undefined
       }
-      const threadId = await this.ensureProductThread(runtime, input.profile)
+      const threadId = await this.ensureProductThread(runtime)
       reservation.threadId = threadId
       if (reservation.disconnected || disconnected()) {
         this.finishTurn(reservation)
@@ -233,7 +222,6 @@ export class CodexChatService {
       }
       const turn = await runtime.startProductTurn({
         threadId,
-        ...(input.skill === undefined ? {} : { skill: input.skill }),
         permissionProfile: input.permissionProfile,
         ...(input.settings === undefined ? {} : { settings: input.settings }),
         text: input.text,
@@ -479,31 +467,16 @@ export class CodexChatService {
 
   private async ensureProductThread(
     runtime: CodexWorkspaceRuntime,
-    profile?: ProductThreadProfile,
   ): Promise<string> {
-    const profileKey = profile ? productThreadProfileKey(profile) : 'project'
-    if (this.currentThreadId && this.currentThreadProfile === profileKey) {
-      return this.currentThreadId
-    }
-    if (this.currentThreadId) {
-      await runtime.releaseThread({ threadId: this.currentThreadId })
-      this.currentThreadId = undefined
-      this.currentThreadProfile = undefined
-    }
+    if (this.currentThreadId) return this.currentThreadId
     let thread
     try {
-      thread = profile
-        ? await runtime.startThread({
-            workspace: profile.workspace,
-            mcp: profile.mcp,
-          })
-        : await runtime.startThread()
+      thread = await runtime.startThread()
     } catch (error) {
       await this.handleUnknownOutcome(error)
       throw error
     }
     this.currentThreadId = thread.threadId
-    this.currentThreadProfile = profileKey
     return thread.threadId
   }
 
@@ -547,7 +520,6 @@ export class CodexChatService {
     this.runtimeClosePromise = undefined
     this.runtimeFailureCode = undefined
     this.currentThreadId = undefined
-    this.currentThreadProfile = undefined
   }
 
   private beginDisconnectCleanup(active: ActiveTurn): void {
@@ -647,10 +619,6 @@ function stateError(code: CodexChatServiceErrorCode): CodexChatServiceError {
 
 function safeFailureCode(code: string): string {
   return /^[a-z][a-z0-9_]{0,63}$/.test(code) ? code : 'runtime_failed'
-}
-
-function productThreadProfileKey(profile: ProductThreadProfile): string {
-  return `${profile.workspace}\u0000${profile.mcp.url}`
 }
 
 async function safelyWrite(

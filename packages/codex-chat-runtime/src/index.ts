@@ -35,7 +35,6 @@ export type {
   AnswerUserInput,
   CancelUserInput,
   CodexChildEnvironment,
-  CodexPrivateMcpServerInput,
   CodexProductCapableRuntime,
   CodexProductPermissionProfile,
   CodexModelCatalog,
@@ -44,10 +43,8 @@ export type {
   CodexMcpReadinessPort,
   CodexModelReasoningEffort,
   CodexProductTurnSettings,
-  CodexProductSkillInput,
   CodexProductTurn,
   CodexWorkspaceRuntime,
-  StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
 export {

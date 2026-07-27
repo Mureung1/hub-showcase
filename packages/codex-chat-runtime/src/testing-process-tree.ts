@@ -26,7 +26,6 @@ import type {
   CancelUserInput,
   CodexWorkspaceRuntime,
   StartProductTurnInput,
-  StartThreadInput,
 } from './runtime-contract.js'
 
 const PACKAGE_ROOT = path.resolve(
@@ -120,10 +119,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
         spawned!.runtime.readEffectiveConfig(input),
       listEffectiveSkills: (input) =>
         spawned!.runtime.listEffectiveSkills(input),
-      startThread: (input?: StartThreadInput) =>
-        input === undefined
-          ? spawned!.runtime.startThread()
-          : spawned!.runtime.startThread(input),
+      startThread: () => spawned!.runtime.startThread(),
       readAccountReadiness: () => spawned!.runtime.readAccountReadiness(),
       readModelCatalog: () => spawned!.runtime.readModelCatalog(),
       waitForMcpServerReady: (input) =>
