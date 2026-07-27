@@ -8,5 +8,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
     },
+    // 상위 hub/shared/regions.json 정적 import 허용(프로젝트 루트 밖 파일)
+    fs: { allow: ['..'] },
   },
 })

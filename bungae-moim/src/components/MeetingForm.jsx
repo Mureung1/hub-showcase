@@ -17,7 +17,6 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
   const [category, setCategory] = useState(initialValues.category)
   const [sido, setSido] = useState(initialValues.sido)
   const [sigungu, setSigungu] = useState(initialValues.sigungu)
-  const [eupmyeondong, setEupmyeondong] = useState(initialValues.eupmyeondong)
   const [date, setDate] = useState(initialValues.date)
   const [time, setTime] = useState(initialValues.time)
   const [endDate, setEndDate] = useState(initialValues.endDate)
@@ -28,8 +27,7 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const sigunguOptions = Object.keys(REGIONS[sido] ?? {})
-  const eupmyeondongOptions = REGIONS[sido]?.[sigungu] ?? []
+  const sigunguOptions = REGIONS[sido] ?? []
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -48,7 +46,7 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
         description: description.trim(),
         regionSido: sido,
         regionSigungu: sigungu,
-        regionEupmyeondong: eupmyeondong || null,
+        regionEupmyeondong: null,
         startAt: type === 'flash' ? `${date}T${time}:00+09:00` : `${date}T00:00:00+09:00`,
         endAt: type === 'small' ? `${endDate}T00:00:00+09:00` : null,
         capacity: type === 'flash' ? Number(capacity) : null,
@@ -106,16 +104,15 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
 
         <div className="field">
           <label>지역</label>
-          <div className="field-row field-row--three">
+          <div className="field-row">
             <select
               className="field-select"
               value={sido}
               onChange={(e) => {
                 const nextSido = e.target.value
                 setSido(nextSido)
-                const firstSigungu = Object.keys(REGIONS[nextSido])[0]
+                const firstSigungu = REGIONS[nextSido][0]
                 setSigungu(firstSigungu)
-                setEupmyeondong('')
               }}
               aria-label="시/도"
             >
@@ -128,26 +125,10 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
             <select
               className="field-select"
               value={sigungu}
-              onChange={(e) => {
-                setSigungu(e.target.value)
-                setEupmyeondong('')
-              }}
+              onChange={(e) => setSigungu(e.target.value)}
               aria-label="시/군/구"
             >
               {sigunguOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <select
-              className="field-select"
-              value={eupmyeondong}
-              onChange={(e) => setEupmyeondong(e.target.value)}
-              aria-label="읍/면/동 (선택)"
-            >
-              <option value="">읍/면/동</option>
-              {eupmyeondongOptions.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
