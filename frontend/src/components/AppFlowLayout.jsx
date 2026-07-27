@@ -25,6 +25,7 @@ const BACK_TARGET = {
   '/search': '/profile',
   '/result': '/search',
   '/detail': '/result',
+  '/history': '/',
 }
 
 // githubId만 localStorage에 남긴다 — 새로고침/직접 URL 진입(예: /history) 시에도 "누구 이력인지"를

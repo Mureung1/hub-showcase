@@ -3,7 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getRecommendationHistory, addFavorite, removeFavorite } from '../api/index.js'
 import IssueCard from './IssueCard.jsx'
-import { DIFFICULTY_META, formatSessionTime } from '../utils/format.js'
+import { DIFFICULTY_META } from '../utils/format.js'
 import { TOPIC_OPTIONS } from '../utils/preferences.js'
 
 const ALL = 'all'
@@ -169,7 +169,6 @@ function History() {
       {pageSessions.map((session) => (
         <div className="h-session" key={session.id}>
           <div className="h-session-head">
-            <span className="h-session-time">{formatSessionTime(session.createdAt)}</span>
             <span className="h-session-tag">
               {session.preferences.languages.join(', ')} · {DIFFICULTY_META[session.preferences.difficulty].label}
               {session.preferences.topics.length > 0 &&
