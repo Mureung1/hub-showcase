@@ -1,0 +1,13 @@
+{
+  "name": "planner-assistant-supabase-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Supabase-backed server for the Godsaeng Planner assistant",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
