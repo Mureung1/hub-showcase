@@ -1,9 +1,9 @@
-import type { Category } from "./types";
+import type { AnalysisCategory } from "./types";
 
 export function analysisCategoryFor(
   categoryName: string | null,
   categoryCode: string | null = null,
-): Category | null {
+): AnalysisCategory | null {
   if (categoryCode === "G20405") return "편의점";
   if (categoryCode === "I21201") return "카페";
   if (categoryCode === "I21001") return "베이커리";

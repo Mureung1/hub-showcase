@@ -123,6 +123,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByLabelText("상권 선택")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "상권 분석" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "분석 결과 닫기" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "분석 설정 패널 열기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "분석 결과 패널 열기" })).toBeInTheDocument();
@@ -251,24 +252,25 @@ describe("App", () => {
   it("switches between the map presentation modes", () => {
     render(<App />);
 
-    const densityMode = screen.getByRole("button", { name: /점포 밀도/ });
-    const originalMode = screen.getByRole("button", { name: "실제 지도" });
-    const buildings = screen.getByRole("button", { name: "건물 레이어 표시" });
-    const prefabs = screen.getByRole("button", { name: "3D" });
+    const analysisMode = screen.getByRole("button", { name: /점포 밀도/ });
+    const flatMode = screen.getByRole("button", { name: "실제 지도" });
+    const storefront3dMode = screen.getByRole("button", { name: "3D 점포" });
 
-    expect(densityMode).toHaveAttribute("aria-pressed", "true");
-    expect(originalMode).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText(/LocalTwin map data/)).toBeInTheDocument();
+    expect(analysisMode).toHaveAttribute("aria-pressed", "true");
+    expect(flatMode).toHaveAttribute("aria-pressed", "false");
+    expect(storefront3dMode).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("OpenFreeMap · LocalTwin")).toBeInTheDocument();
 
-    fireEvent.click(originalMode);
-    expect(densityMode).toHaveAttribute("aria-pressed", "false");
-    expect(originalMode).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/OpenFreeMap/)).toBeInTheDocument();
+    fireEvent.click(flatMode);
+    expect(analysisMode).toHaveAttribute("aria-pressed", "false");
+    expect(flatMode).toHaveAttribute("aria-pressed", "true");
+    expect(storefront3dMode).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("OpenFreeMap")).toBeInTheDocument();
 
-    fireEvent.click(buildings);
-    fireEvent.click(prefabs);
-    expect(buildings).toHaveAttribute("aria-pressed", "false");
-    expect(prefabs).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(storefront3dMode);
+    expect(analysisMode).toHaveAttribute("aria-pressed", "false");
+    expect(flatMode).toHaveAttribute("aria-pressed", "false");
+    expect(storefront3dMode).toHaveAttribute("aria-pressed", "true");
   });
 
   it("does not expose the scene upload pipeline in the public market workspace", () => {
@@ -314,7 +316,16 @@ describe("App", () => {
     expect(screen.getByText("연남 테스트 카페")).toBeInTheDocument();
     expect(screen.getByText("카페 · 서울 마포구 동교로 1")).toBeInTheDocument();
     expect(screen.queryByText(/분석 지표는 현재 지원 업종인/)).not.toBeInTheDocument();
-    expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "selected");
+    expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");
+
+    fireEvent.click(screen.getByRole("button", { name: "3D 점포" }));
+
+    await waitFor(() =>
+      expect(document.querySelector("main")).toHaveAttribute(
+        "data-storefront-3d-state",
+        "selected",
+      ),
+    );
   });
 
   it("keeps a detailed store category and never substitutes cafe analysis", async () => {

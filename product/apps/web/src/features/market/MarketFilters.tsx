@@ -1,4 +1,15 @@
-import { Building2, Coffee, MapPinned, Store, X } from "lucide-react";
+import {
+  BedDouble,
+  Building2,
+  Coffee,
+  Dumbbell,
+  GraduationCap,
+  MapPinned,
+  Scissors,
+  Shirt,
+  Store,
+  X,
+} from "lucide-react";
 
 import { MapLayerControls } from "./MapLayerControls";
 import { NearbyStoreList } from "./NearbyStoreList";
@@ -15,7 +26,7 @@ import type {
 } from "./types";
 
 const categoryPresentation: Record<
-  Category,
+  string,
   {
     icon: typeof Coffee;
     tone: string;
@@ -25,7 +36,14 @@ const categoryPresentation: Record<
   음식점: { icon: Store, tone: "orange" },
   베이커리: { icon: Building2, tone: "blue" },
   편의점: { icon: MapPinned, tone: "gray" },
+  미용: { icon: Scissors, tone: "pink" },
+  의류: { icon: Shirt, tone: "violet" },
+  학원: { icon: GraduationCap, tone: "blue" },
+  숙박: { icon: BedDouble, tone: "violet" },
+  체육: { icon: Dumbbell, tone: "orange" },
 };
+const fallbackCategoryPresentation = { icon: Store, tone: "gray" };
+const fullySupportedCategories = new Set(["카페", "음식점", "베이커리", "편의점"]);
 
 const analysisTopics: Array<{
   value: AnalysisTopic;
@@ -33,14 +51,14 @@ const analysisTopics: Array<{
   available: boolean;
   reason?: string;
 }> = [
-    { value: "overview", label: "종합", available: true },
-    { value: "stores", label: "점포·개폐업", available: true },
-    { value: "sales", label: "매출·소비", available: true },
-    { value: "competition", label: "경쟁 현황", available: true },
-    { value: "flow", label: "유동인구", available: true },
-    { value: "population", label: "주거·직장인구", available: true },
-    { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
-  ];
+  { value: "overview", label: "종합", available: true },
+  { value: "stores", label: "점포·개폐업", available: true },
+  { value: "sales", label: "매출·소비", available: true },
+  { value: "competition", label: "경쟁 현황", available: true },
+  { value: "flow", label: "유동인구", available: true },
+  { value: "population", label: "주거·직장인구", available: true },
+  { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
+];
 
 function CategoryOptions({
   categories,
@@ -51,20 +69,35 @@ function CategoryOptions({
   selected: Category | null;
   onChange: (category: Category) => void;
 }) {
-  return categories.map((label) => {
-    const { icon: Icon, tone } = categoryPresentation[label];
+  return categories.map((label, index) => {
+    const { icon: Icon, tone } = categoryPresentation[label] ?? fallbackCategoryPresentation;
+    const fullSupport = fullySupportedCategories.has(label);
     return (
       <button
         key={label}
         type="button"
         className={`category-option ${selected === label ? "is-selected" : ""}`}
+        aria-label={label}
+        aria-pressed={selected === label}
+        title={`${index + 1}위 · ${fullSupport ? "전체 지원" : "부분 지원"}`}
         onClick={() => onChange(label)}
       >
+        <span className="category-rank" aria-hidden="true">
+          {index + 1}
+        </span>
         <span className={`category-icon ${tone}`}>
           <Icon size={15} />
         </span>
-        <span>{label}</span>
-        <span className="check">{selected === label ? "✓" : ""}</span>
+        <span className="category-option-name">{label}</span>
+        <small
+          className={`category-support-badge is-${fullSupport ? "full" : "partial"}`}
+          aria-hidden="true"
+        >
+          {fullSupport ? "전체" : "부분"}
+        </small>
+        <span className="check" aria-hidden="true">
+          {selected === label ? "✓" : ""}
+        </span>
       </button>
     );
   });
@@ -174,11 +207,15 @@ export function MarketFilters({
         </p>
       </div>
       <div className="filter-group">
-        <p className="filter-label">
-          어떤 가게인가요?
-          <TermHelp term="업종" description="카페, 음식점처럼 가게가 제공하는 상품이나 서비스의 종류입니다." />
-        </p>
-        <div className="category-list">
+        <div className="category-heading-row">
+          <p className="filter-label">
+            어떤 가게인가요?
+            <TermHelp term="업종" description="카페, 음식점처럼 가게가 제공하는 상품이나 서비스의 종류입니다." />
+          </p>
+          <span>{supportedCategories.length}개 업종</span>
+        </div>
+        <p className="category-list-help">세 상권의 고유 점포 수 기준 상위 업종입니다.</p>
+        <div className="category-list" aria-label="분석 업종 선택">
           <CategoryOptions
             categories={supportedCategories}
             selected={category}

@@ -1,8 +1,9 @@
-import type { MapMode } from "../market/types";
+import type { Map as MapLibreMap } from "maplibre-gl";
 
 export const BASE_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 export const BASE_BUILDING_LAYER_ID = "localtwin-base-building-3d";
 
+const EXTERNAL_BUILDING_LAYER_IDS = ["building-3d"] as const;
 const FALLBACK_ICON_SIZE = 12;
 
 export type MissingStyleImageEvent = {
@@ -34,11 +35,9 @@ export function addMissingStyleImageFallback(event: MissingStyleImageEvent) {
   event.target.addImage(event.id, { width: FALLBACK_ICON_SIZE, height: FALLBACK_ICON_SIZE, data });
 }
 
-export function shouldShowBaseBuildings(
-  enabled: boolean,
-  mapMode: MapMode,
-  hasLocalTwinOverlay: boolean,
-) {
-  if (!enabled) return false;
-  return mapMode === "original" || !hasLocalTwinOverlay;
+export function hideExternalBuildingLayers(map: MapLibreMap) {
+  for (const layerId of EXTERNAL_BUILDING_LAYER_IDS) {
+    if (!map.getLayer(layerId)) continue;
+    map.setLayoutProperty(layerId, "visibility", "none");
+  }
 }

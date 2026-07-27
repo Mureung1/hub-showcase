@@ -1,0 +1,127 @@
+.map-panel {
+  --map-overlay-gap: 28px;
+  --density-low: #3b82f6;
+  --density-medium: #f59e0b;
+  --density-high: #ef4444;
+}
+
+.map-legend {
+  bottom: calc(
+    var(--quick-metrics-height) + var(--quick-metrics-bottom) + var(--map-overlay-gap)
+  );
+}
+
+.map-legend .density-low {
+  background: var(--density-low);
+}
+
+.map-legend .density-medium {
+  background: var(--density-medium);
+}
+
+.map-legend .density-high {
+  background: var(--density-high);
+}
+
+.category-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.category-heading-row .filter-label {
+  margin-bottom: 0;
+}
+
+.category-heading-row > span {
+  flex: 0 0 auto;
+  color: #6f7d73;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.category-list-help {
+  margin: 6px 0 9px;
+  color: #7f8c84;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.category-list {
+  max-height: 286px;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd8ce transparent;
+}
+
+.category-option {
+  min-height: 38px;
+  height: auto;
+  grid-template-columns: 18px 24px minmax(0, 1fr) auto 16px;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+}
+
+.category-option:hover {
+  border-color: #dce8df;
+}
+
+.category-option.is-selected {
+  border-color: #b9dcc3;
+  background: #eef8f0;
+}
+
+.category-rank {
+  color: #8b978f;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.category-option-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-support-badge {
+  padding: 2px 5px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.category-support-badge.is-full {
+  color: #1f7a3f;
+  background: #e5f4e8;
+}
+
+.category-support-badge.is-partial {
+  color: #98651f;
+  background: #fff1d8;
+}
+
+.category-icon.pink {
+  color: #c24f75;
+  background: #fde9f0;
+}
+
+.category-icon.violet {
+  color: #7354c7;
+  background: #eee9fb;
+}
+
+@media (max-width: 760px) {
+  .map-panel {
+    --map-overlay-gap: 64px;
+  }
+
+  .category-list {
+    max-height: min(286px, 38vh);
+  }
+}

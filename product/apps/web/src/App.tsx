@@ -8,6 +8,7 @@ import { WorkspaceLayout } from "./features/workspace/WorkspaceLayout";
 import { useProductWorkspaceModel } from "./features/workspace/useProductWorkspaceModel";
 import { PRODUCT_CATALOG_BOOTSTRAP } from "./services/productCatalog";
 import "./styles/global.css";
+import "./styles/mapOverlays.css";
 
 export function App({ useDemoData = false }: { useDemoData?: boolean }) {
   const apiReadiness = useApiReadiness(!useDemoData);

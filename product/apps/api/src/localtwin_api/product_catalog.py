@@ -1,13 +1,20 @@
 """Versioned product scope shared by API repositories and Web clients."""
 
+from collections import defaultdict
 from typing import Literal
 
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-Category = Literal["카페", "음식점", "베이커리", "편의점"]
+from localtwin_api.db_models import StoreMarketLink, StorePoint
+
+AnalysisCategory = Literal["카페", "음식점", "베이커리", "편의점"]
+Category = AnalysisCategory
 NearbyRadius = Literal[100, 300, 500]
+CategoryCoverage = Literal["full", "partial"]
 
-CATEGORY_CODES: dict[Category, tuple[str, ...]] = {
+CATEGORY_CODES: dict[AnalysisCategory, tuple[str, ...]] = {
     "카페": ("CS100010",),
     "음식점": (
         "CS100001",
@@ -23,11 +30,31 @@ CATEGORY_CODES: dict[Category, tuple[str, ...]] = {
     "편의점": ("CS300002",),
 }
 
-CATEGORY_NAME_TERMS: dict[Category, tuple[str, ...]] = {
+CATEGORY_NAME_TERMS: dict[AnalysisCategory, tuple[str, ...]] = {
     "카페": ("카페", "커피"),
     "음식점": ("음식점", "한식", "중식", "일식", "분식", "주점"),
     "베이커리": ("베이커리", "제과", "빵", "도넛"),
     "편의점": ("편의점",),
+}
+
+# User-facing groups considered for the data-driven Top 7. The order is also
+# the classification priority, so one store is counted in exactly one group.
+# Broad food terms stay last to avoid swallowing cafe and bakery stores.
+CATEGORY_FILTER_TERMS: dict[str, tuple[str, ...]] = {
+    "카페": CATEGORY_NAME_TERMS["카페"],
+    "베이커리": CATEGORY_NAME_TERMS["베이커리"],
+    "편의점": CATEGORY_NAME_TERMS["편의점"],
+    "미용": ("미용", "헤어", "네일", "피부관리", "이발"),
+    "의류": ("의류", "의복", "패션", "옷", "신발"),
+    "학원": ("학원", "교습", "교육원"),
+    "숙박": ("숙박", "호텔", "모텔", "여관", "게스트하우스"),
+    "부동산": ("부동산", "공인중개"),
+    "약국": ("약국",),
+    "병원": ("병원", "의원", "치과", "한의원"),
+    "체육": ("체육", "헬스", "피트니스", "스포츠", "요가", "필라테스"),
+    "세탁": ("세탁", "수선"),
+    "생활용품": ("생활용품", "잡화", "문구"),
+    "음식점": CATEGORY_NAME_TERMS["음식점"],
 }
 
 
@@ -70,21 +97,96 @@ SUPPORTED_RADII: tuple[NearbyRadius, ...] = (100, 300, 500)
 
 
 class ProductCategory(BaseModel):
-    name: Category
-    codes: tuple[str, ...]
+    name: str
+    codes: tuple[str, ...] = ()
+    coverage: CategoryCoverage
+    analysis_category: AnalysisCategory | None = None
+    rank: int | None = None
+    store_count: int | None = None
+    market_count: int | None = None
+
+
+BOOTSTRAP_CATEGORIES = tuple(
+    ProductCategory(
+        name=name,
+        codes=codes,
+        coverage="full",
+        analysis_category=name,
+    )
+    for name, codes in CATEGORY_CODES.items()
+)
 
 
 class ProductCatalogResponse(BaseModel):
     markets: tuple[SupportedMarket, ...]
     categories: tuple[ProductCategory, ...]
     radii: tuple[NearbyRadius, ...]
+    ranking_basis: Literal["supported_market_unique_store_count", "bootstrap"]
 
 
-def get_product_catalog() -> ProductCatalogResponse:
+def classify_category_group(store: StorePoint) -> str | None:
+    """Map one source store to one user-facing category group."""
+
+    values = (
+        store.category_small_name,
+        store.category_middle_name,
+        store.category_large_name,
+    )
+    for value in values:
+        if not value:
+            continue
+        normalized = value.casefold()
+        for group, terms in CATEGORY_FILTER_TERMS.items():
+            if any(term.casefold() in normalized for term in terms):
+                return group
+    return None
+
+
+def rank_product_categories(session: Session, limit: int = 7) -> tuple[ProductCategory, ...]:
+    """Rank category groups in supported markets using unique linked stores."""
+
+    rows = session.execute(
+        select(StorePoint, StoreMarketLink.market_code)
+        .join(StoreMarketLink, StoreMarketLink.store_id == StorePoint.store_id)
+        .where(StoreMarketLink.market_code.in_(SUPPORTED_MARKET_CODES))
+        .order_by(StorePoint.store_id)
+    ).all()
+    stores_by_group: dict[str, set[str]] = defaultdict(set)
+    markets_by_group: dict[str, set[str]] = defaultdict(set)
+    for store, market_code in rows:
+        group = classify_category_group(store)
+        if group is None:
+            continue
+        stores_by_group[group].add(store.store_id)
+        markets_by_group[group].add(market_code)
+
+    ranked_names = sorted(
+        stores_by_group,
+        key=lambda name: (-len(stores_by_group[name]), -len(markets_by_group[name]), name),
+    )[:limit]
+    return tuple(
+        ProductCategory(
+            name=name,
+            codes=CATEGORY_CODES.get(name, ()),  # type: ignore[arg-type]
+            coverage="full" if name in CATEGORY_CODES else "partial",
+            analysis_category=name if name in CATEGORY_CODES else None,  # type: ignore[arg-type]
+            rank=index,
+            store_count=len(stores_by_group[name]),
+            market_count=len(markets_by_group[name]),
+        )
+        for index, name in enumerate(ranked_names, start=1)
+    )
+
+
+def get_product_catalog(
+    categories: tuple[ProductCategory, ...] | None = None,
+) -> ProductCatalogResponse:
+    resolved = categories or BOOTSTRAP_CATEGORIES
     return ProductCatalogResponse(
         markets=SUPPORTED_MARKETS,
-        categories=tuple(
-            ProductCategory(name=name, codes=codes) for name, codes in CATEGORY_CODES.items()
-        ),
+        categories=resolved,
         radii=SUPPORTED_RADII,
+        ranking_basis=(
+            "supported_market_unique_store_count" if categories is not None else "bootstrap"
+        ),
     )
