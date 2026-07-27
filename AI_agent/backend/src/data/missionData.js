@@ -217,15 +217,32 @@ const missionScore = (mission, context) => {
 export const getRecommendedMissions = (context = {}) => {
   const normalizedContext =
     typeof context === "string" ? { targetRole: context } : context || {};
+  const completedMissionIdSet = new Set(
+    Array.isArray(normalizedContext.completedMissionIds)
+      ? normalizedContext.completedMissionIds.map(String)
+      : []
+  );
   const rankedMissions = [...mockMissions]
     .map((mission) => ({ mission, score: missionScore(mission, normalizedContext) }))
     .sort((a, b) => b.score - a.score);
 
   const matched = rankedMissions.filter((item) => item.score > 0).map((item) => item.mission);
   const fallback = mockMissions.filter((mission) => mission.id !== "it-service-mvp");
-  const missions = matched.length ? matched : fallback;
-  return missions.slice(0, 4);
+  const rankedPool = matched.length ? matched : fallback;
+  const pool = [
+    ...rankedPool,
+    ...mockMissions.filter(
+      (mission) => !rankedPool.some((rankedMission) => rankedMission.id === mission.id)
+    ),
+  ];
+  const availableMissions = pool.filter(
+    (mission) => !completedMissionIdSet.has(mission.id)
+  );
+
+  return availableMissions.slice(0, 4);
 };
 
 export const getMissionById = (missionId) =>
   mockMissions.find((mission) => mission.id === missionId) || null;
+
+export const getMissionCount = () => mockMissions.length;
