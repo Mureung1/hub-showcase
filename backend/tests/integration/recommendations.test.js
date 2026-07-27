@@ -379,5 +379,33 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
 
         // 규칙 점수만 보면 101이 102보다 훨씬 높지만, 101은 이미 본 이슈라 뒤로 밀리고 새 이슈 102가 먼저 나온다
         expect(second.body.items[0].issueNumber).toBe(102);
+
+        // isNew로도 신규/기존 이슈를 구분할 수 있어야 한다 (POST 응답 전용 필드)
+        const item101 = second.body.items.find((item) => item.issueNumber === 101);
+        const item102 = second.body.items.find((item) => item.issueNumber === 102);
+        expect(item101.isNew).toBe(false);
+        expect(item102.isNew).toBe(true);
+        expect(first.body.items[0].isNew).toBe(true); // 최초 추천은 전부 새 이슈
+
+        // GET 재조회 응답에는 isNew가 포함되지 않는다 (생성 시점 스냅샷일 뿐 재조회 때마다 계산하지 않음)
+        const refetched = await request(app).get(`/api/recommendations/${second.body.id}`);
+        expect(refetched.body.items[0].isNew).toBeUndefined();
+    });
+
+    it('조건(preferences)을 바꾼 요청은 동일 조건 상한과 무관하게 처리된다', async () => {
+        for (let i = 0; i < 3; i += 1) {
+            const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+            expect(res.status).toBe(200);
+            createdRecommendationIds.push(res.body.id);
+        }
+        // 같은 조건 4번째는 상한 초과
+        const blocked = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        expect(blocked.status).toBe(429);
+
+        // 조건을 바꾸면(difficulty: medium) 여전히 성공해야 한다 — 상한은 "동일 조건" 재요청에만 걸린다
+        const differentConditions = { ...preferences, difficulty: 'medium' };
+        const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences: differentConditions });
+        expect(res.status).toBe(200);
+        createdRecommendationIds.push(res.body.id);
     });
 });

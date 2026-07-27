@@ -180,7 +180,9 @@ paths:
         부수효과: 저장된 분석이 7일 경과 상태면 추천 생성 전에 재분석해 갱신한다
         (GET /api/analysis/{githubId}와 동일한 신선도 정책 — 추천이 낡은 프로필에 기반하지 않도록).
         재추천 다양화: 이 githubId가 과거에 받은 이슈는 완전히 배제하지 않고 우선순위만 낮춰, 새 이슈 위주로 채운다
-        (안 본 이슈가 부족하면 이전 이슈로 자연스럽게 채워짐). 같은 githubId는 하루(UTC 기준) 최대 3회까지만 요청 가능하다.
+        (안 본 이슈가 부족하면 이전 이슈로 자연스럽게 채워짐 — 각 아이템의 `isNew`로 신규 여부를 구분할 수 있다).
+        상한: 같은 githubId가 **동일한 preferences**로 하루(UTC 기준) 4번째 요청하면 429. 조건을 바꾼 요청은
+        이 상한과 무관하게 처리된다 — preferences는 languages/topics 대소문자·순서를 정규화해 비교한다.
       operationId: createRecommendation
       requestBody:
         required: true
@@ -520,6 +522,12 @@ components:
             - 레포를 포크하고 로컬에 클론해요.
             - 툴팁 위치 계산 부분에 뷰포트 경계 조건을 추가해요.
             - 작은 화면에서 동작을 확인한 뒤 PR을 올려요.
+        isNew:
+          type: boolean
+          description: |
+            재추천 다양화: 이 이슈가 이 githubId에게 처음 추천되는 것인지 여부(생성 시점 스냅샷).
+            POST /api/recommendations 응답에만 포함되고, GET 재조회 응답에는 포함되지 않는다.
+          example: true
 
     Recommendation:
       type: object

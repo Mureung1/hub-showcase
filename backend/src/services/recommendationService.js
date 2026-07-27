@@ -213,6 +213,28 @@ function startOfUtcDay(date = new Date()) {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
+// preferences 비교용 정규화 키 — 언어/토픽 대소문자·순서 차이를 흡수해 "같은 조건"을 판정한다.
+// 이게 없으면 언어 배열 순서만 다른 요청이 서로 다른 조건으로 오판돼 상한을 우회할 수 있다
+function normalizePreferences(preferences) {
+    return JSON.stringify({
+        languages: [...preferences.languages].map((language) => language.toLowerCase()).sort(),
+        difficulty: preferences.difficulty,
+        topics: [...(preferences.topics ?? [])].map((topic) => topic.toLowerCase()).sort(),
+    });
+}
+
+// 재추천 다양화 — 오늘(UTC) 이 githubId가 "동일 조건"으로 요청한 횟수.
+// 조건을 바꾼 탐색까지 상한에 걸리면 정상적인 탐색을 막게 되므로, 상한은 같은 preferences로의
+// 반복 재요청에만 적용한다(2026-07-27 결정 보완 — 최초의 "githubId 전체 기준"은 상한 대신 다양화 범위에만 유지)
+async function countTodaysSameConditionRequests(githubId, preferences) {
+    const todaysRecommendations = await prisma.recommendation.findMany({
+        where: { githubId, createdAt: { gte: startOfUtcDay() } },
+        select: { preferences: true },
+    });
+    const targetKey = normalizePreferences(preferences);
+    return todaysRecommendations.filter((rec) => normalizePreferences(rec.preferences) === targetKey).length;
+}
+
 // 재추천 다양화 — 이 사용자가 과거에 받은 (repoFullName#issueNumber) 집합.
 // preferences 일치 여부와 무관하게 githubId 전체 이력을 대상으로 한다 — Json 비교 없이 기존 인덱스만으로 조회되고,
 // "이미 본 이슈"라는 사용자 체감과도 preferences 단위 구분보다 더 맞는다 (2026-07-27 결정)
@@ -291,8 +313,10 @@ async function rerankTopItems(items, analysis) {
     return interleaveEqualScores(reranked).map((item, index) => ({ ...item, position: index }));
 }
 
-// recommendations 레코드 → 명세(Recommendation 스키마) 응답 형태
-function toRecommendationResponse(record) {
+// recommendations 레코드 → 명세(Recommendation 스키마) 응답 형태.
+// isNewByKey가 주어지면(POST 응답 전용) 다양화 배지용 isNew 필드를 함께 채운다 — 이건 "생성 시점"에만
+// 의미 있는 스냅샷이라 GET 재조회(isNewByKey 없음)에서는 필드 자체를 응답에 넣지 않는다
+function toRecommendationResponse(record, isNewByKey = null) {
     return {
         id: record.id,
         githubId: record.githubId,
@@ -314,6 +338,7 @@ function toRecommendationResponse(record) {
             issueSummary: null,
             requiredSkills: null,
             guide: null,
+            ...(isNewByKey ? { isNew: isNewByKey.get(`${item.repoFullName}#${item.issueNumber}`) ?? true } : {}),
         })),
         createdAt: record.createdAt.toISOString(),
     };
@@ -425,10 +450,8 @@ export async function createRecommendation(githubId, preferences) {
     // 분석 이력 없으면 getAnalysis가 404(ANALYSIS_NOT_FOUND) 던짐
     const analysis = await getAnalysis(githubId);
 
-    const requestsToday = await prisma.recommendation.count({
-        where: { githubId: analysis.githubId, createdAt: { gte: startOfUtcDay() } },
-    });
-    if (requestsToday >= DAILY_RECOMMENDATION_LIMIT) {
+    const sameConditionRequestsToday = await countTodaysSameConditionRequests(analysis.githubId, preferences);
+    if (sameConditionRequestsToday >= DAILY_RECOMMENDATION_LIMIT) {
         const limitExceeded = new Error('오늘 재추천 횟수를 다 사용했어요. 내일 다시 시도해주세요.');
         limitExceeded.status = 429;
         limitExceeded.code = 'RECOMMENDATION_LIMIT_EXCEEDED';
@@ -474,6 +497,8 @@ export async function createRecommendation(githubId, preferences) {
         (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.matchScore - a.matchScore || b.repoStars - a.repoStars);
     const trimmedItems = interleaveEqualScores(items).slice(0, MAX_ITEMS);
     const rerankedItems = await rerankTopItems(trimmedItems, analysis);
+    const isNewByKey = new Map(
+        rerankedItems.map((item) => [`${item.repoFullName}#${item.issueNumber}`, !item.isSeen]));
     const topItems = rerankedItems.map(({ isSeen: _isSeen, ...item }) => item);
 
     const saved = await prisma.recommendation.create({
@@ -490,7 +515,8 @@ export async function createRecommendation(githubId, preferences) {
         recommendationId: saved.id,
         candidates: candidateNames.length,
         items: topItems.length,
+        newItems: [...isNewByKey.values()].filter(Boolean).length,
     });
 
-    return toRecommendationResponse(saved);
+    return toRecommendationResponse(saved, isNewByKey);
 }
