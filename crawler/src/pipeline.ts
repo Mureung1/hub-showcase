@@ -47,8 +47,8 @@ export async function processAnnouncements(items: BizinfoAnnouncement[]): Promis
   const cache = await getCachedExtractions(atchFileIds)
 
   const subsidies = items.map((item) => {
-    const base = mapAnnouncementToSubsidy(item)
     const atchFileId = parseAttachment(item)?.atchFileId
+    const base = { ...mapAnnouncementToSubsidy(item), atchFileId }
     return applyAiExtraction(base, atchFileId ? (cache.get(atchFileId) ?? null) : null)
   })
 
