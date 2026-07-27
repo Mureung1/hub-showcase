@@ -154,8 +154,9 @@ function ParkingLotDetail() {
       {/* 거리: 목적지를 알고 있을 때만 보여준다(상세 주소로 바로 들어오면 없음). */}
       <DistanceSection distanceInfo={distanceInfo} placeName={placeName} />
 
-      {/* 실시간 카드: realtimeInfo 가 있으면 가용 대수·상태를, 없으면 "정보 없음"을 보여준다. */}
-      <RealtimeCard realtimeInfo={realtimeInfo} />
+      {/* 실시간 카드: realtimeInfo 가 있으면 가용 대수·상태를, 없으면 "정보 없음"을 보여준다.
+          refetch/isFetching 을 넘겨 카드 안에서 새로고침할 수 있게 한다. */}
+      <RealtimeCard realtimeInfo={realtimeInfo} onRefresh={refetch} isRefreshing={isFetching} />
 
       <div className="info-card">
         <h3>기본 정보</h3>
@@ -227,8 +228,13 @@ function DistanceSection({ distanceInfo, placeName }) {
 
 // 실시간 주차 가능 대수 카드.
 // realtimeInfo 가 null 이면(실시간 미제공) "정보 없음" 카드를, 있으면 가용 대수·상태·갱신시각을 보여준다.
-function RealtimeCard({ realtimeInfo }) {
-  // 실시간 데이터가 없는 주차장 → 회색 "정보 없음" 카드.
+//
+// [새로고침 버튼] 실시간 값은 서버가 5분마다 갱신하므로, 화면을 열어둔 채로는 옛 값을 보게 된다.
+//   버튼은 실시간 데이터가 있는 카드에만 둔다 — 미제공 주차장은 다시 불러올 대상이 없다.
+//   onRefresh/isRefreshing 은 부모(ParkingLotDetail)가 useQuery 에서 받아 내려준다.
+//   이 컴포넌트가 훅을 직접 부르지 않는 이유는 "부모가 준 것만 그린다"는 구조를 지키기 위해서다.
+function RealtimeCard({ realtimeInfo, onRefresh, isRefreshing }) {
+  // 실시간 데이터가 없는 주차장 → 회색 "정보 없음" 카드. 새로고침 버튼도 없다.
   if (!realtimeInfo) {
     return (
       <div className="rt-card rt-card--none">
@@ -244,7 +250,23 @@ function RealtimeCard({ realtimeInfo }) {
 
   return (
     <div className="rt-card">
-      <div className="rt-head">실시간 주차 가능 대수</div>
+      <div className="rt-head-row">
+        <span className="rt-head">실시간 주차 가능 대수</span>
+        {/* [type="button"] 기본값은 submit 이라, 폼 안에 놓이면 의도치 않게 제출된다.
+            [onRefresh()] refetch 를 그대로 넘기면 클릭 이벤트 객체가 인자로 들어가므로 감싼다.
+            [aria-label] 아이콘만 있어 화면 낭독기가 읽을 텍스트가 없으므로 따로 준다. */}
+        <button
+          type="button"
+          className="rt-refresh"
+          onClick={() => onRefresh()}
+          disabled={isRefreshing}
+          aria-label="실시간 정보 새로고침"
+        >
+          <span className={isRefreshing ? 'rt-refresh-icon rt-refresh-icon--spin' : 'rt-refresh-icon'}>
+            ↻
+          </span>
+        </button>
+      </div>
       {/* 상태색(modifier)에 따라 숫자 색이 바뀐다: 여유=초록 / 보통=노랑 / 혼잡·만차=빨강 */}
       <div className={`rt-num rt-num--${realtimeStatus.modifier}`}>
         {availableSlots}
