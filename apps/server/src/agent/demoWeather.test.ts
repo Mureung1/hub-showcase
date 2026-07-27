@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { resolveDemoWeather, DEMO_WEATHER_KEYS } from "./demoWeather";
-import { getEnsembleWeather } from "./ensemble";
+import { getEnsembleWeather, clearWeatherCache } from "./ensemble";
+
+// 앙상블 결과는 5분 캐시된다 — 테스트 간 이월을 막는다.
+beforeEach(() => clearWeatherCache());
 
 /**
  * 데모 고정 날씨(5-1). 발표 당일 실제 날씨가 맑으면 "매출 방어" 서사가 성립하지 않아
@@ -99,6 +102,6 @@ describe("getEnsembleWeather — 데모 seed 분기", () => {
 
     expect(w.seeded).toBeUndefined();
     expect(w.sourceCount).toBe(2);
-    expect(w.tempC).toBe(22); // 20*0.6 + 25*0.4
+    expect(w.tempC).toBe(21.5); // 20*0.7 + 25*0.3
   });
 });

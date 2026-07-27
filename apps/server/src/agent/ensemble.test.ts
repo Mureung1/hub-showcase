@@ -1,6 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { NormalizedWeather, WeatherCondition, WeatherSource } from "shared";
-import { mergeWeather, getEnsembleWeather } from "./ensemble";
+import { mergeWeather, getEnsembleWeather, clearWeatherCache } from "./ensemble";
+
+// 앙상블 결과가 5분 캐시되므로, 같은 loc을 쓰는 테스트끼리 서로 오염된다 → 매번 비운다.
+beforeEach(() => clearWeatherCache());
 
 // 정규화 날씨 샘플 빌더
 function w(
@@ -21,10 +24,10 @@ function w(
 }
 
 describe("mergeWeather", () => {
-  it("두 소스 기온을 0.6/0.4로 가중 평균한다", () => {
+  it("두 소스 기온을 0.7/0.3으로 가중 평균한다 (기상청 우선)", () => {
     const r = mergeWeather([w("kma", { tempC: 20 }), w("owm", { tempC: 30 })]);
-    // 20*0.6 + 30*0.4 = 24
-    expect(r.tempC).toBe(24);
+    // 20*0.7 + 30*0.3 = 23
+    expect(r.tempC).toBe(23);
     expect(r.sourceCount).toBe(2);
     expect(r.sources).toEqual(["kma", "owm"]);
   });
@@ -122,5 +125,83 @@ describe("getEnsembleWeather (한쪽 소스 장애 폴백)", () => {
     await expect(getEnsembleWeather(loc, { getKma, getOwm })).rejects.toThrow(/모든 날씨 소스 실패/);
     expect(getKma).toHaveBeenCalledTimes(1);
     expect(getOwm).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * 5분 캐시. 기상청 왕복이 1979~4292ms라 대시보드 로딩 시간을 그대로 차지했다.
+ * 단기예보는 3시간 슬롯이라 5분 안엔 어차피 같은 값 — 정확도 손실 없이 왕복만 줄인다.
+ */
+describe("getEnsembleWeather (5분 캐시)", () => {
+  const loc = { nx: 62, ny: 122, lat: 37.3595, lng: 127.1052 };
+  const sample = () => ({
+    getKma: vi.fn(() => Promise.resolve(w("kma", { tempC: 30 }))),
+    getOwm: vi.fn(() => Promise.resolve(w("owm", { tempC: 20 }))),
+  });
+
+  it("두 번째 호출은 API를 다시 부르지 않고 같은 값을 준다", async () => {
+    const { getKma, getOwm } = sample();
+    const first = await getEnsembleWeather(loc, { getKma, getOwm, now: () => 1000 });
+    const second = await getEnsembleWeather(loc, { getKma, getOwm, now: () => 1000 });
+
+    expect(second).toEqual(first);
+    expect(getKma).toHaveBeenCalledTimes(1); // 재호출 없음
+    expect(getOwm).toHaveBeenCalledTimes(1);
+  });
+
+  it("5분이 지나면 다시 부른다", async () => {
+    const { getKma, getOwm } = sample();
+    await getEnsembleWeather(loc, { getKma, getOwm, now: () => 0 });
+    await getEnsembleWeather(loc, { getKma, getOwm, now: () => 5 * 60 * 1000 + 1 });
+
+    expect(getKma).toHaveBeenCalledTimes(2);
+  });
+
+  it("좌표가 다르면 캐시를 공유하지 않는다", async () => {
+    const { getKma, getOwm } = sample();
+    await getEnsembleWeather(loc, { getKma, getOwm, now: () => 0 });
+    await getEnsembleWeather({ ...loc, nx: 99 }, { getKma, getOwm, now: () => 0 });
+
+    expect(getKma).toHaveBeenCalledTimes(2);
+  });
+
+  it("실패는 캐시하지 않는다 — 다음 요청이 곧바로 재시도할 수 있어야 한다", async () => {
+    const down = () => Promise.reject(new Error("network"));
+    const getOwm = vi.fn(() => Promise.resolve(w("owm", { tempC: 20 })));
+
+    await expect(
+      getEnsembleWeather(loc, { getKma: down, getOwm: down, now: () => 0 }),
+    ).rejects.toThrow();
+
+    const r = await getEnsembleWeather(loc, { getKma: down, getOwm, now: () => 0 });
+    expect(r.sourceCount).toBe(1); // 캐시된 실패에 막히지 않고 재시도됨
+    expect(getOwm).toHaveBeenCalledTimes(1);
+  });
+
+  it("반환값을 고쳐도 캐시가 오염되지 않는다", async () => {
+    const { getKma, getOwm } = sample();
+    const first = await getEnsembleWeather(loc, { getKma, getOwm, now: () => 0 });
+    first.tempC = 999;
+
+    const second = await getEnsembleWeather(loc, { getKma, getOwm, now: () => 0 });
+    expect(second.tempC).not.toBe(999);
+  });
+
+  it("데모 고정 날씨는 캐시보다 먼저 적용된다 (seed를 켠 즉시 반영)", async () => {
+    const { getKma, getOwm } = sample();
+    await getEnsembleWeather(loc, { getKma, getOwm, now: () => 0 }); // 캐시 채우기
+
+    const seeded = await getEnsembleWeather(loc, {
+      getKma,
+      getOwm,
+      now: () => 0,
+      demoWeather: () => ({
+        tempC: 18, humidity: 85, precipitationMm: 6, precipitationProb: 80,
+        isPrecipitating: true, condition: "rain", sources: [], sourceCount: 0, seeded: true,
+      }),
+    });
+
+    expect(seeded.seeded).toBe(true);
+    expect(seeded.tempC).toBe(18);
   });
 });
