@@ -17,7 +17,12 @@ export function createWorkspaceGame(
     height: 540,
     backgroundColor: "#e6fbf2",
     pixelArt: true,
-    roundPixels: true,
+    roundPixels: false,
+    fps: {
+      target: 60,
+      forceSetTimeOut: false,
+      smoothStep: true,
+    },
     physics: {
       default: "arcade",
       arcade: {

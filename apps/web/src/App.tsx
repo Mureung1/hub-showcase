@@ -42,10 +42,20 @@ export function App() {
   return (
     <>
       {view !== "workspace" && (
-        <SiteHeader onHome={showLanding} onOpenWorkspace={showWorkspace} />
+        <SiteHeader
+          variant={view === "landing" ? "overlay" : "default"}
+          onHome={showLanding}
+          onOpenWorkspace={showWorkspace}
+        />
       )}
       <main
-        className={view === "workspace" ? "workspace-main" : "page ptop-container"}
+        className={
+          view === "workspace"
+            ? "min-h-screen bg-ptop-mint-soft"
+            : view === "landing"
+              ? "min-h-screen"
+              : "ptop-container py-12"
+        }
         id={view}
       >
         {view === "landing" ? (

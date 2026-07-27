@@ -76,12 +76,12 @@ export function WorkspaceGame({
   }, [isInputEnabled]);
 
   return (
-    <div className="workspace-game-frame">
-      <div ref={mountRef} className="workspace-game-canvas" />
+    <div className="absolute inset-0 z-0 h-full w-full bg-ptop-mint-soft">
+      <div ref={mountRef} className="h-full w-full [&_canvas]:block [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:[image-rendering:pixelated] [&_canvas:focus-visible]:outline-3 [&_canvas:focus-visible]:outline-ptop-mint-dark [&_canvas:focus-visible]:-outline-offset-5" />
       {loadError && (
-        <div className="workspace-load-error" role="alert">
-          <strong>{loadError}</strong>
-          <button
+        <div className="absolute inset-0 z-10 grid place-content-center justify-items-center gap-3 bg-white/[0.92] text-ptop-ink" role="alert">
+          <strong className="text-sm">{loadError}</strong>
+          <button className="min-h-11 rounded-md bg-[var(--button-primary-bg)] px-4 font-extrabold text-white transition hover:-translate-y-px"
             type="button"
             onClick={() => {
               setLoadError("");
