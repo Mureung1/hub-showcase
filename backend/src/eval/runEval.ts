@@ -1,19 +1,24 @@
-// 분석 품질 회귀 러너(eval) 실행 스크립트 (Task 22).
+// 분석 품질 회귀 러너(eval) 실행 스크립트 (Task 22, Task 24에서 실제 파이프라인 연결).
 //
-// ⚠️ 현재는 골격만 구현되어 있다 — fixture 파싱 + hypotheses.json 로드 + --only 옵션까지만.
-// 실제 Gemini 파이프라인(runAnalysisPipeline) 호출은 의도적으로 보류한다:
-// tagHypothesesFromTranscript()/generateVerificationResult()는 evidence_tags INSERT,
-// verification_results UPSERT, hypotheses.verification_status UPDATE를 무조건 수행하므로
-// 이 fixture들을 그대로 흘려보내면 프로덕션 Supabase에 가짜 데이터가 쌓인다.
-// 완화책(persist:false 옵션 vs eval 전용 Supabase 프로젝트)은 Task 24 착수 시 확정한다
-// (README/plan/Week4_Implementation_Plan.md Task 22 항목 참고).
+// fixture를 실제 Gemini 파이프라인(runAnalysisPipeline)에 persist:false로 태워 지표 4종을
+// 계산한다. persist:false라서 evidence_tags/verification_results/hypotheses에 아무것도
+// 쓰지 않는다 — 프로덕션 Supabase를 건드리지 않고 반복 실행할 수 있다(Task 24).
 
-import { readFileSync, readdirSync } from 'node:fs';
+import 'dotenv/config';
+import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { runAnalysisPipeline } from '../lib/analysisPipeline';
+import {
+  scoreQuoteMatch,
+  scoreCitationIntegrity,
+  checkHypothesisIdValidity,
+  isStatusAccurate,
+} from './metrics';
 
 const FIXTURES_DIR = path.join(__dirname, '../../fixtures');
 const INTERVIEWS_DIR = path.join(FIXTURES_DIR, 'interviews');
 const HYPOTHESES_PATH = path.join(FIXTURES_DIR, 'hypotheses.json');
+const RESULTS_DIR = path.join(__dirname, '../../eval/results');
 
 interface FixtureFrontmatter {
   hypothesis_set: string;
@@ -123,34 +128,152 @@ function parseArgs(argv: string[]): { only?: string } {
   return { only };
 }
 
-function main(): void {
+interface StatusCheck {
+  hypothesis_id: string;
+  actual_status: string;
+  expected_status: string;
+  accurate: boolean;
+}
+
+interface FixtureResult {
+  fixture: string;
+  evidence_tags_count: number;
+  quote_match: { total: number; matched: number };
+  citation_integrity: { total: number; matched: number };
+  hypothesis_id_valid: { allValid: boolean; invalidIds: string[] };
+  status_checks: StatusCheck[];
+  elapsed_ms: number;
+}
+
+// fixture 1건을 실제 파이프라인(persist:false)에 태우고 지표 4종의 원시 수치를 계산한다.
+async function evaluateFixture(
+  fixture: FixtureCase,
+  hypothesesBySet: Record<string, HypothesisFixture[]>,
+): Promise<FixtureResult> {
+  const hypothesisFixtures = hypothesesBySet[fixture.frontmatter.hypothesis_set] ?? [];
+  const hypotheses = hypothesisFixtures.map((h) => ({ id: h.hypothesis_id, cause: h.cause, effect: h.effect }));
+  const interviews = [{ id: `eval-interview-${fixture.name}`, transcript: fixture.transcript }];
+
+  const start = Date.now();
+  const { evidenceTags, verificationResults } = await runAnalysisPipeline({
+    hypotheses,
+    interviews,
+    persist: false,
+  });
+  const elapsedMs = Date.now() - start;
+
+  const validHypothesisIds = hypothesisFixtures.map((h) => h.hypothesis_id);
+  const hypothesisIdValidity = checkHypothesisIdValidity(evidenceTags, validHypothesisIds);
+
+  const quoteMatch = scoreQuoteMatch(
+    evidenceTags.map((t) => t.quote),
+    fixture.transcript,
+  );
+
+  const citationResults = verificationResults.map((vr) => scoreCitationIntegrity(vr.summary, vr.citations));
+  const citationIntegrity = citationResults.reduce(
+    (acc, r) => ({ total: acc.total + r.total, matched: acc.matched + r.matched }),
+    { total: 0, matched: 0 },
+  );
+
+  const statusChecks: StatusCheck[] = verificationResults.map((vr) => {
+    const expected = fixture.frontmatter.expected_status[vr.hypothesis_id] ?? 'TODO(라벨 없음)';
+    return {
+      hypothesis_id: vr.hypothesis_id,
+      actual_status: vr.suggested_status,
+      expected_status: expected,
+      accurate: isStatusAccurate(vr.suggested_status, expected),
+    };
+  });
+
+  return {
+    fixture: fixture.name,
+    evidence_tags_count: evidenceTags.length,
+    quote_match: { total: quoteMatch.total, matched: quoteMatch.matched },
+    citation_integrity: citationIntegrity,
+    hypothesis_id_valid: hypothesisIdValidity,
+    status_checks: statusChecks,
+    elapsed_ms: elapsedMs,
+  };
+}
+
+function formatTimestamp(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+async function main(): Promise<void> {
   const { only } = parseArgs(process.argv.slice(2));
   const hypothesesBySet = loadHypotheses();
   const fixtures = loadFixtures(only);
 
-  console.log(`fixture ${fixtures.length}건을 로드했습니다.\n`);
+  console.log(`fixture ${fixtures.length}건을 실제 Gemini 파이프라인(persist:false)으로 평가합니다.\n`);
 
+  const results: FixtureResult[] = [];
   for (const fixture of fixtures) {
-    const hypotheses = hypothesesBySet[fixture.frontmatter.hypothesis_set] ?? [];
-    const pendingLabels = Object.values(fixture.frontmatter.expected_status).filter((v) =>
-      v.startsWith('TODO'),
-    ).length;
+    console.log(`[${fixture.name}] 실행 중...`);
+    const result = await evaluateFixture(fixture, hypothesesBySet);
+    results.push(result);
 
-    console.log(`[${fixture.name}]`);
-    console.log(`  trap: ${fixture.frontmatter.trap}`);
-    console.log(`  transcript: ${fixture.transcript.length}자`);
-    console.log(`  hypotheses: ${hypotheses.length}건 (hypotheses.json 기준)`);
+    console.log(`  소요 시간: ${result.elapsed_ms}ms`);
+    console.log(`  quote_match: ${result.quote_match.matched}/${result.quote_match.total}`);
+    console.log(`  citation_integrity: ${result.citation_integrity.matched}/${result.citation_integrity.total}`);
     console.log(
-      `  expected_status: ${Object.keys(fixture.frontmatter.expected_status).length}건 중 ${pendingLabels}건 TODO(미확정)`,
+      `  hypothesis_id_valid: ${result.hypothesis_id_valid.allValid ? 'O' : `X (${result.hypothesis_id_valid.invalidIds.join(', ')})`}`,
     );
+    for (const check of result.status_checks) {
+      console.log(
+        `  status[${check.hypothesis_id}]: 실제=${check.actual_status} / 기대=${check.expected_status} / 일치=${check.accurate ? 'O' : 'X'}`,
+      );
+    }
     console.log('');
   }
 
-  console.log(
-    '⚠️ 실제 Gemini 호출/지표 계산은 아직 연결되지 않았습니다. persist:false 옵션이 Task 24에서 ' +
-      '확정되기 전까지, 이 스크립트는 fixture 파싱 결과만 출력합니다 — 지금 파이프라인을 연결하면 ' +
-      '프로덕션 Supabase에 가짜 데이터가 쌓입니다.',
+  const totalQuote = results.reduce(
+    (acc, r) => ({ total: acc.total + r.quote_match.total, matched: acc.matched + r.quote_match.matched }),
+    { total: 0, matched: 0 },
   );
+  const totalCitation = results.reduce(
+    (acc, r) => ({
+      total: acc.total + r.citation_integrity.total,
+      matched: acc.matched + r.citation_integrity.matched,
+    }),
+    { total: 0, matched: 0 },
+  );
+
+  const summary = {
+    timestamp: new Date().toISOString(),
+    model: process.env.GEMINI_MODEL || 'gemini-flash-latest',
+    fixtures_run: results.map((r) => r.fixture),
+    // 관측 단위가 수십 건(인용문·마커)이라 백분율이 유효한 지표 (Week4 계획서 2026-07-27 지표 재분류)
+    quote_match_rate: totalQuote.total === 0 ? 1 : totalQuote.matched / totalQuote.total,
+    citation_integrity_rate: totalCitation.total === 0 ? 1 : totalCitation.matched / totalCitation.total,
+    // 관측 단위가 fixture당 1~3건(총 12건 안팎)이라 백분율 대신 fixture별 pass/fail 표로만 읽는다
+    hypothesis_id_valid_table: results.map((r) => ({
+      fixture: r.fixture,
+      allValid: r.hypothesis_id_valid.allValid,
+      invalidIds: r.hypothesis_id_valid.invalidIds,
+    })),
+    status_accuracy_table: results.flatMap((r) => r.status_checks.map((c) => ({ fixture: r.fixture, ...c }))),
+    raw: results,
+  };
+
+  mkdirSync(RESULTS_DIR, { recursive: true });
+  const outPath = path.join(RESULTS_DIR, `${formatTimestamp(new Date())}.json`);
+  writeFileSync(outPath, JSON.stringify(summary, null, 2), 'utf-8');
+
+  console.log('=== 요약 ===');
+  console.log(
+    `quote_match_rate: ${(summary.quote_match_rate * 100).toFixed(1)}% (${totalQuote.matched}/${totalQuote.total})`,
+  );
+  console.log(
+    `citation_integrity_rate: ${(summary.citation_integrity_rate * 100).toFixed(1)}% (${totalCitation.matched}/${totalCitation.total})`,
+  );
+  console.log('hypothesis_id_valid_rate / status_accuracy는 백분율로 요약하지 않는다 — 결과 파일의 표를 pass/fail로 읽는다.');
+  console.log(`결과 저장: ${outPath}`);
 }
 
-main();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

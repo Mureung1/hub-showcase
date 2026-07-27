@@ -1,0 +1,217 @@
+{
+  "timestamp": "2026-07-27T12:31:29.766Z",
+  "model": "gemini-flash-latest",
+  "fixtures_run": [
+    "01_supportive",
+    "02_contradictory",
+    "03_sparse",
+    "04_multi_hypothesis",
+    "05_noisy"
+  ],
+  "quote_match_rate": 1,
+  "citation_integrity_rate": 1,
+  "hypothesis_id_valid_table": [
+    {
+      "fixture": "01_supportive",
+      "allValid": true,
+      "invalidIds": []
+    },
+    {
+      "fixture": "02_contradictory",
+      "allValid": true,
+      "invalidIds": []
+    },
+    {
+      "fixture": "03_sparse",
+      "allValid": true,
+      "invalidIds": []
+    },
+    {
+      "fixture": "04_multi_hypothesis",
+      "allValid": true,
+      "invalidIds": []
+    },
+    {
+      "fixture": "05_noisy",
+      "allValid": true,
+      "invalidIds": []
+    }
+  ],
+  "status_accuracy_table": [
+    {
+      "fixture": "01_supportive",
+      "hypothesis_id": "a1b1c1d1-0001-4a01-8001-000000000001",
+      "actual_status": "유력함",
+      "expected_status": "유력함",
+      "accurate": true
+    },
+    {
+      "fixture": "02_contradictory",
+      "hypothesis_id": "a1b1c1d1-0002-4a02-8002-000000000002",
+      "actual_status": "수정 필요",
+      "expected_status": "수정 필요",
+      "accurate": true
+    },
+    {
+      "fixture": "03_sparse",
+      "hypothesis_id": "a1b1c1d1-0003-4a03-8003-000000000003",
+      "actual_status": "근거 부족",
+      "expected_status": "근거 부족",
+      "accurate": true
+    },
+    {
+      "fixture": "04_multi_hypothesis",
+      "hypothesis_id": "a1b1c1d1-0004-4a04-8004-000000000004",
+      "actual_status": "유력함",
+      "expected_status": "유력함",
+      "accurate": true
+    },
+    {
+      "fixture": "04_multi_hypothesis",
+      "hypothesis_id": "a1b1c1d1-0004-4a04-8004-000000000005",
+      "actual_status": "유력함",
+      "expected_status": "유력함",
+      "accurate": true
+    },
+    {
+      "fixture": "05_noisy",
+      "hypothesis_id": "a1b1c1d1-0005-4a05-8005-000000000006",
+      "actual_status": "유력함",
+      "expected_status": "근거 부족",
+      "accurate": false
+    }
+  ],
+  "raw": [
+    {
+      "fixture": "01_supportive",
+      "evidence_tags_count": 8,
+      "quote_match": {
+        "total": 8,
+        "matched": 8
+      },
+      "citation_integrity": {
+        "total": 2,
+        "matched": 2
+      },
+      "hypothesis_id_valid": {
+        "allValid": true,
+        "invalidIds": []
+      },
+      "status_checks": [
+        {
+          "hypothesis_id": "a1b1c1d1-0001-4a01-8001-000000000001",
+          "actual_status": "유력함",
+          "expected_status": "유력함",
+          "accurate": true
+        }
+      ],
+      "elapsed_ms": 17839
+    },
+    {
+      "fixture": "02_contradictory",
+      "evidence_tags_count": 9,
+      "quote_match": {
+        "total": 9,
+        "matched": 9
+      },
+      "citation_integrity": {
+        "total": 6,
+        "matched": 6
+      },
+      "hypothesis_id_valid": {
+        "allValid": true,
+        "invalidIds": []
+      },
+      "status_checks": [
+        {
+          "hypothesis_id": "a1b1c1d1-0002-4a02-8002-000000000002",
+          "actual_status": "수정 필요",
+          "expected_status": "수정 필요",
+          "accurate": true
+        }
+      ],
+      "elapsed_ms": 16089
+    },
+    {
+      "fixture": "03_sparse",
+      "evidence_tags_count": 4,
+      "quote_match": {
+        "total": 4,
+        "matched": 4
+      },
+      "citation_integrity": {
+        "total": 3,
+        "matched": 3
+      },
+      "hypothesis_id_valid": {
+        "allValid": true,
+        "invalidIds": []
+      },
+      "status_checks": [
+        {
+          "hypothesis_id": "a1b1c1d1-0003-4a03-8003-000000000003",
+          "actual_status": "근거 부족",
+          "expected_status": "근거 부족",
+          "accurate": true
+        }
+      ],
+      "elapsed_ms": 17893
+    },
+    {
+      "fixture": "04_multi_hypothesis",
+      "evidence_tags_count": 10,
+      "quote_match": {
+        "total": 10,
+        "matched": 10
+      },
+      "citation_integrity": {
+        "total": 7,
+        "matched": 7
+      },
+      "hypothesis_id_valid": {
+        "allValid": true,
+        "invalidIds": []
+      },
+      "status_checks": [
+        {
+          "hypothesis_id": "a1b1c1d1-0004-4a04-8004-000000000004",
+          "actual_status": "유력함",
+          "expected_status": "유력함",
+          "accurate": true
+        },
+        {
+          "hypothesis_id": "a1b1c1d1-0004-4a04-8004-000000000005",
+          "actual_status": "유력함",
+          "expected_status": "유력함",
+          "accurate": true
+        }
+      ],
+      "elapsed_ms": 24591
+    },
+    {
+      "fixture": "05_noisy",
+      "evidence_tags_count": 5,
+      "quote_match": {
+        "total": 5,
+        "matched": 5
+      },
+      "citation_integrity": {
+        "total": 5,
+        "matched": 5
+      },
+      "hypothesis_id_valid": {
+        "allValid": true,
+        "invalidIds": []
+      },
+      "status_checks": [
+        {
+          "hypothesis_id": "a1b1c1d1-0005-4a05-8005-000000000006",
+          "actual_status": "유력함",
+          "expected_status": "근거 부족",
+          "accurate": false
+        }
+      ],
+      "elapsed_ms": 19502
+    }
+  ]
+}
