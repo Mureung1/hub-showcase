@@ -282,10 +282,10 @@ function RecipeDetailPage() {
           </div>
         </div>
 
-        <div className="mt-6 flex items-end justify-end gap-3">
+        <div className="mt-6 flex items-start justify-end gap-3">
           <div className="relative max-w-xs rounded-2xl border-2 border-ink bg-[#FFF3DF] px-4 py-3 font-display text-sm text-text-primary">
             Tip: 재료를 신선하게 준비해두면 더 맛있어요!
-            <span className="absolute top-1/2 -right-[7px] h-3 w-3 -translate-y-1/2 rotate-45 border-r-2 border-t-2 border-ink bg-[#FFF3DF]" />
+            <span className="absolute top-4 -right-[7px] h-3 w-3 rotate-45 border-r-2 border-t-2 border-ink bg-[#FFF3DF]" />
           </div>
           <img src={mascotKkini} alt="" className="w-14 select-none" />
         </div>
