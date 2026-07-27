@@ -1,3 +1,5 @@
+import { ApiError } from './ApiError';
+
 export interface MatchedProduct {
   id: number;
   name: string;
@@ -18,7 +20,7 @@ export async function getMatchedProducts(ingredientIds: number[], token: string)
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error ?? '추천 제품을 불러오지 못했습니다.');
+    throw new ApiError(data.error ?? '추천 제품을 불러오지 못했습니다.', res.status);
   }
   return data.matchedProducts;
 }

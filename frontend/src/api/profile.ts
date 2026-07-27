@@ -1,5 +1,6 @@
 import type { AuthUser } from './auth';
 import type { Gender } from '../types';
+import { ApiError } from './ApiError';
 
 export interface ProfileInput {
   gender: Gender;
@@ -24,7 +25,7 @@ export async function updateProfile(token: string, data: ProfileInput): Promise<
   });
   const result = (await res.json()) as AuthUser | ErrorResponse;
   if (!res.ok) {
-    throw new Error((result as ErrorResponse).error ?? '요청에 실패했습니다.');
+    throw new ApiError((result as ErrorResponse).error ?? '요청에 실패했습니다.', res.status);
   }
   return result as AuthUser;
 }

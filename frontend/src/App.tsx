@@ -57,6 +57,7 @@ function loadStoredFlow(): StoredFlow {
 function App() {
   const [auth, setAuth] = useState<StoredAuth | null>(loadStoredAuth);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>(() => loadStoredFlow().screen);
   const [symptoms, setSymptoms] = useState<string[]>(() => loadStoredFlow().symptoms);
   const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>(
@@ -75,6 +76,7 @@ function App() {
   function handleLoggedIn(result: LoginResponse) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
     setAuth(result);
+    setAuthErrorMessage(null);
   }
 
   function handleProfileComplete(updatedUser: AuthUser) {
@@ -98,6 +100,11 @@ function App() {
     setRecommendedIngredientIds([]);
     setSupplements([]);
     setSelectedProduct(null);
+  }
+
+  function handleAuthError() {
+    setAuthErrorMessage('로그인이 만료되었습니다. 다시 로그인해주세요.');
+    handleLogout();
   }
 
   function handleStart(startedSymptoms: string[]) {
@@ -133,7 +140,7 @@ function App() {
   return (
     <div className={auth && auth.user.gender != null ? 'phone' : 'phone center-screen'}>
       {auth && auth.user.gender == null ? (
-        <Onboarding token={auth.token} onComplete={handleProfileComplete} />
+        <Onboarding token={auth.token} onComplete={handleProfileComplete} onAuthError={handleAuthError} />
       ) : auth ? (
         <>
           <Header
@@ -149,6 +156,7 @@ function App() {
                 initialUser={auth.user}
                 onComplete={handleProfileEditComplete}
                 onCancel={() => setEditingProfile(false)}
+                onAuthError={handleAuthError}
               />
             ) : (
               <>
@@ -157,10 +165,20 @@ function App() {
                   <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
                 )}
                 {screen === 'overlap' && (
-                  <Overlap supplements={supplements} token={auth.token} onNext={() => setScreen('recommend')} />
+                  <Overlap
+                    supplements={supplements}
+                    token={auth.token}
+                    onNext={() => setScreen('recommend')}
+                    onAuthError={handleAuthError}
+                  />
                 )}
                 {screen === 'recommend' && (
-                  <Recommend ingredientIds={recommendedIngredientIds} token={auth.token} onSelect={handleSelectProduct} />
+                  <Recommend
+                    ingredientIds={recommendedIngredientIds}
+                    token={auth.token}
+                    onSelect={handleSelectProduct}
+                    onAuthError={handleAuthError}
+                  />
                 )}
                 {screen === 'detail' && (
                   <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
@@ -170,7 +188,7 @@ function App() {
           </div>
         </>
       ) : (
-        <AuthForm onLoggedIn={handleLoggedIn} />
+        <AuthForm onLoggedIn={handleLoggedIn} notice={authErrorMessage} />
       )}
     </div>
   );

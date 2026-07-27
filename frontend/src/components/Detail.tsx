@@ -8,7 +8,19 @@ interface DetailProps {
 }
 
 export function Detail({ product, onBuy, onRestart }: DetailProps) {
-  if (!product) return null;
+  if (!product) {
+    return (
+      <>
+        <h1 className="heading" style={{ fontSize: 20 }}>
+          선택한 제품을 찾을 수 없어요
+        </h1>
+        <p className="sub">처음부터 다시 진행해주세요.</p>
+        <button className="btn" type="button" onClick={onRestart}>
+          처음으로
+        </button>
+      </>
+    );
+  }
 
   return (
     <>

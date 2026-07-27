@@ -1,3 +1,5 @@
+import { ApiError } from './ApiError';
+
 export interface OverlapResult {
   ingredientId: number;
   ingredientName: string;
@@ -18,7 +20,7 @@ export async function checkOverlap(productNames: string[], token: string): Promi
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error ?? '중복 체크에 실패했습니다.');
+    throw new ApiError(data.error ?? '중복 체크에 실패했습니다.', res.status);
   }
   return data.overlapResults;
 }

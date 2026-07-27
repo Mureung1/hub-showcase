@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react';
 import { getMatchedProducts } from '../api/products';
 import type { Product } from '../types';
 import { ChipIcon, getChipColor } from '../chipIcons';
+import { ApiError } from '../api/ApiError';
 
 interface RecommendProps {
   ingredientIds: number[];
   token: string;
   onSelect: (product: Product) => void;
+  onAuthError: () => void;
 }
 
-export function Recommend({ ingredientIds, token, onSelect }: RecommendProps) {
+export function Recommend({ ingredientIds, token, onSelect, onAuthError }: RecommendProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +25,15 @@ export function Recommend({ ingredientIds, token, onSelect }: RecommendProps) {
     setLoading(true);
     getMatchedProducts(ingredientIds, token)
       .then(setProducts)
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          onAuthError();
+          return;
+        }
+        setError(err.message);
+      })
       .finally(() => setLoading(false));
-  }, [ingredientIds, token]);
+  }, [ingredientIds, token, onAuthError]);
 
   return (
     <>
