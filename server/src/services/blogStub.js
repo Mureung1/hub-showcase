@@ -1,9 +1,6 @@
-// 네이버 블로그 실 연동은 "8. 이후 과제"로 이월 — 여기서는 상태 저장 없이
-// 고정 mock 응답만 반환하는 스텁이다.
-export function connectBlog(body) {
-  return { connected: true, blogId: body?.blogId ?? null };
-}
-
+// 조회(게시물 개수/최근 게시일 등) 실 연동은 Day 17로 이월 — 여기서는 상태 저장 없이
+// 고정 mock 응답만 반환하는 스텁이다. blogId 연결(POST /connect)은 naverAuth.js가
+// 실제로 처리한다.
 export function getBlogAnalysis() {
   return {
     connected: true,

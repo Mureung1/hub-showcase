@@ -15,6 +15,9 @@ function toRow(profile) {
     goal: profile.goal,
     summary: profile.summary,
     keywords: JSON.stringify(profile.keywords ?? []),
+    naver_id: profile.naverId ?? null,
+    blog_id: profile.blogId ?? null,
+    blog_id_confirmed: profile.blogIdConfirmed ?? false,
     created_at: profile.createdAt,
     updated_at: profile.updatedAt,
   };
@@ -34,6 +37,9 @@ function fromRow(row) {
     goal: row.goal,
     summary: row.summary,
     keywords: JSON.parse(row.keywords),
+    naverId: row.naver_id,
+    blogId: row.blog_id,
+    blogIdConfirmed: row.blog_id_confirmed,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
