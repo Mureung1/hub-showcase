@@ -12,22 +12,21 @@ import org.springframework.web.client.RestClient;
 @Component
 public class SeoulParkingLotRealtimeRestClient implements SeoulParkingLotRealtimeClient {
 
-    private static final String BASE_URL = "http://openapi.seoul.go.kr:8088";
     private static final String SUCCESS_CODE = "INFO-000";
 
+    private final RestClient seoulRestClient;
     private final String apiKey;
-    private final RestClient restClient;
 
-    public SeoulParkingLotRealtimeRestClient(@Value("${seoul.api.key}") String apiKey) {
+    public SeoulParkingLotRealtimeRestClient(
+            RestClient seoulRestClient,
+            @Value("${seoul.api.key}") String apiKey) {
+        this.seoulRestClient = seoulRestClient;
         this.apiKey = apiKey;
-        this.restClient = RestClient.builder()
-                .baseUrl(BASE_URL)
-                .build();
     }
 
     @Override
     public SeoulParkingLotRealtimeResponse fetchPage(int startIndex, int endIndex) {
-        SeoulParkingLotRealtimeResponse response = restClient.get()
+        SeoulParkingLotRealtimeResponse response = seoulRestClient.get()
                 .uri("/{key}/json/GetParkingInfo/{start}/{end}/", apiKey, startIndex, endIndex)
                 .retrieve()
                 .body(SeoulParkingLotRealtimeResponse.class);
