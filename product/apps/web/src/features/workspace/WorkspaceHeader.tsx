@@ -70,9 +70,6 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <button className="nav-item" type="button" onClick={() => setCompareOpen(true)}>
             상권 비교
           </button>
-          <button className="nav-item" type="button" onClick={() => setFiltersOpen(true)}>
-            분석 조건
-          </button>
           <button className="nav-item" type="button" onClick={() => setEvidenceOpen(true)}>
             데이터 기준
           </button>

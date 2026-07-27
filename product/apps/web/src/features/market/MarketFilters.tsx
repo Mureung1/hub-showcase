@@ -33,14 +33,14 @@ const analysisTopics: Array<{
   available: boolean;
   reason?: string;
 }> = [
-  { value: "overview", label: "종합", available: true },
-  { value: "stores", label: "점포·개폐업", available: true },
-  { value: "sales", label: "매출·소비", available: true },
-  { value: "competition", label: "경쟁 현황", available: true },
-  { value: "flow", label: "유동인구", available: true },
-  { value: "population", label: "주거·직장인구", available: true },
-  { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
-];
+    { value: "overview", label: "종합", available: true },
+    { value: "stores", label: "점포·개폐업", available: true },
+    { value: "sales", label: "매출·소비", available: true },
+    { value: "competition", label: "경쟁 현황", available: true },
+    { value: "flow", label: "유동인구", available: true },
+    { value: "population", label: "주거·직장인구", available: true },
+    { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
+  ];
 
 function CategoryOptions({
   categories,
@@ -140,13 +140,13 @@ export function MarketFilters({
         </div>
       </div>
       <label className="select-label">
-        <>
+        <span className="select-label-title">
           상권 선택
           <TermHelp
             term="상권"
             description="사람들이 쇼핑하거나 식사하는 등 가게를 이용하는 생활·상업 범위입니다. 행정구역과 꼭 일치하지는 않습니다."
           />
-        </>
+        </span>
         <select
           value={marketKey}
           onChange={(event) => onMarketChange(event.target.value as MarketKey)}
@@ -170,8 +170,7 @@ export function MarketFilters({
           </div>
         </div>
         <p className="filter-help">
-          선택한 상권 polygon 안의 점포와 공식 상권 지표를 함께 보여줍니다.
-          <TermHelp term="polygon" description="지도에서 여러 점을 이어 만든 닫힌 경계선입니다. 여기서는 상권의 분석 범위를 뜻합니다." />
+          선택한 상권 안의 점포와 매출·유동인구 같은 주요 정보를 보여줍니다.
         </p>
       </div>
       <div className="filter-group">
