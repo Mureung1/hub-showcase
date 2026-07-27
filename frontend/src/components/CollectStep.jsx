@@ -56,8 +56,11 @@ function CollectStep({ subjects, onAddSubject, onRemoveSubject, onNext }) {
     <section>
       <form className="card" onSubmit={handleSubmit}>
         <h2 className="section-title">어떤 과목을 준비하나요?</h2>
+        {/* 이 화면에 칸이 두 개뿐이라, 나머지 항목이 없어진 것처럼 보인다.
+            어디서 채울 수 있는지 이름을 그대로 적어준다. */}
         <p className="card-lead">
-          지금 확실히 아는 것만 적으면 돼요. 이해도나 난이도는 다음 단계에서 물어볼게요.
+          지금 확실히 아는 것만 적으면 돼요. 이해도·난이도·공부 분량·학점·성적 반영 비율은
+          다음 단계에서 채울 수 있어요.
         </p>
 
         <div className="form-stack">
