@@ -23,14 +23,7 @@ export default function LoginPage() {
       })
       const { token, userId, username, nickname, hasCompletedHobbyTest } = response.data
       console.log({ token, userId, username, nickname, hasCompletedHobbyTest })
-      try {
-        localStorage.setItem('token', token)
-        localStorage.setItem('userId', String(userId))
-        localStorage.setItem('username', username)
-        localStorage.setItem('nickname', nickname)
-      } catch (storageError) {
-        console.error('localStorage 저장 실패', storageError)
-      }
+      // authStore가 persist 미들웨어로 localStorage 저장까지 자동으로 처리해준다
       login(token, { userId, username, nickname })
       setLoginStatus('success')
       setLoginMessage('로그인 성공')

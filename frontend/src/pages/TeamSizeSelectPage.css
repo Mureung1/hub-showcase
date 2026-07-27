@@ -48,6 +48,17 @@
   box-shadow: 0 8px 20px rgba(74, 46, 34, 0.1);
 }
 
+.team-size-select-card-disabled {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+}
+
+.team-size-select-card-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .team-size-select-icon-row {
   display: flex;
   align-items: center;

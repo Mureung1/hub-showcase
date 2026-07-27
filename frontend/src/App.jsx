@@ -10,6 +10,7 @@ import RoommateTypeSelectPage from './pages/RoommateTypeSelectPage'
 import TeamSizeSelectPage from './pages/TeamSizeSelectPage'
 import MatchResultsPage from './pages/MatchResultsPage'
 import DatingSameResultsPage from './pages/DatingSameResultsPage'
+import DatingOppositeResultsPage from './pages/DatingOppositeResultsPage'
 import TeamSetupPage from './pages/TeamSetupPage'
 import ChatRoomPage from './pages/ChatRoomPage'
 
@@ -28,6 +29,7 @@ function App() {
         <Route path="/select-team-size" element={<TeamSizeSelectPage />} />
         <Route path="/matches" element={<MatchResultsPage />} />
         <Route path="/matching/dating-same" element={<DatingSameResultsPage />} />
+        <Route path="/matching/dating-opposite" element={<DatingOppositeResultsPage />} />
         <Route path="/team-setup" element={<TeamSetupPage />} />
         <Route path="/chat/:chatRoomId" element={<ChatRoomPage />} />
       </Routes>

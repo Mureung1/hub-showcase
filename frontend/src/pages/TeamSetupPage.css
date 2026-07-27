@@ -3,9 +3,10 @@
   min-height: 100vh;
   width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   background: var(--bg-cream);
+  padding: 64px 40px 48px;
 }
 
 .team-setup-notification-bell {
@@ -14,8 +15,163 @@
   right: 32px;
 }
 
-.team-setup-message {
-  font-size: 16px;
-  font-weight: 700;
+.team-setup-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin: 0 0 8px;
+}
+
+.team-setup-subtitle {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-warm-gray);
+  margin: 0 0 8px;
+}
+
+.team-setup-status {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-warm-gray);
+  text-align: center;
+  margin: 40px 0;
+}
+
+.team-setup-status-error {
+  color: var(--coral-primary);
+}
+
+.team-setup-slot-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px;
+  max-width: 900px;
+  margin: 48px auto 32px;
+}
+
+.team-setup-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-setup-slot-circle {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.team-setup-slot-filled.team-setup-slot-peach { background: #f0b79c; }
+.team-setup-slot-filled.team-setup-slot-mint { background: #8fd9bc; }
+.team-setup-slot-filled.team-setup-slot-pink { background: #f5a8c4; }
+.team-setup-slot-filled.team-setup-slot-blue { background: #a8cdef; }
+.team-setup-slot-filled.team-setup-slot-yellow { background: #f5c065; }
+
+.team-setup-slot-empty {
+  background: transparent;
+  border: 2px dashed var(--dating-pink);
+  color: var(--dating-pink);
+  font-size: 28px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.team-setup-slot-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-brown-dark);
+}
+
+.team-setup-invite-success {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--success-mint);
+  margin: 0 0 8px;
+}
+
+.team-setup-bottom-actions {
+  margin-top: 16px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.team-setup-confirm-button {
+  width: 100%;
+  padding: 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--coral-primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.team-setup-confirm-button:disabled {
+  background: var(--neutral-beige);
+  color: var(--text-warm-gray);
+  cursor: not-allowed;
+}
+
+.team-setup-confirm-button.team-setup-confirm-done {
+  background: var(--neutral-beige);
+  color: var(--text-brown-dark);
+}
+
+.team-setup-leader-hint {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-warm-gray);
+  text-align: center;
+  margin: 0;
+}
+
+.team-setup-confirm-error {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--coral-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.team-setup-invite-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--coral-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .team-setup-page {
+    padding: 48px 20px 32px;
+  }
+
+  .team-setup-slot-row {
+    gap: 24px;
+  }
+
+  .team-setup-slot-circle {
+    width: 72px;
+    height: 72px;
+  }
 }
