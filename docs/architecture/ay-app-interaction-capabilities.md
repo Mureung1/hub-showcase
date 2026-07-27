@@ -140,6 +140,9 @@ App 자체가 소유하는 state를 바꾸는 capability는 예외가 아니라 
 | Conversation lock | Card가 pending인 동안 free-form composer, 새 Turn 시작과 steer를 disable한다. 입력을 queue하거나 pending Review 뒤에 예약하지 않는다. |
 | Escape hatch | 전체 Turn interrupt만 계속 제공한다. Interrupt는 Review action이나 `cancel` result가 아니라 native conversation control이며 pending MCP call을 failure path로 끝낸다. |
 | Dismissal | Card 자체의 close·dismiss·`cancel` control은 두지 않는다. Browser disconnect나 Runtime terminal 같은 surface loss는 continuity failure로 처리한다. |
+| Settlement | 정상 result나 failure가 정산되면 해당 card의 control을 제거하고 read-only outcome으로 남긴다. Settled card는 pending slot을 점유하거나 late answer를 받지 않는다. |
+| Revision chain | `revise` 뒤 AY가 다시 `propose_state_patch`를 호출하면 fresh call을 새 card로 transcript 아래에 append한다. 이전 card를 replacement payload로 바꾸거나 reopen하지 않는다. |
+| Durability | Settled card는 conversation presentation이다. 별도 App Review ledger·settled-card store를 만들지 않으며, 향후 재표시가 필요하면 native conversation history가 제공하는 call/result를 투영한다. |
 
 ## 첫 capability: `propose_state_patch`
 
@@ -163,7 +166,7 @@ Exact JSON field name, cardinality와 길이 제한은 implementation spec이 �
 | outcome | 의미 |
 | --- | --- |
 | `accept` | 제안한 방향으로 AY가 실제 file mutation을 진행할 수 있다. |
-| `revise` | feedback을 반영해 AY가 내용을 다시 검토하고 필요하면 새 capability request를 보낸다. |
+| `revise` | 현재 card를 `수정 요청됨` read-only outcome으로 정산한다. AY가 다시 검토해 새 capability request를 보내면 새 card가 append된다. |
 | `reject` | 제안을 적용하지 않고 workflow를 계속하거나 끝낸다. |
 | Turn interrupt MCP failure | 사용자가 전체 Turn을 중단했다. Review result나 `reject`가 아니며 학기 파일을 적용했다는 뜻도 아니다. |
 | `busy` MCP error | 같은 Runtime generation에 이미 사용자 결정 하나가 pending이다. 기존 call을 바꾸거나 queue하지 않는다. |
@@ -193,6 +196,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | 장기 변경 이력 | Git history | 별도 academic event ledger를 만들지 않는다. |
 | Known·active workspace | `../.ay-ple/`의 `WorkspaceRegistry` | App이 직접 소유한다. |
 | Pending interaction | App-side Interaction Broker memory의 Runtime generation별 단일 slot | Queue나 Turn 수명을 넘는 academic record로 승격하지 않는다. |
+| Settled Review card | 별도 App durable owner 없음 | 현재 transcript에서 read-only projection으로만 유지한다. Native conversation history 없이 App ledger로 복원하지 않는다. |
 | Native conversation | Codex Runtime | Browser-safe projection만 제공한다. |
 
 `RawMaterial`, `ModelingRun`, durable `StatePatch`와 durable `UserConfirmation`은 target App domain model에 포함하지 않는다. Workspace file, native Turn, transient capability request/result가 각각 그 책임을 맡는다.
@@ -203,7 +207,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | --- | --- | --- |
 | MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 Workspace root에서 `@ay-ple/interaction-mcp` built STDIO Adapter까지의 relative command를 `cwd` 없이 선언한다. Server가 dynamic binding을 만들고 capability-neutral Runtime이 env만 전달하며, Adapter의 Broker handshake 뒤에만 initialize가 성공한다. |
 | Review 시작 | `propose_state_patch`가 Server-private key와 academic binding을 요구한다. | 표시할 proposal만 보내며 host binding은 Module 내부다. |
-| 사용자 응답 | 별도 `/reviews/:interactionId`와 built-in `request_user_input`을 함께 사용한다. | AY Chat inline card 하나가 composer·steer를 잠그고 MCP call의 closed result를 반환하며 전체 Turn interrupt만 별도 control로 유지한다. |
+| 사용자 응답 | 별도 `/reviews/:interactionId`와 built-in `request_user_input`을 함께 사용하고 replacement가 active Review를 교체한다. | AY Chat inline card 하나가 composer·steer를 잠그고 MCP call의 closed result를 반환한다. Settled card는 read-only로 남고 fresh proposal은 새 card로 append하며 전체 Turn interrupt만 별도 control로 유지한다. |
 | Apply | Server가 durable patch·confirmation transaction으로 `SemesterModel`을 갱신한다. | AY가 result를 해석해 실제 workspace file을 변경한다. |
 | 실행 기록 | App-owned `ModelingRun` receipt를 저장한다. | Native Turn과 일반 Codex history를 재사용한다. |
 | 자료 | App-owned `RawMaterial` registry·snapshot을 사용한다. | AY가 SemesterWorkspace의 실제 파일을 직접 다룬다. |
@@ -226,4 +230,6 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - Rich Review와 built-in `request_user_input`의 이중 confirmation
 - Broker-managed interaction queue, priority·preemption 또는 여러 동시 Review 화면
 - Review modal·별도 approval page와 pending 중 composer·steer
+- Fresh proposal로 기존 settled card를 교체·reopen하는 replacement lifecycle
+- App-owned settled Review ledger와 별도 card hydration store
 - `accept | revise | reject`와 Turn interrupt·continuity failure를 섞는 네 번째 `cancel` result

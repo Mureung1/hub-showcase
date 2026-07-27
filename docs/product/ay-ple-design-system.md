@@ -57,7 +57,7 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 | Source explorer | 자료함처럼 보이게 하고, 선택 상태는 green/teal 계열로 표시한다. |
 | Source preview | 가장 넓고 밝은 종이 surface로 둔다. 원본을 읽는 화면이라는 감각이 우선이다. |
 | AY chat dock | Side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. Pending Review 중에는 free-form composer와 steer를 잠그고 전체 Turn interrupt만 유지한다. |
-| Change proposal | AY Chat transcript의 inline card로 둔다. AY가 응답을 기다리는 `검토 대기`는 honey, result 뒤 AY가 실제 file 작업을 마친 `반영됨`은 green으로 구분한다. Modal·별도 approval page·card dismiss를 만들거나 내부 correlation을 노출하지 않는다. |
+| Change proposal | AY Chat transcript의 inline card로 둔다. AY가 응답을 기다리는 `검토 대기`는 honey로, settled `수락됨`, `수정 요청됨`, `거절됨`은 control 없는 read-only outcome으로 구분한다. `수락됨`을 App이 file 반영까지 확인했다는 뜻으로 쓰지 않는다. Fresh proposal은 새 card로 아래에 append하고 이전 card를 교체·재개하지 않는다. Modal·별도 approval page·card dismiss를 만들거나 내부 correlation을 노출하지 않는다. |
 | Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
 
 ## 피해야 할 것

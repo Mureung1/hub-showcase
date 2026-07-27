@@ -54,8 +54,8 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | 2 | Init Skill이 필요한 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 Git 준비를 돕는다. | AY·Skill이 일반 file·Git 도구를 사용하고 설치 결과를 workspace history에 남긴다. |
 | 3 | 사용자가 AY에게 새 과제를 찾아 정리해 달라고 요청한다. | AY가 실제 공지와 계획서를 읽고 작업을 계획한다. |
 | 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 AY Chat의 inline Review card로 투영한다. |
-| 5 | 사용자가 수락·수정 요청·거절한다. | Pending 동안 composer·steer는 닫고 전체 Turn interrupt만 별도 control로 유지한다. App은 `accept | revise | reject`와 feedback을 같은 MCP call에 반환한다. |
-| 6 | AY가 선택을 해석한다. | 수락이면 실제 workspace file을 변경하고, 수정 요청이면 다시 검토하며, 거절이면 적용하지 않는다. |
+| 5 | 사용자가 수락·수정 요청·거절한다. | Pending 동안 composer·steer는 닫고 전체 Turn interrupt만 별도 control로 유지한다. App은 `accept | revise | reject`와 feedback을 같은 MCP call에 반환하고 해당 card를 read-only outcome으로 남긴다. |
+| 6 | AY가 선택을 해석한다. | 수락이면 실제 workspace file을 변경하고, 수정 요청이면 다시 검토해 필요할 때 fresh call·새 card로 제안하며, 거절이면 적용하지 않는다. |
 | 7 | AY가 자연스러운 checkpoint에서 commit한다. | Git이 실제 파일 변경의 장기 history와 rollback을 소유한다. |
 
 학생이 보는 핵심 문장은 다음과 같다.
@@ -84,6 +84,7 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 - 사용자 result는 closed union으로 반환해 Skill이 다음 행동을 명확히 결정할 수 있게 한다.
 - Pending Review는 AY Chat의 inline card 하나로 표시하고 composer·steer를 잠근다. Modal·별도 approval page와 입력 queue는 만들지 않는다.
 - Card에는 capability action만 두며 전체 Turn interrupt는 Review result와 분리된 native conversation control로 유지한다.
+- Settled card는 read-only로 남기고 fresh call은 새 card로 append한다. 기존 card를 교체·재개하지 않으며 별도 App Review ledger를 만들지 않는다.
 - Pending request와 response를 장기 학업 event로 저장하지 않는다.
 - 일반 clarification은 built-in `request_user_input`을 사용할 수 있다.
 - 하나의 Review 결정을 custom MCP와 built-in `request_user_input`에 이중으로 걸치지 않는다.
