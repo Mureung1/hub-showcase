@@ -6,7 +6,7 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 Canonical product 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. 제거된 public-preview Account→Setup→Ready composition, managed Browser OAuth route와 v3 setup adapter는 Server의 실행·export·test graph에 남지 않는다. [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 v3 kernel은 현재 Server consumer가 없는 package-private 기반이며 current product authority가 아니다.
 
-User-owned Git target의 internal `workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. 이 Module과 package의 v4 identity codec은 current graph 옆에 구현됐지만 아직 public route, `SemesterWorkspaceController` 또는 prepared-workspace startup에 연결되지 않았다.
+User-owned Git target의 internal `workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. Canonical root command의 read-only `prepared-workspace-launch` resolver는 explicit prepared root를 registry보다 우선하고, 인자가 없으면 active pointer를 fresh reopen한다. Canonical·exact Git root·strict v4 identity가 아니거나 active pointer가 없으면 Server·Browser process를 시작하기 전에 fail closed한다. Registry commit과 target `SemesterWorkspaceController` composition은 아직 연결되지 않았다.
 
 ## Canonical 시작과 root 소유권
 
@@ -23,7 +23,7 @@ Canonical product composition은 다음 root authority를 명시적으로 분리
 | `packageRoot` | Current `hub/` source root다. Tracked source와 rebuildable output을 찾으며 사용자 상태를 쓰지 않는다. |
 | `appDataRoot` | 기본값은 canonical sibling `../.ay-ple/`다. Verified Runtime은 `runtime/production-runtime-darwin-arm64`, controlled `HOME`은 `state/runtime/home`, temporary state는 `temp/`에 둔다. |
 | `CODEX_HOME` | Caller의 전역 `CODEX_HOME`을 그대로 사용하며, 미설정이면 OS user의 `~/.codex`를 사용한다. Canonical dev는 별도 auth profile이나 credential copy를 만들지 않는다. |
-| `workspaceRoot` | Default는 선택하지 않는다. Transitional current-v2 개발 확인이 필요할 때만 `--workspace <absolute-path>`를 명시하며 `CODEX_CHAT_WORKSPACE`와 ambient `cwd`를 fallback으로 사용하지 않는다. |
+| `workspaceRoot` | 첫 open·학기 변경은 `--workspace <absolute-prepared-git-root>`를 사용하고, 이후 인자 없는 canonical start는 `WorkspaceRegistry.activeWorkspaceId`를 fresh reopen한다. `CODEX_CHAT_WORKSPACE`와 ambient `cwd`는 fallback으로 사용하지 않는다. |
 
 Package, app data, global Codex home와 workspace는 canonical realpath 기준 same-path·ancestor 관계가 없어야 하고 symlink·non-directory는 mutation 전에 fail closed한다. Controlled child state만 app data 아래에 중첩된다. Fresh clone은 Runtime bundle이 tracked되지 않으므로 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)에 따라 external app data에 materialize한다.
 
@@ -56,7 +56,7 @@ Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 �
 
 Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. Historical [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 당시 target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 했다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
 
-ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. 함께 구현된 generic operation coordinator는 survivor지만 candidate/bootstrap lifecycle union은 [ADR 0020](../../docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md) 이후 correction residue다. Prepared-root validation과 required Runtime readiness가 연결되기 전에는 internal seam이며 current public workspace authority는 계속 아래 v2 aggregate다.
+ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. Prepared-root launch resolver와 candidate-free Browser lifecycle contract는 current graph 옆의 target seam이며, required Runtime readiness와 registry commit이 연결되기 전에는 current public workspace authority가 계속 아래 v2 aggregate다.
 
 | 영역 | Current behavior |
 | --- | --- |
@@ -77,7 +77,7 @@ Assignment action은 selected source를 appDataRoot staging에 byte-preserving s
 
 ## Product operation·Review authority
 
-`ProductOperationCoordinator`는 Assignment action과 free-form product Chat이 process-global active operation lease 하나를 공유하게 한다. 내부 `product-lifecycle-coordinator`는 user-owned Git target의 `workspace_transition | product_turn` lease를 lifecycle eligibility 확인과 같은 synchronous critical section에서 claim하며, current Assignment·Chat도 target `chat` product-turn lease를 소비한다. Busy loser는 existing operation을 preempt하지 않고 `409`로 끝난다. Product-turn lease는 start failure, authoritative native terminal 또는 completed Runtime close authority로만 once-only release되며 disconnect·interrupt·shutdown 시작 자체는 release authority가 아니다.
+`ProductOperationCoordinator`는 Assignment action과 free-form product Chat이 process-global active operation lease 하나를 공유하게 한다. 내부 `product-turn-coordinator`는 normal `product_turn` eligibility 확인과 lease claim을 같은 synchronous critical section에서 수행한다. Busy loser는 existing operation을 preempt하지 않고 `409`로 끝난다. Product-turn lease는 start failure, authoritative native terminal 또는 completed Runtime close authority로만 once-only release되며 disconnect·interrupt·shutdown 시작 자체는 release authority가 아니다. Prepared-workspace startup은 이 operation lease를 사용하지 않는다.
 
 Assignment은 native call 전 durable `ModelingRun(starting)`을 기록하고 exact managed `SkillInput`·bounded `TextInput`, active workspace `cwd`와 private MCP를 Runtime에 전달한다. Source를 선택하지 않은 일반 Chat은 Course 생성 전에도 workspace `cwd`에서 `deny_all + read_only`로 시작하며 academic state를 보호할 durable guard를 만들지 않는다. Course가 있는 Chat은 source/revision guard를 사용하고 optional source selection으로 proposal context를 만들 수 있지만 `ModelingRun`을 만들지 않는다.
 

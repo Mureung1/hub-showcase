@@ -55,11 +55,11 @@ import {
   createAssignmentReviewCoordinator,
 } from './state-patch-review.js'
 import {
-  ProductLifecycleAdmissionError,
-  createProductLifecycleCoordinator,
-  type ProductLifecycleLease,
-  type ProductLifecycleReleaseAuthority,
-} from './product-lifecycle-coordinator.js'
+  ProductTurnAdmissionError,
+  createProductTurnCoordinator,
+  type ProductTurnLease,
+  type ProductTurnReleaseAuthority,
+} from './product-turn-coordinator.js'
 
 const productTextMaxBytes = 128 * 1024
 const safeRuntimeFailure = 'Codex 작업을 계속할 수 없습니다.'
@@ -118,7 +118,7 @@ export type ProductOperationOptions = {
 type ActiveProductOperationBase = {
   readonly operationId: string
   readonly lease: ProductOperationLease
-  readonly lifecycleLease: ProductLifecycleLease
+  readonly turnLease: ProductTurnLease
   readonly reviewBindings: Map<string, AssignmentReviewBinding>
   readonly reviewOutcomes: Map<
     string,
@@ -132,7 +132,7 @@ type ActiveProductOperationBase = {
   mcpSession?: AssignmentMcpProposalSession
   turn?: CodexProductTurn
   guardInterruptRequested?: boolean
-  lifecycleReleaseAuthority?: ProductLifecycleReleaseAuthority
+  turnReleaseAuthority?: ProductTurnReleaseAuthority
 }
 
 type ActiveReviewSubmission = {
@@ -207,10 +207,9 @@ export function createProductOperationCoordinator(options: {
 }): ProductOperationCoordinator {
   let active: ActiveProductOperation | undefined
   let shuttingDown = false
-  const lifecycle = createProductLifecycleCoordinator({
-    readEligibility: () => {
+  const turnCoordinator = createProductTurnCoordinator({
+    assertEligible: () => {
       options.controller.nativeCwd()
-      return { state: 'active' }
     },
   })
 
@@ -223,31 +222,30 @@ export function createProductOperationCoordinator(options: {
         '다른 Codex 작업이 진행 중입니다.',
       )
     }
-    let lifecycleLease: ProductLifecycleLease
+    let turnLease: ProductTurnLease
     try {
-      lifecycleLease = lifecycle.claimProductTurn({
-        kind: 'chat',
+      turnLease = turnCoordinator.claimProductTurn({
         operationId: targetOperationId(),
       })
     } catch (error) {
-      throw presentLifecycleAdmissionError(error)
+      throw presentTurnAdmissionError(error)
     }
     let lease: ProductOperationLease
     try {
       lease = options.service.reserveProductOperation(operationId)
     } catch (error) {
-      lifecycle.release(lifecycleLease, 'start_failed')
+      turnCoordinator.release(turnLease, 'start_failed')
       throw presentServiceError(error)
     }
     return {
       operationId,
       lease,
-      lifecycleLease,
+      turnLease,
       reviewBindings: new Map(),
       reviewOutcomes: new Map(),
       reviewSubmissions: new Map(),
       redactionValues: [options.mcpHost.token],
-      lifecycleReleaseAuthority: 'start_failed',
+      turnReleaseAuthority: 'start_failed',
     }
   }
 
@@ -294,10 +292,10 @@ export function createProductOperationCoordinator(options: {
         })
         .catch(() => undefined)
     } finally {
-      if (operation.lifecycleReleaseAuthority) {
-        lifecycle.release(
-          operation.lifecycleLease,
-          operation.lifecycleReleaseAuthority,
+      if (operation.turnReleaseAuthority) {
+        turnCoordinator.release(
+          operation.turnLease,
+          operation.turnReleaseAuthority,
         )
       }
       if (active === operation) active = undefined
@@ -310,8 +308,8 @@ export function createProductOperationCoordinator(options: {
     turn: CodexProductTurn,
   ): void => {
     operation.turn = turn
-    operation.lifecycleReleaseAuthority = undefined
-    if (!lifecycle.markProductTurnStarted(operation.lifecycleLease)) {
+    operation.turnReleaseAuthority = undefined
+    if (!turnCoordinator.markProductTurnStarted(operation.turnLease)) {
       throw unavailable()
     }
   }
@@ -320,7 +318,7 @@ export function createProductOperationCoordinator(options: {
     operation: ActiveProductOperation,
     settlement: ProductTurnSettlement,
   ): void => {
-    operation.lifecycleReleaseAuthority =
+    operation.turnReleaseAuthority =
       settlement.type === 'terminal'
         ? 'native_terminal'
         : undefined
@@ -331,9 +329,9 @@ export function createProductOperationCoordinator(options: {
   ): Promise<void> => {
     try {
       await options.service.recycleProductRuntime()
-      operation.lifecycleReleaseAuthority = 'runtime_closed'
+      operation.turnReleaseAuthority = 'runtime_closed'
     } catch {
-      operation.lifecycleReleaseAuthority = undefined
+      operation.turnReleaseAuthority = undefined
     }
   }
 
@@ -344,9 +342,9 @@ export function createProductOperationCoordinator(options: {
   ): Promise<void> => {
     try {
       await options.service.abandonAcceptedProductTurn(turn, code)
-      operation.lifecycleReleaseAuthority = 'runtime_closed'
+      operation.turnReleaseAuthority = 'runtime_closed'
     } catch {
-      operation.lifecycleReleaseAuthority = undefined
+      operation.turnReleaseAuthority = undefined
     }
   }
 
@@ -1405,7 +1403,7 @@ export function createProductOperationCoordinator(options: {
 
     beginShutdown() {
       shuttingDown = true
-      lifecycle.beginShutdown()
+      turnCoordinator.beginShutdown()
       if (active?.turn) options.service.disconnectProductTurn(active.turn)
     },
   }
@@ -1946,10 +1944,10 @@ function presentServiceError(error: unknown): ProductOperationError {
   return unavailable()
 }
 
-function presentLifecycleAdmissionError(
+function presentTurnAdmissionError(
   error: unknown,
 ): ProductOperationError {
-  if (!(error instanceof ProductLifecycleAdmissionError)) {
+  if (!(error instanceof ProductTurnAdmissionError)) {
     return presentProductOperationError(error)
   }
   if (error.code !== 'product_unavailable') {

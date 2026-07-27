@@ -35,12 +35,6 @@ export function isTargetProductOperationId(value: unknown): value is string {
   )
 }
 
-export function isProductCandidateId(value: unknown): value is string {
-  return (
-    typeof value === 'string' && /^candidate_[0-9a-f]{32}$/.test(value)
-  )
-}
-
 export function isProductWorkspaceId(value: unknown): value is string {
   return (
     typeof value === 'string' && /^workspace_[0-9a-f]{32}$/.test(value)

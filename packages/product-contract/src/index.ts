@@ -56,7 +56,6 @@ export {
 } from './workspace-lifecycle.js'
 export type {
   ProductAvailableWorkspaceReference,
-  ProductBootstrapCandidate,
   ProductSemesterIdentity,
   ProductUnavailableWorkspaceReference,
   ProductWorkspaceLifecycle,
