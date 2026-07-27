@@ -12,8 +12,6 @@ import java.util.NoSuchElementException;
 @Service
 public class SubscriptionService {
 
-    private static final Long SEED_USER_ID = 1L; // TODO: 로그인 붙으면 실제 로그인 유저로 교체
-
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
 
@@ -24,25 +22,24 @@ public class SubscriptionService {
         this.userRepository = userRepository;
     }
 
-    public List<SubscriptionResponse> getAll() {
-        return subscriptionRepository.findByUserId(SEED_USER_ID).stream()
+    public List<SubscriptionResponse> getAll(Long userId) {
+        return subscriptionRepository.findByUserId(userId).stream()
                 .map(sub -> new SubscriptionResponse(sub.getId(), sub.getServiceName(), sub.getAmount(), sub.getBillingDay()))
                 .toList();
     }
 
-    public Subscription create(String name, Integer price, Integer billingDay) {
+    public Subscription create(Long userId, String name, Integer price, Integer billingDay) {
         validate(name, price, billingDay);
-        User user = userRepository.findById(SEED_USER_ID)
-                .orElseThrow(() -> new IllegalStateException("시드 유저가 없습니다. psql로 users 테이블 확인해보세요."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
 
         Subscription subscription = new Subscription(user, name, price, billingDay);
         return subscriptionRepository.save(subscription);
     }
 
-    public Subscription update(Long id, String name, Integer price, Integer billingDay) {
+    public Subscription update(Long userId, Long id, String name, Integer price, Integer billingDay) {
         validate(name, price, billingDay);
-        Subscription subscription = subscriptionRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 구독입니다: " + id));
+        Subscription subscription = findOwned(userId, id);
 
         subscription.setServiceName(name);
         subscription.setAmount(price);
@@ -50,11 +47,21 @@ public class SubscriptionService {
         return subscriptionRepository.save(subscription);
     }
 
-    public void delete(Long id) {
-        if (!subscriptionRepository.existsById(id)) {
+    public void delete(Long userId, Long id) {
+        Subscription subscription = findOwned(userId, id);
+        subscriptionRepository.delete(subscription);
+    }
+
+    /**
+     * id로 조회하되, 다른 사용자 소유의 구독이면 존재하지 않는 것과 동일하게 취급한다(#63 인증 차단 대비).
+     */
+    private Subscription findOwned(Long userId, Long id) {
+        Subscription subscription = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 구독입니다: " + id));
+        if (!subscription.getUser().getId().equals(userId)) {
             throw new NoSuchElementException("존재하지 않는 구독입니다: " + id);
         }
-        subscriptionRepository.deleteById(id);
+        return subscription;
     }
 
     private void validate(String name, Integer price, Integer billingDay) {

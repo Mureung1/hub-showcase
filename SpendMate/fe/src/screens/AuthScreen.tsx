@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, User, ChevronLeft, Check, AlertCircle } from 'lucide-react'
+import { login, signup } from '../lib/api'
 
 type AuthView = 'login' | 'signup' | 'verify'
 
@@ -80,10 +81,17 @@ function LoginView({ onLogin, onGoSignup }: { onLogin: () => void; onGoSignup: (
     return Object.keys(e).length === 0
   }
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!validate()) return
     setLoading(true)
-    setTimeout(() => { setLoading(false); onLogin() }, 1200)
+    try {
+      await login(email, password)
+      onLogin()
+    } catch (err) {
+      setErrors({ password: err instanceof Error ? err.message : '로그인에 실패했어요.' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -208,10 +216,17 @@ function SignupView({ onSignup, onBack }: { onSignup: () => void; onBack: () => 
     return Object.keys(e).length === 0
   }
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!validate()) return
     setLoading(true)
-    setTimeout(() => { setLoading(false); onSignup() }, 1400)
+    try {
+      await signup(email, password, name)
+      onSignup()
+    } catch (err) {
+      setErrors({ email: err instanceof Error ? err.message : '회원가입에 실패했어요.' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const pwStrength = password.length === 0 ? 0 : password.length < 8 ? 1 : password.length < 12 ? 2 : 3

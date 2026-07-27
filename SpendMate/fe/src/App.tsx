@@ -1,26 +1,46 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Home, BarChart2, Plus, MessageCircle, User } from 'lucide-react'
 import HomeScreen from './screens/HomeScreen'
 import StatsScreen from './screens/StatsScreen'
-import AICoachScreen from './screens/AICoachScreen'
+import AICoachScreen, { INITIAL_COACH_MESSAGES, type Message } from './screens/AICoachScreen'
 import AddExpenseScreen from './screens/AddExpenseScreen'
 import MyPageScreen from './screens/MyPageScreen'
 import AuthScreen from './screens/AuthScreen'
+import { getCurrentUser } from './lib/api'
 
 type Tab = 'home' | 'stats' | 'add' | 'coach' | 'mypage'
 
 export default function App() {
   const [authed, setAuthed] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [showAdd, setShowAdd] = useState(false)
   const [survivalModeOff, setSurvivalModeOff] = useState(false)
+  const [coachMessages, setCoachMessages] = useState<Message[]>(INITIAL_COACH_MESSAGES)
+  const [hasUnreadCoachMessage, setHasUnreadCoachMessage] = useState(false)
+
+  // 새로고침해도 세션이 살아있으면 로그인 화면으로 안 튕기도록 마운트 시 한 번 확인한다 (#60).
+  useEffect(() => {
+    getCurrentUser()
+      .then(user => setAuthed(user !== null))
+      .finally(() => setCheckingSession(false))
+  }, [])
 
   const handleTabPress = (tab: Tab) => {
     if (tab === 'add') {
       setShowAdd(true)
       return
     }
+    if (tab === 'coach') {
+      setHasUnreadCoachMessage(false)
+    }
     setActiveTab(tab)
+  }
+
+  // 지출 추가(#41)로 AI 코치가 먼저 말을 걸기로 판단했을 때, 챗봇 대화 목록에 그대로 추가한다.
+  const pushAgentMessage = (text: string) => {
+    setCoachMessages(prev => [...prev, { id: Date.now(), role: 'ai', text }])
+    if (activeTab !== 'coach') setHasUnreadCoachMessage(true)
   }
 
   return (
@@ -62,7 +82,9 @@ export default function App() {
 
         {/* Screen Content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} className="no-scrollbar">
-          {!authed ? (
+          {checkingSession ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }} />
+          ) : !authed ? (
             <AuthScreen onAuth={() => setAuthed(true)} />
           ) : (
             <>
@@ -73,7 +95,10 @@ export default function App() {
                 />
               )}
               {activeTab === 'stats' && <StatsScreen />}
-              {activeTab === 'coach' && <AICoachScreen />}
+              {/* 탭을 오갈 때 대화 내역이 사라지지 않도록 언마운트 대신 숨김 처리 */}
+              <div style={{ display: activeTab === 'coach' ? 'block' : 'none', height: '100%' }}>
+                <AICoachScreen messages={coachMessages} setMessages={setCoachMessages} />
+              </div>
               {activeTab === 'mypage' && (
                 <MyPageScreen
                   survivalModeOff={survivalModeOff}
@@ -118,17 +143,17 @@ export default function App() {
           >
             <Plus size={26} color="white" strokeWidth={2.5} />
           </button>
-          <NavItem icon={<MessageCircle size={22} />} label="AI 코치" active={activeTab === 'coach'} onPress={() => handleTabPress('coach')} />
+          <NavItem icon={<MessageCircle size={22} />} label="AI 코치" active={activeTab === 'coach'} onPress={() => handleTabPress('coach')} showDot={hasUnreadCoachMessage} />
           <NavItem icon={<User size={22} />} label="마이페이지" active={activeTab === 'mypage'} onPress={() => handleTabPress('mypage')} />
         </div>}
       </div>
 
-      {showAdd && <AddExpenseScreen onClose={() => setShowAdd(false)} />}
+      {showAdd && <AddExpenseScreen onClose={() => setShowAdd(false)} onAgentMessage={pushAgentMessage} />}
     </div>
   )
 }
 
-function NavItem({ icon, label, active, onPress }: { icon: React.ReactNode; label: string; active: boolean; onPress: () => void }) {
+function NavItem({ icon, label, active, onPress, showDot }: { icon: React.ReactNode; label: string; active: boolean; onPress: () => void; showDot?: boolean }) {
   return (
     <button
       onClick={onPress}
@@ -142,9 +167,15 @@ function NavItem({ icon, label, active, onPress }: { icon: React.ReactNode; labe
         cursor: 'pointer',
         color: active ? 'var(--primary)' : '#9CA3AF',
         minWidth: 56,
+        position: 'relative',
       }}
     >
-      {icon}
+      <div style={{ position: 'relative' }}>
+        {icon}
+        {showDot && (
+          <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 99, background: '#FF6B6B', border: '1.5px solid white' }} />
+        )}
+      </div>
       <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, fontFamily: 'Pretendard' }}>{label}</span>
     </button>
   )

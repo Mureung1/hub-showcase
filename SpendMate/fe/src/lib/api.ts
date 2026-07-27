@@ -30,11 +30,16 @@ export async function uploadReceipt(
   return res.json()
 }
 
+export interface ConfirmReceiptResult {
+  expenses: { id: number; itemName: string; amount: number }[]
+  agentMessage: string | null
+}
+
 export async function confirmReceipt(
   receiptId: number,
   items: ExpenseDraft[],
   spentAt: string
-): Promise<void> {
+): Promise<ConfirmReceiptResult> {
   const res = await fetch(`/api/receipts/${receiptId}/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -44,6 +49,16 @@ export async function confirmReceipt(
   if (!res.ok) {
     throw new Error('지출 저장에 실패했어요.')
   }
+  return res.json()
+}
+
+export interface CreateExpenseResult {
+  id: number
+  itemName: string
+  amount: number
+  category: string
+  spentAt: string
+  agentMessage: string | null
 }
 
 export async function createManualExpense(
@@ -51,7 +66,7 @@ export async function createManualExpense(
   category: string,
   memo: string,
   spentAt: string
-): Promise<void> {
+): Promise<CreateExpenseResult> {
   const res = await fetch('/api/expenses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -61,6 +76,7 @@ export async function createManualExpense(
   if (!res.ok) {
     throw new Error('지출 저장에 실패했어요.')
   }
+  return res.json()
 }
 
 export type SummaryPeriod = 'week' | 'month' | '3months'
@@ -178,6 +194,70 @@ export async function getPrediction(): Promise<Prediction> {
   const res = await fetch('/api/expenses/prediction')
   if (!res.ok) {
     throw new Error('소비 예측을 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
+export interface AgentChatResponse {
+  message: string
+}
+
+export async function sendAgentMessage(message: string): Promise<AgentChatResponse> {
+  const res = await fetch('/api/agent/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  })
+  if (!res.ok) {
+    throw new Error('AI 코치와 연결하지 못했어요.')
+  }
+  return res.json()
+}
+
+export interface AuthUser {
+  id: number
+  email: string
+  nickname: string
+}
+
+async function authErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json()
+    return body?.error || fallback
+  } catch {
+    return fallback
+  }
+}
+
+export async function signup(email: string, password: string, nickname: string): Promise<AuthUser> {
+  const res = await fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, nickname }),
+  })
+  if (!res.ok) {
+    throw new Error(await authErrorMessage(res, '회원가입에 실패했어요.'))
+  }
+  return res.json()
+}
+
+export async function login(email: string, password: string): Promise<AuthUser> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) {
+    throw new Error(await authErrorMessage(res, '로그인에 실패했어요.'))
+  }
+  return res.json()
+}
+
+/** 새로고침 시 세션이 아직 살아있는지 확인. 로그인 안 된 상태면 null을 반환한다 (에러를 던지지 않음). */
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  const res = await fetch('/api/auth/me')
+  if (!res.ok) {
+    return null
   }
   return res.json()
 }

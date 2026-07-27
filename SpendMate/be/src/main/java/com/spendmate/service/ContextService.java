@@ -22,8 +22,6 @@ import java.util.Set;
 @Service
 public class ContextService {
 
-    private static final Long SEED_USER_ID = 1L; // TODO: 로그인 붙으면 실제 로그인 유저로 교체
-
     private final ExpenseRepository expenseRepository;
     private final BudgetRepository budgetRepository;
     private final UserRepository userRepository;
@@ -41,13 +39,13 @@ public class ContextService {
      * 배달비 증가율(%) — 이번 달 배달비 대비 지난 달 배달비 증감률.
      * 지난 달 배달비가 0원이면 비교 기준이 없어 null을 반환한다.
      */
-    public Double getDeliveryIncreaseRate() {
+    public Double getDeliveryIncreaseRate(Long userId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime thisMonthStart = now.toLocalDate().withDayOfMonth(1).atStartOfDay();
         LocalDateTime lastMonthStart = thisMonthStart.minusMonths(1);
 
-        int thisMonthDelivery = sumDelivery(thisMonthStart, now);
-        int lastMonthDelivery = sumDelivery(lastMonthStart, thisMonthStart);
+        int thisMonthDelivery = sumDelivery(userId, thisMonthStart, now);
+        int lastMonthDelivery = sumDelivery(userId, lastMonthStart, thisMonthStart);
 
         if (lastMonthDelivery == 0) {
             return null;
@@ -59,21 +57,21 @@ public class ContextService {
      * 예산 대비 지출률(%) — 이번 달 누적 지출 / 총예산.
      * 예산이 설정되지 않았으면 null을 반환한다.
      */
-    public Double getBudgetUsageRate() {
-        var budget = budgetRepository.findByUserIdAndCategoryIsNull(SEED_USER_ID).orElse(null);
+    public Double getBudgetUsageRate(Long userId) {
+        var budget = budgetRepository.findByUserIdAndCategoryIsNull(userId).orElse(null);
         if (budget == null || budget.getAmount() == null || budget.getAmount() == 0) {
             return null;
         }
 
         LocalDateTime thisMonthStart = LocalDateTime.now().toLocalDate().withDayOfMonth(1).atStartOfDay();
-        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(SEED_USER_ID, thisMonthStart, LocalDateTime.now());
+        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(userId, thisMonthStart, LocalDateTime.now());
         int total = expenses.stream().mapToInt(Expense::getAmount).sum();
 
         return total * 100.0 / budget.getAmount();
     }
 
-    private int sumDelivery(LocalDateTime start, LocalDateTime end) {
-        return expenseRepository.findByUserIdAndSpentAtBetween(SEED_USER_ID, start, end).stream()
+    private int sumDelivery(Long userId, LocalDateTime start, LocalDateTime end) {
+        return expenseRepository.findByUserIdAndSpentAtBetween(userId, start, end).stream()
                 .filter(e -> e.getCategory() == Category.DELIVERY)
                 .mapToInt(Expense::getAmount)
                 .sum();
@@ -87,9 +85,9 @@ public class ContextService {
     /**
      * 카테고리별 소비 구성 비율 — 가입일부터 오늘까지(최대 90일) 기준.
      */
-    public List<CategoryComposition> getCategoryComposition() {
-        LocalDateTime start = resolveAnalysisWindowStart();
-        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(SEED_USER_ID, start, LocalDateTime.now());
+    public List<CategoryComposition> getCategoryComposition(Long userId) {
+        LocalDateTime start = resolveAnalysisWindowStart(userId);
+        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(userId, start, LocalDateTime.now());
         int total = expenses.stream().mapToInt(Expense::getAmount).sum();
         if (total == 0) {
             return List.of();
@@ -108,14 +106,14 @@ public class ContextService {
     /**
      * 카테고리별 소비 추세 — 분석 기간을 반으로 나눠 전반/후반 비교.
      */
-    public List<CategoryTrend> getCategoryTrend() {
-        LocalDateTime start = resolveAnalysisWindowStart();
+    public List<CategoryTrend> getCategoryTrend(Long userId) {
+        LocalDateTime start = resolveAnalysisWindowStart(userId);
         LocalDateTime now = LocalDateTime.now();
         long totalDays = Math.max(Duration.between(start, now).toDays(), 1);
         LocalDateTime mid = start.plusDays(totalDays / 2);
 
-        Map<Category, Integer> firstHalf = sumByCategory(start, mid);
-        Map<Category, Integer> secondHalf = sumByCategory(mid, now);
+        Map<Category, Integer> firstHalf = sumByCategory(userId, start, mid);
+        Map<Category, Integer> secondHalf = sumByCategory(userId, mid, now);
 
         Set<Category> categories = new HashSet<>();
         categories.addAll(firstHalf.keySet());
@@ -137,15 +135,15 @@ public class ContextService {
     /**
      * 구독 상태 — 등록된 구독 개수와 합계 금액.
      */
-    public SubscriptionStatus getSubscriptionStatus() {
-        List<Subscription> subs = subscriptionRepository.findByUserId(SEED_USER_ID);
+    public SubscriptionStatus getSubscriptionStatus(Long userId) {
+        List<Subscription> subs = subscriptionRepository.findByUserId(userId);
         int total = subs.stream().mapToInt(Subscription::getAmount).sum();
         return new SubscriptionStatus(subs.size(), total);
     }
 
-    private Map<Category, Integer> sumByCategory(LocalDateTime start, LocalDateTime end) {
+    private Map<Category, Integer> sumByCategory(Long userId, LocalDateTime start, LocalDateTime end) {
         Map<Category, Integer> totals = new EnumMap<>(Category.class);
-        for (Expense e : expenseRepository.findByUserIdAndSpentAtBetween(SEED_USER_ID, start, end)) {
+        for (Expense e : expenseRepository.findByUserIdAndSpentAtBetween(userId, start, end)) {
             totals.merge(e.getCategory(), e.getAmount(), Integer::sum);
         }
         return totals;
@@ -154,9 +152,9 @@ public class ContextService {
     /**
      * 분석 기간 시작점 — 가입일과 90일 전 중 더 늦은 날짜(즉, 최대 90일로 제한).
      */
-    private LocalDateTime resolveAnalysisWindowStart() {
-        User user = userRepository.findById(SEED_USER_ID)
-                .orElseThrow(() -> new IllegalStateException("시드 유저가 없습니다."));
+    private LocalDateTime resolveAnalysisWindowStart(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
         LocalDateTime ninetyDaysAgo = LocalDateTime.now().minusDays(90);
         return user.getCreatedAt().isAfter(ninetyDaysAgo) ? user.getCreatedAt() : ninetyDaysAgo;
     }
@@ -169,19 +167,19 @@ public class ContextService {
      * 5일 미만: 구성/추세 노출 안 함, 안내 문구만. 5~13일: 구성 비율만. 14일 이상: 구성 비율+추세.
      * 90일 초과분은 getCategoryComposition/getCategoryTrend 내부의 resolveAnalysisWindowStart에서 이미 제외됨.
      */
-    public LongTermSignal getLongTermSignal() {
-        User user = userRepository.findById(SEED_USER_ID)
-                .orElseThrow(() -> new IllegalStateException("시드 유저가 없습니다."));
+    public LongTermSignal getLongTermSignal(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
         long daysSinceSignup = Duration.between(user.getCreatedAt(), LocalDateTime.now()).toDays();
-        SubscriptionStatus subscriptionStatus = getSubscriptionStatus();
+        SubscriptionStatus subscriptionStatus = getSubscriptionStatus(userId);
 
         if (daysSinceSignup < 5) {
             return new LongTermSignal("아직 장기 소비 데이터가 부족해 습관 분석은 제한적이에요.", List.of(), List.of(), subscriptionStatus);
         }
         if (daysSinceSignup < 14) {
-            return new LongTermSignal(null, getCategoryComposition(), List.of(), subscriptionStatus);
+            return new LongTermSignal(null, getCategoryComposition(userId), List.of(), subscriptionStatus);
         }
-        return new LongTermSignal(null, getCategoryComposition(), getCategoryTrend(), subscriptionStatus);
+        return new LongTermSignal(null, getCategoryComposition(userId), getCategoryTrend(userId), subscriptionStatus);
     }
 
     public record Context(Double deliveryIncreaseRate, Double budgetUsageRate, LongTermSignal longTermSignal) {}
@@ -189,7 +187,7 @@ public class ContextService {
     /**
      * 단기 신호(#32)와 장기 신호(#33/#34)를 하나로 합친 최종 Context — Agent(F16)에 그대로 전달될 값.
      */
-    public Context getContext() {
-        return new Context(getDeliveryIncreaseRate(), getBudgetUsageRate(), getLongTermSignal());
+    public Context getContext(Long userId) {
+        return new Context(getDeliveryIncreaseRate(userId), getBudgetUsageRate(userId), getLongTermSignal(userId));
     }
 }
