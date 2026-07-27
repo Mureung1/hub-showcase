@@ -9,12 +9,14 @@ const ITEMS_PER_PAGE = 5
 
 // 8 · 전체 검색 이력 — 스텝퍼 흐름 밖 부가 화면. 지금까지 검색한 모든 이슈를 최신순 평탄화 목록으로
 // 보여주고(Recommendation은 삭제 없이 계속 쌓이는 설계라 즐겨찾기 안 한 이슈도 항상 여기서 볼 수 있다),
-// 언어/즐겨찾기 필터와 페이지네이션(카드 5장 = 1페이지)은 전부 이미 받아온 응답을 프론트에서 처리한다
-// (별도 API 없음). 필터는 언어 하나만 둔다 — 주제까지 더하니 복잡해진다는 피드백으로 단순화했다(2026-07-27)
+// 언어/즐겨찾기 필터, 정렬(최신순/점수순), 페이지네이션(카드 5장 = 1페이지)은 전부 이미 받아온 응답을
+// 프론트에서 처리한다(별도 API 없음). 필터는 언어 하나만 둔다 — 주제까지 더하니 복잡해진다는 피드백으로
+// 단순화했다(2026-07-27)
 function History() {
   const { githubId, setRecommendation, setSelectedItem } = useOutletContext()
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [languageFilter, setLanguageFilter] = useState(ALL)
+  const [sortBy, setSortBy] = useState('recent') // 'recent' | 'score'
   const [page, setPage] = useState(1)
 
   const { data: sessions, isLoading, error, refetch } = useQuery({
@@ -61,13 +63,21 @@ function History() {
       )
   }, [dedupedSessions, favoritesOnly, languageFilter])
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE))
-  // 즐겨찾기 해제 등으로 filteredItems가 줄어들면 totalPages도 줄어드는데, page state는 그대로 남아있어
+  // 기본은 세션(검색 시점) 최신순 그대로 — 정렬을 바꾸고 싶을 때만 매칭 점수 내림차순으로 다시 정렬한다.
+  // filteredItems 자체를 안 건드리고 여기서만 정렬하는 이유: 필터 선택지 계산 등 다른 곳은 원래 순서(최신순)를
+  // 기준으로 해도 무방해서, "정렬"은 오직 화면에 보여줄 목록 순서에만 영향을 주는 게 맞다
+  const sortedItems = useMemo(() => {
+    if (sortBy !== 'score') return filteredItems
+    return [...filteredItems].sort((a, b) => b.item.matchScore - a.item.matchScore)
+  }, [filteredItems, sortBy])
+
+  const totalPages = Math.max(1, Math.ceil(sortedItems.length / ITEMS_PER_PAGE))
+  // 즐겨찾기 해제 등으로 sortedItems가 줄어들면 totalPages도 줄어드는데, page state는 그대로 남아있어
   // "존재하지 않는 페이지"를 가리킬 수 있었다(빈 화면 + 못 돌아옴, 2026-07-27 코드리뷰) — 매번 유효 범위로
   // 보정해서 쓴다. setPage로 state 자체를 리셋하지 않는 이유: 렌더 도중 setState를 부르면 추가 렌더가
   // 생기니, 파생값 계산만으로 끝내는 쪽이 더 단순하다
   const safePage = Math.min(page, totalPages)
-  const pageItems = filteredItems.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
+  const pageItems = sortedItems.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
 
   function updateFilter(setter, value) {
     setter(value)
@@ -169,11 +179,28 @@ function History() {
             ))}
           </div>
         )}
+
+        <div className="filterbar">
+          <button
+            type="button"
+            className={sortBy === 'recent' ? 'filter filter-active' : 'filter'}
+            onClick={() => updateFilter(setSortBy, 'recent')}
+          >
+            최신순
+          </button>
+          <button
+            type="button"
+            className={sortBy === 'score' ? 'filter filter-active' : 'filter'}
+            onClick={() => updateFilter(setSortBy, 'score')}
+          >
+            점수순
+          </button>
+        </div>
       </div>
 
       {favoriteError && <p className="r-refetch-error">{favoriteError.message}</p>}
 
-      {filteredItems.length === 0 && (
+      {sortedItems.length === 0 && (
         <div className="panel">
           <p className="lead">
             {sessions.length === 0 ? '아직 검색한 이슈가 없어요.' : '조건에 맞는 이슈가 없어요.'}
@@ -190,7 +217,7 @@ function History() {
         />
       ))}
 
-      {filteredItems.length > ITEMS_PER_PAGE && (
+      {sortedItems.length > ITEMS_PER_PAGE && (
         <div className="h-pagination">
           <button
             type="button"
