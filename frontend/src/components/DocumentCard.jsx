@@ -5,10 +5,16 @@ import './components.css'
 function DocumentCard({ doc, isBest = false }) {
   return (
     <Link to={`/archive/${doc.id}`} className="rs-card rs-doc-card">
-      {(isBest || doc.feedbackWanted || doc.isExample) && (
+      {(isBest || doc.feedbackWanted || doc.isExample || doc.aiScore != null) && (
         <div className="rs-doc-card-flags">
           {isBest && <TagBadge tone="gold">베스트</TagBadge>}
-          {doc.isExample && <TagBadge tone="gold">AI 예시</TagBadge>}
+          {doc.aiScore != null && <TagBadge tone="gold">AI {doc.aiScore}점</TagBadge>}
+          {/* 직접 쓴 예시를 "AI 예시"로 표기하지 않는다(exampleSource로 구분). */}
+          {doc.isExample && (
+            <TagBadge tone="gold">
+              {doc.exampleSource === 'editorial' ? '예시' : 'AI 예시'}
+            </TagBadge>
+          )}
           {doc.feedbackWanted && <TagBadge tone="gold">피드백 요청 중</TagBadge>}
         </div>
       )}

@@ -47,14 +47,21 @@ function emptySectionFeedback(heading) {
  * @param {Array<{key: string, heading: string, content: string}>} sections
  * @returns {Promise<Array<{sectionKey: string, content: string, isAi: true}>>}
  */
+// 섹션이 비었는지 — content(레거시) 또는 fields(구조화) 어느 쪽이든 본다.
+function sectionIsEmpty(section) {
+  if (Array.isArray(section.fields) && section.fields.length > 0) {
+    return !section.fields.some((f) => (f.value ?? '').trim() !== '')
+  }
+  return (section.content ?? '').trim() === ''
+}
+
 export function makeAiFeedback(sections) {
   const comments = sections.map((section) => ({
     sectionKey: section.key,
     isAi: true,
-    content:
-      section.content.trim() === ''
-        ? emptySectionFeedback(section.heading)
-        : (FEEDBACK_BY_GUIDE_KEY[section.guideKey ?? section.key] ?? FALLBACK_FEEDBACK),
+    content: sectionIsEmpty(section)
+      ? emptySectionFeedback(section.heading)
+      : (FEEDBACK_BY_GUIDE_KEY[section.guideKey ?? section.key] ?? FALLBACK_FEEDBACK),
   }))
 
   // 실제 API 왕복을 흉내 내는 지연

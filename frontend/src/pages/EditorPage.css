@@ -15,6 +15,10 @@
   flex-direction: column;
   gap: var(--clb-space-md);
   margin-bottom: var(--clb-space-lg);
+  /* 자동완성 드롭다운이 뒤 패널(장르 렌즈·섹션)에 덮이지 않도록 이 패널을 위로 올린다.
+     글래스(backdrop-filter)가 만드는 스택 컨텍스트 때문에 자식 z-index만으론 부족하다. */
+  position: relative;
+  z-index: 30;
 }
 
 .rs-editor-meta input[type='text'],
@@ -144,6 +148,114 @@
   font-weight: 600;
 }
 
+/* ---- 게임 검색 자동완성(RAWG) ---- */
+.rs-gamesearch {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  /* 같은 패널 안의 액션 버튼(발행 등)보다 검색 컨테이너를 위로 → 드롭다운이 버튼을 덮는다. */
+  z-index: 40;
+}
+.rs-gamesearch > input {
+  width: 100%;
+}
+.rs-gamesearch-loading {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: var(--clb-muted-dim);
+  pointer-events: none;
+}
+.rs-gamesearch-list {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 340px;
+  overflow-y: auto;
+  /* 불투명 배경 — 뒤 요소가 비치지 않게. 브랜드 톤의 진한 인디고. */
+  background: #241d47;
+  border: 1px solid var(--clb-edge-soft);
+  border-radius: var(--clb-radius-control);
+  box-shadow: 0 18px 44px rgba(12, 8, 40, 0.55);
+}
+.rs-gamesearch-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.rs-gamesearch-item.is-active {
+  background: var(--clb-glass-faint);
+}
+.rs-gamesearch-cover {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  grid-column: 1;
+}
+.rs-gamesearch-name {
+  grid-column: 2;
+  color: var(--clb-ink);
+  font-size: 0.95rem;
+}
+.rs-gamesearch-year {
+  color: var(--clb-muted-dim);
+}
+.rs-gamesearch-plat {
+  grid-column: 3;
+  color: var(--clb-muted-dim);
+  font-size: 0.76rem;
+  text-align: right;
+  white-space: nowrap;
+}
+.rs-gamesearch-credit {
+  padding: 6px 9px 2px;
+  font-size: 0.72rem;
+  color: var(--clb-muted-dim);
+  text-align: right;
+}
+
+/* ---- 장르 렌즈 패널 ---- */
+.rs-genre-lens {
+  margin-bottom: var(--clb-space-md);
+}
+
+.rs-genre-lens-title {
+  margin: 0 0 var(--clb-space-xs);
+  font-size: var(--clb-text-card-title);
+}
+
+.rs-genre-lens ul {
+  margin: 0 0 var(--clb-space-xs);
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rs-genre-lens li {
+  color: var(--clb-muted);
+  font-size: 0.92rem;
+}
+
+.rs-genre-lens-hint {
+  margin: 0;
+  color: var(--clb-muted-dim);
+  font-size: var(--clb-text-label);
+  line-height: 1.5;
+}
+
 /* ---- 섹션 편집 (본문 + 가이드 2단) ---- */
 .rs-editor-section {
   display: grid;
@@ -198,6 +310,50 @@
 
 .rs-editor-section textarea::placeholder {
   color: var(--clb-muted-dim);
+}
+
+/* ---- 구조화 짧은 필드 ---- */
+.rs-editor-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-sm);
+}
+
+.rs-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rs-editor-field-label {
+  font-size: var(--clb-text-label);
+  font-weight: 600;
+  color: var(--clb-muted);
+}
+
+.rs-editor-field input,
+.rs-editor-field textarea {
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: var(--clb-radius-control);
+  border: 1px solid var(--clb-edge-soft);
+  background: var(--clb-glass-faint);
+  color: var(--clb-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.rs-editor-field input::placeholder,
+.rs-editor-field textarea::placeholder {
+  color: var(--clb-muted-dim);
+}
+
+.rs-editor-field input:focus-visible,
+.rs-editor-field textarea:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 1px;
 }
 
 /* ---- 우측 가이드 박스 ---- */

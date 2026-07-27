@@ -49,6 +49,42 @@ describe('makeSnapshot', () => {
   })
 })
 
+describe('구조화 필드(fields) 섹션', () => {
+  const fieldForm = (value) =>
+    form({
+      sections: [
+        {
+          id: 's1',
+          heading: '정체성',
+          fields: [{ key: 'pitch', label: '한 줄 소개', value }],
+        },
+      ],
+    })
+
+  it('필드 값이 바뀌면 스냅샷이 달라진다', () => {
+    expect(makeSnapshot(fieldForm('로그라이크 덱빌더'))).not.toBe(
+      makeSnapshot(fieldForm('플랫포머')),
+    )
+  })
+
+  it('필드 라벨은 스냅샷에 영향을 주지 않는다(값만 본다)', () => {
+    const a = fieldForm('같은 값')
+    const b = fieldForm('같은 값')
+    b.sections[0].fields[0].label = '라벨만 다름'
+    expect(makeSnapshot(a)).toBe(makeSnapshot(b))
+  })
+
+  it('isEmptyDraft: 제목·필드가 모두 비면 빈 문서', async () => {
+    const { isEmptyDraft } = await import('./autosave.js')
+    expect(isEmptyDraft({ ...fieldForm('   '), title: '  ' })).toBe(true)
+  })
+
+  it('isEmptyDraft: 필드 하나라도 채워지면 빈 문서 아님', async () => {
+    const { isEmptyDraft } = await import('./autosave.js')
+    expect(isEmptyDraft({ ...fieldForm('한 줄 소개 채움'), title: '' })).toBe(false)
+  })
+})
+
 describe('hasUnsavedChanges', () => {
   it('마지막 저장 스냅샷과 다르면 true', () => {
     expect(hasUnsavedChanges(makeSnapshot(form({ title: '바뀜' })), makeSnapshot(form()))).toBe(

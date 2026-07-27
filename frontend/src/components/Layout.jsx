@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
+import BrandMark from './BrandMark.jsx'
 import './Layout.css'
 
 const NAV_ITEMS = [
@@ -29,9 +30,9 @@ function Layout() {
         <span className="rs-orb rs-orb-c" />
       </div>
       <header className="rs-nav">
-        <NavLink to="/" className="rs-brand">
-          역기획소
-          <span className="rs-brand-code">respec</span>
+        <NavLink to="/" className="rs-brand" aria-label="respec 홈">
+          <BrandMark />
+          <span className="rs-brand-word">respec</span>
         </NavLink>
         <nav className="rs-nav-links" aria-label="주요 메뉴">
           {NAV_ITEMS.map(({ to, label, end }) => (
@@ -68,7 +69,9 @@ function Layout() {
         <Outlet />
       </main>
       <footer className="rs-footer">
-        <p>역기획소 프로토타입 — 목데이터 기반 데모이며, 문서·코멘트 내용은 예시입니다.</p>
+        <p>
+          respec — 게임 기획을 쓰고, 평가받고, 챌린지하는 곳. 일부 문서·코멘트는 학습용 예시입니다.
+        </p>
       </footer>
     </div>
   )

@@ -99,6 +99,43 @@
   font-size: 0.92rem;
 }
 
+/* ---- AI 자동 채점 패널 ---- */
+.rs-score {
+  margin-bottom: var(--clb-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-sm);
+}
+
+.rs-score-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--clb-space-md);
+}
+
+.rs-score-total {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--clb-gold);
+  line-height: 1;
+}
+
+.rs-score-max {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--clb-muted-dim);
+  margin-left: 2px;
+}
+
+.rs-score-detail {
+  margin: 0;
+  color: var(--clb-muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
 /* ---- AI 예시 문서 면책 문구 ---- */
 .rs-example-notice {
   margin: var(--clb-space-sm) 0 0;
@@ -194,6 +231,39 @@
   margin: 0;
   color: var(--clb-muted);
   white-space: pre-wrap;
+}
+
+/* ---- 구조화 섹션(라벨/값) 렌더 ---- */
+.rs-doc-fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-sm);
+}
+
+.rs-doc-field {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--clb-space-md);
+}
+
+.rs-doc-field dt {
+  color: var(--clb-muted-dim);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.rs-doc-field dd {
+  margin: 0;
+  color: var(--clb-muted);
+  white-space: pre-wrap;
+}
+
+@media (max-width: 560px) {
+  .rs-doc-field {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }
 
 .rs-section-comments {

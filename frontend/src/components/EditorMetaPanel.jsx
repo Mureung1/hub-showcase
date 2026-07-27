@@ -1,4 +1,5 @@
 import { categories } from '../data/gameSystems.js'
+import GameSearchInput from './GameSearchInput.jsx'
 
 function EditorMetaPanel({
   title,
@@ -6,6 +7,8 @@ function EditorMetaPanel({
   systemTag,
   category,
   onCategoryChange,
+  isForward,
+  onGamePicked,
   feedbackWanted,
   aiLoading,
   savedAt,
@@ -35,17 +38,28 @@ function EditorMetaPanel({
         aria-label="문서 제목"
       />
       <div className="rs-editor-tags">
-        <input
-          value={gameTag}
-          onChange={(e) => onGameTagChange(e.target.value)}
-          placeholder="대상 게임 (필수)"
-          aria-label="대상 게임 태그"
-        />
+        {/* 역기획은 실제 게임을 다루므로 RAWG 자동완성. 순기획은 가상 게임이라 일반 입력. */}
+        {isForward ? (
+          <input
+            value={gameTag}
+            onChange={(e) => onGameTagChange(e.target.value)}
+            placeholder="게임 가제 / 장르 (필수)"
+            aria-label="게임 가제 또는 장르"
+          />
+        ) : (
+          <GameSearchInput
+            value={gameTag}
+            onChange={onGameTagChange}
+            onPick={onGamePicked}
+            placeholder="대상 게임 검색 (필수) — 예: Zelda"
+            ariaLabel="대상 게임 검색"
+          />
+        )}
         <input
           value={systemTag}
           onChange={(e) => onSystemTagChange(e.target.value)}
-          placeholder="시스템 유형 — 예: 강화 시스템 (필수)"
-          aria-label="시스템 유형 태그"
+          placeholder={isForward ? '한 줄 콘셉트 (필수)' : '시스템 유형 — 예: 강화 시스템 (필수)'}
+          aria-label={isForward ? '한 줄 콘셉트' : '시스템 유형 태그'}
         />
         {/* 둘러보기 필터가 문서 수만큼 늘지 않도록 분류는 고정 목록에서 고르게 한다. */}
         <select

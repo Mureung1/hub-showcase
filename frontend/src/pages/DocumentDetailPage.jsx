@@ -6,6 +6,8 @@ import TagBadge from '../components/TagBadge.jsx'
 import Modal from '../components/Modal.jsx'
 import { getSeedDocument } from '../data/documents.js'
 import { getTemplate } from '../data/templates.js'
+import { getChallenge } from '../data/challenges.js'
+import { lensOfGame } from '../data/gameSystems.js'
 import {
   addCommentToPublished,
   getPublishedDocument,
@@ -19,6 +21,8 @@ import './pages.css'
 
 // 문서 전체 AI 총평 코멘트의 sectionId (백엔드와 동일).
 const OVERALL_SECTION_ID = '__overall__'
+// AI 자동 채점(챌린지 제출작) 코멘트의 sectionId (백엔드와 동일).
+const SCORE_SECTION_ID = '__score__'
 
 function DocumentDetailPage() {
   const { docId } = useParams()
@@ -97,6 +101,8 @@ function DocumentDetailPage() {
 
   const comments = [...(doc.comments ?? []), ...localComments]
   const overallComments = comments.filter((c) => c.sectionId === OVERALL_SECTION_ID)
+  // AI 자동 채점(챌린지 제출작). 특수 코멘트는 섹션/총평 목록에서 제외하고 별도 패널로 보여준다.
+  const scoreComment = comments.find((c) => c.sectionId === SCORE_SECTION_ID)
 
   // 수정 가능 여부: 회원 본인 문서, 또는 비밀번호가 걸린 비회원 문서(모달로 해제).
   const isOwner = auth.isLoggedIn && doc.authorId && doc.authorId === auth.user?.id
@@ -145,7 +151,11 @@ function DocumentDetailPage() {
         title: doc.title,
         gameTag: doc.gameTag,
         templateName: template?.name,
+        kind: template?.kind ?? 'reverse',
         guides,
+        // 같은 장르 관점 + 같은 채점 기준으로 재요청해야 결과가 일관된다.
+        genreLens: template?.kind === 'forward' ? undefined : lensOfGame(doc.gameTag),
+        criteria: doc.challengeId ? getChallenge(doc.challengeId)?.criteria : undefined,
       })
       const refreshed = await getPublishedDocument(doc.id)
       setDbDoc(refreshed)
@@ -203,15 +213,25 @@ function DocumentDetailPage() {
           <TagBadge>{doc.gameTag}</TagBadge>
           <TagBadge>{doc.jobTag}</TagBadge>
           <TagBadge>{doc.systemTag}</TagBadge>
-          {doc.isExample && <TagBadge tone="gold">AI 예시</TagBadge>}
+          {doc.isExample && (
+            <TagBadge tone="gold">
+              {doc.exampleSource === 'editorial' ? '예시' : 'AI 예시'}
+            </TagBadge>
+          )}
           {doc.feedbackWanted && <TagBadge tone="gold">피드백 요청 중</TagBadge>}
         </div>
-        {doc.isExample && (
-          <p className="rs-example-notice">
-            AI가 작성한 <strong>학습용 참고 예시</strong>입니다. 구조와 서술 방식을 참고하는
-            용도이며, 수치는 추정치라 실제 게임과 다를 수 있어요.
-          </p>
-        )}
+        {doc.isExample &&
+          (doc.exampleSource === 'editorial' ? (
+            <p className="rs-example-notice">
+              respec이 직접 작성한 <strong>학습용 참고 예시</strong>입니다. 정답이 아니라 한 가지
+              접근이며, 형식과 분량을 가늠하는 용도로 보세요.
+            </p>
+          ) : (
+            <p className="rs-example-notice">
+              AI가 작성한 <strong>학습용 참고 예시</strong>입니다. 구조와 서술 방식을 참고하는
+              용도이며, 수치는 추정치라 실제 게임과 다를 수 있어요.
+            </p>
+          ))}
         <div className="rs-doc-actions">
           <button
             type="button"
@@ -238,6 +258,25 @@ function DocumentDetailPage() {
           )}
         </div>
       </header>
+
+      {(doc.aiScore != null || scoreComment) && (
+        <section className="rs-panel rs-score">
+          <div className="rs-score-head">
+            <h2 className="rs-overall-title">AI 채점</h2>
+            {doc.aiScore != null && (
+              <span className="rs-score-total">
+                {doc.aiScore}
+                <span className="rs-score-max">/100</span>
+              </span>
+            )}
+          </div>
+          {scoreComment && <p className="rs-score-detail">{scoreComment.content}</p>}
+          <p className="rs-overall-hint">
+            챌린지 채점 기준에 따른 AI 참고 점수예요 — 절대 평가가 아니라 개선 방향을 위한
+            신호입니다.
+          </p>
+        </section>
+      )}
 
       {overallComments.length > 0 && (
         <section className="rs-panel rs-overall">
