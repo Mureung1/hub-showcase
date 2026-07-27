@@ -20,17 +20,26 @@ export default function FunctionalGroupCard({ example }: { example: FunctionalGr
       </div>
 
       {revealed ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {example.highlights.map((h) => (
-            <span
-              key={h.classNumber}
-              className="rounded-full border px-2.5 py-1 text-xs font-medium"
-              style={{ borderColor: h.color, color: h.color }}
-            >
-              {h.label}
-            </span>
-          ))}
-        </div>
+        <>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {example.highlights.map((h) => (
+              <span
+                key={h.classNumber}
+                className="rounded-full border px-2.5 py-1 text-xs font-medium"
+                style={{ borderColor: h.color, color: h.color }}
+              >
+                {h.label}
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setRevealed(false)}
+            className="mt-3 w-full rounded-lg border border-zinc-700 py-1.5 text-xs font-medium text-zinc-300 hover:border-cyan-400 hover:text-cyan-300"
+          >
+            다시 가리기
+          </button>
+        </>
       ) : (
         <button
           type="button"

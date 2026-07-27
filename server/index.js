@@ -5,10 +5,17 @@ import cors from 'cors'
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const PORT = process.env.PORT || 3001
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN
 
 const app = express()
-app.use(cors())
+// FRONTEND_ORIGIN이 설정되면 그 배포 도메인만 허용, 없으면(로컬 개발) 전체 허용
+app.use(cors(FRONTEND_ORIGIN ? { origin: FRONTEND_ORIGIN } : undefined))
 app.use(express.json())
+
+// 배포 플랫폼(Render 등)의 헬스체크용 — 서버가 떠 있는지만 확인, 인증 불필요
+app.get('/', (_req, res) => {
+  res.json({ status: 'ok' })
+})
 
 app.post('/api/ask', async (req, res) => {
   const { question, context } = req.body ?? {}
