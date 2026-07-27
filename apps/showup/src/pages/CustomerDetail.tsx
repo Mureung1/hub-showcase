@@ -61,14 +61,14 @@ const CustomerDetail = () => {
         id: res.id,
         date: res.date,
         type: `예약 ${res.status}`,
-        icon: '📅',
+        icon: 'calendar',
         memo: res.memo,
       })),
       ...incidentsData.map((inc) => ({
         id: `${inc.type}-${toDateString(inc.occurredAt)}`,
         date: toDateString(inc.occurredAt),
         type: getIncidentTypeLabel(inc.type),
-        icon: '⚠️',
+        icon: 'warning',
         memo: inc.memo,
       })),
     ]
@@ -221,7 +221,13 @@ const CustomerDetail = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{event.icon}</span>
+                    <span className="text-gray-400">
+                      {event.icon === 'warning' ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3l9 16H3L12 3z" /></svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      )}
+                    </span>
                     <span className="font-medium text-gray-900">{event.type}</span>
                   </div>
                   {event.memo && (
@@ -240,13 +246,19 @@ const CustomerDetail = () => {
           onClick={() => handleStatusChange('visited')}
           className="bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
         >
-          방문 ✅
+          <span className="inline-flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            방문
+          </span>
         </button>
         <button
           onClick={() => handleStatusChange('noShow')}
           className="bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
         >
-          노쇼 ❌
+          <span className="inline-flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            노쇼
+          </span>
         </button>
         <button
           onClick={() => handleStatusChange('cancelled')}

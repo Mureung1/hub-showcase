@@ -234,13 +234,19 @@ const Reservations = () => {
                       onClick={() => handleStatusChange(res.id, res.customerId, 'visited')}
                       className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                     >
-                      방문 ✅
+                      <span className="inline-flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        방문
+                      </span>
                     </button>
                     <button
                       onClick={() => handleStatusChange(res.id, res.customerId, 'noShow')}
                       className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
                     >
-                      노쇼 ❌
+                      <span className="inline-flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        노쇼
+                      </span>
                     </button>
                     <button
                       onClick={() => handleStatusChange(res.id, res.customerId, 'cancelled')}

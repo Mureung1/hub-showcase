@@ -305,8 +305,8 @@
 - [ ] README 최종 갱신
 
 ### 프론트엔드
-- [ ] 발표 전 최종 UI polish
-- [ ] 데모 시나리오 화면 점검
+- [✅] 발표 전 최종 UI polish — 이모지 전면 제거 (Reservations.tsx, CustomerDetail.tsx, IncidentModal.tsx, AppLayout.tsx), SVG line icons로 교체
+- [✅] 데모 시나리오 화면 점검 — 랜딩/로그인/회원가입 페이지 콘솔 에러 0건, 정상 렌더링 확인
 
 ### 백엔드
 - [✅] 데모 데이터 최종 확인 — 시드 무결성 검증, 오늘(7/27) 예약 3건/내일(7/28) 1건 추가, upload.ts incidentCustomerIds 불일치 버그 수정
