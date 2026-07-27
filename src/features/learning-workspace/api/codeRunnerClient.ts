@@ -29,7 +29,7 @@ export async function executeCode(
   language: CodeRunLanguage,
   options: ExecuteCodeOptions = {},
 ): Promise<CodeRunResult> {
-  const response = await (options.fetchImpl ?? fetch)(codeRunEndpoint, {
+  const response = await (options.fetchImpl ?? fetch)(apiUrl(codeRunEndpoint), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code, language, css: options.css ?? '' }),
@@ -42,3 +42,4 @@ export async function executeCode(
 
   return (await response.json()) as CodeRunResult
 }
+import { apiUrl } from '../../../app/apiUrl'

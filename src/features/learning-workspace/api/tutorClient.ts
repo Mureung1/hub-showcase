@@ -29,12 +29,15 @@ export async function askTutor(
   fetchImpl: typeof fetch = fetch,
   options: AskTutorOptions = {},
 ): Promise<AskTutorResponse> {
-  const response = await fetchImpl(tutorAskEndpoint, {
+  const requestInit: RequestInit = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
-    signal: options.signal,
-  })
+  }
+
+  if (options.signal) requestInit.signal = options.signal
+
+  const response = await fetchImpl(apiUrl(tutorAskEndpoint), requestInit)
 
   if (!response.ok) {
     throw new Error(`튜터 질문 요청에 실패했습니다. (${response.status})`)
@@ -42,3 +45,4 @@ export async function askTutor(
 
   return (await response.json()) as AskTutorResponse
 }
+import { apiUrl } from '../../../app/apiUrl'

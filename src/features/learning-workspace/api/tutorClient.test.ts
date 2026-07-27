@@ -1,8 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { askTutor } from './tutorClient'
 
 describe('tutorClient', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('sends the question, code, mission context, and history', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8787')
     const fetchImpl = vi.fn(async () => ({
       ok: true,
       json: async () => ({ answer: 'useState는 상태 훅입니다.' }),
@@ -21,7 +24,7 @@ describe('tutorClient', () => {
     )
 
     expect(result).toEqual({ answer: 'useState는 상태 훅입니다.' })
-    expect(fetchImpl).toHaveBeenCalledWith('/api/tutor/ask', {
+    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8787/api/tutor/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

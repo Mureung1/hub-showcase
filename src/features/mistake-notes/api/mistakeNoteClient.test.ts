@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createMistakeNote,
   deleteMistakeNote,
@@ -17,12 +17,15 @@ const input = {
 }
 
 describe('mistakeNoteClient', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('creates a mistake note through the server API', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8787')
     const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ note: { ...input, id: 'n1', status: 'open' } }) })) as unknown as typeof fetch
 
     await createMistakeNote(input, fetchImpl)
 
-    expect(fetchImpl).toHaveBeenCalledWith('/api/mistake-notes', {
+    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8787/api/mistake-notes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),

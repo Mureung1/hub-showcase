@@ -1,3 +1,4 @@
+import { apiUrl } from '../../../app/apiUrl'
 import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../model/curriculumGenerator'
 import type { GeneratedCurriculumSnapshot } from '../model/useGeneratedCurriculumStore'
 
@@ -27,7 +28,7 @@ export function resolveCurriculumRecommendationMode(value?: string): CurriculumR
     ? import.meta.env.VITE_CURRICULUM_RECOMMENDATION_MODE ?? import.meta.env.VITE_ICU_API_MODE
     : value
 
-  return modeValue === 'server' ? 'server' : 'mock'
+  return modeValue === 'mock' ? 'mock' : 'server'
 }
 
 export function createFallbackCurriculumPlan(goal: string): GeneratedCurriculumPlan {
@@ -51,7 +52,7 @@ export async function getGeneratedCurriculum(
   options: CurriculumRecommendationOptions = {},
 ): Promise<{ generatedCurriculum: GeneratedCurriculumSnapshot | null }> {
   const fetchImpl = options.fetchImpl ?? fetch
-  const response = await fetchImpl(generatedCurriculumEndpoint)
+  const response = await fetchImpl(apiUrl(generatedCurriculumEndpoint))
 
   if (!response.ok) {
     throw new Error(`Failed to fetch generated curriculum (${response.status})`)
@@ -66,7 +67,7 @@ export async function getCurriculumHistory(
   options: CurriculumRecommendationOptions = {},
 ): Promise<{ curriculums: GeneratedCurriculumSnapshot[] }> {
   const fetchImpl = options.fetchImpl ?? fetch
-  const response = await fetchImpl(curriculumHistoryEndpoint)
+  const response = await fetchImpl(apiUrl(curriculumHistoryEndpoint))
 
   if (!response.ok) {
     throw new Error(`Failed to fetch curriculum history (${response.status})`)
@@ -82,7 +83,7 @@ export async function saveGeneratedCurriculumApi(
   options: CurriculumRecommendationOptions = {},
 ): Promise<{ generatedCurriculum: GeneratedCurriculumSnapshot }> {
   const fetchImpl = options.fetchImpl ?? fetch
-  const response = await fetchImpl(generatedCurriculumEndpoint, {
+  const response = await fetchImpl(apiUrl(generatedCurriculumEndpoint), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(snapshot),
@@ -106,7 +107,7 @@ export async function deleteCurriculumHistoryItemApi(
   options: CurriculumRecommendationOptions = {},
 ): Promise<{ ok: boolean }> {
   const fetchImpl = options.fetchImpl ?? fetch
-  const response = await fetchImpl(`/api/curriculum/generated/${encodeURIComponent(id)}`, {
+  const response = await fetchImpl(apiUrl(`/api/curriculum/generated/${encodeURIComponent(id)}`), {
     method: 'DELETE',
   })
 
@@ -121,7 +122,7 @@ export async function resetGeneratedCurriculumApi(
   options: CurriculumRecommendationOptions = {},
 ): Promise<{ ok: boolean }> {
   const fetchImpl = options.fetchImpl ?? fetch
-  const response = await fetchImpl(generatedCurriculumEndpoint, {
+  const response = await fetchImpl(apiUrl(generatedCurriculumEndpoint), {
     method: 'DELETE',
   })
 
@@ -136,7 +137,7 @@ async function requestServerCurriculumRecommendation(
   request: CurriculumRecommendationRequest,
   fetchImpl: typeof fetch,
 ): Promise<CurriculumRecommendationResponse> {
-  const response = await fetchImpl(curriculumRecommendationEndpoint, {
+  const response = await fetchImpl(apiUrl(curriculumRecommendationEndpoint), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),

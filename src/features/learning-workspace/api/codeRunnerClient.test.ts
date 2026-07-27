@@ -1,8 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { executeCode } from './codeRunnerClient'
 
 describe('codeRunnerClient', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('sends TSX, CSS, and an abort signal to the code runner', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8787')
     const controller = new AbortController()
     const fetchImpl = vi.fn(async () => ({
       ok: true,
@@ -15,7 +18,7 @@ describe('codeRunnerClient', () => {
       signal: controller.signal,
     })
 
-    expect(fetchImpl).toHaveBeenCalledWith('/api/code/run', {
+    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8787/api/code/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -1,3 +1,4 @@
+import { apiUrl } from '../../../app/apiUrl'
 import type { MistakeNote } from '../../mistake-notes/model/useMistakeNoteStore'
 
 export type GitLabAttemptResult = 'passed' | 'failed'
@@ -34,7 +35,7 @@ export async function recordGitLabAttempt(
   request: GitLabAttemptRequest,
   fetchImpl: typeof fetch = fetch,
 ): Promise<GitLabAttemptResponse> {
-  const response = await fetchImpl(gitLabAttemptsEndpoint, {
+  const response = await fetchImpl(apiUrl(gitLabAttemptsEndpoint), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
