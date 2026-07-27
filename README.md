@@ -126,6 +126,7 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 - [시스템 기능 명세](./docs/feature-spec.md)
 - [ERD](./docs/erd.md)
 - [데이터 흐름과 아키텍처](./docs/architecture.md)
+- [첫 배포 준비](./docs/deployment-prep.md)
 - [화면 흐름·IA·와이어프레임](./docs/ux-structure.md)
 - [디자인 시스템](./docs/design-system.md)
 - [개발 Task 및 백로그](./docs/tasks.md)
