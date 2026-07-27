@@ -28,10 +28,12 @@
 - [ ] 완료한 작업은 커밋하고 PR에 확인 결과를 남김
 
 ### 3. 첫 배포 준비하기
-- [ ] FE와 BE가 있는 폴더 위치를 확인함
-- [ ] 로컬에서 FE 빌드와 BE 실행이 되는지 확인함
-- [ ] 배포 환경에 옮겨야 할 환경변수 이름을 정리함
-- [ ] 비밀 키가 GitHub에 올라가지 않았는지 확인함
+- [x] FE와 BE가 있는 폴더 위치를 확인함 — FE는 저장소 루트(`package.json`, `src/`), BE는 `server/`(Express 본체) + `api/index.js`(Vercel 진입점, 이번 주는 안 씀) + `scripts/dev-server.js`(local/Render용 `app.listen()` 실행기)
+- [x] 로컬에서 FE 빌드와 BE 실행이 되는지 확인함 — `npm run build` 성공(`dist/` 생성), BE는 핵심 흐름 테스트 때 이미 확인. `scripts/dev-server.js`가 이미 `process.env.PORT || 3001`을 써서 "배포 환경이 제공하는 포트 사용" 요건은 충족돼 있음
+- [x] 배포 환경에 옮겨야 할 환경변수 이름을 정리함
+  - BE(Render): `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (`.env.local`에 이미 있는 4개)
+  - FE(Vercel): `VITE_API_BASE_URL` — 신규. FE가 `/api/...` 상대경로로 fetch하고 있어서 BE가 다른 도메인(Render)에 있으면 요청이 실패하는 문제를 발견, `src/utils/apiBaseUrl.js`를 만들고 fetch 4곳(`purchaseLinks.js`, `RecipeDetailPage.jsx` 2곳, `Home.jsx`)을 이 값 기준으로 바꿈. 값이 없으면(로컬) 기존처럼 상대경로 그대로 동작 — 로컬 `.env.local`은 안 건드려도 됨. 내일 배포 시 Render URL이 나오면 Vercel 환경변수에 등록 필요
+- [x] 비밀 키가 GitHub에 올라가지 않았는지 확인함 — `.env.local`이 `*.local` gitignore 규칙에 걸려있고 git 히스토리 전체에서 커밋된 적 없음 확인, `src/` 안에도 하드코딩 없음 확인
 - 배포 자체(Vercel/Render에 실제 올리기)는 내일부터 본격적으로 시도 예정 — 오늘은 준비만
 
 배포 사전 준비:
