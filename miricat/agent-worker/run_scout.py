@@ -43,10 +43,15 @@ def collect():
 
 
 def route_to_dict(route):
-    """DB의 콤마 문자열(lines/stops)을 analyze가 기대하는 리스트 형태로."""
+    """DB의 콤마 문자열(lines/stops/roads)을 analyze가 기대하는 리스트 형태로."""
     def tokens(s):
         return [t.strip() for t in (s or "").split(",") if t.strip()]
-    return {"name": route.get("name"), "lines": tokens(route.get("lines")), "stops": tokens(route.get("stops"))}
+    return {
+        "name": route.get("name"),
+        "lines": tokens(route.get("lines")),
+        "stops": tokens(route.get("stops")),
+        "roads": tokens(route.get("roads")),
+    }
 
 
 def judge_and_alert():

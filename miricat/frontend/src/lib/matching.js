@@ -50,22 +50,36 @@ export function isCurrent(period) {
   return end >= today;                      // 아직 안 끝났으면 유효(다가올 것 포함)
 }
 
-// 경로 lines/stops("B1, 급행2") → 토큰 배열
+// 경로 lines/stops/roads("B1, 급행2") → 토큰 배열 (표시·매칭 겸용)
 export function routeTokens(route) {
   if (!route) return [];
-  return [route.lines, route.stops]
+  return [route.lines, route.stops, route.roads]
     .filter(Boolean)
     .flatMap((s) => s.split(",").map((t) => t.trim()))
     .filter(Boolean);
 }
 
-// 이 공지가 내 경로와 겹치나 + 겹친 값들(강조용)
-export function matchNotice(notice, tokens) {
+// 경로의 도로명만 (3층 매칭용)
+export function roadTokens(route) {
+  if (!route?.roads) return [];
+  return route.roads.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
+// 이 공지가 내 경로와 겹치나 + 겹친 값들(강조용). analyst.py analyze와 미러.
+export function matchNotice(notice, route) {
+  const tokens = routeTokens(route);
+  const roads = roadTokens(route);
   const hits = new Set();
   for (const ev of notice.extraction?.events ?? []) {
     if (!isCurrent(ev.period)) continue;   // 끝난 사건은 매칭에서 뺀다
     for (const v of [...(ev.affected_lines || []), ...(ev.affected_stops || [])]) {
       for (const t of tokens) if (hit(v, t)) hits.add(v);
+    }
+    // 3층: 도로명 — 공지의 위치 문구에 내 경유 도로가 등장하는가 (자가용)
+    const hay = norm(`${ev.location || ""} ${ev.event_name || ""}`);
+    for (const r of roads) {
+      const nr = norm(r);
+      if (nr && hay.includes(nr)) hits.add(r);
     }
   }
   return hits; // 비었으면 영향 없음

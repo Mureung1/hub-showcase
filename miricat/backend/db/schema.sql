@@ -21,6 +21,7 @@ alter table routes add column if not exists dest_lng    double precision;
 alter table routes add column if not exists depart_time text;   -- 시간대 예: "08:00"
 alter table routes add column if not exists lines text;         -- 이용 노선(쉼표 구분) 예: "B1" — 공지 매칭용
 alter table routes add column if not exists stops text;         -- 경유 정류장(쉼표 구분) — 공지 매칭용
+alter table routes add column if not exists roads text;         -- 경유 도로명(쉼표 구분, 자가용) — 매칭 3층용
 
 -- ─────────────────────────────────────────────────────────────
 -- 2) route_candidates — 경로 후보 (선택 + 안 고른 대안). 등록 1 : N 후보.

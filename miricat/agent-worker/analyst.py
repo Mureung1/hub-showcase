@@ -1,8 +1,8 @@
 """Analyst — 제품의 '영향 판정' 로직 (MIRI-19, 결정론적 매칭).
 
 추출된 공지 사건(events)이 '내 경로'와 겹치는지 규칙으로 판정한다. LLM 아님.
-지금은 4단계 매칭의 1·2단계(노선·정류장 문자열 겹침)만. 도로명(3)·반경(4)은
-경로 좌표열(MIRI-9) 확보 후 확장 — Tier2(KBO·팝업 등) 대응 지점.
+4단계 매칭 중 1·2단계(노선·정류장 문자열 겹침) + 3단계(경유 도로명 ↔ 공지 위치 문구, 자가용).
+반경(4)은 경로 좌표열 확보 후 확장 — Tier2(KBO·팝업 등) 대응 지점.
 """
 
 import re 
@@ -56,17 +56,21 @@ def _is_current(period):
 
 
 def analyze(route, extraction):
-    """route={'lines':[...], 'stops':[...]}, extraction={'events':[...]} → 판정 dict.
+    """route={'lines':[...], 'stops':[...], 'roads':[...]}, extraction={'events':[...]} → 판정 dict.
 
-    반환: {'affected': bool, 'matched': [{'event_name', 'matched':[겹친 노선/정류장]}]}
+    반환: {'affected': bool, 'matched': [{'event_name', 'matched':[겹친 노선/정류장/도로]}]}
     """
     mine = [*(route.get("lines") or []), *(route.get("stops") or [])]
+    roads = route.get("roads") or []
     matched = []
     for ev in (extraction or {}).get("events", []):
         targets = [*(ev.get("affected_lines") or []), *(ev.get("affected_stops") or [])]
-        hits = sorted({v for v in targets for t in mine if _hit(v, t)})
+        hits = {v for v in targets for t in mine if _hit(v, t)}
+        # 3층: 도로명 — 공지의 위치 문구(location·사건명)에 내 경유 도로가 등장하는가 (자가용)
+        hay = _norm(f"{ev.get('location') or ''} {ev.get('event_name') or ''}")
+        hits |= {r for r in roads if _norm(r) and _norm(r) in hay}
         if hits and _is_current(ev.get("period")):
-            matched.append({"event_name": ev.get("event_name"), "matched": hits})
+            matched.append({"event_name": ev.get("event_name"), "matched": sorted(hits)})
     return {"affected": len(matched) > 0, "matched": matched}
 
 

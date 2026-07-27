@@ -100,6 +100,28 @@ h1 { font-size: 24px; letter-spacing: -0.02em; }
 .field input:focus { border-color: var(--route); background: #fff; }
 .field input::placeholder { color: #b9ab97; }
 
+/* ─────────── 이동수단 토글 ─────────── */
+.mode-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.mode-toggle button {
+  flex: 1;
+  padding: 9px 0;
+  font: 600 14px var(--font);
+  color: var(--slate);
+  background: var(--paper);
+  border: 1.5px solid var(--mist);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mode-toggle button.on {
+  color: var(--route);
+  background: var(--route-soft);
+  border-color: var(--route);
+}
+
 /* ─────────── 정류장 검색 (StationPicker) ─────────── */
 .btn-search {
   flex-shrink: 0;

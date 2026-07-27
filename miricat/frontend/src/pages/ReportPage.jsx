@@ -1,7 +1,7 @@
 import { api } from "../lib/api";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { SOURCE_LABEL, matchNotice, routeTokens, isCurrent } from "../lib/matching";
+import { SOURCE_LABEL, matchNotice, isCurrent } from "../lib/matching";
 import ReportMap from "../components/report/ReportMap";
 import AltVerdict from "../components/report/AltVerdict";
 import TraceList from "../components/report/TraceList";
@@ -61,9 +61,9 @@ export default function ReportPage() {
   const queryRoute = routes.find((r) => r.id === searchParams.get("route"));
   const currentRoute =
     queryRoute ??
-    routes.find((r) => matchNotice(notice, routeTokens(r)).size > 0) ??  // 링크 직진입: 영향받는 경로부터
+    routes.find((r) => matchNotice(notice, r).size > 0) ??  // 링크 직진입: 영향받는 경로부터
     routes[0] ?? null;
-  const hits = matchNotice(notice, routeTokens(currentRoute));
+  const hits = matchNotice(notice, currentRoute);
   const affected = hits.size > 0;
   const event = pickEvent(notice, hits);
   const ended = !!event && !isCurrent(event.period);   // 끝난 사건 → "영향 없음"의 이유가 다르다
@@ -71,7 +71,7 @@ export default function ReportPage() {
   // 간이 대안 재매칭: 다른 등록 경로 중 이 공지에 안 걸리는 첫 경로 (MIRI-25의 맛보기)
   const others = currentRoute ? routes.filter((r) => r.id !== currentRoute.id) : [];
   const altRoute = affected
-    ? others.find((r) => matchNotice(notice, routeTokens(r)).size === 0) ?? null
+    ? others.find((r) => matchNotice(notice, r).size === 0) ?? null
     : null;
 
   return (

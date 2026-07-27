@@ -24,14 +24,14 @@ app.get('/api/health', async (req, res) => {
 
 // 경로 등록 저장: 화면 입력을 routes 테이블에 insert.
 app.post('/api/routes', async (req, res) => {
-  const { origin_name, dest_name, depart_time, lines, stops } = req.body ?? {};
+  const { origin_name, dest_name, depart_time, lines, stops, roads } = req.body ?? {};
   if (!origin_name || !dest_name) {
     return res.status(400).json({ error: 'origin_name과 dest_name은 필수입니다.' });
   }
   const name = `${origin_name} → ${dest_name}`;
   const { data, error } = await supabase
     .from('routes')
-    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null, lines: lines ?? null, stops: stops ?? null })
+    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null, lines: lines ?? null, stops: stops ?? null, roads: roads ?? null })
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -121,12 +121,46 @@ app.get('/api/stations', async (req, res) => {
   res.json({ stations });
 });
 
-// 경로 후보 조회: 출발/도착 좌표 → 대중교통 후보 목록 (노선·정류장 = 이후 공지 매칭의 근거)
+// 경로 후보 조회: 출발/도착 좌표 → 후보 목록. mode=transit(기본, ODsay) / driving(NCP Directions).
+// 대중교통은 노선·정류장(매칭 1·2층), 자가용은 경유 도로명(매칭 3층)이 판정 근거가 된다.
 app.get('/api/route-candidates', async (req, res) => {
-  const { sx, sy, ex, ey } = req.query;
+  const { sx, sy, ex, ey, mode } = req.query;
   if (!sx || !sy || !ex || !ey) {
     return res.status(400).json({ error: '출발/도착 좌표(sx, sy, ex, ey)가 필요합니다.' });
   }
+
+  if (mode === 'driving') {
+    // NCP Directions — 최적(traoptimal)·빠른길(trafast) 두 옵션을 후보로
+    const url = `https://maps.apigw.ntruss.com/map-direction/v1/driving`
+      + `?start=${sx},${sy}&goal=${ex},${ey}&option=traoptimal:trafast`;
+    const r = await fetch(url, {
+      headers: {
+        'x-ncp-apigw-api-key-id': process.env.NAVER_MAP_CLIENT_ID,
+        'x-ncp-apigw-api-key': process.env.NAVER_MAP_CLIENT_SECRET,
+      },
+    });
+    const data = await r.json();
+    if (data.code !== 0) return res.status(502).json({ error: data.message ?? 'Directions 오류' });
+    const seen = new Set();
+    const candidates = [];
+    for (const key of ['traoptimal', 'trafast']) {
+      for (const opt of data.route?.[key] ?? []) {
+        const roads = [...new Set((opt.section ?? []).map((s) => s.name).filter(Boolean))];
+        const sig = roads.join('|');
+        if (seen.has(sig)) continue;         // 두 옵션이 같은 길이면 하나만
+        seen.add(sig);
+        candidates.push({
+          mode: 'driving',
+          totalTime: Math.round((opt.summary?.duration ?? 0) / 60000),  // ms → 분
+          distanceKm: Math.round((opt.summary?.distance ?? 0) / 100) / 10,
+          roads,                             // 경유 도로명 (매칭 3층 재료)
+          lines: [], stops: [],
+        });
+      }
+    }
+    return res.json({ candidates });
+  }
+
   const url = `${ODSAY_BASE}/searchPubTransPathT?apiKey=${encodeURIComponent(process.env.ODSAY_API_KEY)}`
     + `&SX=${sx}&SY=${sy}&EX=${ex}&EY=${ey}`;
   const r = await fetch(url);
@@ -149,6 +183,7 @@ app.get('/api/route-candidates', async (req, res) => {
       }                                                 // 3 = 도보 → 매칭에 안 쓰니 버림
     }
     return {
+      mode: 'transit',
       totalTime: p.info?.totalTime ?? null,             // 분
       transitCount: (p.info?.busTransitCount ?? 0) + (p.info?.subwayTransitCount ?? 0),
       stationCount: p.info?.busStationCount ?? null,

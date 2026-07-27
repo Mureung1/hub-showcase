@@ -112,7 +112,7 @@ export default function NoticesPanel({ routes = [] }) {
   const tokens = routeTokens(selected);
 
   // 선택 경로 기준으로 각 공지에 매칭 결과를 붙이고 경보/확인함으로 가른다
-  const withHits = notices.map((n) => ({ n, hits: matchNotice(n, tokens) }));
+  const withHits = notices.map((n) => ({ n, hits: matchNotice(n, selected) }));
   const alerts = withHits.filter((x) => x.hits.size > 0);
   const clears = withHits.filter((x) => x.hits.size === 0);
 
