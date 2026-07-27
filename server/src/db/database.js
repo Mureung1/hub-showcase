@@ -28,7 +28,7 @@ db.exec(`
     grading INTEGER NOT NULL DEFAULT 4,
     study_amount INTEGER NOT NULL DEFAULT 4,
     available_time INTEGER NOT NULL DEFAULT 4,
-    credits REAL NOT NULL DEFAULT 3,
+    credits REAL,
     previous_score INTEGER,
     completed_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -49,7 +49,7 @@ for (const [name, ddl] of [
   ["grading", "grading INTEGER NOT NULL DEFAULT 4"],
   ["study_amount", "study_amount INTEGER NOT NULL DEFAULT 4"],
   ["available_time", "available_time INTEGER NOT NULL DEFAULT 4"],
-  ["credits", "credits REAL NOT NULL DEFAULT 3"],
+  ["credits", "credits REAL"],
   // 이전 시험 점수는 선택 입력이라 기본값 없이 NULL 을 허용한다("해당 없음"과 구분).
   ["previous_score", "previous_score INTEGER"],
   // 완료 처리 시각. NULL 이면 활성, 값이 있으면 완료(과목 완료 체크·히스토리 기능).
@@ -130,6 +130,44 @@ if (currentVersion() < GRADE_WEIGHT_NULLABLE_VERSION) {
     DROP TABLE subjects;
     ALTER TABLE subjects_migrated RENAME TO subjects;
     PRAGMA user_version = ${GRADE_WEIGHT_NULLABLE_VERSION};
+    COMMIT;
+  `);
+}
+
+// credits 도 NULL 을 허용한다.
+// 학점이 점수를 곱하는 배수였을 때는 3(=1배)이 진짜 중립이라 기본값으로 채워도 괜찮았다.
+// 이제는 학점도 가중 평균에 들어가는 요인이라, 안 답한 값을 3으로 채우면
+// 사용자가 하지 않은 대답이 점수에 섞인다.
+const CREDITS_NULLABLE_VERSION = 3;
+
+if (currentVersion() < CREDITS_NULLABLE_VERSION) {
+  db.exec(`
+    BEGIN;
+    CREATE TABLE subjects_migrated (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      exam_date TEXT NOT NULL,
+      understanding INTEGER NOT NULL,
+      difficulty INTEGER NOT NULL,
+      grade_weight INTEGER,
+      grading INTEGER NOT NULL DEFAULT 4,
+      study_amount INTEGER NOT NULL DEFAULT 4,
+      available_time INTEGER NOT NULL DEFAULT 4,
+      credits REAL,
+      previous_score INTEGER,
+      completed_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO subjects_migrated
+      (id, name, exam_date, understanding, difficulty, grade_weight, grading,
+       study_amount, available_time, credits, previous_score, completed_at, created_at)
+    SELECT
+      id, name, exam_date, understanding, difficulty, grade_weight, grading,
+      study_amount, available_time, credits, previous_score, completed_at, created_at
+    FROM subjects;
+    DROP TABLE subjects;
+    ALTER TABLE subjects_migrated RENAME TO subjects;
+    PRAGMA user_version = ${CREDITS_NULLABLE_VERSION};
     COMMIT;
   `);
 }

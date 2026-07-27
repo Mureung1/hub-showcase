@@ -544,6 +544,13 @@
   gap: var(--space-md);
 }
 
+/* 이미 치른 시험. 점수로는 아래로 내려가지만, 보고 바로 알아볼 수 있게 한 단계 죽인다.
+   글자는 그대로 읽혀야 하므로 배경만 바꾸고 색은 건드리지 않는다. */
+.subject-item.is-past {
+  background-color: var(--color-background);
+  border-style: dashed;
+}
+
 .subject-rank {
   flex-shrink: 0;
   width: 28px;
@@ -699,6 +706,11 @@
 /* 2.57:1 -> 4.16:1 */
 .breakdown-fill-availableTime {
   background-color: #c4517d;
+}
+
+/* 학점. 기존 8색과 색조가 겹치지 않고 트랙 대비 4.76:1 이다. */
+.breakdown-fill-credits {
+  background-color: #0f7b8a;
 }
 
 .breakdown-fill-previousScore {

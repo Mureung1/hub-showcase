@@ -1,10 +1,10 @@
 // 우선순위 성향 프리셋. 클라이언트의 priorityCalculator.js와 값을 맞춘다.
 // 각 가중치의 합은 1.0 이다.
 export const WEIGHT_PRESETS = {
-  balanced: { understanding: 0.18, difficulty: 0.13, urgency: 0.18, gradeWeight: 0.13, grading: 0.08, studyAmount: 0.09, availableTime: 0.09, previousScore: 0.12 },
-  difficulty: { understanding: 0.18, difficulty: 0.22, urgency: 0.09, gradeWeight: 0.13, grading: 0.09, studyAmount: 0.09, availableTime: 0.09, previousScore: 0.11 },
-  urgency: { understanding: 0.13, difficulty: 0.09, urgency: 0.31, gradeWeight: 0.13, grading: 0.05, studyAmount: 0.09, availableTime: 0.09, previousScore: 0.11 },
-  grade: { understanding: 0.09, difficulty: 0.09, urgency: 0.13, gradeWeight: 0.27, grading: 0.13, studyAmount: 0.09, availableTime: 0.09, previousScore: 0.11 },
+  balanced: { understanding: 0.16, difficulty: 0.12, urgency: 0.16, gradeWeight: 0.12, grading: 0.07, studyAmount: 0.08, availableTime: 0.08, previousScore: 0.11, credits: 0.1 },
+  difficulty: { understanding: 0.17, difficulty: 0.2, urgency: 0.08, gradeWeight: 0.12, grading: 0.08, studyAmount: 0.08, availableTime: 0.08, previousScore: 0.11, credits: 0.08 },
+  urgency: { understanding: 0.12, difficulty: 0.08, urgency: 0.28, gradeWeight: 0.12, grading: 0.05, studyAmount: 0.08, availableTime: 0.08, previousScore: 0.11, credits: 0.08 },
+  grade: { understanding: 0.08, difficulty: 0.08, urgency: 0.11, gradeWeight: 0.22, grading: 0.11, studyAmount: 0.08, availableTime: 0.08, previousScore: 0.08, credits: 0.16 },
 };
 
 export const DEFAULT_WEIGHT_KEY = "balanced";
@@ -49,14 +49,20 @@ const FACTOR_KEYS = [
   "studyAmount",
   "availableTime",
   "previousScore",
+  "credits",
 ];
 
-// 중요도(과목 학점 수) 배수. 3학점을 기준(1배)으로 한다. (클라이언트와 값을 맞춘다.)
-const REFERENCE_CREDITS = 3;
+// 학점은 배수가 아니라 다른 요인과 같은 0~100 점수다.
+// 1학점을 0, 6학점을 100 으로 본다. (클라이언트 priorityCalculator.js 와 값을 맞춘다.)
+const MIN_CREDITS = 1;
+const MAX_CREDITS = 6;
 
-function creditMultiplier(credits) {
-  const c = typeof credits === "number" && credits > 0 ? credits : REFERENCE_CREDITS;
-  return c / REFERENCE_CREDITS;
+function creditsScore(credits) {
+  if (typeof credits !== "number" || !Number.isFinite(credits) || credits <= 0) {
+    return null;
+  }
+  const ratio = (credits - MIN_CREDITS) / (MAX_CREDITS - MIN_CREDITS);
+  return Math.max(0, Math.min(100, ratio * 100));
 }
 
 export function getDaysUntil(examDate, today = new Date()) {
@@ -77,11 +83,16 @@ function calculateUrgencyScore(daysUntil) {
     return null;
   }
 
+  // 이미 치른 시험은 급하지 않다. (클라이언트 priorityCalculator.js 와 규칙을 맞춘다.)
+  if (daysUntil < 0) {
+    return 0;
+  }
+
   if (daysUntil >= URGENCY_HORIZON) {
     return 0;
   }
 
-  if (daysUntil <= 0) {
+  if (daysUntil === 0) {
     return 100;
   }
 
@@ -101,6 +112,7 @@ export function calculatePriorityScore(
     studyAmount,
     availableTime,
     previousScore,
+    credits,
   },
   weights
 ) {
@@ -123,6 +135,7 @@ export function calculatePriorityScore(
       typeof previousScore === "number"
         ? 100 - Math.max(0, Math.min(100, previousScore))
         : null,
+    credits: creditsScore(credits),
   };
 
   let weightedSum = 0;
@@ -149,8 +162,10 @@ export function calculatePriorityScore(
 export function scoreSubjects(subjects, weightKey) {
   const weights = WEIGHT_PRESETS[weightKey] || WEIGHT_PRESETS[DEFAULT_WEIGHT_KEY];
 
-  return subjects.map((subject) => {
-    const base = calculatePriorityScore(
+  return subjects.map((subject) => ({
+    ...subject,
+    // 학점도 요인 중 하나라 점수 안에 이미 들어 있다. 따로 곱하지 않는다.
+    priorityScore: calculatePriorityScore(
       {
         understanding: subject.understanding,
         difficulty: subject.difficulty,
@@ -160,14 +175,9 @@ export function scoreSubjects(subjects, weightKey) {
         studyAmount: subject.studyAmount,
         availableTime: subject.availableTime,
         previousScore: subject.previousScore,
+        credits: subject.credits,
       },
       weights
-    );
-
-    return {
-      ...subject,
-      // 기본 점수에 중요도(학점) 배수를 곱해 최종 점수를 낸다.
-      priorityScore: Math.round(base * creditMultiplier(subject.credits)),
-    };
-  });
+    ),
+  }));
 }

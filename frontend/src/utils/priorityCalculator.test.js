@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   calculatePriorityScore,
-  creditMultiplier,
   getScoreBreakdown,
+  FACTOR_KEYS,
   WEIGHT_PRESETS,
 } from "./priorityCalculator.js";
 
@@ -63,25 +63,65 @@ test("getScoreBreakdown: 확보 가능한 공부 시간은 적을수록 높은 �
   assert.equal(getScoreBreakdown({ availableTime: 7, daysUntil: 40 }).availableTime, 0);
 });
 
-// 중요도(학점) 배수: 3학점 기준 1배, 학점이 높을수록 커진다.
-test("creditMultiplier: 3학점 기준 1배, 6학점 2배, 7.5학점 2.5배", () => {
-  assert.equal(creditMultiplier(3), 1);
-  assert.equal(creditMultiplier(6), 2);
-  assert.equal(creditMultiplier(7.5), 2.5);
+// ── 학점은 배수가 아니라 다른 요인과 같은 0~100 점수다 ──
+// 예전에는 최종 점수에 credits/3 을 곱했다. 6학점이면 2배라 180점 같은 값이 나왔고,
+// 0~100 을 전제로 한 배지 경계와 "N점" 표시가 무의미해졌다.
+
+test("getScoreBreakdown: 학점이 높을수록 높은 점수", () => {
+  assert.equal(getScoreBreakdown({ credits: 1, daysUntil: 40 }).credits, 0);
+  assert.equal(getScoreBreakdown({ credits: 3, daysUntil: 40 }).credits, 40);
+  assert.equal(getScoreBreakdown({ credits: 6, daysUntil: 40 }).credits, 100);
 });
 
-test("creditMultiplier: 값이 없거나 잘못되면 1배(기본 3학점)", () => {
-  assert.equal(creditMultiplier(undefined), 1);
-  assert.equal(creditMultiplier(0), 1);
-  assert.equal(creditMultiplier(-5), 1);
+// 6학점을 넘는 과목은 드물다. 그 위는 전부 최고점으로 본다.
+test("getScoreBreakdown: 6학점을 넘어도 100을 넘지 않는다", () => {
+  assert.equal(getScoreBreakdown({ credits: 7.5, daysUntil: 40 }).credits, 100);
+  assert.equal(getScoreBreakdown({ credits: 30, daysUntil: 40 }).credits, 100);
 });
 
-// 같은 기본 점수라도 학점이 높은 과목이 최종 점수가 더 높다. (사용자 예: 7.5학점 vs 5학점)
-test("최종 점수: 같은 기본 점수면 학점 높은 쪽이 더 높다", () => {
-  const base = 80;
-  const higher = Math.round(base * creditMultiplier(7.5));
-  const lower = Math.round(base * creditMultiplier(5));
-  assert.ok(higher > lower, `${higher} > ${lower}`);
+test("getScoreBreakdown: 학점을 안 넣으면 모름(null)", () => {
+  assert.equal(getScoreBreakdown({ daysUntil: 40 }).credits, null);
+  assert.equal(getScoreBreakdown({ credits: null, daysUntil: 40 }).credits, null);
+  assert.equal(getScoreBreakdown({ credits: 0, daysUntil: 40 }).credits, null);
+});
+
+// 학점이 높으면 우선순위가 올라가야 한다. (배수를 없앤 뒤에도 이 성질은 지킨다)
+test("calculatePriorityScore: 같은 조건이면 학점 높은 쪽이 더 높다", () => {
+  const base = { understanding: 4, daysUntil: 10 };
+  const high = calculatePriorityScore({ ...base, credits: 6 }, WEIGHT_PRESETS.balanced);
+  const low = calculatePriorityScore({ ...base, credits: 1 }, WEIGHT_PRESETS.balanced);
+  assert.ok(high > low, `${high} > ${low}`);
+});
+
+// 배수를 곱하던 시절에는 6학점 과목이 180점까지 갔다.
+test("calculatePriorityScore: 어떤 값을 넣어도 0~100 을 벗어나지 않는다", () => {
+  const allMax = {
+    understanding: 1,
+    difficulty: 7,
+    daysUntil: 0,
+    gradeWeight: 100,
+    grading: 7,
+    studyAmount: 7,
+    availableTime: 1,
+    previousScore: 0,
+    credits: 30,
+  };
+
+  for (const key of Object.keys(WEIGHT_PRESETS)) {
+    const score = calculatePriorityScore(allMax, WEIGHT_PRESETS[key]);
+    assert.ok(score >= 0 && score <= 100, `${key}: ${score}`);
+  }
+});
+
+test("WEIGHT_PRESETS: 모든 성향의 가중치 합이 1.0", () => {
+  for (const [key, weights] of Object.entries(WEIGHT_PRESETS)) {
+    const sum = FACTOR_KEYS.reduce((total, factor) => total + weights[factor], 0);
+    assert.ok(Math.abs(sum - 1) < 1e-9, `${key}: ${sum}`);
+  }
+});
+
+test("FACTOR_KEYS: 학점이 요인 목록에 들어 있다", () => {
+  assert.ok(FACTOR_KEYS.includes("credits"));
 });
 
 // 이전 시험 점수는 선택 입력이다. "안 봤다"는 "평균 봤다"가 아니므로 모름(null)으로 둔다.
@@ -176,6 +216,26 @@ test("calculatePriorityScore: 모름이 있어도 성향에 따라 점수가 달
   const grade = calculatePriorityScore(subject, WEIGHT_PRESETS.grade);
 
   assert.notEqual(urgent, grade);
+});
+
+// ── 시험이 지난 과목은 급하지 않다 ──
+// 예전에는 daysUntil <= 0 을 전부 100(가장 급함)으로 봤다. 그래서 한 달 전에 끝난
+// 시험이 계속 1순위로 떠 있었고, 사용자가 직접 지우지 않으면 목록을 차지했다.
+
+test("getScoreBreakdown: 시험 당일은 가장 급하다", () => {
+  assert.equal(getScoreBreakdown({ daysUntil: 0 }).urgency, 100);
+});
+
+test("getScoreBreakdown: 시험이 지났으면 급하지 않다", () => {
+  assert.equal(getScoreBreakdown({ daysUntil: -1 }).urgency, 0);
+  assert.equal(getScoreBreakdown({ daysUntil: -30 }).urgency, 0);
+});
+
+test("calculatePriorityScore: 지난 시험이 오늘 시험보다 우선순위가 낮다", () => {
+  const base = { understanding: 4 };
+  const today = calculatePriorityScore({ ...base, daysUntil: 0 }, WEIGHT_PRESETS.balanced);
+  const past = calculatePriorityScore({ ...base, daysUntil: -7 }, WEIGHT_PRESETS.balanced);
+  assert.ok(past < today, `${past} < ${today}`);
 });
 
 // ── 성적 반영 비율(gradeWeight)도 "모름"을 가진다 ──

@@ -31,8 +31,7 @@ const NEW_SUBJECT_DEFAULTS = {
   grading: UNKNOWN,
   studyAmount: UNKNOWN,
   availableTime: UNKNOWN,
-  // 학점 수는 점수를 곱하는 배수라 3학점(1배)이 중립이다. 안 물어봐도 순위를 왜곡하지 않는다.
-  credits: 3,
+  credits: null,
   gradeWeight: null,
   previousScore: null,
 };

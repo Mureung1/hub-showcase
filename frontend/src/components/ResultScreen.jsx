@@ -134,16 +134,25 @@ function ResultScreen({
           {rankedSubjects.map((subject, index) => {
             const isExpanded = expandedIds.has(subject.id);
             const isDetailOpen = detailIds.has(subject.id);
+            const daysUntil = getDaysUntil(subject.examDate);
+            // 이미 치른 시험은 급함이 0이라 아래로 내려가지만, 왜 내려갔는지도 보여준다.
+            const isPast = daysUntil !== null && daysUntil < 0;
 
             return (
-              <li key={subject.id} className="subject-item">
+              <li key={subject.id} className={`subject-item${isPast ? " is-past" : ""}`}>
                 <div className="subject-row">
                   <span className="subject-rank">{index + 1}</span>
                   <div className="subject-main">
                     <span className="subject-name">{subject.name}</span>
                     <span className="subject-meta">
-                      {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                      {formatScale(subject.understanding)}
+                      {isPast ? (
+                        <>시험이 지났어요 ({formatDday(daysUntil)})</>
+                      ) : (
+                        <>
+                          {formatDday(daysUntil)} · 이해도{" "}
+                          {formatScale(subject.understanding)}
+                        </>
+                      )}
                     </span>
                   </div>
                   <PriorityBadge priorityScore={subject.priorityScore} />

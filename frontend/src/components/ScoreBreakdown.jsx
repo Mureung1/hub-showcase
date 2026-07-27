@@ -10,6 +10,7 @@ const FACTORS = [
   { key: "studyAmount", label: "분량", modifier: "studyAmount" },
   { key: "availableTime", label: "시간", modifier: "availableTime" },
   { key: "previousScore", label: "이전", modifier: "previousScore" },
+  { key: "credits", label: "학점", modifier: "credits" },
 ];
 
 function ScoreBreakdown({ subject }) {
@@ -22,6 +23,7 @@ function ScoreBreakdown({ subject }) {
     studyAmount: subject.studyAmount,
     availableTime: subject.availableTime,
     previousScore: subject.previousScore,
+    credits: subject.credits,
   });
 
   return (

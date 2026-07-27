@@ -108,13 +108,12 @@ function SubjectDetailFields({ subject, onChange }) {
               min: 0.5,
               max: 30,
               integer: false,
-              // 학점은 배수라서 비워두면 3학점(1배)과 같다.
-              emptyValue: 3,
+              emptyValue: null,
               label: "학점 수",
             })
           }
         />
-        <p className="form-hint">높을수록 최종 점수가 더 크게 반영돼요. 비우면 3학점으로 봐요.</p>
+        <p className="form-hint">학점이 높을수록 우선순위가 올라가요. 비우면 계산에서 빠져요.</p>
       </div>
 
       <div className="form-group">

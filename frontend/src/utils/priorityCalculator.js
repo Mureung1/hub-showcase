@@ -4,50 +4,54 @@ export const WEIGHT_PRESETS = {
   balanced: {
     key: "balanced",
     label: "균형",
-    understanding: 0.18,
-    difficulty: 0.13,
-    urgency: 0.18,
-    gradeWeight: 0.13,
-    grading: 0.08,
-    studyAmount: 0.09,
-    availableTime: 0.09,
-    previousScore: 0.12,
+    understanding: 0.16,
+    difficulty: 0.12,
+    urgency: 0.16,
+    gradeWeight: 0.12,
+    grading: 0.07,
+    studyAmount: 0.08,
+    availableTime: 0.08,
+    previousScore: 0.11,
+    credits: 0.1,
   },
   difficulty: {
     key: "difficulty",
     label: "난이도 중시",
-    understanding: 0.18,
-    difficulty: 0.22,
-    urgency: 0.09,
-    gradeWeight: 0.13,
-    grading: 0.09,
-    studyAmount: 0.09,
-    availableTime: 0.09,
+    understanding: 0.17,
+    difficulty: 0.2,
+    urgency: 0.08,
+    gradeWeight: 0.12,
+    grading: 0.08,
+    studyAmount: 0.08,
+    availableTime: 0.08,
     previousScore: 0.11,
+    credits: 0.08,
   },
   urgency: {
     key: "urgency",
     label: "임박도 중시",
-    understanding: 0.13,
-    difficulty: 0.09,
-    urgency: 0.31,
-    gradeWeight: 0.13,
+    understanding: 0.12,
+    difficulty: 0.08,
+    urgency: 0.28,
+    gradeWeight: 0.12,
     grading: 0.05,
-    studyAmount: 0.09,
-    availableTime: 0.09,
+    studyAmount: 0.08,
+    availableTime: 0.08,
     previousScore: 0.11,
+    credits: 0.08,
   },
   grade: {
     key: "grade",
     label: "학점 전략",
-    understanding: 0.09,
-    difficulty: 0.09,
-    urgency: 0.13,
-    gradeWeight: 0.27,
-    grading: 0.13,
-    studyAmount: 0.09,
-    availableTime: 0.09,
-    previousScore: 0.11,
+    understanding: 0.08,
+    difficulty: 0.08,
+    urgency: 0.11,
+    gradeWeight: 0.22,
+    grading: 0.11,
+    studyAmount: 0.08,
+    availableTime: 0.08,
+    previousScore: 0.08,
+    credits: 0.16,
   },
 };
 
@@ -64,13 +68,19 @@ function ascendingScore(value) {
   return ((value - 1) / (SCALE_MAX - 1)) * 100;
 }
 
-// 중요도(과목 학점 수) 배수. 3학점을 기준(1배)으로, 학점이 높을수록 최종 점수를 키운다.
-// 예: 6학점 -> 2배, 7.5학점 -> 2.5배. 같은 기본 점수라도 학점이 높은 과목이 더 높게 나온다.
-export const REFERENCE_CREDITS = 3;
+// 학점은 다른 요인과 똑같이 0~100 점수로 환산한다.
+// 예전에는 최종 점수에 credits/3 을 곱했는데, 6학점이면 2배라 180점 같은 값이 나왔다.
+// 0~100 을 전제로 한 배지 경계와 "N점" 표시가 그때 의미를 잃었다.
+// 1학점을 0, 6학점을 100 으로 본다. 6학점을 넘는 과목은 드물어 전부 최고점으로 둔다.
+const MIN_CREDITS = 1;
+const MAX_CREDITS = 6;
 
-export function creditMultiplier(credits) {
-  const c = typeof credits === "number" && credits > 0 ? credits : REFERENCE_CREDITS;
-  return c / REFERENCE_CREDITS;
+function creditsScore(credits) {
+  if (typeof credits !== "number" || !Number.isFinite(credits) || credits <= 0) {
+    return null;
+  }
+  const ratio = (credits - MIN_CREDITS) / (MAX_CREDITS - MIN_CREDITS);
+  return Math.max(0, Math.min(100, ratio * 100));
 }
 
 // "모르겠다"(0)와 미입력·범위 밖 값은 척도 위의 값이 아니라 "정보가 없다"는 뜻이다.
@@ -89,6 +99,7 @@ export const FACTOR_KEYS = [
   "studyAmount",
   "availableTime",
   "previousScore",
+  "credits",
 ];
 
 // 1~7 값이 클수록 높은 점수. 모름이면 null 을 그대로 넘긴다.
@@ -113,6 +124,7 @@ export function getScoreBreakdown({
   studyAmount,
   availableTime,
   previousScore,
+  credits,
 }) {
   return {
     // 이해도가 낮을수록 먼저 공부해야 하므로 점수를 높인다. (1 -> 100, 7 -> 0)
@@ -140,6 +152,8 @@ export function getScoreBreakdown({
       typeof previousScore === "number"
         ? 100 - Math.max(0, Math.min(100, previousScore))
         : null,
+    // 학점이 높은 과목일수록 성적에 미치는 영향이 커서 우선순위를 높인다.
+    credits: creditsScore(credits),
   };
 }
 
@@ -175,11 +189,17 @@ function calculateUrgencyScore(daysUntil) {
     return null;
   }
 
+  // 이미 치른 시험은 급하지 않다. 지난 시험을 계속 가장 급한 것으로 두면
+  // 사용자가 직접 지우기 전까지 끝난 과목이 1순위를 차지한다.
+  if (daysUntil < 0) {
+    return 0;
+  }
+
   if (daysUntil >= URGENCY_HORIZON) {
     return 0;
   }
 
-  if (daysUntil <= 0) {
+  if (daysUntil === 0) {
     return 100;
   }
 

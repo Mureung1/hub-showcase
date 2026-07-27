@@ -20,8 +20,7 @@ const SCORE_FIELDS = [
 const SCORE_FIELD_DEFAULT = 0;
 const SCORE_MAX = 7;
 
-// 중요도(과목 학점 수)는 양의 실수(예: 3, 5, 7.5)이고, 값이 없으면 기본값 3 으로 채운다.
-const CREDITS_DEFAULT = 3;
+// 중요도(과목 학점 수)는 양의 실수(예: 3, 5, 7.5)다. 값이 없으면 모름(NULL)으로 둔다.
 
 // 저장 전에 입력값을 검사한다. 잘못된 값이면 이유 문자열을, 문제없으면 null 을 돌려준다.
 function validateSubjectInput(body) {
@@ -56,7 +55,8 @@ function validateSubjectInput(body) {
     }
   }
 
-  if (credits !== undefined) {
+  // 학점도 선택 입력이다. null 은 "모름"이라 허용하고, 값이 있으면 0보다 큰 수.
+  if (credits !== undefined && credits !== null) {
     if (typeof credits !== "number" || !Number.isFinite(credits) || credits <= 0 || credits > 30) {
       return "중요도(credits)는 0보다 큰 학점 수여야 합니다.";
     }
@@ -78,8 +78,8 @@ function normalize(body) {
     examDate: body.examDate,
     // 안 보냈으면 "모름"(null)이다. 40 으로 채우면 답한 적 없는 값이 점수에 섞인다.
     gradeWeight: body.gradeWeight ?? null,
-    // 학점 수만은 점수를 곱하는 배수라 3학점(1배)이 진짜 중립이다.
-    credits: body.credits ?? CREDITS_DEFAULT,
+    // 학점도 이제 가중 평균에 들어가는 요인이라, 안 보냈으면 모름(null)이다.
+    credits: body.credits ?? null,
     // 선택 입력. 값이 없으면 "해당 없음"을 뜻하는 null 그대로 저장한다.
     previousScore: body.previousScore ?? null,
   };
