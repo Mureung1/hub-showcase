@@ -1,0 +1,10 @@
+<!doctype html>
+<html>
+  <body onload="globalThis.__importExecuted = true">
+    <script>globalThis.__importExecuted = true; fetch('https://example.net/script')</script>
+    <iframe src="https://example.net/frame"></iframe>
+    <img src="https://example.net/pixel" onerror="globalThis.__importExecuted = true">
+    <a href="https://example.com/safe">안전한 링크</a>
+    일반 문장 https://example.org/plain
+  </body>
+</html>

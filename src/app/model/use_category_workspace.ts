@@ -34,32 +34,45 @@ export function useCategoryWorkspace({
   const [isMutating, setIsMutating] = useState(false);
   const workspaceStateRef = useRef(workspaceState);
   const mutationInFlightRef = useRef(false);
+  const loadRevisionRef = useRef(0);
+  const mountedRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
-    const loadingState = createLoadingState(repository);
+  const reloadCategories = useCallback(async () => {
+    const revision = ++loadRevisionRef.current;
+    const currentState = workspaceStateRef.current;
+    const loadingState =
+      currentState.repository === repository
+        ? { ...currentState, status: 'loading' as const }
+        : createLoadingState(repository);
 
     workspaceStateRef.current = loadingState;
+    setWorkspaceState(loadingState);
 
-    void loadCategories(repository).then((loadResult) => {
-      if (!active) {
-        return;
-      }
+    const loadResult = await loadCategories(repository);
 
-      const readyState: CategoryWorkspaceState = {
-        categories: loadResult.categories,
-        loadWarnings: loadResult.warnings,
-        repository,
-        status: 'ready',
-      };
-      workspaceStateRef.current = readyState;
-      setWorkspaceState(readyState);
-    });
+    if (!mountedRef.current || loadRevisionRef.current !== revision) {
+      return;
+    }
+
+    const readyState: CategoryWorkspaceState = {
+      categories: loadResult.categories,
+      loadWarnings: loadResult.warnings,
+      repository,
+      status: 'ready',
+    };
+    workspaceStateRef.current = readyState;
+    setWorkspaceState(readyState);
+  }, [repository]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void reloadCategories();
 
     return () => {
-      active = false;
+      mountedRef.current = false;
+      loadRevisionRef.current += 1;
     };
-  }, [repository]);
+  }, [reloadCategories]);
 
   const runMutation = useCallback(
     async <T>(command: () => Promise<T>, failure: T): Promise<T> => {
@@ -225,6 +238,7 @@ export function useCategoryWorkspace({
     isLoading: !isCurrentRepository || workspaceState.status === 'loading',
     isMutating,
     loadWarnings: isCurrentRepository ? workspaceState.loadWarnings : [],
+    reloadCategories,
     updateCategory,
   };
 }

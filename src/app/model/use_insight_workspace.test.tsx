@@ -394,6 +394,50 @@ describe('useInsightWorkspace', () => {
     ]);
   });
 
+  it('재조회는 가장 늦게 시작한 요청 결과만 반영한다', async () => {
+    const firstReload =
+      createDeferred<Awaited<ReturnType<InsightRepository['list']>>>();
+    const secondReload =
+      createDeferred<Awaited<ReturnType<InsightRepository['list']>>>();
+    const list = vi
+      .fn<InsightRepository['list']>()
+      .mockResolvedValueOnce({
+        insights: [createInsight({ id: 'initial' })],
+        warnings: [],
+      })
+      .mockReturnValueOnce(firstReload.promise)
+      .mockReturnValueOnce(secondReload.promise);
+    const repository = createRepository({ list });
+    const { result } = await renderReadyWorkspace(repository);
+    let firstRequest!: Promise<void>;
+    let secondRequest!: Promise<void>;
+
+    act(() => {
+      firstRequest = result.current.reloadInsights();
+      secondRequest = result.current.reloadInsights();
+    });
+
+    await act(async () => {
+      secondReload.resolve({
+        insights: [createInsight({ id: 'latest' })],
+        warnings: [],
+      });
+      await secondRequest;
+    });
+    expect(result.current.insights[0]?.id).toBe('latest');
+
+    await act(async () => {
+      firstReload.resolve({
+        insights: [createInsight({ id: 'stale' })],
+        warnings: [],
+      });
+      await firstRequest;
+    });
+
+    expect(result.current.insights[0]?.id).toBe('latest');
+    expect(list).toHaveBeenCalledTimes(3);
+  });
+
   it('저장소가 바뀌면 이전 지연 응답을 무시하고 새 목록만 노출한다', async () => {
     const oldList =
       createDeferred<Awaited<ReturnType<InsightRepository['list']>>>();

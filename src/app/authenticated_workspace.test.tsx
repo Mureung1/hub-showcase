@@ -29,6 +29,11 @@ import type {
   InsightRepository as AsyncInsightRepository,
   InsightRepositoryLoadResult,
 } from '@/entities/insight';
+import type {
+  InsightImportService,
+  NotionImportApi,
+  PreparedImport,
+} from '@/features/insight-import';
 import {
   pwaInstallPromptEvents,
   type BeforeInstallPromptEvent,
@@ -108,6 +113,242 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('Notion callback query가 있으면 가져오기 창을 열고 연결 분석을 재개한다', async () => {
+    const connectionId = '10000000-0000-4000-8000-000000000099';
+    window.history.replaceState(
+      null,
+      '',
+      `/?import=notion&connection=${connectionId}`
+    );
+    const notionApi = {
+      analyze: vi.fn<NotionImportApi['analyze']>().mockResolvedValue({
+        candidateCount: 1,
+        prepared: { ...createPreparedImport(), id: connectionId },
+        requestCount: 1,
+        status: 'ready',
+      }),
+      cancel: vi.fn<NotionImportApi['cancel']>(),
+      complete: vi.fn<NotionImportApi['complete']>(),
+      start: vi.fn<NotionImportApi['start']>(),
+      status: vi.fn<NotionImportApi['status']>().mockResolvedValue({
+        connectionId,
+        includePageUrls: false,
+        jobId: connectionId,
+        jobStatus: 'analyzing',
+        status: 'connected',
+        workspaceName: '개인 문서',
+      }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          importService={createImportService()}
+          notionImportApi={notionApi}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByRole('dialog', { name: '보관함 가져오기' })
+    ).toBeTruthy();
+    expect(await screen.findByText('신규')).toBeTruthy();
+    expect(notionApi.status).toHaveBeenCalledWith(
+      connectionId,
+      expect.any(AbortSignal)
+    );
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('Notion callback 분석 중 창을 닫으면 일회성 상태와 query를 정리한다', async () => {
+    const user = userEvent.setup();
+    const connectionId = '10000000-0000-4000-8000-000000000097';
+    window.history.replaceState(
+      null,
+      '',
+      `/?tab=home&import=notion&connection=${connectionId}`
+    );
+    vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
+    const notionApi = {
+      analyze: vi.fn<NotionImportApi['analyze']>(),
+      cancel: vi
+        .fn<NotionImportApi['cancel']>()
+        .mockResolvedValue({ status: 'canceled' }),
+      complete: vi.fn<NotionImportApi['complete']>(),
+      start: vi.fn<NotionImportApi['start']>(),
+      status: vi
+        .fn<NotionImportApi['status']>()
+        .mockImplementation((_connectionId, signal) => {
+          if (!signal) {
+            throw new Error('취소 신호가 필요합니다.');
+          }
+
+          return new Promise((_, reject) => {
+            signal.addEventListener(
+              'abort',
+              () =>
+                reject(
+                  new DOMException('작업이 취소되었습니다.', 'AbortError')
+                ),
+              { once: true }
+            );
+          });
+        }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          importService={createImportService()}
+          notionImportApi={notionApi}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await screen.findByRole('dialog', { name: '보관함 가져오기' });
+    await user.click(screen.getByRole('button', { name: '닫기' }));
+
+    expect(
+      screen.queryByRole('dialog', { name: '보관함 가져오기' })
+    ).toBeNull();
+    expect(window.location.search).toBe('?tab=home');
+  });
+
+  it('거절된 Notion callback을 안내하고 URL에서 일회성 query를 제거한다', async () => {
+    const connectionId = '10000000-0000-4000-8000-000000000098';
+    window.history.replaceState(
+      null,
+      '',
+      `/?tab=home&import=notion&connection=${connectionId}&error=access-denied`
+    );
+    const notionApi = {
+      analyze: vi.fn<NotionImportApi['analyze']>(),
+      cancel: vi.fn<NotionImportApi['cancel']>(),
+      complete: vi.fn<NotionImportApi['complete']>(),
+      start: vi.fn<NotionImportApi['start']>(),
+      status: vi.fn<NotionImportApi['status']>(),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          importService={createImportService()}
+          notionImportApi={notionApi}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByText(
+        'Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.'
+      )
+    ).toBeTruthy();
+    expect(notionApi.status).not.toHaveBeenCalled();
+    expect(window.location.search).toBe('?tab=home');
+  });
+
+  it('가져오기 완료 뒤 인사이트와 분류를 재조회해 보관함과 꺼내보기에 반영한다', async () => {
+    const user = userEvent.setup();
+    const importedCategory = createCategory({
+      id: '20000000-0000-4000-8000-000000000010',
+      name: '가져온 분류',
+    });
+    const importedInsight = createInsight({
+      categoryId: importedCategory.id,
+      id: '30000000-0000-4000-8000-000000000010',
+      memo: '재조회 단서',
+      title: '가져온 인사이트',
+    });
+    const insightList = vi
+      .fn<AsyncInsightRepository['list']>()
+      .mockResolvedValueOnce({ insights: [], warnings: [] })
+      .mockResolvedValue({
+        insights: [importedInsight],
+        warnings: [],
+      });
+    const categoryList = vi
+      .fn<AsyncCategoryRepository['list']>()
+      .mockResolvedValueOnce({ categories: [], warnings: [] })
+      .mockResolvedValue({
+        categories: [importedCategory],
+        warnings: [],
+      });
+    const insightRepository: AsyncInsightRepository = {
+      ...toAsyncRepository(createRepository()),
+      list: insightList,
+    };
+    const categoryRepository: AsyncCategoryRepository = {
+      ...createCategoryRepository(),
+      list: categoryList,
+    };
+    const importService = createImportService();
+    importService.prepare.mockResolvedValue({
+      ok: true,
+      value: createPreparedImport(),
+    });
+    importService.commit.mockResolvedValue({
+      ok: true,
+      value: {
+        createdCount: 1,
+        duplicateCount: 0,
+        excludedCount: 0,
+        jobId: '10000000-0000-4000-8000-000000000010',
+      },
+    });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          categoryRepository={categoryRepository}
+          importService={importService}
+          repository={insightRepository}
+        />
+      </DesignSystemProvider>
+    );
+
+    await screen.findByRole('heading', {
+      name: '아직 저장한 인사이트가 없어요',
+    });
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(
+      screen.getByRole('button', { name: '내 저장물 가져오기' })
+    );
+    await user.click(screen.getByRole('button', { name: '링크 붙여넣기' }));
+    await user.type(
+      screen.getByRole('textbox', { name: '가져올 링크' }),
+      'https://example.com/imported'
+    );
+    await user.click(screen.getByRole('button', { name: '분석하기' }));
+    await user.click(screen.getByRole('button', { name: '가져오기' }));
+
+    await waitFor(() => expect(insightList).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(categoryList).toHaveBeenCalledTimes(2));
+    await user.click(screen.getByRole('button', { name: '완료' }));
+
+    expect(await screen.findByText('가져온 인사이트')).not.toBeNull();
+    expect(screen.getByRole('button', { name: '가져온 분류' })).not.toBeNull();
+
+    await user.type(
+      screen.getByRole('searchbox', { name: '보관함 검색' }),
+      '가져온'
+    );
+    expect(screen.getByText('가져온 인사이트')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '홈' }));
+    await user.type(
+      screen.getByRole('textbox', {
+        name: '지금 꺼내보고 싶은 상황',
+      }),
+      '재조회 단서'
+    );
+    await user.click(screen.getByRole('button', { name: '꺼내보기' }));
+
+    expect(screen.getByText('가져온 인사이트')).not.toBeNull();
+  }, 20_000);
+
   it.each(['read-failed', 'permission-denied'] as const)(
     'distinguishes %s from an empty library across home and library tabs',
     async (warning) => {
@@ -1862,6 +2103,54 @@ function createCategory(overrides: Partial<Category> = {}): Category {
     sortOrder: 0,
     updatedAt: '2026-07-24T00:00:00.000Z',
     ...overrides,
+  };
+}
+
+function createImportService() {
+  return {
+    commit: vi.fn<InsightImportService['commit']>(),
+    deleteRecord: vi.fn<InsightImportService['deleteRecord']>(),
+    listHistory: vi
+      .fn<InsightImportService['listHistory']>()
+      .mockResolvedValue({ ok: true, value: [] }),
+    listIssues: vi.fn<InsightImportService['listIssues']>(),
+    prepare: vi.fn<InsightImportService['prepare']>(),
+    retry: vi.fn<InsightImportService['retry']>(),
+    undo: vi.fn<InsightImportService['undo']>(),
+  };
+}
+
+function createPreparedImport(): PreparedImport {
+  return {
+    adapterKey: 'pasted-text',
+    collections: [],
+    expiresAt: '2026-07-26T03:00:00.000Z',
+    id: '10000000-0000-4000-8000-000000000010',
+    items: [
+      {
+        candidateId: 'pasted-text:0',
+        capturedAtCandidate: null,
+        classification: 'new',
+        collectionPath: [],
+        domain: 'example.com',
+        exclusionCode: null,
+        explicitMemoCandidate: null,
+        normalizedUrl: 'https://example.com/imported',
+        originalUrl: 'https://example.com/imported',
+        sourceLocation: '1번째 줄',
+        titleCandidate: null,
+        warnings: ['missing-title'],
+      },
+    ],
+    status: 'ready',
+    summary: {
+      createdCount: 0,
+      duplicateCount: 0,
+      excludedCount: 0,
+      inputDuplicateCount: 0,
+      newCount: 1,
+      totalCount: 1,
+    },
   };
 }
 

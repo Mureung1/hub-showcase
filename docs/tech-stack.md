@@ -1,6 +1,6 @@
 # 기술 스택 및 라이브러리
 
-이 문서는 아맞다 프로젝트에서 사용할 기술 스택과 후보 라이브러리를 정리한다. 버전은 2026-07-20 기준 `package.json`을 기준으로 한다.
+이 문서는 아맞다 프로젝트에서 사용할 기술 스택과 후보 라이브러리를 정리한다. 버전은 2026-07-26 기준 `package-lock.json`을 기준으로 한다.
 
 ## 결정 기준
 
@@ -38,6 +38,10 @@
 | dnd-kit                     | core 6.3.1, sortable 10.0.0, utilities 3.2.2     | 드래그 앤 드롭       | 설치됨, 미연동 | 카테고리 정렬이나 카드 순서 변경이 필요해질 때 접근성과 확장성을 갖춘 드래그 앤 드롭을 구현할 수 있다.   | react-beautiful-dnd, react-dnd                           | 실제 정렬/드래그 화면을 만들 때 연결한다.                                                                             |
 | pnpm                        | 11.10.0                                          | 패키지 매니저        | 전환 예정      | 설치 속도와 디스크 효율이 좋고, 의존성 구조가 엄격해 장기 유지보수에 유리하다.                           | npm, yarn, bun                                           | 현재 repo는 npm lockfile을 사용한다. 전환 시 `package-lock.json` 제거와 `pnpm-lock.yaml` 생성이 필요하다.             |
 | Supabase JS                 | 2.110.1                                          | BaaS 클라이언트      | 사용 중        | Google OAuth, Postgres 저장과 사용자별 RLS를 브라우저·서버·확장에서 같은 인증 경계로 사용한다.           | Firebase, 직접 Express API, Appwrite                     | `src/shared/api`, 인사이트 저장 어댑터, Express 캡처 서비스와 Chrome 확장 인증에 연결되어 있다.                       |
+| csv-parse                   | 7.0.1                                            | CSV 파서             | 사용 중        | 따옴표·개행·구분자를 포함한 CSV를 문자열 분할 없이 구조적으로 파싱한다.                                  | Papa Parse, 직접 파서                                    | 범용 가져오기의 헤더 감지와 필드 매핑 전 구조 파싱에 사용한다.                                                        |
+| htmlparser2                 | 12.0.0                                           | HTML 파서            | 사용 중        | 외부 HTML을 DOM에 실행하지 않는 inert SAX 방식으로 링크와 북마크 계층을 읽는다.                          | parse5, DOMParser                                        | Chrome bookmark HTML과 범용 HTML 어댑터에 사용한다.                                                                   |
+| @zip.js/zip.js              | 2.8.34                                           | ZIP 처리             | 사용 중        | entry metadata를 먼저 검사하고 허용된 파일만 순차 해제해 traversal과 zip bomb 위험을 제한한다.           | fflate, JSZip                                            | 중첩 archive와 symlink를 거부하고 파일·총 해제 크기 제한을 적용한다.                                                  |
+| @notionhq/client            | 5.23.2                                           | Notion API SDK       | 사용 중        | 최신 Notion API 타입과 data source·page·block 요청 경계를 제공한다.                                      | 직접 fetch                                               | 서버 전용 OAuth token으로 `2026-03-11` API를 호출하며 브라우저 번들에는 포함하지 않는다.                              |
 | React Router                | 8.2.0                                            | 라우팅               | 설치됨, 미연동 | URL 기반 화면 전환, 딥링크, 인증 보호 라우트가 필요해지면 표준 라우터가 필요하다.                        | TanStack Router, wouter, Next.js App Router              | 현재는 탭 상태 기반 화면이므로 라우트 설계 확정 후 연결한다.                                                          |
 | Zod                         | 4.4.3                                            | 스키마 검증          | 설치됨, 미연동 | 환경 변수, API 응답, 폼 입력을 런타임에서 검증해 TypeScript의 빈틈을 보완한다.                           | Valibot, Yup, ArkType                                    | `src/shared/config`, `src/shared/api`, 폼 검증에 유용하다.                                                            |
 | React Hook Form             | 7.81.0                                           | 폼 상태 관리         | 설치됨, 미연동 | 저장/온보딩/편집 폼이 복잡해질 때 렌더링 비용과 검증 코드를 줄일 수 있다.                                | Formik, TanStack Form, 직접 state                        | 폼 설계가 생기면 Zod resolver와 함께 연결한다.                                                                        |
@@ -65,6 +69,7 @@
 - `insights` 테이블은 사용자별 정규화 URL 중복 제한과 RLS 조회·생성·수정·삭제 정책을 가진다.
 - 브라우저와 확장에는 publishable key만 둘 수 있다. secret key와 service role key는 공개 설정에서 거부한다.
 - Vite 웹과 Express API는 Vercel 단일 프로젝트에서 같은 HTTPS 출처로 배포한다. Pull Request는 미리보기, `main`은 운영 배포를 만들며 상세 계약은 [운영 배포 문서](./deployment.md)와 [#54](https://github.com/ppre1ude/hub/issues/54)에서 관리한다.
+- 범용 가져오기의 파일 파싱은 브라우저에서 끝내고 표준 후보만 Supabase RPC로 보낸다. Notion SDK와 OAuth secret은 Express 서버 경계에만 두며 연결 token은 AES-256-GCM으로 암호화한다.
 - Supabase GitHub 연동은 `ppre1ude/hub`의 `main`과 `supabase/migrations/`를 운영 프로젝트에 자동 반영한다. Google OAuth와 허용 Redirect URL은 Supabase Dashboard에서 별도로 관리한다.
 
 현재 전환 순서는 [#21](https://github.com/ppre1ude/hub/issues/21), 다중 기기 캡처 진행 상황은 [#36](https://github.com/ppre1ude/hub/issues/36)을 기준으로 관리한다.

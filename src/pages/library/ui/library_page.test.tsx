@@ -70,6 +70,7 @@ describe('LibraryPage', () => {
           totalInsightCount={0}
           onCategoryChange={vi.fn()}
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          onOpenImport={vi.fn()}
           onOpenSave={vi.fn()}
           onQueryChange={vi.fn()}
           onRetryLoad={onRetryLoad}
@@ -106,6 +107,7 @@ describe('LibraryPage', () => {
           totalInsightCount={1}
           onCategoryChange={vi.fn()}
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          onOpenImport={vi.fn()}
           onOpenSave={onOpenSave}
           onQueryChange={onQueryChange}
           onRetryLoad={vi.fn()}
@@ -142,6 +144,7 @@ describe('LibraryPage', () => {
           totalInsightCount={0}
           onCategoryChange={vi.fn()}
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          onOpenImport={vi.fn()}
           onOpenSave={vi.fn()}
           onQueryChange={vi.fn()}
           onRetryLoad={vi.fn()}
@@ -180,6 +183,7 @@ describe('LibraryPage', () => {
           totalInsightCount={1}
           onCategoryChange={onCategoryChange}
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          onOpenImport={vi.fn()}
           onOpenSave={vi.fn()}
           onQueryChange={onQueryChange}
           onRetryLoad={vi.fn()}
@@ -206,6 +210,7 @@ describe('LibraryPage', () => {
 
   it('explains an empty result and opens the save screen', async () => {
     const user = userEvent.setup();
+    const onOpenImport = vi.fn();
     const onOpenSave = vi.fn();
 
     render(
@@ -217,6 +222,7 @@ describe('LibraryPage', () => {
           totalInsightCount={0}
           onCategoryChange={vi.fn()}
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          onOpenImport={onOpenImport}
           onOpenSave={onOpenSave}
           onQueryChange={vi.fn()}
           onRetryLoad={vi.fn()}
@@ -234,6 +240,58 @@ describe('LibraryPage', () => {
     await user.click(screen.getByRole('button', { name: '링크 저장' }));
 
     expect(onOpenSave).toHaveBeenCalledOnce();
+    await user.click(
+      screen.getByRole('button', { name: '내 저장물 가져오기' })
+    );
+    expect(onOpenImport).toHaveBeenCalledOnce();
+  });
+
+  it('기존 보관함에는 가져오기 보조 액션을 유지하고 로딩 중에는 숨긴다', () => {
+    const onOpenImport = vi.fn();
+    const insight = {
+      categoryId: null,
+      createdAt: '2026-07-14T00:00:00.000Z',
+      domain: 'example.com',
+      id: '10000000-0000-4000-8000-000000000001',
+      memo: null,
+      normalizedUrl: 'https://example.com',
+      originalUrl: 'https://example.com',
+      title: '기존 인사이트',
+      titleOrigin: 'fallback' as const,
+      updatedAt: '2026-07-14T00:00:00.000Z',
+    };
+    const commonProps = {
+      activeCategory: 'all',
+      categoryOptions: [{ colorKey: null, label: '전체', value: 'all' }],
+      onCategoryChange: vi.fn(),
+      onDeleteInsight: vi.fn().mockResolvedValue({ ok: true } as const),
+      onOpenImport,
+      onOpenSave: vi.fn(),
+      onQueryChange: vi.fn(),
+      onRetryLoad: vi.fn(),
+      onUpdateInsight: vi.fn().mockResolvedValue({ ok: true } as const),
+      query: '',
+      totalInsightCount: 1,
+    };
+    const { rerender } = render(
+      <DesignSystemProvider>
+        <LibraryPage {...commonProps} insights={[insight]} />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('button', { name: '내 저장물 가져오기' })
+    ).not.toBeNull();
+
+    rerender(
+      <DesignSystemProvider>
+        <LibraryPage {...commonProps} insights={[insight]} loading />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.queryByRole('button', { name: '내 저장물 가져오기' })
+    ).toBeNull();
   });
 });
 
