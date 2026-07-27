@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const manifestPath = resolve(root, 'src/data/live-campuses.json');
+const manifestPath = resolve(root, 'src/shared/data/live-campuses.json');
 const campuses = JSON.parse(await readFile(manifestPath, 'utf8'));
 const headers = { 'User-Agent': 'CampusFlow/0.1 (campus boundary asset generator)' };
 const generatedOn = new Date().toISOString().slice(0, 10);

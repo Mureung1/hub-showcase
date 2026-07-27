@@ -6,7 +6,7 @@ import { fetchAllPages, getServiceKey } from './lib/public-data-client.mjs';
 import { stopNameSimilarity } from './lib/stop-usage.mjs';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const campusPath = path.join(projectRoot, 'src/data/live-campuses.json');
+const campusPath = path.join(projectRoot, 'src/shared/data/live-campuses.json');
 const reportPath = path.join(projectRoot, 'reports/nearby-stop-candidates.json');
 const operationDate = readOption('date', process.env.BUS_STOP_OPR_YMD ?? DEFAULT_STOP_OPERATION_DATE);
 const campusFilter = readOption('campus', '');

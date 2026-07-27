@@ -9,9 +9,9 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 installCliErrorHandler('validate');
 const readJson = (relativePath) => readFile(path.join(projectRoot, relativePath), 'utf8').then((text) => ({ text, value: JSON.parse(text) }));
 const [{ value: campuses }, mappingsFile, usageFile] = await Promise.all([
-  readJson('src/data/live-campuses.json'),
-  readJson('src/data/public-stop-mappings.json'),
-  readJson('src/data/generated-stop-usage.json'),
+  readJson('src/shared/data/live-campuses.json'),
+  readJson('src/shared/data/public-stop-mappings.json'),
+  readJson('src/shared/data/generated-stop-usage.json'),
 ]);
 
 try {

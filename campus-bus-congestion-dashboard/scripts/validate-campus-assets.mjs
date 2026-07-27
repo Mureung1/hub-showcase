@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const campuses = JSON.parse(await readFile(resolve(root, 'src/data/live-campuses.json'), 'utf8'));
+const campuses = JSON.parse(await readFile(resolve(root, 'src/shared/data/live-campuses.json'), 'utf8'));
 const errors = [];
 const expectedStops = new Map([
   ['kangwon-chuncheon', ['강원대정문', '강원대백록관', '강원대중앙도서관']],

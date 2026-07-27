@@ -7,7 +7,7 @@ import { aggregateMonthlyItems, findStopCandidates } from './lib/stop-usage.mjs'
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const reportPath = path.join(projectRoot, 'reports/remaining-region-check.json');
-const campusPath = path.join(projectRoot, 'src/data/live-campuses.json');
+const campusPath = path.join(projectRoot, 'src/shared/data/live-campuses.json');
 const regions = {
   'kangwon-chuncheon': { ctpvCd: '51', sggCd: '51110', label: '강원특별자치도 춘천시', terms: ['강원대'] },
   'gnu-gajwa': { ctpvCd: '48', sggCd: '48170', label: '경상남도 진주시', terms: ['가좌주공그린빌', '경상국립대학교'] },
