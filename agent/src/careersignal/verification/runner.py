@@ -64,6 +64,15 @@ class CheckRunReport(BaseModel):
         return tuple(r for r in self.results if r.blocks_publication)
 
     @property
+    def warnings(self) -> tuple[CheckResult, ...]:
+        """공개를 막지 않는 실패. 판정을 verified_with_warning 으로 만든다."""
+        return tuple(
+            r
+            for r in self.results
+            if r.verdict is CheckVerdict.FAIL and r.severity is Severity.WARNING
+        )
+
+    @property
     def unregistered(self) -> tuple[CheckName, ...]:
         """구현이 없어 실행하지 못한 검사."""
         return tuple(

@@ -20,9 +20,17 @@ from careersignal.verification.registry import (
     CheckSpec,
 )
 from careersignal.verification.runner import CheckRunner, CheckRunReport
+from careersignal.verification.verdict import (
+    VERDICT_BY_CHECK,
+    decide,
+    publishable,
+    summarize,
+    validation_outcome,
+)
 
 __all__ = [
     "CHECK_SPECS",
+    "VERDICT_BY_CHECK",
     "REASON_CHECK_ERROR",
     "REASON_NOT_APPLICABLE",
     "REASON_NOT_REGISTERED",
@@ -33,6 +41,10 @@ __all__ = [
     "CheckRunReport",
     "CheckRunner",
     "CheckSpec",
+    "decide",
     "not_applicable",
     "passed",
+    "publishable",
+    "summarize",
+    "validation_outcome",
 ]
