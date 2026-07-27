@@ -30,7 +30,7 @@ flowchart TD
     end
     subgraph RESULTPAGE["📄 ResultPage /a/:id/result · 마운트 2개 병렬"]
         R1["GET :id<br/><br/>appointments · select"]:::read
-        R2["GET :id/results (마감 전 409)<br/><br/>appointments · select<br/>participants · select<br/>responses · select"]:::read
+        R2["GET :id/results (마감 전 409)<br/><br/>appointments · select<br/>get_slot_counts · rpc<br/>(participants ⋈ responses 집계)"]:::read
     end
 
     subgraph JAF["🧩 JoinAppointmentForm · 컴포넌트"]
@@ -38,13 +38,13 @@ flowchart TD
     end
     subgraph ADMIN["🧩 AdminDashboard · 컴포넌트 (role=admin) · 마운트 3개 병렬"]
         A1["GET :id<br/><br/>appointments · select"]:::read
-        A2["GET :id/response-status<br/><br/>participants · select<br/>responses · select"]:::read
-        A3["GET :id/participants<br/><br/>participants · select<br/>responses · select"]:::read
+        A2["GET :id/response-status<br/><br/>get_completed_count · rpc<br/>(participants ⋈ responses 집계)"]:::read
+        A3["GET :id/participants<br/><br/>get_participants_status · rpc<br/>(participants + responses 존재 확인)"]:::read
         A4["PUT :id/participants/:pid/close<br/><br/>appointments · select, update<br/>participants · select"]:::write
     end
     subgraph PART["🧩 ParticipantDashboard · 컴포넌트 (role=participant) · 마운트 3개 병렬"]
         P1["GET :id<br/><br/>appointments · select"]:::read
-        P2["GET :id/response-status<br/><br/>participants · select<br/>responses · select"]:::read
+        P2["GET :id/response-status<br/><br/>get_completed_count · rpc<br/>(participants ⋈ responses 집계)"]:::read
         P3["GET :id/participants/:pid/responses<br/><br/>participants · select<br/>responses · select"]:::read
     end
 
@@ -154,10 +154,10 @@ DB는 서버의 Supabase 클라이언트를 통해 PostgreSQL에 접근한다.
 
 | API | `appointments` | `participants` | `responses` |
 |---|---|---|---|
-| `GET /api/appointments/:id/response-status` | — | SELECT<br>약속 참여자 ID 조회 | SELECT<br>응답 완료 인원 집계 |
-| `GET /api/appointments/:id/participants` | — | SELECT<br>참여자 ID 및 이름 조회 | SELECT<br>참여자별 응답 여부 확인 |
+| `GET /api/appointments/:id/response-status` | — | `get_completed_count` RPC<br>내부 JOIN | RPC 내부 `count(distinct)` 집계 |
+| `GET /api/appointments/:id/participants` | — | `get_participants_status` RPC<br>참여자 목록 조회 | RPC 내부 `exists`로 응답 여부 확인 |
 | `PUT /api/appointments/:id/participants/:pid/close` | SELECT<br>미마감이면 `closed_at` UPDATE | SELECT<br>관리자 역할 확인 | — |
-| `GET /api/appointments/:id/results` | SELECT<br>마감 여부 확인 | 마감된 경우 SELECT | 마감된 경우 SELECT<br>슬롯별 결과 집계 |
+| `GET /api/appointments/:id/results` | SELECT<br>마감 여부 확인 | `get_slot_counts` RPC<br>내부 JOIN | RPC 내부 `group by`로 슬롯별 집계 |
 
 ### DB 테이블 관계
 

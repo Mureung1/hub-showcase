@@ -13,12 +13,23 @@ function Modal({ open, onClose, children }: ModalProps) { // study: 부모가 �
   const cardRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLElement | null>(null)
 
+  // claude: 아래 포커스 관리 effect가 onClose를 "지금 값"으로 읽되 의존성에는 넣지 않기 위한 ref.
+  // 호출부가 모두 onClose를 인라인 화살표 함수로 넘겨서(예: DateRangeField의 `onClose={() => setOpen(false)}`)
+  // 부모가 리렌더될 때마다 함수 객체가 새로 만들어진다. 이걸 의존성 배열에 그대로 두면 모달이 열려 있는데도
+  // 매 리렌더마다 cleanup(트리거로 포커스 복귀) → 재실행(카드로 포커스)이 돌아서 포커스가 튀었다.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
   // claude: Hooks는 조건부 return보다 항상 위에서 호출해야 해서(Rules of Hooks), 아래의 "if (!open) return null"보다
   // 앞으로 옮겨왔다(study 주석은 원문 그대로 유지). 열릴 때 지금 포커스돼 있던 요소(트리거)를 기억해두고, 모달 내부에
   // 이미 포커스된 요소가 없으면(DateRangeField의 달력처럼 내부 위젯이 스스로 포커스를 잡는 경우가 있어 그건 건드리지
   // 않음) 모달 카드로 포커스를 옮긴다. Escape 키는 오버레이 클릭과 똑같이 onClose를 호출하므로, ScheduleEditor의
   // isSubmitting, AdminDashboard의 isClosing 같은 "제출 중엔 안 닫힘" 가드도 onClose 안에 있어서 그대로 적용된다.
   // 닫힐 때(effect cleanup)는 리스너를 지우고 트리거로 포커스를 되돌린다.
+  // claude: 의존성은 [open]만 — 이 effect는 "열림/닫힘이 실제로 바뀔 때"만 돌아야 한다. Escape 핸들러는
+  // 키를 누른 시점에 onCloseRef.current를 읽으므로 항상 최신 onClose(위의 제출 중 가드 포함)가 호출된다.
   useEffect(() => {
     if (!open) return
 
@@ -28,7 +39,7 @@ function Modal({ open, onClose, children }: ModalProps) { // study: 부모가 �
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') onCloseRef.current()
     }
     document.addEventListener('keydown', handleKeyDown)
 
@@ -36,7 +47,7 @@ function Modal({ open, onClose, children }: ModalProps) { // study: 부모가 �
       document.removeEventListener('keydown', handleKeyDown)
       triggerRef.current?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null // study: 모달 보여주는게 open으로만 결정되므로, 라우터와 무관하게 동작
 

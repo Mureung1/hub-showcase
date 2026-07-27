@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
 
 const fromMock = vi.fn()
-const supabaseMock = { from: fromMock }
+const rpcMock = vi.fn()
+const supabaseMock = { from: fromMock, rpc: rpcMock }
 vi.mock('../lib/supabase.js', () => ({
   supabase: supabaseMock,
   requireSupabase: () => supabaseMock,
@@ -13,9 +14,7 @@ type QueryResult = { data: unknown; error: unknown }
 
 function createQueryBuilder(result: QueryResult) {
   const builder = {
-    insert: vi.fn(() => builder),
     select: vi.fn(() => builder),
-    delete: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     single: vi.fn(() => Promise.resolve(result)),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
@@ -32,7 +31,12 @@ const appointmentRow = {
   closed_at: null,
 }
 
-function mockTables(overrides: { participants?: QueryResult; appointments?: QueryResult; responses?: QueryResult }) {
+function mockTables(overrides: {
+  participants?: QueryResult
+  appointments?: QueryResult
+  responses?: QueryResult
+  submitResponse?: QueryResult
+}) {
   fromMock.mockImplementation((table: string) => {
     if (table === 'participants') {
       return createQueryBuilder(overrides.participants ?? { data: { id: 'participant-uuid' }, error: null })
@@ -45,6 +49,14 @@ function mockTables(overrides: { participants?: QueryResult; appointments?: Quer
     }
     throw new Error(`unexpected table: ${table}`)
   })
+
+  // claude: PUT의 저장 단계는 이제 responses 테이블 직접 조작이 아니라 submit_response RPC 한 번이다(delete+insert를 한 트랜잭션으로 묶음).
+  rpcMock.mockImplementation((fn: string) => {
+    if (fn === 'submit_response') {
+      return Promise.resolve(overrides.submitResponse ?? { data: null, error: null })
+    }
+    throw new Error(`unexpected rpc: ${fn}`)
+  })
 }
 
 const url = '/api/appointments/appt-uuid/participants/participant-uuid/responses'
@@ -52,6 +64,7 @@ const url = '/api/appointments/appt-uuid/participants/participant-uuid/responses
 describe('PUT .../responses', () => {
   beforeEach(() => {
     fromMock.mockReset()
+    rpcMock.mockReset()
   })
 
   it('가능한 시간만 제출하면 200과 개수를 반환한다', async () => {
@@ -132,11 +145,22 @@ describe('PUT .../responses', () => {
 
     expect(res.status).toBe(409)
   })
+
+  it('저장 RPC가 실패하면 500을 반환한다', async () => {
+    mockTables({ submitResponse: { data: null, error: { message: 'insert failed' } } })
+
+    const res = await request(app)
+      .put(url)
+      .send({ availableSlots: [{ date: '2026-07-20', time: '09:00' }], preferredSlots: [] })
+
+    expect(res.status).toBe(500)
+  })
 })
 
 describe('GET .../responses', () => {
   beforeEach(() => {
     fromMock.mockReset()
+    rpcMock.mockReset()
   })
 
   it('저장된 값을 정규화된 시간과 함께 반환한다', async () => {
