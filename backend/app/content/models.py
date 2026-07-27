@@ -198,3 +198,68 @@ class CollectionPlan:
             if item.status == ItemStatus.REJECTED and item.reject_reason is not None:
                 counts[item.reject_reason.value] = counts.get(item.reject_reason.value, 0) + 1
         return counts
+
+
+@dataclass(frozen=True)
+class SourceCollectionFailure:
+    """일괄 수집에서 PipelineError로 끝난 source 하나."""
+
+    source_id: str
+    error_code: FeedError
+
+
+@dataclass
+class BatchCollectionResult:
+    """여러 source를 순차 수집한 결과. docs/plan/engineering/content-pipeline.md 16장."""
+
+    mode: str
+    plans: list[CollectionPlan] = field(default_factory=list)
+    failures: list[SourceCollectionFailure] = field(default_factory=list)
+
+    @property
+    def total_source_count(self) -> int:
+        return len(self.plans) + len(self.failures)
+
+    @property
+    def successful_source_count(self) -> int:
+        """PipelineError 없이 끝났고, item 저장 실패도 없는 source 수."""
+        return sum(1 for plan in self.plans if plan.failed_count == 0)
+
+    @property
+    def failed_source_count(self) -> int:
+        """PipelineError로 끝났거나, plan은 나왔지만 item 저장 실패가 있는 source 수."""
+        return len(self.failures) + sum(1 for plan in self.plans if plan.failed_count > 0)
+
+    @property
+    def inserted_total(self) -> int:
+        return sum(plan.inserted_count for plan in self.plans)
+
+    @property
+    def duplicate_in_db_total(self) -> int:
+        return sum(plan.duplicate_in_db_count for plan in self.plans)
+
+    @property
+    def duplicate_in_feed_total(self) -> int:
+        return sum(plan.duplicate_in_feed_count for plan in self.plans)
+
+    @property
+    def duplicate_race_total(self) -> int:
+        return sum(plan.duplicate_race_count for plan in self.plans)
+
+    @property
+    def rejected_total(self) -> int:
+        return sum(plan.rejected_count for plan in self.plans)
+
+    @property
+    def failed_item_total(self) -> int:
+        return sum(plan.failed_count for plan in self.plans)
+
+    @property
+    def overall_status(self) -> str:
+        if self.total_source_count == 0:
+            return "success"
+        if len(self.failures) == self.total_source_count:
+            return "failure"
+        if self.failed_source_count > 0:
+            return "partial_failure"
+        return "success"
