@@ -33,7 +33,9 @@ export function ddayToDate(s, today = new Date()) {
 
 // 목록 한 페이지. 반환: [{ ix, title, deadline, cats, sourceUrl }]
 export async function fetchList(page = 1) {
-  const url = `${BASE}/?c=find&s=1&gub=1&pg=${page}`;
+  // gbn=list&mode=ing(진행중 전체 목록). 기본 뷰(pg 파라미터)는 featured 20건만 주고 페이지네이션도
+  // 안 먹었다(실측). mode=ing는 활성 공고를 다 준다(현재 34건). page는 이 뷰에서 동작한다.
+  const url = `${BASE}/?c=find&s=1&gub=1&gbn=list&mode=ing&page=${page}`;
   const $ = load(await getHtml(url));
   const seen = new Map();
   $(".hide-info").each((_, el) => {

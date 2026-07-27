@@ -48,9 +48,12 @@ export function matchActivity(activity, profile) {
   if (failed.length === 0) return { status: "eligible", failed: [] };
   if (failed.length === 1) {
     const f = failed[0];
-    // 학년이 2급간 이상 차이면 근접이 아니라 지원 불가
-    const gradeFar = f.label === "학년" && !f.near;
-    return { status: gradeFar ? "ineligible" : "near", failed };
+    // '거의 가능'은 프로필을 살짝 바꾸면 가능한 경우다. 학년(±1)은 그럴 여지가 있지만, 지역은
+    // 이사를 못 가니 "거의 맞출" 수가 없는 하드 조건이다 = 지역 불일치는 불가로 본다.
+    // (안 그러면 부산 유저에게 딴 지역 공고가 죄다 '거의 가능'으로 떠서 필터가 무의미해진다.)
+    // 학년도 2급간 이상 차이면 불가.
+    const hardFail = f.label === "지역" || (f.label === "학년" && !f.near);
+    return { status: hardFail ? "ineligible" : "near", failed };
   }
   return { status: "ineligible", failed };
 }

@@ -11,10 +11,19 @@ const UA = "Mozilla/5.0 (compatible; ActivityCurationBot/0.1; personal project, 
 // 예의: 요청 사이 간격을 둔다. (robots 는 목록·상세 Allow, 원문 재게시 안 함)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function getHtml(url) {
-  const res = await fetch(url, { headers: { "User-Agent": UA } });
-  if (!res.ok) throw new Error(`콘코 ${res.status}: ${url}`);
-  return res.text();
+// 여러 소스를 동시에 돌리면 네트워크 포화로 연결이 타임아웃(terminated/fetch failed)날 때가 있다.
+// 콘코는 상세를 건당 수백 번 요청해 가장 취약하다. 일시적 연결 실패는 backoff 재시도로 넘긴다.
+async function getHtml(url, tries = 3) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": UA } });
+      if (!res.ok) throw new Error(`콘코 ${res.status}: ${url}`);
+      return await res.text();
+    } catch (e) {
+      if (i === tries - 1) throw e;
+      await sleep(900 * (i + 1)); // 0.9s, 1.8s 대기 후 재시도
+    }
+  }
 }
 
 // 목록 한 페이지. int_gbn=1 은 대회·공모전. page 는 1부터.
