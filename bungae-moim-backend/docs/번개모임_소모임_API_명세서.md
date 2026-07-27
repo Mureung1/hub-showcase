@@ -136,6 +136,9 @@
 ```
 - `type: "small"`이면 `capacity`는 무시(또는 null 강제), `endAt` 필수.
 - `openChatUrl`은 `open.kakao.com` 패턴 검증만 수행 (기획서 11번 "오픈채팅 링크 오류" 행 — 그 이상 검증 없음).
+- `category`는 `운동`·`스터디`·`취미`·`식사`만 허용합니다. `전체`는 목록 필터 전용 값이라 등록에는 쓸 수 없고, 그 외 값과 함께 `VALIDATION_ERROR`(400)입니다.
+- `regionSido`/`regionSigungu`는 공용 지역 데이터(`shared/regions.json`, 17개 시/도·229개 시/군/구)에 있는 **조합**만 허용합니다. `regionSido`가 목록에 없거나 `regionSigungu`가 그 시/도 하위가 아니면 `VALIDATION_ERROR`(400)입니다. 세종특별자치시는 하위 구분이 없어 `regionSigungu`도 `세종특별자치시`로 보냅니다.
+- 이 두 검증은 `PATCH /api/meetings/:id`(모임 수정, 모임장만)에도 동일하게 적용됩니다. 모임 수정은 부분 수정이 아니라 이 섹션과 같은 본문 전체를 다시 검증하는 **전체 교체(full-replace)**이며(`type`만 기존 값과 같아야 함), 같은 검증 함수를 재사용합니다.
 
 ### GET /api/meetings/:id
 

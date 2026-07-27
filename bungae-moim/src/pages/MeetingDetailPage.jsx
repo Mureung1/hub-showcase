@@ -227,9 +227,7 @@ export default function MeetingDetailPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink-mute)' }}>
               <span>🗓 {formatMeetingSchedule(meeting)}</span>
-              <span>
-                📍 {meeting.regionSigungu} {meeting.regionEupmyeondong ?? ''}
-              </span>
+              <span>📍 {meeting.regionSigungu}</span>
               <span>
                 👥 {meeting.type === 'flash' ? `${confirmedCount}/${meeting.capacity}명 확정` : `${confirmedCount}명 참여중 (정원 없음)`}
               </span>

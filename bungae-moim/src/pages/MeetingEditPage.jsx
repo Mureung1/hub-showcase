@@ -33,7 +33,6 @@ function meetingToFormValues(m) {
     category: m.category,
     sido: m.regionSido,
     sigungu: m.regionSigungu,
-    eupmyeondong: m.regionEupmyeondong ?? '',
     date: start.date,
     time: start.time,
     endDate: m.endAt ? splitKst(m.endAt).date : d.endDate,
