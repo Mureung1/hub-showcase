@@ -79,6 +79,9 @@ def test_productive_cluster_receives_an_agglomeration_bonus() -> None:
     assert result.data_coverage == 100
     assert result.score >= 65
     assert result.decision_status == "supported"
+    assert result.decision_summary.verdict == "suitable"
+    assert len(result.decision_summary.strengths) <= 2
+    assert len(result.decision_summary.risks) <= 2
     assert any(reason.metric_key == "category_local_quotient" for reason in result.reasons)
 
 
@@ -102,6 +105,8 @@ def test_missing_and_fixture_metrics_reduce_confidence() -> None:
 
     assert result.confidence < 60
     assert result.decision_status == "insufficient_evidence"
+    assert result.decision_summary.verdict == "insufficient"
+    assert result.decision_summary.missing_evidence
     assert result.data_coverage < 50
     assert "fixture_present" in result.decision_blockers
     assert any("fixture" in limitation for limitation in result.limitations)
@@ -119,6 +124,7 @@ def test_score_endpoint_returns_formula_and_evidence() -> None:
     assert payload["cluster"]["classification"] == "productive_cluster"
     assert payload["components"]
     assert payload["reasons"]
+    assert payload["decision_summary"]["headline"]
 
 
 def test_one_metric_shrinks_component_toward_neutral() -> None:
