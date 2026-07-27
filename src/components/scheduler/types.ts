@@ -77,7 +77,7 @@ export type Profile = {
   handle: string | null
   bio: string | null
   avatarColor: string | null
-  avatarEyes: 1 | 2 | null
+  avatarEyes: 1 | 2 | 3 | null
   stats: ProfileStats
 }
 

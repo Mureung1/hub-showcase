@@ -110,8 +110,8 @@ usersRouter.patch('/me', asyncHandler(async (req, res) => {
   }
 
   if (avatarEyes !== undefined) {
-    if (avatarEyes !== null && avatarEyes !== 1 && avatarEyes !== 2) {
-      res.status(400).json({ error: 'avatarEyes는 1 또는 2여야 합니다.' })
+    if (avatarEyes !== null && avatarEyes !== 1 && avatarEyes !== 2 && avatarEyes !== 3) {
+      res.status(400).json({ error: 'avatarEyes는 1, 2 또는 3이어야 합니다.' })
       return
     }
     data.avatarEyes = avatarEyes as number | null

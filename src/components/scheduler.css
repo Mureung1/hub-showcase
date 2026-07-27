@@ -79,6 +79,7 @@ body { background: #f1f0eb; }
 .scheduler-avatar i { position: absolute; width: 6px; height: 6px; top: 21px; left: 13px; background: var(--scheduler-ink); }
 .scheduler-avatar i + i { left: 29px; }
 .scheduler-avatar i.one-eye { left: 21px; }
+.scheduler-avatar i.third-eye { top: 10px; left: 21px; }
 
 .category-filter-icon { width: 48px; height: 48px; flex: 0 0 auto; position: relative; display: block; background: #dcece6; clip-path: polygon(8px 0, 40px 0, 40px 8px, 48px 8px, 48px 40px, 40px 40px, 40px 48px, 8px 48px, 8px 40px, 0 40px, 0 8px, 8px 8px); filter: drop-shadow(4px 0 0 var(--scheduler-ink)) drop-shadow(-4px 0 0 var(--scheduler-ink)) drop-shadow(0 4px 0 var(--scheduler-ink)) drop-shadow(0 -4px 0 var(--scheduler-ink)); }
 .category-filter-icon.blue { background: #dce9f8; }.category-filter-icon.coral { background: #f9dfd6; }.category-filter-icon.violet { background: #e7e0f4; }.category-filter-icon.green { background: #dcece6; }

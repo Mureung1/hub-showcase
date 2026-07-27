@@ -627,7 +627,7 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary, onOpenDo
   const [draftHandle, setDraftHandle] = useState('')
   const [draftBio, setDraftBio] = useState('')
   const [draftColor, setDraftColor] = useState<string | null>(null)
-  const [draftEyes, setDraftEyes] = useState<1 | 2 | null>(null)
+  const [draftEyes, setDraftEyes] = useState<1 | 2 | 3 | null>(null)
 
   const startEditing = () => {
     if (!profile) return
@@ -662,9 +662,13 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary, onOpenDo
     )
   }
 
-  const avatarProps = profile.avatarColor && profile.avatarEyes
-    ? { color: profile.avatarColor, eyes: profile.avatarEyes }
-    : getAvatarProps(profile.id)
+  // 색상만 고르고 눈 개수는 아직 안 고른(또는 그 반대) 경우에도 실제로 고른 쪽은 그대로 반영해야 하므로,
+  // 색상/눈 개수를 하나로 묶어서 다같이 있어야만 쓰는 게 아니라 각각 따로 해시 기본값으로 대체한다.
+  const avatarFallback = getAvatarProps(profile.id)
+  const avatarProps = {
+    color: profile.avatarColor ?? avatarFallback.color,
+    eyes: profile.avatarEyes ?? avatarFallback.eyes,
+  }
 
   return (
     <section className="profile-view" aria-labelledby="profile-title">
@@ -703,7 +707,7 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary, onOpenDo
             ))}
           </div>
           <div className="avatar-eyes-picker" role="radiogroup" aria-label="아바타 눈 모양">
-            {([1, 2] as const).map((eyes) => (
+            {([1, 2, 3] as const).map((eyes) => (
               <button
                 type="button"
                 key={eyes}
