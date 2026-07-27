@@ -26,6 +26,6 @@ Codex runtime 상태와 제품 실행 상태는 수명과 복구 책임이 다�
 
 Personal product layout seam은 `packageRoot=hub/`, `appDataRoot=../.ay-ple/`, semester parent `../workspace/`, global Codex authority `~/.codex`를 canonicalize하고 서로의 소유권을 섞지 않아야 한다. Legacy env나 `process.cwd()`로 fallback하지 않으며 여러 학기 사이에서는 `WorkspaceRegistry`의 active repository pointer만 전환한다.
 
-Current development composition은 Runtime dependency를 `../.ay-ple/runtime/`, 재현 cache를 `../.ay-ple/cache/`에 두고 source·build output과 실행 payload를 분리한다. 전환 전 package-local Runtime과 별도 dogfood profile command는 제거됐으며 당시 public target의 배치 결정과 구현 근거는 historical ADR 0016이 보존한다.
+채택한 composition은 Runtime dependency를 `../.ay-ple/runtime/`, 재현 cache를 `../.ay-ple/cache/`에 두고 source·build output과 실행 payload를 분리한다. Package-local Runtime과 별도 dogfood profile은 이 layout의 authority가 아니며 당시 public target의 배치 결정과 구현 근거는 historical ADR 0016이 보존한다.
 
 [ADR 0004](0004-split-runtime-history-semantics-from-workspace-storage.md)의 Runtime Diagnostic History는 완료·역사 기록이며 현재 제품 layout의 일부가 아니다. 현재 구현, 채택한 제품 목표와 후속 기술 항목은 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 구분해 관리하고, 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.

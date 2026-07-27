@@ -52,4 +52,4 @@ ADR 0014는 public preview에서 임의의 사용자 자료를 보호하고 firs
 
 ## 결과
 
-현재 개발 실행은 explicit prepared-root launch와 sibling appData의 durable registry reopen만 사용한다. Legacy path selection, app-owned admission·scaffold·bundle verification, fixed `project_root_markers=[]`, managed Skill override와 package-local Runtime fallback은 제거됐고 validated local residue는 canonical smoke 뒤 one-shot cleanup됐다. Commit 동작을 위한 별도 app subsystem과 auto-commit hook은 만들지 않는다. App과 AY의 Review·file mutation 경계는 ADR 0019가 소유하며, `workspace-state.json`의 exact academic schema는 후속 spec에서 별도로 고정한다.
+제품 실행은 explicit prepared-root launch와 sibling appData의 durable registry reopen을 사용한다. Legacy path selection, app-owned admission·scaffold·bundle verification, fixed `project_root_markers=[]`, managed Skill override와 package-local Runtime fallback은 이 architecture의 authority가 아니다. Commit 동작을 위한 별도 app subsystem과 auto-commit hook은 만들지 않는다. App과 AY의 Review·file mutation 경계는 ADR 0019가 소유하며, `workspace-state.json`의 exact academic schema는 후속 spec에서 별도로 고정한다.
