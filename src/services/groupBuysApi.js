@@ -1,10 +1,11 @@
-const API_URL = "http://localhost:3001";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/$/, "");
 
 async function request(path, options) {
   const token = localStorage.getItem("campus-cart-token");
   const response = await fetch(`${API_URL}${path}`, { ...options, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers } });
   if (response.status === 204) return null;
-  const body = await response.json();
+  const text = await response.text();
+  const body = text ? parseResponseBody(text) : {};
   if (!response.ok) throw new Error(body.error ?? "요청을 처리하지 못했습니다.");
   return body;
 }
@@ -26,4 +27,12 @@ export const deleteGroupBuy = (id) => request(`/api/group-buys/${id}`, { method:
 
 function jsonOptions(method, body) {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+}
+
+function parseResponseBody(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: "서버 응답을 확인하지 못했습니다." };
+  }
 }
