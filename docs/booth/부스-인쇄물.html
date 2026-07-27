@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>마감할인 — 부스 인쇄물 (A3 x2)</title>
+    <style>
+      /*
+       * 부스 인쇄물 — A3 세로 2장.
+       * 기준 토큰: 루트 DESIGN.md (Toss TDS). 이모지 금지, 숫자는 tabular-nums + 700.
+       * "PDF로 인쇄" 시 A3 세로 2페이지로 정확히 떨어지도록 @page/page-break 지정.
+       */
+      :root {
+        --primary: #3182f6;
+        --primary-hover: #2272eb;
+        --primary-weak: #e8f3ff;
+        --canvas: #ffffff;
+        --surface: #f2f4f6;
+        --ink: #191f28;
+        --ink-2: #4e5968;
+        --muted: #8b95a1;
+        --border: #e5e8eb;
+        --success: #03b26c;
+        --error: #f04452;
+        --warning: #fe9800;
+
+        --r-sm: 8px;
+        --r-md: 12px;
+        --r-lg: 16px;
+        --r-xl: 24px;
+
+        --font:
+          'Toss Product Sans', 'SF Pro KR', -apple-system, BlinkMacSystemFont,
+          'Apple SD Gothic Neo', Roboto, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #d7dbe0;
+        color: var(--ink);
+        font-family: var(--font);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .num {
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      /* ── A3 세로 시트 ── */
+      .sheet {
+        position: relative;
+        width: 297mm;
+        height: 420mm;
+        margin: 12mm auto;
+        padding: 16mm 15mm;
+        background: var(--canvas);
+        overflow: hidden;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 상단 강조 바 (재단선 밖까지 색 채움) */
+      .sheet::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 8mm;
+        background: var(--primary);
+      }
+
+      /* ══════════════ 공통 요소 ══════════════ */
+      .kicker {
+        display: inline-block;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: var(--primary);
+        text-transform: uppercase;
+      }
+
+      .section-title {
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 6px 0 0;
+      }
+
+      .section-lead {
+        font-size: 18px;
+        color: var(--ink-2);
+        margin: 8px 0 0;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        height: 30px;
+        padding: 0 13px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink-2);
+        background: var(--surface);
+        border-radius: 999px;
+      }
+
+      /* ══════════════ 1페이지 ══════════════ */
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .brand-mark {
+        flex: none;
+        width: 86px;
+        height: 86px;
+        border-radius: 22px;
+        background: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 18px rgba(49, 130, 246, 0.35);
+      }
+
+      .brand-mark svg {
+        width: 48px;
+        height: 48px;
+      }
+
+      .brand-name {
+        font-size: 54px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin: 0;
+      }
+
+      .brand-desc {
+        font-size: 16px;
+        color: var(--muted);
+        margin: 8px 0 0;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .tagline {
+        margin: 52px 0 0;
+        font-size: 44px;
+        font-weight: 700;
+        line-height: 1.38;
+        letter-spacing: -0.02em;
+      }
+      .tagline b {
+        color: var(--primary);
+      }
+
+      /* 문제 2열 대비 */
+      .problem {
+        margin-top: 54px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      .pcard {
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 28px 26px 30px;
+        background: var(--canvas);
+      }
+
+      .pcard__role {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 23px;
+        font-weight: 700;
+      }
+
+      .pcard__dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .pcard__dot--owner {
+        background: var(--primary);
+      }
+      .pcard__dot--user {
+        background: var(--success);
+      }
+
+      .pcard ul {
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .pcard li {
+        position: relative;
+        padding-left: 22px;
+        margin-top: 15px;
+        font-size: 18px;
+        color: var(--ink-2);
+        line-height: 1.5;
+      }
+      .pcard li::before {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 11px;
+        width: 7px;
+        height: 7px;
+        border-radius: 2px;
+        background: var(--border);
+      }
+      .pcard__punch {
+        margin-top: 20px;
+        padding-top: 18px;
+        border-top: 1px dashed var(--border);
+        font-size: 19px;
+        font-weight: 700;
+      }
+      .pcard__punch--owner {
+        color: var(--error);
+      }
+      .pcard__punch--user {
+        color: var(--ink);
+      }
+
+      .bridge {
+        margin: 52px 0 0;
+        padding: 26px 28px;
+        background: var(--ink);
+        color: #fff;
+        border-radius: var(--r-lg);
+        font-size: 23px;
+        font-weight: 700;
+        text-align: center;
+        letter-spacing: -0.01em;
+      }
+      .bridge b {
+        color: #7db4ff;
+      }
+
+      /* 핵심 루프 4단계 */
+      .loop {
+        margin-top: 58px;
+      }
+      .loop__steps {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .step {
+        background: var(--surface);
+        border-radius: var(--r-md);
+        padding: 26px 16px 28px;
+        text-align: center;
+      }
+      .step__no {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+      .step__name {
+        font-size: 21px;
+        font-weight: 700;
+      }
+      .step__desc {
+        font-size: 15px;
+        color: var(--ink-2);
+        margin-top: 8px;
+        line-height: 1.45;
+      }
+      .step__hl {
+        color: var(--primary);
+        font-weight: 700;
+      }
+      .loop__arrow {
+        align-self: center;
+        color: var(--muted);
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      /* 하단 띠 */
+      .page1-foot {
+        margin-top: auto;
+        padding-top: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .foot-lead {
+        font-size: 18px;
+        color: var(--ink-2);
+      }
+      .foot-lead b {
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .foot-tags {
+        display: flex;
+        gap: 8px;
+        flex: none;
+      }
+
+      /* ══════════════ 2페이지 ══════════════ */
+      .p2-head {
+        margin-bottom: 50px;
+      }
+
+      .mockups {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 20px;
+        align-items: stretch;
+      }
+
+      .frame {
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-lg);
+        background: var(--surface);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+      }
+      .frame__cap {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink-2);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .frame__cap .pcard__dot {
+        width: 10px;
+        height: 10px;
+      }
+
+      /* 소비자 폰 목업 */
+      .phone {
+        flex: 1;
+        background: var(--canvas);
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .phone__bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .phone__loc {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .deal-card {
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 16px 16px;
+        box-shadow: var(--shadow-subtle);
+        background: var(--canvas);
+      }
+      .deal-card__top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .deal-card__name {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .deal-card__dist {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .deal-card__price {
+        margin-top: 6px;
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+      }
+      .deal-card__sale {
+        font-size: 19px;
+        color: var(--primary);
+      }
+      .deal-card__orig {
+        font-size: 13px;
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+      .deal-card__meta {
+        margin-top: 6px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--ink-2);
+      }
+      .deal-card__left b {
+        color: var(--error);
+      }
+      .pickup-chip {
+        margin-top: 2px;
+        background: var(--primary-weak);
+        border-radius: var(--r-md);
+        padding: 12px 14px;
+        text-align: center;
+      }
+      .pickup-chip span {
+        font-size: 11.5px;
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+      .pickup-chip .code {
+        font-size: 28px;
+        color: var(--primary);
+        letter-spacing: 0.22em;
+        margin-top: 3px;
+      }
+
+      /* 사장님 대시보드 목업 */
+      .dash {
+        flex: 1;
+        background: var(--canvas);
+        border-radius: var(--r-md);
+        border: 1px solid var(--border);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .dash__stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+      .stat {
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 16px 15px;
+      }
+      .stat--hot {
+        border-color: var(--primary);
+        background: var(--primary-weak);
+      }
+      .stat__label {
+        font-size: 12px;
+        color: var(--muted);
+        display: block;
+      }
+      .stat__val {
+        font-size: 24px;
+        margin-top: 4px;
+        display: block;
+      }
+      .stat__val small {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink-2);
+      }
+      .stat--hot .stat__val {
+        color: var(--primary);
+      }
+      .dash__deal {
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 17px 18px;
+      }
+      .dash__deal-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 15px;
+      }
+      .dash__deal-top .num {
+        font-size: 17px;
+      }
+      .bar {
+        display: flex;
+        height: 10px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: var(--surface);
+        margin-top: 10px;
+      }
+      .bar i {
+        height: 100%;
+        display: block;
+      }
+      .bar .picked {
+        background: var(--success);
+      }
+      .bar .reserved {
+        background: var(--primary);
+      }
+      .legend {
+        margin-top: 8px;
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: var(--ink-2);
+      }
+      .legend b {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 600;
+      }
+      .legend .sw {
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+      }
+
+      /* 기술 하이라이트 */
+      .tech {
+        margin-top: 50px;
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 18px;
+      }
+      .tech-card {
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 28px 28px;
+      }
+      .tech-card--hero {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .tech-card__k {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: #7db4ff;
+        text-transform: uppercase;
+      }
+      .tech-card--plain .tech-card__k,
+      .arch-card .tech-card__k {
+        color: var(--primary);
+      }
+      .tech-card__t {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 8px 0 0;
+        letter-spacing: -0.02em;
+      }
+
+      /* 아키텍처 · 데이터 흐름 다이어그램 */
+      .arch-card {
+        background: var(--surface);
+      }
+      .arch {
+        margin-top: 20px;
+      }
+      .tier-tag {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 9px;
+      }
+      .arch-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .node {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 13px 15px;
+      }
+      .node b {
+        display: block;
+        font-size: 15.5px;
+        font-weight: 700;
+      }
+      .node span {
+        display: block;
+        font-size: 12px;
+        color: var(--ink-2);
+        margin-top: 3px;
+        line-height: 1.4;
+      }
+      .node--user {
+        border-left-color: var(--success);
+      }
+      .node--owner {
+        border-left-color: var(--primary);
+      }
+      .node--server {
+        border-left-color: var(--ink);
+      }
+      .node--db {
+        border-left-color: var(--primary);
+      }
+      .node--fcm {
+        border-left-color: var(--warning);
+      }
+
+      /* 세로 연결선 + 화살촉 */
+      .conn {
+        position: relative;
+        height: 30px;
+      }
+      .conn::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 7px;
+        width: 2px;
+        background: var(--muted);
+        transform: translateX(-50%);
+        opacity: 0.5;
+      }
+      .conn::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 7px solid var(--muted);
+        transform: translateX(-50%);
+      }
+      .conn__lbl {
+        position: absolute;
+        left: calc(50% + 12px);
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      /* 서버 → (DB, FCM) 분기 커넥터 */
+      .split {
+        position: relative;
+        height: 34px;
+      }
+      .split .stem {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        height: 12px;
+        width: 2px;
+        background: var(--muted);
+        opacity: 0.5;
+        transform: translateX(-50%);
+      }
+      .split .bar {
+        position: absolute;
+        top: 12px;
+        left: 25%;
+        right: 25%;
+        height: 2px;
+        background: var(--muted);
+        opacity: 0.5;
+      }
+      .split .drop {
+        position: absolute;
+        top: 12px;
+        height: 22px;
+        width: 2px;
+        background: var(--muted);
+        opacity: 0.5;
+      }
+      .split .drop.l {
+        left: 25%;
+      }
+      .split .drop.r {
+        right: 25%;
+        left: auto;
+      }
+      .split .drop::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: -7px;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 7px solid var(--muted);
+        transform: translateX(-50%);
+      }
+
+      .arch-note {
+        margin: 16px 0 0;
+        font-size: 13px;
+        color: var(--ink-2);
+        line-height: 1.5;
+      }
+      .arch-note b {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      /* 위치 카드 */
+      .geo {
+        margin-top: 18px;
+        position: relative;
+        height: 178px;
+        border-radius: var(--r-md);
+        background:
+          radial-gradient(circle at 50% 50%, rgba(49, 130, 246, 0.1), transparent 62%),
+          var(--surface);
+        overflow: hidden;
+      }
+      .geo .ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        border: 1.5px dashed var(--primary);
+        border-radius: 50%;
+        opacity: 0.55;
+      }
+      .geo .ring.r1 {
+        width: 100px;
+        height: 100px;
+      }
+      .geo .ring.r2 {
+        width: 166px;
+        height: 166px;
+        opacity: 0.3;
+      }
+      .geo .me {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--primary);
+        box-shadow: 0 0 0 5px rgba(49, 130, 246, 0.2);
+      }
+      .geo .pin {
+        position: absolute;
+        width: 11px;
+        height: 11px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+      }
+      .geo .pin.in {
+        background: var(--success);
+      }
+      .geo .pin.out {
+        background: var(--muted);
+      }
+
+      .tech-card__note {
+        margin-top: 14px;
+        font-size: 14.5px;
+        color: var(--ink-2);
+        line-height: 1.5;
+      }
+      .tech-card__note b {
+        color: var(--ink);
+      }
+
+      /* 하단: QR + 스택 */
+      .p2-foot {
+        margin-top: auto;
+        padding-top: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        border-top: 1px solid var(--border);
+      }
+      .stack {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .stack .lb {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      .stack .tags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      /* ── 인쇄 ── */
+      @page {
+        size: A3 portrait;
+        margin: 0;
+      }
+      @media print {
+        html,
+        body {
+          background: #fff;
+        }
+        .sheet {
+          margin: 0;
+          box-shadow: none;
+          page-break-after: always;
+          break-after: page;
+        }
+        .sheet:last-child {
+          page-break-after: auto;
+          break-after: auto;
+        }
+        * {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ══════════════════ 1페이지 : 왜 · 무엇을 ══════════════════ -->
+    <section class="sheet">
+      <div class="hero">
+        <div class="brand-mark" aria-hidden="true">
+          <!-- 태그/가격표 아이콘 -->
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M20.6 13.4L12.6 21.4a2 2 0 0 1-2.8 0L2.6 14.2a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h8.8a2 2 0 0 1 1.4.6l6.4 6.4a2 2 0 0 1 0 2.8z"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linejoin="round"
+            />
+            <circle cx="7.5" cy="7.5" r="1.6" fill="#fff" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-name">마감할인</h1>
+          <p class="brand-desc">로컬 마감 임박 재고 · 실시간 매칭 플랫폼</p>
+        </div>
+      </div>
+
+      <p class="tagline">
+        버려질 재고와,<br />그걸 싸게 살 <b>근처 사람</b>을<br />실시간으로 잇습니다.
+      </p>
+
+      <div class="problem">
+        <div class="pcard">
+          <div class="pcard__role">
+            <span class="pcard__dot pcard__dot--owner"></span>사장님
+          </div>
+          <ul>
+            <li>마감에 남은 재고는 대부분 폐기 — 순손실 + 음식물 쓰레기</li>
+            <li>"반값이라도 팔면 이득"이지만 제때 알릴 채널이 없음</li>
+            <li>재고 처리에 쓸 인력·시간이 없어 등록은 30초 안에 끝나야 함</li>
+          </ul>
+          <p class="pcard__punch pcard__punch--owner">남은 재고 = 그대로 손실</p>
+        </div>
+
+        <div class="pcard">
+          <div class="pcard__role">
+            <span class="pcard__dot pcard__dot--user"></span>소비자
+          </div>
+          <ul>
+            <li>근처 어느 가게가 지금 마감 할인 중인지 알 방법이 없음</li>
+            <li>좋은 가게 상품을 가성비 있게 사고 싶은 니즈 (지역 주민·대학생)</li>
+            <li>알림이 너무 많으면 피로 — 관심 카테고리·가게·거리로 걸러야 함</li>
+          </ul>
+          <p class="pcard__punch pcard__punch--user">싸게 살 기회를 놓침</p>
+        </div>
+      </div>
+
+      <div class="bridge">
+        버려질 재고와 그걸 싸게 살 근처 사람이 <b>서로를 실시간으로 찾지 못한다.</b>
+      </div>
+
+      <div class="loop">
+        <span class="kicker">How it works</span>
+        <h2 class="section-title">핵심 루프 — 등록에서 픽업까지</h2>
+        <div class="loop__steps">
+          <div class="step">
+            <div class="step__no">1</div>
+            <div class="step__name">등록</div>
+            <div class="step__desc">사장님이 상품·수량·<br />픽업 마감시간 입력</div>
+          </div>
+          <div class="loop__arrow">›</div>
+          <div class="step">
+            <div class="step__no">2</div>
+            <div class="step__name">알림</div>
+            <div class="step__desc">
+              조건 맞는 근처 사용자에게<br /><span class="step__hl">FCM 푸시</span> 발송
+            </div>
+          </div>
+          <div class="loop__arrow">›</div>
+          <div class="step">
+            <div class="step__no">3</div>
+            <div class="step__name">예약</div>
+            <div class="step__desc">
+              <span class="step__hl">선착순 재고 차감</span><br />+ 픽업코드 발급
+            </div>
+          </div>
+          <div class="loop__arrow">›</div>
+          <div class="step">
+            <div class="step__no">4</div>
+            <div class="step__name">픽업</div>
+            <div class="step__desc">매장 방문 · 코드 제시<br />현장결제 후 수령</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page1-foot">
+        <p class="foot-lead">
+          <b>대학가 1곳</b>부터 밀도 있게 시작 — 콜드 스타트를 좁은 지역으로 돌파
+        </p>
+        <div class="foot-tags">
+          <span class="tag">관심 카테고리</span>
+          <span class="tag">즐겨찾기 가게</span>
+          <span class="tag">반경 N km</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ 2페이지 : 어떻게 · 증명 ══════════════════ -->
+    <section class="sheet">
+      <div class="p2-head">
+        <span class="kicker">The product</span>
+        <h2 class="section-title">두 축을 한 앱에서 — 소비자와 사장님</h2>
+        <p class="section-lead">
+          소비자는 근처 마감 할인을 받아 예약하고, 사장님은 카운터 화면에서 현황을 조율합니다.
+        </p>
+      </div>
+
+      <div class="mockups">
+        <!-- 소비자 앱 -->
+        <div class="frame">
+          <div class="frame__cap">
+            <span class="pcard__dot pcard__dot--user"></span>소비자 앱 — 딜 목록 · 픽업코드
+          </div>
+          <div class="phone">
+            <div class="phone__bar">
+              <span>근처 마감 할인</span>
+              <span class="phone__loc">기준 주소 · 2km</span>
+            </div>
+            <div class="deal-card">
+              <div class="deal-card__top">
+                <span class="deal-card__name">소보루 크루아상</span>
+                <span class="deal-card__dist">0.4 km</span>
+              </div>
+              <div class="deal-card__price">
+                <span class="deal-card__sale num">2,000원</span>
+                <span class="deal-card__orig num">4,000원</span>
+              </div>
+              <div class="deal-card__meta">
+                <span class="deal-card__left">남은 <b class="num">3</b>개</span>
+                <span>~21:00 픽업</span>
+              </div>
+            </div>
+            <div class="deal-card">
+              <div class="deal-card__top">
+                <span class="deal-card__name">수제 딸기 케이크</span>
+                <span class="deal-card__dist">0.9 km</span>
+              </div>
+              <div class="deal-card__price">
+                <span class="deal-card__sale num">7,500원</span>
+                <span class="deal-card__orig num">15,000원</span>
+              </div>
+              <div class="deal-card__meta">
+                <span class="deal-card__left">남은 <b class="num">2</b>개</span>
+                <span>~20:30 픽업</span>
+              </div>
+            </div>
+            <div class="pickup-chip">
+              <span>예약 완료 · 픽업코드</span>
+              <div class="code num">4913</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 사장님 대시보드 -->
+        <div class="frame">
+          <div class="frame__cap">
+            <span class="pcard__dot pcard__dot--owner"></span>사장님 대시보드 — 카운터 PC 상시 화면 (16:9)
+          </div>
+          <div class="dash">
+            <div class="dash__stats">
+              <div class="stat">
+                <span class="stat__label">오늘 픽업</span>
+                <span class="stat__val num">12<small>개</small></span>
+              </div>
+              <div class="stat">
+                <span class="stat__label">오늘 매출</span>
+                <span class="stat__val num">48,000<small>원</small></span>
+              </div>
+              <div class="stat stat--hot">
+                <span class="stat__label">픽업 대기</span>
+                <span class="stat__val num">3<small>건</small></span>
+              </div>
+              <div class="stat">
+                <span class="stat__label">남은 재고</span>
+                <span class="stat__val num">7<small>개</small></span>
+              </div>
+            </div>
+
+            <div class="dash__deal">
+              <div class="dash__deal-top">
+                <b>소보루 크루아상</b>
+                <span class="num">3 / 10 남음</span>
+              </div>
+              <div class="bar">
+                <i class="picked" style="width: 40%"></i>
+                <i class="reserved" style="width: 30%"></i>
+              </div>
+              <div class="legend">
+                <b><span class="sw" style="background: var(--success)"></span>픽업 4</b>
+                <b><span class="sw" style="background: var(--primary)"></span>예약 3</b>
+                <b><span class="sw" style="background: var(--border)"></span>남음 3</b>
+              </div>
+            </div>
+
+            <div class="dash__deal">
+              <div class="dash__deal-top">
+                <b>수제 딸기 케이크</b>
+                <span class="num">2 / 6 남음</span>
+              </div>
+              <div class="bar">
+                <i class="picked" style="width: 33%"></i>
+                <i class="reserved" style="width: 34%"></i>
+              </div>
+              <div class="legend">
+                <b><span class="sw" style="background: var(--success)"></span>픽업 2</b>
+                <b><span class="sw" style="background: var(--primary)"></span>예약 2</b>
+                <b><span class="sw" style="background: var(--border)"></span>남음 2</b>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tech">
+        <!-- 아키텍처 · 데이터 흐름 -->
+        <div class="tech-card arch-card">
+          <span class="tech-card__k">Architecture</span>
+          <h3 class="tech-card__t">데이터 흐름 한눈에</h3>
+
+          <div class="arch">
+            <div class="arch-tier">
+              <span class="tier-tag">CLIENT · React + Vite</span>
+              <div class="arch-row">
+                <div class="node node--user">
+                  <b>소비자 앱</b><span>딜 목록 · 예약 · 픽업코드</span>
+                </div>
+                <div class="node node--owner">
+                  <b>사장님 대시보드</b><span>등록 · 현황 · 픽업 확인</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="conn">
+              <span class="conn__lbl">/api · axios (HTTPS)</span>
+            </div>
+
+            <div class="arch-tier">
+              <span class="tier-tag">SERVER · Express (Node, ESM)</span>
+              <div class="node node--server">
+                <b>routes → services → repositories</b>
+                <span>입력 검증 · 관심 대상 판정 · 거리 조회(Haversine)</span>
+              </div>
+            </div>
+
+            <div class="split">
+              <span class="stem"></span>
+              <span class="bar"></span>
+              <span class="drop l"></span>
+              <span class="drop r"></span>
+            </div>
+
+            <div class="arch-row">
+              <div class="node node--db">
+                <b>PostgreSQL</b>
+              </div>
+              <div class="node node--fcm">
+                <b>FCM 푸시</b><span>조건 대상 기기로 발송</span>
+              </div>
+            </div>
+
+            <p class="arch-note">
+              FCM 푸시는 조건에 맞는 <b>소비자·사장님 기기로 알림이 되돌아갑니다.</b>
+            </p>
+          </div>
+        </div>
+
+        <!-- 위치 기반 -->
+        <div class="tech-card tech-card--plain">
+          <span class="tech-card__k">Location targeting</span>
+          <h3 class="tech-card__t">위치 기반 알림 타게팅</h3>
+          <div class="geo" aria-hidden="true">
+            <div class="ring r2"></div>
+            <div class="ring r1"></div>
+            <div class="me"></div>
+            <div class="pin in" style="left: 42%; top: 40%"></div>
+            <div class="pin in" style="left: 60%; top: 58%"></div>
+            <div class="pin out" style="left: 20%; top: 24%"></div>
+            <div class="pin out" style="left: 82%; top: 74%"></div>
+          </div>
+          <p class="tech-card__note">
+            <b>(카테고리 매칭 OR 즐겨찾기) AND 반경 조건.</b> Haversine 거리 계산으로 반경 밖
+            딜은 알림에서 제외 — 알림 피로를 줄입니다.
+          </p>
+        </div>
+      </div>
+
+      <div class="p2-foot">
+        <div class="stack">
+          <div class="lb">TECH STACK</div>
+          <div class="tags">
+            <span class="tag">React</span>
+            <span class="tag">Express</span>
+            <span class="tag">PostgreSQL</span>
+            <span class="tag">FCM Push</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
