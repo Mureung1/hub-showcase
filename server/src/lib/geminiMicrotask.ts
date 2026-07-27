@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export const PROMPT_VERSION = "lv2-v3";
+export const PROMPT_VERSION = "lv2-v4";
 export const LV3_PROMPT_VERSION = "lv3-memory-v3";
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 export const GEMINI_TIMEOUT_MS = 3_000;
@@ -57,10 +57,10 @@ const LV2_REASON_STRATEGIES: Record<GeminiMicrotaskInput["reason"], string> = {
 // 문구는 새로 짓지 않고 이미 품질 검증(85개 전수 통과)이 끝난
 // src/lib/microtaskTemplates.js의 값을 그대로 옮겨왔다 — 그 파일을 import하면 서버
 // tsconfig 경계 밖이라 typecheck가 깨지므로(과거 _tmplAudit.ts에서 겪음) 값만 복제한다.
-// 범위는 9개 유형 전부가 아니라, 오늘 실측에서 실제로 문제가 확인된 유형(리포트/글쓰기,
-// 발표/PT 준비)과 예시가 아예 없어 위험이 높았던 유형(코딩 실습·시험공부·프로젝트·
-// 조별과제·개인공부·기타) 8종으로 한정했다. 문제풀이/암기는 기존 정적 예시로 이미
-// 대표되고 있었고 오염 사례도 없어 이번 범위에서 제외했다.
+// 9개 유형 전부를 커버한다(2026-07-27, 문제풀이/암기 3개 combo 추가로 구조적 갭 해소).
+// 단, "이유별 완전 차별화"까지는 보장하지 않는다 — 발표/PT 준비처럼 첫 행동의 형태가
+// 원래 좁은 유형은 이유별 예시를 넣어도 결과가 근접 수렴하는 걸 재샘플링으로 확인했고,
+// 이건 예시 부족이 아니라 유형 자체의 구조적 한계로 판단해 추가 재작성은 하지 않는다.
 const LV2_TYPE_REASON_EXAMPLES: Partial<
   Record<string, Record<"overwhelm" | "dislike" | "temptation", string>>
 > = {
@@ -68,6 +68,11 @@ const LV2_TYPE_REASON_EXAMPLES: Partial<
     overwhelm: "빈 문서를 연 채로 제목 한 줄 입력하기",
     dislike: "문서를 연 채로 첫 문장 한 줄 쓰기",
     temptation: "폰을 멀리 둔 채로 문서 제목 한 줄 입력하기",
+  },
+  "문제풀이/암기": {
+    overwhelm: "첫 문제 조건을 노트에 한 줄 옮겨 적기",
+    dislike: "가장 쉬워 보이는 문제 하나 풀기",
+    temptation: "폰을 멀리 둔 채로 첫 문제 조건 한 줄 적기",
   },
   "발표/PT 준비": {
     overwhelm: "슬라이드 첫 장에 발표 제목 입력하기",
@@ -106,15 +111,33 @@ const LV2_TYPE_REASON_EXAMPLES: Partial<
   },
 };
 
-// reason이 custom이면 유형별 매칭 예시가 없으므로(microtaskTemplates.js의
-// CUSTOM_FALLBACK_MICROTASKS도 유형 무관 범용 문구), 유형과 무관하게 이 값 하나를 쓴다.
-const LV2_CUSTOM_REASON_EXAMPLE = "해야 할 일을 한 문장으로 적기";
+// custom 이유는 microtaskTemplates.js에 유형별 검증된 문구가 없어(그 파일의 템플릿은
+// overwhelm/dislike/temptation 3종만 다룸) 새로 작성했다. LV2_REASON_STRATEGIES의 custom
+// 전략("완성도 부담을 낮춰 임시 초안 수준의 행동")을 그대로 담아, 9개 유형 전부에 대해
+// "완벽하지 않은/다듬지 않은 X 초안 한 줄 Y"류로 통일된 톤을 유지했다. 전부
+// validateMicrotaskQuality()로 통과 확인 완료(2026-07-27).
+const LV2_CUSTOM_REASON_EXAMPLES: Partial<Record<string, string>> = {
+  "리포트/글쓰기": "완벽하지 않은 리포트 제목 초안 한 줄 적기",
+  "문제풀이/암기": "정답 확신 없어도 첫 문제 풀이 초안 한 줄 쓰기",
+  "발표/PT 준비": "다듬지 않은 발표 제목 초안 한 줄 작성하기",
+  "코딩 실습": "완벽하지 않은 임시 코드 한 줄 작성하기",
+  시험공부: "완벽하지 않게 핵심 개념 한 줄 요약하기",
+  프로젝트: "다듬지 않은 초안 메모 한 줄 작성하기",
+  조별과제: "완벽하지 않은 내 파트 초안 한 줄 쓰기",
+  개인공부: "정리되지 않아도 되는 핵심 내용 한 줄 적기",
+  기타: "완벽하지 않은 임시 메모 한 줄 적기",
+};
+
+// 위 맵에 없는 유형(현재는 없음, 방어용 기본값)을 위한 범용 custom 예시.
+const LV2_CUSTOM_REASON_FALLBACK_EXAMPLE = "해야 할 일을 한 문장으로 적기";
 
 function pickLv2DynamicExample(
   type: string,
   reason: GeminiMicrotaskInput["reason"],
 ): string | null {
-  if (reason === "custom") return LV2_CUSTOM_REASON_EXAMPLE;
+  if (reason === "custom") {
+    return LV2_CUSTOM_REASON_EXAMPLES[type] ?? LV2_CUSTOM_REASON_FALLBACK_EXAMPLE;
+  }
   return LV2_TYPE_REASON_EXAMPLES[type]?.[reason] ?? null;
 }
 

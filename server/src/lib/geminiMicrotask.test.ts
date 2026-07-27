@@ -145,6 +145,7 @@ describe("generateGeminiMicrotask", () => {
   it.each([
     ["리포트/글쓰기", "overwhelm", "빈 문서를 연 채로 제목 한 줄 입력하기"],
     ["리포트/글쓰기", "dislike", "문서를 연 채로 첫 문장 한 줄 쓰기"],
+    ["문제풀이/암기", "overwhelm", "첫 문제 조건을 노트에 한 줄 옮겨 적기"],
     ["발표/PT 준비", "temptation", "폰을 멀리 둔 채로 PPT 첫 장 제목 한 줄 입력하기"],
     ["코딩 실습", "overwhelm", "요구사항에서 할 일 한 줄 적기"],
     ["기타", "dislike", "해야 할 일 첫 단계 한 줄 적기"],
@@ -164,14 +165,45 @@ describe("generateGeminiMicrotask", () => {
     },
   );
 
-  it("reason=custom이면 유형과 무관하게 범용 custom 예시가 들어간다", async () => {
+  it.each([
+    ["리포트/글쓰기", "완벽하지 않은 리포트 제목 초안 한 줄 적기"],
+    ["문제풀이/암기", "정답 확신 없어도 첫 문제 풀이 초안 한 줄 쓰기"],
+    ["발표/PT 준비", "다듬지 않은 발표 제목 초안 한 줄 작성하기"],
+    ["코딩 실습", "완벽하지 않은 임시 코드 한 줄 작성하기"],
+    ["시험공부", "완벽하지 않게 핵심 개념 한 줄 요약하기"],
+    ["프로젝트", "다듬지 않은 초안 메모 한 줄 작성하기"],
+    ["조별과제", "완벽하지 않은 내 파트 초안 한 줄 쓰기"],
+    ["개인공부", "정리되지 않아도 되는 핵심 내용 한 줄 적기"],
+    ["기타", "완벽하지 않은 임시 메모 한 줄 적기"],
+  ] as const)(
+    "reason=custom이면 유형=%s에 맞는 custom 예시가 들어간다",
+    async (type, expectedExample) => {
+      const fetchMock = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+      await generateGeminiMicrotask({
+        ...INPUT,
+        type,
+        reason: "custom",
+        customReason: "완벽하게 하고 싶어서",
+      });
+
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.input).toContain(
+        `이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: ${expectedExample}`,
+      );
+    },
+  );
+
+  it("reason=custom이고 유형이 매핑에 없으면 범용 custom 예시로 폴백한다", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
 
     await generateGeminiMicrotask({
       ...INPUT,
-      type: "리포트/글쓰기",
+      type: "존재하지 않는 유형",
       reason: "custom",
       customReason: "완벽하게 하고 싶어서",
     });
@@ -182,12 +214,12 @@ describe("generateGeminiMicrotask", () => {
     );
   });
 
-  it("동적 예시가 없는 유형(문제풀이/암기)에는 해당 안내 줄 자체가 빠진다", async () => {
+  it("동적 예시 매핑에 없는 유형+비-custom 이유에는 해당 안내 줄 자체가 빠진다", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
 
-    await generateGeminiMicrotask({ ...INPUT, type: "문제풀이/암기" });
+    await generateGeminiMicrotask({ ...INPUT, type: "존재하지 않는 유형" });
 
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body.input).not.toContain("이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예:");
