@@ -254,6 +254,45 @@ test('MCP cancellation aborts the held POST without retry or a normal result', a
   }
 })
 
+test('202 acknowledgement is rejected as unavailable without polling or retry', async () => {
+  const broker = await startBroker(async (request, response) => {
+    if (request.kind === 'handshake') {
+      return { protocolVersion: 1, kind: 'handshake_accepted' }
+    }
+    response.writeHead(202, { 'content-type': 'application/json' })
+    response.end(
+      JSON.stringify({
+        protocolVersion: 1,
+        kind: 'error',
+        code: 'broker_unavailable',
+        displayMessage: 'Poll for the result later.',
+      }),
+    )
+    return null
+  })
+  const client = startAdapter(broker.url)
+  try {
+    await initialize(client)
+    client.send({
+      jsonrpc: '2.0',
+      id: 30,
+      method: 'tools/call',
+      params: { name: 'propose_state_patch', arguments: validRequest },
+    })
+    const response = await client.read()
+    assert.equal(
+      (response.result as { isError: boolean }).isError,
+      true,
+    )
+    assert.match(JSON.stringify(response), /Broker is unavailable/)
+    assert.doesNotMatch(JSON.stringify(response), /Poll for/)
+    assert.equal(broker.requests.length, 2)
+  } finally {
+    await client.close()
+    await broker.close()
+  }
+})
+
 async function initialize(client: AdapterClient): Promise<void> {
   client.send({
     jsonrpc: '2.0',

@@ -591,7 +591,7 @@ test('an accepted commit reports lost continuation without reapplying after nati
   }
 })
 
-test('revision feedback rotates the private MCP session, replaces the Review, and accepts the replacement exactly once', async () => {
+test('donor-only characterization: revision rotates the private MCP session and replaces the Review', async () => {
   const fixture = await createActionFixture()
   const runtime = new RevisionHttpMcpProductRuntime()
 

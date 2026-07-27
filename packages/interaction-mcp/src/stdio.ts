@@ -283,7 +283,7 @@ async function callTool(id: JsonRpcId, params: unknown): Promise<void> {
       return
     }
     sendToolFailure(id, safeUnavailableMessage)
-  } catch (error) {
+  } catch {
     sendToolFailure(
       id,
       abortController.signal.aborted
@@ -339,7 +339,10 @@ async function postToBroker(
   }
   const responseBody = await readBoundedResponseBody(response)
   const decoded = parseInteractionBrokerResponse(responseBody)
-  if (response.status !== 200 && decoded.kind !== 'error') {
+  if (
+    response.status !== 200 &&
+    (response.status < 400 || decoded.kind !== 'error')
+  ) {
     throw new BrokerUnavailableError()
   }
   return decoded

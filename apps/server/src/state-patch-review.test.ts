@@ -460,7 +460,7 @@ test('reject records a durable no-apply decision and nominal retry does not answ
   }
 })
 
-test('revision feedback rotates the proposal key and atomically replaces the pending patch before a second Review', async () => {
+test('donor-only characterization: revision feedback replaces the pending durable patch before a second Review', async () => {
   const fixture = await createReviewFixture()
 
   try {
@@ -935,7 +935,7 @@ test('workspace reactivation invalidates an old proposal tool session', async ()
   }
 })
 
-test('only the exact Plan question from the patch native Turn becomes a product Review', async () => {
+test('donor-only characterization: built-in Plan question creates the second Review confirmation binding', async () => {
   const fixture = await createReviewFixture()
 
   try {
