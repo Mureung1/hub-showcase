@@ -75,7 +75,7 @@ export function itemIconStyle(color: string | null): CSSProperties | undefined {
 
 // 마이홈(본인)·친구 마이홈 방문·온보딩 미리보기 세 곳에서 그대로 재사용하는 두두 마스코트 렌더링.
 // appearance가 null이면(온보딩 미리보기처럼 아직 장착 아이템이 없는 경우) 장착 슬롯은 그냥 안 보여준다.
-export function renderDodoMascot(bodyColor: string, eyeCount: 1 | 2, appearance: DodoAppearance | null, label: string) {
+export function renderDodoMascot(bodyColor: string, eyeCount: 1 | 2 | 3, appearance: DodoAppearance | null, label: string) {
   const equippedSlots = appearance ? [appearance.hat, appearance.glasses, appearance.outfit, appearance.accessory] : []
 
   return (
@@ -87,6 +87,7 @@ export function renderDodoMascot(bodyColor: string, eyeCount: 1 | 2, appearance:
           <>
             <i className="home-dodo-eye left" />
             <i className="home-dodo-eye right" />
+            {eyeCount === 3 && <i className="home-dodo-eye third" />}
           </>
         )}
         <span className="home-dodo-cheek left" />

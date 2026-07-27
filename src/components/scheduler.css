@@ -239,6 +239,7 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .home-dodo-eye { width: 16px; height: 16px; position: absolute; top: 63px; background: var(--scheduler-ink); }
 .home-dodo-eye.left { left: 48px; }.home-dodo-eye.right { right: 48px; }
 .home-dodo-eye.one-eye { left: 80px; }
+.home-dodo-eye.third { top: 40px; left: 80px; }
 .home-dodo-cheek { width: 16px; height: 8px; position: absolute; top: 99px; background: #d77f7d; }
 .home-dodo-cheek.left { left: 24px; }.home-dodo-cheek.right { right: 24px; }
 .home-dodo-mouth { width: 24px; height: 8px; position: absolute; left: 76px; top: 113px; background: var(--scheduler-ink); box-shadow: 8px 8px 0 var(--scheduler-ink), 16px 8px 0 var(--scheduler-ink), 24px 0 0 var(--scheduler-ink); }

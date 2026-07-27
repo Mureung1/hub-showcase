@@ -6,9 +6,9 @@ import type { SelfDodoAppearance } from './types'
 
 type DodoAppearancePickerProps = {
   color: string
-  eyeCount: 1 | 2
+  eyeCount: 1 | 2 | 3
   onColorChange: (color: string) => void
-  onEyeCountChange: (eyeCount: 1 | 2) => void
+  onEyeCountChange: (eyeCount: 1 | 2 | 3) => void
 }
 
 // 온보딩·마이페이지 커스텀 화면 둘 다에서 쓰는 두두 미리보기 + 색상/눈개수 선택 UI.
@@ -32,7 +32,7 @@ export function DodoAppearancePicker({ color, eyeCount, onColorChange, onEyeCoun
         ))}
       </div>
       <div className="avatar-eyes-picker" role="radiogroup" aria-label="두두 눈 개수">
-        {([1, 2] as const).map((count) => (
+        {([1, 2, 3] as const).map((count) => (
           <button
             type="button"
             key={count}
@@ -50,7 +50,7 @@ export function DodoAppearancePicker({ color, eyeCount, onColorChange, onEyeCoun
 
 type DodoOnboardingViewProps = {
   appearance: SelfDodoAppearance
-  onComplete: (patch: { bodyColor: string; eyeCount: 1 | 2 }) => Promise<void>
+  onComplete: (patch: { bodyColor: string; eyeCount: 1 | 2 | 3 }) => Promise<void>
   onLogout: () => void
 }
 
@@ -58,7 +58,7 @@ type DodoOnboardingViewProps = {
 // 그대로 "시작하기"를 눌러도 되고, 바꿔서 눌러도 된다 — 둘 다 제출로 취급해 온보딩을 끝낸다.
 export function DodoOnboardingView({ appearance, onComplete, onLogout }: DodoOnboardingViewProps) {
   const [draftColor, setDraftColor] = useState(appearance.bodyColor)
-  const [draftEyeCount, setDraftEyeCount] = useState<1 | 2>(appearance.eyeCount)
+  const [draftEyeCount, setDraftEyeCount] = useState<1 | 2 | 3>(appearance.eyeCount)
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
 

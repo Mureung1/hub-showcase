@@ -27,7 +27,7 @@ export function useDodoManager() {
     setAppearance(await dodoApi.unequipRoomItem(inventoryId))
   }
 
-  const updateAppearance = async (patch: { bodyColor: string; eyeCount: 1 | 2 }) => {
+  const updateAppearance = async (patch: { bodyColor: string; eyeCount: 1 | 2 | 3 }) => {
     setAppearance(await dodoApi.updateDodoAppearance(patch))
   }
 

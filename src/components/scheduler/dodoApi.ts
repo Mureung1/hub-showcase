@@ -9,7 +9,7 @@ export function fetchDodoAppearance() {
   return request<SelfDodoAppearance>('/api/dodo/appearance')
 }
 
-export function updateDodoAppearance(patch: { bodyColor: string; eyeCount: 1 | 2 }) {
+export function updateDodoAppearance(patch: { bodyColor: string; eyeCount: 1 | 2 | 3 }) {
   return request<SelfDodoAppearance>('/api/dodo/appearance', { method: 'PATCH', body: JSON.stringify(patch) })
 }
 

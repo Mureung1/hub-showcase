@@ -111,7 +111,7 @@ export type EquippedSlotItem = { itemId: string; iconKey: string; color: string 
 // 친구 마이홈 방문에서도 그대로 쓰이는 공용 모양 — bodyColor/eyeCount는 방문자도 실제 모습을 봐야 해서 포함한다.
 export type DodoAppearance = {
   bodyColor: string
-  eyeCount: 1 | 2
+  eyeCount: 1 | 2 | 3
   hat: EquippedSlotItem | null
   glasses: EquippedSlotItem | null
   outfit: EquippedSlotItem | null

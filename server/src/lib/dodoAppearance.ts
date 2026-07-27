@@ -61,7 +61,7 @@ function toSlotResponse(item: AppearanceWithItems['hatItem'], color: string | nu
 export function toAppearanceResponse(appearance: AppearanceWithItems) {
   return {
     bodyColor: appearance.bodyColor,
-    eyeCount: appearance.eyeCount as 1 | 2,
+    eyeCount: appearance.eyeCount as 1 | 2 | 3,
     hat: toSlotResponse(appearance.hatItem, appearance.hatColor),
     glasses: toSlotResponse(appearance.glassesItem, appearance.glassesColor),
     outfit: toSlotResponse(appearance.outfitItem, appearance.outfitColor),
@@ -69,9 +69,9 @@ export function toAppearanceResponse(appearance: AppearanceWithItems) {
   }
 }
 
-// 몸 색상/눈 개수만 다루는 1차 온보딩 — 검증(색상 팔레트 포함 여부, eyeCount 1|2)은 라우트에서 하고
+// 몸 색상/눈 개수만 다루는 1차 온보딩 — 검증(색상 팔레트 포함 여부, eyeCount 1|2|3)은 라우트에서 하고
 // 여기서는 upsert만 담당한다. onboardedAt은 최초 1회만 기록해(멱등) 재제출해도 온보딩 완료 시점이 안 바뀐다.
-export async function updateDodoBaseAppearance(userId: string, patch: { bodyColor: string; eyeCount: 1 | 2 }) {
+export async function updateDodoBaseAppearance(userId: string, patch: { bodyColor: string; eyeCount: 1 | 2 | 3 }) {
   const existing = await prisma.dodoAppearance.findUnique({ where: { userId } })
   return prisma.dodoAppearance.upsert({
     where: { userId },

@@ -5,7 +5,7 @@ import type { SelfDodoAppearance } from './types'
 
 type DodoCustomizeViewProps = {
   appearance: SelfDodoAppearance
-  onSave: (patch: { bodyColor: string; eyeCount: 1 | 2 }) => Promise<void>
+  onSave: (patch: { bodyColor: string; eyeCount: 1 | 2 | 3 }) => Promise<void>
   onBack: () => void
 }
 
@@ -13,7 +13,7 @@ type DodoCustomizeViewProps = {
 // 온보딩과 같은 PATCH /api/dodo/appearance를 재사용하므로, 다시 저장해도 onboardedAt은 그대로 유지된다.
 export function DodoCustomizeView({ appearance, onSave, onBack }: DodoCustomizeViewProps) {
   const [draftColor, setDraftColor] = useState(appearance.bodyColor)
-  const [draftEyeCount, setDraftEyeCount] = useState<1 | 2>(appearance.eyeCount)
+  const [draftEyeCount, setDraftEyeCount] = useState<1 | 2 | 3>(appearance.eyeCount)
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
 

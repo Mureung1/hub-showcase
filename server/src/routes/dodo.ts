@@ -132,8 +132,8 @@ dodoRouter.patch('/appearance', asyncHandler(async (req, res) => {
     res.status(400).json({ error: `bodyColor는 ${AVATAR_PALETTE.join('/')} 중 하나여야 합니다.` })
     return
   }
-  if (eyeCount !== 1 && eyeCount !== 2) {
-    res.status(400).json({ error: 'eyeCount는 1 또는 2여야 합니다.' })
+  if (eyeCount !== 1 && eyeCount !== 2 && eyeCount !== 3) {
+    res.status(400).json({ error: 'eyeCount는 1, 2 또는 3이어야 합니다.' })
     return
   }
 
