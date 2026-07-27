@@ -23,11 +23,29 @@ CATEGORY_CODES: dict[Category, tuple[str, ...]] = {
     "편의점": ("CS300002",),
 }
 
+# Categories with complete Seoul commercial-analysis metrics.
 CATEGORY_NAME_TERMS: dict[Category, tuple[str, ...]] = {
     "카페": ("카페", "커피"),
     "음식점": ("음식점", "한식", "중식", "일식", "분식", "주점"),
     "베이커리": ("베이커리", "제과", "빵", "도넛"),
     "편의점": ("편의점",),
+}
+
+# User-facing groups considered when ranking the most common store categories.
+# Groups outside CATEGORY_CODES are intentionally exposed as partial support.
+CATEGORY_FILTER_TERMS: dict[str, tuple[str, ...]] = {
+    **CATEGORY_NAME_TERMS,
+    "주점": ("주점", "호프", "포차", "술집", "와인바", "칵테일바"),
+    "의류": ("의류", "의복", "패션", "옷", "신발"),
+    "미용": ("미용", "헤어", "네일", "피부관리", "이발"),
+    "학원": ("학원", "교습", "교육원"),
+    "숙박": ("숙박", "호텔", "모텔", "여관", "게스트하우스"),
+    "부동산": ("부동산", "공인중개"),
+    "약국": ("약국",),
+    "병원": ("병원", "의원", "치과", "한의원"),
+    "체육": ("체육", "헬스", "피트니스", "스포츠", "요가", "필라테스"),
+    "세탁": ("세탁", "수선"),
+    "생활용품": ("생활용품", "잡화", "문구"),
 }
 
 
@@ -70,8 +88,13 @@ SUPPORTED_RADII: tuple[NearbyRadius, ...] = (100, 300, 500)
 
 
 class ProductCategory(BaseModel):
-    name: Category
+    name: str
     codes: tuple[str, ...]
+
+
+BOOTSTRAP_CATEGORIES = tuple(
+    ProductCategory(name=name, codes=codes) for name, codes in CATEGORY_CODES.items()
+)
 
 
 class ProductCatalogResponse(BaseModel):
@@ -80,11 +103,11 @@ class ProductCatalogResponse(BaseModel):
     radii: tuple[NearbyRadius, ...]
 
 
-def get_product_catalog() -> ProductCatalogResponse:
+def get_product_catalog(
+    categories: tuple[ProductCategory, ...] | None = None,
+) -> ProductCatalogResponse:
     return ProductCatalogResponse(
         markets=SUPPORTED_MARKETS,
-        categories=tuple(
-            ProductCategory(name=name, codes=codes) for name, codes in CATEGORY_CODES.items()
-        ),
+        categories=categories or BOOTSTRAP_CATEGORIES,
         radii=SUPPORTED_RADII,
     )
