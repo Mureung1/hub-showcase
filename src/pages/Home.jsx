@@ -14,6 +14,7 @@ import {
 import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
+import { apiUrl } from '../utils/apiBaseUrl'
 import TopNav from '../components/TopNav'
 import MenuCard from '../components/MenuCard'
 import PromoBanner from '../components/PromoBanner'
@@ -86,7 +87,7 @@ function Home() {
       return
     }
 
-    const fetchRecipes = fetch(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`)
+    const fetchRecipes = fetch(apiUrl(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`))
       .then((res) => res.json())
       .then((data) => groupRecipesByMissingIngredients(data.recipes ?? [], ownedMatchNames, SEASONING_MATCH_NAMES))
       .catch(() => ({ ready: [], shopping: [], others: [] }))

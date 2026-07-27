@@ -5,6 +5,7 @@ import { fridgeIngredients } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
 import { buildNaverSearchUrl, buildCoupangSearchUrl, fetchNaverProducts } from '../utils/purchaseLinks'
+import { apiUrl } from '../utils/apiBaseUrl'
 import CookingSteps from '../components/CookingSteps'
 import IngredientList from '../components/IngredientList'
 import PurchaseLinkPanel from '../components/PurchaseLinkPanel'
@@ -36,7 +37,7 @@ function RecipeDetailPage() {
     setIsPlaying(false)
     setVideoAspectRatio(16 / 9)
 
-    fetch(`/api/recipes/${recipeId}`)
+    fetch(apiUrl(`/api/recipes/${recipeId}`))
       .then((res) => {
         if (!res.ok) throw new Error('not found')
         return res.json()
@@ -54,7 +55,7 @@ function RecipeDetailPage() {
     if (!youtubeId) return
 
     let cancelled = false
-    fetch(`/api/youtube/dimensions?videoId=${youtubeId}`)
+    fetch(apiUrl(`/api/youtube/dimensions?videoId=${youtubeId}`))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!cancelled && data?.width && data?.height) {
