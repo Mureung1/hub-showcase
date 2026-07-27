@@ -1,4 +1,4 @@
-import { parse } from 'csv-parse/sync';
+import { parse } from 'csv-parse/browser/esm/sync';
 
 import type {
   ImportFieldMappingRequest,
@@ -280,7 +280,9 @@ function normalizeFlatRow(row: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(row).map(([field, value]) => [
       field,
-      value === null || value === undefined ? '' : String(value),
+      value === null || value === undefined
+        ? ''
+        : String(value).replace(/\r\n?/gu, '\n'),
     ])
   );
 }
