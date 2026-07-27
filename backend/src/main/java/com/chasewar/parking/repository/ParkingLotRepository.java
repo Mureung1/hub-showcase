@@ -18,7 +18,7 @@ public interface ParkingLotRepository extends JpaRepository<ParkingLot, Long> {
             SELECT new com.chasewar.parking.repository.dto.ParkingLotDetailProjection(
                 p.id, p.name, p.address, p.tel,
                 p.parkingKind, p.operType, p.totalSlots, p.payType,
-                p.fee, p.operatingHours,
+                p.fee, p.operatingHours, p.coordinates,
                 r.availableSlots, r.totalSlots, r.sourceUpdatedAt
             )
             FROM ParkingLot p

@@ -1,18 +1,19 @@
 package com.chasewar.parking.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-import com.chasewar.global.infra.placesearch.PlaceSearchClient;
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.ParkingLotRealtime;
-import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.parking.domain.vo.DistanceType;
 import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.domain.vo.OperatingHours;
 import com.chasewar.parking.domain.vo.RealtimeStatus;
+import com.chasewar.parking.domain.vo.WalkingRoute;
 import com.chasewar.parking.dto.ParkingLotDetailResponse;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
+import com.chasewar.parking.infra.walkingroute.WalkingRouteClient;
 import com.chasewar.parking.repository.ParkingLotRealtimeRepository;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.IntegrationTest;
@@ -29,10 +30,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class ParkingLotServiceIntegrationTest extends IntegrationTest {
 
     private static final Coordinates destinationCoordinates = new Coordinates(37.5, 127.0);
-    private static final String destination = "강남역";
-
-    @MockitoBean
-    private PlaceSearchClient placeSearchClient;
+    private static final Coordinates NEAR = new Coordinates(37.501, 127.0);
+    private static final Coordinates FAR = new Coordinates(37.503, 127.0);
 
     @Autowired
     private ParkingLotRepository parkingLotRepository;
@@ -43,6 +42,9 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
     @Autowired
     private ParkingLotRealtimeRepository parkingLotRealtimeRepository;
 
+    @MockitoBean
+    private WalkingRouteClient walkingRouteClient;
+
     @DisplayName("목적지 주변 주차장을 검색한다")
     @Nested
     class SearchParkingLots {
@@ -51,14 +53,12 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_within1km() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             persistParkingLot("12345", "1km 이내 가까운 주차장", new Coordinates(37.501, 127.0));
             persistParkingLot("30000", "1km 이내 먼 주차장", new Coordinates(37.507, 127.0));
             persistParkingLot("67890", "1km 초과 주차장", new Coordinates(37.52, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results)
@@ -70,14 +70,12 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_sortedByDistance() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             persistParkingLot("30000", "1km 이내 먼 주차장", new Coordinates(37.507, 127.0));
             persistParkingLot("20000", "1km 이내 중간 주차장", new Coordinates(37.504, 127.0));
             persistParkingLot("10000", "1km 이내 가장 가까운 주차장", new Coordinates(37.501, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results)
@@ -89,13 +87,11 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_excludeNoCoordinates() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             persistParkingLot("10000", "좌표 있는 주차장", new Coordinates(37.501, 127.0));
             persistParkingLot("20000", "좌표 없는 주차장", null);
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results)
@@ -107,14 +103,12 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_limitTo10() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             for (int i = 1; i <= 15; i++) {
                 persistParkingLot(String.valueOf(i), "테스트 주차장" + i, new Coordinates(37.5 + i * 0.000001, 127.0));
             }
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(results).hasSize(10);
@@ -124,32 +118,29 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_withRealtimeStatus() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
                     .pkltCd("10001")
                     .name("실시간 데이터가 있는 주차장")
                     .coordinates(new Coordinates(37.502, 127.0))
                     .build()
             );
+
             parkingLotRealtimeRepository.save(
-                    new ParkingLotRealtime("10001", 100, 60, LocalDateTime.of(2026, 7, 23, 17, 02))
+                    new ParkingLotRealtime("10001", 100, 5, LocalDateTime.of(2026, 7, 23, 17, 02))
             );
 
             // when
-            List<ParkingLotSearchResponse> responses = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> responses = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(responses.get(0).name()).isEqualTo("실시간 데이터가 있는 주차장");
-            assertThat(responses.get(0).realtimeStatus()).isEqualTo(RealtimeStatus.SPACIOUS.name());
+            assertThat(responses.get(0).realtimeStatus()).isEqualTo(RealtimeStatus.BUSY.name());
         }
 
         @DisplayName("실시간 데이터가 없는 주차장은 null를 반환한다")
         @Test
         void success_withoutRealtimeStatus() {
             // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.of(destinationCoordinates));
             parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
                     .pkltCd("10001")
                     .name("실시간 데이터가 없는 주차장")
@@ -158,11 +149,53 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
             );
 
             // when
-            List<ParkingLotSearchResponse> responses = parkingLotService.search(destination);
+            List<ParkingLotSearchResponse> responses = parkingLotService.search(destinationCoordinates);
 
             // then
             assertThat(responses.get(0).name()).isEqualTo("실시간 데이터가 없는 주차장");
             assertThat(responses.get(0).realtimeStatus()).isNull();
+        }
+
+        @DisplayName("직선거리와 순서가 다르더라도 도보거리를 기준으로 정렬해 반환한다")
+        @Test
+        void success_sortedByWalkingDistance() {
+            // given
+            persistParkingLot("10001", "직선이 가깝고 도보가 먼 주차장", NEAR);
+            persistParkingLot("10002", "직선이 멀고 도보가 가까운 주차장", FAR);
+
+            given(walkingRouteClient.findRoute(NEAR, destinationCoordinates))
+                    .willReturn(Optional.of(new WalkingRoute(900, 750)));
+            given(walkingRouteClient.findRoute(FAR, destinationCoordinates))
+                    .willReturn(Optional.of(new WalkingRoute(400, 300)));
+
+            // when
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
+
+            // then
+            assertThat(results)
+                    .extracting(ParkingLotSearchResponse::name)
+                    .containsExactly("직선이 멀고 도보가 가까운 주차장", "직선이 가깝고 도보가 먼 주차장");
+            assertThat(results)
+                    .extracting(ParkingLotSearchResponse::distance)
+                    .containsExactly(400, 900);
+            assertThat(results)
+                    .extracting(ParkingLotSearchResponse::walkingSeconds)
+                    .containsExactly(300, 750);
+        }
+
+        @DisplayName("도보 경로를 구하지 못하면 도보 거리 대신 직선거리를 반환한다")
+        @Test
+        void success_fallbackToStraightDistance() {
+            // given
+            persistParkingLot("10001", "도보 경로를 못 구한 주차장", NEAR);
+
+            // when
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
+
+            // then
+            assertThat(results.get(0).distance()).isEqualTo(111);
+            assertThat(results.get(0).distanceType()).isEqualTo(DistanceType.STRAIGHT.name());
+            assertThat(results.get(0).walkingSeconds()).isNull();
         }
     }
 
@@ -182,13 +215,14 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
                     .build());
 
             // when
-            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId());
+            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId(), null);
 
             // then
             assertThat(response.name()).isEqualTo("역삼동 공영주차장");
             assertThat(response.fee().basicFee()).isEqualTo(5000);
             assertThat(response.operatingHours().weekdayStart()).isEqualTo("0900");
             assertThat(response.realtimeInfo()).isNull();
+            assertThat(response.distanceInfo()).isNull();
         }
 
         @DisplayName("실시간 주차장 데이터가 있는 주차장은 상세 정보에 실시간 정보를 포함한다")
@@ -201,18 +235,74 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
                     .build()
             );
             parkingLotRealtimeRepository.save(
-                    new ParkingLotRealtime("10001", 100, 60, LocalDateTime.of(2026, 7, 23, 9, 41, 15))
+                    new ParkingLotRealtime("10001", 100, 5, LocalDateTime.of(2026, 7, 23, 9, 41, 15))
             );
 
             // when
-            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId());
+            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId(), null);
 
             // then
             assertThat(response.realtimeInfo()).isNotNull();
-            assertThat(response.realtimeInfo().availableSlots()).isEqualTo(60);
+            assertThat(response.realtimeInfo().availableSlots()).isEqualTo(5);
             assertThat(response.realtimeInfo().totalSlots()).isEqualTo(100);
-            assertThat(response.realtimeInfo().status()).isEqualTo(RealtimeStatus.SPACIOUS.name());
+            assertThat(response.realtimeInfo().status()).isEqualTo(RealtimeStatus.BUSY.name());
             assertThat(response.totalSlots()).isEqualTo(100);
+        }
+
+        @DisplayName("목적지 좌표를 함께 받으면 상세 정보에 도보거리를 포함한다")
+        @Test
+        void success_walkingDistance() {
+            // given
+            ParkingLot saved = parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
+                    .pkltCd("10001")
+                    .coordinates(NEAR)
+                    .build()
+            );
+            given(walkingRouteClient.findRoute(NEAR, destinationCoordinates))
+                    .willReturn(Optional.of(new WalkingRoute(900, 720)));
+
+            // when
+            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId(), destinationCoordinates);
+
+            // then
+            assertThat(response.distanceInfo().distance()).isEqualTo(900);
+            assertThat(response.distanceInfo().distanceType()).isEqualTo(DistanceType.WALKING.name());
+            assertThat(response.distanceInfo().walkingSeconds()).isEqualTo(720);
+        }
+
+        @DisplayName("API를 통해 도보 경로를 구하지 못하면 직선거리를 반환한다")
+        @Test
+        void success_fallbackStraightDistance() {
+            // given
+            ParkingLot saved = parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
+                    .pkltCd("10001")
+                    .coordinates(NEAR)
+                    .build()
+            );
+
+            // when
+            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId(), destinationCoordinates);
+
+            // then
+            assertThat(response.distanceInfo().distance()).isEqualTo(111);
+            assertThat(response.distanceInfo().distanceType()).isEqualTo(DistanceType.STRAIGHT.name());
+            assertThat(response.distanceInfo().walkingSeconds()).isNull();
+        }
+
+        @DisplayName("주차장 좌표가 없으면 목적지를 받아도 거리 정보를 포함하지 않는다")
+        @Test
+        void success_withoutCoordinates() {
+            // given
+            ParkingLot saved = parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
+                    .pkltCd("10001")
+                    .build()
+            );
+
+            // when
+            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId(), destinationCoordinates);
+
+            // then
+            assertThat(response.distanceInfo()).isNull();
         }
     }
 

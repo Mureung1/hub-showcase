@@ -10,13 +10,15 @@
 import SearchIcon from './SearchIcon.jsx';
 
 /** 검색 중: 스피너 + 스켈레톤 카드(프로토타입 results-loading). */
-export function LoadingState() {
+// label에 기본값을 둬서 기존 호출부(<LoadingState />)는 그대로 두고,
+// 필요한 화면만 다른 문구를 넘길 수 있게 했다(예: 장소 검색 → "장소를 찾는 중").
+export function LoadingState({ label = '검색 중' }) {
   return (
     // role="status"/aria-live: 스크린리더에 "상태가 갱신됨"을 알리는 접근성 속성.
     <div className="loading-wrap" role="status" aria-live="polite">
       <div className="loading-row">
         <span className="spinner" aria-hidden="true" />
-        <span>검색 중</span>
+        <span>{label}</span>
       </div>
       {/* [스켈레톤 UI] 실제 카드가 오기 전 회색 뼈대를 미리 보여줘 체감 대기시간을 줄인다. */}
       <div className="skeleton-list" aria-hidden="true">

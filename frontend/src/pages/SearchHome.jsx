@@ -2,7 +2,8 @@
 // pages/SearchHome.jsx — 화면 1: 검색 홈 (주소 "/")
 // ----------------------------------------------------------------------------
 // 로고 + 검색창(SearchBar) + 예시 목적지 칩을 보여주는 첫 화면.
-// 칩을 누르면 그 목적지로 곧장 결과 화면으로 이동한다.
+// 칩을 누르면 그 검색어로 목적지 선택 화면(/places)으로 이동한다.
+// (검색창 제출도 같은 경로 — 두 진입점의 동작을 일치시킨다.)
 // ============================================================================
 
 import { useNavigate } from 'react-router-dom';
@@ -17,10 +18,10 @@ function SearchHome() {
   // useNavigate: "코드로" 페이지를 이동시키는 함수를 준다(Link=클릭 이동, 이건 로직 이동).
   const navigate = useNavigate();
 
-  // 목적지를 쿼리스트링에 실어 결과 화면으로 이동.
+  // 검색어를 쿼리스트링에 실어 목적지 선택 화면으로 이동.
   // encodeURIComponent: 한글/공백/특수문자를 URL에 안전한 형태로 인코딩(예: 공백→%20).
-  const goToResults = (destination) => {
-    navigate(`/results?destination=${encodeURIComponent(destination)}`);
+  const goToPlaces = (keyword) => {
+    navigate(`/places?keyword=${encodeURIComponent(keyword)}`);
   };
 
   // return 하는 JSX가 화면. className은 HTML의 class(=CSS와 연결).
@@ -47,7 +48,7 @@ function SearchHome() {
             key={destination}                        // [key] 목록 항목을 식별하는 고유값(재렌더 최적화에 필수)
             type="button"
             className="chip"
-            onClick={() => goToResults(destination)} // [이벤트] 클릭 시 실행할 함수를 넘긴다
+            onClick={() => goToPlaces(destination)}  // [이벤트] 클릭 시 실행할 함수를 넘긴다
           >
             {destination}                            {/* {} 안에 JS 값을 화면에 삽입 */}
           </button>

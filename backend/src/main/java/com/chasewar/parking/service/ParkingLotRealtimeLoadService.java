@@ -1,8 +1,8 @@
 package com.chasewar.parking.service;
 
 import com.chasewar.parking.domain.ParkingLotRealtime;
-import com.chasewar.parking.infra.seoul.SeoulParkingLotRealtimeClient;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo.Row;
+import com.chasewar.parking.infra.opendata.SeoulParkingLotRealtimeClient;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo.Row;
 import com.chasewar.parking.repository.ParkingLotRealtimeJdbcRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -13,24 +13,25 @@ import { useQuery } from '@tanstack/react-query';
 import { searchParkingLots } from '../api/parkingLots.js';
 
 /**
- * 목적지 주변 주차장 검색을 위한 react-query 훅.
- * - destination 이 비어 있으면 요청하지 않는다(enabled).
- * - 404(NOT_FOUND_DESTINATION)는 재시도하지 않는다.
+ * 목적지 좌표 주변 주차장 검색을 위한 react-query 훅.
+ * - 좌표가 없으면 요청하지 않는다(enabled).
+ *
+ * @param {{latitude: string|null, longitude: string|null}} destination URL에서 읽은 목적지 좌표
  */
-export function useSearchParkingLots(destination) {
+export function useSearchParkingLots({ latitude, longitude }) {
   return useQuery({
-    // queryKey: 이 데이터의 고유 "이름표"(캐시 키). destination이 바뀌면 다른 데이터로 보고
-    //   새로 요청하고, 같은 key면 캐시된 결과를 즉시 재사용한다.
-    queryKey: ['parkingLots', destination],
+    // queryKey: 이 데이터의 고유 "이름표"(캐시 키). 좌표가 바뀌면 다른 데이터로 보고
+    //   새로 요청하고, 같은 좌표면 캐시된 결과를 즉시 재사용한다.
+    //   [주의] 좌표는 URL에서 읽은 "문자열"을 그대로 쓴다. 어딘가에서 숫자로 바꿔 섞으면
+    //   같은 위치인데도 키가 달라져(예: '37.5' vs 37.5) 캐시가 조용히 빗나간다.
+    queryKey: ['parkingLots', latitude, longitude],
     // queryFn: 실제로 데이터를 가져오는 비동기 함수(우리 API 호출).
-    queryFn: () => searchParkingLots(destination),
-    // enabled: false면 요청을 아예 안 함. 빈 목적지엔 굳이 서버를 부르지 않는다.
-    enabled: Boolean(destination),
-    // retry: 실패 시 재시도 정책(함수로 세밀 제어). 404(장소 못 찾음)는 다시 해도 같으니
-    //   재시도 X, 그 외(일시적 오류)는 1번만.
-    retry: (failureCount, error) => {
-      if (error?.response?.status === 404) return false; // ?. = 앞이 없으면 에러 없이 undefined
-      return failureCount < 1;
-    },
+    queryFn: () => searchParkingLots({ latitude, longitude }),
+    // enabled: false면 요청을 아예 안 함. 좌표 없이 /results로 들어온 경우 서버를 부르지 않는다.
+    enabled: Boolean(latitude && longitude),
+    // retry: 일시적 오류만 1번 더 시도.
+    //   예전에는 "장소 못 찾음 404"를 걸러내는 함수형 retry였는데, 목적지 확정이 /places로
+    //   옮겨가면서 이 API에는 404가 없어졌다(주변에 주차장이 없으면 빈 배열 200).
+    retry: 1,
   });
 }

@@ -1,8 +1,8 @@
 package com.chasewar.parking.service;
 
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.infra.seoul.SeoulParkingLotClient;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
+import com.chasewar.parking.infra.opendata.SeoulParkingLotClient;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
 import com.chasewar.parking.repository.ParkingLotJdbcRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ public class ParkingLotLoadService {
         log.info("[주차장 적재] 전체 {}행 예상", totalCount);
 
         List<Row> rows = new ArrayList<>();
-        for (int start = 1; start <= totalCount; start++) {
+        for (int start = 1; start <= totalCount; start += PAGE_SIZE) {
             int end = start + PAGE_SIZE - 1;
             rows.addAll(seoulParkingLotClient.fetchPage(start, end).getParkInfo().rows());
         }

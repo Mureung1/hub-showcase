@@ -1,0 +1,23 @@
+name: chasewar
+
+services:
+  app:
+    image: ghcr.io/geunnseung/chasewar-app:latest
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SEOUL_API_KEY: ${SEOUL_API_KEY}
+      KAKAO_API_KEY: ${KAKAO_API_KEY}
+      TMAP_API_KEY: ${TMAP_API_KEY}
+
+  nginx:
+    image: ghcr.io/geunnseung/chasewar-web:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      app:
+        condition: service_healthy

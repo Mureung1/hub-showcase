@@ -12,8 +12,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import SearchIcon from './SearchIcon.jsx';
 
 /**
- * 목적지 검색 입력창. 홈·검색 결과 화면에서 공통으로 재사용한다.
- * 제출 시 /results?destination=... 로 이동한다.
+ * 목적지 검색 입력창. 홈·목적지 선택·검색 결과 화면에서 공통으로 재사용한다.
+ * 제출 시 /places?keyword=... (목적지 선택 화면)으로 이동한다.
+ * 검색어만으로는 어느 장소인지 확정할 수 없으므로, 주차장 목록으로 바로 가지 않고
+ * 사용자가 후보 중 목적지를 고르는 화면을 먼저 거친다.
  *
  * @param {string}  defaultValue 초기 검색어(결과 화면에서 현재 검색어 표시)
  * @param {boolean} showClear    지우기(×) 버튼 노출 여부(결과 화면)
@@ -43,7 +45,7 @@ function SearchBar({
     event.preventDefault(); // 폼 제출 시 브라우저의 기본 새로고침 동작을 막는다(SPA 유지)
     const query = value.trim();
     if (!query) return;     // 빈 검색어면 무시
-    navigate(`/results?destination=${encodeURIComponent(query)}`);
+    navigate(`/places?keyword=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -52,7 +54,7 @@ function SearchBar({
       <SearchIcon />
       <input
         type="text"
-        name="destination"
+        name="keyword"
         value={value}                                      // 화면에 보이는 값 = state(제어 컴포넌트)
         onChange={(event) => setValue(event.target.value)} // 타이핑마다 state 갱신 → 재렌더
         placeholder={placeholder}

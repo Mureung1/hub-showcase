@@ -1,7 +1,7 @@
 package com.chasewar.support.fixture;
 
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.domain.vo.OperType;
 import com.chasewar.parking.domain.vo.OperatingHours;

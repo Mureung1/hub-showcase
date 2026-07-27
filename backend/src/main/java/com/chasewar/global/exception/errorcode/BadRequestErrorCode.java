@@ -4,7 +4,8 @@ import org.springframework.http.HttpStatus;
 
 public enum BadRequestErrorCode implements ErrorCode {
 
-    MISSING_REQUEST_PARAMETER("필수 요청 파라미터가 없습니다.");
+    MISSING_REQUEST_PARAMETER("필수 요청 파라미터가 없습니다."),
+    INVALID_REQUEST_PARAMETER("요청 파라미터가 올바르지 않습니다.");
 
     private static final HttpStatus status = HttpStatus.BAD_REQUEST;
 

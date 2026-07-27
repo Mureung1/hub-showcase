@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 
-import com.chasewar.parking.infra.seoul.SeoulParkingLotRealtimeClient;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotRealtimeResponse;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo.Result;
-import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo.Row;
+import com.chasewar.parking.infra.opendata.SeoulParkingLotRealtimeClient;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotRealtimeResponse;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo.Result;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotRealtimeResponse.GetParkingInfo.Row;
 import com.chasewar.parking.repository.ParkingLotRealtimeRepository;
 import com.chasewar.support.IntegrationTest;
 import java.util.Arrays;

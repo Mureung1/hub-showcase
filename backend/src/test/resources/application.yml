@@ -18,3 +18,7 @@ seoul:
 kakao:
   api:
     key: test-key
+
+tmap:
+  api:
+    key: test-key

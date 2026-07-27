@@ -1,0 +1,12 @@
+services:
+  app:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # 로컬 MySQL 컨테이너의 계정을 그대로 재사용한다(.env에 이미 있음).
+      DB_URL: jdbc:mysql://host.docker.internal:3307/${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+
+  nginx:
+    build: ./frontend
