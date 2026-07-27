@@ -20,20 +20,49 @@ export async function runJavaScriptCode(
     return createReactPreviewRunResult(code, { css, language })
   }
 
+  const maxLogEntries = 200
+  const maxLogEntryLength = 2000
   const logs = []
+  const pushLog = (line) => {
+    if (logs.length >= maxLogEntries) {
+      return
+    }
+    logs.push(line.length > maxLogEntryLength ? line.slice(0, maxLogEntryLength) + '...(truncated)' : line)
+  }
 
   const virtualConsole = {
-    log: (...args) => logs.push(args.map(String).join(' ')),
-    error: (...args) => logs.push('[ERROR] ' + args.map(String).join(' ')),
-    warn: (...args) => logs.push('[WARN] ' + args.map(String).join(' ')),
-    info: (...args) => logs.push('[INFO] ' + args.map(String).join(' ')),
+    log: (...args) => pushLog(args.map(String).join(' ')),
+    error: (...args) => pushLog('[ERROR] ' + args.map(String).join(' ')),
+    warn: (...args) => pushLog('[WARN] ' + args.map(String).join(' ')),
+    info: (...args) => pushLog('[INFO] ' + args.map(String).join(' ')),
+  }
+
+  // Timers scheduled by sandboxed code are real Node timers; track and clear
+  // them after this run so a runaway setInterval can't outlive the request.
+  const activeTimerIds = new Set()
+  const trackedSetTimeout = (handler, delay, ...args) => {
+    const id = nodeSetTimeout(handler, delay, ...args)
+    activeTimerIds.add(id)
+    return id
+  }
+  const trackedSetInterval = (handler, delay, ...args) => {
+    const id = nodeSetInterval(handler, delay, ...args)
+    activeTimerIds.add(id)
+    return id
+  }
+  const clearAllTrackedTimers = () => {
+    for (const id of activeTimerIds) {
+      nodeClearTimeout(id)
+      nodeClearInterval(id)
+    }
+    activeTimerIds.clear()
   }
 
   const context = {
     console: virtualConsole,
-    setTimeout: nodeSetTimeout,
+    setTimeout: trackedSetTimeout,
     clearTimeout: nodeClearTimeout,
-    setInterval: nodeSetInterval,
+    setInterval: trackedSetInterval,
     clearInterval: nodeClearInterval,
   }
 
@@ -52,6 +81,8 @@ export async function runJavaScriptCode(
       logs,
       error: error.message || String(error),
     }
+  } finally {
+    clearAllTrackedTimers()
   }
 }
 

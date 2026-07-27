@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { handleCurriculumApiRequest } from './curriculumRoutes.mjs'
 import { handleGitLabAttemptApiRequest } from './gitLabAttemptRoutes.mjs'
+import { handleHealthApiRequest } from './healthRoutes.mjs'
 import { handleLearningProgressApiRequest } from './learningProgressRoutes.mjs'
 import { handleMistakeNoteApiRequest } from './mistakeNoteRoutes.mjs'
 import { handleCodeRunApiRequest } from './codeRunRoutes.mjs'
+import { handleTutorApiRequest } from './tutorRoutes.mjs'
 import { loadCurriculumTracks } from '../modules/curriculum/adapters/jsonCurriculumCatalogRepository.mjs'
 import { createInMemoryGeneratedCurriculumRepository } from '../modules/curriculum/adapters/inMemoryGeneratedCurriculumRepository.mjs'
 import { createSqliteGeneratedCurriculumRepository } from '../modules/curriculum/adapters/sqliteGeneratedCurriculumRepository.mjs'
@@ -36,6 +38,7 @@ export const defaultCurriculumAgentHost = '127.0.0.1'
 export const defaultCurriculumAgentPort = 8787
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const defaultStaticRoots = [path.join(repoRoot, 'dist'), path.join(repoRoot, 'dist-preview')]
 
 export function createCurriculumAgentServer(options = {}) {
   return http.createServer(createCurriculumAgentApp(options))
@@ -51,9 +54,13 @@ export function createCurriculumAgentApp({
   gitLabAttemptRecorder,
   generatedCurriculumRepository = createInMemoryGeneratedCurriculumRepository(),
   knowledgeChunks = [],
+  staticRoots = defaultStaticRoots,
+  repositoryMode = 'in-memory',
   logger = console,
 } = {}) {
   const app = express()
+
+  app.set('trust proxy', true)
 
   app.use((request, response, next) => {
     response.set(createCorsHeaders())
@@ -63,12 +70,18 @@ export function createCurriculumAgentApp({
   app.use(express.text({ type: '*/*', limit: '1mb' }))
 
   app.use(async (request, response, next) => {
+    if (!request.path.startsWith('/api')) {
+      next()
+      return
+    }
+
     try {
       const bodyText = typeof request.body === 'string' ? request.body : ''
       const routeContext = {
         method: request.method,
         url: request.originalUrl,
         bodyText,
+        ip: request.ip,
         tracks,
         config,
         recommendationProvider,
@@ -78,14 +91,17 @@ export function createCurriculumAgentApp({
         gitLabAttemptRecorder,
         generatedCurriculumRepository,
         knowledgeChunks,
+        repositoryMode,
         logger,
       }
       const result =
+        (await handleHealthApiRequest(routeContext)) ??
         (await handleCurriculumApiRequest(routeContext)) ??
         (await handleLearningProgressApiRequest(routeContext)) ??
         (await handleMistakeNoteApiRequest(routeContext)) ??
         (await handleGitLabAttemptApiRequest(routeContext)) ??
         (await handleCodeRunApiRequest(routeContext)) ??
+        (await handleTutorApiRequest(routeContext)) ??
         createRouteNotFoundResponse()
 
       sendJson(response, result)
@@ -94,6 +110,25 @@ export function createCurriculumAgentApp({
     }
   })
 
+  const existingStaticRoots = staticRoots.filter((staticRoot) => fs.existsSync(staticRoot))
+  for (const staticRoot of existingStaticRoots) {
+    app.use(express.static(staticRoot))
+  }
+
+  app.use((request, response, next) => {
+    if (!['GET', 'HEAD'].includes(request.method) || existingStaticRoots.length === 0) {
+      next()
+      return
+    }
+
+    const indexPath = path.join(existingStaticRoots[0], 'index.html')
+    if (!fs.existsSync(indexPath)) {
+      next()
+      return
+    }
+
+    response.sendFile(indexPath)
+  })
   app.use((error, request, response, next) => {
     if (response.headersSent) {
       next(error)
@@ -141,6 +176,7 @@ export function createRuntimeContext() {
     config: createAgentConfig(),
     ...repositories,
     knowledgeChunks: loadKnowledgeChunks({ fs, path, repoRoot }),
+    repositoryMode: repositories.repositoryMode,
   }
 }
 
@@ -208,8 +244,8 @@ export function createRuntimeRepositories(
 }
 
 export function startCurriculumAgentServer({
-  host = process.env.CURRICULUM_AGENT_HOST || defaultCurriculumAgentHost,
-  port = Number(process.env.CURRICULUM_AGENT_PORT || defaultCurriculumAgentPort),
+  host = process.env.CURRICULUM_AGENT_HOST || (process.env.PORT ? '0.0.0.0' : defaultCurriculumAgentHost),
+  port = Number(process.env.PORT || process.env.CURRICULUM_AGENT_PORT || defaultCurriculumAgentPort),
   tracks,
   config,
   recommendationProvider,
@@ -235,6 +271,7 @@ export function startCurriculumAgentServer({
 
   server.listen(port, host, () => {
     logger.log(`Curriculum Agent API listening on http://${host}:${port}`)
+    logger.log(`repository mode: ${runtimeContext.repositoryMode ?? 'in-memory'}`)
   })
 
   return server

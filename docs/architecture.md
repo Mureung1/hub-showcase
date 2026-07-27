@@ -84,6 +84,12 @@ backend/
 
 ## 화면 아키텍처
 
+### 공통 AppShell
+
+- `src/app/AppShell.tsx`가 `ResizableNavigator`를 직접 소유합니다.
+- 네비게이터는 AppShell 내부에 유지하며 개별 화면이나 AppShell 외부 레이어로 분리하지 않습니다.
+- 각 기능 화면은 AppShell의 `Outlet` 영역에 렌더링됩니다.
+
 ### 1. Onboarding / Profile Setup
 
 역할:

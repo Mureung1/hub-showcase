@@ -18,13 +18,6 @@ __MACOSX/
 # Local temporary design references
 .tmp-devchat-design-ref/
 
-# Keep only webfont files that are referenced by the app
-src/components/fonts/**/OTF/
-src/components/fonts/**/TTF/
-src/components/fonts/**/eot/
-src/components/fonts/**/woff/
-src/components/fonts/**/Web/index.html
-
 # Generated documentation assets
 docs/**/*.png
 docs/**/*.svg
@@ -38,3 +31,5 @@ src/.env.*
 !src/.env.example
 
 .worktrees/
+.claude/
+*.log

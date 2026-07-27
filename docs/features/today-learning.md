@@ -17,7 +17,7 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 
 ## 화면 구성
 
-- Left Navigation: Today, Learning List, Review, Settings
+- AppShell Navigation: `AppShell` 내부의 공통 `ResizableNavigator`를 유지하며 Today Hub는 `Outlet` 영역에 렌더링
 - Header: 오늘 학습, 날짜, 오늘 예정 요약
 - Today's Focus: 진행 중인 트랙, 현재 단계, 오늘 미션, 진행률, 이어서 학습하기
 - Today Queue: 개념 설명, 퀴즈, 실습, 실행, 리뷰 순서와 각 단계별 워크스페이스 진입 링크
@@ -107,9 +107,13 @@ Today Hub는 오답을 관리하는 전체 화면이 아니라, 최근 상태를
 ## 테마 기준
 
 - 라이트모드와 다크모드를 모두 지원합니다.
+<!-- Previous Today Hub brand direction kept for audit:
 - 오늘 학습 허브는 Workday 이미지처럼 오렌지, 시안, 딥블루가 조화되는 브랜드 색감을 사용할 수 있습니다.
-- 단, 학습 목록과 복습 리스트는 반복 사용 화면이므로 중립 표면과 명확한 대비를 우선합니다.
 - 오렌지는 강조/완료/환영 상태에 제한적으로 사용하고, 주요 CTA와 선택 상태는 시안 또는 딥블루 계열을 우선합니다.
+-->
+- 오늘 학습 허브는 흰색 네비게이터를 유지하고, 본문 배경은 #ffecd2 warm corner와 #e8f1fa to #d7e8fb blue-gray gradient를 사용합니다.
+- 학습 목록, 복습 리스트, 워크스페이스 미리보기는 흰색 카드 표면과 #d5deea 경계를 사용해 반복 사용 화면의 대비를 우선합니다.
+- 현재 학습 행과 선택 상태는 #e8f2ff, 주요 CTA는 강한 blue 계열을 사용합니다.
 ## Mock 진행 상태 저장
 
 React mock 화면 단계에서는 실제 DB 대신 `icu.learningProgress` localStorage 값을 사용합니다.

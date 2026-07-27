@@ -31,6 +31,7 @@ import {
 } from '../learning-workspace/workspaceMission'
 import { getInitialStepOffset } from '../learning-workspace/workspaceInteraction'
 import { ProgressBar } from './ProgressBar'
+import { TrackIcon } from './TrackIcon'
 import {
   findTopWeakConcept,
   formatTestResultLabel,
@@ -55,8 +56,6 @@ const queueStatusLabels: Record<TodayQueueStatus, string> = {
   locked: '대기',
   optional: '선택',
 }
-
-const weekLabels = ['월', '화', '수', '목', '금', '토', '일']
 
 function isMissionComplete(progress: LearningMissionProgress | undefined) {
   return Boolean(progress?.completedAt || progress?.runState === 'passed')
@@ -170,24 +169,6 @@ export function TodayLearningHub() {
       }).format(now),
     [now],
   )
-  const monthLabel = useMemo(
-    () => new Intl.DateTimeFormat('ko-KR', { month: 'long', year: 'numeric' }).format(now),
-    [now],
-  )
-  const calendarDays = useMemo(() => {
-    const year = now.getFullYear()
-    const month = now.getMonth()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const firstDay = (new Date(year, month, 1).getDay() + 6) % 7
-
-    return [
-      ...Array.from({ length: firstDay }, (_, index) => ({ key: `empty-${index}`, day: null })),
-      ...Array.from({ length: daysInMonth }, (_, index) => ({
-        key: `day-${index + 1}`,
-        day: index + 1,
-      })),
-    ]
-  }, [now])
   const generatedQueue = useMemo<TodayQueueItem[]>(
     () => [
       {
@@ -281,28 +262,41 @@ export function TodayLearningHub() {
         id: 'git-lab',
         title: '깃 시뮬레이터',
         percent: gitLabProgress.percent,
-        testResultLabel: `${gitLabProgress.percent}%`,
-        actionLabel: '레벨 이어하기',
+        stepLabel: `Step ${Math.min(gitLabProgress.clearedCount + 1, gitLabProgress.totalCount)} / ${gitLabProgress.totalCount}`,
+        recentLearningLabel:
+          gitLabProgress.clearedCount > 0 ? `${gitLabProgress.clearedCount}개 완료` : '—',
+        nextLearningLabel: '레벨 이어하기',
         actionHref: '/git-lab',
       },
       {
         id: 'react-practice',
         title: 'React 실습',
         percent: completionPercent,
-        testResultLabel: formatTestResultLabel(activeMissionTestResult),
-        actionLabel: '이어서 학습하기',
+        stepLabel: `Step ${stepPosition} / ${stepTotal}`,
+        recentLearningLabel: '오늘',
+        nextLearningLabel: previewActiveMission.stepLabel,
         actionHref: `/workspace?mission=${activeMissionId}`,
       },
       {
         id: 'docker-practice',
         title: 'Docker 실습',
         percent: null as number | null,
-        testResultLabel: '준비 중',
-        actionLabel: null,
+        stepLabel: 'Step 0 / 4',
+        recentLearningLabel: '—',
+        nextLearningLabel: '컨테이너 기초',
         actionHref: null,
       },
     ],
-    [activeMissionId, activeMissionTestResult, completionPercent, gitLabProgress.percent],
+    [
+      activeMissionId,
+      completionPercent,
+      gitLabProgress.clearedCount,
+      gitLabProgress.percent,
+      gitLabProgress.totalCount,
+      previewActiveMission.stepLabel,
+      stepPosition,
+      stepTotal,
+    ],
   )
 
   return (
@@ -310,7 +304,7 @@ export function TodayLearningHub() {
       <section className={styles.content}>
         <header className={styles.topbar}>
           <div>
-            <h1 id="today-title">Dashboard</h1>
+            <h1 id="today-title">학습 진행 현황</h1>
             <p>{todayLabel}</p>
           </div>
           <label className={styles.search}>
@@ -337,50 +331,52 @@ export function TodayLearningHub() {
           </section>
         ) : null}
 
-        <div className={styles.heroGrid}>
-          <section className={styles.heroCard} aria-labelledby="welcome-title">
-            <p className={styles.heroEyebrow}>오늘 목표</p>
-            <h2 id="welcome-title">{previewActiveMission.title}</h2>
-            <span>{previewActiveMission.detail}</span>
-            <ProgressBar
-              percent={completionPercent}
-              label={`오늘 학습 진행률 ${completionPercent}퍼센트`}
-            />
-            <div className={styles.heroMeta}>
-              <span>
-                {stepPosition} / {stepTotal} 단계
-              </span>
-              <span>테스트 통과: {formatTestResultLabel(activeMissionTestResult)}</span>
-              {topWeakConcept ? <span>취약 개념 · {topWeakConcept}</span> : null}
+        <section className={styles.focusCard} aria-labelledby="welcome-title">
+          <div className={styles.focusHeader}>
+            <div className={styles.focusCopy}>
+              <p className={styles.focusEyebrow}>오늘 이어갈 학습</p>
+              <h2 id="welcome-title">{previewActiveMission.title}</h2>
+              <p className={styles.focusDetail}>{previewActiveMission.detail}</p>
             </div>
-          </section>
+            <div className={styles.focusActionPanel}>
+              <span className={styles.focusStep}>
+                Step {stepPosition} / {stepTotal} · {previewActiveMission.stepLabel}
+              </span>
+              <Link
+                className={styles.primaryCta}
+                to={`/workspace?mission=${previewActiveMission.id}`}
+              >
+                이어서 학습하기
+              </Link>
+            </div>
+          </div>
 
-          <section className={styles.continueCard} aria-labelledby="continue-title">
-            <p className={styles.continueEyebrow}>이어 학습하기</p>
-            <h3 id="continue-title">{previewActiveMission.title}</h3>
-            <p className={styles.continueStep}>
-              Step {stepPosition}. {previewActiveMission.stepLabel}
-            </p>
-            <ProgressBar
-              percent={completionPercent}
-              label={`이어 학습하기 진행률 ${completionPercent}퍼센트`}
-            />
-            <Link className={styles.continueLink} to={`/workspace?mission=${activeMissionId}`}>
-              이어서 학습하기
-            </Link>
-          </section>
-        </div>
+          <div className={styles.focusProgress}>
+            <ProgressBar percent={completionPercent} label="오늘 학습 진행률 퍼센트" />
+          </div>
 
-        <section className={styles.statsGrid} aria-label="오늘 학습 요약">
-          {stats.map((stat) => (
-            <article className={styles.statCard} data-tone={stat.tone} key={stat.label}>
-              <span aria-hidden="true" />
-              <strong>{stat.value}</strong>
-              <p>{stat.label}</p>
-            </article>
-          ))}
+          <dl className={styles.focusMetrics} aria-label="오늘 학습 상태 요약">
+            {stats.map((stat) => (
+              <div className={styles.focusMetric} data-tone={stat.tone} key={stat.label}>
+                <dt>{stat.label}</dt>
+                <dd>{stat.value}</dd>
+              </div>
+            ))}
+            <div
+              className={styles.focusMetric}
+              data-tone={activeMissionTestResult ? 'green' : 'muted'}
+            >
+              <dt>테스트 상태</dt>
+              <dd>{formatTestResultLabel(activeMissionTestResult)}</dd>
+            </div>
+            {topWeakConcept ? (
+              <div className={styles.focusMetric} data-tone="warning">
+                <dt>취약 개념</dt>
+                <dd>{topWeakConcept}</dd>
+              </div>
+            ) : null}
+          </dl>
         </section>
-
         <div className={styles.midGrid}>
           <section className={styles.queueCard} aria-labelledby="queue-title">
             <div className={styles.panelTitleRow}>
@@ -400,7 +396,10 @@ export function TodayLearningHub() {
                   </span>
                   <span className={styles.queueDuration}>{item.durationMinutes}분</span>
                   {item.status === 'current' ? (
-                    <Link className={styles.queueContinueButton} to={'/workspace?mission=' + item.id}>
+                    <Link
+                      className={styles.queueContinueButton}
+                      to={'/workspace?mission=' + item.id}
+                    >
                       계속하기
                     </Link>
                   ) : (
@@ -437,111 +436,127 @@ export function TodayLearningHub() {
           <section className={styles.trackSection} aria-labelledby="tracks-title">
             <div className={styles.panelTitleRow}>
               <h2 id="tracks-title">학습 목록</h2>
+              <Link to="/curriculum/history">전체 보기</Link>
             </div>
-            <div className={styles.trackTable} role="table" aria-label="트랙별 진행률과 테스트 통과율">
+            <div
+              className={styles.trackTable}
+              role="table"
+              aria-label="트랙별 진행률과 현재 및 다음 학습"
+            >
               <div className={styles.trackTableHeader} role="row">
                 <span role="columnheader">트랙</span>
                 <span role="columnheader">진행률</span>
-                <span role="columnheader">테스트 통과율</span>
+                <span role="columnheader">현재 단계</span>
+                <span role="columnheader">최근 학습</span>
+                <span role="columnheader">다음 학습</span>
+                <span role="columnheader">상태</span>
               </div>
               {trackRows.map((track) => {
                 const status = getTrackStatus(track.percent)
 
                 return (
-                  <div className={styles.trackTableRow} role="row" key={track.id} data-status={status}>
-                    <div role="cell">
+                  <div
+                    className={styles.trackTableRow}
+                    role="row"
+                    key={track.id}
+                    data-status={status}
+                  >
+                    <div className={styles.trackIdentityCell} role="cell">
                       <div className={styles.trackTitleRow}>
                         <span className={styles.trackIcon} data-track={track.id} aria-hidden="true">
-                          {track.title.slice(0, 1)}
+                          <TrackIcon trackId={track.id} />
                         </span>
                         <h3>{track.title}</h3>
-                        <span className={styles.trackTableStatus} data-status={status}>
-                          {trackStatusLabels[status]}
-                        </span>
                       </div>
+                    </div>
+                    <div className={styles.trackProgressCell} role="cell">
+                      <span className={styles.trackCellLabel}>진행률</span>
+                      <strong>{track.percent !== null ? `${track.percent}%` : '—'}</strong>
                       {track.percent !== null ? (
-                        <ProgressBar percent={track.percent} label={`${track.title} 진행률 ${track.percent}퍼센트`} />
-                      ) : null}
-                      {track.actionHref ? (
-                        <Link to={track.actionHref}>{track.actionLabel}</Link>
+                        <ProgressBar
+                          percent={track.percent}
+                          label={`${track.title} 진행률 ${track.percent}퍼센트`}
+                        />
                       ) : null}
                     </div>
-                    <span role="cell">{track.percent !== null ? `${track.percent}%` : '준비 중'}</span>
-                    <span role="cell">{track.testResultLabel}</span>
+                    <div className={styles.trackTextCell} role="cell">
+                      <span className={styles.trackCellLabel}>현재 단계</span>
+                      <span>{track.stepLabel}</span>
+                    </div>
+                    <div className={styles.trackTextCell} role="cell">
+                      <span className={styles.trackCellLabel}>최근 학습</span>
+                      <span>{track.recentLearningLabel}</span>
+                    </div>
+                    <div className={styles.trackTextCell} role="cell">
+                      <span className={styles.trackCellLabel}>다음 학습</span>
+                      {track.actionHref ? (
+                        <Link to={track.actionHref}>{track.nextLearningLabel}</Link>
+                      ) : (
+                        <span>{track.nextLearningLabel}</span>
+                      )}
+                    </div>
+                    <div className={styles.trackStatusCell} role="cell">
+                      <span className={styles.trackCellLabel}>상태</span>
+                      <span className={styles.trackTableStatus} data-status={status}>
+                        {trackStatusLabels[status]}
+                      </span>
+                    </div>
                   </div>
                 )
               })}
             </div>
           </section>
 
-          <section className={styles.workspacePreviewCard} aria-labelledby="workspace-preview-title">
-            <div className={styles.panelTitleRow}>
-              <h2 id="workspace-preview-title">작업 공간 미리보기</h2>
-              <Link to={`/workspace?mission=${activeMissionId}`}>워크스페이스로 이동</Link>
-            </div>
-            {previewFiles.length > 1 ? (
-              <select
-                className={styles.workspacePreviewFileSelect}
-                aria-label="미리볼 파일 선택"
-                value={selectedPreviewFile?.name ?? ''}
-                onChange={(event) => setSelectedPreviewFileName(event.target.value)}
-              >
-                {previewFiles.map((file) => (
-                  <option key={file.path} value={file.name}>
-                    {file.name}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            <div className={styles.workspacePreviewGrid}>
-              <div className={styles.workspacePreviewHint}>
-                <span>AI 힌트</span>
-                <p>{previewActiveMission.hint}</p>
+          <div className={styles.sideStack}>
+            <section
+              className={styles.workspacePreviewCard}
+              aria-labelledby="workspace-preview-title"
+            >
+              <div className={styles.panelTitleRow}>
+                <h2 id="workspace-preview-title">작업 공간 미리보기</h2>
+                <Link to={`/workspace?mission=${activeMissionId}`}>워크스페이스로 이동</Link>
               </div>
-              <pre className={styles.workspacePreviewCode}>
-                <code>{selectedPreviewFile?.value ?? ''}</code>
-              </pre>
-            </div>
-            {activeMissionTestResult ? (
-              <p className={styles.workspacePreviewBanner} data-passed={activeMissionTestResult.passed === activeMissionTestResult.total}>
-                {activeMissionTestResult.passed} / {activeMissionTestResult.total} 테스트 통과
-                {activeMissionTestResult.passed < activeMissionTestResult.total
-                  ? ' · 아직 통과하지 못한 항목이 있습니다.'
-                  : ''}
-              </p>
-            ) : (
-              <p className={styles.workspacePreviewBanner} data-passed="false">
-                아직 실행한 테스트가 없습니다.
-              </p>
-            )}
-          </section>
-        </div>
-
-        <div className={styles.calendarRow}>
-          <section className={styles.calendarCard} aria-labelledby="calendar-title">
-            <div className={styles.panelTitleRow}>
-              <h2 id="calendar-title">{monthLabel}</h2>
-              <div className={styles.arrowGroup} aria-hidden="true">
-                <span>‹</span>
-                <span>›</span>
-              </div>
-            </div>
-            <div className={styles.weekGrid} aria-hidden="true">
-              {weekLabels.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </div>
-            <div className={styles.calendarGrid}>
-              {calendarDays.map((item) => (
-                <span
-                  className={item.day === now.getDate() ? styles.selectedDay : undefined}
-                  key={item.key}
+              {previewFiles.length > 1 ? (
+                <select
+                  className={styles.workspacePreviewFileSelect}
+                  aria-label="미리볼 파일 선택"
+                  value={selectedPreviewFile?.name ?? ''}
+                  onChange={(event) => setSelectedPreviewFileName(event.target.value)}
                 >
-                  {item.day ?? ''}
-                </span>
-              ))}
-            </div>
-          </section>
+                  {previewFiles.map((file) => (
+                    <option key={file.path} value={file.name}>
+                      {file.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              <div className={styles.workspacePreviewGrid}>
+                <div className={styles.workspacePreviewHint}>
+                  <span>AI 힌트</span>
+                  <p>{previewActiveMission.hint}</p>
+                </div>
+                <pre className={styles.workspacePreviewCode}>
+                  <code>{selectedPreviewFile?.value ?? ''}</code>
+                </pre>
+              </div>
+              {activeMissionTestResult ? (
+                <p
+                  className={styles.workspacePreviewBanner}
+                  data-passed={activeMissionTestResult.passed === activeMissionTestResult.total}
+                >
+                  {activeMissionTestResult.passed} / {activeMissionTestResult.total} 테스트 통과
+                  {activeMissionTestResult.passed < activeMissionTestResult.total
+                    ? ' · 아직 통과하지 못한 항목이 있습니다.'
+                    : ''}
+                </p>
+              ) : (
+                <p className={styles.workspacePreviewBanner} data-passed="false">
+                  아직 실행한 테스트가 없습니다.
+                </p>
+              )}
+            </section>
+
+          </div>
         </div>
       </section>
     </main>

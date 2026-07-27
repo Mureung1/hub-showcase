@@ -18,11 +18,17 @@ ICU는 초급·중급 개발자가 오늘 학습할 내용을 정하고, 커리�
 
 - 생산성 도구처럼 차분한 표면과 명확한 정보 계층을 사용합니다.
 - 편집기와 터미널은 두 테마 모두 어두운 표면을 사용합니다.
+<!-- Previous brand color direction kept for audit:
 - 주요 행동, 선택, focus에는 cyan과 deep blue를 사용합니다.
 - orange는 완료, 환영, 중요한 강조에 제한적으로 사용합니다.
+-->
+- 현재 브랜드 화면은 흰색 네비게이터와 흰색 카드 표면을 유지하고, 콘텐츠 배경은 #e8f1fa에서 #d7e8fb로 이어지는 더 진한 blue-gray gradient를 사용합니다.
+- 첫 화면의 따뜻한 진입감은 좌상단 warm tone #ffecd2로 제한하고, 주요 CTA와 선택 상태는 명확한 blue 계열을 우선합니다.
+- 카드 경계는 #d5deea, 현재/활성 행은 #e8f2ff를 기본으로 사용해 정보 대비를 확보합니다.
 - Git Lab의 commit node와 성공 상태에는 green을 사용할 수 있습니다.
 - 반경은 `8px` 이하를 기본으로 하고 카드 중첩과 장식용 gradient를 피합니다.
 - 앱 전역 폰트를 우선하고 UI fallback은 system sans, 코드는 monospace를 사용합니다.
+- 사이드바 로고(`AppShell`의 `.brand`, "ICU / I CODE U")는 예외적으로 `Cloudsofa_namgim-Regular`를 사용하고, 그 외 모든 화면은 전역 폰트 `LINE Seed KR`을 사용합니다.
 
 ## Design Tokens
 
@@ -44,11 +50,25 @@ ICU는 초급·중급 개발자가 오늘 학습할 내용을 정하고, 커리�
   --color-dark-text-muted: #94a3b8;
   --color-dark-border: #25364d;
 
-  --color-brand-orange: #ff8a1c;
-  --color-brand-pink: #f3b8d8;
-  --color-brand-cyan: #35c8f4;
-  --color-brand-blue: #07003d;
-  --color-brand-navy: #112b5f;
+  /*
+   * Previous Workday-inspired brand accents kept for audit:
+   * --color-brand-orange: #ff8a1c;
+   * --color-brand-pink: #f3b8d8;
+   * --color-brand-cyan: #35c8f4;
+   * --color-brand-blue: #07003d;
+   * --color-brand-navy: #112b5f;
+   */
+  --color-brand-page-bg: #e8f1fa;
+  --color-brand-page-bg-deep: #d7e8fb;
+  --color-brand-page-bg-warm: #ffecd2;
+  --color-brand-surface: #ffffff;
+  --color-brand-surface-subtle: #f8fbff;
+  --color-brand-border: #d5deea;
+  --color-brand-active-row: #e8f2ff;
+  --color-brand-primary: #0057d9;
+  --color-brand-primary-strong: #003b8f;
+  --color-brand-accent-cyan: #35bdf4;
+  --color-brand-accent-orange: #ff8a1c;
   --color-editor-bg: #151a24;
   --color-editor-text: #dbe4ef;
 }

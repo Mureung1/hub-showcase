@@ -3,7 +3,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../components/fonts/Cloudsofa_namgim-Regular.ttf') format('truetype');
+  src: url('./fonts/Cloudsofa_namgim-Regular.ttf') format('truetype');
 }
 
 @font-face {
@@ -11,7 +11,7 @@
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src: url('../components/fonts/LINE_SeedKR_2023.09.06/Web/woff2/LINESeedKR-Th.woff2')
+  src: url('./fonts/LINESeedKR-Th.woff2')
     format('woff2');
 }
 
@@ -20,7 +20,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../components/fonts/LINE_SeedKR_2023.09.06/Web/woff2/LINESeedKR-Rg.woff2')
+  src: url('./fonts/LINESeedKR-Rg.woff2')
     format('woff2');
 }
 
@@ -29,7 +29,7 @@
   font-style: normal;
   font-weight: 700 900;
   font-display: swap;
-  src: url('../components/fonts/LINE_SeedKR_2023.09.06/Web/woff2/LINESeedKR-Bd.woff2')
+  src: url('./fonts/LINESeedKR-Bd.woff2')
     format('woff2');
 }
 :root {
