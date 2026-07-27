@@ -9,6 +9,15 @@ const CODE_ATTEMPTS = 5
 const randomCode = () => String(Math.floor(1000 + Math.random() * 9000))
 
 /*
+ * 부하 테스트 비교군 스위치 (T-15). 기본값은 항상 안전한 경로다.
+ * UNSAFE_STOCK=1 로 켜면 락 미적용 구현으로 바뀌어 오버셀이 재현된다 — 측정 용도로만 쓴다.
+ */
+const UNSAFE_STOCK = process.env.UNSAFE_STOCK === '1'
+if (UNSAFE_STOCK) {
+  console.warn('[경고] UNSAFE_STOCK=1 — 락 미적용 재고 차감 경로로 동작합니다. 부하 테스트 전용.')
+}
+
+/*
  * 예약 생성 (T-08) — 이 프로젝트의 기술 셀링포인트.
  *
  * 오버셀 방지의 핵심은 "확인 후 차감"이 아니라 조건부 UPDATE 한 문장이다
@@ -24,7 +33,9 @@ export async function createReservation(userId, { dealId, qty }) {
   }
 
   const reservation = await withTransaction(async (client) => {
-    const deal = await dealRepo.decrementStock(id, quantity, client)
+    const deal = UNSAFE_STOCK
+      ? await dealRepo.decrementStockUnsafe(id, quantity, client)
+      : await dealRepo.decrementStock(id, quantity, client)
 
     if (!deal) {
       // 실패 원인 구분 (같은 트랜잭션 안에서 읽기)

@@ -99,13 +99,6 @@ export async function findByIdWithStore(dealId, { lat, lng } = {}, db = pool) {
 }
 
 /*
- * 선착순 재고의 원자적 차감 (T-08 — 이 프로젝트의 기술 셀링포인트).
- *
- * 조건 검사(remaining_qty >= qty)와 차감을 한 문장에서 수행한다.
- * 행 락 안에서 원자적으로 처리되므로 동시 요청이 몰려도 재고를 초과해 성공할 수 없다.
- * 차감에 실패하면 null을 반환한다(영향 행 0). DB의 CHECK(remaining_qty >= 0)가 최종 방어선.
- */
-/*
  * 만료 처리 (T-14) — 픽업 마감이 지난 딜을 한 문장으로 정리한다.
  *
  * 세 가지가 원자적으로 함께 일어나야 불변식이 깨지지 않는다:
@@ -147,6 +140,13 @@ export async function expireOverdue(db = pool) {
   }))
 }
 
+/*
+ * 선착순 재고의 원자적 차감 (T-08 — 이 프로젝트의 기술 셀링포인트).
+ *
+ * 조건 검사(remaining_qty >= qty)와 차감을 한 문장에서 수행한다.
+ * 행 락 안에서 원자적으로 처리되므로 동시 요청이 몰려도 재고를 초과해 성공할 수 없다.
+ * 차감에 실패하면 null을 반환한다(영향 행 0). DB의 CHECK(remaining_qty >= 0)가 최종 방어선.
+ */
 export async function decrementStock(dealId, qty, db = pool) {
   const { rows } = await db.query(
     `UPDATE deals
@@ -160,4 +160,40 @@ export async function decrementStock(dealId, qty, db = pool) {
     [dealId, qty],
   )
   return rows.length ? toDeal(rows[0]) : null
+}
+
+/*
+ * [부하 테스트 전용 — 절대 운영 경로에서 쓰지 않는다] 락 미적용 재고 차감 (T-15 비교군).
+ *
+ * decrementStock이 왜 필요한지 증명하기 위한 의도적으로 잘못된 구현이다.
+ * 읽기 → 애플리케이션에서 판단 → 읽은 값으로 덮어쓰기 세 단계로 나뉘어 있어,
+ * 판단과 쓰기 사이에 다른 트랜잭션이 끼어들면 갱신 손실(lost update)이 발생한다.
+ *
+ * 절대값을 쓰기 때문에 remaining_qty가 음수로 가지 않아 CHECK 제약에도 걸리지 않는다.
+ * 그래서 오버셀이 에러가 아니라 "정상 응답"으로 조용히 새어 나간다 — 이것이 이 비교의 핵심이다.
+ *
+ * UNSAFE_STOCK=1 일 때만 reservationService가 이 경로를 선택한다.
+ */
+export async function decrementStockUnsafe(dealId, qty, db = pool) {
+  const { rows } = await db.query(
+    `SELECT * FROM deals
+     WHERE id = $1 AND status = 'active' AND pickup_deadline_at > now()`,
+    [dealId],
+  )
+  if (rows.length === 0) return null
+
+  const current = rows[0]
+  // 이 판단 시점의 remaining_qty는 이미 낡았을 수 있다 (다른 요청이 그 사이에 차감)
+  if (current.remaining_qty < qty) return null
+
+  const next = current.remaining_qty - qty
+  const { rows: updated } = await db.query(
+    `UPDATE deals
+     SET remaining_qty = $2,
+         status = CASE WHEN $2 = 0 THEN 'sold_out' ELSE status END
+     WHERE id = $1
+     RETURNING *`,
+    [dealId, next],
+  )
+  return updated.length ? toDeal(updated[0]) : null
 }
