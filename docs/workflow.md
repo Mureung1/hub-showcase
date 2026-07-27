@@ -9,6 +9,20 @@
 - **3주차 — 자소서 초안 생성**: 본작업(T9~T16)을 계획보다 빠르게 끝내고 스코프를 넓힘(Supabase 영속 저장, 로그인 게이트, 배포, `profile` 재조회 구조 개선). `design-review`·`test-writer` 스킬을 이 주에 만들어 화면/테스트 컨벤션을 통일했고, 금요일에 처음으로 워크플로우 자체를 정리해봤다(이 문서의 시작).
 - **4주차 — 최종 마무리(이번 주)**: 배포는 이미 끝난 상태에서, 실제 채용 공고 크롤링(이슈 #23)·데모 영상 제작(이슈 #27)·이 워크플로우 정리 확장(이슈 #28)에 집중. 크롤링 과정에서 실제로 겪은 판단 사례는 아래 "이번 주 의사결정" 참고.
 
+## 배포 과정과 확인 기준
+
+3주차 목~금요일에 실제로 겪은 배포 흐름이다. 이번 주(4주차) 공식 미션이 요구하는 "배포 과정과 확인 기준 정리"는 이미 지난주에 실전으로 겪은 내용이라 여기 그대로 옮긴다.
+
+**배포 설정**
+- **백엔드(Render)**: Web Service로 GitHub 연동, Root Directory `backend`, Build Command `npm install`, Start Command `npm start`, Region Singapore(한국 사용자 기준 지연 고려), Instance Type Free. 환경변수 5개(`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`/`ANTHROPIC_API_KEY`/`APP_LOGIN_ID`/`APP_LOGIN_PASSWORD`) 등록.
+- **프론트엔드(Vercel)**: Vite 프리셋 자동 인식, 환경변수 `VITE_API_BASE_URL`에 Render 주소 등록. Production Branch를 기본값 `main`에서 `work`로 수정 — `main`은 부트캠프 템플릿만 있는 stale 브랜치라 실제 코드(`package.json` 등)가 없어서, 처음엔 이 사실을 모르고 `main` 기준으로 배포를 시도했다가 빌드가 실패했다.
+
+**확인 기준** (이번 주 미션의 "검증" 요구사항과 매칭)
+1. FE 주소가 외부에서 열리는가 — 배포된 Vercel URL에 curl/브라우저로 직접 접속해 200 확인.
+2. BE 상태 확인 API가 응답하는가 — 인증 없이 호출하면 401, 올바른 인증이면 200이 오는지 curl로 확인(로그인 게이트가 실제로 걸려 있는지까지 같이 검증).
+3. 화면에서 보낸 요청이 DB 저장·조회까지 이어지는가 — 코드만 읽고 판단하지 않고 `verification-agent`로 프로덕션 URL 기준 로그인→정보입력→추천→상세→초안 생성 전체 흐름을 실제로 구동해 재검증.
+4. 실패한 배포는 로그를 읽고 원인을 기록 — Render 로그에 뜨는 "No open ports detected, continuing to scan..."은 서버가 아직 부팅 중이라 뜨는 일시적 메시지이지 실패가 아니었다. 이후 "Your service is live"가 뜨는지까지 보고 진짜 성공/실패를 구분했다.
+
 ## 기본 사이클
 
 새 작업을 시작할 때마다 대체로 이 순서를 따랐다.
