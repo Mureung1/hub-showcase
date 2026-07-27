@@ -78,5 +78,75 @@ app.get('/api/notices', async (req, res) => {
   res.json({ notices: data });
 });
 
+// ── ODsay 프록시 ──────────────────────────────────────────────
+// API 키를 브라우저에 노출하면 안 되므로(F12로 훔쳐감) 서버가 대신 호출한다.
+// 응답도 프론트가 쓰기 좋은 모양으로 다듬는다 — ODsay 원본 구조가 바뀌어도 프론트는 무사.
+const ODSAY_BASE = 'https://api.odsay.com/v1/api';
+
+function odsayError(data) {
+  // ODsay는 실패 시 { error: {...} } 또는 { error: [{...}] } 형태 — 방어적으로 메시지만 뽑는다
+  if (!data.error) return null;
+  const e = Array.isArray(data.error) ? data.error[0] : data.error;
+  return e?.msg ?? e?.message ?? 'ODsay 오류';
+}
+
+// 정류장 검색: 이름 일부 → 정류장 후보 (경로 등록에서 출발/도착 선택용)
+app.get('/api/stations', async (req, res) => {
+  const q = (req.query.q ?? '').trim();
+  if (!q) return res.status(400).json({ error: '검색어(q)가 필요합니다.' });
+  const url = `${ODSAY_BASE}/searchStation?apiKey=${encodeURIComponent(process.env.ODSAY_API_KEY)}`
+    + `&stationName=${encodeURIComponent(q)}&stationClass=1`;   // stationClass=1 = 버스 정류장
+  const r = await fetch(url);
+  const data = await r.json();
+  const err = odsayError(data);
+  if (err) return res.status(502).json({ error: err });        // 502 = 우리 잘못 아니고 위쪽(ODsay) 문제
+  const stations = (data.result?.station ?? []).slice(0, 8).map((s) => ({
+    name: s.stationName,
+    x: s.x,                                  // 경도(lng)
+    y: s.y,                                  // 위도(lat)
+    arsID: s.arsID,                          // 정류장 고유번호 (버스 안내판에 붙은 그 번호)
+    region: [s.do, s.gu].filter(Boolean).join(' '),   // "대전광역시 유성구" — 동명 정류장 구분용
+  }));
+  res.json({ stations });
+});
+
+// 경로 후보 조회: 출발/도착 좌표 → 대중교통 후보 목록 (노선·정류장 = 이후 공지 매칭의 근거)
+app.get('/api/route-candidates', async (req, res) => {
+  const { sx, sy, ex, ey } = req.query;
+  if (!sx || !sy || !ex || !ey) {
+    return res.status(400).json({ error: '출발/도착 좌표(sx, sy, ex, ey)가 필요합니다.' });
+  }
+  const url = `${ODSAY_BASE}/searchPubTransPathT?apiKey=${encodeURIComponent(process.env.ODSAY_API_KEY)}`
+    + `&SX=${sx}&SY=${sy}&EX=${ex}&EY=${ey}`;
+  const r = await fetch(url);
+  const data = await r.json();
+  const err = odsayError(data);
+  if (err) return res.status(502).json({ error: err });
+  // path[] → subPath[](구간) → lane[](그 구간에서 탈 수 있는 노선들) 3중 구조를 평탄화
+  const candidates = (data.result?.path ?? []).slice(0, 5).map((p) => {
+    const lines = [];   // 매칭 1층 재료 (버스 번호 + 지하철 호선)
+    const stops = [];   // 매칭 2층 재료 (승하차 정류장 — 전체 경유 정류장은 아님, 한계 인지)
+    for (const sp of p.subPath ?? []) {
+      if (sp.trafficType === 2) {                       // 2 = 버스 구간
+        for (const l of sp.lane ?? []) lines.push(l.busNo);
+        if (sp.startName) stops.push(sp.startName);
+        if (sp.endName) stops.push(sp.endName);
+      } else if (sp.trafficType === 1) {                // 1 = 지하철 구간
+        for (const l of sp.lane ?? []) lines.push(l.name);
+        if (sp.startName) stops.push(sp.startName);
+        if (sp.endName) stops.push(sp.endName);
+      }                                                 // 3 = 도보 → 매칭에 안 쓰니 버림
+    }
+    return {
+      totalTime: p.info?.totalTime ?? null,             // 분
+      transitCount: (p.info?.busTransitCount ?? 0) + (p.info?.subwayTransitCount ?? 0),
+      stationCount: p.info?.busStationCount ?? null,
+      lines: [...new Set(lines)],                       // 같은 노선 중복 제거
+      stops: [...new Set(stops)],
+    };
+  });
+  res.json({ candidates });
+});
+
 const PORT = process.env.PORT || 8000; // Vite 프록시(/api → :8000)가 기대하는 포트
 app.listen(PORT, () => console.log(`miricat api on :${PORT}`));

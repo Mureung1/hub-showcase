@@ -99,6 +99,62 @@ h1 { font-size: 24px; letter-spacing: -0.02em; }
 .field input:focus { border-color: var(--route); background: #fff; }
 .field input::placeholder { color: #b9ab97; }
 
+/* ─────────── 정류장 검색 (StationPicker) ─────────── */
+.btn-search {
+  flex-shrink: 0;
+  padding: 0 16px;
+  font: 600 14px var(--font);
+  color: var(--route);
+  background: var(--route-soft);
+  border: 1.5px solid var(--route);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.station-results {
+  margin-top: 6px;
+  border: 1.5px solid var(--mist);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.station-results button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  font: 400 14px var(--font);
+  color: var(--ink);
+  background: #fff;
+  border: none;
+  border-bottom: 1px solid var(--mist);
+  cursor: pointer;
+}
+.station-results button:last-child { border-bottom: none; }
+.station-results button:hover { background: var(--route-soft); }
+.station-results button small,
+.picked-station small { color: var(--slate); font-size: 12px; margin-left: 4px; }
+.station-empty { padding: 10px 12px; font-size: 13px; color: var(--slate); }
+.picked-station {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1.5px solid var(--good);
+  border-radius: 10px;
+  background: var(--good-soft);
+  font-size: 14px;
+}
+.picked-station button {
+  font: 500 12px var(--font);
+  color: var(--slate);
+  background: #fff;
+  border: 1px solid var(--mist);
+  border-radius: 8px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
 .opt-label {
   font-size: 13px;
   font-weight: 600;
