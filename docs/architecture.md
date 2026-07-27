@@ -400,6 +400,7 @@ sequenceDiagram
 job_role_id
 scope_level: overall | cluster | posting
 scope_id
+entry_segment: entry_junior | experienced | unspecified
 dataset_version
 taxonomy_version
 knowledge_version
