@@ -17,3 +17,6 @@ export const getPosition = USE_MOCK ? mock.getPosition : api.getPosition;
 export const recalculate = USE_MOCK ? mock.recalculate : api.recalculate;
 
 export { ApiError } from "./api";
+export const generateDoc = USE_MOCK ? mock.generateDoc : api.generateDoc;
+export const pollDoc = USE_MOCK ? mock.pollDoc : api.pollDoc;
+export const saveDoc = USE_MOCK ? mock.saveDoc : api.saveDoc;

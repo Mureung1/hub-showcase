@@ -1,5 +1,4 @@
-import type { Credential, Position, PositionDetail } from "./types";
-
+import type { Credential, DocType, Position, PositionDetail } from "./types";
 /**
  * MVP 목업. 실제 API 연동 시 이 파일의 함수 시그니처만 유지한 채
  * fetch 구현으로 바꾸면 컴포넌트는 그대로 재사용된다.
@@ -263,4 +262,21 @@ export function getDocs(positionId: string) {
         letter: "아직 생성된 자기소개서가 없습니다.",
       }
   );
+}
+/* ── F6 목업: 실 API 시그니처를 흉내낸다 ── */
+
+let mockJobSeq = 1000;
+
+export async function generateDoc(postingId: number, type: DocType) {
+  const id = ++mockJobSeq;
+  return { id, status: "PENDING" as const };
+}
+
+export async function pollDoc(id: number): Promise<string> {
+  await new Promise((r) => setTimeout(r, 800));
+  return "[목업 문서]\n\n실 API 모드에서 실제 생성 결과가 여기 표시됩니다.";
+}
+
+export async function saveDoc(id: number, content: string) {
+  return { id, status: "DONE" as const };
 }
