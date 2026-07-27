@@ -40,7 +40,7 @@ npm run start -w @ay-ple/server
 
 ## Legacy bytes 보존 경계
 
-Server production source에는 app-owned v2 academic store, Course·material registry, Assignment receipt, durable patch·confirmation·revision apply와 recovery I/O가 없다. `@ay-ple/semester-workspace`도 v4 identity codec·classification과 shared validators만 남기고 current-v2 decoder·v3 kernel을 제거했다. 기존 workspace의 v2/v3 파일은 읽거나 rewrite·delete하지 않으며 unsupported prepared root로 보존한다. Canonical authority는 root v4 identity, external `WorkspaceRegistry`와 user-owned Git workspace다.
+Server production source에는 app-owned v2 academic store, Course·material registry, Assignment receipt, durable patch·confirmation·revision apply와 recovery I/O가 없다. `@ay-ple/semester-workspace`도 v4 identity codec·classification과 shared validators만 남기고 current-v2 decoder·v3 kernel을 제거했다. 기존 workspace의 v2/v3 파일은 읽거나 재작성·삭제하지 않으며 지원하지 않는 prepared root로 보존한다. Canonical authority는 root v4 identity, external `WorkspaceRegistry`와 user-owned Git workspace다.
 
 ## Product operation·Review authority
 
