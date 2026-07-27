@@ -152,7 +152,7 @@ RawMaterial registry
 | 포함 | 완료 의미 |
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
-| `propose_state_patch` MCP | Tracked project declaration과 process-local env binding으로 연결되고, host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
+| `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Authenticated Broker handshake가 없으면 activation이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, 선택적인 evidence와 세 action을 데스크톱 화면에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
@@ -179,6 +179,7 @@ RawMaterial registry
 | 실제 자료 사용 | AY가 복사본이 아니라 선택한 학기 Git workspace의 파일을 직접 다루는가? |
 | App의 차별화 | 일반 채팅보다 나은 capability-specific 판단 UI를 제공하는가? |
 | 왕복 완결성 | 한 MCP call 안에서 요청·UI·사용자 선택·structured result 반환이 끝나는가? |
+| Runtime 정직성 | Required Interaction MCP가 Broker와 연결되지 않으면 workspace activation이 성공하지 않는가? |
 | 경계의 깊이 | Skill이 correlation·Browser lifecycle·revision을 알지 않아도 되는가? |
 | AY의 자율성 | Skill과 AY가 workflow와 실제 file apply를 소유하는가? |
 | 사용자 통제 | Review 전에는 제안된 file mutation이 적용되지 않는가? |

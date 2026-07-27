@@ -73,11 +73,14 @@ Bootstrap은 SemesterWorkspace의 Git-tracked `.codex/config.toml`에 정적인 
 command = "<hub-owned-stdio-entrypoint>"
 env_vars = ["<endpoint-env>", "<token-env>", "<runtime-binding-env>"]
 enabled_tools = ["propose_state_patch"]
+required = true
 ```
 
-이 예시는 ownership을 보여주며 exact path·env 이름·startup policy는 implementation spec이 소유한다. Config에는 secret이나 process-local 값을 넣지 않는다. AY-PLE이 Codex child를 시작할 때 current App endpoint·token·Runtime binding을 environment로 주입하고, Codex가 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다.
+이 예시는 ownership을 보여주며 exact path·env 이름은 implementation spec이 소유한다. Config에는 secret이나 process-local 값을 넣지 않는다. AY-PLE이 Codex child를 시작할 때 current App endpoint·token·Runtime binding을 environment로 주입하고, Codex가 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다.
 
 따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load된다. Bootstrap은 global trust를 수정하지 않고, exact Git root와 `workspace-write`를 요청하는 정상 thread start가 current pinned App Server의 native trust write와 same-start config reload를 사용한다. 명시적 `untrusted`는 보존한다.
+
+`required = true`는 단순히 STDIO process가 spawn됐다는 뜻이 아니다. Adapter는 current Broker endpoint·token·Runtime binding을 검증하고 authenticated handshake를 완료한 뒤 MCP initialize에 성공한다. App activation은 effective MCP status에서 expected server와 handshake도 확인하므로 explicit `untrusted` 때문에 project declaration 전체가 무시된 경우까지 실패한다. App은 MCP 없는 degraded mode로 계속하지 않는다.
 
 ## Capability 설계 규칙
 
@@ -89,6 +92,7 @@ enabled_tools = ["propose_state_patch"]
 | Self-contained request | UI에 필요한 표시 정보와 허용 응답을 요청 하나에 담는다. App-owned workflow ID를 caller에게 요구하지 않는다. |
 | Closed result | `accept | revise | reject`처럼 Skill이 exhaustively 해석할 수 있는 result union을 반환한다. |
 | Host-owned binding | Workspace·Turn·Browser correlation은 caller field가 아니라 host가 process environment와 Broker session에서 주입한다. |
+| Required connection | Adapter와 current App Broker의 authenticated handshake가 완료되지 않으면 Workspace Runtime을 정상 상태로 열지 않는다. |
 | Transient lifecycle | Pending request와 user result는 interaction 수명 동안만 존재한다. Durable 학기 이력을 만들지 않는다. |
 | Explicit cancellation | User cancel, Browser disconnect, Runtime terminal을 서로 구분된 result 또는 error로 정산한다. |
 | Capability-specific UI | 자료 preview, diff, evidence처럼 해당 결정에 필요한 UI를 제공한다. Arbitrary schema renderer를 만들지 않는다. |
@@ -153,7 +157,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 
 | 영역 | 현재 구현 | 채택한 목표 |
 | --- | --- | --- |
-| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 hub-owned STDIO Adapter를 선언하고 Runtime은 dynamic env만 공급한다. |
+| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 required hub-owned STDIO Adapter를 선언하고 Runtime은 dynamic env만 공급한다. Adapter의 Broker handshake 뒤에만 initialize가 성공한다. |
 | Review 시작 | `propose_state_patch`가 Server-private key와 academic binding을 요구한다. | 표시할 proposal만 보내며 host binding은 Module 내부다. |
 | 사용자 응답 | 별도 `/reviews/:interactionId`와 built-in `request_user_input`을 함께 사용한다. | MCP call 하나가 UI 응답을 기다렸다가 closed result를 반환한다. |
 | Apply | Server가 durable patch·confirmation transaction으로 `SemesterModel`을 갱신한다. | AY가 result를 해석해 실제 workspace file을 변경한다. |
@@ -172,4 +176,5 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - App-owned academic event sourcing 또는 duplicate Codex Turn ledger
 - MCP caller가 host correlation과 store revision을 조립하는 protocol
 - Endpoint·token을 담은 tracked MCP config 또는 App의 broad config override
+- Interaction MCP 없이 정상으로 보이는 degraded AY-PLE Workspace Runtime
 - Rich Review와 built-in `request_user_input`의 이중 confirmation
