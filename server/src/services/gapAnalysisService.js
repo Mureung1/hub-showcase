@@ -13,6 +13,9 @@ export const EDUCATION_RANK = {
 // checklist_2.md 확정 사항: 전공 placeholder 3종은 전공무관과 동일하게 항상 통과 처리
 const MAJOR_ANY_VALUES = new Set(['전공무관', '관련 전공(공고별 상이)', '해당 교과 전공'])
 
+// OPIc은 숫자 점수가 아니라 등급(낮은→높은 순)이라 EDUCATION_RANK와 같은 방식으로 순서를 매겨서 비교한다.
+export const OPIC_RANK = { NL: 0, NM: 1, NH: 2, IL: 3, IM1: 4, IM2: 5, IM3: 6, IH: 7, AL: 8 }
+
 function compareEducation(job, spec) {
   if (job.education === '학력무관') return true
   return EDUCATION_RANK[spec.education] >= EDUCATION_RANK[job.education]
@@ -37,6 +40,9 @@ function compareMajor(job, spec) {
 function compareForeignLanguage(job, spec) {
   if (!job.foreign_lang_test) return true
   if (spec.foreign_lang_test !== job.foreign_lang_test) return false
+  if (job.foreign_lang_test === 'OPIc') {
+    return (OPIC_RANK[spec.foreign_lang_score] ?? -1) >= OPIC_RANK[job.foreign_lang_score]
+  }
   return (spec.foreign_lang_score ?? 0) >= job.foreign_lang_score
 }
 

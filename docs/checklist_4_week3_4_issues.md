@@ -260,6 +260,22 @@
 
 ---
 
+## #28 — 어학 성적 데이터 품질 수정 (OPIc 등급화 + TOEFL/TOEIC Speaking 실제 범위) [버그 수정]
+
+**설명**: 사용자가 결과 화면에서 발견 — 어학 시험 4종(TOEIC/TOEFL/OPIc/TOEIC Speaking) 전부 `foreign_lang_score`가 시험 구분 없이 600/650/700/750/800 5단계로 합성돼 있었음. TOEIC(0~990)은 그럭저럭 말이 되지만 TOEFL(0~120)/TOEIC Speaking(0~200)은 범위 밖이고, OPIc은 원래 등급(NL~AL) 체계라 숫자 점수 자체가 성립하지 않음. 원본 합성 스크립트(`synthesize_specs.py`)가 저장소에 없어 재실행 불가 — 시드 시점 재매핑 + 기존 DB 보정으로 처리. 완료 기준:
+
+- [x] `server/src/db/seed.js`에 `normalizeForeignLangScore(test, rawScore)` 추가 — OPIc은 600~800→IM1~AL 등급 문자열로, TOEFL은 80~110로, TOEIC Speaking은 110~170로 재매핑(TOEIC은 그대로). 시드 시점(CSV insert)에 적용
+- [x] `fixForeignLangScoresIfNeeded()` 추가, `index.js`에서 서버 시작 시마다 실행 — 이미 옛 값으로 시드된 기존 DB(로컬/배포)도 자동 보정. idempotent(이미 고쳐진 값은 매핑 테이블에 없어 그대로 반환)
+- [x] `gapAnalysisService.js`에 `OPIC_RANK`(NL~AL 순서) 추가, `compareForeignLanguage`가 OPIc일 때만 등급 순서로 비교(그 외는 기존 숫자 비교 그대로)
+- [x] `gapAnalysisValidation.js` — OPIc이면 `foreign_lang_score`가 `OPIC_RANK`에 있는 등급 문자열인지 검증, 그 외는 기존처럼 0 이상 숫자 검증
+- [x] `SpecPage.jsx` — 어학 시험을 OPIc으로 선택하면 숫자 입력 대신 등급 선택 `<select>`로 전환(`OPIC_GRADE_OPTIONS`, 신규). 시험 종류를 바꾸면 이전 점수/등급 값 초기화
+- [x] `src/lib/gapAnalysis.js`의 `describeRequirement` — OPIc은 "IM2 등급 이상", 그 외는 "700점 이상"으로 표기 구분(`formatForeignLangScore` 헬퍼)
+- [x] 검증: 백엔드 64/64(OPIc 등급 비교 3케이스 + 검증 2케이스 신규), FE lint/test 15/15, e2e 6/6 전부 회귀 없음. 실제 로컬 DB에 마이그레이션 적용 확인(OPIc 5종 전부 문자열 등급으로 저장됨), 실제 서버에 `POST /api/gap-analysis`로 OPIc spec 보내서 등급 비교가 실제로 동작하는 것 확인, SpecPage/JobDetailModal 실제 화면 스크린샷으로 등급 select·문구 확인
+
+**참고**: 프로덕션(Render) DB는 서버가 재시작/재배포될 때 `fixForeignLangScoresIfNeeded()`가 자동으로 실행되므로 별도 수동 작업 없이 다음 배포 때 반영됨.
+
+---
+
 ## 의존관계 요약
 
 핵심 트랙: `#15` → `#21` → `#16`(단, "홈 vs 초기화" 검증 항목만 `#21` 이후) · `#17` · `#22` · `#24`는 순서 제약 없이 병행 가능.

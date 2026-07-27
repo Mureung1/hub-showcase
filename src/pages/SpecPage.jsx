@@ -4,6 +4,7 @@ import {
   MAJOR_OPTIONS,
   CERT_OPTIONS,
   FOREIGN_LANG_TEST_OPTIONS,
+  OPIC_GRADE_OPTIONS,
 } from '../constants/specOptions'
 import { useAppState } from '../context/AppStateContext'
 
@@ -93,12 +94,15 @@ function SpecPage() {
             <div className="row">
               <select
                 value={spec.foreign_lang_test}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const nextTest = e.target.value
+                  // 시험 종류가 바뀌면 이전 시험 기준 점수/등급이 그대로 남아있으면 안 되므로 초기화한다 —
+                  // OPIc은 등급 문자열, 나머지는 숫자 점수라 형식 자체가 다르다.
                   patchSpec({
-                    foreign_lang_test: e.target.value,
-                    foreign_lang_score: e.target.value ? spec.foreign_lang_score : 0,
+                    foreign_lang_test: nextTest,
+                    foreign_lang_score: nextTest === 'OPIc' ? '' : 0,
                   })
-                }
+                }}
               >
                 <option value="">없음</option>
                 {FOREIGN_LANG_TEST_OPTIONS.map((opt) => (
@@ -107,17 +111,31 @@ function SpecPage() {
                   </option>
                 ))}
               </select>
-              {spec.foreign_lang_test && (
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="점수"
+              {spec.foreign_lang_test === 'OPIc' ? (
+                <select
                   value={spec.foreign_lang_score || ''}
-                  onChange={(e) =>
-                    patchSpec({ foreign_lang_score: Number(e.target.value.replace(/\D/g, '')) || 0 })
-                  }
-                />
+                  onChange={(e) => patchSpec({ foreign_lang_score: e.target.value })}
+                >
+                  <option value="">등급 선택</option>
+                  {OPIC_GRADE_OPTIONS.map((grade) => (
+                    <option key={grade} value={grade}>
+                      {grade}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                spec.foreign_lang_test && (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="점수"
+                    value={spec.foreign_lang_score || ''}
+                    onChange={(e) =>
+                      patchSpec({ foreign_lang_score: Number(e.target.value.replace(/\D/g, '')) || 0 })
+                    }
+                  />
+                )
               )}
             </div>
           </label>
