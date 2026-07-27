@@ -19,12 +19,6 @@ export const AXES: Axis[] = (meta.AXES as Omit<Axis, 'weight'>[]).map((a) => ({
   weight: (meta.AXIS_WEIGHT as Record<string, number>)[a.key],
 }));
 
-export const LEVELS: Record<number, { label: string }> = {
-  1: { label: '위험' },
-  2: { label: '무난' },
-  3: { label: '적절' },
-};
-
 export const REL_HINTS: Record<string, string> = meta.REL_HINTS as Record<string, string>;
 
 /** 온보딩 직업/역할 (title, 한 줄 설명) */

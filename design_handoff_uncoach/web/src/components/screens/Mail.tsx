@@ -7,7 +7,7 @@ import { scoreDraft, type ScoreResult } from "@/lib/client/api";
 import type { Situation } from "@/lib/domain/types";
 import type { ScreenKey } from "@/components/AppShell";
 import ProfileChip from "@/components/stitch/ProfileChip";
-import { ScoreCard, FeedbackItem, FeedbackHeading, axisMetrics } from "@/components/stitch/Feedback";
+import { ScoreCard, RubricTable, FeedbackItem, FeedbackHeading, axisMetrics, situationRubricRows } from "@/components/stitch/Feedback";
 
 const DEFAULT_BODY = `안녕하세요, 담당자님.\n\n진행 중인 프로젝트 일정에 대해 안내드립니다.\n\n초기 단계에서 예상치 못한 지연이 있었으나, 최종 납기에는 영향이 없도록 조치하고 있습니다.\n\n자세한 내용은 내일 다시 공유드리겠습니다.\n\n감사합니다.`;
 
@@ -117,13 +117,17 @@ export default function Mail({ situation, onExit, nav }: { situation?: Situation
               <span className="px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed text-xs font-bold tracking-wide">시나리오: {sit.title}</span>
             </div>
 
-            {/* 종합 점수 (공용) */}
-            <ScoreCard
-              title="종합 점수"
-              total={total}
-              metrics={attempt ? axisMetrics(attempt.scores) : []}
-              empty="왼쪽 상단 '평가하기'를 눌러 이메일 초안을 평가받아 보세요."
-            />
+            {/* 종합 점수 (공용) — 상황별 루브릭이 있으면 축별 1·2·3점 기준을 펼친 채점표로 */}
+            {attempt && sit.rubric ? (
+              <RubricTable rows={situationRubricRows(sit.rubric, attempt.scores, attempt.reasons)} total={attempt.total} />
+            ) : (
+              <ScoreCard
+                title="종합 점수"
+                total={total}
+                metrics={attempt ? axisMetrics(attempt.scores) : []}
+                empty="왼쪽 상단 '평가하기'를 눌러 이메일 초안을 평가받아 보세요."
+              />
+            )}
 
             {/* 피드백 (공용) */}
             <div className="flex flex-col gap-3 mt-6">
@@ -138,7 +142,8 @@ export default function Mail({ situation, onExit, nav }: { situation?: Situation
 
               {attempt && <FeedbackItem accent="primary" icon="lightbulb" body={attempt.coach} />}
 
-              {attempt && AXES.map((ax) => {
+              {/* 루브릭 채점표를 쓰면 축별 근거가 표 안에 이미 있으므로, 폴백(rubric 없음)일 때만 카드로 */}
+              {attempt && !sit.rubric && AXES.map((ax) => {
                 const reason = attempt.reasons[ax.key];
                 if (!reason) return null;
                 const good = attempt.scores[ax.key] >= 3;

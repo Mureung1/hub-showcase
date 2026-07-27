@@ -7,7 +7,7 @@ import { scoreDraft, type ScoreResult } from "@/lib/client/api";
 import type { Situation, ThreadItem } from "@/lib/domain/types";
 import type { ScreenKey } from "@/components/AppShell";
 import ProfileChip from "@/components/stitch/ProfileChip";
-import { ScoreCard, FeedbackItem, FeedbackHeading, axisMetrics } from "@/components/stitch/Feedback";
+import { ScoreCard, RubricTable, FeedbackItem, FeedbackHeading, axisMetrics, situationRubricRows } from "@/components/stitch/Feedback";
 
 // 제안 답변 패턴 — 누르면 예시 초안이 입력창에 채워진다.
 const SUGGESTIONS: { label: string; draft: string }[] = [
@@ -183,13 +183,17 @@ export default function Chat({ situation, onExit, nav }: { situation?: Situation
             <div className="flex-1 py-4 font-label-sm text-label-sm font-semibold text-primary border-b-2 border-primary text-center">AI 코칭</div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* 실시간 평가 (공용) */}
-            <ScoreCard
-              title="실시간 평가"
-              total={attempt ? attempt.total : null}
-              metrics={attempt ? axisMetrics(attempt.scores) : []}
-              empty="메시지를 보내면 맥락·격식·전략 3축을 실시간으로 평가합니다."
-            />
+            {/* 실시간 평가 (공용) — 상황별 루브릭이 있으면 축별 1·2·3점 기준을 펼친 채점표로 */}
+            {attempt && sit.rubric ? (
+              <RubricTable rows={situationRubricRows(sit.rubric, attempt.scores, attempt.reasons)} total={attempt.total} />
+            ) : (
+              <ScoreCard
+                title="실시간 평가"
+                total={attempt ? attempt.total : null}
+                metrics={attempt ? axisMetrics(attempt.scores) : []}
+                empty="메시지를 보내면 맥락·격식·전략 3축을 실시간으로 평가합니다."
+              />
+            )}
 
             {/* 피드백 (공용) */}
             <div className="space-y-3">
