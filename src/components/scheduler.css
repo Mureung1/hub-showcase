@@ -322,8 +322,12 @@ button.agenda-copy:hover strong { text-decoration: underline; }
   clip-path: polygon(4px 0, 20px 0, 20px 4px, 24px 4px, 24px 14px, 20px 14px, 20px 6px, 4px 6px, 4px 14px, 0 14px, 0 4px, 4px 4px);
 }
 .shop-item-headphones::after { content: ''; position: absolute; width: 6px; height: 12px; top: 19px; left: 11px; background: var(--item-color, var(--scheduler-violet)); box-shadow: 20px 0 0 var(--item-color, var(--scheduler-violet)); }
-/* 5배로 확대돼 보이는 아이템이라 공용 외곽선(4px)이 과하게 두꺼워 보여 테이블만 더 얇게 줄인다. */
-.shop-item-table { filter: drop-shadow(1.5px 0 0 var(--scheduler-ink)) drop-shadow(-1.5px 0 0 var(--scheduler-ink)) drop-shadow(0 1.5px 0 var(--scheduler-ink)) drop-shadow(0 -1.5px 0 var(--scheduler-ink)); }
+/* 테이블은 배경이 투명해서(::before/::after만 보임) 공용 filter:drop-shadow가 사각형이 아니라
+   상판+다리의 울퉁불퉁한 실루엣을 따라 그려져 겹outline이 생긴다(간식류와 같은 문제).
+   3.75배로 크게 확대되는 아이템이라 이 겹outline이 더 두드러지고, 드래그로 옮기는 동안
+   프레임마다 다시 래스터화되면서 아주 얇은 검은 선(seam)이 깜빡이는 것으로 보였다.
+   상판(inset 테두리)·다리(잉크색 자체 채움)에 각자 충분한 윤곽이 이미 있어서 꺼도 무방하다. */
+.shop-item-table { filter: none; }
 .shop-item-table::before { content: ''; position: absolute; width: 34px; height: 8px; top: 11px; left: 7px; background: var(--item-color, var(--scheduler-coral)); box-shadow: inset 0 0 0 1px var(--scheduler-ink); }
 .shop-item-table::after { content: ''; position: absolute; width: 4px; height: 20px; top: 19px; left: 10px; background: var(--scheduler-ink); box-shadow: 24px 0 0 var(--scheduler-ink); }
 
