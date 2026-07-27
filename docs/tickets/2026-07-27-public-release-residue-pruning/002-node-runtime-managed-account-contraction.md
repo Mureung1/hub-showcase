@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current session)
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,29 +32,36 @@
 
 ## Acceptance Criteria
 
-- [ ] Package root와 private runtime contract에서 managed account lifecycle·role·login/logout type export가 사라진다.
-- [ ] `createCodexChatRuntime`과 lower-level verified start seam은 workspace-only input과 survivor Runtime result만 허용한다.
-- [ ] Node supervisor의 role branch, auth-only empty-root validation과 workspace-family denial logic이 제거된다.
-- [ ] Node private bridge protocol과 decoder가 `read_account`만 account-related command로 허용한다.
-- [ ] `readAccountReadiness()`는 ChatGPT를 `ready`, signed-out·unsupported를 `not_ready(authentication_required)`로 계속 투영한다.
-- [ ] Account read의 malformed response, timeout, Runtime close와 process loss가 safe error·bounded cleanup으로 수렴한다.
-- [ ] Managed lifecycle 전용 Node unit·actual-child·type tests는 삭제되고 survivor product tests는 같은 또는 더 강한 coverage로 green이다.
-- [ ] Source와 tests에서 removed TypeScript identifier·command의 non-historical reference가 0건이다.
+- [x] Package root와 private runtime contract에서 managed account lifecycle·role·login/logout type export가 사라진다.
+- [x] `createCodexChatRuntime`과 lower-level verified start seam은 workspace-only input과 survivor Runtime result만 허용한다.
+- [x] Node supervisor의 role branch, auth-only empty-root validation과 workspace-family denial logic이 제거된다.
+- [x] Node private bridge protocol과 decoder가 `read_account`만 account-related command로 허용한다.
+- [x] `readAccountReadiness()`는 ChatGPT를 `ready`, signed-out·unsupported를 `not_ready(authentication_required)`로 계속 투영한다.
+- [x] Account read의 malformed response, timeout, Runtime close와 process loss가 safe error·bounded cleanup으로 수렴한다.
+- [x] Managed lifecycle 전용 Node unit·actual-child·type tests는 삭제되고 survivor product tests는 같은 또는 더 강한 coverage로 green이다.
+- [x] Source와 tests에서 removed TypeScript identifier·command의 non-historical reference가 0건이다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm run test:node-unit -w @ay-ple/codex-chat-runtime`
-  - `npm run test:node-actual -w @ay-ple/codex-chat-runtime`
-  - `npm run typecheck -w @ay-ple/codex-chat-runtime`
-  - `npm run build -w @ay-ple/codex-chat-runtime`
-  - `npm test -w @ay-ple/server`
+  - `npm run test:node-unit -w @ay-ple/codex-chat-runtime` — 통과, 128 assertions
+  - `npm run test:node-actual -w @ay-ple/codex-chat-runtime` — 통과, 82 tests. Account Readiness의 unsupported projection과 malformed·timeout·close-race·process-loss settlement 및 process-group reap을 포함한다.
+  - `npm run typecheck -w @ay-ple/codex-chat-runtime` — 통과
+  - `npm run build -w @ay-ple/codex-chat-runtime` — 통과
+  - `npm test -w @ay-ple/server` — 통과, 133 tests
+  - Removed Node surface `rg` scan — non-historical reference 0건
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
-  - `npm run build`
+  - `npm test` — 통과
+  - `npm run typecheck` — 통과
+  - `npm run build` — 통과
+  - `npm run lint -w @ay-ple/chat-shell` — 통과
+  - `npm run check:docs-links` — 통과
 - Manual or live smoke:
-  - 없음. Existing verified Runtime artifact가 필요한 actual-child gate는 provider credential 없이 실행한다.
+  - 없음. Verified Runtime artifact를 사용하는 actual-child gate를 provider credential 없이 실행했다.
+
+## Result
+
+Node production·testing surface를 exact workspace 하나의 `CodexWorkspaceRuntime`으로 닫고 managed account lifecycle, Runtime role, `auth-only` factory branch와 login·logout private protocol을 compatibility alias 없이 제거했다. Fresh `readAccountReadiness()`는 survivor seam으로 유지해 ChatGPT·signed-out·unsupported projection을 고정했고 malformed response, timeout, Runtime close, child process loss의 safe settlement와 bounded cleanup을 직접 검증했다. Deterministic fake와 process fixture도 obsolete role·lifecycle state 없이 workspace-only 계약을 사용한다. Python bridge와 official SDK patch stack은 후속 ticket 범위로 유지했다. Standards·Spec 병렬 리뷰의 후속 확인 결과 남은 finding은 없다. 구현 체크포인트는 `3a006becc`, `6e51bd9c7`, `9bee4e34f`이다.
 
 ## Blocked By
 
@@ -62,7 +69,7 @@
 
 ## Starting Points
 
-- `packages/codex-chat-runtime/src/account-contract.ts`
+- `packages/codex-chat-runtime/src/native-context-contract.ts`
 - `packages/codex-chat-runtime/src/runtime-contract.ts`
 - `packages/codex-chat-runtime/src/index.ts`
 - `packages/codex-chat-runtime/src/runtime.ts`
