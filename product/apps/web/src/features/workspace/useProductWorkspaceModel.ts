@@ -12,6 +12,7 @@ import { findReadyOverlayRegion } from "../map/supportedRegions";
 import type { SelectedStorefront } from "../map/storefronts/SelectedStorefrontLayer";
 import { hasStorefrontVariant } from "../map/storefronts/storefrontRegistry";
 import { selectMapStores } from "../map/storefronts/storefrontSelection";
+import { useStorefrontBuildingPlacements } from "../map/storefronts/useStorefrontBuildingPlacement";
 import { useCompactMap } from "../map/useCompactMap";
 import { useMapViewport } from "../map/useMapViewport";
 import { useWorkspacePanels } from "./useWorkspacePanels";
@@ -206,6 +207,101 @@ function useWorkspaceMarketData(
   return { marketAnalysis, nearby, market };
 }
 
+function useStorefrontCandidates(
+  compactMap: boolean,
+  selection: SelectionState,
+  viewport: ViewportState,
+  visibleStores: MarketStore[],
+  selectedStore: MarketStore | null,
+) {
+  const selectedStorefrontCandidate = useMemo<SelectedStorefront | null>(() => {
+    const categoryCode = selectedStore?.categoryCode ?? null;
+    if (
+      !viewport.prefabMode ||
+      viewport.storefront3dUnavailable ||
+      viewport.mapMode !== "localtwin" ||
+      !selectedStore ||
+      !selectedStore.id ||
+      !hasStorefrontVariant(categoryCode) ||
+      !findReadyOverlayRegion([selectedStore.longitude, selectedStore.latitude])
+    ) {
+      return null;
+    }
+    return {
+      id: selectedStore.id,
+      longitude: selectedStore.longitude,
+      latitude: selectedStore.latitude,
+      categoryCode,
+    };
+  }, [selectedStore, viewport.mapMode, viewport.prefabMode, viewport.storefront3dUnavailable]);
+  const candidateMapStores = useMemo(
+    () =>
+      selectMapStores(visibleStores, {
+        selectedName: selectedStore?.name ?? null,
+        focus: selectedStorefrontCandidate
+          ? [selectedStorefrontCandidate.longitude, selectedStorefrontCandidate.latitude]
+          : null,
+        limit: compactMap ? 6 : 12,
+        bounds: viewport.visibleMapBounds,
+        minimumDistanceMeters: selectedStorefrontCandidate
+          ? compactMap
+            ? 125
+            : 105
+          : compactMap
+            ? 55
+            : 40,
+      }),
+    [
+      compactMap,
+      selectedStore?.name,
+      selectedStorefrontCandidate,
+      viewport.visibleMapBounds,
+      visibleStores,
+    ],
+  );
+  const storefrontCandidates = useMemo(() => {
+    if (
+      !viewport.prefabMode ||
+      viewport.storefront3dUnavailable ||
+      viewport.mapMode !== "localtwin"
+    ) {
+      return [];
+    }
+    const mapCandidates = candidateMapStores.flatMap((store) => {
+      if (
+        !store.id ||
+        !store.categoryCode ||
+        !categoryMatchesSelection(store.category, selection.categorySelection) ||
+        !hasStorefrontVariant(store.categoryCode)
+      ) {
+        return [];
+      }
+      return [
+        {
+          id: store.id,
+          longitude: store.longitude,
+          latitude: store.latitude,
+          categoryCode: store.categoryCode,
+        },
+      ];
+    });
+    const candidates = [selectedStorefrontCandidate, ...mapCandidates].filter(
+      (store): store is SelectedStorefront => store !== null,
+    );
+    return candidates.filter(
+      (store, index) => candidates.findIndex((candidate) => candidate.id === store.id) === index,
+    );
+  }, [
+    candidateMapStores,
+    selectedStorefrontCandidate,
+    selection.categorySelection,
+    viewport.mapMode,
+    viewport.prefabMode,
+    viewport.storefront3dUnavailable,
+  ]);
+  return { selectedStorefrontCandidate, candidateMapStores, storefrontCandidates };
+}
+
 function useWorkspaceStorefronts(
   compactMap: boolean,
   catalogState: WorkspaceCatalog,
@@ -235,25 +331,6 @@ function useWorkspaceStorefronts(
     score: market.score,
     nearbyStores: nearbyMarketStores,
   });
-  const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
-    const selectedSearchResult = storeSelection.selectedSearchResult;
-    if (
-      !viewport.prefabMode ||
-      viewport.storefront3dUnavailable ||
-      viewport.mapMode !== "localtwin" ||
-      selectedSearchResult?.result_type !== "store" ||
-      !hasStorefrontVariant(selectedSearchResult.category_code) ||
-      !findReadyOverlayRegion([selectedSearchResult.longitude, selectedSearchResult.latitude])
-    ) {
-      return null;
-    }
-    return {
-      id: selectedSearchResult.id,
-      longitude: selectedSearchResult.longitude,
-      latitude: selectedSearchResult.latitude,
-      categoryCode: selectedSearchResult.category_code,
-    };
-  }, [storeSelection.selectedSearchResult, viewport]);
   const visibleStores = useMemo(() => {
     const sourceStores = nearbyMarketStores;
     const stores = storeSelection.selectedSearchStore
@@ -274,46 +351,67 @@ function useWorkspaceStorefronts(
         (store) => !categoryMatchesSelection(store.category, selection.categorySelection),
       ),
     ];
-    return selectedStorefront3d
-      ? orderedStores.filter((store) => (store.id ?? store.name) !== selectedStorefront3d.id)
-      : orderedStores;
+    return orderedStores;
   }, [
     nearbyMarketStores,
-    selectedStorefront3d,
     selection.categorySelection,
     storeSelection.selectedSearchStore,
   ]);
   const listedStores = useMemo(
     () =>
-      visibleStores.filter((store) =>
-        categoryMatchesSelection(store.category, selection.categorySelection),
+      visibleStores.filter(
+        (store) =>
+          (store.id ?? store.name) !== (storeSelection.selected?.id ?? storeSelection.selected?.name) &&
+          categoryMatchesSelection(store.category, selection.categorySelection),
       ),
-    [selection.categorySelection, visibleStores],
+    [selection.categorySelection, storeSelection.selected?.id, storeSelection.selected?.name, visibleStores],
+  );
+  const { selectedStorefrontCandidate, candidateMapStores, storefrontCandidates } = useStorefrontCandidates(
+    compactMap,
+    selection,
+    viewport,
+    visibleStores,
+    storeSelection.selected,
+  );
+  const buildingPlacements = useStorefrontBuildingPlacements(storefrontCandidates, visibleStores);
+  const storefrontBuildings3d = useMemo<SelectedStorefront[]>(() => {
+    const placementByStoreId = new Map(
+      buildingPlacements
+        .filter((placement) => placement.building.storeCountInBuilding <= 1)
+        .map((placement) => [placement.storeId, placement.building]),
+    );
+    return storefrontCandidates.flatMap((store) => {
+      const building = placementByStoreId.get(store.id);
+      return building
+        ? [
+            {
+              ...store,
+              building: {
+                id: building.buildingId,
+                center: building.center,
+                plotSizeMeters: building.plotSizeMeters,
+                heightMeters: building.heightMeters,
+                storeCountInBuilding: building.storeCountInBuilding,
+              },
+            },
+          ]
+        : [];
+    });
+  }, [buildingPlacements, storefrontCandidates]);
+  const replacementStoreIds = useMemo(
+    () => new Set(storefrontBuildings3d.map((store) => store.id)),
+    [storefrontBuildings3d],
   );
   const mapStores = useMemo(
+    () => candidateMapStores.filter((store) => !replacementStoreIds.has(store.id ?? store.name)),
+    [candidateMapStores, replacementStoreIds],
+  );
+  const selectedStorefront3d = useMemo(
     () =>
-      selectMapStores(visibleStores, {
-        selectedName: storeSelection.selected?.name ?? null,
-        focus: selectedStorefront3d
-          ? [selectedStorefront3d.longitude, selectedStorefront3d.latitude]
-          : null,
-        limit: compactMap ? 6 : 12,
-        bounds: viewport.visibleMapBounds,
-        minimumDistanceMeters: selectedStorefront3d
-          ? compactMap
-            ? 125
-            : 105
-          : compactMap
-            ? 55
-            : 40,
-      }),
-    [
-      compactMap,
-      selectedStorefront3d,
-      storeSelection.selected?.name,
-      viewport.visibleMapBounds,
-      visibleStores,
-    ],
+      storefrontBuildings3d.find((store) => store.id === selectedStorefrontCandidate?.id) ??
+      selectedStorefrontCandidate ??
+      null,
+    [selectedStorefrontCandidate, storefrontBuildings3d],
   );
   const sameCategoryCount = nearby.data?.same_category_count ?? 0;
   const categoryCoverageReason =
@@ -350,6 +448,7 @@ function useWorkspaceStorefronts(
   return {
     storeSelection,
     selectedStorefront3d,
+    storefrontBuildings3d,
     visibleStores,
     listedStores,
     mapStores,

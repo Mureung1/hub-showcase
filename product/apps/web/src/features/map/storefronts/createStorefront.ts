@@ -10,8 +10,8 @@ function standardMaterial(color: number, roughness = 0.82) {
 function addBox(
   parent: THREE.Object3D,
   name: string,
-  size: [number, number, number],
-  position: [number, number, number],
+  size: readonly [number, number, number],
+  position: readonly [number, number, number],
   material: THREE.Material,
 ) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
@@ -196,12 +196,25 @@ export function createStorefront(variant: StorefrontVariant, assets?: Storefront
   } else {
     addBox(storefront, "shop-body", [4.2, 2.8, 2.6], [0, 1.45, 0], wall);
     addBox(storefront, "roof-cap", [4.7, 0.34, 3.05], [0, 3.02, 0], roof);
-    addBox(storefront, "storefront-sign", [2.5, 0.72, 0.18], [0, 2.36, 1.39], trim);
-    addBox(storefront, "front-window-left", [1.22, 1.28, 0.12], [-1.17, 1.1, 1.37], glass);
-    addBox(storefront, "front-window-right", [1.22, 1.28, 0.12], [1.17, 1.1, 1.37], glass);
-    addBox(storefront, "front-door", [0.78, 1.65, 0.14], [0, 0.92, 1.39], dark);
-    addBox(storefront, "door-window", [0.52, 0.74, 0.05], [0, 1.25, 1.48], glass);
-    addBox(storefront, "awning", [3.6, 0.18, 0.82], [0, 1.83, 1.63], accent).rotation.x = -0.3;
+    const signGroup = new THREE.Group();
+    signGroup.name = "storefront-sign";
+    for (const [name, size, position] of [
+      ["north", [2.5, 0.72, 0.18], [0, 2.36, 1.39]],
+      ["south", [2.5, 0.72, 0.18], [0, 2.36, -1.39]],
+      ["east", [0.18, 0.72, 2.0], [2.18, 2.36, 0]],
+      ["west", [0.18, 0.72, 2.0], [-2.18, 2.36, 0]],
+    ] as const) {
+      addBox(signGroup, `storefront-sign-${name}`, size, position, trim);
+    }
+    storefront.add(signGroup);
+    for (const [name, size, position] of [
+      ["north", [2.4, 1.2, 0.12], [0, 1.12, 1.37]],
+      ["south", [2.4, 1.2, 0.12], [0, 1.12, -1.37]],
+      ["east", [0.12, 1.2, 1.9], [2.12, 1.12, 0]],
+      ["west", [0.12, 1.2, 1.9], [-2.12, 1.12, 0]],
+    ] as const) {
+      addBox(storefront, `facade-window-${name}`, size, position, glass);
+    }
   }
 
   if (variant.attachment === "flower") {
@@ -227,11 +240,8 @@ export function createStorefront(variant: StorefrontVariant, assets?: Storefront
 
   addCategoryAttachment(storefront, variant, trim, accent, flower, dark);
 
-  const ground = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.65, 3.65, 0.22, 48),
-    standardMaterial(0xc8d8c3),
-  );
-  ground.name = "miniature-ground";
+  const ground = new THREE.Mesh(new THREE.BoxGeometry(4.7, 0.22, 4.7), standardMaterial(0xc8d8c3));
+  ground.name = "square-storefront-plot";
   ground.position.y = -0.16;
   ground.receiveShadow = true;
   storefront.add(ground);

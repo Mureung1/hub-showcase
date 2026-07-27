@@ -273,15 +273,18 @@ def add_snapshot_sources(
     }
 
 
-def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str, int]:
-    snapshot = load_canonical_snapshot(snapshot_dir)
-    source_ids = add_snapshot_sources(connection, snapshot, snapshot_dir, "서울 열린데이터광장")
+def known_market_codes(connection: sqlite3.Connection) -> set[str]:
+    return {market_code for (market_code,) in connection.execute("SELECT market_code FROM markets")}
 
-    known_market_codes = persist_market_rows(
-        connection, snapshot.sources["areas"].rows, source_ids["areas"]
-    )
-    for row in snapshot.sources["stores"].rows:
-        if row["TRDAR_CD"] not in known_market_codes:
+
+def persist_store_metric_rows(
+    connection: sqlite3.Connection,
+    rows: list[dict[str, Any]],
+    known_codes: set[str],
+    source_id: str,
+) -> None:
+    for row in rows:
+        if row["TRDAR_CD"] not in known_codes:
             continue
         connection.execute(
             """
@@ -299,18 +302,23 @@ def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str
                 integer(row.get("OPBIZ_STOR_CO")),
                 number(row.get("CLSBIZ_RT")),
                 integer(row.get("CLSBIZ_STOR_CO")),
-                source_ids["stores"],
+                source_id,
             ),
         )
 
-    for row in snapshot.sources["sales"].rows:
-        if row["TRDAR_CD"] not in known_market_codes:
+
+def persist_sales_metric_rows(
+    connection: sqlite3.Connection,
+    rows: list[dict[str, Any]],
+    known_codes: set[str],
+    source_id: str,
+) -> None:
+    for row in rows:
+        if row["TRDAR_CD"] not in known_codes:
             continue
         connection.execute(
-            """
-            INSERT OR REPLACE INTO sales_metrics VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
+            "INSERT OR REPLACE INTO sales_metrics "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 row["TRDAR_CD"],
                 str(row["STDR_YYQU_CD"]),
@@ -326,17 +334,22 @@ def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str
                 number(row.get("TMZON_14_17_SELNG_AMT")),
                 number(row.get("TMZON_17_21_SELNG_AMT")),
                 number(row.get("TMZON_21_24_SELNG_AMT")),
-                source_ids["sales"],
+                source_id,
             ),
         )
 
-    for row in snapshot.sources["flow"].rows:
-        if row["TRDAR_CD"] not in known_market_codes:
+
+def persist_flow_metric_rows(
+    connection: sqlite3.Connection,
+    rows: list[dict[str, Any]],
+    known_codes: set[str],
+    source_id: str,
+) -> None:
+    for row in rows:
+        if row["TRDAR_CD"] not in known_codes:
             continue
         connection.execute(
-            """
-            INSERT OR REPLACE INTO flow_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
+            """INSERT OR REPLACE INTO flow_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 row["TRDAR_CD"],
                 str(row["STDR_YYQU_CD"]),
@@ -347,8 +360,34 @@ def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str
                 number(row.get("TMZON_14_17_FLPOP_CO")),
                 number(row.get("TMZON_17_21_FLPOP_CO")),
                 number(row.get("TMZON_21_24_FLPOP_CO")),
-                source_ids["flow"],
+                source_id,
             ),
+        )
+
+
+def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str, int]:
+    snapshot = load_canonical_snapshot(snapshot_dir)
+    source_ids = add_snapshot_sources(connection, snapshot, snapshot_dir, "서울 열린데이터광장")
+
+    if "areas" in snapshot.sources:
+        market_codes = persist_market_rows(
+            connection, snapshot.sources["areas"].rows, source_ids["areas"]
+        )
+    else:
+        market_codes = known_market_codes(connection)
+
+    source_rows = {slug: source.rows for slug, source in snapshot.sources.items()}
+    if "stores" in source_rows:
+        persist_store_metric_rows(
+            connection, source_rows["stores"], market_codes, source_ids["stores"]
+        )
+    if "sales" in source_rows:
+        persist_sales_metric_rows(
+            connection, source_rows["sales"], market_codes, source_ids["sales"]
+        )
+    if "flow" in source_rows:
+        persist_flow_metric_rows(
+            connection, source_rows["flow"], market_codes, source_ids["flow"]
         )
     return table_counts(connection)
 

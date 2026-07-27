@@ -171,6 +171,14 @@ Source reliability 상한:
 
 API는 `/api/v1/scores/evaluate`에서 `formula_version`, component, cluster, reasons와 limitations를 함께 반환한다.
 
+`decision_summary`는 상세 근거를 읽기 전의 첫 안내다. API는 `검토 가능`, `주의`, `근거 부족` 중
+하나의 verdict와 장점 최대 2개, 주의점 최대 2개, 누락 근거를 반환한다. 이 verdict는 창업 성공을
+예측하거나 보장하지 않으며, `decision_status=insufficient_evidence`이면 점수와 무관하게
+`근거 부족`을 우선한다.
+
+점포를 선택했을 때도 이 점수는 공식 상권 경계 기준이다. 선택한 좌표의 반경 내 동일 업종 수와
+거리 정보는 별도 공간 분석으로 보여 주며, 상권 단위 매출·유동인구를 반경 값처럼 바꾸지 않는다.
+
 ## 10. 조사 근거
 
 - [서울시 상권분석서비스 점포-상권](https://data.seoul.go.kr/dataList/datasetView.do?currentPageNo=1&infId=OA-15577&serviceKind=1&srvType=A): 점포, 개·폐업, 프랜차이즈 근거
@@ -188,6 +196,15 @@ API는 `/api/v1/scores/evaluate`에서 `formula_version`, component, cluster, re
 peer group과 공식 버전이 다른 점수를 직접 비교하지 않는다.
 가중치는 평가 fixture와 사용자 연구 후 version을 올려 조정한다.
 ```
+
+## 13. 현재 범위와 다음 보완
+
+`비용·수익성 계산기`는 현재 범위에서 제외한다. 공공데이터만으로 임대료·원가·인건비를 정확히
+판단할 수 없는 상태에서 이익이나 생존 가능성을 숫자로 단정하지 않기 위해서다.
+
+업종별 calibration은 `SCORE-003`의 후속이다. 최소 다섯 분기 이상의 같은 업종·비교군 자료와
+실제 후행 결과를 확보한 뒤, 현재 가중치가 어떤 오류를 만드는지 검증하고 formula version을 올려
+변경한다. 그 전에는 같은 기본 가중치를 쓰되 업종·기간·비교군·신뢰도를 화면과 API에 계속 남긴다.
 
 ## 12. 공식 보완 계획
 

@@ -62,37 +62,54 @@ def validate_source_url(value: str) -> str:
     return value
 
 
-def source_table_counts(connection: sqlite3.Connection) -> dict[str, int]:
+def source_table_counts(
+    connection: sqlite3.Connection, tables: Sequence[str] = TABLE_ORDER
+) -> dict[str, int]:
     return {
         table: int(connection.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0])
-        for table in TABLE_ORDER
+        for table in tables
     }
 
 
-def source_category_counts(connection: sqlite3.Connection) -> dict[str, int]:
+def source_category_counts(
+    connection: sqlite3.Connection, tables: Sequence[str] = ("store_metrics", "sales_metrics")
+) -> dict[str, int]:
     return {
         table: int(
             connection.execute(f'SELECT COUNT(DISTINCT category_code) FROM "{table}"').fetchone()[0]
         )
-        for table in ("store_metrics", "sales_metrics")
+        for table in tables
     }
 
 
-def target_table_counts(connection: Connection) -> dict[str, int]:
+def target_table_counts(
+    connection: Connection, tables: Sequence[str] = TABLE_ORDER
+) -> dict[str, int]:
     return {
-        table: int(connection.scalar(select(func.count()).select_from(model)) or 0)
-        for table, model in MODEL_BY_TABLE.items()
+        table: int(connection.scalar(select(func.count()).select_from(MODEL_BY_TABLE[table])) or 0)
+        for table in tables
     }
 
 
-def target_category_counts(connection: Connection) -> dict[str, int]:
+def target_category_counts(
+    connection: Connection, tables: Sequence[str] = ("store_metrics", "sales_metrics")
+) -> dict[str, int]:
     return {
-        "store_metrics": int(
-            connection.scalar(select(func.count(func.distinct(StoreMetric.category_code)))) or 0
-        ),
-        "sales_metrics": int(
-            connection.scalar(select(func.count(func.distinct(SalesMetric.category_code)))) or 0
-        ),
+        table: int(
+            connection.scalar(
+                select(
+                    func.count(
+                        func.distinct(
+                            StoreMetric.category_code
+                            if table == "store_metrics"
+                            else SalesMetric.category_code
+                        )
+                    )
+                )
+            )
+            or 0
+        )
+        for table in tables
     }
 
 
@@ -141,6 +158,17 @@ def upsert_rows(connection: Connection, table: str, rows: Sequence[Mapping[str, 
     connection.execute(statement)
 
 
+def counts_match_source(source_counts: Mapping[str, int], target_counts: Mapping[str, int]) -> bool:
+    for table, source_count in source_counts.items():
+        target_count = target_counts.get(table, 0)
+        if table == "data_sources":
+            if target_count < source_count:
+                return False
+        elif target_count != source_count:
+            return False
+    return True
+
+
 def seed_canonical(
     source_path: Path,
     engine: Engine,
@@ -166,17 +194,20 @@ def seed_canonical(
         source.row_factory = sqlite3.Row
         if source.execute("PRAGMA foreign_key_check").fetchall():
             raise ValueError("Canonical SQLite contains foreign key violations.")
-        source_counts = source_table_counts(source)
-        source_categories = source_category_counts(source)
+        source_counts = source_table_counts(source, selected_tables)
+        category_tables = tuple(
+            table for table in selected_tables if table in {"store_metrics", "sales_metrics"}
+        )
+        source_categories = source_category_counts(source, category_tables)
 
         with engine.begin() as target:
             for table in selected_tables:
                 table_chunk_size = effective_chunk_size(table, chunk_size, target.dialect.name)
                 for rows in iter_source_rows(source, table, chunk_size=table_chunk_size):
                     upsert_rows(target, table, prepare_rows(table, rows))
-            target_counts = target_table_counts(target)
-            target_categories = target_category_counts(target)
-            if target_counts != source_counts:
+            target_counts = target_table_counts(target, selected_tables)
+            target_categories = target_category_counts(target, category_tables)
+            if not counts_match_source(source_counts, target_counts):
                 raise ValueError("Target table counts do not match canonical SQLite.")
             if target_categories != source_categories:
                 raise ValueError("Target category counts do not match canonical SQLite.")

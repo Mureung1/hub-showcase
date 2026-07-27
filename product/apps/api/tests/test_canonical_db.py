@@ -90,7 +90,7 @@ def make_seoul_snapshot(path: Path) -> None:
         json.dumps(
             {
                 "source_url": "https://data.seoul.go.kr",
-                "collected_at": "2026-07-11T00:00:00Z",
+                "collected_at": "2026-07-11T00:00:01Z",
                 "period": "20251",
                 "sources": sources,
             }
@@ -116,6 +116,54 @@ def test_seoul_import_is_idempotent_and_keeps_provenance(tmp_path: Path) -> None
     assert connection.execute(
         "SELECT source_type FROM data_sources WHERE dataset='sales'"
     ).fetchone() == ("official_estimate",)
+
+
+def test_seoul_import_accepts_metric_only_snapshots_after_market_seed(tmp_path: Path) -> None:
+    initial = tmp_path / "initial"
+    initial.mkdir()
+    make_seoul_snapshot(initial)
+    partial = tmp_path / "partial"
+    partial.mkdir()
+    sources = [
+        write_snapshot(
+            partial,
+            "sales",
+            [
+                {
+                    "TRDAR_CD": "M1",
+                    "STDR_YYQU_CD": "20252",
+                    "SVC_INDUTY_CD": "CS100010",
+                    "SVC_INDUTY_CD_NM": "카페",
+                    "THSMON_SELNG_AMT": "2000",
+                    "THSMON_SELNG_CO": "20",
+                }
+            ],
+        ),
+        write_snapshot(
+            partial,
+            "flow",
+            [{"TRDAR_CD": "M1", "STDR_YYQU_CD": "20252", "TOT_FLPOP_CO": "240"}],
+        ),
+    ]
+    (partial / "manifest.json").write_text(
+        json.dumps(
+            {
+                "source_url": "https://data.seoul.go.kr",
+                "collected_at": "2026-07-11T00:00:00Z",
+                "period": "20252",
+                "sources": sources,
+            }
+        ),
+        encoding="utf-8",
+    )
+    connection = sqlite3.connect(":memory:")
+    connection.executescript(SCHEMA)
+    import_seoul(connection, initial)
+
+    counts = import_seoul(connection, partial)
+
+    assert counts["sales_metrics"] == 2
+    assert counts["flow_metrics"] == 2
 
 
 def test_public_import_links_store_and_permit_sources(tmp_path: Path) -> None:

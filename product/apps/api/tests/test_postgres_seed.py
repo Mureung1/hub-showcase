@@ -9,6 +9,7 @@ from alembic import command
 from localtwin_api.canonical_db import SCHEMA
 from localtwin_api.database import create_database_engine
 from localtwin_api.postgres_seed import (
+    counts_match_source,
     effective_chunk_size,
     normalize_raw_path,
     seed_canonical,
@@ -200,7 +201,9 @@ def test_large_requested_chunk_is_capped_by_statement_parameter_budget() -> None
     assert effective_chunk_size("markets", 100, "postgresql") == 100
 
 
-def test_incremental_seed_restores_selected_tables_and_checks_all_counts(tmp_path: Path) -> None:
+def test_incremental_seed_restores_selected_tables_and_checks_selected_counts(
+    tmp_path: Path,
+) -> None:
     source_path = tmp_path / "source.db"
     make_source_database(source_path, "data/raw/areas.json")
     engine = migrated_engine(tmp_path / "target.db")
@@ -215,7 +218,21 @@ def test_incremental_seed_restores_selected_tables_and_checks_all_counts(tmp_pat
         tables=("market_geometries", "store_market_links"),
     )
 
-    assert report.target_counts == report.source_counts
+    assert report.target_counts == report.source_counts == {
+        "market_geometries": 1,
+        "store_market_links": 1,
+    }
     assert report.target_counts["market_geometries"] == 1
     assert report.target_counts["store_market_links"] == 1
     engine.dispose()
+
+
+def test_data_source_provenance_allows_existing_snapshot_history() -> None:
+    assert counts_match_source(
+        {"data_sources": 3, "sales_metrics": 2},
+        {"data_sources": 5, "sales_metrics": 2},
+    )
+    assert not counts_match_source(
+        {"data_sources": 3, "sales_metrics": 2},
+        {"data_sources": 2, "sales_metrics": 2},
+    )

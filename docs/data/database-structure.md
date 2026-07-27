@@ -287,14 +287,14 @@ flowchart LR
 
 ## 4. Table별 역할과 행의 기준
 
-| Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-16 development seed reference rows |
+| Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-27 canonical / development seed reference rows |
 | --- | --- | --- | --- | ---: |
-| `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 12 |
+| `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 18 / 22 |
 | `markets` | 서울시 상권 하나 | `market_code` | `source_snapshot_id` | 1,650 |
 | `market_geometries` | 시연 대상 상권의 WGS84 polygon 하나 | `market_code` | `market_code`, `source_snapshot_id` | 3 |
 | `store_metrics` | 상권·분기·업종별 점포 집계 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 304,775 |
-| `sales_metrics` | 상권·분기·업종별 추정매출 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 21,427 |
-| `flow_metrics` | 상권·분기별 추정 유동인구 | `market_code + period` | `market_code`, `source_snapshot_id` | 1,650 |
+| `sales_metrics` | 상권·분기·업종별 추정매출 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 85,732 |
+| `flow_metrics` | 상권·분기별 추정 유동인구 | `market_code + period` | `market_code`, `source_snapshot_id` | 6,595 |
 | `store_points` | 개별 점포 하나와 대표 좌표 | `store_id` | `source_snapshot_id` | 537,489 |
 | `store_market_links` | point-in-polygon으로 확인한 점포의 소속 상권 | `store_id` | `store_id`, `market_code`, `source_snapshot_id` | 4,548 |
 | `permit_businesses` | dataset 안의 인허가 사업장 하나 | `dataset + management_no` | `source_snapshot_id` | 40 |

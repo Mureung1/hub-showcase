@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis } from "../../services/marketAnalysis";
 import { MarketInspector } from "./MarketInspector";
-import { InspectorSummary } from "./MarketInspectorSections";
+import { InspectorStoreTrend, InspectorSummary } from "./MarketInspectorSections";
 import { FLOW_TIME_BUCKET_LABELS } from "./model";
 import type { Market, MarketStore } from "./types";
 
@@ -129,8 +129,9 @@ describe("MarketInspector population evidence", () => {
     expect(details).not.toHaveAttribute("open");
     fireEvent.click(screen.getByText(/행정동 배후통계 자세히 보기/));
     expect(details).toHaveAttribute("open");
-    expect(screen.getByText("행정동 주민")).toBeInTheDocument();
-    expect(screen.getByText("상권 경계와 행정동 경계는 다릅니다.")).toBeInTheDocument();
+    expect(screen.getByText("이 동네에 사는 사람")).toBeInTheDocument();
+    expect(screen.getByText(/상권과 동네의 경계가 서로 달라요/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/행정동 배후통계:/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /서울시 상권분석서비스 상주인구/ })).toHaveTextContent(
       "20251 · 과거 기준 · 상권",
     );
@@ -217,6 +218,30 @@ describe("MarketInspector population evidence", () => {
     expect(screen.getByText("순증 +5개")).toBeInTheDocument();
     expect(screen.getByText(/월별 변화가 아닌 선택 분기 합계/)).toBeInTheDocument();
     expect(screen.queryByText("개·폐업 추이")).not.toBeInTheDocument();
+  });
+
+  it("lets the reader combine only the quarters they want to compare", () => {
+    render(
+      <InspectorStoreTrend
+        categorySelection={{ name: "카페", code: "CS100010", analysisCategory: "카페", coverage: "full" }}
+        topic="stores"
+        trendState="ready"
+        trend={{
+          market_id: "3110562",
+          category: "카페",
+          operating_duration_status: "unavailable",
+          points: [
+            { period: "20251", opening_count: 3, closure_count: 1, net_opening_count: 2, category_store_count: 10, source_name: "서울시", source_url: "https://data.seoul.go.kr", source_type: "official", unit: "stores_per_quarter", method: "sum_official_category_rows" },
+            { period: "20252", opening_count: 5, closure_count: 2, net_opening_count: 3, category_store_count: 12, source_name: "서울시", source_url: "https://data.seoul.go.kr", source_type: "official", unit: "stores_per_quarter", method: "sum_official_category_rows" },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("개업 8개")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "2025년 1분기" }));
+    expect(screen.getByText("개업 5개")).toBeInTheDocument();
+    expect(screen.getByText("순증 +3개")).toBeInTheDocument();
   });
 
   it("renders the six source time buckets without inventing times after 24:00", () => {
