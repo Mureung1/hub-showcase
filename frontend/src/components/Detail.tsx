@@ -32,6 +32,8 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
         <p className="sub">{product.companyName}</p>
       </div>
 
+      {product.description && <p className="sub">{product.description}</p>}
+
       <div className="chip-list">
         {product.haccpCertified && (
           <span className="chip-badge">
