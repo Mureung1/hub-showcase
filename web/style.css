@@ -397,6 +397,77 @@ body[data-state="error"] .starter {
   color: var(--ink-3);
 }
 
+.card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.card__retried {
+  color: var(--retry);
+  font-size: 0.76rem;
+}
+
+/*
+ * 3줄 요약. grid로 라벨과 본문을 두 열에 고정한다 —
+ * 카드마다 라벨 폭이 달라지면 세로로 훑을 때 눈이 걸린다.
+ */
+.summary {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: 0.28rem 0.7rem;
+  margin: 0.7rem 0 0;
+}
+
+.summary > dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.75;
+  text-align: right;
+}
+
+.summary > dd {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  line-height: 1.62;
+}
+
+/* 값이 없어도 줄을 지우지 않는다. 비었다는 사실만 다르게 보이게 한다. */
+.summary__missing {
+  color: var(--muted-2);
+  font-style: italic;
+}
+
+.card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.card__abstract {
+  margin: 0.45rem 0 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+
+.card__link {
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
 /* 배지 — 도구 선택(2단계)이 사용자 눈에 보이는 유일한 지점이다. */
 .badge {
   display: inline-block;

@@ -138,6 +138,104 @@
     }
   }
 
+  /**
+   * 요약의 3키는 **순서와 자리가 고정이다.** 자유 문단으로 바꾸지 않는다.
+   *
+   * 값이 비어 있어도 줄을 지운다거나 접지 않는다 — 카드마다 줄 수가 달라지면
+   * 세로로 훑을 때 같은 정보가 같은 높이에 오지 않아 눈으로 비교할 수 없게 된다.
+   * 그게 이 서비스가 요약을 3줄로 못박은 이유다.
+   */
+  const SUMMARY_ROWS = [
+    ["contribution", "기여"],
+    ["method", "방법"],
+    ["result", "결과"],
+  ];
+
+  /**
+   * `paper_done` — 이 서비스의 결과물. 논문 1편이 끝날 때마다 카드 하나를 즉시 붙인다.
+   * 모아뒀다 마지막에 그리지 않는다: 사용자는 3분을 기다리는 게 아니라 30초마다 뭔가를 얻어야 한다.
+   */
+  function appendPaperCard(event) {
+    const item = appendEntry("entry--card");
+    item.id = `paper-${event.index}`; // 트렌드의 논문 칩이 여기로 스크롤한다 (Week 4)
+
+    // ── 머리: 배지 + 메타 ──
+    // 배지는 도구 선택(2단계)이 사용자 눈에 보이는 유일한 지점이라 생략하지 않는다.
+    const head = document.createElement("div");
+    head.className = "card__head";
+
+    const badge = document.createElement("span");
+    badge.className = event.used_fulltext ? "badge badge--fulltext" : "badge badge--abstract";
+    badge.textContent = event.used_fulltext ? "본문까지 읽음" : "초록으로 충분";
+
+    // 왜 그렇게 판단했는지는 read 이벤트에만 있다 — 8-3에서 받아둔 것을 꺼내 쓴다.
+    const decided = readInfo.get(event.index);
+    if (decided !== undefined && decided.reason) badge.title = decided.reason;
+
+    const meta = document.createElement("span");
+    meta.className = "entry__meta";
+    meta.textContent = `arXiv ${event.arxiv_id} · ${event.date}`;
+
+    head.append(badge, meta);
+
+    // 스스로 점검했다는 흔적. 성공한 카드에도 남긴다 — 감추면 자기 검증이 없던 일이 된다.
+    if (event.retried > 0) {
+      const retried = document.createElement("span");
+      retried.className = "card__retried";
+      retried.textContent = `자기 검증 후 ${event.retried}회 보완`;
+      head.appendChild(retried);
+    }
+
+    // ── 제목 ──
+    const title = document.createElement("h2");
+    title.className = "entry__title";
+    title.textContent = event.title;
+
+    // ── 3줄 요약 ──
+    const summary = document.createElement("dl");
+    summary.className = "summary";
+    for (const [key, label] of SUMMARY_ROWS) {
+      const term = document.createElement("dt");
+      term.textContent = label;
+
+      const value = document.createElement("dd");
+      const text = event.summary[key];
+      if (text) {
+        value.textContent = text;
+      } else {
+        // 자리는 유지하되 비었다는 사실은 숨기지 않는다.
+        value.textContent = "요약하지 못했습니다";
+        value.classList.add("summary__missing");
+      }
+      summary.append(term, value);
+    }
+
+    // ── 근거: 원문 초록 + arXiv 링크 ──
+    // 요약을 원문과 대조할 수 없으면 연구자는 요약을 믿지 않는다. 초록은 필수다.
+    const foot = document.createElement("div");
+    foot.className = "card__foot";
+
+    const abstract = document.createElement("details");
+    abstract.className = "disclosure";
+    const abstractSummary = document.createElement("summary");
+    abstractSummary.textContent = "원문 초록 펼치기";
+    const abstractBody = document.createElement("p");
+    abstractBody.className = "card__abstract";
+    abstractBody.textContent = event.abstract;
+    abstract.append(abstractSummary, abstractBody);
+
+    const link = document.createElement("a");
+    link.className = "card__link";
+    link.href = event.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "arXiv 원문 ↗";
+
+    foot.append(abstract, link);
+
+    item.append(head, title, summary, foot);
+  }
+
   /** 사용자의 스크롤이 사실상 맨 아래에 있는가. */
   function isPinnedToBottom() {
     const gap =
@@ -185,7 +283,7 @@
         break;
 
       case "paper_done":
-        // TODO(8-5 · #73): 3줄 요약 카드 + 배지 + 초록 펼침 + arXiv 링크
+        appendPaperCard(event);
         break;
 
       case "retry":
