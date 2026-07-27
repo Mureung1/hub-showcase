@@ -127,7 +127,7 @@ function FridgePage() {
         <section className="relative z-10 mx-auto -mt-2.5 w-full max-w-[820px] rounded-container border-4 border-ink bg-bg-surface p-4 shadow-[8px_8px_0_rgba(91,65,48,0.22)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <h1 className="font-display text-lg text-text-primary">🧺 냉장고에 뭐가 있나요?</h1>
+              <h1 className="font-display text-lg text-text-primary">냉장고에 뭐가 있나요?</h1>
               {selectedIds.length > 0 && (
                 <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-text">
                   {selectedIds.length}개
