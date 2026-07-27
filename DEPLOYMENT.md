@@ -33,7 +33,53 @@ npm start
 
 PowerShell 창을 닫으면 테스트 서버도 종료된다. 위 설정은 `127.0.0.1`만 사용하므로 같은 컴퓨터 밖에서는 접근할 수 없다.
 
-## Future Hosting Environment
+## Vercel + Render 첫 배포 준비
+
+### 역할 분리
+
+- Vercel: React/Vite 정적 프론트엔드
+- Render: Express API 서버와 Gemini·Supabase 서버 설정
+- Supabase: 인증과 사용자별 프로필·설정·출처·저장 공고 데이터
+
+프론트엔드는 `VITE_API_BASE_URL`에 설정한 Render API로 요청한다. 값이 비어 있으면 기존 로컬 Vite `/api` 프록시를 사용한다.
+
+### Render 설정
+
+`render.yaml`은 API 서비스의 기본값을 제공한다. Render에서 저장소를 연결한 뒤 아래 환경변수를 설정한다.
+
+```text
+ALLOWED_ORIGINS=https://배포할-vercel-도메인
+PUBLIC_URL=https://배포된-render-서비스.onrender.com
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_publishable_anon_key
+AI_PROVIDER=gemini
+ALLOW_LIVE_GEMINI=false
+GEMINI_API_KEY=실제_호출을_켜는_경우에만
+```
+
+Render가 제공하는 `PORT`는 직접 지정하지 않는다. `SUPABASE_SERVICE_ROLE_KEY`와 API 키는 Render의 secret 환경변수에만 넣고 Vercel에는 넣지 않는다.
+
+### Vercel 설정
+
+`vercel.json`은 Vite build와 `dist` 출력 경로를 고정한다. Vercel Project Settings의 Environment Variables에 아래 공개값을 설정한다.
+
+```text
+VITE_API_BASE_URL=https://배포된-render-서비스.onrender.com
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_publishable_anon_key
+```
+
+`VITE_` 변수는 브라우저 번들에 포함되므로 API 키, service role key, 비밀번호를 넣으면 안 된다. Vercel Preview URL을 테스트하려면 그 정확한 URL도 Render의 `ALLOWED_ORIGINS`에 임시로 추가한다.
+
+### 배포 순서
+
+1. Render API를 먼저 배포하고 `/api/health`가 `ok: true`인지 확인한다.
+2. Render의 URL을 Vercel `VITE_API_BASE_URL`에 입력한다.
+3. Vercel 프론트엔드를 배포한다.
+4. Vercel Production URL을 Render `ALLOWED_ORIGINS`에 정확히 등록하고 Render를 재배포한다.
+5. 로그인, 저장 출처, 분석, 저장 공고를 실제 배포 URL에서 확인한다.
+
+## 단일 서버 배포 대안
 
 실제 호스팅 플랫폼에서는 다음 값을 secret 또는 runtime environment로 설정한다.
 
@@ -51,6 +97,15 @@ ANALYZE_RATE_LIMIT_WINDOW_MS=60000
 ```
 
 `PORT`와 `TRUST_PROXY`는 호스팅 플랫폼 규칙에 맞게 조정한다. API 키는 `.env` 파일을 이미지에 복사하지 말고 플랫폼의 secret 저장소에서 주입한다.
+
+## Automated local production smoke test
+
+```bash
+npm run build
+npm run smoke:production
+```
+
+`smoke:production`은 임시 로컬 포트에서 Express production 서버를 시작하고 `/api/health`와 SPA root 문서를 확인한 뒤 자동 종료한다. 외부 배포나 AI API 호출은 하지 않는다.
 
 ## Docker
 
@@ -79,7 +134,6 @@ docker run --rm -p 127.0.0.1:4173:3001 --env-file .env uniradar-local
 
 현재는 아래 항목이 없으므로 인터넷에 공개하지 않는다.
 
-- 로그인과 사용자별 권한
 - 사용자별 Gemini 사용량 제한과 비용 상한
 - 영구 저장소 기반 rate limit
 - 개인정보 처리방침과 이용약관

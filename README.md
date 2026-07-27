@@ -52,11 +52,15 @@ npm run verify:requirements
 npm run verify:requirements:fast
 ```
 
+## 최종 핵심 흐름 점검
+
+배포 전 로그인부터 공고 저장·태스크화까지의 점검 순서와 계정 A/B 분리 기준은 [FINAL_FLOW_CHECKLIST.md](./FINAL_FLOW_CHECKLIST.md)에 정리했습니다.
+
 ## 저장한 공고
 
 사이드바의 **4. 저장한 공고**에서 저장 목록을 카테고리로 필터링하고, 최근 저장순·마감 임박순·추천 점수순으로 정렬할 수 있습니다. 공고 상세, 원문 열기, 삭제도 이 화면에서 처리합니다.
 
-로그인 기능이 꺼진 로컬 데모에서는 `POST /api/opportunities`와 `GET /api/opportunities`가 `data/uniradar-demo.sqlite`를 사용합니다. 로그인한 사용자는 Bearer access token을 포함한 `/api/saved-opportunities` API를 사용하며, Supabase `saved_opportunities` 테이블의 RLS로 계정별 데이터가 분리됩니다.
+인증이 구성되지 않은 **로컬 개발 데모**에서만 `POST /api/opportunities`와 `GET /api/opportunities`가 `data/uniradar-demo.sqlite`를 사용합니다. 배포 환경 또는 Supabase 저장소에서는 이 익명 API가 차단됩니다. 로그인한 사용자는 Bearer access token을 포함한 `/api/saved-opportunities` API를 사용하며, Supabase `saved_opportunities` 테이블의 RLS로 계정별 데이터가 분리됩니다.
 
 사용자별 저장 공고를 사용하려면 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)와 [AUTH_AND_USER_DATA.md](./AUTH_AND_USER_DATA.md)의 인증·SQL 설정을 완료해야 합니다. API 키나 service role key는 프론트엔드에 전달하지 않습니다.
 
@@ -204,7 +208,7 @@ https://github.com/clradtr/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%
 
 ## 배포 기반 구조
 
-기본 실행은 계속 로컬 전용입니다. 향후 도메인과 호스팅을 연결할 수 있는 production 단일 서버, CORS, 보안 헤더, 요청 제한과 Docker 구조는 [DEPLOYMENT.md](./DEPLOYMENT.md)에 정리했습니다. 로그인과 사용자별 사용량 제한이 준비되기 전에는 외부에 공개하지 않습니다.
+기본 실행은 계속 로컬 전용입니다. 화요일 Vercel 프론트엔드와 Render API 첫 배포에 필요한 환경변수, CORS, smoke test, Docker 구조는 [DEPLOYMENT.md](./DEPLOYMENT.md)에 정리했습니다. 로그인과 사용자별 사용량 제한이 준비되기 전에는 외부에 공개하지 않습니다.
 
 ## 개인 설정
 

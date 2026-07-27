@@ -21,6 +21,15 @@ function normalizeText(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeStorageScope(scope) {
+  return normalizeText(scope);
+}
+
+function withStorageScope(key, scope) {
+  const normalizedScope = normalizeStorageScope(scope);
+  return normalizedScope ? `${key}:account:${encodeURIComponent(normalizedScope)}` : key;
+}
+
 
 function createCustomSourceId(targetUrl) {
   return `custom:${targetUrl}`;
@@ -47,23 +56,25 @@ function normalizeCustomSource(source) {
   };
 }
 
-export function buildNoticeHistoryKey(targetUrl) {
-  return `${historyNamespace}:${resolveTargetUrl(targetUrl) || "unknown"}`;
+export function buildNoticeHistoryKey(targetUrl, scope = "") {
+  return `${withStorageScope(historyNamespace, scope)}:${resolveTargetUrl(targetUrl) || "unknown"}`;
 }
 
-export function buildScanSnapshotKey(targetUrl) {
-  return `${scanSnapshotNamespace}:${resolveTargetUrl(targetUrl) || "unknown"}`;
+export function buildScanSnapshotKey(targetUrl, scope = "") {
+  return `${withStorageScope(scanSnapshotNamespace, scope)}:${resolveTargetUrl(targetUrl) || "unknown"}`;
 }
 
-export function readNoticeHistory(targetUrl, fallbackUrls = []) {
-  const storage = getStorage();
+export function buildLastScanResultKey(scope = "") {
+  return withStorageScope(LAST_SCAN_RESULT_STORAGE_KEY, scope);
+}
 
+export function readNoticeHistory(targetUrl, fallbackUrls = [], storage = getStorage(), scope = "") {
   if (!storage) {
     return fallbackUrls;
   }
 
   try {
-    const rawValue = storage.getItem(buildNoticeHistoryKey(targetUrl));
+    const rawValue = storage.getItem(buildNoticeHistoryKey(targetUrl, scope));
 
     if (!rawValue) {
       return fallbackUrls;
@@ -76,31 +87,27 @@ export function readNoticeHistory(targetUrl, fallbackUrls = []) {
   }
 }
 
-export function writeNoticeHistory(targetUrl, urls) {
-  const storage = getStorage();
-
+export function writeNoticeHistory(targetUrl, urls, storage = getStorage(), scope = "") {
   if (!storage) {
     return;
   }
 
-  storage.setItem(buildNoticeHistoryKey(targetUrl), JSON.stringify(uniqueUrls(urls)));
+  storage.setItem(buildNoticeHistoryKey(targetUrl, scope), JSON.stringify(uniqueUrls(urls)));
 }
 
-export function mergeNoticeHistory(targetUrl, previousUrls, nextUrls) {
+export function mergeNoticeHistory(targetUrl, previousUrls, nextUrls, storage = getStorage(), scope = "") {
   const mergedUrls = uniqueUrls([...previousUrls, ...nextUrls]);
-  writeNoticeHistory(targetUrl, mergedUrls);
+  writeNoticeHistory(targetUrl, mergedUrls, storage, scope);
   return mergedUrls;
 }
 
-export function readScanSnapshot(targetUrl) {
-  const storage = getStorage();
-
+export function readScanSnapshot(targetUrl, storage = getStorage(), scope = "") {
   if (!storage) {
     return [];
   }
 
   try {
-    const rawValue = storage.getItem(buildScanSnapshotKey(targetUrl));
+    const rawValue = storage.getItem(buildScanSnapshotKey(targetUrl, scope));
 
     if (!rawValue) {
       return [];
@@ -113,16 +120,13 @@ export function readScanSnapshot(targetUrl) {
   }
 }
 
-export function writeScanSnapshot(targetUrl, urls) {
-  const storage = getStorage();
-
+export function writeScanSnapshot(targetUrl, urls, storage = getStorage(), scope = "") {
   if (!storage) {
     return;
   }
 
-  storage.setItem(buildScanSnapshotKey(targetUrl), JSON.stringify(uniqueUrls(urls)));
+  storage.setItem(buildScanSnapshotKey(targetUrl, scope), JSON.stringify(uniqueUrls(urls)));
 }
-
 function normalizeStoredLink(link) {
   if (!link || typeof link !== "object") {
     return null;
@@ -247,30 +251,43 @@ export function normalizeLastScanResult(value) {
   };
 }
 
-export function readLastScanResult(storage = getStorage()) {
+export function readLastScanResult(storage = getStorage(), scope = "") {
   if (!storage) {
     return null;
   }
 
   try {
-    const rawValue = storage.getItem(LAST_SCAN_RESULT_STORAGE_KEY);
+    const rawValue = storage.getItem(buildLastScanResultKey(scope));
     return rawValue ? normalizeLastScanResult(JSON.parse(rawValue)) : null;
   } catch {
     return null;
   }
 }
 
-export function writeLastScanResult(scan, storage = getStorage()) {
+export function writeLastScanResult(scan, storage = getStorage(), scope = "") {
   if (!storage) {
     return;
   }
 
   const normalizedScan = normalizeLastScanResult(scan);
   if (normalizedScan) {
-    storage.setItem(LAST_SCAN_RESULT_STORAGE_KEY, JSON.stringify(normalizedScan));
+    storage.setItem(buildLastScanResultKey(scope), JSON.stringify(normalizedScan));
   }
 }
 
+export function createScopedNoticeHistoryStore(scope = "") {
+  return {
+    mergeNoticeHistory: (targetUrl, previousUrls, nextUrls, storage) =>
+      mergeNoticeHistory(targetUrl, previousUrls, nextUrls, storage, scope),
+    readLastScanResult: (storage) => readLastScanResult(storage, scope),
+    readNoticeHistory: (targetUrl, fallbackUrls, storage) =>
+      readNoticeHistory(targetUrl, fallbackUrls, storage, scope),
+    readScanSnapshot: (targetUrl, storage) => readScanSnapshot(targetUrl, storage, scope),
+    writeLastScanResult: (scan, storage) => writeLastScanResult(scan, storage, scope),
+    writeNoticeHistory: (targetUrl, urls, storage) => writeNoticeHistory(targetUrl, urls, storage, scope),
+    writeScanSnapshot: (targetUrl, urls, storage) => writeScanSnapshot(targetUrl, urls, storage, scope),
+  };
+}
 export function readCustomSources(storage = getStorage()) {
 
   if (!storage) {

@@ -1,3 +1,5 @@
+import { buildApiUrl } from "./config/apiBaseUrl.js";
+
 async function readJsonResponse(response) {
   const payload = await response.json().catch(() => ({}));
 
@@ -10,7 +12,7 @@ async function readJsonResponse(response) {
 }
 
 export async function getHealth() {
-  const response = await fetch("/api/health", {
+  const response = await fetch(buildApiUrl("/api/health"), {
     headers: {
       Accept: "application/json",
     },
@@ -20,7 +22,7 @@ export async function getHealth() {
 }
 
 export async function getNoticeSources() {
-  const response = await fetch("/api/sources", {
+  const response = await fetch(buildApiUrl("/api/sources"), {
     headers: { Accept: "application/json" },
   });
 
@@ -33,7 +35,7 @@ export async function discoverNotices({ sourceId, keyword = "", limit = 20 }) {
     keyword,
     limit: String(limit),
   });
-  const response = await fetch(`/api/discover?${query.toString()}`, {
+  const response = await fetch(buildApiUrl(`/api/discover?${query.toString()}`), {
     headers: { Accept: "application/json" },
   });
 
@@ -41,7 +43,7 @@ export async function discoverNotices({ sourceId, keyword = "", limit = 20 }) {
 }
 
 export async function analyzeOpportunity(payload) {
-  const response = await fetch("/api/analyze", {
+  const response = await fetch(buildApiUrl("/api/analyze"), {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -55,7 +57,7 @@ export async function analyzeOpportunity(payload) {
 
 export async function getSavedOpportunities(accessToken) {
   const endpoint = accessToken ? "/api/saved-opportunities?limit=100" : "/api/opportunities?limit=100";
-  const response = await fetch(endpoint, {
+  const response = await fetch(buildApiUrl(endpoint), {
     headers: accessToken ? createAuthorizationHeaders(accessToken) : { Accept: "application/json" },
   });
 
@@ -64,7 +66,7 @@ export async function getSavedOpportunities(accessToken) {
 
 export async function saveOpportunity(analysis, accessToken) {
   const endpoint = accessToken ? "/api/saved-opportunities" : "/api/opportunities";
-  const response = await fetch(endpoint, {
+  const response = await fetch(buildApiUrl(endpoint), {
     method: "POST",
     headers: accessToken
       ? createAuthorizationHeaders(accessToken, true)
@@ -79,7 +81,7 @@ export async function deleteSavedOpportunity(storageId, accessToken) {
   const endpoint = accessToken
     ? `/api/saved-opportunities/${encodeURIComponent(storageId)}`
     : `/api/opportunities/${encodeURIComponent(storageId)}`;
-  const response = await fetch(endpoint, {
+  const response = await fetch(buildApiUrl(endpoint), {
     method: "DELETE",
     headers: accessToken ? createAuthorizationHeaders(accessToken) : { Accept: "application/json" },
   });
@@ -87,12 +89,12 @@ export async function deleteSavedOpportunity(storageId, accessToken) {
 }
 
 export async function getRecommendationSites() {
-  const response = await fetch("/api/sites", { headers: { Accept: "application/json" } });
+  const response = await fetch(buildApiUrl("/api/sites"), { headers: { Accept: "application/json" } });
   return readJsonResponse(response);
 }
 
 export async function recommendSites(payload) {
-  const response = await fetch("/api/recommend-sites", {
+  const response = await fetch(buildApiUrl("/api/recommend-sites"), {
     method: "POST",
     headers: { Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -110,14 +112,14 @@ function createAuthorizationHeaders(accessToken, includeJson = false) {
 }
 
 export async function getProfile(accessToken) {
-  const response = await fetch("/api/profile", {
+  const response = await fetch(buildApiUrl("/api/profile"), {
     headers: createAuthorizationHeaders(accessToken),
   });
   return readJsonResponse(response);
 }
 
 export async function saveProfile(profile, accessToken) {
-  const response = await fetch("/api/profile", {
+  const response = await fetch(buildApiUrl("/api/profile"), {
     method: "PUT",
     headers: createAuthorizationHeaders(accessToken, true),
     body: JSON.stringify(profile),
@@ -126,21 +128,21 @@ export async function saveProfile(profile, accessToken) {
 }
 
 export async function deleteProfile(accessToken) {
-  const response = await fetch("/api/profile", {
+  const response = await fetch(buildApiUrl("/api/profile"), {
     method: "DELETE",
     headers: createAuthorizationHeaders(accessToken),
   });
   if (!response.ok) await readJsonResponse(response);
 }
 export async function getUserSettings(accessToken) {
-  const response = await fetch("/api/settings", {
+  const response = await fetch(buildApiUrl("/api/settings"), {
     headers: createAuthorizationHeaders(accessToken),
   });
   return readJsonResponse(response);
 }
 
 export async function saveUserSettings(settings, accessToken) {
-  const response = await fetch("/api/settings", {
+  const response = await fetch(buildApiUrl("/api/settings"), {
     method: "PUT",
     headers: createAuthorizationHeaders(accessToken, true),
     body: JSON.stringify(settings),
@@ -149,21 +151,21 @@ export async function saveUserSettings(settings, accessToken) {
 }
 
 export async function resetUserSettings(accessToken) {
-  const response = await fetch("/api/settings/reset", {
+  const response = await fetch(buildApiUrl("/api/settings/reset"), {
     method: "POST",
     headers: createAuthorizationHeaders(accessToken),
   });
   return readJsonResponse(response);
 }
 export async function getSavedNoticeSources(accessToken) {
-  const response = await fetch("/api/notice-sources", {
+  const response = await fetch(buildApiUrl("/api/notice-sources"), {
     headers: createAuthorizationHeaders(accessToken),
   });
   return readJsonResponse(response);
 }
 
 export async function saveNoticeSource(source, accessToken) {
-  const response = await fetch("/api/notice-sources", {
+  const response = await fetch(buildApiUrl("/api/notice-sources"), {
     method: "POST",
     headers: createAuthorizationHeaders(accessToken, true),
     body: JSON.stringify(source),
@@ -172,7 +174,7 @@ export async function saveNoticeSource(source, accessToken) {
 }
 
 export async function deleteNoticeSource(sourceId, accessToken) {
-  const response = await fetch(`/api/notice-sources/${encodeURIComponent(String(sourceId).replace(/^custom:/, ""))}`, {
+  const response = await fetch(buildApiUrl(`/api/notice-sources/${encodeURIComponent(String(sourceId).replace(/^custom:/, ""))}`), {
     method: "DELETE",
     headers: createAuthorizationHeaders(accessToken),
   });

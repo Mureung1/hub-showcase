@@ -129,3 +129,52 @@ test("개인 설정은 관심 종류·지역·온라인 여부·결과 개수를
   assert.equal(result.recommendations.length, 1);
   assert.equal(result.recommendations[0].siteId, "daegu-research");
 });
+test("추천 서비스는 요청한 계정의 개인 설정을 추천 알고리즘까지 전달한다", async () => {
+  const registry = [
+    {
+      id: "online-scholarship",
+      name: "온라인 장학 사이트",
+      active: true,
+      trusted: true,
+      providerType: "government",
+      regions: ["온라인"],
+      informationTypes: ["scholarship"],
+      strengths: [],
+      limitations: [],
+    },
+    {
+      id: "daegu-research",
+      name: "대구 연구 사이트",
+      active: true,
+      trusted: true,
+      providerType: "university",
+      regions: ["대구"],
+      informationTypes: ["research"],
+      strengths: [],
+      limitations: [],
+    },
+  ];
+  const service = createSiteRecommendationService({
+    registry,
+    getAIConfig: () => ({ liveGeminiEnabled: false }),
+  });
+
+  const result = await service.recommend({
+    profile,
+    trackedSiteIds: [],
+    desiredInformation: [],
+    keyword: null,
+    settings: {
+      recommendationCategories: ["research"],
+      preferredRegions: ["대구"],
+      includeOnline: false,
+      minimumMatchScore: 50,
+      includeUnknownDeadline: true,
+      autoSaveAnalyzedOpportunities: false,
+      recommendationLimit: 1,
+    },
+  });
+
+  assert.deepEqual(result.coverage.desiredInformation, ["research"]);
+  assert.deepEqual(result.recommendations.map((item) => item.siteId), ["daegu-research"]);
+});
