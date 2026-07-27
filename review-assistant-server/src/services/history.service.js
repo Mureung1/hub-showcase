@@ -1,5 +1,5 @@
 import { supabase } from '../db/supabaseClient.js'
-import { suggestionForKeyword } from './reviews.service.js'
+import { suggestionForKeyword, sanitizeKeywords } from './reviews.service.js'
 import { countKeywords } from './stats.service.js'
 
 const RECURRING_THRESHOLD = 2
@@ -33,7 +33,7 @@ export async function getReviewsByUser(userId) {
   return data.map((row) => ({
     originalText: row.original_text,
     sentiment: row.sentiment,
-    keywords: row.keywords,
+    keywords: sanitizeKeywords(row.keywords),
     score: row.score,
     createdAt: row.created_at,
   }))
