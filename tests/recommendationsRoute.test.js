@@ -46,6 +46,7 @@ test("빈 요청에는 안전한 추천 기본값을 적용한다", async () => 
   assert.equal(receivedRequest.mode, "quick");
   assert.equal(receivedRequest.maxMissingIngredients, 0);
   assert.equal(receivedRequest.batchSize, 3);
+  assert.equal(receivedRequest.batchNumber, 1);
 });
 
 test("지원하지 않는 추천 조건은 400 오류로 차단한다", async () => {

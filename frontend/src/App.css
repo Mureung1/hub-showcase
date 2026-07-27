@@ -370,7 +370,7 @@
 .recommendation-section-heading h2 { margin: 3px 0 0; font-size: 25px; }
 .recommendation-section-heading p:last-child { margin: 7px 0 0; color: var(--muted); }
 .one-missing-toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 800; white-space: nowrap; }
-.one-missing-toggle input { width: 17px; height: 17px; accent-color: var(--secondary); }
+.one-missing-toggle select { min-height: 34px; padding: 6px 28px 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
 .recipe-recommendation-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
 .recipe-card { min-width: 0; padding: 22px; display: flex; flex-direction: column; border: 1px solid #e9e1dc; border-radius: 20px; background: #fff; box-shadow: 0 12px 28px rgba(73,50,37,.07); }
 .recipe-card.special { border-color: #f1d4bd; background: linear-gradient(180deg,#fffaf6 0%,#fff 58%); }

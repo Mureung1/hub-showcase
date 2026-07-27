@@ -17,6 +17,7 @@ test("fetchRecommendations sends the fixed API contract", async () => {
       mode: "noFire",
       maxMissingIngredients: 1,
       batchSize: 3,
+      batchNumber: 2,
       excludedRecipeFingerprints: ["a".repeat(64)],
       allergens: [],
       excludedIngredients: [],
@@ -28,6 +29,7 @@ test("fetchRecommendations sends the fixed API contract", async () => {
   const result = await fetchRecommendations({
     mode: "noFire",
     maxMissingIngredients: 1,
+    batchNumber: 2,
     excludedRecipeFingerprints: ["a".repeat(64)],
   });
 

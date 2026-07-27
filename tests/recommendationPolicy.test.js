@@ -53,6 +53,10 @@ function recipe(values = {}) {
     name: "삼겹살 볶음",
     description: "삼겹살을 빠르게 볶아 만드는 든든한 한 끼예요.",
     servings: 1,
+    servingStyle: "singleDish",
+    cookingTechnique: "stirFry",
+    primaryIngredients: ["삼겹살"],
+    components: [],
     requiredIngredients: [{ name: "삼겹살", amount: 200, unit: "g" }],
     optionalIngredients: [],
     cookingTime: 15,
@@ -103,7 +107,12 @@ test("부족 재료 수와 메뉴 형태 중복을 서버 정책으로 차단한
   const generated = {
     recipes: [
       recipe(),
-      recipe({ name: "다른 볶음", requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }] }),
+      recipe({
+        name: "다른 볶음",
+        cookingTechnique: "panFry",
+        primaryIngredients: ["양파"],
+        requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }],
+      }),
       recipe({ name: "세 번째 볶음" }),
     ],
   };
@@ -112,6 +121,7 @@ test("부족 재료 수와 메뉴 형태 중복을 서버 정책으로 차단한
     () => validateGeneratedRecipes(generated, {
       mode: "quick",
       maxMissingIngredients: 0,
+      batchNumber: 1,
       excludedRecipeFingerprints: [],
     }, context),
     (error) => error instanceof RecommendationPolicyError
@@ -125,19 +135,109 @@ test("재료 중복은 허용하고 서로 다른 메뉴 형태는 통과시킨�
   const generated = {
     recipes: [
       recipe(),
-      recipe({ name: "삼겹살 덮밥", dishType: "riceBowl" }),
-      recipe({ name: "삼겹살 국수", dishType: "noodle" }),
+      recipe({ name: "삼겹살 덮밥", dishType: "riceBowl", cookingTechnique: "panFry" }),
+      recipe({ name: "삼겹살 국수", dishType: "noodle", cookingTechnique: "boil" }),
     ],
   };
   const recipes = validateGeneratedRecipes(generated, {
     mode: "quick",
     maxMissingIngredients: 0,
+    batchNumber: 1,
     excludedRecipeFingerprints: [],
   }, context);
 
   assert.equal(recipes.length, 3);
   assert.ok(recipes.every((item) => item.requiredIngredients[0].name === "삼겹살"));
   assert.ok(recipes.every((item) => /^[a-f0-9]{64}$/.test(item.fingerprint)));
+});
+
+test("기본 양념과 조리된 밥은 부족 재료로 계산하지 않고 그 외 재료는 최대 두 개까지 허용한다", () => {
+  const context = buildIngredientContext(rows, { today: "2026-07-22" });
+  const generated = {
+    recipes: [recipe({
+      name: "삼겹살 한 상",
+      servingStyle: "mealSet",
+      dishType: "mealSet",
+      cookingTechnique: "grill",
+      primaryIngredients: ["삼겹살"],
+      components: [
+        { name: "밥", role: "staple", ingredientNames: ["밥"] },
+        { name: "삼겹살구이", role: "main", ingredientNames: ["삼겹살", "양파"] },
+        { name: "김치", role: "side", ingredientNames: ["김치"] },
+      ],
+      requiredIngredients: [
+        { name: "밥", amount: 1, unit: "공기" },
+        { name: "삼겹살", amount: 200, unit: "g" },
+        { name: "양파", amount: 0.5, unit: "개" },
+        { name: "김치", amount: 50, unit: "g" },
+      ],
+    })],
+  };
+
+  const recipes = validateGeneratedRecipes(generated, {
+    mode: "quick",
+    maxMissingIngredients: 2,
+    batchNumber: 1,
+    excludedRecipeFingerprints: [],
+  }, context);
+
+  assert.deepEqual(recipes[0].missingIngredients, ["양파", "김치"]);
+});
+
+test("소비기한 당일 재료에는 상태 확인 안내만 추가한다", () => {
+  const dDayRows = [{ ...rows[0], expiration_date: "2026-07-22" }];
+  const context = buildIngredientContext(dDayRows, { today: "2026-07-22" });
+  const generated = { recipes: [recipe()] };
+
+  const recipes = validateGeneratedRecipes(generated, {
+    mode: "quick",
+    maxMissingIngredients: 0,
+    batchNumber: 1,
+    excludedRecipeFingerprints: [],
+  }, context);
+
+  assert.match(recipes[0].safetyNotes[0], /상태를 확인/);
+  assert.doesNotMatch(recipes[0].safetyNotes[0], /충분히 익혀/);
+});
+
+test("보유 수량보다 많이 요구하면 같은 재료도 부족 재료로 계산한다", () => {
+  const context = buildIngredientContext(rows, { today: "2026-07-22" });
+  const generated = {
+    recipes: [recipe({
+      requiredIngredients: [{ name: "삼겹살", amount: 600, unit: "g" }],
+    })],
+  };
+
+  const recipes = validateGeneratedRecipes(generated, {
+    mode: "quick",
+    maxMissingIngredients: 1,
+    batchNumber: 1,
+    excludedRecipeFingerprints: [],
+  }, context);
+
+  assert.deepEqual(recipes[0].missingIngredients, ["삼겹살"]);
+});
+
+test("가장 우선순위가 높은 재료를 어떤 추천에도 쓰지 않으면 거부한다", () => {
+  const context = buildIngredientContext(rows, { today: "2026-07-22" });
+  const generated = {
+    recipes: [recipe({
+      name: "양파볶음",
+      primaryIngredients: ["양파"],
+      requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }],
+    })],
+  };
+
+  assert.throws(
+    () => validateGeneratedRecipes(generated, {
+      mode: "quick",
+      maxMissingIngredients: 1,
+      batchNumber: 1,
+      excludedRecipeFingerprints: [],
+    }, context),
+    (error) => error instanceof RecommendationPolicyError
+      && error.violations.some((violation) => violation.startsWith("PRIORITY_INGREDIENT_UNUSED")),
+  );
 });
 
 test("한국 시간 기준 다음 자정을 UTC 시각으로 계산한다", () => {

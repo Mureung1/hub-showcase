@@ -89,7 +89,7 @@ function App() {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [savedRecipes, setSavedRecipes] = useState(() => readSavedRecipes());
   const [selectedMood, setSelectedMood] = useState("noFire");
-  const [includeOneMissing, setIncludeOneMissing] = useState(true);
+  const [missingIngredientLimit, setMissingIngredientLimit] = useState(1);
   const [isRecipeLoading, setIsRecipeLoading] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -122,7 +122,7 @@ function App() {
 
     fetchRecommendations({
       mode: selectedMood,
-      maxMissingIngredients: includeOneMissing ? 1 : 0,
+      maxMissingIngredients: missingIngredientLimit,
       signal: controller.signal,
     }).then((result) => {
       setRecommendationRecipes(result.recipes);
@@ -137,7 +137,7 @@ function App() {
     });
 
     return () => controller.abort();
-  }, [activeMainTab, includeOneMissing, ingredientError, ingredients, isLoading, recommendationRetryKey, selectedMood]);
+  }, [activeMainTab, ingredientError, ingredients, isLoading, missingIngredientLimit, recommendationRetryKey, selectedMood]);
 
   const loadMoreRecommendations = async () => {
     if (isMoreRecommendationsLoading || recommendationRecipes.length >= (recommendationMeta?.maxRecipes ?? 15)) return;
@@ -148,7 +148,8 @@ function App() {
     try {
       const result = await fetchRecommendations({
         mode: selectedMood,
-        maxMissingIngredients: includeOneMissing ? 1 : 0,
+        maxMissingIngredients: missingIngredientLimit,
+        batchNumber: (recommendationMeta?.batchNumber ?? 1) + 1,
         excludedRecipeFingerprints: recommendationRecipes.map((recipe) => recipe.fingerprint),
       });
       setRecommendationRecipes((current) => [...current, ...result.recipes.filter((recipe) => !current.some((item) => item.fingerprint === recipe.fingerprint))]);
@@ -374,7 +375,7 @@ function App() {
     setNaggingMessage(null);
     setSelectedIngredient(null);
     setSelectedMood(mode);
-    setIncludeOneMissing(true);
+    setMissingIngredientLimit(1);
     setSelectedRecipe(null);
     setActiveMainTab("recommend");
   };
@@ -423,7 +424,7 @@ function App() {
         {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={showRecommendations} />}
         {activeMainTab === "recommend" && (selectedRecipe
           ? <RecipeWorkspace menu={selectedRecipe} isLoading={isRecipeLoading} onBack={showRecommendations} isSaved={isRecipeSaved(selectedRecipe, savedRecipes)} onToggleSaved={() => toggleRecipeSaved(selectedRecipe)} />
-          : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} includeOneMissing={includeOneMissing} setIncludeOneMissing={setIncludeOneMissing} onSelectRecipe={handleRecipeSelect} onToggleSaved={toggleRecipeSaved} />)}
+          : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} missingIngredientLimit={missingIngredientLimit} setMissingIngredientLimit={setMissingIngredientLimit} onSelectRecipe={handleRecipeSelect} onToggleSaved={toggleRecipeSaved} />)}
       </main>
       {message.text && <div className={`toast-message ${message.type}`} role={message.type === "error" ? "alert" : "status"} aria-live="polite">{message.text}</div>}
       {isFormOpen && <IngredientFormModal title={editingIngredientId ? "재료 수정" : "재료 추가"} onClose={closeIngredientForm}>
@@ -535,9 +536,12 @@ const moodOptions = [
   { id: "balanced", icon: "🥗", title: "균형 있게 먹고 싶어요", description: "여러 식품군을 활용한 한 끼" },
 ];
 
-function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingMore, error, onRetry, onLoadMore, selectedMood, setSelectedMood, includeOneMissing, setIncludeOneMissing, onSelectRecipe, onToggleSaved }) {
+function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingMore, error, onRetry, onLoadMore, selectedMood, setSelectedMood, missingIngredientLimit, setMissingIngredientLimit, onSelectRecipe, onToggleSaved }) {
   const maxRecipes = meta?.maxRecipes ?? 15;
-  const canLoadMore = recipes.length > 0 && recipes.length < maxRecipes && (meta?.batchNumber ?? 1) < (meta?.maxBatches ?? 5);
+  const canLoadMore = recipes.length > 0
+    && recipes.length < maxRecipes
+    && meta?.stopReason !== "qualityLimit"
+    && (meta?.batchNumber ?? 1) < (meta?.maxBatches ?? 5);
 
   return <WorkspaceShell eyebrow="Today&apos;s Menu" title="오늘 뭐 먹지?" description="지금 할 수 있는 만큼만 골라보세요. 냉장고 상황에 맞춰 선택지를 줄여드릴게요.">
     <section className="mood-section" aria-labelledby="mood-title">
@@ -551,12 +555,13 @@ function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingM
     </section>}
 
     <section className="recommendation-section" aria-labelledby="recommendation-title">
-      <div className="recommendation-section-heading"><div><p className="eyebrow">For You</p><h2 id="recommendation-title">지금 고르기 좋은 메뉴</h2></div><label className="one-missing-toggle"><input type="checkbox" checked={includeOneMissing} onChange={(event) => setIncludeOneMissing(event.target.checked)} /> 재료 1개 부족한 메뉴도 보기</label></div>
+      <div className="recommendation-section-heading"><div><p className="eyebrow">For You</p><h2 id="recommendation-title">지금 고르기 좋은 메뉴</h2></div><label className="one-missing-toggle">부족 재료 허용<select value={missingIngredientLimit} onChange={(event) => setMissingIngredientLimit(Number(event.target.value))}><option value={0}>없음</option><option value={1}>최대 1개</option><option value={2}>최대 2개</option></select></label></div>
       {isLoading && <div className="recommendation-status" role="status">보유 재료로 레시피를 추천하고 있어요...</div>}
       {!isLoading && error && <RecommendationError message={error} hasRecipes={recipes.length > 0} onRetry={onRetry} />}
       {!isLoading && recipes.length > 0 && <div className="recipe-recommendation-grid">{recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} label="오늘 추천" isSaved={isRecipeSaved(recipe, savedRecipes)} onSelect={() => onSelectRecipe(recipe)} onToggleSaved={() => onToggleSaved(recipe)} />)}</div>}
-      {!isLoading && !error && recipes.length === 0 && <EmptyRecipeState onShowOneMissing={() => setIncludeOneMissing(true)} />}
+      {!isLoading && !error && recipes.length === 0 && <EmptyRecipeState onShowOneMissing={() => setMissingIngredientLimit(1)} />}
       {!isLoading && recipes.length > 0 && <div className="recommendation-footer"><span>{recipes.length}/{maxRecipes}개 추천</span>{canLoadMore ? <button type="button" onClick={onLoadMore} disabled={isLoadingMore}>{isLoadingMore ? "다른 추천을 찾고 있어요..." : "다른 추천 보기"}</button> : <strong>오늘의 추천을 모두 확인했어요.</strong>}</div>}
+      {!isLoading && meta?.stopReason === "qualityLimit" && <p className="recommendation-cache-note">억지로 개수를 채우지 않고 품질 기준을 통과한 메뉴만 보여드려요.</p>}
       {!isLoading && meta?.source === "cache" && <p className="recommendation-cache-note">오늘 생성한 추천을 다시 불러왔어요.</p>}
     </section>
   </WorkspaceShell>;

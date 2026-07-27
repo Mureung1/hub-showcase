@@ -15,6 +15,7 @@ export function createRecommendationCacheKey({ inventorySignature, request, now 
     mode: request.mode,
     maxMissingIngredients: request.maxMissingIngredients,
     batchSize: request.batchSize,
+    batchNumber: request.batchNumber,
     excludedRecipeFingerprints: sortStrings(request.excludedRecipeFingerprints),
     allergens: sortStrings(request.allergens),
     excludedIngredients: sortStrings(request.excludedIngredients),
@@ -24,7 +25,7 @@ export function createRecommendationCacheKey({ inventorySignature, request, now 
 }
 
 export function getRecommendationBatchNumber(request) {
-  return request.excludedRecipeFingerprints.length / request.batchSize + 1;
+  return request.batchNumber;
 }
 
 export function createRecommendationCacheStore({ supabaseClient, now = () => new Date() }) {

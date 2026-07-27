@@ -3,6 +3,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { sanitizeIngredientTags } from "../../shared/ingredientTags.js";
 
 export const ASSUMED_PANTRY_INGREDIENTS = [
+  "물",
+  "조리된 밥",
   "소금",
   "후추",
   "식용유",
@@ -14,6 +16,7 @@ export const ASSUMED_PANTRY_INGREDIENTS = [
 ];
 
 const INGREDIENT_ALIASES = new Map([
+  ["밥", "조리된밥"],
   ["달걀", "계란"],
   ["파", "대파"],
   ["쪽파", "대파"],
@@ -169,18 +172,45 @@ export function createRecipeFingerprint(recipe) {
     name: normalizeIngredientName(recipe.name),
     requiredNames,
     dishType: recipe.dishType,
+    servingStyle: recipe.servingStyle,
+    cookingTechnique: recipe.cookingTechnique,
   };
   return createHash("sha256").update(JSON.stringify(fingerprintSource)).digest("hex");
 }
 
 function getModeViolation(recipe, mode) {
-  if (mode === "noFire" && (recipe.cookingMethod !== "noFire" || recipe.cookingTime > 10)) {
-    return "noFire 모드는 불을 사용하지 않고 10분 이내여야 합니다.";
-  }
-  if (mode === "quick" && recipe.cookingTime > 20) {
-    return "quick 모드는 20분 이내여야 합니다.";
+  if (mode === "noFire" && recipe.cookingMethod !== "noFire") {
+    return "NO_FIRE_VIOLATION: noFire 모드는 불을 사용하는 레시피를 반환할 수 없습니다.";
   }
   return null;
+}
+
+function normalizeUnit(unit) {
+  return String(unit ?? "").trim().replaceAll(" ", "").toLowerCase();
+}
+
+function isOwnedQuantityInsufficient(ownedIngredient, requiredIngredient) {
+  if (!ownedIngredient || ownedIngredient.quantityMode !== "exact") return false;
+  if (!Number.isFinite(ownedIngredient.quantity) || !Number.isFinite(requiredIngredient.amount)) return false;
+  if (normalizeUnit(ownedIngredient.unit) !== normalizeUnit(requiredIngredient.unit)) return false;
+  return requiredIngredient.amount > ownedIngredient.quantity;
+}
+
+function getPrimaryIngredientSet(recipe) {
+  return new Set((recipe.primaryIngredients ?? []).map(normalizeIngredientName));
+}
+
+function setsEqual(left, right) {
+  return left.size === right.size && [...left].every((value) => right.has(value));
+}
+
+function getRecipeDifferenceCount(left, right) {
+  return [
+    left.dishType !== right.dishType,
+    left.cookingTechnique !== right.cookingTechnique,
+    left.servingStyle !== right.servingStyle,
+    !setsEqual(getPrimaryIngredientSet(left), getPrimaryIngredientSet(right)),
+  ].filter(Boolean).length;
 }
 
 export function validateGeneratedRecipes(generated, request, ingredientContext) {
@@ -192,32 +222,56 @@ export function validateGeneratedRecipes(generated, request, ingredientContext) 
   const pantryNames = new Set(ASSUMED_PANTRY_INGREDIENTS.map(normalizeIngredientName));
   const excludedFingerprints = new Set(request.excludedRecipeFingerprints);
   const seenNames = new Set();
-  const seenDishTypes = new Set();
   const seenFingerprints = new Set();
 
   const recipes = generated.recipes.map((recipe, index) => {
     const fingerprint = createRecipeFingerprint(recipe);
     const normalizedRecipeName = normalizeIngredientName(recipe.name);
-    const missingIngredients = recipe.requiredIngredients
-      .map((ingredient) => ingredient.name)
-      .filter((name) => {
-        const normalizedName = normalizeIngredientName(name);
-        return !ownedByName.has(normalizedName) && !pantryNames.has(normalizedName);
-      });
+    const requiredNames = new Set(recipe.requiredIngredients.map((ingredient) => normalizeIngredientName(ingredient.name)));
+    const optionalNames = new Set(recipe.optionalIngredients.map((ingredient) => normalizeIngredientName(ingredient.name)));
+    const missingIngredients = [...new Set(recipe.requiredIngredients
+      .filter((ingredient) => {
+        const normalizedName = normalizeIngredientName(ingredient.name);
+        if (pantryNames.has(normalizedName)) return false;
+        const ownedIngredient = ownedByName.get(normalizedName);
+        return !ownedIngredient || isOwnedQuantityInsufficient(ownedIngredient, ingredient);
+      })
+      .map((ingredient) => ingredient.name))];
 
-    if (seenNames.has(normalizedRecipeName)) violations.push(`recipes.${index}.name: 중복 레시피명입니다.`);
-    if (seenDishTypes.has(recipe.dishType)) violations.push(`recipes.${index}.dishType: 메뉴 형태가 중복됩니다.`);
+    if (seenNames.has(normalizedRecipeName)) {
+      violations.push(`DUPLICATE_RECIPE_NAME: recipes.${index}.name이 이전 추천과 같습니다.`);
+    }
     if (seenFingerprints.has(fingerprint) || excludedFingerprints.has(fingerprint)) {
-      violations.push(`recipes.${index}: 이전 추천과 중복되는 레시피입니다.`);
+      violations.push(`DUPLICATE_RECIPE: recipes.${index}가 이전 추천과 중복됩니다.`);
     }
     if (missingIngredients.length > request.maxMissingIngredients) {
-      violations.push(`recipes.${index}: 부족 재료가 ${request.maxMissingIngredients}개를 초과합니다.`);
+      violations.push(`MISSING_INGREDIENT_LIMIT: recipes.${index}의 부족 재료가 ${request.maxMissingIngredients}개를 초과합니다.`);
     }
     const modeViolation = getModeViolation(recipe, request.mode);
     if (modeViolation) violations.push(`recipes.${index}: ${modeViolation}`);
+    if (recipe.servingStyle === "mealSet" && recipe.dishType !== "mealSet") {
+      violations.push(`SERVING_STYLE_MISMATCH: recipes.${index}의 한 상 구성은 dishType도 mealSet이어야 합니다.`);
+    }
+    if (recipe.servingStyle === "singleDish" && recipe.dishType === "mealSet") {
+      violations.push(`SERVING_STYLE_MISMATCH: recipes.${index}의 단일 요리는 mealSet dishType을 사용할 수 없습니다.`);
+    }
+
+    for (const primaryIngredient of recipe.primaryIngredients) {
+      if (!requiredNames.has(normalizeIngredientName(primaryIngredient))) {
+        violations.push(`PRIMARY_INGREDIENT_MISMATCH: recipes.${index}의 주재료 ${primaryIngredient}가 필수 재료에 없습니다.`);
+      }
+    }
+
+    for (const component of recipe.components) {
+      for (const ingredientName of component.ingredientNames) {
+        const normalizedName = normalizeIngredientName(ingredientName);
+        if (!requiredNames.has(normalizedName) && !optionalNames.has(normalizedName)) {
+          violations.push(`MEAL_COMPONENT_MISMATCH: recipes.${index}의 ${component.name} 구성 재료 ${ingredientName}가 재료 목록에 없습니다.`);
+        }
+      }
+    }
 
     seenNames.add(normalizedRecipeName);
-    seenDishTypes.add(recipe.dishType);
     seenFingerprints.add(fingerprint);
 
     const dDayIngredients = recipe.requiredIngredients
@@ -226,7 +280,7 @@ export function validateGeneratedRecipes(generated, request, ingredientContext) 
       .map((ingredient) => ingredient.name);
     const safetyNotes = [...recipe.safetyNotes];
     if (dDayIngredients.length > 0) {
-      safetyNotes.unshift(`${dDayIngredients.join(", ")}은(는) 오늘까지 사용하고 상태를 확인해 충분히 익혀주세요.`);
+      safetyNotes.unshift(`${dDayIngredients.join(", ")}은(는) 조리 전에 상태를 확인해 주세요.`);
     }
 
     return {
@@ -237,6 +291,28 @@ export function validateGeneratedRecipes(generated, request, ingredientContext) 
       safetyNotes: [...new Set(safetyNotes)].slice(0, 3),
     };
   });
+
+  for (let leftIndex = 0; leftIndex < generated.recipes.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < generated.recipes.length; rightIndex += 1) {
+      if (getRecipeDifferenceCount(generated.recipes[leftIndex], generated.recipes[rightIndex]) < 2) {
+        violations.push(
+          `INSUFFICIENT_VARIETY: recipes.${leftIndex}와 recipes.${rightIndex}는 조리 형태·기법·주재료 중 두 가지 이상 달라야 합니다.`,
+        );
+      }
+    }
+  }
+
+  const highestPriorityIngredient = ingredientContext.availableIngredients[0];
+  if (recipes.length > 0 && highestPriorityIngredient) {
+    const highestPriorityName = normalizeIngredientName(highestPriorityIngredient.name);
+    const usesHighestPriorityIngredient = generated.recipes.some((recipe) => recipe.requiredIngredients
+      .some((ingredient) => normalizeIngredientName(ingredient.name) === highestPriorityName));
+    if (!usesHighestPriorityIngredient) {
+      violations.push(
+        `PRIORITY_INGREDIENT_UNUSED: 가장 우선순위가 높은 ${highestPriorityIngredient.name}을 추천 중 하나에 사용해야 합니다.`,
+      );
+    }
+  }
 
   if (violations.length > 0) throw new RecommendationPolicyError(violations);
   return recipes;

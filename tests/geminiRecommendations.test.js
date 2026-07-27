@@ -6,11 +6,16 @@ import {
   createGeminiRecommendationClient,
   GeminiRecommendationError,
 } from "../backend/services/geminiRecommendations.js";
+import {
+  generatedRecommendationSchema,
+  recommendationRequestSchema,
+} from "../backend/schemas/recommendations.js";
 
 const request = {
   mode: "quick",
   maxMissingIngredients: 0,
   batchSize: 3,
+  batchNumber: 1,
   excludedRecipeFingerprints: [],
   allergens: [],
   excludedIngredients: [],
@@ -28,6 +33,10 @@ function generatedRecipe(index) {
     name: `삼겹살 메뉴 ${index}`,
     description: "고소한 삼겹살을 간단하게 즐기는 든든한 한 끼예요.",
     servings: 1,
+    servingStyle: "singleDish",
+    cookingTechnique: ["stirFry", "panFry", "stew"][index - 1],
+    primaryIngredients: ["삼겹살"],
+    components: [],
     requiredIngredients: [{ name: "삼겹살", amount: 200, unit: "g" }],
     optionalIngredients: [],
     cookingTime: 15,
@@ -48,7 +57,9 @@ test("프롬프트에 허용 재료만 포함하고 만료 재료는 포함하�
   const prompt = buildRecommendationPrompt({ request, ingredientContext });
   assert.match(prompt, /삼겹살/);
   assert.doesNotMatch(prompt, /상한 두부/);
-  assert.match(prompt, /20분 이내/);
+  assert.match(prompt, /20분 안팎/);
+  assert.match(prompt, /mealSet/);
+  assert.match(prompt, /억지/);
 });
 
 test("Interactions API 구조화 응답을 Zod로 검증한다", async () => {
@@ -61,7 +72,17 @@ test("Interactions API 구조화 응답을 Zod로 검증한다", async () => {
       usage: { total_input_tokens: 10, total_output_tokens: 20 },
       steps: [{
         type: "model_output",
-        content: [{ type: "text", text: JSON.stringify({ recipes: [1, 2, 3].map(generatedRecipe) }) }],
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            recipes: [1, 2, 3].map(generatedRecipe),
+            generationSummary: {
+              requestedCount: 3,
+              returnedCount: 3,
+              stopReason: "targetMet",
+            },
+          }),
+        }],
       }],
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   };
@@ -75,6 +96,8 @@ test("Interactions API 구조화 응답을 Zod로 검증한다", async () => {
   assert.ok(requestBody.response_format.schema.properties.recipes.items.required.includes("dishType"));
   assert.ok(requestBody.response_format.schema.properties.recipes.items.required.includes("description"));
   assert.ok(requestBody.response_format.schema.properties.recipes.items.required.includes("substitutions"));
+  assert.ok(requestBody.response_format.schema.properties.recipes.items.required.includes("servingStyle"));
+  assert.ok(requestBody.response_format.schema.required.includes("generationSummary"));
 });
 
 test("대체 재료 안내가 없는 응답은 형식 오류로 거부한다", async () => {
@@ -85,7 +108,17 @@ test("대체 재료 안내가 없는 응답은 형식 오류로 거부한다", a
     model: "test-model",
     steps: [{
       type: "model_output",
-      content: [{ type: "text", text: JSON.stringify({ recipes: [invalidRecipe, generatedRecipe(2), generatedRecipe(3)] }) }],
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          recipes: [invalidRecipe, generatedRecipe(2), generatedRecipe(3)],
+          generationSummary: {
+            requestedCount: 3,
+            returnedCount: 3,
+            stopReason: "targetMet",
+          },
+        }),
+      }],
     }],
   }), { status: 200, headers: { "Content-Type": "application/json" } });
   const client = createGeminiRecommendationClient({ apiKey: "test-key", model: "test-model", fetchImpl });
@@ -94,6 +127,60 @@ test("대체 재료 안내가 없는 응답은 형식 오류로 거부한다", a
     () => client.generate({ request, ingredientContext }),
     (error) => error instanceof GeminiRecommendationError && error.code === "GEMINI_INVALID_RESPONSE",
   );
+});
+
+test("품질 기준을 통과한 레시피가 적으면 1~2개 응답을 허용한다", async () => {
+  const fetchImpl = async () => new Response(JSON.stringify({
+    id: "interaction-quality-limit",
+    model: "test-model",
+    steps: [{
+      type: "model_output",
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          recipes: [generatedRecipe(1)],
+          generationSummary: {
+            requestedCount: 3,
+            returnedCount: 1,
+            stopReason: "qualityLimit",
+          },
+        }),
+      }],
+    }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  const client = createGeminiRecommendationClient({ apiKey: "test-key", model: "test-model", fetchImpl });
+
+  const result = await client.generate({ request, ingredientContext });
+  assert.equal(result.generated.recipes.length, 1);
+  assert.equal(result.generated.generationSummary.stopReason, "qualityLimit");
+});
+
+test("추천 요청은 부족 재료를 최대 두 개까지 허용하고 세 개는 거부한다", () => {
+  assert.equal(recommendationRequestSchema.parse({ maxMissingIngredients: 2 }).maxMissingIngredients, 2);
+  assert.throws(() => recommendationRequestSchema.parse({ maxMissingIngredients: 3 }));
+});
+
+test("적합한 레시피가 없으면 빈 결과와 명시적인 종료 이유를 허용한다", () => {
+  const result = generatedRecommendationSchema.parse({
+    recipes: [],
+    generationSummary: {
+      requestedCount: 3,
+      returnedCount: 0,
+      stopReason: "noSuitableRecipe",
+    },
+  });
+  assert.equal(result.recipes.length, 0);
+});
+
+test("실제 반환 개수와 요약 개수가 다르면 형식 오류로 거부한다", () => {
+  assert.throws(() => generatedRecommendationSchema.parse({
+    recipes: [generatedRecipe(1)],
+    generationSummary: {
+      requestedCount: 3,
+      returnedCount: 2,
+      stopReason: "qualityLimit",
+    },
+  }));
 });
 
 test("무료 사용 한도 오류를 재시도 가능한 서비스 오류로 변환한다", async () => {
