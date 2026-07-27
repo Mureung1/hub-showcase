@@ -18,6 +18,7 @@ export const seedDocuments = [
     feedbackWanted: false,
     likes: 24,
     bookmarks: 11,
+    aiScore: 88,
     publishedAt: '2026-06-24',
     sections: [
       {
@@ -110,6 +111,7 @@ export const seedDocuments = [
     feedbackWanted: false,
     likes: 15,
     bookmarks: 6,
+    aiScore: 81,
     publishedAt: '2026-06-25',
     sections: [
       {
@@ -309,6 +311,159 @@ export const seedDocuments = [
         createdAt: '2026-07-06',
       },
     ],
+  },
+  // ── 순기획 예시(직접 작성) ────────────────────────────────
+  // 챌린지 "예시 확인하기"가 여는 문서. 새 fields 양식을 그대로 보여준다.
+  // exampleSource: 'editorial' — AI가 쓴 것이 아니므로 배지·문구를 구분한다.
+  {
+    id: 'doc-pitch-tidefisher',
+    author: 'respec 예시',
+    type: '순기획',
+    templateId: 'pitch',
+    status: 'published',
+    isExample: true,
+    exampleSource: 'editorial',
+    title: '폭풍낚시 — 바다가 매번 새로 그려지는 협동 낚시',
+    gameTag: '폭풍낚시(가제)',
+    jobTag: '피치',
+    systemTag: '역할 분담 협동 낚시',
+    category: '콘셉트·피치',
+    challengeId: null,
+    feedbackWanted: false,
+    likes: 12,
+    bookmarks: 7,
+    publishedAt: '2026-07-20',
+    sections: [
+      {
+        id: 'tf-1',
+        guideKey: 'identity',
+        heading: '정체성',
+        fields: [
+          {
+            key: 'pitch',
+            label: '한 줄 소개',
+            value: '한 판마다 바다 지형과 날씨가 새로 그려지는, 2~4인 협동 낚시 게임.',
+          },
+          { key: 'genre', label: '장르', value: '협동 로그라이크 · 캐주얼 시뮬레이션' },
+          { key: 'platform', label: '플랫폼', value: 'PC · 콘솔 (게임패드 우선)' },
+          {
+            key: 'target',
+            label: '타깃',
+            value:
+              '친구와 20~30분 짧게 즐기는 라이트 코어. 스타듀밸리·레이드는 좋아하나 하드 액션은 부담스러운 층.',
+          },
+        ],
+      },
+      {
+        id: 'tf-2',
+        guideKey: 'appeal',
+        heading: '재미와 차별점',
+        fields: [
+          {
+            key: 'pillars',
+            label: '디자인 필러 (2~3)',
+            value:
+              '1) 예측 불가한 바다 — 매 판 지형·조류·날씨가 재구성된다\n2) 역할이 나뉘어야 잡힌다 — 조타·미끼·릴링을 혼자 다 못 한다\n3) 한 판 20분 — 실패해도 부담 없이 다시',
+          },
+          {
+            key: 'fun',
+            label: '핵심 재미',
+            value: '폭풍이 몰아치는 30초 동안 서로 소리치며 역할을 바꿔 대물을 끌어올리는 순간.',
+          },
+          {
+            key: 'usp',
+            label: '차별점',
+            value:
+              '기존 낚시 게임은 "혼자, 잔잔하게, 무한히"인데 이 게임은 "함께, 위험하게, 한 판으로" 끝난다. 낚시를 협동 로그라이크의 코어 루프로 옮긴 사례가 아직 없다.',
+          },
+          {
+            key: 'nongoals',
+            label: '안 할 것',
+            value:
+              'PvP, 성능을 파는 과금, 무한 오픈월드. 스코프를 "한 척의 배 + 한 판"으로 묶어 지킨다.',
+          },
+        ],
+      },
+    ],
+    comments: [],
+  },
+  {
+    id: 'doc-loop-lanternkeeper',
+    author: 'respec 예시',
+    type: '순기획',
+    templateId: 'gameplay',
+    status: 'published',
+    isExample: true,
+    exampleSource: 'editorial',
+    title: '등대지기 — "불을 켠다" 하나로 30분을 붙잡는 루프',
+    gameTag: '등대지기(가제)',
+    jobTag: '게임플레이',
+    systemTag: '단일 행동 코어 루프',
+    category: '메커닉·밸런스',
+    challengeId: null,
+    feedbackWanted: false,
+    likes: 9,
+    bookmarks: 5,
+    publishedAt: '2026-07-21',
+    sections: [
+      {
+        id: 'lk-1',
+        guideKey: 'loop',
+        heading: '핵심 루프',
+        fields: [
+          {
+            key: 'core_loop',
+            label: '코어 루프',
+            value:
+              '어둠 속을 걸어 등불을 하나 켠다(약 40초) → 밝아진 범위만큼 다음 등불과 자원이 보인다 → 기름이 줄어 되돌아갈지 더 갈지 정한다 → 귀환해 기름을 보충하고 범위를 영구 확장한다.\n한 사이클 약 3분, 10사이클이면 30분.',
+          },
+        ],
+      },
+      {
+        id: 'lk-2',
+        guideKey: 'systems',
+        heading: '주요 시스템',
+        fields: [
+          {
+            key: 'systems',
+            label: '핵심 시스템',
+            value:
+              '기름(시간 자원): 이동·점등에 소모되며 남은 양이 곧 남은 탐험 거리다.\n등불 네트워크: 켠 등불은 영구히 남아 다음 판의 출발선을 앞당긴다 — 실패해도 전진한다.\n어둠의 압력: 오래 머물수록 시야가 좁아져 "욕심"에 비용을 매긴다.',
+          },
+        ],
+      },
+      {
+        id: 'lk-3',
+        guideKey: 'controls',
+        heading: '조작 · 모드',
+        fields: [
+          {
+            key: 'controls',
+            label: '조작 방식',
+            value: '이동 + 상호작용 1버튼. 조작을 의도적으로 최소화했다.',
+          },
+          {
+            key: 'mode',
+            label: '싱글 / 멀티',
+            value: '싱글 중심. 비동기 협동(남이 켠 등불이 내 맵에 희미하게 보임).',
+          },
+        ],
+      },
+      {
+        id: 'lk-4',
+        guideKey: 'quests',
+        heading: '미션 · 퀘스트',
+        fields: [
+          {
+            key: 'structure',
+            label: '진행 구조',
+            value:
+              '명시적 퀘스트 없음. "다음 등불"이 유일한 목표이고, 지도가 밝아지는 것 자체가 진행도다.',
+          },
+        ],
+      },
+    ],
+    comments: [],
   },
 ]
 

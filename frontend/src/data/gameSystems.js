@@ -13,6 +13,7 @@
 
 // 문서가 무엇을 분석하는가. 새 문서도 이 안에서 고르게 해 필터가 무한히 늘지 않게 한다.
 export const categories = [
+  '콘셉트·피치', // 순기획(오리지널 기획안)용
   '성장·강화',
   '경제·재화',
   '메커닉·밸런스',
@@ -1135,6 +1136,120 @@ export function getGameSystem(id) {
 // 카탈로그에 없는 게임(사람이 자유 입력한 것)은 '기타'로 묶는다.
 export function genreOfGame(gameTag) {
   return games.find((g) => g.name === gameTag)?.genre ?? '기타'
+}
+
+// 장르 렌즈 — 같은 "역기획"이라도 장르마다 반드시 짚어야 할 것이 다르다.
+// 작성 가이드(에디터)·챌린지 카드·AI 피드백 세 곳에서 같은 목록을 쓴다.
+export const genreLenses = {
+  MOBA: [
+    '라인전과 성장 격차',
+    '오브젝트가 만드는 집결 타이밍',
+    '시야(정보)의 자원화',
+    '챔피언 상성과 교체 여지',
+  ],
+  'FPS·슈터': [
+    '반동·명중 페널티가 만드는 숙련 곡선',
+    'TTK와 교전 길이',
+    '맵 구조와 진입로 유불리',
+    '유틸리티(스킬)와 총기 실력의 균형',
+  ],
+  배틀로얄: [
+    '자기장이 강제하는 매치 페이싱',
+    '루팅 편차와 초반 운',
+    '생존 vs 교전의 보상 배분',
+    '스쿼드 단위 부활·기절 설계',
+  ],
+  MMORPG: [
+    '레벨·장비 성장 곡선의 변곡점',
+    '재화의 공급(소스)과 소모(싱크)',
+    '일일·주간 주기와 숙제 피로',
+    '엔드컨텐츠 진입 게이팅',
+  ],
+  스포츠: [
+    '조작감과 실력 반영도',
+    '시즌·카드 등급이 만드는 자산 감가',
+    '이적시장 등 유저 간 경제',
+    '스쿼드 조합 제약(케미)',
+  ],
+  '실시간 전략': [
+    '자원 수급과 소모의 템포',
+    '유닛 상성과 카운터 여지',
+    '전개 속도와 스노우볼 억제',
+    '한 판의 길이와 결착 조건',
+  ],
+  퍼즐: [
+    '새 규칙을 가르치는 순서(학습 곡선)',
+    '난이도 곡선과 좌절 지점',
+    '힌트·되돌리기 등 구제 장치',
+    '해법의 폭(단일해 vs 다중해)',
+  ],
+  로그라이크: [
+    '한 런의 길이와 페이싱',
+    '빌드 다양성과 시드 편차',
+    '영구 성장(메타 progression)의 역할',
+    '실패가 재도전으로 이어지는 마찰',
+  ],
+  핵앤슬래시: [
+    '파밍 루프와 드랍 확률',
+    '아이템 등급·옵션의 희소성 사다리',
+    '빌드 자유도와 되돌릴 수 없는 선택',
+    '반복 사냥의 지루함 방지 장치',
+  ],
+  '액션 어드벤처': [
+    '탐험을 유도하는 시선 설계',
+    '월드 구조와 이동 자유도',
+    '보상 밀도(가볼 이유)',
+    '순서를 강제하지 않는 목표 구성',
+  ],
+  플랫포머: [
+    '레벨 문법(도입-발전-변주-결론)',
+    '조작 정밀도와 관용 프레임',
+    '적·장애물 배치의 리듬',
+    '체크포인트 간격과 실패 비용',
+  ],
+  기타: [
+    '핵심 반복 행동(코어 루프)',
+    '성장 또는 진행의 축',
+    '보상과 리스크의 균형',
+    '이탈 지점과 재방문 동기',
+  ],
+}
+
+// gameTag → 그 장르에서 짚어야 할 체크포인트. 장르를 모르면 '기타' 렌즈.
+export function lensOfGame(gameTag) {
+  return genreLenses[genreOfGame(gameTag)] ?? genreLenses['기타']
+}
+
+// 우리 장르 키 → 렌즈. (RAWG로 판별한 장르에 직접 렌즈를 붙일 때 쓴다.)
+export function lensOfGenre(genre) {
+  return genreLenses[genre] ?? genreLenses['기타']
+}
+
+// RAWG 게임의 genres/tags(영문명) → 우리 11개 장르 중 하나.
+// RAWG 장르와 우리 장르가 1:1이 아니라 근사 매핑이다. 구체적인 것부터(태그 포함) 검사한다.
+export function mapRawgToGenre({ genres = [], tags = [] } = {}) {
+  const g = genres.map((x) => x.toLowerCase())
+  const t = tags.map((x) => x.toLowerCase())
+  const has = (list, kw) => list.some((x) => x.includes(kw))
+
+  // 태그가 더 구체적인 장르(로그라이크·배틀로얄·MOBA·핵앤슬래시)를 먼저 잡는다.
+  if (has(t, 'roguelike') || has(t, 'rogue-like') || has(t, 'roguelite')) return '로그라이크'
+  if (has(t, 'battle royale')) return '배틀로얄'
+  if (has(t, 'moba')) return 'MOBA'
+  if (has(t, 'hack and slash') || has(t, 'hack-and-slash') || has(t, 'dungeon crawler'))
+    return '핵앤슬래시'
+
+  // 그다음 RAWG 상위 장르.
+  if (has(g, 'massively multiplayer')) return 'MMORPG'
+  if (has(g, 'shooter')) return 'FPS·슈터'
+  if (has(g, 'platformer')) return '플랫포머'
+  if (has(g, 'puzzle')) return '퍼즐'
+  if (has(g, 'sports')) return '스포츠'
+  if (has(g, 'strategy')) return '실시간 전략'
+  // 액션/어드벤처가 있으면 그쪽을 우선(젤다처럼 RPG 태그가 섞여도 액션 어드벤처로).
+  if (has(g, 'adventure') || has(g, 'action')) return '액션 어드벤처'
+  if (has(g, 'role-playing') || has(g, 'rpg')) return 'MMORPG' // 순수 RPG 근사: 성장·경제 렌즈
+  return '기타'
 }
 
 // 필터 칩 순서용 — 실제로 카탈로그에 존재하는 장르만, 위 games 순서를 유지해 반환.

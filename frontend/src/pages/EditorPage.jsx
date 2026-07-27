@@ -14,15 +14,23 @@ import {
 } from '../lib/storage.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { rememberLocalDoc } from '../lib/localDocs.js'
+import { genreOfGame, lensOfGenre, mapRawgToGenre } from '../data/gameSystems.js'
 import { makeSnapshot, hasUnsavedChanges, isEmptyDraft, shouldAutosave } from '../lib/autosave.js'
 import './pages.css'
 import './EditorPage.css'
 
 const JOB_TAG_BY_TEMPLATE = {
+  // 역기획
   system: '시스템',
   content: '컨텐츠',
   uiux: 'UI/UX',
   level: '레벨',
+  // 순기획
+  pitch: '피치',
+  concept: '콘셉트',
+  world: '세계관',
+  gameplay: '게임플레이',
+  bizmodel: 'BM',
   free: '자유',
 }
 
@@ -36,6 +44,15 @@ let sectionSeq = 0
 function nextSectionId() {
   sectionSeq += 1
   return `sec-${Date.now()}-${sectionSeq}`
+}
+
+// 템플릿 섹션 스펙 → 빈 섹션 인스턴스. fields가 있으면 값만 빈 필드 배열로, 없으면 content 문자열.
+function sectionFromSpec(s) {
+  const base = { id: nextSectionId(), guideKey: s.key, heading: s.heading }
+  if (Array.isArray(s.fields)) {
+    return { ...base, fields: s.fields.map((f) => ({ key: f.key, label: f.label, value: '' })) }
+  }
+  return { ...base, content: '' }
 }
 
 function EditorPage() {
@@ -59,17 +76,13 @@ function EditorPage() {
   const [systemTag, setSystemTag] = useState(() => searchParams.get('system') ?? '')
   // 둘러보기 필터용 고정 분류. 카탈로그에서 시작했으면 그 시스템의 분류가 미리 채워진다.
   const [category, setCategory] = useState(() => searchParams.get('category') ?? '')
+  // RAWG 자동완성에서 고른 게임의 장르(우리 11종으로 매핑). 카탈로그에 없는 게임의 렌즈 판별에 쓴다.
+  const [pickedGenre, setPickedGenre] = useState(null)
   const [feedbackWanted, setFeedbackWanted] = useState(false)
   // 신규 문서는 템플릿 프리셋으로 즉시 초기화, 이어쓰기는 아래 useEffect에서 서버 데이터로 채운다.
+  // 템플릿이 짧은 필드(fields)를 주면 빈 값으로 필드를 깔고, 아니면 content 문자열 하나로.
   const [sections, setSections] = useState(() =>
-    template && !draftParam
-      ? template.sections.map((s) => ({
-          id: nextSectionId(),
-          guideKey: s.key,
-          heading: s.heading,
-          content: '',
-        }))
-      : [],
+    template && !draftParam ? template.sections.map(sectionFromSpec) : [],
   )
   const [aiComments, setAiComments] = useState({})
   const [aiLoading, setAiLoading] = useState(false)
@@ -208,8 +221,44 @@ function EditorPage() {
       example: null,
     }
 
+  // 역기획/순기획 구분 — AI 프롬프트 선택과 문서 유형 표기에 쓴다.
+  const kind = template.kind ?? 'reverse'
+  const isForward = kind === 'forward'
+
+  // 장르 렌즈 — 같은 역기획이라도 장르마다 볼 것이 다르다. 대상 게임이 정해지면 노출한다.
+  // (순기획은 아직 없는 게임이라 장르 렌즈를 적용하지 않는다.)
+  // 카탈로그에 있는 게임은 그 장르를, 없으면 RAWG로 고른 장르(pickedGenre)를 쓴다.
+  const trimmedGame = gameTag.trim()
+  let genre = null
+  if (!isForward && trimmedGame) {
+    const catalogGenre = genreOfGame(trimmedGame)
+    genre = catalogGenre !== '기타' ? catalogGenre : (pickedGenre ?? '기타')
+  }
+  const genreLens = genre ? lensOfGenre(genre) : null
+
+  // AI에 보낼 섹션 형태(미리보기·발행 공통). 필드가 있으면 필드째, 없으면 content를 보낸다.
+  const aiSections = () =>
+    sections.map((s) => ({
+      key: s.id,
+      heading: s.heading,
+      content: s.content,
+      fields: s.fields,
+      guide: guideOf(s).guide,
+    }))
+
   function updateSection(id, patch) {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+  }
+
+  // 구조화 섹션의 개별 필드 값 갱신.
+  function updateField(sectionId, fieldKey, value) {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === sectionId
+          ? { ...s, fields: s.fields.map((f) => (f.key === fieldKey ? { ...f, value } : f)) }
+          : s,
+      ),
+    )
   }
 
   function removeSection(id) {
@@ -284,12 +333,9 @@ function EditorPage() {
           title: title.trim(),
           gameTag: gameTag.trim(),
           templateName: template.name,
-          sections: sections.map((s) => ({
-            key: s.id,
-            heading: s.heading,
-            content: s.content,
-            guide: guideOf(s).guide,
-          })),
+          kind,
+          genreLens,
+          sections: aiSections(),
         })
         setAiComments(groupBySection(feedback))
       } else {
@@ -300,6 +346,7 @@ function EditorPage() {
             guideKey: s.guideKey,
             heading: s.heading,
             content: s.content,
+            fields: s.fields,
           })),
         )
         setAiComments(groupBySection(feedback))
@@ -332,7 +379,7 @@ function EditorPage() {
         id: docId, // 저장한 적 있으면 같은 row를 발행으로 flip, 없으면 서버가 새로 발급
         // 회원이면 author_name은 서버가 프로필로 채운다. 비회원만 표시명을 보낸다.
         author: auth.isLoggedIn ? undefined : '익명',
-        type: '역기획',
+        type: isForward ? '순기획' : '역기획',
         templateId,
         title: title.trim(),
         gameTag: gameTag.trim(),
@@ -342,11 +389,13 @@ function EditorPage() {
         challengeId: challenge?.id ?? null,
         feedbackWanted,
         // guideKey를 남겨야 이어쓰기 때 섹션 가이드가 복원되고 AI 재요청도 정확해진다.
-        sections: sections.map(({ id, guideKey, heading, content }) => ({
+        // fields(구조화)/content(레거시) 중 있는 것을 그대로 보낸다.
+        sections: sections.map(({ id, guideKey, heading, content, fields }) => ({
           id,
           guideKey,
           heading,
           content,
+          fields,
         })),
         // 좋아요·북마크·코멘트는 보내지 않는다 — 서버가 관리하며,
         // 여기서 보내면 재발행 때 기존 코멘트와 카운트를 덮어써 지운다.
@@ -381,7 +430,11 @@ function EditorPage() {
             title: title.trim(),
             gameTag: gameTag.trim(),
             templateName: template.name,
+            kind,
             guides,
+            genreLens,
+            // 챌린지 제출이면 채점 기준을 함께 보내 AI 자동 채점을 받는다.
+            criteria: challenge?.criteria,
           })
         } catch (err) {
           // 발행 자체는 성공. 다만 실패를 삼키면 총평이 왜 없는지 알 수 없으므로
@@ -423,6 +476,8 @@ function EditorPage() {
         systemTag={systemTag}
         category={category}
         onCategoryChange={setCategory}
+        isForward={isForward}
+        onGamePicked={(g) => setPickedGenre(mapRawgToGenre(g))}
         feedbackWanted={feedbackWanted}
         aiLoading={aiLoading}
         savedAt={savedAt}
@@ -440,6 +495,7 @@ function EditorPage() {
         }}
         onGameTagChange={(v) => {
           setGameTag(v)
+          setPickedGenre(null) // 직접 타이핑하면 RAWG 선택 장르는 초기화(선택 시 onGamePicked가 다시 설정)
           setPublishError(null)
         }}
         onSystemTagChange={(v) => {
@@ -452,6 +508,21 @@ function EditorPage() {
         onPublish={handlePublish}
       />
 
+      {genreLens && (
+        <div className="rs-panel rs-genre-lens">
+          <h2 className="rs-genre-lens-title">{genre} 장르에서 꼭 짚을 것</h2>
+          <ul>
+            {genreLens.map((l) => (
+              <li key={l}>{l}</li>
+            ))}
+          </ul>
+          <p className="rs-genre-lens-hint">
+            장르마다 봐야 할 것이 다릅니다. 위 항목이 문서 어딘가에서 다뤄지면 훨씬 깊은 역기획서가
+            되고, AI 피드백도 이 관점으로 읽어요.
+          </p>
+        </div>
+      )}
+
       {sections.map((section) => (
         <EditorSection
           key={section.id}
@@ -459,6 +530,7 @@ function EditorPage() {
           guide={guideOf(section)}
           aiComments={aiComments[section.id] ?? []}
           onChange={(patch) => updateSection(section.id, patch)}
+          onFieldChange={(key, value) => updateField(section.id, key, value)}
           onRemove={() => removeSection(section.id)}
         />
       ))}

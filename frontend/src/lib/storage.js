@@ -85,3 +85,8 @@ export function toggleReaction(docId, type) {
 export function verifyEditPassword(docId, editPassword) {
   return request(`/documents/${docId}/verify-edit`, { method: 'POST', body: { editPassword } })
 }
+
+// RAWG 게임 검색(자동완성). 백엔드 프록시를 타므로 API 키는 노출되지 않는다.
+export function searchGames(q) {
+  return request(`/games/search?q=${encodeURIComponent(q)}`)
+}

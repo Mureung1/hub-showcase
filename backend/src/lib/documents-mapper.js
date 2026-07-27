@@ -1,14 +1,22 @@
 // 프론트(camelCase) ↔ DB(snake_case) 변환의 단일 지점.
 // 매핑표는 docs/data-model.md 기준. 프론트는 snake_case를 절대 보지 않는다.
 
+// 섹션은 두 형태를 왕복 지원한다:
+//  - 구조화: fields = [{ key, label, value }]  (짧은 필드들)
+//  - 레거시: content = "긴 문자열"             (기존 문서·자유 양식)
+// 둘 다 sections jsonb에 그대로 담는다(스키마 변경 없음).
 function mapSectionToDb(section) {
-  const row = { id: section.id, heading: section.heading, content: section.content }
+  const row = { id: section.id, heading: section.heading }
+  if (section.content != null) row.content = section.content
+  if (Array.isArray(section.fields)) row.fields = section.fields
   if (section.guideKey != null) row.guide_key = section.guideKey // 초안에만 존재
   return row
 }
 
 function mapSectionToApi(row) {
-  const section = { id: row.id, heading: row.heading, content: row.content }
+  const section = { id: row.id, heading: row.heading }
+  if (row.content != null) section.content = row.content
+  if (Array.isArray(row.fields)) section.fields = row.fields
   if (row.guide_key != null) section.guideKey = row.guide_key
   return section
 }
@@ -63,6 +71,8 @@ export function toApiDoc(row) {
     hasEditPassword: Boolean(row.edit_password_hash),
     // AI가 미리 작성한 예시 문서인지(프론트 배지·필터용).
     isExample: Boolean(row.is_example),
+    // 챌린지 제출작 AI 채점 점수(0~100). 없으면 null. 서버만 채운다(클라 쓰기 불가).
+    aiScore: row.ai_score ?? null,
     type: row.type,
     templateId: row.template_id,
     status: row.status,

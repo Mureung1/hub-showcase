@@ -3,6 +3,7 @@ import cors from 'cors'
 import express from 'express'
 import documentsRouter from './routes/documents.js'
 import profileRouter from './routes/profile.js'
+import gamesRouter from './routes/games.js'
 import { supabase } from './lib/supabase.js'
 
 // 앱 구성만 담당하고 listen은 index.js가 한다 — 테스트(supertest)가 포트를 열지 않고
@@ -24,6 +25,7 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/documents', documentsRouter)
 app.use('/api/profile', profileRouter)
+app.use('/api/games', gamesRouter)
 
 // 종단 에러 미들웨어 — 라우트에서 던진 에러를 JSON으로.
 // eslint-disable-next-line no-unused-vars

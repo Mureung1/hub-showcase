@@ -160,8 +160,78 @@ a.rs-card:focus-visible {
 }
 
 .rs-challenge-dates {
+  margin-left: auto;
   color: var(--clb-muted-dim);
   font-size: var(--clb-text-label);
+}
+
+/* 채점 기준 · 소재 · 장르 렌즈 블록 — 투명성(무엇으로 평가받는지 미리 공개) */
+.rs-challenge-block {
+  margin-top: var(--clb-space-sm);
+}
+
+.rs-challenge-block-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--clb-text-label);
+  font-weight: 700;
+  color: var(--clb-muted-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* 배점 있는 채점 기준 */
+.rs-criteria-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rs-criteria-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rs-criterion-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--clb-space-xs);
+  color: var(--clb-ink);
+  font-size: 0.93rem;
+}
+
+.rs-criterion-weight {
+  padding: 1px 8px;
+  border-radius: var(--clb-radius-pill);
+  background: var(--clb-glass-faint);
+  border: 1px solid var(--clb-edge-soft);
+  color: var(--clb-gold);
+  font-size: var(--clb-text-label);
+  font-weight: 700;
+}
+
+.rs-criterion-hint {
+  color: var(--clb-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+/* 소재 · 장르 렌즈 목록 */
+.rs-topic-list {
+  margin: 0;
+  padding-left: 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rs-topic-list li {
+  color: var(--clb-muted);
+  font-size: 0.9rem;
 }
 
 .rs-challenge-title {

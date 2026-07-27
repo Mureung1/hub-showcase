@@ -96,19 +96,23 @@
 
 .rs-brand {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 1.15rem;
-  font-weight: 800;
+  align-items: center;
+  gap: 9px;
   text-decoration: none;
-  letter-spacing: -0.01em;
 }
 
-.rs-brand-code {
-  font-family: var(--clb-font-mono);
-  font-size: var(--clb-text-label);
-  font-weight: 500;
-  color: var(--clb-muted-dim);
+.rs-brand-mark {
+  display: block;
+  border-radius: 8px;
+  box-shadow: var(--clb-shadow-panel);
+  flex-shrink: 0;
+}
+
+.rs-brand-word {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--clb-ink);
 }
 
 .rs-nav-links {

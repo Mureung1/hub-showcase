@@ -15,6 +15,8 @@ export function makeSnapshot({ title, gameTag, systemTag, category, feedbackWant
       id: s.id,
       heading: s.heading,
       content: s.content,
+      // 구조화 섹션은 필드 값의 변화도 저장 트리거가 되어야 한다.
+      fields: (s.fields ?? []).map((f) => ({ key: f.key, value: f.value })),
     })),
   })
 }
@@ -28,7 +30,11 @@ export function hasUnsavedChanges(snapshot, lastSaved) {
 // (템플릿만 열어둔 상태로 빈 초안이 DB에 쌓이는 것을 막는다)
 export function isEmptyDraft({ title, sections }) {
   const hasTitle = (title ?? '').trim() !== ''
-  const hasBody = (sections ?? []).some((s) => (s.content ?? '').trim() !== '')
+  const hasBody = (sections ?? []).some(
+    (s) =>
+      (s.content ?? '').trim() !== '' ||
+      (s.fields ?? []).some((f) => (f.value ?? '').trim() !== ''),
+  )
   return !hasTitle && !hasBody
 }
 
