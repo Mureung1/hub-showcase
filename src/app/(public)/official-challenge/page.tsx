@@ -68,7 +68,7 @@ export default async function OfficialChallengePage() {
       <section id="overview" className={styles.hero} aria-labelledby="official-hero-title">
         <Image
           className={styles.heroImage}
-          src="/images/official-challenge/focus-core-complete.png"
+          src="/images/official-challenge/focus-core-complete.webp"
           alt=""
           fill
           priority
@@ -142,7 +142,7 @@ export default async function OfficialChallengePage() {
       <section id="for-whom" className={styles.dayOne} aria-labelledby="day-one-title">
         <Image
           className={styles.storyImage}
-          src="/images/official-challenge/focus-core-day-01.png"
+          src="/images/official-challenge/focus-core-day-01.webp"
           alt=""
           fill
           sizes="100vw"
@@ -189,7 +189,7 @@ export default async function OfficialChallengePage() {
       <section id="how-it-works" className={styles.midpoint} aria-labelledby="midpoint-title">
         <Image
           className={styles.storyImage}
-          src="/images/official-challenge/focus-core-day-14.png"
+          src="/images/official-challenge/focus-core-day-14.webp"
           alt=""
           fill
           sizes="100vw"
@@ -317,7 +317,7 @@ export default async function OfficialChallengePage() {
       <section id="join" className={styles.join} aria-labelledby="join-title">
         <Image
           className={styles.joinImage}
-          src="/images/official-challenge/focus-core-complete.png"
+          src="/images/official-challenge/focus-core-complete.webp"
           alt=""
           fill
           sizes="48vw"
