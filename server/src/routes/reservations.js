@@ -4,6 +4,7 @@ import { requireUser } from '../middlewares/requireUser.js'
 import {
   createReservation,
   listMyReservations,
+  listStoreReservations,
   confirmPickup,
 } from '../services/reservationService.js'
 
@@ -24,6 +25,15 @@ router.get(
   requireUser,
   asyncHandler(async (req, res) => {
     res.json(await listMyReservations(req.userId))
+  }),
+)
+
+// GET /api/reservations/store — 내 가게에 들어온 예약 목록 (사장님)
+router.get(
+  '/store',
+  requireUser,
+  asyncHandler(async (req, res) => {
+    res.json(await listStoreReservations(req.userId))
   }),
 )
 

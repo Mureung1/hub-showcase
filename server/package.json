@@ -7,12 +7,17 @@
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "migrate": "node src/db/migrate.js",
-    "seed": "node src/db/seed.js"
+    "seed": "node src/db/seed.js",
+    "seed:load": "node src/db/seedLoad.js",
+    "verify:load": "node src/db/verifyLoad.js",
+    "seed:geo": "node src/db/seedGeo.js",
+    "explain:geo": "node src/db/explainGeo.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "firebase-admin": "^14.2.0",
     "morgan": "^1.10.0",
     "pg": "^8.13.1"
   },

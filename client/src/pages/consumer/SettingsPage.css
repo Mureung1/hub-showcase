@@ -100,6 +100,33 @@
   opacity: 0.4;
 }
 
+.settings__push {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.settings__push--on {
+  color: var(--color-success);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-success);
+}
+
+.settings__push:disabled {
+  cursor: default;
+}
+
+.settings__push:disabled:not(.settings__push--on) {
+  opacity: 0.5;
+}
+
 .settings__hint {
   font-size: 12px;
   color: var(--color-muted);

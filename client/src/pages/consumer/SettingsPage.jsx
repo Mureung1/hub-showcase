@@ -2,7 +2,20 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/client.js'
 import { CATEGORIES } from '../../lib/constants.js'
+import {
+  enablePush,
+  getPermission,
+  isPushSupported,
+  syncTokenIfGranted,
+} from '../../lib/firebase.js'
 import './SettingsPage.css'
+
+const PUSH_LABEL = {
+  granted: '이 기기 알림 다시 동기화',
+  denied: '브라우저 알림 차단됨',
+  default: '브라우저 알림 받기',
+  unsupported: '이 브라우저는 알림을 지원하지 않아요',
+}
 
 /*
  * M5 세부 설정 (T-12). 관심 카테고리와 위치 조건을 조절한다.
@@ -15,6 +28,8 @@ function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
+  const [pushState, setPushState] = useState(getPermission())
+  const [pushMsg, setPushMsg] = useState(null)
 
   useEffect(() => {
     api
@@ -23,6 +38,35 @@ function SettingsPage() {
       .catch((err) => setError(err.response?.data?.message ?? '설정을 불러오지 못했습니다.'))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    isPushSupported().then((ok) => {
+      if (!ok) {
+        setPushState('unsupported')
+        return
+      }
+      // 권한이 이미 있으면 토큰이 서버에 없을 수 있으니 조용히 재동기화한다
+      // (재시딩 등으로 토큰이 지워졌는데 버튼만 켜져 보이던 문제 방지)
+      syncTokenIfGranted().then((res) => {
+        if (res.ok) setPushMsg('이 기기로 알림을 받을 수 있어요.')
+      })
+    })
+  }, [])
+
+  const turnOnPush = async () => {
+    setPushMsg(null)
+    const res = await enablePush()
+    setPushState(getPermission())
+    if (res.ok) {
+      setPushMsg('이 기기로 알림을 보내드릴게요.')
+    } else if (res.reason === 'denied') {
+      setPushMsg('브라우저에서 알림이 차단됐어요. 주소창 자물쇠 아이콘에서 허용으로 바꿔주세요.')
+    } else if (res.reason === 'unsupported') {
+      setPushMsg('이 브라우저는 웹 푸시를 지원하지 않아요. 알림 화면에서 확인할 수 있어요.')
+    } else {
+      setPushMsg('알림을 켜지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
+  }
 
   const toggleCategory = (category) => {
     setSaved(false)
@@ -78,6 +122,22 @@ function SettingsPage() {
       </button>
       <h1 className="settings__title">알림 설정</h1>
       <p className="settings__sub">관심 조건에 맞는 마감 할인만 알려드려요.</p>
+
+      <section className="settings__section">
+        <h2 className="settings__label">알림 방식</h2>
+        <button
+          type="button"
+          className={`settings__push${pushState === 'granted' ? ' settings__push--on' : ''}`}
+          onClick={turnOnPush}
+          disabled={pushState === 'denied' || pushState === 'unsupported'}
+        >
+          {PUSH_LABEL[pushState] ?? PUSH_LABEL.default}
+        </button>
+        {pushMsg && <p className="settings__hint">{pushMsg}</p>}
+        <p className="settings__hint">
+          푸시를 켜지 않아도 알림 화면에서 놓친 마감 할인을 확인할 수 있어요.
+        </p>
+      </section>
 
       <section className="settings__section">
         <h2 className="settings__label">관심 카테고리</h2>

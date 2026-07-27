@@ -1,4 +1,7 @@
 import * as notificationRepo from '../repositories/notificationRepository.js'
+import * as dealRepo from '../repositories/dealRepository.js'
+import * as storeRepo from '../repositories/storeRepository.js'
+import { sendToUsers } from './pushService.js'
 
 /*
  * 알림 대상 판정 (T-11) — 기획서 §3.2의 핵심 로직.
@@ -16,8 +19,10 @@ export async function findNotificationTargets(dealId) {
 }
 
 /*
- * 딜 등록 시 알림 생성 — 인앱 알림 행을 남긴다.
- * FCM 푸시 발송은 T-13에서 이 함수 뒤에 붙인다.
+ * 딜 등록 시 알림 — 인앱 알림 행을 남기고 FCM 푸시를 보낸다 (T-11 + T-13).
+ *
+ * 인앱 알림을 먼저 저장하는 이유: 푸시는 권한 거부·미지원·발송 실패로 못 받을 수 있으므로
+ * 앱에서 확인 가능한 기록이 항상 남아야 한다(푸시는 부가, 인앱이 기준).
  * 호출부(딜 등록)의 응답을 막지 않도록 실패해도 예외를 삼키고 로그만 남긴다.
  */
 export async function notifyDealCreated(deal, storeName) {
@@ -25,18 +30,64 @@ export async function notifyDealCreated(deal, storeName) {
     const targets = await findNotificationTargets(deal.id)
     if (targets.length === 0) return { targetCount: 0 }
 
+    const userIds = targets.map((t) => t.userId)
+    const title = `${storeName} 마감 할인`
+    const body = `${deal.name} ${deal.originalPrice.toLocaleString()}원 → ${deal.salePrice.toLocaleString()}원`
+
+    await notificationRepo.insertMany({ userIds, dealId: deal.id, title, body })
+
+    const push = await sendToUsers(userIds, { title, body, dealId: deal.id })
+    const pushLog = push.skipped
+      ? '비활성'
+      : `성공 ${push.sent} / 실패 ${push.failed ?? 0}${push.cleaned ? ` / 무효 토큰 ${push.cleaned}건 정리` : ''}`
+    console.log(`알림: 대상 ${targets.length}명, 푸시 ${pushLog}`)
+
+    return { targetCount: targets.length, push }
+  } catch (err) {
+    console.error('알림 처리 실패 (딜 등록은 정상 처리됨):', err.message)
+    return { targetCount: 0, failed: true }
+  }
+}
+
+/*
+ * 예약 발생 시 사장님 알림 (T-17).
+ *
+ * 반드시 예약 트랜잭션이 커밋된 뒤에 호출한다 — 알림 실패가 예약을 되돌리면 안 되고,
+ * 알림에 담기는 남은 재고도 확정된 값이어야 한다.
+ * 딜 등록 알림과 마찬가지로 인앱 기록을 먼저 남기고 푸시는 부가로 보낸다.
+ */
+export async function notifyReservationCreated(reservation) {
+  try {
+    const deal = await dealRepo.findById(reservation.dealId)
+    if (!deal) return { notified: false }
+
+    const store = await storeRepo.findById(deal.storeId)
+    if (!store) return { notified: false }
+
+    const title = `새 예약 · ${store.name}`
+    const body = `${deal.name} ${reservation.qty}개 예약 · 남은 수량 ${deal.remainingQty}개`
+
     await notificationRepo.insertMany({
-      userIds: targets.map((t) => t.userId),
+      userIds: [store.ownerId],
       dealId: deal.id,
-      title: `${storeName} 마감 할인`,
-      body: `${deal.name} ${deal.originalPrice.toLocaleString()}원 → ${deal.salePrice.toLocaleString()}원`,
+      title,
+      body,
     })
 
-    // TODO(T-13): 여기서 device_tokens를 조회해 FCM 푸시 발송
-    return { targetCount: targets.length }
+    const push = await sendToUsers([store.ownerId], {
+      title,
+      body,
+      dealId: deal.id,
+      link: '/owner',
+    })
+    console.log(
+      `예약 알림: 사장님 ${store.ownerId}, 푸시 ${push.skipped ? '비활성' : `성공 ${push.sent} / 실패 ${push.failed ?? 0}`}`,
+    )
+
+    return { notified: true, ownerId: store.ownerId, push }
   } catch (err) {
-    console.error('알림 생성 실패 (딜 등록은 정상 처리됨):', err.message)
-    return { targetCount: 0, failed: true }
+    console.error('예약 알림 실패 (예약은 정상 처리됨):', err.message)
+    return { notified: false, failed: true }
   }
 }
 

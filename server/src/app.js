@@ -8,6 +8,7 @@ import reservationsRouter from './routes/reservations.js'
 import notificationsRouter from './routes/notifications.js'
 import usersRouter from './routes/users.js'
 import favoritesRouter from './routes/favorites.js'
+import deviceTokensRouter from './routes/deviceTokens.js'
 
 const app = express()
 
@@ -22,6 +23,7 @@ app.use('/api/reservations', reservationsRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/favorites', favoritesRouter)
+app.use('/api/device-tokens', deviceTokensRouter)
 
 // 공통 에러 응답: { message }
 app.use((err, req, res, next) => {
