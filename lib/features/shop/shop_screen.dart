@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -172,13 +174,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                     AppSpacing.screenH,
                     AppSpacing.xl,
                   ),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: AppSpacing.md,
-                        crossAxisSpacing: AppSpacing.md,
-                        mainAxisExtent: 236,
-                      ),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: AppSpacing.md,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisExtent: _cardExtent(context),
+                  ),
                   itemCount: kShopItems.length,
                   itemBuilder: (context, index) {
                     final item = kShopItems[index];
@@ -200,6 +201,29 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
       ],
     );
   }
+}
+
+/// 기본 배율(1.0)에서의 상품 카드 높이. 그리드 셀은 고정 높이라 카드가 이 안에
+/// 들어가야 한다.
+const double _kCardExtent = 236;
+
+/// 그 높이 중 **글꼴 배율을 타는 부분**(상품명 · 상태 줄 · 버튼 글자).
+/// 미리보기 이미지(72)와 패딩·간격은 배율과 무관하게 고정이다.
+const double _kCardTextExtent = 60;
+
+/// 상품 카드 한 칸의 높이.
+///
+/// 예전엔 236 고정이었다. 그래서 글꼴 배율을 키우면 **카드 안 내용만 커지고 칸은
+/// 그대로**라 아래쪽이 잘렸다 — 하필 잘리는 자리가 구매 버튼이라 상점을 쓸 수 없게
+/// 된다(E-4 D-5: 배율 1.6에서 6px, 2.0에서 22px). `Flexible`로 풀 수 있는 가로
+/// 문제가 아니라 **세로 여유가 없는 문제**라, 배율만큼 칸을 늘려 준다.
+///
+/// 고정분과 글자분을 나눠 글자분에만 배율을 곱하므로 배율 1.0에서는 [_kCardExtent]
+/// 그대로다(평소 모습이 바뀌지 않는다). 배율을 1보다 작게 줄인 사용자에게는 칸을
+/// 줄이지 않는다 — 줄여서 얻을 것이 없고 잘릴 위험만 생긴다.
+double _cardExtent(BuildContext context) {
+  final scaled = MediaQuery.textScalerOf(context).scale(_kCardTextExtent);
+  return math.max(_kCardExtent, _kCardExtent - _kCardTextExtent + scaled);
 }
 
 /// 아이템 카드 하나. 5상태 버튼 분기를 담는다.

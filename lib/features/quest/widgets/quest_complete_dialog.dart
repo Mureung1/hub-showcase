@@ -4,7 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/constants/reward_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/reward_chip.dart';
+import '../../../core/widgets/reward_showcase.dart';
 
 /// 퀘스트 완료 연출 — 트로피 + 퀘스트명 + 방금 받은 보상.
 ///
@@ -108,6 +108,7 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
 
     return Dialog(
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+      insetPadding: kCelebrationDialogInset,
       child: GestureDetector(
         // 본문 아무 데나 탭하면 애니메이션을 끝으로 건너뛴다(연출 생략).
         behavior: HitTestBehavior.opaque,
@@ -160,31 +161,20 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
               ),
               AppSpacing.gapMd,
               // 보상 표시 카드 — 방금 받은 코인·XP가 0에서 카운트업한다.
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerLow,
-                  borderRadius: AppRadius.mdAll,
-                ),
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _count,
-                    builder: (context, _) {
-                      final t = _count.value.clamp(0.0, 1.0);
-                      // 실지급액에 도달하는 과정일 뿐 — 최종 프레임은 정확히 reward다
-                      // (t=1이면 round가 원값과 같다). 재계산이 아니다.
-                      final shown = Reward(
-                        coin: (widget.reward.coin * t).round(),
-                        xp: (widget.reward.xp * t).round(),
-                      );
-                      return RewardChip(reward: shown, large: true);
-                    },
-                  ),
-                ),
+              // 카드의 생김새와 확대 표시 규칙은 [RewardShowcase]가 쥐고 있다
+              // (연속 출석 보너스 연출과 같은 카드를 쓴다).
+              AnimatedBuilder(
+                animation: _count,
+                builder: (context, _) {
+                  final t = _count.value.clamp(0.0, 1.0);
+                  // 실지급액에 도달하는 과정일 뿐 — 최종 프레임은 정확히 reward다
+                  // (t=1이면 round가 원값과 같다). 재계산이 아니다.
+                  final shown = Reward(
+                    coin: (widget.reward.coin * t).round(),
+                    xp: (widget.reward.xp * t).round(),
+                  );
+                  return RewardShowcase(reward: shown);
+                },
               ),
               // 인증 보너스가 포함됐다면 그 사실을 밝힌다. 합산된 총액만 보여 주면
               // 사용자는 "왜 보통 퀘스트인데 8코인이지?"를 알 수 없고, 인증(메모·사진)
@@ -201,11 +191,16 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
                       color: scheme.primary,
                     ),
                     AppSpacing.gapWXs,
-                    Text(
-                      '인증 보너스 +${kVerificationBonus.coin} · '
-                      'XP +${kVerificationBonus.xp} 포함',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: scheme.primary,
+                    // 아래 상한 안내 줄과 같은 처방 — 아이콘은 16px 고정이고
+                    // 문구만 글꼴 배율을 타므로 문구 쪽에 접힐 여지를 준다.
+                    // (없으면 배율 2.0에서 모든 폭이 넘쳤다: E-4 D-2)
+                    Flexible(
+                      child: Text(
+                        '인증 보너스 +${kVerificationBonus.coin} · '
+                        'XP +${kVerificationBonus.xp} 포함',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.primary,
+                        ),
                       ),
                     ),
                   ],

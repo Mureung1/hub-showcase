@@ -28,31 +28,45 @@ class CoinPill extends StatelessWidget {
         color: reward.coinGlow.withValues(alpha: 0.22),
         borderRadius: AppRadius.fullAll,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      // **`Row`가 아니라 `Wrap`이다.** 고정폭 `Row`였을 때는 큰 잔액(1,234)과 큰
+      // 글꼴 배율이 겹치면 pill이 부모 폭을 넘었다(E-4 D-6: 배율 2.0 · 폭 320dp의
+      // 홈 코인 배너에서 20px). 폭이 모자라면 "코인" 단위를 다음 줄로 내려보낸다.
+      // [RewardChip]이 코인·XP 묶음을 접는 것과 같은 처방이다.
+      child: Wrap(
+        // 예전 Row의 gapWXs와 같은 값 — 배율 1.0에서 생김새가 바뀌지 않는다.
+        spacing: AppSpacing.xs,
+        runSpacing: AppSpacing.xs,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Icon(
-            Symbols.monetization_on,
-            size: compact ? 16 : 20,
-            fill: 1,
-            color: reward.coin,
+          // 아이콘과 숫자는 **한 묶음**이다. 둘이 다른 줄로 갈라지면 "🪙"와
+          // "1,234"가 남남처럼 읽힌다. 줄바꿈은 바깥 Wrap에만 맡긴다.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Symbols.monetization_on,
+                size: compact ? 16 : 20,
+                fill: 1,
+                color: reward.coin,
+              ),
+              AppSpacing.gapWXs,
+              Text(
+                _format(amount),
+                style:
+                    (compact
+                            ? theme.textTheme.labelSmall
+                            : theme.textTheme.labelMedium)
+                        ?.copyWith(color: reward.onCoin),
+              ),
+            ],
           ),
-          AppSpacing.gapWXs,
-          Text(
-            _format(amount),
-            style: (compact
-                ? theme.textTheme.labelSmall
-                : theme.textTheme.labelMedium)?.copyWith(color: reward.onCoin),
-          ),
-          if (!compact) ...[
-            AppSpacing.gapWXs,
+          if (!compact)
             Text(
               '코인',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: reward.onCoin.withValues(alpha: 0.75),
               ),
             ),
-          ],
         ],
       ),
     );

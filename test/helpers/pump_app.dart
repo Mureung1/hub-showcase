@@ -29,6 +29,7 @@ Future<InMemoryQuestRepository> pumpScreen(
   AppFailure? failWith,
   DateTime Function()? clock,
   List<Override> extraOverrides = const [],
+  TextScaler? textScaler,
 }) async {
   const uid = 'test-uid';
 
@@ -75,7 +76,19 @@ Future<InMemoryQuestRepository> pumpScreen(
         if (clock != null) clockProvider.overrideWithValue(clock),
         ...extraOverrides,
       ],
-      child: MaterialApp(theme: AppTheme.light, home: screen),
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: screen,
+        // 접근성 글꼴 배율 강제. `home:`을 직접 감싸지 않고 MaterialApp.builder를
+        // 쓰는 이유는 **Navigator 위**를 감싸야 다이얼로그·시트 같은 별도 라우트에도
+        // 같은 배율이 적용되기 때문이다.
+        builder: textScaler == null
+            ? null
+            : (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
+      ),
     ),
   );
 

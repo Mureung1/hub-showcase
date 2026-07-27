@@ -388,8 +388,19 @@ class _QuestRowCard extends StatelessWidget {
           ),
           AppSpacing.gapSm,
           // 난이도를 바꾸면 예상 보상도 함께 바뀐다(난이도에서 파생).
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //
+          // **`Row(spaceBetween)`이 아니라 `Wrap(spaceBetween)`이다.** 라벨도 칩도
+          // 글꼴 배율을 그대로 타는데, 예전 Row에는 유연 위젯이 없어 둘 다 고유 폭을
+          // 요구했고 배율 1.6·폭 360dp부터 줄이 넘쳤다(E-4 D-4).
+          //
+          // 여기서 `Flexible` 두 개로는 부족하다 — 폭을 반씩 나눠 갖게 되는데,
+          // 배율 2.0에서는 칩 한 묶음("XP +10")이 그 절반보다 넓다. Wrap은 자식에게
+          // **줄 전체 폭**을 주므로, 한 줄에 안 들어가면 칩이 통째로 다음 줄로 내려가
+          // 온전한 폭을 받는다. 한 줄에 들어갈 때의 배치는 Row(spaceBetween)와 같다.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: AppSpacing.xs,
             children: [
               Text('예상 보상', style: theme.textTheme.labelMedium),
               RewardChip(reward: rewardFor(row.difficulty)),

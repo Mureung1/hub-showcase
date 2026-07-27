@@ -47,11 +47,13 @@
 - [x] **Auth·Firestore·FCM** 3개 서비스 초기화 코드가 존재하고 콘솔에 프로젝트가 연결되어 있다.
       → `FirebaseBootstrap._warmUpServices()`. FCM 토큰 조회는 첫 프레임을 막지 않도록 await하지 않는다.
       > 알림 **권한 요청**은 부트스트랩에서 뺐다. 앱을 켜자마자 맥락 없이 푸시 권한을 물으면 거절률만 올라간다. 필요한 시점에 `requestNotificationPermission()`을 부른다.
-- [ ] **Storage** 서비스가 콘솔에 연결되어 있다.
-      → **보류**: Storage는 Blaze(종량제) 요금제가 필요한데 사용자가 결정을 미뤘다. 버킷이 프로비저닝되지 않았다.
+- [ ] **Storage** 서비스가 콘솔에 연결되어 있다. → **N/A — 미사용 확정**(보류 아님. 2026-07-27 결정)
+      → **원래 사유**: Storage는 Blaze(종량제) 요금제가 필요한데 사용자가 결정을 미뤘고, 버킷이 프로비저닝되지 않았다.
       `FirebaseStorage.instance`는 lazy 게터라 버킷이 없어도 예외를 던지지 않는다 — **즉 초기화 코드가 도는 것은 Storage 연결의 증거가 아니다.**
-      `storage.rules`는 작성해 뒀고 배포만 남았다. 3주차 사진 첨부 시점에 재판단한다.
-      미도입 시 인증 보너스는 메모만으로도 성립한다(plan.md: "사진 **또는** 메모").
+      → **재판단은 이미 끝났다(E-4 문서 감사 C-2)**: "3주차 사진 첨부 시점에 재판단한다"는 미래형으로 남아 있었으나, 그 재판단의 결론은 아래 「사진 첨부 기능」에 이미 기록돼 있다 — **Firestore base64 우회 채택**. 따라서 이 항목은 "보류"가 아니라 **"N/A — 미사용 확정"**이다.
+      → **코드 확인**: `firebase_storage`를 **읽기·쓰기에 쓰는 곳이 `lib` 전체에 0곳**이다. 남은 것은 `lib/core/firebase/firebase_bootstrap.dart:74`의 `FirebaseStorage.instance;` 워밍업 한 줄(+ `:5` import)과 `pubspec.yaml:58`의 `firebase_storage: ^13.0.0` 의존성뿐 — **dead dependency + dead warm-up**이다. `storage.rules`도 작성만 돼 있고 미배포다.
+      → **사용자 결정(2026-07-27): 의존성은 제거하지 않고 그대로 둔다.** 한글 경로 빌드가 예민한 프로젝트라(→ CLAUDE.md의 `overridePathCheck` 주의) 지금 걷어내면 빌드 설정이 흔들릴 위험이 있고 얻는 이득이 없다. **데모 후 정리 대상으로 기록만 남긴다.**
+      → 인증 보너스는 메모만으로도 성립하고(plan.md: "사진 **또는** 메모"), 사진도 base64 우회로 성립하므로 **기능 공백은 없다.**
 - [x] 네트워크가 없는 상태에서 초기화가 앱을 크래시시키지 않고 오류를 처리한다.
       → 3중 방어: ① 초기화 실패 시 오류 화면 ② Firestore 로컬 캐시(`persistenceEnabled`) ③ 캐시된 세션이 있으면 로그인이 네트워크를 건드리지 않음.
 - [x] 익명 또는 테스트 계정으로 로그인/세션 유지가 동작한다.
@@ -366,6 +368,7 @@
       → `storage_screen.dart`의 `archivedGroupsProvider.when`이 로딩→`_StorageSkeleton`, 오류→`ErrorView`, 비었을 때→`EmptyView`를 각각 그린다. 스트릭(`currentUserProvider`)은 못 읽으면 0으로 떨어뜨려 폴더뷰는 그대로 보인다. 테스트: `test/features/storage_screen_test.dart`.
 - [x] 인증(메모/사진)한 도전은 뱃지로 구분된다.
       → **폴더뷰 재작성 후 목록 카드(`QuestCard`)는 메모/사진 뱃지를 더 이상 그리지 않는다.** 인증 내용(메모 전문·인증 사진)은 이제 카드를 탭해 상세 시트에서 본다(아래 「완료 기록 상세 조회」로 연결). 사진은 여전히 목록에서 미리 읽지 않고 상세를 열 때만 `fetchProof`로 조회한다(proof 문서가 questId당 별도 — 3주차 문서 분리 이유). ⚠️ **항목 문구('뱃지로 구분된다')는 타임라인 시절 표현이라 현행 폴더뷰와 어긋난다 — 문구 재검토 필요**(체크 상태는 임의로 바꾸지 않음). 테스트: `test/features/storage_screen_test.dart`·`test/features/achievement_detail_sheet_test.dart`.
+      > **E-4 문서 감사 C-3에서 재확인됨.** 이 어긋남은 **이미 위 ⚠️로 자인해 둔 상태**라 은폐가 아니다. **항목 문구는 일부러 그대로 둔다** — 구현에 맞춰 요구사항 문장을 고치면 "못 지킨 요구"와 "의도적으로 바꾼 설계"가 구분되지 않는다. 실제로는 **뱃지(요약 신호)를 상세 시트(전문 열람)로 대체한 설계 변경**이며, 사용자 피드백에 따른 폴더뷰 재작성의 결과다. 표시 방식을 확정할 때 이 항목 문구를 함께 정리한다.
 
 ### 완료 기록 상세 조회
 > checklist에 항목이 없던 흐름이라 신규 섹션으로 승격했다(3단계-a). 3단계-a는 **보기 전용**이었고(verification-agent 10/10 PASS), **3단계-b에서 메모·사진 편집이 붙어 더는 보기 전용이 아니다**(같은 시트에 "수정" 버튼 → 편집 모드, verification-agent 7/7 PASS). **태그는 다음 조각(3단계-c)** 대기.
@@ -374,7 +377,8 @@
 - [x] 인증 사진은 목록에서 미리 읽지 않고 상세를 열 때만 조회한다.
       → `fetchProof(uid, questId)` 신설(인터페이스 `lib/repositories/quest_repository.dart` + Firestore·InMemory 2구현). 사진 base64가 `proofDoc/{questId}`에 있어 목록에서 N번 읽으면 비싸다(3주차 문서 분리 이유). 상세 시트가 `loadProof` 클로저로 lazy 조회한다(시트는 저장소·provider를 모름). 없으면 null(에러 아님), 저장소 실패 시 AppFailure, 깨진 base64는 "사진 없음"으로 폴백해 시트가 죽지 않는다. 테스트: `test/repositories/in_memory_quest_repository_test.dart`(fetchProof). ⚠️ Firestore `fetchProof`(특히 깨진 문서 분기)는 `fake_cloud_firestore` 미도입으로 자동 테스트 N/A — InMemory와 같은 계약으로 검증.
 - [x] 완료 날짜가 KST 기준으로 표시되고, 사진 로딩·없음·실패가 각각 처리된다.
-      → `_formatKstDate`가 `kKstOffset`(단일 정의처)를 인용해 UTC를 KST 벽시계로 변환한다(자정 근처 완료의 하루 어긋남 방지). `_ProofPhoto`의 FutureBuilder가 로딩(스피너)·사진 있음(썸네일)·없음/실패("사진 없음" 플레이스홀더)를 각각 그리고, 조회 실패에도 시트가 생존한다. 테스트: `test/features/achievement_detail_sheet_test.dart`(KST 날짜·사진 3경로·깨진 base64 방어).
+      → `_formatKstDate`가 `kKstOffset`(단일 정의처)를 인용해 UTC를 KST 벽시계로 변환한다(자정 근처 완료의 하루 어긋남 방지). 사진은 **로딩(스피너)·있음(썸네일)·없음/실패("사진 없음" 플레이스홀더) 3경로**를 각각 그리고, 조회 실패에도 시트가 생존한다. 테스트: `test/features/achievement_detail_sheet_test.dart`(KST 날짜·사진 3경로·깨진 base64 방어).
+      > **근거 문장 갱신(E-4 문서 감사 C-1)**: 예전 근거는 "`_ProofPhoto`의 `FutureBuilder`가 3경로를 그린다"였으나 **코드 현실과 달랐다** — `lib/features/storage/widgets/achievement_detail_sheet.dart`에 `_ProofPhoto`도 `FutureBuilder`도 **없다**. 3단계-b 편집 모드 작업에서 `initState` + `_photoLoading` 상태(`:84,121,128`) + `_photoView()`(`:311-322`) / `_PhotoFrame`(`:520`) / `_PhotoPlaceholder`(`:535`) / `_LoadingSpinner`(`:572`) 구조로 리팩터링됐다(편집 모드가 사진을 교체·제거하므로 `Future` 한 번 물고 끝나는 `FutureBuilder`로는 갱신을 반영할 수 없다). **동작(3경로 방어)은 그대로라 `[x]` 자체는 유효하므로 체크는 유지하고 근거 문장만 현행 구조로 고쳤다.**
 - [x] 보관함 상세 시트에서 완료 기록의 메모·사진을 수정할 수 있다. (3단계-b)
       → 보기 전용 시트(3-a)에 "수정" 버튼 → 편집 모드(메모 `TextField` + 사진 교체/제거 + 저장/취소). 같은 시트 안에서 보기↔편집 전환. `lib/features/storage/widgets/achievement_detail_sheet.dart` 확장(`_editing`/`_saving` 상태). 시트는 저장소·uid·image_picker를 직접 모르고 화면(`storage_screen._openDetail`)이 콜백 클로저(`onSaveMemo`/`onSavePhoto`/`pickImage`)로 주입한다(3-a `loadProof`와 같은 경계). 테스트: `test/features/achievement_detail_sheet_test.dart`.
 - [x] 인증 사진은 교체와 제거가 모두 되고, 독립 갱신 경로로 저장된다. (3단계-b)
@@ -694,8 +698,43 @@
 - `offline_tour_test`는 **읽기 단절만** 본다. 단절 상태의 **쓰기**(완료·구매·분해) 방어는 각 기능 테스트에 흩어져 있고, 이 관통 테스트가 다시 확인하지는 않는다.
 
 ### 최종 QA 및 버그 수정
-- [ ] `flutter analyze` error 0건, 알려진 크래시 0건이다.
-- [ ] 회귀 테스트가 통과한다.
+- [x] `flutter analyze` error 0건, 알려진 크래시 0건이다.
+      → `flutter analyze` **No issues found**(0건). verification-agent 독립 재현.
+      > **「알려진 크래시 0건」의 범위**: 여기서 "알려진"은 **테스트·QA로 드러난 범위**를 말한다. 이번 라운드(E-4)에 **실기기 실행은 하지 않았다** — 즉 "실기기에서 크래시가 없음을 확인했다"는 뜻이 아니라, 833건의 자동 테스트와 코드 감사로 드러난 크래시가 0건이라는 뜻이다. 실기기 범위는 「데모 시나리오 작성」·「발표용 테스트 데이터 준비」와 아래 최종 통합 검증 기준 ③④의 에뮬레이터 스모크에서 덮는다.
+- [x] 회귀 테스트가 통과한다.
+      → `flutter test` **833건 전부 통과**(E-4 착수 기준선 759 + 레이아웃 관통 72 + 위계 2). verification-agent 독립 재현.
+- [x] **해소된 결함 기록 — 큰 글꼴 배율 레이아웃 결함 6건 (E-4에서 실증·수정)**
+  - **무엇이었나**: E-3에서 고친 `RewardChip` 오버플로와 **원인이 같은** 결함(고정폭 `Row`에 유연 위젯이 없어 글꼴 배율이 오르면 줄바꿈할 곳이 없다)이 6곳 더 남아 있었다. E-4 QA에서 전부 실측 재현하고 수정했다.
+
+  | # | 위치 | 재현 조건(실측) | 수정 |
+  |---|------|----------------|------|
+  | D-1 | `lib/features/quest/quest_split_screen.dart` `_DecomposingView` 로딩 `Row` | 배율 1.3 / 360dp부터(안드로이드 "글꼴 크게" **한 단계**) | 문구 `Text`를 `Flexible`로 |
+  | D-2 | `lib/features/quest/widgets/quest_complete_dialog.dart:194` 인증 보너스 `Row` | 배율 1.3 / 320dp부터, 2.0에서 전폭 | `Flexible`(`:197`) — **바로 아래 상한 안내 `Row`가 이미 쓰던 패턴**(`:224`)을 복사 |
+  | D-3 | 완료·연속출석 다이얼로그의 **보상 표시 카드** | 배율 2.0 · 폭 320 → **70px** 오버플로 | **신규 `lib/core/widgets/reward_showcase.dart`** — 두 다이얼로그가 각자 들고 있던 카드를 공통화하고, `insetPadding`을 `kCelebrationDialogInset`(`reward_showcase.dart:87`, Material 기본 40px → `AppSpacing.md`)로 좁혀 안쪽 폭 **48px** 확보. **`reward_chip.dart`는 무수정** — 칩 안쪽 묶음이 접히지 않는 것은 설계 의도라(아이콘과 숫자가 갈라지면 안 된다) 칩을 고치는 대신 **부르는 쪽이 폭 예산을 정한다** |
+  | D-4 | `lib/features/quest/quest_create_screen.dart` 「예상 보상」 `Row(spaceBetween)` | 배율 1.6 / 360 → 24px | `Wrap(alignment: spaceBetween)`(`:400-402`). **`Flexible` 2개로는 부족**하다 — 폭을 반씩 나눠 갖는데 배율 2.0에서 칩 한 묶음이 그 절반보다 넓다 |
+  | D-5 | `lib/features/shop/shop_screen.dart` 상품 카드 | 배율 **1.6부터** · **폭 무관** → **구매 버튼 잘림** | **세로** 문제라 `Flexible`이 답이 아니다. 카드 높이 236을 고정분 + 글자분(`_kCardTextExtent = 60`, `:212`)으로 나눠 **글자분에만 배율을 적용**(`:225-226`). 배율 1.0에서 정확히 236 — 평소 모습 불변 |
+  | D-6 | `lib/features/home/widgets/character_card.dart` · `lib/core/widgets/coin_pill.dart` | 배율 2.0 **+ 폭 320dp + 큰 값**(coin 1234 · Lv.12) | 캐릭터 카드: `Expanded` → **양쪽 `Flexible` + spaceBetween**(`character_card.dart:80,86`). 코인 pill: `Row` → `Wrap`(`coin_pill.dart:35`), 단 아이콘+숫자는 내부 `Row(min)`로 묶어 **줄바꿈 최소 단위**를 유지("🪙"와 "1,234"가 남남처럼 읽히지 않게) |
+
+  - **D-3 수정이 낳은 부작용과 그 해소** — 이 항목이 이번 라운드의 핵심이다.
+    - **최초 수정은 틀렸다**: `large: textScale <= 1.3`으로 상한을 넘으면 확대 표시를 껐다. 그랬더니 **배율 1.4~1.66에서 글꼴을 키운 사용자가 기본 사용자보다 보상 숫자를 더 작게 보는 역전**이 생겼다(20px → **16.8px**, 아이콘 28 → 14로 절반). 접근성 설정을 켠 사람에게만 보상이 주인공 자리에서 밀려난다. verification-agent **FAIL 판정**.
+    - **처방 (A) 배율 상한 클램프로 재수정**: `large: true`를 **항상** 유지하고, `RewardShowcase` **안쪽에서만** `MediaQuery`로 배율을 1.3까지 자른다(`reward_showcase.dart:47,69-75`). 결과는 1.0 → 20px, 1.3~2.0 → **26px 고정**, 아이콘은 전 구간 28.0. **역전·급락 구간 0개, 단조 비감소.**
+    - **클램프는 카드 안쪽에만 걸린다**: 다이얼로그의 제목·설명은 사용자 배율을 그대로 따른다(측정 오차 0). **읽어야 할 문장까지 대신 줄이지는 않는다**(`reward_showcase.dart:67-68` 주석에 근거 명시).
+  - **회귀 방어 자산**
+    - `test/features/text_scale_layout_test.dart` — 화면 6종 × 배율{1.3, **1.4**, 1.6, 2.0} × 폭{320, 360, 411} = **72건**. **1.4는 `large` 분기 경계라 표본 사이에 두지 않으려고 일부러 넣었다**(`:50-55` 주석에 이유 명시 — "경계를 막 넘은 첫 프레임을 아무도 그려 보지 않는" 상황을 막는다).
+    - `test/features/reward_showcase_test.dart` — 위계 단조성 **2건**(`:102`, `:166`). **기준값을 하드코딩하지 않고 같은 테스트 안에서 배율 1.0을 측정해 비교**한다(상수를 박아 두면 기준 자체가 낡는다).
+    - **자명 통과 방지**: 관통 테스트는 `takeException()`을 **전부 소진**(`drainExceptions`, `:81-88`)한 뒤 **화면이 실제로 그려졌는지**(`expectVisible`)를 함께 단언한다 — 오류 화면이나 빈 화면으로 떨어지면 오버플로가 날 일이 없어 **조용히 통과**하기 때문이다.
+  - **뮤테이션 실증**: 개발자 8회 + verification-agent 독립 6종. 결정적인 것 둘 — **(a)** `expectVisible` 블록만 삭제하면 **빈 화면인데도 54/54 통과**(그 가드가 유일한 방벽임을 증명). **(b)** 배율 주입을 무력화하면 **실제 결함이 있어도 54건 전부 통과**(배율이 정말 걸리고 있음을 대조로 증명). 상한 값은 **양쪽에서 협공**된다 — 1.0으로 조이면 위계 테스트가, 1.8로 풀면 관통 테스트가 잡는다(1.8 뮤테이션에서 4건 FAIL 실증).
+  - **전체 결과**: `flutter test` **833건** 전부 통과, `flutter analyze` **0건**.
+
+**커버 공백 (정직 기록)**
+- **보상 숫자는 배율 1.3 이상에서 더 커지지 않는다** — 설계된 트레이드오프다. 실효 크기가 1.3~2.0 **전 구간 26px 고정**이라, 배율 2.0 사용자는 텍스트를 200%로 요청했지만 보상 숫자만 130%까지 받는다.
+- 그 결과 **배율 ≒1.63 이상에서 다이얼로그 내부 위계가 상대적으로 역전**된다 — 퀘스트명은 `bodyMedium`(16px)에 사용자 배율이 그대로 걸려 2.0에서 32px인데, 바로 아래 보상 숫자는 26px이다(배율 1.0에서는 20 vs 16으로 보상이 더 컸다). **절대 크기 역전도 오버플로도 아니라 릴리스 차단 사유는 아니지만**, `reward_showcase.dart`의 "보상을 **주인공으로** 보여 준다"(`:10`)는 선언과 고배율에서 어긋난다. **후속 과제 후보.**
+- **`showDialog` 실사용 경로는 상시 테스트에 없다.** verification-agent가 프로브로 CLEAN을 확인했지만 **그 프로브는 삭제했다**. 상시 자산(`text_scale_layout_test`)은 `Scaffold(body:)`로 다이얼로그를 띄우므로, 향후 `insetPadding`이나 라우트 레벨 `MediaQuery`가 바뀌면 **관통 테스트가 못 잡는다**.
+- **`_kCardTextExtent = 60`(`lib/features/shop/shop_screen.dart:212`)은 실측 근거 없는 가정값이다.** 상품 카드 236px 중 "글꼴 배율을 타는 부분"을 60으로 잡았을 뿐이고, 이 가정이 틀리면 배율 보정량이 어긋난다. **지금 통과하는 이유가 값이 우연히 넉넉해서일 수 있다.** 배율 2.0까지만 검증됐으므로 **그 이상 배율이나 상품명이 길어지면 재발 가능**.
+- **위계 회귀 가드는 `RewardShowcase` 단일 위젯만 본다.** `RewardChip(large: false)`를 쓰는 다른 화면(퀘스트 카드, 직접 등록 「예상 보상」)에는 같은 종류의 **크기 역전 가드가 없다.**
+- **관통 테스트는 세로 뷰포트 2400px 고정**(`text_scale_layout_test.dart:63`). 실제 단말의 짧은 세로에서 발생하는 스크롤·세로 오버플로는 **관심 밖이며 미검증**이다.
+
+> **후속 선택 과제 우선순위**(verification-agent 제시 — `docs/plan.md`의 2대 핵심 기능보다 **낮다**): 3번(`showDialog` 실경로를 관통 테스트 시나리오로 승격) → 4번(`_kCardTextExtent`를 실측 또는 `IntrinsicHeight` 기반으로 대체) → 2번(고배율 내부 위계).
 
 ### 데모 시나리오 작성
 - [ ] 발표용 시나리오가 문서화되어 있고 실제 앱에서 재현된다.
@@ -709,10 +748,29 @@
 
 > 전체 사용자 흐름이 끝에서 끝까지 동작하는지 확인하는 최종 판정 기준. 각 항목은 실제 앱 실행 또는 통합 테스트 결과로 PASS/FAIL을 판정한다.
 
-- [ ] 사용자가 큰 목표를 입력하면 AI가 마이크로 퀘스트와 난이도를 생성한다.
-- [ ] 사용자가 분해 결과를 수정·삭제·재생성할 수 있다.
+> **E-4 판정 결과: 5 PASS / 2 FAIL.** FAIL 2건(③④)은 **코드 결함이 아니라 증거 부족**이다 — 코드는 규칙을 지키지만 그 규칙이 지켜짐을 증명하는 수단이 자동 테스트로는 닿지 않는 자리에 있다. 둘 다 **에뮬레이터 스모크 1회로 동시 해소** 가능하다(맨 아래 후속 절차).
+
+- [x] 사용자가 큰 목표를 입력하면 AI가 마이크로 퀘스트와 난이도를 생성한다.
+      → 관통 `test/integration/user_flow_test.dart:174-181` · 출력 품질(개수·난이도 분포·JSON 스키마) `test/quality/decompose_quality_test.dart:38-79,107-205` · 원격 호출 계약 `test/repositories/remote_quest_decomposer_test.dart:46-236`. 실제 배선은 `lib/main.dart:54-58`(키가 있으면 `RemoteQuestDecomposer`, 없으면 `FakeQuestDecomposer` 데모 모드).
+- [x] 사용자가 분해 결과를 수정·삭제·재생성할 수 있다.
+      → 수정 `user_flow_test.dart:185-196,212`(편집한 제목이 저장까지 살아남는다) · 삭제 `test/features/quest_split_screen_test.dart:311,386` · 재생성 `:405,411,424,447`.
 - [ ] 확정한 결과가 퀘스트 목록에 정상 등록되고 재실행 후에도 유지된다.
+      → **FAIL(증거 부족) — 등록은 PASS, "재실행 후 유지"가 미증명.**
+      → **등록 PASS**: `user_flow_test.dart:199-219` — 5개가 **같은 `goalId`로 저장**되고, 원본 목표 텍스트가 goal 저장소에 보존되며, 목록에 목표 폴더로 나타난다.
+      → **"재실행 후 유지"는 자동 테스트로 증명되지 않았다.** `user_flow_test.dart:333-364`가 하는 것은 *저장소 인스턴스를 살린 채 위젯 트리만 재-pump*하는 **구조적 대리 증명**이고, 테스트 자신이 `:335-338` 주석으로 **"위젯 테스트는 프로세스를 실제로 재시작할 수 없다"**고 한계를 명시한다.
+      → 실 영속 실증은 위 **1주차 `am force-stop` 콜드스타트 기록(이 문서 「Firebase 프로젝트 연동」 익명 로그인/세션 유지 항목)뿐**이며, **그 이후 도입된 `goalId` 폴더·`archived`·`proof` 스키마 기준으로는 재실증이 없다.**
 - [ ] 퀘스트 완료 시 난이도에 맞는 코인과 XP가 (트랜잭션으로, 중복 없이) 지급된다.
-- [ ] 완료 결과가 캐릭터 성장(레벨·XP·진화)에 반영된다.
-- [ ] AI 실패 시에도 템플릿으로 퀘스트를 등록할 수 있다.
-- [ ] 사용자가 막힌 퀘스트를 더 작게 재분해해 다시 실행할 수 있다.
+      → **FAIL(증거 부족) — 수치·중복 방지·롤백은 PASS, "트랜잭션으로"의 원자성만 미검증.**
+      → **수치 PASS**: `lib/core/constants/reward_rules.dart:31-33` = 쉬움 3/5 · 보통 5/10 · 어려움 10/20.
+      → **중복 방지·롤백 PASS**: `test/repositories/in_memory_quest_repository_test.dart:403,426,466,483` · `user_flow_test.dart:230-248,291-331`(지급 실패 시 잔액·상태가 되돌아온다).
+      → **"트랜잭션으로"의 원자성은 자동 테스트 N/A.** 코드는 규칙을 지킨다 — `lib/repositories/firestore/firestore_quest_repository.dart:263-388`이 `runTransaction`으로 quest·user를 **먼저 전부 read한 뒤** write하고(read-before-write 준수), `rewardedAt` 미기록일 때만 지급하며(`:294`의 `if (!alreadyPaid)`, `:301`의 조기 return), proof·achievement 쓰기까지 **같은 트랜잭션**에 넣는다(`:352,363`). 그러나 `fake_cloud_firestore` 미도입이라 **실제 원자성·경쟁 상태는 미검증**이다.
+- [x] 완료 결과가 캐릭터 성장(레벨·XP·진화)에 반영된다.
+      → `user_flow_test.dart:236-258` · `test/features/quest_list_screen_test.dart:586-628`(레벨업) `:629-`(Lv9 알 → Lv10 참새 진화) · `test/features/growth_dialogs_test.dart:73-125` · 규칙 `test/core/growth_rules_test.dart`.
+- [x] AI 실패 시에도 템플릿으로 퀘스트를 등록할 수 있다.
+      → `user_flow_test.dart:261-289` — timeout → 폴백 배너 → 등록 → `goalId`까지 **끝에서 끝까지 관통**. 화면 분기 `quest_split_screen_test.dart:254` · 상태 `test/features/decompose_notifier_test.dart` · 템플릿 자체 `quest_templates_test.dart`.
+- [x] 사용자가 막힌 퀘스트를 더 작게 재분해해 다시 실행할 수 있다.
+      → `test/features/quest_redecompose_test.dart` 12건(`:58,84,312,380,408,429,447,133`).
+
+> **③④ 해소용 후속 절차 — 에뮬레이터 스모크 1회**(E-5와 묶는다). 두 FAIL이 같은 1회로 동시에 풀린다.
+> - **③**: AI 분해 → 등록 → `adb shell am force-stop` → 재기동 → **목표 폴더·자식 퀘스트·완료 상태가 그대로인지** 확인(현행 `goalId`/`archived`/`proof` 스키마 기준).
+> - **④**: **어려움** 퀘스트를 메모 인증으로 완료 → **코인 +13 · XP +23**(10/20 + 인증 보너스 3/3) → 체크를 껐다 다시 켜기 → **재지급 없음** → Firestore 콘솔에서 `rewardedAt`이 **1회만** 찍혔는지 확인.

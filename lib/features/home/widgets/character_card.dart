@@ -66,21 +66,33 @@ class CharacterCard extends StatelessWidget {
                   _RebirthBadge(rebirth: user.rebirth),
                   AppSpacing.gapSm,
                 ],
+                // 레벨(왼쪽)과 XP 수치(오른쪽). **둘 다 Flexible이다.**
+                //
+                // 예전엔 XP 쪽이 유연 위젯이 아니어서 고유 폭을 통째로 요구했고,
+                // 큰 값(Lv.12 · 네 자리 XP)에 큰 글꼴 배율이 겹치면 왼쪽에 줄
+                // 자리가 남지 않아 넘쳤다(E-4 D-6: 배율 2.0 · 폭 320dp).
+                // loose fit이라 폭이 넉넉하면 둘 다 고유 폭을 쓰고 spaceBetween이
+                // 평소 모습을 유지한다.
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
+                    Flexible(
                       child: Text(
                         'Level ${user.level} · ${stage.name}',
                         style: theme.textTheme.headlineMedium,
                       ),
                     ),
-                    Text(
-                      user.canRebirth
-                          ? 'MAX'
-                          : 'XP ${user.xp} / ${user.xpForNextLevel}',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        user.canRebirth
+                            ? 'MAX'
+                            : 'XP ${user.xp} / ${user.xpForNextLevel}',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        // 접혔을 때도 오른쪽 정렬을 유지한다.
+                        textAlign: TextAlign.end,
                       ),
                     ),
                   ],
