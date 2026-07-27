@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+logging:
+  level:
+    root: info
+    com.chasewar: info
+
+seoul:
+  api:
+    key: ${SEOUL_API_KEY}
+
+kakao:
+  api:
+    key: ${KAKAO_API_KEY}
+
+tmap:
+  api:
+    key: ${TMAP_API_KEY}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
