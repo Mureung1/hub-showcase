@@ -94,9 +94,10 @@ function BookmarksPage() {
                 type="button"
                 className="reflinks-btn-large"
                 onClick={() => setReferenceLinksJobId(job.job_id)}
+                title="해당 공고에 필요한 사이트만 모아둡니다 🙂"
+                aria-label="필요한 사이트 모아보기"
               >
                 <span>🔗</span>
-                필요 사이트
               </button>
             )}
           </div>
