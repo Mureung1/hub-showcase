@@ -2,13 +2,9 @@ package com.tapha.hub.book.presentation;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateBookRequest(
-        @NotNull(message = "사용자 정보가 필요해요.")
-        Long userId,
-
         @NotBlank(message = "검색한 책을 선택해 주세요.")
         @Size(max = 255, message = "검색한 책 정보가 너무 길어요.")
         String providerId,

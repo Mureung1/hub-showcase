@@ -46,6 +46,9 @@ public class Book {
     @Column(name = "initial_page", nullable = false)
     private int initialPage;
 
+    @Column(name = "page_count")
+    private Integer pageCount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private BookStatus status;
@@ -63,7 +66,7 @@ public class Book {
     }
 
     public Book(Long userId, String title, String author, int initialPage, Instant createdAt) {
-        this(userId, title, author, initialPage, createdAt, null, null, null, null, null);
+        this(userId, title, author, initialPage, createdAt, null, null, null, null, null, null);
     }
 
     public Book(
@@ -76,7 +79,8 @@ public class Book {
             String metadataProviderId,
             String isbn10,
             String isbn13,
-            String editionKey
+            String editionKey,
+            Integer pageCount
     ) {
         this.userId = userId;
         this.title = title;
@@ -87,6 +91,7 @@ public class Book {
         this.isbn13 = isbn13;
         this.editionKey = editionKey;
         this.initialPage = initialPage;
+        this.pageCount = pageCount;
         this.status = BookStatus.READING;
         this.createdAt = createdAt;
     }
@@ -129,6 +134,10 @@ public class Book {
 
     public int getInitialPage() {
         return initialPage;
+    }
+
+    public Integer getPageCount() {
+        return pageCount;
     }
 
     public BookStatus getStatus() {

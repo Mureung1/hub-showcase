@@ -1,19 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AddBookDialog } from './App';
-import { searchBooks } from './lib/api';
+import { AddBookDialog } from './AddBookDialog';
+import { searchBooks } from '../../lib/api';
 
-vi.mock('./lib/api', () => ({
-  createBook: vi.fn(),
-  createReadingRecord: vi.fn(),
-  createUser: vi.fn(),
-  deleteReadingRecord: vi.fn(),
-  getBook: vi.fn(),
-  getBooks: vi.fn(),
+vi.mock('../../lib/api', () => ({
   searchBooks: vi.fn(),
-  updateBookStatus: vi.fn(),
-  updateReadingRecord: vi.fn(),
 }));
 
 describe('AddBookDialog', () => {

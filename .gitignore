@@ -3,3 +3,5 @@ dist/
 .codex/
 .agents/
 server/.env
+client/.env
+.gstack/

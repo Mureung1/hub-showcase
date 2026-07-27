@@ -1,5 +1,7 @@
 # 나의 책장 디자인 가이드
 
+> **폐기된 초기 방향:** 이 문서의 `방 전체를 3D로 만든다`는 안은 성능과 조정 비용 때문에 현재 구현 기준이 아닙니다. 현재는 페이지 안에서 책의 위치·꺼내기·펼치기만 3D로 표현하고 나머지 UI는 DOM으로 구성합니다. 현재 기준은 [Current Implementation Status](docs/current-implementation-status.md)와 [Architecture Decisions](client/docs/architecture-decisions.md)를 따릅니다.
+
 > 이 문서는 **나의 책장** PC 웹 MVP의 시각·상호작용 기준이다. 제품 정책과 데이터 규칙은 `client/docs/product-prd.md`, 클릭 결과는 `client/docs/click-unit-ui-spec.md`를 따른다. 이 문서는 그 기능을 **실제로 책을 꺼내 테이블에서 펼치는 작은 독서방**으로 보이게 만드는 방법에 집중한다.
 
 ## 1. 디자인 목표

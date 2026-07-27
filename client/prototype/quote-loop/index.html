@@ -1,0 +1,730 @@
+<!doctype html>
+<!-- THROWAWAY PROTOTYPE: 글귀 입력과 재개 흐름의 사용성만 검증하며 제품 코드로 승격하지 않는다. -->
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>잇장 — 글귀에서 다시 독서로</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #fffaf0;
+        --paper: #fffdf8;
+        --ink: #24211f;
+        --muted: #6f6258;
+        --line: #ded4c7;
+        --wood: #9b6747;
+        --wood-dark: #654331;
+        --accent: #b95438;
+        --focus: #146b8c;
+        --success: #35624a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--canvas);
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font: 16px/1.6 Geist, Pretendard, "Noto Sans KR", system-ui, sans-serif;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 44px;
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        padding: 0.7rem 1rem;
+        background: var(--ink);
+        color: var(--paper);
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--accent);
+      }
+
+      button.secondary {
+        background: transparent;
+        color: var(--ink);
+      }
+
+      button.secondary:hover {
+        background: #f1e8dc;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--focus), transparent 45%);
+        outline-offset: 3px;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      h1,
+      h2,
+      blockquote {
+        font-family: Georgia, "Noto Serif KR", serif;
+      }
+
+      h1,
+      h2,
+      p,
+      blockquote {
+        margin-top: 0;
+      }
+
+      .prototype-note {
+        margin: 0;
+        padding: 0.45rem 1rem;
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 0.78rem;
+        text-align: center;
+      }
+
+      .site-header {
+        display: flex;
+        min-height: 68px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        padding: 0 5vw;
+      }
+
+      .brand {
+        font-family: Georgia, "Noto Serif KR", serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      .step-label {
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      main {
+        width: min(1120px, 90vw);
+        margin: 0 auto;
+        padding: clamp(2rem, 6vw, 5rem) 0;
+      }
+
+      .screen[hidden] {
+        display: none;
+      }
+
+      .eyebrow {
+        margin-bottom: 0.7rem;
+        color: var(--accent);
+        font-size: 0.77rem;
+        font-weight: 750;
+        letter-spacing: 0.08em;
+      }
+
+      .screen-title {
+        max-width: 720px;
+        margin-bottom: 1rem;
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        font-weight: 600;
+        letter-spacing: -0.055em;
+        line-height: 1.15;
+      }
+
+      .lead {
+        max-width: 620px;
+        color: var(--muted);
+      }
+
+      .record-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+        gap: clamp(2rem, 6vw, 5rem);
+        margin-top: 3rem;
+      }
+
+      .book-context {
+        align-self: end;
+        border-bottom: 16px solid var(--wood);
+        padding: 0 2rem 1rem;
+      }
+
+      .book-cover {
+        width: min(260px, 72%);
+        min-height: 350px;
+        margin: 0 auto;
+        border: 2px solid var(--ink);
+        padding: 2.2rem 1.6rem;
+        background: #6f5873;
+        box-shadow: 12px 11px 0 var(--wood-dark);
+        color: var(--paper);
+      }
+
+      .book-cover small {
+        display: block;
+        margin-top: 1rem;
+      }
+
+      form {
+        display: grid;
+        align-content: start;
+        gap: 1.4rem;
+      }
+
+      label {
+        display: grid;
+        gap: 0.5rem;
+        font-weight: 680;
+      }
+
+      label small {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid #9f9589;
+        border-radius: 3px;
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      input {
+        min-height: 50px;
+        padding: 0 0.8rem;
+      }
+
+      textarea {
+        min-height: 160px;
+        resize: vertical;
+        padding: 0.8rem;
+        line-height: 1.7;
+      }
+
+      .field-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-top: -0.2rem;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .saved-panel,
+      .complete-panel {
+        width: min(650px, 100%);
+        margin: 8vh auto 0;
+        border-top: 3px solid var(--wood);
+        padding-top: 2rem;
+        text-align: center;
+      }
+
+      .saved-panel .actions,
+      .complete-panel .actions {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 2rem;
+      }
+
+      .bookshelf-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 0.44fr);
+        gap: clamp(2rem, 6vw, 5rem);
+        align-items: start;
+        margin-top: 2.5rem;
+      }
+
+      .shelf-books {
+        display: flex;
+        min-height: 290px;
+        align-items: end;
+        gap: 0.7rem;
+        border-right: 12px solid var(--wood-dark);
+        border-bottom: 18px solid var(--wood);
+        border-left: 12px solid var(--wood-dark);
+        padding: 2rem 1.5rem 0.8rem;
+      }
+
+      .shelf-book {
+        display: grid;
+        width: clamp(74px, 9vw, 105px);
+        height: 215px;
+        place-items: center;
+        border: 2px solid var(--ink);
+        padding: 0.7rem;
+        background: #56715c;
+        color: white;
+        writing-mode: vertical-rl;
+      }
+
+      .shelf-book:nth-child(2) {
+        height: 245px;
+        background: #8b7048;
+      }
+
+      .shelf-book:nth-child(3) {
+        height: 195px;
+        background: #3f5558;
+      }
+
+      .shelf-book:nth-child(4) {
+        height: 230px;
+        background: #a94f3b;
+      }
+
+      .shelf-book.secondary {
+        background: #56715c;
+        color: white;
+      }
+
+      .shelf-book.secondary:nth-child(2) {
+        background: #8b7048;
+      }
+
+      .shelf-book.secondary:nth-child(3) {
+        background: #3f5558;
+      }
+
+      .shelf-book.secondary:nth-child(4) {
+        background: #a94f3b;
+      }
+
+      .quote-banner {
+        position: sticky;
+        top: 2rem;
+        min-height: 430px;
+        border: 1px solid #8d8175;
+        padding: 2rem;
+        background: var(--paper);
+      }
+
+      .quote-banner blockquote {
+        margin: 3rem 0;
+        font-size: clamp(1.45rem, 2.5vw, 2.05rem);
+        font-weight: 600;
+        line-height: 1.65;
+        white-space: pre-wrap;
+      }
+
+      .quote-source {
+        margin-bottom: 1.5rem;
+        border-top: 1px solid var(--line);
+        padding-top: 1rem;
+      }
+
+      .empty-quote {
+        margin: 3rem 0;
+        color: var(--muted);
+      }
+
+      .dialog-backdrop {
+        position: fixed;
+        z-index: 10;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+        background: rgb(36 33 31 / 58%);
+      }
+
+      .dialog-backdrop[hidden] {
+        display: none;
+      }
+
+      .book-dialog {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: min(780px, 100%);
+        min-height: 420px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        box-shadow: 0 22px 60px rgb(36 33 31 / 22%);
+      }
+
+      .dialog-page {
+        display: grid;
+        align-content: center;
+        gap: 1rem;
+        padding: clamp(2rem, 6vw, 4rem);
+      }
+
+      .dialog-page + .dialog-page {
+        border-left: 1px solid var(--line);
+      }
+
+      .dialog-page h2 {
+        margin: 0;
+        font-size: 2.5rem;
+      }
+
+      .dialog-actions {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .close-dialog {
+        position: absolute;
+        z-index: 1;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 44px;
+        padding: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 1.4rem;
+      }
+
+      .moderator-panel {
+        position: fixed;
+        z-index: 20;
+        right: 1rem;
+        bottom: 1rem;
+        width: min(330px, calc(100vw - 2rem));
+        border: 1px solid var(--ink);
+        padding: 0.8rem 1rem;
+        background: var(--paper);
+        box-shadow: 0 8px 28px rgb(36 33 31 / 18%);
+        font-size: 0.76rem;
+      }
+
+      .moderator-panel pre {
+        max-height: 180px;
+        overflow: auto;
+        white-space: pre-wrap;
+      }
+
+      .complete-mark {
+        color: var(--success);
+        font-size: 2.5rem;
+      }
+
+      @media (max-width: 767px) {
+        .site-header {
+          padding: 0 1rem;
+        }
+
+        main {
+          width: min(100% - 2rem, 620px);
+          padding: 2.5rem 0;
+        }
+
+        .record-layout,
+        .bookshelf-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .book-context {
+          display: none;
+        }
+
+        .shelf-books {
+          display: grid;
+          min-height: auto;
+          grid-template-columns: 1fr 1fr;
+          border: 0;
+          padding: 0;
+        }
+
+        .shelf-book,
+        .shelf-book:nth-child(n) {
+          width: auto;
+          height: auto;
+          min-height: 64px;
+          place-items: start;
+          writing-mode: horizontal-tb;
+        }
+
+        .quote-banner {
+          position: static;
+          min-height: auto;
+        }
+
+        .book-dialog {
+          display: block;
+          min-height: 0;
+        }
+
+        .dialog-page + .dialog-page {
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <p class="prototype-note">사용성 검증용 프로토타입 · 입력 내용은 저장되지 않습니다</p>
+    <header class="site-header">
+      <span class="brand">잇장</span>
+      <span class="step-label" id="step-label">1 / 4 · 독서 마무리</span>
+    </header>
+
+    <main>
+      <section class="screen" data-screen="record" tabindex="-1">
+        <p class="eyebrow">독서 마무리</p>
+        <h1 class="screen-title">오늘 읽은 자리를 남겨둘게요.</h1>
+        <p class="lead">다음에 책을 펼칠 때 이어갈 수 있도록 마지막 페이지를 기록해 주세요.</p>
+
+        <div class="record-layout">
+          <div class="book-context" aria-hidden="true">
+            <div class="book-cover">
+              <h2>데미안</h2>
+              <small>헤르만 헤세</small>
+            </div>
+          </div>
+
+          <form id="record-form">
+            <label>
+              오늘 어디까지 읽었나요?
+              <input id="page-input" name="page" type="number" min="85" max="220" value="96" required />
+            </label>
+
+            <label>
+              남기고 싶은 문장
+              <small>오래 남았거나 다시 만나고 싶은 문장이 있다면 적어보세요. 선택 사항이에요.</small>
+              <textarea id="quote-input" name="quote" maxlength="300" placeholder="문장을 그대로 적어보세요."></textarea>
+              <span class="field-meta"><span>최대 300자</span><span id="quote-count">0 / 300</span></span>
+            </label>
+
+            <button type="submit">독서 기록 저장</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="saved" tabindex="-1" hidden>
+        <div class="saved-panel">
+          <p class="eyebrow">기록 완료</p>
+          <h1>96쪽에 책갈피를 꽂아뒀어요.</h1>
+          <p class="lead" style="margin-inline: auto">이제 며칠 뒤 다시 서재에 들어왔다고 생각하고 다음 화면을 살펴보세요.</p>
+          <div class="actions">
+            <button type="button" id="next-visit">다음 방문 화면 보기</button>
+            <button type="button" class="secondary" data-reset>처음부터</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="bookshelf" tabindex="-1" hidden>
+        <p class="eyebrow">나의 서재</p>
+        <h1 class="screen-title">읽고 있는 책</h1>
+        <p class="lead">다음 장을 기다리는 네 권의 책이에요.</p>
+
+        <div class="bookshelf-layout">
+          <section aria-label="읽고 있는 책">
+            <div class="shelf-books">
+              <button class="shelf-book secondary" type="button" data-book="데미안">데미안</button>
+              <button class="shelf-book secondary" type="button" data-book="물고기는 존재하지 않는다">물고기는 존재하지 않는다</button>
+              <button class="shelf-book secondary" type="button" data-book="파친코">파친코</button>
+              <button class="shelf-book secondary" type="button" data-book="도둑맞은 집중력">도둑맞은 집중력</button>
+            </div>
+          </section>
+
+          <aside class="quote-banner" aria-labelledby="quote-heading">
+            <p class="eyebrow" id="quote-heading">다시 만난 문장</p>
+            <div id="quote-success">
+              <blockquote id="resurfaced-quote"></blockquote>
+              <p class="quote-source"><strong>데미안</strong><br /><span class="step-label">내가 읽고 있는 책에서</span></p>
+              <button type="button" id="open-from-quote">이 책 다시 열기</button>
+            </div>
+            <div id="quote-empty" hidden>
+              <p class="empty-quote">독서를 마치고 오래 남기고 싶은 문장을 기록해보세요.</p>
+              <button type="button" id="open-recent">읽던 책 열기</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="complete" tabindex="-1" hidden>
+        <div class="complete-panel">
+          <div class="complete-mark" aria-hidden="true">✓</div>
+          <p class="eyebrow">검증 흐름 완료</p>
+          <h1>데미안을 다시 펼쳤어요.</h1>
+          <p class="lead" style="margin-inline: auto">여기까지 도달한 경로와 망설였던 지점을 진행자에게 알려주세요.</p>
+          <div class="actions">
+            <button type="button" class="secondary" data-reset>처음부터 다시</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="dialog-backdrop" id="dialog-backdrop" hidden>
+      <section class="book-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+        <button type="button" class="close-dialog" id="close-dialog" aria-label="닫기">×</button>
+        <div class="dialog-page">
+          <p class="eyebrow">읽고 있는 책</p>
+          <h2 id="dialog-title">데미안</h2>
+          <p>헤르만 헤세</p>
+        </div>
+        <div class="dialog-page">
+          <p id="last-page-copy">지난번 96쪽까지 읽었어요.</p>
+          <strong id="next-page-copy">97쪽부터 이어서</strong>
+          <div class="dialog-actions">
+            <button type="button" id="resume-reading">이어서 읽기</button>
+            <button type="button" class="secondary" id="view-records">독서 기록 보기</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <details class="moderator-panel" id="moderator-panel" hidden>
+      <summary>진행자용 상태</summary>
+      <pre id="state-output"></pre>
+      <button type="button" class="secondary" data-reset>상태 초기화</button>
+    </details>
+
+    <script>
+      const initialState = {
+        step: "record",
+        page: 96,
+        quote: "",
+        quoteSaved: false,
+        openedFrom: null,
+        resumed: false,
+      };
+      let state = { ...initialState };
+      let dialogInvoker = null;
+
+      const screens = [...document.querySelectorAll("[data-screen]")];
+      const stepLabel = document.querySelector("#step-label");
+      const quoteInput = document.querySelector("#quote-input");
+      const quoteCount = document.querySelector("#quote-count");
+      const pageInput = document.querySelector("#page-input");
+      const dialogBackdrop = document.querySelector("#dialog-backdrop");
+      const stateOutput = document.querySelector("#state-output");
+      const moderatorPanel = document.querySelector("#moderator-panel");
+      const stepNames = {
+        record: "1 / 4 · 독서 마무리",
+        saved: "2 / 4 · 기록 확인",
+        bookshelf: "3 / 4 · 다음 방문",
+        complete: "4 / 4 · 다시 독서로",
+      };
+
+      function render() {
+        screens.forEach((screen) => {
+          screen.hidden = screen.dataset.screen !== state.step;
+        });
+        stepLabel.textContent = stepNames[state.step];
+        quoteCount.textContent = `${quoteInput.value.length} / 300`;
+        document.querySelector("#resurfaced-quote").textContent = state.quote;
+        document.querySelector("#quote-success").hidden = !state.quoteSaved;
+        document.querySelector("#quote-empty").hidden = state.quoteSaved;
+        document.querySelector(".saved-panel h1").textContent = `${state.page}쪽에 책갈피를 꽂아뒀어요.`;
+        document.querySelector("#last-page-copy").textContent = `지난번 ${state.page}쪽까지 읽었어요.`;
+        document.querySelector("#next-page-copy").textContent = `${state.page + 1}쪽부터 이어서`;
+        stateOutput.textContent = JSON.stringify(state, null, 2);
+      }
+
+      function goTo(step) {
+        state.step = step;
+        render();
+        document.querySelector(`[data-screen="${step}"]`).focus({ preventScroll: true });
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
+
+      function openBook(from, invoker) {
+        state.openedFrom = from;
+        dialogInvoker = invoker;
+        document.querySelector("main").inert = true;
+        document.querySelector(".site-header").inert = true;
+        moderatorPanel.inert = true;
+        dialogBackdrop.hidden = false;
+        document.querySelector("#resume-reading").focus();
+        render();
+      }
+
+      function closeBook() {
+        dialogBackdrop.hidden = true;
+        document.querySelector("main").inert = false;
+        document.querySelector(".site-header").inert = false;
+        moderatorPanel.inert = false;
+        dialogInvoker?.focus();
+      }
+
+      function reset() {
+        state = { ...initialState };
+        pageInput.value = "96";
+        quoteInput.value = "";
+        dialogBackdrop.hidden = true;
+        document.querySelector("main").inert = false;
+        document.querySelector(".site-header").inert = false;
+        moderatorPanel.inert = false;
+        goTo("record");
+        pageInput.focus();
+      }
+
+      document.querySelector("#record-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        state.page = Number(pageInput.value);
+        state.quote = quoteInput.value.trim();
+        state.quoteSaved = state.quote.length > 0;
+        goTo("saved");
+      });
+
+      quoteInput.addEventListener("input", render);
+      document.querySelector("#next-visit").addEventListener("click", () => goTo("bookshelf"));
+      document.querySelector("#open-from-quote").addEventListener("click", (event) => openBook("quote", event.currentTarget));
+      document.querySelector("#open-recent").addEventListener("click", (event) => openBook("empty-state", event.currentTarget));
+      document.querySelectorAll("[data-book]").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          if (event.currentTarget.dataset.book === "데미안") {
+            openBook("bookshelf", event.currentTarget);
+          }
+        });
+      });
+      document.querySelector("#close-dialog").addEventListener("click", closeBook);
+      dialogBackdrop.addEventListener("click", (event) => {
+        if (event.target === dialogBackdrop) closeBook();
+      });
+      document.querySelector("#resume-reading").addEventListener("click", () => {
+        state.resumed = true;
+        dialogBackdrop.hidden = true;
+        document.querySelector("main").inert = false;
+        document.querySelector(".site-header").inert = false;
+        moderatorPanel.inert = false;
+        goTo("complete");
+      });
+      document.querySelector("#view-records").addEventListener("click", () => {
+        alert("프로토타입에서는 기존 독서 기록 화면을 구현하지 않습니다.");
+      });
+      document.querySelectorAll("[data-reset]").forEach((button) => button.addEventListener("click", reset));
+      document.addEventListener("keydown", (event) => {
+        if (dialogBackdrop.hidden) return;
+        if (event.key === "Escape") {
+          closeBook();
+          return;
+        }
+        if (event.key !== "Tab") return;
+
+        const focusable = [...document.querySelectorAll(".book-dialog button:not(:disabled)")];
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
+
+      moderatorPanel.hidden = new URLSearchParams(location.search).get("moderator") !== "1";
+      render();
+    </script>
+  </body>
+</html>

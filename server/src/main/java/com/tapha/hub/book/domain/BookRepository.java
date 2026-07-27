@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
 
-    List<Book> findByUserIdAndStatusOrderByCreatedAtDescIdDesc(Long userId, BookStatus status);
+    List<Book> findByUserIdOrderByCreatedAtDescIdDesc(Long userId);
 
     Optional<Book> findByIdAndUserId(Long id, Long userId);
 

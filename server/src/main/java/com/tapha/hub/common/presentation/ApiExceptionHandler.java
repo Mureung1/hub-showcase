@@ -10,6 +10,9 @@ import com.tapha.hub.common.application.ResourceNotFoundException;
 import com.tapha.hub.common.application.InvalidRequestException;
 import com.tapha.hub.book.application.BookProviderException;
 import com.tapha.hub.book.application.DuplicateBookException;
+import com.tapha.hub.auth.presentation.AuthenticationRequiredException;
+import com.tapha.hub.auth.presentation.InvalidCsrfTokenException;
+import com.tapha.hub.auth.presentation.InvalidGoogleCredentialException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -45,5 +48,23 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleBookProvider(BookProviderException exception) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(new ApiError("BOOK_PROVIDER_UNAVAILABLE", exception.getMessage()));
+    }
+
+    @ExceptionHandler(AuthenticationRequiredException.class)
+    public ResponseEntity<ApiError> handleAuthenticationRequired(AuthenticationRequiredException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiError("AUTHENTICATION_REQUIRED", exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidGoogleCredentialException.class)
+    public ResponseEntity<ApiError> handleInvalidGoogleCredential(InvalidGoogleCredentialException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiError("INVALID_GOOGLE_CREDENTIAL", exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCsrfTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidCsrfToken(InvalidCsrfTokenException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiError("INVALID_CSRF_TOKEN", exception.getMessage()));
     }
 }

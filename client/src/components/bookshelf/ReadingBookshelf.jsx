@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { ArrowRight, BookOpen, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { ReadingActivityCalendar } from '@/components/bookshelf/ReadingActivityCalendar';
 import { getContinueBook, getLatestRecord, getNextStartPage } from '@/lib/reading';
 
 const ThreeBookshelf = lazy(() => import('@/components/bookshelf/ThreeBookshelf').then((module) => ({
@@ -36,6 +37,21 @@ function ContinueReadingCard({ book, onContinueReading }) {
         <ArrowRight aria-hidden="true" size={17} strokeWidth={1.8} />
       </Button>
     </section>
+  );
+}
+
+function QuoteBanner({ quote, book, onOpen }) {
+  if (!quote || !book) return null;
+  return (
+    <aside className="quote-banner" aria-labelledby="quote-banner-title">
+      <p className="section-kicker">A LINE TO RETURN TO</p>
+      <blockquote id="quote-banner-title">“{quote.text}”</blockquote>
+      <button type="button" onClick={onOpen}>
+        <span>{book.title}</span>
+        다시 펼치기
+        <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} />
+      </button>
+    </aside>
   );
 }
 
@@ -99,12 +115,19 @@ export function ReadingBookshelf({
   onSelectBook,
   onContinueReading,
   onRestoreBook,
+  quote,
+  onOpenQuote,
+  readingActivity,
+  isReadingActivityLoading,
+  readingActivityError,
+  onRetryReadingActivity,
 }) {
   const continueBook = getContinueBook(books);
   const [hoveredBookId, setHoveredBookId] = useState(null);
   const [restoringBookId, setRestoringBookId] = useState(null);
   const [restoreError, setRestoreError] = useState('');
   const openingBook = books.find((book) => book.id === openingBookId);
+  const quoteBook = books.find((book) => book.id === quote?.bookId);
   const targetPageCount = openingBook?.status === 'COMPLETED'
     ? 5
     : Number(openingBook?.recordCount ?? 0) > 0
@@ -140,8 +163,35 @@ export function ReadingBookshelf({
       </header>
 
       <section className="reading-bookshelf" aria-labelledby="reading-shelf-title">
-        <div className="reading-room-layout">
-          <div className="room-stage">
+        <div className="reading-bookshelf__heading">
+          <div>
+            <p className="section-kicker">NOW READING</p>
+            <h1 id="reading-shelf-title">읽고 있는 책</h1>
+            <p>{books.length}권의 책이 다음 장을 기다리고 있어요.</p>
+          </div>
+          <Button className="reading-bookshelf__add" type="button" onClick={onAddBook}>
+            <Plus aria-hidden="true" size={17} strokeWidth={1.8} />
+            책 추가
+          </Button>
+        </div>
+
+        <div className="bookshelf-layout">
+          <aside className="bookshelf-details">
+            <QuoteBanner quote={quote} book={quoteBook} onOpen={onOpenQuote} />
+            {continueBook ? (
+              <div className="bookshelf-details__continue">
+                <ContinueReadingCard book={continueBook} onContinueReading={onContinueReading} />
+              </div>
+            ) : (
+              <div className="bookshelf-details__empty">
+                <p className="section-kicker">NEXT PAGE</p>
+                <strong>읽고 있는 책을 한 권 꽂아볼까요?</strong>
+                <Button type="button" onClick={onAddBook}>읽고 있는 책 추가</Button>
+              </div>
+            )}
+          </aside>
+
+          <div className="bookshelf-stage">
             <div className="three-bookshelf" aria-label="읽는 중인 책 선반">
               <Suspense fallback={<div className="three-bookshelf__loading">책장을 준비하고 있어요.</div>}>
                 <ThreeBookshelf
@@ -172,7 +222,6 @@ export function ReadingBookshelf({
                   </li>
                 ))}
               </ul>
-              <div className="three-bookshelf__ground" aria-hidden="true" />
               {bookOpeningPhase && (
                 <p className="three-bookshelf__motion-debug" role="status" aria-live="polite">
                   <span>{phaseLabels[bookOpeningPhase]}</span>
@@ -184,32 +233,19 @@ export function ReadingBookshelf({
             </div>
             <p className="three-bookshelf__note">책을 누르면 다음에는 지난 갈피부터 이어 읽을 수 있어요.</p>
           </div>
+        </div>
 
-          <aside className="bookshelf-details">
-            <div className="reading-bookshelf__heading">
-              <div>
-                <p className="section-kicker">NOW READING</p>
-                <h1 id="reading-shelf-title">읽고 있는 책</h1>
-                <p>{books.length}권의 책이 다음 장을 기다리고 있어요.</p>
-              </div>
-              <Button className="reading-bookshelf__add" type="button" onClick={onAddBook}>
-                <Plus aria-hidden="true" size={17} strokeWidth={1.8} />
-                책 추가
-              </Button>
-            </div>
+        <div className="bookshelf-lower">
+          <div className="bookshelf-lower__activity">
+            <ReadingActivityCalendar
+              activity={readingActivity}
+              isLoading={isReadingActivityLoading}
+              error={readingActivityError}
+              onRetry={onRetryReadingActivity}
+            />
+          </div>
 
-            {continueBook ? (
-              <div className="room-stage__continue">
-                <ContinueReadingCard book={continueBook} onContinueReading={onContinueReading} />
-              </div>
-            ) : (
-              <div className="room-stage__empty">
-                <p className="section-kicker">NEXT PAGE</p>
-                <strong>읽고 있는 책을 한 권 꽂아볼까요?</strong>
-                <Button type="button" onClick={onAddBook}>읽고 있는 책 추가</Button>
-              </div>
-            )}
-
+          <div>
             <div className="status-shelves" aria-label="완독 및 보관 책장">
               <StatusShelf
                 title="완독"
@@ -232,7 +268,7 @@ export function ReadingBookshelf({
               />
             </div>
             {restoreError && <p className="status-shelves__error" role="alert">{restoreError}</p>}
-          </aside>
+          </div>
         </div>
       </section>
     </main>

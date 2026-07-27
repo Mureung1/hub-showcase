@@ -1,4 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+let csrfToken = null;
+let sessionRequest = null;
 
 export class ApiError extends Error {
   constructor(message, { code, status } = {}) {
@@ -14,7 +16,14 @@ async function request(path, options = {}) {
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...options.headers },
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(options.method ?? 'GET')
+          ? { 'X-CSRF-Token': csrfToken }
+          : {}),
+        ...options.headers,
+      },
       ...options,
     });
   } catch {
@@ -32,55 +41,105 @@ async function request(path, options = {}) {
   return body;
 }
 
-export function createUser({ nickname }) {
-  return request('/api/users', {
-    method: 'POST',
-    body: JSON.stringify({ nickname }),
-  });
+export function getSession() {
+  if (!sessionRequest) {
+    sessionRequest = request('/api/auth/session')
+      .then((session) => {
+        csrfToken = session.csrfToken;
+        return session.user;
+      })
+      .finally(() => {
+        sessionRequest = null;
+      });
+  }
+  return sessionRequest;
 }
 
-export function getBooks(userId, status = 'READING') {
-  return request(`/api/users/${userId}/books?status=${encodeURIComponent(status)}`);
+export async function loginWithGoogle(credential) {
+  const session = await request('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ credential }),
+  });
+  csrfToken = session.csrfToken;
+  return session.user;
+}
+
+export function getBooks() {
+  return request('/api/bookshelf');
+}
+
+export function getReadingActivity({ from, to }) {
+  return request(`/api/reading-activity?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
 }
 
 export function searchBooks(query) {
   return request(`/api/books/search?q=${encodeURIComponent(query.trim())}`);
 }
 
-export function createBook({ userId, providerId, initialPage }) {
+export function createBook({ providerId, initialPage }) {
   return request('/api/books', {
     method: 'POST',
-    body: JSON.stringify({ userId, providerId, initialPage }),
+    body: JSON.stringify({ providerId, initialPage }),
   });
 }
 
-export function getBook(bookId, userId) {
-  return request(`/api/books/${bookId}?userId=${encodeURIComponent(userId)}`);
+export function getBook(bookId) {
+  return request(`/api/books/${bookId}`);
 }
 
-export function createReadingRecord({ bookId, userId, endPage, startPageOverride, impression, readingDurationSeconds }) {
+export function createReadingRecord({
+  bookId,
+  endPage,
+  startPageOverride,
+  impression,
+  readingDurationSeconds,
+  quoteText,
+  quoteExposureId,
+}) {
   return request(`/api/books/${bookId}/records`, {
     method: 'POST',
-    body: JSON.stringify({ userId, endPage, startPageOverride: startPageOverride || null, impression: impression || null, readingDurationSeconds: readingDurationSeconds ?? null }),
+    body: JSON.stringify({
+      endPage,
+      startPageOverride: startPageOverride || null,
+      impression: impression || null,
+      readingDurationSeconds: readingDurationSeconds ?? null,
+      quoteText: quoteText || null,
+      quoteExposureId: quoteExposureId ?? null,
+    }),
   });
 }
 
-export function updateReadingRecord({ bookId, recordId, userId, endPage, impression }) {
+export function updateReadingRecord({ bookId, recordId, endPage, impression }) {
   return request(`/api/books/${bookId}/records/${recordId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ userId, endPage, impression: impression || null }),
+    body: JSON.stringify({ endPage, impression: impression || null }),
   });
 }
 
-export function deleteReadingRecord({ bookId, recordId, userId }) {
-  return request(`/api/books/${bookId}/records/${recordId}?userId=${encodeURIComponent(userId)}`, {
+export function deleteReadingRecord({ bookId, recordId }) {
+  return request(`/api/books/${bookId}/records/${recordId}`, {
     method: 'DELETE',
   });
 }
 
-export function updateBookStatus({ bookId, userId, status, finalReview }) {
+export function updateBookStatus({ bookId, status, finalReview }) {
   return request(`/api/books/${bookId}/status`, {
     method: 'PATCH',
-    body: JSON.stringify({ userId, status, finalReview: finalReview?.trim() || null }),
+    body: JSON.stringify({ status, finalReview: finalReview?.trim() || null }),
   });
+}
+
+export function getRandomQuote() {
+  return request('/api/quotes/random');
+}
+
+export function createQuoteExposure(quoteId) {
+  return request('/api/quote-exposures', {
+    method: 'POST',
+    body: JSON.stringify({ quoteId }),
+  });
+}
+
+export function openQuoteExposure(exposureId) {
+  return request(`/api/quote-exposures/${exposureId}/open`, { method: 'POST' });
 }

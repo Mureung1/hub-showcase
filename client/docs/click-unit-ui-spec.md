@@ -1,5 +1,7 @@
 # Click Unit UI Specification
 
+> **상태 안내:** 이 문서는 초기 클릭 명세를 보존합니다. 닉네임·브라우저 `userId` 흐름은 Google 로그인과 서버 세션으로 대체됐고, 글귀 직접 입력은 구현됐습니다. 현재 동작은 [`docs/current-implementation-status.md`](../../docs/current-implementation-status.md)를 우선합니다.
+
 ## 기준
 
 - 이 문서는 나의 책장 MVP의 화면별 클릭, 입력, 상태 변화를 정의한다.

@@ -1,9 +1,11 @@
 package com.tapha.hub.book.application;
 
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -46,8 +48,8 @@ public class BookService {
     }
 
     @Transactional
-    public BookResponse create(CreateBookRequest request) {
-        if (!userRepository.existsById(request.userId())) {
+    public BookResponse create(Long userId, CreateBookRequest request) {
+        if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("사용자를 찾을 수 없어요.");
         }
 
@@ -56,21 +58,26 @@ public class BookService {
             throw new BookProviderException("선택한 책 정보를 확인할 수 없어요.");
         }
         String editionKey = metadata.editionKey();
-        if (bookRepository.findByUserIdAndEditionKey(request.userId(), editionKey).isPresent()) {
+        if (bookRepository.findByUserIdAndEditionKey(userId, editionKey).isPresent()) {
             throw new DuplicateBookException();
+        }
+        int initialPage = request.initialPage() == null ? 1 : request.initialPage();
+        if (metadata.pageCount() != null && initialPage > metadata.pageCount()) {
+            throw new InvalidRequestException("INVALID_PAGE_RANGE", "시작 페이지가 책의 전체 쪽수를 넘을 수 없어요.");
         }
 
         Book book = new Book(
-                request.userId(),
+                userId,
                 metadata.title().trim(),
                 normalizeAuthor(metadata.author()),
-                request.initialPage() == null ? 1 : request.initialPage(),
+                initialPage,
                 Instant.now(),
                 metadata.provider(),
                 metadata.providerId(),
                 metadata.normalizedIsbn10(),
                 metadata.normalizedIsbn13(),
-                editionKey
+                editionKey,
+                metadata.pageCount()
         );
 
         try {
@@ -95,17 +102,31 @@ public class BookService {
     }
 
     @Transactional(readOnly = true)
-    public BookshelfResponse getBooks(Long userId, BookStatus status) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("사용자를 찾을 수 없어요.");
-        }
+    public BookshelfResponse getBooks(Long userId) {
+        List<Book> books = bookRepository.findByUserIdOrderByCreatedAtDescIdDesc(userId);
+        List<Long> bookIds = books.stream().map(Book::getId).toList();
+        // ponytail: scans one user's records; replace with a DB summary projection when measured shelf p95 or record volume requires it.
+        Map<Long, List<com.tapha.hub.reading.domain.ReadingRecord>> recordsByBook = bookIds.isEmpty()
+                ? Map.of()
+                : readingRecordRepository.findByBookIdInOrderByCreatedAtAscIdAsc(bookIds).stream()
+                        .collect(Collectors.groupingBy(
+                                com.tapha.hub.reading.domain.ReadingRecord::getBookId,
+                                LinkedHashMap::new,
+                                Collectors.toList()
+                        ));
 
-        List<BookResponse> books = bookRepository
-                .findByUserIdAndStatusOrderByCreatedAtDescIdDesc(userId, status)
-                .stream().map(this::toBookResponse)
-                .toList();
-
-        return new BookshelfResponse(books);
+        Map<BookStatus, List<BookResponse>> byStatus = books.stream()
+                .map(book -> toBookResponse(book, recordsByBook.getOrDefault(book.getId(), List.of())))
+                .collect(Collectors.groupingBy(
+                        BookResponse::status,
+                        () -> new EnumMap<>(BookStatus.class),
+                        Collectors.toList()
+                ));
+        return new BookshelfResponse(
+                byStatus.getOrDefault(BookStatus.READING, List.of()),
+                byStatus.getOrDefault(BookStatus.COMPLETED, List.of()),
+                byStatus.getOrDefault(BookStatus.ARCHIVED, List.of())
+        );
     }
 
     @Transactional(readOnly = true)
@@ -119,8 +140,8 @@ public class BookService {
     }
 
     @Transactional
-    public BookResponse updateStatus(Long bookId, UpdateBookStatusRequest request) {
-        Book book = bookRepository.findByIdAndUserId(bookId, request.userId())
+    public BookResponse updateStatus(Long bookId, Long userId, UpdateBookStatusRequest request) {
+        Book book = bookRepository.findByIdAndUserId(bookId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("책을 찾을 수 없어요."));
 
         String finalReview = normalizeFinalReview(request.finalReview());
@@ -152,6 +173,16 @@ public class BookService {
                 readingRecordRepository.countByBookId(book.getId()),
                 readingRecordRepository.findTopByBookIdOrderByCreatedAtDescIdDesc(book.getId())
                         .map(ReadingRecordSummary::from).orElse(null));
+    }
+
+    private BookResponse toBookResponse(
+            Book book,
+            List<com.tapha.hub.reading.domain.ReadingRecord> records
+    ) {
+        ReadingRecordSummary latest = records.isEmpty()
+                ? null
+                : ReadingRecordSummary.from(records.getLast());
+        return BookResponse.from(book, records.size(), latest);
     }
 
     private String normalizeFinalReview(String finalReview) {

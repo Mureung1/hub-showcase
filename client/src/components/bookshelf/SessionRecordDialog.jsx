@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -15,8 +15,20 @@ import { getNextStartPage } from '@/lib/reading';
 export function SessionRecordDialog({ book, record = null, canEditPage = true, open, onOpenChange, onSave }) {
   const endPageId = useId();
   const impressionId = useId();
+  const quoteId = useId();
   const overrideId = useId();
-  const [draft, setDraft] = useState({ endPage: '', impression: '', startPageOverride: '' });
+  const finalFocusRef = useRef(null);
+  const wasOpenRef = useRef(open);
+  if (open && !wasOpenRef.current && typeof document !== 'undefined') {
+    finalFocusRef.current = document.activeElement;
+  }
+  wasOpenRef.current = open;
+  const [draft, setDraft] = useState({
+    endPage: '',
+    impression: '',
+    quoteText: '',
+    startPageOverride: '',
+  });
   const [errors, setErrors] = useState({});
   const [isOverrideOpen, setIsOverrideOpen] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -32,7 +44,7 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
     && Number.isInteger(endPage) && endPage >= startPage;
 
   function resetDraft() {
-    setDraft({ endPage: '', impression: '', startPageOverride: '' });
+    setDraft({ endPage: '', impression: '', quoteText: '', startPageOverride: '' });
     setErrors({});
     setIsOverrideOpen(false);
     setSubmitError('');
@@ -40,6 +52,7 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
   }
 
   function handleOpenChange(nextOpen) {
+    if (!nextOpen && isSaving) return;
     onOpenChange(nextOpen);
     if (!nextOpen) resetDraft();
   }
@@ -51,6 +64,7 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
       setDraft({
         endPage: String(record.endPage),
         impression: record.impression ?? '',
+        quoteText: '',
         startPageOverride: '',
       });
       setErrors({});
@@ -73,6 +87,8 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
       nextErrors.startPageOverride = '1 이상의 시작 페이지를 입력해 주세요.';
     } else if (endPage < startPage) {
       nextErrors.endPage = `끝난 페이지는 ${startPage}쪽보다 앞설 수 없어요.`;
+    } else if (book.pageCount && endPage > book.pageCount) {
+      nextErrors.endPage = `전체 ${book.pageCount}쪽을 넘을 수 없어요.`;
     }
 
     if (Object.keys(nextErrors).length) {
@@ -87,8 +103,10 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
         endPage,
         startPageOverride: !isEditing && isOverrideOpen ? startPage : null,
         impression: draft.impression.trim(),
+        quoteText: isEditing ? null : draft.quoteText.trim(),
       });
-      handleOpenChange(false);
+      onOpenChange(false);
+      resetDraft();
     } catch (requestError) {
       setSubmitError(requestError.message);
       setIsSaving(false);
@@ -97,7 +115,7 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="record-dialog" showCloseButton={false}>
+      <DialogContent className="record-dialog" showCloseButton={false} finalFocus={finalFocusRef}>
         <DialogHeader className="record-dialog__header">
           <p className="section-kicker">{isEditing ? 'EDIT A RECORD' : 'ADD A RECORD'}</p>
           <DialogTitle>
@@ -116,6 +134,7 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
               name="endPage"
               type="number"
               min={startPage || 1}
+              max={book.pageCount ?? undefined}
               inputMode="numeric"
               value={draft.endPage}
               readOnly={!isPageEditable}
@@ -146,8 +165,25 @@ export function SessionRecordDialog({ book, record = null, canEditPage = true, o
               onChange={(event) => setDraft((current) => ({ ...current, impression: event.target.value }))}
               placeholder="한 줄이면 충분해요. 비워 두어도 괜찮아요."
               rows={4}
+              maxLength={1000}
             />
           </div>
+
+          {!isEditing && (
+            <div className="field-group">
+              <Label htmlFor={quoteId}>도움이 된 글귀 <span>선택</span></Label>
+              <textarea
+                id={quoteId}
+                name="quoteText"
+                value={draft.quoteText}
+                onChange={(event) => setDraft((current) => ({ ...current, quoteText: event.target.value }))}
+                placeholder="나중에 다시 만나고 싶은 문장을 남겨보세요."
+                rows={3}
+                maxLength={300}
+              />
+              <p className="field-help">남긴 글귀는 책장 옆에서 다시 읽기를 권해줘요.</p>
+            </div>
+          )}
 
           {!isEditing && !isOverrideOpen ? (
             <Button className="record-dialog__override" type="button" variant="link" onClick={() => setIsOverrideOpen(true)}>

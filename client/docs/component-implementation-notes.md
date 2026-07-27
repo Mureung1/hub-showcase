@@ -1,5 +1,7 @@
 # Component Implementation Notes
 
+> **상태 안내:** 아래에는 초기 컴포넌트 계획도 함께 남아 있습니다. 실제 컴포넌트 트리와 API 경계는 [`docs/current-implementation-status.md`](../../docs/current-implementation-status.md)를 우선하며, `App.jsx`는 현재 세션 복구와 최상위 화면 전환만 담당합니다.
+
 ## 기준
 
 - 이 문서는 나의 책장 MVP를 구현할 때 화면과 컴포넌트의 책임, 상태, API 경계를 정리한다.

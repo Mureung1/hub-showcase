@@ -41,6 +41,8 @@ public class ReadingRecord {
         this.createdAt = createdAt;
     }
     public Long getId() { return id; }
+    public Long getBookId() { return bookId; }
+    public Long getUserId() { return userId; }
     public int getStartPage() { return startPage; }
     public int getEndPage() { return endPage; }
     public String getImpression() { return impression; }

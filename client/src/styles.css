@@ -145,6 +145,11 @@ input:focus-visible {
   margin-top: 3.3rem;
 }
 
+.google-login-button {
+  min-height: 44px;
+  margin-top: 0.9rem;
+}
+
 .field-group {
   display: grid;
   gap: 0.68rem;
@@ -1433,13 +1438,10 @@ input:focus-visible {
   }
 }
 
-/* W3 room: the reading shelf remains the main stage; status shelves stay quiet. */
 .bookshelf-preview {
-  --room-wall: #f3e7d3;
-  --room-floor: #afc9de;
   padding-right: clamp(1rem, 4vw, 4rem);
   padding-left: clamp(1rem, 4vw, 4rem);
-  background: var(--room-wall);
+  background: var(--canvas);
 }
 
 .reading-bookshelf {
@@ -1452,29 +1454,7 @@ input:focus-visible {
   z-index: 3;
 }
 
-.room-stage {
-  position: relative;
-  min-height: clamp(34rem, calc(100dvh - 12rem), 48rem);
-  margin-top: 0.9rem;
-}
-
-.three-bookshelf {
-  height: clamp(34rem, calc(100dvh - 12rem), 48rem);
-  margin-top: 0;
-  border: 1px solid rgb(36 33 31 / 16%);
-  background: var(--room-wall);
-  box-shadow: 0 1.4rem 2.6rem rgb(72 55 40 / 15%);
-}
-
-.room-stage__continue {
-  position: absolute;
-  z-index: 6;
-  right: 4%;
-  bottom: 8%;
-  width: min(28rem, 42%);
-}
-
-.room-stage__continue .continue-reading-card {
+.bookshelf-details__continue .continue-reading-card {
   align-items: end;
   margin: 0;
   border: 1px solid rgb(36 33 31 / 14%);
@@ -1484,50 +1464,45 @@ input:focus-visible {
   box-shadow: 0 0.8rem 1.4rem rgb(72 55 40 / 14%);
 }
 
-.room-stage__continue .continue-reading-card__book {
+.bookshelf-details__continue .continue-reading-card__book {
   width: 3.7rem;
   height: 5.5rem;
 }
 
-.room-stage__continue .continue-reading-card__book-spine {
+.bookshelf-details__continue .continue-reading-card__book-spine {
   width: 2.8rem;
   height: 4.8rem;
 }
 
-.room-stage__continue .continue-reading-card__impression {
+.bookshelf-details__continue .continue-reading-card__impression {
   max-width: 15rem;
 }
 
-.room-stage__continue .continue-reading-card > button {
+.bookshelf-details__continue .continue-reading-card > button {
   min-height: 2.6rem;
   font-size: 0.82rem;
 }
 
-.room-stage__empty {
-  position: absolute;
-  z-index: 6;
-  right: 5%;
-  bottom: 9%;
+.bookshelf-details__empty {
   display: grid;
   gap: 0.35rem;
-  width: min(20rem, 38%);
   border-left: 0.3rem solid var(--accent);
   background: rgb(255 253 248 / 94%);
   padding: 1.1rem 1.2rem;
   box-shadow: 0 0.8rem 1.4rem rgb(72 55 40 / 14%);
 }
 
-.room-stage__empty .section-kicker {
+.bookshelf-details__empty .section-kicker {
   margin-bottom: 0.1rem;
 }
 
-.room-stage__empty strong {
+.bookshelf-details__empty strong {
   font-family: Georgia, "Noto Serif KR", serif;
   font-size: 1.05rem;
   font-weight: 600;
 }
 
-.room-stage__empty button {
+.bookshelf-details__empty button {
   justify-self: start;
   min-height: 2.4rem;
   margin-top: 0.5rem;
@@ -1804,27 +1779,7 @@ input:focus-visible {
 }
 
 @media (max-width: 760px) {
-  .room-stage,
-  .three-bookshelf {
-    min-height: 30rem;
-    height: 30rem;
-  }
-
-  .room-stage__continue {
-    right: 4%;
-    bottom: 5%;
-    left: 4%;
-    width: auto;
-  }
-
-  .room-stage__empty {
-    right: 4%;
-    bottom: 5%;
-    left: 4%;
-    width: auto;
-  }
-
-  .room-stage__continue .continue-reading-card {
+  .bookshelf-details__continue .continue-reading-card {
     align-items: start;
     flex-direction: column;
     gap: 0.9rem;
@@ -1874,9 +1829,9 @@ input:focus-visible {
   height: 26rem;
   margin-top: 3rem;
   overflow: hidden;
-  border: 1px solid rgb(111 74 53 / 22%);
-  background: #d7c0aa;
-  box-shadow: 0 1.2rem 2rem rgb(72 55 40 / 10%);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .three-bookshelf__canvas {
@@ -2116,7 +2071,7 @@ input:focus-visible {
   }
 
   .three-bookshelf__controls li {
-    flex-basis: 2.25rem;
+    flex-basis: 2.75rem;
   }
 
   .book-spine {
@@ -2146,27 +2101,27 @@ input:focus-visible {
   }
 }
 
-/* Reading room: the shelf anchors the page; its information stays alongside it. */
+/* The 3D shelf stays local to the books; the rest of the page remains DOM UI. */
 .bookshelf-preview .reading-bookshelf {
   width: min(100%, 92rem);
   margin: 1.7rem auto 0;
 }
 
-.reading-room-layout {
+.bookshelf-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(20rem, 0.8fr);
   align-items: start;
   gap: clamp(1.5rem, 3vw, 3rem);
 }
 
-.reading-room-layout .room-stage {
+.bookshelf-layout .bookshelf-stage {
   position: sticky;
   top: 1rem;
   min-height: 0;
   margin: 0;
 }
 
-.reading-room-layout .three-bookshelf {
+.bookshelf-layout .three-bookshelf {
   height: clamp(32rem, calc(100dvh - 4rem), 44rem);
   margin: 0;
 }
@@ -2177,14 +2132,53 @@ input:focus-visible {
   min-width: 0;
 }
 
-.bookshelf-details .reading-bookshelf__heading {
-  align-items: flex-start;
+.quote-banner {
+  border: 1px solid var(--line);
+  border-left: 0.3rem solid var(--accent);
+  background: var(--paper);
+  padding: 1.35rem 1.4rem;
 }
 
-.bookshelf-details .room-stage__continue,
-.bookshelf-details .room-stage__empty {
-  position: static;
-  width: auto;
+.quote-banner .section-kicker {
+  margin-bottom: 0.7rem;
+}
+
+.quote-banner blockquote {
+  margin: 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.12rem;
+  line-height: 1.65;
+}
+
+.quote-banner button {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: 1rem;
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 0.8rem 0 0;
+  color: var(--accent-dark);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.quote-banner button span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--muted);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookshelf-details .reading-bookshelf__heading {
+  align-items: flex-start;
 }
 
 .bookshelf-details .continue-reading-card {
@@ -2197,6 +2191,122 @@ input:focus-visible {
   max-width: 100%;
 }
 
+.reading-activity-calendar {
+  border-top: 0.55rem solid var(--accent);
+  background: rgb(255 253 248 / 78%);
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.reading-activity-calendar__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.reading-activity-calendar__header .section-kicker {
+  margin-bottom: 0.3rem;
+}
+
+.reading-activity-calendar__header h2 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.reading-activity-calendar__header > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.reading-activity-calendar__body {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.reading-activity-calendar__weekdays {
+  display: grid;
+  grid-template-rows: repeat(7, 0.82rem);
+  gap: 0.28rem;
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.64rem;
+  line-height: 0.82rem;
+}
+
+.reading-activity-calendar__grid {
+  display: grid;
+  grid-template-rows: repeat(7, 0.82rem);
+  grid-auto-columns: 0.82rem;
+  grid-auto-flow: column;
+  gap: 0.28rem;
+  min-width: max-content;
+}
+
+.reading-activity-calendar__day {
+  display: block;
+  width: 0.82rem;
+  height: 0.82rem;
+  border: 1px solid rgb(36 33 31 / 10%);
+  background: #e7dfd3;
+}
+
+.reading-activity-calendar__day--1 {
+  background: #d7a99c;
+}
+
+.reading-activity-calendar__day--2 {
+  background: #bf7765;
+}
+
+.reading-activity-calendar__day--3 {
+  background: #9f4e3d;
+}
+
+.reading-activity-calendar__day--4 {
+  background: var(--accent-dark);
+}
+
+.reading-activity-calendar__day.is-future {
+  border-color: transparent;
+  background: rgb(231 223 211 / 35%);
+}
+
+.reading-activity-calendar__day:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.reading-activity-calendar__status,
+.reading-activity-calendar__empty {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.reading-activity-calendar__status p {
+  margin: 0;
+}
+
+.reading-activity-calendar__status button {
+  margin-top: 0.55rem;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  padding: 0;
+  color: var(--accent-dark);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
 .bookshelf-details .status-shelves {
   grid-template-columns: 1fr;
   margin-top: 0;
@@ -2207,15 +2317,274 @@ input:focus-visible {
     margin-top: 2rem;
   }
 
-  .reading-room-layout {
+  .bookshelf-layout {
     grid-template-columns: 1fr;
   }
 
-  .reading-room-layout .room-stage {
+  .bookshelf-layout .bookshelf-stage {
     position: static;
   }
 
-  .reading-room-layout .three-bookshelf {
+  .bookshelf-layout .three-bookshelf {
     height: clamp(24rem, 65dvh, 34rem);
+  }
+}
+
+/* Bookshelf visual hierarchy: one reading stage, one return column, one archive band. */
+.bookshelf-preview .reading-bookshelf {
+  margin-top: clamp(2.2rem, 5vw, 4.8rem);
+}
+
+.bookshelf-preview .reading-bookshelf__heading {
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: clamp(1.4rem, 2.5vw, 2.2rem);
+}
+
+.bookshelf-preview .reading-bookshelf__heading h1 {
+  font-size: clamp(2.8rem, 5vw, 5.2rem);
+  font-weight: 500;
+  letter-spacing: -0.085em;
+  line-height: 0.95;
+}
+
+.bookshelf-preview .reading-bookshelf__heading p:not(.section-kicker) {
+  margin-top: 1.1rem;
+  font-size: 1rem;
+}
+
+.bookshelf-preview .reading-bookshelf__add {
+  min-height: 2.9rem;
+  padding-inline: 1.05rem;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: none;
+}
+
+.bookshelf-preview .reading-bookshelf__add:hover {
+  background: var(--accent-dark);
+}
+
+.bookshelf-preview__header a,
+.bookshelf-details .continue-reading-card > button,
+.bookshelf-lower .status-shelf__restore {
+  min-height: 3rem;
+}
+
+.bookshelf-layout {
+  grid-template-columns: minmax(0, 1.45fr) minmax(19rem, 0.55fr);
+  grid-template-areas: 'stage details';
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 6.5rem);
+  min-height: min(45rem, calc(100dvh - 8rem));
+  padding-block: clamp(2rem, 4vw, 4.5rem);
+}
+
+.bookshelf-layout .bookshelf-stage {
+  grid-area: stage;
+  position: relative;
+  top: auto;
+}
+
+.bookshelf-layout .bookshelf-stage::before {
+  position: absolute;
+  z-index: 0;
+  inset: 12% 6% 8%;
+  background: radial-gradient(ellipse at center, rgb(192 142 105 / 14%), transparent 68%);
+  content: '';
+  pointer-events: none;
+}
+
+.bookshelf-layout .three-bookshelf {
+  z-index: 1;
+  height: clamp(30rem, 58vw, 40rem);
+}
+
+.bookshelf-layout .three-bookshelf__note {
+  margin-top: -1rem;
+  text-align: center;
+}
+
+.bookshelf-details {
+  grid-area: details;
+  align-content: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.quote-banner {
+  position: relative;
+  border: 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 1.4rem 0 1.2rem;
+}
+
+.quote-banner::before {
+  position: absolute;
+  top: 1rem;
+  right: 0;
+  color: rgb(181 92 62 / 18%);
+  content: '“';
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 5rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.quote-banner .section-kicker {
+  margin-bottom: 1.3rem;
+}
+
+.quote-banner blockquote {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(1.2rem, 1.9vw, 1.55rem);
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.quote-banner button {
+  min-height: 2.8rem;
+  margin-top: 1.3rem;
+  padding-top: 0.9rem;
+}
+
+.bookshelf-details .continue-reading-card {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.6rem 1.2rem;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--ink);
+  background: transparent;
+  padding: 1.4rem 0 0;
+  box-shadow: none;
+}
+
+.bookshelf-details .continue-reading-card::after {
+  display: none;
+}
+
+.bookshelf-details .continue-reading-card__book {
+  grid-row: 1 / 3;
+}
+
+.bookshelf-details .continue-reading-card > div:nth-child(2) {
+  min-width: 0;
+}
+
+.bookshelf-details .continue-reading-card h2 {
+  font-size: clamp(1.35rem, 2vw, 1.65rem);
+  text-wrap: balance;
+  word-break: keep-all;
+}
+
+.bookshelf-details .continue-reading-card > button {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: 0.5rem;
+}
+
+.bookshelf-details .continue-reading-card__impression {
+  white-space: normal;
+}
+
+.bookshelf-lower {
+  display: grid;
+  grid-template-columns: minmax(22rem, 0.75fr) minmax(0, 1.25fr);
+  align-items: start;
+  gap: clamp(3rem, 7vw, 7rem);
+  border-top: 1px solid var(--ink);
+  padding-block: clamp(2rem, 4vw, 4rem) clamp(4rem, 7vw, 7rem);
+}
+
+.bookshelf-lower .reading-activity-calendar {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.bookshelf-lower .reading-activity-calendar__header h2 {
+  font-size: clamp(1.45rem, 2.4vw, 2rem);
+}
+
+.bookshelf-lower .reading-activity-calendar__body {
+  margin-top: 1.5rem;
+}
+
+.bookshelf-lower .status-shelves {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0;
+}
+
+.bookshelf-lower .status-shelf {
+  border: 0;
+  border-top: 0.35rem solid var(--wood);
+  background: transparent;
+  padding: 1rem 0 0;
+}
+
+.bookshelf-lower .status-shelf--archive {
+  border-top-color: #6c8795;
+}
+
+.bookshelf-lower .status-shelf__item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bookshelf-lower .status-shelf__restore {
+  justify-self: start;
+  padding-inline: 0.2rem;
+}
+
+@media (max-width: 900px) {
+  .bookshelf-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'details'
+      'stage';
+    gap: 2.5rem;
+    min-height: 0;
+    padding-block: 2rem 4rem;
+  }
+
+  .bookshelf-layout .three-bookshelf {
+    height: clamp(24rem, 65dvh, 34rem);
+  }
+
+  .bookshelf-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 2rem;
+  }
+
+  .bookshelf-lower {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .bookshelf-preview .reading-bookshelf__heading {
+    align-items: flex-start;
+  }
+
+  .bookshelf-layout .three-bookshelf {
+    height: 22rem;
+  }
+
+  .bookshelf-preview .reading-bookshelf__heading h1 {
+    font-size: clamp(2.6rem, 15vw, 4rem);
+  }
+
+  .bookshelf-details,
+  .bookshelf-lower .status-shelves {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bookshelf-details .continue-reading-card {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
   }
 }
