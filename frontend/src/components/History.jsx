@@ -62,20 +62,35 @@ function History() {
   }, [dedupedSessions, favoritesOnly, languageFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE))
-  const pageItems = filteredItems.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+  // 즐겨찾기 해제 등으로 filteredItems가 줄어들면 totalPages도 줄어드는데, page state는 그대로 남아있어
+  // "존재하지 않는 페이지"를 가리킬 수 있었다(빈 화면 + 못 돌아옴, 2026-07-27 코드리뷰) — 매번 유효 범위로
+  // 보정해서 쓴다. setPage로 state 자체를 리셋하지 않는 이유: 렌더 도중 setState를 부르면 추가 렌더가
+  // 생기니, 파생값 계산만으로 끝내는 쪽이 더 단순하다
+  const safePage = Math.min(page, totalPages)
+  const pageItems = filteredItems.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
 
   function updateFilter(setter, value) {
     setter(value)
     setPage(1) // 필터가 바뀌면 결과 집합이 달라지므로 1페이지로 되돌린다
   }
 
-  // 성공 후에만 다시 불러온다(낙관적 업데이트 없음) — Result.jsx의 handleToggleFavorite와 같은 방식
+  const [favoriteError, setFavoriteError] = useState(null)
+
+  // 성공 후에만 다시 불러온다(낙관적 업데이트 없음) — Result.jsx의 handleToggleFavorite와 같은 방식.
+  // IssueCard가 이 함수를 await 없이 호출하므로, 실패를 여기서 안 잡으면 unhandled rejection으로
+  // 조용히 묻히고 별만 안 바뀐 채 아무 안내도 없었다(2026-07-27 코드리뷰 발견)
   async function handleToggleFavorite(item) {
-    if (item.isFavorited) {
-      await removeFavorite(githubId, item.repoFullName, item.issueNumber)
-    } else {
-      await addFavorite(githubId, item.repoFullName, item.issueNumber)
+    try {
+      if (item.isFavorited) {
+        await removeFavorite(githubId, item.repoFullName, item.issueNumber)
+      } else {
+        await addFavorite(githubId, item.repoFullName, item.issueNumber)
+      }
+    } catch (error) {
+      setFavoriteError(error)
+      return
     }
+    setFavoriteError(null)
     refetch()
   }
 
@@ -156,6 +171,8 @@ function History() {
         )}
       </div>
 
+      {favoriteError && <p className="r-refetch-error">{favoriteError.message}</p>}
+
       {filteredItems.length === 0 && (
         <div className="panel">
           <p className="lead">
@@ -178,19 +195,19 @@ function History() {
           <button
             type="button"
             className="btn btn-soft"
-            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={page === 1}
+            onClick={() => setPage(Math.max(1, safePage - 1))}
+            disabled={safePage === 1}
           >
             이전
           </button>
           <span className="h-pagination-label">
-            {page} / {totalPages}
+            {safePage} / {totalPages}
           </span>
           <button
             type="button"
             className="btn btn-soft"
-            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={page === totalPages}
+            onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+            disabled={safePage === totalPages}
           >
             다음
           </button>

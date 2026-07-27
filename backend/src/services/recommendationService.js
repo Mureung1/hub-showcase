@@ -252,6 +252,14 @@ async function getSeenIssueKeys(githubId) {
     return new Set(seenItems.map((item) => `${item.repoFullName}#${item.issueNumber}`));
 }
 
+// 재추천 다양화 정렬 규칙 — matchScore가 1순위(화면에 그대로 노출되므로 점수보다 다양화를 우선하면
+// "정렬이 안 맞는다"로 보임), isSeen(안 본 이슈 우선)은 동점일 때만 적용되는 타이브레이커.
+// 1차 정렬(candidateItems)과 LLM 재순위 후 재정렬(rerankTopItems) 두 곳에서 똑같이 써야 해서
+// 하나로 뽑아둔다 — 따로 두면 한쪽만 고쳤을 때 조용히 어긋난다(2026-07-27 코드리뷰 발견)
+function compareForDiversification(a, b) {
+    return b.matchScore - a.matchScore || (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.repoStars - a.repoStars;
+}
+
 // 동점 구간만 언어별 라운드로빈으로 재배치 (스타 tie-break만 쓰면 TS 등 인플레 생태계가 독식)
 // 입력은 (matchScore desc, repoStars desc) 정렬 전제
 function interleaveEqualScores(items) {
@@ -312,10 +320,8 @@ async function rerankTopItems(items, analysis) {
         return { ...item, matchScore: Math.min(100, Math.max(0, item.matchScore + result.adjustment)), reason: result.reason };
     });
 
-    // 점수가 바뀌었으니 동점 그룹도 달라진다 — 정렬·언어 인터리브를 재적용.
-    // 여기도 matchScore가 1순위, isSeen은 동점 타이브레이커로만 적용해 위 1차 정렬과 규칙을 맞춘다
-    reranked.sort((a, b) =>
-        b.matchScore - a.matchScore || (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.repoStars - a.repoStars);
+    // 점수가 바뀌었으니 동점 그룹도 달라진다 — 정렬·언어 인터리브를 재적용
+    reranked.sort(compareForDiversification);
     return interleaveEqualScores(reranked).map((item, index) => ({ ...item, position: index }));
 }
 
@@ -461,6 +467,12 @@ export async function createRecommendation(githubId, preferences) {
     // 분석 이력 없으면 getAnalysis가 404(ANALYSIS_NOT_FOUND) 던짐
     const analysis = await getAnalysis(githubId);
 
+    // 알려진 한계(2026-07-27 코드리뷰 발견, 의도적으로 미수정): 이 확인과 아래 prisma.recommendation.create
+    // 사이에 GitHub/LLM 호출(수 초)이 끼어 있어 "확인 후 실행" 경쟁 조건이 있다 — 같은 githubId+조건 요청이
+    // 그 시간差 안에 동시에 들어오면 상한(3회)을 넘겨 저장될 수 있다. DB advisory lock으로 완전히 막을 수
+    // 있지만 GitHub/LLM 호출 내내 커넥션을 붙잡아야 해서 비용이 크고, 정상 경로(같은 탭)에서는 프론트가
+    // 이미 재검색 버튼을 disabled 처리해 중복 요청 자체가 안 나가므로(Result.jsx) 멀티탭/직접 API 호출
+    // 같은 드문 경우에만 해당한다. 소프트 캡이라 이 정도 위험은 감수하기로 함
     const sameConditionToday = await findTodaysSameConditionRecommendations(analysis.githubId, preferences);
     if (sameConditionToday.length >= DAILY_RECOMMENDATION_LIMIT) {
         logger.info('재추천 상한 도달 — 새로 계산하지 않고 오늘 마지막 결과를 그대로 반환', {
@@ -471,8 +483,12 @@ export async function createRecommendation(githubId, preferences) {
         return toRecommendationResponse(sameConditionToday[0], { isFavoritedByKey });
     }
 
-    const seenKeys = await getSeenIssueKeys(analysis.githubId);
-    const isFavoritedByKey = await getFavoriteKeys(analysis.githubId);
+    // 서로 다른 테이블(RecommendationItem/Favorite)을 조회하는 독립 쿼리라 순서대로 기다릴 이유가 없다
+    // — 둘 다 동시에 시작해서 느린 쪽 하나만큼만 기다리면 된다(2026-07-27 코드리뷰 발견)
+    const [seenKeys, isFavoritedByKey] = await Promise.all([
+        getSeenIssueKeys(analysis.githubId),
+        getFavoriteKeys(analysis.githubId),
+    ]);
     const candidateNames = await collectCandidateRepos(preferences);
     const repos = await fetchReposWithIssues(candidateNames, DIFFICULTY_ISSUE_LABELS[preferences.difficulty]);
     cacheReposAndIssues(repos);
@@ -504,12 +520,8 @@ export async function createRecommendation(githubId, preferences) {
             });
         }
     }
-    // 재추천 다양화: 매칭 점수가 여전히 1순위 정렬 기준이다(화면에 "매칭 점수 N점"으로 그대로 노출되므로,
-    // 점수보다 다양화를 우선하면 사용자 눈에는 "정렬이 안 맞는다"로 보인다). 안 본 이슈 우선은 동점일 때만
-    // 적용되는 타이브레이커로 둬서, 같은 점수대 안에서만 새 이슈가 먼저 오게 한다.
     // 완전히 제외하지 않는 이유: 후보가 적으면(mock처럼) 안 본 이슈가 부족해도 빈 결과 대신 이전 이슈로 자연스럽게 채워지게 하기 위함
-    items.sort((a, b) =>
-        b.matchScore - a.matchScore || (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.repoStars - a.repoStars);
+    items.sort(compareForDiversification);
     const trimmedItems = interleaveEqualScores(items).slice(0, MAX_ITEMS);
     const rerankedItems = await rerankTopItems(trimmedItems, analysis);
     const isNewByKey = new Map(

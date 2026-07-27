@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Navigate, useOutletContext } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { createRecommendation, addFavorite, removeFavorite } from '../api/index.js'
@@ -16,14 +17,24 @@ function Result() {
     onSuccess: (next) => setRecommendation(next),
   })
 
-  // 즐겨찾기 토글 — API 성공 후에만 화면 상태(recommendation.items)를 갱신한다(낙관적 업데이트 없음)
+  const [favoriteError, setFavoriteError] = useState(null)
+
+  // 즐겨찾기 토글 — API 성공 후에만 화면 상태(recommendation.items)를 갱신한다(낙관적 업데이트 없음).
+  // IssueCard가 이 함수를 await 없이 호출하므로, 여기서 실패를 안 잡으면 콘솔에 unhandled rejection만
+  // 남고 화면엔 아무 표시도 안 된 채 별만 조용히 안 바뀌었다(2026-07-27 코드리뷰 발견)
   async function handleToggleFavorite(item) {
     const { githubId } = recommendation
-    if (item.isFavorited) {
-      await removeFavorite(githubId, item.repoFullName, item.issueNumber)
-    } else {
-      await addFavorite(githubId, item.repoFullName, item.issueNumber)
+    try {
+      if (item.isFavorited) {
+        await removeFavorite(githubId, item.repoFullName, item.issueNumber)
+      } else {
+        await addFavorite(githubId, item.repoFullName, item.issueNumber)
+      }
+    } catch (error) {
+      setFavoriteError(error)
+      return
     }
+    setFavoriteError(null)
     setRecommendation({
       ...recommendation,
       items: recommendation.items.map((existing) =>
@@ -77,6 +88,7 @@ function Result() {
       </div>
 
       {refetchError && <p className="r-refetch-error">{refetchError.message}</p>}
+      {favoriteError && <p className="r-refetch-error">{favoriteError.message}</p>}
 
       {isRefetching && (
         <div className="panel">
