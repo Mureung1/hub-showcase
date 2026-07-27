@@ -9,7 +9,11 @@ describe('structured file adapter 브라우저 호환성', () => {
 
   it('Node Buffer가 없는 브라우저에서도 CSV를 분석한다', async () => {
     const file = new File(
-      [['url,title', 'https://example.com/article,브라우저 CSV'].join('\n')],
+      [
+        ['url,title', 'https://example.com/article,"첫 줄\r\n둘째 줄"'].join(
+          '\r\n'
+        ),
+      ],
       'links.csv',
       { type: 'text/csv' }
     );
@@ -22,7 +26,7 @@ describe('structured file adapter 브라우저 호환성', () => {
     ).resolves.toEqual([
       expect.objectContaining({
         originalUrl: 'https://example.com/article',
-        titleCandidate: '브라우저 CSV',
+        titleCandidate: '첫 줄\n둘째 줄',
       }),
     ]);
   });
