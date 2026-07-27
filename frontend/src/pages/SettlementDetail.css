@@ -1,0 +1,12 @@
+.settlement-member-note {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  margin: 0;
+}
+
+.settlement-member-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-inline-gap);
+  flex-shrink: 0;
+}

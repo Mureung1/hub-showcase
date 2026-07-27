@@ -346,14 +346,14 @@
 - `transferLink`는 토스/카카오페이 딥링크 URL이며, 정확한 스킴/파라미터는 아직 미확정(하단 TODO 참고). 현재는 플레이스홀더 포맷으로 표기.
 - 카카오톡 공유(정산 요청 메시지 전송)는 FE에서 카카오 SDK를 직접 호출하는 방식으로, 별도 BE 엔드포인트 없음(`3. 파티원`의 초대 링크 공유와 동일한 패턴).
 - 정산은 별도 목록 페이지 없이 구독 상세 화면의 정산 카드로 접근한다. 구독 목록/전환은 기존 `GET /api/subscriptions`(2. 구독 서비스)를 그대로 쓰고, 상세 진입 후에는 `GET /api/subscriptions/:id/settlements`로 해당 구독의 월별 이력을 불러온다.
-- 파티원은 `reportedAt`으로 "정산완료" 셀프 신고를 할 수 있다(낮은 신뢰도 — `status`는 바뀌지 않음). 파티장은 신고를 보고 실제 확인 후 기존 상태 변경 엔드포인트로 **수락**(`status: "done"`) 또는 **거절**(`status: "pending"`)한다 — 어느 쪽이든 처리 시 `reportedAt`은 `null`로 초기화되어 안내가 사라지고, 거절된 파티원은 다시 신고할 수 있다.
+- 파티원은 `reportedAt`으로 이체 확인 요청을 할 수 있다(낮은 신뢰도 — `status`는 바뀌지 않음). 파티장은 요청을 보고 실제 확인 후 기존 상태 변경 엔드포인트로 **수락**(`status: "done"`) 또는 **거절**(`status: "pending"`)한다 — 어느 쪽이든 처리 시 `reportedAt`은 `null`로 초기화되어 안내가 사라지고, 거절된 파티원은 다시 요청할 수 있다.
 
 | Method | Path | 설명 | 인증 |
 | --- | --- | --- | --- |
 | POST | `/api/subscriptions/:id/settlements` | 정산 생성(정산 요청 시작) | ✓ (파티장) |
 | GET | `/api/subscriptions/:id/settlements` | 정산 이력 목록 조회(구독 하나) | ✓ |
 | GET | `/api/subscriptions/:id/settlements/:settlementId` | 정산 상세 조회 | ✓ |
-| POST | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId/report` | 정산완료 셀프 신고 | ✓ (본인) |
+| POST | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId/report` | 이체 확인 요청 | ✓ (본인) |
 | PATCH | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId` | 파티원 정산 상태 변경(수락/거절) | ✓ (파티장) |
 
 ### 정산 생성: `POST /api/subscriptions/:id/settlements`
@@ -393,7 +393,7 @@
 ### 정산 이력 목록 조회: `GET /api/subscriptions/:id/settlements`
 
 - **파티장이면 무조건**, 파티원이면 **현재 `PartyMember`인 경우에만** 조회 가능(내보내진 파티원 본인은 즉시 조회 불가 — 단, 파티장 화면에는 그 사람의 과거 항목이 계속 보임).
-- `role: "owner"`면 각 정산의 `memberCount`/`doneCount` 요약을 반환. `role: "member"`면 각 정산에서 본인의 `amount`/`status`만 반환(다른 파티원 정보 제외) — 구독 상세 페이지의 정산 카드가 "지난 이력" 섹션을 채울 때 이 응답을 그대로 쓴다.
+- `role: "owner"`면 각 정산의 `memberCount`/`doneCount` 요약을 반환. `role: "member"`면 각 정산에서 본인의 `amount`/`status`/`reportedAt`/`settlementMemberId`/`transferLink`만 반환(다른 파티원 정보 제외) — 구독 상세 페이지의 정산 카드가 "지난 이력" 섹션을 채우고, 가장 최근 항목이 `pending`이면 그 자리에서 바로 이체·이체 확인 요청까지 할 수 있게 이 응답을 그대로 쓴다. `myReportedAt`은 목록에서도 대기/확인 대기중/확인 완료 3단계 상태를 구분해 보여주기 위한 필드. `mySettlementMemberId`/`myTransferLink`는 구독 상세에서 `GET .../settlements/:settlementId` 상세 조회 없이 바로 `POST .../report`를 호출하거나 토스 딥링크로 이동할 수 있게 하기 위한 필드.
 - 월별 이력을 최신순으로 반환.
 
 **Response `200`** (파티장 예시)
@@ -412,8 +412,8 @@
 ```json
 {
   "items": [
-    { "id": "settlement_7", "billingMonth": "2026-07", "myAmount": 3225, "myStatus": "pending", "createdAt": "2026-07-03T00:00:00.000Z" },
-    { "id": "settlement_6", "billingMonth": "2026-06", "myAmount": 3225, "myStatus": "done", "createdAt": "2026-06-03T00:00:00.000Z" }
+    { "id": "settlement_7", "billingMonth": "2026-07", "myAmount": 3225, "myStatus": "pending", "myReportedAt": null, "mySettlementMemberId": "sm_10", "myTransferLink": "supertoss://send?amount=3225&bank=국민은행&accountno=12345678901234", "createdAt": "2026-07-03T00:00:00.000Z" },
+    { "id": "settlement_6", "billingMonth": "2026-06", "myAmount": 3225, "myStatus": "done", "myReportedAt": null, "mySettlementMemberId": "sm_9", "myTransferLink": "supertoss://send?amount=3225&bank=국민은행&accountno=12345678901234", "createdAt": "2026-06-03T00:00:00.000Z" }
   ]
 }
 ```
@@ -426,7 +426,7 @@
 
 - **파티장이면 무조건** 조회 가능(내보낸 파티원의 과거 항목 포함). 파티원이면 **현재 `PartyMember`이고 본인이 그 정산에 참여했던 경우에만** 조회 가능 — 내보내진 파티원 본인은 즉시 조회 불가.
 - `role`이 `"owner"`이면 전체 파티원의 정산 항목(`members`)을 반환하며, FE는 파티원별 상태 리스트 + "카카오톡으로 정산 요청 공유" 버튼을 보여준다.
-- `role`이 `"member"`이면 본인 항목 하나만 담긴 배열을 반환하고 `transferLink`도 포함한다. FE는 다른 파티원 목록을 보여주지 않고 본인 상태(대기중/완료)만 보여주며, 카카오톡 공유 버튼 대신 "토스로 이체하기"(`transferLink`) 버튼을 놓는다. 지난 이력은 같은 화면에서 `GET /api/subscriptions/:id/settlements`(본인 항목만)를 추가로 호출해 채운다.
+- `role`이 `"member"`이면 본인 항목 하나만 담긴 배열을 반환하고 `transferLink`도 포함한다. FE는 다른 파티원 목록을 보여주지 않고 본인 상태(대기중/완료)만 보여주며, 카카오톡 공유 버튼 대신 "토스로 이체하기"(`transferLink`) 버튼을 놓는다. 파티원의 일반적인 이체·이체 확인 요청 동선은 구독 상세 화면에 인라인으로 옮겨졌고(`GET .../settlements` 응답의 `myTransferLink`/`mySettlementMemberId` 사용), 이 엔드포인트의 member 응답은 주로 파티장이 "카카오톡으로 정산 요청" 버튼으로 공유한 링크를 파티원이 열었을 때(딥링크 진입) 쓰인다.
 
 **Response `200`** (파티장 예시)
 
@@ -444,16 +444,40 @@
 }
 ```
 
-- `sm_2`처럼 `status: "pending"`인데 `reportedAt`이 있으면 파티원이 셀프 신고한 상태 — FE는 이 신호로 파티장에게 확인 요청 안내를 보여줄 수 있다.
+- `sm_2`처럼 `status: "pending"`인데 `reportedAt`이 있으면 파티원이 이체 확인을 요청한 상태 — FE는 이 신호로 파티장에게 확인 요청 안내를 보여줄 수 있다.
+
+**Response `200`** (파티원 예시 — 본인 항목만)
+
+```json
+{
+  "id": "settlement_1",
+  "subscriptionId": "sub_1",
+  "billingMonth": "2026-07",
+  "role": "member",
+  "members": [
+    {
+      "id": "sm_2",
+      "userId": "user_3",
+      "name": "이영희",
+      "amount": 4250,
+      "status": "pending",
+      "doneAt": null,
+      "reportedAt": "2026-07-16T08:00:00.000Z",
+      "transferLink": "supertoss://send?amount=4250&bank=국민은행&accountno=123456-78-901234"
+    }
+  ],
+  "createdAt": "2026-07-15T00:00:00.000Z"
+}
+```
 
 **Error `403`**: 파티장도 아니고 현재 파티원도 아닌 사용자의 접근
 
 **Error `404`**: 존재하지 않는 정산
 
-### 정산완료 셀프 신고: `POST /api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId/report`
+### 이체 확인 요청: `POST /api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId/report`
 
 - 파티원 본인 전용 — `:settlementMemberId`의 `SettlementMember.userId`가 요청자와 일치해야 한다.
-- `reportedAt`을 현재 시각으로 설정한다(이미 설정돼 있어도 최신 시각으로 덮어씀 — 거절된 뒤 재신고하는 경우 포함). `status`는 변경하지 않는다.
+- `reportedAt`을 현재 시각으로 설정한다(이미 설정돼 있어도 최신 시각으로 덮어씀 — 거절된 뒤 재요청하는 경우 포함). `status`는 변경하지 않는다.
 - 최종 확정 권한은 여전히 파티장에게만 있다 — 이 호출은 파티장에게 "확인해보세요" 안내를 띄우는 용도일 뿐이다.
 
 **Response `200`**
@@ -468,12 +492,12 @@
 
 **Error `404`**: 존재하지 않는 정산 또는 파티원 항목
 
-**Error `409`**: 이미 `"done"`으로 처리된 항목 — 이미 파티장이 확정한 항목은 신고할 필요가 없음
+**Error `409`**: 이미 `"done"`으로 처리된 항목 — 이미 파티장이 확정한 항목은 요청할 필요가 없음
 
 ### 파티원 정산 상태 변경: `PATCH /api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId`
 
-- 파티장 전용. 파티원의 신고(`reportedAt`)를 확인한 뒤 실제로 입금됐으면 **수락**(`status: "done"`), 아니었으면 **거절**(`status: "pending"`)한다. 신고가 없었어도 파티장이 육안으로 직접 확인하고 바로 `"done"`으로 바꾸는 것도 그대로 허용(신고는 필수 전제 조건이 아니라 보조 신호).
-- PATCH 호출 시(수락/거절 어느 쪽이든) `reportedAt`은 `null`로 초기화된다 — 신고를 확인 처리했다는 의미이며, 거절된 파티원은 다시 신고(`POST .../report`)할 수 있다.
+- 파티장 전용. 파티원의 확인 요청(`reportedAt`)를 확인한 뒤 실제로 입금됐으면 **수락**(`status: "done"`), 아니었으면 **거절**(`status: "pending"`)한다. 요청이 없었어도 파티장이 육안으로 직접 확인하고 바로 `"done"`으로 바꾸는 것도 그대로 허용(요청은 필수 전제 조건이 아니라 보조 신호).
+- PATCH 호출 시(수락/거절 어느 쪽이든) `reportedAt`은 `null`로 초기화된다 — 요청 확인 처리했다는 의미이며, 거절된 파티원은 다시 요청(`POST .../report`)할 수 있다.
 - `:settlementMemberId`는 `SettlementMember.id`(예: `sm_1`)이며, 파티원 목록의 `PartyMember.id`(`member_1`)와는 다른 값이다.
 
 **Request**

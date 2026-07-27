@@ -7,6 +7,7 @@ import SubscriptionForm from './pages/SubscriptionForm';
 import SubscriptionDetail from './pages/SubscriptionDetail';
 import SubscriptionEdit from './pages/SubscriptionEdit';
 import SubscriptionJoin from './pages/SubscriptionJoin';
+import SettlementDetail from './pages/SettlementDetail';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/subscriptions/new" element={<SubscriptionForm />} />
         <Route path="/subscriptions/:id" element={<SubscriptionDetail />} />
         <Route path="/subscriptions/:id/edit" element={<SubscriptionEdit />} />
+        <Route path="/subscriptions/:id/settlements/:settlementId" element={<SettlementDetail />} />
         <Route path="/join/:id" element={<SubscriptionJoin />} />
         <Route path="*" element={<NotFound />} />
       </Route>

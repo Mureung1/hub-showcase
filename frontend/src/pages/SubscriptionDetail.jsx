@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { deleteSubscription, getSubscription } from '../lib/subscriptions'
+import { getMembers, deleteMember } from '../lib/partyMembers'
+import {
+  billingMonthLabel,
+  createSettlement,
+  getSettlements,
+  reportSettlementMember,
+  settlementStatusLabel,
+  useTossQrCode,
+} from '../lib/settlements'
 import { getServiceColor } from '../lib/serviceColor'
 import RoleBadge from '../components/RoleBadge'
 import LoginRequired from '../components/LoginRequired'
@@ -16,6 +25,22 @@ const SubscriptionDetail = () => {
   const [copied, setCopied] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteErrorMessage, setDeleteErrorMessage] = useState('')
+  const [members, setMembers] = useState([])
+  const [membersStatus, setMembersStatus] = useState('idle')
+  const [memberToRemove, setMemberToRemove] = useState(null)
+  const [removeErrorMessage, setRemoveErrorMessage] = useState('')
+  const [settlements, setSettlements] = useState([])
+  const [settlementsStatus, setSettlementsStatus] = useState('idle')
+  const [createStatus, setCreateStatus] = useState('idle')
+  const [createErrorMessage, setCreateErrorMessage] = useState('')
+  const [reportStatus, setReportStatus] = useState('idle')
+  const [reportErrorMessage, setReportErrorMessage] = useState('')
+
+  const latestSettlement =
+    subscription && subscription.role !== 'owner' && settlements.length > 0 ? settlements[0] : null
+  const qrDataUrl = useTossQrCode(
+    latestSettlement?.myStatus === 'pending' ? latestSettlement.myTransferLink : null,
+  )
 
   const handleDelete = async () => {
     setDeleteErrorMessage('')
@@ -34,6 +59,17 @@ const SubscriptionDetail = () => {
       setTimeout(() => setCopied(false), 1500)
     } catch {
       // 클립보드 접근이 막힌 환경 — 화면에 보이는 링크 텍스트로 수동 복사 가능
+    }
+  }
+
+  const handleRemoveMember = async () => {
+    setRemoveErrorMessage('')
+    try {
+      await deleteMember(id, memberToRemove.id)
+      setMembers((prev) => prev.filter((member) => member.id !== memberToRemove.id))
+      setMemberToRemove(null)
+    } catch (error) {
+      setRemoveErrorMessage(error.message)
     }
   }
 
@@ -73,6 +109,58 @@ const SubscriptionDetail = () => {
         }
       })
   }, [id])
+
+  useEffect(() => {
+    if (status !== 'success' || subscription.role !== 'owner') return
+
+    getMembers(id)
+      .then((items) => {
+        setMembers(items)
+        setMembersStatus('success')
+      })
+      .catch(() => {
+        setMembersStatus('error')
+      })
+  }, [id, status, subscription?.role])
+
+  useEffect(() => {
+    if (status !== 'success') return
+
+    getSettlements(id)
+      .then((items) => {
+        setSettlements(items)
+        setSettlementsStatus('success')
+      })
+      .catch(() => {
+        setSettlementsStatus('error')
+      })
+  }, [id, status])
+
+  const handleCreateSettlement = async () => {
+    setCreateStatus('submitting')
+    setCreateErrorMessage('')
+    try {
+      const settlement = await createSettlement(id)
+      navigate(`/subscriptions/${id}/settlements/${settlement.id}`)
+    } catch (error) {
+      setCreateErrorMessage(error.message)
+      setCreateStatus('error')
+    }
+  }
+
+  const handleReport = async (settlementId, settlementMemberId) => {
+    setReportStatus('submitting')
+    setReportErrorMessage('')
+    try {
+      await reportSettlementMember(id, settlementId, settlementMemberId)
+      const items = await getSettlements(id)
+      setSettlements(items)
+      setReportStatus('idle')
+    } catch (error) {
+      setReportErrorMessage(error.message)
+      setReportStatus('error')
+    }
+  }
 
   let content
 
@@ -114,6 +202,125 @@ const SubscriptionDetail = () => {
             <span className="detail-label">내 몫</span>
             <span className="detail-value">{myAmount.toLocaleString()}원</span>
           </div>
+        </div>
+
+        {role === 'owner' && (
+          <div className="subscription-detail-card">
+            <p className="detail-section-title">파티원 ({members.length}명)</p>
+            {membersStatus === 'idle' && <p className="member-list-message">불러오는 중...</p>}
+            {membersStatus === 'error' && <p className="member-list-message">파티원 목록을 불러오지 못했어요.</p>}
+            {membersStatus === 'success' && members.length === 0 && (
+              <p className="member-list-message">아직 가입한 파티원이 없어요.</p>
+            )}
+            {membersStatus === 'success' && members.length > 0 && (
+              <ul className="member-list">
+                {members.map((member) => (
+                  <li key={member.id} className="member-list-item">
+                    <div className="member-info">
+                      <p className="member-name">{member.name}</p>
+                      <p className="member-joined-at">
+                        {new Date(member.joinedAt).toLocaleDateString()} 가입
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="member-remove-btn"
+                      onClick={() => setMemberToRemove(member)}
+                    >
+                      내보내기
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="subscription-detail-card">
+          {latestSettlement && (
+            <div className="settlement-current">
+              <div className="settlement-section-header">
+                <span className="detail-section-title">{billingMonthLabel(latestSettlement.billingMonth)} 정산</span>
+                <span className={`member-status ${latestSettlement.myStatus}`}>
+                  {settlementStatusLabel(latestSettlement.myStatus, latestSettlement.myReportedAt)}
+                </span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">정산 금액</span>
+                <span className="detail-value">{latestSettlement.myAmount.toLocaleString()}원</span>
+              </div>
+              {reportErrorMessage && <p className="form-error">{reportErrorMessage}</p>}
+              {latestSettlement.myStatus === 'pending' && (
+                <div className="settlement-current-actions">
+                  <a className="toss-transfer-btn" href={latestSettlement.myTransferLink}>
+                    토스로 이체하기
+                  </a>
+                  <button
+                    type="button"
+                    className="confirm-request-btn"
+                    disabled={reportStatus === 'submitting' || Boolean(latestSettlement.myReportedAt)}
+                    onClick={() => handleReport(latestSettlement.id, latestSettlement.mySettlementMemberId)}
+                  >
+                    {latestSettlement.myReportedAt ? '확인 요청 완료' : '이체 확인 요청'}
+                  </button>
+                </div>
+              )}
+              {latestSettlement.myStatus === 'pending' && qrDataUrl && (
+                <div className="settlement-transfer-qr">
+                  <img src={qrDataUrl} alt="토스 송금 QR코드" className="toss-transfer-qr" />
+                  <p className="settlement-transfer-fallback-message">
+                    QR코드를 스캔해서 토스로 이체할 수 있어요.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="settlement-section-header">
+            <p className="detail-section-title">정산 이력</p>
+            {role === 'owner' && (
+              <button
+                type="button"
+                className="settlement-start-btn"
+                onClick={handleCreateSettlement}
+                disabled={createStatus === 'submitting'}
+              >
+                {createStatus === 'submitting' ? '생성 중...' : '이번 달 정산 시작'}
+              </button>
+            )}
+          </div>
+          {createStatus === 'error' && <p className="form-error">{createErrorMessage}</p>}
+          {settlementsStatus === 'idle' && <p className="member-list-message">불러오는 중...</p>}
+          {settlementsStatus === 'error' && <p className="member-list-message">정산 이력을 불러오지 못했어요.</p>}
+          {settlementsStatus === 'success' && settlements.length === 0 && (
+            <p className="member-list-message">아직 정산 이력이 없어요.</p>
+          )}
+          {settlementsStatus === 'success' && settlements.length > 0 && (
+            <ul className="settlement-list">
+              {settlements.map((settlement) =>
+                role === 'owner' ? (
+                  <li key={settlement.id}>
+                    <Link to={`/subscriptions/${id}/settlements/${settlement.id}`} className="settlement-list-item">
+                      <span className="settlement-month">{billingMonthLabel(settlement.billingMonth)}</span>
+                      <span className="detail-value">
+                        {settlement.doneCount}/{settlement.memberCount}명 완료
+                      </span>
+                    </Link>
+                  </li>
+                ) : (
+                  <li key={settlement.id} className="settlement-list-item">
+                    <span className="settlement-month">{billingMonthLabel(settlement.billingMonth)}</span>
+                    <span className="settlement-my-summary">
+                      <span className="detail-value">{settlement.myAmount.toLocaleString()}원</span>
+                      <span className={`member-status ${settlement.myStatus}`}>
+                        {settlementStatusLabel(settlement.myStatus, settlement.myReportedAt)}
+                      </span>
+                    </span>
+                  </li>
+                ),
+              )}
+            </ul>
+          )}
         </div>
 
         {role === 'owner' && (
@@ -179,6 +386,18 @@ const SubscriptionDetail = () => {
           errorMessage={deleteErrorMessage}
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+      {memberToRemove && (
+        <ConfirmDialog
+          message={`${memberToRemove.name}님을 파티에서 내보낼까요?`}
+          confirmLabel="내보내기"
+          errorMessage={removeErrorMessage}
+          onConfirm={handleRemoveMember}
+          onCancel={() => {
+            setMemberToRemove(null)
+            setRemoveErrorMessage('')
+          }}
         />
       )}
     </div>
