@@ -331,7 +331,7 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
         expect(res.body.error.code).toBe('RECOMMENDATION_LIMIT_EXCEEDED');
     });
 
-    it('이전에 추천된 이슈보다 규칙 점수가 낮아도 새 이슈를 우선 배치한다', async () => {
+    it('매칭 점수가 같은 이슈들 사이에서는 안 본 이슈를 먼저 배치한다 (점수 자체는 항상 1순위 정렬 기준)', async () => {
         // 1차: 이슈 101(good first issue, easy 일치 → 규칙 점수 높음) 하나만 후보로 줘서 "이미 본 이슈"로 만든다
         fetchReposWithIssues.mockResolvedValueOnce([
             {
@@ -354,7 +354,7 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
         expect(first.status).toBe(200);
         createdRecommendationIds.push(first.body.id);
 
-        // 2차: 이슈 101(이미 본 이슈, 규칙 점수 높음)과 이슈 102(라벨 없음 → hard 판정, 규칙 점수 낮음)를 함께 후보로 준다
+        // 2차: 이슈 101(이미 본 이슈)과 이슈 102(새 이슈) 둘 다 라벨이 같아(good first issue) 규칙 점수가 동점이다
         fetchReposWithIssues.mockResolvedValueOnce([
             {
                 fullName: MOCK_REPO_FULL_NAME,
@@ -369,7 +369,7 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
                 pushedAt: new Date().toISOString(),
                 issues: [
                     { number: 101, title: 'seen issue', url: 'https://github.com/octocat/Hello-World/issues/101', labels: ['good first issue'] },
-                    { number: 102, title: 'new issue', url: 'https://github.com/octocat/Hello-World/issues/102', labels: [] },
+                    { number: 102, title: 'new issue', url: 'https://github.com/octocat/Hello-World/issues/102', labels: ['good first issue'] },
                 ],
             },
         ]);
@@ -377,7 +377,8 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
         expect(second.status).toBe(200);
         createdRecommendationIds.push(second.body.id);
 
-        // 규칙 점수만 보면 101이 102보다 훨씬 높지만, 101은 이미 본 이슈라 뒤로 밀리고 새 이슈 102가 먼저 나온다
+        // 동점이라 점수만으로는 순서가 안 갈리지만, 새 이슈 102가 타이브레이커로 먼저 나온다
+        expect(second.body.items[0].matchScore).toBe(second.body.items[1].matchScore);
         expect(second.body.items[0].issueNumber).toBe(102);
 
         // isNew로도 신규/기존 이슈를 구분할 수 있어야 한다 (POST 응답 전용 필드)
@@ -390,6 +391,55 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
         // GET 재조회 응답에는 isNew가 포함되지 않는다 (생성 시점 스냅샷일 뿐 재조회 때마다 계산하지 않음)
         const refetched = await request(app).get(`/api/recommendations/${second.body.id}`);
         expect(refetched.body.items[0].isNew).toBeUndefined();
+    });
+
+    it('규칙 점수가 다르면 안 본 이슈라도 점수 순서를 뒤집지 않는다 (다양화가 매칭 점수 정렬을 깨면 안 됨)', async () => {
+        // 1차: 이슈 201(good first issue, 규칙 점수 높음) 하나만 후보로 줘서 "이미 본 이슈"로 만든다
+        fetchReposWithIssues.mockResolvedValueOnce([
+            {
+                fullName: MOCK_REPO_FULL_NAME,
+                description: 'mock repo',
+                url: 'https://github.com/octocat/Hello-World',
+                stars: 500,
+                primaryLanguage: 'JavaScript',
+                languages: ['JavaScript'],
+                topics: [],
+                goodFirstIssueCount: 3,
+                helpWantedIssueCount: 1,
+                pushedAt: new Date().toISOString(),
+                issues: [
+                    { number: 201, title: 'seen, high score', url: 'https://github.com/octocat/Hello-World/issues/201', labels: ['good first issue'] },
+                ],
+            },
+        ]);
+        const first = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(first.body.id);
+
+        // 2차: 201(이미 본 이슈, 규칙 점수 높음)과 202(라벨 없음 → hard 판정, 규칙 점수 낮음, 새 이슈)를 함께 준다
+        fetchReposWithIssues.mockResolvedValueOnce([
+            {
+                fullName: MOCK_REPO_FULL_NAME,
+                description: 'mock repo',
+                url: 'https://github.com/octocat/Hello-World',
+                stars: 500,
+                primaryLanguage: 'JavaScript',
+                languages: ['JavaScript'],
+                topics: [],
+                goodFirstIssueCount: 3,
+                helpWantedIssueCount: 1,
+                pushedAt: new Date().toISOString(),
+                issues: [
+                    { number: 201, title: 'seen, high score', url: 'https://github.com/octocat/Hello-World/issues/201', labels: ['good first issue'] },
+                    { number: 202, title: 'new, low score', url: 'https://github.com/octocat/Hello-World/issues/202', labels: [] },
+                ],
+            },
+        ]);
+        const second = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+        createdRecommendationIds.push(second.body.id);
+
+        // 매칭 점수가 높은 201이 새 이슈(202)보다 항상 먼저 나와야 한다 — 목록이 화면에 "매칭 점수" 순으로 보이기 때문
+        expect(second.body.items[0].issueNumber).toBe(201);
+        expect(second.body.items[0].matchScore).toBeGreaterThan(second.body.items[1].matchScore);
     });
 
     it('조건(preferences)을 바꾼 요청은 동일 조건 상한과 무관하게 처리된다', async () => {

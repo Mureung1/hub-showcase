@@ -307,9 +307,9 @@ async function rerankTopItems(items, analysis) {
     });
 
     // 점수가 바뀌었으니 동점 그룹도 달라진다 — 정렬·언어 인터리브를 재적용.
-    // isSeen 우선순위도 여기서 다시 지켜야 한다 — 안 그러면 LLM 재순위가 다양화로 밀어둔 순서를 덮어써버린다
+    // 여기도 matchScore가 1순위, isSeen은 동점 타이브레이커로만 적용해 위 1차 정렬과 규칙을 맞춘다
     reranked.sort((a, b) =>
-        (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+        b.matchScore - a.matchScore || (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.repoStars - a.repoStars);
     return interleaveEqualScores(reranked).map((item, index) => ({ ...item, position: index }));
 }
 
@@ -490,11 +490,12 @@ export async function createRecommendation(githubId, preferences) {
             });
         }
     }
-    // 재추천 다양화: 안 본 이슈 그룹을 먼저 배치 → 그 안에서 기존처럼 점수·스타 정렬.
-    // 그룹으로 먼저 나누기 때문에 동점 인터리브도 같은 그룹 안에서만 일어나 안 본/본 이슈가 섞이지 않는다.
+    // 재추천 다양화: 매칭 점수가 여전히 1순위 정렬 기준이다(화면에 "매칭 점수 N점"으로 그대로 노출되므로,
+    // 점수보다 다양화를 우선하면 사용자 눈에는 "정렬이 안 맞는다"로 보인다). 안 본 이슈 우선은 동점일 때만
+    // 적용되는 타이브레이커로 둬서, 같은 점수대 안에서만 새 이슈가 먼저 오게 한다.
     // 완전히 제외하지 않는 이유: 후보가 적으면(mock처럼) 안 본 이슈가 부족해도 빈 결과 대신 이전 이슈로 자연스럽게 채워지게 하기 위함
     items.sort((a, b) =>
-        (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+        b.matchScore - a.matchScore || (a.isSeen === b.isSeen ? 0 : a.isSeen ? 1 : -1) || b.repoStars - a.repoStars);
     const trimmedItems = interleaveEqualScores(items).slice(0, MAX_ITEMS);
     const rerankedItems = await rerankTopItems(trimmedItems, analysis);
     const isNewByKey = new Map(
