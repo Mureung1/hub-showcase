@@ -3,6 +3,9 @@ package com.chasewar.parking.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo;
@@ -38,7 +41,7 @@ class ParkingLotLoadServiceIntegrationTest extends IntegrationTest {
         void success_initialLoad() {
             // given
             given(seoulParkingLotClient.fetchPage(anyInt(), anyInt()))
-                    .willReturn(responseWith("1000001", "1000002"));
+                    .willReturn(responseWith(2, "1000001", "1000002"));
 
             // when
             parkingLotLoadService.load();
@@ -52,7 +55,7 @@ class ParkingLotLoadServiceIntegrationTest extends IntegrationTest {
         void success_reload() {
             // given
             given(seoulParkingLotClient.fetchPage(anyInt(), anyInt()))
-                    .willReturn(responseWith("1000001", "1000002"));
+                    .willReturn(responseWith(2, "1000001", "1000002"));
 
             // when
             parkingLotLoadService.load();
@@ -61,16 +64,33 @@ class ParkingLotLoadServiceIntegrationTest extends IntegrationTest {
             // then
             assertThat(parkingLotRepository.findAll()).hasSize(2);
         }
+
+        @DisplayName("전체 행 수를 페이지 크기만큼 나누어 요청한다")
+        @Test
+        void success_pagingByPageSize() {
+            // given - 서울 공공 API가 전체 2189행이라고 응답
+            given(seoulParkingLotClient.fetchPage(anyInt(), anyInt()))
+                    .willReturn(responseWith(2189, "1000001", "1000002"));
+
+            // when
+            parkingLotLoadService.load();
+
+            // then
+            verify(seoulParkingLotClient, times(2)).fetchPage(1, 1000);
+            verify(seoulParkingLotClient).fetchPage(1001, 2000);
+            verify(seoulParkingLotClient).fetchPage(2001, 3000);
+            verifyNoMoreInteractions(seoulParkingLotClient);
+        }
     }
 
-    private SeoulParkingLotResponse responseWith(String... pkltCds) {
+    private SeoulParkingLotResponse responseWith(int totalCount, String... pkltCds) {
         List<Row> rows = List.of(
                 rowWithPkltCd(pkltCds[0]),
                 rowWithPkltCd(pkltCds[1])
         );
         Result result = new Result("INFO-000", "정상 처리되었습니다");
 
-        return new SeoulParkingLotResponse(new GetParkInfo(pkltCds.length, result, rows));
+        return new SeoulParkingLotResponse(new GetParkInfo(totalCount, result, rows));
     }
 
     private Row rowWithPkltCd(String pkltCd) {
