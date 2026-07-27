@@ -130,3 +130,40 @@
 - 문서 동기화: `docs/skills.md` S2 제약 문구와 `docs/checklist.md` C06을 "고정 8개 중 하나 **이거나 후보 소진 시 null**"로 수정해 `final` 종결 예외를 명시.
 - 검증: `npm run verify` 통과. 8개 tool 전부 rejectedTools에 넣고(시간 제약과 무관하게) 호출 → `proposedTool: null, final: true` 확인.
 - 확인: [x] 2026-07-26 22:22 GPT — 승인. 후보 소진 공통 null+final 종결, TOOLS 복원 제거 및 S2/C06 동기화 확인.
+
+## 2026-07-27 | T04 | Timer 새로고침 내구성
+- 작업: `app/page.js`에 새로고침 내구성 추가. 진행 상태(`step`/`currentIndex`/`microsteps`/`stepStartedAt`)를 바뀔 때마다 localStorage(`kok-session`)에 저장하고, 마운트 시 `useState` 초기값에서 바로 복원한다. "reason"/"proposal"(힘들어 루프 중) 상태는 재구성에 필요한 정보(reasonChip, 제안 내용)를 저장하지 않으므로 "focus"로 안전하게 되돌린다. `goHome()` 호출 시 저장된 값을 지운다. `app/components/FocusTimer.js`는 자체적으로 갖고 있던 `startedAt` state를 없애고 `page.js`의 `stepStartedAt`을 prop으로 받아 남은 시간을 재계산하도록 바꿔, 시작 시각을 두 군데서 따로 관리하던 걸 하나로 합쳤다.
+- 실제 구현 중 두 차례 하이드레이션 오류를 만나 수정함: (1) 마운트 이펙트 안에서 여러 `setState`를 연쇄 호출하는 방식은 이 프로젝트의 eslint 규칙(`react-hooks/set-state-in-effect`)에 위반돼 `npm run verify`가 실패 → localStorage 복원을 이펙트가 아니라 각 `useState`의 lazy initializer에서 바로 읽어오는 방식으로 변경. (2) 그렇게 하니 서버는 항상 "input"을 렌더링하는데 클라이언트는 마운트 즉시 복원된 화면(`timer` 등 완전히 다른 컴포넌트 트리)을 렌더링해 하이드레이션 불일치 오류가 실제 브라우저에서 재현됨 → `useSyncExternalStore`로 마운트 완료 여부를 판단해, 하이드레이션이 끝나기 전까진 무조건 "input"을 그리고 마운트 직후에만 복원된 화면(`effectiveStep`)으로 전환하도록 수정.
+- 검증: `npm run verify` 통과(lint+build). 이번 세션엔 브라우저 자동화 도구가 없어 새로고침 동작 자체는 사용자가 직접 dev 서버에서 확인함 — 타이머 도중 새로고침해도 화면이 유지되고 남은 시간이 실제 경과 시간만큼 정확히 줄어있음, 하이드레이션 오류 없음, 타이머 종료 후 다음 스텝/완료 화면 전이도 정상 확인. `docs/checklist.md` C04 2개 전부 체크, `docs/backlog.md` T04 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
+- 미결: 없음
+- 확인: [ ]
+
+## 2026-07-27 | T15 | 타이머 종료 시 완료 확인 + Agent 판단 연장
+- 작업: `app/api/timer-extend/route.js` 신규(S6) — `{currentStep, extendCount}`를 받아 Solar가 연장 분(1~25 정수)과 이유를 직접 판단해 반환, `suggest_break`과 같은 패턴(고정 계단이 아니라 모델이 직접 분 단위를 정함). `app/components/TimerConfirm.js` 신규 — 타이머 종료 시 뜨는 "이 스텝 다 끝났어?" 확인 화면. `app/page.js`의 `FocusTimer.onFinish`가 바로 완료 처리로 가지 않고 "timer-confirm" 화면을 거치도록 변경, "아니, 더 필요해" 선택 시 `/api/timer-extend`를 호출해 받은 분만큼 `stepStartedAt`을 재설정하고 타이머를 재시작한다. `extendCount`/`timerDurationMinutes`/`extendReason`은 다음 스텝으로 넘어갈 때(`advanceToNextStep`) 초기화. 연장 판단 이유는 `FocusTimer`에 캐릭터 위 말풍선(`SpeechBubble`, `BrainDumpInput`과 같은 위치)으로 표시 — 처음엔 시계 아래 텍스트로 뒀다가 사용자가 캐릭터에 가려져 안 보인다고 확인해줘서 위치를 바꿈. `docs/etc/component-tree.md`가 T08(이유칩/제안카드)·T04(새로고침 내구성) 반영이 안 된 채 낡아있던 걸 이번에 같이 최신화했다.
+- 검증: `npm run verify` 통과(lint+build). `/api/timer-extend`를 실제 Solar 호출로 직접 확인(정수 `extendMinutes`, 자연스러운 한국어 `reason` 반환). 화면 클릭 흐름(타이머 종료 → 확인 화면 → "다 했어"로 정상 완료 전이, "더 필요해"로 연장된 시간만큼 타이머 재시작 + 말풍선 표시)은 사용자가 직접 브라우저에서 확인. `docs/checklist.md` C15 3개 전부 체크, `docs/backlog.md` T15 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
+- 미결: 타이머 연장 도중 새로고침하면 연장된 시간(`timerDurationMinutes`)은 저장되지 않아 원래 예상 시간 기준으로 복원된다(C04/C15 어느 쪽에도 명시된 요구사항은 아니라 지금은 그대로 둠). T04·T15는 사용자 요청에 따라 GPT 리뷰를 한 번에 묶어 받을 예정(아직 리뷰 전).
+- 확인: [ ]
+
+## 2026-07-27 | T14 | Brain Dump 일정 확인 멀티턴
+- 작업: `app/api/brain-dump/route.js`에 `turn`(되물은 횟수)·`clarifications`(답변 목록) 입력을 추가하고, Solar가 마이크로스텝 분할과 동시에 "기한이 명확한지, 불명확하면 뭐라고 되물을지, 명확하면 오늘로부터 며칠 뒤인지"까지 한 번의 호출로 판단하게 확장했다. 기한이 불명확하고 아직 질문을 2번 안 했으면(`turn<2`) 저장하지 않고 `{microsteps: null, followUpQuestion}`을 반환, 이미 2번 물었으면(`turn>=2`) 더 묻지 않고 오늘 날짜로 강제 확정한다. `app/page.js`의 `handleSubmit`이 최초 제출과 되묻기 답변 제출을 모두 처리하도록 통합했고, `app/components/BrainDumpInput.js`는 캐릭터 말풍선 문구를 prop으로 받아 되묻는 질문으로 바꿀 수 있게 했다. 구현 중 발견한 문제도 반영: 확정된 기한이 전부 오늘 이후로 미뤄지면 `/api/steps`가 빈 목록을 반환해 미리보기 화면이 깨질 수 있어서, 이 경우 입력 화면에 안내 문구만 보여주고 진행하지 않도록 함. 추가로 사용자 피드백에 따라 입력 화면 기본 문구를 "잘 쓰려고 하지 말고 편하게 적어도 돼! ..."로 바꿔 부담을 줄였다.
+- 검증: `npm run verify` 통과(lint+build). `/api/brain-dump`를 실제 Solar 호출로 3가지 시나리오 확인 — 기한이 텍스트에 명확히 있으면 안 되묻고 바로 그 날짜로 저장, 기한이 없으면 되묻는 질문 반환(저장 안 함), 애매한 답변이 계속돼도 2번째 질문 이후(3번째 시도)엔 강제로 오늘 날짜 확정. 테스트로 만든 Notion 항목은 이후 archive 정리. 화면에서 실제로 되묻는 질문이 뜨고 답변 후 이어지는 것은 사용자가 직접 브라우저에서 확인. `docs/checklist.md` C14 3개 전부 체크, `docs/backlog.md` T14 완료로 변경.
+- 미결: 없음
+- 확인: [ ]
+
+## 2026-07-27 | 홈 버튼 추가 (등록된 Task 아님)
+- 작업: T14 테스트 중 사용자가 "화면을 벗어날 방법이 없다"고 지적해 반영. `app/components/HomeButton.js` 신규(왼쪽 위 고정 아이콘 버튼, 별도 아이콘 라이브러리 없이 인라인 SVG). input(되묻기 중일 때만)·preview·complete 화면에 추가했고, focus·timer·timer-confirm 화면은 사용자 요청대로 일부러 제외했다("할 일 하는 도중엔 이탈 유도 안 함"). 기존 `RestSuggestion`의 텍스트 버튼도 이 컴포넌트로 통일. `goHome()`이 T14 되묻기 상태(followUpQuestion 등)도 같이 지우도록 보완해, 홈으로 돌아온 뒤에도 되묻는 질문이 남아있지 않게 했다.
+- 검증: `npm run verify` 통과. 화면 배치와 클릭 동작은 사용자가 직접 확인.
+- 미결: 없음
+- 확인: [ ]
+
+## 2026-07-27 | T20 | 타이머 일시정지 + 재개 사유 기록
+- 작업: 사용자가 "타이머 도중 멈출 방법이 없다"고 지적해 이슈 #49로 신규 등록 후 구현. `app/components/FocusTimer.js`에 오른쪽 위 일시정지 버튼(onPause) 추가. `app/components/PauseScreen.js` 신규 — 이유를 선택적으로 적을 수 있는 입력창과 "다시 시작" 버튼. `app/page.js`는 일시정지 시각(`pausedAt`)을 기록해두고, 다시 시작하면 멈춘 시간만큼 `stepStartedAt`을 뒤로 밀어 남은 시간이 그대로 이어지게 했다(T04의 시작 시각 재계산 방식 재사용). `pauseCount`/`pauseReasons`는 스텝별로 쌓아뒀다가 완료 시 `/api/steps/complete`에 같이 보내고, 서버는 빈 이유를 걸러내고 Notion Steps DB의 신규 속성 `PauseCount`(Number)/`PauseReasons`(Text)에 기록한다. 일시정지 이유를 그 순간 Agent 판단에 반영할지 사용자와 논의했는데, 할 일과 무관한 외부 방해(전화 등)라 그 순간 제안할 tool이 없다고 판단해 순수 기록으로만 뒀고, 대신 나중에 T10처럼 개인화 참고 정보로 쓸 수 있다는 메모를 `docs/dev-plan.md` 백로그에 남겼다.
+- 검증: `npm run verify` 통과. `/api/steps/complete`를 실제 Notion 왕복으로 확인 — `pauseCount:2, pauseReasons:["전화 옴",""]` 전송 시 `PauseCount:2`, `PauseReasons:"전화 옴"`(빈 문자열 제외)으로 정확히 기록·조회됨. 테스트 데이터는 이후 archive 정리. 화면에서 일시정지→이유 입력→다시 시작→시간이 멈춘 만큼 빠지고 이어지는 것은 사용자가 직접 확인. `docs/checklist.md` C20 3개 전부 체크, `docs/backlog.md` T20 완료로 변경, 총 개수 표기(T01~T20) 갱신.
+- 미결: 없음
+- 확인: [ ]
+
+## 2026-07-27 | T19 | 오늘 마감까지 남은 시간 표시 + 연장 버튼
+- 작업: `app/page.js`의 `minutesUntilMidnight()`을 `minutesUntilDeadline(extraMinutes)`로 바꾸고, 연장 버튼으로 늘어난 분(`deadlineExtraMinutes`, 기본 0)을 더하도록 확장. `/api/struggle` 호출 시 `remainingTimeMinutes` 계산에도 그대로 반영해, T07의 재판단 게이트가 연장된 시간을 인식하게 했다. `app/components/OneFocusView.js`에 "지금 HH:MM · 오늘 마감까지 N시간 M분" 문구와 "+1시간" 버튼을 추가하고, 1초마다 갱신되는 자체 시계(`useEffect`+`setInterval`)를 붙였다. `goHome()`에서 `deadlineExtraMinutes`를 0으로 리셋.
+- 검증: `npm run verify` 통과(lint+build). 화면에서 시계가 실시간으로 도는 것과 "+1시간" 버튼을 누르면 남은 시간이 늘어나는 것은 사용자가 직접 확인. `docs/checklist.md` C19 2개 전부 체크, `docs/backlog.md` T19 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신(T14/T20/T19 반영).
+- 미결: `deadlineExtraMinutes`는 새로고침 시 리셋된다(T04 localStorage 세션에 포함 안 함) — C19에 명시된 요구사항은 아니라 지금은 그대로 둠.
+- 확인: [ ]

@@ -1,4 +1,5 @@
 import Character from "./Character";
+import HomeButton from "./HomeButton";
 
 // onBackHome: "홈 화면으로 돌아가기" 버튼 클릭 시 호출
 export default function RestSuggestion({ onBackHome }) {
@@ -27,21 +28,7 @@ export default function RestSuggestion({ onBackHome }) {
       />
       <h1 style={{ fontSize: "24px" }}>괜찮아, 잠깐 쉬어도 돼</h1>
 
-      <button
-        onClick={onBackHome}
-        style={{
-          padding: "12px 24px",
-          borderRadius: "100px",
-          border: "none",
-          background: "transparent",
-          color: "var(--ink-soft)",
-          fontFamily: "var(--font-body)",
-          fontSize: "14px",
-          cursor: "pointer",
-        }}
-      >
-        ← 홈 화면으로 돌아가기
-      </button>
+      <HomeButton onClick={onBackHome} />
       <Character closed />
     </main>
   );

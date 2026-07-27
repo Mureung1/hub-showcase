@@ -92,6 +92,16 @@ docs/instructions.md 절차에 따라 T04(Full Screen Timer 지속성)를 진행
 (시작 시각 기준 재계산) 고쳐줘.
 ```
 
+**T20 (타이머 일시정지 + 재개 사유 기록)** ※ 선행: T04
+
+```
+docs/instructions.md 절차에 따라 T20(타이머 일시정지 + 재개 사유 기록)을 진행해줘.
+완료 조건은 checklist.md C20, 계약은 skills.md S7이야.
+일시정지 버튼으로 카운트다운을 멈추고, 이유는 선택 입력, 다시 시작하면
+멈춘 시간만큼 제외하고 이어지게(stepStartedAt 재계산) 해줘. 완료 시
+pauseCount·pauseReasons를 Notion에 기록해줘. agent-design.md와는 무관해.
+```
+
 ## Phase 3 — Agent 루프 (Feat-4, 핵심)
 
 이 Phase는 [agent-design.md](agent-design.md)(동결된 설계)를 근거로 진행한다. 순서: T05 → T06 → T08(+T07) → T09 → T10.
