@@ -119,7 +119,8 @@
 - [ ] [P1] Lv4 진입 시 다음 단계 타이머와 카운트다운 종료
 - [ ] [P1] Home·History 초기 조회 실패 시 오류 UI와 재시도 제공
 - [x] [P1] Focus "멈추기" 중복 클릭 방지 — `handleComplete`와 동일한 패턴(`stopInFlightRef` + `isStopping` state, 버튼 `disabled`)을 `handleStop`에 적용. RTL 테스트(`sends only one stopped request for rapid repeated clicks`) 추가, 전체 프론트 테스트 186개 통과 확인 (2026-07-27, `src/components/FocusMode.jsx`/`.test.jsx`)
-- [ ] [P1] 할 일 등록 입력 검증·중복 제출 방지·오류 UI 보강
+- [x] [P1] 할 일 등록 입력 검증·중복 제출 방지·오류 UI 보강 — 프론트만 진행(서버 검증은 아래 별도 P1 후보로 분리). `validateTaskTitle`(기존 미연결 자산)을 `RegisterPage.jsx`에 연결, D-day 검증용 `validateDeadline`(`src/lib/validateDeadline.ts`)을 simple-tdd로 신규 작성(Red→Green, 빈 값/음수 방지, 0은 유효)해 함께 배선. `submitInFlightRef`+`isSubmitting` 가드로 연타 시 요청 1회만 발송(오늘 Focus 멈추기에 적용한 패턴과 동일). `handleSubmit`을 try/catch로 감싸 실패 시 에러 메시지 표시(`FocusMode.jsx`의 `errorMessage` 패턴 재사용). `RegisterPage.test.jsx` 신규 작성(4케이스: 제목/D-day 빈 값 차단, 연타 방지, API 실패 시 에러 UI), 전체 프론트 typecheck·테스트(20 files / 209 tests) 통과 확인 (2026-07-27)
+- [ ] [P1] 등록 API(`POST /api/tasks`)에 `invalid_*` 컨벤션 검증 없음 — 다른 라우트(avoidance-reasons, events, feedbacks)와 컨벤션 안 맞음, 프론트 검증만으로 정상 경로는 막혀있어 급하지 않음 (2026-07-27, 122행 작업 중 스코프에서 분리)
 - [ ] [P1] 서버 Task eventType allowlist 적용
 - [ ] [P1] `stopped` 이벤트 서버 멱등성 가드 없음 — skipCount 반토막 로직이 중복 요청 시 여러 번 실행됨, UI 가드로 실질 위험은 제거됐으나 서버 단 정합성 보강은 별도 이슈 (2026-07-27, Focus 멈추기 중복 클릭 방지 작업 중 발견)
 
@@ -170,7 +171,7 @@
 - [ ] [P1] Lv2 마이크로태스크의 회피 이유별 차별화 부족 — 위와 같은 2026-07-27 샘플링에서 발견. `발표/PT 준비` 유형은 overwhelm/dislike/temptation/custom 4개 이유의 결과가 사실상 같은 문장("첫 슬라이드에 발표 제목 한 줄 입력하기")으로 나온다. 프롬프트에 `LV2_REASON_STRATEGIES`(이유별 전략 문구)를 넣었는데도 유형이 강하게 결정되는 경우 이유가 묻힌다. plan.md 핵심 기능 ②("이유에 따라 개입 강도와 메시지 내용이 달라진다") 관점에서 남은 과제. 이것도 정규식 게이트로 잡을 성질이 아니라 프롬프트/평가 영역
 - [ ] 정리 필요 — 배포 전 전체 파일 구조 점검(2026-07-25) 중 발견한 미사용/미연결 파일 3건
   - [x] `src/lib/memoryNudge.ts`(+`.test.ts`): `e18d9f8`에서 Lv3 로직이 서버(`lv3MemoryCandidate.ts`+`geminiMicrotask.ts`)로 옮겨가면서 어떤 컴포넌트도 더 이상 import하지 않는 죽은 코드가 됨. 2026-07-27 삭제 완료(#57) — grep으로 참조 없음 재확인 후 두 파일 삭제, typecheck·전체 프론트 테스트(18 files / 185 tests) 통과 확인
-  - `src/lib/taskTitle.ts`(+`.test.ts`)의 `validateTaskTitle`: simple-tdd Skill 연습용으로 작성됐으나 `RegisterPage.jsx`에 실제로 연결된 적 없음. wireframe.md의 "제목 미입력 시 제출 차단"이 사실상 미구현 상태라는 뜻이기도 함 — `RegisterPage.jsx`에 연결하거나, 연습용이었음을 명확히 하고 삭제할지 결정 필요
+  - [x] `src/lib/taskTitle.ts`(+`.test.ts`)의 `validateTaskTitle`: simple-tdd Skill 연습용으로 작성됐으나 `RegisterPage.jsx`에 실제로 연결된 적 없었음 — 2026-07-27 "할 일 등록 입력 검증" 작업(122행)에서 `RegisterPage.jsx`에 연결 완료, wireframe.md의 "제목 미입력 시 제출 차단"도 이제 실제로 구현됨
   - `.agents/`: 빈 폴더, 용도 불명(git 추적 대상도 아님) — 삭제해도 안전할 가능성 높음, 만든 이유만 확인 후 정리
 - [ ] Lv3 서버리스 함수(iad1, 버지니아) ↔ Supabase DB(ap-northeast-2, 서울) 리전 불일치 — Lv3만 Gemini 호출 전 DB 쿼리 2회(Task+TaskEvent)를 하는데, 리전 간 왕복 지연이 Gemini의 2000ms 타임아웃과 합쳐지면 배포 환경에서만 간헐적 타임아웃 유발 가능성. 2026-07-26 기준 실제 에러로 확인된 적은 없음(그날 실패는 서비스워커 캐시 문제로 결론). 예방 차원에서 vercel.json에 "regions": ["icn1"] 추가 검토
 - [ ] (참고, 급하지 않음) 로컬 개발 서버(localhost:5174)에서 이미 삭제한 것으로 알던 task의 레벨업 알림이 뜬 현상 — 로컬 서버가 프로덕션과 같은 DB를 보는지 다른 DB를 보는지 원인 미확인. 프로덕션과 무관한 현상으로 추정되나 확인 안 됨
