@@ -54,6 +54,9 @@
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dday-urgent {
@@ -69,4 +72,9 @@
 .dday-normal {
   background: var(--success-bg);
   color: var(--success);
+}
+
+.dday-flexible {
+  background: var(--neutral-bg);
+  color: var(--neutral);
 }

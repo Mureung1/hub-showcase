@@ -1,11 +1,5 @@
-import { REGIONS, type Subsidy } from '@hub/shared'
+import { NO_DEADLINE_DDAY, REGIONS, type Subsidy } from '@hub/shared'
 import type { BizinfoAnnouncement } from './bizinfo-client.js'
-
-/**
- * API가 신청기간 대신 자유 텍스트("예산 소진시까지" 등)를 주는 경우의 dday.
- * 정렬(deadline 오름차순) 시 날짜가 명확한 공고보다 뒤로 밀리도록 큰 값을 쓴다.
- */
-const NO_DEADLINE_DDAY = 9999
 
 const FALLBACK_QUALIFICATION = '공고문 원문에서 확인해주세요'
 const FALLBACK_DOCUMENT = '공고문 원문에서 확인해주세요'
