@@ -39,6 +39,16 @@ alter table public.subsidies add column if not exists region text[] not null def
 -- 이슈 #52: 이미 배포된 테이블은 위 create table이 스킵되므로 별도로 컬럼을 추가한다.
 alter table public.subsidies add column if not exists industry text[] not null default '{}';
 
+-- 이슈 #67: 첨부파일 AI 구조화 추출 결과. employees/revenue/business_years는 문서 원문 표현,
+-- *_max_count/*_max_krw/*_years_max는 매칭 가점 계산용 정규화 숫자. 전부 nullable —
+-- 신규 공고 중 AI 추출을 아직 안 했거나 문서에 조건이 없으면 null("정보 없음").
+alter table public.subsidies add column if not exists employees text;
+alter table public.subsidies add column if not exists employees_max_count integer;
+alter table public.subsidies add column if not exists revenue text;
+alter table public.subsidies add column if not exists revenue_max_krw bigint;
+alter table public.subsidies add column if not exists business_years text;
+alter table public.subsidies add column if not exists business_years_max numeric;
+
 -- 이슈 #7: 사용자가 제출한 매칭 조건(OnboardingProfile) 저장
 -- 컬럼은 server/src/routes/match.ts 의 profileSchema 와 1:1 매핑한다.
 create table if not exists public.match_requests (
@@ -56,3 +66,16 @@ create table if not exists public.match_requests (
 
 -- 서버는 service_role 키로 접근하므로 RLS를 켜두되 anon 정책은 두지 않는다.
 alter table public.match_requests enable row level security;
+
+-- 이슈 #67: 첨부파일 AI 구조화 추출 결과 캐시 (atchFileId 기준, 재호출 방지 목적)
+-- 크롤러(묶음 2)는 이 테이블에만 쓰고, subsidies 반영은 별도 단계(묶음 3)에서 처리한다.
+-- extracted 컬럼 형태는 crawler/src/gemini-extract.ts의 ExtractedFields와 1:1 매핑.
+create table if not exists public.document_extractions (
+  atch_file_id   text        primary key,
+  model          text        not null, -- 실제로 처리한 모델명 (gemini-2.5-flash / gemini-3.1-flash-lite)
+  extracted      jsonb       not null,
+  extracted_at   timestamptz not null default now()
+);
+
+-- 서버는 service_role 키로 접근하므로 RLS를 켜두되 anon 정책은 두지 않는다.
+alter table public.document_extractions enable row level security;

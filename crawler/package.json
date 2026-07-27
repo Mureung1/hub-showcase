@@ -10,9 +10,11 @@
     "lint": "oxlint src"
   },
   "dependencies": {
+    "@google/genai": "^2.13.0",
     "@hub/shared": "*",
     "@supabase/supabase-js": "^2.110.7",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "fflate": "^0.8.3"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
