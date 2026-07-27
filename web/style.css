@@ -315,6 +315,29 @@ body[data-state="error"] .starter {
   background: var(--fail);
 }
 
+/* ── paper_failed 내부 ────────────────────────────────────────── */
+.failed__heading {
+  margin: 0;
+  color: var(--fail);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.failed__title {
+  margin: 0.25rem 0 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.failed__reason {
+  margin: 0.15rem 0 0.5rem;
+  color: var(--ink-3);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
 /* ── judge 블록 내부 ──────────────────────────────────────────── */
 .judge__heading {
   margin: 0;

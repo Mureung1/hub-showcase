@@ -236,6 +236,41 @@
     item.append(head, title, summary, foot);
   }
 
+  /**
+   * `paper_failed` — 부분 실패. **정상적인 결말이지 에러가 아니다.**
+   *
+   * 타임라인 안의 항목 하나로 남긴다. 화면을 대체하거나 앞의 카드를 지우지 않는다 —
+   * 4편 중 3편 성공은 흔한 일이고, 여기서 전체 에러를 띄우면 이미 만든 3편과
+   * 거기 든 3분·API 비용을 통째로 버리게 된다.
+   *
+   * `url`은 반드시 붙인다. AI가 못 읽었으면 사람이 읽으면 된다 —
+   * 막다른 길로 끝내지 않는다.
+   */
+  function appendPaperFailed(event) {
+    const item = appendEntry("entry--failed");
+
+    const heading = document.createElement("p");
+    heading.className = "failed__heading";
+    heading.textContent = `${event.index}편째 — 요약하지 못했습니다`;
+
+    const title = document.createElement("p");
+    title.className = "failed__title";
+    title.textContent = event.title;
+
+    const reason = document.createElement("p");
+    reason.className = "failed__reason";
+    reason.textContent = event.reason;
+
+    const link = document.createElement("a");
+    link.className = "card__link";
+    link.href = event.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "원문에서 직접 확인 ↗";
+
+    item.append(heading, title, reason, link);
+  }
+
   /** 사용자의 스크롤이 사실상 맨 아래에 있는가. */
   function isPinnedToBottom() {
     const gap =
@@ -286,12 +321,21 @@
         appendPaperCard(event);
         break;
 
-      case "retry":
-        // TODO(8-6 · #74): 앰버 로그. 감추지 않는다
+      case "retry": {
+        // 하이라이트 2. 스스로 점검했다는 증거이므로 감추지 않는다.
+        // 앰버는 "고장"이 아니라 "정상 작동 중 주의"의 톤이다 — 빨강을 쓰지 않는다.
+        const item = appendEntry("entry--retry");
+        item.textContent = `요약 보완 중 (${event.attempt}회)`;
+
+        const detail = document.createElement("span");
+        detail.className = "entry__detail";
+        detail.textContent = ` — 스스로 검증한 결과: ${event.feedback}`;
+        item.appendChild(detail);
         break;
+      }
 
       case "paper_failed":
-        // TODO(8-6 · #74): 타임라인 항목 + 원문 링크. 화면을 대체하지 않는다
+        appendPaperFailed(event);
         break;
 
       case "done":
