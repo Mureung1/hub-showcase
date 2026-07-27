@@ -2,28 +2,41 @@ import { useState } from "react";
 import PriorityBadge from "./PriorityBadge";
 import WeightSelector from "./WeightSelector";
 import ScoreBreakdown from "./ScoreBreakdown";
+import SubjectDetailFields from "./SubjectDetailFields";
+import Chevron from "./Chevron";
 import { getDaysUntil, formatDday } from "../utils/daysUntil";
 import { buildPriorityReason } from "../utils/priorityReason";
+import { formatScale } from "../utils/scaleLabels";
 
 const THIS_WEEK_DAYS = 7;
 
-function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
+// 열려 있는 id 집합을 토글한다. (점수 구성 / 더 정확하게 둘 다 같은 방식이라 함수를 나눠 쓴다)
+function toggleId(setter, id) {
+  setter((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    return next;
+  });
+}
+
+function ResultScreen({
+  subjects,
+  weightKey,
+  onChangeWeight,
+  onUpdateSubject,
+  onCompleteSubject,
+  onBack,
+}) {
   const [sortKey, setSortKey] = useState("score");
   const [onlyThisWeek, setOnlyThisWeek] = useState(false);
   // 점수 분해 막대는 기본적으로 숨겨두고, 눌러서 펼친 과목만 보여준다.
   const [expandedIds, setExpandedIds] = useState(() => new Set());
-
-  function toggleBreakdown(id) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
+  // 추가 입력도 마찬가지로, 더 정확하게 하고 싶은 과목만 펼친다.
+  const [detailIds, setDetailIds] = useState(() => new Set());
 
   const filteredSubjects = onlyThisWeek
     ? subjects.filter((subject) => {
@@ -74,7 +87,7 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
         </div>
       ) : (
         <div className="empty-state">
-          <p>등록된 과목이 없어요. 과목을 추가하고 다시 확인해 주세요.</p>
+          <p>등록된 과목이 없어요. 과목을 담고 다시 확인해 주세요.</p>
         </div>
       )}
 
@@ -85,6 +98,7 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
           <button
             type="button"
             className={`chip${sortKey === "score" ? " is-selected" : ""}`}
+            aria-pressed={sortKey === "score"}
             onClick={() => setSortKey("score")}
           >
             점수순
@@ -92,6 +106,7 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
           <button
             type="button"
             className={`chip${sortKey === "dday" ? " is-selected" : ""}`}
+            aria-pressed={sortKey === "dday"}
             onClick={() => setSortKey("dday")}
           >
             D-day순
@@ -114,6 +129,8 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
         <ul className="subject-list">
           {rankedSubjects.map((subject, index) => {
             const isExpanded = expandedIds.has(subject.id);
+            const isDetailOpen = detailIds.has(subject.id);
+
             return (
               <li key={subject.id} className="subject-item">
                 <div className="subject-row">
@@ -122,23 +139,43 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
                     <span className="subject-name">{subject.name}</span>
                     <span className="subject-meta">
                       {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                      {subject.understanding} · 난이도 {subject.difficulty}
+                      {formatScale(subject.understanding)}
                     </span>
                   </div>
                   <PriorityBadge priorityScore={subject.priorityScore} />
                   <span className="subject-score">{subject.priorityScore}점</span>
                 </div>
 
-                <button
-                  type="button"
-                  className="breakdown-toggle"
-                  aria-expanded={isExpanded}
-                  onClick={() => toggleBreakdown(subject.id)}
-                >
-                  {isExpanded ? "점수 구성 접기 ▴" : "점수 구성 보기 ▾"}
-                </button>
+                <div className="subject-tools">
+                  <button
+                    type="button"
+                    className="link-button"
+                    aria-expanded={isExpanded}
+                    onClick={() => toggleId(setExpandedIds, subject.id)}
+                  >
+                    점수 구성 <Chevron open={isExpanded} />
+                  </button>
+                  <button
+                    type="button"
+                    className="link-button"
+                    aria-expanded={isDetailOpen}
+                    onClick={() => toggleId(setDetailIds, subject.id)}
+                  >
+                    더 정확하게 <Chevron open={isDetailOpen} />
+                  </button>
+                  <button
+                    type="button"
+                    className="entry-action subject-done"
+                    onClick={() => onCompleteSubject(subject.id)}
+                  >
+                    공부 끝
+                  </button>
+                </div>
 
                 {isExpanded && <ScoreBreakdown subject={subject} />}
+                {isDetailOpen && (
+                  <SubjectDetailFields subject={subject} onChange={onUpdateSubject} />
+                )}
               </li>
             );
           })}
@@ -148,7 +185,7 @@ function ResultScreen({ subjects, weightKey, onChangeWeight, onBack }) {
       )}
 
       <button type="button" className="button button-secondary" onClick={onBack}>
-        다시 입력하기
+        ← 과목 다시 담기
       </button>
     </section>
   );
