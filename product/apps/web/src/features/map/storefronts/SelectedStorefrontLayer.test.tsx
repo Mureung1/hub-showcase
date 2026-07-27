@@ -3,6 +3,7 @@ import { useMap } from "react-map-gl/maplibre";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SelectedStorefrontLayer } from "./SelectedStorefrontLayer";
+import { storefrontLayerId } from "./storefrontLayerId";
 
 vi.mock("react-map-gl/maplibre", () => ({ useMap: vi.fn() }));
 vi.mock("./createStorefrontMapLayer", () => ({
@@ -33,6 +34,7 @@ describe("SelectedStorefrontLayer", () => {
       current: { getMap: () => map },
     } as unknown as ReturnType<typeof useMap>);
 
+    const onReady = vi.fn();
     render(
       <SelectedStorefrontLayer
         store={{
@@ -42,6 +44,7 @@ describe("SelectedStorefrontLayer", () => {
           categoryCode: "I21201",
         }}
         onUnavailable={vi.fn()}
+        onReady={onReady}
       />,
     );
 
@@ -50,7 +53,13 @@ describe("SelectedStorefrontLayer", () => {
     act(() => listeners.get("styledata")?.());
 
     await waitFor(() => expect(map.addLayer).toHaveBeenCalledTimes(1));
+    expect(onReady).toHaveBeenCalledWith("store-1");
     expect(map.off).toHaveBeenCalledWith("styledata", expect.any(Function));
     expect(map.off).toHaveBeenCalledWith("idle", expect.any(Function));
+  });
+
+  it("gives every replaced building a stable, separate MapLibre custom-layer id", () => {
+    expect(storefrontLayerId("store/a")).toBe("localtwin-storefront-store-a");
+    expect(storefrontLayerId("store-b")).toBe("localtwin-storefront-store-b");
   });
 });

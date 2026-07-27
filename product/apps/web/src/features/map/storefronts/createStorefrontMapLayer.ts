@@ -13,18 +13,44 @@ export type StorefrontMapLayerInput = {
   categoryCode: string;
   source: string;
   sourceId: string;
+  building?: {
+    id: string;
+    center: [number, number];
+    plotSizeMeters: number;
+    heightMeters: number;
+    storeCountInBuilding: number;
+  } | null;
 };
 
 export type StorefrontMapLayer = CustomLayerInterface & {
   setStore: (nextInput: StorefrontMapLayerInput) => void;
 };
 
-function storefrontModelMatrix(input: StorefrontMapLayerInput) {
-  const origin = MercatorCoordinate.fromLngLat([input.longitude, input.latitude], 7);
-  const scale = origin.meterInMercatorCoordinateUnits() * 10;
+function storefrontModelMatrix(input: StorefrontMapLayerInput, storefront: THREE.Group) {
+  const [longitude, latitude] = input.building?.center ?? [input.longitude, input.latitude];
+  const origin = MercatorCoordinate.fromLngLat([longitude, latitude], 0);
+  const unitScale = origin.meterInMercatorCoordinateUnits();
+  const bounds = new THREE.Box3().setFromObject(storefront);
+  storefront.position.y -= bounds.min.y;
+  const dimensions = bounds.setFromObject(storefront).getSize(new THREE.Vector3());
+  const localFootprint = Math.max(dimensions.x, dimensions.z, 0.001);
+  const localHeight = Math.max(dimensions.y, 0.001);
+  const plotSizeMeters = input.building?.plotSizeMeters ?? 8;
+  const heightMeters = input.building ? Math.max(3.4, Math.min(24, input.building.heightMeters)) : 8;
+  const horizontalScale = plotSizeMeters / localFootprint;
+  const verticalScale = heightMeters / localHeight;
+
+  // MapLibre receives Three.js local Y as map Z after rotationX.  The second
+  // scale value is therefore depth, while the third is height.
   return new THREE.Matrix4()
     .makeTranslation(origin.x, origin.y, origin.z)
-    .scale(new THREE.Vector3(scale, -scale, scale))
+    .scale(
+      new THREE.Vector3(
+        unitScale * horizontalScale,
+        -unitScale * horizontalScale,
+        unitScale * verticalScale,
+      ),
+    )
     .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
 }
 
@@ -35,7 +61,7 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
   let storefront: THREE.Group | null = null;
   let mapInstance: MapLibreMap | null = null;
   let currentInput = input;
-  let modelMatrix = storefrontModelMatrix(input);
+  let modelMatrix = new THREE.Matrix4();
   let replacementVersion = 0;
 
   function installStorefront(nextStorefront: THREE.Group) {
@@ -48,6 +74,7 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
       disposeStorefront(storefront);
     }
     storefront = nextStorefront;
+    modelMatrix = storefrontModelMatrix(currentInput, storefront);
     storefront.userData.locationSource = currentInput.source;
     storefront.userData.locationSourceId = currentInput.sourceId;
     scene.add(storefront);
@@ -57,7 +84,6 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
   function replaceStorefront(nextInput: StorefrontMapLayerInput) {
     const version = ++replacementVersion;
     currentInput = nextInput;
-    modelMatrix = storefrontModelMatrix(nextInput);
     if (!scene) return;
     const variant = getStorefrontVariant(nextInput.categoryCode);
     installStorefront(createStorefront(variant));
