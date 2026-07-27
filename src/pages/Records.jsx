@@ -3,16 +3,8 @@ import { Link } from 'react-router-dom'
 import { useRoutineToday } from '@/hooks/useRoutineToday'
 import { useExerciseRecords } from '@/hooks/useExerciseRecords'
 import Sidebar from '@/components/Sidebar'
+import { KOREAN_DAY_LABEL } from '@/lib/dayLabels'
 
-const KOREAN_DAY_LABEL = {
-  MON: '월',
-  TUE: '화',
-  WED: '수',
-  THU: '목',
-  FRI: '금',
-  SAT: '토',
-  SUN: '일',
-}
 const WEEKDAY_HEADERS = ['일', '월', '화', '수', '목', '금', '토']
 
 // loggedAt(진짜 타임스탬프)에서 "YYYY-M-D" 키를 뽑는다 — 이 키로 달력 칸과 세션을 잇는다.

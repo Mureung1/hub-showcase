@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { patchJson } from '@/lib/api'
-
-const KOREAN_DAY_LABEL = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' }
+import { KOREAN_DAY_LABEL } from '@/lib/dayLabels'
 
 function fetchToday() {
   return fetch('/api/routine/today').then((res) => res.json())
