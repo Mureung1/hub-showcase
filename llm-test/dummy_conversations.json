@@ -1,0 +1,66 @@
+[
+  {
+    "uuid": "conv-test-001",
+    "name": "테스트 대화 1",
+    "created_at": "2026-07-27T09:15:00Z",
+    "updated_at": "2026-07-27T09:20:00Z",
+    "chat_messages": [
+      {
+        "uuid": "msg-001",
+        "sender": "human",
+        "text": "요즘 계속 야근해서 너무 지친다",
+        "created_at": "2026-07-27T09:15:00Z"
+      },
+      {
+        "uuid": "msg-002",
+        "sender": "assistant",
+        "text": "많이 힘드셨겠어요. 어떤 부분이 가장 힘드신가요?",
+        "created_at": "2026-07-27T09:15:30Z"
+      },
+      {
+        "uuid": "msg-003",
+        "sender": "human",
+        "text": "마감이 계속 밀려서 주말에도 일해야 할 것 같다",
+        "created_at": "2026-07-27T09:17:00Z"
+      },
+      {
+        "uuid": "msg-004",
+        "sender": "human",
+        "text": "8월 중순 서울 공연 목록 좀 알려줘",
+        "created_at": "2026-07-27T12:30:00Z"
+      },
+      {
+        "uuid": "msg-005",
+        "sender": "assistant",
+        "text": "죄송하지만 실시간 공연 정보는 확인이 어려워요.",
+        "created_at": "2026-07-27T12:30:15Z"
+      }
+    ]
+  },
+  {
+    "uuid": "conv-test-002",
+    "name": "테스트 대화 2",
+    "created_at": "2026-07-28T19:40:00Z",
+    "updated_at": "2026-07-28T19:45:00Z",
+    "chat_messages": [
+      {
+        "uuid": "msg-006",
+        "sender": "human",
+        "text": "오늘 면접 봤는데 생각보다 잘 안 된 것 같다",
+        "created_at": "2026-07-28T19:40:00Z"
+      },
+      {
+        "uuid": "msg-007",
+        "sender": "assistant",
+        "text": "면접이 뜻대로 안 풀려서 속상하셨겠어요.",
+        "created_at": "2026-07-28T19:40:20Z"
+      },
+      {
+        "uuid": "msg-008",
+        "sender": "human",
+        "text": "저녁에 운동하고 나니 기분이 좀 나아졌다",
+        "created_at": "2026-07-28T20:10:00Z"
+      }
+    ]
+  }
+]
