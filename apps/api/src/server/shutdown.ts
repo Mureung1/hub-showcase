@@ -1,4 +1,5 @@
 import type { Server } from "node:http";
+import { sanitizeLogValue } from "../utils/sanitizeLogValue.js";
 
 interface ShutdownHandlerOptions {
   closeDatabasePool: () => Promise<void>;
@@ -39,7 +40,7 @@ export function createShutdownHandler({
       console.info("[server] 정상 종료를 완료했습니다.");
     } catch (error) {
       clearTimeout(forceExitTimer);
-      console.error("[server] 정상 종료 중 오류가 발생했습니다.", error);
+      console.error("[server] 정상 종료 중 오류가 발생했습니다.", sanitizeLogValue(error));
       process.exitCode = 1;
     }
   };

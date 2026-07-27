@@ -3,6 +3,8 @@ export interface RecurringTask {
   stop(): Promise<void>;
 }
 
+import { sanitizeLogValue } from "../utils/sanitizeLogValue.js";
+
 interface RecurringTaskOptions {
   intervalMs: number;
   task: () => Promise<void>;
@@ -12,7 +14,8 @@ interface RecurringTaskOptions {
 export function createRecurringTask({
   intervalMs,
   task,
-  onError = (error) => console.error("[background] 작업 실행 실패", error),
+  onError = (error) =>
+    console.error("[background] 작업 실행 실패", sanitizeLogValue(error)),
 }: RecurringTaskOptions): RecurringTask {
   let timer: NodeJS.Timeout | null = null;
   let currentRun: Promise<void> | null = null;
