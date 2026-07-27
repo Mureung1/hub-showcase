@@ -51,6 +51,12 @@ export interface Subsidy {
   revenueMaxKrw?: number
   businessYears?: string
   businessYearsMax?: number
+  /**
+   * 이슈 #77: 공고 첨부파일 식별자 — `document_extractions.atch_file_id`와 조인해 이 지원금이
+   * AI로 보강됐는지·어떤 모델로 처리됐는지 확인하는 용도. 첨부파일이 없거나 미지원 포맷이면
+   * undefined.
+   */
+  atchFileId?: string
 }
 
 /** GET /api/subsidies 응답 — 페이지네이션 포함 (이슈 #48) */

@@ -46,6 +46,7 @@ function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
     revenue_max_krw: null,
     business_years: null,
     business_years_max: null,
+    atch_file_id: null,
     ...overrides,
   }
 }

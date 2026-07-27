@@ -49,6 +49,10 @@ alter table public.subsidies add column if not exists revenue_max_krw bigint;
 alter table public.subsidies add column if not exists business_years text;
 alter table public.subsidies add column if not exists business_years_max numeric;
 
+-- 이슈 #77: document_extractions와 조인해 "AI 보강 여부/사용 모델"을 확인할 수 있게
+-- 첨부파일 식별자를 subsidies에도 저장(nullable — 첨부파일 없는 공고도 있음).
+alter table public.subsidies add column if not exists atch_file_id text;
+
 -- 이슈 #7: 사용자가 제출한 매칭 조건(OnboardingProfile) 저장
 -- 컬럼은 server/src/routes/match.ts 의 profileSchema 와 1:1 매핑한다.
 create table if not exists public.match_requests (
