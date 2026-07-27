@@ -18,7 +18,7 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 
 - AY-PLE App은 **InteractionCapability**를 제공하는 MCP Module을 소유한다. 이 Module의 Interface는 “AY가 표시할 내용과 허용할 응답을 요청하면, 사용자가 App UI에서 결정하고, 구조화된 결과가 같은 Codex Turn으로 반환된다”는 한 번의 round trip이다.
 - MCP Module은 `hub/`가 소유하는 Codex-facing STDIO Adapter와 App-side Interaction Broker로 나눈다. Adapter는 표준 MCP request/result를 운반하고 Broker는 현재 Runtime binding, Browser projection, pending lifecycle과 사용자 result 반환을 숨긴다.
-- Bootstrap Skill은 Git-tracked `<SemesterWorkspace>/.codex/config.toml`에 AY-PLE Interaction MCP의 정적 project declaration을 설치한다. 이 declaration은 hub-owned STDIO entrypoint, 전달할 environment variable 이름, capability allowlist와 `required = true`를 표현한다. Exact command path와 env 이름은 implementation spec이 고정한다.
+- Bootstrap Skill은 Git-tracked `<SemesterWorkspace>/.codex/config.toml`에 AY-PLE Interaction MCP의 정적 project declaration을 설치한다. 이 declaration은 exact SemesterWorkspace root에서 hub-owned built STDIO entrypoint까지 계산한 상대 `command`, 전달할 environment variable 이름, capability allowlist와 `required = true`를 표현하고 MCP server `cwd`는 생략한다. Current pinned launcher는 생략된 server `cwd`를 Workspace Runtime의 exact root `cwd`로 fallback한다. Exact package·executable path와 env 이름은 implementation spec이 고정한다.
 - Project config에는 endpoint, token, native identity나 다른 secret·process-local 값을 기록하지 않는다. AY-PLE Runtime은 Codex child environment에 현재 App instance의 endpoint·token·Runtime binding을 넣고, MCP declaration의 `env_vars`가 이를 STDIO Adapter에 전달한다.
 - STDIO Adapter는 process 시작만으로 initialize를 성공시키지 않는다. Environment binding을 검증하고 현재 App-side Broker와 인증된 handshake를 완료한 뒤에만 MCP initialize를 성공시킨다. Endpoint·token 누락, Broker offline, authentication 실패나 capability mismatch는 required MCP initialization failure이며 Workspace Runtime·activation을 실패시킨다.
 - App activation은 effective MCP status에서 expected `ay_ple_interaction` server와 handshake 완료를 확인한다. Explicit `untrusted`처럼 project config 자체가 무시되어 native `required` declaration이 보이지 않는 경우도 이 gate에서 실패한다.
@@ -57,6 +57,7 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 | 모든 사용자 질문을 built-in `request_user_input`으로 처리 | 거절 | 일반 clarification에는 적합하지만 원본 preview, diff, evidence와 capability-specific action을 표현하는 AY-PLE UI를 제공하지 못한다. |
 | App이 매 thread마다 전체 MCP config를 override | 거절 | Project-native declaration과 사용자 config precedence를 우회하고 App이 Skill·MCP discovery까지 소유하게 한다. Dynamic endpoint·secret은 config가 아니라 Runtime environment로 결합할 수 있다. |
 | Bootstrap Skill이 `../workspace/` parent를 전역 trust로 기록 | 거절 | Current Codex trust lookup은 하위 Git repository로 parent trust를 상속하지 않는다. Exact workspace thread start의 native trust가 실제 Git root를 기록하고 config를 즉시 reload한다. |
+| MCP entrypoint를 absolute user path, `npx`·global install 또는 appData copy로 실행 | 거절 | Personal source checkout인 `hub/`가 구현 authority다. Workspace-relative declaration은 machine-specific absolute path와 별도 설치·복사 lifecycle을 피하고, root가 이동하면 명시적인 Bootstrap Update와 Git diff로 다시 결합한다. |
 
 ## 결과
 

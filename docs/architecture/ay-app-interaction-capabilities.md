@@ -53,7 +53,7 @@ App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 �
 | Module | Interface | 숨기는 것 |
 | --- | --- | --- |
 | Skill·AY workflow | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
-| Workspace MCP declaration | STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
+| Workspace MCP declaration | Workspace-root-relative STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
 | Interaction MCP STDIO Adapter | Capability별 typed MCP request/result와 Broker transport | Project config loading, MCP wire와 process environment |
 | App-side Interaction Broker | Typed capability request/result | Runtime binding, correlation, pending lifecycle, cancellation, Browser transport |
 | UI Adapter | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
@@ -70,13 +70,15 @@ Bootstrap은 SemesterWorkspace의 Git-tracked `.codex/config.toml`에 정적인 
 
 ```toml
 [mcp_servers.ay_ple_interaction]
-command = "<hub-owned-stdio-entrypoint>"
+command = "../../hub/<built-stdio-entrypoint>"
 env_vars = ["<endpoint-env>", "<token-env>", "<runtime-binding-env>"]
 enabled_tools = ["propose_state_patch"]
 required = true
 ```
 
-이 예시는 ownership을 보여주며 exact path·env 이름은 implementation spec이 소유한다. Config에는 secret이나 process-local 값을 넣지 않는다. AY-PLE이 Codex child를 시작할 때 current App endpoint·token·Runtime binding을 environment로 주입하고, Codex가 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다.
+이 예시의 `../../hub/`는 canonical sibling layout에서 Bootstrap이 **exact SemesterWorkspace root를 기준으로** 계산한 값이다. `.codex/` directory 기준의 고정 문자열이 아니며, 다른 위치의 existing repository를 채택하면 실제 두 root 사이의 상대경로를 계산한다. Current pinned local STDIO launcher는 MCP server `cwd`가 없을 때 Runtime fallback `cwd`에서 relative `command`를 resolve하므로 declaration에는 `cwd`를 쓰지 않고 Workspace Runtime의 exact Git root를 그대로 사용한다.
+
+Exact package·executable path와 env 이름은 implementation spec이 소유한다. Config에는 absolute machine path, `npx`·global install, appData에 복제한 Adapter, secret이나 process-local 값을 넣지 않는다. AY-PLE이 Codex child를 시작할 때 current App endpoint·token·Runtime binding을 environment로 주입하고, Codex가 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다. `hub/` 또는 SemesterWorkspace root가 독립적으로 이동해 상대경로가 바뀌면 Bootstrap Update가 declaration을 다시 계산하고 review 가능한 workspace Git checkpoint를 남긴다.
 
 따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load된다. Bootstrap은 global trust를 수정하지 않고, exact Git root와 `workspace-write`를 요청하는 정상 thread start가 current pinned App Server의 native trust write와 same-start config reload를 사용한다. 명시적 `untrusted`는 보존한다.
 
@@ -143,7 +145,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | 상태 | Durable owner | App의 역할 |
 | --- | --- | --- |
 | 실제 학기 파일 | SemesterWorkspace Git repository | 선택한 root를 exact `cwd`로 연결한다. |
-| 정적 Interaction MCP declaration | SemesterWorkspace의 tracked `.codex/config.toml` | 직접 rewrite하지 않고 native project loading을 사용한다. |
+| 정적 Interaction MCP declaration | SemesterWorkspace의 tracked `.codex/config.toml` | Bootstrap·Update가 설치하며 App Runtime은 직접 rewrite하지 않고 native project loading을 사용한다. |
 | MCP endpoint·token·Runtime binding | App Runtime environment | Workspace나 global config에 persist하지 않는다. |
 | 구조화된 학기 snapshot | SemesterWorkspace의 tracked file | Capability UI에 필요한 경우 읽어 표시할 수 있지만 mutation authority를 소유하지 않는다. |
 | 장기 변경 이력 | Git history | 별도 academic event ledger를 만들지 않는다. |
@@ -157,7 +159,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 
 | 영역 | 현재 구현 | 채택한 목표 |
 | --- | --- | --- |
-| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 required hub-owned STDIO Adapter를 선언하고 Runtime은 dynamic env만 공급한다. Adapter의 Broker handshake 뒤에만 initialize가 성공한다. |
+| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 Workspace root에서 hub-owned built STDIO Adapter까지의 relative command를 `cwd` 없이 선언하고 Runtime은 dynamic env만 공급한다. Adapter의 Broker handshake 뒤에만 initialize가 성공한다. |
 | Review 시작 | `propose_state_patch`가 Server-private key와 academic binding을 요구한다. | 표시할 proposal만 보내며 host binding은 Module 내부다. |
 | 사용자 응답 | 별도 `/reviews/:interactionId`와 built-in `request_user_input`을 함께 사용한다. | MCP call 하나가 UI 응답을 기다렸다가 closed result를 반환한다. |
 | Apply | Server가 durable patch·confirmation transaction으로 `SemesterModel`을 갱신한다. | AY가 result를 해석해 실제 workspace file을 변경한다. |
@@ -176,5 +178,6 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - App-owned academic event sourcing 또는 duplicate Codex Turn ledger
 - MCP caller가 host correlation과 store revision을 조립하는 protocol
 - Endpoint·token을 담은 tracked MCP config 또는 App의 broad config override
+- Absolute machine path, `npx`·global install 또는 appData copy에 의존하는 Interaction MCP launcher
 - Interaction MCP 없이 정상으로 보이는 degraded AY-PLE Workspace Runtime
 - Rich Review와 built-in `request_user_input`의 이중 confirmation
