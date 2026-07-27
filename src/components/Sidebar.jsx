@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 const NAV_ITEMS = [
   { label: '오늘의 루틴', to: '/routine', enabled: true },
   { label: '주간 플랜', enabled: false },
-  { label: '운동 기록', enabled: false },
+  { label: '운동 기록', to: '/records', enabled: true },
   { label: '통증 이력', enabled: false },
   { label: '설정', enabled: false },
 ]
