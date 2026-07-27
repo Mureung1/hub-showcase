@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login, setToken } from '../api/client.ts'
+import { getMe, login, setToken } from '../api/client.ts'
 import Layout from '../components/Layout.tsx'
 
 function LoginPage() {
@@ -19,7 +19,9 @@ function LoginPage() {
     try {
       const { token } = await login({ email, password })
       setToken(token)
-      navigate('/')
+
+      const me = await getMe()
+      navigate(me.onboardingCompleted ? '/' : '/onboarding')
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.')
     } finally {

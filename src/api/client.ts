@@ -34,6 +34,8 @@ type MeResponse = {
   email: string
   name: string
   nickname: string
+  preferredCategory: string | null
+  onboardingCompleted: boolean
 }
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -67,4 +69,13 @@ export function login(input: LoginInput): Promise<AuthResponse> {
 
 export function getMe(): Promise<MeResponse> {
   return request('/auth/me')
+}
+
+export function updatePreferredCategory(
+  preferredCategory: string | null,
+): Promise<{ preferredCategory: string | null; onboardingCompleted: boolean }> {
+  return request('/auth/preference', {
+    method: 'PATCH',
+    body: JSON.stringify({ preferredCategory }),
+  })
 }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getTodayChallenge } from '../api/challenges.ts'
-import { getToken } from '../api/client.ts'
+import { BASE_URL, getToken } from '../api/client.ts'
 import { getTodayRecord } from '../api/records.ts'
+import type { RecordData } from '../api/records.ts'
 import Layout from '../components/Layout.tsx'
 
 type Challenge = {
@@ -12,19 +13,21 @@ type Challenge = {
 
 function HomePage() {
   const [challenge, setChallenge] = useState<Challenge | null>(null)
-  const [recorded, setRecorded] = useState<boolean | null>(null)
+  const [record, setRecord] = useState<RecordData | null>(null)
   const isLoggedIn = Boolean(getToken())
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      return
+    }
+
     getTodayChallenge()
       .then(setChallenge)
       .catch(() => setChallenge(null))
 
-    if (isLoggedIn) {
-      getTodayRecord()
-        .then((res) => setRecorded(res.recorded))
-        .catch(() => setRecorded(null))
-    }
+    getTodayRecord()
+      .then((res) => setRecord(res.record))
+      .catch(() => setRecord(null))
   }, [isLoggedIn])
 
   return (
@@ -33,11 +36,26 @@ function HomePage() {
         <p className="mb-2.5 inline-block rounded-full bg-accent-bg px-2.5 py-1 text-xs font-semibold text-accent">
           오늘의 챌린지
         </p>
-        <h2 className="text-[17px] text-heading">{challenge ? challenge.topic : '불러오는 중...'}</h2>
+        <h2 className="text-[17px] text-heading">
+          {isLoggedIn ? (challenge ? challenge.topic : '불러오는 중...') : '로그인하면 볼 수 있어요'}
+        </h2>
+
+        {isLoggedIn &&
+          (record ? (
+            <img
+              alt="오늘의 기록 사진"
+              className="mt-3 aspect-square w-full rounded-xl object-cover"
+              src={`${BASE_URL}${record.imageUrl}`}
+            />
+          ) : (
+            <div className="mt-3 flex aspect-square w-full items-center justify-center rounded-xl bg-border text-xs text-muted">
+              아직 오늘의 사진이 없어요
+            </div>
+          ))}
       </section>
 
       {isLoggedIn ? (
-        recorded ? (
+        record ? (
           <p className="rounded-2xl bg-done-bg px-[18px] py-3 text-center text-sm text-done">
             오늘 기록을 완료했어요
           </p>

@@ -4,6 +4,7 @@ import RequireAuth from './components/RequireAuth.tsx'
 import CalendarPage from './pages/CalendarPage.tsx'
 import HomePage from './pages/HomePage.tsx'
 import LoginPage from './pages/LoginPage.tsx'
+import OnboardingPage from './pages/OnboardingPage.tsx'
 import RecordPage from './pages/RecordPage.tsx'
 import RoomPage from './pages/RoomPage.tsx'
 import RoomsPage from './pages/RoomsPage.tsx'
@@ -17,6 +18,14 @@ function App() {
       <Route element={<ProjectIntro />} path="/intro" />
       <Route element={<LoginPage />} path="/login" />
       <Route element={<SignupPage />} path="/signup" />
+      <Route
+        element={
+          <RequireAuth>
+            <OnboardingPage />
+          </RequireAuth>
+        }
+        path="/onboarding"
+      />
       <Route
         element={
           <RequireAuth>

@@ -6,6 +6,8 @@ type CurrentUser = {
   email: string
   name: string
   nickname: string
+  preferredCategory: string | null
+  onboardingCompleted: boolean
 }
 
 export function useCurrentUser() {
