@@ -34,4 +34,61 @@ describe("HistoryRow completion snapshot", () => {
     expect(document.querySelector(".bar-track")).not.toBeInTheDocument();
     expect(document.querySelector(".bar-fill")).not.toBeInTheDocument();
   });
+
+  it("shows the completion-time reason label when entry.reason is a fixed option (happy path)", () => {
+    render(
+      <HistoryRow
+        entry={{
+          taskId: "task-1",
+          title: "테스트 과제",
+          completedAt: "2026-07-23T12:34:00.000Z",
+          durationSeconds: null,
+          entryLevel: null,
+          microTask: null,
+          reason: "overwhelm",
+          customReasonText: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByText("막막해서 못 시작")).toBeInTheDocument();
+  });
+
+  it("shows the custom reason text when entry.reason is custom (경계)", () => {
+    render(
+      <HistoryRow
+        entry={{
+          taskId: "task-1",
+          title: "테스트 과제",
+          completedAt: "2026-07-23T12:34:00.000Z",
+          durationSeconds: null,
+          entryLevel: null,
+          microTask: null,
+          reason: "custom",
+          customReasonText: "완벽하게 하고 싶어서",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("완벽하게 하고 싶어서")).toBeInTheDocument();
+  });
+
+  it("shows nothing for reason when entry.reason is null (경계)", () => {
+    render(
+      <HistoryRow
+        entry={{
+          taskId: "task-1",
+          title: "테스트 과제",
+          completedAt: "2026-07-23T12:34:00.000Z",
+          durationSeconds: null,
+          entryLevel: null,
+          microTask: null,
+          reason: null,
+          customReasonText: null,
+        }}
+      />,
+    );
+
+    expect(document.querySelector(".history-reason")).not.toBeInTheDocument();
+  });
 });

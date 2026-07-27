@@ -26,6 +26,14 @@
   white-space: nowrap;
 }
 
+.history-reason {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .history-completion {
   flex: 1 1 320px;
   display: flex;

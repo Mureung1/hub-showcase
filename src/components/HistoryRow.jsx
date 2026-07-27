@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { REASON_OPTIONS } from "../lib/taskOptions";
 import "./HistoryRow.css";
 
 function formatDuration(totalSeconds) {
@@ -7,14 +8,27 @@ function formatDuration(totalSeconds) {
   return `${mm}:${ss}`;
 }
 
-// entry: /api/history 항목(taskId/title/completedAt/durationSeconds/entryLevel/microTask).
-// entryLevel/microTask는 Lv2를 거쳐 완료했을 때만 값이 있다 — 없으면 그 항목은 생략한다
+// entry.reason/customReasonText는 완료 시점(completedAt) 기준 회피 이유다 — 현재
+// task 상태가 아니라 그 시점에 유효했던 값이라 완료 후 바뀌지 않는다(server/src/routes/history.ts).
+function reasonLabel(entry) {
+  if (!entry.reason) return null;
+  if (entry.reason === "custom" && entry.customReasonText) {
+    return entry.customReasonText;
+  }
+  return REASON_OPTIONS.find((option) => option.value === entry.reason)?.label ?? null;
+}
+
+// entry: /api/history 항목(taskId/title/completedAt/durationSeconds/entryLevel/microTask/reason/customReasonText).
+// entryLevel/microTask/reason은 값이 있을 때만 표시한다 — 없으면 그 항목은 생략한다
 // (CompletionMessage.jsx와 동일한 조건부 렌더링 패턴).
 function HistoryRow({ entry }) {
+  const reasonText = reasonLabel(entry);
+
   return (
     <div className="history-row">
       <div className="history-main">
         <span className="htitle">{entry.title}</span>
+        {reasonText && <span className="history-reason">{reasonText}</span>}
       </div>
       <div className="history-completion">
         <span className="history-completed-at">
