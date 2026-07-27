@@ -6,6 +6,43 @@
 
 ## Entries
 
+### Version Entry: 프롤로그 Outcomes 표 2단 구조 전환
+
+#### Metadata
+
+- ID: VER-20260727-003
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-27 23:23 KST
+- 적용자: Codex
+- 변경 타입: update
+- 대상 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`
+- 관련 승인 큐: `APPR-20260727-003`
+- 관련 결정 로그: `DEC-20260727-003`
+- 적용된 창작·서사 공개: 없음
+
+#### Before
+
+프롤로그 여섯 Scene의 `Outcomes and State`는 `outcome_id`, 확정 결과,
+상태 변화, 다음 씬 또는 다음 씬·화면, 공개 정보의 5열 표였다. 긴 내부 ID와
+설명 문장이 같은 표 폭을 사용해 좁은 화면에서 읽기 어려웠다.
+
+#### After
+
+각 Scene의 `Outcomes and State`를 구현 연결용 `Outcome Routing`과 설명용
+`Outcome Details`로 분리했다. Routing은 `outcome_id`, 상태 변화와 다음
+씬의 3열 표이며, Details는 같은 순서의 Outcome ID별 확정 결과와 공개
+정보를 제공한다. 기존 `Information Visibility`는 씬 전체 공개·비공개
+경계로 별도 유지했다.
+
+#### Notes
+
+- 주의 사항: 없음. 사건 순서, 공개 시점, Outcome ID·값, 상태, 다음 목적지와 기존 각주는 변경하지 않았다.
+- 독립 검수: 6 Scene·10 Outcome, 원문 필드 50/50, CW 각주 18/18, Routing↔Details 10/10 일치.
+- 적용 후 대상 문서 SHA-256: `980dcf01bce03633c01f7b083ce1733e467c70fbb6c57576701d4973350a17b4`
+- 남은 `provisional` 항목과 검증 조건: 없음
+
+---
+
 ### Version Entry: 프롤로그 Scene 2A~4 인게임 스크립트 적용
 
 #### Metadata

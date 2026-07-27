@@ -82,9 +82,23 @@
 
 #### Outcomes and State
 
-| outcome_id | 작성본 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
-|---|---|---|---|---|
-|  |  |  |  |  |
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+|  |  |  |
+
+##### Outcome Details
+
+###### `OUTCOME_ID`
+
+- 확정 결과:
+- 공개 정보:
+
+#### Information Visibility
+
+- 이 씬에서 공개:
+- 계속 비공개:
 
 #### Production Notes
 

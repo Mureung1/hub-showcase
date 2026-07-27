@@ -18,6 +18,247 @@ AI가 생성한 변경안과 신규 문서 초안을 검토하기 위한 공간�
 
 ## Applied
 
+### APPR-20260727-003: 프롤로그 Outcomes 표 2단 구조 전환
+
+#### Metadata
+
+- ID: APPR-20260727-003
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 상태: applied
+- 생성일: 2026-07-27
+- 요청자: 사용자
+- 대상 문서 경로: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`
+- 기준 Git 커밋: `a2a69f13edc7196f2062676d81fe9cb31e369d71`
+- 비교 대상: Scene S01·S02A·S02B·S02C·S03·S04의 `Outcomes and State` 전체
+- 변경 타입: update
+- 관련 workflow: `docs/workflows/document_change.md`, `docs/workflows/write_ingame_script.md`, `docs/skills/scenario_writing.md`, `docs/workflows/approval_queue.md`
+
+#### Proposal
+
+프롤로그 여섯 Scene의 `Outcomes and State` 5열 표를 구현 연결용
+`Outcome Routing` 3열 표와 설명용 `Outcome Details` 블록으로 분리한다.
+Routing에는 `outcome_id`, 상태 변화와 다음 씬만 두고, Details에는 같은
+순서의 Outcome ID별 확정 결과와 공개 정보를 둔다. 기존
+`Information Visibility`는 씬 전체의 공개·비공개 경계로 별도 유지한다.
+
+변경은 문서 표현 구조에만 한정한다. 기존 Outcome ID, 확정 결과, 상태 변화,
+다음 목적지, 공개 정보, 각주, 사건 순서와 공개 시점은 바꾸지 않는다.
+
+공용 인게임 스크립트 템플릿과 작성 skill·workflow는 사용자의 구현 요청에
+따라 같은 2단 계약으로 갱신했다. 본 승인 항목은 confirmed 프로젝트 문서의
+여섯 `Outcomes and State` 섹션만 적용 대상으로 한다.
+
+#### Review Notes
+
+- 위험도: low
+- 충돌 가능성: 서사·데이터·런타임 계약 변경 없음. 저장소에서 현행 5열 표를 자동 파싱하는 도구는 발견되지 않음.
+- 누락 정보: 없음
+- 작성 당시 원본 요약: 여섯 Scene이 `outcome_id`, 확정 결과, 상태 변화, 다음 씬 또는 다음 씬·화면, 공개 정보의 5열 표를 사용한다. 각 표 뒤에는 씬 전체의 `Information Visibility`가 별도 존재한다.
+- 작성 당시 대상 문서 SHA-256: `dbfb87416a05057b935d8a38effa9a8f0b3e1cd2d5afc49320df069035fe285c`
+- 적용 범위: 여섯 `Outcomes and State`만 교체한다. 바로 뒤 `Information Visibility`와 나머지 문서는 변경하지 않는다.
+- 신규 CW·NR·TBD: 없음
+- 공용 열 제목: S04의 기존 `다음 씬·화면`을 포함해 모두 `다음 씬`으로 통일한다. 기존 목적지 값은 그대로 유지하므로 의미 손실은 없다.
+- 적용 전 재확인: 기준 Git 커밋이 유지되고 대상 문서 SHA-256이 작성 당시 값과 일치함. 선행 의존 승인 없음, 독립 검수 `pass`, 활성 필수 수정 0건을 확인함.
+- 적용 결과: 여섯 `Outcomes and State`를 승인 Draft와 같은 Routing·Details 구조로 교체하고 기존 `Information Visibility`와 나머지 문서를 유지함.
+- 적용 후 대상 문서 SHA-256: `980dcf01bce03633c01f7b083ce1733e467c70fbb6c57576701d4973350a17b4`
+
+#### Subagent Review
+
+- 작성·창작 에이전트: `scenario_writer`
+- 작업 Phase·범위: Scene S01·S02A·S02B·S02C·S03·S04의 Outcomes 표현-only 2단 구조 변환
+- Specialist Task Packet 검증: complete
+- 전달한 사용자 사실·선택·금지사항: 긴 5열 표의 가독성 개선, `2단 분리`, 프롤로그 전체 Scene과 공용 템플릿·에이전트 규칙 반영, 내용·ID·각주 변경 금지
+- 전달한 사실·입력 출처 유형: 사용자 문제 제기와 형식·범위 선택은 `current_user_input`·`prior_user_input`, 현행 값은 `confirmed_document`, 사전 검토 권고와 writer Draft는 `proposal_input`, 합성 테스트 데이터 없음
+- 전달한 권한: 기존 여섯 Outcomes 표의 구조적 재배치만 허용
+- 명시적으로 부여하지 않은 권한: 창작, 문장 축약·교정, 서사·상태·ID·공개 시점 변경, 승인, 적용, 파일 수정
+- 독립 검수 에이전트: `scenario_reviewer`
+- 검수 판정: pass
+- 검수한 원본: Project Brief, 게임 개요, 확정 프롤로그 스크립트의 여섯 Outcomes·Information Visibility, 공용 template·skill·workflow
+- 최초 필수 결과와 조치: 없음
+- 해소 확인: `blocking` 0건, `required_revision` 0건, `authorial_reconsideration` 0건
+- 남은 선택적 권고: 없음
+- 검수 결과: 6 Scene·10 Outcome의 50개 원문 필드가 50/50 문자 일치하고 기존 CW 각주 18개가 18/18 보존됨. Routing과 Details는 10/10 동일 순서로 대응함.
+- 메인 Codex 승인 경계 확인: 독립 검수 pass와 사용자의 형식 선택은 confirmed 문서의 승인·적용 권한이 아니다. 본 항목의 명시적 승인 전에는 대상 문서를 수정하지 않는다.
+
+#### Scenario Improvement Review
+
+추가 개선 권고 없음. 이번 Draft는 사건 순서, 공개 시점, 분기, Outcome과
+동기를 변경하지 않는 표현-only 변환이다.
+
+#### Draft
+
+##### Scene S01
+
+```markdown
+#### Outcomes and State
+
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S01_INTERVENE`[^CW-PROLOGUE-01] | `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL = true`[^CW-PROLOGUE-05] | `SCENE_PROLOGUE_02A`[^CW-PROLOGUE-01] |
+| `OUTCOME_PROLOGUE_S01_OBSERVE`[^CW-PROLOGUE-01] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_02B`[^CW-PROLOGUE-01] |
+| `OUTCOME_PROLOGUE_S01_RETREAT`[^CW-PROLOGUE-01] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_02C`[^CW-PROLOGUE-01] |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S01_INTERVENE`
+
+- 확정 결과: 저지를 시도하지만 마지막 주문이 먼저 완성되는 `SCENE_PROLOGUE_02A` 결과로 진행한다.
+- 공개 정보: 흑의인을 저지하려 했다는 선택 이력
+
+###### `OUTCOME_PROLOGUE_S01_OBSERVE`
+
+- 확정 결과: 방해받지 않은 의식이 완성되는 `SCENE_PROLOGUE_02B` 결과로 진행한다.
+- 공개 정보: 의식을 지켜봤다는 선택 이력
+
+###### `OUTCOME_PROLOGUE_S01_RETREAT`
+
+- 확정 결과: 봉인 파괴의 충격파에 휩쓸리는 `SCENE_PROLOGUE_02C` 결과로 진행한다.
+- 공개 정보: 신당을 빠져나가려 했다는 선택 이력
+```
+
+##### Scene S02A
+
+```markdown
+#### Outcomes and State
+
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S02A_CONTINUE`[^CW-PROLOGUE-07] | `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL = true` 상태를 유지한다.[^CW-PROLOGUE-05] 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S02A_CONTINUE`
+
+- 확정 결과: 붕괴 결과를 확정한다.
+- 공개 정보: 봉인 파괴, 저지 실패
+```
+
+##### Scene S02B
+
+```markdown
+#### Outcomes and State
+
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S02B_CONTINUE`[^CW-PROLOGUE-07] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S02B_CONTINUE`
+
+- 확정 결과: 붕괴 결과를 확정한다.
+- 공개 정보: 방해받지 않은 의식 완성, 봉인 파괴
+```
+
+##### Scene S02C
+
+```markdown
+#### Outcomes and State
+
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S02C_CONTINUE`[^CW-PROLOGUE-07] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S02C_CONTINUE`
+
+- 확정 결과: 충격파에 휩쓸려 정신을 잃은 결과를 확정한다.
+- 공개 정보: 봉인 파괴의 충격파
+```
+
+##### Scene S03
+
+```markdown
+#### Outcomes and State
+
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S03_APPROACH`[^CW-PROLOGUE-07] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_04` |
+| `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | 현재 자동 저장을 덮어쓰지 않는다. 실제 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 기존 게임오버 UI |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S03_APPROACH`
+
+- 확정 결과: 재앙 곁으로 접근한다.
+- 공개 정보: 오염을 퍼뜨리는 거대한 재앙
+
+###### `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`
+
+- 확정 결과: `S03-L007`~`S03-L009`를 표시한 뒤 기존 게임오버로 전환한다.
+- 공개 정보: 오염에 휩쓸린 결과
+```
+
+##### Scene S04
+
+```markdown
+#### Outcomes and State
+
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`[^CW-PROLOGUE-07] | 인연의 피리 현현·수령·인벤토리 추가. 실제 `ITEM_` ID와 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 혼돈 보스전 Scene ID `TBD` |
+| `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | 현재 자동 저장을 덮어쓰지 않는다. 실제 호출 계약과 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 기존 게임오버 UI |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`
+
+- 확정 결과: `S04-L009-ACCEPT`~`S04-L011-ACCEPT`를 순서대로 표시한다.
+- 공개 정보: 피리 수령, 원숭이·닭·개 사용 가능
+
+###### `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`
+
+- 확정 결과: `S04-L009-REFUSE`~`S04-L012-REFUSE`를 순서대로 표시한 뒤 기존 게임오버를 호출한다.
+- 공개 정보: 더 빠른 오염에 휩쓸린 결과
+```
+
+#### Decision History
+
+##### Decision Entry
+
+- 결정: pending 승인 Draft 생성
+- 결정자: Codex
+- 결정일: 2026-07-27
+- 이유: 사용자가 2단 분리와 프롤로그 전체 적용을 선택했으며, writer 형식 변환과 reviewer 독립 검수가 완료됨
+- 결정 당시 Draft 요약: 여섯 Scene·10 Outcome을 Routing 3열 표와 Outcome별 Details로 재배치하고 모든 원문 값과 각주를 보존함
+
+##### Decision Entry
+
+- 결정: approved
+- 결정자: 사용자
+- 결정일: 2026-07-27
+- 이유: 사용자가 `APPR-20260727-003`을 특정해 승인 후 적용을 명시함
+- 결정 당시 Draft 요약: 독립 검수 `pass`를 받은 여섯 Scene·10 Outcome의 표현-only 2단 구조 변환
+
+##### Decision Entry
+
+- 결정: applied
+- 결정자: Codex
+- 결정일: 2026-07-27
+- 이유: 승인 후 원본·의존성·검수 상태가 모두 승인 Draft와 일치해 적용 조건을 충족함
+- 결정 당시 Draft 요약: 여섯 Outcomes 섹션을 적용하고 원문 값 50개와 기존 CW 각주 18개를 보존함
+
+#### Links
+
+- 관련 결정 로그: `DEC-20260727-003`
+- 관련 버전 기록: `VER-20260727-003`
+- 근거 파일: `workspace/projects/chronicles-of-the-twelve-bonds/project_brief.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`, `docs/templates/ingame_script.md`, `docs/skills/scenario_writing.md`, `docs/workflows/write_ingame_script.md`
+- 상위/대체 승인 항목: 없음
+- 선행/의존 승인 항목: 없음
+
 ### APPR-20260727-002: 프롤로그 Scene 2A~4 인게임 스크립트 작성
 
 #### Metadata

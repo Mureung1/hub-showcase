@@ -75,6 +75,9 @@ Approval Queue 저장을 담당한다.
    별도 대안으로 만들지 않는다.
 7. `docs/skills/scenario_writing.md`에 따라 사건을 입력 대기 또는 확정 결과
    전달 단위의 씬으로 나누고 `docs/templates/ingame_script.md`로 작성한다.
+   `Outcomes and State`는 구현 연결용 `Outcome Routing` 표와 설명용
+   `Outcome Details`로 분리하고, Outcome ID·순서·값·각주를 1:1로
+   일치시킨다. 씬 전체 `Information Visibility`는 별도 유지한다.
 8. 구체적인 창작 문장과 필드는 `CW-*` 각주로, 원본 서사 구조와 달라진 부분은
    `NR-*` Narrative Revision Log로 각각 공개한다.
 9. 씬 데이터 조합을 UI·기술 문서와 대조한다. 확정되지 않은 판정값, 등록

@@ -6,6 +6,48 @@
 
 ## Entries
 
+### Decision: 프롤로그 Outcomes 표 2단 구조 전환 승인
+
+#### Metadata
+
+- ID: DEC-20260727-003
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-27
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260727-003`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`
+- 적용된 창작·서사 공개: 없음
+
+#### Context
+
+프롤로그 여섯 Scene의 `Outcomes and State`가 Outcome ID, 확정 결과, 상태
+변화, 다음 씬과 공개 정보를 하나의 5열 표에 담아 긴 설명 셀의 가독성이
+낮았다. 공용 인게임 스크립트 템플릿과 작성 규칙도 같은 5열 구조를 사용했다.
+
+#### Decision
+
+Scene S01·S02A·S02B·S02C·S03·S04의 `Outcomes and State`를
+`Outcome Routing` 3열 표와 Outcome ID별 `Outcome Details`로 분리한다.
+Outcome별 공개 정보는 Details에 두고, 씬 전체의 `Information Visibility`는
+별도 유지한다. 기존 ID, 결과, 상태, 다음 목적지, 공개 정보와 각주는
+변경하지 않는다.
+
+#### Rationale
+
+사용자가 `APPR-20260727-003`을 특정해 승인 후 적용을 명시했다.
+`scenario_writer`가 표현-only Draft를 작성하고 `scenario_reviewer`가
+6 Scene·10 Outcome의 원문 필드 50개와 CW 각주 18개가 모두 보존됐으며
+Routing과 Details가 10/10 대응한다고 독립 검수했다. 적용 전 대상 문서의
+SHA-256이 승인안 작성 당시 값과 일치했고 선행 의존 승인도 없다.
+
+#### Follow-up
+
+- 후속 작업: 없음
+- `provisional` 검증·재조정: 없음
+
+---
+
 ### Decision: 프롤로그 Scene 2A~4 인게임 스크립트 승인
 
 #### Metadata

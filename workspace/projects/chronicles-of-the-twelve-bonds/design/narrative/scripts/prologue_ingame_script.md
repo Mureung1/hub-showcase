@@ -105,11 +105,30 @@
 
 #### Outcomes and State
 
-| outcome_id | 확정 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
-|---|---|---|---|---|
-| `OUTCOME_PROLOGUE_S01_INTERVENE`[^CW-PROLOGUE-01] | 저지를 시도하지만 마지막 주문이 먼저 완성되는 `SCENE_PROLOGUE_02A` 결과로 진행한다. | `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL = true`[^CW-PROLOGUE-05] | `SCENE_PROLOGUE_02A`[^CW-PROLOGUE-01] | 흑의인을 저지하려 했다는 선택 이력 |
-| `OUTCOME_PROLOGUE_S01_OBSERVE`[^CW-PROLOGUE-01] | 방해받지 않은 의식이 완성되는 `SCENE_PROLOGUE_02B` 결과로 진행한다. | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_02B`[^CW-PROLOGUE-01] | 의식을 지켜봤다는 선택 이력 |
-| `OUTCOME_PROLOGUE_S01_RETREAT`[^CW-PROLOGUE-01] | 봉인 파괴의 충격파에 휩쓸리는 `SCENE_PROLOGUE_02C` 결과로 진행한다. | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_02C`[^CW-PROLOGUE-01] | 신당을 빠져나가려 했다는 선택 이력 |
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S01_INTERVENE`[^CW-PROLOGUE-01] | `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL = true`[^CW-PROLOGUE-05] | `SCENE_PROLOGUE_02A`[^CW-PROLOGUE-01] |
+| `OUTCOME_PROLOGUE_S01_OBSERVE`[^CW-PROLOGUE-01] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_02B`[^CW-PROLOGUE-01] |
+| `OUTCOME_PROLOGUE_S01_RETREAT`[^CW-PROLOGUE-01] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_02C`[^CW-PROLOGUE-01] |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S01_INTERVENE`
+
+- 확정 결과: 저지를 시도하지만 마지막 주문이 먼저 완성되는 `SCENE_PROLOGUE_02A` 결과로 진행한다.
+- 공개 정보: 흑의인을 저지하려 했다는 선택 이력
+
+###### `OUTCOME_PROLOGUE_S01_OBSERVE`
+
+- 확정 결과: 방해받지 않은 의식이 완성되는 `SCENE_PROLOGUE_02B` 결과로 진행한다.
+- 공개 정보: 의식을 지켜봤다는 선택 이력
+
+###### `OUTCOME_PROLOGUE_S01_RETREAT`
+
+- 확정 결과: 봉인 파괴의 충격파에 휩쓸리는 `SCENE_PROLOGUE_02C` 결과로 진행한다.
+- 공개 정보: 신당을 빠져나가려 했다는 선택 이력
 
 #### Information Visibility
 
@@ -173,9 +192,18 @@
 
 #### Outcomes and State
 
-| outcome_id | 확정 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
-|---|---|---|---|---|
-| `OUTCOME_PROLOGUE_S02A_CONTINUE`[^CW-PROLOGUE-07] | 붕괴 결과를 확정한다. | `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL = true` 상태를 유지한다.[^CW-PROLOGUE-05] 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` | 봉인 파괴, 저지 실패 |
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S02A_CONTINUE`[^CW-PROLOGUE-07] | `FLAG_PROLOGUE_TRIED_TO_STOP_RITUAL = true` 상태를 유지한다.[^CW-PROLOGUE-05] 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S02A_CONTINUE`
+
+- 확정 결과: 붕괴 결과를 확정한다.
+- 공개 정보: 봉인 파괴, 저지 실패
 
 #### Information Visibility
 
@@ -236,9 +264,18 @@
 
 #### Outcomes and State
 
-| outcome_id | 확정 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
-|---|---|---|---|---|
-| `OUTCOME_PROLOGUE_S02B_CONTINUE`[^CW-PROLOGUE-07] | 붕괴 결과를 확정한다. | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` | 방해받지 않은 의식 완성, 봉인 파괴 |
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S02B_CONTINUE`[^CW-PROLOGUE-07] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S02B_CONTINUE`
+
+- 확정 결과: 붕괴 결과를 확정한다.
+- 공개 정보: 방해받지 않은 의식 완성, 봉인 파괴
 
 #### Information Visibility
 
@@ -299,9 +336,18 @@
 
 #### Outcomes and State
 
-| outcome_id | 확정 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
-|---|---|---|---|---|
-| `OUTCOME_PROLOGUE_S02C_CONTINUE`[^CW-PROLOGUE-07] | 충격파에 휩쓸려 정신을 잃은 결과를 확정한다. | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` | 봉인 파괴의 충격파 |
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S02C_CONTINUE`[^CW-PROLOGUE-07] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_03` |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S02C_CONTINUE`
+
+- 확정 결과: 충격파에 휩쓸려 정신을 잃은 결과를 확정한다.
+- 공개 정보: 봉인 파괴의 충격파
 
 #### Information Visibility
 
@@ -369,10 +415,24 @@
 
 #### Outcomes and State
 
-| outcome_id | 확정 결과 | 상태 변화 | 다음 씬 | 공개 정보 |
-|---|---|---|---|---|
-| `OUTCOME_PROLOGUE_S03_APPROACH`[^CW-PROLOGUE-07] | 재앙 곁으로 접근한다. | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_04` | 오염을 퍼뜨리는 거대한 재앙 |
-| `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | `S03-L007`~`S03-L009`를 표시한 뒤 기존 게임오버로 전환한다. | 현재 자동 저장을 덮어쓰지 않는다. 실제 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 기존 게임오버 UI | 오염에 휩쓸린 결과 |
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S03_APPROACH`[^CW-PROLOGUE-07] | 별도 보상·패널티 없음 | `SCENE_PROLOGUE_04` |
+| `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | 현재 자동 저장을 덮어쓰지 않는다. 실제 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 기존 게임오버 UI |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S03_APPROACH`
+
+- 확정 결과: 재앙 곁으로 접근한다.
+- 공개 정보: 오염을 퍼뜨리는 거대한 재앙
+
+###### `OUTCOME_PROLOGUE_S03_FLEE_GAME_OVER`
+
+- 확정 결과: `S03-L007`~`S03-L009`를 표시한 뒤 기존 게임오버로 전환한다.
+- 공개 정보: 오염에 휩쓸린 결과
 
 #### Information Visibility
 
@@ -448,10 +508,24 @@
 
 #### Outcomes and State
 
-| outcome_id | 확정 결과 | 상태 변화 | 다음 씬·화면 | 공개 정보 |
-|---|---|---|---|---|
-| `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`[^CW-PROLOGUE-07] | `S04-L009-ACCEPT`~`S04-L011-ACCEPT`를 순서대로 표시한다. | 인연의 피리 현현·수령·인벤토리 추가. 실제 `ITEM_` ID와 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 혼돈 보스전 Scene ID `TBD` | 피리 수령, 원숭이·닭·개 사용 가능 |
-| `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | `S04-L009-REFUSE`~`S04-L012-REFUSE`를 순서대로 표시한 뒤 기존 게임오버를 호출한다. | 현재 자동 저장을 덮어쓰지 않는다. 실제 호출 계약과 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 기존 게임오버 UI | 더 빠른 오염에 휩쓸린 결과 |
+##### Outcome Routing
+
+| outcome_id | 상태 변화 | 다음 씬 |
+|---|---|---|
+| `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`[^CW-PROLOGUE-07] | 인연의 피리 현현·수령·인벤토리 추가. 실제 `ITEM_` ID와 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 혼돈 보스전 Scene ID `TBD` |
+| `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`[^CW-PROLOGUE-07] | 현재 자동 저장을 덮어쓰지 않는다. 실제 호출 계약과 상태 키는 `TBD`.[^CW-PROLOGUE-15] | 기존 게임오버 UI |
+
+##### Outcome Details
+
+###### `OUTCOME_PROLOGUE_S04_ACCEPT_FLUTE`
+
+- 확정 결과: `S04-L009-ACCEPT`~`S04-L011-ACCEPT`를 순서대로 표시한다.
+- 공개 정보: 피리 수령, 원숭이·닭·개 사용 가능
+
+###### `OUTCOME_PROLOGUE_S04_REFUSE_AND_FLEE_GAME_OVER`
+
+- 확정 결과: `S04-L009-REFUSE`~`S04-L012-REFUSE`를 순서대로 표시한 뒤 기존 게임오버를 호출한다.
+- 공개 정보: 더 빠른 오염에 휩쓸린 결과
 
 #### Information Visibility
 

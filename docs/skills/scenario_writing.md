@@ -46,6 +46,16 @@
   작성한다.
 - 구현 영역은 진입·종료 조건, 다음 씬, 입력 모드, 분기, Outcome, 상태 변화,
   공개 정보와 필요한 참조를 작성한다.
+- `Outcomes and State`는 긴 설명을 한 표에 모으지 않고 `Outcome Routing`과
+  `Outcome Details`의 2단 구조로 작성한다. Routing 표에는
+  `outcome_id`, 상태 변화와 다음 씬만 두고, 같은 순서의 Details에는
+  Outcome ID별 확정 결과와 공개 정보를 기록한다.
+- Outcome이 하나뿐인 씬도 같은 구조를 사용한다. Routing의 모든 Outcome은
+  Details에 정확히 한 번 있어야 하며 ID, 순서, 값과 창작 각주를 서로
+  일치시킨다.
+- Outcome별 `공개 정보`는 해당 결과에서 공개·기록되는 정보이고,
+  `Information Visibility`는 씬 전체의 공개·비공개 경계다. 두 범위를
+  합치거나 한쪽을 생략하지 않는다.
 - 제작 영역은 일러스트, 배경, BGM, 효과음, 카메라, 애니메이션과 QA 요구를
   작성하되 미확정 리소스는 `TBD`로 둔다.
 
@@ -100,6 +110,8 @@
 - 모든 구체 창작 문장·ID·연출이 CW 각주로 공개되었는가
 - 플레이어 노출 대본에 스포일러나 내부 ID가 섞이지 않았는가
 - input mode, choices, Outcome, 상태와 다음 씬 조합이 유효한가
+- 모든 Outcome이 Routing과 Details에 같은 순서로 1:1 대응하고,
+  Outcome별 공개 정보와 씬 전체 Information Visibility가 분리되어 있는가
 - 모든 씬과 분기가 도달 가능하고 종료점이 있는가
 - 세계관·시스템 변경 의존성이 별도 고위험 제안과 `TBD`로 분리되었는가
 - 승인 전 canonical 문서와 결정·버전 기록을 변경하지 않았는가
