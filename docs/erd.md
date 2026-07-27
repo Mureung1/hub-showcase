@@ -282,6 +282,8 @@ CREATE INDEX ON source_assessments USING gin (allowed_uses);
 CREATE INDEX ON postings (job_role_id, company_id);
 ```
 
+`job_role_id` 판정 규칙은 [지표 명세](metric-spec.md) 2.8에 있다.
+
 ### 4.6 `posting_versions`
 
 분석의 모집단 단위다. 모든 지표의 중복 제거 단위가 `posting_version_id`다.
