@@ -84,6 +84,9 @@ function LandingPage() {
                 </button>
               )}
             </div>
+            <button className="btn-link hero-guide-link" onClick={() => navigate('/guide')}>
+              이용 방법이 궁금하다면? →
+            </button>
           </div>
           <div className="hero-visual" aria-hidden="true">
             <p className="hero-visual-eyebrow">PREVIEW · 분석 결과 예시</p>

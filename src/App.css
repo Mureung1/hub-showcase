@@ -631,6 +631,61 @@ h1 {
   margin: 0;
 }
 
+.guide-section {
+  margin-bottom: 16px;
+}
+.guide-section.has-image {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.guide-section-image {
+  width: 100%;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-chip);
+  display: block;
+}
+@media (min-width: 860px) {
+  .guide-section.has-image {
+    flex-direction: row;
+    align-items: center;
+  }
+  .guide-section-image {
+    width: 46%;
+    flex-shrink: 0;
+  }
+  .guide-section-body {
+    flex: 1;
+    min-width: 0;
+  }
+}
+.guide-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 10px;
+}
+.guide-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-list li {
+  font-size: 13px;
+  color: var(--gray-500);
+  line-height: 1.6;
+}
+.hero-guide-link {
+  display: inline-block;
+  margin-top: 14px;
+}
+.guide-cta {
+  text-align: center;
+  margin-top: 24px;
+}
+
 @media (min-width: 640px) {
   .how-grid {
     grid-template-columns: repeat(2, 1fr);
