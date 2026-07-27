@@ -469,8 +469,10 @@ function updateManagedConfig(current: string, desiredBlock: string): string {
     desiredServer === undefined ||
     !managedServerMatchesExceptCommand(currentServer, desiredServer)
   ) {
-    throw new Error(
-      `Managed MCP declaration differs from the required shape.\n--- existing\n${currentBlock}\n--- required\n${desiredBlock}`,
+    throw tomlConflict(
+      'Managed MCP declaration differs from the required shape.',
+      currentBlock,
+      desiredBlock,
     )
   }
   if (currentBlock === desiredBlock) return current
@@ -479,8 +481,10 @@ function updateManagedConfig(current: string, desiredBlock: string): string {
     parseProjectToml(updated)
     return updated
   }
-  throw new Error(
-    `Managed MCP declaration differs from the required bytes.\n--- existing\n${currentBlock}\n--- required\n${desiredBlock}`,
+  throw tomlConflict(
+    'Managed MCP declaration differs from the required bytes.',
+    currentBlock,
+    desiredBlock,
   )
 }
 
