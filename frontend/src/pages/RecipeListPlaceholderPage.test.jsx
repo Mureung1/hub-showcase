@@ -12,10 +12,54 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { AuthContext } from "../auth/authContext";
 import RecipeListPlaceholderPage from "./RecipeListPlaceholderPage";
 
+const { firebaseAuthMock, signOutMock } = vi.hoisted(() => ({
+  firebaseAuthMock: {},
+  signOutMock: vi.fn(),
+}));
+
+vi.mock("firebase/auth", () => ({
+  signOut: signOutMock,
+}));
+
+vi.mock("../firebase", () => ({
+  firebaseAuth: firebaseAuthMock,
+}));
+
 afterEach(() => {
   cleanup();
+  signOutMock.mockReset();
   vi.unstubAllGlobals();
 });
+
+function renderLogoutPage() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    ),
+  );
+  const user = {
+    displayName: "요리사",
+    getIdToken: vi.fn().mockResolvedValue("firebase-token"),
+  };
+
+  render(
+    <AuthContext.Provider value={{ user }}>
+      <MemoryRouter initialEntries={["/recipes"]}>
+        <Routes>
+          <Route
+            path="/recipes"
+            element={<RecipeListPlaceholderPage />}
+          />
+          <Route path="/" element={<h1>로그인</h1>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthContext.Provider>,
+  );
+}
 
 function renderRecipeDetail({
   type = "OWNED",
@@ -104,6 +148,79 @@ function renderRecipeDetail({
 }
 
 describe("RecipeListPlaceholderPage", () => {
+  it("Firebase 로그아웃 성공 후 로그인 화면으로 이동한다", async () => {
+    signOutMock.mockResolvedValue();
+    renderLogoutPage();
+
+    fireEvent.click(
+      await screen.findAllByRole("button", { name: "로그아웃" }).then(
+        ([logoutButton]) => logoutButton,
+      ),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "로그인" }),
+    ).toBeInTheDocument();
+    expect(signOutMock).toHaveBeenCalledTimes(1);
+    expect(signOutMock).toHaveBeenCalledWith(firebaseAuthMock);
+  });
+
+  it("로그아웃 실패 시 현재 화면과 재시도 가능한 오류를 유지한다", async () => {
+    signOutMock
+      .mockRejectedValueOnce(new Error("로그아웃하지 못했습니다."))
+      .mockResolvedValueOnce();
+    renderLogoutPage();
+
+    const [logoutButton] = await screen.findAllByRole("button", {
+      name: "로그아웃",
+    });
+    fireEvent.click(logoutButton);
+
+    expect(
+      await screen.findAllByRole("alert").then(([alert]) => alert),
+    ).toHaveTextContent("로그아웃에 실패했어요. 다시 시도해 주세요.");
+    expect(
+      screen.getByRole("heading", { name: /요리사의 레시피북/ }),
+    ).toBeInTheDocument();
+    expect(logoutButton).not.toBeDisabled();
+
+    fireEvent.click(logoutButton);
+
+    expect(
+      await screen.findByRole("heading", { name: "로그인" }),
+    ).toBeInTheDocument();
+    expect(signOutMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("로그아웃 처리 중 같은 시점의 중복 실행을 막는다", async () => {
+    let resolveSignOut;
+    signOutMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSignOut = resolve;
+        }),
+    );
+    renderLogoutPage();
+
+    const logoutButtons = await screen.findAllByRole("button", {
+      name: "로그아웃",
+    });
+    fireEvent.click(logoutButtons[0]);
+    fireEvent.click(logoutButtons[1]);
+
+    expect(signOutMock).toHaveBeenCalledTimes(1);
+    logoutButtons.forEach((logoutButton) => {
+      expect(logoutButton).toBeDisabled();
+      expect(logoutButton).toHaveAttribute("aria-busy", "true");
+    });
+
+    resolveSignOut();
+
+    expect(
+      await screen.findByRole("heading", { name: "로그인" }),
+    ).toBeInTheDocument();
+  });
+
   it("빈 레시피 목록을 알린다", async () => {
     vi.stubGlobal(
       "fetch",

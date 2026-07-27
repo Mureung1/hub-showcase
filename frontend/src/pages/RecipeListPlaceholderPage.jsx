@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { signOut } from "firebase/auth";
 import {
   Link,
   useLocation,
@@ -13,6 +14,7 @@ import {
 } from "../api/recipeApi";
 import RecipeInputForm from "../components/RecipeInputForm";
 import RecipeDetailView from "../components/RecipeDetailView";
+import { firebaseAuth } from "../firebase";
 import TransferInvitationPage from "./TransferInvitationPage";
 
 const filters = [
@@ -49,6 +51,9 @@ function RecipeListPlaceholderPage() {
   const [cookingModeRecipe, setCookingModeRecipe] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+  const isLogoutPendingRef = useRef(false);
   const isAddingRecipe = location.pathname === "/recipes/new";
   const isTransferInvitationDialog =
     location.pathname === "/transfer-invitations";
@@ -163,6 +168,26 @@ function RecipeListPlaceholderPage() {
     navigate("/recipes")
   }
 
+  async function handleLogout() {
+    if (isLogoutPendingRef.current) {
+      return;
+    }
+
+    isLogoutPendingRef.current = true;
+    setIsLoggingOut(true);
+    setLogoutError("");
+
+    try {
+      await signOut(firebaseAuth);
+      navigate("/", { replace: true });
+    } catch {
+      setLogoutError("로그아웃에 실패했어요. 다시 시도해 주세요.");
+    } finally {
+      isLogoutPendingRef.current = false;
+      setIsLoggingOut(false);
+    }
+  }
+
   async function handlePrepareRecipe(recipeInput) {
     if (!user) {
       throw new Error("로그인 정보를 확인할 수 없습니다.");
@@ -189,6 +214,23 @@ function RecipeListPlaceholderPage() {
       >
         <span aria-hidden="true">☰</span>
         <span>나만의 레시피북</span>
+        {logoutError ? (
+          <p
+            className="ml-auto max-w-32 text-right text-[11px] leading-tight text-[#ffd9cf]"
+            role="alert"
+          >
+            {logoutError}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          className={`${logoutError ? "" : "ml-auto"} min-h-10 shrink-0 rounded-md border border-[#aa8c4b] px-2.5 text-xs text-[#f3e1b4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580] disabled:cursor-wait disabled:opacity-70`}
+          aria-busy={isLoggingOut}
+          disabled={isLoggingOut}
+          onClick={handleLogout}
+        >
+          {isLoggingOut ? "로그아웃 중" : "로그아웃"}
+        </button>
       </header>
 
       <div
@@ -248,6 +290,25 @@ function RecipeListPlaceholderPage() {
                 </button>
               );
             })}
+          </div>
+          <div className="mt-auto w-[calc(100%-10px)] border-t border-[rgb(220_193_126/32%)] pt-3">
+            {logoutError ? (
+              <p
+                className="mb-2 text-xs leading-relaxed text-[#ffd9cf]"
+                role="alert"
+              >
+                {logoutError}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              className="min-h-9 w-full rounded-md border border-[#aa8c4b] px-2.5 text-xs text-[#f3e1b4] hover:bg-[rgb(255_244_204/7%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580] disabled:cursor-wait disabled:opacity-70"
+              aria-busy={isLoggingOut}
+              disabled={isLoggingOut}
+              onClick={handleLogout}
+            >
+              {isLoggingOut ? "로그아웃 중" : "로그아웃"}
+            </button>
           </div>
         </aside>
 
