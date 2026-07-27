@@ -1,3 +1,5 @@
+import type { ExpressionSpecification } from "maplibre-gl";
+
 export const DENSITY_COLORS = {
   low: "#3b82f6",
   medium: "#f59e0b",
@@ -5,7 +7,7 @@ export const DENSITY_COLORS = {
   peak: "#b91c1c",
 } as const;
 
-export const DENSITY_HEATMAP_COLOR = [
+export const DENSITY_HEATMAP_COLOR: ExpressionSpecification = [
   "interpolate",
   ["linear"],
   ["heatmap-density"],
@@ -19,4 +21,4 @@ export const DENSITY_HEATMAP_COLOR = [
   DENSITY_COLORS.high,
   1,
   DENSITY_COLORS.peak,
-] as const;
+];
