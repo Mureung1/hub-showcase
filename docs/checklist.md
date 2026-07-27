@@ -111,13 +111,61 @@
       · "겉보기 같지만 속은 API 통신 구조"가 검증 포인트
 
 ### 2. BE·DB — 한 사이클 관통
-> Express API는 TDD로 시도 — 테스트 먼저 작성(GET은 배열 반환, PATCH는
-> done:true) 후 구현. 스키마 계약이 확정돼 있어 정답이 명확한 첫 TDD 대상.
-> 커리큘럼의 "기능 검증 전용 Agent" 요구와 연결
-- [ ] Supabase notifications 테이블 1개 생성
-- [ ] Express API: 알림 목록 조회(GET) / 완료 처리(PATCH)
-- [ ] FE의 mock을 실제 API 호출로 교체 ← 수직슬라이스 완성 지점
-      (화면에서 완료 누름 → 서버 → DB 저장 → 응답 → 화면 흐려짐)
+> 목표: 완료 누르고 새로고침해도 남는 상태 = 수직슬라이스 완성
+> 검증 구역: D-day·API 계약은 자동 테스트 / 화면 모양은 눈 검증
+
+#### 2-1. D-day 계산 (TDD 첫 바퀴) ← 교체보다 먼저. 뱃지가 이것에 의존
+- [ ] mock deadline을 표준 형식으로 교체 + 미래 날짜로 갱신
+      완료: 4건 다 파싱 가능, 지난 날짜 없음
+- [ ] 시나리오 목록 — 정상 / 오늘 마감 / 지남 / 마감 없음 / 완료됨
+      완료: 표로 정리, 내가 읽고 빠진 케이스 확인
+- [ ] red — 테스트 + 스텁. 기준일을 인자로 받는 형태
+      완료: 터미널에 빨강 (import 오류 아닌 진짜 실패)
+- [ ] green — 최소 구현
+      완료: npx vitest run 초록
+- [ ] 화면 연결 — ddayLabel 임시 필드 제거
+      · NotificationCard: 마감 없으면 뱃지 자체를 안 그림
+      · Hero 날짜 "7월 13일" → 진짜 오늘
+      완료: 뱃지가 계산값으로 나옴 + 레이아웃 안 깨짐 (눈 검증)
+
+#### 2-2. Supabase 테이블 + 시드
+- [ ] 프로젝트 생성
+- [ ] CREATE TABLE — 실행 전 한 줄씩 설명 듣고 승인
+      완료: Table Editor에 확정 컬럼대로 생김
+- [ ] 시드 4건 — deadline은 now() + interval 상대 날짜
+      완료: 조회되고, 시간이 지나도 D-day가 유효
+
+#### 2-3. Express 뼈대
+- [ ] server/ 세팅 + Hello
+- [ ] app 정의와 listen 분리 (테스트용 구조)
+      완료: 왜 나눴는지 내 말로 설명 가능
+- [ ] .gitignore 먼저 → .env → supabase client
+      ⚠️ service_role 키 커밋 금지
+      완료: select()가 시드를 배열로 반환
+- [ ] express.json() + 로거
+
+#### 2-4. GET /api/notifications
+- [ ] router → controller → service 계층 구현
+- [ ] controller 단위 테스트 (service는 스텁)
+- [ ] supertest 도입 + 통합 테스트 (배열 반환)
+      완료: 브라우저에서 JSON 확인
+
+#### 2-5. PATCH /api/notifications/:id
+- [ ] 구현 + 테스트 (done:true / 없는 id는 404)
+      ⚠️ params.id는 문자열, DB id는 숫자 — 변환 필요
+      완료: DB에서 done이 실제로 바뀜
+
+#### 2-6. 교체 ← 수직슬라이스 완성 지점
+- [ ] vite.config.js에 proxy (/api → localhost:3000)
+- [ ] MSW 끄기 (main.jsx)
+      ⚠️ 안 끄면 서비스워커가 가로채서 교체 검증이 무효
+      완료: 완료 누르고 새로고침 → 상태가 남음
+      완료: 서버 끄면 에러 화면이 떠야 정상
+
+#### 2-7. 기록
+- [ ] plan.md 결정 히스토리 + 컬럼 확정
+- [ ] CLAUDE.md 진행 상황
+- [ ] 커밋 + PR (⚠️ push 전 #1653 상태 확인)
 
 ### 3. 에이전트 투입 (슬라이스 완성 후)
 - [ ] Gmail/포털 수집 → LLM 판단 → Supabase에 알림 insert

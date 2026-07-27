@@ -43,7 +43,10 @@
 세부 단위 진행 상황은 docs/checklist.md에서만 관리한다 (이 파일은 마일스톤 요약만 유지).
 
 ## 다음 세션 시작 시 참고
-- 2주차 2번(BE·DB) 착수 — Supabase notifications 테이블 → Express API(GET/PATCH, TDD로 시도) → FE의 MSW를 실제 API로 교체하면 수직슬라이스 완성. checklist 2번 참조
+- 2주차 2번 착수. 순서는 D-day 계산 TDD(2-1) → Supabase 테이블(2-2) →
+  Express(2-3~2-5) → MSW를 실서버로 교체(2-6).
+  D-day가 먼저인 이유: 뱃지가 ddayLabel에 의존하는데 그 필드를 DB에 저장하지
+  않기로 해서, 계산 로직이 없으면 교체 순간 뱃지 4개가 빈칸이 됨.
 
 ## 참고
 @README.md
