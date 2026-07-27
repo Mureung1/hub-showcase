@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,30 +33,40 @@ AY-PLE 재시작은 registry의 active SemesterWorkspace를 fresh 검증해 같�
 
 ## Acceptance Criteria
 
-- [ ] App restart가 valid registry와 v4 identity를 사용해 same workspace의 fresh Runtime·thread를 열고 active lifecycle을 복구한다.
-- [ ] Missing/moved/reused/mismatched root가 no Runtime start와 `workspace_unavailable` recovery로 수렴하며 path를 노출하지 않는다.
-- [ ] Malformed/future registry가 byte-for-byte 보존되고 reset 또는 empty fallback 없이 `registry_incompatible`로 표시된다.
-- [ ] No-root/null-pointer startup이 `prepared_workspace_required`이고 Browser chooser나 hub Runtime을 만들지 않는다.
-- [ ] Prepared-root relaunch 실패가 previous registry pointer를 보존하며 뒤이은 no-argument relaunch가 previous workspace를 정상 reopen한다.
-- [ ] Reopen과 relaunch 뒤 native thread cwd, Skill, MCP credential과 transcript가 previous process 또는 다른 workspace에서 교차하지 않는다.
-- [ ] Active Runtime terminal과 required MCP loss가 new Turn admission을 닫고 bounded settlement 뒤 honest recovery로 수렴한다.
-- [ ] Browser E2E가 starting, active, workspace unavailable, runtime unavailable, registry incompatible와 failed-switch recovery를 desktop width에서 검증하고 candidate/change controls가 없음을 확인한다.
+- [x] App restart가 valid registry와 v4 identity를 사용해 same workspace의 fresh Runtime·thread를 열고 active lifecycle을 복구한다.
+- [x] Missing/moved/reused/mismatched root가 no Runtime start와 `workspace_unavailable` recovery로 수렴하며 path를 노출하지 않는다.
+- [x] Malformed/future registry가 byte-for-byte 보존되고 reset 또는 empty fallback 없이 `registry_incompatible`로 표시된다.
+- [x] No-root/null-pointer startup이 `prepared_workspace_required`이고 Browser chooser나 hub Runtime을 만들지 않는다.
+- [x] Prepared-root relaunch 실패가 previous registry pointer를 보존하며 뒤이은 no-argument relaunch가 previous workspace를 정상 reopen한다.
+- [x] Reopen과 relaunch 뒤 native thread cwd, Skill, MCP credential과 transcript가 previous process 또는 다른 workspace에서 교차하지 않는다.
+- [x] Active Runtime terminal과 required MCP loss가 new Turn admission을 닫고 bounded settlement 뒤 honest recovery로 수렴한다.
+- [x] Browser E2E가 starting, active, workspace unavailable, runtime unavailable, registry incompatible와 failed-switch recovery를 desktop width에서 검증하고 candidate/change controls가 없음을 확인한다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm test -w @ay-ple/server`
-  - `npm test -w @ay-ple/chat-shell`
-  - `npm run test:e2e -w @ay-ple/chat-shell`
-  - Registry reopen, failed prepared-root relaunch와 cross-workspace deterministic Runtime focused tests
+  - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/prepared-workspace-startup.test.ts` — registry reopen, fresh generation, failed explicit relaunch, previous-root recovery, terminal·Adapter loss를 포함한 24개 test green
+  - `npm test -w @ay-ple/server` — 194개 test green
+  - `npm test -w @ay-ple/product-contract` — 21개 test green
+  - `npm test -w @ay-ple/chat-shell` — 47개 test green
+  - `npm run test:e2e -w @ay-ple/chat-shell` — 35개 Chromium desktop test green
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
-  - `npm run build`
-  - `npm run lint -w @ay-ple/chat-shell`
-  - `npm run check:docs-links`
+  - `npm test` — green
+  - `npm run typecheck` — green
+  - `npm run build` — green
+  - `npm run lint -w @ay-ple/chat-shell` — green
+  - `npm run check:docs-links` — active 28개와 historical banner 2개 green
+  - `git diff --check` — green
 - Manual or live smoke:
-  - 두 temporary prepared Git SemesterWorkspace에서 explicit first open→no-argument reopen→failed explicit relaunch→previous-root reopen→successful relaunch를 수행하고 registry, process tree, exact cwd와 UI recovery를 확인한다.
+  - `npm run test:runtime-local-provider` — exact local provider bridge와 prepared Git root trust를 사용하는 4개 actual test green
+  - Chromium E2E에서 두 temporary prepared Git SemesterWorkspace를 실제 shared listener와 deterministic Runtime/Broker에 연결해 explicit first open → no-argument reopen → failed explicit relaunch → previous-root reopen → successful relaunch를 실행했다. Registry와 user file bytes, fresh thread·credential, exact Git root, 1440px·1920px UI와 path-free recovery를 함께 확인했다.
+  - `/code-review 618e0adba996d777b78e054a73945b06b02e691e`의 Standards와 Spec 축 모두 final finding 0개였다.
+
+## Result
+
+`PreparedWorkspaceStartupCoordinator`는 no-argument launch마다 registry active pointer와 v4 root identity를 fresh 검증하고 새 Runtime·thread·Interaction generation을 만든다. Explicit prepared-root relaunch가 root, Runtime, MCP readiness 또는 registry transaction에서 실패하면 prior registry authority와 user-owned bytes를 그대로 보존하므로 다음 no-argument process가 previous SemesterWorkspace를 정상 reopen한다. Registered root 불일치와 Runtime continuity loss는 각각 path-free `workspace_unavailable`과 `runtime_unavailable` lifecycle로 구분된다.
+
+Target `WorkspaceLifecycleView`는 `starting | active | recovery_required`의 safe projection만 표시하며 candidate, chooser, restart 또는 change control을 제공하지 않는다. 실제 public App composition 전환은 downstream joint cutover가 소유하지만, W-008 Browser harness는 Vite → shared listener → prepared startup seam을 통과해 relaunch와 failed-switch recovery를 검증한다. 주요 구현 commit은 `a8c78e611`, `a0f121ada`, `731b68279`, `e08a710db`, `40707ddb3`이다.
 
 ## Blocked By
 
