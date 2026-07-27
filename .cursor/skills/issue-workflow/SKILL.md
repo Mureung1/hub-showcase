@@ -158,6 +158,24 @@ npm run lint                   # oxlint
     이슈 브랜치로 옮긴다.
 - 판단이 애매하면(이슈로 등록할지 하루 브랜치에 넣을지) 사용자에게 먼저 확인한다.
 
+### `weekN_plan.md` 충돌 방지
+
+여러 이슈를 연달아 진행할 때 `docs/weekN_plan.md`의 진행 현황 표·frontmatter `todos:`가 거의
+매번 충돌났던 사례(#76/#75, #78/#79, #80/#82, #84/#87 등 반복). 원인은 이슈 브랜치 안에
+**코드 변경과 `weekN_plan.md` 갱신을 같이 커밋**하면서, 직전 이슈의 `weekN_plan.md` PR이
+머지되기 전에 다음 이슈 브랜치를 새로 파기 때문 — 두 브랜치가 같은 표의 같은 위치(마지막
+행)에 각자 행을 추가해 텍스트 레벨에서 자동 병합이 안 된다.
+
+**방지 원칙**: `weekN_plan.md` 갱신을 이슈 브랜치에 절대 같이 넣지 않는다.
+1. 이슈 브랜치(`feat/issue-N-*`)는 코드·계획 문서(`weekN/issue-N-*.md`)만 다루고
+   `weekN_plan.md`는 건드리지 않는다.
+2. 이슈 PR이 머지된 직후, **그 시점 최신 main에서 새로 브랜치**를 파서(`docs/issue-N-status`
+   등) `weekN_plan.md` 한 줄만 갱신하는 작은 PR을 별도로 올린다 — 코드 PR과 절대 합치지 않는다.
+3. 그래도 여러 이슈가 겹쳐 진행 중이면(사용자가 다음 이슈로 바로 넘어가라고 지시하는 경우 등)
+   `weekN_plan.md` PR 여러 개가 동시에 열려있을 수 있다 — 이땐 충돌이 나도 텍스트 몇 줄
+   수동 병합이라 손해가 크지 않으니, 매번 `git fetch && git merge origin/main`으로 양쪽 행을
+   다 살리고 넘어간다 (아래 "머지 충돌 해결" 참고). 무리해서 순서를 강제로 맞추려 하지 않는다.
+
 - **관련 파일만** `git add`. 제외 대상: `.cursor/plans/`, 이번 이슈와 무관한 문서.
 - [Conventional Commits](https://www.conventionalcommits.org/) — 허용 type: `feat` `fix` `docs` `style` `refactor` `chore` `test`, scope 예: `client` `server` `shared` `crawler` `design`. 헤더 100자 이내, 끝 마침표 금지 (commitlint가 강제).
 - 요약 끝에 `(#N)` 이슈 번호. 본문은 HEREDOC로 전달.
