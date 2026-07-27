@@ -674,7 +674,7 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onCo
         {recipeSteps.length ? <ol className="recipe-steps">{recipeSteps.map((step, index) => <li key={`${index}-${step}`}><span>{index + 1}</span><p>{step}</p></li>)}</ol> : <p className="section-empty-copy">등록된 조리 순서가 없습니다.</p>}
       </RecipeDetailSection>
 
-      <RecipeDetailSection eyebrow="Nutrition balance" title="영양 구성">
+      <RecipeDetailSection eyebrow="Nutrition balance" title="영양 구성" tone="nutrition">
         <div className="nutrition-summary-card"><div className="chip-list">{menu.nutritionTags.map((tag) => <em key={tag}>{INGREDIENT_TAG_LABELS[tag] ?? tag}</em>)}</div><p>{menu.nutritionSummary}</p><small>영양 수치를 추정하지 않은 정성적인 안내예요.</small></div>
       </RecipeDetailSection>
 

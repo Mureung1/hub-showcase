@@ -275,8 +275,8 @@
 .nutrition-summary-card {
   padding: 22px;
   border: 1px solid rgba(0, 109, 54, 0.16);
-  border-radius: 20px;
-  background: var(--primary-soft);
+  border-radius: 16px;
+  background: #fff;
 }
 
 .nutrition-summary-card p {
@@ -289,7 +289,20 @@
   color: var(--muted);
 }
 
+.recipe-detail-section.nutrition {
+  margin: 18px 0;
+  padding: 24px;
+  border: 1px solid rgba(0, 109, 54, 0.16);
+  border-radius: 20px;
+  background: #f4fbf7;
+}
+
+.recipe-detail-section.nutrition .recipe-section-heading::before {
+  background: var(--primary);
+}
+
 .recipe-detail-section.safety {
+  margin: 18px 0;
   padding: 24px;
   border: 1px solid rgba(225, 29, 72, 0.16);
   border-radius: 20px;
@@ -341,6 +354,7 @@
   }
 
   .recipe-detail-section.substitution,
+  .recipe-detail-section.nutrition,
   .recipe-detail-section.safety {
     padding: 20px;
   }

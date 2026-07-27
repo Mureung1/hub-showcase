@@ -85,6 +85,8 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   expect(screen.getByRole("heading", { name: "레시피 소개" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "대체 재료 안내" })).toBeInTheDocument();
   expect(screen.getByText("양파").closest(".substitution-tile")).toHaveTextContent("대파");
+  expect(screen.getByRole("heading", { name: "영양 구성" }).closest(".recipe-detail-section"))
+    .toHaveClass("nutrition");
   expect(screen.getByRole("link", { name: /구매하기/ })).toHaveAttribute("href", expect.stringContaining("query=%EB%8C%80%ED%8C%8C"));
 
   fireEvent.click(screen.getByRole("button", { name: /레시피 저장/ }));
