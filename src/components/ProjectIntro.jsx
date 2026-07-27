@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { WEAK_AREAS_BY_EXAM } from '../constants/examAreas'
-import { createDailyStudyPlan } from '../utils/studyPlanGenerator'
+import { createAdaptiveDailyStudyPlan, createDailyStudyPlan, getPriorityAreaFromNote } from '../utils/studyPlanGenerator'
+import { createTodayStudyTasks } from '../utils/todayStudyGenerator'
 
 const MENU_ITEMS = [
   { id: 'intro', label: '시험 선택' },
@@ -9,6 +10,8 @@ const MENU_ITEMS = [
   { id: 'plan', label: '학습 계획' },
   { id: 'today', label: '오늘의 학습' },
 ]
+
+const RECORD_MENU_ITEM = { id: 'records', label: '학습 기록' }
 
 const EXAMS = [
   {
@@ -40,17 +43,16 @@ const INITIAL_FORM_VALUES = {
   dailyStudyMinutes: '',
 }
 
+const INITIAL_ACTUAL_STUDY_FORM = {
+  area: '',
+  title: '',
+  minutes: '',
+}
+
 const SCORE_STATUS = {
   hasScore: 'hasScore',
   noScore: 'noScore',
 }
-
-const TODAY_TASKS = [
-  { id: 'review', title: '취약 영역 핵심 개념 복습', minutes: 20 },
-  { id: 'practice', title: '실전 문항 2세트 풀이', minutes: 40 },
-  { id: 'wrong-note', title: '오답 원인 3개 정리', minutes: 20 },
-  { id: 'speak-check', title: '답변 또는 지문 1개 소리 내어 점검', minutes: 20 },
-]
 
 const STUDY_PLAN_ID_STORAGE_KEY = 'studyPlanId'
 const DEFAULT_TOEFL_SCORE_SYSTEM = 'scaled'
@@ -63,7 +65,7 @@ const FRIENDLY_RESPONSE_ERROR_MESSAGE = '서버 응답을 확인할 수 없습�
 const DEFAULT_SAVE_ERROR_MESSAGE = '학습 계획을 저장하지 못했습니다. 입력값을 확인하고 다시 시도해 주세요.'
 const DEFAULT_LOOKUP_ERROR_MESSAGE = '저장된 학습 계획을 다시 불러오지 못했습니다. 정보를 다시 입력해 주세요.'
 
-function ProjectIntro() {
+function ProjectIntro({ accessToken = '', isAuthenticated = true, onAuthRequired = () => {}, restoreLatestPlan = true }) {
   const [activeScreen, setActiveScreen] = useState('intro')
   const [selectedExam, setSelectedExam] = useState('')
   const [formValues, setFormValues] = useState(INITIAL_FORM_VALUES)
@@ -71,25 +73,54 @@ function ProjectIntro() {
   const [scoreStatus, setScoreStatus] = useState(SCORE_STATUS.hasScore)
   const [selectedWeakAreas, setSelectedWeakAreas] = useState([])
   const [weakAreaNote, setWeakAreaNote] = useState('')
+  const [actualStudyForm, setActualStudyForm] = useState(INITIAL_ACTUAL_STUDY_FORM)
+  const [actualStudyEntries, setActualStudyEntries] = useState([])
+  const [difficultArea, setDifficultArea] = useState('')
+  const [nextPriorityArea, setNextPriorityArea] = useState('')
+  const [reflectionNote, setReflectionNote] = useState('')
+  const [studyRecordMessage, setStudyRecordMessage] = useState('')
+  const [isSavingStudyRecord, setIsSavingStudyRecord] = useState(false)
+  const [dailyStudyRecords, setDailyStudyRecords] = useState([])
+  const [selectedDailyStudyRecord, setSelectedDailyStudyRecord] = useState(null)
+  const [isLoadingDailyStudyRecords, setIsLoadingDailyStudyRecords] = useState(false)
+  const [dailyStudyRecordError, setDailyStudyRecordError] = useState('')
+  const [previousDailyStudyRecord, setPreviousDailyStudyRecord] = useState(null)
+  const [adaptivePlanError, setAdaptivePlanError] = useState('')
   const [diagnosisError, setDiagnosisError] = useState('')
   const [completedTasks, setCompletedTasks] = useState([])
   const [fieldErrors, setFieldErrors] = useState({})
   const [savedStudyPlan, setSavedStudyPlan] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const screenTitle = MENU_ITEMS.find((item) => item.id === activeScreen)?.label
+  const availableMenuItems = isAuthenticated ? [...MENU_ITEMS, RECORD_MENU_ITEM] : MENU_ITEMS
+  const screenTitle = availableMenuItems.find((item) => item.id === activeScreen)?.label
+  const workflowStepIndex = MENU_ITEMS.findIndex((item) => item.id === activeScreen)
+  const workflowStep = workflowStepIndex >= 0 ? workflowStepIndex + 1 : MENU_ITEMS.length
+  const adaptiveStudyPlan = createAdaptiveStudyPlanResult({
+    formValues,
+    previousRecord: previousDailyStudyRecord,
+    savedStudyPlan,
+    selectedExam,
+    selectedWeakAreas,
+    weakAreaNote,
+  })
+  const todayTasks = createTodayStudyTasks({
+    examType: (savedStudyPlan || { ...formValues, examType: selectedExam }).examType || selectedExam,
+    dailyStudyPlan: adaptiveStudyPlan.plan,
+  })
 
   useEffect(() => {
-    let isMounted = true
-    const savedStudyPlanId = localStorage.getItem(STUDY_PLAN_ID_STORAGE_KEY)
+    resetStudyPlanState()
 
-    if (!savedStudyPlanId) {
+    if (!restoreLatestPlan || !isAuthenticated || !accessToken) {
       return undefined
     }
 
+    let isMounted = true
+
     async function restoreSavedStudyPlan() {
       try {
-        const studyPlan = await fetchStudyPlanById(savedStudyPlanId)
+        const studyPlan = await fetchLatestStudyPlan(accessToken)
 
         if (!isMounted) {
           return
@@ -99,14 +130,32 @@ function ProjectIntro() {
         setSelectedExam(studyPlan.examType)
         setActiveScreen('plan')
       } catch (error) {
-        localStorage.removeItem(STUDY_PLAN_ID_STORAGE_KEY)
-
         if (!isMounted) {
           return
         }
 
-        setErrorMessage(error.message || DEFAULT_LOOKUP_ERROR_MESSAGE)
-        setActiveScreen('info')
+        if (error.code === 'STUDY_PLAN_NOT_FOUND') {
+          resetStudyPlanState()
+          return
+        }
+
+        if (error.code === 'UNAUTHORIZED') {
+          resetStudyPlanState()
+          setErrorMessage('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.')
+          return
+        }
+
+        if (error.code === 'NETWORK_ERROR') {
+          resetStudyPlanState()
+          setErrorMessage('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.')
+          return
+        }
+
+        if (error.code === 'DATABASE_ERROR') {
+          resetStudyPlanState()
+          setErrorMessage(error.message || '저장된 학습 계획을 조회하지 못했습니다.')
+          setActiveScreen('info')
+        }
       }
     }
 
@@ -115,7 +164,80 @@ function ProjectIntro() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [accessToken, isAuthenticated, restoreLatestPlan])
+
+  useEffect(() => {
+    if (!isAuthenticated || !accessToken || !savedStudyPlan?.id) {
+      setPreviousDailyStudyRecord(null)
+      setAdaptivePlanError('')
+      return undefined
+    }
+
+    let isMounted = true
+
+    async function loadPreviousRecord() {
+      try {
+        const record = await fetchLatestDailyStudyRecordBeforeToday(savedStudyPlan.id, accessToken)
+
+        if (isMounted) {
+          setPreviousDailyStudyRecord(record)
+          setAdaptivePlanError('')
+        }
+      } catch (error) {
+        if (isMounted) {
+          setPreviousDailyStudyRecord(null)
+          setAdaptivePlanError('이전 학습 기록을 불러오지 못해 기본 계획을 사용합니다.')
+        }
+      }
+    }
+
+    loadPreviousRecord()
+
+    return () => {
+      isMounted = false
+    }
+  }, [accessToken, isAuthenticated, savedStudyPlan?.id])
+
+  function resetStudyPlanState() {
+    setActiveScreen('intro')
+    setSelectedExam('')
+    setFormValues(INITIAL_FORM_VALUES)
+    setToeflScoreSystem(DEFAULT_TOEFL_SCORE_SYSTEM)
+    setScoreStatus(SCORE_STATUS.hasScore)
+    setSelectedWeakAreas([])
+    setWeakAreaNote('')
+    resetStudyRecordState()
+    setDiagnosisError('')
+    setCompletedTasks([])
+    setFieldErrors({})
+    setSavedStudyPlan(null)
+    setErrorMessage('')
+    localStorage.removeItem(STUDY_PLAN_ID_STORAGE_KEY)
+  }
+
+  function resetStudyRecordState() {
+    setActualStudyForm(INITIAL_ACTUAL_STUDY_FORM)
+    setActualStudyEntries([])
+    setDifficultArea('')
+    setNextPriorityArea('')
+    setReflectionNote('')
+    setStudyRecordMessage('')
+    setIsSavingStudyRecord(false)
+    setDailyStudyRecords([])
+    setSelectedDailyStudyRecord(null)
+    setIsLoadingDailyStudyRecords(false)
+    setDailyStudyRecordError('')
+    setPreviousDailyStudyRecord(null)
+    setAdaptivePlanError('')
+  }
+
+  function handleMenuClick(screenId) {
+    if (screenId === 'records') {
+      loadDailyStudyRecords()
+    }
+
+    setActiveScreen(screenId)
+  }
 
   function updateFormValue(fieldName, value) {
     setFieldErrors((currentErrors) => ({ ...currentErrors, [fieldName]: '' }))
@@ -129,6 +251,8 @@ function ProjectIntro() {
     setScoreStatus(SCORE_STATUS.hasScore)
     setSelectedWeakAreas([])
     setWeakAreaNote('')
+    setCompletedTasks([])
+    resetStudyRecordState()
     setDiagnosisError('')
     setFieldErrors({})
     setErrorMessage('')
@@ -151,6 +275,15 @@ function ProjectIntro() {
   }
 
   async function handleSaveStudyPlan() {
+    if (!isAuthenticated || !accessToken) {
+      setSavedStudyPlan(null)
+      setCompletedTasks([])
+      resetStudyRecordState()
+      setActiveScreen('plan')
+      onAuthRequired()
+      return
+    }
+
     setIsSaving(true)
     setErrorMessage('')
     setFieldErrors({})
@@ -184,10 +317,10 @@ function ProjectIntro() {
     try {
       const createResponse = await fetch('/api/study-plans', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthorizedJsonHeaders(accessToken),
         body: JSON.stringify(requestBody),
       })
-      const createResult = await parseJsonResponse(createResponse)
+      const createResult = await parseJsonResponse(createResponse, 'SAVE')
 
       if (!createResponse.ok) {
         throw new Error(getResponseMessage(createResult) || DEFAULT_SAVE_ERROR_MESSAGE)
@@ -204,7 +337,7 @@ function ProjectIntro() {
       let studyPlan
 
       try {
-        studyPlan = await fetchStudyPlanById(studyPlanId)
+        studyPlan = await fetchStudyPlanById(studyPlanId, accessToken)
       } catch (error) {
         localStorage.removeItem(STUDY_PLAN_ID_STORAGE_KEY)
         throw error
@@ -248,7 +381,132 @@ function ProjectIntro() {
     }
 
     setDiagnosisError('')
+    setCompletedTasks([])
+    resetStudyRecordState()
     handleSaveStudyPlan()
+  }
+
+  function updateActualStudyForm(fieldName, value) {
+    setStudyRecordMessage('')
+    setActualStudyForm((currentForm) => ({ ...currentForm, [fieldName]: value }))
+  }
+
+  function addActualStudyEntry() {
+    const area = actualStudyForm.area || (WEAK_AREAS_BY_EXAM[selectedExam] || [])[0] || ''
+    const title = actualStudyForm.title.trim()
+    const minutes = Number(actualStudyForm.minutes)
+
+    if (!area || !title || !Number.isInteger(minutes) || minutes < 1) {
+      setStudyRecordMessage('학습 영역, 내용, 1분 이상의 시간을 입력해 주세요.')
+      return
+    }
+
+    setActualStudyEntries((currentEntries) => [
+      ...currentEntries,
+      {
+        id: `actual-${Date.now()}-${currentEntries.length}`,
+        area,
+        title,
+        minutes,
+      },
+    ])
+    setActualStudyForm({ area, title: '', minutes: '' })
+    setStudyRecordMessage('')
+  }
+
+  function removeActualStudyEntry(entryId) {
+    setActualStudyEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== entryId))
+  }
+
+  async function handleSaveStudyRecord() {
+    if (!isAuthenticated || !accessToken) {
+      onAuthRequired()
+      return
+    }
+
+    if (!savedStudyPlan?.id) {
+      setStudyRecordMessage('저장된 학습 계획을 먼저 생성해 주세요.')
+      return
+    }
+
+    setIsSavingStudyRecord(true)
+    setStudyRecordMessage('')
+
+    try {
+      const response = await fetch('/api/daily-study-records', {
+        method: 'POST',
+        headers: getAuthorizedJsonHeaders(accessToken),
+        body: JSON.stringify({
+          studyPlanId: savedStudyPlan.id,
+          recordDate: getLocalDateString(),
+          generatedTasks: todayTasks,
+          completedTaskIds: completedTasks,
+          actualStudyEntries,
+          difficultArea: difficultArea || null,
+          nextPriorityArea: nextPriorityArea || null,
+          reflectionNote: reflectionNote || null,
+        }),
+      })
+      const result = await parseJsonResponse(response, 'DAILY_STUDY_RECORD')
+
+      if (!response.ok) {
+        const error = new Error(getDailyStudyRecordErrorMessage(response.status, result))
+        error.code = result?.error?.code || getStudyPlanRequestErrorCode(response.status)
+        throw error
+      }
+
+      setStudyRecordMessage('오늘의 학습 기록을 저장했습니다.')
+    } catch (error) {
+      if (error.code === 'UNAUTHORIZED') {
+        setStudyRecordMessage('로그인이 만료되었습니다. 다시 로그인해 주세요.')
+      } else if (error.code === 'VALIDATION_ERROR') {
+        setStudyRecordMessage('학습 기록 입력값을 확인해 주세요.')
+      } else {
+        setStudyRecordMessage('학습 기록을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+      }
+    } finally {
+      setIsSavingStudyRecord(false)
+    }
+  }
+
+  async function loadDailyStudyRecords() {
+    if (!isAuthenticated || !accessToken) {
+      setDailyStudyRecordError('학습 기록을 보려면 로그인해 주세요.')
+      return
+    }
+
+    setIsLoadingDailyStudyRecords(true)
+    setDailyStudyRecordError('')
+    setSelectedDailyStudyRecord(null)
+
+    try {
+      const records = await fetchDailyStudyRecords(accessToken)
+      setDailyStudyRecords(records)
+    } catch (error) {
+      setDailyStudyRecords([])
+      setDailyStudyRecordError(getDailyStudyRecordLookupErrorMessage(error))
+    } finally {
+      setIsLoadingDailyStudyRecords(false)
+    }
+  }
+
+  async function loadDailyStudyRecordDetail(recordId) {
+    if (!isAuthenticated || !accessToken) {
+      setDailyStudyRecordError('학습 기록을 보려면 로그인해 주세요.')
+      return
+    }
+
+    setIsLoadingDailyStudyRecords(true)
+    setDailyStudyRecordError('')
+
+    try {
+      const record = await fetchDailyStudyRecordById(recordId, accessToken)
+      setSelectedDailyStudyRecord(record)
+    } catch (error) {
+      setDailyStudyRecordError(getDailyStudyRecordLookupErrorMessage(error))
+    } finally {
+      setIsLoadingDailyStudyRecords(false)
+    }
   }
 
   return (
@@ -257,13 +515,13 @@ function ProjectIntro() {
         <div className="top-menu-inner">
           <span className="brand-mark">Study Plan</span>
           <div className="menu-list">
-            {MENU_ITEMS.map((item) => (
+            {availableMenuItems.map((item) => (
               <button
                 className={`menu-button ${activeScreen === item.id ? 'menu-button-active' : ''}`}
                 data-screen-id={item.id}
                 key={item.id}
                 type="button"
-                onClick={() => setActiveScreen(item.id)}
+                onClick={() => handleMenuClick(item.id)}
               >
                 {item.label}
               </button>
@@ -274,16 +532,16 @@ function ProjectIntro() {
 
       <div className="intro-shell">
         <header className="intro-header">
-          <span className="intro-label">STEP {Math.min(MENU_ITEMS.findIndex((item) => item.id === activeScreen) + 1, 5)}/5</span>
+          <span className="intro-label">STEP {Math.min(workflowStep, MENU_ITEMS.length)}/{MENU_ITEMS.length}</span>
           <h1>준비할 시험과 목표를 정리해 학습 흐름을 만들어 보세요</h1>
           <p className="intro-tagline">
             시험 선택부터 정보 입력, 취약 영역 진단, 학습 계획 확인까지 한 화면 안에서 차분하게 이동할 수 있는
             학습 계획 프로토타입입니다.
           </p>
           <div className="intro-summary">
-            <span className="summary-pill">현재 화면: {screenTitle}</span>
-            <span className="summary-pill">선택 시험: {selectedExam || '선택 전'}</span>
-            <span className="summary-pill">{savedStudyPlan ? 'DB 저장 완료' : 'DB 저장 전'}</span>
+        <span className="summary-pill">현재 화면: {screenTitle}</span>
+        <span className="summary-pill">선택 시험: {selectedExam || '선택 전'}</span>
+        <span className="summary-pill">{isAuthenticated ? (savedStudyPlan ? 'DB 저장 완료' : 'DB 저장 전') : '비로그인 체험'}</span>
           </div>
         </header>
 
@@ -329,9 +587,14 @@ function ProjectIntro() {
         {activeScreen === 'plan' && (
           <PlanDashboard
             formValues={formValues}
+            adaptivePlanError={adaptivePlanError}
+            adaptiveStudyPlan={adaptiveStudyPlan}
             savedStudyPlan={savedStudyPlan}
             selectedExam={selectedExam}
             selectedWeakAreas={selectedWeakAreas}
+            isAuthenticated={isAuthenticated}
+            previousRecord={previousDailyStudyRecord}
+            weakAreaNote={weakAreaNote}
             onEditInfo={() => setActiveScreen('info')}
             onViewToday={() => setActiveScreen('today')}
           />
@@ -341,8 +604,34 @@ function ProjectIntro() {
             completedTasks={completedTasks}
             formValues={formValues}
             savedStudyPlan={savedStudyPlan}
-            tasks={TODAY_TASKS}
+            selectedExam={selectedExam}
+            actualStudyEntries={actualStudyEntries}
+            actualStudyForm={actualStudyForm}
+            difficultArea={difficultArea}
+            isAuthenticated={isAuthenticated}
+            isSavingStudyRecord={isSavingStudyRecord}
+            nextPriorityArea={nextPriorityArea}
+            reflectionNote={reflectionNote}
+            studyRecordMessage={studyRecordMessage}
+            tasks={todayTasks}
+            onAddActualStudyEntry={addActualStudyEntry}
+            onActualStudyFormChange={updateActualStudyForm}
+            onDifficultAreaChange={setDifficultArea}
+            onNextPriorityAreaChange={setNextPriorityArea}
+            onReflectionNoteChange={setReflectionNote}
+            onRemoveActualStudyEntry={removeActualStudyEntry}
+            onSaveStudyRecord={handleSaveStudyRecord}
             onToggleTask={setCompletedTasks}
+          />
+        )}
+        {activeScreen === 'records' && (
+          <DailyStudyRecordsScreen
+            errorMessage={dailyStudyRecordError}
+            isLoading={isLoadingDailyStudyRecords}
+            records={dailyStudyRecords}
+            selectedRecord={selectedDailyStudyRecord}
+            onBackToList={() => setSelectedDailyStudyRecord(null)}
+            onSelectRecord={loadDailyStudyRecordDetail}
           />
         )}
       </div>
@@ -350,18 +639,108 @@ function ProjectIntro() {
   )
 }
 
-async function fetchStudyPlanById(studyPlanId) {
-  const lookupResponse = await fetch(`/api/study-plans/${studyPlanId}`)
-  const lookupResult = await parseJsonResponse(lookupResponse)
+async function fetchStudyPlanById(studyPlanId, accessToken) {
+  if (!accessToken) {
+    throw new Error(DEFAULT_LOOKUP_ERROR_MESSAGE)
+  }
+
+  const lookupResponse = await fetch(`/api/study-plans/${studyPlanId}`, {
+    headers: getAuthorizedHeaders(accessToken),
+  })
+  const lookupResult = await parseJsonResponse(lookupResponse, 'LOOKUP')
 
   if (!lookupResponse.ok) {
-    throw new Error(getResponseMessage(lookupResult) || DEFAULT_LOOKUP_ERROR_MESSAGE)
+    const error = new Error(getStudyPlanRequestErrorMessage(lookupResponse.status, lookupResult))
+    error.code = lookupResult?.error?.code || getStudyPlanRequestErrorCode(lookupResponse.status)
+    throw error
   }
 
   return lookupResult.data
 }
 
-async function parseJsonResponse(response) {
+async function fetchLatestStudyPlan(accessToken) {
+  let lookupResponse
+
+  try {
+    lookupResponse = await fetch('/api/study-plans/me/latest', {
+      headers: getAuthorizedHeaders(accessToken),
+    })
+  } catch (error) {
+    const networkError = new Error('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.')
+    networkError.code = 'NETWORK_ERROR'
+    throw networkError
+  }
+
+  const lookupResult = await parseJsonResponse(lookupResponse, 'LATEST')
+
+  if (!lookupResponse.ok) {
+    const error = new Error(getStudyPlanRequestErrorMessage(lookupResponse.status, lookupResult))
+    error.code = lookupResult?.error?.code || getStudyPlanRequestErrorCode(lookupResponse.status)
+    throw error
+  }
+
+  return lookupResult.data
+}
+
+async function fetchDailyStudyRecords(accessToken) {
+  const response = await fetch('/api/daily-study-records', {
+    headers: getAuthorizedHeaders(accessToken),
+  })
+  const result = await parseJsonResponse(response, 'DAILY_STUDY_RECORD_LIST')
+
+  if (!response.ok) {
+    const error = new Error(getDailyStudyRecordLookupErrorMessageByStatus(response.status, result))
+    error.code = result?.error?.code || getStudyPlanRequestErrorCode(response.status)
+    throw error
+  }
+
+  return result.data || []
+}
+
+async function fetchDailyStudyRecordById(recordId, accessToken) {
+  const response = await fetch(`/api/daily-study-records/${recordId}`, {
+    headers: getAuthorizedHeaders(accessToken),
+  })
+  const result = await parseJsonResponse(response, 'DAILY_STUDY_RECORD_DETAIL')
+
+  if (!response.ok) {
+    const error = new Error(getDailyStudyRecordLookupErrorMessageByStatus(response.status, result))
+    error.code = result?.error?.code || getStudyPlanRequestErrorCode(response.status)
+    throw error
+  }
+
+  return result.data
+}
+
+async function fetchLatestDailyStudyRecordBeforeToday(studyPlanId, accessToken) {
+  const response = await fetch(`/api/daily-study-records/latest-before-today?studyPlanId=${studyPlanId}`, {
+    headers: getAuthorizedHeaders(accessToken),
+  })
+  const result = await parseJsonResponse(response, 'PREVIOUS_DAILY_STUDY_RECORD')
+
+  if (!response.ok) {
+    const error = new Error(getDailyStudyRecordLookupErrorMessageByStatus(response.status, result))
+    error.code = result?.error?.code || getStudyPlanRequestErrorCode(response.status)
+    throw error
+  }
+
+  return result.data || null
+}
+
+function getAuthorizedHeaders(accessToken) {
+  return {
+    Authorization: `Bearer ${accessToken}`,
+  }
+}
+
+function getAuthorizedJsonHeaders(accessToken) {
+  return {
+    ...getAuthorizedHeaders(accessToken),
+    'Content-Type': 'application/json',
+  }
+}
+
+async function parseJsonResponse(response, requestType = 'GENERAL') {
   const responseText = await response.text()
 
   if (!responseText) {
@@ -371,12 +750,151 @@ async function parseJsonResponse(response) {
   try {
     return JSON.parse(responseText)
   } catch {
+    if (requestType === 'LATEST' && response.status === 404) {
+      return {
+        error: {
+          code: 'STUDY_PLAN_NOT_FOUND',
+          message: '저장된 학습 계획이 없습니다.',
+        },
+      }
+    }
+
     throw new Error(FRIENDLY_RESPONSE_ERROR_MESSAGE)
   }
 }
 
 function getResponseMessage(responseBody) {
   return responseBody?.message || responseBody?.error?.message || ''
+}
+
+function getStudyPlanRequestErrorCode(status) {
+  if (status === 401) {
+    return 'UNAUTHORIZED'
+  }
+
+  if (status === 404) {
+    return 'STUDY_PLAN_NOT_FOUND'
+  }
+
+  if (status >= 500) {
+    return 'DATABASE_ERROR'
+  }
+
+  return 'REQUEST_ERROR'
+}
+
+function getStudyPlanRequestErrorMessage(status, responseBody) {
+  const responseMessage = getResponseMessage(responseBody)
+
+  if (status === 401) {
+    return responseMessage || '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  if (status === 404) {
+    return responseMessage || '저장된 학습 계획이 없습니다.'
+  }
+
+  if (status >= 500) {
+    return responseMessage || '저장된 학습 계획을 조회하지 못했습니다.'
+  }
+
+  return responseMessage || DEFAULT_LOOKUP_ERROR_MESSAGE
+}
+
+function getDailyStudyRecordErrorMessage(status, responseBody) {
+  const responseMessage = getResponseMessage(responseBody)
+
+  if (status === 401) {
+    return responseMessage || '로그인이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  if (status === 400) {
+    return responseMessage || '학습 기록 입력값을 확인해 주세요.'
+  }
+
+  return responseMessage || '학습 기록을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'
+}
+
+function getDailyStudyRecordLookupErrorMessage(error) {
+  if (error.code === 'UNAUTHORIZED') {
+    return '로그인이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  return '학습 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+}
+
+function getDailyStudyRecordLookupErrorMessageByStatus(status, responseBody) {
+  const responseMessage = getResponseMessage(responseBody)
+
+  if (status === 401) {
+    return responseMessage || '로그인이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  return responseMessage || '학습 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+}
+
+function getRecordStats(record) {
+  const generatedTasks = Array.isArray(record.generatedTasks) ? record.generatedTasks : []
+  const completedTaskIds = Array.isArray(record.completedTaskIds) ? record.completedTaskIds : []
+  const actualStudyEntries = Array.isArray(record.actualStudyEntries) ? record.actualStudyEntries : []
+  const totalTasks = generatedTasks.length
+  const completedCount = generatedTasks.filter((task) => completedTaskIds.includes(task.id)).length
+  const completionRate = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
+  const plannedMinutes = generatedTasks.reduce((total, task) => total + (Number(task.minutes) || 0), 0)
+  const actualMinutes = actualStudyEntries.reduce((total, entry) => total + (Number(entry.minutes) || 0), 0)
+
+  return {
+    actualMinutes,
+    completedCount,
+    completionRate,
+    plannedMinutes,
+    totalTasks,
+  }
+}
+
+function formatRecordDate(dateText) {
+  return dateText ? dateText.replaceAll('-', '.') : '날짜 없음'
+}
+
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function createAdaptiveStudyPlanResult({ formValues, previousRecord, savedStudyPlan, selectedExam, selectedWeakAreas, weakAreaNote }) {
+  const planSource = savedStudyPlan || { ...formValues, examType: selectedExam }
+  const examType = planSource.examType || selectedExam
+  const dailyStudyMinutes = Number(planSource.dailyStudyMinutes)
+  const priorityAreaFromNote = getPriorityAreaFromNote({
+    areas: WEAK_AREAS_BY_EXAM[examType] || [],
+    weakAreas: selectedWeakAreas,
+    weakAreaNote,
+  })
+  if (previousRecord) {
+    return createAdaptiveDailyStudyPlan({
+      examType,
+      dailyStudyMinutes,
+      weakAreas: selectedWeakAreas,
+      previousRecord,
+    })
+  }
+
+  const plan = createDailyStudyPlan({
+    examType,
+    dailyStudyMinutes,
+    weakAreas: selectedWeakAreas,
+    priorityArea: priorityAreaFromNote,
+  })
+
+  return {
+    priorityArea: plan.find((item) => item.isPriority)?.area || selectedWeakAreas[0] || plan[0]?.area || '',
+    reason: '저장된 이전 기록이 없어 선택한 취약 영역을 기준으로 계획을 만들었습니다.',
+    previousRecordDate: null,
+    plan,
+  }
 }
 
 function validateScoreInputs(selectedExam, toeflScoreSystem, formValues) {
@@ -955,15 +1473,21 @@ function DiagnosisScreen({
   )
 }
 
-function PlanDashboard({ formValues, savedStudyPlan, selectedExam, selectedWeakAreas, onEditInfo, onViewToday }) {
+function PlanDashboard({
+  adaptivePlanError,
+  adaptiveStudyPlan,
+  formValues,
+  savedStudyPlan,
+  selectedExam,
+  isAuthenticated,
+  previousRecord,
+  onEditInfo,
+  onViewToday,
+}) {
   const planSource = savedStudyPlan || { ...formValues, examType: selectedExam }
   const dailyMinutes = Number(planSource.dailyStudyMinutes) || 120
-  const dailyPlan = createDailyStudyPlan({
-    examType: selectedExam,
-    dailyStudyMinutes: dailyMinutes,
-    weakAreas: selectedWeakAreas,
-  })
-  const priorityArea = selectedWeakAreas[0] || dailyPlan[0]?.area || '기본기'
+  const dailyPlan = adaptiveStudyPlan.plan
+  const priorityArea = adaptiveStudyPlan.priorityArea || dailyPlan.find((item) => item.isPriority)?.area || dailyPlan[0]?.area || '기본기'
   const daysLeft = getDaysLeft(planSource.examDate)
 
   return (
@@ -997,6 +1521,18 @@ function PlanDashboard({ formValues, savedStudyPlan, selectedExam, selectedWeakA
             </div>
           ))}
         </div>
+        <section className="adaptive-plan-panel">
+          <div className="section-head record-head">
+            <h3>이전 학습 기록 반영</h3>
+            <p>{adaptivePlanError || adaptiveStudyPlan.reason}</p>
+          </div>
+          <div className="result-panel compact-results">
+            <ResultItem label="오늘 우선 영역" value={priorityArea || '기록 없음'} />
+            <ResultItem label="이전 기록 날짜" value={previousRecord?.studyDate ? formatRecordDate(previousRecord.studyDate) : '기록 없음'} />
+            <ResultItem label="조정 상태" value={previousRecord ? '이전 기록 반영' : '기본 계획'} />
+            <ResultItem label="영역 수" value={`${dailyPlan.length}개`} />
+          </div>
+        </section>
         <div className="form-actions">
           <button className="secondary-action" type="button" onClick={onEditInfo}>
             입력 정보 수정
@@ -1010,6 +1546,7 @@ function PlanDashboard({ formValues, savedStudyPlan, selectedExam, selectedWeakA
         <span className="board-label">이번 주 핵심 목표</span>
         <strong>{priorityArea} 루틴 고정</strong>
         <p>매일 {Math.max(20, Math.round(dailyMinutes * 0.35))}분 이상을 우선 영역에 배정하고, 오답 원인을 한 줄로 남깁니다.</p>
+        {!isAuthenticated && <p>학습 기록을 저장하고 다음 계획에 반영하려면 로그인해 주세요.</p>}
         {savedStudyPlan?.id && (
           <div className="result-item saved-id">
             <span>저장된 데이터 id</span>
@@ -1030,12 +1567,150 @@ function ResultItem({ label, value }) {
   )
 }
 
-function TodayStudy({ completedTasks, formValues, savedStudyPlan, tasks, onToggleTask }) {
-  const planSource = savedStudyPlan || formValues
+function DailyStudyRecordsScreen({
+  errorMessage,
+  isLoading,
+  records,
+  selectedRecord,
+  onBackToList,
+  onSelectRecord,
+}) {
+  if (selectedRecord) {
+    const stats = getRecordStats(selectedRecord)
+
+    return (
+      <section className="dashboard-section record-history-section">
+        <div className="section-head">
+          <div>
+            <h2>{formatRecordDate(selectedRecord.studyDate)} · {selectedRecord.examType || '시험 정보 없음'}</h2>
+            <p>{stats.completedCount}/{stats.totalTasks}개 완료 · 달성률 {stats.completionRate}%</p>
+          </div>
+          <button className="secondary-action" type="button" onClick={onBackToList}>
+            목록으로 돌아가기
+          </button>
+        </div>
+
+        {errorMessage && <p className="form-message form-message-error">{errorMessage}</p>}
+        {isLoading && <p className="empty-text">학습 기록을 불러오는 중입니다.</p>}
+
+        <div className="record-detail-grid">
+          <section className="record-detail-panel">
+            <h3>체크리스트</h3>
+            <div className="task-list">
+              {(selectedRecord.generatedTasks || []).map((task) => {
+                const isCompleted = (selectedRecord.completedTaskIds || []).includes(task.id)
+
+                return (
+                  <div className={`history-task-item ${isCompleted ? 'history-task-done' : ''}`} key={task.id}>
+                    <span>{isCompleted ? '완료' : '미완료'}</span>
+                    <strong>{task.title}</strong>
+                    <em>{task.area}</em>
+                    <b>{task.minutes}분</b>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className="record-detail-panel">
+            <h3>체크리스트 외 실제 학습</h3>
+            {(selectedRecord.actualStudyEntries || []).length > 0 ? (
+              <div className="actual-entry-list">
+                {selectedRecord.actualStudyEntries.map((entry) => (
+                  <div className="actual-entry-item" key={entry.id}>
+                    <span>{entry.area}</span>
+                    <strong>{entry.title}</strong>
+                    <em>{entry.minutes}분</em>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-text">추가 학습 기록이 없습니다.</p>
+            )}
+          </section>
+        </div>
+
+        <div className="record-reflection-grid">
+          <ResultItem label="오늘 가장 어려웠던 영역" value={selectedRecord.difficultArea || '기록 없음'} />
+          <ResultItem label="내일 더 공부하고 싶었던 영역" value={selectedRecord.nextPriorityArea || '기록 없음'} />
+          <ResultItem label="오늘의 메모" value={selectedRecord.reflectionNote || '기록 없음'} />
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="dashboard-section record-history-section">
+      <div className="section-head">
+        <div>
+          <h2>학습 기록</h2>
+          <p>저장한 날짜별 학습 결과를 최신 순으로 확인합니다.</p>
+        </div>
+      </div>
+
+      {isLoading && <p className="empty-text">학습 기록을 불러오는 중입니다.</p>}
+      {errorMessage && <p className="form-message form-message-error">{errorMessage}</p>}
+      {!isLoading && !errorMessage && records.length === 0 && (
+        <p className="empty-text">아직 저장된 학습 기록이 없습니다. 오늘의 학습을 완료하고 첫 기록을 남겨 보세요.</p>
+      )}
+
+      {!isLoading && !errorMessage && records.length > 0 && (
+        <div className="record-history-list">
+          {records.map((record) => {
+            const stats = getRecordStats(record)
+
+            return (
+              <article className="record-history-card" key={record.id}>
+                <div>
+                  <h3>{formatRecordDate(record.studyDate)} · {record.examType || '시험 정보 없음'}</h3>
+                  <p>{stats.completedCount}/{stats.totalTasks}개 완료 · 달성률 {stats.completionRate}%</p>
+                  <p>계획 {stats.plannedMinutes}분 · 추가 학습 {stats.actualMinutes}분</p>
+                  <p>어려웠던 영역 {record.difficultArea || '기록 없음'}</p>
+                  <p>다음 우선 영역 {record.nextPriorityArea || '기록 없음'}</p>
+                </div>
+                <button className="primary-action" type="button" onClick={() => onSelectRecord(record.id)}>
+                  자세히 보기
+                </button>
+              </article>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function TodayStudy({
+  actualStudyEntries,
+  actualStudyForm,
+  completedTasks,
+  difficultArea,
+  formValues,
+  isAuthenticated,
+  isSavingStudyRecord,
+  nextPriorityArea,
+  reflectionNote,
+  savedStudyPlan,
+  selectedExam,
+  studyRecordMessage,
+  tasks,
+  onActualStudyFormChange,
+  onAddActualStudyEntry,
+  onDifficultAreaChange,
+  onNextPriorityAreaChange,
+  onReflectionNoteChange,
+  onRemoveActualStudyEntry,
+  onSaveStudyRecord,
+  onToggleTask,
+}) {
+  const planSource = savedStudyPlan || { ...formValues, examType: selectedExam }
+  const examType = planSource.examType || selectedExam
+  const studyAreas = WEAK_AREAS_BY_EXAM[examType] || []
+  const actualArea = actualStudyForm.area || studyAreas[0] || ''
   const completedCount = completedTasks.length
   const remainingCount = tasks.length - completedCount
-  const progress = Math.round((completedCount / tasks.length) * 100)
-  const dailyMinutes = Number(planSource.dailyStudyMinutes) || tasks.reduce((total, task) => total + task.minutes, 0)
+  const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0
+  const dailyMinutes = tasks.reduce((total, task) => total + task.minutes, 0)
   const daysLeft = getDaysLeft(planSource.examDate)
 
   function toggleTask(task) {
@@ -1064,6 +1739,113 @@ function TodayStudy({ completedTasks, formValues, savedStudyPlan, tasks, onToggl
             )
           })}
         </div>
+        <section className="study-record-panel" aria-labelledby="study-record-title">
+          <div className="section-head record-head">
+            <h3 id="study-record-title">오늘 학습 기록</h3>
+            <p>체크리스트와 별도로 실제 공부한 내용을 남겨 둡니다.</p>
+          </div>
+
+          <div className="record-entry-grid">
+            <label className="input-field">
+              <span>영역 선택</span>
+              <select value={actualArea} onChange={(event) => onActualStudyFormChange('area', event.target.value)}>
+                {studyAreas.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="input-field">
+              <span>학습 내용</span>
+              <input
+                type="text"
+                value={actualStudyForm.title}
+                placeholder="예: Part 3 오답 복습"
+                onChange={(event) => onActualStudyFormChange('title', event.target.value)}
+              />
+            </label>
+
+            <label className="input-field">
+              <span>실제 공부 시간(분)</span>
+              <input
+                min="1"
+                type="number"
+                value={actualStudyForm.minutes}
+                onChange={(event) => onActualStudyFormChange('minutes', event.target.value)}
+              />
+            </label>
+
+            <button className="primary-action add-record-button" type="button" onClick={onAddActualStudyEntry}>
+              추가하기
+            </button>
+          </div>
+
+          <div className="actual-entry-list" aria-label="추가된 학습 항목">
+            {actualStudyEntries.length > 0 ? (
+              actualStudyEntries.map((entry) => (
+                <div className="actual-entry-item" key={entry.id}>
+                  <span>{entry.area}</span>
+                  <strong>{entry.title}</strong>
+                  <em>{entry.minutes}분</em>
+                  <button className="secondary-action" type="button" onClick={() => onRemoveActualStudyEntry(entry.id)}>
+                    삭제
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="empty-text">추가된 학습 기록이 없습니다.</p>
+            )}
+          </div>
+
+          <div className="record-select-grid">
+            <label className="input-field">
+              <span>오늘 가장 어려웠던 영역</span>
+              <select value={difficultArea} onChange={(event) => onDifficultAreaChange(event.target.value)}>
+                <option value="">선택 전</option>
+                {studyAreas.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="input-field">
+              <span>내일 더 공부하고 싶은 영역</span>
+              <select value={nextPriorityArea} onChange={(event) => onNextPriorityAreaChange(event.target.value)}>
+                <option value="">선택 전</option>
+                {studyAreas.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="input-field">
+            <span>오늘의 메모</span>
+            <textarea
+              value={reflectionNote}
+              placeholder="오늘 공부하면서 느낀 점을 적어 주세요."
+              onChange={(event) => onReflectionNoteChange(event.target.value)}
+            />
+          </label>
+
+          {studyRecordMessage && (
+            <p className={`form-message ${isAuthenticated ? 'form-message-success' : 'form-message-error'}`}>
+              {studyRecordMessage}
+            </p>
+          )}
+
+          <div className="form-actions">
+            <button className="primary-action" type="button" disabled={isSavingStudyRecord} onClick={onSaveStudyRecord}>
+              {isSavingStudyRecord ? '저장 중...' : '오늘 학습 기록 저장하기'}
+            </button>
+          </div>
+        </section>
       </div>
       <aside className="summary-card progress-card">
         <div className="circle-progress" style={{ '--progress': `${progress}%` }}>
