@@ -3,6 +3,7 @@ import ProgressSteps from "./components/ProgressSteps";
 import CollectStep from "./components/CollectStep";
 import UnderstandingStep from "./components/UnderstandingStep";
 import ResultScreen from "./components/ResultScreen";
+import ResultSummary from "./components/ResultSummary";
 import { WEIGHT_PRESETS, DEFAULT_WEIGHT_KEY } from "./utils/priorityCalculator";
 import { fetchPriorityScores, scoreSubjectsLocally } from "./utils/priorityApi";
 import { UNKNOWN } from "./utils/scaleLabels";
@@ -228,8 +229,12 @@ function App() {
     );
   }
 
+  // 결과 단계에서는 왼쪽에 순위가 이미 다 나오므로 옆 순위판을 띄우지 않는다.
+  // 넓은 화면에서만 옆에 붙고, 좁은 화면에서는 단계 흐름 그대로다. (App.css 참고)
+  const showSummary = step !== "result" && scoredSubjects.length > 0;
+
   return (
-    <main className="app-container">
+    <main className={`app-container${showSummary ? " has-side" : ""}`}>
       <header className="app-header">
         <h1 className="app-title">오늘 뭐부터 공부하지?</h1>
         <p className="app-description">
@@ -239,39 +244,47 @@ function App() {
 
       <ProgressSteps current={step} />
 
-      {step === "collect" && (
-        <CollectStep
-          subjects={scoredSubjects}
-          onAddSubject={handleAddSubject}
-          onRemoveSubject={handleRemoveSubject}
-          onNext={() => setStep("understanding")}
-        />
-      )}
+      <div className="app-layout">
+        <div className="app-main">
+          {step === "collect" && (
+            <CollectStep
+              subjects={scoredSubjects}
+              onAddSubject={handleAddSubject}
+              onRemoveSubject={handleRemoveSubject}
+              onNext={() => setStep("understanding")}
+            />
+          )}
 
-      {step === "understanding" && (
-        <UnderstandingStep
-          subjects={scoredSubjects}
-          onChangeUnderstanding={(id, value) =>
-            handleUpdateSubject(id, { understanding: value })
-          }
-          onUpdateSubject={handleUpdateSubject}
-          onBack={() => setStep("collect")}
-          onNext={() => setStep("result")}
-        />
-      )}
+          {step === "understanding" && (
+            <UnderstandingStep
+              subjects={scoredSubjects}
+              onChangeUnderstanding={(id, value) =>
+                handleUpdateSubject(id, { understanding: value })
+              }
+              onUpdateSubject={handleUpdateSubject}
+              onBack={() => setStep("collect")}
+              onNext={() => setStep("result")}
+            />
+          )}
 
-      {step === "result" && (
-        <ResultScreen
-          subjects={scoredSubjects}
-          weightKey={weightKey}
-          onChangeWeight={setWeightKey}
-          planHours={planHours}
-          onChangePlanHours={setPlanHours}
-          onUpdateSubject={handleUpdateSubject}
-          onCompleteSubject={handleCompleteSubject}
-          onBack={() => setStep("collect")}
-        />
-      )}
+          {step === "result" && (
+            <ResultScreen
+              subjects={scoredSubjects}
+              weightKey={weightKey}
+              onChangeWeight={setWeightKey}
+              planHours={planHours}
+              onChangePlanHours={setPlanHours}
+              onUpdateSubject={handleUpdateSubject}
+              onCompleteSubject={handleCompleteSubject}
+              onBack={() => setStep("collect")}
+            />
+          )}
+        </div>
+
+        {showSummary && (
+          <ResultSummary subjects={scoredSubjects} weightKey={weightKey} />
+        )}
+      </div>
     </main>
   );
 }

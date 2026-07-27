@@ -3,6 +3,132 @@
   margin: 48px auto;
 }
 
+/* 넓은 화면에서는 입력 옆에 순위판을 붙인다.
+   1024px 미만에서는 세로로 쌓여 지금과 같은 단계 흐름이 된다.
+   결과 단계에는 순위판을 안 띄우므로(.has-side 없음) 폭도 640px 로 돌아간다. */
+@media (min-width: 1024px) {
+  .app-container.has-side {
+    /* 640(본문) + 32(간격) + 340(순위판) = 1012 */
+    width: min(100% - 48px, 1040px);
+  }
+
+  .app-container.has-side .app-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--space-section);
+    align-items: start;
+  }
+
+  /* 입력을 아래로 내려도 순위는 계속 보여야 한다. */
+  .result-summary {
+    position: sticky;
+    top: var(--space-md);
+  }
+}
+
+/* 옆 순위판 */
+.result-summary {
+  padding: var(--space-card);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+/* 좁은 화면에서는 입력 아래에 붙는다. */
+.app-layout > .result-summary {
+  margin-top: var(--space-md);
+}
+
+.summary-eyebrow {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.summary-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.summary-top-name {
+  font-size: var(--font-subheading);
+  font-weight: 700;
+}
+
+.summary-top-score {
+  flex-shrink: 0;
+  font-size: var(--font-subheading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.summary-reason {
+  margin: var(--space-sm) 0 var(--space-card);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.summary-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-md) 0 0;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-label);
+}
+
+.summary-rank {
+  flex-shrink: 0;
+  width: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+/* 과목명이 길어도 D-day 와 배지는 밀려나지 않게 한다. */
+.summary-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.summary-dday {
+  flex-shrink: 0;
+  font-size: var(--font-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.summary-score {
+  flex-shrink: 0;
+  width: 28px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-note {
+  margin: var(--space-md) 0 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 .app-header {
   margin-bottom: var(--space-section);
 }
