@@ -36,6 +36,7 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
 
       setSavingIds(prev => [...prev, paper.paperId]);
 
+      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성
       const { paperId, title, authors, channel, year, matchScore, url } = paper;
       const formattedAuthors = Array.isArray(authors) ? authors.join(', ') : authors;
       const paperPayload = { paperId, title, authors: formattedAuthors, channel, year, matchScore, userId, url: url || '' };
@@ -86,12 +87,13 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
 
   return (
     <section id="container-c" className="bento-card container-c">
+      
       {/* C-Left: 큐레이션 결과 리스트 뷰 (45% 폭) */}
       <div className="container-c-left">
         <div className="sub-card-header">
           <h2 className="card-title">Container C (좌측): 큐레이션 결과</h2>
         </div>
-        <div className="sub-card-content">
+        <div className="sub-card-content scroll-y">
           <p className="placeholder-text">매칭 스코어(%) 기준 정렬 논문 목록</p>
           
           {!curationData.papers || curationData.papers.length === 0 ? (
@@ -102,27 +104,45 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                 key={paper.paperId} 
                 className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'} ${selectedPaper?.paperId === paper.paperId ? 'active' : ''}`}
                 onClick={() => setSelectedPaper(paper)}
-                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+                style={{ display: 'flex', flexDirection: 'column' }}
               >
-                <div className="paper-card-header">
-                  <span className="match-badge">{paper.matchScore}% Match</span>
-                  <span className="paper-year">{paper.year}</span>
+                <div 
+                  className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}
+                  style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', display: 'inline-block', marginBottom: '12px', alignSelf: 'flex-start', borderRadius: '4px' }}
+                >
+                  {paper.matchScore}% Match
                 </div>
-                <h3 className="paper-card-title">{paper.title}</h3>
-                <p className="paper-card-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
+                <h3 className="paper-title">{paper.title}</h3>
+                <p className="paper-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
+                <div className="paper-meta" style={{ marginTop: 'auto' }}>
+                  <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
+                </div>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                  <span className="paper-channel-tag">{paper.channel}</span>
+                {/* 보관 및 원문보기 버튼 액션 그룹 */}
+                <div className="card-action-group" style={{ display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'stretch' }}>
                   <button 
-                    className="save-btn" 
+                    className="archive-btn save-paper-btn" 
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSavePaper(paper);
                     }}
                     disabled={savingIds.includes(paper.paperId)}
+                    style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', border: '1px solid transparent' }}
                   >
-                    {savingIds.includes(paper.paperId) ? '보관 중...' : savedPapers.some(item => item.paperId === paper.paperId) ? '보관됨' : '📌 내 서재 보관'}
+                    {savingIds.includes(paper.paperId) ? '💾 보관 중...' : '💾 내 서재 보관'}
                   </button>
+                  {paper.url && (
+                    <a 
+                      href={paper.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="archive-btn"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', borderRadius: '4px' }}
+                    >
+                      📖 원문 보기
+                    </a>
+                  )}
                 </div>
               </div>
             ))
@@ -130,75 +150,105 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
         </div>
       </div>
 
-      {/* C-Right: 상세 3줄 인사이트 뷰 (55% 폭) */}
+      {/* C-Right: 3줄 핵심 인사이트 보드 및 내 서재 보관함 (55% 폭) */}
       <div className="container-c-right">
         <div className="sub-card-header">
-          <h2 className="card-title">Container C (우측): AI 3줄 인사이트</h2>
+          <h2 className="card-title">Container C (우측): 데일리 인사이트 & 서재</h2>
         </div>
-        <div className="sub-card-content">
-          {!selectedPaper ? (
-            <div className="placeholder-content">
-              <p className="placeholder-desc">좌측에서 논문을 선택하면 3줄 핵심 인사이트가 표시됩니다.</p>
-            </div>
-          ) : (
-            <div className="paper-detail-view">
-              <div className="detail-header">
-                <h3>{selectedPaper.title}</h3>
-                <p className="detail-meta">
-                  저자: {Array.isArray(selectedPaper.authors) ? selectedPaper.authors.join(', ') : selectedPaper.authors} | 채널: {selectedPaper.channel} ({selectedPaper.year})
-                </p>
+        <div className="sub-card-content scroll-y">
+          
+          {/* 3줄 요약 인사이트 패널 */}
+          {selectedPaper ? (
+            <div className="insight-panel">
+              <h4 className="panel-subtitle">💡 에이전트 3줄 핵심 요약: "{selectedPaper.title}"</h4>
+              
+              <div className="insight-item">
+                <div className="number-circle">1</div>
+                <div className="insight-text">
+                  <strong>연구 배경 및 한계 원인 (Research Background & Limitations):</strong> {selectedPaper.insights?.background || selectedPaper.reasoning}
+                </div>
+              </div>
+
+              <div className="insight-item">
+                <div className="number-circle">2</div>
+                <div className="insight-text">
+                  <strong>제안하는 핵심 방법론 (Proposed Core Method):</strong> {selectedPaper.insights?.coreMethod || selectedPaper.reasoning}
+                </div>
+              </div>
+
+              <div className="insight-item">
+                <div className="number-circle">3</div>
+                <div className="insight-text">
+                  <strong>구체적 개선 결과 및 수치 (Specific Results & Metrics):</strong> {selectedPaper.insights?.quantitativeResult || selectedPaper.reasoning}
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'stretch' }}>
+                <button 
+                  id="add-to-library-btn" 
+                  className="archive-btn"
+                  onClick={() => handleSavePaper(selectedPaper)}
+                  disabled={savingIds.includes(selectedPaper.paperId)}
+                  style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', border: '1px solid transparent' }}
+                >
+                  {savingIds.includes(selectedPaper.paperId) ? '💾 보관 중...' : '💾 내 서재 보관'}
+                </button>
                 {selectedPaper.url && (
-                  <a href={selectedPaper.url} target="_blank" rel="noopener noreferrer" className="paper-link-btn">
-                    🔗 원문 논문 보기 (Open Access)
+                  <a 
+                    href={selectedPaper.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="archive-btn"
+                    style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', borderRadius: '4px' }}
+                  >
+                    📖 원문 보기
                   </a>
                 )}
               </div>
-
-              {/* OVG 3대 학술 평가 바 */}
-              <div className="ovg-section">
-                <h4>OVG 3대 학술 평가</h4>
-                <div className="ovg-bars">
-                  <div className="ovg-bar-item">
-                    <span>독창성 (Originality): {selectedPaper.ovgBreakdown?.originality || 90}%</span>
-                    <div className="bar-bg"><div className="bar-fill" style={{ width: `${selectedPaper.ovgBreakdown?.originality || 90}%` }}></div></div>
-                  </div>
-                  <div className="ovg-bar-item">
-                    <span>타당성 (Validity): {selectedPaper.ovgBreakdown?.validity || 90}%</span>
-                    <div className="bar-bg"><div className="bar-fill" style={{ width: `${selectedPaper.ovgBreakdown?.validity || 90}%` }}></div></div>
-                  </div>
-                  <div className="ovg-bar-item">
-                    <span>일반화 가능성 (Generalizability): {selectedPaper.ovgBreakdown?.generalizability || 90}%</span>
-                    <div className="bar-bg"><div className="bar-fill" style={{ width: `${selectedPaper.ovgBreakdown?.generalizability || 90}%` }}></div></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* XAI 선별 근거 및 3대 정형화 구획 인사이트 */}
-              <div className="insights-section">
-                <div className="reasoning-box">
-                  <strong>💡 에이전트 선별 근거:</strong>
-                  <p>{selectedPaper.reasoning}</p>
-                </div>
-
-                <div className="insight-blocks">
-                  <div className="insight-block background">
-                    <span className="block-tag">📌 연구 배경</span>
-                    <p>{selectedPaper.insights?.background}</p>
-                  </div>
-                  <div className="insight-block method">
-                    <span className="block-tag">⚡ 핵심 방법론</span>
-                    <p>{selectedPaper.insights?.coreMethod}</p>
-                  </div>
-                  <div className="insight-block result">
-                    <span className="block-tag">📈 개선 결과</span>
-                    <p>{selectedPaper.insights?.quantitativeResult}</p>
-                  </div>
-                </div>
-              </div>
+            </div>
+          ) : (
+            <div className="insight-panel" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <p>원하는 논문을 선택하시면 에이전트 분석 요약이 제공됩니다.</p>
             </div>
           )}
+
+          {/* 내 서재 보관함 라이브러리 */}
+          <div className="library-panel">
+            <h4 className="panel-subtitle">📚 내 서재 보관함 (My Library)</h4>
+            <ul className="library-list">
+              {savedPapers.length === 0 ? (
+                <p className="empty-result" style={{ fontSize: '11px' }}>보관된 논문이 없습니다.</p>
+              ) : (
+                savedPapers.map((item) => (
+                  <li key={item.paperId} className="library-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="library-paper-title" title={item.title} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>
+                      {item.title}
+                    </span>
+                    <div className="library-btn-group" style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                      {item.url && (
+                        <a 
+                          href={item.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="remove-btn"
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', whiteSpace: 'nowrap' }}
+                        >
+                          📖 원문
+                        </a>
+                      )}
+                      <button className="remove-btn" onClick={() => handleRemovePaper(item.paperId)}>
+                        제거
+                      </button>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+
         </div>
       </div>
+
     </section>
   );
 }
