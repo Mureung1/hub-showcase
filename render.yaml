@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ptop-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build:api
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: WEB_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_JWKS_URL
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_MODEL
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false

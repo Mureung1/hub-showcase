@@ -74,7 +74,7 @@ npm run dev:api
 실행 주소:
 
 ```text
-Web:    http://localhost:5173/hub/
+Web:    http://localhost:5173/
 Health: http://localhost:3000/api/v1/health
 ```
 
@@ -112,6 +112,7 @@ http://127.0.0.1:4177/prototype/index.html
 - [Wiki용 기획서](./docs/wiki/wiki-home.md)
 - [프로젝트 기록](./docs/records/agent-record.md)
 - [개발 가이드](./docs/development/development-guide.md)
+- [배포 구성](./docs/development/deployment.md)
 - [Supabase 데이터 모델 설계](./docs/development/supabase-data-model.md)
 - [Day4 작업 계획](./docs/plans/day4-plan.md)
 - [전체 개발 일정 및 백로그 계획](./docs/plans/development-tasks.md)
@@ -159,5 +160,5 @@ http://127.0.0.1:4177/prototype/index.html
 - 사용자가 직접 가구를 배치하는 맵 편집
 - Repository 전체 코드를 무제한으로 AI에 전송하는 분석
 - 자동으로 완성본이라 단정하는 최종 포트폴리오 생성
-- Notion, GitHub Pages 내보내기
+- Notion 내보내기
 - 여러 프로젝트 비교

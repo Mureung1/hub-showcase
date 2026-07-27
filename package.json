@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "npm run dev:web",
+    "start": "npm run start --workspace @ptop/api",
     "dev:web": "npm run dev --workspace @ptop/web",
     "dev:api": "npm run start:dev --workspace @ptop/api",
     "test": "npm run test --workspaces --if-present",
@@ -21,7 +22,6 @@
     "build": "npm run build --workspaces --if-present",
     "build:web": "npm run build --workspace @ptop/web",
     "build:api": "npm run build --workspace @ptop/api",
-    "predeploy": "npm run build:web",
-    "deploy": "npm run deploy --workspace @ptop/web"
+    "predeploy": "npm run build:web"
   }
 }

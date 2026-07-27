@@ -28,7 +28,7 @@ GitHub Repository URL을 입력받는 경우에는 README와 코드 파일뿐 �
 | 참여자 | contributor 목록, 계정, 커밋 수 | 팀 구성과 `커밋 기준 활동 비중`을 표시한다. | contributor API 응답은 캐시될 수 있고, squash merge나 pair programming 등 실제 협업 방식을 반영하지 못할 수 있다. |
 | Pull Request | 작성자, 제목, 본문, 상태, 머지 시점, 리뷰어, 리뷰 댓글, 변경 파일 | 기능 제안, 구현 근거, 코드 리뷰와 협업 경험을 연결한다. | PR이 없는 프로젝트에서는 이 근거를 사용할 수 없다. |
 | Issue | 작성자, 담당자, 라벨, 상태, 마일스톤, 댓글, 관련 PR | 해결하려던 문제와 논의 과정을 확인한다. | 담당자 지정만으로 실제 작업자를 단정하지 않는다. |
-| 품질과 배포 | 테스트 파일, GitHub Actions workflow, check 결과, 태그, Release, GitHub Pages/배포 링크 | 테스트, 자동화, 릴리스, 배포 경험을 설명하는 단서로 사용한다. | workflow 파일이 있어도 실제로 항상 성공했거나 운영 품질이 보장되는 것은 아니다. |
+| 품질과 배포 | 테스트 파일, GitHub Actions workflow, check 결과, 태그, Release, 배포 링크 | 테스트, 자동화, 릴리스, 배포 경험을 설명하는 단서로 사용한다. | workflow 파일이 있어도 실제로 항상 성공했거나 운영 품질이 보장되는 것은 아니다. |
 
 ### GitHub API 참고 자료
 

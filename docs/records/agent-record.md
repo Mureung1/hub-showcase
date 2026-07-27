@@ -26,7 +26,7 @@ PtoP는 GitHub Repository를 입력하면 프로젝트 참여 정보와 작업 �
 - 코드 파일 내부 분석
 - PR/Issue 분석
 - AI가 사용자의 역할을 자동 확정하는 기능
-- Notion 또는 GitHub Pages 자동 내보내기
+- Notion 자동 내보내기
 
 ## 주요 결정 기록
 
