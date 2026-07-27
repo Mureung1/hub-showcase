@@ -1,0 +1,15 @@
+.map-panel {
+  --map-overlay-gap: 28px;
+}
+
+.map-legend {
+  bottom: calc(
+    var(--quick-metrics-height) + var(--quick-metrics-bottom) + var(--map-overlay-gap)
+  );
+}
+
+@media (max-width: 760px) {
+  .map-panel {
+    --map-overlay-gap: 64px;
+  }
+}
