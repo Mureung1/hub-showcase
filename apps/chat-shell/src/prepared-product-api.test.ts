@@ -6,16 +6,15 @@ import {
   streamPreparedChat,
 } from './prepared-product-api.js'
 
-test('prepared Browser stream rejects old academic operation frames', async () => {
+test('prepared Browser stream rejects an unknown operation frame', async () => {
   const originalFetch = globalThis.fetch
   let requestBody: string | undefined
   globalThis.fetch = async (_input, init) => {
     requestBody = String(init?.body)
     return new Response(
       `${JSON.stringify({
-        type: 'skill.requested',
+        type: 'unknown.frame',
         operationId: `action_${'1'.repeat(32)}`,
-        skill: { name: 'first-assignment', version: '1' },
       })}\n`,
       {
         status: 200,
