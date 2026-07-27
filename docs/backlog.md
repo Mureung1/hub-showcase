@@ -15,7 +15,11 @@
 | TSK-011 | Week 3 (July 20-24) | BE | VS-4: TDD & Tests | Implement unit tests for Express endpoints using Supertest and Jest | Jest, Supertest | P1 | Agent | Todo |
 | TSK-017 | Week 3 (July 20-24) | FE | VS-3: Type Safety & DB | Establish frontend MVP user session (localStorage) | React, LocalStorage | P1 | Agent | Todo |
 | TSK-012 | Week 4 (July 27-30) | BE | VS-5: Gemini Integration | Replace mock endpoint with live Google Gemini API connection | Gemini API, Node.js | P0 | Agent | Todo |
-| TSK-013 | Week 4 (July 27-30) | FE | VS-5: Gemini Integration | Integrate E2E integration tests for live query -> Gemini -> render flow | Cypress, React | P2 | Human | Todo |
-| TSK-014 | Week 4 (July 27-30) | DB | VS-6: Deployment & QA | Optimize PostgreSQL queries and add indexing for production load | PostgreSQL | P2 | Agent | Todo |
-| TSK-015 | Week 4 (July 27-30) | FE | VS-6: Deployment & QA | Deploy React frontend to Vercel and configure Nginx reverse proxy for BE | Vercel, Nginx | P1 | Human | Todo |
+| TSK-019 | Week 4 (July 27-30) | BE | VS-5: Gemini Integration | Implement 'Query Transformation' pipeline using Gemini API for Agentic Search | Gemini API, Node.js | P0 | Agent | Todo |
+| TSK-015 | Week 4 (July 27-30) | FE/BE | VS-6: Deployment & QA | Deploy React to Vercel and Express to Render with Env Vars(CORS, API Key) | Vercel, Render | P1 | Human/Agent | Todo |
 | TSK-016 | Week 4 (July 27-30) | FE | VS-6: Deployment & QA | Conduct comprehensive visual QA and finalize Demoday presentation | Pure CSS, QA | P0 | Human | Todo |
+| TSK-018 | Week 4 (July 27-30) | BE | VS-6: Deployment & QA | Implement Graceful Shutdown to prevent Port 5000 EADDRINUSE | Node.js, Express | P0 | Agent | Todo |
+| TSK-020 | Week 4 (July 27-30) | Infra | VS-6: Deployment & QA | Record & Submit 5-min Demo Video covering Core Flow and Agent Collaboration | QA, Video | P0 | Human | Todo |
+| TSK-021 | Week 4 (July 27-30) | Doc | VS-6: Deployment & QA | Document Agent·Skill·Rule Workflow and draw architecture diagram | Markdown, Diagram | P0 | Human | Todo |
+| TSK-013 | Week 4 (July 27-30) | FE | VS-5: Gemini Integration | Integrate E2E integration tests for live query -> Gemini -> render flow | Cypress, React | P3 | Human | Hold |
+| TSK-014 | Week 4 (July 27-30) | DB | VS-6: Deployment & QA | Optimize PostgreSQL queries and add indexing for production load | PostgreSQL | P3 | Agent | Hold |

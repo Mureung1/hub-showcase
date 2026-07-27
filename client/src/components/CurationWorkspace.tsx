@@ -39,7 +39,8 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
       const formattedAuthors = Array.isArray(authors) ? authors.join(', ') : authors;
       const paperPayload = { paperId, title, authors: formattedAuthors, channel, year, matchScore, userId, url: url || '' };
 
-      const response = await fetch('http://localhost:5000/api/library', {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/library`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

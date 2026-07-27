@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import { DbPaper } from '../app.js';
+import { DbPaper } from '../types/curate.types.js';
 
-// Supabase Client 완벽 모킹 (Fluent API 체이닝 및 then을 활용한 Promise 반환 모방)
+// Supabase Client 완벽 모킹
 vi.mock('../utils/supabaseClient.js', () => {
   const mockSelect = vi.fn();
   const mockInsert = vi.fn();
@@ -16,9 +16,7 @@ vi.mock('../utils/supabaseClient.js', () => {
     insert: mockInsert.mockReturnThis(),
     delete: mockDelete.mockReturnThis(),
     eq: mockEq.mockReturnThis(),
-    // 최종 execution을 모방하기 위해 Promise의 then 인터페이스 구현
     then: vi.fn().mockImplementation((resolve) => {
-      // 기본 mock 데이터 반환 설정
       return Promise.resolve(resolve({ data: [], error: null }));
     })
   };
@@ -28,6 +26,49 @@ vi.mock('../utils/supabaseClient.js', () => {
     default: mockClient
   };
 });
+
+// S2 Service & Gemini Service 모킹 (테스트 시 외부 네트워크 429 차단)
+vi.mock('../services/s2.service.js', () => ({
+  fetchS2Papers: vi.fn().mockResolvedValue([
+    {
+      paperId: 'mock-s2-101',
+      title: 'Deep Learning for Medical Imaging Optimization',
+      authors: ['John Doe'],
+      abstract: 'Abstract content',
+      year: 2025,
+      url: 'https://example.com/paper'
+    }
+  ])
+}));
+
+vi.mock('../services/gemini.service.js', () => ({
+  transformQuery: vi.fn().mockResolvedValue({
+    searchKeyword: 'Deep Learning Medical Imaging',
+    reasoning: 'Transformed search query'
+  }),
+  evaluatePapersWithRAG: vi.fn().mockResolvedValue([
+    {
+      paperId: 'mock-s2-101',
+      title: 'Deep Learning for Medical Imaging Optimization',
+      authors: ['John Doe'],
+      channel: 'IEEE TPAMI',
+      year: 2025,
+      matchScore: 95,
+      url: 'https://example.com/paper',
+      ovgBreakdown: {
+        originality: 95,
+        validity: 90,
+        generalizability: 92
+      },
+      reasoning: '의료 영상 딥러닝 최적화 방법론 제시',
+      insights: {
+        background: '의료 영상 데이터의 고차원 특성과 노이즈 문제',
+        coreMethod: '3D CNN 기반 노이즈 제거 어텐션 신경망',
+        quantitativeResult: '기존 모델 대비 진단 정확도 14% 향상'
+      }
+    }
+  ])
+}));
 
 describe('Backend Express Server E2E/Unit Tests', () => {
   it('1. GET / should return server status successfully', async () => {
@@ -49,11 +90,13 @@ describe('Backend Express Server E2E/Unit Tests', () => {
     if (res.body.data.papers.length > 0) {
       expect(res.body.data.papers[0].paperId).toBeDefined();
       expect(res.body.data.papers[0].insights).toBeDefined();
+      expect(res.body.data.papers[0].insights.background).toBeDefined();
+      expect(res.body.data.papers[0].insights.coreMethod).toBeDefined();
+      expect(res.body.data.papers[0].insights.quantitativeResult).toBeDefined();
     }
-  }, 45000);
+  });
 
   it('3. POST /api/library should insert paper and return camelCase LibraryItem', async () => {
-    // mockClient 가로채서 insert 시뮬레이션 성공 데이터 주입
     const mockDbResponse: DbPaper[] = [
       {
         user_id: 'test-user-uuid',
@@ -67,7 +110,6 @@ describe('Backend Express Server E2E/Unit Tests', () => {
       }
     ];
 
-    // supabaseClient 가로채기
     const supabase = (await import('../utils/supabaseClient.js')).default;
     // @ts-expect-error: Supabase Client "then" promise interface mapping does not match mock client signature perfectly
     vi.spyOn(supabase, 'then').mockImplementation((resolve: any) => {
@@ -90,7 +132,6 @@ describe('Backend Express Server E2E/Unit Tests', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
-    // camelCase DTO 변환 검증 (id 유령 필드 부재 확인)
     expect(res.body.data.id).toBeUndefined();
     expect(res.body.data.userId).toBe('test-user-uuid');
     expect(res.body.data.paperId).toBe('paper-001');
