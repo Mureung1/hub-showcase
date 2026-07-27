@@ -152,6 +152,10 @@ function xmlWrapParagraphs(paragraphs) {
 // critical path를 줄인다.
 export function buildFastAnalysisPrompt(paragraphs, title) {
   const xmlParagraphs = xmlWrapParagraphs(paragraphs)
+  // 상한을 절대값(4)으로 고정하면 긴 기사일수록 선별 커버리지가 떨어진다.
+  // 문단 수에 비례해 상한을 늘리되, sentences는 verbatim 에코 비용이 있어
+  // fast lane 응답 지연에 직결되므로 6개로 다시 상한을 둔다.
+  const maxSentences = Math.min(6, Math.max(4, Math.ceil(paragraphs.length / 2)))
 
   return `당신은 영문 뉴스 기반 해외 주식 모의투자 학습 서비스의 AI 어시스턴트입니다. 아래는 기사 제목과 원문 문단입니다. 각 문단은 <paragraph> 태그로 감싸져 있습니다.
 
@@ -161,7 +165,7 @@ ${xmlParagraphs}
 
 위 원문을 바탕으로 아래 2가지 작업을 한 번에 수행하세요.
 
-1. sentences — 영어 문장 구조상 초보 학습자가 읽기 어려운 문장을 2~4개 선별합니다. 예: 길게 이어진 주어+동격구/분사구문, 'A rather than B' 같은 비교 구문, 삽입절 등 구조가 복잡한 문장.
+1. sentences — 영어 문장 구조상 초보 학습자가 읽기 어려운 문장을 2~${maxSentences}개 선별합니다. 예: 길게 이어진 주어+동격구/분사구문, 'A rather than B' 같은 비교 구문, 삽입절 등 구조가 복잡한 문장.
    - "text" 필드는 반드시 위 원문에서 글자 하나, 공백 하나, 문장부호 하나까지 정확히 그대로 복사한 값이어야 합니다. 절대로 다시 타이핑하거나, 의역하거나, 요약하거나, 일부 단어만 잘라내거나, 여러 문장을 이어붙이지 마세요.
    - 곧은따옴표(", ')를 스마트따옴표(", ", ', ')로 바꾸지 마세요. 원문에 있는 그대로 유지하세요.
    - 문장 안에 큰따옴표(")가 포함되어 있다면, 그 앞에 반드시 백슬래시를 붙여 \\" 로 이스케이프하세요(JSON 문자열 규칙을 지키기 위한 이스케이프이며, 문장 내용을 바꾸는 것이 아닙니다). 이스케이프를 빠뜨리면 JSON 파싱이 깨집니다.

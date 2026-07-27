@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import {
+  buildFastAnalysisPrompt,
   buildFuzzyPattern,
   findVerbatimMatch,
   parseFastAnalysisResponse,
@@ -119,6 +120,20 @@ const paragraphs = [
   "The company reported strong quarterly earnings today.",
   "Shares fell sharply on the news.",
 ]
+
+describe("buildFastAnalysisPrompt", () => {
+  it.each([
+    [1, "2~4개"],
+    [8, "2~4개"],
+    [10, "2~5개"],
+    [12, "2~6개"],
+    [30, "2~6개"],
+  ])("문단이 %i개면 상한이 %s로 지시된다", (paragraphCount, expectedRangeText) => {
+    const longParagraphs = Array.from({ length: paragraphCount }, (_, i) => `Paragraph number ${i + 1}.`)
+    const prompt = buildFastAnalysisPrompt(longParagraphs, "제목")
+    expect(prompt).toContain(expectedRangeText)
+  })
+})
 
 describe("parseFastAnalysisResponse", () => {
   afterEach(() => {
