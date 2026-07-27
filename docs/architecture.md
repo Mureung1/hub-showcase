@@ -92,7 +92,8 @@ Supabase Postgres + Prisma, 모델 6개:
 
 ## 인프라 / 배포
 - **프론트**: GitHub Pages, `kimsunho2000.github.io/hub/` (`npm run deploy` → `gh-pages`). `vite.config.js`의 `base: '/hub/'` + `HashRouter`로 하위 경로·새로고침 404 문제 회피(`main.jsx` 참고).
-- **백엔드**: Render, 루트 `render.yaml` 블루프린트로 정의(`rootDir: backend`, 빌드 시 `prisma generate`, 헬스체크 `/health`). `DATABASE_URL`/`GITHUB_TOKEN`/`GEMINI_API_KEY`는 Render 대시보드에서 직접 입력하는 시크릿(레포에 값 없음), `CORS_ORIGIN`은 프론트 origin(`https://kimsunho2000.github.io`)으로 고정.
+- **백엔드**: Render, 루트 `render.yaml` 블루프린트로 정의(`rootDir: backend`, 헬스체크 `/health`). `DATABASE_URL`/`GITHUB_TOKEN`/`GEMINI_API_KEY`는 Render 대시보드에서 직접 입력하는 시크릿(레포에 값 없음), `CORS_ORIGIN`은 프론트 origin(`https://kimsunho2000.github.io`)으로 고정. 빌드 커맨드(`npm install && npx prisma generate && npm test`)에 백엔드 테스트를 끼워 넣어 **테스트 게이트** 역할을 함 — `.github/workflows`(대회 운영용 auto-merge 봇, 손대지 않음)를 안 건드리고도 "테스트 실패 시 배포 안 나감"을 만족시키는 방법.
+- **자동 배포**: 백엔드는 Render의 Auto-Deploy(대시보드 설정)로 `N034_김선호` 브랜치 push 시 자동 재배포됨. 프론트(GitHub Pages)는 자동화하려면 GitHub Actions가 필요한데 `.github/workflows`를 건드릴 수 없어 수동(`npm run deploy`)으로 유지.
 - **DB**: 로컬 개발과 배포 환경이 같은 Supabase Postgres 인스턴스를 공유한다(별도 프로덕션 DB 없음) — 마이그레이션은 로컬에서 `prisma migrate dev`로 적용된 상태 그대로 사용, 배포 빌드에서 별도 migrate 스텝을 돌리지 않는다.
 - **프론트↔백엔드 연결**: Vite 환경변수는 빌드 시점에 번들에 박히므로, 백엔드 배포 URL이 정해진 뒤 `frontend/.env.production`에 `VITE_API_BASE_URL`을 채우고 프론트를 재배포해야 한다.
 - **CI**: 없음 — `.github/workflows/`는 대회 운영용 auto-merge 봇뿐이라 별도로 건드리지 않음(`docs/testing.md` 참고). 테스트는 로컬/수동 실행(`npm run test:backend`, `npm run test:e2e`).

@@ -91,12 +91,15 @@
       - 참고: plan §7 재조회/필터링
 - [x] **[FE] 프론트 배포** (github.io 등) — 프로토타입 데모 포함
       - DoD: 공개 URL 접속 가능 ✅ `kimsunho2000.github.io/hub/` (`npm run deploy`)
-- [ ] **[BE] 백엔드 배포** — API 서버 + 환경변수(GitHub 토큰) 설정
-      - DoD: 배포된 API로 프론트 연동 성공 — Render `render.yaml` 블루프린트 준비 완료(2026-07-27), 실제 서비스 생성·시크릿 입력은 대시보드에서 진행 필요
+- [x] **[BE] 백엔드 배포** — API 서버 + 환경변수(GitHub 토큰) 설정
+      - DoD: 배포된 API로 프론트 연동 성공 ✅ 2026-07-27 Render(`https://firstpr-backend.onrender.com`) 배포, `VITE_API_BASE_URL`로 프론트 연결 후 재배포 완료. `render.yaml` buildCommand에 `npm test` 게이트 추가
 - [x] **[공통] architecture.md 최종 확정** — 폴더구조/API/DB/배포/데이터흐름 기록
       - DoD: [architecture.md](architecture.md) 6개 섹션 채움 ✅ 2026-07-24 (프론트엔드/백엔드 섹션 채움, 인프라/배포는 다음 주로 미뤄 스텁만 남김)
 
-## Week 4 — 스텁 (내일 정리 예정)
-- [ ] **[FE/BE] 재추천 다양화** — 같은 조건으로 다시 요청 시 새 이슈 위주로(중복 방지), 주기당 2~3회 상한
-      - DoD: 미정 (내일 세부 설계 — 중복 제외 저장 위치, 상한 카운트 단위 결정 후 착수)
-      - 참고: 2026-07-23 논의
+## Week 4
+- [x] **[FE/BE] 재추천 다양화** — 같은 조건으로 다시 요청 시 새 이슈 위주로(중복 방지), 주기당 2~3회 상한
+      - DoD: ✅ 2026-07-27 매칭 점수 1순위 + 동점 시 안 본 이슈 우선(`compareForDiversification`), 하루(UTC) 동일 조건 3회 상한 도달 시 에러 대신 캐시된 결과 반환
+      - 참고: 2026-07-23 논의, [decisions](decisions.md)
+- [x] **[FE/BE] 즐겨찾기 + 전체 검색 이력** — 로드맵 항목 조기 착수
+      - DoD: ✅ 2026-07-27 `Favorite` 모델, `/history` 화면(언어 필터·정렬·페이지네이션), `GET /api/recommendations` 이력 조회
+      - 참고: [architecture.md](architecture.md)
