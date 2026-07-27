@@ -3,6 +3,7 @@ const User = require('./User');
 const GroupPurchase = require('./GroupPurchase');
 const UserGroupPurchase = require('./UserGroupPurchase');
 const Notification = require('./Notification');
+const Favorite = require('./Favorite');
 
 User.belongsToMany(GroupPurchase, {
   through: UserGroupPurchase,
@@ -25,6 +26,10 @@ Notification.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Notification.belongsTo(GroupPurchase, { foreignKey: 'groupPurchaseId', onDelete: 'CASCADE' });
 User.hasMany(Notification, { foreignKey: 'userId' });
 GroupPurchase.hasMany(Notification, { foreignKey: 'groupPurchaseId' });
+Favorite.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Favorite.belongsTo(GroupPurchase, { foreignKey: 'groupPurchaseId', onDelete: 'CASCADE' });
+User.hasMany(Favorite, { foreignKey: 'userId' });
+GroupPurchase.hasMany(Favorite, { foreignKey: 'groupPurchaseId' });
 
 module.exports = {
   sequelize,
@@ -32,5 +37,6 @@ module.exports = {
   GroupPurchase,
   UserGroupPurchase,
   Notification,
+  Favorite,
 };
 

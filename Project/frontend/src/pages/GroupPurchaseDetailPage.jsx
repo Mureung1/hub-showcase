@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   cancelGroupPurchaseJoin,
   confirmGroupPurchasePayment,
@@ -6,10 +6,13 @@ import {
   joinGroupPurchase,
   markGroupPurchaseReceipt,
   markGroupPurchasePayment,
+  addFavoriteGroupPurchase,
+  removeFavoriteGroupPurchase,
   updateGroupPurchaseStatus,
 } from '../api/groupPurchase';
 import './GroupPurchaseDetailPage.css';
 import KakaoMap from '../components/KakaoMap';
+import { getProfileImageUrl } from '../utils/profileImage';
 
 const mockPurchase = {
   id: 1,
@@ -38,18 +41,28 @@ const hostActions = {
   WAITING_PICKUP: { status: 'FINISHED', label: '공동구매 완료 처리' },
 };
 
+const getDeadlineLabel = (deadlineAt) => {
+  const remainingMs = new Date(deadlineAt).getTime() - Date.now();
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) return '모집 마감';
+  return `D-${Math.ceil(remainingMs / (1000 * 60 * 60 * 24))}`;
+};
+
 export default function GroupPurchaseDetailPage({ onNavigate, id }) {
-  const [purchase, setPurchase] = useState(mockPurchase);
+  const [purchase, setPurchase] = useState(null);
   const [joinState, setJoinState] = useState('idle');
   const [workflowState, setWorkflowState] = useState('idle');
   const [message, setMessage] = useState('');
   const [isLiked, setIsLiked] = useState(false);
+  const [isFavoriteUpdating, setIsFavoriteUpdating] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const galleryImages = purchase.imageUrls?.length ? purchase.imageUrls : (purchase.imageUrl ? [purchase.imageUrl] : images);
-  const activeStepIndex = purchase.status === 'FAILED' ? -1 : Math.max(statusSteps.indexOf(purchase.status), 0);
-  const progress = (purchase.currentParticipants / purchase.targetParticipants) * 100;
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const hasOpenedPaymentModal = useRef(false);
+  const galleryImages = purchase?.imageUrls?.length ? purchase.imageUrls : (purchase?.imageUrl ? [purchase.imageUrl] : []);
+  const activeStepIndex = purchase?.status === 'FAILED' ? -1 : Math.max(statusSteps.indexOf(purchase?.status), 0);
+  const progress = purchase ? Math.min((purchase.currentParticipants / purchase.targetParticipants) * 100, 100) : 0;
 
   useEffect(() => {
+    hasOpenedPaymentModal.current = false;
     async function fetchDetail() {
       try {
         const result = await getGroupPurchaseById(id);
@@ -59,7 +72,8 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
           setPurchase({
             id: data.id,
             category: data.category === 'FOOD' ? '식자재' : data.category === 'NECESSITY' ? '생활용품' : '기타',
-            deadline: 'D-1',
+            deadline: getDeadlineLabel(data.deadlineAt),
+            deadlineAt: data.deadlineAt,
             title: data.title,
             totalPrice: data.totalPrice,
             perPersonPrice: data.perPersonPrice,
@@ -67,6 +81,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
             currentParticipants: data.currentParticipants,
             pickupPlace: data.pickupPlace || data.pickupTimeSlot || '지정 위치',
             pickupDetailAddress: data.pickupDetailAddress,
+            pickupTimeSlot: data.pickupTimeSlot,
             pickupLatitude: data.pickupLatitude,
             pickupLongitude: data.pickupLongitude,
             paymentAccount: data.paymentAccount,
@@ -78,9 +93,14 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
             viewer: data.viewer,
             paymentSummary: data.viewer?.paymentSummary,
             paymentParticipants: data.viewer?.paymentParticipants,
+            host: data.host,
           });
           setJoinState(data.viewer?.application ? 'joined' : 'idle');
-          setIsPaymentModalOpen(Boolean(data.status === 'COMPLETED' && data.viewer?.application && !data.viewer.application.isPaid && data.paymentAccount));
+          setIsLiked(Boolean(data.viewer?.isFavorite));
+          if (data.status === 'COMPLETED' && data.viewer?.application && !data.viewer.application.isPaid && data.paymentAccount && !hasOpenedPaymentModal.current) {
+            setIsPaymentModalOpen(true);
+            hasOpenedPaymentModal.current = true;
+          }
           setMessage('');
         }
       } catch (err) {
@@ -93,6 +113,10 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
       return () => window.clearInterval(intervalId);
     }
   }, [id]);
+
+  if (!purchase) {
+    return <main className="td-detail-page__content">공동구매 정보를 불러오는 중입니다.</main>;
+  }
 
   async function handleJoin() {
     setJoinState('loading');
@@ -229,6 +253,26 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
     }
   }
 
+  async function handleFavorite() {
+    if (!localStorage.getItem('accessToken')) {
+      setMessage('찜하려면 먼저 로그인해 주세요.');
+      return;
+    }
+
+    setIsFavoriteUpdating(true);
+    try {
+      const result = isLiked
+        ? await removeFavoriteGroupPurchase(purchase.id)
+        : await addFavoriteGroupPurchase(purchase.id);
+      if (!result.success) throw new Error(result.error?.message || '찜 상태를 바꾸지 못했습니다.');
+      setIsLiked(result.data.isFavorite);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsFavoriteUpdating(false);
+    }
+  }
+
   return (
     <div className="td-root td-detail-page">
       <main id="top" className="td-detail-page__content">
@@ -251,24 +295,27 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
             <div className="td-detail-page__card td-detail-page__header-card">
               <div className="td-detail-page__chips">
                 <span className="td-detail-page__chip">{purchase.category}</span>
-                <span className="td-detail-page__chip td-detail-page__chip--deadline">{purchase.deadline}</span>
+                <span className="td-detail-page__chip td-detail-page__chip--deadline">{getDeadlineLabel(purchase.pickupTimeSlot || purchase.deadlineAt)}</span>
               </div>
               <h1 className="td-detail-page__title">{purchase.title}</h1>
               
               {/* Bento Grid Images */}
-              <div className="td-detail-page__gallery-bento">
-                <div className="td-detail-page__gallery-main-wrapper">
-                  <img className="td-detail-page__gallery-img" src={galleryImages[0]} alt={purchase.title} />
+              {galleryImages.length > 0 && (
+                <div className={`td-detail-page__gallery-bento td-detail-page__gallery-bento--${Math.min(galleryImages.length, 5)}`}>
+                  {galleryImages.map((imageUrl, index) => (
+                    <button
+                      type="button"
+                      className="td-detail-page__gallery-item"
+                      key={`${imageUrl}-${index}`}
+                      onClick={() => setSelectedImageIndex(index)}
+                      aria-label={`이미지 ${index + 1} 크게 보기`}
+                    >
+                      <img className="td-detail-page__gallery-img" src={imageUrl} alt={`${purchase.title} ${index + 1}`} />
+                      {index === 0 && <span className="td-detail-page__gallery-representative">대표 이미지</span>}
+                    </button>
+                  ))}
                 </div>
-                <div className="td-detail-page__gallery-sub-grid">
-                  <div className="td-detail-page__gallery-sub-wrapper">
-                    <img className="td-detail-page__gallery-img" src={galleryImages[1] || galleryImages[0]} alt={purchase.title} />
-                  </div>
-                  <div className="td-detail-page__gallery-sub-wrapper">
-                    <img className="td-detail-page__gallery-img" src={galleryImages[2] || galleryImages[0]} alt={purchase.title} />
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Price Cards */}
               <div className="td-detail-page__prices-flex">
@@ -276,14 +323,12 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                   <span className="td-label-md td-detail-page__price-label">총 가격 (목표)</span>
                   <div className="td-detail-page__price-amount">
                     {won(purchase.totalPrice)}
-                    <span className="td-detail-page__price-count"> / 20개</span>
                   </div>
                 </div>
                 <div className="td-detail-page__price-card td-detail-page__price-card--highlight">
                   <span className="td-label-md td-detail-page__price-label-highlight">인당 금액 ({purchase.targetParticipants}명 기준)</span>
                   <div className="td-detail-page__price-amount-highlight">
                     {won(purchase.perPersonPrice)}
-                    <span className="td-detail-page__price-count-highlight"> / 5개</span>
                   </div>
                 </div>
               </div>
@@ -376,6 +421,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                   <KakaoMap latitude={purchase.pickupLatitude} longitude={purchase.pickupLongitude} height={192} />
                 </div>
                 <p className="td-body-md td-detail-page__map-text">{purchase.pickupPlace}{purchase.pickupDetailAddress ? ` · ${purchase.pickupDetailAddress}` : ''}</p>
+                {purchase.pickupTimeSlot && <p className="td-body-sm td-detail-page__map-text">픽업 시간: {new Date(purchase.pickupTimeSlot).toLocaleString('ko-KR')}</p>}
               </div>
 
               {/* Host Info Card */}
@@ -385,27 +431,27 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                   <div className="td-detail-page__host-avatar-wrapper">
                     <img 
                       className="td-detail-page__host-avatar" 
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuACbsPFnckdsTPtf8b85CE0uOU4hfWqoo-y5Esqcul3vcrTXP5gy7h72CcVUH4PMofG8Nj1wcAmfosUQcrVrH-V1X0I87Mvl3a97SsD33nY4Miqcdoy8vIo9Jc9l2gRVLhqhsex2nWtg3AVQjmGg4or569Xuts8UrGI-EefuminqOyPEUMX7hqytfdR36RTi-rCmAgIg2447mNmruo-u3e2RoYjAEZcy70tmjSAUJskTD49YO3Bboo" 
-                      alt="Host Profile"
+                      src={getProfileImageUrl(purchase.host?.id)}
+                      alt={`${purchase.host?.nickname || '방장'} 프로필 사진`}
                     />
                   </div>
                   <div>
-                    <div className="td-label-md">FreshLover99</div>
-                    <div className="td-detail-page__host-subtext">가입일: 2년 전</div>
+                    <div className="td-label-md">{purchase.host?.nickname || '방장'}</div>
+                    <div className="td-detail-page__host-subtext">가입일: {purchase.host?.createdAt ? new Date(purchase.host.createdAt).toLocaleDateString('ko-KR') : '-'}</div>
                   </div>
                 </div>
                 <div className="td-detail-page__host-stats-grid">
                   <div className="td-detail-page__host-stat-box">
                     <span className="td-detail-page__host-stat-label">매너 온도</span>
                     <strong className="td-label-md td-detail-page__host-stat-temp">
-                      42.5°C 
+                      {purchase.host?.mannerTemperature ?? 36.5}°C
                       <span className="material-symbols-outlined text-sm">sentiment_satisfied</span>
                     </strong>
                   </div>
                   <div className="td-detail-page__host-stat-box">
                     <span className="td-detail-page__host-stat-label">노쇼 횟수</span>
                     <strong className="td-label-md td-detail-page__host-stat-value">
-                      0 <span className="td-detail-page__host-stat-unit">회</span>
+                      {purchase.host?.noShowCount ?? 0} <span className="td-detail-page__host-stat-unit">회</span>
                     </strong>
                   </div>
                 </div>
@@ -503,7 +549,8 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                 <div className="td-detail-page__action-secondary-row">
                   <button 
                     className={`td-detail-page__action-sec-btn ${isLiked ? 'td-detail-page__action-sec-btn--liked' : ''}`}
-                    onClick={() => setIsLiked(!isLiked)}
+                    onClick={handleFavorite}
+                    disabled={isFavoriteUpdating}
                   >
                     <span className="material-symbols-outlined text-sm">{isLiked ? 'favorite' : 'favorite_border'}</span>
                     찜하기
@@ -535,6 +582,29 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                 {workflowState === 'loading' ? '처리 중...' : '입금 완료했어요'}
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {selectedImageIndex !== null && galleryImages[selectedImageIndex] && (
+        <div
+          className="td-detail-page__image-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="이미지 크게 보기"
+          onClick={() => setSelectedImageIndex(null)}
+        >
+          <section className="td-detail-page__image-modal" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="td-detail-page__image-modal-close"
+              onClick={() => setSelectedImageIndex(null)}
+              aria-label="이미지 크게 보기 닫기"
+            >
+              ×
+            </button>
+            <img src={galleryImages[selectedImageIndex]} alt={`${purchase.title} 크게 보기`} />
+            <p>{selectedImageIndex + 1} / {galleryImages.length}</p>
           </section>
         </div>
       )}

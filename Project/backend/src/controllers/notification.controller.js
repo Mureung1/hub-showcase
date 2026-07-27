@@ -14,4 +14,21 @@ async function listMine(req, res, next) {
   }
 }
 
-module.exports = { listMine };
+async function removeMine(req, res, next) {
+  try {
+    const notification = await Notification.findOne({
+      where: { id: req.params.id, userId: req.user.id },
+    });
+    if (!notification) {
+      return res.status(404).json({ success: false, data: null, error: { message: '알림을 찾을 수 없습니다.' } });
+    }
+
+    const deletedId = notification.id;
+    await notification.destroy();
+    return res.status(200).json({ success: true, data: { id: deletedId, deleted: true }, error: null });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = { listMine, removeMine };

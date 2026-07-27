@@ -9,13 +9,16 @@ const {
   markGroupPurchasePayment,
   confirmGroupPurchasePayment,
   markGroupPurchaseReceipt,
+  listFavoriteGroupPurchases,
+  addFavoriteGroupPurchase,
+  removeFavoriteGroupPurchase,
 } = require('../services/groupPurchase.service');
 const AppError = require('../utils/appError');
 
 async function list(req, res, next) {
   try {
     const { category, status } = req.query;
-    const data = await listGroupPurchases({ category, status });
+    const data = await listGroupPurchases({ category, status }, req.user?.id);
     return res.status(200).json({ success: true, data, error: null });
   } catch (err) {
     return next(err);
@@ -92,6 +95,41 @@ async function confirmPayment(req, res, next) {
 async function mine(req, res, next) {
   try {
     const data = await getMyGroupPurchaseActivities(req.user.id);
+    return res.status(200).json({ success: true, data, error: null });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function favorites(req, res, next) {
+  try {
+    const data = await listFavoriteGroupPurchases(req.user.id);
+    return res.status(200).json({ success: true, data, error: null });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function addFavorite(req, res, next) {
+  try {
+    const groupPurchaseId = Number(req.params.id);
+    if (!Number.isSafeInteger(groupPurchaseId) || groupPurchaseId < 1) {
+      throw new AppError(400, '올바른 공동구매 ID가 필요합니다.', 'VALIDATION_ERROR');
+    }
+    const data = await addFavoriteGroupPurchase(groupPurchaseId, req.user.id);
+    return res.status(201).json({ success: true, data, error: null });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function removeFavorite(req, res, next) {
+  try {
+    const groupPurchaseId = Number(req.params.id);
+    if (!Number.isSafeInteger(groupPurchaseId) || groupPurchaseId < 1) {
+      throw new AppError(400, '올바른 공동구매 ID가 필요합니다.', 'VALIDATION_ERROR');
+    }
+    const data = await removeFavoriteGroupPurchase(groupPurchaseId, req.user.id);
     return res.status(200).json({ success: true, data, error: null });
   } catch (err) {
     return next(err);
@@ -199,4 +237,7 @@ module.exports = {
   payment,
   confirmPayment,
   receive,
+  favorites,
+  addFavorite,
+  removeFavorite,
 };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getMyNotifications } from '../api/groupPurchase';
+import { deleteMyNotification, getFavoriteGroupPurchases, getMyNotifications } from '../api/groupPurchase';
+import { defaultProfileImageUrl, getProfileImageUrl } from '../utils/profileImage';
 import './Header.css';
 
 export default function Header({ currentPage, onNavigate }) {
@@ -8,25 +9,49 @@ export default function Header({ currentPage, onNavigate }) {
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('currentUser') || null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [favorites, setFavorites] = useState([]);
   const activeProfile = (currentUser === 'host' || currentUser === '호스트 (방장)')
     ? { label: '방장 민지', image: 'https://i.pravatar.cc/160?img=47' }
     : { label: '참여자 서준', image: 'https://i.pravatar.cc/160?img=12' };
+
+  const displayProfile = !currentUser
+    ? { label: '로그인 필요', image: defaultProfileImageUrl }
+    : currentUser === 'host'
+      ? { label: '방장 민지', image: getProfileImageUrl(1) }
+      : currentUser === 'participant'
+        ? { label: '참여자 서준', image: getProfileImageUrl(2) }
+        : { label: '이웃 다은', image: getProfileImageUrl(3) };
 
   useEffect(() => {
     async function loadNotifications() {
       if (!localStorage.getItem('accessToken')) {
         setNotifications([]);
+        setFavorites([]);
         return;
       }
       try {
         const result = await getMyNotifications();
         if (result.success) setNotifications(result.data);
+        const favoriteResult = await getFavoriteGroupPurchases();
+        if (favoriteResult.success) setFavorites(favoriteResult.data);
       } catch (error) {
         console.warn('Failed to load notifications:', error.message || error);
       }
     }
     loadNotifications();
   }, [currentUser]);
+
+  async function handleDeleteNotification(event, notificationId) {
+    event.stopPropagation();
+    try {
+      const result = await deleteMyNotification(notificationId);
+      if (!result.success) throw new Error(result.error?.message || '알림을 삭제하지 못했습니다.');
+      setNotifications((current) => current.filter((notification) => notification.id !== notificationId));
+    } catch (error) {
+      alert(error.message || '알림을 삭제하지 못했습니다.');
+    }
+  }
 
   const handleDevLogin = async (userId, role) => {
     try {
@@ -38,9 +63,10 @@ export default function Header({ currentPage, onNavigate }) {
       const result = await response.json();
       if (result.success) {
         localStorage.setItem('accessToken', result.data.accessToken);
-        const profileKey = result.data.user?.id === 1 ? 'host' : 'participant';
+        const profileKey = result.data.user?.id === 1 ? 'host' : result.data.user?.id === 2 ? 'participant' : 'neighbor';
         localStorage.setItem('currentUser', profileKey);
         setCurrentUser(profileKey);
+        window.setTimeout(() => window.location.reload(), 0);
         alert(`개발자 로그인 성공! (${role}로 로그인됨)`);
       } else {
         alert(`로그인 실패: ${result.error?.message}`);
@@ -55,6 +81,7 @@ export default function Header({ currentPage, onNavigate }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('currentUser');
     setCurrentUser(null);
+    window.setTimeout(() => window.location.reload(), 0);
     alert('로그아웃 되었습니다.');
     setShowDevMenu(false);
   };
@@ -126,9 +153,9 @@ export default function Header({ currentPage, onNavigate }) {
               {notifications.length === 0 ? (
                 <p>새 알림이 없어요.</p>
               ) : notifications.map((notification) => (
+                <div className="td-header__notification-row" key={notification.id}>
                 <button
                   className="td-header__notification-item"
-                  key={notification.id}
                   onClick={() => {
                     setShowNotifications(false);
                     onNavigate('detail', notification.groupPurchaseId);
@@ -137,33 +164,69 @@ export default function Header({ currentPage, onNavigate }) {
                   <b>{notification.title}</b>
                   <span>{notification.content}</span>
                 </button>
+                <button
+                  type="button"
+                  className="td-header__notification-delete-btn"
+                  aria-label="알림 삭제"
+                  onClick={(event) => handleDeleteNotification(event, notification.id)}
+                >
+                  ×
+                </button>
+                </div>
               ))}
             </div>
           )}
           </div>
           <button className="td-header__action-btn td-header__action-btn--cart" aria-label="장바구니">
-            <span className="material-symbols-outlined">shopping_cart</span>
-            <span className="td-header__cart-badge">2</span>
+            <span
+              aria-label="찜한 공동구매 보기"
+              onClick={() => onNavigate('favorites')}
+            >
+              ♥
+            </span>
           </button>
+          {showFavorites && (
+            <div className="td-header__favorite-dropdown">
+              <strong>찜한 공동구매</strong>
+              {favorites.length === 0 ? (
+                <p>아직 찜한 공동구매가 없어요.</p>
+              ) : favorites.map((purchase) => (
+                <button
+                  className="td-header__favorite-item"
+                  key={purchase.id}
+                  onClick={() => {
+                    setShowFavorites(false);
+                    onNavigate('detail', purchase.id);
+                  }}
+                >
+                  <img src={purchase.imageUrl || purchase.imageUrls?.[0]} alt="" />
+                  <span>{purchase.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="td-header__avatar-container">
             <button className="td-header__avatar-btn" onClick={() => setShowDevMenu(!showDevMenu)}>
               <img
-                alt={activeProfile.label}
+                alt={displayProfile.label}
                 className="td-header__avatar"
-                src={activeProfile.image}
+                src={displayProfile.image}
               />
             </button>
             {showDevMenu && (
               <div className="td-header__dev-dropdown">
                 {currentUser ? (
                   <>
-                    <div className="td-header__dev-title">현재 로그인: <span>{activeProfile.label}</span></div>
+                    <div className="td-header__dev-title">현재 로그인: <span>{displayProfile.label}</span></div>
                     <button className="td-header__dev-item-btn td-header__dev-item-btn--logout" onClick={handleLogout}>
                       <span className="material-symbols-outlined">logout</span>로그아웃
                     </button>
                   </>
                 ) : (
                   <>
+                    <button className="td-header__dev-item-btn" onClick={() => handleDevLogin(3, '이웃 다은')}>
+                      <span className="material-symbols-outlined">face</span>이웃 다은
+                    </button>
                     <div className="td-header__dev-title">개발자 로그인</div>
                     <button className="td-header__dev-item-btn" onClick={() => handleDevLogin(1, '호스트 (방장)')}>
                       <span className="material-symbols-outlined">admin_panel_settings</span>호스트 (방장)

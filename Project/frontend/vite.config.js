@@ -8,6 +8,8 @@ export default defineConfig({
     proxy: {
       '/group-purchases': 'http://localhost:4000',
       '/auth': 'http://localhost:4000',
+      '/notifications': 'http://localhost:4000',
+      '/users': 'http://localhost:4000',
     },
   },
   test: {

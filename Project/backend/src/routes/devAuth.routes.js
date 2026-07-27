@@ -37,13 +37,24 @@ router.post('/dev-login', async (req, res, next) => {
           mannerTemperature: 36.5,
           noShowCount: 0,
         });
+      } else if (Number(userId) === 3) {
+        user = await User.create({
+          id: 3,
+          email: 'neighbor3@test.com',
+          nickname: '이웃 다은',
+          oauthProvider: 'NAVER',
+          oauthId: 'part-oauth-3',
+          mannerTemperature: 36.5,
+          noShowCount: 0,
+        });
       } else {
         throw new AppError(404, '해당 유저가 없습니다.', 'USER_NOT_FOUND');
       }
     }
 
     const mockNickname = Number(userId) === 1 ? '방장 민지' : '참여자 서준';
-    if (user.nickname !== mockNickname) await user.update({ nickname: mockNickname });
+    if (Number(userId) === 3 && user.nickname !== '이웃 다은') await user.update({ nickname: '이웃 다은' });
+    if (Number(userId) !== 3 && user.nickname !== mockNickname) await user.update({ nickname: mockNickname });
 
     const accessToken = jwt.sign({ sub: user.id }, env.jwt.accessSecret, {
       expiresIn: env.jwt.accessExpiresIn,

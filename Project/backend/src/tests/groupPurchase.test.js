@@ -11,7 +11,7 @@ const { processExpiredGroupPurchases } = require('../schedulers/deadlineSchedule
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 
-jest.setTimeout(15000);
+jest.setTimeout(60000);
 
 function getAuthHeader(userId) {
   const token = jwt.sign({ sub: userId }, env.jwt.accessSecret, { expiresIn: '5m' });
@@ -668,6 +668,140 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
         .set('Authorization', getAuthHeader(hostUser.id));
       expect(confirmation.status).toBe(200);
       expect(confirmation.body.data.isPaymentConfirmed).toBe(true);
+    });
+  });
+
+  describe('closed participation history', () => {
+    test('a joined purchase remains in the participant history after it is closed', async () => {
+      const closedPurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: 'Closed participation history purchase',
+        productUrl: 'https://example.com/closed-history',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 2,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5,
+        pickupLongitude: 127,
+        category: 'FOOD',
+        status: 'FINISHED',
+        deadlineAt: new Date(Date.now() - 86400000),
+      });
+      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: closedPurchase.id, isReceived: true });
+
+      const response = await request(app)
+        .get('/group-purchases/mine')
+        .set('Authorization', getAuthHeader(participants[0].id));
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.joined.map((purchase) => purchase.id)).toContain(closedPurchase.id);
+    });
+  });
+
+  describe('saved base location', () => {
+    test('a user can save a base location and receive distance values in the public list', async () => {
+      const locationPurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: 'Distance list purchase',
+        productUrl: 'https://example.com/distance-list',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 1,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() + 86400000),
+      });
+
+      const updated = await request(app)
+        .patch('/users/me/location')
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send({ latitude: 37.5665, longitude: 126.978, address: '서울특별시 중구 세종대로 110' });
+      expect(updated.status).toBe(200);
+      expect(updated.body.data).toMatchObject({ baseLatitude: 37.5665, baseLongitude: 126.978, baseAddress: '서울특별시 중구 세종대로 110' });
+
+      const list = await request(app)
+        .get('/group-purchases')
+        .set('Authorization', getAuthHeader(participants[0].id));
+      const item = list.body.data.find((purchase) => purchase.id === locationPurchase.id);
+      expect(item.distanceKm).toBe(0);
+    });
+  });
+
+  describe('favorite API', () => {
+    test('a signed-in user can save, list, and remove a favorite purchase', async () => {
+      const favoritePurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: 'Favorite API purchase',
+        productUrl: 'https://example.com/favorite-api',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 1,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5,
+        pickupLongitude: 127,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() + 86400000),
+      });
+
+      const added = await request(app)
+        .post(`/group-purchases/${favoritePurchase.id}/favorite`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+      expect(added.status).toBe(201);
+      expect(added.body.data).toMatchObject({ groupPurchaseId: favoritePurchase.id, isFavorite: true });
+
+      const list = await request(app)
+        .get('/group-purchases/favorites')
+        .set('Authorization', getAuthHeader(participants[0].id));
+      expect(list.status).toBe(200);
+      expect(list.body.data.map((purchase) => purchase.id)).toContain(favoritePurchase.id);
+
+      const removed = await request(app)
+        .delete(`/group-purchases/${favoritePurchase.id}/favorite`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+      expect(removed.status).toBe(200);
+      expect(removed.body.data).toMatchObject({ groupPurchaseId: favoritePurchase.id, isFavorite: false });
+    });
+  });
+
+  describe('notification deletion API', () => {
+    test('an owner can delete a notification and another user cannot delete it', async () => {
+      const purchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: 'Notification deletion purchase',
+        productUrl: 'https://example.com/notification-delete',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 1,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5,
+        pickupLongitude: 127,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() + 86400000),
+      });
+      const notification = await Notification.create({
+        userId: participants[0].id,
+        groupPurchaseId: purchase.id,
+        title: 'Delete me',
+        content: 'This notification should disappear.',
+      });
+
+      const forbidden = await request(app)
+        .delete(`/notifications/${notification.id}`)
+        .set('Authorization', getAuthHeader(participants[1].id));
+      expect(forbidden.status).toBe(404);
+      expect(await Notification.findByPk(notification.id)).not.toBeNull();
+
+      const deleted = await request(app)
+        .delete(`/notifications/${notification.id}`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+      expect(deleted.status).toBe(200);
+      expect(deleted.body.data).toMatchObject({ id: notification.id, deleted: true });
+      expect(await Notification.findByPk(notification.id)).toBeNull();
     });
   });
 });

@@ -42,6 +42,16 @@ export const getMyGroupPurchaseActivities = () => {
   return apiClient.get('/group-purchases/mine');
 };
 
+/** Fetch the signed-in user's saved group purchases. */
+export const getFavoriteGroupPurchases = () => apiClient.get('/group-purchases/favorites');
+
+/** Save or remove the current group purchase from the signed-in user's favorites. */
+export const addFavoriteGroupPurchase = (id) => apiClient.post(`/group-purchases/${id}/favorite`);
+export const removeFavoriteGroupPurchase = (id) => apiClient.delete(`/group-purchases/${id}/favorite`);
+
+/** Save the signed-in user's map location for distance calculations. */
+export const updateMyLocation = ({ latitude, longitude, address }) => apiClient.patch('/users/me/location', { latitude, longitude, address });
+
 /** Advance a hosted group purchase to its next workflow status. */
 export const updateGroupPurchaseStatus = (id, status) => {
   return apiClient.patch(`/group-purchases/${id}/status`, { status });
@@ -64,3 +74,6 @@ export const confirmGroupPurchasePayment = (id, applicationId) => {
 
 /** Fetch notifications for the signed-in user. */
 export const getMyNotifications = () => apiClient.get('/notifications');
+
+/** Permanently remove one notification owned by the current user. */
+export const deleteMyNotification = (id) => apiClient.delete(`/notifications/${id}`);

@@ -114,9 +114,49 @@
 /* Bento grid images */
 .td-detail-page__gallery-bento {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 32px;
+}
+
+.td-detail-page__gallery-bento--1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.td-detail-page__gallery-bento--3,
+.td-detail-page__gallery-bento--5 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.td-detail-page__gallery-item {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--td-surface-muted);
+  cursor: zoom-in;
+}
+
+.td-detail-page__gallery-bento--1 .td-detail-page__gallery-item {
+  aspect-ratio: 16 / 9;
+}
+
+.td-detail-page__gallery-item:hover .td-detail-page__gallery-img {
+  transform: scale(1.05);
+}
+
+.td-detail-page__gallery-representative {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.68);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .td-detail-page__gallery-main-wrapper {
@@ -150,6 +190,54 @@
 
 .td-detail-page__gallery-img:hover {
   transform: scale(1.05);
+}
+
+.td-detail-page__image-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.76);
+}
+
+.td-detail-page__image-modal {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(960px, 100%);
+  max-height: calc(100vh - 48px);
+}
+
+.td-detail-page__image-modal img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 105px);
+  border-radius: 16px;
+  object-fit: contain;
+}
+
+.td-detail-page__image-modal p {
+  margin: 12px 0 0;
+  color: #fff;
+  font-weight: 700;
+}
+
+.td-detail-page__image-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 /* Price Cards */

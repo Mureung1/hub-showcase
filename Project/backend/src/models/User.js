@@ -27,6 +27,10 @@ const User = sequelize.define(
       type: DataTypes.DOUBLE,
       allowNull: true,
     },
+    baseAddress: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     mannerTemperature: {
       type: DataTypes.DOUBLE,
       allowNull: false,

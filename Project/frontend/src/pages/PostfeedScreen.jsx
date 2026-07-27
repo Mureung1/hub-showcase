@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getGroupPurchases, getMyGroupPurchaseActivities, joinGroupPurchase } from '../api/groupPurchase';
+import { addFavoriteGroupPurchase, getFavoriteGroupPurchases, getGroupPurchases, getMyGroupPurchaseActivities, joinGroupPurchase, removeFavoriteGroupPurchase } from '../api/groupPurchase';
 import './PostfeedScreen.css';
 
 const categories = [
@@ -21,7 +21,7 @@ export default function PostfeedScreen({ onNavigate }) {
   const [activeCategory, setActiveCategory] = useState('전체');
   const [activeFilter, setActiveFilter] = useState('Distance');
   const [availableOnly, setAvailableOnly] = useState(false);
-  const [locationName, setLocationName] = useState('경북 칠곡군 석적읍');
+  const [locationName, setLocationName] = useState('');
   const [joiningId, setJoiningId] = useState(null);
   const hasToken = Boolean(localStorage.getItem('accessToken'));
 
@@ -45,8 +45,16 @@ export default function PostfeedScreen({ onNavigate }) {
     queryFn: getMyGroupPurchaseActivities,
     enabled: hasToken,
   });
+  const { data: favoriteResponse } = useQuery({
+    queryKey: ['favoriteGroupPurchases'],
+    queryFn: getFavoriteGroupPurchases,
+    enabled: hasToken,
+  });
   const joinedPurchaseIds = new Set((myActivityResponse?.data?.joined || []).map((purchase) => purchase.id));
   const hostedPurchaseIds = new Set((myActivityResponse?.data?.hosted || []).map((purchase) => purchase.id));
+  const favoriteIds = new Set((favoriteResponse?.data || []).map((purchase) => purchase.id));
+  const savedLocationName = myActivityResponse?.data?.user?.baseAddress;
+  const displayLocationName = savedLocationName || locationName || '내 위치를 설정해 주세요';
 
   const rawPosts = apiResponse?.data || [];
 
@@ -84,6 +92,7 @@ export default function PostfeedScreen({ onNavigate }) {
       status: item.status,
       badgeText: item.status === 'COMPLETED' ? '마감 완료' : '진행 중',
       badgeType: item.status === 'COMPLETED' ? 'danger' : 'info',
+      distanceKm: item.distanceKm,
     };
   });
 
@@ -113,6 +122,17 @@ export default function PostfeedScreen({ onNavigate }) {
     } finally {
       setJoiningId(null);
     }
+  };
+
+  const handleFavorite = async (id, event) => {
+    event.stopPropagation();
+    if (!hasToken) {
+      alert('찜하려면 먼저 로그인해 주세요.');
+      return;
+    }
+    if (favoriteIds.has(id)) await removeFavoriteGroupPurchase(id);
+    else await addFavoriteGroupPurchase(id);
+    queryClient.invalidateQueries({ queryKey: ['favoriteGroupPurchases'] });
   };
 
   const handleCardClick = (id) => {
@@ -153,8 +173,8 @@ export default function PostfeedScreen({ onNavigate }) {
             <div className="td-postfeed-page__location-info">
               <span className="material-symbols-outlined td-postfeed-page__location-pin">location_on</span>
               <div>
-                <h4 className="td-postfeed-page__location-title">Greenwood Estates</h4>
-                <p className="td-postfeed-page__location-subtitle">{locationName}</p>
+                <h4 className="td-postfeed-page__location-title">내 위치</h4>
+                <p className="td-postfeed-page__location-subtitle">{displayLocationName}</p>
               </div>
             </div>
             <button className="td-postfeed-page__location-change-btn" onClick={changeLocation}>
@@ -198,7 +218,7 @@ export default function PostfeedScreen({ onNavigate }) {
             <div className="td-postfeed-page__header-text">
               <span className="material-symbols-outlined text-3xl td-postfeed-page__near-icon">near_me</span>
               <div>
-                <h2 className="td-headline-md">{locationName}</h2>
+                <h2 className="td-headline-md">{displayLocationName}</h2>
                 <p className="td-postfeed-page__header-subtitle text-body-md">내 주변 인기 공동구매</p>
               </div>
             </div>
@@ -222,6 +242,7 @@ export default function PostfeedScreen({ onNavigate }) {
               const isJoined = joinedPosts[post.id] || joinedPurchaseIds.has(post.id);
               const isHosted = hostedPurchaseIds.has(post.id);
               const isFull = post.currentParticipants >= post.targetParticipants;
+              const isFavorite = favoriteIds.has(post.id);
               return (
                 <article 
                   key={post.id} 
@@ -230,6 +251,7 @@ export default function PostfeedScreen({ onNavigate }) {
                 >
                   <div className="td-postfeed-page__card-image-wrapper">
                     <img className="td-postfeed-page__card-image" src={post.imageUrl} alt={post.title} />
+                    <button className={`td-postfeed-page__favorite-btn ${isFavorite ? 'td-postfeed-page__favorite-btn--active' : ''}`} aria-label="찜하기" onClick={(event) => handleFavorite(post.id, event)}>♥</button>
                     {post.badgeText && (
                       <div className={`td-postfeed-page__card-badge td-postfeed-page__card-badge--${post.badgeType}`}>
                         <span className="material-symbols-outlined text-xs">timer</span>
@@ -255,7 +277,7 @@ export default function PostfeedScreen({ onNavigate }) {
                         </p>
                         <p className="td-postfeed-page__stats-item td-postfeed-page__stats-item--sub">
                           <span className="material-symbols-outlined text-[12px]">directions_walk</span>
-                          {post.distanceText}
+                          {post.distanceKm != null ? `${post.distanceKm}km` : '내 위치를 설정해 주세요'}
                         </p>
                       </div>
                     </div>

@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { cancelGroupPurchaseJoin, getMyGroupPurchaseActivities } from '../api/groupPurchase';
+import { cancelGroupPurchaseJoin, getFavoriteGroupPurchases, getMyGroupPurchaseActivities, updateMyLocation } from '../api/groupPurchase';
 import { filterPurchasesByActivity } from '../utils/filterPurchasesByActivity';
+import { getProfileImageUrl } from '../utils/profileImage';
+import KakaoMap from '../components/KakaoMap';
 import './MyPage.css';
 
 const statusLabels = {
@@ -21,7 +23,14 @@ function PurchaseCard({ purchase, onNavigate, onCancel, cancellingId, isJoined }
 
   return (
     <article className="td-mypage__card td-mypage__item-card">
-      <div className="td-mypage__item-img-wrapper">
+      <div className={`td-mypage__item-img-wrapper ${purchase.imageUrl || purchase.imageUrls?.[0] ? 'td-mypage__item-img-wrapper--has-image' : ''}`}>
+        {(purchase.imageUrl || purchase.imageUrls?.[0]) && (
+          <img
+            className="td-mypage__item-img"
+            src={purchase.imageUrl || purchase.imageUrls?.[0]}
+            alt={`${purchase.title} 대표 이미지`}
+          />
+        )}
         <div className="td-mypage__profile-avatar">{purchase.category === 'FOOD' ? '식' : '생'}</div>
         <div className="td-mypage__item-badge td-mypage__item-badge--recruiting">
           <span className="td-label-sm">{statusLabels[purchase.status] || purchase.status}</span>
@@ -60,6 +69,12 @@ export default function MyPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState('hosted');
   const [activityFilter, setActivityFilter] = useState('all');
   const [cancellingId, setCancellingId] = useState(null);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [pendingLocation, setPendingLocation] = useState({ latitude: 37.5665, longitude: 126.978, address: '' });
+  useEffect(() => {
+    localStorage.removeItem('myPageTab');
+  }, []);
   const queryClient = useQueryClient();
   const hasToken = Boolean(localStorage.getItem('accessToken'));
   const { data: response, isLoading, error } = useQuery({
@@ -67,8 +82,17 @@ export default function MyPage({ onNavigate }) {
     queryFn: getMyGroupPurchaseActivities,
     enabled: hasToken,
   });
+  const { data: favoriteResponse, isLoading: isFavoriteLoading } = useQuery({
+    queryKey: ['favoriteGroupPurchases'],
+    queryFn: getFavoriteGroupPurchases,
+    enabled: hasToken && activeTab === 'favorite',
+  });
   const data = response?.data;
-  const allPurchases = activeTab === 'hosted' ? data?.hosted || [] : data?.joined || [];
+  const allPurchases = activeTab === 'hosted'
+    ? data?.hosted || []
+    : activeTab === 'joined'
+      ? data?.joined || []
+      : favoriteResponse?.data || [];
   const purchases = filterPurchasesByActivity(allPurchases, activityFilter);
 
   async function handleCancel(id) {
@@ -84,6 +108,29 @@ export default function MyPage({ onNavigate }) {
     }
   }
 
+  function openLocationModal() {
+    setPendingLocation({
+      latitude: data?.user?.baseLatitude || 37.5665,
+      longitude: data?.user?.baseLongitude || 126.978,
+      address: data?.user?.baseAddress || '',
+    });
+    setIsLocationModalOpen(true);
+  }
+
+  async function saveLocation() {
+    setLocationSaving(true);
+    try {
+      await updateMyLocation(pendingLocation);
+      queryClient.invalidateQueries({ queryKey: ['myGroupPurchaseActivities'] });
+      queryClient.invalidateQueries({ queryKey: ['groupPurchases'] });
+      setIsLocationModalOpen(false);
+    } catch (apiError) {
+      alert(apiError.message || '내 위치를 저장하지 못했습니다.');
+    } finally {
+      setLocationSaving(false);
+    }
+  }
+
   if (!hasToken) {
     return <main className="td-mypage__content"><p className="td-body-md">우측 상단 프로필 메뉴에서 개발용 로그인을 해주세요.</p></main>;
   }
@@ -95,6 +142,9 @@ export default function MyPage({ onNavigate }) {
   }
 
   const user = data.user;
+  if (activeTab === 'favorite' && isFavoriteLoading) {
+    return <main className="td-mypage__content"><p className="td-body-md">찜한 공동구매를 불러오는 중입니다.</p></main>;
+  }
   return (
     <div className="td-root td-mypage">
       <main className="td-mypage__content">
@@ -104,9 +154,14 @@ export default function MyPage({ onNavigate }) {
             <section className="td-mypage__card td-mypage__profile-card">
               <div className="td-mypage__profile-bg-glow" />
               <div className="td-mypage__profile-info">
-                <div className="td-mypage__profile-avatar">{user.nickname.slice(0, 1)}</div>
+                <div className="td-mypage__profile-avatar"><img src={getProfileImageUrl(user.id)} alt={`${user.nickname} 프로필 사진`} /></div>
                 <div><h2 className="td-headline-md">{user.nickname}</h2><p className="td-mypage__profile-loc">공동구매 활동을 관리해요</p></div>
               </div>
+              {user.baseAddress && <p className="td-mypage__saved-location"><span className="material-symbols-outlined">location_on</span>{user.baseAddress}</p>}
+              <button className="td-mypage__location-btn" onClick={openLocationModal}>
+                <span className="material-symbols-outlined">location_on</span>
+                {user.baseLatitude != null ? '내 위치 다시 설정' : '내 위치 설정하기'}
+              </button>
               <div className="td-mypage__manner-box">
                 <div className="td-mypage__manner-header"><span className="td-label-md">매너 온도</span><span className="td-label-md td-mypage__manner-temp">{user.mannerTemperature}°C</span></div>
                 <div className="td-mypage__manner-bar-track"><div className="td-mypage__manner-bar-fill" style={{ width: `${Math.min(user.mannerTemperature, 100)}%` }} /></div>
@@ -129,6 +184,7 @@ export default function MyPage({ onNavigate }) {
 
           <section className="td-mypage__right-column">
             <div className="td-mypage__tabs-container">
+              <button className={`td-mypage__tab-btn ${activeTab === 'favorite' ? 'td-mypage__tab-btn--active' : ''}`} onClick={() => setActiveTab('favorite')}>♥ 찜한 공동구매</button>
               <button className={`td-mypage__tab-btn ${activeTab === 'hosted' ? 'td-mypage__tab-btn--active' : ''}`} onClick={() => setActiveTab('hosted')}>내가 만든 공동구매</button>
               <button className={`td-mypage__tab-btn ${activeTab === 'joined' ? 'td-mypage__tab-btn--active' : ''}`} onClick={() => setActiveTab('joined')}>내가 참여한 공동구매</button>
             </div>
@@ -144,6 +200,25 @@ export default function MyPage({ onNavigate }) {
           </section>
         </div>
       </main>
+      {isLocationModalOpen && (
+        <div className="td-mypage__location-modal-backdrop" role="dialog" aria-modal="true" aria-label="내 위치 설정">
+          <section className="td-mypage__location-modal">
+            <h2>내 위치 설정하기</h2>
+            <p>지도를 클릭하거나 주소를 검색해 내 위치를 설정하세요.</p>
+            <KakaoMap
+              latitude={pendingLocation.latitude}
+              longitude={pendingLocation.longitude}
+              onLocationChange={setPendingLocation}
+              height={300}
+            />
+            <p className="td-mypage__location-address">{pendingLocation.address || '지도에서 위치를 선택해 주세요.'}</p>
+            <div className="td-mypage__location-modal-actions">
+              <button onClick={() => setIsLocationModalOpen(false)}>취소</button>
+              <button onClick={saveLocation} disabled={locationSaving}>{locationSaving ? '저장 중...' : '이 위치로 저장'}</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

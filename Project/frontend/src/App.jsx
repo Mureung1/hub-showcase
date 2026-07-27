@@ -7,6 +7,7 @@ import PostfeedScreen from './pages/PostfeedScreen';
 import CreatePostScreen from './pages/CreatePostScreen';
 import MyPage from './pages/MyPage';
 import GroupPurchaseDetailPage from './pages/GroupPurchaseDetailPage';
+import FavoriteScreen from './pages/FavoriteScreen';
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,8 @@ function App() {
           <PostfeedScreen onNavigate={handlePageChange} posts={posts} setPosts={setPosts} />
         ) : page === 'createpost' ? (
           <CreatePostScreen onNavigate={handlePageChange} onAddPost={handleAddPost} />
+        ) : page === 'favorites' ? (
+          <FavoriteScreen onNavigate={handlePageChange} />
         ) : page === 'mypage' ? (
           <MyPage onNavigate={handlePageChange} />
         ) : (

@@ -103,6 +103,26 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+.td-mypage__profile-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.td-mypage__location-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-bottom: 18px; padding: 11px 14px; border: 1px solid var(--td-primary-container); border-radius: 12px; background: #fff; color: var(--td-primary-container); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.td-mypage__saved-location { display: flex; align-items: flex-start; gap: 6px; margin: -10px 0 12px; color: var(--td-on-surface-variant); font-size: 13px; line-height: 1.45; }
+.td-mypage__saved-location span { flex: 0 0 auto; font-size: 17px; color: var(--td-primary-container); }
+.td-mypage__location-btn:hover { background: #e9f8f0; }
+.td-mypage__location-modal-backdrop { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px; background: rgba(0,0,0,.45); }
+.td-mypage__location-modal { width: min(620px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: 24px; border-radius: 24px; background: #fff; box-shadow: 0 18px 48px rgba(0,0,0,.2); }
+.td-mypage__location-modal h2 { margin: 0 0 8px; }
+.td-mypage__location-modal > p { margin: 0 0 16px; color: var(--td-on-surface-variant); }
+.td-mypage__location-address { min-height: 20px; margin-top: 12px !important; font-size: 14px; }
+.td-mypage__location-modal-actions { display: flex; justify-content: end; gap: 10px; margin-top: 20px; }
+.td-mypage__location-modal-actions button { padding: 11px 16px; border: 1px solid var(--td-border-light); border-radius: 10px; background: #fff; font: inherit; cursor: pointer; }
+.td-mypage__location-modal-actions button:last-child { border-color: var(--td-primary-container); background: var(--td-primary-container); color: #fff; }
+
 .td-mypage__profile-loc {
   font-family: var(--td-font-family);
   font-size: 14px;
@@ -359,6 +379,10 @@
   display: flex;
 }
 
+.td-mypage__tabs-container .td-mypage__tab-btn:first-child {
+  display: none;
+}
+
 .td-mypage__tab-btn {
   flex: 1;
   border: none;
@@ -419,6 +443,10 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
+}
+
+.td-mypage__item-img-wrapper--has-image .td-mypage__profile-avatar {
+  display: none;
 }
 
 .td-mypage__item-card:hover .td-mypage__item-img {

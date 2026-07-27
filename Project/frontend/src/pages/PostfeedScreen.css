@@ -303,6 +303,12 @@
   position: relative;
 }
 
+.td-postfeed-page__favorite-btn { position: absolute; top: 14px; left: 14px; z-index: 2; width: 38px; height: 38px; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: #89938f; font-size: 21px; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.td-postfeed-page__favorite-btn--active { color: #e84d67; }
+.td-postfeed-page__favorite-btn:hover { background: #fff0f3; color: #e84d67; transform: scale(1.12); }
+.td-postfeed-page__favorite-btn:active { transform: scale(.94); }
+.td-postfeed-page__card:has(.td-postfeed-page__favorite-btn:hover), .td-postfeed-page__card:has(.td-postfeed-page__card-btn:hover) { transform: none; box-shadow: none; }
+
 .td-postfeed-page__card-image {
   width: 100%;
   height: 100%;
@@ -435,6 +441,7 @@
 .td-postfeed-page__card-btn:hover:not(:disabled) {
   background-color: var(--td-mint-green);
 }
+.td-postfeed-page__card-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(0, 120, 70, .22); }
 
 .td-postfeed-page__card-btn--joined {
   background-color: var(--td-surface-container);
