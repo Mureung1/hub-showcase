@@ -128,7 +128,8 @@
       "entry_label_raw": "백엔드 시스템 개발 및 운영 경력이 7년 이상이신 분",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaomobility_be_autonomous.txt"
     },
     {
       "source_id": "src_kakaomobility_be_parking",
@@ -153,7 +154,8 @@
       "entry_label_raw": "3년 이상의 백엔드 개발 혹은 그에 준하는 경험 및 역량을 갖추신 분",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaomobility_be_parking.txt"
     },
     {
       "source_id": "src_kakaomobility_be_logistics",
@@ -178,7 +180,8 @@
       "entry_label_raw": "백엔드 서버 개발 경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaomobility_be_logistics.txt"
     },
     {
       "source_id": "src_woowahan_be_dispatch",
@@ -203,7 +206,8 @@
       "entry_label_raw": "경력",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow sign-in/**, mypage/**, /w1/**",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "woowahan_be_dispatch.txt"
     },
     {
       "source_id": "src_kakaopay_be_stablecoin",
@@ -228,7 +232,8 @@
       "entry_label_raw": "실제 상용 서비스의 백엔드 시스템 설계, 개발 및 운영 경험 (최소 10년 이상)",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaopay_be_stablecoin.txt"
     },
     {
       "source_id": "src_kakaopay_be_payment",
@@ -253,7 +258,8 @@
       "entry_label_raw": "지원자격에 연차 하한 표기 없음. Java 또는 Kotlin 언어와 Spring Framework 활용 능력",
       "entry_label": "unspecified",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaopay_be_payment.txt"
     },
     {
       "source_id": "src_supercent_be_adtech_mid",
@@ -278,7 +284,8 @@
       "entry_label_raw": "경력 4년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "supercent_be_adtech_mid.txt"
     },
     {
       "source_id": "src_supercent_be_adtech_senior",
@@ -303,7 +310,8 @@
       "entry_label_raw": "경력 8년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "supercent_be_adtech_senior.txt"
     },
     {
       "source_id": "src_nexon_be_lastparadise",
@@ -328,7 +336,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "nexon_be_lastparadise.txt"
     },
     {
       "source_id": "src_nexon_be_ua",
@@ -353,7 +362,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "nexon_be_ua.txt"
     },
     {
       "source_id": "src_neople_be_projectdl",
@@ -378,7 +388,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "neople_be_projectdl.txt"
     },
     {
       "source_id": "src_neople_be_overkill",
@@ -403,7 +414,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "neople_be_overkill.txt"
     },
     {
       "source_id": "src_neople_be_dnf",
@@ -428,7 +440,8 @@
       "entry_label_raw": "지원 구분: 경력무관",
       "entry_label": "unspecified",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "neople_be_dnf.txt"
     },
     {
       "source_id": "src_mintrocket_be_godzilla",
@@ -453,7 +466,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "mintrocket_be_godzilla.txt"
     },
     {
       "source_id": "src_autoever_be_smartfactory",
@@ -478,7 +492,8 @@
       "entry_label_raw": "경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "autoever_be_smartfactory.txt"
     },
     {
       "source_id": "src_channeltalk_se_senior",
@@ -503,7 +518,8 @@
       "entry_label_raw": "시니어/정규직",
       "entry_label": "experienced",
       "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "channeltalk_se_senior.txt"
     },
     {
       "source_id": "src_channeltalk_se",
@@ -529,6 +545,7 @@
       "entry_label": "junior",
       "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
       "collected_on": "2026-07-27",
+      "content_file": "channeltalk_se.txt",
       "note": "목록 표기가 주니어를 하한으로 둔다. 백엔드·프론트엔드·모바일을 함께 모집하는지 본문에서 확인한다. 지표 명세 2.8은 여러 직무를 함께 모집하는 공고를 모집단에서 뺀다"
     },
     {
@@ -554,7 +571,8 @@
       "entry_label_raw": "경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "cashwalk_be.txt"
     },
     {
       "source_id": "src_bucketplace_be_commerce",
@@ -579,7 +597,8 @@
       "entry_label_raw": "경력 13년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "bucketplace_be_commerce.txt"
     },
     {
       "source_id": "src_linepay_be_server",
@@ -604,7 +623,8 @@
       "entry_label_raw": "3년 이상의 서버 개발 경험 또는 이에 준하는 역량을 갖추신 분",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /ko/2021_1st, /en/2021_1st",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "linepay_be_server.txt"
     },
     {
       "source_id": "src_zimssa_be_senior",
@@ -629,7 +649,8 @@
       "entry_label_raw": "경력 10년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "zimssa_be_senior.txt"
     },
     {
       "source_id": "src_estsecurity_be_linux",
@@ -654,7 +675,8 @@
       "entry_label_raw": "경력 5년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "estsecurity_be_linux.txt"
     },
     {
       "source_id": "src_estgames_be_rts",
@@ -679,7 +701,8 @@
       "entry_label_raw": "경력 무관",
       "entry_label": "unspecified",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "estgames_be_rts.txt"
     },
     {
       "source_id": "src_kurly_be_commerce_core",
@@ -704,7 +727,8 @@
       "entry_label_raw": "경력 5~12년",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_commerce_core.txt"
     },
     {
       "source_id": "src_kurly_be_commerce_ad",
@@ -729,7 +753,8 @@
       "entry_label_raw": "경력 8~15년",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_commerce_ad.txt"
     },
     {
       "source_id": "src_kurly_be_commerce_home",
@@ -754,7 +779,8 @@
       "entry_label_raw": "경력 5~15년",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_commerce_home.txt"
     },
     {
       "source_id": "src_kurly_be_fulfillment",
@@ -779,7 +805,8 @@
       "entry_label_raw": "경력 5년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_fulfillment.txt"
     },
     {
       "source_id": "src_kurly_be_payment",
@@ -805,6 +832,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "kurly_be_payment.txt",
       "note": "회사가 컬리이므로 기업군은 회사 단위로 빅테크·플랫폼이다. 제목의 핀테크는 담당 도메인이다"
     },
     {
@@ -831,6 +859,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "miridih_be_senior.txt",
       "note": "greetinghr 호스팅이며 커스텀 도메인 www.miridih.com 으로 서비스한다"
     },
     {
@@ -856,7 +885,8 @@
       "entry_label_raw": "경력 10년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "travelwallet_be_lead.txt"
     },
     {
       "source_id": "src_autoever_be_smarttag",
@@ -882,6 +912,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "autoever_be_smarttag.txt",
       "note": "직군 필드가 직무를 가리키지 않아 지표 명세 2.8의 세 번째 입력으로 판정했다"
     },
     {
@@ -909,6 +940,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "autoever_be_salesforce.txt",
       "note": "패키지 플랫폼 위의 서버 로직 개발이다. 지표 명세 2.8에 따라 모집단에 넣고 platform_bound 로 표시한다"
     },
     {
@@ -935,6 +967,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "gowid_be.txt",
       "note": "법인 지출관리 구독형 소프트웨어를 제공하므로 기업군을 B2B SaaS 로 둔다"
     },
     {
@@ -960,7 +993,8 @@
       "entry_label_raw": "경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "qmit_be_mid.txt"
     },
     {
       "source_id": "src_qmit_be_senior",
@@ -985,7 +1019,8 @@
       "entry_label_raw": "경력 5년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "qmit_be_senior.txt"
     },
     {
       "source_id": "src_lgcns_be_app_architect",
@@ -1008,6 +1043,7 @@
       "title": "[LG CNS] 어플리케이션 아키텍트/AI 아키텍트 모집(경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "lgcns_be_app_architect.txt",
       "note": "모집분야가 Application Architect 와 AI Architect 둘이며 요구사항 본문이 분리된다. AI Architect 는 ai_engineer 라 이 매니페스트에 담지 않는다. robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
@@ -1042,6 +1078,7 @@
       "title": "[LG CNS] MES 영역 전문가 모집 (경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "lgcns_be_mes_ops.txt",
       "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
@@ -1076,6 +1113,7 @@
       "title": "[LG CNS] MES개발자 분야 모집(경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "lgcns_be_mes_dev.txt",
       "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
@@ -1332,6 +1370,14 @@
     {
       "source": "api.careers.lg.com/rmk/job/retrieveJobNoticesDetail",
       "method": "채용 페이지가 호출하는 공개 엔드포인트. jobNoticeId 를 POST 하면 data.jobNoticesDetail.recList 에 모집분야별 jobGroupName, requiredItem, detailContext 가 들어 있다. 목록의 식별자는 목록 화면의 jobNoticeList 에 있다"
+    },
+    {
+      "source": "2단계 본문 수집 절차",
+      "method": "매니페스트의 url 을 브라우저로 열어 본문 전문을 agent/data/sources/backend/ 아래 content_file 이름으로 저장한다. greetinghr 계열은 같은 출처 fetch 로 여러 건을 한 번에 받는다. 저장한 뒤 FileFetcher 와 SourceCollector 로 적재 파이프라인에 태운다"
+    },
+    {
+      "source": "모집분야를 여럿 담은 출처의 본문",
+      "method": "positions 가 있는 항목은 해당 모집분야의 요구사항 구간만 담는다. careers.lg.com 은 api.careers.lg.com/rmk/job/retrieveJobNoticesDetail 의 recList 에서 jobGroupName 이 일치하는 원소의 requiredItem 과 detailContext 를 쓴다"
     }
   ]
 }
