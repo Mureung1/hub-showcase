@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { CLASSIFICATION_PROMPT_PREFIX, emptyBuckets, bucketsFromClassifications } from './prompt.js';
+import { GEMINI_MODEL } from '../../config.js';
 
 const GEMINI_RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -32,7 +33,7 @@ export async function classify(names) {
   try {
     const client = getClient();
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: GEMINI_MODEL,
       contents: CLASSIFICATION_PROMPT_PREFIX + names.join('\n'),
       config: {
         responseMimeType: 'application/json',
