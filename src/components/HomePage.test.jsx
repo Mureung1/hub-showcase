@@ -87,6 +87,7 @@ vi.mock("./NudgeModal", () => ({
           onStart({
             entryMode: "intervention",
             entryLevel: task.level,
+            journeyLevel: task.level,
             microTask: task.level === 1 ? null : "open one paragraph",
             generationSource: task.level === 1 ? "none" : "rule_based",
             memoryEvidence: null,
@@ -106,6 +107,7 @@ vi.mock("./FocusMode", () => ({
     entryMode,
     microTask,
     entryLevel,
+    journeyLevel,
     generationSource,
     memoryEvidence,
     onSessionCompleted,
@@ -118,6 +120,7 @@ vi.mock("./FocusMode", () => ({
       data-entry-mode={entryMode ?? ""}
       data-micro-task={microTask ?? ""}
       data-entry-level={entryLevel ?? ""}
+      data-journey-level={journeyLevel ?? ""}
       data-generation-source={generationSource ?? ""}
       data-memory-evidence={
         memoryEvidence ? JSON.stringify(memoryEvidence) : ""
@@ -156,16 +159,19 @@ function setupApi(
   {
     failNotificationOnceFor = null,
     failReasonOnceFor = null,
+    streak = 0,
   } = {},
 ) {
   let serverTasks = initialTasks.map((task) => ({ ...task }));
   const notificationCalls = [];
+  let taskListCalls = 0;
   let failed = false;
   let reasonFailed = false;
 
   apiFetch.mockImplementation(async (path, options = {}) => {
     if (path === "/api/tasks" && !options.method) {
-      return { data: serverTasks.map((task) => ({ ...task })) };
+      taskListCalls += 1;
+      return { data: serverTasks.map((task) => ({ ...task })), streak };
     }
 
     const eventMatch = path.match(/^\/api\/tasks\/([^/]+)\/events$/);
@@ -220,6 +226,7 @@ function setupApi(
     callsFor: (taskId) =>
       notificationCalls.filter((calledId) => calledId === taskId).length,
     allCalls: () => [...notificationCalls],
+    taskListCalls: () => taskListCalls,
     updateTask: (taskId, updates) => {
       serverTasks = serverTasks.map((task) =>
         task.id === taskId ? { ...task, ...updates } : task,
@@ -350,6 +357,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     expect(focus).toHaveAttribute("data-entry-mode", "intervention");
     expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
     expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(focus).toHaveAttribute("data-journey-level", "2");
     expect(focus).toHaveAttribute("data-generation-source", "rule_based");
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
       version: 2,
@@ -357,6 +365,7 @@ describe("HomePage response-driven nudge scheduling", () => {
       startedAt: NOW.getTime() + 3_000,
       entryMode: "intervention",
       entryLevel: 2,
+      journeyLevel: 2,
       microTask: "open one paragraph",
       generationSource: "rule_based",
       memoryEvidence: null,
@@ -366,8 +375,10 @@ describe("HomePage response-driven nudge scheduling", () => {
     expect(api.callsFor("a")).toBe(1);
   });
 
-  it("stores a null-metadata session when Focus starts from a Task card", async () => {
-    setupApi([makeTask({ id: "a", level: 1 })]);
+  it.each([1, 2, 3, 4])(
+    "stores a direct session with Journey level %s when Focus starts from a Task card",
+    async (level) => {
+    setupApi([makeTask({ id: "a", level })]);
     await renderHome();
 
     fireEvent.click(screen.getByTestId("task-a"));
@@ -376,17 +387,23 @@ describe("HomePage response-driven nudge scheduling", () => {
       "data-task-id",
       "a",
     );
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute(
+      "data-journey-level",
+      String(level),
+    );
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
       version: 2,
       taskId: "a",
       startedAt: NOW.getTime(),
       entryMode: "direct",
       entryLevel: null,
+      journeyLevel: level,
       microTask: null,
       generationSource: "none",
       memoryEvidence: null,
     });
-  });
+    },
+  );
 
   it("removes the stored session when Focus reports completion success", async () => {
     setupApi([makeTask({ id: "a", level: 1 })]);
@@ -401,7 +418,7 @@ describe("HomePage response-driven nudge scheduling", () => {
   });
 
   it("removes the stored session and closes Focus after a successful stop", async () => {
-    setupApi([makeTask({ id: "a", level: 1 })]);
+    const api = setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
     fireEvent.click(screen.getByTestId("task-a"));
     expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).not.toBeNull();
@@ -413,6 +430,7 @@ describe("HomePage response-driven nudge scheduling", () => {
 
     expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).toBeNull();
     expect(screen.queryByTestId("focus-mode")).not.toBeInTheDocument();
+    expect(api.taskListCalls()).toBe(2);
   });
 
   it("restores a valid active Focus session before scheduling its notification", async () => {
@@ -422,6 +440,7 @@ describe("HomePage response-driven nudge scheduling", () => {
       startedAt: NOW.getTime() - 125_000,
       entryMode: "intervention",
       entryLevel: 2,
+      journeyLevel: 2,
       microTask: "open one paragraph",
       generationSource: "rule_based",
       memoryEvidence: null,
@@ -438,6 +457,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     );
     expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
     expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(focus).toHaveAttribute("data-journey-level", "2");
     expect(focus).toHaveAttribute("data-entry-mode", "intervention");
     expect(focus).toHaveAttribute("data-generation-source", "rule_based");
 
@@ -500,6 +520,7 @@ describe("HomePage response-driven nudge scheduling", () => {
       startedAt: NOW.getTime() - 10_000,
       entryMode: "intervention",
       entryLevel: 2,
+      journeyLevel: 2,
       microTask: "existing step",
       generationSource: "rule_based",
       memoryEvidence: null,
@@ -743,5 +764,14 @@ describe("HomePage response-driven nudge scheduling", () => {
     });
 
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("renders the streak chip using the server's streak value", async () => {
+    const task = makeTask({ id: "a", level: 0 });
+    setupApi([task], { streak: 5 });
+
+    await renderHome();
+
+    expect(screen.getByText("🔥 5")).toBeInTheDocument();
   });
 });

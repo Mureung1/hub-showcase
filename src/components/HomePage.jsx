@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import TaskCard from "./TaskCard";
 import EmptyState from "./EmptyState";
 import FocusMode from "./FocusMode";
@@ -32,7 +31,7 @@ const STAT_DEFS = [
   {
     key: "streak",
     label: "스트릭",
-    calc: () => 0, // TODO: 실제 스트릭 계산은 나중 이슈에서
+    calc: (_tasks, streak) => streak,
     format: (value) => `🔥 ${value}`,
   },
 ];
@@ -51,11 +50,11 @@ function didReasonChange(previousTask, savedReason) {
   );
 }
 
-function StatsRow({ tasks }) {
+function StatsRow({ tasks, streak }) {
   return (
     <div className="stats-row">
       {STAT_DEFS.map((def) => {
-        const value = def.calc(tasks);
+        const value = def.calc(tasks, streak);
         return (
           <div className="stat-chip" key={def.key}>
             {def.label}
@@ -68,8 +67,8 @@ function StatsRow({ tasks }) {
 }
 
 function HomePage() {
-  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
+  const [streak, setStreak] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
   const [focusSession, setFocusSession] = useState(null); // 시작 방식과 개입 action을 보존하는 Focus 세션 v2
@@ -96,7 +95,7 @@ function HomePage() {
   const lv3ReasonChangedByTaskRef = useRef(new Map());
 
   const loadTasks = useCallback(({ restoreFocus = false } = {}) => {
-    return apiFetch("/api/tasks").then(({ data }) => {
+    return apiFetch("/api/tasks").then(({ data, streak: nextStreak }) => {
       if (restoreFocus) {
         const restored = getRestorableFocusSession(data);
         if (restored) {
@@ -105,6 +104,7 @@ function HomePage() {
         }
       }
       setTasks(data);
+      setStreak(nextStreak ?? 0);
       setIsLoading(false);
     });
   }, []);
@@ -343,6 +343,7 @@ function HomePage() {
       taskId: task.id,
       entryMode: overrides.entryMode ?? "direct",
       entryLevel: overrides.entryLevel ?? null,
+      journeyLevel: overrides.journeyLevel ?? task.level,
       microTask: overrides.microTask ?? null,
       generationSource: overrides.generationSource ?? "none",
       memoryEvidence: overrides.memoryEvidence ?? null,
@@ -361,6 +362,7 @@ function HomePage() {
     startFocus(task, {
       entryMode: session?.entryMode ?? "intervention",
       entryLevel: session?.entryLevel ?? null,
+      journeyLevel: session?.journeyLevel ?? task.level,
       microTask: session?.microTask ?? null,
       generationSource: session?.generationSource ?? "none",
       memoryEvidence: session?.memoryEvidence ?? null,
@@ -413,12 +415,6 @@ function HomePage() {
       window.alert("회피 이유를 저장하지 못했어요. 다시 시도해주세요.");
       return null;
     }
-  }
-
-  // Lv4 "캘린더에 추가" 카드(#28) → 히스토리의 캘린더 뷰로 이동, 등록일이 선택된 상태로 연다(#43).
-  function handleAddToCalendar(task) {
-    closeModal();
-    navigate("/history", { state: { selectedDate: task.createdAt } });
   }
 
   // 삭제: 목록에서 로컬 필터링만 하면 tasks가 바뀌어 타이머 정리 effect(154행)와
@@ -478,7 +474,7 @@ function HomePage() {
         <h1 className="page-title">홈</h1>
         <p className="page-sub">등록된 할일과 지금 상태예요.</p>
       </div>
-      <StatsRow tasks={tasks} />
+      <StatsRow tasks={tasks} streak={streak} />
       <div className="task-grid">
         {tasks.map((task) => (
           <TaskCard
@@ -498,6 +494,7 @@ function HomePage() {
             entryMode={focusSession?.entryMode}
             microTask={focusSession?.microTask ?? null}
             entryLevel={focusSession?.entryLevel ?? null}
+            journeyLevel={focusSession?.journeyLevel}
             generationSource={focusSession?.generationSource}
             memoryEvidence={focusSession?.memoryEvidence ?? null}
             onSessionCompleted={removeFocusSession}
@@ -520,7 +517,6 @@ function HomePage() {
           }
           onStart={handleStartFromModal}
           onClose={closeModal}
-          onAddToCalendar={handleAddToCalendar}
           completedTasks={completedTasks}
         />
       )}
