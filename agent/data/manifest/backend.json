@@ -201,9 +201,9 @@
       "title": "Server(배차시스템)",
       "job_role_raw": "직무 필터: Server",
       "entry_label_raw": "경력",
+      "entry_label": "experienced",
       "robots_policy": "allow /; disallow sign-in/**, mypage/**, /w1/**",
-      "collected_on": "2026-07-27",
-      "note": "목록의 경력 표기가 연차 하한 없는 '경력'이다. entry_label 판정은 본문 확인 뒤에 채운다"
+      "collected_on": "2026-07-27"
     },
     {
       "source_id": "src_kakaopay_be_stablecoin",
@@ -326,6 +326,7 @@
       "title": "[낙원: LAST PARADISE] 서버 프로그래머",
       "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
       "entry_label_raw": "지원 구분: 경력",
+      "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
       "collected_on": "2026-07-27"
     },
@@ -350,6 +351,7 @@
       "title": "[플랫폼본부] UA실 서버 프로그래머",
       "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
       "entry_label_raw": "지원 구분: 경력",
+      "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
       "collected_on": "2026-07-27"
     },
@@ -374,6 +376,7 @@
       "title": "[프로젝트DL] 서버 프로그래머",
       "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
       "entry_label_raw": "지원 구분: 경력",
+      "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
       "collected_on": "2026-07-27"
     },
@@ -398,6 +401,7 @@
       "title": "[Overkill] 시니어 서버 프로그래머",
       "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
       "entry_label_raw": "지원 구분: 경력",
+      "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
       "collected_on": "2026-07-27"
     },
@@ -422,9 +426,9 @@
       "title": "[던전앤파이터] 서버 프로그래머",
       "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
       "entry_label_raw": "지원 구분: 경력무관",
+      "entry_label": "unspecified",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27",
-      "note": "경력무관은 지표 명세 2.6의 다섯 패턴 어디에도 대응하지 않는다"
+      "collected_on": "2026-07-27"
     },
     {
       "source_id": "src_mintrocket_be_godzilla",
@@ -447,6 +451,7 @@
       "title": "[민트로켓] '고질라 디펜스 포스: X' 서버 프로그래머",
       "job_role_raw": "직무: Game Programming / 제목: 서버 프로그래머",
       "entry_label_raw": "지원 구분: 경력",
+      "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
       "collected_on": "2026-07-27"
     },
@@ -496,6 +501,7 @@
       "title": "Software Engineer, Senior",
       "job_role_raw": "목록 설명: 800만 명이 사용하는 AI 메신저의 백엔드 시스템을 설계",
       "entry_label_raw": "시니어/정규직",
+      "entry_label": "experienced",
       "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
       "collected_on": "2026-07-27"
     },
@@ -520,9 +526,10 @@
       "title": "Software Engineer",
       "job_role_raw": "목록 설명: 800만 명이 사용하는 AI 메신저의 백엔드, 프론트엔드, 모바일",
       "entry_label_raw": "주니어/시니어/정규직",
+      "entry_label": "junior",
       "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
       "collected_on": "2026-07-27",
-      "note": "백엔드·프론트엔드·모바일을 함께 모집하는지 본문에서 확인한다. 지표 명세 2.8은 여러 직무를 함께 모집하는 공고를 모집단에서 뺀다"
+      "note": "목록 표기가 주니어를 하한으로 둔다. 백엔드·프론트엔드·모바일을 함께 모집하는지 본문에서 확인한다. 지표 명세 2.8은 여러 직무를 함께 모집하는 공고를 모집단에서 뺀다"
     },
     {
       "source_id": "src_cashwalk_be",
