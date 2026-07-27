@@ -252,7 +252,7 @@ npm run seed
 npm run dev
 ```
 
-> ⚠️ API 키는 서버 환경변수로만 관리합니다. `VITE_*` 등 클라이언트 노출 변수에 넣지 마세요.
+> ⚠️ Groq/Supabase API 키는 서버 환경변수로만 관리합니다. `VITE_*` 클라이언트 노출 변수에는 절대 넣지 마세요. (`VITE_API_BASE_URL`은 비밀값이 아닌 BE 주소 설정이라 예외 — 아래 "배포" 참고)
 
 ### 테스트
 
@@ -262,6 +262,33 @@ npm run test:watch  # 감시 모드
 ```
 
 Vitest 기반. 순수 함수는 소스 파일과 같은 디렉토리에 `*.test.ts`로 colocate합니다 (예: `server/services/queryService.ts` + `queryService.test.ts`). 새 순수 함수를 테스트 먼저 작성해서 만들 때는 `tdd-workflow` 스킬을 참고하세요.
+
+## 배포
+
+FE(Vercel)와 BE(Render)를 **서로 다른 도메인**에 나눠 배포합니다. FE는 개발 중엔 Vite 프록시로 `/api/*`를 BE로 상대 경로 호출하지만, 배포 시엔 도메인이 갈리므로 `VITE_API_BASE_URL`로 BE 절대 주소를 지정해야 합니다(`src/api/http.ts`의 `apiFetch`가 이 값을 모든 요청 앞에 붙입니다).
+
+### BE — Render
+
+- **Root Directory**: 저장소 루트 (`server/`가 서브패키지가 아니라 루트에서 바로 실행됨)
+- **Build Command**: `npm install`
+- **Start Command**: `npm start` (`tsx server/index.ts` — 별도 컴파일 없이 TS를 직접 실행)
+- **환경변수**: `GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`(Render가 자동 주입하면 생략 가능), `CORS_ORIGIN`(Vercel 배포 도메인으로 설정 — 비워두면 전체 origin 허용)
+
+### FE — Vercel
+
+- **Framework Preset**: Vite (자동 감지)
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **환경변수**: `VITE_API_BASE_URL` = Render에 배포된 BE 주소(예: `https://briefy-api.onrender.com`) — 빌드 시점에 번들에 포함되므로 반드시 배포 전에 설정
+
+### 배포 전 확인
+
+```bash
+npm run build   # FE 프로덕션 빌드 확인
+npm start       # BE 프로덕션 실행 방식(tsx) 로컬 검증
+```
+
+Supabase 마이그레이션(`supabase/migrations/`)은 배포 파이프라인에 포함되지 않습니다 — 새 마이그레이션이 추가되면 Supabase SQL Editor에서 수동 실행합니다.
 
 ## 프로젝트 구조
 
