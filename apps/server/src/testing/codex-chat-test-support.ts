@@ -14,6 +14,7 @@ import {
   type CodexProductTurn,
   type CodexWorkspaceRuntime,
   type StartProductTurnInput,
+  type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 
 import type { CodexChatBootstrap } from '../codex-chat.js'
@@ -170,13 +171,13 @@ export class ControlledRuntime implements CodexWorkspaceRuntime {
     return { threadId: 'thread-A' }
   }
 
-  async startTurn(): Promise<CodexChatTurn> {
+  async startTurn(input?: StartTurnInput): Promise<CodexChatTurn> {
     this.startTurnCalls += 1
     this.dispatched.resolve()
     await this.startTurnGate?.promise
     if (this.startTurnError) throw this.startTurnError
     return {
-      threadId: 'thread-A',
+      threadId: input?.threadId ?? 'thread-A',
       turnId: 'turn-A1',
       events: this.events(),
     }
@@ -212,17 +213,20 @@ export class ControlledRuntime implements CodexWorkspaceRuntime {
   }
 
   async startProductTurn(
-    _input: StartProductTurnInput,
+    input: StartProductTurnInput,
   ): Promise<CodexProductTurn> {
-    throw new Error('ControlledRuntime does not script product Turns')
+    return this.startTurn({
+      threadId: input.threadId,
+      text: input.text,
+    })
   }
 
   async answerUserInput(_input: AnswerUserInput): Promise<void> {
-    throw new Error('ControlledRuntime does not script user-input answers')
+    throw interactionNotPendingError()
   }
 
   async cancelUserInput(_input: CancelUserInput): Promise<void> {
-    throw new Error('ControlledRuntime does not script user-input cancellation')
+    throw interactionNotPendingError()
   }
 
   async interrupt(): Promise<void> {
@@ -326,6 +330,14 @@ export class ControlledRuntime implements CodexWorkspaceRuntime {
     this.eventWaiters.push(waiter)
     return waiter.promise
   }
+}
+
+function interactionNotPendingError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'interaction_not_pending',
+    displayMessage: 'The user-input interaction is not pending.',
+    unknownOutcome: false,
+  })
 }
 
 export class BackpressuredResponse extends EventEmitter {
