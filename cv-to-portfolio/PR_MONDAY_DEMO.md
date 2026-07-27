@@ -7,7 +7,7 @@ PR 제목: [N123_이규민] 데모 핵심 수직슬라이스와 Showcase 완성
 
 - 데모 핵심 시나리오를 `QANDA 공고 선택 → 개발자 CV → Minimal Clean 생성 → Supabase 저장·재조회`로 확정
 - 월요일 완료 기능과 이후 기능, 화면·서버·DB별 점검 결과를
-  [`docs/monday-demo-core-flow-2026-07-27.md`](docs/monday-demo-core-flow-2026-07-27.md)에 기록
+  [데모 핵심 흐름 문서](https://github.com/dolphin1404/NaverConnect_wm/blob/codex/week3-job-targeted-portfolio/cv-to-portfolio/docs/monday-demo-core-flow-2026-07-27.md)에 기록
 - 원격 Supabase에 `is_favorite` migration이 아직 없어도 핵심 저장·목록·상세 조회가 멈추지
   않도록 PostgREST `42703` 구버전 스키마 호환 경로 추가
 - 구버전 스키마에서 저장·목록·상세 조회가 모두 동작하는 서버 회귀 테스트 추가
@@ -16,9 +16,9 @@ PR 제목: [N123_이규민] 데모 핵심 수직슬라이스와 Showcase 완성
 
 ### 동작 화면
 
-![기업·공고 선택](showcase/screenshots/target-selection.webp)
+![기업·공고 선택](https://raw.githubusercontent.com/dolphin1404/NaverConnect_wm/codex/week3-job-targeted-portfolio/cv-to-portfolio/showcase/screenshots/target-selection.webp)
 
-![생성 결과](showcase/screenshots/generated-result.webp)
+![생성 결과](https://raw.githubusercontent.com/dolphin1404/NaverConnect_wm/codex/week3-job-targeted-portfolio/cv-to-portfolio/showcase/screenshots/generated-result.webp)
 
 ### 확인 결과
 
