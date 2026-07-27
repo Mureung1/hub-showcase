@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes.js'
 import usersRoutes from './routes/users.routes.js'
 import subscriptionsRoutes from './routes/subscriptions.routes.js'
 import partyMembersRoutes from './routes/partyMembers.routes.js'
+import settlementsRoutes from './routes/settlements.routes.js'
 
 const app = express()
 const port = process.env.PORT || 4000
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/subscriptions', subscriptionsRoutes)
 app.use('/api/subscriptions', partyMembersRoutes)
+app.use('/api/subscriptions', settlementsRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

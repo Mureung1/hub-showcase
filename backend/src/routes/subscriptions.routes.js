@@ -258,6 +258,8 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     }
 
     await prisma.$transaction([
+      prisma.settlementMember.deleteMany({ where: { settlement: { subscriptionId: subscription.id } } }),
+      prisma.settlement.deleteMany({ where: { subscriptionId: subscription.id } }),
       prisma.partyMember.deleteMany({ where: { subscriptionId: subscription.id } }),
       prisma.subscription.delete({ where: { id: subscription.id } }),
     ])
