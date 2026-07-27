@@ -76,6 +76,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
             presentationMode={viewport.presentationMode}
             baseBuildingsRendered={viewport.baseBuildingsRendered}
             layer={selection.layer}
+            selectedCategoryName={selection.categorySelection.name}
             boundaryVisible={selection.boundaryVisible}
             storesVisible={selection.storesVisible}
             storefrontBuildings3d={storefronts.storefrontBuildings3d}
