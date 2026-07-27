@@ -19,4 +19,7 @@
   /* D-day soon 뱃지 (와이어프레임 JS 기준) */
   --warning: #d97706;
   --warning-bg: #fef3c7;
+  /* D-day 없음(상시/소진시까지) 뱃지 — 이슈 #82 */
+  --neutral: #6b7280;
+  --neutral-bg: #f3f4f6;
 }

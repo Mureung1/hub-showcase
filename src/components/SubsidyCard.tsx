@@ -1,5 +1,5 @@
 import type { Subsidy } from '@hub/shared'
-import { getDdayClass } from '../utils/dday'
+import { getDdayClass, getDdayLabel } from '../utils/dday'
 import './SubsidyCard.css'
 
 interface SubsidyCardProps {
@@ -15,7 +15,7 @@ export default function SubsidyCard({ subsidy, onClick }: SubsidyCardProps) {
     <button type="button" className="home-card" onClick={onClick}>
       <div className="home-card-top">
         <div className="home-card-title">{subsidy.name}</div>
-        <span className={`dday ${ddayClass}`}>D-{subsidy.dday}</span>
+        <span className={`dday ${ddayClass}`}>{getDdayLabel(subsidy)}</span>
       </div>
       <div className="home-card-meta">
         {subsidy.org} · {subsidy.amount}

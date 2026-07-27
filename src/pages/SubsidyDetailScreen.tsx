@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import StatusBox from '../components/StatusBox'
 import { useOnboarding } from '../context/OnboardingContext'
 import { useSubsidy } from '../hooks/useSubsidy'
-import { getDdayClass } from '../utils/dday'
+import { getDdayClass, getDdayLabel } from '../utils/dday'
 import './SubsidyDetailScreen.css'
 
 const FALLBACK_APPLY_URL = 'https://www.bizinfo.go.kr'
@@ -78,7 +78,7 @@ export default function SubsidyDetailScreen() {
           ← 목록으로
         </button>
         <div className="detail-dday-row">
-          <span className={`dday ${ddayClass}`}>D-{subsidy.dday}</span>
+          <span className={`dday ${ddayClass}`}>{getDdayLabel(subsidy)}</span>
         </div>
         <div className="detail-title">{subsidy.name}</div>
         <div className="detail-org">{subsidy.org}</div>

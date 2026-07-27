@@ -46,6 +46,9 @@
   border-radius: 6px;
   font-weight: 500;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .detail-title {
@@ -240,4 +243,9 @@
 .dday-normal {
   background: var(--success-bg);
   color: var(--success);
+}
+
+.dday-flexible {
+  background: var(--neutral-bg);
+  color: var(--neutral);
 }
