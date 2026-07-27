@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const STORAGE_KEY = 'scholar_sync_profile_session';
 
 export interface ProfileData {
-  userId: string;
   major: string;
   channels: string[];
   keywords: string[];
 }
 
 export interface ProfileSessionReturn extends ProfileData {
+  userId: string;
   setMajor: (major: string) => void;
   toggleChannel: (channel: string) => void;
   addKeyword: (keyword: string) => void;
@@ -17,7 +18,8 @@ export interface ProfileSessionReturn extends ProfileData {
 }
 
 export function useProfileSession(): ProfileSessionReturn {
-  // Lazy Initialization 패턴 적용: 초기 렌더링 시 1회만 localStorage 로드
+  const { userId: authUserId } = useAuth();
+
   const [profile, setProfile] = useState<ProfileData>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -25,7 +27,6 @@ export function useProfileSession(): ProfileSessionReturn {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object') {
           return {
-            userId: parsed.userId || generateUUID(),
             major: parsed.major || 'Technological University Dublin (TUD)',
             channels: Array.isArray(parsed.channels) ? parsed.channels : ['arXiv', 'IEEE', 'NeurIPS'],
             keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [
@@ -40,9 +41,7 @@ export function useProfileSession(): ProfileSessionReturn {
       console.error('❌ Failed to parse profile session from localStorage:', e);
     }
 
-    // 기본 프로필 세팅
-    const defaultData: ProfileData = {
-      userId: generateUUID(),
+    return {
       major: 'Technological University Dublin (TUD)',
       channels: ['arXiv', 'IEEE', 'NeurIPS'],
       keywords: [
@@ -51,12 +50,6 @@ export function useProfileSession(): ProfileSessionReturn {
         'AI Agents'
       ]
     };
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultData));
-    } catch (e) {
-      console.error('❌ Failed to save default profile session to localStorage:', e);
-    }
-    return defaultData;
   });
 
   // 상태 변경 시 localStorage 동기화
@@ -98,8 +91,12 @@ export function useProfileSession(): ProfileSessionReturn {
     }));
   };
 
+  // 구글 OAuth 로그인된 user.id가 있으면 최우선 사용, 없으면 guest-fallback 세션 생성
+  const effectiveUserId = authUserId || getGuestUserId();
+
   return {
     ...profile,
+    userId: effectiveUserId,
     setMajor,
     toggleChannel,
     addKeyword,
@@ -107,9 +104,14 @@ export function useProfileSession(): ProfileSessionReturn {
   };
 }
 
-function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+function getGuestUserId(): string {
+  const GUEST_KEY = 'scholar_sync_guest_id';
+  let guestId = localStorage.getItem(GUEST_KEY);
+  if (!guestId) {
+    guestId = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : 'guest-' + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem(GUEST_KEY, guestId);
   }
-  return 'user-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36);
+  return guestId;
 }
