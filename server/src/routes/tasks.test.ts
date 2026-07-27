@@ -41,12 +41,12 @@ if (!isTestDb) {
   );
 }
 
-async function createTestTask() {
+async function createTestTask(type = "개인공부") {
   const res = await request(app)
     .post("/api/tasks")
     .send({
       title: uniqueTitle(),
-      type: "개인공부",
+      type,
       startTime: new Date().toISOString(),
       deadline: new Date(Date.now() + 86400000).toISOString(),
       reason: "overwhelm",
@@ -90,6 +90,19 @@ describe.skipIf(!isTestDb)("GET /api/tasks", () => {
 
     const task = res.body.data.find((t: { id: string }) => t.id === created.id);
     expect(task.reason).toBe("temptation");
+  });
+
+  it("현재 스트릭을 streak 필드로 함께 반환한다", async () => {
+    await prisma.appState.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", streak: 5 },
+      update: { streak: 5 },
+    });
+
+    const res = await request(app).get("/api/tasks");
+
+    expect(res.status).toBe(200);
+    expect(res.body.streak).toBe(5);
   });
 });
 
@@ -176,6 +189,98 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.level).toBe(1);
   });
+
+  it("59초 중단은 레벨을 유지하고 stopped 시간을 기록한다", async () => {
+    const created = await createTestTask();
+    await prisma.task.update({
+      where: { id: created.id },
+      data: { status: "active", skipCount: 4, level: 4 },
+    });
+
+    const res = await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "stopped", durationSeconds: 59 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({
+      status: "active",
+      skipCount: 4,
+      level: 4,
+    });
+    const event = await prisma.taskEvent.findFirstOrThrow({
+      where: { taskId: created.id, eventType: "stopped" },
+    });
+    expect(event.durationSeconds).toBe(59);
+  });
+
+  it("60초 중단은 Lv4를 정확히 Lv3으로 완화하고 스트릭을 0으로 리셋한다", async () => {
+    const created = await createTestTask();
+    await prisma.task.update({
+      where: { id: created.id },
+      data: { status: "active", skipCount: 6, level: 4 },
+    });
+    await prisma.appState.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", streak: 3 },
+      update: { streak: 3 },
+    });
+
+    const res = await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "stopped", durationSeconds: 60 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({
+      status: "active",
+      skipCount: 3,
+      level: 3,
+    });
+    const event = await prisma.taskEvent.findFirstOrThrow({
+      where: { taskId: created.id, eventType: "stopped" },
+    });
+    expect(event.durationSeconds).toBe(60);
+    expect(
+      await prisma.appState.findUnique({ where: { id: "singleton" } }),
+    ).toMatchObject({ streak: 0 });
+  });
+
+  it(
+    "유효하지 않은 stopped 시간은 변환하거나 거부하지 않고 완화 없이 기록한다",
+    async () => {
+      const created = await createTestTask();
+      await prisma.task.update({
+        where: { id: created.id },
+        data: { status: "active", skipCount: 4, level: 4 },
+      });
+      const invalidBodies = [
+        {},
+        { durationSeconds: null },
+        { durationSeconds: "60" },
+        { durationSeconds: -1 },
+        { durationSeconds: 1.5 },
+        { durationSeconds: 43_201 },
+      ];
+
+      for (const body of invalidBodies) {
+        const res = await request(app)
+          .post(`/api/tasks/${created.id}/events`)
+          .send({ eventType: "stopped", ...body });
+        expect(res.status).toBe(200);
+        expect(res.body.data).toMatchObject({
+          status: "active",
+          skipCount: 4,
+          level: 4,
+        });
+      }
+
+      const events = await prisma.taskEvent.findMany({
+        where: { taskId: created.id, eventType: "stopped" },
+      });
+      expect(events).toHaveLength(invalidBodies.length);
+      expect(events.every((event) => event.durationSeconds === null)).toBe(true);
+    },
+    30_000,
+  );
 });
 
 describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷(#STEP2)", () => {
@@ -219,6 +324,28 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
     expect(event?.entryMode).toBe("intervention");
     expect(event?.generationSource).toBe("gemini");
     expect(event?.memoryEvidence).toBeNull();
+  });
+
+  it("무응답을 겪고 완료해도(skipCount > 0) 스트릭이 증가한다", async () => {
+    const task = await createTestTask();
+    await prisma.task.update({
+      where: { id: task.id },
+      data: { status: "active", skipCount: 3, level: 2 },
+    });
+    const appStateBefore = await prisma.appState.findUnique({
+      where: { id: "singleton" },
+    });
+    const streakBefore = appStateBefore?.streak ?? 0;
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({ eventType: "done" });
+
+    expect(res.status).toBe(200);
+    const appStateAfter = await prisma.appState.findUniqueOrThrow({
+      where: { id: "singleton" },
+    });
+    expect(appStateAfter.streak).toBe(streakBefore + 1);
   });
 
   it("세 값 없이 보내도(카드 직접 클릭 경로) 기존처럼 완료 처리되고 세 필드는 null로 저장된다 (회귀)", async () => {
@@ -288,7 +415,7 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
   );
 
   it(
-    "실제 done 이벤트가 아닌 sourceDoneEventId는 거부하고 완료 전환도 롤백한다",
+    "실제 done 이벤트가 아닌 sourceDoneEventId는 evidence만 버리고 완료한다",
     async () => {
       const sourceTask = await createTestTask();
       await request(app)
@@ -309,21 +436,19 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
           memoryEvidence: { sourceDoneEventId: activatedEvent.id },
         });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error.code).toBe("invalid_memory_evidence");
+      expect(res.status).toBe(200);
       expect(
         await prisma.task.findUniqueOrThrow({ where: { id: targetTask.id } }),
-      ).toMatchObject({ status: "waiting" });
-      expect(
-        await prisma.taskEvent.count({
-          where: { taskId: targetTask.id, eventType: "done" },
-        }),
-      ).toBe(0);
+      ).toMatchObject({ status: "done" });
+      const doneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(doneEvent.memoryEvidence).toBeNull();
     },
     15000,
   );
 
-  it("memoryEvidence에 클라이언트가 만든 스냅샷 필드를 함께 보내면 거부한다", async () => {
+  it("memoryEvidence에 클라이언트가 만든 스냅샷 필드를 함께 보내면 evidence만 버리고 완료한다", async () => {
     const task = await createTestTask();
 
     const res = await request(app)
@@ -336,9 +461,108 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
         },
       });
 
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe("invalid_memory_evidence");
+    expect(res.status).toBe(200);
+    const doneEvent = await prisma.taskEvent.findFirstOrThrow({
+      where: { taskId: task.id, eventType: "done" },
+    });
+    expect(doneEvent.memoryEvidence).toBeNull();
   });
+
+  it(
+    "다른 Task 유형의 done 이벤트는 memoryEvidence로 저장하지 않는다",
+    async () => {
+      const sourceTask = await createTestTask("조별과제");
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({
+          eventType: "done",
+          microTask: "공유 문서에 첫 문장 쓰기",
+        });
+      const sourceDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "done" },
+      });
+      const targetTask = await createTestTask("개인공부");
+
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          entryMode: "intervention",
+          entryLevel: 3,
+          microTask: "첫 소제목 핵심 한 문장 쓰기",
+          generationSource: "gemini",
+          memoryEvidence: { sourceDoneEventId: sourceDoneEvent.id },
+        });
+
+      expect(res.status).toBe(200);
+      const targetDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(targetDoneEvent.memoryEvidence).toBeNull();
+    },
+    15000,
+  );
+
+  it(
+    "microTask가 없는 done 이벤트는 memoryEvidence로 저장하지 않는다",
+    async () => {
+      const sourceTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({ eventType: "done" });
+      const sourceDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "done" },
+      });
+      const targetTask = await createTestTask();
+
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          generationSource: "gemini",
+          memoryEvidence: { sourceDoneEventId: sourceDoneEvent.id },
+        });
+
+      expect(res.status).toBe(200);
+      const targetDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(targetDoneEvent.memoryEvidence).toBeNull();
+    },
+    15000,
+  );
+
+  it(
+    "rule_based 완료에 첨부된 memoryEvidence는 저장하지 않는다",
+    async () => {
+      const sourceTask = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${sourceTask.id}/events`)
+        .send({
+          eventType: "done",
+          microTask: "첫 소제목 핵심 한 문장 쓰기",
+        });
+      const sourceDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: sourceTask.id, eventType: "done" },
+      });
+      const targetTask = await createTestTask();
+
+      const res = await request(app)
+        .post(`/api/tasks/${targetTask.id}/events`)
+        .send({
+          eventType: "done",
+          generationSource: "rule_based",
+          memoryEvidence: { sourceDoneEventId: sourceDoneEvent.id },
+        });
+
+      expect(res.status).toBe(200);
+      const targetDoneEvent = await prisma.taskEvent.findFirstOrThrow({
+        where: { taskId: targetTask.id, eventType: "done" },
+      });
+      expect(targetDoneEvent.memoryEvidence).toBeNull();
+    },
+    15000,
+  );
 
   it("이미 완료된 task에 done을 다시 보내도 성공 응답을 유지하고 이벤트를 추가하지 않는다 (멱등)", async () => {
     const task = await createTestTask();

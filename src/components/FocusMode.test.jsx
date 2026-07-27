@@ -69,6 +69,66 @@ describe("FocusMode completion request guard", () => {
     expect(screen.getByText("완료한 할일")).toBeInTheDocument();
   });
 
+  it("shows the success character only after completion succeeds", async () => {
+    apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
+    const { container } = renderFocusMode();
+
+    expect(container.querySelector(".completion-character")).toBeNull();
+    expect(container.querySelector(".focus-mode-journey")).not.toBeNull();
+    const journeyCharacter = container.querySelector(
+      ".focus-journey-character",
+    );
+    expect(journeyCharacter).not.toBeNull();
+    expect(journeyCharacter.getAttribute("src")).toContain(
+      "nagbot_walk_lv2.png",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+
+    await waitFor(() => {
+      expect(container.querySelector(".completion-character")).not.toBeNull();
+    });
+    expect(container.querySelector(".focus-mode-journey")).toBeNull();
+    expect(container.querySelector(".focus-journey-character")).toBeNull();
+    expect(
+      container.querySelector(".focus-mode-completed").style.backgroundImage,
+    ).toBe("");
+    expect(screen.getByRole("button", { name: "홈으로" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "기록 보기" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "도움됐어요" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "아쉬웠어요" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the first-action panel only when the focus session has a microTask", () => {
+    const { rerender } = renderFocusMode();
+
+    expect(screen.getByText("첫 행동")).toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter>
+        <FocusMode
+          taskId="task-1"
+          title="테스트 과제"
+          startedAt={Date.now()}
+          entryMode="direct"
+          microTask={null}
+          entryLevel={null}
+          generationSource="none"
+          memoryEvidence={null}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("첫 행동")).not.toBeInTheDocument();
+    expect(screen.getByText("현재 할 일")).toBeInTheDocument();
+  });
+
   it("restores both guards after failure so completion can be retried", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     apiFetch
@@ -124,6 +184,32 @@ describe("FocusMode completion request guard", () => {
     expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).toBe('{"saved":true}');
   });
 
+  it("sends only one stopped request for rapid repeated clicks", async () => {
+    let resolveRequest;
+    const request = new Promise((resolve) => {
+      resolveRequest = resolve;
+    });
+    apiFetch.mockReturnValue(request);
+    const onStop = vi.fn();
+    renderFocusMode({ onStop });
+
+    const stopButton = screen.getByRole("button", { name: "멈추기" });
+    fireEvent.click(stopButton);
+    fireEvent.click(stopButton);
+    fireEvent.click(stopButton);
+
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(stopButton).toBeDisabled();
+
+    await act(async () => {
+      resolveRequest({ data: { id: "task-1", status: "active" } });
+      await request;
+    });
+
+    expect(onStop).toHaveBeenCalledTimes(1);
+    expect(stopButton).toBeEnabled();
+  });
+
   it("removes the stored session after stop succeeds", async () => {
     sessionStorage.setItem(FOCUS_SESSION_KEY, '{"saved":true}');
     apiFetch.mockResolvedValue({ data: { id: "task-1", status: "active" } });
@@ -151,6 +237,31 @@ describe("FocusMode completion request guard", () => {
     });
     expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).toBe('{"saved":true}');
   });
+});
+
+describe("FocusMode Shared Journey asset mapping", () => {
+  it.each([
+    [0, "nagbot_walk_lv0.png", "journey_lv0_clear.png"],
+    [1, "nagbot_walk_lv1.png", "journey_lv1_partly_cloudy.png"],
+    [2, "nagbot_walk_lv2.png", "journey_lv2_cloudy.png"],
+    [3, "nagbot_walk_lv3.png.png", "journey_lv3_rain.png"],
+    [4, "nagbot_walk_lv4.png", "journey_lv4_storm.png"],
+    [null, "nagbot_walk_lv0.png", "journey_lv0_clear.png"],
+    [9, "nagbot_walk_lv0.png", "journey_lv0_clear.png"],
+  ])(
+    "maps entryLevel %s to the expected character and background",
+    (entryLevel, characterFile, backgroundFile) => {
+      const { container } = renderFocusMode({ entryLevel });
+      const journey = container.querySelector(".focus-mode-journey");
+      const character = container.querySelector(".focus-journey-character");
+
+      expect(character.getAttribute("src")).toContain(characterFile);
+      expect(character).toHaveClass(
+        `focus-journey-character-lv${Number.isInteger(entryLevel) && entryLevel >= 0 && entryLevel <= 4 ? entryLevel : 0}`,
+      );
+      expect(journey.style.backgroundImage).toContain(backgroundFile);
+    },
+  );
 });
 
 describe("FocusMode elapsed time recovery", () => {
@@ -230,6 +341,63 @@ describe("FocusMode elapsed time recovery", () => {
       entryLevel: null,
       microTask: null,
       generationSource: "none",
+      memoryEvidence: null,
+    });
+  });
+
+  it("Lv3에서 표시된 행동과 추적 참조를 done 요청에 그대로 포함한다", async () => {
+    apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
+    renderFocusMode({
+      startedAt: NOW.getTime(),
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: "목차 후보를 세 줄로 작성하기",
+      generationSource: "gemini",
+      memoryEvidence: { sourceDoneEventId: "done-event-1" },
+    });
+
+    expect(
+      screen.getByText("목차 후보를 세 줄로 작성하기"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      eventType: "done",
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: "목차 후보를 세 줄로 작성하기",
+      generationSource: "gemini",
+      memoryEvidence: { sourceDoneEventId: "done-event-1" },
+    });
+  });
+
+  it("Lv3 fallback으로 전달된 행동을 done 요청에도 같은 값으로 포함한다", async () => {
+    const fallback = "첫 슬라이드에 발표 핵심 한 문장 입력하기";
+    apiFetch.mockResolvedValue({ data: { id: "task-1", status: "done" } });
+    renderFocusMode({
+      startedAt: NOW.getTime(),
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: fallback,
+      generationSource: "rule_based",
+      memoryEvidence: null,
+    });
+
+    expect(screen.getByText(fallback)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toMatchObject({
+      eventType: "done",
+      entryMode: "intervention",
+      entryLevel: 3,
+      microTask: fallback,
+      generationSource: "rule_based",
       memoryEvidence: null,
     });
   });

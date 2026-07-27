@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import TaskCard from "./TaskCard";
 import EmptyState from "./EmptyState";
 import FocusMode from "./FocusMode";
@@ -32,16 +31,30 @@ const STAT_DEFS = [
   {
     key: "streak",
     label: "스트릭",
-    calc: () => 0, // TODO: 실제 스트릭 계산은 나중 이슈에서
+    calc: (_tasks, streak) => streak,
     format: (value) => `🔥 ${value}`,
   },
 ];
 
-function StatsRow({ tasks }) {
+function normalizeReasonText(value) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : null;
+}
+
+function didReasonChange(previousTask, savedReason) {
+  if (!previousTask || typeof previousTask.reason !== "string") return null;
+  if (previousTask.reason !== savedReason.reason) return true;
+  if (savedReason.reason !== "custom") return false;
+  return (
+    normalizeReasonText(previousTask.customReasonText) !==
+    normalizeReasonText(savedReason.customReasonText)
+  );
+}
+
+function StatsRow({ tasks, streak }) {
   return (
     <div className="stats-row">
       {STAT_DEFS.map((def) => {
-        const value = def.calc(tasks);
+        const value = def.calc(tasks, streak);
         return (
           <div className="stat-chip" key={def.key}>
             {def.label}
@@ -54,8 +67,8 @@ function StatsRow({ tasks }) {
 }
 
 function HomePage() {
-  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
+  const [streak, setStreak] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
   const [focusSession, setFocusSession] = useState(null); // 시작 방식과 개입 action을 보존하는 Focus 세션 v2
@@ -76,9 +89,13 @@ function HomePage() {
   // taskId -> 이미 회피이유 재확인을 띄운 레벨 Set. 레벨 1·3 각각 1회만 노출(=최대 2회).
   // 멈추기로 레벨이 내려갔다가 같은 레벨을 재진입해도 다시 뜨지 않게 막는다.
   const reasonCheckedRef = useRef(new Map());
+  // Task별로 실제 Lv2 모달에 표시해 확정한 행동과 Lv3 이유 변경 여부를 보존한다.
+  // 서버/DB 스키마를 늘리지 않는 현재 MVP의 같은 HomePage 세션 전용 스냅샷이다.
+  const lv2ActionByTaskRef = useRef(new Map());
+  const lv3ReasonChangedByTaskRef = useRef(new Map());
 
   const loadTasks = useCallback(({ restoreFocus = false } = {}) => {
-    return apiFetch("/api/tasks").then(({ data }) => {
+    return apiFetch("/api/tasks").then(({ data, streak: nextStreak }) => {
       if (restoreFocus) {
         const restored = getRestorableFocusSession(data);
         if (restored) {
@@ -87,6 +104,7 @@ function HomePage() {
         }
       }
       setTasks(data);
+      setStreak(nextStreak ?? 0);
       setIsLoading(false);
     });
   }, []);
@@ -205,7 +223,7 @@ function HomePage() {
             leveledUp,
             updated.level,
           );
-          if (checkpointLevel !== null) {
+          if (checkpointLevel === 1) {
             checked.add(checkpointLevel);
             reasonCheckedRef.current.set(id, checked);
           }
@@ -325,6 +343,7 @@ function HomePage() {
       taskId: task.id,
       entryMode: overrides.entryMode ?? "direct",
       entryLevel: overrides.entryLevel ?? null,
+      journeyLevel: overrides.journeyLevel ?? task.level,
       microTask: overrides.microTask ?? null,
       generationSource: overrides.generationSource ?? "none",
       memoryEvidence: overrides.memoryEvidence ?? null,
@@ -343,33 +362,59 @@ function HomePage() {
     startFocus(task, {
       entryMode: session?.entryMode ?? "intervention",
       entryLevel: session?.entryLevel ?? null,
+      journeyLevel: session?.journeyLevel ?? task.level,
       microTask: session?.microTask ?? null,
       generationSource: session?.generationSource ?? "none",
       memoryEvidence: session?.memoryEvidence ?? null,
     });
   }
 
+  const handleLv2ActionResolved = useCallback((taskId, microTask) => {
+    if (
+      typeof taskId !== "string" ||
+      typeof microTask !== "string" ||
+      microTask.trim().length === 0
+    ) {
+      return;
+    }
+    lv2ActionByTaskRef.current.set(taskId, microTask.trim());
+  }, []);
+
   // 회피 이유 재확인에서 이유를 고른 경우, avoidance_reasons에 새 행으로 저장한다.
-  // 저장 실패해도 이미 접힌 체크포인트를 되돌리진 않고(사용자 흐름 방해 최소화)
-  // handleDeleteTask와 동일하게 alert로만 알린다.
+  // Lv3 생성은 이 함수가 돌려준 서버 저장 결과만 사용한다. 실패 시 null을 반환해
+  // 체크포인트를 유지하고 생성 요청도 시작하지 않는다.
   async function handleReconfirmReason(reason, customText) {
     const id = modalTaskId;
     const level = modalCheckpointLevel;
+    const previousTask = stateRef.current.tasks.find((task) => task.id === id);
     try {
-      await apiFetch(`/api/tasks/${id}/avoidance-reasons`, {
+      const { data } = await apiFetch(`/api/tasks/${id}/avoidance-reasons`, {
         method: "POST",
         body: JSON.stringify({ level, reason, customText }),
       });
+      const savedReason = {
+        reason: data.reason,
+        customReasonText: data.customText ?? null,
+      };
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === id ? { ...task, ...savedReason } : task,
+        ),
+      );
+      if (level === 3) {
+        const reasonChanged = didReasonChange(previousTask, savedReason);
+        lv3ReasonChangedByTaskRef.current.set(id, reasonChanged);
+        const checked = reasonCheckedRef.current.get(id) ?? new Set();
+        checked.add(3);
+        reasonCheckedRef.current.set(id, checked);
+        return { ...savedReason, reasonChanged };
+      }
+      return savedReason;
     } catch (err) {
       console.error(err);
       window.alert("회피 이유를 저장하지 못했어요. 다시 시도해주세요.");
+      return null;
     }
-  }
-
-  // Lv4 "캘린더에 추가" 카드(#28) → 히스토리의 캘린더 뷰로 이동, 등록일이 선택된 상태로 연다(#43).
-  function handleAddToCalendar(task) {
-    closeModal();
-    navigate("/history", { state: { selectedDate: task.createdAt } });
   }
 
   // 삭제: 목록에서 로컬 필터링만 하면 tasks가 바뀌어 타이머 정리 effect(154행)와
@@ -378,6 +423,9 @@ function HomePage() {
     try {
       await apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
       setTasks((prev) => prev.filter((t) => t.id !== id));
+      lv2ActionByTaskRef.current.delete(id);
+      lv3ReasonChangedByTaskRef.current.delete(id);
+      reasonCheckedRef.current.delete(id);
       if (selectedTaskId === id) setSelectedTaskId(null);
     } catch (err) {
       console.error(err);
@@ -426,7 +474,7 @@ function HomePage() {
         <h1 className="page-title">홈</h1>
         <p className="page-sub">등록된 할일과 지금 상태예요.</p>
       </div>
-      <StatsRow tasks={tasks} />
+      <StatsRow tasks={tasks} streak={streak} />
       <div className="task-grid">
         {tasks.map((task) => (
           <TaskCard
@@ -446,6 +494,7 @@ function HomePage() {
             entryMode={focusSession?.entryMode}
             microTask={focusSession?.microTask ?? null}
             entryLevel={focusSession?.entryLevel ?? null}
+            journeyLevel={focusSession?.journeyLevel}
             generationSource={focusSession?.generationSource}
             memoryEvidence={focusSession?.memoryEvidence ?? null}
             onSessionCompleted={removeFocusSession}
@@ -461,9 +510,13 @@ function HomePage() {
           task={modalTask}
           checkpointLevel={modalCheckpointLevel}
           onReconfirmReason={handleReconfirmReason}
+          onLv2ActionResolved={handleLv2ActionResolved}
+          lv2MicroTask={lv2ActionByTaskRef.current.get(modalTask.id) ?? null}
+          lv3ReasonChanged={
+            lv3ReasonChangedByTaskRef.current.get(modalTask.id) ?? null
+          }
           onStart={handleStartFromModal}
           onClose={closeModal}
-          onAddToCalendar={handleAddToCalendar}
           completedTasks={completedTasks}
         />
       )}

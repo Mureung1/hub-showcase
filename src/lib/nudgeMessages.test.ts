@@ -3,8 +3,11 @@ import { addDays } from "date-fns";
 import {
   buildNudgeMessage,
   buildLv2NudgeMessage,
+  buildLv3MemoryNudgeMessage,
+  buildLv3PersonalizedNudgeMessage,
   isLockedToStart,
   LV1_MESSAGES,
+  LV3_SAFE_FALLBACKS,
 } from "./nudgeMessages.js";
 import {
   MICROTASK_TEMPLATES,
@@ -95,7 +98,7 @@ describe("buildNudgeMessage", () => {
       skipCount: 5,
     };
 
-    it("매칭되는 완료 이력이 있으면 그때(과거 task 유형)의 마이크로태스크가 그대로 표시된다 (happy path)", () => {
+    it("클라이언트 완료 Task 목록으로 과거 행동을 추정하지 않고 안전 fallback을 사용한다", () => {
       const completedTasks = [
         {
           id: "past",
@@ -109,23 +112,87 @@ describe("buildNudgeMessage", () => {
 
       const result = buildNudgeMessage(3, currentTask, completedTasks);
 
-      // #25 재생성: 매칭된 과거 task의 유형(리포트/글쓰기) 풀에서 나온 문구여야 한다
-      // (현재 할일의 유형 '개인공부'가 아니라) — 기억 기반 경로임을 증명.
-      expect(MICROTASK_TEMPLATES["리포트/글쓰기"].overwhelm).toContain(result.microtask);
-      // 그 마이크로태스크가 본문에 그대로 담긴다.
+      expect(result.microtask).toBe(LV3_SAFE_FALLBACKS.개인공부);
       expect(result.body).toContain(result.microtask);
-      // 근거로 과거 task의 유형을 언급한다.
-      expect(result.body).toContain("리포트/글쓰기");
+      expect(result.body).not.toContain("지난 완료");
+      expect(result.memoryEvidence).toBeNull();
+      expect(result.generationSource).toBe("rule_based");
     });
 
     it("매칭 이력이 없으면 회피 패턴 근거 문구 + 폴백 마이크로태스크가 표시된다 (경계)", () => {
       const result = buildNudgeMessage(3, currentTask, []);
 
-      // 폴백: 현재 할일 자신의 유형(개인공부) 풀에서 나온 문구.
-      expect(MICROTASK_TEMPLATES["개인공부"].overwhelm).toContain(result.microtask);
+      expect(result.microtask).toBe(LV3_SAFE_FALLBACKS.개인공부);
       expect(result.body).toContain(result.microtask);
       // 회피 패턴 근거: skipCount 숫자를 언급한다.
       expect(result.body).toContain(String(currentTask.skipCount));
+    });
+
+    it("서버 근거 기반 행동은 성공 공식으로 과장하지 않고 추적 참조를 보존한다", () => {
+      const memoryEvidence = { sourceDoneEventId: "done-event-1" };
+      const result = buildLv3MemoryNudgeMessage(
+        "목차 후보를 세 줄로 작성하기",
+        memoryEvidence,
+      );
+
+      expect(result.body).toContain("지난 완료 기록을 참고해");
+      expect(result.body).not.toContain("그때 이렇게 해서 완료");
+      expect(result.body).toContain(result.microtask);
+      expect(result.generationSource).toBe("gemini");
+      expect(result.memoryEvidence).toBe(memoryEvidence);
+    });
+
+    it("과거 근거 없는 Gemini 행동은 맞춤 제안으로 표시하고 evidence를 남기지 않는다", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const result = buildLv3PersonalizedNudgeMessage(microTask);
+
+      expect(result.body).toContain("할 일과 회피 이유에 맞춰");
+      expect(result.body).toContain(microTask);
+      expect(result.microtask).toBe(microTask);
+      expect(result.generationSource).toBe("gemini");
+      expect(result.memoryEvidence).toBeNull();
+    });
+
+    it("눈앞의 유혹이면 body 앞에 방해 제거 안내를 붙이되 microtask는 깨끗하게 둔다 (경계)", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const result = buildLv3PersonalizedNudgeMessage(microTask, "temptation");
+
+      expect(result.body).toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(result.body).toContain(microTask);
+      // 방해 제거 문구는 안내(body)에만 있고, 저장/재사용될 microtask엔 섞이지 않는다.
+      expect(result.microtask).toBe(microTask);
+      expect(result.microtask).not.toContain("멀리 두고");
+    });
+
+    it("유혹이 아닌 이유는 기존 안내 문구를 그대로 유지한다 (경계)", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const overwhelm = buildLv3PersonalizedNudgeMessage(microTask, "overwhelm");
+      const noReason = buildLv3PersonalizedNudgeMessage(microTask);
+
+      expect(overwhelm.body).not.toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(overwhelm.body).toBe(noReason.body);
+    });
+
+    it("기억 기반 메시지도 유혹이면 방해 제거 안내 + 기존 근거 문구를 함께 유지한다 (경계)", () => {
+      const microTask = "목차 후보를 세 줄로 작성하기";
+      const memoryEvidence = { sourceDoneEventId: "done-event-1" };
+      const result = buildLv3MemoryNudgeMessage(
+        microTask,
+        memoryEvidence,
+        "temptation",
+      );
+
+      expect(result.body).toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(result.body).toContain("지난 완료 기록을 참고해");
+      expect(result.microtask).toBe(microTask);
+      expect(result.memoryEvidence).toBe(memoryEvidence);
+    });
+
+    it("9개 유형 모두 비어 있지 않은 안전 fallback을 가진다", () => {
+      expect(Object.keys(LV3_SAFE_FALLBACKS)).toHaveLength(9);
+      for (const value of Object.values(LV3_SAFE_FALLBACKS)) {
+        expect(value.trim().length).toBeGreaterThan(0);
+      }
     });
   });
 

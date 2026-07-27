@@ -4,7 +4,9 @@ import app from "../app.js";
 import {
   GeminiMicrotaskError,
   generateGeminiMicrotask,
+  generateGeminiLv3Microtask,
 } from "../lib/geminiMicrotask.js";
+import { findLv3MemoryContext } from "../lib/lv3MemoryCandidate.js";
 
 vi.mock("../lib/geminiMicrotask.js", async (importOriginal) => {
   const original =
@@ -12,8 +14,13 @@ vi.mock("../lib/geminiMicrotask.js", async (importOriginal) => {
   return {
     ...original,
     generateGeminiMicrotask: vi.fn(),
+    generateGeminiLv3Microtask: vi.fn(),
   };
 });
+
+vi.mock("../lib/lv3MemoryCandidate.js", () => ({
+  findLv3MemoryContext: vi.fn(),
+}));
 
 const VALID_BODY = {
   title: "보고서 작성",
@@ -125,5 +132,157 @@ describe("POST /api/microtasks/lv2", () => {
       .send(VALID_BODY);
     expect(res.status).toBe(status);
     expect(res.body.error.code).toBe(code);
+  });
+});
+
+const VALID_LV3_BODY = {
+  taskId: "current-task",
+  reason: "overwhelm",
+  customReason: null,
+  reasonChanged: false,
+  lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
+  level: 3,
+};
+
+describe("POST /api/microtasks/lv3", () => {
+  beforeEach(() => {
+    vi.mocked(findLv3MemoryContext).mockReset();
+    vi.mocked(generateGeminiLv3Microtask).mockReset();
+    vi.mocked(findLv3MemoryContext).mockResolvedValue({
+      currentTask: {
+        id: "current-task",
+        title: "기말 리포트",
+        type: "리포트/글쓰기",
+      },
+      candidate: {
+        sourceDoneEventId: "done-event-1",
+        sourceTaskTitle: "중간 리포트",
+        sourceMicroTask: "핵심 주장 한 문장 쓰기",
+      },
+    });
+    vi.mocked(generateGeminiLv3Microtask).mockResolvedValue(
+      "목차 후보를 세 줄로 작성하기",
+    );
+  });
+
+  it("서버가 선택한 과거 done 근거로 Lv3 행동을 생성한다", async () => {
+    const res = await request(app)
+      .post("/api/microtasks/lv3")
+      .send({
+        ...VALID_LV3_BODY,
+        memoryEvidence: { sourceDoneEventId: "client-forged" },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      data: {
+        status: "generated",
+        microTask: "목차 후보를 세 줄로 작성하기",
+        source: "gemini",
+        memoryEvidence: { sourceDoneEventId: "done-event-1" },
+      },
+    });
+    expect(findLv3MemoryContext).toHaveBeenCalledWith("current-task");
+    expect(generateGeminiLv3Microtask).toHaveBeenCalledWith({
+      title: "기말 리포트",
+      type: "리포트/글쓰기",
+      reason: "overwhelm",
+      customReason: null,
+      reasonChanged: false,
+      lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
+      sourceDoneEventId: "done-event-1",
+      sourceTaskTitle: "중간 리포트",
+      sourceMicroTask: "핵심 주장 한 문장 쓰기",
+    });
+  });
+
+  it("적합한 과거 기록이 없어도 Lv2 행동과 최신 이유로 Gemini를 호출한다", async () => {
+    vi.mocked(findLv3MemoryContext).mockResolvedValue({
+      currentTask: {
+        id: "current-task",
+        title: "기말 리포트",
+        type: "리포트/글쓰기",
+      },
+      candidate: null,
+    });
+
+    const res = await request(app)
+      .post("/api/microtasks/lv3")
+      .send(VALID_LV3_BODY);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      data: {
+        status: "generated",
+        microTask: "목차 후보를 세 줄로 작성하기",
+        source: "gemini",
+        memoryEvidence: null,
+      },
+    });
+    expect(generateGeminiLv3Microtask).toHaveBeenCalledWith({
+      title: "기말 리포트",
+      type: "리포트/글쓰기",
+      reason: "overwhelm",
+      customReason: null,
+      reasonChanged: false,
+      lv2MicroTask: "발표 자료에 제목과 목차 3개 적기",
+      sourceDoneEventId: null,
+      sourceTaskTitle: null,
+      sourceMicroTask: null,
+    });
+  });
+
+  it("이유가 달라지면 최신 이유와 변경 여부를 Gemini 입력에 전달한다", async () => {
+    await request(app)
+      .post("/api/microtasks/lv3")
+      .send({
+        ...VALID_LV3_BODY,
+        reason: "custom",
+        customReason: "완벽하게 하고 싶음",
+        reasonChanged: true,
+      });
+
+    expect(generateGeminiLv3Microtask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: "custom",
+        customReason: "완벽하게 하고 싶음",
+        reasonChanged: true,
+      }),
+    );
+  });
+
+  it.each([
+    [{ ...VALID_LV3_BODY, lv2MicroTask: "가".repeat(61) }, "invalid_lv2_microtask"],
+    [{ ...VALID_LV3_BODY, reasonChanged: "yes" }, "invalid_reason_changed"],
+  ])("잘못된 Lv3 비교 컨텍스트를 거부한다", async (body, code) => {
+    const res = await request(app).post("/api/microtasks/lv3").send(body);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(code);
+    expect(generateGeminiLv3Microtask).not.toHaveBeenCalled();
+  });
+
+  it("Gemini 품질 실패를 기존 provider 오류 형식으로 반환한다", async () => {
+    vi.mocked(generateGeminiLv3Microtask).mockRejectedValue(
+      new GeminiMicrotaskError(
+        "invalid_provider_response",
+        "invalid_response",
+      ),
+    );
+
+    const res = await request(app)
+      .post("/api/microtasks/lv3")
+      .send(VALID_LV3_BODY);
+
+    expect(res.status).toBe(502);
+    expect(res.body.error.code).toBe("invalid_provider_response");
+  });
+
+  it.each([2, 4, "3", null])("level=%s를 거부한다", async (level) => {
+    const res = await request(app)
+      .post("/api/microtasks/lv3")
+      .send({ ...VALID_LV3_BODY, level });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("invalid_level");
   });
 });

@@ -1,5 +1,5 @@
-// #43: 히스토리 캘린더 뷰가 쓰는 순수 함수. task를 등록일(createdAt) 기준으로
-// 날짜별로 묶고, 월 달력 그리드에 필요한 날짜 배열을 만든다.
+// #43: 히스토리 캘린더 뷰가 쓰는 순수 함수. task를 날짜별로 묶고, 월 달력 그리드에
+// 필요한 날짜 배열을 만든다.
 import {
   startOfMonth,
   endOfMonth,
@@ -11,20 +11,22 @@ import {
 
 export interface TaskLike {
   createdAt: string;
+  completedAt?: string | null;
 }
 
-// 로컬 달력일 기준 "YYYY-MM-DD" 키. task는 등록일 하루에만 나타난다 —
-// completedAt 필드가 없어 완료일 기준 그룹핑은 이번 스코프 밖(checklist.md 참고).
+// 로컬 달력일 기준 "YYYY-MM-DD" 키.
 export function dateKey(iso: string): string {
   return format(new Date(iso), "yyyy-MM-dd");
 }
 
+// 완료된 task는 completedAt 날짜에, 아직 진행 중이라 completedAt이 없는(또는 null인)
+// task는 기존처럼 createdAt 날짜에 나타난다.
 export function groupTasksByDate<T extends TaskLike>(
   tasks: T[],
 ): Record<string, T[]> {
   const grouped: Record<string, T[]> = {};
   for (const task of tasks) {
-    const key = dateKey(task.createdAt);
+    const key = dateKey(task.completedAt ?? task.createdAt);
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(task);
   }
