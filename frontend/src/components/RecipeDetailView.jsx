@@ -9,6 +9,8 @@ const typeLabels = {
 
 function RecipeDetailView({
   isReceivedRecipeSaved,
+  isCookingMode,
+  onCookingModeChange,
   recipeDetail,
   recipeId,
   user,
@@ -16,12 +18,14 @@ function RecipeDetailView({
   return (
     <div className="h-full overflow-y-auto p-[50px_42px_38px] max-[1100px]:p-[38px_42px] max-[700px]:p-[25px_22px_24px] short-screen:p-[30px_34px_24px]">
       <section aria-label="레시피 상세">
-        <Link
-          to="/recipes"
-          className="inline-flex min-h-11 items-center text-sm text-[#4f5b50] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a] min-[1101px]:hidden"
-        >
-          ← 목록
-        </Link>
+        {!isCookingMode ? (
+          <Link
+            to="/recipes"
+            className="inline-flex min-h-11 items-center text-sm text-[#4f5b50] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a] min-[1101px]:hidden"
+          >
+            ← 목록
+          </Link>
+        ) : null}
 
         <header className="border-b border-[#c9bea7] pb-5 max-[700px]:pt-2">
           <p className="text-xs font-semibold tracking-[0.08em] text-[#8b6e35]">
@@ -48,6 +52,28 @@ function RecipeDetailView({
             ) : null}
           </div>
         </header>
+
+        <label
+          className="mt-5 inline-flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold text-[#31523d]"
+        >
+          <span>조리 중 보기</span>
+          <input
+            type="checkbox"
+            role="switch"
+            className="peer sr-only"
+            checked={isCookingMode}
+            onChange={(event) =>
+              onCookingModeChange(event.target.checked)
+            }
+          />
+          <span
+            aria-hidden="true"
+            className="relative h-7 w-14 rounded-full bg-[#b8ad97] transition-colors after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-[#fbf8ef] after:shadow-sm after:transition-transform peer-checked:bg-[#15332a] peer-checked:after:translate-x-7 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#15332a] motion-reduce:transition-none motion-reduce:after:transition-none"
+          />
+          <span aria-hidden="true" className="text-xs text-[#626157]">
+            {isCookingMode ? "켜짐" : "꺼짐"}
+          </span>
+        </label>
 
         {isReceivedRecipeSaved ? (
           <p
@@ -91,10 +117,12 @@ function RecipeDetailView({
         ) : null}
 
         {recipeDetail.type === "OWNED" ? (
-          <TransferInvitationShareSection
-            recipeId={recipeId}
-            user={user}
-          />
+          <div hidden={isCookingMode}>
+            <TransferInvitationShareSection
+              recipeId={recipeId}
+              user={user}
+            />
+          </div>
         ) : null}
 
         <section
@@ -175,12 +203,18 @@ function RecipeDetailView({
             >
               출처
             </h3>
-            <a
-              href={recipeDetail.source.url}
-              className="mt-2 inline-block text-sm text-[#31523d] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a]"
-            >
-              {recipeDetail.source.title ?? recipeDetail.source.url}
-            </a>
+            {isCookingMode ? (
+              <p className="mt-2 text-sm text-[#31523d]">
+                {recipeDetail.source.title ?? recipeDetail.source.url}
+              </p>
+            ) : (
+              <a
+                href={recipeDetail.source.url}
+                className="mt-2 inline-block text-sm text-[#31523d] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a]"
+              >
+                {recipeDetail.source.title ?? recipeDetail.source.url}
+              </a>
+            )}
             {recipeDetail.source.author ? (
               <p className="mt-1 text-xs text-[#777469]">
                 {recipeDetail.source.author}

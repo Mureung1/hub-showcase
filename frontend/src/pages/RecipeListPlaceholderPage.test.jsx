@@ -280,6 +280,25 @@ describe("RecipeListPlaceholderPage", () => {
       "href",
       "https://example.com/kimchi-stew",
     );
+
+    const cookingModeSwitch = within(detailRegion).getByRole(
+      "switch",
+      { name: "조리 중 보기" },
+    );
+    expect(cookingModeSwitch).not.toBeChecked();
+
+    fireEvent.click(cookingModeSwitch);
+
+    expect(cookingModeSwitch).toBeChecked();
+    expect(
+      within(detailRegion).getByText("김치찌개 원본"),
+    ).toBeInTheDocument();
+    expect(
+      within(detailRegion).queryByRole("link"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailRegion).queryByRole("button"),
+    ).not.toBeInTheDocument();
   });
 
   it("전달받은 레시피 상세에 관계와 기억 정보를 표시한다", async () => {
@@ -378,6 +397,21 @@ describe("RecipeListPlaceholderPage", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "전달받은 레시피를 저장했습니다.",
     );
+
+    fireEvent.click(
+      within(detailRegion).getByRole("switch", {
+        name: "조리 중 보기",
+      }),
+    );
+
+    expect(
+      within(detailRegion).getByRole("switch", {
+        name: "조리 중 보기",
+      }),
+    ).toBeChecked();
+    expect(
+      within(memoryRegion).getByText("생일마다 해주시던 음식"),
+    ).toBeInTheDocument();
   });
 
   it("상세 응답을 기다리는 동안 로딩 상태를 알린다", async () => {
@@ -624,6 +658,92 @@ describe("RecipeListPlaceholderPage", () => {
     );
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("조리 중 보기에서 본문을 유지하고 관리 동작만 숨긴 뒤 기존 초대를 복원한다", async () => {
+    const { fetchMock, user } = renderRecipeDetail();
+    const detailRegion = await screen.findByRole("region", {
+      name: "레시피 상세",
+    });
+    const cookingModeSwitch = within(detailRegion).getByRole(
+      "switch",
+      { name: "조리 중 보기" },
+    );
+
+    expect(cookingModeSwitch).not.toBeChecked();
+
+    fireEvent.click(
+      within(detailRegion).getByRole("button", {
+        name: "전달 초대 만들기",
+      }),
+    );
+
+    const linkInput = await screen.findByLabelText("전달 링크");
+    const codeInput = screen.getByLabelText("초대 코드");
+    const fetchCallCount = fetchMock.mock.calls.length;
+    const tokenCallCount = user.getIdToken.mock.calls.length;
+
+    fireEvent.click(cookingModeSwitch);
+
+    const activeCookingModeSwitch = within(detailRegion).getByRole(
+      "switch",
+      { name: "조리 중 보기" },
+    );
+    expect(activeCookingModeSwitch).toBeChecked();
+    expect(
+      within(detailRegion).getByRole("heading", {
+        name: "김치찌개",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(detailRegion).getByText("등록된 재료가 없습니다."),
+    ).toBeInTheDocument();
+    expect(
+      within(detailRegion).getByText(
+        "등록된 조리 순서가 없습니다.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(detailRegion).queryByRole("region", {
+        name: "전달 공유",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailRegion).queryByRole("link"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailRegion).queryByRole("button"),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("switch")).toHaveLength(1);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(fetchCallCount);
+    expect(user.getIdToken).toHaveBeenCalledTimes(tokenCallCount);
+
+    fireEvent.click(activeCookingModeSwitch);
+
+    expect(
+      within(detailRegion).getByRole("switch", {
+        name: "조리 중 보기",
+      }),
+    ).not.toBeChecked();
+    expect(
+      within(detailRegion).getByRole("region", {
+        name: "전달 공유",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "전달 코드" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /김치찌개/ }),
+    ).toBeInTheDocument();
+    expect(linkInput).toHaveValue(
+      `${window.location.origin}/transfer-invitations/link-token`,
+    );
+    expect(codeInput).toHaveValue("ABCD-1234");
+    expect(fetchMock).toHaveBeenCalledTimes(fetchCallCount);
+    expect(user.getIdToken).toHaveBeenCalledTimes(tokenCallCount);
   });
 
   it("OWNED 레시피의 전달 링크와 코드를 생성하고 복사한다", async () => {

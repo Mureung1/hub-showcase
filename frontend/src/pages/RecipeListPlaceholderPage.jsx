@@ -46,12 +46,17 @@ function RecipeListPlaceholderPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [loadVersion, setLoadVersion] = useState(0);
   const [recipeDetail, setRecipeDetail] = useState(null);
+  const [cookingModeRecipe, setCookingModeRecipe] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const isAddingRecipe = location.pathname === "/recipes/new";
   const isTransferInvitationDialog =
     location.pathname === "/transfer-invitations";
   const isShowingRightPage = isAddingRecipe || Boolean(recipeId);
+  const isCookingMode =
+    recipeDetail !== null &&
+    recipeDetail.id === recipeId &&
+    cookingModeRecipe === recipeDetail;
 
   useEffect(() => {
     let isCancelled = false;
@@ -175,8 +180,12 @@ function RecipeListPlaceholderPage() {
     <main className="grid h-dvh grid-rows-[minmax(0,1fr)] place-items-stretch overflow-hidden bg-[radial-gradient(circle_at_50%_30%,#faf9f4,#e8e7e2_55%,#d7d6d1)] p-2.5 font-[Noto_Serif_KR,Nanum_Myeongjo,Malgun_Gothic,serif] text-[#272923] max-[700px]:flex max-[700px]:flex-col max-[700px]:p-0">
       <header
         className="hidden h-14 shrink-0 items-center gap-3 bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[240px] px-4.5 text-base text-[#eed08b] max-[700px]:flex"
-        inert={isTransferInvitationDialog || undefined}
-        aria-hidden={isTransferInvitationDialog || undefined}
+        inert={
+          isTransferInvitationDialog || isCookingMode || undefined
+        }
+        aria-hidden={
+          isTransferInvitationDialog || isCookingMode || undefined
+        }
       >
         <span aria-hidden="true">☰</span>
         <span>나만의 레시피북</span>
@@ -187,7 +196,11 @@ function RecipeListPlaceholderPage() {
         inert={isTransferInvitationDialog || undefined}
         aria-hidden={isTransferInvitationDialog || undefined}
       >
-        <aside className="flex h-full min-h-0 flex-col items-center overflow-hidden bg-[linear-gradient(90deg,transparent,#102b23_18%,#102b23_82%,transparent)] px-2.5 pb-6.5 pt-11.25 text-[#e3c580] max-[700px]:hidden short-screen:pt-7.5">
+        <aside
+          className="flex h-full min-h-0 flex-col items-center overflow-hidden bg-[linear-gradient(90deg,transparent,#102b23_18%,#102b23_82%,transparent)] px-2.5 pb-6.5 pt-11.25 text-[#e3c580] max-[700px]:hidden short-screen:pt-7.5"
+          inert={isCookingMode || undefined}
+          aria-hidden={isCookingMode || undefined}
+        >
           <div className="text-center text-[21px] leading-normal tracking-[0.08em]">
             <img
               src="/design-assets/cookbook/gold-book-emblem.png"
@@ -239,9 +252,13 @@ function RecipeListPlaceholderPage() {
         </aside>
 
         <div className="grid min-h-0 min-w-0 grid-cols-2 drop-shadow-[0_3px_3px_rgb(44_35_20/0.23)] max-[1100px]:grid-cols-1 max-[700px]:block max-[700px]:h-full">
-          <section className={`min-w-0 overflow-hidden rounded-l-[3px] bg-[#f8f5eb] bg-[radial-gradient(circle_at_30%_40%,rgb(255_255_255/85%),transparent_60%)] shadow-[inset_-12px_0_23px_-20px_#4f3a20] min-[1101px]:shadow-[inset_-12px_0_23px_-20px_#4f3a20,-3px_0_0_#f1ece1,-6px_0_0_#d8cfbd] max-[700px]:h-full
+          <section
+            className={`min-w-0 overflow-hidden rounded-l-[3px] bg-[#f8f5eb] bg-[radial-gradient(circle_at_30%_40%,rgb(255_255_255/85%),transparent_60%)] shadow-[inset_-12px_0_23px_-20px_#4f3a20] min-[1101px]:shadow-[inset_-12px_0_23px_-20px_#4f3a20,-3px_0_0_#f1ece1,-6px_0_0_#d8cfbd] max-[700px]:h-full
     max-[700px]:rounded-[5px] ${isShowingRightPage ? "max-[1100px]:hidden" : "max-[700px]:block"
-            }`}>
+              }`}
+            inert={isCookingMode || undefined}
+            aria-hidden={isCookingMode || undefined}
+          >
             <div className="relative h-full overflow-y-auto p-[50px_46px_120px_36px] max-[700px]:p-[25px_22px_84px] short-screen:p-[30px_34px_92px]">
               <header>
                 <h1 className="mb-3.25 text-[31px] font-semibold tracking-[0.09em] max-[700px]:mb-2 max-[700px]:text-[25px] short-screen:mb-2 short-screen:text-[26px]">
@@ -376,8 +393,14 @@ function RecipeListPlaceholderPage() {
             {recipeDetail ? (
               <RecipeDetailView
                 key={recipeDetail.id}
+                isCookingMode={isCookingMode}
                 isReceivedRecipeSaved={
                   location.state?.receivedRecipeSaved
+                }
+                onCookingModeChange={(nextCookingMode) =>
+                  setCookingModeRecipe(
+                    nextCookingMode ? recipeDetail : null,
+                  )
                 }
                 recipeDetail={recipeDetail}
                 recipeId={recipeId}
