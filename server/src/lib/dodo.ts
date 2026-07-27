@@ -120,7 +120,7 @@ function generateDiaryText(options: { completedCategoryNames: string[]; hasReact
 }
 
 // 그날 인증 영상이 없으면 일기를 만들지 않는다(§6.4: 영상 인증 완료가 전제 조건).
-// 오늘 날짜는 인증·반응·포인트가 들어올 때마다 다시 불러 최신 상태로 갱신한다.
+// 오늘 날짜는 인증·반응·포인트가 들어올 때마다, 그리고 영상이 삭제됐을 때도 다시 불러 최신 상태로 갱신한다.
 export async function upsertDailyDiary(userId: string, forDate: Date = new Date()) {
   const dateOnly = toDateOnly(forDate)
   const dayEnd = endOfDay(dateOnly)
@@ -129,7 +129,12 @@ export async function upsertDailyDiary(userId: string, forDate: Date = new Date(
     where: { userId, deletedAt: null, createdAt: { gte: dateOnly, lt: dayEnd } },
     orderBy: { createdAt: 'desc' },
   })
-  if (!representativeVideo) return null
+  if (!representativeVideo) {
+    // 그날 대표로 삼을 영상이 하나도 안 남았으면(예: 유일한 영상을 삭제) 일기도 더 이상 근거가 없으니 지운다.
+    // 없는 걸 지우려는 게 아니라 있으면 지우는 것이라 deleteMany로 안전하게 처리한다.
+    await prisma.dodoDiaryEntry.deleteMany({ where: { userId, date: dateOnly } })
+    return null
+  }
 
   const [todaySchedules, pointsAgg, reactionCountToday, commentCountToday, mood] = await Promise.all([
     prisma.schedule.findMany({ where: { userId, date: dateOnly }, include: { category: { select: { name: true } } } }),

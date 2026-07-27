@@ -168,6 +168,12 @@ videosRouter.delete('/:id', asyncHandler(async (req, res) => {
     console.error('스토리지 영상 삭제 실패:', error)
   }
 
+  // 이 영상이 그날의 일기 대표 영상이었을 수 있으니 다시 계산한다 — 남은 영상 중 최신 것으로 교체되거나,
+  // 하나도 안 남았으면 일기 자체가 삭제된다(upsertDailyDiary 내부 처리).
+  upsertDailyDiary(req.userId!, existing.createdAt).catch((error) => {
+    console.error('영상 삭제 후 두두 일기 재계산 실패:', error)
+  })
+
   res.status(204).end()
 }))
 
