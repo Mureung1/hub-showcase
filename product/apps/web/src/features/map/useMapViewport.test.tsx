@@ -19,17 +19,18 @@ describe("useMapViewport", () => {
     expect(result.current.analysisMoveMode).toBe("idle");
   });
 
-  it("restores map display defaults during reset", () => {
+  it("restores the analysis presentation during reset", () => {
     const initial: [number, number] = [126.923, 37.56];
     const { result } = renderHook(() => useMapViewport(initial));
-    act(() => {
-      result.current.setMapMode("original");
-      result.current.setPrefabMode(false);
-      result.current.setBaseBuildingsVisible(false);
-    });
-    act(() => result.current.resetViewport(initial));
-    expect(result.current.mapMode).toBe("localtwin");
+
+    act(() => result.current.setPresentationMode("storefront3d"));
+    expect(result.current.presentationMode).toBe("storefront3d");
     expect(result.current.prefabMode).toBe(true);
+
+    act(() => result.current.resetViewport(initial));
+    expect(result.current.presentationMode).toBe("analysis");
+    expect(result.current.mapMode).toBe("localtwin");
+    expect(result.current.prefabMode).toBe(false);
     expect(result.current.baseBuildingsVisible).toBe(true);
   });
 

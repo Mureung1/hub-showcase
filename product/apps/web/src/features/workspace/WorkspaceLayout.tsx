@@ -71,38 +71,38 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           />
         }
         mapBody={
-          <>
-            <MarketMapCanvas
-              market={market}
-              marketId={catalogState.marketIdByKey[selection.marketKey]}
-              mapRef={viewport.mapRef}
-              onVisibleCenterChange={viewport.updateVisibleCenter}
-              onVisibleBoundsChange={viewport.updateVisibleBounds}
-              presentationMode={viewport.presentationMode}
-              baseBuildingsRendered={viewport.baseBuildingsRendered}
-              layer={selection.layer}
-              boundaryVisible={selection.boundaryVisible}
-              storesVisible={selection.storesVisible}
-              storefrontBuildings3d={storefronts.storefrontBuildings3d}
-              onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
-              flowPeople={storefronts.flowPeople}
-              activeHour={selection.activeHour}
-              activeDemandLabel={storefronts.activeDemandLabel}
-              mapStores={storefronts.mapStores}
-              selected={storefronts.storeSelection.selected}
-              score={storefronts.score}
-              sameCategoryCount={storefronts.sameCategoryCount}
-              onSelectStore={actions.chooseListedStore}
-              visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
-              onEvidenceOpen={() => panels.setEvidenceOpen(true)}
-            />
-            <MarketQuickMetrics
-              market={market}
-              categorySelection={selection.categorySelection}
-              analysis={marketAnalysis.analysis}
-              analysisState={marketAnalysis.analysisState}
-            />
-          </>
+          <MarketMapCanvas
+            market={market}
+            marketId={catalogState.marketIdByKey[selection.marketKey]}
+            mapRef={viewport.mapRef}
+            onVisibleCenterChange={viewport.updateVisibleCenter}
+            onVisibleBoundsChange={viewport.updateVisibleBounds}
+            presentationMode={viewport.presentationMode}
+            baseBuildingsRendered={viewport.baseBuildingsRendered}
+            layer={selection.layer}
+            boundaryVisible={selection.boundaryVisible}
+            storesVisible={selection.storesVisible}
+            storefrontBuildings3d={storefronts.storefrontBuildings3d}
+            onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
+            flowPeople={storefronts.flowPeople}
+            activeHour={selection.activeHour}
+            activeDemandLabel={storefronts.activeDemandLabel}
+            mapStores={storefronts.mapStores}
+            selected={storefronts.storeSelection.selected}
+            score={storefronts.score}
+            sameCategoryCount={storefronts.sameCategoryCount}
+            onSelectStore={actions.chooseListedStore}
+            visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
+            onEvidenceOpen={() => panels.setEvidenceOpen(true)}
+          />
+        }
+        bottomMetrics={
+          <MarketQuickMetrics
+            market={market}
+            categorySelection={selection.categorySelection}
+            analysis={marketAnalysis.analysis}
+            analysisState={marketAnalysis.analysisState}
+          />
         }
         market={market}
         presentationMode={viewport.presentationMode}
