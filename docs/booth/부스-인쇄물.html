@@ -329,490 +329,383 @@
         flex: none;
       }
 
-      /* ══════════════ 2페이지 ══════════════ */
+      /* ══════════════ 2페이지 — AI 에이전트 워크플로우 ══════════════ */
       .p2-head {
+        margin-bottom: 30px;
+      }
+
+      /* 원칙 한 줄 — 이 페이지의 주장 */
+      .creed {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto 1fr;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 52px;
+        padding: 38px 26px;
+        background: var(--ink);
+        border-radius: var(--r-lg);
+      }
+      .creed__cell {
+        text-align: center;
+      }
+      .creed__k {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        color: #8b95a1;
+        margin-bottom: 7px;
+      }
+      .creed__v {
+        display: block;
+        font-size: 33px;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: -0.02em;
+      }
+      .creed__v em {
+        font-style: normal;
+        color: #7db4ff;
+      }
+      .creed__sep {
+        width: 1px;
+        height: 54px;
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      /* ── 섹션 공통 ── */
+      .wsec {
         margin-bottom: 50px;
       }
-
-      .mockups {
-        display: grid;
-        grid-template-columns: 350px 1fr;
-        gap: 20px;
-        align-items: stretch;
-      }
-
-      .frame {
-        border: 1.5px solid var(--border);
-        border-radius: var(--r-lg);
-        background: var(--surface);
-        padding: 18px;
+      .wsec__head {
         display: flex;
-        flex-direction: column;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 22px;
       }
-      .frame__cap {
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--ink-2);
-        margin-bottom: 14px;
-        display: flex;
+      .wsec__no {
+        display: inline-flex;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
+        width: 27px;
+        height: 27px;
+        flex: none;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        align-self: center;
       }
-      .frame__cap .pcard__dot {
-        width: 10px;
-        height: 10px;
+      .wsec__t {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .wsec__s {
+        font-size: 15px;
+        color: var(--muted);
+        margin: 0;
       }
 
-      /* 소비자 폰 목업 */
-      .phone {
-        flex: 1;
-        background: var(--canvas);
-        border-radius: 20px;
-        border: 1px solid var(--border);
-        padding: 20px 16px;
-        display: flex;
-        flex-direction: column;
+      /* ── 8단계 루프 ── */
+      .loop8 {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+      }
+      .lstep {
+        position: relative;
+        background: var(--surface);
+        border-radius: var(--r-md);
+        padding: 24px 8px 26px;
+        text-align: center;
+      }
+      /* 단계 사이 연결 화살촉 */
+      .lstep:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: -6px;
+        top: 50%;
+        z-index: 1;
+        width: 0;
+        height: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 6px solid var(--muted);
+        transform: translateY(-50%);
+        opacity: 0.55;
+      }
+      .lstep__n {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 5px;
+      }
+      .lstep__t {
+        display: block;
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.25;
+        word-break: keep-all;
+      }
+      .lstep__tool {
+        display: block;
+        font-size: 12.5px;
+        color: var(--ink-2);
+        margin-top: 5px;
+      }
+      /* 검증 3단계 강조 */
+      .lstep--verify {
+        background: var(--primary-weak);
+      }
+      .lstep--verify .lstep__t {
+        color: #1b64da;
+      }
+      .lstep--verify .lstep__n {
+        color: #5b8fd4;
+      }
+
+      /* ── 에이전트 역할 분담 ── */
+      .agents {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
         gap: 14px;
       }
-      .phone__bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--ink);
-      }
-      .phone__loc {
-        font-size: 12px;
-        color: var(--muted);
-        font-weight: 600;
-      }
-      .deal-card {
-        border: 1px solid var(--border);
+      .agrp {
+        border: 1.5px solid var(--border);
+        border-top-width: 5px;
         border-radius: var(--r-md);
-        padding: 16px 16px;
-        box-shadow: var(--shadow-subtle);
-        background: var(--canvas);
+        padding: 22px 18px 24px;
       }
-      .deal-card__top {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 8px;
+      .agrp--plan {
+        border-top-color: var(--primary);
       }
-      .deal-card__name {
-        font-size: 15px;
+      .agrp--build {
+        border-top-color: var(--success);
+      }
+      .agrp--check {
+        border-top-color: var(--warning);
+      }
+      .agrp--learn {
+        border-top-color: var(--ink);
+      }
+      .agrp__phase {
+        display: block;
+        font-size: 18px;
         font-weight: 700;
+        margin-bottom: 3px;
       }
-      .deal-card__dist {
-        font-size: 12px;
+      .agrp__when {
+        display: block;
+        font-size: 12.5px;
         color: var(--muted);
-        font-weight: 600;
-        white-space: nowrap;
+        margin-bottom: 16px;
       }
-      .deal-card__price {
-        margin-top: 6px;
+      .agrp ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .agrp li {
         display: flex;
         align-items: baseline;
         gap: 7px;
-      }
-      .deal-card__sale {
-        font-size: 19px;
-        color: var(--primary);
-      }
-      .deal-card__orig {
         font-size: 13px;
-        color: var(--muted);
-        text-decoration: line-through;
+        line-height: 1.35;
       }
-      .deal-card__meta {
-        margin-top: 6px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 12px;
+      .agrp li b {
+        font-family: 'SF Mono', 'Consolas', 'D2Coding', monospace;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      .agrp li span {
         color: var(--ink-2);
-      }
-      .deal-card__left b {
-        color: var(--error);
-      }
-      .pickup-chip {
-        margin-top: 2px;
-        background: var(--primary-weak);
-        border-radius: var(--r-md);
-        padding: 12px 14px;
-        text-align: center;
-      }
-      .pickup-chip span {
-        font-size: 11.5px;
-        color: var(--ink-2);
-        font-weight: 600;
-      }
-      .pickup-chip .code {
-        font-size: 28px;
-        color: var(--primary);
-        letter-spacing: 0.22em;
-        margin-top: 3px;
-      }
-
-      /* 사장님 대시보드 목업 */
-      .dash {
-        flex: 1;
-        background: var(--canvas);
-        border-radius: var(--r-md);
-        border: 1px solid var(--border);
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .dash__stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-      }
-      .stat {
-        border: 1px solid var(--border);
-        border-radius: var(--r-md);
-        padding: 16px 15px;
-      }
-      .stat--hot {
-        border-color: var(--primary);
-        background: var(--primary-weak);
-      }
-      .stat__label {
-        font-size: 12px;
-        color: var(--muted);
-        display: block;
-      }
-      .stat__val {
-        font-size: 24px;
-        margin-top: 4px;
-        display: block;
-      }
-      .stat__val small {
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--ink-2);
-      }
-      .stat--hot .stat__val {
-        color: var(--primary);
-      }
-      .dash__deal {
-        border: 1px solid var(--border);
-        border-radius: var(--r-md);
-        padding: 17px 18px;
-      }
-      .dash__deal-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        font-size: 15px;
-      }
-      .dash__deal-top .num {
-        font-size: 17px;
-      }
-      .bar {
-        display: flex;
-        height: 10px;
-        border-radius: 999px;
-        overflow: hidden;
-        background: var(--surface);
-        margin-top: 10px;
-      }
-      .bar i {
-        height: 100%;
-        display: block;
-      }
-      .bar .picked {
-        background: var(--success);
-      }
-      .bar .reserved {
-        background: var(--primary);
-      }
-      .legend {
-        margin-top: 8px;
-        display: flex;
-        gap: 16px;
-        font-size: 12px;
-        color: var(--ink-2);
-      }
-      .legend b {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        font-weight: 600;
-      }
-      .legend .sw {
-        width: 9px;
-        height: 9px;
-        border-radius: 2px;
-      }
-
-      /* 기술 하이라이트 */
-      .tech {
-        margin-top: 50px;
-        display: grid;
-        grid-template-columns: 1.35fr 1fr;
-        gap: 18px;
-      }
-      .tech-card {
-        border: 1.5px solid var(--border);
-        border-radius: var(--r-lg);
-        padding: 28px 28px;
-      }
-      .tech-card--hero {
-        background: var(--ink);
-        border-color: var(--ink);
-        color: #fff;
-      }
-      .tech-card__k {
         font-size: 13px;
+      }
+      .ro {
+        display: inline-block;
+        font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.1em;
-        color: #7db4ff;
-        text-transform: uppercase;
-      }
-      .tech-card--plain .tech-card__k,
-      .arch-card .tech-card__k {
-        color: var(--primary);
-      }
-      .tech-card__t {
-        font-size: 22px;
-        font-weight: 700;
-        margin: 8px 0 0;
-        letter-spacing: -0.02em;
-      }
-
-      /* 아키텍처 · 데이터 흐름 다이어그램 */
-      .arch-card {
-        background: var(--surface);
-      }
-      .arch {
-        margin-top: 20px;
-      }
-      .tier-tag {
-        display: block;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
         color: var(--muted);
-        margin-bottom: 9px;
-      }
-      .arch-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-      .node {
-        background: #fff;
         border: 1px solid var(--border);
-        border-left: 4px solid var(--border);
-        border-radius: var(--r-md);
-        padding: 13px 15px;
-      }
-      .node b {
-        display: block;
-        font-size: 15.5px;
-        font-weight: 700;
-      }
-      .node span {
-        display: block;
-        font-size: 12px;
-        color: var(--ink-2);
-        margin-top: 3px;
-        line-height: 1.4;
-      }
-      .node--user {
-        border-left-color: var(--success);
-      }
-      .node--owner {
-        border-left-color: var(--primary);
-      }
-      .node--server {
-        border-left-color: var(--ink);
-      }
-      .node--db {
-        border-left-color: var(--primary);
-      }
-      .node--fcm {
-        border-left-color: var(--warning);
-      }
-
-      /* 세로 연결선 + 화살촉 */
-      .conn {
-        position: relative;
-        height: 30px;
-      }
-      .conn::before {
-        content: '';
-        position: absolute;
-        left: 50%;
-        top: 0;
-        bottom: 7px;
-        width: 2px;
-        background: var(--muted);
-        transform: translateX(-50%);
-        opacity: 0.5;
-      }
-      .conn::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        bottom: 0;
-        width: 0;
-        height: 0;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 7px solid var(--muted);
-        transform: translateX(-50%);
-      }
-      .conn__lbl {
-        position: absolute;
-        left: calc(50% + 12px);
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--muted);
+        border-radius: 4px;
+        padding: 0 4px;
         white-space: nowrap;
       }
 
-      /* 서버 → (DB, FCM) 분기 커넥터 */
-      .split {
-        position: relative;
-        height: 34px;
+      /* ── 검증 습관 3종 ── */
+      .habits {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 14px;
       }
-      .split .stem {
-        position: absolute;
-        left: 50%;
-        top: 0;
-        height: 12px;
-        width: 2px;
-        background: var(--muted);
-        opacity: 0.5;
-        transform: translateX(-50%);
-      }
-      .split .bar {
-        position: absolute;
-        top: 12px;
-        left: 25%;
-        right: 25%;
-        height: 2px;
-        background: var(--muted);
-        opacity: 0.5;
-      }
-      .split .drop {
-        position: absolute;
-        top: 12px;
-        height: 22px;
-        width: 2px;
-        background: var(--muted);
-        opacity: 0.5;
-      }
-      .split .drop.l {
-        left: 25%;
-      }
-      .split .drop.r {
-        right: 25%;
-        left: auto;
-      }
-      .split .drop::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        bottom: -7px;
-        width: 0;
-        height: 0;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 7px solid var(--muted);
-        transform: translateX(-50%);
-      }
-
-      .arch-note {
-        margin: 16px 0 0;
-        font-size: 13px;
-        color: var(--ink-2);
-        line-height: 1.5;
-      }
-      .arch-note b {
-        color: var(--ink);
-        font-weight: 700;
-      }
-
-      /* 위치 카드 */
-      .geo {
-        margin-top: 18px;
-        position: relative;
-        height: 178px;
+      .habit {
+        border: 1.5px solid var(--border);
         border-radius: var(--r-md);
-        background:
-          radial-gradient(circle at 50% 50%, rgba(49, 130, 246, 0.1), transparent 62%),
-          var(--surface);
-        overflow: hidden;
+        padding: 24px 22px 26px;
       }
-      .geo .ring {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        border: 1.5px dashed var(--primary);
-        border-radius: 50%;
-        opacity: 0.55;
+      .habit--proof {
+        background: var(--ink);
+        border-color: var(--ink);
       }
-      .geo .ring.r1 {
-        width: 100px;
-        height: 100px;
+      .habit__t {
+        font-size: 17.5px;
+        font-weight: 700;
+        margin: 0 0 18px;
       }
-      .geo .ring.r2 {
-        width: 166px;
-        height: 166px;
-        opacity: 0.3;
-      }
-      .geo .me {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--primary);
-        box-shadow: 0 0 0 5px rgba(49, 130, 246, 0.2);
-      }
-      .geo .pin {
-        position: absolute;
-        width: 11px;
-        height: 11px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-      }
-      .geo .pin.in {
-        background: var(--success);
-      }
-      .geo .pin.out {
-        background: var(--muted);
+      .habit--proof .habit__t {
+        color: #fff;
       }
 
-      .tech-card__note {
-        margin-top: 14px;
+      /* (1) 3중 검증 */
+      .triple {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .triple div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         font-size: 14.5px;
         color: var(--ink-2);
-        line-height: 1.5;
       }
-      .tech-card__note b {
+      .triple .sw {
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+        flex: none;
+      }
+      .triple b {
         color: var(--ink);
+        font-size: 14.5px;
       }
 
-      /* 하단: QR + 스택 */
+      /* (2) 테스트 깨뜨리기 */
+      .flip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .flip__box {
+        flex: 1;
+        text-align: center;
+        border-radius: var(--r-sm);
+        padding: 15px 6px;
+        font-size: 13.5px;
+        font-weight: 700;
+        line-height: 1.3;
+      }
+      .flip__box small {
+        display: block;
+        font-size: 10.5px;
+        font-weight: 600;
+        margin-top: 3px;
+        opacity: 0.75;
+      }
+      .flip__pass {
+        background: rgba(3, 178, 108, 0.12);
+        color: #018a53;
+      }
+      .flip__fail {
+        background: rgba(240, 68, 82, 0.12);
+        color: #d8323f;
+      }
+      .flip__arrow {
+        flex: none;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .habit__note {
+        margin: 15px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      /* (3) 동시성 실측 */
+      .proof {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .proof__cell {
+        text-align: center;
+      }
+      .proof__n {
+        display: block;
+        font-size: 52px;
+        line-height: 1;
+        color: #fff;
+      }
+      .proof__n--ok {
+        color: #4ade9a;
+      }
+      .proof__n--zero {
+        color: #4ade9a;
+      }
+      .proof__c {
+        display: block;
+        font-size: 12px;
+        color: #b0b8c1;
+        margin-top: 6px;
+      }
+      .proof__op {
+        color: #6b7684;
+        font-size: 17px;
+        padding-bottom: 22px;
+      }
+      .proof__code {
+        margin-top: 18px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: var(--r-sm);
+        padding: 9px 11px;
+        font-family: 'SF Mono', 'Consolas', 'D2Coding', monospace;
+        font-size: 11px;
+        color: #cfe0ff;
+        line-height: 1.45;
+      }
+      .proof__code .kw {
+        color: #7db4ff;
+      }
+
+      /* ── 하단 ── */
       .p2-foot {
         margin-top: auto;
-        padding-top: 26px;
+        padding-top: 22px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 20px;
         border-top: 1px solid var(--border);
+      }
+      .fstat {
+        display: flex;
+        gap: 30px;
+      }
+      .fstat div {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .fstat b {
+        font-size: 28px;
+        color: var(--primary);
+      }
+      .fstat span {
+        font-size: 13px;
+        color: var(--ink-2);
       }
       .stack {
         display: flex;
@@ -831,7 +724,6 @@
         gap: 8px;
         flex-wrap: wrap;
       }
-
       /* ── 인쇄 ── */
       @page {
         size: A3 portrait;
@@ -961,196 +853,204 @@
       </div>
     </section>
 
-    <!-- ══════════════════ 2페이지 : 어떻게 · 증명 ══════════════════ -->
+    <!-- ══════════════════ 2페이지 : AI 에이전트 워크플로우 ══════════════════ -->
     <section class="sheet">
       <div class="p2-head">
-        <span class="kicker">The product</span>
-        <h2 class="section-title">두 축을 한 앱에서 — 소비자와 사장님</h2>
-        <p class="section-lead">
-          소비자는 근처 마감 할인을 받아 예약하고, 사장님은 카운터 화면에서 현황을 조율합니다.
+        <span class="kicker">AI Agent Workflow</span>
+        <h2 class="section-title">3주간 AI와 일한 방식</h2>
+      </div>
+
+      <div class="creed">
+        <div class="creed__cell">
+          <span class="creed__k">DECIDE</span>
+          <span class="creed__v">결정은 <em>내가</em></span>
+        </div>
+        <span class="creed__sep"></span>
+        <div class="creed__cell">
+          <span class="creed__k">EXECUTE</span>
+          <span class="creed__v">실행은 <em>AI가</em></span>
+        </div>
+        <span class="creed__sep"></span>
+        <div class="creed__cell">
+          <span class="creed__k">VERIFY</span>
+          <span class="creed__v">검증은 <em>눈으로</em></span>
+        </div>
+      </div>
+
+      <div class="wsec">
+        <div class="wsec__head">
+          <span class="wsec__no">1</span>
+          <h3 class="wsec__t">Task 하나가 도는 8단계</h3>
+          <p class="wsec__s">예외 없이 반복해 리듬을 만든다</p>
+        </div>
+        <div class="loop8">
+          <div class="lstep">
+            <span class="lstep__n">01</span>
+            <span class="lstep__t">Task<br />확인</span>
+            <span class="lstep__tool">task.md · DoD</span>
+          </div>
+          <div class="lstep">
+            <span class="lstep__n">02</span>
+            <span class="lstep__t">이슈<br />분해</span>
+            <span class="lstep__tool">GitHub</span>
+          </div>
+          <div class="lstep">
+            <span class="lstep__n">03</span>
+            <span class="lstep__t">구현</span>
+            <span class="lstep__tool">Repo→Svc→Route</span>
+          </div>
+          <div class="lstep lstep--verify">
+            <span class="lstep__n">04</span>
+            <span class="lstep__t">API<br />검증</span>
+            <span class="lstep__tool">curl 2xx/4xx</span>
+          </div>
+          <div class="lstep lstep--verify">
+            <span class="lstep__n">05</span>
+            <span class="lstep__t">화면<br />검증</span>
+            <span class="lstep__tool">브라우저</span>
+          </div>
+          <div class="lstep lstep--verify">
+            <span class="lstep__n">06</span>
+            <span class="lstep__t">데이터<br />검증</span>
+            <span class="lstep__tool">DB 쿼리</span>
+          </div>
+          <div class="lstep">
+            <span class="lstep__n">07</span>
+            <span class="lstep__t">커밋</span>
+            <span class="lstep__tool">Task ID 기재</span>
+          </div>
+          <div class="lstep">
+            <span class="lstep__n">08</span>
+            <span class="lstep__t">이슈<br />기록</span>
+            <span class="lstep__tool">근거 남기고 종료</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="wsec">
+        <div class="wsec__head">
+          <span class="wsec__no">2</span>
+          <h3 class="wsec__t">역할별로 나눠 쓴 서브에이전트</h3>
+          <p class="wsec__s">만능 도구 하나가 아니라, 국면마다 다른 역할로</p>
+        </div>
+        <div class="agents">
+          <div class="agrp agrp--plan">
+            <span class="agrp__phase">계획</span>
+            <span class="agrp__when">무엇을 · 어떤 순서로</span>
+            <ul>
+              <li><b>planner</b><span>작업 분해 · 우선순위</span></li>
+              <li><b>architect</b><span>기술 선택 · 스키마</span></li>
+              <li><b>feature-slice</b><span>시연 가능 단위로</span></li>
+            </ul>
+          </div>
+          <div class="agrp agrp--build">
+            <span class="agrp__phase">구현</span>
+            <span class="agrp__when">코드를 만든다</span>
+            <ul>
+              <li><b>test-writer</b><span>깨질 지점을 겨냥</span></li>
+              <li><b>debugger</b><span>재현 → 격리 → 최소 수정</span></li>
+              <li><b>performance</b><span>측정 없는 최적화 금지</span></li>
+            </ul>
+          </div>
+          <div class="agrp agrp--check">
+            <span class="agrp__phase">점검</span>
+            <span class="agrp__when">커밋 전에 걸러낸다</span>
+            <ul>
+              <li><b>reviewer</b><span>정확성 · 동시성</span></li>
+              <li><b>security</b><span>입력 · 비밀정보</span></li>
+              <li><b>docs</b><span>문서와 코드 불일치</span></li>
+            </ul>
+          </div>
+          <div class="agrp agrp--learn">
+            <span class="agrp__phase">학습</span>
+            <span class="agrp__when">남의 코드로 두지 않기</span>
+            <ul>
+              <li><b>code-tutor</b><span>개념 단위로 이해</span></li>
+              <li><b>tutor-explorer</b><span>실행 흐름 추적</span></li>
+              <li><b>tutor-scribe</b><span>학습 상태 기록</span></li>
+            </ul>
+          </div>
+        </div>
+        <p class="habit__note" style="margin-top: 12px">
+          계획·점검 에이전트는 <span class="ro">읽기 전용</span> 권한 — 실수로도 코드를 바꾸지 못하게
+          도구를 제한했다. <b>planner(무엇을)</b>와 <b>architect(어떻게)</b>를 나눈 것이 역할 분리의 핵심.
         </p>
       </div>
 
-      <div class="mockups">
-        <!-- 소비자 앱 -->
-        <div class="frame">
-          <div class="frame__cap">
-            <span class="pcard__dot pcard__dot--user"></span>소비자 앱 — 딜 목록 · 픽업코드
-          </div>
-          <div class="phone">
-            <div class="phone__bar">
-              <span>근처 마감 할인</span>
-              <span class="phone__loc">기준 주소 · 2km</span>
-            </div>
-            <div class="deal-card">
-              <div class="deal-card__top">
-                <span class="deal-card__name">소보루 크루아상</span>
-                <span class="deal-card__dist">0.4 km</span>
-              </div>
-              <div class="deal-card__price">
-                <span class="deal-card__sale num">2,000원</span>
-                <span class="deal-card__orig num">4,000원</span>
-              </div>
-              <div class="deal-card__meta">
-                <span class="deal-card__left">남은 <b class="num">3</b>개</span>
-                <span>~21:00 픽업</span>
-              </div>
-            </div>
-            <div class="deal-card">
-              <div class="deal-card__top">
-                <span class="deal-card__name">수제 딸기 케이크</span>
-                <span class="deal-card__dist">0.9 km</span>
-              </div>
-              <div class="deal-card__price">
-                <span class="deal-card__sale num">7,500원</span>
-                <span class="deal-card__orig num">15,000원</span>
-              </div>
-              <div class="deal-card__meta">
-                <span class="deal-card__left">남은 <b class="num">2</b>개</span>
-                <span>~20:30 픽업</span>
-              </div>
-            </div>
-            <div class="pickup-chip">
-              <span>예약 완료 · 픽업코드</span>
-              <div class="code num">4913</div>
-            </div>
-          </div>
+      <div class="wsec">
+        <div class="wsec__head">
+          <span class="wsec__no">3</span>
+          <h3 class="wsec__t">"되는 것처럼 보이는 것"을 막는 습관</h3>
+          <p class="wsec__s">AI 협업에서 가장 위험한 것</p>
         </div>
-
-        <!-- 사장님 대시보드 -->
-        <div class="frame">
-          <div class="frame__cap">
-            <span class="pcard__dot pcard__dot--owner"></span>사장님 대시보드 — 카운터 PC 상시 화면 (16:9)
+        <div class="habits">
+          <div class="habit">
+            <h4 class="habit__t">서로 다른 도구로 3중 검증</h4>
+            <div class="triple">
+              <div>
+                <span class="sw" style="background: var(--primary)"></span>
+                <b>API</b> curl로 정상·실패 경로
+              </div>
+              <div>
+                <span class="sw" style="background: var(--success)"></span>
+                <b>화면</b> 브라우저로 흐름
+              </div>
+              <div>
+                <span class="sw" style="background: var(--warning)"></span>
+                <b>데이터</b> DB 쿼리로 반영
+              </div>
+            </div>
+            <p class="habit__note">한 겹으로는 "된 줄 알았는데"를 못 막는다.</p>
           </div>
-          <div class="dash">
-            <div class="dash__stats">
-              <div class="stat">
-                <span class="stat__label">오늘 픽업</span>
-                <span class="stat__val num">12<small>개</small></span>
-              </div>
-              <div class="stat">
-                <span class="stat__label">오늘 매출</span>
-                <span class="stat__val num">48,000<small>원</small></span>
-              </div>
-              <div class="stat stat--hot">
-                <span class="stat__label">픽업 대기</span>
-                <span class="stat__val num">3<small>건</small></span>
-              </div>
-              <div class="stat">
-                <span class="stat__label">남은 재고</span>
-                <span class="stat__val num">7<small>개</small></span>
-              </div>
+
+          <div class="habit">
+            <h4 class="habit__t">통과한 테스트는 일부러 깨뜨린다</h4>
+            <div class="flip">
+              <span class="flip__box flip__pass">통과<small>3 / 3</small></span>
+              <span class="flip__arrow">→</span>
+              <span class="flip__box flip__fail">조건 반전<small>3개 실패</small></span>
+              <span class="flip__arrow">→</span>
+              <span class="flip__box flip__pass">원복<small>3 / 3</small></span>
             </div>
-
-            <div class="dash__deal">
-              <div class="dash__deal-top">
-                <b>소보루 크루아상</b>
-                <span class="num">3 / 10 남음</span>
-              </div>
-              <div class="bar">
-                <i class="picked" style="width: 40%"></i>
-                <i class="reserved" style="width: 30%"></i>
-              </div>
-              <div class="legend">
-                <b><span class="sw" style="background: var(--success)"></span>픽업 4</b>
-                <b><span class="sw" style="background: var(--primary)"></span>예약 3</b>
-                <b><span class="sw" style="background: var(--border)"></span>남음 3</b>
-              </div>
-            </div>
-
-            <div class="dash__deal">
-              <div class="dash__deal-top">
-                <b>수제 딸기 케이크</b>
-                <span class="num">2 / 6 남음</span>
-              </div>
-              <div class="bar">
-                <i class="picked" style="width: 33%"></i>
-                <i class="reserved" style="width: 34%"></i>
-              </div>
-              <div class="legend">
-                <b><span class="sw" style="background: var(--success)"></span>픽업 2</b>
-                <b><span class="sw" style="background: var(--primary)"></span>예약 2</b>
-                <b><span class="sw" style="background: var(--border)"></span>남음 2</b>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tech">
-        <!-- 아키텍처 · 데이터 흐름 -->
-        <div class="tech-card arch-card">
-          <span class="tech-card__k">Architecture</span>
-          <h3 class="tech-card__t">데이터 흐름 한눈에</h3>
-
-          <div class="arch">
-            <div class="arch-tier">
-              <span class="tier-tag">CLIENT · React + Vite</span>
-              <div class="arch-row">
-                <div class="node node--user">
-                  <b>소비자 앱</b><span>딜 목록 · 예약 · 픽업코드</span>
-                </div>
-                <div class="node node--owner">
-                  <b>사장님 대시보드</b><span>등록 · 현황 · 픽업 확인</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="conn">
-              <span class="conn__lbl">/api · axios (HTTPS)</span>
-            </div>
-
-            <div class="arch-tier">
-              <span class="tier-tag">SERVER · Express (Node, ESM)</span>
-              <div class="node node--server">
-                <b>routes → services → repositories</b>
-                <span>입력 검증 · 관심 대상 판정 · 거리 조회(Haversine)</span>
-              </div>
-            </div>
-
-            <div class="split">
-              <span class="stem"></span>
-              <span class="bar"></span>
-              <span class="drop l"></span>
-              <span class="drop r"></span>
-            </div>
-
-            <div class="arch-row">
-              <div class="node node--db">
-                <b>PostgreSQL</b>
-              </div>
-              <div class="node node--fcm">
-                <b>FCM 푸시</b><span>조건 대상 기기로 발송</span>
-              </div>
-            </div>
-
-            <p class="arch-note">
-              FCM 푸시는 조건에 맞는 <b>소비자·사장님 기기로 알림이 되돌아갑니다.</b>
+            <p class="habit__note">
+              통과만으로는 아무것도 증명하지 못한다. 실패를 확인해야 테스트가 동작을 붙잡고 있다는
+              증거가 된다.
             </p>
           </div>
-        </div>
 
-        <!-- 위치 기반 -->
-        <div class="tech-card tech-card--plain">
-          <span class="tech-card__k">Location targeting</span>
-          <h3 class="tech-card__t">위치 기반 알림 타게팅</h3>
-          <div class="geo" aria-hidden="true">
-            <div class="ring r2"></div>
-            <div class="ring r1"></div>
-            <div class="me"></div>
-            <div class="pin in" style="left: 42%; top: 40%"></div>
-            <div class="pin in" style="left: 60%; top: 58%"></div>
-            <div class="pin out" style="left: 20%; top: 24%"></div>
-            <div class="pin out" style="left: 82%; top: 74%"></div>
+          <div class="habit habit--proof">
+            <h4 class="habit__t">동시성은 말이 아니라 숫자로</h4>
+            <div class="proof">
+              <div class="proof__cell">
+                <span class="proof__n">100</span>
+                <span class="proof__c">동시 요청</span>
+              </div>
+              <span class="proof__op">→</span>
+              <div class="proof__cell">
+                <span class="proof__n proof__n--ok">3</span>
+                <span class="proof__c">정확히 성공</span>
+              </div>
+              <span class="proof__op">·</span>
+              <div class="proof__cell">
+                <span class="proof__n proof__n--zero">0</span>
+                <span class="proof__c">오버셀</span>
+              </div>
+            </div>
+            <div class="proof__code">
+              <span class="kw">UPDATE</span> deals <span class="kw">SET</span> 남은수량 = 남은수량 -
+              :qty<br />
+              <span class="kw">WHERE</span> 남은수량 &gt;= :qty
+            </div>
           </div>
-          <p class="tech-card__note">
-            <b>(카테고리 매칭 OR 즐겨찾기) AND 반경 조건.</b> Haversine 거리 계산으로 반경 밖
-            딜은 알림에서 제외 — 알림 피로를 줄입니다.
-          </p>
         </div>
       </div>
 
       <div class="p2-foot">
+        <div class="fstat">
+          <div><b class="num">16</b><span>GitHub 이슈</span></div>
+          <div><b class="num">18</b><span>Task 완료</span></div>
+          <div><b class="num">11</b><span>서브에이전트</span></div>
+        </div>
         <div class="stack">
           <div class="lb">TECH STACK</div>
           <div class="tags">
