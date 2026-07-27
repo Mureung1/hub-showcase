@@ -160,10 +160,6 @@ const SettlementDetail = () => {
               <span className="detail-value">{myMember.amount.toLocaleString()}원</span>
             </div>
 
-            <a className="toss-transfer-btn" href={myMember.transferLink}>
-              토스로 이체하기
-            </a>
-
             <div className="detail-row">
               <span className="detail-label">상태</span>
               <span className={`member-status ${myMember.status}`}>{myStatusLabel}</span>
@@ -172,14 +168,19 @@ const SettlementDetail = () => {
             {reportErrorMessage && <p className="form-error">{reportErrorMessage}</p>}
 
             {myMember.status === 'pending' && (
-              <button
-                type="button"
-                className="copy-link-btn"
-                disabled={reportStatus === 'submitting' || Boolean(myMember.reportedAt)}
-                onClick={() => handleReport(myMember.id)}
-              >
-                {myMember.reportedAt ? '확인 요청 완료' : '이체 확인 요청'}
-              </button>
+              <div className="settlement-current-actions">
+                <a className="toss-transfer-btn" href={myMember.transferLink}>
+                  토스로 이체하기
+                </a>
+                <button
+                  type="button"
+                  className="confirm-request-btn"
+                  disabled={reportStatus === 'submitting' || Boolean(myMember.reportedAt)}
+                  onClick={() => handleReport(myMember.id)}
+                >
+                  {myMember.reportedAt ? '확인 요청 완료' : '이체 확인 요청'}
+                </button>
+              </div>
             )}
           </div>
         )}

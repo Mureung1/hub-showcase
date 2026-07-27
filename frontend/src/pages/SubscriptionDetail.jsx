@@ -270,9 +270,6 @@ const SubscriptionDetail = () => {
             )}
           </div>
           {createStatus === 'error' && <p className="form-error">{createErrorMessage}</p>}
-
-          
-
           {settlementsStatus === 'idle' && <p className="member-list-message">불러오는 중...</p>}
           {settlementsStatus === 'error' && <p className="member-list-message">정산 이력을 불러오지 못했어요.</p>}
           {settlementsStatus === 'success' && settlements.length === 0 && (
