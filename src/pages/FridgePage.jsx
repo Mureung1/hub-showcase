@@ -79,6 +79,10 @@ function FridgePage() {
     )
   }
 
+  function handleSelectAll() {
+    setSelectedIds(fridgeIngredients.map((ingredient) => ingredient.id))
+  }
+
   function handleClear() {
     setSelectedIds([])
   }
@@ -132,6 +136,15 @@ function FridgePage() {
                 <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-text">
                   {selectedIds.length}개
                 </span>
+              )}
+              {selectedIds.length < fridgeIngredients.length && (
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-xs text-text-secondary underline hover:text-text-primary"
+                >
+                  전체 선택
+                </button>
               )}
               {selectedIds.length > 0 && (
                 <button
