@@ -305,8 +305,43 @@ test('internal target carries one semantic Review round trip on the current Prod
         )
         assert.equal(invalid.status, 409)
 
+        const terminalCall = postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          {
+            ...capabilityCall,
+            request: {
+              ...capabilityCall.request,
+              summary: 'Runtime terminal로 끝날 제안입니다.',
+            },
+          },
+          headers,
+        )
+        const terminalRequested = await trace.until(
+          (frame) =>
+            frame.type === 'review.requested' &&
+            'review' in frame &&
+            frame.interactionId !== interactionId &&
+            frame.interactionId !== freshInteractionId,
+        )
+        const terminalInteractionId = String(
+          terminalRequested.interactionId,
+        )
         runtime.releaseHeldTurn()
+        assert.equal((await terminalCall).status, 503)
         const frames = await trace.rest()
+        assert.deepEqual(
+          frames.find(
+            (frame) =>
+              frame.type === 'review.failed' &&
+              frame.interactionId === terminalInteractionId,
+          ),
+          {
+            type: 'review.failed',
+            operationId: terminalRequested.operationId,
+            interactionId: terminalInteractionId,
+            reason: 'runtime_terminated',
+          },
+        )
         assert.equal(
           frames.filter(
             (frame) =>
@@ -323,6 +358,18 @@ test('internal target carries one semantic Review round trip on the current Prod
         assert.equal(browserTrace.includes(fixture.workspaceRoot), false)
         assert.equal(browserTrace.includes('thread-private-chat'), false)
         assert.equal(browserTrace.includes('turn-private-chat-1'), false)
+
+        const credentialStillActive = await postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          {
+            protocolVersion: 1,
+            kind: 'handshake',
+            serverName: 'ay_ple_interaction',
+            capabilities: ['propose_state_patch'],
+          },
+          headers,
+        )
+        assert.equal(credentialStillActive.status, 200)
       },
     )
   } finally {

@@ -212,6 +212,8 @@ export function createProductOperationCoordinator(options: {
   readonly controller: SemesterWorkspaceController
   readonly mcpHost: AssignmentMcpHost
   readonly service: CodexChatService
+  readonly interactionTurnTerminal?: () => Promise<void>
+  readonly interactionRuntimeTerminal?: () => Promise<void>
 }): ProductOperationCoordinator {
   let active: ActiveProductOperation | undefined
   let shuttingDown = false
@@ -733,6 +735,11 @@ export function createProductOperationCoordinator(options: {
             operationId: operation.operationId,
           }),
     async write(activity) {
+      if (activity.type === 'runtime.failed') {
+        await options.interactionRuntimeTerminal?.()
+      } else if (activity.type === 'turn.completed') {
+        await options.interactionTurnTerminal?.()
+      }
       const frame = await projectActivity(operation, activity)
       return frame ? sink.write(frame) : true
     },
@@ -1057,6 +1064,11 @@ export function createProductOperationCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
+        if (settlement.type === 'unknown') {
+          await options.interactionRuntimeTerminal?.()
+        } else {
+          await options.interactionTurnTerminal?.()
+        }
         recordTurnSettlement(operation, settlement)
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
@@ -1138,6 +1150,9 @@ export function createProductOperationCoordinator(options: {
         )
       } catch (error) {
         if (!streamOpened) throw presentProductOperationError(error)
+        if (operation.turn) {
+          await options.interactionRuntimeTerminal?.()
+        }
         throw error
       } finally {
         operation.mcpSession?.cancel()
@@ -1248,6 +1263,11 @@ export function createProductOperationCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
+        if (settlement.type === 'unknown') {
+          await options.interactionRuntimeTerminal?.()
+        } else {
+          await options.interactionTurnTerminal?.()
+        }
         recordTurnSettlement(operation, settlement)
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
@@ -1274,6 +1294,7 @@ export function createProductOperationCoordinator(options: {
       } catch (error) {
         if (!streamOpened) throw presentProductOperationError(error)
         if (operation.turn) {
+          await options.interactionRuntimeTerminal?.()
           await closeAcceptedTurn(
             operation,
             operation.turn,

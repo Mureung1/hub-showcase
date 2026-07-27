@@ -104,12 +104,17 @@ export async function createServerApplication(
   const assignmentMcpHost = semesterWorkspace
     ? createAssignmentMcpHost()
     : undefined
+  let inlineSemanticReview: InlineSemanticReviewVertical | undefined
   const productOperations =
     semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
       ? createProductOperationCoordinator({
           controller: semesterWorkspace,
           mcpHost: assignmentMcpHost,
           service: codexChat.service,
+          interactionTurnTerminal: () =>
+            inlineSemanticReview?.turnTerminal() ?? Promise.resolve(),
+          interactionRuntimeTerminal: () =>
+            inlineSemanticReview?.runtimeTerminal() ?? Promise.resolve(),
         })
       : undefined
   if (options.internalInteractionTarget && !productOperations) {
@@ -117,7 +122,7 @@ export async function createServerApplication(
       'The internal interaction target requires product operations',
     )
   }
-  const inlineSemanticReview =
+  inlineSemanticReview =
     options.internalInteractionTarget && productOperations
       ? await createInlineSemanticReviewVertical({
           workspaceRoot: options.internalInteractionTarget.workspaceRoot,

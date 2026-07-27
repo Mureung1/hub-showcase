@@ -1293,6 +1293,11 @@
   border-top: 1px solid var(--line);
 }
 
+.semantic-evidence figcaption span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
 .semantic-evidence blockquote {
   margin: 4px 0 0;
   color: var(--muted);

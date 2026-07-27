@@ -949,6 +949,7 @@ function SemanticReviewCard({
               >
                 <figcaption>
                   {evidence.relativePath} · occurrence {evidence.occurrence}
+                  <span>SHA-256 {evidence.contentDigest}</span>
                 </figcaption>
                 <blockquote>
                   {evidence.contextBefore}

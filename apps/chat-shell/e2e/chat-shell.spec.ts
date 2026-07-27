@@ -221,6 +221,7 @@ test.describe('internal inline Semantic Review target', () => {
     await expect(first).toContainText('2026-08-03 23:59')
     await expect(first).toContainText('problem-solving-syllabus.txt')
     await expect(first).toContainText('LMS 과제함 업로드')
+    await expect(first).toContainText(/SHA-256 [0-9a-f]{64}/u)
     await expect(page.getByRole('textbox', { name: '메시지' })).toBeDisabled()
     await expect(page.getByRole('button', { name: '작업 중단' })).toBeVisible()
     await expect(first.getByRole('button', { name: '수락' })).toBeFocused()

@@ -81,7 +81,8 @@ export type InteractionBroker = {
     result: ProductReviewResult,
   ): Promise<void>
   browserDisconnected(): Promise<void>
-  turnInterrupted(): Promise<void>
+  turnInterrupted(): Promise<boolean>
+  turnTerminal(): Promise<void>
   runtimeTerminal(): Promise<void>
   runtimeReplaced(): Promise<void>
   adapterLost(): Promise<void>
@@ -173,9 +174,18 @@ export async function createInteractionBroker(
         throw new InteractionSettlementError('delivery_failed')
       }
     },
-    browserDisconnected: () =>
-      failCallContinuity('transport_failed'),
+    browserDisconnected: async () => {
+      await failCallContinuity('transport_failed')
+    },
     turnInterrupted: () => failCallContinuity('turn_interrupted'),
+    turnTerminal: async () => {
+      const current = pending
+      if (current) {
+        await failPending(current, 'runtime_terminated', {
+          abortDelivery: true,
+        })
+      }
+    },
     runtimeTerminal: () => terminate('runtime_terminated', false),
     runtimeReplaced: () => terminate('runtime_terminated', true),
     adapterLost: () => terminate('transport_failed', true),
@@ -407,13 +417,14 @@ export async function createInteractionBroker(
       ProductReviewFrame,
       { readonly type: 'review.failed' }
     >['reason'],
-  ): Promise<void> {
+  ): Promise<boolean> {
     const current = pending
-    if (!current) return
+    if (!current) return false
     await failPending(current, reason, {
       abortDelivery: true,
       interrupt: true,
     })
+    return true
   }
 
   function rejectBeforePublication(current: PendingInteraction): void {
