@@ -74,9 +74,7 @@ async def _run(
                 str(child_pid_path),
                 str(trace_path),
             ),
-            opt_out_notification_methods=(
-                "thread/status/changed",
-            ),
+            opt_out_notification_methods=("thread/status/changed",),
         )
     )
     child = None
