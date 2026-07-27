@@ -22,6 +22,38 @@ import { configuredBootstrap, postJson } from './testing/codex-chat-test-support
 import { withTestServer } from './testing/test-server.js'
 import { materializeE2eSemesterWorkspace } from '../../../scripts/semester-workspace-materializer.mjs'
 
+test('inactive workspace Chat keeps the current validation response', async () => {
+  const fixture = await createChatFixture()
+  const runtime = new ProductChatRuntime()
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl) => {
+        const response = await postJson(
+          `${baseUrl}/api/product/chat/messages`,
+          {
+            text: '아직 작업공간을 선택하지 않았어.',
+            materials: [],
+          },
+        )
+
+        assert.equal(response.status, 400)
+        assert.deepEqual(await response.json(), {
+          code: 'action_invalid',
+          displayMessage: '학기 작업공간과 선택 자료를 확인해 주세요.',
+        })
+        assert.equal(runtime.productInputs.length, 0)
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('course-free Product Chat starts before ModelingRun and reuses one native Thread across sequential Turns', async () => {
   const fixture = await createChatFixture()
   const runtime = new ProductChatRuntime()

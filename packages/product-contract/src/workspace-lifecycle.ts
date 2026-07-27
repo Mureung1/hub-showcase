@@ -31,11 +31,8 @@ export type ProductWorkspaceSummary = {
   readonly label: string
 }
 
-export type ProductAvailableWorkspaceReference = {
+export type ProductAvailableWorkspaceReference = ProductWorkspaceSummary & {
   readonly availability: 'available'
-  readonly workspaceId: string
-  readonly semester: ProductSemesterIdentity
-  readonly label: string
 }
 
 export type ProductUnavailableWorkspaceReference = {
@@ -323,18 +320,10 @@ function decodeTransitionTarget(
 }
 
 function decodeWorkspaceSummary(value: unknown): ProductWorkspaceSummary {
-  if (
-    !isExactObject(value, ['label', 'semester', 'workspaceId']) ||
-    !isProductWorkspaceId(value.workspaceId) ||
-    !isSafeWorkspaceLabel(value.label)
-  ) {
+  if (!isExactObject(value, ['label', 'semester', 'workspaceId'])) {
     throw invalidContract()
   }
-  return {
-    workspaceId: value.workspaceId,
-    semester: decodeSemesterIdentity(value.semester),
-    label: value.label,
-  }
+  return decodeWorkspaceSummaryFields(value)
 }
 
 function decodeWorkspaceSummaryOrNull(
@@ -353,14 +342,26 @@ function decodeAvailableWorkspaceReference(
       'semester',
       'workspaceId',
     ]) ||
-    value.availability !== 'available' ||
+    value.availability !== 'available'
+  ) {
+    throw invalidContract()
+  }
+  return {
+    availability: 'available',
+    ...decodeWorkspaceSummaryFields(value),
+  }
+}
+
+function decodeWorkspaceSummaryFields(
+  value: Record<string, unknown>,
+): ProductWorkspaceSummary {
+  if (
     !isProductWorkspaceId(value.workspaceId) ||
     !isSafeWorkspaceLabel(value.label)
   ) {
     throw invalidContract()
   }
   return {
-    availability: 'available',
     workspaceId: value.workspaceId,
     semester: decodeSemesterIdentity(value.semester),
     label: value.label,

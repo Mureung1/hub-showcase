@@ -53,6 +53,7 @@ test('transition and product Turn claims are one non-preemptive lease', () => {
       error instanceof ProductLifecycleAdmissionError &&
       error.code === 'operation_busy',
   )
+  assert.equal(coordinator.release(transition, 'start_failed'), false)
   assert.equal(coordinator.release(transition, 'runtime_closed'), true)
 })
 
@@ -83,6 +84,18 @@ test('eligibility is checked in the same critical section as claim', () => {
         kind: 'workspace_init',
         operationId,
         candidateId: `candidate_${'3'.repeat(32)}`,
+      }),
+    (error: unknown) =>
+      error instanceof ProductLifecycleAdmissionError &&
+      error.code === 'operation_ineligible',
+  )
+
+  assert.throws(
+    () =>
+      coordinator.claimProductTurn({
+        kind: 'workspace_init',
+        operationId,
+        candidateId: 'candidate_invalid',
       }),
     (error: unknown) =>
       error instanceof ProductLifecycleAdmissionError &&

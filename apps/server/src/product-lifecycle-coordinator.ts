@@ -113,7 +113,11 @@ export function createProductLifecycleCoordinator(options: {
     },
 
     claimProductTurn(input) {
-      if (!/^operation_[0-9a-f]{32}$/.test(input.operationId)) {
+      if (
+        !/^operation_[0-9a-f]{32}$/.test(input.operationId) ||
+        (input.kind === 'workspace_init' &&
+          !/^candidate_[0-9a-f]{32}$/.test(input.candidateId))
+      ) {
         throw new ProductLifecycleAdmissionError(
           'operation_ineligible',
           409,
@@ -155,7 +159,9 @@ export function createProductLifecycleCoordinator(options: {
     release(lease, authority) {
       if (active !== lease) return false
       if (
-        (authority === 'start_failed' && active.phase !== 'starting') ||
+        (authority === 'start_failed' &&
+          (active.kind !== 'product_turn' ||
+            active.phase !== 'starting')) ||
         (authority === 'native_terminal' &&
           (active.kind !== 'product_turn' || active.phase !== 'started'))
       ) {

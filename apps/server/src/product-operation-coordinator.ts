@@ -34,6 +34,7 @@ import {
   CodexChatServiceError,
   type CodexProductStreamSink,
   type ProductOperationLease,
+  type ProductTurnSettlement,
 } from './codex-chat-service.js'
 import {
   SemesterWorkspaceError,
@@ -131,7 +132,7 @@ type ActiveProductOperationBase = {
   mcpSession?: AssignmentMcpProposalSession
   turn?: CodexProductTurn
   guardInterruptRequested?: boolean
-  lifecycleReleaseAuthority: ProductLifecycleReleaseAuthority
+  lifecycleReleaseAuthority?: ProductLifecycleReleaseAuthority
 }
 
 type ActiveReviewSubmission = {
@@ -293,12 +294,48 @@ export function createProductOperationCoordinator(options: {
         })
         .catch(() => undefined)
     } finally {
-      lifecycle.release(
-        operation.lifecycleLease,
-        operation.lifecycleReleaseAuthority,
-      )
+      if (operation.lifecycleReleaseAuthority) {
+        lifecycle.release(
+          operation.lifecycleLease,
+          operation.lifecycleReleaseAuthority,
+        )
+      }
       if (active === operation) active = undefined
       options.controller.noteProductOperationReleased(operation.operationId)
+    }
+  }
+
+  const markTurnStarted = (
+    operation: ActiveProductOperation,
+    turn: CodexProductTurn,
+  ): void => {
+    operation.turn = turn
+    operation.lifecycleReleaseAuthority = undefined
+    if (!lifecycle.markProductTurnStarted(operation.lifecycleLease)) {
+      throw unavailable()
+    }
+  }
+
+  const recordTurnSettlement = (
+    operation: ActiveProductOperation,
+    settlement: ProductTurnSettlement,
+  ): void => {
+    operation.lifecycleReleaseAuthority =
+      settlement.type === 'terminal'
+        ? 'native_terminal'
+        : 'runtime_closed'
+  }
+
+  const closeAcceptedTurn = async (
+    operation: ActiveProductOperation,
+    turn: CodexProductTurn,
+    code: string,
+  ): Promise<void> => {
+    try {
+      await options.service.abandonAcceptedProductTurn(turn, code)
+      operation.lifecycleReleaseAuthority = 'runtime_closed'
+    } catch {
+      operation.lifecycleReleaseAuthority = undefined
     }
   }
 
@@ -869,9 +906,7 @@ export function createProductOperationCoordinator(options: {
           )
           return
         }
-        operation.turn = turn
-        lifecycle.markProductTurnStarted(operation.lifecycleLease)
-        operation.lifecycleReleaseAuthority = 'runtime_closed'
+        markTurnStarted(operation, turn)
         operation.redactionValues.push(turn.threadId, turn.turnId)
         try {
           operation.assignment.run =
@@ -894,9 +929,11 @@ export function createProductOperationCoordinator(options: {
             .catch(() => undefined)
           if (failedRun) operation.assignment.run = failedRun
           operation.mcpSession?.cancel()
-          await options.service
-            .abandonAcceptedProductTurn(turn, 'running_transition_unknown')
-            .catch(() => undefined)
+          await closeAcceptedTurn(
+            operation,
+            turn,
+            'running_transition_unknown',
+          )
           await writeAssignmentTerminal(
             operationOptions.sink,
             operation,
@@ -917,9 +954,7 @@ export function createProductOperationCoordinator(options: {
           })
         } catch {
           operation.mcpSession?.cancel()
-          await options.service
-            .abandonAcceptedProductTurn(turn, 'mcp_binding_unknown')
-            .catch(() => undefined)
+          await closeAcceptedTurn(operation, turn, 'mcp_binding_unknown')
           const settledRun = await options.controller
             .settleAssignmentAction({
               actionId,
@@ -947,10 +982,7 @@ export function createProductOperationCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
-        operation.lifecycleReleaseAuthority =
-          settlement.type === 'terminal'
-            ? 'native_terminal'
-            : 'runtime_closed'
+        recordTurnSettlement(operation, settlement)
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
         operation.reviewOutcomes.clear()
@@ -1117,9 +1149,7 @@ export function createProductOperationCoordinator(options: {
           })
           return
         }
-        operation.turn = turn
-        lifecycle.markProductTurnStarted(operation.lifecycleLease)
-        operation.lifecycleReleaseAuthority = 'runtime_closed'
+        markTurnStarted(operation, turn)
         operation.redactionValues.push(turn.threadId, turn.turnId)
         if (operation.chat.guardPrepared) {
           await options.controller.bindProductChatExecution({
@@ -1143,10 +1173,7 @@ export function createProductOperationCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
-        operation.lifecycleReleaseAuthority =
-          settlement.type === 'terminal'
-            ? 'native_terminal'
-            : 'runtime_closed'
+        recordTurnSettlement(operation, settlement)
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
         operation.reviewOutcomes.clear()
@@ -1172,12 +1199,11 @@ export function createProductOperationCoordinator(options: {
       } catch (error) {
         if (!streamOpened) throw presentProductOperationError(error)
         if (operation.turn) {
-          await options.service
-            .abandonAcceptedProductTurn(
-              operation.turn,
-              'running_transition_unknown',
-            )
-            .catch(() => undefined)
+          await closeAcceptedTurn(
+            operation,
+            operation.turn,
+            'running_transition_unknown',
+          )
         } else if (isUnknownOutcome(error)) {
           await options.service.recycleProductRuntime().catch(() => undefined)
         }
@@ -1912,10 +1938,10 @@ function presentServiceError(error: unknown): ProductOperationError {
 function presentLifecycleAdmissionError(
   error: unknown,
 ): ProductOperationError {
-  if (
-    error instanceof ProductLifecycleAdmissionError &&
-    error.code !== 'product_unavailable'
-  ) {
+  if (!(error instanceof ProductLifecycleAdmissionError)) {
+    return presentProductOperationError(error)
+  }
+  if (error.code !== 'product_unavailable') {
     return new ProductOperationError(
       'action_busy',
       409,
