@@ -111,7 +111,8 @@
   - [ ] Capability contract test, deterministic Browser E2E와 exact local-provider trace로 accept·revise·reject·cancel·disconnect·Runtime terminal에서 허위 apply나 duplicate result가 없음을 검증한다.
 
 - [ ] User-owned SemesterWorkspace lifecycle과 canonical local roots를 완성한다.
-  - [ ] Sibling `../.ay-ple/`에 known·active repository path만 소유하는 durable `WorkspaceRegistry`를 두고, 사용자가 선택한 한 학기 Git root를 exact Codex `cwd`로 전환한다.
+  - [ ] Sibling `../.ay-ple/`에 known·active repository path만 소유하는 durable `WorkspaceRegistry`를 두고, 사용자가 선택한 한 학기 Git root를 Codex project root와 thread의 고정 `cwd`로 전환한다. Descendant cwd를 별도 identity로 만들지 않고 workspace 전환 때 recorded thread cwd를 일치시킨다.
+  - [ ] Runtime의 fixed `project_root_markers=[]`와 process-wide managed Skill override를 제거하고, exact Git root의 native project config·`AGENTS.md`·Skill discovery를 사용한다. Persistent Runtime과 context probe가 같은 effective project boundary를 관측하는지 검증한다.
   - [ ] Instruction-based init Skill로 Git 초기화, 최소 `AGENTS.md`, root `workspace-state.json`과 첫 checkpoint를 준비한다. Existing bytes와 dirty working tree를 존중하고 별도 scaffold script는 deterministic 필요가 확인될 때만 추가한다.
   - [ ] Runtime payload를 verified `../.ay-ple/runtime/`에서 시작하고 workspace별 transient operation state를 Git 밖 `../.ay-ple/state/workspaces/<workspaceId>/`에 둔다.
   - [ ] 새 canonical layout의 Runtime·global Codex account·active workspace·InteractionCapability smoke가 성공한 뒤에만 legacy dogfood appData, managed development workspace와 package-local Runtime artifact를 scoped cleanup한다.

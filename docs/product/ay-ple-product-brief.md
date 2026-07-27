@@ -116,8 +116,8 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 1. 사용자의 기존 `~/.codex/` account readiness를 확인한다.
 2. 사용자가 기존 또는 새 학기 directory를 명시적으로 선택한다.
 3. App이 canonical path를 `WorkspaceRegistry`의 known·active workspace로 기록한다.
-4. 선택한 root를 exact Codex `cwd`로 연결한다.
-5. 필요한 경우 사용자가 init Skill을 실행해 Git과 최소 workspace file을 준비한다.
+4. 새 directory라면 사용자가 init Skill을 실행해 그 자리에서 Git과 최소 workspace file을 준비한다.
+5. 준비된 Git root를 Codex project root와 정상 thread의 고정 `cwd`로 연결한다. 하위 directory는 작업 대상일 뿐 별도 cwd가 아니다.
 
 App은 Git repository 생성·cleanliness·commit 정책을 별도 subsystem으로 구현하지 않는다. AY는 `AGENTS.md`의 간단한 지침에 따라 작업의 자연스러운 checkpoint를 자율적으로 판단한다.
 
@@ -144,7 +144,7 @@ RawMaterial registry
 
 | 포함 | 완료 의미 |
 | --- | --- |
-| User-owned SemesterWorkspace | 선택한 Git root가 exact Codex `cwd`이며 App-owned source copy가 없다. |
+| User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
 | `propose_state_patch` MCP | Host binding 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, 선택적인 evidence와 세 action을 데스크톱 화면에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
