@@ -21,6 +21,7 @@
 
   /* 입력을 아래로 내려도 순위는 계속 보여야 한다. */
   .result-summary {
+    display: block;
     position: sticky;
     top: var(--space-md);
   }
@@ -34,9 +35,15 @@
   border-radius: var(--radius-card);
 }
 
-/* 좁은 화면에서는 입력 아래에 붙는다. */
-.app-layout > .result-summary {
-  margin-top: var(--space-md);
+/* 좁은 화면에서는 옆에 못 붙어 "입력하면서 같이 본다"는 존재 이유가 사라진다.
+   세로로 쌓이면 '다음' 버튼 아래로 밀려 스크롤해야 보이고, 결과 화면에 같은
+   내용이 다 있어 중복이다. 그래서 아예 그리지 않는다.
+   (보이는 구간을 min/max 로 나눠 적는다. 한쪽만 적으면 선언 순서에 따라
+   기본값이 미디어쿼리를 이기는 일이 생긴다.) */
+@media (max-width: 1023px) {
+  .result-summary {
+    display: none;
+  }
 }
 
 .summary-eyebrow {
@@ -231,10 +238,17 @@
   border-color: var(--color-danger);
 }
 
+/* 메시지가 떠도 아래 버튼이 밀리지 않도록 자리를 미리 잡아둔다. */
 .form-error {
   min-height: 18px;
   font-size: var(--font-caption);
   color: var(--color-danger);
+}
+
+/* 다만 form-stack 의 24px 간격이 위아래로 붙으면, 메시지가 없을 때 66px 짜리
+   빈 구멍이 생긴다. 위쪽 간격만 좁혀 붙여 둔다. */
+.form-stack > .form-error {
+  margin-top: calc(var(--space-sm) - var(--space-card));
 }
 
 /* 도움말은 읽는 글이지 누르는 것이 아니다. Primary 색 + 굵게 쓰면 링크로 읽힌다. */
@@ -271,9 +285,12 @@
   gap: var(--space-sm);
 }
 
+/* 1~7 은 한 줄에 나란히 있어야 "척도"로 읽힌다.
+   최소 너비를 두면 좁은 화면에서 7만 다음 줄로 밀려 혼자 폭을 다 차지했다.
+   폭을 0에서 균등하게 늘려 어떤 화면에서도 일곱 칸이 같은 크기로 한 줄에 들어가게 한다. */
 .score-option {
-  flex: 1 1 40px;
-  min-width: 36px;
+  flex: 1 1 0;
+  min-width: 0;
   height: 44px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-input);
@@ -351,11 +368,15 @@
   background-color: var(--color-surface);
 }
 
+/* 과목명과 D-day 를 한 줄에 둔다. 세로로 쌓으면 과목 하나가 90px 을 먹어
+   핸드폰에서 목록이 금방 길어진다. 자리가 모자라면 알아서 줄바꿈한다. */
 .entry-main {
   flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .entry-name {
@@ -368,7 +389,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 2px;
 }
 
 .meta-chip {
@@ -846,6 +866,18 @@
 
 /* 좁은 화면 대응 */
 @media (max-width: 480px) {
+  /* 카드 여백 24px 은 320px 화면에서 내용 폭을 너무 많이 가져간다. */
+  .card,
+  .recommend-card,
+  .result-summary {
+    padding: var(--space-md);
+  }
+
+  /* 좁을수록 칸 사이보다 칸 자체의 폭이 중요하다. */
+  .score-selector {
+    gap: 4px;
+  }
+
   .result-toolbar {
     flex-direction: column;
     align-items: stretch;

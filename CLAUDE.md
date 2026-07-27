@@ -156,7 +156,7 @@ style: 디자인 시스템 위반과 접근성 결함을 고친다
 4. **우선순위 계산 규칙은 두 곳에 있다.** 기준은 서버의 `server/src/services/priorityService.js`이고, `frontend/src/utils/priorityCalculator.js`는 같은 규칙의 폴백 구현이다. 계산 규칙을 바꾸면 **반드시 두 파일을 함께** 고치고 양쪽 결과가 같은지 확인한다.
 5. 프론트와 서버 통신은 `fetch`를 쓴다. Vite dev 서버가 `/api`를 `localhost:3001`로 프록시한다.
 6. 디자인은 `design-skill.md`의 디자인 시스템을 기준으로 구현한다.
-7. Desktop 화면을 기준으로 만든다.
+7. Desktop과 모바일을 모두 지원한다. 화면 폭 1024px 이상에서는 왼쪽 입력 · 오른쪽 순위판 2단으로 두고, 그 미만에서는 세로로 쌓아 단계 흐름만 남긴다. 순위판은 좁은 화면에서 감춘다(결과 화면에 같은 내용이 있고, 옆에 못 붙으면 존재 이유가 없다). 확인은 320 · 375 · 768 · 1024 · 1440px에서 한다.
 8. `frontend`는 GitHub Pages(`https://<user>.github.io/hub/`)로 배포한다. 그래서 빌드할 때만 Vite `base`가 `/hub/`가 된다. 배포본에는 서버가 없으니 3번 폴백 경로로 돈다.
 
 ---
