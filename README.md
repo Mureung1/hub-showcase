@@ -8,7 +8,8 @@
 
 > 그림은 [Mermaid](https://mermaid.js.org)로 그렸다 — GitHub에서 빌드 없이 그대로 렌더되고, 텍스트라
 > 코드와 함께 버전 관리된다. **전체 다이어그램(핵심 흐름·인증·배포·CSV·광고 + 구조 점검 결과)은
-> [`docs/architecture.md`](docs/architecture.md)에 있다.**
+> [`docs/03-개발스펙/architecture.md`](docs/03-개발스펙/architecture.md)에 있다. 그 외 문서는
+> [`docs/README.md`](docs/README.md) 색인 참고.**
 
 한 문장 요약: **브라우저가 화면을 다 그리고, 비밀 키가 필요한 외부 호출만 Express 프록시가 대신하며,
 데이터는 로그인 여부에 따라 localStorage나 Supabase로 갈린다.**

@@ -89,14 +89,19 @@ tab on web; used by ad/map links since WebView blocks `target="_blank"`). `src/l
 `navigator.geolocation` need **no native code**: Capacitor's default `BridgeWebChromeClient` handles
 `onShowFileChooser`/`onGeolocationPermissionsShowPrompt`/`onPermissionRequest`, so `MainActivity` stays a plain
 `BridgeActivity`. Header/tab-bar use `env(safe-area-inset-*)`. Full build steps, the server-URL-vs-local-bundle
-tradeoff, and the known CSV-download WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive
+tradeoff, and the known CSV-download WebView limitation are in `docs/03-개발스펙/apk-build-guide.md`. **Capacitor is additive
 — none of it affects the web build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
 
 ## Architecture
 
-`docs/architecture.md` renders all of the below as Mermaid diagrams (system layout, photo→nutrition
+`docs/03-개발스펙/architecture.md` renders all of the below as Mermaid diagrams (system layout, photo→nutrition
 flow, auth, deployment, CSV, ads); a condensed version is embedded in README.md. Update the diagram
 in the same change that moves the code.
+
+All project docs live under `docs/`, grouped into four categories: `01-알고리즘/` (nutrition-matching
+and ad/leaderboard scoring logic), `02-디자인/` (Toss-style design system — the `/toss` skill's
+source of truth), `03-개발스펙/` (architecture, build/test/interaction guides, PRD), `04-프로젝트설명/`
+(project narrative, cost analysis, release checklists). `docs/README.md` indexes all of it.
 
 ### One Express app, two deployment entry points
 
@@ -288,7 +293,7 @@ nothing) then `applyBackup` — so the duplicate-date "overwrite / skip" dialog 
 row-level parse failures are skipped and counted rather than aborting the file, while a wrong *file*
 (missing section markers / mismatched header) aborts before writing anything. Every outcome surfaces
 as a toast (`src/context/ToastContext.jsx`), because PRD §2 forbids silent failure. Test procedure and
-the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/generate-sample-csv.mjs`.
+the 1,000-row sample generator: `docs/03-개발스펙/csv-crossplatform-test.md`, `scripts/generate-sample-csv.mjs`.
 
 - `src/lib/mealStore.js`: guest mode's live meal storage (via `dataStore.js`, keyed by
   `dataStore.GUEST_ID`) *and* the CSV export/import subsystem's self-contained legacy storage for
@@ -330,9 +335,9 @@ the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/gener
   (`.tds-tabbar`) each carry their own `view-transition-name` so they are pulled out of the animated
   `root` snapshot — without that, the `translateX` on `::view-transition-old/new(root)` drags both bars
   (the tab bar is `position: fixed`) off-screen and back on every tab change, which is what "the tab bar
-  flickers" was. Details: `docs/interaction-guide.md`.
+  flickers" was. Details: `docs/03-개발스펙/interaction-guide.md`.
 - **`.claude/commands/toss.md`** (invoked via `/toss`) is a project-specific skill applying Toss
-  design-system conventions, with detailed docs under `디자인/docs/`. Note one intentional
+  design-system conventions, with detailed docs under `docs/02-디자인/`. Note one intentional
   deviation documented in `theme.js`'s header comment: this app uses a single green accent
   (`#059669`) as its one primary/accent color everywhere the Toss docs describe blue — follow
   `theme.js` as the actual token source, and `/toss` for everything else (one primary button per

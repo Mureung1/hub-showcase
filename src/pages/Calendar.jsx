@@ -5,6 +5,7 @@ import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
 import DateRangeExport from '../components/DateRangeExport.jsx'
+import DietAnalysisCard from '../components/DietAnalysisCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -222,6 +223,8 @@ export default function Calendar() {
     <div style={styles.page}>
       {/* 화면 제목("달력")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주고,
           달력 UI 자체가 무슨 화면인지 바로 보여준다. */}
+      <DietAnalysisCard />
+
       <Card>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
           <button

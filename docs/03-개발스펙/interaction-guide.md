@@ -4,11 +4,11 @@ PRD v2.0 §4 구현 결과. 코드는 아래 5곳이 전부다.
 
 | 파일 | 역할 |
 |---|---|
-| [src/components/Pressable.jsx](../src/components/Pressable.jsx) | **공통 프레스 컴포넌트**. 버튼·탭·카드가 전부 이걸 거친다 |
-| [src/lib/tabs.js](../src/lib/tabs.js) | 탭 순서 단일 소스(탭바 렌더 + 슬라이드 방향 계산이 같은 순서를 봐야 함) |
-| [src/lib/useTabTransition.js](../src/lib/useTabTransition.js) | 방향 결정 → `<html data-nav-direction>` 설정 → View Transitions 실행 + 중복 클릭 가드 |
-| [src/index.css](../src/index.css) | 실제 애니메이션 전부(프레스/바운스/슬라이드/reduce-motion) |
-| [src/components/ProgressBarFill.jsx](../src/components/ProgressBarFill.jsx) | 진행 막대 채움 — `width` 대신 `transform: scaleX` |
+| [src/components/Pressable.jsx](../../src/components/Pressable.jsx) | **공통 프레스 컴포넌트**. 버튼·탭·카드가 전부 이걸 거친다 |
+| [src/lib/tabs.js](../../src/lib/tabs.js) | 탭 순서 단일 소스(탭바 렌더 + 슬라이드 방향 계산이 같은 순서를 봐야 함) |
+| [src/lib/useTabTransition.js](../../src/lib/useTabTransition.js) | 방향 결정 → `<html data-nav-direction>` 설정 → View Transitions 실행 + 중복 클릭 가드 |
+| [src/index.css](../../src/index.css) | 실제 애니메이션 전부(프레스/바운스/슬라이드/reduce-motion) |
+| [src/components/ProgressBarFill.jsx](../../src/components/ProgressBarFill.jsx) | 진행 막대 채움 — `width` 대신 `transform: scaleX` |
 
 ---
 

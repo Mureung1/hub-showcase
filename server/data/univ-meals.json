@@ -1,0 +1,2163 @@
+{
+  "cnu": {
+    "week": "20260727",
+    "updatedAt": "2026-07-27",
+    "days": [
+      {
+        "date": "20260727",
+        "cafeterias": {
+          "cnu1": {
+            "name": "제1학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "lunch": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "dinner": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              }
+            }
+          },
+          "cnu2": {
+            "name": "제2학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "suspended",
+                  "price": null,
+                  "note": "운영중단(내부공사)",
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnu3": {
+            "name": "제3학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 4000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "김치치즈가츠동",
+                      "allergyCodes": [
+                        "M10",
+                        "M2"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "김떡만강정",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "닭꼬치구이",
+                      "allergyCodes": [
+                        "M15"
+                      ],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "차조밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "콩비지국",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "훈제오리볶음",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "만두탕수",
+                      "allergyCodes": [
+                        "M10",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "버섯맛살볶음",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "마늘쫑무침",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "쌀밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "참치김치찌개",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "떡갈비",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "잡채",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "미역오이무침",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "깍두기",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "cnu4": {
+            "name": "제4학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "순두부찌개",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "들깨백불고기",
+                      "allergyCodes": [
+                        "M10",
+                        "M16"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "비엔나브로콜리볶음",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "청포묵무침",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "도시락김",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "깍두기",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnuLife": {
+            "name": "생활과학대학",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "보리열무비빔밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "콩나물국",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "떡갈비양파볶음",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "인절미",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "date": "20260728",
+        "cafeterias": {
+          "cnu1": {
+            "name": "제1학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "lunch": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "dinner": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              }
+            }
+          },
+          "cnu2": {
+            "name": "제2학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "suspended",
+                  "price": null,
+                  "note": "운영중단(내부공사)",
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnu3": {
+            "name": "제3학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 4000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "냉모밀국수",
+                      "allergyCodes": [
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "참치마요주먹밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "블랙돈까스",
+                      "allergyCodes": [
+                        "M10",
+                        "M6"
+                      ],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "강낭콩밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "맑은미역국",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "생선까스",
+                      "allergyCodes": [
+                        "M6",
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "고추잡채&꽃빵",
+                      "allergyCodes": [
+                        "M10",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "도토리묵/양념장",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "콩자반",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "쌀밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "반계탕",
+                      "allergyCodes": [
+                        "M15"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "비빔만두",
+                      "allergyCodes": [
+                        "M10",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "볼어묵조림",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "깍두기",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "cnu4": {
+            "name": "제4학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "제육덮밥",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "유부된장국",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "갈릭치즈미트볼",
+                      "allergyCodes": [
+                        "M10",
+                        "M2"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "푸실리샐러드",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnuLife": {
+            "name": "생활과학대학",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "장조림버터계란밥",
+                      "allergyCodes": [
+                        "M16",
+                        "M1",
+                        "M2"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "맑은우동국물",
+                      "allergyCodes": [
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "로제떡볶이",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "곤약우동샐러드",
+                      "allergyCodes": [
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "date": "20260729",
+        "cafeterias": {
+          "cnu1": {
+            "name": "제1학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "lunch": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "dinner": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              }
+            }
+          },
+          "cnu2": {
+            "name": "제2학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "suspended",
+                  "price": null,
+                  "note": "운영중단(내부공사)",
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnu3": {
+            "name": "제3학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 4000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "해물짬뽕",
+                      "allergyCodes": [
+                        "M10",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "군만두",
+                      "allergyCodes": [
+                        "M10",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "꿔바로우",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "매주 수요일은 현미 먹는 날",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "두부된장국",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "소불고기",
+                      "allergyCodes": [
+                        "M16"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "후랑크야채볶음",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "알배추쌈",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "콩나물겨자채",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "목살필라프&계란후라이",
+                      "allergyCodes": [
+                        "M10",
+                        "M1"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "어묵무국",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "토마토푸실리볶음",
+                      "allergyCodes": [
+                        "M12"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "파인애플샐러드",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "cnu4": {
+            "name": "제4학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "돼지국밥",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "오징어초무침",
+                      "allergyCodes": [
+                        "M17"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "동그랑땡전",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "부추겉절이",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "깍두기",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnuLife": {
+            "name": "생활과학대학",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "치즈닭갈비덮밥",
+                      "allergyCodes": [
+                        "M15",
+                        "M2"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "유부된장국",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "들기름비빔우동",
+                      "allergyCodes": [
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "감자고로케",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "단무지",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "date": "20260730",
+        "cafeterias": {
+          "cnu1": {
+            "name": "제1학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "lunch": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "dinner": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              }
+            }
+          },
+          "cnu2": {
+            "name": "제2학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "suspended",
+                  "price": null,
+                  "note": "운영중단(내부공사)",
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnu3": {
+            "name": "제3학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 4000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "제육야채덮밥",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "새우카츠",
+                      "allergyCodes": [
+                        "M9"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "교자만두찜",
+                      "allergyCodes": [
+                        "M10",
+                        "M6"
+                      ],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "흑미밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "어묵무국",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "들깨백닭갈비",
+                      "allergyCodes": [
+                        "M15"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "콩나물잡채",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "멸치고추볶음",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "열무겉절이",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "백김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "닭갈비볶음밥",
+                      "allergyCodes": [
+                        "M15"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "맑은미역국",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "들기름막국수",
+                      "allergyCodes": [
+                        "M3",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "고구마맛탕",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "배추김치",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "cnu4": {
+            "name": "제4학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "치킨마요덮밥",
+                      "allergyCodes": [
+                        "M15"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "맑은우동국물",
+                      "allergyCodes": [
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "로제스파게티",
+                      "allergyCodes": [
+                        "M15",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "허니버터감자튀김",
+                      "allergyCodes": [
+                        "M2",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "단무지",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnuLife": {
+            "name": "생활과학대학",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "돼지국밥",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "오징어초무침",
+                      "allergyCodes": [
+                        "M17"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "연두부&양념장",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "꽃맛살샐러드",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "깍두기",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "date": "20260731",
+        "cafeterias": {
+          "cnu1": {
+            "name": "제1학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "lunch": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "dinner": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              }
+            }
+          },
+          "cnu2": {
+            "name": "제2학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "suspended",
+                  "price": null,
+                  "note": "운영중단(내부공사)",
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnu3": {
+            "name": "제3학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 4000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "짜계치밥",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "오꼬노미핫바",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "깐풍치킨",
+                      "allergyCodes": [
+                        "M15"
+                      ],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "쌀밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "소고기해장국",
+                      "allergyCodes": [
+                        "M16"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "함박스테이크",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "실곤약야채무침",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "단호박샐러드",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "깍두기",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "쌀밥",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "고구마치즈돈까스",
+                      "allergyCodes": [
+                        "M10",
+                        "M2",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "맑은장국",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "쫄면",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "씨리얼샐러드",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "단무지",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "cnu4": {
+            "name": "제4학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "돈육보쌈",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "콩나물국",
+                      "allergyCodes": [
+                        "M5"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "비빔막국수",
+                      "allergyCodes": [
+                        "M3",
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "상추쌈",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "무말랭이무침",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnuLife": {
+            "name": "생활과학대학",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "open",
+                  "price": 6000,
+                  "note": null,
+                  "menus": [
+                    {
+                      "name": "냉모밀국수",
+                      "allergyCodes": [
+                        "M6"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "햄야채볶음밥",
+                      "allergyCodes": [
+                        "M10"
+                      ],
+                      "estimated": true
+                    },
+                    {
+                      "name": "옛날고로케",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "쥬스",
+                      "allergyCodes": [],
+                      "estimated": true
+                    },
+                    {
+                      "name": "단무지",
+                      "allergyCodes": [],
+                      "estimated": true
+                    }
+                  ]
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "date": "20260801",
+        "cafeterias": {
+          "cnu1": {
+            "name": "제1학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "lunch": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              },
+              "dinner": {
+                "student": {
+                  "status": "external",
+                  "price": null,
+                  "note": "제1학생회관은 별도 운영 안내 페이지에서 확인할 수 있어요.",
+                  "menus": []
+                },
+                "staff": null
+              }
+            }
+          },
+          "cnu2": {
+            "name": "제2학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnu3": {
+            "name": "제3학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnu4": {
+            "name": "제4학생회관",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          },
+          "cnuLife": {
+            "name": "생활과학대학",
+            "meals": {
+              "breakfast": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "lunch": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              },
+              "dinner": {
+                "student": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                },
+                "staff": {
+                  "status": "closed",
+                  "price": null,
+                  "note": null,
+                  "menus": []
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

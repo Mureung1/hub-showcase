@@ -95,7 +95,7 @@
 ### 💡 키가 없는 동안 할 수 있는 것 (권장)
 
 현재 등록된 제휴 링크 9개의 **상품명·가격·이미지만 손으로 채우면** 지금 구조에서 카드가 완성된다.
-[`src/data/coupangProducts.js`](../src/data/coupangProducts.js)의 각 항목에 `// sourceUrl:` 주석으로
+[`src/data/coupangProducts.js`](../../src/data/coupangProducts.js)의 각 항목에 `// sourceUrl:` 주석으로
 실제 상품 페이지 주소가 적혀 있으니, 열어서 복사해 붙이면 된다. 5분이면 끝나고 API가 필요 없다.
 상품명을 채우면 **같은 영양소의 2·3번 상품도 자동으로 노출 대상이 된다**(지금은 중복 카드 방지를 위해
 1번만 쓰고 있다).

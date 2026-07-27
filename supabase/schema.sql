@@ -23,6 +23,14 @@ create table if not exists public.profiles (
   conditions    text[] not null default '{}',  -- 기저질환 태그(사전 정의 key 또는 자유 입력 혼합)
   allergies     text[] not null default '{}',  -- 알레르기 태그(사전 정의 key 또는 자유 입력 혼합)
 
+  -- 4주차: 학교(급식·학식 조회용, FR-1.1) + 직업(식당 추천용, FR-2.1). 둘 다 선택 사항 — 미설정(NULL)이면
+  -- 기존 동작(급식·학식 토글/직업 맞춤 추천 노출 안 함)과 완전히 동일하다.
+  school_type        text check (school_type in ('k12', 'university')),
+  school_office_code text,  -- k12: NEIS 시도교육청코드(예: J10). university: 사용 안 함(NULL).
+  school_code        text,  -- k12: NEIS 학교코드. university: 지원 대학 id(예: 'cnu').
+  school_name        text,  -- 화면 표시용 학교명(예: '양서고등학교', '충남대학교').
+  occupation         text check (occupation in ('elementary', 'middle_high', 'university', 'worker', 'other')),
+
   -- 하루 권장 영양정보. calcRecommendedNutrients() 결과 그대로 저장.
   -- 6개 숫자 컬럼 대신 jsonb 하나로 묶어서 앱의 NUTRIENT_LABELS(단일 소스) 구조를 그대로 맞춘다.
   -- 형태: { "calories":n, "protein":n, "carbs":n, "fat":n, "fiber":n, "sodium":n }

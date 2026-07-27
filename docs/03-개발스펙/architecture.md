@@ -4,7 +4,7 @@
 > git diff로 변경 이력이 남으며, 코드가 바뀌면 그림도 같은 PR에서 함께 고칠 수 있어서다.
 > (PlantUML은 렌더 서버가 필요하고, Structurizr는 별도 모델 빌드가 필요해 README 임베드에 맞지 않는다.)
 >
-> 압축본은 [README](../README.md#아키텍처-한눈에-보기)에 있다. 이 문서는 그 확장판이다.
+> 압축본은 [README](../../README.md#아키텍처-한눈에-보기)에 있다. 이 문서는 그 확장판이다.
 
 ---
 
@@ -270,7 +270,45 @@ flowchart LR
 
 ---
 
-## 8. 그림을 그리며 발견한 것 (다음 작업 후보)
+## 8. 4주차 추가 — 학식·급식 / 직업 추천 / AI 식습관 분석
+
+```mermaid
+flowchart TD
+    profile["프로필.school<br/>{type: k12|university, ...}"] --> toggle["지도 탭<br/>학식·급식 토글"]
+    toggle -->|"k12"| neis["/api/school-meal<br/>NEIS 급식식단정보"]
+    toggle -->|"university"| univ["/api/univ-meal?univ=cnu<br/>(이번 주 전체, 24h 캐시)"]
+
+    univ --> crawl["1차: cnu.js가 4개 건물 병렬 크롤링<br/>(2·3·4학생회관·생활과학대학)"]
+    crawl -->|"4곳 모두 성공"| live["source: live<br/>(성공 시 폴백 파일도 자동 갱신)"]
+    crawl -->|"하나라도 실패/타임아웃"| fb["2차: server/data/univ-meals.json"]
+    fb -->|"주 데이터 있음"| fallback["source: fallback<br/>+ '○월 ○일 기준' 안내"]
+    fb -->|"없음"| empty["source: empty<br/>(방학/휴무 — 에러 아님)"]
+
+    neis --> allergyMap["allergyRules.js<br/>NEIS 번호 → M1~M19(공식)"]
+    live & fallback --> allergyTag["cnuWeeklyParser.js<br/>주석(pork 등)+키워드 → M1~M19(추정 배지)"]
+```
+
+- **급식·학식 카드는 하나를 공유한다**(`MealCard.jsx`, 보강 Step 6) — 메뉴마다 알레르기 칩을 반복하지
+  않고 메뉴명 옆 번호 위첨자(`src/lib/allergyDisplay.js`) + 카드 하단 범례 1줄로 축약해, 알레르기
+  코드 통일(NEIS 공식 번호 ↔ 학식 키워드 추정, 둘 다 `allergyRules.js`의 M1~M19)의 이점이 표시
+  레이어에서도 그대로 드러난다 — `estimated` 플래그로 배지만 다르게 그린다.
+- **대학 학식은 5개 식당 × 주간 단위**(보강 Step 7)로 한 번에 받아온다 — 제1학생회관은 이 크롤링
+  시스템에 실제 데이터가 없어(실측) 크롤링 대상에서 빼고 외부 안내 페이지 링크로 대체한다. 하이브리드
+  판정은 `src/lib/cnuWeekFallback.js`의 순수 함수(`resolveCnuWeekResult`) 하나로 분리돼 있어, HTML
+  파서(`src/lib/cnuWeeklyParser.js`)·크롤러(`server/univMealAdapters/cnu.js`)를 몰라도 테스트할 수
+  있다. 화면은 이 주 전체를 한 번만 받아 날짜·식당·학생/직원 트랙 전환을 전부 클라이언트에서 처리한다
+  (탭 클릭마다 서버를 다시 부르지 않는다).
+- **직업 기반 추천**(`src/lib/occupationKeywords.js`)은 지도 탭에서 부족 영양소 추천과 **병렬로**
+  돌아가는 완전히 별개의 검색이다 — 실패해도 서로 영향을 주지 않고, 지도에는 색이 다른 핀(빨강/파랑)
+  으로 함께 표시된다(`NaverPlaceMap.jsx`). 직업 미설정이면 이 경로 자체가 아예 실행되지 않는다.
+- **AI 식습관 분석**은 원본 끼니 기록을 절대 Gemini에 보내지 않는다 — `src/lib/dietSummary.js`가 만든
+  집계 요약(일평균 칼로리·영양소별 달성률·자주 먹은 음식·과다/부족 항목)만 `/api/gemini`로 전달된다.
+  같은 기간(7/30일) 분석은 하루 1회만 실제 호출하고(`dietAnalysisCache.js`, localStorage), 이후
+  재방문·재클릭은 캐시만 보여준다 — 그래서 화면에 "다시 분석" 버튼이 없다.
+
+---
+
+## 9. 그림을 그리며 발견한 것 (다음 작업 후보)
 
 다이어그램으로 옮겨 적으면서 **실제로 어긋나 있던 연결**들이다. 이번 작업에서는 코드를 고치지 않았고, 여기 기록만 남긴다.
 

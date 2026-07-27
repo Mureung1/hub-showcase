@@ -43,6 +43,10 @@ function rowToApp(row) {
       activity: row.activity,
       conditions: row.conditions ?? [],
       allergies: row.allergies ?? [],
+      school: row.school_type
+        ? { type: row.school_type, officeCode: row.school_office_code, code: row.school_code, name: row.school_name }
+        : null,
+      occupation: row.occupation ?? null,
     },
     recommended: row.recommended && Object.keys(row.recommended).length > 0 ? row.recommended : null,
   }
@@ -74,6 +78,11 @@ export async function upsertProfile({ profile, recommended }) {
     activity: profile.activity,
     conditions: profile.conditions ?? [],
     allergies: profile.allergies ?? [],
+    school_type: profile.school?.type ?? null,
+    school_office_code: profile.school?.officeCode ?? null,
+    school_code: profile.school?.code ?? null,
+    school_name: profile.school?.name ?? null,
+    occupation: profile.occupation ?? null,
     recommended: recommended ?? {},
   }
 

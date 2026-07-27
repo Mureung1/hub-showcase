@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
+import CafeteriaPanel from '../components/CafeteriaPanel.jsx'
 import Card from '../components/Card.jsx'
 import FoodCategoryChips from '../components/FoodCategoryChips.jsx'
 import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
+import OccupationPlaceList from '../components/OccupationPlaceList.jsx'
 import PlaceList from '../components/PlaceList.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -21,6 +23,7 @@ import { geocodeLocation, reverseGeocode } from '../lib/kakao.js'
 import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutrition.js'
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { buildDeficiencyRows, isSodiumExceeded } from '../lib/nutrition.js'
+import { getOccupationRecommendation } from '../lib/occupationKeywords.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 위치 권한 거부/실패 시 지도를 띄울 기본 위치(대전 유성구 충남대학교 인근)
@@ -212,6 +215,20 @@ async function searchAndMerge({ x, y, keywords, regionLabel, categoryKey = 'all'
   return { places: merged.slice(0, MAX_TOTAL_PLACES), rawPool }
 }
 
+// 직업 맞춤 추천(FR-2.2) — 부족 영양소 추천과는 별개 축이라 카테고리 필터 없이(categoryKey:'all')
+// 직업별 고정 키워드로만 찾는다. 실패해도 기존 부족 영양소 추천(searchAroundPosition)은 영향받지
+// 않도록 호출부(handleFindNearby 등)에서 항상 이 함수만 따로 catch한다.
+// 지오코딩을 한 번 더 하는 대가로 searchAroundPosition을 손대지 않아도 되게 해, 이미 복잡한 그
+// 함수의 회귀 위험을 낮춘다.
+async function searchOccupationPlaces({ x, y }, occupation) {
+  const { keywords } = getOccupationRecommendation(occupation)
+  if (keywords.length === 0) return []
+
+  const regionLabel = await reverseGeocode({ x, y }).catch(() => null)
+  const { places } = await searchAndMerge({ x, y, keywords, regionLabel, categoryKey: 'all' })
+  return places.map((place) => ({ ...place, isOccupationMatch: true }))
+}
+
 // allergyLabels가 비고 나트륨 정상이면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게 나간다.
 function buildExpectedPrompt(places, deficientRows, allergyLabels = [], { sodiumExceeded = false } = {}) {
   const placeText = places.map((p) => `- ${p.place_name} (${p.category_name || '분류 없음'})`).join('\n')
@@ -296,6 +313,11 @@ export default function MapPage() {
   // 쓰면 places가 null인 동안(검색 전) 리렌더마다 새 배열이 생겨 지도가 매번 통째로 재생성된다.
   // 스폰서 식당(광고, isAd)은 실제 좌표가 없는 목업 항목이라 지도 마커 대상에서는 제외한다(목록에는 남긴다).
   const mapPlaces = useMemo(() => (places ?? []).filter((place) => !place.isAd), [places])
+  // OccupationPlaceList의 "부족한 영양소도 채울 수 있어요" 겹침 표시(FR-2.3)에 쓴다.
+  const nutrientPlaceIds = useMemo(() => new Set((places ?? []).map(placeIdentity)), [places])
+  // 직업 맞춤 추천 핀(FR-2.3) — 부족 영양소 추천(places)과 별개 배열로 들고 있다가 지도에 다른
+  // 색으로 함께 그린다. 직업 미설정/기타면 항상 빈 배열(기존 지도 동작과 완전히 동일).
+  const [occupationPlaces, setOccupationPlaces] = useState([])
   const [myPosition, setMyPosition] = useState(null)
   const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
@@ -309,6 +331,11 @@ export default function MapPage() {
   const [searchedCategory, setSearchedCategory] = useState(null)
   const staleCategory = places !== null && searchedCategory !== categoryKey
   const locateTriedRef = useRef(false)
+
+  // 상단 토글 "주변 식당 | 학식·급식"(FR-1.2) — 서브 영역만 바뀌고 지도 탭 자체는 그대로다.
+  // 학생/대학생 직업이면 첫 진입 시 학식·급식을 우선 보여준다(FR-2.2 mealShortcut) — 그 외/미설정은
+  // 기존과 동일하게 '주변 식당'부터 보여준다. 최초 렌더 한 번만 결정하고, 이후 직접 고른 탭은 유지한다.
+  const [view, setView] = useState(() => getOccupationRecommendation(profile?.occupation).mealShortcut ?? 'nearby')
 
   function handleChangeCategory(key) {
     setSelectedFoodCategory(key)
@@ -425,16 +452,26 @@ export default function MapPage() {
     return { places: withExpected, categoryNotice }
   }
 
+  // 직업 맞춤 검색(searchOccupationPlaces)은 항상 자체 .catch로 감싸 빈 배열로 떨어뜨린다 — 이 새
+  // 검색이 실패하거나 느려도 기존 부족 영양소 검색(searchAroundPosition)의 동작·에러 메시지는
+  // 전혀 영향받지 않는다(PRD "한쪽 실패가 다른 쪽을 막지 않게").
   async function handleFindNearby() {
     setNearbyLoading(true)
     setNearbyError('')
     setCategoryNotice('')
     setPlaces(null)
+    setOccupationPlaces([])
     try {
       const { x, y } = await getCurrentPosition()
-      const { places: results, categoryNotice } = await searchAroundPosition({ x, y })
+      const [{ places: results, categoryNotice }, occupationResults] = await Promise.all([
+        searchAroundPosition({ x, y }),
+        searchOccupationPlaces({ x, y }, profile?.occupation).catch((err) => {
+          console.error('occupation place search failed:', err)
+          return []
+        }),
+      ])
 
-      if (results.length === 0) {
+      if (results.length === 0 && occupationResults.length === 0) {
         setNearbyError(emptyResultMessage('주변'))
         return
       }
@@ -444,6 +481,7 @@ export default function MapPage() {
       setCategoryNotice(categoryNotice)
       setSearchedCategory(categoryKey)
       setPlaces(results)
+      setOccupationPlaces(occupationResults)
     } catch (err) {
       console.error('nearby search failed:', err)
       setNearbyError(err.message || '주변 식당을 찾지 못했습니다.')
@@ -463,11 +501,18 @@ export default function MapPage() {
     setNearbyError('')
     setCategoryNotice('')
     setPlaces(null)
+    setOccupationPlaces([])
     try {
       const { x, y, label } = await geocodeLocation(query)
-      const { places: results, categoryNotice } = await searchAroundPosition({ x, y })
+      const [{ places: results, categoryNotice }, occupationResults] = await Promise.all([
+        searchAroundPosition({ x, y }),
+        searchOccupationPlaces({ x, y }, profile?.occupation).catch((err) => {
+          console.error('occupation place search failed:', err)
+          return []
+        }),
+      ])
 
-      if (results.length === 0) {
+      if (results.length === 0 && occupationResults.length === 0) {
         setNearbyError(emptyResultMessage('이 위치 주변'))
         return
       }
@@ -477,6 +522,7 @@ export default function MapPage() {
       setCategoryNotice(categoryNotice)
       setSearchedCategory(categoryKey)
       setPlaces(results)
+      setOccupationPlaces(occupationResults)
     } catch (err) {
       console.error('location search failed:', err)
       setNearbyError(err.message || '위치를 찾지 못했습니다.')
@@ -489,14 +535,61 @@ export default function MapPage() {
     <div style={styles.page}>
       {/* 화면 제목("지도")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주므로
           중복이고, 지도를 위로 올려 한 화면에 더 넓게 보여준다. */}
+      <div style={{ display: 'flex', gap: spacing.sm, marginBottom: spacing.md }}>
+        {[
+          { key: 'nearby', label: '주변 식당' },
+          { key: 'cafeteria', label: '학식·급식' },
+        ].map((tab) => {
+          const active = view === tab.key
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              className="tds-press"
+              onClick={() => setView(tab.key)}
+              style={{
+                flex: 1,
+                padding: `${spacing.sm}px 0`,
+                borderRadius: radius.sm,
+                border: 'none',
+                background: active ? colors.primary : colors.bg,
+                color: active ? '#fff' : colors.textStrong,
+                fontWeight: 700,
+                fontSize: font.size.sm,
+                cursor: 'pointer',
+              }}
+            >
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {view === 'cafeteria' && <CafeteriaPanel />}
+
+      {view === 'nearby' && (
+      <>
       <div style={{ marginBottom: spacing.md }}>
         {myPosition ? (
-          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} />
+          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} occupationPlaces={occupationPlaces} />
         ) : (
           <Skeleton height={320} radius={radius.lg} />
         )}
         {locationNotice && (
           <p style={{ ...styles.helperText, margin: `${spacing.sm}px 0 0`, textAlign: 'center' }}>{locationNotice}</p>
+        )}
+        {/* 색만으로 구분하지 않도록 범례는 항상 색 점 + 글자 라벨을 함께 둔다(FR-2.3 접근성 요구사항). */}
+        {occupationPlaces.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.sm }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: font.size.xs, color: colors.textSub }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EA4335', display: 'inline-block' }} />
+              영양소 추천
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: font.size.xs, color: colors.textSub }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: colors.info, display: 'inline-block' }} />
+              직업 맞춤
+            </span>
+          </div>
         )}
       </div>
 
@@ -557,6 +650,11 @@ export default function MapPage() {
           )}
           <PlaceList places={places} todayTotal={todayTotal} recommended={recommended} deficientRows={top3Rows} />
         </>
+      )}
+      {!nearbyLoading && (
+        <OccupationPlaceList places={occupationPlaces} nutrientPlaceIds={nutrientPlaceIds} />
+      )}
+      </>
       )}
     </div>
   )

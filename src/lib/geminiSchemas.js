@@ -169,4 +169,5 @@ export const GEMINI_TEMPERATURE = {
   keywords: 0.7,
   expectedIntake: 0.2,
   recommendation: 0.6,
+  dietAnalysis: 0.5,
 }

@@ -4,10 +4,10 @@ PRD v2.0 §2의 수용 기준을 실제로 확인하는 절차서. 코드 위치
 
 | 파일 | 역할 |
 |---|---|
-| [src/utils/platform.js](../src/utils/platform.js) | `getPlatform()` — `'web' \| 'mobile-web' \| 'apk'`. **모든 플랫폼 분기는 이 함수 하나가 기준** |
-| [src/lib/fileExport.js](../src/lib/fileExport.js) | `saveTextFile()` — 환경별 저장(브라우저 blob 다운로드 / Capacitor Filesystem + Share) + UTF-8 BOM |
-| [src/lib/dataBackup.js](../src/lib/dataBackup.js) | 신체정보+식단 백업 CSV의 생성/파싱/반영. 게스트·로그인 계정 공통 |
-| [src/components/DataBackupPanel.jsx](../src/components/DataBackupPanel.jsx) | MY 탭 UI(내보내기/가져오기 버튼, 중복 날짜 다이얼로그, 토스트) |
+| [src/utils/platform.js](../../src/utils/platform.js) | `getPlatform()` — `'web' \| 'mobile-web' \| 'apk'`. **모든 플랫폼 분기는 이 함수 하나가 기준** |
+| [src/lib/fileExport.js](../../src/lib/fileExport.js) | `saveTextFile()` — 환경별 저장(브라우저 blob 다운로드 / Capacitor Filesystem + Share) + UTF-8 BOM |
+| [src/lib/dataBackup.js](../../src/lib/dataBackup.js) | 신체정보+식단 백업 CSV의 생성/파싱/반영. 게스트·로그인 계정 공통 |
+| [src/components/DataBackupPanel.jsx](../../src/components/DataBackupPanel.jsx) | MY 탭 UI(내보내기/가져오기 버튼, 중복 날짜 다이얼로그, 토스트) |
 
 테스트용 샘플 파일은 아래로 만든다(생성물은 `.gitignore` 처리돼 있다):
 
@@ -54,7 +54,7 @@ node scripts/generate-sample-csv.mjs 1000 scripts/sample-broken.csv --broken   #
 
 ## 3. APK (`getPlatform() === 'apk'`)
 
-`npm run app:sync` → Android Studio에서 실기기에 설치. (원격 URL 방식이므로 **웹 변경분이 배포되어 있어야** 앱에도 반영된다 — `docs/apk-build-guide.md` 참고.)
+`npm run app:sync` → Android Studio에서 실기기에 설치. (원격 URL 방식이므로 **웹 변경분이 배포되어 있어야** 앱에도 반영된다 — [apk-build-guide.md](apk-build-guide.md) 참고.)
 
 | # | 절차 | 기대 결과 |
 |---|---|---|
@@ -81,7 +81,8 @@ node scripts/generate-sample-csv.mjs 1000 scripts/sample-broken.csv --broken   #
 ## 형식이 둘이라는 점 (2026-07-22 버그 수정)
 
 이 앱에는 내보내기 진입점이 **둘**이고 형식도 다르다. 한때 가져오기가 그중 하나만 읽을 수 있어서
-"내보낸 파일을 다시 못 읽는" 버그가 있었다(자세한 경위: [fix-csv-roundtrip-프롬프트.md](fix-csv-roundtrip-프롬프트.md)).
+"내보낸 파일을 다시 못 읽는" 버그가 있었다(수정 경위는 `CLAUDE.md`의 "CSV backup" 절 참고). 지금은
+가져오기가 두 형식을 자동으로 판별해 읽는다.
 
 | 내보내기 | 형식 | 파일명 |
 |---|---|---|
@@ -89,7 +90,7 @@ node scripts/generate-sample-csv.mjs 1000 scripts/sample-broken.csv --broken   #
 | 달력 탭 "기간별 기록 내보내기" | 평면 표 (`recommended_*`/`compliant` 포함, 신체정보 없음) | `mealog_<시작>_to_<종료>.csv` |
 
 지금은 **가져오기 하나가 두 형식을 자동 인식**한다. 판별은 파일 **내용**으로만 하므로 파일명을 바꿔도
-읽힌다. 형식 정의(컬럼 상수·직렬화·파싱)는 전부 [src/lib/backupFormat.js](../src/lib/backupFormat.js)
+읽힌다. 형식 정의(컬럼 상수·직렬화·파싱)는 전부 [src/lib/backupFormat.js](../../src/lib/backupFormat.js)
 한 곳에 있고, 내보내는 쪽(`dataBackup.js`, `csv.js`)이 같은 상수를 참조한다.
 
 ### 회귀 방지

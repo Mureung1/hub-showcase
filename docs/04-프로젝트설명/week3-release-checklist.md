@@ -1,6 +1,6 @@
 # 3주차 배포 전 점검 리포트 (week3-features)
 
-PRD: [docs/PRD_v2.md](PRD_v2.md) · 브랜치: `week3-features` (main 기준 4커밋, 58파일 +3799/-718)
+PRD: [PRD_v2.md](../03-개발스펙/PRD_v2.md) · 브랜치: `week3-features` (main 기준 4커밋, 58파일 +3799/-718)
 
 | 커밋 | 내용 |
 |---|---|
@@ -55,7 +55,7 @@ FR-4.3이 금지하는 `width`/`height`/`top`/`left`와 성격이 다르다.
 둘 다 기존 `@capacitor/core@^6.2.1`과 같은 v6 라인. **웹 번들에는 들어가지 않는다** — 네이티브에서만
 동적 import되어 별도 청크(8.38 kB)로 분리된다.
 
-> `framer-motion`은 실측 후 **채택하지 않았다** — 상세는 [interaction-guide.md](interaction-guide.md#1-framer-motion을-쓰지-않은-이유-번들-실측).
+> `framer-motion`은 실측 후 **채택하지 않았다** — 상세는 [interaction-guide.md](../03-개발스펙/interaction-guide.md#1-framer-motion을-쓰지-않은-이유-번들-실측).
 
 ---
 
@@ -84,7 +84,7 @@ FR-4.3이 금지하는 `width`/`height`/`top`/`left`와 성격이 다르다.
 | 중복 날짜 덮어쓰기/건너뛰기 | ✅ | `ImportConflictDialog` |
 | 행 단위 실패 요약 | ✅ | "N건 가져옴, M건 실패". 검증용: `node scripts/generate-sample-csv.mjs 1000 out.csv --broken` (50행 고의 손상) |
 
-절차서: [csv-crossplatform-test.md](csv-crossplatform-test.md)
+절차서: [csv-crossplatform-test.md](../03-개발스펙/csv-crossplatform-test.md)
 
 ### §3 쿠팡 파트너스 광고
 
@@ -102,7 +102,7 @@ FR-4.3이 금지하는 `width`/`height`/`top`/`left`와 성격이 다르다.
 |---|---|---|
 | 방향성 슬라이드, 끊김 0건 | ✅ 코드 완료 | View Transitions + CSS 폴백. **체감은 실기기 확인**(C-3) |
 | 터치 후 100ms 이내 피드백 | ✅ | 프레스-인 트랜지션 90ms |
-| CPU 4x에서 프레임 드랍 없음 | ⏳ 수동 | 절차: [interaction-guide.md §4](interaction-guide.md) |
+| CPU 4x에서 프레임 드랍 없음 | ⏳ 수동 | 절차: [interaction-guide.md §4](../03-개발스펙/interaction-guide.md) |
 | 동작 줄이기 시 페이드 대체 | ✅ 코드 완료 | `@media (prefers-reduced-motion: reduce)`로 슬라이드/바운스/스케일 전부 대체 |
 
 ---
@@ -111,7 +111,7 @@ FR-4.3이 금지하는 `width`/`height`/`top`/`left`와 성격이 다르다.
 
 ### C-1. Supabase 대시보드 설정 (안 하면 가입이 안 됨)
 
-[`supabase/migrations/2026-07-22_id-password-auth.sql`](../supabase/migrations/2026-07-22_id-password-auth.sql) **1번 블록**:
+[`supabase/migrations/2026-07-22_id-password-auth.sql`](../../supabase/migrations/2026-07-22_id-password-auth.sql) **1번 블록**:
 
 - [ ] **Authentication → Sign In / Providers → Email → Confirm email: OFF** ← **필수**
       (앱은 아이디를 `<아이디>@mealyze.app` 합성 이메일로 바꿔 넘긴다. 수신 불가 주소라 확인 메일을
@@ -133,7 +133,7 @@ FR-4.3이 금지하는 `width`/`height`/`top`/`left`와 성격이 다르다.
 ### C-3. 쿠팡 파트너스 링크 교체
 
 - [ ] partners.coupang.com 승인 후, 영양소별 상품의 **파트너스 링크 + 이미지 URL** 확보
-- [ ] [`src/data/coupangProducts.js`](../src/data/coupangProducts.js)의 `productName`/`price`/
+- [ ] [`src/data/coupangProducts.js`](../../src/data/coupangProducts.js)의 `productName`/`price`/
       `imageUrl`/`partnersUrl` 4개 값만 교체 (`id`/`nutrient`는 건드리지 말 것 — 추천 로직의 키)
 - [ ] `npm run check:ads`로 데이터 무결성 재확인
 

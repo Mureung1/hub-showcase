@@ -8,7 +8,14 @@ import { colors, radius, spacing, styles } from '../styles/theme.js'
 // 들어온다. 네이버 LatLng 생성자는 (위도, 경도) 순서이므로, 반드시 y→위도, x→경도로 매핑해야 한다.
 // 순서를 바꾸면 마커가 엉뚱한 곳(바다 등)에 찍힌다.
 
-export default function NaverPlaceMap({ myPosition, places = [] }) {
+// MapPage.jsx/PlaceList.jsx의 placeIdentity와 같은 규칙(같은 식당을 같은 키로 취급).
+function placeIdentity(place) {
+  return place.place_url || `${place.place_name}|${place.road_address_name}`
+}
+
+// occupationPlaces: 직업 맞춤 추천(FR-2.2/2.3) — places(부족 영양소 추천, 기본 빨간 핀)와 별개로
+// 파란 원형 핀으로 그린다. 같은 식당이 양쪽에 다 있으면 직업 핀만 남긴다("직업 핀 우선").
+export default function NaverPlaceMap({ myPosition, places = [], occupationPlaces = [] }) {
   const { loaded, error: loadError } = useNaverMapLoader()
   const containerRef = useRef(null)
   const mapRef = useRef(null)
@@ -38,7 +45,12 @@ export default function NaverPlaceMap({ myPosition, places = [] }) {
     })
     myInfoWindow.open(map, myMarker)
 
+    const occupationIds = new Set(occupationPlaces.map(placeIdentity))
+
     places.forEach((place) => {
+      // 직업 핀과 겹치는 식당은 기본 핀을 생략한다("직업 핀 우선", FR-2.3) — 아래에서 파란 핀으로 그린다.
+      if (occupationIds.has(placeIdentity(place))) return
+
       const position = new naver.maps.LatLng(Number(place.y), Number(place.x))
       bounds.extend(position)
 
@@ -52,8 +64,33 @@ export default function NaverPlaceMap({ myPosition, places = [] }) {
       })
     })
 
+    // 직업 맞춤 핀 — 기본 핀(빨강)과 구분되도록 파란 원형 아이콘을 쓴다(colors.info, 범례와 동일 색).
+    occupationPlaces.forEach((place) => {
+      const position = new naver.maps.LatLng(Number(place.y), Number(place.x))
+      bounds.extend(position)
+
+      const marker = new naver.maps.Marker({
+        map,
+        position,
+        icon: {
+          content: `<div style="width:14px;height:14px;border-radius:50%;background:${colors.info};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>`,
+          size: new naver.maps.Size(18, 18),
+          anchor: new naver.maps.Point(9, 9),
+        },
+      })
+      const infoWindow = new naver.maps.InfoWindow({
+        content: `<div style="padding:4px 8px;font-size:12px;white-space:nowrap;">${place.place_name}</div>`,
+      })
+
+      naver.maps.Event.addListener(marker, 'click', () => {
+        infoWindow.open(map, marker)
+      })
+    })
+
+    const hasAnyPlace = places.length > 0 || occupationPlaces.length > 0
+
     // 장소가 없을 때(내 위치 핀만)는 fitBounds가 최대 줌으로 조여버리므로 중심만 잡는다.
-    if (places.length > 0) {
+    if (hasAnyPlace) {
       map.fitBounds(bounds)
     }
 
@@ -61,7 +98,7 @@ export default function NaverPlaceMap({ myPosition, places = [] }) {
     // 다음 틱에 리사이즈 이벤트를 한 번 더 쏴서 바로잡는다.
     const relayoutTimer = setTimeout(() => {
       naver.maps.Event.trigger(map, 'resize')
-      if (places.length > 0) {
+      if (hasAnyPlace) {
         map.fitBounds(bounds)
       } else {
         map.setCenter(center)
@@ -69,7 +106,7 @@ export default function NaverPlaceMap({ myPosition, places = [] }) {
     }, 0)
 
     return () => clearTimeout(relayoutTimer)
-  }, [loaded, myPosition, places])
+  }, [loaded, myPosition, places, occupationPlaces])
 
   // 탭/아코디언 등으로 지도 컨테이너가 숨겨졌다(display:none 등) 나중에 다시 보이는 경우, 네이버 지도는
   // 스스로 크기 변화를 감지하지 못해 레이아웃이 깨진 채로 남을 수 있다 — 컨테이너 크기 변화를 직접

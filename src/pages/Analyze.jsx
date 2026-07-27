@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AnalysisResultCard from '../components/AnalysisResultCard.jsx'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import LabelScan from '../components/LabelScan.jsx'
@@ -495,6 +495,7 @@ export default function Analyze() {
   const { authUser, profile, tempSex, setTodayMeal, addTodayMeal, setTempSex } = useUser()
   const { showToast } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
   // 닉네임 > 아이디 순으로 고른 표시 이름(authUser.displayName). 인증용 합성 이메일은 화면에 쓰지 않는다.
   const greetingName = authUser?.displayName ?? '게스트'
   const showSexPrompt = !profile && !tempSex
@@ -516,6 +517,17 @@ export default function Analyze() {
   // PhotoUpload가 canvas.toDataURL로 만든 **data URL**이라 URL.revokeObjectURL 대상이 아니다
   // (objectURL이 아니라 문자열이라 참조가 끊기면 그대로 회수된다). 상태를 비우는 것으로 충분하다.
   const [resultPhotoUrl, setResultPhotoUrl] = useState(null)
+
+  // 학식(대학) 화면의 "영양 분석" 버튼처럼, 다른 화면에서 메뉴 이름을 미리 채운 채 이 화면으로 들어오는
+  // 4번째 입구(PRD 4주차 FR-1.3) — 새 분석 파이프라인을 만들지 않고 기존 텍스트 경로 입력만 채워준다.
+  // 한 번 반영한 뒤에는 state를 비워, 나중에 뒤로가기/재방문해도 다시 덮어쓰지 않는다.
+  useEffect(() => {
+    const prefill = location.state?.prefillMenuName
+    if (!prefill) return
+    setMenuName(prefill)
+    navigate(location.pathname, { replace: true, state: {} })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
 
   // IDLE로 되돌리며 입력까지 전부 비운다. 저장 완료와 "다시 찍기"가 공유한다.
   function resetToIdle() {
