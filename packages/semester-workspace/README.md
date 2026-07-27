@@ -1,11 +1,12 @@
 # `@ay-ple/semester-workspace`
 
-`@ay-ple/semester-workspace`는 app-owned v3 `SemesterWorkspace`의 strict codec, filesystem admission, workspace instruction/Skill bundle과 durable setup transaction을 소유하는 Node-only Module이다. 현재 구현은 fresh workspace의 admission/recovery, current v2 compatibility decoder, exact bundle materialization과 lease-bound `Semester Ready` commit/relaunch seam까지 닫는다.
+`@ay-ple/semester-workspace`는 SemesterWorkspace의 versioned codec과 app-owned v3 admission·setup kernel을 소유하는 Node-only Module이다. 현재 public product는 current v2 compatibility decoder만 소비하지만, user-owned Git target을 위한 root v4 identity codec도 current graph 옆의 internal target surface로 제공한다.
 
 ## 현재 경계
 
 | 표면 | 현재 동작 |
 | --- | --- |
+| V4 identity codec | Root `workspace-state.json`의 exact `kind`, `formatVersion`, `workspaceId`, `semester`, opaque `snapshot`을 `1 MiB` 안에서 strict encode/decode한다. Workspace ID, `1..20` year level, term slug·byte bound와 JSON value만 허용하며 current-v2, historical v3, malformed/future bytes를 rewrite 없이 분류한다. |
 | V3 codec | Exact top-level·`manifest`·`semester`·`state` shape, positive safe integer `yearLevel`, bounded custom-capable term, opaque workspace ID와 empty initial state를 strict encode/decode한다. |
 | `inspect(intent)` | Existing canonical parent 아래 nonexistent one-segment leaf만 write 없이 `new_target` plan으로 만든다. Existing directory, symlink, current v2, malformed/future state와 unavailable authority를 no-write outcome으로 분류한다. |
 | `describe(plan)` | 같은 admission instance가 발급한 exact create plan에만 Server-private `WorkspaceAdmissionPlanDescription`을 반환한다. `setupPlanId`는 random opaque `plan.planId` 그대로이고, canonical receipt-plan digest와 target/workspace binding은 Browser contract가 아니다. Unknown·tampered·resume plan은 `null`이다. |
@@ -36,4 +37,4 @@ npm run typecheck -w @ay-ple/semester-workspace
 npm run build -w @ay-ple/semester-workspace
 ```
 
-Unit·filesystem suite는 v3 conformance, write-free inspection, exclusive create, no-clobber publish, private plan binding, current-v2 preservation, cross-instance recovery, durable setup/Ready commit 전후 실제 process death, same-release relaunch, bundle complete-tree/source drift·missing-only recovery·static context conflict와 high-level native config·Skill snapshot guard를 검증한다.
+Unit·filesystem suite는 v4 identity·opaque snapshot과 legacy no-rewrite classification, v3 conformance, write-free inspection, exclusive create, no-clobber publish, private plan binding, current-v2 preservation, cross-instance recovery, durable setup/Ready commit 전후 실제 process death, same-release relaunch, bundle complete-tree/source drift·missing-only recovery·static context conflict와 high-level native config·Skill snapshot guard를 검증한다.

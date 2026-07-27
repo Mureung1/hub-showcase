@@ -6,6 +6,8 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 Canonical product 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. 제거된 public-preview Account→Setup→Ready composition, managed Browser OAuth route와 v3 setup adapter는 Server의 실행·export·test graph에 남지 않는다. [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 v3 kernel은 현재 Server consumer가 없는 package-private 기반이며 current product authority가 아니다.
 
+User-owned Git target의 internal `workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. 이 Module과 package의 v4 identity codec은 current graph 옆에 구현됐지만 아직 public route, `SemesterWorkspaceController` 또는 Runtime activation에 연결되지 않았다.
+
 ## Canonical 시작과 root 소유권
 
 Repository root에서 다음 명령을 사용한다.
@@ -24,6 +26,8 @@ Canonical product composition은 다음 root authority를 명시적으로 분리
 | `workspaceRoot` | Default는 선택하지 않는다. Transitional current-v2 개발 확인이 필요할 때만 `--workspace <absolute-path>`를 명시하며 `CODEX_CHAT_WORKSPACE`와 ambient `cwd`를 fallback으로 사용하지 않는다. |
 
 Package, app data, global Codex home와 workspace는 canonical realpath 기준 same-path·ancestor 관계가 없어야 하고 symlink·non-directory는 mutation 전에 fail closed한다. Controlled child state만 app data 아래에 중첩된다. Fresh clone은 Runtime bundle이 tracked되지 않으므로 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)에 따라 external app data에 materialize한다.
+
+`WorkspaceRegistry` store는 최대 `64`개 canonical realpath root와 active pointer만 보존한다. `256 KiB` strict codec, synced temporary file, opened-byte compare, no-clobber initial publish, atomic replacement rename와 directory sync를 사용하며 실제 process death 뒤 owned writer residue만 정리한다. Malformed·future registry는 original bytes를 보존하고 missing file만 empty v1 시작점으로 취급한다. Active reopen과 explicit reselect는 root `workspace-state.json` v4 identity를 fresh read하며 registry root와 `workspaceId`가 일치할 때만 available로 반환한다.
 
 Canonical root command는 ambient `PORT`를 무시하고 Server `PORT`를 `3000`으로 고정해 Chat Shell Vite proxy target과 일치시킨다. Direct Server entrypoint는 caller environment를 local `.env`보다 우선하고 `PORT`가 없으면 `3000`, listener address는 `127.0.0.1`을 사용한다. Root command가 exact Chat Shell Origin을 설정한다. `dev:chat-only`와 `/api/codex-chat/*`는 supported entrypoint·route·alias가 아니다.
 
@@ -51,6 +55,8 @@ Materializer가 발급한 ownership marker가 있는 exact leaf만 재생성할 
 Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 지원한다. [ADR 0013](../../docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 이 format을 첫 durable compatibility baseline으로 채택한다.
 
 Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 adopted target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 한다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
+
+ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. Candidate lifecycle과 required Runtime activation이 연결되기 전에는 internal target seam이며 current public workspace authority는 계속 아래 v2 aggregate다.
 
 | 영역 | Current behavior |
 | --- | --- |
