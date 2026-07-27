@@ -37,7 +37,7 @@ function getAIClient(): GoogleGenAI | null {
 }
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const GEMINI_TIMEOUT_MS = 20_000;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs = GEMINI_TIMEOUT_MS): Promise<T> {
@@ -312,8 +312,8 @@ app.post("/api/recommend", async (req, res) => {
       const catalogText = PRODUCT_CATALOG
         .filter((item) => !catalogExcludeItemIds.includes(item.id))
         .map((item) =>
-        `ID:${item.id} | ${item.category} | ${item.name} | colors:${item.colors.join(",")} | seasons:${item.seasons.join(",")} | styles:${item.styles.join(",")}`
-      ).join("\n");
+          `ID:${item.id} | ${item.category} | ${item.name} | colors:${item.colors.join(",")} | seasons:${item.seasons.join(",")} | styles:${item.styles.join(",")}`
+        ).join("\n");
 
       const promptString = `당신은 대한민국의 전문 패션 스타일리스트입니다.
 아래 자체 상품 카탈로그에 존재하는 상품 ID만 사용하여 코디를 추천하세요.
@@ -354,12 +354,14 @@ stylistNote는 사용자의 수정 요청을 어떻게 반영했는지 포함하
         }));
         const parsed = JSON.parse(response.text?.trim() || "{}");
         const forcedIds = forceDifferentCatalogIds(parsed, weather, destination, situation, catalogExcludeItemIds);
-        return res.json({ ...buildCatalogOutfit(
-          forcedIds,
-          parsed.stylistNote || "자체 상품 카탈로그에서 조건에 맞는 새로운 코디를 선택했습니다.",
-          "gemini-local-catalog",
-          catalogExcludeItemIds
-        ), excludedItemIds: hardExcludedCatalogIds });
+        return res.json({
+          ...buildCatalogOutfit(
+            forcedIds,
+            parsed.stylistNote || "자체 상품 카탈로그에서 조건에 맞는 새로운 코디를 선택했습니다.",
+            "gemini-local-catalog",
+            catalogExcludeItemIds
+          ), excludedItemIds: hardExcludedCatalogIds
+        });
       } catch (error) {
         console.error("Gemini catalog recommendation failed:", error);
         return res.json({
