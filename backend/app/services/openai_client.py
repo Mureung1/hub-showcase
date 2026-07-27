@@ -23,6 +23,9 @@ GUARDRAIL = """[중요] 아래 규칙을 반드시 지켜:
 - 손님을 특정할 수 있는 정보(외모, 말투 흉내, 행동 디테일 등)는 포함하지 마.
 - 풍자와 유머는 괜찮지만, 대상은 '자영업의 고단함'이지 '특정 손님'이 아니야."""
 
+# 사용할 모델. GPT-4o보다 저렴하고 성능도 더 좋아서 GPT-5로 교체함.
+MODEL_NAME = "gpt-5"
+
 
 def _tone_for_temperature(temperature: int) -> str:
     if temperature <= 30:
@@ -81,7 +84,7 @@ def generate_content(
     business_type=None,
     business_description=None,
 ):
-    """GPT-4o를 호출해서 하소연을 SNS 콘텐츠로 재구성."""
+    """GPT-5를 호출해서 하소연을 SNS 콘텐츠로 재구성."""
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     prompt = build_prompt(
         complaint, temperature, platform, weather, holiday, keyword,
@@ -89,8 +92,8 @@ def generate_content(
     )
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=500,
+        max_completion_tokens=500,
     )
     return response.choices[0].message.content

@@ -1,5 +1,6 @@
 import math
 import os
+import time
 from datetime import datetime, timedelta
 
 import httpx
@@ -23,6 +24,9 @@ PTY_LABELS = {
     "6": "빗방울눈날림",
     "7": "눈날림",
 }
+
+MAX_RETRIES = 3
+RETRY_DELAY_SECONDS = 1.0
 
 
 def latlon_to_grid(lat, lon):
@@ -75,8 +79,19 @@ def _latest_base_datetime():
     return base_date, base_time
 
 
+def _fetch_weather_once(params):
+    """API 요청 1회 시도. 실패하면 예외를 그대로 던짐 (재시도는 호출하는 쪽에서 처리)."""
+    response = httpx.get(BASE_URL, params=params, timeout=5.0)
+    response.raise_for_status()
+    return response.json()
+
+
 def get_current_weather():
-    """오늘의 날씨(기온, 강수형태)를 초단기실황 API로 조회."""
+    """오늘의 날씨(기온, 강수형태)를 초단기실황 API로 조회.
+
+    기상청 API가 가끔 일시적으로 응답이 느리거나 실패하는 경우가 있어서,
+    최대 MAX_RETRIES번까지 짧은 간격으로 재시도함.
+    """
     api_key = os.getenv("WEATHER_API_KEY")
     nx, ny = latlon_to_grid(DEFAULT_LAT, DEFAULT_LON)
     base_date, base_time = _latest_base_datetime()
@@ -92,18 +107,25 @@ def get_current_weather():
         "ny": ny,
     }
 
-    response = httpx.get(BASE_URL, params=params, timeout=5.0)
-    response.raise_for_status()
-    data = response.json()
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            data = _fetch_weather_once(params)
+            items = data["response"]["body"]["items"]["item"]
+            values = {item["category"]: item["obsrValue"] for item in items}
 
-    items = data["response"]["body"]["items"]["item"]
-    values = {item["category"]: item["obsrValue"] for item in items}
+            temp = values.get("T1H")  # 기온
+            pty = values.get("PTY", "0")  # 강수형태
+            label = PTY_LABELS.get(pty, "맑음")
 
-    temp = values.get("T1H")  # 기온
-    pty = values.get("PTY", "0")  # 강수형태
-    label = PTY_LABELS.get(pty, "맑음")
+            return {
+                "label": label,
+                "temp": f"{temp}°C" if temp is not None else None,
+            }
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_SECONDS)
 
-    return {
-        "label": label,
-        "temp": f"{temp}°C" if temp is not None else None,
-    }
+    # 재시도 다 실패하면 마지막 에러를 그대로 던짐 (라우터에서 최종적으로 폴백 처리)
+    raise last_error

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Copy, Check, RefreshCw, Download, Image as ImageIcon, Loader2 } from "lucide-react";
 import { PLATFORMS, HASHTAG_SUGGESTIONS } from "../data/mockData";
 
@@ -9,10 +10,19 @@ export function ResultContent({
   onRegenerate,
   imageGenerated,
   imageCaption,
+  imageBase64,
   isGeneratingImage,
   onGenerateImage,
   onResetImage,
 }) {
+  const [copiedTag, setCopiedTag] = useState(null);
+
+  const handleTagClick = (tag) => {
+    navigator.clipboard.writeText(tag).catch(() => {});
+    setCopiedTag(tag);
+    setTimeout(() => setCopiedTag(null), 1200);
+  };
+
   return (
     <>
       {/* 플랫폼 미리보기 카드 */}
@@ -43,7 +53,7 @@ export function ResultContent({
         </div>
       </div>
 
-      {/* 복사/재생성/저장 — 자동 SNS 업로드가 아니라 사용자가 직접 게시하는 흐름 */}
+      {/* 복사/재생성/저장 */}
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={onCopy}
@@ -102,18 +112,26 @@ export function ResultContent({
 
         {imageGenerated && (
           <div className="relative rounded-xl overflow-hidden border border-border bg-card aspect-square max-h-64">
-            <div
-              className="w-full h-full flex flex-col items-center justify-center gap-3 text-center p-6"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(255,77,31,0.15) 0%, rgba(255,176,32,0.08) 50%, rgba(79,195,247,0.12) 100%)",
-              }}
-            >
-              <div className="text-5xl">☔</div>
-              <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
-                {imageCaption}
-              </p>
-            </div>
+            {imageBase64 ? (
+              <img
+                src={`data:image/png;base64,${imageBase64}`}
+                alt={imageCaption || "생성된 이미지"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-full h-full flex flex-col items-center justify-center gap-3 text-center p-6"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(255,77,31,0.15) 0%, rgba(255,176,32,0.08) 50%, rgba(79,195,247,0.12) 100%)",
+                }}
+              >
+                <div className="text-5xl">🖼️</div>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
+                  {imageCaption || "이미지를 불러오지 못했어요"}
+                </p>
+              </div>
+            )}
             <div className="absolute top-2 right-2 flex gap-1.5">
               <button className="p-1.5 rounded-lg bg-background/70 backdrop-blur-sm border border-border hover:bg-background transition-colors">
                 <Download size={12} />
@@ -129,16 +147,19 @@ export function ResultContent({
         )}
       </div>
 
-      {/* 추천 해시태그 */}
+      {/* 추천 해시태그 - 클릭하면 복사됨 */}
       <div className="flex flex-col gap-2">
-        <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">추천 해시태그</div>
+        <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+          추천 해시태그 (클릭해서 복사)
+        </div>
         <div className="flex flex-wrap gap-1.5">
           {HASHTAG_SUGGESTIONS.map((tag) => (
             <span
               key={tag}
+              onClick={() => handleTagClick(tag)}
               className="px-2.5 py-1 rounded-full border border-border text-xs text-muted-foreground hover:text-foreground hover:border-[rgba(255,255,255,0.14)] cursor-pointer transition-colors"
             >
-              {tag}
+              {copiedTag === tag ? "복사됨!" : tag}
             </span>
           ))}
         </div>

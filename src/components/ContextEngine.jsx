@@ -1,33 +1,31 @@
-import { Wind, CloudRain, Clock, Hash } from "lucide-react";
+import { Wind, CloudRain, Clock } from "lucide-react";
 import { CONTEXT_CHIPS } from "../data/mockData";
 
-export function ContextEngine({ active, onToggle }) {
+export function ContextEngine({ active, onToggle, weatherInfo, holidayInfo, isLoadingContext }) {
+  const weatherDisplay = isLoadingContext
+    ? "불러오는 중..."
+    : weatherInfo || "날씨 정보를 가져오지 못했어요";
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">맥락 엔진</label>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Wind size={11} />
-          <span>자동 감지 중</span>
+          <span>{isLoadingContext ? "불러오는 중..." : "자동 감지 완료"}</span>
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#34D399" }} />
         </div>
       </div>
 
-      {/* 날씨/공휴일 API + 큐레이션 키워드 DB 결과 미리보기 (지금은 mock 데이터) */}
-      <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3 text-xs">
+      <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3 text-xs flex-wrap">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <CloudRain size={12} />
-          <span>흐리고 비, 18°C</span>
+          <span>{weatherDisplay}</span>
         </div>
         <div className="w-px h-3 bg-border" />
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Clock size={12} />
-          <span>화요일 오후</span>
-        </div>
-        <div className="w-px h-3 bg-border" />
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Hash size={12} />
-          <span>#혼밥 #소확행 (큐레이션 키워드)</span>
+          <span>{holidayInfo || "오늘은 특별한 날 아님"}</span>
         </div>
       </div>
 
