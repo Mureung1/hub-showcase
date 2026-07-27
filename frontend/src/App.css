@@ -715,9 +715,9 @@
 }
 
 /* 계산에서 빠졌다는 건 "모름"이라는 글자가 이미 말해준다.
-   더 흐리게 만들면(#9ca3af 는 2.54:1) 뜻은 그대로인데 읽히지만 않는다. */
+   색을 더 흐리게 하면(#9ca3af 는 2.54:1) 뜻은 그대로인데 읽히지만 않아서 그대로 둔다. */
 .breakdown-value.is-unknown {
-  font-size: 12px;
+  font-weight: 400;
 }
 
 /* 우선순위 성향 선택기 */
@@ -912,7 +912,7 @@
   border-radius: 50%;
   background-color: var(--color-border);
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-caption);
   font-weight: 600;
 }
 
