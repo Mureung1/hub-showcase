@@ -4,11 +4,12 @@
   "summary": "PM이 수집한 사용자 인터뷰 전사문을 AI로 분석해 가설별 근거를 태깅하고 검증결과 초안을 생성하되, 판단의 근거가 원문까지 되짚어지는 '사슬'로 남아 재현 가능한 리서치 리포트를 만드는 서비스입니다.",
   "githubUser": "naruv0134",
   "demoUrl": "https://example.com",
-  "thumbnail": "thumbnail.webp",
+  "thumbnail": "thumbnail.jpeg",
   "screenshots": [
-    "screenshots/input_page.webp",
-    "screenshots/dashboard.webp",
-    "screenshots/detail_page.webp"
+    "screenshots/input_hypothesis_result.png",
+    "screenshots/verification_card.png",
+    "screenshots/evidence_drawer.png",
+    "screenshots/refine_chat.png"
   ],
   "problem": "PM이 가설을 검증할 때 수많은 인터뷰 전사문을 일일이 읽어 가설에 해당하는 발언과 근거를 분류·요약하는 데 많은 시간이 듭니다. LLM 스킬로 분석하면, 대화가 끝나는 순간 '왜 그렇게 판단했는지'의 근거가 함께 휘발되어, 나중에 결론에 대한 질문을 받으면 처음부터 다시 훑어야 합니다.",
   "targetUsers": [
