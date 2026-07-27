@@ -12,7 +12,7 @@
 
 이 문서는 AY의 MCP 요청을 AY-PLE의 typed UI로 바꾸고, 사용자의 structured result를 같은 Codex Turn에 반환하는 long-lived seam을 설명한다. 제품 가치와 MVP 범위는 Product Brief, 결정의 이유는 ADR 0019, 현재 코드의 강결합 topology와 gap은 구현 지도가 소유한다.
 
-Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합친 deep Module이다. Bootstrap이 설치한 project MCP declaration으로 Adapter를 native discovery하고, App Runtime이 environment로 현재 Broker binding을 공급한다.
+Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합친 deep Module이다. Physical code boundary는 private workspace package `@ay-ple/interaction-mcp`와 `apps/server`에 걸친다. Package는 stable executable·typed capability contract·private transport를, Server는 Broker runtime과 Browser projection을 소유한다. Bootstrap이 설치한 project MCP declaration으로 Adapter를 native discovery하고, App Runtime이 environment로 현재 Broker binding을 공급한다.
 
 - Tracked `.codex/config.toml`과 process-local environment binding의 분리
 - Runtime·Thread·Turn과 MCP tool server의 결합
@@ -50,15 +50,18 @@ App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 �
 
 ## 모듈 경계
 
-| Module | Interface | 숨기는 것 |
-| --- | --- | --- |
-| Skill·AY workflow | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
-| Workspace MCP declaration | Workspace-root-relative STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
-| Interaction MCP STDIO Adapter | Capability별 typed MCP request/result와 Broker transport | Project config loading, MCP wire와 process environment |
-| App-side Interaction Broker | Typed capability request/result | Runtime binding, correlation, pending lifecycle, cancellation, Browser transport |
-| UI Adapter | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
-| Codex Runtime Adapter | App binding env를 공급하고 native project MCP를 시작 | Native protocol, `threadId`·`turnId`·`requestId` |
-| SemesterWorkspace | 일반 file·Git interface | 실제 학기 자료와 선택적인 구조화 snapshot의 형식 |
+| Module | Tracked owner | Interface | 숨기는 것 |
+| --- | --- | --- | --- |
+| Skill·AY workflow | `<SemesterWorkspace>/.agents/skills/` | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
+| Workspace MCP declaration | `<SemesterWorkspace>/.codex/config.toml` | Workspace-root-relative STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
+| Capability contract·STDIO Adapter | `packages/interaction-mcp` | Built executable, capability별 typed MCP request/result와 authenticated Broker transport | Project config loading, MCP wire와 process environment |
+| App-side Interaction Broker | `apps/server` | Package의 server-side port와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle과 cancellation |
+| Browser wire | `packages/product-contract` | Capability별 Browser-safe request·result projection | Raw MCP와 private Broker transport |
+| UI Adapter | `apps/chat-shell` | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
+| Codex Runtime Adapter | `packages/codex-chat-runtime` | Generic child environment 전달과 native MCP readiness | Capability schema, Broker protocol, `threadId`·`turnId`·`requestId` |
+| SemesterWorkspace | User-owned Git repository | 일반 file·Git interface | 실제 학기 자료와 선택적인 구조화 snapshot의 형식 |
+
+Dependency direction은 `apps/server`가 `@ay-ple/interaction-mcp`, `@ay-ple/codex-chat-runtime`과 `@ay-ple/product-contract`를 조합하는 형태다. `@ay-ple/interaction-mcp`와 Runtime package는 서로 import하지 않고, Chat Shell은 계속 `@ay-ple/product-contract`만 사용한다. 이 경계는 raw MCP shape가 Browser contract로 새거나 product-specific capability가 native Runtime adapter로 내려가는 것을 막는다.
 
 Production Browser Adapter와 in-memory test Adapter는 Interaction MCP Module의 같은 Interface를 구현한다. 이 seam의 핵심 contract test는 다음 한 문장으로 표현한다.
 
@@ -70,7 +73,7 @@ Bootstrap은 SemesterWorkspace의 Git-tracked `.codex/config.toml`에 정적인 
 
 ```toml
 [mcp_servers.ay_ple_interaction]
-command = "../../hub/<built-stdio-entrypoint>"
+command = "../../hub/packages/interaction-mcp/dist/<stdio-entrypoint>"
 env_vars = ["<endpoint-env>", "<token-env>", "<runtime-binding-env>"]
 enabled_tools = ["propose_state_patch"]
 required = true
@@ -78,7 +81,7 @@ required = true
 
 이 예시의 `../../hub/`는 canonical sibling layout에서 Bootstrap이 **exact SemesterWorkspace root를 기준으로** 계산한 값이다. `.codex/` directory 기준의 고정 문자열이 아니며, 다른 위치의 existing repository를 채택하면 실제 두 root 사이의 상대경로를 계산한다. Current pinned local STDIO launcher는 MCP server `cwd`가 없을 때 Runtime fallback `cwd`에서 relative `command`를 resolve하므로 declaration에는 `cwd`를 쓰지 않고 Workspace Runtime의 exact Git root를 그대로 사용한다.
 
-Exact package·executable path와 env 이름은 implementation spec이 소유한다. Config에는 absolute machine path, `npx`·global install, appData에 복제한 Adapter, secret이나 process-local 값을 넣지 않는다. AY-PLE이 Codex child를 시작할 때 current App endpoint·token·Runtime binding을 environment로 주입하고, Codex가 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다. `hub/` 또는 SemesterWorkspace root가 독립적으로 이동해 상대경로가 바뀌면 Bootstrap Update가 declaration을 다시 계산하고 review 가능한 workspace Git checkpoint를 남긴다.
+`packages/interaction-mcp`까지의 package location은 채택됐고 exact executable filename과 env 이름은 implementation spec이 소유한다. Config에는 absolute machine path, `npx`·global install, appData에 복제한 Adapter, secret이나 process-local 값을 넣지 않는다. `apps/server`가 current Broker endpoint·token·Runtime binding을 만들고, `@ay-ple/codex-chat-runtime`은 그 이름이나 의미를 해석하지 않는 generic child environment로 Codex에 전달한다. Codex는 `env_vars` allowlist에 따라 STDIO Adapter로 전달한다. `hub/` 또는 SemesterWorkspace root가 독립적으로 이동해 상대경로가 바뀌면 Bootstrap Update가 declaration을 다시 계산하고 review 가능한 workspace Git checkpoint를 남긴다.
 
 따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load된다. Bootstrap은 global trust를 수정하지 않고, exact Git root와 `workspace-write`를 요청하는 정상 thread start가 current pinned App Server의 native trust write와 same-start config reload를 사용한다. 명시적 `untrusted`는 보존한다.
 
@@ -159,7 +162,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 
 | 영역 | 현재 구현 | 채택한 목표 |
 | --- | --- | --- |
-| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 Workspace root에서 hub-owned built STDIO Adapter까지의 relative command를 `cwd` 없이 선언하고 Runtime은 dynamic env만 공급한다. Adapter의 Broker handshake 뒤에만 initialize가 성공한다. |
+| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 Workspace root에서 `@ay-ple/interaction-mcp` built STDIO Adapter까지의 relative command를 `cwd` 없이 선언한다. Server가 dynamic binding을 만들고 capability-neutral Runtime이 env만 전달하며, Adapter의 Broker handshake 뒤에만 initialize가 성공한다. |
 | Review 시작 | `propose_state_patch`가 Server-private key와 academic binding을 요구한다. | 표시할 proposal만 보내며 host binding은 Module 내부다. |
 | 사용자 응답 | 별도 `/reviews/:interactionId`와 built-in `request_user_input`을 함께 사용한다. | MCP call 하나가 UI 응답을 기다렸다가 closed result를 반환한다. |
 | Apply | Server가 durable patch·confirmation transaction으로 `SemesterModel`을 갱신한다. | AY가 result를 해석해 실제 workspace file을 변경한다. |
@@ -179,5 +182,6 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - MCP caller가 host correlation과 store revision을 조립하는 protocol
 - Endpoint·token을 담은 tracked MCP config 또는 App의 broad config override
 - Absolute machine path, `npx`·global install 또는 appData copy에 의존하는 Interaction MCP launcher
+- `apps/server` 내부 build path나 `@ay-ple/codex-chat-runtime`의 product-specific branch로 구현한 STDIO Adapter
 - Interaction MCP 없이 정상으로 보이는 degraded AY-PLE Workspace Runtime
 - Rich Review와 built-in `request_user_input`의 이중 confirmation

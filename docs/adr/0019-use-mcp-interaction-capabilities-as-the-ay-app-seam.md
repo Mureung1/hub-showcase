@@ -17,8 +17,10 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 ## 결정
 
 - AY-PLE App은 **InteractionCapability**를 제공하는 MCP Module을 소유한다. 이 Module의 Interface는 “AY가 표시할 내용과 허용할 응답을 요청하면, 사용자가 App UI에서 결정하고, 구조화된 결과가 같은 Codex Turn으로 반환된다”는 한 번의 round trip이다.
-- MCP Module은 `hub/`가 소유하는 Codex-facing STDIO Adapter와 App-side Interaction Broker로 나눈다. Adapter는 표준 MCP request/result를 운반하고 Broker는 현재 Runtime binding, Browser projection, pending lifecycle과 사용자 result 반환을 숨긴다.
-- Bootstrap Skill은 Git-tracked `<SemesterWorkspace>/.codex/config.toml`에 AY-PLE Interaction MCP의 정적 project declaration을 설치한다. 이 declaration은 exact SemesterWorkspace root에서 hub-owned built STDIO entrypoint까지 계산한 상대 `command`, 전달할 environment variable 이름, capability allowlist와 `required = true`를 표현하고 MCP server `cwd`는 생략한다. Current pinned launcher는 생략된 server `cwd`를 Workspace Runtime의 exact root `cwd`로 fallback한다. Exact package·executable path와 env 이름은 implementation spec이 고정한다.
+- MCP Module은 `hub/`가 소유하는 Codex-facing STDIO Adapter와 App-side Interaction Broker로 나눈다. Private npm workspace package `@ay-ple/interaction-mcp`는 built STDIO executable, capability별 MCP request/result schema·codec와 authenticated Adapter↔Broker transport contract를 소유한다.
+- `apps/server`는 package가 정의한 server-side port를 사용해 Broker listener·process-local endpoint와 token, 현재 Runtime binding, pending lifecycle, Browser projection과 사용자 result 반환을 소유한다. `@ay-ple/product-contract`는 Browser-safe projection만, `apps/chat-shell`은 capability별 UI만 소유하며 raw MCP·private Broker transport를 알지 않는다.
+- `@ay-ple/codex-chat-runtime`은 capability-neutral하게 Codex child environment를 전달하고 native MCP readiness를 관측한다. `@ay-ple/interaction-mcp`를 import하거나 `propose_state_patch` schema, Broker endpoint와 UI lifecycle을 소유하지 않는다.
+- Bootstrap Skill은 Git-tracked `<SemesterWorkspace>/.codex/config.toml`에 AY-PLE Interaction MCP의 정적 project declaration을 설치한다. 이 declaration은 exact SemesterWorkspace root에서 `hub/packages/interaction-mcp`의 built STDIO entrypoint까지 계산한 상대 `command`, 전달할 environment variable 이름, capability allowlist와 `required = true`를 표현하고 MCP server `cwd`는 생략한다. Current pinned launcher는 생략된 server `cwd`를 Workspace Runtime의 exact root `cwd`로 fallback한다. Exact executable filename과 env 이름은 implementation spec이 고정한다.
 - Project config에는 endpoint, token, native identity나 다른 secret·process-local 값을 기록하지 않는다. AY-PLE Runtime은 Codex child environment에 현재 App instance의 endpoint·token·Runtime binding을 넣고, MCP declaration의 `env_vars`가 이를 STDIO Adapter에 전달한다.
 - STDIO Adapter는 process 시작만으로 initialize를 성공시키지 않는다. Environment binding을 검증하고 현재 App-side Broker와 인증된 handshake를 완료한 뒤에만 MCP initialize를 성공시킨다. Endpoint·token 누락, Broker offline, authentication 실패나 capability mismatch는 required MCP initialization failure이며 Workspace Runtime·activation을 실패시킨다.
 - App activation은 effective MCP status에서 expected `ay_ple_interaction` server와 handshake 완료를 확인한다. Explicit `untrusted`처럼 project config 자체가 무시되어 native `required` declaration이 보이지 않는 경우도 이 gate에서 실패한다.
@@ -41,11 +43,11 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 | --- | --- | --- |
 | 사용자 | App UI에서의 최종 선택과 학기 자료의 의미 | MCP correlation, native protocol |
 | AY·Skill | 작업 계획, interaction 요청 시점, 결과 해석, 실제 파일 변경과 Git checkpoint | App UI lifecycle, Browser transport |
-| Interaction MCP STDIO Adapter | Project config로 발견되는 typed MCP Interface와 Broker transport | App UI lifecycle, 학업 workflow 순서 |
-| App-side Interaction Broker | Runtime binding, correlation, 취소·disconnect, UI projection과 결과 반환 | Workspace file apply, Skill workflow |
-| AY-PLE UI Adapter | Capability별 화면 projection과 사용자 입력 수집 | Agent의 다음 행동, 학기 SSOT |
+| `@ay-ple/interaction-mcp` | Project config로 발견되는 built STDIO executable, typed MCP Interface와 authenticated Broker transport contract | App listener·UI lifecycle, 학업 workflow 순서 |
+| `apps/server`의 Interaction Broker | Endpoint·token value, Runtime binding, correlation, 취소·disconnect, Browser projection과 결과 반환 | Workspace file apply, Skill workflow |
+| `@ay-ple/product-contract`·`apps/chat-shell` | Browser-safe capability projection, 화면과 사용자 입력 수집 | Raw MCP·private Broker transport, Agent의 다음 행동 |
 | SemesterWorkspace | 실제 학기 파일, 선택적인 구조화 snapshot과 Git history | Runtime correlation, pending UI interaction |
-| Codex Runtime | Thread·Turn 실행, MCP 연결과 native permission | AY-PLE 제품 UI의 의미, 학기 SSOT |
+| `@ay-ple/codex-chat-runtime` | Thread·Turn 실행, generic child environment 전달, native MCP 연결·readiness와 permission | Capability schema, Broker·UI 의미, 학기 SSOT |
 
 ## 고려한 대안
 
@@ -58,6 +60,8 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 | App이 매 thread마다 전체 MCP config를 override | 거절 | Project-native declaration과 사용자 config precedence를 우회하고 App이 Skill·MCP discovery까지 소유하게 한다. Dynamic endpoint·secret은 config가 아니라 Runtime environment로 결합할 수 있다. |
 | Bootstrap Skill이 `../workspace/` parent를 전역 trust로 기록 | 거절 | Current Codex trust lookup은 하위 Git repository로 parent trust를 상속하지 않는다. Exact workspace thread start의 native trust가 실제 Git root를 기록하고 config를 즉시 reload한다. |
 | MCP entrypoint를 absolute user path, `npx`·global install 또는 appData copy로 실행 | 거절 | Personal source checkout인 `hub/`가 구현 authority다. Workspace-relative declaration은 machine-specific absolute path와 별도 설치·복사 lifecycle을 피하고, root가 이동하면 명시적인 Bootstrap Update와 Git diff로 다시 결합한다. |
+| STDIO executable과 capability contract를 `apps/server` 내부에 둠 | 거절 | Codex가 독립 process로 실행하는 stable entrypoint와 MCP transport가 Express application build·Browser lifecycle의 내부 경로에 결합된다. |
+| Interaction MCP를 `@ay-ple/codex-chat-runtime`에 구현 | 거절 | Native Codex lifecycle adapter가 AY-PLE 제품 capability schema와 App UI transport를 알아야 하므로 Runtime 경계가 얕아진다. |
 
 ## 결과
 

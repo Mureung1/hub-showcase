@@ -53,7 +53,7 @@ Root `npm run dev`는 repository-relative personal app data·existing workspace�
 
 | Root | Canonical path | 소유권 |
 | --- | --- | --- |
-| `packageRoot` | `hub/` | Tracked source와 built-in Skill, rebuildable `node_modules`·`dist` |
+| `packageRoot` | `hub/` | Tracked source, built-in Skill과 `@ay-ple/interaction-mcp` source, rebuildable `node_modules`·`dist` |
 | `appDataRoot` | `../.ay-ple/` | Verified Runtime payload, `WorkspaceRegistry`, cache와 temp |
 | Semester parent | `../workspace/` | 학기별 독립 Git repository |
 | Global Codex | `~/.codex/` | 기존 account, config, Skill과 Codex-managed session state |
@@ -116,6 +116,8 @@ chooser-selected-directory/
 hub/
   .agents/skills/             # 개발 harness와 초기 Bootstrap Skill
   skills/                     # AY-PLE built-in Skill source catalog
+  packages/interaction-mcp/
+    dist/                     # rebuildable built STDIO entrypoint
   node_modules/               # rebuildable npm dependency
   **/dist/                    # rebuildable output
 
@@ -143,7 +145,7 @@ Active SemesterWorkspace가 없을 때는 Runtime·context probe를 canonical `h
 
 Target workspace의 `AGENTS.md`와 Skills는 App-owned exact bundle이 아니다. Init Skill은 existing bytes를 존중하면서 최소 지침과 Skill copy를 준비하고, AY는 exact Git root에서 Codex의 native project config·instruction·Skill discovery를 사용한다. Current Runtime의 fixed `project_root_markers=[]`, process-wide managed Skill root와 one-shot `config/read`·`skills/list` probe는 현재 구현 사실이다. Target은 fixed marker와 managed Skill override를 제거하되 effective context 관측 seam은 필요한 범위에서 유지하며, consumer 없는 v3 bundle verifier가 target workspace contents를 소유하거나 drift를 이유로 일반 사용자 파일을 막지 않는다.
 
-Bootstrap이 설치하는 `.codex/config.toml`은 exact SemesterWorkspace root에서 hub-owned built Interaction MCP STDIO Adapter까지 계산한 상대 `command`, forwarded env 이름, capability allowlist와 `required = true`를 담고 MCP server `cwd`는 생략한다. Current pinned local STDIO launcher가 Runtime fallback `cwd`를 쓰므로 relative command의 기준은 `.codex/`가 아니라 Workspace Runtime의 exact Git root다. App endpoint·token·Runtime binding은 Codex child의 process environment에만 존재하고 STDIO Adapter로 allowlist 전달된다. Adapter는 current App Broker와 authenticated handshake를 끝낸 뒤에만 initialize를 성공시킨다. App activation은 effective MCP status에서 expected server·handshake를 별도로 확인해 project config 자체가 무시된 경우도 잡는다. Current thread-start private MCP config injection은 제거하며, project config가 load되지 않거나 Broker binding이 실패한 Runtime은 active workspace로 열지 않는다.
+Bootstrap이 설치하는 `.codex/config.toml`은 exact SemesterWorkspace root에서 `hub/packages/interaction-mcp`의 built STDIO Adapter까지 계산한 상대 `command`, forwarded env 이름, capability allowlist와 `required = true`를 담고 MCP server `cwd`는 생략한다. Current pinned local STDIO launcher가 Runtime fallback `cwd`를 쓰므로 relative command의 기준은 `.codex/`가 아니라 Workspace Runtime의 exact Git root다. `apps/server`가 App endpoint·token·Runtime binding을 소유하고, capability-neutral `@ay-ple/codex-chat-runtime`은 그 값을 Codex child environment로만 전달하며, Codex가 STDIO Adapter로 allowlist 전달한다. Adapter는 current App Broker와 authenticated handshake를 끝낸 뒤에만 initialize를 성공시킨다. App activation은 effective MCP status에서 expected server·handshake를 별도로 확인해 project config 자체가 무시된 경우도 잡는다. Current thread-start private MCP config injection은 제거하며, project config가 load되지 않거나 Broker binding이 실패한 Runtime은 active workspace로 열지 않는다.
 
 사용자가 선택한 Git root의 실제 자료는 별도 import·registration 없이 AY의 작업 대상이다. App은 자료를 `RawMaterial`로 승격하거나 snapshot해야만 native `cwd`에서 읽을 수 있게 하는 admission layer를 두지 않는다. Codex-managed state의 내부 file roster도 product contract로 고정하지 않는다.
 
