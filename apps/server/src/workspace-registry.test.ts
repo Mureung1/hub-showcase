@@ -351,10 +351,9 @@ test('registry loss followed by explicit reselect preserves workspace identity a
       appDataRoot: fixture.appDataRoot,
     })
 
-    const selected = await store.registerSelectedWorkspace({
+    const selected = await store.commitActiveWorkspace({
       expectedAuthority: null,
       canonicalRoot: fixture.firstRoot,
-      activate: true,
     })
     assert.equal(selected.status, 'written')
     if (selected.status !== 'written') assert.fail('reselect must write')

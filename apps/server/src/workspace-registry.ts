@@ -110,10 +110,9 @@ export interface WorkspaceRegistryStore {
     readonly registry: WorkspaceRegistryV1
   }): Promise<WorkspaceRegistryWriteResult>
   resolveActiveWorkspace(): Promise<ResolvedRegistryWorkspace>
-  registerSelectedWorkspace(input: {
+  commitActiveWorkspace(input: {
     readonly expectedAuthority: WorkspaceRegistryAuthority | null
     readonly canonicalRoot: string
-    readonly activate: boolean
   }): Promise<
     | WorkspaceRegistryWriteResult
     | {
@@ -235,7 +234,7 @@ export function createWorkspaceRegistryStore(
       }
     },
 
-    async registerSelectedWorkspace(input) {
+    async commitActiveWorkspace(input) {
       const canonicalRoot = await canonicalSelectedRoot(
         input.canonicalRoot,
       )
@@ -281,9 +280,7 @@ export function createWorkspaceRegistryStore(
       const next: WorkspaceRegistryV1 = {
         kind: registryKind,
         formatVersion: registryFormatVersion,
-        activeWorkspaceId: input.activate
-          ? identity.state.workspaceId
-          : current.activeWorkspaceId,
+        activeWorkspaceId: identity.state.workspaceId,
         workspaces,
       }
       return writeRegistry(
@@ -396,10 +393,7 @@ async function writeRegistry(
   expectedAuthority: WorkspaceRegistryAuthority | null,
   candidate: WorkspaceRegistryV1,
   options: WorkspaceRegistryStoreOptions,
-  expectedWorkspace?: {
-    readonly canonicalRoot: string
-    readonly workspaceId: string
-  },
+  expectedWorkspace?: WorkspaceRegistryEntry,
 ): Promise<WorkspaceRegistryWriteResult> {
   const registry = decodeWorkspaceRegistryBytes(
     encodeWorkspaceRegistry(candidate),
@@ -484,6 +478,13 @@ async function writeRegistry(
         return { status: 'conflict' }
       }
 
+      await assertRegistryRootsCurrent(registry)
+      if (
+        expectedWorkspace &&
+        !(await workspaceIdentityStillMatches(expectedWorkspace))
+      ) {
+        return { status: 'conflict' }
+      }
       await inject(options, 'before_final_compare')
       const finalGuard = await openRegistryFile(guard)
       const finalCompared = await openRegistryFile(target)
@@ -491,13 +492,6 @@ async function writeRegistry(
         !finalGuard.bytes.equals(expectedBytes) ||
         !finalCompared.bytes.equals(expectedBytes) ||
         !sameIdentity(finalGuard.identity, finalCompared.identity)
-      ) {
-        return { status: 'conflict' }
-      }
-      await assertRegistryRootsCurrent(registry)
-      if (
-        expectedWorkspace &&
-        !(await workspaceIdentityStillMatches(expectedWorkspace))
       ) {
         return { status: 'conflict' }
       }
@@ -528,13 +522,28 @@ async function writeRegistry(
       authority: written.authority,
     }
   } finally {
+    let cleanupFailed = false
     if (temporaryExists) {
-      await unlink(temporary).catch(() => undefined)
+      try {
+        await unlink(temporary)
+      } catch {
+        cleanupFailed = true
+      }
     }
     if (guardExists) {
-      await unlink(guard).catch(() => undefined)
+      try {
+        await unlink(guard)
+        await syncDirectory(directory)
+      } catch {
+        cleanupFailed = true
+      }
     }
-    await releaseWriterLease(directory, lease).catch(() => undefined)
+    try {
+      await releaseWriterLease(directory, lease)
+    } catch {
+      cleanupFailed = true
+    }
+    if (cleanupFailed) throw new WorkspaceRegistryStorageError()
   }
 }
 
