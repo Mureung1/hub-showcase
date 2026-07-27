@@ -74,6 +74,7 @@ def extract_node(state: State) -> dict:
                 system_instruction=SYSTEM_PROMPT,
                 response_mime_type="application/json",
                 response_schema=Extraction,   # 구조화 출력: 이 스키마 모양으로만 응답
+                temperature=0,                # 추출은 창의성 불필요 — 같은 입력엔 같은 출력에 가깝게 (변동성 완화)
             ),
         )
         data: Extraction = resp.parsed         # 파싱된 Pydantic 인스턴스
