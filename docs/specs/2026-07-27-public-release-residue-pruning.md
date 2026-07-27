@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
 
 ## Problem Statement
 
@@ -173,3 +173,13 @@ None.
 ## Further Notes
 
 이 spec의 완료는 Development Backlog의 public release lane 감사 항목 중 surface 분류와 Runtime managed account·v3 kernel `keep | remove` 판정을 닫는다. 완료 시 구현 지도와 Runtime 격리 문서는 current topology만 설명하고, Runtime·workspace package README는 각 package의 실제 survivor surface를 반영해야 한다. Backlog에서 그 감사 항목을 완료 처리한 뒤에야 다음 상위 todo인 `ImportSource` 여정을 시작한다.
+
+## Completion
+
+다섯 implementation ticket이 모두 완료됐다.
+
+- [001 — Workspace-only Runtime survivor seam을 확정한다](../tickets/2026-07-27-public-release-residue-pruning/001-workspace-runtime-survivor-seam.md)
+- [002 — Node Runtime에서 managed account lifecycle과 role을 제거한다](../tickets/2026-07-27-public-release-residue-pruning/002-node-runtime-managed-account-contraction.md)
+- [003 — Python bridge의 managed account protocol을 제거한다](../tickets/2026-07-27-public-release-residue-pruning/003-python-bridge-account-protocol-contraction.md)
+- [004 — Exact SDK patch stack과 production bundle을 8단계로 재고정한다](../tickets/2026-07-27-public-release-residue-pruning/004-eight-patch-runtime-bundle-baseline.md)
+- [005 — Current topology와 workspace keep 판정을 반영하고 감사를 닫는다](../tickets/2026-07-27-public-release-residue-pruning/005-current-topology-audit-closeout.md)
