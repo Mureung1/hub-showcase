@@ -73,5 +73,26 @@ sequenceDiagram
 - YOLOv8의 객체 탐지율(특히 음식이나 공간의 애매한 경계)을 높이기 위해 프롬프트 튜닝이나 추가 학습(Fine-Tuning)이 필요할지에 대한 비전 AI 담당자분의 의견을 구합니다.
 - 크롤러로 수집되는 실시간 트렌드 데이터가 불필요한 노이즈(스팸 태그 등)를 포함하지 않도록, 전처리 파이프라인 설계에 대한 서버팀의 리뷰 부탁드립니다.
 
+## 배포 전 확인 결과
+- FE 위치: `frontend`
+  - 완료 기준: 프로덕션 빌드가 성공해야 함
+  - 확인 결과: `npm run build` 성공
+- BE 위치: `backend`
+  - 완료 기준: Node/Express 서버가 로컬에서 실행되고 `/api/health`가 200을 반환해야 함
+  - 확인 결과: `PORT=5055 npm start` 상당의 실행으로 서버 기동, Supabase 연결, `/api/health` 200 확인
+- 실패 지점 분류
+  - 화면: FE 빌드 성공, 빌드 단계 오류 없음
+  - 서버: BE 프로세스 기동 및 헬스체크 성공
+  - DB: 서버 시작 시 Supabase 연결 완료 로그 확인
+- 배포 환경변수 이름
+  - 필수: `PORT`, `SUPABASE_URL`, `SUPABASE_KEY`
+  - Naver DataLab: `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`
+  - 선택/확장: `TIKTOK_CLIENT_ID`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_ACCESS_TOKEN`, `INSTAGRAM_ACCESS_TOKEN`
+- 비밀 키 GitHub 업로드 여부
+  - `git ls-files` 기준 실제 `.env` 파일은 추적되지 않고 `backend/.env.example`만 추적됨
+  - `.gitignore`의 `.env` 규칙이 `backend/.env`에 적용됨을 확인
+  - 추적 파일 및 Git 히스토리에서 OpenAI/GitHub/AWS/Private key 형태의 고위험 토큰 패턴 검출 없음
+  - `SECRET`, `TOKEN`, `KEY` 키워드 검색 결과는 환경변수 참조 코드, GitHub Actions 기본 `secrets.GITHUB_TOKEN`, 문서 예시값으로 확인됨
+
 ## 🔗 관련 이슈 (Related Issues)
 - Resolves: #[이슈 번호]
