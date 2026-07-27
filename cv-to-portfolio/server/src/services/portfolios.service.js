@@ -4,6 +4,8 @@ import { ServiceError } from "../errors/ServiceError.js";
 const TABLE = "portfolios";
 const META_COLUMNS = "id,name,title,theme_slug,theme_name,is_favorite,created_at";
 const DETAIL_COLUMNS = `${META_COLUMNS},html`;
+const LEGACY_META_COLUMNS = "id,name,title,theme_slug,theme_name,created_at";
+const LEGACY_DETAIL_COLUMNS = `${LEGACY_META_COLUMNS},html`;
 const REQUEST_TIMEOUT_MS = 8000;
 
 function mapRow(row, includeHtml = false) {
@@ -72,9 +74,33 @@ async function request(path, options = {}, fetchImpl = globalThis.fetch) {
   }
 }
 
+function isMissingFavoriteColumn(error) {
+  const detail = error?.cause?.message || "";
+  return (
+    error instanceof ServiceError &&
+    detail.includes("42703") &&
+    detail.includes("is_favorite")
+  );
+}
+
+async function requestWithLegacyColumns(
+  path,
+  legacyPath,
+  options = {},
+  fetchImpl = globalThis.fetch,
+) {
+  try {
+    return await request(path, options, fetchImpl);
+  } catch (error) {
+    if (!isMissingFavoriteColumn(error)) throw error;
+    return request(legacyPath, options, fetchImpl);
+  }
+}
+
 export async function createPortfolio(input, fetchImpl) {
-  const rows = await request(
+  const rows = await requestWithLegacyColumns(
     `/rest/v1/${TABLE}?select=${DETAIL_COLUMNS}`,
+    `/rest/v1/${TABLE}?select=${LEGACY_DETAIL_COLUMNS}`,
     {
       method: "POST",
       headers: headers("return=representation"),
@@ -97,8 +123,9 @@ export async function createPortfolio(input, fetchImpl) {
 }
 
 export async function listPortfolios(limit = 10, fetchImpl) {
-  const rows = await request(
+  const rows = await requestWithLegacyColumns(
     `/rest/v1/${TABLE}?select=${META_COLUMNS}&order=created_at.desc&limit=${limit}`,
+    `/rest/v1/${TABLE}?select=${LEGACY_META_COLUMNS}&order=created_at.desc&limit=${limit}`,
     { headers: headers() },
     fetchImpl,
   );
@@ -111,8 +138,9 @@ export async function listPortfolios(limit = 10, fetchImpl) {
 }
 
 export async function getPortfolio(id, fetchImpl) {
-  const rows = await request(
+  const rows = await requestWithLegacyColumns(
     `/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}&select=${DETAIL_COLUMNS}&limit=1`,
+    `/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}&select=${LEGACY_DETAIL_COLUMNS}&limit=1`,
     { headers: headers() },
     fetchImpl,
   );
