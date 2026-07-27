@@ -59,9 +59,33 @@ def _event_stream(topic: str, limit: int) -> Iterator[str]:
 
     **리스트에 모았다가 마지막에 보내지 않는다.** 그러면 사용자는 3분을 기다렸다가
     한꺼번에 받게 되고, 이 서비스의 핵심인 "판단 과정이 실시간으로 보인다"가 사라진다.
+
+    예상하지 못한 예외는 여기서 `error` 이벤트로 바꿔 내보내고 정상 종료한다.
+    그냥 끊기면 브라우저는 "아직 오는 중"과 구분하지 못해 매달리고, EventSource가
+    자동 재연결하면 에이전트가 통째로 재실행되어 API 비용이 탄다.
+    `except Exception`은 `GeneratorExit`(BaseException 상속)을 잡지 않으므로
+    7-3의 중단 경로를 삼키지 않는다.
+
+    **한계**: 여기서 보내는 `error`는 최후의 그물이다. `paper_done`이 이미 나간 뒤에
+    발동하면 sse-contract.md의 "아무것도 못 건진 경우에만 error" 규정을 어기게 된다.
+    다만 이 시점에는 유효한 `done`을 만들 재료(stats)가 없고, 아무것도 안 보내면
+    브라우저가 재연결해 에이전트를 통째로 재실행한다 — 그쪽이 더 비싸다.
+    근본 해결은 agent.py의 trend/done 조립부를 보호하는 것이다 (이슈 #65).
     """
-    for event in agent.run_agent(topic, limit=limit):
-        yield _sse_frame(event)
+    try:
+        for event in agent.run_agent(topic, limit=limit):
+            yield _sse_frame(event)
+    except Exception as exc:
+        # 스택트레이스는 서버 로그에만 남긴다 — 응답에 넣으면 내부 구조가 노출된다.
+        logger.exception("스트림 도중 예상하지 못한 예외가 발생했다 (topic=%s)", topic)
+        yield _sse_frame(
+            {
+                "stage": "error",
+                "message": "예상하지 못한 오류로 중단되었습니다. 잠시 뒤 다시 시도해 주세요.",
+                "code": "internal_error",
+                "at": f"스트리밍 중 ({type(exc).__name__})",
+            }
+        )
 
 
 async def _guarded_stream(request: Request, source: Iterator[str]) -> AsyncIterator[str]:

@@ -95,6 +95,49 @@ def test_guarded_stream_stops_when_client_disconnects():
     assert "completed" not in marks, "중단됐는데 소스가 끝까지 돌았다"
 
 
+def test_event_stream_ends_with_error_event_on_exception(monkeypatch):
+    """스트림 도중 예외가 나면 error 이벤트로 종결한다 (7-4).
+
+    그냥 끊기면 브라우저는 "아직 오는 중"과 구분하지 못해 매달리고,
+    EventSource가 자동 재연결하면 에이전트가 통째로 재실행되어 API 비용이 탄다.
+    """
+
+    def _blows_up(topic, limit=None):
+        yield {"stage": "search", "topic": topic}
+        raise RuntimeError("의도적 실패")
+
+    monkeypatch.setattr(main.agent, "run_agent", _blows_up)
+
+    frames = list(main._event_stream("LLM agent planning", limit=3))
+
+    assert len(frames) == 2, "search 뒤에 종결 이벤트가 나오지 않았다"
+    last = json.loads(frames[-1][len("data: ") :])
+    assert last["stage"] == "error"
+    assert last["code"] == "internal_error"
+    assert "RuntimeError" in last["at"]
+    assert set(last) == {"stage", "message", "code", "at"}, "계약에 없는 필드가 섞였다"
+
+
+def test_event_stream_does_not_swallow_generator_exit(monkeypatch):
+    """GeneratorExit은 error로 바꾸지 않는다 (7-4).
+
+    잡아서 삼키면 7-3의 중단 경로가 죽는다 — 끊긴 뒤에도 스트림이 살아남는다.
+    """
+
+    def _endless(topic, limit=None):
+        while True:
+            yield {"stage": "search", "topic": topic}
+
+    monkeypatch.setattr(main.agent, "run_agent", _endless)
+
+    stream = main._event_stream("LLM agent planning", limit=3)
+    next(stream)
+    stream.close()  # GeneratorExit을 던진다
+
+    # close()가 조용히 끝나면 성공. error 이벤트를 yield하려 했다면
+    # "generator ignored GeneratorExit" RuntimeError가 났을 것이다.
+
+
 def test_guarded_stream_closes_source_on_disconnect():
     """중단 시에도 소스를 확정적으로 닫는다 — GC에 맡기지 않는다 (7-3).
 
