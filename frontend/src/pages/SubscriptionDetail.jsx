@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { deleteSubscription, getSubscription } from '../lib/subscriptions'
 import { getMembers, deleteMember } from '../lib/partyMembers'
-import { createSettlement, getSettlements, reportSettlementMember, settlementStatusLabel } from '../lib/settlements'
+import {
+  billingMonthLabel,
+  createSettlement,
+  getSettlements,
+  reportSettlementMember,
+  settlementStatusLabel,
+} from '../lib/settlements'
 import { getServiceColor } from '../lib/serviceColor'
 import RoleBadge from '../components/RoleBadge'
 import LoginRequired from '../components/LoginRequired'
@@ -228,7 +234,7 @@ const SubscriptionDetail = () => {
           {latestSettlement && (
             <div className="settlement-current">
               <div className="settlement-section-header">
-                <span className="detail-section-title">{latestSettlement.billingMonth} 정산</span>
+                <span className="detail-section-title">{billingMonthLabel(latestSettlement.billingMonth)} 정산</span>
                 <span className={`member-status ${latestSettlement.myStatus}`}>
                   {settlementStatusLabel(latestSettlement.myStatus, latestSettlement.myReportedAt)}
                 </span>
@@ -281,7 +287,7 @@ const SubscriptionDetail = () => {
                 role === 'owner' ? (
                   <li key={settlement.id}>
                     <Link to={`/subscriptions/${id}/settlements/${settlement.id}`} className="settlement-list-item">
-                      <span className="settlement-month">{settlement.billingMonth}</span>
+                      <span className="settlement-month">{billingMonthLabel(settlement.billingMonth)}</span>
                       <span className="detail-value">
                         {settlement.doneCount}/{settlement.memberCount}명 완료
                       </span>
@@ -289,7 +295,7 @@ const SubscriptionDetail = () => {
                   </li>
                 ) : (
                   <li key={settlement.id} className="settlement-list-item">
-                    <span className="settlement-month">{settlement.billingMonth}</span>
+                    <span className="settlement-month">{billingMonthLabel(settlement.billingMonth)}</span>
                     <span className="settlement-my-summary">
                       <span className="detail-value">{settlement.myAmount.toLocaleString()}원</span>
                       <span className={`member-status ${settlement.myStatus}`}>

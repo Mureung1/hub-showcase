@@ -12,6 +12,16 @@ export function settlementOwnerStatusLabel(status, reportedAt) {
   return '정산 대기'
 }
 
+export function billingMonthLabel(billingMonth) {
+  const [year, month] = billingMonth.split('-')
+  return `${year}년 ${Number(month)}월`
+}
+
+export function billingMonthShortLabel(billingMonth) {
+  const [, month] = billingMonth.split('-')
+  return `${Number(month)}월`
+}
+
 export async function createSettlement(id) {
   const token = getToken()
   const res = await fetch(`/api/subscriptions/${id}/settlements`, {

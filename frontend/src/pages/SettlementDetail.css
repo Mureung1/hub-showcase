@@ -11,6 +11,32 @@
   text-decoration: none;
 }
 
+.settlement-transfer-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-inline-gap);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.toss-transfer-qr {
+  display: block;
+  width: 160px;
+  height: 160px;
+  border-radius: var(--radius-md);
+}
+
+.settlement-transfer-pending-message,
+.settlement-transfer-fallback-message {
+  text-align: center;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  margin: 0;
+}
+
 .settlement-member-note {
   font-size: var(--font-size-caption);
   color: var(--color-text-faint);

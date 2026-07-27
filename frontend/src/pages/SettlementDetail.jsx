@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import QRCode from 'qrcode'
 import {
+  billingMonthLabel,
+  billingMonthShortLabel,
   getSettlementDetail,
   reportSettlementMember,
   settlementOwnerStatusLabel,
@@ -25,6 +28,11 @@ const SettlementDetail = () => {
   const [reportStatus, setReportStatus] = useState('idle')
   const [reportErrorMessage, setReportErrorMessage] = useState('')
 
+  const [showTransferFallback, setShowTransferFallback] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState('')
+
+  const myMember = settlement && settlement.role !== 'owner' ? settlement.members[0] : null
+
   useEffect(() => {
     getSettlementDetail(id, settlementId)
       .then((data) => {
@@ -46,6 +54,33 @@ const SettlementDetail = () => {
       .catch(() => {})
   }, [id])
 
+  useEffect(() => {
+    if (!myMember || myMember.status !== 'pending') return
+
+    let fallbackTimer
+    const handleVisibilityChange = () => {
+      if (document.hidden) clearTimeout(fallbackTimer)
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    window.location.href = myMember.transferLink
+    fallbackTimer = setTimeout(() => {
+      if (!document.hidden) setShowTransferFallback(true)
+    }, 1500)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      clearTimeout(fallbackTimer)
+    }
+  }, [myMember?.id, myMember?.status, myMember?.transferLink])
+
+  useEffect(() => {
+    if (!showTransferFallback || !myMember) return
+    QRCode.toDataURL(myMember.transferLink)
+      .then(setQrDataUrl)
+      .catch(() => {})
+  }, [showTransferFallback, myMember?.transferLink])
+
   const handleKakaoShare = () => {
     if (!window.Kakao?.isInitialized()) return
 
@@ -53,7 +88,7 @@ const SettlementDetail = () => {
 
     window.Kakao.Share.sendCustom({
       templateId: Number(import.meta.env.VITE_KAKAO_SETTLEMENT_SHARE_TEMPLATE_ID),
-      templateArgs: { serviceName, path },
+      templateArgs: { serviceName, path, billingMonth: billingMonthShortLabel(settlement.billingMonth) },
     })
   }
 
@@ -99,13 +134,12 @@ const SettlementDetail = () => {
     content = <p className="subscription-detail-message">{errorMessage}</p>
   } else {
     const { billingMonth, role, members } = settlement
-    const myMember = role === 'owner' ? null : members[0]
     const myStatusLabel = myMember ? settlementStatusLabel(myMember.status, myMember.reportedAt) : ''
 
     content = (
       <>
         <div className="subscription-detail-header">
-          <h1 className="subscription-detail-title">{billingMonth} 정산 내역</h1>
+          <h1 className="subscription-detail-title">{billingMonthLabel(billingMonth)} 정산 내역</h1>
         </div>
 
         {role === 'owner' ? (
@@ -154,35 +188,50 @@ const SettlementDetail = () => {
             </ul>
           </div>
         ) : (
-          <div className="subscription-detail-card">
-            <div className="detail-row detail-row-highlight">
-              <span className="detail-label">내 정산 금액</span>
-              <span className="detail-value">{myMember.amount.toLocaleString()}원</span>
+          <>
+            <div className="subscription-detail-card">
+              <div className="detail-row detail-row-highlight">
+                <span className="detail-label">내 정산 금액</span>
+                <span className="detail-value">{myMember.amount.toLocaleString()}원</span>
+              </div>
+
+              <div className="detail-row">
+                <span className="detail-label">상태</span>
+                <span className={`member-status ${myMember.status}`}>{myStatusLabel}</span>
+              </div>
+
+              {reportErrorMessage && <p className="form-error">{reportErrorMessage}</p>}
+
+              {myMember.status === 'pending' && (
+                <div className="settlement-current-actions">
+                  {showTransferFallback ? (
+                    <a className="toss-transfer-btn" href={myMember.transferLink}>
+                      토스로 이체하기
+                    </a>
+                  ) : (
+                    <p className="settlement-transfer-pending-message">토스로 이동하고 있어요...</p>
+                  )}
+                  <button
+                    type="button"
+                    className="confirm-request-btn"
+                    disabled={reportStatus === 'submitting' || Boolean(myMember.reportedAt)}
+                    onClick={() => handleReport(myMember.id)}
+                  >
+                    {myMember.reportedAt ? '확인 요청 완료' : '이체 확인 요청'}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="detail-row">
-              <span className="detail-label">상태</span>
-              <span className={`member-status ${myMember.status}`}>{myStatusLabel}</span>
-            </div>
-
-            {reportErrorMessage && <p className="form-error">{reportErrorMessage}</p>}
-
-            {myMember.status === 'pending' && (
-              <div className="settlement-current-actions">
-                <a className="toss-transfer-btn" href={myMember.transferLink}>
-                  토스로 이체하기
-                </a>
-                <button
-                  type="button"
-                  className="confirm-request-btn"
-                  disabled={reportStatus === 'submitting' || Boolean(myMember.reportedAt)}
-                  onClick={() => handleReport(myMember.id)}
-                >
-                  {myMember.reportedAt ? '확인 요청 완료' : '이체 확인 요청'}
-                </button>
+            {myMember.status === 'pending' && showTransferFallback && qrDataUrl && (
+              <div className="settlement-transfer-qr-card">
+                <img src={qrDataUrl} alt="토스 송금 QR코드" className="toss-transfer-qr" />
+                <p className="settlement-transfer-fallback-message">
+                  앱이 자동으로 열리지 않았어요. QR코드를 스캔하거나 토스로 이체하기 버튼을 눌러주세요.
+                </p>
               </div>
             )}
-          </div>
+          </>
         )}
       </>
     )

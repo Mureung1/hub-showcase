@@ -9,7 +9,7 @@ function currentBillingMonth() {
 }
 
 function buildTransferLink({ amount, bankName, accountNumber }) {
-  return `supertoss://send?amount=${amount}&bank=${encodeURIComponent(bankName)}&accountno=${accountNumber}`
+  return `supertoss://send?bank=${encodeURIComponent(bankName)}&accountNo=${accountNumber}&amount=${amount}`
 }
 
 router.post('/:id/settlements', requireAuth, async (req, res, next) => {
