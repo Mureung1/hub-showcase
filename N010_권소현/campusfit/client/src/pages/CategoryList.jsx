@@ -32,7 +32,12 @@ const totalCount = listings.filter((l) => l.categoryId === categoryId).length;
     .filter((l) => region === "all" || !l.eligibleRegions || l.eligibleRegions.includes(region))
     .filter((l) => grade === "all" || !l.eligibleGrades || l.eligibleGrades.includes(grade))
     .filter((l) => interest === "all" || l.interest === interest)
-    .sort((a, b) => a.dDay - b.dDay);
+    .sort((a, b) => {
+      const aMatch = region !== "all" && a.eligibleRegions?.includes(region) ? 0 : 1;
+      const bMatch = region !== "all" && b.eligibleRegions?.includes(region) ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return a.dDay - b.dDay;
+    });
 
   return (
     <div className="cat-layout shell">

@@ -17,6 +17,7 @@ export const api = {
   getBoardPosts: (listingId) =>
     request(`/api/board${listingId ? `?listingId=${listingId}` : ""}`),
   getBoardPost: (id) => request(`/api/board/${id}`),
+  getYouthPolicies: () => request("/api/youth-policy"),
   addBoardPost: (post) =>
     request("/api/board", {
       method: "POST",
