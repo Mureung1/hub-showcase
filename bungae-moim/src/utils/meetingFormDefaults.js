@@ -23,5 +23,6 @@ export function defaultFormValues() {
     adultOnly: false,
     openChatUrl: '',
     description: '',
+    applyQuestion: '',
   }
 }

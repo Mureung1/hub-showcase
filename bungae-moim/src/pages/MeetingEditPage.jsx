@@ -40,6 +40,7 @@ function meetingToFormValues(m) {
     adultOnly: m.adultOnly,
     openChatUrl: m.openChatUrl ?? '',
     description: m.description ?? '',
+    applyQuestion: m.applyQuestion ?? '',
   }
 }
 

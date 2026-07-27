@@ -47,8 +47,19 @@ export function fetchMeeting(id) {
 }
 
 // POST /api/meetings/:id/apply — 참여 신청(F1). 성공 시 { status } 반환.
-export function applyToMeeting(id) {
-  return request(`/api/meetings/${encodeURIComponent(id)}/apply`, { method: 'POST' })
+// answer는 가입 질문이 설정된 소모임에서만 필요하다. 바디를 보낼 때는 Content-Type이
+// 반드시 있어야 서버의 express.json()이 파싱한다(없으면 req.body가 {}가 된다).
+export function applyToMeeting(id, answer) {
+  const hasAnswer = typeof answer === 'string' && answer.trim() !== ''
+  return request(`/api/meetings/${encodeURIComponent(id)}/apply`, {
+    method: 'POST',
+    ...(hasAnswer
+      ? {
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answer: answer.trim() }),
+        }
+      : {}),
+  })
 }
 
 // DELETE /api/meetings/:id/apply — 참여/신청 취소(F2). 성공 시 { status: 'cancelled' } 반환.
