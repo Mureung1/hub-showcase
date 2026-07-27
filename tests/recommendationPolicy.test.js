@@ -130,6 +130,34 @@ test("부족 재료 수와 메뉴 형태 중복을 서버 정책으로 차단한
   );
 });
 
+test("부분 허용 모드에서는 정책을 통과한 메뉴만 반환한다", () => {
+  const context = buildIngredientContext(rows, { today: "2026-07-22" });
+  const generated = {
+    recipes: [
+      recipe(),
+      recipe({
+        name: "재료가 부족한 볶음",
+        primaryIngredients: ["양파"],
+        requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }],
+      }),
+      recipe({
+        name: "삼겹살 찌개",
+        dishType: "stew",
+        cookingTechnique: "stew",
+      }),
+    ],
+  };
+
+  const recipes = validateGeneratedRecipes(generated, {
+    mode: "quick",
+    maxMissingIngredients: 0,
+    batchNumber: 1,
+    excludedRecipeFingerprints: [],
+  }, context, { allowPartial: true });
+
+  assert.deepEqual(recipes.map(({ name }) => name), ["삼겹살 볶음", "삼겹살 찌개"]);
+});
+
 test("재료 중복은 허용하고 서로 다른 메뉴 형태는 통과시킨다", () => {
   const context = buildIngredientContext(rows, { today: "2026-07-22" });
   const generated = {

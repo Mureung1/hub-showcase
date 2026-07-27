@@ -166,6 +166,59 @@ test("품질 제한으로 레시피가 한 개만 생성되어도 정상 응답�
   assert.equal(result.meta.stopReason, "qualityLimit");
 });
 
+test("두 번째 생성에서는 정책 위반 메뉴만 제외하고 통과한 메뉴를 반환한다", async () => {
+  let attempts = 0;
+  let saved;
+  const service = createRecommendationService({
+    supabaseClient: createSupabaseClient(),
+    geminiClient: {
+      model: "test-model",
+      generate: async () => {
+        attempts += 1;
+        return {
+          generated: {
+            recipes: [
+              generatedRecipe(1),
+              {
+                ...generatedRecipe(2),
+                name: "양파 메뉴",
+                primaryIngredients: ["양파"],
+                requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }],
+              },
+              generatedRecipe(3),
+            ],
+            generationSummary: {
+              requestedCount: 3,
+              returnedCount: 3,
+              stopReason: "targetMet",
+            },
+          },
+          metadata: { model: "test-model", durationMs: 10 },
+        };
+      },
+    },
+    cacheStore: {
+      get: async () => null,
+      set: async (value) => {
+        saved = value;
+        return {
+          generated_at: "2026-07-22T06:00:00Z",
+          expires_at: "2026-07-22T15:00:00Z",
+        };
+      },
+    },
+    now: () => new Date("2026-07-22T06:00:00Z"),
+  });
+
+  const result = await service.recommend(request);
+
+  assert.equal(attempts, 2);
+  assert.deepEqual(result.recipes.map(({ name }) => name), ["삼겹살 메뉴 1", "삼겹살 메뉴 3"]);
+  assert.equal(result.meta.returnedCount, 2);
+  assert.equal(result.meta.stopReason, "qualityLimit");
+  assert.equal(saved.recipes.length, 2);
+});
+
 test("추천 가능한 재료가 없으면 Gemini를 호출하지 않고 422 오류를 반환한다", async () => {
   const service = createRecommendationService({
     supabaseClient: createSupabaseClient([]),

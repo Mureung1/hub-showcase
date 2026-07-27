@@ -66,10 +66,23 @@ async function generateValidRecipes({ geminiClient, request, ingredientContext }
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       const result = await geminiClient.generate({ request, ingredientContext, policyFeedback });
-      const recipes = validateGeneratedRecipes(result.generated, request, ingredientContext);
+      const recipes = validateGeneratedRecipes(
+        result.generated,
+        request,
+        ingredientContext,
+        { allowPartial: attempt === 2 },
+      );
       return {
         recipes,
-        generationSummary: result.generated.generationSummary,
+        generationSummary: {
+          requestedCount: 3,
+          returnedCount: recipes.length,
+          stopReason: recipes.length === 3
+            ? "targetMet"
+            : recipes.length === 0
+              ? "noSuitableRecipe"
+              : "qualityLimit",
+        },
         metadata: result.metadata,
         attempt,
       };
