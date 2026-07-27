@@ -145,7 +145,7 @@ hub/
 
 - Conventional Commits: `feat` / `fix` / `docs` / `style` / `refactor` / `test` / `chore`.
 - 제목은 한국어 허용, 명령형 요약. 예: `feat: 결과 화면 디자인 시스템 적용`.
-- 커밋 푸터에 공동 저자 표기를 남긴다: `Co-Authored-By: Claude ...`.
+- 커밋·PR에 AI 크레딧(Co-Authored-By, Generated with 등)을 표기하지 않는다(2026-07-21 확정).
 - 브랜치는 `work` 기준. amend/rebase/force push는 사용자 명시 허가 없이 사용하지 않는다.
 
 ### 개발 전 확정 사항

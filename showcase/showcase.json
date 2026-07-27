@@ -4,17 +4,22 @@
   "summary": "MBTI를 입구로 공부·스트레스 성향을 점검하고, 나에게 맞는 공부법과 회복 루틴을 추천받아 스스로 검증하는 자기조절 학습 도구입니다.",
   "githubUser": "bricepark94(박병관)",
   "demoUrl": "https://hub-theta-brown.vercel.app",
-  "thumbnail": "thumbnail.jpg",
-  "screenshots": ["screenshots/home.webp"],
-  "problem": "학생·수험생은 자기에게 맞는 공부법을 'MBTI 유형'만으로 단정하거나, 반대로 기준 없이 남의 방법을 따라 하다 지칩니다. 공부 성향과 피로·스트레스 신호가 한곳에 정리되지 않아, 오늘 무엇을 어떻게 공부할지 정하고 그 방식이 실제로 맞는지 확인하기 어렵습니다.",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/01-result.webp",
+    "screenshots/02-plan.webp",
+    "screenshots/03-retrospective.webp"
+  ],
+  "problem": "학생·수험생은 자기에게 맞는 공부법을 'MBTI 유형'만으로 단정하거나, 반대로 기준 없이 남의 방법을 따라 하다 지칩니다. 공부 성향과 피로·스트레스 신호가 한곳에 정리되지 않아, 오늘 무엇을 어떻게 공부할지 정하고 그 방식이 실제로 맞는지 확인하기 어렵습니다. 그렇다고 MBTI 결과를 그대로 믿게 만들면 또 다른 단정이 되기 때문에, 추천을 주는 것만큼 '그 추천이 실제로 나에게 맞았는지'를 사용자가 직접 확인할 수 있게 만드는 것이 이 서비스의 과제였습니다.",
   "targetUsers": [
     "자기에게 맞는 공부법을 찾는 학생·수험생",
     "번아웃·스트레스를 관리하며 공부 루틴을 잡으려는 사람"
   ],
   "features": [
-    "MBTI와 공부·스트레스 설문을 함께 받아 학습 선호와 피로 패턴을 행동지표로 정리합니다.",
-    "규칙 기반으로 오늘 시도할 공부법 TOP 3와 회복 루틴을 추천하고 근거를 보여줍니다.",
-    "추천을 실천 카드로 바꾸고, 예측과 결과를 대조해 나에게 맞는 방식을 스스로 검증합니다."
+    "MBTI와 공부·스트레스 설문을 함께 받아 학습 선호와 피로 패턴을 5가지 행동지표로 정리합니다.",
+    "규칙 기반으로 오늘 시도할 공부법 TOP 3와 회복 루틴을 추천하고, 어떤 지표에서 나온 추천인지 근거를 함께 보여줍니다.",
+    "MBTI 힌트를 뺀 baseline 추천과 나란히 비교해, MBTI가 실제로 추천 순서를 바꿨는지 화면에서 확인합니다.",
+    "추천을 20~30분 실천 카드와 하루 스케줄로 바꾸고, 예측과 실제를 대조한 회고 리포트로 남깁니다."
   ],
   "featureTags": [
     "학습법 추천",
@@ -24,53 +29,91 @@
   "techStack": [
     "React",
     "Vite",
+    "JavaScript",
+    "Node.js",
     "Express",
-    "Supabase"
+    "Supabase",
+    "Gemini API",
+    "Vercel",
+    "Render",
+    "Vitest"
   ],
   "techHighlights": [
-    "React 상태 관리로 설문 응답과 추천 결과를 화면에 갱신합니다.",
-    "규칙 기반 추천 엔진이 MBTI 신호와 baseline을 분리 산출해 추가 효과를 비교합니다.",
-    "결과·기록은 서버 없이 브라우저 localStorage에만 저장해 개인 데이터를 로컬에만 둡니다."
+    "추천 엔진이 task/state-only baseline과 MBTI 힌트 추가 결과를 따로 산출해, MBTI의 추가 효과를 화면에서 분리해 보여줍니다.",
+    "결과·기록의 1차 저장소는 브라우저 localStorage이고, 사용자가 동의한 경우에만 Express를 거쳐 Supabase에 비식별 요약을 저장합니다.",
+    "외부 LLM(Gemini)이 실패하거나 키가 없으면 규칙 기반 설문 경로로 자동 폴백해, AI가 멈춰도 핵심 흐름은 끝까지 진행됩니다."
   ],
-  "developmentWithAI": "저는 문제와 핵심 기능, 추천 로직의 방향을 정했습니다. AI는 요구사항을 작업으로 나누고 코드 초안과 디자인 시스템을 만들었습니다. 저는 결과를 실행하고 테스트하면서 직접 확인하고 수정했습니다.",
+  "developmentWithAI": "저는 문제 정의와 핵심 기능, 추천 로직의 판단 기준, 그리고 하드룰(MBTI를 고정 판단 도구로 쓰지 않기, 성적 예측·정신건강 진단 금지)을 정했습니다. AI 에이전트는 요구사항을 이슈 단위 작업으로 나누고 코드 초안·디자인 시스템·단위 테스트·PR 본문을 만들었습니다. 다만 작업 우선순위, 배포 승인, PR 제출, 외부 LLM 연동 게이트 통과 여부는 자동화하지 않고 제가 직접 판단했습니다. 설계가 갈리는 지점은 ADR 문서(docs/decisions.md)에 선택지와 장단점, 채택 이유를 남겨 나중에 왜 그렇게 했는지 되짚을 수 있게 했습니다.",
   "agent": {
-    "summary": "기획부터 구현, 디자인, 테스트, PR 작성까지 Agent와 Skill을 함께 사용했습니다.",
+    "summary": "에이전트가 저장소에서 읽을 경로를 먼저 설계했습니다. README가 문서 지도 역할을 하고, docs/context.md에서 제품의 제약을 파악한 뒤, AGENTS.md가 작업 유형별로 반드시 읽을 문서를 안내합니다. 반복되는 작업은 Skill로 표준화하되 사람이 결정해야 하는 부분(작업 우선순위, main 배포, PR 제출)은 승인 게이트로 남겼습니다. force push·시크릿 커밋·업스트림 오링크를 부르는 bare 이슈번호는 git 훅으로 차단했습니다.",
     "agentTools": [
       {
+        "type": "skill",
+        "name": "daily-mission",
+        "purpose": "저장소 상태와 미해결 이슈를 점검해 오늘 할 작업을 정합니다. 매번 전체 맥락을 다시 설명하지 않아도 되도록 시작점을 고정합니다."
+      },
+      {
         "type": "agent",
-        "name": "개발 계획 Agent",
-        "purpose": "요구사항을 작업 단위로 나누고 구현 순서를 정합니다."
+        "name": "feature-planner",
+        "purpose": "요구사항을 우선순위·의존성이 있는 작은 작업과 이슈 초안으로 나눕니다. 코드는 만들지 않아 계획과 구현을 분리합니다."
       },
       {
         "type": "skill",
-        "name": "코드 작성 Skill",
-        "purpose": "정해진 작업에 필요한 코드 초안을 만듭니다."
+        "name": "plan-and-checklist",
+        "purpose": "기획서·체크리스트·README가 실제 코드와 어긋나지 않도록 갱신합니다. 에이전트가 낡은 문맥으로 작업하는 것을 막습니다."
       },
       {
         "type": "skill",
-        "name": "테스트 점검 Skill",
-        "purpose": "주요 기능을 확인할 테스트 항목을 만듭니다."
+        "name": "prototype-build",
+        "purpose": "화면·설문·규칙 기반 점수·추천·localStorage를 구현합니다. 새 프레임워크나 외부 AI API를 임의로 붙이지 않습니다."
+      },
+      {
+        "type": "agent",
+        "name": "feature-verifier",
+        "purpose": "build·lint·단위 테스트·헬스체크·end-to-end 흐름을 돌려 요구사항대로 동작하는지 증거와 함께 검증합니다. 기능은 추가하지 않습니다."
+      },
+      {
+        "type": "skill",
+        "name": "create-pr",
+        "purpose": "브랜치 상태를 확인하고 의도한 파일만 스테이징해 커밋·푸시합니다. 시크릿과 불필요한 의존성 변경을 걸러냅니다."
+      },
+      {
+        "type": "skill",
+        "name": "submit-daily-pr",
+        "purpose": "인수인계 문서를 쓰고 PR 제목·본문 초안을 만든 뒤, 사용자 승인을 받아야만 업스트림 저장소에 PR을 제출합니다."
       }
     ],
     "workflows": [
       {
-        "name": "기능 개발 Workflow",
+        "name": "기능 개발 워크플로우",
         "steps": [
-          "기능 명세 작성",
-          "GitHub Issue 등록",
-          "개별 코드 브랜치 만들기",
-          "Agent에게 구현 계획 요청",
-          "코드 작성",
-          "테스트 실행"
+          "오늘 미션과 저장소 상태 점검 (daily-mission)",
+          "요구사항을 작은 작업으로 나누고 GitHub 이슈 등록 (feature-planner)",
+          "기획서·체크리스트 갱신 (plan-and-checklist)",
+          "work 브랜치에서 구현 (prototype-build)",
+          "build·lint·단위 테스트·브라우저 확인 (feature-verifier)",
+          "화면 또는 기능 단위로 커밋 (create-pr)"
         ]
       },
       {
-        "name": "PR 협업 Workflow",
+        "name": "배포·검증 워크플로우",
         "steps": [
-          "PR 작성",
-          "Agent에게 변경 내용 점검 요청",
-          "리뷰 의견 반영",
-          "최종 결과 확인"
+          "사용자 승인을 받은 뒤 work 브랜치를 main으로 push",
+          "Vercel(frontend)·Render(backend) 자동 재배포 대기",
+          "프론트 공개 URL이 외부에서 열리는지 확인",
+          "/api/health가 backend:supabase로 응답하는지 확인",
+          "화면에서 동의 저장 → 서버 조회 → 삭제까지 라운드트립 확인",
+          "실패하면 Render 로그·Supabase 상태·환경변수 순으로 원인을 이슈에 기록"
+        ]
+      },
+      {
+        "name": "PR 협업 워크플로우",
+        "steps": [
+          "그날 커밋을 인수인계 문서로 정리 (submit-daily-pr)",
+          "PR 제목·본문 초안을 사용자에게 보여주고 승인 대기",
+          "bare 이슈번호·시크릿 자동 점검 통과 확인",
+          "업스트림 저장소에 PR 제출",
+          "리뷰 피드백을 문서와 다음 작업 계획에 반영"
         ]
       }
     ]

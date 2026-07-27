@@ -40,6 +40,27 @@ MBTI는 사람을 고정적으로 판단하는 기준이 아닙니다. 이 프�
 
 현재 프런트 `package.json` 기준의 실제 기술 스택만 정리했습니다. 연구 데이터 저장·LLM 프록시는 아래 백엔드(Express)에서 처리합니다.
 
+### 왜 이 선택인가 (대안과 트레이드오프)
+
+기술과 구조를 고를 때마다 대안을 함께 적어두고 채택 이유를 남겼습니다. 전체 기록은 [docs/decisions.md](docs/decisions.md)(ADR-001~009)에 있고, 핵심만 옮기면 다음과 같습니다.
+
+| 결정 | 고른 것 | 고려한 대안 | 이 쪽을 고른 이유 |
+|---|---|---|---|
+| 프런트 프레임워크 | Vite + React (JavaScript) | Next.js, TypeScript 도입 | 이 앱은 화면 흐름 하나짜리 SPA라 SSR·라우팅이 필요 없었습니다. 4주 안에 검증할 것은 **추천 로직과 사용자 흐름**이지 렌더링 전략이 아니라고 보고 빌드가 가장 빠른 구성을 유지했습니다. TypeScript는 MVP 속도를 우선해 미도입하고, 대신 순수 함수에 단위 테스트를 붙였습니다. |
+| 저장 계층 | localStorage 1차 + 동의 시 서버 비식별 요약 | 처음부터 서버 DB 중심, 완전 로컬 전용 | 개인 응답이 들어가는 서비스라 **기본값을 로컬**로 두는 편이 안전했습니다. 다만 "MBTI가 실제로 추천을 바꾸는가"를 확인하려면 집계가 필요해서, 동의한 사용자에 한해 비식별 파생값만 보내는 이중 구조로 갔습니다 (ADR-001·ADR-006). |
+| DB 제공자 | in-memory 어댑터 → Supabase | 처음부터 Supabase, 파일 기반 저장 | 키가 없어도 서버가 돌아야 개발이 막히지 않습니다. `store.js`를 어댑터로 만들어 **환경변수 유무로 자동 분기**시키고, 키가 준비된 뒤 코드 변경 없이 Supabase로 넘어갔습니다 (ADR-002). |
+| 추천 로직 | 규칙 기반 | 처음부터 LLM 추천 | 추천 이유를 사용자에게 그대로 보여줘야 하는 제품이라 **설명 가능성**이 우선이었습니다. LLM은 근거 보완용으로만, 게이트를 통과한 뒤 붙였습니다 (ADR-004·ADR-008). |
+| 제품 정체성 | MBTI를 입구로, 무게중심은 자기조절 | MBTI 전면, 자기조절 전면(MBTI 최소화) | 성과는 유형보다 자기조절·메타인지로 더 잘 설명된다는 근거(H-SRL-1)와, 그래도 진입 동기는 MBTI가 만든다는 현실을 둘 다 반영했습니다 (ADR-007). |
+| 코드 컨벤션 | 2-space·세미콜론·큰따옴표, ESLint flat config, 로직은 `scoring`/`recommendations`/`schedule`/`storage`로 분리 | 파일 하나에 로직 집중 | 추천 로직은 사람이 읽고 근거를 설명해야 하는 부분이라, 화면 코드와 섞이지 않게 순수 함수로 떼어냈습니다. 그래야 **단위 테스트로 고정**할 수 있습니다. |
+
+### AI가 실패해도 흐름이 멈추지 않게
+
+외부 LLM은 언제든 느려지거나, 실패하거나, 예상과 다른 형식으로 답할 수 있다고 전제하고 설계했습니다.
+
+- `backend/src/lib/llm.js`는 모델 체인(`MODEL_CHAIN`)을 순서대로 시도하고, **키가 없거나 전부 실패하면 규칙 기반 설문 경로로 폴백**합니다. 사용자는 AI 대화를 건너뛰어도 결과·추천·실천 카드까지 그대로 완주할 수 있습니다.
+- `backend/src/store.js`도 같은 방식입니다. Supabase 키가 없으면 in-memory 어댑터로 떨어지고, `/api/health`가 `backend` 필드로 **지금 어느 쪽으로 돌고 있는지**를 알려줍니다.
+- 프런트는 저장값이 깨져 있거나 응답이 누락돼도 흐름이 멈추지 않도록 복구 경로를 둡니다.
+
 ## 아키텍처
 
 화면(프런트) → 백엔드 프록시 → 저장소/외부 LLM 의 실제 데이터 흐름입니다. 백엔드는 환경변수 유무에 따라 저장소(Supabase↔in-memory)와 LLM(Gemini↔규칙 폴백)을 자동 분기합니다. 개인정보·대화 원문은 연구 저장 경로로 흐르지 않습니다(ADR-001/008).
@@ -83,7 +104,10 @@ flowchart LR
 | [docs/plan.md](docs/plan.md) | 최종 기획서, 문제 정의, 사용자 흐름, MVP 범위 |
 | [docs/checklist.md](docs/checklist.md) | MVP 구현 현황과 검증 베타·장기 확장 게이트 |
 | [docs/evidence-data-roadmap.md](docs/evidence-data-roadmap.md) | 문헌 근거, 측정, NMAR, 개인정보, 알고리즘 검증 기준 |
-| [docs/ai-workflow.md](docs/ai-workflow.md) | AI와 함께 일하는 작업 순서와 사용 Skill·Agent |
+| [docs/ai-workflow.md](docs/ai-workflow.md) | AI와 함께 일하는 작업 순서, 배포·검증 루프, 사용 Skill·Agent |
+| [docs/demo-scenario.md](docs/demo-scenario.md) | 발표용 핵심 데모 흐름과 아직 동작하지 않는 것 목록 |
+| [docs/decisions.md](docs/decisions.md) | ADR — 설계 갈림길마다 고려한 선택지와 채택 이유 |
+| [docs/deployment.md](docs/deployment.md) | Vercel·Render 공개 배포 절차와 환경변수 |
 | [GitHub Wiki](https://github.com/bricepark94/hub/wiki) | 발표·공유용 프로젝트 문서 허브 |
 
 ## 실행 방법
