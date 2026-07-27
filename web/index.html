@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>논문 브리핑 — arXiv를 읽고 스스로 판단하는 에이전트</title>
+    <meta
+      name="description"
+      content="주제를 입력하면 에이전트가 arXiv 논문을 골라 읽고 요약합니다. 판단 과정이 실시간으로 보입니다."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <!--
+    data-state는 화면 전체의 상태다 (ia_state_map.svg의 ①~⑥).
+      idle    — ① 진입. 입력창이 보인다
+      running — ② 작업 중. 타임라인이 자란다
+      done    — ③④ 완료·부분 완료
+      empty   — ⑤ 결과 없음 (에러 아님)
+      error   — ⑥ 전체 실패. 유일하게 화면을 대체한다
+    전이는 app.js가 SSE 이벤트를 받아 일으킨다. 페이지 이동은 없다.
+  -->
+  <body data-state="idle">
+    <!-- ③ 완료 헤더가 고정될 자리. 내용 채우기는 Week 4 범위라 지금은 비어 있다. -->
+    <header id="run-header" class="run-header" hidden></header>
+
+    <main class="page">
+      <div class="masthead">
+        <h1 class="masthead__title">논문 브리핑</h1>
+        <p class="masthead__subtitle">arXiv를 읽고 스스로 판단하는 에이전트</p>
+      </div>
+
+      <!-- ① 진입 — 빈 화면은 이탈을 부른다. 클릭 한 번으로 시작되게 한다. -->
+      <section class="starter" id="starter">
+        <form class="starter__form" id="topic-form" autocomplete="off">
+          <label class="visually-hidden" for="topic-input">연구 주제</label>
+          <input
+            class="starter__input"
+            id="topic-input"
+            name="topic"
+            type="text"
+            placeholder="LLM agent planning"
+            required
+          />
+          <button class="starter__submit" type="submit">브리핑</button>
+        </form>
+
+        <!--
+          예시 주제는 영어로 둔다. 검색어는 tools.search_arxiv()에서 all:"{topic}"으로
+          arXiv에 그대로 나가므로, 한국어를 넣으면 0편이 돌아온다.
+          판단(judge)과 재시도(retry)가 실제로 일어나는 주제로 고른다 — 데모에서
+          보여줄 것이 그 두 가지다.
+        -->
+        <div class="starter__examples">
+          <span class="starter__examples-label">예시</span>
+          <button class="chip" type="button" data-topic="LLM agent planning">
+            LLM agent planning
+          </button>
+          <button class="chip" type="button" data-topic="retrieval augmented generation">
+            retrieval augmented generation
+          </button>
+          <button class="chip" type="button" data-topic="chain of thought reasoning">
+            chain of thought reasoning
+          </button>
+          <button class="chip" type="button" data-topic="multi agent collaboration">
+            multi agent collaboration
+          </button>
+        </div>
+      </section>
+
+      <!--
+        단일 세로 타임라인. 좌우 분할도, 챗봇 UI도 아니다 (CLAUDE.md UI 규칙).
+        과정 로그와 결과 카드가 여기 시간순으로 쌓이고, 완료 후에도 지워지지 않는다.
+      -->
+      <ol class="timeline" id="timeline"></ol>
+    </main>
+
+    <script src="mock.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

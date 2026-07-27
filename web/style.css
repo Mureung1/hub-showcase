@@ -1,0 +1,393 @@
+/*
+ * 타임라인 UI 스타일.
+ *
+ * 이 파일의 유일한 일은 **위계를 레이아웃이 아니라 스타일로 만드는 것**이다
+ * (CLAUDE.md UI 규칙). 과정 로그는 작고 흐리게, 결과 카드는 크고 선명하게.
+ * 좌우로 나누거나 탭으로 가르지 않는다 — 항목은 전부 하나의 세로 흐름에 쌓인다.
+ *
+ * 색은 docs/spec/wireframes/*.svg에서 그대로 가져왔다. 화면마다 다른 색을 즉흥으로
+ * 쓰면 "판단 = 파랑, 재시도 = 앰버, 실패 = 주황"이라는 규칙이 무너지고,
+ * 사용자는 색을 정보로 읽지 못하게 된다.
+ */
+
+/* ---------------------------------------------------------------- 토큰 */
+:root {
+  /* 잉크 — 진할수록 위계가 높다 */
+  --ink: #16202b;
+  --ink-2: #4a5966;
+  --ink-3: #5a6b7c;
+  --muted: #8a96a2;
+  --muted-2: #98a3ae;
+
+  /* 면과 선 */
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --surface-tint: #f1f6fb;
+  --line: #dde3e9;
+  --line-2: #c1cad3;
+  --line-tint: #c3d7ea;
+
+  /* 의미색 — 각 단계에 고정으로 묶인다 */
+  --judge: #2563a8; /* 판단 */
+  --ok: #2e7d5b; /* 성공·본문까지 읽음 */
+  --retry: #b07a18; /* 자기 검증 재시도 */
+  --fail: #b4451f; /* 부분 실패·전체 실패·트렌드 강조 */
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --page-width: 46rem;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+    "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* ---------------------------------------------------------------- 기본 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 3.5rem 1.25rem 6rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:where(a) {
+  color: var(--judge);
+  text-decoration-color: var(--line-tint);
+  text-underline-offset: 2px;
+}
+
+:where(button):focus-visible,
+:where(input):focus-visible,
+:where(a):focus-visible,
+:where(summary):focus-visible {
+  outline: 2px solid var(--judge);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- 머리말 */
+.masthead {
+  margin-bottom: 2rem;
+}
+
+.masthead__title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.masthead__subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--ink-3);
+  font-size: 0.95rem;
+}
+
+/* ---------------------------------------------------------- ① 진입 화면 */
+.starter {
+  margin-bottom: 2.5rem;
+}
+
+.starter__form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.starter__input {
+  flex: 1 1 auto;
+  min-width: 0; /* 없으면 flex 자식이 줄어들지 않아 가로 스크롤이 생긴다 */
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.starter__input::placeholder {
+  color: var(--muted-2);
+}
+
+.starter__submit {
+  flex: 0 0 auto;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid var(--judge);
+  border-radius: var(--radius-sm);
+  background: var(--judge);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.starter__submit:hover {
+  filter: brightness(1.08);
+}
+
+.starter__examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+
+.starter__examples-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.chip {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--judge);
+  background: var(--surface-tint);
+  color: var(--judge);
+}
+
+/* 작업이 시작되면 입력 영역을 접는다. 지우지는 않는다 — 다시 브리핑할 수 있어야 한다. */
+body[data-state="running"] .starter,
+body[data-state="done"] .starter,
+body[data-state="empty"] .starter,
+body[data-state="error"] .starter {
+  display: none;
+}
+
+/* ------------------------------------------------------- ③ 완료 헤더 자리 */
+/* 내용은 Week 4에서 채운다. 자리와 고정 동작만 미리 정의해 둔다. */
+.run-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+}
+
+/* ---------------------------------------------------------------- 타임라인 */
+.timeline {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 1.5rem;
+  list-style: none;
+}
+
+/* 시간의 축. 항목이 하나도 없으면 그리지 않는다. */
+.timeline:not(:empty)::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  left: 3px;
+  width: 2px;
+  background: var(--line);
+}
+
+/*
+ * 모든 타임라인 항목의 공통 골격.
+ * 계층 구분은 아래 --log / --card 두 modifier가 전부 담당한다.
+ */
+.entry {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+/* 축 위의 점. 단계별 색이 여기서 갈린다. */
+.entry::before {
+  content: "";
+  position: absolute;
+  top: 0.62rem;
+  left: -1.5rem;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--line-2);
+}
+
+/* ── 계층 1: 과정 로그 — 작고 흐리게 ───────────────────────────────
+   에이전트가 무엇을 하는 중인지 알리는 흐름. 읽지 않고 훑고 지나가도 된다.
+   완료 후에도 남는다 (감사 기록이므로 지우지 않는다). */
+.entry--log {
+  margin-bottom: 0.15rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.entry--log .entry__detail {
+  color: var(--muted-2);
+}
+
+/* ── 계층 2: 결과 카드 — 크고 선명하게 ──────────────────────────────
+   이 서비스의 결과물. 세로로 훑을 때 같은 위치에 같은 정보가 있어야 비교가 된다. */
+.entry--card {
+  margin: 1.1rem 0 1.4rem;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(22, 32, 43, 0.04);
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.entry--card::before {
+  top: 1.35rem;
+  background: var(--ok);
+}
+
+/* ── 단계별 색 ─────────────────────────────────────────────────── */
+
+/* 판단 — 이 서비스의 하이라이트 1. 과정 로그보다 확실히 위계가 높다. */
+.entry--judge {
+  margin: 1.1rem 0 1.4rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--line-tint);
+  border-left: 3px solid var(--judge);
+  border-radius: var(--radius);
+  background: var(--surface-tint);
+}
+
+.entry--judge::before {
+  top: 1.2rem;
+  background: var(--judge);
+}
+
+/* 재시도 — 앰버. 경고가 아니라 "정상 작동 중 주의"다. 감추지 않는다. */
+.entry--retry {
+  color: var(--retry);
+  font-size: 0.84rem;
+}
+
+.entry--retry::before {
+  background: var(--retry);
+}
+
+/* 부분 실패 — 화면을 대체하지 않는다. 타임라인 안의 항목 하나다. */
+.entry--failed {
+  margin: 0.9rem 0 1.1rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid #e8d3c9;
+  border-left: 3px solid var(--fail);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 0.9rem;
+}
+
+.entry--failed::before {
+  top: 1.1rem;
+  background: var(--fail);
+}
+
+/* ── 카드 내부 요소 (8-5에서 채운다) ───────────────────────────── */
+.entry__title {
+  margin: 0 0 0.15rem;
+  font-size: 1.02rem;
+  font-weight: 650;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+
+.entry__meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+
+.entry__detail {
+  color: var(--ink-3);
+}
+
+/* 배지 — 도구 선택(2단계)이 사용자 눈에 보이는 유일한 지점이다. */
+.badge {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--fulltext {
+  border: 1px solid var(--ok);
+  background: #eaf4ef;
+  color: var(--ok);
+}
+
+.badge--abstract {
+  border: 1px solid var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+
+/* 펼침 요소 — 화면을 바꾸지 않고 제자리에서 펼친다. 맥락을 잃지 않기 위해. */
+.disclosure > summary {
+  cursor: pointer;
+  color: var(--judge);
+  font-size: 0.82rem;
+  list-style: none;
+}
+
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure > summary::before {
+  content: "▸ ";
+  font-size: 0.7em;
+}
+
+.disclosure[open] > summary::before {
+  content: "▾ ";
+}
+
+/* ---------------------------------------------------------------- 좁은 화면 */
+@media (max-width: 32rem) {
+  .page {
+    padding: 2.25rem 1rem 4rem;
+  }
+
+  .starter__form {
+    flex-wrap: wrap;
+  }
+
+  .starter__submit {
+    width: 100%;
+  }
+}
