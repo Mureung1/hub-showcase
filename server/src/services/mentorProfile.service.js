@@ -1,6 +1,11 @@
 const { updateAccountCredentials } = require('./account.service');
 const { supabase } = require('../db/supabase');
-const { ValidationError, requireString, requireStringArray } = require('../utils/validators');
+const {
+  ValidationError,
+  requireLabName,
+  requireString,
+  requireStringArray,
+} = require('../utils/validators');
 
 const FIELD_MAP = {
   school: 'school',
@@ -66,13 +71,17 @@ const updateMyProfile = async (user, payload = {}) => {
     password: payload.password,
   });
 
-  ['school', 'major', 'academicStatus', 'program', 'lab', 'detailedIntroduction'].forEach(
+  ['school', 'major', 'academicStatus', 'program', 'detailedIntroduction'].forEach(
     (field) => {
       if (payload[field] !== undefined) {
         mentorProfileUpdate[FIELD_MAP[field]] = requireString(payload[field], field);
       }
     },
   );
+
+  if (payload.lab !== undefined) {
+    mentorProfileUpdate.lab = requireLabName(payload.lab, 'lab');
+  }
 
   if (payload.introduction !== undefined) {
     const introduction = requireString(payload.introduction, 'introduction');

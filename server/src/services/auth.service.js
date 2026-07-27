@@ -4,6 +4,7 @@ const { ConflictError } = require('../utils/errors');
 const {
   ValidationError,
   requireEmail,
+  requireLabName,
   requirePassword,
   requireString,
   requireStringArray,
@@ -94,7 +95,7 @@ const signupMentor = async (payload) => {
   const major = requireString(payload?.major, 'major');
   const academicStatus = requireString(payload?.academicStatus, 'academicStatus');
   const program = requireString(payload?.program, 'program');
-  const lab = requireString(payload?.lab, 'lab');
+  const lab = requireLabName(payload?.lab, 'lab');
   const introduction = requireString(payload?.introduction, 'introduction');
   const detailedIntroduction = requireString(
     payload?.detailedIntroduction,
