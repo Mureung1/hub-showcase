@@ -11,6 +11,7 @@ import { invitationsRouter, storeInvitationsRouter } from "./modules/invitations
 import { payrollRouter } from "./modules/payroll";
 import { storesRouter } from "./modules/stores/stores.routes";
 import { recurringSchedulesRouter, scheduleItemRouter, schedulesRouter } from "./modules/schedules/schedules.routes";
+import { substituteRequestsRouter } from "./modules/substituteRequests";
 import { workersRouter } from "./modules/workers/workers.routes";
 
 export function createApp() {
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/api/stores/:storeId/recurring-schedules", recurringSchedulesRouter);
   app.use("/api/stores/:storeId/schedules", schedulesRouter);
   app.use("/api/stores/:storeId/payroll", payrollRouter);
+  app.use("/api/stores/:storeId/substitute-requests", substituteRequestsRouter);
   app.use("/api/stores/:storeId/workers", workersRouter);
   app.use("/api/invitations", invitationsRouter);
   app.use("/api/stores", storesRouter);
