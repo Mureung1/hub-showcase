@@ -53,7 +53,7 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | 1 | 사용자가 한 학기 Git repository를 SemesterWorkspace로 선택한다. | App은 active path를 기록하고 Codex의 exact `cwd`로 연결한다. |
 | 2 | Init Skill이 필요한 최소 `AGENTS.md`, `workspace-state.json`과 Git 준비를 돕는다. | AY·Skill이 일반 file·Git 도구를 사용한다. |
 | 3 | 사용자가 AY에게 새 과제를 찾아 정리해 달라고 요청한다. | AY가 실제 공지와 계획서를 읽고 작업을 계획한다. |
-| 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 변경 요약과 선택적인 `EvidenceRef`를 Review UI로 투영한다. |
+| 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 Review UI로 투영한다. |
 | 5 | 사용자가 수락·수정 요청·거절한다. | App이 `accept | revise | reject`와 feedback을 같은 MCP call에 반환한다. |
 | 6 | AY가 선택을 해석한다. | 수락이면 실제 workspace file을 변경하고, 수정 요청이면 다시 검토하며, 거절이면 적용하지 않는다. |
 | 7 | AY가 자연스러운 checkpoint에서 commit한다. | Git이 실제 파일 변경의 장기 history와 rollback을 소유한다. |
@@ -88,6 +88,8 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 - Native command·file·network approval과 학업 Review는 서로 다른 권한 경계다.
 
 첫 capability인 `propose_state_patch`의 의미는 변경을 App이 적용하라는 명령이 아니다. AY가 사용자에게 변경안을 보여주고 다음 행동을 결정하기 위한 transient Review request다.
+
+공개 request는 Assignment·Course schema나 raw Git diff에 결합하지 않는다. 사람이 이해할 설명과 순서가 있는 semantic change를 사용하고, 각 change는 label·설명, before/after와 선택적인 evidence를 가진다.
 
 ## SemesterWorkspace와 상태 소유권
 
@@ -144,7 +146,7 @@ RawMaterial registry
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex `cwd`이며 App-owned source copy가 없다. |
 | `propose_state_patch` MCP | Host binding 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
-| Capability-specific Review UI | 원문 또는 diff, 선택적인 evidence와 세 action을 데스크톱 화면에서 이해할 수 있다. |
+| Capability-specific Review UI | Semantic before/after change, 선택적인 evidence와 세 action을 데스크톱 화면에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
 | Failure settlement | cancel·disconnect·Runtime terminal이 허위 apply 없이 끝난다. |
@@ -181,7 +183,7 @@ RawMaterial registry
 | 질문 | 소유할 후속 결정 |
 | --- | --- |
 | `workspace-state.json`에 반드시 필요한 최소 학기 metadata는 무엇인가? | SemesterWorkspace init spec |
-| `propose_state_patch`의 첫 exact input/result field는 무엇인가? | InteractionCapability implementation spec |
-| Review UI가 실제 파일 diff와 semantic change 중 무엇을 기본으로 보여주는가? | Product scenario/prototype |
+| `propose_state_patch` semantic Review model의 exact field name, cardinality와 길이 제한은 무엇인가? | InteractionCapability implementation spec |
+| Semantic change와 evidence preview를 어떤 화면 구성으로 보여주는가? | Product scenario/prototype |
 | User cancel과 Browser disconnect를 Skill에 어떤 error/result로 반환하는가? | Interaction MCP lifecycle spec |
 | 첫 Review 뒤 추가할 두 번째 capability는 무엇인가? | 실제 dogfood에서 반복되는 사용자 판단을 관찰한 뒤 결정 |

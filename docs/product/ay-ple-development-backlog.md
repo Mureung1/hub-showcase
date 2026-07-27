@@ -104,7 +104,7 @@
 - [ ] First Assignment를 user-owned Git SemesterWorkspace와 InteractionCapability seam으로 재구성한다.
   - [ ] Current First Assignment의 MCP→Browser Review→same-Turn continuation을 characterization test로 고정하고, app-owned academic apply와 결합된 부분을 target contract로 승격하지 않는다.
   - [ ] `InteractionCapability<Request, Result>` deep Module과 production Browser Adapter·in-memory test Adapter를 만든다. Module 내부가 exact Turn binding, correlation, once-only answer, cancel·disconnect·terminal settlement를 소유한다.
-  - [ ] `propose_state_patch` input에서 caller-supplied `requestKey`, workspace·Course identity, store revision과 native identity를 제거하고, 표시용 change·선택적 evidence만 받는 capability contract로 축소한다.
+  - [ ] `propose_state_patch` input에서 caller-supplied `requestKey`, workspace·Course identity, store revision과 native identity를 제거하고, 설명·순서 있는 semantic before/after change·선택적 evidence만 받는 도메인 중립 capability contract로 축소한다. Assignment schema와 raw Git diff를 공개 contract에 넣지 않는다.
   - [ ] Review UI의 `accept | revise | reject`와 optional feedback을 custom MCP call 하나의 closed result로 반환한다. 같은 결정을 built-in `request_user_input`에 다시 걸지 않는다.
   - [ ] AY가 interaction result 뒤 SemesterWorkspace의 실제 file을 변경하고 의미 있는 checkpoint에서 Git commit하게 한다. App은 accepted result를 대신 적용하거나 clean working tree를 선행조건으로 요구하지 않는다.
   - [ ] App-owned `RawMaterial` registry·snapshot, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 revision-bound academic apply transaction을 current product contract와 persistence에서 제거한다.

@@ -58,7 +58,7 @@ _Avoid_: 과제 마감 복제, 시험 일시 복제, 파생 timeline 행
 ## 제안과 신뢰
 
 **StatePatch**:
-AY가 Review를 위해 학생에게 보여주는 일시적인 구조화 변경 제안이다. 변경 요약과 선택적인 EvidenceRef를 담지만 App의 durable entity나 학기 자료를 바꿀 권한은 아니다.
+AY가 Review를 위해 학생에게 보여주는 일시적인 구조화 변경 제안이다. 도메인 중립적인 semantic before/after change와 선택적인 EvidenceRef를 담지만 App의 durable entity나 학기 자료를 바꿀 권한은 아니다.
 _UI alias_: 변경 제안
 _Avoid_: App-owned pending record, Agent 최종 답변, 자동 반영, raw protocol event
 

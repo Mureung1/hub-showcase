@@ -83,11 +83,13 @@ App 자체가 소유하는 state를 바꾸는 capability는 예외가 아니라 
 | 입력 | 의미 |
 | --- | --- |
 | `summary` | 사용자가 판단할 변경의 짧은 설명 |
-| `changes` | before/after 또는 add/update/delete의 표시용 구조 |
-| `evidence` | 필요한 경우 workspace-relative file, content digest와 locator |
+| `changes` | 순서가 있는 semantic change. 각 항목은 사람이 이해할 label·설명과 before/after를 가지며, 추가·삭제에서는 한쪽을 생략할 수 있다. |
+| `evidence` | 필요한 경우 change와 연결하는 workspace-relative file, content digest와 locator |
 | `question` | 사용자가 무엇을 결정하는지 설명하는 문구 |
 
-Exact JSON field roster는 implementation spec이 소유한다. 공개 입력에 `requestKey`, `workspaceId`, `courseId`, `baseRevision`, native identity 또는 App store revision을 넣지 않는다.
+이 모델은 Assignment·Course 같은 학업 entity schema에 종속되지 않으며 raw Git diff나 file mutation command를 운반하지 않는다. File diff가 유용한 capability는 나중에 별도 Interface로 설계할 수 있지만, `propose_state_patch`의 semantic change를 임의 diff payload로 대체하지 않는다.
+
+Exact JSON field name, cardinality와 길이 제한은 implementation spec이 소유한다. 공개 입력에 `requestKey`, `workspaceId`, `courseId`, `baseRevision`, native identity 또는 App store revision을 넣지 않는다.
 
 ### AY가 받는 의미
 
@@ -142,6 +144,7 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - AY-PLE 전용 학업 workflow engine
 - 모든 App·Browser event를 운반하는 generic event bus
 - Arbitrary JSON schema를 자동으로 제품 UI로 바꾸는 renderer
+- Assignment·Course schema 또는 raw Git diff에 결합된 `propose_state_patch`
 - App-owned academic event sourcing 또는 duplicate Codex Turn ledger
 - MCP caller가 host correlation과 store revision을 조립하는 protocol
 - Rich Review와 built-in `request_user_input`의 이중 confirmation
