@@ -5,7 +5,12 @@
   "githubUser": "hunteak1020-dev(임현택)",
   "demoUrl": "",
   "thumbnail": "thumbnail.webp",
-  "screenshots": [],
+  "screenshots": [
+    "screenshots/01-sorting.png",
+    "screenshots/02-linear-structures.png",
+    "screenshots/03-chemistry.png",
+    "screenshots/04-ai-qna.png"
+  ],
   "problem": "대학 전공 수업에는 시간에 따라 상태가 단계적으로 변하거나 공간적·구조적 형태를 갖는 개념이 많은데, 교재의 정적인 텍스트와 그림만으로는 그 변화와 구조를 직접 볼 수 없어 직관적으로 이해하고 오래 기억하기 어렵습니다.",
   "targetUsers": [
     "정적인 텍스트인 전공 개념을 시각적으로 복습하고 싶은 대학생",
