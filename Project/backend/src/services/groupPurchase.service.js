@@ -1,9 +1,19 @@
-const { GroupPurchase, UserGroupPurchase, User, sequelize } = require('../models');
+const { GroupPurchase, UserGroupPurchase, User, Favorite, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const AppError = require('../utils/appError');
 const { notifyParticipantsOfStatus, notifyHostOfPaymentReport } = require('./notification.service');
 
-async function listGroupPurchases(filters = {}) {
+function calculateDistanceKm(latitudeA, longitudeA, latitudeB, longitudeB) {
+  const toRadians = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const latitudeDelta = toRadians(latitudeB - latitudeA);
+  const longitudeDelta = toRadians(longitudeB - longitudeA);
+  const a = Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(toRadians(latitudeA)) * Math.cos(toRadians(latitudeB)) * Math.sin(longitudeDelta / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function listGroupPurchases(filters = {}, viewerId = null) {
   const where = {};
   if (filters.category) {
     where.category = filters.category;
@@ -14,16 +24,26 @@ async function listGroupPurchases(filters = {}) {
   if (!filters.status || filters.status === 'RECRUITING') {
     where.deadlineAt = { [Op.gt]: new Date() };
   }
-  return await GroupPurchase.findAll({
+  const purchases = await GroupPurchase.findAll({
     where,
     include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature'] }],
     order: [['createdAt', 'DESC']],
+  });
+  if (!viewerId) return purchases;
+
+  const viewer = await User.findByPk(viewerId, { attributes: ['baseLatitude', 'baseLongitude'] });
+  if (!viewer || viewer.baseLatitude == null || viewer.baseLongitude == null) return purchases;
+
+  return purchases.map((purchase) => {
+    const data = purchase.toJSON();
+    const distanceKm = calculateDistanceKm(viewer.baseLatitude, viewer.baseLongitude, data.pickupLatitude, data.pickupLongitude);
+    return { ...data, distanceKm: Number(distanceKm.toFixed(1)) };
   });
 }
 
 async function getGroupPurchaseById(id, viewerId = null) {
   const groupPurchase = await GroupPurchase.findByPk(id, {
-    include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature', 'noShowCount'] }],
+    include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature', 'noShowCount', 'createdAt'] }],
   });
   if (!groupPurchase) {
     throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
@@ -34,7 +54,8 @@ async function getGroupPurchaseById(id, viewerId = null) {
   }
 
   const application = await UserGroupPurchase.findOne({ where: { groupPurchaseId: id, userId: viewerId } });
-  const [reportedCount, confirmedCount, participantCount, paymentParticipants] = await Promise.all([
+  const [favorite, reportedCount, confirmedCount, participantCount, paymentParticipants] = await Promise.all([
+    Favorite.findOne({ where: { groupPurchaseId: id, userId: viewerId } }),
     UserGroupPurchase.count({ where: { groupPurchaseId: id, isPaid: true } }),
     UserGroupPurchase.count({ where: { groupPurchaseId: id, isPaymentConfirmed: true } }),
     UserGroupPurchase.count({ where: { groupPurchaseId: id } }),
@@ -50,6 +71,7 @@ async function getGroupPurchaseById(id, viewerId = null) {
     ...data,
     viewer: {
       isHost: data.hostId === viewerId,
+      isFavorite: Boolean(favorite),
       application: application
         ? { id: application.id, isReceived: application.isReceived, isPaid: application.isPaid, isPaymentConfirmed: application.isPaymentConfirmed }
         : null,
@@ -61,9 +83,33 @@ async function getGroupPurchaseById(id, viewerId = null) {
   };
 }
 
+async function listFavoriteGroupPurchases(userId) {
+  const favorites = await Favorite.findAll({
+    where: { userId },
+    include: [{
+      model: GroupPurchase,
+      include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature'] }],
+    }],
+    order: [['createdAt', 'DESC']],
+  });
+  return favorites.map((favorite) => favorite.GroupPurchase.toJSON());
+}
+
+async function addFavoriteGroupPurchase(groupPurchaseId, userId) {
+  const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId);
+  if (!groupPurchase) throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
+  await Favorite.findOrCreate({ where: { groupPurchaseId, userId } });
+  return { groupPurchaseId, isFavorite: true };
+}
+
+async function removeFavoriteGroupPurchase(groupPurchaseId, userId) {
+  await Favorite.destroy({ where: { groupPurchaseId, userId } });
+  return { groupPurchaseId, isFavorite: false };
+}
+
 async function getMyGroupPurchaseActivities(userId) {
   const user = await User.findByPk(userId, {
-    attributes: ['id', 'nickname', 'mannerTemperature', 'noShowCount'],
+    attributes: ['id', 'nickname', 'mannerTemperature', 'noShowCount', 'baseLatitude', 'baseLongitude', 'baseAddress'],
   });
   if (!user) {
     throw new AppError(404, '사용자를 찾을 수 없습니다.', 'USER_NOT_FOUND');
@@ -121,6 +167,10 @@ async function createGroupPurchase(data) {
   } = data;
 
   const perPersonPrice = Math.round(totalPrice / targetParticipants);
+  const pickupDate = new Date(pickupTimeSlot);
+  const fallbackDeadline = Number.isFinite(pickupDate.getTime())
+    ? pickupDate
+    : new Date(Date.now() + 1000 * 60 * 60 * 24);
 
   // Ensure host user exists in the database to prevent foreign key errors
   let host = await User.findByPk(hostId);
@@ -154,7 +204,7 @@ async function createGroupPurchase(data) {
     pickupTimeSlot,
     paymentAccount,
     category,
-    deadlineAt: deadlineAt || new Date(Date.now() + 1000 * 60 * 60 * 24),
+    deadlineAt: deadlineAt || fallbackDeadline,
     status: 'RECRUITING',
   });
 }
@@ -346,4 +396,7 @@ module.exports = {
   markGroupPurchasePayment,
   confirmGroupPurchasePayment,
   markGroupPurchaseReceipt,
+  listFavoriteGroupPurchases,
+  addFavoriteGroupPurchase,
+  removeFavoriteGroupPurchase,
 };

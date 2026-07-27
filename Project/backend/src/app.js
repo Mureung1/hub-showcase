@@ -6,6 +6,7 @@ const env = require('./config/env');
 const devAuthRoutes = require('./routes/devAuth.routes');
 const groupPurchaseRoutes = require('./routes/groupPurchase.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const userRoutes = require('./routes/user.routes');
 const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
@@ -22,7 +23,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(cookieParser());
-app.use(express.json());
+// Images are currently sent as data URLs. Allow up to five 1 MB files after
+// Base64 encoding while keeping a bounded request size for the API.
+app.use(express.json({ limit: '8mb' }));
 
 app.get('/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok' }, error: null });
@@ -34,6 +37,7 @@ if (env.enableDevLogin) {
 
 app.use('/group-purchases', groupPurchaseRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/users', userRoutes);
 
 app.use(errorHandler);
 

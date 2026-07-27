@@ -9,6 +9,8 @@
     "db:sync": "node src/scripts/syncAndSeed.js",
     "db:reset": "node src/scripts/syncAndSeed.js --reset",
     "db:migrate": "node src/scripts/migrateNotificationsAndPickupPlace.js",
+    "db:migrate:favorites": "node src/scripts/migrateFavorites.js",
+    "db:migrate:base-address": "node src/scripts/migrateUserBaseAddress.js",
     "check": "node --check src/server.js && node --check src/app.js && node --check src/scripts/syncAndSeed.js",
     "test": "jest --runInBand"
   },
