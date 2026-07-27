@@ -9,8 +9,9 @@ import CompleteScreen from "./components/CompleteScreen";
 import RestSuggestion from "./components/RestSuggestion";
 import ReasonChips from "./components/ReasonChips";
 import ProposalCard from "./components/ProposalCard";
+import TimerConfirm from "./components/TimerConfirm";
 
-// "input" -> "preview" -> "focus" -> "timer" -> "complete"
+// "input" -> "preview" -> "focus" -> "timer" -> "timer-confirm" -> (완료: "complete") / (연장: "timer")
 // "focus" 중 "나 지금 힘들어" -> "reason" -> "proposal" -> (수락 시 tool별로 분기) / (거절 시 "proposal" 재판단)
 // 새로고침 내구성(C04)에 쓰는 localStorage 키. step/currentIndex/microsteps/stepStartedAt만
 // 저장한다 - "reason"/"proposal"(힘들어 루프 중) 화면을 다시 그리는 데 필요한 정보(reasonChip,
@@ -79,6 +80,14 @@ export default function Home() {
     const saved = readSavedSession()?.stepStartedAt;
     return saved ? new Date(saved) : null;
   });
+  // T15: 타이머 종료 시 완료 확인 + Agent 판단 연장. extendCount는 이 스텝에서 이미 연장한
+  // 횟수(S6 입력), timerDurationMinutes는 null이면 원래 estimatedMinutes를 쓰고 연장이
+  // 받아들여지면 그 분으로 덮어쓴다. extendReason은 타이머 화면에 잠깐 보여줄 문구.
+  const [extendCount, setExtendCount] = useState(0);
+  const [timerDurationMinutes, setTimerDurationMinutes] = useState(null);
+  const [extendReason, setExtendReason] = useState(null);
+  const [extendLoading, setExtendLoading] = useState(false);
+  const [extendError, setExtendError] = useState(null);
 
   // 서버는 항상 "input"만 렌더링하므로(localStorage 접근 불가), 클라이언트도 마운트가
   // 끝나기 전까지는 위에서 복원한 값과 무관하게 "input"을 그린다 - 그렇지 않으면 서버가 그린
@@ -170,11 +179,49 @@ export default function Home() {
   // 완료 처리 없이(미루기 등) 그냥 다음 스텝으로 넘어갈 때 재사용.
   function advanceToNextStep() {
     const nextIndex = currentIndex + 1;
+    // 다음 스텝은 연장 이력과 무관하게 새로 시작한다(T15).
+    setExtendCount(0);
+    setTimerDurationMinutes(null);
+    setExtendReason(null);
     if (nextIndex < microsteps.length) {
       setCurrentIndex(nextIndex);
       setStep("preview");
     } else {
       setStep("complete");
+    }
+  }
+
+  // 타이머가 0이 됐을 때 바로 완료 처리하지 않고, 먼저 확인 화면으로 간다(T15, C15).
+  function handleTimerFinish() {
+    setStep("timer-confirm");
+  }
+
+  // 확인 화면에서 "아니, 더 필요해" 선택 시 Agent(Solar)에게 연장 분을 판단받는다(S6).
+  async function handleExtend() {
+    setExtendLoading(true);
+    setExtendError(null);
+
+    try {
+      const response = await fetch("/api/timer-extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentStep: microsteps[currentIndex],
+          extendCount,
+        }),
+      });
+      if (!response.ok) throw new Error("연장 판단에 실패했어요, 다시 시도해줘");
+
+      const { extendMinutes, reason } = await response.json();
+      setTimerDurationMinutes(extendMinutes);
+      setExtendReason(reason);
+      setExtendCount((count) => count + 1);
+      setStepStartedAt(new Date());
+      setStep("timer");
+    } catch (err) {
+      setExtendError(err.message);
+    } finally {
+      setExtendLoading(false);
     }
   }
 
@@ -431,6 +478,19 @@ export default function Home() {
   }
 
   if (effectiveStep === "timer") {
+    return (
+      <FocusTimer
+        durationMinutes={timerDurationMinutes ?? microsteps[currentIndex]?.estimatedMinutes ?? 25}
+        startedAt={stepStartedAt}
+        onFinish={handleTimerFinish}
+        caption={extendReason}
+      />
+    );
+  }
+
+  // 타이머가 0이 됐을 때 뜨는 확인 화면(T15, C15) - "응, 다 했어"는 기존 완료 처리로,
+  // "아니, 더 필요해"는 Agent 판단 연장(S6)으로 이어진다.
+  if (effectiveStep === "timer-confirm") {
     if (completeError) {
       return (
         <main
@@ -451,10 +511,12 @@ export default function Home() {
       );
     }
     return (
-      <FocusTimer
-        durationMinutes={microsteps[currentIndex]?.estimatedMinutes ?? 25}
-        startedAt={stepStartedAt}
-        onFinish={handleStepFinish}
+      <TimerConfirm
+        onYes={handleStepFinish}
+        onNo={handleExtend}
+        isLoading={extendLoading}
+        error={extendError}
+        onRetry={handleExtend}
       />
     );
   }
