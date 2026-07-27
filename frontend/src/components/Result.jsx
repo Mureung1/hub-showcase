@@ -1,10 +1,20 @@
 import { Link, Navigate, useOutletContext } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import { createRecommendation } from '../api/index.js'
 import { DIFFICULTY_META, LANGUAGE_CLASSES, TAG_CLASSES, formatStars } from '../utils/format.js'
 import { TOPIC_OPTIONS } from '../utils/preferences.js'
 
+const LIMIT_EXCEEDED_MESSAGE = '오늘 재추천 횟수를 다 사용했어요. 내일 다시 시도해주세요.'
+
 // 5 · 추천 결과 목록
 function Result() {
-  const { recommendation, setSelectedItem } = useOutletContext()
+  const { recommendation, setRecommendation, setSelectedItem } = useOutletContext()
+
+  // 지금 화면에 보이는 목록을 만든 바로 그 조건으로 재요청 — 재추천 다양화(새 이슈 우선, 하루 상한)는 백엔드가 처리
+  const { mutate: refetch, isPending: isRefetching, error: refetchError } = useMutation({
+    mutationFn: () => createRecommendation(recommendation?.githubId, recommendation?.preferences),
+    onSuccess: (next) => setRecommendation(next),
+  })
 
   if (!recommendation) {
     return <Navigate to="/input" replace />
@@ -36,6 +46,24 @@ function Result() {
           ))}
         </div>
       </div>
+
+      <div className="r-refetch">
+        <button
+          type="button"
+          className="btn btn-soft btn-lg"
+          onClick={() => refetch()}
+          disabled={isRefetching}
+        >
+          {isRefetching ? '다시 찾는 중…' : '다른 이슈로 다시 찾기'}
+        </button>
+      </div>
+      {refetchError && (
+        <p className="r-refetch-error">
+          {refetchError.code === 'RECOMMENDATION_LIMIT_EXCEEDED'
+            ? LIMIT_EXCEEDED_MESSAGE
+            : refetchError.message}
+        </p>
+      )}
 
       {items.length === 0 && (
         <div className="panel">

@@ -6,11 +6,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 
 const client = axios.create({ baseURL: API_BASE_URL })
 
-// 네트워크 실패·서버 에러를 한글 메시지로 감싼다 — axios의 영어 기술 메시지가 화면에 노출되지 않게
+// 네트워크 실패·서버 에러를 한글 메시지로 감싼다 — axios의 영어 기술 메시지가 화면에 노출되지 않게.
+// error.code도 함께 보존해서, 화면에서 특정 에러(예: RECOMMENDATION_LIMIT_EXCEEDED)만 다르게 안내할 수 있게 한다
 function toUserError(error, fallbackMessage) {
   if (error.response) {
     // openapi.yaml 공통 에러 형식 { error: { code, message } } — 사용자용 한글 메시지를 그대로 노출
-    return new Error(error.response.data?.error?.message || fallbackMessage)
+    const userError = new Error(error.response.data?.error?.message || fallbackMessage)
+    userError.code = error.response.data?.error?.code
+    return userError
   }
   return new Error('서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요.')
 }
