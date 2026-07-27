@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from careersignal.contracts.check_result import AutonomyLevel
 from careersignal.domain.permissions import Component
 from careersignal.repositories.base import Repository, Unit
@@ -81,6 +83,18 @@ class TelemetryRepository:
             },
         )
 
+    def finish_step(self, step_id: str, ended_at: datetime | None = None) -> None:
+        """단계는 시작할 때 행을 만들고 끝날 때 종료 시각만 채운다.
+
+        식별자와 시작 시각은 트리거가 변경을 막는다.
+        """
+        self.unit.update(
+            "agent_run_steps",
+            {"ended_at": ended_at or datetime.now()},
+            "step_id = %(step_id)s",
+            {"step_id": step_id},
+        )
+
     def record_tool_call(
         self,
         call_id: str,
@@ -90,15 +104,14 @@ class TelemetryRepository:
         latency: int | None = None,
         error: str | None = None,
     ) -> None:
-        import json
-
+        """`arguments` 는 jsonb 다. 래퍼가 타입을 명시하지 않으면 text 로 추론된다."""
         self.unit.insert(
             "tool_calls",
             {
                 "call_id": call_id,
                 "agent_run_id": agent_run_id,
                 "tool_name": tool_name,
-                "arguments": json.dumps(arguments) if arguments else None,
+                "arguments": Jsonb(arguments) if arguments is not None else None,
                 "latency": latency,
                 "error": error,
             },

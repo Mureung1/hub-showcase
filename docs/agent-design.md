@@ -357,6 +357,40 @@ flowchart LR
 
 공개 여부는 [아키텍처](architecture.md) 8장의 공개 정책을 따른다.
 
+#### 검사와 판정의 대응
+
+차단 판정이 난 검사를 판정 유형으로 옮긴다. 대응이 없는 검사가 있으면 그 검사의 실패가 `verified`로 새어 나간다.
+
+| 검사 | 판정 | 근거 |
+| --- | --- | --- |
+| 1 Schema | `schema_invalid` | |
+| 2 Source policy | `policy_violation` | |
+| 7 Contradiction | `contradicted` | |
+| 4 Numerical | `contradicted` | 재계산 값이 다르다는 것은 어긋나는 값이 존재한다는 뜻이다 |
+| 6 Cross model | `contradicted` | 다른 모델 계열의 판정이 어긋난다 |
+| 3 Citation span | `insufficient_evidence` | 인용 위치가 원문과 다르면 주장을 받치는 것이 없다 |
+| 5 Entailment | `insufficient_evidence` | 근거가 주장을 지지하지 않는다 |
+
+수리 동작이 `request_research`인 실패는 검사와 무관하게 `needs_research`로 판정한다.
+
+#### 우선순위
+
+차단 판정이 여럿이면 문제가 근본적인 순서로 하나를 고른다.
+
+```text
+schema_invalid > policy_violation > contradicted > needs_research > insufficient_evidence
+```
+
+구조가 깨진 산출물에는 근거의 함의를 따질 수 없으므로 `schema_invalid`가 앞이다. `needs_research`가 `insufficient_evidence`보다 앞인 이유는 후속 동작이 다르기 때문이다. `needs_research`는 조사 요청을 발행하고 `insufficient_evidence`는 비공개로 끝난다. 순서를 바꾸면 외부 자료로 해결할 수 있는 실패가 요청 없이 묻힌다.
+
+차단 판정이 없고 경고만 있으면 `verified_with_warning`, 둘 다 없으면 `verified`다.
+
+#### 판정하지 않는 경우
+
+선언된 검사가 모두 실행되지 않았으면 판정하지 않는다. 일곱 판정은 검증이 끝난 산출물의 결과를 나타내는 값이므로, 끝나지 않은 것에 이름을 붙이지 않는다.
+
+판정이 없는 산출물은 공개하지 않는다. 분석 버전은 `validating`에서 `failed`로 간다. 이 경로는 검사가 모두 구현된 뒤에도 남는다. 배포에서 검사 하나가 등록되지 않는 상황을 `verified`로 통과시키지 않기 위해서다.
+
 ### 9.5 통합 검증
 
 통합 Verifier는 분석 버전의 모든 필수 산출물에 대한 검사 결과를 집계하고 활성화 가능 여부를 반환한다. 오케스트레이터가 모든 단계 뒤에 호출한다.
