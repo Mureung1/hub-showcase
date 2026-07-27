@@ -16,7 +16,7 @@
 /api
 ```
 
-: 모든 리소스는 `/api` 하위에 위치.
+모든 리소스는 `/api` 하위에 위치한다.
 
 ### 인증
 
@@ -276,14 +276,17 @@
 ## 3. 파티원 (Party Member) [초안]
 
 - 가입 링크(`joinUrl`)는 별도 토큰 없이 `subscriptionId`를 그대로 사용 — 구독당 1개, 가입 여부와 무관하게 항상 동일. 파티장이 카카오톡 공유하기로 그룹원에게 전달.
-- 가입 흐름: (1) 이미 로그인된 사용자가 초대 링크를 클릭 → FE가 보유 토큰으로 바로 `POST /api/subscriptions/:id/join` 호출. (2) 미로그인 사용자가 초대 링크를 클릭 → FE가 로그인 버튼을 보여주기 전에 먼저 `GET /api/subscriptions/:id/preview`로 링크 유효성을 확인 → 유효한 경우에만 `state=subscriptionId`로 구글 로그인 유도(1. 인증 참고) → 로그인 완료 후 `/join/:id`로 복귀해 동일하게 `POST /api/subscriptions/:id/join` 호출. 무효한 링크는 로그인 여부와 무관하게 안내 문구만 표시.
+- 가입 흐름:
+  - 이미 로그인된 사용자가 초대 링크를 클릭 → FE가 보유 토큰으로 바로 `POST /api/subscriptions/:id/join` 호출.
+  - 미로그인 사용자가 초대 링크를 클릭 → FE가 로그인 버튼을 보여주기 전에 먼저 `GET /api/subscriptions/:id/preview`로 링크 유효성을 확인 → 유효한 경우에만 `state=subscriptionId`로 구글 로그인 유도(1. 인증 참고) → 로그인 완료 후 `/join/:id`로 복귀해 동일하게 `POST /api/subscriptions/:id/join` 호출.
+  - 무효한 링크는 로그인 여부와 무관하게 안내 문구만 표시.
 - 모든 파티원은 로그인 회원.
 - `memberCount`는 구독 등록/수정 시 파티장이 입력하는 고정 정산 인원수이며, 실제 가입 완료 인원과 별개 — 초대는 보냈지만 아직 가입하지 않은 인원이 있으면 아래 파티원 목록 수가 `memberCount`보다 적을 수 있음. 파티원 가입/삭제로 자동으로 바뀌지 않으며, 정산 인원수를 바꾸려면 파티장이 `PATCH /subscriptions/:id`로 직접 조정.
 
 | Method | Path | 설명 | 인증 |
 | --- | --- | --- | --- |
 | POST | `/api/subscriptions/:id/join` | 파티 가입 (파티원 등록) | ✓ |
-| GET | `/api/subscriptions/:id/members` | 파티원 목록 조회 (가입 완료자만) | ✓ (파티장) |
+| GET | `/api/subscriptions/:id/members` | 파티원 목록 조회(가입 완료자만) | ✓ (파티장) |
 | DELETE | `/api/subscriptions/:id/members/:memberId` | 파티원 삭제 | ✓ (파티장 또는 본인) |
 
 ### 파티 가입: `POST /api/subscriptions/:id/join`
@@ -337,21 +340,21 @@
 
 - 정산은 구독(Subscription) 단위로, 결제월(`billingMonth`, `"YYYY-MM"`) 하나당 최대 1개만 생성된다. 같은 달에 중복 생성 시도는 `409`.
 - 파티장이 정산을 생성(`POST .../settlements`)하는 시점의 `PartyMember` 목록을 스냅샷으로 떠서 파티원별 정산 항목(`SettlementMember`)을 함께 생성한다. 이후 파티원이 추가/삭제되어도 이미 생성된 정산의 항목에는 영향 없음.
-- `SettlementMember`는 생성 시점의 `userId`를 직접 저장한다(파티원 관계 `PartyMember`를 거치지 않음). 따라서 이후 해당 파티원이 파티에서 나가 `PartyMember`가 삭제되어도 과거 정산 이력에는 전혀 영향이 없다.
+- `SettlementMember`는 생성 시점의 `userId`+`name`을 직접 저장한다(파티원 관계 `PartyMember`를 거치지 않음). 따라서 이후 해당 파티원이 파티에서 나가 `PartyMember`가 삭제되어도 과거 정산 이력 자체(이름/금액/상태)는 전혀 영향이 없어 파티장은 계속 조회할 수 있다 — 단, 내보내진 파티원 본인은 즉시 조회 권한을 잃는다(아래 각 엔드포인트 설명 참고).
 - `amount`는 생성 시점의 `subAmount / memberCount`(1/n) 값을 스냅샷으로 저장. 이후 구독 금액이 바뀌어도 과거 정산 금액은 변하지 않는다.
 - 모든 정산 항목은 `"pending"`으로 시작하며, 파티원의 이체가 (파티장 육안 확인 등으로) 확인되면 파티장이 해당 항목만 `"done"`으로 변경한다 — 입금 자동 확인은 MVP 범위 밖.
 - `transferLink`는 토스/카카오페이 딥링크 URL이며, 정확한 스킴/파라미터는 아직 미확정(하단 TODO 참고). 현재는 플레이스홀더 포맷으로 표기.
 - 카카오톡 공유(정산 요청 메시지 전송)는 FE에서 카카오 SDK를 직접 호출하는 방식으로, 별도 BE 엔드포인트 없음(`3. 파티원`의 초대 링크 공유와 동일한 패턴).
-- **`GET /api/settlements`는 "정산 인스턴스" 목록이 아니라 "구독" 목록이다.** `GET /api/subscriptions`처럼 소유(owner)+참여(member)를 `role` 필드로 합쳐 반환하되, 각 구독의 "이번 달 정산 상태"만 요약해서 얹는다. 이렇게 단위를 구독으로 잡은 이유는, 정산은 매달 새로 쌓이지만 사용자가 겪는 구독 개수는 그렇지 않기 때문이다 — 정산 인스턴스 단위로 반환하면 시간이 지날수록(완료된 지난달·지지난달 항목까지 다 나오면서) 목록이 끝없이 길어진다. 파티원이 파티를 나가도(`PartyMember` 삭제) 그 구독에 정산 참여 이력(`SettlementMember`)이 있으면 `active: false`(탈퇴함) 배지와 함께 계속 노출되지만, 이 역시 "구독 한 줄"로만 남지 매달 새 줄이 추가되지는 않는다.
-- `GET /api/subscriptions/:id/settlements`(구독 하나의 월별 이력)는 `GET /api/settlements` 목록에서 항목을 눌러 들어간 상세 화면이 "지난 이력" 섹션을 채울 때 쓰는 별도 엔드포인트다. 파티장은 물론 파티원도 호출 가능(각자 자기 몫만 보임) — 한 구독으로 범위가 좁혀지므로 여기서는 매달 쌓이는 이력을 그대로 보여줘도 무방하다.
+- 정산은 별도 목록 페이지 없이 구독 상세 화면의 정산 카드로 접근한다. 구독 목록/전환은 기존 `GET /api/subscriptions`(2. 구독 서비스)를 그대로 쓰고, 상세 진입 후에는 `GET /api/subscriptions/:id/settlements`로 해당 구독의 월별 이력을 불러온다.
+- 파티원은 `reportedAt`으로 이체 확인 요청을 할 수 있다(낮은 신뢰도 — `status`는 바뀌지 않음). 파티장은 요청을 보고 실제 확인 후 기존 상태 변경 엔드포인트로 **수락**(`status: "done"`) 또는 **거절**(`status: "pending"`)한다 — 어느 쪽이든 처리 시 `reportedAt`은 `null`로 초기화되어 안내가 사라지고, 거절된 파티원은 다시 요청할 수 있다.
 
 | Method | Path | 설명 | 인증 |
 | --- | --- | --- | --- |
 | POST | `/api/subscriptions/:id/settlements` | 정산 생성(정산 요청 시작) | ✓ (파티장) |
-| GET | `/api/settlements` | 내 구독 목록 조회(정산 관점) | ✓ |
 | GET | `/api/subscriptions/:id/settlements` | 정산 이력 목록 조회(구독 하나) | ✓ |
 | GET | `/api/subscriptions/:id/settlements/:settlementId` | 정산 상세 조회 | ✓ |
-| PATCH | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId` | 파티원 정산 상태 변경(확인 완료 처리) | ✓ (파티장) |
+| POST | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId/report` | 이체 확인 요청 | ✓ (본인) |
+| PATCH | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId` | 파티원 정산 상태 변경(수락/거절) | ✓ (파티장) |
 
 ### 정산 생성: `POST /api/subscriptions/:id/settlements`
 
@@ -372,6 +375,8 @@
       "name": "김철수",
       "amount": 4250,
       "status": "pending",
+      "doneAt": null,
+      "reportedAt": null,
       "transferLink": "supertoss://send?amount=4250&bank=국민은행&accountno=123456-78-901234"
     }
   ],
@@ -385,53 +390,10 @@
 
 **Error `409`**: 이번 달(`billingMonth`) 정산이 이미 생성됨
 
-### 구독 목록 조회(정산): `GET /api/settlements`
-
-- 인증된 사용자가 소유(owner)했거나, 현재든 과거든 참여(member)한 적 있는 모든 구독을 한 줄씩 반환. 항목 단위는 **구독**이며 정산 인스턴스가 아니다.
-- `active`: `role: "owner"`는 항상 `true`. `role: "member"`는 현재 그 구독의 `PartyMember`인지 여부 — 탈퇴했으면 `false`.
-- `currentSettlement`: 이번 달(`billingMonth`) 정산 요약.
-  - 아직 생성되지 않았으면 `{ "exists": false }`만 포함(주로 owner가 아직 정산을 시작하지 않은 경우).
-  - owner: `{ "exists": true, "id", "memberCount", "doneCount" }`.
-  - member: `{ "exists": true, "id", "myAmount", "myStatus" }`. 탈퇴한 구독은 보통 이번 달 정산 대상이 아니므로 `exists: false`.
-- 정렬: `active: true` 항목 먼저, 그다음 탈퇴/과거 항목. 버튼 문구("정산 생성"/"이체하기"/완료 표시 등)는 API가 정하지 않고 FE가 `role`+`active`+`currentSettlement` 조합으로 결정한다.
-- 각 항목의 `subscriptionId`로 상세 이력(`GET /api/subscriptions/:subscriptionId/settlements`)과 상세 조회로 이동.
-
-**Response `200`**
-
-```json
-{
-  "items": [
-    {
-      "subscriptionId": "sub_1",
-      "serviceName": "넷플릭스",
-      "role": "owner",
-      "active": true,
-      "currentSettlement": { "exists": true, "id": "settlement_3", "billingMonth": "2026-07", "memberCount": 3, "doneCount": 1 }
-    },
-    {
-      "subscriptionId": "sub_2",
-      "serviceName": "왓챠",
-      "role": "member",
-      "active": true,
-      "currentSettlement": { "exists": true, "id": "settlement_7", "billingMonth": "2026-07", "myAmount": 3225, "myStatus": "pending" }
-    },
-    {
-      "subscriptionId": "sub_3",
-      "serviceName": "디즈니플러스",
-      "role": "member",
-      "active": false,
-      "currentSettlement": { "exists": false }
-    }
-  ]
-}
-```
-
-**Error `401`**: 토큰 없음/만료
-
 ### 정산 이력 목록 조회: `GET /api/subscriptions/:id/settlements`
 
-- 파티장이거나, 해당 구독에 (현재든 과거든) `SettlementMember`로 남아있는 사용자가 조회 가능.
-- `role: "owner"`면 각 정산의 `memberCount`/`doneCount` 요약을 반환. `role: "member"`면 각 정산에서 본인의 `amount`/`status`만 반환(다른 파티원 정보 제외) — `GET /api/settlements`의 항목을 눌러 들어간 상세 화면의 "지난 이력" 섹션이 이 응답을 그대로 쓴다.
+- **파티장이면 무조건**, 파티원이면 **현재 `PartyMember`인 경우에만** 조회 가능(내보내진 파티원 본인은 즉시 조회 불가 — 단, 파티장 화면에는 그 사람의 과거 항목이 계속 보임).
+- `role: "owner"`면 각 정산의 `memberCount`/`doneCount` 요약을 반환. `role: "member"`면 각 정산에서 본인의 `amount`/`status`/`reportedAt`/`settlementMemberId`/`transferLink`만 반환(다른 파티원 정보 제외) — 구독 상세 페이지의 정산 카드가 "지난 이력" 섹션을 채우고, 가장 최근 항목이 `pending`이면 그 자리에서 바로 이체·이체 확인 요청까지 할 수 있게 이 응답을 그대로 쓴다. `myReportedAt`은 목록에서도 대기/확인 대기중/확인 완료 3단계 상태를 구분해 보여주기 위한 필드. `mySettlementMemberId`/`myTransferLink`는 구독 상세에서 `GET .../settlements/:settlementId` 상세 조회 없이 바로 `POST .../report`를 호출하거나 토스 딥링크로 이동할 수 있게 하기 위한 필드.
 - 월별 이력을 최신순으로 반환.
 
 **Response `200`** (파티장 예시)
@@ -450,21 +412,21 @@
 ```json
 {
   "items": [
-    { "id": "settlement_7", "billingMonth": "2026-07", "myAmount": 3225, "myStatus": "pending", "createdAt": "2026-07-03T00:00:00.000Z" },
-    { "id": "settlement_6", "billingMonth": "2026-06", "myAmount": 3225, "myStatus": "done", "createdAt": "2026-06-03T00:00:00.000Z" }
+    { "id": "settlement_7", "billingMonth": "2026-07", "myAmount": 3225, "myStatus": "pending", "myReportedAt": null, "mySettlementMemberId": "sm_10", "myTransferLink": "supertoss://send?amount=3225&bank=국민은행&accountno=12345678901234", "createdAt": "2026-07-03T00:00:00.000Z" },
+    { "id": "settlement_6", "billingMonth": "2026-06", "myAmount": 3225, "myStatus": "done", "myReportedAt": null, "mySettlementMemberId": "sm_9", "myTransferLink": "supertoss://send?amount=3225&bank=국민은행&accountno=12345678901234", "createdAt": "2026-06-03T00:00:00.000Z" }
   ]
 }
 ```
 
-**Error `403`**: 파티장도 아니고 해당 구독에 `SettlementMember`로도 남아있지 않은 사용자의 접근
+**Error `403`**: 파티장도 아니고 현재 파티원도 아닌 사용자의 접근
 
 **Error `404`**: 존재하지 않는 구독
 
 ### 정산 상세 조회: `GET /api/subscriptions/:id/settlements/:settlementId`
 
-- 파티장이거나, 해당 정산에 `SettlementMember.userId`로 남아있으면 조회 가능 — 조회 시점에 그 구독의 `PartyMember`인지 여부는 확인하지 않는다(파티 탈퇴 후에도 자신이 참여했던 정산은 계속 조회 가능).
+- **파티장이면 무조건** 조회 가능(내보낸 파티원의 과거 항목 포함). 파티원이면 **현재 `PartyMember`이고 본인이 그 정산에 참여했던 경우에만** 조회 가능 — 내보내진 파티원 본인은 즉시 조회 불가.
 - `role`이 `"owner"`이면 전체 파티원의 정산 항목(`members`)을 반환하며, FE는 파티원별 상태 리스트 + "카카오톡으로 정산 요청 공유" 버튼을 보여준다.
-- `role`이 `"member"`이면 본인 항목 하나만 담긴 배열을 반환하고 `transferLink`도 포함한다. FE는 다른 파티원 목록을 보여주지 않고 본인 상태(대기중/완료)만 보여주며, 카카오톡 공유 버튼 대신 "토스로 이체하기"(`transferLink`) 버튼을 놓는다. 지난 이력은 같은 화면에서 `GET /api/subscriptions/:id/settlements`(본인 항목만)를 추가로 호출해 채운다.
+- `role`이 `"member"`이면 본인 항목 하나만 담긴 배열을 반환하고 `transferLink`도 포함한다. FE는 다른 파티원 목록을 보여주지 않고 본인 상태(대기중/완료)만 보여주며, 카카오톡 공유 버튼 대신 "토스로 이체하기"(`transferLink`) 버튼을 놓는다. 파티원의 일반적인 이체·이체 확인 요청 동선은 구독 상세 화면에 인라인으로 옮겨졌고(`GET .../settlements` 응답의 `myTransferLink`/`mySettlementMemberId` 사용), 이 엔드포인트의 member 응답은 주로 파티장이 "카카오톡으로 정산 요청" 버튼으로 공유한 링크를 파티원이 열었을 때(딥링크 진입) 쓰인다.
 
 **Response `200`** (파티장 예시)
 
@@ -475,20 +437,67 @@
   "billingMonth": "2026-07",
   "role": "owner",
   "members": [
-    { "id": "sm_1", "userId": "user_2", "name": "김철수", "amount": 4250, "status": "done", "doneAt": "2026-07-16T00:00:00.000Z" },
-    { "id": "sm_2", "userId": "user_3", "name": "이영희", "amount": 4250, "status": "pending", "doneAt": null }
+    { "id": "sm_1", "userId": "user_2", "name": "김철수", "amount": 4250, "status": "done", "doneAt": "2026-07-16T00:00:00.000Z", "reportedAt": null },
+    { "id": "sm_2", "userId": "user_3", "name": "이영희", "amount": 4250, "status": "pending", "doneAt": null, "reportedAt": "2026-07-16T08:00:00.000Z" }
   ],
   "createdAt": "2026-07-15T00:00:00.000Z"
 }
 ```
 
-**Error `403`**: 파티장도 아니고 해당 정산에 `SettlementMember`로도 남아있지 않은 사용자의 접근
+- `sm_2`처럼 `status: "pending"`인데 `reportedAt`이 있으면 파티원이 이체 확인을 요청한 상태 — FE는 이 신호로 파티장에게 확인 요청 안내를 보여줄 수 있다.
+
+**Response `200`** (파티원 예시 — 본인 항목만)
+
+```json
+{
+  "id": "settlement_1",
+  "subscriptionId": "sub_1",
+  "billingMonth": "2026-07",
+  "role": "member",
+  "members": [
+    {
+      "id": "sm_2",
+      "userId": "user_3",
+      "name": "이영희",
+      "amount": 4250,
+      "status": "pending",
+      "doneAt": null,
+      "reportedAt": "2026-07-16T08:00:00.000Z",
+      "transferLink": "supertoss://send?amount=4250&bank=국민은행&accountno=123456-78-901234"
+    }
+  ],
+  "createdAt": "2026-07-15T00:00:00.000Z"
+}
+```
+
+**Error `403`**: 파티장도 아니고 현재 파티원도 아닌 사용자의 접근
 
 **Error `404`**: 존재하지 않는 정산
 
+### 이체 확인 요청: `POST /api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId/report`
+
+- 파티원 본인 전용 — `:settlementMemberId`의 `SettlementMember.userId`가 요청자와 일치해야 한다.
+- `reportedAt`을 현재 시각으로 설정한다(이미 설정돼 있어도 최신 시각으로 덮어씀 — 거절된 뒤 재요청하는 경우 포함). `status`는 변경하지 않는다.
+- 최종 확정 권한은 여전히 파티장에게만 있다 — 이 호출은 파티장에게 "확인해보세요" 안내를 띄우는 용도일 뿐이다.
+
+**Response `200`**
+
+```json
+{ "id": "sm_1", "status": "pending", "reportedAt": "2026-07-20T09:00:00.000Z" }
+```
+
+**Error `401`**: 로그인 필요
+
+**Error `403`**: 본인의 정산 항목이 아닌 사용자의 접근
+
+**Error `404`**: 존재하지 않는 정산 또는 파티원 항목
+
+**Error `409`**: 이미 `"done"`으로 처리된 항목 — 이미 파티장이 확정한 항목은 요청할 필요가 없음
+
 ### 파티원 정산 상태 변경: `PATCH /api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId`
 
-- 파티장 전용. 파티원의 이체를 확인한 뒤 해당 항목만 `"done"`으로 변경(오처리 시 `"pending"`으로 되돌리는 것도 허용).
+- 파티장 전용. 파티원의 확인 요청(`reportedAt`)를 확인한 뒤 실제로 입금됐으면 **수락**(`status: "done"`), 아니었으면 **거절**(`status: "pending"`)한다. 요청이 없었어도 파티장이 육안으로 직접 확인하고 바로 `"done"`으로 바꾸는 것도 그대로 허용(요청은 필수 전제 조건이 아니라 보조 신호).
+- PATCH 호출 시(수락/거절 어느 쪽이든) `reportedAt`은 `null`로 초기화된다 — 요청 확인 처리했다는 의미이며, 거절된 파티원은 다시 요청(`POST .../report`)할 수 있다.
 - `:settlementMemberId`는 `SettlementMember.id`(예: `sm_1`)이며, 파티원 목록의 `PartyMember.id`(`member_1`)와는 다른 값이다.
 
 **Request**
@@ -500,7 +509,7 @@
 **Response `200`**
 
 ```json
-{ "id": "sm_1", "status": "done", "doneAt": "2026-07-16T00:00:00.000Z" }
+{ "id": "sm_1", "status": "done", "doneAt": "2026-07-16T00:00:00.000Z", "reportedAt": null }
 ```
 
 **Error `400`**: `status` 값이 `"pending"`/`"done"`이 아님
@@ -513,11 +522,17 @@
 
 ## 참고 / TODO
 
+### 미해결 TODO
+
 - 만족도 설문 및 AI 리포트 API는 아직 미작성.
 - 요청 바디 유효성 검증 로직(Zod 등)은 아직 미구현(`backend/src/middleware/errorHandler.js`에는 에러 포맷터만 존재) — 검증 미들웨어 구현 시 `400` 에러의 상세 필드 목록을 이 문서에 추가할 것.
-- `1. 인증`, `2. 구독 서비스`, `3. 파티원`, `4. 정산` 섹션은 `backend/prisma/schema.prisma`의 `User`/`Subscription`/`PartyMember`/`Settlement`/`SettlementMember` 모델로 DB 설계 완료. 나머지(만족도) 섹션은 아직 스키마 설계 전.
 - `4. 정산`의 `transferLink` 딥링크 스킴/파라미터는 플레이스홀더 — 토스/카카오페이 딥링크 스펙 확인(`docs/plan.md`/`checklist.md` 2주차 기획 항목) 완료 후 실제 포맷으로 갱신 필요.
-- 구독 삭제(`DELETE /api/subscriptions/:id`) 시 연관된 정산(`Settlement`/`SettlementMember`) 이력을 보존할지, 함께 삭제할지 아직 미정 — 별도 논의 필요.
 - 구글 OAuth 클라이언트 ID/시크릿을 `.env`에 반영 필요(`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` 등).
 - 초대용 `state` 파라미터의 위변조 방지(서명/만료 검증) 방식 결정 필요.
 - 계좌번호 등 민감정보 저장 시 암호화 여부/방식 결정 필요.
+
+### 확정된 정책 · 구현 주의사항
+
+- `1. 인증`, `2. 구독 서비스`, `3. 파티원`, `4. 정산` 섹션은 `backend/prisma/schema.prisma`의 `User`/`Subscription`/`PartyMember`/`Settlement`/`SettlementMember` 모델로 DB 설계 완료. 나머지(만족도) 섹션은 아직 스키마 설계 전.
+- 구독 삭제(`DELETE /api/subscriptions/:id`) 시 연관 정산 이력(`Settlement`/`SettlementMember`)도 함께 삭제됨(cascade) — 확정.
+- `GET /api/subscriptions/dashboard`는 `GET /api/subscriptions/:id`와 경로가 겹치므로, 백엔드 구현 시 반드시 `/:id`보다 먼저 라우터에 등록할 것(순서가 바뀌면 `dashboard`가 `:id` 파라미터로 매칭돼 영영 도달 불가).

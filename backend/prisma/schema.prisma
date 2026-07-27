@@ -72,9 +72,11 @@ model SettlementMember {
   settlement   Settlement             @relation(fields: [settlementId], references: [id])
   userId       String
   user         User                   @relation(fields: [userId], references: [id])
+  name         String
   amount       Int
   status       SettlementMemberStatus @default(pending)
   doneAt       DateTime?
+  reportedAt   DateTime?
   createdAt    DateTime               @default(now())
 
   @@unique([settlementId, userId])

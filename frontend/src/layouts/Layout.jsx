@@ -38,6 +38,11 @@ const Layout = () => {
               로그인
             </a>
           )}
+          {user && (
+            <span className="gnb-account" title={user.email}>
+              {user.email.split('@')[0]}
+            </span>
+          )}
         </div>
       </header>
 

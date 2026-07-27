@@ -3,12 +3,6 @@
 
 📄 [기획서 바로가기](https://github.com/hyunjinch/hub/wiki/SUBZIP-%EA%B8%B0%ED%9A%8D%EC%84%9C)
 
-📌 [개발 Task 바로가기](https://github.com/hyunjinch/hub/wiki/SUBZIP-%EA%B0%9C%EB%B0%9C-Task)
-
--> [주차별 계획](https://github.com/users/hyunjinch/projects/1)
-
-🥽 [아키텍처 다이어그램 바로가기](https://claude.ai/code/artifact/db199641-c80a-4a54-adb8-f5252fb74faf)
-
 ## 구조
 - `frontend/` — React (Vite)
 - `backend/` — Express, PostgreSQL+Prisma

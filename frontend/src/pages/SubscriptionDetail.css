@@ -130,6 +130,219 @@
   cursor: pointer;
 }
 
+.settlement-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-inline-gap);
+}
+
+.settlement-start-btn {
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.settlement-start-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.settlement-current {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: var(--space-inline-gap);
+}
+
+.settlement-current-actions {
+  display: flex;
+  gap: var(--space-inline-gap);
+}
+
+.toss-transfer-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  color: var(--color-on-primary);
+  background: var(--color-accent-toss);
+  text-decoration: none;
+}
+
+.settlement-current-actions .toss-transfer-btn {
+  flex: 3;
+  padding: 10px;
+}
+
+.settlement-current-actions .settlement-transfer-pending-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 3;
+}
+
+.settlement-transfer-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-inline-gap);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.settlement-transfer-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-inline-gap);
+}
+
+.toss-transfer-qr {
+  display: block;
+  width: 160px;
+  height: 160px;
+  border-radius: var(--radius-md);
+}
+
+.settlement-transfer-pending-message,
+.settlement-transfer-fallback-message {
+  text-align: center;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  margin: 0;
+}
+
+.confirm-request-btn {
+  flex: 2;
+  padding: 10px 8px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-on-primary);
+  color: var(--color-primary);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+.confirm-request-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.settlement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  max-height: 216px;
+  overflow-y: auto;
+}
+
+.settlement-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-inline-gap);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  text-decoration: none;
+  color: inherit;
+}
+
+.settlement-month {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.settlement-my-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-inline-gap);
+}
+
+.member-status {
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.member-status.pending {
+  background: var(--color-card-warning);
+  color: var(--color-text-muted);
+}
+
+.member-status.done {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.member-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-inline-gap);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.member-info {
+  min-width: 0;
+}
+
+.member-name {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 2px;
+}
+
+.member-joined-at {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  margin: 0;
+}
+
+.member-remove-btn {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-card-suggest);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.member-list-message {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
 .subscription-detail-message {
   padding: var(--space-section-gap) 4px;
   color: var(--color-text-muted);
