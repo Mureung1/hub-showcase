@@ -77,20 +77,27 @@ function CategoryOptions({
         key={label}
         type="button"
         className={`category-option ${selected === label ? "is-selected" : ""}`}
+        aria-label={label}
         aria-pressed={selected === label}
+        title={`${index + 1}위 · ${fullSupport ? "전체 지원" : "부분 지원"}`}
         onClick={() => onChange(label)}
       >
-        <span className="category-rank" aria-label={`${index + 1}위`}>
+        <span className="category-rank" aria-hidden="true">
           {index + 1}
         </span>
         <span className={`category-icon ${tone}`}>
           <Icon size={15} />
         </span>
         <span className="category-option-name">{label}</span>
-        <small className={`category-support-badge is-${fullSupport ? "full" : "partial"}`}>
+        <small
+          className={`category-support-badge is-${fullSupport ? "full" : "partial"}`}
+          aria-hidden="true"
+        >
           {fullSupport ? "전체" : "부분"}
         </small>
-        <span className="check" aria-hidden="true">{selected === label ? "✓" : ""}</span>
+        <span className="check" aria-hidden="true">
+          {selected === label ? "✓" : ""}
+        </span>
       </button>
     );
   });
