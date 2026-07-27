@@ -26,6 +26,33 @@ class SourceRepository(Repository):
     def register_source(self, values: dict[str, Any]) -> None:
         self.unit.insert("sources", values)
 
+    def find_source(self, source_id: str) -> dict[str, Any] | None:
+        return self.unit.fetch_one(
+            "SELECT * FROM sources WHERE source_id = %s", (source_id,)
+        )
+
+    def pending_research_requests(
+        self, analysis_version: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """수집이 소비할 조사 요청.
+
+        읽기만 한다. 상태 갱신은 오케스트레이터의 몫이며 컬럼 단위 GRANT 가
+        이 경계를 강제한다. 정의는 docs/permission-matrix.md 5.3이다.
+
+        우선순위가 높은 요청부터 돌려준다.
+        """
+        return self.unit.fetch_all(
+            """
+            SELECT request_id, goal, needed_evidence_type, scope_level, scope_id,
+                   status, priority
+            FROM research_requests
+            WHERE analysis_version = %s AND status IN ('open', 'scheduled')
+            ORDER BY priority DESC, request_id
+            LIMIT %s
+            """,
+            (analysis_version, limit),
+        )
+
     def find_snapshot_by_hash(self, source_id: str, digest: str) -> str | None:
         """같은 내용이면 새 스냅샷을 만들지 않는다."""
         return self.unit.fetch_value(

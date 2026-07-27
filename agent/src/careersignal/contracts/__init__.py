@@ -21,7 +21,7 @@ from careersignal.contracts.evidence import (
 from careersignal.contracts.objective import EvidenceSlot, ObjectiveContract
 from careersignal.contracts.repair import MissingEvidence, RepairOrder
 from careersignal.contracts.research import ResearchRequest, ResearchStatus
-from careersignal.contracts.run_context import Budget, RunContext
+from careersignal.contracts.run_context import Budget, RunContext, StopReason
 from careersignal.contracts.verification import (
     TypedVerdict,
     VerificationResult,
@@ -47,6 +47,7 @@ __all__ = [
     "RetrievalStrategy",
     "RunContext",
     "Severity",
+    "StopReason",
     "TypedVerdict",
     "UsageType",
     "VerificationResult",
