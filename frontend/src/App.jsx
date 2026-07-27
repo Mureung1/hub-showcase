@@ -18,6 +18,9 @@ import "./App.css";
 
 const SUBJECTS_STORAGE_KEY = "exam-priority:subjects";
 const WEIGHT_STORAGE_KEY = "exam-priority:weight";
+const PLAN_HOURS_STORAGE_KEY = "exam-priority:planHours";
+// 저녁에 흔히 쓸 만한 시간. 화면에 그대로 보이고 바로 고칠 수 있어서 숨은 가정이 아니다.
+const DEFAULT_PLAN_HOURS = "3";
 
 // 1단계에서는 이름과 시험 날짜만 받는다. 나머지는 "아직 안 물어봤다"는 뜻의 모름으로 둔다.
 // 여기에 중립값 4를 넣으면, 사용자가 답한 적 없는 값이 점수에 섞인다. (priorityCalculator.js 참고)
@@ -64,11 +67,16 @@ function loadWeightKey() {
   return saved && WEIGHT_PRESETS[saved] ? saved : DEFAULT_WEIGHT_KEY;
 }
 
+function loadPlanHours() {
+  return localStorage.getItem(PLAN_HOURS_STORAGE_KEY) ?? DEFAULT_PLAN_HOURS;
+}
+
 function App() {
   // collect(과목 담기) -> understanding(이해도) -> result(결과)
   const [step, setStep] = useState("collect");
   const [subjects, setSubjects] = useState(loadSubjects);
   const [weightKey, setWeightKey] = useState(loadWeightKey);
+  const [planHours, setPlanHours] = useState(loadPlanHours);
   // 완료 과목은 활성 목록·우선순위 계산 어디에도 노출하지 않는다.
   const activeSubjects = subjects.filter((subject) => !isCompleted(subject));
 
@@ -137,6 +145,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem(WEIGHT_STORAGE_KEY, weightKey);
   }, [weightKey]);
+
+  useEffect(() => {
+    localStorage.setItem(PLAN_HOURS_STORAGE_KEY, planHours);
+  }, [planHours]);
 
   // 과목이나 성향이 바뀌면 서버에 다시 물어본다. 답이 오기 전까지는 로컬 계산이 보인다.
   useEffect(() => {
@@ -253,6 +265,8 @@ function App() {
           subjects={scoredSubjects}
           weightKey={weightKey}
           onChangeWeight={setWeightKey}
+          planHours={planHours}
+          onChangePlanHours={setPlanHours}
           onUpdateSubject={handleUpdateSubject}
           onCompleteSubject={handleCompleteSubject}
           onBack={() => setStep("collect")}

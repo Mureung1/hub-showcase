@@ -3,6 +3,7 @@ import PriorityBadge from "./PriorityBadge";
 import WeightSelector from "./WeightSelector";
 import ScoreBreakdown from "./ScoreBreakdown";
 import SubjectDetailFields from "./SubjectDetailFields";
+import StudyPlan from "./StudyPlan";
 import Chevron from "./Chevron";
 import { getDaysUntil, formatDday } from "../utils/daysUntil";
 import { buildPriorityReason } from "../utils/priorityReason";
@@ -15,6 +16,8 @@ function ResultScreen({
   subjects,
   weightKey,
   onChangeWeight,
+  planHours,
+  onChangePlanHours,
   onUpdateSubject,
   onCompleteSubject,
   onBack,
@@ -77,6 +80,14 @@ function ResultScreen({
         <div className="empty-state">
           <p>등록된 과목이 없어요. 과목을 담고 다시 확인해 주세요.</p>
         </div>
+      )}
+
+      {subjects.length > 0 && (
+        <StudyPlan
+          subjects={subjects}
+          hours={planHours}
+          onChangeHours={onChangePlanHours}
+        />
       )}
 
       <WeightSelector value={weightKey} onChange={onChangeWeight} />

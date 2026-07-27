@@ -879,6 +879,66 @@
   color: var(--color-text-secondary);
 }
 
+/* 오늘의 공부 배분 */
+.study-plan {
+  margin-top: var(--space-md);
+}
+
+.plan-hours {
+  margin-bottom: var(--space-card);
+}
+
+.plan-hours-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* 시간 칸은 두 자리면 충분하다. 전체 너비를 쓰면 입력할 양이 많아 보인다. */
+.plan-hours-row .form-input {
+  width: 96px;
+}
+
+.plan-hours-unit {
+  font-size: var(--font-body);
+  color: var(--color-text-secondary);
+}
+
+.plan-list {
+  list-style: none;
+  margin: 0 0 var(--space-md);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.plan-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-input);
+  background-color: var(--color-background);
+}
+
+.plan-name {
+  font-size: var(--font-body);
+  font-weight: 500;
+}
+
+.plan-minutes {
+  flex-shrink: 0;
+  font-size: var(--font-subheading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-skipped {
+  margin-top: var(--space-md);
+}
+
 /* 목록 위에 한 번만 놓는 안내문. */
 .list-lead {
   margin: 0 0 var(--space-sm);
