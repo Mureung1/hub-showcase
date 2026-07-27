@@ -14,9 +14,10 @@ function ScheduleActions({ onBack, onPublishNow, onSchedule, isSubmitting }) {
           <button
             type="button"
             onClick={onPublishNow}
-            className="flex-1 md:flex-none px-xl py-md border border-outline-variant rounded-xl font-bold hover:bg-surface-container-high transition-all text-on-surface"
+            className="flex-1 md:flex-none px-xl py-md border border-outline-variant rounded-xl font-bold hover:bg-surface-container-high transition-all text-on-surface flex items-center justify-center gap-xs"
           >
-            즉시 발행
+            <span className="material-symbols-outlined">open_in_new</span>
+            네이버에 게시
           </button>
         )}
         <button

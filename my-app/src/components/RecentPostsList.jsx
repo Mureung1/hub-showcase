@@ -21,6 +21,7 @@ function RecentPostsList({ posts, onViewAll }) {
         {posts.map((post) => (
           <div
             key={post.id}
+            onClick={() => post.publishedUrl && window.open(post.publishedUrl, "_blank", "noopener,noreferrer")}
             className="flex items-center gap-md p-xs hover:bg-surface-container-low rounded-xl transition-colors cursor-pointer group"
           >
             <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-variant flex-shrink-0">
