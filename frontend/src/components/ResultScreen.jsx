@@ -7,21 +7,9 @@ import Chevron from "./Chevron";
 import { getDaysUntil, formatDday } from "../utils/daysUntil";
 import { buildPriorityReason } from "../utils/priorityReason";
 import { formatScale } from "../utils/scaleLabels";
+import { toggleInSet } from "../utils/toggleSet";
 
 const THIS_WEEK_DAYS = 7;
-
-// 열려 있는 id 집합을 토글한다. (점수 구성 / 더 정확하게 둘 다 같은 방식이라 함수를 나눠 쓴다)
-function toggleId(setter, id) {
-  setter((prev) => {
-    const next = new Set(prev);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    return next;
-  });
-}
 
 function ResultScreen({
   subjects,
@@ -151,7 +139,7 @@ function ResultScreen({
                     type="button"
                     className="link-button"
                     aria-expanded={isExpanded}
-                    onClick={() => toggleId(setExpandedIds, subject.id)}
+                    onClick={() => toggleInSet(setExpandedIds, subject.id)}
                   >
                     점수 구성 <Chevron open={isExpanded} />
                   </button>
@@ -159,7 +147,7 @@ function ResultScreen({
                     type="button"
                     className="link-button"
                     aria-expanded={isDetailOpen}
-                    onClick={() => toggleId(setDetailIds, subject.id)}
+                    onClick={() => toggleInSet(setDetailIds, subject.id)}
                   >
                     더 정확하게 <Chevron open={isDetailOpen} />
                   </button>

@@ -835,6 +835,11 @@
   font-weight: 600;
 }
 
+/* 과목별 "더 자세히". 이해도 선택기와 붙어 보이지 않도록 한 칸 띄운다. */
+.understanding-item > .link-button {
+  margin-top: var(--space-sm);
+}
+
 .step-progress-note {
   margin: var(--space-card) 0 0;
   text-align: center;

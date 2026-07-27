@@ -242,6 +242,7 @@ function App() {
           onChangeUnderstanding={(id, value) =>
             handleUpdateSubject(id, { understanding: value })
           }
+          onUpdateSubject={handleUpdateSubject}
           onBack={() => setStep("collect")}
           onNext={() => setStep("result")}
         />
