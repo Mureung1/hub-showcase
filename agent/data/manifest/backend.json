@@ -1128,6 +1128,60 @@
           "entry_label": "experienced"
         }
       ]
+    },
+    {
+      "source_id": "src_enki_be_offen",
+      "url": "https://enki.career.greetinghr.com/ko/o/226454",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 엔키화이트햇",
+      "company_id": "co_enkiwhitehat",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "제품개발팀 : OFFen Backend 개발자(경력)",
+      "job_role_raw": "직군: 연구원 / 직무: 개발 / 담당업무: 보안 플랫폼 백엔드 설계 및 개발, REST API 설계, Neo4j·PostgreSQL 데이터 모델링",
+      "entry_label_raw": "경력사항: 경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /o/*/apply, /ko/o/*/apply, /en/o/*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "content_file": "enki_be_offen.txt",
+      "note": "robots 가 ClaudeBot 을 Disallow 하지만 Content-Signal 에 use=reference 가 있다. 데이터 전략 8.1 의 세 조건을 지켜 수집한다"
+    },
+    {
+      "source_id": "src_enki_be_offen_open",
+      "url": "https://enki.career.greetinghr.com/ko/o/226461",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 엔키화이트햇",
+      "company_id": "co_enkiwhitehat",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "제품개발팀 : OFFen Backend 개발자(경력무관)",
+      "job_role_raw": "직군: 연구원 / 직무: 개발 / 담당업무: 보안 플랫폼 백엔드 설계 및 개발, REST API 설계, Neo4j·PostgreSQL 데이터 모델링",
+      "entry_label_raw": "경력사항: 경력 무관",
+      "entry_label": "unspecified",
+      "robots_policy": "allow /; disallow /o/*/apply, /ko/o/*/apply, /en/o/*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "content_file": "enki_be_offen_open.txt",
+      "note": "같은 팀의 같은 제품을 대상군을 나눠 두 공고로 모집한다. 담당업무와 사용 기술은 src_enki_be_offen 과 같고 필요역량과 우대사항이 다르다. robots 처리는 src_enki_be_offen 과 같다"
     }
   ],
   "unreachable": [
