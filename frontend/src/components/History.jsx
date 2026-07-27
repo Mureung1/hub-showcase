@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getRecommendationHistory, addFavorite, removeFavorite } from '../api/index.js'
@@ -6,18 +6,60 @@ import IssueCard from './IssueCard.jsx'
 import { DIFFICULTY_META, formatSessionTime } from '../utils/format.js'
 import { TOPIC_OPTIONS } from '../utils/preferences.js'
 
+const ALL = 'all'
+const SESSIONS_PER_PAGE = 5
+
 // 8 · 전체 검색 이력 — 스텝퍼 흐름 밖 부가 화면. 지금까지 검색한 모든 세션을 최신순으로 보여주고
 // (Recommendation은 삭제 없이 계속 쌓이는 설계라 즐겨찾기 안 한 이슈도 항상 여기서 볼 수 있다),
-// "즐겨찾기만 보기"는 이미 받아온 응답을 프론트에서 필터링하는 것으로 처리한다(별도 API 없음)
+// 언어/주제/즐겨찾기 필터와 페이지네이션은 전부 이미 받아온 응답을 프론트에서 처리한다(별도 API 없음 —
+// 사용자당 세션 수가 크지 않은 이 앱 규모에서는 전체를 한 번에 받고 화면에서만 나누는 게 더 단순함)
 function History() {
   const { githubId, setRecommendation, setSelectedItem } = useOutletContext()
   const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [languageFilter, setLanguageFilter] = useState(ALL)
+  const [topicFilter, setTopicFilter] = useState(ALL)
+  const [page, setPage] = useState(1)
 
   const { data: sessions, isLoading, error, refetch } = useQuery({
     queryKey: ['recommendationHistory', githubId],
     queryFn: () => getRecommendationHistory(githubId),
     enabled: Boolean(githubId),
   })
+
+  // 필터 선택지는 현재 필터 결과가 아니라 전체 이력 기준으로 뽑는다 — 필터를 걸수록 선택지가 줄어들면 헷갈림
+  const availableLanguages = useMemo(() => {
+    if (!sessions) return []
+    const languages = new Set(sessions.flatMap((session) => session.items.map((item) => item.primaryLanguage)))
+    return [...languages].sort()
+  }, [sessions])
+
+  const availableTopics = useMemo(() => {
+    if (!sessions) return []
+    const topics = new Set(sessions.flatMap((session) => session.preferences.topics))
+    return [...topics].sort()
+  }, [sessions])
+
+  const filteredSessions = useMemo(() => {
+    if (!sessions) return []
+    return sessions
+      .filter((session) => topicFilter === ALL || session.preferences.topics.includes(topicFilter))
+      .map((session) => ({
+        ...session,
+        items: session.items.filter(
+          (item) =>
+            (!favoritesOnly || item.isFavorited) && (languageFilter === ALL || item.primaryLanguage === languageFilter),
+        ),
+      }))
+      .filter((session) => session.items.length > 0)
+  }, [sessions, favoritesOnly, languageFilter, topicFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / SESSIONS_PER_PAGE))
+  const pageSessions = filteredSessions.slice((page - 1) * SESSIONS_PER_PAGE, page * SESSIONS_PER_PAGE)
+
+  function updateFilter(setter, value) {
+    setter(value)
+    setPage(1) // 필터가 바뀌면 결과 집합이 달라지므로 1페이지로 되돌린다
+  }
 
   // 성공 후에만 다시 불러온다(낙관적 업데이트 없음) — Result.jsx의 handleToggleFavorite와 같은 방식
   async function handleToggleFavorite(item) {
@@ -76,35 +118,67 @@ function History() {
           <button
             type="button"
             className={favoritesOnly ? 'btn btn-primary r-refetch-btn' : 'btn btn-soft r-refetch-btn'}
-            onClick={() => setFavoritesOnly((prev) => !prev)}
+            onClick={() => updateFilter(setFavoritesOnly, !favoritesOnly)}
           >
             즐겨찾기만 보기
           </button>
         </div>
         <p>지금까지 검색한 이슈를 검색 시점별로 모아봤어요.</p>
+
+        {availableLanguages.length > 0 && (
+          <div className="filterbar">
+            <button
+              type="button"
+              className={languageFilter === ALL ? 'filter filter-active' : 'filter'}
+              onClick={() => updateFilter(setLanguageFilter, ALL)}
+            >
+              전체 언어
+            </button>
+            {availableLanguages.map((language) => (
+              <button
+                key={language}
+                type="button"
+                className={languageFilter === language ? 'filter filter-active' : 'filter'}
+                onClick={() => updateFilter(setLanguageFilter, language)}
+              >
+                {language}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {availableTopics.length > 0 && (
+          <div className="filterbar">
+            <button
+              type="button"
+              className={topicFilter === ALL ? 'filter filter-active' : 'filter'}
+              onClick={() => updateFilter(setTopicFilter, ALL)}
+            >
+              전체 주제
+            </button>
+            {availableTopics.map((topic) => (
+              <button
+                key={topic}
+                type="button"
+                className={topicFilter === topic ? 'filter filter-active' : 'filter'}
+                onClick={() => updateFilter(setTopicFilter, topic)}
+              >
+                {TOPIC_OPTIONS.find((option) => option.value === topic)?.label ?? topic}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {sessions.length === 0 && (
+      {filteredSessions.length === 0 && (
         <div className="panel">
-          <p className="lead">아직 검색한 이슈가 없어요.</p>
+          <p className="lead">
+            {sessions.length === 0 ? '아직 검색한 이슈가 없어요.' : '조건에 맞는 이슈가 없어요.'}
+          </p>
         </div>
       )}
 
-      {sessions.length > 0 && sessions.every((session) =>
-        (favoritesOnly ? session.items.filter((item) => item.isFavorited) : session.items).length === 0,
-      ) && (
-        <div className="panel">
-          <p className="lead">즐겨찾기한 이슈가 아직 없어요.</p>
-        </div>
-      )}
-
-      {sessions.map((session) => {
-        const visibleItems = favoritesOnly
-          ? session.items.filter((item) => item.isFavorited)
-          : session.items
-        if (visibleItems.length === 0) {
-          return null
-        }
+      {pageSessions.map((session) => {
         const filters = [
           ...session.preferences.languages,
           DIFFICULTY_META[session.preferences.difficulty].label,
@@ -124,7 +198,7 @@ function History() {
                 ))}
               </div>
             </div>
-            {visibleItems.map((item) => (
+            {session.items.map((item) => (
               <IssueCard
                 key={item.issueUrl}
                 item={item}
@@ -135,6 +209,30 @@ function History() {
           </div>
         )
       })}
+
+      {filteredSessions.length > SESSIONS_PER_PAGE && (
+        <div className="h-pagination">
+          <button
+            type="button"
+            className="btn btn-soft"
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page === 1}
+          >
+            이전
+          </button>
+          <span className="h-pagination-label">
+            {page} / {totalPages}
+          </span>
+          <button
+            type="button"
+            className="btn btn-soft"
+            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={page === totalPages}
+          >
+            다음
+          </button>
+        </div>
+      )}
     </>
   )
 }

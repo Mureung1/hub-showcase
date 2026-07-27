@@ -546,6 +546,8 @@ h1.hero {
   margin: 16px 0 8px;
 }
 .filter {
+  border: 0;
+  font-family: inherit;
   font-size: 14px;
   font-weight: var(--weight-semibold);
   color: var(--color-text-secondary);
@@ -553,6 +555,9 @@ h1.hero {
   border-radius: var(--radius-full);
   padding: 8px 15px;
   box-shadow: var(--shadow-card);
+}
+button.filter {
+  cursor: pointer;
 }
 .filter-active {
   color: var(--color-text-on-primary);
@@ -766,6 +771,23 @@ h1.hero {
   font-size: var(--text-caption);
   font-weight: var(--weight-bold);
   color: var(--color-text-tertiary);
+}
+.h-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+.h-pagination .btn {
+  height: 38px;
+  padding: 0 18px;
+  font-size: var(--text-caption);
+}
+.h-pagination-label {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
 }
 
 /* ── 상세 ───────────────────────────────── */
