@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { SOURCE_LABEL, fmtDate, matchNotice, routeTokens } from "../lib/matching";
 
 function Chips({ items, color, hits }) {
@@ -26,7 +27,7 @@ function Chips({ items, color, hits }) {
   );
 }
 
-function NoticeCard({ n, hits, alertMode }) {
+function NoticeCard({ n, hits, alertMode, routeId }) {
   const events = n.extraction?.events ?? [];
   return (
     <div
@@ -66,14 +67,23 @@ function NoticeCard({ n, hits, alertMode }) {
         </div>
       )}
 
-      <a
-        href={n.source_url}
-        target="_blank"
-        rel="noreferrer"
-        style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "#3E7CB1" }}
-      >
-        공지 원문 보기 →
-      </a>
+      <div style={{ display: "flex", gap: 14, marginTop: 10 }}>
+        {/* 리포트 = 앱 안 이동(Link) / 원문 = 외부 사이트(a) */}
+        <Link
+          to={`/report/${n.id}${routeId ? `?route=${routeId}` : ""}`}
+          style={{ fontSize: 13, fontWeight: 600, color: "#3E7CB1", textDecoration: "none" }}
+        >
+          미리캣 리포트 보기 →
+        </Link>
+        <a
+          href={n.source_url}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 13, color: "#8B7863" }}
+        >
+          공지 원문 →
+        </a>
+      </div>
     </div>
   );
 }
@@ -155,7 +165,7 @@ export default function NoticesPanel({ routes = [] }) {
             </p>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
-              {alerts.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode />)}
+              {alerts.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode routeId={selected?.id} />)}
             </div>
           )}
 
@@ -164,7 +174,7 @@ export default function NoticesPanel({ routes = [] }) {
             확인함 · 이 경로 영향 없음 ({clears.length})
           </div>
           <div style={{ display: "grid", gap: 12 }}>
-            {clears.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode={false} />)}
+            {clears.map(({ n, hits }) => <NoticeCard key={n.id} n={n} hits={hits} alertMode={false} routeId={selected?.id} />)}
           </div>
         </>
       )}

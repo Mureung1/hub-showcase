@@ -2,7 +2,7 @@ import Miricat from "../Miricat";
 
 // 브리핑 리포트의 지도. 도로 격자·경로 좌표는 프로토타입에서 가져온 "연출용 그림"이고
 // (실좌표 지도는 이후 티켓), 데이터로 움직이는 건 라벨·통제 표시·대안 점선 여부뿐이다.
-export default function ReportMap({ affected, originName, destName, eventLabel, showAlt, altName }) {
+export default function ReportMap({ affected, originName, destName, eventLabel, showAlt }) {
   return (
     <div className="report-map">
       <svg viewBox="0 0 620 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -43,10 +43,11 @@ export default function ReportMap({ affected, originName, destName, eventLabel, 
         {/* 출발/도착 노드 */}
         <circle cx="60" cy="372" r="9" fill="#fff" stroke="#33261A" strokeWidth="3.5" />
         <circle cx="560" cy="90" r="9" fill="#33261A" stroke="#fff" strokeWidth="3" />
-        <text x="60" y="404" fontSize="12" fontWeight="600" fill="#33261A" textAnchor="middle">
+        {/* 라벨은 안쪽으로 흐르게 정렬 — slice 크롭으로 긴 이름이 모서리에서 잘리는 것 방지 */}
+        <text x="48" y="404" fontSize="12" fontWeight="600" fill="#33261A" textAnchor="start">
           {originName || "집"}
         </text>
-        <text x="560" y="66" fontSize="12" fontWeight="600" fill="#33261A" textAnchor="middle">
+        <text x="572" y="66" fontSize="12" fontWeight="600" fill="#33261A" textAnchor="end">
           {destName || "회사"}
         </text>
 
@@ -75,7 +76,7 @@ export default function ReportMap({ affected, originName, destName, eventLabel, 
       <div className="map-legend">
         <span className="lg"><i></i>내 경로</span>
         {affected && <span className="lg red"><i></i>통제 구간</span>}
-        {showAlt && <span className="lg dash"><i></i>대안 {altName || "경로"}</span>}
+        {showAlt && <span className="lg dash"><i></i>대안 경로</span>}
       </div>
     </div>
   );

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { SOURCE_LABEL, matchNotice, routeTokens, isCurrent } from "../lib/matching";
 import ReportMap from "../components/report/ReportMap";
+import AltVerdict from "../components/report/AltVerdict";
+import TraceList from "../components/report/TraceList";
 
 // 헤드라인으로 보여줄 사건: 내 경로와 겹친 사건 우선, 없으면 아직 유효한 첫 사건
 function pickEvent(notice, hits) {
@@ -58,6 +60,7 @@ export default function ReportPage() {
   const hits = matchNotice(notice, routeTokens(currentRoute));
   const affected = hits.size > 0;
   const event = pickEvent(notice, hits);
+  const ended = !!event && !isCurrent(event.period);   // 끝난 사건 → "영향 없음"의 이유가 다르다
 
   // 간이 대안 재매칭: 다른 등록 경로 중 이 공지에 안 걸리는 첫 경로 (MIRI-25의 맛보기)
   const others = currentRoute ? routes.filter((r) => r.id !== currentRoute.id) : [];
@@ -80,7 +83,6 @@ export default function ReportPage() {
           destName={currentRoute?.dest_name}
           eventLabel={event?.location || event?.event_name}
           showAlt={!!altRoute}
-          altName={altRoute?.name}
         />
 
         <div className="report-side">
@@ -94,7 +96,11 @@ export default function ReportPage() {
                   {[event.period, SOURCE_LABEL[notice.source] ?? notice.source].filter(Boolean).join(" · ")}
                 </div>
                 {!affected && (
-                  <div className="sub">이 경로와 겹치지 않아요 — 확인만 해두세요.</div>
+                  <div className="sub">
+                    {ended
+                      ? "이미 끝난 일이에요 — 지금 이동에는 영향이 없어요."
+                      : "이 경로와 겹치지 않아요 — 확인만 해두세요."}
+                  </div>
                 )}
               </>
             ) : (
@@ -105,7 +111,9 @@ export default function ReportPage() {
             )}
           </div>
 
-          {/* TODO(다음 단계): 🧭 이렇게 가세요(AltVerdict) · 미리캣이 이렇게 확인했어요(TraceList) */}
+          {affected && <AltVerdict altRoute={altRoute} others={others} hits={hits} />}
+
+          <TraceList notice={notice} currentRoute={currentRoute} hits={hits} event={event} />
 
           <a className="rp-link" href={notice.source_url} target="_blank" rel="noreferrer">
             공지 원문 보기 →
