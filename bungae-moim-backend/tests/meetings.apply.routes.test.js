@@ -253,4 +253,29 @@ describe('POST /api/meetings/:id/apply', () => {
     );
     expect(rows[0].apply_answer).toBe('두 번째 답변');
   });
+
+  it('공백만 있는 답변은 400 VALIDATION_ERROR(trim 후 빈 문자열)', async () => {
+    const host = await createUser('ans-h5');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent } = await loginAgent('ans-u5');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '   ' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('신청 자격이 없으면(거절됨) 답변 검증보다 거절 사유가 먼저 나온다', async () => {
+    const host = await createUser('ans-h6');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent, userId } = await loginAgent('ans-u6');
+    await insertParticipant(meetingId, userId, 'rejected');
+
+    // 답변을 아예 보내지 않는다 — "답변이 필요합니다"가 아니라 "신청이 거절된 모임입니다"가 나와야 한다.
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.message).toBe('신청이 거절된 모임입니다');
+  });
 });

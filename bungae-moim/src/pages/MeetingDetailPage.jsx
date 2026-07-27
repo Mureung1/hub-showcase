@@ -251,6 +251,12 @@ export default function MeetingDetailPage() {
                 신청자 {countActiveApplicants(participants)}명 · 대기중 {pendingApplicants.length}명
               </span>
 
+              {meeting.applyQuestion && (
+                <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>
+                  질문: “{meeting.applyQuestion}”
+                </span>
+              )}
+
               {participantsError && (
                 <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>
                   신청자 목록을 불러오지 못했어요. {participantsError}
@@ -280,7 +286,7 @@ export default function MeetingDetailPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <span style={{ fontSize: 13.5, fontWeight: 700 }}>{p.nickname}</span>
                       <TrustBadge score={p.trustScore} />
-                      {p.applyAnswer && (
+                      {p.applyAnswer && ['pending', 'approved', 'confirmed'].includes(p.status) && (
                         <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>“{p.applyAnswer}”</span>
                       )}
                     </div>

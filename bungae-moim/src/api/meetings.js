@@ -73,7 +73,7 @@ export function fetchParticipants(id) {
 }
 
 // PATCH /api/meetings/:id/participants/:userId — 승인/거절(F4). { userId, status } 반환.
-// 위의 applyToMeeting/cancelParticipation은 바디가 없어 헤더를 안 붙이지만, 이건 JSON 바디를
+// 위의 cancelParticipation은 바디가 없어 헤더를 안 붙이지만, 이건 JSON 바디를
 // 보내므로 Content-Type이 반드시 있어야 한다. 없으면 서버의 express.json()이 본문을 파싱하지
 // 않아 req.body가 {}가 되고, 원인을 알기 어려운 VALIDATION_ERROR로 나타난다.
 export function respondToApplicant(id, userId, status) {
