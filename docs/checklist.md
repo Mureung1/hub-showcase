@@ -115,12 +115,13 @@
 - [ ] [P1] 동일한 NudgeModal 안에서 Lv1 → Lv2 → Lv3 → Lv4 자동 전환
 - [ ] [P1] taskId + level별 메시지·microTask·generationSource 고정
 - [ ] [P1] 늦게 도착한 Gemini 응답이 다음 레벨 화면을 덮어쓰지 않도록 처리
-- [ ] [P1] ReasonCheckpoint 입력값과 선택 상태 보존
+- [x] [P1] ReasonCheckpoint 입력값과 선택 상태 보존 — 재현 안 됨으로 확인. 근거: `NudgeModal.jsx`의 `showCheckpoint`가 false로 바뀌는(=`ReasonCheckpoint` unmount) 조건은 `checkpointAnswered`(제출 시 의도적으로 true) / `checkpointLevel`(모달 오픈 시 고정, 도중 변경 없음) / `lockedToStart`(`task.level===4`)뿐인데, `HomePage.jsx`의 `runTick`이 모달이 하나라도 열려 있으면 전역적으로 즉시 리턴해 레벨 상승 폴링 자체를 막는다 — 즉 체크포인트가 떠 있는 동안 `task.level`이 배경에서 4로 올라 unmount를 유발하는 시나리오가 애초에 불가능함. 유일하게 실제로 입력이 사라지는 경로는 사용자가 명시적으로 "닫기"를 눌러 모달 전체를 닫는 경우인데, 이건 다이얼로그를 직접 닫으면 입력이 사라지는 일반적인 UX 동작이라 버그로 보지 않음 (2026-07-27 조사, 코드 변경 없음)
 - [ ] [P1] Lv4 진입 시 다음 단계 타이머와 카운트다운 종료
 - [ ] [P1] Home·History 초기 조회 실패 시 오류 UI와 재시도 제공
-- [ ] [P1] Focus "멈추기" 중복 클릭 방지
+- [x] [P1] Focus "멈추기" 중복 클릭 방지 — `handleComplete`와 동일한 패턴(`stopInFlightRef` + `isStopping` state, 버튼 `disabled`)을 `handleStop`에 적용. RTL 테스트(`sends only one stopped request for rapid repeated clicks`) 추가, 전체 프론트 테스트 186개 통과 확인 (2026-07-27, `src/components/FocusMode.jsx`/`.test.jsx`)
 - [ ] [P1] 할 일 등록 입력 검증·중복 제출 방지·오류 UI 보강
 - [ ] [P1] 서버 Task eventType allowlist 적용
+- [ ] [P1] `stopped` 이벤트 서버 멱등성 가드 없음 — skipCount 반토막 로직이 중복 요청 시 여러 번 실행됨, UI 가드로 실질 위험은 제거됐으나 서버 단 정합성 보강은 별도 이슈 (2026-07-27, Focus 멈추기 중복 클릭 방지 작업 중 발견)
 
 ### 4주차 중 추가로 발견/제작한 것 (원본 항목에 없던 것)
 
