@@ -1,7 +1,11 @@
 import { Router } from "express";
 import type { Prisma, Task } from "@prisma/client";
 import { prisma } from "../db/client.js";
-import { calculateLevel } from "../lib/scoring.js";
+import {
+  calculateLevel,
+  calculateStoppedRelief,
+  normalizeStoppedDurationSeconds,
+} from "../lib/scoring.js";
 import { getCurrentReason } from "../db/avoidanceReasons.js";
 import { broadcastLevelUpPush } from "../lib/broadcastPush.js";
 import {
@@ -32,17 +36,20 @@ function withReason(
 
 router.get("/", async (_req, res) => {
   try {
-    const tasks = await prisma.task.findMany({
-      include: {
-        // Lv1/Lv3 재확인이나 최초 등록으로 쌓인 회피 이유 중 가장 최근 것만 필요하다
-        // (nudgeMessages.js의 Lv2 빌더가 이 값으로 getMicrotask를 호출한다).
-        avoidanceReasons: { orderBy: { createdAt: "desc" }, take: 1 },
-      },
-    });
+    const [tasks, appState] = await Promise.all([
+      prisma.task.findMany({
+        include: {
+          // Lv1/Lv3 재확인이나 최초 등록으로 쌓인 회피 이유 중 가장 최근 것만 필요하다
+          // (nudgeMessages.js의 Lv2 빌더가 이 값으로 getMicrotask를 호출한다).
+          avoidanceReasons: { orderBy: { createdAt: "desc" }, take: 1 },
+        },
+      }),
+      prisma.appState.findUnique({ where: { id: "singleton" } }),
+    ]);
     const data = tasks.map(({ avoidanceReasons, ...task }) =>
       withReason(task, avoidanceReasons[0] ?? null),
     );
-    res.json({ data });
+    res.json({ data, streak: appState?.streak ?? 0 });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -90,6 +97,10 @@ router.post("/", async (req, res) => {
 router.post("/:id/events", async (req, res) => {
   const { id } = req.params;
   const { eventType, durationSeconds, entryLevel, microTask } = req.body;
+  const stoppedDurationSeconds =
+    eventType === "stopped"
+      ? normalizeStoppedDurationSeconds(durationSeconds)
+      : null;
   let doneContext: DoneContextInput = {
     entryMode: null,
     generationSource: null,
@@ -230,12 +241,12 @@ router.post("/:id/events", async (req, res) => {
           },
         });
 
-        const wasFirstTry = currentTask.skipCount === 0;
-
+        // 개입(무응답/skipCount)을 거쳐 완료하는 것도 이 서비스의 정상 흐름이므로,
+        // 스트릭은 개입 여부와 무관하게 완료할 때마다 오른다. "멈추기"만 리셋한다.
         await tx.appState.upsert({
           where: { id: "singleton" },
-          create: { id: "singleton", streak: wasFirstTry ? 1 : 0 },
-          update: { streak: wasFirstTry ? { increment: 1 } : 0 },
+          create: { id: "singleton", streak: 1 },
+          update: { streak: { increment: 1 } },
         });
 
         return tx.task.findUniqueOrThrow({ where: { id } });
@@ -246,15 +257,28 @@ router.post("/:id/events", async (req, res) => {
           taskId: id,
           eventType,
           occurredAt: new Date(),
+          ...(eventType === "stopped" && stoppedDurationSeconds !== null
+            ? { durationSeconds: stoppedDurationSeconds }
+            : {}),
         },
       });
 
       if (eventType === "stopped") {
-        const nextSkipCount = Math.max(0, Math.floor(currentTask.skipCount / 2));
+        const relief = calculateStoppedRelief(
+          currentTask.skipCount,
+          stoppedDurationSeconds,
+        );
+
+        // "멈추기"는 완료 시도를 중단한 것이므로 스트릭을 리셋한다.
+        await tx.appState.upsert({
+          where: { id: "singleton" },
+          create: { id: "singleton", streak: 0 },
+          update: { streak: 0 },
+        });
 
         return tx.task.update({
           where: { id },
-          data: { skipCount: nextSkipCount, level: calculateLevel(nextSkipCount) },
+          data: { skipCount: relief.skipCount, level: relief.level },
         });
       }
 
