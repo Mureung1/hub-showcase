@@ -85,6 +85,7 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 - Pending Review는 AY Chat의 inline card 하나로 표시하고 composer·steer를 잠근다. Modal·별도 approval page와 입력 queue는 만들지 않는다.
 - Card에는 capability action만 두며 전체 Turn interrupt는 Review result와 분리된 native conversation control로 유지한다.
 - Settled card는 read-only로 남기고 fresh call은 새 card로 append한다. 기존 card를 교체·재개하지 않으며 별도 App Review ledger를 만들지 않는다.
+- Optional `EvidenceRef`는 active SemesterWorkspace에서 on-demand로 bounded read하고 path·digest·locator를 모두 검증한 뒤 card에 투영한다. 하나라도 invalid면 partial Review 없이 call 전체를 실패시키며 file registry·copy·cache를 만들지 않는다.
 - Pending request와 response를 장기 학업 event로 저장하지 않는다.
 - 일반 clarification은 built-in `request_user_input`을 사용할 수 있다.
 - 하나의 Review 결정을 custom MCP와 built-in `request_user_input`에 이중으로 걸치지 않는다.
@@ -156,10 +157,10 @@ RawMaterial registry
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
 | `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Authenticated Broker handshake가 없으면 activation이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
-| Capability-specific Review UI | Semantic before/after change, 선택적인 evidence와 세 action을 데스크톱 화면에서 이해할 수 있다. |
+| Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
-| Failure settlement | cancel·disconnect·Runtime terminal이 허위 apply 없이 끝난다. |
+| Failure settlement | Turn interrupt·disconnect·Runtime terminal과 invalid evidence가 partial Review나 허위 apply 없이 끝난다. |
 | Deep-module test seam | In-memory Adapter와 Browser Adapter가 같은 InteractionCapability contract를 통과한다. |
 
 ## 의도적으로 만들지 않는 것
@@ -182,6 +183,7 @@ RawMaterial registry
 | 실제 자료 사용 | AY가 복사본이 아니라 선택한 학기 Git workspace의 파일을 직접 다루는가? |
 | App의 차별화 | 일반 채팅보다 나은 capability-specific 판단 UI를 제공하는가? |
 | 왕복 완결성 | 한 MCP call 안에서 요청·UI·사용자 선택·structured result 반환이 끝나는가? |
+| 근거 정직성 | Evidence가 active workspace의 exact content version과 일치할 때만 card 전체가 표시되는가? |
 | Runtime 정직성 | Required Interaction MCP가 Broker와 연결되지 않으면 workspace activation이 성공하지 않는가? |
 | 경계의 깊이 | Skill이 correlation·Browser lifecycle·revision을 알지 않아도 되는가? |
 | AY의 자율성 | Skill과 AY가 workflow와 실제 file apply를 소유하는가? |
@@ -195,6 +197,6 @@ RawMaterial registry
 | --- | --- |
 | `workspace-state.json`에 반드시 필요한 최소 학기 metadata는 무엇인가? | SemesterWorkspace init spec |
 | `propose_state_patch` semantic Review model의 exact field name, cardinality와 길이 제한은 무엇인가? | InteractionCapability implementation spec |
-| Semantic change와 evidence preview를 어떤 화면 구성으로 보여주는가? | Product scenario/prototype |
-| User cancel과 Browser disconnect를 Skill에 어떤 error/result로 반환하는가? | Interaction MCP lifecycle spec |
+| Inline card 안에서 semantic change와 validated evidence preview를 어떤 시각 hierarchy로 보여주는가? | Product scenario/prototype |
+| Evidence preview가 처음 지원할 file codec, locator와 exact byte bound는 무엇인가? | InteractionCapability implementation spec |
 | 첫 Review 뒤 추가할 두 번째 capability는 무엇인가? | 실제 dogfood에서 반복되는 사용자 판단을 관찰한 뒤 결정 |

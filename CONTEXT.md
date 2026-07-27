@@ -36,8 +36,8 @@ SemesterWorkspace 안에서 한 과목을 나타내는 학업 객체다. 정체�
 _Avoid_: 디렉터리, thread, 태그
 
 **EvidenceRef**:
-AY가 제안한 값이 어느 학기 자료의 어떤 content version과 위치에 근거하는지 Review에 전달할 수 있는 선택적 field-level 참조다. App이 모든 file operation을 추적한다는 뜻은 아니다.
-_Avoid_: 필수 global file registry, 최신 파일만 가리키는 링크, Agent 활동 로그
+AY가 제안한 값이 어느 학기 자료의 어떤 content version과 위치에 근거하는지 Review에 전달할 수 있는 선택적 field-level 참조다. App은 Review 요청 때 active SemesterWorkspace의 relative path를 on-demand로 bounded read하고 exact content digest와 locator를 검증해 transient preview를 만들 뿐, 모든 file operation을 추적하지 않는다.
+_Avoid_: 필수 global file registry, 최신 파일만 가리키는 링크, App-owned source copy·cache, 일부만 검증된 preview, Agent 활동 로그
 
 **SemesterModel**:
 SemesterWorkspace가 과목과 학업 사실을 구조화해 보존할 때 사용하는 현재 학기 snapshot이다. Agent 대화 기록이나 App-owned aggregate가 아니다.

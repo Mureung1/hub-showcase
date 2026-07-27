@@ -56,7 +56,7 @@ App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 �
 | Skill·AY workflow | `<SemesterWorkspace>/.agents/skills/` | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
 | Workspace MCP declaration | `<SemesterWorkspace>/.codex/config.toml` | Workspace-root-relative STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
 | Capability contract·STDIO Adapter | `packages/interaction-mcp` | Built executable, capability별 typed MCP request/result와 authenticated Broker transport | Project config loading, MCP wire와 process environment |
-| App-side Interaction Broker | `apps/server` | Package의 server-side Interface와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle과 failure settlement |
+| App-side Interaction Broker | `apps/server` | Package의 server-side Interface와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle, on-demand evidence resolution과 failure settlement |
 | Browser wire | `packages/product-contract` | Capability별 Browser-safe request·result projection | Raw MCP와 private Broker transport |
 | UI Adapter | `apps/chat-shell` | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
 | Codex Runtime Adapter | `packages/codex-chat-runtime` | Generic child environment 전달과 native MCP readiness | Capability schema, Broker protocol, `threadId`·`turnId`·`requestId` |
@@ -144,6 +144,21 @@ App 자체가 소유하는 state를 바꾸는 capability는 예외가 아니라 
 | Revision chain | `revise` 뒤 AY가 다시 `propose_state_patch`를 호출하면 fresh call을 새 card로 transcript 아래에 append한다. 이전 card를 replacement payload로 바꾸거나 reopen하지 않는다. |
 | Durability | Settled card는 conversation presentation이다. 별도 App Review ledger·settled-card store를 만들지 않으며, 향후 재표시가 필요하면 native conversation history가 제공하는 call/result를 투영한다. |
 
+## Evidence resolution
+
+`EvidenceRef`는 App이 미리 등록한 material ID가 아니라 현재 Review가 가리키는 workspace content version이다. Optional evidence가 하나라도 있으면 Broker가 Browser projection 전에 다음 preflight를 모두 수행한다.
+
+| 단계 | 계약 |
+| --- | --- |
+| Workspace binding | 현재 authenticated Runtime binding의 exact SemesterWorkspace root만 authority로 사용한다. Caller는 workspace ID나 absolute path를 보내지 않는다. |
+| Path safety | Workspace-relative path를 normalize·resolve하고 실제 target이 root 안에 남는 regular file인지 확인한다. Root 밖으로 향하는 traversal이나 symlink target은 실패한다. |
+| Bounded read | File size와 읽기·projection 크기를 implementation bound 안으로 제한하고 한 번만 읽는다. Exact byte·locator limit과 지원 preview codec은 implementation spec이 고정한다. |
+| Integrity | 읽은 content의 exact digest와 locator가 request의 `EvidenceRef`와 일치해야 한다. Latest file을 암묵적으로 새 기준으로 채택하지 않는다. |
+| Atomic projection | 모든 evidence를 검증한 뒤에만 하나의 Browser card를 publish한다. 하나라도 missing, out-of-root, oversized, stale 또는 malformed이면 card를 전혀 만들지 않고 call 전체를 MCP failure로 끝낸다. |
+| Lifetime | 검증한 bounded preview는 현재 pending/settled transcript card의 transient Browser-safe projection으로만 전달한다. Server-side registry·reusable cache·snapshot이나 durable evidence history를 만들지 않는다. |
+
+따라서 Browser는 filesystem path로 직접 읽지 않고, App도 SemesterWorkspace 전체를 scan·register하지 않는다. Evidence가 필요 없는 proposal은 ref를 생략할 수 있지만, 첨부한 ref를 자동으로 버리고 evidence 없는 partial Review로 낮추지는 않는다.
+
 ## 첫 capability: `propose_state_patch`
 
 `propose_state_patch`는 이름을 유지하되 App-owned academic transaction이 아니라 Review UI round trip으로 축소한다.
@@ -196,6 +211,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | 장기 변경 이력 | Git history | 별도 academic event ledger를 만들지 않는다. |
 | Known·active workspace | `../.ay-ple/`의 `WorkspaceRegistry` | App이 직접 소유한다. |
 | Pending interaction | App-side Interaction Broker memory의 Runtime generation별 단일 slot | Queue나 Turn 수명을 넘는 academic record로 승격하지 않는다. |
+| Validated evidence preview | 별도 durable owner 없음 | Active workspace에서 on-demand로 검증해 current card에만 투영하고 registry·cache·snapshot으로 재사용하지 않는다. |
 | Settled Review card | 별도 App durable owner 없음 | 현재 transcript에서 read-only projection으로만 유지한다. Native conversation history 없이 App ledger로 복원하지 않는다. |
 | Native conversation | Codex Runtime | Browser-safe projection만 제공한다. |
 
@@ -232,4 +248,5 @@ Current implementation을 target처럼 기술하지 않는다. Exact current pac
 - Review modal·별도 approval page와 pending 중 composer·steer
 - Fresh proposal로 기존 settled card를 교체·reopen하는 replacement lifecycle
 - App-owned settled Review ledger와 별도 card hydration store
+- Workspace file registry·source copy·reusable preview cache와 invalid evidence를 숨기는 partial Review
 - `accept | revise | reject`와 Turn interrupt·continuity failure를 섞는 네 번째 `cancel` result
