@@ -2,6 +2,7 @@ import {
   invalidContract,
   isExactObject,
   isRecord,
+  isTargetProductOperationId,
   utf8Bytes,
 } from './contract-values.js'
 
@@ -136,7 +137,7 @@ export function decodeProductReviewResult(value: unknown): ProductReviewResult {
 export function decodeProductReviewFrame(value: unknown): ProductReviewFrame {
   if (
     !isRecord(value) ||
-    !isSemanticReviewOperationId(value.operationId) ||
+    !isTargetProductOperationId(value.operationId) ||
     !isSemanticReviewInteractionId(value.interactionId)
   ) {
     throw invalidContract()
@@ -275,10 +276,6 @@ function isWorkspaceRelativePath(value: unknown): value is string {
   return value
     .split('/')
     .every((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
-}
-
-function isSemanticReviewOperationId(value: unknown): value is string {
-  return typeof value === 'string' && /^operation_[0-9a-f]{32}$/.test(value)
 }
 
 function isSemanticReviewInteractionId(value: unknown): value is string {

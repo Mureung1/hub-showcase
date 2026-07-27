@@ -323,7 +323,18 @@ export function createProductOperationCoordinator(options: {
     operation.lifecycleReleaseAuthority =
       settlement.type === 'terminal'
         ? 'native_terminal'
-        : 'runtime_closed'
+        : undefined
+  }
+
+  const recycleUnknownTurnRuntime = async (
+    operation: ActiveProductOperation,
+  ): Promise<void> => {
+    try {
+      await options.service.recycleProductRuntime()
+      operation.lifecycleReleaseAuthority = 'runtime_closed'
+    } catch {
+      operation.lifecycleReleaseAuthority = undefined
+    }
   }
 
   const closeAcceptedTurn = async (
@@ -1054,7 +1065,7 @@ export function createProductOperationCoordinator(options: {
           operation.mcpSession?.cancel()
         }
         if (settlement.type === 'unknown') {
-          await options.service.recycleProductRuntime().catch(() => undefined)
+          await recycleUnknownTurnRuntime(operation)
         }
         await writeAssignmentTerminal(
           operationOptions.sink,
@@ -1181,7 +1192,7 @@ export function createProductOperationCoordinator(options: {
         operation.pendingReplacement = undefined
         operation.mcpSession?.cancel()
         if (settlement.type === 'unknown') {
-          await options.service.recycleProductRuntime().catch(() => undefined)
+          await recycleUnknownTurnRuntime(operation)
         }
         const guardSettled = await settleChatGuard(operation)
         await writeChatTerminal(operationOptions.sink, operation, {

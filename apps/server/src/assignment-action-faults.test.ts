@@ -576,6 +576,65 @@ for (const scenario of ['runtime.failed', 'EOF'] as const) {
   })
 }
 
+test('a failed unknown-turn Runtime close keeps the lifecycle lease unavailable', async () => {
+  const fixture = await createFaultFixture()
+  const runtime = new FaultRuntime({
+    close: async () => {
+      throw new Error('injected unknown-turn Runtime close failure')
+    },
+    startProductTurn: async (input) => ({
+      threadId: input.threadId,
+      turnId: 'turn-native-runtime-close-failed',
+      events: activities([
+        {
+          type: 'runtime.failed',
+          code: 'runtime_lost',
+          displayMessage: 'Private runtime failure detail.',
+          mutationOutcomeKnown: false,
+        },
+      ]),
+    }),
+  })
+
+  try {
+    await assert.rejects(
+      withTestServer(
+        {
+          codexChat: configuredBootstrap(runtime),
+          semesterWorkspace: fixture.bootstrap,
+        },
+        async (baseUrl, application) => {
+          const workspace = await activateCourse(application)
+          const selected = selectCanonicalMaterials(workspace.materials)
+          const firstFrames = await readFrames(
+            await postJson(
+              `${baseUrl}/api/product/actions/first-assignment`,
+              actionRequest(workspace.course!.id, selected),
+            ),
+          )
+
+          assert.equal(terminalFrames(firstFrames)[0]?.status, 'unknown')
+          assert.equal(runtime.closeCalls, 1)
+
+          const second = await postJson(
+            `${baseUrl}/api/product/actions/first-assignment`,
+            actionRequest(workspace.course!.id, selected),
+          )
+          assert.equal(second.status, 409)
+          assert.deepEqual(await second.json(), {
+            code: 'action_busy',
+            displayMessage: '다른 작업이 끝난 뒤 다시 시도해 주세요.',
+          })
+          assert.equal(runtime.startProductTurnCalls, 1)
+        },
+      ),
+      /injected unknown-turn Runtime close failure/,
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('a bind-store failure after native acceptance records acceptance unknown without publishing accepted', async () => {
   const fixture = await createFaultFixture()
   const runtime = new FaultRuntime({
