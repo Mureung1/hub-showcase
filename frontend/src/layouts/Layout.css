@@ -30,6 +30,15 @@
   gap: var(--space-inline-gap);
 }
 
+.gnb-account {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .gnb-cta {
   font-size: var(--font-size-body);
   font-weight: 700;
