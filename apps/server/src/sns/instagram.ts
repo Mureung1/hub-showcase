@@ -44,12 +44,28 @@ export interface InstagramResult {
   error?: string;
 }
 
+/**
+ * 토큰 접두사로 API 호스트를 판별한다 (IG_API_HOST가 있으면 그 값이 항상 이긴다).
+ *
+ * - `IGAA…` = Instagram Login 방식 토큰 → **graph.instagram.com**
+ * - `EAA…`  = Facebook Login 방식 토큰  → **graph.facebook.com**
+ *
+ * 짝이 안 맞으면 Meta가 `190 Cannot parse access token`을 돌려준다. 메시지가 토큰 탓처럼
+ * 읽히지만 실제 원인은 호스트라서, 멀쩡한 토큰을 계속 재발급하며 시간을 버리기 쉽다.
+ */
+export function resolveApiHost(accessToken?: string): string {
+  const explicit = process.env.IG_API_HOST;
+  if (explicit) return explicit;
+  return accessToken?.startsWith("IGAA") ? "graph.instagram.com" : "graph.facebook.com";
+}
+
 /** env에서 IG 설정을 읽는다(호출 시점에 읽어 테스트가 env를 제어할 수 있게 한다). */
 export function readInstagramConfig(): InstagramConfig {
+  const accessToken = process.env.IG_ACCESS_TOKEN;
   return {
     userId: process.env.IG_USER_ID,
-    accessToken: process.env.IG_ACCESS_TOKEN,
-    apiHost: process.env.IG_API_HOST || "graph.facebook.com",
+    accessToken,
+    apiHost: resolveApiHost(accessToken),
     apiVersion: process.env.IG_API_VERSION || "v21.0",
     imageUrl: process.env.IG_DEMO_IMAGE_URL,
   };
@@ -68,15 +84,21 @@ interface IgPermalinkResponse {
   permalink?: string;
 }
 
-/** 게시된 미디어의 permalink를 조회한다(best-effort — 실패해도 게시 성공은 유지). */
+/**
+ * 게시된 미디어의 permalink를 조회한다(best-effort — 실패해도 게시 성공은 유지).
+ *
+ * ⚠️ 미디어는 **user id 하위가 아니라 최상위 노드**다. `/{ig-user-id}/{media-id}`로 부르면
+ * `100 Tried accessing nonexisting field`가 난다(미디어 ID를 필드 이름으로 해석). 그래서
+ * 게시 경로(`/{ig-user-id}/media`)와 달리 apiBase(host+version)까지만 받는다.
+ */
 async function fetchPermalink(
-  base: string,
+  apiBase: string,
   mediaId: string,
   accessToken: string,
   doFetch: FetchLike,
 ): Promise<string | undefined> {
   try {
-    const url = `${base}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`;
+    const url = `${apiBase}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`;
     const res = await doFetch(url, { method: "GET" });
     if (!res.ok) return undefined;
     const json = (await res.json()) as IgPermalinkResponse;
@@ -107,7 +129,9 @@ export async function publishToInstagram(
     return { posted: false, error: "게시 이미지 URL 미설정 (Instagram은 이미지 필수) — 복사 폴백" };
   }
 
-  const base = `https://${config.apiHost}/${config.apiVersion}/${config.userId}`;
+  // apiBase = 그래프 루트(미디어 조회용), base = 계정 노드(게시용). 둘을 섞으면 permalink가 100으로 깨진다.
+  const apiBase = `https://${config.apiHost}/${config.apiVersion}`;
+  const base = `${apiBase}/${config.userId}`;
   const token = config.accessToken as string;
 
   try {
@@ -134,7 +158,7 @@ export async function publishToInstagram(
     }
 
     // 3) permalink (best-effort)
-    const permalink = await fetchPermalink(base, pubJson.id, token, doFetch);
+    const permalink = await fetchPermalink(apiBase, pubJson.id, token, doFetch);
     return { posted: true, permalink };
   } catch (e) {
     return { posted: false, error: e instanceof Error ? e.message : "IG 게시 오류" };

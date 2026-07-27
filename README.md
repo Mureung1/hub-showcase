@@ -182,6 +182,7 @@ curl http://localhost:4000/weather/today   # 오늘 매장 앙상블 날씨
 
 > 데모의 "쿠폰 실시간 추적"은 연출이며, 실제로는 쿠폰 코드 기반 누적 집계입니다.
 > Instagram·Solapi 모두 **본인 계정/번호에만** 실동작하고, 타인 대상은 모의로 둡니다.
+> Instagram 실게시 검증 기록: [`@cafe_kimsajang` 게시물](https://www.instagram.com/p/DbSCTJfEjCB/) (2026-07-27, 앱 개발 모드)
 
 ## 📚 문서
 

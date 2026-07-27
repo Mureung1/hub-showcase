@@ -117,7 +117,7 @@ export function patchCampaign(
  * 데모에서 링크가 깨지고, 존재하지 않는 게시를 성공으로 꾸미는 셈이 된다.
  * (실연동 경로는 이 상수를 쓰지 않는다 — 서버가 게시 후 받은 permalink를 그대로 준다.)
  */
-const DEMO_IG_PERMALINK = "";
+const DEMO_IG_PERMALINK = "https://www.instagram.com/p/DbSCTJfEjCB/";
 
 /** POST /campaigns/:id/send — 발송(야간이면 예약). */
 export function sendCampaign(

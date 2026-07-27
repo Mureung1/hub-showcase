@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   publishToInstagram,
   isInstagramLive,
+  resolveApiHost,
   type InstagramConfig,
   type FetchLike,
   type FetchResponse,
@@ -19,6 +20,29 @@ const liveConfig: InstagramConfig = {
 function jsonRes(body: unknown, ok = true, status = 200): FetchResponse {
   return { ok, status, json: async () => body };
 }
+
+describe("resolveApiHost — 토큰 종류로 호스트 판별", () => {
+  afterEach(() => {
+    delete process.env.IG_API_HOST;
+  });
+
+  it("IGAA… (Instagram Login) 토큰이면 graph.instagram.com", () => {
+    expect(resolveApiHost("IGAAxxxxTOKEN")).toBe("graph.instagram.com");
+  });
+
+  it("EAA… (Facebook Login) 토큰이면 graph.facebook.com", () => {
+    expect(resolveApiHost("EAAxxxxTOKEN")).toBe("graph.facebook.com");
+  });
+
+  it("토큰이 없으면 기본 graph.facebook.com", () => {
+    expect(resolveApiHost(undefined)).toBe("graph.facebook.com");
+  });
+
+  it("IG_API_HOST가 있으면 토큰 종류와 무관하게 그 값이 이긴다", () => {
+    process.env.IG_API_HOST = "graph.facebook.com";
+    expect(resolveApiHost("IGAAxxxxTOKEN")).toBe("graph.facebook.com");
+  });
+});
 
 describe("isInstagramLive", () => {
   it("userId·accessToken이 모두 있어야 live", () => {
@@ -92,7 +116,13 @@ describe("publishToInstagram — 실게시 성공 경로", () => {
     // 호출 순서: media → media_publish → permalink 조회
     expect(calls[0].url).toContain("/17841400000000000/media");
     expect(calls[1].url).toContain("/media_publish");
-    expect(calls[2].url).toContain("fields=permalink");
+
+    // permalink는 미디어 최상위 노드(/{version}/{media-id})로 조회해야 한다.
+    // /{ig-user-id}/{media-id}로 부르면 Meta가 100(nonexisting field)을 준다.
+    expect(calls[2].url).toBe(
+      "https://graph.facebook.com/v21.0/MEDIA_9?fields=permalink&access_token=TEST_TOKEN",
+    );
+    expect(calls[2].url).not.toContain("/17841400000000000/MEDIA_9");
 
     // 1단계 body에 caption·image_url·creation 없음 확인
     const createBody = JSON.parse(calls[0].init.body ?? "{}");
