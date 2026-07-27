@@ -7,7 +7,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv  # 1. 라이브러리 임포트 추가
 
-load_dotenv()  #이거 활성화 해야 open ai api호출
+#load_dotenv()  #이거 활성화 해야 open ai api호출
 
 # 🚀 [개선 1] 출력 스키마 설명 구체화 (마크다운 포맷 및 상세 분석 유도)
 class BriefingOutputSchema(BaseModel):
