@@ -101,7 +101,7 @@
   - [x] Runtime managed account·`auth-only` primitive는 제거하고 fresh Account Readiness만 workspace Runtime에 유지했다. 당시 `@ay-ple/semester-workspace` v3 admission·setup kernel은 ADR 0014 target의 구현 증거로 남겼고, 이후 ADR 0018이 그 target을 대체했다.
   - [x] 감사 결과를 구현 지도, Runtime 격리 문서와 이 backlog에 반영했다.
 
-- [ ] First Assignment를 user-owned Git SemesterWorkspace와 InteractionCapability seam으로 재구성한다.
+- [ ] [User-owned SemesterWorkspace와 InteractionCapability 전환 Spec](../specs/2026-07-27-user-owned-semester-workspace-interaction-capability.md)에 따라 First Assignment를 user-owned Git SemesterWorkspace와 InteractionCapability seam으로 재구성한다.
   - [ ] Current First Assignment의 MCP→Browser Review→same-Turn continuation을 characterization test로 고정하고, app-owned academic apply와 결합된 부분을 target contract로 승격하지 않는다.
   - [ ] Private workspace package `@ay-ple/interaction-mcp`를 추가해 built STDIO executable, `InteractionCapability<Request, Result>` schema·codec와 authenticated Adapter↔Broker transport contract를 소유하게 한다. `apps/server`는 package의 server-side Interface로 production Broker·Browser Adapter를 조합하고 in-memory Adapter로 exact binding, correlation, generation별 단일 pending slot, once-only answer, Turn interrupt·disconnect·terminal MCP failure settlement를 독립 검증한다.
   - [ ] `@ay-ple/codex-chat-runtime`은 generic child environment 전달과 native MCP readiness만 제공하고 `@ay-ple/interaction-mcp`, capability schema나 Broker lifecycle에 의존하지 않게 한다. Browser는 계속 `@ay-ple/product-contract`만 사용하고 raw MCP·private transport를 받지 않는다.
@@ -116,7 +116,7 @@
 
 - [ ] User-owned SemesterWorkspace lifecycle과 canonical local roots를 완성한다.
   - [ ] Active workspace가 없을 때 canonical `hub/` cwd의 Bootstrap Runtime·thread를 열고, 명시적 activation 뒤 이를 종료한 다음 exact SemesterWorkspace Git root에서 새 Workspace Runtime·thread를 시작한다. Bootstrap thread를 resume하거나 cwd만 바꾸지 않는다.
-  - [ ] Sibling `../.ay-ple/`에 activation이 끝난 known·active repository path만 소유하는 durable `WorkspaceRegistry`를 두고, 사용자가 선택한 한 학기 Git root를 Codex project root와 thread의 고정 `cwd`로 전환한다. Descendant cwd를 별도 identity로 만들지 않고 workspace 전환 때 recorded thread cwd를 일치시킨다.
+  - [ ] Sibling `../.ay-ple/`에 activation이 끝난 known·active repository path만 소유하는 durable `WorkspaceRegistry`를 두고, 사용자가 선택한 한 학기 Git root를 Codex project root와 thread의 고정 `cwd`로 전환한다. Descendant cwd를 별도 identity로 만들지 않고 workspace 전환 때 recorded thread cwd를 일치시킨다. Initial Browser에는 current active workspace와 process-local candidate만 투영하고, 다른 학기는 directory chooser로 다시 선택한다.
   - [ ] Runtime의 fixed `project_root_markers=[]`와 process-wide managed Skill override를 제거하고, exact Git root의 native project config·`AGENTS.md`·Skill discovery를 사용한다. Persistent Runtime과 context probe가 같은 effective project boundary를 관측하는지 검증한다.
   - [ ] 초기 Bootstrap Skill은 repository 개발 harness와 함께 `hub/.agents/skills/`에 두어 hub-rooted Codex가 native discovery하게 하고, AY-PLE built-in Skill source catalog는 `hub/skills/`에 둔다. Bootstrap·Update가 선택한 source directory를 SemesterWorkspace의 Git-tracked `.agents/skills/`로 복사하고, symlink나 Runtime `extraRoots` 없이 native discovery되는지 검증한다.
   - [ ] `@ay-ple/interaction-mcp`의 built STDIO Adapter와 `apps/server`의 Broker를 연결하고, Bootstrap이 exact SemesterWorkspace root에서 `hub/packages/interaction-mcp` entrypoint까지 계산한 relative command·env 이름·capability allowlist와 `required = true`를 SemesterWorkspace의 `.codex/config.toml`에 설치한다. MCP server `cwd`와 `tool_timeout_sec`은 생략하고 Runtime은 endpoint·token·binding value를 child environment로만 공급하며 current thread-start MCP config injection을 제거한다. Current pinned native default 300초에서 timeout이 pending interaction을 terminal 정산하고 retry가 fresh capability call로만 시작되는지 검증하며, 별도 countdown·연장·keepalive·자동 retry는 만들지 않는다.
@@ -140,7 +140,7 @@
   - [ ] Workspace-local 구조화 snapshot이 안정되면 `MarkdownProjection`, derived timeline, 학생 할 일 표면과 학기 상태 질의를 source of truth와 분리해 추가한다.
   - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 Git history를 이해하기 쉬운 `WorkspaceHistory` UI로 투영한다.
   - [ ] 실제 자료에서 필요성이 확인되면 HWP/HWPX parsing과 OCR을 추가한다.
-  - [ ] 여러 workspace를 반복해서 바꾸는 사용 흐름이 확인되면 current chooser 경계에서 최근 workspace 목록과 명시적 전환 UX를 설계한다.
+  - [ ] 여러 workspace를 반복해서 바꾸는 사용 흐름이 확인되면 current chooser 경계에서 registry-backed 최근 workspace 목록과 one-click 전환 UX를 설계한다.
   - [ ] macOS packaged Desktop App을 채택하면 bundled native payload의 third-party notice를 감사하고 signing·notarization, atomic update/rollback과 clean-machine packaging smoke를 완료한다. Windows·Linux 지원은 별도 사용자 필요와 artifact·QA 범위를 승인한 뒤에만 추가한다.
   - [ ] Runtime·bridge diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
   - [ ] Native `TextInput`·`SkillInput` 조합으로 해결되지 않고 resource mention 필요성이 확인되면 `MentionInput`을 먼저 검증한다. 그 뒤에도 남는 구체적인 case에만 exact official SDK/native contract의 experimental context delivery, background terminal, realtime과 기타 raw capability를 별도로 검증한다.
