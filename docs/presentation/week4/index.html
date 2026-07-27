@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CalMe - AI 기반 대학생 일정 관리 서비스</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #0066CC;
+      --secondary: #00A8E8;
+      --accent: #FF6B6B;
+      --success: #10B981;
+      --bg-light: #F8F9FA;
+      --bg-white: #FFFFFF;
+      --text-dark: #1A1A1A;
+      --text-light: #666666;
+      --border: #E5E7EB;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* Header */
+    header {
+      background: var(--bg-white);
+      border-radius: 16px;
+      padding: 60px 40px;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+    }
+
+    .tagline {
+      font-size: 20px;
+      color: var(--text-light);
+      margin-bottom: 20px;
+      font-weight: 300;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Main Content */
+    .content {
+      background: var(--bg-white);
+      border-radius: 16px;
+      padding: 60px 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .section {
+      margin-bottom: 50px;
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    h2 {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+      margin-top: 20px;
+    }
+
+    p {
+      font-size: 16px;
+      color: var(--text-light);
+      margin-bottom: 15px;
+      line-height: 1.8;
+    }
+
+    /* Problem & Solution */
+    .problem-solution {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin: 30px 0;
+    }
+
+    .problem-box, .solution-box {
+      padding: 25px;
+      border-radius: 12px;
+      background: var(--bg-light);
+    }
+
+    .problem-box {
+      border-left: 4px solid var(--accent);
+    }
+
+    .solution-box {
+      border-left: 4px solid var(--success);
+    }
+
+    .problem-box h3, .solution-box h3 {
+      margin-top: 0;
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .feature-card {
+      background: var(--bg-light);
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .feature-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+
+    .feature-card h3 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      margin: 0;
+    }
+
+    /* Tech Stack */
+    .tech-stack {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin: 30px 0;
+    }
+
+    .tech-item {
+      background: var(--primary);
+      color: white;
+      padding: 15px 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Progress */
+    .progress-timeline {
+      margin: 30px 0;
+    }
+
+    .progress-item {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+      align-items: start;
+    }
+
+    .week-badge {
+      background: var(--primary);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .progress-content {
+      background: var(--bg-light);
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .progress-content h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .progress-content p {
+      font-size: 14px;
+      margin: 0;
+      color: var(--text-light);
+    }
+
+    /* Images */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .image-item {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background: var(--bg-light);
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text-light);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .image-item img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: cover;
+    }
+
+    .image-label {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 10px;
+      font-weight: 500;
+    }
+
+    /* Highlight */
+    .highlight {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border-left: 4px solid var(--primary);
+      padding: 20px;
+      border-radius: 8px;
+      margin: 30px 0;
+    }
+
+    .highlight p {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 40px 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .problem-solution,
+      .features-grid,
+      .tech-stack,
+      .image-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      header {
+        padding: 40px 20px;
+      }
+
+      .content {
+        padding: 40px 20px;
+      }
+
+      .logo {
+        font-size: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="subtitle">✨ 프로젝트</div>
+      <div class="logo">CalMe</div>
+      <div class="tagline">AI 기반 대학생 일정 관리 서비스</div>
+      <p style="font-size: 14px; color: var(--text-light); margin: 15px 0 0;">공지사항과 안내문에서 일정을 자동으로 추출하고 캘린더에 등록해주는 서비스</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Problem & Solution -->
+      <section class="section">
+        <h2>🎯 문제 정의 & 솔루션</h2>
+        <div class="problem-solution">
+          <div class="problem-box">
+            <h3>❌ 문제점</h3>
+            <p style="margin: 0;">대학생들은 학교 공지, 공모전, 팀플 등 여러 곳에서 오는 공지를 일일이 확인해야 하며, 이 과정에서 중요한 마감일을 놓치는 불편함을 겪습니다.</p>
+          </div>
+          <div class="solution-box">
+            <h3>✅ 솔루션</h3>
+            <p style="margin: 0;">공지를 업로드하면 AI가 자동으로 분석하여 일정을 추출하고, 사용자가 수정 후 캘린더에 등록할 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Core Features -->
+      <section class="section">
+        <h2>⭐ 핵심 기능</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>AI 자동 분석</h3>
+            <p>Claude AI가 공지 내용을 분석하여 일정명, 마감일, 제출물 등 정보를 자동 추출</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">✏️</div>
+            <h3>수정 & 확인</h3>
+            <p>AI 분석 결과를 사용자가 직접 검토하고 수정할 수 있는 편집 인터페이스</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📅</div>
+            <h3>자동 등록</h3>
+            <p>수정된 일정을 캘린더에 자동으로 등록하고 대시보드에서 한눈에 확인</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Tech Stack -->
+      <section class="section">
+        <h2>🛠 기술 스택</h2>
+        <div class="tech-stack">
+          <div class="tech-item">React</div>
+          <div class="tech-item">Express.js</div>
+          <div class="tech-item">SQLite</div>
+          <div class="tech-item">Claude API</div>
+        </div>
+        <h3>주요 기술</h3>
+        <ul style="font-size: 14px; color: var(--text-light); list-position: inside;">
+          <li>JWT 인증 & bcrypt 암호화</li>
+          <li>PDF 텍스트 추출 (pdf-parse)</li>
+          <li>Claude API (claude-opus-4-8) 프롬프트 엔지니어링</li>
+          <li>JSON Schema 검증</li>
+          <li>중복 감지 로직</li>
+        </ul>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Development Progress -->
+      <section class="section">
+        <h2>📈 개발 진행 현황</h2>
+        <div class="progress-timeline">
+          <div class="progress-item">
+            <div class="week-badge">1주차</div>
+            <div class="progress-content">
+              <h3>기획 & 설계</h3>
+              <p>사용자 시나리오, 기술 아키텍처, UI 프로토타입 완성</p>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="week-badge">2주차</div>
+            <div class="progress-content">
+              <h3>기반 구축</h3>
+              <p>로그인/회원가입, 텍스트/PDF 입력 기능, Mock 분석 결과 표시 완료</p>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="week-badge">3주차</div>
+            <div class="progress-content">
+              <h3>AI 통합 & 저장 기능</h3>
+              <p>Claude API 실제 연결, 결과 수정 UI, 일정 저장, 중복 감지 시스템 완성</p>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="week-badge">4주차</div>
+            <div class="progress-content">
+              <h3>완성 & 배포</h3>
+              <p>캘린더 구현, 대시보드 개선, 통합 테스트, 배포 준비</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Highlights -->
+      <section class="section">
+        <h2>✨ 주요 특징</h2>
+        <div class="highlight">
+          <p>🎯 <strong>실제 AI 분석:</strong> Mock 데이터가 아닌 Claude API를 통한 실제 공지 분석</p>
+        </div>
+        <div class="highlight">
+          <p>🔍 <strong>중복 감지:</strong> 같은 사용자의 중복 일정 등록을 방지하는 안전장치</p>
+        </div>
+        <div class="highlight">
+          <p>📊 <strong>사용자 격리:</strong> JWT 인증을 통한 안전한 사용자 데이터 관리</p>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Screenshots -->
+      <section class="section">
+        <h2>📸 주요 화면</h2>
+        <div class="image-grid">
+          <div>
+            <div class="image-item">
+              <img src="../week3/analysis_result_edit.png" alt="분석 결과 수정 화면">
+            </div>
+            <div class="image-label">분석 결과 수정 UI</div>
+          </div>
+          <div>
+            <div class="image-item">
+              <img src="../week3/dashboard_with_events.png" alt="대시보드">
+            </div>
+            <div class="image-label">저장된 일정 대시보드</div>
+          </div>
+          <div>
+            <div class="image-item">
+              <img src="../week3/duplicate_warning.png" alt="중복 감지 팝업">
+            </div>
+            <div class="image-label">중복 감지 경고</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Summary -->
+      <section class="section">
+        <h2>🚀 프로젝트 완성도</h2>
+        <p><strong>CalMe는 4주간의 집중 개발을 통해 다음을 달성했습니다:</strong></p>
+        <ul style="font-size: 15px; color: var(--text-light); margin-left: 20px; margin-top: 15px;">
+          <li>✅ AI 기반 자동 분석 기능 (Mock → 실제 Claude API 전환)</li>
+          <li>✅ 사용자 중심의 수정 & 저장 기능</li>
+          <li>✅ 견고한 데이터 검증 및 중복 감지 시스템</li>
+          <li>✅ 안전한 인증 & 암호화</li>
+          <li>✅ 완전한 서비스 흐름 (입력 → 분석 → 수정 → 저장 → 확인)</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</body>
+</html>
