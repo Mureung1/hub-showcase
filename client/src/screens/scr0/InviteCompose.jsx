@@ -16,22 +16,46 @@ import envelope from '../../assets/envelope.png'
 // templates/invite-compose/InviteCompose.dc.html 이식.
 // 편지지 실사 텍스처 + 왁스씰 + 레이스 트림, 발송 시 접힘·봉투삽입·발송 애니메이션(디자인 타이밍 그대로 유지).
 //
-// [필수값 임시 기본값] POST /api/letters는 host_name·candidate_slots를 필수로 요구하지만
-// 이 화면에는 해당 입력란이 없다(디자인 원본 기준). 실제 후보 시간대 수집은 SCR1에서 이뤄지므로
-// 여기서는 임시 기본값으로 채워 전송한다.
+// [필수값 임시 기본값] POST /api/letters는 host_name을 필수로 요구하지만
+// 이 화면에는 해당 입력란이 없다(디자인 원본 기준). 여기서는 임시 기본값으로 채워 전송한다.
 const TEMP_HOST_NAME = '나'
-const TEMP_CANDIDATE_SLOTS = [{ id: 's1', label: '시간 미정' }]
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()))
 
 export function InviteCompose() {
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
   const [members] = useState(() => GROUP.members.slice(0, 3))
+  const [slots, setSlots] = useState(() => [{ id: uid(), label: '' }])
+  const [locations, setLocations] = useState(() => [{ id: uid(), name: '' }])
   const [phase, setPhase] = useState('writing') // writing | sending | sent
   const [errorMsg, setErrorMsg] = useState('')
-  const sendDisabled = title.trim().length === 0
+  const sendDisabled =
+    title.trim().length === 0 ||
+    !slots.some((s) => s.label.trim()) ||
+    !locations.some((l) => l.name.trim())
+
+  function addSlot() {
+    setSlots((prev) => [...prev, { id: uid(), label: '' }])
+  }
+  function updateSlot(id, label) {
+    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, label } : s)))
+  }
+  function removeSlot(id) {
+    setSlots((prev) => (prev.length > 1 ? prev.filter((s) => s.id !== id) : prev))
+  }
+
+  function addLocation() {
+    setLocations((prev) => [...prev, { id: uid(), name: '' }])
+  }
+  function updateLocation(id, name) {
+    setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)))
+  }
+  function removeLocation(id) {
+    setLocations((prev) => (prev.length > 1 ? prev.filter((l) => l.id !== id) : prev))
+  }
 
   async function send() {
     if (sendDisabled) return
@@ -43,8 +67,8 @@ export function InviteCompose() {
         title,
         host_name: TEMP_HOST_NAME,
         topic: note,
-        candidate_slots: TEMP_CANDIDATE_SLOTS,
-        candidate_locations: [],
+        candidate_slots: slots.filter((s) => s.label.trim()).map((s) => ({ id: s.id, label: s.label.trim() })),
+        candidate_locations: locations.filter((l) => l.name.trim()).map((l) => ({ id: l.id, name: l.name.trim() })),
         participant_names: members,
       }),
       wait(900),
@@ -119,7 +143,55 @@ export function InviteCompose() {
                 <Input variant="underline" label="함께 전할 한마디" placeholder="예: 오랜만에 다 같이 모여요" value={note} onChange={(e) => setNote(e.target.value)} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.18em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>함께할 사람</div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>후보 시간대</div>
+                  {slots.map((s) => (
+                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ flex: 1 }}>
+                        <Input variant="underline" placeholder="예: 토요일 오후 2시" value={s.label} onChange={(e) => updateSlot(s.id, e.target.value)} />
+                      </div>
+                      {slots.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => removeSlot(s.id)}
+                          aria-label="시간대 삭제"
+                          style={{ background: 'none', border: 'none', color: 'var(--ink-soft)', fontSize: '14px', cursor: 'pointer', padding: '4px' }}
+                        >
+                          ✕
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                  <div>
+                    <Button size="sm" variant="accent" onClick={addSlot}>+ 추가</Button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>후보 장소</div>
+                  {locations.map((l) => (
+                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ flex: 1 }}>
+                        <Input variant="underline" placeholder="예: 강남역 스터디카페" value={l.name} onChange={(e) => updateLocation(l.id, e.target.value)} />
+                      </div>
+                      {locations.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => removeLocation(l.id)}
+                          aria-label="장소 삭제"
+                          style={{ background: 'none', border: 'none', color: 'var(--ink-soft)', fontSize: '14px', cursor: 'pointer', padding: '4px' }}
+                        >
+                          ✕
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                  <div>
+                    <Button size="sm" variant="accent" onClick={addLocation}>+ 추가</Button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>함께할 사람</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {members.map((m) => (
                       <Chip key={m} tone="wedgwood" sticker>

@@ -128,12 +128,12 @@ export function ParticipantsStatus() {
                 {item.label}
               </>
             )
-            // 참가자 현황·조율만 실제 라우팅 — 나머지 미구현 화면 항목은 동일한 스타일의 비활성 div로,
+            // 참가자 현황·조율·진행만 실제 라우팅 — 나머지 미구현 화면 항목은 동일한 스타일의 비활성 div로,
             // 클릭해도 아무 동작을 하지 않는다(없는 라우트로 이동해 튕기는 것을 방지).
             // NAV_ITEMS의 coordinate.href는 아직 없는 SCR1 스케줄 화면(/scr1/schedule)을 가리키므로,
-            // 여기서는 SCR3 확정 화면(/scr3/confirm)으로 직접 연결한다.
-            const href = item.key === 'coordinate' ? '/scr3/confirm' : item.href
-            return item.key === 'participants' || item.key === 'coordinate' ? (
+            // 여기서는 SCR2 역할 배정 화면(/scr2/roles)으로 직접 연결한다(SCR2가 SCR3보다 앞선 단계).
+            const href = item.key === 'coordinate' ? '/scr2/roles' : item.key === 'progress' ? '/scr4/workspace' : item.href
+            return item.key === 'participants' || item.key === 'coordinate' || item.key === 'progress' ? (
               <Link key={item.key} to={`${href}${token ? `?token=${token}` : ''}`} style={itemStyle}>
                 {content}
               </Link>

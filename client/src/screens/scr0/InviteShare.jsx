@@ -5,7 +5,6 @@ import { Button } from '../../components/forms/Button.jsx'
 import { Toast } from '../../components/feedback/Toast.jsx'
 import waxSeal from '../../assets/vintage-wax-seal-swan.png'
 import silverTray from '../../assets/vintage-silver-tray.png'
-import pearls from '../../assets/pearls-cutout.png'
 
 // SCR0 · 1-1 초대장 공유 화면 — docs/design 「Letter&Co Design System.zip」
 // templates/invite-share/InviteShare.dc.html 이식.
@@ -34,11 +33,11 @@ export function InviteShare() {
 
         <SectionTitle script="Sent" title="초대장을 보냈어요" subtitle="SCR·1-1 공유하기" align="center" />
 
-        <div style={{ position: 'relative', width: '100%', height: '340px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ position: 'relative', width: '100%', height: '340px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <img
             src={silverTray}
             alt=""
-            style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: '110%', maxWidth: '460px', opacity: 0.9, pointerEvents: 'none', zIndex: 0 }}
+            style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '110%', maxWidth: '460px', opacity: 0.9, pointerEvents: 'none', zIndex: 0 }}
           />
           <div
             style={{
@@ -63,7 +62,6 @@ export function InviteShare() {
               {copied ? '복사됨' : '복사'}
             </Button>
           </div>
-          <img src={pearls} alt="" style={{ position: 'relative', zIndex: 1, width: '150px', opacity: 0.85, marginTop: '28px', pointerEvents: 'none' }} />
         </div>
 
         <div style={{ width: '100%', display: 'flex', gap: '8px' }}>

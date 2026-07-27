@@ -4,7 +4,10 @@ import { InviteCompose } from './screens/scr0/InviteCompose.jsx'
 import { InviteShare } from './screens/scr0/InviteShare.jsx'
 import { InviteJoin } from './screens/scr0/InviteJoin.jsx'
 import { ParticipantsStatus } from './screens/scr0/ParticipantsStatus.jsx'
+import { Assign } from './screens/scr2/Assign.jsx'
 import { CoordinateConfirm } from './screens/scr3/CoordinateConfirm.jsx'
+import { ProgressWorkspace } from './screens/scr4/ProgressWorkspace.jsx'
+import { ProgressChecklist } from './screens/scr4/ProgressChecklist.jsx'
 
 function App() {
   return (
@@ -15,7 +18,10 @@ function App() {
       <Route path="/scr0/share" element={<InviteShare />} />
       <Route path="/scr0/join" element={<InviteJoin />} />
       <Route path="/scr0/status" element={<ParticipantsStatus />} />
+      <Route path="/scr2/roles" element={<Assign />} />
       <Route path="/scr3/confirm" element={<CoordinateConfirm />} />
+      <Route path="/scr4/workspace" element={<ProgressWorkspace />} />
+      <Route path="/scr4/checklist" element={<ProgressChecklist />} />
       <Route path="*" element={<Navigate to="/scr0" replace />} />
     </Routes>
   )

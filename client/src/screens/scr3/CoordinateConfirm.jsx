@@ -185,8 +185,15 @@ export function CoordinateConfirm() {
                 {item.label}
               </>
             )
-            // 참가자 현황·조율만 실제 라우팅 — 나머지 미구현 화면 항목은 동일한 스타일의 비활성 div로 둔다.
-            const href = item.key === 'participants' ? `${item.href}${token ? `?token=${token}` : ''}` : item.key === 'coordinate' ? `/scr3/confirm${token ? `?token=${token}` : ''}` : null
+            // 참가자 현황·조율·진행만 실제 라우팅 — 나머지 미구현 화면 항목은 동일한 스타일의 비활성 div로 둔다.
+            const href =
+              item.key === 'participants'
+                ? `${item.href}${token ? `?token=${token}` : ''}`
+                : item.key === 'coordinate'
+                  ? `/scr2/roles${token ? `?token=${token}` : ''}`
+                  : item.key === 'progress'
+                    ? `/scr4/workspace${token ? `?token=${token}` : ''}`
+                    : null
             return href ? (
               <Link key={item.key} to={href} style={itemStyle}>
                 {content}
