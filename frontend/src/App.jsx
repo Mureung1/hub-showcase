@@ -540,10 +540,10 @@ const moodOptions = [
 
 function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingMore, error, onRetry, onLoadMore, selectedMood, setSelectedMood, missingIngredientLimit, setMissingIngredientLimit, onSelectRecipe, onToggleSaved }) {
   const maxRecipes = meta?.maxRecipes ?? 15;
+  const remainingRecommendationCount = Math.max(0, (meta?.maxBatches ?? 5) - (meta?.batchNumber ?? 1));
   const canLoadMore = recipes.length > 0
     && recipes.length < maxRecipes
-    && meta?.stopReason !== "qualityLimit"
-    && (meta?.batchNumber ?? 1) < (meta?.maxBatches ?? 5);
+    && remainingRecommendationCount > 0;
 
   return <WorkspaceShell eyebrow="Today&apos;s Menu" title="오늘 뭐 먹지?" description="지금 할 수 있는 만큼만 골라보세요. 냉장고 상황에 맞춰 선택지를 줄여드릴게요.">
     <section className="mood-section" aria-labelledby="mood-title">
@@ -562,7 +562,7 @@ function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingM
       {!isLoading && error && <RecommendationError message={error} hasRecipes={recipes.length > 0} onRetry={onRetry} />}
       {!isLoading && recipes.length > 0 && <div className="recipe-recommendation-grid">{recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} label="오늘 추천" isSaved={isRecipeSaved(recipe, savedRecipes)} onSelect={() => onSelectRecipe(recipe)} onToggleSaved={() => onToggleSaved(recipe)} />)}</div>}
       {!isLoading && !error && recipes.length === 0 && <EmptyRecipeState onShowOneMissing={() => setMissingIngredientLimit(1)} />}
-      {!isLoading && canLoadMore && <div className="recommendation-footer"><button type="button" onClick={onLoadMore} disabled={isLoadingMore}>{isLoadingMore ? "다른 추천을 찾고 있어요..." : "다른 추천 보기"}</button></div>}
+      {!isLoading && canLoadMore && <div className="recommendation-footer"><button type="button" onClick={onLoadMore} disabled={isLoadingMore}>{isLoadingMore ? "다른 추천을 찾고 있어요..." : `다른 추천 보기 (남은 ${remainingRecommendationCount}회)`}</button></div>}
     </section>
   </WorkspaceShell>;
 }
