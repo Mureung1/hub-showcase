@@ -1,3 +1,4 @@
+import { api } from "../lib/api";
 import { useState, useEffect } from "react";
 import RouteRegister from "../components/RouteRegister";
 import SavedRoutes from "../components/SavedRoutes";
@@ -9,7 +10,7 @@ export default function HomePage() {
   const [routes, setRoutes] = useState([]);
 
   async function loadRoutes() {
-    const res = await fetch("/api/routes");
+    const res = await fetch(api("/api/routes"));
     const data = await res.json();
     setRoutes(data.routes ?? []);
   }

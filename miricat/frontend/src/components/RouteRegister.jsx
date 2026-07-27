@@ -1,3 +1,4 @@
+import { api } from "../lib/api";
 import { useState } from "react";
 import Field from "./Field";
 import StationPicker from "./StationPicker";
@@ -23,7 +24,7 @@ export default function RouteRegister({ onSaved }) {
     setFinding(true);
     try {
       const res = await fetch(
-        `/api/route-candidates?sx=${origin.x}&sy=${origin.y}&ex=${dest.x}&ey=${dest.y}`
+        api(`/api/route-candidates?sx=${origin.x}&sy=${origin.y}&ex=${dest.x}&ey=${dest.y}`)
       );
       const data = await res.json();
       setCandidates(data.candidates ?? []);
@@ -36,7 +37,7 @@ export default function RouteRegister({ onSaved }) {
   async function handleSubmit() {
     const chosen = candidates?.[selectedIdx];
     if (!chosen) return;
-    const res = await fetch("/api/routes", {
+    const res = await fetch(api("/api/routes"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

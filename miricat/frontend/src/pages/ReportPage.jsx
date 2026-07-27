@@ -1,3 +1,4 @@
+import { api } from "../lib/api";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { SOURCE_LABEL, matchNotice, routeTokens, isCurrent } from "../lib/matching";
@@ -26,8 +27,8 @@ export default function ReportPage() {
     let cancelled = false;   // 언마운트/재실행 후 도착한 응답이 화면을 덮지 않게
     async function load() {
       const [nRes, rRes] = await Promise.all([
-        fetch(`/api/notices/${noticeId}`),
-        fetch("/api/routes"),
+        fetch(api(`/api/notices/${noticeId}`)),
+        fetch(api("/api/routes")),
       ]);
       if (cancelled) return;
       if (!nRes.ok) { setStatus("notfound"); return; }

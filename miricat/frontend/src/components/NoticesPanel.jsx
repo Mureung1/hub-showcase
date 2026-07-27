@@ -1,3 +1,4 @@
+import { api } from "../lib/api";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { SOURCE_LABEL, fmtDate, matchNotice, routeTokens } from "../lib/matching";
@@ -97,7 +98,7 @@ export default function NoticesPanel({ routes = [] }) {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/notices");
+      const res = await fetch(api("/api/notices"));
       const data = await res.json();
       setNotices(data.notices ?? []);
     } finally {

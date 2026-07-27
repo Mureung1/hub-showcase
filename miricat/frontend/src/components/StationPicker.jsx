@@ -1,3 +1,4 @@
+import { api } from "../lib/api";
 import { useState } from "react";
 
 // 정류장 검색 + 선택. 고른 정류장 객체({name,x,y,region})를 부모에게 올려보낸다.
@@ -11,7 +12,7 @@ export default function StationPicker({ label, station, onSelect }) {
     if (!q.trim() || searching) return;
     setSearching(true);
     try {
-      const res = await fetch(`/api/stations?q=${encodeURIComponent(q)}`);
+      const res = await fetch(api(`/api/stations?q=${encodeURIComponent(q)}`));
       const data = await res.json();
       setResults(data.stations ?? []);
     } finally {
