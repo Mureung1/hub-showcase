@@ -21,7 +21,7 @@
 | `accent-heart` | `#F0455C` | 찜/하트 아이콘 등 포인트 액센트 |
 | `bg-cream` | `#FBF1DE` | 냉장고 씬(홈 진입 화면) 배경 |
 | `border` | `#EADFC8` | 구분선, 카드 테두리 |
-| `ink` | `#5B4130` | 카드·버튼의 굵은 테두리(3~4px) + 오프셋 하드 섀도로 "3D" 느낌을 내는 잉크색. 기존 `border`(연한 구분선)와는 용도가 다름 |
+| `ink` | `#5B4130` | 카드·버튼의 굵은 테두리 + 오프셋 하드 섀도로 "3D" 느낌을 내는 잉크색. 기존 `border`(연한 구분선)와는 용도가 다름. 굵기는 2단계: 카드·헤더·필터 같은 큰 덩어리는 `border-[3.6px]`, 재료 칩·재생 버튼·말풍선 같은 작은 요소는 `border-2`(2px)~`border-[3px]` |
 
 ## 타이포그래피
 
@@ -50,7 +50,7 @@
 | 패턴 | 구성 | 쓰는 토큰 |
 |---|---|---|
 | `promo-banner` | 그라디언트 배경(`primary` → 밝은 노랑) + eyebrow + 헤드라인 | `primary`, `radius-banner`, `space-4` |
-| `filter-chip` | pill 버튼, 비활성은 `bg-surface`+`border` 테두리, 활성은 `primary` 배경 | `radius-pill`, `primary`, `border` |
+| `filter-chip` | pill 버튼, 굵은 `ink` 테두리(`border-[3.6px]`, 카드·헤더와 같은 굵기)는 선택 여부와 무관하게 항상 유지, 비활성은 `bg-surface` 배경, 활성은 `primary` 배경으로만 구분 | `radius-pill`, `primary`, `ink` |
 | `recipe-card` (실제 앱 `MenuCard`와 대응) | `bg-surface` 카드 + 상단 이미지 + 본문(이름/부제/가격). 하트 배지는 제거함(사용 안 함) | `radius-card`, `bg-surface`, `text-secondary` |
 | `recipe-grid` (실제 앱 `RecipeGrid`) | `recipe-card`를 3열 그리드(`grid-cols-3`, 모바일 1열)로 늘어놓는 `<ol>` 래퍼. 홈 화면에 이 그리드가 5번(지금 바로/조금만 사면/전체 둘러보기/빈 상태 대체 후보 2종) 반복되던 걸 하나로 합침 — `cheapestId`(최저가 배지)·`showMissingCount`·`showTimeLabel` prop으로 섹션마다 다른 배지만 켜고 끔 | `radius-card`, `bg-surface` |
 | `best-tag` | 작은 pill 배지, `primary-soft` 배경 + `primary-text` 글자 | `primary-soft`, `primary-text` |
