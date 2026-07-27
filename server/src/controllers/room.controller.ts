@@ -143,7 +143,7 @@ export async function getRoomToday(req: Request, res: Response, next: NextFuncti
       }),
     );
 
-    res.json({ roomId: room.id, roomName: room.name, date, members });
+    res.json({ roomId: room.id, roomName: room.name, inviteCode: room.inviteCode, date, members });
   } catch (err) {
     next(err);
   }
