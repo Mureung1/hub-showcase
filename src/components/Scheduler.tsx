@@ -3,6 +3,7 @@ import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
 import { DiaryView } from './scheduler/DiaryView'
+import { DodoOnboardingView } from './scheduler/DodoOnboardingView'
 import { FriendHomeView } from './scheduler/FriendHomeView'
 import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
@@ -104,6 +105,17 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const exitFriendHome = () => {
     setVisitingFriendId(null)
     setActiveTab(returnTab)
+  }
+
+  if (!dodoManager.appearance) return null
+  if (!dodoManager.appearance.onboarded) {
+    return (
+      <DodoOnboardingView
+        appearance={dodoManager.appearance}
+        onComplete={dodoManager.updateAppearance}
+        onLogout={() => { logoutRequest(); onLogout() }}
+      />
+    )
   }
 
   return (

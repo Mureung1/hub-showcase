@@ -1,9 +1,10 @@
 import type { RoomEquipSlot } from '@prisma/client'
 import { prisma } from '../db.js'
 
-// DodoAppearance의 bodyColor/eyeShape/eyeColor는 NOT NULL이지만 두두 커스터마이징 UI가 아직 없어서
-// 지금 .home-dodo CSS에 하드코딩된 값과 동일한 고정 기본값으로만 채운다.
-const DEFAULT_APPEARANCE = { bodyColor: '#f2a58d', eyeShape: 'round', eyeColor: '#344b46' }
+// DodoAppearance의 bodyColor/eyeShape/eyeColor는 NOT NULL이라 항상 값이 있어야 하는데,
+// 처음 생성되는 시점(온보딩 전)엔 .home-dodo CSS에 원래 하드코딩돼 있던 값과 동일한 기본값으로 채운다.
+// eyeCount는 스키마 기본값(2)과 동일한 값을 코드에도 명시해 mock 테스트가 실제 DB 기본값에 의존하지 않게 한다.
+const DEFAULT_APPEARANCE = { bodyColor: '#f2a58d', eyeShape: 'round', eyeColor: '#344b46', eyeCount: 2 }
 
 const APPEARANCE_INCLUDE = { hatItem: true, glassesItem: true, outfitItem: true, accessoryItem: true } as const
 
@@ -54,13 +55,30 @@ function toSlotResponse(item: AppearanceWithItems['hatItem'], color: string | nu
   return item ? { itemId: item.id, iconKey: item.iconKey, color } : null
 }
 
+// 친구 마이홈 방문(routes/friends.ts)에서도 그대로 재사용되는 공용 응답 — bodyColor/eyeCount는
+// 방문자도 실제 모습을 봐야 하니 포함하지만, "온보딩을 끝냈는지"는 본인만의 정보라 여기 넣지 않는다
+// (routes/dodo.ts의 self 전용 라우트에서만 별도로 계산해서 얹는다).
 export function toAppearanceResponse(appearance: AppearanceWithItems) {
   return {
+    bodyColor: appearance.bodyColor,
+    eyeCount: appearance.eyeCount as 1 | 2,
     hat: toSlotResponse(appearance.hatItem, appearance.hatColor),
     glasses: toSlotResponse(appearance.glassesItem, appearance.glassesColor),
     outfit: toSlotResponse(appearance.outfitItem, appearance.outfitColor),
     accessory: toSlotResponse(appearance.accessoryItem, appearance.accessoryColor),
   }
+}
+
+// 몸 색상/눈 개수만 다루는 1차 온보딩 — 검증(색상 팔레트 포함 여부, eyeCount 1|2)은 라우트에서 하고
+// 여기서는 upsert만 담당한다. onboardedAt은 최초 1회만 기록해(멱등) 재제출해도 온보딩 완료 시점이 안 바뀐다.
+export async function updateDodoBaseAppearance(userId: string, patch: { bodyColor: string; eyeCount: 1 | 2 }) {
+  const existing = await prisma.dodoAppearance.findUnique({ where: { userId } })
+  return prisma.dodoAppearance.upsert({
+    where: { userId },
+    create: { userId, ...DEFAULT_APPEARANCE, ...patch, onboardedAt: new Date() },
+    update: { ...patch, onboardedAt: existing?.onboardedAt ?? new Date() },
+    include: APPEARANCE_INCLUDE,
+  })
 }
 
 export type EquipRoomItemResult =

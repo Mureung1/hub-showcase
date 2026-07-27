@@ -7,7 +7,7 @@ import type { DodoManager } from './useDodoManager'
 import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
 import { FOOD_ICON_KEYS, type RoomShopManager } from './useRoomShopManager'
-import type { FriendPost, HomeVisitActionKind } from './types'
+import type { DodoAppearance, FriendPost, HomeVisitActionKind } from './types'
 
 export const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
   'game-console': 'shop-item-console',
@@ -71,6 +71,46 @@ const WALL_BAND = { min: 5, max: 45 }
 
 export function itemIconStyle(color: string | null): CSSProperties | undefined {
   return color ? ({ '--item-color': color } as CSSProperties) : undefined
+}
+
+// 마이홈(본인)·친구 마이홈 방문·온보딩 미리보기 세 곳에서 그대로 재사용하는 두두 마스코트 렌더링.
+// appearance가 null이면(온보딩 미리보기처럼 아직 장착 아이템이 없는 경우) 장착 슬롯은 그냥 안 보여준다.
+export function renderDodoMascot(bodyColor: string, eyeCount: 1 | 2, appearance: DodoAppearance | null, label: string) {
+  const equippedSlots = appearance ? [appearance.hat, appearance.glasses, appearance.outfit, appearance.accessory] : []
+
+  return (
+    <div className="home-dodo" style={{ '--dodo-body-color': bodyColor } as CSSProperties} aria-label={label}>
+      <div className="home-dodo-body">
+        {eyeCount === 1 ? (
+          <i className="home-dodo-eye one-eye" />
+        ) : (
+          <>
+            <i className="home-dodo-eye left" />
+            <i className="home-dodo-eye right" />
+          </>
+        )}
+        <span className="home-dodo-cheek left" />
+        <span className="home-dodo-cheek right" />
+        <span className="home-dodo-mouth" />
+      </div>
+      {equippedSlots.map((slot) => {
+        if (!slot || slot.iconKey !== 'headphones') return null
+        // 이어컵(타원)이 밴드보다 훨씬 아래로 늘어지므로, 밴드에 clip-path를 걸면 같은 요소의
+        // ::before/::after인 이어컵까지 그 clip-path 영역에 잘려버린다 — 그래서 셋을 별도 엘리먼트로 나눈다.
+        return (
+          <div key={slot.itemId} className="home-dodo-headphones" style={itemIconStyle(slot.color)} aria-hidden="true">
+            <i className="home-dodo-headphones-band" />
+            <i className="home-dodo-headphones-strut left" />
+            <i className="home-dodo-headphones-strut right" />
+            <i className="home-dodo-headphones-cup left" />
+            <i className="home-dodo-headphones-cup right" />
+          </div>
+        )
+      })}
+      <i className="home-dodo-leg left" />
+      <i className="home-dodo-leg right" />
+    </div>
+  )
 }
 
 const VISIT_ACTION_LABEL: Record<HomeVisitActionKind, string> = {
@@ -174,31 +214,12 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, shop
         <div className="myhome-rug" aria-hidden="true" />
         <div className="myhome-message" role="status">{message}</div>
 
-        <div className="home-dodo" aria-label="마이홈에 있는 두두">
-          <div className="home-dodo-body">
-            <i className="home-dodo-eye left" />
-            <i className="home-dodo-eye right" />
-            <span className="home-dodo-cheek left" />
-            <span className="home-dodo-cheek right" />
-            <span className="home-dodo-mouth" />
-          </div>
-          {dodoManager.appearance && Object.values(dodoManager.appearance).map((slot) => {
-            if (!slot || slot.iconKey !== 'headphones') return null
-            // 이어컵(타원)이 밴드보다 훨씬 아래로 늘어지므로, 밴드에 clip-path를 걸면 같은 요소의
-            // ::before/::after인 이어컵까지 그 clip-path 영역에 잘려버린다 — 그래서 셋을 별도 엘리먼트로 나눈다.
-            return (
-              <div key={slot.itemId} className="home-dodo-headphones" style={itemIconStyle(slot.color)} aria-hidden="true">
-                <i className="home-dodo-headphones-band" />
-                <i className="home-dodo-headphones-strut left" />
-                <i className="home-dodo-headphones-strut right" />
-                <i className="home-dodo-headphones-cup left" />
-                <i className="home-dodo-headphones-cup right" />
-              </div>
-            )
-          })}
-          <i className="home-dodo-leg left" />
-          <i className="home-dodo-leg right" />
-        </div>
+        {renderDodoMascot(
+          dodoManager.appearance?.bodyColor ?? '#f2a58d',
+          dodoManager.appearance?.eyeCount ?? 2,
+          dodoManager.appearance,
+          '마이홈에 있는 두두',
+        )}
 
         {shopManager.layout.map((entry) => {
           const item = shopManager.inventory.find((candidate) => candidate.id === entry.inventoryId)
@@ -402,7 +423,7 @@ function InventorySection({
       {visibleInventory.map((item) => {
         const isPlaced = layout.some((entry) => entry.inventoryId === item.id)
         const isEquipped = item.equippable && appearance
-          ? Object.values(appearance).some((slot) => slot?.itemId === item.itemId)
+          ? [appearance.hat, appearance.glasses, appearance.outfit, appearance.accessory].some((slot) => slot?.itemId === item.itemId)
           : false
         return (
           <article key={item.id} className="room-shop-item">
