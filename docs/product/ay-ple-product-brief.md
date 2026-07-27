@@ -53,8 +53,8 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | 1 | 사용자가 한 학기 Git repository를 SemesterWorkspace로 선택한다. | App은 active path를 기록하고 Codex의 exact `cwd`로 연결한다. |
 | 2 | Init Skill이 필요한 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 Git 준비를 돕는다. | AY·Skill이 일반 file·Git 도구를 사용하고 설치 결과를 workspace history에 남긴다. |
 | 3 | 사용자가 AY에게 새 과제를 찾아 정리해 달라고 요청한다. | AY가 실제 공지와 계획서를 읽고 작업을 계획한다. |
-| 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 Review UI로 투영한다. |
-| 5 | 사용자가 수락·수정 요청·거절한다. | App이 `accept | revise | reject`와 feedback을 같은 MCP call에 반환한다. |
+| 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 AY Chat의 inline Review card로 투영한다. |
+| 5 | 사용자가 수락·수정 요청·거절한다. | Pending 동안 composer·steer는 닫고 전체 Turn interrupt만 별도 control로 유지한다. App은 `accept | revise | reject`와 feedback을 같은 MCP call에 반환한다. |
 | 6 | AY가 선택을 해석한다. | 수락이면 실제 workspace file을 변경하고, 수정 요청이면 다시 검토하며, 거절이면 적용하지 않는다. |
 | 7 | AY가 자연스러운 checkpoint에서 commit한다. | Git이 실제 파일 변경의 장기 history와 rollback을 소유한다. |
 
@@ -69,7 +69,7 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | 사용자 | SemesterWorkspace 선택, App UI에서의 최종 판단, 학기 자료의 의미 | Native protocol과 correlation |
 | AY·Skill | 작업 계획, 파일 읽기·수정, interaction 요청 시점, 결과 해석과 Git checkpoint | Browser UI lifecycle |
 | AY-PLE App | Workspace 선택·registry, Runtime host, capability-specific UI와 interaction round trip | 학업 workflow, app-owned file copy, accepted result의 대리 적용 |
-| Interaction MCP Module | Typed request/result, Turn binding, pending·cancel·disconnect lifecycle | SemesterWorkspace file mutation |
+| Interaction MCP Module | Typed request/result, Turn binding, pending·failure·disconnect lifecycle | SemesterWorkspace file mutation |
 | Codex Runtime | Thread·Turn, Skills, MCP와 native permission | 학기 SSOT와 AY-PLE UI 의미 |
 | SemesterWorkspace | 실제 학기 파일, 선택적인 구조화 snapshot, Git history | Runtime secret과 pending interaction |
 
@@ -82,6 +82,8 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 - Capability는 `propose_state_patch`처럼 사용자 결정 하나를 표현한다.
 - App 내부 binding을 위한 `workspaceId`, `requestKey`, revision과 native ID를 AY에게 요구하지 않는다.
 - 사용자 result는 closed union으로 반환해 Skill이 다음 행동을 명확히 결정할 수 있게 한다.
+- Pending Review는 AY Chat의 inline card 하나로 표시하고 composer·steer를 잠근다. Modal·별도 approval page와 입력 queue는 만들지 않는다.
+- Card에는 capability action만 두며 전체 Turn interrupt는 Review result와 분리된 native conversation control로 유지한다.
 - Pending request와 response를 장기 학업 event로 저장하지 않는다.
 - 일반 clarification은 built-in `request_user_input`을 사용할 수 있다.
 - 하나의 Review 결정을 custom MCP와 built-in `request_user_input`에 이중으로 걸치지 않는다.

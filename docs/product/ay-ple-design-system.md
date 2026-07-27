@@ -56,8 +56,8 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 | Activity bar | 앱 구조를 보조하는 낮은 대비의 아이콘 rail로 둔다. IDE chrome처럼 어둡게 만들지 않는다. |
 | Source explorer | 자료함처럼 보이게 하고, 선택 상태는 green/teal 계열로 표시한다. |
 | Source preview | 가장 넓고 밝은 종이 surface로 둔다. 원본을 읽는 화면이라는 감각이 우선이다. |
-| AY chat dock | side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. |
-| Change proposal | AY가 응답을 기다리는 `검토 대기`는 honey, result 뒤 AY가 실제 file 작업을 마친 `반영됨`은 green으로 구분한다. 내부 correlation은 노출하지 않는다. |
+| AY chat dock | Side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. Pending Review 중에는 free-form composer와 steer를 잠그고 전체 Turn interrupt만 유지한다. |
+| Change proposal | AY Chat transcript의 inline card로 둔다. AY가 응답을 기다리는 `검토 대기`는 honey, result 뒤 AY가 실제 file 작업을 마친 `반영됨`은 green으로 구분한다. Modal·별도 approval page·card dismiss를 만들거나 내부 correlation을 노출하지 않는다. |
 | Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
 
 ## 피해야 할 것
@@ -69,6 +69,7 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 | Purple-blue tech gradient | 흔한 AI SaaS 느낌이 강하고 AY-PLE 브랜드 자산과 맞지 않는다. |
 | Local app workbench 안의 marketing hero | 실제 setup·Review workflow보다 홍보 메시지가 앞서면 현재 작업과 상태를 찾기 어렵다. |
 | Cute-only mascot UI | 학업 자료와 마감 관리를 믿고 맡기는 생산성 앱 신뢰도가 떨어진다. |
+| Review modal·별도 approval page | AY의 요청 맥락과 사용자 결정을 transcript에서 분리하고 불필요한 navigation·focus lifecycle을 만든다. |
 
 ## 검증 적용 위치
 
