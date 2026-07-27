@@ -48,55 +48,31 @@ function GlobalHeader({ lang, setLang, currentView, setCurrentView }: GlobalHead
         </button>
 
         {user ? (
-          <div className="user-profile-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {userAvatar ? (
-              <img 
-                src={userAvatar} 
-                alt={userName} 
-                className="user-avatar"
-                style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
-              />
-            ) : (
-              <span className="user-icon" role="img" aria-label="user">👤</span>
-            )}
-            <span className="user-name" style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-color)' }}>
-              {userName}
-            </span>
+          <div className="user-profile-group">
+            <div className="user-profile" title={userName}>
+              {userAvatar ? (
+                <img 
+                  src={userAvatar} 
+                  alt={userName} 
+                  className="user-avatar"
+                />
+              ) : (
+                <span className="user-icon" role="img" aria-label="user">👤</span>
+              )}
+            </div>
             <button 
-              className="auth-btn logout-btn"
+              className="auth-btn"
               onClick={signOut}
-              style={{
-                padding: '6px 12px',
-                fontSize: '0.8rem',
-                borderRadius: '6px',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'transparent',
-                cursor: 'pointer',
-                color: 'var(--text-muted)'
-              }}
             >
               로그아웃
             </button>
           </div>
         ) : (
           <button 
-            className="auth-btn login-btn"
+            className="auth-btn"
             onClick={signInWithGoogle}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              borderRadius: '6px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--card-bg, #ffffff)',
-              cursor: 'pointer',
-              color: 'var(--text-color)'
-            }}
           >
-            <span>🌐</span> Google 로그인
+            Google 로그인
           </button>
         )}
       </div>

@@ -11,8 +11,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 미들웨어 설정
-app.use(cors());
+// 동적 CORS 미들웨어 설정 (credentials: true 허용을 위해 와일드카드 * 제거 및 명시적 오리진 폴백 사용)
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

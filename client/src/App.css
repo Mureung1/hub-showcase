@@ -156,6 +156,36 @@ body {
   font-size: 16px;
 }
 
+.user-profile-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.auth-btn {
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.auth-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
 /* 4. Bento Grid (2x2 Asymmetric Layout) */
 .bento-grid {
   flex-grow: 1;
