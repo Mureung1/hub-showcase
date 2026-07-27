@@ -6,6 +6,7 @@ import ItemCard from "../ItemCard";
 import {
   apiBaseUrl,
   getRequestErrorMessage,
+  matchesItemSearch,
   readApiError,
   type ArchiveItemResponse,
   type DeleteItemResponse,
@@ -14,6 +15,7 @@ import {
 
 export default function ArchivePage() {
   const [items, setItems] = useState<Item[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +63,8 @@ export default function ArchivePage() {
     }
   }
 
+  const filteredItems = items.filter((item) => matchesItemSearch(item, searchQuery));
+
   return (
     <main className="min-h-screen bg-cream flex flex-col max-w-md mx-auto px-5 pt-6 pb-24">
       <header className="flex items-center justify-between mb-8">
@@ -77,17 +81,36 @@ export default function ArchivePage() {
 
       {loading && <p className="text-sm text-muted">불러오는 중...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {!loading && !error && items.length === 0 && (
+      {!loading && !error && items.length > 0 && (
+        <section className="mb-6">
+          <label htmlFor="archive-search" className="sr-only">
+            아카이브 검색
+          </label>
+          <input
+            id="archive-search"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="제목, 요약, 원문, 카테고리 검색"
+            className="w-full rounded-xl border border-creamDeep bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-accent"
+          />
+        </section>
+      )}
+      {!loading && !error && filteredItems.length === 0 && (
         <div className="bg-white/60 rounded-xl px-4 py-10 text-center">
-          <p className="text-sm text-muted">아직 보관한 콘텐츠가 없어요.</p>
-          <Link href="/categories" className="mt-3 inline-block text-sm text-accentDark">
-            카테고리에서 콘텐츠 확인하기
-          </Link>
+          <p className="text-sm text-muted">
+            {searchQuery.trim() ? "검색 결과가 없어요." : "아직 보관한 콘텐츠가 없어요."}
+          </p>
+          {!searchQuery.trim() && (
+            <Link href="/categories" className="mt-3 inline-block text-sm text-accentDark">
+              카테고리에서 콘텐츠 확인하기
+            </Link>
+          )}
         </div>
       )}
-      {!loading && !error && items.length > 0 && (
+      {!loading && !error && filteredItems.length > 0 && (
         <ul className="space-y-3">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <ItemCard
               key={item.id}
               item={item}

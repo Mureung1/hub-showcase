@@ -20,6 +20,28 @@ export type DeleteItemResponse = {
 
 export type ArchiveItemResponse = Item;
 
+const searchableItemFields: Array<keyof Item> = [
+  "title",
+  "summary",
+  "content",
+  "original_url",
+  "source_platform",
+  "category_main",
+  "category_sub",
+];
+
+export function matchesItemSearch(item: Item, query: string) {
+  const normalizedQuery = query.trim().toLocaleLowerCase("ko");
+  if (!normalizedQuery) return true;
+
+  return searchableItemFields.some((field) => {
+    const value = item[field];
+    return typeof value === "string"
+      ? value.toLocaleLowerCase("ko").includes(normalizedQuery)
+      : false;
+  });
+}
+
 export const apiBaseUrl = (
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 ).replace(/\/$/, "");
