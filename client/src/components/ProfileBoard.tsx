@@ -58,7 +58,8 @@ function ProfileBoard({
     setIsCurating(true);
     console.log("🚀 큐레이션 요청 쿼리:", query);
     
-    fetch('http://localhost:5000/api/curate', {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    fetch(`${baseUrl}/api/curate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

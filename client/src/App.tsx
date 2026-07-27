@@ -30,7 +30,8 @@ function App() {
   useEffect(() => {
     if (!userId) return;
     
-    fetch(`http://localhost:5000/api/library/${userId}`)
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    fetch(`${baseUrl}/api/library/${userId}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch library');
         return res.json() as Promise<{ status: string; data: LibraryItem[] }>;
@@ -46,7 +47,8 @@ function App() {
   // 서재 논문 삭제 처리 핸들러 (Lifting Up)
   const handleRemovePaper = async (paperId: string): Promise<void> => {
     try {
-      const response = await fetch(`http://localhost:5000/api/library/${userId}/${paperId}`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/library/${userId}/${paperId}`, {
         method: 'DELETE'
       });
 
