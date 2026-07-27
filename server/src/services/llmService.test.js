@@ -223,6 +223,31 @@ describe("parseFastAnalysisResponse", () => {
       expect(result.summaryBullets).toEqual(["요약1", "요약2"])
       expect(warnSpy).toHaveBeenCalled()
     })
+
+    it("sentence가 검증 단계에서 손실되면 단계별 개수를 담은 경고를 남긴다", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+      const body = {
+        ...validBody,
+        sentences: [
+          { text: "reported strong quarterly earnings", translation: "번역1", reason: "이유1" },
+          { text: "this text is not in the paragraphs", translation: "번역2", reason: "이유2" },
+        ],
+      }
+
+      parseFastAnalysisResponse(makeResponse(body), paragraphs)
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[llmService] sentences loss: raw=2 fieldValid=2 verbatimMatched=1 final=1"),
+      )
+    })
+
+    it("sentence 손실이 없으면 손실 경고를 남기지 않는다", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+      parseFastAnalysisResponse(makeResponse(validBody), paragraphs)
+
+      expect(warnSpy).not.toHaveBeenCalled()
+    })
   })
 
   describe("실패하는 경우", () => {

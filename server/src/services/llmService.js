@@ -224,26 +224,35 @@ export function parseFastAnalysisResponse(response, paragraphs) {
     throw new Error("computeFastAnalysis: unexpected LLM response shape")
   }
 
+  const fieldValidSentences = sentences.filter(
+    (s) =>
+      s &&
+      typeof s.text === "string" &&
+      s.text.length > 0 &&
+      typeof s.translation === "string" &&
+      s.translation.length > 0 &&
+      typeof s.reason === "string" &&
+      s.reason.length > 0,
+  )
+  const verbatimResolved = fieldValidSentences.map((s) => ({ ...s, text: findVerbatimMatch(paragraphs, s.text) }))
+  const verbatimMatched = verbatimResolved.filter((s) => s.text !== null)
+
   const seenSentenceText = new Set()
-  const validSentences = sentences
-    .filter(
-      (s) =>
-        s &&
-        typeof s.text === "string" &&
-        s.text.length > 0 &&
-        typeof s.translation === "string" &&
-        s.translation.length > 0 &&
-        typeof s.reason === "string" &&
-        s.reason.length > 0,
-    )
-    .map((s) => ({ ...s, text: findVerbatimMatch(paragraphs, s.text) }))
-    .filter((s) => s.text !== null)
+  const validSentences = verbatimMatched
     .filter((s) => {
       if (seenSentenceText.has(s.text)) return false
       seenSentenceText.add(s.text)
       return true
     })
     .map((s, i) => ({ id: `s${i + 1}`, text: s.text, translation: s.translation, reason: s.reason }))
+
+  // sentences 손실 계측: "모델이 애초에 적게 냈는지" vs "검증 단계(원문
+  // 완전일치)에서 깎였는지"를 로그만으로 구분할 수 있도록 단계별 개수를 남긴다.
+  if (validSentences.length < sentences.length) {
+    console.warn(
+      `[llmService] sentences loss: raw=${sentences.length} fieldValid=${fieldValidSentences.length} verbatimMatched=${verbatimMatched.length} final=${validSentences.length}`,
+    )
+  }
 
   const validBullets = summaryBullets.filter((b) => typeof b === "string" && b.length > 0)
   if (validBullets.length !== 3) {
