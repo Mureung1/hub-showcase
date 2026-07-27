@@ -179,7 +179,6 @@
 .trust-badge strong {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: var(--accent-soft);
   font-size: 13px;
 }
 

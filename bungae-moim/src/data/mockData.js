@@ -1,5 +1,5 @@
-// 프로토타입용 목 데이터. 오늘 = 2026-07-09(목) 기준으로 하드코딩했습니다.
-// 실제 서비스에서는 이 파일 전체가 API 응답(번개모임_소모임_API_명세서.md)으로 대체됩니다.
+// FE mock 데이터는 0건(전부 API 응답으로 대체됨). 이 파일은 실제 상수만 담는다:
+// CATEGORIES(카테고리 필터/등록 폼 값)와, BE와 공유하는 지역 데이터(shared/regions.json)의 재export.
 
 import regionsData from '../../../shared/regions.json'
 

@@ -44,7 +44,7 @@ export default function SiteHeader({ minimal = false }) {
                 <span className="site-user-name">{currentUser.nickname}</span>
                 {/* MyPage:70과 같은 방식으로 그대로 넘긴다. 서버의 normalizeUser가
                     trust_score를 Number()로 변환해 내려주고, 비로그인 GUEST_USER도
-                    trustScore: 0이라 TrustBadge의 toFixed(1)이 안전하다. */}
+                    trustScore: 0이라 TrustBadge의 Math.round(Number(score) || 0)이 안전하다. */}
                 <TrustBadge score={currentUser.trustScore} />
               </span>
               <span className="site-header-divider" aria-hidden="true" />
