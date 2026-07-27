@@ -31,7 +31,7 @@ public class BudgetTool implements AgentTool {
     }
 
     @Override
-    public Object execute(Map<String, Object> input) {
-        return budgetService.getTotal();
+    public Object execute(Map<String, Object> input, Long userId) {
+        return budgetService.getTotal(userId);
     }
 }

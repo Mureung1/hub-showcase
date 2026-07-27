@@ -11,7 +11,7 @@ import java.util.Map;
 public class AgentClient {
 
     private static final String API_URL = "https://api.anthropic.com/v1/messages";
-    private static final String MODEL = "claude-sonnet-5";
+    private static final String MODEL = "claude-haiku-4-5-20251001";
 
     @Value("${claude.api-key}")
     private String apiKey;
@@ -25,12 +25,18 @@ public class AgentClient {
 
     @SuppressWarnings("unchecked")
     public ClaudeResponse sendMessage(String systemPrompt, String userMessage, List<Map<String, Object>> tools) {
+        return sendMessage(systemPrompt, List.of(Map.of("role", "user", "content", userMessage)), tools);
+    }
+
+    @SuppressWarnings("unchecked")
+    public ClaudeResponse sendMessage(String systemPrompt, List<Map<String, Object>> messages, List<Map<String, Object>> tools) {
         Map<String, Object> requestBody = Map.of(
                 "model", MODEL,
                 "max_tokens", 1024,
+                "temperature", 0,
                 "system", systemPrompt,
                 "tools", tools,
-                "messages", List.of(Map.of("role", "user", "content", userMessage))
+                "messages", messages
         );
 
         Map<String, Object> response = webClient.post()
@@ -39,6 +45,9 @@ public class AgentClient {
                 .header("content-type", "application/json")
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus(status -> status.isError(), clientResponse ->
+                        clientResponse.bodyToMono(String.class)
+                                .map(body -> new IllegalStateException("Claude API 오류(" + clientResponse.statusCode() + "): " + body)))
                 .bodyToMono(Map.class)
                 .block();
 

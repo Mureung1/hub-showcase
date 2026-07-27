@@ -39,8 +39,8 @@ public class ExpenseSummaryTool implements AgentTool {
     }
 
     @Override
-    public Object execute(Map<String, Object> input) {
+    public Object execute(Map<String, Object> input, Long userId) {
         String period = (String) input.getOrDefault("period", "month");
-        return expenseService.getSummary(period);
+        return expenseService.getSummary(userId, period);
     }
 }

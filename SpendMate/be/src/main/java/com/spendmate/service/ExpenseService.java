@@ -24,7 +24,6 @@ import java.util.Map;
 @Service
 public class ExpenseService {
 
-    private static final Long SEED_USER_ID = 1L; // TODO: 로그인 붙으면 실제 로그인 유저로 교체
     private static final List<String> DAY_LABELS = List.of("일", "월", "화", "수", "목", "금", "토");
 
     private final ExpenseRepository expenseRepository;
@@ -47,12 +46,12 @@ public class ExpenseService {
     /**
      * 영수증/캡처 없이 사용자가 직접 입력한 지출을 저장한다 (F12).
      */
-    public Expense createManual(Integer amount, Category category, String memo, LocalDateTime spentAt) {
+    public Expense createManual(Long userId, Integer amount, Category category, String memo, LocalDateTime spentAt) {
         if (amount == null || amount == 0) {
             throw new IllegalArgumentException("금액을 입력해주세요.");
         }
-        User user = userRepository.findById(SEED_USER_ID)
-                .orElseThrow(() -> new IllegalStateException("시드 유저가 없습니다. psql로 users 테이블 확인해보세요."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
 
         Expense expense = new Expense(user, null, null, memo, amount,
                 category != null ? category : Category.OTHER,
@@ -64,9 +63,9 @@ public class ExpenseService {
     /**
      * 카테고리별 지출 합계 (F5 도넛차트/카테고리 목록용).
      */
-    public ExpenseSummary getSummary(String period) {
+    public ExpenseSummary getSummary(Long userId, String period) {
         LocalDateTime start = resolveStart(period);
-        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(SEED_USER_ID, start, LocalDateTime.now());
+        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(userId, start, LocalDateTime.now());
 
         Map<Category, Integer> totals = new EnumMap<>(Category.class);
         int total = 0;
@@ -88,10 +87,10 @@ public class ExpenseService {
     /**
      * 최근 7일 일별 지출 합계 (F5 바차트용). 지출 없는 날도 0으로 채워서 반환한다.
      */
-    public List<DailyAmount> getDailySummary() {
+    public List<DailyAmount> getDailySummary(Long userId) {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.minusDays(6).atStartOfDay();
-        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(SEED_USER_ID, start, LocalDateTime.now());
+        List<Expense> expenses = expenseRepository.findByUserIdAndSpentAtBetween(userId, start, LocalDateTime.now());
 
         Map<LocalDate, Integer> byDate = new LinkedHashMap<>();
         for (int i = 6; i >= 0; i--) {
@@ -113,8 +112,8 @@ public class ExpenseService {
     /**
      * 이번 달 누적 변동비 일평균 (월초부터 오늘까지 데이터로 계산, F6).
      */
-    public double getDailyAverageThisMonth() {
-        int cumulativeSpend = getSummary("month").total();
+    public double getDailyAverageThisMonth(Long userId) {
+        int cumulativeSpend = getSummary(userId, "month").total();
         int daysElapsed = LocalDate.now().getDayOfMonth();
         return cumulativeSpend / (double) daysElapsed;
     }
@@ -123,17 +122,17 @@ public class ExpenseService {
      * 예산 - 구독 고정비 - 이번 달 누적 지출을 일평균으로 나눠 소진 예상일을 계산한다 (F6).
      * 예산이 설정되지 않았거나 아직 일평균이 0이면(소비 데이터 없음) 예측할 수 없어 null을 반환한다.
      */
-    public LocalDate predictDepletionDate() {
-        Budget budget = budgetRepository.findByUserIdAndCategoryIsNull(SEED_USER_ID).orElse(null);
+    public LocalDate predictDepletionDate(Long userId) {
+        Budget budget = budgetRepository.findByUserIdAndCategoryIsNull(userId).orElse(null);
         if (budget == null || budget.getAmount() == null) {
             return null;
         }
 
-        int fixedCost = subscriptionRepository.findByUserId(SEED_USER_ID).stream()
+        int fixedCost = subscriptionRepository.findByUserId(userId).stream()
                 .mapToInt(Subscription::getAmount)
                 .sum();
-        int cumulativeSpend = getSummary("month").total();
-        double dailyAverage = getDailyAverageThisMonth();
+        int cumulativeSpend = getSummary(userId, "month").total();
+        double dailyAverage = getDailyAverageThisMonth(userId);
         if (dailyAverage <= 0) {
             return null;
         }
@@ -147,14 +146,14 @@ public class ExpenseService {
     /**
      * F6 예측 API 응답용 — 소진 예상일 + 일평균 + 남은 예산(고정비/누적지출 차감 후)을 한 번에 반환한다.
      */
-    public PredictionResponse getPrediction() {
-        Budget budget = budgetRepository.findByUserIdAndCategoryIsNull(SEED_USER_ID).orElse(null);
+    public PredictionResponse getPrediction(Long userId) {
+        Budget budget = budgetRepository.findByUserIdAndCategoryIsNull(userId).orElse(null);
         Integer remainingBudget = null;
         if (budget != null && budget.getAmount() != null) {
-            int fixedCost = subscriptionRepository.findByUserId(SEED_USER_ID).stream()
+            int fixedCost = subscriptionRepository.findByUserId(userId).stream()
                     .mapToInt(Subscription::getAmount)
                     .sum();
-            int cumulativeSpend = getSummary("month").total();
+            int cumulativeSpend = getSummary(userId, "month").total();
             remainingBudget = budget.getAmount() - fixedCost - cumulativeSpend;
         }
 
@@ -163,11 +162,11 @@ public class ExpenseService {
                 ? "아직 데이터가 적어 예측 정확도가 낮을 수 있어요. 데이터가 쌓일수록 예측이 더 정확해져요."
                 : null;
 
-        LocalDate depletionDate = predictDepletionDate();
+        LocalDate depletionDate = predictDepletionDate(userId);
         LocalDate endOfMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
         boolean survivalMode = depletionDate != null && !depletionDate.isAfter(endOfMonth);
 
-        return new PredictionResponse(depletionDate, getDailyAverageThisMonth(), remainingBudget, dataQualityNotice, survivalMode);
+        return new PredictionResponse(depletionDate, getDailyAverageThisMonth(userId), remainingBudget, dataQualityNotice, survivalMode);
     }
 
     private LocalDateTime resolveStart(String period) {

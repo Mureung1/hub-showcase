@@ -8,5 +8,5 @@ public interface AgentTool {
 
     Map<String, Object> definition();
 
-    Object execute(Map<String, Object> input);
+    Object execute(Map<String, Object> input, Long userId);
 }

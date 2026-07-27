@@ -31,7 +31,7 @@ public class SubscriptionsTool implements AgentTool {
     }
 
     @Override
-    public Object execute(Map<String, Object> input) {
-        return subscriptionService.getAll();
+    public Object execute(Map<String, Object> input, Long userId) {
+        return subscriptionService.getAll(userId);
     }
 }
