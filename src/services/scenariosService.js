@@ -1,7 +1,12 @@
 // commandsService.js와 같은 fetch 패턴 — 네트워크 실패/응답 실패를 구분해서 에러 메시지를 던지고,
 // 호출부(ScenarioHomePage/ScenarioDetailPage/CommandDetailPage)는 이 함수들이 BE를 거쳐
 // Supabase에서 가져온다는 사실을 몰라도 되게 만드는 창구.
-const API_BASE_URL = 'http://localhost:4000';
+// commandsService.js와 동일한 이유로 환경변수 오버라이드 지원 (배포 시 BE 주소가 localhost가 아님)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
+// 경로 문자열을 호출부에 흩어놓지 않고 한 곳에 모아둔다 — BE 라우트가 바뀌어도
+// 이 한 줄만 고치면 되게 하기 위함(피드백 시간에 나온 지적).
+const SCENARIOS_PATH = '/api/scenarios';
 
 async function requestJson(path) {
     let response;
@@ -25,12 +30,12 @@ async function requestJson(path) {
 // GET /api/scenarios — 전체 시나리오 목록 (ScenarioHomePage 카드 목록, CommandDetailPage의
 // "관련 상황" 역방향 조회에도 씀 — command_ids.includes(id)로 FE에서 필터링)
 export async function fetchScenarios() {
-    const data = await requestJson('/api/scenarios');
+    const data = await requestJson(SCENARIOS_PATH);
     return data.results;
 }
 
 // GET /api/scenarios/:id — 시나리오 하나 상세 조회. 존재하지 않는 id면 404이고,
 // 이 경우 에러를 던지지 않고 null을 돌려줘서 ScenarioDetailPage가 정상적인 분기로 처리할 수 있게 한다.
 export async function fetchScenarioById(id) {
-    return requestJson(`/api/scenarios/${id}`);
+    return requestJson(`${SCENARIOS_PATH}/${id}`);
 }
