@@ -38,6 +38,7 @@ router.get("/", async (_req, res) => {
   try {
     const [tasks, appState] = await Promise.all([
       prisma.task.findMany({
+        orderBy: { createdAt: "desc" }, // 최신 등록된 task가 맨 위에 오도록
         include: {
           // Lv1/Lv3 재확인이나 최초 등록으로 쌓인 회피 이유 중 가장 최근 것만 필요하다
           // (nudgeMessages.js의 Lv2 빌더가 이 값으로 getMicrotask를 호출한다).

@@ -92,6 +92,21 @@ describe.skipIf(!isTestDb)("GET /api/tasks", () => {
     expect(task.reason).toBe("temptation");
   });
 
+  it("여러 task를 등록하면 최신 등록순으로 반환한다", async () => {
+    const first = await createTestTask();
+    const second = await createTestTask();
+    const third = await createTestTask();
+
+    const res = await request(app).get("/api/tasks");
+
+    const ids = res.body.data.map((t: { id: string }) => t.id);
+    const firstIndex = ids.indexOf(first.id);
+    const secondIndex = ids.indexOf(second.id);
+    const thirdIndex = ids.indexOf(third.id);
+    expect(thirdIndex).toBeLessThan(secondIndex);
+    expect(secondIndex).toBeLessThan(firstIndex);
+  });
+
   it("현재 스트릭을 streak 필드로 함께 반환한다", async () => {
     await prisma.appState.upsert({
       where: { id: "singleton" },
