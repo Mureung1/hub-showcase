@@ -777,7 +777,7 @@ button.filter {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  margin-top: 12px;
+  margin: 12px 0 20px;
 }
 .h-pagination .btn {
   height: 38px;

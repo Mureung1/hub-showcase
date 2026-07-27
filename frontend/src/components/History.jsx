@@ -39,9 +39,28 @@ function History() {
     return [...topics].sort()
   }, [sessions])
 
-  const filteredSessions = useMemo(() => {
+  // 같은 이슈가 여러 세션에 걸쳐 반복 추천되는 경우(다양화가 새 이슈 부족 시 예전 이슈로 채우는 폴백,
+  // 또는 그냥 여러 번 검색해서 겹치는 경우)가 많아 세션마다 그대로 보여주면 중복이 심하다.
+  // 세션이 이미 최신순으로 오므로, 한 번 등장한 (repoFullName#issueNumber)는 그 이후(더 오래된) 세션에서는 숨긴다
+  // — 즐겨찾기 여부는 그 이슈가 처음(가장 최근) 등장한 카드 하나로만 판단하면 되므로 정보 손실이 없다
+  const dedupedSessions = useMemo(() => {
     if (!sessions) return []
+    const seenKeys = new Set()
     return sessions
+      .map((session) => ({
+        ...session,
+        items: session.items.filter((item) => {
+          const key = `${item.repoFullName}#${item.issueNumber}`
+          if (seenKeys.has(key)) return false
+          seenKeys.add(key)
+          return true
+        }),
+      }))
+      .filter((session) => session.items.length > 0)
+  }, [sessions])
+
+  const filteredSessions = useMemo(() => {
+    return dedupedSessions
       .filter((session) => topicFilter === ALL || session.preferences.topics.includes(topicFilter))
       .map((session) => ({
         ...session,
@@ -51,10 +70,37 @@ function History() {
         ),
       }))
       .filter((session) => session.items.length > 0)
-  }, [sessions, favoritesOnly, languageFilter, topicFilter])
+  }, [dedupedSessions, favoritesOnly, languageFilter, topicFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredSessions.length / SESSIONS_PER_PAGE))
   const pageSessions = filteredSessions.slice((page - 1) * SESSIONS_PER_PAGE, page * SESSIONS_PER_PAGE)
+  const showPagination = filteredSessions.length > SESSIONS_PER_PAGE
+
+  // 위·아래 두 군데(목록 시작 바로 위 + 끝) 모두에 렌더링한다 — 세션당 카드가 여러 장이라 아래쪽에만
+  // 있으면 페이지를 넘기려고 매번 끝까지 스크롤해야 했다
+  const pagination = showPagination && (
+    <div className="h-pagination">
+      <button
+        type="button"
+        className="btn btn-soft"
+        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+        disabled={page === 1}
+      >
+        이전
+      </button>
+      <span className="h-pagination-label">
+        {page} / {totalPages}
+      </span>
+      <button
+        type="button"
+        className="btn btn-soft"
+        onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+        disabled={page === totalPages}
+      >
+        다음
+      </button>
+    </div>
+  )
 
   function updateFilter(setter, value) {
     setter(value)
@@ -178,6 +224,8 @@ function History() {
         </div>
       )}
 
+      {pagination}
+
       {pageSessions.map((session) => {
         const filters = [
           ...session.preferences.languages,
@@ -210,29 +258,7 @@ function History() {
         )
       })}
 
-      {filteredSessions.length > SESSIONS_PER_PAGE && (
-        <div className="h-pagination">
-          <button
-            type="button"
-            className="btn btn-soft"
-            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={page === 1}
-          >
-            이전
-          </button>
-          <span className="h-pagination-label">
-            {page} / {totalPages}
-          </span>
-          <button
-            type="button"
-            className="btn btn-soft"
-            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={page === totalPages}
-          >
-            다음
-          </button>
-        </div>
-      )}
+      {pagination}
     </>
   )
 }
