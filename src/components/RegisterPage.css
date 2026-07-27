@@ -68,3 +68,9 @@
 .register-form .btn {
   margin-top: 22px;
 }
+
+.register-error {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--gauge3);
+}

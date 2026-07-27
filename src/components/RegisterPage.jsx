@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addDays, setHours, setMinutes, setSeconds, setMilliseconds } from "date-fns";
 import { apiFetch } from "../lib/api";
 import { TYPE_OPTIONS, REASON_OPTIONS } from "../lib/taskOptions";
+import { validateTaskTitle } from "../lib/taskTitle";
+import { validateDeadline } from "../lib/validateDeadline";
 import "./RegisterPage.css";
 
 function RegisterPage() {
@@ -15,44 +17,74 @@ function RegisterPage() {
   const [deadline, setDeadline] = useState(""); // 마감까지 D-day — 숫자를 문자열로 들고 있다가 제출 시 다룬다
   const [reason, setReason] = useState(REASON_OPTIONS[0].value); // 회피 이유 — select, 기본값은 첫 옵션의 value
   const [customText, setCustomText] = useState(""); // reason이 "custom"일 때만 쓰는 자유 입력
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitInFlightRef = useRef(false);
+  const titleInputRef = useRef(null);
+  const deadlineInputRef = useRef(null);
 
   async function handleSubmit(e) {
     e.preventDefault(); // form 기본 제출 동작(새로고침) 막기
 
-    // startTime(<input type="time">의 "HH:MM")은 시:분만 갖고 있으므로
-    // 오늘 날짜와 합쳐 완전한 datetime으로 만든다 — 서버/DB는 항상 완전한
-    // datetime 문자열만 주고받는다는 컨벤션(CLAUDE.md)을 지키기 위함.
-    // 값을 비운 채 제출하면(선택 입력 취급) 지금 시각을 시작 예정 시각으로 대체한다.
-    const startAt = startTime
-      ? (() => {
-          const [hours, minutes] = startTime.split(":").map(Number);
-          return setMilliseconds(
-            setSeconds(setMinutes(setHours(new Date(), hours), minutes), 0),
-            0,
-          );
-        })()
-      : new Date();
+    if (!validateTaskTitle(title)) {
+      setErrorMessage("제목을 입력해주세요.");
+      titleInputRef.current?.focus();
+      return;
+    }
 
-    // deadline은 "오늘로부터 며칠 뒤"라는 D-day 숫자이므로, 오늘 날짜에
-    // 그만큼 더해 실제 마감 날짜로 변환한다.
-    const deadlineAt = addDays(new Date(), Number(deadline));
+    if (!validateDeadline(deadline)) {
+      setErrorMessage("마감까지 D-day를 입력해주세요.");
+      deadlineInputRef.current?.focus();
+      return;
+    }
 
-    const payload = {
-      title,
-      type,
-      startTime: startAt.toISOString(),
-      deadline: deadlineAt.toISOString(),
-      reason,
-      customText,
-    };
+    if (submitInFlightRef.current) return;
+    submitInFlightRef.current = true;
+    setIsSubmitting(true);
+    setErrorMessage(null);
 
-    await apiFetch("/api/tasks", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    try {
+      // startTime(<input type="time">의 "HH:MM")은 시:분만 갖고 있으므로
+      // 오늘 날짜와 합쳐 완전한 datetime으로 만든다 — 서버/DB는 항상 완전한
+      // datetime 문자열만 주고받는다는 컨벤션(CLAUDE.md)을 지키기 위함.
+      // 값을 비운 채 제출하면(선택 입력 취급) 지금 시각을 시작 예정 시각으로 대체한다.
+      const startAt = startTime
+        ? (() => {
+            const [hours, minutes] = startTime.split(":").map(Number);
+            return setMilliseconds(
+              setSeconds(setMinutes(setHours(new Date(), hours), minutes), 0),
+              0,
+            );
+          })()
+        : new Date();
 
-    // 제출 성공 후 홈 페이지로 이동
-    navigate("/home");
+      // deadline은 "오늘로부터 며칠 뒤"라는 D-day 숫자이므로, 오늘 날짜에
+      // 그만큼 더해 실제 마감 날짜로 변환한다.
+      const deadlineAt = addDays(new Date(), Number(deadline));
+
+      const payload = {
+        title,
+        type,
+        startTime: startAt.toISOString(),
+        deadline: deadlineAt.toISOString(),
+        reason,
+        customText,
+      };
+
+      await apiFetch("/api/tasks", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      // 제출 성공 후 홈 페이지로 이동
+      navigate("/home");
+    } catch (err) {
+      console.error(err);
+      setErrorMessage("할일 등록에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      submitInFlightRef.current = false;
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -69,6 +101,7 @@ function RegisterPage() {
               제목
             </label>
             <input
+              ref={titleInputRef}
               className="field-input"
               id="title"
               type="text"
@@ -117,6 +150,7 @@ function RegisterPage() {
                 마감까지 D-day
               </label>
               <input
+                ref={deadlineInputRef}
                 className="field-input"
                 id="deadline"
                 type="number"
@@ -162,7 +196,13 @@ function RegisterPage() {
             </div>
           )}
 
-          <button className="btn btn-primary btn-block" type="submit">
+          {errorMessage && <div className="register-error">{errorMessage}</div>}
+
+          <button
+            className="btn btn-primary btn-block"
+            type="submit"
+            disabled={isSubmitting}
+          >
             등록하고 홈으로
           </button>
         </form>
