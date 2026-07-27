@@ -15,6 +15,7 @@ import {
 } from "../features/career/careerStorage";
 import { getMyAnalysis } from "../features/career/analysisApi";
 import { getMySpec } from "../features/career/specApi";
+import { getMySubmissions } from "../features/career/submissionApi";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -80,6 +81,7 @@ function MyPage() {
   const [majorSearchMessage, setMajorSearchMessage] = useState("");
   const [spec, setSpec] = useState(getCareerSpec(session?.id));
   const [analysis, setAnalysis] = useState(getCareerAnalysis(session?.id));
+  const [submissions, setSubmissions] = useState([]);
   const [pageMessage, setPageMessage] = useState("");
   const hasSpec = isCareerSpecComplete(spec);
   const hasAnalysis = Boolean(analysis);
@@ -93,9 +95,10 @@ function MyPage() {
 
     const loadMyPageData = async () => {
       try {
-        const [savedSpec, savedAnalysis] = await Promise.all([
+        const [savedSpec, savedAnalysis, savedSubmissions] = await Promise.all([
           getMySpec(),
           getMyAnalysis(),
+          getMySubmissions(),
         ]);
 
         if (!isMounted) {
@@ -115,6 +118,8 @@ function MyPage() {
         } else {
           setAnalysis(null);
         }
+
+        setSubmissions(savedSubmissions);
       } catch (error) {
         if (isMounted) {
           setPageMessage(error.message);
@@ -657,6 +662,104 @@ function MyPage() {
 
         <section style={styles.card}>
           <div style={styles.cardHeader}>
+            <strong style={styles.cardTitle}>이전 미션 이력</strong>
+            <div style={styles.headerActions}>
+              <span style={styles.cardHint}>
+                {submissions.length > 0
+                  ? `${submissions.length}개 제출 완료`
+                  : "제출 이력 없음"}
+              </span>
+              <button
+                type="button"
+                className="cm-button cm-button-secondary cm-button-compact"
+                onClick={() => navigate(routes.mission)}
+              >
+                미션 더 보기
+              </button>
+            </div>
+          </div>
+
+          {submissions.length > 0 ? (
+            <div className="mypage-mission-history" style={styles.missionHistory}>
+              {submissions.map((submission) => (
+                <article key={submission.id} style={styles.missionHistoryItem}>
+                  <div style={styles.missionHistoryMain}>
+                    <span style={styles.missionStatus}>제출 완료</span>
+                    <strong style={styles.missionTitle}>
+                      {submission.missionTitle || "미션 제목 없음"}
+                    </strong>
+                    <p style={styles.missionMeta}>
+                      제출일 {formatDate(submission.submittedAt)}
+                    </p>
+                    <div style={styles.missionBadgeList}>
+                      <span
+                        style={
+                          submission.feedback
+                            ? styles.missionBadgeDone
+                            : styles.missionBadgeMuted
+                        }
+                      >
+                        {submission.feedback ? "피드백 생성" : "피드백 전"}
+                      </span>
+                      <span
+                        style={
+                          submission.portfolioDraft
+                            ? styles.missionBadgeDone
+                            : styles.missionBadgeMuted
+                        }
+                      >
+                        {submission.portfolioDraft ? "포트폴리오 생성" : "포트폴리오 전"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={styles.missionActions}>
+                    {submission.submittedUrl && (
+                      <a
+                        href={submission.submittedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="cm-button cm-button-secondary cm-button-compact"
+                        style={styles.actionLink}
+                      >
+                        결과물 열기
+                      </a>
+                    )}
+                    {submission.submittedFileData && (
+                      <a
+                        href={submission.submittedFileData}
+                        download={submission.submittedFileName}
+                        className="cm-button cm-button-secondary cm-button-compact"
+                        style={styles.actionLink}
+                      >
+                        파일 받기
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      className="cm-button cm-button-ghost cm-button-compact"
+                      onClick={() =>
+                        navigate(`${routes.upload}?missionId=${submission.missionId}`)
+                      }
+                    >
+                      다시 제출
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyBlock
+              title="아직 제출 완료한 미션이 없습니다."
+              text="미션을 수행하고 결과물을 제출하면 이곳에서 이전 미션 이력을 확인할 수 있습니다."
+              actionLabel="미션 시작하기"
+              onAction={() => navigate(routes.mission)}
+            />
+          )}
+        </section>
+
+        <section style={styles.card}>
+          <div style={styles.cardHeader}>
             <strong style={styles.cardTitle}>등록한 스펙</strong>
             <div style={styles.headerActions}>
               <span style={styles.cardHint}>
@@ -975,6 +1078,76 @@ const styles = {
     lineHeight: 1.55,
     whiteSpace: "pre-wrap",
     wordBreak: "keep-all",
+  },
+  missionHistory: {
+    display: "grid",
+    gap: "12px",
+  },
+  missionHistoryItem: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: "14px",
+    padding: "16px",
+    borderRadius: "14px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+  },
+  missionHistoryMain: {
+    minWidth: 0,
+    display: "grid",
+    gap: "7px",
+  },
+  missionStatus: {
+    justifySelf: "start",
+    padding: "6px 9px",
+    borderRadius: "999px",
+    background: "#dcfce7",
+    color: "#15803d",
+    fontSize: "12px",
+    fontWeight: 900,
+  },
+  missionTitle: {
+    color: "#0f172a",
+    fontSize: "17px",
+    lineHeight: 1.35,
+    wordBreak: "keep-all",
+  },
+  missionMeta: {
+    margin: 0,
+    color: "#64748b",
+    fontSize: "13px",
+    fontWeight: 800,
+  },
+  missionBadgeList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+  missionBadgeDone: {
+    padding: "6px 9px",
+    borderRadius: "999px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "12px",
+    fontWeight: 900,
+  },
+  missionBadgeMuted: {
+    padding: "6px 9px",
+    borderRadius: "999px",
+    background: "#f1f5f9",
+    color: "#64748b",
+    fontSize: "12px",
+    fontWeight: 900,
+  },
+  missionActions: {
+    display: "flex",
+    justifyContent: "flex-start",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+  actionLink: {
+    textDecoration: "none",
   },
   emptyState: {
     display: "grid",
