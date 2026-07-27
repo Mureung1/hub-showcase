@@ -11,5 +11,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // 테스트 파일(*.test.ts)은 vitest가 따로 실행하므로 배포 빌드(tsc) 대상에서 제외한다.
+  // 이러면 vitest 미설치 상태에서도 build가 깨지지 않고, 테스트 파일은 저장소에 남는다.
+  "exclude": ["**/*.test.ts"]
 }
