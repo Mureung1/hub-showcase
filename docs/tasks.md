@@ -45,14 +45,23 @@ Google Sheet/Notion 대신 **markdown**(이 파일)으로 관리한다. 이 프�
 - **Day 3 (목요일 미션, 조정):** Meilisearch Cloud 가입 + 인덱스 생성, 정적 `commands.js` 데이터를 인덱스에 업로드(Supabase 거치지 않고 직접), Express `/api/search` 라우트 구현, `searchService.js`를 실제 fetch 호출로 교체, 화면→서버→Meilisearch조회→응답→화면갱신 수직슬라이스 완성, 기능검증 Agent 제작 + 검증.
 - **Day 4 (여유/버퍼):** 계획 수립 Agent 제작(월요일 미션 3번), GitHub Project 칸반 정리, PR 마무리.
 
-### 3주차 — 진행 중
+### 3주차 — Task 정리 (금요일 오전 기준)
 
-Week 3 Monday 미션("Supabase 연동" + "다음 기능 설계하고 나누기")에 따라 진행:
-- Supabase 연동 완료(기능 C)
-- 다음 기능으로 "상황별 명령어 묶음"을 화면→데이터→흐름 순서로 설계 후 구현(기능 D, checklist.md 참고) — 동료 피드백 1번(#25)과 향후 확장 아이디어(#35)를 하나로 통합
-- 명령어 커버리지 재점검 착수, `nano` 추가
+**완료:**
+- Supabase 연동 (기능 C) — `categories`/`commands`/`scenarios` 테이블, GitHub #22~#24 close
+- "다음 기능 설계하고 나누기" 미션 — 화면→데이터→흐름 순서로 "상황별 명령어 묶음"(기능 D) 설계 후 구현. 동료 피드백 1번(#25)과 향후 확장 아이디어(#35)를 하나로 통합, GitHub #25/#35 close
+- 명령어 커버리지 재점검 착수 — 에디터 명령어 부재 발견, `nano` 추가(50번째 명령어). GitHub #31은 In Progress로 전환(완료 아님, 계속 진행)
+- CORS 다중 origin 지원, 시나리오 화면 UI 다듬기(아이콘/화살표/메뉴 목록)
+- "데이터 흐름과 아키텍처 시각화" 미션 — mermaid 다이어그램 2종(화면 흐름, 아키텍처) 작성 후 실제 PNG로 렌더링해 README/발표자료에 삽입
+- 프로젝트 문서 전반 최신화(README/CLAUDE.md/plan.md/checklist.md) — Supabase/Meilisearch 적용 상태, 명령어 수(49→50) 등 실제 상태와 어긋나 있던 부분 정정
+- 데모 발표 자료(대본 + PPT) 준비
 
-남은 것: vim/emacs 등 커버리지 재점검 계속, blocked 항목(저장소 링크/명령어 목록/재미요소) 논의.
+**다음 주로 이월:**
+- 명령어 커버리지 재점검 계속 (vim/emacs 등 에디터, 그 외 후보)
+- blocked 항목 논의 (저장소 링크 의도 재확인 / 명령어 추가 목록 확정 / 재미요소 구체안)
+- AI 챗봇 API 선택 확정, `POST /api/chat` 기본 구현
+
+**계획 조정 없음** — 이번 주 실제 진행이 애초 계획(Supabase 연동 + 다음 기능 설계·구현)과 일치, 커버리지 재점검만 "착수"에서 "진행 중"으로 범위가 명확해짐.
 
 ### 4주차
 전체 QA, 문서 정리, 데모 준비.
