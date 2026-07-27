@@ -35,9 +35,11 @@ import {
   type ToneLevel,
 } from '../../entities/message'
 import {
+  generateWithApi,
   generateWithMock,
   isValidGenerationResponse,
   type GenerationErrorCode,
+  type GenerationExecutor,
   type GenerationResult,
   type GenerationRoute,
   type MockGenerationCase,
@@ -112,14 +114,14 @@ const loadingMessages = ['보낼 말 3가지를 만들고 있어요.', '아직 �
 
 const generateWithTimeout = (
   request: Parameters<typeof generateWithMock>[0],
-  generationCase: MockGenerationCase,
+  executeGeneration: GenerationExecutor,
 ): Promise<GenerationResult> =>
   new Promise((resolve) => {
     const timeout = window.setTimeout(() => {
       resolve({ ok: false, error: 'timeout' })
     }, generationTimeoutMs)
 
-    void generateWithMock(request, generationCase)
+    void executeGeneration(request)
       .then((result) => {
         window.clearTimeout(timeout)
         resolve(result)
@@ -432,11 +434,13 @@ const loadFlowState = (): FlowState => {
 }
 
 type MessageFlowProps = {
+  generationExecutor?: GenerationExecutor
   interactionReporter?: InteractionReporter
   mockGenerationCase?: MockGenerationCase
 }
 
 function MessageFlow({
+  generationExecutor,
   interactionReporter = reportInteraction,
   mockGenerationCase = developmentGenerationCase,
 }: MessageFlowProps) {
@@ -489,6 +493,11 @@ function MessageFlow({
   const hasNavigatedSteps = useRef(false)
   const [resultShownVersion, setResultShownVersion] = useState(initialFlow.step === 'result' ? 1 : 0)
   const lastReportedResultVersion = useRef(0)
+  const executeGeneration: GenerationExecutor =
+    generationExecutor ??
+    (import.meta.env.PROD
+      ? generateWithApi
+      : (request) => generateWithMock(request, mockGenerationCase))
 
   useEffect(() => () => window.clearTimeout(copyResetTimer.current), [])
 
@@ -908,7 +917,7 @@ function MessageFlow({
         speechStyleId: safeSpeechStyleId,
         contextAnswers: [answer],
       },
-      mockGenerationCase,
+      executeGeneration,
     )
 
     if (requestId !== generationRequestId.current) return
@@ -965,11 +974,11 @@ function MessageFlow({
     setGenerationStatus('loading')
     setGenerationError(null)
 
-    const result = await generateWithTimeout(
+    const request =
       mode === 'reply'
         ? {
-            route: 'manual_ai',
-            mode: 'reply',
+            route: 'manual_ai' as const,
+            mode: 'reply' as const,
             scenarioId: selectedScenarioId,
             purpose: selectedPurposeId,
             speechStyleId,
@@ -977,15 +986,14 @@ function MessageFlow({
             ...(situation.trim() ? { situation } : {}),
           }
         : {
-            route: 'manual_ai',
-            mode: 'initiate',
+            route: 'manual_ai' as const,
+            mode: 'initiate' as const,
             scenarioId: selectedScenarioId,
             purpose: selectedPurposeId,
             speechStyleId,
             situation,
-          },
-      mockGenerationCase,
-    )
+          }
+    const result = await generateWithTimeout(request, executeGeneration)
 
     if (requestId !== generationRequestId.current) return
 
@@ -1358,7 +1366,7 @@ function MessageFlow({
             <AssistantPrompt
               assistantName={selectedScenario.helper}
               avatarAsset={catAssistantAssets[selectedScenario.id]}
-              description="받은 내용이나 구체적인 사정을 반영하고 싶을 때 직접 알려주세요. 지금은 AI 연결 전 검증용 예시를 보여줘요."
+              description="받은 내용이나 구체적인 사정을 평소 말하듯 적어주세요. 예: 약속을 미뤄야 해서 정중하게 사과하고 싶어요."
               headingRef={stepHeadingRef}
               title={mode === 'reply' ? '받은 말을 조금 보여주라냥' : '상황을 조금 더 들려주라냥'}
             />
@@ -1399,7 +1407,8 @@ function MessageFlow({
 
               <p className="privacy-note">
                 <strong>이 대화의 약속</strong>
-                실명·연락처·학번은 빼고 적어주세요. 입력 내용은 마지막 선택 후 30분 동안 이 탭에만 임시 보관돼요.
+                실명·연락처·학번은 빼고 적어주세요. AI 생성을 위해 입력 내용은 Google Gemini API로 전송돼요.
+                답냥이 서버·분석 DB에는 원문을 저장하지 않고, 이 탭에는 마지막 선택 후 30분 동안만 임시 보관해요.
               </p>
               <GenerateButton
                 canGenerate={canGenerate}
@@ -1524,7 +1533,9 @@ function MessageFlow({
                 <strong>기본 · 더 부드럽게 · 더 분명하게</strong>
                 <span>필요하면 고쳐서 바로 복사해요</span>
               </div>
-              {displayedSource === 'ai' && <p className="mock-note">현재는 AI 연결 전 검증용 예시 후보입니다.</p>}
+              {!import.meta.env.PROD && displayedSource === 'ai' && (
+                <p className="mock-note">개발·테스트용 예시 후보입니다.</p>
+              )}
               {!isPreviousResultShown && generationStatus === 'error' && generationError && (
                 <GenerationErrorNotice error={generationError} onRetry={retryResultGeneration} />
               )}

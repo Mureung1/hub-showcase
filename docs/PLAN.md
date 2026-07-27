@@ -61,7 +61,7 @@
 - [ ] 후속 외부 가치 검증. 대학생 5명의 카드·실 AI 짧은 과업, E2E 시간·입력·수정·“내 말 같다”·블라인드 품질·경계 이해와 `Go | Iterate | No-go`를 기록한다. 2026-07-23 사용자 결정으로 현재 미실행·`Pending`이며 T23·T31 기술 완료를 막지 않는다 (T22)
 - [ ] 비식별 흐름 계측: T36의 5개 allowlist event API·DB 구현 뒤 Preview `waitUntil()`·보존·집계 query 운영 검증 (T24·T36)
 - [x] 공개 Production의 카드·guided/manual AI·fallback·결과 다듬기·복사와 모바일 실기기·카카오톡 인앱 복사 폴백 기술 확인 (T23)
-- [ ] T23·T29·T30·T34 결과를 합친 기술 MVP DoD 재검증·최종 통합 배포. T22 `Pending`과 외부 가치 주장 제한은 별도 유지 (T31)
+- [x] T23·T29·T30·T34 결과를 합친 기술 MVP DoD 재검증·최종 통합 배포. `beb6cda` Preview·Production 실제 AI·DB metadata·public bundle 검증 완료, T22 `Pending`과 외부 가치 주장 제한은 별도 유지 (T31)
 
 ## 리스크 · 유동 항목
 

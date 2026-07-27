@@ -1207,3 +1207,16 @@
 - 사용자가 Vercel에는 `GEMINI_API_KEY`만 있었음을 확인하고 `DATABASE_URL`을 Preview에 추가했다. 재배포 과정에서 `api/generate.ts`·`api/interaction.ts`의 `process`를 찾지 못하는 TS2591이 발생했다. 저장소에는 `@types/node`와 `tsconfig.api.json` Node types가 이미 있었지만 Vercel 함수 빌더가 읽는 루트 `tsconfig.json`에는 Node 타입이 없었다.
 - 사용자 승인 후 루트 `tsconfig.json`에 `types: ["node"]`만 추가했다. root showConfig, API 타입검사, 전체 44파일 375테스트, lint, production build가 통과했다. 현재 작업트리와 분리한 Preview worktree에서 `tsconfig.json` 한 파일만 `4d44c40 fix: Vercel API Node 타입 인식`으로 커밋·push했고, 같은 스냅샷의 API 타입·lint·build도 통과했다.
 - 새 Vercel Preview status는 2026-07-23T09:25:26Z success가 되어 TS2591 빌드 실패가 해소됐다. 보호된 Preview의 최신 runtime 생성과 `waitUntil()` DB write는 사용자가 `2026-07-23T09:29:11Z` 이후 합성 요청 1건을 다시 실행한 뒤 확인하도록 남겼고, 임시 worktree는 제거했다.
+
+## 2026-07-24 (T31 배포 UI→실제 AI 연결 결함 보완)
+- 사용자가 공개 배포에서 자연어 상황을 적어도 AI가 동작하지 않는다고 보고했다. 공개 Production `/api/generate`에 `"약속을 미뤄야겠다 그리고 정중하게 사과하고싶다"`를 직접 보내면 약속 연기·사과를 반영한 AI tone 1/2/3이 HTTP 200으로 반환됐지만, `MessageFlow`는 guided/manual 두 경로 모두 `generateWithMock()`만 호출하고 `"AI 연결 전 검증용 예시"`를 표시하고 있었다. 이전 Production 검증은 API 직접 호출이었으므로 UI→API 통합 누락을 발견하지 못했다.
+- 사용자 승인 후 same-origin `/api/generate` strict HTTP client를 추가하고 Production build는 실제 API, 개발·테스트는 deterministic mock을 사용하도록 연결했다. `template_fallback`의 API 0회는 유지했다. 직접 입력에는 별도 양식이 아니라 평소 말하듯 적는 자연어 예시를 제공하고, 입력이 Google Gemini API로 전송되며 답냥이 서버·분석 DB에는 원문을 저장하지 않는다고 안내한다.
+- HTTP 200 strict 응답, 400/429/500·network·invalid JSON/contract, template 서버 전송 금지와 exact 자연어 request를 테스트했다. App 주입형 executor 통합 테스트는 동일 문장이 `manual_ai(friend/initiate/apologize/haeyo)` request에 그대로 들어가고 세 후보로 표시되는 것을 확인했다.
+- 집중 2파일 93테스트와 전체 45파일 386테스트, 프론트·API 타입검사, templates·DB·retrieval drift/eval, lint, Production build, 하네스, `git diff --check`가 통과했다. Production main bundle에는 `/api/generate`와 Gemini 안내가 포함되고 stale mock 안내·대표 mock 후보 문장은 없다. 실제 연결 코드는 `2398e9b fix: 배포 UI를 실제 AI API에 연결`로 커밋했으며 아직 미배포다. CHECKLIST T31은 새 Preview UI→API·DB write와 Production 재배포 전까지 미완료로 유지한다.
+
+## 2026-07-24 (T31 실제 AI Production 배포·완료)
+- UI→API 수정과 검증 기록을 포함한 `beb6cda`를 `origin/N166_진현지`에 `f690a74`에서 force 없이 fast-forward했다. 같은 SHA의 Preview deployment `5582284113`과 Production deployment `5582330653`이 모두 `success`이며 공개 `https://dabnyang.vercel.app/`은 HTTP 200이다.
+- Preview UI→API 세 후보 생성 뒤 `generation_runs`에 `2026-07-24T01:20:58.411Z` `friend/initiate/decline`, `status=success` metadata 행이 기록됐다. Production에는 `"약속을 미뤄야겠다 그리고 정중하게 사과하고싶다"` 합성 요청을 보내 `source=ai` tone 1/2/3 세 후보가 약속 연기·정중한 사과를 반영하는지 확인했고, `2026-07-24T01:28:13.759Z` `friend/initiate/apologize`, `status=success`, latency 1458ms, attempt 1 행을 확인했다. DB 조회에는 원문·생성문을 포함하지 않았다.
+- 공개 main `index-Bo0zVbG7.js`는 로컬 검증 bundle과 SHA-256 `3ec66fd2cab9a03158b843319e8afe4e577973f84adc05d4e4b7764d4f8cd731`로 같았다. `/api/generate`·Google Gemini API 안내가 포함되고 `AI 연결 전 검증용 예시`·`개발·테스트용 예시`·대표 mock 후보 문장은 없었다.
+- 연결 가능한 Browser backend가 `[]`여서 Production 클릭을 이 세션에서 독립 재현하지 못했다. 동일 SHA Preview UI 통과, 공개 bundle 바이트 일치, Production same-origin API·DB 성공을 결합한 증거 한계를 [T31 검증 보고서](../harness/tasks/T31-technical-mvp-integration/verification.md)에 기록했다.
+- 전체 45파일 386테스트, 프론트·API 타입검사, template·DB·retrieval drift/eval, lint, Production build, 25개 하네스 상태 검사, `git diff --check`를 문서 마감 뒤 다시 통과했다. T31 AC-1~AC-11에 따라 plan을 `종료`, verification을 `통과`, CHECKLIST·PLAN을 완료 처리했다. T22는 외부 참여자 검증 전 `Pending`, T35는 retrieval offline 실험 미완료·운영 비활성으로 유지한다.
