@@ -155,20 +155,55 @@ GRANT UPDATE (status, priority, fulfilled_by_snapshot_ids, resolved_at)
 
 Supabase의 service role은 행 수준 정책을 우회한다. 따라서 에이전트 서비스는 service role이 아니라 구성요소별 role로 접속한다. Express만 service role을 쓰고, Express는 쓰기 권한이 없다.
 
-기본 권한을 회수하고 필요한 것만 부여한다.
+#### role 전환 방식
+
+구성요소마다 접속 문자열을 따로 두지 않는다. 하나의 사용자로 접속하고 거래를 열 때마다 `SET LOCAL ROLE`로 전환한다. 접속 문자열이 열세 개로 늘어나면 관리와 커넥션 풀 운영이 나빠지고, Supabase는 접속 사용자 생성을 제한한다.
 
 ```sql
+BEGIN;
+SET LOCAL ROLE "cs_agent_interpret";
+-- 이 거래의 모든 문장에 해석 에이전트의 권한만 적용된다
+COMMIT;
+```
+
+`SET LOCAL`은 거래가 끝나면 자동으로 원래 사용자로 돌아간다. 되돌리는 코드를 잊어도 권한이 새지 않는다. 구현은 `repositories/base.py`의 `unit_of_work()`가 단일 통로로 담당한다.
+
+구성요소 role은 `NOLOGIN`이다. 직접 접속할 수 없고 전환으로만 사용한다.
+
+전환하려면 접속 사용자가 각 role의 구성원이어야 한다. PostgreSQL 16부터 구성원 자격이 `ADMIN`·`INHERIT`·`SET` 세 옵션으로 나뉘고, `SET ROLE`에는 `SET`이 필요하다. `CREATEROLE` 사용자가 만든 role에는 `ADMIN`만 자동으로 붙으므로 `SET`을 명시한다.
+
+```sql
+GRANT cs_agent_interpret TO <접속 사용자> WITH SET TRUE;
+```
+
+#### 기본 권한
+
+`PUBLIC`에 대한 일괄 회수는 하지 않는다.
+
+```sql
+-- 사용하지 않는다. Supabase 내부 role 연결이 끊겨 접속이 종료된다
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
+```
+
+PostgreSQL은 새 테이블의 권한을 `PUBLIC`에 부여하지 않는다. 이 문장은 얻는 것 없이 위험만 있다. 대신 다음으로 앞으로 만들 테이블의 기본값을 막고, 필요한 권한만 role에 부여한다.
+
+```sql
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC;
 ```
 
+#### 변경 차단 트리거
+
 append-only 테이블은 트리거로 `UPDATE`·`DELETE`를 차단한다. 권한과 별개로 동작해 role 설정이 잘못되어도 원본이 보존된다.
 
-| 테이블 | 차단 |
-| --- | --- |
-| `source_snapshots` | `UPDATE`, `DELETE` |
-| `source_observations` | `UPDATE`, `DELETE` |
-| 계측 테이블 9종 | `UPDATE`, `DELETE` |
+| 테이블 | 차단 | 방식 |
+| --- | --- | --- |
+| `source_snapshots` | `UPDATE`, `DELETE` | 전량 차단 |
+| `source_observations` | `UPDATE`, `DELETE` | 전량 차단 |
+| 계측 테이블 7종 | `UPDATE`, `DELETE` | 전량 차단 |
+| `agent_runs` | `UPDATE`, `DELETE` | 종료 컬럼만 허용 |
+| `agent_run_steps` | `UPDATE`, `DELETE` | 종료 컬럼만 허용 |
+
+실행 기록 두 종은 전량 차단하지 않는다. 실행이 시작될 때 행을 만들고 끝날 때 종료 시각·상태·종료 사유·토큰 사용량을 채우기 때문이다. 트리거는 이 컬럼들만 바뀌었는지 확인하고, 시작 시점의 입력값이 바뀌면 예외를 낸다.
 
 ### 6.3 검증 층
 
@@ -176,6 +211,7 @@ append-only 테이블은 트리거로 `UPDATE`·`DELETE`를 차단한다. 권한
 
 | 테스트 | 기대 |
 | --- | --- |
+| 접속 사용자가 열세 role 전부로 전환 | 성공 |
 | 해석 role이 `statistics_facts`에 INSERT | 권한 오류 |
 | 통계 role이 `analysis_claims`에 INSERT | 권한 오류 |
 | 전략 role이 `output_type = 'roadmap'`으로 INSERT | `CHECK` 위반 |
@@ -186,7 +222,16 @@ append-only 테이블은 트리거로 `UPDATE`·`DELETE`를 차단한다. 권한
 | Express role이 아무 테이블에 INSERT | 권한 오류 |
 | Express가 비활성 버전의 `analysis_outputs` 조회 | 빈 결과 |
 
+첫 항목은 나머지의 전제다. 전환이 안 되면 아래 검사들은 권한이 막아서가 아니라 전환이 실패해서 오류를 내므로, 통과 여부를 신뢰할 수 없다.
+
+트리거 검사는 대상 테이블에 실제 행을 넣은 뒤 변경을 시도한다. 빈 테이블에 `UPDATE`를 하면 행 단위 트리거가 발동하지 않아 검사가 통과한 것처럼 보인다.
+
 이 테스트는 P3-4의 완료 조건이다.
+
+| 실행 | 결과 |
+| --- | --- |
+| migration `0001`~`0007` | 적용 완료 |
+| `pytest` | 69건 통과 |
 
 ## 7. 키 배치
 
