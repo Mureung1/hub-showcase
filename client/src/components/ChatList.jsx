@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const ChatList = ({ onSelectChat }) => {
+  const { currentUser } = useAuth();
   const [rooms, setRooms] = useState([]);
 
   useEffect(() => {
@@ -15,10 +17,12 @@ const ChatList = ({ onSelectChat }) => {
             id: r.id,
             postId: r.post_id,
             postTitle: r.post_title,
-            partnerName: r.partner_name,
+            partnerName: (currentUser && currentUser.id === r.host_id) ? r.helper_name : r.host_name,
             partnerGrade: r.partner_grade,
             lastMessage: r.last_message,
             lastTime: r.last_time,
+            host_id: r.host_id,
+            helper_id: r.helper_id,
             unreadCount: r.unreadCount || 0
           }));
           setRooms(mappedRooms);
@@ -70,7 +74,7 @@ const ChatList = ({ onSelectChat }) => {
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{room.partnerName || '익명'}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '16px' }}>익명</span>
                     <span style={{ fontSize: '12px', color: 'var(--color-primary-cta)', backgroundColor: '#fff', border: '1px solid var(--color-primary-cta)', padding: '2px 6px', borderRadius: '8px' }}>
                       {room.partnerGrade || '학년'}
                     </span>

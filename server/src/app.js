@@ -3,9 +3,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
 import { Server } from 'socket.io';
+import { createClient } from '@supabase/supabase-js';
 import { supabase, isMock, mockDb } from './supabase.js';
 
 dotenv.config();
+
+// Supabase Admin Client (Service Role Key로 유저 생성 등 관리 작업 수행)
+const supabaseAdmin = (!isMock && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  : null;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,8 +61,8 @@ io.on('connection', (socket) => {
       }
     } else {
       try {
-        await supabase.from('messages').insert([dbMsg]);
-        await supabase.from('chats').update({ last_message: dbMsg.text, last_time: dbMsg.time }).eq('id', data.roomId);
+        await (supabaseAdmin || supabase).from('messages').insert([dbMsg]);
+        await (supabaseAdmin || supabase).from('chats').update({ last_message: dbMsg.text, last_time: dbMsg.time }).eq('id', data.roomId);
       } catch (e) {
         console.error("DB Save Error:", e.message);
       }
@@ -75,7 +81,8 @@ io.on('connection', (socket) => {
       });
     } else {
       try {
-        await supabase
+        const db = supabaseAdmin || supabase;
+        await db
           .from('messages')
           .update({ is_read: true })
           .eq('room_id', String(roomId))
@@ -101,7 +108,7 @@ io.on('connection', (socket) => {
       }
     } else {
       try {
-        await supabase.from('chats').update({
+        await (supabaseAdmin || supabase).from('chats').update({
           appointment_status: appointment.status,
           appointment_location: appointment.location,
           appointment_time: appointment.time,
@@ -118,6 +125,171 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`🔌 User disconnected: ${socket.id}`);
   });
+});
+
+// ===== Auth API =====
+
+// POST /api/auth/signup - 회원가입 (Supabase Auth 유저 생성 + profiles 저장)
+app.post('/api/auth/signup', async (req, res) => {
+  const { email, password, username, userId } = req.body;
+
+  if (!email || !password || !username) {
+    return res.status(400).json({ error: '이메일, 비밀번호, 아이디는 필수 입력입니다' });
+  }
+
+  // 아이디 형식 검증
+  if (!/^[a-zA-Z0-9_]{2,20}$/.test(username)) {
+    return res.status(400).json({ error: '2~20자 영문, 숫자, 밑줄(_)만 사용 가능합니다' });
+  }
+
+  if (isMock) {
+    // Mock 모드: 중복 검사 후 메모리에 저장
+    const existingEmail = mockDb.profiles.find(p => p.email === email);
+    if (existingEmail) return res.status(400).json({ error: '이미 가입된 이메일입니다. 로그인해 주세요.' });
+
+    const existingUsername = mockDb.profiles.find(p => p.username === username);
+    if (existingUsername) return res.status(400).json({ error: '이미 사용 중인 아이디입니다' });
+
+    const userId = crypto.randomUUID();
+    mockDb.profiles.push({ id: userId, username, email, email_verified: true, created_at: new Date().toISOString() });
+    return res.status(201).json({ success: true, userId, username });
+  }
+
+  try {
+    // 아이디 중복 확인
+    const { data: existingProfile } = await (supabaseAdmin || supabase).from('profiles').select('id').eq('username', username).maybeSingle();
+    if (existingProfile) return res.status(400).json({ error: '이미 사용 중인 아이디입니다' });
+
+    if (!supabaseAdmin) {
+      throw new Error('서버 설정 오류: SUPABASE_SERVICE_ROLE_KEY가 .env에 설정되지 않았습니다.');
+    }
+
+    let authUserId = userId;
+
+    if (authUserId) {
+      // 1. OTP 검증으로 이미 auth.users에 존재하는 유저의 비밀번호만 업데이트
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+        password,
+        email_confirm: true
+      });
+      if (authError) throw authError;
+    } else {
+      // 2. 혹시 OTP 과정을 거치지 않은 경우 신규 유저 생성 (Mock 또는 강제 가입시)
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true
+      });
+      
+      if (authError) {
+        if (authError.message.includes('already') || authError.message.includes('exists')) {
+          return res.status(400).json({ error: '이미 가입된 이메일입니다. 로그인해 주세요.' });
+        }
+        throw authError;
+      }
+      authUserId = authData.user.id;
+    }
+
+    // profiles 테이블에 저장 (RLS 우회를 위해 Admin 권한 사용)
+    const { error: profileError } = await supabaseAdmin.from('profiles').insert([{
+      id: authUserId,
+      username,
+      email,
+      email_verified: true
+    }]);
+
+    if (profileError) throw profileError;
+
+    res.status(201).json({ success: true, userId: authUserId, username });
+  } catch (err) {
+    console.error('회원가입 에러:', err.message);
+    res.status(500).json({ error: err.message || '회원가입에 실패했습니다' });
+  }
+});
+
+// POST /api/auth/login - 로그인 (username → email 조회 후 반환)
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: '아이디와 비밀번호를 입력해 주세요' });
+  }
+
+  if (isMock) {
+    const profile = mockDb.profiles.find(p => p.username === username);
+    if (!profile) return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다' });
+    return res.json({ success: true, email: profile.email, userId: profile.id, username: profile.username });
+  }
+
+  try {
+    // username으로 profiles 테이블에서 email 조회
+    const { data: profile, error } = await (supabaseAdmin || supabase).from('profiles').select('*').eq('username', username).maybeSingle();
+
+    if (error || !profile) {
+      return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다' });
+    }
+
+    // 프론트엔드에서 이 email로 Supabase Auth signInWithPassword를 호출함
+    res.json({ success: true, email: profile.email, userId: profile.id, username: profile.username });
+  } catch (err) {
+    console.error('로그인 에러:', err.message);
+    res.status(500).json({ error: '서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.' });
+  }
+});
+
+// GET /api/auth/check-username - 아이디 중복 확인
+app.get('/api/auth/check-username', async (req, res) => {
+  const { username } = req.query;
+
+  if (!username || !/^[a-zA-Z0-9_]{2,20}$/.test(username)) {
+    return res.json({ available: false });
+  }
+
+  if (isMock) {
+    const exists = mockDb.profiles.some(p => p.username === username);
+    return res.json({ available: !exists });
+  }
+
+  try {
+    const { data } = await (supabaseAdmin || supabase).from('profiles').select('id').eq('username', username).maybeSingle();
+    res.json({ available: !data });
+  } catch (err) {
+    res.status(500).json({ available: false, error: err.message });
+  }
+});
+
+// GET /api/auth/me - 현재 유저 정보 반환 (JWT 토큰으로 조회)
+app.get('/api/auth/me', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: '인증 토큰이 필요합니다' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  if (isMock) {
+    // Mock 모드: 첫 번째 프로필 반환 (테스트용)
+    if (mockDb.profiles.length > 0) {
+      return res.json(mockDb.profiles[0]);
+    }
+    return res.status(404).json({ error: '유저를 찾을 수 없습니다' });
+  }
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: '유효하지 않은 토큰입니다' });
+    }
+
+    const { data: profile } = await (supabaseAdmin || supabase).from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if (!profile) {
+      return res.status(404).json({ error: '프로필을 찾을 수 없습니다' });
+    }
+
+    res.json(profile);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Health Check API
@@ -168,7 +340,8 @@ app.get('/api/posts', async (req, res) => {
   }
 
   try {
-    let query = supabase.from('posts').select('*');
+    const db = supabaseAdmin || supabase;
+    let query = db.from('posts').select('*');
 
     if (status === 'recruiting') {
       query = query.eq('status', '모집중');
@@ -210,7 +383,7 @@ app.get('/api/posts', async (req, res) => {
 
 // POST /api/posts - Create a new post
 app.post('/api/posts', async (req, res) => {
-  const { title, content, tags, reward, author_grade, author_major, grade_tag, major_tag } = req.body;
+  const { title, content, tags, reward, author_grade, author_major, grade_tag, major_tag, author_id, author_name } = req.body;
 
   if (!title || !content) {
     return res.status(400).json({ error: 'Title and content are required' });
@@ -226,6 +399,8 @@ app.post('/api/posts', async (req, res) => {
     reward: reward || '없음',
     author_grade: finalGrade,
     author_major: finalMajor,
+    author_id,
+    author_name,
     created_at: new Date().toISOString()
   };
 
@@ -236,7 +411,8 @@ app.post('/api/posts', async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const db = supabaseAdmin || supabase;
+    const { data, error } = await db
       .from('posts')
       .insert([newPost])
       .select();
@@ -245,6 +421,194 @@ app.post('/api/posts', async (req, res) => {
     res.status(201).json(data[0]);
   } catch (err) {
     console.error("Supabase Post Insert Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/posts/:id/has-chats - 게시글에 생성된 채팅방이 있는지 확인
+app.get('/api/posts/:id/has-chats', async (req, res) => {
+  const postId = req.params.id;
+  if (isMock) {
+    const hasChats = mockDb.chats.some(c => String(c.post_id) === String(postId));
+    return res.json({ hasChats });
+  }
+
+  try {
+    const db = supabaseAdmin || supabase;
+    const { count, error } = await db
+      .from('chats')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', postId);
+      
+    if (error) throw error;
+    res.json({ hasChats: count > 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/posts/:id/requests - 게시글에 달린 신청 목록 조회
+app.get('/api/posts/:id/requests', async (req, res) => {
+  const postId = req.params.id;
+  if (isMock) {
+    const reqs = mockDb.chat_requests.filter(r => String(r.post_id) === String(postId) && r.status === 'pending');
+    return res.json(reqs);
+  }
+  try {
+    const db = supabaseAdmin || supabase;
+    const { data, error } = await db.from('chat_requests').select('*').eq('post_id', postId).eq('status', 'pending');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/posts/:id/requests - 1:1 채팅 신청 (요청)
+app.post('/api/posts/:id/requests', async (req, res) => {
+  const postId = req.params.id;
+  const { helper_id, helper_name, message } = req.body;
+  
+  if (!helper_id || !helper_name || !message) {
+    return res.status(400).json({ error: '필수 정보가 누락되었습니다' });
+  }
+
+  const newRequest = {
+    post_id: postId,
+    helper_id,
+    helper_name,
+    message,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  };
+
+  if (isMock) {
+    newRequest.id = String(mockDb.chat_requests.length + 1);
+    mockDb.chat_requests.push(newRequest);
+    return res.status(201).json(newRequest);
+  }
+
+  try {
+    const db = supabaseAdmin || supabase;
+    const { data, error } = await db.from('chat_requests').insert([newRequest]).select();
+    if (error) throw error;
+    res.status(201).json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/posts/:id/requests/:reqId/accept - 신청 수락 및 방 생성
+app.post('/api/posts/:id/requests/:reqId/accept', async (req, res) => {
+  const { id: postId, reqId } = req.params;
+  
+  try {
+    const db = supabaseAdmin || supabase;
+    let request;
+    if (isMock) {
+      request = mockDb.chat_requests.find(r => String(r.id) === String(reqId));
+      if (!request) throw new Error('신청을 찾을 수 없습니다.');
+    } else {
+      const { data, error } = await db.from('chat_requests').select('*').eq('id', reqId).maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('신청을 찾을 수 없습니다.');
+      request = data;
+    }
+
+    const { host_id, host_name, post_title, partner_grade } = req.body; 
+    const newChatId = Math.random().toString(36).substr(2, 9);
+    const newChat = {
+      ...(newChatId ? { id: newChatId } : {}),
+      post_id: postId,
+      post_title: post_title || '무제',
+      host_id: host_id,
+      host_name: host_name || '방장',
+      helper_id: request.helper_id,
+      helper_name: request.helper_name,
+      partner_grade: partner_grade || '미상',
+      last_message: request.message,
+      last_time: new Date().toISOString()
+    };
+
+    let createdChat;
+    if (isMock) {
+      mockDb.chats.push({ ...newChat, created_at: new Date().toISOString() });
+      createdChat = newChat;
+      mockDb.chat_requests.forEach(r => {
+        if (String(r.post_id) === String(postId)) {
+          r.status = (String(r.id) === String(reqId)) ? 'accepted' : 'rejected';
+        }
+      });
+      mockDb.messages.push({
+        id: 'mock-msg-' + Date.now(), room_id: newChat.id, sender: 'helper', text: request.message, time: newChat.last_time, is_read: false
+      });
+    } else {
+      const { data: chatData, error: chatError } = await db.from('chats').insert([newChat]).select();
+      if (chatError) throw chatError;
+      createdChat = chatData[0];
+
+      await db.from('messages').insert([{
+        room_id: createdChat.id, sender: 'helper', text: request.message, time: createdChat.last_time, is_read: false
+      }]);
+
+      await db.from('chat_requests').update({ status: 'rejected' }).eq('post_id', postId).neq('id', reqId);
+      await db.from('chat_requests').update({ status: 'accepted' }).eq('id', reqId);
+    }
+    
+    res.json(createdChat);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/posts/:id - 게시글 수정
+app.put('/api/posts/:id', async (req, res) => {
+  const postId = req.params.id;
+  const { title, content, tags, reward, author_grade, author_major, grade_tag, major_tag } = req.body;
+
+  const updateData = {
+    title, content, tags: tags || [], reward,
+    author_grade: grade_tag || author_grade || '1학년',
+    author_major: major_tag || author_major || '일반학과'
+  };
+
+  if (isMock) {
+    const postIndex = mockDb.posts.findIndex(p => String(p.id) === String(postId));
+    if (postIndex === -1) return res.status(404).json({ error: 'Post not found' });
+    mockDb.posts[postIndex] = { ...mockDb.posts[postIndex], ...updateData };
+    return res.json(mockDb.posts[postIndex]);
+  }
+
+  try {
+    const db = supabaseAdmin || supabase;
+    const { data, error } = await db
+      .from('posts')
+      .update(updateData)
+      .eq('id', postId)
+      .select();
+
+    if (error) throw error;
+    res.json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/posts/:id - 게시글 삭제
+app.delete('/api/posts/:id', async (req, res) => {
+  const postId = req.params.id;
+  
+  if (isMock) {
+    mockDb.posts = mockDb.posts.filter(p => String(p.id) !== String(postId));
+    return res.json({ success: true });
+  }
+
+  try {
+    const db = supabaseAdmin || supabase;
+    const { error } = await db.from('posts').delete().eq('id', postId);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
@@ -259,7 +623,7 @@ app.get('/api/chats', async (req, res) => {
     return res.json(chatsWithUnread);
   }
   try {
-    const { data, error } = await supabase.from('chats').select('*').order('last_time', { ascending: false });
+    const { data, error } = await (supabaseAdmin || supabase).from('chats').select('*').order('last_time', { ascending: false });
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -269,11 +633,12 @@ app.get('/api/chats', async (req, res) => {
 
 // POST /api/chats - Create a chat room
 app.post('/api/chats', async (req, res) => {
-  const { id, postId, postTitle, partnerName, partnerGrade, lastMessage, lastTime, initialMsgs } = req.body;
+  const { id, postId, postTitle, host_name, partnerName, partnerGrade, lastMessage, lastTime, initialMsgs, host_id, helper_id } = req.body;
   
   const newChat = {
-    id: String(id), post_id: postId, post_title: postTitle, partner_name: partnerName, 
-    partner_grade: partnerGrade, last_message: lastMessage, last_time: lastTime, created_at: new Date().toISOString()
+    id: String(id), post_id: postId, post_title: postTitle, host_name: host_name, helper_name: partnerName, 
+    partner_grade: partnerGrade, last_message: lastMessage, last_time: lastTime, 
+    host_id, helper_id, created_at: new Date().toISOString()
   };
 
   if (isMock) {
@@ -287,14 +652,15 @@ app.post('/api/chats', async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase.from('chats').insert([newChat]).select();
+    const db = supabaseAdmin || supabase;
+    const { data, error } = await db.from('chats').insert([newChat]).select();
     if (error) throw error;
 
     if (initialMsgs && initialMsgs.length > 0) {
       const msgsToInsert = initialMsgs.map(m => ({
         id: m.id.toString(), room_id: String(id), sender: m.sender, text: m.text, time: m.time, is_read: false, created_at: new Date().toISOString()
       }));
-      await supabase.from('messages').insert(msgsToInsert);
+      await (supabaseAdmin || supabase).from('messages').insert(msgsToInsert);
     }
 
     res.status(201).json(data[0]);
@@ -311,7 +677,8 @@ app.get('/api/chats/:roomId', async (req, res) => {
     return res.json(chat || null);
   }
   try {
-    const { data, error } = await supabase.from('chats').select('*').eq('id', String(roomId)).single();
+    const db = supabaseAdmin || supabase;
+    const { data, error } = await db.from('chats').select('*').eq('id', String(roomId)).maybeSingle();
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -327,7 +694,8 @@ app.get('/api/chats/:roomId/messages', async (req, res) => {
     return res.json(msgs);
   }
   try {
-    const { data, error } = await supabase.from('messages').select('*').eq('room_id', String(roomId)).order('created_at', { ascending: true });
+    const db = supabaseAdmin || supabase;
+    const { data, error } = await db.from('messages').select('*').eq('room_id', String(roomId)).order('created_at', { ascending: true });
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -348,7 +716,7 @@ app.post('/api/chats/:roomId/read', async (req, res) => {
     return res.json({ success: true });
   }
   try {
-    await supabase.from('messages').update({ is_read: true }).eq('room_id', String(roomId)).neq('sender', userRole);
+    await (supabaseAdmin || supabase).from('messages').update({ is_read: true }).eq('room_id', String(roomId)).neq('sender', userRole);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

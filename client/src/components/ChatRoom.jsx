@@ -5,6 +5,7 @@ import AppointmentModal from './AppointmentModal';
 
 const ChatRoom = ({ room, onBack }) => {
   const { currentUser } = useAuth();
+  const myRole = currentUser?.id === room?.host_id ? 'host' : 'helper';
   
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -29,7 +30,7 @@ const ChatRoom = ({ room, onBack }) => {
           const msgsData = await msgsRes.json();
           if (Array.isArray(msgsData)) {
             const markedMsgs = msgsData.map(m => {
-              if (m.sender !== currentUser?.role) {
+              if (m.sender !== myRole) {
                 return { ...m, is_read: true };
               }
               return m;
@@ -38,11 +39,11 @@ const ChatRoom = ({ room, onBack }) => {
           }
 
           // 2. HTTP 읽음 처리 API 호출 (DB 상태 보존)
-          if (currentUser?.role) {
+          if (myRole) {
             fetch(`${API_URL}/api/chats/${room.id}/read`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userRole: currentUser.role })
+              body: JSON.stringify({ userRole: myRole })
             }).catch(e => console.error("HTTP markAsRead error", e));
           }
 
@@ -63,7 +64,7 @@ const ChatRoom = ({ room, onBack }) => {
       }
     };
     fetchRoomData();
-  }, [room, currentUser]);
+  }, [room, currentUser, myRole]);
 
   const socket = useSocket();
 
@@ -72,14 +73,14 @@ const ChatRoom = ({ room, onBack }) => {
     if (socket && room && room.id) {
       socket.emit('joinRoom', room.id);
 
-      if (currentUser?.role) {
-        socket.emit('markAsRead', { roomId: room.id, userRole: currentUser.role });
+      if (myRole) {
+        socket.emit('markAsRead', { roomId: room.id, userRole: myRole });
       }
 
       const handleReceiveMessage = (msg) => {
         setMessages(prev => [...prev, msg]);
-        if (msg.sender !== currentUser?.role && currentUser?.role) {
-          socket.emit('markAsRead', { roomId: room.id, userRole: currentUser.role });
+        if (msg.sender !== myRole && myRole) {
+          socket.emit('markAsRead', { roomId: room.id, userRole: myRole });
         }
       };
 
@@ -105,7 +106,7 @@ const ChatRoom = ({ room, onBack }) => {
         socket.off('appointmentUpdated', handleAppointmentUpdated);
       };
     }
-  }, [socket, room, currentUser]);
+  }, [socket, room, currentUser, myRole]);
 
   // 스크롤 이동
   useEffect(() => {
@@ -118,7 +119,7 @@ const ChatRoom = ({ room, onBack }) => {
   const sendSystemOrUserMessage = (text, isSystem = false) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    const sender = isSystem ? 'system' : (currentUser?.role || 'helper');
+    const sender = isSystem ? 'system' : myRole;
 
     const newMsg = { id: Date.now(), sender, text, time: timeStr, is_read: false };
     setMessages(prev => [...prev, newMsg]);
@@ -148,7 +149,7 @@ const ChatRoom = ({ room, onBack }) => {
       status: 'PROPOSED',
       location,
       time,
-      proposedBy: currentUser?.role || 'helper'
+      proposedBy: myRole
     };
     setAppointment(newAppt);
 
@@ -156,8 +157,7 @@ const ChatRoom = ({ room, onBack }) => {
       socket.emit('updateAppointment', { roomId: room.id, appointment: newAppt });
     }
 
-    const roleName = currentUser?.role === 'host' ? '방장' : '도와주는 사람';
-    sendSystemOrUserMessage(`📢 [${roleName}]님이 약속을 제안했습니다: ${location} (${time})`, true);
+    sendSystemOrUserMessage(`📢 새로운 약속이 제안되었습니다: ${location} (${time})`, true);
   };
 
   // 2. 상대방 약속 확정하기
@@ -189,8 +189,7 @@ const ChatRoom = ({ room, onBack }) => {
       socket.emit('updateAppointment', { roomId: room.id, appointment: newAppt });
     }
 
-    const roleName = currentUser?.role === 'host' ? '방장' : '도와주는 사람';
-    sendSystemOrUserMessage(`🔄 [${roleName}]님이 '다시 정하기'를 요청했습니다. 새로운 시간/장소를 제안해주세요.`, true);
+    sendSystemOrUserMessage(`🔄 '다시 정하기'가 요청되었습니다. 새로운 시간/장소를 제안해주세요.`, true);
   };
 
   return (
@@ -205,7 +204,7 @@ const ChatRoom = ({ room, onBack }) => {
           </svg>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>{room?.partnerName || '익명'} ({room?.partnerGrade || '학년'})</h2>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>익명 ({room?.partnerGrade || '학년'})</h2>
           <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>
             {room?.postTitle || '채팅방'}
           </div>
@@ -237,12 +236,12 @@ const ChatRoom = ({ room, onBack }) => {
           <>
             <div style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>
               <span style={{ fontWeight: 'bold', color: 'var(--color-primary-cta)' }}>
-                📍 {appointment.proposedBy === currentUser?.role ? '제안중' : '약속 제안받음'}:
+                📍 {appointment.proposedBy === myRole ? '제안중' : '약속 제안받음'}:
               </span> {appointment.location} ({appointment.time})
             </div>
 
             <div style={{ display: 'flex', gap: '6px', flexShrink: 0, marginLeft: '8px' }}>
-              {appointment.proposedBy === currentUser?.role ? (
+              {appointment.proposedBy === myRole ? (
                 // 내가 제안한 경우: 수정하기
                 <button 
                   onClick={() => setIsAppointmentModalOpen(true)}
@@ -320,7 +319,7 @@ const ChatRoom = ({ room, onBack }) => {
           }
 
           // 메시지의 발송자와 현재 화면을 보고 있는 사람의 역할이 같으면 '나'로 인식 (오른쪽 배치)
-          const isMe = msg.sender === currentUser?.role;
+          const isMe = msg.sender === myRole;
           
           return (
             <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', marginBottom: '16px' }}>

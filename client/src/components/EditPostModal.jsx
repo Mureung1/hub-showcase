@@ -2,19 +2,23 @@ import React, { useState } from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
 
-// 게시글 작성 모달 컴포넌트
-// - index.html의 #modal-create-post 디자인을 React로 이식
-// - App.jsx에 있던 E2E 통신 로직(handleCreatePost)을 이 안으로 이사
-const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
+// 게시글 수정 모달 컴포넌트
+const EditPostModal = ({ isOpen, onClose, onPostEdited, initialData }) => {
   const { currentUser } = useAuth();
-  // ── 1) 상태(State) 선언 ──
-  // 유저가 폼에 입력하는 모든 값을 여기서 추적합니다
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [gradeTag, setGradeTag] = useState('');      // 학년 태그 (1개만)
-  const [majorTag, setMajorTag] = useState('');      // 학과 태그 (1개만)
-  const [topicTags, setTopicTags] = useState([]);    // 관심 주제 태그 (최대 3개)
-  const [reward, setReward] = useState('음료 제공');  // 보상 옵션 (기본값: 음료)
+  
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [content, setContent] = useState(initialData?.content || '');
+  const [gradeTag, setGradeTag] = useState(initialData?.grade_tag || initialData?.author_grade || '');
+  const [majorTag, setMajorTag] = useState(initialData?.major_tag || initialData?.author_major || '');
+  
+  // 기존 태그 복원 (topicTags)
+  const initialTopicTags = initialData?.tags?.filter(
+    t => t !== initialData?.major_tag && t !== initialData?.author_major && 
+         t !== initialData?.grade_tag && t !== initialData?.author_grade
+  ) || [];
+  
+  const [topicTags, setTopicTags] = useState(initialTopicTags);
+  const [reward, setReward] = useState(initialData?.reward || '음료 제공');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── 2) 관심 주제 태그 토글 함수 ──
@@ -49,8 +53,8 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${apiUrl}/api/posts`, {
-        method: 'POST',
+      const res = await fetch(`${apiUrl}/api/posts/${initialData.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
@@ -61,26 +65,16 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
           grade_tag: gradeTag || '미상',
           major_tag: majorTag || '미상',
           reward,
-          author_id: currentUser?.id,
-          author_name: currentUser?.username,
         }),
       });
 
-      if (!res.ok) throw new Error('게시글 생성 실패');
+      if (!res.ok) throw new Error('게시글 수정 실패');
 
-      // 성공! → 폼 초기화 → 부모에게 알림 → 모달 닫기
-      setTitle('');
-      setContent('');
-      setGradeTag('');
-      setMajorTag('');
-      setTopicTags([]);
-      setReward('음료 제공');
-
-      if (onPostCreated) onPostCreated(); // 부모(App.jsx)에게 "글 새로 생겼어!" 알림
-      if (onClose) onClose();             // 모달 닫기
+      if (onPostEdited) onPostEdited();
+      if (onClose) onClose();
     } catch (err) {
-      console.error('게시글 생성 오류:', err);
-      alert('게시글 생성에 실패했습니다.');
+      console.error('게시글 수정 오류:', err);
+      alert('게시글 수정에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +90,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
 
         {/* 모달 헤더 */}
         <div className="modal-header">
-          <span className="modal-header-title">고민글 올리기</span>
+          <span className="modal-header-title">고민글 수정하기</span>
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
 
@@ -230,7 +224,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? '게시 중...' : '고민글 게시하기'}
+            {isSubmitting ? '수정 중...' : '게시글 수정하기'}
           </button>
         </div>
       </div>
@@ -238,4 +232,4 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   );
 };
 
-export default CreatePostModal;
+export default EditPostModal;
