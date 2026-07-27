@@ -32,7 +32,7 @@ public class ParkingLotLoadService {
         log.info("[주차장 적재] 전체 {}행 예상", totalCount);
 
         List<Row> rows = new ArrayList<>();
-        for (int start = 1; start <= totalCount; start++) {
+        for (int start = 1; start <= totalCount; start += PAGE_SIZE) {
             int end = start + PAGE_SIZE - 1;
             rows.addAll(seoulParkingLotClient.fetchPage(start, end).getParkInfo().rows());
         }
