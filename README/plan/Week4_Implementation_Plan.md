@@ -47,11 +47,14 @@ gantt
 - **"파인튜닝"의 실제 범위 — 모델 가중치 학습이 아니다:**
   기획서의 4주차 키워드는 "AI 모델 파인튜닝 및 고도화"지만, 현재 구조는 Gemini API 호출 기반이며 학습 데이터셋도 없다. 따라서 4주차의 고도화는 **① 프롬프트 엔지니어링 ② 출력 스키마 확장 ③ 후처리 검증 강화** 세 축으로 수행한다. 실제 파인튜닝(모델 학습)은 인터뷰 데이터 축적이 선행되어야 하므로 v2 후보로 명시적으로 미룬다.
 - **개선 전에 측정한다:** 프롬프트를 먼저 고치면 좋아졌는지 알 수 없다. **Task 21(mock 전사문) → Task 22(eval 러너)를 반드시 먼저** 끝내고, 이후 모든 프롬프트 변경은 baseline 대비 지표로 판정한다.
-- **품질 지표 4종 (Task 22에서 정의):**
-  1. `quote_match_rate` — 인용문이 원문에 실제 존재하는 비율 (환각률의 역수)
-  2. `hypothesis_id_valid_rate` — 존재하는 가설을 가리키는 비율
-  3. `citation_integrity_rate` — 본문 `[n]` 마커 ↔ `citations` 일대일 대응 비율
-  4. `status_accuracy` — `suggested_status`가 골든셋 정답과 일치하는 비율
+- **품질 지표 4종 (Task 22에서 정의) — 관측 단위에 따라 표현 방식을 분리한다 (2026-07-27 수정):**
+  fixture는 5~6건, 가설은 파일당 1~3개라 판정 단위(`hypothesis_id_valid_rate`/`status_accuracy`)는 총 12건 안팎이다. 여기서 소수점 있는 백분율(예: 91.7%)은 없는 정밀도를 만들어낸다 — 1건만 뒤집혀도 8%p가 움직이므로 "1~2%p 차이는 개선이 아니다"라는 원칙 자체가 이 지표엔 적용 불가능하다. 그래서 관측 단위 크기로 표현 방식을 나눈다:
+  - **백분율 유효 (관측 단위 수십 건 — 인용문·마커 개수):**
+    1. `quote_match_rate` — 인용문이 원문에 실제 존재하는 비율 (환각률의 역수)
+    3. `citation_integrity_rate` — 본문 `[n]` 마커 ↔ `citations` 일대일 대응 비율
+  - **fixture별 pass/fail 단언표로 표현 (관측 단위 12건 안팎 — 백분율 금지):**
+    2. `hypothesis_id_valid_rate` — 존재하는 가설을 가리키는가 (fixture × 가설별 O/X)
+    4. `status_accuracy` — `suggested_status`가 골든셋 정답과 일치하는가 (fixture × 가설별 O/X, Task 26 완료조건과 동일 형태)
 - **프롬프트 3계층 관계 (혼선 방지):**
   - `.claude/skills/pm-interview-analysis/SKILL.md` — **방법론 원본**(왜 그렇게 판정하는가). [`naruv0134/pm-skills`](https://github.com/naruv0134/pm-skills)에서 선별·번역해 만든다 (Task 23)
   - `README/AI_Pipeline_Design.md` — **계약 문서**(입출력 스키마·온도·폴백)
@@ -79,18 +82,23 @@ gantt
   - *골든셋 라벨:* 각 md 상단 frontmatter에 기대값을 명시 — `hypothesis_set`, `expected_status`(가설별), `min_tags`/`max_tags`(태깅 수 허용 범위), `trap`(그 파일이 노리는 실패 유형). **정답 라벨은 사람이 직접 판단해 적는다**(AI 출력을 정답으로 삼으면 평가가 자기참조가 된다).
   - *개인정보:* 실제 인터뷰 내용을 쓰지 않는다. 전부 창작 데이터이며, Task 35 데모 영상 촬영도 이 데이터로만 진행한다.
   - *완료 조건:* 5건 이상의 md가 존재하고, 전부 `화자명: 발언` 포맷 계약을 지키며, `hypotheses.json`의 가설 세트와 매칭되고, 각 파일에 사람이 작성한 기대 라벨이 들어 있다.
+  - **⚠️ 라벨 출처 (2026-07-27):** `expected_status` 5건은 사람이 아니라 AI가 초안으로 채웠다(각 fixture frontmatter의 `label_source` 참고). 이 항목이 원래 경계했던 "AI가 채우면 자기참조 평가가 되어 무의미해진다" 위험이 그대로 적용된다. Task 22 baseline은 이 라벨로 이미 측정했지만, **정식 확정 전 사람 검수를 권장**하며 그 전까지 이 체크박스는 완료로 보지 않는다.
 
-- [ ] **Task 22: [Test/AI] 분석 품질 회귀 러너(eval) 구축 및 baseline 기록**
+- [x] **Task 22: [Test/AI] 분석 품질 회귀 러너(eval) 구축 및 baseline 기록**
   - *상세:* `backend/src/eval/runEval.ts` 신규. Task 21의 fixture를 **실제 Gemini로** 1·2단계에 통과시키고 위 지표 4종을 계산해 표로 출력한다.
     - 결과는 `backend/eval/results/YYYY-MM-DD_HHmm.json` 으로 저장 → 프롬프트 변경 전후를 파일 대 파일로 비교한다.
     - **`npm test`에 넣지 않는다.** 실 API 호출이라 느리고 쿼터를 소모하며 결과가 결정적이지 않다. `backend/package.json`에 `"eval": "ts-node src/eval/runEval.ts"` 별도 스크립트로 분리하고, 유닛 테스트는 항상 고정 mock 응답으로 돌린다.
     - 지표 계산 함수(`scoreQuoteMatch` 등)는 **순수 함수로 분리**해 `runEval.ts`가 아니라 `src/eval/metrics.ts`에 두고, 이건 유닛 테스트 대상으로 삼는다(Task 28).
     - 무료 티어 쿼터를 고려해 `--only 03_sparse` 같은 단일 fixture 실행 옵션을 둔다.
   - *완료 조건:* `npm run eval --prefix backend` 1회 실행으로 fixture별 4개 지표가 출력되고, `eval/results/`에 **baseline 파일이 남으며**, 그 수치가 이후 Task 25~27의 판정 기준으로 계획서에 인용된다.
+  - **⚠️ 발견된 선결 이슈 — `runEval.ts`가 그대로 프로덕션 DB에 쓴다 (2026-07-27, metrics.ts 구현 중 발견):** `tagHypothesesFromTranscript()`(`hypothesisTagger.ts`)와 `generateVerificationResult()`(`verificationResult.ts`)는 각각 `evidence_tags` INSERT / `verification_results` UPSERT를 무조건 수행한다. `runAnalysisPipeline()`도 `hypotheses.verification_status`를 UPDATE한다. eval을 fixture로 그대로 돌리면 **실제 Supabase 프로젝트에 가짜 fixture 데이터가 쌓인다.** 두 가지 선택지가 있고 아직 결정하지 않았다:
+    1. 두 함수에 `persist?: boolean = true` 옵션을 추가해 `false`면 DB 호출을 건너뛰고 합성 id로 레코드를 반환한다(작은 변경, 단 TDD로 먼저 테스트 작성 필요 — `tdd-feature-loop` 대상).
+    2. eval 전용 Supabase 프로젝트/스키마를 분리한다(설정 비용 있음, 대신 코드 변경 없음).
+    Task 24(프롬프트 모듈 분리)와 겹치는 영역이므로, **Task 24 착수 시 이 옵션 중 하나를 함께 확정**한다. 그 전까지 `runEval.ts`는 골격(fixture 파싱 + `hypotheses.json` 로드 + `--only` 옵션)까지만 구현하고 실제 파이프라인 호출은 보류한다.
 
 ### 🔴 High — ② PM Skill 기반 분석 고도화
 
-- [ ] **Task 23: [AI/Skill] PM Skill 도입 및 가설검증 프레임으로 번역 (방법론 원본 확정)**
+- [x] **Task 23: [AI/Skill] PM Skill 도입 및 가설검증 프레임으로 번역 (방법론 원본 확정)**
   - *출처 — 백지에서 쓰지 않는다:* 기존 자산인 [`naruv0134/pm-skills`](https://github.com/naruv0134/pm-skills)(9개 플러그인 · 68 스킬 · 42 워크플로)를 도입해 방법론의 출발점으로 삼는다.
     - **선별 원칙 — 전부 설치하지 않는다.** 68개를 통째로 넣으면 세션 컨텍스트만 소모하고 실제 쓰는 건 극소수다. 이 도구의 도메인(가설 검증 인터뷰 분석)에 실제로 걸리는 것만 가져온다:
       - `pm-product-discovery/summarize-interview` — 전사문 ➡️ 구조화 요약 (가장 직접적)
@@ -113,7 +121,7 @@ gantt
   - *역할 분담 명시:* 이 문서가 프롬프트의 단일 원본이며, `AI_Pipeline_Design.md`(계약)와 `lib/prompts/`(구현)는 이 문서를 따른다. 세 곳이 어긋나면 SKILL.md가 정답. pm-skills 원본은 **참조 출처로만 남기고** 우리 SKILL.md가 그것을 대체한다(원본을 계속 따라가면 JTBD 축으로 다시 끌려간다).
   - *완료 조건:* pm-skills에서 선별한 4개 스킬의 출처가 문서에 명시되고, SKILL.md가 존재하며 Claude Code 세션에서 스킬로 인식되고, 위 판정 기준이 **"어떤 입력이면 어떤 판정"**의 형태로(모호한 형용사 없이) 서술되어 Task 25/26의 프롬프트로 그대로 번역 가능하다.
 
-- [ ] **Task 24: [BE] 프롬프트 모듈 분리 (`lib/prompts/`)**
+- [x] **Task 24: [BE] 프롬프트 모듈 분리 (`lib/prompts/`)**
   - *상세:* 3주차 리스크 조언에서 예고한 "프롬프트만 교체할 수 있는 구조"를 실제로 만든다. 현재 system instruction과 `responseSchema`가 `hypothesisTagger.ts` / `verificationResult.ts` / `refineHypothesis.ts` 안에 각각 박혀 있어, 프롬프트 실험 시 로직 파일을 건드려야 한다.
     - `backend/src/lib/prompts/stage1Classify.ts` / `stage2Verify.ts` / `stage3Refine.ts` 로 분리. 각 모듈은 `{ systemInstruction, responseSchema, temperature, buildUserPrompt(input) }` 를 export.
     - 로직 파일은 프롬프트 문자열을 **모르는 상태**가 되어야 한다 — 입력을 넘기고 결과를 받을 뿐.
@@ -128,7 +136,8 @@ gantt
   - *완료 조건:* mock `02_contradictory` / `05_noisy` 에서 강도가 사람 판단과 일치하게 분류되고, `evidence_tags`에 값이 적재되며, `npm run eval`의 `quote_match_rate`가 baseline 대비 **하락하지 않는다**(강도 판정이 인용 정확도를 해치지 않아야 함).
 
 - [ ] **Task 26: [AI/BE] 2단계 고도화 — 반증 우선 판정 + 확신도 캘리브레이션**
-  - *상세:* `suggested_status` 판정 규칙을 "근거 **수**"에서 "**강도 가중합 + 반박 존재 여부**"로 교체한다(Task 23 기준). 가중합 계산은 프롬프트에 맡기지 않고 **애플리케이션 코드의 순수 함수**로 구현해 AI에게는 재료만 주는 쪽이 재현성이 높다 — 어느 쪽이 나은지는 Task 22 eval의 `status_accuracy`로 판정하고, 결과를 계획서에 기록한다.
+  - *상세:* `suggested_status` 판정 규칙을 "근거 **수**"에서 "**강도 가중합 + 반박 존재 여부**"로 교체한다(Task 23 기준). 가중합 계산은 프롬프트에 맡기지 않고 **애플리케이션 코드의 순수 함수**로 구현한다.
+  - **⚠️ 코드 vs 프롬프트 A/B 비교는 하지 않는다 (2026-07-27 결정, eval 생략):** 애초에 A/B로 판정하려면 변동성을 감안해 안(2안) × 2회 = eval 4회 추가 소모가 필요한데, 무료 티어 쿼터에서 이건 비용 대비 얻는 정보가 적다. 코드 쪽이 이미 우세한 이유가 구조적으로 명확하다 — (a) LLM 비결정성을 판정 로직에서 제거해 지표 잡음이 줄고, (b) Task 28의 TDD 대상이 되며, (c) "왜 유력함인가"를 계산식으로 감사할 수 있어 이 도구의 근거 사슬 원칙과 정합된다. **A/B 실험 없이 애플리케이션 코드 쪽으로 바로 구현하고, 이 문단을 그 판단 근거로 남긴다.**
     - `confidence`(높음/보통/낮음) + `confidence_reason`(1문장) 추가 → 마이그레이션 008. 사용자가 "AI가 얼마나 확신하는지"를 보고 검토 우선순위를 정할 수 있게 한다.
     - `direction`은 Task 23의 3형태(원인 축소 / 결과 재정의 / 조건 추가) 중 하나를 명시하도록 강제.
   - *완료 조건:* mock `03_sparse`에서 `유력함`이 나오지 않고, `01_supportive`에서 `근거 부족`이 나오지 않으며, **before/after 지표 표가 계획서 하단에 기록**된다. 개선되지 않았다면 개선되지 않았다고 적고 원인을 남긴다(수치를 좋아 보이게 고르지 않는다).
@@ -247,11 +256,13 @@ gantt
     | `requirement-verifier` **Agent** | `.claude/agents/` | 완료 조건 대비 독립 판정 (구현자와 분리, PASS/FAIL/NOT VERIFIED 3값) |
   - *`requirement-verifier` Agent 설계 원칙:* 메인 세션은 판정에 참여하지 않는다. 프롬프트에 **완료 조건 원문만** 넘기고 구현 요약·"다 됐다"는 맥락은 넘기지 않는다. 증거로 인정하는 것은 코드 위치(`file:line`)와 **실제 테스트 실행 출력**뿐이며, 자동 확인이 불가능한 항목(외부 Gemini API, 수동 E2E)은 추측으로 PASS를 주지 않고 **NOT VERIFIED**로 표기한다. 이 값이 없으면 검증기는 항상 PASS만 뱉는 장식이 된다.
   - *과하게 만들지 않는다:* 참고 사례들도 Skill 2~4개 + Agent 1개 규모다. 쓰지 않을 스킬을 개수 채우려고 만들면 "실사용" 서술이 다시 거짓이 된다. **위 4개까지만.**
-  - *완료 조건:* 4개 아티팩트가 레포에 파일로 존재하고, 4주차 커밋 이력에서 각 아티팩트가 **실제로 사용된 Task를 최소 1건씩** 지목할 수 있다(예: `tdd-feature-loop` → Task 28의 `test:` → `feat:` 커밋 쌍).
+  - **검증 메커니즘 (2026-07-27 추가):** "커밋 이력에서 지목할 수 있다"는 조건은 그 자체로는 기계적으로 검증 불가능하다 — git은 어떤 스킬을 썼는지 기록하지 않는다. 이를 실체화하기 위해 `branch-commit-push` 스킬에 **커밋 트레일러 규약**(`Skill: <name>` / `Agent: <name>`)을 추가했다(2026-07-27, [SKILL.md](../../.claude/skills/branch-commit-push/SKILL.md) 2-1절). Task 21 착수 시점부터 이 트레일러를 실제로 붙이고, `git log --grep "^Skill: "` / `--grep "^Agent: "`로 지목한다. 트레일러 없는 "사용했다"는 주장은 이 Task의 완료 조건을 충족하지 않는다.
+  - *완료 조건:* 4개 아티팩트가 레포에 파일로 존재하고, 4주차 커밋 이력에서 각 아티팩트가 **실제로 사용된 Task를 최소 1건씩** 커밋 트레일러로 지목할 수 있다(예: `tdd-feature-loop` → Task 28의 `test:` → `feat:` 커밋 쌍, 각각 `Skill: tdd-feature-loop` 트레일러 포함).
+  - **Skill 개수 기준 (2026-07-27 명확화):** "위 4개까지만"은 **4주차에 새로 만드는 아티팩트** 기준이다. 이미 존재하는 자작 스킬 `branch-commit-push`(2026-07-24 도입, 실사용 중)는 이 개수에서 제외하되 showcase에는 **5번째 아티팩트로 함께 정직하게 기재**한다(Task 40). 마켓플레이스 설치분인 caveman 계열 4개는 개발에 사용된 적이 없으므로 showcase에 기재하지 않는다.
 
 - [ ] **Task 40: [Docs] `showcase.json` `agent` 섹션 실제 아티팩트 기준으로 재작성**
   - *상세:* Task 39의 결과물만 기재한다. 존재하지 않는 것은 쓰지 않는다.
-    - `agentTools` — Skill 3개 + Agent 1개를 **실제 파일명 그대로** 기재.
+    - `agentTools` — Task 39의 신규 Skill 3개 + Agent 1개, 그리고 기존 자작 스킬 `branch-commit-push`(2026-07-24 도입)까지 **총 5개를 실제 파일명 그대로** 기재. caveman 계열(마켓플레이스 설치, 미사용)은 기재하지 않는다.
     - `workflows` — 현재 항목("설계 우선 태스크 구현 Workflow" 등)은 **서비스 개발 순서 설명**이지 Agent 활용이 아니다. 참고 사례처럼 **아티팩트를 이름으로 호출하는 절차**로 다시 쓴다. 예: `1. 계획서에서 Task의 완료 조건 확인 → 2. tdd-feature-loop Skill로 실패 테스트 작성(Red) → 3. 최소 구현(Green) → 4. requirement-verifier Agent로 완료 조건 대비 독립 판정 → 5. FAIL 항목 재작업 후 커밋`
     - `developmentWithAI` / `agent.summary` — **2~3주차와 4주차를 구분해 정직하게 서술한다.** *"초기에는 대화 기반으로 진행했고, 반복적으로 나타난 패턴(설계 선확정 · 라이브 검증 · TDD)을 4주차에 Skill과 Agent로 고정해 고도화 작업에 적용했습니다."* — 처음부터 완비된 도구가 있었다고 쓰는 것보다 이쪽이 사실이고, 패턴을 발견해 도구화한 과정 자체가 더 설득력 있다.
     - `demoUrl` 플레이스홀더(`https://example.com`) 갱신은 Task 36에서 처리.
@@ -268,7 +279,14 @@ gantt
 - **병렬 가능 구간:** Task 28~30(테스트)은 Task 25~27(프롬프트)과 **대상이 겹치지 않는 범위에서만** 병렬로 진행한다. 단, Task 24(프롬프트 모듈 분리)는 다른 Task들이 건드릴 파일을 대거 이동시키므로 **혼자 먼저 끝낸다** — 병렬로 돌리면 충돌한다.
 
 - **리스크 요인:**
-  - **측정 없는 고도화가 가장 큰 리스크:** Task 21·22를 건너뛰고 프롬프트부터 손대면 "좋아진 것 같다"는 인상만 남고 회귀를 감지할 수 없다. **21·22는 타협 대상이 아니다.** 시간이 부족하면 Task 27·33·38을 먼저 버린다.
+  - **측정 없는 고도화가 가장 큰 리스크:** Task 21·22를 건너뛰고 프롬프트부터 손대면 "좋아진 것 같다"는 인상만 남고 회귀를 감지할 수 없다. **21·22는 타협 대상이 아니다.**
+  - **시간이 부족할 때 버리는 순서 (2026-07-27 재확정): Task 34 → 33 → 27 → 31.**
+    - Task 34(Notion 연동)를 최우선 드롭 대상으로 둔다 — 외부 심사 가치가 가장 낮고, 파서 + Notion DB 스키마 설계까지 작업량은 적지 않다. MCP 미연결 시 대체 산출물(`Notion_Task_Board.md`)만 남기고 끝낸다.
+    - Task 33(버전 히스토리 뷰어)은 서버 API가 이미 있어 FE 전용 작업이라 다음으로 버린다.
+    - Task 27(3단계 리파인 고도화)은 그다음.
+    - Task 31(비-UTF-8 인코딩)은 재현 빈도가 낮아 그다음.
+    - **Task 38(README 교체)은 드롭 대상에서 제외한다** — 작업량은 수 시간 이내인데, "처음 보는 사람이 프로젝트를 실행할 수 있는가"는 심사에 직결된다.
+    - **Task 35·36(데모 영상)은 어떤 상황에서도 드롭하지 않고 시간을 먼저 확보한다** — 쇼케이스 성격상 영상 부재가 최대 감점 요인이며, 계획서 자체도 "마지막에 몰리면 못 만든다"고 이미 경고하고 있다.
   - **골든셋의 정답을 AI가 만들면 평가가 무의미해진다:** Task 21의 `expected_status`는 반드시 사람이 전사문을 읽고 직접 정한다. AI 출력을 정답으로 복사하는 순간 지표는 항상 100%가 되고 아무것도 측정하지 못한다.
   - **Gemini 무료 티어 쿼터:** eval 1회 실행 = fixture 5건 × (1단계 1회 + 가설수 × 2단계)이므로 호출량이 빠르게 는다. Task 1에서 만든 폴백 체인(`GEMINI_FALLBACK_MODELS`)이 있지만, `--only` 옵션으로 단일 fixture만 돌리는 습관을 들이고, eval을 `npm test`나 CI에 절대 넣지 않는다.
   - **LLM 출력은 결정적이지 않다:** 같은 프롬프트라도 실행마다 결과가 달라져, 지표 1~2%p 차이는 개선의 증거가 아니다. **동일 프롬프트로 최소 2회 측정**하고, 그 변동폭보다 큰 차이만 개선으로 인정한다.
@@ -292,9 +310,11 @@ gantt
 
 | 지표 | Baseline (Task 22) | 1단계 고도화 후 (Task 25) | 2단계 고도화 후 (Task 26) | 판정 |
 |---|---|---|---|---|
-| `quote_match_rate` | — | — | — | — |
-| `hypothesis_id_valid_rate` | — | — | — | — |
-| `citation_integrity_rate` | — | — | — | — |
-| `status_accuracy` | — | — | — | — |
+| `quote_match_rate` | 100.0% (36/36) | — | — | — |
+| `citation_integrity_rate` | 100.0% (23/23) | — | — | — |
+| `hypothesis_id_valid_rate` | 5/5 fixture 전부 O (무효 id 0건) | — | — | — |
+| `status_accuracy` | 4/5 fixture 일치 (`05_noisy`만 불일치) | — | — | — |
 
+> 측정 조건: `backend/eval/results/2026-07-27_2131.json`, 모델 `gemini-flash-latest`(05_noisy만 429로 `gemini-3.1-flash-lite` 폴백), fixture 5건 전체, 측정 1회, `persist:false`(Task 24).
+> `05_noisy` 불일치는 버그가 아니라 예상된 결과다 — 골든 라벨은 Task 23의 근거 강도 위계(직접 경험 vs 의견)를 적용해 판단했는데, baseline 프롬프트는 아직 그 위계를 반영하지 않고 badge_label 개수만 본다. 이 격차가 Task 25/26에서 줄어드는지가 실질적인 개선 여부의 신호다.
 > 측정 조건(모델명·온도·fixture 세트·측정 횟수)을 함께 기록한다. 조건이 다르면 비교가 성립하지 않는다.

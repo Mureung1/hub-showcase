@@ -31,15 +31,61 @@ description: 이 레포의 브랜치 생성 · 커밋 분리 · 푸시 규약을
 
 분리 판단 기준: "이 커밋 하나만 리버트했을 때 다른 의도가 같이 사라지는가?" 그렇다면 아직 안 쪼개진 것이다.
 
+### 2-1. Skill/Agent 사용 트레일러 (4주차 Task 39 검증용, 2026-07-27 도입)
+
+이 커밋을 만드는 과정에서 `.claude/skills/` 또는 `.claude/agents/`의 아티팩트를 실제로 사용했다면, 커밋 메시지 본문 맨 아래에 트레일러를 추가한다. **git log는 어떤 스킬을 썼는지 기록하지 않으므로, 이 트레일러가 "실사용했다"는 주장의 유일한 기계적 증거다.** 사용하지 않았다면 붙이지 않는다(장식으로 전부 붙이면 증거로서 무의미해진다).
+
+```
+feat: 근거 강도 가중합 함수 구현 (Task 26)
+
+Skill: tdd-feature-loop
+```
+
+여러 개를 썼으면 줄을 나눠 여러 개 적는다:
+```
+Skill: analysis-quality-eval
+Agent: requirement-verifier
+```
+
+검증은 `git log --grep "^Skill: <name>"` 또는 `--grep "^Agent: <name>"`로 한다.
+
 ## 3. 푸시 — 항상 확인받는다
 
 - `main`에는 절대 직접 푸시하지 않는다.
 - **로컬 커밋까지는 자율적으로 진행해도 되지만, `git push`는 실행 직전에 반드시 사용자에게 브랜치명·커밋 목록을 보여주고 확인받는다.** 푸시는 원격(공유 상태)에 영향을 주는 되돌리기 어려운 동작이기 때문이다.
 - 첫 푸시는 `git push -u origin <branch>`.
-- `gh` CLI가 이 환경에 설치되어 있지 않다(확인됨, `winget install GitHub.cli`로 설치 가능). 따라서 PR은 **직접 만들지 않고**, 푸시 후 GitHub compare URL(`https://github.com/naruv0134/hub/compare/main...<branch>`)을 안내해 사람이 만들게 한다.
-- PR을 만들 때는 `.github/pull_request_template.md`의 4섹션(주요 작업 리스트 / 내가 설명할 수 있는 부분 / 아직 이해 못 한 부분 / 새로 알게 된 것)을 그대로 채운다. 타이틀 형식은 `[루카스ID_실명] 한 문장 요약` — 이 값은 아직 `CLAUDE.md`에 고정되어 있지 않으므로 **첫 실행 시 사용자에게 확인**한 뒤 기록해 재사용한다.
+- `gh` CLI가 이 환경에 설치되어 있지 않다(확인됨, `winget install GitHub.cli`로 설치 가능). 따라서 PR은 **직접 만들지 않고**, 아래 5절 URL을 안내해 사람이 만들게 한다.
 
-## 4. 안전 원칙
+## 4. PR — base는 upstream의 개인 브랜치다 (확정, 2026-07-24 검증됨)
+
+이 레포는 fork다. `origin` = `naruv0134/hub`(내 fork), `upstream` = `connect-AIAgentChallenge-26-1/hub`(수강생 전체 공유 허브). **PR은 origin이 아니라 upstream을 대상으로 연다:**
+
+- **base repository:** `connect-AIAgentChallenge-26-1/hub` (upstream)
+- **base branch:** `N089_박지은` (내 개인 브랜치 — 수강생마다 `N{학번}_{실명}` 형식의 개인 브랜치가 upstream에 있고, 각자 자기 브랜치로 PR을 연다. upstream `main`이 아니다.)
+- **head repository:** `naruv0134/hub` (origin, 내 fork)
+- **head branch:** 작업 브랜치
+
+compare URL: `https://github.com/naruv0134/hub/compare/connect-AIAgentChallenge-26-1:hub:N089_박지은...naruv0134:hub:<branch>`
+
+PR 타이틀 형식은 `.github/pull_request_template.md` 기준 `[N089_박지은] 한 문장 요약`.
+
+### 알려진 반복 충돌 패턴 — README.md
+
+`upstream/N089_박지은`의 루트 `README.md`는 예전 PR(#1860) 병합 시점에 충돌이 나서 **Vite 템플릿 기본 문구로 수동 해결(upstream 쪽 유지)**된 채 고정돼 있다. 그 이후 우리 fork에서 README.md를 계속 갱신해왔기 때문에, **README.md를 건드리는 새 PR을 열 때마다 같은 충돌이 재현될 가능성이 높다.**
+
+**대응 — 푸시 전에 미리 병합해서 충돌을 없앤다:**
+```bash
+git fetch upstream
+git merge upstream/N089_박지은 --no-ff
+# README.md 충돌 시: 우리 기획서 버전이 맞으므로 ours 유지
+git checkout --ours README.md
+git add README.md
+git commit  # merge commit 완성
+git push origin <branch>
+```
+병합 전 `git merge upstream/N089_박지은 --no-commit --no-ff` (로컬 테스트 브랜치에서)로 실제 충돌 파일이 README.md 하나뿐인지 먼저 확인하고, 다른 파일까지 충돌하면 임의로 `--ours`를 전체 적용하지 않고 파일별로 판단한다.
+
+## 5. 안전 원칙
 
 - `git status` 없이 `add`/`commit`/`push`를 진행하지 않는다.
 - 스테이징 후 `git diff --cached`로 실제 내용을 확인하고, `.env`·키·토큰처럼 보이는 내용이 있으면 파일명이 무해해 보여도 커밋하지 않는다.

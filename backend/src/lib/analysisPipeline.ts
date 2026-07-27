@@ -25,8 +25,9 @@ export interface AnalysisPipelineResult {
 export async function runAnalysisPipeline(params: {
   hypotheses: HypothesisRow[];
   interviews: InterviewRow[];
+  persist?: boolean;
 }): Promise<AnalysisPipelineResult> {
-  const { hypotheses, interviews } = params;
+  const { hypotheses, interviews, persist = true } = params;
 
   const hypothesisRefs: HypothesisRef[] = hypotheses.map((h) => ({
     hypothesis_id: h.id,
@@ -46,6 +47,7 @@ export async function runAnalysisPipeline(params: {
           interviewId: interview.id,
           transcript,
           hypotheses: hypothesisRefs,
+          persist,
         }),
       { timeoutMs: 60000, maxRetries: 2 },
     );
@@ -71,18 +73,21 @@ export async function runAnalysisPipeline(params: {
           cause: hypothesis.cause,
           effect: hypothesis.effect,
           evidence: evidenceForHypothesis,
+          persist,
         }),
       { timeoutMs: 60000, maxRetries: 2 },
     );
     verificationResults.push(result);
 
-    const { error: updateError } = await supabase
-      .from('hypotheses')
-      .update({ verification_status: result.suggested_status })
-      .eq('id', hypothesis.id);
+    if (persist) {
+      const { error: updateError } = await supabase
+        .from('hypotheses')
+        .update({ verification_status: result.suggested_status })
+        .eq('id', hypothesis.id);
 
-    if (updateError) {
-      throw new Error(`hypotheses.verification_status 갱신에 실패했습니다: ${updateError.message}`);
+      if (updateError) {
+        throw new Error(`hypotheses.verification_status 갱신에 실패했습니다: ${updateError.message}`);
+      }
     }
   }
 
