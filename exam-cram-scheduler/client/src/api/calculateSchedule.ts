@@ -99,7 +99,11 @@ export interface ScheduleCalculateResponse {
 export async function calculateSchedule(
   request: ScheduleCalculateRequest,
 ): Promise<ScheduleCalculateResponse> {
-  const res = await fetch('/api/schedule/calculate', {
+  // #30 — 개발 환경에선 VITE_API_BASE_URL이 비어 있어 상대경로('/api/...')로 나가고,
+  // vite.config.ts의 프록시가 이를 :4000으로 중계한다. 배포 환경에선 이 값에 Render 서버
+  // 주소가 들어가서 절대 URL('https://…/api/…')로 완성돼 다른 도메인의 BE로 직접 닿는다.
+  const base = import.meta.env.VITE_API_BASE_URL ?? '';
+  const res = await fetch(`${base}/api/schedule/calculate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
