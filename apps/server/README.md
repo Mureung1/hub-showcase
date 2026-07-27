@@ -6,7 +6,7 @@ Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 p
 
 Canonical product 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. 제거된 public-preview Account→Setup→Ready composition, managed Browser OAuth route와 v3 setup adapter는 Server의 실행·export·test graph에 남지 않는다. [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 v3 kernel은 현재 Server consumer가 없는 package-private 기반이며 current product authority가 아니다.
 
-User-owned Git target의 internal `workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. Canonical root command의 read-only `prepared-workspace-launch` resolver는 explicit prepared root를 registry보다 우선하고, 인자가 없으면 active pointer를 fresh reopen한다. Canonical·exact Git root·strict v4 identity가 아니거나 active pointer가 없으면 Server·Browser process를 시작하기 전에 fail closed한다. Registry commit과 target `SemesterWorkspaceController` composition은 아직 연결되지 않았다.
+User-owned Git target의 internal `workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. Canonical root command의 read-only `prepared-workspace-launch` resolver는 explicit prepared root를 registry보다 우선하고, 인자가 없으면 active pointer를 fresh reopen한다. Canonical·exact Git root·strict v4 identity가 아니거나 active pointer가 없으면 Server·Browser process를 시작하기 전에 fail closed한다. Internal `prepared-workspace-startup` coordinator는 fresh validation → shared listener → Broker generation → exact-root Runtime·native config → authenticated target thread → required MCP roster → fresh context → registry transaction → active projection 순서를 dependency ports 위에서 고정한다. Real shared listener·Broker와 deterministic Runtime fault matrix는 이 seam을 검증하지만 current public current-v2 composition의 atomic cutover는 아직 수행하지 않았다.
 
 ## Canonical 시작과 root 소유권
 
@@ -56,7 +56,7 @@ Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 �
 
 Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. Historical [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 당시 target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 했다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
 
-ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. Prepared-root launch resolver와 candidate-free Browser lifecycle contract는 current graph 옆의 target seam이며, required Runtime readiness와 registry commit이 연결되기 전에는 current public workspace authority가 계속 아래 v2 aggregate다.
+ADR 0018 target의 root v4 codec과 external `WorkspaceRegistry`도 current-v2 product store를 자동 변환하거나 함께 쓰지 않는다. Prepared-root launch resolver, candidate-free Browser lifecycle contract와 required-readiness startup coordinator는 current graph 옆의 target seam이다. Internal coordinator에서는 readiness 뒤 registry commit이 연결됐지만 public composition cutover 전에는 current public workspace authority가 계속 아래 v2 aggregate다.
 
 | 영역 | Current behavior |
 | --- | --- |
