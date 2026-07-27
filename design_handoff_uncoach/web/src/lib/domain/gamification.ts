@@ -9,28 +9,40 @@ export interface GamificationState {
 
 // --- XP / 레벨 ---
 //
-// XP 기준 (전부 history에서 파생 — 따로 저장하지 않는다)
-//   ① 세션 점수      : 총점 그대로 0~100. 잘 쓸수록 많이 받는다.
-//   ② 새 상황 보너스 : 처음 해보는 상황마다 +20. 같은 상황 반복으로는 다시 안 준다.
-//   ③ 매일 첫 훈련   : 훈련한 날마다 +10. 하루에 몰아서 해도 한 번만.
-// ②③ 모두 "고유 개수"라서 기록 순서와 무관하게 같은 값이 나온다(재계산 안전).
+// XP는 '활동'을 보상한다(듀오링고식). 예전엔 세션 총점을 그대로 더해 XP가 점수에 커플링됐고,
+// 낮은 점수로도 세션을 많이 하면 그만큼 올랐다("실력색"이 강함). 이제 세션 완료 자체에 플랫 XP를
+// 주고 잘한 세션에만 보너스를 얹는다. 전부 history에서 파생 — 따로 저장하지 않는다.
+//   ① 세션 완료      : 세션마다 +15 (활동).
+//   ② 잘한 세션      : 총점 80 이상이면 +10 (품질 보너스).
+//   ③ 새 상황        : 처음 해보는 상황마다 +20. 반복으론 다시 안 준다.
+//   ④ 매일 첫 훈련   : 훈련한 날마다 +10. 하루에 몰아쳐도 한 번만.
+// ③④는 "고유 개수"라 기록 순서와 무관하게 같은 값(재계산 안전).
 
+export const XP_PER_SESSION = 15;
+export const XP_QUALITY_BONUS = 10;
+export const XP_QUALITY_THRESHOLD = 80;
 export const XP_NEW_SITUATION = 20;
 export const XP_DAILY_FIRST = 10;
 
+/** 세션 하나가 주는 XP — 완료(활동) + 잘한 세션 보너스. 점수합 커플링을 끊는다. */
+export function sessionXP(rec: SessionRecord): number {
+  return XP_PER_SESSION + (totalOf(rec.scores) >= XP_QUALITY_THRESHOLD ? XP_QUALITY_BONUS : 0);
+}
+
 export function totalXP(history: SessionRecord[]): number {
-  const score = history.reduce((sum, h) => sum + totalOf(h.scores), 0);
+  const base = history.reduce((sum, h) => sum + sessionXP(h), 0);
   const sids = new Set(history.map((h) => h.sid)).size;
   const days = new Set(history.filter((h) => h.ts).map((h) => dayStart(h.ts!))).size;
-  return score + sids * XP_NEW_SITUATION + days * XP_DAILY_FIRST;
+  return base + sids * XP_NEW_SITUATION + days * XP_DAILY_FIRST;
 }
 
 /**
- * 레벨 n → n+1 에 필요한 XP. 초반은 금방 오르고 뒤로 갈수록 완만해진다.
- * Lv1→2 = 200(약 2세션), Lv5까지 누적 1,400(약 15세션), Lv10까지 5,400(약 50세션).
+ * 레벨 n → n+1 에 필요한 XP. 세션당 XP가 작아졌으므로(활동 기반) 곡선도 낮춰 초반 진입을 지킨다.
+ * Lv1→2 = 100(약 4~6세션), Lv5까지 누적 700.
+ * ponytail: 곡선은 sessionXP(15~25)에 맞춘 손튜닝 — 세션당 XP를 바꾸면 여기도 같이 조정할 것.
  */
 export function xpForLevel(level: number): number {
-  return 100 + 100 * level;
+  return 50 + 50 * level;
 }
 
 export interface LevelInfo {
@@ -49,6 +61,98 @@ export function levelInfo(xp: number): LevelInfo {
   }
   const xpForNext = xpForLevel(level);
   return { level, xpIntoLevel: rest, xpForNext, progress: rest / xpForNext };
+}
+
+// --- 데일리 목표 (듀오링고식 일일 XP 목표) ---
+//
+// 오늘 벌어들인 XP가 목표치를 넘으면 그날의 목표 달성. 자정(dayStart)에 리셋된다.
+// '오늘 XP'는 오늘 세션들의 총점 합 — XP의 지배 성분(세션 점수)과 같은 통화를 쓴다.
+// ponytail: 목표치는 기본 상수 하나. 사용자별 선택(캐주얼/보통/집중)은 Profile+Settings가 필요해 나중에.
+
+export const DAILY_XP_GOAL = 40;
+
+export interface DailyGoalInfo {
+  earned: number;
+  goal: number;
+  progress: number; // 0~1 (목표 초과해도 1로 clamp)
+  met: boolean;
+}
+
+/** 오늘 벌어들인 XP — 오늘(로컬 자정 기준) 세션들의 sessionXP 합. 평생 XP와 같은 통화. ts 없는 기록 제외. */
+export function xpToday(history: SessionRecord[]): number {
+  const today = dayStart(Date.now());
+  return history
+    .filter((h) => h.ts && dayStart(h.ts) === today)
+    .reduce((sum, h) => sum + sessionXP(h), 0);
+}
+
+export function dailyGoal(history: SessionRecord[], goal: number = DAILY_XP_GOAL): DailyGoalInfo {
+  const earned = xpToday(history);
+  return { earned, goal, progress: goal > 0 ? Math.min(1, earned / goal) : 0, met: earned >= goal };
+}
+
+// --- 주간 리그 (다른 사용자 없는 '자기 자신과의' 주간 경쟁) ---
+//
+// 듀오링고 리그의 자기 버전. 실사용자가 거의 없는 데모라 남의 데이터로 순위를 매길 수 없으니
+// '이번 주 나 vs 지난 주들의 나'로 경쟁시킨다(가짜 경쟁자 없음 — 정직). 주는 월요일 시작(로컬).
+// 주간 XP는 sessionXP 합만 쓴다 — 새상황·매일 보너스는 평생 개념이라 주 단위엔 넣지 않는다.
+
+const WEEK_MS = 7 * 86400000;
+
+/** ts가 속한 주의 월요일 00:00(로컬). */
+function weekStart(ts: number): number {
+  const d0 = dayStart(ts);
+  const dow = (new Date(d0).getDay() + 6) % 7; // 월=0
+  return d0 - dow * 86400000;
+}
+
+/** [weekStartMs, +7일) 세션들의 sessionXP 합. */
+export function xpForWeek(history: SessionRecord[], weekStartMs: number): number {
+  return history
+    .filter((h) => h.ts && h.ts >= weekStartMs && h.ts < weekStartMs + WEEK_MS)
+    .reduce((sum, h) => sum + sessionXP(h), 0);
+}
+
+export interface WeekBar {
+  weekStart: number;
+  xp: number;
+  current: boolean;
+}
+
+/** 최근 n주(이번 주 포함, 과거→현재 순) 주간 XP — 비교 막대·추세용. */
+export function recentWeeks(history: SessionRecord[], n = 5): WeekBar[] {
+  const thisWeek = weekStart(Date.now());
+  const out: WeekBar[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const ws = thisWeek - i * WEEK_MS;
+    out.push({ weekStart: ws, xp: xpForWeek(history, ws), current: i === 0 });
+  }
+  return out;
+}
+
+export interface WeeklyLeague {
+  thisWeekXP: number;
+  bestWeekXP: number; // 최근 n주 중 최고(이번 주 포함)
+  isBest: boolean;    // 이번 주가 자기 최고 기록인가(0보다 클 때만)
+  goalDays: number;   // 이번 주 일일목표 달성일 수 (0~7)
+  weeks: WeekBar[];
+}
+
+/** 이번 주 XP, 자기 최고 주와의 비교, 일일목표 달성일. goal은 일일 목표치. */
+export function weeklyLeague(history: SessionRecord[], goal: number = DAILY_XP_GOAL, n = 5): WeeklyLeague {
+  const weeks = recentWeeks(history, n);
+  const thisWeekXP = weeks[weeks.length - 1].xp;
+  const bestWeekXP = Math.max(...weeks.map((w) => w.xp));
+  const ws = weekStart(Date.now());
+  let goalDays = 0;
+  for (let d = 0; d < 7; d++) {
+    const from = ws + d * 86400000;
+    const dayXP = history
+      .filter((h) => h.ts && h.ts >= from && h.ts < from + 86400000)
+      .reduce((sum, h) => sum + sessionXP(h), 0);
+    if (dayXP >= goal) goalDays++;
+  }
+  return { thisWeekXP, bestWeekXP, isBest: thisWeekXP > 0 && thisWeekXP >= bestWeekXP, goalDays, weeks };
 }
 
 // --- 스트릭 ---

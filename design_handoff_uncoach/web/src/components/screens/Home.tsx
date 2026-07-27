@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/lib/client/store";
 import { getSituation, situationsForRole, totalOf, modeOf, MODE_LABEL, MODE_ICON, type ModeKey } from "@/lib/domain/situations";
 import { DEMO_SITS } from "@/lib/domain/demo-sits";
 import { NEWS_CATEGORIES } from "@/lib/domain/news-categories";
-import { computeStreak, levelInfo, totalXP } from "@/lib/domain/gamification";
+import { computeStreak, levelInfo, totalXP, dailyGoal, type DailyGoalInfo } from "@/lib/domain/gamification";
 import DashboardLayout from "@/components/stitch/DashboardLayout";
 import type { Situation } from "@/lib/domain/types";
 import type { ScreenKey } from "@/components/AppShell";
@@ -90,6 +90,7 @@ export default function Home({ nav, start }: { nav: (k: ScreenKey) => void; star
       };
     });
   const lvl = levelInfo(totalXP(history));
+  const goal = dailyGoal(history);
 
   return (
     <DashboardLayout active="home" name={name} nav={nav}>
@@ -99,13 +100,16 @@ export default function Home({ nav, start }: { nav: (k: ScreenKey) => void; star
           <h2 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-1">안녕하세요, {name}님 👋</h2>
           <p className="text-on-surface-variant">오늘도 힘차게 훈련을 시작해볼까요?</p>
         </div>
-        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-card border border-border-light">
-          <div className="text-right">
-            <p className="font-label-sm text-label-sm text-on-surface-variant">내 레벨</p>
-            <p className="font-stats-number text-stats-number text-primary">Lv. {lvl.level}</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-progress-orange">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+        <div className="flex items-center gap-3">
+          <DailyGoalRing {...goal} />
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-card border border-border-light">
+            <div className="text-right">
+              <p className="font-label-sm text-label-sm text-on-surface-variant">내 레벨</p>
+              <p className="font-stats-number text-stats-number text-primary">Lv. {lvl.level}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-progress-orange">
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+            </div>
           </div>
         </div>
       </div>
@@ -269,6 +273,54 @@ function RecCard({ onClick, icon, iconCls, blobCls, badge, badgeCls, title, desc
       {stat}
       <div className="mt-4 flex justify-end"><span className="bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg">훈련 시작하기</span></div>
     </button>
+  );
+}
+
+/**
+ * 오늘의 목표 링 — 듀오링고식 일일 XP 진행. 자정에 리셋(오늘 세션 총점 합).
+ * 마운트 시 0→목표까지 한 번 채워지는 스윕으로 진행을 전달한다(prefers-reduced-motion이면 즉시).
+ */
+function DailyGoalRing({ earned, goal, progress, met }: DailyGoalInfo) {
+  const R = 18;
+  const C = 2 * Math.PI * R;
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setShown(progress);
+      return;
+    }
+    const id = requestAnimationFrame(() => setShown(progress));
+    return () => cancelAnimationFrame(id);
+  }, [progress]);
+
+  return (
+    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-card border border-border-light">
+      <div className="text-right">
+        <p className="font-label-sm text-label-sm text-on-surface-variant">오늘의 목표</p>
+        <p className="font-stats-number text-stats-number text-primary">
+          {earned}<span className="text-outline text-sm font-normal"> / {goal} XP</span>
+        </p>
+      </div>
+      <div className="relative w-10 h-10 shrink-0">
+        <svg viewBox="0 0 44 44" className="w-10 h-10 -rotate-90">
+          <circle cx="22" cy="22" r={R} fill="none" strokeWidth="4" stroke="currentColor" className="text-surface-container-high" />
+          <circle
+            cx="22" cy="22" r={R} fill="none" strokeWidth="4" strokeLinecap={shown > 0 ? "round" : "butt"} stroke="currentColor"
+            className={met ? "text-tertiary" : "text-primary"}
+            strokeDasharray={C}
+            style={{ strokeDashoffset: C * (1 - shown), transition: "stroke-dashoffset 800ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          />
+        </svg>
+        <span
+          className={"material-symbols-outlined absolute inset-0 transition-colors " + (met ? "text-tertiary" : "text-progress-orange")}
+          // material-symbols 폰트 CSS가 display·font-size를 덮어써 flex/text-[18px] 유틸이 무력화된다.
+          // 인라인(최고 우선순위)으로 강제해야 아이콘이 링 안에 세로 중앙으로 앉는다.
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, lineHeight: 1, ...(met ? { fontVariationSettings: "'FILL' 1" } : null) }}
+        >
+          {met ? "check_circle" : "local_fire_department"}
+        </span>
+      </div>
+    </div>
   );
 }
 

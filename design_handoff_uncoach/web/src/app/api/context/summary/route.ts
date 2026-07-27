@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGemini, extractText, parseLooseJson, GEMINI_MODEL } from "@/lib/scoring/gemini";
 import { NEWS_SUMMARY_SYSTEM } from "@/lib/scoring/context-system";
-import { clampLevel, toScores } from "@/lib/domain/news-score";
+import { clampLevel, toScores, isCopied } from "@/lib/domain/news-score";
 import { totalOf } from "@/lib/domain/situations";
 import { sameOrigin, rateLimit, clientIp } from "@/lib/server/guard";
 
@@ -53,15 +53,31 @@ export async function POST(req: NextRequest) {
       accuracy: clampLevel(raw.accuracy ?? fallback),
       concision: clampLevel(raw.concision ?? fallback),
     };
+    const rs = (out.reasons ?? {}) as Record<string, unknown>;
+    const reason = (k: string) => (rs[k] ? String(rs[k]) : undefined);
+    const reasons: Record<"grasp" | "accuracy" | "concision", string | undefined> = {
+      grasp: reason("grasp"),
+      accuracy: reason("accuracy"),
+      concision: reason("concision"),
+    };
+    let coach = String(out.coach || "");
+
+    // 지문을 그대로 베낀 요약은 '고른 것도 압축한 것도' 아니라 두 축을 1점으로 내린다.
+    // 사실 정확성은 건드리지 않는다 — 베낀 글은 실제로 정확하므로, 여기서 깎으면 없는 흠을 지어내는 셈이다.
+    if (isCopied(draft, passage.text)) {
+      scores.grasp = 1;
+      scores.concision = 1;
+      reasons.grasp = "지문에서 직접 골라내지 않고 문장을 그대로 옮겼습니다.";
+      reasons.concision = "내 말로 압축하지 않고 지문을 그대로 베꼈습니다.";
+      coach =
+        "지문을 거의 그대로 옮겨 적었어요. 요약은 가장 중요한 한 가지를 직접 골라 내 말로 압축하는 연습이에요 — 한 문장으로 다시 써볼까요?";
+    }
+
     // verdict는 이제 3축 총점에서 파생한다 — 모델이 따로 준 판정과 점수가 어긋나지 않게.
     const total = totalOf(toScores(scores));
     const verdict = total >= 80 ? "pass" : total >= 50 ? "partial" : "miss";
 
-    const rs = (out.reasons ?? {}) as Record<string, unknown>;
-    const reason = (k: string) => (rs[k] ? String(rs[k]) : undefined);
-    const reasons = { grasp: reason("grasp"), accuracy: reason("accuracy"), concision: reason("concision") };
-
-    return NextResponse.json({ captured, missed, verdict, scores, reasons, coach: String(out.coach || "") });
+    return NextResponse.json({ captured, missed, verdict, scores, reasons, coach });
   } catch (e) {
     const msg = (e as Error).message;
     if (msg === "NO_KEY") {

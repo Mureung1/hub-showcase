@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 import { AXES } from "@/lib/domain/situations";
-import type { Scores } from "@/lib/domain/types";
+import type { Scores, AxisKey, Rubric } from "@/lib/domain/types";
 
 // 대화·메일·뉴스 훈련의 "점수 + 피드백" 영역을 하나의 시각 언어로 통일하는 공용 컴포넌트.
 
@@ -30,14 +30,21 @@ export function axisMetrics(scores: Scores): Metric[] {
   });
 }
 
-/** /10 지표(정확성·간결성·핵심정보)를 공통 Metric[]으로 변환 */
-export function scoreMetrics(items: { label: string; value: number | null }[]): Metric[] {
-  return items.map(({ label, value }) => {
-    if (value == null) return { label, pct: 0, valueText: "--/10", cls: "text-outline", bar: "bg-surface-container-highest" };
-    const cls = value >= 8 ? "text-tertiary" : value >= 5 ? "text-progress-orange" : "text-error";
-    const bar = value >= 8 ? "bg-tertiary" : value >= 5 ? "bg-progress-orange" : "bg-error";
-    return { label, pct: value * 10, valueText: `${value}/10`, cls, bar };
-  });
+/**
+ * 상황별 루브릭(sit.rubric)을 RubricTable rows로.
+ * 축 이름·설명·가중치는 공통 AXES에서, 1·2·3점 기준은 이 상황의 rubric에서,
+ * 점수·근거는 채점 결과에서 가져온다 — 뉴스와 같은 채점표 UI를 대화·메일에도 그대로 쓴다.
+ */
+export function situationRubricRows(rubric: Rubric, scores: Scores, reasons: Partial<Record<AxisKey, string>>): RubricRow[] {
+  return AXES.map((ax) => ({
+    num: ax.num,
+    name: ax.name,
+    desc: ax.desc,
+    weight: ax.weight,
+    levels: rubric[ax.key] as [string, string, string],
+    score: scores[ax.key],
+    reason: reasons[ax.key],
+  }));
 }
 
 /** 총점(0~100)도 막대와 같은 등급색을 쓴다 — 위험/무난/적절이 한눈에 읽히도록 */

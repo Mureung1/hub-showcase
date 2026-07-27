@@ -73,9 +73,6 @@ export const NEWS_AXES: NewsAxis[] = [
 
 export type NewsScores = Record<NewsAxisKey, number>;
 
-/** 요약 가이드 기준: 3문장 이내 · 150자 이내 */
-export const SUMMARY_MAX_LEN = 150;
-
 /** 1~3 → 라벨. 대화·메일 피드백(위험/무난/적절)과 같은 3단계를 쓴다. */
 export const NEWS_LEVEL_LABEL = ['-', '아쉬움', '무난', '적절'] as const;
 
@@ -101,4 +98,51 @@ export function clampLevel(v: unknown): number {
   if (v === null || v === undefined || v === "") return 2;
   const n = Math.round(Number(v));
   return Number.isFinite(n) ? Math.min(3, Math.max(1, n)) : 2;
+}
+
+// --- 복붙 탐지 ---
+// 요약 훈련의 구멍: 지문 첫 문장을 그대로 옮기면 핵심 포착·사실 정확성·압축이 전부 만점(→100)이 됐다.
+// 요약은 '직접 골라 내 말로 압축'하는 연습이므로, 지문을 통째로 베낀 글은 채점 전에 걸러 감점한다.
+
+/** 어절(공백) 단위로 쪼갠다. 대소문자·구두점만 정리 — 조사는 남겨야 진짜 그대로 베낀 것만 잡힌다. */
+function tokens(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[.,!?"'“”‘’()[\]{}·\-—…:;/\\]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/**
+ * 요약이 지문을 그대로 베낀 정도.
+ * 지문 안에 '연속으로' 똑같이 나타나는 요약 어절의 가장 긴 구간을 찾아,
+ * 그 길이(runTokens)와 요약 전체 어절 대비 비율(ratio)을 돌려준다.
+ * 지문/요약이 길어야 250×50 남짓이라 O(n·m) DP로 충분하다.
+ */
+export function copyOverlap(draft: string, passage: string): { ratio: number; runTokens: number } {
+  const d = tokens(draft);
+  const p = tokens(passage);
+  if (!d.length || !p.length) return { ratio: 0, runTokens: 0 };
+  let best = 0;
+  let prev = new Array<number>(p.length + 1).fill(0);
+  for (let i = 1; i <= d.length; i++) {
+    const cur = new Array<number>(p.length + 1).fill(0);
+    for (let j = 1; j <= p.length; j++) {
+      if (d[i - 1] === p[j - 1]) {
+        cur[j] = prev[j - 1] + 1;
+        if (cur[j] > best) best = cur[j];
+      }
+    }
+    prev = cur;
+  }
+  return { ratio: best / d.length, runTokens: best };
+}
+
+/**
+ * 베껴 썼다고 볼 것인가. 요약의 60% 이상이 지문과 '연속으로' 겹치고 그 구간이 6어절 이상일 때만.
+ * 고유명사구·수치 같은 짧은 필연적 겹침(예: "삼성전자 3분기 영업이익")은 통과시킨다.
+ */
+export function isCopied(draft: string, passage: string): boolean {
+  const { ratio, runTokens } = copyOverlap(draft, passage);
+  return runTokens >= 6 && ratio >= 0.6;
 }

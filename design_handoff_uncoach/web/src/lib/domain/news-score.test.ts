@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { NEWS_AXES, toScores, fromScores, clampLevel } from "./news-score";
+import { NEWS_AXES, toScores, fromScores, clampLevel, copyOverlap, isCopied } from "./news-score";
 import { modeOf, newsSid, totalOf, AXES } from "./situations";
 import type { NewsScores } from "./news-score";
 
@@ -79,6 +79,40 @@ describe("clampLevel", () => {
 
   it("숫자 문자열은 받아준다", () => {
     expect(clampLevel("3")).toBe(3);
+  });
+});
+
+describe("copyOverlap / isCopied", () => {
+  const passage =
+    "정부가 오늘 청년 주택 지원 정책을 발표했다. 만 39세 이하 무주택 청년에게 전세 대출 한도를 기존보다 두 배로 늘려준다. 시장에서는 실효성을 두고 의견이 갈린다.";
+
+  it("지문 첫 문장을 그대로 옮기면 복붙으로 잡힌다", () => {
+    const draft = "정부가 오늘 청년 주택 지원 정책을 발표했다";
+    const { ratio, runTokens } = copyOverlap(draft, passage);
+    expect(runTokens).toBeGreaterThanOrEqual(6);
+    expect(ratio).toBeGreaterThanOrEqual(0.6);
+    expect(isCopied(draft, passage)).toBe(true);
+  });
+
+  it("내 말로 다시 쓴 요약은 통과한다", () => {
+    const draft = "청년 전세 대출 한도를 두 배로 늘리는 지원책이 나왔지만 효과엔 논란이 있다.";
+    expect(isCopied(draft, passage)).toBe(false);
+  });
+
+  it("고유명사·수치가 겹쳐도 짧은 인용이면 통과한다", () => {
+    const draft = "청년 주택 지원, 전세 대출 확대가 핵심.";
+    expect(isCopied(draft, passage)).toBe(false);
+  });
+
+  it("빈 입력은 0", () => {
+    expect(copyOverlap("", passage)).toEqual({ ratio: 0, runTokens: 0 });
+    expect(isCopied("", passage)).toBe(false);
+  });
+
+  it("복붙은 두 축(핵심·압축) 1점이라 총점이 pass 밑으로 떨어진다", () => {
+    // 라우트의 감점을 그대로 재현: grasp=1, concision=1, accuracy는 정직하게 3
+    const total = totalOf(toScores(n(1, 3, 1)));
+    expect(total).toBeLessThan(80);
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 import { useApp } from "@/lib/client/store";
 import { totalOf } from "@/lib/domain/situations";
-import { BADGES, computeStreak, levelInfo, totalXP, unlockedBadges } from "@/lib/domain/gamification";
+import { BADGES, computeStreak, levelInfo, totalXP, unlockedBadges, weeklyLeague, type WeeklyLeague } from "@/lib/domain/gamification";
 import DashboardLayout from "@/components/stitch/DashboardLayout";
 import type { ScreenKey } from "@/components/AppShell";
 
@@ -10,6 +10,7 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
   const history = app.history;
   const lvl = levelInfo(totalXP(history));
   const streak = computeStreak(history);
+  const league = weeklyLeague(history);
   const unlocked = new Set(unlockedBadges({ history, assets: app.assets }).map((b) => b.id));
   const best = history.length ? Math.max(...history.map((h) => totalOf(h.scores))) : 0;
 
@@ -47,6 +48,9 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
               </div>
             </div>
           </div>
+
+          {/* 주간 리그 — 나와의 경쟁 */}
+          <WeeklyLeagueCard league={league} />
 
           {/* 활동 기록 히트맵 */}
           <div className="bg-white rounded-xl p-padding-card border border-border-light shadow-card">
@@ -106,5 +110,70 @@ export default function Stats({ nav }: { nav: (k: ScreenKey) => void }) {
         </section>
       </div>
     </DashboardLayout>
+  );
+}
+
+/**
+ * 주간 리그 — 다른 사용자 없이 '이번 주 나 vs 지난 주들의 나'로 경쟁시킨다.
+ * 주간 XP 비교 막대(현재 주 강조) + 이번 주 일일목표 달성일. Home 차트와 같은 막대 언어.
+ */
+function WeeklyLeagueCard({ league }: { league: WeeklyLeague }) {
+  const n = league.weeks.length;
+  const maxXP = Math.max(1, ...league.weeks.map((w) => w.xp));
+  return (
+    <div className="bg-white rounded-xl p-padding-card border border-border-light shadow-card">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-body-lg font-semibold text-on-surface flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-[20px]">leaderboard</span> 주간 리그
+        </h3>
+        <span className="font-label-sm text-outline">나와의 경쟁</span>
+      </div>
+
+      <div className="flex items-end justify-between gap-4 mb-4">
+        <div>
+          <p className="font-label-sm text-on-surface-variant">이번 주 XP</p>
+          <p className="font-stats-number text-stats-number text-primary">
+            {league.thisWeekXP}<span className="text-outline text-sm font-normal"> XP</span>
+          </p>
+        </div>
+        {league.isBest ? (
+          <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant">
+            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span> 최고 기록 경신 중
+          </span>
+        ) : (
+          <span className="font-label-sm text-outline">최고 {league.bestWeekXP} XP</span>
+        )}
+      </div>
+
+      {/* 주간 비교 막대 */}
+      <div className="flex items-end gap-2 h-24">
+        {league.weeks.map((w) => {
+          const h = w.xp > 0 ? `${Math.max(8, (w.xp / maxXP) * 100)}%` : "4px";
+          const cls = w.current ? "bg-primary" : w.xp > 0 ? "bg-primary-fixed-dim" : "bg-surface-container-high";
+          return (
+            <div key={w.weekStart} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
+              {w.xp > 0 && <span className={"text-[10px] font-bold " + (w.current ? "text-primary" : "text-outline")}>{w.xp}</span>}
+              <div className={"w-full max-w-[40px] rounded-t-md " + cls} style={{ height: h }} />
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-2 mt-1 text-[10px] text-outline">
+        {league.weeks.map((w, i) => (
+          <span key={w.weekStart} className="flex-1 text-center">{i === n - 1 ? "이번 주" : `${n - 1 - i}주 전`}</span>
+        ))}
+      </div>
+
+      {/* 이번 주 일일목표 달성일 */}
+      <div className="mt-4 pt-3 border-t border-border-light flex items-center justify-between">
+        <span className="font-label-sm text-on-surface-variant">이번 주 목표 달성</span>
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: 7 }, (_, d) => (
+            <span key={d} className={"w-2.5 h-2.5 rounded-full " + (d < league.goalDays ? "bg-tertiary" : "bg-surface-container-high")} />
+          ))}
+          <span className="ml-1 font-bold text-sm text-on-surface">{league.goalDays}/7</span>
+        </div>
+      </div>
+    </div>
   );
 }

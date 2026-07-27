@@ -8,8 +8,16 @@ import {
   sessionsThisWeek,
   daysSinceLastSession,
   xpForLevel,
+  XP_PER_SESSION,
+  XP_QUALITY_BONUS,
   XP_NEW_SITUATION,
   XP_DAILY_FIRST,
+  xpToday,
+  dailyGoal,
+  DAILY_XP_GOAL,
+  xpForWeek,
+  recentWeeks,
+  weeklyLeague,
 } from "./gamification";
 import type { Scores, SessionRecord, AssetRecord } from "./types";
 
@@ -27,53 +35,57 @@ const sess = (day: number, v = 2, withTs = true, sid = "pq"): SessionRecord => (
 const asset = (id: string): AssetRecord => ({ id, text: "표현", sid: "pq", date: "7.23" });
 
 describe("totalXP", () => {
+  const S = XP_PER_SESSION + XP_QUALITY_BONUS; // 만점(품질보너스 포함) 세션 1건
   it("빈 history는 0", () => {
     expect(totalXP([])).toBe(0);
   });
-  it("세션 점수 + 새 상황 보너스 + 매일 첫 훈련 보너스를 합산", () => {
-    // 같은 상황을 이틀에 걸쳐 만점 2회: 200점 + 상황 1개 + 훈련일 2일
-    expect(totalXP([sess(22, 3), sess(23, 3)])).toBe(200 + XP_NEW_SITUATION + 2 * XP_DAILY_FIRST);
+  it("세션 XP(완료+품질) + 새 상황 + 매일 첫 훈련 보너스를 합산", () => {
+    // 같은 상황을 이틀에 걸쳐 만점 2회: 세션 2건 + 상황 1개 + 훈련일 2일
+    expect(totalXP([sess(22, 3), sess(23, 3)])).toBe(2 * S + XP_NEW_SITUATION + 2 * XP_DAILY_FIRST);
+  });
+  it("낮은 점수 세션은 품질 보너스 없이 완료 XP만 (점수 커플링 제거)", () => {
+    // v=2 → 총점 67(<80) → 품질보너스 없음, ts 없어 매일 보너스도 없음
+    expect(totalXP([sess(23, 2, false)])).toBe(XP_PER_SESSION + XP_NEW_SITUATION);
   });
   it("같은 상황을 반복해도 새 상황 보너스는 한 번만", () => {
-    // 같은 날 같은 상황 2회: 200점 + 상황 1개 + 훈련일 1일
-    expect(totalXP([sess(23, 3), sess(23, 3)])).toBe(200 + XP_NEW_SITUATION + XP_DAILY_FIRST);
+    expect(totalXP([sess(23, 3), sess(23, 3)])).toBe(2 * S + XP_NEW_SITUATION + XP_DAILY_FIRST);
   });
   it("다른 상황이면 새 상황 보너스를 각각 받는다", () => {
-    expect(totalXP([sess(23, 3), sess(23, 3, true, "other")])).toBe(200 + 2 * XP_NEW_SITUATION + XP_DAILY_FIRST);
+    expect(totalXP([sess(23, 3), sess(23, 3, true, "other")])).toBe(2 * S + 2 * XP_NEW_SITUATION + XP_DAILY_FIRST);
   });
   it("ts 없는 과거 기록엔 매일 첫 훈련 보너스가 붙지 않는다", () => {
-    expect(totalXP([sess(23, 3, false)])).toBe(100 + XP_NEW_SITUATION);
+    expect(totalXP([sess(23, 3, false)])).toBe(S + XP_NEW_SITUATION);
   });
 });
 
 describe("levelInfo", () => {
-  it("xp 0이면 레벨 1, 다음 레벨까지 200", () => {
+  it("xp 0이면 레벨 1, 다음 레벨까지 100", () => {
     const l = levelInfo(0);
     expect(l.level).toBe(1);
     expect(l.xpIntoLevel).toBe(0);
     expect(l.xpForNext).toBe(xpForLevel(1));
     expect(l.progress).toBe(0);
   });
-  it("레벨업 요구치는 레벨마다 100씩 늘어난다", () => {
-    expect(xpForLevel(1)).toBe(200);
-    expect(xpForLevel(2)).toBe(300);
-    expect(xpForLevel(9)).toBe(1000);
+  it("레벨업 요구치는 레벨마다 50씩 늘어난다", () => {
+    expect(xpForLevel(1)).toBe(100);
+    expect(xpForLevel(2)).toBe(150);
+    expect(xpForLevel(9)).toBe(500);
   });
-  it("딱 200이면 레벨 2로 넘어가고 잔여 0", () => {
-    const l = levelInfo(200);
+  it("딱 100이면 레벨 2로 넘어가고 잔여 0", () => {
+    const l = levelInfo(100);
     expect(l.level).toBe(2);
     expect(l.xpIntoLevel).toBe(0);
-    expect(l.xpForNext).toBe(300);
+    expect(l.xpForNext).toBe(150);
   });
-  it("레벨 2 중간(350)이면 진행도 0.5", () => {
-    const l = levelInfo(350);
+  it("레벨 2 중간(175)이면 진행도 0.5", () => {
+    const l = levelInfo(175);
     expect(l.level).toBe(2);
-    expect(l.xpIntoLevel).toBe(150);
+    expect(l.xpIntoLevel).toBe(75);
     expect(l.progress).toBeCloseTo(0.5);
   });
-  it("누적 1,400이면 레벨 5 (200+300+400+500)", () => {
-    expect(levelInfo(1400).level).toBe(5);
-    expect(levelInfo(1399).level).toBe(4);
+  it("누적 700이면 레벨 5 (100+150+200+250)", () => {
+    expect(levelInfo(700).level).toBe(5);
+    expect(levelInfo(699).level).toBe(4);
   });
   it("음수 xp도 레벨 1로 떨어뜨린다", () => {
     expect(levelInfo(-10).level).toBe(1);
@@ -224,5 +236,66 @@ describe("newlyUnlocked", () => {
   it("상태 변화가 없으면 빈 배열", () => {
     const s = { history: [sess(23)], assets: [] };
     expect(newlyUnlocked(s, s)).toEqual([]);
+  });
+});
+
+describe("xpToday / dailyGoal", () => {
+  beforeEach(() => vi.setSystemTime(NOW)); // 오늘 = 2026-07-23
+  afterEach(() => vi.useRealTimers());
+  const S = XP_PER_SESSION + XP_QUALITY_BONUS; // 만점 세션 1건의 sessionXP
+
+  it("빈 history는 0", () => {
+    expect(xpToday([])).toBe(0);
+  });
+  it("오늘 세션만 sessionXP로 합산 — 어제 기록은 제외", () => {
+    expect(xpToday([sess(23, 3), sess(22, 3)])).toBe(S);
+  });
+  it("같은 날 여러 세션은 누적", () => {
+    expect(xpToday([sess(23, 3), sess(23, 3)])).toBe(2 * S);
+  });
+  it("ts 없는 기록은 제외", () => {
+    expect(xpToday([sess(23, 3, false)])).toBe(0);
+  });
+  it("dailyGoal: 목표 달성이면 met + progress 1로 clamp", () => {
+    const g = dailyGoal([sess(23, 3), sess(23, 3)], 30); // 2*S=50 ≥ 30
+    expect(g.met).toBe(true);
+    expect(g.progress).toBe(1);
+    expect(g.earned).toBe(2 * S);
+  });
+  it("dailyGoal: 미달이면 met=false, progress는 비율", () => {
+    const g = dailyGoal([sess(23, 3)], 2 * S); // S / 2S
+    expect(g.met).toBe(false);
+    expect(g.progress).toBeCloseTo(0.5);
+  });
+  it("기본 목표치는 DAILY_XP_GOAL", () => {
+    expect(dailyGoal([]).goal).toBe(DAILY_XP_GOAL);
+  });
+});
+
+describe("weeklyLeague / xpForWeek / recentWeeks", () => {
+  beforeEach(() => vi.setSystemTime(NOW)); // 2026-07-23(목) → 이번 주 월=07-20
+  afterEach(() => vi.useRealTimers());
+  const S = XP_PER_SESSION + XP_QUALITY_BONUS;
+
+  it("recentWeeks: 최근 n주, 마지막이 이번 주", () => {
+    const w = recentWeeks([], 5);
+    expect(w).toHaveLength(5);
+    expect(w[4].current).toBe(true);
+    expect(w.slice(0, 4).every((x) => !x.current)).toBe(true);
+  });
+  it("xpForWeek/thisWeekXP: 해당 주 세션만 sessionXP로 합산", () => {
+    // 이번 주 2건(07-21, 07-23) + 지난 주 1건(07-15)
+    const league = weeklyLeague([sess(23, 3), sess(21, 3), sess(15, 3)]);
+    expect(league.thisWeekXP).toBe(2 * S);
+    expect(league.weeks.find((x) => !x.current && x.xp > 0)?.xp).toBe(S);
+  });
+  it("이번 주가 최고면 isBest + 일일목표 달성일 계산", () => {
+    const league = weeklyLeague([sess(23, 3), sess(23, 3)]); // 07-23에 2*S=50 (goal 40 초과)
+    expect(league.thisWeekXP).toBe(2 * S);
+    expect(league.isBest).toBe(true);
+    expect(league.goalDays).toBe(1); // 07-23 하루만 목표 달성
+  });
+  it("기록 없으면 isBest=false", () => {
+    expect(weeklyLeague([]).isBest).toBe(false);
   });
 });
