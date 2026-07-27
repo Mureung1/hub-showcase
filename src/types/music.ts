@@ -18,8 +18,8 @@ export interface MusicRecord {
   emotion: string;
   recordDate: string;
   liked: boolean;
+  likeCount: number;
   author: {
-    id: string;
     nickname: string;
     avatarUrl: string | null;
   } | null;

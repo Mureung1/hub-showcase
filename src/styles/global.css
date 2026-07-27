@@ -469,6 +469,33 @@ textarea[aria-invalid="true"] {
   border-top: 1px solid var(--color-border-soft);
 }
 
+.feed-section {
+  margin-top: 72px;
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.feed-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.feed-state {
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+  text-align: center;
+}
+
+.feed-state p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
 .people-state,
 .user-card {
   border: 1px solid var(--color-border);
@@ -552,20 +579,41 @@ textarea[aria-invalid="true"] {
   white-space: nowrap;
 }
 
-.follow-status {
+.follow-button {
   padding: 7px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
+  background: transparent;
   color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.follow-status.is-following {
+.follow-button.is-following {
   border-color: var(--color-frame-glow);
   background: var(--color-signature-soft);
   color: var(--color-signature);
+}
+
+.follow-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.follow-action {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+}
+
+.user-card .follow-error {
+  max-width: 150px;
+  color: #d97878;
+  font-size: 11px;
+  text-align: right;
+  white-space: normal;
 }
 
 .music-card {
@@ -653,6 +701,118 @@ textarea[aria-invalid="true"] {
   color: var(--color-text-sub);
   line-height: 1.7;
   overflow-wrap: anywhere;
+}
+
+.like-button[role="img"] {
+  cursor: default;
+}
+
+.like-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.like-error {
+  margin: var(--space-2) 0 0;
+  color: #b85f5f;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.like-count {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.like-users {
+  margin-top: var(--space-2);
+}
+
+.like-count-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.like-count-button:hover,
+.like-count-button:focus-visible,
+.like-count-button[aria-expanded="true"] {
+  color: var(--color-signature);
+  text-decoration-color: currentColor;
+}
+
+.like-users-panel {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.like-users-panel p {
+  margin: 0;
+}
+
+.like-user-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.like-user-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.like-user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.like-user-avatar-fallback {
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-signature-soft);
+  color: var(--color-signature);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.like-users-more,
+.like-users-panel [role="alert"] button {
+  margin-top: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-signature);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.like-users-more:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.like-users-more-error {
+  margin-top: var(--space-2);
 }
 
 .spotify-link {
@@ -862,6 +1022,10 @@ textarea[aria-invalid="true"] {
     grid-template-columns: 1fr;
   }
 
+  .feed-list {
+    grid-template-columns: 1fr;
+  }
+
   .selected-track-card {
     grid-template-columns: 60px minmax(0, 1fr);
   }
@@ -881,9 +1045,14 @@ textarea[aria-invalid="true"] {
     height: 44px;
   }
 
-  .follow-status {
+  .follow-action {
     grid-column: 2;
     justify-self: start;
+    justify-items: start;
+  }
+
+  .user-card .follow-error {
+    text-align: left;
   }
 
   .music-card {

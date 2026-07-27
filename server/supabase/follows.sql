@@ -18,3 +18,19 @@ for select
 to authenticated
 using (follower_id = (select auth.uid()));
 
+drop policy if exists "users_can_create_own_follows" on public.follows;
+create policy "users_can_create_own_follows"
+on public.follows
+for insert
+to authenticated
+with check (
+  follower_id = (select auth.uid())
+  and following_id <> (select auth.uid())
+);
+
+drop policy if exists "users_can_delete_own_follows" on public.follows;
+create policy "users_can_delete_own_follows"
+on public.follows
+for delete
+to authenticated
+using (follower_id = (select auth.uid()));

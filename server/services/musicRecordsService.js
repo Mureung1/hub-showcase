@@ -1,4 +1,6 @@
-const recordColumns = [
+import { getLikeCounts, getLikedRecordIds } from "./likesService.js";
+
+export const recordColumns = [
   "id",
   "user_id",
   "spotify_track_id",
@@ -15,7 +17,7 @@ const recordColumns = [
 
 export class MusicRecordValidationError extends Error {}
 
-export function mapMusicRecord(record) {
+export function mapMusicRecord(record, liked = false, likeCount = 0) {
   return {
     id: record.id,
     userId: record.user_id,
@@ -28,6 +30,8 @@ export function mapMusicRecord(record) {
     emotionText: record.emotion_text,
     recordDate: record.record_date,
     createdAt: record.created_at,
+    liked,
+    likeCount,
     author: record.author
       ? {
           id: record.author.id,
@@ -69,7 +73,22 @@ export async function listMusicRecords(supabase, userId) {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []).map(mapMusicRecord);
+  const records = data ?? [];
+  const likedRecordIds = await getLikedRecordIds(
+    supabase,
+    userId,
+    records.map((record) => record.id),
+  );
+  const likeCounts = await getLikeCounts(
+    supabase,
+    records.map((record) => record.id),
+  );
+
+  return records.map((record) => mapMusicRecord(
+    record,
+    likedRecordIds.has(record.id),
+    likeCounts.get(String(record.id)) ?? 0,
+  ));
 }
 
 export async function createMusicRecord(supabase, userId, body, getToday = getCurrentDate) {
@@ -94,5 +113,5 @@ export async function createMusicRecord(supabase, userId, body, getToday = getCu
     .single();
 
   if (error) throw error;
-  return mapMusicRecord(data);
+  return mapMusicRecord(data, false, 0);
 }

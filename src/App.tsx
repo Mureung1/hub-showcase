@@ -3,10 +3,12 @@ import { MusicCard } from "./components/MusicCard";
 import { MusicRecordForm } from "./components/MusicRecordForm";
 import { AuthScreen } from "./components/AuthScreen";
 import { UserList } from "./components/UserList";
+import { FollowingFeed } from "./components/FollowingFeed";
 import type { Session } from "@supabase/supabase-js";
 import { getCurrentSession, getProfile, signOut, subscribeToAuthChanges } from "./services/authService";
 import type { AuthProfile } from "./services/authService";
 import type { MusicRecord, MusicRecordDraft, SpotifyTrack } from "./types/music";
+import { updateMusicRecordLike } from "./services/likesService";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -22,6 +24,8 @@ interface ApiMusicRecord {
   emotionText: string;
   recordDate: string;
   createdAt: string;
+  liked: boolean;
+  likeCount: number;
   author: {
     id: string;
     nickname: string;
@@ -45,7 +49,8 @@ function toMusicRecord(record: ApiMusicRecord): MusicRecord {
     externalUrl: record.externalUrl ?? null,
     emotion: record.emotionText,
     recordDate: record.recordDate,
-    liked: false,
+    liked: record.liked,
+    likeCount: record.likeCount,
     author: record.author ?? null,
   };
 }
@@ -68,6 +73,9 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
   const [isAuthLoading, setIsAuthLoading] = useState(initialView === "auth");
   const [authError, setAuthError] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+  const [pendingLikeId, setPendingLikeId] = useState<string | null>(null);
+  const [likeErrors, setLikeErrors] = useState<Record<string, string>>({});
 
   const applySession = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession);
@@ -177,12 +185,43 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
     await loadRecords();
   };
 
-  const toggleLike = (id: string | number) => {
-    setRecords((current) =>
-      current.map((record) =>
-        record.id === id ? { ...record, liked: !record.liked } : record,
-      ),
-    );
+  const toggleLike = async (id: string | number, nextLiked: boolean) => {
+    if (!session?.access_token || pendingLikeId !== null) return;
+
+    const recordKey = String(id);
+    setPendingLikeId(recordKey);
+    setLikeErrors((current) => ({ ...current, [recordKey]: "" }));
+
+    try {
+      const nextState = await updateMusicRecordLike(
+        apiBaseUrl,
+        session.access_token,
+        id,
+        nextLiked,
+      );
+      setRecords((current) => current.map((record) => (
+        String(record.id) === nextState.recordId
+          ? {
+              ...record,
+              liked: nextState.liked,
+              likeCount: nextState.likeCount,
+            }
+          : record
+      )));
+    } catch (error) {
+      setLikeErrors((current) => ({
+        ...current,
+        [recordKey]: error instanceof Error ? error.message : "좋아요 상태를 바꾸지 못했어요.",
+      }));
+    } finally {
+      setPendingLikeId(null);
+    }
+  };
+
+  const updateLikeCount = (id: string | number, likeCount: number) => {
+    setRecords((current) => current.map((record) => (
+      String(record.id) === String(id) ? { ...record, likeCount } : record
+    )));
   };
 
   const handleSignOut = async () => {
@@ -264,7 +303,17 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
           ) : (
             <div className="record-list">
               {records.map((record) => (
-                <MusicCard key={record.id} record={record} onToggleLike={toggleLike} />
+                <MusicCard
+                  key={record.id}
+                  record={record}
+                  showLikeState
+                  isLikePending={pendingLikeId !== null}
+                  likeError={likeErrors[String(record.id)]}
+                  onToggleLike={session?.access_token ? toggleLike : undefined}
+                  apiBaseUrl={session?.access_token ? apiBaseUrl : undefined}
+                  accessToken={session?.access_token}
+                  onLikeCountChange={updateLikeCount}
+                />
               ))}
             </div>
           )}
@@ -272,7 +321,18 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
       </div>
 
       {session?.access_token && (
-        <UserList accessToken={session.access_token} apiBaseUrl={apiBaseUrl} />
+        <>
+          <FollowingFeed
+            accessToken={session.access_token}
+            apiBaseUrl={apiBaseUrl}
+            refreshKey={feedRefreshKey}
+          />
+          <UserList
+            accessToken={session.access_token}
+            apiBaseUrl={apiBaseUrl}
+            onFollowChange={() => setFeedRefreshKey((current) => current + 1)}
+          />
+        </>
       )}
     </main>
   );
