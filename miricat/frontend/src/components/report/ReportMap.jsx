@@ -5,7 +5,8 @@ import Miricat from "../Miricat";
 export default function ReportMap({ affected, originName, destName, eventLabel, showAlt }) {
   return (
     <div className="report-map">
-      <svg viewBox="0 0 620 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      {/* meet = 전체가 항상 보이게 (남는 공간은 배경색과 같아 티 안 남). slice는 옆을 잘라 라벨이 잘렸었음 */}
+      <svg viewBox="0 0 620 430" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         {/* 도시 도로 격자 (배경 연출) */}
         <g stroke="#DEE4EA" strokeWidth="10" strokeLinecap="round">
           <path d="M-20 90 H640" /><path d="M-20 210 H640" /><path d="M-20 330 H640" />

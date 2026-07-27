@@ -52,6 +52,8 @@ export default function RouteRegister({ onSaved }) {
     if (res.ok) {
       setSaved(data.route);
       onSaved?.();   // 저장 성공 → 부모에게 알려 목록 자동 갱신
+      // 다음 등록을 위해 폼 초기화 (저장됨 메시지는 남긴다)
+      setOrigin(null); setDest(null); setDepartTime(""); setCandidates(null);
     } else {
       setSaved({ error: data.error ?? "저장 실패" });
     }

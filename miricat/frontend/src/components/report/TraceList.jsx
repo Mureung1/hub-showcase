@@ -20,6 +20,9 @@ function buildSteps({ notice, currentRoute, hits, event }) {
       ? { text: `공지에서 "${event.event_name}" 안내를 찾았어요`, found: true }
       : { text: "이 공지에서는 통제·우회 사건을 찾지 못했어요" }
   );
+  if (event) {
+    steps.push({ text: "찾은 내용을 다시 한 번 확인했어요" });   // 그래프의 검증 단계(재추출 루프)
+  }
   if (event?.period) {
     steps.push(
       isCurrent(event.period)

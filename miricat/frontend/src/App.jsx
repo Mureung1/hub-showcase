@@ -9,7 +9,10 @@ export default function App() {
     <div style={{ maxWidth: 1060, margin: "0 auto", padding: "40px 24px" }}>
       <div className="brand">
         <span className="brand-badge"><Miricat size={42} /></span>
-        <h1>미리캣</h1>
+        <div>
+          <h1>미리캣</h1>
+          <p className="brand-tag">내 출근길의 보초</p>
+        </div>
       </div>
       <Routes>
         <Route path="/" element={<HomePage />} />

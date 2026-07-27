@@ -44,6 +44,17 @@ def mark_alerted(notice_id):
         {"alerted_at": datetime.now(timezone.utc).isoformat()}
     ).eq("id", notice_id).execute()
 
+def reset_alerts(keyword=None):
+    """경보 표시(alerted_at)를 되돌린다 — 데모/리허설에서 경보를 다시 울리기 위한 용도.
+    keyword를 주면 제목에 그 단어가 든 공지만, 없으면 표시된 공지 전부."""
+    q = _sb.table("notices").update({"alerted_at": None})
+    if keyword:
+        q = q.ilike("title", f"%{keyword}%")          # ilike = 대소문자 무시 부분 일치
+    else:
+        q = q.filter("alerted_at", "not.is", "null")  # 이미 표시된 것만 (전부 리셋)
+    res = q.execute()
+    return len(res.data or [])
+
 if __name__ == "__main__":
     saved = save_notice(
         source="test",

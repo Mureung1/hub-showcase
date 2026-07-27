@@ -6,13 +6,18 @@ import ReportMap from "../components/report/ReportMap";
 import AltVerdict from "../components/report/AltVerdict";
 import TraceList from "../components/report/TraceList";
 
-// 헤드라인으로 보여줄 사건: 내 경로와 겹친 사건 우선, 없으면 아직 유효한 첫 사건
+// 헤드라인으로 보여줄 사건: "아직 유효하면서 내 경로와 겹친" 사건 우선.
+// (같은 사건이 날짜별로 여러 항목일 수 있어, 끝난 항목을 잘못 집으면 문구가 모순된다)
 function pickEvent(notice, hits) {
   const events = notice.extraction?.events ?? [];
-  const matched = events.find((ev) =>
-    [...(ev.affected_lines || []), ...(ev.affected_stops || [])].some((v) => hits.has(v))
+  const hitsIn = (ev) =>
+    [...(ev.affected_lines || []), ...(ev.affected_stops || [])].some((v) => hits.has(v));
+  return (
+    events.find((ev) => isCurrent(ev.period) && hitsIn(ev)) ??
+    events.find(hitsIn) ??
+    events.find((ev) => isCurrent(ev.period)) ??
+    events[0] ?? null
   );
-  return matched ?? events.find((ev) => isCurrent(ev.period)) ?? events[0] ?? null;
 }
 
 // 브리핑 리포트: 디스코드 경보 링크(/report/:noticeId)로 진입하는 데모 클라이맥스 화면

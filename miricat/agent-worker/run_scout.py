@@ -106,10 +106,12 @@ def send_daily_report(counts, ongoing):
     checked = " · ".join(f"{name} {n}건" for name, n in counts.items()) or "확인한 소스 없음"
     now = datetime.now().strftime("%m/%d %H:%M")
     if ongoing:
+        base = os.environ.get("REPORT_BASE_URL", "http://localhost:5173")
         lines = [f"🐾 오늘도 확인했어요 — 새 공지는 없어요. (확인: {checked} · {now})"]
         for o in ongoing:
             events = ", ".join(o["events"]) or o["notice"]["title"].strip()[:30]
             lines.append(f"⏳ 진행 중인 영향 · {o['route']['name']} — {events}")
+            lines.append(f"　　↳ 리포트: {base}/report/{o['notice']['id']}")
         text = "\n".join(lines)
     else:
         text = f"🐾 이상 없음 — 등록된 경로에 영향 주는 공지가 없어요. (확인: {checked} · {now})"

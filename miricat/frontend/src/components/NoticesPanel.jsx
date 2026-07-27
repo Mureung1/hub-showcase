@@ -152,7 +152,7 @@ export default function NoticesPanel({ routes = [] }) {
             {tokens.length > 0 ? (
               <>🚌 <b>{selected.name}</b> 기준 · 이용 {tokens.join(", ")} · 미리캣이 대조해 판정</>
             ) : (
-              <>⚠️ 이 경로엔 이용 노선 정보가 없어요. 경로를 등록할 때 후보(B1/급행2)를 골라 저장하면 매칭돼요.</>
+              <>⚠️ 이 경로엔 이용 노선 정보가 없어요. 경로를 새로 등록하면 이용 노선·정류장으로 매칭돼요.</>
             )}
           </div>
 
