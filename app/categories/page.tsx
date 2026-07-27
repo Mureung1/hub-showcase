@@ -6,6 +6,7 @@ import ItemCard from "../ItemCard";
 import {
   apiBaseUrl,
   getRequestErrorMessage,
+  matchesItemSearch,
   readApiError,
   type DeleteItemResponse,
   type ArchiveItemResponse,
@@ -29,6 +30,7 @@ export default function CategoriesPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [selectedMain, setSelectedMain] = useState("전체");
   const [selectedSub, setSelectedSub] = useState("전체");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,9 +85,9 @@ export default function CategoriesPage() {
         const matchesMain =
           selectedMain === "전체" || getMainCategory(item) === selectedMain;
         const matchesSub = selectedSub === "전체" || getSubCategory(item) === selectedSub;
-        return matchesMain && matchesSub;
+        return matchesMain && matchesSub && matchesItemSearch(item, searchQuery);
       }),
-    [items, selectedMain, selectedSub]
+    [items, searchQuery, selectedMain, selectedSub]
   );
 
   function selectMainCategory(category: string) {
@@ -146,6 +148,20 @@ export default function CategoriesPage() {
 
       {!loading && !error && (
         <>
+          <section className="mb-6">
+            <label htmlFor="content-search" className="sr-only">
+              저장 콘텐츠 검색
+            </label>
+            <input
+              id="content-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="제목, 요약, 원문, 카테고리 검색"
+              className="w-full rounded-xl border border-creamDeep bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-accent"
+            />
+          </section>
+
           <section className="mb-6">
             <h2 className="text-sm font-medium text-muted mb-3">대분류</h2>
             <div className="flex flex-wrap gap-2">
@@ -220,7 +236,11 @@ export default function CategoriesPage() {
 
             {filteredItems.length === 0 ? (
               <div className="bg-white/60 rounded-xl px-4 py-10 text-center">
-                <p className="text-sm text-muted">해당 카테고리에 저장된 항목이 없어요.</p>
+                <p className="text-sm text-muted">
+                  {searchQuery.trim()
+                    ? "검색 결과가 없어요."
+                    : "해당 카테고리에 저장된 항목이 없어요."}
+                </p>
               </div>
             ) : (
               <ul className="space-y-3">

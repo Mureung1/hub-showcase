@@ -21,6 +21,17 @@ const archivedItem = {
   created_at: "2026-07-23T00:00:00.000Z",
 };
 
+const travelItem = {
+  ...archivedItem,
+  id: 2,
+  title: "제주 여행 코스",
+  summary: "여름 휴가 일정입니다.",
+  content: "제주 맛집과 숙소",
+  original_url: null,
+  category_main: "여행",
+  category_sub: "국내여행",
+};
+
 describe("ArchivePage", () => {
   afterEach(() => {
     cleanup();
@@ -60,5 +71,23 @@ describe("ArchivePage", () => {
         body: JSON.stringify({ archived: false }),
       })
     );
+  });
+
+  it("제목과 요약으로 보관 항목을 검색하고 별도 빈 상태를 표시한다", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [archivedItem, travelItem] })
+    );
+    render(<ArchivePage />);
+
+    expect(await screen.findByText("보관한 콘텐츠")).toBeInTheDocument();
+    const search = screen.getByRole("searchbox", { name: "아카이브 검색" });
+    fireEvent.change(search, { target: { value: "여름 휴가" } });
+    expect(screen.getByText("제주 여행 코스")).toBeInTheDocument();
+    expect(screen.queryByText("보관한 콘텐츠")).not.toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "일치하지 않음" } });
+    expect(screen.getByText("검색 결과가 없어요.")).toBeInTheDocument();
+    expect(screen.queryByText("아직 보관한 콘텐츠가 없어요.")).not.toBeInTheDocument();
   });
 });
