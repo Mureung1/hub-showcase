@@ -9,23 +9,30 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  nickname     String
-  createdAt    DateTime @default(now())
-  records      Record[]
+  id                  String       @id @default(uuid())
+  email               String       @unique
+  passwordHash        String
+  name                String
+  nickname            String
+  preferredCategory   String?
+  onboardingCompleted Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  records             Record[]
+  roomMembers         RoomMember[]
+  challenges          Challenge[]
 
   @@map("users")
 }
 
 model Challenge {
   id        String   @id @default(uuid())
-  date      String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  date      String
   topic     String
   createdAt DateTime @default(now())
 
+  @@unique([userId, date])
   @@map("challenges")
 }
 
@@ -40,4 +47,26 @@ model Record {
 
   @@unique([userId, date])
   @@map("records")
+}
+
+model Room {
+  id         String       @id @default(uuid())
+  name       String
+  inviteCode String       @unique
+  createdAt  DateTime     @default(now())
+  members    RoomMember[]
+
+  @@map("rooms")
+}
+
+model RoomMember {
+  id       String   @id @default(uuid())
+  roomId   String
+  room     Room     @relation(fields: [roomId], references: [id])
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@map("room_members")
 }

@@ -7,6 +7,14 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1),
   PORT: z.coerce.number().default(4000),
   FRONTEND_ORIGIN: z.string().min(1).default('http://localhost:5173'),
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
-export const env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
+
+export const env = {
+  ...parsedEnv,
+  allowedOrigins: parsedEnv.ALLOWED_ORIGINS
+    ? parsedEnv.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+    : [],
+};

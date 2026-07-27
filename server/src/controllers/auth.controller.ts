@@ -77,7 +77,40 @@ export async function me(req: Request, res: Response, next: NextFunction) {
       throw new HttpError(401, '사용자를 찾을 수 없습니다.');
     }
 
-    res.json({ id: user.id, email: user.email, name: user.name, nickname: user.nickname });
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      nickname: user.nickname,
+      preferredCategory: user.preferredCategory,
+      onboardingCompleted: user.onboardingCompleted,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+const updatePreferenceSchema = z.object({
+  preferredCategory: z.string().nullable(),
+});
+
+export async function updatePreferredCategory(req: Request, res: Response, next: NextFunction) {
+  const parsed = updatePreferenceSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid request' });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: {
+        preferredCategory: parsed.data.preferredCategory,
+        onboardingCompleted: true,
+      },
+    });
+
+    res.json({ preferredCategory: user.preferredCategory, onboardingCompleted: user.onboardingCompleted });
   } catch (err) {
     next(err);
   }

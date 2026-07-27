@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://localhost:4000'
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
 const TOKEN_KEY = 'challengelog_token'
 
 export function getToken(): string | null {
@@ -34,6 +34,8 @@ type MeResponse = {
   email: string
   name: string
   nickname: string
+  preferredCategory: string | null
+  onboardingCompleted: boolean
 }
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -67,4 +69,13 @@ export function login(input: LoginInput): Promise<AuthResponse> {
 
 export function getMe(): Promise<MeResponse> {
   return request('/auth/me')
+}
+
+export function updatePreferredCategory(
+  preferredCategory: string | null,
+): Promise<{ preferredCategory: string | null; onboardingCompleted: boolean }> {
+  return request('/auth/preference', {
+    method: 'PATCH',
+    body: JSON.stringify({ preferredCategory }),
+  })
 }
