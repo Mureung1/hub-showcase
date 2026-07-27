@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { supabase } from '../db/supabase.js'
 import { userIdFromReq } from '../lib/auth.js'
 import { generatePlan } from '../services/planner.js'
+import { explainAssignment } from '../services/explainer.js'
 import { assignRoles, computeTeamStats } from '../../src/logic/assignRoles.js'
 import { parseDate, toDateInputValue } from '../../src/utils/dates.js'
 
@@ -530,6 +531,8 @@ projects.post('/api/projects/:id/assign', async (req, res) => {
 
     const result = assignRoles(participants, surveyMap, roles)
     const stats = computeTeamStats(participants, surveyMap, roles, result)
+    // 플래닝 에이전트가 배정 이유를 팀 단위로 설명 (집계값만 전달; 실패 시 null → 화면이 규칙 요약 폴백)
+    const summary = await explainAssignment({ stats, roleNames: roles.map((r) => r.name) })
 
     // 기존 배정 삭제 후 재저장 — 한 사람의 여러 역할을 각각 1행으로
     const { error: ed } = await supabase.from('assignments').delete().eq('project_id', project.id)
@@ -545,7 +548,12 @@ projects.post('/api/projects/:id/assign', async (req, res) => {
 
     const { error: eu } = await supabase
       .from('projects')
-      .update({ status: 'assigned', revealed_at: new Date().toISOString(), assignment_stats: stats })
+      .update({
+        status: 'assigned',
+        revealed_at: new Date().toISOString(),
+        assignment_stats: stats,
+        assignment_summary: summary,
+      })
       .eq('id', project.id)
     throwIf(eu, '배정 상태 갱신')
 
@@ -558,14 +566,14 @@ projects.post('/api/projects/:id/assign', async (req, res) => {
 // ── 배정 결과 조회: 팀원별 역할 + 규칙 요약 통계 (팀원 전용) ──
 projects.get('/api/projects/:id/result', async (req, res) => {
   try {
-    const { project } = await loadMember(req)
+    const { user, project } = await loadMember(req)
     if (!['assigned', 'active', 'completed'].includes(project.status)) {
       throw fail(409, '아직 배정 결과가 없습니다.')
     }
 
     const { data: proj, error: ep } = await supabase
       .from('projects')
-      .select('title, status, revealed_at, assignment_stats, assignment_summary, creator_id')
+      .select('title, status, revealed_at, swap_used, assignment_stats, assignment_summary, creator_id')
       .eq('id', project.id)
       .single()
     throwIf(ep, '프로젝트 조회')
@@ -592,10 +600,13 @@ projects.get('/api/projects/:id/result', async (req, res) => {
 
     res.json({
       project: { title: proj.title, status: proj.status, revealedAt: proj.revealed_at },
+      isCreator: user.id === proj.creator_id, // 뷰어가 생성자인가 (맞교환 UI 노출)
+      swapUsed: proj.swap_used,
       leaderRole: leaderRole ? { name: leaderRole.name, emoji: leaderRole.emoji } : null,
       members: members.map((m) => {
         const rs = byMember.get(m.id) ?? []
         return {
+          id: m.id,
           nickname: m.nickname,
           isCreator: m.user_id === proj.creator_id,
           isLeader: rs.some((r) => r?.is_leader_role),
@@ -605,6 +616,75 @@ projects.get('/api/projects/:id/result', async (req, res) => {
       stats: proj.assignment_stats,
       summary: proj.assignment_summary,
     })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 역할 맞교환: 공개 후 10분 내, 생성자가 두 팀원의 실무 역할을 1회 맞교환 ──
+projects.post('/api/projects/:id/swap', async (req, res) => {
+  try {
+    const { project } = await loadCreatorProject(req, 'id, status, revealed_at, swap_used, creator_id')
+    if (project.status !== 'assigned') throw fail(409, '배정 공개 후에만 맞교환할 수 있습니다.')
+    if (project.swap_used) throw fail(409, '역할 맞교환은 한 번만 가능합니다.')
+    const revealed = project.revealed_at ? new Date(project.revealed_at).getTime() : 0
+    if (!revealed || Date.now() - revealed > 10 * 60 * 1000) {
+      throw fail(409, '맞교환 가능 시간(공개 후 10분)이 지났습니다.')
+    }
+
+    const { memberA, memberB } = req.body ?? {}
+    if (!memberA || !memberB || memberA === memberB) throw fail(400, '서로 다른 두 팀원을 선택해 주세요.')
+
+    const { data: mems, error: e1 } = await supabase
+      .from('project_members')
+      .select('id')
+      .eq('project_id', project.id)
+      .in('id', [memberA, memberB])
+    throwIf(e1, '팀원 확인')
+    if (mems.length !== 2) throw fail(400, '선택한 팀원을 찾을 수 없습니다.')
+
+    // 두 팀원의 실무 역할(조장 제외)만 조회 → 교차 저장 (조장 표식은 각자 유지)
+    const { data: rows, error: e2 } = await supabase
+      .from('assignments')
+      .select('member_id, role_id, roles(is_leader_role)')
+      .eq('project_id', project.id)
+      .in('member_id', [memberA, memberB])
+    throwIf(e2, '배정 조회')
+    const workA = rows.filter((r) => r.member_id === memberA && !r.roles?.is_leader_role).map((r) => r.role_id)
+    const workB = rows.filter((r) => r.member_id === memberB && !r.roles?.is_leader_role).map((r) => r.role_id)
+
+    if (workA.length > 0) {
+      const { error } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('project_id', project.id)
+        .eq('member_id', memberA)
+        .in('role_id', workA)
+      throwIf(error, 'A 역할 제거')
+    }
+    if (workB.length > 0) {
+      const { error } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('project_id', project.id)
+        .eq('member_id', memberB)
+        .in('role_id', workB)
+      throwIf(error, 'B 역할 제거')
+    }
+    const swapRows = [
+      ...workB.map((roleId) => ({ project_id: project.id, member_id: memberA, role_id: roleId })),
+      ...workA.map((roleId) => ({ project_id: project.id, member_id: memberB, role_id: roleId })),
+    ]
+    if (swapRows.length > 0) {
+      const { error } = await supabase.from('assignments').insert(swapRows)
+      throwIf(error, '역할 교차 저장')
+    }
+
+    const { error: e3 } = await supabase.from('projects').update({ swap_used: true }).eq('id', project.id)
+    throwIf(e3, '맞교환 상태 갱신')
+    await supabase.from('activity_log').insert({ project_id: project.id, member_id: memberA, type: 'swap' })
+
+    res.json({ ok: true })
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.message })
   }

@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증·생성/플래너·계획확정·합류·설문·배정 완료 |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 생성~배정·설명·맞교환 완료 (3탭 쓰기·알림 남음) |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -49,8 +49,9 @@
 - [x] 설문 제출 API + 화면 (프로젝트 실제 역할 기반) — `Survey.jsx` 실연동, surveys upsert
 - [x] 설문 마감(생성자 수동) + 배정 실행 (`assignRoles` 서버 이식·조장 isLeader 판정·**다역 저장**) — `POST /api/projects/:id/assign`
 - [x] 배정 결과 공개·조회 (규칙 요약) — `GET /api/projects/:id/result`, `AssignmentResult.jsx` 실연동
-- [ ] 플래닝 에이전트의 배정 설명 `server/services/explainer.js` (Claude 배정 설명 → 규칙 요약 대체)
-- [ ] 10분 내 1회 역할 맞교환 / 전원 제출 시 자동 마감 / 태스크 담당자 자동배정
+- [x] 플래닝 에이전트의 배정 설명 `server/services/explainer.js` (Claude 팀 단위 설명·타협안 → `assignment_summary`, 실패 시 규칙 요약 폴백)
+- [x] 배정 공개 후 10분 내 1회 역할 맞교환 — `POST /api/projects/:id/swap` (생성자·서버시각 창·실무 역할 교차 저장), `AssignmentResult.jsx` 맞교환 UI
+- [ ] 전원 제출 시 자동 마감 / 태스크 담당자 자동배정
 
 ### 공통 · 인프라
 - [x] Express 단일 게이트웨이 + Supabase Secret key 서버 전용 — `server/db/supabase.js`
@@ -253,6 +254,17 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-27 · 배정 결과 10분 내 1회 역할 맞교환
+- **왜**: 배정 불복 대비 공정 절차 — 공개 후 10분 내 생성자가 두 팀원 역할을 1회 맞교환(무한 재배정 방지). "사람은 결과보다 절차가 공정할 때 납득".
+- **방식**: `POST /api/projects/:id/swap`(생성자·`status=assigned`·`!swap_used`·`now−revealed_at≤10분` 가드) → 두 팀원의 **실무 역할만 교차 저장**(조장 표식 유지, `unique(project,member,role)` 무충돌) → `swap_used=true` + 활동로그 `swap`. `GET /result`에 뷰어 `isCreator`·`swapUsed`·member `id` 추가. `AssignmentResult.jsx`는 지난 배정 슬라이스에서 뺐던 맞교환 UI(카운트다운·2명 선택)를 서버 연동으로 복원. `revealed_at`·`swap_used` 컬럼 기존 재사용(마이그레이션 없음).
+- **검증**: curl — 맞교환 전/후 두 팀원 실무 역할 **뒤바뀜**(조장 유지)·`swapUsed` false→true → 2회차 409 · 비생성자 403 · 만료(revealed_at 11분 전 조정) 409 · 진행 탭 역할 반영. `oxlint`·`build` 통과. 테스트 데이터 정리.
+- **참고(단순화)**: 맞교환 후 `assignment_stats`/AI 설명은 재계산하지 않음(원래 알고리즘 배정 설명 유지, 카드의 실제 역할만 갱신).
+
+### 2026-07-27 · 배정 설명자 (플래닝 에이전트가 배정 이유 설명)
+- **왜**: 결과 화면이 규칙 요약만 보여줬다. 리브랜딩한 "플래닝 에이전트가 배정 결과를 설명"을 실제 AI로 완성. AI는 배정을 하지 않고 **이유만** 설명(공정 규칙과 역할 분리).
+- **방식**: `server/services/explainer.js` 신규 — `explainAssignment({stats, roleNames})`가 Claude로 팀 단위 설명(선호·경험 반영·조장 처리·타협안)을 생성, `planner.js`와 동일 SDK/모델 패턴(짧은 산문이라 구조화 출력 없이 `effort:low`). **★ 공정성: 개인 설문·개인 배정은 절대 입력하지 않고 집계값(stats)·역할명만** 전달 → 역추론 불가. 키 없음/오류/거부 시 `null`(→ 화면이 규칙 요약 폴백), try/catch로 **배정 자체는 절대 실패하지 않게**. `POST /assign`이 stats 계산 뒤 호출해 `assignment_summary` 저장. 프론트는 이미 summary-우선 렌더라 변경 없음.
+- **검증**: explainer 단독 실행 — 정상 케이스(팀 단위·개인 언급 없음)·기피 역할 케이스(로테이션·업무 경감 **타협안** 생성)·키 없음(null) 확인. `oxlint`·`build` 통과. 서버 curl 전 흐름 → `POST /assign` 200 → `GET /result`의 `summary`가 **AI 설명 문자열로 채워짐** 확인. 테스트 데이터 정리.
 
 ### 2026-07-27 · 역할 배정 실행 + 결과 공개 (규칙 요약)
 - **왜**: 이 프로젝트의 **핵심 차별점** — 생성자가 설문을 마감하면 **AI가 아니라 결정적 점수 규칙**이 역할을 배정하고(재현성·공정성), 결과를 공개한다.
