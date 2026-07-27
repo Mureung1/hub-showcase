@@ -8,6 +8,18 @@ const dateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
   minute: "2-digit",
 });
 
+const dateDividerFormatter = new Intl.DateTimeFormat("ko-KR", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  weekday: "long",
+});
+
+const toDateKey = (isoString) => {
+  const date = new Date(isoString);
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+};
+
 const SCROLL_TOP_THRESHOLD = 80;
 const SCROLL_BOTTOM_THRESHOLD = 120;
 
@@ -219,19 +231,27 @@ function ChatModal({ applicationId, otherPartyName, onClose }) {
           ) : messages.length === 0 ? (
             <p className="chat-modal-status">아직 주고받은 메시지가 없습니다.</p>
           ) : (
-            messages.map((message) => {
+            messages.map((message, index) => {
               const isMine = message.senderId === currentUser?.id;
+              const dateKey = toDateKey(message.createdAt);
+              const previousDateKey =
+                index > 0 ? toDateKey(messages[index - 1].createdAt) : null;
+              const showDateDivider = dateKey !== previousDateKey;
 
               return (
-                <div
-                  className={`chat-message${isMine ? " chat-message-mine" : ""}`}
-                  key={message.id}
-                >
-                  <span className="chat-message-sender">{message.senderName}</span>
-                  <p className="chat-message-body">{message.body}</p>
-                  <span className="chat-message-time">
-                    {dateTimeFormatter.format(new Date(message.createdAt))}
-                  </span>
+                <div key={message.id}>
+                  {showDateDivider && (
+                    <div className="chat-date-divider">
+                      <span>{dateDividerFormatter.format(new Date(message.createdAt))}</span>
+                    </div>
+                  )}
+                  <div className={`chat-message${isMine ? " chat-message-mine" : ""}`}>
+                    <span className="chat-message-sender">{message.senderName}</span>
+                    <p className="chat-message-body">{message.body}</p>
+                    <span className="chat-message-time">
+                      {dateTimeFormatter.format(new Date(message.createdAt))}
+                    </span>
+                  </div>
                 </div>
               );
             })
