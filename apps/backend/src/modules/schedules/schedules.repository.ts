@@ -5,6 +5,7 @@ import {
   CreateScheduleRepositoryInput,
   RecurringScheduleRuleRecord,
   ScheduleRecord,
+  TransferScheduleToSubstituteRepositoryInput,
   UpdateScheduleRepositoryInput
 } from "./schedules.types";
 
@@ -211,6 +212,32 @@ export async function updateScheduleById(input: UpdateScheduleRepositoryInput) {
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  return {
+    ...data,
+    profiles: normalizeJoinedProfile(data.profiles)
+  };
+}
+
+export async function transferScheduleToSubstitute(input: TransferScheduleToSubstituteRepositoryInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("schedules")
+    .update({
+      worker_id: input.nextWorkerId,
+      source: "SUBSTITUTE"
+    })
+    .eq("id", input.scheduleId)
+    .eq("worker_id", input.currentWorkerId)
+    .select(SCHEDULE_COLUMNS)
+    .maybeSingle<ScheduleQueryRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    return null;
   }
 
   return {

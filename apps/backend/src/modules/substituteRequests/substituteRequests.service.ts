@@ -1,21 +1,29 @@
 import { HttpError } from "../../common/errors/HttpError";
 import { findStoreMembership } from "../../common/repositories/storeMembership.repository";
-import { findOverlappingWorkerSchedules, findScheduleById } from "../schedules/schedules.repository";
 import {
+  findOverlappingWorkerSchedules,
+  findScheduleById,
+  transferScheduleToSubstitute
+} from "../schedules/schedules.repository";
+import {
+  approveSubstituteRequestById,
   findActiveSubstituteRequestByScheduleId,
   findSubstituteApplication,
   findSubstituteRequestById,
-  findOpenSubstituteRequestsByStoreId,
+  findSubstituteRequestsByStoreIdAndStatuses,
   findSubstituteRequestProfiles,
   findSubstituteRequestSchedules,
   insertSubstituteApplication,
   insertSubstituteRequest,
+  rejectSubstituteRequestById,
   updateSubstituteRequestCandidate
 } from "./substituteRequests.repository";
 import {
   ApplySubstituteRequestInput,
+  ApproveSubstituteRequestInput,
   CreateSubstituteRequestInput,
   ListSubstituteRequestsInput,
+  RejectSubstituteRequestInput,
   SubstituteRequestRecord,
   SubstituteRequestScheduleRecord,
   SubstituteRequestListItemResponse,
@@ -43,11 +51,13 @@ function toSubstituteRequestResponse(request: SubstituteRequestRecord): Substitu
 function toSubstituteRequestListItemResponse(input: {
   request: SubstituteRequestRecord;
   requesterName: string;
+  candidateWorkerName: string | null;
   schedule: SubstituteRequestScheduleRecord;
 }): SubstituteRequestListItemResponse {
   return {
     ...toSubstituteRequestResponse(input.request),
     requesterName: input.requesterName,
+    candidateWorkerName: input.candidateWorkerName,
     workerId: input.schedule.worker_id,
     workDate: input.schedule.work_date,
     startTime: input.schedule.start_time,
@@ -72,11 +82,19 @@ function getTodayDateText() {
 }
 
 export async function listStoreSubstituteRequests(input: ListSubstituteRequestsInput) {
-  const requests = await findOpenSubstituteRequestsByStoreId(input.storeId);
+  const visibleStatuses: SubstituteRequestStatus[] =
+    input.actorRole === "OWNER" ? ["OPEN", "PENDING_APPROVAL"] : ["OPEN"];
+  const requests = await findSubstituteRequestsByStoreIdAndStatuses(input.storeId, visibleStatuses);
   const scheduleIds = [...new Set(requests.map((request) => request.schedule_id))];
-  const requesterIds = [...new Set(requests.map((request) => request.requester_id))];
+  const profileIds = [
+    ...new Set(
+      requests.flatMap((request) =>
+        request.candidate_worker_id ? [request.requester_id, request.candidate_worker_id] : [request.requester_id]
+      )
+    )
+  ];
   const schedules = await findSubstituteRequestSchedules(scheduleIds);
-  const profiles = await findSubstituteRequestProfiles(requesterIds);
+  const profiles = await findSubstituteRequestProfiles(profileIds);
   const scheduleMap = new Map(schedules.map((schedule) => [schedule.id, schedule]));
   const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
   const todayDate = getTodayDateText();
@@ -95,6 +113,9 @@ export async function listStoreSubstituteRequests(input: ListSubstituteRequestsI
       return toSubstituteRequestListItemResponse({
         request,
         requesterName: profileMap.get(request.requester_id)?.name ?? "알바생",
+        candidateWorkerName: request.candidate_worker_id
+          ? profileMap.get(request.candidate_worker_id)?.name ?? "알바생"
+          : null,
         schedule
       });
     })
@@ -212,5 +233,99 @@ export async function applyToSubstituteRequest(input: ApplySubstituteRequestInpu
 
   return {
     substituteRequest: toSubstituteRequestResponse(updatedRequest)
+  };
+}
+
+async function findReviewableRequest(input: ApproveSubstituteRequestInput | RejectSubstituteRequestInput) {
+  const request = await findSubstituteRequestById(input.requestId);
+
+  if (!request) {
+    throw new HttpError(404, "대타 요청을 찾을 수 없습니다.", "SUBSTITUTE_REQUEST_NOT_FOUND");
+  }
+
+  const membership = await findStoreMembership(request.store_id, input.actorUserId);
+
+  if (!membership || membership.role !== "OWNER") {
+    throw new HttpError(403, "사장님만 대타 요청을 승인하거나 거절할 수 있습니다.", "OWNER_ROLE_REQUIRED");
+  }
+
+  if (request.status !== "PENDING_APPROVAL") {
+    throw new HttpError(409, "승인 대기 상태의 대타 요청만 처리할 수 있습니다.", "SUBSTITUTE_REQUEST_NOT_PENDING");
+  }
+
+  if (!request.candidate_worker_id) {
+    throw new HttpError(409, "신청 후보자가 없는 대타 요청입니다.", "SUBSTITUTE_CANDIDATE_REQUIRED");
+  }
+
+  return request;
+}
+
+export async function approveSubstituteRequest(input: ApproveSubstituteRequestInput) {
+  const request = await findReviewableRequest(input);
+  const candidateMembership = await findStoreMembership(request.store_id, request.candidate_worker_id ?? "");
+
+  if (!candidateMembership || candidateMembership.role !== "WORKER") {
+    throw new HttpError(409, "후보자가 더 이상 매장 알바생이 아닙니다.", "CANDIDATE_WORKER_REQUIRED");
+  }
+
+  const schedule = await findScheduleById(request.schedule_id);
+
+  if (!schedule) {
+    throw new HttpError(404, "근무 일정을 찾을 수 없습니다.", "SCHEDULE_NOT_FOUND");
+  }
+
+  if (schedule.worker_id !== request.requester_id) {
+    throw new HttpError(409, "근무표가 이미 변경되어 승인할 수 없습니다.", "SCHEDULE_ALREADY_CHANGED");
+  }
+
+  if (schedule.work_date < getTodayDateText()) {
+    throw new HttpError(400, "지난 근무의 대타 요청은 승인할 수 없습니다.", "PAST_SCHEDULE_NOT_ALLOWED");
+  }
+
+  const overlappingSchedules = await findOverlappingWorkerSchedules({
+    storeId: request.store_id,
+    workerId: request.candidate_worker_id ?? "",
+    workDate: schedule.work_date,
+    startTime: schedule.start_time,
+    endTime: schedule.end_time,
+    excludeScheduleId: schedule.id
+  });
+
+  if (overlappingSchedules.length > 0) {
+    throw new HttpError(409, "후보자에게 같은 시간대 근무가 있어 승인할 수 없습니다.", "SCHEDULE_TIME_OVERLAP");
+  }
+
+  const transferredSchedule = await transferScheduleToSubstitute({
+    scheduleId: schedule.id,
+    currentWorkerId: request.requester_id,
+    nextWorkerId: request.candidate_worker_id ?? ""
+  });
+
+  if (!transferredSchedule) {
+    throw new HttpError(409, "근무표가 이미 변경되어 승인할 수 없습니다.", "SCHEDULE_ALREADY_CHANGED");
+  }
+
+  const approvedRequest = await approveSubstituteRequestById(input);
+
+  if (!approvedRequest) {
+    throw new HttpError(409, "이미 처리된 대타 요청입니다.", "SUBSTITUTE_REQUEST_NOT_PENDING");
+  }
+
+  return {
+    substituteRequest: toSubstituteRequestResponse(approvedRequest)
+  };
+}
+
+export async function rejectSubstituteRequest(input: RejectSubstituteRequestInput) {
+  await findReviewableRequest(input);
+
+  const rejectedRequest = await rejectSubstituteRequestById(input);
+
+  if (!rejectedRequest) {
+    throw new HttpError(409, "이미 처리된 대타 요청입니다.", "SUBSTITUTE_REQUEST_NOT_PENDING");
+  }
+
+  return {
+    substituteRequest: toSubstituteRequestResponse(rejectedRequest)
   };
 }

@@ -2,7 +2,13 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMe } from "../features/auth";
-import { useApplySubstituteRequest, useSubstituteRequests } from "../features/substitute";
+import {
+  useApplySubstituteRequest,
+  useApproveSubstituteRequest,
+  useRejectSubstituteRequest,
+  useSubstituteRequests
+} from "../features/substitute";
+import { SubstituteRequestListItem } from "../features/substitute";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
@@ -14,6 +20,14 @@ function getDateLabel(date: string) {
   return format(new Date(`${date}T00:00:00`), "M월 d일");
 }
 
+function getStatusLabel(request: SubstituteRequestListItem, isOwner: boolean) {
+  if (request.status === "PENDING_APPROVAL") {
+    return isOwner ? "승인 대기" : "신청 중";
+  }
+
+  return isOwner ? "공개" : "신청 가능";
+}
+
 export function SubstituteRequestsPage() {
   const { data: me, isLoading: isMeLoading } = useMe();
   const selectedStoreId = getSelectedStoreId();
@@ -22,13 +36,18 @@ export function SubstituteRequestsPage() {
   const isWorker = selectedStore?.role === "WORKER";
   const { data, error, isLoading } = useSubstituteRequests(selectedStoreId);
   const applySubstituteRequestMutation = useApplySubstituteRequest();
+  const approveSubstituteRequestMutation = useApproveSubstituteRequest();
+  const rejectSubstituteRequestMutation = useRejectSubstituteRequest();
   const [message, setMessage] = useState<string | null>(null);
+  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
   const substituteRequests = data?.substituteRequests ?? [];
   const pageTitle = isOwner ? "매장 공개 대타 요청" : "신청 가능한 대타 요청";
   const emptyTitle = isOwner ? "진행 중인 공개 요청이 없습니다." : "신청 가능한 대타 요청이 없습니다.";
   const emptyDescription = isOwner
-    ? "알바생이 등록한 공개 요청이 생기면 이곳에 표시됩니다."
+    ? "알바생이 등록하거나 신청한 공개 요청이 생기면 이곳에 표시됩니다."
     : "오늘 이후 다른 알바생이 공개한 요청이 생기면 이곳에 표시됩니다.";
+  const pendingCount = substituteRequests.filter((request) => request.status === "PENDING_APPROVAL").length;
+  const openCount = substituteRequests.filter((request) => request.status === "OPEN").length;
 
   function handleApply(requestId: string) {
     setMessage(null);
@@ -37,6 +56,43 @@ export function SubstituteRequestsPage() {
         setMessage("대타 요청에 신청했습니다. 사장님 승인 대기 상태로 변경되었습니다.");
       }
     });
+  }
+
+  function handleApprove(requestId: string) {
+    setMessage(null);
+    approveSubstituteRequestMutation.mutate(requestId, {
+      onSuccess: () => {
+        setMessage("대타 요청을 승인했습니다.");
+      }
+    });
+  }
+
+  function handleReject(requestId: string) {
+    setMessage(null);
+    const rejectReason = rejectReasons[requestId]?.trim() ?? "";
+
+    if (!rejectReason) {
+      setMessage("거절 사유를 입력해주세요.");
+      return;
+    }
+
+    rejectSubstituteRequestMutation.mutate(
+      {
+        requestId,
+        values: {
+          rejectReason
+        }
+      },
+      {
+        onSuccess: () => {
+          setRejectReasons((current) => ({
+            ...current,
+            [requestId]: ""
+          }));
+          setMessage("대타 요청을 거절했습니다.");
+        }
+      }
+    );
   }
 
   if (isMeLoading) {
@@ -78,7 +134,7 @@ export function SubstituteRequestsPage() {
         <section className="calendar-card" aria-label="공개 대타 요청 목록">
           <div className="card-head">
             <div>
-              <p className="label">OPEN REQUESTS</p>
+              <p className="label">REQUESTS</p>
               <h2>{substituteRequests.length}건</h2>
             </div>
             {isWorker ? (
@@ -102,14 +158,24 @@ export function SubstituteRequestsPage() {
             </div>
           ) : null}
 
-          {applySubstituteRequestMutation.error ? (
+          {applySubstituteRequestMutation.error ||
+          approveSubstituteRequestMutation.error ||
+          rejectSubstituteRequestMutation.error ? (
             <p className="form-error schedule-message">
               {applySubstituteRequestMutation.error instanceof Error
                 ? applySubstituteRequestMutation.error.message
-                : "대타 요청 신청에 실패했습니다."}
+                : approveSubstituteRequestMutation.error instanceof Error
+                  ? approveSubstituteRequestMutation.error.message
+                  : rejectSubstituteRequestMutation.error instanceof Error
+                    ? rejectSubstituteRequestMutation.error.message
+                    : "대타 요청 처리에 실패했습니다."}
             </p>
           ) : null}
-          {message ? <p className="form-success schedule-message">{message}</p> : null}
+          {message ? (
+            <p className={message.includes("입력") ? "form-error schedule-message" : "form-success schedule-message"}>
+              {message}
+            </p>
+          ) : null}
 
           {!isLoading && !error && substituteRequests.length === 0 ? (
             <div className="empty-state">
@@ -136,10 +202,11 @@ export function SubstituteRequestsPage() {
                       {" · "}
                       {request.position ?? "포지션 없음"}
                     </span>
+                    {request.candidateWorkerName ? <span>후보 {request.candidateWorkerName}</span> : null}
                     <p className="request-reason">{request.reason}</p>
                   </div>
                   <div className="request-card-actions">
-                    {isWorker ? (
+                    {isWorker && request.status === "OPEN" ? (
                       <button
                         className="primary-button inline-empty-link"
                         disabled={applySubstituteRequestMutation.isPending}
@@ -149,8 +216,42 @@ export function SubstituteRequestsPage() {
                         {applySubstituteRequestMutation.isPending ? "신청 중" : "신청"}
                       </button>
                     ) : (
-                      <p className="badge">공개</p>
+                      <p className="badge">{getStatusLabel(request, Boolean(isOwner))}</p>
                     )}
+
+                    {isOwner && request.status === "PENDING_APPROVAL" ? (
+                      <div className="request-review-actions">
+                        <button
+                          className="primary-button"
+                          disabled={approveSubstituteRequestMutation.isPending}
+                          onClick={() => handleApprove(request.id)}
+                          type="button"
+                        >
+                          {approveSubstituteRequestMutation.isPending ? "승인 중" : "승인"}
+                        </button>
+                        <textarea
+                          maxLength={200}
+                          onChange={(event) =>
+                            setRejectReasons((current) => ({
+                              ...current,
+                              [request.id]: event.target.value
+                            }))
+                          }
+                          placeholder="거절 사유"
+                          rows={2}
+                          value={rejectReasons[request.id] ?? ""}
+                        />
+                        <button
+                          className="secondary-button"
+                          disabled={rejectSubstituteRequestMutation.isPending}
+                          onClick={() => handleReject(request.id)}
+                          type="button"
+                        >
+                          {rejectSubstituteRequestMutation.isPending ? "거절 중" : "거절"}
+                        </button>
+                      </div>
+                    ) : null}
+
                     <Link className="text-button" to={getScheduleDatePath(request.workDate)}>
                       근무 보기
                     </Link>
@@ -165,9 +266,10 @@ export function SubstituteRequestsPage() {
           <section className="side-card today-card">
             <p className="label">SUMMARY</p>
             <h2>{substituteRequests.length}건</h2>
-            <span>{isOwner ? "매장 전체 공개 요청" : "내가 신청할 수 있는 요청"}</span>
+            <span>{isOwner ? `공개 ${openCount}건 · 승인 대기 ${pendingCount}건` : "내가 신청할 수 있는 요청"}</span>
             <div className="mini-people">
               <strong>OPEN</strong>
+              {isOwner ? <strong>PENDING</strong> : null}
               <strong>{selectedStore.name}</strong>
             </div>
           </section>

@@ -43,6 +43,7 @@ export type SubstituteRequestProfileRecord = {
 
 export type SubstituteRequestListItemResponse = SubstituteRequestResponse & {
   requesterName: string;
+  candidateWorkerName: string | null;
   workerId: string;
   workDate: string;
   startTime: string;
@@ -71,6 +72,17 @@ export type ListSubstituteRequestsInput = {
 export type ApplySubstituteRequestInput = {
   requestId: string;
   actorUserId: string;
+};
+
+export type ApproveSubstituteRequestInput = {
+  requestId: string;
+  actorUserId: string;
+};
+
+export type RejectSubstituteRequestInput = {
+  requestId: string;
+  actorUserId: string;
+  rejectReason: string;
 };
 
 export type SubstituteApplicationRecord = {

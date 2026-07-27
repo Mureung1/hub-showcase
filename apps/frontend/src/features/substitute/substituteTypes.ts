@@ -15,6 +15,7 @@ export type SubstituteRequest = {
 
 export type SubstituteRequestListItem = SubstituteRequest & {
   requesterName: string;
+  candidateWorkerName: string | null;
   workerId: string;
   workDate: string;
   startTime: string;
@@ -37,5 +38,17 @@ export type CreateSubstituteRequestResponse = {
 };
 
 export type ApplySubstituteRequestResponse = {
+  substituteRequest: SubstituteRequest;
+};
+
+export type ApproveSubstituteRequestResponse = {
+  substituteRequest: SubstituteRequest;
+};
+
+export type RejectSubstituteRequestInput = {
+  rejectReason: string;
+};
+
+export type RejectSubstituteRequestResponse = {
   substituteRequest: SubstituteRequest;
 };
