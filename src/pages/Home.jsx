@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { mockRecipes } from '../data/mockRecipes'
 import { categories, TYPE_LABELS } from '../data/categories'
@@ -53,6 +53,10 @@ function Home() {
   // 추천 fetch가 아직 안 끝났는지("loading") 구분하는 상태 — 이게 없으면 초기값(빈 배열)과
   // "불러왔는데 결과 없음"이 똑같아 보여서, fetch가 끝나기도 전에 "못 찾았어요" 카드가 먼저 뜬다.
   const [status, setStatus] = useState('loading')
+  // fetch 결과와 "로딩 영상이 한 바퀴 다 돌았는지"를 각각 별도로 기다렸다가, 둘 다 끝난 뒤에만
+  // status를 'done'으로 바꾼다 — fetch가 아무리 빨리 끝나도 영상이 중간에 끊기지 않게 하기 위함.
+  const fetchResultRef = useRef(null)
+  const videoLoopedRef = useRef(false)
 
   function handleToggleLike(recipeId) {
     setLikedIds((prev) => {
@@ -62,8 +66,20 @@ function Home() {
     })
   }
 
+  function finishLoadingIfReady() {
+    if (!videoLoopedRef.current || !fetchResultRef.current) return
+    const { ready, shopping, others } = fetchResultRef.current
+    setReadyRecipes(ready)
+    setShoppingRecipes(shopping)
+    setOtherRecipes(others)
+    setStatus('done')
+  }
+
   useEffect(() => {
     if (forceLoading) return // status가 초기값 'loading'에서 안 바뀌게 그대로 둔다
+
+    fetchResultRef.current = null
+    videoLoopedRef.current = false
 
     const selectedIds = loadFridgeSelection()
     // 조미료(category: 'seasoning')는 거의 모든 레시피에 들어가 있어서 추천 매칭에 포함시키면
@@ -72,33 +88,26 @@ function Home() {
       .filter((ingredient) => selectedIds.includes(ingredient.id) && ingredient.category !== 'seasoning')
       .flatMap((ingredient) => ingredient.matchNames)
 
-    // fetch가 너무 빨리 끝나서 "찾는 중..." 문구가 눈에 안 보이고 지나가는 문제 — 최소 노출 시간을 둬서
-    // 실제 조회 시간과 무관하게 항상 이 시간만큼은 로딩 문구가 보이게 한다.
-    const MIN_LOADING_MS = 1200
-    const minDelay = new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS))
-
     if (ownedMatchNames.length === 0) {
-      minDelay.then(() => {
-        setReadyRecipes([])
-        setShoppingRecipes([])
-        setOtherRecipes([])
-        setStatus('done')
-      })
+      fetchResultRef.current = { ready: [], shopping: [], others: [] }
+      finishLoadingIfReady()
       return
     }
 
-    const fetchRecipes = fetch(apiUrl(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`))
+    fetch(apiUrl(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`))
       .then((res) => res.json())
       .then((data) => groupRecipesByMissingIngredients(data.recipes ?? [], ownedMatchNames, SEASONING_MATCH_NAMES))
       .catch(() => ({ ready: [], shopping: [], others: [] }))
-
-    Promise.all([fetchRecipes, minDelay]).then(([{ ready, shopping, others }]) => {
-      setReadyRecipes(ready)
-      setShoppingRecipes(shopping)
-      setOtherRecipes(others)
-      setStatus('done')
-    })
+      .then((result) => {
+        fetchResultRef.current = result
+        finishLoadingIfReady()
+      })
   }, [forceLoading])
+
+  function handleLoadingVideoLoopEnd() {
+    videoLoopedRef.current = true
+    finishLoadingIfReady()
+  }
 
   function applyFilters(recipes) {
     // 정렬 기준(가격순)만 다르고 나머지(음식종류/시간) 필터 로직은 selectors.js를 그대로 재사용 —
@@ -129,7 +138,7 @@ function Home() {
         {status === 'loading' ? (
           // forceLoading(개발용 ?loading=1)이든 실제 fetch 중이든, 끝날 때까지 전체화면 로딩만 보여주고
           // 배너·필터·추천 리스트는 로딩이 끝난 뒤에야 나타난다.
-          <LoadingIndicator />
+          <LoadingIndicator onFirstLoopEnd={handleLoadingVideoLoopEnd} />
         ) : (
           <>
         <PromoBanner />
