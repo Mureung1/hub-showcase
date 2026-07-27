@@ -497,11 +497,18 @@ h1.hero {
 .r-head {
   margin-bottom: 20px;
 }
+.r-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
 .r-head h1 {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  margin: 0 0 6px;
+  margin: 0;
 }
 .r-head p {
   margin: 0;
@@ -531,13 +538,22 @@ h1.hero {
   color: var(--color-text-on-primary);
   background: var(--color-primary);
 }
-.r-refetch {
-  display: flex;
-  justify-content: center;
-  margin: 4px 0 20px;
+.r-refetch-btn {
+  flex: none;
+  height: 34px;
+  padding: 0 14px 0 12px;
+  font-size: var(--text-caption);
 }
-.r-refetch .btn {
-  padding: 0 20px;
+.r-refetch-icon {
+  transition: transform 0.15s;
+}
+.r-refetch-icon.spin {
+  animation: flow-spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .r-refetch-icon.spin {
+    animation: none;
+  }
 }
 .r-refetch-error {
   text-align: center;

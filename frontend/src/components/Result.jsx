@@ -1,6 +1,7 @@
 import { Link, Navigate, useOutletContext } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { createRecommendation } from '../api/index.js'
+import { RefreshIcon } from './icons.jsx'
 import { DIFFICULTY_META, LANGUAGE_CLASSES, TAG_CLASSES, formatStars } from '../utils/format.js'
 import { TOPIC_OPTIONS } from '../utils/preferences.js'
 
@@ -33,7 +34,18 @@ function Result() {
   return (
     <>
       <div className="r-head">
-        <h1>이런 이슈는 어때요?</h1>
+        <div className="r-head-row">
+          <h1>이런 이슈는 어때요?</h1>
+          <button
+            type="button"
+            className="btn btn-soft r-refetch-btn"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+          >
+            <RefreshIcon className={isRefetching ? 'r-refetch-icon spin' : 'r-refetch-icon'} />
+            재검색
+          </button>
+        </div>
         <p>
           딱 맞는 이슈 <span className="accent">{items.length}개</span>를 찾았어요. 이슈를 눌러
           자세히 확인해보세요.
@@ -47,16 +59,6 @@ function Result() {
         </div>
       </div>
 
-      <div className="r-refetch">
-        <button
-          type="button"
-          className="btn btn-soft btn-lg"
-          onClick={() => refetch()}
-          disabled={isRefetching}
-        >
-          {isRefetching ? '다시 찾는 중…' : '다른 이슈로 다시 찾기'}
-        </button>
-      </div>
       {refetchError && (
         <p className="r-refetch-error">
           {refetchError.code === 'RECOMMENDATION_LIMIT_EXCEEDED'
@@ -65,7 +67,17 @@ function Result() {
         </p>
       )}
 
-      {items.length === 0 && (
+      {isRefetching && (
+        <div className="panel">
+          <h1 className="a-title">
+            <span className="spinner" />
+            재검색하고 있어요
+          </h1>
+          <p className="a-lead">같은 조건에서, 아직 못 본 이슈 위주로 다시 찾는 중이에요.</p>
+        </div>
+      )}
+
+      {!isRefetching && items.length === 0 && (
         <div className="panel">
           <p className="lead">
             조건에 맞는 이슈를 찾지 못했어요.
@@ -75,7 +87,7 @@ function Result() {
         </div>
       )}
 
-      {items.map((item) => {
+      {!isRefetching && items.map((item) => {
         const badge = DIFFICULTY_META[item.difficulty]
         const langClass = LANGUAGE_CLASSES[item.primaryLanguage] ?? ''
         return (

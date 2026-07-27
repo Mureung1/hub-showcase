@@ -97,6 +97,28 @@ export function LogoMark() {
   )
 }
 
+// 재검색 버튼용 순환 화살표 아이콘. className으로 로딩 중 회전 애니메이션(.spin)을 얹을 수 있다
+export function RefreshIcon({ className }) {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" className={className}>
+      <path
+        d="M3.5 8a4.5 4.5 0 0 1 7.6-3.2L13 6.5M13 3.5v3.5h-3.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12.5 8a4.5 4.5 0 0 1-7.6 3.2L3 9.5M3 12.5V9h3.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 // 돌아가기 화살표 (텍스트 화살표 문자 대체 — 폰트에 따라 모양이 달라지지 않도록 SVG로 고정)
 export function ChevronLeftIcon() {
   return (
