@@ -1,5 +1,6 @@
 import os
 import pathlib
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from supabase import create_client
@@ -26,6 +27,22 @@ def find_notice(source_url):
     """source_url로 공지 1건 조회. 없으면 None."""
     res = _sb.table("notices").select("*").eq("source_url", source_url).execute()
     return res.data[0] if res.data else None
+
+def get_routes():
+    """등록된 경로 전부 — 매일 판정의 기준."""
+    res = _sb.table("routes").select("id, name, lines, stops").execute()
+    return res.data or []
+
+def get_notices():
+    """저장된 공지 전부(판정용). alerted_at 포함 — 이미 알린 공지 구분용."""
+    res = _sb.table("notices").select("id, source, source_url, title, extraction, alerted_at").execute()
+    return res.data or []
+
+def mark_alerted(notice_id):
+    """이 공지는 경보를 보냈다고 표시 — 다음 실행에서 재경보 방지(멱등성)."""
+    _sb.table("notices").update(
+        {"alerted_at": datetime.now(timezone.utc).isoformat()}
+    ).eq("id", notice_id).execute()
 
 if __name__ == "__main__":
     saved = save_notice(

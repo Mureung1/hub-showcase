@@ -62,8 +62,10 @@ create table if not exists notices (
   title       text,
   raw_text    text,                       -- 본문 전문
   extraction  jsonb,                      -- 추출 결과 {events: [...]}
-  collected_at timestamptz default now()
+  collected_at timestamptz default now(),
+  alerted_at  timestamptz                 -- 경보 보낸 시각 (null = 아직 안 알림) — 재경보 방지
 );
+-- 기존 테이블에 컬럼 추가할 때: alter table notices add column if not exists alerted_at timestamptz;
 
 create index if not exists idx_notices_source on notices(source);
 

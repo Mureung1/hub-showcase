@@ -45,6 +45,7 @@ class State(TypedDict):
     tries: int                    # MIRI-14: Verifier 재시도 횟수 (상한 MAX_TRIES)
     route: Optional[dict]         # MIRI-19: 매칭 대상 내 경로 {lines, stops}
     analysis: Optional[dict]      # MIRI-19: Analyst 판정 {affected, matched}
+    title: Optional[str]          # 공지 제목 — 날짜가 제목에만 있는 공지가 많아 추출 입력에 함께 준다
 
 
 def scout_node(state: State) -> dict:
@@ -62,9 +63,13 @@ def extract_node(state: State) -> dict:
         return {"error": "GEMINI_API_KEY가 없습니다. aistudio.google.com/apikey 에서 발급 후 miricat/.env 에 추가하세요."}
     try:
         client = genai.Client(api_key=api_key)
+        # 제목에만 날짜가 있는 공지가 많다("...알림(2026.7.9)") — 추출 입력에는 제목을 합쳐 주되,
+        # DB에 저장되는 raw_text(원문)는 건드리지 않는다.
+        title = state.get("title")
+        contents = f"제목: {title}\n\n{state['raw_text']}" if title else state["raw_text"]
         resp = client.models.generate_content(
             model=MODEL,
-            contents=state["raw_text"],
+            contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
                 response_mime_type="application/json",
@@ -129,7 +134,9 @@ def reporter_node(state: State) -> dict:
     fields.append({"name": "원문 공지", "value": source_url})
     report_base = os.environ.get("REPORT_BASE_URL", "http://localhost:5173")
     embed = {
-        "title": "🚨 경보 — 내 출근 경로에 영향 공지",
+        "title": (f"🚨 경보 — {state['route']['name']}에 영향 공지"
+                  if (state.get("route") or {}).get("name")
+                  else "🚨 경보 — 내 출근 경로에 영향 공지"),   # 경로가 여럿이면 어느 경로인지 밝힌다
         "url": f"{report_base}/report/{found['id']}" if found else source_url,             # 제목 클릭 = 원문으로 (출처 원칙)
         "color": 0xE4572E,            # 미리캣 경보 빨강
         "fields": fields,
@@ -158,10 +165,11 @@ builder.set_entry_point("scout")
 app = builder.compile()
 
 
-def run(source, seq, route=None) -> dict:
+def run(source, seq, route=None, title=None) -> dict:
     """공지 1건을 그래프에 넣고 결과 State를 돌려준다. route 주면 Analyst가 영향 판정."""
     return app.invoke({
         "raw_text": "", "extraction": None, "error": None,
         "source": source, "seq": seq, "tries": 0,
         "route": route, "analysis": None, "report": None,
+        "title": title,
     })
