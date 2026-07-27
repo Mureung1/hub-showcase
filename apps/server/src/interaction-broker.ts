@@ -91,12 +91,19 @@ export type InteractionBroker = {
 type PendingInteraction = {
   readonly interactionId: string
   readonly turn: ActiveInteractionProductTurn
+  readonly heldResponse: Response
   readonly responseReady: Deferred<InteractionBrokerResponse>
   readonly completion: Deferred<
     { readonly ok: true } | { readonly ok: false }
   >
   published: boolean
-  state: 'preflight' | 'pending' | 'settling' | 'failed' | 'settled'
+  state:
+    | 'preflight'
+    | 'pending'
+    | 'settling'
+    | 'delivering'
+    | 'failed'
+    | 'settled'
 }
 
 type EvidenceSnapshot = {
@@ -148,7 +155,9 @@ export async function createInteractionBroker(
         throw new InteractionSettlementError('conflict')
       }
       if (!sameTurn(options.activeProductTurn(), current.turn)) {
-        await failPending(current, 'runtime_terminated')
+        await failPending(current, 'runtime_terminated', {
+          abortDelivery: true,
+        })
         throw new InteractionSettlementError('conflict')
       }
       const decoded = decodeProposeStatePatchResult(result)
@@ -256,6 +265,7 @@ export async function createInteractionBroker(
     const current: PendingInteraction = {
       interactionId,
       turn: { ...turn },
+      heldResponse: response,
       responseReady,
       completion,
       published: false,
@@ -265,7 +275,10 @@ export async function createInteractionBroker(
     let aborted = false
     const onAbort = () => {
       aborted = true
-      void failPending(current, 'transport_failed', true)
+      void failPending(current, 'transport_failed', {
+        abortDelivery: true,
+        interrupt: true,
+      })
     }
     request.once('aborted', onAbort)
     response.once('close', () => {
@@ -301,7 +314,9 @@ export async function createInteractionBroker(
       !sameTurn(options.activeProductTurn(), current.turn)
     ) {
       if (current.state === 'preflight') {
-        await failPending(current, 'runtime_terminated')
+        await failPending(current, 'runtime_terminated', {
+          abortDelivery: true,
+        })
       }
       const terminalResponse = await current.responseReady.promise
       if (!response.destroyed) {
@@ -334,23 +349,37 @@ export async function createInteractionBroker(
 
     const brokerResponse = await current.responseReady.promise
     if (aborted || response.destroyed) {
-      await failPending(current, 'transport_failed', true)
+      await failPending(current, 'transport_failed', {
+        abortDelivery: true,
+        interrupt: true,
+      })
       return
     }
-    const status = brokerResponse.kind === 'error'
-      ? statusForError(brokerResponse.code)
+    let outboundResponse = brokerResponse
+    if (brokerResponse.kind === 'capability_result') {
+      if ((current as PendingInteraction).state === 'settling') {
+        current.state = 'delivering'
+      } else {
+        outboundResponse = errorResponse('interaction_interrupted')
+      }
+    }
+    const status = outboundResponse.kind === 'error'
+      ? statusForError(outboundResponse.code)
       : 200
     const delivered = await writeResponse(
       response,
-      brokerResponse,
+      outboundResponse,
       status,
     )
     if (
-      brokerResponse.kind === 'capability_result' &&
-      (current as PendingInteraction).state === 'settling'
+      outboundResponse.kind === 'capability_result' &&
+      (current as PendingInteraction).state === 'delivering'
     ) {
       if (!delivered) {
-        await failPending(current, 'transport_failed', true)
+        await failPending(current, 'transport_failed', {
+          abortDelivery: true,
+          interrupt: true,
+        })
         return
       }
       current.state = 'settled'
@@ -360,7 +389,7 @@ export async function createInteractionBroker(
           type: 'review.resolved',
           operationId: current.turn.operationId,
           interactionId: current.interactionId,
-          result: brokerResponse.result,
+          result: outboundResponse.result,
         } satisfies ProductReviewFrame
         decodeProductReviewFrame(resolved)
         await publishUi(resolved)
@@ -381,7 +410,10 @@ export async function createInteractionBroker(
   ): Promise<void> {
     const current = pending
     if (!current) return
-    await failPending(current, reason, true)
+    await failPending(current, reason, {
+      abortDelivery: true,
+      interrupt: true,
+    })
   }
 
   function rejectBeforePublication(current: PendingInteraction): void {
@@ -396,9 +428,18 @@ export async function createInteractionBroker(
       ProductReviewFrame,
       { readonly type: 'review.failed' }
     >['reason'],
-    interrupt = false,
+    actions: {
+      readonly abortDelivery?: boolean
+      readonly interrupt?: boolean
+    } = {},
   ): Promise<void> {
     if (current.state === 'failed' || current.state === 'settled') return
+    if (
+      actions.abortDelivery &&
+      (current.state === 'settling' || current.state === 'delivering')
+    ) {
+      current.heldResponse.destroy()
+    }
     current.state = 'failed'
     if (pending === current) pending = undefined
     current.responseReady.resolve(errorResponse('interaction_interrupted'))
@@ -414,7 +455,7 @@ export async function createInteractionBroker(
       decodeProductReviewFrame(failed)
       followups.push(publishUi(failed).catch(() => undefined))
     }
-    if (interrupt) {
+    if (actions.interrupt) {
       followups.push(
         boundedLifecycleCall(() =>
           options.interruptProductTurn?.(current.turn),
@@ -433,11 +474,11 @@ export async function createInteractionBroker(
       intakeOpen = false
       const current = pending
       const pendingFailure = current
-        ? failPending(current, reason)
+        ? failPending(current, reason, { abortDelivery: true })
         : Promise.resolve()
       credentialActive = false
       const runtimeTeardown = teardown
-        ? boundedLifecycleCall(options.teardownRuntime)
+        ? boundedLifecycleCall(options.teardownRuntime).catch(() => undefined)
         : Promise.resolve()
       await Promise.all([pendingFailure, runtimeTeardown])
     })()
@@ -769,6 +810,7 @@ function sha256(value: Buffer): string {
 }
 
 class EvidenceError extends Error {}
+class LifecycleDeadlineError extends Error {}
 
 function settleWithin(
   promise: Promise<void>,
@@ -776,7 +818,10 @@ function settleWithin(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     let settled = false
-    const timer = setTimeout(() => finish(resolve), deadlineMs)
+    const timer = setTimeout(
+      () => finish(() => reject(new LifecycleDeadlineError())),
+      deadlineMs,
+    )
     const finish = (complete: () => void) => {
       if (settled) return
       settled = true

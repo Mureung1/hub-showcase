@@ -470,6 +470,52 @@ test('stalled UI cleanup cannot delay interrupt, credential revoke, or teardown'
   }
 })
 
+test('a requested-card publish timeout fails without creating an invisible pending slot', async () => {
+  const fixture = await createFixture()
+  const frames: unknown[] = []
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: {
+      publish(frame) {
+        frames.push(frame)
+        return new Promise<void>(() => undefined)
+      },
+    },
+    lifecycleDeadlineMs: 10,
+  })
+  const server = await listen(broker.router)
+
+  try {
+    await acceptHandshake(server, broker)
+    const first = await postBroker(
+      server,
+      broker,
+      capabilityCall(requestWithoutEvidence()),
+    )
+    assert.equal(first.code, 'broker_unavailable')
+    const second = await postBroker(
+      server,
+      broker,
+      capabilityCall(requestWithoutEvidence()),
+    )
+    assert.equal(second.code, 'broker_unavailable')
+    assert.equal(frames.length, 2)
+    await assert.rejects(
+      broker.settle(
+        (frames[0] as { interactionId: string }).interactionId,
+        { outcome: 'accept' },
+      ),
+      (error) =>
+        error instanceof InteractionSettlementError &&
+        error.code === 'conflict',
+    )
+  } finally {
+    await broker.appShutdown()
+    await close(server)
+  }
+})
+
 test('settlement racing generation close converges without replay or a pending slot', async () => {
   const fixture = await createFixture()
   const frames: unknown[] = []
@@ -496,12 +542,23 @@ test('settlement racing generation close converges without replay or a pending s
       call,
     ])
     assert.equal(outcomes[1].status, 'fulfilled')
-    assert.equal(outcomes[2].status, 'fulfilled')
     assert.equal(frames.length, 2)
-    assert.ok(
-      (frames[1] as { type: string }).type === 'review.resolved' ||
-        (frames[1] as { type: string }).type === 'review.failed',
-    )
+    const terminalType = (frames[1] as { type: string }).type
+    if (terminalType === 'review.resolved') {
+      assert.equal(outcomes[0].status, 'fulfilled')
+      assert.equal(outcomes[2].status, 'fulfilled')
+      assert.equal(
+        (outcomes[2] as PromiseFulfilledResult<Record<string, any>>)
+          .value.kind,
+        'capability_result',
+      )
+    } else {
+      assert.equal(terminalType, 'review.failed')
+      assert.equal(outcomes[0].status, 'rejected')
+      if (outcomes[2].status === 'fulfilled') {
+        assert.notEqual(outcomes[2].value.kind, 'capability_result')
+      }
+    }
     await assert.rejects(
       broker.settle(interactionId, { outcome: 'accept' }),
       (error) =>
