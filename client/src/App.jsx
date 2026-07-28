@@ -17,14 +17,14 @@ import { getDaysUntil, getDdayLabel, isThisMonth } from "./dday";
 
 export default function App() {
   // 현재 화면을 기억하는 상태. 시작은 "contract"
-  const [screen, setScreen] = useState("contract");
+  const [screen, setScreen] = useState("expenses");
 
   // ── 계약 정보 상태 (App으로 끌어올림 = 여러 화면이 공유) ──
   // 계약입력 화면에서 채우고, 타임라인 화면에서 꺼내 씀
   const [contract, setContract] = useState({
     startDate: "", // 계약 시작일
-    endDate: "",   // 계약 만료일
-    deposit: "",   // 보증금 (콤마 포함 문자열)
+    endDate: "", // 계약 만료일
+    deposit: "", // 보증금 (콤마 포함 문자열)
   });
 
   // ── 보관함 기록 상태 (배열) ──
@@ -47,25 +47,49 @@ export default function App() {
 
   // 타임라인은 자체 전체 화면 레이아웃(넓은 폭 + 자체 배경)을 씀
   if (screen === "timeline") {
-    return <Timeline go={go} contract={contract} notified={notified} records={records} />;
+    return (
+      <Timeline
+        go={go}
+        contract={contract}
+        notified={notified}
+        records={records}
+      />
+    );
   }
 
   return (
     <div style={styles.page}>
       <div style={styles.card}>
         {screen === "contract" && (
-          <ContractInput go={go} contract={contract} setContract={setContract} />
+          <ContractInput
+            go={go}
+            contract={contract}
+            setContract={setContract}
+          />
         )}
         {screen === "decision" && <Decision go={go} />}
-        {screen === "renew" && <RenewResult go={go} addRecord={addRecord} setNotified={setNotified} />}
-        {screen === "leave" && <LeaveResult go={go} addRecord={addRecord} setNotified={setNotified} />}
-        {screen === "returnCheck" && <ReturnCheck go={go} addRecord={addRecord} />}
+        {screen === "renew" && (
+          <RenewResult
+            go={go}
+            addRecord={addRecord}
+            setNotified={setNotified}
+          />
+        )}
+        {screen === "leave" && (
+          <LeaveResult
+            go={go}
+            addRecord={addRecord}
+            setNotified={setNotified}
+          />
+        )}
+        {screen === "returnCheck" && (
+          <ReturnCheck go={go} addRecord={addRecord} />
+        )}
         {screen === "unpaid" && <UnpaidAction go={go} addRecord={addRecord} />}
         {screen === "archive" && <Archive go={go} records={records} />}
         {screen === "settings" && <Settings go={go} />}
         {screen === "expenses" && <ExpenseSetup go={go} />}
       </div>
-      <p style={styles.debug}>현재 화면 상태: "{screen}"</p>
     </div>
   );
 }
@@ -107,7 +131,9 @@ function ContractInput({ go, contract, setContract }) {
       </div>
       <div style={styles.introEyebrow}>집 관련 돈 관리</div>
       <h1 style={styles.introHeadline}>
-        집에 나가는 돈,<br />이제 신경 쓰지 마세요.
+        집에 나가는 돈,
+        <br />
+        이제 신경 쓰지 마세요.
       </h1>
       <p style={styles.introDesc}>
         월세·관리비·공과금부터 보증금 반환까지, 홈키퍼가 챙겨드려요.
@@ -117,13 +143,15 @@ function ContractInput({ go, contract, setContract }) {
         <span style={styles.title}>계약 정보 입력</span>
         <span style={styles.step}>1 / 1 단계</span>
       </div>
-      <p style={styles.desc}>계약 날짜와 보증금을 입력하면 일정이 자동으로 만들어져요.</p>
+      <p style={styles.desc}>
+        계약 날짜와 보증금을 입력하면 일정이 자동으로 만들어져요.
+      </p>
 
       <label style={styles.label}>계약 시작일</label>
       <input
         type="date"
         style={styles.input}
-        value={contract.startDate}                       /* 상태 → 화면 */
+        value={contract.startDate} /* 상태 → 화면 */
         onChange={(e) => update("startDate", e.target.value)} /* 화면 → 상태 */
       />
 
@@ -146,7 +174,9 @@ function ContractInput({ go, contract, setContract }) {
       />
       {/* 입력한 금액을 '○○만원 / ○○억 ○○만원'으로 읽기 쉽게 표시 */}
       {contract.deposit && (
-        <div style={styles.depositWord}>{formatKoreanMoney(contract.deposit)}</div>
+        <div style={styles.depositWord}>
+          {formatKoreanMoney(contract.deposit)}
+        </div>
       )}
 
       <button style={styles.primaryBtn} onClick={handleSubmit}>
@@ -239,7 +269,7 @@ function formatKoreanMoney(depositStr) {
   const man = Math.floor(won / 10000); // 만원 단위로
   if (man === 0) return `${won.toLocaleString("ko-KR")}원`;
   const eok = Math.floor(man / 10000); // 억 단위
-  const restMan = man % 10000;         // 나머지 만원
+  const restMan = man % 10000; // 나머지 만원
   if (eok > 0) {
     return restMan > 0
       ? `${eok}억 ${restMan.toLocaleString("ko-KR")}만원`
@@ -259,9 +289,21 @@ function Timeline({ go, contract, notified, records }) {
 
   // 각 시점 기본 정보 (상태는 아래에서 오늘 기준으로 자동 계산)
   const rawPoints = [
-    { name: "보증보험 마감", date: insuranceDate, desc: "가입은 계약 초기에 해두는 게 좋아요" },
-    { name: "갱신 결정", date: renewDate, desc: "계속 살지, 나갈지 정하는 시점" },
-    { name: "통보 마지노선", date: noticeDate, desc: "이때까진 집주인에게 알려야 해요" },
+    {
+      name: "보증보험 마감",
+      date: insuranceDate,
+      desc: "가입은 계약 초기에 해두는 게 좋아요",
+    },
+    {
+      name: "갱신 결정",
+      date: renewDate,
+      desc: "계속 살지, 나갈지 정하는 시점",
+    },
+    {
+      name: "통보 마지노선",
+      date: noticeDate,
+      desc: "이때까진 집주인에게 알려야 해요",
+    },
     { name: "계약 만료", date: endDate, desc: "보증금을 돌려받는 날" },
   ];
 
@@ -303,9 +345,13 @@ function Timeline({ go, contract, notified, records }) {
         </div>
         <div style={t.navMenu}>
           <span style={t.navActive}>타임라인</span>
-          <span style={t.navItem} onClick={() => go("archive")}>보관함</span>
+          <span style={t.navItem} onClick={() => go("archive")}>
+            보관함
+          </span>
         </div>
-        <div style={t.avatar} onClick={() => go("settings")} title="설정">⚙️</div>
+        <div style={t.avatar} onClick={() => go("settings")} title="설정">
+          ⚙️
+        </div>
       </nav>
 
       <div style={t.divider} />
@@ -315,17 +361,23 @@ function Timeline({ go, contract, notified, records }) {
         <div style={t.eyebrow}>YOUR LEASE, WELL KEPT</div>
         {isExpired ? (
           <h1 style={t.headline}>
-            계약 만료일이 지났어요.<br />
+            계약 만료일이 지났어요.
+            <br />
             보증금 반환을 <span style={t.accent}>확인</span>해 주세요.
           </h1>
         ) : nextPoint ? (
           <h1 style={t.headline}>
-            챙겨야 할 일정을 확인하세요.<br />
-            다음 할 일까지 <span style={t.accent}>{nextPoint.remain}일</span> 남았어요.
+            챙겨야 할 일정을 확인하세요.
+            <br />
+            다음 할 일까지 <span style={t.accent}>
+              {nextPoint.remain}일
+            </span>{" "}
+            남았어요.
           </h1>
         ) : (
           <h1 style={t.headline}>
-            계약 정보를 먼저<br />
+            계약 정보를 먼저
+            <br />
             <span style={t.accent}>입력</span>해 주세요.
           </h1>
         )}
@@ -354,8 +406,12 @@ function Timeline({ go, contract, notified, records }) {
             <>
               <div style={t.greenLabel}>계약 종료</div>
               <div style={t.greenTitle}>보증금 반환 확인하기</div>
-              <div style={t.greenDesc}>계약이 만료됐어요. 보증금을 잘 돌려받았는지 확인해요.</div>
-              <button style={t.ctaBtn} onClick={() => go("returnCheck")}>반환 확인하기 →</button>
+              <div style={t.greenDesc}>
+                계약이 만료됐어요. 보증금을 잘 돌려받았는지 확인해요.
+              </div>
+              <button style={t.ctaBtn} onClick={() => go("returnCheck")}>
+                반환 확인하기 →
+              </button>
             </>
           ) : nextPoint ? (
             <>
@@ -365,15 +421,23 @@ function Timeline({ go, contract, notified, records }) {
                 <span style={t.dNum}>{nextPoint.remain}</span>
               </div>
               <div style={t.greenTitle}>{nextPoint.name}하기</div>
-              <div style={t.greenDesc}>{nextPoint.date}까지 · {nextPoint.desc}</div>
-              <button style={t.ctaBtn} onClick={() => go("decision")}>결정하러 가기 →</button>
+              <div style={t.greenDesc}>
+                {nextPoint.date}까지 · {nextPoint.desc}
+              </div>
+              <button style={t.ctaBtn} onClick={() => go("decision")}>
+                결정하러 가기 →
+              </button>
             </>
           ) : (
             <>
               <div style={t.greenLabel}>안내</div>
               <div style={t.greenTitle}>계약 정보가 필요해요</div>
-              <div style={t.greenDesc}>계약 날짜와 보증금을 입력하면 일정이 만들어져요.</div>
-              <button style={t.ctaBtn} onClick={() => go("contract")}>입력하러 가기 →</button>
+              <div style={t.greenDesc}>
+                계약 날짜와 보증금을 입력하면 일정이 만들어져요.
+              </div>
+              <button style={t.ctaBtn} onClick={() => window.location.reload()}>
+                입력하러 가기 →
+              </button>
             </>
           )}
         </div>
@@ -385,18 +449,42 @@ function Timeline({ go, contract, notified, records }) {
             {points.map((p, i) => (
               <div key={i} style={t.jItem}>
                 <div style={t.jLeft}>
-                  <div style={{ ...t.jDot, ...(p.state === "done" ? t.jDotDone : {}), ...(p.state === "active" ? t.jDotActive : {}), ...(p.state === "past" ? t.jDotPast : {}) }} />
+                  <div
+                    style={{
+                      ...t.jDot,
+                      ...(p.state === "done" ? t.jDotDone : {}),
+                      ...(p.state === "active" ? t.jDotActive : {}),
+                      ...(p.state === "past" ? t.jDotPast : {}),
+                    }}
+                  />
                   {i < points.length - 1 && <div style={t.jLine} />}
                 </div>
                 <div style={t.jBody}>
                   <div style={t.jNameRow}>
-                    <span style={{ ...t.jName, ...(p.state === "active" ? { color: "#c17a4a" } : {}), ...(p.state === "past" ? { color: "#a29a8a" } : {}) }}>{p.name}</span>
-                    {p.state === "done" && <span style={t.jBadgeDone}>완료</span>}
-                    {p.state === "active" && <span style={t.jBadgeNow}>지금 여기</span>}
-                    {p.state === "past" && <span style={t.jBadgePast}>지남</span>}
+                    <span
+                      style={{
+                        ...t.jName,
+                        ...(p.state === "active" ? { color: "#c17a4a" } : {}),
+                        ...(p.state === "past" ? { color: "#a29a8a" } : {}),
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                    {p.state === "done" && (
+                      <span style={t.jBadgeDone}>완료</span>
+                    )}
+                    {p.state === "active" && (
+                      <span style={t.jBadgeNow}>지금 여기</span>
+                    )}
+                    {p.state === "past" && (
+                      <span style={t.jBadgePast}>지남</span>
+                    )}
                   </div>
                   <div style={t.jDate}>
-                    {p.date}{p.state === "active" && p.remain >= 0 ? ` · D-${p.remain}` : ""}
+                    {p.date}
+                    {p.state === "active" && p.remain >= 0
+                      ? ` · D-${p.remain}`
+                      : ""}
                   </div>
                   <div style={t.jDesc}>{p.desc}</div>
                 </div>
@@ -416,7 +504,10 @@ function Timeline({ go, contract, notified, records }) {
               <span style={t.recentIcon}>{records[0].icon}</span>
               <div>
                 <div style={t.recentTitle}>{records[0].title}</div>
-                <div style={t.recentSub}>{records[0].date}{records[0].sub ? ` · ${records[0].sub}` : ""}</div>
+                <div style={t.recentSub}>
+                  {records[0].date}
+                  {records[0].sub ? ` · ${records[0].sub}` : ""}
+                </div>
               </div>
             </div>
           ) : (
@@ -424,14 +515,17 @@ function Timeline({ go, contract, notified, records }) {
               아직 활동이 없어요. 통보를 완료하면 여기에 표시돼요.
             </div>
           )}
-          <button style={t.recentBtn} onClick={() => go("archive")}>보관함 보기 →</button>
+          <button style={t.recentBtn} onClick={() => go("archive")}>
+            보관함 보기 →
+          </button>
         </div>
 
         {/* 오늘의 팁 */}
         <div style={t.tipCard}>
           <div style={t.tipLabel}>💡 알아두면 좋아요</div>
           <div style={t.tipText}>
-            전입신고와 확정일자는 <b>이사 당일 바로</b> 받는 게 안전해요. 하루만 늦어도 보증금 보호 순위가 밀릴 수 있어요.
+            전입신고와 확정일자는 <b>이사 당일 바로</b> 받는 게 안전해요. 하루만
+            늦어도 보증금 보호 순위가 밀릴 수 있어요.
           </div>
         </div>
       </div>
@@ -444,12 +538,16 @@ function Decision({ go }) {
   return (
     <div>
       <div style={styles.backRow}>
-        <button style={styles.ghostBtn} onClick={() => go("timeline")}>← 타임라인으로</button>
+        <button style={styles.ghostBtn} onClick={() => go("timeline")}>
+          ← 타임라인으로
+        </button>
       </div>
       <div style={styles.center}>
         <div style={styles.qIcon}>📅</div>
         <div style={styles.qTitle}>계약 만료가 6개월 남았어요</div>
-        <div style={styles.qDesc}>이 집에서 계속 사실 건가요, 나가실 건가요?</div>
+        <div style={styles.qDesc}>
+          이 집에서 계속 사실 건가요, 나가실 건가요?
+        </div>
       </div>
       <div style={styles.choices}>
         {/* 갱신 → renew, 퇴거 → leave 로 분기 */}
@@ -488,7 +586,11 @@ function RenewResult({ go, addRecord, setNotified }) {
 
   const handleSave = () => {
     // 선택한 방법들을 쉼표로 이어서 기록에 저장
-    addRecord({ icon: "🏠", title: "갱신 통보 완료", sub: `${methods.join(", ")}으로 통보` });
+    addRecord({
+      icon: "🏠",
+      title: "갱신 통보 완료",
+      sub: `${methods.join(", ")}으로 통보`,
+    });
     setNotified(true); // 타임라인의 '갱신 결정'을 완료로 바꿈
     go("timeline");
   };
@@ -498,26 +600,50 @@ function RenewResult({ go, addRecord, setNotified }) {
   return (
     <div>
       <div style={styles.backRow}>
-        <button style={styles.ghostBtn} onClick={() => go("decision")}>← 선택 다시 하기</button>
+        <button style={styles.ghostBtn} onClick={() => go("decision")}>
+          ← 선택 다시 하기
+        </button>
       </div>
-      <div style={styles.titleRow}><span style={{ fontSize: 22 }}>🏠</span><span style={styles.title}>갱신하기로 하셨네요</span></div>
+      <div style={styles.titleRow}>
+        <span style={{ fontSize: 22 }}>🏠</span>
+        <span style={styles.title}>갱신하기로 하셨네요</span>
+      </div>
       <div style={styles.stepsGuide}>
         <div style={styles.sgTitle}>이렇게 진행하면 돼요</div>
-        <div style={styles.sgItem}><span style={styles.sgNum}>1</span> 집주인에게 "갱신하겠다"고 통보해요</div>
-        <div style={styles.sgItem}><span style={styles.sgNum}>2</span> 문자·카톡이면 캡처, 내용증명이면 영수증 보관</div>
-        <div style={styles.sgItem}><span style={styles.sgNum}>3</span> 아래에서 통보 완료 표시를 남겨요</div>
+        <div style={styles.sgItem}>
+          <span style={styles.sgNum}>1</span> 집주인에게 "갱신하겠다"고 통보해요
+        </div>
+        <div style={styles.sgItem}>
+          <span style={styles.sgNum}>2</span> 문자·카톡이면 캡처, 내용증명이면
+          영수증 보관
+        </div>
+        <div style={styles.sgItem}>
+          <span style={styles.sgNum}>3</span> 아래에서 통보 완료 표시를 남겨요
+        </div>
       </div>
-      <a href="https://www.easylaw.go.kr" target="_blank" rel="noopener noreferrer" style={styles.link}>
+      <a
+        href="https://www.easylaw.go.kr"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={styles.link}
+      >
         정확한 문구·양식 확인하기 · 생활법령정보 ↗
       </a>
 
       {/* 통보 방법 선택 - 여러 개 선택 가능 */}
-      <div style={styles.sectionLabel}>어떤 방법으로 통보하셨나요? <span style={styles.multiHint}>(여러 개 선택 가능)</span></div>
+      <div style={styles.sectionLabel}>
+        어떤 방법으로 통보하셨나요?{" "}
+        <span style={styles.multiHint}>(여러 개 선택 가능)</span>
+      </div>
       <div style={styles.methodRow}>
         {methodOptions.map((m) => (
           <button
             key={m}
-            style={methods.includes(m) ? { ...styles.methodBtn, ...styles.methodPicked } : styles.methodBtn}
+            style={
+              methods.includes(m)
+                ? { ...styles.methodBtn, ...styles.methodPicked }
+                : styles.methodBtn
+            }
             onClick={() => toggleMethod(m)}
           >
             {m}
@@ -527,12 +653,20 @@ function RenewResult({ go, addRecord, setNotified }) {
 
       {/* 완료 체크 */}
       <label style={styles.doneCheck}>
-        <input type="checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={done}
+          onChange={(e) => setDone(e.target.checked)}
+        />
         <span>통보 완료했어요</span>
       </label>
 
       <button
-        style={canSave ? styles.primaryBtn : { ...styles.primaryBtn, ...styles.btnDisabled }}
+        style={
+          canSave
+            ? styles.primaryBtn
+            : { ...styles.primaryBtn, ...styles.btnDisabled }
+        }
         onClick={handleSave}
         disabled={!canSave}
       >
@@ -557,7 +691,11 @@ function LeaveResult({ go, addRecord, setNotified }) {
   };
 
   const handleSave = () => {
-    addRecord({ icon: "🚪", title: "퇴거 통보 완료", sub: `${methods.join(", ")}으로 통보` });
+    addRecord({
+      icon: "🚪",
+      title: "퇴거 통보 완료",
+      sub: `${methods.join(", ")}으로 통보`,
+    });
     setNotified(true); // 타임라인의 '갱신 결정'을 완료로 바꿈
     go("timeline");
   };
@@ -567,44 +705,67 @@ function LeaveResult({ go, addRecord, setNotified }) {
   return (
     <div>
       <div style={styles.backRow}>
-        <button style={styles.ghostBtn} onClick={() => go("decision")}>← 선택 다시 하기</button>
+        <button style={styles.ghostBtn} onClick={() => go("decision")}>
+          ← 선택 다시 하기
+        </button>
       </div>
-      <div style={styles.titleRow}><span style={{ fontSize: 22 }}>🚪</span><span style={styles.title}>나가기로 하셨네요</span></div>
+      <div style={styles.titleRow}>
+        <span style={{ fontSize: 22 }}>🚪</span>
+        <span style={styles.title}>나가기로 하셨네요</span>
+      </div>
       <div style={styles.warnBox}>
-        <b>만료 2개월 전까지</b> 나가겠다는 의사를 꼭 알려야 해요. 안 그러면 계약이 자동 연장될 수 있어요.
+        <b>만료 2개월 전까지</b> 나가겠다는 의사를 꼭 알려야 해요. 안 그러면
+        계약이 자동 연장될 수 있어요.
       </div>
       <div style={styles.sectionLabel}>나갈 때 꼭 확인하세요</div>
       <div style={styles.noticeGroup}>
         <div style={styles.noticeItem}>
           <span style={styles.noticeDot} />
           <div>
-            <div style={styles.noticeTitleDanger}>보증금 받기 전엔 전입신고 옮기지 않기</div>
-            <div style={styles.noticeDesc}>미리 옮기면 보증금 지킬 권리(대항력)를 잃을 수 있어요</div>
+            <div style={styles.noticeTitleDanger}>
+              보증금 받기 전엔 전입신고 옮기지 않기
+            </div>
+            <div style={styles.noticeDesc}>
+              미리 옮기면 보증금 지킬 권리(대항력)를 잃을 수 있어요
+            </div>
           </div>
         </div>
         <div style={styles.noticeItem}>
           <span style={styles.noticeDot} />
           <div>
-            <div style={styles.noticeTitle}>새 집 잔금일과 보증금 받는 날 맞추기</div>
-            <div style={styles.noticeDesc}>두 날짜가 어긋나면 목돈이 잠깐 비어버릴 수 있어요</div>
+            <div style={styles.noticeTitle}>
+              새 집 잔금일과 보증금 받는 날 맞추기
+            </div>
+            <div style={styles.noticeDesc}>
+              두 날짜가 어긋나면 목돈이 잠깐 비어버릴 수 있어요
+            </div>
           </div>
         </div>
         <div style={styles.noticeItem}>
           <span style={styles.noticeDot} />
           <div>
             <div style={styles.noticeTitle}>등기부등본 다시 확인하기</div>
-            <div style={styles.noticeDesc}>근저당 등이 새로 잡혔는지 이사 전에 점검해요</div>
+            <div style={styles.noticeDesc}>
+              근저당 등이 새로 잡혔는지 이사 전에 점검해요
+            </div>
           </div>
         </div>
       </div>
 
       {/* 통보 방법 선택 - 여러 개 선택 가능 */}
-      <div style={{ ...styles.sectionLabel, marginTop: 20 }}>어떤 방법으로 통보하셨나요? <span style={styles.multiHint}>(여러 개 선택 가능)</span></div>
+      <div style={{ ...styles.sectionLabel, marginTop: 20 }}>
+        어떤 방법으로 통보하셨나요?{" "}
+        <span style={styles.multiHint}>(여러 개 선택 가능)</span>
+      </div>
       <div style={styles.methodRow}>
         {methodOptions.map((m) => (
           <button
             key={m}
-            style={methods.includes(m) ? { ...styles.methodBtn, ...styles.methodPicked } : styles.methodBtn}
+            style={
+              methods.includes(m)
+                ? { ...styles.methodBtn, ...styles.methodPicked }
+                : styles.methodBtn
+            }
             onClick={() => toggleMethod(m)}
           >
             {m}
@@ -614,12 +775,20 @@ function LeaveResult({ go, addRecord, setNotified }) {
 
       {/* 완료 체크 */}
       <label style={styles.doneCheck}>
-        <input type="checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={done}
+          onChange={(e) => setDone(e.target.checked)}
+        />
         <span>통보 완료했어요</span>
       </label>
 
       <button
-        style={canSave ? styles.primaryBtn : { ...styles.primaryBtn, ...styles.btnDisabled }}
+        style={
+          canSave
+            ? styles.primaryBtn
+            : { ...styles.primaryBtn, ...styles.btnDisabled }
+        }
         onClick={handleSave}
         disabled={!canSave}
       >
@@ -633,13 +802,19 @@ function LeaveResult({ go, addRecord, setNotified }) {
 function ReturnCheck({ go, addRecord }) {
   // 받았어요 → 반환 완료 기록 남기고 타임라인으로
   const handleReceived = () => {
-    addRecord({ icon: "💰", title: "보증금 반환 완료", sub: "만료일에 보증금 수령" });
+    addRecord({
+      icon: "💰",
+      title: "보증금 반환 완료",
+      sub: "만료일에 보증금 수령",
+    });
     go("timeline");
   };
   return (
     <div>
       <div style={styles.backRow}>
-        <button style={styles.ghostBtn} onClick={() => go("timeline")}>← 타임라인으로</button>
+        <button style={styles.ghostBtn} onClick={() => go("timeline")}>
+          ← 타임라인으로
+        </button>
       </div>
       <div style={styles.center}>
         <div style={styles.qIcon}>💵</div>
@@ -665,31 +840,64 @@ function ReturnCheck({ go, addRecord }) {
 // ── 화면 7: 미반환 대응 ──
 function UnpaidAction({ go, addRecord }) {
   const handleSave = () => {
-    addRecord({ icon: "🛡️", title: "미반환 대응 확인", sub: "임차권등기명령 안내 확인" });
+    addRecord({
+      icon: "🛡️",
+      title: "미반환 대응 확인",
+      sub: "임차권등기명령 안내 확인",
+    });
     go("archive");
   };
   return (
     <div>
       <div style={styles.backRow}>
-        <button style={styles.ghostBtn} onClick={() => go("returnCheck")}>← 이전으로</button>
+        <button style={styles.ghostBtn} onClick={() => go("returnCheck")}>
+          ← 이전으로
+        </button>
       </div>
-      <div style={styles.titleRow}><span style={{ fontSize: 22 }}>🛡️</span><span style={styles.title}>보증금을 아직 못 받으셨군요</span></div>
+      <div style={styles.titleRow}>
+        <span style={{ fontSize: 22 }}>🛡️</span>
+        <span style={styles.title}>보증금을 아직 못 받으셨군요</span>
+      </div>
       <div style={styles.keyWarn}>
-        <div style={styles.keyWarnTitle}>⚠️ 이사보다 '임차권등기명령'이 먼저예요</div>
-        <p style={{ fontSize: 12, color: "#6b6558", lineHeight: 1.6, margin: 0 }}>
+        <div style={styles.keyWarnTitle}>
+          ⚠️ 이사보다 '임차권등기명령'이 먼저예요
+        </div>
+        <p
+          style={{ fontSize: 12, color: "#6b6558", lineHeight: 1.6, margin: 0 }}
+        >
           등기가 끝나기 전에 이사하면 보증금 받을 권리(대항력)를 잃을 수 있어요.
         </p>
       </div>
-      <a href="https://ecfs.scourt.go.kr" target="_blank" rel="noopener noreferrer" style={styles.link}>
+      <a
+        href="https://ecfs.scourt.go.kr"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={styles.link}
+      >
         1. 임차권등기명령 신청 · 대법원 전자소송 ↗
       </a>
-      <a href="https://www.klac.or.kr" target="_blank" rel="noopener noreferrer" style={styles.link}>
+      <a
+        href="https://www.klac.or.kr"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={styles.link}
+      >
         2. 무료 법률상담 · 대한법률구조공단 ↗
       </a>
-      <a href="https://www.khug.or.kr/jeonse" target="_blank" rel="noopener noreferrer" style={styles.link}>
+      <a
+        href="https://www.khug.or.kr/jeonse"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={styles.link}
+      >
         3. 전세사기 피해자 지원 · HUG ↗
       </a>
-      <button style={{ ...styles.primaryBtn, marginTop: 8 }} onClick={handleSave}>확인했어요, 보관함에 기록</button>
+      <button
+        style={{ ...styles.primaryBtn, marginTop: 8 }}
+        onClick={handleSave}
+      >
+        확인했어요, 보관함에 기록
+      </button>
     </div>
   );
 }
@@ -701,14 +909,18 @@ function Archive({ go, records }) {
     <div>
       <div style={styles.header}>
         <span style={styles.title}>보관함</span>
-        <button style={styles.ghostBtn} onClick={() => go("timeline")}>← 타임라인으로</button>
+        <button style={styles.ghostBtn} onClick={() => go("timeline")}>
+          ← 타임라인으로
+        </button>
       </div>
 
       {records.length === 0 ? (
         // 기록이 하나도 없을 때: 빈 화면 안내
         <div style={{ textAlign: "center", padding: "40px 20px" }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>📦</div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 보관된 게 없어요</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>
+            아직 보관된 게 없어요
+          </div>
           <div style={{ fontSize: 13, color: "#6b6558", lineHeight: 1.7 }}>
             갱신·퇴거 통보를 완료하면 여기에 자동으로 기록돼요.
           </div>
@@ -721,12 +933,16 @@ function Archive({ go, records }) {
               <div style={styles.recordIcon}>{r.icon}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500 }}>{r.title}</div>
-                <div style={{ fontSize: 12, color: "#6b6558", marginTop: 2 }}>{r.sub}</div>
+                <div style={{ fontSize: 12, color: "#6b6558", marginTop: 2 }}>
+                  {r.sub}
+                </div>
               </div>
               <div style={{ fontSize: 12, color: "#999" }}>{r.date}</div>
             </div>
           ))}
-          <div style={styles.disclaimer}>ℹ️ 이 기록은 참고용 메모예요. 법적 증빙 효력을 보장하지는 않아요.</div>
+          <div style={styles.disclaimer}>
+            ℹ️ 이 기록은 참고용 메모예요. 법적 증빙 효력을 보장하지는 않아요.
+          </div>
         </>
       )}
     </div>
@@ -739,15 +955,25 @@ function Settings({ go }) {
     <div>
       <div style={styles.header}>
         <span style={styles.title}>설정</span>
-        <button style={styles.ghostBtn} onClick={() => go("timeline")}>← 타임라인으로</button>
+        <button style={styles.ghostBtn} onClick={() => go("timeline")}>
+          ← 타임라인으로
+        </button>
       </div>
       {["내 계약 관리", "알림 시점 조절", "개인정보 처리방침"].map((m, i) => (
-        <div key={i} style={styles.menuItem}><span>{m}</span><span style={{ color: "#b4b2a9" }}>›</span></div>
+        <div key={i} style={styles.menuItem}>
+          <span>{m}</span>
+          <span style={{ color: "#b4b2a9" }}>›</span>
+        </div>
       ))}
       <div style={styles.disclaimerBox}>
-        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>⚠️ 꼭 알아두세요</div>
-        <p style={{ fontSize: 12, color: "#6b6558", lineHeight: 1.7, margin: 0 }}>
-          이 앱은 법률 자문이 아닌 일정 안내 서비스입니다. 정확한 법적 판단은 공식 기관이나 전문가를 통해 확인해주세요.
+        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+          ⚠️ 꼭 알아두세요
+        </div>
+        <p
+          style={{ fontSize: 12, color: "#6b6558", lineHeight: 1.7, margin: 0 }}
+        >
+          이 앱은 법률 자문이 아닌 일정 안내 서비스입니다. 정확한 법적 판단은
+          공식 기관이나 전문가를 통해 확인해주세요.
         </p>
       </div>
     </div>
@@ -758,75 +984,414 @@ function Settings({ go }) {
 // 스타일
 // ============================================================
 const styles = {
-  page: { minHeight: "100vh", background: "#f3f0e9", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px", fontFamily: "-apple-system, 'Noto Sans KR', sans-serif", color: "#2a2724" },
-  card: { width: "100%", maxWidth: 560, background: "#faf8f3", border: "1px solid #ebe6da", borderRadius: 18, padding: 32, boxSizing: "border-box" },
-  debug: { marginTop: 16, fontSize: 12, color: "#8a8478", background: "#faf8f3", padding: "6px 12px", borderRadius: 20, border: "1px solid #ebe6da" },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #ebe6da", paddingBottom: 16, marginBottom: 20 },
-  introBrand: { display: "flex", alignItems: "center", gap: 10, marginBottom: 20 },
-  introLogo: { width: 32, height: 32, borderRadius: "50%", background: "#2d4030", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 },
+  page: {
+    minHeight: "100vh",
+    background: "#f3f0e9",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "40px 20px",
+    fontFamily: "-apple-system, 'Noto Sans KR', sans-serif",
+    color: "#2a2724",
+  },
+  card: {
+    width: "100%",
+    maxWidth: 560,
+    background: "#faf8f3",
+    border: "1px solid #ebe6da",
+    borderRadius: 18,
+    padding: 32,
+    boxSizing: "border-box",
+  },
+  debug: {
+    marginTop: 16,
+    fontSize: 12,
+    color: "#8a8478",
+    background: "#faf8f3",
+    padding: "6px 12px",
+    borderRadius: 20,
+    border: "1px solid #ebe6da",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottom: "1px solid #ebe6da",
+    paddingBottom: 16,
+    marginBottom: 20,
+  },
+  introBrand: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+  },
+  introLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: "50%",
+    background: "#2d4030",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 14,
+    fontWeight: 700,
+  },
   introBrandName: { fontSize: 16, fontWeight: 700, color: "#2d4030" },
-  introEyebrow: { fontSize: 12, letterSpacing: 1, color: "#c17a4a", fontWeight: 700, marginBottom: 12 },
-  introHeadline: { fontSize: 25, fontWeight: 800, lineHeight: 1.4, margin: "0 0 12px", color: "#2d4030", fontFamily: "'Noto Serif KR', serif", letterSpacing: "-0.5px" },
+  introEyebrow: {
+    fontSize: 12,
+    letterSpacing: 1,
+    color: "#c17a4a",
+    fontWeight: 700,
+    marginBottom: 12,
+  },
+  introHeadline: {
+    fontSize: 25,
+    fontWeight: 800,
+    lineHeight: 1.4,
+    margin: "0 0 12px",
+    color: "#2d4030",
+    fontFamily: "'Noto Serif KR', serif",
+    letterSpacing: "-0.5px",
+  },
   introDesc: { fontSize: 13, color: "#6b6558", lineHeight: 1.6, margin: 0 },
-  title: { fontSize: 18, fontWeight: 700, color: "#2d4030", fontFamily: "'Noto Serif KR', serif" },
+  title: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#2d4030",
+    fontFamily: "'Noto Serif KR', serif",
+  },
   sub: { fontSize: 12, color: "#8a8478", marginTop: 3 },
   step: { fontSize: 12, color: "#8a8478" },
   desc: { fontSize: 14, color: "#6b6558", lineHeight: 1.6, marginBottom: 20 },
-  label: { display: "block", fontSize: 13, color: "#6b6558", margin: "12px 0 6px" },
-  input: { width: "100%", height: 44, padding: "0 12px", border: "1px solid #d9d2c4", borderRadius: 10, fontSize: 15, boxSizing: "border-box", background: "#fff" },
-  depositWord: { fontSize: 13, color: "#c17a4a", marginTop: 8, fontWeight: 600 },
-  primaryBtn: { width: "100%", height: 48, marginTop: 24, background: "#2d4030", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" },
-  ghostBtn: { padding: "8px 14px", background: "#faf8f3", border: "1px solid #d9d2c4", borderRadius: 10, fontSize: 13, color: "#6b6558", cursor: "pointer" },
-  banner: { display: "flex", alignItems: "center", gap: 12, background: "#e8ede2", borderRadius: 12, padding: 16, marginBottom: 26 },
+  label: {
+    display: "block",
+    fontSize: 13,
+    color: "#6b6558",
+    margin: "12px 0 6px",
+  },
+  input: {
+    width: "100%",
+    height: 44,
+    padding: "0 12px",
+    border: "1px solid #d9d2c4",
+    borderRadius: 10,
+    fontSize: 15,
+    boxSizing: "border-box",
+    background: "#fff",
+  },
+  depositWord: {
+    fontSize: 13,
+    color: "#c17a4a",
+    marginTop: 8,
+    fontWeight: 600,
+  },
+  primaryBtn: {
+    width: "100%",
+    height: 48,
+    marginTop: 24,
+    background: "#2d4030",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  ghostBtn: {
+    padding: "8px 14px",
+    background: "#faf8f3",
+    border: "1px solid #d9d2c4",
+    borderRadius: 10,
+    fontSize: 13,
+    color: "#6b6558",
+    cursor: "pointer",
+  },
+  banner: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    background: "#e8ede2",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 26,
+  },
   bannerTitle: { fontSize: 14, fontWeight: 700, color: "#2d4030" },
   bannerDesc: { fontSize: 13, color: "#5c6b54", marginTop: 3 },
-  bannerBtn: { marginLeft: "auto", height: 38, padding: "0 16px", background: "#c17a4a", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" },
+  bannerBtn: {
+    marginLeft: "auto",
+    height: 38,
+    padding: "0 16px",
+    background: "#c17a4a",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  },
   timelineRow: { display: "flex", justifyContent: "space-between" },
-  point: { display: "flex", flexDirection: "column", alignItems: "center", width: "22%", textAlign: "center" },
-  dot: { width: 22, height: 22, borderRadius: "50%", background: "#fff", border: "2px solid #cfc9bb" },
+  point: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "22%",
+    textAlign: "center",
+  },
+  dot: {
+    width: 22,
+    height: 22,
+    borderRadius: "50%",
+    background: "#fff",
+    border: "2px solid #cfc9bb",
+  },
   dotDone: { background: "#2d4030", border: "2px solid #2d4030" },
   dotActive: { background: "#c17a4a", border: "2px solid #c17a4a" },
   pointName: { fontSize: 12, fontWeight: 500, color: "#6b6558", marginTop: 10 },
   pointDate: { fontSize: 11, color: "#8a8478", marginTop: 2 },
   backRow: { marginBottom: 16 },
-  titleRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 },
+  titleRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
   center: { textAlign: "center", padding: "24px 0 28px" },
-  qIcon: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 56, height: 56, borderRadius: "50%", background: "#e8ede2", fontSize: 28, marginBottom: 16 },
-  qTitle: { fontSize: 20, fontWeight: 700, color: "#2d4030", fontFamily: "'Noto Serif KR', serif" },
+  qIcon: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 56,
+    height: 56,
+    borderRadius: "50%",
+    background: "#e8ede2",
+    fontSize: 28,
+    marginBottom: 16,
+  },
+  qTitle: {
+    fontSize: 20,
+    fontWeight: 700,
+    color: "#2d4030",
+    fontFamily: "'Noto Serif KR', serif",
+  },
   qDesc: { fontSize: 14, color: "#6b6558", marginTop: 8 },
   choices: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
-  choice: { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "28px 16px", background: "#fff", border: "1px solid #d9d2c4", borderRadius: 14, cursor: "pointer" },
+  choice: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 10,
+    padding: "28px 16px",
+    background: "#fff",
+    border: "1px solid #d9d2c4",
+    borderRadius: 14,
+    cursor: "pointer",
+  },
   choiceIcon: { fontSize: 32 },
   choiceTitle: { fontSize: 16, fontWeight: 700, color: "#2d4030" },
   choiceSub: { fontSize: 12, color: "#6b6558" },
-  stepsGuide: { background: "#e8ede2", borderRadius: 14, padding: "16px 18px", marginBottom: 20 },
-  sgTitle: { fontSize: 13, fontWeight: 700, color: "#2d4030", marginBottom: 12 },
-  sgItem: { display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#3f5140", marginBottom: 10 },
-  sgNum: { flexShrink: 0, width: 20, height: 20, borderRadius: "50%", background: "#2d4030", color: "#fff", fontSize: 12, display: "inline-flex", alignItems: "center", justifyContent: "center" },
-  link: { display: "block", padding: "12px 14px", background: "#e8ede2", borderRadius: 10, fontSize: 13, color: "#2d4030", textDecoration: "none", marginBottom: 10, fontWeight: 500 },
-  warnBox: { background: "#f6ead9", borderRadius: 10, padding: "12px 14px", fontSize: 12, color: "#9c6633", lineHeight: 1.6, marginBottom: 20 },
-  sectionLabel: { fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#2d4030" },
-  checkItem: { display: "flex", alignItems: "center", gap: 10, padding: 14, border: "1px solid #ebe6da", borderRadius: 10, fontSize: 13, marginBottom: 8, cursor: "pointer" },
-  checkDanger: { border: "1.5px solid #d99a9a", color: "#b83232", fontWeight: 500 },
-  noticeGroup: { border: "1px solid #ebe6da", borderRadius: 14, padding: 18, marginBottom: 16, display: "flex", flexDirection: "column", gap: 16, background: "#fff" },
+  stepsGuide: {
+    background: "#e8ede2",
+    borderRadius: 14,
+    padding: "16px 18px",
+    marginBottom: 20,
+  },
+  sgTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#2d4030",
+    marginBottom: 12,
+  },
+  sgItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 13,
+    color: "#3f5140",
+    marginBottom: 10,
+  },
+  sgNum: {
+    flexShrink: 0,
+    width: 20,
+    height: 20,
+    borderRadius: "50%",
+    background: "#2d4030",
+    color: "#fff",
+    fontSize: 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  link: {
+    display: "block",
+    padding: "12px 14px",
+    background: "#e8ede2",
+    borderRadius: 10,
+    fontSize: 13,
+    color: "#2d4030",
+    textDecoration: "none",
+    marginBottom: 10,
+    fontWeight: 500,
+  },
+  warnBox: {
+    background: "#f6ead9",
+    borderRadius: 10,
+    padding: "12px 14px",
+    fontSize: 12,
+    color: "#9c6633",
+    lineHeight: 1.6,
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: 700,
+    marginBottom: 10,
+    color: "#2d4030",
+  },
+  checkItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    border: "1px solid #ebe6da",
+    borderRadius: 10,
+    fontSize: 13,
+    marginBottom: 8,
+    cursor: "pointer",
+  },
+  checkDanger: {
+    border: "1.5px solid #d99a9a",
+    color: "#b83232",
+    fontWeight: 500,
+  },
+  noticeGroup: {
+    border: "1px solid #ebe6da",
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+    background: "#fff",
+  },
   noticeItem: { display: "flex", gap: 10, alignItems: "flex-start" },
-  noticeDot: { flexShrink: 0, width: 6, height: 6, borderRadius: "50%", background: "#c17a4a", marginTop: 6 },
+  noticeDot: {
+    flexShrink: 0,
+    width: 6,
+    height: 6,
+    borderRadius: "50%",
+    background: "#c17a4a",
+    marginTop: 6,
+  },
   noticeTitle: { fontSize: 13, fontWeight: 500, color: "#2a2724" },
   noticeTitleDanger: { fontSize: 13, fontWeight: 500, color: "#b83232" },
   noticeDesc: { fontSize: 12, color: "#6b6558", marginTop: 3, lineHeight: 1.5 },
-  methodRow: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 },
+  methodRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    gap: 8,
+    marginBottom: 16,
+  },
   multiHint: { fontSize: 12, fontWeight: 400, color: "#8a8478" },
-  methodBtn: { padding: 10, background: "#fff", border: "1px solid #d9d2c4", borderRadius: 10, fontSize: 13, color: "#2a2724", cursor: "pointer" },
-  methodPicked: { background: "#2d4030", color: "#fff", border: "1px solid #2d4030" },
-  doneCheck: { display: "flex", alignItems: "center", gap: 10, padding: 14, border: "1px solid #d9d2c4", borderRadius: 10, fontSize: 14, fontWeight: 500, marginBottom: 16, cursor: "pointer" },
+  methodBtn: {
+    padding: 10,
+    background: "#fff",
+    border: "1px solid #d9d2c4",
+    borderRadius: 10,
+    fontSize: 13,
+    color: "#2a2724",
+    cursor: "pointer",
+  },
+  methodPicked: {
+    background: "#2d4030",
+    color: "#fff",
+    border: "1px solid #2d4030",
+  },
+  doneCheck: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    border: "1px solid #d9d2c4",
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 500,
+    marginBottom: 16,
+    cursor: "pointer",
+  },
   btnDisabled: { background: "#cfc9bb", cursor: "not-allowed", marginTop: 0 },
-  keyWarn: { border: "1.5px solid #d99a9a", borderRadius: 14, padding: "16px 18px", marginBottom: 20, background: "#fff" },
-  keyWarnTitle: { fontSize: 14, fontWeight: 700, color: "#b83232", marginBottom: 8 },
-  record: { display: "flex", gap: 12, padding: 14, border: "1px solid #ebe6da", borderRadius: 12, marginBottom: 10, alignItems: "center", background: "#fff" },
-  recordIcon: { flexShrink: 0, width: 36, height: 36, borderRadius: "50%", background: "#e8ede2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 },
-  disclaimer: { display: "flex", gap: 8, padding: 12, background: "#e8ede2", borderRadius: 10, fontSize: 12, color: "#5c6b54", lineHeight: 1.6, marginTop: 12 },
-  menuItem: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: 14, border: "1px solid #ebe6da", borderRadius: 10, fontSize: 13, marginBottom: 8, background: "#fff" },
-  disclaimerBox: { border: "1px solid #ebe6da", borderRadius: 14, padding: "16px 18px", background: "#e8ede2", marginTop: 14 },errorText: { fontSize: 12, color: "#c0392b", marginTop: -8, marginBottom: 12, textAlign: "center" },
+  keyWarn: {
+    border: "1.5px solid #d99a9a",
+    borderRadius: 14,
+    padding: "16px 18px",
+    marginBottom: 20,
+    background: "#fff",
+  },
+  keyWarnTitle: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#b83232",
+    marginBottom: 8,
+  },
+  record: {
+    display: "flex",
+    gap: 12,
+    padding: 14,
+    border: "1px solid #ebe6da",
+    borderRadius: 12,
+    marginBottom: 10,
+    alignItems: "center",
+    background: "#fff",
+  },
+  recordIcon: {
+    flexShrink: 0,
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    background: "#e8ede2",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 18,
+  },
+  disclaimer: {
+    display: "flex",
+    gap: 8,
+    padding: 12,
+    background: "#e8ede2",
+    borderRadius: 10,
+    fontSize: 12,
+    color: "#5c6b54",
+    lineHeight: 1.6,
+    marginTop: 12,
+  },
+  menuItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 14,
+    border: "1px solid #ebe6da",
+    borderRadius: 10,
+    fontSize: 13,
+    marginBottom: 8,
+    background: "#fff",
+  },
+  disclaimerBox: {
+    border: "1px solid #ebe6da",
+    borderRadius: 14,
+    padding: "16px 18px",
+    background: "#e8ede2",
+    marginTop: 14,
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#c0392b",
+    marginTop: -8,
+    marginBottom: 12,
+    textAlign: "center",
+  },
 };
 
 // ============================================================
@@ -843,72 +1408,249 @@ const t = {
     boxSizing: "border-box",
   },
   // 상단 네비
-  nav: { display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1040, margin: "0 auto" },
+  nav: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    maxWidth: 1040,
+    margin: "0 auto",
+  },
   brand: { display: "flex", alignItems: "center", gap: 10 },
-  logo: { width: 34, height: 34, borderRadius: "50%", background: "#2d4030", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700 },
+  logo: {
+    width: 34,
+    height: 34,
+    borderRadius: "50%",
+    background: "#2d4030",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 15,
+    fontWeight: 700,
+  },
   brandName: { fontSize: 16, fontWeight: 700, whiteSpace: "nowrap" },
   navMenu: { display: "flex", gap: 28, fontSize: 14 },
-  navActive: { color: "#2d4030", fontWeight: 700, borderBottom: "2px solid #c17a4a", paddingBottom: 4, cursor: "pointer" },
+  navActive: {
+    color: "#2d4030",
+    fontWeight: 700,
+    borderBottom: "2px solid #c17a4a",
+    paddingBottom: 4,
+    cursor: "pointer",
+  },
   navItem: { color: "#6b6558", cursor: "pointer", paddingBottom: 4 },
-  avatar: { width: 36, height: 36, borderRadius: "50%", background: "#ece8de", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer" },
-  divider: { maxWidth: 1040, margin: "20px auto 0", borderTop: "1px solid #e0dbcf" },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    background: "#ece8de",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 16,
+    cursor: "pointer",
+  },
+  divider: {
+    maxWidth: 1040,
+    margin: "20px auto 0",
+    borderTop: "1px solid #e0dbcf",
+  },
 
   // 헤드라인
   hero: { maxWidth: 1040, margin: "36px auto 0" },
-  eyebrow: { fontSize: 13, letterSpacing: 3, color: "#c17a4a", fontWeight: 600, marginBottom: 16 },
-  headline: { fontSize: 34, fontWeight: 800, lineHeight: 1.35, margin: 0, fontFamily: "'Noto Serif KR', serif", letterSpacing: "-0.5px" },
+  eyebrow: {
+    fontSize: 13,
+    letterSpacing: 3,
+    color: "#c17a4a",
+    fontWeight: 600,
+    marginBottom: 16,
+  },
+  headline: {
+    fontSize: 34,
+    fontWeight: 800,
+    lineHeight: 1.35,
+    margin: 0,
+    fontFamily: "'Noto Serif KR', serif",
+    letterSpacing: "-0.5px",
+  },
   accent: { color: "#c17a4a" },
   chips: { display: "flex", gap: 10, marginTop: 22, flexWrap: "wrap" },
-  chip: { fontSize: 13, color: "#6b6558", background: "#faf8f3", border: "1px solid #e0dbcf", borderRadius: 20, padding: "6px 14px" },
-  chipGreen: { fontSize: 13, color: "#2d4030", background: "#e8ede2", borderRadius: 20, padding: "6px 14px", fontWeight: 500 },
-  chipGray: { fontSize: 13, color: "#8a8478", background: "#ece8de", borderRadius: 20, padding: "6px 14px", fontWeight: 500 },
+  chip: {
+    fontSize: 13,
+    color: "#6b6558",
+    background: "#faf8f3",
+    border: "1px solid #e0dbcf",
+    borderRadius: 20,
+    padding: "6px 14px",
+  },
+  chipGreen: {
+    fontSize: 13,
+    color: "#2d4030",
+    background: "#e8ede2",
+    borderRadius: 20,
+    padding: "6px 14px",
+    fontWeight: 500,
+  },
+  chipGray: {
+    fontSize: 13,
+    color: "#8a8478",
+    background: "#ece8de",
+    borderRadius: 20,
+    padding: "6px 14px",
+    fontWeight: 500,
+  },
 
   // 2단 그리드
-  grid: { maxWidth: 1040, margin: "18px auto 0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 },
+  grid: {
+    maxWidth: 1040,
+    margin: "18px auto 0",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 18,
+  },
 
   // 초록 카드
-  greenCard: { background: "#2d4030", borderRadius: 18, padding: "28px 30px", color: "#e8e5dc" },
+  greenCard: {
+    background: "#2d4030",
+    borderRadius: 18,
+    padding: "28px 30px",
+    color: "#e8e5dc",
+  },
   greenLabel: { fontSize: 13, color: "#a6b3a0", marginBottom: 18 },
   dRow: { display: "flex", alignItems: "baseline", gap: 6 },
   dPrefix: { fontSize: 24, fontWeight: 300, color: "#c9d1c2" },
-  dNum: { fontSize: 68, fontWeight: 800, color: "#fff", lineHeight: 1, fontFamily: "'Noto Serif KR', serif" },
+  dNum: {
+    fontSize: 68,
+    fontWeight: 800,
+    color: "#fff",
+    lineHeight: 1,
+    fontFamily: "'Noto Serif KR', serif",
+  },
   greenTitle: { fontSize: 22, fontWeight: 700, color: "#fff", marginTop: 14 },
   greenDesc: { fontSize: 13, color: "#a6b3a0", marginTop: 8, lineHeight: 1.6 },
-  ctaBtn: { marginTop: 22, background: "#c17a4a", color: "#fff", border: "none", borderRadius: 10, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer" },
+  ctaBtn: {
+    marginTop: 22,
+    background: "#c17a4a",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    padding: "13px 22px",
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
 
   // 계약 여정 카드
-  journeyCard: { background: "#faf8f3", border: "1px solid #ebe6da", borderRadius: 18, padding: "26px 30px" },
-  journeyTitle: { fontSize: 16, fontWeight: 700, color: "#2d4030", marginBottom: 20 },
+  journeyCard: {
+    background: "#faf8f3",
+    border: "1px solid #ebe6da",
+    borderRadius: 18,
+    padding: "26px 30px",
+  },
+  journeyTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "#2d4030",
+    marginBottom: 20,
+  },
   journeyList: { display: "flex", flexDirection: "column" },
   jItem: { display: "flex", gap: 14, minHeight: 54 },
   jLeft: { display: "flex", flexDirection: "column", alignItems: "center" },
-  jDot: { width: 16, height: 16, borderRadius: "50%", background: "#fff", border: "2px solid #cfc9bb", flexShrink: 0, zIndex: 1 },
+  jDot: {
+    width: 16,
+    height: 16,
+    borderRadius: "50%",
+    background: "#fff",
+    border: "2px solid #cfc9bb",
+    flexShrink: 0,
+    zIndex: 1,
+  },
   jDotDone: { background: "#2d4030", border: "2px solid #2d4030" },
   jDotActive: { background: "#c17a4a", border: "2px solid #c17a4a" },
   jDotPast: { background: "#d4cdbd", border: "2px solid #d4cdbd" },
-  jLine: { width: 2, flex: 1, background: "#e0dbcf", marginTop: 2, marginBottom: 2 },
+  jLine: {
+    width: 2,
+    flex: 1,
+    background: "#e0dbcf",
+    marginTop: 2,
+    marginBottom: 2,
+  },
   jBody: { paddingBottom: 20 },
   jNameRow: { display: "flex", alignItems: "center", gap: 8 },
   jName: { fontSize: 14, fontWeight: 600, color: "#2a2724" },
-  jBadgeDone: { fontSize: 10, color: "#2d4030", background: "#e8ede2", borderRadius: 8, padding: "2px 7px", fontWeight: 600 },
-  jBadgeNow: { fontSize: 10, color: "#fff", background: "#c17a4a", borderRadius: 8, padding: "2px 7px", fontWeight: 600 },
-  jBadgePast: { fontSize: 10, color: "#8a8478", background: "#ece8de", borderRadius: 8, padding: "2px 7px", fontWeight: 600 },
+  jBadgeDone: {
+    fontSize: 10,
+    color: "#2d4030",
+    background: "#e8ede2",
+    borderRadius: 8,
+    padding: "2px 7px",
+    fontWeight: 600,
+  },
+  jBadgeNow: {
+    fontSize: 10,
+    color: "#fff",
+    background: "#c17a4a",
+    borderRadius: 8,
+    padding: "2px 7px",
+    fontWeight: 600,
+  },
+  jBadgePast: {
+    fontSize: 10,
+    color: "#8a8478",
+    background: "#ece8de",
+    borderRadius: 8,
+    padding: "2px 7px",
+    fontWeight: 600,
+  },
   jDate: { fontSize: 12, color: "#8a8478", marginTop: 3 },
   jDesc: { fontSize: 12, color: "#a29a8a", marginTop: 4, lineHeight: 1.4 },
 
   // 하단 보조 카드: 최근 활동
-  recentCard: { background: "#faf8f3", border: "1px solid #ebe6da", borderRadius: 16, padding: "20px 24px" },
-  recentLabel: { fontSize: 13, color: "#6b6558", marginBottom: 14, fontWeight: 600 },
+  recentCard: {
+    background: "#faf8f3",
+    border: "1px solid #ebe6da",
+    borderRadius: 16,
+    padding: "20px 24px",
+  },
+  recentLabel: {
+    fontSize: 13,
+    color: "#6b6558",
+    marginBottom: 14,
+    fontWeight: 600,
+  },
   recentRow: { display: "flex", alignItems: "center", gap: 12 },
-  recentIcon: { width: 36, height: 36, borderRadius: "50%", background: "#e8ede2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 },
+  recentIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    background: "#e8ede2",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 18,
+    flexShrink: 0,
+  },
   recentTitle: { fontSize: 14, fontWeight: 600, color: "#2d4030" },
   recentSub: { fontSize: 12, color: "#8a8478", marginTop: 2 },
   recentEmpty: { fontSize: 13, color: "#a29a8a", lineHeight: 1.6 },
-  recentBtn: { marginTop: 16, background: "none", border: "none", color: "#c17a4a", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 },
+  recentBtn: {
+    marginTop: 16,
+    background: "none",
+    border: "none",
+    color: "#c17a4a",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    padding: 0,
+  },
 
   // 하단 보조 카드: 오늘의 팁
   tipCard: { background: "#e8ede2", borderRadius: 16, padding: "20px 24px" },
-  tipLabel: { fontSize: 13, color: "#2d4030", fontWeight: 700, marginBottom: 10 },
+  tipLabel: {
+    fontSize: 13,
+    color: "#2d4030",
+    fontWeight: 700,
+    marginBottom: 10,
+  },
   tipText: { fontSize: 13, color: "#3f5140", lineHeight: 1.7 },
 };
 // ── 화면 10: 지출 항목 설정 (홈키퍼 새 화면) ──
@@ -926,8 +1668,8 @@ function ExpenseSetup({ go }) {
   const loadExpenses = async () => {
     try {
       const res = await fetch("http://localhost:3001/api/expenses");
-      const data = await res.json();  // 응답을 객체로 변환
-      setExpenses(data);              // 목록 상태에 넣기
+      const data = await res.json(); // 응답을 객체로 변환
+      setExpenses(data); // 목록 상태에 넣기
     } catch (err) {
       console.log("목록 불러오기 실패:", err);
     }
@@ -972,7 +1714,7 @@ function ExpenseSetup({ go }) {
     setAmount("");
     setDueDay("");
   };
-// ── 추가 버튼: 서버로 POST 요청을 보내 DB에 저장 ──
+  // ── 추가 버튼: 서버로 POST 요청을 보내 DB에 저장 ──
   // ── 입력 중 실시간 검증: 해당 항목만 검사해서 에러를 갱신 ──
   const validateField = (field, value) => {
     // 현재 입력값 전체를 모아서 검증
@@ -1016,8 +1758,8 @@ function ExpenseSetup({ go }) {
         return;
       }
 
-      cancelEdit();     // 폼 비우고 등록 모드로 복귀
-      loadExpenses();   // 목록 새로고침
+      cancelEdit(); // 폼 비우고 등록 모드로 복귀
+      loadExpenses(); // 목록 새로고침
     } catch (err) {
       alert("서버에 연결할 수 없어요. 서버가 켜져 있는지 확인해주세요.");
     }
@@ -1033,8 +1775,11 @@ function ExpenseSetup({ go }) {
         </div>
         <div style={styles.header}>
           <span style={styles.title}>지출 항목</span>
-          <button style={styles.ghostBtn} onClick={() => go("contract")}>
-            ← 홈으로
+          <button
+            style={styles.ghostBtn}
+            onClick={() => window.location.reload()}
+          >
+            🔄 새로고침
           </button>
         </div>
         <p style={styles.desc}>
@@ -1046,7 +1791,10 @@ function ExpenseSetup({ go }) {
           style={styles.input}
           placeholder="관리비"
           value={name}
-          onChange={(e) => { setName(e.target.value); validateField("name", e.target.value); }}
+          onChange={(e) => {
+            setName(e.target.value);
+            validateField("name", e.target.value);
+          }}
         />
         {errors.name && <p style={styles.errorText}>{errors.name}</p>}
         <label style={styles.label}>금액 (원)</label>
@@ -1055,7 +1803,10 @@ function ExpenseSetup({ go }) {
           type="number"
           placeholder="120000"
           value={amount}
-          onChange={(e) => { setAmount(e.target.value); validateField("amount", e.target.value); }}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            validateField("amount", e.target.value);
+          }}
         />
         {errors.amount && <p style={styles.errorText}>{errors.amount}</p>}
 
@@ -1065,10 +1816,13 @@ function ExpenseSetup({ go }) {
           type="number"
           placeholder="25"
           value={dueDay}
-          onChange={(e) => { setDueDay(e.target.value); validateField("due_day", e.target.value); }}
+          onChange={(e) => {
+            setDueDay(e.target.value);
+            validateField("due_day", e.target.value);
+          }}
         />
         {errors.due_day && <p style={styles.errorText}>{errors.due_day}</p>}
-    <button style={styles.primaryBtn} onClick={handleAdd}>
+        <button style={styles.primaryBtn} onClick={handleAdd}>
           {editingId ? "수정하기" : "추가하기"}
         </button>
 
@@ -1093,137 +1847,235 @@ function ExpenseSetup({ go }) {
         )}
         {/* 이번 달 총 지출 (합계) */}
         {expenses.length > 0 && (
-          <div style={{
-            marginTop: 24,
-            padding: "18px 20px",
-            background: "#2d4030",
-            borderRadius: 14,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}>
-            <span style={{ fontSize: 14, color: "#a6b3a0" }}>이번 달 고정 지출</span>
-            <span style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>
-              {expenses.reduce((sum, item) => sum + item.amount, 0).toLocaleString("ko-KR")}원
-            </span>
+          <div
+            style={{
+              marginTop: 24,
+              padding: "18px 20px",
+              background: "#2d4030",
+              borderRadius: 14,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ width: "100%" }}>
+              <div style={{ fontSize: 13, color: "#a6b3a0", marginBottom: 6 }}>이번 달 고정 지출</div>
+              <div style={{ fontSize: 30, fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}>
+                {expenses.reduce((sum, item) => sum + item.amount, 0).toLocaleString("ko-KR")}
+                <span style={{ fontSize: 17, marginLeft: 2 }}>원</span>
+              </div>
+            </div>
           </div>
         )}
         {/* 이번 달 남은 지출 */}
         {expenses.length > 0 && (
-          <div style={{
-            marginTop: 10,
-            padding: "12px 20px",
-            background: "#fff",
-            border: "1px solid #ebe6da",
-            borderRadius: 12,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}>
-            <span style={{ fontSize: 13, color: "#8a8478" }}>이번 달 남은 금액</span>
+          <div
+            style={{
+              marginTop: 10,
+              padding: "12px 20px",
+              background: "#fff",
+              border: "1px solid #ebe6da",
+              borderRadius: 12,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontSize: 13, color: "#8a8478" }}>
+              이번 달 남은 금액
+            </span>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#2d4030" }}>
               {expenses
                 .filter((item) => isThisMonth(item.due_day))
                 .reduce((sum, item) => sum + item.amount, 0)
-                .toLocaleString("ko-KR")}원
+                .toLocaleString("ko-KR")}
+              원
             </span>
           </div>
         )}
+        {/* 임박 알림 */}
+        {(() => {
+          const urgent = [...expenses]
+            .filter((item) => getDaysUntil(item.due_day) <= 3)
+            .sort((a, b) => getDaysUntil(a.due_day) - getDaysUntil(b.due_day));
+
+          if (urgent.length === 0) return null;
+
+          return (
+            <div
+              style={{
+                marginTop: 10,
+                padding: "14px 18px",
+                background: "#fbe9e7",
+                border: "1px solid #f5c6bd",
+                borderRadius: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#c0392b",
+                  marginBottom: 8,
+                }}
+              >
+                🔔 곧 납부할 항목이 있어요
+              </div>
+              {urgent.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 13,
+                    color: "#8a4038",
+                    padding: "3px 0",
+                  }}
+                >
+                  <span>
+                    {item.name} · {getDdayLabel(getDaysUntil(item.due_day))}
+                  </span>
+                  <span style={{ fontWeight: 700 }}>
+                    {item.amount.toLocaleString("ko-KR")}원
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
         <div style={{ marginTop: 28 }}></div>
         <div style={{ marginTop: 28 }}>
           {expenses.length === 0 ? (
-            <p style={{ fontSize: 14, color: "#8a8478", textAlign: "center" }}>
-              아직 등록된 항목이 없어요.
-            </p>
-          ) : (
-              [...expenses]
-                .sort((a, b) => getDaysUntil(a.due_day) - getDaysUntil(b.due_day))
-                .map((item) => {
-                  const days = getDaysUntil(item.due_day);
-          return (
             <div
-              key={item.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "16px 18px",
-                  background: "#fff",
-                  border: "1px solid #ebe6da",
-                  borderRadius: 12,
-                  marginBottom: 10,
-                }}
-              >
-                {/* 아이콘 */}
-                <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "#e8ede2",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                  flexShrink: 0,
-                }}>
-                  🏠
-                </div>
-                {/* 이름 + 납부일 */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#2d4030" }}>
-                    {item.name}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#8a8478", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>매월 {item.due_day}일 납부</span>
-                  <span style={{
-                    background: days <= 3 ? "#fbe9e7" : "#f0ede4",
-                    color: days <= 3 ? "#c0392b" : "#8a8478",
-                    borderRadius: 6,
-                    padding: "2px 7px",
-                    fontSize: 11,
-                    fontWeight: 700,
-                  }}>
-                    {getDdayLabel(days)}
-                  </span>
-                </div>
-                </div>
-                {/* 금액 */}
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#2d4030" }}>
-                  {item.amount.toLocaleString("ko-KR")}원
-                  <button
-                  onClick={() => startEdit(item)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#a29a8a",
-                    fontSize: 15,
-                    cursor: "pointer",
-                    padding: "0 4px",
-                    flexShrink: 0,
-                  }}
-                  title="수정"
-                >
-                  ✏️
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#a29a8a",
-                    fontSize: 18,
-                    cursor: "pointer",
-                    padding: "0 4px",
-                    flexShrink: 0,
-                  }}
-                  title="삭제"
-                >
-                  ×
-                </button>
-                </div>
+              style={{
+                textAlign: "center",
+                padding: "40px 20px",
+                color: "#a8a296",
+              }}
+            >
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#8a8478" }}>
+                아직 등록된 지출이 없어요
               </div>
-          );
-        })
+              <div style={{ fontSize: 13, marginTop: 6 }}>
+                위에서 첫 지출을 등록해보세요
+              </div>
+            </div>
+          ) : (
+            [...expenses]
+              .sort((a, b) => getDaysUntil(a.due_day) - getDaysUntil(b.due_day))
+              .map((item) => {
+                const days = getDaysUntil(item.due_day);
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                      padding: "16px 18px",
+                      background: "#fff",
+                      border: "1px solid #ebe6da",
+                      borderRadius: 14,
+                      marginBottom: 10,
+                      boxShadow: "0 1px 6px rgba(45,64,48,0.04)",
+                    }}
+                  >
+                    {/* 아이콘 */}
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "#e8ede2",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 18,
+                        flexShrink: 0,
+                      }}
+                    >
+                      🏠
+                    </div>
+                    {/* 이름 + 납부일 */}
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: "#2d4030",
+                        }}
+                      >
+                        {item.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#8a8478",
+                          marginTop: 3,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <span>매월 {item.due_day}일 납부</span>
+                        <span
+                          style={{
+                            background: days <= 3 ? "#fbe9e7" : "#f0ede4",
+                            color: days <= 3 ? "#c0392b" : "#8a8478",
+                            borderRadius: 20,
+                            padding: "2px 9px",
+                            fontSize: 11,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {getDdayLabel(days)}
+                        </span>
+                      </div>
+                    </div>
+                    {/* 금액 */}
+                    <div
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "#2d4030",
+                      }}
+                    >
+                      {item.amount.toLocaleString("ko-KR")}원
+                      <button
+                        onClick={() => startEdit(item)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#a29a8a",
+                          fontSize: 15,
+                          cursor: "pointer",
+                          padding: "0 4px",
+                          flexShrink: 0,
+                        }}
+                        title="수정"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#a29a8a",
+                          fontSize: 18,
+                          cursor: "pointer",
+                          padding: "0 4px",
+                          flexShrink: 0,
+                        }}
+                        title="삭제"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
           )}
         </div>
       </div>
