@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePromo, applyPromo } from "./promo";
+import { parsePromo, applyPromo, promoMismatch } from "./promo";
 import { SCENARIOS } from "./mocks/scenarios";
 
 /**
@@ -109,6 +109,43 @@ describe("applyPromo — 발송 문구(copy) 동기화", () => {
   it("사장님이 할인 언급을 지운 문구는 그대로 둔다", () => {
     const copy = "오늘 따뜻한 라떼 어때요?";
     expect(applyPromo(copy, { kind: "rate", pct: 12 })).toBe(copy);
+  });
+});
+
+describe("promoMismatch — 문구·쿠폰 불일치 감지", () => {
+  it("값이 같으면 null", () => {
+    expect(promoMismatch("오늘 15% 할인이에요", "픽업 주문 15% 할인 (오늘 하루)")).toBeNull();
+    expect(promoMismatch("세트 2,000원 할인", "따뜻한 세트 2,000원 할인")).toBeNull();
+  });
+
+  it("같은 형태에서 값이 다르면 잡는다", () => {
+    expect(promoMismatch("오늘 20% 할인이에요", "픽업 주문 15% 할인")).toBe(
+      "문구는 20%, 쿠폰은 15%로 서로 달라요",
+    );
+    expect(promoMismatch("세트 3000원 할인", "따뜻한 세트 2,000원 할인")).toBe(
+      "문구는 3,000원, 쿠폰은 2,000원으로 서로 달라요",
+    );
+  });
+
+  it("혜택 형태가 다르면 잡는다 (자동 동기화로 못 메우는 구멍)", () => {
+    // 문구를 "2,000원 할인"으로 고쳐도 %형 promo에 금액을 되쓸 수 없어 반영되지 않는다.
+    expect(promoMismatch("세트 2,000원 할인", "픽업 주문 10% 할인")).toBe(
+      "문구와 쿠폰의 혜택 형태가 달라요 (한쪽은 %, 한쪽은 금액)",
+    );
+  });
+
+  it("한쪽을 못 읽으면 판정하지 않는다", () => {
+    // 숫자를 지우는 중간 타이핑("% 할인")마다 경고가 번쩍이면 안 된다.
+    expect(promoMismatch("오늘 % 할인이에요", "픽업 주문 10% 할인")).toBeNull();
+    // 사장님이 할인 언급을 지운 경우도 불일치가 아니다.
+    expect(promoMismatch("오늘 따뜻한 라떼 어때요?", "픽업 주문 10% 할인")).toBeNull();
+  });
+
+  it("mock 4개는 원본 상태에서 불일치가 없다", () => {
+    for (const key of Object.keys(SCENARIOS) as (keyof typeof SCENARIOS)[]) {
+      const { copy, promo } = SCENARIOS[key];
+      expect(promoMismatch(copy, promo)).toBeNull();
+    }
   });
 });
 

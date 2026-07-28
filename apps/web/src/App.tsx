@@ -5,7 +5,7 @@ import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/token
 import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
 import { MOCK_MODE, getWeatherToday, getProposalToday, patchCampaign, sendCampaign, getTracking } from "./api/client";
 import { scenarioFromApi } from "./api/todayScenario";
-import { parsePromo, applyPromo, type PromoEdit } from "./promo";
+import { parsePromo, applyPromo, promoMismatch, type PromoEdit } from "./promo";
 
 /**
  * WeatherPilot v3 — 대시보드(날씨·매출 진단) → 검토·편집(문구+채널+법적필터) → 발송 → 쿠폰 추적 / 성과
@@ -199,6 +199,21 @@ export default function WeatherPilotV3() {
     setPromoEdit(next);
     setCopy((c) => applyPromo(c, next));
   }
+  /**
+   * 발송 문구 편집 — 문구에서 할인 숫자를 고치면 쿠폰도 따라온다(위 changePromo의 반대 방향).
+   *
+   * 혜택 형태(kind)가 같을 때만 반영한다. 형태까지 따라가게 두면:
+   *  - 숫자를 지우는 중간 상태("% 할인")가 kind:"none"으로 읽혀 입력칸이 사라지고
+   *    쿠폰 라벨이 원본 값으로 되돌아간다 — 타이핑 중에 화면이 튄다.
+   *  - "10% 할인"을 "2,000원 할인"으로 바꾸면 %형인 promo에 금액을 되쓸 수가 없어
+   *    어차피 반영되지 않는다.
+   * 반영 못 한 경우는 promoMismatch가 화면에 경고로 드러낸다(조용히 넘기지 않는다).
+   */
+  function changeCopy(next: string) {
+    setCopy(next);
+    const fromCopy = parsePromo(next);
+    if (fromCopy.kind === promoEdit.kind) setPromoEdit(fromCopy);
+  }
 
   // 승인(문구·채널 저장) → 발송. 백엔드 없으면 api/client가 MOCK 응답을 돌려준다.
   async function handleSend() {
@@ -302,7 +317,7 @@ export default function WeatherPilotV3() {
           <Dashboard s={s} onReview={goEdit} />
         ) : view === "edit" ? (
           <EditView
-            copy={copy} setCopy={setCopy}
+            copy={copy} onCopyChange={changeCopy}
             promoEdit={promoEdit} onPromoChange={changePromo} promoLabel={promoValue}
             channels={channels} toggleChannel={toggleChannel}
             nightMode={nightMode} setNightMode={setNightMode}
@@ -394,8 +409,8 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
 }
 
 // ---- 검토·편집 (문구 + 채널 + 법적 안전장치) --------------------------------
-function EditView({ copy, setCopy, promoEdit, onPromoChange, promoLabel, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
-  copy: string; setCopy: (v: string) => void;
+function EditView({ copy, onCopyChange, promoEdit, onPromoChange, promoLabel, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
+  copy: string; onCopyChange: (v: string) => void;
   promoEdit: PromoEdit; onPromoChange: (v: PromoEdit) => void; promoLabel: string;
   channels: ChannelId[]; toggleChannel: (id: ChannelId) => void;
   nightMode: boolean; setNightMode: (v: boolean) => void;
@@ -412,7 +427,13 @@ function EditView({ copy, setCopy, promoEdit, onPromoChange, promoLabel, channel
     promoEdit.kind === "amount"
       ? `할인액 상한은 ${MAX_DISCOUNT_WON.toLocaleString()}원이에요.`
       : `할인율 상한은 ${MAX_DISCOUNT_PCT}%예요.`;
+  // 자동 동기화로 못 메운 불일치(혜택 형태가 서로 다른 경우)를 화면에 드러낸다.
+  const mismatch = promoMismatch(copy, promoLabel);
   const fieldLabel = { fontSize: 12.5, color: T.sub, fontWeight: 600 } as const;
+  const warnBox = {
+    marginTop: 8, fontSize: 12, color: T.downText, background: T.downBg,
+    border: `1px solid ${T.warnLine}`, borderRadius: 8, padding: "6px 10px", lineHeight: 1.5,
+  } as const;
   const numInput = {
     textAlign: "right", boxSizing: "border-box", borderRadius: 10, padding: "8px 10px",
     fontSize: 14, fontFamily: font, color: T.ink, background: T.surfaceAlt,
@@ -437,7 +458,7 @@ function EditView({ copy, setCopy, promoEdit, onPromoChange, promoLabel, channel
         <Eyebrow>✏️ 발송 문구 · 수정 가능</Eyebrow>
         <textarea
           value={copy}
-          onChange={(e) => setCopy(e.target.value)}
+          onChange={(e) => onCopyChange(e.target.value)}
           rows={6}
           style={{ width: "100%", marginTop: 10, boxSizing: "border-box", resize: "vertical", border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", fontSize: 14, lineHeight: 1.6, fontFamily: font, color: T.ink, background: T.surfaceAlt }}
         />
@@ -484,9 +505,10 @@ function EditView({ copy, setCopy, promoEdit, onPromoChange, promoLabel, channel
           </span>
         </div>
         {overLimit && (
-          <div style={{ marginTop: 8, fontSize: 12, color: T.downText, background: T.downBg, border: `1px solid ${T.warnLine}`, borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
-            {overLimitText} 이대로 발송하면 서버가 거부합니다.
-          </div>
+          <div style={warnBox}>{overLimitText} 이대로 발송하면 서버가 거부합니다.</div>
+        )}
+        {mismatch && (
+          <div style={warnBox}>{mismatch} 문자와 쿠폰이 다른 혜택으로 발송돼요.</div>
         )}
       </Card>
 

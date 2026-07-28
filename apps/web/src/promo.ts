@@ -68,3 +68,30 @@ export function applyPromo(text: string, edit: PromoEdit): string {
   if (edit.kind === "amount") return text.replace(AMOUNT, `${formatWon(edit.won)}원`);
   return text;
 }
+
+/**
+ * 발송 문구와 쿠폰이 서로 다른 혜택을 말하고 있으면 안내 문구를, 같으면 null을 돌려준다.
+ *
+ * 자동 동기화로 못 메우는 구멍을 잡는 장치다 — 사장님이 문구의 "10% 할인"을
+ * "2,000원 할인"으로 바꾸면 혜택 형태가 달라져 쿠폰(%형)에 되쓸 수가 없다.
+ * 그때 조용히 넘기면 문자와 쿠폰이 다른 약속을 하고 발송된다.
+ *
+ * 한쪽을 못 읽으면(none) 판정하지 않는다 — 사장님이 할인 언급을 지웠거나 "10퍼센트"처럼
+ * 다르게 쓴 경우고, 그걸 불일치로 몰면 지우는 중간 타이핑마다 경고가 번쩍인다.
+ */
+export function promoMismatch(copy: string, promo: string): string | null {
+  const inCopy = parsePromo(copy);
+  const inPromo = parsePromo(promo);
+  if (inCopy.kind === "none" || inPromo.kind === "none") return null;
+
+  if (inCopy.kind !== inPromo.kind) {
+    return "문구와 쿠폰의 혜택 형태가 달라요 (한쪽은 %, 한쪽은 금액)";
+  }
+  if (inCopy.kind === "rate" && inPromo.kind === "rate" && inCopy.pct !== inPromo.pct) {
+    return `문구는 ${inCopy.pct}%, 쿠폰은 ${inPromo.pct}%로 서로 달라요`;
+  }
+  if (inCopy.kind === "amount" && inPromo.kind === "amount" && inCopy.won !== inPromo.won) {
+    return `문구는 ${formatWon(inCopy.won)}원, 쿠폰은 ${formatWon(inPromo.won)}원으로 서로 달라요`;
+  }
+  return null;
+}
