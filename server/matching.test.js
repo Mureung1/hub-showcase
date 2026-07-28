@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding } from './matching.js'
+import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding, isRoomStale } from './matching.js'
 
 test('둘 다 genderOnly가 false면 성별이 달라도 보여준다', () => {
   const me = { gender: 'female', genderOnly: false }
@@ -133,4 +133,29 @@ test('6분 늦으면 지각이다', () => {
 test('30분 늦으면 지각이고 늦은 분을 그대로 보여준다', () => {
   const boardedAt = new Date('2026-07-27T21:00:00Z')
   expect(classifyBoarding('20:30:00', REFERENCE_DATE, boardedAt)).toEqual({ status: 'late', minutesLate: 30 })
+})
+
+test('마지막 활동이 1시간 전이면 아직 안 오래됐다', () => {
+  const lastSeenAt = new Date('2026-07-23T11:00:00Z').toISOString()
+  expect(isRoomStale(lastSeenAt, NOW)).toBe(false)
+})
+
+test('경계값 정확히 2시간 전이면 아직 안 오래됐다', () => {
+  const lastSeenAt = new Date('2026-07-23T10:00:00Z').toISOString()
+  expect(isRoomStale(lastSeenAt, NOW)).toBe(false)
+})
+
+test('2시간 1분 전이면 오래된 방이다', () => {
+  const lastSeenAt = new Date('2026-07-23T09:59:00Z').toISOString()
+  expect(isRoomStale(lastSeenAt, NOW)).toBe(true)
+})
+
+test('활동 기록이 없으면 오래된 것으로 취급하지 않는다', () => {
+  expect(isRoomStale(null, NOW)).toBe(false)
+})
+
+test('기준 시간을 직접 지정할 수 있다', () => {
+  const lastSeenAt = new Date('2026-07-23T11:50:00Z').toISOString() // 10분 전
+  expect(isRoomStale(lastSeenAt, NOW, 5)).toBe(true)
+  expect(isRoomStale(lastSeenAt, NOW, 15)).toBe(false)
 })

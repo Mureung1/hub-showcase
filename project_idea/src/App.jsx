@@ -143,6 +143,10 @@ function App() {
           onBack={() => setStep(2)}
           onComplete={() => setStep(4)}
           onUpdateCandidate={updateJoinedCandidate}
+          onLeave={() => {
+            setJoinedCandidate(null);
+            setStep(2);
+          }}
         />
       )}
       {step === 4 && <RatingScreen candidate={joinedCandidate} onBack={() => setStep(3)} onFinish={handleFinish} />}

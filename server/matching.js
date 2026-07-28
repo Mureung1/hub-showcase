@@ -32,6 +32,16 @@ export function describeActivity(lastSeenAt, now = new Date()) {
   return { isActive: false, label: `${diffMinutes}분 전 활동` }
 }
 
+const STALE_THRESHOLD_MINUTES = 120
+
+// 마지막 활동(하트비트) 이후 일정 시간이 지난 방은 후보 목록에서 제외하기 위한 판단 함수
+export function isRoomStale(lastSeenAt, now = new Date(), thresholdMinutes = STALE_THRESHOLD_MINUTES) {
+  if (!lastSeenAt) return false
+
+  const diffMinutes = (now - new Date(lastSeenAt)) / 60000
+  return diffMinutes > thresholdMinutes
+}
+
 const BOARDING_GRACE_MINUTES = 5
 
 export function classifyBoarding(desiredTime, referenceDate, boardedAt) {

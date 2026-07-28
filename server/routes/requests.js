@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import { supabase } from '../supabaseClient.js'
-import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding } from '../matching.js'
+import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding, isRoomStale } from '../matching.js'
 
 const router = Router()
 
@@ -125,6 +125,8 @@ router.get('/', async (req, res) => {
       memberIds,
     }))
     .filter((room) => room.groupCount < 4)
+    // 마지막 활동(하트비트)이 오래된 방은 후보 목록에서 제외 (방장이 떠나고 안 돌아온 방 정리)
+    .filter((room) => !isRoomStale(room.last_seen_at))
 
   const { myRequestId } = req.query
   const me = myRequestId ? data.find((r) => r.id === myRequestId) : null
@@ -396,6 +398,21 @@ router.post('/:id/respond', async (req, res) => {
   }
 
   res.json({ members, groupCount: members.filter((m) => m.status === 'matched').length })
+})
+
+router.post('/:id/leave', async (req, res) => {
+  const { id } = req.params
+
+  const { error } = await supabase
+    .from('matching_requests')
+    .update({ group_id: null, status: 'open' })
+    .eq('id', id)
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  res.json({ ok: true })
 })
 
 router.post('/:id/board', async (req, res) => {

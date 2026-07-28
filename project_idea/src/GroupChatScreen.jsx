@@ -9,10 +9,11 @@ function formatMessageTime(iso) {
   return new Date(iso).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
 }
 
-function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate }) {
+function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onLeave }) {
   const groupId = candidate?.groupId ?? null;
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(!!groupId);
+  const [leaving, setLeaving] = useState(false);
   // '이전'으로 나갔다가 돌아와도 이 화면 상태가 초기화되지 않도록, App.jsx의 candidate 객체에 백업해둔 값에서 복원함
   const [confirmed, setConfirmedState] = useState(candidate?.confirmed ?? false);
   const [respondError, setRespondError] = useState(null);
@@ -133,6 +134,16 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate }) {
     }
   }
 
+  async function handleLeave() {
+    if (leaving || !myRequestId) return;
+    setLeaving(true);
+    try {
+      await fetch(`${API_BASE}/api/requests/${myRequestId}/leave`, { method: "POST" });
+    } finally {
+      onLeave?.();
+    }
+  }
+
   async function handleBoard() {
     if (boarding) return;
     setBoarding(true);
@@ -164,14 +175,23 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate }) {
 
   return (
     <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
-      {onBack && (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0 0", cursor: "pointer" }}
+          >
+            ‹ 이전
+          </button>
+        )}
         <button
-          onClick={onBack}
-          style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0 0", cursor: "pointer" }}
+          onClick={handleLeave}
+          disabled={leaving}
+          style={{ border: "none", background: "none", color: "#C8102E", fontSize: 13, padding: "14px 0 0", cursor: leaving ? "default" : "pointer" }}
         >
-          ‹ 이전
+          {leaving ? "나가는 중..." : "방 나가기"}
         </button>
-      )}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0" }}>
         <div style={{ display: "flex" }}>
           {Array.from({ length: count }).map((_, i) => (
