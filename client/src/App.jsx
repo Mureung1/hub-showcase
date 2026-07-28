@@ -1858,15 +1858,13 @@ function ExpenseSetup({ go }) {
               alignItems: "center",
             }}
           >
-            <span style={{ fontSize: 14, color: "#a6b3a0" }}>
-              이번 달 고정 지출
-            </span>
-            <span style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>
-              {expenses
-                .reduce((sum, item) => sum + item.amount, 0)
-                .toLocaleString("ko-KR")}
-              원
-            </span>
+            <div style={{ width: "100%" }}>
+              <div style={{ fontSize: 13, color: "#a6b3a0", marginBottom: 6 }}>이번 달 고정 지출</div>
+              <div style={{ fontSize: 30, fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}>
+                {expenses.reduce((sum, item) => sum + item.amount, 0).toLocaleString("ko-KR")}
+                <span style={{ fontSize: 17, marginLeft: 2 }}>원</span>
+              </div>
+            </div>
           </div>
         )}
         {/* 이번 달 남은 지출 */}
@@ -1978,8 +1976,9 @@ function ExpenseSetup({ go }) {
                       padding: "16px 18px",
                       background: "#fff",
                       border: "1px solid #ebe6da",
-                      borderRadius: 12,
+                      borderRadius: 14,
                       marginBottom: 10,
+                      boxShadow: "0 1px 6px rgba(45,64,48,0.04)",
                     }}
                   >
                     {/* 아이콘 */}
@@ -2024,8 +2023,8 @@ function ExpenseSetup({ go }) {
                           style={{
                             background: days <= 3 ? "#fbe9e7" : "#f0ede4",
                             color: days <= 3 ? "#c0392b" : "#8a8478",
-                            borderRadius: 6,
-                            padding: "2px 7px",
+                            borderRadius: 20,
+                            padding: "2px 9px",
                             fontSize: 11,
                             fontWeight: 700,
                           }}
