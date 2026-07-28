@@ -18,6 +18,11 @@
 규칙(`foundation < application < tradeoff`)이며, 가장 깊은 요구에 맞추면 아래 등급은
 따라온다. 순서 비교는 `domain/depth.py` 의 `highest` 를 그대로 쓴다.
 
+연차·기간은 신호가 아니다. docs/eval/rubrics_v1.json 의 `rb_depth_level_grade` 가
+자격·연차를 `foundation` 으로 적고 `signal_map` 이 `attribute` 를 그 등급에
+대응시킨다. 연차 표기가 있는 표현에서는 연차를 세는 말(`TENURE_ATTENDANT_SIGNALS`)을
+신호에서 빼며, 그 결과 남는 신호가 없으면 `foundation` 이다.
+
 신호가 하나도 없으면 `foundation` 이다. 컬럼이 NOT NULL 이고 `unknown` 이 없으므로
 (docs/erd.md 7.13) 등급을 반드시 하나 골라야 하고, 셋 가운데 가장 적게 주장하는 값을
 고른다. 신호 없는 표현을 `tradeoff` 로 올리면 `entry_label_advanced_signal_rate` 의
@@ -28,6 +33,8 @@
 """
 
 from __future__ import annotations
+
+import re
 
 from careersignal.domain.depth import DepthLevel, highest
 from careersignal.taxonomy.vocabulary import normalize_expression
@@ -136,6 +143,51 @@ docs/eval/backend_dimensions_v1.json 의 차원 라벨 `분산 시스템과 마�
 """
 
 
+TENURE_PATTERNS: tuple[str, ...] = (
+    r"\d+년(?:이상|이하|초과|미만)",
+    r"\d+년차",
+    r"경력\d+년",
+    r"\d+년경력",
+)
+"""연차·기간을 요구하는 표기.
+
+매칭 키에 대고 견주므로 띄어쓰기를 적지 않는다. `normalize_expression` 이 공백을
+모두 지우므로 `3년 이상` 과 `3년이상` 이 같은 키가 된다.
+
+이 표기를 따로 두는 근거는 docs/eval/rubrics_v1.json 의 `rb_depth_level_grade` 다.
+`pass_when` 이 "표현이 자격·연차·태도·학위·어학을 요구하면 foundation 이다" 로
+적고 `signal_map` 이 `attribute` 를 `foundation` 에 대응시킨다. 연차는 무엇을 할 수
+있는지가 아니라 얼마나 오래 했는지를 재는 값이며, 깊이 등급이 재는 것과 다르다.
+"""
+
+TENURE_ATTENDANT_SIGNALS: tuple[str, ...] = (
+    "경험",
+    "경력",
+    "개발",
+    "실무",
+)
+"""연차 표기에 딸려 오는 낱말. 연차가 함께 있으면 깊이 신호로 세지 않는다.
+
+`3년 이상의 백엔드 개발 경험` 은 docs/eval/backend_dimensions_v1.json 이
+`depth_signal` 을 `attribute`, `depth_level` 을 `foundation` 으로 적은 표현이고
+차원 라벨도 `경력 연차` 다. 그런데 `경험` 과 `개발` 이 `APPLICATION_SIGNALS` 에
+있어 등급이 `application` 으로 올라갔다.
+
+네 낱말은 연차를 세는 말의 일부다. 연차 요구는 `N년 이상의 <분야> 개발 경험`
+처럼 적히며, 여기의 `개발 경험` 은 무엇을 다뤄 봤는지가 아니라 무엇을 세는지를
+가리킨다. 그래서 연차 표기가 함께 있을 때만 이 넷을 신호에서 뺀다. 연차가 없는
+`Golang을 활용한 프로덕션 서비스 개발 및 운영 경험` 은 그대로 `application` 이다.
+
+넷 밖의 신호는 빼지 않는다. `5년 이상 대용량 트래픽 처리 경험` 은 `대용량` 이
+남아 `tradeoff` 이고, `경력 3년 이상, Kafka 운영 경험` 은 `운영` 이 남아
+`application` 이다. 같은 루브릭이 규모 신호를 `tradeoff` 로, 운영 경험을
+`application` 으로 적는 것과 맞는다.
+"""
+
+_TENURE = re.compile("|".join(TENURE_PATTERNS))
+"""연차 표기를 한 번에 견주는 규칙."""
+
+
 def _keys(signals: tuple[str, ...]) -> tuple[str, ...]:
     """신호를 매칭 키로 옮긴다. 표현과 신호가 같은 규칙을 지난다."""
     return tuple(key for key in (normalize_expression(s) for s in signals) if key)
@@ -148,17 +200,42 @@ _SIGNALS: tuple[tuple[DepthLevel, tuple[str, ...]], ...] = (
 )
 """등급과 그 등급의 매칭 키. 순서는 판정에 영향을 주지 않는다."""
 
+_TENURE_ATTENDANT_KEYS: frozenset[str] = frozenset(_keys(TENURE_ATTENDANT_SIGNALS))
+"""연차 표기가 함께 있을 때 신호에서 빼는 매칭 키."""
+
+
+def states_tenure(expression: str | None) -> bool:
+    """표현이 연차·기간을 요구하는가.
+
+    `N년 이상`, `N년차`, `경력 N년` 과 그 표기 변형을 잡는다. 연차는 깊이가 아니라
+    자격이므로 이 판정이 참이면 딸림 낱말을 신호에서 뺀다.
+    """
+    key = normalize_expression(expression or "")
+    return bool(key) and _TENURE.search(key) is not None
+
+
+def _ignored(key: str) -> frozenset[str]:
+    """이 표현에서 신호로 세지 않을 매칭 키. 연차가 없으면 빈다."""
+    if _TENURE.search(key) is None:
+        return frozenset()
+    return _TENURE_ATTENDANT_KEYS
+
 
 def matched_signals(expression: str) -> tuple[str, ...]:
-    """표현이 건드린 신호 키 전부. 판정의 근거이며 진단에 쓴다."""
+    """표현이 건드린 신호 키 전부. 판정의 근거이며 진단에 쓴다.
+
+    `judge_depth` 가 세지 않은 키는 여기에도 담지 않는다. 근거와 판정이 어긋나면
+    진단이 판정을 설명하지 못한다.
+    """
     key = normalize_expression(expression)
     if not key:
         return ()
+    ignored = _ignored(key)
     return tuple(
         signal
         for _, signals in _SIGNALS
         for signal in signals
-        if signal in key
+        if signal in key and signal not in ignored
     )
 
 
@@ -167,15 +244,19 @@ def judge_depth(expression: str | None) -> DepthLevel:
 
     표현에 걸린 신호의 등급 가운데 가장 깊은 것을 돌려주고, 걸린 신호가 없으면
     `DEFAULT_LEVEL` 이다.
+
+    연차·기간을 요구하는 표현은 `TENURE_ATTENDANT_SIGNALS` 를 빼고 견준다. 연차만
+    남는 표현은 걸린 신호가 없어 `foundation` 이 된다.
     """
     key = normalize_expression(expression or "")
     if not key:
         return DEFAULT_LEVEL
 
+    ignored = _ignored(key)
     found = [
         level
         for level, signals in _SIGNALS
-        if any(signal in key for signal in signals)
+        if any(signal in key for signal in signals if signal not in ignored)
     ]
     return highest(found) or DEFAULT_LEVEL
 
@@ -184,7 +265,10 @@ __all__ = [
     "APPLICATION_SIGNALS",
     "DEFAULT_LEVEL",
     "FOUNDATION_SIGNALS",
+    "TENURE_ATTENDANT_SIGNALS",
+    "TENURE_PATTERNS",
     "TRADEOFF_SIGNALS",
     "judge_depth",
     "matched_signals",
+    "states_tenure",
 ]

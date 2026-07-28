@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 from datetime import date
 from types import SimpleNamespace
 from typing import Any
@@ -16,9 +18,11 @@ import pytest
 from pydantic import ValidationError
 
 from careersignal.agents.statistics.judge import (
+    DIMENSION_KINDS,
     JUDGEMENT_RESPONSE_SCHEMA,
     JUDGEMENT_TASK,
     NO_RELATION,
+    RELATION_JUDGEMENT_PROMPT,
     RELATIONS,
     DimensionOption,
     OpenAIRelationJudge,
@@ -43,6 +47,10 @@ from careersignal.taxonomy import (
     Vocabulary,
     candidate_identifier,
     normalize_expression,
+)
+from careersignal.taxonomy.discovery import (
+    NO_CANDIDATE_EXPRESSION,
+    REJUDGE_EXCLUDED,
 )
 
 TAXONOMY_ID = "tax_backend"
@@ -119,6 +127,19 @@ class FakeStats:
         조회가 거르지 못하는 자리이며 파이썬의 건너뛰기가 잡는다.
         """
         self.existing: set[str] = set()
+        self.stale: list[dict[str, Any]] = []
+        """재판정 대상으로 돌려줄 후보 행. 저장소의 `stale_candidates` 자리다."""
+
+        self.expressions: dict[str, list[str]] = {}
+        """후보마다 붙어 있는 표기. 빈도 순으로 이미 정렬된 목록이다."""
+
+        self.updates: list[tuple[str, dict[str, Any]]] = []
+
+        self.writing_threads: set[str] = set()
+        """쓰기를 부른 갈래 이름. 저장소 연결은 스레드 안전하지 않다.
+
+        동시 실행이 모델만 겹쳐 부르고 저장은 주 갈래에서 하는지 검사한다.
+        """
 
     def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
         return dict(self._active) if self._active else None
@@ -146,10 +167,44 @@ class FakeStats:
     def candidate_ids(self, taxonomy_id: str) -> set[str]:
         return set(self.existing)
 
+    def stale_candidates(
+        self,
+        taxonomy_id: str,
+        taxonomy_version_id: str,
+        terminal_statuses: tuple[str, ...],
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """조회가 거르는 조건을 그대로 흉내 낸다.
+
+        종료 상태와 활성 버전 기준의 판정을 SQL 이 먼저 뺀다. 대역이 이 조건을
+        빠뜨리면 검사가 파이썬의 방어선만 보고 조회를 보지 못한다.
+        """
+        rows = [
+            row
+            for row in self.stale
+            if row.get("lifecycle_status") not in terminal_statuses
+            and row.get("judged_against_taxonomy_version_id") != taxonomy_version_id
+        ]
+        rows.sort(key=lambda row: row["candidate_id"])
+        return list(rows if limit is None else rows[:limit])
+
+    def candidate_expressions(
+        self, candidate_id: str, dataset_version: str
+    ) -> list[str]:
+        return list(self.expressions.get(candidate_id, []))
+
+    def update_candidate_judgment(
+        self, candidate_id: str, values: dict[str, Any]
+    ) -> None:
+        self.writing_threads.add(threading.current_thread().name)
+        self.updates.append((candidate_id, values))
+
     def add_candidate(self, values: dict[str, Any]) -> None:
+        self.writing_threads.add(threading.current_thread().name)
         self.candidates.append(values)
 
     def link_candidate_mention(self, candidate_id: str, mention_id: str) -> None:
+        self.writing_threads.add(threading.current_thread().name)
         self.links.append((candidate_id, mention_id))
 
 
@@ -163,6 +218,56 @@ class Exploding:
         examples: tuple[str, ...] = (),
     ) -> RelationJudgment:
         raise RuntimeError("판정 응답을 읽지 못했다")
+
+
+class Slow:
+    """호출마다 다른 시간을 기다리는 판정 구현.
+
+    먼저 보낸 묶음이 더 오래 기다리므로 도착 순서가 보낸 순서와 뒤집힌다. 결과를
+    도착 순서로 저장하는 구현이면 후보와 근거의 순서가 어긋난다.
+    """
+
+    def __init__(self) -> None:
+        self._stub = StubRelationJudge()
+        self._lock = threading.Lock()
+        self.calls = 0
+
+    def judge(
+        self,
+        expression: str,
+        options: tuple[DimensionOption, ...] = (),
+        examples: tuple[str, ...] = (),
+    ) -> RelationJudgment:
+        with self._lock:
+            self.calls += 1
+            order = self.calls
+        time.sleep(0.02 / order)
+        return self._stub.judge(expression, options, examples)
+
+
+class Quota:
+    """할당량이 끝난 뒤의 제공자. 되살릴 수 없는 실패를 던진다."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.calls = 0
+
+    def judge(
+        self,
+        expression: str,
+        options: tuple[DimensionOption, ...] = (),
+        examples: tuple[str, ...] = (),
+    ) -> RelationJudgment:
+        with self._lock:
+            self.calls += 1
+        raise type("AuthenticationError", (Exception,), {})("자격 증명이 틀렸다")
+
+
+def _unrecoverable(exc: BaseException) -> bool:
+    """`taxonomy/assignment.py` 의 판정을 그대로 쓴다. 규칙을 두 벌 두지 않는다."""
+    from careersignal.taxonomy.assignment import unrecoverable_exception
+
+    return unrecoverable_exception(exc)
 
 
 class FakeOpenAI:
@@ -924,3 +1029,380 @@ def test_the_discovery_order_stays_deterministic() -> None:
     sql = _recorded_discovery_sql(limit=None).sql
 
     assert sql.rstrip().endswith("ORDER BY m.mention_id")
+
+
+# ============================================================ 재판정
+def _stale(
+    candidate_id: str = "cand_old",
+    judged_against: str | None = "tx_backend_v0",
+    lifecycle_status: str = PROPOSED,
+) -> dict[str, Any]:
+    return {
+        "candidate_id": candidate_id,
+        "proposed_label": "메시지 브로커",
+        "lifecycle_status": lifecycle_status,
+        "judged_against_taxonomy_version_id": judged_against,
+    }
+
+
+def test_a_candidate_judged_against_another_version_is_judged_again() -> None:
+    """어휘가 채워진 뒤에도 옛 판정을 두면 이미 차원이 된 개념이 신규 후보로 남는다."""
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale()]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+    judge = StubRelationJudge("synonym")
+
+    outcome = CandidateDiscovery(judge, store).run(_context())
+
+    assert outcome.rejudged_candidates == 1
+    assert outcome.judged == 1
+    assert len(judge.calls) == 1
+    candidate_id, values = store.updates[0]
+    assert candidate_id == "cand_old"
+    assert values["relation_judgment"] == "synonym"
+    assert values["nearest_dimension_id"] == "dim_queue"
+    assert values["judged_against_taxonomy_version_id"] == TAXONOMY_VERSION_ID
+
+
+def test_a_candidate_judged_against_the_active_version_is_left_alone() -> None:
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale(judged_against=TAXONOMY_VERSION_ID)]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+    judge = StubRelationJudge()
+
+    outcome = CandidateDiscovery(judge, store).run(_context())
+
+    assert outcome.rejudged_candidates == 0
+    assert judge.calls == []
+    assert store.updates == []
+
+
+def test_a_candidate_never_judged_is_judged_again() -> None:
+    """어느 어휘를 걸고 판정했는지 모르는 후보를 활성 어휘 기준의 판정으로 볼 수 없다."""
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale(judged_against=None)]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context())
+
+    assert outcome.rejudged_candidates == 1
+
+
+@pytest.mark.parametrize("status", ["merged", "split", "deprecated"])
+def test_a_terminal_candidate_is_not_judged_again(status: str) -> None:
+    """나가는 전이가 없는 후보를 다시 판정하면 예산만 준다."""
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale(lifecycle_status=status)]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+    judge = StubRelationJudge()
+
+    outcome = CandidateDiscovery(judge, store).run(_context())
+
+    assert outcome.rejudged_candidates == 0
+    assert judge.calls == []
+    assert store.updates == []
+
+
+def test_the_statuses_excluded_from_rejudgement_cover_the_settled_candidates() -> None:
+    """나가는 전이가 없는 셋과 이미 차원이 된 하나다."""
+    assert set(REJUDGE_EXCLUDED) == {"merged", "split", "deprecated", "active"}
+
+
+def test_a_promoted_candidate_is_not_judged_again() -> None:
+    """이미 차원이 된 후보를 다시 판정하면 자기 자신의 동의어라는 답만 온다."""
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale(lifecycle_status="active")]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+    judge = StubRelationJudge()
+
+    outcome = CandidateDiscovery(judge, store).run(_context())
+
+    assert outcome.rejudged_candidates == 0
+    assert judge.calls == []
+
+
+def test_rejudging_does_not_touch_the_candidate_lineage() -> None:
+    """후보는 발견의 기록이다. 판정이 바뀌어도 계보는 그대로다."""
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale()]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+
+    CandidateDiscovery(StubRelationJudge(), store).run(_context())
+
+    _, values = store.updates[0]
+    assert "candidate_id" not in values
+    assert "taxonomy_id" not in values
+    assert "discovered_in_run_id" not in values
+    assert "lifecycle_status" not in values
+    assert store.candidates == []
+
+
+def test_rejudging_sends_the_most_frequent_wording_first() -> None:
+    """첫 판정과 같은 표현을 봐야 재판정이 다른 이름을 짓지 않는다."""
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale()]
+    store.expressions = {"cand_old": ["메시지 브로커 운영", "메시지 브로커 이해"]}
+    judge = StubRelationJudge()
+
+    CandidateDiscovery(judge, store).run(_context())
+
+    expression, _, examples = judge.calls[0]
+    assert expression == "메시지 브로커 운영"
+    assert examples == ("메시지 브로커 이해",)
+
+
+def test_a_candidate_without_any_wording_is_not_judged() -> None:
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale()]
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context())
+
+    assert outcome.rejudged_candidates == 0
+    assert outcome.discarded == (("cand_old", NO_CANDIDATE_EXPRESSION),)
+
+
+def test_rejudgement_is_counted_apart_from_reuse() -> None:
+    """재사용은 모델 호출이 0 이고 재판정은 후보마다 하나다. 예산 계획이 여기서 선다."""
+    store = FakeStats([_mention("mention_2", "Kafka 운영 경험")], [_dimension()])
+    store.existing = {
+        candidate_identifier(TAXONOMY_ID, normalize_expression("Kafka 운영 경험"))
+    }
+    store.stale = [_stale()]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context())
+
+    assert outcome.reused_candidates == 1
+    assert outcome.rejudged_candidates == 1
+    assert outcome.judged == 1
+
+
+def test_rejudgement_stops_at_the_budget() -> None:
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale("cand_a"), _stale("cand_b")]
+    store.expressions = {"cand_a": ["표현 하나"], "cand_b": ["표현 둘"]}
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context(1))
+
+    assert outcome.rejudged_candidates == 1
+    assert outcome.stop_reason is StopReason.BUDGET_EXHAUSTED
+
+
+def test_a_broken_rejudgement_does_not_stop_the_others() -> None:
+    class OnceExploding:
+        def __init__(self) -> None:
+            self.seen = 0
+
+        def judge(
+            self,
+            expression: str,
+            options: tuple[DimensionOption, ...] = (),
+            examples: tuple[str, ...] = (),
+        ) -> RelationJudgment:
+            self.seen += 1
+            if self.seen == 1:
+                raise RuntimeError("판정 응답을 읽지 못했다")
+            return RelationJudgment(proposed_label=expression)
+
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale("cand_a"), _stale("cand_b")]
+    store.expressions = {"cand_a": ["표현 하나"], "cand_b": ["표현 둘"]}
+
+    outcome = CandidateDiscovery(OnceExploding(), store).run(_context())
+
+    assert outcome.rejudged_candidates == 1
+    assert len(outcome.errors) == 1
+
+
+def test_the_outcome_summarises_each_rejudged_candidate() -> None:
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale()]
+    store.expressions = {"cand_old": ["메시지 브로커 운영 경험"]}
+
+    outcome = CandidateDiscovery(StubRelationJudge("related"), store).run(_context())
+
+    assert outcome.candidates == ()
+    summary = outcome.rejudged[0]
+    assert summary.candidate_id == "cand_old"
+    assert summary.relation_judgment == "related"
+    assert outcome.gained_evidence
+
+
+def test_the_stale_query_excludes_terminal_and_current_judgments() -> None:
+    sql = StatisticsRepository._STALE_CANDIDATES
+
+    assert "lifecycle_status = ANY(%(terminal)s)" in sql
+    assert "judged_against_taxonomy_version_id IS NULL" in sql
+    assert "ORDER BY c.candidate_id" in sql
+
+
+# ============================================================ 차원 종류
+def test_the_judgement_schema_asks_for_a_dimension_kind() -> None:
+    """`Technology` 그래프 노드는 이 값이 있어야 만들어진다."""
+    assert "dimension_kind" in JUDGEMENT_RESPONSE_SCHEMA["properties"]
+    assert "dimension_kind" in JUDGEMENT_RESPONSE_SCHEMA["required"]
+
+
+def test_the_five_dimension_kinds_match_the_check() -> None:
+    assert DIMENSION_KINDS == (
+        "technology",
+        "practice",
+        "domain",
+        "collaboration",
+        "tooling",
+    )
+
+
+def test_the_prompt_explains_every_dimension_kind() -> None:
+    for kind in DIMENSION_KINDS:
+        assert f"{kind}:" in RELATION_JUDGEMENT_PROMPT
+
+
+def test_the_candidate_row_stores_the_dimension_kind() -> None:
+    store = FakeStats([_mention("mention_1", "Kafka 운영 경험")])
+
+    CandidateDiscovery(StubRelationJudge(dimension_kind="technology"), store).run(
+        _context()
+    )
+
+    assert store.candidates[0]["proposed_dimension_kind"] == "technology"
+
+
+def test_a_judgement_without_a_kind_leaves_the_column_empty() -> None:
+    """값을 지어내면 기술이 아닌 요구가 `Technology` 노드가 된다."""
+    store = FakeStats([_mention("mention_1", "Kafka 운영 경험")])
+
+    CandidateDiscovery(StubRelationJudge(dimension_kind=None), store).run(_context())
+
+    assert store.candidates[0]["proposed_dimension_kind"] is None
+
+
+def test_a_kind_outside_the_five_values_is_dropped() -> None:
+    client = FakeOpenAI(
+        {
+            "proposed_label": "Kafka",
+            "relation": "none",
+            "nearest_dimension_id": None,
+            "dimension_kind": "언어",
+            "rationale": "",
+            "confidence": None,
+        }
+    )
+
+    judgment = OpenAIRelationJudge(client).judge("Kafka 운영 경험")
+
+    assert judgment.dimension_kind is None
+
+
+def test_a_kind_inside_the_five_values_survives() -> None:
+    client = FakeOpenAI(
+        {
+            "proposed_label": "Kafka",
+            "relation": "none",
+            "nearest_dimension_id": None,
+            "dimension_kind": "technology",
+            "rationale": "",
+            "confidence": None,
+        }
+    )
+
+    judgment = OpenAIRelationJudge(client).judge("Kafka 운영 경험")
+
+    assert judgment.dimension_kind == "technology"
+
+
+def test_the_stub_refuses_a_kind_outside_the_five_values() -> None:
+    with pytest.raises(ValueError):
+        StubRelationJudge(dimension_kind="언어")
+
+
+# ============================================================ 동시 실행
+def _many_mentions(count: int) -> list[dict[str, Any]]:
+    """서로 다른 매칭 키를 갖는 표현. 묶음이 표현 수만큼 나온다."""
+    return [
+        _mention(f"mention_{index}", f"기술 {index} 운영 경험")
+        for index in range(1, count + 1)
+    ]
+
+
+def test_the_concurrent_run_keeps_the_group_order() -> None:
+    """겹쳐 불러도 후보와 근거의 순서는 묶음 순서다. 도착 순서를 쓰지 않는다."""
+    serial = FakeStats(_many_mentions(9), [_dimension()])
+    concurrent = FakeStats(_many_mentions(9), [_dimension()])
+
+    one = CandidateDiscovery(Slow(), serial, workers=1).run(_context())
+    many = CandidateDiscovery(Slow(), concurrent, workers=6).run(_context())
+
+    assert [row["candidate_id"] for row in serial.candidates] == [
+        row["candidate_id"] for row in concurrent.candidates
+    ]
+    assert serial.links == concurrent.links
+    assert one.created_candidates == many.created_candidates
+    assert [c.match_key for c in one.candidates] == [c.match_key for c in many.candidates]
+
+
+def test_the_repository_is_written_from_one_thread_only() -> None:
+    """저장은 주 갈래에서만 한다. 저장소 연결은 스레드 안전하지 않다."""
+    store = FakeStats(_many_mentions(9), [_dimension()])
+
+    CandidateDiscovery(Slow(), store, workers=6).run(_context())
+
+    assert store.candidates
+    assert store.writing_threads == {threading.current_thread().name}
+
+
+def test_the_concurrent_run_does_not_exceed_the_budget() -> None:
+    """겹쳐 보내도 예산보다 많이 부르지 않는다. 첫 판정과 재판정을 함께 센다."""
+    store = FakeStats(_many_mentions(20), [_dimension()])
+    store.stale = [_stale("cand_a"), _stale("cand_b")]
+    store.expressions = {"cand_a": ["표현 하나"], "cand_b": ["표현 둘"]}
+    judge = Slow()
+
+    outcome = CandidateDiscovery(judge, store, workers=8).run(_context(5))
+
+    assert judge.calls == 5
+    assert outcome.judged == 5
+    assert outcome.stop_reason is StopReason.BUDGET_EXHAUSTED
+
+
+def test_the_rejudgement_runs_concurrently_in_order() -> None:
+    """재판정도 겹쳐 부르고 후보 순서대로 저장한다."""
+    store = FakeStats([], [_dimension()])
+    store.stale = [_stale(f"cand_{index}") for index in range(1, 8)]
+    store.expressions = {
+        f"cand_{index}": [f"표현 {index}"] for index in range(1, 8)
+    }
+
+    outcome = CandidateDiscovery(Slow(), store, workers=5).run(_context())
+
+    assert outcome.rejudged_candidates == 7
+    assert [candidate_id for candidate_id, _ in store.updates] == [
+        f"cand_{index}" for index in range(1, 8)
+    ]
+    assert store.writing_threads == {threading.current_thread().name}
+
+
+def test_an_unrecoverable_failure_stops_the_remaining_groups() -> None:
+    """되살릴 수 없는 실패를 만나면 남은 묶음을 보내지 않는다."""
+    store = FakeStats(_many_mentions(30), [_dimension()])
+    judge = Quota()
+
+    outcome = CandidateDiscovery(
+        judge, store, workers=3, stop_when=_unrecoverable
+    ).run(_context())
+
+    assert judge.calls < 30
+    assert outcome.judged == judge.calls
+    assert outcome.created_candidates == 0
+    assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
+
+
+def test_without_the_predicate_every_group_is_still_tried() -> None:
+    """판정을 넣지 않으면 예전처럼 한 묶음의 실패가 나머지를 막지 않는다."""
+    store = FakeStats(_many_mentions(6), [_dimension()])
+    judge = Quota()
+
+    outcome = CandidateDiscovery(judge, store, workers=3).run(_context())
+
+    assert judge.calls == 6
+    assert len(outcome.errors) == 6

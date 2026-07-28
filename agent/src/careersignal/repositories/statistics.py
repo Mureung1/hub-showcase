@@ -249,14 +249,107 @@ class StatisticsRepository(Repository):
     def candidate_ids(self, taxonomy_id: str) -> set[str]:
         """이 분류체계에 이미 있는 후보.
 
-        같은 표현이 다시 나오면 후보를 새로 만들지 않고 근거만 더한다. 판정을
-        다시 부르지 않으므로 재실행이 모델 호출을 늘리지 않는다.
+        같은 표현이 다시 나오면 후보를 새로 만들지 않고 근거만 더한다. 같은 실행이
+        판정을 다시 부르지 않으므로 근거를 더하는 일이 모델 호출을 늘리지 않는다.
+        재판정은 별도 갈래이며 `stale_candidates()` 가 대상을 고른다.
         """
         rows = self.unit.fetch_all(
             "SELECT candidate_id FROM requirement_candidates WHERE taxonomy_id = %s",
             (taxonomy_id,),
         )
         return {r["candidate_id"] for r in rows}
+
+    # ------------------------------------------------------------ 재판정 대상
+    _STALE_CANDIDATES = """
+        SELECT c.candidate_id, c.proposed_label, c.lifecycle_status,
+               c.judged_against_taxonomy_version_id
+        FROM requirement_candidates c
+        WHERE c.taxonomy_id = %(taxonomy_id)s
+          AND NOT (c.lifecycle_status = ANY(%(terminal)s))
+          AND (c.judged_against_taxonomy_version_id IS NULL
+               OR c.judged_against_taxonomy_version_id
+                  <> %(taxonomy_version_id)s)
+        ORDER BY c.candidate_id
+    """
+    """활성 버전이 아닌 버전을 기준으로 판정된 후보.
+
+    관계 판정은 판정에 건 기존 차원 목록에 상대적이고 그 목록은 특정 분류체계
+    버전의 활성 어휘에서 나온다(docs/erd.md 7.7). 새 버전이 발행되면 어휘가 달라지고
+    옛 판정은 더 이상 그 어휘에 상대적이지 않으므로 다시 서야 한다. 근거는
+    docs/statistics-model.md 3.1 의 이중 경로와 3.5 의 재할당이다.
+
+    판정 기준 버전이 비어 있는 행도 대상이다. 어느 어휘를 걸고 판정했는지 모르는
+    후보를 활성 어휘 기준의 판정으로 볼 수 없다.
+
+    종료 상태의 후보는 뺀다. `merged`·`split`·`deprecated` 는 나가는 전이가 없는
+    상태이며(docs/statistics-model.md 3.3) 다시 판정해도 갈 곳이 없다.
+
+    `candidate_id` 로 정렬한다. 식별자가 결정적이므로 이 정렬은 적재 순서와 무관하게
+    같은 차례를 준다. 예산이 대상을 자를 때 어느 후보가 먼저 오는지가 실행마다
+    같아야 나눠 돌린 결과를 대조할 수 있다.
+    """
+
+    def stale_candidates(
+        self,
+        taxonomy_id: str,
+        taxonomy_version_id: str,
+        terminal_statuses: tuple[str, ...],
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """다시 판정할 후보. 활성 버전 기준으로 판정된 후보는 빠진다."""
+        sql = self._STALE_CANDIDATES
+        params: dict[str, Any] = {
+            "taxonomy_id": taxonomy_id,
+            "taxonomy_version_id": taxonomy_version_id,
+            "terminal": list(terminal_statuses),
+        }
+        if limit is not None:
+            sql = f"{sql}        LIMIT %(limit)s\n"
+            params["limit"] = limit
+        return self.unit.fetch_all(sql, params)
+
+    _CANDIDATE_EXPRESSIONS = """
+        SELECT m.raw_expression, count(*) AS mention_count
+        FROM requirement_candidate_mentions cm
+        JOIN requirement_mentions m ON m.mention_id = cm.mention_id
+        WHERE cm.candidate_id = %(candidate_id)s
+          AND m.dataset_version = %(dataset_version)s
+        GROUP BY m.raw_expression
+        ORDER BY count(*) DESC, m.raw_expression
+    """
+    """후보에 붙은 표기와 그 빈도.
+
+    재판정이 모델에 보낼 대표 표현과 다른 표기를 여기서 고른다. 가장 자주 쓰인
+    표기가 대표이며 같은 횟수면 사전 순으로 가른다. 발견이 후보를 처음 만들 때
+    쓴 규칙(`taxonomy/discovery.py` 의 `_representative`)과 같아서, 재판정이 첫
+    판정과 다른 표현을 보고 다른 이름을 짓지 않는다.
+    """
+
+    def candidate_expressions(
+        self, candidate_id: str, dataset_version: str
+    ) -> list[str]:
+        """후보의 표기를 빈도 순으로. 첫 값이 대표 표현이다."""
+        rows = self.unit.fetch_all(
+            self._CANDIDATE_EXPRESSIONS,
+            {"candidate_id": candidate_id, "dataset_version": dataset_version},
+        )
+        return [row["raw_expression"] for row in rows]
+
+    def update_candidate_judgment(
+        self, candidate_id: str, values: dict[str, Any]
+    ) -> None:
+        """후보의 판정 컬럼을 새 판정으로 갈아 끼운다.
+
+        후보 행을 지우거나 합치지 않는다. 후보는 어느 표현에서 나왔는지의 기록이며
+        `candidate_id` 와 근거 mention 은 그대로 남는다. 갱신하는 것은 판정 결과와
+        그 판정이 선 분류체계 버전뿐이다.
+        """
+        self.unit.update(
+            "requirement_candidates",
+            dict(values),
+            "candidate_id = %(candidate_id)s",
+            {"candidate_id": candidate_id},
+        )
 
     # ------------------------------------------------------------ 후보
     def add_candidate(self, values: dict[str, Any]) -> None:

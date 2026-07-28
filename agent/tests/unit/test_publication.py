@@ -43,6 +43,7 @@ def _candidate(**overrides: Any) -> dict[str, Any]:
         "lifecycle_status": lifecycle.PROPOSED,
         "nearest_dimension_id": None,
         "relation_judgment": "none",
+        "proposed_dimension_kind": None,
         "judged_against_taxonomy_version_id": ACTIVE_VERSION,
         "judgment_rationale": "기존 차원으로 설명되지 않는다",
         "nearest_label": None,
@@ -83,9 +84,15 @@ class FakePublicationStore:
         relations: list[dict[str, Any]] | None = None,
         active: dict[str, Any] | None = None,
         version_number: int = 1,
+        sentences: dict[str, list[str]] | None = None,
+        mention_counts: dict[str, int] | None = None,
+        group_counts: dict[tuple[str, ...], tuple[int, int]] | None = None,
     ) -> None:
         self._candidates = candidates or []
         self._counts = counts or {}
+        self._sentences = sentences or {}
+        self._mention_counts = mention_counts or {}
+        self._group_counts = group_counts or {}
         self._dimension_versions = dimension_versions or []
         self._aliases = aliases or []
         self._relations = relations or []
@@ -119,6 +126,37 @@ class FakePublicationStore:
         rows = list(self._candidates)
         return rows if limit is None else rows[:limit]
 
+    def group_evidence(
+        self, candidate_ids, dataset_version: str
+    ) -> dict[str, int]:
+        """묶음 전체에서 센 두 수. 후보마다의 수를 합치지 않고 최대를 취한다.
+
+        실제 SQL 은 `DISTINCT` 로 공고와 회사를 세므로 같은 공고를 두 후보가 함께
+        증명해도 하나다. 대역은 후보별 수를 미리 받아 두고 그중 가장 큰 값을 쓰되,
+        묶음마다의 값을 따로 정하고 싶으면 `group_counts` 에 적는다.
+        """
+        key = tuple(sorted(candidate_ids))
+        if key in self._group_counts:
+            postings, companies = self._group_counts[key]
+            return {
+                "independent_posting_count": postings,
+                "independent_company_count": companies,
+            }
+        counted = [self._counts.get(cid, (4, 3)) for cid in candidate_ids]
+        return {
+            "independent_posting_count": max((c[0] for c in counted), default=0),
+            "independent_company_count": max((c[1] for c in counted), default=0),
+        }
+
+    def candidate_mention_counts(
+        self, candidate_ids, dataset_version: str
+    ) -> dict[str, int]:
+        return {
+            cid: self._mention_counts.get(cid, 1)
+            for cid in candidate_ids
+            if cid in self._mention_counts or True
+        }
+
     def candidate_evidence(
         self, candidate_id: str, dataset_version: str
     ) -> dict[str, int]:
@@ -131,7 +169,7 @@ class FakePublicationStore:
     def representative_sentences(
         self, candidate_id: str, dataset_version: str, limit: int
     ) -> list[str]:
-        return ["Kafka 운영 경험"]
+        return list(self._sentences.get(candidate_id, ["Kafka 운영 경험"]))[:limit]
 
     def expected_dimension_labels(self, job_role_id: str) -> dict[str, Any]:
         return {"eval_set_id": None, "labels": ()}
@@ -676,3 +714,196 @@ def test_a_repository_refuses_a_transaction_of_another_component() -> None:
 
     with pytest.raises(PermissionError):
         PromotionRepository(Other())
+
+
+# ============================================================ 라벨 묶음
+def test_the_rest_of_a_group_becomes_an_alias_of_the_new_dimension() -> None:
+    """같은 개념의 표기가 한 차원에 모여야 다음 기지 추출이 그 표기를 맞힌다."""
+    store = FakePublicationStore(
+        [
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_b", proposed_label="Java"),
+        ],
+        sentences={
+            "cand_java_a": ["Java 개발 경험"],
+            "cand_java_b": ["자바 백엔드 경험"],
+        },
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+    )
+
+    outcome = _publish(store)
+
+    assert outcome.created_dimensions == 1
+    assert outcome.created_aliases == 1
+    alias = store.written_aliases[0]
+    assert alias["alias_text"] == "자바 백엔드 경험"
+    assert alias["dimension_id"] == dimension_identifier(TAXONOMY_ID, "cand_java_a")
+
+
+def test_the_representative_is_written_before_the_members() -> None:
+    """대표의 차원이 아직 없으면 나머지가 붙을 곳이 없다."""
+    store = FakePublicationStore(
+        [
+            _candidate(candidate_id="cand_java_z", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+        ],
+        sentences={
+            "cand_java_z": ["Java 개발 경험"],
+            "cand_java_a": ["자바 백엔드 경험"],
+        },
+        mention_counts={"cand_java_z": 9, "cand_java_a": 1},
+    )
+
+    outcome = _publish(store)
+
+    assert outcome.created_dimensions == 1
+    assert store.written_dimensions[0]["dimension_id"] == dimension_identifier(
+        TAXONOMY_ID, "cand_java_z"
+    )
+    assert store.written_aliases[0]["dimension_id"] == dimension_identifier(
+        TAXONOMY_ID, "cand_java_z"
+    )
+
+
+def test_an_alias_already_taken_by_another_dimension_falls_to_hold() -> None:
+    """`UNIQUE (taxonomy_version_id, alias_text)` 가 한 표기를 한 차원에만 허용한다."""
+    store = FakePublicationStore(
+        [
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_b", proposed_label="Java"),
+        ],
+        sentences={
+            "cand_java_a": ["Java 개발 경험"],
+            "cand_java_b": ["옛 표기"],
+        },
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+        dimension_versions=[_dimension_version()],
+        aliases=[
+            {
+                "dimension_id": "dim_queue",
+                "alias_text": "옛 표기",
+                "alias_source": "discovered",
+            }
+        ],
+    )
+
+    outcome = _publish(store)
+
+    assert outcome.carried_aliases == 1
+    assert outcome.created_aliases == 0
+    assert outcome.alias_conflicts == 1
+    assert outcome.merged == 0
+    assert outcome.held == 1
+    held = [row for row in store.decisions if row["candidate_id"] == "cand_java_b"]
+    assert held[0]["decision"] == "hold"
+    assert ("cand_java_b", lifecycle.COLLECTING_EVIDENCE) in store.lifecycles
+
+
+# ============================================================ 차원 종류
+def test_the_dimension_kind_comes_from_the_judgment() -> None:
+    """`Technology` 그래프 노드는 이 값이 `technology` 인 차원에서만 만들어진다."""
+    store = FakePublicationStore(
+        [_candidate(proposed_dimension_kind="technology")]
+    )
+
+    outcome = _publish(store)
+
+    assert store.written_dimensions[0]["dimension_kind"] == "technology"
+    assert outcome.defaulted_dimension_kinds == 0
+
+
+def test_a_candidate_without_a_kind_falls_back_to_practice() -> None:
+    store = FakePublicationStore([_candidate(proposed_dimension_kind=None)])
+
+    outcome = _publish(store)
+
+    assert store.written_dimensions[0]["dimension_kind"] == DEFAULT_DIMENSION_KIND
+    assert outcome.defaulted_dimension_kinds == 1
+
+
+# ============================================================ 실데이터 모사
+def test_three_postings_naming_one_concept_promote_once_with_two_aliases() -> None:
+    """서로 다른 세 공고가 같은 개념을 다르게 적고 판정이 셋 다 `Java` 로 이름 짓는다.
+
+    관측된 실행은 이 자리에서 후보 셋을 각각 독립 공고 1 로 세어 전부 보류했다.
+    묶음으로 세면 독립 공고 3, 독립 회사 3 이 되어 승격이 일어나고, 대표가 아닌 둘의
+    표기가 그 차원의 별칭이 된다.
+    """
+    store = FakePublicationStore(
+        [
+            _candidate(candidate_id="cand_java_1", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_2", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_3", proposed_label="java"),
+        ],
+        counts={
+            "cand_java_1": (1, 1),
+            "cand_java_2": (1, 1),
+            "cand_java_3": (1, 1),
+        },
+        group_counts={("cand_java_1", "cand_java_2", "cand_java_3"): (3, 3)},
+        sentences={
+            "cand_java_1": ["Java 개발 경험"],
+            "cand_java_2": ["Java 기반 서버 개발"],
+            "cand_java_3": ["자바 백엔드 경험"],
+        },
+        mention_counts={"cand_java_1": 3, "cand_java_2": 2, "cand_java_3": 1},
+    )
+
+    outcome = _publish(store)
+
+    assert outcome.promoted == 1
+    assert outcome.merged == 2
+    assert outcome.created_dimensions == 1
+    assert outcome.created_aliases == 2
+    assert outcome.held == 0
+
+    dimension_id = dimension_identifier(TAXONOMY_ID, "cand_java_1")
+    assert store.written_dimension_versions[0]["display_label"] == "Java"
+    assert {row["alias_text"] for row in store.written_aliases} == {
+        "Java 기반 서버 개발",
+        "자바 백엔드 경험",
+    }
+    assert {row["dimension_id"] for row in store.written_aliases} == {dimension_id}
+    assert [row["candidate_id"] for row in store.decisions] == [
+        "cand_java_1",
+        "cand_java_2",
+        "cand_java_3",
+    ]
+
+
+def test_a_group_whose_representative_is_a_synonym_folds_into_that_dimension() -> None:
+    """대표가 차원을 만들지 않으면 나머지는 대표가 붙은 기존 차원에 붙는다."""
+    store = FakePublicationStore(
+        [
+            _candidate(
+                candidate_id="cand_mq_a",
+                proposed_label="MQ",
+                relation_judgment="synonym",
+                nearest_dimension_id="dim_queue",
+                nearest_label="메시지 큐",
+            ),
+            _candidate(
+                candidate_id="cand_mq_b",
+                proposed_label="MQ",
+                relation_judgment="synonym",
+                nearest_dimension_id="dim_queue",
+                nearest_label="메시지 큐",
+            ),
+        ],
+        sentences={
+            "cand_mq_a": ["MQ 운영 경험"],
+            "cand_mq_b": ["메시지큐 사용 경험"],
+        },
+        mention_counts={"cand_mq_a": 3, "cand_mq_b": 1},
+        dimension_versions=[_dimension_version()],
+    )
+
+    outcome = _publish(store)
+
+    assert outcome.created_dimensions == 0
+    assert outcome.created_aliases == 2
+    assert {row["dimension_id"] for row in store.written_aliases} == {"dim_queue"}
+    assert {row["alias_text"] for row in store.written_aliases} == {
+        "MQ",
+        "메시지큐 사용 경험",
+    }

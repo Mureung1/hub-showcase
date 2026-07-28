@@ -3,7 +3,10 @@
 기존 차원으로 설명되지 않은 표현 하나를 받아 후보 라벨을 짓고, 가장 가까운 기존
 차원과의 관계를 판정한다. 판정 값 네 가지의 정의는 docs/statistics-model.md 3.2 이고,
 결과가 들어가는 자리는 docs/erd.md 7.7 의 `proposed_label`,
-`nearest_dimension_id`, `relation_judgment` 다.
+`nearest_dimension_id`, `relation_judgment`, `proposed_dimension_kind` 다.
+
+차원 종류도 같은 호출이 낸다. 값 집합은 docs/erd.md 7.3 이고, 이 값이 없으면
+`Technology` 그래프 노드가 하나도 만들어지지 않는다(docs/ontology-v1.md 2.1).
 
 명명과 판정을 한 포트에 둔다. 근거는 셋이다.
 
@@ -48,6 +51,28 @@ RELATIONS: tuple[str, ...] = ("synonym", "broader", "narrower", "related", "none
 NO_RELATION: Relation = "none"
 """기존 차원으로 설명되지 않는다. 신규 차원 후보가 된다."""
 
+DimensionKind = Literal[
+    "technology", "practice", "domain", "collaboration", "tooling"
+]
+
+DIMENSION_KINDS: tuple[str, ...] = (
+    "technology",
+    "practice",
+    "domain",
+    "collaboration",
+    "tooling",
+)
+"""`requirement_dimensions.dimension_kind` 의 CHECK 와 같은 집합이다.
+
+값은 docs/erd.md 7.3 이 정한다. 같은 판정이 이 값을 함께 내는 이유는
+docs/ontology-v1.md 2.1 이다. `Technology` 그래프 노드는
+`dimension_kind = 'technology'` 인 차원에서만 만들어지므로, 종류를 판정하지 않으면
+온톨로지의 기술 절반이 비어 있는 채로 남는다.
+
+종류를 별도 호출로 나누지 않는다. 이름을 짓는 이해가 곧 종류를 가르는 이해이며,
+나눠 부르면 모델 호출이 후보 수만큼 늘어난다.
+"""
+
 RELATION_JUDGEMENT_PROMPT = """너는 채용공고에서 발견된 요구 표현에 이름을 붙이고,
 그 표현이 기존 요구 차원과 어떤 관계인지 판정한다.
 
@@ -71,8 +96,14 @@ RELATION_JUDGEMENT_PROMPT = """너는 채용공고에서 발견된 요구 표현
    적는다. none 이면 null 로 둔다. 목록에 없는 식별자를 만들지 않는다.
 5. 기존 차원 목록이 비어 있으면 relation 은 none 이고 nearest_dimension_id 는
    null 이다.
-6. rationale 은 그 판정을 고른 이유를 한 문장으로 적는다.
-7. confidence 는 판정의 확신이며 0 과 1 사이의 수다. 근거가 없으면 null 로 둔다.
+6. dimension_kind 는 이 요구가 어떤 종류인지이며 다음 다섯 중 하나다.
+   - technology: 언어·프레임워크·미들웨어처럼 이름을 가진 기술 그 자체다.
+   - practice: 설계·운영·테스트처럼 기술을 쓰는 방식과 일하는 방법이다.
+   - domain: 커머스·금융·광고처럼 그 일이 다루는 사업 영역의 지식이다.
+   - collaboration: 협업·소통·리드처럼 사람과 함께 일하는 능력이다.
+   - tooling: Jira·GitHub Actions 처럼 개발을 돕는 도구의 사용이다.
+7. rationale 은 그 판정을 고른 이유를 한 문장으로 적는다.
+8. confidence 는 판정의 확신이며 0 과 1 사이의 수다. 근거가 없으면 null 로 둔다.
 
 출력은 주어진 스키마를 따르는 JSON 하나다. 설명 문장을 덧붙이지 않는다."""
 
@@ -82,6 +113,7 @@ JUDGEMENT_RESPONSE_SCHEMA: dict[str, Any] = {
         "proposed_label": {"type": "string"},
         "relation": {"type": "string", "enum": list(RELATIONS)},
         "nearest_dimension_id": {"type": ["string", "null"]},
+        "dimension_kind": {"type": ["string", "null"], "enum": [*DIMENSION_KINDS, None]},
         "rationale": {"type": "string"},
         "confidence": {"type": ["number", "null"]},
     },
@@ -89,6 +121,7 @@ JUDGEMENT_RESPONSE_SCHEMA: dict[str, Any] = {
         "proposed_label",
         "relation",
         "nearest_dimension_id",
+        "dimension_kind",
         "rationale",
         "confidence",
     ],
@@ -138,6 +171,13 @@ class RelationJudgment(BaseModel):
 
     nearest_dimension_id: str | None = None
     """`requirement_candidates.nearest_dimension_id`. 관계가 `none` 이면 비운다."""
+
+    dimension_kind: DimensionKind | None = None
+    """`requirement_candidates.proposed_dimension_kind`. 다섯 값의 CHECK 를 따른다.
+
+    비울 수 있다. 판정이 종류를 고르지 못한 상태와 `practice` 로 고른 상태는 다르며,
+    비운 값을 승격이 `practice` 로 떨어뜨리되 그 사실을 결과에 남긴다.
+    """
 
     rationale: str = ""
     """판정을 고른 이유. 승격 심사가 읽는다."""
@@ -256,7 +296,12 @@ class OpenAIRelationJudge:
     def _judgment(
         self, item: dict[str, Any], expression: str, allowed: set[str]
     ) -> RelationJudgment:
-        """목록 밖의 차원과 짝이 맞지 않는 관계를 `none` 으로 내린다."""
+        """목록 밖의 차원과 짝이 맞지 않는 관계를 `none` 으로 내린다.
+
+        다섯 값 밖의 `dimension_kind` 도 비운다. 종류를 지어내면
+        `Technology` 그래프 노드가 기술이 아닌 요구에서 만들어진다
+        (docs/ontology-v1.md 2.1).
+        """
         relation = str(item.get("relation", NO_RELATION))
         nearest = item.get("nearest_dimension_id")
         if relation not in RELATIONS or nearest not in allowed:
@@ -264,12 +309,17 @@ class OpenAIRelationJudge:
         if relation == NO_RELATION:
             nearest = None
 
+        kind = item.get("dimension_kind")
+        if kind not in DIMENSION_KINDS:
+            kind = None
+
         label = str(item.get("proposed_label", "")).strip() or expression.strip()
         try:
             return RelationJudgment(
                 proposed_label=label,
                 relation=relation,  # type: ignore[arg-type]
                 nearest_dimension_id=nearest,
+                dimension_kind=kind,  # type: ignore[arg-type]
                 rationale=str(item.get("rationale", "")),
                 confidence=item.get("confidence"),
             )
@@ -301,14 +351,26 @@ class StubRelationJudge:
 
     `relation` 을 주면 그 값만 돌려준다. 판정 네 값의 저장 경로를 각각 확인할 때
     쓴다. `calls` 는 호출마다 받은 `(표현, 선택지 식별자, 근거 표현)` 이다.
+
+    `dimension_kind` 도 같은 방식으로 준다. 기본값은 `practice` 이며 종류를 가장
+    적게 특정하는 값이다. `None` 을 주면 종류를 고르지 못한 판정이 되어, 승격이
+    기본값으로 떨어뜨리는 경로를 확인할 수 있다. 대역이 표현을 보고 종류를
+    추측하지 않는 이유는 그것이 판정이기 때문이며, 대역은 저장 경로만 만든다.
     """
 
     model = "stub-relation-judge"
 
-    def __init__(self, relation: str | None = None) -> None:
+    def __init__(
+        self,
+        relation: str | None = None,
+        dimension_kind: str | None = "practice",
+    ) -> None:
         if relation is not None and relation not in RELATIONS:
             raise ValueError(f"관계 판정 값이 아니다: {relation}")
+        if dimension_kind is not None and dimension_kind not in DIMENSION_KINDS:
+            raise ValueError(f"차원 종류 값이 아니다: {dimension_kind}")
         self._forced = relation
+        self._kind = dimension_kind
         self.calls: list[tuple[str, tuple[str, ...], tuple[str, ...]]] = []
 
     def judge(
@@ -322,7 +384,11 @@ class StubRelationJudge:
         )
         label = expression.strip()
         if not options:
-            return RelationJudgment(proposed_label=label, relation=NO_RELATION)
+            return RelationJudgment(
+                proposed_label=label,
+                relation=NO_RELATION,
+                dimension_kind=self._kind,  # type: ignore[arg-type]
+            )
 
         option = options[0]
         relation = self._forced or self._relation(label, option.label)
@@ -331,6 +397,7 @@ class StubRelationJudge:
             proposed_label=label,
             relation=relation,  # type: ignore[arg-type]
             nearest_dimension_id=nearest,
+            dimension_kind=self._kind,  # type: ignore[arg-type]
             rationale=f"대역 판정: {option.label}",
         )
 

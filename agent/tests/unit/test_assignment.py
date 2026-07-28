@@ -9,7 +9,10 @@ docs/adr/0005-mention-assignment-separation.md 에서 온다. 생성 모델과 �
 from __future__ import annotations
 
 import hashlib
+import threading
+import time
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,6 +24,7 @@ from careersignal.domain.permissions import Component, can_write
 from careersignal.domain.scope import ScopeLevel
 from careersignal.providers.models import EMBEDDING
 from careersignal.repositories.assignment import AssignmentRepository
+from careersignal.taxonomy import assignment as assignment_module
 from careersignal.taxonomy.assignment import (
     ALIAS_EXACT,
     METHOD_CONFIDENCE,
@@ -33,6 +37,8 @@ from careersignal.taxonomy.assignment import (
     AssignmentOutcome,
     RequirementAssignment,
     assignment_identifier,
+    group_reasons,
+    is_unrecoverable,
 )
 from careersignal.taxonomy.depth import DEFAULT_LEVEL, judge_depth
 from careersignal.taxonomy.requiredness import Requiredness
@@ -129,6 +135,12 @@ class FakeAssignments:
         조회가 거르지 못하는 자리이며 파이썬의 건너뛰기가 잡는다.
         """
 
+        self.writing_threads: set[str] = set()
+        """쓰기를 부른 갈래 이름. 저장소 연결은 스레드 안전하지 않다.
+
+        동시 실행이 모델만 겹쳐 부르고 저장은 주 갈래에서 하는지 검사한다.
+        """
+
     # ------------------------------------------------------------ 조회
     def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
         return dict(self._active) if self._active else None
@@ -169,6 +181,7 @@ class FakeAssignments:
 
     # ------------------------------------------------------------ 쓰기
     def add_assignment(self, values: dict[str, Any]) -> None:
+        self.writing_threads.add(threading.current_thread().name)
         key = (values["mention_id"], values["taxonomy_version_id"])
         if any(
             (row["mention_id"], row["taxonomy_version_id"]) == key for row in self.rows
@@ -238,12 +251,74 @@ class Exploding:
 
 
 class ExplodingEmbeddings:
-    """예외를 던지는 임베딩 구현."""
+    """예외를 던지는 임베딩 구현.
+
+    던질 예외의 클래스 이름과 메시지를 받는다. 되살릴 수 있는 실패와 없는 실패를
+    같은 대역으로 검사하기 위해서다. 이름을 골라 만든 예외를 쓰므로 openai 패키지가
+    없어도 판정 갈래를 모두 지난다.
+    """
 
     model = "exploding-embedding"
 
+    def __init__(
+        self, name: str = "RuntimeError", message: str = "임베딩 응답을 읽지 못했다"
+    ) -> None:
+        self._name = name
+        self._message = message
+
     def embed(self, texts: list[str]) -> list[list[float]]:
-        raise RuntimeError("임베딩 응답을 읽지 못했다")
+        raise _named_error(self._name, self._message)
+
+
+class FailingAssigner:
+    """`fail_from` 번째 호출부터 예외를 던지는 배정 구현.
+
+    앞의 호출은 대역과 같이 첫 선택지를 고른다. 실패 앞의 할당이 남는지, 실패 뒤의
+    표현을 시도하는지를 한 대역으로 본다.
+    """
+
+    def __init__(self, fail_from: int, name: str, message: str) -> None:
+        self._fail_from = fail_from
+        self._name = name
+        self._message = message
+        self._lock = threading.Lock()
+        self.calls = 0
+
+    def assign(self, expression: str, options: Any = (), section: Any = None) -> Any:
+        # 동시 실행에서 여러 갈래가 함께 부른다. 셈이 어긋나면 검사가 흔들린다.
+        with self._lock:
+            self.calls += 1
+            calls = self.calls
+        if calls >= self._fail_from:
+            raise _named_error(self._name, self._message)
+        return StubDimensionAssigner().assign(expression, options, section)
+
+
+class SlowAssigner:
+    """호출마다 다른 시간을 기다리는 배정 구현.
+
+    먼저 보낸 요청이 더 오래 기다리므로 도착 순서가 보낸 순서와 뒤집힌다. 결과를
+    도착 순서로 저장하는 구현이면 이 대역에서 순서가 어긋난다.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.calls = 0
+        self.arrivals: list[str] = []
+
+    def assign(self, expression: str, options: Any = (), section: Any = None) -> Any:
+        with self._lock:
+            self.calls += 1
+            order = self.calls
+        time.sleep(0.02 / order)
+        with self._lock:
+            self.arrivals.append(expression)
+        return StubDimensionAssigner().assign(expression, options, section)
+
+
+def _named_error(name: str, message: str) -> Exception:
+    """이름이 `name` 인 예외 하나. 제공자 SDK 를 설치하지 않고 갈래를 검사한다."""
+    return type(name, (Exception,), {})(message)
 
 
 def _context(
@@ -313,6 +388,55 @@ def test_the_rubric_scale_and_structure_signals_are_tradeoff(expression: str) ->
     tradeoff 다. 표현은 docs/eval/backend_dimensions_v1.json 의 기대 항목에서 가져왔다.
     """
     assert judge_depth(expression) is DepthLevel.TRADEOFF
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "3년 이상의 백엔드 개발 경험 또는 그에 준하는 엔지니어링 역량을 가지신 분",
+        "5년차 이상 백엔드 개발자",
+        "경력 3년 이상",
+        "백엔드 개발 경험 3년 이상",
+        "관련 업무 경력 5년 이상이신 분",
+    ],
+)
+def test_a_tenure_expression_is_foundation(expression: str) -> None:
+    """연차·기간은 깊이 신호가 아니다.
+
+    docs/eval/rubrics_v1.json 의 `rb_depth_level_grade` 가 "표현이 자격·연차·태도·
+    학위·어학을 요구하면 foundation 이다" 로 적고 `signal_map` 이 `attribute` 를
+    `foundation` 에 대응시킨다. 첫 표현은 docs/eval/backend_dimensions_v1.json 이
+    기대 등급 `foundation`, 차원 라벨 `경력 연차` 로 적은 항목이다.
+    """
+    assert judge_depth(expression) is DepthLevel.FOUNDATION
+
+
+@pytest.mark.parametrize(
+    ("expression", "expected"),
+    [
+        ("5년 이상 대용량 트래픽 처리 경험", DepthLevel.TRADEOFF),
+        ("경력 3년 이상, Kafka 운영 경험", DepthLevel.APPLICATION),
+        ("3년 이상 Redis 캐시 구축 경험", DepthLevel.APPLICATION),
+    ],
+)
+def test_a_tenure_expression_keeps_its_other_signals(
+    expression: str, expected: DepthLevel
+) -> None:
+    """연차가 다른 신호를 지우지 않는다.
+
+    빼는 것은 연차를 세는 말 넷뿐이다. 규모 신호와 운영·구축 신호는 남아 등급을
+    정한다. 같은 루브릭이 규모를 `tradeoff`, 사용·구현·운영 경험을 `application`
+    으로 적는다.
+    """
+    assert judge_depth(expression) is expected
+
+
+def test_a_tenure_word_without_a_year_stays_applied() -> None:
+    """연차 표기가 없으면 `경험`·`개발` 은 그대로 `application` 신호다."""
+    assert (
+        judge_depth("Golang을 활용한 프로덕션 서비스 개발 및 운영 경험이 있으신 분")
+        is DepthLevel.APPLICATION
+    )
 
 
 def test_a_topic_word_alone_does_not_raise_the_grade() -> None:
@@ -753,7 +877,11 @@ def test_a_broken_assigner_is_not_read_as_no_evidence() -> None:
 
 
 def test_a_broken_embedding_only_empties_the_vector_method() -> None:
-    """벡터 결과가 비는 것과 실행이 실패하는 것은 다른 상태다."""
+    """벡터 결과가 비는 것과 실행이 실패하는 것은 다른 상태다.
+
+    방법 하나가 통째로 빠진 것은 `unavailable_methods` 에 한 줄로 담기고 표현의
+    실패를 담는 `errors` 에는 들어가지 않는다. 사슬은 모델 판정으로 이어진다.
+    """
     store = FakeAssignments(
         [_mention("mention_1", "메시지 큐 운영 경험")], [_dimension()]
     )
@@ -763,7 +891,9 @@ def test_a_broken_embedding_only_empties_the_vector_method() -> None:
     ).run(_context())
 
     assert outcome.count_of(MODEL_JUDGMENT) == 1
-    assert outcome.errors[0][0] == VECTOR_MATCH
+    assert outcome.unavailable_methods[0][0] == VECTOR_MATCH
+    assert outcome.errors == ()
+    assert outcome.stop_reason is not StopReason.EXPLICIT_FAILURE
 
 
 def test_an_exhausted_budget_leaves_the_rest_for_the_next_run() -> None:
@@ -782,6 +912,255 @@ def test_an_exhausted_budget_leaves_the_rest_for_the_next_run() -> None:
     assert outcome.stop_reason is StopReason.BUDGET_EXHAUSTED
     assert outcome.judged == 1
     assert len(store.rows) == 1
+
+
+# ============================================================ 되살릴 수 없는 실패
+@pytest.mark.parametrize(
+    ("name", "message"),
+    [
+        ("RateLimitError", "Error code: 429 - insufficient_quota"),
+        ("RateLimitError", "You exceeded your current quota, please check"),
+        ("APIStatusError", "billing_hard_limit_reached"),
+        ("AuthenticationError", "Error code: 401"),
+        ("PermissionDeniedError", "Error code: 403"),
+        ("NotFoundError", "The model does not exist or you do not have access"),
+        ("RuntimeError", "INSUFFICIENT_QUOTA"),
+    ],
+)
+def test_a_quota_or_credential_failure_is_unrecoverable(
+    name: str, message: str
+) -> None:
+    """같은 호출을 다시 해도 반드시 실패하는 것들. 대조는 대소문자를 가리지 않는다."""
+    assert is_unrecoverable(name, message)
+
+
+@pytest.mark.parametrize(
+    ("name", "message"),
+    [
+        ("RateLimitError", "Rate limit reached for requests, try again in 1s"),
+        ("APITimeoutError", "Request timed out"),
+        ("APIConnectionError", "Connection error"),
+        ("InternalServerError", "Error code: 500"),
+        ("ValidationError", "응답이 스키마를 지키지 않았다"),
+        ("ValueError", "차원 식별자를 읽지 못했다"),
+    ],
+)
+def test_a_transient_or_shape_failure_is_recoverable(name: str, message: str) -> None:
+    """기다리면 풀리는 오류와 한 표현의 응답 형식 오류는 멈출 사유가 아니다."""
+    assert not is_unrecoverable(name, message)
+
+
+def test_the_judgement_does_not_import_the_provider() -> None:
+    """판정은 문자열 둘만 본다. 제공자 패키지를 모른다."""
+    source = Path(assignment_module.__file__).read_text(encoding="utf-8")
+
+    assert "import openai" not in source
+    assert "from openai" not in source
+
+
+def test_the_quota_failure_stops_before_the_remaining_expressions() -> None:
+    """할당량이 끝나면 남은 표현을 시도하지 않는다.
+
+    지금까지 저장한 할당은 그대로 남고, 시도하지 않은 표현 수만 결과에 적힌다.
+
+    동시 실행 수를 1 로 두어 하나씩 부르는 자리를 본다. 겹쳐 보내면 이미 날아간
+    요청이 있어 호출 수가 정확히 2 가 되지 않는다. 그 갈래는 아래 검사가 본다.
+    """
+    store = FakeAssignments(
+        [_mention(f"mention_{index}", f"메시지 큐 사용 사례 {index}") for index in range(1, 6)],
+        [_dimension()],
+    )
+    assigner = FailingAssigner(
+        fail_from=2, name="RateLimitError", message="429 - insufficient_quota"
+    )
+
+    outcome = RequirementAssignment(assigner, store, workers=1).run(_context())
+
+    assert assigner.calls == 2
+    assert outcome.judged == 2
+    assert outcome.assigned_mentions == 1
+    assert len(outcome.errors) == 1
+    assert outcome.halted
+    assert outcome.halted_pending == 3
+    assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
+    assert len(store.rows) == 1
+
+
+def test_the_quota_failure_stops_the_concurrent_run_too() -> None:
+    """겹쳐 보내는 중에 할당량이 끝나면 새 요청을 더 보내지 않는다.
+
+    이미 날아간 요청은 취소하지 않는다. 그래서 호출 수는 동시 실행 수만큼 더
+    나가지만 표현 전체를 부르지는 않는다.
+    """
+    store = FakeAssignments(
+        [_mention(f"mention_{index}", f"메시지 큐 사용 사례 {index}") for index in range(1, 6)],
+        [_dimension()],
+    )
+    assigner = FailingAssigner(
+        fail_from=2, name="RateLimitError", message="429 - insufficient_quota"
+    )
+
+    outcome = RequirementAssignment(assigner, store, workers=2).run(_context())
+
+    assert assigner.calls == 3
+    assert outcome.judged == 3
+    assert outcome.halted
+    assert outcome.halted_pending == 2
+    assert outcome.assigned_mentions == 1
+    assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
+
+
+def test_the_concurrent_run_assigns_the_same_rows_as_the_serial_one() -> None:
+    """동시 실행 수가 달라도 저장되는 할당과 그 순서가 같다."""
+    mentions = [
+        _mention(f"mention_{index}", f"메시지 큐 사용 사례 {index}")
+        for index in range(1, 12)
+    ]
+    serial = FakeAssignments(list(mentions), [_dimension()])
+    concurrent = FakeAssignments(list(mentions), [_dimension()])
+
+    one = RequirementAssignment(SlowAssigner(), serial, workers=1).run(_context())
+    many = RequirementAssignment(SlowAssigner(), concurrent, workers=5).run(_context())
+
+    assert [row["mention_id"] for row in serial.rows] == [
+        row["mention_id"] for row in concurrent.rows
+    ]
+    assert serial.rows == concurrent.rows
+    assert one.assigned_mentions == many.assigned_mentions
+    assert one.judged == many.judged
+
+
+def test_the_repository_is_written_from_one_thread_only() -> None:
+    """저장은 주 갈래에서만 한다. 저장소 연결은 스레드 안전하지 않다."""
+    store = FakeAssignments(
+        [
+            _mention(f"mention_{index}", f"메시지 큐 사용 사례 {index}")
+            for index in range(1, 12)
+        ],
+        [_dimension()],
+    )
+
+    RequirementAssignment(SlowAssigner(), store, workers=5).run(_context())
+
+    assert store.rows
+    assert store.writing_threads == {threading.current_thread().name}
+
+
+def test_the_concurrent_run_does_not_exceed_the_budget() -> None:
+    """겹쳐 보내도 예산보다 많이 부르지 않는다."""
+    store = FakeAssignments(
+        [
+            _mention(f"mention_{index}", f"메시지 큐 사용 사례 {index}")
+            for index in range(1, 21)
+        ],
+        [_dimension()],
+    )
+    assigner = SlowAssigner()
+
+    outcome = RequirementAssignment(assigner, store, workers=6).run(
+        _context(max_tool_calls=7)
+    )
+
+    assert assigner.calls == 7
+    assert outcome.judged == 7
+    assert outcome.stop_reason is StopReason.BUDGET_EXHAUSTED
+
+
+def test_a_transient_failure_skips_only_that_expression() -> None:
+    """일시적 오류는 그 표현만 실패로 세고 다음 표현으로 넘어간다."""
+    store = FakeAssignments(
+        [_mention(f"mention_{index}", f"메시지 큐 사용 사례 {index}") for index in range(1, 6)],
+        [_dimension()],
+    )
+    assigner = FailingAssigner(
+        fail_from=2, name="APITimeoutError", message="Request timed out"
+    )
+
+    outcome = RequirementAssignment(assigner, store).run(_context())
+
+    assert assigner.calls == 5
+    assert len(outcome.errors) == 4
+    assert not outcome.halted
+    assert outcome.halted_pending == 0
+    assert outcome.assigned_mentions == 1
+
+
+def test_an_unrecoverable_embedding_failure_stops_the_chain() -> None:
+    """임베딩이 할당량으로 죽으면 모델 판정으로 넘기지 않는다.
+
+    할당량과 자격 증명은 계정 단위다. 같은 키로 부르는 다음 방법도 반드시 실패하므로
+    사슬을 이어 가면 실패 줄만 쌓인다.
+    """
+    store = FakeAssignments(
+        [_mention("mention_1", "메시지 큐 사례 하나"), _mention("mention_2", "메시지 큐 사례 둘")],
+        [_dimension()],
+    )
+    assigner = FailingAssigner(fail_from=99, name="RuntimeError", message="")
+
+    outcome = RequirementAssignment(
+        assigner,
+        store,
+        ExplodingEmbeddings("RateLimitError", "429 - insufficient_quota"),
+    ).run(_context())
+
+    assert assigner.calls == 0
+    assert outcome.judged == 0
+    assert outcome.halted
+    assert outcome.halted_pending == 2
+    assert outcome.unavailable_methods[0][0] == VECTOR_MATCH
+    assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
+
+
+def test_the_first_reason_survives_a_later_one() -> None:
+    """멈춘 사유는 처음 깨진 자리다. 뒤에 온 사유가 덮지 않는다."""
+    state_reason = "RateLimitError: insufficient_quota"
+    store = FakeAssignments(
+        [_mention("mention_1", "메시지 큐 사례 하나"), _mention("mention_2", "메시지 큐 사례 둘")],
+        [_dimension()],
+    )
+    assigner = FailingAssigner(
+        fail_from=1, name="RateLimitError", message="insufficient_quota"
+    )
+
+    outcome = RequirementAssignment(assigner, store).run(_context())
+
+    assert outcome.halted_reason == state_reason
+
+
+# ============================================================ 사유 묶음
+def test_the_same_reason_is_counted_once() -> None:
+    """같은 사유가 수백 줄 반복되면 다른 사유가 묻힌다."""
+    records = [
+        ("mention_1", "RateLimitError: insufficient_quota"),
+        ("mention_2", "RateLimitError: insufficient_quota"),
+        ("mention_3", "RateLimitError: insufficient_quota"),
+        ("mention_4", "ValidationError: 응답을 읽지 못했다"),
+    ]
+
+    assert group_reasons(records) == (
+        ("RateLimitError: insufficient_quota", 3),
+        ("ValidationError: 응답을 읽지 못했다", 1),
+    )
+
+
+def test_grouping_an_empty_list_gives_nothing() -> None:
+    assert group_reasons([]) == ()
+
+
+def test_the_outcome_groups_its_own_failures() -> None:
+    """결과 모델이 실패와 못 붙임을 각각 사유별로 묶는다."""
+    store = FakeAssignments(
+        [_mention(f"mention_{index}", f"메시지 큐 사용 사례 {index}") for index in range(1, 4)],
+        [_dimension()],
+    )
+    assigner = FailingAssigner(
+        fail_from=1, name="APITimeoutError", message="Request timed out"
+    )
+
+    outcome = RequirementAssignment(assigner, store).run(_context())
+
+    assert outcome.grouped_errors() == (("APITimeoutError: Request timed out", 3),)
+    assert outcome.grouped_unassigned() == ()
 
 
 # ============================================================ 결과 모델과 권한

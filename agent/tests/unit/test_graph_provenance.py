@@ -92,13 +92,17 @@ CONNECTIONS: dict[str, dict[str, Any]] = {
 EVIDENCE = {
     "EVIDENCED_BY": "requirement_mention",
     "ASSIGNED_TO": "assignment",
-    "COMPUTED_FROM": "statistic_fact",
     "SUPPORTED_BY": "analysis_claim_evidence",
     "CONTRADICTED_BY": "analysis_claim_evidence",
-    "DERIVED_FROM": "checklist_item",
+    "DERIVED_FROM": "analysis_claim",
     "FILLS": "roadmap_item_fill",
-    "PRODUCED_BY": "agent_run",
 }
+"""엣지별 필수 근거. 목록은 docs/ontology-v1.md 4장이다.
+
+`PART_OF`·`COMPUTED_FROM`·`PRODUCED_BY` 는 근거를 요구하지 않는다. 출발 노드가
+가리키는 행을 근거로 다시 요구하면 아무것도 검증하지 않는다. 근거는
+docs/adr/0012-ontology-evidence-source-of-truth.md 다.
+"""
 
 ROWS = [
     {

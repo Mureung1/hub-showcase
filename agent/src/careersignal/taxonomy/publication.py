@@ -18,6 +18,16 @@
 `dimension_id` 는 유지되며 버전마다 달라지는 것은
 `requirement_dimension_versions` 의 라벨·정의·생명주기다.
 
+라벨 묶음의 대표가 아닌 후보는 차원을 만들지 않고 대표가 만든 차원의 표기가 된다.
+같은 개념을 가리키는 표기가 하나의 차원에 모여야 다음 실행의 기지 추출이 그 표기를
+맞히고, 같은 요구가 차원 여럿으로 갈리지 않는다. 표기 자리는 버전 안에서 하나뿐이므로
+(`UNIQUE (taxonomy_version_id, alias_text)`) 자리를 먼저 잡은 쪽이 남고 뒤에 온 쪽은
+보류로 내린다.
+
+새 차원의 `dimension_kind` 는 후보가 담아 온 값을 그대로 옮긴다. 이 값을 한 값으로
+고정하면 `dimension_kind = 'technology'` 인 차원이 하나도 생기지 않고 `Technology`
+그래프 노드가 영원히 0 개가 된다(docs/ontology-v1.md 2.1).
+
 `standard_mapping_status` 는 `unmapped` 으로 시작한다. 표준 문서가 최신 기술 어휘를
 담지 못하므로 이 상태가 정상이다(docs/statistics-model.md 4장). `standard_id` 를
 비운 채 다른 상태를 적으면 CHECK 제약을 어긴다.
@@ -34,6 +44,8 @@ from careersignal.contracts.run_context import RunContext, StopReason
 from careersignal.repositories.promotion import PromotionRepository
 from careersignal.taxonomy import lifecycle
 from careersignal.taxonomy.promotion import (
+    REASON_ALIAS_CONFLICT,
+    REASON_NO_ALIAS_TARGET,
     ROUTE_ALIAS,
     ROUTE_RELATION,
     UNMAPPED,
@@ -41,15 +53,21 @@ from careersignal.taxonomy.promotion import (
     CandidateReview,
     ReviewOutcome,
     decision_row,
+    hold_alias,
 )
 from careersignal.taxonomy.vocabulary import normalize_expression
 
 DEFAULT_DIMENSION_KIND = "practice"
-"""승격이 만드는 차원의 종류. docs/erd.md 7.3 의 CHECK 값 가운데 하나다.
+"""후보가 종류를 담지 않을 때 쓰는 값. docs/erd.md 7.3 의 CHECK 값 가운데 하나다.
 
-후보 행은 종류를 담지 않는다. 다섯 값 가운데 요구의 성격을 가장 적게 특정하는
-값으로 시작하고, 종류 판정은 별도 단위로 둔다. 종류를 지어내 `technology` 로 적으면
-`Technology` 그래프 노드가 기술이 아닌 요구에서 만들어진다.
+종류는 후보를 명명한 판정이 함께 낸다(`requirement_candidates.proposed_dimension_kind`).
+그 값이 있으면 그대로 옮기고, 없을 때만 다섯 값 가운데 요구의 성격을 가장 적게
+특정하는 이 값으로 떨어진다. 종류를 지어내 `technology` 로 적으면 `Technology` 그래프
+노드가 기술이 아닌 요구에서 만들어진다.
+
+떨어뜨린 횟수를 실행 결과에 남긴다(`PublicationOutcome.defaulted_dimension_kinds`).
+이 수가 크면 판정이 종류를 내지 못하고 있다는 뜻이고, 그대로 두면 `Technology` 노드가
+다시 0 개가 된다(docs/ontology-v1.md 2.1).
 """
 
 REVIEW_STATUS = "promoted"
@@ -146,6 +164,20 @@ class PublicationOutcome(BaseModel):
     created_relations: int = 0
     recorded_decisions: int = 0
     """이 실행이 저장한 결정 행 수. 심사가 저장한 보류·기각은 세지 않는다."""
+
+    defaulted_dimension_kinds: int = 0
+    """판정이 종류를 내지 않아 `practice` 로 떨어뜨린 차원 수.
+
+    이 수가 새 차원 수와 같으면 종류 판정이 통째로 비어 있다는 뜻이고, `Technology`
+    그래프 노드가 하나도 만들어지지 않는다(docs/ontology-v1.md 2.1).
+    """
+
+    alias_conflicts: int = 0
+    """같은 표기가 이미 다른 차원에 붙어 있어 보류로 내린 판정 수.
+
+    `merged` 에서 빠지고 `held` 에 더해진다. 심사는 `merge` 로 보냈지만 표기 자리가
+    없어 별칭을 만들지 못한 후보이며, 종료 상태로 끝내지 않고 다음 실행이 다시 본다.
+    """
 
     decisions: tuple[CandidateDecision, ...] = ()
     errors: tuple[tuple[str, str], ...] = ()
@@ -303,11 +335,22 @@ class TaxonomyPublication:
         """판정별 경로로 후보를 새 버전에 넣는다.
 
         한 후보의 실패가 나머지를 막지 않는다.
+
+        차례가 의미를 갖는다. 묶음의 대표를 먼저 넣는다. 대표가 아닌 후보는 대표가
+        만든 차원에 표기를 붙이므로, 대표의 차원이 아직 없으면 붙일 곳이 없다.
+
+        표기 자리를 이미 다른 차원이 잡고 있으면 그 후보를 보류로 내린다.
+        `UNIQUE (taxonomy_version_id, alias_text)` 가 한 표기를 한 차원에만 허용하므로
+        (docs/erd.md 7.5) 뒤에 온 쪽은 이 버전에서 붙을 곳이 없다.
         """
-        for decision in state.review.promotable:
+        for decision in _lead_first(state.review.promotable):
             try:
                 if decision.route == ROUTE_ALIAS:
-                    self._add_alias(decision, state)
+                    blocked = self._add_alias(decision, state)
+                    if blocked is not None:
+                        self._record(hold_alias(decision, blocked), state)
+                        state.alias_conflicts += 1
+                        continue
                 else:
                     self._add_dimension(decision, state)
                     if decision.route == ROUTE_RELATION:
@@ -327,11 +370,15 @@ class TaxonomyPublication:
         """
         lifecycle.path_to(lifecycle.PROPOSED, lifecycle.ACTIVE)
         dimension_id = dimension_identifier(state.taxonomy_id, decision.candidate_id)
+        kind = decision.proposed_dimension_kind
+        if kind is None:
+            kind = DEFAULT_DIMENSION_KIND
+            state.defaulted_dimension_kinds += 1
         self._repository.add_dimension(
             {
                 "dimension_id": dimension_id,
                 "taxonomy_id": state.taxonomy_id,
-                "dimension_kind": DEFAULT_DIMENSION_KIND,
+                "dimension_kind": kind,
             }
         )
         self._repository.add_dimension_version(
@@ -385,27 +432,43 @@ class TaxonomyPublication:
         )
         state.created_relations += 1
 
-    def _add_alias(self, decision: CandidateDecision, state: _State) -> None:
-        """동의어 후보를 상대 차원의 표기로 접는다. 차원을 만들지 않는다.
+    def _add_alias(self, decision: CandidateDecision, state: _State) -> str | None:
+        """후보를 차원의 표기로 접는다. 차원을 만들지 않는다.
 
-        같은 표기가 이미 버전 안에 있으면 넣지 않는다.
-        `UNIQUE (taxonomy_version_id, alias_text)` 가 한 표현을 한 차원에만 붙인다.
+        붙일 곳은 둘 중 하나다. 기존 차원의 동의어로 판정된 후보는
+        `nearest_dimension_id` 가 가리키는 차원에 붙고, 라벨 묶음의 대표가 아닌 후보는
+        대표가 실제로 닿은 차원에 붙는다. 대표가 신규 차원을 만들었으면 그 차원이고,
+        대표도 기존 차원의 동의어로 접혔으면 대표가 붙은 그 기존 차원이다.
+
+        대표가 닿은 자리를 발행이 기록해 둔 값에서만 읽는다. 후보 행에 남아 있는
+        `nearest_dimension_id` 로 대신하면, 대표의 쓰기가 실패했을 때 묶음의 나머지가
+        엉뚱한 차원의 표기가 된다.
+
+        넣지 못하면 그 사유를 돌려준다. 넣었으면 비운다. 부른 쪽이 사유를 받아 그
+        후보를 보류로 내린다.
         """
-        target = decision.nearest_dimension_id
-        if not target or not state.claim_alias(decision.proposed_label):
-            return
+        if decision.alias_of_candidate_id:
+            target = state.landing_of(decision.alias_of_candidate_id)
+        else:
+            target = decision.nearest_dimension_id
+        if not target:
+            return REASON_NO_ALIAS_TARGET
+
+        alias_text = decision.alias_text or decision.proposed_label
+        if not state.claim_alias(alias_text):
+            return REASON_ALIAS_CONFLICT
         self._repository.add_alias(
             {
-                "alias_id": alias_identifier(
-                    state.taxonomy_version_id, decision.proposed_label
-                ),
+                "alias_id": alias_identifier(state.taxonomy_version_id, alias_text),
                 "dimension_id": target,
                 "taxonomy_version_id": state.taxonomy_version_id,
-                "alias_text": decision.proposed_label,
+                "alias_text": alias_text,
                 "alias_source": ALIAS_SOURCE,
             }
         )
+        state.alias_target[decision.candidate_id] = target
         state.created_aliases += 1
+        return None
 
     def _record(self, decision: CandidateDecision, state: _State) -> None:
         """승격 결정을 기록하고 후보의 생명주기를 옮긴다.
@@ -460,6 +523,20 @@ class TaxonomyPublication:
         )
 
 
+def _lead_first(
+    decisions: tuple[CandidateDecision, ...],
+) -> tuple[CandidateDecision, ...]:
+    """묶음의 대표를 먼저, 대표에 붙는 후보를 나중에 놓는다.
+
+    대표가 아닌 후보는 대표가 만든 차원에 표기를 붙이므로 대표의 차원이 먼저 있어야
+    한다. 심사가 이미 그 차례로 판정을 돌려주지만, 발행이 차례에 기대지 않게 여기서
+    다시 세운다. 두 갈래 안의 차례는 그대로 두므로 재실행이 같은 결과를 준다.
+    """
+    return tuple(
+        sorted(decisions, key=lambda d: 1 if d.alias_of_candidate_id else 0)
+    )
+
+
 class _State:
     """발행 하나가 쌓는 값. 결과 모델로 굳히기 전의 가변 상태다."""
 
@@ -482,6 +559,11 @@ class _State:
         """새 버전에 행을 가진 차원. 관계와 별칭의 끝점 검사에 쓴다."""
 
         self.promoted_dimension: dict[str, str] = {}
+        """후보가 만든 신규 차원. 묶음의 나머지가 붙을 곳을 여기서 찾는다."""
+
+        self.alias_target: dict[str, str] = {}
+        """후보가 표기로 붙은 차원. 대표가 동의어로 접힌 묶음이 여기서 붙을 곳을 찾는다."""
+
         self._alias_texts: set[str] = set()
 
         self.carried_dimensions = 0
@@ -491,7 +573,15 @@ class _State:
         self.created_aliases = 0
         self.created_relations = 0
         self.recorded_decisions = 0
+        self.defaulted_dimension_kinds = 0
+        self.alias_conflicts = 0
         self.errors: list[tuple[str, str]] = []
+
+    def landing_of(self, candidate_id: str) -> str | None:
+        """후보가 이번 발행에서 실제로 닿은 차원. 아직 쓰지 못했으면 비운다."""
+        return self.promoted_dimension.get(candidate_id) or self.alias_target.get(
+            candidate_id
+        )
 
     def claim_alias(self, alias_text: str) -> bool:
         """이 버전에서 아직 쓰지 않은 표기인가. 처음이면 자리를 잡는다."""
@@ -516,8 +606,8 @@ class _State:
             taxonomy_policy_version=self.policy_version,
             reviewed=self.review.reviewed,
             promoted=counts.get("promote", 0),
-            merged=counts.get("merge", 0),
-            held=counts.get("hold", 0),
+            merged=max(counts.get("merge", 0) - self.alias_conflicts, 0),
+            held=counts.get("hold", 0) + self.alias_conflicts,
             rejected=counts.get("reject", 0),
             superseded=self.superseded,
             carried_dimensions=self.carried_dimensions,
@@ -527,6 +617,8 @@ class _State:
             created_aliases=self.created_aliases,
             created_relations=self.created_relations,
             recorded_decisions=self.recorded_decisions,
+            defaulted_dimension_kinds=self.defaulted_dimension_kinds,
+            alias_conflicts=self.alias_conflicts,
             decisions=self.review.decisions,
             errors=tuple(self.errors),
         )

@@ -32,8 +32,16 @@ Phase 10 은 이미 종결 판정을 받은 후보를, Phase 11 은 같은 분�
 할당한 표현을, Phase 12 는 이미 만든 노드·엣지와 캐시 적중을 각각 건너뛴다. 중간에
 끊겨도 같은 명령을 다시 실행하면 저장소 상태에서 이어진다.
 
-한 단계가 `explicit_failure` 로 끝나면 뒤 단계를 돌리지 않는다. 잘못된 입력 위에
-다음 단계를 쌓지 않는다. 종료 코드는 0 정상, 1 단계 실패, 2 확인 거부와 인자 오류다.
+실패를 두 갈래로 나눈다. 실행 전제가 깨진 실패만 뒤 단계를 막는다. 활성 분류체계가
+없거나 봉투의 버전이 활성 버전과 어긋나거나 온톨로지가 등록되지 않은 실행은 산출물이
+하나도 없고, 그 위에 다음 단계를 쌓으면 없는 입력을 있는 것처럼 다룬다. 일부 항목만
+실패한 실행은 막지 않는다. 표현 1044개 가운데 245개를 붙인 실행의 245개는 그대로
+쓸 수 있는 근거이며, 나머지 때문에 그래프를 만들지 않으면 이미 치른 비용을 버린다.
+판정은 `blocks_next_phases` 가 하고 근거는 `PRECONDITION_REASONS` 다.
+
+막지 않은 실패도 조용히 넘기지 않는다. 요약이 무엇이 덜 끝났는지 한 줄로 적고
+종료 코드가 0이 아니다. 종료 코드는 0 정상, 1 전제가 깨져 뒤 단계를 돌리지 않음,
+2 확인 거부와 인자 오류, 3 끝까지 돌았으나 덜 끝난 것이 있음이다.
 
 실행 앞에서 적용된 alembic 리비전이 `migrations/versions/` 의 head 와 같은지 본다.
 migration 을 적용하지 않은 스키마 위에서 돌면 psycopg 의 `UndefinedColumn` 이 실행
@@ -99,6 +107,7 @@ from careersignal.domain.scope import ScopeLevel  # noqa: E402
 from careersignal.graph.paths import GraphPathRunner  # noqa: E402
 from careersignal.graph.provenance import ProvenanceGraphBuilder  # noqa: E402
 from careersignal.graph.semantic import (  # noqa: E402
+    NO_ONTOLOGY,
     ONTOLOGY_VERSION,
     SemanticGraphBuilder,
 )
@@ -108,6 +117,7 @@ from careersignal.orchestration.envelope import (  # noqa: E402
     ensure_envelope,
     start_agent_run,
 )
+from careersignal.providers.concurrency import default_workers  # noqa: E402
 from careersignal.providers.embeddings import (  # noqa: E402
     DEFAULT_BATCH_SIZE,
     OpenAIEmbeddingClient,
@@ -122,12 +132,22 @@ from careersignal.repositories.knowledge_graph import (  # noqa: E402
 from careersignal.repositories.lineage import LineageGraphRepository  # noqa: E402
 from careersignal.repositories.promotion import PromotionRepository  # noqa: E402
 from careersignal.repositories.statistics import StatisticsRepository  # noqa: E402
-from careersignal.taxonomy.assignment import RequirementAssignment  # noqa: E402
+from careersignal.taxonomy.assignment import (  # noqa: E402
+    RequirementAssignment,
+    group_reasons,
+    unrecoverable_exception,
+)
 from careersignal.taxonomy.discovery import (  # noqa: E402
+    NO_ACTIVE_TAXONOMY,
+    REJUDGE_EXCLUDED,
+    TAXONOMY_MISMATCH,
     CandidateDiscovery,
     candidate_identifier,
 )
-from careersignal.taxonomy.promotion import CandidateReview  # noqa: E402
+from careersignal.taxonomy.promotion import (  # noqa: E402
+    UNKNOWN_POLICY,
+    CandidateReview,
+)
 from careersignal.taxonomy.publication import TaxonomyPublication  # noqa: E402
 from careersignal.taxonomy.vocabulary import (  # noqa: E402
     Vocabulary,
@@ -192,6 +212,39 @@ EMBEDDING_PRICE_PER_REQUEST = 0.0
 EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_ABORTED = 2
+EXIT_INCOMPLETE = 3
+"""끝까지 돌았으나 덜 끝난 것이 있다.
+
+`EXIT_FAILED` 와 가른다. 앞은 뒤 단계를 돌리지 못한 실행이고 뒤는 뒤 단계까지 돌되
+일부 항목을 남긴 실행이다. 두 상태의 다음 할 일이 다르다. 앞은 전제를 고쳐 처음부터
+다시 돌려야 하고, 뒤는 남은 것만 같은 명령으로 이어 돌리면 된다. 0 이 아닌 값을 내는
+이유는 자동 실행이 이 실행을 성공으로 세지 않게 하기 위해서다.
+"""
+
+PRECONDITION_REASONS: frozenset[str] = frozenset(
+    {
+        NO_ACTIVE_TAXONOMY,
+        TAXONOMY_MISMATCH,
+        UNKNOWN_POLICY,
+        NO_ONTOLOGY,
+    }
+)
+"""실행 전제가 깨졌음을 알리는 사유.
+
+각 실행 클래스가 전제 확인에 실패했을 때 `errors` 에 적는 문구다. 사유 문구로
+판정하는 이유는 결과 모델이 단계마다 다르고 공통 표식이 없기 때문이다. 문구는
+각 모듈의 상수에서 그대로 가져오므로 문구가 바뀌면 이 집합도 함께 바뀐다.
+
+- `NO_ACTIVE_TAXONOMY` 활성 분류체계 버전이 없다. 붙일 차원도 발행할 버전도 없다.
+- `TAXONOMY_MISMATCH` 봉투가 가리키는 버전과 활성 버전이 다르다. 어느 버전의
+  통계인지 정할 수 없다.
+- `UNKNOWN_POLICY` 등록되지 않은 승격 정책 버전이다. 심사 임계값을 정할 수 없다.
+- `NO_ONTOLOGY` 온톨로지 버전이 등록되어 있지 않다. 노드와 엣지의 유형을 정할 수
+  없다.
+
+실행 봉투를 세우지 못하는 경우는 여기에 없다. `Session.envelope` 가 `SystemExit`
+를 던지므로 단계가 결과 모델을 만들기 전에 실행이 끝난다.
+"""
 
 UNSET_PRICE = "단가 미설정 — 호출 수만 표시"
 
@@ -232,6 +285,40 @@ def stub_needs_permission(stub: bool, stub_write: bool, dry_run: bool) -> bool:
     `--stub-write` 는 쓰겠다는 뜻을 밝힌 것이므로 통과시킨다.
     """
     return stub and not stub_write and not dry_run
+
+
+def precondition_failed(errors: Sequence[tuple[str, str]]) -> bool:
+    """실행 전제가 깨졌는가. 사유 문구로 판정한다.
+
+    전제가 깨진 실행은 산출물이 하나도 없다. 활성 분류체계가 없으면 붙일 차원이
+    없고, 온톨로지가 없으면 노드 유형이 없다. 한 항목이 실패한 것과 근본이 다르다.
+    """
+    return any(reason in PRECONDITION_REASONS for _, reason in errors)
+
+
+def blocks_next_phases(
+    stop_reason: StopReason, errors: Sequence[tuple[str, str]] = ()
+) -> bool:
+    """이 결과 위에 다음 단계를 쌓을 수 없는가.
+
+    막는 것은 실행 전제가 깨진 실패뿐이다. 근거는 두 가지다.
+
+    첫째, 부분 성공은 성공한 만큼 정당하다. 표현 1044개 가운데 245개를 붙인 실행의
+    245개는 검증을 기다리는 정상 할당이며, 나머지가 실패했다는 이유로 그래프를
+    만들지 않으면 이미 치른 모델 호출 비용을 버린다. 뒤 단계도 이어달리기를 하므로
+    남은 표현을 다음 실행이 붙이면 그때 노드와 엣지가 더 만들어진다.
+
+    둘째, 전제가 깨진 실행은 부분 성공이 아니다. 활성 분류체계가 없는 실행은 0개를
+    붙였고 그 위의 그래프는 빈 그래프가 아니라 잘못된 그래프다. 없는 분류체계를
+    가리키는 노드를 만들면 뒤 실행이 그 자국을 다시 지워야 한다.
+
+    `explicit_failure` 가 아닌 종료 사유는 막지 않는다. `budget_exhausted` 는 한도를
+    다 쓴 것이고 `no_new_evidence` 는 더할 근거가 없는 것이며, 둘 다 지금까지의
+    산출물이 온전하다.
+    """
+    if stop_reason is not StopReason.EXPLICIT_FAILURE:
+        return False
+    return precondition_failed(errors)
 
 
 _REVISION_PATTERN = re.compile(r'^revision\s*=\s*["\']([^"\']+)["\']', re.MULTILINE)
@@ -462,6 +549,13 @@ class Workload:
     judgements: int = 0
     reused_candidates: int = 0
 
+    rejudgements: int = 0
+    """판정 기준 버전이 활성 버전과 달라 다시 판정할 후보.
+
+    첫 판정과 같은 예산을 쓰므로 Phase 9 의 호출 수에 더한다. 새 분류체계 버전을
+    발행한 직후에 커지고, 재판정을 마치면 다음 실행에서 0 으로 돌아간다.
+    """
+
     candidates: int = 0
     """Phase 10 이 심사할 후보."""
 
@@ -494,8 +588,11 @@ def build_estimates(
             phase=9,
             targets=workload.mentions,
             chat_model=phase_model(9, stub),
-            chat_calls=0 if stub else workload.judgements,
-            note=f"잔여 {workload.residual}개 · 재사용 후보 {workload.reused_candidates}개",
+            chat_calls=0 if stub else workload.judgements + workload.rejudgements,
+            note=(
+                f"잔여 {workload.residual}개 · 재사용 후보 "
+                f"{workload.reused_candidates}개 · 재판정 {workload.rejudgements}개"
+            ),
         ),
         10: PhaseEstimate(
             phase=10,
@@ -565,6 +662,12 @@ def gather_workload(
             statistics.candidate_ids(taxonomy_id),
         )
 
+        rejudgements = len(
+            statistics.stale_candidates(
+                taxonomy_id, taxonomy_version_id, REJUDGE_EXCLUDED, limit
+            )
+        )
+
         candidates = len(
             promotion.candidates_to_review(taxonomy_id, taxonomy_version_id, limit)
         )
@@ -585,6 +688,7 @@ def gather_workload(
         residual=residual,
         judgements=judgements,
         reused_candidates=reused,
+        rejudgements=rejudgements,
         candidates=candidates,
         assignable=assignable,
         alias_hits=alias_hits,
@@ -707,9 +811,8 @@ def report_extraction(outcome: Any) -> None:
     print(f"  새 mention   {outcome.created_mentions}개")
     print(f"  자리 못 찾음 {len(outcome.discarded)}개")
     print(f"  실패         {len(outcome.errors)}건")
+    _report_reasons("  실패 사유", group_reasons(outcome.errors))
     print(f"  종료 사유    {outcome.stop_reason}")
-    for chunk_id, reason in outcome.errors[:5]:
-        print(f"    {chunk_id}  {reason}")
 
 
 def report_discovery(outcome: Any) -> None:
@@ -722,11 +825,11 @@ def report_discovery(outcome: Any) -> None:
     print(f"  잔여         {outcome.residual_mentions}개")
     print(f"  새 후보      {outcome.created_candidates}개")
     print(f"  재사용 후보  {outcome.reused_candidates}개")
+    print(f"  재판정 후보  {outcome.rejudged_candidates}개")
     print(f"  판정 호출    {outcome.judged}회")
     print(f"  판정별       {_spread(outcome.relations)}")
+    _report_reasons("  실패 사유", group_reasons(outcome.errors))
     print(f"  종료 사유    {outcome.stop_reason}")
-    for target, reason in outcome.errors[:5]:
-        print(f"    {target}  {reason}")
 
 
 def report_publication(outcome: Any) -> None:
@@ -748,15 +851,22 @@ def report_publication(outcome: Any) -> None:
             f"  승계         차원 {outcome.carried_dimensions}개  "
             f"별칭 {outcome.carried_aliases}개  관계 {outcome.carried_relations}개"
         )
+        print(f"  종류 기본값  {outcome.defaulted_dimension_kinds}개")
+        print(f"  별칭 충돌    {outcome.alias_conflicts}건")
     else:
         print("  발행 버전    없음. 승격된 후보가 없다")
     print(f"  결정 기록    {outcome.recorded_decisions}건")
+    _report_reasons("  실패 사유", group_reasons(outcome.errors))
     print(f"  종료 사유    {outcome.stop_reason}")
-    for target, reason in outcome.errors[:5]:
-        print(f"    {target}  {reason}")
 
 
 def report_assignment(outcome: Any) -> None:
+    """Phase 11 결과를 찍는다.
+
+    실패를 세 자리로 나눠 읽는다. 방법 하나가 통째로 빠진 것, 표현 하나의 판정이
+    실패한 것, 되살릴 수 없는 실패로 멈춘 것이다. 같은 사유는 묶어 세므로 429 한
+    줄이 수백 번 반복되지 않는다.
+    """
     print("\nPhase 11  할당")
     print(f"  분류체계     {outcome.taxonomy_version_id or '없음'}")
     print(f"  실행 방식    {'전량 재할당' if outcome.full_reassignment else '증분'}")
@@ -769,9 +879,15 @@ def report_assignment(outcome: Any) -> None:
     print(f"  모델 판정    {outcome.judged}회")
     print(f"  못 붙임      {len(outcome.unassigned)}개")
     print(f"  실패         {len(outcome.errors)}건")
+    if outcome.unavailable_methods:
+        print("  못 쓴 방법")
+        for method, reason in outcome.unavailable_methods:
+            print(f"    {method}  {reason}")
+    _report_reasons("  실패 사유", outcome.grouped_errors())
+    if outcome.halted:
+        print(f"  멈춘 사유    {outcome.halted_reason}")
+        print(f"  남긴 표현    {outcome.halted_pending}개. 다음 실행이 다시 집는다")
     print(f"  종료 사유    {outcome.stop_reason}")
-    for target, reason in outcome.errors[:5]:
-        print(f"    {target}  {reason}")
 
 
 def report_graph(title: str, outcome: Any) -> None:
@@ -788,9 +904,8 @@ def report_graph(title: str, outcome: Any) -> None:
         print("  건너뛴 유형")
         for type_name, reason in outcome.skipped_types:
             print(f"    {type_name}  {reason}")
+    _report_reasons("  실패 사유", group_reasons(outcome.errors))
     print(f"  종료 사유    {outcome.stop_reason}")
-    for target, reason in outcome.errors[:5]:
-        print(f"    {target}  {reason}")
 
 
 def report_paths(outcome: Any) -> None:
@@ -805,9 +920,19 @@ def report_paths(outcome: Any) -> None:
         print("  건너뛴 유형")
         for path_type, reason in outcome.skipped_types:
             print(f"    {path_type}  {reason}")
+    _report_reasons("  실패 사유", group_reasons(outcome.errors))
     print(f"  종료 사유    {outcome.stop_reason}")
-    for target, reason in outcome.errors[:5]:
-        print(f"    {target}  {reason}")
+
+
+def _report_reasons(title: str, grouped: Sequence[tuple[str, int]]) -> None:
+    """사유별 건수를 찍는다. 많은 것부터 다섯 줄까지다."""
+    if not grouped:
+        return
+    print(title)
+    for reason, count in grouped[:5]:
+        print(f"    {count}건  {reason}")
+    if len(grouped) > 5:
+        print(f"    (사유 {len(grouped) - 5}가지 더 있다)")
 
 
 def _spread(counts: Mapping[str, int]) -> str:
@@ -818,6 +943,21 @@ def _spread(counts: Mapping[str, int]) -> str:
 
 
 # ================================================================ 실행
+@dataclass(frozen=True, slots=True)
+class PhaseResult:
+    """단계 하나의 결과. 요약과 종료 코드가 이 값을 읽는다."""
+
+    step: str
+    stop_reason: StopReason
+    summary: str = ""
+
+    blocking: bool = False
+    """뒤 단계를 막았는가. 실행 전제가 깨진 실패만 참이다."""
+
+    incomplete: str = ""
+    """덜 끝난 것. 비어 있으면 이 단계가 남긴 것이 없다."""
+
+
 @dataclass
 class Session:
     """한 번의 스크립트 실행이 들고 다니는 값."""
@@ -828,7 +968,14 @@ class Session:
     stub: bool
     analysis_version: str | None
     workload: Workload
-    results: list[tuple[str, StopReason, str]] = field(default_factory=list)
+    workers: int = 1
+    """동시에 보낼 모델 요청 수. Phase 8·9·11 이 함께 쓴다.
+
+    기본값을 1 로 두어 이 값을 넘기지 않고 만든 실행이 하나씩 부르게 한다.
+    실행 스크립트는 `--workers` 의 값을 넣으며 그 기본값은 공용 상수다.
+    """
+
+    results: list[PhaseResult] = field(default_factory=list)
     published_version: bool = False
     """이번 실행의 Phase 10 이 새 분류체계 버전을 발행했는가."""
 
@@ -891,14 +1038,37 @@ class Session:
             budget=Budget(max_tool_calls=max(calls, 1)),
         )
 
-    def record(self, step: str, stop_reason: StopReason, summary: str = "") -> bool:
+    def record(
+        self,
+        step: str,
+        stop_reason: StopReason,
+        summary: str = "",
+        errors: Sequence[tuple[str, str]] = (),
+        incomplete: str = "",
+    ) -> bool:
         """단계 결과를 남기고 계속 진행할지 판정한다.
 
-        `explicit_failure` 는 실행 전제가 깨진 상태다. 그 위에 다음 단계를 쌓으면
-        잘못된 입력이 산출물에 그대로 들어간다.
+        `blocks_next_phases` 가 막을 실패와 막지 않을 실패를 가른다. 막는 것은
+        실행 전제가 깨진 실패뿐이며, 그 위에 다음 단계를 쌓으면 없는 입력이
+        산출물에 그대로 들어간다.
+
+        `incomplete` 는 이 단계가 덜 끝낸 것을 사람이 읽는 한 줄로 적은 값이다.
+        비워 두면 실패 건수로 채운다. 요약이 이 값을 그대로 찍고 종료 코드가
+        `EXIT_INCOMPLETE` 가 되므로, 막지 않은 실패가 조용히 넘어가지 않는다.
         """
-        self.results.append((step, stop_reason, summary))
-        return stop_reason is not StopReason.EXPLICIT_FAILURE
+        blocking = blocks_next_phases(stop_reason, errors)
+        if not incomplete and errors and not blocking:
+            incomplete = f"실패 {len(errors)}건"
+        self.results.append(
+            PhaseResult(
+                step=step,
+                stop_reason=stop_reason,
+                summary=summary,
+                blocking=blocking,
+                incomplete=incomplete,
+            )
+        )
+        return not blocking
 
 
 def run_phase_8(session: Session) -> bool:
@@ -906,12 +1076,18 @@ def run_phase_8(session: Session) -> bool:
     context = session.context("8", session.workload.chunks)
     extractor = StubMentionExtractor() if session.stub else OpenAIMentionExtractor()
     with unit_of_work(Component.AGENT_STATS) as unit:
-        outcome = MentionCollector(extractor, StatisticsRepository(unit)).run(
-            context, session.limit
-        )
+        outcome = MentionCollector(
+            extractor,
+            StatisticsRepository(unit),
+            workers=session.workers,
+            stop_when=unrecoverable_exception,
+        ).run(context, session.limit)
     report_extraction(outcome)
     return session.record(
-        "8", outcome.stop_reason, f"mention {outcome.created_mentions}개"
+        "8",
+        outcome.stop_reason,
+        f"mention {outcome.created_mentions}개",
+        outcome.errors,
     )
 
 
@@ -924,14 +1100,18 @@ def run_phase_9(session: Session) -> bool:
     context = session.context("9", session.workload.judgements)
     judge = StubRelationJudge() if session.stub else OpenAIRelationJudge()
     with unit_of_work(Component.AGENT_STATS) as unit:
-        outcome = CandidateDiscovery(judge, StatisticsRepository(unit)).run(
-            context, session.limit
-        )
+        outcome = CandidateDiscovery(
+            judge,
+            StatisticsRepository(unit),
+            workers=session.workers,
+            stop_when=unrecoverable_exception,
+        ).run(context, session.limit)
     report_discovery(outcome)
     return session.record(
         "9",
         outcome.stop_reason,
         f"후보 {outcome.created_candidates}개 · 판정 {outcome.judged}회",
+        outcome.errors,
     )
 
 
@@ -953,6 +1133,7 @@ def run_phase_10(session: Session) -> bool:
         "10",
         outcome.stop_reason,
         f"승격 {outcome.promoted}개 · 발행 {outcome.taxonomy_version_id or '없음'}",
+        outcome.errors,
     )
 
 
@@ -978,7 +1159,10 @@ def run_phase_11(session: Session) -> bool:
     full = session.published_version and session.limit is None
     with unit_of_work(Component.AGENT_STATS) as unit:
         assignment = RequirementAssignment(
-            assigner, AssignmentRepository(unit), embeddings
+            assigner,
+            AssignmentRepository(unit),
+            embeddings,
+            workers=session.workers,
         )
         outcome = (
             assignment.reassign(context)
@@ -987,8 +1171,30 @@ def run_phase_11(session: Session) -> bool:
         )
     report_assignment(outcome)
     return session.record(
-        "11", outcome.stop_reason, f"할당 {outcome.assigned_mentions}개"
+        "11",
+        outcome.stop_reason,
+        f"할당 {outcome.assigned_mentions}개",
+        outcome.errors,
+        _assignment_incomplete(outcome),
     )
+
+
+def _assignment_incomplete(outcome: Any) -> str:
+    """Phase 11 이 덜 끝낸 것을 한 줄로 적는다. 다 끝났으면 빈 값이다.
+
+    사용자가 요약만 보고 무엇을 다시 돌려야 하는지 알 수 있어야 한다. 멈춘 실행은
+    남긴 표현 수가, 이어 돈 실행은 실패한 표현 수가 다음 실행의 대상이다.
+    """
+    parts: list[str] = []
+    if outcome.errors:
+        parts.append(f"표현 {len(outcome.errors)}개 실패")
+    for method, _ in outcome.unavailable_methods:
+        parts.append(f"{method} 못 씀")
+    if outcome.halted:
+        # 사유는 한 번만 적는다. 같은 문장을 방법마다 되풀이하면 요약이 길어진다.
+        parts.append(f"표현 {outcome.halted_pending}개 시도 못 함")
+        parts.append(f"멈춘 사유 {outcome.halted_reason}")
+    return " · ".join(parts)
 
 
 def run_phase_12(session: Session) -> bool:
@@ -1012,7 +1218,10 @@ def run_phase_12(session: Session) -> bool:
         if active is None:
             print("\nPhase 12  활성 분류체계 버전이 없다. 그래프를 만들지 않는다")
             return session.record(
-                "12", StopReason.EXPLICIT_FAILURE, "활성 분류체계 버전 없음"
+                "12",
+                StopReason.EXPLICIT_FAILURE,
+                "활성 분류체계 버전 없음",
+                ((session.job_role_id, NO_ACTIVE_TAXONOMY),),
             )
 
         taxonomy_version_id = active["taxonomy_version_id"]
@@ -1020,7 +1229,9 @@ def run_phase_12(session: Session) -> bool:
         semantic = SemanticGraphBuilder(repository).run(context, ONTOLOGY_VERSION)
     report_graph("Phase 12-1  의미 층", semantic)
     semantic_summary = f"노드 {semantic.node_count}개 · 엣지 {semantic.edge_count}개"
-    if not session.record("12-1", semantic.stop_reason, semantic_summary):
+    if not session.record(
+        "12-1", semantic.stop_reason, semantic_summary, semantic.errors
+    ):
         return False
 
     lineage_context = session.context("12-2", 1, taxonomy_version_id)
@@ -1033,7 +1244,9 @@ def run_phase_12(session: Session) -> bool:
         lineage_summary = (
             f"노드 {provenance.node_count}개 · 엣지 {provenance.edge_count}개"
         )
-        if not session.record("12-2", provenance.stop_reason, lineage_summary):
+        if not session.record(
+            "12-2", provenance.stop_reason, lineage_summary, provenance.errors
+        ):
             return False
 
         paths = GraphPathRunner(GraphPathRepository(unit)).run(
@@ -1044,6 +1257,7 @@ def run_phase_12(session: Session) -> bool:
         "12-3",
         paths.stop_reason,
         f"적중 {paths.hit_count}개 · 미스 {paths.miss_count}개",
+        paths.errors,
     )
 
 
@@ -1057,12 +1271,36 @@ RUNNERS: dict[int, Callable[[Session], bool]] = {
 
 
 def report_summary(session: Session) -> None:
+    """단계별 결과와 덜 끝난 것을 찍는다.
+
+    표시를 셋으로 가른다. `실패` 는 뒤 단계를 막은 단계이고, `일부` 는 돌긴 했으나
+    남긴 것이 있는 단계이며, `완료` 는 남긴 것이 없는 단계다. 사용자가 요약만 보고
+    무엇을 다시 돌려야 하는지 알 수 있어야 한다.
+    """
     print("\n요약")
-    for step, stop_reason, summary in session.results:
-        mark = "실패" if stop_reason is StopReason.EXPLICIT_FAILURE else "완료"
-        print(f"  Phase {step:<6}{mark}  {stop_reason:<20}{summary}")
+    for result in session.results:
+        if result.blocking:
+            mark = "실패"
+        elif result.incomplete:
+            mark = "일부"
+        else:
+            mark = "완료"
+        print(
+            f"  Phase {result.step:<6}{mark}  "
+            f"{result.stop_reason:<20}{result.summary}"
+        )
+        if result.incomplete:
+            print(f"                덜 끝남  {result.incomplete}")
     if not session.results:
         print("  돌린 단계가 없다")
+        return
+
+    unfinished = [result for result in session.results if result.incomplete]
+    if unfinished:
+        print("\n덜 끝난 것")
+        for result in unfinished:
+            print(f"  Phase {result.step:<6}{result.incomplete}")
+        print("  같은 명령을 다시 돌리면 남은 것부터 집는다")
 
 
 # ================================================================ 인자
@@ -1072,6 +1310,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--job-role", default=None, help="기본값은 매니페스트의 직무")
     parser.add_argument(
         "--limit", type=int, default=None, help="각 단계가 집을 최대 건수"
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=default_workers(),
+        help=(
+            "동시에 보낼 모델 요청 수. Phase 8·9·11 이 함께 쓴다."
+            f" 기본값 {default_workers()}. 1 이면 하나씩 부른다"
+        ),
     )
     parser.add_argument(
         "--from",
@@ -1164,6 +1411,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.stub_write and not args.stub:
         print("--stub-write 는 --stub 과 함께 쓴다")
         return EXIT_ABORTED
+    if args.workers < 1:
+        # 저장소를 열기 전에 거른다. 실행 중간에 터지면 앞 단계만 저장된 채로 끝난다.
+        print("--workers 는 1 이상이다")
+        return EXIT_ABORTED
 
     try:
         phases = phase_range(args.from_phase, args.to_phase)
@@ -1184,6 +1435,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"데이터셋      {manifest.dataset_version}  기준일 {manifest.as_of_date}")
     print(f"구간          Phase {phases[0]} ~ {phases[-1]}")
     print(f"건수 제한     {args.limit if args.limit else '없음'}")
+    print(f"동시 호출     {args.workers}")
     if args.limit:
         print(LIMIT_WARNING)
     if args.stub and args.dry_run:
@@ -1227,15 +1479,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         stub=args.stub,
         analysis_version=args.analysis_version,
         workload=workload,
+        workers=args.workers,
     )
 
     for phase in phases:
         if not RUNNERS[phase](session):
             report_summary(session)
-            print(f"\nPhase {phase} 가 실패로 끝났다. 뒤 단계를 돌리지 않는다")
+            print(
+                f"\nPhase {phase} 의 실행 전제가 깨졌다. 뒤 단계를 돌리지 않는다"
+            )
             return EXIT_FAILED
 
     report_summary(session)
+    if any(result.incomplete for result in session.results):
+        # 뒤 단계까지 돌았으나 남긴 것이 있다. 성공으로 세지 않는다.
+        return EXIT_INCOMPLETE
     return EXIT_OK
 
 

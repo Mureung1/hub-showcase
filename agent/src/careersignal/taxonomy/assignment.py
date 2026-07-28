@@ -26,12 +26,24 @@ mention 은 원문 근거를 담고 분류체계를 참조하지 않으며, 해�
 차원이 하나도 없는 상태를 정상으로 취급한다. 냉시작의 활성 분류체계에는 차원이 없고,
 어느 방법도 붙을 곳이 없으므로 아무것도 하지 않고 끝난다. 이때 임베딩과 모델을
 부르지 않는다.
+
+실패를 되살릴 수 있는 것과 없는 것으로 나눈다. 되살릴 수 없는 실패를 만나면 남은
+표현을 시도하지 않고 그 자리에서 멈추며, 지금까지 저장한 할당은 그대로 남는다. 판정은
+`is_unrecoverable` 이 하고, 예외 클래스 이름과 메시지 문자열만 본다. 제공자 패키지를
+import 하지 않는 이유는 `agents/statistics/extractor.py` 와 같다. 이 모듈은 어느
+제공자가 뒤에 있는지 몰라야 하고, 그래야 대역으로 검사할 수 있다.
+
+결과의 실패 자리를 셋으로 나눈다. 방법 하나가 통째로 못 쓰이게 된 것은
+`unavailable_methods` 에 한 줄로, 표현 하나의 판정이 실패한 것은 `errors` 에 목록으로,
+멈춘 사유는 `halted_reason` 에 한 줄로 담는다. 임베딩이 죽어 벡터 근접이 빠지는 것은
+사슬이 다음 방법으로 넘어가는 정상 동작이며 표현의 실패와 같은 자리에 섞지 않는다.
 """
 
 from __future__ import annotations
 
 import hashlib
 import math
+from collections.abc import Callable, Sequence
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -39,6 +51,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from careersignal.agents.statistics.assigner import DimensionAssigner
 from careersignal.agents.statistics.judge import DimensionOption
 from careersignal.contracts.run_context import RunContext, StopReason
+from careersignal.providers.concurrency import DEFAULT_WORKERS, map_ordered
 from careersignal.providers.embeddings import EmbeddingClient
 from careersignal.providers.models import EMBEDDING
 from careersignal.repositories.assignment import AssignmentRepository
@@ -122,8 +135,102 @@ BUDGET_STOPPED = "예산이 끝나 방법 사슬을 마치지 못했다"
 EMBEDDING_FAILED = "임베딩을 만들지 못했다"
 """벡터 방법만 비우고 모델 판정으로 넘긴다."""
 
+_CALL = "call"
+_BUDGET = "budget"
+_NO_OPTIONS = "no_options"
+"""모델 판정 전에 표현을 가르는 세 갈래. `_plan` 만 쓰는 내부 값이다.
+
+`_CALL` 은 부를 것, `_BUDGET` 은 예산이 닿지 않아 못 부를 것, `_NO_OPTIONS` 는 걸
+차원이 없어 부를 필요가 없는 것이다.
+"""
+
 DIMENSION_MISMATCH = "임베딩 차원이 설정과 다르다"
 """`EMBEDDING.dimensions` 와 다른 벡터는 비교에 쓰지 않는다."""
+
+UNRECOVERABLE_EXCEPTIONS: frozenset[str] = frozenset(
+    {
+        "AuthenticationError",
+        "PermissionDeniedError",
+        "NotFoundError",
+    }
+)
+"""이름만으로 되살릴 수 없다고 보는 예외 클래스.
+
+- `AuthenticationError` 는 자격 증명이 틀렸다. 같은 키로 다시 불러도 같다.
+- `PermissionDeniedError` 는 그 키가 그 자원을 부를 권한이 없다.
+- `NotFoundError` 는 부르려는 모델이 없다. 모델 이름은 실행 중에 바뀌지 않는다.
+
+이름을 적을 뿐 제공자 패키지를 import 하지 않는다. 문자열 대조는 어느 SDK 를 쓰든
+같은 자리에서 동작하고, 대역이 같은 이름의 예외를 던져 검사할 수 있다.
+"""
+
+UNRECOVERABLE_MARKERS: tuple[str, ...] = (
+    "insufficient_quota",
+    "exceeded your current quota",
+    "billing_hard_limit_reached",
+    "account_deactivated",
+    "invalid_api_key",
+    "incorrect api key",
+    "model_not_found",
+    "does not exist or you do not have access",
+)
+"""메시지에 이 말이 있으면 되살릴 수 없다.
+
+클래스 이름만으로는 가를 수 없는 자리가 있다. `RateLimitError` 는 초당 호출 수를
+넘긴 일시적 오류일 수도 있고 결제 한도를 다 쓴 `insufficient_quota` 일 수도 있다.
+앞은 기다리면 풀리고 뒤는 결제를 고치기 전까지 풀리지 않는다. 그래서 클래스 이름과
+메시지를 함께 본다.
+
+대조는 소문자로 접은 뒤 부분 문자열로 한다. 제공자가 메시지를 감싸거나 앞뒤에 코드와
+요청 식별자를 붙여도 이 말은 남는다.
+"""
+
+
+def failure_text(exception_name: str, message: str) -> str:
+    """예외 하나를 결과에 적을 한 줄로 옮긴다. 형식을 한 자리에 둔다."""
+    return f"{exception_name}: {message}"
+
+
+def is_unrecoverable(exception_name: str, message: str) -> bool:
+    """같은 호출을 다시 해도 반드시 실패하는가.
+
+    순수 함수다. 예외 객체가 아니라 `type(exc).__name__` 과 `str(exc)` 두 문자열만
+    받는다. 제공자 패키지를 모르는 채로 판정해야 이 모듈이 어느 SDK 에도 묶이지
+    않고, 두 문자열이면 대역으로 모든 갈래를 검사할 수 있다.
+
+    참이면 부르는 쪽이 남은 표현을 시도하지 않고 멈춘다. 할당량이 끝난 뒤의 호출은
+    비용도 결과도 남기지 않고 실패 줄만 쌓는다. 거짓이면 그 표현만 실패로 세고 다음
+    표현으로 넘어간다. 일시적 오류와 한 표현의 응답 형식 오류가 여기에 든다.
+    """
+    if exception_name in UNRECOVERABLE_EXCEPTIONS:
+        return True
+    folded = message.casefold()
+    return any(marker in folded for marker in UNRECOVERABLE_MARKERS)
+
+
+def unrecoverable_exception(exc: BaseException) -> bool:
+    """예외 객체 하나를 `is_unrecoverable` 의 두 문자열로 옮긴다.
+
+    동시 실행 도구(`providers/concurrency.py`)는 예외 객체를 그대로 넘기고,
+    `is_unrecoverable` 은 문자열 둘만 본다. 그 사이를 잇는 한 줄을 여기에 둔다.
+    Phase 8 과 Phase 9 도 같은 판정을 써야 하지만 이 모듈을 import 하면 순환이
+    되므로, 실행 스크립트가 이 함수를 그 자리에 넣어 준다.
+    """
+    return is_unrecoverable(type(exc).__name__, str(exc))
+
+
+def group_reasons(records: Sequence[tuple[str, str]]) -> tuple[tuple[str, int], ...]:
+    """`(대상, 사유)` 목록을 사유별 건수로 묶는다.
+
+    많은 사유부터 주고 건수가 같으면 사유의 사전 순이다. 할당량이 끝난 실행은 같은
+    한 줄이 수백 번 반복되며, 묶지 않으면 그 한 줄이 결과를 덮어 다른 사유가 묻힌다.
+    """
+    counts: dict[str, int] = {}
+    for _, reason in records:
+        counts[reason] = counts.get(reason, 0) + 1
+    return tuple(
+        sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    )
 
 
 def assignment_identifier(mention_id: str, taxonomy_version_id: str) -> str:
@@ -169,14 +276,49 @@ class AssignmentOutcome(BaseModel):
     """차원을 붙이지 못한 표현. `(mention, 사유)` 다."""
 
     errors: tuple[tuple[str, str], ...] = ()
-    """구현이 던진 예외와 실행 전제의 실패. `(대상, 사유)` 다."""
+    """표현 하나의 판정·저장이 실패한 것과 실행 전제의 실패. `(대상, 사유)` 다.
+
+    방법 하나가 통째로 못 쓰이게 된 것은 여기에 담지 않는다. 그 자리는
+    `unavailable_methods` 이며, 임베딩이 죽어 벡터 근접이 빠지는 것을 표현 수백 개의
+    실패와 같은 수로 읽으면 무엇이 깨졌는지 알 수 없다.
+    """
+
+    unavailable_methods: tuple[tuple[str, str], ...] = ()
+    """이번 실행이 통째로 쓰지 못한 방법. `(방법, 사유)` 다.
+
+    사슬은 다음 방법으로 이어졌으므로 실행의 실패가 아니다. 방법마다 한 줄이며
+    방법 수가 셋이므로 이 목록은 길어지지 않는다.
+    """
+
+    halted_reason: str | None = None
+    """되살릴 수 없는 실패를 만나 멈춘 사유. 비어 있으면 끝까지 돌았다."""
+
+    halted_pending: int = 0
+    """멈춘 뒤 시도하지 않고 남긴 표현 수.
+
+    이 표현들은 저장소에 아무 자국도 남기지 않으므로 다음 실행이 같은 자리에서
+    다시 집는다.
+    """
 
     @property
     def gained_evidence(self) -> bool:
         return self.assigned_mentions > 0
 
+    @property
+    def halted(self) -> bool:
+        """되살릴 수 없는 실패로 멈춘 실행인가."""
+        return self.halted_reason is not None
+
     def count_of(self, method: str) -> int:
         return self.by_method.get(method, 0)
+
+    def grouped_errors(self) -> tuple[tuple[str, int], ...]:
+        """실패를 사유별 건수로 묶는다. 같은 사유가 수백 줄 반복되는 것을 막는다."""
+        return group_reasons(self.errors)
+
+    def grouped_unassigned(self) -> tuple[tuple[str, int], ...]:
+        """못 붙인 표현을 사유별 건수로 묶는다."""
+        return group_reasons(self.unassigned)
 
 
 class RequirementAssignment:
@@ -191,10 +333,19 @@ class RequirementAssignment:
         assigner: DimensionAssigner,
         repository: AssignmentRepository,
         embeddings: EmbeddingClient | None = None,
+        workers: int = DEFAULT_WORKERS,
+        stop_when: Callable[[BaseException], bool] = unrecoverable_exception,
     ) -> None:
+        """`workers` 는 동시에 보낼 모델 판정 수다. 1 이면 하나씩 부른다.
+
+        임베딩은 이 값을 쓰지 않는다. `providers/embeddings.py` 가 이미 문자열을
+        묶어 한 번에 보내므로 요청 수가 적고, 겹쳐 보낼 이유가 없다.
+        """
         self._assigner = assigner
         self._repository = repository
         self._embeddings = embeddings
+        self._workers = workers
+        self._stop_when = stop_when
 
     # ------------------------------------------------------------ 진입점
     def run(self, context: RunContext, limit: int | None = None) -> AssignmentOutcome:
@@ -236,6 +387,11 @@ class RequirementAssignment:
 
         한 표현의 실패가 나머지를 막지 않는다. 저장에 실패한 표현은 결과에 남고
         다음 실행이 다시 집는다.
+
+        되살릴 수 없는 실패는 다르다. 만나는 자리에서 사슬을 끊고 남은 표현을
+        시도하지 않는다. 할당량 소진과 인증 실패는 계정 단위이므로 같은 자격
+        증명으로 부르는 다음 방법도 반드시 실패한다. 임베딩이 그렇게 죽으면 모델
+        판정으로 넘어가지 않는 이유가 여기에 있다.
         """
         active = self._repository.active_taxonomy_version(context.job_role_id)
         if active is None:
@@ -275,7 +431,10 @@ class RequirementAssignment:
 
         residual = self._by_alias(pending, state)
         residual = self._by_vector(residual, state)
-        self._by_model(residual, state)
+        if state.halted_reason is None:
+            self._by_model(residual, state)
+        else:
+            state.halted_pending = len(residual)
         return state.outcome(rows)
 
     # ------------------------------------------------------------ 1. 별칭 일치
@@ -311,7 +470,10 @@ class RequirementAssignment:
         `providers/embeddings.py` 가 갖고 있으며, 축소 규칙을 두 벌 두지 않는다.
 
         임베딩이 없거나 넘어지면 이 방법만 비우고 모델 판정으로 넘긴다. 벡터 검색이
-        비는 것과 실행이 실패하는 것은 다른 상태다.
+        비는 것과 실행이 실패하는 것은 다른 상태다. 넘어진 사실은 결과의
+        `unavailable_methods` 에 한 줄로 남으며 표현의 실패로 세지 않는다.
+
+        되살릴 수 없는 실패는 예외다. 그때는 `_execute` 가 사슬을 끊는다.
         """
         if not rows or self._embeddings is None:
             return rows
@@ -346,7 +508,11 @@ class RequirementAssignment:
         return residual
 
     def _embed(self, texts: list[str], state: _State) -> list[list[float]] | None:
-        """문자열 묶음 하나를 벡터로 바꾼다. 실패하면 비운다."""
+        """문자열 묶음 하나를 벡터로 바꾼다. 실패하면 비운다.
+
+        실패는 방법 하나를 못 쓰게 만들 뿐이므로 `unavailable_methods` 에 적는다.
+        되살릴 수 없는 실패면 실행을 멈출 사유도 함께 남긴다.
+        """
         if state.exhausted():
             state.budget_exhausted = True
             return None
@@ -355,14 +521,18 @@ class RequirementAssignment:
         try:
             vectors = self._embeddings.embed(list(texts))  # type: ignore[union-attr]
         except Exception as exc:
-            state.errors.append((VECTOR_MATCH, f"{type(exc).__name__}: {exc}"))
+            name, message = type(exc).__name__, str(exc)
+            reason = failure_text(name, message)
+            state.unavailable_methods.append((VECTOR_MATCH, reason))
+            if is_unrecoverable(name, message):
+                state.halt(reason)
             return None
 
         if len(vectors) != len(texts):
-            state.errors.append((VECTOR_MATCH, EMBEDDING_FAILED))
+            state.unavailable_methods.append((VECTOR_MATCH, EMBEDDING_FAILED))
             return None
         if any(len(vector) != EMBEDDING.dimensions for vector in vectors):
-            state.errors.append((VECTOR_MATCH, DIMENSION_MISMATCH))
+            state.unavailable_methods.append((VECTOR_MATCH, DIMENSION_MISMATCH))
             return None
         return [[float(value) for value in vector] for vector in vectors]
 
@@ -373,33 +543,87 @@ class RequirementAssignment:
         선택지는 배정할 수 있는 활성 차원 가운데 추린 것이다. 벡터를 만들었으면
         근접 순으로, 아니면 글자 겹침으로 고른다. 목록이 비면 부르지 않는다. 고를
         것이 없는 판정은 비용만 쓴다.
+
+        되살릴 수 없는 실패를 만나면 그 자리에서 돌아간다. 남은 표현 수는
+        `halted_pending` 에 담고 목록으로 펼치지 않는다. 시도하지 않은 표현마다 같은
+        사유를 한 줄씩 적으면 결과가 그 한 줄로 덮인다.
+
+        판정은 겹쳐 보내고 저장은 주 갈래에서 **표현의 원래 순서대로** 한다. 먼저
+        선택지를 만들며 부를 표현과 부르지 않을 표현을 가르고, 예산이 닿는 만큼만
+        보낸다. 이미 날아간 요청의 결과는 멈춘 뒤에도 받아서 저장한다. 요청은 이미
+        나갔으니 비용이 들었고, 버리면 그 표현을 다음 실행이 다시 부른다.
         """
-        for row in rows:
-            options = self._options(row, state)
-            if not options:
+        plan = self._plan(rows, state)
+        tasks = [
+            (row, options) for row, options, kind in plan if kind == _CALL
+        ]
+
+        results = map_ordered(
+            lambda task: self._assigner.assign(
+                task[0]["raw_expression"], task[1], task[0].get("section")
+            ),
+            tasks,
+            self._workers,
+            self._stop_when,
+        )
+        state.tool_calls += len(results)
+        state.judged += len(results)
+        judged = {
+            row["mention_id"]: record
+            for (row, _options), record in zip(tasks, results)
+        }
+
+        for index, (row, _options, kind) in enumerate(plan):
+            if kind == _NO_OPTIONS:
                 state.unassigned.append((row["mention_id"], NOT_ASSIGNED))
                 continue
-            if state.exhausted():
-                state.budget_exhausted = True
+            if kind == _BUDGET:
                 state.unassigned.append((row["mention_id"], BUDGET_STOPPED))
                 continue
 
-            state.tool_calls += 1
-            state.judged += 1
-            try:
-                judgment = self._assigner.assign(
-                    row["raw_expression"], options, row.get("section")
-                )
-            except Exception as exc:
-                state.errors.append(
-                    (row["mention_id"], f"{type(exc).__name__}: {exc}")
-                )
+            record = judged.get(row["mention_id"])
+            if record is None:
+                # 멈춘 뒤 보내지 않은 표현이다. 여기서부터 뒤는 전부 시도하지
+                # 않았으므로 수만 세고 목록으로 펼치지 않는다.
+                state.halted_pending = len(plan) - index
+                return
+            if record.error is not None:
+                name, message = type(record.error).__name__, str(record.error)
+                reason = failure_text(name, message)
+                state.errors.append((row["mention_id"], reason))
+                if is_unrecoverable(name, message):
+                    state.halt(reason)
                 continue
 
-            if judgment.dimension_id is None:
+            judgment = record.value
+            if judgment is None or judgment.dimension_id is None:
                 state.unassigned.append((row["mention_id"], NOT_ASSIGNED))
                 continue
             self._store(row, judgment.dimension_id, MODEL_JUDGMENT, state)
+
+    def _plan(
+        self, rows: list[dict[str, Any]], state: _State
+    ) -> list[tuple[dict[str, Any], tuple[DimensionOption, ...], str]]:
+        """표현마다 부를지 말지를 미리 정한다.
+
+        선택지가 비면 부르지 않는다. 고를 것이 없는 판정은 비용만 쓴다. 예산이 닿는
+        수만큼만 `_CALL` 로 두고 나머지는 `_BUDGET` 이다. 보내기 전에 잘라야 동시
+        실행이 예산을 넘겨 부르지 않는다.
+        """
+        remaining = max(state.context.budget.max_tool_calls - state.tool_calls, 0)
+        plan: list[tuple[dict[str, Any], tuple[DimensionOption, ...], str]] = []
+        for row in rows:
+            options = self._options(row, state)
+            if not options:
+                plan.append((row, options, _NO_OPTIONS))
+                continue
+            if remaining == 0:
+                state.budget_exhausted = True
+                plan.append((row, options, _BUDGET))
+                continue
+            remaining -= 1
+            plan.append((row, options, _CALL))
+        return plan
 
     def _options(
         self, row: dict[str, Any], state: _State
@@ -442,7 +666,9 @@ class RequirementAssignment:
                 _assignment_row(row, entry, method, state.taxonomy_version_id)
             )
         except Exception as exc:
-            state.errors.append((row["mention_id"], f"{type(exc).__name__}: {exc}"))
+            state.errors.append(
+                (row["mention_id"], failure_text(type(exc).__name__, str(exc)))
+            )
             return
         state.assigned += 1
         state.by_method[method] = state.by_method.get(method, 0) + 1
@@ -499,10 +725,23 @@ class _State:
 
         self.unassigned: list[tuple[str, str]] = []
         self.errors: list[tuple[str, str]] = []
+        self.unavailable_methods: list[tuple[str, str]] = []
+
+        self.halted_reason: str | None = None
+        self.halted_pending = 0
 
     def exhausted(self) -> bool:
         """예산은 외부 호출 수로 센다. 임베딩과 모델 판정이 함께 걸린다."""
         return self.tool_calls >= self.context.budget.max_tool_calls
+
+    def halt(self, reason: str) -> None:
+        """되살릴 수 없는 실패를 만났다. 먼저 만난 사유를 남긴다.
+
+        덮어쓰지 않는다. 뒤에 온 사유는 앞의 실패가 부른 결과일 수 있고, 사용자가
+        고쳐야 하는 것은 처음 깨진 자리다.
+        """
+        if self.halted_reason is None:
+            self.halted_reason = reason
 
     def outcome(self, rows: list[dict[str, Any]]) -> AssignmentOutcome:
         return AssignmentOutcome(
@@ -512,6 +751,7 @@ class _State:
                 assigned=self.assigned,
                 errors=bool(self.errors),
                 budget_exhausted=self.budget_exhausted,
+                halted=self.halted_reason is not None,
             ),
             taxonomy_version_id=self.taxonomy_version_id,
             full_reassignment=self.full,
@@ -524,6 +764,9 @@ class _State:
             judged=self.judged,
             unassigned=tuple(self.unassigned),
             errors=tuple(self.errors),
+            unavailable_methods=tuple(self.unavailable_methods),
+            halted_reason=self.halted_reason,
+            halted_pending=self.halted_pending,
         )
 
 
@@ -572,13 +815,23 @@ def _stop_reason(
     assigned: int,
     errors: bool,
     budget_exhausted: bool,
+    halted: bool = False,
 ) -> StopReason:
     """docs/agent-design.md 11.1의 종료 조건을 판정한다.
 
     순서가 의미를 갖는다. 예산이 끝나 표현을 남긴 실행을 전수 조사로 볼 수 없고,
     저장이나 판정이 깨진 실행을 근거 없음으로 볼 수 없다. 차원이 없어 아무것도
     붙이지 못한 실행은 실패가 아니라 근거 없음이다.
+
+    되살릴 수 없는 실패로 멈춘 실행은 `explicit_failure` 다. docs/agent-design.md
+    11.1 이 조사 종료 조건으로 적은 넷 가운데 "명시적 실패" 에 해당한다.
+    `budget_exhausted` 를 쓰지 않는 이유는 그 값이 가리키는 것이 `Budget` 의
+    `max_tool_calls`, 곧 이 실행이 스스로 정한 한도이기 때문이다. 두 값을 섞으면
+    `agent_runs.stop_reason` 만 보고 "다시 돌리면 나아간다"(봉투 한도)와 "결제를
+    고치기 전에는 같은 자리에서 죽는다"(할당량 소진)를 가를 수 없다.
     """
+    if halted:
+        return StopReason.EXPLICIT_FAILURE
     if budget_exhausted:
         return StopReason.BUDGET_EXHAUSTED
     if errors:
@@ -603,9 +856,15 @@ __all__ = [
     "NOT_ASSIGNED",
     "NO_DIMENSIONS",
     "PENDING_VERIFICATION",
+    "UNRECOVERABLE_EXCEPTIONS",
+    "UNRECOVERABLE_MARKERS",
     "VECTOR_MATCH",
     "VECTOR_MATCH_THRESHOLD",
     "AssignmentOutcome",
     "RequirementAssignment",
     "assignment_identifier",
+    "failure_text",
+    "group_reasons",
+    "is_unrecoverable",
+    "unrecoverable_exception",
 ]

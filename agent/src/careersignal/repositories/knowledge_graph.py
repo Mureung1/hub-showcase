@@ -149,6 +149,10 @@ class SemanticGraphRepository(GraphRepository):
 
     _EVIDENCE_KEYS = {
         "assignment": ("posting_requirement_assignments", ("assignment_id",)),
+        "cluster_membership": (
+            "company_cluster_memberships",
+            ("membership_id",),
+        ),
         "capability_dimension_link": (
             "capability_dimension_links",
             ("capability_id", "dimension_id", "taxonomy_version_id"),
@@ -164,7 +168,13 @@ class SemanticGraphRepository(GraphRepository):
         "checklist_item": ("checklist_items", ("item_id",)),
         "study_track": ("study_tracks", ("track_id",)),
     }
-    """semantic 층 근거의 자리. 목록은 `0002_seed_reference.sql` 의 시드와 같다."""
+    """semantic 층 근거의 자리.
+
+    목록은 `ontology_versions.required_evidence_by_edge_type` 의 시드와 같다.
+    시드는 `0002_seed_reference.sql` 이 넣고 `0020_ontology_evidence_alignment.sql`
+    이 문서에 맞춰 고친다. 여기 없는 근거 종류는 `evidence_exists` 가 언제나
+    거짓을 주므로 그 엣지가 전부 폐기된다.
+    """
 
     # ------------------------------------------------------------ 노드 원천
     def job_role(self, job_role_id: str) -> dict[str, Any] | None:

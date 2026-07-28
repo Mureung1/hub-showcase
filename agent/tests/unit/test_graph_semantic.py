@@ -80,11 +80,17 @@ CONNECTIONS: dict[str, dict[str, Any]] = {
 """`0002_seed_reference.sql` 의 semantic 층 허용 연결 가운데 D3a 여섯 종이다."""
 
 EVIDENCE = {
+    "BELONGS_TO_CLUSTER": "cluster_membership",
     "REQUIRES": "assignment",
     "REQUIRES_CAPABILITY": "capability_dimension_link",
     "MAPS_TO_STANDARD": "dimension_version_mapping",
     "PREREQUISITE_OF": "wiki_prerequisites",
 }
+"""엣지별 필수 근거. 목록은 docs/ontology-v1.md 4장이다.
+
+`BELONGS_TO_CLUSTER` 는 파생 엣지이므로 원천 행을 가리켜야 파생 일치 검사가
+성립한다. 근거는 docs/adr/0012-ontology-evidence-source-of-truth.md 다.
+"""
 
 
 def _rows(

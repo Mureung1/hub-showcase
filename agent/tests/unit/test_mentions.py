@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from datetime import date
 from typing import Any
 
@@ -45,6 +47,12 @@ class FakeStats:
         조회가 거르지 못하는 자리이며 파이썬의 건너뛰기가 잡는다.
         """
 
+        self.writing_threads: set[str] = set()
+        """쓰기를 부른 갈래 이름. 저장소 연결은 스레드 안전하지 않다.
+
+        동시 실행이 모델만 겹쳐 부르고 저장은 주 갈래에서 하는지 검사한다.
+        """
+
     def chunks_to_extract(
         self, dataset_version: str, job_role_id: str, limit: int | None = None
     ) -> list[dict[str, Any]]:
@@ -60,6 +68,7 @@ class FakeStats:
         return self.done | self.raced
 
     def add_mention(self, values: dict[str, Any]) -> None:
+        self.writing_threads.add(threading.current_thread().name)
         self.mentions.append(values)
 
 
@@ -68,6 +77,46 @@ class Exploding:
 
     def extract(self, section: str | None, text: str) -> tuple[MentionCandidate, ...]:
         raise RuntimeError("모델 응답을 읽지 못했다")
+
+
+class Slow:
+    """호출마다 다른 시간을 기다리는 추출 구현.
+
+    먼저 보낸 청크가 더 오래 기다리므로 도착 순서가 보낸 순서와 뒤집힌다. 결과를
+    도착 순서로 저장하는 구현이면 이 대역에서 mention 순서가 어긋난다.
+    """
+
+    def __init__(self) -> None:
+        self._stub = StubMentionExtractor()
+        self._lock = threading.Lock()
+        self.calls = 0
+
+    def extract(self, section: str | None, text: str) -> tuple[MentionCandidate, ...]:
+        with self._lock:
+            self.calls += 1
+            order = self.calls
+        time.sleep(0.02 / order)
+        return self._stub.extract(section, text)
+
+
+class Quota:
+    """할당량이 끝난 뒤의 제공자. 되살릴 수 없는 실패를 던진다."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.calls = 0
+
+    def extract(self, section: str | None, text: str) -> tuple[MentionCandidate, ...]:
+        with self._lock:
+            self.calls += 1
+        raise type("AuthenticationError", (Exception,), {})("자격 증명이 틀렸다")
+
+
+def _unrecoverable(exc: BaseException) -> bool:
+    """`taxonomy/assignment.py` 의 판정을 그대로 쓴다. 규칙을 두 벌 두지 않는다."""
+    from careersignal.taxonomy.assignment import unrecoverable_exception
+
+    return unrecoverable_exception(exc)
 
 
 class Inventing:
@@ -278,6 +327,76 @@ def test_the_budget_stops_the_run() -> None:
 
     assert outcome.visited_chunks == 2
     assert outcome.stop_reason is StopReason.BUDGET_EXHAUSTED
+
+
+# ============================================================ 동시 실행
+def _chunks(count: int) -> list[dict[str, Any]]:
+    return [_chunk(f"chunk_{index}") for index in range(1, count + 1)]
+
+
+def test_the_concurrent_run_stores_the_mentions_in_the_chunk_order() -> None:
+    """겹쳐 불러도 저장 순서는 청크 순서다. 도착 순서를 쓰지 않는다."""
+    serial = FakeStats(_chunks(9))
+    concurrent = FakeStats(_chunks(9))
+
+    MentionCollector(Slow(), serial, workers=1).run(_context())
+    MentionCollector(Slow(), concurrent, workers=6).run(_context())
+
+    assert [m["mention_id"] for m in serial.mentions] == [
+        m["mention_id"] for m in concurrent.mentions
+    ]
+    assert [m["chunk_id"] for m in concurrent.mentions] == [
+        f"chunk_{index}" for index in range(1, 10) for _ in range(3)
+    ]
+
+
+def test_the_repository_is_written_from_one_thread_only() -> None:
+    """저장은 주 갈래에서만 한다. 저장소 연결은 스레드 안전하지 않다."""
+    store = FakeStats(_chunks(9))
+
+    MentionCollector(Slow(), store, workers=6).run(_context())
+
+    assert store.mentions
+    assert store.writing_threads == {threading.current_thread().name}
+
+
+def test_the_concurrent_run_does_not_exceed_the_budget() -> None:
+    """겹쳐 보내도 예산보다 많이 부르지 않는다."""
+    store = FakeStats(_chunks(20))
+    extractor = Slow()
+
+    outcome = MentionCollector(extractor, store, workers=8).run(
+        _context(max_tool_calls=5)
+    )
+
+    assert extractor.calls == 5
+    assert outcome.visited_chunks == 5
+    assert outcome.stop_reason is StopReason.BUDGET_EXHAUSTED
+
+
+def test_an_unrecoverable_failure_stops_the_remaining_chunks() -> None:
+    """되살릴 수 없는 실패를 만나면 남은 청크를 보내지 않는다."""
+    store = FakeStats(_chunks(30))
+    extractor = Quota()
+
+    outcome = MentionCollector(
+        extractor, store, workers=3, stop_when=_unrecoverable
+    ).run(_context())
+
+    assert extractor.calls < 30
+    assert outcome.visited_chunks == extractor.calls
+    assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
+
+
+def test_without_the_predicate_every_chunk_is_still_tried() -> None:
+    """판정을 넣지 않으면 예전처럼 한 청크의 실패가 나머지를 막지 않는다."""
+    store = FakeStats(_chunks(6))
+    extractor = Quota()
+
+    outcome = MentionCollector(extractor, store, workers=3).run(_context())
+
+    assert extractor.calls == 6
+    assert len(outcome.errors) == 6
 
 
 def test_running_twice_creates_the_same_identifiers() -> None:
