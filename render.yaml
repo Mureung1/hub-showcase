@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: shortsgen-backend
+    runtime: node
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+      npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000

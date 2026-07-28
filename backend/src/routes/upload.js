@@ -24,8 +24,9 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const timestamp = Date.now();
     const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
-    cb(null, `${name}-${timestamp}${ext}`);
+    // 파일명을 영문으로 변환 (한글/특수문자 제거)
+    const safeName = `upload_${timestamp}`;
+    cb(null, `${safeName}${ext}`);
   }
 });
 

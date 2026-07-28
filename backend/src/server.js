@@ -39,8 +39,13 @@ function checkEnvironmentVariables() {
 
 checkEnvironmentVariables();
 
-// Middleware
-app.use(cors());
+// CORS 설정 (모든 origin 허용 - 프로덕션에서는 제한 권장)
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.static('uploads')); // 업로드된 파일 정적 서빙
 app.use('/ai-output', express.static('ai-pipeline/output')); // AI 생성 파일 정적 서빙
