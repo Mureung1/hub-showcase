@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { fetchMe, clearToken } from '../lib/auth'
+import { API_BASE } from '../lib/apiBase'
 import './Layout.css'
 
 const Layout = () => {
@@ -37,7 +38,7 @@ const Layout = () => {
               로그아웃
             </button>
           ) : (
-            <a href="/api/auth/google" className="gnb-login">
+            <a href={`${API_BASE}/api/auth/google`} className="gnb-login">
               로그인
             </a>
           )}
