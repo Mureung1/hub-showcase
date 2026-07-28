@@ -21,10 +21,11 @@ describe("map presentation profiles", () => {
     expect(profile.camera).toEqual({ pitch: 38, bearing: -18 });
   });
 
-  it("enables storefront replacement only in storefront mode", () => {
+  it("keeps neutral base buildings and enables storefront replacement only in storefront mode", () => {
     const profile = getMapPresentationProfile("storefront3d");
 
-    expect(profile.coloredBuildingsVisible).toBe(true);
+    expect(profile.coloredBuildingsVisible).toBe(false);
+    expect(profile.fallbackBuildingsVisible).toBe(true);
     expect(profile.storefrontsVisible).toBe(true);
     expect(profile.camera).toEqual({ pitch: 56, bearing: -24 });
   });
