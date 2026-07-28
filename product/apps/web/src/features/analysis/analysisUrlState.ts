@@ -20,7 +20,7 @@ export type AnalysisUrlState = {
   selectedCategoryName: string;
   selectedCategoryCode: string | null;
   radius: AnalysisRadius;
-  activeHour: number;
+  activeHour?: number;
   layer: LayerMode;
   scope: AnalysisScope;
   topic: AnalysisTopic;
@@ -54,7 +54,7 @@ function includes<T extends string | number>(values: readonly T[], value: unknow
 export function readAnalysisUrlState(
   defaults: AnalysisUrlState,
   policy: AnalysisUrlPolicy,
-): AnalysisUrlState {
+): AnalysisUrlState & { activeHour: number } {
   const parameters = new URLSearchParams(window.location.search);
   const marketValue = parameters.get("market");
   const categoryValue = parameters.get("category");
@@ -71,6 +71,7 @@ export function readAnalysisUrlState(
     parameters.has("lng") &&
     parameters.has("lat") &&
     findReadyOverlayRegion(parsedCenter) !== undefined;
+  const defaultActiveHour = defaults.activeHour ?? 2;
 
   return {
     marketKey: includes(policy.marketKeys, marketValue) ? marketValue : defaults.marketKey,
@@ -84,7 +85,7 @@ export function readAnalysisUrlState(
       ? stringParameter(parameters.get("categoryCode"), "", 30) || null
       : defaults.selectedCategoryCode,
     radius: includes(policy.radii, radiusValue) ? radiusValue : defaults.radius,
-    activeHour: includes(ACTIVE_HOURS, activeHourValue) ? activeHourValue : defaults.activeHour,
+    activeHour: includes(ACTIVE_HOURS, activeHourValue) ? activeHourValue : defaultActiveHour,
     layer: includes(LAYERS, layerValue) ? layerValue : defaults.layer,
     scope: "market",
     topic: includes(TOPICS, topicValue) ? topicValue : defaults.topic,
