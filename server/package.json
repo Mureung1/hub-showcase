@@ -11,7 +11,8 @@
     "seed:load": "node src/db/seedLoad.js",
     "verify:load": "node src/db/verifyLoad.js",
     "seed:geo": "node src/db/seedGeo.js",
-    "explain:geo": "node src/db/explainGeo.js"
+    "explain:geo": "node src/db/explainGeo.js",
+    "measure:notify": "node src/db/measureNotify.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
