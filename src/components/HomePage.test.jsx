@@ -302,9 +302,9 @@ describe("HomePage response-driven nudge scheduling", () => {
 
   it.each([
     { label: "Lv.1", initialLevel: 0, openAfter: 0, blockedFor: 30_000 },
-    { label: "Lv.2", initialLevel: 1, openAfter: 3_000, blockedFor: 30_000 },
+    { label: "Lv.2", initialLevel: 1, openAfter: 10_000, blockedFor: 30_000 },
     { label: "Lv.3", initialLevel: 2, openAfter: 6_000, blockedFor: 30_000 },
-    { label: "Lv.4", initialLevel: 3, openAfter: 10_000, blockedFor: 60_000 },
+    { label: "Lv.4", initialLevel: 3, openAfter: 3_000, blockedFor: 60_000 },
   ])(
     "$label modal pauses further notifications and level changes",
     async ({ initialLevel, openAfter, blockedFor }) => {
@@ -321,25 +321,26 @@ describe("HomePage response-driven nudge scheduling", () => {
   );
 
   it("restarts every active task with a full interval from explicit close", async () => {
+    // modal-task는 Lv0→1(항상 즉시)로 모달을 띄우고, other-task는 기본
+    // deadline(overdue)이라 Lv2 지연이 짧다. close 이후 modal-task는 far
+    // 버킷의 Lv2(40000ms)로 재예약돼 other-task의 Lv2(overdue, 10000ms)보다
+    // 훨씬 늦게 다시 개입하므로, 레벨이 높을수록 간격이 짧아지는 현재
+    // 정책에서도 other-task가 방해받지 않고 자신의 새 간격을 완주할 수 있다.
     const api = setupApi([
       makeTask({
         id: "modal-task",
-        level: 1,
-        deadline: "2026-07-24T12:00:00.000Z",
+        level: 0,
+        deadline: "2026-08-02T12:00:00.000Z", // far
       }),
-      makeTask({
-        id: "other-task",
-        level: 1,
-        deadline: "2026-07-26T12:00:00.000Z",
-      }),
+      makeTask({ id: "other-task", level: 1 }), // 기본 deadline → overdue
     ]);
     await renderHome();
 
-    await advance(6_000);
+    await advance(0);
     expect(screen.getByTestId("nudge-modal")).toHaveTextContent("modal-task");
     expect(api.callsFor("other-task")).toBe(0);
 
-    await advance(20_000);
+    await advance(30_000);
     expect(api.callsFor("other-task")).toBe(0);
     fireEvent.click(screen.getByText("close-modal"));
 
@@ -362,11 +363,11 @@ describe("HomePage response-driven nudge scheduling", () => {
 
     await advance(0);
     fireEvent.click(screen.getByText("close-modal"));
-    await advance(3_000);
+    await advance(10_000);
     fireEvent.click(screen.getByText("close-modal"));
     await advance(6_000);
     fireEvent.click(screen.getByText("close-modal"));
-    await advance(10_000);
+    await advance(3_000);
 
     expect(api.callsFor("repeating-task")).toBe(4);
     expect(api.callsFor("deferred-task")).toBe(0);
@@ -379,7 +380,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     const api = setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
       "data-level",
       "2",
@@ -396,7 +397,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
       version: 2,
       taskId: "a",
-      startedAt: NOW.getTime() + 3_000,
+      startedAt: NOW.getTime() + 10_000,
       entryMode: "intervention",
       entryLevel: 2,
       journeyLevel: 2,
@@ -576,7 +577,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     const api = setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     fireEvent.change(screen.getByLabelText("reason-input"), {
       target: { value: "still deciding" },
     });
@@ -627,7 +628,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
       "data-level",
       "2",
@@ -734,7 +735,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     );
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     expect(api.callsFor("fails")).toBe(1);
     await advance(3_000);
 
@@ -757,7 +758,7 @@ describe("HomePage response-driven nudge scheduling", () => {
         <HomePage />
       </MemoryRouter>,
     );
-    await advance(3_000);
+    await advance(10_000);
 
     expect(api.callsFor("a")).toBe(1);
   });

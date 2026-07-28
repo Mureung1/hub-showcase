@@ -84,4 +84,18 @@ describe("getNudgeDelayMs", () => {
       getLevelDelayMinutes(3, bucket) * 60_000,
     );
   });
+
+  // 재발 방지: demo 표에서도 레벨이 높을수록 더 자주 개입해야 하므로 값이
+  // 반드시 감소해야 한다 — 레벨이 높을수록 값이 커지던 예전 버그가 다시
+  // 생기지 않도록 모든 긴급도 구간에서 방향성을 검증한다.
+  it.each(["far", "soon", "close", "overdue"])(
+    "%s 구간에서는 레벨이 높을수록 DEMO_LEVEL_DELAY_MS가 짧아진다 (회귀 방지)",
+    (bucket) => {
+      const lv2 = DEMO_LEVEL_DELAY_MS[bucket][2];
+      const lv3 = DEMO_LEVEL_DELAY_MS[bucket][3];
+      const lv4 = DEMO_LEVEL_DELAY_MS[bucket][4];
+      expect(lv2).toBeGreaterThan(lv3);
+      expect(lv3).toBeGreaterThan(lv4);
+    },
+  );
 });
