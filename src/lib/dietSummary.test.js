@@ -31,6 +31,8 @@ describe('buildDietSummary', () => {
     expect(summary.endDate).toBe('2026-07-27')
     expect(summary.recordedDays).toBe(7)
     expect(summary.avgCalories).toBe(1000)
+    // avgIntake는 프롬프트가 인용할 절대 섭취량 — achievementRates(%)와 별개로 실제 그램/mg을 담는다.
+    expect(summary.avgIntake).toEqual({ calories: 1000, protein: 90, carbs: 150, fat: 20, fiber: 5, sodium: 2600 })
     // protein: 90/60=150% → 과다, fiber: 5/25=20% → 부족, sodium: 2600/2000=130%(초과 임계값 130% 자체는 포함 안 됨)
     expect(summary.achievementRates.protein).toBe(150)
     expect(summary.achievementRates.fiber).toBe(20)

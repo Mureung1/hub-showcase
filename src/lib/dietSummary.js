@@ -62,11 +62,16 @@ export function buildDietSummary(mealsByDate, recommended) {
     .slice(0, TOP_FOODS_LIMIT)
     .map(([name, count]) => ({ name, count }))
 
+  // 반올림한 일평균 절대량(영양소별) — 프롬프트가 "최근 7일 평균 3,700mg" 같은 실제 숫자를
+  // 인용할 근거로 쓴다. 퍼센트(achievementRates)만 주면 모델이 절대량을 스스로 지어낼 위험이 있다.
+  const avgIntake = Object.fromEntries(NUTRIENT_LABELS.map(({ key }) => [key, Math.round(avgTotal[key] || 0)]))
+
   return {
     startDate: recordedDates[0],
     endDate: recordedDates[recordedDates.length - 1],
     recordedDays: dayCount,
-    avgCalories: Math.round(avgTotal.calories || 0),
+    avgCalories: avgIntake.calories,
+    avgIntake,
     achievementRates,
     topFoods,
     exceededNutrients,
