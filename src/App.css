@@ -45,29 +45,30 @@ h1 {
   text-decoration: none;
   flex-shrink: 0;
 }
-.logo-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-chip);
-  background: var(--logo-color);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
+.logo-wordmark {
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
-.logo-mark.small {
-  width: 22px;
-  height: 22px;
-  font-size: 12px;
-  border-radius: 10px;
+.logo-wordmark .logo-spec {
+  color: var(--logo-spec-color);
 }
-.logo-text {
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--gray-900);
+.logo-wordmark .logo-fit {
+  color: var(--logo-fit-color);
+}
+.logo-wordmark .logo-i {
+  position: relative;
+}
+.logo-wordmark .logo-dot {
+  position: absolute;
+  left: 0.08em;
+  top: -0.26em;
+  width: 0.26em;
+  height: 0.26em;
+  border-radius: 50%;
+  background: var(--logo-spec-color);
+  display: inline-block;
 }
 .header-spacer {
   flex: 1;
@@ -251,8 +252,8 @@ h1 {
   gap: 8px;
   margin: 0 0 12px;
 }
-.footer-brand .logo-text {
-  font-size: 14px;
+.footer-brand .logo-wordmark {
+  font-size: 15px;
 }
 .footer-desc {
   font-size: 12.5px;
