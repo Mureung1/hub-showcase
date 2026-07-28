@@ -98,8 +98,6 @@ export class CodexChatService {
   reserveProductOperation(operationId: string): ProductOperationLease {
     this.requireAvailable()
     if (
-      this.accountReadPromise ||
-      this.modelCatalogReadPromise ||
       this.activeTurn ||
       this.productOperationLease
     ) {
@@ -142,7 +140,7 @@ export class CodexChatService {
     this.requireAvailable()
     if (lease) {
       this.requireProductLease(lease)
-      return this.readProductAccountReadinessOnce()
+      return this.accountReadPromise ?? this.readProductAccountReadinessOnce()
     }
 
     if (this.activeTurn || this.productOperationLease) {
@@ -165,7 +163,7 @@ export class CodexChatService {
     this.requireAvailable()
     if (lease) {
       this.requireProductLease(lease)
-      return this.readProductModelCatalogOnce()
+      return this.modelCatalogReadPromise ?? this.readProductModelCatalogOnce()
     }
     if (this.activeTurn || this.productOperationLease) {
       throw stateError('active_turn')
