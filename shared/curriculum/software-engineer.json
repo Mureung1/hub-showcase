@@ -37,6 +37,15 @@
           "resources": [
             { "label": "Pro Git Book", "url": "https://git-scm.com/book/ko/v2", "type": "official-doc" }
           ]
+        },
+        {
+          "moduleId": "sw-01-04",
+          "title": "문제 해결 기본 습관",
+          "topics": ["문제 분석 절차", "엣지 케이스 도출", "디버깅 습관"],
+          "practiceIdeas": ["문제를 풀기 전 입출력/제약조건을 먼저 정리하는 습관 연습"],
+          "resources": [
+            { "label": "위키피디아 - 문제 해결", "url": "https://en.wikipedia.org/wiki/Problem_solving", "type": "reference" }
+          ]
         }
       ]
     },
@@ -72,6 +81,15 @@
           "practiceIdeas": ["피보나치부터 배낭 문제까지 단계적으로 DP 연습"],
           "resources": [
             { "label": "MDN - 재귀 개념", "url": "https://developer.mozilla.org/en-US/docs/Glossary/Recursion", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "sw-02-04",
+          "title": "그래프 알고리즘 심화",
+          "topics": ["최소 신장 트리", "다익스트라 최단 경로", "유니온 파인드"],
+          "practiceIdeas": ["다익스트라로 가중치 그래프 최단 경로 문제 풀이"],
+          "resources": [
+            { "label": "위키피디아 - 다익스트라 알고리즘", "url": "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm", "type": "reference" }
           ]
         }
       ]
@@ -109,6 +127,15 @@
           "resources": [
             { "label": "Refactoring Guru - 코드 스멜", "url": "https://refactoring.guru/refactoring/smells", "type": "reference" }
           ]
+        },
+        {
+          "moduleId": "sw-03-04",
+          "title": "동시성과 안전한 코드",
+          "topics": ["동시성 기초 개념", "경쟁 상태(race condition)", "락과 원자적 연산"],
+          "practiceIdeas": ["경쟁 상태가 발생하는 예제를 직접 만들고 수정"],
+          "resources": [
+            { "label": "위키피디아 - 경쟁 상태", "url": "https://en.wikipedia.org/wiki/Race_condition", "type": "reference" }
+          ]
         }
       ]
     },
@@ -144,6 +171,15 @@
           "practiceIdeas": ["작은 기능에 대해 설계 문서를 먼저 작성하고 리뷰받기"],
           "resources": [
             { "label": "Google Engineering Practices - Code Review", "url": "https://google.github.io/eng-practices/review/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "sw-04-04",
+          "title": "성능 측정과 트레이드오프 분석",
+          "topics": ["벤치마킹 기법", "프로파일링 도구 활용", "트레이드오프 문서화"],
+          "practiceIdeas": ["같은 문제의 두 가지 구현을 벤치마킹하고 결과를 문서로 정리"],
+          "resources": [
+            { "label": "위키피디아 - 벤치마크(컴퓨팅)", "url": "https://en.wikipedia.org/wiki/Benchmark_(computing)", "type": "reference" }
           ]
         }
       ]

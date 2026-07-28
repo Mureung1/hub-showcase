@@ -68,7 +68,7 @@ export function createGeneratedCurriculumPlan({ goal, recommendation, tracks }) 
   }
 
   return {
-    id: `${track.trackId}-curriculum-plan`,
+    id: createUniquePlanId(track.trackId),
     goal,
     title: recommendation.title,
     summary: recommendation.summary,
@@ -78,6 +78,10 @@ export function createGeneratedCurriculumPlan({ goal, recommendation, tracks }) 
     steps: selectedModules.map((module, index) => createGeneratedCurriculumStep(module, level, index)),
     sources: createGeneratedCurriculumSources(selectedModules),
   }
+}
+
+function createUniquePlanId(trackId) {
+  return `${trackId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function normalizeWorkspaceMode(value) {

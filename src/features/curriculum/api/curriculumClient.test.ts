@@ -15,7 +15,7 @@ describe('curriculumClient', () => {
       { mode: 'mock' },
     )
 
-    expect(result.plan.id).toBe('backend-curriculum-plan')
+    expect(result.plan.id).toMatch(/^backend-\d+-[a-z0-9]+$/)
     expect(result.plan.todayMission.fileName).toBe('main.py')
   })
 

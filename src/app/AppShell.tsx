@@ -33,7 +33,10 @@ export function AppShell() {
           {navItems.map((item) => (
             <NavLink
               className={({ isActive }) => (isActive ? styles.activeNavItem : undefined)}
-              end={item.to === '/'}
+              end={
+                item.to === '/' ||
+                navItems.some((other) => other.to !== item.to && other.to.startsWith(`${item.to}/`))
+              }
               key={item.to}
               to={item.to}
             >

@@ -263,11 +263,10 @@
   grid-template-rows: minmax(0, 1fr);
   gap: 20px;
   overflow: hidden;
-  transition: grid-template-columns 240ms ease;
 }
 
 .labMainNoGoal {
-  grid-template-columns: minmax(340px, 1fr) minmax(420px, 1.25fr);
+  grid-template-columns: minmax(340px, 1fr) minmax(420px, 1.25fr) minmax(0px, 0fr);
 }
 
 .terminalSlot,
@@ -279,10 +278,12 @@
 
 .terminalSlot {
   grid-row: 1;
+  grid-column: 1;
 }
 
 .goalSlot {
   grid-row: 1;
+  grid-column: 3;
 }
 
 .terminalSlot > section,
@@ -294,6 +295,8 @@
 
 .graphPanel {
   min-width: 0;
+  grid-row: 1;
+  grid-column: 2;
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 

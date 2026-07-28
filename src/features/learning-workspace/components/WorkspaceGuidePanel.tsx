@@ -30,38 +30,42 @@ export function WorkspaceGuidePanel({
 
   return (
     <main className={styles.guidePanel} aria-label="AI 튜터">
-      <ul
-        className={styles.tutorConversation}
-        aria-label="튜터 대화"
-        aria-live="polite"
-        ref={conversationRef}
-      >
-        {tutorMessages.map((message, index) => (
-          <li
-            key={`${message.role}-${index}`}
-            className={
-              message.role === 'user'
-                ? styles.tutorMessageUser
-                : message.role === 'error'
-                  ? styles.tutorMessageError
-                  : styles.tutorMessageTutor
-            }
-          >
-            {message.text}
-          </li>
-        ))}
-        {isAskingTutor ? (
-          <li className={styles.tutorMessageLoading} aria-label="튜터 답변 준비 중">
-            <span className={styles.tutorLoadingBurst}>
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-            </span>
-          </li>
-        ) : null}
-      </ul>
+      {tutorMessages.length === 0 && !isAskingTutor ? (
+        <div className={styles.tutorEmptyState}>궁금한 점을 입력하면 튜터가 답해드려요.</div>
+      ) : (
+        <ul
+          className={styles.tutorConversation}
+          aria-label="튜터 대화"
+          aria-live="polite"
+          ref={conversationRef}
+        >
+          {tutorMessages.map((message, index) => (
+            <li
+              key={`${message.role}-${index}`}
+              className={
+                message.role === 'user'
+                  ? styles.tutorMessageUser
+                  : message.role === 'error'
+                    ? styles.tutorMessageError
+                    : styles.tutorMessageTutor
+              }
+            >
+              {message.text}
+            </li>
+          ))}
+          {isAskingTutor ? (
+            <li className={styles.tutorMessageLoading} aria-label="튜터 답변 준비 중">
+              <span className={styles.tutorLoadingBurst}>
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+              </span>
+            </li>
+          ) : null}
+        </ul>
+      )}
 
       <form className={styles.tutorComposer} onSubmit={onSubmitTutorQuestion}>
         <input

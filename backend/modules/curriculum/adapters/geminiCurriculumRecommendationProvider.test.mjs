@@ -58,7 +58,7 @@ describe('gemini curriculum recommendation provider', () => {
       input: {
         userGoal: 'I want to learn backend development',
         knowledgeContext: [],
-        constraints: { moduleCount: 3 },
+        constraints: { moduleCountMin: 3, moduleCountMax: 4 },
       },
     })
   })

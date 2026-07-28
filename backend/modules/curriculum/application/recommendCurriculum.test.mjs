@@ -51,7 +51,7 @@ describe('recommendCurriculum use case', () => {
         recommendationProvider,
       }),
     ).resolves.toMatchObject({
-      id: 'backend-curriculum-plan',
+      id: expect.stringMatching(/^backend-\d+-[a-z0-9]+$/),
       goal: 'I want to learn backend development',
       todayMission: { fileName: 'main.py' },
     })

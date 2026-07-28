@@ -43,14 +43,14 @@ describe('generateMockCurriculum', () => {
 
     expect(plan.goal).toBeTruthy()
     expect(plan.title).toBe('프론트엔드 개발자 커리큘럼')
-    expect(plan.steps.length).toBe(3)
+    expect(plan.steps.length).toBe(4)
     expect(plan.todayMission.durationMinutes).toBeGreaterThan(0)
   })
 
   it('fills the generated plan fields from curriculum data', () => {
     const plan = generateMockCurriculum('백엔드 개발자')
 
-    expect(plan.id).toBe('backend-curriculum-plan')
+    expect(plan.id).toMatch(/^backend-\d+-[a-z0-9]+$/)
     expect(plan.summary).toContain('HTTP 요청-응답 흐름')
     expect(plan.estimatedDuration).toBe('15주 로드맵')
     expect(plan.focusRole).toBe('백엔드 개발자')

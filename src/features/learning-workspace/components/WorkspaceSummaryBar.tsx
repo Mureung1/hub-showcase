@@ -90,21 +90,28 @@ export function WorkspaceSummaryBar({
         ))}
       </ol>
 
-      <div className={styles.conceptRow}>
-        <div>
-          <span className={styles.sectionLabel}>오늘의 개념 — {guideTitle}</span>
-          <p>{guideDetail}</p>
-        </div>
-        <div>
-          <span className={styles.sectionLabel}>이번 실습</span>
-          <p>{practiceDetail}</p>
-          <ul className={styles.criteriaList}>
-            {criteria.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
+      <Collapsible.Root defaultOpen={false}>
+        <Collapsible.Trigger className={styles.planToggleTrigger}>
+          오늘의 개념·실습 보기
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+          <div className={styles.conceptRow}>
+            <div>
+              <span className={styles.sectionLabel}>오늘의 개념 — {guideTitle}</span>
+              <p>{guideDetail}</p>
+            </div>
+            <div>
+              <span className={styles.sectionLabel}>이번 실습</span>
+              <p>{practiceDetail}</p>
+              <ul className={styles.criteriaList}>
+                {criteria.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </Collapsible.Content>
+      </Collapsible.Root>
 
       <p className={styles.summaryBarStepIndex} aria-hidden="true">
         {currentStepIndex} / {curriculumSteps.length}

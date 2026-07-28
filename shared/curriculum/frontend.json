@@ -37,6 +37,15 @@
           "resources": [
             { "label": "MDN JavaScript 가이드", "url": "https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide", "type": "official-doc" }
           ]
+        },
+        {
+          "moduleId": "fe-01-04",
+          "title": "브라우저 개발자 도구 활용",
+          "topics": ["요소 검사와 스타일 디버깅", "콘솔 활용법", "네트워크 탭으로 요청 확인"],
+          "practiceIdeas": ["개발자 도구로 레이아웃 버그를 직접 찾아 수정", "네트워크 탭에서 API 요청/응답 확인"],
+          "resources": [
+            { "label": "MDN 개발자 도구 가이드", "url": "https://developer.mozilla.org/ko/docs/Learn/Common_questions/Tools_and_setup/What_are_browser_developer_tools", "type": "official-doc" }
+          ]
         }
       ]
     },
@@ -72,6 +81,15 @@
           "practiceIdeas": ["useEffect로 API 연동 목록 페이지 만들기", "재사용 가능한 useFetch 커스텀 훅 작성"],
           "resources": [
             { "label": "React 공식 문서 - Managing State", "url": "https://react.dev/learn/managing-state", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fe-02-04",
+          "title": "폼 처리와 유효성 검사",
+          "topics": ["제어/비제어 컴포넌트", "폼 라이브러리 개념", "유효성 검사 패턴"],
+          "practiceIdeas": ["회원가입 폼에 실시간 유효성 검사 적용", "제어/비제어 방식 각각으로 같은 폼 구현해 비교"],
+          "resources": [
+            { "label": "React Hook Form 공식 문서", "url": "https://react-hook-form.com/get-started", "type": "official-doc" }
           ]
         }
       ]
@@ -109,6 +127,15 @@
           "resources": [
             { "label": "TypeScript 공식 핸드북", "url": "https://www.typescriptlang.org/docs/handbook/intro.html", "type": "official-doc" }
           ]
+        },
+        {
+          "moduleId": "fe-03-04",
+          "title": "스타일링 아키텍처",
+          "topics": ["CSS Modules vs CSS-in-JS", "디자인 시스템 기초", "재사용 가능한 컴포넌트 구조화"],
+          "practiceIdeas": ["재사용 가능한 버튼/입력 컴포넌트 라이브러리 구축", "디자인 토큰(색상/간격)을 변수로 정리"],
+          "resources": [
+            { "label": "CSS Modules 공식 저장소", "url": "https://github.com/css-modules/css-modules", "type": "reference" }
+          ]
         }
       ]
     },
@@ -145,6 +172,15 @@
           "practiceIdeas": ["Vite 프로젝트를 정적 호스팅에 배포 자동화", "환경별(dev/prod) 설정 분리 구성"],
           "resources": [
             { "label": "Vite 공식 문서 - Building for Production", "url": "https://vitejs.dev/guide/build.html", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fe-04-04",
+          "title": "웹 접근성 심화",
+          "topics": ["스크린리더 대응", "키보드 내비게이션", "WCAG 기준 이해"],
+          "practiceIdeas": ["스크린리더로 직접 테스트하며 접근성 문제 개선", "탭 키만으로 모든 기능을 사용할 수 있는지 점검"],
+          "resources": [
+            { "label": "W3C WAI 접근성 가이드", "url": "https://www.w3.org/WAI/fundamentals/accessibility-intro/", "type": "official-doc" }
           ]
         }
       ]

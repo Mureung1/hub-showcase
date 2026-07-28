@@ -132,7 +132,7 @@ function generateCurriculumPlan(goal: string): GeneratedCurriculumPlan {
   }
 
   return {
-    id: `${config.track.trackId}-curriculum-plan`,
+    id: createUniquePlanId(config.track.trackId),
     goal: normalizedGoal,
     title: `${config.track.trackName} 커리큘럼`,
     summary: `${config.track.description} 먼저 ${startLevel.goal}`,
@@ -142,6 +142,10 @@ function generateCurriculumPlan(goal: string): GeneratedCurriculumPlan {
     steps: startLevel.modules.map((module, index) => createCurriculumStep(module, startLevel, index)),
     sources: createCurriculumSources(startLevel),
   }
+}
+
+function createUniquePlanId(trackId: string) {
+  return `${trackId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function selectCurriculumTrack(goal: string) {

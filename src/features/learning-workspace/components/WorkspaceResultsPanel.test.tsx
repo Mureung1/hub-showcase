@@ -39,6 +39,6 @@ describe('WorkspaceResultsPanel', () => {
     expect(markup).toContain('모든 테스트를 통과했습니다.')
     expect(markup).toContain('통과 1')
     expect(markup).toContain('다음 단계')
-    expect(markup).toContain('화면 렌더링까지 확인했습니다.')
+    expect(markup).toContain('활동 기록 보기')
   })
 })

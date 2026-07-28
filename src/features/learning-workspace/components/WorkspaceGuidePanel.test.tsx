@@ -15,7 +15,7 @@ describe('WorkspaceGuidePanel', () => {
       />,
     )
 
-    expect(markup).toContain('튜터 대화')
+    expect(markup).toContain('궁금한 점을 입력하면 튜터가 답해드려요.')
     expect(markup).toContain('튜터에게 질문하기')
   })
 

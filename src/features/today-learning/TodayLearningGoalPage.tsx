@@ -79,7 +79,11 @@ export function TodayLearningGoalPage() {
     setGenerationStatus('generating')
 
     void recommendCurriculum(
-      { goal: trimmedGoal, followUpInstruction: trimmedFollowUp || undefined, previousPlan: generatedCurriculum?.plan },
+      {
+        goal: trimmedGoal,
+        followUpInstruction: trimmedFollowUp || undefined,
+        previousPlan: trimmedFollowUp ? generatedCurriculum?.plan : undefined,
+      },
       { mode: shouldUseServerApi() ? 'server' : 'mock' },
     )
       .then(async ({ plan }) => {

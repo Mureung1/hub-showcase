@@ -45,9 +45,7 @@ describe('WorkspaceSummaryBar', () => {
     expect(markup).toContain('33%')
     expect(markup).toContain('네트워크 기본기')
     expect(markup).toContain('버전 관리와 협업 기초')
-    expect(markup).toContain('파일시스템 구조, 권한 관리, 프로세스 관리를 순서대로 학습합니다.')
-    expect(markup).toContain('ops-checklist.sh에서 확인할 내용을 정리하세요.')
-    expect(markup).toContain('오늘 단계의 핵심을 한 문장으로 설명하기')
+    expect(markup).toContain('오늘의 개념·실습 보기')
   })
 
   it('keeps the plan overview collapsed by default (content not in static markup)', () => {

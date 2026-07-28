@@ -90,7 +90,10 @@ export function CurriculumHistoryPage() {
 
     try {
       if (shouldUseServerApi()) {
-        const { generatedCurriculum } = await saveGeneratedCurriculumApi(snapshot, { mode: 'server' })
+        const { generatedCurriculum } = await saveGeneratedCurriculumApi(
+          { ...snapshot, id: targetId, updatedAt: new Date().toISOString() },
+          { mode: 'server' },
+        )
         hydrateGeneratedCurriculum(generatedCurriculum)
       } else {
         activateCurriculumSnapshot(targetId)
