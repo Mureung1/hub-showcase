@@ -1,4 +1,3 @@
-import type { FilterSpecification } from "maplibre-gl";
 import {
   BedDouble,
   ChevronRight,
@@ -20,7 +19,7 @@ import { lazy, Suspense, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
 
 import { categoryClass, isTestEnvironment } from "../market/model";
-import type { LayerMode, Market, MarketStore } from "../market/types";
+import type { LayerMode, Market, MarketKey, MarketStore } from "../market/types";
 import {
   addMissingStyleImageFallback,
   BASE_BUILDING_LAYER_ID,
@@ -28,6 +27,7 @@ import {
   hideExternalBuildingLayers,
 } from "./baseMap";
 import {
+  insideSelectedMarketFilter,
   outsideSelectedMarketFilter,
   useMarketBoundaryGeometry,
 } from "./marketBoundaryGeometry";
@@ -37,15 +37,11 @@ import { groupStoreMarkers, STORE_MARKER_DETAIL_ZOOM } from "./storeMarkerLod";
 import "./storeMarkerLod.css";
 import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
-import { findReadyOverlayRegion, type MapBounds } from "./supportedRegions";
+import { READY_OVERLAY_REGIONS, type MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
-import {
-  buildSupplementalStorefronts,
-  selectSupplementalStorefrontCandidates,
-} from "./storefronts/supplementalStorefrontPlacement";
-import { useStorefrontBuildingPlacements } from "./storefronts/useStorefrontBuildingPlacement";
 
 const DENSITY_MARKER_MIN_ZOOM = 15.7;
+const SELECTED_MARKET_BUILDING_LAYER_ID = `${BASE_BUILDING_LAYER_ID}-selected-market`;
 
 const StorefrontBuildingLayers = lazy(() =>
   import("./storefronts/StorefrontBuildingLayers").then((module) => ({
@@ -76,6 +72,7 @@ function storefrontReadinessKey(store: SelectedStorefront) {
 
 type MarketMapCanvasProps = {
   market: Market;
+  marketKey: MarketKey;
   marketId: string;
   mapRef: RefObject<MapRef | null>;
   onVisibleCenterChange: (center: [number, number]) => void;
@@ -230,6 +227,7 @@ function markerIcon(category: string): LucideIcon {
 
 export function MarketMapCanvas({
   market,
+  marketKey,
   marketId,
   mapRef,
   onVisibleCenterChange,
@@ -241,7 +239,7 @@ export function MarketMapCanvas({
   boundaryVisible,
   storesVisible,
   storefrontBuildings3d,
-  visibleStores,
+  visibleStores: _visibleStores,
   onStorefrontUnavailable,
   flowPeople,
   activeHour,
@@ -255,53 +253,25 @@ export function MarketMapCanvas({
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
   const profile = getMapPresentationProfile(presentationMode);
-  const marketBoundaryGeometry = useMarketBoundaryGeometry(marketId);
+  const marketBoundaryGeometry = useMarketBoundaryGeometry(marketId, marketKey);
   const activeOverlayRegion = useMemo(
-    () => findReadyOverlayRegion(market.center),
-    [market.center],
+    () => READY_OVERLAY_REGIONS.find((region) => region.label === marketKey),
+    [marketKey],
   );
-  const baseBuildingFilter = useMemo<FilterSpecification>(
+  const outsideBuildingFilter = useMemo(
     () =>
       profile.localTwinOverlayVisible
         ? outsideSelectedMarketFilter(marketBoundaryGeometry)
-        : (["all"] as FilterSpecification),
+        : (["all"] as const),
     [marketBoundaryGeometry, profile.localTwinOverlayVisible],
   );
-  const primaryStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
-  const primaryBuildingIds = useMemo(
-    () =>
-      new Set(
-        primaryStorefronts.flatMap((store) => (store.building ? [store.building.id] : [])),
-      ),
-    [primaryStorefronts],
-  );
-  const supplementalCandidates = useMemo(
-    () =>
-      profile.storefrontsVisible
-        ? selectSupplementalStorefrontCandidates({
-            stores: mapStores,
-            existingObjectCount: primaryStorefronts.length,
-            selected,
-          })
-        : [],
-    [mapStores, primaryStorefronts.length, profile.storefrontsVisible, selected],
-  );
-  const supplementalPlacements = useStorefrontBuildingPlacements(
-    supplementalCandidates,
-    visibleStores,
-  );
-  const supplementalStorefronts = useMemo(
-    () =>
-      buildSupplementalStorefronts({
-        candidates: supplementalCandidates,
-        placements: supplementalPlacements,
-        occupiedBuildingIds: primaryBuildingIds,
-      }),
-    [primaryBuildingIds, supplementalCandidates, supplementalPlacements],
+  const insideBuildingFilter = useMemo(
+    () => insideSelectedMarketFilter(profile.localTwinOverlayVisible ? marketBoundaryGeometry : null),
+    [marketBoundaryGeometry, profile.localTwinOverlayVisible],
   );
   const visibleStorefronts = useMemo(
-    () => [...primaryStorefronts, ...supplementalStorefronts],
-    [primaryStorefronts, supplementalStorefronts],
+    () => (profile.storefrontsVisible ? storefrontBuildings3d : []),
+    [profile.storefrontsVisible, storefrontBuildings3d],
   );
   const representedStoreIds = useMemo(
     () => new Set(visibleStorefronts.map((store) => store.id)),
@@ -333,18 +303,6 @@ export function MarketMapCanvas({
       ),
     [visibleStorefronts],
   );
-  const readyStorefronts = useMemo(
-    () =>
-      visibleStorefronts.filter((store) => readyStorefrontKeys.has(storefrontReadinessKey(store))),
-    [readyStorefrontKeys, visibleStorefronts],
-  );
-  const readyReplacementStorefronts = useMemo(
-    () =>
-      readyStorefronts.filter(
-        (store) => (store.placementMode ?? "replace-building") === "replace-building",
-      ),
-    [readyStorefronts],
-  );
   const markerGroups = useMemo(
     () =>
       groupStoreMarkers(
@@ -357,9 +315,6 @@ export function MarketMapCanvas({
   );
   const densityMarkersVisible =
     presentationMode !== "analysis" || layer !== "density" || zoom >= DENSITY_MARKER_MIN_ZOOM;
-  const hiddenOverlayBuildingIds = readyReplacementStorefronts.flatMap((store) =>
-    store.building ? [store.building.id] : [],
-  );
   const SelectedIcon = selected ? markerIcon(selected.category) : Coffee;
 
   if (isTestEnvironment())
@@ -399,25 +354,49 @@ export function MarketMapCanvas({
           source-layer="building"
           minzoom={14}
           beforeId="boundary_3"
-          filter={baseBuildingFilter}
+          filter={outsideBuildingFilter}
           layout={{ visibility: baseBuildingsRendered ? "visible" : "none" }}
           paint={{
             "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
             "fill-extrusion-color": "hsl(35, 8%, 85%)",
             "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
-            "fill-extrusion-opacity": 0.8,
+            "fill-extrusion-opacity": 0.82,
             "fill-extrusion-vertical-gradient": true,
           }}
         />
-        {profile.localTwinOverlayVisible && (
-          <SupportedRegionOverlays
-            region={activeOverlayRegion}
-            buildingsVisible={profile.selectedMarketBuildingsVisible}
-            buildingAppearance={presentationMode === "storefront3d" ? "storefront3d" : "analysis"}
-            marketBoundaryGeometry={marketBoundaryGeometry}
-            hiddenBuildingIds={hiddenOverlayBuildingIds}
-          />
-        )}
+        <Layer
+          id={SELECTED_MARKET_BUILDING_LAYER_ID}
+          type="fill-extrusion"
+          source="openmaptiles"
+          source-layer="building"
+          minzoom={14}
+          beforeId="boundary_3"
+          filter={insideBuildingFilter}
+          layout={{
+            visibility:
+              baseBuildingsRendered && profile.localTwinOverlayVisible ? "visible" : "none",
+          }}
+          paint={{
+            "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
+            "fill-extrusion-color": [
+              "step",
+              ["to-number", ["get", "render_height"], 8],
+              "#f1d6a5",
+              7,
+              "#b9d8c1",
+              11,
+              "#a9cfdf",
+              16,
+              "#e9b9ad",
+              24,
+              "#d5c3e2",
+            ],
+            "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
+            "fill-extrusion-opacity": presentationMode === "storefront3d" ? 0.9 : 0.94,
+            "fill-extrusion-vertical-gradient": true,
+          }}
+        />
+        {profile.localTwinOverlayVisible && <SupportedRegionOverlays region={activeOverlayRegion} />}
         <StoreDensityHeatmap
           stores={densityStores}
           visible={presentationMode === "analysis" && layer === "density" && storesVisible}
@@ -476,6 +455,17 @@ export function MarketMapCanvas({
               onSelect={onSelectStore}
             />
           ))}
+        {presentationMode === "storefront3d" && selected && (
+          <Marker
+            longitude={selected.longitude}
+            latitude={selected.latitude}
+            anchor="center"
+          >
+            <span className="selected-store-focus-anchor" aria-label={`${selected.name} 선택 위치`}>
+              <SelectedIcon size={20} strokeWidth={2.6} aria-hidden="true" />
+            </span>
+          </Marker>
+        )}
         {selected && (
           <Popup
             longitude={selected.longitude}
