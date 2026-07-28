@@ -14,11 +14,20 @@
   transition: all 0.12s;
 }
 
+/**
+ * hover는 배경을 바꾸지 않는다(테두리 색만) — selected와 배경을 공유하면 복수선택에서
+ * 같은 버튼을 다시 눌러 해제할 때 마우스가 버튼 위에 남아있는 동안 hover가 selected처럼
+ * 보이는 문제가 있었다. 배경 채움 여부를 "선택됨"의 유일한 신호로 만들어 hover와 절대
+ * 겹치지 않게 한다.
+ */
 .opt:hover {
   border-color: var(--blue);
-  background: var(--blue-soft);
 }
 
+/**
+ * 배경 채움(hover엔 없음) + 텍스트 색상/굵기로 hover와 구분한다 — border-width는 1px 유지
+ * (사용자 확인, 2026-07-28: 2px는 과했음).
+ */
 .opt.selected {
   border-color: var(--blue);
   background: var(--blue-soft);
@@ -29,19 +38,4 @@
 .opt-icon {
   font-size: 18px;
   flex-shrink: 0;
-}
-
-.opt-label {
-  flex: 1;
-}
-
-/**
- * 색상(hover/selected 배경 공유)에 의존하지 않는 선택 표시 — hover 중에 같은 버튼을 눌러
- * 해제해도(마우스가 버튼 위에 그대로 있어 hover 스타일이 남아있어도) 체크마크 유무로 바로
- * 구분된다.
- */
-.opt-check {
-  flex-shrink: 0;
-  color: var(--blue);
-  font-weight: 700;
 }
