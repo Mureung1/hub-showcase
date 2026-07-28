@@ -24,9 +24,9 @@ import {
   type ProductReviewResult,
 } from '@ay-ple/product-contract'
 import {
-  startCodexActionLocalProviderTestFixture,
-  type CodexActionLocalProviderJournal,
-  type CodexActionLocalProviderTestFixture,
+  startCodexFirstAssignmentConformanceTestFixture,
+  type CodexFirstAssignmentConformanceJournal,
+  type CodexFirstAssignmentConformanceTestFixture,
 } from '@ay-ple/codex-chat-runtime/testing'
 import express from 'express'
 
@@ -98,12 +98,14 @@ test(
   { timeout: 120_000 },
   async () => {
     const fixture = await prepareWorkspace()
-    let actionRuntimeFixture: CodexActionLocalProviderTestFixture | undefined
+    let firstAssignmentRuntimeFixture:
+      | CodexFirstAssignmentConformanceTestFixture
+      | undefined
     let preparedServer: PreparedServerApplication | undefined
     let listener: BoundServerApplicationListener | undefined
     try {
-      actionRuntimeFixture =
-        await startCodexActionLocalProviderTestFixture({
+      firstAssignmentRuntimeFixture =
+        await startCodexFirstAssignmentConformanceTestFixture({
           runtimeRoot,
           workspace: fixture.workspaceRoot,
         })
@@ -115,8 +117,8 @@ test(
           createRuntime: async () => {
             assert.ok(preparedServer)
             assert.ok(listener)
-            assert.ok(actionRuntimeFixture)
-            return actionRuntimeFixture.createRuntime({
+            assert.ok(firstAssignmentRuntimeFixture)
+            return firstAssignmentRuntimeFixture.createRuntime({
               childEnvironment: {
                 AY_PLE_INTERACTION_BROKER_URL:
                   `http://127.0.0.1:${listener.port}/api/_private/interaction-mcp`,
@@ -220,8 +222,8 @@ test(
         status: 'closed',
         processTreeGone: true,
       })
-      const journal = await actionRuntimeFixture.finish()
-      await assertExactActionProviderEvidence(
+      const journal = await firstAssignmentRuntimeFixture.finish()
+      await assertFirstAssignmentConformanceProviderEvidence(
         journal,
         fixture,
       )
@@ -232,7 +234,7 @@ test(
         () =>
           listener?.close({ signal: new AbortController().signal }) ??
           Promise.resolve(),
-        () => actionRuntimeFixture?.dispose() ?? Promise.resolve(),
+        () => firstAssignmentRuntimeFixture?.dispose() ?? Promise.resolve(),
         () => fixture.cleanup(),
       ])
     }
@@ -540,8 +542,8 @@ async function settlePublicReview(
   assert.equal(response.status, 204)
 }
 
-async function assertExactActionProviderEvidence(
-  journal: CodexActionLocalProviderJournal,
+async function assertFirstAssignmentConformanceProviderEvidence(
+  journal: CodexFirstAssignmentConformanceJournal,
   fixture: WorkspaceFixture,
 ): Promise<void> {
   const firstRequest = journal.requests[0]
@@ -675,11 +677,11 @@ async function assertExactActionProviderEvidence(
 }
 
 function uniqueProviderCalls(
-  journal: CodexActionLocalProviderJournal,
-): CodexActionLocalProviderJournal['requests'][number]['functionCalls'] {
+  journal: CodexFirstAssignmentConformanceJournal,
+): CodexFirstAssignmentConformanceJournal['requests'][number]['functionCalls'] {
   const calls = new Map<
     string,
-    CodexActionLocalProviderJournal['requests'][number]['functionCalls'][number]
+    CodexFirstAssignmentConformanceJournal['requests'][number]['functionCalls'][number]
   >()
   for (const request of journal.requests) {
     for (const call of request.functionCalls) calls.set(call.callId, call)
@@ -688,14 +690,14 @@ function uniqueProviderCalls(
 }
 
 function uniqueProviderOutputs(
-  journal: CodexActionLocalProviderJournal,
+  journal: CodexFirstAssignmentConformanceJournal,
 ): Map<
   string,
-  CodexActionLocalProviderJournal['requests'][number]['functionOutputs'][number]
+  CodexFirstAssignmentConformanceJournal['requests'][number]['functionOutputs'][number]
 > {
   const outputs = new Map<
     string,
-    CodexActionLocalProviderJournal['requests'][number]['functionOutputs'][number]
+    CodexFirstAssignmentConformanceJournal['requests'][number]['functionOutputs'][number]
   >()
   for (const request of journal.requests) {
     for (const output of request.functionOutputs) {

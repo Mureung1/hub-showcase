@@ -7,12 +7,12 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 import {
-  startActionLocalProvider,
-  type ActionLocalProvider,
-  type ActionLocalProviderFunctionCall,
-  type ActionLocalProviderFunctionOutput,
-  type ActionLocalProviderRequest,
-} from './action-local-provider-server.js'
+  startFirstAssignmentConformanceProvider,
+  type FirstAssignmentConformanceProvider,
+  type FirstAssignmentConformanceProviderFunctionCall,
+  type FirstAssignmentConformanceProviderFunctionOutput,
+  type FirstAssignmentConformanceProviderRequest,
+} from './first-assignment-conformance-provider.js'
 import {
   createLocalProviderEnvironment,
   writeLocalProviderConfig,
@@ -29,12 +29,12 @@ import type {
   CodexWorkspaceRuntime,
 } from './runtime-contract.js'
 
-export type CodexActionLocalProviderFunctionCall =
-  ActionLocalProviderFunctionCall
-export type CodexActionLocalProviderFunctionOutput =
-  ActionLocalProviderFunctionOutput
+export type CodexFirstAssignmentConformanceFunctionCall =
+  FirstAssignmentConformanceProviderFunctionCall
+export type CodexFirstAssignmentConformanceFunctionOutput =
+  FirstAssignmentConformanceProviderFunctionOutput
 
-export type CodexActionRuntimeInputItem =
+export type CodexFirstAssignmentConformanceRuntimeInputItem =
   | {
       readonly type: 'skill'
       readonly name: string
@@ -45,32 +45,34 @@ export type CodexActionRuntimeInputItem =
       readonly text: string
     }
 
-export type CodexActionLocalProviderJournal = {
-  readonly requests: readonly ActionLocalProviderRequest[]
+export type CodexFirstAssignmentConformanceJournal = {
+  readonly requests: readonly FirstAssignmentConformanceProviderRequest[]
   readonly runtimeProductInputs: ReadonlyArray<
-    readonly CodexActionRuntimeInputItem[]
+    readonly CodexFirstAssignmentConformanceRuntimeInputItem[]
   >
 }
 
-export interface CodexActionLocalProviderTestFixture {
+export interface CodexFirstAssignmentConformanceTestFixture {
   createRuntime(options: {
     readonly childEnvironment: CodexChildEnvironment
   }): Promise<CodexWorkspaceRuntime>
-  finish(): Promise<CodexActionLocalProviderJournal>
+  finish(): Promise<CodexFirstAssignmentConformanceJournal>
   dispose(): Promise<void>
 }
 
-export async function startCodexActionLocalProviderTestFixture(options: {
+export async function startCodexFirstAssignmentConformanceTestFixture(options: {
   readonly runtimeRoot: string
   readonly workspace: string
-}): Promise<CodexActionLocalProviderTestFixture> {
+}): Promise<CodexFirstAssignmentConformanceTestFixture> {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
   const fixtureRoot = await realpath(
-    await mkdtemp(path.join(tmpdir(), 'ay-ple-action-local-provider-')),
+    await mkdtemp(
+      path.join(tmpdir(), 'ay-ple-first-assignment-conformance-'),
+    ),
   )
-  let provider: ActionLocalProvider
+  let provider: FirstAssignmentConformanceProvider
   try {
-    provider = await startActionLocalProvider()
+    provider = await startFirstAssignmentConformanceProvider()
   } catch (error) {
     await rm(fixtureRoot, { recursive: true, force: true })
     throw error
@@ -81,7 +83,7 @@ export async function startCodexActionLocalProviderTestFixture(options: {
     await writeLocalProviderConfig(
       environment.codexHome,
       provider.url,
-      'Official SDK action local provider',
+      'Official SDK First Assignment conformance provider',
     )
   } catch (error) {
     const cleanup = await Promise.allSettled([
@@ -97,7 +99,7 @@ export async function startCodexActionLocalProviderTestFixture(options: {
     if (cleanupErrors.length > 0) {
       throw new AggregateError(
         [error, ...cleanupErrors],
-        'Action Runtime fixture setup and cleanup failed',
+        'First Assignment conformance Runtime fixture setup and cleanup failed',
       )
     }
     throw error
@@ -105,8 +107,10 @@ export async function startCodexActionLocalProviderTestFixture(options: {
 
   let spawned: SpawnedCodexChatRuntime | undefined
   let exposedRuntime: CodexWorkspaceRuntime | undefined
-  let providerJournal: CodexActionLocalProviderJournal | undefined
-  const runtimeProductInputs: Array<readonly CodexActionRuntimeInputItem[]> = []
+  let providerJournal: CodexFirstAssignmentConformanceJournal | undefined
+  const runtimeProductInputs: Array<
+    readonly CodexFirstAssignmentConformanceRuntimeInputItem[]
+  > = []
   let disposed = false
 
   const closeRuntime = async (): Promise<void> => {
@@ -115,12 +119,14 @@ export async function startCodexActionLocalProviderTestFixture(options: {
     await withinDuration(
       spawned.closed,
       10_000,
-      'Exact action Runtime did not close',
+      'Exact First Assignment conformance Runtime did not close',
     )
     await waitForProcessGroupExit(requirePid(spawned.child), 10_000)
   }
 
-  const closeProvider = async (): Promise<CodexActionLocalProviderJournal> => {
+  const closeProvider = async (): Promise<
+    CodexFirstAssignmentConformanceJournal
+  > => {
     providerJournal ??= {
       requests: await provider.close(),
       runtimeProductInputs: structuredClone(runtimeProductInputs),
@@ -131,7 +137,9 @@ export async function startCodexActionLocalProviderTestFixture(options: {
   return {
     async createRuntime({ childEnvironment }) {
       if (spawned || exposedRuntime) {
-        throw new Error('Exact action Runtime fixture may start only once')
+        throw new Error(
+          'Exact First Assignment conformance Runtime fixture may start only once',
+        )
       }
       spawned = await startVerifiedCodexChatRuntime({
         bundle,
@@ -203,7 +211,10 @@ export async function startCodexActionLocalProviderTestFixture(options: {
         )
         .map((result) => result.reason)
       if (errors.length > 0) {
-        throw new AggregateError(errors, 'Exact action Runtime cleanup failed')
+        throw new AggregateError(
+          errors,
+          'Exact First Assignment conformance Runtime cleanup failed',
+        )
       }
     },
   }
@@ -212,7 +223,9 @@ export async function startCodexActionLocalProviderTestFixture(options: {
 function requirePid(child: SpawnedCodexChatRuntime['child']): number {
   const pid = child.pid
   if (!Number.isSafeInteger(pid) || (pid ?? 0) <= 1) {
-    throw new Error('Exact action Runtime process ID is invalid')
+    throw new Error(
+      'Exact First Assignment conformance Runtime process ID is invalid',
+    )
   }
   return pid as number
 }

@@ -4,7 +4,7 @@ import type { Socket } from 'node:net'
 
 import { withinDuration } from './local-provider-test-support.js'
 
-const selectedActionPaths = [
+const selectedFirstAssignmentSourcePaths = [
   'materials/lms-outline-notice.txt',
   'materials/problem-solving-syllabus.txt',
 ] as const
@@ -17,21 +17,23 @@ const acceptedAssignment = [
 ].join('\n')
 const maxRequestBytes = 4 * 1024 * 1024
 
-export type ActionLocalProviderFunctionCall = {
+export type FirstAssignmentConformanceProviderFunctionCall = {
   readonly callId: string
   readonly name: string
   readonly arguments: Readonly<Record<string, unknown>>
 }
 
-export type ActionLocalProviderFunctionOutput = {
+export type FirstAssignmentConformanceProviderFunctionOutput = {
   readonly callId: string
   readonly output: string
 }
 
-export type ActionLocalProviderRequest = {
+export type FirstAssignmentConformanceProviderRequest = {
   readonly developerTexts: readonly string[]
-  readonly functionCalls: readonly ActionLocalProviderFunctionCall[]
-  readonly functionOutputs: readonly ActionLocalProviderFunctionOutput[]
+  readonly functionCalls:
+    readonly FirstAssignmentConformanceProviderFunctionCall[]
+  readonly functionOutputs:
+    readonly FirstAssignmentConformanceProviderFunctionOutput[]
   readonly instructions: string | null
   readonly method: string
   readonly model: string | null
@@ -40,15 +42,17 @@ export type ActionLocalProviderRequest = {
   readonly userTexts: readonly string[]
 }
 
-export interface ActionLocalProvider {
+export interface FirstAssignmentConformanceProvider {
   readonly url: string
-  close(): Promise<readonly ActionLocalProviderRequest[]>
+  close(): Promise<readonly FirstAssignmentConformanceProviderRequest[]>
   dispose(): Promise<void>
 }
 
-export async function startActionLocalProvider(): Promise<ActionLocalProvider> {
-  const responses = actionResponses()
-  const requests: ActionLocalProviderRequest[] = []
+export async function startFirstAssignmentConformanceProvider(): Promise<
+  FirstAssignmentConformanceProvider
+> {
+  const responses = firstAssignmentConformanceResponses()
+  const requests: FirstAssignmentConformanceProviderRequest[] = []
   const sockets = new Set<Socket>()
   let responseIndex = 0
   const server = createServer((request, response) => {
@@ -57,7 +61,9 @@ export async function startActionLocalProvider(): Promise<ActionLocalProvider> {
         const body = responses[responseIndex]
         responseIndex += 1
         if (body === undefined) {
-          throw new Error('Action local provider has no queued response')
+          throw new Error(
+            'First Assignment conformance provider has no queued response',
+          )
         }
         return body
       },
@@ -104,7 +110,7 @@ export async function startActionLocalProvider(): Promise<ActionLocalProvider> {
         await withinDuration(
           gracefulClose,
           2_000,
-          'Action local provider did not close gracefully',
+          'First Assignment conformance provider did not close gracefully',
         )
       } catch {
         server.closeAllConnections()
@@ -112,13 +118,15 @@ export async function startActionLocalProvider(): Promise<ActionLocalProvider> {
         await withinDuration(
           gracefulClose,
           2_000,
-          'Action local provider did not close after forced connection cleanup',
+          'First Assignment conformance provider did not close after forced connection cleanup',
         )
       }
     })()
     return closeServerPromise
   }
-  let closePromise: Promise<readonly ActionLocalProviderRequest[]> | undefined
+  let closePromise:
+    | Promise<readonly FirstAssignmentConformanceProviderRequest[]>
+    | undefined
   return {
     url: `http://127.0.0.1:${address.port}`,
     close() {
@@ -126,7 +134,7 @@ export async function startActionLocalProvider(): Promise<ActionLocalProvider> {
         await closeServer()
         if (responseIndex !== responses.length) {
           throw new Error(
-            `Action local provider consumed ${responseIndex}/${responses.length} responses`,
+            `First Assignment conformance provider consumed ${responseIndex}/${responses.length} responses`,
           )
         }
         return structuredClone(requests)
@@ -139,7 +147,7 @@ export async function startActionLocalProvider(): Promise<ActionLocalProvider> {
 
 type RequestHandlerState = {
   nextResponse(): string
-  record(request: ActionLocalProviderRequest): void
+  record(request: FirstAssignmentConformanceProviderRequest): void
 }
 
 async function handleRequest(
@@ -188,7 +196,9 @@ async function readRequestBody(request: IncomingMessage): Promise<string> {
     const value = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
     total += value.byteLength
     if (total > maxRequestBytes) {
-      throw new Error('Action local provider request exceeded its byte budget')
+      throw new Error(
+        'First Assignment conformance provider request exceeded its byte budget',
+      )
     }
     chunks.push(value)
   }
@@ -198,7 +208,7 @@ async function readRequestBody(request: IncomingMessage): Promise<string> {
 function journalRequest(
   request: IncomingMessage,
   body: Record<string, unknown>,
-): ActionLocalProviderRequest {
+): FirstAssignmentConformanceProviderRequest {
   return {
     method: request.method ?? '',
     path: request.url ?? '',
@@ -235,8 +245,8 @@ function messageInputTexts(
 
 function journalFunctionCalls(
   body: Record<string, unknown>,
-): ActionLocalProviderFunctionCall[] {
-  const calls: ActionLocalProviderFunctionCall[] = []
+): FirstAssignmentConformanceProviderFunctionCall[] {
+  const calls: FirstAssignmentConformanceProviderFunctionCall[] = []
   for (const item of arrayRecords(body.input)) {
     if (
       item.type !== 'function_call' ||
@@ -261,8 +271,8 @@ function journalFunctionCalls(
 
 function journalFunctionOutputs(
   body: Record<string, unknown>,
-): ActionLocalProviderFunctionOutput[] {
-  const outputs: ActionLocalProviderFunctionOutput[] = []
+): FirstAssignmentConformanceProviderFunctionOutput[] {
+  const outputs: FirstAssignmentConformanceProviderFunctionOutput[] = []
   for (const item of arrayRecords(body.input)) {
     if (
       item.type !== 'function_call_output' ||
@@ -290,7 +300,7 @@ function journalToolNames(body: Record<string, unknown>): string[] {
     .filter((name): name is string => typeof name === 'string')
 }
 
-function actionResponses(): string[] {
+function firstAssignmentConformanceResponses(): string[] {
   const readArguments = {
     cmd: selectedReadCommand(),
     login: false,
@@ -307,7 +317,7 @@ function actionResponses(): string[] {
       'action-review-initial-response',
       'call-action-review-initial',
       'propose_state_patch',
-      actionReview(
+      firstAssignmentReview(
         '첫 과제 정보를 정리합니다.',
         '선택한 두 자료에서 확인한 정보를 반영합니다.',
       ),
@@ -321,7 +331,7 @@ function actionResponses(): string[] {
       'action-review-revised-response',
       'call-action-review-revised',
       'propose_state_patch',
-      actionReview(
+      firstAssignmentReview(
         '피드백을 반영해 과제 정보를 다시 정리합니다.',
         '제출 방식을 더 분명하게 반영합니다.',
       ),
@@ -362,7 +372,7 @@ function actionResponses(): string[] {
       'action-review-rejected-response',
       'call-action-review-rejected',
       'propose_state_patch',
-      actionReview(
+      firstAssignmentReview(
         '추가 변경을 제안합니다.',
         '현재 자료를 다시 확인한 추가 제안입니다.',
       ),
@@ -391,7 +401,7 @@ function selectedReadCommand(): string {
     '/usr/bin/python3',
     '-c',
     shellQuote(source),
-    ...selectedActionPaths.map(shellQuote),
+    ...selectedFirstAssignmentSourcePaths.map(shellQuote),
   ].join(' ')
 }
 
@@ -420,7 +430,7 @@ function shellQuote(value: string): string {
   return `'${value.replaceAll("'", "'\"'\"'")}'`
 }
 
-function actionReview(
+function firstAssignmentReview(
   summary: string,
   description: string,
 ): Record<string, unknown> {
@@ -544,7 +554,9 @@ function arrayRecords(value: unknown): Record<string, unknown>[] {
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new Error('Action local provider request body must be an object')
+    throw new Error(
+      'First Assignment conformance provider request body must be an object',
+    )
   }
   return value as Record<string, unknown>
 }

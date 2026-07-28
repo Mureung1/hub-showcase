@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import {
   chmod,
+  link,
   mkdir,
   mkdtemp,
   readFile,
   realpath,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -25,6 +27,7 @@ import {
   startVerifiedCodexChatRuntime as startRuntimeAtExactGitRoot,
   type NodeRuntimeDeadlines,
   type SpawnedCodexChatRuntime,
+  type StartVerifiedCodexChatRuntimeOptions,
 } from './runtime.js'
 import {
   EXTERNAL_PRODUCTION_RUNTIME_ROOT_FOR_TEST as ARTIFACT_ROOT,
@@ -1015,6 +1018,62 @@ test('rejects malformed or unsafe Product Skill input before native turn mutatio
         TypeError,
       )
     }
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'turn/start'),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('rejects a Product Skill when its parent directory is replaced during validation', async () => {
+  let swapSkillParent: (() => Promise<void>) | undefined
+  const harness = await startHarness(
+    'product-skill-parent-swap',
+    undefined,
+    async ({ phase }) => {
+      assert.equal(phase, 'before_open')
+      await swapSkillParent?.()
+    },
+  )
+  try {
+    const workspace = await realpath(dirname(harness.journalPath))
+    const skillsRoot = join(workspace, '.agents', 'skills')
+    const skillRoot = join(skillsRoot, 'swapped-skill')
+    const replacementRoot = join(skillsRoot, 'replacement-skill')
+    const displacedRoot = join(skillsRoot, 'displaced-skill')
+    const skillPath = join(skillRoot, 'SKILL.md')
+    const replacementSkillPath = join(replacementRoot, 'SKILL.md')
+    await Promise.all([
+      mkdir(skillRoot, { recursive: true }),
+      mkdir(replacementRoot, { recursive: true }),
+    ])
+    await writeFile(skillPath, '# Parent swap test Skill\n', 'utf8')
+    await link(skillPath, replacementSkillPath)
+    swapSkillParent = async () => {
+      await rename(skillRoot, displacedRoot)
+      await rename(replacementRoot, skillRoot)
+    }
+
+    const { threadId } = await harness.runtime.startThread()
+    await assert.rejects(
+      harness.runtime.startProductTurn({
+        threadId,
+        permissionProfile: 'workspace_write',
+        skill: {
+          name: 'swapped-skill',
+          path: skillPath,
+        },
+        text: 'Do not start this Product Turn.',
+      }),
+      (error: unknown) =>
+        error instanceof TypeError &&
+        error.message ===
+          'Product Skill path ancestry changed during validation',
+    )
 
     const journal = await readAppServerJournal(harness.journalPath)
     assert.equal(
@@ -2880,6 +2939,8 @@ async function startHarness(
     aggregateMaxFrames: number
     aggregateMaxBytes: number
   },
+  productSkillValidationTestHook?:
+    StartVerifiedCodexChatRuntimeOptions['productSkillValidationTestHook'],
 ): Promise<SpawnedCodexChatRuntime> {
   const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-bridge-${label}-`))
   roots.push(workspace)
@@ -2892,6 +2953,7 @@ async function startHarness(
     workspace,
     environment,
     budgets,
+    productSkillValidationTestHook,
     launchArgsOverride: [
       bundle.pythonExecutable,
       '-B',

@@ -69,6 +69,16 @@ import { SerializedBridgeWriter } from './serialized-writer.js'
 
 type ResultFrame = Extract<BridgeOutputFrame, { type: 'result' }>
 type RuntimeState = 'starting' | 'ready' | 'closing' | 'closed' | 'failed'
+type ProductSkillPathIdentity = {
+  readonly path: string
+  readonly kind: 'directory' | 'file'
+  readonly device: number
+  readonly inode: number
+}
+type ProductSkillValidationTestHook = (input: {
+  readonly phase: 'before_open'
+  readonly skillPath: string
+}) => void | Promise<void>
 type CommandName =
   | 'read_account'
   | 'read_model_catalog'
@@ -199,6 +209,8 @@ interface StartVerifiedCodexChatRuntimeCommonOptions {
     processGroupId: number,
     signal: NodeJS.Signals,
   ) => void
+  /** Package-private filesystem race injection; production callers omit this. */
+  readonly productSkillValidationTestHook?: ProductSkillValidationTestHook
 }
 
 export type CodexRuntimeApplicationIdentity = {
@@ -339,6 +351,7 @@ export async function startVerifiedCodexChatRuntime(
     deadlines,
     options.signalProcessGroupOverride ?? signalDetachedProcessGroup,
     nativeContext,
+    options.productSkillValidationTestHook,
   )
   try {
     await runtime.waitUntilReady()
@@ -374,6 +387,9 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
     signal: NodeJS.Signals,
   ) => void
   private readonly nativeContext: NativeContextGenerationCoordinator
+  private readonly productSkillValidationTestHook:
+    | ProductSkillValidationTestHook
+    | undefined
   private readonly framer = new NdjsonBridgeFramer()
   private readonly spawned = createDeferred<void>()
   private readonly ready = createDeferred<void>()
@@ -408,6 +424,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
       signal: NodeJS.Signals,
     ) => void,
     nativeContext: NativeContextGenerationCoordinator,
+    productSkillValidationTestHook: ProductSkillValidationTestHook | undefined,
   ) {
     this.child = child
     this.workspace = workspace
@@ -415,6 +432,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
     this.deadlines = deadlines
     this.processGroupSignaler = processGroupSignaler
     this.nativeContext = nativeContext
+    this.productSkillValidationTestHook = productSkillValidationTestHook
     this.aggregateQueueBudget = new AggregateOperationQueueBudget(
       budgets.aggregateMaxFrames,
       budgets.aggregateMaxBytes,
@@ -660,7 +678,11 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
     input: StartProductTurnInput,
   ): Promise<CodexProductTurn> {
     if (input.skill !== undefined) {
-      await validateProductSkillFile(input.skill.path, this.workspace)
+      await validateProductSkillFile(
+        input.skill.path,
+        this.workspace,
+        this.productSkillValidationTestHook,
+      )
     }
     const { threadId, text } = input
     const stream = new CodexChatEventStream<CodexProductActivity>({
@@ -1891,6 +1913,7 @@ function requireExactInputKeys(
 async function validateProductSkillFile(
   skillPath: string,
   workspace: string,
+  testHook: ProductSkillValidationTestHook | undefined,
 ): Promise<void> {
   const relative = path.relative(workspace, skillPath)
   if (
@@ -1902,16 +1925,17 @@ async function validateProductSkillFile(
     throw new TypeError('Product Skill path must be inside the Codex workspace')
   }
   try {
-    const before = await lstat(skillPath)
-    if (!before.isFile() || before.isSymbolicLink()) {
+    const before = await readProductSkillPathIdentities(
+      skillPath,
+      workspace,
+    )
+    const beforeLeaf = before.at(-1)
+    if (!beforeLeaf || beforeLeaf.kind !== 'file') {
       throw new TypeError(
         'Product Skill path must reference a regular non-symlink file',
       )
     }
-    const canonical = await realpath(skillPath)
-    if (canonical !== skillPath) {
-      throw new TypeError('Product Skill path must be canonical')
-    }
+    await testHook?.({ phase: 'before_open', skillPath })
     const handle = await open(
       skillPath,
       fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
@@ -1920,11 +1944,27 @@ async function validateProductSkillFile(
       const opened = await handle.stat()
       if (
         !opened.isFile() ||
-        opened.dev !== before.dev ||
-        opened.ino !== before.ino
+        opened.dev !== beforeLeaf.device ||
+        opened.ino !== beforeLeaf.inode
       ) {
         throw new TypeError(
           'Product Skill path changed during validation',
+        )
+      }
+      const after = await readProductSkillPathIdentities(
+        skillPath,
+        workspace,
+      )
+      const afterLeaf = after.at(-1)
+      if (
+        !sameProductSkillPathIdentities(before, after) ||
+        !afterLeaf ||
+        afterLeaf.kind !== 'file' ||
+        opened.dev !== afterLeaf.device ||
+        opened.ino !== afterLeaf.inode
+      ) {
+        throw new TypeError(
+          'Product Skill path ancestry changed during validation',
         )
       }
     } finally {
@@ -1934,6 +1974,92 @@ async function validateProductSkillFile(
     if (error instanceof TypeError) throw error
     throw new TypeError('Product Skill path could not be validated')
   }
+}
+
+async function readProductSkillPathIdentities(
+  skillPath: string,
+  workspace: string,
+): Promise<readonly ProductSkillPathIdentity[]> {
+  const relative = path.relative(workspace, skillPath)
+  const components = relative.split(path.sep)
+  const candidates = [
+    workspace,
+    ...components.map((_component, index) =>
+      path.join(workspace, ...components.slice(0, index + 1)),
+    ),
+  ]
+  const identities: ProductSkillPathIdentity[] = []
+  for (const [index, candidate] of candidates.entries()) {
+    const expectedKind = index === candidates.length - 1 ? 'file' : 'directory'
+    const before = await lstat(candidate)
+    if (
+      before.isSymbolicLink() ||
+      (expectedKind === 'file' ? !before.isFile() : !before.isDirectory())
+    ) {
+      throw new TypeError(
+        expectedKind === 'file'
+          ? 'Product Skill path must reference a regular non-symlink file'
+          : 'Product Skill path ancestors must be canonical directories',
+      )
+    }
+    const canonical = await realpath(candidate)
+    const after = await lstat(candidate)
+    if (
+      canonical !== candidate ||
+      (candidate !== workspace &&
+        !isPathWithinCanonicalRoot(canonical, workspace))
+    ) {
+      throw new TypeError('Product Skill path must be canonical')
+    }
+    if (
+      after.isSymbolicLink() ||
+      (expectedKind === 'file' ? !after.isFile() : !after.isDirectory()) ||
+      before.dev !== after.dev ||
+      before.ino !== after.ino
+    ) {
+      throw new TypeError(
+        'Product Skill path ancestry changed during validation',
+      )
+    }
+    identities.push({
+      path: candidate,
+      kind: expectedKind,
+      device: after.dev,
+      inode: after.ino,
+    })
+  }
+  return identities
+}
+
+function sameProductSkillPathIdentities(
+  before: readonly ProductSkillPathIdentity[],
+  after: readonly ProductSkillPathIdentity[],
+): boolean {
+  return (
+    before.length === after.length &&
+    before.every((identity, index) => {
+      const current = after[index]
+      return (
+        current?.path === identity.path &&
+        current.kind === identity.kind &&
+        current.device === identity.device &&
+        current.inode === identity.inode
+      )
+    })
+  )
+}
+
+function isPathWithinCanonicalRoot(
+  candidate: string,
+  root: string,
+): boolean {
+  const relative = path.relative(root, candidate)
+  return (
+    relative !== '' &&
+    relative !== '..' &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
+  )
 }
 
 function requireInteractionId(value: unknown): asserts value is string {

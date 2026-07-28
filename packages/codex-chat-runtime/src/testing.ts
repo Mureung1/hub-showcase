@@ -34,13 +34,13 @@ export {
   type CodexChatTestProcessTree,
 } from './testing-process-tree.js'
 export {
-  startCodexActionLocalProviderTestFixture,
-  type CodexActionLocalProviderFunctionCall,
-  type CodexActionLocalProviderFunctionOutput,
-  type CodexActionLocalProviderJournal,
-  type CodexActionLocalProviderTestFixture,
-  type CodexActionRuntimeInputItem,
-} from './testing-action-local-provider.js'
+  startCodexFirstAssignmentConformanceTestFixture,
+  type CodexFirstAssignmentConformanceFunctionCall,
+  type CodexFirstAssignmentConformanceFunctionOutput,
+  type CodexFirstAssignmentConformanceJournal,
+  type CodexFirstAssignmentConformanceRuntimeInputItem,
+  type CodexFirstAssignmentConformanceTestFixture,
+} from './testing-first-assignment-conformance.js'
 
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }
