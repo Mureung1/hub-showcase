@@ -20,6 +20,8 @@ export type TechnicalChallengeContext = {
     commits: GitHubRepositoryAnalysisSource["commits"];
     pullRequests: NonNullable<GitHubRepositoryAnalysisSource["pullRequests"]>;
     issues: NonNullable<GitHubRepositoryAnalysisSource["issues"]>;
+    discussions?: NonNullable<GitHubRepositoryAnalysisSource["discussions"]>;
+    projects?: NonNullable<GitHubRepositoryAnalysisSource["projects"]>;
     changedPaths: string[];
   };
   analysis: RepositoryAnalysisDetails;

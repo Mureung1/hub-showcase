@@ -45,6 +45,11 @@ export function buildTechnicalChallengeContext(
   const targetIssues = normalizedTargetLogin
     ? (source.issues ?? []).filter((issue) => matchesLogin(issue.authorLogin, normalizedTargetLogin))
     : source.issues ?? [];
+  const targetDiscussions = normalizedTargetLogin
+    ? (source.discussions ?? []).filter((discussion) =>
+        matchesLogin(discussion.authorLogin, normalizedTargetLogin),
+      )
+    : source.discussions ?? [];
   const changedPaths = uniquePaths(targetCommits.flatMap((commit) => commit.changedFiles ?? []));
 
   const candidates = (source.files ?? [])
@@ -105,6 +110,8 @@ export function buildTechnicalChallengeContext(
       commits: targetCommits,
       pullRequests: targetPullRequests,
       issues: targetIssues,
+      discussions: targetDiscussions,
+      projects: source.projects ?? [],
       changedPaths,
     },
     analysis: normalizedTargetLogin ? { ...analysis, evidence } : analysis,
