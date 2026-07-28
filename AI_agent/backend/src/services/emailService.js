@@ -125,7 +125,9 @@ export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
     });
 
     if (!response.ok) {
-      throw new Error("Resend API로 확인 메일을 발송하지 못했습니다.");
+      const errorBody = await response.json().catch(() => ({}));
+      const resendMessage = errorBody.message || errorBody.error || response.statusText;
+      throw new Error(`Resend API로 확인 메일을 발송하지 못했습니다. ${resendMessage}`);
     }
 
     return;
