@@ -5,6 +5,7 @@ import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/token
 import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
 import { MOCK_MODE, getWeatherToday, getProposalToday, patchCampaign, sendCampaign, getTracking } from "./api/client";
 import { scenarioFromApi } from "./api/todayScenario";
+import { parsePromo, applyPromo, promoMismatch, type PromoEdit } from "./promo";
 
 /**
  * WeatherPilot v3 — 대시보드(날씨·매출 진단) → 검토·편집(문구+채널+법적필터) → 발송 → 쿠폰 추적 / 성과
@@ -28,17 +29,9 @@ type RemoteState =
   | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
   | { status: "error"; message: string };
 
-// 프로모션 문구에서 할인율(%)을 뽑는다. 없으면 0. (QW-4)
-function parseDiscountPct(promo: string): number {
-  const m = promo.match(/(\d+)\s*%/);
-  return m ? Number(m[1]) : 0;
-}
-// 프로모션 문구의 할인율을 pct로 바꾼다. 기존 %가 없으면 "N% 할인"으로 만든다.
-function applyDiscountPct(promo: string, pct: number): string {
-  return /(\d+)\s*%/.test(promo) ? promo.replace(/(\d+)\s*%/, `${pct}%`) : `${pct}% 할인`;
-}
-
-const MAX_DISCOUNT_PCT = 20; // 서버 가드레일과 동일 상한 (안내용 — 최종 강제는 서버)
+// 서버 가드레일(agent/guardrails.ts)과 동일 상한 — 여기 값은 안내용이고 최종 강제는 서버다.
+const MAX_DISCOUNT_PCT = 20;
+const MAX_DISCOUNT_WON = 3000;
 
 // ---- 채널 브랜드 로고 (앱아이콘 스타일 인라인 SVG — 외부 아이콘 라이브러리 미사용) ------
 function InstagramLogo({ size = 22 }: { size?: number }) {
@@ -89,7 +82,10 @@ export default function WeatherPilotV3() {
   const [copy, setCopy] = useState("");
   const [channels, setChannels] = useState<ChannelId[]>([]);
   const [nightMode, setNightMode] = useState(false);
-  const [discountPct, setDiscountPct] = useState(0); // 사장님이 편집하는 할인율 (QW-4)
+  // 사장님이 편집하는 쿠폰 혜택 (QW-4) — 정률(%)·정액(원)·편집불가 중 하나.
+  // 초기값을 kind:"none"으로 두는 이유: goEdit() 전에도 promoValue가 계산되는데,
+  // 숫자를 미리 들고 있으면 "픽업 10% 할인"이 "픽업 0% 할인"으로 보이게 된다.
+  const [promoEdit, setPromoEdit] = useState<PromoEdit>({ kind: "none" });
 
   // 실연동 상태 (MOCK_MODE=off일 때만 서버에서 오늘 날씨·제안을 불러온다)
   const [remote, setRemote] = useState<RemoteState>(
@@ -167,8 +163,8 @@ export default function WeatherPilotV3() {
   // 실연동은 오늘 캠페인 id, mock은 발송 시점에 새로 만든다(추적 램프 리셋용).
   const campaignId = remote.status === "ready" ? remote.campaignId : "mock-demo";
 
-  // 편집된 할인율이 반영된 프로모션 문구 (미리보기·쿠폰 라벨·발송에 사용). (QW-4)
-  const promoValue = applyDiscountPct(s.promo, discountPct);
+  // 편집된 혜택이 반영된 프로모션 문구 (미리보기·쿠폰 라벨·발송에 사용). (QW-4)
+  const promoValue = applyPromo(s.promo, promoEdit);
   // SNS 캡션 — 발송(MOCK 응답 채우기)과 발송완료 화면(복사 폴백)이 같은 값을 쓰도록 한 번만 만든다.
   const snsCaption = buildSnsCaption({ copy, promo: { type: "할인", value: promoValue } });
 
@@ -185,11 +181,38 @@ export default function WeatherPilotV3() {
     setCopy(s.copy);
     setChannels([...s.channels]);
     setNightMode(false);
-    setDiscountPct(parseDiscountPct(s.promo));
+    setPromoEdit(parsePromo(s.promo));
     setView("edit"); // UAT 계측 시작은 view→"edit" effect에서 (핸들러 내 불순 호출 회피)
   }
   function toggleChannel(id: ChannelId) {
     setChannels((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+  }
+  /**
+   * 쿠폰 혜택 편집 — 쿠폰 라벨과 발송 문구(copy)를 함께 갱신한다. (QW-4)
+   *
+   * copy를 안 따라가게 두면 쿠폰은 12%인데 문자는 "10% 할인"이라고 나가서, 손님에게
+   * 서로 다른 혜택을 약속하는 문자가 실제로 발송된다(buildSmsBody가 copy를 쓴다).
+   * copy는 사장님이 손으로 고치는 값이라 통째로 다시 만들지 않고, 현재 문구에서
+   * 할인 숫자만 바꾼다 — 앞뒤 말과 이모지는 그대로 남는다.
+   */
+  function changePromo(next: PromoEdit) {
+    setPromoEdit(next);
+    setCopy((c) => applyPromo(c, next));
+  }
+  /**
+   * 발송 문구 편집 — 문구에서 할인 숫자를 고치면 쿠폰도 따라온다(위 changePromo의 반대 방향).
+   *
+   * 혜택 형태(kind)가 같을 때만 반영한다. 형태까지 따라가게 두면:
+   *  - 숫자를 지우는 중간 상태("% 할인")가 kind:"none"으로 읽혀 입력칸이 사라지고
+   *    쿠폰 라벨이 원본 값으로 되돌아간다 — 타이핑 중에 화면이 튄다.
+   *  - "10% 할인"을 "2,000원 할인"으로 바꾸면 %형인 promo에 금액을 되쓸 수가 없어
+   *    어차피 반영되지 않는다.
+   * 반영 못 한 경우는 promoMismatch가 화면에 경고로 드러낸다(조용히 넘기지 않는다).
+   */
+  function changeCopy(next: string) {
+    setCopy(next);
+    const fromCopy = parsePromo(next);
+    if (fromCopy.kind === promoEdit.kind) setPromoEdit(fromCopy);
   }
 
   // 승인(문구·채널 저장) → 발송. 백엔드 없으면 api/client가 MOCK 응답을 돌려준다.
@@ -294,8 +317,8 @@ export default function WeatherPilotV3() {
           <Dashboard s={s} onReview={goEdit} />
         ) : view === "edit" ? (
           <EditView
-            copy={copy} setCopy={setCopy}
-            discountPct={discountPct} setDiscountPct={setDiscountPct} promoLabel={promoValue}
+            copy={copy} onCopyChange={changeCopy}
+            promoEdit={promoEdit} onPromoChange={changePromo} promoLabel={promoValue}
             channels={channels} toggleChannel={toggleChannel}
             nightMode={nightMode} setNightMode={setNightMode}
             onBack={() => setView("dashboard")} onSend={handleSend} sending={sending}
@@ -386,15 +409,36 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
 }
 
 // ---- 검토·편집 (문구 + 채널 + 법적 안전장치) --------------------------------
-function EditView({ copy, setCopy, discountPct, setDiscountPct, promoLabel, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
-  copy: string; setCopy: (v: string) => void;
-  discountPct: number; setDiscountPct: (v: number) => void; promoLabel: string;
+function EditView({ copy, onCopyChange, promoEdit, onPromoChange, promoLabel, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
+  copy: string; onCopyChange: (v: string) => void;
+  promoEdit: PromoEdit; onPromoChange: (v: PromoEdit) => void; promoLabel: string;
   channels: ChannelId[]; toggleChannel: (id: ChannelId) => void;
   nightMode: boolean; setNightMode: (v: boolean) => void;
   onBack: () => void; onSend: () => void; sending: boolean;
 }) {
   const dangolOn = channels.includes("dangol");
-  const discountOver = discountPct > MAX_DISCOUNT_PCT;
+  // 상한 초과 안내 — 정률·정액이 상한이 다르므로 판정과 문구가 같이 갈린다.
+  // 여기서 막지는 않는다(발송 버튼은 살려둔다) — 최종 거부는 서버 가드레일이 한다.
+  const overLimit =
+    promoEdit.kind === "rate" ? promoEdit.pct > MAX_DISCOUNT_PCT
+    : promoEdit.kind === "amount" ? promoEdit.won > MAX_DISCOUNT_WON
+    : false;
+  const overLimitText =
+    promoEdit.kind === "amount"
+      ? `할인액 상한은 ${MAX_DISCOUNT_WON.toLocaleString()}원이에요.`
+      : `할인율 상한은 ${MAX_DISCOUNT_PCT}%예요.`;
+  // 자동 동기화로 못 메운 불일치(혜택 형태가 서로 다른 경우)를 화면에 드러낸다.
+  const mismatch = promoMismatch(copy, promoLabel);
+  const fieldLabel = { fontSize: 12.5, color: T.sub, fontWeight: 600 } as const;
+  const warnBox = {
+    marginTop: 8, fontSize: 12, color: T.downText, background: T.downBg,
+    border: `1px solid ${T.warnLine}`, borderRadius: 8, padding: "6px 10px", lineHeight: 1.5,
+  } as const;
+  const numInput = {
+    textAlign: "right", boxSizing: "border-box", borderRadius: 10, padding: "8px 10px",
+    fontSize: 14, fontFamily: font, color: T.ink, background: T.surfaceAlt,
+    border: `1.5px solid ${overLimit ? T.downText : T.border}`,
+  } as const;
   const anyChannel = channels.length > 0;
   const sendDisabled = !anyChannel || sending;
   const sendLabel = sending ? "발송 중…"
@@ -414,29 +458,57 @@ function EditView({ copy, setCopy, discountPct, setDiscountPct, promoLabel, chan
         <Eyebrow>✏️ 발송 문구 · 수정 가능</Eyebrow>
         <textarea
           value={copy}
-          onChange={(e) => setCopy(e.target.value)}
+          onChange={(e) => onCopyChange(e.target.value)}
           rows={6}
           style={{ width: "100%", marginTop: 10, boxSizing: "border-box", resize: "vertical", border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", fontSize: 14, lineHeight: 1.6, fontFamily: font, color: T.ink, background: T.surfaceAlt }}
         />
-        {/* 쿠폰 할인율 편집 (QW-4) — 서버 가드레일 ≤20% 최종 강제 */}
+        {/*
+          쿠폰 혜택 편집 (QW-4) — 문구에 담긴 형태에 맞는 입력만 띄운다.
+            rate   "픽업 주문 10% 할인"      → 할인율(%) 입력
+            amount "따뜻한 세트 2,000원 할인" → 할인액(원) 입력
+            none   형태를 못 읽음            → 입력 없이 원문 그대로 (덮어쓰기 방지)
+          예전엔 형태 구분 없이 % 입력만 띄워, 정액 쿠폰이 "0% 할인"으로 덮어써졌다.
+        */}
         <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <label htmlFor="wp-discount" style={{ fontSize: 12.5, color: T.sub, fontWeight: 600 }}>쿠폰 할인율</label>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <input
-              id="wp-discount" type="number" min={0} max={100} value={discountPct}
-              onChange={(e) => setDiscountPct(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-              style={{ width: 66, textAlign: "right", boxSizing: "border-box", border: `1.5px solid ${discountOver ? T.downText : T.border}`, borderRadius: 10, padding: "8px 10px", fontSize: 14, fontFamily: font, color: T.ink, background: T.surfaceAlt }}
-            />
-            <span style={{ fontSize: 14, color: T.sub, fontWeight: 600 }}>%</span>
-          </span>
+          {promoEdit.kind === "rate" ? (
+            <>
+              <label htmlFor="wp-discount" style={fieldLabel}>쿠폰 할인율</label>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <input
+                  id="wp-discount" type="number" min={0} max={100} value={promoEdit.pct}
+                  onChange={(e) => onPromoChange({ kind: "rate", pct: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
+                  style={{ ...numInput, width: 66 }}
+                />
+                <span style={{ fontSize: 14, color: T.sub, fontWeight: 600 }}>%</span>
+              </span>
+            </>
+          ) : promoEdit.kind === "amount" ? (
+            <>
+              <label htmlFor="wp-discount" style={fieldLabel}>쿠폰 할인액</label>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <input
+                  id="wp-discount" type="number" min={0} step={100} value={promoEdit.won}
+                  onChange={(e) => onPromoChange({ kind: "amount", won: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
+                  style={{ ...numInput, width: 92 }}
+                />
+                <span style={{ fontSize: 14, color: T.sub, fontWeight: 600 }}>원</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <span style={fieldLabel}>쿠폰</span>
+              <span style={{ fontSize: 12, color: T.sub }}>금액·할인율이 없는 쿠폰이라 문구에서 바꿔주세요</span>
+            </>
+          )}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: T.primaryDark, fontWeight: 600 }}>
             <span style={{ fontSize: 15 }}>🎟️</span> {promoLabel}
           </span>
         </div>
-        {discountOver && (
-          <div style={{ marginTop: 8, fontSize: 12, color: T.downText, background: T.downBg, border: `1px solid ${T.warnLine}`, borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
-            할인율 상한은 {MAX_DISCOUNT_PCT}%예요. 이대로 발송하면 서버가 거부합니다.
-          </div>
+        {overLimit && (
+          <div style={warnBox}>{overLimitText} 이대로 발송하면 서버가 거부합니다.</div>
+        )}
+        {mismatch && (
+          <div style={warnBox}>{mismatch} 문자와 쿠폰이 다른 혜택으로 발송돼요.</div>
         )}
       </Card>
 
@@ -547,6 +619,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
   const igPosted = igOn && (sendResult.sns?.posted ?? false);
   const permalink = sendResult.sns?.permalink;
   const caption = sendResult.sns?.caption ?? snsCaption;
+  // 실패 사유는 서버가 준 것을 쓴다 — 원인을 화면이 임의로 단정하면 틀린다.
+  // (실례: "토큰·이미지 미설정"이라 적어뒀는데 실제 원인은 인스타 계정 차단이었다.
+  //  둘 다 설정돼 있어서, 화면만 보고는 어디를 봐야 하는지 알 수 없었다)
+  const igError = sendResult.sns?.error;
 
   // SNS 전용 발송 안내 — 채널명은 바로 윗줄(names)에 이미 나오므로 반복하지 않는다.
   // 단, 인스타(자동 게시)와 X(수동 복사)를 같이 보낸 경우엔 처리가 달라 구분해 준다.
@@ -656,7 +732,7 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
             {igPosted
               ? "인스타그램 본인 계정에 자동 게시됐어요. 문구는 필요하면 복사해 쓰세요."
               : igOn
-                ? "자동 게시가 안 됐어요(토큰·이미지 미설정). 문구를 복사해 직접 올려주세요."
+                ? `자동 게시가 안 됐어요${igError ? ` (${igError})` : ""}. 문구를 복사해 직접 올려주세요.`
                 : "X(트위터)는 문구를 복사해 직접 올려주세요."}
           </p>
           {/* 귀속 방법 안내 — SNS는 공개 채널이라 개인별 쿠폰 코드를 못 준다(shared/sns.ts).

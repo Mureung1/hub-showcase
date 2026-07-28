@@ -7,6 +7,7 @@ import {
   type ProposalContext,
 } from "./generate";
 import { checkGuardrails } from "./guardrails";
+import { checkProposalQuality } from "./quality";
 
 const weather: EnsembleWeather = {
   tempC: 18,
@@ -21,9 +22,12 @@ const weather: EnsembleWeather = {
 
 const diagnosis: Diagnosis = {
   baselineRevenue: 840000,
+  normalRevenue: 893117,
   rainImpactPct: -0.22,
   estimated: false,
   sampleDays: 29,
+  campaignDays: 0,
+  baselineExcludesCampaigns: false,
   byCondition: [],
 };
 
@@ -64,6 +68,24 @@ describe("generateProposal", () => {
     expect(proposal.promo.value).toBe("픽업 10% 할인");
     expect(proposal.channels).toContain("dangol");
     expect(caller).toHaveBeenCalledOnce();
+  });
+
+  it("copy와 promo의 할인율이 어긋나면 copy 기준으로 맞춰 저장한다 (재생성하지 않음)", async () => {
+    // 실측 회귀(2026-07-22 저장분): LLM이 copy엔 15%, promo엔 21%를 썼다.
+    // 스키마·형태는 멀쩡하니 통째로 버리지 않고 숫자만 맞춘다. 21%는 상한 초과라
+    // 맞추지 않으면 가드레일에 걸려 멀쩡한 제안이 폴백으로 떨어진다.
+    const caller = vi.fn(async () =>
+      JSON.stringify({
+        title: "비 오는 날 픽업 할인",
+        copy: "☔ 오늘 픽업 주문 15% 할인해 드려요!",
+        promo: { type: "할인", value: "픽업 21% 할인" },
+        channels: ["dangol"],
+      }),
+    );
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller });
+    expect(proposal.promo.value).toBe("픽업 15% 할인");
+    expect(proposal.copy).toContain("15% 할인");
+    expect(caller).toHaveBeenCalledOnce(); // 재생성 없음
   });
 
   it("apiKey가 없으면 예외", async () => {
@@ -109,6 +131,47 @@ describe("generateProposal", () => {
     expect(c).toHaveBeenCalledTimes(2);
   });
 
+  it("copy에 한자가 섞이면 재생성한다 (실측 회귀: 2026-07-26 저장분)", async () => {
+    // 예전엔 가드레일만 검사해서, quality.ts에 한국어 검사가 있는데도 그대로 저장됐다.
+    let calls = 0;
+    const han = JSON.stringify({
+      title: "비 오는 날 카페 픽업 할인",
+      copy: "☔ 비 오는 오늘 10% 할인된 가격에 즐기세요! 🎉今日의 주문은 픽업으로 받아보세요!",
+      promo: { type: "할인", value: "10% 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => (calls++ === 0 ? han : valid));
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("정상 제안");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("허용 안 된 채널이면 재생성한다", async () => {
+    let calls = 0;
+    const bad = JSON.stringify({
+      title: "정상 제안",
+      copy: "정상 문구",
+      promo: { type: "할인", value: "10% 할인" },
+      channels: ["facebook"],
+    });
+    const c = vi.fn(async () => (calls++ === 0 ? bad : valid));
+    await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("손님 문구에 내부 정보(매출·하락)가 새면 재생성한다", async () => {
+    let calls = 0;
+    const leak = JSON.stringify({
+      title: "정상 제안",
+      copy: "비 오는 날 매출이 걱정이라 준비했어요",
+      promo: { type: "할인", value: "10% 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => (calls++ === 0 ? leak : valid));
+    await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
   it("재생성까지 실패하면 템플릿 폴백을 반환한다 (에러로 죽지 않음)", async () => {
     const c = vi.fn(async () => "계속 깨진 응답");
     const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
@@ -145,5 +208,11 @@ describe("buildFallbackProposal", () => {
 
   it("폴백 제안은 가드레일을 통과한다", () => {
     expect(checkGuardrails(buildFallbackProposal(ctx)).ok).toBe(true);
+  });
+
+  it("폴백 제안은 품질검사도 통과한다 (파이프라인이 품질로 채택 판정하므로)", () => {
+    // 폴백은 검사 없이 반환되니, 이게 깨지면 우리 루브릭이 거부할 제안을 우리가 내보낸다.
+    const q = checkProposalQuality(buildFallbackProposal(ctx), ctx.store.name);
+    expect(q.violations).toEqual([]);
   });
 });

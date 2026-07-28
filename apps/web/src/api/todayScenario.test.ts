@@ -37,9 +37,12 @@ function makeWeather(over: Partial<EnsembleWeather> = {}): EnsembleWeather {
 function makeDiagnosis(over: Partial<Diagnosis> = {}): Diagnosis {
   return {
     baselineRevenue: 800000,
+    normalRevenue: 800000, // 매출 타일은 전체 평균이 아니라 평상시(무강수) 평균 기준
     rainImpactPct: -0.22,
     estimated: false,
     sampleDays: 30,
+    campaignDays: 0,
+    baselineExcludesCampaigns: false,
     byCondition: [],
     ...over,
   };
@@ -82,7 +85,7 @@ describe("A. 정상 케이스", () => {
     expect(s.todayDown).toBe(true);
     expect(s.diagText).toBe("비 평균 −18%");
     expect(s.impHead).toBe("이 가게 데이터 기준 −18% 예상");
-    expect(s.impDetail).toContain("최근 30일"); // 실측(estimated=false) 분기
+    expect(s.impDetail).toContain("캠페인 없던 30일"); // 실측(estimated=false) 분기
     expect(s.emoji).toBe("🌧️");
   });
 
@@ -307,9 +310,10 @@ describe("D. 빈 값·결측", () => {
     expect(s.promo).toBe("할인");
   });
 
-  it("D6: baselineRevenue 0 → 매출 타일 전부 0, NaN 미발생", () => {
+  it("D6: normalRevenue 0 → 매출 타일 전부 0, NaN 미발생", () => {
     const diagnosis = makeDiagnosis({
       baselineRevenue: 0,
+      normalRevenue: 0,
       byCondition: [impact("clear", -0.18)],
     });
 

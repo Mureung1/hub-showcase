@@ -41,18 +41,31 @@ export async function getStoreById(storeId: string): Promise<StoreRow> {
   return data as StoreRow;
 }
 
-/** 매장의 일매출을 진단 입력 형태(매출 + 날씨 스냅샷)로 조회한다. */
+/**
+ * 매장의 일매출을 진단 입력 형태(매출 + 날씨 스냅샷 + 개입 여부)로 조회한다.
+ *
+ * 캠페인을 발송한 날은 매출에 사람 손이 탔으므로 '날씨 순효과'를 재는 기준선에서 빼야 한다
+ * (안 빼면 캠페인이 성공할수록 진단이 "우린 비 와도 안 떨어져요"로 스스로를 지운다).
+ * 별도 플래그 컬럼은 두지 않는다 — campaigns가 이미 (store_id, date, status)를 갖고 있어
+ * 날짜로 맞추면 되고, 그래야 지난 데이터도 소급해서 판별된다.
+ *
+ * 개입으로 세는 건 status='sent'뿐이다. draft·approved는 사장님이 아직 안 보냈고,
+ * scheduled는 야간 차단으로 발송을 미룬 상태라 그날 매출에 영향이 없다.
+ */
 export async function getSalesWithWeather(storeId: string): Promise<SalesWithWeather[]> {
   const sb = getSupabase();
-  const { data } = await sb
-    .from("daily_sales")
-    .select("revenue, weather_snapshot")
-    .eq("store_id", storeId);
-  return (data ?? []).map((r) => {
+  const [salesRes, sentRes] = await Promise.all([
+    sb.from("daily_sales").select("date, revenue, weather_snapshot").eq("store_id", storeId),
+    sb.from("campaigns").select("date").eq("store_id", storeId).eq("status", "sent"),
+  ]);
+  const sentDates = new Set((sentRes.data ?? []).map((c) => c.date as string));
+
+  return (salesRes.data ?? []).map((r) => {
     const w = r.weather_snapshot as { condition: WeatherCondition; isPrecipitating: boolean } | null;
     return {
       revenue: r.revenue as number,
       weather: w ? { condition: w.condition, isPrecipitating: w.isPrecipitating } : null,
+      hadCampaign: sentDates.has(r.date as string),
     };
   });
 }

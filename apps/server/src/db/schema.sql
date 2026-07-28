@@ -39,6 +39,10 @@ create table customers (
 create index customers_store_id_idx on customers(store_id);
 
 -- 일매출 (수동 입력 / CSV 업로드) + 그날 날씨 스냅샷
+--
+-- 캠페인 발송 여부 컬럼은 일부러 두지 않는다. campaigns가 이미 (store_id, date, status)를
+-- 갖고 있어 날짜로 맞추면 되고(db/queries.ts getSalesWithWeather), 그래야 지난 데이터도
+-- 소급 판별된다. 진단은 발송일(status='sent')을 기준선에서 빼고 날씨 순효과만 잰다.
 create table daily_sales (
   store_id         uuid not null references stores(id) on delete cascade,
   date             date not null,

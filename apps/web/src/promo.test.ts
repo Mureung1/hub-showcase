@@ -1,0 +1,164 @@
+import { describe, it, expect } from "vitest";
+import { parsePromo, applyPromo, promoMismatch } from "./promo";
+import { SCENARIOS } from "./mocks/scenarios";
+
+/**
+ * 회귀 대상: 정액 쿠폰("2,000원 할인")이 검토 화면에서 "0% 할인"으로 덮어써지던 버그.
+ * mocks/scenarios의 실제 promo 문구를 그대로 넣어, 데모에서 보이는 값으로 검증한다.
+ */
+
+describe("parsePromo — 혜택 형태 판별", () => {
+  it("정률 쿠폰은 rate", () => {
+    expect(parsePromo("픽업 주문 10% 할인 (오늘 하루)")).toEqual({ kind: "rate", pct: 10 });
+    expect(parsePromo("픽업 15 % 할인")).toEqual({ kind: "rate", pct: 15 });
+  });
+
+  it("정액 쿠폰은 amount — 천단위 쉼표를 벗긴 숫자", () => {
+    expect(parsePromo("따뜻한 세트 2,000원 할인 (단골 전용)")).toEqual({
+      kind: "amount",
+      won: 2000,
+    });
+    expect(parsePromo("세트 1500원 쿠폰")).toEqual({ kind: "amount", won: 1500 });
+  });
+
+  it("%와 금액이 같이 있으면 정률이 우선", () => {
+    // 사장님이 조절할 대상은 할인율이고, 금액은 조건(최소 주문액)일 가능성이 높다.
+    expect(parsePromo("픽업 10% 할인 (5,000원 이상)")).toEqual({ kind: "rate", pct: 10 });
+  });
+
+  it("조건 금액만 있으면 none — 할인액으로 오인하지 않는다", () => {
+    expect(parsePromo("5,000원 이상 주문 시 사은품")).toEqual({ kind: "none" });
+  });
+
+  it("'할인'이 안 붙은 %는 none — 편집 대상이 아니다", () => {
+    // "100% 아라비카"를 할인율로 읽으면 사장님이 안 건드린 숫자가 편집으로 바뀐다.
+    // 못 읽어서 편집이 막히는 쪽이, 잘못 읽어서 문구를 망치는 쪽보다 안전하다.
+    expect(parsePromo("100% 아라비카 원두")).toEqual({ kind: "none" });
+    expect(parsePromo("15% 세일")).toEqual({ kind: "none" });
+  });
+
+  it("숫자가 없으면 none", () => {
+    expect(parsePromo("아메리카노 증정")).toEqual({ kind: "none" });
+    expect(parsePromo("")).toEqual({ kind: "none" });
+  });
+});
+
+describe("applyPromo — 편집값 되쓰기", () => {
+  it("정률은 숫자만 바꾸고 설명은 남긴다", () => {
+    expect(applyPromo("픽업 주문 10% 할인 (오늘 하루)", { kind: "rate", pct: 12 })).toBe(
+      "픽업 주문 12% 할인 (오늘 하루)",
+    );
+  });
+
+  it("정액은 천단위 쉼표를 붙여 되쓴다", () => {
+    expect(
+      applyPromo("따뜻한 세트 2,000원 할인 (단골 전용)", { kind: "amount", won: 2500 }),
+    ).toBe("따뜻한 세트 2,500원 할인 (단골 전용)");
+  });
+
+  it("형태가 문구와 안 맞으면 원문을 그대로 둔다 (회귀: '0% 할인'으로 덮어쓰던 버그)", () => {
+    const amountPromo = "따뜻한 세트 2,000원 할인 (단골 전용)";
+    expect(applyPromo(amountPromo, { kind: "rate", pct: 12 })).toBe(amountPromo);
+    expect(applyPromo(amountPromo, { kind: "none" })).toBe(amountPromo);
+
+    const ratePromo = "픽업 주문 10% 할인";
+    expect(applyPromo(ratePromo, { kind: "amount", won: 2000 })).toBe(ratePromo);
+  });
+
+  it("0도 정상 편집값이다 (사장님이 할인을 뺀 경우)", () => {
+    expect(applyPromo("픽업 주문 10% 할인", { kind: "rate", pct: 0 })).toBe("픽업 주문 0% 할인");
+  });
+
+  it("같은 문구를 연달아 편집해도 결과가 같다 (정규식 lastIndex 오염 방지)", () => {
+    const promo = "따뜻한 세트 2,000원 할인";
+    const edit = { kind: "amount", won: 2500 } as const;
+    expect(applyPromo(promo, edit)).toBe(applyPromo(promo, edit));
+  });
+});
+
+describe("applyPromo — 발송 문구(copy) 동기화", () => {
+  it("문구 속 할인율도 같이 바뀐다 (쿠폰만 바뀌면 다른 혜택을 약속하는 문자가 나간다)", () => {
+    const copy = SCENARIOS.rain.copy;
+    const next = applyPromo(copy, { kind: "rate", pct: 12 });
+    expect(next).toContain("오늘 픽업 주문 12% 할인");
+    // 앞뒤 말·이모지·줄바꿈은 그대로.
+    expect(next).toContain("☔ 비 오는 오늘, 굳이 나오지 마세요! 🙅‍♀️");
+    expect(next.split("\n")).toHaveLength(copy.split("\n").length);
+  });
+
+  it("문구 속 할인액도 같이 바뀐다", () => {
+    const next = applyPromo(SCENARIOS.cold.copy, { kind: "amount", won: 2500 });
+    expect(next).toContain("세트 2,500원 할인");
+  });
+
+  it("혜택이 두 번 나오면 둘 다 바꾼다", () => {
+    // 하나만 바뀌면 같은 문자 안에서 값이 어긋난다.
+    const copy = "오늘 10% 할인!\n지금 주문하면 10% 할인 그대로 드려요";
+    expect(applyPromo(copy, { kind: "rate", pct: 15 })).toBe(
+      "오늘 15% 할인!\n지금 주문하면 15% 할인 그대로 드려요",
+    );
+  });
+
+  it("할인과 무관한 숫자는 건드리지 않는다", () => {
+    const copy = "100% 아라비카 원두로 만든 커피, 오늘 10% 할인이에요";
+    expect(applyPromo(copy, { kind: "rate", pct: 12 })).toBe(
+      "100% 아라비카 원두로 만든 커피, 오늘 12% 할인이에요",
+    );
+  });
+
+  it("사장님이 할인 언급을 지운 문구는 그대로 둔다", () => {
+    const copy = "오늘 따뜻한 라떼 어때요?";
+    expect(applyPromo(copy, { kind: "rate", pct: 12 })).toBe(copy);
+  });
+});
+
+describe("promoMismatch — 문구·쿠폰 불일치 감지", () => {
+  it("값이 같으면 null", () => {
+    expect(promoMismatch("오늘 15% 할인이에요", "픽업 주문 15% 할인 (오늘 하루)")).toBeNull();
+    expect(promoMismatch("세트 2,000원 할인", "따뜻한 세트 2,000원 할인")).toBeNull();
+  });
+
+  it("같은 형태에서 값이 다르면 잡는다", () => {
+    expect(promoMismatch("오늘 20% 할인이에요", "픽업 주문 15% 할인")).toBe(
+      "문구는 20%, 쿠폰은 15%로 서로 달라요",
+    );
+    expect(promoMismatch("세트 3000원 할인", "따뜻한 세트 2,000원 할인")).toBe(
+      "문구는 3,000원, 쿠폰은 2,000원으로 서로 달라요",
+    );
+  });
+
+  it("혜택 형태가 다르면 잡는다 (자동 동기화로 못 메우는 구멍)", () => {
+    // 문구를 "2,000원 할인"으로 고쳐도 %형 promo에 금액을 되쓸 수 없어 반영되지 않는다.
+    expect(promoMismatch("세트 2,000원 할인", "픽업 주문 10% 할인")).toBe(
+      "문구와 쿠폰의 혜택 형태가 달라요 (한쪽은 %, 한쪽은 금액)",
+    );
+  });
+
+  it("한쪽을 못 읽으면 판정하지 않는다", () => {
+    // 숫자를 지우는 중간 타이핑("% 할인")마다 경고가 번쩍이면 안 된다.
+    expect(promoMismatch("오늘 % 할인이에요", "픽업 주문 10% 할인")).toBeNull();
+    // 사장님이 할인 언급을 지운 경우도 불일치가 아니다.
+    expect(promoMismatch("오늘 따뜻한 라떼 어때요?", "픽업 주문 10% 할인")).toBeNull();
+  });
+
+  it("mock 4개는 원본 상태에서 불일치가 없다", () => {
+    for (const key of Object.keys(SCENARIOS) as (keyof typeof SCENARIOS)[]) {
+      const { copy, promo } = SCENARIOS[key];
+      expect(promoMismatch(copy, promo)).toBeNull();
+    }
+  });
+});
+
+describe("mock 시나리오 4개 왕복", () => {
+  it("parse → apply 왕복이 원문을 바꾸지 않는다", () => {
+    // goEdit()이 하는 일과 동일: promo에서 혜택을 읽어 그대로 되돌린다.
+    for (const key of Object.keys(SCENARIOS) as (keyof typeof SCENARIOS)[]) {
+      const { promo } = SCENARIOS[key];
+      expect(applyPromo(promo, parsePromo(promo))).toBe(promo);
+    }
+  });
+
+  it("한파 시나리오는 정액으로 읽혀 금액 입력이 뜬다", () => {
+    expect(parsePromo(SCENARIOS.cold.promo)).toEqual({ kind: "amount", won: 2000 });
+  });
+});

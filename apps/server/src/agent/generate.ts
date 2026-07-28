@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { EnsembleWeather, Diagnosis, Proposal } from "shared";
-import { checkGuardrails } from "./guardrails";
+import { checkProposalQuality } from "./quality";
+import { syncPromoToCopy } from "./promoSync";
 
 /**
  * LLM 마케팅 제안 생성 (2-2 초안).
@@ -66,7 +67,7 @@ export function buildProposalPrompt(ctx: ProposalContext): string {
 - 매장 내부 사정(매출 하락·진단 수치 등)을 문구에 노출 금지.
 - 모든 문구(title·copy·promo)는 오직 한국어로만. 한자·중국어·일본어·영어 단어 금지 (이모지 허용).
 - 의료 효능·과장 표현(치료·완치·효능·최고·1등·무조건·100% 등) 금지.
-- 할인율은 20%를 넘지 마세요.
+- 할인율은 20%를 넘지 마세요. 금액으로 깎아줄 때는 3,000원을 넘지 마세요.
 - channels는 instagram, x, dangol 중에서 고르세요.
 
 [좋은 예시] (비 오는 날)
@@ -152,9 +153,25 @@ async function tryGenerate(
   storeName: string,
 ): Promise<Proposal | null> {
   try {
-    const proposal = parseAndValidate(await caller(prompt, apiKey));
-    if (!proposal) return null; // 파싱·스키마 실패
-    if (!checkGuardrails(proposal, storeName).ok) return null; // 가드레일 위반 → 재생성 대상
+    const parsed = parseAndValidate(await caller(prompt, apiKey));
+    if (!parsed) return null; // 파싱·스키마 실패
+    // copy와 promo의 할인 숫자가 어긋난 채 저장되지 않게 먼저 맞춘다(재생성 대상이 아니다 —
+    // 나머지가 멀쩡한 제안을 통째로 버리는 것보다 숫자 하나를 맞추는 쪽이 낫다).
+    // 가드레일은 맞춘 뒤의 값으로 검사해야 상한 판정이 실제 저장값과 일치한다.
+    const proposal = syncPromoToCopy(parsed);
+    // 가드레일이 아니라 품질검사(가드레일 + 한국어전용·내부정보·채널)를 통과해야 채택한다.
+    //
+    // 예전엔 가드레일만 봐서, 검사 코드가 이미 있는데도 copy에 한자가 섞인 제안이
+    // 그대로 저장됐다(실측: "🎉今日의 주문은 픽업으로 받아보세요!"). 루브릭으로만 두면
+    // 감시는 되지만 아무것도 막지 못한다.
+    //
+    // ⚠️ 발송 시점(routes/campaigns.ts)은 계속 checkGuardrails만 쓴다. 거기에 한국어
+    // 검사를 걸면 사장님이 직접 쓴 "ICE 아메리카노" 같은 문구가 발송에서 막힌다.
+    // 생성물에 요구하는 기준(품질)과 사람 편집물에 요구하는 기준(안전·법규)은 다르다.
+    //
+    // 실측 비용: 저장된 제안 10건 중 1건만 재검사에 걸린다(정규화 후) → 재생성 1회까지
+    // 실패해 템플릿 폴백으로 떨어질 확률 ≈ 1%.
+    if (!checkProposalQuality(proposal, storeName).ok) return null; // 품질 위반 → 재생성 대상
     return proposal;
   } catch {
     return null; // 네트워크 등 호출 실패

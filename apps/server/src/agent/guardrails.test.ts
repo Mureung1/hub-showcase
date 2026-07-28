@@ -36,6 +36,35 @@ describe("checkGuardrails", () => {
     expect(checkGuardrails(proposal({ copy: "오늘만 30% 할인!" })).ok).toBe(false);
   });
 
+  it("정액 할인 3,000원은 허용, 3,100원은 거부한다 (경계값)", () => {
+    const ok = proposal({
+      copy: "❄️ 세트 3,000원 할인이에요!",
+      promo: { type: "할인", value: "따뜻한 세트 3,000원 할인" },
+    });
+    expect(checkGuardrails(ok).ok).toBe(true);
+
+    const bad = checkGuardrails(
+      proposal({
+        copy: "❄️ 세트 3,100원 할인이에요!",
+        promo: { type: "할인", value: "따뜻한 세트 3,100원 할인" },
+      }),
+    );
+    expect(bad.ok).toBe(false);
+    expect(bad.violations[0]).toMatch(/할인액 3,100원/);
+  });
+
+  it("쉼표 없는 표기·'쿠폰' 표기도 잡는다", () => {
+    const bad = checkGuardrails(proposal({ promo: { type: "할인", value: "세트 5000원 쿠폰" } }));
+    expect(bad.ok).toBe(false);
+    expect(bad.violations[0]).toMatch(/할인액 5,000원/);
+  });
+
+  it("조건으로 쓴 금액은 할인액으로 오인하지 않는다", () => {
+    // "10,000원 이상 주문 시"를 할인액으로 읽으면 멀쩡한 제안이 재생성 루프에 빠진다.
+    const ok = proposal({ copy: "10,000원 이상 주문 시 픽업 10% 할인!" });
+    expect(checkGuardrails(ok).ok).toBe(true);
+  });
+
   it("제목의 창작 상호를 검출한다 (실사고: 그레이스카페)", () => {
     const bad = checkGuardrails(proposal({ title: "그레이스카페 오늘의 혜택" }), "김사장 카페");
     expect(bad.ok).toBe(false);
