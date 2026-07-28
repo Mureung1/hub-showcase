@@ -18,7 +18,7 @@ test('가설을 입력하고 분석하면 AI 권고가 대시보드에 표시된
     .getByPlaceholder(/전사문을 붙여넣거나/)
     .fill('진행자: 테스트 질문입니다.\n사용자: 테스트 답변입니다.')
 
-  await page.getByRole('button', { name: '분석 시작' }).click()
+  await page.getByRole('button', { name: 'AI 분석 시작' }).click()
 
   await expect(page).toHaveURL(/\/projects\/[a-f0-9-]+$/, { timeout: 45_000 })
   await expect(page.getByText(/유력함|근거 부족|수정 필요/)).toBeVisible({ timeout: 45_000 })
