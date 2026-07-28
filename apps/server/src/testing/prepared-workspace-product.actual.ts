@@ -22,6 +22,7 @@ import type { ProductReviewFrame, ProductReviewResult } from '@ay-ple/product-co
 import {
   startCodexActionLocalProviderTestFixture,
   type CodexActionLocalProviderJournal,
+  type CodexActionLocalProviderTestFixture,
 } from '@ay-ple/codex-chat-runtime/testing'
 import express from 'express'
 
@@ -42,6 +43,7 @@ import {
   type BoundServerApplicationListener,
 } from '../server-listener.js'
 import { codexChatIdentity } from './codex-chat-test-support.js'
+import { NdjsonTrace } from './ndjson-trace.js'
 
 const execFileAsync = promisify(execFile)
 const repositoryRoot = path.resolve(
@@ -92,13 +94,15 @@ test(
   { timeout: 120_000 },
   async () => {
     const fixture = await prepareWorkspace()
-    const actionRuntimeFixture = await startCodexActionLocalProviderTestFixture({
-      runtimeRoot,
-      workspace: fixture.workspaceRoot,
-    })
+    let actionRuntimeFixture: CodexActionLocalProviderTestFixture | undefined
     let preparedServer: PreparedServerApplication | undefined
     let listener: BoundServerApplicationListener | undefined
     try {
+      actionRuntimeFixture =
+        await startCodexActionLocalProviderTestFixture({
+          runtimeRoot,
+          workspace: fixture.workspaceRoot,
+        })
       const lifecycle = await readActiveLifecycle(fixture.workspaceRoot)
       preparedServer = await createPreparedServerApplication({
         codexChat: {
@@ -107,6 +111,7 @@ test(
           createRuntime: async () => {
             assert.ok(preparedServer)
             assert.ok(listener)
+            assert.ok(actionRuntimeFixture)
             return actionRuntimeFixture.createRuntime({
               childEnvironment: {
                 AY_PLE_INTERACTION_BROKER_URL:
@@ -218,12 +223,14 @@ test(
       )
       await assertNoCredentialResidue(fixture.workspaceRoot)
     } finally {
-      await preparedServer?.application.close().catch(() => undefined)
-      await listener
-        ?.close({ signal: new AbortController().signal })
-        .catch(() => undefined)
-      await actionRuntimeFixture.dispose()
-      await fixture.cleanup()
+      await runCleanupSteps([
+        () => preparedServer?.application.close() ?? Promise.resolve(),
+        () =>
+          listener?.close({ signal: new AbortController().signal }) ??
+          Promise.resolve(),
+        () => actionRuntimeFixture?.dispose() ?? Promise.resolve(),
+        () => fixture.cleanup(),
+      ])
     }
   },
 )
@@ -314,6 +321,22 @@ test(
   },
 )
 
+async function runCleanupSteps(
+  steps: readonly (() => Promise<unknown>)[],
+): Promise<void> {
+  const errors: unknown[] = []
+  for (const step of steps) {
+    try {
+      await step()
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  if (errors.length > 0) {
+    throw new AggregateError(errors, 'Prepared-workspace trace cleanup failed')
+  }
+}
+
 type WorkspaceFixture = {
   readonly root: string
   readonly workspaceRoot: string
@@ -338,6 +361,15 @@ async function prepareWorkspace(): Promise<WorkspaceFixture> {
   const root = await realpath(
     await mkdtemp(path.join(tmpdir(), 'ay-ple-prepared-product-')),
   )
+  try {
+    return await populateWorkspace(root)
+  } catch (error) {
+    await rm(root, { recursive: true, force: true })
+    throw error
+  }
+}
+
+async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
   const workspaceRoot = path.join(root, 'semester-workspace')
   const outside = path.join(root, 'outside-evidence.txt')
   await mkdir(workspaceRoot)
@@ -469,7 +501,7 @@ async function readActiveLifecycle(workspaceRoot: string) {
 
 async function invokePublicOrganizeSources(
   baseUrl: string,
-): Promise<ActualNdjsonTrace> {
+): Promise<NdjsonTrace> {
   const response = await fetch(`${baseUrl}/api/product/actions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -480,7 +512,11 @@ async function invokePublicOrganizeSources(
   })
   assert.equal(response.status, 200)
   assert.ok(response.body)
-  return new ActualNdjsonTrace(response.body.getReader())
+  return new NdjsonTrace(
+    response.body.getReader(),
+    (frames) =>
+      `Actual NDJSON stream ended before target frame: ${JSON.stringify(frames)}`,
+  )
 }
 
 async function settlePublicReview(
@@ -498,42 +534,6 @@ async function settlePublicReview(
     },
   )
   assert.equal(response.status, 204)
-}
-
-class ActualNdjsonTrace {
-  private readonly frames: Array<Record<string, unknown>> = []
-  private buffer = ''
-
-  constructor(
-    private readonly reader: ReadableStreamDefaultReader<Uint8Array>,
-  ) {}
-
-  async until(
-    predicate: (frame: Record<string, unknown>) => boolean,
-  ): Promise<Record<string, unknown>> {
-    for (;;) {
-      const found = this.frames.find(predicate)
-      if (found) return found
-      const next = await this.reader.read()
-      if (next.done) {
-        throw new Error(
-          `Actual NDJSON stream ended before target frame: ${JSON.stringify(this.frames)}`,
-        )
-      }
-      this.buffer += new TextDecoder().decode(next.value, { stream: true })
-      const lines = this.buffer.split('\n')
-      this.buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        if (line) {
-          this.frames.push(JSON.parse(line) as Record<string, unknown>)
-        }
-      }
-    }
-  }
-
-  all(): readonly Record<string, unknown>[] {
-    return structuredClone(this.frames)
-  }
 }
 
 async function assertExactActionProviderEvidence(
@@ -622,23 +622,23 @@ async function assertExactActionProviderEvidence(
     ],
   )
   const outputs = uniqueProviderOutputs(journal)
-  assert.equal(
-    reviewOutcome(
-      outputs.get('call-action-review-initial')?.output,
-    ),
-    'revise',
+  assert.deepEqual(
+    reviewResult(outputs.get('call-action-review-initial')?.output),
+    {
+      outcome: 'revise',
+      feedback: '제출 방식을 더 분명하게 써 주세요.',
+    },
   )
-  assert.equal(
-    reviewOutcome(
-      outputs.get('call-action-review-revised')?.output,
-    ),
-    'accept',
+  assert.deepEqual(
+    reviewResult(outputs.get('call-action-review-revised')?.output),
+    { outcome: 'accept' },
   )
-  assert.equal(
-    reviewOutcome(
-      outputs.get('call-action-review-rejected')?.output,
-    ),
-    'reject',
+  assert.deepEqual(
+    reviewResult(outputs.get('call-action-review-rejected')?.output),
+    {
+      outcome: 'reject',
+      feedback: '추가 변경은 하지 않습니다.',
+    },
   )
   const mutationCall = calls.find(
     (call) => call.callId === 'call-action-apply-checkpoint',
@@ -701,33 +701,47 @@ function uniqueProviderOutputs(
   return outputs
 }
 
-function reviewOutcome(output: string | undefined): string | undefined {
+type ReviewResultEvidence = {
+  readonly outcome: string
+  readonly feedback?: string
+}
+
+function reviewResult(
+  output: string | undefined,
+): ReviewResultEvidence | undefined {
   if (output === undefined) return undefined
   for (const line of output.split('\n')) {
-    const outcome = findReviewOutcome(parseJsonValue(line.trim()))
-    if (outcome !== undefined) return outcome
+    const result = findReviewResult(parseJsonValue(line.trim()))
+    if (result !== undefined) return result
   }
   return undefined
 }
 
-function findReviewOutcome(value: unknown): string | undefined {
+function findReviewResult(value: unknown): ReviewResultEvidence | undefined {
   if (typeof value === 'string') {
     const parsed = parseJsonValue(value)
-    return parsed === value ? undefined : findReviewOutcome(parsed)
+    return parsed === value ? undefined : findReviewResult(parsed)
   }
   if (Array.isArray(value)) {
     for (const item of value) {
-      const outcome = findReviewOutcome(item)
-      if (outcome !== undefined) return outcome
+      const result = findReviewResult(item)
+      if (result !== undefined) return result
     }
     return undefined
   }
   if (typeof value !== 'object' || value === null) return undefined
   const record = value as Record<string, unknown>
-  if (typeof record.outcome === 'string') return record.outcome
+  if (typeof record.outcome === 'string') {
+    return {
+      outcome: record.outcome,
+      ...(typeof record.feedback === 'string'
+        ? { feedback: record.feedback }
+        : {}),
+    }
+  }
   for (const child of Object.values(record)) {
-    const outcome = findReviewOutcome(child)
-    if (outcome !== undefined) return outcome
+    const result = findReviewResult(child)
+    if (result !== undefined) return result
   }
   return undefined
 }

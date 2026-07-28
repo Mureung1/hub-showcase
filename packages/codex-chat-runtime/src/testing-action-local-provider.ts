@@ -8,6 +8,7 @@ import path from 'node:path'
 
 import {
   startActionLocalProvider,
+  type ActionLocalProvider,
   type ActionLocalProviderFunctionCall,
   type ActionLocalProviderFunctionOutput,
   type ActionLocalProviderRequest,
@@ -67,7 +68,13 @@ export async function startCodexActionLocalProviderTestFixture(options: {
   const fixtureRoot = await realpath(
     await mkdtemp(path.join(tmpdir(), 'ay-ple-action-local-provider-')),
   )
-  const provider = await startActionLocalProvider()
+  let provider: ActionLocalProvider
+  try {
+    provider = await startActionLocalProvider()
+  } catch (error) {
+    await rm(fixtureRoot, { recursive: true, force: true })
+    throw error
+  }
   let environment
   try {
     environment = await createLocalProviderEnvironment(fixtureRoot)

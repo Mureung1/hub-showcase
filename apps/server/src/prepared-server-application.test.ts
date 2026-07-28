@@ -30,6 +30,7 @@ import type {
 import { bindServerApplicationListener } from './server-listener.js'
 import { createPreparedServerApplication } from './prepared-server-application.js'
 import { codexChatIdentity, postJson } from './testing/codex-chat-test-support.js'
+import { NdjsonTrace } from './testing/ndjson-trace.js'
 
 test('prepared public composition exposes workspace sources beside AY Chat and inline Review', async () => {
   const workspaceRoot = await realpath(
@@ -1300,36 +1301,6 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
   close() {
     this.finish()
     return Promise.resolve()
-  }
-}
-
-class NdjsonTrace {
-  private readonly frames: Array<Record<string, unknown>> = []
-  private buffer = ''
-
-  constructor(
-    private readonly reader: ReadableStreamDefaultReader<Uint8Array>,
-  ) {}
-
-  async until(
-    predicate: (frame: Record<string, unknown>) => boolean,
-  ): Promise<Record<string, unknown>> {
-    for (;;) {
-      const found = this.frames.find(predicate)
-      if (found) return found
-      const next = await this.reader.read()
-      if (next.done) throw new Error('NDJSON stream ended before target frame')
-      this.buffer += new TextDecoder().decode(next.value, { stream: true })
-      const lines = this.buffer.split('\n')
-      this.buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        if (line) this.frames.push(JSON.parse(line))
-      }
-    }
-  }
-
-  cancel(): Promise<void> {
-    return this.reader.cancel()
   }
 }
 

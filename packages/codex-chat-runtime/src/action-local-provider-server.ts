@@ -83,6 +83,11 @@ export async function startActionLocalProvider(): Promise<ActionLocalProvider> {
       server.off('error', reject)
       resolve()
     })
+  }).catch((error: unknown) => {
+    server.closeAllConnections()
+    for (const socket of sockets) socket.destroy()
+    if (server.listening) server.close()
+    throw error
   })
   const address = server.address() as AddressInfo
   let closeServerPromise: Promise<void> | undefined
