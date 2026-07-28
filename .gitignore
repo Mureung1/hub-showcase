@@ -1,10 +1,14 @@
 node_modules/
 dist/
 dist-preview/
+coverage/
+.vitest/
+.vercel/
+*.tsbuildinfo
 *.local
 vite-dev.log
 vite-dev.err
-vite-dev.pid
+*.pid
 .icu/
 *.sqlite
 *.sqlite-journal
@@ -17,10 +21,16 @@ __MACOSX/
 
 # Local temporary design references
 .tmp-devchat-design-ref/
+/.tmp-*
 
 # Generated documentation assets
 docs/**/*.png
 docs/**/*.svg
+
+# Local planning and issue notes
+docs/issues/
+docs/superpowers/plans/
+docs/superpowers/specs/
 
 # Local environment secrets
 .env
