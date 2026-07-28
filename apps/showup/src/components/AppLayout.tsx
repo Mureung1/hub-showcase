@@ -39,7 +39,7 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-16 md:pb-0 md:pl-60">
+    <div className="min-h-screen bg-slate-100 pb-16 md:pb-0 md:pl-56">
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white md:hidden">
         <div className="flex h-16 items-center justify-around">
@@ -68,7 +68,7 @@ const AppLayout = () => {
       </nav>
 
       {/* PC sidebar */}
-      <aside className="fixed bottom-0 left-0 top-0 hidden w-60 flex-col border-r border-slate-300/80 bg-white md:flex">
+      <aside className="fixed bottom-0 left-0 top-0 hidden w-56 flex-col border-r border-slate-300/80 bg-white md:flex">
         <button
           type="button"
           className="border-b border-slate-100 px-6 py-6 text-left transition-colors hover:bg-slate-50"

@@ -93,7 +93,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <header className="flex flex-col justify-between gap-4 border-b border-slate-300/70 pb-6 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600">
