@@ -109,6 +109,57 @@ export function buildDayPlans(
   });
 }
 
+/** #39 — 결과 화면 주간 요약 리스트의 한 줄 */
+export interface DaySummary {
+  /** 정렬·키용 날짜(KST) "YYYY-MM-DD" — 기상하는 날 기준 */
+  dateKey: string;
+  /** 예) "월" (기상하는 날의 요일) */
+  weekday: string;
+  /** 예) "22:00 취침 · 07:00 기상 · 14:00 카페인 1.5잔(150mg) → 09:00 생화학" */
+  text: string;
+}
+
+/**
+ * #39 — 결과 화면 주간 요약. 밤(취침~기상) 하나를 하루로 보고, 그날 아침 기상하는 밤을
+ * 기준으로 그날 카페인·시험을 붙인다(buildDayPlans와 같은 묶음 기준).
+ * buildDayPlans와 달리 "요일)" 접두사 한 줄로 만들고 기상 시각도 본문에 함께 적는다.
+ *
+ * 요일은 기상하는 날(공부·시험이 있는 날) 기준으로 붙인다 — 취침 시각(전날 저녁)은 자정을
+ * 넘겨 이 날로 이어지므로, 시험·카페인이 있는 날에 맞춰야 "화) … 09:00 생화학"이 어긋나지 않는다.
+ */
+export function buildDaySummaries(
+  response: ScheduleCalculateResponse,
+  request: ScheduleCalculateRequest | null,
+): DaySummary[] {
+  const { nights, caffeineDoses } = response.recommendedSchedule;
+
+  return nights.map((night) => {
+    const 그날 = kstDateKey(night.wakeTime);
+
+    const 카페인 = caffeineDoses.filter((dose) => kstDateKey(dose.time) === 그날);
+    const 시험 = (request?.exams ?? []).filter((exam) => kstDateKey(exam.examDateTime) === 그날);
+
+    const 조각: string[] = [
+      `${formatKstTime(night.bedTime)} 취침`,
+      `${formatKstTime(night.wakeTime)} 기상`,
+    ];
+    for (const dose of 카페인) {
+      조각.push(`${formatKstTime(dose.time)} 카페인 ${formatCups(dose.cups, dose.amountMg)}`);
+    }
+
+    const 앞부분 = 조각.join(' · ');
+    const 뒷부분 = 시험
+      .map((exam) => `${formatKstTime(exam.examDateTime)} ${exam.subject}`)
+      .join(', ');
+
+    return {
+      dateKey: 그날,
+      weekday: formatKstWeekday(night.wakeTime),
+      text: 뒷부분 ? `${앞부분} → ${뒷부분}` : 앞부분,
+    };
+  });
+}
+
 /** 오늘(KST) 날짜 키 "YYYY-MM-DD" */
 function todayKstKey(): string {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: KST }).format(new Date());
