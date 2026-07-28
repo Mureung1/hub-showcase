@@ -62,6 +62,28 @@ public class ExpenseController {
     public ResponseEntity<ExpenseService.PredictionResponse> prediction(@CurrentUser Long userId) {
         return ResponseEntity.ok(expenseService.getPrediction(userId));
     }
+
+    @GetMapping("/api/expenses/recent")
+    public ResponseEntity<List<ExpenseService.RecentExpense>> recent(
+            @CurrentUser Long userId, @RequestParam(defaultValue = "20") int limit) {
+        return ResponseEntity.ok(expenseService.getRecent(userId, limit));
+    }
+
+    @GetMapping("/api/expenses/daily-calendar")
+    public ResponseEntity<List<ExpenseService.DailySpend>> dailyCalendar(@CurrentUser Long userId) {
+        return ResponseEntity.ok(expenseService.getMonthlyDaily(userId));
+    }
+
+    @GetMapping("/api/expenses/savings-missions")
+    public ResponseEntity<ExpenseService.SavingsMissionResponse> savingsMissions(@CurrentUser Long userId) {
+        return ResponseEntity.ok(expenseService.getSavingsMissions(userId));
+    }
+
+    @GetMapping("/api/expenses/category-changes")
+    public ResponseEntity<List<ExpenseService.CategoryChange>> categoryChanges(@CurrentUser Long userId) {
+        return ResponseEntity.ok(expenseService.getCategoryChanges(userId));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
