@@ -16,6 +16,8 @@ import { NearbyStoreList } from "./NearbyStoreList";
 import { TermHelp } from "./TermHelp";
 import type { ProductCategory } from "../../services/productCatalog";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
+import { PanelTextSizeControl } from "../workspace/PanelTextSizeControl";
+import type { PanelTextSize } from "../workspace/usePanelTextSize";
 import type {
   AnalysisTopic,
   Category,
@@ -112,6 +114,8 @@ type MarketFiltersProps = {
   supportedCategories: ProductCategory[];
   catalogState: "ranked" | "connecting" | "bootstrap" | "error";
   onCatalogRetry: () => void;
+  panelTextSize: PanelTextSize;
+  onPanelTextSizeChange: (size: PanelTextSize) => void;
   category: Category | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
@@ -140,6 +144,8 @@ export function MarketFilters({
   supportedCategories,
   catalogState,
   onCatalogRetry,
+  panelTextSize,
+  onPanelTextSizeChange,
   category,
   categorySelection,
   categoryCoverageReason,
@@ -166,6 +172,7 @@ export function MarketFilters({
       <div className="panel-heading">
         <p>어디를 볼까요?</p>
         <div className="panel-heading-actions">
+          <PanelTextSizeControl value={panelTextSize} onChange={onPanelTextSizeChange} />
           <button type="button" className="text-button" onClick={onReset}>
             초기화
           </button>
