@@ -197,7 +197,6 @@ export function WorkspaceLayout({
             boundaryVisible={selection.boundaryVisible}
             storesVisible={selection.storesVisible}
             storefrontBuildings3d={selectedFocusStorefront ? [selectedFocusStorefront] : []}
-            visibleStores={storefronts.visibleStores}
             onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
             flowPeople={storefronts.flowPeople}
             activeHour={selection.activeHour}
