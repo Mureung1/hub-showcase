@@ -22,9 +22,18 @@ export function TaskCreateModal({ projectId, members, onClose }) {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const selectedAssignee = assignableMembers.find((member) => member.id === values.assigneeId)
+  const selectedAssigneeIsAi = selectedAssignee?.kind === 'ai' || selectedAssignee?.isAi
 
   const set = (key, value) => {
-    setValues((current) => ({ ...current, [key]: value }))
+    const assigningToAi = key === 'assigneeId' && assignableMembers.some((member) => (
+      member.id === value && (member.kind === 'ai' || member.isAi)
+    ))
+    setValues((current) => ({
+      ...current,
+      [key]: value,
+      ...(assigningToAi ? { status: TASK_STATUS.NOT_STARTED } : {}),
+    }))
     setErrors((current) => ({ ...current, [key]: undefined }))
     setSubmitError('')
   }
@@ -55,7 +64,7 @@ export function TaskCreateModal({ projectId, members, onClose }) {
         <label className={forms.field}><span className={forms.label}>할 일 제목 <em>*</em></span><input autoFocus className={`${forms.input} ${errors.title ? forms.errorInput : ''}`} value={values.title} onChange={(event) => set('title', event.target.value)} placeholder="할 일을 입력하세요" aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'task-title-error' : undefined} />{errors.title ? <span id="task-title-error" className={forms.error}>{errors.title}</span> : null}</label>
         <label className={forms.field}><span className={forms.label}>담당 팀원 <em>*</em></span><select className={forms.select} value={values.assigneeId} onChange={(event) => set('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)} aria-describedby={errors.assigneeId ? 'task-assignee-error' : undefined}>{assignableMembers.length === 0 ? <option value="">선택 가능한 팀원이 없습니다.</option> : <><AssigneeOptionGroup label="협업 사용자" members={collaborators} /><AssigneeOptionGroup label="AI Agent" members={aiAgents} /></>}</select>{errors.assigneeId ? <span id="task-assignee-error" className={forms.error}>{errors.assigneeId}</span> : null}</label>
         <label className={forms.field}><span className={forms.label}>마감일 <em>*</em></span><input type="date" className={`${forms.input} ${errors.dueDate ? forms.errorInput : ''}`} value={values.dueDate} onChange={(event) => set('dueDate', event.target.value)} aria-invalid={Boolean(errors.dueDate)} aria-describedby={errors.dueDate ? 'task-due-date-error' : undefined} />{errors.dueDate ? <span id="task-due-date-error" className={forms.error}>{errors.dueDate}</span> : null}</label>
-        <div className={forms.field}><span className={forms.label}>진행 상태 <em>*</em></span><div className={`${forms.choiceGrid} ${forms.choiceGridTwo}`}>{TASK_STATUS_ORDER.map((status) => { const [color, background] = colors[status]; return <button key={status} type="button" aria-pressed={values.status === status} className={`${forms.choice} ${values.status === status ? forms.choiceActive : ''}`} style={{ '--choice-color': color, '--choice-background': background }} onClick={() => set('status', status)}>{TASK_STATUS_LABEL[status]}</button> })}</div></div>
+        <div className={forms.field}><span className={forms.label}>진행 상태 <em>*</em></span>{selectedAssigneeIsAi ? <p className={forms.help}>AI Agent 할 일은 시작 전으로 등록되고 실행 흐름에서 자동으로 변경됩니다.</p> : null}<div className={`${forms.choiceGrid} ${forms.choiceGridTwo}`}>{TASK_STATUS_ORDER.map((status) => { const [color, background] = colors[status]; return <button key={status} type="button" disabled={selectedAssigneeIsAi} aria-pressed={values.status === status} className={`${forms.choice} ${values.status === status ? forms.choiceActive : ''}`} style={{ '--choice-color': color, '--choice-background': background }} onClick={() => set('status', status)}>{TASK_STATUS_LABEL[status]}</button> })}</div></div>
         <label className={forms.field}><span className={forms.label}>설명 <span className={forms.optional}>(선택)</span></span><textarea className={forms.textarea} value={values.description} onChange={(event) => set('description', event.target.value)} placeholder="간단한 설명을 입력하세요" /></label>
       </form>
     </Modal>

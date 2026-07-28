@@ -6,6 +6,7 @@ export class TeamFlowApiError extends Error {
     aiRun = null,
     task = null,
     durationMs = null,
+    usage = null,
     cause,
   }) {
     super(message, cause ? { cause } : undefined)
@@ -15,6 +16,7 @@ export class TeamFlowApiError extends Error {
     this.aiRun = aiRun
     this.task = task
     this.durationMs = durationMs
+    this.usage = usage
   }
 
   withAiRun(aiRun, task = null) {

@@ -100,6 +100,7 @@
 }
 .agentList > button:hover { background: var(--color-surface-sunken); }
 .agentList > button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.agentList > button:disabled { cursor: wait; opacity: .65; }
 
 .agentList > button > span { display: grid; min-width: 0; gap: 2px; }
 .agentList strong,
@@ -258,14 +259,59 @@
 .resultMeta strong { overflow: hidden; color: var(--color-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .resultMeta span { flex: 0 0 auto; color: var(--color-text-secondary); font-size: 10px; }
 
-.markdownResult {
+.resultMetaAside {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.attemptBadge {
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.runningState,
+.staleRunState {
+  display: grid;
+  min-height: 220px;
+  grid-row: 2 / -1;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 24px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.runningState svg { color: var(--color-accent); }
+.staleRunState svg { color: var(--color-status-review-text); }
+.runningState strong,
+.staleRunState strong { color: var(--color-text); font-size: 13px; }
+.runningState p,
+.runningState small,
+.staleRunState p { margin: 0; }
+.runningState p { font-size: 12px; font-weight: 650; }
+.runningState small { font-size: 10px; }
+.staleRunState p { font-size: 11px; }
+
+.resultBody {
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.markdownResult {
+  min-height: 0;
   padding: 18px;
   color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.7;
-  scrollbar-gutter: stable;
 }
 .markdownResult h1,
 .markdownResult h2,
@@ -275,6 +321,64 @@
 .markdownResult ul,
 .markdownResult ol,
 .markdownResult blockquote { margin: 7px 0; }
+
+.traceSections {
+  display: grid;
+  gap: 8px;
+  padding: 0 17px 18px;
+}
+
+.traceDetails {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.traceDetails summary {
+  padding: 11px 13px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.traceDetails[open] summary { border-bottom: 1px solid var(--color-border); }
+.traceDetails > ol { display: grid; gap: 7px; margin: 0; padding: 12px 34px 14px; line-height: 1.6; }
+
+.reviewChecklist {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 4px 13px;
+  list-style: none;
+}
+
+.reviewChecklist li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.reviewChecklist li:last-child { border-bottom: 0; }
+.reviewChecklist b { padding: 3px 6px; border-radius: 7px; font-size: 9px; }
+.reviewPassed { background: var(--color-status-completed-background); color: var(--color-status-completed-text); }
+.reviewIssue { background: var(--color-status-review-background); color: var(--color-status-review-text); }
+
+.reviewIssues,
+.nextAction {
+  padding: 11px 13px;
+  border-top: 1px solid var(--color-border);
+}
+
+.reviewIssues strong,
+.nextAction strong { color: var(--color-text); font-size: 10px; }
+.reviewIssues ul { display: grid; gap: 4px; margin: 7px 0 0; padding-left: 18px; line-height: 1.6; }
+.nextAction p { margin: 5px 0 0; line-height: 1.6; }
 
 .reviewActions { display: flex; justify-content: flex-end; gap: 8px; padding: 13px 17px; border-top: 1px solid var(--color-border); }
 .rejectButton { display: inline-flex; min-height: 34px; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-text-secondary); font-size: 11px; font-weight: 650; }
@@ -306,7 +410,7 @@
     grid-template-rows: auto auto;
     overflow: visible;
   }
-  .markdownResult { min-height: 280px; max-height: 560px; }
+  .resultBody { min-height: 280px; max-height: 560px; }
   .agentList { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 }
 

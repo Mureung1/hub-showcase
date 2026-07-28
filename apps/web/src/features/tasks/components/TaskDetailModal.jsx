@@ -12,6 +12,7 @@ import { formatShortDate } from '../../../lib/format.js'
 import { selectAssignableProjectMembers } from '../../../state/selectors.js'
 import { useTeamFlow } from '../../../state/useTeamFlow.js'
 import workspace from '../../../styles/workspace.module.css'
+import { getAiTaskMutationPolicy } from '../aiTaskMutationPolicy.js'
 import styles from './TaskModal.module.css'
 
 const statusColors = {
@@ -32,11 +33,15 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
   const [errors, setErrors] = useState({})
   const [values, setValues] = useState(() => taskValues(task))
   const member = members.find((candidate) => candidate.id === task.assigneeId)
+  const mutationPolicy = getAiTaskMutationPolicy(task, members, state.aiRuns)
   const assignableMembers = selectAssignableProjectMembers(state, task.projectId)
   const currentDisabledAi = Boolean(member && (member.kind === 'ai' || member.isAi) && !assignableMembers.some((candidate) => candidate.id === member.id))
   const availableMembers = currentDisabledAi ? [...assignableMembers, member] : assignableMembers
   const collaborators = availableMembers.filter((candidate) => candidate.kind === 'user')
   const aiAgents = availableMembers.filter((candidate) => candidate.kind === 'ai' || candidate.isAi)
+  const selectedAssignee = availableMembers.find((candidate) => candidate.id === values.assigneeId)
+  const selectedAssigneeIsAi = selectedAssignee?.kind === 'ai' || selectedAssignee?.isAi
+  const statusManagedInEdit = !mutationPolicy.canChangeStatus || selectedAssigneeIsAi
 
   function beginEdit() {
     setValues(taskValues(task))
@@ -47,7 +52,14 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
   }
 
   function change(key, value) {
-    setValues((current) => ({ ...current, [key]: value }))
+    const assigningToAi = key === 'assigneeId' && availableMembers.some((candidate) => (
+      candidate.id === value && (candidate.kind === 'ai' || candidate.isAi)
+    ))
+    setValues((current) => ({
+      ...current,
+      [key]: value,
+      ...(assigningToAi ? { status: TASK_STATUS.NOT_STARTED } : {}),
+    }))
     setErrors((current) => ({ ...current, [key]: undefined }))
     setRequestError('')
   }
@@ -80,13 +92,16 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
     setSaving(true)
     setRequestError('')
     try {
-      await actions.updateTask(task.id, {
+      const patch = {
         title: values.title.trim(),
         assigneeId: values.assigneeId,
         dueDate: values.dueDate,
-        status: values.status,
         description: values.description.trim(),
-      })
+      }
+      if (mutationPolicy.canChangeStatus && !selectedAssigneeIsAi) {
+        patch.status = values.status
+      }
+      await actions.updateTask(task.id, patch)
       setEditing(false)
     } catch (error) {
       setRequestError(error instanceof Error ? error.message : '할 일을 수정하지 못했습니다.')
@@ -106,7 +121,7 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
     }
   }
 
-  const footer = readOnly ? (
+  const footer = readOnly || (!mutationPolicy.canEdit && !mutationPolicy.canDelete) ? (
     <button type="button" className={styles.closeButton} onClick={onClose}>닫기</button>
   ) : editing ? (
     <>
@@ -121,8 +136,8 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
     </>
   ) : (
     <>
-      <button type="button" className={styles.deleteButton} onClick={() => setConfirmingDelete(true)}><Trash2 size={14} />할 일 삭제</button>
-      <button type="button" className={styles.editButton} onClick={beginEdit}>수정</button>
+      {mutationPolicy.canDelete ? <button type="button" className={styles.deleteButton} onClick={() => setConfirmingDelete(true)}><Trash2 size={14} />할 일 삭제</button> : null}
+      {mutationPolicy.canEdit ? <button type="button" className={styles.editButton} onClick={beginEdit}>수정</button> : null}
       <button type="button" className={styles.closeButton} onClick={onClose}>닫기</button>
     </>
   )
@@ -139,10 +154,11 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
           </div>
           <div className={forms.field}>
             <span className={forms.label}>진행 상태</span>
+            {statusManagedInEdit ? <p className={styles.policyNotice}>{mutationPolicy.message || 'AI Agent가 담당한 할 일의 진행 상태는 실행 흐름에서 자동으로 변경됩니다.'}</p> : null}
             <div className={`${forms.choiceGrid} ${forms.choiceGridTwo}`}>
               {TASK_STATUS_ORDER.map((status) => {
                 const [color, background] = statusColors[status]
-                return <button key={status} type="button" aria-pressed={values.status === status} className={`${forms.choice} ${values.status === status ? forms.choiceActive : ''}`} style={{ '--choice-color': color, '--choice-background': background }} onClick={() => change('status', status)}>{TASK_STATUS_LABEL[status]}</button>
+                return <button key={status} type="button" disabled={statusManagedInEdit} aria-pressed={values.status === status} className={`${forms.choice} ${values.status === status ? forms.choiceActive : ''}`} style={{ '--choice-color': color, '--choice-background': background }} onClick={() => change('status', status)}>{TASK_STATUS_LABEL[status]}</button>
               })}
             </div>
           </div>
@@ -150,12 +166,13 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
         </form>
       ) : <div className={styles.detail}>
         {requestError ? <p className={forms.error} role="alert">{requestError}</p> : null}
+        {mutationPolicy.message ? <p className={styles.policyNotice}>{mutationPolicy.message}</p> : null}
         <div className={styles.titleRow}><h3>{task.title}</h3><StatusBadge status={task.status} /></div>
         <dl className={styles.meta}>
           <div><dt>담당자</dt><dd>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</dd></div>
           <div><dt>마감일</dt><dd className={workspace.mono}><Calendar size={14} />{formatShortDate(task.dueDate)}</dd></div>
         </dl>
-        <fieldset className={styles.statusField} disabled={updatingStatus || readOnly}>
+        <fieldset className={styles.statusField} disabled={updatingStatus || readOnly || !mutationPolicy.canChangeStatus}>
           <legend>진행 상태</legend>
           <div className={styles.statusOptions}>
             {TASK_STATUS_ORDER.map((status) => {

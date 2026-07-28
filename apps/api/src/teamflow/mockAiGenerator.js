@@ -379,7 +379,11 @@ function renderMockMarkdown(snapshot) {
 /**
  * Generates a deterministic mock result and the exact context used for it.
  * @param {object} input
- * @returns {{contextSnapshot: Record<string, unknown>, resultMarkdown: string}}
+ * @returns {{
+ *   contextSnapshot: Record<string, unknown>,
+ *   resultMarkdown: string,
+ *   agentTrace: Record<string, unknown>,
+ * }}
  */
 export function generateMockAiResult(input = {}) {
   const contextSnapshot = buildMockAiContext(input)
@@ -387,5 +391,22 @@ export function generateMockAiResult(input = {}) {
   return {
     contextSnapshot,
     resultMarkdown: renderMockMarkdown(contextSnapshot),
+    agentTrace: {
+      version: 1,
+      plan: [
+        '배정된 할 일과 역할 프롬프트를 확인합니다.',
+        '활성화된 프로젝트 컨텍스트를 고정된 순서로 정리합니다.',
+        '검토 가능한 Mock 결과와 다음 행동을 작성합니다.',
+      ],
+      selfReview: {
+        roleFollowed: true,
+        requirementsMet: true,
+        selectedContextOnly: true,
+        issues: [],
+      },
+      suggestedNextAction: '결과를 검토하고 유효하면 공유 노트로 반영합니다.',
+      attemptCount: 1,
+      repaired: false,
+    },
   }
 }

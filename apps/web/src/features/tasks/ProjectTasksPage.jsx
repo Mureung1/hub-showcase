@@ -15,6 +15,7 @@ import { formatShortDate } from '../../lib/format.js'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 import { selectProjectMembers, selectProjectTasks } from '../../state/selectors.js'
 import workspace from '../../styles/workspace.module.css'
+import { getAiTaskMutationPolicy } from './aiTaskMutationPolicy.js'
 import styles from './ProjectTasksPage.module.css'
 
 const filters = ['all', ...TASK_STATUS_ORDER]
@@ -89,7 +90,7 @@ export function ProjectTasksPage() {
 
         {view === 'list' ? (
           <section className={`${workspace.card} ${styles.taskTableCard}`}>
-            <table className={workspace.table}><thead><tr><SortHeader label="할 일 제목" sortKey="title" sort={sort} onSort={changeSort} /><SortHeader label="담당자" sortKey="assignee" sort={sort} onSort={changeSort} /><SortHeader label="마감일" sortKey="dueDate" sort={sort} onSort={changeSort} /><SortHeader label="진행 상태" sortKey="status" sort={sort} onSort={changeSort} /></tr></thead><tbody>{sorted.map((task) => { const member = memberById.get(task.assigneeId); return <tr className={`${workspace.clickableRow} ${task.isNew ? styles.newTask : ''}`} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => openTaskDetail(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTaskDetail(task) } }}><td><div className={styles.titleWithNew}><p className={workspace.cellTitle}>{task.title}</p>{task.isNew ? <span>NEW</span> : null}</div>{task.description ? <p className={workspace.cellDescription}>{task.description}</p> : null}</td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><TaskStatusMenu task={task} disabled={!capabilities.tasks} onChange={(status) => actions.updateTask(task.id, { status })} /></td></tr> })}{sorted.length === 0 ? <tr><td colSpan="4"><p className={workspace.empty}>검색 결과가 없습니다.</p></td></tr> : null}</tbody></table>
+            <table className={workspace.table}><thead><tr><SortHeader label="할 일 제목" sortKey="title" sort={sort} onSort={changeSort} /><SortHeader label="담당자" sortKey="assignee" sort={sort} onSort={changeSort} /><SortHeader label="마감일" sortKey="dueDate" sort={sort} onSort={changeSort} /><SortHeader label="진행 상태" sortKey="status" sort={sort} onSort={changeSort} /></tr></thead><tbody>{sorted.map((task) => { const member = memberById.get(task.assigneeId); const mutationPolicy = getAiTaskMutationPolicy(task, state.members, state.aiRuns); return <tr className={`${workspace.clickableRow} ${task.isNew ? styles.newTask : ''}`} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => openTaskDetail(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTaskDetail(task) } }}><td><div className={styles.titleWithNew}><p className={workspace.cellTitle}>{task.title}</p>{task.isNew ? <span>NEW</span> : null}</div>{task.description ? <p className={workspace.cellDescription}>{task.description}</p> : null}</td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><TaskStatusMenu task={task} disabled={!capabilities.tasks || !mutationPolicy.canChangeStatus} disabledReason={mutationPolicy.message} onChange={(status) => actions.updateTask(task.id, { status })} /></td></tr> })}{sorted.length === 0 ? <tr><td colSpan="4"><p className={workspace.empty}>검색 결과가 없습니다.</p></td></tr> : null}</tbody></table>
           </section>
         ) : (
           <div className={styles.board}>{TASK_STATUS_ORDER.map((status) => { const group = filtered.filter((task) => task.status === status); const [color, background] = statColors[status]; return <section className={styles.boardColumn} key={status}><header style={{ '--column-color': color, '--column-background': background }}><span><i />{TASK_STATUS_LABEL[status]}</span><strong>{group.length}</strong></header><div>{group.map((task) => { const member = memberById.get(task.assigneeId); return <button className={task.isNew ? styles.newBoardTask : ''} type="button" key={task.id} onClick={() => openTaskDetail(task)}><strong>{task.title}</strong>{task.description ? <p>{task.description}</p> : null}<span>{member ? <Avatar member={member} /> : <i />}<em className={workspace.mono}>{formatShortDate(task.dueDate)}</em></span></button> })}{group.length === 0 ? <p className={styles.noTasks}>할 일 없음</p> : null}</div></section> })}</div>
@@ -114,7 +115,7 @@ function SortHeader({ label, sortKey, sort, onSort }) {
   )
 }
 
-function TaskStatusMenu({ task, disabled, onChange }) {
+function TaskStatusMenu({ task, disabled, disabledReason = '', onChange }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
   const triggerRef = useRef(null)
@@ -172,6 +173,7 @@ function TaskStatusMenu({ task, disabled, onChange }) {
         className={styles.statusTrigger}
         data-status={task.status}
         disabled={disabled}
+        title={disabledReason || undefined}
         aria-label={`${task.title} 진행 상태`}
         aria-haspopup="listbox"
         aria-expanded={open}

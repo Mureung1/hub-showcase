@@ -158,6 +158,12 @@ select set_config(
 );
 set local role authenticated;
 
+select pg_temp.assert_true(
+  not has_column_privilege('authenticated', 'public.tasks', 'status', 'UPDATE')
+  and not has_table_privilege('authenticated', 'public.tasks', 'DELETE'),
+  'authenticated users must mutate tasks through guarded RPCs'
+);
+
 insert into ai_status_test_state (key, value)
 select
   'ai_member',
@@ -226,7 +232,7 @@ with inserted_task as (
     'Restore task after credential failure',
     (select value from ai_status_test_state where key = 'ai_member'),
     '2026-07-31',
-    'in_review',
+    'not_started',
     'Credential failures must restore the exact pre-run status.'
   )
   returning id
@@ -442,6 +448,21 @@ select pg_temp.assert_true(
   'rejecting AI output must return the task to in_progress'
 );
 
+select public.update_task(
+  (select value from ai_status_test_state where key = 'main_task'),
+  '{"description":"Revised after rejection"}'::jsonb
+);
+
+select pg_temp.assert_true(
+  (
+    select status = 'in_progress'
+      and description = 'Revised after rejection'
+    from public.tasks
+    where id = (select value from ai_status_test_state where key = 'main_task')
+  ),
+  'rejected AI work must allow content edits without manual status changes'
+);
+
 insert into ai_status_test_state (key, value)
 select
   'retry_run',
@@ -477,6 +498,27 @@ select pg_temp.assert_true(
     where id = (select value from ai_status_test_state where key = 'main_task')
   ),
   'applying AI output must atomically set applied and task completed'
+);
+
+select pg_temp.expect_error(
+  format(
+    $sql$
+      select public.update_task(
+        %L,
+        '{"title":"Attempted rewrite after apply"}'::jsonb
+      )
+    $sql$,
+    (select value from ai_status_test_state where key = 'main_task')
+  ),
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
+);
+
+select pg_temp.expect_error(
+  format(
+    'select public.delete_task(%L)',
+    (select value from ai_status_test_state where key = 'main_task')
+  ),
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
 );
 
 select pg_temp.expect_error(
@@ -553,12 +595,12 @@ select public.fail_ai_run(
 select pg_temp.assert_true(
   (
     select status = 'failed'
-      and task_status_before_run = 'in_review'
+      and task_status_before_run = 'not_started'
     from public.ai_runs
     where id = (select value from ai_status_test_state where key = 'credential_run')
   )
   and (
-    select status = 'in_review'
+    select status = 'not_started'
     from public.tasks
     where id = (select value from ai_status_test_state where key = 'credential_task')
   ),
@@ -577,11 +619,21 @@ select
     null
   ) -> 'aiRun' ->> 'id')::uuid);
 
-update public.tasks
-set
-  assignee_id = 'e3000000-0000-4000-8000-000000000001',
-  status = 'not_started'
-where id = (select value from ai_status_test_state where key = 'reassigned_task');
+select pg_temp.expect_error(
+  format(
+    $sql$
+      select public.update_task(
+        %L,
+        jsonb_build_object(
+          'assigneeId',
+          'e3000000-0000-4000-8000-000000000001'
+        )
+      )
+    $sql$,
+    (select value from ai_status_test_state where key = 'reassigned_task')
+  ),
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
+);
 
 select public.complete_ai_run(
   (select value from ai_status_test_state where key = 'reassigned_run'),
@@ -592,12 +644,12 @@ select public.complete_ai_run(
 
 select pg_temp.assert_true(
   (
-    select status = 'not_started'
-      and assignee_id = 'e3000000-0000-4000-8000-000000000001'
+    select status = 'in_review'
+      and assignee_id = (select value from ai_status_test_state where key = 'ai_member')
     from public.tasks
     where id = (select value from ai_status_test_state where key = 'reassigned_task')
   ),
-  'AI completion must not overwrite a task reassigned to a human collaborator'
+  'running AI work must keep its assignee and advance to review'
 );
 
 insert into ai_status_test_state (key, value)
@@ -612,9 +664,18 @@ select
     null
   ) -> 'aiRun' ->> 'id')::uuid);
 
-update public.tasks
-set status = 'not_started'
-where id = (select value from ai_status_test_state where key = 'manual_status_task');
+select pg_temp.expect_error(
+  format(
+    $sql$
+      select public.update_task(
+        %L,
+        '{"status":"not_started"}'::jsonb
+      )
+    $sql$,
+    (select value from ai_status_test_state where key = 'manual_status_task')
+  ),
+  'TEAMFLOW_CONFLICT:AI_TASK_STATUS_MANAGED'
+);
 
 select public.complete_ai_run(
   (select value from ai_status_test_state where key = 'manual_status_run'),
@@ -629,12 +690,12 @@ select public.reject_ai_run(
 
 select pg_temp.assert_true(
   (
-    select status = 'not_started'
+    select status = 'in_progress'
       and assignee_id = (select value from ai_status_test_state where key = 'ai_member')
     from public.tasks
     where id = (select value from ai_status_test_state where key = 'manual_status_task')
   ),
-  'AI completion and rejection must not overwrite a collaborator status change'
+  'AI completion and rejection must own the assigned task status lifecycle'
 );
 
 insert into ai_status_test_state (key, value)

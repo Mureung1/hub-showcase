@@ -15,3 +15,7 @@ export function isAiRunBlocking(run, now = Date.now()) {
   if (!Number.isFinite(lastChangedAt) || !Number.isFinite(now)) return true
   return now - lastChangedAt < STALE_RUNNING_RUN_MS
 }
+
+export function isAiRunStale(run, now = Date.now()) {
+  return run?.status === AI_RUN_STATUS.RUNNING && !isAiRunBlocking(run, now)
+}

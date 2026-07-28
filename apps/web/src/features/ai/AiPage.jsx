@@ -27,7 +27,7 @@ import workspace from '../../styles/workspace.module.css'
 import { MarkdownPreview } from '../notes/MarkdownPreview.jsx'
 import { AiCredentialSettingsModal } from '../settings/AiCredentialSettingsModal.jsx'
 import { AiExecutionStatus } from './AiExecutionStatus.jsx'
-import { isAiRunBlocking } from './aiRunBlocking.js'
+import { isAiRunBlocking, isAiRunStale } from './aiRunBlocking.js'
 import { CreateAiAgentModal } from './CreateAiAgentModal.jsx'
 import styles from './AiPage.module.css'
 
@@ -121,7 +121,7 @@ export function AiPage() {
   const [showCredentialSettings, setShowCredentialSettings] = useState(false)
   const [saving, setSaving] = useState(false)
   const [changingEnabled, setChangingEnabled] = useState(false)
-  const [runningTaskId, setRunningTaskId] = useState('')
+  const [runningRequest, setRunningRequest] = useState(null)
   const [reviewingRunId, setReviewingRunId] = useState('')
   const [feedback, setFeedback] = useState('')
   const [error, setError] = useState('')
@@ -166,6 +166,18 @@ export function AiPage() {
 
   const selectedRun = aiRuns.find((run) => run.id === selectedRunId) ?? null
   const selectedTask = selectedRun?.taskId ? taskById.get(selectedRun.taskId) : null
+  const localRunningTask = runningRequest?.memberId === selectedMemberId
+    ? taskById.get(runningRequest.taskId) ?? null
+    : null
+  const selectedRunStale = isAiRunStale(selectedRun)
+  const persistedRunningTask = (
+    selectedRun?.status === AI_RUN_STATUS.RUNNING
+    && !selectedRunStale
+  )
+    ? selectedTask ?? { title: selectedRun.contextSnapshot?.task?.title ?? 'AI 작업' }
+    : null
+  const runningTask = localRunningTask ?? persistedRunningTask
+  const selectedAgentTrace = displayAgentTrace(selectedRun?.agentTrace)
   const agentEnabled = Boolean(selectedAiAgent?.enabled)
 
   function showFeedback(message) {
@@ -175,6 +187,7 @@ export function AiPage() {
   }
 
   function selectAgent(memberId) {
+    if (runningRequest) return
     settingsDirty.current = false
     setError('')
     setSelectedRunId('')
@@ -221,8 +234,9 @@ export function AiPage() {
   }
 
   async function runTask(taskId) {
-    if (!selectedAiMember || !agentEnabled || !executionReady) return
-    setRunningTaskId(taskId)
+    if (!selectedAiMember || !agentEnabled || !executionReady || runningRequest) return
+    const request = { memberId: selectedAiMember.id, taskId }
+    setRunningRequest(request)
     setError('')
     try {
       const aiRun = await actions.createAiRun(selectedAiMember.id, taskId)
@@ -244,7 +258,7 @@ export function AiPage() {
       }
       setError(errorMessage(requestError, `${liveExecution ? 'AI' : '모의'} 작업을 실행하지 못했습니다.`))
     } finally {
-      setRunningTaskId('')
+      setRunningRequest((current) => (current === request ? null : current))
     }
   }
 
@@ -321,7 +335,7 @@ export function AiPage() {
                   const member = memberById.get(agent.memberId)
                   if (!member) return null
                   return (
-                    <button type="button" key={agent.memberId} aria-pressed={agent.memberId === selectedMemberId} onClick={() => selectAgent(agent.memberId)}>
+                    <button type="button" key={agent.memberId} aria-pressed={agent.memberId === selectedMemberId} onClick={() => selectAgent(agent.memberId)} disabled={Boolean(runningRequest)}>
                       <Avatar member={member} />
                       <span><strong>{member.name}</strong><small>{member.role}</small></span>
                       <i className={agent.enabled ? styles.agentEnabled : styles.agentDisabled}>{agent.enabled ? '활성' : '비활성'}</i>
@@ -379,10 +393,13 @@ export function AiPage() {
                     {aiTasks.length === 0 ? <p className={workspace.empty}>할 일 생성·수정 화면에서 이 AI Agent를 담당자로 지정해 주세요.</p> : (
                       <ul className={styles.taskList}>{aiTasks.map((task) => {
                         const blockingRun = blockingRunByTaskId.get(task.id)
-                        const isRunning = runningTaskId === task.id
+                        const isRunning = (
+                          runningRequest?.memberId === selectedMemberId
+                          && runningRequest.taskId === task.id
+                        )
                         const completed = task.status === TASK_STATUS.COMPLETED
                         const applied = blockingRun?.status === AI_RUN_STATUS.APPLIED
-                        const runBlocked = !agentEnabled || !executionReady || completed || isRunning || Boolean(blockingRun)
+                        const runBlocked = !agentEnabled || !executionReady || completed || Boolean(runningRequest) || Boolean(blockingRun)
                         const buttonTitle = !agentEnabled
                           ? '비활성 AI Agent는 실행할 수 없습니다.'
                           : !executionReady
@@ -411,10 +428,32 @@ export function AiPage() {
                   </article>
 
                   <article className={`${workspace.card} ${styles.resultCard}`}>
-                    <header className={workspace.sectionHeader}><h2>실행 결과</h2>{selectedRun ? <RunStatus status={selectedRun.status} /> : null}</header>
-                    {selectedRun ? <>
-                      <div className={styles.resultMeta}><strong>{selectedTask?.title ?? selectedRun.contextSnapshot?.task?.title ?? '삭제된 할 일'}</strong><span className={workspace.mono}>{formatShortDate(selectedRun.createdAt)}</span></div>
-                      <div className={styles.markdownResult}>{selectedRun.resultMarkdown ? <MarkdownPreview content={selectedRun.resultMarkdown} /> : <p>{selectedRun.errorMessage || '결과 내용이 없습니다.'}</p>}</div>
+                    <header className={workspace.sectionHeader}><h2>실행 결과</h2>{runningTask ? <RunStatus status={AI_RUN_STATUS.RUNNING} /> : selectedRunStale ? <span className={`${styles.historyBadge} ${styles.history_failed}`}>재시도 필요</span> : selectedRun ? <RunStatus status={selectedRun.status} /> : null}</header>
+                    {runningTask ? (
+                      <div className={styles.runningState} role="status" aria-live="polite">
+                        <Sparkles size={22} aria-hidden="true" />
+                        <strong>{runningTask.title}</strong>
+                        <p>계획·결과·자체 점검을 진행 중입니다.</p>
+                        <small>완료되면 최종 결과를 검토할 수 있습니다.</small>
+                      </div>
+                    ) : selectedRunStale ? (
+                      <div className={styles.staleRunState} role="status">
+                        <XCircle size={22} aria-hidden="true" />
+                        <strong>실행이 오래 멈춰 있습니다.</strong>
+                        <p>할 일에서 다시 실행해 주세요.</p>
+                      </div>
+                    ) : selectedRun ? <>
+                      <div className={styles.resultMeta}>
+                        <strong>{selectedTask?.title ?? selectedRun.contextSnapshot?.task?.title ?? '삭제된 할 일'}</strong>
+                        <span className={styles.resultMetaAside}>
+                          {selectedAgentTrace ? <i className={styles.attemptBadge}>{selectedAgentTrace.attemptCount === 2 ? '1회 보완됨' : '1회 생성'}</i> : null}
+                          <span className={workspace.mono}>{formatShortDate(selectedRun.createdAt)}</span>
+                        </span>
+                      </div>
+                      <div className={styles.resultBody}>
+                        <div className={styles.markdownResult}>{selectedRun.resultMarkdown ? <MarkdownPreview content={selectedRun.resultMarkdown} /> : <p>{selectedRun.errorMessage || '결과 내용이 없습니다.'}</p>}</div>
+                        {selectedAgentTrace ? <AgentTraceDetails trace={selectedAgentTrace} /> : null}
+                      </div>
                       {selectedRun.status === AI_RUN_STATUS.PENDING_REVIEW && canWrite ? <div className={styles.reviewActions}><button type="button" className={styles.rejectButton} onClick={() => reviewRun('reject')} disabled={reviewingRunId === selectedRun.id}><XCircle size={14} aria-hidden="true" />보류</button><button type="button" className={styles.applyButton} onClick={() => reviewRun('apply')} disabled={reviewingRunId === selectedRun.id}><FileCheck size={14} aria-hidden="true" />{reviewingRunId === selectedRun.id ? '처리 중...' : '공유 노트로 반영'}</button></div> : null}
                       {selectedRun.status === AI_RUN_STATUS.APPLIED && selectedRun.appliedNoteId ? <Link className={styles.noteLink} to={`../notes?note=${selectedRun.appliedNoteId}`}><Check size={14} aria-hidden="true" />반영된 공유 노트 보기</Link> : null}
                     </> : <p className={workspace.empty}>AI 담당 할 일을 실행하면 검토할 결과가 여기에 표시됩니다.</p>}
@@ -443,6 +482,44 @@ export function AiPage() {
 
 function RunStatus({ status }) {
   return <span className={`${styles.historyBadge} ${styles[`history_${status}`]}`}>{status === AI_RUN_STATUS.APPLIED ? <Check size={11} aria-hidden="true" /> : null}{runStatusLabel[status] ?? status}</span>
+}
+
+function AgentTraceDetails({ trace }) {
+  const reviewItems = [
+    ['역할 준수', trace.selfReview.roleFollowed],
+    ['요구사항 충족', trace.selfReview.requirementsMet],
+    ['선택 자료 준수', trace.selfReview.selectedContextOnly],
+  ]
+
+  return (
+    <div className={styles.traceSections}>
+      <details className={styles.traceDetails}>
+        <summary>작업 계획</summary>
+        <ol>{trace.plan.map((step, index) => <li key={`${index}-${step}`}>{step}</li>)}</ol>
+      </details>
+      <details className={styles.traceDetails}>
+        <summary>자체 점검</summary>
+        <ul className={styles.reviewChecklist}>{reviewItems.map(([label, passed]) => (
+          <li key={label}><span>{label}</span><b className={passed ? styles.reviewPassed : styles.reviewIssue}>{passed ? '확인' : '문제'}</b></li>
+        ))}</ul>
+        {trace.selfReview.issues.length > 0 ? <div className={styles.reviewIssues}><strong>발견한 문제</strong><ul>{trace.selfReview.issues.map((issue, index) => <li key={`${index}-${issue}`}>{issue}</li>)}</ul></div> : null}
+        <div className={styles.nextAction}><strong>제안하는 다음 행동</strong><p>{trace.suggestedNextAction}</p></div>
+      </details>
+    </div>
+  )
+}
+
+function displayAgentTrace(trace) {
+  if (!trace || trace.version !== 1 || !Array.isArray(trace.plan) || trace.plan.length < 1) return null
+  if (!trace.plan.every((step) => typeof step === 'string' && step.trim())) return null
+  if (![1, 2].includes(trace.attemptCount)) return null
+  if ((trace.attemptCount === 1 && trace.repaired !== false) || (trace.attemptCount === 2 && trace.repaired !== true)) return null
+  const review = trace.selfReview
+  if (!review || typeof review !== 'object' || !Array.isArray(review.issues)) return null
+  if (!['roleFollowed', 'requirementsMet', 'selectedContextOnly'].every((key) => typeof review[key] === 'boolean')) return null
+  if (!review.issues.every((issue) => typeof issue === 'string' && issue.trim())) return null
+  if (typeof trace.suggestedNextAction !== 'string' || !trace.suggestedNextAction.trim()) return null
+  return trace
 }
 
 function profileValues(member) {

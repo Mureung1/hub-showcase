@@ -22,7 +22,7 @@ describe('connected prototype flows', () => {
     expect(within(dialog).getByText('테스트 사용자')).toBeInTheDocument()
     expect(within(dialog).getByText('tester@example.com')).toBeInTheDocument()
     expect(within(dialog).getByText('Google')).toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: /받은 프로젝트 초대.*0건/ })).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: /알림.*\d+건/ })).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog', { name: '계정 및 설정' })).not.toBeInTheDocument()
@@ -89,7 +89,7 @@ describe('connected prototype flows', () => {
     expect(accountTrigger).toHaveFocus()
   })
 
-  test('opens received invitations from the account panel', async () => {
+  test('opens received invitations from the notification center', async () => {
     const user = userEvent.setup()
     const payload = await testTeamFlowRepository.load()
     const repository = {
@@ -111,11 +111,50 @@ describe('connected prototype flows', () => {
     expect(await screen.findByRole('heading', { name: '팀플 관리 웹서비스 (TeamFlow)' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' }))
-    await user.click(within(screen.getByRole('dialog', { name: '계정 및 설정' })).getByRole('button', { name: /받은 프로젝트 초대.*1건/ }))
+    await user.click(within(screen.getByRole('dialog', { name: '계정 및 설정' })).getByRole('button', { name: /알림/ }))
+    const notifications = screen.getByRole('dialog', { name: '알림' })
+    expect(within(notifications).getByRole('heading', { name: '프로젝트 초대' })).toBeInTheDocument()
+    await user.click(within(notifications).getByRole('button', { name: /1개의 받은 초대/ }))
 
     expect(await screen.findByRole('heading', { name: '내 프로젝트' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '받은 프로젝트 초대' })).toBeInTheDocument()
     expect(screen.getByText('초대받은 프로젝트')).toBeInTheDocument()
+  })
+
+  test('shows an assigned incomplete task as an actionable deadline notification', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const now = new Date()
+    const dueDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-')
+    const deadlineTask = {
+      id: 'deadline-notification-task',
+      projectId: '1',
+      title: '오늘 마감 알림 테스트',
+      assigneeId: payload.currentMemberIdsByProject['1'],
+      dueDate,
+      status: TASK_STATUS.NOT_STARTED,
+      description: '',
+    }
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({ ...payload, tasks: [...payload.tasks, deadlineTask] }),
+    }
+
+    renderApp('/projects/1', repository)
+    expect(await screen.findByRole('heading', { name: '팀플 관리 웹서비스 (TeamFlow)' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' }))
+    await user.click(within(screen.getByRole('dialog', { name: '계정 및 설정' })).getByRole('button', { name: /알림/ }))
+
+    const notifications = screen.getByRole('dialog', { name: '알림' })
+    expect(within(notifications).getByText('오늘 마감 알림 테스트')).toBeInTheDocument()
+    const deadlineNotification = within(notifications).getByRole('button', { name: /오늘 마감 알림 테스트/ })
+    expect(within(deadlineNotification).getByText('오늘 마감')).toBeInTheDocument()
+    await user.click(deadlineNotification)
+    expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
   })
 
   test('keeps project sidebar controls within dedicated touch targets', async () => {

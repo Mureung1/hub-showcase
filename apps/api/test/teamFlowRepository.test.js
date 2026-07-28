@@ -28,6 +28,20 @@ const contextConfig = {
   resources: true,
 }
 
+const agentTrace = {
+  version: 1,
+  plan: ['할 일과 컨텍스트를 확인합니다.', '결과를 작성하고 자체 점검합니다.'],
+  selfReview: {
+    roleFollowed: true,
+    requirementsMet: true,
+    selectedContextOnly: true,
+    issues: [],
+  },
+  suggestedNextAction: '결과를 사람이 검토합니다.',
+  attemptCount: 1,
+  repaired: false,
+}
+
 const liveRuntime = {
   mode: 'live',
   provider: 'gemini',
@@ -489,6 +503,7 @@ test('AI agent profile creation and partial updates use the multi-agent database
     error_message: null,
     applied_note_id: null,
     created_by: userId,
+    agent_trace: agentTrace,
     created_at: '2026-07-24T00:00:00.000Z',
     updated_at: '2026-07-24T00:00:00.000Z',
   }
@@ -695,6 +710,7 @@ test('mock AI run gathers project context on the server and stores pending revie
     error_message: null,
     applied_note_id: null,
     created_by: userId,
+    agent_trace: agentTrace,
     created_at: '2026-07-24T00:00:00.000Z',
     updated_at: '2026-07-24T00:00:00.000Z',
   }
@@ -711,7 +727,7 @@ test('mock AI run gathers project context on the server and stores pending revie
           error: null,
         }
       }
-      if (name === 'complete_ai_run') {
+      if (name === 'complete_agentic_ai_run') {
         return {
           data: {
             aiRun: run,
@@ -731,7 +747,11 @@ test('mock AI run gathers project context on the server and stores pending revie
       buildMockAiContext: () => snapshot,
       generateMockAiResult: (input) => {
         generatedInputs.push(input)
-        return { contextSnapshot: snapshot, resultMarkdown: run.result_markdown }
+        return {
+          contextSnapshot: snapshot,
+          resultMarkdown: run.result_markdown,
+          agentTrace,
+        }
       },
     },
   )
@@ -757,15 +777,17 @@ test('mock AI run gathers project context on the server and stores pending revie
       },
     },
     {
-      name: 'complete_ai_run',
+      name: 'complete_agentic_ai_run',
       args: {
         p_run_id: aiRunId,
         p_result_markdown: run.result_markdown,
+        p_agent_trace: agentTrace,
         p_usage: {},
         p_duration_ms: 0,
       },
     },
   ])
+  assert.deepEqual(result.aiRun.agentTrace, agentTrace)
 })
 
 test('AI run lifecycle starts before generation, finishes atomically, and returns the updated task', async () => {
@@ -793,6 +815,7 @@ test('AI run lifecycle starts before generation, finishes atomically, and return
     model: null,
     usage: {},
     duration_ms: 0,
+    agent_trace: agentTrace,
     created_at: '2026-07-27T00:00:00.000Z',
     updated_at: '2026-07-27T00:00:00.000Z',
   }
@@ -811,7 +834,7 @@ test('AI run lifecycle starts before generation, finishes atomically, and return
           error: null,
         }
       }
-      if (name === 'complete_ai_run') {
+      if (name === 'complete_agentic_ai_run') {
         return {
           data: {
             aiRun: {
@@ -831,6 +854,7 @@ test('AI run lifecycle starts before generation, finishes atomically, and return
     generateMockAiResult: () => ({
       contextSnapshot: snapshot,
       resultMarkdown: '# 모의 실행 결과',
+      agentTrace,
     }),
   })
 
@@ -838,7 +862,7 @@ test('AI run lifecycle starts before generation, finishes atomically, and return
 
   assert.equal(result.aiRun.status, 'pending_review')
   assert.equal(result.task.status, 'in_review')
-  assert.deepEqual(calls.map(({ name }) => name), ['start_ai_run', 'complete_ai_run'])
+  assert.deepEqual(calls.map(({ name }) => name), ['start_ai_run', 'complete_agentic_ai_run'])
 })
 
 test('AI run review actions return their atomic task status transitions', async () => {
@@ -944,6 +968,7 @@ test('live AI run uses only the current user credential and stores provider meta
     model: 'gemini-test-flash',
     usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
     duration_ms: 321,
+    agent_trace: agentTrace,
     created_at: '2026-07-27T00:00:00.000Z',
     updated_at: '2026-07-27T00:00:00.000Z',
   }
@@ -964,7 +989,7 @@ test('live AI run uses only the current user credential and stores provider meta
           error: null,
         }
       }
-      if (name === 'complete_ai_run') {
+      if (name === 'complete_agentic_ai_run') {
         return {
           data: {
             aiRun: run,
@@ -999,6 +1024,7 @@ test('live AI run uses only the current user credential and stores provider meta
           model: 'gemini-test-flash',
           usage: run.usage,
           durationMs: run.duration_ms,
+          agentTrace,
         }
       },
     },
@@ -1022,6 +1048,7 @@ test('live AI run uses only the current user credential and stores provider meta
   assert.equal(result.aiRun.model, 'gemini-test-flash')
   assert.deepEqual(result.aiRun.usage, run.usage)
   assert.equal(result.aiRun.durationMs, 321)
+  assert.deepEqual(result.aiRun.agentTrace, agentTrace)
   assert.equal(result.task.status, 'in_review')
   assert.deepEqual(calls, [
     {
@@ -1036,10 +1063,11 @@ test('live AI run uses only the current user credential and stores provider meta
       },
     },
     {
-      name: 'complete_ai_run',
+      name: 'complete_agentic_ai_run',
       args: {
         p_run_id: aiRunId,
         p_result_markdown: run.result_markdown,
+        p_agent_trace: agentTrace,
         p_usage: run.usage,
         p_duration_ms: 321,
       },
@@ -1177,6 +1205,11 @@ test('provider-attempt failure persists a failed run, invalidates the key, and r
           code: 'AI_CREDENTIAL_INVALID',
           message: 'Gemini API 키를 확인해 주세요.',
           durationMs: 187,
+          usage: {
+            inputTokens: 7,
+            outputTokens: 11,
+            totalTokens: 18,
+          },
         })
       },
     },
@@ -1213,10 +1246,120 @@ test('provider-attempt failure persists a failed run, invalidates the key, and r
     args: {
       p_run_id: aiRunId,
       p_error_message: 'Gemini API 키를 확인해 주세요.',
-      p_usage: {},
+      p_usage: {
+        inputTokens: 7,
+        outputTokens: 11,
+        totalTokens: 18,
+      },
       p_duration_ms: 187,
       p_restore_task_status: true,
     },
+  })
+})
+
+test('an invalid response after the bounded repair is stored as failed while the task remains in progress', async () => {
+  const rows = aiContextRows()
+  const credential = credentialStore({
+    user_id: userId,
+    provider: 'gemini',
+    encrypted_key: 'ciphertext',
+    iv: 'iv',
+    auth_tag: 'tag',
+    encryption_version: 1,
+    key_hint: '1234',
+    verified_at: '2026-07-27T00:00:00.000Z',
+  })
+  const snapshot = {
+    version: 1,
+    task: { id: taskId },
+    context: {},
+    truncation: {},
+  }
+  const failedRun = {
+    id: aiRunId,
+    project_id: projectId,
+    ai_member_id: aiMemberId,
+    task_id: taskId,
+    status: 'failed',
+    context_snapshot: snapshot,
+    result_markdown: null,
+    error_message: 'AI 응답 형식을 확인할 수 없습니다.',
+    applied_note_id: null,
+    created_by: userId,
+    execution_mode: 'live',
+    provider: 'gemini',
+    model: 'gemini-test-flash',
+    usage: { inputTokens: 12, outputTokens: 21, totalTokens: 33 },
+    duration_ms: 410,
+    created_at: '2026-07-27T00:00:00.000Z',
+    updated_at: '2026-07-27T00:00:00.000Z',
+  }
+  const calls = []
+  const repository = createSupabaseTeamFlowRepository({
+    from: (table) => (
+      table === 'user_ai_credentials'
+        ? credential.query()
+        : filteredQuery(rows[table])
+    ),
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      if (name === 'start_ai_run') {
+        return {
+          data: {
+            aiRun: { ...failedRun, status: 'running', error_message: null },
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      if (name === 'fail_ai_run') {
+        return {
+          data: {
+            aiRun: failedRun,
+            task: { ...rows.tasks[0], status: 'in_progress' },
+          },
+          error: null,
+        }
+      }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+  }, { id: userId }, {
+    aiRuntime: liveRuntime,
+    credentialCipher: {
+      decrypt: () => 'valid-current-key',
+    },
+    aiProvider: {
+      generate: async () => {
+        throw new TeamFlowApiError({
+          status: 502,
+          code: 'AI_PROVIDER_INVALID_RESPONSE',
+          message: 'AI 응답 형식을 확인할 수 없습니다.',
+          durationMs: 410,
+          usage: { inputTokens: 12, outputTokens: 21, totalTokens: 33 },
+        })
+      },
+    },
+    buildLiveAiContext: () => snapshot,
+    buildGeminiPrompt: () => ({ systemInstruction: 'system', prompt: 'prompt' }),
+    generateMockAiResult: () => assert.fail('invalid live output must never fall back to Mock'),
+  })
+
+  await assert.rejects(
+    () => repository.createAiRun(aiMemberId, taskId),
+    (error) => {
+      assert.equal(error.code, 'AI_PROVIDER_INVALID_RESPONSE')
+      assert.equal(error.aiRun.status, 'failed')
+      assert.equal(error.task.status, 'in_progress')
+      return true
+    },
+  )
+  assert.deepEqual(calls.map(({ name }) => name), ['start_ai_run', 'fail_ai_run'])
+  assert.deepEqual(calls[1].args, {
+    p_run_id: aiRunId,
+    p_error_message: 'AI 응답 형식을 확인할 수 없습니다.',
+    p_usage: { inputTokens: 12, outputTokens: 21, totalTokens: 33 },
+    p_duration_ms: 410,
+    p_restore_task_status: false,
   })
 })
 
@@ -1413,7 +1556,7 @@ test('mock AI run blocks open or applied history but retries after rejected or f
           error: null,
         }
       }
-      if (name === 'complete_ai_run') {
+      if (name === 'complete_agentic_ai_run') {
         return {
           data: {
             aiRun: pendingRun,
@@ -1429,11 +1572,12 @@ test('mock AI run blocks open or applied history but retries after rejected or f
     generateMockAiResult: () => ({
       contextSnapshot: { version: 1, context: {}, truncation: {} },
       resultMarkdown: pendingRun.result_markdown,
+      agentTrace,
     }),
   })
 
   assert.equal((await rejectedRepository.createAiRun(aiMemberId, taskId)).aiRun.status, 'pending_review')
-  assert.deepEqual(rejectedCalls.map(({ name }) => name), ['start_ai_run', 'complete_ai_run'])
+  assert.deepEqual(rejectedCalls.map(({ name }) => name), ['start_ai_run', 'complete_agentic_ai_run'])
 
   const failedRows = aiContextRows()
   failedRows.ai_runs = [{
@@ -1494,6 +1638,13 @@ test('disabled project AI cannot receive a new task or a task reassignment befor
     description: '',
   }
   const supabase = {
+    rpc: async (name) => {
+      assert.equal(name, 'update_task')
+      return {
+        data: null,
+        error: { message: 'TEAMFLOW_CONFLICT:AI_AGENT_DISABLED' },
+      }
+    },
     from(table) {
       if (table === 'ai_agents') return filteredQuery(rows.ai_agents)
       if (table === 'tasks') {
@@ -1510,9 +1661,6 @@ test('disabled project AI cannot receive a new task or a task reassignment befor
           insert() {
             assert.fail('disabled AI must be rejected before task insert')
           },
-          update() {
-            assert.fail('disabled AI must be rejected before task update')
-          },
         }
       }
       assert.fail(`unexpected table ${table}`)
@@ -1528,6 +1676,49 @@ test('disabled project AI cannot receive a new task or a task reassignment befor
     repository.updateTask(taskId, { assigneeId: aiMemberId }),
     TeamFlowConflictError,
   )
+})
+
+test('task update and delete use guarded database RPCs instead of direct table mutations', async () => {
+  const calls = []
+  const updatedTask = {
+    ...aiContextRows().tasks[0],
+    title: '잠금 규칙을 통과한 수정',
+  }
+  const supabase = {
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      if (name === 'update_task') return { data: updatedTask, error: null }
+      if (name === 'delete_task') return { data: taskId, error: null }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+    from: () => assert.fail('task update and delete must not mutate the table directly'),
+  }
+  const repository = createSupabaseTeamFlowRepository(supabase, { id: userId })
+
+  const result = await repository.updateTask(taskId, {
+    title: '잠금 규칙을 통과한 수정',
+    description: '설명',
+  })
+  const deletedId = await repository.deleteTask(taskId)
+
+  assert.equal(result.title, '잠금 규칙을 통과한 수정')
+  assert.equal(deletedId, taskId)
+  assert.deepEqual(calls, [
+    {
+      name: 'update_task',
+      args: {
+        p_task_id: taskId,
+        p_patch: {
+          title: '잠금 규칙을 통과한 수정',
+          description: '설명',
+        },
+      },
+    },
+    {
+      name: 'delete_task',
+      args: { p_task_id: taskId },
+    },
+  ])
 })
 
 test('resource upload intent uses the database RPC before creating a signed upload URL', async () => {

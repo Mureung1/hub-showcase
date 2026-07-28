@@ -224,7 +224,7 @@ API 서버가 실행 중인지 확인합니다.
 
 ## AI 팀원 API
 
-로컬·테스트의 Mock 모드에서는 Express가 저장된 프로젝트 정보만 정규화해 같은 입력에 항상 같은 Markdown을 만듭니다. 운영의 Gemini 모드는 실행한 협업자 본인의 암호화된 API 키를 사용합니다. 어느 모드든 결과는 먼저 `pending_review`로 저장되며 프로젝트 데이터를 자동으로 수정하지 않습니다.
+로컬·테스트의 Mock 모드에서는 Express가 저장된 프로젝트 정보만 정규화해 같은 입력에 항상 같은 Markdown을 만듭니다. 운영의 Gemini 모드는 실행한 협업자 본인의 암호화된 API 키를 사용합니다. 실행은 `계획 → 결과 생성 → 자체 점검 → 필요 시 1회 보완`까지만 수행하며, 어느 모드든 결과는 먼저 `pending_review`로 저장되고 프로젝트 데이터를 자동으로 수정하지 않습니다.
 
 ### `GET /api/ai-credentials/gemini`
 
@@ -317,7 +317,31 @@ AI 팀원에게 배정된 미완료 할 일을 현재 서버 실행 모드로 �
 { "taskId": "33333333-3333-4333-8333-333333333333" }
 ```
 
-성공: `201 Created` — `{ "aiRun": { "status": "pending_review", ... } }`
+성공: `201 Created`
+
+```json
+{
+  "aiRun": {
+    "status": "pending_review",
+    "resultMarkdown": "# 최종 결과",
+    "agentTrace": {
+      "version": 1,
+      "plan": ["배정된 할 일을 확인합니다."],
+      "selfReview": {
+        "roleFollowed": true,
+        "requirementsMet": true,
+        "selectedContextOnly": true,
+        "issues": []
+      },
+      "suggestedNextAction": "결과를 검토합니다.",
+      "attemptCount": 1,
+      "repaired": false
+    }
+  }
+}
+```
+
+첫 응답의 형식이나 자체 점검에 문제가 있을 때만 Gemini를 한 번 더 호출합니다. 두 번째 응답도 검증을 통과하지 못하면 실행은 `failed`, 할 일은 `in_progress`로 저장됩니다. 과거 실행의 `agentTrace`는 `null`일 수 있습니다.
 
 생성기는 프로젝트 설명, 공유 노트, 할 일, 팀원 역할, 자료 이름·설명 중 활성화된 컨텍스트만 사용합니다. 현재 시간·난수·외부 URL·업로드 파일 본문은 사용하지 않습니다.
 
