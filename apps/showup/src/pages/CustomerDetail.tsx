@@ -22,6 +22,13 @@ function toDateString(value: FirestoreTimestamp): string {
   return new Date(value as unknown as Date).toISOString().split('T')[0]
 }
 
+function getLocalDateString(date = new Date()): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 interface TimelineEvent {
   id: string
   date: string
@@ -125,20 +132,20 @@ const CustomerDetail = () => {
   const handleStatusChange = async (nextStatus: 'visited' | 'noShow' | 'cancelled') => {
     if (!user || !id || !customer) return
 
-    // 예약 ID 찾기: 오늘 예약 중 pending/confirmed 상태 우선
-    const today = new Date()
-    const todayStr = today.toISOString().split('T')[0]
-    const reservations = await listReservations(user.uid, id)
-    const target = reservations.find(
-      (r) => r.date === todayStr && (r.status === 'pending' || r.status === 'confirmed'),
-    ) ?? reservations.find((r) => r.status === 'pending' || r.status === 'confirmed')
-
-    if (!target) {
-      toast.error('상태를 변경할 예약이 없습니다')
-      return
-    }
-
     try {
+      // 오늘 활성 예약을 우선하고, 없으면 가장 최근 예약을 대상으로 한다.
+      const reservations = await listReservations(user.uid, id)
+      const todayStr = getLocalDateString()
+      const target = reservations.find(
+        (r) => r.date === todayStr && (r.status === 'pending' || r.status === 'confirmed'),
+      ) ?? reservations.find((r) => r.status === 'pending' || r.status === 'confirmed')
+        ?? reservations[0]
+
+      if (!target) {
+        toast.info('상태를 변경할 예약이 없습니다')
+        return
+      }
+
       await transitionReservationStatusAndRefresh(user.uid, id, target.id, nextStatus)
       const updatedCustomer = await getCustomer(user.uid, id)
       setCustomer(updatedCustomer)

@@ -50,12 +50,19 @@ export async function listReservations(
   storeId: string,
   customerId?: string,
 ): Promise<ReservationWithId[]> {
-  let q = query(reservationsRef(storeId), orderBy('date', 'desc'), orderBy('time', 'desc'));
-  if (customerId) {
-    q = query(q, where('customerId', '==', customerId));
-  }
+  const q = customerId
+    ? query(reservationsRef(storeId), where('customerId', '==', customerId))
+    : query(reservationsRef(storeId), orderBy('date', 'desc'), orderBy('time', 'desc'));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Reservation) }));
+  const reservations = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Reservation) }));
+
+  if (customerId) {
+    reservations.sort((a, b) =>
+      `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`),
+    );
+  }
+
+  return reservations;
 }
 
 export async function listTodayReservations(

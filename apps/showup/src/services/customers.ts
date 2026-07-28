@@ -25,7 +25,9 @@ interface CustomerCreateInput {
   phone: string;
 }
 
-function enrichCustomer(id: string, storeId: string, data: Customer): CustomerSearchResult {
+function enrichCustomer(id: string, storeId: string, data: Partial<Customer>): CustomerSearchResult {
+  const phone = data.phone || ''
+  const name = data.name || ''
   const riskStats = data.riskStats ?? {
     totalVisits: 0,
     noShowCount: 0,
@@ -40,17 +42,9 @@ function enrichCustomer(id: string, storeId: string, data: Customer): CustomerSe
   return {
     id,
     storeId,
-    name: data.name,
-    phoneMasked: maskPhone(data.phone),
-    riskStats: data.riskStats ?? {
-      totalVisits: 0,
-      noShowCount: 0,
-      lateCancelCount: 0,
-      incidentCounts: { abuse: 0, dispute: 0, late: 0, unreasonable: 0 },
-      score: 0,
-      lastNoShowAt: null,
-      updatedAt: null,
-    },
+    name,
+    phoneMasked: phone ? maskPhone(phone) : '',
+    riskStats: riskStats as Customer['riskStats'],
     riskLevel,
     alert: alert.show,
   };
@@ -177,6 +171,7 @@ export async function getTopRiskyCustomers(
   );
   const snap = await getDocs(q);
   return snap.docs
-    .slice(0, limit)
-    .map((d) => enrichCustomer(d.id, storeId, d.data() as Customer));
+    .map((d) => enrichCustomer(d.id, storeId, d.data() as Customer))
+    .filter((customer) => customer.riskStats.score > 0)
+    .slice(0, limit);
 }
