@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_spacing.dart';
+import 'quest_card.dart' show kQuestCardTrailingBox;
 
 /// 퀘스트 카드 우측 `⋮` 더보기 메뉴의 항목 하나.
 ///
@@ -45,6 +46,20 @@ class QuestActionsMenu extends StatelessWidget {
         size: _iconSize,
         color: theme.colorScheme.onSurfaceVariant,
       ),
+      // 박스 크기를 완료 토글과 **똑같이** 못 박는다([kQuestCardTrailingBox]).
+      // 정본(24:171)에서 `⋮`(윗줄)와 완료 토글(가운뎃줄)은 오른쪽 끝이 맞물린
+      // 같은 세로축에 선다. 박스 폭이 다르면 두 글리프의 중심이 어긋난다.
+      //
+      // `minimumSize`만으로는 이 크기가 되지 않는다 — `IconButton`은 테마 기본
+      // `MaterialTapTargetSize.padded`를 따라 레이아웃 박스를 최소 48로 부풀린다
+      // (박스는 그 안에 가운데 정렬될 뿐이라 눈에는 42인데 자리는 48을 먹고,
+      //  윗줄이 통째로 48이 돼 칩이 아래로 밀린다). 그래서 `shrinkWrap`을 함께 준다.
+      padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(
+        minimumSize: const Size.square(kQuestCardTrailingBox),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       onSelected: (index) => actions[index].onSelected(),
       itemBuilder: (context) => [
         for (var i = 0; i < actions.length; i++)
@@ -68,6 +83,10 @@ class QuestActionsMenu extends StatelessWidget {
   }
 }
 
-/// 완료 버튼(28)보다 한 단계 작게 — 주요 행동이 아니라 보조 진입점이다.
+/// 완료 토글(26)보다 한 단계 작게 — 주요 행동이 아니라 보조 진입점이다.
+///
+/// 정본(24:171)의 `Symbols.more_vert` 프레임은 26이지만, `⋮`는 점 세 개라 같은
+/// 크기여도 무게가 다르다. 여기서 정하는 건 **글리프 크기뿐**이고, 오른쪽 세로축은
+/// 박스([kQuestCardTrailingBox])가 잡으므로 완료 토글과 중심이 어긋나지 않는다.
 const double _iconSize = 22;
 const double _menuIconSize = 20;

@@ -26,38 +26,28 @@ abstract final class AppColors {
   static const secondaryContainer = Color(0xFF2170E4);
   static const onSecondary = Color(0xFFFFFFFF);
 
-  /// 블루 아주 옅은 틴트 — **AI 진입점 카드 배경**(퀘스트 목록 상단 프로모).
-  /// (Figma 리디자인 `#e6eef9`. [surfaceContainerLow](`#eff4ff`)보다 한 단 진해
-  ///  같은 흰 화면 위에서 보더 없이도 카드 경계가 읽힌다. [primarySurface]가
-  ///  그린 쪽에서 하는 역할의 블루 짝이다.)
+  /// 블루 아주 옅은 틴트 — **AI 진입점 카드 배경**(퀘스트 목록 상단 프로모) ·
+  /// **안내 박스([NoticeBox]) 배경**.
+  ///
+  /// 정본 변수 `tint/aiSurface` = `#e6eef9`. 쓰이는 자리는 Redesign 페이지의
+  /// `73:460`(Notice 컴포넌트)과 `66:451`(AI Promo)이다.
+  /// [surfaceContainerLow](`#eff4ff`)보다 한 단 진해 같은 흰 화면 위에서 보더 없이도
+  /// 경계가 읽힌다. [primarySurface]가 그린 쪽에서 하는 역할의 블루 짝이다.
   static const secondarySurface = Color(0xFFE6EEF9);
 
-  /// **AI 분해 결과 확인 화면의 요약·안내 카드 배경.**
-  /// (Figma `1:372` 실측 `rgba(235,244,255,0.6)` on 배경 `#f8f9ff` → 불투명 환산
-  ///  `#f0f6ff`. 알파로 깎아 쓰면 같은 카드가 배경 위에 놓일 때와 흰 카드 위에
-  ///  겹칠 때 값이 달라지므로 [primarySurface]와 같은 규칙으로 못 박는다.)
+  /// [NoticeBox] 아이콘 홀더(32×32 흰 원)의 섀도.
+  /// 정본 `73:453` 실측 `0 1px 2px rgba(0,0,0,0.05)`.
   ///
-  /// ⚠️ **라이트 전용.** Figma에 다크 사양이 없다 — 다크에서는 이 값을 쓰지 말고
-  /// `ColorScheme`(surfaceContainer 계열) 경로를 그대로 탄다.
-  static const infoSurface = Color(0xFFF0F6FF);
-
-  /// [infoSurface] 카드의 보더 — 흰 초안 카드와 구분되도록 블루를 섞은 옅은 선.
-  /// (Figma `1:372` 실측 `rgba(33,112,228,0.2)` on [infoSurface] → 불투명 환산
-  ///  `#c7dbfa`.)
-  ///
-  /// ⚠️ **라이트 전용**([infoSurface]와 같은 이유). 다크는 `outlineVariant` 경로.
-  static const infoOutline = Color(0xFFC7DBFA);
-
-  /// 요약·안내 카드의 아주 옅은 그린 섀도 — 넓게 퍼지되 거의 보이지 않는 깊이감.
-  /// Figma: `0 10px 30px rgba(0,110,47,0.04)` — [primary] 4%.
-  ///
-  /// [cardShadow]와 나눈 이유: 저쪽은 [primaryContainer](밝은 그린) 14%로 카드를
-  /// 띄우는 주인공용이고, 이쪽은 본문에 딸린 안내 상자라 존재만 남을 만큼 옅다.
-  static const List<BoxShadow> infoShadow = [
+  /// ⚠️ 앱의 다른 섀도는 모두 **그린 틴트**([softShadow]·[cardShadow]·버튼 섀도)인데
+  /// 이것만 검정 5%다. 안내 박스 자체가 이미 블루 틴트 면이라, 그 위에 얹힌 흰 원을
+  /// 다시 그린으로 띄우면 색이 세 겹으로 겹친다 — 정본이 중립 섀도를 쓴 이유이고
+  /// 여기서도 그대로 따른다. 값은 거의 보이지 않을 만큼 옅어(흰 원이 배경에 뚫린
+  /// 구멍이 아니라 **얹힌 칩**으로 읽히는 정도) 색 역할 규칙과 충돌하지 않는다.
+  static const List<BoxShadow> noticeIconShadow = [
     BoxShadow(
-      color: Color(0x0A006E2F), // primary 4%
-      blurRadius: 30,
-      offset: Offset(0, 10),
+      color: Color(0x0D000000), // 검정 5%
+      blurRadius: 2,
+      offset: Offset(0, 1),
     ),
   ];
 

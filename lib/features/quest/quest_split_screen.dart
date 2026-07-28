@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/gradient_button.dart';
+import '../../core/widgets/notice_box.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/quest_draft.dart';
 import 'decompose_notifier.dart';
@@ -329,8 +330,14 @@ class _RedecomposeCard extends StatelessWidget {
 /// bodySmall과 눈높이를 맞춘 맥락 아이콘 크기.
 const double _contextIconSize = 14;
 
-/// 입력 카드 (Figma 리디자인 · AIChallengeSection) —
+/// 입력 카드 — 정본 Redesign 페이지 `103:470` AIChallengeSection.
 /// 블루 AI 배지 + 제목 + 설명 + 입력 필드(+카운터) + 블루 그라디언트 분해 버튼.
+///
+/// 정본과 대조 완료(값 변경 없음): 흰 면 · 보더 `outlineVariant` · 라운드 12 ·
+/// 패딩 16 · 자식 간격 12 · 섀도 `0 8px 20px -6px rgba(34,197,94,.14)`
+/// (= [AppColors.cardShadow]) · 배지 패딩 12/라운드 12/아이콘 24 · 헤더 간격 16 ·
+/// 입력 필드는 `inputDecorationTheme`(fill `surfaceContainerLow`, 라운드 12, 패딩 16) ·
+/// 카운터 Sora 12 · 버튼 h56 · 라운드 12 · 아이콘 ↻.
 ///
 /// 안내 박스는 이 카드 **밖**으로 나갔다([_SplitNotice]). 결과가 뜬 뒤에도 카드
 /// 안에 붙어 다니면 "AI가 나눠줘요"라는 예고를 이미 나눠진 결과 위에서 다시 읽게 된다.
@@ -439,35 +446,16 @@ const double _inputIconSize = 20;
 /// 아직 아무것도 나누지 않았을 때의 안내 박스 — AI가 무엇을 해 주는지 한 줄.
 ///
 /// 결과가 뜨면 사라진다. 예고와 결과가 한 화면에 같이 있을 이유가 없다.
+///
+/// 정본 `73:465`(= [NoticeBox] 컴포넌트 `73:460`)이고 문구도 정본 `73:455` 그대로다.
 class _SplitNotice extends StatelessWidget {
   const _SplitNotice();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Container(
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: AppRadius.mdAll,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Symbols.alt_route, color: scheme.secondary),
-          AppSpacing.gapWSm,
-          Expanded(
-            child: Text(
-              'AI가 목표를 분석해 오늘 할 수 있는 퀘스트로 나눠줘요.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return const NoticeBox(
+      icon: Symbols.alt_route,
+      message: 'AI가 목표를 분석해 오늘 할 수 있는 퀘스트로 나눠줘요.',
     );
   }
 }
@@ -534,6 +522,19 @@ class _DecomposingView extends StatelessWidget {
 /// "다시 나누기"는 같은 목표로 전체 재생성한다. AI 재요청이므로 **블루**
 /// 그라디언트다. 재생성 중에도 카드는 그대로 보이고(전체 로딩으로 숨기지 않음), 재생성
 /// 실패 시 기존 결과가 보존되며 스낵바만 뜬다. 확정 저장·개별 재생성 버튼은 이후 커밋 몫이다.
+///
+/// 정본은 Redesign 페이지 `98:1275` AIResultSection이다. 헤더(titleLarge) · 세로 간격
+/// 12 일괄 · 하단 `98:1282` 두 버튼 1:1 폭 + 사이 12 · h56 · 라운드 12는 정본 그대로다.
+///
+/// ⚠️ **결과 카드만 정본과 다르다 — 사용자 결정이다.** 정본의 결과 카드
+/// (`98:1277`~)는 목록에서 쓰는 평범한 `QuestCard`다: 라운드 **12** · 높이 128 ·
+/// 우상단 **⋮**(more_vert) · 제목 옆 **○**(완료 토글). 우리는 [QuestDraftCard]를 쓴다:
+/// 라운드 **24** · 윗줄 `[난이도][✦ AI] … [↻][×]` · 제목 + `✎` · 보상 칩 ·
+/// 컨트롤 크기 36 통일. 사용자가 직접 지정한 배치라 정본보다 우선한다.
+///
+/// 근거도 남겨 둔다: 여기 있는 것은 **아직 저장되지 않은 초안**이라 ○(완료)가 성립하지
+/// 않고, 대신 저장 전에만 할 수 있는 조작(더 나누기·버리기·제목 고치기)이 카드 위에
+/// 직접 드러나야 한다. ⋮에 숨기면 편집 화면인 줄 모르고 그대로 등록해 버린다.
 class _ResultSection extends ConsumerWidget {
   const _ResultSection({required this.state, required this.onRegister});
 
@@ -691,6 +692,9 @@ class _RegisterButton extends StatelessWidget {
       // 저장 중엔 눌리지 않는다(중복 탭 방지). busy와 이중 방어다.
       onPressed: isSaving ? null : onRegister,
       style: GradientButtonStyle.growth,
+      // 정본 `98:1284`의 `✓`. 옆 버튼(✦ = AI에게 다시 맡긴다)과 아이콘만 봐도
+      // "확정한다 / 다시 나눈다"가 갈린다 — 색에만 기대지 않는다.
+      icon: Symbols.check,
       label: '등록하기',
       busy: isSaving,
     );
@@ -725,7 +729,11 @@ class _RegenerateButton extends StatelessWidget {
       // 재생성 중엔 눌리지 않는다(중복요청 방지).
       onPressed: isRegenerating ? null : onPressed,
       style: GradientButtonStyle.ai,
-      icon: Symbols.refresh,
+      // 정본 `98:1283`은 ↻(refresh)가 아니라 **✦**(auto_awesome)를 쓴다. "다시"는
+      // 라벨이 이미 말하고 있고, 이 버튼이 실제로 하는 일은 재시도가 아니라
+      // **AI에게 다시 맡기는 것**이라 AI 글리프가 옆의 ✓(내가 확정한다)와 대비된다.
+      // 입력 카드의 「분해하기」는 정본 `50:456` 그대로 ↻를 유지한다.
+      icon: Symbols.auto_awesome,
       // 「다시 AI로 나누기」는 반쪽 폭·큰 글꼴 배율에서 한 줄에 못 들어간다.
       // GradientButton이 라벨을 Flexible로 감싸 접어 준다.
       label: isTemplate ? '다시 AI로 나누기' : '다시 나누기',
@@ -792,47 +800,28 @@ class _EditTitleDialogState extends State<_EditTitleDialog> {
   }
 }
 
-/// AI 폴백 안내 — 블루 톤 info 박스. 템플릿 출처일 때만 렌더된다.
+/// AI 폴백 안내 — 템플릿 출처일 때만 렌더된다.
 ///
-/// 배경·보더는 Figma 실측을 불투명 토큰으로 환산한 [AppColors.infoSurface] /
-/// [AppColors.infoOutline]이다. 알파 파생(`secondaryContainer` 12% · `secondary` 40%)을
-/// 걷어낸 이유: 깔린 배경색에 따라 값이 흔들려 실측과 어긋난다(`app_colors.dart` 규칙).
+/// 컨테이너는 [_SplitNotice]와 같은 정본 Notice 사양([NoticeBox])이다. 예전의 자체
+/// 배경·보더·섀도(`infoSurface`/`infoOutline`/`infoShadow`)는 정본이 아닌 페이지에서
+/// 뽑은 값이라 걷어냈다 — 정본 Notice 배경 `tint/aiSurface`는 이미 앱에 있던
+/// [AppColors.secondarySurface]와 같은 값이고, 보더는 정본에 아예 없다.
 ///
-/// **다크에는 Figma 사양이 없다.** 그래서 라이트에서만 새 토큰을 쓰고, 다크에서는
-/// 기존 `ColorScheme` 경로(surfaceContainer + outlineVariant)를 그대로 탄다 —
-/// 다크 값을 임의로 추정하지 않는다.
+/// **정본에는 폴백 톤 Notice가 없다.** 그래도 안내 박스와 똑같이 그리지 않는다:
+/// 두 박스는 같은 자리에서 번갈아 뜨는데(빈 상태 ↔ 템플릿 결과), 형태가 같으면
+/// "이건 AI가 아니라 대체 결과"라는 사실이 글줄을 읽기 전에는 전달되지 않는다.
+/// 실기기 테스트에서 실제로 지적된 지점이라 신호를 지우지 않고 [NoticeBox.alert]로
+/// 남긴다 — 아이콘 홀더가 흰 원에서 **채운 블루 원**으로 뒤집힌다(정본에서 벗어나는
+/// 부분은 홀더 하나뿐이고 배경·라운드·패딩·간격은 정본 그대로다).
 class _FallbackBanner extends StatelessWidget {
   const _FallbackBanner();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final isLight = theme.brightness == Brightness.light;
-
-    return Container(
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: isLight ? AppColors.infoSurface : scheme.surfaceContainer,
-        borderRadius: AppRadius.mdAll,
-        border: Border.all(
-          color: isLight ? AppColors.infoOutline : scheme.outlineVariant,
-        ),
-        boxShadow: isLight ? AppColors.infoShadow : null,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Symbols.info, fill: 1, color: scheme.secondary),
-          AppSpacing.gapWSm,
-          Expanded(
-            child: Text(
-              'AI 연결이 잠시 원활하지 않아 대표 템플릿으로 준비했어요. 아래에서 다시 AI로 나눠볼 수 있어요.',
-              style: theme.textTheme.bodySmall?.copyWith(color: scheme.secondary),
-            ),
-          ),
-        ],
-      ),
+    return const NoticeBox(
+      icon: Symbols.info,
+      message: 'AI 연결이 잠시 원활하지 않아 대표 템플릿으로 준비했어요. 아래에서 다시 AI로 나눠볼 수 있어요.',
+      alert: true,
     );
   }
 }
