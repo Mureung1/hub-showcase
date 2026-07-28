@@ -58,7 +58,7 @@ Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다.
 Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 일곱 단계 complete ordered patch stack `e9bee416c02ff419dc961f092de85df54b40e7456a304d62470ac19ff64f7a8b`
-- source-only `manifests/patched-source.json` SHA-256 `c8b31958e041efc26cfd60cfaf648cd0b1a0db93ae37904d1d6d58871e993bce`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `08c7f6b7c5d880251d83d44e7d7c8831a093a202454bf3525dd78fbf9ae0fdf6`
+- source-only `manifests/patched-source.json` SHA-256 `c8b31958e041efc26cfd60cfaf648cd0b1a0db93ae37904d1d6d58871e993bce`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `84f79a9b0e7d25f6b4a1d00dd930761ea988e270d8d67410f941ffe34d932c95`
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
 - patched SDK wheel `0cca6e81ed5086b9b11b79c66d9eaf6ddfec5c7cf768643b9b6c07f07fb34cb9`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
