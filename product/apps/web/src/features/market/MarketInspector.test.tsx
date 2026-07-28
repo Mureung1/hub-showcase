@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis } from "../../services/marketAnalysis";
@@ -71,6 +71,10 @@ const background: AdminAreaBackground = {
   ],
 };
 
+afterEach(() => {
+  cleanup();
+});
+
 function renderInspector(
   value: AdminAreaBackground | null,
   state: "ready" | "error",
@@ -95,8 +99,6 @@ function renderInspector(
         coverage: "full",
       }}
       categoryCoverageReason="전체 지원"
-      panelTextSize="default"
-      onPanelTextSizeChange={vi.fn()}
       activeHour={0}
       sameCategoryCount={1}
       analysis={analysis}
@@ -288,7 +290,7 @@ describe("MarketInspector population evidence", () => {
     );
 
     expect(
-      screen.getByText(/서울 길단위인구의 선택 분기 집계입니다/),
+      screen.getByText(/서울시 추정 길단위인구의 선택 분기 집계입니다/),
     ).toBeInTheDocument();
     expect(screen.getByText("1명/분기")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /유동인구 상대값|데이터 없음/ })).toHaveLength(6);

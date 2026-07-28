@@ -5,6 +5,7 @@ import { useApiReadiness } from "./features/system/useApiReadiness";
 import { WorkspaceDialogs } from "./features/workspace/WorkspaceDialogs";
 import { WorkspaceHeader } from "./features/workspace/WorkspaceHeader";
 import { WorkspaceLayout } from "./features/workspace/WorkspaceLayout";
+import { usePanelTextSize } from "./features/workspace/usePanelTextSize";
 import { useProductWorkspaceModel } from "./features/workspace/useProductWorkspaceModel";
 import { PRODUCT_CATALOG_BOOTSTRAP } from "./services/productCatalog";
 import "./styles/global.css";
@@ -65,6 +66,7 @@ function ProductWorkspace({
   onCatalogRetry: () => void;
 }) {
   const model = useProductWorkspaceModel(catalog, useDemoData, apiReadiness);
+  const panelText = usePanelTextSize();
   const storefrontState = model.viewport.storefront3dUnavailable
     ? "fallback"
     : model.storefronts.selectedStorefront3d
@@ -73,11 +75,16 @@ function ProductWorkspace({
 
   return (
     <main className="app-shell" data-storefront-3d-state={storefrontState}>
-      <WorkspaceHeader model={model} />
+      <WorkspaceHeader
+        model={model}
+        panelTextSize={panelText.size}
+        onPanelTextSizeChange={panelText.setSize}
+      />
       <WorkspaceLayout
         model={model}
         catalogDisplayState={catalogState}
         onCatalogRetry={onCatalogRetry}
+        panelTextSize={panelText.size}
       />
       <WorkspaceDialogs model={model} />
     </main>
