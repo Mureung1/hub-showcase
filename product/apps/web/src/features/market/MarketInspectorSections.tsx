@@ -6,6 +6,7 @@ import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnal
 import { MetricGuide } from "./MetricGuide";
 import { TermHelp } from "./TermHelp";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
+import type { FlowState } from "./useMarketAnalysis";
 import type { AnalysisState } from "./useMarketAnalysis";
 
 function formatQuarterPeriod(period: string) {
@@ -81,7 +82,7 @@ export function InspectorHeader({
             ? "전체 분석 지원"
             : categorySelection.coverage === "partial"
               ? "점포·경쟁 지표만 제공"
-              : "분석 근거 없음"}
+              : "이 상권에 점포 없음"}
         </span>
         <p>{categoryCoverageReason}</p>
       </div>
@@ -591,6 +592,7 @@ export function InspectorFlow({
   market,
   categorySelection,
   analysis,
+  flowState,
   topic,
   activeHour,
   onActiveHourChange,
@@ -598,16 +600,42 @@ export function InspectorFlow({
   market: Market;
   categorySelection: CategorySelection;
   analysis: MarketAnalysis | null;
+  flowState: FlowState;
   topic: AnalysisTopic;
   activeHour: number;
   onActiveHourChange: (hour: number) => void;
 }) {
-  if (
-    categorySelection.coverage !== "full" ||
-    analysis === null ||
-    (topic !== "overview" && topic !== "flow")
-  ) {
+  if (categorySelection.coverage !== "full" || (topic !== "overview" && topic !== "flow")) {
     return null;
+  }
+
+  if (flowState === "loading") {
+    return (
+      <section className="metric-section">
+        <div className="section-title"><span>시간대별 활동성</span></div>
+        <p className="metric-note" role="status">시간대별 유동인구를 불러오는 중입니다.</p>
+      </section>
+    );
+  }
+
+  if (flowState === "error") {
+    return (
+      <section className="metric-section">
+        <div className="section-title"><span>시간대별 활동성</span></div>
+        <p className="metric-note" role="alert">시간대별 유동인구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+      </section>
+    );
+  }
+
+  if (flowState === "unavailable" || analysis === null) {
+    return (
+      <section className="metric-section">
+        <div className="section-title"><span>시간대별 활동성</span></div>
+        <p className="metric-note" role="status">
+          선택한 분기에는 시간대별 유동인구 자료가 없습니다. 다른 분기를 선택하면 확인할 수 있습니다.
+        </p>
+      </section>
+    );
   }
 
   const activeBucket = analysis.raw.flow_time_buckets[activeHour];
@@ -658,7 +686,8 @@ export function InspectorFlow({
           </strong>
         </div>
         <p className="metric-note">
-          서울 길단위인구가 제공하는 선택 분기 집계입니다. 막대 높이는 이 상권 안에서 시간대끼리 비교한 상대값입니다.
+          서울 길단위인구의 선택 분기 집계입니다. 막대 높이는 이 상권 안에서 시간대끼리 비교한 상대값입니다.
+          {flowState === "partial" ? " 일부 시간대 자료는 아직 없습니다." : ""}
         </p>
       </section>
     </>

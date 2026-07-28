@@ -69,10 +69,10 @@ export function DataPeriodSummary({
   return (
     <section className="data-period-summary" aria-label="데이터 기준 시점">
       <div>
-        <span>데이터 기준 시점</span>
+        <span>자료마다 기준 시점이 다를 수 있어요</span>
         <p>
-          지표마다 공식 원천의 갱신 주기가 달라 같은 날짜로 강제하지 않습니다. 각 값의 기간과 공간
-          단위를 함께 확인해 주세요.
+          점포, 매출, 유동인구는 같은 날 수집되지 않을 수 있어요. 숫자를 비교할 때는 오른쪽의
+          기간과 범위를 함께 봐주세요.
         </p>
       </div>
       {entries.length > 0 ? (
@@ -89,8 +89,8 @@ export function DataPeriodSummary({
         <p role="status">현재 응답에서 확인 가능한 기간 근거가 없습니다.</p>
       )}
       <small>
-        현재 화면은 제공 가능한 최신 snapshot을 조합하며, 사용자가 기간을 바꾸는 기능은 아직
-        지원하지 않습니다.
+        현재 화면은 선택한 분기의 자료를 보여줍니다. 분기를 바꾸면 그 시점에 맞는 자료로 함께
+        바뀝니다.
       </small>
     </section>
   );

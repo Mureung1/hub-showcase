@@ -12,7 +12,10 @@ import "./styles/mapOverlays.css";
 
 export function App({ useDemoData = false }: { useDemoData?: boolean }) {
   const apiReadiness = useApiReadiness(!useDemoData);
-  const { catalog, state, retry } = useProductCatalog(PRODUCT_CATALOG_BOOTSTRAP, !useDemoData);
+  const { catalog, state, remoteState, retry } = useProductCatalog(
+    PRODUCT_CATALOG_BOOTSTRAP,
+    useDemoData || apiReadiness.state === "ready",
+  );
   if (state === "loading")
     return <main className="app-bootstrap">지원 범위를 불러오는 중입니다.</main>;
   if (!catalog || catalog.markets.length === 0) {
@@ -26,7 +29,24 @@ export function App({ useDemoData = false }: { useDemoData?: boolean }) {
     );
   }
   return (
-    <ProductWorkspace catalog={catalog} useDemoData={useDemoData} apiReadiness={apiReadiness} />
+    <ProductWorkspace
+      catalog={catalog}
+      useDemoData={useDemoData}
+      apiReadiness={apiReadiness}
+      catalogState={
+        catalog.ranking_basis === "supported_market_unique_store_count"
+          ? "ranked"
+          : remoteState === "error"
+            ? "error"
+            : apiReadiness.state === "ready" && remoteState === "ready"
+              ? "bootstrap"
+              : "connecting"
+      }
+      onCatalogRetry={() => {
+        apiReadiness.retry();
+        retry();
+      }}
+    />
   );
 }
 
@@ -34,10 +54,14 @@ function ProductWorkspace({
   catalog,
   useDemoData,
   apiReadiness,
+  catalogState,
+  onCatalogRetry,
 }: {
   catalog: NonNullable<ReturnType<typeof useProductCatalog>["catalog"]>;
   useDemoData: boolean;
   apiReadiness: ReturnType<typeof useApiReadiness>;
+  catalogState: "ranked" | "connecting" | "bootstrap" | "error";
+  onCatalogRetry: () => void;
 }) {
   const model = useProductWorkspaceModel(catalog, useDemoData, apiReadiness);
   const storefrontState = model.viewport.storefront3dUnavailable
@@ -49,7 +73,11 @@ function ProductWorkspace({
   return (
     <main className="app-shell" data-storefront-3d-state={storefrontState}>
       <WorkspaceHeader model={model} />
-      <WorkspaceLayout model={model} />
+      <WorkspaceLayout
+        model={model}
+        catalogDisplayState={catalogState}
+        onCatalogRetry={onCatalogRetry}
+      />
       <WorkspaceDialogs model={model} />
     </main>
   );

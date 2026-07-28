@@ -14,6 +14,7 @@ import {
 import { MapLayerControls } from "./MapLayerControls";
 import { NearbyStoreList } from "./NearbyStoreList";
 import { TermHelp } from "./TermHelp";
+import type { ProductCategory } from "../../services/productCatalog";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
 import type {
   AnalysisTopic,
@@ -65,38 +66,40 @@ function CategoryOptions({
   selected,
   onChange,
 }: {
-  categories: Category[];
+  categories: ProductCategory[];
   selected: Category | null;
   onChange: (category: Category) => void;
 }) {
-  return categories.map((label, index) => {
-    const { icon: Icon, tone } = categoryPresentation[label] ?? fallbackCategoryPresentation;
-    const fullSupport = fullySupportedCategories.has(label);
+  return categories.map((category, index) => {
+    const { name, rank, store_count: storeCount } = category;
+    const { icon: Icon, tone } = categoryPresentation[name] ?? fallbackCategoryPresentation;
+    const fullSupport = category.coverage ? category.coverage === "full" : fullySupportedCategories.has(name);
+    const displayRank = rank ?? index + 1;
     return (
       <button
-        key={label}
+        key={name}
         type="button"
-        className={`category-option ${selected === label ? "is-selected" : ""}`}
-        aria-label={label}
-        aria-pressed={selected === label}
-        title={`${index + 1}위 · ${fullSupport ? "전체 지원" : "부분 지원"}`}
-        onClick={() => onChange(label)}
+        className={`category-option ${selected === name ? "is-selected" : ""}`}
+        aria-label={name}
+        aria-pressed={selected === name}
+        title={`${displayRank}위 · ${fullSupport ? "전체 지원" : "부분 지원"}`}
+        onClick={() => onChange(name)}
       >
         <span className="category-rank" aria-hidden="true">
-          {index + 1}
+          {displayRank}
         </span>
         <span className={`category-icon ${tone}`}>
           <Icon size={15} />
         </span>
-        <span className="category-option-name">{label}</span>
-        <small
-          className={`category-support-badge is-${fullSupport ? "full" : "partial"}`}
-          aria-hidden="true"
-        >
-          {fullSupport ? "전체" : "부분"}
-        </small>
+        <span className="category-option-main">
+          <span className="category-option-name">{name}</span>
+          {storeCount !== null && storeCount !== undefined && (
+            <small>{storeCount.toLocaleString("ko-KR")}곳</small>
+          )}
+        </span>
+        {!fullSupport && <small className="category-support-badge">일부</small>}
         <span className="check" aria-hidden="true">
-          {selected === label ? "✓" : ""}
+          {selected === name ? "✓" : ""}
         </span>
       </button>
     );
@@ -106,7 +109,9 @@ function CategoryOptions({
 type MarketFiltersProps = {
   marketKey: MarketKey;
   markets: Record<MarketKey, Market>;
-  supportedCategories: Category[];
+  supportedCategories: ProductCategory[];
+  catalogState: "ranked" | "connecting" | "bootstrap" | "error";
+  onCatalogRetry: () => void;
   category: Category | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
@@ -133,6 +138,8 @@ export function MarketFilters({
   marketKey,
   markets,
   supportedCategories,
+  catalogState,
+  onCatalogRetry,
   category,
   categorySelection,
   categoryCoverageReason,
@@ -212,9 +219,21 @@ export function MarketFilters({
             어떤 가게인가요?
             <TermHelp term="업종" description="카페, 음식점처럼 가게가 제공하는 상품이나 서비스의 종류입니다." />
           </p>
-          <span>{supportedCategories.length}개 업종</span>
+          <span>{catalogState === "ranked" ? "데이터 기준" : "기본 목록"}</span>
         </div>
-        <p className="category-list-help">세 상권의 고유 점포 수 기준 상위 업종입니다.</p>
+        <div className={`catalog-status is-${catalogState}`} role="status">
+          {catalogState === "ranked" && "세 상권의 고유 점포 수가 많은 업종입니다."}
+          {catalogState === "connecting" && "기본 업종 4개를 먼저 보여드리며 데이터 연결을 기다리고 있습니다."}
+          {catalogState === "bootstrap" && "기본 업종 목록입니다. 실제 순위 데이터는 아직 준비되지 않았습니다."}
+          {catalogState === "error" && (
+            <>
+              <span>기본 업종 목록을 보여드리고 있습니다. 순위 데이터를 불러오지 못했습니다.</span>
+              <button type="button" className="text-button" onClick={onCatalogRetry}>
+                다시 시도
+              </button>
+            </>
+          )}
+        </div>
         <div className="category-list" aria-label="분석 업종 선택">
           <CategoryOptions
             categories={supportedCategories}
@@ -230,7 +249,7 @@ export function MarketFilters({
                 ? "전체 지원"
                 : categorySelection.coverage === "partial"
                   ? "부분 지원"
-                  : "분석 미지원"}
+                  : "이 상권에 점포 없음"}
             </span>
           </div>
           <p>{categoryCoverageReason}</p>

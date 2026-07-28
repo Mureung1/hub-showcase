@@ -1,4 +1,16 @@
-import { ChevronRight, Coffee, Target, UsersRound } from "lucide-react";
+import {
+  BedDouble,
+  ChevronRight,
+  Coffee,
+  Dumbbell,
+  GraduationCap,
+  Scissors,
+  Shirt,
+  Store,
+  Target,
+  UsersRound,
+  type LucideIcon,
+} from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
 
@@ -79,14 +91,7 @@ function StoreMarker({
 }) {
   const isSelected = selectedName === store.name;
   const isPrefab = prefabMode && isSelected;
-  const icon =
-    store.category === "카페"
-      ? "☕"
-      : store.category === "음식점"
-        ? "⌁"
-        : store.category === "베이커리"
-          ? "✦"
-          : "+";
+  const Icon = markerIcon(store.category);
   return (
     <Marker longitude={store.longitude} latitude={store.latitude} anchor="bottom">
       <button
@@ -103,7 +108,7 @@ function StoreMarker({
           <>
             <span className="prefab-shadow" />
             <span className="prefab-side" />
-            <span className="prefab-face"><i>{icon}</i></span>
+            <span className="prefab-face"><i><Icon size={10} strokeWidth={2.5} /></i></span>
             <span className="prefab-awning" />
             <span className="prefab-door" />
             <span className="prefab-sign" />
@@ -112,11 +117,21 @@ function StoreMarker({
             <span className="prefab-chimney" />
           </>
         ) : (
-          <span>{icon}</span>
+          <span><Icon size={16} strokeWidth={2.4} /></span>
         )}
       </button>
     </Marker>
   );
+}
+
+function markerIcon(category: string): LucideIcon {
+  if (category.includes("카페") || category.includes("커피")) return Coffee;
+  if (category.includes("미용") || category.includes("헤어") || category.includes("네일") || category.includes("피부관리")) return Scissors;
+  if (category.includes("의류") || category.includes("의복") || category.includes("패션") || category.includes("신발")) return Shirt;
+  if (category.includes("학원") || category.includes("교습") || category.includes("교육원")) return GraduationCap;
+  if (category.includes("숙박") || category.includes("호텔") || category.includes("모텔") || category.includes("여관")) return BedDouble;
+  if (category.includes("체육") || category.includes("헬스") || category.includes("피트니스") || category.includes("스포츠") || category.includes("요가") || category.includes("필라테스")) return Dumbbell;
+  return Store;
 }
 
 export function MarketMapCanvas({

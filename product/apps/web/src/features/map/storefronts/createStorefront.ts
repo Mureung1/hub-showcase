@@ -116,6 +116,64 @@ function addCategoryAttachment(
     addBox(attachment, "convenience-band-orange", [1.22, 0.14, 1.22], [0, 0.24, 0], detail);
   }
 
+  if (variant.attachment === "beauty") {
+    const mirror = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.08, 20), trim);
+    mirror.name = "beauty-mirror";
+    mirror.rotation.x = Math.PI / 2;
+    mirror.position.y = 0.58;
+    attachment.add(mirror);
+    addBox(attachment, "beauty-mirror-stand", [0.14, 0.58, 0.14], [0, 0.24, 0], accent);
+    addBox(attachment, "beauty-mirror-base", [0.82, 0.12, 0.32], [0, -0.03, 0], detail);
+  }
+
+  if (variant.attachment === "apparel") {
+    addBox(attachment, "apparel-rack-bar", [1.45, 0.1, 0.1], [0, 0.7, 0], trim);
+    addBox(attachment, "apparel-rack-left", [0.1, 1.28, 0.1], [-0.62, 0.1, 0], accent);
+    addBox(attachment, "apparel-rack-right", [0.1, 1.28, 0.1], [0.62, 0.1, 0], accent);
+    for (const x of [-0.35, 0, 0.35]) {
+      const garment = new THREE.Mesh(new THREE.ConeGeometry(0.23, 0.52, 4), detail);
+      garment.name = "apparel-garment";
+      garment.position.set(x, 0.37, 0);
+      garment.rotation.y = Math.PI / 4;
+      attachment.add(garment);
+    }
+  }
+
+  if (variant.attachment === "academy") {
+    for (const [index, height] of [0.76, 0.96, 0.66].entries()) {
+      addBox(
+        attachment,
+        "academy-book",
+        [0.26, height, 0.38],
+        [(index - 1) * 0.3, height / 2 - 0.04, 0],
+        index === 1 ? accent : detail,
+      );
+    }
+    addBox(attachment, "academy-book-base", [1.2, 0.12, 0.52], [0, -0.05, 0], trim);
+  }
+
+  if (variant.attachment === "lodging") {
+    addBox(attachment, "lodging-bed-base", [1.45, 0.36, 0.92], [0, 0.12, 0], dark);
+    addBox(attachment, "lodging-mattress", [1.36, 0.28, 0.84], [0, 0.44, 0], trim);
+    addBox(attachment, "lodging-pillow", [0.48, 0.14, 0.68], [-0.34, 0.64, 0], detail);
+    addBox(attachment, "lodging-headboard", [0.14, 0.88, 0.95], [0.69, 0.48, 0], accent);
+  }
+
+  if (variant.attachment === "sports") {
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.05, 12), dark);
+    handle.name = "sports-dumbbell-handle";
+    handle.rotation.z = Math.PI / 2;
+    handle.position.y = 0.48;
+    attachment.add(handle);
+    for (const x of [-0.58, 0.58]) {
+      const weight = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.18, 12), accent);
+      weight.name = "sports-dumbbell-weight";
+      weight.rotation.z = Math.PI / 2;
+      weight.position.set(x, 0.48, 0);
+      attachment.add(weight);
+    }
+  }
+
   parent.add(attachment);
 }
 

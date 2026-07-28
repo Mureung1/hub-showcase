@@ -6,18 +6,18 @@ export type StorefrontVariant = {
   roof: number;
   accent: number;
   flower: number;
-  attachment: "none" | "flower" | "coffee" | "meal" | "bakery" | "convenience";
-};
-
-const genericVariant: StorefrontVariant = {
-  categoryCode: "generic",
-  label: "Local shop",
-  wall: 0xd9d8cf,
-  trim: 0xf5f1e8,
-  roof: 0x7b8179,
-  accent: 0x5e6c61,
-  flower: 0xe9a9b7,
-  attachment: "none",
+  attachment:
+    | "none"
+    | "flower"
+    | "coffee"
+    | "meal"
+    | "bakery"
+    | "convenience"
+    | "beauty"
+    | "apparel"
+    | "academy"
+    | "lodging"
+    | "sports";
 };
 
 const flowerVariant = {
@@ -70,6 +70,66 @@ const convenienceVariant = {
   attachment: "convenience" as const,
 };
 
+const beautyVariant = {
+  label: "LocalTwin Beauty",
+  wall: 0xf1d7df,
+  trim: 0xfffbf5,
+  roof: 0xbc7892,
+  accent: 0xc95787,
+  flower: 0xf3c3d5,
+  attachment: "beauty" as const,
+};
+
+const apparelVariant = {
+  label: "LocalTwin Apparel",
+  wall: 0xe2dcf2,
+  trim: 0xfffcf6,
+  roof: 0x826cba,
+  accent: 0x7256b0,
+  flower: 0xd8c5ef,
+  attachment: "apparel" as const,
+};
+
+const academyVariant = {
+  label: "LocalTwin Academy",
+  wall: 0xcce8eb,
+  trim: 0xfafffb,
+  roof: 0x4f95a0,
+  accent: 0x267e8f,
+  flower: 0xb9e2dd,
+  attachment: "academy" as const,
+};
+
+const lodgingVariant = {
+  label: "LocalTwin Lodging",
+  wall: 0xe9d9e5,
+  trim: 0xfffbf8,
+  roof: 0x9a6689,
+  accent: 0x895274,
+  flower: 0xead0df,
+  attachment: "lodging" as const,
+};
+
+const sportsVariant = {
+  label: "LocalTwin Sports",
+  wall: 0xf0d7d1,
+  trim: 0xfffcf7,
+  roof: 0xbd6257,
+  accent: 0xbe5044,
+  flower: 0xf0c4b7,
+  attachment: "sports" as const,
+};
+
+const serviceVariant = {
+  label: "LocalTwin Service",
+  wall: 0xd7e3dc,
+  trim: 0xfffcf5,
+  roof: 0x6f897b,
+  accent: 0x467c62,
+  flower: 0xc8dfcf,
+  attachment: "none" as const,
+};
+
 export const storefrontRegistry: Record<string, StorefrontVariant> = {
   G21901: {
     categoryCode: "G21901",
@@ -91,6 +151,19 @@ export const storefrontRegistry: Record<string, StorefrontVariant> = {
     categoryCode: "G20405",
     ...convenienceVariant,
   },
+  S20701: { categoryCode: "S20701", ...beautyVariant },
+  S20702: { categoryCode: "S20702", ...beautyVariant },
+  S20703: { categoryCode: "S20703", ...beautyVariant },
+  G20901: { categoryCode: "G20901", ...apparelVariant },
+  G20902: { categoryCode: "G20902", ...apparelVariant },
+  G20905: { categoryCode: "G20905", ...apparelVariant },
+  S20601: { categoryCode: "S20601", ...apparelVariant },
+  P10501: { categoryCode: "P10501", ...academyVariant },
+  P10603: { categoryCode: "P10603", ...academyVariant },
+  P10611: { categoryCode: "P10611", ...academyVariant },
+  P10625: { categoryCode: "P10625", ...academyVariant },
+  I10103: { categoryCode: "I10103", ...lodgingVariant },
+  S20801: { categoryCode: "S20801", ...sportsVariant },
 };
 
 export function getStorefrontVariant(categoryCode: string) {
@@ -99,9 +172,14 @@ export function getStorefrontVariant(categoryCode: string) {
   if (/^I2\d{4}$/.test(categoryCode)) {
     return { categoryCode, ...restaurantVariant };
   }
-  return genericVariant;
+  if (/^S207/.test(categoryCode)) return { categoryCode, ...beautyVariant };
+  if (/^(G209|S206)/.test(categoryCode)) return { categoryCode, ...apparelVariant };
+  if (/^P10/.test(categoryCode)) return { categoryCode, ...academyVariant };
+  if (/^I101/.test(categoryCode)) return { categoryCode, ...lodgingVariant };
+  if (/^(S208|R104)/.test(categoryCode)) return { categoryCode, ...sportsVariant };
+  return { categoryCode, ...serviceVariant };
 }
 
 export function hasStorefrontVariant(categoryCode: string | null): categoryCode is string {
-  return categoryCode !== null && getStorefrontVariant(categoryCode).categoryCode !== "generic";
+  return Boolean(categoryCode?.trim());
 }

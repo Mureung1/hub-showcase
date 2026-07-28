@@ -37,50 +37,49 @@ function EvidenceDialog({ model }: { model: ProductWorkspaceModel }) {
         >
           <X size={20} />
         </button>
-        <p className="modal-eyebrow">EVIDENCE · SOURCE PERIODS</p>
-        <h2>이 화면의 숫자는 이렇게 읽습니다.</h2>
-        <DataPeriodSummary
-          analysis={analysis}
-          background={background}
-          nearbyEvidence={nearby.data?.evidence ?? []}
-        />
-        <div className="evidence-grid">
-          {analysis && <AnalysisEvidence analysis={analysis} />}
-          <div>
-            <span>상권 변화</span>
-            <b>서울시 상권분석서비스</b>
-            <p>
-              개업·폐업은 상권·서비스업종 단위 집계입니다. 개별 점포의 경영 상태로 해석하지
-              않습니다.
-            </p>
+        <div className="evidence-modal-content" aria-label="데이터 산정 근거 내용" tabIndex={0}>
+          <p className="modal-eyebrow">데이터 기준과 시점</p>
+          <h2>이 숫자는 무엇을 뜻하나요?</h2>
+          <DataPeriodSummary
+            analysis={analysis}
+            background={background}
+            nearbyEvidence={nearby.data?.evidence ?? []}
+          />
+          <div className="evidence-grid">
+            {analysis && <AnalysisEvidence analysis={analysis} />}
+            <div>
+              <span>가게 수의 변화</span>
+              <b>새로 열고 닫은 가게 수</b>
+              <p>상권 전체를 합친 숫자예요. 한 가게의 경영 상태를 뜻하지는 않습니다.</p>
+            </div>
+            <div>
+              <span>사람이 많은 시간</span>
+              <b>6개 시간대로 나눈 유동인구</b>
+              <p>시간대끼리 얼마나 차이 나는지 보여줘요. 개인의 이동을 추적한 정보는 아닙니다.</p>
+            </div>
+            <div>
+              <span>상권 점수</span>
+              <b>LocalTwin score v{analysis?.score.formula_version ?? "1.1.0"}</b>
+              <p>
+                수요, 매출, 점포 수와 변화 추이를 함께 본 보조 점수예요.
+                {analysis ? ` 현재 근거 신뢰도는 ${analysis.score.confidence}%입니다.` : ""}
+              </p>
+            </div>
+            <div>
+              <span>이 화면이 보는 범위</span>
+              <b>
+                {market.name} · {category}
+              </b>
+              <p>
+                지도 점포는 상권 안에서, 주변 점포 비교는 중심에서 {radius}m 안에서 봅니다.
+                {analysis ? ` 현재 선택한 자료 시점은 ${analysis.period}입니다.` : ""}
+              </p>
+            </div>
           </div>
-          <div>
-            <span>시간대 수요</span>
-            <b>서울시 길단위인구 집계</b>
-            <p>6개 시간대 공식 집계를 0~100으로 정규화해 표시합니다. 개인 이동 정보가 아닙니다.</p>
-          </div>
-          <div>
-            <span>입지 점수</span>
-            <b>LocalTwin score v{analysis?.score.formula_version ?? "1.1.0"}</b>
-            <p>
-              서울 peer 백분위의 수요·점포당 매출·폐업·업종 밀도·순증률만 반영합니다.
-              {analysis ? ` 현재 근거 신뢰도는 ${analysis.score.confidence}%입니다.` : ""}
-            </p>
-          </div>
-          <div>
-            <span>분석 범위</span>
-            <b>
-              {market.name} · {category}
-            </b>
-            <p>
-              지도 탐색 반경은 {radius}m이며, 우측 상권 집계의 현재 응답 기간은
-              {analysis ? ` ${analysis.period}` : " 확인되지 않았습니다"}.
-            </p>
-          </div>
+          <button type="button" className="primary-action" onClick={() => setEvidenceOpen(false)}>
+            확인
+          </button>
         </div>
-        <button type="button" className="primary-action" onClick={() => setEvidenceOpen(false)}>
-          확인
-        </button>
       </section>
     </div>
   );
@@ -98,7 +97,7 @@ function ReportDialog({ model }: { model: ProductWorkspaceModel }) {
         role="dialog"
         aria-modal="true"
         aria-label="상권 분석 보고서"
-        className="evidence-modal report-modal"
+        className="compare-modal report-modal"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <button
@@ -150,7 +149,7 @@ function AnalysisEvidence({
   return (
     <>
       <div>
-        <span>현재 판정</span>
+          <span>현재 판단</span>
         <b>
           {analysis.score.band} · 신뢰도 {analysis.score.confidence}%
         </b>
@@ -161,12 +160,12 @@ function AnalysisEvidence({
         </p>
       </div>
       <div>
-        <span>데이터 반영 범위</span>
+          <span>확인된 자료 범위</span>
         <b>{analysis.score.data_coverage}%</b>
         <p>누락 지표는 0점으로 단정하지 않고 component별 50점 중립값 방향으로 수축했습니다.</p>
       </div>
       <div>
-        <span>특수상권 판정</span>
+          <span>상권의 특징</span>
         <b>
           {CLUSTER_LABELS[analysis.score.cluster.classification] ??
             analysis.score.cluster.classification}

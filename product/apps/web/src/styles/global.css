@@ -543,21 +543,59 @@ html:not(.is-english) .app-shell {
 
 .category-list {
   display: grid;
-  gap: 5px;
+  gap: 6px;
 }
 
 .category-option {
-  height: 33px;
+  min-height: 46px;
   display: grid;
-  grid-template-columns: 24px 1fr 16px;
+  grid-template-columns: 24px 28px minmax(0, 1fr) auto 20px;
   align-items: center;
-  padding: 0 5px;
+  gap: 8px;
+  padding: 5px 8px;
   border: 0;
   border-radius: 5px;
   color: #566359;
   background: transparent;
   text-align: left;
+  font-size: 14px;
+}
+
+.category-option-main {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.category-option-name {
+  font-weight: 650;
+}
+
+.category-option-main small {
+  color: var(--lt-color-text-muted);
   font-size: 12px;
+  font-weight: 500;
+}
+
+.category-support-badge {
+  color: #98651f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.catalog-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: var(--lt-color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.catalog-status.is-error {
+  color: var(--lt-color-warning-strong, #98651f);
 }
 
 .category-option:hover,
@@ -997,7 +1035,7 @@ html:not(.is-english) .app-shell {
   backdrop-filter: blur(14px);
   box-shadow: 0 5px 16px rgba(31, 62, 40, 0.13);
   color: #354439;
-  font-size: 12px;
+  font-size: var(--lt-type-caption);
 }
 
 .map-search {
@@ -1042,6 +1080,23 @@ html:not(.is-english) .app-shell {
 .map-search input:disabled {
   cursor: wait;
   opacity: 0.55;
+}
+
+.map-search:focus-within {
+  border-color: rgba(39, 139, 86, 0.7);
+  box-shadow:
+    0 0 0 3px rgba(39, 139, 86, 0.18),
+    0 5px 16px rgba(31, 62, 40, 0.13);
+}
+
+.map-search .search-clear-button {
+  color: #65766d;
+}
+
+.map-search .search-clear-button:hover {
+  color: #174f2b;
+  background: #edf5ef;
+  border-radius: var(--lt-radius-control);
 }
 
 .market-search-status {
@@ -1169,7 +1224,7 @@ html:not(.is-english) .app-shell {
   border-radius: 5px;
   color: #56635a;
   background: transparent;
-  font-size: 11px;
+  font-size: var(--lt-type-caption);
   font-weight: 700;
 }
 
@@ -1317,6 +1372,26 @@ html.is-english .three-d {
 
 .map-marker.blue {
   background: #4283dc;
+}
+
+.map-marker.pink {
+  background: #cf618c;
+}
+
+.map-marker.violet {
+  background: #8568ca;
+}
+
+.map-marker.cyan {
+  background: #278da0;
+}
+
+.map-marker.plum {
+  background: #9a5c87;
+}
+
+.map-marker.red {
+  background: #c85e4f;
 }
 
 .map-marker.gray {
@@ -2459,10 +2534,27 @@ html:not(.is-english) .evidence-button:focus-visible {
 .compare-modal {
   position: relative;
   width: min(660px, 100%);
-  padding: 32px;
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 22px 70px rgba(10, 25, 15, 0.28);
+}
+
+.evidence-modal {
+  display: flex;
+  max-height: min(760px, calc(100dvh - 40px));
+  overflow: hidden;
+}
+
+.evidence-modal-content {
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+  padding: 32px;
+  scrollbar-gutter: stable;
+}
+
+.compare-modal {
+  padding: 32px;
 }
 
 .modal-close {
@@ -2482,9 +2574,9 @@ html:not(.is-english) .evidence-button:focus-visible {
 .modal-eyebrow {
   margin: 0;
   color: #238145;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.05em;
 }
 
 .evidence-modal h2,
@@ -2511,14 +2603,14 @@ html:not(.is-english) .evidence-button:focus-visible {
 
 .data-period-summary>div>span {
   color: #256e40;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .data-period-summary p {
   margin: 5px 0 0;
   color: #68766d;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -2538,7 +2630,7 @@ html:not(.is-english) .evidence-button:focus-visible {
   padding: 6px 8px;
   border-radius: 5px;
   background: #fff;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .data-period-summary a {
@@ -2559,7 +2651,7 @@ html:not(.is-english) .evidence-button:focus-visible {
 
 .data-period-summary>small {
   color: #7e8982;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -3521,17 +3613,7 @@ html:not(.is-english) .evidence-button:focus-visible {
   }
 
   .market-search-shell {
-    width: 39px;
-    transition: width 160ms ease;
-  }
-
-  .market-search-shell:focus-within {
-    width: 230px;
-  }
-
-  .market-search-shell:not(:focus-within) .map-search input {
-    width: 0;
-    opacity: 0;
+    width: min(230px, calc(100vw - 145px));
   }
 
   .market-search-results {
@@ -3655,6 +3737,11 @@ html:not(.is-english) .evidence-button:focus-visible {
   }
 
   .evidence-modal,
+  .compare-modal {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .evidence-modal-content,
   .compare-modal {
     padding: 25px 19px;
   }
@@ -4061,6 +4148,91 @@ html:not(.is-english) .evidence-button:focus-visible {
 
 .prefab-building.gray .prefab-sign {
   background: #64746a;
+}
+
+.prefab-building.pink .prefab-face i,
+.prefab-building.pink .prefab-sign {
+  background: #c65585;
+}
+
+.prefab-building.pink .prefab-side {
+  background: #e9bfd0;
+}
+
+.prefab-building.pink .prefab-roof {
+  background: #d47da0;
+}
+
+.prefab-building.pink .prefab-awning {
+  background: repeating-linear-gradient(90deg, #fff8fb 0 5px, #d46f9b 5px 10px);
+}
+
+.prefab-building.violet .prefab-face i,
+.prefab-building.violet .prefab-sign {
+  background: #785fc0;
+}
+
+.prefab-building.violet .prefab-side {
+  background: #cbc0ec;
+}
+
+.prefab-building.violet .prefab-roof {
+  background: #9179d1;
+}
+
+.prefab-building.violet .prefab-awning {
+  background: repeating-linear-gradient(90deg, #fbf9ff 0 5px, #8d74cd 5px 10px);
+}
+
+.prefab-building.cyan .prefab-face i,
+.prefab-building.cyan .prefab-sign {
+  background: #238195;
+}
+
+.prefab-building.cyan .prefab-side {
+  background: #afd5dc;
+}
+
+.prefab-building.cyan .prefab-roof {
+  background: #4da2b2;
+}
+
+.prefab-building.cyan .prefab-awning {
+  background: repeating-linear-gradient(90deg, #f5feff 0 5px, #3799a9 5px 10px);
+}
+
+.prefab-building.plum .prefab-face i,
+.prefab-building.plum .prefab-sign {
+  background: #8b547b;
+}
+
+.prefab-building.plum .prefab-side {
+  background: #dfc5d8;
+}
+
+.prefab-building.plum .prefab-roof {
+  background: #aa7099;
+}
+
+.prefab-building.plum .prefab-awning {
+  background: repeating-linear-gradient(90deg, #fff9fd 0 5px, #a66c94 5px 10px);
+}
+
+.prefab-building.red .prefab-face i,
+.prefab-building.red .prefab-sign {
+  background: #bc5549;
+}
+
+.prefab-building.red .prefab-side {
+  background: #e7bfb7;
+}
+
+.prefab-building.red .prefab-roof {
+  background: #d57a6c;
+}
+
+.prefab-building.red .prefab-awning {
+  background: repeating-linear-gradient(90deg, #fff9f7 0 5px, #cf6c5e 5px 10px);
 }
 
 .prefab-building.is-selected {

@@ -3,8 +3,8 @@
 | 항목 | 내용 |
 | --- | --- |
 | 상태 | Active |
-| 버전 | v0.1 |
-| 최종 갱신 | 2026-07-16 |
+| 버전 | v0.2 |
+| 최종 갱신 | 2026-07-28 |
 | 적용 대상 | 제품 UI, 기능 프로토타입, 개발문서 사이트 |
 
 ## 1. 목적
@@ -48,6 +48,25 @@ LocalTwin은 마케팅 사이트가 아니라 반복적으로 사용하는 상�
 
 Motion은 사용자의 시선을 다음 판단 대상으로 옮기거나 공간·시간의 변화를 설명할 때만 사용한다. 장식적인 반복 motion보다 `지도 → 후보 가게 → 3D 현장 → 시간대별 혼잡도`의 관계를 전달하는 전환을 우선한다.
 
+### 2.7 익숙한 조작과 사용자 통제권을 우선한다
+
+Apple HIG의 `Purpose / Agency / Responsibility / Familiarity`를 LocalTwin에서는 다음처럼 해석한다.
+
+- `Purpose`: 첫 화면과 primary action은 상권을 판단하는 핵심 작업에 집중한다.
+- `Agency`: 사용자가 panel을 열고 닫고, 조건을 초기화하고, 오류에서 다시 시도할 수 있게 한다.
+- `Responsibility`: 데이터 시점, 범위, 누락과 추정 여부를 숨기지 않는다.
+- `Familiarity`: 검색, toolbar, tab, sidebar와 sheet는 사용자가 이미 아는 동작 문법을 따른다.
+
+### 2.8 레퍼런스는 역할을 나누어 사용한다
+
+| 레퍼런스                                                                                        | 채택하는 것                                                            | 채택하지 않는 것                                                 |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [Apple HIG](https://developer.apple.com/kr/design/human-interface-guidelines/design-principles) | 정보 계층, navigation, adaptive layout, typography, 접근성             | Apple 고유 시각 재질의 그대로 복제                               |
+| [Mobbin](https://mobbin.com/)                                                                   | 실제 제품의 screen 단위가 아닌 전체 flow, 상태 전환, copy pattern 비교 | 맥락이 다른 앱 화면의 외형 복사                                  |
+| [Awwwards](https://www.awwwards.com/)                                                           | 완성도, 반응형, 성능을 해치지 않는 microinteraction과 시각적 리듬      | 업무 흐름을 늦추는 scroll effect, cursor effect, 상시 WebGL 장식 |
+
+새 레퍼런스를 적용할 때는 `사용자 문제 → 참고한 원리 → LocalTwin 규칙 → 검증할 상태`를 먼저 기록한다. 화면 모양만 비슷하게 만드는 변경은 디자인 시스템 변경으로 승인하지 않는다.
+
 ## 3. 디자인 Token
 
 아래 표는 token 의미의 문서 source of truth이고, 실행 값은 `product/apps/web/src/styles/tokens.css`에서 같은 이름으로 관리한다. 두 값이 달라지면 같은 Task에서 함께 갱신한다.
@@ -87,12 +106,13 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 
 | 역할 | 크기 | 굵기 |
 | --- | --- | --- |
-| 화면 제목 | `28px` | `700` |
-| section 제목 | `20px` | `700` |
+| 화면 제목 | `24–28px` | `700` |
+| section 제목 | `18–20px` | `700` |
 | panel 제목 | `16px` | `700` |
-| 본문 | `16px` | `400` |
-| control / 보조 text | `14px` | `600` |
+| 본문 | `14–16px` | `400–500` |
+| control / 보조 text | `12–14px` | `600` |
 | metadata | `12px` | `600` |
+| 지도 attribution과 법적 표기 | `8–10px` | `400–600` |
 
 사용 규칙:
 
@@ -100,6 +120,10 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 숫자와 단위 사이의 위계를 명확히 하되, 점수만 과도하게 크게 만들지 않는다.
 - letter spacing은 기본값 `0`을 사용한다.
 - compact panel 안에는 hero 크기의 제목을 사용하지 않는다.
+- 본문은 `14px`, 사용자가 눌러야 하는 control label은 `12px`보다 작게 만들지 않는다.
+- `11px` 이하는 지도 attribution, 법적 표기처럼 사용자가 조작하지 않는 보조 정보에만 허용한다.
+- 작은 text에는 thin weight를 사용하지 않는다. `400` 이상을 사용하고 대비를 함께 확인한다.
+- 긴 한국어 label, `200%` browser zoom과 가장 좁은 지원 너비에서 잘림을 확인한다.
 
 ### 3.3 간격과 크기
 
@@ -111,8 +135,9 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 
 | 대상 | 기준 |
 | --- | --- |
-| icon button | 최소 `40px × 40px` |
-| 일반 control | 최소 높이 `40px` |
+| desktop icon button | 최소 `34px × 34px`, 인접 target 간 `8px` 확보 |
+| mobile touch target | 최소 `44px × 44px` |
+| 일반 control | desktop 최소 높이 `34px`, mobile 최소 높이 `44px` |
 | 상단 app bar | `56px` 또는 `64px` |
 | panel 내부 여백 | `16px` 또는 `24px` |
 | card 간격 | `12px` 또는 `16px` |
@@ -209,8 +234,35 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 모바일에서는 지도, 목록, 상세를 한 화면에 모두 압축하지 않는다.
 - 모바일 상세 정보는 sheet 또는 별도 view로 열고 명확한 닫기 action을 제공한다.
 - `320px` 너비에서도 text와 control이 겹치거나 화면 밖으로 밀리지 않아야 한다.
+- 화면이 좁아지면 우측 inspector 같은 tertiary column을 먼저 접고, 지도와 현재 작업 맥락을 유지한다.
+- persistent overlay는 지도 marker, attribution과 핵심 조작을 가리지 않도록 실제 overlay bounds를 map safe inset에 반영한다.
+- mobile에서 열린 sheet는 다른 sheet와 동시에 열지 않는다. 닫은 뒤에는 열었던 trigger로 focus를 돌려준다.
 
-### 4.4 MotionSites 레퍼런스 적용 가이드
+### 4.4 Navigation, sidebar와 search
+
+Navigation과 action:
+
+- tab bar와 navigation은 상권 분석, 저장 목록처럼 상태를 유지하며 전환하는 top-level section에만 사용한다.
+- 비교 dialog, 데이터 근거, 보고서 열기처럼 현재 화면에 작용하는 command는 toolbar action으로 제공한다.
+- top-level tab은 기본 `5개 이하`로 유지하고 icon과 짧은 text label을 함께 제공한다.
+- selected, hover와 `focus-visible` 상태를 서로 구분한다. selected를 색상만으로 표시하지 않는다.
+
+Sidebar와 panel:
+
+- desktop sidebar는 동등한 분석 영역 또는 반복 탐색 조건을 넓고 평평하게 보여줄 때 사용한다.
+- sidebar hierarchy는 `2단계 이하`로 유지하고 group label은 짧고 구체적으로 작성한다.
+- 사용자가 지도를 넓게 볼 수 있도록 sidebar를 숨기고 다시 여는 control을 제공한다.
+- mobile에서는 sidebar를 유지하지 않고 map-first sheet로 변환한다.
+
+Search:
+
+- 검색 위치를 찾기 쉽도록 모든 지원 너비에서 field 또는 명확한 search entry를 계속 노출한다.
+- placeholder는 `상권명, 점포명, 주소, 업종`처럼 검색 가능한 대상을 알려준다.
+- query가 있으면 clear button을 제공하고, 지운 뒤 focus를 search field에 유지한다.
+- 기본 scope는 넓게 시작하고 필요할 때 명시적인 filter 또는 token으로 좁힌다.
+- `idle / loading / no results / error / ready`를 구분하고 keyboard로 결과를 선택할 수 있게 한다.
+
+### 4.5 MotionSites 레퍼런스 적용 가이드
 
 [MotionSites](https://motionsites.ai/)는 제품 화면을 복제하기 위한 template가 아니라, 핵심 대상을 강조하고 장면을 전환하는 motion reference로 사용한다. LocalTwin에는 다음 사례의 구성 원리를 선별 적용한다.
 
@@ -258,7 +310,7 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 
 - 익숙한 기능에는 Lucide icon 또는 프로젝트가 채택한 동일 icon set을 사용한다.
 - 저장, 닫기, 확대, 축소, 위치 이동 등 익숙한 action은 icon button을 우선한다.
-- unfamiliar icon에는 tooltip과 accessible name을 제공한다.
+- text label을 시각적으로 숨기는 breakpoint에서도 icon button에는 고정된 tooltip과 accessible name을 제공한다.
 - tooltip은 trigger의 중앙에 고정해 배치하지 않는다. 실제 화면 좌표를 기준으로 좌·우·상·하 여백을
   계산하고, 좁은 화면에서도 viewport 밖으로 잘리거나 panel의 overflow에 가려지지 않아야 한다.
 - 한 화면의 primary button은 가능한 한 하나로 유지한다.
@@ -313,6 +365,8 @@ error
 - keyboard만으로 주요 탐색과 action을 수행할 수 있다.
 - focus indicator를 제거하지 않는다.
 - interactive element에는 accessible name이 있다.
+- search field는 `focus-visible` 또는 `focus-within` ring으로 현재 입력 위치를 표시한다.
+- dialog와 mobile sheet를 닫으면 이를 열었던 trigger로 focus를 돌려준다.
 - 오류 메시지는 색상 외 text로 원인과 복구 action을 설명한다.
 - animation은 `prefers-reduced-motion`을 존중한다.
 - 긴 상권명, 점포명과 가장 긴 option에서도 layout이 깨지지 않는다.
@@ -379,13 +433,19 @@ error
 - 업무 도구에 맞춘 정보 밀도
 - 3D를 보조 탐색 화면으로 제한
 - 접근 가능한 상태와 반응형 검증 원칙
+- desktop command toolbar와 mobile map-first panel 구조
+- 모든 너비에서 검색 field 노출, query clear와 focus 복귀
+- mobile에서 text가 숨는 지도 mode의 고정 accessible name
 
 ### 구현 필요
 
 - [x] `product/apps/web/src/styles/tokens.css` 생성
+- [x] HIG 기반 typography와 control-size token 추가
+- [x] desktop/mobile visual audit 기준 화면 추가
 - [ ] 공통 button, filter, panel, score, marker component 구현
 - [ ] 임의 색상과 spacing 사용을 확인하는 lint 또는 check 추가
-- [ ] desktop/mobile visual regression 기준 화면 추가
+- [ ] 기존 `8–11px` product text를 attribution 예외와 일반 content로 분류하고 typography token으로 이전
+- [ ] mobile 지도 위 panel trigger와 bottom dock의 overlay 점유를 한 번에 조정하는 navigation pass
 - [ ] 기존 HTML 프로토타입을 이 문서의 radius와 token 기준으로 정리
 
 ## 11. 관련 문서
@@ -397,3 +457,4 @@ error
 - [전체 개발 체크리스트](../development/checklist.md)
 - [검증 가이드](../development/validation.md)
 - [상권 분석 프로토타입](../prototypes/core-market-analysis-prototype.html)
+- [Apple HIG 기반 UI/UX 규칙 감사](../changes/2026-07-28-hig-ui-ux-rules.md)

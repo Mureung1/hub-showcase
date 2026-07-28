@@ -6,7 +6,15 @@ import { MarketMapPanel } from "../map/MarketMapPanel";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 
-export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
+export function WorkspaceLayout({
+  model,
+  catalogDisplayState,
+  onCatalogRetry,
+}: {
+  model: ProductWorkspaceModel;
+  catalogDisplayState: "ranked" | "connecting" | "bootstrap" | "error";
+  onCatalogRetry: () => void;
+}) {
   const {
     catalog,
     catalogState,
@@ -30,7 +38,9 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
         <MarketFilters
           marketKey={selection.marketKey}
           markets={catalogState.markets}
-          supportedCategories={catalog.categories.map((item) => item.name)}
+          supportedCategories={catalog.categories}
+          catalogState={catalogDisplayState}
+          onCatalogRetry={onCatalogRetry}
           category={selection.categorySelection.name}
           categorySelection={selection.categorySelection}
           categoryCoverageReason={storefronts.categoryCoverageReason}
@@ -109,6 +119,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
         densityLabel={storefronts.densityLabel}
         activeDemandLabel={storefronts.activeDemandLabel}
         activeDemand={storefronts.activeDemand}
+        flowState={marketAnalysis.flowState}
         mapRef={viewport.mapRef}
         onCompareOpen={() => panels.setCompareOpen(true)}
         comparisonEnabled={selection.categorySelection.coverage === "full"}
@@ -134,6 +145,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           background={marketAnalysis.background}
           backgroundState={marketAnalysis.backgroundState}
           analysisState={marketAnalysis.analysisState}
+          flowState={marketAnalysis.flowState}
           analysisScope="market"
           topic={selection.analysisTopic}
           onAnalysisRetry={marketAnalysis.retryAnalysis}
