@@ -32,15 +32,46 @@ interface RepoWithSummary extends GithubRepoData {
 
 class GithubService {
   /**
-   * GitHub API로 인기 저장소 검색 (별 순)
+   * GitHub API로 저장소 검색 (필터별)
+   * @param filter - 'trending' (별 순), 'recent' (최근), 'active' (활발)
+   * @param language - 프로그래밍 언어 필터
    */
-  async fetchTrendingRepos(language?: string, limit: number = 20): Promise<GithubRepoData[]> {
-    const query = language ? `language:${language} stars:>1000` : 'stars:>1000'
+  async fetchReposByFilter(
+    filter: 'trending' | 'recent' | 'active' = 'trending',
+    language?: string,
+    limit: number = 300
+  ): Promise<GithubRepoData[]> {
+    let query = language ? `language:${language}` : ''
+    let sortBy = 'stars'
+    let orderBy = 'desc'
+
+    // 필터별 조건 추가
+    switch (filter) {
+      case 'trending':
+        // 별 1000개 이상 (많은 순)
+        query += (query ? ' ' : '') + 'stars:>1000'
+        sortBy = 'stars'
+        orderBy = 'desc'
+        break
+      case 'recent':
+        // 최근 2개월 내 생성되고 별 1000개 이상 (최신순)
+        query += (query ? ' ' : '') + 'stars:>1000 created:>2026-05-27'
+        sortBy = 'created'
+        orderBy = 'desc'
+        break
+      case 'active':
+        // 최근 2주 내 업데이트되고 별 1000개 이상 (최신순)
+        query += (query ? ' ' : '') + 'stars:>1000 pushed:>2026-07-13'
+        sortBy = 'updated'
+        orderBy = 'desc'
+        break
+    }
+
     const token = process.env.GITHUB_TOKEN ? `&Authorization: token ${process.env.GITHUB_TOKEN}` : ''
 
     const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(
       query
-    )}&sort=stars&order=desc&per_page=${limit}`
+    )}&sort=${sortBy}&order=${orderBy}&per_page=${limit}`
 
     const response = await fetch(url, {
       headers: {
@@ -86,6 +117,83 @@ class GithubService {
       license: item.license?.name || undefined,
       homepageUrl: item.homepage || undefined,
     }))
+  }
+
+  /**
+   * 인기 저장소 검색 (호환성 유지)
+   */
+  async fetchTrendingRepos(language?: string, limit: number = 300): Promise<GithubRepoData[]> {
+    return this.fetchReposByFilter('trending', language, limit)
+  }
+
+  /**
+   * 최근 저장소 검색
+   */
+  async fetchRecentRepos(language?: string, limit: number = 300): Promise<GithubRepoData[]> {
+    try {
+      // 먼저 DB에서 최근 저장소 조회
+      const recentRepos = await prisma.githubRepo.findMany({
+        where: language ? { language } : {},
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      })
+      if (recentRepos.length > 0) {
+        return recentRepos.map(r => ({
+          id: r.githubId,
+          owner: r.owner,
+          name: r.name,
+          fullName: r.fullName,
+          description: r.description || undefined,
+          url: r.url,
+          stars: r.stars,
+          forks: r.forks,
+          openIssues: r.openIssues,
+          language: r.language || undefined,
+          topics: r.topics,
+          license: r.license || undefined,
+          homepageUrl: r.homepageUrl || undefined,
+        }))
+      }
+    } catch (error) {
+      console.error('DB 조회 오류:', error)
+    }
+    // DB에 없으면 GitHub API 호출
+    return this.fetchReposByFilter('recent', language, limit)
+  }
+
+  /**
+   * 활발한 저장소 검색
+   */
+  async fetchActiveRepos(language?: string, limit: number = 300): Promise<GithubRepoData[]> {
+    try {
+      // 먼저 DB에서 활발한 저장소 조회
+      const activeRepos = await prisma.githubRepo.findMany({
+        where: language ? { language } : {},
+        take: limit,
+        orderBy: { updatedAt: 'desc' },
+      })
+      if (activeRepos.length > 0) {
+        return activeRepos.map(r => ({
+          id: r.githubId,
+          owner: r.owner,
+          name: r.name,
+          fullName: r.fullName,
+          description: r.description || undefined,
+          url: r.url,
+          stars: r.stars,
+          forks: r.forks,
+          openIssues: r.openIssues,
+          language: r.language || undefined,
+          topics: r.topics,
+          license: r.license || undefined,
+          homepageUrl: r.homepageUrl || undefined,
+        }))
+      }
+    } catch (error) {
+      console.error('DB 조회 오류:', error)
+    }
+    // DB에 없으면 GitHub API 호출
+    return this.fetchReposByFilter('active', language, limit)
   }
 
   /**
@@ -146,11 +254,9 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
   }
 
   /**
-   * 저장소 정보 및 요약을 DB에 저장
+   * 저장소 정보를 DB에 즉시 저장 (요약 없이)
    */
   async saveRepo(repo: RepoWithSummary): Promise<void> {
-    const { summary, bullets } = await this.summarizeRepo(repo)
-
     await prisma.githubRepo.upsert({
       where: { githubId: repo.id },
       create: {
@@ -168,8 +274,8 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
         license: repo.license || null,
         homepageUrl: repo.homepageUrl || null,
         readme: repo.readme || null,
-        summary,
-        summaryBullets: bullets,
+        summary: null,  // LLM 요약은 나중에 생성
+        summaryBullets: [],
         lastFetchedAt: new Date(),
       },
       update: {
@@ -178,8 +284,6 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
         openIssues: repo.openIssues,
         description: repo.description || null,
         readme: repo.readme || null,
-        summary,
-        summaryBullets: bullets,
         lastFetchedAt: new Date(),
       },
     })
@@ -188,9 +292,51 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
   }
 
   /**
+   * 저장소에 LLM 요약 추가 (백그라운드 작업)
+   */
+  async generateSummaryForRepo(githubId: number): Promise<void> {
+    const repo = await prisma.githubRepo.findUnique({
+      where: { githubId },
+    })
+
+    if (!repo || repo.summary) return  // 이미 요약이 있으면 스킵
+
+    try {
+      const { summary, bullets } = await this.summarizeRepo({
+        id: repo.id as any,
+        owner: repo.owner,
+        name: repo.name,
+        fullName: repo.fullName,
+        description: repo.description || undefined,
+        url: repo.url,
+        stars: repo.stars,
+        forks: repo.forks,
+        openIssues: repo.openIssues,
+        language: repo.language || undefined,
+        topics: repo.topics,
+        license: repo.license || undefined,
+        homepageUrl: repo.homepageUrl || undefined,
+        readme: repo.readme || undefined,
+      })
+
+      await prisma.githubRepo.update({
+        where: { githubId },
+        data: {
+          summary,
+          summaryBullets: bullets,
+        },
+      })
+
+      console.log(`📝 Summary generated: ${repo.fullName}`)
+    } catch (error) {
+      console.error(`❌ Failed to generate summary for ${repo.fullName}:`, error)
+    }
+  }
+
+  /**
    * 인기 저장소 수집 및 요약 (일괄 처리)
    */
-  async collectAndSummarizeRepos(language?: string, limit: number = 20): Promise<void> {
+  async collectAndSummarizeRepos(language?: string, limit: number = 300): Promise<void> {
     console.log(`📥 Fetching ${limit} trending repos...`)
 
     // GitHub에서 인기 repo 목록 조회
@@ -205,14 +351,14 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
         // README 파일 가져오기
         const readme = await this.fetchReadme(repo.owner, repo.name)
 
-        // DB에 저장 및 요약 생성
+        // DB에 즉시 저장 (요약 제외)
         await this.saveRepo({
           ...repo,
           readme: readme || undefined,
         })
 
-        // API 레이트 제한 고려 (0.5초 간격)
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // 레이트 제한 고려 (최소 대기만)
+        await new Promise(resolve => setTimeout(resolve, 50))
       } catch (error) {
         console.error(`❌ Error processing ${repo.fullName}:`, error)
         continue
@@ -225,7 +371,7 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
   /**
    * DB에서 인기 저장소 조회
    */
-  async getTrendingRepos(limit: number = 20): Promise<any[]> {
+  async getTrendingRepos(limit: number = 300): Promise<any[]> {
     return prisma.githubRepo.findMany({
       take: limit,
       orderBy: { stars: 'desc' },
@@ -235,7 +381,7 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
   /**
    * 언어별 인기 저장소 조회
    */
-  async getReposByLanguage(language: string, limit: number = 10): Promise<any[]> {
+  async getReposByLanguage(language: string, limit: number = 300): Promise<any[]> {
     return prisma.githubRepo.findMany({
       where: { language },
       take: limit,
@@ -255,7 +401,7 @@ ${repo.readme ? `README 내용:\n${repo.readme}` : ''}
   /**
    * 저장소 검색
    */
-  async searchRepos(query: string, limit: number = 10): Promise<any[]> {
+  async searchRepos(query: string, limit: number = 300): Promise<any[]> {
     return prisma.githubRepo.findMany({
       where: {
         OR: [
