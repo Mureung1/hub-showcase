@@ -25,3 +25,13 @@ export function createRecord(image: File, memo: string): Promise<RecordData> {
 
   return request('/records', { method: 'POST', body: formData })
 }
+
+export type MonthRecord = {
+  date: string
+  imageUrl: string
+  memo: string
+}
+
+export function getRecordsByMonth(year: number, month: number): Promise<MonthRecord[]> {
+  return request(`/records?year=${year}&month=${month}`)
+}

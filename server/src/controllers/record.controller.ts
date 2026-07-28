@@ -45,6 +45,34 @@ export async function createRecord(req: Request, res: Response, next: NextFuncti
   }
 }
 
+const monthQuerySchema = z.object({
+  year: z.coerce.number().int(),
+  month: z.coerce.number().int().min(1).max(12),
+});
+
+export async function getRecordsByMonth(req: Request, res: Response, next: NextFunction) {
+  const parsed = monthQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid request' });
+    return;
+  }
+
+  try {
+    const userId = req.user!.id;
+    const monthPrefix = `${parsed.data.year}-${String(parsed.data.month).padStart(2, '0')}`;
+
+    const records = await prisma.record.findMany({
+      where: { userId, date: { startsWith: monthPrefix } },
+      select: { date: true, imageUrl: true, memo: true },
+      orderBy: { date: 'asc' },
+    });
+
+    res.json(records);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getTodayRecord(req: Request, res: Response, next: NextFunction) {
   try {
     const date = getKstChallengeDateString();
