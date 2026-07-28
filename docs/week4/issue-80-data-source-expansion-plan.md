@@ -143,3 +143,48 @@ PDF/HWP/HWPX 등 제각각). 이슈 #67에서 bizinfo 첨부파일 하나를 놓
 
 이번 문서는 아직 실행 승인 전 단계 — 4개 사이트 1차 조사는 끝났고, 다음 단계(K-Startup 표본
 확대 조사)로 진행할지 사용자 확인 후 이어간다.
+
+## 2026-07-28 추가 조사
+
+> 작성 시점 주석 — 아래는 2026-07-28 시점 조사 결과. 최신 진행 상태는 `docs/week4_plan.md` 참고.
+
+### K-Startup 실제 엔드포인트 확보 + 표본 확대 조사(160건)
+
+`nidview.k-startup.go.kr` 프리뷰 페이지의 JS(`view/js/app/api.js`)에서 폼 action을 역추적해
+실제 호출 URL을 확보:
+
+```
+GET https://nidview.k-startup.go.kr/view/public/call/kisedKstartupService/announcementInformation?page=N&perPage=N&rcrt_prgs_yn=Y
+```
+
+인증키 불필요, 전체 29,568건 보유. 단 `rcrt_prgs_yn` 쿼리는 **서버가 실제로 필터링하지 않음**
+(응답에 Y/N 섞여 나옴 — k-skill 프로젝트 문서가 `supt_regin`에 대해 언급한 것과 동일한 유형의
+상위호환 이슈). 클라이언트 사이드로 재필터링 필요.
+
+진행중(`rcrt_prgs_yn === 'Y'`, 클라이언트 필터) 160건 실측:
+
+- **`biz_enyy`(업력) 결측 0%, 그러나 160건 전부 예외 없이 "10년미만"이 상한**(예비창업자/1년/
+  2년/3년/5년/7년/10년미만 7개 토큰만 등장, "10년 이상"급 값 전무). 리스크 표의 "K-Startup
+  커버리지가 창업기업에 치우칠 가능성"은 **가능성이 아니라 구조적 확정**으로 재평가함 —
+  창업진흥원이 운영하는 사이트라 창업 초기기업만 대상으로 함
+- `supt_biz_clsfc`(사업분류): 창업교육/멘토링·컨설팅/시설·공간·보육/행사·네트워크가 90%+,
+  실질적 자금 지원(`정책자금`)은 1.9%뿐
+- `aply_excl_trgt_ctnt`(신청제외대상) 실질값 있는 비율 46.9%(과반 미달, 나머지는 "공고문
+  참조" fallback) — 최초 조사의 사례 1건보다 낮은 신뢰도
+- `pbanc_ctnt` 자유텍스트에 금액 패턴 있는 비율 1.2%
+
+**사용자 결정(2026-07-28)**: 위 제약(업력 10년 이내 전용)을 명시하고도 K-Startup을 소상공인24와
+병행 추가하기로 확정 — 업력 짧은 카페·음식점 등에는 여전히 유용하다고 판단. 구현 이슈:
+[#94](https://github.com/syd348/hub/issues/94)
+
+### 소상공인24 구조 확인 재시도 (실패)
+
+curl로 페이지 HTML + 메인 JS 번들(`index.1cd822e3.js`, 2.6MB)을 받아 정적 분석 시도. `/biz/mdle/pbanc`
+같은 API 경로 문자열은 번들에서 발견됐지만(`ce("/biz/mdle/pbanc").detail(pbancSn)` 형태), 실제
+REST 규칙(base URL, list/search 전체 경로)은 코드에서 동적으로 조립돼 정적 분석으로 못 찾음 —
+추측성 요청(`/api/biz/mdle/pbanc/list` 등)은 전부 404. K-Startup(단순 jQuery 페이지)과 달리
+소상공인24는 OCR WASM 모듈까지 포함된 무거운 SPA라 이 방식이 안 맞음.
+
+**사용자 결정(2026-07-28)**: 지금은 보류 — 브라우저(Chrome 확장 연결 또는 사용자 DevTools
+Network 탭) 확인이 가능해지면 이어감. 구현 이슈(보류 상태로 등록):
+[#95](https://github.com/syd348/hub/issues/95)
