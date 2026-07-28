@@ -1,6 +1,8 @@
 #!/bin/zsh
 # L2 — 백엔드 API 계약 검증 (HTTP 레벨). 단위 테스트가 못 보는 상태코드·헤더·입력 검증을 본다.
 BASE=${BASE:-http://localhost:3001}
+# CORS 허용 origin. 배포 대상을 검사할 땐 ORIGIN=https://hub-theta-brown.vercel.app 로 넘긴다.
+ORIGIN=${ORIGIN:-http://localhost:5173}
 ANON="verify-l2-$(date +%s)"
 pass=0; fail=0
 
@@ -45,7 +47,7 @@ n=$(python3 -c "import json;print(len(json.load(open('/tmp/l2body'))))")
 [[ "$n" == "0" ]] && { print "  PASS  삭제 후 0건"; ((pass++)); } || { print "  FAIL  삭제 후 ${n}건"; ((fail++)); }
 
 # CORS: 허용 origin 통과 / 미허용 origin 차단
-allowed=$(curl -s -m 30 -i -X OPTIONS "$BASE/api/results" -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: POST" | grep -ci "access-control-allow-origin")
+allowed=$(curl -s -m 30 -i -X OPTIONS "$BASE/api/results" -H "Origin: $ORIGIN" -H "Access-Control-Request-Method: POST" | grep -ci "access-control-allow-origin")
 [[ "$allowed" -ge 1 ]] && { print "  PASS  CORS 허용 origin 통과"; ((pass++)); } || { print "  FAIL  CORS 허용 origin 헤더 없음"; ((fail++)); }
 blocked=$(curl -s -m 30 -i -X OPTIONS "$BASE/api/results" -H "Origin: https://evil.example.com" -H "Access-Control-Request-Method: POST" | grep -ci "access-control-allow-origin")
 [[ "$blocked" -eq 0 ]] && { print "  PASS  CORS 미허용 origin 차단"; ((pass++)); } || { print "  FAIL  CORS 미허용 origin에 허용 헤더 부여"; ((fail++)); }
