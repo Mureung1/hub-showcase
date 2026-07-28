@@ -118,6 +118,18 @@ describe("POST /campaigns/:id/send (발송 분기)", () => {
     expect(mockDb.issueCouponsFor).not.toHaveBeenCalled();
   });
 
+  it("정액 할인 상한 초과도 발송 직전 가드레일이 400으로 거부한다 (금액권 UI 우회 방지)", async () => {
+    mockDb.getCampaignById.mockResolvedValue({
+      store_id: "s1",
+      edited_copy: null,
+      proposal: proposal("세트 5,000원 할인"),
+    });
+    const { status, body } = await send("c1", { channels: ["dangol"] });
+    expect(status).toBe(400);
+    expect(String(body.error)).toContain("가드레일");
+    expect(mockDb.issueCouponsFor).not.toHaveBeenCalled();
+  });
+
   it("SNS 전용(단골 아님)은 문자 대상 0으로 sent", async () => {
     mockDb.getCampaignById.mockResolvedValue({
       store_id: "s1",
