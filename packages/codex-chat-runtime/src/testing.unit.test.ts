@@ -57,6 +57,7 @@ test('deterministic runtime returns isolated native-context projections and reco
   const scriptedConfig = {
     projectRootMarkers: ['.git'],
     globalInstructionsFile: '/deterministic/workspace/AGENTS.md',
+    mcpServers: [],
   }
   const scriptedSkills = [
     {
@@ -101,6 +102,7 @@ test('deterministic native-context calls honor AbortSignal without closing the r
       {
         projectRootMarkers: [],
         globalInstructionsFile: null,
+        mcpServers: [],
       },
     ],
     threadIds: ['thread-after-abort'],
@@ -128,6 +130,7 @@ test('deterministic native-context calls honor AbortSignal without closing the r
     {
       projectRootMarkers: [],
       globalInstructionsFile: null,
+      mcpServers: [],
     },
   )
   assert.deepEqual(await runtime.startThread(), {
@@ -176,7 +179,11 @@ test('deterministic native-context calls reject a pre-aborted signal before cons
 test('deterministic native-context calls reject a closed runtime before consuming scripts', async () => {
   let scriptConsumed = false
   const scriptedConfig = observeConsumption(
-    { projectRootMarkers: [], globalInstructionsFile: null },
+    {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+      mcpServers: [],
+    },
     () => {
       scriptConsumed = true
     },
@@ -198,6 +205,7 @@ test('deterministic native-context calls reject a closed runtime before consumin
 
 test('deterministic MCP readiness requires one ready server with the exact tool roster', async () => {
   const runtime = new DeterministicCodexChatRuntime({
+    threadIds: ['thread-mcp'],
     mcpServerStatuses: [
       [
         {
@@ -230,7 +238,9 @@ test('deterministic MCP readiness requires one ready server with the exact tool 
       ],
     ],
   })
+  const thread = await runtime.startThread()
   const input = {
+    threadId: thread.threadId,
     serverName: 'ay_ple_interaction',
     expectedTools: ['propose_state_patch'],
     signal: new AbortController().signal,
@@ -257,6 +267,7 @@ test('deterministic MCP readiness requires one ready server with the exact tool 
 
 test('deterministic MCP readiness aborts without consuming the next status snapshot', async () => {
   const runtime = new DeterministicCodexChatRuntime({
+    threadIds: ['thread-mcp'],
     mcpServerStatuses: [
       [
         {
@@ -269,10 +280,12 @@ test('deterministic MCP readiness aborts without consuming the next status snaps
   })
   const aborted = new AbortController()
   aborted.abort()
+  const thread = await runtime.startThread()
 
   await assert.rejects(
     () =>
       runtime.waitForMcpServerReady({
+        threadId: thread.threadId,
         serverName: 'ay_ple_interaction',
         expectedTools: ['propose_state_patch'],
         signal: aborted.signal,
@@ -285,6 +298,7 @@ test('deterministic MCP readiness aborts without consuming the next status snaps
     },
   )
   await runtime.waitForMcpServerReady({
+    threadId: thread.threadId,
     serverName: 'ay_ple_interaction',
     expectedTools: ['propose_state_patch'],
     signal: new AbortController().signal,
@@ -293,6 +307,7 @@ test('deterministic MCP readiness aborts without consuming the next status snaps
 
 test('deterministic MCP readiness validates the public input shape before consuming status', async () => {
   const runtime = new DeterministicCodexChatRuntime({
+    threadIds: ['thread-mcp'],
     mcpServerStatuses: [
       [
         {
@@ -303,7 +318,9 @@ test('deterministic MCP readiness validates the public input shape before consum
       ],
     ],
   })
+  const thread = await runtime.startThread()
   const input = {
+    threadId: thread.threadId,
     serverName: 'ay_ple_interaction',
     expectedTools: ['propose_state_patch'],
     signal: new AbortController().signal,

@@ -73,6 +73,25 @@ test('runs the production bridge against exact Codex and the official local prov
       },
     })
     const processGroupId = requirePid(runtime.child)
+    assert.deepEqual(
+      await within(
+        runtime.runtime.readEffectiveConfig({
+          signal: new AbortController().signal,
+        }),
+      ),
+      {
+        projectRootMarkers: ['.git'],
+        globalInstructionsFile: null,
+        mcpServers: [
+          {
+            name: 'ay_ple_interaction',
+            enabled: true,
+            required: true,
+            enabledTools: ['propose_state_patch'],
+          },
+        ],
+      },
+    )
     const thread = await within(runtime.runtime.startThread())
 
     const nominal = await within(
@@ -282,9 +301,10 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
         postKillMs: 2_000,
       },
     })
-    await within(runtime.runtime.startThread())
+    const thread = await within(runtime.runtime.startThread())
     await within(
       runtime.runtime.waitForMcpServerReady({
+        threadId: thread.threadId,
         serverName: 'ay_ple_interaction',
         expectedTools: ['propose_state_patch'],
         signal: new AbortController().signal,
@@ -293,6 +313,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
     await assert.rejects(
       within(
         runtime.runtime.waitForMcpServerReady({
+          threadId: thread.threadId,
           serverName: 'ay_ple_interaction',
           expectedTools: ['wrong_tool'],
           signal: new AbortController().signal,
@@ -465,6 +486,7 @@ test('records exact trust despite a trusted ancestor and reloads only exact nati
     assert.deepEqual(config, {
       projectRootMarkers: ['.git'],
       globalInstructionsFile: projectInstructions,
+      mcpServers: [],
     })
     assert.deepEqual(skills, [
       {
@@ -647,6 +669,7 @@ test('preserves explicit untrusted at workspace-write thread start', async () =>
     assert.deepEqual(config, {
       projectRootMarkers: ['.git'],
       globalInstructionsFile: null,
+      mcpServers: [],
     })
     assert.deepEqual(skills, [
       {

@@ -1,21 +1,13 @@
 diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
-index 94b1eeb..ac1214a 100644
+index 8f2105f..a850cc3 100644
 --- a/sdk/python/src/openai_codex/api.py
 +++ b/sdk/python/src/openai_codex/api.py
-@@ -45,6 +45,9 @@ from .generated.v2_all import (
-     GetAccountParams,
-     GetAccountResponse,
+@@ -49,0 +50,2 @@ from .generated.v2_all import (
 +    ListMcpServerStatusParams,
 +    ListMcpServerStatusResponse,
-     LoginAccountParams,
+@@ -50,0 +53 @@ from .generated.v2_all import (
 +    McpServerStatusDetail,
-     ModelListResponse,
-     Personality,
-     ReasoningEffort,
-@@ -285,6 +288,18 @@ class Codex:
-         """List available models reported by Codex."""
-         return self._client.model_list(include_hidden=include_hidden)
- 
+@@ -387,0 +391,12 @@ class Codex:
 +    def mcp_server_statuses(self, thread_id: str) -> ListMcpServerStatusResponse:
 +        """List MCP server and tool inventory for one live thread."""
 +        params = ListMcpServerStatusParams(
@@ -28,13 +20,7 @@ index 94b1eeb..ac1214a 100644
 +            response_model=ListMcpServerStatusResponse,
 +        )
 +
- 
- class AsyncCodex:
-     """Async mirror of :class:`Codex`.
-@@ -533,6 +548,22 @@ class AsyncCodex:
-         await self._ensure_initialized()
-         return await self._client.model_list(include_hidden=include_hidden)
- 
+@@ -646,0 +662,16 @@ class AsyncCodex:
 +    async def mcp_server_statuses(
 +        self,
 +        thread_id: str,
@@ -51,29 +37,17 @@ index 94b1eeb..ac1214a 100644
 +            response_model=ListMcpServerStatusResponse,
 +        )
 +
- 
- @dataclass(slots=True)
- class Thread:
 diff --git a/sdk/python/tests/test_public_api_runtime_behavior.py b/sdk/python/tests/test_public_api_runtime_behavior.py
-index d798844..e909b20 100644
+index d798844..1f1e6c0 100644
 --- a/sdk/python/tests/test_public_api_runtime_behavior.py
 +++ b/sdk/python/tests/test_public_api_runtime_behavior.py
-@@ -13,7 +13,10 @@ from openai_codex.api import (
-     Codex,
-     Sandbox,
- )
+@@ -17 +17,4 @@ from openai_codex.api import (
 -from openai_codex.generated.v2_all import TurnStartParams
 +from openai_codex.generated.v2_all import (
 +    ListMcpServerStatusResponse,
 +    TurnStartParams,
 +)
- from openai_codex.models import InitializeResponse
- 
- ROOT = Path(__file__).resolve().parents[1]
-@@ -156,6 +159,40 @@ def test_thread_start_preserves_native_effective_model_settings() -> None:
-     asyncio.run(scenario())
- 
- 
+@@ -158,0 +162,34 @@ def test_thread_start_preserves_native_effective_model_settings() -> None:
 +def test_async_codex_mcp_server_statuses_uses_thread_project_context() -> None:
 +    async def scenario() -> None:
 +        codex = AsyncCodex()
@@ -108,6 +82,3 @@ index d798844..e909b20 100644
 +    asyncio.run(scenario())
 +
 +
- def _approval_mode_turn_params(approval_mode: ApprovalMode) -> TurnStartParams:
-     """Build real generated turn params from one public approval mode."""
-     approval_policy, approvals_reviewer = public_api_module._approval_mode_settings(approval_mode)

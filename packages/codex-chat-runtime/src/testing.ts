@@ -241,12 +241,16 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
     this.callLog.push({
       operation: 'waitForMcpServerReady',
       input: {
+        threadId: input.threadId,
         serverName: input.serverName,
         expectedTools: [...input.expectedTools],
       },
     })
     this.requireOpen()
     if (input.signal.aborted) throw mcpReadinessAbortedError()
+    if (!this.liveThreads.has(input.threadId)) {
+      throw mcpServerNotReadyError()
+    }
     const scripted = this.mcpServerStatuses.shift()
     if (scripted === undefined) {
       throw new Error('No deterministic MCP server status snapshot remains')

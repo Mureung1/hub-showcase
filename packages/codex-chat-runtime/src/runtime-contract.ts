@@ -77,6 +77,7 @@ export interface CodexModelCatalogRuntime {
 
 export interface CodexMcpReadinessPort {
   waitForMcpServerReady(input: {
+    readonly threadId: CodexThreadId
     readonly serverName: string
     readonly expectedTools: readonly string[]
     readonly signal: AbortSignal

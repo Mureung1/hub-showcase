@@ -576,15 +576,14 @@ class BridgeWorker:
         self,
         command: WaitForMcpServerReadyCommand,
     ) -> None:
-        if len(self._threads) != 1:
+        if command.thread_id not in self._threads:
             self._operation_error(
                 command.bridge_request_id,
                 "mcp_server_not_ready",
             )
             return
-        thread_id = next(iter(self._threads))
         try:
-            response = await self._codex.mcp_server_statuses(thread_id)
+            response = await self._codex.mcp_server_statuses(command.thread_id)
         except Exception as exc:
             self._sdk_failure(command.bridge_request_id, exc)
             return

@@ -586,6 +586,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
       (bridgeRequestId) => ({
         bridgeRequestId,
         command: 'wait_for_mcp_server_ready',
+        threadId: input.threadId,
         serverName: input.serverName,
         expectedTools: [...input.expectedTools],
       }),

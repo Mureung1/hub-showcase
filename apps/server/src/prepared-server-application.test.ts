@@ -351,6 +351,7 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
     return Promise.resolve({
       projectRootMarkers: [],
       globalInstructionsFile: null,
+      mcpServers: [],
     })
   }
 

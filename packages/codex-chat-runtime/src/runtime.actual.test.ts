@@ -118,11 +118,13 @@ test('streams one nominal native turn to its authoritative terminal', async () =
   }
 })
 
-test('verifies same-generation project MCP inventory without thread overrides', async () => {
+test('verifies project MCP inventory on one pinned thread while another thread is live', async () => {
   const harness = await startHarness('mcp-ready')
   try {
+    const thread = await harness.runtime.startThread()
     await harness.runtime.startThread()
     await harness.runtime.waitForMcpServerReady({
+      threadId: thread.threadId,
       serverName: 'ay_ple_interaction',
       expectedTools: ['propose_state_patch'],
       signal: new AbortController().signal,
@@ -207,7 +209,7 @@ test('fails closed for absent, unready, and wrong project MCP inventory', async 
     await t.test(label, async () => {
       const harness = await startHarness(`mcp-${label.replaceAll(' ', '-')}`)
       try {
-        await harness.runtime.startThread()
+        const thread = await harness.runtime.startThread()
         await writeFile(
           join(dirname(harness.journalPath), 'injected-response.json'),
           JSON.stringify({
@@ -217,6 +219,7 @@ test('fails closed for absent, unready, and wrong project MCP inventory', async 
         )
         await assert.rejects(
           harness.runtime.waitForMcpServerReady({
+            threadId: thread.threadId,
             serverName: 'ay_ple_interaction',
             expectedTools: ['propose_state_patch'],
             signal: new AbortController().signal,
@@ -236,13 +239,14 @@ test('fails closed for absent, unready, and wrong project MCP inventory', async 
 test('aborts a pending project MCP readiness observation locally', async () => {
   const harness = await startHarness('mcp-abort')
   try {
-    await harness.runtime.startThread()
+    const thread = await harness.runtime.startThread()
     await writeFile(
       join(dirname(harness.journalPath), 'delay-mcp-status-ms'),
       '100',
     )
     const controller = new AbortController()
     const pending = harness.runtime.waitForMcpServerReady({
+      threadId: thread.threadId,
       serverName: 'ay_ple_interaction',
       expectedTools: ['propose_state_patch'],
       signal: controller.signal,
@@ -377,6 +381,7 @@ test('projects one atomic native-context generation through the workspace Runtim
         config: {
           projectRootMarkers: [],
           globalInstructionsFile: null,
+          mcpServers: [],
         },
         skills: [
           {
@@ -402,6 +407,7 @@ test('projects one atomic native-context generation through the workspace Runtim
       {
         projectRootMarkers: [],
         globalInstructionsFile: null,
+        mcpServers: [],
       },
     )
     assert.deepEqual(
@@ -473,6 +479,7 @@ test('runs the pinned workspace Runtime and native-context sidecar provider-free
     assert.deepEqual(await harness.runtime.readEffectiveConfig({ signal }), {
       projectRootMarkers: ['.git'],
       globalInstructionsFile: null,
+      mcpServers: [],
     })
     assert.deepEqual(await harness.runtime.listEffectiveSkills({ signal }), [
       {

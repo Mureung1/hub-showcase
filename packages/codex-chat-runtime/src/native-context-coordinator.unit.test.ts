@@ -16,6 +16,7 @@ const FIRST_SNAPSHOT: NativeContextProbeSnapshot = {
   config: {
     projectRootMarkers: ['.git'],
     globalInstructionsFile: '/workspace/AGENTS.md',
+    mcpServers: [],
   },
   skills: [
     {
@@ -30,6 +31,7 @@ const SECOND_SNAPSHOT: NativeContextProbeSnapshot = {
   config: {
     projectRootMarkers: [],
     globalInstructionsFile: null,
+    mcpServers: [],
   },
   skills: [
     {

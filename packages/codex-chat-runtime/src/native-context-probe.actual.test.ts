@@ -155,6 +155,7 @@ test('queries exact native context, omits system Skills, and fully reaps before 
       config: {
         projectRootMarkers: [],
         globalInstructionsFile: null,
+        mcpServers: [],
       },
       skills: [
         {
@@ -436,6 +437,7 @@ test('queries the pinned native App Server provider-free', async () => {
       config: {
         projectRootMarkers: ['.git'],
         globalInstructionsFile: projectInstructions,
+        mcpServers: [],
       },
       skills: [
         {
@@ -464,6 +466,7 @@ test('queries the pinned native App Server provider-free', async () => {
         config: {
           projectRootMarkers: ['.git'],
           globalInstructionsFile: null,
+          mcpServers: [],
         },
         skills: [
           {

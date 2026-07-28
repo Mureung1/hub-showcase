@@ -472,6 +472,7 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
     return Promise.resolve({
       projectRootMarkers: [],
       globalInstructionsFile: null,
+      mcpServers: [],
     })
   }
 

@@ -18,10 +18,12 @@ import {
   PreparedWorkspaceStartupError,
   startPreparedWorkspace,
   type PreparedWorkspaceActiveSession,
+  type PreparedWorkspaceMcpMonitor,
   type PreparedWorkspaceStartupPorts,
 } from './prepared-workspace-startup.js'
 
 const serverHost = '127.0.0.1'
+const mcpReadinessPollIntervalMs = 1_000
 
 export type StartConfiguredServerApplicationOptions = {
   readonly environment?: NodeJS.ProcessEnv
@@ -162,10 +164,11 @@ async function startPreparedConfiguredServerApplication(input: {
           terminal: runtime.terminal,
           async loadNativeProjectConfig() {
             const signal = new AbortController().signal
-            await Promise.all([
+            const [config] = await Promise.all([
               runtime.readEffectiveConfig({ signal }),
               runtime.listEffectiveSkills({ signal }),
             ])
+            return config
           },
           async startWorkspaceThread() {
             const thread = await runtime.startThread()
@@ -181,8 +184,15 @@ async function startPreparedConfiguredServerApplication(input: {
             ) {
               throw new Error('Prepared Runtime thread context changed')
             }
-            await runtime.releaseThread({ threadId: context.threadId })
-            startupThreadId = undefined
+          },
+          monitorRequiredMcp(monitorInput) {
+            if (monitorInput.threadId !== startupThreadId) {
+              throw new Error('Prepared Runtime monitor context changed')
+            }
+            return createCodexMcpReadinessMonitor(
+              runtime,
+              monitorInput,
+            )
           },
           close: () => runtime.close(),
         }
@@ -239,6 +249,63 @@ async function startPreparedConfiguredServerApplication(input: {
     await target.application.close().catch(() => undefined)
     throw error
   }
+}
+
+export function createCodexMcpReadinessMonitor(
+  runtime: Pick<CodexWorkspaceRuntime, 'waitForMcpServerReady'>,
+  input: {
+    readonly threadId: string
+    readonly serverName: string
+    readonly expectedTools: readonly string[]
+  },
+  pollIntervalMs = mcpReadinessPollIntervalMs,
+): PreparedWorkspaceMcpMonitor {
+  if (!Number.isSafeInteger(pollIntervalMs) || pollIntervalMs < 1) {
+    throw new TypeError('The MCP readiness poll interval is invalid')
+  }
+  const lost = deferred<unknown>()
+  let stopped = false
+  let timer: NodeJS.Timeout | undefined
+  let controller: AbortController | undefined
+  let activeCheck: Promise<void> | undefined
+
+  const schedule = (): void => {
+    timer = setTimeout(runCheck, pollIntervalMs)
+  }
+  const runCheck = (): void => {
+    if (stopped) return
+    controller = new AbortController()
+    const currentController = controller
+    activeCheck = runtime
+      .waitForMcpServerReady({
+        ...input,
+        signal: currentController.signal,
+      })
+      .then(
+        () => {
+          if (!stopped) schedule()
+        },
+        (cause) => {
+          if (!stopped) lost.resolve(cause)
+        },
+      )
+      .finally(() => {
+        if (controller === currentController) controller = undefined
+        activeCheck = undefined
+      })
+  }
+
+  schedule()
+  return Object.freeze({
+    lost: lost.promise,
+    async close() {
+      if (stopped) return
+      stopped = true
+      if (timer) clearTimeout(timer)
+      controller?.abort()
+      await activeCheck?.catch(() => undefined)
+    },
+  })
 }
 
 async function closePreparedHost(

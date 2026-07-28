@@ -391,11 +391,24 @@ function createDeterministicPorts(
           terminal: terminal.promise,
           async loadNativeProjectConfig() {
             if (options.holdStartup) await startupGate.promise
+            return {
+              projectRootMarkers: ['.git'],
+              globalInstructionsFile: null,
+              mcpServers: [
+                {
+                  name: 'ay_ple_interaction',
+                  enabled: true,
+                  required: true,
+                  enabledTools: ['propose_state_patch'],
+                },
+              ],
+            }
           },
           async startWorkspaceThread() {
             return { threadId }
           },
           async waitForRequiredMcp(waitInput) {
+            assert.equal(waitInput.threadId, threadId)
             assert.equal(waitInput.serverName, 'ay_ple_interaction')
             assert.deepEqual(waitInput.expectedTools, [
               'propose_state_patch',
@@ -419,6 +432,13 @@ function createDeterministicPorts(
               context.workspaceId,
               options.expectedWorkspaceId ?? targetWorkspaceId,
             )
+          },
+          monitorRequiredMcp(monitorInput) {
+            assert.equal(monitorInput.threadId, threadId)
+            return {
+              lost: new Promise(() => undefined),
+              async close() {},
+            }
           },
           async close() {},
         }

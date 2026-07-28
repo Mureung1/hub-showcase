@@ -17,7 +17,12 @@ export function requireMcpReadinessInput(
     throw new TypeError('MCP readiness input must be an object')
   }
   const actualKeys = Object.keys(input).sort()
-  const expectedKeys = ['expectedTools', 'serverName', 'signal']
+  const expectedKeys = [
+    'expectedTools',
+    'serverName',
+    'signal',
+    'threadId',
+  ]
   if (
     actualKeys.length !== expectedKeys.length ||
     actualKeys.some((key, index) => key !== expectedKeys[index])
@@ -25,7 +30,9 @@ export function requireMcpReadinessInput(
     throw new TypeError('MCP readiness input fields are invalid')
   }
 
-  const { expectedTools, serverName, signal } = input as Record<string, unknown>
+  const { expectedTools, serverName, signal, threadId } =
+    input as Record<string, unknown>
+  requireBoundedString(threadId, 'MCP thread ID', 1024)
   requireBoundedString(serverName, 'MCP server name', 256)
   if (
     !Array.isArray(expectedTools) ||

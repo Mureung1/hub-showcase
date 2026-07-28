@@ -306,6 +306,19 @@ function cloneConfig(config: CodexEffectiveConfig): CodexEffectiveConfig {
   return Object.freeze({
     projectRootMarkers: Object.freeze([...config.projectRootMarkers]),
     globalInstructionsFile: config.globalInstructionsFile,
+    mcpServers: Object.freeze(
+      config.mcpServers.map((server) =>
+        Object.freeze({
+          name: server.name,
+          enabled: server.enabled,
+          required: server.required,
+          enabledTools:
+            server.enabledTools === null
+              ? null
+              : Object.freeze([...server.enabledTools]),
+        }),
+      ),
+    ),
   })
 }
 

@@ -73,9 +73,11 @@ export function decodeNativeContextConfig(
   if (instructions !== null && !isAbsoluteNormalizedPath(instructions)) {
     throw new Error('invalid config/read response')
   }
+  const mcpServers = decodeEffectiveMcpServers(config.mcp_servers)
   return Object.freeze({
     projectRootMarkers: Object.freeze(projectRootMarkers),
     globalInstructionsFile: instructions,
+    mcpServers,
   })
 }
 
@@ -213,6 +215,71 @@ function hasAllowedKeys(
 ): boolean {
   const accepted = new Set(allowed)
   return Object.keys(value).every((key) => accepted.has(key))
+}
+
+function decodeEffectiveMcpServers(
+  value: unknown,
+): CodexEffectiveConfig['mcpServers'] {
+  if (value === undefined || value === null) return Object.freeze([])
+  if (!isJsonObject(value) || Object.keys(value).length > 128) {
+    throw new Error('invalid config/read response')
+  }
+
+  return Object.freeze(
+    Object.entries(value)
+      .sort(([left], [right]) =>
+        left < right ? -1 : left > right ? 1 : 0,
+      )
+      .map(([name, declaration]) => {
+        if (
+          !isBoundedString(name, 256, true) ||
+          !isJsonObject(declaration)
+        ) {
+          throw new Error('invalid config/read response')
+        }
+        const enabled = Object.hasOwn(declaration, 'enabled')
+          ? declaration.enabled
+          : true
+        const required = Object.hasOwn(declaration, 'required')
+          ? declaration.required
+          : false
+        if (
+          typeof enabled !== 'boolean' ||
+          typeof required !== 'boolean'
+        ) {
+          throw new Error('invalid config/read response')
+        }
+
+        const rawEnabledTools = declaration.enabled_tools
+        let enabledTools: readonly string[] | null = null
+        if (rawEnabledTools !== undefined && rawEnabledTools !== null) {
+          if (
+            !Array.isArray(rawEnabledTools) ||
+            rawEnabledTools.length > 128
+          ) {
+            throw new Error('invalid config/read response')
+          }
+          const tools: string[] = []
+          for (const tool of rawEnabledTools) {
+            if (!isBoundedString(tool, 256, true)) {
+              throw new Error('invalid config/read response')
+            }
+            tools.push(tool)
+          }
+          if (new Set(tools).size !== tools.length) {
+            throw new Error('invalid config/read response')
+          }
+          enabledTools = Object.freeze(tools)
+        }
+
+        return Object.freeze({
+          name,
+          enabled,
+          required,
+          enabledTools,
+        })
+      }),
+  )
 }
 
 function isBoundedString(

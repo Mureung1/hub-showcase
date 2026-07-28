@@ -38,6 +38,7 @@ class ReadModelCatalogCommand:
 @dataclass(frozen=True, slots=True)
 class WaitForMcpServerReadyCommand:
     bridge_request_id: str
+    thread_id: str
     server_name: str
     expected_tools: tuple[str, ...]
     command: Literal["wait_for_mcp_server_ready"] = "wait_for_mcp_server_ready"
@@ -262,12 +263,14 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             {
                 "bridgeRequestId",
                 "command",
+                "threadId",
                 "serverName",
                 "expectedTools",
             },
         )
         return WaitForMcpServerReadyCommand(
             request_id,
+            _require_nonempty_string(value.get("threadId")),
             _require_bounded_string(value.get("serverName"), max_bytes=256),
             _require_tool_roster(value.get("expectedTools")),
         )

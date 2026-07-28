@@ -7,6 +7,7 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 export type {
   CodexEffectiveConfig,
+  CodexEffectiveMcpServer,
   CodexEffectiveSkill,
   CodexNativeContextPort,
 } from './native-context-contract.js'

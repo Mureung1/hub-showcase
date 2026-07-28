@@ -208,6 +208,7 @@ export class ControlledRuntime implements CodexWorkspaceRuntime {
     return {
       projectRootMarkers: [],
       globalInstructionsFile: null,
+      mcpServers: [],
     }
   }
 

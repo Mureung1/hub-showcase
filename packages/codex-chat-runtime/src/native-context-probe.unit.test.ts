@@ -29,12 +29,16 @@ const BUNDLE: VerifiedProductionBundle = {
 function configResult(input: {
   readonly markers?: unknown
   readonly instructions?: unknown
+  readonly mcpServers?: unknown
   readonly omitMarkers?: boolean
   readonly omitInstructions?: boolean
 } = {}): Record<string, unknown> {
   return {
     config: {
       model: 'private-model',
+      ...(Object.hasOwn(input, 'mcpServers')
+        ? { mcp_servers: input.mcpServers }
+        : {}),
       ...(input.omitMarkers
         ? {}
         : {
@@ -177,15 +181,44 @@ test('projects and freezes only the high-level effective config', () => {
     configResult({
       markers: ['.git', '.hg'],
       instructions: '/private/tmp/AGENTS.md',
+      mcpServers: {
+        ignored_server: {
+          enabled: false,
+          required: false,
+        },
+        ay_ple_interaction: {
+          command: 'node',
+          enabled: true,
+          enabled_tools: ['propose_state_patch'],
+          required: true,
+        },
+      },
     }),
   )
 
   assert.deepEqual(projected, {
     projectRootMarkers: ['.git', '.hg'],
     globalInstructionsFile: '/private/tmp/AGENTS.md',
+    mcpServers: [
+      {
+        name: 'ay_ple_interaction',
+        enabled: true,
+        required: true,
+        enabledTools: ['propose_state_patch'],
+      },
+      {
+        name: 'ignored_server',
+        enabled: false,
+        required: false,
+        enabledTools: null,
+      },
+    ],
   })
   assert.equal(Object.isFrozen(projected), true)
   assert.equal(Object.isFrozen(projected.projectRootMarkers), true)
+  assert.equal(Object.isFrozen(projected.mcpServers), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]?.enabledTools), true)
   assert.equal(Object.hasOwn(projected, 'model'), false)
 
   const nativeDefault = nativeContextProbeTesting.decodeConfigResult(
@@ -194,8 +227,10 @@ test('projects and freezes only the high-level effective config', () => {
   assert.deepEqual(nativeDefault, {
     projectRootMarkers: ['.git'],
     globalInstructionsFile: null,
+    mcpServers: [],
   })
   assert.equal(Object.isFrozen(nativeDefault.projectRootMarkers), true)
+  assert.equal(Object.isFrozen(nativeDefault.mcpServers), true)
 })
 
 test('rejects missing, malformed, or unbounded native config fields', async (t) => {
@@ -220,6 +255,30 @@ test('rejects missing, malformed, or unbounded native config fields', async (t) 
     [
       'unnormalized instruction path',
       configResult({ instructions: '/private/tmp/../AGENTS.md' }),
+    ],
+    [
+      'non-object MCP declarations',
+      configResult({ mcpServers: [] }),
+    ],
+    [
+      'non-boolean MCP required flag',
+      configResult({
+        mcpServers: {
+          ay_ple_interaction: {
+            required: 'true',
+          },
+        },
+      }),
+    ],
+    [
+      'malformed enabled MCP tool roster',
+      configResult({
+        mcpServers: {
+          ay_ple_interaction: {
+            enabled_tools: ['propose_state_patch', 42],
+          },
+        },
+      }),
     ],
     [
       'unexpected response key',

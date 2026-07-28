@@ -1,4 +1,7 @@
-import type { CodexChildEnvironment } from '@ay-ple/codex-chat-runtime'
+import type {
+  CodexChildEnvironment,
+  CodexEffectiveConfig,
+} from '@ay-ple/codex-chat-runtime'
 import type { ProductWorkspaceLifecycle } from '@ay-ple/product-contract'
 import type { SemesterWorkspaceStateV4 } from '@ay-ple/semester-workspace'
 
@@ -51,9 +54,10 @@ export type PreparedWorkspaceBrokerGeneration = {
 
 export type PreparedWorkspaceRuntimeGeneration = {
   readonly terminal: Promise<unknown>
-  loadNativeProjectConfig(): Promise<void>
+  loadNativeProjectConfig(): Promise<CodexEffectiveConfig>
   startWorkspaceThread(): Promise<{ readonly threadId: string }>
   waitForRequiredMcp(input: {
+    readonly threadId: string
     readonly serverName: string
     readonly expectedTools: readonly string[]
     readonly signal: AbortSignal
@@ -63,6 +67,16 @@ export type PreparedWorkspaceRuntimeGeneration = {
     readonly threadId: string
     readonly workspaceId: string
   }): Promise<void>
+  monitorRequiredMcp(input: {
+    readonly threadId: string
+    readonly serverName: string
+    readonly expectedTools: readonly string[]
+  }): PreparedWorkspaceMcpMonitor
+  close(): Promise<void>
+}
+
+export type PreparedWorkspaceMcpMonitor = {
+  readonly lost: Promise<unknown>
   close(): Promise<void>
 }
 
@@ -126,11 +140,12 @@ export async function startPreparedWorkspace(options: {
   let listener: PreparedWorkspaceSharedListener | undefined
   let broker: PreparedWorkspaceBrokerGeneration | undefined
   let runtime: PreparedWorkspaceRuntimeGeneration | undefined
+  let mcpMonitor: PreparedWorkspaceMcpMonitor | undefined
   let lifecycle: ProductWorkspaceLifecycle = {
     state: 'starting',
     workspace: workspaceSummary(selection.workspace),
   }
-  let runtimeTerminated = false
+  let generationUnavailable = false
   let cleanupPromise: Promise<void> | undefined
 
   const cleanup = (
@@ -140,6 +155,7 @@ export async function startPreparedWorkspace(options: {
       const failures: unknown[] = []
       const deadline = Date.now() + cleanupDeadlineMs
       for (const close of [
+        () => mcpMonitor?.close() ?? Promise.resolve(),
         () =>
           (reason === 'runtime_terminal'
             ? broker?.runtimeTerminal()
@@ -166,9 +182,14 @@ export async function startPreparedWorkspace(options: {
   }
 
   const onRuntimeTerminal = (): void => {
-    runtimeTerminated = true
+    generationUnavailable = true
     lifecycle = runtimeUnavailableLifecycle(selection.workspace)
     void cleanup('runtime_terminal').catch(() => undefined)
+  }
+  const onAdapterLost = (): Promise<void> => {
+    generationUnavailable = true
+    lifecycle = runtimeUnavailableLifecycle(selection.workspace)
+    return cleanup('adapter_lost')
   }
 
   try {
@@ -190,7 +211,12 @@ export async function startPreparedWorkspace(options: {
     void runtime.terminal.then(onRuntimeTerminal, onRuntimeTerminal)
 
     stage = 'native_project_config'
-    await raceRuntimeTerminal(runtime.loadNativeProjectConfig(), runtime)
+    requireInteractionMcpDeclaration(
+      await raceRuntimeTerminal(
+        runtime.loadNativeProjectConfig(),
+        runtime,
+      ),
+    )
 
     stage = 'adapter_handshake'
     const thread = await raceRuntimeTerminal(
@@ -201,6 +227,7 @@ export async function startPreparedWorkspace(options: {
     stage = 'required_tool_roster'
     await raceRuntimeTerminal(
       runtime.waitForRequiredMcp({
+        threadId: thread.threadId,
         serverName: requiredInteractionServer,
         expectedTools: requiredInteractionTools,
         signal: new AbortController().signal,
@@ -221,14 +248,29 @@ export async function startPreparedWorkspace(options: {
       }),
       runtime,
     )
-    if (runtimeTerminated) throw new RuntimeTerminatedDuringStartup()
+    if (generationUnavailable) throw new RuntimeTerminatedDuringStartup()
+
+    stage = 'required_tool_roster'
+    mcpMonitor = runtime.monitorRequiredMcp({
+      threadId: thread.threadId,
+      serverName: requiredInteractionServer,
+      expectedTools: requiredInteractionTools,
+    })
+    void mcpMonitor.lost.then(
+      () => {
+        if (!cleanupPromise) void onAdapterLost().catch(() => undefined)
+      },
+      () => {
+        if (!cleanupPromise) void onAdapterLost().catch(() => undefined)
+      },
+    )
 
     const activeLifecycle = {
       state: 'active',
       workspace: workspaceSummary(fresh.workspace),
     } satisfies PreparedWorkspaceActiveLifecycle
     const acceptCommit = (): boolean => {
-      if (runtimeTerminated) return false
+      if (generationUnavailable) return false
       lifecycle = activeLifecycle
       return true
     }
@@ -246,10 +288,7 @@ export async function startPreparedWorkspace(options: {
     return Object.freeze({
       lifecycle: activeLifecycle,
       readLifecycle: () => lifecycle,
-      adapterLost: () => {
-        lifecycle = runtimeUnavailableLifecycle(selection.workspace)
-        return cleanup('adapter_lost')
-      },
+      adapterLost: onAdapterLost,
       close: () => cleanup('shutdown'),
     })
   } catch (cause) {
@@ -286,6 +325,44 @@ async function requirePreparedSelection(options: {
     stage: 'prepared_root_validation',
     launchFailure: launch,
   })
+}
+
+function requireInteractionMcpDeclaration(
+  config: CodexEffectiveConfig,
+): void {
+  const declarations = config.mcpServers.filter(
+    ({ name }) => name === requiredInteractionServer,
+  )
+  const declaration = declarations[0]
+  if (
+    declarations.length !== 1 ||
+    !declaration ||
+    !declaration.enabled ||
+    !declaration.required ||
+    declaration.enabledTools === null ||
+    !sameStringSet(
+      declaration.enabledTools,
+      requiredInteractionTools,
+    )
+  ) {
+    throw new TypeError(
+      'The required Interaction MCP declaration is invalid',
+    )
+  }
+}
+
+function sameStringSet(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  const sortedLeft = [...left].sort()
+  const sortedRight = [...right].sort()
+  return (
+    sortedLeft.length === sortedRight.length &&
+    sortedLeft.every(
+      (value, index) => value === sortedRight[index],
+    )
+  )
 }
 
 async function requireFreshSelection(

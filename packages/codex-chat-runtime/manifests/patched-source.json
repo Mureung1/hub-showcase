@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "570c4325dd19b6d1ad0997ddb7530f638ae54b348f2d3b52a17d25fdd8f4bec1",
+  "patch_stack_sha256": "f6c82d2d862ae5bb9033c6db0a8ae18b19684181fe70f7ed3ace7f8498149d89",
   "patches": [
     {
       "bytes": 6020,
@@ -784,7 +784,7 @@
       "sha256": "d3c99630255d7938fe691c609fe672b255ff5ec9f8f3bc52dc8ad96e8323736f"
     },
     {
-      "bytes": 4170,
+      "bytes": 3310,
       "changed_files": {
         "sdk/python/src/openai_codex/api.py": {
           "after": {
@@ -815,7 +815,7 @@
       "id": "0008-thread-mcp-status",
       "order": 8,
       "path": "upstream/patches/0008-thread-mcp-status.patch",
-      "sha256": "0e232457785e07d66d25baed25eabb1b2c53b6b95d9b6016b6cd9e834834ba79"
+      "sha256": "9b0c917ffe8e26232e88406b4cf72450d6f3b1d0455777b69d6bd07f2af09cfd"
     }
   ],
   "schema_version": 1,

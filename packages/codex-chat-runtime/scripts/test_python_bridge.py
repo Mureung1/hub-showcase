@@ -304,10 +304,12 @@ class ProtocolUnitTests(unittest.TestCase):
 
         readiness = decode_command_line(
             b'{"bridgeRequestId":"mcp","command":"wait_for_mcp_server_ready",'
+            b'"threadId":"thread-native",'
             b'"serverName":"ay_ple_interaction",'
             b'"expectedTools":["propose_state_patch"]}\n'
         )
         self.assertEqual(readiness.server_name, "ay_ple_interaction")
+        self.assertEqual(readiness.thread_id, "thread-native")
         self.assertEqual(readiness.expected_tools, ("propose_state_patch",))
 
         answer = decode_command_line(
@@ -335,12 +337,14 @@ class ProtocolUnitTests(unittest.TestCase):
             {
                 "bridgeRequestId": "mcp",
                 "command": "wait_for_mcp_server_ready",
+                "threadId": "thread-native",
                 "serverName": "ay_ple_interaction",
                 "expectedTools": [],
             },
             {
                 "bridgeRequestId": "mcp",
                 "command": "wait_for_mcp_server_ready",
+                "threadId": "thread-native",
                 "serverName": "ay_ple_interaction",
                 "expectedTools": ["same", "same"],
             },
