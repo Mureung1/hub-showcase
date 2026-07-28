@@ -92,7 +92,15 @@ function statusOf(error) {
 
 // 429(쿼터)·503(과부하)는 일시적, 404(모델 폐기·계정별 미제공)는 영구적이지만 둘 다 "이 모델만" 문제이므로
 // 다음 모델로 넘어간다. 그 외 오류(인증·요청 형식 등)는 재시도 이득이 적어 즉시 중단.
+//
+// llm_timeout 도 "이 모델만" 문제로 본다(2026-07-28 실측): flash-latest 는 구조화 출력에서 6~8초가 기본이라
+// 입력이 조금만 길어지면 12초 상한을 넘긴다. 그런데 타임아웃 오류에는 status 가 없어서 예전에는
+// isRetriable=false 로 즉시 포기했고, 실측 1.5초로 훨씬 빠른 flash-lite-latest 를 시도조차 하지 않았다.
+// 결과적으로 AI 기능이 조용히 규칙 폴백으로 떨어졌다. 재시도해도 MODEL_CHAIN 길이만큼만 도니 무한루프는 없다.
 function isRetriable(error) {
+  if (error?.message === "llm_timeout") {
+    return true;
+  }
   const status = Number(statusOf(error));
   return status === 429 || status === 503 || status === 404;
 }
@@ -141,15 +149,20 @@ export async function estimateMbtiFromChat(messages = [], options = {}) {
         return { ...validated, mbti: knownMbti || validated.mbti, model };
       }
       // JSON 은 왔지만 계약 위반 → 폴백(다음 모델로 넘기지 않고 종료: 재호출 이득 적음).
+      console.warn(`[llm] ${model}: 출력 계약 위반 → 규칙 폴백`);
       return null;
     } catch (error) {
       if (isRetriable(error)) {
+        // 로그가 없으면 배포 환경에서 AI가 조용히 죽어도 알 수 없다(Render 로그가 유일한 관측 지점).
+        console.warn(`[llm] ${model} 실패(재시도 가능): ${error.message} · status=${statusOf(error) ?? "없음"}`);
         continue; // 다음 모델 시도(배열 끝나면 루프 종료 → 무한루프 없음).
       }
+      console.warn(`[llm] ${model} 실패(중단): ${error.message} · status=${statusOf(error) ?? "없음"}`);
       return null; // 비재시도성 오류 → 규칙 폴백.
     }
   }
-  return null; // 모든 모델 소진 → 규칙 폴백.
+  console.warn(`[llm] 모든 모델(${MODEL_CHAIN.join(", ")}) 소진 → 규칙 폴백`);
+  return null;
 }
 
 function safeParseJson(text) {
