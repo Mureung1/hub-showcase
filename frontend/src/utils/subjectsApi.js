@@ -2,7 +2,9 @@
 // 서버가 없으면(정적 배포·서버 다운) 각 함수는 { ok: false }를 돌려주고,
 // 호출하는 App 쪽에서 localStorage 기반 로컬 동작으로 폴백한다.
 
-const BASE = "/api/subjects";
+import { apiUrl } from "./apiBase";
+
+const BASE = apiUrl("/api/subjects");
 
 export async function fetchSubjects() {
   try {
