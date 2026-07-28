@@ -255,12 +255,41 @@ describe('InsightImportDialog', () => {
       ).disabled
     ).toBe(true);
 
+    const sourceGroup = screen.getByRole('group', { name: '가져올 위치' });
+    const sourceButtons = within(sourceGroup).getAllByRole('button');
+
+    expect(
+      sourceButtons.every((button) => (button as HTMLButtonElement).disabled)
+    ).toBe(true);
+
     deferred.resolve({ ok: false, reason: 'write-failed' });
 
-    const alert = await screen.findByRole('alert', {
+    const pastePanel = screen.getByRole('region', {
+      name: '링크 붙여넣기',
+    });
+    const alert = await within(pastePanel).findByRole('alert', {
       name: '가져오기를 진행하지 못했어요',
     });
     expect(alert.textContent).not.toContain('https://example.com');
+
+    await user.click(
+      within(sourceGroup).getByRole('button', {
+        name: '파일에서 가져오기',
+      })
+    );
+
+    expect(
+      screen.queryByRole('alert', {
+        name: '가져오기를 진행하지 못했어요',
+      })
+    ).toBeNull();
+
+    await user.click(
+      within(sourceGroup).getByRole('button', {
+        name: '링크 붙여넣기',
+      })
+    );
+
     expect(
       (
         screen.getByRole('textbox', {

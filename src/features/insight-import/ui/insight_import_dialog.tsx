@@ -33,6 +33,7 @@ import { ImportFieldMappingForm } from './import_field_mapping';
 import { ImportHistory } from './import_history';
 import { ImportIssueDetails, ImportPreview } from './import_preview';
 import {
+  INSIGHT_IMPORT_SOURCE_LABELS,
   InsightImportSourceSelector,
   type InsightImportSource,
 } from './insight_import_source_selector';
@@ -109,6 +110,10 @@ export function InsightImportDialog({
     useState<InsightImportSource | null>(
       initialNotionConnectionId || initialNotionError ? 'notion' : null
     );
+  const [controllerErrorSource, setControllerErrorSource] = useState<Exclude<
+    InsightImportSource,
+    'notion'
+  > | null>(null);
   const [includeNotionPageUrls, setIncludeNotionPageUrls] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [undoConfirming, setUndoConfirming] = useState(false);
@@ -145,6 +150,7 @@ export function InsightImportDialog({
       }
       controller.cancelCurrentOperation();
       setSourceSelected(null);
+      setControllerErrorSource(null);
       setPastedText('');
       setUndoConfirming(false);
     }
@@ -153,11 +159,13 @@ export function InsightImportDialog({
   }
 
   async function analyze() {
+    setControllerErrorSource('paste');
     await controller.analyzePastedText(pastedText);
   }
 
   async function analyzeFile(file: File | undefined) {
     if (file) {
+      setControllerErrorSource('file');
       await controller.analyzeFile(file);
     }
   }
@@ -168,6 +176,7 @@ export function InsightImportDialog({
     }
     controller.reset();
     setSourceSelected(null);
+    setControllerErrorSource(null);
     setPastedText('');
   }
 
@@ -185,6 +194,12 @@ export function InsightImportDialog({
   const isPreviewStage =
     controller.stage === 'preview' || controller.stage === 'committing';
   const invalidNewCategory = hasInvalidNewCategoryMapping(controller.mappings);
+  const isSourceLocked =
+    controller.stage === 'analyzing' ||
+    ['connecting', 'analyzing', 'mapping'].includes(notion.stage);
+  const sourceHeadingId = sourceSelected
+    ? `insight-import-${sourceSelected}-title`
+    : undefined;
 
   return (
     <Modal
@@ -195,145 +210,172 @@ export function InsightImportDialog({
       size="large"
       title="보관함 가져오기"
     >
-      {controller.errorMessage ? (
-        <StatusMessage title="가져오기를 진행하지 못했어요" variant="error">
-          {controller.errorMessage}
-        </StatusMessage>
-      ) : null}
-      {notion.errorMessage ? (
-        <StatusMessage title="Notion 연결을 확인해 주세요" variant="error">
-          {notion.errorMessage}
-        </StatusMessage>
-      ) : null}
-
       {isSourceStage ? (
-        <div className="insight-import-dialog__source">
+        <div className="insight-import-dialog__stage insight-import-dialog__stage--source">
           <InsightImportSourceSelector
-            disabled={false}
+            disabled={isSourceLocked}
             onSelect={setSourceSelected}
             selected={sourceSelected}
           />
 
-          {sourceSelected === 'file' ? (
-            <div className="insight-import-dialog__file">
-              <label htmlFor="insight-import-file">가져올 파일</label>
-              <input
-                accept=".csv,.json,.html,.htm,.md,.markdown,.txt,.zip"
-                aria-describedby="insight-import-file-help"
-                disabled={controller.stage === 'analyzing'}
-                id="insight-import-file"
-                onChange={(event) =>
-                  void analyzeFile(event.currentTarget.files?.[0])
-                }
-                type="file"
-              />
-              <p id="insight-import-file-help">
-                CSV, JSON, HTML, Markdown, 텍스트, ZIP을 지원합니다. 원본 파일은
-                서버에 업로드하지 않으며, 일반 파일은 10 MiB, ZIP은 20 MiB까지
-                선택할 수 있습니다.
+          <section
+            aria-label={sourceSelected ? undefined : '가져오기 작업'}
+            aria-labelledby={sourceHeadingId}
+            className="insight-import-dialog__source-panel"
+          >
+            {sourceSelected ? (
+              <h3 id={sourceHeadingId}>
+                {INSIGHT_IMPORT_SOURCE_LABELS[sourceSelected]}
+              </h3>
+            ) : (
+              <p className="insight-import-dialog__source-prompt">
+                가져올 위치를 선택해 주세요.
               </p>
-            </div>
-          ) : null}
+            )}
 
-          {sourceSelected === 'paste' ? (
-            <div className="insight-import-dialog__paste">
-              <label htmlFor="insight-import-pasted-text">가져올 링크</label>
-              <TextArea
-                disabled={controller.stage === 'analyzing'}
-                id="insight-import-pasted-text"
-                onChange={(event) => setPastedText(event.currentTarget.value)}
-                rows={7}
-                value={pastedText}
-              />
-              <Button
-                disabled={
-                  controller.stage === 'analyzing' ||
-                  pastedText.trim().length === 0
-                }
-                hierarchy="primary"
-                onClick={() => void analyze()}
-                type="button"
+            {controller.errorMessage &&
+            controllerErrorSource === sourceSelected ? (
+              <StatusMessage
+                title="가져오기를 진행하지 못했어요"
+                variant="error"
               >
-                {controller.stage === 'analyzing' ? '분석 중' : '분석하기'}
-              </Button>
-            </div>
-          ) : null}
+                {controller.errorMessage}
+              </StatusMessage>
+            ) : null}
 
-          {sourceSelected === 'notion' ? (
-            <div className="insight-import-dialog__notion">
-              <p>
-                Notion 공식 화면에서 가져올 페이지를 직접 선택합니다. 읽기
-                권한만 사용하고 가져오기가 끝나면 연결을 해제합니다.
-              </p>
+            {sourceSelected === 'notion' && notion.errorMessage ? (
+              <StatusMessage
+                title="Notion 연결을 확인해 주세요"
+                variant="error"
+              >
+                {notion.errorMessage}
+              </StatusMessage>
+            ) : null}
 
-              {notion.stage === 'idle' || notion.stage === 'error' ? (
-                <>
-                  <label className="insight-import-dialog__notion-checkbox">
-                    <input
-                      checked={includeNotionPageUrls}
-                      onChange={(event) =>
-                        setIncludeNotionPageUrls(event.currentTarget.checked)
-                      }
-                      type="checkbox"
-                    />
-                    Notion 페이지 자체 주소도 가져오기
-                  </label>
-                  <p>
-                    Notion 안에 저장한 외부 링크가 아니라 선택한 페이지도
-                    원문으로 보관할 때만 사용합니다.
-                  </p>
-                  <Button
-                    hierarchy="primary"
-                    onClick={() => void notion.start(includeNotionPageUrls)}
-                    type="button"
-                  >
-                    Notion 연결하기
-                  </Button>
-                </>
-              ) : null}
-
-              {notion.stage === 'connecting' || notion.stage === 'analyzing' ? (
-                <section aria-live="polite" role="status">
-                  <strong>
-                    {notion.workspaceName ?? 'Notion 작업 공간'} 분석 중
-                  </strong>
-                  <p>
-                    완료한 요청 {notion.requestCount}개 · 후보{' '}
-                    {notion.candidateCount}개
-                  </p>
-                  <Button
-                    hierarchy="secondary"
-                    onClick={() => void notion.cancel()}
-                    type="button"
-                  >
-                    연결 취소
-                  </Button>
-                </section>
-              ) : null}
-
-              {notion.stage === 'mapping' ? (
-                <NotionFieldMappingForm
-                  onSubmit={(mappings) => void notion.submitMappings(mappings)}
-                  requests={notion.mappingRequests}
+            {sourceSelected === 'file' ? (
+              <div className="insight-import-dialog__file">
+                <label htmlFor="insight-import-file">가져올 파일</label>
+                <input
+                  accept=".csv,.json,.html,.htm,.md,.markdown,.txt,.zip"
+                  aria-describedby="insight-import-file-help"
+                  disabled={controller.stage === 'analyzing'}
+                  id="insight-import-file"
+                  onChange={(event) =>
+                    void analyzeFile(event.currentTarget.files?.[0])
+                  }
+                  type="file"
                 />
-              ) : null}
-            </div>
-          ) : null}
+                <p id="insight-import-file-help">
+                  CSV, JSON, HTML, Markdown, 텍스트, ZIP을 지원합니다. 원본 파일은
+                  서버에 업로드하지 않으며, 일반 파일은 10 MiB, ZIP은 20 MiB까지
+                  선택할 수 있습니다.
+                </p>
+              </div>
+            ) : null}
 
-          {notion.stage === 'idle' || notion.stage === 'error' ? (
-            <ImportHistory
-              entries={controller.history}
-              errorMessage={controller.historyErrorMessage}
-              loading={controller.isHistoryLoading}
-              onDelete={controller.deleteRecord}
-              onUndo={controller.undo}
-            />
-          ) : null}
+            {sourceSelected === 'paste' ? (
+              <div className="insight-import-dialog__paste">
+                <label htmlFor="insight-import-pasted-text">가져올 링크</label>
+                <TextArea
+                  disabled={controller.stage === 'analyzing'}
+                  id="insight-import-pasted-text"
+                  onChange={(event) => setPastedText(event.currentTarget.value)}
+                  rows={7}
+                  value={pastedText}
+                />
+                <Button
+                  disabled={
+                    controller.stage === 'analyzing' ||
+                    pastedText.trim().length === 0
+                  }
+                  hierarchy="primary"
+                  onClick={() => void analyze()}
+                  type="button"
+                >
+                  {controller.stage === 'analyzing' ? '분석 중' : '분석하기'}
+                </Button>
+              </div>
+            ) : null}
+
+            {sourceSelected === 'notion' ? (
+              <div className="insight-import-dialog__notion">
+                <p>
+                  Notion 공식 화면에서 가져올 페이지를 직접 선택합니다. 읽기
+                  권한만 사용하고 가져오기가 끝나면 연결을 해제합니다.
+                </p>
+
+                {notion.stage === 'idle' || notion.stage === 'error' ? (
+                  <>
+                    <label className="insight-import-dialog__notion-checkbox">
+                      <input
+                        checked={includeNotionPageUrls}
+                        onChange={(event) =>
+                          setIncludeNotionPageUrls(event.currentTarget.checked)
+                        }
+                        type="checkbox"
+                      />
+                      Notion 페이지 자체 주소도 가져오기
+                    </label>
+                    <p>
+                      Notion 안에 저장한 외부 링크가 아니라 선택한 페이지도
+                      원문으로 보관할 때만 사용합니다.
+                    </p>
+                    <Button
+                      hierarchy="primary"
+                      onClick={() => void notion.start(includeNotionPageUrls)}
+                      type="button"
+                    >
+                      Notion 연결하기
+                    </Button>
+                  </>
+                ) : null}
+
+                {notion.stage === 'connecting' ||
+                notion.stage === 'analyzing' ? (
+                  <section aria-live="polite" role="status">
+                    <strong>
+                      {notion.workspaceName ?? 'Notion 작업 공간'} 분석 중
+                    </strong>
+                    <p>
+                      완료한 요청 {notion.requestCount}개 · 후보{' '}
+                      {notion.candidateCount}개
+                    </p>
+                    <Button
+                      hierarchy="secondary"
+                      onClick={() => void notion.cancel()}
+                      type="button"
+                    >
+                      연결 취소
+                    </Button>
+                  </section>
+                ) : null}
+
+                {notion.stage === 'mapping' ? (
+                  <NotionFieldMappingForm
+                    onSubmit={(mappings) =>
+                      void notion.submitMappings(mappings)
+                    }
+                    requests={notion.mappingRequests}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+
+            {notion.stage === 'idle' || notion.stage === 'error' ? (
+              <ImportHistory
+                entries={controller.history}
+                errorMessage={controller.historyErrorMessage}
+                loading={controller.isHistoryLoading}
+                onDelete={controller.deleteRecord}
+                onUndo={controller.undo}
+              />
+            ) : null}
+          </section>
         </div>
       ) : null}
 
       {isPreviewStage && controller.prepared ? (
-        <>
+        <div className="insight-import-dialog__stage insight-import-dialog__stage--single">
           <ImportPreview
             categories={categories}
             mappings={controller.mappings}
@@ -357,11 +399,11 @@ export function InsightImportDialog({
               {controller.stage === 'committing' ? '가져오는 중' : '가져오기'}
             </Button>
           </div>
-        </>
+        </div>
       ) : null}
 
       {controller.stage === 'field-mapping' ? (
-        <>
+        <div className="insight-import-dialog__stage insight-import-dialog__stage--single">
           <ImportFieldMappingForm
             onSubmit={(mappings) =>
               void controller.submitFieldMappings(mappings)
@@ -373,13 +415,13 @@ export function InsightImportDialog({
               다시 선택
             </Button>
           </div>
-        </>
+        </div>
       ) : null}
 
       {controller.stage === 'result' &&
       controller.prepared &&
       controller.result ? (
-        <div className="insight-import-dialog__result">
+        <div className="insight-import-dialog__result insight-import-dialog__stage insight-import-dialog__stage--single">
           <section
             aria-label="가져오기를 완료했어요"
             aria-live="polite"
