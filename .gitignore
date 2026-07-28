@@ -42,4 +42,8 @@ src/.env.*
 
 .worktrees/
 .claude/
+
+# Project-specific Codex agent instructions are local-only.
+.codex/agents/
+
 *.log

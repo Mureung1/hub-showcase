@@ -3,7 +3,7 @@
   "title": "ICU (I CODE U) - AI 코딩 튜터 데스크탑 서비스",
   "summary": "오늘의 학습 계획 수립부터 맞춤 커리큘럼 추천, Monaco 에디터 실습, 코드 실행 피드백, Git Lab 명령 학습, 오답노트 관리까지 한 흐름으로 제공하는 AI 코딩 학습 플랫폼입니다.",
   "githubUser": "xxrin",
-  "demoUrl": "https://github.com/xxriny/hub",
+  "demoUrl": "https://icu-app-beta.vercel.app",
   "thumbnail": "screenshot/온보딩.webp",
   "screenshots": [
     "screenshot/온보딩.webp",
@@ -51,12 +51,22 @@
   ],
   "developmentWithAI": "AI와 함께 개발 목표와 명세를 정리하고, 작업 단위별 구현 및 테스트, 디자인 가이드 준수, 백엔드 API 연동, 오답노트 모달 및 문서화까지 유기적인 pair-programming으로 개발을 완료했습니다.",
   "agent": {
-    "summary": "Codex 개발 Agent와 Product Design, ICU Product UI, Superpowers Workflow를 활용하고, Ponytail 원칙과 RTK 검증 도구를 결합해 설계부터 구현, 테스트, 문서화, 커밋까지 일관된 개발 흐름을 운영했습니다.",
+    "summary": "저는 개념 학습, 코드 실습, 실행 피드백, 오답 관리가 여러 도구로 흩어진 문제를 정의하고, 오늘의 학습 허브부터 워크스페이스, Git 시뮬레이터, 오답노트로 이어지도록 정했습니다. Codex와는 기존 코드와 문서를 함께 검토하며 구현 방향을 구체화하고, 기능 단위 테스트와 타입 검사, 빌드를 거쳐 코드를 완성했습니다. 운영 배포에서는 메인 앱과 Preview Runtime을 Vercel에, Core API와 Judge를 Render에 분리하는 구조를 설계했습니다. 기능은 브라우저에서 직접 사용하며 확인했고, Deployment Secrets Reviewer와 Documentation Drift Reviewer를 서브 에이전트로 두어 환경변수 노출 위험과 문서·구현의 불일치까지 검증한 뒤 발견한 문제의 원인을 찾으려고 했습니다.",
     "agentTools": [
       {
         "type": "agent",
         "name": "Codex 개발 Agent",
         "purpose": "요구사항 분석, 구현 계획 수립, 코드와 문서 수정, 테스트 작업을 수행합니다."
+      },
+      {
+        "type": "agent",
+        "name": "Deployment Secrets Reviewer",
+        "purpose": "GitHub Actions, Vercel, Render 배포 과정에서 키와 환경변수의 저장소·로그·브라우저 번들 노출 경로를 읽기 전용으로 검증합니다."
+      },
+      {
+        "type": "agent",
+        "name": "Documentation Drift Reviewer",
+        "purpose": "README와 공식 문서를 실제 코드, API, 라우트, 환경변수, 배포 설정과 비교해 오래되거나 불일치한 내용을 읽기 전용으로 검증합니다."
       },
       {
         "type": "skill",
@@ -74,12 +84,12 @@
         "purpose": "브레인스토밍, 구현 계획, 단계별 실행, 검증과 브랜치 마무리를 체계적인 작업 순서로 연결합니다."
       },
       {
-        "type": "tool",
+        "type": "skill",
         "name": "RTK",
         "purpose": "Git, 테스트, lint, build 명령의 출력을 간결하게 정리해 검증 결과를 빠르게 확인합니다."
       },
       {
-        "type": "rule",
+        "type": "skill",
         "name": "Ponytail Working Principle",
         "purpose": "삭제, 기존 패턴 재사용, 플랫폼 기능, 설정 변경, 최소 구현 순으로 가장 작은 해결책을 선택합니다."
       }
@@ -99,6 +109,8 @@
         "name": "품질 검증 및 커밋 Workflow",
         "steps": [
           "RTK로 Git 변경 범위 확인",
+          "Deployment Secrets Reviewer로 배포 키와 환경변수 노출 경로 검증",
+          "Documentation Drift Reviewer로 공식 문서와 현재 구현의 정합성 검증",
           "Vitest와 TypeScript typecheck 실행",
           "ESLint와 앱 및 Preview build 검증",
           "커밋 전 변경 파일과 핵심 내용 사전 보고",
