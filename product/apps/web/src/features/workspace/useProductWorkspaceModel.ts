@@ -366,7 +366,7 @@ function useWorkspaceStorefronts(
       ),
     [selection.categorySelection, storeSelection.selected?.id, storeSelection.selected?.name, visibleStores],
   );
-  const { selectedStorefrontCandidate, candidateMapStores, storefrontCandidates } = useStorefrontCandidates(
+  const { selectedStorefrontCandidate, storefrontCandidates } = useStorefrontCandidates(
     compactMap,
     selection,
     viewport,
@@ -403,8 +403,13 @@ function useWorkspaceStorefronts(
     [storefrontBuildings3d],
   );
   const mapStores = useMemo(
-    () => candidateMapStores.filter((store) => !replacementStoreIds.has(store.id ?? store.name)),
-    [candidateMapStores, replacementStoreIds],
+    () =>
+      visibleStores.filter(
+        (store) =>
+          categoryMatchesSelection(store.category, selection.categorySelection) &&
+          !replacementStoreIds.has(store.id ?? store.name),
+      ),
+    [replacementStoreIds, selection.categorySelection, visibleStores],
   );
   const selectedStorefront3d = useMemo(
     () =>
@@ -416,7 +421,10 @@ function useWorkspaceStorefronts(
   const sameCategoryCount = nearby.data?.same_category_count ?? 0;
   const categoryCoverageReason =
     nearby.data?.category_coverage.requested_category === selection.categorySelection.name
-      ? nearby.data.category_coverage.reason
+      ? nearby.data.category_coverage.status === "unavailable" &&
+        nearby.data.same_category_count === 0
+        ? `${market.name} 안에서 ${selection.categorySelection.name} 점포를 찾지 못했습니다. 세 상권 전체 순위와 현재 선택한 상권의 점포 수는 다를 수 있습니다.`
+        : nearby.data.category_coverage.reason
       : selection.categorySelection.coverage === "full"
         ? "선택 업종은 현재 상권 분석 지표를 모두 지원합니다."
         : selection.categorySelection.coverage === "partial"
@@ -430,11 +438,13 @@ function useWorkspaceStorefronts(
     selection.layer === "density"
       ? `${selection.categorySelection.name} 점포 밀도`
       : "대표 시간대 수요";
-  const activeDemand = (marketAnalysis.analysis ? market.demand[selection.activeHour] : null) ?? 0;
+  const activeDemand = marketAnalysis.analysis ? market.demand[selection.activeHour] : null;
   const activeDemandLabel = market.demandLabels[selection.activeHour] ?? "시간 구간 미확인";
   const flowPeople = useMemo(
     () =>
-      Array.from(
+      activeDemand === null
+        ? []
+        : Array.from(
         { length: Math.max(3, Math.min(11, Math.round(activeDemand / 9))) },
         (_, index) => ({
           longitude: market.center[0] + (((index * 19) % 11) - 5) * 0.00018,

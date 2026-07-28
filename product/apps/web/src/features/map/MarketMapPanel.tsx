@@ -16,6 +16,7 @@ import type { ReactNode, RefObject } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 
 import type { LayerMode, Market } from "../market/types";
+import type { FlowState } from "../market/useMarketAnalysis";
 import "./MapBottomDock.css";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 
@@ -30,7 +31,8 @@ type MarketMapPanelProps = {
   onLayerChange: (layer: LayerMode) => void;
   densityLabel: string;
   activeDemandLabel: string;
-  activeDemand: number;
+  activeDemand: number | null;
+  flowState: FlowState;
   mapRef: RefObject<MapRef | null>;
   onCompareOpen: () => void;
   comparisonEnabled: boolean;
@@ -100,6 +102,7 @@ export function MarketMapPanel({
   densityLabel,
   activeDemandLabel,
   activeDemand,
+  flowState,
   mapRef,
   onCompareOpen,
   comparisonEnabled,
@@ -121,7 +124,9 @@ export function MarketMapPanel({
             <button
               type="button"
               className={presentationMode === "flat" ? "is-selected" : ""}
+              aria-label="실제 지도"
               aria-pressed={presentationMode === "flat"}
+              title="실제 지도"
               onClick={() => onPresentationModeChange("flat")}
             >
               <MapPinned size={15} /> <span>실제 지도</span>
@@ -129,7 +134,9 @@ export function MarketMapPanel({
             <button
               type="button"
               className={presentationMode === "analysis" ? "is-selected" : ""}
+              aria-label={densityLabel}
               aria-pressed={presentationMode === "analysis"}
+              title={densityLabel}
               onClick={() => {
                 onPresentationModeChange("analysis");
                 onLayerChange("density");
@@ -140,7 +147,9 @@ export function MarketMapPanel({
             <button
               type="button"
               className={presentationMode === "storefront3d" ? "is-selected" : ""}
+              aria-label="3D 점포"
               aria-pressed={presentationMode === "storefront3d"}
+              title="3D 점포"
               onClick={() => onPresentationModeChange("storefront3d")}
             >
               <Building2 size={15} /> <span>3D 점포</span>
@@ -179,7 +188,9 @@ export function MarketMapPanel({
         <p>
           {layer === "density"
             ? "선택 업종 점포가 상대적으로 모인 정도"
-            : "선택 시간대의 상대 유동 수요"}
+            : flowState === "unavailable"
+              ? "선택 분기의 시간대별 유동인구 자료 없음"
+              : "선택 시간대의 상대 유동 수요"}
         </p>
         {layer === "density" ? (
           <>
@@ -188,15 +199,27 @@ export function MarketMapPanel({
             <span><i className="density-high" /> 높음</span>
           </>
         ) : (
-          <span className="demand-legend-note">사람 아이콘이 많을수록 수요가 높습니다.</span>
+          <span className="demand-legend-note">
+            {flowState === "unavailable"
+              ? "자료가 적재된 분기로 바꾸면 시간대별 분포를 볼 수 있습니다."
+              : "사람 아이콘이 많을수록 수요가 높습니다."}
+          </span>
         )}
       </div>
 
       {layer === "demand" && (
         <div className="flow-card">
           <span>시간대 유동 수요</span>
-          <b>{activeDemandLabel} · {activeDemand}/100</b>
-          <small>아이콘 수는 상대 수요 비율을 표시합니다.</small>
+          <b>
+            {flowState === "unavailable" || activeDemand === null
+              ? "자료 없음"
+              : `${activeDemandLabel} · ${activeDemand}/100`}
+          </b>
+          <small>
+            {flowState === "unavailable"
+              ? "이 분기에는 시간대별 유동인구 자료가 없습니다."
+              : "아이콘 수는 상대 수요 비율을 표시합니다."}
+          </small>
         </div>
       )}
 

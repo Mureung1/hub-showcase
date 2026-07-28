@@ -62,7 +62,7 @@ describe("DataPeriodSummary", () => {
     expect(screen.getByText("2025년 12월")).toBeInTheDocument();
     expect(screen.getByText("2024년")).toBeInTheDocument();
     expect(screen.getByText("2026년 3월")).toBeInTheDocument();
-    expect(screen.getByText(/같은 날짜로 강제하지 않습니다/)).toBeInTheDocument();
-    expect(screen.getByText(/기간을 바꾸는 기능은 아직 지원하지 않습니다/)).toBeInTheDocument();
+    expect(screen.getByText("자료마다 기준 시점이 다를 수 있어요")).toBeInTheDocument();
+    expect(screen.getByText(/분기를 바꾸면 그 시점에 맞는 자료로 함께 바뀝니다/)).toBeInTheDocument();
   });
 });

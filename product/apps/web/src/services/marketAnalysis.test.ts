@@ -103,8 +103,12 @@ describe("market analysis service", () => {
       vi.fn().mockResolvedValue(new Response(JSON.stringify(periods), { status: 200 })),
     );
 
-    await expect(loadAnalysisPeriods("카페", new AbortController().signal)).resolves.toEqual(
+    await expect(loadAnalysisPeriods("카페", new AbortController().signal, "3110562")).resolves.toEqual(
       periods,
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("market_id=3110562"),
+      expect.any(Object),
     );
   });
 

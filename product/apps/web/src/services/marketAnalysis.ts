@@ -257,8 +257,13 @@ export async function loadMarketComparison(
   return Object.fromEntries(analyses) as Record<MarketKey, MarketAnalysis>;
 }
 
-export async function loadAnalysisPeriods(category: Category, signal: AbortSignal) {
+export async function loadAnalysisPeriods(
+  category: Category,
+  signal: AbortSignal,
+  marketId?: string,
+) {
   const query = new URLSearchParams({ category });
+  if (marketId) query.set("market_id", marketId);
   const response = await fetch(apiUrl(`/api/v1/analysis/periods?${query}`), { signal });
   if (!response.ok) throw new Error(`API ${response.status}`);
   return (await response.json()) as AnalysisPeriods;
