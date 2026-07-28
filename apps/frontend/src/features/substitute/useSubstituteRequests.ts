@@ -30,9 +30,14 @@ export function useCreateSubstituteRequest(storeId: string | null) {
     mutationFn: (input: CreateSubstituteRequestInput) =>
       createSubstituteRequest(accessToken ?? "", storeId ?? "", input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["substituteRequests"]
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["substituteRequests"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["notifications"]
+        })
+      ]);
     }
   });
 }
@@ -45,9 +50,14 @@ export function useApplySubstituteRequest() {
   return useMutation({
     mutationFn: (requestId: string) => applySubstituteRequest(accessToken ?? "", requestId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["substituteRequests"]
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["substituteRequests"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["notifications"]
+        })
+      ]);
     }
   });
 }
@@ -69,6 +79,9 @@ export function useApproveSubstituteRequest() {
         }),
         queryClient.invalidateQueries({
           queryKey: ["payrollSummary"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["notifications"]
         })
       ]);
     }
@@ -84,9 +97,14 @@ export function useRejectSubstituteRequest() {
     mutationFn: (input: { requestId: string; values: RejectSubstituteRequestInput }) =>
       rejectSubstituteRequest(accessToken ?? "", input.requestId, input.values),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["substituteRequests"]
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["substituteRequests"]
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["notifications"]
+        })
+      ]);
     }
   });
 }

@@ -5,6 +5,7 @@ import {
   getDayLabel,
   getHoursLabel,
   getMonthlyScheduleSummary,
+  getUpcomingSchedules,
   parseMonthParam
 } from "./scheduleCalendar";
 import { Schedule } from "./scheduleTypes";
@@ -143,5 +144,42 @@ describe("scheduleCalendar", () => {
     expect(getHoursLabel(4)).toBe("4시간");
     expect(getHoursLabel(4.5)).toBe("4.5시간");
     expect(getHoursLabel(0)).toBe("0시간");
+  });
+  it("upcoming schedules exclude past dates and already ended work today", () => {
+    const schedules = [
+      createSchedule({
+        id: "past-date",
+        workerId: "worker-me",
+        workDate: "2026-07-27",
+        startTime: "09:00",
+        endTime: "13:00"
+      }),
+      createSchedule({
+        id: "ended-today",
+        workerId: "worker-me",
+        workDate: "2026-07-28",
+        startTime: "09:00",
+        endTime: "13:00"
+      }),
+      createSchedule({
+        id: "later-today",
+        workerId: "worker-me",
+        workDate: "2026-07-28",
+        startTime: "18:00",
+        endTime: "22:00"
+      }),
+      createSchedule({
+        id: "future-date",
+        workerId: "worker-me",
+        workDate: "2026-07-29",
+        startTime: "10:00",
+        endTime: "14:00"
+      })
+    ];
+
+    expect(getUpcomingSchedules(schedules, new Date("2026-07-28T14:30:00")).map((schedule) => schedule.id)).toEqual([
+      "later-today",
+      "future-date"
+    ]);
   });
 });

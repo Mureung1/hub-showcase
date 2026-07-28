@@ -1,10 +1,12 @@
 import { HttpError } from "../../common/errors/HttpError";
 import { findStoreMembership } from "../../common/repositories/storeMembership.repository";
+import { createNotifications } from "../notifications/notifications.service";
 import {
   findOverlappingWorkerSchedules,
   findScheduleById,
   transferScheduleToSubstitute
 } from "../schedules/schedules.repository";
+import { findStoreById } from "../stores/stores.repository";
 import {
   approveSubstituteRequestById,
   findActiveSubstituteRequestByScheduleId,
@@ -32,6 +34,10 @@ import {
 } from "./substituteRequests.types";
 
 const ACTIVE_SUBSTITUTE_REQUEST_STATUSES: SubstituteRequestStatus[] = ["OPEN", "PENDING_APPROVAL", "APPROVED"];
+
+function getScheduleTimeLabel(schedule: { work_date: string; start_time: string; end_time: string }) {
+  return `${schedule.work_date} ${schedule.start_time.slice(0, 5)}-${schedule.end_time.slice(0, 5)}`;
+}
 
 function toSubstituteRequestResponse(request: SubstituteRequestRecord): SubstituteRequestResponse {
   return {
@@ -164,6 +170,18 @@ export async function createStoreSubstituteRequest(input: CreateSubstituteReques
   }
 
   const substituteRequest = await insertSubstituteRequest(input);
+  const store = await findStoreById(input.storeId);
+
+  if (store) {
+    await createNotifications([
+      {
+        userId: store.owner_id,
+        type: "SUBSTITUTE_REQUEST_CREATED",
+        title: "대타 요청이 등록되었습니다.",
+        message: `${getScheduleTimeLabel(schedule)} 근무에 대타 요청이 등록되었습니다.`
+      }
+    ]);
+  }
 
   return {
     substituteRequest: toSubstituteRequestResponse(substituteRequest)
@@ -230,6 +248,26 @@ export async function applyToSubstituteRequest(input: ApplySubstituteRequestInpu
   }
 
   await insertSubstituteApplication(input);
+  const store = await findStoreById(request.store_id);
+  const notifications = [
+    {
+      userId: request.requester_id,
+      type: "SUBSTITUTE_REQUEST_APPLIED" as const,
+      title: "대타 신청이 들어왔습니다.",
+      message: `${getScheduleTimeLabel(schedule)} 근무에 대타 신청이 들어왔습니다.`
+    }
+  ];
+
+  if (store) {
+    notifications.push({
+      userId: store.owner_id,
+      type: "SUBSTITUTE_REQUEST_APPLIED",
+      title: "대타 신청이 들어왔습니다.",
+      message: `${getScheduleTimeLabel(schedule)} 근무에 대타 신청이 들어왔습니다.`
+    });
+  }
+
+  await createNotifications(notifications);
 
   return {
     substituteRequest: toSubstituteRequestResponse(updatedRequest)
@@ -311,19 +349,52 @@ export async function approveSubstituteRequest(input: ApproveSubstituteRequestIn
     throw new HttpError(409, "이미 처리된 대타 요청입니다.", "SUBSTITUTE_REQUEST_NOT_PENDING");
   }
 
+  await createNotifications([
+    {
+      userId: request.requester_id,
+      type: "SUBSTITUTE_REQUEST_APPROVED",
+      title: "대타 요청이 승인되었습니다.",
+      message: `${getScheduleTimeLabel(schedule)} 근무의 대타 요청이 승인되었습니다.`
+    },
+    {
+      userId: request.candidate_worker_id ?? "",
+      type: "SUBSTITUTE_REQUEST_APPROVED",
+      title: "대타 근무가 확정되었습니다.",
+      message: `${getScheduleTimeLabel(schedule)} 근무의 대타로 확정되었습니다.`
+    }
+  ]);
+
   return {
     substituteRequest: toSubstituteRequestResponse(approvedRequest)
   };
 }
 
 export async function rejectSubstituteRequest(input: RejectSubstituteRequestInput) {
-  await findReviewableRequest(input);
+  const request = await findReviewableRequest(input);
+  const schedule = await findScheduleById(request.schedule_id);
 
   const rejectedRequest = await rejectSubstituteRequestById(input);
 
   if (!rejectedRequest) {
     throw new HttpError(409, "이미 처리된 대타 요청입니다.", "SUBSTITUTE_REQUEST_NOT_PENDING");
   }
+
+  const scheduleLabel = schedule ? getScheduleTimeLabel(schedule) : "요청한";
+
+  await createNotifications([
+    {
+      userId: request.requester_id,
+      type: "SUBSTITUTE_REQUEST_REJECTED",
+      title: "대타 요청이 거절되었습니다.",
+      message: `${scheduleLabel} 근무의 대타 요청이 거절되었습니다.`
+    },
+    {
+      userId: request.candidate_worker_id ?? "",
+      type: "SUBSTITUTE_REQUEST_REJECTED",
+      title: "대타 신청이 거절되었습니다.",
+      message: `${scheduleLabel} 근무의 대타 신청이 거절되었습니다.`
+    }
+  ]);
 
   return {
     substituteRequest: toSubstituteRequestResponse(rejectedRequest)
