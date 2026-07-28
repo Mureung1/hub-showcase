@@ -9,3 +9,4 @@ dist
 # 부하 테스트 실행 산출물 (seedLoad/k6가 생성 — 환경마다 값이 다르다)
 load/fixture.json
 load/summary.json
+load/latency-summary.json
