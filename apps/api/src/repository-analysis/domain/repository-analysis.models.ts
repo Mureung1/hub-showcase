@@ -61,6 +61,8 @@ export type GitHubRepositoryAnalysisSource = {
     changedFiles: number | null;
     additions: number | null;
     deletions: number | null;
+    bodyExcerpt?: string | null;
+    imageUrls?: string[];
     reviewCount: number;
     reviewerLogins: string[];
   }>;
@@ -72,7 +74,26 @@ export type GitHubRepositoryAnalysisSource = {
     url: string;
     createdAt: string;
     closedAt: string | null;
+    bodyExcerpt?: string | null;
     commentCount: number;
+  }>;
+  discussions?: Array<{
+    number: number;
+    title: string;
+    bodyExcerpt: string | null;
+    authorLogin: string | null;
+    category: string | null;
+    url: string;
+    createdAt: string;
+    commentCount: number;
+  }>;
+  projects?: Array<{
+    number: number;
+    title: string;
+    description: string | null;
+    url: string | null;
+    updatedAt: string | null;
+    itemCount: number;
   }>;
   treeTruncated?: boolean;
   warnings?: string[];
@@ -106,7 +127,7 @@ export type RepositoryAnalysisPersistenceInput = {
     technicalChallenges: TechnicalChallengeCandidate[];
     warnings: string[];
     evidence: Array<{
-      evidenceType: "commit" | "pull_request" | "issue" | "file" | "config" | "release";
+      evidenceType: "commit" | "pull_request" | "issue" | "discussion" | "project" | "file" | "config" | "release";
       referenceId: string | null;
       title: string;
       url: string | null;

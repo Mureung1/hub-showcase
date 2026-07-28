@@ -3,6 +3,7 @@ import test from "node:test";
 import type { RepositoryAnalysisResult } from "@ptop/contracts";
 import {
   RepositoryAnalysisApiError,
+  getRepositoryAnalysisErrorMessage,
   requestRepositoryAnalysis,
 } from "./repositoryAnalysisApi";
 
@@ -127,5 +128,26 @@ test("requestRepositoryAnalysis provides a useful network failure", async () => 
   await assert.rejects(
     requestRepositoryAnalysis({ repositoryUrl: "https://github.com/user/repo" }, fetchImpl),
     /분석 서버에 연결할 수 없습니다/,
+  );
+});
+
+test("maps stable API error codes to actionable user messages", () => {
+  assert.match(
+    getRepositoryAnalysisErrorMessage(
+      new RepositoryAnalysisApiError("not found", "REPOSITORY_NOT_FOUND", 404),
+    ),
+    /접근 권한/,
+  );
+  assert.match(
+    getRepositoryAnalysisErrorMessage(
+      new RepositoryAnalysisApiError("rate limited", "GITHUB_RATE_LIMITED", 429),
+    ),
+    /요청 한도/,
+  );
+  assert.match(
+    getRepositoryAnalysisErrorMessage(
+      new RepositoryAnalysisApiError("storage failed", "ANALYSIS_PERSISTENCE_FAILED", 503),
+    ),
+    /저장하지 못했습니다/,
   );
 });

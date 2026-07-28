@@ -7,6 +7,7 @@ import type {
 import type { TechnicalChallengeContext } from "./technical-challenge.models";
 import {
   TechnicalChallengeResponseValidationError,
+  restrictCandidateEvidenceImages,
   parseTechnicalChallengeResponse,
 } from "./technical-challenge.analyzer";
 import { createTechnicalChallengePrompt } from "./technical-challenge.prompt";
@@ -116,5 +117,22 @@ describe("parseTechnicalChallengeResponse", () => {
     expect(() =>
       parseTechnicalChallengeResponse(JSON.stringify({ candidates: [withoutEvidence] })),
     ).toThrow(TechnicalChallengeResponseValidationError);
+  });
+
+  it("keeps only images that came from an analyzed PR", () => {
+    const candidateWithImages = {
+      ...candidate,
+      evidence: [{
+        ...evidenceReference,
+        evidenceType: "pull_request" as const,
+        imageUrls: ["https://github.com/user-attachments/assets/allowed", "https://example.com/fake"],
+      }],
+    };
+
+    expect(restrictCandidateEvidenceImages([candidateWithImages], [
+      "https://github.com/user-attachments/assets/allowed",
+    ])[0].evidence[0].imageUrls).toEqual([
+      "https://github.com/user-attachments/assets/allowed",
+    ]);
   });
 });

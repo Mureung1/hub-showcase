@@ -45,6 +45,7 @@ export class RepositoryAnalysisService {
     const source = await this.githubClient.getRepositoryAnalysisSource(
       location.owner,
       location.repository,
+      targetGithubLogin,
     );
     const contributors = calculateCommitActivityPercent(createContributorMetrics(source));
     const baseAnalysis = createAnalysisDetails(source);

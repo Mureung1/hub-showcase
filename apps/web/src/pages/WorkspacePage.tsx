@@ -1,4 +1,4 @@
-import type { RepositoryAnalysisResult } from "@ptop/contracts";
+import type { ReflectionAnalysis, RepositoryAnalysisResult } from "@ptop/contracts";
 import { useCallback, useEffect, useState } from "react";
 import { AuthModal } from "../features/auth/AuthModal";
 import { useAuth } from "../features/auth/useAuth";
@@ -12,6 +12,7 @@ type WorkspacePageProps = {
   onAnalysisComplete: (
     result: RepositoryAnalysisResult,
     reflectionDraft: ReflectionDraft,
+    reflectionAnalysis: ReflectionAnalysis | null,
   ) => void;
 };
 
@@ -77,9 +78,9 @@ export function WorkspacePage({ onBackToLanding, openAnalysisOnEntry, onAnalysis
       {isTerminalOpen && (
         <RepositoryTerminal
           onClose={closeTerminal}
-          onAnalysisComplete={(result, draft) => {
+          onAnalysisComplete={(result, draft, reflectionAnalysis) => {
             closeTerminal();
-            onAnalysisComplete(result, draft);
+            onAnalysisComplete(result, draft, reflectionAnalysis);
           }}
         />
       )}

@@ -13,17 +13,20 @@ export const landingSteps: readonly LandingStep[] = [
   {
     number: "01",
     title: "Repository 연결",
-    description: "정리하고 싶은 프로젝트의 GitHub 주소만 입력하면 분석 준비가 완료됩니다.",
+    description:
+      "정리하고 싶은 프로젝트의 GitHub 주소만 입력하면 분석 준비가 완료됩니다.",
   },
   {
     number: "02",
-    title: "Poppy의 질문에 답변",
-    description: "코드가 말해주지 못하는 당신의 진솔한 고민을 Poppy가 물어봅니다.",
+    title: "마스코트 포피의 질문에 답변",
+    description:
+      "코드가 말해주지 못하는 당신의 진솔한 고민을 Poppy가 물어봅니다.",
   },
   {
     number: "03",
     title: "분석 결과 확인",
-    description: "경험이 녹아든 포트폴리오를 위한 핵심 단서들이 문서화되어 나옵니다.",
+    description:
+      "경험이 녹아든 포트폴리오를 위한 핵심 단서들이 문서화되어 나옵니다.",
   },
 ] as const;
 

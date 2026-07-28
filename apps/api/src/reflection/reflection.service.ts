@@ -1,9 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
 import type {
   ReflectionDraft,
+  TechnicalChallengeCandidate,
   ReflectionDraftSaveResponse,
 } from "@ptop/contracts";
 import { ReflectionDraftPersistence } from "./reflection.persistence";
+import { ReflectionAlignmentAnalyzer } from "./reflection.alignment";
 
 export class InvalidReflectionDraftError extends Error {
   constructor() {
@@ -14,17 +16,24 @@ export class InvalidReflectionDraftError extends Error {
 
 @Injectable()
 export class ReflectionService {
-  constructor(private readonly persistence: ReflectionDraftPersistence) {}
+  constructor(
+    private readonly persistence: ReflectionDraftPersistence,
+    @Optional() private readonly alignmentAnalyzer?: ReflectionAlignmentAnalyzer,
+  ) {}
 
   async save(
     analysisResultId: string,
     draft: unknown,
+    candidates: TechnicalChallengeCandidate[] = [],
   ): Promise<ReflectionDraftSaveResponse> {
     if (!analysisResultId.trim() || !isReflectionDraft(draft)) {
       throw new InvalidReflectionDraftError();
     }
 
-    return this.persistence.save(analysisResultId, draft);
+    const reflectionAnalysis = this.alignmentAnalyzer
+      ? await this.alignmentAnalyzer.analyze(draft, candidates)
+      : null;
+    return this.persistence.save(analysisResultId, draft, reflectionAnalysis);
   }
 
   async find(analysisResultId: string): Promise<ReflectionDraftSaveResponse | null> {
@@ -45,6 +54,7 @@ function isReflectionDraft(value: unknown): value is ReflectionDraft {
     "motivation",
     "role",
     "memorableProblem",
+    "postAnalysisReflection",
     "attempts",
     "improvement",
     "customChallengeTitle",

@@ -59,6 +59,10 @@ describe("GitHubRepositoryClient", () => {
         ],
       ],
       [
+        "https://api.github.com/repos/SubJeeLee/hub/commits?per_page=100&page=2",
+        [],
+      ],
+      [
         "https://api.github.com/repos/SubJeeLee/hub/commits/abc123",
         {
           sha: "abc123",
@@ -149,7 +153,7 @@ describe("GitHubRepositoryClient", () => {
         },
       ],
       [
-        "https://api.github.com/repos/SubJeeLee/hub/pulls?state=all&per_page=30&sort=updated&direction=desc",
+        "https://api.github.com/repos/SubJeeLee/hub/pulls?state=all&per_page=100&sort=updated&direction=desc",
         [
           {
             number: 7,
@@ -162,6 +166,7 @@ describe("GitHubRepositoryClient", () => {
             changed_files: 4,
             additions: 80,
             deletions: 10,
+            body: "문제 상황\n![분석 화면](https://github.com/user-attachments/assets/example-image)",
           },
         ],
       ],
@@ -302,6 +307,8 @@ describe("GitHubRepositoryClient", () => {
         changedFiles: 4,
         additions: 80,
         deletions: 10,
+        bodyExcerpt: "문제 상황\n![분석 화면](https://github.com/user-attachments/assets/example-image)",
+        imageUrls: ["https://github.com/user-attachments/assets/example-image"],
         reviewCount: 1,
         reviewerLogins: ["camper"],
       },
@@ -319,7 +326,10 @@ describe("GitHubRepositoryClient", () => {
       },
     ]);
     expect(result.treeTruncated).toBe(false);
-    expect(result.warnings).toEqual([]);
+    expect(result.warnings).toEqual([
+      "Discussion 데이터를 확인하지 못했습니다.",
+      "Project 데이터를 확인하지 못했습니다.",
+    ]);
     expect(global.fetch).toHaveBeenCalledWith(
       "https://api.github.com/repos/SubJeeLee/hub",
       expect.objectContaining({
@@ -361,5 +371,107 @@ describe("GitHubRepositoryClient", () => {
     await expect(client.getRepositoryAnalysisSource("owner", "repo")).rejects.toEqual(
       new GitHubRequestError(500),
     );
+  });
+
+  it("maps network and malformed upstream responses to an external service error", async () => {
+    global.fetch = jest.fn(async () => {
+      throw new TypeError("fetch failed");
+    }) as typeof fetch;
+    const client = new GitHubRepositoryClient(new ConfigService());
+
+    await expect(client.getRepositoryAnalysisSource("owner", "repo")).rejects.toEqual(
+      new GitHubRequestError(502),
+    );
+  });
+
+  it("ignores null optional GraphQL nodes and keeps the core analysis available", async () => {
+    global.fetch = jest.fn(async (input) => {
+      const url = String(input);
+
+      if (url === "https://api.github.com/repos/owner/repo") {
+        return new Response(
+          JSON.stringify({
+            id: 1,
+            html_url: "https://github.com/owner/repo",
+            owner: { login: "owner" },
+            name: "repo",
+            description: null,
+            default_branch: "main",
+            visibility: "public",
+            fork: false,
+            archived: false,
+            license: null,
+            homepage: null,
+            created_at: "2026-07-01T00:00:00Z",
+            pushed_at: null,
+          }),
+          { status: 200 },
+        );
+      }
+
+      if (url.endsWith("/languages")) {
+        return new Response(JSON.stringify({ TypeScript: 1 }), { status: 200 });
+      }
+
+      if (url.includes("/contributors?")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+
+      if (url.includes("/commits?")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+
+      if (url === "https://api.github.com/graphql") {
+        return new Response(
+          JSON.stringify({
+            data: {
+              repository: {
+                discussions: {
+                  nodes: [
+                    null,
+                    {
+                      number: 1,
+                      title: "Decision",
+                      bodyText: null,
+                      url: "https://github.com/owner/repo/discussions/1",
+                      createdAt: "2026-07-02T00:00:00Z",
+                      author: null,
+                      category: null,
+                      comments: null,
+                    },
+                  ],
+                },
+                projectsV2: {
+                  nodes: [
+                    null,
+                    {
+                      number: 1,
+                      title: "Roadmap",
+                      shortDescription: null,
+                      url: null,
+                      updatedAt: null,
+                      items: null,
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+          { status: 200 },
+        );
+      }
+
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+
+    const client = new GitHubRepositoryClient(new ConfigService({ GITHUB_TOKEN: "test-token" }));
+    const result = await client.getRepositoryAnalysisSource("owner", "repo");
+
+    expect(result.discussions).toEqual([
+      expect.objectContaining({ number: 1, title: "Decision", commentCount: 0 }),
+    ]);
+    expect(result.projects).toEqual([
+      expect.objectContaining({ number: 1, title: "Roadmap", itemCount: 0 }),
+    ]);
   });
 });

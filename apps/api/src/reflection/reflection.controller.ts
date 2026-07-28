@@ -19,7 +19,11 @@ export class ReflectionDraftController {
     @Body() request: ReflectionDraftSaveRequest,
   ) {
     try {
-      return await this.reflectionService.save(analysisId, request?.draft);
+      return await this.reflectionService.save(
+        analysisId,
+        request?.draft,
+        request?.technicalChallenges,
+      );
     } catch (error) {
       throw this.toHttpException(error);
     }

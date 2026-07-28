@@ -13,11 +13,7 @@
     "Repository 근거와 회고를 결합해 기술적 도전 단서를 보여줍니다.",
     "2D 작업실에서 새 분석을 시작하고 이전 프로젝트 흐름을 탐색합니다."
   ],
-  "featureTags": [
-    "Repository 분석",
-    "회고 기록",
-    "2D 작업실"
-  ],
+  "featureTags": ["Repository 분석", "회고 기록", "2D 작업실"],
   "techStack": [
     "React",
     "TypeScript",
@@ -34,9 +30,13 @@
   ],
   "githubUser": "SubJeeLee(이준섭)",
   "demoUrl": "",
-  "thumbnail": "thumbnail.webp",
+  "thumbnail": "thumbnail.png",
   "screenshots": [
-    "screenshots/home.webp"
+    "screenshots/01-workspace.png",
+    "screenshots/02-repository-analysis.png",
+    "screenshots/03-candidate-selection.png",
+    "screenshots/04-reflection.png",
+    "screenshots/05-portfolio-draft.png"
   ],
   "agent": {
     "summary": "문제 정의와 사용자 흐름을 먼저 정리한 뒤 Agent와 함께 계획·구현·테스트를 반복했습니다.",

@@ -6,6 +6,13 @@ type IdentifierRow = { id: string };
 type ContributorIdentifierRow = IdentifierRow & { github_login: string };
 type AnalysisDetails = NonNullable<RepositoryAnalysisPersistenceInput["analysis"]>;
 
+export class RepositoryAnalysisPersistenceError extends Error {
+  constructor(message = "Repository 분석 결과를 저장하지 못했습니다.", options?: ErrorOptions) {
+    super(message, options);
+    this.name = "RepositoryAnalysisPersistenceError";
+  }
+}
+
 @Injectable()
 export class RepositoryAnalysisPersistence {
   constructor(private readonly supabase: SupabaseClientService) {}
@@ -27,9 +34,17 @@ export class RepositoryAnalysisPersistence {
       const contributorIds = await this.insertContributors(analysisResultId, input);
       await this.insertEvidence(analysisResultId, contributorIds, input);
       await this.completeAnalysis(analysisResultId, input);
-    } catch {
-      await this.deletePendingAnalysis(analysisResultId);
-      throw new Error("Repository 분석 저장에 실패했습니다.");
+    } catch (error) {
+      try {
+        await this.deletePendingAnalysis(analysisResultId);
+      } catch {
+        // Cleanup failure must not replace the original persistence failure.
+      }
+
+      throw new RepositoryAnalysisPersistenceError(
+        "Repository 분석 저장에 실패했습니다.",
+        error instanceof Error ? { cause: error } : undefined,
+      );
     }
 
     return { analysisResultId, reused: false };
@@ -83,7 +98,10 @@ export class RepositoryAnalysisPersistence {
     const { data, error } = await query.maybeSingle();
 
     if (error) {
-      throw new Error("Repository 분석 결과 조회에 실패했습니다.");
+      throw new RepositoryAnalysisPersistenceError(
+        "Repository 분석 결과 조회에 실패했습니다.",
+        { cause: error },
+      );
     }
 
     return (data as IdentifierRow | null)?.id ?? null;
@@ -150,7 +168,9 @@ export class RepositoryAnalysisPersistence {
       .select("id, github_login");
 
     if (error || !data) {
-      throw new Error("Contributor 저장에 실패했습니다.");
+      throw new RepositoryAnalysisPersistenceError("Contributor 저장에 실패했습니다.", {
+        cause: error ?? undefined,
+      });
     }
 
     return new Map(
@@ -188,7 +208,9 @@ export class RepositoryAnalysisPersistence {
     );
 
     if (error) {
-      throw new Error("분석 근거 저장에 실패했습니다.");
+      throw new RepositoryAnalysisPersistenceError("분석 근거 저장에 실패했습니다.", {
+        cause: error,
+      });
     }
   }
 
@@ -210,7 +232,9 @@ export class RepositoryAnalysisPersistence {
       .eq("id", analysisResultId);
 
     if (error) {
-      throw new Error("분석 완료 상태 저장에 실패했습니다.");
+      throw new RepositoryAnalysisPersistenceError("분석 완료 상태 저장에 실패했습니다.", {
+        cause: error,
+      });
     }
   }
 
@@ -220,7 +244,9 @@ export class RepositoryAnalysisPersistence {
 
   private requireIdentifier(data: unknown, error: unknown): string {
     if (error || !data || typeof data !== "object" || !("id" in data)) {
-      throw new Error("Repository 분석 저장에 실패했습니다.");
+      throw new RepositoryAnalysisPersistenceError("Repository 분석 저장에 실패했습니다.", {
+        cause: error instanceof Error ? error : undefined,
+      });
     }
 
     return String((data as IdentifierRow).id);

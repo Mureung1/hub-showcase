@@ -109,6 +109,7 @@ http://127.0.0.1:4177/prototype/index.html
 - [GitHub Wiki](https://github.com/SubJeeLee/hub/wiki)
 - [문서 구조](./docs/document-map.md)
 - [PtoP 기획서](./docs/plans/plan.md)
+- [최신 PRD](./docs/plans/prd.md)
 - [Wiki용 기획서](./docs/wiki/wiki-home.md)
 - [프로젝트 기록](./docs/records/agent-record.md)
 - [개발 가이드](./docs/development/development-guide.md)

@@ -6,7 +6,7 @@ const GITHUB_API_URL = "https://api.github.com";
 
 export class GitHubRepositoryNotFoundError extends Error {
   constructor() {
-    super("GitHub Repository를 찾을 수 없습니다.");
+    super("GitHub Repository를 찾을 수 없거나 접근 권한이 없습니다.");
     this.name = "GitHubRepositoryNotFoundError";
   }
 }
@@ -87,6 +87,7 @@ type GitHubPullRequestResponse = {
   changed_files?: number;
   additions?: number;
   deletions?: number;
+  body?: string | null;
 };
 
 type GitHubReviewResponse = {
@@ -103,12 +104,43 @@ type GitHubIssueResponse = {
   created_at: string;
   closed_at: string | null;
   comments: number;
+  body?: string | null;
   pull_request?: unknown;
 };
 
+type GitHubDiscussionResponse = {
+  number: number;
+  title: string;
+  bodyText?: string | null;
+  url: string;
+  createdAt: string;
+  author: { login: string } | null;
+  category: { name: string } | null;
+  comments?: { totalCount: number } | null;
+};
+
+type GitHubProjectResponse = {
+  number: number;
+  title: string;
+  shortDescription?: string | null;
+  url?: string | null;
+  updatedAt?: string | null;
+  items?: { totalCount: number } | null;
+};
+
+type GitHubGraphqlResponse<T> = {
+  data?: T;
+  errors?: Array<{ message?: string }>;
+};
+
 const MAX_COMMIT_DETAILS = 30;
-const MAX_PULL_REQUESTS = 30;
+const MAX_COMMITS = 300;
+const COMMITS_PER_PAGE = 100;
+const MAX_PULL_REQUESTS = 100;
+const MAX_PULL_REQUEST_DETAILS = 30;
 const MAX_ISSUES = 30;
+const MAX_DISCUSSIONS = 20;
+const MAX_PROJECTS = 20;
 const MAX_CONTEXT_FILES = 20;
 
 @Injectable()
@@ -118,13 +150,14 @@ export class GitHubRepositoryClient {
   async getRepositoryAnalysisSource(
     owner: string,
     repository: string,
+    targetGithubLogin: string | null = null,
   ): Promise<GitHubRepositoryAnalysisSource> {
     const repositoryPath = `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}`;
     const metadata = await this.request<GitHubRepositoryResponse>(repositoryPath);
     const [languageBytes, contributors, commits] = await Promise.all([
       this.request<Record<string, number>>(`${repositoryPath}/languages`),
       this.request<GitHubContributorResponse[]>(`${repositoryPath}/contributors?per_page=100&anon=0`),
-      this.request<GitHubCommitResponse[]>(`${repositoryPath}/commits?per_page=100`),
+      this.fetchRecentCommits(repositoryPath),
     ]);
     const warnings: string[] = [];
     const [readmeResponse, treeResponse, packageResponse, pullRequestResponse, issueResponse] =
@@ -152,7 +185,13 @@ export class GitHubRepositoryClient {
         ),
       ]);
 
-    const [detailedCommits, pullRequests, issues] = await Promise.all([
+    const authoredPullRequests = targetGithubLogin
+      ? (pullRequestResponse ?? []).filter((pullRequest) =>
+          matchesGithubLogin(pullRequest.user?.login, targetGithubLogin),
+        )
+      : (pullRequestResponse ?? []).slice(0, MAX_PULL_REQUEST_DETAILS);
+
+    const [detailedCommits, pullRequests, issues, discussions, projects] = await Promise.all([
       Promise.all(
         commits.slice(0, MAX_COMMIT_DETAILS).map((commit) =>
           this.requestOptional<GitHubCommitDetailResponse>(
@@ -162,8 +201,10 @@ export class GitHubRepositoryClient {
           ),
         ),
       ),
-      this.createPullRequestSummaries(owner, repository, pullRequestResponse ?? [], warnings),
+      this.createPullRequestSummaries(owner, repository, authoredPullRequests, warnings),
       this.createIssueSummaries(issueResponse ?? []),
+      this.getDiscussions(owner, repository, warnings),
+      this.getProjects(owner, repository, warnings),
     ]);
 
     const detailedCommitMap = new Map(
@@ -232,9 +273,32 @@ export class GitHubRepositoryClient {
       packageManifest,
       pullRequests,
       issues,
+      discussions,
+      projects,
       treeTruncated: treeResponse?.truncated ?? false,
       warnings,
     };
+  }
+
+  private async fetchRecentCommits(repositoryPath: string): Promise<GitHubCommitResponse[]> {
+    const commits: GitHubCommitResponse[] = [];
+    const maxPages = Math.ceil(MAX_COMMITS / COMMITS_PER_PAGE);
+
+    for (let page = 1; page <= maxPages; page += 1) {
+      const pageQuery = page === 1
+        ? `?per_page=${COMMITS_PER_PAGE}`
+        : `?per_page=${COMMITS_PER_PAGE}&page=${page}`;
+      const pageCommits = await this.request<GitHubCommitResponse[]>(
+        `${repositoryPath}/commits${pageQuery}`,
+      );
+
+      commits.push(...pageCommits);
+      if (pageCommits.length < COMMITS_PER_PAGE) {
+        break;
+      }
+    }
+
+    return commits.slice(0, MAX_COMMITS);
   }
 
   private async createPullRequestSummaries(
@@ -244,7 +308,7 @@ export class GitHubRepositoryClient {
     warnings: string[],
   ): Promise<GitHubRepositoryAnalysisSource["pullRequests"]> {
     return Promise.all(
-      pullRequests.slice(0, MAX_PULL_REQUESTS).map(async (pullRequest) => {
+      pullRequests.slice(0, MAX_PULL_REQUEST_DETAILS).map(async (pullRequest) => {
         const reviews = await this.requestOptional<GitHubReviewResponse[]>(
           `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/pulls/${pullRequest.number}/reviews`,
           `Pull Request #${pullRequest.number} 리뷰`,
@@ -262,6 +326,10 @@ export class GitHubRepositoryClient {
           changedFiles: pullRequest.changed_files ?? null,
           additions: pullRequest.additions ?? null,
           deletions: pullRequest.deletions ?? null,
+          ...(pullRequest.body !== undefined
+            ? { bodyExcerpt: excerpt(pullRequest.body) }
+            : {}),
+          imageUrls: extractImageUrls(pullRequest.body),
           reviewCount: reviews?.length ?? 0,
           reviewerLogins: unique(
             (reviews ?? [])
@@ -337,7 +405,66 @@ export class GitHubRepositoryClient {
         url: issue.html_url,
         createdAt: issue.created_at,
         closedAt: issue.closed_at,
+        ...(issue.body !== undefined ? { bodyExcerpt: excerpt(issue.body) } : {}),
         commentCount: issue.comments,
+      }));
+  }
+
+  private async getDiscussions(
+    owner: string,
+    repository: string,
+    warnings: string[],
+  ): Promise<GitHubRepositoryAnalysisSource["discussions"]> {
+    if (!this.configService.get<string>("GITHUB_TOKEN")) {
+      return [];
+    }
+
+    const response = await this.requestGraphql<{
+      repository: {
+        discussions?: { nodes?: Array<GitHubDiscussionResponse | null> } | null;
+      } | null;
+    }>(DISCUSSIONS_QUERY, { owner, repository }, "Discussion", warnings);
+
+    return (response?.repository?.discussions?.nodes ?? [])
+      .slice(0, MAX_DISCUSSIONS)
+      .filter((discussion): discussion is GitHubDiscussionResponse => discussion !== null)
+      .map((discussion) => ({
+        number: discussion.number,
+        title: discussion.title,
+        bodyExcerpt: excerpt(discussion.bodyText),
+        authorLogin: discussion.author?.login ?? null,
+        category: discussion.category?.name ?? null,
+        url: discussion.url,
+        createdAt: discussion.createdAt,
+        commentCount: discussion.comments?.totalCount ?? 0,
+      }));
+  }
+
+  private async getProjects(
+    owner: string,
+    repository: string,
+    warnings: string[],
+  ): Promise<GitHubRepositoryAnalysisSource["projects"]> {
+    if (!this.configService.get<string>("GITHUB_TOKEN")) {
+      return [];
+    }
+
+    const response = await this.requestGraphql<{
+      repository: {
+        projectsV2?: { nodes?: Array<GitHubProjectResponse | null> } | null;
+      } | null;
+    }>(PROJECTS_QUERY, { owner, repository }, "Project", warnings);
+
+    return (response?.repository?.projectsV2?.nodes ?? [])
+      .slice(0, MAX_PROJECTS)
+      .filter((project): project is GitHubProjectResponse => project !== null)
+      .map((project) => ({
+        number: project.number,
+        title: project.title,
+        description: project.shortDescription ?? null,
+        url: project.url ?? null,
+        updatedAt: project.updatedAt ?? null,
+        itemCount: project.items?.totalCount ?? 0,
       }));
   }
 
@@ -404,24 +531,36 @@ export class GitHubRepositoryClient {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${GITHUB_API_URL}${path}`, { headers });
+    try {
+      const response = await fetch(`${GITHUB_API_URL}${path}`, { headers });
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new GitHubRepositoryNotFoundError();
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new GitHubRepositoryNotFoundError();
+        }
+
+        if (
+          response.status === 429 ||
+          (response.status === 403 && response.headers.get("x-ratelimit-remaining") === "0")
+        ) {
+          throw new GitHubRateLimitError();
+        }
+
+        throw new GitHubRequestError(response.status);
       }
 
+      return (await response.json()) as T;
+    } catch (error) {
       if (
-        response.status === 429 ||
-        (response.status === 403 && response.headers.get("x-ratelimit-remaining") === "0")
+        error instanceof GitHubRepositoryNotFoundError ||
+        error instanceof GitHubRateLimitError ||
+        error instanceof GitHubRequestError
       ) {
-        throw new GitHubRateLimitError();
+        throw error;
       }
 
-      throw new GitHubRequestError(response.status);
+      throw new GitHubRequestError(502);
     }
-
-    return (await response.json()) as T;
   }
 
   private async requestOptional<T>(
@@ -436,10 +575,116 @@ export class GitHubRepositoryClient {
       return null;
     }
   }
+
+  private async requestGraphql<T>(
+    query: string,
+    variables: Record<string, string>,
+    _label: string,
+    _warnings: string[],
+  ): Promise<T | null> {
+    const token = this.configService.get<string>("GITHUB_TOKEN");
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${GITHUB_API_URL}/graphql`, {
+        method: "POST",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "PtoP",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      if (!response.ok) {
+        throw new GitHubRequestError(response.status);
+      }
+
+      const payload = (await response.json()) as GitHubGraphqlResponse<T>;
+      if (payload.errors?.length || !payload.data) {
+        throw new Error(payload.errors?.[0]?.message ?? "GraphQL 응답이 비어 있습니다.");
+      }
+
+      return payload.data;
+    } catch {
+      // Discussions and Projects are optional GitHub features. An unavailable
+      // GraphQL field should not make the core Repository analysis look broken.
+      _warnings.push(`${_label} 데이터를 확인하지 못했습니다.`);
+      return null;
+    }
+  }
 }
+
+function matchesGithubLogin(login: string | null | undefined, targetLogin: string): boolean {
+  return login?.trim().toLowerCase() === targetLogin.trim().toLowerCase();
+}
+
+const DISCUSSIONS_QUERY = `
+  query RepositoryDiscussions($owner: String!, $repository: String!) {
+    repository(owner: $owner, name: $repository) {
+      discussions(first: 20, orderBy: { field: UPDATED_AT, direction: DESC }) {
+        nodes {
+          number
+          title
+          bodyText
+          url
+          createdAt
+          author { login }
+          category { name }
+          comments { totalCount }
+        }
+      }
+    }
+  }
+`;
+
+const PROJECTS_QUERY = `
+  query RepositoryProjects($owner: String!, $repository: String!) {
+    repository(owner: $owner, name: $repository) {
+      projectsV2(first: 20) {
+        nodes {
+          number
+          title
+          shortDescription
+          url
+          updatedAt
+          items(first: 1) { totalCount }
+        }
+      }
+    }
+  }
+`;
 
 function decodeBase64(value: string): string {
   return Buffer.from(value.replace(/\n/g, ""), "base64").toString("utf8");
+}
+
+function excerpt(value: string | null | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized.slice(0, 4_000) : null;
+}
+
+function extractImageUrls(value: string | null | undefined): string[] {
+  if (!value) return [];
+
+  const urls = new Set<string>();
+  const markdownPattern = /!\[[^\]]*\]\((https?:\/\/[^)\s]+)[^)]*\)/gi;
+  const htmlPattern = /<img[^>]+src=["'](https?:\/\/[^"']+)["']/gi;
+  const attachmentPattern = /https?:\/\/github\.com\/user-attachments\/assets\/[\w./-]+/gi;
+
+  for (const match of value.matchAll(markdownPattern)) urls.add(trimUrl(match[1]));
+  for (const match of value.matchAll(htmlPattern)) urls.add(trimUrl(match[1]));
+  for (const match of value.matchAll(attachmentPattern)) urls.add(trimUrl(match[0]));
+
+  return [...urls].filter(Boolean).slice(0, 8);
+}
+
+function trimUrl(value: string): string {
+  return value.replace(/[.,;:!?]+$/, "");
 }
 
 function unique(values: string[]): string[] {

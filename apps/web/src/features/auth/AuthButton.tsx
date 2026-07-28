@@ -12,6 +12,11 @@ export function AuthButton() {
     void signInWithGitHub();
   };
 
+  const handleSwitchAccount = async () => {
+    setIsModalOpen(true);
+    await signOut();
+  };
+
   return (
     <div className="relative flex min-w-0 items-center justify-end gap-2.5">
       {isLoading && !user ? (
@@ -23,6 +28,9 @@ export function AuthButton() {
           <span className="max-w-[140px] truncate text-[0.82rem] font-semibold text-ptop-ink" title={user.email ?? label}>
             {label}
           </span>
+          <button className="cursor-pointer border-0 bg-transparent px-0 py-2 text-[0.82rem] font-extrabold text-ptop-ink transition-colors duration-[var(--motion-fast)] hover:text-ptop-mint-dark" type="button" onClick={() => void handleSwitchAccount()}>
+            계정 전환
+          </button>
           <button className="min-h-10 cursor-pointer rounded-full border border-ptop-mint-line bg-ptop-mint-soft px-3.5 font-extrabold text-ptop-mint-dark transition duration-[var(--motion-fast)] hover:-translate-y-px" type="button" onClick={() => void signOut()}>
             로그아웃
           </button>
@@ -37,6 +45,7 @@ export function AuthButton() {
         <AuthModal
           isLoading={isLoading}
           error={error}
+          description="다른 GitHub 계정으로 로그인하고 프로젝트 경험을 정리해보세요."
           onClose={() => setIsModalOpen(false)}
           onSignIn={handleSignIn}
         />

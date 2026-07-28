@@ -34,14 +34,24 @@ export function AnalysisReflectionPanel({
   const [saveStatus, setSaveStatus] = useState<ReflectionSaveStatus>("idle");
   const [saveMessage, setSaveMessage] = useState("");
   const saveLockRef = useRef(false);
+  const autoSaveKeyRef = useRef("");
 
   useEffect(() => {
     const restoredDraft = loadReflectionDraft(repositoryUrl);
-    setDraft(restoredDraft);
+    // 후보는 분석 결과 화면에서 현재 세션에 직접 선택한다. 이전 분석의
+    // localStorage 초안을 그대로 복원하면 선택하지 않은 후보가 선택 상태로 보인다.
+    const draftForCurrentAnalysis: ReflectionDraft = {
+      ...restoredDraft,
+      postAnalysisReflection: "",
+      selectedChallengeTitles: [],
+    };
+
+    setDraft(draftForCurrentAnalysis);
     setSaveStatus("idle");
     setSaveMessage("");
     saveLockRef.current = false;
-    onChange(restoredDraft);
+    autoSaveKeyRef.current = "";
+    onChange(draftForCurrentAnalysis);
   }, [onChange, repositoryUrl]);
 
   useEffect(() => {
@@ -99,6 +109,23 @@ export function AnalysisReflectionPanel({
       void saveAnswer();
     }
   }, [onSave, saveStatus]);
+
+  useEffect(() => {
+    const initialReflection = draft.memorableProblem.trim();
+    if (!isAnalysisComplete || !onSave || !initialReflection || saveStatus !== "idle") {
+      return;
+    }
+
+    // 분석이 끝나는 순간 분석 중에 작성한 회고를 한 번 자동 전달한다.
+    // 사용자는 별도의 전송 동작 없이도 Repository 근거와 회고를 함께 분석받는다.
+    if (autoSaveKeyRef.current === initialReflection) {
+      return;
+    }
+
+    autoSaveKeyRef.current = initialReflection;
+    setSaveMessage("분석 중 작성한 회고를 Repository 근거와 함께 분석하는 중입니다.");
+    void saveAnswer();
+  }, [draft.memorableProblem, isAnalysisComplete, onSave, saveStatus]);
 
   return (
     <section
@@ -182,7 +209,7 @@ export function AnalysisReflectionPanel({
                 ? "SENT"
                 : "SEND  >"}
         </button>
-        {isAnalysisComplete && onViewResults && (
+        {isAnalysisComplete && onViewResults && saveStatus === "saved" && (
           <button
             className="min-h-11 border-2 border-[var(--terminal-border)] bg-[#16202e] px-5 text-sm font-bold text-[var(--terminal-ink)] transition hover:border-[var(--terminal-accent)] hover:text-[var(--terminal-accent)] focus-visible:outline-2 focus-visible:outline-[var(--terminal-accent)] focus-visible:outline-offset-2"
             type="button"

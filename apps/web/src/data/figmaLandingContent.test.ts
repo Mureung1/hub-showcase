@@ -8,7 +8,7 @@ test("Figma landing content keeps the three-step product story", () => {
     ["01", "02", "03"],
   );
   assert.equal(landingSteps[0].title, "Repository 연결");
-  assert.equal(landingSteps[1].title, "Poppy의 질문에 답변");
+  assert.equal(landingSteps[1].title, "마스코트 포피의 질문에 답변");
   assert.equal(landingSteps[2].title, "분석 결과 확인");
 });
 

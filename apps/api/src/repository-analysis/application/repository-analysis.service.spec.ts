@@ -73,7 +73,11 @@ describe("RepositoryAnalysisService", () => {
 
     const result = await service.analyze(request);
 
-    expect(githubClient.getRepositoryAnalysisSource).toHaveBeenCalledWith("SubJeeLee", "hub");
+    expect(githubClient.getRepositoryAnalysisSource).toHaveBeenCalledWith(
+      "SubJeeLee",
+      "hub",
+      "SubJeeLee",
+    );
     expect(technicalChallengeAnalyzer.analyze).toHaveBeenCalledTimes(1);
     expect(technicalChallengeAnalyzer.analyze).toHaveBeenCalledWith(
       expect.objectContaining({ targetGithubLogin: "SubJeeLee" }),
@@ -185,5 +189,50 @@ describe("RepositoryAnalysisService", () => {
         }),
       }),
     );
+  });
+
+  it("returns a completed result with a warning when AI candidate generation is unavailable", async () => {
+    const { service, technicalChallengeAnalyzer, persistence } = createService();
+    technicalChallengeAnalyzer.analyze.mockResolvedValue({
+      candidates: [],
+      warning: "AI 분석 provider 설정이 없어 기술적 도전 후보를 생성하지 못했습니다.",
+    });
+
+    const result = await service.analyze({
+      repositoryUrl: "https://github.com/SubJeeLee/hub",
+      githubLogin: "SubJeeLee",
+    });
+
+    expect(result.analysis.technicalChallenges).toEqual([]);
+    expect(result.analysis.warnings).toContain(
+      "AI 분석 provider 설정이 없어 기술적 도전 후보를 생성하지 못했습니다.",
+    );
+    expect(persistence.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        analysis: expect.objectContaining({
+          warnings: expect.arrayContaining([
+            "AI 분석 provider 설정이 없어 기술적 도전 후보를 생성하지 못했습니다.",
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it("propagates required GitHub and persistence failures instead of returning a partial success", async () => {
+    const { service, githubClient, persistence } = createService();
+    const githubError = new Error("github unavailable");
+    githubClient.getRepositoryAnalysisSource.mockRejectedValueOnce(githubError);
+
+    await expect(
+      service.analyze({ repositoryUrl: "https://github.com/SubJeeLee/hub" }),
+    ).rejects.toBe(githubError);
+    expect(persistence.save).not.toHaveBeenCalled();
+
+    const persistenceError = new Error("database unavailable");
+    persistence.save.mockRejectedValueOnce(persistenceError);
+
+    await expect(
+      service.analyze({ repositoryUrl: "https://github.com/SubJeeLee/hub" }),
+    ).rejects.toBe(persistenceError);
   });
 });

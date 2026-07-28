@@ -24,5 +24,6 @@ import { TechnicalChallengeAnalyzer } from "./application/technical-challenge/te
       useExisting: HttpTechnicalChallengeAiClient,
     },
   ],
+  exports: [TECHNICAL_CHALLENGE_AI_CLIENT],
 })
 export class RepositoryAnalysisModule {}
