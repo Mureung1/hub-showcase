@@ -24,7 +24,9 @@
         "docs/erd.md 13장",
         "docs/metric-spec.md 3.3 대표 등급 규칙"
       ],
-      "related_rubrics": ["rb_depth_level_grade"]
+      "related_rubrics": [
+        "rb_depth_level_grade"
+      ]
     },
     {
       "rubric_id": "rb_depth_level_grade",
@@ -95,14 +97,15 @@
       ],
       "fail_when": [
         "출발점이 되는 공고 표현이 없다",
-        "보강 근거가 D 또는 E 계층이다",
         "한 공고의 표현에서 직무 전체나 기업군 전체의 요구를 끌어낸다",
-        "추론 요구를 명시 요구와 같은 자리에 표시한다"
+        "추론 요구를 명시 요구와 같은 자리에 표시한다",
+        "보강 근거가 E 계층이다"
       ],
       "reference": [
         "docs/agent-design.md 7.4",
         "docs/agent-design.md 8장 추론 요구",
-        "docs/data-strategy.md 3장"
+        "docs/data-strategy.md 3장",
+        "docs/adr/0010-third-party-interpretation-scope.md"
       ]
     },
     {
@@ -223,7 +226,10 @@
         "표기가 비슷하다는 이유로 exact 를 부여한다",
         "시장 어휘를 표준 용어로 치환해 저장한다"
       ],
-      "reference": ["docs/statistics-model.md 4장", "docs/knowledge-schema.md 6.2"]
+      "reference": [
+        "docs/statistics-model.md 4장",
+        "docs/knowledge-schema.md 6.2"
+      ]
     },
     {
       "rubric_id": "rb_mapping_broader",
@@ -235,8 +241,12 @@
         "표준 항목이 설명하지 못하는 mention 이 차원 안에 남는다",
         "표준 항목의 범위가 차원 범위의 진부분집합이다"
       ],
-      "fail_when": ["포함 방향을 반대로 기록한다. 그 경우는 narrower 다"],
-      "reference": ["docs/statistics-model.md 4장"]
+      "fail_when": [
+        "포함 방향을 반대로 기록한다. 그 경우는 narrower 다"
+      ],
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
     },
     {
       "rubric_id": "rb_mapping_narrower",
@@ -247,8 +257,12 @@
       "pass_when": [
         "차원의 모든 mention 이 표준 항목 범위 안에 들고, 표준 항목이 차원 밖의 요구까지 설명한다"
       ],
-      "fail_when": ["포함 방향을 반대로 기록한다. 그 경우는 broader 다"],
-      "reference": ["docs/statistics-model.md 4장"]
+      "fail_when": [
+        "포함 방향을 반대로 기록한다. 그 경우는 broader 다"
+      ],
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
     },
     {
       "rubric_id": "rb_mapping_related",
@@ -262,7 +276,9 @@
       "fail_when": [
         "판정이 어렵다는 이유로 related 를 기본값처럼 부여한다. 대응 항목을 찾지 못했으면 unmapped 다"
       ],
-      "reference": ["docs/statistics-model.md 4장"]
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
     },
     {
       "rubric_id": "rb_mapping_unmapped",
@@ -278,7 +294,9 @@
         "unmapped 를 피하려고 인접하지 않은 표준 항목에 related 를 부여한다",
         "unmapped 차원을 통계와 화면에서 제외한다"
       ],
-      "reference": ["docs/statistics-model.md 4장"]
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
     },
     {
       "rubric_id": "rb_evidence_tier_scope",
@@ -296,7 +314,13 @@
         "근거 계층을 기록하지 않는다"
       ],
       "matrix": {
-        "columns": ["A", "B", "C", "D", "E"],
+        "columns": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
         "column_meanings": {
           "A": "기업 공식 채용공고",
           "B": "회사 공식 채용·기술·문화 자료",
@@ -314,37 +338,79 @@
         "rows": [
           {
             "claim_type": "개별 공고 명시 사실",
-            "cells": {"A": "지지", "B": "미지지", "C": "미지지", "D": "미지지", "E": "미지지"},
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
             "note": "근거는 해당 공고 원문의 직접 문장과 위치다"
           },
           {
             "claim_type": "통계 수치",
-            "cells": {"A": "지지", "B": "미지지", "C": "용어 연결만", "D": "미지지", "E": "미지지"},
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "용어 연결만",
+              "D": "미지지",
+              "E": "미지지"
+            },
             "note": "집계는 실제 채용공고에서 직접 관찰한 요구만 센다"
           },
           {
             "claim_type": "기업군 일반화",
-            "cells": {"A": "지지", "B": "미지지", "C": "미지지", "D": "미지지", "E": "미지지"},
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
             "note": "독립 회사 수가 근거의 일부다"
           },
           {
             "claim_type": "추론 요구",
-            "cells": {"A": "지지", "B": "보강", "C": "보강", "D": "미지지", "E": "미지지"},
-            "note": "출발점은 공고 표현이고 B·C 는 보강 자리다"
+            "cells": {
+              "A": "지지",
+              "B": "보강",
+              "C": "보강",
+              "D": "보강",
+              "E": "미지지"
+            },
+            "note": "출발점은 공고 표현이고 B·C·D 는 보강 자리다"
           },
           {
             "claim_type": "회사 맥락 신호",
-            "cells": {"A": "미지지", "B": "지지", "C": "미지지", "D": "미지지", "E": "미지지"},
+            "cells": {
+              "A": "미지지",
+              "B": "지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
             "note": "공고에 없음이 성립 조건이므로 A 는 부재 확인에만 쓴다"
           },
           {
             "claim_type": "합격 전략",
-            "cells": {"A": "지지", "B": "지지", "C": "지지", "D": "지지", "E": "후보 탐색만"},
+            "cells": {
+              "A": "지지",
+              "B": "지지",
+              "C": "지지",
+              "D": "지지",
+              "E": "후보 탐색만"
+            },
             "note": "D 계층 근거는 전략과 로드맵 밖으로 나가지 않는다"
           },
           {
             "claim_type": "편차 없음",
-            "cells": {"A": "지지", "B": "미지지", "C": "미지지", "D": "미지지", "E": "미지지"},
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
             "note": "닫힌 공고 집합의 전수 검사가 근거다"
           }
         ]
@@ -352,9 +418,13 @@
       "reference": [
         "docs/data-strategy.md 3장",
         "docs/data-strategy.md 4장",
-        "docs/agent-design.md 8장"
+        "docs/agent-design.md 8장",
+        "docs/adr/0010-third-party-interpretation-scope.md"
       ],
-      "related_rubrics": ["rb_evidence_allowed_use_token", "rb_evidence_wiki_field_scope"]
+      "related_rubrics": [
+        "rb_evidence_allowed_use_token",
+        "rb_evidence_wiki_field_scope"
+      ]
     },
     {
       "rubric_id": "rb_evidence_allowed_use_token",
@@ -370,7 +440,10 @@
         "토큰이 없는 용도로 근거를 인용한다",
         "허용 용도 검사를 사람 점검으로 대체한다"
       ],
-      "reference": ["docs/data-strategy.md 3.1", "docs/knowledge-schema.md 8.5"]
+      "reference": [
+        "docs/data-strategy.md 3.1",
+        "docs/knowledge-schema.md 8.5"
+      ]
     },
     {
       "rubric_id": "rb_evidence_wiki_field_scope",
@@ -385,7 +458,10 @@
         "근거가 없는 필드를 저장한다",
         "D 계층 근거로 definition 이나 why_required 를 채운다"
       ],
-      "reference": ["docs/knowledge-schema.md 8.5", "docs/data-strategy.md 6.1"]
+      "reference": [
+        "docs/knowledge-schema.md 8.5",
+        "docs/data-strategy.md 6.1"
+      ]
     }
   ]
 }
