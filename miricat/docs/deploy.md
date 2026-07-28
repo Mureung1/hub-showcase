@@ -20,6 +20,8 @@
   - `SUPABASE_URL`
   - `SUPABASE_SERVICE_ROLE_KEY`
   - `ODSAY_API_KEY`
+  - `NAVER_MAP_CLIENT_ID` / `NAVER_MAP_CLIENT_SECRET` (자가용 Directions 프록시용)
+- **ODsay IP 등록**: ODsay 키는 등록된 공인 IP에서만 호출 가능 — Render의 Outbound IP 전부 + 로컬(워커) 공인 IP를 lab.odsay.com 인증키 관리에 등록. 집 IP는 유동이라 바뀌면 재등록(`curl ifconfig.me`로 확인)
   - (`PORT`는 Render가 자동 주입 — 코드가 `process.env.PORT || 8000`이라 대응됨)
 - 주의: index.js의 dotenv는 `../.env`를 읽는데 배포 환경엔 그 파일이 없음 → dotenv가 조용히 넘어가고 Render 환경변수를 그대로 쓰므로 문제없음
 - 확인: `https://<render-url>/api/health` → `{"ok":true,...}`
@@ -30,6 +32,12 @@
 - 환경변수: `VITE_API_BASE=https://<render-url>` + `VITE_NAVER_MAP_CLIENT_ID=<네이버지도 클라이언트ID>` (**빌드 시점에 박히는 값** — 바꾸면 재배포 필요)
 - **NCP 콘솔**: Maps Application의 Web 서비스 URL에 `https://<vercel-url>` 추가 (없으면 리포트 실지도가 인증 오류로 안 뜸)
 - 확인: 홈에서 경로 목록 로드 + `/report/<uuid>` 직접 접속
+
+### 2.5 GitHub Actions — 보초 클라우드 자동화 (완료: 2026-07-28)
+- 워크플로: **main 브랜치**의 `.github/workflows/miricat-sentry.yml` (schedule은 기본 브랜치에서만 트리거 → 코드는 work를 checkout)
+- 매일 KST 07:30 (cron `30 22 * * *` UTC) + Actions 탭 수동 실행 가능
+- 시크릿 4개 (포크 레포 Settings→Actions): SUPABASE_URL · SUPABASE_SERVICE_ROLE_KEY · GEMINI_API_KEY · DISCORD_WEBHOOK_URL
+- ⚠️ 로컬 `scheduler.py`와 동시 상시 실행 금지 — 매일 보고가 두 번 감. 로컬은 데모 수동 트리거(run_scout)용으로만
 
 ### 3. 로컬 워커 — 링크 갱신
 - `miricat/.env`의 `REPORT_BASE_URL`을 `https://<vercel-url>`로 교체

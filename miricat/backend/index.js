@@ -5,6 +5,7 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const { matchNotice } = require('./matching');
 
 const app = express();
 app.use(cors());
@@ -22,7 +23,63 @@ app.get('/api/health', async (req, res) => {
   res.json({ ok: !error, data: data ?? null, error: error?.message ?? null });
 });
 
-// 경로 등록 저장: 화면 입력을 routes 테이블에 insert.
+// ── 즉시 첫 점검 ─────────────────────────────────────────────
+// 보초를 세우는 순간, 모아둔 공지들과 바로 대조해서 첫 보고를 보낸다.
+// (크롤링·추출은 매일 아침 보초 몫 — 여기선 저장된 공지와의 결정론적 매칭만. LLM 없음 = 즉답)
+
+// 감시 관할 — 수집 소스가 있는 지역의 대략적 좌표 상자. 경로가 하나도 안 걸치면 "관할 밖"을 정직하게 알린다.
+const COVERAGE = [
+  { name: '대전·세종권', minX: 127.15, maxX: 127.65, minY: 36.10, maxY: 36.75 },
+  { name: '경기권', minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
+];
+const inCoverage = (points) =>
+  !points?.length ||   // 좌표 없는 옛 경로는 보수적으로 관할 취급
+  points.some((p) => COVERAGE.some((b) => p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY));
+
+async function instantCheck(route) {
+  const { data: notices } = await supabase
+    .from('notices')
+    .select('id, title, source_url, extraction')
+    .order('collected_at', { ascending: false })
+    .limit(30);
+  const alerts = [];
+  for (const n of notices ?? []) {
+    const hits = matchNotice(n, route);
+    if (hits.size) alerts.push({ notice: n, hits: [...hits] });
+  }
+  return { covered: inCoverage(route.path), checked: (notices ?? []).length, alerts };
+}
+
+async function sendFirstReport(route, check) {
+  const webhook = process.env.DISCORD_WEBHOOK_URL;
+  if (!webhook) return false;
+  const reportBase = process.env.REPORT_BASE_URL ?? 'https://hub-pi-lime.vercel.app';
+  const apiBase = process.env.API_BASE_URL ?? 'https://miricat-api.onrender.com';
+  let payload;
+  if (check.alerts.length) {
+    const a = check.alerts[0];                       // 첫 점검은 가장 최근 영향 공지 하나만 무겁게
+    payload = { embeds: [{
+      title: `🚨 첫 점검 경보 — ${route.name}에 영향 공지`,
+      url: `${reportBase}/report/${a.notice.id}?route=${route.id}`,
+      color: 0xE4572E,
+      description: (a.notice.title ?? '').trim(),
+      fields: [
+        { name: '겹친 것', value: a.hits.join(', ') },
+        { name: '원문 공지', value: a.notice.source_url },
+      ],
+      image: { url: `${apiBase}/api/routes/${route.id}/map.png?hits=${encodeURIComponent(a.hits.join(','))}` },
+      footer: { text: '보초를 세우자마자 모아둔 공지와 대조한 결과예요' },
+    }] };
+  } else if (check.covered) {
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 모아둔 공지 ${check.checked}건과 대조했고, 지금 영향 주는 공지는 없어요.` };
+  } else {
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 서울·경기·대전·세종 게시판을 확인하고 있어요.` };
+  }
+  const r = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  return r.ok;   // 화면이 "보냈어요"를 사실일 때만 말하게
+}
+
+// 경로 등록 저장: 화면 입력을 routes 테이블에 insert + 즉시 첫 점검.
 app.post('/api/routes', async (req, res) => {
   const { origin_name, dest_name, depart_time, lines, stops, roads, path } = req.body ?? {};
   if (!origin_name || !dest_name) {
@@ -35,7 +92,20 @@ app.post('/api/routes', async (req, res) => {
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json({ route: data });
+
+  // 즉시 첫 점검 — 실패해도 등록 자체는 성공으로 (점검은 부가 서비스)
+  let check = null;
+  let notified = false;
+  try {
+    check = await instantCheck(data);
+    notified = await sendFirstReport(data, check);
+  } catch (e) {
+    console.error('즉시 점검 실패:', e.message);
+  }
+  res.status(201).json({
+    route: data,
+    check: check && { covered: check.covered, checked: check.checked, alertCount: check.alerts.length, notified },
+  });
 });
 
 // 등록된 경로 목록 (최신순) — 저장 확인·화면 표시용.
@@ -66,6 +136,20 @@ app.get('/api/notices/:id', async (req, res) => {
   if (error) return res.status(404).json({ error: error.message });
   res.json({ notice: data });
 })
+
+// 보초 상태 — "살아있는 서비스"의 증거. 마지막 순찰 시각·보관 공지 수·감시 게시판 수.
+app.get('/api/status', async (req, res) => {
+  const { data, error } = await supabase
+    .from('notices')
+    .select('source, collected_at')
+    .order('collected_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({
+    lastPatrol: data[0]?.collected_at ?? null,        // 가장 최근 수집 시각 = 마지막 순찰
+    noticeCount: data.length,
+    sourceCount: new Set(data.map((n) => n.source)).size,
+  });
+});
 
 // 미리캣이 확인한 공지 목록 (최신순) — Python 에이전트가 notices에 저장한 추출 결과를 화면에 보여준다.
 app.get('/api/notices', async (req, res) => {
@@ -203,6 +287,54 @@ app.get('/api/route-candidates', async (req, res) => {
     };
   });
   res.json({ candidates });
+});
+
+// 경로 지도 이미지 (NCP Static Map 프록시) — 디스코드 embed 이미지용.
+// Static Map은 경로선(폴리라인) 미지원 → 출발·도착 + 영향 정류장(hits, 빨강) 마커로 표현.
+// NCP는 인증 헤더가 필요해 디스코드가 직접 못 불러온다 → 우리가 받아서 이미지를 흘려준다.
+const _norm = (s) => (s || '').toLowerCase().replace(/노선/g, '').replace(/[\s번]/g, ''); // matching.js 미러
+app.get('/api/routes/:id/map.png', async (req, res) => {
+  const { data: route, error } = await supabase
+    .from('routes').select('path').eq('id', req.params.id).single();
+  const points = route?.path;
+  if (error || !points?.length) return res.status(404).json({ error: '경로 좌표가 없습니다.' });
+
+  // 화면 채우기: 좌표들의 중심 + 범위(span)에서 줌 레벨을 어림한다
+  const xs = points.map((p) => p.x), ys = points.map((p) => p.y);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const span = Math.max(Math.max(...xs) - Math.min(...xs), (Math.max(...ys) - Math.min(...ys)) * 1.3, 0.005);
+  const level = Math.max(7, Math.min(16, Math.floor(Math.log2(360 / span)) + 1));
+
+  // 마커: 공지와 겹친 정류장(빨강, hits=쉼표목록) 우선 + 출발(초록)·도착(파랑)
+  // 영향 정류장이 출발/도착과 같은 자리면 빨강만 그린다 (겹치면 가려짐)
+  const hits = (req.query.hits ?? '').split(',').map(_norm).filter(Boolean);
+  const isHit = (p) => p.name && hits.some((h) => h && (_norm(p.name).includes(h) || h.includes(_norm(p.name))));
+  const redPts = points.filter(isHit);
+  const markers = [];
+  if (!isHit(points[0])) markers.push(`type:d|size:mid|color:green|pos:${points[0].x} ${points[0].y}`);
+  if (!isHit(points[points.length - 1])) markers.push(`type:d|size:mid|color:blue|pos:${points[points.length - 1].x} ${points[points.length - 1].y}`);
+  for (const p of redPts) markers.push(`type:d|size:mid|color:red|pos:${p.x} ${p.y}`);
+
+  const url = `https://maps.apigw.ntruss.com/map-static/v2/raster`
+    + `?w=800&h=420&scale=2&format=png&center=${cx},${cy}&level=${level}`
+    + markers.map((m) => `&markers=${encodeURIComponent(m)}`).join('');
+  const r = await fetch(url, {
+    headers: {
+      'x-ncp-apigw-api-key-id': process.env.NAVER_MAP_CLIENT_ID,
+      'x-ncp-apigw-api-key': process.env.NAVER_MAP_CLIENT_SECRET,
+    },
+  });
+  if (!r.ok) return res.status(502).json({ error: `Static Map 오류 (${r.status})` });
+  res.set('Content-Type', 'image/png');
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.send(Buffer.from(await r.arrayBuffer()));
+});
+
+// 진단용: 이 서버가 바깥으로 나갈 때 쓰는 공인 IP (ODsay IP 등록 대조용)
+app.get('/api/debug/egress-ip', async (req, res) => {
+  const r = await fetch('https://ifconfig.me', { headers: { 'User-Agent': 'curl' } });
+  res.json({ egressIp: (await r.text()).trim() });
 });
 
 const PORT = process.env.PORT || 8000; // Vite 프록시(/api → :8000)가 기대하는 포트

@@ -42,6 +42,18 @@ SOURCES = [
                 "시정 보도자료 위주라 title_filter 필수 (교통 공지 밀도 낮음, 0건인 날 많음).",
     },
     {
+        "id": "seoul_topis",
+        "name": "서울 TOPIS 교통소식",
+        "active": True,                     # 2026-07-28 검증 완료 (JSON 목록+본문 동봉·원문 링크 렌더)
+        "fetcher": "topis",                 # 목록 JSON(POST)에 본문 HTML까지 담겨 옴 — scout의 전용 페처
+        "list_url": "https://topis.seoul.go.kr/notice/selectNoticeList.do",
+        "list_pattern": None,               # fetcher가 대신함
+        # 합성 id("0201&bdwrSeq=6062")를 끼우면 검증된 원문 URL 모양이 된다
+        "view_url": "https://topis.seoul.go.kr/notice/openNoticeView.do?blbdDivCd=02&bdwrDivCd={id}",
+        "note": "게시판 자체가 교통통제·정류장 공지 전용이라 필터 불필요. 밀도 최상(주 단위 다수). "
+                "본문이 목록 응답에 동봉 → 글별 재요청 없음(부하 최소).",
+    },
+    {
         "id": "gbis_route",
         "name": "경기버스정보(GBIS) 노선신설·폐선안내",
         "active": True,                     # 2026-07-27 검증 완료 (JSON 목록·script 본문·GET 원문링크)
