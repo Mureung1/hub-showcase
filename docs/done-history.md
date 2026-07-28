@@ -35,6 +35,42 @@ This file records work that has already been installed, created, implemented, or
   - Reason: why it is not today's work
 ```
 
+## 2026-07-28
+
+### Completed
+- Applied the existing owner HTML prototype layout to the real React owner screen while keeping the current Supabase lookup and stamp-award logic.
+  - Related files: `src/features/owner.jsx`, `src/App.css`, `owner-prototype.html`, `owner-prototype.css`
+  - Verification: `cmd /c npm run verify`
+  - Do not suggest again: applying the first owner prototype layout to the React owner dashboard
+- Converted the prototype's editable cafe settings area into a read-only MVP cafe rule card.
+  - Related files: `src/features/owner.jsx`
+  - Verification: `cmd /c npm run verify`
+  - Do not suggest again: adding owner-side cafe settings save UI for issue 5
+- Applied the existing customer HTML prototype visual direction to the real React customer screen.
+  - Related files: `src/features/customer.jsx`, `src/App.css`, `user_proto.html`, `prototype.css`
+  - Verification: `cmd /c npm run verify`
+  - Do not suggest again: applying the first user prototype visual style to the customer stamp-card screen
+- Replaced the letter-based customer bottom navigation with CSS icon shapes and updated the customer QR and cafe stamp cards to match the prototype's brighter mobile-app style.
+  - Related files: `src/features/customer.jsx`, `src/App.css`
+  - Verification: `cmd /c npm run verify`
+  - Do not suggest again: replacing H/C/N/M tab letters with first-pass customer nav icons
+- Ran the week 3 issue 8 pre-deploy QA checks that can be verified locally, including build/lint, route responses, Supabase env presence, and QR/member-number parsing behavior.
+  - Related files: `src/features/customer.jsx`, `src/features/owner.jsx`, `src/utils/stamp.js`, `src/App.css`
+  - Verification: `cmd /c npm run verify`; `node --input-type=module -e "...stamp utils checks..."`; local HTTP 200 checks for `/login`, `/customer`, and `/owner`
+  - Do not suggest again: running the first local issue 8 pre-deploy QA pass
+- Fixed the member-number/QR parsing error messages that were still mojibake.
+  - Related files: `src/utils/stamp.js`
+  - Verification: `node --input-type=module -e "...stamp utils checks..."`; `cmd /c npm run verify`
+  - Do not suggest again: fixing the first garbled QR/member lookup validation messages
+
+### Verify Only
+- Check the owner dashboard visually with a real owner account and live Supabase data.
+  - Reason: the build passes locally, but the owner route is protected and requires a valid owner login session for full browser verification.
+- Check the customer home screen visually with a real customer account and live Supabase data.
+  - Reason: the build passes locally, but the customer route is protected and needs a valid customer login session to inspect real QR, cafe cards, coupons, and notifications.
+- Complete the live end-to-end flow with real demo accounts: customer QR value, owner lookup, invalid input errors, stamp award, coupon issuance, and customer refresh.
+  - Reason: these checks need authenticated Supabase customer and owner sessions with seeded demo data.
+
 ## 2026-07-16
 
 ### Previously Completed From Repository Evidence

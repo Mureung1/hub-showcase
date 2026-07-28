@@ -8,6 +8,7 @@ function RoleLogin() {
   const [password, setPassword] = useState('')
   const [loginStatus, setLoginStatus] = useState('idle')
   const [loginError, setLoginError] = useState('')
+
   const handleLogin = async (event) => {
     event.preventDefault()
     setLoginStatus('loading')
@@ -27,14 +28,14 @@ function RoleLogin() {
     setLoginStatus('idle')
     navigate('/customer')
   }
+
   return (
     <main className="app-shell role-screen">
       <section className="role-intro">
-        <p className="eyebrow">Cafe Stamp MVP</p>
-        <h1>카페 스탬프를 웹에서 가볍게 관리해요</h1>
-        <p>
-          손님은 QR을 보여주고, 사장님은 가게 화면에서 스탬프를 적립합니다.
-        </p>
+        <div className="login-card-title">
+          <h1>Moang</h1>
+          <p>스탬프를 모아봐요</p>
+        </div>
       </section>
 
       <section className="role-actions" aria-label="로그인">
@@ -59,15 +60,14 @@ function RoleLogin() {
 
           {loginError && <p className="form-error">{loginError}</p>}
 
-          <button className="primary-button" type="submit">
-            {loginStatus === 'loading' ? '로그인 중...' : '로그인'}
+          <button className="primary-button" type="submit" disabled={loginStatus === 'loading'}>
+            {loginStatus === 'loading' ? '로그인 중' : '로그인'}
           </button>
         </form>
       </section>
+      <p className="login-copy">자주 가는 카페의 스탬프와 쿠폰을 한곳에서 확인해요.</p>
     </main>
   )
 }
-
-
 
 export { RoleLogin }

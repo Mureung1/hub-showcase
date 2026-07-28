@@ -134,7 +134,7 @@ function OwnerDashboard({ profile }) {
     const loadOwnerCafe = async () => {
       if (!profile?.cafe_id) {
         setOwnerStatus('error')
-        setOwnerError('담당 카페를 찾을 수 없습니다.')
+        setOwnerError('해당 카페를 찾을 수 없습니다.')
         return
       }
 
@@ -149,7 +149,7 @@ function OwnerDashboard({ profile }) {
 
       if (error) {
         setOwnerStatus('error')
-        setOwnerError('담당 카페 정보를 불러오지 못했습니다.')
+        setOwnerError('해당 카페 정보를 불러오지 못했습니다.')
         return
       }
 
@@ -166,128 +166,198 @@ function OwnerDashboard({ profile }) {
     }
   }, [ownerStatus])
 
+  const currentStampLabel = lookupResult
+    ? `${lookupResult.currentStamps} / ${lookupResult.goalStamps}개`
+    : '-'
+  const couponIssuedLabel = awardResult?.couponIssued ? '1' : '0'
+  const recentActivityLabel = awardResult
+    ? awardResult.couponIssued
+      ? `${lookupResult?.customerName ?? '손님'} 쿠폰 발급 완료`
+      : `${lookupResult?.customerName ?? '손님'} 스탬프 1개 적립`
+    : '아직 처리 내역이 없습니다'
+
   return (
-    <main className="app-shell owner-screen">
-      <header className="customer-header">
-        <div>
-          <p className="eyebrow">사장님 모드</p>
-          <h1>가게 관리</h1>
+    <main className="owner-app" aria-label="사장님 화면">
+      <aside className="owner-sidebar" aria-label="사장님 메뉴">
+        <div className="owner-brand">
+          <span aria-hidden="true">CS</span>
+          <div>
+            <strong>{ownerCafe?.name ?? 'Cafe Stamp'}</strong>
+            <small>사장님 테스트 로그인</small>
+          </div>
         </div>
-        <button className="ghost-button" type="button" onClick={handleLogout}>
-          로그아웃
-        </button>
-      </header>
+        <nav>
+          <a className="active" href="#owner-dashboard">홈</a>
+          <a href="#owner-scan">QR 적립</a>
+          <a href="#owner-rules">카페 규칙</a>
+          <a href="#owner-activity">처리 결과</a>
+        </nav>
+      </aside>
 
-      <section className="owner-panel">
-        {ownerStatus === 'loading' && <StatusCard title="담당 카페를 불러오고 있어요" />}
-        {ownerStatus === 'error' && <StatusCard title={ownerError} />}
-        {ownerStatus === 'idle' && (
-          <>
-            <div className="section-title">
-              <h2>{ownerCafe.name}</h2>
-              <p>스탬프 조건과 보상 내용을 확인하고 손님 QR을 입력합니다.</p>
-            </div>
+      <section className="owner-workspace">
+        <header className="owner-topbar">
+          <div>
+            <p>사장님 모드</p>
+            <h1>오늘의 스탬프 운영</h1>
+          </div>
+          <button type="button" onClick={handleLogout}>
+            로그아웃
+          </button>
+        </header>
 
-            <dl className="rule-list">
-              <div>
-                <dt>스탬프 목표</dt>
-                <dd>{ownerCafe.stamp_goal}개</dd>
-              </div>
-              <div>
-                <dt>보상 내용</dt>
-                <dd>{ownerCafe.reward_title}</dd>
-              </div>
-            </dl>
-
-            <form className="lookup-form" onSubmit={handleLookupSubmit}>
-              <label htmlFor="member-lookup">회원번호 또는 QR 값</label>
-              <div className="lookup-row">
-                <input
-                  id="member-lookup"
-                  ref={lookupInputRef}
-                  type="text"
-                  value={lookupInput}
-                  onChange={(event) => setLookupInput(event.target.value)}
-                  placeholder="cafe-stamp:C-1001 또는 C-1001"
-                  autoComplete="off"
-                />
-                <button
-                  className="primary-button"
-                  type="submit"
-                  disabled={lookupStatus === 'loading'}
-                >
-                  {lookupStatus === 'loading' ? '조회 중...' : '조회'}
-                </button>
+        <section className="owner-panel" id="owner-dashboard" aria-label="운영 현황">
+          {ownerStatus === 'loading' && <StatusCard title="카페 정보를 불러오고 있습니다." />}
+          {ownerStatus === 'error' && <StatusCard title={ownerError} />}
+          {ownerStatus === 'idle' && (
+            <>
+              <div className="owner-metric-grid">
+                <article className="owner-metric-card">
+                  <span>조회한 손님</span>
+                  <strong>{lookupResult ? '1' : '0'}</strong>
+                  <small>{parsedMemberNumber || '회원번호를 입력해 주세요'}</small>
+                </article>
+                <article className="owner-metric-card">
+                  <span>현재 스탬프</span>
+                  <strong>{currentStampLabel}</strong>
+                  <small>{ownerCafe.name} 기준</small>
+                </article>
+                <article className="owner-metric-card">
+                  <span>쿠폰 발급</span>
+                  <strong>{couponIssuedLabel}</strong>
+                  <small>{awardResult?.couponIssued ? '자동 발급 완료' : '이번 처리 기준'}</small>
+                </article>
               </div>
 
-              {lookupError && <p className="form-error">{lookupError}</p>}
+              <div className="owner-dashboard-grid">
+                <article className="owner-card owner-scan-card" id="owner-scan">
+                  <div>
+                    <p>직원용 적립</p>
+                    <h2>손님 QR 값이나 회원번호를 입력한 뒤 먼저 조회합니다.</h2>
+                  </div>
+                  <form className="owner-lookup-form" onSubmit={handleLookupSubmit}>
+                    <label htmlFor="member-lookup">QR/회원번호 입력</label>
+                    <div className="owner-scan-input">
+                      <input
+                        id="member-lookup"
+                        ref={lookupInputRef}
+                        type="text"
+                        value={lookupInput}
+                        onChange={(event) => setLookupInput(event.target.value)}
+                        placeholder="cafe-stamp:C-1001 또는 C-1001"
+                        autoComplete="off"
+                      />
+                      <button type="submit" disabled={lookupStatus === 'loading'}>
+                        {lookupStatus === 'loading' ? '조회 중' : '조회'}
+                      </button>
+                    </div>
+                  </form>
+                  {lookupError && <p className="form-error">{lookupError}</p>}
+                  {parsedMemberNumber && !lookupError && (
+                    <div className="owner-info-box">
+                      <span>조회할 회원번호</span>
+                      <strong>{parsedMemberNumber}</strong>
+                    </div>
+                  )}
+                </article>
 
-              {parsedMemberNumber && !lookupError && (
-                <div className="lookup-result">
-                  <span>조회한 회원번호</span>
-                  <strong>{parsedMemberNumber}</strong>
-                </div>
-              )}
-            </form>
-
-            {lookupResult && (
-              <article className="lookup-card">
-                <div>
-                  <p className="eyebrow">조회 결과</p>
-                  <h3>{lookupResult.customerName}</h3>
-                  <p>회원번호 {lookupResult.memberNumber}</p>
-                </div>
-                <dl className="rule-list">
-                  <div>
-                    <dt>담당 카페</dt>
-                    <dd>{lookupResult.cafeName}</dd>
+                <article className="owner-card owner-result-card">
+                  <div className="owner-section-head">
+                    <div>
+                      <p>조회 결과</p>
+                      <h2>{lookupResult ? lookupResult.customerName : '손님을 조회해 주세요'}</h2>
+                    </div>
                   </div>
-                  <div>
-                    <dt>현재 스탬프</dt>
-                    <dd>
-                      {lookupResult.currentStamps} / {lookupResult.goalStamps}개
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>보상 내용</dt>
-                    <dd>{lookupResult.reward}</dd>
-                  </div>
-                </dl>
-                <button
-                  className="primary-button"
-                  type="button"
-                  disabled={awardStatus === 'loading'}
-                  onClick={handleAwardStamp}
-                >
-                  {awardStatus === 'loading' ? '적립 처리 중...' : '스탬프 1개 적립'}
-                </button>
-                {awardError && <p className="form-error">{awardError}</p>}
-                {awardResult && (
-                  <div className="award-result">
-                    <strong>
-                      {awardResult.couponIssued
-                        ? '쿠폰이 발급되었습니다.'
-                        : '스탬프가 적립되었습니다.'}
-                    </strong>
-                    <p>
-                      현재 {awardResult.currentStamps} / {awardResult.goalStamps}개
+                  {lookupResult ? (
+                    <>
+                      <dl className="owner-rule-list">
+                        <div>
+                          <dt>회원번호</dt>
+                          <dd>{lookupResult.memberNumber}</dd>
+                        </div>
+                        <div>
+                          <dt>현재 스탬프</dt>
+                          <dd>
+                            {lookupResult.currentStamps} / {lookupResult.goalStamps}개
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>보상</dt>
+                          <dd>{lookupResult.reward}</dd>
+                        </div>
+                      </dl>
+                      <button
+                        className="owner-award-button"
+                        type="button"
+                        disabled={awardStatus === 'loading'}
+                        onClick={handleAwardStamp}
+                      >
+                        {awardStatus === 'loading' ? '적립 처리 중' : '스탬프 1개 적립'}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="owner-empty-text">
+                      QR 스캐너가 입력한 값이나 손님 회원번호를 왼쪽 입력창에 넣어 주세요.
                     </p>
-                    {awardResult.couponIssued && (
-                      <p>
-                        쿠폰: {awardResult.couponTitle} / {awardResult.couponBarcode}
-                      </p>
+                  )}
+                  {awardError && <p className="form-error">{awardError}</p>}
+                </article>
+              </div>
+
+              <div className="owner-dashboard-grid">
+                <article className="owner-card owner-rule-card" id="owner-rules">
+                  <div className="owner-section-head">
+                    <div>
+                      <p>내 카페 관리</p>
+                      <h2>스탬프 규칙</h2>
+                    </div>
+                  </div>
+                  <dl className="owner-rule-list">
+                    <div>
+                      <dt>카페명</dt>
+                      <dd>{ownerCafe.name}</dd>
+                    </div>
+                    <div>
+                      <dt>목표 스탬프</dt>
+                      <dd>{ownerCafe.stamp_goal}개</dd>
+                    </div>
+                    <div>
+                      <dt>보상 이름</dt>
+                      <dd>{ownerCafe.reward_title}</dd>
+                    </div>
+                  </dl>
+                </article>
+
+                <article className="owner-card owner-activity-card" id="owner-activity">
+                  <div className="owner-section-head">
+                    <div>
+                      <p>처리 결과</p>
+                      <h2>최근 적립과 쿠폰 발급</h2>
+                    </div>
+                    <span>실시간 처리</span>
+                  </div>
+                  <div className={awardResult ? 'owner-success-box' : 'owner-info-box'}>
+                    <strong>{recentActivityLabel}</strong>
+                    {awardResult && (
+                      <>
+                        <span>
+                          현재 {awardResult.currentStamps} / {awardResult.goalStamps}개
+                        </span>
+                        {awardResult.couponIssued && (
+                          <span>
+                            쿠폰: {awardResult.couponTitle} / {awardResult.couponBarcode}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
-                )}
-              </article>
-            )}
-          </>
-        )}
+                </article>
+              </div>
+            </>
+          )}
+        </section>
       </section>
     </main>
   )
 }
-
-
 
 export { OwnerDashboard }
