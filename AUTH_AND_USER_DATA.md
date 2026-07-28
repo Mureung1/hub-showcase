@@ -4,11 +4,11 @@
 
 - 인증: Supabase Auth의 이메일·비밀번호 인증
 - 프로필 DB: Supabase PostgreSQL `profiles`
-- 세션: Supabase 클라이언트가 `sessionStorage`에서 복원하며, 앱은 `AuthProvider` 한 곳에서 상태를 관리한다. 새로고침에는 유지되지만 창·탭을 닫으면 종료된다.
+- 세션: Supabase 클라이언트가 이 기기의 `localStorage`에서 복원하며, 앱은 `AuthProvider` 한 곳에서 상태를 관리한다. 창·탭을 닫은 뒤에도 유지되며 사용자가 로그아웃하면 제거된다.
 - API 인증: React가 access token을 `Authorization: Bearer <token>`으로 보내면 Express가 Supabase `auth.getUser(token)`으로 검증한다.
 - DB 접근: 프로필 쿼리는 검증된 토큰을 가진 anon Supabase 클라이언트로 실행한다. 따라서 RLS가 실제 API 접근에도 적용된다.
 
-비밀번호, service role key, access token 원문은 앱 코드나 localStorage 프로필에 저장하지 않는다. Supabase 클라이언트는 access token을 `sessionStorage`에만 저장한다. 장기 보존되는 localStorage에는 인증 토큰을 기록하지 않으며, UniRadar의 `uniradar.userProfile`에는 프로필 데이터만 남는다.
+비밀번호와 service role key는 앱 코드나 브라우저 저장소에 저장하지 않는다. 지속 로그인 기능을 위해 Supabase 클라이언트가 갱신 가능한 인증 세션을 이 기기의 `localStorage`에 보관한다. 이 세션은 로그아웃 시 제거되며, 공용 기기에서는 사용 후 반드시 로그아웃해야 한다. UniRadar의 `uniradar.userProfile`에는 프로필 데이터만 남는다.
 
 ## 환경변수
 

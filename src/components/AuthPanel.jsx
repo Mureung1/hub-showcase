@@ -83,7 +83,7 @@ export default function AuthPanel() {
         <div>
           <p className="eyebrow">Account</p>
           <h2 id="auth-panel-title">{isSignUp ? "회원가입" : "로그인"}</h2>
-          <p>프로필과 저장 출처는 로그인한 계정에만 저장됩니다.</p>
+          <p>이 기기에서는 로그아웃 전까지 로그인 상태가 유지됩니다.</p>
         </div>
         <div className="auth-mode-toggle" aria-label="인증 방식">
           <button className={!isSignUp ? "is-active" : ""} type="button" onClick={() => setMode("signin")}>로그인</button>

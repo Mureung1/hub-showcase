@@ -161,7 +161,7 @@ mock과 Gemini 분석 결과는 모두 [`DATA_SCHEMA.md`](./DATA_SCHEMA.md)에 �
 
 ### 사용자 프로필과 재판정
 
-Supabase 환경변수를 설정하면 아이디·비밀번호 로그인 후 사용자별 프로필을 `profiles` 테이블에 저장합니다. 인증 세션은 `sessionStorage`에 보관되어 새로고침에는 유지되지만 브라우저 창·탭을 닫으면 종료됩니다. 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 기존 브라우저 프로필은 사용자가 동의할 때만 계정으로 가져옵니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md), 인증 설정은 [`AUTH_AND_USER_DATA.md`](./AUTH_AND_USER_DATA.md)를 참고하세요.
+Supabase 환경변수를 설정하면 아이디·비밀번호 로그인 후 사용자별 프로필을 `profiles` 테이블에 저장합니다. 인증 세션은 이 기기의 브라우저 저장소에 보관되어 창·탭을 닫은 뒤에도 유지되며, 로그아웃하면 제거됩니다. 비밀번호는 저장하지 않습니다. 공용 기기에서는 사용 후 반드시 로그아웃하세요. 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 기존 브라우저 프로필은 사용자가 동의할 때만 계정으로 가져옵니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md), 인증 설정은 [`AUTH_AND_USER_DATA.md`](./AUTH_AND_USER_DATA.md)를 참고하세요.
 
 ## Supabase 인증과 계정 프로필
 
