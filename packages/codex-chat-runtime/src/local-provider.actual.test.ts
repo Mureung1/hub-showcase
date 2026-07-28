@@ -54,13 +54,51 @@ test('runs the production bridge against exact Codex and the official local prov
     const workspace = join(root, 'runtime-workspace')
     await mkdir(workspace)
     await initializeGitRootForTest(workspace)
+    const canonicalWorkspace = await realpath(workspace)
+    const skillPath = join(
+      canonicalWorkspace,
+      '.agents',
+      'skills',
+      'ay-ple-first-assignment',
+      'SKILL.md',
+    )
+    const skillBody = 'EXACT_SKILL_BODY_SENTINEL'
+    const actionText = [
+      'ActionInvocation: organize_sources',
+      'Selected SemesterWorkspace file references:',
+      '- "materials/assignment-notice.md"',
+    ].join('\n')
+    await Promise.all([
+      mkdir(dirname(skillPath), { recursive: true }),
+      mkdir(join(canonicalWorkspace, 'materials'), { recursive: true }),
+    ])
+    await Promise.all([
+      writeFile(
+        skillPath,
+        [
+          '---',
+          'name: ay-ple-first-assignment',
+          'description: Exact local-provider test Skill.',
+          '---',
+          '',
+          skillBody,
+          '',
+        ].join('\n'),
+        'utf8',
+      ),
+      writeFile(
+        join(canonicalWorkspace, 'materials', 'assignment-notice.md'),
+        '# Assignment notice\n',
+        'utf8',
+      ),
+    ])
     const environment = await createEnvironmentRoots(root)
     provider = await startLocalProvider(bundle, root)
     await writeLocalProviderConfig(environment.codexHome, provider.url)
 
     runtime = await startVerifiedCodexChatRuntime({
       bundle,
-      workspace: await realpath(workspace),
+      workspace: canonicalWorkspace,
       environment,
       disableManagedConfigForTest: true,
       deadlines: {
@@ -134,6 +172,23 @@ test('runs the production bridge against exact Codex and the official local prov
       text: 'after interrupt',
     })
 
+    const action = await within(
+      runtime.runtime.startProductTurn({
+        threadId: thread.threadId,
+        permissionProfile: 'workspace_write',
+        skill: {
+          name: 'ay-ple-first-assignment',
+          path: skillPath,
+        },
+        text: actionText,
+      }),
+    )
+    const actionEvents = await within(collect(action.events))
+    assertNativeTurn(actionEvents, thread.threadId, action.turnId, {
+      status: 'completed',
+      text: 'skill action',
+    })
+
     await within(runtime.runtime.close())
     await within(runtime.closed)
     assert.equal(runtime.child.exitCode, 0)
@@ -144,7 +199,7 @@ test('runs the production bridge against exact Codex and the official local prov
     const policy = await probeEffectivePolicy(
       bundle,
       environment,
-      await realpath(workspace),
+      canonicalWorkspace,
       thread.threadId,
     )
     assert.equal(policy.approvalPolicy, 'never')
@@ -156,13 +211,31 @@ test('runs the production bridge against exact Codex and the official local prov
 
     const journal = await provider.close()
     provider = undefined
-    assert.deepEqual(
-      journal.requests.map((request) => request.userTexts.at(-1)),
-      [
-        'Run the exact local-provider T0.',
-        'Start a turn that will be interrupted.',
-        'Continue on the same native thread.',
-      ],
+    assert.deepEqual(journal.requests.slice(0, 3).map(
+      (request) => request.userTexts.at(-1),
+    ), [
+      'Run the exact local-provider T0.',
+      'Start a turn that will be interrupted.',
+      'Continue on the same native thread.',
+    ])
+    const actionRequest = journal.requests[3]
+    assert.ok(actionRequest)
+    const skillIndex = actionRequest.userTexts.findIndex((text) =>
+      text.startsWith('<skill>'),
+    )
+    const textIndex = actionRequest.userTexts.indexOf(actionText)
+    assert.notEqual(skillIndex, -1)
+    assert.notEqual(textIndex, -1)
+    const skillBlock = actionRequest.userTexts[skillIndex] as string
+    assert.match(
+      skillBlock,
+      /<name>ay-ple-first-assignment<\/name>/u,
+    )
+    assert.equal(skillBlock.includes(`<path>${skillPath}</path>`), true)
+    assert.equal(skillBlock.includes(skillBody), true)
+    assert.equal(
+      actionRequest.userTexts.some((text) => text.startsWith('<mention>')),
+      false,
     )
   } finally {
     await runtime?.runtime.close().catch(() => undefined)

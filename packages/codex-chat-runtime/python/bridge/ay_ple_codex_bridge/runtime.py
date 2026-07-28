@@ -16,6 +16,7 @@ from openai_codex import (
     AsyncUserInputRequest,
     JsonRpcError,
     Sandbox,
+    SkillInput,
     TextInput,
     TransportClosedError,
     UserInputRequestError,
@@ -663,7 +664,19 @@ class BridgeWorker:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))
 
     async def _start_product_turn(self, command: StartProductTurnCommand) -> None:
-        turn_input = [TextInput(text=command.text)]
+        turn_input = [
+            *(
+                [
+                    SkillInput(
+                        name=command.skill_name,
+                        path=command.skill_path,
+                    )
+                ]
+                if command.skill_name is not None and command.skill_path is not None
+                else []
+            ),
+            TextInput(text=command.text),
+        ]
 
         async def start_product_turn(record: ThreadRecord) -> AsyncTurnHandle:
             effective_model = command.model or record.handle.initial_model

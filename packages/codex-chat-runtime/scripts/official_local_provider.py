@@ -216,6 +216,13 @@ def _serve(args: argparse.Namespace) -> int:
                 ["after ", "interrupt"],
             )
         )
+        responses.enqueue_sse(
+            streaming_response(
+                "exact-skill-action-response",
+                "exact-skill-action-message",
+                ["skill ", "action"],
+            )
+        )
         journal = threading.Thread(
             target=_publish_journal,
             args=(responses, journal_path, stop),

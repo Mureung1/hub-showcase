@@ -276,7 +276,21 @@ class FakeAppServer:
     ) -> None:
         params = request.get("params", {})
         text = _input_text(params)
-        expected_input = [{"type": "text", "text": text}]
+        turn_input = params.get("input")
+        if (
+            not isinstance(turn_input, list)
+            or len(turn_input) not in {1, 2}
+            or turn_input[-1] != {"type": "text", "text": text}
+            or (
+                len(turn_input) == 2
+                and (
+                    not isinstance(turn_input[0], dict)
+                    or set(turn_input[0]) != {"type", "name", "path"}
+                    or turn_input[0].get("type") != "skill"
+                )
+            )
+        ):
+            raise RuntimeError(f"product input mismatch: {turn_input!r}")
         expected_collaboration = {
             "mode": "plan",
             "settings": {
@@ -285,8 +299,6 @@ class FakeAppServer:
                 "reasoning_effort": "medium",
             },
         }
-        if params.get("input") != expected_input:
-            raise RuntimeError(f"product input mismatch: {params.get('input')!r}")
         if params.get("collaborationMode") != expected_collaboration:
             raise RuntimeError("product collaboration mode mismatch")
 

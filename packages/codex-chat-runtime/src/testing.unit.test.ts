@@ -442,6 +442,63 @@ test('deterministic product turn supports text-only input without a requested Sk
   ])
 })
 
+test('deterministic product turn snapshots an optional Skill without adding product activity', async () => {
+  const input = {
+    threadId: 'thread-product',
+    permissionProfile: 'workspace_write' as const,
+    settings: {
+      model: 'gpt-current',
+      reasoningEffort: 'high',
+      serviceTier: 'fast' as const,
+    },
+    skill: {
+      name: 'ay-ple-first-assignment',
+      path:
+        '/deterministic/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+    },
+    text: 'ActionInvocation: organize_sources\n- "materials/notice.md"',
+  }
+  const expectedInput = structuredClone(input)
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'completed',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+
+  const turnPromise = runtime.startProductTurn(input)
+  input.settings.model = 'caller-mutated-model'
+  input.skill.name = 'caller-mutated-skill'
+  input.skill.path = '/caller-mutated/SKILL.md'
+  input.text = 'caller-mutated text'
+  const turn = await turnPromise
+
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'turn.completed',
+      threadId: expectedInput.threadId,
+      turnId: 'turn-product',
+      status: 'completed',
+    },
+  ])
+  assert.deepEqual(runtime.calls, [
+    { operation: 'startThread' },
+    { operation: 'startProductTurn', input: expectedInput },
+  ])
+})
+
 test('deterministic product continuation rejects a scripted resolution that disagrees with cancel', async () => {
   const input = {
     threadId: 'thread-product',

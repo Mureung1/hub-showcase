@@ -274,6 +274,8 @@ class ProtocolUnitTests(unittest.TestCase):
             json.dumps(product, separators=(",", ":")).encode() + b"\n"
         )
         self.assertEqual(command.permission_profile, "workspace_write")
+        self.assertIsNone(command.skill_name)
+        self.assertIsNone(command.skill_path)
 
         read_only = {
             **product,
@@ -297,6 +299,31 @@ class ProtocolUnitTests(unittest.TestCase):
         self.assertEqual(command.reasoning_effort, "high")
         self.assertEqual(command.service_tier, "fast")
 
+        skilled = {
+            **product,
+            "skillName": "ay-ple-first-assignment",
+            "skillPath": ("/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md"),
+        }
+        command = decode_command_line(
+            json.dumps(skilled, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.skill_name, "ay-ple-first-assignment")
+        self.assertEqual(
+            command.skill_path,
+            "/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md",
+        )
+
+        configured_skilled = {
+            **configured,
+            "skillName": skilled["skillName"],
+            "skillPath": skilled["skillPath"],
+        }
+        command = decode_command_line(
+            json.dumps(configured_skilled, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.model, "gpt-current")
+        self.assertEqual(command.skill_name, "ay-ple-first-assignment")
+
         catalog = decode_command_line(
             b'{"bridgeRequestId":"models","command":"read_model_catalog"}\n'
         )
@@ -310,11 +337,16 @@ class ProtocolUnitTests(unittest.TestCase):
 
         invalid = (
             {**product, "skillName": "assignment-modeling"},
-            {
-                **product,
-                "skillName": "assignment-modeling",
-                "skillPath": "/managed/assignment-modeling/SKILL.md",
-            },
+            {**product, "skillPath": "/workspace/skill/SKILL.md"},
+            {**skilled, "skillVersion": "v1"},
+            {**skilled, "skillName": ""},
+            {**skilled, "skillName": "é" * 129},
+            {**skilled, "skillName": "unsafe\nname"},
+            {**skilled, "skillPath": "relative/SKILL.md"},
+            {**skilled, "skillPath": "/workspace/skill/../skill/SKILL.md"},
+            {**skilled, "skillPath": "/workspace/skill/README.md"},
+            {**skilled, "skillPath": "/workspace/skill/\nSKILL.md"},
+            {**skilled, "skillPath": f"/{'x' * (16 * 1024)}/SKILL.md"},
             {**product, "planModel": "legacy-model"},
             {**product, "reasoningEffort": "medium"},
             {
@@ -692,6 +724,117 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     for message in self._read_journal_messages(bridge)
                 ]
                 self.assertEqual(methods, ["initialize", "initialized"])
+            finally:
+                bridge.cleanup()
+
+    def test_product_turn_maps_optional_skill_before_text(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-product-skill-"
+        ) as temp:
+            root = Path(temp).resolve()
+            skill_path = (
+                root / ".agents" / "skills" / "ay-ple-first-assignment" / "SKILL.md"
+            )
+            skill_path.parent.mkdir(parents=True)
+            skill_path.write_text("# Test Skill\n", encoding="utf-8")
+            bridge = BridgeProcess(root)
+            try:
+                bridge.send({"bridgeRequestId": "thread", "command": "start_thread"})
+                self.assertEqual(bridge.receive()["type"], "result")
+                bridge.send(
+                    {
+                        "bridgeRequestId": "product",
+                        "command": "start_product_turn",
+                        "threadId": "thread-1",
+                        "permissionProfile": "workspace_write",
+                        "skillName": "ay-ple-first-assignment",
+                        "skillPath": str(skill_path),
+                        "text": "Continue the product conversation.",
+                    }
+                )
+                acceptance = bridge.receive()
+                self.assertEqual(
+                    acceptance,
+                    {
+                        "type": "result",
+                        "bridgeRequestId": "product",
+                        "command": "start_product_turn",
+                        "threadId": "thread-1",
+                        "turnId": "turn-1",
+                    },
+                )
+
+                requested: dict[str, Any] | None = None
+                for _ in range(8):
+                    frame = bridge.receive()
+                    event = frame.get("event")
+                    if (
+                        isinstance(event, dict)
+                        and event.get("type") == "user_input.requested"
+                    ):
+                        requested = event
+                        break
+                self.assertIsNotNone(requested)
+                assert requested is not None
+                bridge.send(
+                    {
+                        "bridgeRequestId": "cancel",
+                        "command": "cancel_user_input",
+                        "interactionId": requested["interactionId"],
+                    }
+                )
+
+                cancel_result = False
+                terminal = False
+                for _ in range(12):
+                    frame = bridge.receive()
+                    if (
+                        frame.get("type") == "result"
+                        and frame.get("bridgeRequestId") == "cancel"
+                    ):
+                        cancel_result = True
+                    event = frame.get("event")
+                    if (
+                        isinstance(event, dict)
+                        and event.get("type") == "turn.completed"
+                    ):
+                        terminal = True
+                    if cancel_result and terminal:
+                        break
+                self.assertTrue(cancel_result)
+                self.assertTrue(terminal)
+
+                messages = self._wait_for_journal_method(
+                    bridge,
+                    "turn/start",
+                )
+                turn_start = next(
+                    message
+                    for message in messages
+                    if message.get("method") == "turn/start"
+                )
+                self.assertEqual(
+                    turn_start["params"]["input"],
+                    [
+                        {
+                            "type": "skill",
+                            "name": "ay-ple-first-assignment",
+                            "path": str(skill_path),
+                        },
+                        {
+                            "type": "text",
+                            "text": "Continue the product conversation.",
+                        },
+                    ],
+                )
+                self.assertNotIn(
+                    "skills/extraRoots/set",
+                    [message.get("method") for message in messages],
+                )
+
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
             finally:
                 bridge.cleanup()
 

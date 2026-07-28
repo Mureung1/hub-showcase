@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from collections import deque
 from dataclasses import dataclass
 from typing import Any, Literal, TypeAlias
@@ -57,6 +58,8 @@ class StartProductTurnCommand:
     model: str | None
     reasoning_effort: str | None
     service_tier: Literal["default", "fast"] | None
+    skill_name: str | None
+    skill_path: str | None
     text: str
     command: Literal["start_product_turn"] = "start_product_turn"
 
@@ -193,6 +196,24 @@ def _require_bounded_string(
     return value
 
 
+def _require_safe_bounded_string(value: object, *, max_bytes: int) -> str:
+    string = _require_bounded_string(value, max_bytes=max_bytes)
+    if any(ord(character) < 0x20 or ord(character) == 0x7F for character in string):
+        raise ProtocolViolation("invalid_command")
+    return string
+
+
+def _require_skill_path(value: object) -> str:
+    skill_path = _require_safe_bounded_string(value, max_bytes=16 * 1024)
+    if (
+        not os.path.isabs(skill_path)
+        or os.path.normpath(skill_path) != skill_path
+        or os.path.basename(skill_path) != "SKILL.md"
+    ):
+        raise ProtocolViolation("invalid_command")
+    return skill_path
+
+
 def _require_answers(value: object) -> dict[str, tuple[str, ...]]:
     if not isinstance(value, dict) or len(value) > 3:
         raise ProtocolViolation("invalid_command")
@@ -260,12 +281,15 @@ def decode_command_line(line: bytes) -> BridgeCommand:
         }
         permission_fields = {"permissionProfile"}
         settings_fields = {"model", "reasoningEffort", "serviceTier"}
+        skill_fields = {"skillName", "skillPath"}
         fields = set(value)
-        allowed_fields = (
-            base_fields | permission_fields,
-            base_fields | permission_fields | settings_fields,
-        )
-        if fields not in allowed_fields:
+        allowed_fields = {
+            frozenset(base_fields | permission_fields),
+            frozenset(base_fields | permission_fields | settings_fields),
+            frozenset(base_fields | permission_fields | skill_fields),
+            frozenset(base_fields | permission_fields | settings_fields | skill_fields),
+        }
+        if frozenset(fields) not in allowed_fields:
             raise ProtocolViolation("invalid_command")
         if fields & settings_fields:
             model = _require_bounded_string(value.get("model"), max_bytes=256)
@@ -279,6 +303,14 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             model = None
             reasoning_effort = None
             service_tier = None
+        if fields & skill_fields:
+            skill_name = _require_safe_bounded_string(
+                value.get("skillName"), max_bytes=256
+            )
+            skill_path = _require_skill_path(value.get("skillPath"))
+        else:
+            skill_name = None
+            skill_path = None
         permission_profile = value.get("permissionProfile")
         if permission_profile not in {"read_only", "workspace_write"}:
             raise ProtocolViolation("invalid_command")
@@ -289,6 +321,8 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             model,
             reasoning_effort,
             service_tier,
+            skill_name,
+            skill_path,
             _require_bounded_string(value.get("text"), max_bytes=512 * 1024),
         )
     if command == "answer_user_input":

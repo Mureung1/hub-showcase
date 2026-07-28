@@ -786,37 +786,239 @@ test('forwards the fixed project cwd without thread-start overrides and supports
   }
 })
 
-test('rejects removed managed Skill input before native turn mutation', async () => {
-  const harness = await startHarness('product-skill-input-validation')
+test('snapshots one workspace Skill before asynchronous validation and native turn mutation', async () => {
+  const harness = await startHarness('product-skill-input')
   try {
+    const workspace = await realpath(dirname(harness.journalPath))
+    const skillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'ay-ple-first-assignment',
+      'SKILL.md',
+    )
+    await mkdir(dirname(skillPath), { recursive: true })
+    await writeFile(
+      skillPath,
+      [
+        '---',
+        'name: ay-ple-first-assignment',
+        'description: Test Skill.',
+        '---',
+        '',
+        'Use the selected SemesterWorkspace files.',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
     const { threadId } = await harness.runtime.startThread()
-    assert.throws(
-      () =>
-        harness.runtime.startProductTurn({
-          threadId,
-          text: 'Missing permission profile.',
-        } as StartProductTurnInput),
-      /permission profile/i,
+    const input = {
+      threadId,
+      permissionProfile: 'workspace_write' as const,
+      settings: {
+        model: 'fake-model',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast' as const,
+      },
+      skill: {
+        name: 'ay-ple-first-assignment',
+        path: skillPath,
+      },
+      text: 'Continue the product conversation.',
+    }
+
+    const pendingTurn = harness.runtime.startProductTurn(input)
+    input.settings.model = 'caller-mutated-model'
+    input.skill.name = 'caller-mutated-skill'
+    input.skill.path = '/caller-mutated/SKILL.md'
+    input.text = 'caller-mutated text'
+    const turn = await pendingTurn
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested } = await readUntilUserInput(iterator)
+    const cancelled = harness.runtime.cancelUserInput({
+      interactionId: requested.interactionId,
+    })
+    await collectIterator(iterator)
+    await cancelled
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    const turnStart = journal.messages.find(
+      ({ method }) => method === 'turn/start',
     )
-    assert.throws(() =>
-      harness.runtime.startProductTurn({
-        threadId,
-        skill: {
-          name: 'assignment-modeling',
-          path: '/managed/assignment-modeling/SKILL.md',
-        },
-        permissionProfile: 'workspace_write',
-        text: 'Review staged Markdown at /staged/assignment.md',
-      } as StartProductTurnInput),
-    )
-    const journal = JSON.parse(
-      await readFile(harness.journalPath, 'utf8'),
-    ) as { messages: readonly { readonly method?: string }[] }
+    assert.deepEqual(turnStart?.params?.input, [
+      {
+        type: 'skill',
+        name: 'ay-ple-first-assignment',
+        path: skillPath,
+      },
+      {
+        type: 'text',
+        text: 'Continue the product conversation.',
+      },
+    ])
+    assert.equal(turnStart?.params?.model, 'fake-model')
+    assert.equal(turnStart?.params?.effort, 'medium')
+    assert.equal(turnStart?.params?.serviceTier, 'fast')
     assert.equal(
       journal.messages.some(
-        ({ method }) =>
-          method === 'skills/extraRoots/set' || method === 'turn/start',
+        ({ method }) => method === 'skills/extraRoots/set',
       ),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('rejects malformed or unsafe Product Skill input before native turn mutation', async () => {
+  const harness = await startHarness('product-skill-validation')
+  try {
+    const workspace = await realpath(dirname(harness.journalPath))
+    const validSkillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'valid-skill',
+      'SKILL.md',
+    )
+    await mkdir(dirname(validSkillPath), { recursive: true })
+    await writeFile(validSkillPath, '# Valid test Skill\n', 'utf8')
+
+    const outsideRoot = await mkdtemp(
+      join(tmpdir(), 'ay-ple-product-skill-outside-'),
+    )
+    roots.push(outsideRoot)
+    const outsideSkillPath = join(await realpath(outsideRoot), 'SKILL.md')
+    await writeFile(outsideSkillPath, '# Outside test Skill\n', 'utf8')
+
+    const directorySkillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'directory-skill',
+      'SKILL.md',
+    )
+    await mkdir(directorySkillPath, { recursive: true })
+
+    const linkedSkillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'linked-skill',
+      'SKILL.md',
+    )
+    await mkdir(dirname(linkedSkillPath), { recursive: true })
+    await symlink(validSkillPath, linkedSkillPath)
+
+    const linkedParent = join(
+      workspace,
+      '.agents',
+      'skills',
+      'linked-parent',
+    )
+    await symlink(dirname(validSkillPath), linkedParent)
+
+    const { threadId } = await harness.runtime.startThread()
+    const base = {
+      threadId,
+      permissionProfile: 'workspace_write',
+      text: 'Continue the product conversation.',
+    }
+    const invalidInputs = [
+      {
+        threadId,
+        text: base.text,
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: validSkillPath },
+        extra: true,
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill' },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: validSkillPath,
+          version: 'v1',
+        },
+      },
+      {
+        ...base,
+        skill: { name: '', path: validSkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'é'.repeat(129), path: validSkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'unsafe\nname', path: validSkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: 'relative/SKILL.md' },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path:
+            `${workspace}/.agents/skills/valid-skill/` +
+            '../valid-skill/SKILL.md',
+        },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: join(dirname(validSkillPath), 'README.md'),
+        },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: outsideSkillPath },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: join(workspace, '.agents', 'skills', 'missing', 'SKILL.md'),
+        },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: directorySkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: linkedSkillPath },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: join(linkedParent, 'SKILL.md'),
+        },
+      },
+    ]
+
+    for (const invalidInput of invalidInputs) {
+      await assert.rejects(
+        async () =>
+          harness.runtime.startProductTurn(
+            invalidInput as StartProductTurnInput,
+          ),
+        TypeError,
+      )
+    }
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'turn/start'),
       false,
     )
   } finally {

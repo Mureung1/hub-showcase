@@ -41,10 +41,16 @@ export type CodexProductTurnSettings = {
   readonly serviceTier: 'default' | 'fast'
 }
 
+export type CodexProductSkillInput = {
+  readonly name: string
+  readonly path: string
+}
+
 export type StartProductTurnInput = {
   readonly threadId: CodexThreadId
   readonly permissionProfile: CodexProductPermissionProfile
   readonly settings?: CodexProductTurnSettings
+  readonly skill?: CodexProductSkillInput
   readonly text: string
 }
 

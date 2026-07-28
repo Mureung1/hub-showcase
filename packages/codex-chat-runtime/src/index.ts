@@ -43,6 +43,7 @@ export type {
   CodexModelCatalogEntry,
   CodexModelCatalogRuntime,
   CodexModelReasoningEffort,
+  CodexProductSkillInput,
   CodexProductTurnSettings,
   CodexProductTurn,
   CodexWorkspaceRuntime,

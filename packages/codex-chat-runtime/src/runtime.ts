@@ -5,7 +5,7 @@ import {
   type SpawnOptionsWithoutStdio,
 } from 'node:child_process'
 import { constants as fsConstants } from 'node:fs'
-import { access, lstat, realpath } from 'node:fs/promises'
+import { access, lstat, open, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 
@@ -87,6 +87,8 @@ const GIT_ROOT_PROBE_MAX_BYTES = 4 * 1024
 const CHILD_ENVIRONMENT_MAX_ENTRIES = 16
 const CHILD_ENVIRONMENT_MAX_VALUE_BYTES = 8 * 1024
 const CHILD_ENVIRONMENT_MAX_AGGREGATE_BYTES = 64 * 1024
+const PRODUCT_SKILL_NAME_MAX_BYTES = 256
+const PRODUCT_SKILL_PATH_MAX_BYTES = 16 * 1024
 const CHILD_ENVIRONMENT_KEY_PATTERN = /^[A-Z_][A-Z0-9_]*$/u
 const PROTECTED_CHILD_ENVIRONMENT_KEYS = new Set([
   'CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG',
@@ -650,7 +652,16 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
   }
 
   startProductTurn(input: StartProductTurnInput): Promise<CodexProductTurn> {
-    requireProductTurnInput(input)
+    const snapshot = snapshotProductTurnInput(input)
+    return this.startValidatedProductTurn(snapshot)
+  }
+
+  private async startValidatedProductTurn(
+    input: StartProductTurnInput,
+  ): Promise<CodexProductTurn> {
+    if (input.skill !== undefined) {
+      await validateProductSkillFile(input.skill.path, this.workspace)
+    }
     const { threadId, text } = input
     const stream = new CodexChatEventStream<CodexProductActivity>({
       maxFrames: this.budgets.operationMaxFrames,
@@ -672,6 +683,12 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
               model: input.settings.model,
               reasoningEffort: input.settings.reasoningEffort,
               serviceTier: input.settings.serviceTier,
+            }),
+        ...(input.skill === undefined
+          ? {}
+          : {
+              skillName: input.skill.name,
+              skillPath: input.skill.path,
             }),
         text,
       }),
@@ -1760,7 +1777,9 @@ function requireAbortSignal(value: unknown): asserts value is AbortSignal {
   }
 }
 
-function requireProductTurnInput(input: StartProductTurnInput): void {
+function snapshotProductTurnInput(
+  input: StartProductTurnInput,
+): StartProductTurnInput {
   if (
     typeof input !== 'object' ||
     input === null ||
@@ -1770,38 +1789,85 @@ function requireProductTurnInput(input: StartProductTurnInput): void {
         key !== 'threadId' &&
         key !== 'permissionProfile' &&
         key !== 'settings' &&
+        key !== 'skill' &&
         key !== 'text',
     )
   ) {
     throw new TypeError('Product Turn input fields are invalid')
   }
-  requireNativeId(input.threadId)
+  const threadId = input.threadId
+  const permissionProfile = input.permissionProfile
+  const candidateSettings = input.settings
+  const candidateSkill = input.skill
+  const text = input.text
+
+  requireNativeId(threadId)
   if (
-    input.permissionProfile !== 'read_only' &&
-    input.permissionProfile !== 'workspace_write'
+    permissionProfile !== 'read_only' &&
+    permissionProfile !== 'workspace_write'
   ) {
     throw new TypeError('Product permission profile is invalid')
   }
-  if (input.settings !== undefined) {
+  let settings: StartProductTurnInput['settings']
+  if (candidateSettings !== undefined) {
     requireExactInputKeys(
-      input.settings,
+      candidateSettings,
       ['model', 'reasoningEffort', 'serviceTier'],
       'Product Turn settings',
     )
-    requireBoundedString(input.settings.model, 'Product model', 256)
+    const model = candidateSettings.model
+    const reasoningEffort = candidateSettings.reasoningEffort
+    const serviceTier = candidateSettings.serviceTier
+    requireBoundedString(model, 'Product model', 256)
     requireBoundedString(
-      input.settings.reasoningEffort,
+      reasoningEffort,
       'Product reasoning effort',
       64,
     )
     if (
-      input.settings.serviceTier !== 'default' &&
-      input.settings.serviceTier !== 'fast'
+      serviceTier !== 'default' &&
+      serviceTier !== 'fast'
     ) {
       throw new TypeError('Product service tier is invalid')
     }
+    settings = { model, reasoningEffort, serviceTier }
   }
-  requireBoundedString(input.text, 'Product turn text', 512 * 1024)
+  let skill: StartProductTurnInput['skill']
+  if (candidateSkill !== undefined) {
+    requireExactInputKeys(
+      candidateSkill,
+      ['name', 'path'],
+      'Product Skill input',
+    )
+    const name = candidateSkill.name
+    const skillPath = candidateSkill.path
+    requireSafeBoundedString(
+      name,
+      'Product Skill name',
+      PRODUCT_SKILL_NAME_MAX_BYTES,
+    )
+    requireSafeBoundedString(
+      skillPath,
+      'Product Skill path',
+      PRODUCT_SKILL_PATH_MAX_BYTES,
+    )
+    if (
+      !path.isAbsolute(skillPath) ||
+      path.normalize(skillPath) !== skillPath ||
+      path.basename(skillPath) !== 'SKILL.md'
+    ) {
+      throw new TypeError('Product Skill path is invalid')
+    }
+    skill = { name, path: skillPath }
+  }
+  requireBoundedString(text, 'Product turn text', 512 * 1024)
+  return {
+    threadId,
+    permissionProfile,
+    ...(settings === undefined ? {} : { settings }),
+    ...(skill === undefined ? {} : { skill }),
+    text,
+  }
 }
 
 function requireExactInputKeys(
@@ -1819,6 +1885,54 @@ function requireExactInputKeys(
     actual.some((key, index) => key !== sortedExpected[index])
   ) {
     throw new TypeError(`${label} fields are invalid`)
+  }
+}
+
+async function validateProductSkillFile(
+  skillPath: string,
+  workspace: string,
+): Promise<void> {
+  const relative = path.relative(workspace, skillPath)
+  if (
+    relative === '' ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    throw new TypeError('Product Skill path must be inside the Codex workspace')
+  }
+  try {
+    const before = await lstat(skillPath)
+    if (!before.isFile() || before.isSymbolicLink()) {
+      throw new TypeError(
+        'Product Skill path must reference a regular non-symlink file',
+      )
+    }
+    const canonical = await realpath(skillPath)
+    if (canonical !== skillPath) {
+      throw new TypeError('Product Skill path must be canonical')
+    }
+    const handle = await open(
+      skillPath,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+    )
+    try {
+      const opened = await handle.stat()
+      if (
+        !opened.isFile() ||
+        opened.dev !== before.dev ||
+        opened.ino !== before.ino
+      ) {
+        throw new TypeError(
+          'Product Skill path changed during validation',
+        )
+      }
+    } finally {
+      await handle.close()
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError('Product Skill path could not be validated')
   }
 }
 
@@ -1865,6 +1979,20 @@ function requireBoundedString(
     Buffer.byteLength(value, 'utf8') > maxBytes
   ) {
     throw new TypeError(`${label} is invalid`)
+  }
+}
+
+function requireSafeBoundedString(
+  value: unknown,
+  label: string,
+  maxBytes: number,
+): asserts value is string {
+  requireBoundedString(value, label, maxBytes)
+  for (const character of value) {
+    const point = character.codePointAt(0) as number
+    if (point < 0x20 || point === 0x7f) {
+      throw new TypeError(`${label} is invalid`)
+    }
   }
 }
 

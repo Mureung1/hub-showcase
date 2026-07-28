@@ -546,6 +546,9 @@ function cloneProductTurnInput(
     ...(input.settings === undefined
       ? {}
       : { settings: { ...input.settings } }),
+    ...(input.skill === undefined
+      ? {}
+      : { skill: { ...input.skill } }),
     text: input.text,
   }
 }
@@ -560,6 +563,8 @@ function sameProductTurnInput(
     left.settings?.model === right.settings?.model &&
     left.settings?.reasoningEffort === right.settings?.reasoningEffort &&
     left.settings?.serviceTier === right.settings?.serviceTier &&
+    left.skill?.name === right.skill?.name &&
+    left.skill?.path === right.skill?.path &&
     left.text === right.text
   )
 }
