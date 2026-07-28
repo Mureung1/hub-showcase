@@ -78,3 +78,35 @@
   background: var(--brand-soft);
   color: var(--brand-strong);
 }
+
+/* #40 — 본체(열기) + 삭제 버튼을 나란히 놓는 껍데기 */
+.rowWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 삭제 버튼이 있을 때 본체가 남는 폭을 차지하도록 */
+.rowInWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowDelete {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  color: var(--ink-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rowDelete:hover {
+  background: var(--surface-muted);
+  color: var(--danger-text);
+}

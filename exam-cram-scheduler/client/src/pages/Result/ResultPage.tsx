@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '../../layouts/AppShell/AppShell';
-import { Card, Row, Button, WarningBanner, Calendar, CalendarDaySheet } from '../../components';
+import { Card, Button, WarningBanner, WeekSchedule } from '../../components';
 import text from '../../styles/text.module.css';
 import styles from './ResultPage.module.css';
 import { useSchedule } from '../../context/ScheduleContext';
-import { buildCalendarData, buildDayDetail, buildDayPlans, buildSummary } from './formatSchedule';
+import { buildCalendarData, buildDaySummaries, buildSummary } from './formatSchedule';
 import { buildChartGeometry, VIEW_HEIGHT, type ChartGeometry } from './buildChart';
 import { saveSchedule } from '../../storage/savedSchedules';
 
@@ -13,7 +13,6 @@ export function ResultPage() {
   const { request, response } = useSchedule();
   const navigate = useNavigate();
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // 계산 없이 주소로 직접 들어왔거나 새로고침한 경우 — 보관함이 비어 있으므로
   // 그리려다 크래시하지 않도록 안내만 띄운다(#18).
@@ -38,10 +37,9 @@ export function ResultPage() {
   }
 
   const summary = buildSummary(response, request);
-  const dailySchedule = buildDayPlans(response, request);
+  const daySummaries = buildDaySummaries(response, request);
   const chartGeometry = buildChartGeometry(response, request);
   const calendar = buildCalendarData(response, request);
-  const dayDetail = selectedDate ? buildDayDetail(response, request, selectedDate) : null;
 
   // #19 — 이 브라우저에만 저장한다. 저장이 안 되더라도(시크릿 모드·용량 초과) 홈으로는
   // 보내주되, 저장 안 됐다는 사실은 알려준다. 조용히 실패하면 나중에 기록이 없어서 당황한다.
@@ -101,38 +99,22 @@ export function ResultPage() {
         <WarningBanner key={warning}>{warning}</WarningBanner>
       ))}
 
-      {/* #27 — 그래프 아래 시험 캘린더. 날짜가 길어 그래프만으로는 한눈에 안 들어오므로
-          기간 전체를 달력으로 조망하고, 날짜를 누르면 그날 상세를 시트로 본다. */}
+      {/* #39 — 그래프 아래 주간 스케줄. 시험기간이 보통 1~2주라 월 전체 대신 걸친 주만
+          가로 스크롤로 보고, 각 날짜의 취침·기상·카페인 요약을 클릭 없이 그 아래에 상시 표시한다.
+          (홈 화면은 여전히 월 캘린더 + 상세 시트를 쓴다 — 결과 화면만 주 단위로 분리) */}
       <div className={text.sectionBlock}>
         <div className={text.sectionHead}>
-          <span className={text.label}>시험 캘린더</span>
+          <span className={text.label}>주간 스케줄</span>
         </div>
         <Card>
-          <Calendar
+          <WeekSchedule
             rangeStart={calendar.rangeStart}
             rangeEnd={calendar.rangeEnd}
             marks={calendar.marks}
-            onSelectDate={setSelectedDate}
+            days={daySummaries}
           />
         </Card>
       </div>
-
-      <div className={`${text.sectionBlock} ${text.sectionBlockTight}`}>
-        <div className={text.sectionHead}>
-          <span className={text.label}>날짜별 추천 스케줄</span>
-        </div>
-        <Card>
-          {dailySchedule.map((day) => (
-            <Row key={day.title} icon="🌙" iconVariant="sleep" title={day.title} subtitle={day.subtitle} />
-          ))}
-        </Card>
-      </div>
-
-      <CalendarDaySheet
-        open={selectedDate !== null}
-        onClose={() => setSelectedDate(null)}
-        detail={dayDetail}
-      />
     </AppShell>
   );
 }
@@ -142,7 +124,8 @@ export function ResultPage() {
  * 좌표 계산은 buildChart.ts가 하고 여기서는 그리기만 한다.
  */
 function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
-  const { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks } = geometry;
+  const { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks, nowX } =
+    geometry;
 
   if (!linePath) {
     return (
@@ -217,6 +200,32 @@ function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
           strokeWidth="1"
         />
       ))}
+
+      {/* #41 — 지금 시각 세로선. 기간 안일 때만(nowX !== null) 그린다. 위에 "지금" 라벨을
+          붙여 시험 점선(회색 점선)과 구분한다. 곡선 위에 올려 현재 위치가 바로 보이게 맨 뒤에 그린다. */}
+      {nowX !== null && (
+        <g>
+          <line x1={nowX} y1={18} x2={nowX} y2={143} stroke="var(--brand-strong)" strokeWidth="1.5" strokeLinecap="round" />
+          <rect
+            x={Math.min(width - 16, Math.max(16, nowX)) - 15}
+            y={2}
+            width={30}
+            height={13}
+            rx={6.5}
+            fill="var(--brand-strong)"
+          />
+          <text
+            x={Math.min(width - 16, Math.max(16, nowX))}
+            y={11.5}
+            fontSize="8.5"
+            fontWeight="700"
+            textAnchor="middle"
+            fill="#fff"
+          >
+            지금
+          </text>
+        </g>
+      )}
 
       {/* 날짜가 바뀌는 지점의 요일 */}
       {dayTicks.map((tick) => (

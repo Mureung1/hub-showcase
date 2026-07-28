@@ -9,4 +9,5 @@ export { BottomSheet } from './BottomSheet/BottomSheet';
 export { Field } from './Field/Field';
 export { Calendar } from './Calendar/Calendar';
 export { CalendarDaySheet, type CalendarDayDetail } from './Calendar/CalendarDaySheet';
+export { WeekSchedule } from './WeekSchedule/WeekSchedule';
 export * from './icons';

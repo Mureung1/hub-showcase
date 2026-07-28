@@ -1,0 +1,121 @@
+/* #39 결과 화면 주간 스케줄 — 캘린더 패턴이 디자인 문서에 없어, 색은 기존 토큰(--brand,
+   --ink-*, --line)만 쓰고 셀 표시는 월 캘린더(Calendar.module.css)와 같은 규칙을 따른다. */
+
+/* 주 스트립 가로 스크롤 — 차트(.chartScroll)와 같은 방식. 넘치면 옆으로 밀어 본다 */
+.weekScroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 한 주 블록 — 폭 고정이라 주가 여러 개면 가로로 넘쳐 스크롤된다 */
+.week {
+  flex: 0 0 auto;
+  width: 252px;
+}
+
+/* 주 범위 라벨 "7/20~7/26" — 월 캘린더의 월 라벨(15px/700)보다 한 급 작게 */
+.weekLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin-bottom: 8px;
+}
+
+.weekHeader,
+.weekRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+/* 요일 라벨 — 캡션급(--ink-400), Calendar와 동일 */
+.weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-400);
+  padding-bottom: 6px;
+}
+
+/* 날짜 칸 — 결과 화면에선 누를 일이 없어 div. 정사각 대신 살짝 납작하게 */
+.cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  color: var(--ink-900);
+}
+
+.num {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* 기간 밖 날짜 — 주를 채우려고 넣은 앞뒤 날. 흐리게 */
+.outside {
+  color: var(--ink-400);
+  opacity: 0.55;
+}
+
+/* 오늘 — 갈색 동그라미 + 흰 숫자(Calendar와 동일) */
+.today .num {
+  background: var(--brand);
+  color: var(--surface);
+  font-weight: 700;
+}
+
+/* 시험일 — 숫자 아래 갈색 밑줄(Calendar와 동일) */
+.exam::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 13px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--brand);
+}
+
+/* 날짜별 요약 리스트 — 리스트 로우(.row) 톤을 따르되 아이콘 없는 텍스트 줄 */
+.summaryList {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryItem {
+  display: flex;
+  gap: 8px;
+  padding: 10px 2px;
+  align-items: baseline;
+}
+
+.summaryItem + .summaryItem {
+  border-top: 1px solid var(--line);
+}
+
+/* "월)" 요일 접두사 — 눈에 먼저 걸리도록 진하게 */
+.summaryDay {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--brand-strong);
+  min-width: 26px;
+}
+
+.summaryText {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-600);
+}

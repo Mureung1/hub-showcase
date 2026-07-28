@@ -1,0 +1,41 @@
+/* #40 — 기록 삭제 전 "정말 지울까요?" 인라인 확인 줄. 실수로 지우는 걸 막는다. */
+.confirmRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 2px;
+}
+
+.confirmText {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-900);
+  min-width: 0;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.confirmBtn {
+  border: none;
+  border-radius: 9px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelBtn {
+  background: var(--surface-muted);
+  color: var(--ink-600);
+}
+
+.deleteBtn {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
