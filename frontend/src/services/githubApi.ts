@@ -33,7 +33,7 @@ export interface GithubApiResponse<T> {
 }
 
 class GithubApi {
-  async getTrendingRepos(limit: number = 20, language?: string): Promise<GithubRepo[]> {
+  async getTrendingRepos(limit: number = 300, language?: string): Promise<GithubRepo[]> {
     try {
       const params = new URLSearchParams()
       params.append('limit', Math.min(limit, 50).toString())
@@ -59,7 +59,59 @@ class GithubApi {
     }
   }
 
-  async searchRepos(query: string, limit: number = 10): Promise<GithubRepo[]> {
+  async getRecentRepos(limit: number = 300, language?: string): Promise<GithubRepo[]> {
+    try {
+      const params = new URLSearchParams()
+      params.append('limit', Math.min(limit, 50).toString())
+      if (language) {
+        params.append('language', language)
+      }
+
+      const response = await fetch(`${API_BASE}/api/github/recent?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const result: GithubApiResponse<GithubRepo[]> = await response.json()
+      return result.data || []
+    } catch (error) {
+      console.error('❌ 최근 저장소 조회 오류:', error)
+      throw error
+    }
+  }
+
+  async getActiveRepos(limit: number = 300, language?: string): Promise<GithubRepo[]> {
+    try {
+      const params = new URLSearchParams()
+      params.append('limit', Math.min(limit, 50).toString())
+      if (language) {
+        params.append('language', language)
+      }
+
+      const response = await fetch(`${API_BASE}/api/github/active?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const result: GithubApiResponse<GithubRepo[]> = await response.json()
+      return result.data || []
+    } catch (error) {
+      console.error('❌ 활발한 저장소 조회 오류:', error)
+      throw error
+    }
+  }
+
+  async searchRepos(query: string, limit: number = 300): Promise<GithubRepo[]> {
     try {
       if (!query || query.length < 2) {
         throw new Error('검색어는 최소 2글자 이상이어야 합니다')
@@ -87,7 +139,7 @@ class GithubApi {
     }
   }
 
-  async getReposByLanguage(language: string, limit: number = 10): Promise<GithubRepo[]> {
+  async getReposByLanguage(language: string, limit: number = 300): Promise<GithubRepo[]> {
     try {
       const params = new URLSearchParams()
       params.append('limit', Math.min(limit, 50).toString())
@@ -157,7 +209,7 @@ class GithubApi {
     }
   }
 
-  async collectRepos(language?: string, limit: number = 20): Promise<boolean> {
+  async collectRepos(language?: string, limit: number = 300): Promise<boolean> {
     try {
       const response = await fetch(`${API_BASE}/api/github/collect`, {
         method: 'POST',

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { CANONICAL_MAJORS, CANONICAL_REGIONS, ENROLLMENT_STATUS_TYPES, GRADE_TYPES } from "../constants/taxonomy";
 
 // Posting 카테고리 enum
 export const PostingCategorySchema = z.enum([
@@ -24,10 +23,10 @@ export type ParseStatus = z.infer<typeof ParseStatusSchema>;
 export const EligibilitySchema = z.object({
   id: z.string().uuid().optional(),
   postingId: z.string().uuid(),
-  majors: z.array(z.enum(CANONICAL_MAJORS)).default([]),
-  regions: z.array(z.enum(CANONICAL_REGIONS)).default([]),
-  grades: z.array(z.enum(GRADE_TYPES)).default([]),
-  enrollmentStatuses: z.array(z.enum(ENROLLMENT_STATUS_TYPES)).default([]),
+  majors: z.array(z.string()).default([]),
+  regions: z.array(z.string()).default([]),
+  grades: z.array(z.number()).default([]),
+  enrollmentStatuses: z.array(z.string()).default([]),
   ageMin: z.number().int().min(18).max(100).nullable().default(null),
   ageMax: z.number().int().min(18).max(100).nullable().default(null),
   incomeMax: z.number().int().min(1).max(10).nullable().default(null),
@@ -57,7 +56,7 @@ export const PostingSchema = z.object({
 
 export type Posting = z.infer<typeof PostingSchema>;
 
-// 프론트엔드 카드 뷰용 간단한 응답 (타입 안전)
+// 프론트엔드 카드 뷰용 간단한 응답
 export const PostingCardSchema = PostingSchema.pick({
   id: true,
   category: true,
@@ -85,10 +84,10 @@ export const CreatePostingSchema = PostingSchema.pick({
   sourceUrl: true,
 }).extend({
   rawEligibilityText: z.string(),
-  majors: z.array(z.enum(CANONICAL_MAJORS)).default([]),
-  regions: z.array(z.enum(CANONICAL_REGIONS)).default([]),
-  grades: z.array(z.enum(GRADE_TYPES)).default([]),
-  enrollmentStatuses: z.array(z.enum(ENROLLMENT_STATUS_TYPES)).default([]),
+  majors: z.array(z.string()).default([]),
+  regions: z.array(z.string()).default([]),
+  grades: z.array(z.number()).default([]),
+  enrollmentStatuses: z.array(z.string()).default([]),
   ageMin: z.number().int().nullable().optional(),
   ageMax: z.number().int().nullable().optional(),
   incomeMax: z.number().int().nullable().optional(),

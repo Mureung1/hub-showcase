@@ -13,10 +13,10 @@ export type CalendarEventType = z.infer<typeof CalendarEventTypeSchema>;
 export const CalendarEventSourceSchema = z.enum(["manual", "scrap-sync"]);
 export type CalendarEventSource = z.infer<typeof CalendarEventSourceSchema>;
 
-// iCalendar 표준 필드 기반
-export const CalendarEventSchema = z.object({
+// iCalendar 표준 필드 기반 Base 스키마
+const BaseCalendarEventSchema = z.object({
   id: z.string().uuid().optional(),
-  uid: z.string().unique().optional(),
+  uid: z.string().optional(),
   userId: z.string().uuid(),
   title: z.string().min(1).max(200),
   type: CalendarEventTypeSchema,
@@ -26,7 +26,9 @@ export const CalendarEventSchema = z.object({
   source: CalendarEventSourceSchema.default("manual"),
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date().default(() => new Date()),
-}).refine(
+});
+
+export const CalendarEventSchema = BaseCalendarEventSchema.refine(
   (data) => data.dtstart < data.dtend,
   { message: "종료 시간이 시작 시간보다 나중이어야 합니다", path: ["dtend"] }
 );
@@ -34,7 +36,7 @@ export const CalendarEventSchema = z.object({
 export type CalendarEvent = z.infer<typeof CalendarEventSchema>;
 
 // 생성 요청 스키마
-export const CreateCalendarEventSchema = CalendarEventSchema.pick({
+export const CreateCalendarEventSchema = BaseCalendarEventSchema.pick({
   title: true,
   type: true,
   dtstart: true,

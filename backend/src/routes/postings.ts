@@ -1,21 +1,21 @@
 import { Router } from 'express'
-import { PrismaClient } from '@prisma/client'
-import { matchUserToPosting } from '../services/matchingService.js'
-import { calculateSmartScore, rankPostingsBySmartScore } from '../services/smartMatchingService.js'
+import { PrismaClient, Prisma } from '@prisma/client'
 import { verifyAuth, AuthRequest } from '../middleware/auth.js'
-import { CalendarService } from '../services/calendarService.js'
-import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider.js'
+import { matchUserToPosting } from '../services/matchingService.js'
 
 const router = Router()
 const prisma = new PrismaClient()
-const googleCalendarProvider = new GoogleCalendarProvider()
-const calendarService = new CalendarService(googleCalendarProvider)
 
-// GET /api/postings - 필터링된 공고 목록 조회
+// GET /api/postings - 필터링된 공고 목록
 router.get('/', verifyAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!
-    const { limit = '20', offset = '0', category, smart, sortBy = 'deadline' } = req.query
+    const {
+      limit = '20',
+      offset = '0',
+      category = 'all',
+      smart = 'false',
+    } = req.query as { limit?: string; offset?: string; category?: string; smart?: string }
 
     // 사용자 프로필 조회
     const userProfile = await prisma.userProfile.findUnique({
@@ -26,84 +26,60 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: '사용자 프로필을 찾을 수 없습니다' })
     }
 
-    // 기본 쿼리: 마감되지 않은 공고만 조회
-    const now = new Date()
-    const whereClause: any = {
-      receptionEndDate: {
-        gt: now,  // 현재 시간보다 뒤인 공고만
-      },
-    }
-    if (category && category !== 'all') {
-      whereClause.category = category
+    // 조건식 구성
+    const where: Prisma.PostingWhereInput = {}
+    if (category !== 'all') {
+      where.category = category as any
     }
 
-    // 스마트 정렬 사용 시 캘린더 이벤트 포함
-    const useSmartMatching = smart === 'true'
-
-    // 총 공고 수
-    const total = await prisma.posting.count({ where: whereClause })
-
-    // matchScore 정렬 시 모든 데이터 조회 (메모리에서 정렬 후 pagination)
-    const shouldFetchAll = sortBy === 'matchScore'
-    const orderByClause = sortBy === 'matchScore' ? undefined : { receptionEndDate: 'asc' }
-
-    // 공고 목록 조회 (자격요건 포함)
+    // 공고 조회 (eligibility, scraps 포함)
     const postings = await prisma.posting.findMany({
-      where: whereClause,
+      where,
       include: {
         eligibility: true,
         scraps: {
           where: { userId },
-          select: { id: true },
         },
       },
-      orderBy: orderByClause,
-      ...(shouldFetchAll ? {} : { take: parseInt(limit as string), skip: parseInt(offset as string) }),
+      orderBy: { receptionEndDate: 'asc' },
+      take: parseInt(limit),
+      skip: parseInt(offset),
     })
 
-    // 스마트 정렬용 사용자 캘린더 이벤트 조회
-    let userCalendarEvents: any[] = []
-    if (useSmartMatching) {
-      userCalendarEvents = await prisma.calendarEvent.findMany({
-        where: { userId },
-      })
-    }
+    // 총 공고 수
+    const total = await prisma.posting.count({ where })
 
-    // 매칭 스코어 계산
-    let result = postings
+    // 응답 데이터 포맷
+    const result = postings
       .filter(posting => posting.eligibility)
       .map(posting => {
         const eligibility = posting.eligibility!
         const match = matchUserToPosting(userProfile, eligibility)
-        const smartScore = useSmartMatching
-          ? calculateSmartScore({
-              ...posting,
-              category: posting.category,
-              receptionEndDate: posting.receptionEndDate,
-              eventStartDate: posting.eventStartDate,
-              eventEndDate: posting.eventEndDate,
-            }, userCalendarEvents)
+        const isScraped = posting.scraps.length > 0
+
+        // D-Day 계산
+        const dDay = posting.receptionEndDate
+          ? Math.ceil(
+              (new Date(posting.receptionEndDate).getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24)
+            )
           : null
 
         return {
           id: posting.id,
           title: posting.title,
           category: posting.category,
+          hostOrg: posting.hostOrg,
           receptionStartDate: posting.receptionStartDate,
           receptionEndDate: posting.receptionEndDate,
           eventStartDate: posting.eventStartDate,
           eventEndDate: posting.eventEndDate,
           sourceUrl: posting.sourceUrl,
           parseStatus: posting.parseStatus,
-          isScraped: posting.scraps.length > 0,
+          isScraped,
           isEligible: match.isEligible,
           matchScore: Math.round(match.score),
-          smartScore: smartScore ? {
-            score: smartScore.score,
-            reason: smartScore.reason,
-            isRecommended: smartScore.isRecommended,
-            conflictLevel: smartScore.conflictLevel,
-          } : undefined,
+          dDay,
           eligibility: {
             majors: eligibility.majors,
             regions: eligibility.regions,
@@ -116,48 +92,65 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
         }
       })
 
-    // 정렬 적용
-    if (sortBy === 'matchScore') {
-      // 1차: 매칭도 높은 순 (내림차순)
-      // 2차: 매칭도 같으면 마감일 빠른 순 (오름차순)
-      result.sort((a, b) => {
-        const scoreDiff = (b.matchScore ?? 0) - (a.matchScore ?? 0)
-        if (scoreDiff !== 0) return scoreDiff
-
-        const dateA = new Date(a.receptionEndDate).getTime()
-        const dateB = new Date(b.receptionEndDate).getTime()
-        return dateA - dateB
-      })
-
-      // matchScore 정렬 시 메모리에서 정렬 후 pagination 적용
-      const limitNum = parseInt(limit as string)
-      const offsetNum = parseInt(offset as string)
-      result = result.slice(offsetNum, offsetNum + limitNum)
-    }
-
     res.json({
       success: true,
       data: {
         postings: result,
         pagination: {
           total,
-          limit: parseInt(limit as string),
-          offset: parseInt(offset as string),
-          hasMore: parseInt(offset as string) + result.length < total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          hasMore: parseInt(offset) + result.length < total,
         },
       },
     })
   } catch (error) {
-    console.error('공고 조회 실패:', error)
-    res.status(500).json({ error: '공고 조회에 실패했습니다' })
+    console.error('공고 목록 조회 실패:', error)
+    res.status(500).json({ error: '공고 목록 조회에 실패했습니다' })
+  }
+})
+
+// POST /api/postings/:id/scrap - 스크랩 토글
+router.post('/:id/scrap', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const { id: postingId } = req.params
+
+    const existingScrap = await prisma.scrap.findUnique({
+      where: {
+        userId_postingId: {
+          userId,
+          postingId,
+        },
+      },
+    })
+
+    if (existingScrap) {
+      await prisma.scrap.delete({
+        where: { id: existingScrap.id },
+      })
+      return res.json({ success: true, isScraped: false })
+    }
+
+    await prisma.scrap.create({
+      data: {
+        userId,
+        postingId,
+      },
+    })
+
+    res.json({ success: true, isScraped: true })
+  } catch (error) {
+    console.error('스크랩 토글 실패:', error)
+    res.status(500).json({ error: '스크랩 처리에 실패했습니다' })
   }
 })
 
 // GET /api/postings/:id - 공고 상세 조회
 router.get('/:id', verifyAuth, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params
     const userId = req.userId!
+    const { id } = req.params
 
     const posting = await prisma.posting.findUnique({
       where: { id },
@@ -165,12 +158,11 @@ router.get('/:id', verifyAuth, async (req: AuthRequest, res) => {
         eligibility: true,
         scraps: {
           where: { userId },
-          select: { id: true, notifyEnabled: true },
         },
       },
     })
 
-    if (!posting) {
+    if (!posting || !posting.eligibility) {
       return res.status(404).json({ error: '공고를 찾을 수 없습니다' })
     }
 
@@ -178,95 +170,24 @@ router.get('/:id', verifyAuth, async (req: AuthRequest, res) => {
       where: { userId },
     })
 
-    let matchResult = { isEligible: false, score: 0 }
-    if (userProfile && posting.eligibility) {
-      matchResult = matchUserToPosting(userProfile, posting.eligibility)
-    }
+    const match = userProfile
+      ? matchUserToPosting(userProfile, posting.eligibility)
+      : { isEligible: true, score: 100 }
+
+    const isScraped = posting.scraps.length > 0
 
     res.json({
       success: true,
       data: {
         ...posting,
-        isEligible: matchResult.isEligible,
-        matchScore: Math.round(matchResult.score),
-        isScrapped: posting.scraps.length > 0,
-        scrappedNotify: posting.scraps[0]?.notifyEnabled ?? false,
+        isScraped,
+        isEligible: match.isEligible,
+        matchScore: Math.round(match.score),
       },
     })
   } catch (error) {
     console.error('공고 상세 조회 실패:', error)
     res.status(500).json({ error: '공고 조회에 실패했습니다' })
-  }
-})
-
-// POST /api/postings/:id/scrap - 공고 스크랩
-router.post('/:id/scrap', verifyAuth, async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params
-    const userId = req.userId!
-
-    // 공고 존재 확인
-    const posting = await prisma.posting.findUnique({ where: { id } })
-    if (!posting) {
-      return res.status(404).json({ error: '공고를 찾을 수 없습니다' })
-    }
-
-    // 이미 스크랩했으면 삭제
-    const existing = await prisma.scrap.findUnique({
-      where: {
-        userId_postingId: { userId, postingId: id },
-      },
-    })
-
-    if (existing) {
-      // Google Calendar에서 이벤트 삭제
-      if (existing.googleEventId) {
-        try {
-          await calendarService.unsync(userId, existing.googleEventId)
-        } catch (error) {
-          console.error('Google Calendar 이벤트 삭제 실패:', error)
-        }
-      }
-
-      await prisma.scrap.delete({
-        where: {
-          userId_postingId: { userId, postingId: id },
-        },
-      })
-      return res.json({ success: true, data: { isScrapped: false } })
-    }
-
-    // 새로 스크랩 추가
-    const scrap = await prisma.scrap.create({
-      data: {
-        userId,
-        postingId: id,
-        notifyEnabled: true,
-      },
-    })
-
-    // Google Calendar 동기화 (연동된 경우만)
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { googleAccessToken: true }
-    })
-
-    if (user?.googleAccessToken) {
-      try {
-        const result = await calendarService.sync(userId, posting)
-        await prisma.scrap.update({
-          where: { id: scrap.id },
-          data: { googleEventId: result.eventId }
-        })
-      } catch (error) {
-        console.error('Google Calendar 동기화 실패:', error)
-      }
-    }
-
-    res.json({ success: true, data: { isScrapped: true } })
-  } catch (error) {
-    console.error('스크랩 실패:', error)
-    res.status(500).json({ error: '스크랩에 실패했습니다' })
   }
 })
 

@@ -7,13 +7,16 @@ interface GithubReposPageProps {
   setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github') => void
 }
 
-type FilterTab = 'trending' | 'search'
+type FilterTab = 'trending' | 'recent' | 'active' | 'search'
 
 export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps) {
   const [repos, setRepos] = useState<GithubRepo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedTab, setSelectedTab] = useState<FilterTab>('trending')
+  const [selectedTab, setSelectedTab] = useState<FilterTab>(() => {
+    const saved = localStorage.getItem('github-selected-tab')
+    return (saved as FilterTab) || 'trending'
+  })
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [llmInfo, setLlmInfo] = useState<any>(null)
@@ -49,8 +52,8 @@ export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps
         if (llmStatus) {
           setLlmInfo(llmStatus)
         }
-        const trendingRepos = await githubApi.getTrendingRepos(20)
-        setRepos(trendingRepos)
+        // 저장된 탭에 맞는 데이터 로드
+        await handleLoadRepos(selectedTab, null)
       } catch (err) {
         setError(err instanceof Error ? err.message : '데이터 로드 실패')
         console.error('❌ 초기 로드 오류:', err)
@@ -62,26 +65,45 @@ export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps
     loadInitialData()
   }, [])
 
-  const handleLanguageSelect = async (language: string | null) => {
+  const handleLoadRepos = async (tab: FilterTab, language: string | null) => {
     try {
       setIsLoading(true)
       setError(null)
-      setSelectedLanguage(language)
-      setSelectedTab('trending')
 
-      if (language) {
-        const filtered = await githubApi.getReposByLanguage(language, 20)
-        setRepos(filtered)
-      } else {
-        const trending = await githubApi.getTrendingRepos(20)
-        setRepos(trending)
+      let repos
+      switch (tab) {
+        case 'trending':
+          repos = await githubApi.getTrendingRepos(300, language || undefined)
+          break
+        case 'recent':
+          repos = await githubApi.getRecentRepos(300, language || undefined)
+          break
+        case 'active':
+          repos = await githubApi.getActiveRepos(300, language || undefined)
+          break
+        default:
+          repos = []
       }
+
+      setRepos(repos)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '필터링 실패')
-      console.error('❌ 필터링 오류:', err)
+      setError(err instanceof Error ? err.message : '저장소 조회 실패')
+      console.error('❌ 오류:', err)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleLanguageSelect = async (language: string | null) => {
+    setSelectedLanguage(language)
+    await handleLoadRepos(selectedTab, language)
+  }
+
+  const handleTabChange = async (tab: FilterTab) => {
+    setSelectedTab(tab)
+    localStorage.setItem('github-selected-tab', tab)
+    setSelectedLanguage(null)
+    await handleLoadRepos(tab, null)
   }
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -96,7 +118,7 @@ export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps
       setSelectedTab('search')
       setSelectedLanguage(null)
 
-      const results = await githubApi.searchRepos(searchQuery, 20)
+      const results = await githubApi.searchRepos(searchQuery, 300)
       setRepos(results)
     } catch (err) {
       setError(err instanceof Error ? err.message : '검색 실패')
@@ -111,13 +133,13 @@ export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps
       setIsCollecting(true)
       setError(null)
 
-      await githubApi.collectRepos(undefined, 10)
-      alert('✅ 저장소 수집이 시작되었습니다. 잠시 후 새로고침해 주세요.')
+      await githubApi.collectRepos(undefined, 300)
+      alert('저장소 수집이 시작되었습니다. 약 1-2분 소요됩니다.')
 
       setTimeout(async () => {
         try {
-          const trending = await githubApi.getTrendingRepos(20)
-          setRepos(trending)
+          // 현재 선택된 탭의 데이터로 새로고침
+          await handleLoadRepos(selectedTab, selectedLanguage)
         } catch (err) {
           console.error('새로고침 오류:', err)
         }
@@ -250,6 +272,33 @@ export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps
 
         {/* 메인 컨텐츠 */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          {/* 탭 메뉴 */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+            {[
+              { id: 'trending' as const, label: '인기 저장소' },
+              { id: 'recent' as const, label: '최근 저장소' },
+              { id: 'active' as const, label: '활발한 저장소' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: selectedTab === tab.id ? 600 : 500,
+                  backgroundColor: selectedTab === tab.id ? '#2563eb' : '#f3f4f6',
+                  color: selectedTab === tab.id ? '#fff' : '#374151',
+                  transition: 'all 200ms',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           {/* 검색 및 수집 */}
           <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '20px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

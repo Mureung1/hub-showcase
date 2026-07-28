@@ -1,14 +1,13 @@
 import { z } from "zod";
-import { CANONICAL_MAJORS, CANONICAL_REGIONS, ENROLLMENT_STATUS_TYPES } from "../constants/taxonomy";
 
 // 사용자 프로필 Zod 스키마
 export const UserProfileSchema = z.object({
   id: z.string().uuid().optional(),
   userId: z.string().uuid(),
-  major: z.enum(CANONICAL_MAJORS).nullable().default(null),
+  major: z.string().nullable().default(null),
   grade: z.number().int().min(1).max(4).nullable().default(null),
-  enrollmentStatus: z.enum(ENROLLMENT_STATUS_TYPES).nullable().default(null),
-  residenceRegion: z.enum(CANONICAL_REGIONS).nullable().default(null),
+  enrollmentStatus: z.string().nullable().default(null),
+  residenceRegion: z.string().nullable().default(null),
   incomeBracket: z.number().int().min(1).max(10).nullable().default(null),
   age: z.number().int().min(18).max(100).nullable().default(null),
   interestTags: z.array(z.string()).default([]),
@@ -36,4 +35,5 @@ export type CreateUserProfileRequest = z.infer<typeof CreateUserProfileSchema>;
 export const UpdateUserProfileSchema = CreateUserProfileSchema.extend({
   nickname: z.string().min(2, '닉네임은 2자 이상이어야 합니다').max(20, '닉네임은 20자 이하여야 합니다').optional(),
 });
+
 export type UpdateUserProfileRequest = z.infer<typeof UpdateUserProfileSchema>;

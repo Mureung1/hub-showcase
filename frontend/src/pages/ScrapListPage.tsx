@@ -260,7 +260,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
 
         {/* 로딩 상태 */}
         {isLoading ? (
-          <div style={{ textAlign: 'center', paddingY: '48px' }}>
+          <div style={{ textAlign: 'center', paddingTop: '48px' }}>
             <div
               style={{
                 display: 'inline-block',
@@ -429,7 +429,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center', paddingY: '48px' }}>
+          <div style={{ textAlign: 'center', paddingTop: '48px' }}>
             <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '13px' }}>
               스크랩한 공고가 없습니다
             </p>

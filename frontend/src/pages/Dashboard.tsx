@@ -100,7 +100,7 @@ export default function Dashboard() {
       {/* 카테고리 탭 */}
       <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 16px' }}>
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingY: '16px' }}>
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingTop: '16px' }}>
             {CATEGORIES.map(cat => (
               <button
                 key={cat.value}
@@ -145,7 +145,7 @@ export default function Dashboard() {
 
         {/* 로딩 상태 */}
         {isLoading ? (
-          <div style={{ textAlign: 'center', paddingY: '48px' }}>
+          <div style={{ textAlign: 'center', paddingTop: '48px' }}>
             <div style={{
               display: 'inline-block',
               animation: 'spin 1s linear infinite',
@@ -260,7 +260,7 @@ export default function Dashboard() {
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center', paddingY: '48px' }}>
+          <div style={{ textAlign: 'center', paddingTop: '48px' }}>
             <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '13px' }}>
               해당하는 공고가 없습니다
             </p>

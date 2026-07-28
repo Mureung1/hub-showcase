@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
-import { githubService } from '../services/githubService'
-import { llmService } from '../services/llmService'
-import { AuthRequest, verifyAuth } from '../middleware/auth'
+import { githubService } from '../services/githubService.js'
+import { llmService } from '../services/llmService.js'
+import { AuthRequest, verifyAuth } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -11,7 +11,7 @@ const router = Router()
  */
 router.get('/trending', async (req: AuthRequest, res: Response) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 50)
+    const limit = Math.min(parseInt(req.query.limit as string) || 300, 300)
     const language = req.query.language as string
 
     console.log(`📥 Fetching trending repos (language: ${language || 'all'}, limit: ${limit})`)
@@ -34,6 +34,60 @@ router.get('/trending', async (req: AuthRequest, res: Response) => {
     })
   } catch (error) {
     console.error('❌ Error fetching trending repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/recent
+ * 최근 저장소 조회
+ */
+router.get('/recent', async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 300, 300)
+    const language = req.query.language as string
+
+    console.log(`📥 Fetching recent repos (language: ${language || 'all'}, limit: ${limit})`)
+
+    const repos = await githubService.fetchRecentRepos(language, limit)
+
+    res.json({
+      success: true,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching recent repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/active
+ * 활발한 저장소 조회
+ */
+router.get('/active', async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 300, 300)
+    const language = req.query.language as string
+
+    console.log(`📥 Fetching active repos (language: ${language || 'all'}, limit: ${limit})`)
+
+    const repos = await githubService.fetchActiveRepos(language, limit)
+
+    res.json({
+      success: true,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching active repos:', error)
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
