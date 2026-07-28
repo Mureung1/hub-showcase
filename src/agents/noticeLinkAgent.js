@@ -1,3 +1,5 @@
+import { buildApiUrl, getConfiguredApiBaseUrl } from "../config/apiBaseUrl.js";
+
 const fallbackSelector = "a[href]";
 const broadFallbackSelector = "a[href], a[onclick], a[data-href], a[data-url], a[data-link], a[data-contest_pk], a[data-inner_link]";
 
@@ -774,7 +776,7 @@ function formatProxyConnectionError(error) {
   const message = error instanceof Error ? error.message : "";
 
   if (/failed to fetch|networkerror|load failed|원격 서버에 연결/i.test(message)) {
-    return "HTML 프록시 API에 연결하지 못했습니다. 실행 창에 API server running on http://127.0.0.1:3001 문구가 보이는지 확인한 뒤 다시 스캔해주세요.";
+    return "HTML 프록시 API에 연결하지 못했습니다. API 서버가 실행 중이고 VITE_API_BASE_URL 설정이 올바른지 확인한 뒤 다시 스캔해주세요.";
   }
 
   return message
@@ -795,10 +797,16 @@ async function readHtmlResponse(response) {
   };
 }
 
-function createProxyRequestUrls(targetUrl) {
+export function createProxyRequestUrls(targetUrl, apiBaseUrl = getConfiguredApiBaseUrl()) {
   const encodedTargetUrl = encodeURIComponent(targetUrl);
+  const apiPath = `/api/fetch-html?url=${encodedTargetUrl}`;
+
+  if (apiBaseUrl) {
+    return [buildApiUrl(apiPath, apiBaseUrl)];
+  }
+
   return [
-    `/api/fetch-html?url=${encodedTargetUrl}`,
+    apiPath,
     `http://localhost:3001/api/fetch-html?url=${encodedTargetUrl}`,
     `http://127.0.0.1:3001/api/fetch-html?url=${encodedTargetUrl}`,
   ];

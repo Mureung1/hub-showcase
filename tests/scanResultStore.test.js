@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   LAST_SCAN_RESULT_STORAGE_KEY,
+  createScopedNoticeHistoryStore,
   readLastScanResult,
   writeLastScanResult,
 } from "../src/storage/noticeHistoryStore.js";
@@ -81,4 +82,30 @@ test("last scan result ignores malformed storage safely", () => {
   storage.setItem(LAST_SCAN_RESULT_STORAGE_KEY, "not-json");
 
   assert.equal(readLastScanResult(storage), null);
+});
+test("scoped scan history keeps each account's records separate", () => {
+  const storage = createMemoryStorage();
+  const accountA = createScopedNoticeHistoryStore("account-a");
+  const accountB = createScopedNoticeHistoryStore("account-b");
+  const targetUrl = "https://example.com/notices";
+
+  accountA.writeLastScanResult({
+    allLinks: [{ title: "A 계정 공지", url: "https://example.com/notices/a" }],
+    fetchedAt: "2026-07-27T09:00:00.000Z",
+  }, storage);
+  accountA.writeNoticeHistory(targetUrl, ["https://example.com/notices/a"], storage);
+
+  assert.equal(accountB.readLastScanResult(storage), null);
+  assert.deepEqual(accountB.readNoticeHistory(targetUrl, [], storage), []);
+
+  accountB.writeLastScanResult({
+    allLinks: [{ title: "B 계정 공지", url: "https://example.com/notices/b" }],
+    fetchedAt: "2026-07-27T10:00:00.000Z",
+  }, storage);
+  accountB.writeNoticeHistory(targetUrl, ["https://example.com/notices/b"], storage);
+
+  assert.equal(accountA.readLastScanResult(storage).allLinks[0].title, "A 계정 공지");
+  assert.equal(accountB.readLastScanResult(storage).allLinks[0].title, "B 계정 공지");
+  assert.deepEqual(accountA.readNoticeHistory(targetUrl, [], storage), ["https://example.com/notices/a"]);
+  assert.deepEqual(accountB.readNoticeHistory(targetUrl, [], storage), ["https://example.com/notices/b"]);
 });

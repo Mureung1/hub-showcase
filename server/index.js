@@ -34,6 +34,7 @@ import {
 } from "./middleware/httpSecurity.js";
 import { createFixedWindowRateLimit } from "./middleware/rateLimit.js";
 import { createRequireAuth } from "./middleware/requireAuth.js";
+import { createRequireLocalDemoMode } from "./middleware/requireLocalDemoMode.js";
 import { createSupabaseAuthService } from "./services/supabaseAuth.js";
 import { createProfileRepository } from "./services/profileRepository.js";
 import { profileRequestSchema } from "./schemas/profileSchemas.js";
@@ -65,6 +66,11 @@ const discoverRateLimit = createFixedWindowRateLimit({
 const opportunityStorage = createOpportunityStorage();
 const authService = createSupabaseAuthService();
 const requireAuth = createRequireAuth(authService);
+const requireLocalDemoMode = createRequireLocalDemoMode({
+  authConfigured: authService.configured,
+  isProduction: runtimeConfig.isProduction,
+  storageProvider: opportunityStorage.provider,
+});
 const profileRepository = createProfileRepository({
   createUserClient: (accessToken) => authService.createUserClient(accessToken),
 });
@@ -528,7 +534,7 @@ app.delete("/api/saved-opportunities/:opportunityId", requireAuth, async (reques
   }
 });
 
-app.get("/api/opportunities", async (request, response) => {
+app.get("/api/opportunities", requireLocalDemoMode, async (request, response) => {
   const validation = savedOpportunitiesQuerySchema.safeParse(request.query);
 
   if (!validation.success) {
@@ -547,7 +553,7 @@ app.get("/api/opportunities", async (request, response) => {
   }
 });
 
-app.post("/api/opportunities", async (request, response) => {
+app.post("/api/opportunities", requireLocalDemoMode, async (request, response) => {
   const validation = saveOpportunityRequestSchema.safeParse(request.body);
 
   if (!validation.success) {
@@ -566,7 +572,7 @@ app.post("/api/opportunities", async (request, response) => {
   }
 });
 
-app.delete("/api/opportunities/:storageId", async (request, response) => {
+app.delete("/api/opportunities/:storageId", requireLocalDemoMode, async (request, response) => {
   const storageId = String(request.params.storageId || "").trim();
   if (!storageId) {
     sendJson(response, 400, { error: "invalid_request", message: "삭제할 저장 공고 ID가 필요합니다." });

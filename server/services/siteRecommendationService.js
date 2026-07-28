@@ -45,6 +45,7 @@ export function createSiteRecommendationService(options = {}) {
         desiredInformation,
         candidateSites: registry,
         keyword,
+        settings,
       });
       const config = getConfig();
 

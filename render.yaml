@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: uniradar-api
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: SERVE_CLIENT
+        value: "false"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: ANALYZE_RATE_LIMIT_ENABLED
+        value: "true"

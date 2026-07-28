@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getRecommendationSites, recommendSites } from "../api.js";
 import {
@@ -85,6 +85,7 @@ export default function SiteRecommendations({ onAddSource, profile, savedSources
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [noticeMessage, setNoticeMessage] = useState("");
+  const recommendationRequestIdRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -115,6 +116,14 @@ export default function SiteRecommendations({ onAddSource, profile, savedSources
   );
   const savedSourceIdSet = useMemo(() => new Set(savedSourceSiteIds), [savedSourceSiteIds]);
 
+  useEffect(() => {
+    recommendationRequestIdRef.current += 1;
+    setResult(null);
+    setErrorMessage("");
+    setNoticeMessage("");
+    setIsLoading(false);
+  }, [profile, savedSourceSiteIds, settings]);
+
   function toggleInformationType(type) {
     setDesiredInformation((currentTypes) => currentTypes.includes(type)
       ? currentTypes.filter((currentType) => currentType !== type)
@@ -127,6 +136,8 @@ export default function SiteRecommendations({ onAddSource, profile, savedSources
       return;
     }
 
+    const requestId = recommendationRequestIdRef.current + 1;
+    recommendationRequestIdRef.current = requestId;
     setIsLoading(true);
     setErrorMessage("");
     setNoticeMessage("");
@@ -136,17 +147,20 @@ export default function SiteRecommendations({ onAddSource, profile, savedSources
         desiredInformation,
         keyword: keyword.trim() || null,
         profile,
+        settings,
         trackedSiteIds: nextSavedSourceSiteIds,
       });
+      if (requestId !== recommendationRequestIdRef.current) return;
       setResult(response);
       if (!response.recommendations?.length) {
         setNoticeMessage("현재 조건에서 추가로 추천할 등록 사이트가 없습니다.");
       }
     } catch (error) {
+      if (requestId !== recommendationRequestIdRef.current) return;
       setResult(null);
       setErrorMessage(error.message || "사이트 추천을 불러오지 못했습니다.");
     } finally {
-      setIsLoading(false);
+      if (requestId === recommendationRequestIdRef.current) setIsLoading(false);
     }
   }
 

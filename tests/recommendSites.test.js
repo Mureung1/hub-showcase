@@ -65,6 +65,52 @@ test("모든 등록 사이트가 저장된 출처이면 추천 결과가 비어 
   assert.deepEqual(result.recommendations, []);
 });
 
+test("다른 학교 프로필에는 학교 전용 사이트를 추천하지 않는다", () => {
+  const otherUniversityProfile = {
+    ...profile,
+    school: "서울대학교",
+    regions: ["서울", "온라인"],
+  };
+  const result = recommendSites({
+    profile: otherUniversityProfile,
+    candidateSites: siteRegistry,
+    desiredInformation: ["contest", "research"],
+  });
+
+  const recommendedIds = result.recommendations.map((item) => item.siteId);
+
+  assert.equal(recommendedIds.includes("university-general-notices"), false);
+  assert.equal(recommendedIds.includes("department-notices"), false);
+  assert.equal(recommendedIds.includes("nrf"), true);
+});
+
+test("여러 대학교 가상 프로필에서 학교 전용 사이트를 정확히 구분한다", () => {
+  const profiles = [
+    { school: "경북대학교", shouldIncludeKnu: true },
+    { school: "경북 대학교", shouldIncludeKnu: true },
+    { school: "서울대학교", shouldIncludeKnu: false },
+    { school: "부산대학교", shouldIncludeKnu: false },
+    { school: "고려대학교", shouldIncludeKnu: false },
+    { school: "한국과학기술원", shouldIncludeKnu: false },
+  ];
+
+  profiles.forEach(({ school, shouldIncludeKnu }) => {
+    const result = recommendSites({
+      profile: { ...profile, school },
+      candidateSites: siteRegistry,
+      desiredInformation: ["contest", "research"],
+    });
+    const recommendedIds = result.recommendations.map((item) => item.siteId);
+    const hasKnuOnlySite = recommendedIds.some((siteId) => [
+      "university-general-notices",
+      "department-notices",
+    ].includes(siteId));
+
+    assert.equal(hasKnuOnlySite, shouldIncludeKnu, `${school} 프로필의 경북대 전용 사이트 처리`);
+    assert.equal(recommendedIds.includes("nrf"), true, `${school} 프로필의 전국 연구 사이트 추천`);
+  });
+});
+
 test("Gemini 설명 생성이 실패해도 규칙 기반 추천을 반환한다", async () => {
   const service = createSiteRecommendationService({
     registry: siteRegistry,
@@ -128,4 +174,53 @@ test("개인 설정은 관심 종류·지역·온라인 여부·결과 개수를
   assert.deepEqual(result.coverage.desiredInformation, ["research"]);
   assert.equal(result.recommendations.length, 1);
   assert.equal(result.recommendations[0].siteId, "daegu-research");
+});
+test("추천 서비스는 요청한 계정의 개인 설정을 추천 알고리즘까지 전달한다", async () => {
+  const registry = [
+    {
+      id: "online-scholarship",
+      name: "온라인 장학 사이트",
+      active: true,
+      trusted: true,
+      providerType: "government",
+      regions: ["온라인"],
+      informationTypes: ["scholarship"],
+      strengths: [],
+      limitations: [],
+    },
+    {
+      id: "daegu-research",
+      name: "대구 연구 사이트",
+      active: true,
+      trusted: true,
+      providerType: "university",
+      regions: ["대구"],
+      informationTypes: ["research"],
+      strengths: [],
+      limitations: [],
+    },
+  ];
+  const service = createSiteRecommendationService({
+    registry,
+    getAIConfig: () => ({ liveGeminiEnabled: false }),
+  });
+
+  const result = await service.recommend({
+    profile,
+    trackedSiteIds: [],
+    desiredInformation: [],
+    keyword: null,
+    settings: {
+      recommendationCategories: ["research"],
+      preferredRegions: ["대구"],
+      includeOnline: false,
+      minimumMatchScore: 50,
+      includeUnknownDeadline: true,
+      autoSaveAnalyzedOpportunities: false,
+      recommendationLimit: 1,
+    },
+  });
+
+  assert.deepEqual(result.coverage.desiredInformation, ["research"]);
+  assert.deepEqual(result.recommendations.map((item) => item.siteId), ["daegu-research"]);
 });

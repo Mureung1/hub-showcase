@@ -33,7 +33,14 @@ function createAnalysis(id = "analysis-1", sourceUrl = "https://example.com/noti
       disqualifyingReasons: [],
       nextActions: ["참가신청서를 준비하세요."],
     },
-    tasks: [],
+    tasks: [
+      {
+        dueDate: "2026-08-30",
+        id: `task-${id}`,
+        status: "todo",
+        title: `${id} 제출 준비`,
+      },
+    ],
   };
 }
 
@@ -117,6 +124,8 @@ test("저장 공고는 사용자별로 분리되고 같은 원문 URL은 중복 
   assert.equal(userAItems[0].opportunity.title, "수정된 AI 공모전");
   assert.equal(userBItems.length, 1);
   assert.equal(userBItems[0].id, "analysis-b");
+  assert.equal(userAItems[0].tasks[0].id, "task-analysis-1");
+  assert.equal(userBItems[0].tasks[0].id, "task-analysis-b");
 });
 
 test("저장 공고 삭제는 요청한 사용자의 항목에만 적용된다", async () => {

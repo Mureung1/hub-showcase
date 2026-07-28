@@ -1172,6 +1172,18 @@ body {
   gap: 14px;
 }
 
+.topbar-user-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-logout-button {
+  min-height: 36px;
+  padding: 0 11px;
+  font-size: 0.8rem;
+}
+
 .mode-badge {
   display: inline-flex;
   min-height: 36px;
@@ -1723,6 +1735,11 @@ select:focus {
   .topbar-actions,
   .user-chip {
     align-items: flex-start;
+  }
+
+  .topbar-user-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .topbar-actions {

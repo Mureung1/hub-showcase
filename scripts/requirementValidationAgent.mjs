@@ -73,7 +73,11 @@ const requirementGroups = [
   {
     id: "RQ-08",
     title: "로컬/배포 런타임 보안 기본값",
-    tests: ["tests/runtimeInfrastructure.test.js"],
+    tests: [
+      "tests/runtimeInfrastructure.test.js",
+      "tests/apiBaseUrl.test.js",
+      "tests/dockerRuntimeFiles.test.js",
+    ],
   },
   {
     id: "RQ-09",
@@ -81,6 +85,7 @@ const requirementGroups = [
     tests: [
       "tests/opportunityRepository.test.js",
       "tests/localOpportunityRepository.test.js",
+      "tests/localDemoMiddleware.test.js",
     ],
   },
   {

@@ -14,7 +14,7 @@ function createMemoryStorage() {
   };
 }
 
-export function createSessionStorageAdapter(browserStorage) {
+export function createPersistentAuthStorageAdapter(browserStorage) {
   const memoryStorage = createMemoryStorage();
 
   return {
@@ -50,19 +50,14 @@ export function createSessionStorageAdapter(browserStorage) {
   };
 }
 
-export function getAuthSessionStorage() {
-  try {
-    return createSessionStorageAdapter(globalThis.window?.sessionStorage);
-  } catch {
-    return createSessionStorageAdapter(null);
+export function getPersistentAuthStorage(browserStorage) {
+  if (browserStorage !== undefined) {
+    return createPersistentAuthStorageAdapter(browserStorage);
   }
-}
-export function clearLegacyLocalAuthSession(supabaseUrl, localStorage) {
-  if (!supabaseUrl || !localStorage) return;
+
   try {
-    const projectRef = new URL(supabaseUrl).hostname.split(".")[0];
-    if (projectRef) localStorage.removeItem(`sb-${projectRef}-auth-token`);
+    return createPersistentAuthStorageAdapter(globalThis.window?.localStorage);
   } catch {
-    // Ignore unavailable storage or malformed configuration.
+    return createPersistentAuthStorageAdapter(null);
   }
 }

@@ -2,6 +2,9 @@
   "name": "opportunity-agent-intro",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22 <23"
+  },
   "type": "module",
   "scripts": {
     "client:dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
@@ -10,6 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.js",
+    "smoke:production": "node scripts/productionSmokeTest.mjs",
     "test": "node --test tests/*.test.js",
     "verify:requirements": "node scripts/requirementValidationAgent.mjs",
     "verify:requirements:fast": "node scripts/requirementValidationAgent.mjs --skip-build"

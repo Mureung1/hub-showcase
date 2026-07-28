@@ -63,16 +63,10 @@ import {
   validateUserProfile,
 } from "./storage/profileStore.js";
 import {
-  mergeNoticeHistory,
+  createScopedNoticeHistoryStore,
   readCustomSources,
-  readLastScanResult,
-  readNoticeHistory,
-  readScanSnapshot,
   removeCustomSource,
   upsertCustomSource,
-  writeLastScanResult,
-  writeNoticeHistory,
-  writeScanSnapshot,
 } from "./storage/noticeHistoryStore.js";
 
 
@@ -127,9 +121,13 @@ const statusLabels = {
 };
 
 const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
   second: "2-digit",
+  hour12: false,
 });
 
 function findSourceByUrl(sources, targetUrl) {
@@ -898,12 +896,27 @@ function NoticeBriefPanel({ analysisProgress, briefs }) {
 }
 
 function Topbar({ health, user }) {
+  const { signOut } = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const provider = providerLabels[health?.aiProvider] ?? health?.aiProvider ?? "server";
   const modeLabel = health
     ? health.liveAIEnabled
       ? `${provider} 실제 분석 모드`
       : "mock 분석 모드"
     : "서버 확인 중";
+
+  async function handleSignOut() {
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } catch {
+      // AuthProvider stores a user-friendly sign-out error.
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
 
   return (
     <header className="topbar">
@@ -921,12 +934,25 @@ function Topbar({ health, user }) {
       </div>
       <div className="topbar-actions">
         <span className={`mode-badge mode-${health?.aiProvider || "mock"}`}>{modeLabel}</span>
-        <div className="user-chip" aria-label="사용자">
-          <span>김</span>
-          <div>
-            <strong>{user ? getUsernameFromUser(user) : "게스트"}</strong>
-            <small>{user ? "로그인됨" : "로그인 필요"}</small>
+        <div className="topbar-user-actions">
+          <div className="user-chip" aria-label="사용자">
+            <span>김</span>
+            <div>
+              <strong>{user ? getUsernameFromUser(user) : "게스트"}</strong>
+              <small>{user ? "로그인됨" : "로그인 필요"}</small>
+            </div>
           </div>
+          {user ? (
+            <button
+              aria-label="현재 계정 로그아웃"
+              className="secondary-button compact-button topbar-logout-button"
+              disabled={isSigningOut}
+              onClick={handleSignOut}
+              type="button"
+            >
+              {isSigningOut ? "로그아웃 중" : "로그아웃"}
+            </button>
+          ) : null}
         </div>
       </div>
     </header>
@@ -1072,11 +1098,15 @@ function CategoryStrip() {
 function OpportunityAgentWorkbench() {
   const { isAuthLoading, isConfigured: isAuthConfigured, session, user } = useAuth();
   const { settings: userSettings } = useUserSettings();
+  const noticeHistoryStore = useMemo(
+    () => createScopedNoticeHistoryStore(isAuthConfigured ? user?.id : ""),
+    [isAuthConfigured, user?.id],
+  );
   const [customSources, setCustomSources] = useState([]);
   const [isSavingSource, setIsSavingSource] = useState(false);
   const [config, setConfig] = useState(createInitialConfig);
   const [knownLinks, setKnownLinks] = useState([]);
-  const [initialScan] = useState(() => readLastScanResult());
+  const [initialScan] = useState(() => noticeHistoryStore.readLastScanResult());
   const [scan, setScan] = useState(initialScan);
   const [status, setStatus] = useState(initialScan ? "complete" : "idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -1088,8 +1118,11 @@ function OpportunityAgentWorkbench() {
   const [displayMode, setDisplayMode] = useState("latest");
   const [health, setHealth] = useState(null);
   const [healthError, setHealthError] = useState("");
-  const [legacyProfile, setLegacyProfile] = useState(() => readUserProfile());
+  const [legacyProfile, setLegacyProfile] = useState(() =>
+    isAuthConfigured ? null : readUserProfile(),
+  );
   const [userProfile, setUserProfile] = useState(null);
+  const [profileOwnerId, setProfileOwnerId] = useState(null);
   const [profileDraft, setProfileDraft] = useState(() => createEmptyProfileDraft());
   const [isProfileEditing, setIsProfileEditing] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
@@ -1118,6 +1151,10 @@ function OpportunityAgentWorkbench() {
   const [noticeAnalysisByUrl, setNoticeAnalysisByUrl] = useState({});
   const [noticeAnalysisProgress, setNoticeAnalysisProgress] = useState(null);
 
+  const activeUserProfile = isAuthConfigured && profileOwnerId !== user?.id
+    ? null
+    : userProfile;
+
   const isRunning = status === "running" || status === "analyzing";
   const resolvedTargetUrl = resolveTargetUrl(config.targetUrl);
   const sourceOptions = useMemo(() => [...defaultNoticeSources, ...customSources], [customSources]);
@@ -1129,7 +1166,7 @@ function OpportunityAgentWorkbench() {
 
   function setLatestScan(nextScan) {
     setScan(nextScan);
-    writeLastScanResult(nextScan);
+    noticeHistoryStore.writeLastScanResult(nextScan);
   }
 
   const displayLinks = useMemo(
@@ -1188,6 +1225,11 @@ function OpportunityAgentWorkbench() {
       return undefined;
     }
 
+    setCustomSources([]);
+    setConfig((currentConfig) => defaultNoticeSources.some((source) => source.id === currentConfig.selectedSourceId)
+      ? currentConfig
+      : createInitialConfig());
+
     getSavedNoticeSources(session.access_token)
       .then((response) => {
         if (!cancelled) setCustomSources(Array.isArray(response.sources) ? response.sources : []);
@@ -1209,6 +1251,7 @@ function OpportunityAgentWorkbench() {
 
     if (!isAuthConfigured) {
       setUserProfile(legacyProfile);
+      setProfileOwnerId(null);
       setProfileDraft(profileToDraft(legacyProfile));
       setIsProfileEditing(!legacyProfile);
       setIsProfileLoading(false);
@@ -1217,12 +1260,17 @@ function OpportunityAgentWorkbench() {
 
     if (!user || !session?.access_token) {
       setUserProfile(null);
+      setProfileOwnerId(null);
       setProfileDraft(createEmptyProfileDraft());
       setIsProfileEditing(true);
       setIsProfileLoading(false);
       return undefined;
     }
 
+    setUserProfile(null);
+    setProfileOwnerId(null);
+    setProfileDraft(createEmptyProfileDraft());
+    setIsProfileEditing(true);
     setIsProfileLoading(true);
     setProfileError("");
     getProfile(session.access_token)
@@ -1230,6 +1278,7 @@ function OpportunityAgentWorkbench() {
         if (cancelled) return;
         const profile = response.profile || null;
         setUserProfile(profile);
+        setProfileOwnerId(user.id);
         setProfileDraft(profileToDraft(profile));
         setIsProfileEditing(!profile);
       })
@@ -1237,6 +1286,7 @@ function OpportunityAgentWorkbench() {
         if (!cancelled) {
           setProfileError(getErrorMessage(error));
           setUserProfile(null);
+          setProfileOwnerId(null);
           setProfileDraft(createEmptyProfileDraft());
           setIsProfileEditing(true);
         }
@@ -1250,6 +1300,18 @@ function OpportunityAgentWorkbench() {
     };
   }, [isAuthConfigured, legacyProfile, session?.access_token, user?.id]);
 
+  useEffect(() => {
+    const restoredScan = noticeHistoryStore.readLastScanResult();
+
+    setScan(restoredScan);
+    setStatus(restoredScan ? "complete" : "idle");
+    setKnownLinks([]);
+    setNoticeAnalysisByUrl({});
+    setNoticeAnalysisProgress(null);
+    setNoticeMessage(restoredScan
+      ? `마지막 스캔 결과(${formatScanTime(restoredScan.fetchedAt)})를 복원했습니다.`
+      : "서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.");
+  }, [noticeHistoryStore]);
   useEffect(() => {
     let isCancelled = false;
 
@@ -1281,8 +1343,8 @@ function OpportunityAgentWorkbench() {
     }
 
     const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
-    setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
-  }, [config.targetUrl, sourceOptions]);
+    setKnownLinks(noticeHistoryStore.readNoticeHistory(config.targetUrl, fallbackUrls));
+  }, [config.targetUrl, noticeHistoryStore, sourceOptions]);
 
 
   function updateProfileDraft(name, value) {
@@ -1313,7 +1375,7 @@ function OpportunityAgentWorkbench() {
   }
 
   function handleCancelProfileEdit() {
-    setProfileDraft(profileToDraft(userProfile));
+    setProfileDraft(profileToDraft(activeUserProfile));
     setIsProfileEditing(false);
     setProfileError("");
     setProfileSuccessMessage("");
@@ -1328,7 +1390,7 @@ function OpportunityAgentWorkbench() {
 
   async function handleSaveProfile(event) {
     event.preventDefault();
-    const candidate = createUserProfileFromDraft(profileDraft, userProfile);
+    const candidate = createUserProfileFromDraft(profileDraft, activeUserProfile);
     const validation = validateUserProfile(candidate);
 
     if (!validation.valid) {
@@ -1340,6 +1402,7 @@ function OpportunityAgentWorkbench() {
     try {
       const savedProfile = await persistProfile(candidate);
       setUserProfile(savedProfile);
+      setProfileOwnerId(isAuthConfigured ? user?.id ?? null : null);
       setProfileDraft(profileToDraft(savedProfile));
       setIsProfileEditing(false);
       setProfileError("");
@@ -1362,6 +1425,7 @@ function OpportunityAgentWorkbench() {
       clearUserProfile();
       setLegacyProfile(null);
       setUserProfile(savedProfile);
+      setProfileOwnerId(isAuthConfigured ? user?.id ?? null : null);
       setProfileDraft(profileToDraft(savedProfile));
       setIsProfileEditing(false);
       setProfileSuccessMessage("기존 브라우저 프로필을 계정으로 옮겼습니다.");
@@ -1384,6 +1448,7 @@ function OpportunityAgentWorkbench() {
         setLegacyProfile(null);
       }
       setUserProfile(null);
+      setProfileOwnerId(null);
       setProfileDraft(createEmptyProfileDraft());
       setIsProfileEditing(true);
       setProfileError("");
@@ -1524,7 +1589,7 @@ function OpportunityAgentWorkbench() {
 
     try {
       const result = await analyzeOpportunity({
-        profile: userProfile,
+        profile: activeUserProfile,
         sourceUrl: url || undefined,
         rawText,
       });
@@ -1572,7 +1637,7 @@ function OpportunityAgentWorkbench() {
 
     try {
       const result = await analyzeOpportunity({
-        profile: userProfile,
+        profile: activeUserProfile,
         rawText: "",
         sourceUrl: url,
       });
@@ -1900,8 +1965,8 @@ function OpportunityAgentWorkbench() {
 
   async function scanSource(source) {
     const fallbackUrls = source.knownUrls ?? [];
-    const currentKnownLinks = readNoticeHistory(source.targetUrl, fallbackUrls);
-    const previousScanLinks = readScanSnapshot(source.targetUrl);
+    const currentKnownLinks = noticeHistoryStore.readNoticeHistory(source.targetUrl, fallbackUrls);
+    const previousScanLinks = noticeHistoryStore.readScanSnapshot(source.targetUrl);
     const result = await runNoticeLinkScan({
       html: source.html ?? "",
       knownUrls: currentKnownLinks,
@@ -1913,7 +1978,7 @@ function OpportunityAgentWorkbench() {
       ? findNewPostLinks(result.allLinks, previousScanLinks, result.targetUrl)
       : result.allLinks;
 
-    writeScanSnapshot(
+    noticeHistoryStore.writeScanSnapshot(
       result.targetUrl,
       result.allLinks.map((link) => link.url),
     );
@@ -1942,7 +2007,7 @@ function OpportunityAgentWorkbench() {
       targetUrl: result.targetUrl,
     };
 
-    setKnownLinks(readNoticeHistory(source.targetUrl, source.knownUrls));
+    setKnownLinks(noticeHistoryStore.readNoticeHistory(source.targetUrl, source.knownUrls));
     setLatestScan(nextScan);
     setDisplayMode("latest");
 
@@ -1993,7 +2058,7 @@ function OpportunityAgentWorkbench() {
       setNoticeAnalysisProgress({ completed: 0, failedCount: 0, total: latestLinks.length });
       const summary = await analyzeNoticeLinks({
         links: latestLinks,
-        profile: userProfile,
+        profile: activeUserProfile,
         onProgress: ({ completed, entry, failedCount, total }) => {
           setNoticeAnalysisByUrl((currentEntries) => ({
             ...currentEntries,
@@ -2066,7 +2131,7 @@ function OpportunityAgentWorkbench() {
     const scanSummary = createScanSummary(sourceResults, failedSources);
     const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
 
-    setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
+    setKnownLinks(noticeHistoryStore.readNoticeHistory(config.targetUrl, fallbackUrls));
     setLatestScan(scanSummary);
     setDisplayMode("latest");
     setNoticeMessage(
@@ -2083,9 +2148,9 @@ function OpportunityAgentWorkbench() {
 
     if (scan.isBatch && scan.sourceResults?.length) {
       const nextKnownCount = scan.sourceResults.reduce((sum, sourceResult) => {
-        const nextKnownLinks = mergeNoticeHistory(
+        const nextKnownLinks = noticeHistoryStore.mergeNoticeHistory(
           sourceResult.targetUrl,
-          readNoticeHistory(sourceResult.targetUrl, sourceResult.source.knownUrls),
+          noticeHistoryStore.readNoticeHistory(sourceResult.targetUrl, sourceResult.source.knownUrls),
           sourceResult.allLinks.map((link) => link.url),
         );
 
@@ -2093,7 +2158,7 @@ function OpportunityAgentWorkbench() {
       }, 0);
       const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
 
-      setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
+      setKnownLinks(noticeHistoryStore.readNoticeHistory(config.targetUrl, fallbackUrls));
       setLatestScan({
         ...scan,
         knownCount: nextKnownCount,
@@ -2102,7 +2167,7 @@ function OpportunityAgentWorkbench() {
       return;
     }
 
-    const nextKnownLinks = mergeNoticeHistory(
+    const nextKnownLinks = noticeHistoryStore.mergeNoticeHistory(
       scan.targetUrl,
       knownLinks,
       scan.allLinks.map((link) => link.url),
@@ -2123,8 +2188,8 @@ function OpportunityAgentWorkbench() {
       return;
     }
 
-    writeNoticeHistory(resolvedTargetUrl, []);
-    writeScanSnapshot(resolvedTargetUrl, []);
+    noticeHistoryStore.writeNoticeHistory(resolvedTargetUrl, []);
+    noticeHistoryStore.writeScanSnapshot(resolvedTargetUrl, []);
     setKnownLinks([]);
 
     if (scan && scan.targetUrl === resolvedTargetUrl) {
@@ -2200,7 +2265,7 @@ function OpportunityAgentWorkbench() {
                   sourceOptions={sourceOptions}
                 />
                 <div className="side-stack">
-                  <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={userProfile} />
+                  <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={activeUserProfile} />
                   <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
                   <RoadmapPanel />
                 </div>
@@ -2212,7 +2277,7 @@ function OpportunityAgentWorkbench() {
                 analysisRawText={analysisRawText}
                 analysisResult={analysisResult}
                 analysisUrl={analysisUrl}
-                hasProfile={Boolean(userProfile)}
+                hasProfile={Boolean(activeUserProfile)}
                 health={health}
                 healthError={healthError}
                 isAnalyzing={isAnalyzing}
@@ -2246,7 +2311,7 @@ function OpportunityAgentWorkbench() {
           {activeView === "profile" ? (
             <div className="view-page profile-view">
               <AuthPanel />
-              {isAuthConfigured && user && !userProfile && legacyProfile ? (
+              {isAuthConfigured && user && !activeUserProfile && legacyProfile ? (
                 <LegacyProfileMigrationPanel isImporting={isImportingLegacyProfile} onImport={handleImportLegacyProfile} />
               ) : null}
               {isAuthConfigured && !user ? (
@@ -2258,7 +2323,7 @@ function OpportunityAgentWorkbench() {
                   draft={profileDraft}
                   errorMessage={profileError}
                   isEditing={isProfileEditing}
-                  isSaved={Boolean(userProfile)}
+                  isSaved={Boolean(activeUserProfile)}
                   isSaving={isProfileSaving}
                   onBeginEdit={handleBeginProfileEdit}
                   onCancelEdit={handleCancelProfileEdit}
@@ -2273,7 +2338,7 @@ function OpportunityAgentWorkbench() {
 
           {activeView === "recommendations" ? (
             <div className="view-page recommendations-view">
-              <SiteRecommendations onAddSource={addRecommendedSource} profile={userProfile} savedSources={sourceOptions} settings={userSettings} />
+              <SiteRecommendations key={isAuthConfigured ? user?.id || "unauthenticated" : "local"} onAddSource={addRecommendedSource} profile={activeUserProfile} savedSources={sourceOptions} settings={userSettings} />
               <NoticeDiscovery onSelectCandidate={handleSelectDiscoveredNotice} />
             </div>
           ) : null}
@@ -2365,9 +2430,11 @@ function OpportunityAgentWorkbench() {
   );
 }
 export default function OpportunityAgentIntro() {
+  const { user } = useAuth();
+
   return (
     <AuthGate>
-      <UserSettingsProvider>
+      <UserSettingsProvider key={user?.id || "anonymous"}>
         <OpportunityAgentWorkbench />
       </UserSettingsProvider>
     </AuthGate>
