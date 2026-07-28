@@ -30,6 +30,7 @@ export async function apiSend(path, method, body) {
 }
 
 export const apiPost = (path, body) => apiSend(path, 'POST', body)
+export const apiDelete = (path) => apiSend(path, 'DELETE')
 
 // GET 데이터 로딩 훅 — 로딩/에러/데이터 3상태 + 재시도
 export function useApi(path) {

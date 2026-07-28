@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 생성~배정·설명·맞교환 완료 (3탭 쓰기·알림 남음) |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 생성~배정·설명·맞교환·태스크(담당자 자동배정+상태 변경)·링크 업로드 완료 (파일 업로드·관리 쓰기·알림 남음) |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -34,8 +34,9 @@
 - [x] 대시보드 조회 — `DashboardTab.jsx` ↔ `/api/me/dashboard`
 - [x] 프로젝트 진행 조회 — `ProgressTab.jsx` ↔ `/api/me/progress`
 - [x] 프로젝트 관리 조회 — `ProjectsTab.jsx` ↔ `/api/me/projects`
-- [ ] 태스크 상태 변경 (할 일 / 진행 중 / 완료)
-- [ ] 파일·링크 업로드 + 코멘트(100자)
+- [x] 태스크 상태 변경 (할 일 / 진행 중 / 완료) — `POST /api/me/tasks/:taskId/status` (자기 태스크만), `ProgressTab.jsx` 상태 버튼 3개
+- [x] 링크 업로드 + 코멘트(100자) — `POST /api/me/tasks/:taskId/uploads` · `DELETE /api/me/uploads/:uploadId` (자기 태스크·본인 자료만), `ProgressTab.jsx` UploadForm/✕, `activity_log 'upload'` → 잔디·최근활동
+- [ ] 파일 업로드 (multer + Storage 비공개 버킷 + 서명 URL 다운로드) — 후속
 - [ ] 프로젝트 삭제 / 완료 처리 / 메인 지정 / 순서 변경
 
 ### 프로젝트 생성 ~ 배정 플로우 — ⬜ 화면만 완성, BE/DB 미연결
@@ -51,7 +52,8 @@
 - [x] 배정 결과 공개·조회 (규칙 요약) — `GET /api/projects/:id/result`, `AssignmentResult.jsx` 실연동
 - [x] 플래닝 에이전트의 배정 설명 `server/services/explainer.js` (Claude 팀 단위 설명·타협안 → `assignment_summary`, 실패 시 규칙 요약 폴백)
 - [x] 배정 공개 후 10분 내 1회 역할 맞교환 — `POST /api/projects/:id/swap` (생성자·서버시각 창·실무 역할 교차 저장), `AssignmentResult.jsx` 맞교환 UI
-- [ ] 전원 제출 시 자동 마감 / 태스크 담당자 자동배정
+- [x] 태스크 담당자 자동배정 — 배정/맞교환 직후 역할 보유자에게 라운드로빈 연결 (`assignTasksToRoleHolders`, projects.js)
+- [ ] 전원 제출 시 자동 마감
 
 ### 공통 · 인프라
 - [x] Express 단일 게이트웨이 + Supabase Secret key 서버 전용 — `server/db/supabase.js`
@@ -63,7 +65,7 @@
 - [ ] 검증 에이전트 `.claude/agents/verifier.md` + 결함 수정
 
 ### 알려진 후속 과제
-- **조장 DB 정합**: 조장이 "조장+실무" 2역이 되면 `assignments`의 `unique(project_id, member_id)`와 충돌 → 배정 API 때 조장 표식 저장 위치 결정 (예: `project_members.is_leader` + 실무는 `assignments` 1행)
+- ~~**조장 DB 정합**: 조장이 "조장+실무" 2역이 되면 `assignments`의 `unique(project_id, member_id)`와 충돌~~ → **해결**: unique를 `(project_id, member_id, role_id)`로 변경해 한 사람이 여러 역할(조장 표식 + 실무)을 각각 1행으로 저장. me.js가 member별 역할을 묶어 표시
 - `shell-quote`(concurrently 하위 의존성) high 취약점 — 개발 도구라 배포 영향 없음, 추후 정리
 
 ---
@@ -254,6 +256,24 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-28 · 태스크 자료 링크 업로드 (URL + 100자 코멘트)
+- **왜**: 진행 탭 태스크 카드의 `📎 업로드`는 목업이었고(클릭 시 안내만), `GET /api/me/progress`는 이미 `uploads`를 내려주지만 **쓰기 API가 없고** 응답이 raw snake_case(`task_id`/`link_url`)라 프론트의 camelCase(`u.taskId`/`u.linkUrl`) 기대와 어긋난 **잠복 버그**가 있었다(실 업로드가 없어 안 드러남). 링크+코멘트 업로드를 실동작시켜 "산출물 공유 + 잔디 기록"을 연다. **파일(Storage) 업로드는 분리** — multer 의존성·비공개 버킷 수동 생성이 필요해 다음 슬라이스로.
+- **방식**:
+  - `me.js` — 소유권 가드 `loadOwnTask(user, taskId)` 추출(404/403 판정) 후 **status 엔드포인트도 이 헬퍼로 리팩터**(중복 제거). `POST /api/me/tasks/:taskId/uploads`(내 태스크만): `new URL()`로 http/https만 허용(아니면 400)·코멘트 100자 초과 400 → `uploads`(kind='link') insert + `activity_log 'upload'`(payload `{task}`) 1행 → 대시보드 최근활동·참여 잔디에 반영. `DELETE /api/me/uploads/:uploadId`(올린 본인만, 아니면 403). progress 응답 uploads를 **camelCase로 매핑**해 잠복 버그 해소.
+  - `client.js` — `apiDelete = (path) => apiSend(path, 'DELETE')`(apiPost와 대칭).
+  - `ProgressTab.jsx` — `UploadForm` 자식 컴포넌트(URL 필수 + 코멘트 선택, 자체 busy/err), 진행 중 카드 목업 교체, 자료 표시에 `✕` 삭제 버튼. `tabs.css`에 `.task-input-row` 줄바꿈 + `.upload-del`/`.upload-err`(Soft Mint 토큰만). 마이그레이션·새 의존성 없음.
+  - **범위(의도)**: 자료 추가/표시/삭제는 **진행 중 카드**에서 관리(요약의 진행 전/완료 항목은 상태 버튼만). 업로드 자체는 status와 무관하게 내 태스크면 API로 가능.
+- **검증**: 풀플로우 Node 스크립트 — 배정 후 내 태스크에 업로드 201 · progress에 **camelCase로 표시**(linkUrl·comment·kind) · 대시보드 최근활동 `upload` 기록 · **참여 잔디에 오늘 포함** · 남의 태스크 업로드 403 · 잘못된 URL 400 · 코멘트 101자 400 · 남의 자료 삭제 403 · 내 자료 삭제 200 후 목록에서 사라짐 — **18/18 통과**, 테스트 데이터 정리. `oxlint`(exit 0)·`build` 통과. 진행 중 카드 업로드 폼+링크(코멘트/✕)+URL 에러 헤드리스 스크린샷(실 `tabs.css`) 확인.
+
+### 2026-07-27 · 태스크 담당자 자동배정 + 진행 탭 상태 변경
+- **왜**: 배정까지 끝나도 태스크는 **역할(role_id)에만 연결**돼 사람(assignee)에 미지정 → 진행 탭 "내 태스크"가 비고 상태 변경이 목업이었다. 배정 결과를 태스크에 연결하고 상태 변경(할일/진행중/완료)을 실동작시켜 **협업(진행 관리) 단계**를 연다. 상태가 바뀌면 진행률(이미 태스크 status로 계산)이 자연히 움직인다.
+- **방식**:
+  - `assignTasksToRoleHolders(projectId)` (projects.js) — `assignments`(member↔role)로 각 태스크를 **역할 보유자에게 라운드로빈** 분배(같은 역할 여러 명이면 태스크 고르게 나눔, `role_id` null 태스크는 미배정). `POST /assign` 배정 저장 직후 + `POST /swap` 역할 교차 저장 직후 호출 → 맞교환으로 바뀐 역할의 태스크도 담당자가 따라감.
+  - `POST /api/me/tasks/:taskId/status` (me.js) — 태스크가 요청자의 `project_members`에 배정됐는지 확인해 **내 태스크만** 변경(아니면 403), 잘못된 status 400. 실제로 바뀌면 `activity_log` `task_status` 1행 → 대시보드 최근 활동. 진행 탭 조회는 이미 `assignee_member_id`로 "내 태스크"를 뽑으므로 담당자만 채우면 자동 표시(조회 무변경).
+  - `ProgressTab.jsx` — 진행 중 카드·요약 항목마다 상태 버튼 3개(현재 상태만 색+링 강조), 클릭 시 `apiPost` → `reload()`로 그룹 이동·진행률 갱신. `tabs.css`에 `.status-btns`/`.status-btn`(Soft Mint 토큰만). 마이그레이션 불필요(`assignee_member_id`·`status` 기존 컬럼).
+- **검증**: 풀플로우 Node 스크립트(생성→확정→3명 합류→설문→배정) — 배정 후 태스크에 **담당자 채워짐**(생성자 9/팀원A 2/팀원B 3개) · 내 태스크 상태 todo→doing→done 200·진행률 0→50%·done 0→1 · 활동로그 `task_status` 기록 · **남의 태스크 변경 403**·잘못된 status 400 · **맞교환 후 태스크가 새 역할 따라 재배정**(팀원A 2→3개) — **18/18 통과**, 테스트 데이터 정리. `oxlint`(exit 0)·`build` 통과. 진행 탭 상태 버튼 헤드리스 스크린샷(실 `tabs.css`) 확인.
+- **참고**: 조장은 "조장 표식 + 실무 역할" 2행이라 태스크는 실무 역할 기준으로만 배정됨(조장 표식 역할엔 태스크 없음). '조장 DB 정합' 후속과제는 이 다역 저장 구조로 해결됨.
 
 ### 2026-07-27 · 배정 결과 10분 내 1회 역할 맞교환
 - **왜**: 배정 불복 대비 공정 절차 — 공개 후 10분 내 생성자가 두 팀원 역할을 1회 맞교환(무한 재배정 방지). "사람은 결과보다 절차가 공정할 때 납득".

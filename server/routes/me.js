@@ -23,6 +23,54 @@ function throwIf(error, where) {
   if (error) throw new Error(`${where}: ${error.message}`)
 }
 
+// 상태 코드를 담은 에러 (catch에서 res.status로 사용)
+function fail(status, message) {
+  const err = new Error(message)
+  err.status = status
+  return err
+}
+
+// 태스크를 로드하고 요청자가 그 담당자인지 확인한다.
+// 태스크 없으면 404, 이 프로젝트 팀원이 아니면 403, 내 태스크가 아니면 403.
+// 상태 변경·자료 업로드가 공유하는 소유권 가드.
+async function loadOwnTask(user, taskId) {
+  const { data: task, error: e1 } = await supabase
+    .from('tasks')
+    .select('id, project_id, assignee_member_id, title, status')
+    .eq('id', taskId)
+    .maybeSingle()
+  throwIf(e1, '태스크 조회')
+  if (!task) throw fail(404, '태스크를 찾을 수 없습니다.')
+
+  const { data: membership, error: e2 } = await supabase
+    .from('project_members')
+    .select('id')
+    .eq('project_id', task.project_id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+  throwIf(e2, '멤버 확인')
+  if (!membership) throw fail(403, '이 프로젝트의 팀원이 아닙니다.')
+  if (task.assignee_member_id !== membership.id) throw fail(403, '내 태스크만 변경할 수 있습니다.')
+  return { task, membership }
+}
+
+// 링크 업로드용 URL 검증 — http/https만 허용. 상태코드 담긴 에러 throw.
+function normalizeUrl(raw) {
+  const url = String(raw ?? '').trim()
+  if (!url) throw fail(400, 'URL을 입력해 주세요.')
+  if (url.length > 2000) throw fail(400, 'URL이 너무 깁니다.')
+  let parsed
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw fail(400, '올바른 URL이 아닙니다. (http:// 또는 https://)')
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw fail(400, 'http 또는 https 링크만 올릴 수 있습니다.')
+  }
+  return url
+}
+
 // 태스크 배열 → 완료율(%)
 function progressOf(tasks) {
   if (tasks.length === 0) return 0
@@ -213,7 +261,16 @@ me.get('/api/me/progress', async (req, res) => {
         dueDate: t.due_date,
         milestoneTitle: t.milestones?.title ?? null,
       })),
-      uploads,
+      // 프론트(ProgressTab)가 camelCase로 읽으므로 여기서 변환한다
+      uploads: uploads.map((u) => ({
+        id: u.id,
+        taskId: u.task_id,
+        kind: u.kind,
+        fileName: u.file_name,
+        linkUrl: u.link_url,
+        comment: u.comment,
+        createdAt: u.created_at,
+      })),
     })
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.message })
@@ -263,6 +320,103 @@ me.get('/api/me/projects', async (req, res) => {
       active: result.filter((p) => p.status !== 'completed'),
       completed: result.filter((p) => p.status === 'completed'),
     })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 태스크 상태 변경: 자기 태스크만 (할 일 / 진행 중 / 완료) ──
+const TASK_STATUS = new Set(['todo', 'doing', 'done'])
+me.post('/api/me/tasks/:taskId/status', async (req, res) => {
+  try {
+    const user = await currentUser(req)
+    const status = req.body?.status
+    if (!TASK_STATUS.has(status)) throw fail(400, '태스크 상태 값이 올바르지 않습니다.')
+
+    const { task, membership } = await loadOwnTask(user, req.params.taskId)
+
+    const { error: e3 } = await supabase.from('tasks').update({ status }).eq('id', task.id)
+    throwIf(e3, '태스크 상태 변경')
+
+    // 실제로 바뀌었으면 활동 로그(대시보드 최근 활동) 기록
+    if (task.status !== status) {
+      await supabase.from('activity_log').insert({
+        project_id: task.project_id,
+        member_id: membership.id,
+        type: 'task_status',
+        payload: { task: task.title, to: status },
+      })
+    }
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 태스크 자료 업로드: 링크 + 코멘트 (자기 태스크만) ──
+// (파일 업로드는 후속 슬라이스 — Storage 버킷·서명 URL 필요)
+me.post('/api/me/tasks/:taskId/uploads', async (req, res) => {
+  try {
+    const user = await currentUser(req)
+    const { task, membership } = await loadOwnTask(user, req.params.taskId)
+
+    const url = normalizeUrl(req.body?.url)
+    const comment = String(req.body?.comment ?? '').trim()
+    if (comment.length > 100) throw fail(400, '코멘트는 100자까지 입력할 수 있습니다.')
+
+    const { error: e1 } = await supabase.from('uploads').insert({
+      project_id: task.project_id,
+      task_id: task.id,
+      member_id: membership.id,
+      kind: 'link',
+      link_url: url,
+      comment: comment || null,
+    })
+    throwIf(e1, '자료 업로드')
+
+    // 활동 로그 — 대시보드 최근 활동 + 참여 잔디(activityDates)의 원천
+    await supabase.from('activity_log').insert({
+      project_id: task.project_id,
+      member_id: membership.id,
+      type: 'upload',
+      payload: { task: task.title },
+    })
+
+    res.status(201).json({ ok: true })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 태스크 자료 삭제: 올린 본인만 ──
+me.delete('/api/me/uploads/:uploadId', async (req, res) => {
+  try {
+    const user = await currentUser(req)
+
+    const { data: upload, error: e1 } = await supabase
+      .from('uploads')
+      .select('id, project_id, member_id')
+      .eq('id', req.params.uploadId)
+      .maybeSingle()
+    throwIf(e1, '자료 조회')
+    if (!upload) throw fail(404, '자료를 찾을 수 없습니다.')
+
+    const { data: membership, error: e2 } = await supabase
+      .from('project_members')
+      .select('id')
+      .eq('project_id', upload.project_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    throwIf(e2, '멤버 확인')
+    if (!membership || upload.member_id !== membership.id) {
+      throw fail(403, '내가 올린 자료만 삭제할 수 있습니다.')
+    }
+
+    const { error: e3 } = await supabase.from('uploads').delete().eq('id', upload.id)
+    throwIf(e3, '자료 삭제')
+
+    res.json({ ok: true })
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.message })
   }

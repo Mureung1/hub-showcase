@@ -4,11 +4,11 @@
   "summary": "대학생 팀 프로젝트의 킥오프를 AI 중립 중재자가 대신해, 계획 수립과 역할 분담을 빠르게 끝내주는 웹 서비스입니다.",
   "githubUser": "furio24(소경한)",
   "demoUrl": "",
-  "thumbnail": "thumbnail.webp",
+  "thumbnail": "thumbnail.png",
   "screenshots": [
-    "screenshots/home.webp",
-    "screenshots/plan-review.webp",
-    "screenshots/dashboard.webp"
+    "screenshots/ing.png",
+    "screenshots/newproject.png",
+    "screenshots/signup.png"
   ],
   "problem": "대학생 팀 프로젝트는 첫 회의에서 위계도 경험도 없이 계획과 역할을 정해야 해서, 눈치보기 속에 계획 없는 진행과 불공정한 역할 분담이 굳어집니다.",
   "targetUsers": [
@@ -32,12 +32,12 @@
     "React",
     "Vite",
     "Express",
-    "Supabase (PostgreSQL)",
+    "Supabase",
     "Claude API"
   ],
   "techHighlights": [
     "React와 react-router로 화면을 구성하고, 공통 훅(useApi·apiPost)으로 서버 API 호출과 로딩·에러 상태를 처리합니다.",
-    "Express를 유일한 API 게이트웨이로 두고 Supabase(PostgreSQL)에 데이터를 저장하며, 비밀 키는 서버에만 두어 브라우저로 노출하지 않습니다.",
+    "Express를 유일한 API 게이트웨이로 두고 Supabase(PostgreSQL)에 데이터를 저장하며, 비밀 키는 서버에만 두고 브라우저로 노출하지 않습니다.",
     "인증은 bcrypt 비밀번호 해시와 JWT를 httpOnly 쿠키로 관리해 세션을 안전하게 유지합니다.",
     "플래닝 에이전트가 Claude의 구조화 출력으로 계획 JSON을 생성하고, 호출 실패나 키 부재 시 템플릿으로 폴백해 항상 유효한 계획을 만듭니다.",
     "역할 배정은 AI가 아닌 결정적 점수 로직으로 처리해 같은 응답이면 같은 결과가 나오도록(재현성·공정성) 설계했습니다."
@@ -69,7 +69,6 @@
           "plan.md 체크리스트 확인",
           "슬라이스 계획 수립·승인",
           "화면→API→DB 한 사이클 구현",
-          "oxlint·build·curl·스크린샷으로 검증",
           "plan.md 체크리스트·개발 로그 갱신"
         ]
       },

@@ -114,6 +114,45 @@ async function savePlan(projectId, plan) {
   }
 }
 
+// 배정 결과(member↔role)로 각 태스크를 그 역할 보유 팀원에게 라운드로빈 배정한다.
+// 배정·맞교환 직후 호출 — 역할이 바뀐 팀원의 태스크도 따라간다.
+async function assignTasksToRoleHolders(projectId) {
+  const { data: assignments, error: ea } = await supabase
+    .from('assignments')
+    .select('member_id, role_id')
+    .eq('project_id', projectId)
+  throwIf(ea, '배정 조회')
+  const roleToMembers = new Map()
+  assignments.forEach((a) => {
+    if (!roleToMembers.has(a.role_id)) roleToMembers.set(a.role_id, [])
+    roleToMembers.get(a.role_id).push(a.member_id)
+  })
+
+  const { data: tasks, error: et } = await supabase
+    .from('tasks')
+    .select('id, role_id')
+    .eq('project_id', projectId)
+    .order('sort_order')
+  throwIf(et, '태스크 조회')
+
+  const assigneeToTasks = new Map()
+  const cursor = new Map() // role_id → 라운드로빈 인덱스
+  for (const t of tasks) {
+    const holders = t.role_id ? roleToMembers.get(t.role_id) : null
+    if (!holders || holders.length === 0) continue // 역할 미연결 태스크는 미배정
+    const i = cursor.get(t.role_id) ?? 0
+    const memberId = holders[i % holders.length]
+    cursor.set(t.role_id, i + 1)
+    if (!assigneeToTasks.has(memberId)) assigneeToTasks.set(memberId, [])
+    assigneeToTasks.get(memberId).push(t.id)
+  }
+
+  for (const [memberId, taskIds] of assigneeToTasks) {
+    const { error } = await supabase.from('tasks').update({ assignee_member_id: memberId }).in('id', taskIds)
+    throwIf(error, '태스크 담당자 배정')
+  }
+}
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export const projects = Router()
@@ -546,6 +585,9 @@ projects.post('/api/projects/:id/assign', async (req, res) => {
       throwIf(ei, '배정 저장')
     }
 
+    // 배정 결과를 태스크 담당자로 연결 (진행 탭 "내 태스크" 활성화)
+    await assignTasksToRoleHolders(project.id)
+
     const { error: eu } = await supabase
       .from('projects')
       .update({
@@ -679,6 +721,9 @@ projects.post('/api/projects/:id/swap', async (req, res) => {
       const { error } = await supabase.from('assignments').insert(swapRows)
       throwIf(error, '역할 교차 저장')
     }
+
+    // 바뀐 역할에 맞춰 두 팀원의 태스크 담당자도 갱신
+    await assignTasksToRoleHolders(project.id)
 
     const { error: e3 } = await supabase.from('projects').update({ swap_used: true }).eq('id', project.id)
     throwIf(e3, '맞교환 상태 갱신')
