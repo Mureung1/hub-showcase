@@ -29,12 +29,7 @@ import type {
 
 import { bindServerApplicationListener } from './server-listener.js'
 import { createPreparedServerApplication } from './prepared-server-application.js'
-import {
-  codexChatIdentity,
-  postJson,
-  postUntilFirstLine,
-  waitFor,
-} from './testing/codex-chat-test-support.js'
+import { codexChatIdentity, postJson } from './testing/codex-chat-test-support.js'
 
 test('prepared public composition exposes workspace sources beside AY Chat and inline Review', async () => {
   const workspaceRoot = await realpath(
@@ -510,20 +505,22 @@ test('public organize_sources starts one Skill-backed Product operation with ord
     assert.equal(interrupt.status, 202)
     await trace.until((frame) => frame.type === 'operation.terminal')
 
-    const disconnectedAction = postUntilFirstLine(
+    const disconnectedAction = await postJson(
       `${baseUrl}/api/product/actions`,
       {
         action: 'organize_sources',
         files: [{ relativePath: '자료/둘째.txt' }],
       },
     )
-    assert.equal(
-      JSON.parse(await disconnectedAction.firstLine).type,
-      'operation.preparing',
+    assert.equal(disconnectedAction.status, 200)
+    assert.ok(disconnectedAction.body)
+    const disconnectedTrace = new NdjsonTrace(
+      disconnectedAction.body.getReader(),
     )
-    await waitFor(() => runtime.productInputs.length === 2)
-    disconnectedAction.destroy()
-    await disconnectedAction.closed
+    await disconnectedTrace.until(
+      (frame) => frame.type === 'operation.accepted',
+    )
+    await disconnectedTrace.cancel()
     await waitForIdleProductOperation(baseUrl)
     assert.equal(runtime.listEffectiveSkillsCalls, 2)
   } finally {
@@ -1373,6 +1370,10 @@ class NdjsonTrace {
         if (line) this.frames.push(JSON.parse(line))
       }
     }
+  }
+
+  cancel(): Promise<void> {
+    return this.reader.cancel()
   }
 }
 

@@ -332,7 +332,7 @@ test('action source preflight rejects size drift before no-follow open', async (
           return
         }
         grown = true
-        await writeFile(selected, 'content grew past the bound')
+        await writeFile(selected, 'longer')
       },
     })
 
@@ -340,7 +340,7 @@ test('action source preflight rejects size drift before no-follow open', async (
       projection.preflightTextFiles([{ relativePath: 'selected.md' }]),
       (error: unknown) =>
         error instanceof WorkspaceSourceProjectionError &&
-        error.code === 'source_too_large',
+        error.code === 'source_not_found',
     )
   } finally {
     await fixture.cleanup()

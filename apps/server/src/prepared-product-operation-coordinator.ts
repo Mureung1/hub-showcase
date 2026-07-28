@@ -416,7 +416,7 @@ export function createPreparedProductOperationCoordinator(options: {
           : { status: 'unknown', failureCode: settlement.code },
       )
     } catch (error) {
-      if (!streamOpened) throw present(error)
+      if (!streamOpened) throw toPreparedOperationError(error)
       await options.interactionRuntimeTerminal?.()
       await writeTerminal(operation, {
         status: 'unknown',
@@ -558,7 +558,7 @@ export function createPreparedProductOperationCoordinator(options: {
           throw invalidInteraction()
         }
         interaction.state = 'pending'
-        throw present(error)
+        throw toPreparedOperationError(error)
       }
     },
 
@@ -705,7 +705,9 @@ function safeOperationCode(error: unknown): string {
   return 'product_operation_failed'
 }
 
-function present(error: unknown): PreparedProductOperationError {
+function toPreparedOperationError(
+  error: unknown,
+): PreparedProductOperationError {
   if (error instanceof PreparedProductOperationError) return error
   if (!(error instanceof OrganizeSourcesActionError)) return unavailable()
   switch (error.code) {

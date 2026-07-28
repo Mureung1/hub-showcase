@@ -92,10 +92,19 @@ export async function createOrganizeSourcesAction(options: {
         workspaceRoot,
         workspaceRootIdentity,
       )
-      const skill = await resolveExpectedSkill(skills, {
-        expectedSkillRoot,
-        workspaceRoot,
-      })
+      let skill: CodexProductSkillInput
+      try {
+        skill = await resolveExpectedSkill(skills, {
+          expectedSkillRoot,
+          workspaceRoot,
+        })
+      } catch (error) {
+        await assertWorkspaceRootIdentity(
+          workspaceRoot,
+          workspaceRootIdentity,
+        )
+        throw error
+      }
       await assertWorkspaceRootIdentity(
         workspaceRoot,
         workspaceRootIdentity,

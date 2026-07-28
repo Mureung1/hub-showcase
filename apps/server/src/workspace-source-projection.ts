@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
 import {
+  type FileHandle,
   lstat,
   open,
   opendir,
@@ -327,66 +328,21 @@ async function preflightTextFile(
       ) => void | Promise<void>)
     | undefined,
 ): Promise<void> {
-  await assertWorkspaceRootIdentity(
-    workspaceRoot,
-    workspaceRootIdentity,
-  )
   const normalized = validateReadablePath(relativePath)
   if (!isTextPath(normalized)) {
     throw new WorkspaceSourceProjectionError('unsupported_type')
   }
-  const candidate = path.resolve(workspaceRoot, ...normalized.split('/'))
-  const stats = await safeLstat(candidate)
-  if (!stats || stats.isSymbolicLink() || !stats.isFile()) {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  let canonicalCandidate: string
-  try {
-    canonicalCandidate = await realpath(candidate)
-  } catch {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  if (
-    canonicalCandidate !== candidate ||
-    !isPathWithinRoot(canonicalCandidate, workspaceRoot)
-  ) {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  if (stats.size > maximumBytes) {
-    throw new WorkspaceSourceProjectionError('source_too_large')
-  }
-
-  await testHook?.('before_open', normalized)
-  let handle
-  try {
-    handle = await open(
-      candidate,
-      constants.O_RDONLY | constants.O_NOFOLLOW,
-    )
-  } catch {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
+  const handle = await openValidatedRegularFile(
+    workspaceRoot,
+    workspaceRootIdentity,
+    normalized,
+    maximumBytes,
+    () => testHook?.('before_open', normalized),
+  )
   let closeFailed = false
-  try {
-    const openedStats = await handle.stat()
-    if (
-      !openedStats.isFile() ||
-      openedStats.dev !== stats.dev ||
-      openedStats.ino !== stats.ino
-    ) {
-      throw new WorkspaceSourceProjectionError('source_not_found')
-    }
-    if (openedStats.size > maximumBytes) {
-      throw new WorkspaceSourceProjectionError('source_too_large')
-    }
-  } catch (error) {
-    if (error instanceof WorkspaceSourceProjectionError) throw error
-    throw new WorkspaceSourceProjectionError('source_unavailable')
-  } finally {
-    await handle.close().catch(() => {
-      closeFailed = true
-    })
-  }
+  await handle.close().catch(() => {
+    closeFailed = true
+  })
   if (closeFailed) {
     throw new WorkspaceSourceProjectionError('source_unavailable')
   }
@@ -398,52 +354,13 @@ async function readBoundedRegularFile(
   relativePath: string,
   maximumBytes: number,
 ): Promise<Buffer> {
-  await assertWorkspaceRootIdentity(
+  const handle = await openValidatedRegularFile(
     workspaceRoot,
     workspaceRootIdentity,
+    relativePath,
+    maximumBytes,
   )
-  const candidate = path.resolve(workspaceRoot, ...relativePath.split('/'))
-  const stats = await safeLstat(candidate)
-  if (!stats || stats.isSymbolicLink() || !stats.isFile()) {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  let canonicalCandidate: string
   try {
-    canonicalCandidate = await realpath(candidate)
-  } catch {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  if (
-    canonicalCandidate !== candidate ||
-    !isPathWithinRoot(canonicalCandidate, workspaceRoot)
-  ) {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  if (stats.size > maximumBytes) {
-    throw new WorkspaceSourceProjectionError('source_too_large')
-  }
-
-  let handle
-  try {
-    handle = await open(
-      candidate,
-      constants.O_RDONLY | constants.O_NOFOLLOW,
-    )
-  } catch {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  try {
-    const openedStats = await handle.stat()
-    if (
-      !openedStats.isFile() ||
-      openedStats.dev !== stats.dev ||
-      openedStats.ino !== stats.ino
-    ) {
-      throw new WorkspaceSourceProjectionError('source_not_found')
-    }
-    if (openedStats.size > maximumBytes) {
-      throw new WorkspaceSourceProjectionError('source_too_large')
-    }
     const chunks: Buffer[] = []
     let bytesReadTotal = 0
     while (bytesReadTotal <= maximumBytes) {
@@ -474,6 +391,71 @@ async function readBoundedRegularFile(
     throw new WorkspaceSourceProjectionError('source_unavailable')
   } finally {
     await handle.close().catch(() => undefined)
+  }
+}
+
+async function openValidatedRegularFile(
+  workspaceRoot: string,
+  workspaceRootIdentity: WorkspaceRootIdentity,
+  relativePath: string,
+  maximumBytes: number,
+  beforeOpen?: () => void | Promise<void>,
+): Promise<FileHandle> {
+  await assertWorkspaceRootIdentity(
+    workspaceRoot,
+    workspaceRootIdentity,
+  )
+  const candidate = path.resolve(workspaceRoot, ...relativePath.split('/'))
+  const stats = await safeLstat(candidate)
+  if (!stats || stats.isSymbolicLink() || !stats.isFile()) {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  let canonicalCandidate: string
+  try {
+    canonicalCandidate = await realpath(candidate)
+  } catch {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  if (
+    canonicalCandidate !== candidate ||
+    !isPathWithinRoot(canonicalCandidate, workspaceRoot)
+  ) {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  if (stats.size > maximumBytes) {
+    throw new WorkspaceSourceProjectionError('source_too_large')
+  }
+
+  await beforeOpen?.()
+  let handle: FileHandle
+  try {
+    handle = await open(
+      candidate,
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    )
+  } catch {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  try {
+    const openedStats = await handle.stat()
+    if (
+      !openedStats.isFile() ||
+      openedStats.dev !== stats.dev ||
+      openedStats.ino !== stats.ino
+    ) {
+      throw new WorkspaceSourceProjectionError('source_not_found')
+    }
+    if (openedStats.size > maximumBytes) {
+      throw new WorkspaceSourceProjectionError('source_too_large')
+    }
+    if (openedStats.size !== stats.size) {
+      throw new WorkspaceSourceProjectionError('source_not_found')
+    }
+    return handle
+  } catch (error) {
+    await handle.close().catch(() => undefined)
+    if (error instanceof WorkspaceSourceProjectionError) throw error
+    throw new WorkspaceSourceProjectionError('source_unavailable')
   }
 }
 
