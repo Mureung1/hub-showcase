@@ -30,7 +30,9 @@ from careersignal.contracts import Budget, RunContext, StopReason
 from careersignal.domain.permissions import Component, can_write
 from careersignal.domain.scope import ScopeLevel
 from careersignal.providers.models import TASK_TIER, Tier, chat_model
+from careersignal.repositories.statistics import StatisticsRepository
 from careersignal.taxonomy import (
+    NEIGHBOUR_LIMIT,
     NO_ACTIVE_TAXONOMY,
     PROPOSED,
     TAXONOMY_MISMATCH,
@@ -111,6 +113,11 @@ class FakeStats:
         self.candidates: list[dict[str, Any]] = []
         self.links: list[tuple[str, str]] = []
         self.linked: set[str] = set()
+        self.raced: set[str] = set()
+        """이 실행의 조회 밖에서 다른 실행이 후보에 붙인 표현.
+
+        조회가 거르지 못하는 자리이며 파이썬의 건너뛰기가 잡는다.
+        """
         self.existing: set[str] = set()
 
     def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
@@ -125,10 +132,16 @@ class FakeStats:
     def mentions_to_discover(
         self, dataset_version: str, job_role_id: str, limit: int | None = None
     ) -> list[dict[str, Any]]:
-        return list(self._mentions if limit is None else self._mentions[:limit])
+        """이미 후보에 붙은 표현을 뺀 뒤 자른다.
+
+        차례가 `_MENTIONS_TO_DISCOVER` 와 같다. 자르고 나서 빼면 `--limit` 이 이미
+        붙은 표현으로 채워져 재실행이 앞으로 나아가지 못한다.
+        """
+        rows = [row for row in self._mentions if row["mention_id"] not in self.linked]
+        return list(rows if limit is None else rows[:limit])
 
     def candidate_mentions(self, dataset_version: str) -> set[str]:
-        return set(self.linked)
+        return self.linked | self.raced
 
     def candidate_ids(self, taxonomy_id: str) -> set[str]:
         return set(self.existing)
@@ -605,6 +618,28 @@ def test_the_judge_only_sees_dimensions_worth_judging() -> None:
     assert judge.calls[0][1] == ()
 
 
+def test_the_neighbour_limit_caps_the_options() -> None:
+    """겹치는 차원이 상한보다 많아도 판정에 거는 선택지는 상한까지다."""
+    judge = StubRelationJudge()
+    dimensions = [
+        _dimension(f"dim_{index}", f"메시지 큐 {index}") for index in range(12)
+    ]
+    store = FakeStats([_mention("mention_1", "메시지 큐 운영 경험")], dimensions)
+
+    CandidateDiscovery(judge, store).run(_context())
+
+    assert len(judge.calls[0][1]) == NEIGHBOUR_LIMIT
+
+
+def test_a_vocabulary_smaller_than_the_limit_gives_every_overlapping_dimension() -> None:
+    vocabulary = Vocabulary.from_rows(
+        TAXONOMY_VERSION_ID,
+        [_dimension(), _dimension("dim_async", "메시지 비동기")],
+    )
+
+    assert len(vocabulary.neighbours("메시지 큐 운영", NEIGHBOUR_LIMIT)) == 2
+
+
 # ============================================================ 저장
 @pytest.mark.parametrize(
     "column",
@@ -640,6 +675,24 @@ def test_the_candidate_records_the_run_that_found_it() -> None:
     assert store.candidates[0]["taxonomy_id"] == TAXONOMY_ID
 
 
+def test_the_candidate_records_the_version_the_judgment_was_made_against() -> None:
+    """관계 판정은 그 시점 활성 어휘에 상대적이다. 근거는 ADR 0011 이다."""
+    store = FakeStats([_mention("mention_1", "메시지 브로커 운영 경험")], [_dimension()])
+
+    CandidateDiscovery(StubRelationJudge("related"), store).run(_context())
+
+    row = store.candidates[0]
+    assert row["judged_against_taxonomy_version_id"] == TAXONOMY_VERSION_ID
+
+
+def test_the_candidate_records_why_the_relation_was_chosen() -> None:
+    store = FakeStats([_mention("mention_1", "메시지 브로커 운영 경험")], [_dimension()])
+
+    CandidateDiscovery(StubRelationJudge("related"), store).run(_context())
+
+    assert store.candidates[0]["judgment_rationale"] == "대역 판정: 메시지 큐"
+
+
 def test_the_outcome_summarises_each_candidate() -> None:
     store = FakeStats([_mention("mention_1", "메시지 브로커 운영 경험")], [_dimension()])
 
@@ -656,15 +709,45 @@ def test_the_outcome_summarises_each_candidate() -> None:
 
 
 # ============================================================ 증분 재실행
-def test_a_mention_already_linked_is_skipped() -> None:
+def test_a_mention_already_linked_is_not_offered_again() -> None:
+    """이미 후보에 붙은 표현은 조회가 먼저 뺀다. 건너뛸 것조차 오지 않는다."""
     store = FakeStats([_mention("mention_1", "Kafka 운영 경험")])
     store.linked = {"mention_1"}
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context())
+
+    assert outcome.skipped_mentions == 0
+    assert outcome.created_candidates == 0
+    assert store.links == []
+    assert outcome.stop_reason is StopReason.FRONTIER_EXHAUSTED
+
+
+def test_a_mention_linked_by_an_overlapping_run_is_still_skipped() -> None:
+    """조회가 거른 뒤에도 파이썬이 다시 확인한다. 두 실행이 겹칠 때의 방어선이다."""
+    store = FakeStats([_mention("mention_1", "Kafka 운영 경험")])
+    store.raced = {"mention_1"}
 
     outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context())
 
     assert outcome.skipped_mentions == 1
     assert outcome.created_candidates == 0
     assert store.links == []
+
+
+def test_the_limit_leaves_the_already_linked_mentions_out() -> None:
+    """`--limit` 이 이미 붙은 표현으로 채워지면 재실행이 앞으로 나아가지 못한다."""
+    store = FakeStats(
+        [
+            _mention("mention_1", "Kafka 운영 경험"),
+            _mention("mention_2", "Redis 운영 경험"),
+        ]
+    )
+    store.linked = {"mention_1"}
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context(), limit=1)
+
+    assert outcome.visited_mentions == 1
+    assert [mention_id for _, mention_id in store.links] == ["mention_2"]
 
 
 def test_a_new_wording_of_an_existing_candidate_only_adds_evidence() -> None:
@@ -790,3 +873,54 @@ def test_a_pinned_version_other_than_the_active_one_is_refused() -> None:
     assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
     assert outcome.errors == (("backend", TAXONOMY_MISMATCH),)
     assert store.candidates == []
+
+
+# ============================================================ 조회 문자열
+class RecordingUnit:
+    """저장소가 실제로 실행하는 SQL 을 붙잡는 대역. 데이터베이스에 붙지 않는다.
+
+    대역 저장소로는 이 결함을 잡지 못한다. `--limit` 이 자르는 차례는 파이썬이
+    아니라 SQL 이 정하고, 단위 시험은 데이터베이스에 붙을 수 없다. 그래서 저장소가
+    만들어 낸 조회 문자열을 직접 본다.
+    """
+
+    def __init__(self, component: Component) -> None:
+        self.component = component
+        self.sql = ""
+        self.params: dict[str, Any] = {}
+
+    def fetch_all(
+        self, sql: str, params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        self.sql = sql
+        self.params = dict(params or {})
+        return []
+
+
+def _recorded_discovery_sql(limit: int | None = 200) -> RecordingUnit:
+    unit = RecordingUnit(Component.AGENT_STATS)
+    StatisticsRepository(unit).mentions_to_discover("ds_2026_01", "backend", limit)
+    return unit
+
+
+def test_the_linked_mentions_leave_before_the_limit_cuts() -> None:
+    """자르고 나서 걸러 내면 같은 `--limit` 을 다시 줘도 아무것도 진행하지 못한다."""
+    unit = _recorded_discovery_sql()
+
+    assert "NOT EXISTS" in unit.sql
+    assert unit.sql.index("NOT EXISTS") < unit.sql.index("LIMIT")
+
+
+def test_the_mention_exclusion_matches_the_candidate_mentions_rule() -> None:
+    """제외 기준이 `candidate_mentions()` 와 같다."""
+    sql = _recorded_discovery_sql().sql
+
+    assert "FROM requirement_candidate_mentions cm" in sql
+    assert "cm.mention_id = m.mention_id" in sql
+
+
+def test_the_discovery_order_stays_deterministic() -> None:
+    """정렬을 바꾸면 후보의 근거 목록 순서가 흔들려 재실행 결과를 대조할 수 없다."""
+    sql = _recorded_discovery_sql(limit=None).sql
+
+    assert sql.rstrip().endswith("ORDER BY m.mention_id")

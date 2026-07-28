@@ -23,7 +23,9 @@ from careersignal.agents.statistics import (
     quoted,
 )
 from careersignal.contracts import Budget, RunContext, StopReason
+from careersignal.domain.permissions import Component
 from careersignal.domain.scope import ScopeLevel
+from careersignal.repositories.statistics import StatisticsRepository
 
 CHUNK = """- Java 또는 Kotlin 경력 3년 이상
 - RDBMS 사용 경험
@@ -37,14 +39,25 @@ class FakeStats:
         self.mentions: list[dict[str, Any]] = []
         self._rows = rows or []
         self.done: set[str] = set()
+        self.raced: set[str] = set()
+        """이 실행의 조회 밖에서 다른 실행이 뽑아 둔 청크.
+
+        조회가 거르지 못하는 자리이며 파이썬의 건너뛰기가 잡는다.
+        """
 
     def chunks_to_extract(
         self, dataset_version: str, job_role_id: str, limit: int | None = None
     ) -> list[dict[str, Any]]:
-        return list(self._rows if limit is None else self._rows[:limit])
+        """이미 뽑은 청크를 뺀 뒤 자른다.
+
+        차례가 `_POSTING_CHUNKS` 와 같다. 자르고 나서 빼면 `--limit` 이 이미 뽑은
+        청크로 채워져 재실행이 앞으로 나아가지 못한다.
+        """
+        rows = [row for row in self._rows if row["chunk_id"] not in self.done]
+        return list(rows if limit is None else rows[:limit])
 
     def extracted_chunks(self, dataset_version: str) -> set[str]:
-        return set(self.done)
+        return self.done | self.raced
 
     def add_mention(self, values: dict[str, Any]) -> None:
         self.mentions.append(values)
@@ -208,14 +221,38 @@ def test_an_invented_expression_is_discarded_with_a_reason() -> None:
     assert outcome.stop_reason is StopReason.NO_NEW_EVIDENCE
 
 
-def test_an_already_extracted_chunk_is_skipped() -> None:
+def test_an_already_extracted_chunk_is_not_offered_again() -> None:
+    """이미 뽑은 청크는 조회가 먼저 뺀다. 건너뛸 것조차 오지 않는다."""
     store = FakeStats([_chunk()])
     store.done = {"chunk_1"}
 
     outcome = MentionCollector(StubMentionExtractor(), store).run(_context())
 
     assert outcome.created_mentions == 0
+    assert outcome.skipped_chunks == 0
+    assert outcome.stop_reason is StopReason.FRONTIER_EXHAUSTED
+
+
+def test_a_chunk_extracted_by_an_overlapping_run_is_still_skipped() -> None:
+    """조회가 거른 뒤에도 파이썬이 다시 확인한다. 두 실행이 겹칠 때의 방어선이다."""
+    store = FakeStats([_chunk()])
+    store.raced = {"chunk_1"}
+
+    outcome = MentionCollector(StubMentionExtractor(), store).run(_context())
+
+    assert outcome.created_mentions == 0
     assert outcome.skipped_chunks == 1
+
+
+def test_the_limit_leaves_the_already_extracted_chunks_out() -> None:
+    """`--limit` 이 이미 뽑은 청크로 채워지면 재실행이 앞으로 나아가지 못한다."""
+    store = FakeStats([_chunk("chunk_1"), _chunk("chunk_2")])
+    store.done = {"chunk_1"}
+
+    outcome = MentionCollector(StubMentionExtractor(), store).run(_context(), limit=1)
+
+    assert outcome.visited_chunks == 1
+    assert {m["chunk_id"] for m in store.mentions} == {"chunk_2"}
 
 
 def test_a_broken_extractor_stops_with_explicit_failure() -> None:
@@ -276,3 +313,55 @@ def test_every_not_null_column_is_filled(column: str) -> None:
     MentionCollector(StubMentionExtractor(), store).run(_context())
 
     assert store.mentions[0][column] is not None
+
+
+# ============================================================ 조회 문자열
+class RecordingUnit:
+    """저장소가 실제로 실행하는 SQL 을 붙잡는 대역. 데이터베이스에 붙지 않는다.
+
+    대역 저장소로는 이 결함을 잡지 못한다. `--limit` 이 자르는 차례는 파이썬이
+    아니라 SQL 이 정하고, 단위 시험은 데이터베이스에 붙을 수 없다. 그래서 저장소가
+    만들어 낸 조회 문자열을 직접 본다.
+    """
+
+    def __init__(self, component: Component) -> None:
+        self.component = component
+        self.sql = ""
+        self.params: dict[str, Any] = {}
+
+    def fetch_all(
+        self, sql: str, params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        self.sql = sql
+        self.params = dict(params or {})
+        return []
+
+
+def _recorded_chunk_sql(limit: int | None = 200) -> RecordingUnit:
+    unit = RecordingUnit(Component.AGENT_STATS)
+    StatisticsRepository(unit).chunks_to_extract("ds_2026_01", "backend", limit)
+    return unit
+
+
+def test_the_extracted_chunks_leave_before_the_limit_cuts() -> None:
+    """자르고 나서 걸러 내면 같은 `--limit` 을 다시 줘도 아무것도 진행하지 못한다."""
+    unit = _recorded_chunk_sql()
+
+    assert "NOT EXISTS" in unit.sql
+    assert unit.sql.index("NOT EXISTS") < unit.sql.index("LIMIT")
+
+
+def test_the_chunk_exclusion_matches_the_extracted_chunks_rule() -> None:
+    """제외 기준이 `extracted_chunks()` 와 같다. 청크 단위이며 같은 데이터셋 버전이다."""
+    sql = _recorded_chunk_sql().sql
+
+    assert "FROM requirement_mentions m" in sql
+    assert "m.chunk_id = c.chunk_id" in sql
+    assert "m.dataset_version = %(dataset_version)s" in sql
+
+
+def test_the_chunk_order_stays_deterministic() -> None:
+    """정렬을 바꾸면 나눠 돌린 실행의 결과를 대조할 수 없다."""
+    sql = _recorded_chunk_sql(limit=None).sql
+
+    assert sql.rstrip().endswith("ORDER BY pv.posting_version_id, c.ordinal, c.chunk_id")
