@@ -144,7 +144,7 @@ function AppContent({
   if (authState.status === 'loading') {
     return (
       <main className="auth-gate">
-        <LoadingState label="로그인 상태 확인 중" />
+        <LoadingState label="로그인 상태를 확인하고 있어요" />
       </main>
     );
   }

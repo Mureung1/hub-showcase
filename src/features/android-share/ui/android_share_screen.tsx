@@ -9,10 +9,12 @@ export type AndroidShareScreenProps = {
 
 function getLoadingLabel(status: 'authenticating' | 'received' | 'saving') {
   if (status === 'authenticating') {
-    return 'Google 로그인 기다리는 중';
+    return 'Google 로그인을 기다리고 있어요';
   }
 
-  return status === 'saving' ? '링크 저장 중' : '공유 링크 확인 중';
+  return status === 'saving'
+    ? '인사이트를 저장하고 있어요'
+    : '공유한 링크를 확인하고 있어요';
 }
 
 export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
@@ -33,7 +35,7 @@ export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
   if (state.status === 'completed') {
     return (
       <main className="android-share-shell">
-        <LoadingState label="원래 앱으로 돌아가는 중" />
+        <LoadingState label="원래 앱으로 돌아가고 있어요" />
       </main>
     );
   }
@@ -57,7 +59,9 @@ export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
                 onClick={controller.retry}
                 type="button"
               >
-                {state.retry === 'auth' ? '로그인 다시 시도' : '저장 다시 시도'}
+                {state.retry === 'auth'
+                  ? '로그인 다시 시도하기'
+                  : '인사이트 다시 저장하기'}
               </Button>
             ) : null}
             <Button
@@ -90,8 +94,8 @@ export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
     const resultLabel =
       state.status === 'duplicate' ||
       (state.status === 'editing-memo' && state.result === 'duplicate')
-        ? '이미 저장됨'
-        : '저장됨';
+        ? '이미 저장한 인사이트예요'
+        : '인사이트를 저장했어요';
 
     return (
       <main
@@ -153,7 +157,7 @@ export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
                 onClick={controller.startMemoEditing}
                 type="button"
               >
-                {insight.memo ? '메모 수정' : '메모 추가'}
+                {insight.memo ? '메모 수정하기' : '메모 추가하기'}
               </Button>
             ) : null}
 
@@ -166,7 +170,9 @@ export function AndroidShareScreen({ controller }: AndroidShareScreenProps) {
               size="large"
               type="button"
             >
-              {controller.isCompleting ? '완료 처리 중' : '완료'}
+              {controller.isCompleting
+                ? '원래 앱으로 돌아가고 있어요'
+                : '원래 앱으로 돌아가기'}
             </Button>
           </div>
         </section>

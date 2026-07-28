@@ -150,7 +150,7 @@ describe('useInsightImport', () => {
       },
     ]);
     expect(result.current.errorMessage).toBe(
-      '가져오기를 완료하지 못했습니다. 다시 시도해 주세요.'
+      '인사이트를 가져오지 못했어요. 확인한 내용은 그대로 두었어요. 다시 시도해 주세요.'
     );
   });
 
@@ -339,7 +339,7 @@ describe('useInsightImport', () => {
     expect(result.current.stage).toBe('preview');
     expect(result.current.prepared?.id).toBe(JOB_ID);
     expect(result.current.historyErrorMessage).toBe(
-      '가져오기 기록을 불러오지 못했습니다.'
+      '가져오기 기록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
     );
   });
 

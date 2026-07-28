@@ -68,14 +68,10 @@ function getInitialAuthError() {
   );
 }
 
-function getActionErrorMessage(action: AuthAction, error: unknown) {
-  const actionLabel = action === 'sign-in' ? 'Google 로그인' : '로그아웃';
-  const reason =
-    error instanceof Error && error.message.trim()
-      ? error.message.trim()
-      : '알 수 없는 인증 오류가 발생했습니다.';
-
-  return `${actionLabel}에 실패했습니다. ${reason}`;
+function getActionErrorMessage(action: AuthAction) {
+  return action === 'sign-in'
+    ? 'Google 로그인에 실패했어요. 다시 시도해 주세요.'
+    : '로그아웃하지 못했어요. 다시 시도해 주세요.';
 }
 
 export function AuthProvider({ children, service }: AuthProviderProps) {
@@ -130,12 +126,7 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
       authService.subscribeSignInFailures?.((context) => {
         setAuthAction(undefined);
         setAuthErrorAction('sign-in');
-        setAuthErrorMessage(
-          getActionErrorMessage(
-            'sign-in',
-            new Error('로그인을 완료하지 못했어요.')
-          )
-        );
+        setAuthErrorMessage(getActionErrorMessage('sign-in'));
         if (context === 'android-share') {
           setAndroidShareOAuthCallbackRevision((revision) => revision + 1);
         }
@@ -161,9 +152,9 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
 
       try {
         await command();
-      } catch (error) {
+      } catch {
         setAuthErrorAction(action);
-        setAuthErrorMessage(getActionErrorMessage(action, error));
+        setAuthErrorMessage(getActionErrorMessage(action));
       } finally {
         setAuthAction(undefined);
       }

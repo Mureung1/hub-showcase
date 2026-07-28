@@ -56,7 +56,7 @@ const CATEGORY_LOAD_WARNING_MESSAGES: Record<
   'corrupted-entry': {
     title: '일부 카테고리를 제외했어요',
     description:
-      '손상된 카테고리를 제외했습니다. 보이는 카테고리는 계속 사용할 수 있어요.',
+      '손상된 카테고리를 제외했어요. 나머지 카테고리는 계속 사용할 수 있어요.',
   },
   'permission-denied': {
     title: '카테고리 접근 권한을 확인하지 못했어요',
@@ -70,12 +70,12 @@ const CATEGORY_LOAD_WARNING_MESSAGES: Record<
   },
 };
 const SAVE_ERROR_MESSAGES: Record<SaveInsightFailureReason, string> = {
-  'invalid-url': '올바른 URL을 입력해주세요.',
+  'invalid-url': '올바른 URL을 입력해 주세요.',
   'permission-denied':
-    '저장 권한을 확인하지 못했어요. 입력한 URL을 그대로 두었으니 다시 로그인한 뒤 시도해주세요.',
-  'unsupported-protocol': 'http 또는 https 주소만 저장할 수 있어요.',
+    '저장 권한을 확인하지 못했어요. 입력한 URL은 그대로 두었어요. 다시 로그인한 뒤 시도해 주세요.',
+  'unsupported-protocol': 'http 또는 https URL만 저장할 수 있어요.',
   'write-failed':
-    '원격 저장에 실패했어요. 입력한 URL을 그대로 두었으니 네트워크를 확인하고 다시 시도해주세요.',
+    '보관함에 저장하지 못했어요. 입력한 URL은 그대로 두었어요. 네트워크를 확인하고 다시 시도해 주세요.',
 };
 const LOAD_WARNING_MESSAGES: Record<
   InsightRepositoryWarning,
@@ -84,20 +84,20 @@ const LOAD_WARNING_MESSAGES: Record<
   'read-failed': {
     title: '보관함을 불러오지 못했어요',
     description:
-      '원격 보관함을 읽지 못했어요. 네트워크를 확인하고 새로고침해주세요.',
+      '보관함을 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.',
   },
   'corrupted-store': {
     title: '저장 데이터를 불러오지 못했어요',
     description:
-      '저장 데이터가 손상되어 불러오지 못했어요. 새 링크는 계속 저장할 수 있어요.',
+      '저장 데이터가 손상되어 불러오지 못했어요. 새 인사이트는 계속 저장할 수 있어요.',
   },
   'corrupted-entry': {
-    title: '일부 링크를 제외했어요',
-    description: '일부 손상된 링크를 제외하고 나머지를 불러왔어요.',
+    title: '일부 인사이트를 제외했어요',
+    description: '일부 손상된 인사이트를 제외하고 나머지를 불러왔어요.',
   },
   'permission-denied': {
     title: '보관함 접근 권한을 확인하지 못했어요',
-    description: '다시 로그인한 뒤 보관함을 열어주세요.',
+    description: '다시 로그인한 뒤 보관함을 열어 주세요.',
   },
 };
 
@@ -131,7 +131,7 @@ function getLoadWarningMessage(
     return {
       title: '저장된 인사이트를 읽지 못했어요',
       description:
-        '원격 보관함의 데이터를 확인하지 못했어요. 다시 불러와도 계속되면 문제를 알려주세요.',
+        '보관함의 데이터를 확인하지 못했어요. 다시 불러와도 계속되면 문제를 알려 주세요.',
     };
   }
 
@@ -476,7 +476,7 @@ export function AuthenticatedWorkspace({
         </div>
         {accountControl ?? (
           <p className="workspace-connection-status">
-            로그인 계정의 원격 보관함에 저장됨
+            이 계정의 보관함에 저장해요
           </p>
         )}
       </header>
@@ -491,7 +491,7 @@ export function AuthenticatedWorkspace({
         ) : null}
 
         {loadWarnings.length > 0 ? (
-          <div className="workspace-warnings" aria-label="저장소 안내">
+          <div className="workspace-warnings" aria-label="보관함 안내">
             {loadWarnings.map((warning) => {
               const message = getLoadWarningMessage(warning, insights.length);
 
@@ -581,7 +581,7 @@ export function AuthenticatedWorkspace({
             contextDraft={contextDraft}
             contextErrorMessage={
               contextSaveFailed
-                ? '먼저 저장한 링크와 입력은 그대로 두었어요. 다시 시도하거나 건너뛸 수 있어요.'
+                ? '먼저 저장한 인사이트와 입력한 내용은 그대로 두었어요. 다시 시도하거나 지금은 건너뛸 수 있어요.'
                 : undefined
             }
             contextSaveComplete={contextSaveComplete}

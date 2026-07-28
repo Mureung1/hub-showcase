@@ -143,7 +143,7 @@ export function InsightImportDialog({
     if (!nextOpen) {
       if (
         ['analyzing', 'connecting', 'mapping'].includes(notion.stage) &&
-        !globalThis.confirm('Notion 연결을 취소하고 가져오기 창을 닫을까요?')
+        !globalThis.confirm('Notion 연결을 그만두고 가져오기 창을 닫을까요?')
       ) {
         return;
       }
@@ -208,7 +208,7 @@ export function InsightImportDialog({
       return (
         <>
           <Button hierarchy="ghost" onClick={resetSource} type="button">
-            다시 선택
+            가져올 위치 다시 선택하기
           </Button>
           <Button
             disabled={
@@ -220,7 +220,9 @@ export function InsightImportDialog({
             onClick={() => void controller.commit()}
             type="button"
           >
-            {controller.stage === 'committing' ? '가져오는 중' : '가져오기'}
+            {controller.stage === 'committing'
+              ? '인사이트를 가져오고 있어요'
+              : '인사이트 가져오기'}
           </Button>
         </>
       );
@@ -230,14 +232,14 @@ export function InsightImportDialog({
       return (
         <>
           <Button hierarchy="ghost" onClick={resetSource} type="button">
-            다시 선택
+            가져올 위치 다시 선택하기
           </Button>
           <Button
             form={IMPORT_FIELD_MAPPING_FORM_ID}
             hierarchy="primary"
             type="submit"
           >
-            계속
+            가져올 내용 확인하기
           </Button>
         </>
       );
@@ -258,7 +260,7 @@ export function InsightImportDialog({
             onClick={() => handleOpenChange(false)}
             type="button"
           >
-            완료
+            보관함으로 돌아가기
           </Button>
         </>
       );
@@ -274,7 +276,7 @@ export function InsightImportDialog({
         onClick={() => handleOpenChange(false)}
         type="button"
       >
-        취소
+        닫기
       </Button>
     );
 
@@ -283,7 +285,7 @@ export function InsightImportDialog({
         <>
           {closeButton}
           <Button disabled hierarchy="primary" type="button">
-            분석 중
+            가져올 내용을 확인하고 있어요
           </Button>
         </>
       );
@@ -299,7 +301,7 @@ export function InsightImportDialog({
             onClick={() => void analyze()}
             type="button"
           >
-            분석하기
+            가져올 내용 확인하기
           </Button>
         </>
       );
@@ -329,14 +331,14 @@ export function InsightImportDialog({
               onClick={() => void notion.cancel()}
               type="button"
             >
-              연결 취소
+              Notion 연결 그만두기
             </Button>
             <Button
               form={NOTION_FIELD_MAPPING_FORM_ID}
               hierarchy="primary"
               type="submit"
             >
-              계속
+              가져올 내용 확인하기
             </Button>
           </>
         );
@@ -349,7 +351,7 @@ export function InsightImportDialog({
             onClick={() => void notion.cancel()}
             type="button"
           >
-            연결 취소
+            Notion 연결 그만두기
           </Button>
         );
       }
@@ -361,12 +363,12 @@ export function InsightImportDialog({
   return (
     <Modal
       className="insight-import-dialog"
-      description="다른 곳에 저장한 링크를 분석한 뒤 확인하고 가져옵니다."
+      description="다른 곳에 저장한 링크를 확인한 뒤 보관함으로 가져와요."
       footer={renderDialogFooter()}
       onOpenChange={handleOpenChange}
       open={open}
       size="large"
-      title="보관함 가져오기"
+      title="인사이트 가져오기"
     >
       {isSourceStage ? (
         <div className="insight-import-dialog__stage insight-import-dialog__stage--source">
@@ -424,9 +426,9 @@ export function InsightImportDialog({
                   type="file"
                 />
                 <p id="insight-import-file-help">
-                  CSV, JSON, HTML, Markdown, 텍스트, ZIP을 지원합니다. 원본
-                  파일은 서버에 업로드하지 않으며, 일반 파일은 10 MiB, ZIP은 20
-                  MiB까지 선택할 수 있습니다.
+                  CSV, JSON, HTML, Markdown, 텍스트, ZIP을 지원해요. 원본 파일은
+                  서버에 올리지 않아요. 일반 파일은 10 MiB, ZIP은 20 MiB까지
+                  선택할 수 있어요.
                 </p>
               </div>
             ) : null}
@@ -447,8 +449,8 @@ export function InsightImportDialog({
             {sourceSelected === 'notion' ? (
               <div className="insight-import-dialog__notion">
                 <p>
-                  Notion 공식 화면에서 가져올 페이지를 직접 선택합니다. 읽기
-                  권한만 사용하고 가져오기가 끝나면 연결을 해제합니다.
+                  Notion에서 가져올 페이지를 직접 선택해요. 읽기 권한만 사용하고
+                  가져오기가 끝나면 연결을 해제해요.
                 </p>
 
                 {notion.stage === 'idle' || notion.stage === 'error' ? (
@@ -465,7 +467,7 @@ export function InsightImportDialog({
                     </label>
                     <p>
                       Notion 안에 저장한 외부 링크가 아니라 선택한 페이지도
-                      원문으로 보관할 때만 사용합니다.
+                      원문으로 보관할 때만 사용해요.
                     </p>
                   </>
                 ) : null}
@@ -474,11 +476,12 @@ export function InsightImportDialog({
                 notion.stage === 'analyzing' ? (
                   <section aria-live="polite" role="status">
                     <strong>
-                      {notion.workspaceName ?? 'Notion 작업 공간'} 분석 중
+                      {notion.workspaceName ?? 'Notion 작업 공간'}에서 가져올
+                      내용을 확인하고 있어요
                     </strong>
                     <p>
-                      완료한 요청 {notion.requestCount}개 · 후보{' '}
-                      {notion.candidateCount}개
+                      요청 {notion.requestCount}개를 확인했고 후보{' '}
+                      {notion.candidateCount}개를 찾았어요.
                     </p>
                   </section>
                 ) : null}
@@ -537,12 +540,14 @@ export function InsightImportDialog({
       controller.result ? (
         <div className="insight-import-dialog__result insight-import-dialog__stage insight-import-dialog__stage--single">
           <section
-            aria-label="가져오기를 완료했어요"
+            aria-label={`인사이트 ${controller.result.createdCount}개를 보관함에 추가했어요`}
             aria-live="polite"
             className="insight-import-dialog__success"
             role="status"
           >
-            <strong>가져오기를 완료했어요</strong>
+            <strong>
+              인사이트 {controller.result.createdCount}개를 보관함에 추가했어요
+            </strong>
             <p>
               인사이트 {controller.result.createdCount}개를 보관함에 추가했어요.
             </p>
@@ -569,23 +574,25 @@ export function InsightImportDialog({
 
           {controller.result.undo ? (
             <p role="status">
-              인사이트 {controller.result.undo.deletedCount}개를 되돌렸어요.
+              인사이트 {controller.result.undo.deletedCount}개를 보관함에서
+              삭제했어요.
               {controller.result.undo.preservedCount > 0
-                ? ` 사용자가 수정한 ${controller.result.undo.preservedCount}개는 유지했어요.`
+                ? ` 직접 수정한 ${controller.result.undo.preservedCount}개는 그대로 두었어요.`
                 : ''}
             </p>
           ) : undoConfirming ? (
             <div className="insight-import-dialog__confirmation">
-              <p>이 작업에서 새로 만든 인사이트만 삭제합니다.</p>
+              <p>이 가져오기를 되돌릴까요?</p>
+              <p>이 작업에서 새로 만든 인사이트만 삭제해요.</p>
               <Button onClick={() => void confirmUndo()} type="button">
-                정말 되돌리기
+                가져오기 되돌리기
               </Button>
               <Button
                 hierarchy="ghost"
                 onClick={() => setUndoConfirming(false)}
                 type="button"
               >
-                취소
+                닫기
               </Button>
             </div>
           ) : (
@@ -741,7 +748,7 @@ function RaceDuplicateNotice({
 
   return racingDuplicateCount > 0 ? (
     <p>
-      분석 후 다른 경로에서 저장된 {racingDuplicateCount}개를 중복으로
+      분석 후 다른 경로에서 저장된 인사이트 {racingDuplicateCount}개를 중복으로
       제외했어요
     </p>
   ) : null;

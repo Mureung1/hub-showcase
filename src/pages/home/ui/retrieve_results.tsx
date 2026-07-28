@@ -40,12 +40,30 @@ export function RetrieveResults({
         <div className="home-page__no-results">
           <EmptyState
             actionLabel="보관함 보기"
-            description={`“${submittedQuery}”와 일치하는 인사이트를 찾지 못했어요. 다른 상황 예시를 선택하거나 검색어를 바꿔보세요.`}
+            description="검색어를 줄이거나 다른 상황을 입력해 보세요."
             onAction={onOpenLibrary}
-            title={`“${submittedQuery}” 결과가 없어요`}
+            title={`“${submittedQuery}”${getRoParticle(submittedQuery)} 찾은 인사이트가 없어요`}
           />
         </div>
       )}
     </section>
   );
+}
+
+function getRoParticle(value: string) {
+  const lastCharacter = value
+    .trim()
+    .replace(/[\p{P}\p{S}\s]+$/gu, '')
+    .at(-1);
+  if (!lastCharacter) {
+    return '로';
+  }
+
+  const codePoint = lastCharacter.codePointAt(0);
+  if (codePoint === undefined || codePoint < 0xac00 || codePoint > 0xd7a3) {
+    return '로';
+  }
+
+  const finalConsonantIndex = (codePoint - 0xac00) % 28;
+  return finalConsonantIndex === 0 || finalConsonantIndex === 8 ? '로' : '으로';
 }

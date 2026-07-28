@@ -23,16 +23,25 @@ describe('createChromeCaptureNotifications', () => {
     expect(create).toHaveBeenCalledWith(NOTIFICATION_ID, {
       buttons: [{ title: '메모 남기기' }],
       iconUrl: 'icons/amadda-192.png',
-      message: '저장됨',
+      message: '인사이트를 저장했어요.',
       title: '아맞다',
       type: 'basic',
     });
   });
 
   it.each([
-    ['unsupported-page', '이 페이지는 저장할 수 없음'],
-    ['login-failed', '로그인이 필요함'],
-    ['save-failed', '저장하지 못함'],
+    [
+      'unsupported-page',
+      '이 페이지는 저장할 수 없어요. 다른 페이지에서 다시 시도해 주세요.',
+    ],
+    [
+      'login-failed',
+      '로그인이 필요해요. 확장 아이콘에서 로그인한 뒤 다시 시도해 주세요.',
+    ],
+    [
+      'save-failed',
+      '인사이트를 저장하지 못했어요. 현재 페이지는 그대로 열려 있어요. 다시 시도해 주세요.',
+    ],
   ] as const)('shows the safe failure %s', async (reason, message) => {
     const create = vi.fn();
     const notifications = createChromeCaptureNotifications({ create });

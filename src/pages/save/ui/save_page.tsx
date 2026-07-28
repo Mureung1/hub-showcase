@@ -79,15 +79,16 @@ export function SavePage({
   return (
     <section className="save-page" aria-labelledby="save-title">
       <header className="save-page__header">
-        <p className="save-page__kicker">링크 저장</p>
+        {!isSharedSave ? (
+          <p className="save-page__kicker">URL을 입력하면 바로 저장해요</p>
+        ) : null}
         <h2 id="save-title">
           {isSharedSave
-            ? '공유한 링크를 보관할까요?'
-            : 'URL만 넣고 바로 보관해요'}
+            ? '공유한 링크를 저장할까요?'
+            : 'URL을 입력하면 바로 저장해요'}
         </h2>
         <p>
-          저장 전 미리보기 없이 먼저 보관하고, 카테고리와 메모는 선택적으로
-          남깁니다.
+          먼저 인사이트를 저장하고 제목, 메모와 카테고리는 나중에 추가해도 돼요.
         </p>
       </header>
 
@@ -108,7 +109,7 @@ export function SavePage({
         >
           클립보드에서 붙여넣기
         </Button>
-        <label htmlFor="save-url">링크 URL</label>
+        <label htmlFor="save-url">URL</label>
         <TextField
           aria-describedby={errorMessage ? 'save-url-error' : undefined}
           aria-invalid={Boolean(errorMessage)}
@@ -128,7 +129,7 @@ export function SavePage({
               disabled={isSaving}
               id="save-shared-title"
               onChange={(event) => onTitleChange(event.currentTarget.value)}
-              placeholder="공유 제목을 입력하세요"
+              placeholder="예: 다시 읽고 싶은 글"
               value={saveTitle}
               width="100%"
             />
@@ -137,7 +138,7 @@ export function SavePage({
         {errorMessage ? (
           <StatusMessage
             id="save-url-error"
-            title="URL을 확인해주세요"
+            title="URL을 확인해 주세요"
             variant="error"
           >
             <p>{errorMessage}</p>
@@ -163,14 +164,14 @@ export function SavePage({
           size="medium"
           type="submit"
         >
-          {isSaving ? '저장 중' : '저장하기'}
+          {isSaving ? '저장하고 있어요' : '저장하기'}
         </Button>
       </form>
 
       {saveComplete ? (
         <div className="save-page__followup">
-          <StatusMessage title="저장됨" variant="success">
-            <p>링크를 보관함에 저장했습니다. 정리는 지금 하지 않아도 됩니다.</p>
+          <StatusMessage title="인사이트를 저장했어요" variant="success">
+            <p>보관함에 추가했어요. 지금 정리하지 않아도 돼요.</p>
           </StatusMessage>
           <form
             className="save-page__context-form"
@@ -178,8 +179,8 @@ export function SavePage({
             onSubmit={onContextSave}
           >
             <div className="save-page__context-header">
-              <h3>언제 다시 쓰고 싶은 자료인가요?</h3>
-              <p>필요할 때 떠올릴 단서를 선택해서 남겨보세요.</p>
+              <h3>언제 다시 쓰고 싶은가요?</h3>
+              <p>필요할 때 떠올릴 제목, 메모나 카테고리를 남겨 보세요.</p>
             </div>
 
             <label htmlFor="save-context-title">제목 (선택)</label>
@@ -238,7 +239,7 @@ export function SavePage({
 
             {contextErrorMessage ? (
               <StatusMessage
-                title="개인 맥락을 저장하지 못했어요"
+                title="인사이트 정보를 저장하지 못했어요"
                 variant="error"
               >
                 <p>{contextErrorMessage}</p>
@@ -246,7 +247,10 @@ export function SavePage({
             ) : null}
 
             {contextSaveComplete ? (
-              <StatusMessage title="맥락 저장 완료" variant="success">
+              <StatusMessage
+                title="인사이트 정보를 저장했어요"
+                variant="success"
+              >
                 <p>보관함과 검색 결과에 바로 반영했어요.</p>
               </StatusMessage>
             ) : null}
@@ -260,12 +264,12 @@ export function SavePage({
                 type="submit"
               >
                 {isContextSaving
-                  ? '저장 중'
+                  ? '인사이트 정보를 저장하고 있어요'
                   : contextErrorMessage
-                    ? '다시 시도'
+                    ? '인사이트 정보 다시 저장하기'
                     : contextSaveComplete
-                      ? '수정 저장하기'
-                      : '맥락 저장하기'}
+                      ? '변경 내용 저장하기'
+                      : '인사이트 정보 저장하기'}
               </Button>
               <Button
                 disabled={isContextSaving}
@@ -274,7 +278,7 @@ export function SavePage({
                 size="medium"
                 type="button"
               >
-                건너뛰기
+                지금은 건너뛰기
               </Button>
             </div>
           </form>

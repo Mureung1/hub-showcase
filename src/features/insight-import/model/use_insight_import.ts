@@ -87,9 +87,10 @@ const INITIAL_STATE: InsightImportState = {
   stage: 'source',
 };
 
-const HISTORY_FAILURE_MESSAGE = '가져오기 기록을 불러오지 못했습니다.';
+const HISTORY_FAILURE_MESSAGE =
+  '가져오기 기록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 const REFRESH_FAILURE_MESSAGE =
-  '가져오기는 완료됐지만 보관함을 새로고침하지 못했습니다.';
+  '인사이트는 가져왔지만 보관함을 새로고침하지 못했어요. 보관함을 다시 열어 주세요.';
 
 export function useInsightImport({
   fileAdapters = [],
@@ -674,23 +675,23 @@ function getServiceErrorMessage(reason: ImportServiceFailureReason) {
   }
 
   if (reason === 'permission-denied') {
-    return '로그인 상태를 확인해 주세요.';
+    return '로그인 상태를 확인하지 못했어요. 다시 로그인한 뒤 시도해 주세요.';
   }
 
   if (reason === 'read-failed') {
-    return '가져오기 정보를 불러오지 못했습니다.';
+    return '가져오기 정보를 불러오지 못했어요. 다시 시도해 주세요.';
   }
 
   if (reason === 'undo-expired') {
     return '되돌릴 수 있는 24시간이 지났어요.';
   }
 
-  return '가져오기를 완료하지 못했습니다. 다시 시도해 주세요.';
+  return '인사이트를 가져오지 못했어요. 확인한 내용은 그대로 두었어요. 다시 시도해 주세요.';
 }
 
 function getFileErrorMessage(code: ImportFileError['code']) {
   if (code === 'file-too-large' || code === 'limit-exceeded') {
-    return '가져올 파일의 크기나 항목 수가 제한을 넘었습니다.';
+    return '가져올 파일의 크기나 항목 수가 제한을 넘었어요.';
   }
 
   if (code === 'unsupported-encoding') {
@@ -698,12 +699,12 @@ function getFileErrorMessage(code: ImportFileError['code']) {
   }
 
   if (code === 'corrupted-file') {
-    return '손상된 파일이라 가져올 수 없습니다.';
+    return '파일이 손상되어 가져올 수 없어요. 다른 파일을 선택해 주세요.';
   }
 
   if (code === 'unsafe-zip') {
-    return '안전하지 않은 ZIP 파일입니다. 압축을 푼 뒤 지원 파일만 선택해 주세요.';
+    return '안전하지 않은 ZIP 파일이에요. 압축을 푼 뒤 지원하는 파일만 선택해 주세요.';
   }
 
-  return '지원하는 링크 파일 구조를 찾지 못했습니다.';
+  return '가져올 수 있는 링크 구조를 찾지 못했어요. 다른 파일을 선택해 주세요.';
 }

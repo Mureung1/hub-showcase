@@ -78,7 +78,7 @@ describe('AccountMenu', () => {
     expect(
       (
         screen.getByRole('button', {
-          name: '로그아웃 처리 중',
+          name: '로그아웃하고 있어요',
         }) as HTMLButtonElement
       ).disabled
     ).toBe(true);

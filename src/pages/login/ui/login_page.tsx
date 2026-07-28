@@ -27,17 +27,17 @@ export function LoginPage({
           서비스 소개로
         </Button>
         <p className="login-eyebrow">로그인</p>
-        <h1 id="login-title">환영합니다!</h1>
+        <h1 id="login-title">아맞다에 오신 걸 환영해요</h1>
         <p className="login-description">
-          로그인 후 나만의 보관함과 꺼내보기를 사용할 수 있어요.
+          로그인하면 나만의 보관함과 꺼내보기를 사용할 수 있어요.
         </p>
         {errorMessage ? (
-          <StatusMessage title="로그인하지 못했습니다" variant="error">
+          <StatusMessage title="로그인하지 못했어요" variant="error">
             <p>{errorMessage}</p>
           </StatusMessage>
         ) : null}
         <Button
-          aria-label={isLoading ? 'Google 로그인 연결 중' : undefined}
+          aria-label={isLoading ? 'Google에 연결하고 있어요' : undefined}
           disabled={isLoading}
           fullWidth
           hierarchy="primary"
@@ -46,13 +46,13 @@ export function LoginPage({
           size="large"
           type="button"
         >
-          {isLoading ? 'Google 로그인 연결 중' : 'Google로 시작하기'}
+          {isLoading ? 'Google에 연결하고 있어요' : 'Google로 시작하기'}
         </Button>
         <div className="login-divider">
           <span>간편 로그인</span>
         </div>
         <p className="terms-notice">
-          로그인 시 이용약관 및 개인정보처리방침에 동의하게 됩니다.
+          로그인하면 이용약관과 개인정보처리방침에 동의해요.
         </p>
       </section>
     </main>

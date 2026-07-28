@@ -29,7 +29,7 @@ export function RetrieveSearchPanel({
   return (
     <>
       <form className="home-page__search" onSubmit={onRetrieve}>
-        <label htmlFor="retrieve-query">지금 꺼내보고 싶은 상황</label>
+        <label htmlFor="retrieve-query">지금 꺼내 보고 싶은 상황</label>
         <div className="home-page__search-row">
           <ClearableTextField
             clearLabel="입력 지우기"
@@ -66,7 +66,7 @@ export function RetrieveSearchPanel({
         ))}
       </div>
       <p className="home-page__summary">
-        떠오르는 단어나 지금 하고 있는 일을 짧게 적어보세요.
+        떠오르는 단어나 지금 하는 일을 짧게 적어 보세요.
       </p>
     </>
   );

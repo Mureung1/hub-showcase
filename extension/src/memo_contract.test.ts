@@ -14,7 +14,7 @@ describe('extension memo page contract', () => {
     expect(html).toContain('maxlength="200"');
     expect(html).toContain('data-memo-form');
     expect(html).toContain('data-memo-status');
-    expect(html).toMatch(/>\s*메모 저장\s*<\/button>/);
+    expect(html).toMatch(/>\s*메모 저장하기\s*<\/button>/);
     expect(html).toMatch(/>\s*닫기\s*<\/button>/);
     expect(html).toContain('src="/src/memo.ts"');
   });

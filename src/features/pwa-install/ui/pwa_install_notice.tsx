@@ -31,7 +31,7 @@ export function PwaInstallNotice({
           onClick={() => void onInstall()}
           type="button"
         >
-          {isPrompting ? '설치 중' : '설치하기'}
+          {isPrompting ? '설치하고 있어요' : '설치하기'}
         </Button>
         <Button
           disabled={isPrompting}
@@ -39,7 +39,7 @@ export function PwaInstallNotice({
           onClick={onDismiss}
           type="button"
         >
-          나중에
+          나중에 설치하기
         </Button>
       </div>
     </section>

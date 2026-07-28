@@ -9,7 +9,7 @@ type FeatureTab = {
 
 const FEATURE_TABS: readonly FeatureTab[] = [
   { id: 'save', label: '01 저장' },
-  { id: 'category', label: '02 분류' },
+  { id: 'category', label: '02 카테고리' },
   { id: 'retrieve', label: '03 꺼내보기' },
 ];
 
@@ -57,12 +57,12 @@ export function OnboardingFeatureTabs() {
   return (
     <section className="feature-showcase" aria-labelledby={`${baseId}-title`}>
       <h2
-        aria-label="발견한 링크가 필요한 순간 다시 쓰이도록, 아맞다가 저장부터 꺼내보기까지 이어드려요."
+        aria-label="발견한 링크를 인사이트로 저장하고 필요한 순간 다시 꺼내 보세요."
         id={`${baseId}-title`}
       >
-        발견한 링크가 필요한 순간 다시 쓰이도록,
+        발견한 링크를 인사이트로 저장하고
         <br />
-        아맞다가 저장부터 꺼내보기까지 이어드려요.
+        필요한 순간 다시 꺼내 보세요.
       </h2>
 
       <div
@@ -123,17 +123,17 @@ function renderFeaturePanel(activeTab: FeatureTabId) {
 function SaveFeaturePreview() {
   return (
     <div className="feature-preview feature-preview--save">
-      <PreviewToolbar index="01" title="링크 저장" />
+      <PreviewToolbar index="01" title="인사이트 저장" />
       <div className="feature-save-flow">
         <div className="feature-field">
-          <span>링크 URL</span>
+          <span>URL</span>
           <strong>https://example.com/article</strong>
         </div>
-        <span className="feature-primary-action">저장하기</span>
+        <span className="feature-primary-action">인사이트 저장하기</span>
       </div>
       <div className="feature-status">
         <span aria-hidden="true" />
-        <strong>저장 완료</strong>
+        <strong>인사이트를 저장했어요</strong>
       </div>
     </div>
   );

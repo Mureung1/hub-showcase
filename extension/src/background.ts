@@ -91,7 +91,9 @@ export function createChromeCaptureNotifications(
       await notifications.create(notificationId, {
         buttons: [{ title: '메모 남기기' }],
         iconUrl: 'icons/amadda-192.png',
-        message: created ? '저장됨' : '이미 저장됨',
+        message: created
+          ? '인사이트를 저장했어요.'
+          : '이미 저장한 인사이트예요.',
         title: '아맞다',
         type: 'basic',
       });
@@ -197,10 +199,12 @@ async function openMemoWindow(
 
 function getFailureMessage(reason: CaptureFailure) {
   if (reason === 'unsupported-page') {
-    return '이 페이지는 저장할 수 없음';
+    return '이 페이지는 저장할 수 없어요. 다른 페이지에서 다시 시도해 주세요.';
   }
 
-  return reason === 'login-failed' ? '로그인이 필요함' : '저장하지 못함';
+  return reason === 'login-failed'
+    ? '로그인이 필요해요. 확장 아이콘에서 로그인한 뒤 다시 시도해 주세요.'
+    : '인사이트를 저장하지 못했어요. 현재 페이지는 그대로 열려 있어요. 다시 시도해 주세요.';
 }
 
 function isSaveMemoMessage(

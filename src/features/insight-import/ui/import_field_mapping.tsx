@@ -132,7 +132,7 @@ function ImportFieldMappingFields({
 
       {showSubmitButton ? (
         <Button disabled={disabled} hierarchy="primary" type="submit">
-          계속
+          가져올 내용 확인하기
         </Button>
       ) : null}
     </form>

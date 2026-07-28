@@ -19,7 +19,7 @@ describe('mountMemoPage', () => {
           <label for="memo">한 줄 메모</label>
           <textarea id="memo" maxlength="200" data-memo-input></textarea>
           <p aria-live="polite" data-memo-status></p>
-          <button type="submit">메모 저장</button>
+          <button type="submit">메모 저장하기</button>
           <button type="button" data-close>닫기</button>
         </form>
       </main>
@@ -45,14 +45,18 @@ describe('mountMemoPage', () => {
     mountPage({ closeWindow, sendMessage });
 
     await user.type(getByLabelText(document.body, '한 줄 메모'), '회의 참고');
-    await user.click(getByRole(document.body, 'button', { name: '메모 저장' }));
+    await user.click(
+      getByRole(document.body, 'button', { name: '메모 저장하기' })
+    );
 
     expect(sendMessage).toHaveBeenCalledWith({
       insightId: INSIGHT_ID,
       memo: '회의 참고',
       type: 'save-insight-memo',
     });
-    expect(getByRole(document.body, 'status')).toHaveTextContent('메모 저장됨');
+    expect(getByRole(document.body, 'status')).toHaveTextContent(
+      '메모를 저장했어요.'
+    );
     expect(closeWindow).toHaveBeenCalledOnce();
   });
 
@@ -65,14 +69,16 @@ describe('mountMemoPage', () => {
     const input = getByLabelText(document.body, '한 줄 메모');
 
     await user.type(input, '보존할 메모');
-    await user.click(getByRole(document.body, 'button', { name: '메모 저장' }));
+    await user.click(
+      getByRole(document.body, 'button', { name: '메모 저장하기' })
+    );
 
     expect(input).toHaveValue('보존할 메모');
     expect(getByRole(document.body, 'alert')).toHaveTextContent(
-      '메모를 저장하지 못했습니다. 다시 시도해 주세요.'
+      '메모를 저장하지 못했어요. 입력한 메모는 그대로 두었어요. 다시 시도해 주세요.'
     );
     expect(
-      getByRole(document.body, 'button', { name: '다시 시도' })
+      getByRole(document.body, 'button', { name: '메모 다시 저장하기' })
     ).toBeEnabled();
   });
 
@@ -81,11 +87,13 @@ describe('mountMemoPage', () => {
     const sendMessage = vi.fn();
     mountPage({ sendMessage });
 
-    await user.click(getByRole(document.body, 'button', { name: '메모 저장' }));
+    await user.click(
+      getByRole(document.body, 'button', { name: '메모 저장하기' })
+    );
 
     expect(sendMessage).not.toHaveBeenCalled();
     expect(getByRole(document.body, 'alert')).toHaveTextContent(
-      '메모를 입력하거나 닫기를 선택해 주세요.'
+      '메모를 입력하거나 창을 닫아 주세요.'
     );
   });
 
@@ -97,10 +105,10 @@ describe('mountMemoPage', () => {
     });
 
     expect(
-      getByRole(document.body, 'button', { name: '메모 저장' })
+      getByRole(document.body, 'button', { name: '메모 저장하기' })
     ).toBeDisabled();
     expect(getByRole(document.body, 'alert')).toHaveTextContent(
-      '메모 대상을 확인할 수 없습니다.'
+      '메모를 남길 인사이트를 확인하지 못했어요.'
     );
   });
 

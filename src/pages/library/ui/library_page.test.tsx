@@ -85,7 +85,7 @@ describe('LibraryPage', () => {
       screen.getByRole('heading', { name: '보관함을 불러오지 못했어요' })
     ).not.toBeNull();
     expect(
-      screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+      screen.queryByRole('heading', { name: '아직 저장한 인사이트가 없어요' })
     ).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '다시 불러오기' }));
@@ -95,17 +95,25 @@ describe('LibraryPage', () => {
 
   it('keeps a no-result query and offers clear and save actions', async () => {
     const user = userEvent.setup();
+    const onCategoryChange = vi.fn();
     const onOpenSave = vi.fn();
     const onQueryChange = vi.fn();
 
     render(
       <DesignSystemProvider>
         <LibraryPage
-          activeCategory="all"
-          categoryOptions={[{ colorKey: null, label: '전체', value: 'all' }]}
+          activeCategory={DEVELOPMENT_CATEGORY_ID}
+          categoryOptions={[
+            { colorKey: null, label: '전체', value: 'all' },
+            {
+              colorKey: 'blue-2',
+              label: '개발',
+              value: DEVELOPMENT_CATEGORY_ID,
+            },
+          ]}
           insights={[]}
           totalInsightCount={1}
-          onCategoryChange={vi.fn()}
+          onCategoryChange={onCategoryChange}
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           onOpenImport={vi.fn()}
           onOpenSave={onOpenSave}
@@ -121,15 +129,18 @@ describe('LibraryPage', () => {
 
     expect((search as HTMLInputElement).value).toBe('기억 단서');
     expect(
-      screen.getByRole('heading', { name: '검색 결과가 없어요' })
+      screen.getByRole('heading', {
+        name: '이 검색어로 찾은 인사이트가 없어요',
+      })
     ).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '검색어 지우기' }));
 
     expect(onQueryChange).toHaveBeenCalledWith('');
+    expect(onCategoryChange).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(search);
 
-    await user.click(screen.getByRole('button', { name: '링크 저장' }));
+    await user.click(screen.getByRole('button', { name: '인사이트 저장하기' }));
 
     expect(onOpenSave).toHaveBeenCalledOnce();
   });
@@ -155,10 +166,12 @@ describe('LibraryPage', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: '저장된 링크가 없어요' })
+      screen.getByRole('heading', { name: '아직 저장한 인사이트가 없어요' })
     ).not.toBeNull();
     expect(
-      screen.queryByRole('heading', { name: '검색 결과가 없어요' })
+      screen.queryByRole('heading', {
+        name: '이 검색어로 찾은 인사이트가 없어요',
+      })
     ).toBeNull();
   });
 
@@ -195,11 +208,11 @@ describe('LibraryPage', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '조건에 맞는 인사이트가 없어요',
+        name: '이 카테고리에 인사이트가 없어요',
       })
     ).not.toBeNull();
     expect(
-      screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+      screen.queryByRole('heading', { name: '아직 저장한 인사이트가 없어요' })
     ).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '전체 보기' }));
@@ -233,16 +246,14 @@ describe('LibraryPage', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: '저장된 링크가 없어요' })
+      screen.getByRole('heading', { name: '아직 저장한 인사이트가 없어요' })
     ).not.toBeNull();
-    expect(screen.getByText(/아직 저장한 링크가 없습니다/)).not.toBeNull();
+    expect(screen.getByText(/첫 인사이트를 저장하면/)).not.toBeNull();
 
-    await user.click(screen.getByRole('button', { name: '링크 저장' }));
+    await user.click(screen.getByRole('button', { name: '인사이트 저장하기' }));
 
     expect(onOpenSave).toHaveBeenCalledOnce();
-    await user.click(
-      screen.getByRole('button', { name: '내 저장물 가져오기' })
-    );
+    await user.click(screen.getByRole('button', { name: '인사이트 가져오기' }));
     expect(onOpenImport).toHaveBeenCalledOnce();
   });
 
@@ -280,7 +291,7 @@ describe('LibraryPage', () => {
     );
 
     expect(
-      screen.getByRole('button', { name: '내 저장물 가져오기' })
+      screen.getByRole('button', { name: '인사이트 가져오기' })
     ).not.toBeNull();
 
     rerender(
@@ -290,7 +301,7 @@ describe('LibraryPage', () => {
     );
 
     expect(
-      screen.queryByRole('button', { name: '내 저장물 가져오기' })
+      screen.queryByRole('button', { name: '인사이트 가져오기' })
     ).toBeNull();
   });
 });
