@@ -308,7 +308,43 @@ flowchart TD
 
 ---
 
-## 9. 그림을 그리며 발견한 것 (다음 작업 후보)
+## 9. 5주차 추가 — 한 판 통합 분석 / 점수 100점 개편 / 식비 지도 / 학교 검색 안정화
+
+```mermaid
+flowchart TD
+    menus["학식·급식 카드의<br/>메뉴명 목록"] --> weights["mealPortions.js<br/>assignTrayWeights()<br/>(role 8종 → 표준 중량)"]
+    weights --> prompt["trayAnalysis.js<br/>중량 근거로 영양 성분만 추정<br/>(식별 단계 없음)"]
+    prompt -->|"/api/gemini"| result["{items, total}"]
+    result -->|"NEIS 급식"| override["total.calories를<br/>NEIS 공식값으로 덮어씀"]
+    result -->|"학식"| asis["total 그대로(추정)"]
+    override & asis --> nav["navigate('/analyze',<br/>state.prefillTrayAnalysis)"]
+    nav --> existing["Analyze.jsx 기존 STATUS.RESULT<br/>→ AnalysisResultCard → 저장<br/>(신규 상태 머신 없음)"]
+```
+
+- **한 판 통합 분석**(§3)은 새 파이프라인이 아니라 기존 사진/텍스트 분석과 같은 결과 카드·저장
+  상태 머신에 입력만 다르게 얹는 방식이다 — `AnalysisResultCard`에 `titleOverride`/`sourceNote` 두
+  선택적 prop만 추가해 "중식(통합)"/"공식 영양정보 기준" 표시만 바꾸고, 나머지(항목별 펼치기·시간대
+  선택·저장)는 전부 그대로 재사용한다. 단, 저장된 뒤 식단 탭에서 보이는 이름은 여전히 기존 규칙
+  ("첫 음식명 외 N개")을 따른다 — meal record 스키마 자체는 바꾸지 않았기 때문(dataStore 규칙 유지).
+- **영양 점수**(§4)는 리더보드/오늘의 점수 전용 공식(`nutritionScore.js`)을 배점표 기반으로
+  다시 짰다 — 앱이 실제로 추적하는 5개 영양소(칼로리·단백질·탄수화물·지방·나트륨)만 채점하고,
+  달력의 하루 상태 판정(`calcDayStatus`)은 기존 6개 기준을 그대로 유지한다(둘은 원래도 다른 목적이라
+  같은 기준일 필요가 없다). SQL(`get_daily_leaderboard()`)도 같은 공식으로 다시 짜여 있어, 배포된
+  Supabase 프로젝트는 `supabase/migrations/2026-07-28_score-v2-leaderboard.sql` 재적용이 필요하다.
+- **식비 위치 지도**(§2)는 네이버 지도 초기화 로직을 `useNaverMap.js` 공용 훅으로 뽑아 주변 식당
+  지도와 공유한다 — SDK 로딩 자체는 이미 `useNaverMapLoader.js`가 모듈 전역으로 한 번만 하고 있어서
+  (5주차 이전부터), 이번에 새로 추린 건 "지도 인스턴스 생성·마커 배치·bounds/리사이즈" 쪽이다. 건물
+  좌표(5곳)는 카카오/네이버 장소 검색으로 실측한 값을 정적 파일로 하드코딩했다 — 2·4학생회관은 그
+  이름의 POI가 지도 서비스에 아예 없어(실측 확인), 건물 내 매장/동일 건물의 다른 이름(각각
+  "2학생회관커피점", "상록회관")으로 대신 찾았다.
+- **NEIS 학교 검색**(§1)은 버튼 클릭식이던 걸 `SchoolSearchField.jsx`로 분리해 입력 300ms
+  디바운스 + AbortController 자동 검색으로 바꿨다. `fetchWithTimeout`이 이제 호출부가 넘긴
+  외부 `signal`도 받아들여, 내부 타임아웃과 별개로 "이전 검색어 요청 취소"를 구분해서 처리한다
+  (취소는 조용히 무시, 진짜 타임아웃만 에러 메시지로 표시).
+
+---
+
+## 10. 그림을 그리며 발견한 것 (다음 작업 후보)
 
 다이어그램으로 옮겨 적으면서 **실제로 어긋나 있던 연결**들이다. 이번 작업에서는 코드를 고치지 않았고, 여기 기록만 남긴다.
 

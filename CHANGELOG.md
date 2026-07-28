@@ -1,5 +1,34 @@
 # 변경 이력
 
+## 2026-07-28
+
+- **NEIS 학교 검색 안정화**(5주차 §1). `SchoolSearchField.jsx`로 분리해 입력 300ms 디바운스 +
+  AbortController로 이전 미완료 요청 취소(레이스 방지) + `/api/school-search` 응답에
+  `Cache-Control: no-store`. `fetchWithTimeout`이 외부 AbortSignal을 받아들이도록 확장.
+- **한 판 통합 분석**(5주차 §3). `src/lib/mealPortions.js`(`classifyMenuRole`/`assignTrayWeights`)가
+  메뉴명을 8개 role(밥/면/국/메인/밑반찬/김치/후식/음료)로 분류해 표준 중량을 매기고,
+  `src/lib/prompts/trayAnalysis.js`가 그 중량을 근거로 Gemini에 영양 성분만 추정시킨다(식별
+  단계 없음). 학식·급식 카드마다 "한 판 통합 분석" 버튼 추가, 결과는 Analyze.jsx의 기존
+  결과 카드·저장 흐름을 그대로 재사용(신규 상태 머신 없음). NEIS 급식은 합계 칼로리를 공식값으로
+  덮어써 "공식 영양정보 기준"으로, 학식은 "추정"으로 표기.
+- **영양 점수 100점 체계 개편**(5주차 §4). `nutritionScore.js`를 배점표 기반(`calcScore`/
+  `getScoreBreakdown`)으로 다시 짜서 칼로리 적정성 40 / 단백질·탄수화물·지방 각 10 / 나트륨 30 —
+  앱이 실제로 추적하는 5개 영양소만 채점(식이섬유·미량영양소는 배점에서 제외). `LeaderboardCard`에
+  펼침형 배점 상세 추가. 리더보드 SQL(`get_daily_leaderboard()`)도 동일 공식으로 재작성해
+  `supabase/migrations/2026-07-28_score-v2-leaderboard.sql` 추가(기존 배포 프로젝트는 재적용 필요).
+- **AI 식습관 분석 근거 강화**(5주차 §5). 달력 탭 카드를 "기간별 기록 내보내기" 바로 위로 이동.
+  응답을 자유 문단에서 findings 배열(JSON 스키마 강제: good 1개 이상 + warn 1~3개[집계 요약의
+  실제 수치 인용 필수] + tip 1~2개)로 바꿔 "지어낸 근거"를 줄였다. `dietSummary.js`에 영양소별
+  절대 섭취량(`avgIntake`) 추가. 캐시 키에 버전(v2) 추가로 이전 문단 형식 캐시와 격리.
+- **식비 위치 지도**(5주차 §2). `src/lib/useNaverMap.js` 공용 훅으로 지도 초기화 로직을 추출해
+  `NaverPlaceMap.jsx`(주변 식당)를 리팩터링(동작 동일). 학식·급식 탭(대학 전용)에 "식비 위치 보기"
+  접힘 카드 추가 — 충남대 학식 건물 5곳 좌표(`src/data/cnuCafeteriaLocations.js`, 카카오/네이버
+  실측)를 표시하고 선택한 건물 강조 + 네이버 지도 길찾기 링크. 접힌 상태에서는 지도 요청이 전혀
+  나가지 않는 lazy 초기화.
+- 경량화 점검(5주차 §6): `knip`/`depcheck`로 미사용 파일·의존성을 조사했으나, 걸린 항목은 전부
+  의도적으로 유지 중인 롤백 코드(카카오 지도)·엔트리포인트(`api/index.js`)·유틸 스크립트이거나
+  false positive(`cross-env`, `@capacitor/android`)였다 — 실제로 삭제할 대상 없음.
+
 ## 2026-07-27
 
 - **학교 급식·대학 학식 조회** 추가(PRD 4주차 1절). `src/lib/allergyRules.js`가 법정 표시 대상 19종을
