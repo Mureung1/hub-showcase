@@ -225,7 +225,16 @@
   * `server/src/app.js` (수정)
   * `client/src/components/FeedList.jsx` (수정)
 
+### ✅ 12. SocketContext 내 React 미임포트로 인한 메인 화면 렌더링 에러 수정 (완료)
+* **원인**:
+  - `SocketContext.jsx` 파일에서 JSX 구문을 사용하나 상단 `import React from 'react'` 모듈이 누락되어, 브라우저 실행 시 `ReferenceError: React is not defined`로 최상위 `ErrorBoundary`가 발동하여 메인 화면이 차단되던 문제.
+* **작업 내역**:
+  - `SocketContext.jsx` 파일 상단 임포트 구문에 `React`를 명시적으로 추가하여 메인 화면 렌더링 정상화.
+* **관련 파일**:
+  * `client/src/contexts/SocketContext.jsx` (수정)
+
 ## 2026-07-27
+
 
 ### ✅ 1. 채팅방 말풍선 정렬 및 역할(Role) 식별 버그 수정 (완료)
 * **목표**: 채팅 목록에서 채팅방 재입장 시 방장이 도우미로 강제 인식되어 말풍선이 한쪽으로 쏠리는 문제 해결.
