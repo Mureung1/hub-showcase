@@ -664,6 +664,116 @@ body {
   background-color: var(--primary-teal-dark);
 }
 
+/* Card & Action Button semantic classes */
+.ribbon-badge-inline {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  display: inline-block;
+  margin-bottom: 12px;
+  align-self: flex-start;
+  border-radius: 4px;
+}
+
+.paper-meta-bottom {
+  margin-top: auto;
+}
+
+.card-action-group,
+.insight-action-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+.insight-action-group {
+  margin-top: 12px;
+}
+
+.action-btn-primary {
+  flex: 1;
+  height: auto;
+  margin: 0;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  background-color: var(--primary-teal);
+  color: #FFFFFF;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: var(--font-body);
+}
+
+.action-btn-primary:hover {
+  background-color: var(--primary-teal-dark);
+}
+
+.action-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.action-btn-secondary {
+  flex: 1;
+  height: auto;
+  margin: 0;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  text-decoration: none;
+  color: #0284C7;
+  border: 1px solid #0284C7;
+  background-color: rgba(2, 132, 199, 0.08);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-body);
+}
+
+.action-btn-secondary:hover {
+  background-color: rgba(2, 132, 199, 0.18);
+}
+
+.action-btn-secondary-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #0284C7;
+  border: 1px solid #0284C7;
+  background-color: rgba(2, 132, 199, 0.08);
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.insight-placeholder {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.library-empty-text {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* My Library Panel on Right */
 .library-panel {
   border: 1px solid #E2E8F0;
