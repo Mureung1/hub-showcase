@@ -6,6 +6,12 @@
 - Surface: local-spec
 - Next actor: none
 
+## 검토 후 정정 (현재 계약)
+
+이 완료 Spec의 `required MCP readiness`, server·tool roster와 handshake/readiness 표현은 당시 구현 조건을 보존하는 역사 기록이다. 후속 process graph 검토에서 official `mcpServerStatus/list`가 Product thread의 live Adapter가 아니라 요청마다 별도 MCP manager와 임시 Adapter를 만든다는 사실을 확인했으므로, `CodexMcpReadinessPort`, `waitForMcpServerReady`, 1초 polling과 SDK patch `0008-thread-mcp-status`는 current contract에서 제거했다. 이 정정은 pre-App Bootstrap, prepared Git root, registry CAS와 user-owned file/Git authority를 바꾸지 않는다.
+
+Current prepared startup은 listener·Broker 준비 → exact-root Runtime과 native thread start → complete effective MCP declaration 검증 → actual Adapter의 authenticated handshake·held Broker lifecycle acceptance → fresh thread context와 Product thread handoff → Broker `isLost()`를 포함한 registry transaction acceptance 순서다. Complete declaration은 `command`·`args`·name과 nullable source를 보존하는 `env_vars`·`cwd`·`tool_timeout_sec`·static `env`·`enabled`·`required`·`enabled_tools`·`disabled_tools`를 포함하며 Required Interaction server의 세 env var는 unsourced이고 `disabled_tools`는 empty여야 한다. 다른 user MCP의 valid sourced env var는 이 check와 무관하다. Runtime은 bounded generic child environment와 effective declaration projection만 소유하고 live MCP health를 소유하지 않는다. Startup에서 검증한 thread는 정상 Product Turn에도 재사용한다. Registry acceptance 전 continuity loss는 previous pointer를 복원하고 acceptance 뒤 loss는 새 pointer를 유지한 recovery다. Unexpected lifecycle EOF는 `transport_failed`로 정산하며 Runtime terminal과 expected shutdown을 Adapter loss로 오인하지 않는다. Current Runtime patch stack은 `0001..0007`이다.
+
 ## Problem Statement
 
 AY-PLE의 target은 사용자가 소유한 한 학기 Git working tree에서 AY가 실제 파일을 직접 다루는 것이다. 그러나 처음 작성한 이 Spec은 App이 `hub/` cwd의 Bootstrap Runtime·thread를 열고 Browser에서 `BootstrapCandidate`를 선택한 뒤 App Product Turn으로 init Skill을 실행하고 activation하는 흐름을 전제했다.

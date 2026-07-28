@@ -51,7 +51,7 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | 순서 | 사용자 경험 | 소유자 |
 | --- | --- | --- |
 | 1 | 사용자가 App 실행 전 Codex CLI에서 Init Skill을 실행해 한 학기 Git repository를 준비한다. | AY·Skill이 일반 file·Git 도구를 사용하고 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 설치 결과를 workspace history에 남긴다. |
-| 2 | 사용자가 prepared root로 AY-PLE을 시작한다. | App은 exact Git root와 required Interaction MCP를 검증한 뒤 active path를 기록하고 Codex의 고정 `cwd`로 연결한다. |
+| 2 | 사용자가 prepared root로 AY-PLE을 시작한다. | App은 exact Git root, complete effective Interaction declaration과 Broker-owned held Adapter lifecycle을 검증한 뒤 active path를 기록하고 startup thread를 정상 Product Turn에 재사용한다. |
 | 3 | 사용자가 AY에게 새 과제를 찾아 정리해 달라고 요청한다. | AY가 실제 공지와 계획서를 읽고 작업을 계획한다. |
 | 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 AY Chat의 inline Review card로 투영한다. |
 | 5 | 사용자가 수락·수정 요청·거절한다. | Pending 동안 composer·steer는 닫고 전체 Turn interrupt만 별도 control로 유지한다. App은 `accept | revise | reject`와 feedback을 같은 MCP call에 반환하고 해당 card를 read-only outcome으로 남긴다. |
@@ -113,9 +113,9 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 | Interaction MCP endpoint·token·Runtime binding | App이 공급하는 process environment |
 | Codex account·config·session | 사용자의 기존 `~/.codex/` |
 | Pending InteractionCapability | 현재 Turn에 결합된 Interaction MCP Module memory |
-| Pending product operation과 Adapter health | 현재 App process의 Runtime generation memory |
+| Pending product operation과 Broker-owned Adapter lifecycle status | 현재 App process의 Runtime generation memory |
 
-`workspace-state.json`의 exact academic schema는 아직 이 Product Brief가 고정하지 않는다. 중요한 불변 조건은 학기 정보가 App database가 아니라 사용자 소유 workspace에 있고, interaction request/result나 native Turn history를 학기 SSOT에 누적하지 않는다는 점이다. Process-local interaction·operation·Adapter health는 terminal event에서 정산하며 App restart 뒤 durable record가 없는 결과를 성공이나 복구 대상으로 추정하지 않는다.
+`workspace-state.json`의 exact academic schema는 아직 이 Product Brief가 고정하지 않는다. 중요한 불변 조건은 학기 정보가 App database가 아니라 사용자 소유 workspace에 있고, interaction request/result나 native Turn history를 학기 SSOT에 누적하지 않는다는 점이다. Process-local interaction·operation과 Broker-owned Adapter lifecycle status는 terminal event에서 정산하며 App restart 뒤 durable record가 없는 결과를 성공이나 복구 대상으로 추정하지 않는다.
 
 ## 제공 형태와 lifecycle
 
@@ -128,13 +128,13 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 3. Bootstrap 성공 뒤 사용자가 첫 open·학기 변경에는 `--workspace <absolute-prepared-git-root>`로 App을 시작한다. 이후 일반 실행은 `WorkspaceRegistry`의 active pointer를 사용한다.
 4. App은 exact Git root와 v4 identity를 fresh 검증하고 shared listener·Interaction Broker binding을 먼저 준비한다.
 5. App이 exact root를 project root와 고정 `cwd`로 쓰는 fresh Workspace Runtime·thread를 `workspace-write`로 연다. Native App Server가 trust 미지정 exact Git root를 기록하고 project config를 reload한다.
-6. Authenticated Adapter handshake와 required MCP readiness가 성공하면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. 명시적 `untrusted`는 덮어쓰지 않고, 하위 directory와 다른 학기 thread를 이 root의 별도 identity로 사용하지 않는다.
+6. Complete effective MCP declaration과 authenticated held Adapter lifecycle이 모두 확인되면 canonical root를 `WorkspaceRegistry`의 known·active workspace로 기록한다. Registry acceptance를 통과한 startup thread를 정상 Product Turn에도 사용한다. 명시적 `untrusted`는 덮어쓰지 않고, 하위 directory와 다른 학기 thread를 이 root의 별도 identity로 사용하지 않는다.
 
-App은 prepared root validation, Workspace Runtime·Interaction readiness와 active pointer만 소유한다. Git repository 생성·cleanliness·commit 정책, Bootstrap Runtime·candidate·init Turn을 별도 subsystem으로 구현하지 않으며, native Bootstrap과 AY가 일반 file·Git 도구 및 `AGENTS.md`의 간단한 지침에 따라 작업한다.
+App은 prepared root validation, Workspace Runtime, effective Interaction declaration·Adapter lifecycle과 active pointer만 소유한다. Git repository 생성·cleanliness·commit 정책, Bootstrap Runtime·candidate·init Turn을 별도 subsystem으로 구현하지 않으며, native Bootstrap과 AY가 일반 file·Git 도구 및 `AGENTS.md`의 간단한 지침에 따라 작업한다.
 
 ## 현재 구현
 
-First Assignment vertical은 native project config의 required Interaction MCP부터 authenticated held-POST Broker, Browser inline Review와 같은 MCP call의 structured result 반환까지 연결한다. Exact local-provider와 live-provider trace도 이 round trip을 검증했다.
+First Assignment vertical은 native project config의 complete effective Interaction declaration, authenticated held Adapter lifecycle과 capability call별 held Broker POST부터 Browser inline Review와 같은 MCP call의 structured result 반환까지 연결한다. Exact local-provider와 live-provider trace도 이 round trip을 검증했다.
 
 현재 canonical graph는 다음과 같다.
 
@@ -156,7 +156,7 @@ SemesterWorkspace actual file
 | 포함 | 구현 결과 |
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
-| `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Authenticated Broker handshake가 없으면 prepared-workspace startup이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
+| `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Effective declaration이 Bootstrap contract와 다르거나 authenticated held Adapter lifecycle이 없으면 prepared-workspace startup이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
@@ -184,7 +184,7 @@ SemesterWorkspace actual file
 | App의 차별화 | 일반 채팅보다 나은 capability-specific 판단 UI를 제공하는가? |
 | 왕복 완결성 | 한 MCP call 안에서 요청·UI·사용자 선택·structured result 반환이 끝나는가? |
 | 근거 정직성 | Evidence가 active workspace의 exact content version과 일치할 때만 card 전체가 표시되는가? |
-| Runtime 정직성 | Required Interaction MCP가 Broker와 연결되지 않으면 prepared-workspace startup이 성공하지 않는가? |
+| Runtime 정직성 | Effective Interaction declaration이 정확하지 않거나 actual Adapter의 held Broker lifecycle이 연결되지 않으면 prepared-workspace startup이 성공하지 않는가? |
 | 경계의 깊이 | Skill이 correlation·Browser lifecycle·revision을 알지 않아도 되는가? |
 | AY의 자율성 | Skill과 AY가 workflow와 실제 file apply를 소유하는가? |
 | 사용자 통제 | Review 전에는 제안된 file mutation이 적용되지 않는가? |

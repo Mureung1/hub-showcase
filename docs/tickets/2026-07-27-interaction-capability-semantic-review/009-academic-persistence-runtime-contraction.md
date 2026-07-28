@@ -12,14 +12,14 @@
 
 ## What It Delivers
 
-Public consumer가 사라진 old academic workflow와 persistence를 Server에서 제거하고, Runtime의 current-only private MCP·managed Skill override를 contract한다. App은 더 이상 `RawMaterial`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 revision-bound apply를 소유하지 않으며, Runtime은 generic project context·child environment·MCP readiness만 제공한다.
+Public consumer가 사라진 old academic workflow와 persistence를 Server에서 제거하고, Runtime의 current-only private MCP·managed Skill override를 contract한다. App은 더 이상 `RawMaterial`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 revision-bound apply를 소유하지 않으며, Runtime은 generic project context·bounded child environment와 effective native config projection만 제공한다. Actual Adapter readiness와 loss는 Server의 Broker lifecycle이 소유한다.
 
 ## Spec Traceability
 
 - User stories: 6, 7, 8, 9, 10
 - Implementation contract: `Compatibility and Migration`, `Current State and Constraints`, `AY-owned mutation boundary`, `Out of Scope`
 
-## Slice-Specific Constraints
+## 완료 당시 Slice-Specific Constraints
 
 - 이 contract는 ticket 008에서 public consumers가 0인 뒤 시작한다. Old workflow를 target store adapter, compatibility alias나 hidden fallback으로 옮기지 않는다.
 - Package-bounded migration은 Server academic orchestration → Server academic persistence → Runtime old override → final integrated verification 순으로 진행한다. 각 단계는 owning package의 test·typecheck와 removed-consumer inventory가 green인 독립 focused commit으로 닫고, 실패한 단계를 건너뛰어 다음 contraction을 시작하지 않는다.
@@ -32,7 +32,7 @@ Public consumer가 사라진 old academic workflow와 persistence를 Server에�
 - Exact SDK·bridge 변경은 ordered patch, generation, provenance와 production-runtime validation discipline을 지킨다. Raw native status와 generated shapes를 새 public escape hatch로 만들지 않는다.
 - Owning package README와 implementation map은 current target topology와 remaining sibling cleanup만 기록하고 superseded field lists·backlog state를 복제하지 않는다.
 
-## Acceptance Criteria
+## 완료 당시 Acceptance Criteria
 
 - [x] Active Server composition과 production source에 old Assignment MCP host, managed Recipe, double-confirmation coordinator와 App academic apply caller가 없다.
 - [x] Active Server store와 Browser projection이 Course, RawMaterial registry, durable Run·patch·confirmation·revision apply를 생성·읽기·복구하지 않는다.
@@ -43,13 +43,13 @@ Public consumer가 사라진 old academic workflow와 persistence를 Server에�
 - [x] Production apps/packages의 active code와 tests에 removed academic workflow identity가 없으며 prepared temporary Git workspace trace와 public E2E가 계속 통과한다.
 - [x] Exact SDK, bridge, Node Runtime, Server, Chat Shell과 repository-wide PR-ready gates가 최종 integrated state에서 모두 통과한다.
 
-## Verification
+## 완료 당시 Verification
 
 - Targeted test or command: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime && npm run validate:production-runtime -w @ay-ple/codex-chat-runtime && npm run validate:node-runtime -w @ay-ple/codex-chat-runtime && npm test -w @ay-ple/server`
 - Repository checks: `npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test && npm run test:e2e && npm run check:docs-links`
 - Manual or live smoke: Target App에서 workspace reopen → normal Chat → Semantic Review → actual file checkpoint를 실행하고 logs·network·workspace state에 removed academic receipt와 private override가 없는지 확인한다.
 
-## Verification result
+## 완료 당시 Verification result
 
 | 구분 | 결과 |
 | --- | --- |
@@ -61,7 +61,7 @@ Public consumer가 사라진 old academic workflow와 persistence를 Server에�
 | Legacy bytes | 이 작업은 existing v2/v3 workspace 파일을 열거나 rewrite·delete하지 않았다. `@ay-ple/semester-workspace` decoder·v3 kernel 물리 제거는 sibling Workspace ticket 범위로 문서화했다. |
 | Code review | Fixed point `ed1009ad985c3363a7833d6c3a72b85a258a6380` 기준 초기 Standards 4건과 Spec 1건, 재검토 Standards 1건을 발견해 current README/provenance/identity/backlog 분류와 ticket·parent closeout을 모두 수정했다. 최종 재검토 지적과 baseline smell은 0건이었다. |
 
-## Result
+## 완료 당시 Result
 
 Server에서 old Assignment MCP host·managed Recipe·double-confirmation orchestration과 app-owned Course/material/Run/patch/confirmation persistence를 제거했다. Runtime public/testing contract와 Python bridge는 exact project root에서 native project discovery와 text-only Product Turn만 사용하며 private MCP input, thread-start config override, managed Skill injection과 capability-specific lifecycle projection을 제거했다. General Plan interaction, native permission·Turn lifecycle와 exact project MCP readiness는 보존했다. Existing v2/v3 bytes와 tracked First Assignment Skill은 건드리지 않았고 remaining legacy kernel 경계를 sibling Workspace ticket에 남겼다.
 
@@ -72,6 +72,12 @@ Server에서 old Assignment MCP host·managed Recipe·double-confirmation orches
 - `707590893` — `refactor: contract runtime project overrides`
 - `a891c791d` — `test: remove academic frame identity`
 - `bb1f33f57` — `docs: record academic runtime contraction`
+
+## 검토 후 정정 (현재 결과)
+
+Academic persistence·private MCP override·managed Skill injection contraction 결과와 위 구현 commit은 그대로 유효하다. 다만 완료 당시 보존한 Runtime MCP readiness seam은 후속 검토에서 실제 Product Adapter가 아닌 status 요청별 임시 Adapter를 관찰하는 것으로 판명됐다. 따라서 current Runtime public/testing contract에는 `CodexMcpReadinessPort`, `waitForMcpServerReady`, MCP status bridge command와 1초 monitor가 없으며 SDK patch `0008-thread-mcp-status`도 제거됐다. Current exact SDK stack은 `0001..0007`이다.
+
+Runtime survivor는 bounded generic child environment와 effective declaration의 `command`·`args`·`env_vars`·`cwd`·`tool_timeout_sec`·static `env`·`enabled`·`required`·`enabled_tools`·`disabled_tools` projection이다. Server가 이 declaration을 Bootstrap contract와 exact 비교하고 Required Interaction server의 `disabled_tools=[]`를 요구하며, actual Adapter가 authenticated handshake 뒤 연 held Broker lifecycle channel이 startup readiness와 live loss를 증명한다. Broker `isLost()`는 registry acceptance race를 동기적으로 닫고 unexpected lifecycle EOF는 pending Interaction을 `transport_failed`로 정산한다. Startup에서 이 gate를 통과한 native thread는 Product Turn에도 재사용된다. 완료 당시 readiness test·검증 수치는 역사적 evidence로 보존하지만 current Runtime health contract로 해석하지 않는다.
 
 ## Blocked By
 

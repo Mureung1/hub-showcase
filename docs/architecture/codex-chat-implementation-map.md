@@ -16,7 +16,7 @@ Tracked repository의 canonical product caller, official SDK 기반 Runtime, Ser
 
 Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`, `/api/codex-chat/*`와 legacy Browser Chat owner는 current topology가 아니다. Historical ADR·spec·ticket은 당시 증거를 보존하지만 executable fallback이나 compatibility surface로 해석하지 않는다.
 
-Canonical lifecycle의 `active`는 exact prepared Git root에서 listener·Broker, Runtime thread, bounded project config의 `enabled=true`·`required=true`·exact `enabled_tools`, 같은 live thread의 required Interaction MCP readiness와 active monitor가 모두 확인되고 registry transaction이 acceptance됐다는 뜻이다. 제거한 public-preview Server graph의 `Semester Ready` envelope·attestation과 current-v2 controller의 internal `ready`는 current public topology가 아니다.
+Canonical lifecycle의 `active`는 exact prepared Git root에서 listener·Broker, Runtime thread, exact effective project MCP declaration, Adapter의 authenticated held lifecycle channel과 fresh thread context가 모두 확인되고 registry transaction이 acceptance됐다는 뜻이다. Broker의 synchronous Adapter-loss latch는 transaction acceptance에도 참여한다. 제거한 public-preview Server graph의 `Semester Ready` envelope·attestation과 current-v2 controller의 internal `ready`는 current public topology가 아니다.
 
 ## 현재 결론
 
@@ -35,9 +35,9 @@ Canonical lifecycle의 `active`는 exact prepared Git root에서 listener·Broke
 
 | 위치 | 책임 | 공개 경계 |
 | --- | --- | --- |
-| `packages/interaction-mcp` | Domain-neutral `propose_state_patch` codec, strict private Broker wire와 authenticated handshake·one-held-POST를 수행하는 built STDIO Adapter | Server가 소비할 package root와 executable `dist/stdio.js`. Runtime package·Browser contract·active workspace 선택은 포함하지 않음 |
+| `packages/interaction-mcp` | Domain-neutral `propose_state_patch` codec, strict private Broker wire와 authenticated handshake·held lifecycle channel·capability call별 한 held POST를 수행하는 built STDIO Adapter | Server가 소비할 package root와 executable `dist/stdio.js`. Runtime package·Browser contract·active workspace 선택은 포함하지 않음 |
 | `packages/product-contract` | Prepared-workspace lifecycle, normal Chat, Browser-safe semantic Review·interaction·interrupt request/response와 closed target operation frame을 위한 dependency-free exact type·decoder | Browser-safe `.` 하나. Course·material·academic action/history contract, raw MCP, private credential·binding, HTTP framing, persistence, Server domain과 native Runtime protocol은 포함하지 않음 |
-| `packages/codex-chat-runtime` | Exact bundle verification, official SDK, private Node↔Python bridge, workspace-only `CodexWorkspaceRuntime`, fresh Account Readiness, bounded effective MCP declaration, exact live-thread native conversation·Plan·MCP·interaction projection, one-shot native-context probe·atomic coordinator, deadline·bound·fatal settlement과 process-group reap | Package root, Server·Runtime regression용 `./contract`, test-only `./testing`. Production과 lower-level verified factory는 exact workspace 하나만 받고 Node account command family는 `read_account`로 닫힘 |
+| `packages/codex-chat-runtime` | Exact bundle verification, official SDK, private Node↔Python bridge, workspace-only `CodexWorkspaceRuntime`, fresh Account Readiness, bounded effective MCP declaration, exact native conversation·Plan·interaction projection, one-shot native-context probe·atomic coordinator, deadline·bound·fatal settlement과 process-group reap | Package root, Server·Runtime regression용 `./contract`, test-only `./testing`. Production과 lower-level verified factory는 exact workspace 하나만 받고 Node account command family는 `read_account`로 닫힘. Live MCP health와 Broker lifecycle은 소유하지 않음 |
 | `packages/semester-workspace` | User-owned Git root v4 identity codec·classification과 shared identity validators | V4 envelope의 opaque snapshot을 academic schema로 해석하지 않는다. V2/v3 payload decoder, admission·setup·bundle·context authority와 package-managed workspace resource는 없음 |
 | `apps/server` | Prepared launch·registry·startup coordinator, target Product Router, Interaction Broker, generic Product Turn, neutral NDJSON writer와 listener·Runtime close ordering | Canonical entrypoint의 `/api/product/*`는 lifecycle·settings·normal Chat·semantic Review·general interaction·interrupt만 제공. Private Broker Router는 same listener loopback+credential 경계이며 academic persistence·apply는 없음 |
 | `apps/chat-shell` | Candidate-free lifecycle, full-width AY Chat, inline semantic Review card·settlement reducer와 recovery | `@ay-ple/product-contract`를 strict decode하는 fetch/NDJSON adapter와 cross-frame reducer. Semantic `204`는 delivery ACK이고 resolved frame만 settlement authority |
@@ -45,7 +45,7 @@ Canonical lifecycle의 `active`는 exact prepared Git root에서 listener·Broke
 
 `apps/inspector`, legacy runtime packages, `/api/runtime/*`, `/api/codex-chat/*`, `dev:chat-only`, `useChatShell`과 Browser compatibility consumer는 tracked product graph에 없다. Runtime의 internal text contract·regression export는 product lifecycle 검증을 위해 유지된다.
 
-`@ay-ple/interaction-mcp`의 built Adapter·exact codecs와 `apps/server`의 held Interaction Broker·evidence resolver가 canonical graph에 있다. Runtime은 bounded generic child environment, effective MCP declaration projection과 exact live-`threadId` readiness를 제공하며 tracked trusted Git project에서 `required/enabled/enabled_tools`, built Adapter handshake와 `propose_state_patch` roster를 각각 검증한다. Server는 startup thread를 health authority로 유지해 같은 readiness를 1초마다 polling하고 Adapter/server loss를 자동 recovery·teardown으로 연결한다. Broker Router, normal Product Turn NDJSON, Browser inline card, bodyless result와 continuity failure가 한 public composition으로 이어진다. `/api/product-mcp`, academic Review/apply path와 thread-start private MCP override는 mount하지 않는다.
+`@ay-ple/interaction-mcp`의 built Adapter·exact codecs와 `apps/server`의 held Interaction Broker·evidence resolver가 canonical graph에 있다. Runtime은 bounded generic child environment와 bounded effective MCP declaration projection만 제공한다. Server는 exact root-relative `command`, 빈 `args`, source 없는 exact `env_vars`, 생략된 `cwd`·`tool_timeout_sec`, 빈 static `env`, `enabled`·`required`·`enabled_tools`와 empty `disabled_tools`를 검증한다. Projection은 다른 user MCP server의 valid `local | remote` env-var source도 보존하므로 Required Interaction declaration만 좁게 판정한다. 실제 Adapter는 authenticated handshake 뒤 Broker가 accept한 lifecycle channel을 열어야 initialize를 성공시키며, Broker status가 startup readiness와 이후 continuity loss의 authority다. Startup에서 이 gate를 통과한 native thread를 Product Turn에도 재사용하므로 별도 health thread와 `mcpServerStatus/list` polling은 없다. Broker Router, normal Product Turn NDJSON, Browser inline card, bodyless result와 continuity failure가 한 public composition으로 이어진다. `/api/product-mcp`, academic Review/apply path와 thread-start private MCP override는 mount하지 않는다.
 
 ## 실행 흐름
 
@@ -60,7 +60,7 @@ flowchart LR
   SDK["Official openai-codex AsyncCodex"]
   Native["Exact 0.144.4 App Server"]
   Context["One-shot native-context App Server"]
-  Monitor["Pinned-thread MCP monitor"]
+  Adapter["Built Interaction STDIO Adapter"]
   Broker["Interaction Broker"]
   Registry["WorkspaceRegistry"]
   Workspace["Prepared Git workspace"]
@@ -68,29 +68,29 @@ flowchart LR
   Shell -->|"exact JSON / NDJSON"| ProductHttp
   ProductHttp --> Coordinator
   Coordinator --> Service
-  Service --> Runtime
+  Service -->|"reuses startup-approved thread"| Runtime
   Runtime --> Workspace
-  Runtime -->|"project-discovered MCP"| Broker
+  Runtime -->|"project-discovered MCP"| Adapter
+  Adapter -->|"handshake + held lifecycle + calls"| Broker
   Broker -->|"semantic Review frames"| Coordinator
+  Broker -->|"lifecycle loss → recovery/teardown"| Coordinator
   Registry -->|"accepted root only"| Workspace
   Runtime -->|"private correlated NDJSON"| Python
   Python --> SDK
   SDK --> Native
   Runtime -.->|"workspace-only config/read + skills/list"| Context
-  Runtime -->|"exact threadId status every 1s"| Monitor
-  Monitor -->|"loss → recovery/teardown"| Coordinator
 ```
 
 Canonical root `npm run dev`는 current `hub/`, sibling `../.ay-ple/`, caller의 전역 `CODEX_HOME` 또는 `~/.codex`와 prepared workspace를 한 canonical contract로 검증한 뒤 Server와 Chat Shell을 exact local Origin으로 시작한다. Runtime payload와 cache는 external app data, controlled `HOME`과 temp만 app-owned state에 두며 separate SQLite home은 만들지 않는다. `CODEX_CHAT_WORKSPACE`와 ambient `cwd`는 selection authority가 아니다. Explicit `--workspace`는 첫 open·학기 변경을 선택하고 인자 없는 실행은 registry active pointer를 fresh reopen한다.
 
-Persistent bridge와 workspace native-context sidecar는 모두 exact SemesterWorkspace Git root를 `cwd`로 사용하고 native `.git` project boundary를 따른다. Sidecar는 verified native executable과 controlled environment에서 `initialize(capabilities.experimentalApi=true) → initialized → config/read → skills/list`를 실행하고 완전히 reap된 뒤 high-level `CodexNativeContextPort` 결과만 반환한다. Config projection은 root marker·global instruction과 bounded MCP 이름·`enabled`·`required`·`enabled_tools`로 닫힌다. Runtime coordinator는 같은 caller `AbortSignal`의 Config·Skill read를 한 atomic snapshot으로 결합하고 서로 다른 concurrent caller를 독립 generation으로 격리한다. Server boundary는 두 read를 첫 `await` 전에 같은 signal로 claim하고 exact Interaction declaration을 확인한다. Raw JSON-RPC와 generated payload는 Runtime package 밖으로 나오지 않는다. Process-wide managed Skill root, package-owned workspace bundle/context guard와 `skills/extraRoots/set` injection은 사용하지 않는다.
+Persistent bridge와 workspace native-context sidecar는 모두 exact SemesterWorkspace Git root를 `cwd`로 사용하고 native `.git` project boundary를 따른다. Sidecar는 verified native executable과 controlled environment에서 `initialize(capabilities.experimentalApi=true) → initialized → config/read → skills/list`를 실행하고 완전히 reap된 뒤 high-level `CodexNativeContextPort` 결과만 반환한다. Config projection은 root marker·global instruction과 bounded MCP 이름·`command`·`args`·name 및 nullable `local | remote` source를 가진 `env_vars`·`cwd`·`tool_timeout_sec`·static `env`·`enabled`·`required`·`enabled_tools`·`disabled_tools`로 닫힌다. Runtime coordinator는 같은 caller `AbortSignal`의 Config·Skill read를 한 atomic snapshot으로 결합하고 서로 다른 concurrent caller를 독립 generation으로 격리한다. Server boundary는 두 read를 첫 `await` 전에 같은 signal로 claim하고 exact Interaction declaration을 확인한다. Raw JSON-RPC와 generated payload는 Runtime package 밖으로 나오지 않는다. Process-wide managed Skill root, package-owned workspace bundle/context guard와 `skills/extraRoots/set` injection은 사용하지 않는다.
 
 ## HTTP와 Browser contract
 
 | 표면 | 현재 동작 |
 | --- | --- |
 | `GET /api/product/bootstrap` | Path-free `starting | active | recovery_required` prepared-workspace lifecycle와 coarse `operationStatus`를 `no-store`로 반환한다. |
-| `GET /api/product/codex-settings` | 전역 Codex account가 광고한 visible model, reasoning effort 순서와 Fast availability를 Browser-safe하게 반환한다. |
+| `GET /api/product/codex-settings` | Active workspace에서만 전역 Codex account가 광고한 visible model, reasoning effort 순서와 Fast availability를 Browser-safe하게 반환한다. Non-active lifecycle은 Runtime을 시작하지 않고 `503 workspace_unavailable`로 닫는다. |
 | `POST /api/product/chat/messages` | Prepared Git root에서 normal AY Chat을 `workspace_write`로 실행한다. Project config가 Skill·MCP를 발견하며 App은 academic source·Run이나 managed Skill을 주입하지 않는다. |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/answer|cancel` | Active 일반 Plan interaction을 same-Turn native response로 번역한다. Academic state는 바꾸지 않는다. |
 | `POST /api/product/reviews/:interactionId` | Exact Semantic Review binding의 `accept | revise | reject`를 held MCP call에 전달한다. Bodyless `204`는 전달 ACK이고 resolved NDJSON frame이 settlement authority다. |
@@ -100,7 +100,7 @@ Mutation은 loopback socket과 absent 또는 exact configured local Origin에서
 
 ## Runtime과 lifecycle
 
-Runtime package는 official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`, native `0.144.4`, standalone CPython, 여덟 단계 patched SDK와 dependency closure를 canonical manifest로 검증한다. Runtime은 bounded generic child environment를 persistent bridge와 같은 native child에 전달하고, official thread-scoped MCP inventory를 exact live `threadId + serverName + expectedTools` readiness로만 축약한다. Native-context read는 private SDK state에 의존하지 않고 official native App Server method를 AY-PLE-owned supervisor에서 strict decode한다. Canonical normal Product Turn은 bounded `TextInput`, native effective 또는 사용자가 고른 advertised model·reasoning, `workspace_write`와 `default | fast` service tier를 사용한다. Skill·MCP는 project에서 발견하며 managed `SkillInput`, thread-start MCP override, candidate root나 additional writable root를 사용하지 않는다.
+Runtime package는 official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`, native `0.144.4`, standalone CPython, 일곱 단계 patched SDK와 dependency closure를 canonical manifest로 검증한다. Runtime은 bounded generic child environment를 persistent bridge와 같은 native child에 전달하고 effective native config를 bounded high-level shape로 투영하지만 live MCP health API는 제공하지 않는다. Native-context read는 private SDK state에 의존하지 않고 official native App Server method를 AY-PLE-owned supervisor에서 strict decode한다. Canonical normal Product Turn은 bounded `TextInput`, native effective 또는 사용자가 고른 advertised model·reasoning, `workspace_write`와 `default | fast` service tier를 사용한다. Skill·MCP는 project에서 발견하며 managed `SkillInput`, thread-start MCP override, candidate root나 additional writable root를 사용하지 않는다.
 
 Workspace Runtime의 sidecar와 persistent worker는 같은 verified bundle·controlled roots·application identity를 사용하며 Runtime `close()`는 둘의 complete reap을 함께 기다린다. Sidecar query·protocol failure는 persistent conversation Runtime을 곧바로 poison하지 않지만 cleanup ambiguity는 Runtime terminal로 latch된다. Public-preview 전용 `AccountRuntimeCoordinator`, auth-only→workspace transition과 Browser command drain은 Server에서 제거됐다.
 
@@ -109,8 +109,8 @@ Workspace Runtime의 sidecar와 persistent worker는 같은 verified bundle·con
 Server shutdown은 다음 순서를 유지한다.
 
 1. 새 product work와 listener restart를 막는다.
-2. Listener close를 시작해 새 TCP intake를 거절한다.
-3. Active disconnect drain과 Runtime `close()`를 한 promise로 수렴한다.
+2. Broker를 expected shutdown으로 닫아 held lifecycle channel과 pending interaction을 정산한다.
+3. Runtime과 listener close를 bounded하게 수행한다.
 4. Python·native process와 pipe가 사라진 뒤 application close를 resolve한다.
 
 ## Store compatibility
@@ -119,7 +119,7 @@ Server shutdown은 다음 순서를 유지한다.
 
 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)의 v3 admission·recovery, durable setup envelope·journey와 lease-bound Ready relaunch는 historical artifact에만 남는다. V2와 v3 모두 canonical public authority가 아니며 original filesystem bytes는 explicit user action 전까지 보존한다.
 
-ADR 0018 target의 root v4 identity codec, external `WorkspaceRegistry` v1 codec·CAS store, prepared-workspace launch resolver, candidate-free Browser lifecycle codec과 process-local product Turn coordinator가 canonical graph다. Resolver는 explicit prepared root를 우선하고 no-argument start에서 active pointer를 fresh reopen하며 canonical exact Git root와 strict v4 identity만 선택한다. No-argument authoritative reopen은 registry read 전에 dead `pending` writer를 reconcile하여 acceptance 전 first-open target을 제거하거나 switch 이전 pointer를 복원한다. Registry는 canonical root와 active pointer만 보존하고 fresh root identity가 matching할 때만 available로 판정하며 malformed·future bytes를 reset하지 않는다. Server startup coordinator는 shared listener·Broker generation을 Runtime보다 먼저 준비하고 exact-root MCP declaration·authenticated thread·same-thread required roster·fresh context·active monitor 뒤에만 verified `workspaceId` CAS와 active projection을 연다. Registry transaction acceptance보다 Runtime terminal이나 monitored MCP loss가 먼저 오면 같은 writer lease가 prior pointer를 exact 복원하고 normal active projection을 열지 않는다. Missing/moved/reused active root는 Runtime spawn 없는 path-free `workspace_unavailable`, malformed/future registry는 bytes-preserving `registry_incompatible`, startup readiness failure·active Runtime terminal·자동 감지한 Adapter/server continuity loss는 listener가 유지된 `runtime_unavailable` Browser recovery로 구분한다. Failed explicit relaunch 뒤 no-argument run은 previous pointer의 root를 fresh Runtime·thread·Broker generation으로 reopen한다. App shutdown은 monitor → Broker → Runtime → listener cleanup을 수행한다. Chat Shell은 `starting | active | recovery_required`를 polling해 desktop Browser에 투영하고 candidate/change control을 두지 않는다.
+ADR 0018 target의 root v4 identity codec, external `WorkspaceRegistry` v1 codec·CAS store, prepared-workspace launch resolver, candidate-free Browser lifecycle codec과 process-local product Turn coordinator가 canonical graph다. Resolver는 explicit prepared root를 우선하고 no-argument start에서 active pointer를 fresh reopen하며 canonical exact Git root와 strict v4 identity만 선택한다. No-argument authoritative reopen은 registry read 전에 dead `pending` writer를 reconcile하여 acceptance 전 first-open target을 제거하거나 switch 이전 pointer를 복원한다. Registry는 canonical root와 active pointer만 보존하고 fresh root identity가 matching할 때만 available로 판정하며 malformed·future bytes를 reset하지 않는다. Server startup coordinator는 shared listener·Broker generation을 Runtime보다 먼저 준비하고 exact-root thread start·effective MCP declaration·authenticated held Adapter lifecycle·fresh context 뒤에만 verified `workspaceId` CAS와 active projection을 연다. Registry transaction acceptance보다 Runtime terminal이나 Broker의 synchronous Adapter-loss latch가 먼저 오면 같은 writer lease가 prior pointer를 exact 복원하고 normal active projection을 열지 않는다. Startup thread는 acceptance 뒤 Product Turn에도 그대로 전달된다. Missing/moved/reused active root는 Runtime spawn 없는 path-free `workspace_unavailable`, malformed/future registry는 bytes-preserving `registry_incompatible`, startup readiness failure·active Runtime terminal·자동 감지한 Adapter continuity loss는 listener가 유지된 `runtime_unavailable` Browser recovery로 구분한다. Failed explicit relaunch 뒤 no-argument run은 previous pointer의 root를 fresh Runtime·thread·Broker generation으로 reopen한다. App shutdown은 Broker expected close → Runtime → listener cleanup을 수행한다. Chat Shell은 `starting | active | recovery_required`를 polling해 desktop Browser에 투영하고 candidate/change control을 두지 않는다.
 
 ## 검증 표면
 
@@ -134,7 +134,7 @@ ADR 0018 target의 root v4 identity codec, external `WorkspaceRegistry` v1 codec
 | `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` | Canonical bundle·bundled bridge·post-run non-mutation |
 | `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` | Hardened Node actual-child, native-context fake·exact native, exact local-provider와 process-group reap |
 | `npm run test:native-context-actual -w @ay-ple/codex-chat-runtime` | One-shot App Server의 strict protocol·cleanup matrix와 exact native provider-free config·Skill projection |
-| `npm run test:prepared-workspace-product-actual` | Native Bootstrap output의 exact Git root와 installed First Assignment Skill 계약을 real built Adapter·shared listener/Broker에 직접 공급한 handshake/tool readiness, inline Review, accept 전 no-mutation, accept 뒤 AY-owned file checkpoint, failure no-mutation과 credential·process cleanup |
+| `npm run test:prepared-workspace-product-actual` | Native Bootstrap output의 exact Git root와 installed First Assignment Skill 계약을 real built Adapter·shared listener/Broker에 직접 공급한 exact declaration·handshake·held lifecycle readiness, inline Review, accept 전 no-mutation, accept 뒤 AY-owned file checkpoint, failure no-mutation과 credential·process cleanup |
 | `npm run test:product-entrypoint` | Root canonical product command의 explicit root 계산, product API·Browser owner, legacy path 무시와 SIGINT 뒤 OS process graph·port cleanup |
 
 Deterministic Browser green은 exact native identity·bundle·process cleanup을 대신하지 않고 exact local-provider도 Browser reducer·HTTP fail-closed behavior를 대신하지 않는다.
@@ -148,4 +148,4 @@ Deterministic Browser green은 exact native identity·bundle·process cleanup을
 | Interactive Codex approval | Normal Product Turn과 Plan interaction은 검증됐지만 generic command·file·network approval center는 채택하지 않았다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
 | Packaged Desktop | `.app`·`.dmg`, Developer ID signing·notarization, automatic updater와 다른 platform은 지원하지 않는다. | [macOS-first ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md) |
 
-중단한 public npx release lane의 `@ay-ple/runtime-release`, `apps/ay-ple` production host와 public-preview Server·Browser graph는 tracked graph에서 제거했다. 이는 현재 gap이나 후속 목표가 아니며 당시 결정과 구현 증거만 historical ADR 0016·0017과 완료 ticket에 남는다. Runtime의 managed account·`auth-only` surface와 AY-PLE-owned Python login/logout bridge command, managed-login 전용 patch는 제거됐다. Current Runtime은 workspace-only contract, fresh Account Readiness와 exact eight-patch stack만 유지한다.
+중단한 public npx release lane의 `@ay-ple/runtime-release`, `apps/ay-ple` production host와 public-preview Server·Browser graph는 tracked graph에서 제거했다. 이는 현재 gap이나 후속 목표가 아니며 당시 결정과 구현 증거만 historical ADR 0016·0017과 완료 ticket에 남는다. Runtime의 managed account·`auth-only` surface와 AY-PLE-owned Python login/logout bridge command, managed-login 전용 patch는 제거됐다. Current Runtime은 workspace-only contract, fresh Account Readiness와 exact seven-patch stack만 유지한다.
