@@ -247,8 +247,8 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
       </div>
 
       <div style={{ padding: "16px 20px 28px", textAlign: "center", flexShrink: 0 }}>
-        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 10px" }}>
-          마음에 드는 방이 없다면, 직접 새로 만들어서 다른 사람을 기다릴 수 있어요
+        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 10px", whiteSpace: "nowrap" }}>
+          마음에 드는 방이 없다면 새로 만들어보세요
         </p>
         <button
           onClick={() => (joinedId === myRequest.id ? resumeChat() : handleStartNew())}
