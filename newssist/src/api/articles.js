@@ -14,6 +14,12 @@ export async function getArticles({ page = 1, limit = 20 } = {}) {
   return res.json();
 }
 
+export async function getReadHistory() {
+  const res = await fetch('/api/articles/read', { headers: await authHeader() });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
+
 export async function getArticle(id) {
   const res = await fetch(`/api/articles/${id}`, { headers: await authHeader() });
   if (!res.ok) throw new Error((await res.json()).error);
