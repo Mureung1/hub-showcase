@@ -3,7 +3,7 @@ import { PDFParse } from "pdf-parse";
 import { readFile, unlink } from "fs/promises";
 
 // 공지 등록 함수
-export function createNotice(req, res) {
+export async function createNotice(req, res) {
   const { title, content } = req.body;
 
   if (!title || !content) {
@@ -13,50 +13,58 @@ export function createNotice(req, res) {
     });
   }
 
-  const insertNotice = database.prepare(`
-    INSERT INTO notices (title, content)
-    VALUES (?, ?)
-  `);
+  try {
+    const result = await database.query(
+      `
+        INSERT INTO notices (title, content)
+        VALUES ($1, $2)
+        RETURNING id, title, content, created_at AS "createdAt"
+      `,
+      [title, content]
+    );
 
-  const result = insertNotice.run(title, content);
+    const savedNotice = result.rows[0];
 
-  const savedNotice = database
-    .prepare(`
-      SELECT
-        id,
-        title,
-        content,
-        created_at AS createdAt
-      FROM notices
-      WHERE id = ?
-    `)
-    .get(result.lastInsertRowid);
-
-  return res.status(201).json({
-    success: true,
-    message: "공지 저장 성공",
-    data: savedNotice,
-  });
+    return res.status(201).json({
+      success: true,
+      message: "공지 저장 성공",
+      data: savedNotice,
+    });
+  } catch (error) {
+    console.error("공지 저장 중 에러:", error);
+    return res.status(500).json({
+      success: false,
+      message: "공지 저장 중 오류가 발생했습니다.",
+    });
+  }
 }
 
 // 공지 조회 함수
-export function getNotices(req, res) {
-  const notices = database
-    .prepare(`
-      SELECT
-        id,
-        title,
-        content,
-        created_at AS createdAt
-      FROM notices
-      ORDER BY id DESC
-    `)
-    .all();
+export async function getNotices(req, res) {
+  try {
+    const result = await database.query(
+      `
+        SELECT
+          id,
+          title,
+          content,
+          created_at AS "createdAt"
+        FROM notices
+        ORDER BY id DESC
+      `
+    );
 
-  return res.json({
-    success: true,
-    data: notices,
-  });
+    return res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("공지 조회 중 에러:", error);
+    return res.status(500).json({
+      success: false,
+      message: "공지 조회 중 오류가 발생했습니다.",
+    });
+  }
 }
 
 // PDF 업로드 및 텍스트 추출 함수

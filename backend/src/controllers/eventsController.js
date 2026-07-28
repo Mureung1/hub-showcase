@@ -25,40 +25,42 @@ export async function saveEventsHandler(req, res) {
 
       try {
         // 일정 저장 (notice_id는 NULL로, 이후에 분석과 연결)
-        const stmt = database.prepare(`
-          INSERT INTO events (
-            user_id,
-            name,
-            start_date,
-            end_date,
-            deadline,
-            time_start,
-            time_end,
-            location,
-            deliverables,
-            notes,
-            category,
-            is_selected
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        const result = stmt.run(
-          userId,
-          event.name,
-          event.startDate || null,
-          event.endDate || null,
-          event.deadline || null,
-          event.time?.start || null,
-          event.time?.end || null,
-          event.location || null,
-          event.deliverables?.length > 0 ? JSON.stringify(event.deliverables) : null,
-          event.notes || null,
-          event.category || "기타",
-          1
+        const result = await database.query(
+          `
+            INSERT INTO events (
+              user_id,
+              name,
+              start_date,
+              end_date,
+              deadline,
+              time_start,
+              time_end,
+              location,
+              deliverables,
+              notes,
+              category,
+              is_selected
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            RETURNING id
+          `,
+          [
+            userId,
+            event.name,
+            event.startDate || null,
+            event.endDate || null,
+            event.deadline || null,
+            event.time?.start || null,
+            event.time?.end || null,
+            event.location || null,
+            event.deliverables?.length > 0 ? JSON.stringify(event.deliverables) : null,
+            event.notes || null,
+            event.category || "기타",
+            true,
+          ]
         );
 
         savedEvents.push({
-          id: result.lastInsertRowid,
+          id: result.rows[0].id,
           ...event,
         });
       } catch (error) {
@@ -88,29 +90,30 @@ export async function getEventsHandler(req, res) {
   try {
     const userId = req.user.userId;
 
-    const stmt = database.prepare(`
-      SELECT
-        id,
-        name,
-        start_date as startDate,
-        end_date as endDate,
-        deadline,
-        time_start,
-        time_end,
-        location,
-        deliverables,
-        notes,
-        category,
-        is_selected as isSelected,
-        created_at as createdAt
-      FROM events
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-    `);
+    const result = await database.query(
+      `
+        SELECT
+          id,
+          name,
+          start_date as "startDate",
+          end_date as "endDate",
+          deadline,
+          time_start,
+          time_end,
+          location,
+          deliverables,
+          notes,
+          category,
+          is_selected as "isSelected",
+          created_at as "createdAt"
+        FROM events
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+      `,
+      [userId]
+    );
 
-    const events = stmt.all(userId);
-
-    const formattedEvents = events.map(event => ({
+    const formattedEvents = result.rows.map(event => ({
       id: event.id,
       name: event.name,
       startDate: event.startDate,
@@ -161,14 +164,17 @@ export async function checkDuplicateHandler(req, res) {
         continue;
       }
 
-      const stmt = database.prepare(`
-        SELECT id, name, start_date as startDate
-        FROM events
-        WHERE user_id = ? AND name = ? AND start_date = ?
-        LIMIT 1
-      `);
+      const result = await database.query(
+        `
+          SELECT id, name, start_date as "startDate"
+          FROM events
+          WHERE user_id = $1 AND name = $2 AND start_date = $3
+          LIMIT 1
+        `,
+        [userId, event.name, event.startDate]
+      );
 
-      const duplicate = stmt.get(userId, event.name, event.startDate);
+      const duplicate = result.rows[0];
 
       if (duplicate) {
         duplicates.push({
@@ -220,8 +226,12 @@ export async function updateEventHandler(req, res) {
       });
     }
 
-    const getStmt = database.prepare("SELECT * FROM events WHERE id = ? AND user_id = ?");
-    const existingEvent = getStmt.get(eventId, userId);
+    // 기존 일정 조회
+    const getResult = await database.query(
+      "SELECT * FROM events WHERE id = $1 AND user_id = $2",
+      [eventId, userId]
+    );
+    const existingEvent = getResult.rows[0];
 
     if (!existingEvent) {
       return res.status(404).json({
@@ -318,53 +328,50 @@ export async function updateEventHandler(req, res) {
 
     const finalNotes = notes !== undefined ? notes : existingEvent.notes;
 
-    const updateStmt = database.prepare(`
-      UPDATE events
-      SET name = ?,
-          start_date = ?,
-          end_date = ?,
-          deadline = ?,
-          time_start = ?,
-          time_end = ?,
-          location = ?,
-          deliverables = ?,
-          notes = ?
-      WHERE id = ? AND user_id = ?
-    `);
-
-    updateStmt.run(
-      finalName,
-      finalStartDate,
-      finalEndDate,
-      finalDeadline,
-      finalTimeStart,
-      finalTimeEnd,
-      finalLocation,
-      finalDeliverables,
-      finalNotes,
-      eventId,
-      userId
+    // 일정 수정
+    const updateResult = await database.query(
+      `
+        UPDATE events
+        SET name = $1,
+            start_date = $2,
+            end_date = $3,
+            deadline = $4,
+            time_start = $5,
+            time_end = $6,
+            location = $7,
+            deliverables = $8,
+            notes = $9
+        WHERE id = $10 AND user_id = $11
+        RETURNING
+          id,
+          name,
+          start_date as "startDate",
+          end_date as "endDate",
+          deadline,
+          time_start,
+          time_end,
+          location,
+          deliverables,
+          notes,
+          is_selected as "isSelected",
+          created_at as "createdAt"
+      `,
+      [
+        finalName,
+        finalStartDate,
+        finalEndDate,
+        finalDeadline,
+        finalTimeStart,
+        finalTimeEnd,
+        finalLocation,
+        finalDeliverables,
+        finalNotes,
+        eventId,
+        userId,
+      ]
     );
 
-    const selectStmt = database.prepare(`
-      SELECT
-        id,
-        name,
-        start_date as startDate,
-        end_date as endDate,
-        deadline,
-        time_start,
-        time_end,
-        location,
-        deliverables,
-        notes,
-        is_selected as isSelected,
-        created_at as createdAt
-      FROM events
-      WHERE id = ? AND user_id = ?
-    `);
-
-    const updatedEvent = selectStmt.get(eventId, userId);
+    const updatedEvent = updateResult.rows[0];
 
     const formattedEvent = {
       id: updatedEvent.id,
@@ -410,8 +417,12 @@ export async function deleteEventHandler(req, res) {
       });
     }
 
-    const checkStmt = database.prepare("SELECT id FROM events WHERE id = ? AND user_id = ?");
-    const existingEvent = checkStmt.get(eventId, userId);
+    // 기존 일정 확인
+    const checkResult = await database.query(
+      "SELECT id FROM events WHERE id = $1 AND user_id = $2",
+      [eventId, userId]
+    );
+    const existingEvent = checkResult.rows[0];
 
     if (!existingEvent) {
       return res.status(404).json({
@@ -420,8 +431,11 @@ export async function deleteEventHandler(req, res) {
       });
     }
 
-    const deleteStmt = database.prepare("DELETE FROM events WHERE id = ? AND user_id = ?");
-    deleteStmt.run(eventId, userId);
+    // 일정 삭제
+    await database.query(
+      "DELETE FROM events WHERE id = $1 AND user_id = $2",
+      [eventId, userId]
+    );
 
     return res.status(200).json({
       success: true,

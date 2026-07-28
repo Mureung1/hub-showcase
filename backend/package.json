@@ -14,7 +14,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.113.0",
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^12.11.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -22,7 +21,8 @@
     "multer": "^2.2.0",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^6.1.200",
-    "pdfkit": "^0.19.1"
+    "pdfkit": "^0.19.1",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

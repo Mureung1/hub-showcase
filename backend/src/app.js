@@ -1,10 +1,6 @@
 import express from "express";
 import cors from "cors";
-
 import database from "./config/database.js";
-
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middlewares/authMiddleware.js";
 import noticeRoutes from "./routes/noticeRoutes.js";
