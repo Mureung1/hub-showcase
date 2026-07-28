@@ -1,9 +1,10 @@
 export function presentGroupBuy(item, viewerId) {
   const voterChoices = item.voterChoices ?? {};
   const isOwner = item.ownerId === viewerId;
-  const userJoined = item.participants.some(
+  const viewerParticipation = item.participants.find(
     (participant) => participant.userId === viewerId,
   );
+  const userJoined = Boolean(viewerParticipation);
   const canSeeParticipantDetails = isOwner || userJoined;
   const participants = canSeeParticipantDetails
     ? item.participants.map((participant) => ({
@@ -21,6 +22,7 @@ export function presentGroupBuy(item, viewerId) {
     participants,
     isOwner,
     userJoined,
+    userQuantity: viewerParticipation?.quantity ?? null,
     userVote: voterChoices[viewerId] || null,
   };
 }
