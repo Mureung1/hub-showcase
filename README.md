@@ -21,7 +21,7 @@
 
 AY-PLE(에이플)는 App GUI에서 명시한 학기 작업을 AY가 이해해 사용자의 Git workspace에서 직접 수행하고, 판단이 필요한 순간에는 MCP로 App의 typed UI를 다시 요청하는 local-first 학업 Agent 앱입니다. App은 명시적인 action과 request-scoped context를 native Skill Turn에 전달하고, 원문·변경·선택지를 작업에 맞는 화면으로 보여준 뒤 사용자의 structured result를 같은 Codex Turn에 돌려줍니다. Skill과 AY는 workflow와 실제 file mutation을 소유합니다.
 
-현재 코드베이스는 양방향 seam을 모두 구현했습니다. GUI의 explicit `organize_sources` ActionInvocation은 선택한 actual file reference와 workspace-local Skill을 native Turn에 전달하고, `@ay-ple/interaction-mcp`의 typed request/result, authenticated App Broker와 Browser inline Review는 같은 MCP call과 Turn에 사용자 결과를 돌려줍니다. AY가 결과를 해석해 실제 파일과 Git checkpoint를 소유하며, 초기 vertical의 app-owned `RawMaterial`·durable `ModelingRun`·patch/confirmation과 Server-owned apply graph는 복원하지 않습니다. Exact current topology와 검증 표면은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 소유합니다.
+현재 코드베이스는 양방향 seam을 모두 구현했습니다. GUI의 explicit `model_semester` ActionInvocation은 선택한 actual file reference와 workspace-local `ay-ple-semester-modeling` Skill을 native Turn에 전달하고, `@ay-ple/interaction-mcp`의 typed request/result, authenticated App Broker와 Browser inline Review는 같은 MCP call과 Turn에 사용자 결과를 돌려줍니다. AY가 결과를 해석해 `workspace-state.json.snapshot`의 `SemesterModel`과 Git checkpoint를 소유하며, 초기 vertical의 app-owned `RawMaterial`·durable `ModelingRun`·patch/confirmation과 Server-owned apply graph는 복원하지 않습니다. Exact current topology와 검증 표면은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 소유합니다.
 
 Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 경계는 [Public repository clean snapshot ADR](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)에 기록합니다.
 
@@ -39,7 +39,7 @@ Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 �
 npm install
 ```
 
-Fresh clone에서는 App을 열기 전에 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 production bundle을 materialize합니다. 이어서 `hub/`를 연 Codex CLI 같은 native client에서 `semester-workspace-init` Skill을 실행해 strict v4 `workspace-state.json`, 실제 `.git` directory, workspace-local Skill과 required Interaction MCP declaration을 가진 prepared SemesterWorkspace를 만듭니다.
+Fresh clone에서는 App을 열기 전에 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 production bundle을 materialize합니다. 이어서 `hub/`를 연 Codex CLI 같은 native client에서 `semester-workspace-init` Skill을 실행해 strict v4 `workspace-state.json`, 실제 `.git` directory, `hub/skills/`의 valid built-in Skills와 required Interaction MCP declaration을 가진 prepared SemesterWorkspace를 만듭니다.
 
 첫 open과 학기 변경에는 prepared Git root의 absolute path를 명시합니다.
 
@@ -106,6 +106,8 @@ npm run demo
 | [Codex session topology 조사](docs/spikes/codex-session-topology/research.md) | thread·turn·item·compaction·resume의 저수준 의미와 topology 위험 |
 | [Codex local Memories 아키텍처 조사](docs/spikes/codex-memory-architecture/research.md) | built-in memory pipeline, personalization surface, scope·privacy 제약 |
 | [에이전트 실행 엔진 재사용 후보 조사](docs/spikes/agent-runtime-reuse-landscape/research.md) | Codex 직접 사용과 ACP·대체 실행 엔진 비교 근거 |
+| [skills.sh 설치형 Skill 생태계 조사](docs/spikes/skills-ecosystem/research.md) | project copy, `skills-lock.json`, update와 version·migration 지원 범위 |
+| [Built-in Skill capability surface 조사](docs/spikes/built-in-skills-as-capabilities/research.md) | OpenClaw·Hermes Agent의 catalog, tool 경계와 local-change-aware update 패턴 |
 
 ### 완료·역사 기록
 
@@ -146,7 +148,7 @@ npm run demo
 | Chat Shell app | `apps/chat-shell/` | Prepared lifecycle, 3-pane source explorer·text/PDF preview·explicit source action·AY Chat, general clarification·interrupt와 inline Semantic Review를 제공하는 Vite React desktop UI |
 | Product contract | `packages/product-contract/` | Target `/api/product/*` Browser-safe JSON·NDJSON의 dependency-free exact type·decoder |
 | Codex Chat runtime | `packages/codex-chat-runtime/` | Official Python SDK, supervised Node bridge, native conversation contract와 deterministic fake |
-| Product API | `/api/product/*` | Path-free workspace lifecycle, settings, source list·text/PDF preview, normal Chat, closed `organize_sources`, Semantic Review·general interaction·interrupt |
+| Product API | `/api/product/*` | Path-free workspace lifecycle, settings, source list·text/PDF preview, normal Chat, closed `model_semester`, Semantic Review·general interaction·interrupt |
 | Camp artifact | `artifacts/camp-demo/` | Live runtime과 분리된 정적 발표 deck, product prototype와 artifact-local 검증 도구 |
 
 ## 개발 명령어

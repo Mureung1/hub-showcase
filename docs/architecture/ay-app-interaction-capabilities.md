@@ -63,7 +63,7 @@ App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 �
 | Browser wire | `packages/product-contract` | Capability별 Browser-safe request·result projection | Raw MCP와 private Broker transport |
 | UI Adapter | `apps/chat-shell` | Capability UI projection·user result와 read-only source explorer·preview | 화면 state, transient source selection, 입력 validation, focus와 view composition |
 | Codex Runtime Adapter | `packages/codex-chat-runtime` | Generic child environment 전달과 effective native config의 bounded projection | Capability schema, Broker protocol, live Adapter health, `threadId`·`turnId`·`requestId` |
-| SemesterWorkspace | User-owned Git repository | 일반 file·Git interface | 실제 학기 자료와 선택적인 구조화 snapshot의 형식 |
+| SemesterWorkspace | User-owned Git repository | 일반 file·Git interface | 실제 학기 자료와 `SemesterModel` snapshot의 형식 |
 
 Dependency direction은 `apps/server`가 `@ay-ple/interaction-mcp`, `@ay-ple/codex-chat-runtime`과 `@ay-ple/product-contract`를 조합하는 형태다. `@ay-ple/interaction-mcp`와 Runtime package는 서로 import하지 않고, Chat Shell은 계속 `@ay-ple/product-contract`만 사용한다. 이 경계는 raw MCP shape가 Browser contract로 새거나 product-specific capability가 native Runtime adapter로 내려가는 것을 막는다.
 

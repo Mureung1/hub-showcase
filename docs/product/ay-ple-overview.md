@@ -2,7 +2,7 @@
 
 작성일: 2026-07-10
 
-최종 업데이트: 2026-07-28
+최종 업데이트: 2026-07-29
 
 분류: 활성
 
@@ -35,7 +35,7 @@ flowchart LR
 
 ## 현재 예: 새 과제 정리하기
 
-학생은 `문제해결글쓰기` 공지와 강의계획서를 source explorer에서 선택하고 `선택한 자료 정리하기`를 실행한다. AY-PLE은 이 명시적 ActionInvocation을 workspace-local Skill과 선택 file reference가 포함된 native AY 작업으로 전달한다.
+학생은 `문제해결글쓰기` 공지와 강의계획서를 source explorer에서 선택하고 `선택한 자료로 학기 정보 정리하기`를 실행한다. AY-PLE은 이 `model_semester` ActionInvocation을 workspace-local `ay-ple-semester-modeling` Skill과 선택 file reference가 포함된 native AY 작업으로 전달한다.
 
 AY는 실제 파일을 읽고 다음 정보를 찾는다.
 
@@ -45,7 +45,7 @@ AY는 실제 파일을 읽고 다음 정보를 찾는다.
 
 바로 파일을 바꾸기 전에 AY는 `propose_state_patch`라는 InteractionCapability를 호출한다. AY-PLE은 원문 위치와 변경 내용을 함께 보여주고 학생에게 수락·수정 요청·거절을 묻는다.
 
-- 수락하면 AY가 실제 학기 파일에 반영하고 의미 있는 checkpoint에서 commit한다.
+- 수락하면 AY가 root `workspace-state.json`의 `SemesterModel` snapshot에 반영하고 의미 있는 checkpoint에서 commit한다.
 - 수정 요청하면 feedback이 AY에게 돌아가고, AY가 다시 검토해 새 제안을 보여줄 수 있다.
 - 거절하면 AY는 제안을 적용하지 않는다.
 
@@ -101,7 +101,7 @@ year-2-semester-2/
   .git/
 ```
 
-App은 별도 복사본이나 normalized child workspace를 만들지 않는다. 새 workspace의 Git과 최소 파일 준비는 App을 시작하기 전에 사용자가 native Codex client에서 요청한 init Skill과 AY가 일반 도구로 수행한다. `workspace-state.json`은 학기 identity와 필요한 구조화 snapshot을 둘 수 있지만, pending interaction이나 native execution event log는 담지 않는다.
+App은 별도 복사본이나 normalized child workspace를 만들지 않는다. 새 workspace의 Git과 최소 파일 준비는 App을 시작하기 전에 사용자가 native Codex client에서 요청한 init Skill과 AY가 일반 도구로 수행한다. `workspace-state.json`은 학기 identity를 가진 `SemesterWorkspaceState` envelope이고, 그 `snapshot`이 현재 `SemesterModel`을 기록하는 canonical slot이다. Exact academic schema는 아직 고정하지 않으며 pending interaction이나 native execution event log는 담지 않는다.
 
 여러 workspace의 경로와 현재 선택은 sibling `../.ay-ple/`의 `WorkspaceRegistry`가 소유한다. Runtime payload·cache도 그곳에 두고, Codex account·config·session은 사용자의 기존 `~/.codex/`를 사용한다.
 
@@ -119,7 +119,7 @@ App은 별도 복사본이나 normalized child workspace를 만들지 않는다.
 
 현재 제품은 active SemesterWorkspace의 actual file을 folder-relative explorer, text·PDF preview와 명시적인 unsupported·read error 상태로 보여주고, AY Chat·inline Review와 한 3-pane desktop workbench에 배치한다. 이 SourceProjection은 exact active root만 bounded read하며 registry·copy·snapshot·watcher·durable selection이나 file mutation을 만들지 않는다.
 
-현재 First Assignment vertical은 source explorer의 explicit `organize_sources` action에서 AY Chat의 inline Review와 실제 workspace file·Git history 변경까지 end-to-end로 연결한다. Action과 pending Review는 현재 App 실행 안에서만 유지하며 별도 학업 workflow 기록을 만들지 않는다.
+현재 First Assignment 대표 vertical은 source explorer의 explicit `model_semester` action에서 AY Chat의 inline Review와 `workspace-state.json.snapshot`·Git history 변경까지 end-to-end로 연결한다. Action과 pending Review는 현재 App 실행 안에서만 유지하며 별도 학업 workflow 기록을 만들지 않는다.
 
 GUI source selection은 preview focus와 독립적이며 사용자가 action을 실행할 때만 선택한 자료를 AY 작업에 전달한다. 사용자는 기존 Chat에서 제안을 검토하고, 수락한 변경은 AY가 실제 workspace file과 Git history에 남긴다. 초기 vertical이 사용했던 app-owned `RawMaterial`, durable `ModelingRun`·`StatePatch`·`UserConfirmation`과 Server-owned apply transaction은 복원하지 않는다. 정확한 현재 topology와 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), long-lived seam은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 구현된 reverse 상세는 [InteractionCapability 아키텍처](../architecture/ay-app-interaction-capabilities.md), 후속 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 

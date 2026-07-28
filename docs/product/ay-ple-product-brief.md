@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-28
+최종 업데이트: 2026-07-29
 
 분류: 활성
 
@@ -33,6 +33,27 @@ flowchart LR
 
 App은 ActionInvocation의 GUI 의미·request-scoped context와 InteractionCapability의 UI round trip을 소유하고, Skill과 AY는 workflow와 결과 적용을 소유한다. 이 seam 덕분에 AY-PLE은 generic Codex보다 풍부한 UX를 제공하면서도 학업 workflow engine이나 duplicate file manager가 되지 않는다.
 
+## Skill-first Capability Expansion
+
+AY-PLE은 새로운 학업 workflow를 우선 built-in Skill로 제공한다. Skill이 기존 file·Git·native tool만으로 충분하면 App을 바꾸지 않고 capability를 추가하고, App에서 이미 표현한 맥락이나 작업 중 필요한 사용자 판단을 더 잘 전달해야 할 때 기존 `ActionInvocation`·`InteractionCapability`를 조합한다. 기존 Interface로 표현할 수 없는 실제 gap이 확인될 때만 새 typed action 또는 MCP capability와 UI를 추가한다.
+
+대표 `ay-ple-semester-modeling` Skill은 normal Chat에서 대화·workspace 문맥에 따라 model-invoked될 수 있고, `model_semester` action에서는 사용자가 선택한 자료를 검증된 추가 맥락으로 받는다. 선택 file path는 GUI action의 contract이지 Skill 자체의 필수 argument가 아니다.
+
+SemesterModeling은 기존 snapshot을 지우고 선택 자료만으로 다시 만드는 기본 동작이 아니라 관련 학업 사실을 incremental하게 reconcile하는 작업이다. 무관한 사실 보존과 충돌의 정직한 표현은 제품 guardrail로 두되 source 우선순위와 실제 해석은 AY가 학기 문맥에서 판단한다.
+
+```text
+Built-in Skill의 학업 workflow
++ 선택적인 ActionInvocation의 App context
++ 선택적인 InteractionCapability의 App-native 판단 UI
+= AY-PLE capability
+```
+
+MCP를 채택한 제품적 이유도 이 확장 원리와 연결된다. AY가 workflow 중 판단이 필요한 시점을 정하고 App은 그 요청에 맞는 UI와 같은 작업으로 돌아가는 structured result를 제공하므로, App이 기능마다 학업 workflow 순서를 다시 구현하지 않아도 된다. 반대 방향에서는 ActionInvocation이 사용자가 GUI에서 이미 표현한 맥락을 Skill 작업으로 전달한다. 두 방향의 exact lifecycle과 기술 mapping은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md)가 소유한다.
+
+Built-in Skill catalog의 진화는 AY-PLE capability set을 확장하는 기본 경로다. 다만 Skill directory의 존재만으로 완성된 App feature라고 주장하지 않으며, 각 SemesterWorkspace에는 fresh Bootstrap과 Git checkpoint를 거친 installed copy가 실제 실행 capability로 남는다. Current development에서는 catalog 변경 뒤 fixture로 disposable workspace를 재생성하고, 장기 보존 workspace의 Skill update lifecycle은 아직 제공하지 않는다.
+
+OpenClaw·Hermes Agent가 built-in Skill과 runtime Tool을 나누고 catalog update와 local customization을 다루는 방식, 그리고 AY-PLE이 그대로 가져오지 않을 차이는 [Built-in Skill capability surface 조사](../spikes/built-in-skills-as-capabilities/research.md)에 기술 참고로 보존한다.
+
 ## 해결하려는 문제
 
 대학생의 한 학기 자료는 공지, 강의계획서, PDF, PPTX, HWP/HWPX, 이미지, 메모와 녹음처럼 여러 파일과 형식에 흩어진다. 학생은 내용을 다시 읽고 연결해 과제, 시험, 일정과 정리 문서를 직접 유지한다.
@@ -53,7 +74,7 @@ App은 ActionInvocation의 GUI 의미·request-scoped context와 InteractionCapa
 | --- | --- | --- |
 | 1 | 사용자가 App 실행 전 Codex CLI에서 Init Skill을 실행해 한 학기 Git repository를 준비한다. | AY·Skill이 일반 file·Git 도구를 사용하고 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 설치 결과를 workspace history에 남긴다. |
 | 2 | 사용자가 prepared root로 AY-PLE을 시작한다. | App은 exact Git root, complete effective Interaction declaration과 Broker-owned held Adapter lifecycle을 검증한 뒤 active path를 기록하고 startup thread를 정상 Product Turn에 재사용한다. |
-| 3 | 사용자가 source explorer에서 공지와 계획서를 선택하고 `선택한 자료 정리하기`를 실행한다. | App이 selection을 request-scoped ActionInvocation으로 동결하고 workspace-local Skill과 file reference가 포함된 native Turn을 시작한다. |
+| 3 | 사용자가 source explorer에서 공지와 계획서를 선택하고 `선택한 자료로 학기 정보 정리하기`를 실행한다. | App이 `model_semester` selection을 request-scoped ActionInvocation으로 동결하고 workspace-local `ay-ple-semester-modeling` Skill과 file reference가 포함된 native Turn을 시작한다. |
 | 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 AY Chat의 inline Review card로 투영한다. |
 | 5 | 사용자가 수락·수정 요청·거절한다. | Pending 동안 composer·steer는 닫고 전체 Turn interrupt만 별도 control로 유지한다. App은 `accept | revise | reject`와 feedback을 같은 MCP call에 반환하고 해당 card를 read-only outcome으로 남긴다. |
 | 6 | AY가 선택을 해석한다. | 수락이면 실제 workspace file을 변경하고, 수정 요청이면 다시 검토해 필요할 때 fresh call·새 card로 제안하며, 거절이면 적용하지 않는다. |
@@ -72,7 +93,7 @@ App은 ActionInvocation의 GUI 의미·request-scoped context와 InteractionCapa
 | AY-PLE App | Prepared-root resolution·registry, Runtime host, active root의 bounded read-only source explorer·preview, ActionInvocation의 GUI 의미·request-scoped context validation, capability-specific UI와 interaction round trip | Bootstrap·학업 workflow, source ownership·registry·copy·mutation, accepted result의 대리 적용 |
 | Interaction MCP Module | Typed request/result, Turn binding, pending·failure·disconnect lifecycle | SemesterWorkspace file mutation |
 | Codex Runtime | Thread·Turn, Skills, MCP와 native permission | 학기 SSOT와 AY-PLE UI 의미 |
-| SemesterWorkspace | 실제 학기 파일, 선택적인 구조화 snapshot, Git history | Runtime secret과 pending interaction |
+| SemesterWorkspace | 실제 학기 파일, `SemesterModel` snapshot, Git history | Runtime secret과 pending interaction |
 
 AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 시각적 상호작용을 명확히 소유하되, AY가 잘할 수 있는 유연한 workflow와 file operation을 되가져오지 않는 제품이다.
 
@@ -84,7 +105,7 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 
 - Preview, tab 이동과 selection 변화는 AY 입력을 암묵적으로 바꾸지 않는다. 학생이 목적이 분명한 GUI action을 명시적으로 실행할 때만 invocation을 만든다.
 - App은 action 시점의 입력을 active SemesterWorkspace에 결합된 request-scoped context로 검증해 AY 작업에 전달한다.
-- 각 action은 `organize_sources`처럼 사용자에게 목적이 분명한 closed contract를 가진다. 모든 GUI event를 보내는 범용 action bus나 dynamic UI schema를 만들지 않는다.
+- 각 action은 `model_semester`처럼 사용자에게 목적이 분명한 closed contract를 가진다. 모든 GUI event를 보내는 범용 action bus나 dynamic UI schema를 만들지 않는다.
 - 실행 관측은 native 작업과 process-local 상태를 사용하고 App-owned durable `ModelingRun`을 만들지 않는다.
 
 Action을 workspace-local Skill과 file/text input으로 compose하는 exact contract와 native protocol 격리는 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md)가 소유한다.
@@ -94,6 +115,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 `InteractionCapability`는 AY가 MCP로 요청하고 App이 typed UI로 보여준 뒤 structured result를 같은 Turn에 반환하는 기능이다.
 
 - Capability는 `propose_state_patch`처럼 사용자 결정 하나를 표현한다.
+- `SemesterModeling` Skill은 snapshot 변경 전에 `propose_state_patch`를 사용하도록 지시받지만, App은 native file write를 Hook으로 가로채거나 Review result와 filesystem diff를 대조하는 apply engine을 소유하지 않는다. Representative conformance로 이 instruction-led workflow를 검증한다.
 - App 내부 binding을 위한 `workspaceId`, `requestKey`, revision과 native ID를 AY에게 요구하지 않는다.
 - 사용자 result는 closed union으로 반환해 Skill이 다음 행동을 명확히 결정할 수 있게 한다.
 - Pending Review는 AY Chat의 inline card 하나로 표시하고 composer·steer를 잠근다. Modal·별도 approval page와 입력 queue는 만들지 않는다.
@@ -116,7 +138,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 | 정보 | Source of truth |
 | --- | --- |
 | 실제 학기 자료와 결과 파일 | SemesterWorkspace의 일반 file |
-| 학기 identity와 선택적인 구조화 snapshot | Root `workspace-state.json` |
+| 학기 identity와 `SemesterModel`의 canonical snapshot slot | Root `workspace-state.json` |
 | 변경 history와 rollback | Git commit history |
 | Known·active SemesterWorkspace | Sibling `../.ay-ple/`의 `WorkspaceRegistry` |
 | Runtime payload, cross-workspace 운영 metadata·config, cache·temp | Sibling `../.ay-ple/` |
@@ -130,7 +152,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 | Pending ActionInvocation·Chat product operation과 Broker-owned Adapter lifecycle status | 현재 App process의 Runtime generation memory |
 | Source explorer 목록·preview와 선택 | Durable owner 없음. Exact active root의 on-demand read-only projection과 Browser-local presentation state |
 
-`workspace-state.json`의 exact academic schema는 아직 이 Product Brief가 고정하지 않는다. 중요한 불변 조건은 학기 정보가 App database가 아니라 사용자 소유 workspace에 있고, interaction request/result나 native Turn history를 학기 SSOT에 누적하지 않는다는 점이다. Process-local interaction·operation과 Broker-owned Adapter lifecycle status는 terminal event에서 정산하며 App restart 뒤 durable record가 없는 결과를 성공이나 복구 대상으로 추정하지 않는다.
+`workspace-state.json` 전체는 format·workspace·semester identity를 포함하는 `SemesterWorkspaceState` envelope이고, 그 `snapshot`이 `SemesterModel`의 canonical serialization slot이다. Exact academic field schema는 아직 이 Product Brief가 고정하지 않는다. 중요한 불변 조건은 학기 정보가 App database가 아니라 사용자 소유 workspace에 있고, interaction request/result나 native Turn history를 학기 SSOT에 누적하지 않는다는 점이다. Process-local interaction·operation과 Broker-owned Adapter lifecycle status는 terminal event에서 정산하며 App restart 뒤 durable record가 없는 결과를 성공이나 복구 대상으로 추정하지 않는다.
 
 ## 제공 형태와 lifecycle
 
@@ -139,7 +161,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 현재 구현한 lifecycle은 다음과 같다.
 
 1. 사용자가 `hub/`를 연 Codex CLI 같은 native client에서 `semester-workspace-init`을 직접 실행한다.
-2. Skill이 existing bytes와 dirty tree를 존중하면서 Git root, 최소 workspace file, 선택한 `.agents/skills/` copy와 정적인 `.codex/config.toml`을 준비하고 checkpoint를 남긴다.
+2. Skill이 existing bytes와 dirty tree를 존중하면서 Git root, 최소 workspace file, 모든 AY-PLE built-in의 `.agents/skills/` copy와 정적인 `.codex/config.toml`을 준비하고 checkpoint를 남긴다.
 3. Bootstrap 성공 뒤 사용자가 첫 open·학기 변경에는 `--workspace <absolute-prepared-git-root>`로 App을 시작한다. 이후 일반 실행은 `WorkspaceRegistry`의 active pointer를 사용한다.
 4. App은 exact Git root와 v4 identity를 fresh 검증하고 shared listener·Interaction Broker binding을 먼저 준비한다.
 5. App이 exact root를 project root와 고정 `cwd`로 쓰는 fresh Workspace Runtime·thread를 `workspace-write`로 연다. Native App Server가 trust 미지정 exact Git root를 기록하고 project config를 reload한다.
@@ -149,14 +171,14 @@ App은 prepared root validation, Workspace Runtime, effective Interaction declar
 
 ## 현재 구현
 
-First Assignment의 **양방향 AY–App Interaction vertical**은 explicit `organize_sources` ActionInvocation, Browser inline Review와 사용자 결과를 해석한 AY의 actual-file 작업을 한 경험으로 연결한다. 기술 mapping은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 현재 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
+First Assignment의 **양방향 AY–App Interaction vertical**은 explicit `model_semester` ActionInvocation, Browser inline Review와 사용자 결과를 해석한 AY의 `SemesterModel` 작업을 한 경험으로 연결한다. 기술 mapping은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 현재 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
 
 현재 canonical graph는 다음과 같다.
 
 ```text
 SemesterWorkspace actual file
 ├→ App bounded read-only projection → source explorer / text·PDF preview
-│  └→ explicit selection + organize_sources → ActionInvocation
+│  └→ explicit selection + model_semester → ActionInvocation
 │     └→ workspace Skill + selected file refs → AY / native Codex Turn
 └→ normal Chat → AY / native Codex Turn
    → InteractionCapability request
@@ -177,7 +199,7 @@ SemesterWorkspace actual file
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
 | Source-grounded workbench | Active root의 안전한 일반 file을 folder-relative explorer에서 보고 UTF-8 text·PDF를 preview하며, unsupported·stale·read failure는 명시적 상태로 표시한다. 이 read-only projection은 AY Chat·Review와 한 3-pane desktop surface에 공존하되 registry·copy·watcher·durable selection을 만들지 않는다. |
-| `organize_sources` ActionInvocation | Preview와 독립적인 ordered text selection을 explicit action에서만 동결하고, fresh 검증한 자료와 workspace Skill을 한 Product Turn에 전달한다. |
+| `model_semester` ActionInvocation | Preview와 독립적인 ordered file selection을 explicit action에서만 동결하고, fresh 검증한 자료와 `ay-ple-semester-modeling` Skill을 한 Product Turn에 전달한다. |
 | `propose_state_patch` MCP | Prepared workspace의 required interaction 연결을 사용해 typed 변경 제안과 `accept | revise | reject` 결과가 한 요청으로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
@@ -192,7 +214,8 @@ SemesterWorkspace actual file
 - Duplicate `ModelingRun`·academic event ledger
 - 모든 GUI event를 Agent에게 보내는 generic event bus
 - Arbitrary JSON schema를 자동으로 UI로 만드는 renderer
-- Codex Chat과 동일한 Git UI·background terminal·plugin 관리 화면
+- Codex Chat과 동일한 Git UI·background terminal 관리 화면
+- Built-in Skill을 스스로 작성·교체하며 범용적으로 진화하는 self-modifying Agent. Skill authoring meta-skill은 실제 사용자 authoring 요구가 생길 때 별도 평가한다.
 - 과제 정답 생성, 시험 답안 대행과 자동 제출
 - LMS 우회 자동화, cloud sync와 외부 calendar 자동 업로드
 - 모바일·소형 화면 최적화
@@ -210,6 +233,7 @@ SemesterWorkspace actual file
 | 근거 정직성 | Evidence가 active workspace의 exact content version과 일치할 때만 card 전체가 표시되는가? |
 | Runtime 정직성 | Effective Interaction declaration이 정확하지 않거나 actual Adapter의 held Broker lifecycle이 연결되지 않으면 prepared-workspace startup이 성공하지 않는가? |
 | 경계의 깊이 | Skill이 correlation·Browser lifecycle·revision을 알지 않아도 되는가? |
+| Capability leverage | 새 built-in Skill이 기존 AY–App Interaction Interface를 재사용하고, 새 typed interaction은 실제로 필요한 여러 Skill에 leverage를 제공하는가? |
 | AY의 자율성 | Skill과 AY가 workflow와 실제 file apply를 소유하는가? |
 | 사용자 통제 | Review 전에는 제안된 file mutation이 적용되지 않는가? |
 | 복구 가능성 | 실제 변경이 Git checkpoint로 이해하고 되돌릴 수 있게 남는가? |

@@ -139,6 +139,12 @@
   - [x] Capability-neutral Runtime 입력과 Python bridge가 optional Skill과 current file-reference text를 전달하게 하고 기존 SDK patch stack은 늘리지 않았다. Exact native mapping과 `MentionInput` 경계는 [AY–App Interaction Layer](../architecture/ay-app-interaction-layer.md)가 소유한다.
   - [x] Action-started Turn이 기존 Interaction MCP·inline Review를 그대로 사용하고, AY가 actual workspace file mutation과 Git checkpoint를 소유하는 Browser E2E·deterministic Runtime·exact local-provider actual workspace trace를 닫는다. Durable `ModelingRun`, source registry·copy와 App-owned apply는 복원하지 않는다.
 
+- [x] Fresh built-in Skill catalog와 SemesterModeling vocabulary를 current product path에 반영한다.
+  - [x] Workspace mutation 전에 `hub/skills/`의 complete catalog를 generic하게 발견하고 [Runtime 격리 문서의 minimal catalog contract](../architecture/codex-runtime-isolation.md#minimal-catalog-validation-contract)로 검증한다. Invalid Skill root가 하나라도 있으면 valid subset이나 다른 managed file을 쓰지 않은 채 전체 Bootstrap을 fail closed한다. 검증된 모든 complete Skill root는 descendant layout과 content를 해석하지 않고 fresh SemesterWorkspace의 `.agents/skills/`에 복사한다. Existing divergent destination은 원본을 보존한 채 no-clobber로 중단하며 refresh·replace·merge·stale prune과 별도 content lint를 추가하지 않는다. App startup은 source roster·bytes를 다시 대조하지 않고, missing required Skill은 해당 ActionInvocation만 `action_unavailable`로 닫으며 normal Chat·source explorer를 유지한다.
+  - [x] `ay-ple-first-assignment` source와 installed fixture identity를 model-invoked `ay-ple-semester-modeling`으로 rename하고, Skill body를 특정 첫 Assignment가 아니라 Course·Assignment·Exam·ScheduleEvent 학업 사실을 root `workspace-state.json.snapshot`의 `SemesterModel` slot에 incremental하게 reconcile하는 workflow로 확장한다. `SemesterWorkspaceState` envelope identity와 작업에 무관한 기존 사실을 보존하고, conflict는 hidden overwrite보다 `ambiguous`·설명·근거와 Review로 드러내는 guardrail을 둔다. Source 신뢰도·최신성·관련 범위는 AY가 실제 문맥에서 판단하며 exhaustive merge policy를 만들지 않는다. Explicit file refs가 있으면 작업 맥락으로 활용하고, 없으면 대화·SemesterWorkspace 문맥에서 자연스럽게 범위를 정한다. Action marker·file arguments를 required signature로 파싱하거나 부재만으로 종료·clarification하는 guard를 만들지 않는다. Snapshot mutation 전 `propose_state_patch`와 result별 행동은 Skill·tool description으로 harness하고 representative conformance로 검증하되 Hook, write interceptor나 App-owned diff ledger를 추가하지 않는다.
+  - [x] 기존 `organize_sources` public discriminator·Product contract, Server action module file·export·wiring, Browser 호출·control copy, native input marker, package README·구현 지도와 verification fixture를 adopted `model_semester`로 함께 rename한다. `model-semester-action` definition 한 곳이 required `ay-ple-semester-modeling` identity를 소유하고 별도 generic Skill registry나 공용 action→Skill mapping Module은 만들지 않는다. External compatibility contract가 없는 development 단계이므로 old action·Skill alias를 남기지 않는다. `First Assignment`가 실제 대표 시나리오를 뜻하는 conformance provider와 완료·역사 문서는 당시 이름을 보존한다.
+  - [x] `hub/skills/` 변경·추가·rename 뒤 `../fixtures/**`에서 disposable SemesterWorkspace를 재생성하고 Bootstrap을 fresh 실행하는 development flow를 검증한다. Git 밖 fixture path를 tracked utility에 hard-code하지 않는다.
+
 - [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.
   - [ ] 두 번째 실제 action 또는 MCP capability를 추가할 때 기능별 contract만 더하고 workspace binding·Turn lifecycle·nested interaction settlement를 다시 구현하지 않는 extension test를 고정한다.
   - [ ] 여러 대화를 다시 찾고 이어가는 행동이 확인되면 workspace-scoped `thread/list`·`thread/read`·`thread/resume`, 선택 상태와 최소 catalog UX를 추가한다. Rename·archive·pagination은 각각의 need가 있을 때만 포함한다.
@@ -150,6 +156,8 @@
   - [ ] 즉시 정정이 새 turn보다 나은 대표 case와 correlation 규칙을 확인하면 active turn 정정 UX를 추가한다. raw 후보: `turn/steer`.
   - [ ] 실제 context 부족이나 history 편집 case를 확인하면 manual compact와 fork를 각각 평가한다. raw 후보: `thread/compact/start`, `thread/fork`. Deprecated `thread/rollback`은 지원되는 대체 method가 생길 때까지 제외한다.
   - [ ] PDF text extraction과 page/range 근거를 지원하고, Assignment 전략을 재사용하는 Exam Skill을 추가한다.
+  - [ ] 대표 Assignment·Exam SemesterModeling 사례에서 required·optional field와 `known | unknown | ambiguous` guardrail을 포함한 exact `SemesterModel` schema를 정한다. 실제 App·Skill consumer가 생기면 `workspace-state.json.snapshot`을 validated model로 확장하고, Skill lifecycle과 독립된 product-owned Module의 lint Interface와 workspace-level CLI Adapter를 평가하되 package ownership·migration을 미리 고정하지 않는다.
+  - [ ] 실제 사용자가 한 SemesterWorkspace를 장기 보존하면서 새 AY-PLE built-in Skill을 받아야 할 때 update adoption gate를 다시 연다. 그 전에는 disposable fixture→fresh Bootstrap을 사용하고 refresh·replace mode, local edit merge, stale Skill prune, hash manifest·lock·bundle version과 기존 workspace migration을 만들지 않는다.
   - [ ] Workspace-local 구조화 snapshot이 안정되면 `MarkdownProjection`, derived timeline, 학생 할 일 표면과 학기 상태 질의를 source of truth와 분리해 추가한다.
   - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 Git history를 이해하기 쉬운 `WorkspaceHistory` UI로 투영한다.
   - [ ] 실제 자료에서 필요성이 확인되면 HWP/HWPX parsing과 OCR을 추가한다.
@@ -169,7 +177,7 @@
 - 모든 App Server event를 제품에 노출하는 범용 event bus·router와 raw item의 1:1 UI 재현
 - `SemesterWorkspace`·`Course`별 고정 Codex thread topology와 native Turn을 복제하는 별도 run ledger
 - 외부 memory framework 또는 AY-PLE 전용 memory engine
-- Codex UI와 동일한 Git diff·review, background terminal, Goals, plugin·MCP 관리 화면
+- Codex UI와 동일한 Git diff·review, background terminal, Goals와 MCP 관리 화면
 - Raw prompt, JSON-RPC payload와 runtime·bridge 진단 evidence를 제품 감사 기록이나 `SemesterModel`의 source of truth로 사용하는 방식
 - LMS login 자동화, cloud account·sync, 외부 calendar 자동 업로드
 - 과제 정답 생성과 자동 제출

@@ -47,6 +47,10 @@ _Avoid_: 필수 global file registry, 최신 파일만 가리키는 링크, App-
 SemesterWorkspace가 과목과 학업 사실을 구조화해 보존할 때 사용하는 현재 학기 snapshot이다. Agent 대화 기록이나 App-owned aggregate가 아니다.
 _Avoid_: App database, 폴더 구조 전체, 채팅 기록, Agent Memory
 
+**SemesterModeling**:
+SemesterWorkspace의 실제 학기 자료에서 Course, Assignment, Exam, ScheduleEvent에 해당하는 학업 사실을 식별하고 기존 SemesterModel과 조정해 일관된 구조로 정리하는 AY의 학기 작업이다. 선택 자료는 작업 맥락일 수 있지만 특정 학업 객체, 자료 자체의 정리나 한 번의 실행 기록에 한정되지 않는다.
+_Avoid_: ModelingRun, 자료 파일 재배치, First Assignment 전용 workflow, 임의의 file editing
+
 **Assignment**:
 학생에게 제출·완료할 학업 활동을 요구하는 first-class 학업 객체다. 마감, 제출 방식, 요구사항과 근거 같은 과제 사실을 소유한다.
 _Avoid_: 일반 할 일, 캘린더 이벤트, 카드

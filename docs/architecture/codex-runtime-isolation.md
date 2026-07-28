@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최근 갱신: 2026-07-28
+최근 갱신: 2026-07-29
 
 분류: 활성
 
@@ -24,9 +24,9 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | Runtime state | Canonical composition이 sibling `../.ay-ple/` 아래 controlled `state/runtime/home`, `temp/`와 Runtime cache를 계산하고 caller의 전역 `CODEX_HOME`을 account·config·session authority로 사용한다. External `state/workspace-registry.json`의 strict v1 CAS store는 exact effective MCP declaration과 held Adapter lifecycle readiness 뒤 active pointer를 commit하며 current product composition의 reopen authority다. Separate `CODEX_SQLITE_HOME`이나 per-workspace durable operation file은 만들지 않는다. Pending interaction·operation과 Broker-owned Adapter status는 process-local Runtime generation memory에서 terminal 정산한다. | 없음 |
 | Account lifecycle | Current dev·dogfood는 workspace-only `CodexWorkspaceRuntime`을 통해 caller의 `CODEX_HOME`, 또는 미설정 시 `~/.codex`에서 fresh account readiness만 읽는다. 별도 auth profile·device-auth helper·credential copy·Browser OAuth UI와 Node login·logout surface는 없다. | Read-only account plan·usage가 실제 제품 행동에 필요할 때 별도 surface 검토 |
 | 작업 `cwd` | Native Bootstrap이 끝난 한 학기 Git root를 explicit launch input 또는 registry에서 resolve하고 project root와 정상 thread의 고정 `cwd`로 사용한다. No-root startup은 fail closed하고 `CODEX_CHAT_WORKSPACE`·ambient `cwd`를 fallback으로 쓰지 않는다. | 없음 |
-| 학기 제품 상태 | Git-tracked root `workspace-state.json`은 strict v4 identity와 opaque JSON snapshot만 제공한다. 학업 결과는 actual files와 Git checkpoint에 남고 Interaction request/result·academic event history는 App store에 저장하지 않는다. 기존 v2/v3/malformed/future bytes는 지원하지 않는 상태로 보존한다. | Snapshot 구조가 실제 사용자 필요로 안정될 때 별도 schema 결정 |
+| 학기 제품 상태 | Git-tracked root `workspace-state.json`은 strict v4 `SemesterWorkspaceState` identity envelope과 `SemesterModel`용 canonical `snapshot` slot을 제공한다. Current slot 값은 opaque JSON이다. 학업 결과는 actual files와 Git checkpoint에 남고 Interaction request/result·academic event history는 App store에 저장하지 않는다. 기존 v2/v3/malformed/future bytes는 지원하지 않는 상태로 보존한다. | 대표 Assignment·Exam modeling 사례로 field contract와 consumer가 생기면 snapshot을 validated `SemesterModel` contract로 확장한다. Schema·lint logic을 Skill lifecycle과 독립된 product-owned Module에 두고 workspace-level CLI를 Adapter로 제공하는 안은 유력한 후속 후보지만, exact Module ownership·Interface·설치 방식과 migration은 아직 채택하지 않는다. |
 | Native context | Runtime의 persistent bridge와 one-shot official App Server sidecar가 모두 exact workspace Git root `cwd`, native `.git` project boundary와 controlled environment를 사용한다. Sidecar의 `config/read`·`skills/list` raw protocol은 Runtime-private이고 Server는 atomic high-level snapshot만 소비한다. Process-wide managed Skill root, package-owned bundle/context guard와 `skills/extraRoots/set` injection은 없다. | User-added Skill 지원 policy가 필요할 때 별도 결정 |
-| Transport·policy | Local companion이 detached Node→Python→App Server tree를 supervise한다. First Assignment product Turn은 `auto_review + workspace_write`를 explicit하게 보내고 Codex execution permission과 InteractionCapability result를 분리하며, Browser에는 allowlisted product activity와 capability UI만 전달한다. | Interactive native approval UX과 cloud threat model |
+| Transport·policy | Local companion이 detached Node→Python→App Server tree를 supervise한다. `model_semester` Product Turn은 `auto_review + workspace_write`를 explicit하게 보내고 Codex execution permission과 InteractionCapability result를 분리하며, Browser에는 allowlisted product activity와 capability UI만 전달한다. | Interactive native approval UX과 cloud threat model |
 
 Current product startup·Runtime command는 canonical `../.ay-ple/`의 external Runtime·controlled state, 전역 `CODEX_HOME`과 prepared Git root를 조합한다. First open·학기 변경은 explicit `--workspace`, 이후 start는 registry active pointer를 fresh reopen하며 required root가 없으면 fail closed한다. Legacy dogfood profile·managed development materializer와 package-local Runtime/cache command는 tracked graph에서 제거됐고 validated clone-local residue도 one-shot cleanup으로 정리했다. Public application host, Runtime release resolver, public-preview Account→Setup→Ready graph와 app-owned v3 scaffold·bundle kernel도 tracked product graph에 없다.
 
@@ -86,7 +86,7 @@ Current product factory는 Runtime spawn 전과 factory 내부에서 external ap
 
 ## 제품용 directory 구조
 
-현재 personal canonical layout은 아래와 같다. Root `workspace-state.json`은 Git-tracked v4 identity와 opaque snapshot authority다.
+현재 personal canonical layout은 아래와 같다. Root `workspace-state.json`은 Git-tracked v4 `SemesterWorkspaceState` identity envelope이고, opaque `snapshot`은 `SemesterModel`의 canonical serialization slot이다.
 
 ```text
 hub/
@@ -111,11 +111,24 @@ hub/
   AGENTS.md                   # init Skill이 준비하는 간단한 workspace 지침
   .agents/skills/             # source catalog에서 복사한 Git-tracked 실행 Skill
   .codex/config.toml          # Git-safe한 Interaction MCP project declaration
-  workspace-state.json        # Git-tracked workspace-local JSON authority
+  workspace-state.json        # Identity envelope + SemesterModel snapshot slot
   <actual-semester-files>
 ```
 
-`hub/.agents/skills/`에는 repository 개발 harness와 `hub` project에서 App 실행 전 native discovery할 초기 Bootstrap Skill을 둔다. AY-PLE built-in Skill의 tracked source catalog는 `hub/skills/`가 별도로 소유한다. Bootstrap은 선택한 catalog directory를 workspace의 `.agents/skills/`로 복사하며 symlink를 만들지 않는다. Workspace copy가 exact Git root에서 Codex가 native discovery하는 실행 authority이고 Git이 실제 사용 byte를 기록한다. Catalog 변경은 명시적인 Bootstrap·Update와 workspace diff 없이 기존 학기를 바꾸지 않는다. Public distribution 요구 전에는 download·package·plugin 계층을 추가하지 않는다.
+`hub/.agents/skills/`에는 repository 개발 harness와 `hub` project에서 App 실행 전 native discovery할 초기 Bootstrap Skill을 둔다. AY-PLE built-in Skill의 tracked source catalog는 `hub/skills/`가 별도로 소유한다. Bootstrap은 workspace mutation 전에 catalog 전체 validation과 destination conflict planning을 끝낸다. Invalid direct child나 divergent installed destination이 하나라도 있으면 valid subset이나 다른 managed file을 쓰지 않고 fail closed한다. 검증된 모든 complete Skill tree는 fresh workspace의 `.agents/skills/`로 복사하며 symlink를 만들지 않는다. Workspace copy가 exact Git root에서 Codex가 native discovery하는 실행 authority이고 Git이 실제 사용 byte를 기록한다. Current development는 catalog 변경 뒤 `../fixtures/**`에서 disposable workspace를 재생성하고 Bootstrap을 다시 실행하며 existing workspace refresh·merge·prune은 제공하지 않는다.
+
+Minimal catalog validation contract는 다음과 같다.
+
+| 대상 | 검증 |
+| --- | --- |
+| Catalog entry | `hub/skills/`의 각 direct entry는 symlink가 아닌 directory이고 이름이 reserved `ay-ple-*` namespace에 속한다. |
+| Skill entrypoint | Root의 `SKILL.md`는 symlink가 아닌 regular file이고 parseable frontmatter에 non-empty `name`·`description`을 가진다. `name`은 directory basename과 정확히 같다. |
+| Complete tree | Root 아래의 모든 descendant relative path와 bytes를 opaque하게 다룬다. Regular file과 directory만 허용하고 symlink와 special file은 거절한다. |
+| Validation depth | Bootstrap은 root entrypoint 밖의 directory vocabulary, file 관계, content 의미나 behavior를 해석하지 않는다. Catalog를 stable path order로 검증·복사할 뿐 별도 Skill schema framework를 만들지 않는다. |
+
+Skill을 한 `SKILL.md`에 둘지 여러 descendant file로 나눌지는 Bootstrap contract가 아니다. Skill author가 실제 workflow branch와 information hierarchy에 따라 저작 시점에 판단하며, structure가 달라져도 complete-tree copy Interface는 변하지 않는다.
+
+Catalog completeness는 fresh Bootstrap의 pre-mutation contract이고 App startup admission contract가 아니다. Workspace Runtime은 exact Git root에서 native-discovered installed copy를 사용하지만 `hub/skills/`를 다시 읽어 source roster·bytes와 비교하지 않는다. `model_semester`처럼 exact built-in에 의존하는 ActionInvocation은 dispatch 전 effective catalog에서 required Skill의 name·enabled 상태·workspace-local root를 검증하고, 불일치하면 그 action만 unavailable로 닫는다. Normal Chat과 source explorer는 계속 사용할 수 있으며 다른 scope의 동명 Skill이나 source catalog로 fallback하지 않는다.
 
 사용자는 App을 시작하기 전에 `hub/`를 연 Codex CLI 같은 native client에서 Bootstrap Skill을 직접 실행한다. App은 이 native thread를 열거나 resume하지 않고 candidate·init 상태를 알지 않는다. 첫 open·학기 변경은 `--workspace <absolute-prepared-git-root>`, 이후 일반 실행은 registry active pointer를 사용한다. Explicit root도 valid pointer도 없으면 Browser나 Workspace Runtime을 열지 않고 fail closed한다. App은 prepared root의 exact Git marker와 v4 identity를 fresh 검증한 뒤 exact root를 cwd로 쓰는 Workspace Runtime을 표준 `workspace-write`로 시작한다. Current pinned App Server는 trust가 미지정된 exact Git root를 native user config에 기록하고 config를 reload한 뒤 thread를 만든다.
 
@@ -131,7 +144,7 @@ Pre-App native Bootstrap이 설치하는 `.codex/config.toml`은 exact SemesterW
 
 ## Durable store와 rollback
 
-Workspace-local file과 Git은 app data나 native session과 다른 durable authority다. Current-v2/v3 bytes는 전환 전 historical data이므로 Server lifecycle과 contraction이 original bytes를 삭제·rewrite하지 않는다. Current root `workspace-state.json`은 v4 identity와 opaque snapshot만 두고 pending interaction·native execution·academic event history를 넣지 않는다. Exact codec 동작은 [`@ay-ple/semester-workspace` README](../../packages/semester-workspace/README.md), workspace authority는 ADR 0018, interaction state 경계는 ADR 0019가 소유한다.
+Workspace-local file과 Git은 app data나 native session과 다른 durable authority다. Current-v2/v3 bytes는 전환 전 historical data이므로 Server lifecycle과 contraction이 original bytes를 삭제·rewrite하지 않는다. Current root `workspace-state.json`은 v4 identity envelope과 `SemesterModel`용 opaque snapshot slot만 두고 pending interaction·native execution·academic event history를 넣지 않는다. Exact codec 동작은 [`@ay-ple/semester-workspace` README](../../packages/semester-workspace/README.md), workspace authority는 ADR 0018, interaction state 경계는 ADR 0019가 소유한다.
 
 ## 리스크와 대응
 
@@ -149,7 +162,7 @@ Workspace-local file과 Git은 app data나 native session과 다른 durable auth
 | Evidence self-reference | `workspace-state.json`을 포함하는 commit SHA를 같은 JSON에 넣으면 commit identity를 계산할 수 없다. | `EvidenceRef`는 relative path, exact content digest와 locator를 저장하고 Git history는 해당 content version을 찾는 수단으로만 사용한다. |
 | Evidence path escape·drift | Agent-supplied path가 workspace 밖을 읽거나 digest가 달라진 최신 file을 원래 근거처럼 표시할 수 있다. | Broker가 active Runtime의 exact root 안에서 bounded regular-file read, digest·locator 검증을 atomic preflight하고 하나라도 실패하면 Browser projection 없이 MCP call을 닫는다. |
 | Workspace instruction drift | Init Skill이 기존 `AGENTS.md`를 덮어쓰거나 지나치게 상세한 policy를 만들면 사용자 지침과 AY의 판단 공간을 잃는다. | 기존 bytes를 존중하고 commit checkpoint 같은 짧은 원칙만 두며 App code가 exact instruction bundle을 소유하지 않는다. |
-| Skill version drift | `hub/skills/`의 변경이 기존 학기의 실행 동작을 암묵적으로 바꾸면 Git history와 실제 AY behavior가 어긋난다. | Workspace에 real directory를 복사하고 명시적인 Bootstrap·Update와 Git diff·checkpoint를 거쳐서만 바꾼다. Symlink와 Runtime `extraRoots` 주입을 사용하지 않는다. |
+| Skill version drift | `hub/skills/`의 변경이 기존 학기의 실행 동작을 암묵적으로 바꾸면 Git history와 실제 AY behavior가 어긋난다. | Workspace에 real directory를 복사하고 Current development에서는 source 변경 뒤 disposable workspace를 fresh Bootstrap한다. Existing workspace는 conflict 시 보존하며 update lifecycle을 제공하지 않는다. Symlink와 Runtime `extraRoots` 주입을 사용하지 않는다. |
 | MCP secret의 Git 혼입 | Project config에 App endpoint·token이나 Runtime binding value를 쓰면 학기 history에 process-local secret이 남는다. | Config에는 env 이름과 정적 entrypoint만 두고 값은 Runtime child environment로 공급한다. |
 | MCP entrypoint path drift | `hub/`와 SemesterWorkspace 중 하나만 이동하면 tracked relative command가 더는 Adapter를 가리키지 않는다. | Bootstrap Update가 두 canonical root 사이의 command를 다시 계산하고 config diff를 checkpoint한다. App startup은 missing required Adapter를 fail closed한다. |
 | Broker-before-Runtime 순서 역전 | Shared listener나 private route가 online이 되기 전에 required Adapter를 시작하면 deterministic startup failure가 발생하거나 다른 endpoint로 우회하고 싶어진다. | Listener bind와 Broker binding을 Runtime spawn의 명시적인 선행 capability로 만들고 실패 시 child process를 만들지 않는다. |

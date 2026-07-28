@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | 활성 SemesterWorkspace | App-owned admission과 `WorkspaceManifest` validation 뒤 새 thread의 `thread/start.cwd`; 재사용 thread는 기존 `cwd`가 같은지 검증 | `ImportSource`는 workspace나 `cwd`가 아니다. `turn/start.cwd`는 해당 turn 이후에도 유지된다. Workspace가 다르면 새 thread를 시작하며, cross-workspace override는 명시적인 후속 UX 없이는 사용하지 않는다. |
 | SourceSelection | run-scoped `appDataRoot`에 snapshot한 자료의 Markdown link/path를 ModelingRecipe arguments와 함께 한 bounded `TextInput.text`에 렌더링 | 명시적인 작업 입력이지 filesystem permission boundary가 아니다. Original `RawMaterial` path를 native input이나 write target으로 직접 넘기지 않는다. |
-| ModelingRecipe의 Skill | `skill` UserInput variant의 `name`, `path` | native Skill protocol을 사용하며 AY-PLE 전용 plugin 체계를 만들지 않는다. |
+| ModelingRecipe의 Skill | `skill` UserInput variant의 `name`, `path` | 별도 extension protocol 없이 native Skill protocol을 사용한다. |
 | ModelingRecipe의 prompt template과 ModelingInvocation arguments | 위 SourceSelection reference와 함께 전달하는 bounded `TextInput.text` | Skill에 별도 structured arguments 채널이 없으므로 검증한 값을 text에 렌더링한다. First Assignment vertical은 exact `SkillInput` 하나와 이 `TextInput` 하나를 사용한다. |
 | Side effect 없는 ModelingRecipe의 final structured result | 필요한 후속 기능에서만 선택적으로 사용하는 `turn/start.outputSchema` | First Assignment vertical은 사용하지 않는다. `StatePatch` payload를 이 경로에 중복하지 않고 custom MCP input 한 곳을 정본으로 둔다. |
 | StatePatch proposal contract | custom MCP `propose_state_patch` input schema | Tool input이 canonical proposal payload다. MCP는 proposal을 confirm·apply하거나 confirmed SemesterModel을 직접 바꾸지 않는다. |
