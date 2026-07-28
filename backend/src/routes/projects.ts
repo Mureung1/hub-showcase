@@ -7,6 +7,7 @@ import { runAnalysisPipeline } from '../lib/analysisPipeline';
 import { refineVerificationSummary } from '../lib/refineHypothesis';
 import { getFullProjectReport, filterReportByHypothesisIds } from '../lib/projectReport';
 import { buildReportMarkdown } from '../lib/reportMarkdown';
+import { perIpBurstLimit, dailyQuotaGuard } from '../middleware/geminiQuota';
 
 const router = Router();
 const ANALYSIS_REQUESTS_DIR = path.join(__dirname, '..', '..', '..', 'analysis_requests');
@@ -108,7 +109,11 @@ router.post('/', async (req: Request<{}, {}, CreateProjectBody>, res: Response) 
   });
 });
 
-router.post('/:id/analyze', async (req: Request<{ id: string }>, res: Response) => {
+router.post(
+  '/:id/analyze',
+  perIpBurstLimit,
+  dailyQuotaGuard,
+  async (req: Request<{ id: string }>, res: Response) => {
   const { id } = req.params;
 
   const { data: project, error: projectError } = await supabase
@@ -172,7 +177,8 @@ router.post('/:id/analyze', async (req: Request<{ id: string }>, res: Response) 
     const message = err instanceof Error ? err.message : 'AI 분석 파이프라인 실행에 실패했습니다.';
     return res.status(500).json({ error: message });
   }
-});
+  },
+);
 
 // GET /api/projects/:id — 대시보드용. project + 각 가설에 verification_result를 붙여 한 번에 반환.
 router.get('/:id', async (req: Request<{ id: string }>, res: Response) => {
@@ -307,6 +313,8 @@ router.get(
 // FE가 미리보기로만 보여준다. 실제 반영은 별도 /apply 호출에서만 일어난다.
 router.post(
   '/:id/hypotheses/:hid/refine',
+  perIpBurstLimit,
+  dailyQuotaGuard,
   async (
     req: Request<{ id: string; hid: string }, {}, { highlighted_text?: string; message?: string }>,
     res: Response,
