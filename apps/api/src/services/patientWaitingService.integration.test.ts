@@ -120,8 +120,9 @@ describe("PatientWaitingService development Supabase vertical slice", () => {
         await executor.query(
           `
         INSERT INTO public.daily_queues
-          (hospital_id, category_set_id, queue_date, status, opened_at, max_remote_waiting_patients)
-        VALUES ($1, $2, '2026-07-16', 'open', now(), 5)
+          (hospital_id, category_set_id, queue_date, status, opened_at,
+           average_minutes_per_patient, max_remote_waiting_patients)
+        VALUES ($1, $2, '2026-07-16', 'open', now(), 15, 5)
       `,
           [hospitalId, categorySetId],
         );
@@ -149,7 +150,7 @@ describe("PatientWaitingService development Supabase vertical slice", () => {
         });
         await expect(service.getHospitalConfig(hospitalId)).resolves.toMatchObject({
           waitingPatients: 3,
-          estimatedMinutes: 30,
+          estimatedMinutes: 45,
         });
         expect((await service.getActive(accountId))?.entry.id).toBe(waitingId);
         await expect(

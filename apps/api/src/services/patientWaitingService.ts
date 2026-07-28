@@ -86,7 +86,8 @@ export class PatientWaitingService implements PatientWaitingOperations {
         categories: configuration.categories,
         queueStatus: queue?.status ?? "paused",
         waitingPatients,
-        estimatedMinutes: waitingPatients * AVERAGE_TREATMENT_MINUTES,
+        estimatedMinutes:
+          waitingPatients * (queue?.averageMinutesPerPatient ?? AVERAGE_TREATMENT_MINUTES),
       };
     });
   }
@@ -174,6 +175,9 @@ export class PatientWaitingService implements PatientWaitingOperations {
         queueId: queue.id,
         hospitalName: hospital.name,
         patientWebOrigin: this.options.patientWebOrigin,
+        averageMinutesPerPatient: queue.averageMinutesPerPatient,
+        preparationThreshold: queue.preparationThreshold,
+        entryThreshold: queue.entryThreshold,
       });
       return this.buildPosition(executor, waiting.id);
     });
@@ -274,6 +278,9 @@ export class PatientWaitingService implements PatientWaitingOperations {
       queueId,
       hospitalName: hospital.name,
       patientWebOrigin: this.options.patientWebOrigin,
+      averageMinutesPerPatient: queue.averageMinutesPerPatient,
+      preparationThreshold: queue.preparationThreshold,
+      entryThreshold: queue.entryThreshold,
     });
   }
 
@@ -375,6 +382,7 @@ export class PatientWaitingService implements PatientWaitingOperations {
       entries.map((entry) =>
         this.toQueueEntry(entry, counts, configuration.inputMode, configuration.categories),
       ),
+      queue.averageMinutesPerPatient,
     );
     const position = positions.find(({ entry }) => entry.id === waitingId);
     if (!position) throw new ApiError(404, "WAITING_NOT_FOUND", "웨이팅을 찾을 수 없습니다.");

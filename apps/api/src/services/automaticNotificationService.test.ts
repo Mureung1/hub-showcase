@@ -136,6 +136,9 @@ describe("AutomaticNotificationService", () => {
       queueId: waiting.queueId,
       hospitalName: baseInput.hospitalName,
       patientWebOrigin: "https://example.test",
+      averageMinutesPerPatient: 10,
+      preparationThreshold: 6,
+      entryThreshold: 4,
       now,
     });
 
@@ -147,6 +150,44 @@ describe("AutomaticNotificationService", () => {
           hospitalName: baseInput.hospitalName,
           currentPosition: 1,
         },
+      }),
+    );
+  });
+
+  it("대기열의 평균 진료시간과 알림 기준을 자동 알림에 적용한다", async () => {
+    const dependencies = createDependencies();
+    dependencies.listByQueue.mockResolvedValue([
+      {
+        ...waiting,
+        id: "53bf8d41-0aef-49b3-9b65-dd27151a4e92",
+        accountId: null,
+        source: "onsite",
+        status: "onsite_waiting",
+        patientCount: 6,
+        onsiteNearTurnNotifiedAt: now,
+      },
+      waiting,
+    ]);
+
+    await dependencies.service.processQueue(executor, {
+      queueId: waiting.queueId,
+      hospitalName: baseInput.hospitalName,
+      patientWebOrigin: "https://example.test",
+      now,
+      averageMinutesPerPatient: 15,
+      preparationThreshold: 7,
+      entryThreshold: 3,
+    });
+
+    expect(dependencies.send).toHaveBeenCalledWith(
+      executor,
+      expect.objectContaining({
+        waitingEntryId: waiting.id,
+        notificationType: "preparation",
+        variables: expect.objectContaining({
+          currentPosition: 7,
+          estimatedMinutes: 90,
+        }),
       }),
     );
   });
