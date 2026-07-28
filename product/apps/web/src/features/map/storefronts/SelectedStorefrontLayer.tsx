@@ -6,7 +6,10 @@ import type { StorefrontMapLayer, StorefrontMapLayerInput } from "./createStoref
 
 export const SELECTED_STOREFRONT_LAYER_ID = "localtwin-selected-storefront";
 
-export type StorefrontPlacementMode = "replace-building" | "rooftop-marker";
+export type StorefrontPlacementMode =
+  | "replace-building"
+  | "rooftop-marker"
+  | "selected-focus";
 
 export type SelectedStorefront = {
   id: string;

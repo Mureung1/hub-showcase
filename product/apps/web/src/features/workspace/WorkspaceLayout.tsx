@@ -1,11 +1,44 @@
+import { useMemo } from "react";
+
+import { categoryMatchesSelection } from "../market/categorySelection";
 import { MarketFilters } from "../market/MarketFilters";
 import { MarketInspector } from "../market/MarketInspector";
 import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
 import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
+import type { SelectedStorefront } from "../map/storefronts/SelectedStorefrontLayer";
+import { useStorefrontBuildingPlacements } from "../map/storefronts/useStorefrontBuildingPlacement";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 import type { PanelTextSize } from "./usePanelTextSize";
+import { useWorkspaceUrlPersistence } from "./useWorkspaceUrlPersistence";
+
+function focusCategoryCode(category: string, categoryCode: string | null | undefined) {
+  if (categoryCode?.trim()) return categoryCode;
+  if (category.includes("카페") || category.includes("커피")) return "I21201";
+  if (category.includes("베이커리") || category.includes("제과") || category.includes("빵"))
+    return "I21001";
+  if (category.includes("편의점") || category.includes("마트") || category.includes("슈퍼"))
+    return "G20405";
+  if (category.includes("미용") || category.includes("헤어") || category.includes("네일"))
+    return "S20701";
+  if (category.includes("의류") || category.includes("패션") || category.includes("신발"))
+    return "G20901";
+  if (category.includes("학원") || category.includes("교육")) return "P10501";
+  if (category.includes("숙박") || category.includes("호텔") || category.includes("모텔"))
+    return "I10103";
+  if (
+    category.includes("체육") ||
+    category.includes("헬스") ||
+    category.includes("스포츠") ||
+    category.includes("요가") ||
+    category.includes("필라테스")
+  )
+    return "S20801";
+  if (category.includes("음식") || category.includes("한식") || category.includes("중식"))
+    return "I20101";
+  return "LOCAL_SERVICE";
+}
 
 export function WorkspaceLayout({
   model,
@@ -30,6 +63,65 @@ export function WorkspaceLayout({
     apiReadiness,
   } = model;
   const { market, nearby, marketAnalysis } = marketData;
+  useWorkspaceUrlPersistence(model);
+
+  const selectedStore = storefronts.storeSelection.selected;
+  const selectedCategoryStores = useMemo(
+    () =>
+      storefronts.visibleStores.filter((store) =>
+        categoryMatchesSelection(store.category, selection.categorySelection),
+      ),
+    [selection.categorySelection, storefronts.visibleStores],
+  );
+  const selectedFocusCandidate = useMemo<SelectedStorefront | null>(
+    () =>
+      viewport.presentationMode === "storefront3d" &&
+      !viewport.storefront3dUnavailable &&
+      selectedStore
+        ? {
+            id:
+              selectedStore.id ??
+              `${selectedStore.name}:${selectedStore.longitude}:${selectedStore.latitude}`,
+            longitude: selectedStore.longitude,
+            latitude: selectedStore.latitude,
+            categoryCode: focusCategoryCode(selectedStore.category, selectedStore.categoryCode),
+            placementMode: "selected-focus",
+            building: null,
+          }
+        : null,
+    [selectedStore, viewport.presentationMode, viewport.storefront3dUnavailable],
+  );
+  const selectedFocusCandidates = useMemo(
+    () => (selectedFocusCandidate ? [selectedFocusCandidate] : []),
+    [selectedFocusCandidate],
+  );
+  const selectedFocusPlacements = useStorefrontBuildingPlacements(
+    selectedFocusCandidates,
+    storefronts.visibleStores,
+  );
+  const selectedFocusPlacement = selectedFocusCandidate
+    ? selectedFocusPlacements.find((placement) => placement.storeId === selectedFocusCandidate.id)
+    : undefined;
+  const selectedFocusStorefront: SelectedStorefront | null = selectedFocusCandidate
+    ? {
+        ...selectedFocusCandidate,
+        building: selectedFocusPlacement
+          ? {
+              id: selectedFocusPlacement.building.buildingId,
+              center: selectedFocusPlacement.building.center,
+              plotSizeMeters: selectedFocusPlacement.building.plotSizeMeters,
+              heightMeters: selectedFocusPlacement.building.heightMeters,
+              storeCountInBuilding: selectedFocusPlacement.building.storeCountInBuilding,
+            }
+          : null,
+      }
+    : null;
+
+  function selectAndFocusStore(storeName: string) {
+    const store = storefronts.visibleStores.find((candidate) => candidate.name === storeName);
+    actions.chooseListedStore(storeName);
+    if (store) viewport.focusCenter([store.longitude, store.latitude], true);
+  }
 
   return (
     <section
@@ -53,7 +145,7 @@ export function WorkspaceLayout({
           boundaryVisible={selection.boundaryVisible}
           storesVisible={selection.storesVisible}
           visibleStores={storefronts.listedStores}
-          selectedStoreName={storefronts.storeSelection.selected?.name ?? null}
+          selectedStoreName={selectedStore?.name ?? null}
           nearbyState={nearby.state}
           onNearbyRetry={nearby.retry}
           onClose={() => panels.setFiltersOpen(false)}
@@ -70,7 +162,7 @@ export function WorkspaceLayout({
           onStoresVisibleChange={(visible) => {
             selection.setStoresVisible(visible);
           }}
-          onStoreChange={actions.chooseListedStore}
+          onStoreChange={selectAndFocusStore}
         />
       )}
       <MarketMapPanel
@@ -93,17 +185,17 @@ export function WorkspaceLayout({
             selectedCategoryName={selection.categorySelection.name}
             boundaryVisible={selection.boundaryVisible}
             storesVisible={selection.storesVisible}
-            storefrontBuildings3d={storefronts.storefrontBuildings3d}
+            storefrontBuildings3d={selectedFocusStorefront ? [selectedFocusStorefront] : []}
             visibleStores={storefronts.visibleStores}
             onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
             flowPeople={storefronts.flowPeople}
             activeHour={selection.activeHour}
             activeDemandLabel={storefronts.activeDemandLabel}
-            mapStores={storefronts.mapStores}
-            selected={storefronts.storeSelection.selected}
+            mapStores={selectedCategoryStores}
+            selected={selectedStore}
             score={storefronts.score}
             sameCategoryCount={storefronts.sameCategoryCount}
-            onSelectStore={actions.chooseListedStore}
+            onSelectStore={selectAndFocusStore}
             visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
             onEvidenceOpen={() => panels.setEvidenceOpen(true)}
           />
@@ -138,7 +230,7 @@ export function WorkspaceLayout({
       {panels.inspectorOpen && (
         <MarketInspector
           market={market}
-          selected={storefronts.storeSelection.selected}
+          selected={selectedStore}
           score={storefronts.score}
           categorySelection={selection.categorySelection}
           categoryCoverageReason={storefronts.categoryCoverageReason}

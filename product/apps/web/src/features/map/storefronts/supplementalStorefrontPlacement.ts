@@ -2,7 +2,7 @@ import type { MarketStore } from "../../market/types";
 import type { SelectedStorefront } from "./SelectedStorefrontLayer";
 import type { ResolvedStorefrontBuilding } from "./storefrontBuildingPlacement";
 
-export const MAX_VISIBLE_STOREFRONT_OBJECTS = 12;
+export const MAX_VISIBLE_STOREFRONT_OBJECTS = 1;
 
 function storeIdentity(store: MarketStore) {
   return store.id ?? `${store.name}:${store.longitude}:${store.latitude}`;
@@ -17,30 +17,20 @@ export function selectSupplementalStorefrontCandidates({
   existingObjectCount: number;
   selected: MarketStore | null;
 }): SelectedStorefront[] {
-  const remaining = Math.max(0, MAX_VISIBLE_STOREFRONT_OBJECTS - existingObjectCount);
-  if (remaining === 0) return [];
+  if (!selected || existingObjectCount >= MAX_VISIBLE_STOREFRONT_OBJECTS) return [];
+  const selectedIdentity = storeIdentity(selected);
+  const selectedStore = stores.find((store) => storeIdentity(store) === selectedIdentity) ?? selected;
+  if (!selectedStore.id || !selectedStore.categoryCode) return [];
 
-  const selectedIdentity = selected ? storeIdentity(selected) : null;
-  const prioritized = [...stores].sort((left, right) => {
-    const leftSelected = storeIdentity(left) === selectedIdentity ? 1 : 0;
-    const rightSelected = storeIdentity(right) === selectedIdentity ? 1 : 0;
-    return rightSelected - leftSelected;
-  });
-  const seen = new Set<string>();
-  const candidates: SelectedStorefront[] = [];
-
-  for (const store of prioritized) {
-    if (!store.id || !store.categoryCode || seen.has(store.id)) continue;
-    seen.add(store.id);
-    candidates.push({
-      id: store.id,
-      longitude: store.longitude,
-      latitude: store.latitude,
-      categoryCode: store.categoryCode,
-    });
-    if (candidates.length >= remaining) break;
-  }
-  return candidates;
+  return [
+    {
+      id: selectedStore.id,
+      longitude: selectedStore.longitude,
+      latitude: selectedStore.latitude,
+      categoryCode: selectedStore.categoryCode,
+      placementMode: "selected-focus",
+    },
+  ];
 }
 
 export function buildSupplementalStorefronts({
@@ -55,17 +45,15 @@ export function buildSupplementalStorefronts({
   const placementByStoreId = new Map(
     placements.map((placement) => [placement.storeId, placement.building]),
   );
-  const claimedBuildings = new Set(occupiedBuildingIds);
-  const supplemental: SelectedStorefront[] = [];
+  const candidate = candidates[0];
+  if (!candidate) return [];
+  const building = placementByStoreId.get(candidate.id);
+  if (!building || occupiedBuildingIds.has(building.buildingId)) return [];
 
-  for (const candidate of candidates) {
-    const building = placementByStoreId.get(candidate.id);
-    if (!building || claimedBuildings.has(building.buildingId)) continue;
-    claimedBuildings.add(building.buildingId);
-    supplemental.push({
+  return [
+    {
       ...candidate,
-      placementMode:
-        building.storeCountInBuilding <= 1 ? "replace-building" : "rooftop-marker",
+      placementMode: "selected-focus",
       building: {
         id: building.buildingId,
         center: building.center,
@@ -73,7 +61,6 @@ export function buildSupplementalStorefronts({
         heightMeters: building.heightMeters,
         storeCountInBuilding: building.storeCountInBuilding,
       },
-    });
-  }
-  return supplemental;
+    },
+  ];
 }

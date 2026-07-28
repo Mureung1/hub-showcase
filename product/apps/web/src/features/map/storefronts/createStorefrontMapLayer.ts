@@ -66,8 +66,6 @@ function replacementModelMatrix(input: StorefrontMapLayerInput, storefront: THRE
   const horizontalScale = plotSizeMeters / localFootprint;
   const verticalScale = heightMeters / localHeight;
 
-  // MapLibre receives Three.js local Y as map Z after rotationX. The second
-  // scale value is therefore depth, while the third is height.
   return new THREE.Matrix4()
     .makeTranslation(origin.x, origin.y, origin.z)
     .scale(
@@ -113,7 +111,112 @@ function rooftopMarkerMatrix(input: StorefrontMapLayerInput, marker: THREE.Group
     .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
 }
 
+function createSelectedStoreFocus(categoryCode: string) {
+  const variant = getStorefrontVariant(categoryCode);
+  const focus = new THREE.Group();
+  focus.name = "selected-store-focus";
+
+  const target = new THREE.Group();
+  target.name = "selected-store-target";
+
+  const outerRingMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffd83d,
+    transparent: true,
+    opacity: 0.86,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const outerRing = new THREE.Mesh(new THREE.RingGeometry(0.72, 0.94, 48), outerRingMaterial);
+  outerRing.name = "selected-store-pulse-ring";
+  outerRing.rotation.x = -Math.PI / 2;
+  outerRing.position.y = 0.06;
+  target.add(outerRing);
+
+  const innerRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.36, 0.5, 40),
+    new THREE.MeshBasicMaterial({
+      color: variant.accent,
+      transparent: true,
+      opacity: 0.95,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
+    }),
+  );
+  innerRing.rotation.x = -Math.PI / 2;
+  innerRing.position.y = 0.08;
+  target.add(innerRing);
+  focus.add(target);
+
+  const beamMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffe46a,
+    transparent: true,
+    opacity: 0.17,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const beam = new THREE.Mesh(new THREE.ConeGeometry(0.95, 4.6, 32, 1, true), beamMaterial);
+  beam.name = "selected-store-spotlight-beam";
+  beam.position.y = 2.3;
+  focus.add(beam);
+
+  const lightStem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.035, 0.035, 3.4, 12),
+    new THREE.MeshBasicMaterial({
+      color: 0xffef8c,
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false,
+      toneMapped: false,
+    }),
+  );
+  lightStem.name = "selected-store-light-stem";
+  lightStem.position.y = 1.7;
+  focus.add(lightStem);
+
+  const markerPivot = new THREE.Group();
+  markerPivot.name = "selected-store-marker-pivot";
+  markerPivot.position.y = 4.95;
+  const marker = createStorefrontCategoryMarker(variant);
+  marker.name = "selected-store-category-object";
+  marker.scale.setScalar(0.82);
+  markerPivot.add(marker);
+  focus.add(markerPivot);
+
+  focus.userData = {
+    categoryCode,
+    assetStrategy: "selected-store-spotlight",
+  };
+  return focus;
+}
+
+function selectedFocusMatrix(input: StorefrontMapLayerInput, focus: THREE.Group) {
+  const [longitude, latitude] = input.building?.center ?? [input.longitude, input.latitude];
+  const roofHeightMeters = Math.max(2.8, Math.min(80, input.building?.heightMeters ?? 5.5));
+  const origin = MercatorCoordinate.fromLngLat([longitude, latitude], roofHeightMeters + 0.18);
+  const unitScale = origin.meterInMercatorCoordinateUnits();
+  const dimensions = modelDimensions(focus);
+  const localFootprint = Math.max(dimensions.x, dimensions.z, 0.001);
+  const plotSizeMeters = input.building?.plotSizeMeters ?? 7;
+  const targetFootprintMeters = Math.max(2.8, Math.min(4.8, plotSizeMeters * 0.42));
+  const uniformScale = targetFootprintMeters / localFootprint;
+
+  return new THREE.Matrix4()
+    .makeTranslation(origin.x, origin.y, origin.z)
+    .scale(
+      new THREE.Vector3(
+        unitScale * uniformScale,
+        -unitScale * uniformScale,
+        unitScale * uniformScale,
+      ),
+    )
+    .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+}
+
 function storefrontModelMatrix(input: StorefrontMapLayerInput, storefront: THREE.Group) {
+  if (placementMode(input) === "selected-focus") return selectedFocusMatrix(input, storefront);
   return placementMode(input) === "rooftop-marker"
     ? rooftopMarkerMatrix(input, storefront)
     : replacementModelMatrix(input, storefront);
@@ -139,11 +242,11 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
       disposeStorefront(storefront);
     }
     storefront =
-      placementMode(currentInput) === "rooftop-marker"
-        ? nextStorefront
-        : emphasizeCategoryAttachment(nextStorefront);
+      placementMode(currentInput) === "replace-building"
+        ? emphasizeCategoryAttachment(nextStorefront)
+        : nextStorefront;
     storefront.traverse((object) => {
-      object.renderOrder = placementMode(currentInput) === "rooftop-marker" ? 4 : object.renderOrder;
+      object.renderOrder = placementMode(currentInput) === "selected-focus" ? 5 : object.renderOrder;
     });
     modelMatrix = storefrontModelMatrix(currentInput, storefront);
     storefront.userData.locationSource = currentInput.source;
@@ -158,6 +261,11 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
     currentInput = nextInput;
     if (!scene) return;
     const variant = getStorefrontVariant(nextInput.categoryCode);
+
+    if (placementMode(nextInput) === "selected-focus") {
+      installStorefront(createSelectedStoreFocus(nextInput.categoryCode));
+      return;
+    }
 
     if (placementMode(nextInput) === "rooftop-marker") {
       installStorefront(createStorefrontCategoryMarker(variant));
@@ -214,6 +322,30 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
       camera.projectionMatrix = new THREE.Matrix4()
         .fromArray(options.defaultProjectionData.mainMatrix)
         .multiply(modelMatrix);
+
+      if (storefront && placementMode(currentInput) === "selected-focus") {
+        const elapsed = performance.now() / 1000;
+        const markerPivot = storefront.getObjectByName("selected-store-marker-pivot");
+        const pulseRing = storefront.getObjectByName("selected-store-pulse-ring");
+        const beam = storefront.getObjectByName("selected-store-spotlight-beam");
+        if (markerPivot) markerPivot.rotation.y = elapsed * 0.72;
+        if (pulseRing) {
+          const pulse = 1 + Math.sin(elapsed * 3.1) * 0.12;
+          pulseRing.scale.setScalar(pulse);
+          const material = (pulseRing as THREE.Mesh).material;
+          if (material instanceof THREE.MeshBasicMaterial) {
+            material.opacity = 0.62 + (Math.sin(elapsed * 3.1) + 1) * 0.12;
+          }
+        }
+        if (beam) {
+          const material = (beam as THREE.Mesh).material;
+          if (material instanceof THREE.MeshBasicMaterial) {
+            material.opacity = 0.13 + (Math.sin(elapsed * 1.8) + 1) * 0.025;
+          }
+        }
+        mapInstance?.triggerRepaint();
+      }
+
       renderer.resetState();
       renderer.render(scene, camera);
     },

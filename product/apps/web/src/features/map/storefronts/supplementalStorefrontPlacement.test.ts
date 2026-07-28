@@ -33,56 +33,78 @@ function placement(storeId: string, buildingId: string, storeCountInBuilding: nu
   };
 }
 
-describe("supplemental storefront placement", () => {
-  it("uses only the remaining object budget and prioritizes the selected store", () => {
-    const stores = Array.from({ length: 8 }, (_, index) => store(String(index + 1)));
-    const selected = stores[7];
+describe("selected storefront focus placement", () => {
+  it("does not create a 3D object before a store is explicitly selected", () => {
+    expect(
+      selectSupplementalStorefrontCandidates({
+        stores: [store("1"), store("2")],
+        existingObjectCount: 0,
+        selected: null,
+      }),
+    ).toEqual([]);
+  });
 
+  it("uses a one-object budget and selects only the chosen store", () => {
+    const stores = [store("1"), store("2")];
+    const selected = stores[1];
     const candidates = selectSupplementalStorefrontCandidates({
       stores,
-      existingObjectCount: MAX_VISIBLE_STOREFRONT_OBJECTS - 3,
+      existingObjectCount: 0,
       selected,
     });
 
-    expect(candidates).toHaveLength(3);
-    expect(candidates[0].id).toBe(selected.id);
+    expect(MAX_VISIBLE_STOREFRONT_OBJECTS).toBe(1);
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        id: selected.id,
+        placementMode: "selected-focus",
+      }),
+    ]);
+    expect(
+      selectSupplementalStorefrontCandidates({
+        stores,
+        existingObjectCount: 1,
+        selected,
+      }),
+    ).toEqual([]);
   });
 
-  it("fully replaces single-store buildings and uses rooftop markers for mixed-use buildings", () => {
-    const candidates = selectSupplementalStorefrontCandidates({
-      stores: [store("1"), store("2")],
+  it("anchors the focus to a mixed-use building without replacing it", () => {
+    const candidate = selectSupplementalStorefrontCandidates({
+      stores: [store("1")],
       existingObjectCount: 0,
-      selected: null,
+      selected: store("1"),
     });
     const storefronts = buildSupplementalStorefronts({
-      candidates,
-      placements: [placement("1", "way/one", 1), placement("2", "way/two", 4)],
+      candidates: candidate,
+      placements: [placement("1", "way/mixed", 4)],
       occupiedBuildingIds: new Set(),
     });
 
-    expect(storefronts.map((item) => item.placementMode)).toEqual([
-      "replace-building",
-      "rooftop-marker",
+    expect(storefronts).toEqual([
+      expect.objectContaining({
+        placementMode: "selected-focus",
+        building: expect.objectContaining({
+          id: "way/mixed",
+          storeCountInBuilding: 4,
+        }),
+      }),
     ]);
   });
 
-  it("keeps one object per building and skips buildings already used by a primary replacement", () => {
-    const candidates = selectSupplementalStorefrontCandidates({
-      stores: [store("1"), store("2"), store("3")],
+  it("does not duplicate an already occupied building focus", () => {
+    const candidate = selectSupplementalStorefrontCandidates({
+      stores: [store("1")],
       existingObjectCount: 0,
-      selected: null,
-    });
-    const storefronts = buildSupplementalStorefronts({
-      candidates,
-      placements: [
-        placement("1", "way/shared", 3),
-        placement("2", "way/shared", 3),
-        placement("3", "way/occupied", 1),
-      ],
-      occupiedBuildingIds: new Set(["way/occupied"]),
+      selected: store("1"),
     });
 
-    expect(storefronts).toHaveLength(1);
-    expect(storefronts[0].building?.id).toBe("way/shared");
+    expect(
+      buildSupplementalStorefronts({
+        candidates: candidate,
+        placements: [placement("1", "way/occupied", 1)],
+        occupiedBuildingIds: new Set(["way/occupied"]),
+      }),
+    ).toEqual([]);
   });
 });
