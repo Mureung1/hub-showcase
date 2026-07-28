@@ -370,7 +370,7 @@ class ProvenanceGraphBuilder:
                 DERIVED_FROM,
                 build.ref(CHECKLIST_ITEM, row["item_id"]),
                 build.ref(ANALYSIS_CLAIM, row["claim_id"]),
-                evidence_id=row["item_id"],
+                evidence_id=row["claim_id"],
             )
 
     def _roadmap(self, build: LayerBuild, context: RunContext) -> None:

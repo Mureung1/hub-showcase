@@ -9,6 +9,11 @@
 경로는 `requirement_candidate_mentions` → `requirement_mentions` →
 `posting_versions` → `postings` → `companies` 다.
 
+세는 단위는 후보 하나가 아니라 같은 개념 이름으로 묶인 후보 한 벌이다. 후보는 표현의
+매칭 키로 갈리므로 같은 개념의 다른 표기가 서로 다른 후보가 되고, 후보마다 세면 어느
+쪽도 임계값을 넘지 못한다. 묶는 규칙은 `taxonomy/promotion.py` 가 정하고 이 저장소는
+받은 후보 목록을 한 번에 센다.
+
 발행은 이전 활성 버전을 supersede 하고 새 버전을 넣는 두 문장이다. 두 문장이 한
 거래에 있어야 `requirement_taxonomy_versions` 의 부분 유니크 인덱스
 (docs/erd.md 7.2)를 어기지 않는다. 거래는 `repositories/base.py` 의
@@ -17,6 +22,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from psycopg.types.json import Jsonb
@@ -57,6 +63,7 @@ class PromotionRepository(Repository):
     _CANDIDATES_TO_REVIEW = """
         SELECT c.candidate_id, c.proposed_label, c.lifecycle_status,
                c.nearest_dimension_id, c.relation_judgment,
+               c.proposed_dimension_kind,
                c.judged_against_taxonomy_version_id, c.judgment_rationale,
                dv.display_label AS nearest_label
         FROM requirement_candidates c
@@ -110,10 +117,10 @@ class PromotionRepository(Repository):
         JOIN requirement_mentions m ON m.mention_id = cm.mention_id
         JOIN posting_versions pv ON pv.posting_version_id = m.posting_version_id
         JOIN postings p ON p.posting_id = pv.posting_id
-        WHERE cm.candidate_id = %(candidate_id)s
+        WHERE cm.candidate_id = ANY(%(candidate_ids)s)
           AND m.dataset_version = %(dataset_version)s
     """
-    """후보의 독립 공고 수와 독립 회사 수.
+    """후보 묶음의 독립 공고 수와 독립 회사 수.
 
     공고는 `posting_versions.posting_id` 로 센다. 같은 공고의 여러 버전이 같은
     표현을 담아도 공고 하나다.
@@ -121,15 +128,27 @@ class PromotionRepository(Repository):
     회사는 `postings.company_id` 로 따로 센다. 공고 수를 회사 수로 대신 쓰면 한
     회사가 올린 공고 둘이 회사 둘로 세어지고, 그 회사의 특징이 직무 전체의 차원으로
     승격된다. 근거는 docs/statistics-model.md 3.4 다.
+
+    후보 하나가 아니라 후보 목록을 받는다. 후보는 표현의 매칭 키로 갈리므로
+    (`taxonomy/discovery.py` 의 `candidate_identifier`) 같은 개념을 가리키는 표현이
+    표기마다 다른 후보가 된다. 후보 하나로 세면 `3년 이상의 Java 서버 개발 경험` 과
+    `Java 기반 백엔드 개발 경험` 이 각각 공고 하나로 세어져 둘 다 임계값을 넘지
+    못한다. `DISTINCT` 가 목록 전체에 걸리므로 같은 공고를 두 후보가 함께 증명해도
+    공고 하나다.
     """
 
-    def candidate_evidence(
-        self, candidate_id: str, dataset_version: str
+    def group_evidence(
+        self, candidate_ids: Sequence[str], dataset_version: str
     ) -> dict[str, int]:
-        """승격 심사가 임계값과 견줄 두 수. 근거가 없으면 둘 다 0 이다."""
+        """묶음이 임계값과 견줄 두 수. 근거가 없으면 둘 다 0 이다."""
+        if not candidate_ids:
+            return {"independent_posting_count": 0, "independent_company_count": 0}
         row = self.unit.fetch_one(
             self._CANDIDATE_EVIDENCE,
-            {"candidate_id": candidate_id, "dataset_version": dataset_version},
+            {
+                "candidate_ids": list(candidate_ids),
+                "dataset_version": dataset_version,
+            },
         )
         return {
             "independent_posting_count": int(
@@ -139,6 +158,43 @@ class PromotionRepository(Repository):
                 (row or {}).get("independent_company_count") or 0
             ),
         }
+
+    def candidate_evidence(
+        self, candidate_id: str, dataset_version: str
+    ) -> dict[str, int]:
+        """후보 하나만 센 두 수. 묶음이 후보 하나인 경우와 같다."""
+        return self.group_evidence((candidate_id,), dataset_version)
+
+    _CANDIDATE_MENTION_COUNTS = """
+        SELECT cm.candidate_id, count(*) AS mention_count
+        FROM requirement_candidate_mentions cm
+        JOIN requirement_mentions m ON m.mention_id = cm.mention_id
+        WHERE cm.candidate_id = ANY(%(candidate_ids)s)
+          AND m.dataset_version = %(dataset_version)s
+        GROUP BY cm.candidate_id
+    """
+    """후보마다 붙은 근거 mention 수.
+
+    묶음의 대표 후보를 고르는 데 쓴다. 독립 공고 수가 아니라 mention 수인 이유는
+    대표를 고르는 일이 심사가 아니기 때문이다. 임계값을 견주는 수는 묶음 전체에서
+    한 번 세고(`group_evidence`), 이 수는 같은 묶음 안에서 누구의 근거가 가장 두꺼운지
+    만 가른다.
+    """
+
+    def candidate_mention_counts(
+        self, candidate_ids: Sequence[str], dataset_version: str
+    ) -> dict[str, int]:
+        """후보별 근거 mention 수. 근거가 없는 후보는 목록에 없다."""
+        if not candidate_ids:
+            return {}
+        rows = self.unit.fetch_all(
+            self._CANDIDATE_MENTION_COUNTS,
+            {
+                "candidate_ids": list(candidate_ids),
+                "dataset_version": dataset_version,
+            },
+        )
+        return {row["candidate_id"]: int(row["mention_count"]) for row in rows}
 
     _REPRESENTATIVE_SENTENCES = """
         SELECT m.raw_expression

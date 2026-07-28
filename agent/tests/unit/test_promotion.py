@@ -30,6 +30,7 @@ from careersignal.taxonomy.promotion import (
     REASON_DANGLING_RELATION,
     REASON_EVAL_CONFLICT,
     REASON_FEW_POSTINGS,
+    REASON_ALIAS_CONFLICT,
     REASON_MISSING_NEAREST,
     REASON_NO_EVIDENCE,
     REASON_NO_LABEL,
@@ -42,15 +43,20 @@ from careersignal.taxonomy.promotion import (
     ROUTE_RELATION,
     TAXONOMY_MISMATCH,
     UNKNOWN_POLICY,
+    UNGROUPED_PREFIX,
     CandidateEvidence,
     CandidateReview,
     EvalComparison,
     PromotionPolicy,
+    choose_representative,
     compare_with_eval_set,
     decision_identifier,
     decision_row,
+    group_candidates,
+    hold_alias,
     judge_candidate,
     label_distance,
+    label_group_key,
     policy_for,
 )
 
@@ -106,9 +112,13 @@ class FakePromotionStore:
         sentences: dict[str, list[str]] | None = None,
         expected: dict[str, Any] | None = None,
         active: dict[str, Any] | None = None,
+        mention_counts: dict[str, int] | None = None,
+        group_counts: dict[tuple[str, ...], tuple[int, int]] | None = None,
     ) -> None:
         self._candidates = candidates or []
         self._counts = counts or {}
+        self._mention_counts = mention_counts or {}
+        self._group_counts = group_counts or {}
         self._sentences = sentences or {}
         self._expected = expected or {"eval_set_id": None, "labels": ()}
         self._active = (
@@ -136,6 +146,37 @@ class FakePromotionStore:
     ) -> list[dict[str, Any]]:
         rows = list(self._candidates)
         return rows if limit is None else rows[:limit]
+
+    def group_evidence(
+        self, candidate_ids, dataset_version: str
+    ) -> dict[str, int]:
+        """묶음 전체에서 센 두 수. 후보마다의 수를 합치지 않고 최대를 취한다.
+
+        실제 SQL 은 `DISTINCT` 로 공고와 회사를 세므로 같은 공고를 두 후보가 함께
+        증명해도 하나다. 대역은 후보별 수를 미리 받아 두고 그중 가장 큰 값을 쓰되,
+        묶음마다의 값을 따로 정하고 싶으면 `group_counts` 에 적는다.
+        """
+        key = tuple(sorted(candidate_ids))
+        if key in self._group_counts:
+            postings, companies = self._group_counts[key]
+            return {
+                "independent_posting_count": postings,
+                "independent_company_count": companies,
+            }
+        counted = [self._counts.get(cid, (4, 3)) for cid in candidate_ids]
+        return {
+            "independent_posting_count": max((c[0] for c in counted), default=0),
+            "independent_company_count": max((c[1] for c in counted), default=0),
+        }
+
+    def candidate_mention_counts(
+        self, candidate_ids, dataset_version: str
+    ) -> dict[str, int]:
+        return {
+            cid: self._mention_counts.get(cid, 1)
+            for cid in candidate_ids
+            if cid in self._mention_counts or True
+        }
 
     def candidate_evidence(
         self, candidate_id: str, dataset_version: str
@@ -644,17 +685,24 @@ def test_the_evidence_travels_with_the_decision() -> None:
     assert evidence.judgment_rationale == "기존 차원으로 설명되지 않는다"
 
 
-def test_one_broken_candidate_does_not_stop_the_others() -> None:
+def test_one_broken_group_does_not_stop_the_others() -> None:
+    """묶음 하나가 깨져도 다른 묶음의 심사는 끝까지 간다."""
+
     class Broken(FakePromotionStore):
-        def candidate_evidence(
-            self, candidate_id: str, dataset_version: str
-        ) -> dict[str, int]:
+        def representative_sentences(
+            self, candidate_id: str, dataset_version: str, limit: int
+        ) -> list[str]:
             if candidate_id == "cand_broken":
-                raise RuntimeError("근거를 세지 못했다")
-            return super().candidate_evidence(candidate_id, dataset_version)
+                raise RuntimeError("근거를 읽지 못했다")
+            return super().representative_sentences(
+                candidate_id, dataset_version, limit
+            )
 
     store = Broken(
-        [_candidate(candidate_id="cand_broken"), _candidate()]
+        [
+            _candidate(candidate_id="cand_broken", proposed_label="Redis 운영 경험"),
+            _candidate(),
+        ]
     )
 
     outcome = CandidateReview(store).run(_context())
@@ -703,3 +751,222 @@ def test_a_candidate_with_a_terminal_decision_is_not_reviewed_again() -> None:
     sql = PromotionRepository._CANDIDATES_TO_REVIEW
 
     assert "d.decision <> 'hold'" in sql
+
+
+# ============================================================ 라벨 묶음
+def test_two_wordings_of_one_concept_share_a_group_key() -> None:
+    """개념 이름이 같으면 표현이 달라도 한 묶음이다."""
+    assert label_group_key("Java", "cand_a") == label_group_key("java", "cand_b")
+
+
+def test_a_label_that_normalises_to_nothing_stands_alone() -> None:
+    """기호만 남은 이름을 한 묶음으로 모으면 무관한 후보가 한 대표 아래 접힌다."""
+    left = label_group_key("···", "cand_a")
+    right = label_group_key("---", "cand_b")
+
+    assert left != right
+    assert left.startswith(UNGROUPED_PREFIX)
+
+
+def test_the_representative_is_the_candidate_with_the_most_mentions() -> None:
+    assert choose_representative([("cand_b", 1), ("cand_a", 5)]) == "cand_a"
+
+
+def test_a_tie_on_mentions_is_broken_by_the_identifier() -> None:
+    """재실행이 같은 대표를 골라야 대표가 만드는 `dimension_id` 가 흔들리지 않는다."""
+    assert choose_representative([("cand_b", 3), ("cand_a", 3)]) == "cand_a"
+    assert choose_representative([("cand_a", 3), ("cand_b", 3)]) == "cand_a"
+
+
+def test_grouping_is_deterministic_whatever_the_row_order() -> None:
+    rows = [
+        _candidate(candidate_id="cand_b", proposed_label="Java"),
+        _candidate(candidate_id="cand_a", proposed_label="자바"),
+        _candidate(candidate_id="cand_c", proposed_label="java"),
+    ]
+    counts = {"cand_a": 2, "cand_b": 2, "cand_c": 9}
+
+    forward = group_candidates(rows, counts)
+    backward = group_candidates(list(reversed(rows)), counts)
+
+    assert forward == backward
+    java = next(g for g in forward if g.group_key == "java")
+    assert java.member_ids == ("cand_c", "cand_b")
+    assert java.representative_id == "cand_c"
+
+
+def test_a_group_counts_its_postings_and_companies_together() -> None:
+    """후보마다 세면 표기가 갈린 근거가 나뉘어 어느 쪽도 임계값을 넘지 못한다."""
+    store = FakePromotionStore(
+        [
+            _candidate(
+                candidate_id="cand_java_a",
+                proposed_label="Java",
+            ),
+            _candidate(
+                candidate_id="cand_java_b",
+                proposed_label="Java",
+            ),
+        ],
+        counts={"cand_java_a": (1, 1), "cand_java_b": (1, 1)},
+        group_counts={("cand_java_a", "cand_java_b"): (2, 2)},
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+    )
+
+    outcome = CandidateReview(store).run(_context())
+
+    assert len(outcome.groups) == 1
+    assert outcome.grouped_candidates == 2
+    lead = outcome.decisions[0]
+    assert lead.candidate_id == "cand_java_a"
+    assert lead.decision == PROMOTE
+    assert lead.independent_posting_count == 2
+    assert lead.independent_company_count == 2
+
+
+def test_the_rest_of_a_group_becomes_an_alias_of_the_representative() -> None:
+    store = FakePromotionStore(
+        [
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_b", proposed_label="Java"),
+        ],
+        sentences={
+            "cand_java_a": ["Java 개발 경험"],
+            "cand_java_b": ["자바 백엔드 경험"],
+        },
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+    )
+
+    outcome = CandidateReview(store).run(_context())
+
+    member = outcome.decisions[1]
+    assert member.candidate_id == "cand_java_b"
+    assert member.decision == MERGE
+    assert member.route == ROUTE_ALIAS
+    assert member.alias_of_candidate_id == "cand_java_a"
+    assert member.alias_text == "자바 백엔드 경험"
+
+
+def test_a_group_below_the_threshold_holds_every_member() -> None:
+    """하나만 보류하고 나머지를 승격하면 같은 개념이 차원 여럿으로 갈린다."""
+    store = FakePromotionStore(
+        [
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_b", proposed_label="Java"),
+        ],
+        counts={"cand_java_a": (1, 1), "cand_java_b": (1, 1)},
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+    )
+
+    outcome = CandidateReview(store).run(_context())
+
+    assert [d.decision for d in outcome.decisions] == [HOLD, HOLD]
+    assert {d.reason for d in outcome.decisions} == {REASON_FEW_POSTINGS}
+    assert outcome.recorded == 2
+
+
+def test_every_member_of_a_group_keeps_its_own_decision_row() -> None:
+    """후보는 발견의 기록이다. 묶었다고 결정 행을 합치지 않는다."""
+    store = FakePromotionStore(
+        [
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_b", proposed_label="Java"),
+        ],
+        counts={"cand_java_a": (1, 1), "cand_java_b": (1, 1)},
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+    )
+
+    CandidateReview(store).run(_context())
+
+    assert [row["candidate_id"] for row in store.decisions] == [
+        "cand_java_a",
+        "cand_java_b",
+    ]
+
+
+def test_a_member_without_a_sentence_is_held_not_merged() -> None:
+    """별칭을 만들 수 없는 후보를 `merged` 로 끝내면 그 근거가 어디에도 닿지 않는다."""
+    store = FakePromotionStore(
+        [
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+            _candidate(candidate_id="cand_java_b", proposed_label="Java"),
+        ],
+        sentences={"cand_java_a": ["Java 개발 경험"], "cand_java_b": []},
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+    )
+
+    outcome = CandidateReview(store).run(_context())
+
+    member = outcome.decisions[1]
+    assert member.candidate_id == "cand_java_b"
+    assert member.decision == HOLD
+    assert member.reason == REASON_NO_EVIDENCE
+
+
+def test_a_broken_member_is_rejected_without_taking_the_group_down() -> None:
+    """결격은 후보마다의 성질이다. 묶음의 판단을 기다리지 않는다."""
+    store = FakePromotionStore(
+        [
+            _candidate(candidate_id="cand_java_a", proposed_label="Java"),
+            _candidate(
+                candidate_id="cand_java_b",
+                proposed_label="Java",
+                relation_judgment="none",
+                nearest_dimension_id="dim_queue",
+                nearest_label="메시지 큐",
+            ),
+        ],
+        mention_counts={"cand_java_a": 3, "cand_java_b": 1},
+    )
+
+    outcome = CandidateReview(store).run(_context())
+
+    by_id = {d.candidate_id: d for d in outcome.decisions}
+    assert by_id["cand_java_b"].decision == REJECT
+    assert by_id["cand_java_b"].reason == REASON_UNRELATED_TARGET
+    assert by_id["cand_java_a"].decision == PROMOTE
+
+
+def test_the_decision_carries_the_group_key() -> None:
+    store = FakePromotionStore([_candidate(proposed_label="Java")])
+
+    outcome = CandidateReview(store).run(_context())
+
+    assert outcome.decisions[0].group_key == "java"
+
+
+def test_the_dimension_kind_travels_from_the_candidate_row() -> None:
+    store = FakePromotionStore(
+        [_candidate(proposed_dimension_kind="technology")]
+    )
+
+    outcome = CandidateReview(store).run(_context())
+
+    assert outcome.decisions[0].proposed_dimension_kind == "technology"
+
+
+def test_an_alias_conflict_turns_a_merge_into_a_hold() -> None:
+    """기각이 아니다. 다음 버전에서 앞선 표기가 사라지면 결론이 바뀔 수 있다."""
+    merged = judge_candidate(
+        _evidence(
+            relation_judgment="synonym",
+            nearest_dimension_id="dim_queue",
+            nearest_label="메시지 큐",
+        ),
+        POLICY_V1,
+    )
+
+    held = hold_alias(merged)
+
+    assert merged.decision == MERGE
+    assert held.decision == HOLD
+    assert held.reason == REASON_ALIAS_CONFLICT
+    assert held.route == ROUTE_NONE
+    assert held.target_lifecycle == lifecycle.COLLECTING_EVIDENCE
+
+
+def test_the_group_evidence_counts_a_list_of_candidates() -> None:
+    """SQL 이 후보 목록 전체에 `DISTINCT` 를 건다."""
+    sql = PromotionRepository._CANDIDATE_EVIDENCE
+
+    assert "cm.candidate_id = ANY(%(candidate_ids)s)" in sql

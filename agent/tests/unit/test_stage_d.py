@@ -31,9 +31,16 @@ from careersignal.contracts.check_result import (
 from careersignal.contracts.run_context import StopReason
 from careersignal.graph.ontology import GraphBuildOutcome, GraphLayer
 from careersignal.graph.paths import PathCacheOutcome
+from careersignal.graph.semantic import NO_ONTOLOGY
 from careersignal.graph.traversal import TraversalCut
+from careersignal.providers.concurrency import default_workers
 from careersignal.taxonomy.assignment import AssignmentOutcome
-from careersignal.taxonomy.discovery import DiscoveryOutcome, candidate_identifier
+from careersignal.taxonomy.discovery import (
+    NO_ACTIVE_TAXONOMY,
+    TAXONOMY_MISMATCH,
+    DiscoveryOutcome,
+    candidate_identifier,
+)
 from careersignal.taxonomy.publication import PublicationOutcome
 from careersignal.taxonomy.vocabulary import normalize_expression
 
@@ -456,6 +463,44 @@ def test_Phase_11_출력이_할당_결과_모델을_읽는다(capsys: Any) -> No
     assert "할당         80개" in captured
 
 
+def test_Phase_11_출력이_같은_사유를_묶어_센다(capsys: Any) -> None:
+    """같은 한 줄이 수백 번 반복되면 다른 사유가 묻힌다."""
+    outcome = AssignmentOutcome(
+        agent_run_id="run_1",
+        stop_reason=StopReason.EXPLICIT_FAILURE,
+        taxonomy_version_id="tx_backend_v2",
+        assigned_mentions=245,
+        errors=tuple(
+            (f"mention_{index}", "RateLimitError: insufficient_quota")
+            for index in range(198)
+        ),
+    )
+    stage_d.report_assignment(outcome)
+    captured = capsys.readouterr().out
+    _no_object_repr(captured)
+    assert "198건  RateLimitError: insufficient_quota" in captured
+    assert captured.count("RateLimitError") == 1
+
+
+def test_Phase_11_출력이_못_쓴_방법과_멈춘_사유를_따로_읽는다(capsys: Any) -> None:
+    """방법이 통째로 빠진 것과 표현 하나가 실패한 것을 나눠 적는다."""
+    outcome = AssignmentOutcome(
+        agent_run_id="run_1",
+        stop_reason=StopReason.EXPLICIT_FAILURE,
+        taxonomy_version_id="tx_backend_v2",
+        assigned_mentions=55,
+        unavailable_methods=(("vector_match", "RateLimitError: insufficient_quota"),),
+        halted_reason="RateLimitError: insufficient_quota",
+        halted_pending=602,
+    )
+    stage_d.report_assignment(outcome)
+    captured = capsys.readouterr().out
+    _no_object_repr(captured)
+    assert "못 쓴 방법" in captured
+    assert "vector_match" in captured
+    assert "남긴 표현    602개" in captured
+
+
 def test_Phase_12_층_출력이_구축_결과_모델을_읽는다(capsys: Any) -> None:
     outcome = GraphBuildOutcome(
         agent_run_id="run_1",
@@ -623,3 +668,173 @@ def test_head_를_읽지_못하면_사유를_돌려준다(tmp_path: Path) -> Non
     problem = stage_d.schema_problem(tmp_path)
     assert problem is not None
     assert "--skip-schema-check" in problem
+
+
+# ================================================================ 실패 갈래
+def _session() -> Any:
+    """결과 기록만 검사하는 세션. 저장소에 붙지 않는다."""
+    return stage_d.Session(
+        manifest=None,
+        job_role_id="backend",
+        limit=None,
+        stub=True,
+        analysis_version=None,
+        workload=stage_d.Workload(),
+    )
+
+
+def test_전제_사유는_각_모듈의_상수와_같다() -> None:
+    """문구가 어긋나면 전제 실패를 부분 실패로 읽는다."""
+    assert NO_ACTIVE_TAXONOMY in stage_d.PRECONDITION_REASONS
+    assert TAXONOMY_MISMATCH in stage_d.PRECONDITION_REASONS
+    assert NO_ONTOLOGY in stage_d.PRECONDITION_REASONS
+
+
+def test_실행_전제가_깨진_실패는_뒤_단계를_막는다() -> None:
+    """활성 분류체계가 없으면 붙일 차원도 그래프의 재료도 없다."""
+    assert stage_d.blocks_next_phases(
+        StopReason.EXPLICIT_FAILURE, (("backend", NO_ACTIVE_TAXONOMY),)
+    )
+
+
+def test_일부_항목이_실패한_실행은_뒤_단계를_막지_않는다() -> None:
+    """245개를 붙인 실행의 245개는 그대로 쓸 수 있는 근거다."""
+    errors = tuple(
+        (f"mention_{index}", "RateLimitError: insufficient_quota")
+        for index in range(198)
+    )
+    assert not stage_d.blocks_next_phases(StopReason.EXPLICIT_FAILURE, errors)
+
+
+def test_실패가_아닌_종료_사유는_막지_않는다() -> None:
+    """예산 소진과 근거 없음은 지금까지의 산출물이 온전하다."""
+    assert not stage_d.blocks_next_phases(StopReason.BUDGET_EXHAUSTED)
+    assert not stage_d.blocks_next_phases(StopReason.NO_NEW_EVIDENCE)
+    assert not stage_d.blocks_next_phases(StopReason.SLOTS_FILLED)
+
+
+def test_부분_실패를_기록하면_계속_진행한다() -> None:
+    session = _session()
+
+    proceed = session.record(
+        "11",
+        StopReason.EXPLICIT_FAILURE,
+        "할당 245개",
+        (("mention_1", "RateLimitError: insufficient_quota"),),
+    )
+
+    assert proceed
+    assert not session.results[0].blocking
+    assert session.results[0].incomplete == "실패 1건"
+
+
+def test_전제_실패를_기록하면_멈춘다() -> None:
+    session = _session()
+
+    proceed = session.record(
+        "11",
+        StopReason.EXPLICIT_FAILURE,
+        "할당 0개",
+        (("backend", NO_ACTIVE_TAXONOMY),),
+    )
+
+    assert not proceed
+    assert session.results[0].blocking
+
+
+def test_요약이_덜_끝난_것을_적는다(capsys: Any) -> None:
+    """사용자가 요약만 보고 무엇을 다시 돌려야 하는지 알 수 있어야 한다."""
+    session = _session()
+    session.record(
+        "11",
+        StopReason.EXPLICIT_FAILURE,
+        "할당 245개",
+        (("mention_1", "RateLimitError: insufficient_quota"),),
+        "표현 198개 실패 · 표현 602개 시도 못 함",
+    )
+    session.record("12-1", StopReason.SLOTS_FILLED, "노드 300개")
+
+    stage_d.report_summary(session)
+    captured = capsys.readouterr().out
+
+    assert "일부" in captured
+    assert "덜 끝난 것" in captured
+    assert "표현 602개 시도 못 함" in captured
+    assert "같은 명령을 다시 돌리면" in captured
+
+
+def test_할당_결과의_덜_끝난_한_줄이_멈춘_사유를_담는다() -> None:
+    outcome = AssignmentOutcome(
+        agent_run_id="run_1",
+        stop_reason=StopReason.EXPLICIT_FAILURE,
+        assigned_mentions=55,
+        errors=(("mention_1", "RateLimitError: insufficient_quota"),),
+        unavailable_methods=(("vector_match", "RateLimitError: insufficient_quota"),),
+        halted_reason="RateLimitError: insufficient_quota",
+        halted_pending=602,
+    )
+
+    line = stage_d._assignment_incomplete(outcome)
+
+    assert "표현 1개 실패" in line
+    assert "표현 602개 시도 못 함" in line
+    assert "vector_match 못 씀" in line
+
+
+def test_다_끝난_할당은_덜_끝난_것이_없다() -> None:
+    outcome = AssignmentOutcome(
+        agent_run_id="run_1",
+        stop_reason=StopReason.SLOTS_FILLED,
+        assigned_mentions=245,
+    )
+
+    assert stage_d._assignment_incomplete(outcome) == ""
+
+
+def test_종료_코드는_네_상태를_가른다() -> None:
+    """전제 실패와 부분 실패의 다음 할 일이 다르므로 코드도 다르다."""
+    codes = {
+        stage_d.EXIT_OK,
+        stage_d.EXIT_FAILED,
+        stage_d.EXIT_ABORTED,
+        stage_d.EXIT_INCOMPLETE,
+    }
+
+    assert len(codes) == 4
+    assert stage_d.EXIT_OK == 0
+    assert stage_d.EXIT_INCOMPLETE != 0
+
+
+# ================================================================ 동시 호출
+def test_동시_호출_수의_기본값은_공용_상수다() -> None:
+    """기본값을 스크립트가 따로 정하지 않는다. 두 자리에 두면 갈라진다."""
+    assert stage_d.parse_args([]).workers == default_workers()
+
+
+def test_동시_호출_수를_인자로_올린다() -> None:
+    assert stage_d.parse_args(["--workers", "12"]).workers == 12
+
+
+def test_동시_호출_수가_1_미만이면_거부한다() -> None:
+    """저장소를 열기 전에 거른다. 실행 중간에 터지면 앞 단계만 저장된 채로 끝난다."""
+    assert stage_d.main(["--workers", "0"]) == stage_d.EXIT_ABORTED
+
+
+def test_실행_머리말이_동시_호출_수를_찍는다(capsys: Any) -> None:
+    stage_d.main(["--offline", "--workers", "3"])
+
+    assert "동시 호출     3" in capsys.readouterr().out
+
+
+def test_실행_값을_넘기지_않은_Session_은_하나씩_부른다() -> None:
+    """기본값 1 이라 이 값을 모르는 자리가 실수로 겹쳐 부르지 않는다."""
+    session = stage_d.Session(
+        manifest=stage_d.SourceManifest.load(stage_d.DEFAULT_MANIFEST),
+        job_role_id="backend",
+        limit=None,
+        stub=True,
+        analysis_version=None,
+        workload=stage_d.offline_workload(stage_d.parse_args(["--offline"])),
+    )
+
+    assert session.workers == 1

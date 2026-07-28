@@ -77,6 +77,16 @@ proposed
 → merged | split | deprecated
 ```
 
+`under_review`에서 나가는 전이는 셋이다.
+
+```text
+under_review → approved
+under_review → merged
+under_review → deprecated
+```
+
+승격 심사의 판정 가운데 `merge`는 후보를 기존 차원의 별칭으로 흡수하고 `reject`는 후보를 기각한다. 두 판정을 받은 후보는 차원이 되지 않으므로 `active`를 지나지 않으며, 심사를 받은 자리에서 `merged`와 `deprecated`로 끝난다.
+
 `active` 이전의 후보는 통계에 포함하지 않는다. 발견은 후보 생성까지이며, 공식 분류체계 편입은 검증과 승격을 거친다.
 
 ### 3.4 승격 심사

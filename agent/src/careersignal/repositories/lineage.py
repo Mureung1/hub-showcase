@@ -37,6 +37,7 @@ class LineageGraphRepository(GraphRepository):
         "requirement_mention": ("requirement_mentions", ("mention_id",)),
         "assignment": ("posting_requirement_assignments", ("assignment_id",)),
         "statistic_fact": ("statistics_facts", ("fact_id",)),
+        "analysis_claim": ("analysis_claims", ("claim_id",)),
         "analysis_claim_evidence": (
             "analysis_claim_evidence",
             ("claim_id", "support_type", "support_id", "relation"),
@@ -45,7 +46,13 @@ class LineageGraphRepository(GraphRepository):
         "roadmap_item_fill": ("roadmap_item_fills", ("roadmap_item_id", "concept_id")),
         "agent_run": ("agent_runs", ("agent_run_id",)),
     }
-    """provenance 층 근거의 자리. 목록은 `0002_seed_reference.sql` 의 시드와 같다."""
+    """provenance 층 근거의 자리.
+
+    목록은 `ontology_versions.required_evidence_by_edge_type` 의 시드와 같다.
+    시드는 `0002_seed_reference.sql` 이 넣고 `0020_ontology_evidence_alignment.sql`
+    이 문서에 맞춰 고친다. 여기 없는 근거 종류는 `evidence_exists` 가 언제나
+    거짓을 주므로 그 엣지가 전부 폐기된다.
+    """
 
     # ------------------------------------------------------------ 층 사이 연결
     def semantic_nodes(self, ontology_version: str) -> list[dict[str, Any]]:

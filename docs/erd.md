@@ -504,6 +504,7 @@ CHECK (src_dimension_id <> dst_dimension_id)
 | `lifecycle_status` | `text` | NOT NULL. 7.4와 같은 값 집합 |
 | `nearest_dimension_id` | `text` | FK → `requirement_dimensions` |
 | `relation_judgment` | `text` | `CHECK IN ('synonym','broader','narrower','related','none')` |
+| `proposed_dimension_kind` | `text` | `CHECK IN ('technology','practice','domain','collaboration','tooling')` |
 | `judged_against_taxonomy_version_id` | `text` | FK → `requirement_taxonomy_versions` |
 | `judgment_rationale` | `text` | 판정을 고른 이유 한 문장 |
 | `discovered_in_run_id` | `text` | NOT NULL, FK → `agent_runs` |
@@ -514,7 +515,9 @@ CREATE INDEX ON requirement_candidates (taxonomy_id, judged_against_taxonomy_ver
 
 `relation_judgment`는 판정에 건 기존 차원 목록에 상대적이며 그 목록은 분류체계 버전의 활성 어휘에서 나온다. `judged_against_taxonomy_version_id`가 그 버전을 가리키고, 승격 심사는 판정이 가리킨 차원이 활성 버전에 있는지 확인한다. 근거는 [ADR 0011](adr/0011-candidate-judgment-context.md)에 있다.
 
-두 컬럼은 NULL을 허용한다. 이 컬럼이 생기기 전에 만들어진 후보 행은 값을 갖지 않는다.
+세 컬럼은 NULL을 허용한다. 이 컬럼이 생기기 전에 만들어진 후보 행은 값을 갖지 않는다.
+
+`proposed_dimension_kind`는 후보를 명명한 판정이 함께 낸 차원 종류이며 값 집합은 7.3의 `dimension_kind`와 같다. 승격이 이 값을 새 차원에 옮기고, 값이 없으면 `practice`로 떨어뜨린다. 이 컬럼이 없으면 승격이 만드는 차원이 모두 `practice`가 되어 `Technology` 그래프 노드가 하나도 생기지 않는다.
 
 ### 7.8 `requirement_candidate_mentions`
 
