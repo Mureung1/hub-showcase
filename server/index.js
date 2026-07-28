@@ -9,8 +9,9 @@ import { isDemoMode } from './config/runtimeMode.js'
 const app = express()
 const PORT = process.env.PORT || 3001
 const clientDistPath = fileURLToPath(new URL('../client/dist/', import.meta.url))
+const corsOrigin = process.env.CORS_ORIGIN || '*'
 
-app.use(cors())
+app.use(cors({ origin: corsOrigin }))
 app.use(express.json())
 
 app.get('/api/health', (req, res) => {

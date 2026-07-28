@@ -14,6 +14,7 @@ import './App.css'
 const EMPTY_SUMMARY = { emotion: '', cause: '', action: '' }
 const EMPTY_REASONS = { emotion: '', cause: '', action: '' }
 const STORAGE_MODE_KEY = 'haru-checkout-storage-mode'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
 const SUMMARY_FIELDS = [
   { key: 'emotion', icon: '🙂', title: '오늘의 감정' },
@@ -22,7 +23,7 @@ const SUMMARY_FIELDS = [
 ]
 
 async function requestJson(url, options) {
-  const response = await fetch(url, options)
+  const response = await fetch(`${API_BASE_URL}${url}`, options)
   const body = await response.json().catch(() => ({}))
 
   if (!response.ok) {
