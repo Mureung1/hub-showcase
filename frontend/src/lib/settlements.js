@@ -3,8 +3,8 @@ import QRCode from 'qrcode'
 import { getToken } from './auth'
 
 export function settlementStatusLabel(status, reportedAt) {
-  if (status === 'done') return '확인 완료'
-  if (reportedAt) return '확인 대기중'
+  if (status === 'done') return '정산 완료'
+  if (reportedAt) return '확인 대기'
   return '정산 대기'
 }
 
