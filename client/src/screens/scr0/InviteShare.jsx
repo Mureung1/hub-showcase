@@ -3,8 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { SectionTitle } from '../../components/identity/SectionTitle.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { Toast } from '../../components/feedback/Toast.jsx'
-import waxSeal from '../../assets/vintage-wax-seal-swan.png'
-import silverTray from '../../assets/vintage-silver-tray.png'
 
 // SCR0 · 1-1 초대장 공유 화면 — docs/design 「Letter&Co Design System.zip」
 // templates/invite-share/InviteShare.dc.html 이식.
@@ -29,39 +27,30 @@ export function InviteShare() {
   return (
     <div style={{ minHeight: '100vh', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', background: 'var(--paper)' }}>
       <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
-        <img src={waxSeal} alt="" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'drop-shadow(0 3px 8px rgba(74,68,56,0.3))', transform: 'rotate(-6deg)' }} />
+        <SectionTitle script="Sent" title="초대장을 보냈어요" align="center" />
 
-        <SectionTitle script="Sent" title="초대장을 보냈어요" subtitle="SCR·1-1 공유하기" align="center" />
-
-        <div style={{ position: 'relative', width: '100%', height: '340px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <img
-            src={silverTray}
-            alt=""
-            style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '110%', maxWidth: '460px', opacity: 0.9, pointerEvents: 'none', zIndex: 0 }}
-          />
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              width: '100%',
-              background: 'var(--cream)',
-              border: '1px solid var(--line)',
-              borderRadius: '10px',
-              padding: '16px',
-              boxSizing: 'border-box',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 6px 16px rgba(74,68,56,0.1)',
-            }}
-          >
-            <div style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {joinUrl}
-            </div>
-            <Button variant="primary" size="sm" onClick={copyLink}>
-              {copied ? '복사됨' : '복사'}
-            </Button>
+        <div
+          style={{
+            width: '100%',
+            background: 'var(--cream)',
+            backgroundImage: 'var(--texture-grain)',
+            backgroundBlendMode: 'overlay',
+            border: '1px solid var(--wedgwood-pale)',
+            borderRadius: '20px',
+            padding: '16px',
+            boxSizing: 'border-box',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 10px rgba(74,68,56,0.05)',
+          }}
+        >
+          <div style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {joinUrl}
           </div>
+          <Button variant="primary" size="sm" onClick={copyLink}>
+            {copied ? '복사됨' : '복사'}
+          </Button>
         </div>
 
         <div style={{ width: '100%', display: 'flex', gap: '8px' }}>

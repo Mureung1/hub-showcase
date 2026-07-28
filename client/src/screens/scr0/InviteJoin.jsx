@@ -8,8 +8,6 @@ import { Chip } from '../../components/forms/Chip.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { Toast } from '../../components/feedback/Toast.jsx'
 import { getLetterByToken, createResponse } from '../../lib/api.js'
-import laceTrim from '../../assets/vintage-lace-trim-strip.png'
-import waxSeal from '../../assets/vintage-wax-seal-swan.png'
 
 const MBTI_TYPES = [
   'INTJ', 'INTP', 'ENTJ', 'ENTP',
@@ -128,9 +126,9 @@ export function InviteJoin() {
           <div
             style={{
               background: 'var(--surface-raised)',
-              border: '1px solid var(--line)',
-              borderRadius: '10px',
-              boxShadow: 'var(--shadow-fold)',
+              border: '1px solid var(--wedgwood-pale)',
+              borderRadius: '20px',
+              boxShadow: '0 2px 10px rgba(74,68,56,0.05)',
               padding: '24px',
               textAlign: 'center',
               fontFamily: 'var(--font-body)',
@@ -144,26 +142,25 @@ export function InviteJoin() {
 
         {status === 'ready' && phase !== 'done' ? (
           <>
-            <SectionTitle script="Join" title={`${letter.title}에 초대됐어요`} subtitle="SCR·1-2 참가 정보 입력" align="left" />
+            <SectionTitle script="Join" title={`${letter.title}에 초대됐어요`} align="left" />
 
             <div
               style={{
                 position: 'relative',
-                background: 'var(--surface-raised)',
-                border: '1px solid var(--line)',
-                borderRadius: '10px',
+                background: 'var(--cream)',
+                backgroundImage: 'var(--texture-grain)',
+                backgroundBlendMode: 'overlay',
+                border: '1px solid var(--wedgwood-pale)',
+                borderRadius: '20px',
                 padding: '20px',
                 boxSizing: 'border-box',
-                boxShadow: 'var(--shadow-fold)',
+                boxShadow: '0 2px 10px rgba(74,68,56,0.05)',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '20px',
               }}
             >
-              <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', borderTop: '1px solid rgba(74,68,56,0.08)', pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', right: '-14px', bottom: '-14px', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--ink)', opacity: 0.04, pointerEvents: 'none' }} />
-
               <Input variant="underline" label="이름" placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -200,8 +197,6 @@ export function InviteJoin() {
                   ))}
                 </div>
               </div>
-
-              <img src={laceTrim} alt="" style={{ display: 'block', width: 'calc(100% + 40px)', margin: '4px -20px -20px', height: '22px', objectFit: 'cover', objectPosition: 'top', opacity: 0.9 }} />
             </div>
 
             <Button variant="primary" block disabled={submitDisabled} onClick={submit}>
@@ -214,7 +209,6 @@ export function InviteJoin() {
 
         {phase === 'done' ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '40px 0' }}>
-            <img src={waxSeal} alt="" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'drop-shadow(0 3px 8px rgba(74,68,56,0.3))' }} />
             <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 'var(--text-h2)', color: 'var(--ink)' }}>참가 정보를 보냈어요</div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{name}님의 응답이 저장됐어요</div>
           </div>
