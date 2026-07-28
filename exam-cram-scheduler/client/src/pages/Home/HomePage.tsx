@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { AppShell } from '../../layouts/AppShell/AppShell';
 import { Card, Row, Button, Calendar, CalendarDaySheet } from '../../components';
 import text from '../../styles/text.module.css';
+import styles from './HomePage.module.css';
 import { useSchedule } from '../../context/ScheduleContext';
 import {
+  deleteSchedule,
   findNearestUpcomingExam,
   loadSavedSchedules,
   type SavedSchedule,
@@ -21,9 +23,11 @@ export function HomePage() {
   const navigate = useNavigate();
   const { setRequest, setResponse, setStatus } = useSchedule();
 
-  // 화면이 뜰 때 한 번만 읽는다. 저장은 결과 화면에서만 일어나고, 저장 후에는
-  // 홈으로 이동하면서 이 컴포넌트가 새로 마운트되므로 최신 값이 들어온다.
-  const records = useMemo(() => loadSavedSchedules(), []);
+  // 화면이 뜰 때 한 번 읽어 상태로 들고 있는다. 저장은 결과 화면에서 일어나고, 삭제(#40)는
+  // 여기서 일어나므로 삭제 후 목록이 바로 다시 그려지도록 useState로 관리한다.
+  const [records, setRecords] = useState<SavedSchedule[]>(() => loadSavedSchedules());
+  // #40 — 삭제 전 확인 중인 기록 id. null이면 확인 중인 게 없음.
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const latest = records[0] ?? null;
   const nearestExam = useMemo(() => findNearestUpcomingExam(latest), [latest]);
 
@@ -40,6 +44,12 @@ export function HomePage() {
     setResponse(record.response);
     setStatus('success');
     navigate('/result');
+  }
+
+  /** #40 — 확인을 거친 뒤 실제로 지운다. localStorage와 화면 목록 둘 다에서 사라진다. */
+  function confirmDelete(id: string) {
+    setRecords(deleteSchedule(id));
+    setConfirmingId(null);
   }
 
   return (
@@ -86,17 +96,42 @@ export function HomePage() {
             // 기록이 없을 때 빈 카드만 두면 고장난 것처럼 보인다(2026-07-22)
             <Row icon="🗓️" iconVariant="exam" title="최근 계산 내용 없음" subtitle="계산 후 저장하면 여기에 남아요" />
           ) : (
-            records.map((record) => (
-              <Row
-                key={record.id}
-                icon="🗓️"
-                iconVariant="exam"
-                title={summarizeExams(record)}
-                subtitle={summarizeSchedule(record)}
-                chevron
-                onClick={() => openRecord(record)}
-              />
-            ))
+            records.map((record) =>
+              confirmingId === record.id ? (
+                // #40 — 삭제 확인 줄. 실수로 지우지 않도록 한 번 더 물어본다.
+                <div key={record.id} className={styles.confirmRow}>
+                  <span className={styles.confirmText}>이 기록을 삭제할까요?</span>
+                  <div className={styles.confirmActions}>
+                    <button
+                      type="button"
+                      className={`${styles.confirmBtn} ${styles.cancelBtn}`}
+                      onClick={() => setConfirmingId(null)}
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.confirmBtn} ${styles.deleteBtn}`}
+                      onClick={() => confirmDelete(record.id)}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Row
+                  key={record.id}
+                  icon="🗓️"
+                  iconVariant="exam"
+                  title={summarizeExams(record)}
+                  subtitle={summarizeSchedule(record)}
+                  chevron
+                  onClick={() => openRecord(record)}
+                  onDelete={() => setConfirmingId(record.id)}
+                  deleteLabel={`${summarizeExams(record)} 기록 삭제`}
+                />
+              ),
+            )
           )}
         </Card>
       </div>
