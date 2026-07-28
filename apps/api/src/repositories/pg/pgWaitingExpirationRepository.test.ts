@@ -38,7 +38,11 @@ describe("PgWaitingExpirationRepository", () => {
       [
         {
           waiting_entry_id: "f904537c-6d56-43bc-9cf4-f33af8d5be03",
+          queue_id: "9d166db8-b36f-409e-9e7b-c97d66bdb53f",
           hospital_name: "서울이비인후과",
+          average_minutes_per_patient: 15,
+          preparation_threshold: 7,
+          entry_threshold: 3,
         },
       ],
     ]);
@@ -48,7 +52,11 @@ describe("PgWaitingExpirationRepository", () => {
     await expect(repository.listExpired(executor, now)).resolves.toEqual([
       {
         waitingEntryId: "f904537c-6d56-43bc-9cf4-f33af8d5be03",
+        queueId: "9d166db8-b36f-409e-9e7b-c97d66bdb53f",
         hospitalName: "서울이비인후과",
+        averageMinutesPerPatient: 15,
+        preparationThreshold: 7,
+        entryThreshold: 3,
       },
     ]);
     expect(executor.calls[0]?.queryText).toContain("arrival_deadline_at <= $1");
