@@ -1,0 +1,11 @@
+# realllm 프로파일 — 실제 LLM(Groq) 연결용.
+# local 과 함께 켠다:  --spring.profiles.active=local,realllm
+# 프로파일 목록에서 뒤에 오는 realllm 이 local 설정을 덮어쓴다.
+#
+# 키는 파일에 넣지 않는다. 실행 구성의 환경 변수로 GROQ_API_KEY 를 주입할 것.
+app:
+  llm:
+    api-key: ${GROQ_API_KEY:}
+    model: llama-3.3-70b-versatile
+    base-url: https://api.groq.com/openai
+    max-tokens: 2000
