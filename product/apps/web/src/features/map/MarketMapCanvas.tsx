@@ -385,7 +385,7 @@ export function MarketMapCanvas({
           stores={densityStores}
           visible={presentationMode === "analysis" && layer === "density" && storesVisible}
         />
-        {boundaryVisible && <SelectedMarketBoundary marketId={marketId} />}
+        {boundaryVisible && <SelectedMarketBoundary marketId={marketId} marketKey={marketKey} />}
         {storesVisible && visibleStorefronts.length > 0 && (
           <Suspense fallback={null}>
             <StorefrontBuildingLayers
