@@ -149,27 +149,27 @@ App은 prepared root validation, Workspace Runtime, effective Interaction declar
 
 ## 현재 구현
 
-First Assignment의 **AY-originated InteractionCapability vertical**은 native project config의 complete effective Interaction declaration, authenticated held Adapter lifecycle과 capability call별 held Broker POST부터 Browser inline Review와 같은 MCP call의 structured result 반환까지 연결한다. Exact local-provider와 live-provider trace도 이 round trip을 검증했다.
-
-반면 source explorer의 선택을 명시적인 action으로 동결해 workspace-local Skill과 file reference가 포함된 native Turn을 시작하는 ActionInvocation은 현재 canonical graph에서 제거된 상태다. 아래 graph는 현재 구현이고, 채택 target은 이 앞에 `GUI action → ActionInvocation → Skill Turn`을 추가한다.
+First Assignment의 **양방향 AY–App Interaction vertical**은 explicit `organize_sources` ActionInvocation에서 native project config의 complete effective Interaction declaration, authenticated held Adapter lifecycle과 capability call별 held Broker POST, Browser inline Review와 같은 MCP call의 structured result 반환까지 연결한다. Exact provider-free prepared-workspace trace와 prior live-provider Interaction trace가 이 경계를 검증했다.
 
 현재 canonical graph는 다음과 같다.
 
 ```text
 SemesterWorkspace actual file
 ├→ App bounded read-only projection → source explorer / text·PDF preview
-└→ AY / native Codex Turn
+│  └→ explicit selection + organize_sources → ActionInvocation
+│     └→ workspace Skill + selected file refs → AY / native Codex Turn
+└→ normal Chat → AY / native Codex Turn
    → InteractionCapability request
    → App typed UI
    → same-call user result
    → AY-owned file mutation / Git checkpoint
 ```
 
-두 경로는 같은 actual file을 가리키지만 authority는 다르다. Source explorer·preview는 current filesystem을 읽어 보여주는 transient UI이고, AY만 일반 file·Git 도구로 내용을 변경한다. Explorer의 선택은 Chat request나 Review evidence를 암묵적으로 바꾸지 않는다. 채택 target에서도 선택 자체는 inert하며 명시적인 ActionInvocation만 request-scoped input을 만든다.
+두 경로는 같은 actual file을 가리키지만 authority는 다르다. Source explorer·preview는 current filesystem을 읽어 보여주는 transient UI이고, AY만 일반 file·Git 도구로 내용을 변경한다. Explorer의 선택은 Chat request나 Review evidence를 암묵적으로 바꾸지 않는다. 선택 자체는 inert하며 명시적인 ActionInvocation만 request-scoped input을 만든다.
 
 초기 구현이 사용했던 app-owned `RawMaterial → ModelingRun → durable StatePatch → UserConfirmation → Server-owned apply` 흐름은 interaction round trip을 확인한 historical 동기다. 이 객체와 apply transaction은 current product contract와 persistence에서 제거됐다. Exact package·endpoint topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 후속 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 
-## 현재 구현된 InteractionCapability vertical
+## 현재 구현된 양방향 First Assignment vertical
 
 하나의 Review capability가 다음 경계로 end-to-end 동작한다.
 
@@ -177,14 +177,13 @@ SemesterWorkspace actual file
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
 | Source-grounded workbench | Active root의 안전한 일반 file을 folder-relative explorer에서 보고 UTF-8 text·PDF를 preview하며, unsupported·stale·read failure는 명시적 상태로 표시한다. 이 read-only projection은 AY Chat·Review와 한 3-pane desktop surface에 공존하되 registry·copy·watcher·durable selection을 만들지 않는다. |
+| `organize_sources` ActionInvocation | Preview와 독립적인 ordered text selection을 explicit action에서만 동결하고, fresh 검증한 relative refs와 exact workspace-local Skill을 `[SkillInput, TextInput]` Product Turn으로 전달한다. |
 | `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Effective declaration이 Bootstrap contract와 다르거나 authenticated held Adapter lifecycle이 없으면 prepared-workspace startup이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
 | Failure settlement | Turn interrupt·disconnect·Runtime terminal과 invalid evidence가 partial Review나 허위 apply 없이 끝난다. |
-| Deep-module test seam | In-memory Adapter와 Browser Adapter가 같은 InteractionCapability contract를 통과한다. |
-
-ActionInvocation의 typed Browser contract, action→workspace Skill resolution, native `SkillInput`·file reference composition과 명시적인 source action UI는 아직 구현되지 않았다. 완료 조건과 작업 순서는 개발 백로그가 소유한다.
+| Deep-module test seam | Deterministic Browser, in-memory Adapter와 exact local-provider prepared-workspace trace가 같은 ActionInvocation·InteractionCapability contract를 통과한다. |
 
 ## 의도적으로 만들지 않는 것
 
@@ -222,5 +221,4 @@ ActionInvocation의 typed Browser contract, action→workspace Skill resolution,
 | --- | --- |
 | `workspace-state.json`에 반드시 필요한 최소 학기 metadata는 무엇인가? | SemesterWorkspace init spec |
 | Text 이외 evidence preview가 실제로 필요할 때 어떤 file codec과 locator를 추가할 것인가? | 관찰된 사용 사례에 따른 capability spec |
-| 첫 `organize_sources` ActionInvocation의 exact file cardinality와 지원 kind는 무엇인가? | ActionInvocation implementation spec |
 | 첫 Review 뒤 추가할 두 번째 MCP capability는 무엇인가? | 실제 dogfood에서 반복되는 사용자 판단을 관찰한 뒤 결정 |

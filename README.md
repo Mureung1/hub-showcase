@@ -21,7 +21,7 @@
 
 AY-PLE(에이플)는 App GUI에서 명시한 학기 작업을 AY가 이해해 사용자의 Git workspace에서 직접 수행하고, 판단이 필요한 순간에는 MCP로 App의 typed UI를 다시 요청하는 local-first 학업 Agent 앱입니다. App은 명시적인 action과 request-scoped context를 native Skill Turn에 전달하고, 원문·변경·선택지를 작업에 맞는 화면으로 보여준 뒤 사용자의 structured result를 같은 Codex Turn에 돌려줍니다. Skill과 AY는 workflow와 실제 file mutation을 소유합니다.
 
-현재 코드베이스는 이 양방향 seam 중 AY-originated InteractionCapability를 구현했습니다. `@ay-ple/interaction-mcp`의 typed request/result, authenticated App Broker, Browser inline Review와 같은 MCP call의 응답 반환이 연결되고, AY가 결과를 해석해 실제 파일을 바꿉니다. GUI source selection에서 workspace-local Skill과 file reference를 native Turn에 전달하는 ActionInvocation은 채택됐지만 아직 미구현입니다. 초기 vertical의 app-owned `RawMaterial`·durable `ModelingRun`·patch/confirmation과 Server-owned apply graph는 복원하지 않습니다. Exact current topology와 검증 표면은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 소유합니다.
+현재 코드베이스는 양방향 seam을 모두 구현했습니다. GUI의 explicit `organize_sources` ActionInvocation은 선택한 actual file reference와 workspace-local Skill을 native Turn에 전달하고, `@ay-ple/interaction-mcp`의 typed request/result, authenticated App Broker와 Browser inline Review는 같은 MCP call과 Turn에 사용자 결과를 돌려줍니다. AY가 결과를 해석해 실제 파일과 Git checkpoint를 소유하며, 초기 vertical의 app-owned `RawMaterial`·durable `ModelingRun`·patch/confirmation과 Server-owned apply graph는 복원하지 않습니다. Exact current topology와 검증 표면은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 소유합니다.
 
 Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 경계는 [Public repository clean snapshot ADR](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)에 기록합니다.
 
@@ -142,11 +142,11 @@ npm run demo
 | 영역 | 위치 | 설명 |
 | --- | --- | --- |
 | Brand assets | `assets/brand/` | AY-PLE 로고, 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
-| Server app | `apps/server/` | Prepared workspace lifecycle·read-only source projection·normal AY Chat·inline Semantic Review HTTP/NDJSON, Runtime·Broker lifecycle을 소유하는 Express local companion |
-| Chat Shell app | `apps/chat-shell/` | Prepared lifecycle, 3-pane source explorer·text/PDF preview·AY Chat, general clarification·interrupt와 inline Semantic Review를 제공하는 Vite React desktop UI |
+| Server app | `apps/server/` | Prepared workspace lifecycle·read-only source projection·normal AY Chat·closed ActionInvocation·inline Semantic Review HTTP/NDJSON, Runtime·Broker lifecycle을 소유하는 Express local companion |
+| Chat Shell app | `apps/chat-shell/` | Prepared lifecycle, 3-pane source explorer·text/PDF preview·explicit source action·AY Chat, general clarification·interrupt와 inline Semantic Review를 제공하는 Vite React desktop UI |
 | Product contract | `packages/product-contract/` | Target `/api/product/*` Browser-safe JSON·NDJSON의 dependency-free exact type·decoder |
 | Codex Chat runtime | `packages/codex-chat-runtime/` | Official Python SDK, supervised Node bridge, native conversation contract와 deterministic fake |
-| Product API | `/api/product/*` | Path-free workspace lifecycle, settings, source list·text/PDF preview, normal Chat, Semantic Review·general interaction·interrupt |
+| Product API | `/api/product/*` | Path-free workspace lifecycle, settings, source list·text/PDF preview, normal Chat, closed `organize_sources`, Semantic Review·general interaction·interrupt |
 | Camp artifact | `artifacts/camp-demo/` | Live runtime과 분리된 정적 발표 deck, product prototype와 artifact-local 검증 도구 |
 
 ## 개발 명령어
@@ -171,4 +171,4 @@ npm run test:local-provider -w @ay-ple/codex-chat-runtime
 npm run test:prepared-workspace-product-actual
 ```
 
-아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 현재 구현에서 App은 typed InteractionCapability와 workspace registry를, AY와 Skill은 workflow·실제 file mutation·Git checkpoint를, SemesterWorkspace는 학기 자료와 history를 소유합니다. ActionInvocation을 포함한 남은 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.
+아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 현재 구현에서 App은 typed ActionInvocation·InteractionCapability와 workspace registry를, AY와 Skill은 workflow·실제 file mutation·Git checkpoint를, SemesterWorkspace는 학기 자료와 history를 소유합니다. 남은 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.

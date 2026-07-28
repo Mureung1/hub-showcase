@@ -78,7 +78,7 @@ Root companion docs:
 | AY-PLE Product Brief | [product/ay-ple-product-brief.md](product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 경계 |
 | AY-PLE Design System Direction | [product/ay-ple-design-system.md](product/ay-ple-design-system.md) | 브랜드와 데스크톱 UI 기준 |
 | AY-PLE 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | 날짜 없는 계층형 task list와 작업 순서·완료 조건 |
-| AY–App Interaction Layer 아키텍처 | [architecture/ay-app-interaction-layer.md](architecture/ay-app-interaction-layer.md) | ActionInvocation과 InteractionCapability를 잇는 양방향 long-lived seam과 채택 target |
+| AY–App Interaction Layer 아키텍처 | [architecture/ay-app-interaction-layer.md](architecture/ay-app-interaction-layer.md) | 구현된 ActionInvocation과 InteractionCapability를 잇는 양방향 long-lived seam과 확장 target |
 | AY-originated InteractionCapability 아키텍처 | [architecture/ay-app-interaction-capabilities.md](architecture/ay-app-interaction-capabilities.md) | MCP request→typed UI→user result→같은 Turn 반환의 구현된 상세 mapping |
 | Codex Runtime 격리 | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | runtime, app data, SemesterWorkspace 실행 경계 |
 | Codex Chat 구현 지도 | [architecture/codex-chat-implementation-map.md](architecture/codex-chat-implementation-map.md) | survivor runtime·Server·Chat Shell의 현재 topology와 구현 gap |

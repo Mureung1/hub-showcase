@@ -16,7 +16,7 @@ Codex 같은 Agent는 이 파일을 읽고 정리하거나 직접 수정할 수 
 
 AY-PLE은 이 빈틈을 채운다.
 
-아래 feedback loop는 채택한 제품 target이다. 현재 구현은 source explorer·preview, normal Chat과 AY-originated InteractionCapability까지 연결돼 있고, GUI action으로 workspace Skill Turn을 시작하는 ActionInvocation은 아직 다시 구현해야 한다.
+아래 feedback loop는 현재 구현된 제품 흐름이다. Source explorer·preview와 normal Chat에 더해 GUI action이 workspace Skill Turn을 시작하고, AY-originated InteractionCapability가 같은 Turn에서 사용자 판단을 왕복시킨다.
 
 ```mermaid
 flowchart LR
@@ -33,7 +33,7 @@ flowchart LR
 
 사용자는 같은 desktop workbench에서 active SemesterWorkspace의 실제 파일을 folder-relative explorer로 찾고 text·PDF 원문을 preview하면서 AY와 대화하거나 Review할 수 있다. 이 화면은 current file을 읽어 보여주는 read-only projection이며 App이 자료를 별도 등록·복사·저장하거나 수정한다는 뜻이 아니다.
 
-## 채택 target 예: 새 과제 정리하기
+## 현재 예: 새 과제 정리하기
 
 학생은 `문제해결글쓰기` 공지와 강의계획서를 source explorer에서 선택하고 `선택한 자료 정리하기`를 실행한다. AY-PLE은 이 명시적 ActionInvocation을 workspace-local Skill과 선택 file reference가 포함된 native AY 작업으로 전달한다.
 
@@ -119,8 +119,8 @@ App은 별도 복사본이나 normalized child workspace를 만들지 않는다.
 
 현재 제품은 active SemesterWorkspace의 actual file을 folder-relative explorer, text·PDF preview와 명시적인 unsupported·read error 상태로 보여주고, AY Chat·inline Review와 한 3-pane desktop workbench에 배치한다. 이 SourceProjection은 exact active root만 bounded read하며 registry·copy·snapshot·watcher·durable selection이나 file mutation을 만들지 않는다.
 
-현재 First Assignment의 AY-originated vertical은 native project config로 발견한 required Interaction MCP, authenticated App Broker, AY Chat의 inline Review card와 같은 MCP call의 structured result 반환을 end-to-end로 연결한다. App은 active Runtime generation의 pending interaction만 process memory에서 정산하고, AY가 result를 해석해 실제 workspace file을 변경한다.
+현재 First Assignment vertical은 source explorer의 explicit `organize_sources` ActionInvocation에서 native project config로 발견한 required Interaction MCP, authenticated App Broker, AY Chat의 inline Review card와 같은 MCP call의 structured result 반환까지 end-to-end로 연결한다. App은 active Runtime generation의 action·pending interaction만 process memory에서 정산하고, AY가 result를 해석해 실제 workspace file과 Git checkpoint를 변경한다.
 
-GUI source selection에서 native Skill Turn을 시작하는 ActionInvocation은 현재 제거된 상태이며 채택 target으로 다시 연결해야 한다. 초기 vertical이 사용했던 app-owned `RawMaterial`, durable `ModelingRun`·`StatePatch`·`UserConfirmation`과 Server-owned apply transaction은 복원하지 않는다. 정확한 현재 topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), long-lived seam은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 구현된 reverse 상세는 [InteractionCapability 아키텍처](../architecture/ay-app-interaction-capabilities.md), 후속 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
+GUI source selection은 preview focus와 독립적이며 사용자가 action을 실행할 때만 workspace-local Skill과 relative file reference를 native Turn에 전달한다. Fresh Bootstrap workspace의 exact provider-free trace가 selected-only file read, same-Turn Review의 revise·accept·reject, accept 전 no-mutation, AY-owned intended-path checkpoint와 full teardown을 검증한다. 초기 vertical이 사용했던 app-owned `RawMaterial`, durable `ModelingRun`·`StatePatch`·`UserConfirmation`과 Server-owned apply transaction은 복원하지 않는다. 정확한 현재 topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), long-lived seam은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 구현된 reverse 상세는 [InteractionCapability 아키텍처](../architecture/ay-app-interaction-capabilities.md), 후속 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 
 `local-first`는 `offline`을 뜻하지 않는다. Workspace와 App state는 로컬에 있지만 Codex가 읽은 content는 실행 중 provider로 전송될 수 있다. 과제 정답 생성, 시험 답안 대행, 자동 제출과 학교 정책을 우회하는 자동화는 제품 범위 밖이다.

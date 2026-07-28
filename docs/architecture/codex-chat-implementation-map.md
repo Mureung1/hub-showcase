@@ -28,7 +28,7 @@ Canonical lifecycle의 `active`는 exact prepared Git root에서 listener·Broke
 | Native identity를 제품 ID로 다시 만드는가? | 아니다. Server가 발급한 opaque public operation·interaction binding만 Browser에 투영하고 native `threadId`·`turnId`·request identity는 통합 내부에 남는다. |
 | Runtime와 workspace는 어떻게 선택하는가? | Startup은 sibling `../.ay-ple/`의 verified Runtime과 canonical root contract를 사용한다. 첫 open·학기 변경은 explicit `--workspace` prepared Git root, 이후 인자 없는 실행은 registry active pointer를 fresh reopen한다. |
 | Durable product state는 어디에 있는가? | External `WorkspaceRegistry`는 canonical root와 active pointer만 보존하고 workspace의 tracked v4 identity가 일치할 때만 사용한다. 학업 결과는 user-owned Git workspace 파일과 AY-owned checkpoint에 남는다. 기존 current-v2/v3 bytes는 자동 변환하지 않는 지원 외 역사 데이터다. |
-| First Assignment vertical은 닫혔는가? | 아직 아니다. Prepared Git workspace의 normal AY Chat→Interaction MCP proposal→inline Semantic Review→AY-owned actual-file apply/checkpoint와 Browser의 explicit `organize_sources`→validated Product operation→Skill-backed Turn은 구현됐다. Action-started Turn의 exact local-provider·actual prepared-workspace Interaction/apply/checkpoint closeout은 남아 있다. |
+| First Assignment vertical은 닫혔는가? | 그렇다. Prepared Git workspace의 normal AY Chat과 explicit `organize_sources`가 같은 Product operation·thread lifecycle을 사용하고, exact local-provider trace가 selected-only actual-file read→Interaction MCP proposal→inline Semantic Review→revise·accept·reject→AY-owned intended-path mutation/checkpoint와 full teardown을 닫는다. |
 | 채택된 public workflow는 무엇인가? | 현재 구현은 ADR 0018·0019·0020의 prepared Git workspace, read-only source explorer·preview, normal Chat, transient Interaction request/result, AY-owned file apply와 ADR 0021의 명시적 `organize_sources` ActionInvocation이다. Browser action selection·operation transcript도 transient이며 old app-owned source registry·durable Run·patch·confirmation·apply는 복원하지 않는다. |
 
 ## Tracked 구성
@@ -142,7 +142,7 @@ ADR 0018 target의 root v4 identity codec, external `WorkspaceRegistry` v1 codec
 | `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` | Canonical bundle·bundled bridge·post-run non-mutation |
 | `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` | Hardened Node actual-child, native-context fake·exact native, exact local-provider와 process-group reap |
 | `npm run test:native-context-actual -w @ay-ple/codex-chat-runtime` | One-shot App Server의 strict protocol·cleanup matrix와 exact native provider-free config·Skill projection |
-| `npm run test:prepared-workspace-product-actual` | Native Bootstrap output의 exact Git root와 installed First Assignment Skill 계약을 real built Adapter·shared listener/Broker에 직접 공급한 exact declaration·handshake·held lifecycle readiness, inline Review, accept 전 no-mutation, accept 뒤 AY-owned file checkpoint, failure no-mutation과 credential·process cleanup |
+| `npm run test:prepared-workspace-product-actual` | Native Bootstrap output의 exact Git root와 installed First Assignment Skill을 public `organize_sources` route, exact verified Runtime·local provider, real built Adapter·shared listener/Broker에 공급한다. `[SkillInput, TextInput]`, selected-only actual-file read, same-Turn revise·accept·reject Review, accept 전 no-mutation, intended-path checkpoint, unrelated state 보존과 credential·listener·process-group cleanup을 함께 검증한다. |
 | `npm run test:product-entrypoint` | Root canonical product command의 explicit root 계산, product API·Browser owner, legacy path 무시와 SIGINT 뒤 OS process graph·port cleanup |
 
 Deterministic Browser green은 exact native identity·bundle·process cleanup을 대신하지 않고 exact local-provider도 Browser reducer·HTTP fail-closed behavior를 대신하지 않는다.
@@ -151,7 +151,6 @@ Deterministic Browser green은 exact native identity·bundle·process cleanup을
 
 | Gap | 현재 사실 | 정본 |
 | --- | --- | --- |
-| ActionInvocation conformance closeout | Closed Product contract, validated Server route, optional Skill Runtime input과 Browser의 ordered selection·action transcript·shared stream UI는 구현됐다. Exact local-provider와 actual prepared-workspace action→same-Turn Interaction→AY-owned mutation/checkpoint trace는 아직 닫히지 않았다. | [AY–App Interaction Layer 아키텍처](ay-app-interaction-layer.md) |
 | Rollback boundary | Cutover 전 rollback은 current Browser·Server·v2 store·private Runtime/MCP graph 전체, cutover 뒤 rollback은 prepared lifecycle Browser·target Router·Broker·generic Runtime environment·project Skill/MCP graph 전체다. Target Server/old Browser 또는 target Browser/old academic Runtime 같은 half-state는 지원하지 않는다. | [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, multi-thread catalog와 client별 isolation은 없다. 반영된 학업 결과의 durability는 user-owned Git workspace와 checkpoint가 소유한다. | [Chat Shell README](../../apps/chat-shell/README.md) |
 | Interactive Codex approval | Normal Product Turn과 Plan interaction은 검증됐지만 generic command·file·network approval center는 채택하지 않았다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |

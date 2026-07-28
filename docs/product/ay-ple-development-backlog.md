@@ -132,12 +132,12 @@
     - [x] Runtime payload·`WorkspaceRegistry`·cache·temp와 cross-workspace 운영 metadata·config는 `../.ay-ple/`에 둔다. Pending product operation·InteractionCapability와 Broker-owned Adapter lifecycle status는 workspace별 durable file을 만들지 않고 process-local Runtime generation memory에서 terminal 정산하며, restart 뒤 결과를 추정하지 않는다.
     - [x] 새 canonical layout의 Runtime·global Codex account·active workspace·InteractionCapability smoke가 성공한 뒤에만 legacy dogfood appData, managed development workspace와 package-local Runtime artifact를 scoped cleanup한다.
 
-- [ ] Protocol-driven AY–App Interaction Layer의 첫 ActionInvocation을 end-to-end로 완성한다.
+- [x] Protocol-driven AY–App Interaction Layer의 첫 ActionInvocation을 end-to-end로 완성한다.
   - [x] `AY–App Interaction`, `ActionInvocation`과 AY-originated `InteractionCapability`를 구분하고 Skill·MCP를 양방향 제품 확장 protocol로 사용하는 ADR·아키텍처·Product Brief를 채택했다.
   - [x] Chat과 분리된 closed ActionInvocation contract를 만들고 unknown action, raw Skill/native input, absolute path와 implicit Chat material 결합을 거절한다. App action definition은 active SemesterWorkspace의 request-scoped file reference를 fresh 검증하고 expected workspace-local Skill을 effective catalog에서 resolve한다.
   - [x] `organize_sources`를 첫 action으로 연결한다. Source explorer에서 명시적 multi-file selection과 action control을 제공하되 preview·selection 자체는 Turn을 시작하지 않고, action 실행 시에만 선택을 동결해 기존 Product operation stream에 연결한다.
   - [x] Capability-neutral Runtime 입력과 Python bridge가 official SDK의 exact `SkillInput`과 bounded file/text input을 전달하게 한다. Local file carrier는 actual probe로 의미를 확인하고 기존 SDK patch stack을 늘리지 않는다.
-  - [ ] Action-started Turn이 기존 Interaction MCP·inline Review를 그대로 사용하고, AY가 actual workspace file mutation과 Git checkpoint를 소유하는 Browser E2E·deterministic Runtime·actual workspace trace를 닫는다. Durable `ModelingRun`, source registry·copy와 App-owned apply는 복원하지 않는다.
+  - [x] Action-started Turn이 기존 Interaction MCP·inline Review를 그대로 사용하고, AY가 actual workspace file mutation과 Git checkpoint를 소유하는 Browser E2E·deterministic Runtime·exact local-provider actual workspace trace를 닫는다. Durable `ModelingRun`, source registry·copy와 App-owned apply는 복원하지 않는다.
 
 - [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.
   - [ ] 두 번째 실제 action 또는 MCP capability를 추가할 때 기능별 contract만 더하고 workspace binding·Turn lifecycle·nested interaction settlement를 다시 구현하지 않는 extension test를 고정한다.

@@ -4,7 +4,7 @@
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 관련 문서: [CONTEXT.md](../../CONTEXT.md), [Protocol-driven AY–App Interaction Layer ADR](../adr/0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), [MCP InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [InteractionCapability 상세 아키텍처](ay-app-interaction-capabilities.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
@@ -16,7 +16,7 @@ AY-PLE의 seam은 특정 `ModelingRun`이나 MCP tool이 아니다. App이 이�
 
 | 방향 | Interface | Codex-native protocol | 현재 상태 |
 | --- | --- | --- | --- |
-| App → AY | `ActionInvocation` | Project-discovered Skill과 bounded Turn input | 채택·미구현 |
+| App → AY | `ActionInvocation` | Project-discovered Skill과 bounded Turn input | 구현됨 |
 | AY → App → User → AY | `InteractionCapability` | Project-discovered custom MCP tool과 같은 call의 closed result | 구현됨 |
 
 두 Interface는 시작 방향, 정상 결과와 failure lifecycle이 다르므로 하나의 generic envelope로 합치지 않는다. ActionInvocation은 Product Turn admission을 사용하고 InteractionCapability는 그 Turn 안에 nested된다. Active SemesterWorkspace·thread binding, activity projection과 interrupt·terminal coordination처럼 실제로 맞닿는 implementation만 재사용한다.
@@ -62,7 +62,7 @@ App이 제공하는 leverage는 사용자가 GUI에서 이미 표현한 의도�
 
 ### 대표 양방향 sequence
 
-아래 sequence는 채택 target인 `organize_sources` ActionInvocation과 현재 구현된 `propose_state_patch` InteractionCapability가 한 Turn에서 조합되는 대표 흐름이다.
+아래 sequence는 현재 구현된 `organize_sources` ActionInvocation과 `propose_state_patch` InteractionCapability가 한 Turn에서 조합되는 대표 흐름이다.
 
 ```mermaid
 sequenceDiagram
@@ -225,7 +225,7 @@ ActionInvocation으로 시작한 Turn도 project-discovered Interaction MCP를 �
 
 Durable state는 actual workspace file, tracked Skill·config, Git history, `WorkspaceRegistry`와 native conversation에 둔다. Browser selection, ActionInvocation input snapshot, Product operation, pending InteractionCapability, validated evidence preview와 settled inline presentation은 transient다.
 
-## 채택 target과 현재 구현
+## 현재 구현과 확장 target
 
 | 영역 | 현재 구현 | 채택 target |
 | --- | --- | --- |
@@ -237,7 +237,7 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 | AY-originated UI | `propose_state_patch` MCP와 general native clarification | 기존 Interface 유지, 새 typed MCP capability 추가 가능 |
 | 실행 기록 | Native Turn과 process-local operation | 유지. Durable `ModelingRun`을 복원하지 않음 |
 
-현재 구현은 reverse InteractionCapability와 normal Chat에 더해 GUI의 explicit source selection에서 workspace Skill과 file reference를 native Turn으로 전달하는 `organize_sources` ActionInvocation을 deterministic Browser composition으로 검증한다. Exact local-provider와 actual prepared-workspace action→same-Turn Interaction→AY-owned mutation/checkpoint trace는 아직 남아 있으므로 구현 지도와 테스트는 First Assignment 전체를 완료로 표현하지 않는다.
+현재 구현은 reverse InteractionCapability와 normal Chat에 더해 GUI의 explicit source selection에서 workspace Skill과 file reference를 native Turn으로 전달하는 `organize_sources` ActionInvocation을 제공한다. Deterministic Browser composition과 fresh Bootstrap workspace의 exact local-provider trace가 public action→selected-only actual-file read→same-Turn Interaction→revise·accept·reject→AY-owned intended-path mutation/checkpoint와 full teardown을 함께 검증한다. Initial First Assignment vertical은 이 양방향 seam까지 완료됐으며, 두 번째 action·capability와 conversation persistence 같은 후속 범위는 개발 백로그가 소유한다.
 
 ## 검증 seam
 
