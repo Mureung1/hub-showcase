@@ -34,7 +34,7 @@ describe("useMapViewport", () => {
     expect(result.current.baseBuildingsVisible).toBe(true);
   });
 
-  it("hides base buildings when a LocalTwin overlay is visible at the edge of the map", () => {
+  it("hides base buildings when a LocalTwin overlay is visible at the edge of the analysis map", () => {
     const initial: [number, number] = [126.923, 37.56];
     const { result } = renderHook(() => useMapViewport(initial));
 
@@ -49,6 +49,23 @@ describe("useMapViewport", () => {
     });
 
     expect(result.current.baseBuildingsRendered).toBe(false);
+  });
+
+  it("keeps base buildings visible in storefront mode so individual footprints can be replaced", () => {
+    const initial: [number, number] = [126.923, 37.56];
+    const { result } = renderHook(() => useMapViewport(initial));
+
+    act(() => {
+      result.current.updateVisibleBounds({
+        west: 126.912,
+        south: 37.548,
+        east: 126.928,
+        north: 37.558,
+      });
+      result.current.setPresentationMode("storefront3d");
+    });
+
+    expect(result.current.baseBuildingsRendered).toBe(true);
   });
 
   it("keeps the demo viewport's existing center-only building rule", () => {
