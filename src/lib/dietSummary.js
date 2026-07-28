@@ -2,6 +2,7 @@
 // 순수 함수가 만든 요약 수치만 전달한다(개인 식별 정보 없음, FR-3.2). 프롬프트 조립은
 // src/lib/prompts/dietAnalysis.js가 맡는다.
 import { NUTRIENT_LABELS } from './nutrition.js'
+import { isLimitNutrient } from './nutrientCriteria.js'
 import { flattenMealItems, sumMealRecordsNutrients } from './mealStore.js'
 
 const EXCEEDED_THRESHOLD = 130 // 달성률 130% 초과 = 과다 섭취 경향
@@ -53,7 +54,10 @@ export function buildDietSummary(mealsByDate, recommended) {
       const rate = achievementRates[key]
       if (rate == null) continue
       if (rate > EXCEEDED_THRESHOLD) exceededNutrients.push(label)
-      else if (rate < DEFICIENT_THRESHOLD) deficientNutrients.push(label)
+      // 나트륨(상한형)은 달성률이 낮을수록(=적게 먹을수록) 좋은 것이라 "부족 섭취 경향"에 넣지
+      // 않는다 — 이걸 빼먹으면 나트륨을 적게 먹어 잘하고 있는 날을 "부족"으로 잘못 판정해 AI에게
+      // "더 드세요"로 잘못 전달된다(6주차 §3에서 발견해 고친 실제 버그).
+      else if (!isLimitNutrient(key) && rate < DEFICIENT_THRESHOLD) deficientNutrients.push(label)
     }
   }
 

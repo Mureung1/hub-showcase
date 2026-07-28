@@ -1,5 +1,6 @@
 import ProgressBarFill from './ProgressBarFill.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
+import { isLimitNutrient } from '../lib/nutrientCriteria.js'
 import { buildNutrientStatusRows, calcAchievementPercent, NUTRIENT_STATUS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
@@ -39,19 +40,42 @@ function StatusCountBadge({ status, count }) {
   )
 }
 
+// 나트륨 게이지(6주차 §3): 기준 이내=정상색+"충족", 초과=경고색+"초과"를 색만이 아니라 텍스트로도
+// 병기한다 — 다른 5개(목표형)는 퍼센트가 높을수록 좋지만 나트륨은 반대라, 색만으로는 "70%니까
+// 아직 부족하네"로 오해하기 쉽다. 라벨 옆 "상한" 배지로 방향이 반대임을 한 번 더 표시한다.
 function NutrientBarRow({ row }) {
   const meta = STATUS_META[row.status]
   const fillPercent = Math.max(0, Math.min(100, row.percent))
   const isOver = row.percent > 100
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '68px 1fr 56px', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
-      <span style={{ fontSize: font.size.sm, color: colors.textStrong, fontWeight: 600 }}>{row.label}</span>
+    <div style={{ display: 'grid', gridTemplateColumns: '68px 1fr 76px', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+      <span style={{ fontSize: font.size.sm, color: colors.textStrong, fontWeight: 600 }}>
+        {row.label}
+        {isLimitNutrient(row.key) && (
+          <span
+            style={{
+              marginLeft: 4,
+              fontSize: 10,
+              fontWeight: 700,
+              color: colors.textSub,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radius.sm,
+              padding: '1px 4px',
+              verticalAlign: 'middle',
+            }}
+          >
+            상한
+          </span>
+        )}
+      </span>
       <div style={{ height: 10, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
         <ProgressBarFill percent={fillPercent} color={meta.color} />
       </div>
-      <span style={{ fontSize: font.size.sm, fontWeight: 700, color: meta.color, textAlign: 'right' }}>
+      <span style={{ fontSize: font.size.xs, fontWeight: 700, color: meta.color, textAlign: 'right', lineHeight: 1.4 }}>
         {row.percent}%{isOver ? '!' : ''}
+        <br />
+        {meta.label}
       </span>
     </div>
   )

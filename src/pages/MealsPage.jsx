@@ -14,6 +14,7 @@ import Skeleton from '../components/Skeleton.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { isSetMeal, sumNutrients } from '../lib/mealStore.js'
+import { isLimitNutrient } from '../lib/nutrientCriteria.js'
 import { formatNutrient, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -282,7 +283,7 @@ export default function MealsPage() {
               unit={unit}
               actual={todayMealsTotal[key]}
               recommended={recommended[key]}
-              isLimit={key === 'sodium'}
+              isLimit={isLimitNutrient(key)}
             />
           ))}
         </Card>

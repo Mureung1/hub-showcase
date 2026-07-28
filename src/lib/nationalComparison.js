@@ -2,6 +2,7 @@
 // 평균 근처(±NEAR_RATIO)는 '비슷', 그 아래는 '부족', 위는 '과다'로 본다. 단, 나트륨은 상한형이라
 // 방향이 반대다 — 평균보다 "적게" 먹는 게 좋은 것이므로, 평균 이하면 긍정('good')으로 평가한다.
 import { NUTRIENT_LABELS } from './nutrition.js'
+import { isLimitNutrient } from './nutrientCriteria.js'
 
 const NEAR_RATIO = 0.15 // ±15% 이내면 "평균과 비슷"
 
@@ -15,7 +16,7 @@ function subjectParticle(word) {
 
 // status: 'near'(평균 비슷) | 'low'(부족) | 'high'(과다) | 'good'(나트륨이 평균보다 적음=좋음)
 function nutrientStatus(key, ratio) {
-  if (key === 'sodium') {
+  if (isLimitNutrient(key)) {
     if (ratio <= 1) return 'good'
     if (ratio <= 1 + NEAR_RATIO) return 'near'
     return 'high'

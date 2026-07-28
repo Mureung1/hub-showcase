@@ -4,6 +4,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildDeficiencyRows,
+  calcDayStatus,
+  countSatisfiedNutrients,
+  DAY_STATUS_THRESHOLDS,
   DEFICIENCY_TARGET_KEYS,
   isSodiumExceeded,
   RECORD_ONLY_KEYS,
@@ -66,6 +69,37 @@ describe('buildDeficiencyRows', () => {
     expect(row.deficiency).toBe(60) // 정수 반올림
     expect(row.recommended).toBe(120)
     expect(row.actual).toBe(60)
+  })
+})
+
+// 6주차 §3 — 나트륨 상한형 판정이 다른 5개(목표형)와 같은 카운트 규칙(countSatisfiedNutrients →
+// calcDayStatus) 안에서 방향만 올바르게 반대인지 고정한다. 이 앱의 실제 규칙은 "6개 중 4개"류
+// 이분법이 아니라 충족 개수 기준 3단계(good≥5, normal≥2)다.
+describe('countSatisfiedNutrients / calcDayStatus — 나트륨 방향 반전', () => {
+  const RECOMMENDED = { calories: 2400, protein: 120, carbs: 300, fat: 80, fiber: 30, sodium: 2000 }
+  const allSatisfied = { calories: 2400, protein: 120, carbs: 300, fat: 80, fiber: 30, sodium: 1999 }
+
+  it('나트륨 경계값: 1999는 충족 카운트, 2000은 충족 카운트, 2001은 미충족 카운트', () => {
+    expect(countSatisfiedNutrients(RECOMMENDED, { ...allSatisfied, sodium: 1999 })).toBe(6)
+    expect(countSatisfiedNutrients(RECOMMENDED, { ...allSatisfied, sodium: 2000 })).toBe(6)
+    expect(countSatisfiedNutrients(RECOMMENDED, { ...allSatisfied, sodium: 2001 })).toBe(5)
+  })
+
+  it('나트륨을 아예 안 먹어도(0mg) 충족으로 카운트된다 — 적게 먹을수록 좋은 상한형이므로', () => {
+    expect(countSatisfiedNutrients(RECOMMENDED, { ...allSatisfied, sodium: 0 })).toBe(6)
+  })
+
+  it('6개 전부 충족 → good, 5개 충족(나트륨만 초과) → normal 문턱 확인', () => {
+    expect(calcDayStatus(RECOMMENDED, allSatisfied)).toBe('good')
+    // 나트륨만 초과시키면 5개 충족 — good(5) 문턱은 그대로 넘으므로 여전히 good이어야 정상
+    expect(countSatisfiedNutrients(RECOMMENDED, { ...allSatisfied, sodium: 5000 })).toBe(DAY_STATUS_THRESHOLDS.good)
+    expect(calcDayStatus(RECOMMENDED, { ...allSatisfied, sodium: 5000 })).toBe('good')
+  })
+
+  it('충족 개수가 normal 문턱 아래로 떨어지면 bad', () => {
+    const mostlyUnmet = { calories: 0, protein: 0, carbs: 0, fat: 80, fiber: 0, sodium: 5000 }
+    expect(countSatisfiedNutrients(RECOMMENDED, mostlyUnmet)).toBe(1)
+    expect(calcDayStatus(RECOMMENDED, mostlyUnmet)).toBe('bad')
   })
 })
 

@@ -1,6 +1,8 @@
 // 권장 영양소 계산(BMR/TDEE 기반) 순수함수
 // 음식별 기준 데이터(1인분 무게 범위·현실 영양 범위·표준 검색명)는 foodData.js 통합 테이블이 단일 소스다.
 import { getPlausibility, getPortionRange } from './foodData.js'
+// 영양소별 "어느 방향이 좋은가"(target/limit) 판정은 nutrientCriteria.js가 단일 소스다(6주차 §3).
+import { isLimitNutrient, isMet, SODIUM_LIMIT_MG } from './nutrientCriteria.js'
 
 const ACTIVITY_FACTORS = {
   low: 1.375,
@@ -25,7 +27,6 @@ const FIBER_G = {
   female: 25,
 }
 
-const SODIUM_LIMIT_MG = 2000
 
 // 6대 영양소 표시 정보(키/라벨/단위) 단일 소스. 화면에서 이 순서/라벨/단위를 공통으로 사용한다.
 export const NUTRIENT_LABELS = [
@@ -256,8 +257,9 @@ export function buildDeficiencyRows(recommended, total, { max = 3 } = {}) {
 export function isSodiumExceeded(recommended, total) {
   const limit = Number(recommended?.sodium) || 0
   const actual = Number(total?.sodium) || 0
-  return limit > 0 && actual > limit
+  return limit > 0 && !isMet('sodium', actual, limit)
 }
+
 
 // ── 하루 영양 상태 3단계 판정 ──────────────────────────────────────────────
 // 목표형 영양소(칼로리·단백·탄수·지방·식이섬유)는 권장량의 NUTRIENT_SATISFY_RATIO 이상 도달 시 "충족",
@@ -269,11 +271,10 @@ export const DAY_STATUS_THRESHOLDS = { good: 5, normal: 2 }
 
 export function countSatisfiedNutrients(recommended, total) {
   if (!isNutrientSet(recommended) || !isNutrientSet(total)) return 0
-  return NUTRIENT_KEYS.reduce((count, key) => {
-    const satisfied =
-      key === 'sodium' ? total[key] <= recommended[key] : total[key] >= recommended[key] * NUTRIENT_SATISFY_RATIO
-    return count + (satisfied ? 1 : 0)
-  }, 0)
+  return NUTRIENT_KEYS.reduce(
+    (count, key) => count + (isMet(key, total[key], recommended[key], NUTRIENT_SATISFY_RATIO) ? 1 : 0),
+    0,
+  )
 }
 
 // 'good' | 'normal' | 'bad' (판정 불가면 null)
@@ -298,12 +299,12 @@ export const NUTRIENT_EXCEED_RATIO = 1.5
 
 export const NUTRIENT_STATUS = { SATISFIED: 'satisfied', DEFICIENT: 'deficient', EXCEEDED: 'exceeded' }
 
-// 나트륨은 상한형이라 "부족"이 없다(상한 이하=충족, 상한 초과=초과). 나머지 5개는 목표형(부족/충족/초과 3단계).
+// 나트륨(상한형)은 "부족"이 없다(상한 이하=충족, 상한 초과=초과). 나머지 5개(목표형)는 부족/충족/초과 3단계.
 export function classifyNutrientStatus(key, actual, recommended) {
   const rec = Number(recommended) || 0
   const ratio = rec > 0 ? Number(actual) / rec : 0
 
-  if (key === 'sodium') {
+  if (isLimitNutrient(key)) {
     return ratio <= 1 ? NUTRIENT_STATUS.SATISFIED : NUTRIENT_STATUS.EXCEEDED
   }
   if (ratio < NUTRIENT_SATISFY_RATIO) return NUTRIENT_STATUS.DEFICIENT
