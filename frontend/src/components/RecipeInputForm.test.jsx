@@ -47,10 +47,19 @@ describe("RecipeInputForm", () => {
       rawText: "김치를 볶아 끓인다.",
     });
     expect(submitButton).toBeDisabled();
-    expect(screen.getByRole("status")).toHaveTextContent(/정리하고/);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "레시피를 정리하고 있어요",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "입력한 내용을 살펴보고 있습니다. 잠시만 기다려 주세요.",
+    );
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
 
     resolveRequest();
-    await waitFor(() => expect(submitButton).not.toBeDisabled());
+    await waitFor(() => {
+      expect(submitButton).not.toBeDisabled();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
   });
 
   it("요청 실패 후 입력과 오류를 유지하고 다시 시도할 수 있다", async () => {

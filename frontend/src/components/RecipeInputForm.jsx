@@ -90,7 +90,12 @@ function RecipeInputForm({
     "mt-2 w-full rounded-[8px] border border-[#c9bea7] bg-[rgb(255_255_255_/_48%)] px-3.5 py-3 text-sm text-[#272923] outline-none placeholder:text-[#8b887e] focus-visible:border-[#8b6e35] focus-visible:ring-2 focus-visible:ring-[#d8bd78]";
 
   return (
-    <form className="flex flex-col min-h-full" noValidate onSubmit={handleSubmit}>
+    <form
+      className="flex min-h-full flex-col"
+      noValidate
+      aria-busy={isSubmitting}
+      onSubmit={handleSubmit}
+    >
       <div>
         <p className="text-[11px] font-semibold tracking-[0.16em] text-[#8b6e35]">새 레시피</p>
         <h1 className="mt-2 text-[29px] font-semibold tracking-[0.06em] text-[#272923] max-[700px]:text-[24px] short-screen:text-[25px]">레시피를 들려주세요</h1>
@@ -176,9 +181,24 @@ function RecipeInputForm({
         </div>
 
         {isSubmitting ? (
-          <p className="mt-3 text-xs text-[#626157]" role="status">
-            레시피를 정리하고 있습니다.
-          </p>
+          <div
+            className="mb-4 flex min-h-28 w-full items-center gap-4 rounded-lg border border-[#b8aa82] bg-[#f3ecda] px-5 py-4 text-[#5d563f] shadow-[inset_0_1px_0_rgb(255_255_255_/_55%)]"
+            role="status"
+            aria-live="polite"
+          >
+            <span
+              className="size-9 shrink-0 animate-spin rounded-full border-[3px] border-[#cfc29d] border-t-[#5d4a25] motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="block text-base font-semibold text-[#403b2d]">
+                레시피를 정리하고 있어요
+              </span>
+              <span className="mt-1 block text-sm leading-6">
+                입력한 내용을 살펴보고 있습니다. 잠시만 기다려 주세요.
+              </span>
+            </span>
+          </div>
         ) : null}
 
         <div className="flex justify-end gap-2.5 max-[700px]:grid max-[700px]:grid-cols-[auto_1fr]">
