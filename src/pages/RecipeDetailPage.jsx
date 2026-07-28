@@ -172,7 +172,7 @@ function RecipeDetailPage() {
       <div className={videoAspectRatio < 1 ? 'mx-auto max-w-5xl' : 'mx-auto max-w-2xl'}>
         {/* 제목/부제 — 영상보다 위, 페이지 맨 위에 항상 고정 (레이아웃·영상 방향과 무관).
             부족 재료 개수 배지는 없앰 — 바로 아래 "있는 재료"/"없는 재료" 카드가 같은 정보를 더 정확히 보여줌. */}
-        <div className="relative text-center">
+        <div className="relative px-10 text-center">
           <div className="flex flex-wrap items-baseline justify-center gap-2">
             <h1 className="font-display text-2xl font-bold text-text-primary">{recipe.name}</h1>
             <p className="font-display text-sm text-text-secondary">
