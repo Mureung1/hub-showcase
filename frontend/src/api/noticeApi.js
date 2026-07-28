@@ -1,11 +1,11 @@
 import { getToken } from "../utils/auth";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Vercel Rewrite를 사용하여 /api 요청을 Backend로 전달
 
 export async function createNotice(title, content) {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/notices`, {
+  const response = await fetch("/api/notices", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -31,7 +31,7 @@ export async function uploadPDF(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/notices/upload`, {
+  const response = await fetch("/api/notices/upload", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
