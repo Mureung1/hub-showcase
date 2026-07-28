@@ -104,13 +104,6 @@ export type UserInputRequestedEvent = {
   readonly questions: readonly CodexUserInputQuestion[]
 }
 
-export type SkillRequestedEvent = {
-  readonly type: 'skill.requested'
-  readonly threadId: CodexThreadId
-  readonly turnId: CodexTurnId
-  readonly skillName: string
-}
-
 export type UserInputResolvedEvent = {
   readonly type: 'user_input.resolved'
   readonly threadId: CodexThreadId
@@ -136,26 +129,6 @@ export type PlanCompletedEvent = {
   readonly text: string
 }
 
-type McpCallBase = {
-  readonly threadId: CodexThreadId
-  readonly turnId: CodexTurnId
-  readonly itemId: CodexItemId
-  readonly tool: 'propose_state_patch'
-}
-
-export type McpCallStartedEvent = McpCallBase & {
-  readonly type: 'mcp_call.started'
-}
-
-export type McpCallCompletedEvent = McpCallBase & {
-  readonly type: 'mcp_call.completed'
-}
-
-export type McpCallFailedEvent = McpCallBase & {
-  readonly type: 'mcp_call.failed'
-  readonly displayMessage: 'The product proposal tool failed.'
-}
-
 export type TurnInterruptAcknowledgedEvent = {
   readonly type: 'turn.interrupt_acknowledged'
   readonly threadId: CodexThreadId
@@ -173,10 +146,6 @@ export type CodexProductActivity =
   | CodexChatEvent
   | PlanDeltaEvent
   | PlanCompletedEvent
-  | McpCallStartedEvent
-  | McpCallCompletedEvent
-  | McpCallFailedEvent
-  | SkillRequestedEvent
   | TurnInterruptAcknowledgedEvent
   | UserInputRequestedEvent
   | UserInputResolvedEvent
@@ -459,58 +428,12 @@ export function parseCodexProductActivity(value: unknown): CodexProductActivity 
           text: requireString(activity.text),
         }
   }
-  if (
-    activity.type === 'mcp_call.started' ||
-    activity.type === 'mcp_call.completed' ||
-    activity.type === 'mcp_call.failed'
-  ) {
-    requireExactKeys(activity, [
-      'type',
-      'threadId',
-      'turnId',
-      'itemId',
-      'tool',
-      ...(activity.type === 'mcp_call.failed' ? ['displayMessage'] : []),
-    ])
-    if (activity.tool !== 'propose_state_patch') {
-      throw new TypeError('Invalid Codex product MCP tool')
-    }
-    const base = {
-      threadId: requireNonemptyString(activity.threadId),
-      turnId: requireNonemptyString(activity.turnId),
-      itemId: requireNonemptyString(activity.itemId),
-      tool: 'propose_state_patch' as const,
-    }
-    if (activity.type === 'mcp_call.started') {
-      return { type: 'mcp_call.started', ...base }
-    }
-    if (activity.type === 'mcp_call.completed') {
-      return { type: 'mcp_call.completed', ...base }
-    }
-    if (activity.displayMessage !== 'The product proposal tool failed.') {
-      throw new TypeError('Invalid Codex product MCP failure message')
-    }
-    return {
-      type: 'mcp_call.failed',
-      ...base,
-      displayMessage: activity.displayMessage,
-    }
-  }
   if (activity.type === 'turn.interrupt_acknowledged') {
     requireExactKeys(activity, ['type', 'threadId', 'turnId'])
     return {
       type: 'turn.interrupt_acknowledged',
       threadId: requireNonemptyString(activity.threadId),
       turnId: requireNonemptyString(activity.turnId),
-    }
-  }
-  if (activity.type === 'skill.requested') {
-    requireExactKeys(activity, ['type', 'threadId', 'turnId', 'skillName'])
-    return {
-      type: 'skill.requested',
-      threadId: requireNonemptyString(activity.threadId),
-      turnId: requireNonemptyString(activity.turnId),
-      skillName: requireNonemptyString(activity.skillName),
     }
   }
   if (activity.type === 'user_input.resolved') {

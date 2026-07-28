@@ -30,7 +30,13 @@ from ay_ple_codex_bridge.protocol import (  # noqa: E402
 from process_oracle import reap_worker_group, wait_for_process_exit  # noqa: E402
 
 
-BUNDLE = PACKAGE_ROOT / ".artifacts" / "production-runtime-darwin-arm64" / "bundle"
+BUNDLE = (
+    PACKAGE_ROOT.parents[2]
+    / ".ay-ple"
+    / "runtime"
+    / "production-runtime-darwin-arm64"
+    / "bundle"
+)
 BUNDLE_PYTHON = BUNDLE / "python" / "bin" / "python3.10"
 BUNDLE_SITE_PACKAGES = BUNDLE / "site-packages"
 TRACKED_WORKER = BRIDGE_SOURCE / "worker.py"
@@ -230,51 +236,25 @@ class ProtocolUnitTests(unittest.TestCase):
                         json.dumps(value, separators=(",", ":")).encode() + b"\n"
                     )
 
-    def test_decodes_legacy_and_isolated_thread_start_without_exposing_token(
-        self,
-    ) -> None:
-        legacy = decode_command_line(
-            b'{"bridgeRequestId":"legacy","command":"start_thread"}\n'
+    def test_decodes_project_thread_start_and_rejects_removed_overrides(self) -> None:
+        command = decode_command_line(
+            b'{"bridgeRequestId":"project","command":"start_thread"}\n'
         )
-        self.assertIsNone(legacy.workspace)
-        self.assertIsNone(legacy.private_mcp)
+        self.assertEqual(command.bridge_request_id, "project")
 
-        token = "private-mcp-token"
-        isolated = {
-            "bridgeRequestId": "isolated",
+        removed = {
+            "bridgeRequestId": "removed",
             "command": "start_thread",
             "workspace": "/workspace/semester-a",
             "mcp": {
                 "url": "http://127.0.0.1:43127/mcp",
-                "token": token,
+                "token": "private-mcp-token",
             },
         }
-        command = decode_command_line(
-            json.dumps(isolated, separators=(",", ":")).encode() + b"\n"
-        )
-        self.assertEqual(command.workspace, isolated["workspace"])
-        self.assertEqual(command.private_mcp.url, isolated["mcp"]["url"])
-        self.assertEqual(command.private_mcp.token, token)
-        self.assertNotIn(token, str(command))
-
         invalid = (
-            {**isolated, "workspace": "relative/workspace"},
-            {
-                **isolated,
-                "mcp": {
-                    **isolated["mcp"],
-                    "url": "https://127.0.0.1:43127/mcp",
-                },
-            },
-            {
-                **isolated,
-                "mcp": {
-                    **isolated["mcp"],
-                    "url": "http://example.com:43127/mcp",
-                },
-            },
-            {**isolated, "mcp": {"url": "http://127.0.0.1:43127/mcp"}},
-            {**isolated, "extra": True},
+            removed,
+            {**removed, "mcp": None},
+            {**removed, "extra": True},
         )
         for value in invalid:
             with self.subTest(value=value):
@@ -287,29 +267,17 @@ class ProtocolUnitTests(unittest.TestCase):
             "bridgeRequestId": "product",
             "command": "start_product_turn",
             "threadId": "thread-1",
-            "skillName": "assignment-modeling",
-            "skillPath": "/managed/assignment-modeling/SKILL.md",
             "permissionProfile": "workspace_write",
             "text": "Review staged Markdown",
         }
         command = decode_command_line(
             json.dumps(product, separators=(",", ":")).encode() + b"\n"
         )
-        self.assertEqual(command.skill_name, "assignment-modeling")
-        self.assertEqual(command.skill_path, product["skillPath"])
-
-        text_only = dict(product)
-        text_only.pop("skillName")
-        text_only.pop("skillPath")
-        command = decode_command_line(
-            json.dumps(text_only, separators=(",", ":")).encode() + b"\n"
-        )
-        self.assertIsNone(command.skill_name)
-        self.assertIsNone(command.skill_path)
         self.assertEqual(command.permission_profile, "workspace_write")
+        self.assertIsNone(command.skill)
 
         read_only = {
-            **text_only,
+            **product,
             "permissionProfile": "read_only",
         }
         command = decode_command_line(
@@ -330,6 +298,35 @@ class ProtocolUnitTests(unittest.TestCase):
         self.assertEqual(command.reasoning_effort, "high")
         self.assertEqual(command.service_tier, "fast")
 
+        skilled = {
+            **product,
+            "skillName": "ay-ple-first-assignment",
+            "skillPath": ("/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md"),
+        }
+        command = decode_command_line(
+            json.dumps(skilled, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertIsNotNone(command.skill)
+        assert command.skill is not None
+        self.assertEqual(command.skill.name, "ay-ple-first-assignment")
+        self.assertEqual(
+            command.skill.path,
+            "/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md",
+        )
+
+        configured_skilled = {
+            **configured,
+            "skillName": skilled["skillName"],
+            "skillPath": skilled["skillPath"],
+        }
+        command = decode_command_line(
+            json.dumps(configured_skilled, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.model, "gpt-current")
+        self.assertIsNotNone(command.skill)
+        assert command.skill is not None
+        self.assertEqual(command.skill.name, "ay-ple-first-assignment")
+
         catalog = decode_command_line(
             b'{"bridgeRequestId":"models","command":"read_model_catalog"}\n'
         )
@@ -342,17 +339,25 @@ class ProtocolUnitTests(unittest.TestCase):
         self.assertEqual(answer.answers, {"decision": ("Accept",)})
 
         invalid = (
-            {**product, "skillPath": "relative/SKILL.md"},
-            {**product, "skillPath": "/managed/assignment-modeling/OTHER.md"},
-            {key: value for key, value in product.items() if key != "skillName"},
+            {**product, "skillName": "assignment-modeling"},
+            {**product, "skillPath": "/workspace/skill/SKILL.md"},
+            {**skilled, "skillVersion": "v1"},
+            {**skilled, "skillName": ""},
+            {**skilled, "skillName": "é" * 129},
+            {**skilled, "skillName": "unsafe\nname"},
+            {**skilled, "skillPath": "relative/SKILL.md"},
+            {**skilled, "skillPath": "/workspace/skill/../skill/SKILL.md"},
+            {**skilled, "skillPath": "/workspace/skill/README.md"},
+            {**skilled, "skillPath": "/workspace/skill/\nSKILL.md"},
+            {**skilled, "skillPath": f"/{'x' * (16 * 1024)}/SKILL.md"},
             {**product, "planModel": "legacy-model"},
             {**product, "reasoningEffort": "medium"},
             {
                 key: value
-                for key, value in text_only.items()
+                for key, value in product.items()
                 if key != "permissionProfile"
             },
-            {**text_only, "permissionProfile": "danger_full_access"},
+            {**product, "permissionProfile": "danger_full_access"},
             {**configured, "serviceTier": "priority"},
             {
                 **product,
@@ -725,6 +730,117 @@ class PythonBridgeActualChildTests(unittest.TestCase):
             finally:
                 bridge.cleanup()
 
+    def test_product_turn_maps_optional_skill_before_text(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-product-skill-"
+        ) as temp:
+            root = Path(temp).resolve()
+            skill_path = (
+                root / ".agents" / "skills" / "ay-ple-first-assignment" / "SKILL.md"
+            )
+            skill_path.parent.mkdir(parents=True)
+            skill_path.write_text("# Test Skill\n", encoding="utf-8")
+            bridge = BridgeProcess(root)
+            try:
+                bridge.send({"bridgeRequestId": "thread", "command": "start_thread"})
+                self.assertEqual(bridge.receive()["type"], "result")
+                bridge.send(
+                    {
+                        "bridgeRequestId": "product",
+                        "command": "start_product_turn",
+                        "threadId": "thread-1",
+                        "permissionProfile": "workspace_write",
+                        "skillName": "ay-ple-first-assignment",
+                        "skillPath": str(skill_path),
+                        "text": "Continue the product conversation.",
+                    }
+                )
+                acceptance = bridge.receive()
+                self.assertEqual(
+                    acceptance,
+                    {
+                        "type": "result",
+                        "bridgeRequestId": "product",
+                        "command": "start_product_turn",
+                        "threadId": "thread-1",
+                        "turnId": "turn-1",
+                    },
+                )
+
+                requested: dict[str, Any] | None = None
+                for _ in range(8):
+                    frame = bridge.receive()
+                    event = frame.get("event")
+                    if (
+                        isinstance(event, dict)
+                        and event.get("type") == "user_input.requested"
+                    ):
+                        requested = event
+                        break
+                self.assertIsNotNone(requested)
+                assert requested is not None
+                bridge.send(
+                    {
+                        "bridgeRequestId": "cancel",
+                        "command": "cancel_user_input",
+                        "interactionId": requested["interactionId"],
+                    }
+                )
+
+                cancel_result = False
+                terminal = False
+                for _ in range(12):
+                    frame = bridge.receive()
+                    if (
+                        frame.get("type") == "result"
+                        and frame.get("bridgeRequestId") == "cancel"
+                    ):
+                        cancel_result = True
+                    event = frame.get("event")
+                    if (
+                        isinstance(event, dict)
+                        and event.get("type") == "turn.completed"
+                    ):
+                        terminal = True
+                    if cancel_result and terminal:
+                        break
+                self.assertTrue(cancel_result)
+                self.assertTrue(terminal)
+
+                messages = self._wait_for_journal_method(
+                    bridge,
+                    "turn/start",
+                )
+                turn_start = next(
+                    message
+                    for message in messages
+                    if message.get("method") == "turn/start"
+                )
+                self.assertEqual(
+                    turn_start["params"]["input"],
+                    [
+                        {
+                            "type": "skill",
+                            "name": "ay-ple-first-assignment",
+                            "path": str(skill_path),
+                        },
+                        {
+                            "type": "text",
+                            "text": "Continue the product conversation.",
+                        },
+                    ],
+                )
+                self.assertNotIn(
+                    "skills/extraRoots/set",
+                    [message.get("method") for message in messages],
+                )
+
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
+            finally:
+                bridge.cleanup()
+
     def test_response_last_stream_is_acceptance_first_allowlisted_and_safe(
         self,
     ) -> None:
@@ -792,8 +908,8 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     [message["method"] for message in journal[:3]],
                     ["initialize", "initialized", "thread/start"],
                 )
-                self.assertEqual(journal[2]["params"]["approvalPolicy"], "never")
-                self.assertEqual(journal[2]["params"]["sandbox"], "read-only")
+                self.assertEqual(journal[2]["params"]["approvalPolicy"], "on-request")
+                self.assertEqual(journal[2]["params"]["sandbox"], "workspace-write")
                 opt_out = journal[0]["params"]["capabilities"].get(
                     "optOutNotificationMethods"
                 )

@@ -17,7 +17,6 @@ import type {
   CodexModelCatalog,
   CodexProductTurn,
   CodexWorkspaceRuntime,
-  StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
 import type {
@@ -34,19 +33,21 @@ export {
   type CodexChatProcessTreeTestFixture,
   type CodexChatTestProcessTree,
 } from './testing-process-tree.js'
-
 export {
-  startExactProductLocalProviderFixture,
-  type ExactProductLocalProviderFixture,
-  type ExactProductProviderEvidence,
-} from './exact-product-local-provider-fixture.js'
+  startCodexFirstAssignmentConformanceTestFixture,
+  type CodexFirstAssignmentConformanceFunctionCall,
+  type CodexFirstAssignmentConformanceFunctionOutput,
+  type CodexFirstAssignmentConformanceJournal,
+  type CodexFirstAssignmentConformanceRuntimeInputItem,
+  type CodexFirstAssignmentConformanceTestFixture,
+} from './testing-first-assignment-conformance.js'
 
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }
   | { readonly operation: 'readModelCatalog' }
   | { readonly operation: 'readEffectiveConfig' }
   | { readonly operation: 'listEffectiveSkills' }
-  | { readonly operation: 'startThread'; readonly input?: StartThreadInput }
+  | { readonly operation: 'startThread' }
   | {
       readonly operation: 'startTurn'
       readonly input: StartTurnInput
@@ -94,7 +95,6 @@ export type DeterministicCodexProductTurn = {
 }
 
 export type DeterministicCodexChatRuntimeOptions = {
-  readonly workspace?: string
   readonly accountReadiness?: readonly CodexAccountReadiness[]
   readonly modelCatalogs?: readonly CodexModelCatalog[]
   readonly effectiveConfigs?: readonly DeterministicValue<CodexEffectiveConfig>[]
@@ -130,7 +130,6 @@ type DeterministicPendingInteraction = {
 export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
   private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
   readonly terminal = this.terminalDeferred.promise
-  private readonly workspace: string
   private readonly accountReadiness: CodexAccountReadiness[]
   private readonly modelCatalogs: CodexModelCatalog[]
   private readonly effectiveConfigs: DeterministicValue<CodexEffectiveConfig>[]
@@ -151,7 +150,6 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
   private closed = false
 
   constructor(options: DeterministicCodexChatRuntimeOptions = {}) {
-    this.workspace = options.workspace ?? '/deterministic/workspace'
     this.accountReadiness = [...(options.accountReadiness ?? [])]
     this.modelCatalogs = [...structuredClone(options.modelCatalogs ?? [])]
     this.effectiveConfigs = [...(options.effectiveConfigs ?? [])]
@@ -215,18 +213,9 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
     )
   }
 
-  async startThread(input?: StartThreadInput): Promise<CodexChatThread> {
-    this.callLog.push({
-      operation: 'startThread',
-      ...(input === undefined ? {} : { input: cloneStartThreadInput(input) }),
-    })
+  async startThread(): Promise<CodexChatThread> {
+    this.callLog.push({ operation: 'startThread' })
     this.requireOpen()
-    if (
-      input !== undefined &&
-      input.workspace !== this.workspace
-    ) {
-      throw workspaceRootMismatchError()
-    }
     const threadId = this.threadIds.shift()
     if (threadId === undefined) {
       throw new Error('No deterministic thread identity remains')
@@ -561,11 +550,13 @@ function cloneProductTurnInput(
 ): StartProductTurnInput {
   return {
     threadId: input.threadId,
-    ...(input.skill === undefined ? {} : { skill: { ...input.skill } }),
     permissionProfile: input.permissionProfile,
     ...(input.settings === undefined
       ? {}
       : { settings: { ...input.settings } }),
+    ...(input.skill === undefined
+      ? {}
+      : { skill: { ...input.skill } }),
     text: input.text,
   }
 }
@@ -576,21 +567,14 @@ function sameProductTurnInput(
 ): boolean {
   return (
     left.threadId === right.threadId &&
-    left.skill?.name === right.skill?.name &&
-    left.skill?.path === right.skill?.path &&
     left.permissionProfile === right.permissionProfile &&
     left.settings?.model === right.settings?.model &&
     left.settings?.reasoningEffort === right.settings?.reasoningEffort &&
     left.settings?.serviceTier === right.settings?.serviceTier &&
+    left.skill?.name === right.skill?.name &&
+    left.skill?.path === right.skill?.path &&
     left.text === right.text
   )
-}
-
-function cloneStartThreadInput(input: StartThreadInput): StartThreadInput {
-  return {
-    workspace: input.workspace,
-    mcp: { ...input.mcp },
-  }
 }
 
 function cloneAnswerUserInput(input: AnswerUserInput): AnswerUserInput {
@@ -615,15 +599,6 @@ function nativeContextAbortedError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
     code: 'native_context_aborted',
     displayMessage: 'The Codex native context query was cancelled.',
-    unknownOutcome: false,
-  })
-}
-
-function workspaceRootMismatchError(): CodexChatRuntimeError {
-  return new CodexChatRuntimeError({
-    code: 'workspace_mismatch',
-    displayMessage:
-      'The requested workspace does not match this Codex runtime.',
     unknownOutcome: false,
   })
 }

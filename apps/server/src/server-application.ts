@@ -1,45 +1,15 @@
 import express, { type Express } from 'express'
 
-import {
-  createAssignmentMcpHost,
-  type AssignmentMcpHost,
-} from './assignment-mcp-host.js'
-import {
-  createCodexChatComposition,
-  type CodexChatBootstrap,
-  type CodexChatComposition,
-  type ProductRuntimeBootstrap,
-} from './codex-chat.js'
-import { createProductRouter } from './product-http.js'
-import { createProductOperationCoordinator } from './product-operation-coordinator.js'
 import type {
   ServerStartupCleanup,
   ServerStartupCleanupInput,
   ServerStartupCleanupResult,
 } from './server-startup-cleanup.js'
 
-import {
-  createSemesterWorkspaceController,
-  type SemesterWorkspaceController,
-  type SemesterWorkspaceDirectoryChooser,
-} from './semester-workspace.js'
-
-export type CreateServerAppOptions = {
-  codexChat?: CodexChatBootstrap
-  productRuntime?: ProductRuntimeBootstrap
-  productRuntimeWorkspaceRoot?: string
-  semesterWorkspace?: SemesterWorkspaceBootstrap
-}
-
-export type SemesterWorkspaceBootstrap = {
-  readonly appDataRoot: string
-  readonly chooseDirectory: SemesterWorkspaceDirectoryChooser
-  readonly packageRoot: string
-}
+export type CreateServerAppOptions = Record<string, never>
 
 export interface ServerApplication {
   readonly app: Express
-  readonly semesterWorkspace: SemesterWorkspaceController | undefined
   close(): Promise<void>
 }
 
@@ -75,56 +45,10 @@ const serverApplicationLifecycles = new WeakMap<
 >()
 
 export async function createServerApplication(
-  options: CreateServerAppOptions = {},
+  _options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
-  const semesterWorkspace = options.semesterWorkspace
-    ? createSemesterWorkspaceController(options.semesterWorkspace)
-    : undefined
-  const productRuntimeWorkspaceRoot = options.productRuntimeWorkspaceRoot
-  const codexChat = createCodexChatComposition({
-    bootstrap: options.codexChat,
-    productRuntime: options.productRuntime,
-    workspace: semesterWorkspace
-      ? () => semesterWorkspace.nativeCwd()
-      : productRuntimeWorkspaceRoot
-        ? () => productRuntimeWorkspaceRoot
-        : undefined,
-  })
-  const assignmentMcpHost = semesterWorkspace
-    ? createAssignmentMcpHost()
-    : undefined
-  const productOperations =
-    semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
-      ? createProductOperationCoordinator({
-          controller: semesterWorkspace,
-          mcpHost: assignmentMcpHost,
-          service: codexChat.service,
-        })
-      : undefined
-  const app = createServerExpressApp(
-    codexChat,
-    semesterWorkspace,
-    productOperations,
-    assignmentMcpHost,
-    options.codexChat?.httpWriteDrainMs,
-  )
-  let applicationClosePromise: Promise<void> | undefined
-  const closeApplication: CloseServerApplication = ({ signal }) => {
-    productOperations?.beginShutdown()
-    codexChat.beginShutdown()
-    if (applicationClosePromise) return applicationClosePromise
-    const attempt = closeServerApplication(
-      codexChat,
-      assignmentMcpHost,
-    )
-    applicationClosePromise = attempt
-    void attempt.catch(() => {
-      if (applicationClosePromise === attempt) {
-        applicationClosePromise = undefined
-      }
-    })
-    return attempt
-  }
+  const app = express()
+  const closeApplication: CloseServerApplication = async () => undefined
   const lifecycle: ServerApplicationLifecycle = {
     closing: false,
     listenerClaimed: false,
@@ -132,7 +56,6 @@ export async function createServerApplication(
   }
   const application: ServerApplication = {
     app,
-    semesterWorkspace,
     close() {
       if (lifecycle.closePromise) return lifecycle.closePromise
       const cleanup = cleanupServerApplication(lifecycle, {
@@ -229,56 +152,4 @@ function cleanupServerApplication(
     },
   )
   return attempt
-}
-
-function createServerExpressApp(
-  codexChat: CodexChatComposition,
-  semesterWorkspace: SemesterWorkspaceController | undefined,
-  productOperations:
-    | ReturnType<typeof createProductOperationCoordinator>
-    | undefined,
-  assignmentMcpHost: AssignmentMcpHost | undefined,
-  productWriteDrainMs: number | undefined,
-): Express {
-  const app = express()
-  if (assignmentMcpHost) {
-    app.use('/api/product-mcp', assignmentMcpHost.router)
-  }
-  app.use(
-    '/api/product',
-    createProductRouter(
-      semesterWorkspace,
-      codexChat.origin,
-      productOperations,
-      productWriteDrainMs,
-      productOperations
-        ? () => codexChat.service.readProductAccountReadiness()
-        : undefined,
-      productOperations
-        ? async () => {
-            const catalog = await codexChat.service.readProductModelCatalog()
-            return {
-              models: catalog.models.map((model) => ({
-                model: model.model,
-                displayName: model.displayName,
-                description: model.description,
-                isDefault: model.isDefault,
-                defaultReasoningEffort: model.defaultReasoningEffort,
-                supportedReasoningEfforts: model.supportedReasoningEfforts,
-                fastModeAvailable: model.serviceTiers.includes('fast'),
-                fastModeDefault: model.defaultServiceTier === 'fast',
-              })),
-            }
-          }
-        : undefined,
-    ),
-  )
-  return app
-}
-
-async function closeServerApplication(
-  codexChat: CodexChatComposition,
-  assignmentMcpHost: AssignmentMcpHost | undefined,
-): Promise<void> {
-  await codexChat.close().finally(() => assignmentMcpHost?.close())
 }

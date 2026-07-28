@@ -110,6 +110,15 @@ class FakeAppServer:
                 {
                     "launchArgs": self._launch_args,
                     "environment": {
+                        "AY_PLE_INTERACTION_BROKER_TOKEN": os.environ.get(
+                            "AY_PLE_INTERACTION_BROKER_TOKEN"
+                        ),
+                        "AY_PLE_INTERACTION_BROKER_URL": os.environ.get(
+                            "AY_PLE_INTERACTION_BROKER_URL"
+                        ),
+                        "AY_PLE_INTERACTION_RUNTIME_BINDING": os.environ.get(
+                            "AY_PLE_INTERACTION_RUNTIME_BINDING"
+                        ),
                         "CODEX_HOME": os.environ.get("CODEX_HOME"),
                         "CODEX_SQLITE_HOME": os.environ.get("CODEX_SQLITE_HOME"),
                         "HOME": os.environ.get("HOME"),
@@ -267,20 +276,21 @@ class FakeAppServer:
     ) -> None:
         params = request.get("params", {})
         text = _input_text(params)
-        if text == "Continue the product conversation.":
-            expected_input = [{"type": "text", "text": text}]
-        else:
-            expected_input = [
-                {
-                    "type": "skill",
-                    "name": "assignment-modeling",
-                    "path": "/managed/assignment-modeling/SKILL.md",
-                },
-                {
-                    "type": "text",
-                    "text": "Review staged Markdown at /staged/assignment.md",
-                },
-            ]
+        turn_input = params.get("input")
+        if (
+            not isinstance(turn_input, list)
+            or len(turn_input) not in {1, 2}
+            or turn_input[-1] != {"type": "text", "text": text}
+            or (
+                len(turn_input) == 2
+                and (
+                    not isinstance(turn_input[0], dict)
+                    or set(turn_input[0]) != {"type", "name", "path"}
+                    or turn_input[0].get("type") != "skill"
+                )
+            )
+        ):
+            raise RuntimeError(f"product input mismatch: {turn_input!r}")
         expected_collaboration = {
             "mode": "plan",
             "settings": {
@@ -289,8 +299,6 @@ class FakeAppServer:
                 "reasoning_effort": "medium",
             },
         }
-        if params.get("input") != expected_input:
-            raise RuntimeError(f"product input mismatch: {params.get('input')!r}")
         if params.get("collaborationMode") != expected_collaboration:
             raise RuntimeError("product collaboration mode mismatch")
 
@@ -528,17 +536,6 @@ class FakeAppServer:
             return
         if self._inject_response(message):
             return
-        if method == "skills/extraRoots/set":
-            params = message.get("params")
-            if (
-                not isinstance(params, dict)
-                or set(params) != {"extraRoots"}
-                or not isinstance(params["extraRoots"], list)
-                or not all(isinstance(root, str) for root in params["extraRoots"])
-            ):
-                raise RuntimeError("invalid skill extra roots")
-            _write({"id": message["id"], "result": {}})
-            return
         if method == "thread/start":
             if (self._journal_path.parent / "hold-thread-start").is_file():
                 return
@@ -750,13 +747,9 @@ class FakeAppServer:
 
 def main() -> None:
     launch_args = sys.argv[3:]
-    if len(sys.argv) not in {3, 5} or launch_args not in (
-        [],
-        ["--config", "project_root_markers=[]"],
-    ):
+    if len(sys.argv) != 3 or launch_args:
         raise SystemExit(
-            "usage: fake_python_bridge_app_server.py "
-            "JOURNAL_PATH CHILD_PID_PATH [--config project_root_markers=[]]"
+            "usage: fake_python_bridge_app_server.py JOURNAL_PATH CHILD_PID_PATH"
         )
     journal_path = Path(sys.argv[1])
     Path(sys.argv[2]).write_text(str(os.getpid()), encoding="utf-8")

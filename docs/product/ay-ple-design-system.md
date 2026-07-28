@@ -1,16 +1,16 @@
 # AY-PLE Design System Direction
 
-> 2026-07-24 범위 정정: 공식 Public Landing은 현재 제품 surface에서 제외했고 구현 workspace도 제거했다. 아래 Landing 관련 지침은 2026-07-23까지의 historical design context이며 local app의 현재 시각 기준으로 적용하지 않는다. Personal/local 앱의 다음 화면 방향은 기존 구현 감사와 별도 대화 뒤 정한다.
+> 범위 정정: 공식 Public Landing은 현재 제품 surface에서 제외했고 구현 workspace도 제거했다. 아래 local app workbench 지침이 현재 시각 기준이며, ActionInvocation component는 채택 target을 표현한다.
 
 작성일: 2026-07-08
 
-최종 업데이트: 2026-07-27
+최종 업데이트: 2026-07-28
 
 분류: 활성
 
 성숙도: 초안
 
-관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [historical Review Workspace Scenario](ay-ple-review-workspace-scenario.md)
+관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), [InteractionCapability 상세 아키텍처](../architecture/ay-app-interaction-capabilities.md), [historical Review Workspace Scenario](ay-ple-review-workspace-scenario.md)
 
 ## 방향
 
@@ -28,7 +28,7 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 
 | 표면 | 역할 | 표현 방향 |
 | --- | --- | --- |
-| Local app workbench | Workspace 선택, AY 작업과 capability-specific Review가 일어나는 실제 제품 공간 | calm productivity와 source-grounded 정보 구조를 유지하며 marketing layout보다 현재 작업·사용자 판단·다음 행동을 우선한다. |
+| Local app workbench | Source 선택과 명시적 ActionInvocation, AY 작업과 capability-specific Review가 일어나는 실제 제품 공간 | calm productivity와 source-grounded 정보 구조를 유지하며 marketing layout보다 현재 작업·사용자 판단·다음 행동을 우선한다. |
 
 ## 색상
 
@@ -54,8 +54,9 @@ AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 
 | --- | --- |
 | Header | 브랜드와 현재 학기/과목을 작고 안정적으로 보여준다. hero처럼 과장하지 않는다. |
 | Activity bar | 앱 구조를 보조하는 낮은 대비의 아이콘 rail로 둔다. IDE chrome처럼 어둡게 만들지 않는다. |
-| Source explorer | 자료함처럼 보이게 하고, 선택 상태는 green/teal 계열로 표시한다. |
+| Source explorer | 자료함처럼 보이게 하고 preview focus와 ActionInvocation input selection을 구분한다. Selection은 green/teal 계열로 표시하되 선택만으로 AY 작업이 시작된 것처럼 표현하지 않는다. |
 | Source preview | 가장 넓고 밝은 종이 surface로 둔다. 원본을 읽는 화면이라는 감각이 우선이다. |
+| Action trigger | `선택한 자료 정리하기`처럼 무엇이 AY에게 전달되는지 설명하는 명시적 command로 둔다. Invalid selection·busy·preparing·running·terminal 상태를 정직하게 표현한다. |
 | AY chat dock | Side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. Pending Review 중에는 free-form composer와 steer를 잠그고 전체 Turn interrupt만 유지한다. |
 | Change proposal | AY Chat transcript의 inline card로 둔다. AY가 응답을 기다리는 `검토 대기`는 honey로, settled `수락됨`, `수정 요청됨`, `거절됨`은 control 없는 read-only outcome으로 구분한다. `수락됨`을 App이 file 반영까지 확인했다는 뜻으로 쓰지 않는다. Fresh proposal은 새 card로 아래에 append하고 이전 card를 교체·재개하지 않는다. Modal·별도 approval page·card dismiss를 만들거나 내부 correlation을 노출하지 않는다. |
 | Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |

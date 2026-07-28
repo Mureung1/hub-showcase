@@ -15,6 +15,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import exact_sdk
 
 
+class ArtifactRootTests(unittest.TestCase):
+    def test_exact_sdk_cache_is_external_to_the_package(self) -> None:
+        self.assertEqual(
+            exact_sdk.ARTIFACT_ROOT,
+            exact_sdk.REPOSITORY_ROOT.parent / ".ay-ple" / "cache" / "exact-sdk",
+        )
+        self.assertFalse(exact_sdk.ARTIFACT_ROOT.is_relative_to(exact_sdk.PACKAGE_ROOT))
+
+
 class SourceOracleTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory(prefix="exact-sdk-source-test-")
@@ -333,7 +342,6 @@ class ManifestTests(unittest.TestCase):
                     "0005-strict-response-classification",
                     "0006-plan-user-input-seam",
                     "0007-thread-start-settings",
-                    "0008-standalone-skill-extra-roots",
                 ],
             )
             self.assertEqual(
@@ -352,10 +360,7 @@ class ManifestTests(unittest.TestCase):
                 {
                     "sdk/python/scripts/update_sdk_artifacts.py",
                     "sdk/python/src/openai_codex/api.py",
-                    "sdk/python/src/openai_codex/async_client.py",
-                    "sdk/python/src/openai_codex/client.py",
                     "sdk/python/tests/test_public_api_runtime_behavior.py",
-                    "sdk/python/tests/test_public_api_signatures.py",
                 },
             )
             for before_patch, after_patch in zip(

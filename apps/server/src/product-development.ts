@@ -1,11 +1,7 @@
 import path from 'node:path'
 
-import {
-  createMacOsSemesterWorkspaceChooser,
-  type SemesterWorkspaceDirectoryChooser,
-} from './semester-workspace.js'
-import type { ProductRuntimeBootstrap } from './codex-chat-config.js'
-import type { SemesterWorkspaceBootstrap } from './server-application.js'
+import type { CodexChatRuntimeEnvironment } from '@ay-ple/codex-chat-runtime'
+
 import { resolveCanonicalProductRoots } from './product-roots.js'
 
 const productOrigin = 'http://127.0.0.1:4173'
@@ -27,17 +23,18 @@ export class ProductDevelopmentBootstrapError extends Error {
 }
 
 export type ProductDevelopmentBootstrap = {
-  readonly runtime: ProductRuntimeBootstrap
-  readonly runtimeWorkspaceRoot: string
+  readonly runtime: {
+    readonly appDataRoot: string
+    readonly packageRoot: string
+    readonly runtimeRoot: string
+    readonly environment: CodexChatRuntimeEnvironment
+    readonly origin: string
+  }
   readonly selectedWorkspaceRoot?: string
-  readonly semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
 export async function resolveProductDevelopmentBootstrap(
   environment: NodeJS.ProcessEnv,
-  options: {
-    readonly chooseDirectory?: SemesterWorkspaceDirectoryChooser
-  } = {},
 ): Promise<ProductDevelopmentBootstrap | undefined> {
   if (environment.AY_PLE_PRODUCT_MODE === undefined) return undefined
   if (environment.AY_PLE_PRODUCT_MODE !== '1') {
@@ -69,12 +66,7 @@ export async function resolveProductDevelopmentBootstrap(
       ? {}
       : { workspaceRoot: selectedWorkspaceRoot }),
   })
-  const chooseDirectory =
-    options.chooseDirectory ?? createMacOsSemesterWorkspaceChooser()
-  let initialSelection = roots.workspaceRoot
-
   return {
-    runtimeWorkspaceRoot: roots.workspaceRoot ?? roots.packageRoot,
     runtime: {
       appDataRoot: roots.appDataRoot,
       packageRoot: roots.packageRoot,
@@ -91,18 +83,6 @@ export async function resolveProductDevelopmentBootstrap(
       ? {}
       : {
           selectedWorkspaceRoot: roots.workspaceRoot,
-          semesterWorkspace: {
-            packageRoot: roots.packageRoot,
-            appDataRoot: roots.appDataRoot,
-            chooseDirectory: async () => {
-              if (initialSelection !== undefined) {
-                const selected = initialSelection
-                initialSelection = undefined
-                return selected
-              }
-              return chooseDirectory()
-            },
-          },
         }),
   }
 }

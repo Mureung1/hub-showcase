@@ -35,13 +35,7 @@ type ProbeState =
   | 'closed'
   | 'failed'
 
-const APP_SERVER_ARGS = [
-  '--config',
-  'project_root_markers=[]',
-  'app-server',
-  '--listen',
-  'stdio://',
-] as const
+const APP_SERVER_ARGS = ['app-server', '--listen', 'stdio://'] as const
 const SEMVER =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
 const ACTIVE_PROBE_SESSIONS = new Set<symbol>()

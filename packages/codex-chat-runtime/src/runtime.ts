@@ -1,11 +1,13 @@
 import {
+  execFile,
   spawn,
   type ChildProcessWithoutNullStreams,
   type SpawnOptionsWithoutStdio,
 } from 'node:child_process'
 import { constants as fsConstants } from 'node:fs'
-import { access, lstat, realpath } from 'node:fs/promises'
+import { access, lstat, open, realpath } from 'node:fs/promises'
 import path from 'node:path'
+import { promisify } from 'node:util'
 
 import {
   BridgeProtocolError,
@@ -29,10 +31,10 @@ import {
 import type {
   AnswerUserInput,
   CancelUserInput,
+  CodexChildEnvironment,
   CodexModelCatalog,
   CodexProductTurn,
   CodexWorkspaceRuntime,
-  StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
 import {
@@ -67,6 +69,20 @@ import { SerializedBridgeWriter } from './serialized-writer.js'
 
 type ResultFrame = Extract<BridgeOutputFrame, { type: 'result' }>
 type RuntimeState = 'starting' | 'ready' | 'closing' | 'closed' | 'failed'
+type ProductSkillPathIdentity = {
+  readonly path: string
+  readonly kind: 'directory' | 'file'
+  readonly device: number
+  readonly inode: number
+}
+type ValidatedWorkspace = {
+  readonly path: string
+  readonly identity: ProductSkillPathIdentity
+}
+type ProductSkillValidationTestHook = (input: {
+  readonly phase: 'before_open'
+  readonly skillPath: string
+}) => void | Promise<void>
 type CommandName =
   | 'read_account'
   | 'read_model_catalog'
@@ -77,6 +93,30 @@ type CommandName =
   | 'cancel_user_input'
   | 'interrupt'
   | 'release_thread'
+
+const execFileAsync = promisify(execFile)
+const GIT_EXECUTABLE = '/usr/bin/git'
+const GIT_ROOT_PROBE_TIMEOUT_MS = 5_000
+const GIT_ROOT_PROBE_MAX_BYTES = 4 * 1024
+const CHILD_ENVIRONMENT_MAX_ENTRIES = 16
+const CHILD_ENVIRONMENT_MAX_VALUE_BYTES = 8 * 1024
+const CHILD_ENVIRONMENT_MAX_AGGREGATE_BYTES = 64 * 1024
+const PRODUCT_SKILL_NAME_MAX_BYTES = 256
+const PRODUCT_SKILL_PATH_MAX_BYTES = 16 * 1024
+const CHILD_ENVIRONMENT_KEY_PATTERN = /^[A-Z_][A-Z0-9_]*$/u
+const PROTECTED_CHILD_ENVIRONMENT_KEYS = new Set([
+  'CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG',
+  'CODEX_HOME',
+  'CODEX_SQLITE_HOME',
+  'HOME',
+  'LANG',
+  'LC_ALL',
+  'LIBPATH',
+  'PATH',
+  'SHLIB_PATH',
+  'TMPDIR',
+  '__CF_USER_TEXT_ENCODING',
+])
 
 const BRIDGE_OPERATION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   account_read_failed: 'The Codex account could not be read.',
@@ -117,8 +157,6 @@ const BRIDGE_GENERIC_FATAL_CODES = new Set([
 ])
 
 const RUNTIME_CLOSING_MESSAGE = 'The Codex runtime is closing.'
-const WORKSPACE_ROOT_MISMATCH_MESSAGE =
-  'The requested workspace does not match this Codex runtime.'
 
 interface PendingOperation<T> {
   readonly command: CommandName
@@ -154,6 +192,7 @@ interface ChildCloseStatus {
 interface StartVerifiedCodexChatRuntimeCommonOptions {
   readonly bundle: VerifiedProductionBundle
   readonly environment: CodexChatRuntimeEnvironment
+  readonly childEnvironment?: CodexChildEnvironment
   /** Package-private operational limits; production callers use defaults. */
   readonly budgets?: Partial<NodeRuntimeBudgets>
   /** Package-private actual-child seam; production callers omit this. */
@@ -174,6 +213,8 @@ interface StartVerifiedCodexChatRuntimeCommonOptions {
     processGroupId: number,
     signal: NodeJS.Signals,
   ) => void
+  /** Package-private filesystem race injection; production callers omit this. */
+  readonly productSkillValidationTestHook?: ProductSkillValidationTestHook
 }
 
 export type CodexRuntimeApplicationIdentity = {
@@ -250,7 +291,11 @@ export async function startVerifiedCodexChatRuntime(
 ): Promise<SpawnedCodexChatRuntime> {
   const budgets = resolveRuntimeBudgets(options.budgets)
   const deadlines = resolveRuntimeDeadlines(options.deadlines)
-  const workspace = await validateWorkspace(options.workspace)
+  const childEnvironment = normalizeChildEnvironment(
+    options.childEnvironment,
+  )
+  const validatedWorkspace = await validateWorkspace(options.workspace)
+  const workspace = validatedWorkspace.path
   const environment = await validateEnvironment(options.environment)
   requireDisjointRuntimeRoots(workspace, environment)
   const application = validateApplicationIdentity(
@@ -287,6 +332,7 @@ export async function startVerifiedCodexChatRuntime(
     env: createChildEnvironment(
       options.bundle,
       environment,
+      childEnvironment,
       options.disableManagedConfigForTest,
     ),
   }
@@ -306,10 +352,12 @@ export async function startVerifiedCodexChatRuntime(
   const runtime = new NodeCodexChatRuntime(
     child,
     workspace,
+    validatedWorkspace.identity,
     budgets,
     deadlines,
     options.signalProcessGroupOverride ?? signalDetachedProcessGroup,
     nativeContext,
+    options.productSkillValidationTestHook,
   )
   try {
     await runtime.waitUntilReady()
@@ -336,6 +384,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
 
   private readonly child: ChildProcessWithoutNullStreams
   private readonly workspace: string
+  private readonly workspaceIdentity: ProductSkillPathIdentity
   private readonly budgets: NodeRuntimeBudgets
   private readonly aggregateQueueBudget: AggregateOperationQueueBudget
   private readonly stderrCapture: BoundedStderrCapture
@@ -345,6 +394,9 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
     signal: NodeJS.Signals,
   ) => void
   private readonly nativeContext: NativeContextGenerationCoordinator
+  private readonly productSkillValidationTestHook:
+    | ProductSkillValidationTestHook
+    | undefined
   private readonly framer = new NdjsonBridgeFramer()
   private readonly spawned = createDeferred<void>()
   private readonly ready = createDeferred<void>()
@@ -372,6 +424,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
   constructor(
     child: ChildProcessWithoutNullStreams,
     workspace: string,
+    workspaceIdentity: ProductSkillPathIdentity,
     budgets: NodeRuntimeBudgets,
     deadlines: NodeRuntimeDeadlines,
     processGroupSignaler: (
@@ -379,13 +432,16 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
       signal: NodeJS.Signals,
     ) => void,
     nativeContext: NativeContextGenerationCoordinator,
+    productSkillValidationTestHook: ProductSkillValidationTestHook | undefined,
   ) {
     this.child = child
     this.workspace = workspace
+    this.workspaceIdentity = workspaceIdentity
     this.budgets = budgets
     this.deadlines = deadlines
     this.processGroupSignaler = processGroupSignaler
     this.nativeContext = nativeContext
+    this.productSkillValidationTestHook = productSkillValidationTestHook
     this.aggregateQueueBudget = new AggregateOperationQueueBudget(
       budgets.aggregateMaxFrames,
       budgets.aggregateMaxBytes,
@@ -559,26 +615,13 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
     )
   }
 
-  startThread(input?: StartThreadInput): Promise<CodexChatThread> {
-    const normalized = normalizeStartThreadInput(input)
-    if (
-      normalized !== undefined &&
-      normalized.workspace !== this.workspace
-    ) {
-      return Promise.reject(workspaceRootMismatchError())
-    }
+  startThread(): Promise<CodexChatThread> {
     return this.sendOperation(
       'start_thread',
       true,
       (bridgeRequestId) => ({
         bridgeRequestId,
         command: 'start_thread',
-        ...(normalized === undefined
-          ? {}
-          : {
-              workspace: normalized.workspace,
-              mcp: normalized.mcp,
-            }),
       }),
       (frame) => {
         if (frame.command !== 'start_thread') throw new BridgeProtocolError('mismatch')
@@ -636,8 +679,26 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
   }
 
   startProductTurn(input: StartProductTurnInput): Promise<CodexProductTurn> {
-    requireProductTurnInput(input)
-    const { threadId, skill, text } = input
+    const snapshot = snapshotProductTurnInput(input)
+    return this.startValidatedProductTurn(snapshot)
+  }
+
+  private async startValidatedProductTurn(
+    input: StartProductTurnInput,
+  ): Promise<CodexProductTurn> {
+    await validateProductWorkspaceRoot(
+      this.workspace,
+      this.workspaceIdentity,
+    )
+    if (input.skill !== undefined) {
+      await validateProductSkillFile(
+        input.skill.path,
+        this.workspace,
+        this.workspaceIdentity,
+        this.productSkillValidationTestHook,
+      )
+    }
+    const { threadId, text } = input
     const stream = new CodexChatEventStream<CodexProductActivity>({
       maxFrames: this.budgets.operationMaxFrames,
       maxBytes: this.budgets.operationMaxBytes,
@@ -651,9 +712,6 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
         bridgeRequestId,
         command: 'start_product_turn',
         threadId,
-        ...(skill === undefined
-          ? {}
-          : { skillName: skill.name, skillPath: skill.path }),
         permissionProfile: input.permissionProfile,
         ...(input.settings === undefined
           ? {}
@@ -661,6 +719,12 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
               model: input.settings.model,
               reasoningEffort: input.settings.reasoningEffort,
               serviceTier: input.settings.serviceTier,
+            }),
+        ...(input.skill === undefined
+          ? {}
+          : {
+              skillName: input.skill.name,
+              skillPath: input.skill.path,
             }),
         text,
       }),
@@ -1432,20 +1496,91 @@ function observeReadableEnd(
   })
 }
 
-async function validateWorkspace(workspace: string): Promise<string> {
+async function validateWorkspace(
+  workspace: string,
+): Promise<ValidatedWorkspace> {
   if (!path.isAbsolute(workspace)) {
     throw new TypeError('Codex workspace must be absolute')
   }
+  let canonicalWorkspace: string
+  let identity: ProductSkillPathIdentity
   try {
     const stats = await lstat(workspace)
     if (!stats.isDirectory() || stats.isSymbolicLink()) {
       throw new TypeError('Codex workspace must be a directory')
     }
     await access(workspace, fsConstants.R_OK | fsConstants.X_OK)
-    return await realpath(workspace)
+    canonicalWorkspace = await realpath(workspace)
+    identity = {
+      path: canonicalWorkspace,
+      kind: 'directory',
+      device: stats.dev,
+      inode: stats.ino,
+    }
   } catch (error) {
     if (error instanceof TypeError) throw error
     throw new TypeError('Codex workspace could not be validated')
+  }
+  if (workspace !== canonicalWorkspace) {
+    throw new TypeError('Codex workspace must be canonical')
+  }
+  await validateExactGitRoot(canonicalWorkspace)
+  try {
+    const current = await lstat(canonicalWorkspace)
+    if (
+      current.isSymbolicLink() ||
+      !current.isDirectory() ||
+      !sameProductSkillPathIdentity(identity, {
+        path: canonicalWorkspace,
+        kind: 'directory',
+        device: current.dev,
+        inode: current.ino,
+      }) ||
+      (await realpath(canonicalWorkspace)) !== canonicalWorkspace
+    ) {
+      throw new TypeError('Codex workspace changed during validation')
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError('Codex workspace could not be validated')
+  }
+  return {
+    path: canonicalWorkspace,
+    identity,
+  }
+}
+
+async function validateExactGitRoot(workspace: string): Promise<void> {
+  const marker = path.join(workspace, '.git')
+  try {
+    const markerStats = await lstat(marker)
+    if (!markerStats.isDirectory() || markerStats.isSymbolicLink()) {
+      throw new TypeError('Codex workspace must be an exact Git root')
+    }
+    await access(marker, fsConstants.R_OK | fsConstants.X_OK)
+    const { stdout } = await execFileAsync(
+      GIT_EXECUTABLE,
+      ['-C', workspace, 'rev-parse', '--show-toplevel', '--absolute-git-dir'],
+      {
+        encoding: 'utf8',
+        maxBuffer: GIT_ROOT_PROBE_MAX_BYTES,
+        timeout: GIT_ROOT_PROBE_TIMEOUT_MS,
+        windowsHide: true,
+      },
+    )
+    const paths = stdout.trimEnd().split(/\r?\n/u)
+    if (paths.length !== 2) {
+      throw new TypeError('Codex workspace must be an exact Git root')
+    }
+    const [topLevel, gitDirectory] = await Promise.all(
+      paths.map((candidate) => realpath(candidate)),
+    )
+    if (topLevel !== workspace || gitDirectory !== marker) {
+      throw new TypeError('Codex workspace must be an exact Git root')
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError('Codex workspace must be an exact Git root')
   }
 }
 
@@ -1564,11 +1699,13 @@ function validateApplicationIdentity(
 function createChildEnvironment(
   bundle: VerifiedProductionBundle,
   environment: CodexChatRuntimeEnvironment,
+  childEnvironment: CodexChildEnvironment,
   disableManagedConfigForTest: true | undefined,
 ): NodeJS.ProcessEnv {
   const pathDirectories = [
     bundle.codexPathDirectory,
     path.dirname(bundle.pythonExecutable),
+    path.dirname(process.execPath),
     '/usr/bin',
     '/bin',
     '/usr/sbin',
@@ -1582,6 +1719,7 @@ function createChildEnvironment(
     throw new TypeError('Codex runtime PATH contains an invalid directory')
   }
   return {
+    ...childEnvironment,
     ...(disableManagedConfigForTest
       ? { CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG: '1' }
       : {}),
@@ -1597,6 +1735,50 @@ function createChildEnvironment(
     PYTHONUNBUFFERED: '1',
     TMPDIR: environment.tempDirectory,
   }
+}
+
+function normalizeChildEnvironment(
+  value: CodexChildEnvironment | undefined,
+): CodexChildEnvironment {
+  if (value === undefined) return Object.freeze({})
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new TypeError('Codex child environment must be an object')
+  }
+  const entries = Object.entries(value)
+  if (entries.length > CHILD_ENVIRONMENT_MAX_ENTRIES) {
+    throw new TypeError('Codex child environment has too many entries')
+  }
+  let aggregateBytes = 0
+  for (const [key, entryValue] of entries) {
+    if (!CHILD_ENVIRONMENT_KEY_PATTERN.test(key)) {
+      throw new TypeError('Codex child environment key is invalid')
+    }
+    if (isProtectedChildEnvironmentKey(key)) {
+      throw new TypeError('Codex child environment key is protected')
+    }
+    if (typeof entryValue !== 'string' || entryValue.includes('\0')) {
+      throw new TypeError('Codex child environment value is invalid')
+    }
+    const valueBytes = Buffer.byteLength(entryValue, 'utf8')
+    if (valueBytes > CHILD_ENVIRONMENT_MAX_VALUE_BYTES) {
+      throw new TypeError('Codex child environment value is too large')
+    }
+    aggregateBytes += Buffer.byteLength(key, 'utf8') + valueBytes
+    if (aggregateBytes > CHILD_ENVIRONMENT_MAX_AGGREGATE_BYTES) {
+      throw new TypeError('Codex child environment is too large')
+    }
+  }
+  return Object.freeze(Object.fromEntries(entries))
+}
+
+function isProtectedChildEnvironmentKey(key: string): boolean {
+  return (
+    PROTECTED_CHILD_ENVIRONMENT_KEYS.has(key) ||
+    key.startsWith('PYTHON') ||
+    key.startsWith('DYLD_') ||
+    key.startsWith('LD_') ||
+    key.startsWith('_RLD_')
+  )
 }
 
 function resolveRuntimeBudgets(
@@ -1662,81 +1844,97 @@ function requireAbortSignal(value: unknown): asserts value is AbortSignal {
   }
 }
 
-function requireProductTurnInput(input: StartProductTurnInput): void {
-  requireNativeId(input.threadId)
+function snapshotProductTurnInput(
+  input: StartProductTurnInput,
+): StartProductTurnInput {
   if (
-    input.permissionProfile !== 'read_only' &&
-    input.permissionProfile !== 'workspace_write'
+    typeof input !== 'object' ||
+    input === null ||
+    Array.isArray(input) ||
+    Object.keys(input).some(
+      (key) =>
+        key !== 'threadId' &&
+        key !== 'permissionProfile' &&
+        key !== 'settings' &&
+        key !== 'skill' &&
+        key !== 'text',
+    )
+  ) {
+    throw new TypeError('Product Turn input fields are invalid')
+  }
+  const threadId = input.threadId
+  const permissionProfile = input.permissionProfile
+  const candidateSettings = input.settings
+  const candidateSkill = input.skill
+  const text = input.text
+
+  requireNativeId(threadId)
+  if (
+    permissionProfile !== 'read_only' &&
+    permissionProfile !== 'workspace_write'
   ) {
     throw new TypeError('Product permission profile is invalid')
   }
-  if (input.skill !== undefined) {
-    if (typeof input.skill !== 'object' || input.skill === null) {
-      throw new TypeError('Skill input must be an object')
-    }
-    requireBoundedString(input.skill.name, 'Skill name', 256)
-    requireBoundedString(input.skill.path, 'Skill path', 16 * 1024)
-    if (!path.isAbsolute(input.skill.path)) {
-      throw new TypeError('Skill path must be absolute')
-    }
-    if (path.basename(input.skill.path) !== 'SKILL.md') {
-      throw new TypeError('Skill path must target SKILL.md')
-    }
-  }
-  if (input.settings !== undefined) {
+  let settings: StartProductTurnInput['settings']
+  if (candidateSettings !== undefined) {
     requireExactInputKeys(
-      input.settings,
+      candidateSettings,
       ['model', 'reasoningEffort', 'serviceTier'],
       'Product Turn settings',
     )
-    requireBoundedString(input.settings.model, 'Product model', 256)
+    const model = candidateSettings.model
+    const reasoningEffort = candidateSettings.reasoningEffort
+    const serviceTier = candidateSettings.serviceTier
+    requireBoundedString(model, 'Product model', 256)
     requireBoundedString(
-      input.settings.reasoningEffort,
+      reasoningEffort,
       'Product reasoning effort',
       64,
     )
     if (
-      input.settings.serviceTier !== 'default' &&
-      input.settings.serviceTier !== 'fast'
+      serviceTier !== 'default' &&
+      serviceTier !== 'fast'
     ) {
       throw new TypeError('Product service tier is invalid')
     }
+    settings = { model, reasoningEffort, serviceTier }
   }
-  requireBoundedString(input.text, 'Product turn text', 512 * 1024)
-}
-
-function normalizeStartThreadInput(
-  input: StartThreadInput | undefined,
-): StartThreadInput | undefined {
-  if (input === undefined) return undefined
-  requireExactInputKeys(input, ['workspace', 'mcp'], 'Thread input')
-  requireBoundedString(input.workspace, 'Thread workspace', 16 * 1024)
-  if (!path.isAbsolute(input.workspace)) {
-    throw new TypeError('Thread workspace must be absolute')
+  let skill: StartProductTurnInput['skill']
+  if (candidateSkill !== undefined) {
+    requireExactInputKeys(
+      candidateSkill,
+      ['name', 'path'],
+      'Product Skill input',
+    )
+    const name = candidateSkill.name
+    const skillPath = candidateSkill.path
+    requireSafeBoundedString(
+      name,
+      'Product Skill name',
+      PRODUCT_SKILL_NAME_MAX_BYTES,
+    )
+    requireSafeBoundedString(
+      skillPath,
+      'Product Skill path',
+      PRODUCT_SKILL_PATH_MAX_BYTES,
+    )
+    if (
+      !path.isAbsolute(skillPath) ||
+      path.normalize(skillPath) !== skillPath ||
+      path.basename(skillPath) !== 'SKILL.md'
+    ) {
+      throw new TypeError('Product Skill path is invalid')
+    }
+    skill = { name, path: skillPath }
   }
-  requireExactInputKeys(
-    input.mcp,
-    ['url', 'token'],
-    'Private MCP input',
-  )
-  requireBoundedString(input.mcp.url, 'Private MCP URL', 4 * 1024)
-  requireLoopbackHttpUrl(input.mcp.url)
-  requireBoundedString(input.mcp.token, 'Private MCP token', 4 * 1024)
-  if (/\r|\n/u.test(input.mcp.token)) {
-    throw new TypeError('Private MCP token must be a valid HTTP header value')
-  }
+  requireBoundedString(text, 'Product turn text', 512 * 1024)
   return {
-    workspace: input.workspace,
-    mcp: { ...input.mcp },
+    threadId,
+    permissionProfile,
+    ...(settings === undefined ? {} : { settings }),
+    ...(skill === undefined ? {} : { skill }),
+    text,
   }
-}
-
-function workspaceRootMismatchError(): CodexChatRuntimeError {
-  return new CodexChatRuntimeError({
-    code: 'workspace_mismatch',
-    displayMessage: WORKSPACE_ROOT_MISMATCH_MESSAGE,
-    unknownOutcome: false,
-  })
 }
 
 function requireExactInputKeys(
@@ -1757,38 +1955,208 @@ function requireExactInputKeys(
   }
 }
 
-function requireLoopbackHttpUrl(value: string): void {
-  let parsed: URL
+async function validateProductWorkspaceRoot(
+  workspace: string,
+  expected: ProductSkillPathIdentity,
+): Promise<void> {
   try {
-    parsed = new URL(value)
-  } catch {
-    throw new TypeError('Private MCP URL must be a loopback HTTP URL')
-  }
-  const hostname = parsed.hostname.toLowerCase()
-  if (
-    parsed.protocol !== 'http:' ||
-    parsed.username !== '' ||
-    parsed.password !== '' ||
-    parsed.hash !== '' ||
-    !isLoopbackHostname(hostname)
-  ) {
-    throw new TypeError('Private MCP URL must be a loopback HTTP URL')
+    const stats = await lstat(workspace)
+    const actual: ProductSkillPathIdentity = {
+      path: workspace,
+      kind: 'directory',
+      device: stats.dev,
+      inode: stats.ino,
+    }
+    if (
+      stats.isSymbolicLink() ||
+      !stats.isDirectory() ||
+      (await realpath(workspace)) !== workspace ||
+      !sameProductSkillPathIdentity(expected, actual)
+    ) {
+      throw new TypeError(
+        'Product workspace changed after Runtime startup',
+      )
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError(
+      'Product workspace changed after Runtime startup',
+    )
   }
 }
 
-function isLoopbackHostname(hostname: string): boolean {
-  const unwrapped =
-    hostname.startsWith('[') && hostname.endsWith(']')
-      ? hostname.slice(1, -1)
-      : hostname
-  if (unwrapped === '::1') return true
-  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u.exec(
-    unwrapped,
-  )
+async function validateProductSkillFile(
+  skillPath: string,
+  workspace: string,
+  workspaceIdentity: ProductSkillPathIdentity,
+  testHook: ProductSkillValidationTestHook | undefined,
+): Promise<void> {
+  const relative = path.relative(workspace, skillPath)
+  if (
+    relative === '' ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    throw new TypeError('Product Skill path must be inside the Codex workspace')
+  }
+  try {
+    const before = await readProductSkillPathIdentities(
+      skillPath,
+      workspace,
+    )
+    const beforeRoot = before.at(0)
+    const beforeLeaf = before.at(-1)
+    if (
+      !beforeRoot ||
+      !sameProductSkillPathIdentity(workspaceIdentity, beforeRoot)
+    ) {
+      throw new TypeError(
+        'Product Skill workspace changed after Runtime startup',
+      )
+    }
+    if (!beforeLeaf || beforeLeaf.kind !== 'file') {
+      throw new TypeError(
+        'Product Skill path must reference a regular non-symlink file',
+      )
+    }
+    await testHook?.({ phase: 'before_open', skillPath })
+    const handle = await open(
+      skillPath,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+    )
+    try {
+      const opened = await handle.stat()
+      if (
+        !opened.isFile() ||
+        opened.dev !== beforeLeaf.device ||
+        opened.ino !== beforeLeaf.inode
+      ) {
+        throw new TypeError(
+          'Product Skill path changed during validation',
+        )
+      }
+      const after = await readProductSkillPathIdentities(
+        skillPath,
+        workspace,
+      )
+      const afterRoot = after.at(0)
+      const afterLeaf = after.at(-1)
+      if (
+        !sameProductSkillPathIdentities(before, after) ||
+        !afterRoot ||
+        !sameProductSkillPathIdentity(workspaceIdentity, afterRoot) ||
+        !afterLeaf ||
+        afterLeaf.kind !== 'file' ||
+        opened.dev !== afterLeaf.device ||
+        opened.ino !== afterLeaf.inode
+      ) {
+        throw new TypeError(
+          'Product Skill path ancestry changed during validation',
+        )
+      }
+    } finally {
+      await handle.close()
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError('Product Skill path could not be validated')
+  }
+}
+
+async function readProductSkillPathIdentities(
+  skillPath: string,
+  workspace: string,
+): Promise<readonly ProductSkillPathIdentity[]> {
+  const relative = path.relative(workspace, skillPath)
+  const components = relative.split(path.sep)
+  const candidates = [
+    workspace,
+    ...components.map((_component, index) =>
+      path.join(workspace, ...components.slice(0, index + 1)),
+    ),
+  ]
+  const identities: ProductSkillPathIdentity[] = []
+  for (const [index, candidate] of candidates.entries()) {
+    const expectedKind = index === candidates.length - 1 ? 'file' : 'directory'
+    const before = await lstat(candidate)
+    if (
+      before.isSymbolicLink() ||
+      (expectedKind === 'file' ? !before.isFile() : !before.isDirectory())
+    ) {
+      throw new TypeError(
+        expectedKind === 'file'
+          ? 'Product Skill path must reference a regular non-symlink file'
+          : 'Product Skill path ancestors must be canonical directories',
+      )
+    }
+    const canonical = await realpath(candidate)
+    const after = await lstat(candidate)
+    if (
+      canonical !== candidate ||
+      (candidate !== workspace &&
+        !isPathWithinCanonicalRoot(canonical, workspace))
+    ) {
+      throw new TypeError('Product Skill path must be canonical')
+    }
+    if (
+      after.isSymbolicLink() ||
+      (expectedKind === 'file' ? !after.isFile() : !after.isDirectory()) ||
+      before.dev !== after.dev ||
+      before.ino !== after.ino
+    ) {
+      throw new TypeError(
+        'Product Skill path ancestry changed during validation',
+      )
+    }
+    identities.push({
+      path: candidate,
+      kind: expectedKind,
+      device: after.dev,
+      inode: after.ino,
+    })
+  }
+  return identities
+}
+
+function sameProductSkillPathIdentity(
+  expected: ProductSkillPathIdentity,
+  actual: ProductSkillPathIdentity,
+): boolean {
   return (
-    match !== null &&
-    Number(match[1]) === 127 &&
-    match.slice(2).every((part) => Number(part) <= 255)
+    actual.path === expected.path &&
+    actual.kind === expected.kind &&
+    actual.device === expected.device &&
+    actual.inode === expected.inode
+  )
+}
+
+function sameProductSkillPathIdentities(
+  before: readonly ProductSkillPathIdentity[],
+  after: readonly ProductSkillPathIdentity[],
+): boolean {
+  return (
+    before.length === after.length &&
+    before.every((identity, index) => {
+      const current = after[index]
+      return (
+        current !== undefined &&
+        sameProductSkillPathIdentity(identity, current)
+      )
+    })
+  )
+}
+
+function isPathWithinCanonicalRoot(
+  candidate: string,
+  root: string,
+): boolean {
+  const relative = path.relative(root, candidate)
+  return (
+    relative !== '' &&
+    relative !== '..' &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
   )
 }
 
@@ -1835,6 +2203,20 @@ function requireBoundedString(
     Buffer.byteLength(value, 'utf8') > maxBytes
   ) {
     throw new TypeError(`${label} is invalid`)
+  }
+}
+
+function requireSafeBoundedString(
+  value: unknown,
+  label: string,
+  maxBytes: number,
+): asserts value is string {
+  requireBoundedString(value, label, maxBytes)
+  for (const character of value) {
+    const point = character.codePointAt(0) as number
+    if (point < 0x20 || point === 0x7f) {
+      throw new TypeError(`${label} is invalid`)
+    }
   }
 }
 

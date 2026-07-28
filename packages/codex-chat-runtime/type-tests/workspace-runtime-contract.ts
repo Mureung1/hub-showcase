@@ -17,6 +17,16 @@ const runtime: Promise<CodexWorkspaceRuntime> = createCodexChatRuntime({
 void runtime.then((workspaceRuntime) => {
   void workspaceRuntime.readAccountReadiness()
   void workspaceRuntime.readModelCatalog()
+  void workspaceRuntime.startProductTurn({
+    threadId: 'native-thread',
+    permissionProfile: 'workspace_write',
+    skill: {
+      name: 'ay-ple-first-assignment',
+      path:
+        '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+    },
+    text: 'ActionInvocation: organize_sources',
+  })
   void workspaceRuntime.readEffectiveConfig({
     signal: new AbortController().signal,
   })
@@ -24,5 +34,4 @@ void runtime.then((workspaceRuntime) => {
     signal: new AbortController().signal,
   })
   void workspaceRuntime.close()
-
 })

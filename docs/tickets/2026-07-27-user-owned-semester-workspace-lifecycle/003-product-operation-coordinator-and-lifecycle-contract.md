@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,28 +32,43 @@ Browser와 Server가 bootstrap, candidate, active, transitioning, recovery를 �
 
 ## Acceptance Criteria
 
-- [ ] Product contract가 모든 lifecycle variant, safe summary/reference와 `activeOperation`을 exact decode하고 invalid cross-field 조합을 거절한다.
-- [ ] `workspace_unavailable`과 `runtime_unavailable`의 active reference conditionality가 distinct union으로 고정된다.
-- [ ] Generic coordinator가 transition과 product Turn의 concurrent start 중 하나만 admit하고 loser에게 non-preemptive `409`를 반환한다.
-- [ ] Chat은 active에서만, workspace init은 non-null candidate를 가진 bootstrap에서만 admit된다.
-- [ ] Start failure, terminal, interrupt, disconnect, Runtime close와 shutdown에서 lease가 너무 일찍 또는 두 번 release되지 않는다.
-- [ ] Current Chat·Assignment path가 target coordinator expansion 뒤에도 기존 observable behavior를 유지한다.
+- [x] Product contract가 모든 lifecycle variant, safe summary/reference와 `activeOperation`을 exact decode하고 invalid cross-field 조합을 거절한다.
+- [x] `workspace_unavailable`과 `runtime_unavailable`의 active reference conditionality가 distinct union으로 고정된다.
+- [x] Generic coordinator가 transition과 product Turn의 concurrent start 중 하나만 admit하고 loser에게 non-preemptive `409`를 반환한다.
+- [x] Chat은 active에서만, workspace init은 non-null candidate를 가진 bootstrap에서만 admit된다.
+- [x] Start failure, terminal, interrupt, disconnect, Runtime close와 shutdown에서 lease가 너무 일찍 또는 두 번 release되지 않는다.
+- [x] Current Chat·Assignment path가 target coordinator expansion 뒤에도 기존 observable behavior를 유지한다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm test -w @ay-ple/product-contract`
-  - `npm test -w @ay-ple/server`
-  - `npm run typecheck -w @ay-ple/product-contract`
-  - `npm run typecheck -w @ay-ple/server`
+  - `npm test -w @ay-ple/product-contract` — 22개 test green
+  - `npm test -w @ay-ple/server` — 154개 test green
+  - `npm run typecheck -w @ay-ple/product-contract` — green
+  - `npm run typecheck -w @ay-ple/server` — green
 - Repository checks:
-  - `npm test`
-  - `npm run typecheck`
-  - `npm run build`
-  - `npm run lint -w @ay-ple/chat-shell`
-  - `npm run check:docs-links`
+  - `npm test` — green
+  - `npm run typecheck` — green
+  - `npm run build` — green
+  - `npm run lint -w @ay-ple/chat-shell` — green
+  - `npm run check:docs-links` — active 28개와 historical banner 2개 green
+  - `git diff --check` — green
 - Manual or live smoke:
-  - Deterministic deferred Turn과 transition을 경쟁시켜 기존 operation 유지, exact `409`, terminal-only release와 settled bootstrap projection을 확인한다.
+  - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/product-lifecycle-coordinator.test.ts`의 5개 deterministic test로 deferred Turn과 transition의 단일 non-preemptive lease, eligibility와 claim의 atomicity, exact `409`, terminal/Runtime-close authority, once-only release와 shutdown gating을 확인했다.
+  - Unknown Turn의 Runtime close 실패를 주입한 Server 통합 test에서 첫 operation은 honest `unknown`으로 settle되고, 후속 operation은 exact `409 action_busy`를 받으며 두 번째 native Turn이 시작되지 않음을 확인했다.
+  - `/code-review 36c28a5fdacb2a5d6b62411ac4346c15e14f72b8`의 Standards 축은 공용 operation ID validator 재사용 뒤 hard violation과 residual smell이 0개였다. Spec 축은 release authority, eligibility error mapping, candidate ID validation과 current Chat compatibility finding을 수정한 뒤 residual finding 0개를 확인했다.
+
+## Result
+
+`@ay-ple/product-contract`가 current `ProductBootstrap` 의미를 유지한 채 target bootstrap과 모든 `ProductWorkspaceLifecycle` variant를 exact decode한다. Safe workspace summary, candidate, init Turn, `activeOperation`은 bounded opaque ID와 cross-field invariant를 공유하며 `workspace_unavailable`과 `runtime_unavailable`은 서로 다른 active reference 조건을 가진다.
+
+Server의 process-local `ProductLifecycleCoordinator`는 workspace transition과 product Turn을 하나의 non-preemptive lease로 serialize하고 eligibility check와 claim을 같은 critical section에서 수행한다. Current Chat과 Assignment가 이 outer lease를 사용하되 기존 public ID와 response behavior는 유지한다. Lease는 Turn start failure, authoritative native terminal 또는 성공한 Runtime close에만 release되며 interrupt, disconnect, unknown settlement와 shutdown은 release 권한을 만들지 않는다.
+
+구현 commit은 `396b2505c` (`feat: add product lifecycle admission contract`), `5566dd1c1` (`fix: enforce product lifecycle release authority`), `74af9e919` (`fix: retain lifecycle lease through runtime close`)다.
+
+## Subsequent Correction
+
+후속 아키텍처 결정에 따라 App-owned candidate/bootstrap lifecycle union과 `workspace_init` operation은 obsolete다. Ticket 006이 이 surface와 candidate-specific eligibility를 prepared-workspace launch contract로 contract한다. Generic coordinator는 normal product Turn의 eligibility와 lease claim을 같은 critical section에서 수행하는 non-preemptive admission, once-only release authority와 active lease를 native terminal 또는 completed Runtime close까지 보존하는 경계만 재사용한다. Prepared-workspace startup은 operation lease를 claim하지 않으며 workspace transition eligibility도 재사용하지 않는다.
 
 ## Blocked By
 

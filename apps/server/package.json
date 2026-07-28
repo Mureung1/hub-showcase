@@ -17,14 +17,13 @@
     "build": "tsc",
     "verify:package-root": "npm run build && tsx src/testing/verify-built-package-root.ts",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
-    "test:product-shutdown-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/product-shutdown.actual.ts",
-    "test:first-assignment-product-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/first-assignment-product.actual.ts",
-    "trace:first-assignment-live": "NODE_OPTIONS=--conditions=development tsx src/testing/first-assignment-product.live.ts",
+    "test:prepared-workspace-product-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/prepared-workspace-product.actual.ts",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js"
   },
   "dependencies": {
     "@ay-ple/codex-chat-runtime": "0.0.0",
+    "@ay-ple/interaction-mcp": "0.0.0",
     "@ay-ple/product-contract": "0.0.0",
     "@ay-ple/semester-workspace": "0.0.0",
     "dotenv": "^17.2.3",

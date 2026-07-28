@@ -4,6 +4,7 @@ import {
   type CancelUserInput,
   type CodexAccountReadiness,
   type CodexModelCatalog,
+  type CodexEffectiveSkill,
   type CodexProductActivity,
   type CodexProductTurn,
   type CodexWorkspaceRuntime,
@@ -25,17 +26,7 @@ type ActiveTurn = {
   drainDeadline?: NodeJS.Timeout
 }
 
-export type ProductThreadProfile = {
-  readonly workspace: string
-  readonly mcp: {
-    readonly url: string
-    readonly token: string
-  }
-}
-
-export type ProductTurnInput = Omit<StartProductTurnInput, 'threadId'> & {
-  readonly profile: ProductThreadProfile
-}
+export type ProductTurnInput = Omit<StartProductTurnInput, 'threadId'>
 
 export type ProductOperationLease = {
   readonly operationId: string
@@ -72,9 +63,7 @@ export class CodexChatServiceError extends Error {
 }
 
 export class CodexChatService {
-  private readonly source: CodexChatRuntimeSource
   private readonly disconnectDrainMs: number
-  private preparation?: Promise<void>
   private prepared?: CodexChatPreparedRuntime
   private unavailableReason?: CodexChatUnavailableReason
   private runtime?: CodexWorkspaceRuntime
@@ -84,7 +73,6 @@ export class CodexChatService {
   private runtimeRecyclePromise?: Promise<void>
   private runtimeFailureCode?: string
   private currentThreadId?: string
-  private currentThreadProfile?: string
   private accountReadPromise?: Promise<CodexAccountReadiness>
   private modelCatalogReadPromise?: Promise<CodexModelCatalog>
   private activeTurn?: ActiveTurn
@@ -93,7 +81,6 @@ export class CodexChatService {
   private closePromise?: Promise<void>
 
   constructor(source: CodexChatRuntimeSource, disconnectDrainMs: number) {
-    this.source = source
     this.disconnectDrainMs = disconnectDrainMs
     if (source.kind === 'prepared') this.prepared = source.prepared
     if (source.kind === 'unavailable') this.unavailableReason = source.reason
@@ -112,8 +99,6 @@ export class CodexChatService {
   reserveProductOperation(operationId: string): ProductOperationLease {
     this.requireAvailable()
     if (
-      this.accountReadPromise ||
-      this.modelCatalogReadPromise ||
       this.activeTurn ||
       this.productOperationLease
     ) {
@@ -156,7 +141,7 @@ export class CodexChatService {
     this.requireAvailable()
     if (lease) {
       this.requireProductLease(lease)
-      return this.readProductAccountReadinessOnce()
+      return this.accountReadPromise ?? this.readProductAccountReadinessOnce()
     }
 
     if (this.activeTurn || this.productOperationLease) {
@@ -179,7 +164,7 @@ export class CodexChatService {
     this.requireAvailable()
     if (lease) {
       this.requireProductLease(lease)
-      return this.readProductModelCatalogOnce()
+      return this.modelCatalogReadPromise ?? this.readProductModelCatalogOnce()
     }
     if (this.activeTurn || this.productOperationLease) {
       throw stateError('active_turn')
@@ -192,6 +177,24 @@ export class CodexChatService {
       () => this.clearModelCatalogRead(read),
     )
     return read
+  }
+
+  async listProductEffectiveSkills(
+    input: { readonly signal: AbortSignal },
+    lease: ProductOperationLease,
+  ): Promise<readonly CodexEffectiveSkill[]> {
+    this.requireAvailable()
+    this.requireProductLease(lease)
+    try {
+      input.signal.throwIfAborted()
+      const runtime = await this.getRuntime()
+      this.requireProductLease(lease)
+      input.signal.throwIfAborted()
+      return await runtime.listEffectiveSkills(input)
+    } catch (error) {
+      await this.handleUnknownOutcome(error)
+      throw error
+    }
   }
 
   async startProductTurn(
@@ -228,7 +231,7 @@ export class CodexChatService {
         this.finishTurn(reservation)
         return undefined
       }
-      const threadId = await this.ensureProductThread(runtime, input.profile)
+      const threadId = await this.ensureProductThread(runtime)
       reservation.threadId = threadId
       if (reservation.disconnected || disconnected()) {
         this.finishTurn(reservation)
@@ -236,9 +239,9 @@ export class CodexChatService {
       }
       const turn = await runtime.startProductTurn({
         threadId,
-        ...(input.skill === undefined ? {} : { skill: input.skill }),
         permissionProfile: input.permissionProfile,
         ...(input.settings === undefined ? {} : { settings: input.settings }),
+        ...(input.skill === undefined ? {} : { skill: input.skill }),
         text: input.text,
       })
       reservation.phase = 'streaming'
@@ -453,28 +456,7 @@ export class CodexChatService {
     }
   }
 
-  private async ensurePrepared(): Promise<void> {
-    if (this.prepared || this.unavailableReason || this.source.kind !== 'candidate') {
-      return
-    }
-    this.preparation ??= this.prepareCandidate(this.source)
-    await this.preparation
-  }
-
-  private async prepareCandidate(
-    source: Extract<CodexChatRuntimeSource, { kind: 'candidate' }>,
-  ): Promise<void> {
-    const result = await source.prepare()
-    if (result.kind === 'prepared') {
-      this.prepared = result.prepared
-      return
-    }
-    this.unavailableReason = result.reason
-  }
-
   private async getRuntime(): Promise<CodexWorkspaceRuntime> {
-    this.requireAvailable()
-    await this.ensurePrepared()
     this.requireAvailable()
     if (this.runtime) return this.runtime
     if (this.runtimeFailureCode) throw stateError('codex_chat_unavailable')
@@ -503,30 +485,20 @@ export class CodexChatService {
 
   private async ensureProductThread(
     runtime: CodexWorkspaceRuntime,
-    profile: ProductThreadProfile,
   ): Promise<string> {
-    const profileKey = productThreadProfileKey(profile)
-    if (this.currentThreadId && this.currentThreadProfile === profileKey) {
-      return this.currentThreadId
-    }
-    if (this.currentThreadId) {
-      await runtime.releaseThread({ threadId: this.currentThreadId })
-      this.currentThreadId = undefined
-      this.currentThreadProfile = undefined
-    }
-    let thread
+    if (this.currentThreadId) return this.currentThreadId
+    const prepared = this.prepared
+    if (!prepared) throw stateError('codex_chat_unavailable')
+    let threadId
     try {
-      thread = await runtime.startThread({
-        workspace: profile.workspace,
-        mcp: profile.mcp,
-      })
+      threadId = await prepared.acquireProductThread(runtime)
+      requireNativeProductThreadId(threadId)
     } catch (error) {
       await this.handleUnknownOutcome(error)
       throw error
     }
-    this.currentThreadId = thread.threadId
-    this.currentThreadProfile = profileKey
-    return thread.threadId
+    this.currentThreadId = threadId
+    return threadId
   }
 
   private requireStartedRuntime(): CodexWorkspaceRuntime {
@@ -569,7 +541,6 @@ export class CodexChatService {
     this.runtimeClosePromise = undefined
     this.runtimeFailureCode = undefined
     this.currentThreadId = undefined
-    this.currentThreadProfile = undefined
   }
 
   private beginDisconnectCleanup(active: ActiveTurn): void {
@@ -671,8 +642,12 @@ function safeFailureCode(code: string): string {
   return /^[a-z][a-z0-9_]{0,63}$/.test(code) ? code : 'runtime_failed'
 }
 
-function productThreadProfileKey(profile: ProductThreadProfile): string {
-  return `${profile.workspace}\u0000${profile.mcp.url}`
+function requireNativeProductThreadId(value: unknown): asserts value is string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new TypeError(
+      'Native Codex thread identity must be a nonempty string',
+    )
+  }
 }
 
 async function safelyWrite(
