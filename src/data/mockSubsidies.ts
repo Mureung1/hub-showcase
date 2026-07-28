@@ -31,6 +31,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '02-1234-5678',
     region: ['서울'],
     industry: [],
+    supportRealm: '창업',
   },
   {
     id: '2',
@@ -52,6 +53,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '02-3153-0000',
     region: ['서울'],
     industry: [],
+    supportRealm: '경영',
   },
   {
     id: '3',
@@ -73,6 +75,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '1357',
     region: NATIONWIDE,
     industry: [],
+    supportRealm: '금융',
   },
   {
     id: '4',
@@ -94,6 +97,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '1600-3737',
     region: NATIONWIDE,
     industry: ['음식점', '카페·베이커리'],
+    supportRealm: '기술',
   },
   {
     id: '5',
@@ -115,6 +119,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '1551-0100',
     region: NATIONWIDE,
     industry: [],
+    supportRealm: '경영',
   },
   {
     id: '6',
@@ -136,6 +141,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '1357',
     region: NATIONWIDE,
     industry: [],
+    supportRealm: '금융',
   },
   {
     id: '7',
@@ -157,6 +163,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '1800-2400',
     region: NATIONWIDE,
     industry: [],
+    supportRealm: '기술',
   },
   {
     id: '8',
@@ -178,6 +185,7 @@ export const MOCK_SUBSIDIES: Subsidy[] = [
     contact: '1588-0075',
     region: NATIONWIDE,
     industry: [],
+    supportRealm: '인력',
   },
 ]
 

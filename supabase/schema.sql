@@ -53,6 +53,11 @@ alter table public.subsidies add column if not exists business_years_max numeric
 -- 첨부파일 식별자를 subsidies에도 저장(nullable — 첨부파일 없는 공고도 있음).
 alter table public.subsidies add column if not exists atch_file_id text;
 
+-- 이슈 #90: 지원분야 대/중분류(bizinfo pldirSportRealmLclasCodeNm/MlsfcCodeNm). 대분류는
+-- 실측 결측 0%라 not null, 중분류는 옵션 필드라 nullable로 둔다.
+alter table public.subsidies add column if not exists support_realm text not null default '';
+alter table public.subsidies add column if not exists support_realm_detail text;
+
 -- 이슈 #7: 사용자가 제출한 매칭 조건(OnboardingProfile) 저장
 -- 컬럼은 server/src/routes/match.ts 의 profileSchema 와 1:1 매핑한다.
 create table if not exists public.match_requests (

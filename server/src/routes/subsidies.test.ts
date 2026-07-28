@@ -32,6 +32,7 @@ const sample: Subsidy = {
   contact: '02-1234-5678',
   region: ['서울'],
   industry: [],
+  supportRealm: '경영',
 }
 
 beforeEach(() => {
