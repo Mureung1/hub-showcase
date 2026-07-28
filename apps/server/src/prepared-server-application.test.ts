@@ -681,6 +681,83 @@ test('organize_sources preflight rechecks disconnect and aborts on shutdown befo
   }
 })
 
+test('a local Product Turn start rejection leaves the Interaction Broker available for a fresh action', async () => {
+  const fixture = await createOrganizeSourcesServerFixture(
+    'prepared-organize-local-rejection-',
+  )
+  const { baseUrl, runtime, target } = fixture
+  const headers = {
+    authorization: `Bearer ${target.credentials.token}`,
+    'x-ay-ple-runtime-binding': target.credentials.binding,
+  }
+  let lifecycleReader:
+    | ReadableStreamDefaultReader<Uint8Array>
+    | undefined
+  try {
+    const handshake = () =>
+      postJson(
+        `${baseUrl}/api/_private/interaction-mcp/`,
+        {
+          protocolVersion: 1,
+          kind: 'handshake',
+          serverName: 'ay_ple_interaction',
+          capabilities: ['propose_state_patch'],
+        },
+        headers,
+      )
+    assert.equal((await handshake()).status, 200)
+    lifecycleReader = await openBrokerLifecycle(
+      baseUrl,
+      target.credentials,
+    )
+
+    runtime.productTurnStartErrors.push(
+      new TypeError('The Skill input was rejected before native dispatch'),
+    )
+    const rejected = await postJson(
+      `${baseUrl}/api/product/actions`,
+      {
+        action: 'organize_sources',
+        files: [{ relativePath: 'valid.md' }],
+      },
+    )
+    assert.equal(rejected.status, 200)
+    assert.ok(rejected.body)
+    const rejectedTrace = new NdjsonTrace(rejected.body.getReader())
+    const rejectedTerminal = await rejectedTrace.until(
+      (frame) => frame.type === 'operation.terminal',
+    )
+    assert.equal(rejectedTerminal.status, 'failed')
+    assert.equal(
+      rejectedTerminal.failureCode,
+      'product_operation_failed',
+    )
+    await waitForIdleProductOperation(baseUrl)
+
+    assert.equal((await handshake()).status, 200)
+    const retry = await postJson(
+      `${baseUrl}/api/product/actions`,
+      {
+        action: 'organize_sources',
+        files: [{ relativePath: 'valid.md' }],
+      },
+    )
+    assert.equal(retry.status, 200)
+    assert.ok(retry.body)
+    const retryTrace = new NdjsonTrace(retry.body.getReader())
+    await retryTrace.until((frame) => frame.type === 'operation.accepted')
+    runtime.finish()
+    const retryTerminal = await retryTrace.until(
+      (frame) => frame.type === 'operation.terminal',
+    )
+    assert.equal(retryTerminal.status, 'completed')
+    assert.equal(runtime.productTurnStartCalls, 2)
+  } finally {
+    await fixture.close()
+    assert.equal((await lifecycleReader?.read())?.done, true)
+  }
+})
+
 test('workspace source reads require loopback local-host and same-site admission', async () => {
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(tmpdir(), 'prepared-source-admission-')),
@@ -1139,6 +1216,8 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   startThreadCalls = 0
   readonly productInputs: StartProductTurnInput[] = []
+  readonly productTurnStartErrors: Error[] = []
+  productTurnStartCalls = 0
   effectiveSkills: Array<{
     readonly name: string
     readonly enabled: boolean
@@ -1190,6 +1269,9 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
   async startProductTurn(
     input: StartProductTurnInput,
   ): Promise<CodexProductTurn> {
+    this.productTurnStartCalls += 1
+    const error = this.productTurnStartErrors.shift()
+    if (error) throw error
     this.productInputs.push(structuredClone(input))
     const gate = this.turnGate.promise
     const runtime = this

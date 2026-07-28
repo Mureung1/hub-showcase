@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import {
   mkdir,
   mkdtemp,
+  realpath,
   rename,
   rm,
   symlink,
@@ -14,8 +15,30 @@ import test from 'node:test'
 
 import {
   WorkspaceSourceProjectionError,
-  createWorkspaceSourceProjection,
+  createWorkspaceSourceProjection as createAuthorityBackedWorkspaceSourceProjection,
 } from './workspace-source-projection.js'
+import { createWorkspaceFilesystemAuthority } from './workspace-filesystem-authority.js'
+
+type TestProjectionOptions = Omit<
+  Parameters<
+    typeof createAuthorityBackedWorkspaceSourceProjection
+  >[0],
+  'authority'
+> & {
+  readonly workspaceRoot: string
+}
+
+async function createWorkspaceSourceProjection(
+  options: TestProjectionOptions,
+) {
+  const { workspaceRoot, ...projectionOptions } = options
+  const authority =
+    await createWorkspaceFilesystemAuthority(workspaceRoot)
+  return createAuthorityBackedWorkspaceSourceProjection({
+    authority,
+    ...projectionOptions,
+  })
+}
 
 test('source projection lists only bounded user material in relative path order', async () => {
   const fixture = await createFixture('source-projection-list-')
@@ -314,6 +337,43 @@ test('action source preflight rejects an inode swap before no-follow open', asyn
   }
 })
 
+test('action source preflight rejects an intermediate directory replaced by an outside symlink before open', async () => {
+  const fixture = await createFixture('source-action-parent-race-')
+  try {
+    const selectedDirectory = path.join(fixture.root, 'selected')
+    const movedDirectory = path.join(fixture.outside, 'moved-selected')
+    await mkdir(selectedDirectory)
+    await writeFile(path.join(selectedDirectory, 'notes.md'), 'original')
+    let swapped = false
+    const projection = await createWorkspaceSourceProjection({
+      workspaceRoot: fixture.root,
+      sourcePreflightTestHook: async (phase, relativePath) => {
+        if (
+          phase !== 'before_open' ||
+          relativePath !== 'selected/notes.md' ||
+          swapped
+        ) {
+          return
+        }
+        swapped = true
+        await rename(selectedDirectory, movedDirectory)
+        await symlink(movedDirectory, selectedDirectory)
+      },
+    })
+
+    await assert.rejects(
+      projection.preflightTextFiles([
+        { relativePath: 'selected/notes.md' },
+      ]),
+      (error: unknown) =>
+        error instanceof WorkspaceSourceProjectionError &&
+        error.code === 'source_not_found',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('action source preflight rejects size drift before no-follow open', async () => {
   const fixture = await createFixture('source-action-size-race-')
   try {
@@ -601,7 +661,9 @@ async function createFixture(prefix: string): Promise<{
   readonly outside: string
   cleanup(): Promise<void>
 }> {
-  const parent = await mkdtemp(path.join(tmpdir(), prefix))
+  const parent = await realpath(
+    await mkdtemp(path.join(tmpdir(), prefix)),
+  )
   const root = path.join(parent, 'workspace')
   const outside = path.join(parent, 'outside')
   await Promise.all([

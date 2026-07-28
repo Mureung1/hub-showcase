@@ -20,6 +20,7 @@ import {
 } from './prepared-product-operation-coordinator.js'
 import { createOrganizeSourcesAction } from './organize-sources-action.js'
 import type { ServerApplication } from './server-application.js'
+import { createWorkspaceFilesystemAuthority } from './workspace-filesystem-authority.js'
 import { createWorkspaceSourceProjection } from './workspace-source-projection.js'
 
 export type PreparedServerApplication = {
@@ -36,14 +37,16 @@ export async function createPreparedServerApplication(options: {
   readonly workspaceRoot: string
   readonly readLifecycle: () => ProductWorkspaceLifecycle
 }): Promise<PreparedServerApplication> {
+  const workspaceAuthority = await createWorkspaceFilesystemAuthority(
+    options.workspaceRoot,
+  )
   const sources = await createWorkspaceSourceProjection({
-    workspaceRoot: options.workspaceRoot,
+    authority: workspaceAuthority,
   })
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
   })
   const organizeSourcesAction = await createOrganizeSourcesAction({
-    workspaceRoot: options.workspaceRoot,
     sources,
   })
   let interactionBroker: InteractionBroker | undefined

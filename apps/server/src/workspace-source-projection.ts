@@ -1,12 +1,5 @@
 import { createHash } from 'node:crypto'
-import { constants } from 'node:fs'
-import {
-  type FileHandle,
-  lstat,
-  open,
-  opendir,
-  realpath,
-} from 'node:fs/promises'
+import { lstat, opendir } from 'node:fs/promises'
 import path from 'node:path'
 import { TextDecoder } from 'node:util'
 
@@ -21,6 +14,11 @@ import {
   type ProductWorkspaceTextPreview,
   type ProductWorkspaceFileRef,
 } from '@ay-ple/product-contract'
+
+import {
+  WorkspaceFilesystemAuthorityError,
+  type WorkspaceFilesystemAuthority,
+} from './workspace-filesystem-authority.js'
 
 const defaultListMaxDepth = 32
 const defaultTextSourceMaxBytes = 16 * 1024 * 1024
@@ -101,11 +99,6 @@ type WorkspaceSourceProjectionLimits = {
   readonly pdfMaxBytes: number
 }
 
-type WorkspaceRootIdentity = {
-  readonly device: number
-  readonly inode: number
-}
-
 export class WorkspaceSourceProjectionError extends Error {
   constructor(
     readonly code: WorkspaceSourceProjectionErrorCode,
@@ -130,8 +123,15 @@ export type WorkspaceSourceProjection = {
   readPdf(relativePath: string): Promise<WorkspaceSourcePdf>
 }
 
+// Action definitions can recover only the authority captured by this factory;
+// they cannot pair a source projection with another raw workspace root.
+const projectionAuthorities = new WeakMap<
+  WorkspaceSourceProjection,
+  WorkspaceFilesystemAuthority
+>()
+
 export async function createWorkspaceSourceProjection(options: {
-  readonly workspaceRoot: string
+  readonly authority: WorkspaceFilesystemAuthority
   readonly limits?: Partial<WorkspaceSourceProjectionLimits>
   /** Test-only fault injection at the filesystem boundary. */
   readonly sourcePreflightTestHook?: (
@@ -139,8 +139,7 @@ export async function createWorkspaceSourceProjection(options: {
     relativePath: string,
   ) => void | Promise<void>
 }): Promise<WorkspaceSourceProjection> {
-  const workspaceRoot = await canonicalDirectory(options.workspaceRoot)
-  const workspaceRootIdentity = await readWorkspaceRootIdentity(workspaceRoot)
+  const workspaceRoot = options.authority.workspaceRoot
   const limits: WorkspaceSourceProjectionLimits = {
     listMaxEntries:
       options.limits?.listMaxEntries ??
@@ -155,12 +154,9 @@ export async function createWorkspaceSourceProjection(options: {
   }
   assertLimits(limits)
 
-  return {
+  const projection: WorkspaceSourceProjection = {
     async list() {
-      await assertWorkspaceRootIdentity(
-        workspaceRoot,
-        workspaceRootIdentity,
-      )
+      await assertWorkspaceAuthorityCurrent(options.authority)
       const sources: Array<{
         relativePath: string
         size: number
@@ -210,7 +206,11 @@ export async function createWorkspaceSourceProjection(options: {
                 'scan_limit_exceeded',
               )
             }
-            if (!(await isCanonicalPathWithinRoot(candidate, workspaceRoot))) {
+            if (
+              !(await options.authority.isCanonicalContainedPath(
+                candidate,
+              ))
+            ) {
               continue
             }
             await walk(candidate, childSegments, depth + 1)
@@ -219,7 +219,7 @@ export async function createWorkspaceSourceProjection(options: {
           if (
             !stats.isFile() ||
             isExcludedFilePath(childSegments) ||
-            !(await isCanonicalPathWithinRoot(candidate, workspaceRoot))
+            !(await options.authority.isCanonicalContainedPath(candidate))
           ) {
             continue
           }
@@ -232,10 +232,7 @@ export async function createWorkspaceSourceProjection(options: {
       }
 
       await walk(workspaceRoot, [], 0)
-      await assertWorkspaceRootIdentity(
-        workspaceRoot,
-        workspaceRootIdentity,
-      )
+      await assertWorkspaceAuthorityCurrent(options.authority)
       sources.sort((left, right) =>
         compareCodeUnits(left.relativePath, right.relativePath),
       )
@@ -250,18 +247,14 @@ export async function createWorkspaceSourceProjection(options: {
       const resolved: ProductWorkspaceFileRef[] = []
       for (const file of files) {
         await preflightTextFile(
-          workspaceRoot,
-          workspaceRootIdentity,
+          options.authority,
           file.relativePath,
           limits.textSourceMaxBytes,
           options.sourcePreflightTestHook,
         )
         resolved.push({ relativePath: file.relativePath })
       }
-      await assertWorkspaceRootIdentity(
-        workspaceRoot,
-        workspaceRootIdentity,
-      )
+      await assertWorkspaceAuthorityCurrent(options.authority)
       return resolved
     },
 
@@ -271,8 +264,7 @@ export async function createWorkspaceSourceProjection(options: {
         throw new WorkspaceSourceProjectionError('unsupported_type')
       }
       const bytes = await readBoundedRegularFile(
-        workspaceRoot,
-        workspaceRootIdentity,
+        options.authority,
         normalized,
         limits.textSourceMaxBytes,
       )
@@ -296,8 +288,7 @@ export async function createWorkspaceSourceProjection(options: {
         throw new WorkspaceSourceProjectionError('unsupported_type')
       }
       const bytes = await readBoundedRegularFile(
-        workspaceRoot,
-        workspaceRootIdentity,
+        options.authority,
         normalized,
         limits.pdfMaxBytes,
       )
@@ -314,11 +305,22 @@ export async function createWorkspaceSourceProjection(options: {
       }
     },
   }
+  projectionAuthorities.set(projection, options.authority)
+  return projection
+}
+
+export function workspaceFilesystemAuthorityForSourceProjection(
+  projection: WorkspaceSourceProjection,
+): WorkspaceFilesystemAuthority {
+  const authority = projectionAuthorities.get(projection)
+  if (!authority) {
+    throw new WorkspaceSourceProjectionError('source_unavailable')
+  }
+  return authority
 }
 
 async function preflightTextFile(
-  workspaceRoot: string,
-  workspaceRootIdentity: WorkspaceRootIdentity,
+  authority: WorkspaceFilesystemAuthority,
   relativePath: string,
   maximumBytes: number,
   testHook:
@@ -332,130 +334,53 @@ async function preflightTextFile(
   if (!isTextPath(normalized)) {
     throw new WorkspaceSourceProjectionError('unsupported_type')
   }
-  const handle = await openValidatedRegularFile(
-    workspaceRoot,
-    workspaceRootIdentity,
-    normalized,
-    maximumBytes,
-    () => testHook?.('before_open', normalized),
-  )
-  let closeFailed = false
-  await handle.close().catch(() => {
-    closeFailed = true
-  })
-  if (closeFailed) {
-    throw new WorkspaceSourceProjectionError('source_unavailable')
+  try {
+    await authority.useRegularFile({
+      segments: normalized.split('/'),
+      maximumBytes,
+      beforeOpen: () => testHook?.('before_open', normalized),
+      use: async () => undefined,
+    })
+  } catch (error) {
+    throw mapFilesystemAuthorityError(error)
   }
 }
 
 async function readBoundedRegularFile(
-  workspaceRoot: string,
-  workspaceRootIdentity: WorkspaceRootIdentity,
+  authority: WorkspaceFilesystemAuthority,
   relativePath: string,
   maximumBytes: number,
 ): Promise<Buffer> {
-  const handle = await openValidatedRegularFile(
-    workspaceRoot,
-    workspaceRootIdentity,
-    relativePath,
-    maximumBytes,
-  )
   try {
-    const chunks: Buffer[] = []
-    let bytesReadTotal = 0
-    while (bytesReadTotal <= maximumBytes) {
-      const chunk = Buffer.allocUnsafe(
-        Math.min(64 * 1024, maximumBytes + 1 - bytesReadTotal),
-      )
-      const { bytesRead } = await handle.read(
-        chunk,
-        0,
-        chunk.byteLength,
-        null,
-      )
-      if (bytesRead === 0) break
-      chunks.push(chunk.subarray(0, bytesRead))
-      bytesReadTotal += bytesRead
-    }
-    if (bytesReadTotal > maximumBytes) {
-      throw new WorkspaceSourceProjectionError('source_too_large')
-    }
-    const bytes = Buffer.concat(chunks, bytesReadTotal)
-    await assertWorkspaceRootIdentity(
-      workspaceRoot,
-      workspaceRootIdentity,
-    )
-    return bytes
+    return await authority.useRegularFile({
+      segments: relativePath.split('/'),
+      maximumBytes,
+      use: async (handle) => {
+        const chunks: Buffer[] = []
+        let bytesReadTotal = 0
+        while (bytesReadTotal <= maximumBytes) {
+          const chunk = Buffer.allocUnsafe(
+            Math.min(64 * 1024, maximumBytes + 1 - bytesReadTotal),
+          )
+          const { bytesRead } = await handle.read(
+            chunk,
+            0,
+            chunk.byteLength,
+            null,
+          )
+          if (bytesRead === 0) break
+          chunks.push(chunk.subarray(0, bytesRead))
+          bytesReadTotal += bytesRead
+        }
+        if (bytesReadTotal > maximumBytes) {
+          throw new WorkspaceSourceProjectionError('source_too_large')
+        }
+        return Buffer.concat(chunks, bytesReadTotal)
+      },
+    })
   } catch (error) {
     if (error instanceof WorkspaceSourceProjectionError) throw error
-    throw new WorkspaceSourceProjectionError('source_unavailable')
-  } finally {
-    await handle.close().catch(() => undefined)
-  }
-}
-
-async function openValidatedRegularFile(
-  workspaceRoot: string,
-  workspaceRootIdentity: WorkspaceRootIdentity,
-  relativePath: string,
-  maximumBytes: number,
-  beforeOpen?: () => void | Promise<void>,
-): Promise<FileHandle> {
-  await assertWorkspaceRootIdentity(
-    workspaceRoot,
-    workspaceRootIdentity,
-  )
-  const candidate = path.resolve(workspaceRoot, ...relativePath.split('/'))
-  const stats = await safeLstat(candidate)
-  if (!stats || stats.isSymbolicLink() || !stats.isFile()) {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  let canonicalCandidate: string
-  try {
-    canonicalCandidate = await realpath(candidate)
-  } catch {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  if (
-    canonicalCandidate !== candidate ||
-    !isPathWithinRoot(canonicalCandidate, workspaceRoot)
-  ) {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  if (stats.size > maximumBytes) {
-    throw new WorkspaceSourceProjectionError('source_too_large')
-  }
-
-  await beforeOpen?.()
-  let handle: FileHandle
-  try {
-    handle = await open(
-      candidate,
-      constants.O_RDONLY | constants.O_NOFOLLOW,
-    )
-  } catch {
-    throw new WorkspaceSourceProjectionError('source_not_found')
-  }
-  try {
-    const openedStats = await handle.stat()
-    if (
-      !openedStats.isFile() ||
-      openedStats.dev !== stats.dev ||
-      openedStats.ino !== stats.ino
-    ) {
-      throw new WorkspaceSourceProjectionError('source_not_found')
-    }
-    if (openedStats.size > maximumBytes) {
-      throw new WorkspaceSourceProjectionError('source_too_large')
-    }
-    if (openedStats.size !== stats.size) {
-      throw new WorkspaceSourceProjectionError('source_not_found')
-    }
-    return handle
-  } catch (error) {
-    await handle.close().catch(() => undefined)
-    if (error instanceof WorkspaceSourceProjectionError) throw error
-    throw new WorkspaceSourceProjectionError('source_unavailable')
+    throw mapFilesystemAuthorityError(error)
   }
 }
 
@@ -586,20 +511,6 @@ function decodeUtf8Preview(
   throw new WorkspaceSourceProjectionError('unsupported_encoding')
 }
 
-async function canonicalDirectory(directory: string): Promise<string> {
-  try {
-    const canonical = await realpath(directory)
-    const stats = await lstat(canonical)
-    if (!stats.isDirectory()) {
-      throw new WorkspaceSourceProjectionError('source_unavailable')
-    }
-    return canonical
-  } catch (error) {
-    if (error instanceof WorkspaceSourceProjectionError) throw error
-    throw new WorkspaceSourceProjectionError('source_unavailable')
-  }
-}
-
 async function safeLstat(candidate: string) {
   try {
     return await lstat(candidate)
@@ -609,62 +520,29 @@ async function safeLstat(candidate: string) {
   }
 }
 
-async function isCanonicalPathWithinRoot(
-  candidate: string,
-  workspaceRoot: string,
-): Promise<boolean> {
-  try {
-    const canonical = await realpath(candidate)
-    return isPathWithinRoot(canonical, workspaceRoot)
-  } catch {
-    return false
-  }
-}
-
-function isPathWithinRoot(candidate: string, workspaceRoot: string): boolean {
-  return (
-    candidate !== workspaceRoot &&
-    candidate.startsWith(`${workspaceRoot}${path.sep}`)
-  )
-}
-
-async function readWorkspaceRootIdentity(
-  workspaceRoot: string,
-): Promise<WorkspaceRootIdentity> {
-  try {
-    const stats = await lstat(workspaceRoot)
-    if (!stats.isDirectory() || stats.isSymbolicLink()) {
-      throw new WorkspaceSourceProjectionError('source_unavailable')
-    }
-    return {
-      device: stats.dev,
-      inode: stats.ino,
-    }
-  } catch (error) {
-    if (error instanceof WorkspaceSourceProjectionError) throw error
-    throw new WorkspaceSourceProjectionError('source_unavailable')
-  }
-}
-
-async function assertWorkspaceRootIdentity(
-  workspaceRoot: string,
-  expected: WorkspaceRootIdentity,
+async function assertWorkspaceAuthorityCurrent(
+  authority: WorkspaceFilesystemAuthority,
 ): Promise<void> {
   try {
-    const [canonical, current] = await Promise.all([
-      realpath(workspaceRoot),
-      readWorkspaceRootIdentity(workspaceRoot),
-    ])
-    if (
-      canonical !== workspaceRoot ||
-      current.device !== expected.device ||
-      current.inode !== expected.inode
-    ) {
-      throw new WorkspaceSourceProjectionError('source_unavailable')
-    }
+    await authority.assertCurrentWorkspace()
   } catch (error) {
-    if (error instanceof WorkspaceSourceProjectionError) throw error
-    throw new WorkspaceSourceProjectionError('source_unavailable')
+    throw mapFilesystemAuthorityError(error)
+  }
+}
+
+function mapFilesystemAuthorityError(
+  error: unknown,
+): WorkspaceSourceProjectionError {
+  if (!(error instanceof WorkspaceFilesystemAuthorityError)) {
+    return new WorkspaceSourceProjectionError('source_unavailable')
+  }
+  switch (error.code) {
+    case 'workspace_unavailable':
+      return new WorkspaceSourceProjectionError('source_unavailable')
+    case 'path_not_found':
+      return new WorkspaceSourceProjectionError('source_not_found')
+    case 'path_too_large':
+      return new WorkspaceSourceProjectionError('source_too_large')
   }
 }
 

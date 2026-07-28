@@ -102,6 +102,8 @@ type ActiveOperation = {
   releaseAuthority?: ProductTurnReleaseAuthority
 }
 
+type PreparedProductTurnInput = Omit<ProductTurnInput, 'settings'>
+
 export class PreparedProductOperationError extends Error {
   readonly code:
     | 'account_not_ready'
@@ -349,10 +351,11 @@ export function createPreparedProductOperationCoordinator(options: {
       readonly prepare: (
         operation: ActiveOperation,
         signal: AbortSignal,
-      ) => Promise<ProductTurnInput>
+      ) => Promise<PreparedProductTurnInput>
     },
     operationOptions: PreparedProductOperationOptions,
   ): Promise<void> {
+    const codexSettings = snapshotCodexTurnSettings(input.codexSettings)
     const operationId = targetOperationId()
     const operation = reserve(operationId, operationOptions.sink)
     let streamOpened = false
@@ -368,16 +371,26 @@ export function createPreparedProductOperationCoordinator(options: {
         )
       }
       await validateCodexTurnSettings(
-        input.codexSettings,
+        codexSettings,
         options.service,
         operation.serviceLease,
       )
       const preflightAbort = operation.preflightAbort
       if (!preflightAbort) throw unavailable()
-      const turnInput = await input.prepare(
+      const preparedTurnInput = await input.prepare(
         operation,
         preflightAbort.signal,
       )
+      const turnInput: ProductTurnInput = {
+        permissionProfile: preparedTurnInput.permissionProfile,
+        ...(codexSettings === undefined
+          ? {}
+          : { settings: codexSettings }),
+        ...(preparedTurnInput.skill === undefined
+          ? {}
+          : { skill: preparedTurnInput.skill }),
+        text: preparedTurnInput.text,
+      }
       operation.preflightAbort = undefined
       if (operationOptions.disconnected()) return
       streamOpened = true
@@ -417,9 +430,14 @@ export function createPreparedProductOperationCoordinator(options: {
       )
     } catch (error) {
       if (!streamOpened) throw toPreparedOperationError(error)
-      await options.interactionRuntimeTerminal?.()
+      const outcomeUnknown =
+        operation.turn !== undefined ||
+        (error instanceof CodexChatRuntimeError && error.unknownOutcome)
+      if (outcomeUnknown) {
+        await options.interactionRuntimeTerminal?.()
+      }
       await writeTerminal(operation, {
-        status: 'unknown',
+        status: outcomeUnknown ? 'unknown' : 'failed',
         failureCode: safeOperationCode(error),
       })
     } finally {
@@ -484,9 +502,6 @@ export function createPreparedProductOperationCoordinator(options: {
             : { codexSettings: input.codexSettings }),
           prepare: async () => ({
             permissionProfile: 'workspace_write',
-            ...(input.codexSettings === undefined
-              ? {}
-              : { settings: input.codexSettings }),
             text,
           }),
         },
@@ -665,6 +680,17 @@ async function validateCodexTurnSettings(
       '현재 Codex 모델 설정을 다시 선택해 주세요.',
     )
   }
+}
+
+function snapshotCodexTurnSettings(
+  settings: ProductCodexTurnSettings | undefined,
+): ProductCodexTurnSettings | undefined {
+  if (!settings) return undefined
+  return Object.freeze({
+    model: settings.model,
+    reasoningEffort: settings.reasoningEffort,
+    serviceTier: settings.serviceTier,
+  })
 }
 
 function targetOperationId(): string {
