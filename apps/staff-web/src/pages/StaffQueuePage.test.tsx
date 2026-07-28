@@ -1,5 +1,6 @@
 import {
   defaultQueueSettings,
+  type NotificationReceipt,
   type QueueEntry,
   type StaffNotificationHistoryItem,
 } from "@baro-jinryo/shared";
@@ -56,6 +57,7 @@ function renderPage(
   onChangeStatus = vi.fn(async () => undefined),
   onReorder = vi.fn(async () => undefined),
   entries: QueueEntry[] = [entry],
+  onAddOnsite = vi.fn(async () => undefined as unknown as NotificationReceipt),
 ) {
   render(
     <StaffQueuePage
@@ -67,7 +69,7 @@ function renderPage(
       nextDayInputMode="total_only"
       queueStatus="open"
       settings={{ ...defaultQueueSettings }}
-      onAddOnsite={vi.fn()}
+      onAddOnsite={onAddOnsite}
       onChangeQueueStatus={vi.fn()}
       onSaveQueueSettings={onSaveQueueSettings}
       onChangeStatus={onChangeStatus}
@@ -159,6 +161,42 @@ describe("StaffQueuePage 운영 설정", () => {
         entryThreshold: 4,
         maxRemoteWaitingPatients: 20,
       }),
+    );
+  });
+});
+
+describe("StaffQueuePage 현장 접수 알림톡", () => {
+  it("현장 환자를 등록하면 알림톡 mock 미리보기와 상태 링크를 표시한다", async () => {
+    const onAddOnsite = vi.fn(async () => ({
+      id: "50000000-0000-4000-8000-000000000001",
+      recipientPhoneMasked: "0101-****-9265",
+      templateCode: "onsite_registered",
+      openPath: "/onsite-status/mock-token",
+    }));
+    renderPage(
+      vi.fn(async () => notifications),
+      "connected",
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      [entry],
+      onAddOnsite,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "현장 환자 등록" }));
+    fireEvent.change(screen.getByLabelText("휴대전화 번호"), {
+      target: { value: "01091309265" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "대기열에 추가" }));
+
+    expect(await screen.findByLabelText("현장 접수 알림톡 미리보기")).toHaveTextContent(
+      "현장 접수가 완료되었습니다.",
+    );
+    expect(screen.getByText("0101-****-9265")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /현재 대기 상태 보기/ })).toHaveAttribute(
+      "href",
+      "http://127.0.0.1:5173/onsite-status/mock-token",
     );
   });
 });
