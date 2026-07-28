@@ -5,6 +5,8 @@ import {
   GeminiMicrotaskError,
   generateGeminiMicrotask,
   generateGeminiLv3Microtask,
+  getServerLv2FallbackMicroTask,
+  getServerLv3FallbackMicroTask,
 } from "../lib/geminiMicrotask.js";
 import { findLv3MemoryContext } from "../lib/lv3MemoryCandidate.js";
 
@@ -112,26 +114,43 @@ describe("POST /api/microtasks/lv2", () => {
   });
 
   it.each([
-    ["provider_unavailable", 503],
-    ["provider_timeout", 504],
-    ["invalid_provider_response", 502],
-  ] as const)("provider 오류 %s를 정해진 상태로 반환한다", async (code, status) => {
+    ["invalid_provider_response", "invalid_response"],
+    ["provider_timeout", "timeout"],
+    ["provider_unavailable", "network_error"],
+    ["provider_unavailable", "provider_error"],
+    ["provider_unavailable", "rate_limited"],
+  ] as const)(
+    "Gemini 실패(%s/%s)는 502/504로 실패하지 않고 규칙 기반 fallback을 200으로 돌려준다",
+    async (code, category) => {
+      vi.mocked(generateGeminiMicrotask).mockRejectedValue(
+        new GeminiMicrotaskError(code, category),
+      );
+
+      const res = await request(app)
+        .post("/api/microtasks/lv2")
+        .send(VALID_BODY);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        data: {
+          microTask: getServerLv2FallbackMicroTask("리포트/글쓰기", "overwhelm"),
+          source: "rule_based",
+        },
+      });
+    },
+  );
+
+  it("configuration_missing(설정 문제)은 fallback으로 가리지 않고 기존 503을 유지한다", async () => {
     vi.mocked(generateGeminiMicrotask).mockRejectedValue(
-      new GeminiMicrotaskError(
-        code,
-        code === "provider_timeout"
-          ? "timeout"
-          : code === "invalid_provider_response"
-            ? "invalid_response"
-            : "network_error",
-      ),
+      new GeminiMicrotaskError("provider_unavailable", "configuration_missing"),
     );
 
     const res = await request(app)
       .post("/api/microtasks/lv2")
       .send(VALID_BODY);
-    expect(res.status).toBe(status);
-    expect(res.body.error.code).toBe(code);
+
+    expect(res.status).toBe(503);
+    expect(res.body.error.code).toBe("provider_unavailable");
   });
 });
 
@@ -261,20 +280,57 @@ describe("POST /api/microtasks/lv3", () => {
     expect(generateGeminiLv3Microtask).not.toHaveBeenCalled();
   });
 
-  it("Gemini 품질 실패를 기존 provider 오류 형식으로 반환한다", async () => {
+  it.each([
+    ["invalid_provider_response", "invalid_response"],
+    ["provider_timeout", "timeout"],
+    ["provider_unavailable", "network_error"],
+    ["provider_unavailable", "provider_error"],
+    ["provider_unavailable", "rate_limited"],
+  ] as const)(
+    "Gemini 실패(%s/%s)는 502/504로 실패하지 않고 규칙 기반 fallback을 200으로 돌려준다",
+    async (code, category) => {
+      vi.mocked(generateGeminiLv3Microtask).mockRejectedValue(
+        new GeminiMicrotaskError(code, category),
+      );
+
+      const res = await request(app)
+        .post("/api/microtasks/lv3")
+        .send(VALID_LV3_BODY);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        data: {
+          status: "generated",
+          microTask: getServerLv3FallbackMicroTask("리포트/글쓰기"),
+          source: "rule_based",
+          memoryEvidence: null,
+        },
+      });
+    },
+  );
+
+  it("configuration_missing(설정 문제)은 fallback으로 가리지 않고 기존 503을 유지한다", async () => {
     vi.mocked(generateGeminiLv3Microtask).mockRejectedValue(
-      new GeminiMicrotaskError(
-        "invalid_provider_response",
-        "invalid_response",
-      ),
+      new GeminiMicrotaskError("provider_unavailable", "configuration_missing"),
     );
 
     const res = await request(app)
       .post("/api/microtasks/lv3")
       .send(VALID_LV3_BODY);
 
-    expect(res.status).toBe(502);
-    expect(res.body.error.code).toBe("invalid_provider_response");
+    expect(res.status).toBe(503);
+    expect(res.body.error.code).toBe("provider_unavailable");
+  });
+
+  it("할일 조회 자체가 실패하면(taskId 못 찾음) fallback을 시도하지 않는다", async () => {
+    vi.mocked(findLv3MemoryContext).mockResolvedValue(null);
+
+    const res = await request(app)
+      .post("/api/microtasks/lv3")
+      .send(VALID_LV3_BODY);
+
+    expect(res.status).toBe(404);
+    expect(generateGeminiLv3Microtask).not.toHaveBeenCalled();
   });
 
   it.each([2, 4, "3", null])("level=%s를 거부한다", async (level) => {
