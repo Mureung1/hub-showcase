@@ -7,24 +7,25 @@ describe("map presentation profiles", () => {
     expect(getMapPresentationProfile("flat")).toEqual({
       camera: { pitch: 0, bearing: 0 },
       localTwinOverlayVisible: false,
-      coloredBuildingsVisible: false,
+      selectedMarketBuildingsVisible: false,
       fallbackBuildingsVisible: false,
       storefrontsVisible: false,
     });
   });
 
-  it("shows colored buildings without storefront replacements in analysis mode", () => {
+  it("shows selected-market buildings without storefront replacements in analysis mode", () => {
     const profile = getMapPresentationProfile("analysis");
 
-    expect(profile.coloredBuildingsVisible).toBe(true);
+    expect(profile.selectedMarketBuildingsVisible).toBe(true);
+    expect(profile.fallbackBuildingsVisible).toBe(true);
     expect(profile.storefrontsVisible).toBe(false);
     expect(profile.camera).toEqual({ pitch: 38, bearing: -18 });
   });
 
-  it("keeps neutral base buildings and enables storefront replacement only in storefront mode", () => {
+  it("keeps selected-market buildings and enables storefront replacement only in storefront mode", () => {
     const profile = getMapPresentationProfile("storefront3d");
 
-    expect(profile.coloredBuildingsVisible).toBe(false);
+    expect(profile.selectedMarketBuildingsVisible).toBe(true);
     expect(profile.fallbackBuildingsVisible).toBe(true);
     expect(profile.storefrontsVisible).toBe(true);
     expect(profile.camera).toEqual({ pitch: 56, bearing: -24 });

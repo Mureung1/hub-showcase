@@ -34,7 +34,7 @@ describe("useMapViewport", () => {
     expect(result.current.baseBuildingsVisible).toBe(true);
   });
 
-  it("hides base buildings when a LocalTwin overlay is visible at the edge of the analysis map", () => {
+  it("keeps fallback buildings visible in analysis mode for polygon filtering", () => {
     const initial: [number, number] = [126.923, 37.56];
     const { result } = renderHook(() => useMapViewport(initial));
 
@@ -48,10 +48,10 @@ describe("useMapViewport", () => {
       });
     });
 
-    expect(result.current.baseBuildingsRendered).toBe(false);
+    expect(result.current.baseBuildingsRendered).toBe(true);
   });
 
-  it("keeps base buildings visible in storefront mode so individual footprints can be replaced", () => {
+  it("keeps fallback buildings visible in storefront mode", () => {
     const initial: [number, number] = [126.923, 37.56];
     const { result } = renderHook(() => useMapViewport(initial));
 
@@ -68,7 +68,7 @@ describe("useMapViewport", () => {
     expect(result.current.baseBuildingsRendered).toBe(true);
   });
 
-  it("keeps the demo viewport's existing center-only building rule", () => {
+  it("keeps demo fallback buildings visible", () => {
     const initial: [number, number] = [126.923, 37.56];
     const { result } = renderHook(() => useMapViewport(initial, false));
 
