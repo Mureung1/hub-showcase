@@ -345,13 +345,19 @@ export function createPreparedProductOperationCoordinator(options: {
     }
   }
 
-  async function executeProductTurn(
+  async function executeProductTurn<
+    Prepared extends PreparedProductTurnInput,
+  >(
     input: {
       readonly codexSettings?: ProductCodexTurnSettings
       readonly prepare: (
         operation: ActiveOperation,
         signal: AbortSignal,
-      ) => Promise<PreparedProductTurnInput>
+      ) => Promise<Prepared>
+      readonly revalidateForDispatch?: (
+        prepared: Prepared,
+        signal: AbortSignal,
+      ) => Promise<void>
     },
     operationOptions: PreparedProductOperationOptions,
   ): Promise<void> {
@@ -391,7 +397,6 @@ export function createPreparedProductOperationCoordinator(options: {
           : { skill: preparedTurnInput.skill }),
         text: preparedTurnInput.text,
       }
-      operation.preflightAbort = undefined
       if (operationOptions.disconnected()) return
       streamOpened = true
       if (
@@ -402,6 +407,13 @@ export function createPreparedProductOperationCoordinator(options: {
       ) {
         return
       }
+      await input.revalidateForDispatch?.(
+        preparedTurnInput,
+        preflightAbort.signal,
+      )
+      preflightAbort.signal.throwIfAborted()
+      if (operationOptions.disconnected()) return
+      operation.preflightAbort = undefined
       const turn = await options.service.startProductTurn(
         turnInput,
         operationOptions.disconnected,
@@ -430,15 +442,20 @@ export function createPreparedProductOperationCoordinator(options: {
       )
     } catch (error) {
       if (!streamOpened) throw toPreparedOperationError(error)
+      const operationError =
+        error instanceof OrganizeSourcesActionError
+          ? toPreparedOperationError(error)
+          : error
       const outcomeUnknown =
         operation.turn !== undefined ||
-        (error instanceof CodexChatRuntimeError && error.unknownOutcome)
+        (operationError instanceof CodexChatRuntimeError &&
+          operationError.unknownOutcome)
       if (outcomeUnknown) {
         await options.interactionRuntimeTerminal?.()
       }
       await writeTerminal(operation, {
         status: outcomeUnknown ? 'unknown' : 'failed',
-        failureCode: safeOperationCode(error),
+        failureCode: safeOperationCode(operationError),
       })
     } finally {
       await release(operation)
@@ -524,6 +541,12 @@ export function createPreparedProductOperationCoordinator(options: {
                   operation.serviceLease,
                 ),
             }),
+          revalidateForDispatch: (prepared, signal) =>
+            options.organizeSourcesAction.revalidateForDispatch(
+              input,
+              prepared,
+              { signal },
+            ),
         },
         operationOptions,
       )

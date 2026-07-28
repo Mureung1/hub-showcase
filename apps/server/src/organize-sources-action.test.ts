@@ -113,6 +113,42 @@ test('organize_sources prepare rejects a selected file replaced by an outside sy
   }
 })
 
+test('organize_sources dispatch revalidation rejects a selected file replaced by an outside symlink after prepare', async () => {
+  const fixture = await createActionFixture(
+    'organize-sources-dispatch-file-race-',
+  )
+  const input = {
+    action: 'organize_sources',
+    files: [{ relativePath: 'selected.md' }],
+  } as const
+  try {
+    const prepared = await fixture.action.prepare(input, {
+      signal: new AbortController().signal,
+      listEffectiveSkills: async () => [
+        {
+          name: 'ay-ple-first-assignment',
+          enabled: true,
+          sourceRoot: fixture.skillRoot,
+        },
+      ],
+    })
+
+    await rm(fixture.selectedPath)
+    await symlink(fixture.outsidePath, fixture.selectedPath)
+
+    await assert.rejects(
+      fixture.action.revalidateForDispatch(input, prepared, {
+        signal: new AbortController().signal,
+      }),
+      (error: unknown) =>
+        error instanceof OrganizeSourcesActionError &&
+        error.code === 'action_context_stale',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('organize_sources prepare leaves validated settings composition to the operation coordinator', async () => {
   const fixture = await createActionFixture(
     'organize-sources-settings-owner-',

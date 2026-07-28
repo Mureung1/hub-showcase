@@ -33,6 +33,13 @@ export type OrganizeSourcesAction = {
       ) => Promise<readonly CodexEffectiveSkill[]>
     },
   ): Promise<PreparedOrganizeSourcesAction>
+  revalidateForDispatch(
+    input: TargetProductActionInvocationRequest,
+    prepared: PreparedOrganizeSourcesAction,
+    context: {
+      readonly signal: AbortSignal
+    },
+  ): Promise<void>
 }
 
 export class OrganizeSourcesActionError extends Error {
@@ -108,6 +115,45 @@ export async function createOrganizeSourcesAction(options: {
         permissionProfile: 'workspace_write',
         skill,
         text,
+      }
+    },
+
+    async revalidateForDispatch(input, prepared, context) {
+      context.signal.throwIfAborted()
+      let files: readonly ProductWorkspaceFileRef[]
+      try {
+        files = await options.sources.preflightTextFiles(input.files)
+      } catch (error) {
+        throw mapSourceError(error)
+      }
+      context.signal.throwIfAborted()
+
+      const expectedSkillPath = authority.pathFor([
+        '.agents',
+        'skills',
+        skillName,
+        'SKILL.md',
+      ])
+      try {
+        await authority.assertRegularFile([
+          '.agents',
+          'skills',
+          skillName,
+          'SKILL.md',
+        ])
+      } catch (error) {
+        await assertCurrentActionWorkspace(authority)
+        throw new OrganizeSourcesActionError('action_unavailable')
+      }
+      context.signal.throwIfAborted()
+
+      if (
+        prepared.permissionProfile !== 'workspace_write' ||
+        prepared.skill.name !== skillName ||
+        prepared.skill.path !== expectedSkillPath ||
+        prepared.text !== renderOrganizeSourcesActionText(files)
+      ) {
+        throw new OrganizeSourcesActionError('action_context_stale')
       }
     },
   }
