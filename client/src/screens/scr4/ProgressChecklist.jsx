@@ -6,7 +6,7 @@ import { Input } from '../../components/forms/Input.jsx'
 import { Checkbox } from '../../components/forms/Checkbox.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
-import { getRoles, createRoleTasks, updateRoleTask, deleteRoleTask } from '../../lib/api.js'
+import { getLetterByToken, getRoles, createRoleTasks, updateRoleTask, deleteRoleTask } from '../../lib/api.js'
 import letterBgFloralLace from '../../assets/letter-bg-floral-lace.jpg'
 import laceDoily from '../../assets/vintage-lace-doily.png'
 import laceTrimStrip from '../../assets/vintage-lace-trim-strip.png'
@@ -28,6 +28,7 @@ export function ProgressChecklist() {
 
   const [loadStatus, setLoadStatus] = useState('loading') // loading | error | ready
   const [errorMsg, setErrorMsg] = useState('')
+  const [letter, setLetter] = useState(null)
   const [role, setRole] = useState(null)
   const [tasks, setTasks] = useState([])
   const [newLabel, setNewLabel] = useState('')
@@ -39,19 +40,25 @@ export function ProgressChecklist() {
       setErrorMsg('잘못된 링크예요')
       return
     }
-    getRoles(token).then((result) => {
+    Promise.all([getLetterByToken(token), getRoles(token)]).then(([letterResult, rolesResult]) => {
       if (cancelled) return
-      if (result.error) {
+      if (letterResult.error) {
         setLoadStatus('error')
-        setErrorMsg(result.error)
+        setErrorMsg(letterResult.error)
         return
       }
-      const found = (result.data ?? []).find((r) => r.id === roleId)
+      if (rolesResult.error) {
+        setLoadStatus('error')
+        setErrorMsg(rolesResult.error)
+        return
+      }
+      const found = (rolesResult.data ?? []).find((r) => r.id === roleId)
       if (!found) {
         setLoadStatus('error')
         setErrorMsg('역할을 찾을 수 없어요')
         return
       }
+      setLetter(letterResult.data)
       setRole(found)
       setTasks(found.role_tasks ?? [])
       setLoadStatus('ready')
@@ -197,9 +204,9 @@ export function ProgressChecklist() {
         </nav>
 
         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px' }}>
-          <Avatar name="정하은" index={0} size={32} />
+          <Avatar name={letter?.host_name || ''} index={0} size={32} />
           {/* TODO: 실제 값으로 교체 (로그인/프로필 화면 완성 후) */}
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink)' }}>정하은</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink)' }}>{letter?.host_name || '호스트'}</div>
         </div>
       </aside>
 
