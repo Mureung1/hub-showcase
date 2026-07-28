@@ -139,7 +139,7 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-bg-cream" style={PAGE_BACKGROUND_STYLE}>
-      <div className="sticky top-0 z-10">
+      <div className="sticky top-0 z-20">
         <TopNav />
       </div>
 

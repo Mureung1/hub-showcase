@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "node --env-file=.env.local scripts/dev-server.js",
+    "start": "node scripts/dev-server.js",
     "seed:recipes": "node --env-file=.env.local scripts/seedRecipes.js",
     "build": "vite build",
     "lint": "oxlint",
@@ -18,6 +19,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
     "@tailwindcss/vite": "^4.3.2",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

@@ -7,7 +7,7 @@ import { fridgeIngredients, INGREDIENT_CATEGORIES, DEFAULT_SEASONING_IDS } from 
 import { mockRecipes } from '../data/mockRecipes'
 import { getIngredientsByCategory, sortIngredientsByRecipeCount } from '../data/selectors'
 import { loadFridgeSelection, saveFridgeSelection } from '../data/fridgeStorage'
-import fridgePhoto from '../assets/냉장고-Photoroom.png'
+import fridgePhoto from '../assets/냉장고.png'
 import carrotIcon from '../assets/당근.png'
 import meatSeafoodIcon from '../assets/물고기고기.png'
 import processedIcon from '../assets/가공식품.png'

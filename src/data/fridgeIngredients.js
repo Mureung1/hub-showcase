@@ -51,12 +51,14 @@ export const fridgeIngredients = [
   { id: 'salmon', label: '연어', emoji: '🍣', matchNames: ['연어'], category: 'seafood' },
   { id: 'shellfish', label: '조개류', emoji: '🦪', matchNames: ['조개류'], category: 'seafood' },
   { id: 'kelp', label: '다시마', emoji: '🍀', matchNames: ['다시마'], category: 'seafood' },
+  { id: 'anchovy', label: '멸치', emoji: '🐟', matchNames: ['멸치'], category: 'seafood' },
 
   // 가공식품
   { id: 'kimchi', label: '김치', emoji: '🥬', matchNames: ['신김치'], category: 'processed' },
   { id: 'spam', label: '스팸·햄', emoji: '🥫', matchNames: ['스팸', '햄'], category: 'processed' },
   { id: 'tuna', label: '참치캔', emoji: '🐟', matchNames: ['참치캔'], category: 'processed' },
   { id: 'fish-cake', label: '어묵', emoji: '🍢', matchNames: ['어묵'], category: 'processed' },
+  { id: 'fried-tofu', label: '유부', emoji: '🍥', matchNames: ['유부'], category: 'processed' },
   { id: 'sausage', label: '소시지', emoji: '🌭', matchNames: ['소시지'], category: 'processed' },
   { id: 'cheese', label: '치즈', emoji: '🧀', matchNames: ['치즈'], category: 'processed' },
 
@@ -73,8 +75,10 @@ export const fridgeIngredients = [
   { id: 'tofu-regular', label: '두부', emoji: '🧈', matchNames: ['두부'], group: '두부', category: 'etc' },
   { id: 'tofu-soft', label: '순두부', emoji: '🥣', matchNames: ['순두부'], group: '두부', category: 'etc' },
   { id: 'cooking-oil', label: '식용유', emoji: '🍶', matchNames: ['식용유'], category: 'etc' },
-  { id: 'olive-oil', label: '올리브유', emoji: '🫒', matchNames: ['올리브유'], category: 'etc' },
+  { id: 'olive-oil', label: '올리브유', emoji: '🫒', matchNames: ['올리브유', '올리브오일', '퓨어 올리브오일'], category: 'etc' },
   { id: 'sesame-oil', label: '참기름', emoji: '🍶', matchNames: ['참기름'], category: 'etc' },
+  { id: 'butter', label: '버터', emoji: '🧈', matchNames: ['버터'], category: 'etc' },
+  { id: 'herb', label: '허브', emoji: '🌿', matchNames: ['허브', '허브(타임&바질)'], category: 'etc' },
 
   // 조미료 — 홈 추천 매칭에서는 제외되고 레시피 상세의 보유/구매 필요 표시에만 쓰임 (위 주석 참고).
   // 기름류(식용유·올리브유·참기름)는 "조미료"라 부르기 애매해서 위 "기타"로 뺐다.
@@ -89,9 +93,14 @@ export const fridgeIngredients = [
   { id: 'mayo', label: '마요네즈', emoji: '🥫', matchNames: ['마요네즈'], category: 'seasoning' },
   { id: 'gochujang', label: '고추장', emoji: '🌶️', matchNames: ['고추장'], category: 'seasoning' },
   { id: 'doenjang', label: '된장', emoji: '🫘', matchNames: ['된장'], category: 'seasoning' },
-  { id: 'pepper', label: '후추', emoji: '🧂', matchNames: ['후추'], category: 'seasoning' },
+  { id: 'pepper', label: '후추', emoji: '🧂', matchNames: ['후추', '백후추'], category: 'seasoning' },
   { id: 'oyster-sauce', label: '굴소스', emoji: '🫙', matchNames: ['굴소스'], category: 'seasoning' },
   { id: 'chicken-stock', label: '치킨스톡', emoji: '🥫', matchNames: ['치킨스톡'], category: 'seasoning' },
+  { id: 'mentsuyu', label: '쯔유', emoji: '🍶', matchNames: ['쯔유'], category: 'seasoning' },
+  { id: 'mirin', label: '미림', emoji: '🍶', matchNames: ['미림'], category: 'seasoning' },
+  { id: 'msg', label: '미원', emoji: '🧂', matchNames: ['미원'], category: 'seasoning' },
+  { id: 'okonomiyaki-sauce', label: '오코노미야끼소스', emoji: '🍶', matchNames: ['오코노미야끼소스'], category: 'seasoning' },
+  { id: 'seaweed-flakes', label: '김가루', emoji: '🌿', matchNames: ['김가루'], category: 'seasoning' },
 ]
 
 // 조미료는 자취생 대부분이 기본으로 갖고 있다고 가정하고, 냉장고 화면에 처음 들어왔을 때(저장된 선택이 없을 때) 기본으로 체크해둔다.

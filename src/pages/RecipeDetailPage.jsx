@@ -172,7 +172,7 @@ function RecipeDetailPage() {
       <div className={videoAspectRatio < 1 ? 'mx-auto max-w-5xl' : 'mx-auto max-w-2xl'}>
         {/* 제목/부제 — 영상보다 위, 페이지 맨 위에 항상 고정 (레이아웃·영상 방향과 무관).
             부족 재료 개수 배지는 없앰 — 바로 아래 "있는 재료"/"없는 재료" 카드가 같은 정보를 더 정확히 보여줌. */}
-        <div className="relative text-center">
+        <div className="relative px-10 text-center">
           <div className="flex flex-wrap items-baseline justify-center gap-2">
             <h1 className="font-display text-2xl font-bold text-text-primary">{recipe.name}</h1>
             <p className="font-display text-sm text-text-secondary">
@@ -285,7 +285,7 @@ function RecipeDetailPage() {
 
         <div className="mt-6 flex items-start justify-end gap-3">
           <div className="relative max-w-xs rounded-2xl border-2 border-ink bg-[#FFF3DF] px-4 py-3 font-display text-sm text-text-primary">
-            Tip: 재료를 신선하게 준비해두면 더 맛있어요!
+            Tip: {recipe.tip ?? '재료를 신선하게 준비해두면 더 맛있어요!'}
             <span className="absolute top-4 -right-[7px] h-3 w-3 rotate-45 border-r-2 border-t-2 border-ink bg-[#FFF3DF]" />
           </div>
           <img src={mascotKkini} alt="" className="w-14 select-none" />
