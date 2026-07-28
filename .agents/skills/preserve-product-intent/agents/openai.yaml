@@ -1,0 +1,7 @@
+interface:
+  display_name: "Preserve Product Intent"
+  short_description: "관련 기획 문서를 선별해 변경 결과의 정합성을 점검합니다"
+  default_prompt: "Use $preserve-product-intent to plan or review this repository change against applicable AGENTS.md guidance and relevant docs."
+
+policy:
+  allow_implicit_invocation: true

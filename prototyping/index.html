@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RecipeBook Prototype</title>
+  <link rel="stylesheet" href="styles/prototype.css">
+</head>
+
+<body>
+  <main class="site-shell prototype-shell">
+    <section class="screen is-active" data-screen="list" aria-labelledby="list-title">
+      <header class="app-bar">
+        <span class="app-bar-title">내 레시피북</span>
+        <button class="text-link" type="button" data-screen-target="add">추가</button>
+      </header>
+
+      <div class="page">
+        <header class="hero-header compact-header">
+          <p class="eyebrow">총 3개의 레시피</p>
+          <h1 id="list-title">XXX님의 레시피 북</h1>
+          <p class="supporting">저장한 레시피와 전해 받은 기억을 조용히 모아두었습니다.</p>
+        </header>
+
+        <div class="search">
+          <input class="input" id="recipe-search" type="search" placeholder="레시피 제목, 재료, 메모 검색">
+        </div>
+
+        <div class="chip-row" role="list" aria-label="레시피 필터">
+          <button class="chip is-selected" type="button" data-filter="all">전체</button>
+          <button class="chip" type="button" data-filter="mine">내 레시피</button>
+          <button class="chip" type="button" data-filter="received">전달받은 레시피</button>
+          <button class="chip" type="button" data-filter="recent">최근 수정</button>
+        </div>
+
+        <div class="recipe-list" id="recipe-list">
+          <button class="recipe-list-item" type="button" data-screen-target="detail" data-recipe-id="kimchi"
+            data-category="received recent" data-search="엄마 김치찌개 김치 돼지고기 가족 엄마 최근 수정">
+            <h2 class="recipe-list-title">엄마 김치찌개</h2>
+            <p class="recipe-list-description">김치를 충분히 볶고 오래 끓이는 집 맛.</p>
+            <div class="metadata">엄마 · 최근 수정 2일 전 · 전달받음</div>
+          </button>
+          <button class="recipe-list-item" type="button" data-screen-target="detail" data-recipe-id="galbi"
+            data-category="received" data-search="할머니 갈비찜 명절 가족 전달받음">
+            <h2 class="recipe-list-title">할머니 갈비찜</h2>
+            <p class="recipe-list-description">명절마다 먹던 달지 않은 갈비찜.</p>
+            <div class="metadata">할머니 · 2026.07.10 전달받음</div>
+          </button>
+          <button class="recipe-list-item" type="button" data-screen-target="detail" data-recipe-id="basil"
+            data-category="mine recent" data-search="민지 바질 파스타 면수 바질 내가 기록">
+            <h2 class="recipe-list-title">민지의 바질 파스타</h2>
+            <p class="recipe-list-description">면수와 바질 향을 살리는 간단한 파스타.</p>
+            <div class="metadata">친구 민지 · 내가 기록 · 최근 수정</div>
+          </button>
+        </div>
+
+        <p class="empty-message" id="empty-list">찾는 레시피가 보이지 않아요. 다른 말로 천천히 다시 찾아보세요.</p>
+
+        <nav class="bottom-nav" aria-label="하단 탐색">
+          <button class="is-current" type="button">홈</button>
+          <button type="button" data-focus-search>검색</button>
+          <button type="button" data-screen-target="add">추가</button>
+        </nav>
+      </div>
+    </section>
+
+    <section class="screen reading-layout" data-screen="detail" aria-labelledby="detail-title">
+      <header class="app-bar">
+        <button class="text-link cooking-fade" type="button" data-screen-target="list">←</button>
+        <span class="app-bar-title">레시피</span>
+        <button class="text-link management-action" type="button" data-open-sheet>더보기</button>
+      </header>
+
+      <article class="page">
+        <header class="recipe-header">
+          <p class="eyebrow" id="detail-eyebrow">가족 레시피</p>
+          <h1 id="detail-title">엄마 김치찌개</h1>
+          <p class="supporting" id="detail-description">김치를 충분히 볶고 오래 끓이는, 집에서 먹던 가장 익숙한 맛.</p>
+          <div class="metadata-block" id="detail-metadata">
+            <span>엄마가 알려준 레시피</span>
+            <span>2인분 · 약 35분 · 최근 수정 2일 전</span>
+            <span>AI가 초안을 정리했고, 저장 전에 직접 다듬었습니다.</span>
+          </div>
+        </header>
+
+        <div class="quiet-toggle">
+          <span>조리 중 보기</span>
+          <button class="toggle" type="button" aria-pressed="false" data-cooking-toggle><span></span></button>
+        </div>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">재료</h2>
+          <div class="section-divider"></div>
+          <ul class="ingredient-list" id="detail-ingredients">
+            <li>잘 익은 김치 2컵</li>
+            <li>돼지고기 앞다리살 180g</li>
+            <li>두부 반 모</li>
+            <li>대파 1대</li>
+            <li>멸치육수 500ml</li>
+          </ul>
+        </section>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">조리 순서</h2>
+          <div class="section-divider"></div>
+          <ol class="step-list" id="detail-steps">
+            <li>냄비에 돼지고기를 넣고 겉면이 익을 때까지 볶습니다.</li>
+            <li>김치를 넣고 중불에서 5분 정도 더 볶습니다.</li>
+            <li>육수를 붓고 끓어오르면 불을 줄여 20분 더 끓입니다.</li>
+            <li>두부와 대파를 넣고 간을 본 뒤 마무리합니다.</li>
+          </ol>
+        </section>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">내 메모</h2>
+          <div class="section-divider"></div>
+          <div class="memory-note" id="detail-memo">다음에는 두부를 조금 더 넣어도 좋겠다. 엄마는 마지막에 김칫국물을 한 숟가락 더 넣으면 맛이 선명해진다고 했다.
+          </div>
+        </section>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">관계</h2>
+          <div class="section-divider"></div>
+          <div class="relationship-block" id="detail-relationship">
+            <div class="relationship-name">엄마가 알려준 레시피</div>
+            <div class="relationship-detail">관계: 가족</div>
+            <div class="metadata">2026.07.10 전달받음 · 재공유 불가</div>
+          </div>
+        </section>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">출처</h2>
+          <div class="section-divider"></div>
+          <p class="supporting" id="detail-source">직접 전해 받은 레시피</p>
+          <div class="metadata" id="detail-source-meta">원본 내용은 내 레시피북에 저장된 기록 기준으로 표시됩니다.</div>
+        </section>
+      </article>
+    </section>
+
+    <section class="screen" data-screen="add" aria-labelledby="add-title">
+      <header class="app-bar">
+        <button class="text-link" type="button" data-screen-target="list">취소</button>
+        <span class="app-bar-title">레시피 추가</span>
+        <span></span>
+      </header>
+
+      <div class="page with-bottom-cta">
+        <div class="editor-intro">
+          <h1 id="add-title">기억나는 대로 적어보세요.</h1>
+          <p class="supporting">URL을 붙여 넣거나, 메모처럼 자유롭게 적어도 괜찮습니다. 저장하기 전에 원하는 대로 다듬을 수 있습니다.</p>
+        </div>
+
+        <div class="editable-document">
+          <div class="field">
+            <label for="source-url">레시피 URL (선택)</label>
+            <input class="input" id="source-url" type="url" placeholder="https://...">
+          </div>
+          <div class="field">
+            <label for="raw-recipe">직접 입력 (선택)</label>
+            <textarea class="textarea large-textarea" id="raw-recipe"
+              placeholder="엄마가 알려준 김치찌개&#10;김치 반 포기&#10;두부&#10;고춧가루..."></textarea>
+          </div>
+          <p class="supporting">AI가 입력 내용을 구조화하여 초안을 만들어 드립니다. 최종 레시피는 저장 전에 직접 확인합니다.</p>
+          <button class="button button-text invite-link" type="button" data-open-code-modal>전달받은 레시피가 있나요?</button>
+        </div>
+      </div>
+
+      <div class="bottom-cta">
+        <button class="button button-primary" type="button" id="draft-button" disabled>AI로 초안 만들기</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="editor" aria-labelledby="editor-title">
+      <header class="app-bar">
+        <button class="text-link" type="button" data-screen-target="add">이전</button>
+        <span class="app-bar-title">레시피 다듬기</span>
+        <span></span>
+      </header>
+
+      <div class="page with-bottom-cta">
+        <div class="status-banner">
+          AI가 초안을 정리했어요. 저장하기 전에 원하는 대로 수정해 보세요.
+        </div>
+
+        <div class="editor-intro">
+          <h1 id="editor-title">민지의 바질 파스타</h1>
+          <p class="supporting">정리된 내용을 확인하고 내 방식에 맞게 고쳐 저장합니다.</p>
+        </div>
+
+        <div class="editable-document">
+          <div class="field">
+            <label for="edit-title">레시피 이름</label>
+            <input class="input" id="edit-title" value="민지의 바질 파스타">
+          </div>
+          <div class="field">
+            <label for="edit-description">설명</label>
+            <textarea class="textarea short-textarea" id="edit-description">면수와 바질 향을 살리는 간단한 파스타.</textarea>
+          </div>
+          <div class="field">
+            <label for="edit-ingredients">재료</label>
+            <textarea class="textarea"
+              id="edit-ingredients">스파게티면 1인분&#10;바질 한 줌&#10;올리브오일 3큰술&#10;마늘 2쪽&#10;파르메산 치즈 조금</textarea>
+          </div>
+          <div class="field">
+            <label for="edit-steps">조리 순서</label>
+            <textarea class="textarea"
+              id="edit-steps">면을 삶는 동안 마늘을 약한 불에 천천히 익힙니다.&#10;면수와 바질을 넣고 빠르게 섞습니다.&#10;마지막에 치즈를 갈아 올립니다.</textarea>
+          </div>
+          <section class="recipe-section inline-section">
+            <h2 class="recipe-section-title">확인이 필요한 항목</h2>
+            <div class="section-divider"></div>
+            <ul class="quiet-list">
+              <li>바질 한 줌 → 약 20g 기준으로 정리했습니다.</li>
+              <li>치즈 조금 → 마지막에 기호에 맞게 올리는 방식으로 두었습니다.</li>
+            </ul>
+          </section>
+          <div class="field">
+            <label for="edit-memo">내 메모</label>
+            <textarea class="textarea short-textarea" id="edit-memo"
+              placeholder="다음에 다시 봤을 때 떠올리고 싶은 내용을 남겨보세요."></textarea>
+          </div>
+          <section class="recipe-section inline-section">
+            <h2 class="recipe-section-title">출처</h2>
+            <div class="section-divider"></div>
+            <p class="supporting">직접 입력한 메모에서 정리</p>
+          </section>
+        </div>
+      </div>
+
+      <div class="bottom-cta">
+        <button class="button button-primary" type="button" data-save-editor>레시피 저장</button>
+      </div>
+    </section>
+
+    <section class="screen reading-layout" data-screen="received" aria-labelledby="received-title">
+      <header class="app-bar">
+        <button class="text-link" type="button" data-screen-target="list">닫기</button>
+        <span class="app-bar-title">전달받은 레시피</span>
+        <span></span>
+      </header>
+
+      <article class="page with-bottom-cta">
+        <header class="recipe-header invitation-header">
+          <p class="eyebrow">민지가 보내준 레시피</p>
+          <h1 id="received-title">할머니 갈비찜</h1>
+          <p class="supporting">민지가 “명절에 같이 만들어 보자”며 이 레시피를 전해주었습니다.</p>
+          <div class="metadata-block">
+            <span>원 저장자: 할머니</span>
+            <span>2026.07.10 전달됨 · 저장 전 미리보기</span>
+          </div>
+        </header>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">재료</h2>
+          <div class="section-divider"></div>
+          <ul class="ingredient-list">
+            <li>소갈비 1kg</li>
+            <li>무 1/3개</li>
+            <li>당근 1개</li>
+            <li>간장 6큰술</li>
+            <li>배즙 반 컵</li>
+          </ul>
+        </section>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">조리 순서</h2>
+          <div class="section-divider"></div>
+          <ol class="step-list">
+            <li>갈비는 찬물에 담가 핏물을 뺍니다.</li>
+            <li>양념을 넣고 약한 불에서 천천히 졸입니다.</li>
+            <li>무와 당근을 넣고 국물이 자작해질 때까지 익힙니다.</li>
+          </ol>
+        </section>
+
+        <section class="recipe-section">
+          <h2 class="recipe-section-title">출처</h2>
+          <div class="section-divider"></div>
+          <p class="supporting">가족에게 전해 받은 명절 레시피</p>
+          <div class="metadata">AI 구조화 여부: 없음 · 재공유 불가</div>
+        </section>
+      </article>
+
+      <div class="bottom-cta">
+        <button class="button button-primary" type="button" data-screen-target="save-received">내 레시피북에 저장</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="save-received" aria-labelledby="save-received-title">
+      <header class="app-bar">
+        <button class="text-link" type="button" data-screen-target="received">이전</button>
+        <span class="app-bar-title">저장하기</span>
+        <span></span>
+      </header>
+
+      <div class="page with-bottom-cta">
+        <div class="recipe-summary">
+          <p class="eyebrow">받은 레시피</p>
+          <h1 id="save-received-title">할머니 갈비찜</h1>
+          <p class="supporting">이 레시피가 누구에게서 왔는지 함께 남겨두면 나중에 다시 볼 때 더 잘 떠오릅니다.</p>
+        </div>
+
+        <div class="relationship-form">
+          <div class="field">
+            <label for="from-person">누가 이 레시피를 전해주었나요?</label>
+            <input class="input" id="from-person" value="민지">
+          </div>
+          <div class="field">
+            <label>관계</label>
+            <div class="chip-row relationship-choice">
+              <button class="chip is-selected" type="button" data-relation-chip>친구</button>
+              <button class="chip" type="button" data-relation-chip>가족</button>
+              <button class="chip" type="button" data-relation-chip>동료</button>
+              <button class="chip" type="button" data-relation-chip>선생님</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="received-memo">나만의 메모</label>
+            <textarea class="textarea" id="received-memo"
+              placeholder="이 레시피와 함께 기억하고 싶은 내용을 적어보세요.">명절 전날 부엌에서 오래 졸이던 냄새가 생각난다.</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-cta">
+        <button class="button button-primary" type="button" data-save-received>내 레시피북에 저장</button>
+      </div>
+    </section>
+
+    <div class="loading-overlay" id="loading-overlay" hidden>
+      <div class="loading-message">레시피를 정리하고 있습니다.</div>
+    </div>
+
+    <div class="toast prototype-toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-hidden="true" aria-label="레시피 관리">
+      <div class="sheet-handle"></div>
+      <h2>레시피 관리</h2>
+      <button type="button" data-sheet-action="edit" data-requires-edit>수정</button>
+      <button type="button" data-sheet-action="view-share">열람 공유</button>
+      <button type="button" data-sheet-action="pass-share" data-requires-pass-share>전달 공유</button>
+      <button class="danger-action" type="button" data-sheet-action="delete">삭제</button>
+    </aside>
+
+    <div class="modal-backdrop" id="code-modal-backdrop" hidden></div>
+    <section class="code-modal" id="code-modal" aria-hidden="true" aria-labelledby="code-modal-title">
+      <h2 id="code-modal-title">전달받은 레시피 불러오기</h2>
+      <p class="supporting">초대 코드를 입력하면 공유된 레시피를 미리 확인한 뒤 내 레시피북에 저장할 수 있습니다.</p>
+      <div class="field">
+        <label for="invite-code">초대 코드</label>
+        <input class="input" id="invite-code" placeholder="예: RB-2026">
+      </div>
+      <div class="modal-actions">
+        <button class="button button-primary" type="button" data-submit-code>레시피 확인</button>
+        <button class="button button-text" type="button" data-close-code-modal>닫기</button>
+      </div>
+    </section>
+
+    <div class="modal-backdrop" id="share-modal-backdrop" hidden></div>
+    <section class="code-modal" id="share-modal" aria-hidden="true" aria-labelledby="share-modal-title">
+      <h2 id="share-modal-title">전달 공유</h2>
+      <p class="supporting">이 링크나 코드를 받은 사람은 레시피를 미리 보고 자신의 레시피북에 저장할 수 있습니다.</p>
+      <div class="share-lines">
+        <div>
+          <div class="metadata">전달 링크</div>
+          <p>https://recipebook.example/invite/RB-2026</p>
+        </div>
+        <div>
+          <div class="metadata">초대 코드</div>
+          <p>RB-2026</p>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-primary" type="button" data-copy-share="link">링크 복사</button>
+        <button class="button button-secondary" type="button" data-copy-share="code">코드 복사</button>
+        <button class="button button-text" type="button" data-close-share-modal>닫기</button>
+      </div>
+    </section>
+
+    <div class="modal-backdrop" id="memo-modal-backdrop" hidden></div>
+    <section class="code-modal" id="memo-modal" aria-hidden="true" aria-labelledby="memo-modal-title">
+      <h2 id="memo-modal-title">내 메모 수정하기</h2>
+      <p class="supporting">전달받은 레시피의 원본 내용은 그대로 두고, 내가 다시 볼 때 떠올릴 메모만 수정합니다.</p>
+      <div class="field">
+        <label for="memo-edit">내 메모</label>
+        <textarea class="textarea" id="memo-edit" placeholder="다음에 다시 봤을 때 떠올리고 싶은 내용을 남겨보세요."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-primary" type="button" data-save-memo>메모 저장</button>
+        <button class="button button-text" type="button" data-close-memo-modal>닫기</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="scripts/app.js"></script>
+</body>
+
+</html>
