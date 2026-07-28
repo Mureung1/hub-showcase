@@ -1,7 +1,5 @@
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
-import { PanelTextSizeControl } from "../workspace/PanelTextSizeControl";
-import type { PanelTextSize } from "../workspace/usePanelTextSize";
 import { EvidenceCoverageSummary } from "./EvidenceCoverageSummary";
 import { InspectorFlow } from "./InspectorFlow";
 import {
@@ -24,8 +22,6 @@ type MarketInspectorProps = {
   score: number | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
-  panelTextSize: PanelTextSize;
-  onPanelTextSizeChange: (size: PanelTextSize) => void;
   activeHour: number;
   sameCategoryCount: number;
   analysis: MarketAnalysis | null;
@@ -51,8 +47,6 @@ export function MarketInspector({
   score,
   categorySelection,
   categoryCoverageReason,
-  panelTextSize,
-  onPanelTextSizeChange,
   activeHour,
   sameCategoryCount,
   analysis,
@@ -73,10 +67,6 @@ export function MarketInspector({
 }: MarketInspectorProps) {
   return (
     <aside className="inspector-panel">
-      <div className="inspector-text-size-row">
-        <span>글자 크기</span>
-        <PanelTextSizeControl value={panelTextSize} onChange={onPanelTextSizeChange} />
-      </div>
       <InspectorHeader
         market={market}
         selected={selected}
