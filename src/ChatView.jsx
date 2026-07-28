@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-
-const API_BASE = 'http://localhost:4000';
+import { API_BASE } from './apiBase';
 
 // 실제 대화 화면 — messages state는 서버에서 받아온 진짜 기록이다.
 // 서버가 각 메시지에 submerged(잠김 여부)와 summary를 같이 내려주면,

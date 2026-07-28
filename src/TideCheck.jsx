@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import TideSlider from './TideSlider';
 import { hasCheckedInToday } from './hasCheckedInToday';
+import { API_BASE } from './apiBase';
 import './TideCheck.css';
-
-const API_BASE = 'http://localhost:4000';
 
 // onDone은 선택적 props — App처럼 "TideCheck 끝나면 다음 화면으로" 흐름이 필요할 때만 넘겨준다.
 function TideCheck({ onDone }) {
