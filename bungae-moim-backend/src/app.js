@@ -8,6 +8,7 @@ const sessionMiddleware = require('./config/session');
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const meetingsRoutes = require('./routes/meetings');
+const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/meetings', meetingsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 app.get('/health', async (req, res) => {
   try {
