@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as commentsApi from './commentsApi'
 import type { CommentDto } from './commentsApi'
 import { friendPosts, friends, reactionMeta } from './data'
-import * as pointsApi from './pointsApi'
+import * as reactionsApi from './reactionsApi'
+import type { ReactionSummary } from './reactionsApi'
 import { PixelAvatar } from './shared'
 import type { FriendPost, ReactionKind } from './types'
 
@@ -10,26 +11,39 @@ type FriendFeedProps = {
   myPosts: FriendPost[]
   currentUserId: string
   onDeletePost: (postId: string) => void
-  onPointsEarned: () => void
 }
 
-export function FriendFeed({ myPosts, currentUserId, onDeletePost, onPointsEarned }: FriendFeedProps) {
-  const [myReactions, setMyReactions] = useState<Record<string, ReactionKind | null>>({})
+export function FriendFeed({ myPosts, currentUserId, onDeletePost }: FriendFeedProps) {
+  // mock 친구 게시물(실제 VideoPost가 아님)은 서버에 반응을 저장할 수 없어서 로컬로만 토글한다.
+  const [myMockReactions, setMyMockReactions] = useState<Record<string, ReactionKind | null>>({})
+  const [reactionSummaries, setReactionSummaries] = useState<Record<string, ReactionSummary>>({})
   const [comments, setComments] = useState<Record<string, CommentDto[]>>({})
   const [openCommentsFor, setOpenCommentsFor] = useState<string | null>(null)
   const [commentDraft, setCommentDraft] = useState('')
 
   const posts = [...myPosts, ...friendPosts]
 
-  const selectReaction = (postId: string, kind: ReactionKind) => {
-    const wasReacted = Boolean(myReactions[postId])
-    setMyReactions((prev) => ({ ...prev, [postId]: prev[postId] === kind ? null : kind }))
+  useEffect(() => {
+    myPosts.forEach((post) => {
+      if (!post.videoUrl || reactionSummaries[post.id]) return
+      reactionsApi.fetchReactionSummary(post.id)
+        .then((summary) => setReactionSummaries((prev) => ({ ...prev, [post.id]: summary })))
+        .catch(() => {})
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myPosts])
 
-    // 반응이 없던 상태에서 처음 남길 때만 포인트를 요청한다. 서버가 같은 postId로는
-    // 최초 1회만 지급하므로, 지웠다가 다시 남겨도 중복 지급되지 않는다.
-    if (!wasReacted) {
-      pointsApi.awardReactionPoints(postId).then(onPointsEarned).catch(() => {})
+  const selectReaction = (post: FriendPost, kind: ReactionKind) => {
+    if (!post.videoUrl) {
+      setMyMockReactions((prev) => ({ ...prev, [post.id]: prev[post.id] === kind ? null : kind }))
+      return
     }
+
+    const wasSameReaction = reactionSummaries[post.id]?.myReaction === kind
+    const request = wasSameReaction ? reactionsApi.clearReaction(post.id) : reactionsApi.setReaction(post.id, kind)
+    request
+      .then((summary) => setReactionSummaries((prev) => ({ ...prev, [post.id]: summary })))
+      .catch(() => {})
   }
 
   const toggleComments = (postId: string) => {
@@ -72,7 +86,9 @@ export function FriendFeed({ myPosts, currentUserId, onDeletePost, onPointsEarne
       {posts.map((post) => {
         const isMine = post.friendId === 'me'
         const friend = friends.find((item) => item.id === post.friendId)
-        const myReaction = myReactions[post.id] ?? null
+        const summary = reactionSummaries[post.id]
+        const myReaction = post.videoUrl ? summary?.myReaction ?? null : myMockReactions[post.id] ?? null
+        const reactionCounts = post.videoUrl ? summary?.counts : post.reactions
 
         return (
           <article className="feed-post" key={post.id}>
@@ -110,19 +126,23 @@ export function FriendFeed({ myPosts, currentUserId, onDeletePost, onPointsEarne
               {!post.videoUrl && <p className="feed-caption">{post.caption}</p>}
 
               <div className="feed-reactions" role="group" aria-label="눈빛 반응">
-                {reactionMeta.map((reaction) => (
-                  <button
-                    type="button"
-                    key={reaction.key}
-                    className={`feed-reaction ${myReaction === reaction.key ? 'active' : ''}`}
-                    aria-pressed={myReaction === reaction.key}
-                    aria-label={`${reaction.label}(${reaction.hint})`}
-                    title={reaction.label}
-                    onClick={() => selectReaction(post.id, reaction.key)}
-                  >
-                    {reaction.emoji}
-                  </button>
-                ))}
+                {reactionMeta.map((reaction) => {
+                  const count = reactionCounts?.[reaction.key] ?? 0
+                  return (
+                    <button
+                      type="button"
+                      key={reaction.key}
+                      className={`feed-reaction ${myReaction === reaction.key ? 'active' : ''}`}
+                      aria-pressed={myReaction === reaction.key}
+                      aria-label={`${reaction.label}(${reaction.hint}) ${count}개`}
+                      title={reaction.label}
+                      onClick={() => selectReaction(post, reaction.key)}
+                    >
+                      {reaction.emoji}
+                      {count > 0 && <span className="feed-reaction-count">{count}</span>}
+                    </button>
+                  )
+                })}
               </div>
 
               {post.videoUrl && (
