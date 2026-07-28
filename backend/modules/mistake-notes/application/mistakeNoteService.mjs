@@ -1,4 +1,11 @@
-import { createMistakeNote, normalizeMistakeNoteInput, updateMistakeNoteStatus } from '../domain/mistakeNote.mjs'
+import {
+  createMistakeNote,
+  normalizeMistakeNoteInput,
+  updateMistakeNoteContent,
+  updateMistakeNoteStatus,
+} from '../domain/mistakeNote.mjs'
+
+export class MistakeNoteNotFoundError extends Error {}
 
 export async function listMistakeNotes({ repository }) {
   return { notes: await repository.list() }
@@ -15,13 +22,20 @@ export async function addMistakeNote({ input, repository }) {
 
 export async function changeMistakeNoteStatus({ id, status, repository }) {
   const note = await repository.findById(id)
-  if (!note) throw new Error('Mistake note not found')
+  if (!note) throw new MistakeNoteNotFoundError('Mistake note not found')
 
   return await repository.save(updateMistakeNoteStatus(note, status))
 }
 
+export async function updateMistakeNote({ id, input, repository }) {
+  const note = await repository.findById(id)
+  if (!note) throw new MistakeNoteNotFoundError('Mistake note not found')
+
+  return await repository.save(updateMistakeNoteContent(note, input))
+}
+
 export async function removeMistakeNote({ id, repository }) {
-  if (!await repository.delete(id)) throw new Error('Mistake note not found')
+  if (!(await repository.delete(id))) throw new MistakeNoteNotFoundError('Mistake note not found')
 }
 
 export async function resetMistakeNotes({ repository }) {

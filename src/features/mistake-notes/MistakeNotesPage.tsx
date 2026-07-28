@@ -4,14 +4,21 @@ import { shouldUseServerApi } from '../../app/icuApiMode'
 import {
   useMistakeNoteStore,
   type MistakeNote,
+  type MistakeNoteInput,
   type MistakeNoteStatus,
 } from './model/useMistakeNoteStore'
-import { deleteMistakeNote, getMistakeNotes, updateMistakeNoteStatus } from './api/mistakeNoteClient'
+import {
+  deleteMistakeNote,
+  getMistakeNotes,
+  updateMistakeNoteContent,
+  updateMistakeNoteStatus,
+} from './api/mistakeNoteClient'
 import { MistakeNoteDetailModal } from './components/MistakeNoteDetailModal'
 import styles from './MistakeNotesPage.module.css'
 import { createMistakeReviewPath, getMistakeNoteSourceLabel } from './mistakeNoteRoutes'
 import {
   deleteServerMistakeNote,
+  updateServerMistakeNoteContent,
   updateServerMistakeNoteStatus,
 } from './persistMistakeNoteMutation'
 type MistakeFilter = 'all' | MistakeNoteStatus
@@ -21,7 +28,6 @@ const filterLabels: Record<MistakeFilter, string> = {
   open: '미해결',
   resolved: '해결',
 }
-
 
 export default function MistakeNotesPage() {
   const serverMode = shouldUseServerApi()
@@ -114,6 +120,29 @@ export default function MistakeNotesPage() {
       return true
     } catch {
       setMutationError('오답을 삭제하지 못했습니다. 기록은 그대로 유지되었습니다.')
+      return false
+    } finally {
+      setPendingNoteId(null)
+    }
+  }
+
+  async function handleUpdateMistake(note: MistakeNote, input: MistakeNoteInput) {
+    setMutationError(null)
+
+    if (!serverMode) {
+      upsertMistakeNote({ ...note, ...input })
+      return true
+    }
+
+    setPendingNoteId(note.id)
+    try {
+      await updateServerMistakeNoteContent(note.id, input, {
+        update: updateMistakeNoteContent,
+        upsert: upsertMistakeNote,
+      })
+      return true
+    } catch {
+      setMutationError('오답 내용을 저장하지 못했습니다. 입력한 내용은 그대로 유지되었습니다.')
       return false
     } finally {
       setPendingNoteId(null)
@@ -314,6 +343,7 @@ export default function MistakeNotesPage() {
       <MistakeNoteDetailModal
         note={selectedNote}
         onClose={() => setSelectedNoteId(null)}
+        onUpdate={handleUpdateMistake}
         onStatusChange={handleStatusChange}
         onDelete={handleRemoveMistake}
         isPending={Boolean(selectedNote && pendingNoteId === selectedNote.id)}

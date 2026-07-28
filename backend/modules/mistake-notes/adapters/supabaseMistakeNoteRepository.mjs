@@ -77,10 +77,14 @@ export function mapMistakeNote(row) {
     command: row.command,
     reason: row.reason,
     correction: row.correction,
-    createdAt: row.created_at,
-    reviewedAt: row.reviewed_at,
+    createdAt: normalizeTimestamp(row.created_at),
+    reviewedAt: row.reviewed_at ? normalizeTimestamp(row.reviewed_at) : null,
     status: row.status,
   }
+}
+
+function normalizeTimestamp(value) {
+  return new Date(value).toISOString()
 }
 
 export function mapMistakeNoteRow(note) {

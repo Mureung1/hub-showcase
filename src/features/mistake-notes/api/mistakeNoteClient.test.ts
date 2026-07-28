@@ -4,6 +4,7 @@ import {
   deleteMistakeNote,
   mistakeNoteEndpoint,
   resetMistakeNotes,
+  updateMistakeNoteContent,
   updateMistakeNoteStatus,
 } from './mistakeNoteClient'
 
@@ -21,7 +22,10 @@ describe('mistakeNoteClient', () => {
 
   it('creates a mistake note through the server API', async () => {
     vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8787')
-    const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ note: { ...input, id: 'n1', status: 'open' } }) })) as unknown as typeof fetch
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ note: { ...input, id: 'n1', status: 'open' } }),
+    })) as unknown as typeof fetch
 
     await createMistakeNote(input, fetchImpl)
 
@@ -33,7 +37,10 @@ describe('mistakeNoteClient', () => {
   })
 
   it('updates a mistake note status', async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ note: { id: 'n1', status: 'resolved' } }) })) as unknown as typeof fetch
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ note: { id: 'n1', status: 'resolved' } }),
+    })) as unknown as typeof fetch
 
     await updateMistakeNoteStatus('n1', 'resolved', fetchImpl)
 
@@ -42,6 +49,27 @@ describe('mistakeNoteClient', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'resolved' }),
     })
+  })
+
+  it('updates all editable mistake note content', async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ note: { ...input, id: 'n/1' } }),
+    })) as unknown as typeof fetch
+
+    await updateMistakeNoteContent('n/1', input, fetchImpl)
+
+    expect(fetchImpl).toHaveBeenCalledWith('/api/mistake-notes/n%2F1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+  })
+
+  it('throws when a content update fails', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: false, status: 404 })) as unknown as typeof fetch
+
+    await expect(updateMistakeNoteContent('missing', input, fetchImpl)).rejects.toThrow('(404)')
   })
 
   it('deletes one note and resets all notes', async () => {

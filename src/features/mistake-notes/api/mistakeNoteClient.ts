@@ -15,7 +15,9 @@ export function mistakeNoteEndpoint(id: string) {
   return `/api/mistake-notes/${encodeURIComponent(id)}`
 }
 
-export async function getMistakeNotes(fetchImpl: typeof fetch = fetch): Promise<MistakeNotesResponse> {
+export async function getMistakeNotes(
+  fetchImpl: typeof fetch = fetch,
+): Promise<MistakeNotesResponse> {
   const response = await fetchImpl(apiUrl(mistakeNotesEndpoint))
   if (!response.ok) throw new Error(`Mistake notes request failed (${response.status})`)
 
@@ -59,4 +61,19 @@ export async function deleteMistakeNote(id: string, fetchImpl: typeof fetch = fe
 export async function resetMistakeNotes(fetchImpl: typeof fetch = fetch) {
   const response = await fetchImpl(apiUrl(mistakeNotesEndpoint), { method: 'DELETE' })
   if (!response.ok) throw new Error(`Reset mistake notes failed (${response.status})`)
+}
+
+export async function updateMistakeNoteContent(
+  id: string,
+  request: MistakeNoteInput,
+  fetchImpl: typeof fetch = fetch,
+): Promise<MistakeNoteResponse> {
+  const response = await fetchImpl(apiUrl(mistakeNoteEndpoint(id)), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) throw new Error(`Update mistake note content failed (${response.status})`)
+
+  return (await response.json()) as MistakeNoteResponse
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { MistakeNote } from './model/useMistakeNoteStore'
 import {
   deleteServerMistakeNote,
+  updateServerMistakeNoteContent,
   updateServerMistakeNoteStatus,
 } from './persistMistakeNoteMutation'
 
@@ -33,11 +34,46 @@ describe('persistMistakeNoteMutation', () => {
   it('keeps the note when server deletion fails', async () => {
     const remove = vi.fn()
 
-    await expect(deleteServerMistakeNote('note-1', {
-      remove,
-      delete: vi.fn().mockRejectedValue(new Error('delete unavailable')),
-    })).rejects.toThrow('delete unavailable')
+    await expect(
+      deleteServerMistakeNote('note-1', {
+        remove,
+        delete: vi.fn().mockRejectedValue(new Error('delete unavailable')),
+      }),
+    ).rejects.toThrow('delete unavailable')
 
     expect(remove).not.toHaveBeenCalled()
+  })
+
+  it('upserts only the server-confirmed content response', async () => {
+    const upsert = vi.fn()
+    const input = {
+      source: 'workspace' as const,
+      lessonId: 'mission-2',
+      lessonTitle: 'HTTP 수정',
+      command: 'npm run test',
+      reason: '응답이 다릅니다.',
+      correction: 'status를 수정합니다.',
+    }
+    const updatedNote = { ...resolvedNote, ...input }
+
+    await updateServerMistakeNoteContent('note-1', input, {
+      update: vi.fn().mockResolvedValue({ note: updatedNote }),
+      upsert,
+    })
+
+    expect(upsert).toHaveBeenCalledWith(updatedNote)
+  })
+
+  it('does not upsert content when the server update fails', async () => {
+    const upsert = vi.fn()
+
+    await expect(
+      updateServerMistakeNoteContent('note-1', resolvedNote, {
+        update: vi.fn().mockRejectedValue(new Error('update unavailable')),
+        upsert,
+      }),
+    ).rejects.toThrow('update unavailable')
+
+    expect(upsert).not.toHaveBeenCalled()
   })
 })

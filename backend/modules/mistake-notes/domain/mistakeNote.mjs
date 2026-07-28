@@ -21,7 +21,14 @@ export function normalizeMistakeNoteInput(input = {}) {
   const reason = normalizeString(input.reason)
   const correction = normalizeString(input.correction)
 
-  if (!mistakeNoteSources.includes(source) || !lessonId || !lessonTitle || !command || !reason || !correction) {
+  if (
+    !mistakeNoteSources.includes(source) ||
+    !lessonId ||
+    !lessonTitle ||
+    !command ||
+    !reason ||
+    !correction
+  ) {
     throw new Error('Invalid mistake note input')
   }
 
@@ -56,4 +63,11 @@ function normalizeString(value) {
 
 function createId(now) {
   return `mistake-${now.getTime()}-${Math.random().toString(16).slice(2)}`
+}
+
+export function updateMistakeNoteContent(note, input) {
+  return {
+    ...note,
+    ...normalizeMistakeNoteInput(input),
+  }
 }
