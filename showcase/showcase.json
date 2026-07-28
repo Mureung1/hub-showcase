@@ -4,7 +4,7 @@
   "summary": "복잡한 졸업요건을 가진 대학생이 졸업 가능 여부를 쉽게 확인하고, 남은 학기 동안의 수강 계획을 세울 수 있도록 돕는 졸업 플래닝 서비스입니다.",
   "githubUser": "zlnzzaro(김유진)",
   "demoUrl": "",
-  "thumbnail": "thumbnail.png",
+  "thumbnail": "thumbnail.webp",
   "screenshots": [ "screenshots/home(2).png",
                     "screenshots/course_basket.png",
                     "screenshots/simulation.png"
