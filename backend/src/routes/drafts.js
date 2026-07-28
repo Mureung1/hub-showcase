@@ -34,7 +34,7 @@ router.post("/:id/draft", async (req, res) => {
     const posting = await loadPosting(postingId);
 
     if (!posting) {
-      res.status(404).json({ error: `공고를 찾을 수 없습니다: ${postingId}` });
+      res.status(404).json({ error: "이 공고는 더 이상 제공되지 않아요. 목록으로 돌아가서 다른 공고를 확인해주세요." });
       return;
     }
 
