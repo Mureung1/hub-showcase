@@ -6,6 +6,187 @@
   text-align: center;
 }
 
+.focus-mode-completed {
+  position: relative;
+  max-width: 660px;
+  max-height: calc(100vh - 32px);
+  padding: 24px 28px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.focus-mode-journey {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1180px, calc(100vw - 48px));
+  max-width: 1180px;
+  height: min(760px, calc(100dvh - 48px));
+  min-height: 520px;
+  padding: clamp(22px, 3vw, 34px);
+  overflow: hidden;
+  background-color: #d8eef7;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;
+  box-shadow: 0 24px 64px rgba(15, 42, 58, 0.22);
+  text-align: center;
+}
+
+.focus-journey-header {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
+  gap: 12px;
+  width: min(100%, 860px);
+  margin: 0 auto;
+}
+
+.focus-journey-header-single {
+  grid-template-columns: minmax(0, 560px);
+  justify-content: center;
+}
+
+.focus-journey-info,
+.focus-journey-timer {
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(249, 253, 255, 0.76);
+  box-shadow: 0 10px 30px rgba(38, 91, 112, 0.11);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.focus-journey-info {
+  min-width: 0;
+  padding: 13px 16px;
+  border-radius: 16px;
+  text-align: left;
+}
+
+.focus-journey-label,
+.focus-mode-journey .focus-microtask-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #477384;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.focus-mode-journey .focus-title,
+.focus-mode-journey .focus-microtask-body {
+  margin: 0;
+  overflow: hidden;
+  color: #173b4a;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focus-mode-journey .focus-microtask {
+  margin: 0;
+  border-color: rgba(255, 255, 255, 0.68);
+  background: rgba(249, 253, 255, 0.76);
+}
+
+.focus-journey-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(14px, 2.5vh, 24px) 0 4px;
+}
+
+.focus-journey-timer {
+  flex: none;
+  padding: 10px 22px 9px;
+  border-radius: 18px;
+}
+
+.focus-mode-journey .focus-clock {
+  margin: 0;
+  color: #173b4a;
+  font-size: clamp(48px, 7vw, 76px);
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.focus-mode-journey .focus-sub {
+  margin: 6px 0 0;
+  color: #477384;
+  font-size: 12px;
+}
+
+.focus-journey-character {
+  display: block;
+  width: clamp(170px, 26vw, 320px);
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  transform: translateY(-15px);
+  user-select: none;
+}
+
+.focus-journey-character-lv1 {
+  width: clamp(179px, 27.4vw, 337px);
+}
+
+.focus-journey-character-lv2 {
+  width: clamp(178px, 27.2vw, 335px);
+}
+
+.focus-journey-character-lv3 {
+  width: clamp(177px, 27.1vw, 333px);
+}
+
+.focus-mode-journey .focus-error {
+  position: absolute;
+  z-index: 3;
+  right: clamp(22px, 3vw, 34px);
+  bottom: 88px;
+  left: clamp(22px, 3vw, 34px);
+  width: fit-content;
+  max-width: calc(100% - 44px);
+  margin: 0 auto;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(82, 30, 30, 0.88);
+  color: #fff0ed;
+}
+
+.focus-journey-actions {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 440px);
+  margin: 0 auto;
+}
+
+.focus-mode-journey .btn-focus-secondary,
+.focus-mode-journey .btn-focus-primary {
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+.focus-mode-journey .btn-focus-secondary {
+  border-color: rgba(255, 255, 255, 0.78);
+  background: rgba(15, 42, 58, 0.62);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.focus-mode-journey .btn-focus-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(43, 88, 182, 0.2);
+}
+
 .focus-microtask {
   margin-bottom: 18px;
   padding: 14px 16px;
@@ -95,4 +276,152 @@
   display: flex;
   gap: 10px;
   margin-top: 20px;
+}
+
+.focus-mode-completed .focus-exit-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.focus-mode-completed .focus-exit-actions .btn-focus-primary {
+  flex: none;
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+}
+
+.focus-history-link {
+  align-self: center;
+  border: 0;
+  padding: 5px 10px;
+  background: transparent;
+  color: #a7afc9;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.focus-history-link:hover {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.focus-history-link:focus-visible {
+  outline: 2px solid #e9ecf5;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .focus-mode-completed .focus-exit-actions .btn-focus-primary {
+    color: var(--ink);
+  }
+}
+
+@media (max-width: 768px) {
+  .focus-journey-character {
+    width: 230px;
+    transform: translateY(-14px);
+  }
+
+  .focus-journey-character-lv1 {
+    width: 242px;
+  }
+
+  .focus-journey-character-lv2 {
+    width: 241px;
+  }
+
+  .focus-journey-character-lv3 {
+    width: 239px;
+  }
+}
+
+@media (max-width: 420px) {
+  .focus-mode-journey {
+    width: calc(100vw - 24px);
+    height: calc(100dvh - 24px);
+    min-height: 0;
+    padding: 16px;
+    border-radius: 18px;
+    background-position: center bottom;
+  }
+
+  .focus-journey-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .focus-journey-info {
+    padding: 9px 12px;
+    border-radius: 13px;
+  }
+
+  .focus-mode-journey .focus-title,
+  .focus-mode-journey .focus-microtask-body {
+    font-size: 13px;
+  }
+
+  .focus-journey-stage {
+    padding: 10px 0 2px;
+  }
+
+  .focus-journey-timer {
+    padding: 8px 16px 7px;
+    border-radius: 15px;
+  }
+
+  .focus-mode-journey .focus-clock {
+    font-size: 48px;
+  }
+
+  .focus-mode-journey .focus-sub {
+    margin-top: 4px;
+    max-width: 230px;
+    line-height: 1.35;
+  }
+
+  .focus-journey-character {
+    width: 170px;
+    transform: translateY(-17px);
+  }
+
+  .focus-journey-character-lv1 {
+    width: 179px;
+  }
+
+  .focus-journey-character-lv2 {
+    width: 178px;
+  }
+
+  .focus-journey-character-lv3 {
+    width: 177px;
+  }
+
+  .focus-journey-actions {
+    gap: 8px;
+  }
+
+  .focus-mode-journey .btn-focus-secondary,
+  .focus-mode-journey .btn-focus-primary {
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  .focus-mode-journey .focus-error {
+    right: 16px;
+    bottom: 76px;
+    left: 16px;
+    max-width: calc(100% - 32px);
+  }
+
+  .focus-mode-completed {
+    padding: 20px 18px;
+  }
+
+  .focus-mode-completed .focus-exit-actions {
+    margin-top: 14px;
+  }
 }

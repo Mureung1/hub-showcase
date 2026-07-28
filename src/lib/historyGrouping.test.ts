@@ -27,6 +27,46 @@ describe("groupTasksByDate", () => {
   it("빈 배열이면 빈 객체를 반환한다 (경계)", () => {
     expect(groupTasksByDate([])).toEqual({});
   });
+
+  it("completedAt이 있으면 completedAt 날짜로 그룹핑한다 (happy path)", () => {
+    const tasks = [
+      { id: "1", createdAt: "2026-07-01T01:00:00.000Z", completedAt: "2026-07-10T01:00:00.000Z" },
+    ];
+
+    const result = groupTasksByDate(tasks);
+
+    expect(Object.keys(result)).toEqual([dateKey("2026-07-10T01:00:00.000Z")]);
+  });
+
+  it("completedAt이 null이면 createdAt 날짜로 그룹핑한다 (경계)", () => {
+    const tasks = [
+      { id: "1", createdAt: "2026-07-01T01:00:00.000Z", completedAt: null },
+    ];
+
+    const result = groupTasksByDate(tasks);
+
+    expect(Object.keys(result)).toEqual([dateKey("2026-07-01T01:00:00.000Z")]);
+  });
+
+  it("completedAt 필드 자체가 없으면(진행 중 task) createdAt 날짜로 그룹핑한다 (경계)", () => {
+    const tasks = [{ id: "1", createdAt: "2026-07-01T01:00:00.000Z" }];
+
+    const result = groupTasksByDate(tasks);
+
+    expect(Object.keys(result)).toEqual([dateKey("2026-07-01T01:00:00.000Z")]);
+  });
+
+  it("완료 task와 진행 중 task가 섞여도 각자 올바른 날짜로 정확히 분리된다 (회귀)", () => {
+    const tasks = [
+      { id: "done", createdAt: "2026-07-01T01:00:00.000Z", completedAt: "2026-07-10T01:00:00.000Z" },
+      { id: "active", createdAt: "2026-07-05T01:00:00.000Z" },
+    ];
+
+    const result = groupTasksByDate(tasks);
+
+    expect(result[dateKey("2026-07-10T01:00:00.000Z")].map((t) => t.id)).toEqual(["done"]);
+    expect(result[dateKey("2026-07-05T01:00:00.000Z")].map((t) => t.id)).toEqual(["active"]);
+  });
 });
 
 describe("buildMonthGrid", () => {

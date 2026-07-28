@@ -35,7 +35,7 @@ export interface Lv3MicrotaskRequest {
 export interface Lv3MicrotaskResult {
   status: "generated";
   microTask: string;
-  generationSource: "gemini";
+  generationSource: "gemini" | "rule_based";
   memoryEvidence: { sourceDoneEventId: string } | null;
 }
 
@@ -153,7 +153,7 @@ export function requestLv3Microtask(
         data?.status !== "generated" ||
         typeof microTask !== "string" ||
         microTask.trim().length === 0 ||
-        source !== "gemini" ||
+        (source !== "gemini" && source !== "rule_based") ||
         (evidence !== null &&
           (typeof sourceDoneEventId !== "string" ||
             sourceDoneEventId.trim().length === 0))
@@ -164,7 +164,7 @@ export function requestLv3Microtask(
       return {
         status: "generated",
         microTask: microTask.trim(),
-        generationSource: "gemini",
+        generationSource: source,
         // 서버가 발급한 추적 참조를 그대로 운반할 뿐 신뢰 판단은 하지 않는다.
         // 완료 API가 실제 done 이벤트를 다시 조회해 최종 스냅샷을 만든다.
         memoryEvidence:

@@ -1,112 +1,175 @@
 .task-card {
-  background: var(--panel-bg);
+  min-width: 0;
+  padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 18px 20px;
-}
-
-.task-card-clickable {
-  cursor: pointer;
+  background: var(--panel-bg);
 }
 
 .task-card.done {
-  opacity: 0.7;
+  opacity: 0.68;
+  padding-block: 14px;
 }
 
-.task-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--ink);
-  margin: 0;
-}
-
-.task-card-top {
+.task-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+  margin: -4px -4px 8px 0;
+}
+
+.task-card-header-info {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.task-badges {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-status-badge,
+.task-level-badge,
+.task-deadline {
+  display: inline-flex;
+  min-height: 27px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.task-status-badge {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.task-level-badge {
+  min-width: 0;
+  border-color: color-mix(in srgb, var(--task-level-accent, var(--line)) 58%, var(--line));
+  background: color-mix(in srgb, var(--task-level-accent, var(--panel-bg)) 16%, var(--panel-bg));
+  color: color-mix(in srgb, var(--task-level-accent, var(--ink-soft)) 68%, #173544);
+  font-weight: 650;
+}
+
+.task-level-badge strong {
+  font-weight: 850;
+}
+
+.task-level-badge[data-level="1"] {
+  --task-level-accent: var(--level-1);
+}
+
+.task-level-badge[data-level="2"] {
+  --task-level-accent: var(--level-2);
+}
+
+.task-level-badge[data-level="3"] {
+  --task-level-accent: var(--level-3);
+}
+
+.task-level-badge[data-level="4"] {
+  --task-level-accent: var(--level-4);
+}
+
+.task-deadline {
+  flex-shrink: 1;
+  background: var(--panel-bg);
+  color: var(--ink-soft);
+}
+
+.task-deadline-overdue {
+  border-color: color-mix(in srgb, var(--gauge3) 42%, var(--line));
+  color: var(--gauge3);
+}
+
+.task-deadline-urgent {
+  border-color: color-mix(in srgb, var(--gauge4) 46%, var(--line));
+  color: var(--gauge4);
+}
+
+.task-deadline-mobile {
+  display: none;
 }
 
 .task-title-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin: 0 0 10px;
 }
 
-.task-title-row .task-title {
-  flex: 1;
-}
-
-.task-face {
-  font-size: 20px;
-}
-
-.task-delete-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-
-.task-delete-btn:hover {
-  background: var(--bg);
+.task-title {
+  min-width: 0;
+  margin: 0;
   color: var(--ink);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
-.task-delete-btn svg {
-  width: 16px;
-  height: 16px;
+/* Lv별 얼굴 아이콘 — 원(배경)과 얼굴 이미지를 분리된 레이어로 둔다. 원 레이어는
+   overflow:hidden을 쓰지 않으므로(자를 이미지가 애초에 없음) 얼굴 이미지를 살짝
+   위로 올려도 안테나 끝이 잘리지 않는다. 레벨색으로 원을 칠하지 않음 — 배지/얼굴
+   표정으로만 레벨을 표현한다. */
+.task-face {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
 }
 
-.task-meta {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
+.task-face-circle {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(15, 42, 58, 0.06);
 }
 
-.meta-chip {
-  font-size: 13px;
-  color: var(--ink-soft);
-  background: var(--bg);
-  border-radius: 999px;
-  padding: 4px 10px;
-}
-
-.done-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--accent);
-}
-
-.done-chip svg {
-  width: 14px;
-  height: 14px;
+.task-face-img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 115%;
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  /* 에셋 내부 투명 여백 때문에 프레임(48px) 대비 100%보다 키워야 표정이 보인다.
+     안테나 끝만 원 위로 살짝 노출되도록 세로 위치만 소폭 올린다. */
+  transform: translate(-50%, calc(-50% - 2px));
+  pointer-events: none;
 }
 
 .task-details {
   display: grid;
-  gap: 7px;
+  gap: 8px;
   margin-bottom: 14px;
 }
 
 .task-summary {
   display: flex;
+  min-width: 0;
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
   color: var(--ink-soft);
   font-size: 13px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .task-summary-divider {
@@ -114,64 +177,50 @@
 }
 
 .task-reason {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
+  min-width: 0;
   margin: 0;
   color: var(--ink);
   font-size: 13.5px;
   line-height: 1.45;
-}
-
-.task-reason span {
-  flex-shrink: 0;
-  color: var(--ink-soft);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.pressure-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 7px;
-  color: var(--ink-soft);
-  font-size: 13px;
-}
-
-.pressure-heading span:first-child {
-  color: var(--ink);
-  font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
 .pressure-track {
   width: 100%;
   height: 8px;
-  background: var(--bg);
-  border-radius: 999px;
   overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg);
 }
 
 .pressure-fill {
   height: 100%;
-  /* 압력 게이지는 팝업 Lv 색이나 --accent가 아니라 전용 그라데이션을 쓴다 (디자인 Skill 확정 규칙) */
-  background: linear-gradient(
-    90deg,
-    var(--gauge1),
-    var(--gauge2) 40%,
-    var(--gauge3) 70%,
-    var(--gauge4)
-  );
   border-radius: 999px;
+}
+
+.pressure-fill-lv1 {
+  background: linear-gradient(90deg, #a7ded6, #78cfc3);
+}
+
+.pressure-fill-lv2 {
+  background: linear-gradient(90deg, #b6acd3, #9285bc);
+}
+
+.pressure-fill-lv3 {
+  background: linear-gradient(90deg, #e4a8b4, #d77f91);
+}
+
+.pressure-fill-lv4 {
+  background: linear-gradient(90deg, #dc817b, #c94a43);
 }
 
 .next-nudge-note {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 7px;
-  margin-top: 9px;
-  font-size: 13px;
   color: var(--ink-soft);
+  font-size: 13px;
 }
 
 .next-nudge-dot {
@@ -183,14 +232,110 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+.task-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.task-start-btn {
+  min-width: 132px;
+  min-height: 44px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 18px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.task-start-btn:hover {
+  opacity: 0.9;
+}
+
+.task-start-btn:focus-visible,
+.task-delete-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.task-delete-btn {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  padding: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.task-delete-btn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.task-delete-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.task-done-type {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
 @media (max-width: 560px) {
   .task-card {
-    padding: 16px;
+    padding: 15px;
   }
 
-  .pressure-heading {
+  .task-card-header {
+    margin-right: -3px;
+  }
+
+  .task-card-header-info {
     align-items: flex-start;
-    flex-direction: column;
-    gap: 3px;
+  }
+
+  .task-deadline {
+    flex-shrink: 1;
+  }
+
+  .task-deadline-desktop {
+    display: none;
+  }
+
+  .task-deadline-mobile {
+    display: inline;
+  }
+
+  .task-card-actions {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .task-start-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .task-face {
+    width: 40px;
+    height: 40px;
+  }
+
+  .task-face-img {
+    width: 110%;
   }
 }

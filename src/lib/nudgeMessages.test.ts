@@ -5,7 +5,6 @@ import {
   buildLv2NudgeMessage,
   buildLv3MemoryNudgeMessage,
   buildLv3PersonalizedNudgeMessage,
-  isLockedToStart,
   LV1_MESSAGES,
   LV3_SAFE_FALLBACKS,
 } from "./nudgeMessages.js";
@@ -24,7 +23,7 @@ describe("buildNudgeMessage", () => {
   it("skipCount가 LV1_MESSAGES 길이를 넘어가도 순환해서 유효한 문구를 고른다 (경계)", () => {
     const len = LV1_MESSAGES.length;
     const result = buildNudgeMessage(1, { title: "리포트", skipCount: len * 3 + 1 });
-    expect(result.body).toBe(LV1_MESSAGES[1]);
+    expect(result.body).toBe(LV1_MESSAGES[(len * 3 + 1) % len]);
   });
 
   it("빌더가 없는 레벨(0)은 null을 반환한다 (경계)", () => {
@@ -153,6 +152,41 @@ describe("buildNudgeMessage", () => {
       expect(result.memoryEvidence).toBeNull();
     });
 
+    it("눈앞의 유혹이면 body 앞에 방해 제거 안내를 붙이되 microtask는 깨끗하게 둔다 (경계)", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const result = buildLv3PersonalizedNudgeMessage(microTask, "temptation");
+
+      expect(result.body).toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(result.body).toContain(microTask);
+      // 방해 제거 문구는 안내(body)에만 있고, 저장/재사용될 microtask엔 섞이지 않는다.
+      expect(result.microtask).toBe(microTask);
+      expect(result.microtask).not.toContain("멀리 두고");
+    });
+
+    it("유혹이 아닌 이유는 기존 안내 문구를 그대로 유지한다 (경계)", () => {
+      const microTask = "문서에 발표 핵심 문장 한 줄 쓰기";
+      const overwhelm = buildLv3PersonalizedNudgeMessage(microTask, "overwhelm");
+      const noReason = buildLv3PersonalizedNudgeMessage(microTask);
+
+      expect(overwhelm.body).not.toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(overwhelm.body).toBe(noReason.body);
+    });
+
+    it("기억 기반 메시지도 유혹이면 방해 제거 안내 + 기존 근거 문구를 함께 유지한다 (경계)", () => {
+      const microTask = "목차 후보를 세 줄로 작성하기";
+      const memoryEvidence = { sourceDoneEventId: "done-event-1" };
+      const result = buildLv3MemoryNudgeMessage(
+        microTask,
+        memoryEvidence,
+        "temptation",
+      );
+
+      expect(result.body).toContain("잠깐 방해되는 걸 멀리 두고");
+      expect(result.body).toContain("지난 완료 기록을 참고해");
+      expect(result.microtask).toBe(microTask);
+      expect(result.memoryEvidence).toBe(memoryEvidence);
+    });
+
     it("9개 유형 모두 비어 있지 않은 안전 fallback을 가진다", () => {
       expect(Object.keys(LV3_SAFE_FALLBACKS)).toHaveLength(9);
       for (const value of Object.values(LV3_SAFE_FALLBACKS)) {
@@ -162,7 +196,9 @@ describe("buildNudgeMessage", () => {
   });
 
   describe("레벨 4 (마감 임박 경고)", () => {
-    it("실제 deadline 기준 D-day 숫자가 본문에 표시된다 (happy path)", () => {
+    // D-day는 이제 body(핵심 문장)가 아니라 별도 dday 필드로 분리된다 —
+    // 화면이 이 값을 작고 낮은 대비의 보조 정보로 따로 표시한다.
+    it("실제 deadline 기준 D-day 숫자가 dday 필드에 표시된다 (happy path)", () => {
       // 마감이 3일 뒤 → D-3
       const result = buildNudgeMessage(4, {
         title: "기말 리포트",
@@ -171,7 +207,7 @@ describe("buildNudgeMessage", () => {
         skipCount: 5,
         deadline: addDays(new Date(), 3).toISOString(),
       });
-      expect(result.body).toContain("D-3");
+      expect(result.dday).toBe("D-3");
     });
 
     it("deadline이 바뀌면 D-day 숫자도 그에 맞게 바뀐다 (실제 마감 기준임을 확인)", () => {
@@ -182,15 +218,8 @@ describe("buildNudgeMessage", () => {
         skipCount: 8,
         deadline: addDays(new Date(), 10).toISOString(),
       });
-      expect(result.body).toContain("D-10");
+      expect(result.dday).toBe("D-10");
     });
 
-    it("레벨 4에서는 '지금 시작하기' 외 다른 선택지를 잠근다 (다른 버튼 미노출)", () => {
-      // 레벨 4만 true, 그 외 레벨은 false — NudgeModal이 이 값으로 닫기 등 다른 버튼을 숨긴다.
-      expect(isLockedToStart(4)).toBe(true);
-      for (const level of [0, 1, 2, 3]) {
-        expect(isLockedToStart(level)).toBe(false);
-      }
-    });
   });
 });

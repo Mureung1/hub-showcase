@@ -1,5 +1,6 @@
 {
   "buildCommand": "npx prisma generate --schema=server/prisma/schema.prisma && npm run build:server && vite build",
+  "regions": ["icn1"],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }

@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
@@ -25,15 +26,24 @@ vi.mock("../lib/api", () => ({
 }));
 
 vi.mock("./TaskCard", () => ({
-  default: ({ task, onClick }) => (
-    <button data-testid={`task-${task.id}`} onClick={onClick}>
-      {task.title}
-    </button>
+  default: ({ task, onClick, onDelete }) => (
+    <div data-testid={`card-${task.id}`}>
+      <button data-testid={`task-${task.id}`} onClick={onClick}>
+        {task.title}
+      </button>
+      <button aria-label={`delete-${task.id}`} onClick={onDelete}>
+        delete
+      </button>
+    </div>
   ),
 }));
 
 vi.mock("./EmptyState", () => ({
-  default: () => <div data-testid="empty-state" />,
+  default: ({ actionLabel }) => (
+    <a data-testid="empty-state" href="/register">
+      {actionLabel}
+    </a>
+  ),
 }));
 
 vi.mock("./NudgeModal", () => ({
@@ -87,6 +97,7 @@ vi.mock("./NudgeModal", () => ({
           onStart({
             entryMode: "intervention",
             entryLevel: task.level,
+            journeyLevel: task.level,
             microTask: task.level === 1 ? null : "open one paragraph",
             generationSource: task.level === 1 ? "none" : "rule_based",
             memoryEvidence: null,
@@ -106,9 +117,11 @@ vi.mock("./FocusMode", () => ({
     entryMode,
     microTask,
     entryLevel,
+    journeyLevel,
     generationSource,
     memoryEvidence,
     onSessionCompleted,
+    onComplete,
     onStop,
   }) => (
     <div
@@ -118,12 +131,14 @@ vi.mock("./FocusMode", () => ({
       data-entry-mode={entryMode ?? ""}
       data-micro-task={microTask ?? ""}
       data-entry-level={entryLevel ?? ""}
+      data-journey-level={journeyLevel ?? ""}
       data-generation-source={generationSource ?? ""}
       data-memory-evidence={
         memoryEvidence ? JSON.stringify(memoryEvidence) : ""
       }
     >
       <button onClick={() => onSessionCompleted?.()}>complete-session</button>
+      <button onClick={() => onComplete?.()}>leave-completion</button>
       <button onClick={() => onStop?.()}>stop-session</button>
     </div>
   ),
@@ -156,16 +171,37 @@ function setupApi(
   {
     failNotificationOnceFor = null,
     failReasonOnceFor = null,
+    failHistory = false,
+    history = [],
+    includeStreak = true,
+    streak = 0,
   } = {},
 ) {
   let serverTasks = initialTasks.map((task) => ({ ...task }));
+  let serverHistory = history.map((entry) => ({ ...entry }));
   const notificationCalls = [];
+  let taskListCalls = 0;
+  let historyListCalls = 0;
   let failed = false;
   let reasonFailed = false;
 
   apiFetch.mockImplementation(async (path, options = {}) => {
     if (path === "/api/tasks" && !options.method) {
-      return { data: serverTasks.map((task) => ({ ...task })) };
+      taskListCalls += 1;
+      const response = { data: serverTasks.map((task) => ({ ...task })) };
+      if (includeStreak) response.streak = streak;
+      return response;
+    }
+    if (path === "/api/history" && !options.method) {
+      historyListCalls += 1;
+      if (failHistory) throw new Error("history failed");
+      return { data: serverHistory.map((entry) => ({ ...entry })) };
+    }
+
+    const deleteMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
+    if (deleteMatch && options.method === "DELETE") {
+      serverTasks = serverTasks.filter((task) => task.id !== deleteMatch[1]);
+      return { data: null };
     }
 
     const eventMatch = path.match(/^\/api\/tasks\/([^/]+)\/events$/);
@@ -220,6 +256,11 @@ function setupApi(
     callsFor: (taskId) =>
       notificationCalls.filter((calledId) => calledId === taskId).length,
     allCalls: () => [...notificationCalls],
+    taskListCalls: () => taskListCalls,
+    historyListCalls: () => historyListCalls,
+    updateHistory: (entries) => {
+      serverHistory = entries.map((entry) => ({ ...entry }));
+    },
     updateTask: (taskId, updates) => {
       serverTasks = serverTasks.map((task) =>
         task.id === taskId ? { ...task, ...updates } : task,
@@ -350,6 +391,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     expect(focus).toHaveAttribute("data-entry-mode", "intervention");
     expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
     expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(focus).toHaveAttribute("data-journey-level", "2");
     expect(focus).toHaveAttribute("data-generation-source", "rule_based");
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
       version: 2,
@@ -357,6 +399,7 @@ describe("HomePage response-driven nudge scheduling", () => {
       startedAt: NOW.getTime() + 3_000,
       entryMode: "intervention",
       entryLevel: 2,
+      journeyLevel: 2,
       microTask: "open one paragraph",
       generationSource: "rule_based",
       memoryEvidence: null,
@@ -366,8 +409,10 @@ describe("HomePage response-driven nudge scheduling", () => {
     expect(api.callsFor("a")).toBe(1);
   });
 
-  it("stores a null-metadata session when Focus starts from a Task card", async () => {
-    setupApi([makeTask({ id: "a", level: 1 })]);
+  it.each([1, 2, 3, 4])(
+    "stores a direct session with Journey level %s when Focus starts from a Task card",
+    async (level) => {
+    setupApi([makeTask({ id: "a", level })]);
     await renderHome();
 
     fireEvent.click(screen.getByTestId("task-a"));
@@ -376,17 +421,23 @@ describe("HomePage response-driven nudge scheduling", () => {
       "data-task-id",
       "a",
     );
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute(
+      "data-journey-level",
+      String(level),
+    );
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
       version: 2,
       taskId: "a",
       startedAt: NOW.getTime(),
       entryMode: "direct",
       entryLevel: null,
+      journeyLevel: level,
       microTask: null,
       generationSource: "none",
       memoryEvidence: null,
     });
-  });
+    },
+  );
 
   it("removes the stored session when Focus reports completion success", async () => {
     setupApi([makeTask({ id: "a", level: 1 })]);
@@ -401,7 +452,7 @@ describe("HomePage response-driven nudge scheduling", () => {
   });
 
   it("removes the stored session and closes Focus after a successful stop", async () => {
-    setupApi([makeTask({ id: "a", level: 1 })]);
+    const api = setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
     fireEvent.click(screen.getByTestId("task-a"));
     expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).not.toBeNull();
@@ -413,6 +464,7 @@ describe("HomePage response-driven nudge scheduling", () => {
 
     expect(sessionStorage.getItem(FOCUS_SESSION_KEY)).toBeNull();
     expect(screen.queryByTestId("focus-mode")).not.toBeInTheDocument();
+    expect(api.taskListCalls()).toBe(2);
   });
 
   it("restores a valid active Focus session before scheduling its notification", async () => {
@@ -422,6 +474,7 @@ describe("HomePage response-driven nudge scheduling", () => {
       startedAt: NOW.getTime() - 125_000,
       entryMode: "intervention",
       entryLevel: 2,
+      journeyLevel: 2,
       microTask: "open one paragraph",
       generationSource: "rule_based",
       memoryEvidence: null,
@@ -438,6 +491,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     );
     expect(focus).toHaveAttribute("data-micro-task", "open one paragraph");
     expect(focus).toHaveAttribute("data-entry-level", "2");
+    expect(focus).toHaveAttribute("data-journey-level", "2");
     expect(focus).toHaveAttribute("data-entry-mode", "intervention");
     expect(focus).toHaveAttribute("data-generation-source", "rule_based");
 
@@ -500,6 +554,7 @@ describe("HomePage response-driven nudge scheduling", () => {
       startedAt: NOW.getTime() - 10_000,
       entryMode: "intervention",
       entryLevel: 2,
+      journeyLevel: 2,
       microTask: "existing step",
       generationSource: "rule_based",
       memoryEvidence: null,
@@ -578,6 +633,8 @@ describe("HomePage response-driven nudge scheduling", () => {
       "2",
     );
     fireEvent.click(screen.getByText("resolve-lv2-action"));
+    expect(screen.getByText("이전에 제안한 첫 행동")).toBeInTheDocument();
+    expect(screen.getByText("resolved Lv2 action")).toBeInTheDocument();
     fireEvent.click(screen.getByText("close-modal"));
 
     await advance(6_000);
@@ -727,6 +784,9 @@ describe("HomePage response-driven nudge scheduling", () => {
       if (path === "/api/tasks" && !options.method) {
         return Promise.resolve({ data: [task] });
       }
+      if (path === "/api/history" && !options.method) {
+        return Promise.resolve({ data: [] });
+      }
       return notificationPromise;
     });
 
@@ -743,5 +803,350 @@ describe("HomePage response-driven nudge scheduling", () => {
     });
 
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("renders the date streak chip using the server's streak value", async () => {
+    const task = makeTask({ id: "a", level: 0 });
+    setupApi([task], { streak: 5 });
+
+    await renderHome();
+
+    expect(screen.getByText("연속 완료")).toBeInTheDocument();
+    expect(screen.getByText("5일")).toBeInTheDocument();
+  });
+
+  it("Home Summary 네 개를 Task와 History 기준으로 표시한다", async () => {
+    const api = setupApi(
+      [
+        makeTask({ id: "active", status: "active" }),
+        makeTask({ id: "waiting", status: "waiting" }),
+        makeTask({ id: "done", status: "done" }),
+      ],
+      {
+        streak: 4,
+        history: [
+          { taskId: "history-1", completedAt: NOW.toISOString() },
+          { taskId: "history-2", completedAt: NOW.toISOString() },
+        ],
+      },
+    );
+
+    await renderHome();
+
+    const activeCard = screen.getByText("진행 중").closest(".stat-chip");
+    const urgentCard = screen.getByText("마감 임박").closest(".stat-chip");
+    const todayCard = screen.getByText("오늘 완료").closest(".stat-chip");
+    const streakCard = screen.getByText("연속 완료").closest(".stat-chip");
+
+    expect(within(activeCard).getByText("1개")).toBeInTheDocument();
+    expect(within(urgentCard).getByText("2개")).toBeInTheDocument();
+    expect(within(urgentCard).getByText("기한 초과 포함")).toBeInTheDocument();
+    expect(within(todayCard).getByText("2개")).toBeInTheDocument();
+    expect(within(streakCard).getByText("4일")).toBeInTheDocument();
+    expect(api.taskListCalls()).toBe(1);
+    expect(api.historyListCalls()).toBe(1);
+    expect(
+      screen.getByRole("heading", { name: "task active" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "진행 중인 할 일" }),
+    ).toBeInTheDocument();
+  });
+
+  it("History 성공 응답이 빈 배열이면 오늘 완료를 0개로 표시한다", async () => {
+    setupApi([makeTask({ id: "active" })], { history: [] });
+
+    await renderHome();
+
+    const todayCard = screen.getByText("오늘 완료").closest(".stat-chip");
+    expect(within(todayCard).getByText("0개")).toBeInTheDocument();
+  });
+
+  it("History 요청 실패 시 Home을 유지하고 오늘 완료만 대시로 표시한다", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    setupApi([makeTask({ id: "active" })], { failHistory: true });
+
+    await renderHome();
+
+    const todayCard = screen.getByText("오늘 완료").closest(".stat-chip");
+    expect(within(todayCard).getByText("—")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "task active" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("task-active")).toBeInTheDocument();
+    expect(consoleError).toHaveBeenCalled();
+  });
+
+  it.each(["5", -1, 1.5, Infinity, NaN])(
+    "비정상 streak %s는 0일로 표시한다",
+    async (streak) => {
+      setupApi([makeTask({ id: "active" })], { streak });
+
+      await renderHome();
+
+      const streakCard = screen.getByText("연속 완료").closest(".stat-chip");
+      expect(within(streakCard).getByText("0일")).toBeInTheDocument();
+    },
+  );
+
+  it("streak가 누락되면 0일로 표시한다", async () => {
+    setupApi([makeTask({ id: "active" })], { includeStreak: false });
+
+    await renderHome();
+
+    const streakCard = screen.getByText("연속 완료").closest(".stat-chip");
+    expect(within(streakCard).getByText("0일")).toBeInTheDocument();
+  });
+
+  it("Focus 종료 후 Task와 History를 다시 조회해 오늘 완료를 갱신한다", async () => {
+    const api = setupApi([makeTask({ id: "active" })], { history: [] });
+    await renderHome();
+    expect(
+      within(screen.getByText("오늘 완료").closest(".stat-chip")).getByText(
+        "0개",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("task-active"));
+    api.updateHistory([
+      { taskId: "active", completedAt: NOW.toISOString() },
+    ]);
+    await act(async () => {
+      fireEvent.click(screen.getByText("leave-completion"));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      within(screen.getByText("오늘 완료").closest(".stat-chip")).getByText(
+        "1개",
+      ),
+    ).toBeInTheDocument();
+    expect(api.taskListCalls()).toBe(2);
+    expect(api.historyListCalls()).toBe(2);
+  });
+
+  it("첫 번째 active Task를 Hero에 표시하고 기존 목록에도 유지한다", async () => {
+    setupApi([
+      makeTask({ id: "done", status: "done", level: 0 }),
+      makeTask({ id: "waiting", status: "waiting", level: 0 }),
+      makeTask({ id: "first-active", status: "active", level: 2 }),
+      makeTask({ id: "second-active", status: "active", level: 3 }),
+    ]);
+
+    await renderHome();
+
+    expect(
+      screen.getByRole("heading", { name: "task first-active" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "task second-active" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("task-first-active")).toBeInTheDocument();
+    expect(screen.getByTestId("task-second-active")).toBeInTheDocument();
+  });
+
+  it("Hero CTA는 기존 direct Focus 계약을 유지한다", async () => {
+    setupApi([makeTask({ id: "hero", level: 3 })]);
+    await renderHome();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "할 일 바로 시작하기" }),
+    );
+
+    const focus = screen.getByTestId("focus-mode");
+    expect(focus).toHaveAttribute("data-task-id", "hero");
+    expect(focus).toHaveAttribute("data-entry-mode", "direct");
+    expect(focus).toHaveAttribute("data-entry-level", "");
+    expect(focus).toHaveAttribute("data-journey-level", "3");
+    expect(focus).toHaveAttribute("data-micro-task", "");
+    expect(focus).toHaveAttribute("data-generation-source", "none");
+  });
+
+  it("active Task가 없으면 빈 Hero를 표시하고 기존 Task 목록을 유지한다", async () => {
+    setupApi([
+      makeTask({ id: "waiting", status: "waiting", level: 0 }),
+      makeTask({ id: "done", status: "done", level: 0 }),
+    ]);
+
+    await renderHome();
+
+    expect(
+      screen.getByRole("heading", { name: "아직 시작할 여정이 없어요." }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("task-waiting")).toBeInTheDocument();
+    expect(screen.getByTestId("task-done")).toBeInTheDocument();
+  });
+
+  it("Task가 전혀 없으면 빈 Hero와 기존 EmptyState의 역할을 분리한다", async () => {
+    setupApi([]);
+    await renderHome();
+
+    expect(
+      screen.getByRole("heading", { name: "아직 시작할 여정이 없어요." }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "할 일 바로 시작하기" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("상태별 섹션으로 나누되 각 그룹의 API 배열 순서를 유지한다", async () => {
+    setupApi([
+      makeTask({ id: "active-1", status: "active" }),
+      makeTask({ id: "done-1", status: "done" }),
+      makeTask({ id: "waiting-1", status: "waiting" }),
+      makeTask({ id: "active-2", status: "active" }),
+      makeTask({ id: "done-2", status: "done" }),
+    ]);
+
+    await renderHome();
+
+    const activeSection = screen.getByRole("region", {
+      name: "진행 중인 할 일",
+    });
+    const waitingSection = screen.getByRole("region", { name: "시작 예정" });
+    const doneSection = screen.getByRole("region", { name: "완료한 할 일" });
+    const taskIds = (section) =>
+      Array.from(section.querySelectorAll('[data-testid^="task-"]')).map(
+        (element) => element.dataset.testid,
+      );
+
+    expect(taskIds(activeSection)).toEqual(["task-active-1", "task-active-2"]);
+    expect(taskIds(waitingSection)).toEqual(["task-waiting-1"]);
+    expect(taskIds(doneSection)).toEqual(["task-done-1", "task-done-2"]);
+    expect(
+      within(activeSection).getByLabelText("진행 중인 할 일 2개"),
+    ).toBeInTheDocument();
+  });
+
+  it("완료 목록은 세 개만 표시하고 같은 목록 안에서 펼치고 접는다", async () => {
+    setupApi(
+      Array.from({ length: 5 }, (_, index) =>
+        makeTask({ id: `done-${index + 1}`, status: "done" }),
+      ),
+    );
+
+    await renderHome();
+
+    const doneSection = screen.getByRole("region", { name: "완료한 할 일" });
+    const toggle = within(doneSection).getByRole("button", {
+      name: "완료한 할 일 모두 보기",
+    });
+    expect(within(doneSection).getAllByTestId(/^task-done-/)).toHaveLength(3);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    expect(within(doneSection).getAllByTestId(/^task-done-/)).toHaveLength(5);
+    expect(
+      within(doneSection).getByRole("button", { name: "완료 목록 접기" }),
+    ).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(
+      within(doneSection).getByRole("button", { name: "완료 목록 접기" }),
+    );
+    expect(within(doneSection).getAllByTestId(/^task-done-/)).toHaveLength(3);
+  });
+
+  it("펼친 완료 목록이 세 개 이하로 줄면 기본 상태로 돌아가고 토글을 제거한다", async () => {
+    setupApi(
+      Array.from({ length: 4 }, (_, index) =>
+        makeTask({ id: `done-${index + 1}`, status: "done" }),
+      ),
+    );
+
+    await renderHome();
+    const doneSection = screen.getByRole("region", { name: "완료한 할 일" });
+    fireEvent.click(
+      within(doneSection).getByRole("button", {
+        name: "완료한 할 일 모두 보기",
+      }),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "delete-done-4" }));
+      await Promise.resolve();
+    });
+
+    expect(within(doneSection).getAllByTestId(/^task-done-/)).toHaveLength(3);
+    expect(
+      within(doneSection).queryByRole("button", {
+        name: /완료한 할 일 모두 보기|완료 목록 접기/,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("알 수 없는 status도 기존 TaskCard fallback을 유지해 화면에서 누락하지 않는다", async () => {
+    setupApi([makeTask({ id: "paused", status: "paused", level: 2 })]);
+
+    await renderHome();
+
+    const otherSection = screen.getByRole("region", { name: "기타 상태" });
+    expect(within(otherSection).getByTestId("task-paused")).toBeInTheDocument();
+    fireEvent.click(within(otherSection).getByTestId("task-paused"));
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute(
+      "data-task-id",
+      "paused",
+    );
+  });
+
+  it.each([
+    ["active", "active"],
+    ["waiting", "waiting"],
+    ["done", "done"],
+  ])(
+    "%s Task만 있어도 공통 새 할 일 CTA를 한 번 표시한다",
+    async (_label, status) => {
+      setupApi([makeTask({ id: status, status })]);
+
+      await renderHome();
+
+      const links = screen.getAllByRole("link", { name: "+ 새 할 일" });
+      expect(links).toHaveLength(1);
+      expect(links[0]).toHaveAttribute("href", "/register");
+    },
+  );
+
+  it("Task가 없으면 공통 CTA 대신 기존 EmptyState CTA만 표시한다", async () => {
+    setupApi([]);
+
+    await renderHome();
+
+    expect(screen.queryByRole("link", { name: "+ 새 할 일" })).toBeNull();
+    expect(screen.getByTestId("empty-state")).toHaveAttribute(
+      "href",
+      "/register",
+    );
+  });
+
+  it("마감 임박이 있을 때만 해당 Stats 카드를 약하게 강조한다", async () => {
+    setupApi([
+      makeTask({
+        id: "urgent",
+        deadline: "2026-07-23T11:59:59.000Z",
+      }),
+    ]);
+
+    await renderHome();
+
+    const urgentCard = screen.getByText("마감 임박").closest(".stat-chip");
+    const streakCard = screen.getByText("연속 완료").closest(".stat-chip");
+    expect(urgentCard).toHaveClass("stat-chip-urgent");
+    expect(streakCard).not.toHaveClass("stat-chip-urgent");
+  });
+
+  it("마감 임박이 0개이면 Stats 강조를 적용하지 않는다", async () => {
+    setupApi([
+      makeTask({
+        id: "later",
+        deadline: "2026-08-01T12:00:00.000Z",
+      }),
+    ]);
+
+    await renderHome();
+
+    expect(
+      screen.getByText("마감 임박").closest(".stat-chip"),
+    ).not.toHaveClass("stat-chip-urgent");
   });
 });

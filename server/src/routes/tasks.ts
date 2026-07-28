@@ -1,7 +1,11 @@
 import { Router } from "express";
 import type { Prisma, Task } from "@prisma/client";
 import { prisma } from "../db/client.js";
-import { calculateLevel } from "../lib/scoring.js";
+import {
+  calculateLevel,
+  calculateStoppedRelief,
+  normalizeStoppedDurationSeconds,
+} from "../lib/scoring.js";
 import { getCurrentReason } from "../db/avoidanceReasons.js";
 import { broadcastLevelUpPush } from "../lib/broadcastPush.js";
 import {
@@ -12,6 +16,7 @@ import {
   type MemoryEvidenceSnapshot,
 } from "../lib/completionSnapshot.js";
 import { normalizeStoredMicroTask } from "../lib/lv3MemoryCandidate.js";
+import { calculateDateStreak } from "../lib/dateStreak.js";
 
 const router = Router();
 
@@ -32,17 +37,28 @@ function withReason(
 
 router.get("/", async (_req, res) => {
   try {
-    const tasks = await prisma.task.findMany({
-      include: {
-        // Lv1/Lv3 재확인이나 최초 등록으로 쌓인 회피 이유 중 가장 최근 것만 필요하다
-        // (nudgeMessages.js의 Lv2 빌더가 이 값으로 getMicrotask를 호출한다).
-        avoidanceReasons: { orderBy: { createdAt: "desc" }, take: 1 },
-      },
-    });
+    const [tasks, doneEvents] = await Promise.all([
+      prisma.task.findMany({
+        orderBy: { createdAt: "desc" }, // 최신 등록된 task가 맨 위에 오도록
+        include: {
+          // Lv1/Lv3 재확인이나 최초 등록으로 쌓인 회피 이유 중 가장 최근 것만 필요하다
+          // (nudgeMessages.js의 Lv2 빌더가 이 값으로 getMicrotask를 호출한다).
+          avoidanceReasons: { orderBy: { createdAt: "desc" }, take: 1 },
+        },
+      }),
+      prisma.taskEvent.findMany({
+        where: { eventType: "done" },
+        select: { occurredAt: true },
+      }),
+    ]);
     const data = tasks.map(({ avoidanceReasons, ...task }) =>
       withReason(task, avoidanceReasons[0] ?? null),
     );
-    res.json({ data });
+    const streak = calculateDateStreak(
+      doneEvents.map((event) => event.occurredAt),
+      new Date(),
+    );
+    res.json({ data, streak });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -90,6 +106,10 @@ router.post("/", async (req, res) => {
 router.post("/:id/events", async (req, res) => {
   const { id } = req.params;
   const { eventType, durationSeconds, entryLevel, microTask } = req.body;
+  const stoppedDurationSeconds =
+    eventType === "stopped"
+      ? normalizeStoppedDurationSeconds(durationSeconds)
+      : null;
   let doneContext: DoneContextInput = {
     entryMode: null,
     generationSource: null,
@@ -162,7 +182,7 @@ router.post("/:id/events", async (req, res) => {
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id } });
 
       if (eventType === "done") {
-        // status 전환을 먼저 선점한 요청만 완료 이벤트와 streak를 기록한다.
+        // status 전환을 먼저 선점한 요청만 완료 이벤트를 기록한다.
         // 동시 요청은 행 잠금 뒤 조건을 다시 평가하므로 한 요청만 count=1을 얻는다.
         const claimed = await tx.task.updateMany({
           where: { id, status: { not: "done" } },
@@ -170,7 +190,7 @@ router.post("/:id/events", async (req, res) => {
         });
 
         // 이미 완료된 요청은 첫 완료 결과를 그대로 성공으로 반환한다.
-        // 새 이벤트를 만들거나 기존 완료 스냅샷/streak를 덮어쓰지 않는다.
+        // 새 이벤트를 만들거나 기존 완료 스냅샷을 덮어쓰지 않는다.
         if (claimed.count === 0) {
           return tx.task.findUniqueOrThrow({ where: { id } });
         }
@@ -230,14 +250,8 @@ router.post("/:id/events", async (req, res) => {
           },
         });
 
-        const wasFirstTry = currentTask.skipCount === 0;
-
-        await tx.appState.upsert({
-          where: { id: "singleton" },
-          create: { id: "singleton", streak: wasFirstTry ? 1 : 0 },
-          update: { streak: wasFirstTry ? { increment: 1 } : 0 },
-        });
-
+        // 날짜 기반 streak는 done 이벤트의 occurredAt으로 조회 시 계산한다.
+        // 개입 여부나 같은 날의 완료 개수는 이 완료 트랜잭션에 영향을 주지 않는다.
         return tx.task.findUniqueOrThrow({ where: { id } });
       }
 
@@ -246,15 +260,22 @@ router.post("/:id/events", async (req, res) => {
           taskId: id,
           eventType,
           occurredAt: new Date(),
+          ...(eventType === "stopped" && stoppedDurationSeconds !== null
+            ? { durationSeconds: stoppedDurationSeconds }
+            : {}),
         },
       });
 
       if (eventType === "stopped") {
-        const nextSkipCount = Math.max(0, Math.floor(currentTask.skipCount / 2));
+        const relief = calculateStoppedRelief(
+          currentTask.skipCount,
+          stoppedDurationSeconds,
+        );
 
+        // stopped는 Focus 완화 정책만 적용하고 날짜 기반 streak에는 영향을 주지 않는다.
         return tx.task.update({
           where: { id },
-          data: { skipCount: nextSkipCount, level: calculateLevel(nextSkipCount) },
+          data: { skipCount: relief.skipCount, level: relief.level },
         });
       }
 

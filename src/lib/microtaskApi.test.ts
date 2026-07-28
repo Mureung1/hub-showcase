@@ -224,6 +224,24 @@ describe("requestLv3Microtask", () => {
     );
   });
 
+  it("서버 fallback(source=rule_based) 응답도 정상 처리하고 generationSource를 그대로 유지한다", async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: {
+        status: "generated",
+        microTask: "문서에 핵심 주장 한 문장 쓰기",
+        source: "rule_based",
+        memoryEvidence: null,
+      },
+    });
+
+    await expect(requestLv3Microtask(LV3_INPUT)).resolves.toEqual({
+      status: "generated",
+      microTask: "문서에 핵심 주장 한 문장 쓰기",
+      generationSource: "rule_based",
+      memoryEvidence: null,
+    });
+  });
+
   it("3초가 지나면 요청을 abort한다", async () => {
     vi.useFakeTimers();
     vi.mocked(apiFetch).mockImplementation((_path, options) => {
@@ -251,6 +269,21 @@ describe("requestLv3Microtask", () => {
         microTask: "목차 후보를 세 줄로 작성하기",
         source: "gemini",
         memoryEvidence: { sourceDoneEventId: "" },
+      },
+    });
+
+    await expect(requestLv3Microtask(LV3_INPUT)).rejects.toThrow(
+      "invalid_lv3_microtask_response",
+    );
+  });
+
+  it("gemini/rule_based가 아닌 source는 거부한다", async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      data: {
+        status: "generated",
+        microTask: "목차 후보를 세 줄로 작성하기",
+        source: "unknown",
+        memoryEvidence: null,
       },
     });
 

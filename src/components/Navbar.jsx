@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import nagbotFaceLv0 from "../assets/characters/nagbot_face_lv0.png";
 import { subscribeToPush } from "../lib/pushSubscribe";
 import "./Navbar.css";
 
 const NAV_LINKS = [
   { to: "/home", label: "홈" },
-  { to: "/register", label: "할일 등록" },
+  { to: "/register", label: "할 일 등록" },
   { to: "/history", label: "히스토리" },
 ];
 
@@ -54,9 +55,12 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <NavLink className="brand" to="/landing">
-          <span className="brand-icon" aria-hidden="true">
-            🤖
-          </span>
+          <img
+            className="brand-logo"
+            src={nagbotFaceLv0}
+            alt=""
+            aria-hidden="true"
+          />
           잔소리봇
         </NavLink>
         <div className="nav-links">

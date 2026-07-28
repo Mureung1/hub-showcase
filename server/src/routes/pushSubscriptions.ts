@@ -42,4 +42,30 @@ router.post("/", async (req, res) => {
   }
 });
 
+// 만료/불필요해진 구독을 직접 정리할 때 쓴다(410/404 자동 정리는 broadcastPush.ts가
+// 이미 담당하므로, 이 라우트는 운영자가 수동으로 특정 구독을 지우는 경로다).
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const existing = await prisma.pushSubscription.findUnique({ where: { id } });
+
+    if (!existing) {
+      res.status(404).json({
+        error: { code: "not_found", message: "구독 정보를 찾을 수 없습니다." },
+      });
+      return;
+    }
+
+    await prisma.pushSubscription.delete({ where: { id } });
+
+    res.json({ data: { id } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: { code: "internal_error", message: "구독 정보를 삭제하지 못했습니다." },
+    });
+  }
+});
+
 export default router;

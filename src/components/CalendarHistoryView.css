@@ -59,12 +59,15 @@
 }
 
 .calendar-day-today {
-  border-color: var(--accent);
+  outline: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  outline-offset: -1px;
 }
 
 .calendar-day-selected {
   background: var(--accent);
   border-color: var(--accent);
+  /* 오늘 날짜가 선택된 경우 today의 outline이 겹치지 않고 선택 스타일만 보이게 한다. */
+  outline: none;
 }
 
 .calendar-day-selected .calendar-day-number {
@@ -114,11 +117,82 @@
 
 .calendar-day-detail-item {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 2px;
   font-size: 13px;
   color: var(--ink);
 }
 
-.calendar-day-detail-status {
+/* marker(4~5px 원형 점) + 제목을 한 행에 두되, 각자 자기 박스를 갖는 flex item으로
+   둬서 제목이 줄바꿈될 때 두 번째 줄도 marker가 아니라 제목 시작 위치에 맞춰진다. */
+.calendar-day-detail-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.calendar-day-detail-marker {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  align-self: center;
+  border-radius: 999px;
+  background: var(--ink-soft);
+  opacity: 0.6;
+}
+
+.calendar-day-detail-item-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.calendar-day-detail-summary {
+  font-size: 12px;
   color: var(--ink-soft);
+}
+
+.calendar-day-detail-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--calendar-level-accent, var(--line)) 58%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--calendar-level-accent, var(--panel-bg)) 16%, var(--panel-bg));
+  color: color-mix(in srgb, var(--calendar-level-accent, var(--ink-soft)) 68%, #173544);
+  font-weight: 700;
+}
+
+.calendar-day-detail-level[data-level="1"] {
+  --calendar-level-accent: var(--level-1);
+}
+
+.calendar-day-detail-level[data-level="2"] {
+  --calendar-level-accent: var(--level-2);
+}
+
+.calendar-day-detail-level[data-level="3"] {
+  --calendar-level-accent: var(--level-3);
+}
+
+.calendar-day-detail-level[data-level="4"] {
+  --calendar-level-accent: var(--level-4);
+}
+
+.calendar-day-detail-status {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* 데스크톱에서만 셀 높이를 약간 줄여 달력+선택 날짜 기록을 함께 보기 쉽게 한다.
+   열 수/요일 구조/aspect-ratio 기반 계산 방식은 그대로 두고 비율만 낮춘다.
+   모바일은 클릭 영역이 좁아지지 않도록 기존 정사각형(1:1)을 유지한다. */
+@media (min-width: 769px) {
+  .calendar-day {
+    aspect-ratio: 1 / 0.85;
+  }
 }

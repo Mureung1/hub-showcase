@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { addMonths, subMonths, isSameMonth, isSameDay, isToday, format } from "date-fns";
 import { buildMonthGrid, dateKey } from "../lib/historyGrouping";
+import { formatFocusDuration } from "../lib/historyInsights";
 import "./CalendarHistoryView.css";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -10,6 +11,16 @@ const STATUS_LABELS = {
   active: "진행 중",
   done: "완료",
 };
+
+// 완료된 task만 리스트 뷰에 준하는 요약(완료시각·집중시간·진입레벨)을 보여준다 —
+// 첫 행동/회피 이유는 여기서는 표시하지 않는다(컴팩트 행 유지 목적).
+function formatCompletionTimeAndDuration(task) {
+  const parts = [`${format(new Date(task.completedAt), "HH:mm")} 완료`];
+  if (task.durationSeconds != null) {
+    parts.push(`집중 ${formatFocusDuration(task.durationSeconds)}`);
+  }
+  return parts.join(" · ");
+}
 
 function CalendarHistoryView({ tasksByDate, selectedDate, onSelectDate, initialMonth }) {
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
@@ -74,20 +85,43 @@ function CalendarHistoryView({ tasksByDate, selectedDate, onSelectDate, initialM
       {selectedDate && (
         <div className="calendar-day-detail">
           <p className="calendar-day-detail-title">
-            {format(selectedDate, "M월 d일")}에 등록된 할일
+            {format(selectedDate, "M월 d일")} 완료 기록
           </p>
           {selectedTasks.length === 0 ? (
             <p className="calendar-day-detail-empty">이 날 등록된 할일이 없어요.</p>
           ) : (
             <ul className="calendar-day-detail-list">
-              {selectedTasks.map((task) => (
-                <li key={task.id} className="calendar-day-detail-item">
-                  <span>{task.title}</span>
-                  <span className="calendar-day-detail-status">
-                    {STATUS_LABELS[task.status]}
-                  </span>
-                </li>
-              ))}
+              {selectedTasks.map((task) => {
+                const isDone = task.status === "done" && Boolean(task.completedAt);
+                return (
+                  <li key={task.id} className="calendar-day-detail-item">
+                    <span className="calendar-day-detail-title-row">
+                      <span className="calendar-day-detail-marker" aria-hidden="true" />
+                      <span className="calendar-day-detail-item-title">{task.title}</span>
+                    </span>
+                    {isDone ? (
+                      <span className="calendar-day-detail-summary">
+                        {formatCompletionTimeAndDuration(task)}
+                        {task.entryLevel != null && (
+                          <>
+                            {" · "}
+                            <span
+                              className="calendar-day-detail-level"
+                              data-level={task.entryLevel}
+                            >
+                              Lv{task.entryLevel}
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="calendar-day-detail-status">
+                        {STATUS_LABELS[task.status]}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

@@ -1,15 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  ALLOWED_RESULT_VERBS,
   DEFAULT_GEMINI_MODEL,
   GEMINI_TIMEOUT_MS,
+  GeminiMicrotaskError,
   LV3_PROMPT_VERSION,
   PROMPT_VERSION,
   createGeminiMicrotaskCacheKey,
   generateGeminiMicrotask,
   generateGeminiLv3Microtask,
-  isValidLv3MicrotaskQuality,
+  getServerLv2FallbackMicroTask,
+  getServerLv3FallbackMicroTask,
+  isChainedAction,
+  isFallbackEligibleError,
+  isValidMicrotaskQuality,
   resetGeminiMicrotaskCacheForTests,
-  validateLv3MicrotaskQuality,
+  validateMicrotaskQuality,
   type GeminiLv3MicrotaskInput,
   type GeminiMicrotaskInput,
 } from "./geminiMicrotask.js";
@@ -87,10 +93,10 @@ describe("generateGeminiMicrotask", () => {
   it("공식 v1 Interactions 요청 필드와 구조화 출력 형식을 사용한다", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(geminiResponse("문서 파일을 열고 제목을 입력하기"));
+      .mockResolvedValue(geminiResponse("문서 파일에 제목 한 줄 입력하기"));
 
     await expect(generateGeminiMicrotask(INPUT)).resolves.toBe(
-      "문서 파일을 열고 제목을 입력하기",
+      "문서 파일에 제목 한 줄 입력하기",
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -116,6 +122,134 @@ describe("generateGeminiMicrotask", () => {
       "x-goog-api-key": "test-secret-key",
     });
   });
+
+  it("Lv2 프롬프트에도 허용 동사·금지 동사·준비/결과 분리 지시가 들어간다", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+    await generateGeminiMicrotask(INPUT);
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).toContain("열기, 읽기, 보기, 확인하기");
+    expect(body.input).toContain(
+      "여러 독립적인 단계를 나열하지 마세요",
+    );
+    expect(body.input).toContain("행동 문장은 반드시 다음 동사 중 하나로 끝나야 합니다");
+    for (const verb of ALLOWED_RESULT_VERBS) {
+      expect(body.input).toContain(verb);
+    }
+    expect(body.input).toContain("피하기: 표를 채우기");
+    expect(body.input).toContain("권장: 표의 첫 행에 값 하나 입력하기");
+    // INPUT은 리포트/글쓰기 × overwhelm이므로 그 조합의 동적 예시가 들어간다.
+    expect(body.input).toContain(
+      "이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: 빈 문서를 연 채로 제목 한 줄 입력하기",
+    );
+  });
+
+  it.each([
+    ["리포트/글쓰기", "overwhelm", "빈 문서를 연 채로 제목 한 줄 입력하기"],
+    ["리포트/글쓰기", "dislike", "문서를 연 채로 첫 문장 한 줄 쓰기"],
+    ["문제풀이/암기", "overwhelm", "첫 문제 조건을 노트에 한 줄 옮겨 적기"],
+    ["발표/PT 준비", "temptation", "폰을 멀리 둔 채로 PPT 첫 장 제목 한 줄 입력하기"],
+    ["코딩 실습", "overwhelm", "요구사항에서 할 일 한 줄 적기"],
+    ["기타", "dislike", "해야 할 일 첫 단계 한 줄 적기"],
+  ] as const)(
+    "유형=%s 이유=%s일 때 해당 조합의 동적 예시가 프롬프트에 들어간다",
+    async (type, reason, expectedExample) => {
+      const fetchMock = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+      await generateGeminiMicrotask({ ...INPUT, type, reason });
+
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.input).toContain(
+        `이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: ${expectedExample}`,
+      );
+    },
+  );
+
+  it.each([
+    ["리포트/글쓰기", "완벽하지 않은 리포트 제목 초안 한 줄 적기"],
+    ["문제풀이/암기", "정답 확신 없어도 첫 문제 풀이 초안 한 줄 쓰기"],
+    ["발표/PT 준비", "다듬지 않은 발표 제목 초안 한 줄 작성하기"],
+    ["코딩 실습", "완벽하지 않은 임시 코드 한 줄 작성하기"],
+    ["시험공부", "완벽하지 않게 핵심 개념 한 줄 요약하기"],
+    ["프로젝트", "다듬지 않은 초안 메모 한 줄 작성하기"],
+    ["조별과제", "완벽하지 않은 내 파트 초안 한 줄 쓰기"],
+    ["개인공부", "정리되지 않아도 되는 핵심 내용 한 줄 적기"],
+    ["기타", "완벽하지 않은 임시 메모 한 줄 적기"],
+  ] as const)(
+    "reason=custom이면 유형=%s에 맞는 custom 예시가 들어간다",
+    async (type, expectedExample) => {
+      const fetchMock = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+      await generateGeminiMicrotask({
+        ...INPUT,
+        type,
+        reason: "custom",
+        customReason: "완벽하게 하고 싶어서",
+      });
+
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.input).toContain(
+        `이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: ${expectedExample}`,
+      );
+    },
+  );
+
+  it("reason=custom이고 유형이 매핑에 없으면 범용 custom 예시로 폴백한다", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+    await generateGeminiMicrotask({
+      ...INPUT,
+      type: "존재하지 않는 유형",
+      reason: "custom",
+      customReason: "완벽하게 하고 싶어서",
+    });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).toContain(
+      "이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예: 해야 할 일을 한 문장으로 적기",
+    );
+  });
+
+  it("동적 예시 매핑에 없는 유형+비-custom 이유에는 해당 안내 줄 자체가 빠진다", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("제목 한 줄 입력하기"));
+
+    await generateGeminiMicrotask({ ...INPUT, type: "존재하지 않는 유형" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).not.toContain("이번 요청과 같은 유형·회피 이유에 어울리는 좋은 예:");
+  });
+
+  it.each([
+    ["교재를 펼치고 목차를 확인하고 첫 문제 조건 읽기", "quality_chained_action"],
+    ["첫 슬라이드의 핵심 문장 선택", "quality_result_verb_missing"],
+    ["발표 핵심을 작성하기", "quality_bounded_scope_missing"],
+  ] as const)(
+    "Lv2도 품질 기준을 통과하지 못한 응답을 %s로 거부한다",
+    async (microTask, rule) => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        geminiResponse(microTask),
+      );
+
+      await expect(generateGeminiMicrotask(INPUT)).rejects.toMatchObject({
+        code: "invalid_provider_response",
+        validationStage: "quality",
+        validationRule: rule,
+        parsed: true,
+      });
+    },
+  );
 
   it("동일한 동시 요청은 in-flight Promise와 Gemini 호출을 공유한다", async () => {
     let resolveFetch!: (value: Response) => void;
@@ -423,39 +557,116 @@ describe("generateGeminiMicrotask", () => {
     expect(body.input).toContain('"reasonChanged":false');
     expect(body.input).toContain("핵심 주장 한 문장 쓰기");
     expect(body.input).toContain("신뢰할 수 없는 데이터");
-    expect(body.input).toContain("준비 동작을 함께 쓰지 말고");
+    expect(body.input).toContain("여러 독립적인 단계를 나열하지 마세요");
     expect(body.input).toContain("피하기: 문서를 열고");
     expect(body.input).toContain("권장: 문서에 핵심 주장");
     expect(body.input).toContain("반드시 다음 동사 중 하나로 끝나야 합니다");
     expect(body.input).toContain("쓰기, 써보기, 적기");
     expect(body.input).toContain("피하기: 표를 채우기");
     expect(body.input).toContain("권장: 표의 첫 행에 값 하나 입력하기");
+    // reason=overwhelm 전략이 프롬프트에 실제로 들어간다.
+    expect(body.input).toContain("회피 이유가 막막함이므로");
   });
 
   it.each([
-    ["교재를 펼치고 첫 번째 문제에 동그라미 치기", false],
-    ["관련 파일 하나 열기", false],
-    ["관련 파일 한 개 확인하기", false],
-    ["문서 한 개 열고 핵심 문장 한 줄 작성하기", false],
+    ["overwhelm", null, "회피 이유가 막막함이므로"],
+    ["dislike", null, "회피 이유가 하기 싫음이므로"],
+    ["temptation", null, "회피 이유가 눈앞의 유혹이므로"],
+    ["custom", "완벽하게 하고 싶어서", "회피 이유가 사용자가 직접 입력한 경우이므로"],
+  ])(
+    "Lv3 프롬프트에 reason=%s 전략 문구가 정확히 들어간다",
+    async (reason, customReason, expectedStrategy) => {
+      const fetchMock = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(geminiResponse("목차 첫 항목 한 줄 쓰기"));
+
+      await generateGeminiLv3Microtask({
+        ...LV3_INPUT,
+        reason: reason as GeminiLv3MicrotaskInput["reason"],
+        customReason,
+      });
+
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.input).toContain(expectedStrategy);
+    },
+  );
+
+  it("temptation 전략은 방해 제거 준비 동작을 문장에 넣지 말라고 명시한다 (검증 충돌 방지)", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(geminiResponse("첫 문장 한 줄 쓰기"));
+
+    await generateGeminiLv3Microtask({ ...LV3_INPUT, reason: "temptation" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.input).toContain("방해 요소를 치우라는 준비 동작은 문장에 넣지 말고");
+  });
+
+  it.each([
+    ["교재를 펼치고 첫 번째 문제에 동그라미 치기", false], // "치기"는 여전히 허용 동사 아님
+    ["관련 파일 하나 열기", true], // 단일 "-고" 없음, "열기" 종결 허용
+    ["관련 파일 한 개 확인하기", false], // "확인하기"는 허용 동사 아님
+    ["문서 한 개 열고 핵심 문장 한 줄 작성하기", true], // "-고" 1회는 허용
     ["가장 쉬운 문제 1개 풀기", true],
     ["가장 쉬운 문제 한 개의 풀이 첫 줄 쓰기", true],
     ["첫 슬라이드에 발표 핵심 한 문장 입력하기", true],
-  ])("Lv3 행동 품질을 검사한다: %s", (microTask, expected) => {
-    expect(isValidLv3MicrotaskQuality(microTask)).toBe(expected);
+  ])("Lv2/Lv3 공용 행동 품질을 검사한다: %s", (microTask, expected) => {
+    expect(isValidMicrotaskQuality(microTask)).toBe(expected);
   });
 
   it.each([
-    ["문서를 열고 핵심 주장 한 문장 쓰기", "quality_chained_action"],
+    ["문서를 열고 목차를 만들고 첫 문단 쓰기", "quality_chained_action"],
     ["첫 슬라이드의 핵심 문장 선택", "quality_result_verb_missing"],
     ["발표 핵심을 작성하기", "quality_bounded_scope_missing"],
-  ] as const)("Lv3 품질 실패 규칙을 구분한다: %s", (microTask, rule) => {
-    expect(validateLv3MicrotaskQuality(microTask)).toEqual({
+  ] as const)("품질 실패 규칙을 구분한다: %s", (microTask, rule) => {
+    expect(validateMicrotaskQuality(microTask)).toEqual({
       valid: false,
       rule,
     });
   });
 
-  it("9개 유형별 fallback이 모두 Lv3 행동 품질 검사를 통과한다", () => {
+  // 단일 "-고"/"-아/-어" 연결(준비 동작 + 결과 행동 하나)은 통과해야 하고,
+  // 명시적 순서 접속어나 "-고" 반복(다단계)은 계속 거절돼야 한다(2026-07-28 정책 변경).
+  describe("isChainedAction 판정", () => {
+    it.each([
+      "빈 문서에 리포트 제목 한 줄 입력하기",
+      "빈 문서를 열고 제목 한 줄 입력하기",
+      "과제 파일을 열어 첫 문장만 읽기",
+      "입력창을 클릭해 키워드 하나 적기",
+      "첫 번째 문제의 조건만 읽기",
+      "강의자료 첫 페이지 열기",
+    ])("통과해야 하는 예: %s", (microTask) => {
+      expect(isValidMicrotaskQuality(microTask)).toBe(true);
+    });
+
+    it.each([
+      "문서를 열고 목차를 만들고 첫 문단 쓰기",
+      "자료를 찾아 정리한 뒤 보고서에 작성하기",
+      "문제를 읽고 풀이하고 답을 검토하기",
+    ])("계속 거절해야 하는 예(다단계): %s", (microTask) => {
+      expect(isChainedAction(microTask)).toBe(true);
+    });
+
+    it.each([
+      "이 문서를 정리하고 그리고 제목 한 줄 쓰기",
+      "자료를 찾아 정리한 뒤 한 문장 쓰기",
+      "발표 자료를 후에 다시 확인하고 한 줄 쓰기",
+      "메모를 남기고 이후 한 줄 쓰기",
+      "정리하고 마지막으로 한 줄 쓰기",
+    ])("명시적 순서 접속어(그리고/한 뒤/후에/이후/마지막으로)는 거절: %s", (microTask) => {
+      expect(isChainedAction(microTask)).toBe(true);
+    });
+
+    it("단일 -고 연결은 허용한다", () => {
+      expect(isChainedAction("빈 문서를 열고 제목 한 줄 입력하기")).toBe(false);
+    });
+
+    it("-고 연결이 2회 이상 반복되면 다단계로 거절한다", () => {
+      expect(isChainedAction("문서를 열고 목차를 만들고 첫 문단 쓰기")).toBe(true);
+    });
+  });
+
+  it("9개 유형별 fallback이 모두 행동 품질 검사를 통과한다", () => {
     const fallbacks = [
       "문서에 핵심 주장 한 문장 쓰기",
       "가장 쉬운 문제 한 개의 풀이 첫 줄 쓰기",
@@ -470,14 +681,14 @@ describe("generateGeminiMicrotask", () => {
 
     expect(fallbacks).toHaveLength(9);
     for (const fallback of fallbacks) {
-      expect(isValidLv3MicrotaskQuality(fallback)).toBe(true);
+      expect(isValidMicrotaskQuality(fallback)).toBe(true);
     }
   });
 
-  it("Lv3 품질 기준을 통과하지 못한 provider 응답을 거부한다", async () => {
+  it("Lv3 품질 기준을 통과하지 못한 provider 응답을 거부한다(다단계 예시)", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      geminiResponse("교재를 펼치고 첫 번째 문제에 동그라미 치기"),
+      geminiResponse("교재를 펼치고 목차를 확인하고 동그라미 치기"),
     );
 
     await expect(generateGeminiLv3Microtask(LV3_INPUT)).rejects.toMatchObject({
@@ -490,5 +701,69 @@ describe("generateGeminiMicrotask", () => {
       expect.stringContaining('"rule":"quality_chained_action"'),
     );
     expect(JSON.stringify(log.mock.calls)).not.toContain("microTaskPreview");
+  });
+
+  describe("서버 fallback", () => {
+    it("Lv2 fallback은 type/reason 조합마다 품질 검사를 통과하는 문자열을 반환한다", () => {
+      const types = [
+        "리포트/글쓰기",
+        "문제풀이/암기",
+        "발표/PT 준비",
+        "코딩 실습",
+        "시험공부",
+        "프로젝트",
+        "조별과제",
+        "개인공부",
+        "기타",
+      ];
+      const reasons = ["overwhelm", "dislike", "temptation", "custom"] as const;
+      for (const type of types) {
+        for (const reason of reasons) {
+          const fallback = getServerLv2FallbackMicroTask(type, reason);
+          expect(typeof fallback).toBe("string");
+          expect(fallback.length).toBeGreaterThan(0);
+          expect(isValidMicrotaskQuality(fallback)).toBe(true);
+        }
+      }
+    });
+
+    it("Lv3 fallback은 유형마다 품질 검사를 통과하는 문자열을 반환한다(미등록 유형은 기타로 폴백)", () => {
+      const types = [
+        "리포트/글쓰기",
+        "문제풀이/암기",
+        "발표/PT 준비",
+        "코딩 실습",
+        "시험공부",
+        "프로젝트",
+        "조별과제",
+        "개인공부",
+        "기타",
+        "존재하지않는유형",
+      ];
+      for (const type of types) {
+        const fallback = getServerLv3FallbackMicroTask(type);
+        expect(typeof fallback).toBe("string");
+        expect(isValidMicrotaskQuality(fallback)).toBe(true);
+      }
+    });
+
+    it("configuration_missing만 fallback 비대상이고, 그 외 실패 category는 전부 fallback 대상이다", () => {
+      const eligible = [
+        ["invalid_provider_response", "invalid_response"],
+        ["provider_timeout", "timeout"],
+        ["provider_unavailable", "network_error"],
+        ["provider_unavailable", "provider_error"],
+        ["provider_unavailable", "rate_limited"],
+      ] as const;
+      for (const [code, category] of eligible) {
+        const error = new GeminiMicrotaskError(code, category);
+        expect(isFallbackEligibleError(error)).toBe(true);
+      }
+      const configError = new GeminiMicrotaskError(
+        "provider_unavailable",
+        "configuration_missing",
+      );
+      expect(isFallbackEligibleError(configError)).toBe(false);
+    });
   });
 });

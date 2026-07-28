@@ -3,6 +3,9 @@ import {
   GeminiMicrotaskError,
   generateGeminiMicrotask,
   generateGeminiLv3Microtask,
+  getServerLv2FallbackMicroTask,
+  getServerLv3FallbackMicroTask,
+  isFallbackEligibleError,
   type GeminiMicrotaskInput,
   type GeminiLv3MicrotaskInput,
 } from "../lib/geminiMicrotask.js";
@@ -125,6 +128,28 @@ router.post("/lv2", async (req, res) => {
     res.json({ data: { microTask, source: "gemini" } });
   } catch (error) {
     if (error instanceof GeminiMicrotaskError) {
+      // Gemini 호출/파싱/품질 검사가 실패해도 사용자 요청은 실패하지 않는다 — 실패
+      // category/stage/rule은 이미 geminiMicrotask.ts의 logFailure()가 로그로 남겼으니
+      // (원래 실패 원인은 서버 로그에만 남고, 사용자 응답에는 내부 detail을 노출하지 않는다)
+      // 여기서는 규칙 기반 microTask로 즉시 200을 돌려준다. configuration_missing(예:
+      // API 키 미설정)처럼 일시적이지 않은 설정 문제만 예외적으로 기존 5xx를 유지한다.
+      if (isFallbackEligibleError(error)) {
+        try {
+          const fallbackMicroTask = getServerLv2FallbackMicroTask(
+            type,
+            reason as GeminiMicrotaskInput["reason"],
+          );
+          res.json({ data: { microTask: fallbackMicroTask, source: "rule_based" } });
+          return;
+        } catch (fallbackError) {
+          console.error(
+            '[gemini-microtask] {"event":"gemini_microtask_fallback_failed"}',
+            fallbackError,
+          );
+          // fallback 생성 자체가 실패한 경우에만 아래 5xx로 떨어진다.
+        }
+      }
+
       const status =
         error.code === "provider_timeout"
           ? 504
@@ -256,6 +281,11 @@ router.post("/lv3", async (req, res) => {
     return;
   }
 
+  // catch 블록에서 fallback을 만들려면 taskId로 조회한 type이 필요하다 — try 스코프
+  // 밖에서도 읽을 수 있게 미리 선언해둔다. generate 호출 이전에 실패하면(예: taskId를
+  // 못 찾음) null로 남아 fallback을 시도하지 않는다(잘못된 요청/DB 오류까지 숨기지 않음).
+  let currentTaskType: string | null = null;
+
   try {
     const context = await findLv3MemoryContext(taskId.trim());
     if (!context) {
@@ -264,6 +294,7 @@ router.post("/lv3", async (req, res) => {
       });
       return;
     }
+    currentTaskType = context.currentTask.type;
 
     const input: GeminiLv3MicrotaskInput = {
       title: context.currentTask.title,
@@ -294,6 +325,30 @@ router.post("/lv3", async (req, res) => {
     });
   } catch (error) {
     if (error instanceof GeminiMicrotaskError) {
+      // Lv2와 동일한 원칙: 실패 category/stage/rule은 이미 로그로 남았으니(사용자
+      // 응답에는 노출 안 함) 규칙 기반 microTask로 즉시 200을 돌려준다. currentTaskType이
+      // 없으면(할일 조회 자체가 안 된 경우) fallback을 만들 근거가 없으므로 시도하지 않는다.
+      if (isFallbackEligibleError(error) && currentTaskType) {
+        try {
+          const fallbackMicroTask = getServerLv3FallbackMicroTask(currentTaskType);
+          res.json({
+            data: {
+              status: "generated",
+              microTask: fallbackMicroTask,
+              source: "rule_based",
+              memoryEvidence: null,
+            },
+          });
+          return;
+        } catch (fallbackError) {
+          console.error(
+            '[gemini-microtask] {"event":"gemini_lv3_microtask_fallback_failed"}',
+            fallbackError,
+          );
+          // fallback 생성 자체가 실패한 경우에만 아래 5xx로 떨어진다.
+        }
+      }
+
       const status =
         error.code === "provider_timeout"
           ? 504
