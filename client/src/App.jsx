@@ -65,7 +65,6 @@ export default function App() {
         {screen === "settings" && <Settings go={go} />}
         {screen === "expenses" && <ExpenseSetup go={go} />}
       </div>
-      <p style={styles.debug}>현재 화면 상태: "{screen}"</p>
     </div>
   );
 }
@@ -1132,9 +1131,19 @@ function ExpenseSetup({ go }) {
         <div style={{ marginTop: 28 }}></div>
         <div style={{ marginTop: 28 }}>
           {expenses.length === 0 ? (
-            <p style={{ fontSize: 14, color: "#8a8478", textAlign: "center" }}>
-              아직 등록된 항목이 없어요.
-            </p>
+            <div style={{
+              textAlign: "center",
+              padding: "40px 20px",
+              color: "#a8a296",
+            }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#8a8478" }}>
+                아직 등록된 지출이 없어요
+              </div>
+              <div style={{ fontSize: 13, marginTop: 6 }}>
+                위에서 첫 지출을 등록해보세요
+              </div>
+            </div>
           ) : (
               [...expenses]
                 .sort((a, b) => getDaysUntil(a.due_day) - getDaysUntil(b.due_day))
