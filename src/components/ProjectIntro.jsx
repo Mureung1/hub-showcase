@@ -121,8 +121,9 @@ function ProjectIntro() {
               지금 시작할 첫 행동을 제안해요.
             </h1>
             <p className="landing-subtitle">
-              해야 할 일이 막막할 때, 잔소리봇이 미루는 이유를 확인하고 지금 바로 할 수 있는 작은
-              행동을 제안해요.
+              해야 할 일이 막막할 때, 잔소리봇이 미루는 이유를 확인하고{" "}
+              <br className="landing-subtitle-break" />
+              지금 바로 할 수 있는 작은 행동을 제안해요.
             </p>
             <div className="landing-hero-actions">
               <Link className="landing-cta" to="/register">
