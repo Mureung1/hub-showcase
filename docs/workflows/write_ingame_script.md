@@ -63,7 +63,7 @@ Approval Queue 저장을 담당한다.
 ## Steps
 
 1. `project_workspace`에 따라 프로젝트를 하나로 확정한다.
-2. 대상 시나리오 파일과 챕터·Phase, 포함·제외 범위를 확인한다.
+2. 대상 시나리오 파일과 챕터·Scene, 포함·제외 범위를 확인한다.
 3. Source Order에 따라 게임 정체성, 상위 사건, 정사·규칙, 기존 승인 문체와
    구현 계약을 조사한다.
 4. 사건, 조건, 분기, Outcome, 공개 정보와 인물 제약의 근거 지도를 만들고
@@ -75,6 +75,9 @@ Approval Queue 저장을 담당한다.
    별도 대안으로 만들지 않는다.
 7. `docs/skills/scenario_writing.md`에 따라 사건을 입력 대기 또는 확정 결과
    전달 단위의 씬으로 나누고 `docs/templates/ingame_script.md`로 작성한다.
+   `Outcomes and State`는 구현 연결용 `Outcome Routing` 표와 설명용
+   `Outcome Details`로 분리하고, Outcome ID·순서·값·각주를 1:1로
+   일치시킨다. 씬 전체 `Information Visibility`는 별도 유지한다.
 8. 구체적인 창작 문장과 필드는 `CW-*` 각주로, 원본 서사 구조와 달라진 부분은
    `NR-*` Narrative Revision Log로 각각 공개한다.
 9. 씬 데이터 조합을 UI·기술 문서와 대조한다. 확정되지 않은 판정값, 등록

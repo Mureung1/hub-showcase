@@ -6,7 +6,7 @@
 - 문서 타입: game_overview
 - 상태: confirmed
 - 관련 문서: [세계관 설정](../world/world_setting.md), [메인 시나리오](../narrative/main_scenario.md), [핵심 게임 시스템](../systems/core_gameplay_systems.md), [요괴 후보 목록](../content/yokai_candidates.md), [플레이 UI](../ui/gameplay_ui.md), [AI GM 런타임 및 데이터 연동 규칙](../technical/ai_gm_runtime_rules.md)
-- 마지막 변경: 2026-07-21
+- 마지막 변경: 2026-07-27
 
 ## Summary
 
@@ -53,8 +53,8 @@
 ## Document Map
 
 - [세계관 설정](../world/world_setting.md): 세계 구조, 주인공 유형, 십이지신당, 사흉, 흑의인과 인연의 피리
-- [메인 시나리오](../narrative/main_scenario.md): 오프닝 Phase, 혼돈 튜토리얼, 사흉 추적과 엔딩 분기
-- [프롤로그 인게임 스크립트](../narrative/scripts/prologue_ingame_script.md): Phase 1 플레이어 노출 대본과 씬 구현 명세
+- [메인 시나리오](../narrative/main_scenario.md): 프롤로그 Scene, 혼돈 튜토리얼, 사흉 추적과 엔딩 분기
+- [프롤로그 인게임 스크립트](../narrative/scripts/prologue_ingame_script.md): 프롤로그 Scene 1·2A·2B·2C·3·4의 플레이어 노출 대본과 씬 구현 명세
 - [핵심 게임 시스템](../systems/core_gameplay_systems.md): 지도·탐험, 성장, 판정, 전투, 카르마·정보와 플레이 시간
 - [요괴 후보 목록](../content/yokai_candidates.md): 탐험 중 조우할 비사흉 요괴 후보와 후보별 설명·활용 검토
 - [플레이 UI](../ui/gameplay_ui.md): 장면 입력 모드, 지도, 로그, 보조 메뉴와 예시 목업
