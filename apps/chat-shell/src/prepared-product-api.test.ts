@@ -159,14 +159,16 @@ test('prepared Browser fetches text and validated PDF previews', async () => {
     assert.deepEqual(requested, [
       '/api/product/sources/text?relativePath=%EA%B0%95%EC%9D%98+%EA%B3%84%ED%9A%8D%2Foutline.txt',
     ])
-    const pdf = await fetchPreparedWorkspacePdf(
+    const pdfUrl = await fetchPreparedWorkspacePdf(
       '강의 계획/lecture 01.pdf',
     )
-    assert.equal(pdf.type, 'application/pdf')
-    assert.equal(await pdf.text(), '%PDF-1.4')
+    assert.equal(
+      pdfUrl,
+      '/api/product/sources/pdf?relativePath=%EA%B0%95%EC%9D%98+%EA%B3%84%ED%9A%8D%2Flecture+01.pdf',
+    )
     assert.equal(
       requested.at(-1),
-      '/api/product/sources/pdf?relativePath=%EA%B0%95%EC%9D%98+%EA%B3%84%ED%9A%8D%2Flecture+01.pdf',
+      pdfUrl,
     )
   } finally {
     globalThis.fetch = originalFetch

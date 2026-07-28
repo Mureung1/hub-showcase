@@ -137,7 +137,10 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     const pdfFrame = page.getByTitle('lecture.pdf PDF 미리보기')
     await expect(pdfFrame).toBeVisible()
     await expect(pdfFrame).not.toHaveAttribute('sandbox', '')
-    await expect(pdfFrame).toHaveAttribute('src', /^blob:/u)
+    await expect(pdfFrame).toHaveAttribute(
+      'src',
+      /\/api\/product\/sources\/pdf\?relativePath=lecture\.pdf/u,
+    )
     await sources
       .getByRole('button', { name: 'broken.pdf 미리보기' })
       .click()

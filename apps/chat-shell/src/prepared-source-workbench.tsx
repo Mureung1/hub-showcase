@@ -160,31 +160,21 @@ export function usePreparedWorkspaceSources(
     const controller = new AbortController()
     setPreviewView({ state: 'loading', source: selectedSource })
     if (selectedSource.previewKind === 'pdf') {
-      let objectUrl: string | undefined
       void fetchPreparedWorkspacePdf(
         selectedSource.relativePath,
         controller.signal,
       )
-        .then((pdf) => {
+        .then((url) => {
           if (
             controller.signal.aborted ||
             generation !== previewGeneration.current
           ) {
-            return
-          }
-          objectUrl = URL.createObjectURL(pdf)
-          if (
-            controller.signal.aborted ||
-            generation !== previewGeneration.current
-          ) {
-            URL.revokeObjectURL(objectUrl)
-            objectUrl = undefined
             return
           }
           setPreviewView({
             state: 'pdf',
             source: selectedSource,
-            url: objectUrl,
+            url,
           })
         })
         .catch((error: unknown) => {
@@ -200,10 +190,7 @@ export function usePreparedWorkspaceSources(
             displayMessage: sourceErrorMessage(error),
           })
         })
-      return () => {
-        controller.abort()
-        if (objectUrl) URL.revokeObjectURL(objectUrl)
-      }
+      return () => controller.abort()
     }
 
     void fetchPreparedWorkspaceText(
