@@ -1,0 +1,4489 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+prisma/
+  migrations/
+    20260713062946_init/
+      migration.sql
+    20260713092641_add_google_calendar/
+      migration.sql
+    20260714084252_/
+      migration.sql
+    20260716062901_add_push_subscription/
+      migration.sql
+    20260716065926_add_password_field/
+      migration.sql
+    20260716073751_add_nickname_to_user/
+      migration.sql
+    20260716081327_add_posting_event_type/
+      migration.sql
+    20260723081348_add_github_repos/
+      migration.sql
+    migration_lock.toml
+  schema.prisma
+src/
+  middleware/
+    auth.ts
+  routes/
+    auth.ts
+    calendar.ts
+    calendarEvents.ts
+    github.ts
+    postings.ts
+    profile.ts
+    scraps.ts
+  services/
+    providers/
+      googleCalendarProvider.ts
+    calendarService.ts
+    githubService.ts
+    llmService.ts
+    matchingService.test.ts
+    matchingService.ts
+    notificationService.ts
+    smartMatchingService.ts
+  index.ts
+.env.example
+.gitignore
+package.json
+render.yaml
+tsconfig.json
+vitest.config.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="prisma/migrations/20260713062946_init/migration.sql">
+-- CreateEnum
+CREATE TYPE "PostingCategory" AS ENUM ('COMPETITION', 'ACTIVITY', 'POLICY', 'CAMPUS_EVENT');
+
+-- CreateEnum
+CREATE TYPE "ParseStatus" AS ENUM ('CURATED', 'NEEDS_REVIEW', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "RawPostingStatus" AS ENUM ('RAW', 'PARSED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "CalendarEventType" AS ENUM ('EXAM', 'PART_TIME', 'OTHER');
+
+-- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_profiles" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "major" TEXT,
+    "grade" INTEGER,
+    "enrollmentStatus" TEXT,
+    "residenceRegion" TEXT,
+    "incomeBracket" INTEGER,
+    "age" INTEGER,
+    "interestTags" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "raw_postings" (
+    "id" TEXT NOT NULL,
+    "sourceSite" TEXT NOT NULL,
+    "sourceUrl" TEXT NOT NULL,
+    "rawTitle" TEXT NOT NULL,
+    "rawText" TEXT NOT NULL,
+    "scrapedAt" TIMESTAMP(3) NOT NULL,
+    "status" "RawPostingStatus" NOT NULL DEFAULT 'RAW',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "raw_postings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "postings" (
+    "id" TEXT NOT NULL,
+    "rawPostingId" TEXT,
+    "category" "PostingCategory" NOT NULL,
+    "title" VARCHAR(500) NOT NULL,
+    "hostOrg" VARCHAR(200),
+    "receptionStartDate" TIMESTAMP(3),
+    "receptionEndDate" TIMESTAMP(3),
+    "eventStartDate" TIMESTAMP(3),
+    "eventEndDate" TIMESTAMP(3),
+    "sourceUrl" VARCHAR(1000) NOT NULL,
+    "parseStatus" "ParseStatus" NOT NULL DEFAULT 'CURATED',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "postings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "eligibilities" (
+    "id" TEXT NOT NULL,
+    "postingId" TEXT NOT NULL,
+    "majors" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "regions" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "grades" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+    "enrollmentStatuses" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "ageMin" INTEGER,
+    "ageMax" INTEGER,
+    "incomeMax" INTEGER,
+    "gpaMin" DOUBLE PRECISION,
+    "rawEligibilityText" TEXT NOT NULL,
+
+    CONSTRAINT "eligibilities_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "calendar_events" (
+    "id" TEXT NOT NULL,
+    "uid" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" VARCHAR(200) NOT NULL,
+    "type" "CalendarEventType" NOT NULL,
+    "dtstart" TIMESTAMP(3) NOT NULL,
+    "dtend" TIMESTAMP(3) NOT NULL,
+    "relatedPostingId" TEXT,
+    "source" TEXT NOT NULL DEFAULT 'manual',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "calendar_events_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "scraps" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "postingId" TEXT NOT NULL,
+    "scrappedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "notifyEnabled" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "scraps_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_profiles_userId_key" ON "user_profiles"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "raw_postings_sourceUrl_key" ON "raw_postings"("sourceUrl");
+
+-- CreateIndex
+CREATE INDEX "raw_postings_sourceSite_idx" ON "raw_postings"("sourceSite");
+
+-- CreateIndex
+CREATE INDEX "raw_postings_status_idx" ON "raw_postings"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "postings_rawPostingId_key" ON "postings"("rawPostingId");
+
+-- CreateIndex
+CREATE INDEX "postings_category_idx" ON "postings"("category");
+
+-- CreateIndex
+CREATE INDEX "postings_receptionEndDate_idx" ON "postings"("receptionEndDate");
+
+-- CreateIndex
+CREATE INDEX "postings_parseStatus_idx" ON "postings"("parseStatus");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "eligibilities_postingId_key" ON "eligibilities"("postingId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "calendar_events_uid_key" ON "calendar_events"("uid");
+
+-- CreateIndex
+CREATE INDEX "calendar_events_userId_idx" ON "calendar_events"("userId");
+
+-- CreateIndex
+CREATE INDEX "calendar_events_dtstart_dtend_idx" ON "calendar_events"("dtstart", "dtend");
+
+-- CreateIndex
+CREATE INDEX "scraps_userId_idx" ON "scraps"("userId");
+
+-- CreateIndex
+CREATE INDEX "scraps_postingId_idx" ON "scraps"("postingId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "scraps_userId_postingId_key" ON "scraps"("userId", "postingId");
+
+-- AddForeignKey
+ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "postings" ADD CONSTRAINT "postings_rawPostingId_fkey" FOREIGN KEY ("rawPostingId") REFERENCES "raw_postings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "eligibilities" ADD CONSTRAINT "eligibilities_postingId_fkey" FOREIGN KEY ("postingId") REFERENCES "postings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "calendar_events" ADD CONSTRAINT "calendar_events_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "calendar_events" ADD CONSTRAINT "calendar_events_relatedPostingId_fkey" FOREIGN KEY ("relatedPostingId") REFERENCES "postings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "scraps" ADD CONSTRAINT "scraps_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "scraps" ADD CONSTRAINT "scraps_postingId_fkey" FOREIGN KEY ("postingId") REFERENCES "postings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/20260713092641_add_google_calendar/migration.sql">
+-- AlterTable
+ALTER TABLE "scraps" ADD COLUMN     "googleEventId" TEXT;
+
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "googleAccessToken" TEXT,
+ADD COLUMN     "googleConnectedAt" TIMESTAMP(3),
+ADD COLUMN     "googleRefreshToken" TEXT;
+</file>
+
+<file path="prisma/migrations/20260714084252_/migration.sql">
+-- AlterTable
+ALTER TABLE "calendar_events" ADD COLUMN     "endTime" TEXT,
+ADD COLUMN     "hideFromRecommendation" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "isAllDay" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "memo" TEXT,
+ADD COLUMN     "startTime" TEXT;
+
+-- CreateIndex
+CREATE INDEX "calendar_events_hideFromRecommendation_idx" ON "calendar_events"("hideFromRecommendation");
+</file>
+
+<file path="prisma/migrations/20260716062901_add_push_subscription/migration.sql">
+-- CreateTable
+CREATE TABLE "push_subscriptions" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "endpoint" TEXT NOT NULL,
+    "p256dh" TEXT NOT NULL,
+    "auth" TEXT NOT NULL,
+    "subscriptionJson" TEXT NOT NULL,
+    "userAgent" TEXT,
+    "subscribedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "push_subscriptions_userId_idx" ON "push_subscriptions"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "push_subscriptions_userId_endpoint_key" ON "push_subscriptions"("userId", "endpoint");
+
+-- AddForeignKey
+ALTER TABLE "push_subscriptions" ADD CONSTRAINT "push_subscriptions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/20260716065926_add_password_field/migration.sql">
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "password" TEXT;
+</file>
+
+<file path="prisma/migrations/20260716073751_add_nickname_to_user/migration.sql">
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "nickname" TEXT;
+</file>
+
+<file path="prisma/migrations/20260716081327_add_posting_event_type/migration.sql">
+-- AlterEnum
+ALTER TYPE "CalendarEventType" ADD VALUE 'POSTING';
+</file>
+
+<file path="prisma/migrations/20260723081348_add_github_repos/migration.sql">
+-- CreateTable
+CREATE TABLE "github_repos" (
+    "id" TEXT NOT NULL,
+    "githubId" INTEGER NOT NULL,
+    "owner" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "description" TEXT,
+    "url" TEXT NOT NULL,
+    "stars" INTEGER NOT NULL DEFAULT 0,
+    "forks" INTEGER NOT NULL DEFAULT 0,
+    "openIssues" INTEGER NOT NULL DEFAULT 0,
+    "language" TEXT,
+    "readme" TEXT,
+    "readmeHtml" TEXT,
+    "summary" TEXT,
+    "summaryBullets" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "topics" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "license" TEXT,
+    "homepageUrl" TEXT,
+    "lastFetchedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "github_repos_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_github_stars" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "repoId" TEXT NOT NULL,
+    "starredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "user_github_stars_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "github_repos_githubId_key" ON "github_repos"("githubId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "github_repos_fullName_key" ON "github_repos"("fullName");
+
+-- CreateIndex
+CREATE INDEX "github_repos_stars_idx" ON "github_repos"("stars");
+
+-- CreateIndex
+CREATE INDEX "github_repos_language_idx" ON "github_repos"("language");
+
+-- CreateIndex
+CREATE INDEX "github_repos_lastFetchedAt_idx" ON "github_repos"("lastFetchedAt");
+
+-- CreateIndex
+CREATE INDEX "user_github_stars_userId_idx" ON "user_github_stars"("userId");
+
+-- CreateIndex
+CREATE INDEX "user_github_stars_repoId_idx" ON "user_github_stars"("repoId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_github_stars_userId_repoId_key" ON "user_github_stars"("userId", "repoId");
+
+-- AddForeignKey
+ALTER TABLE "user_github_stars" ADD CONSTRAINT "user_github_stars_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_github_stars" ADD CONSTRAINT "user_github_stars_repoId_fkey" FOREIGN KEY ("repoId") REFERENCES "github_repos"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (i.e. Git)
+provider = "postgresql"
+</file>
+
+<file path="prisma/schema.prisma">
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ Enums ============
+
+enum PostingCategory {
+  COMPETITION    // 공모전
+  ACTIVITY       // 대외활동
+  POLICY         // 정책/지원금
+  CAMPUS_EVENT   // 교내행사
+}
+
+enum ParseStatus {
+  CURATED        // 수동 검증됨
+  NEEDS_REVIEW   // 자동 파싱 후 검증 필요
+  FAILED         // 파싱 실패
+}
+
+enum RawPostingStatus {
+  RAW            // 원본 (파싱 전)
+  PARSED         // 파싱 완료
+  FAILED         // 파싱 실패
+}
+
+enum CalendarEventType {
+  EXAM           // 시험
+  PART_TIME      // 아르바이트
+  POSTING        // 공고 마감일
+  OTHER          // 기타
+}
+
+// ============ Models ============
+
+// Supabase Auth와 연동되는 사용자
+model User {
+  id        String   @id
+  email     String   @unique
+  password  String?  // 비밀번호 (해시)
+  nickname  String?  // 닉네임
+  createdAt DateTime @default(now())
+
+  // Google Calendar 연동
+  googleAccessToken   String?
+  googleRefreshToken  String?
+  googleConnectedAt   DateTime?
+
+  // Relations
+  profile              UserProfile?
+  calendarEvents       CalendarEvent[]
+  scraps               Scrap[]
+  pushSubscriptions    PushSubscription[]
+  githubStars          UserGithubStar[]
+
+  @@map("users")
+}
+
+// 사용자 프로필 (필터링 기준)
+model UserProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  major               String?  // canonical 전공값 (HUMANITIES, IT 등)
+  grade               Int?     // 1~4
+  enrollmentStatus    String?  // 재학, 휴학, 졸업예정
+  residenceRegion     String?  // canonical 지역값 (SEOUL, GYEONGGI 등)
+  incomeBracket       Int?     // 1~10, 파생 코드값만
+  age                 Int?     // 만 나이
+  interestTags        String[] // 관심분야 배열
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// 원본 크롤링 데이터 (파싱 대상)
+model RawPosting {
+  id          String           @id @default(cuid())
+  sourceSite  String           // "wevity" 등
+  sourceUrl   String           @unique // 중복 방지 키
+  rawTitle    String
+  rawText     String           // 자유문장 (파싱 대상)
+  scrapedAt   DateTime
+  status      RawPostingStatus @default(RAW)
+  createdAt   DateTime         @default(now())
+
+  // Relations
+  posting Posting?
+
+  @@index([sourceSite])
+  @@index([status])
+  @@map("raw_postings")
+}
+
+// 정규화된 공고 (사용자 노출용)
+model Posting {
+  id                 String          @id @default(cuid())
+  rawPostingId       String?         @unique
+  category           PostingCategory
+  title              String          @db.VarChar(500)
+  hostOrg            String?         @db.VarChar(200)
+  receptionStartDate DateTime?
+  receptionEndDate   DateTime?
+  eventStartDate     DateTime?
+  eventEndDate       DateTime?
+  sourceUrl          String          @db.VarChar(1000)
+  parseStatus        ParseStatus     @default(CURATED)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // Relations
+  rawPosting  RawPosting?  @relation(fields: [rawPostingId], references: [id], onDelete: SetNull)
+  eligibility Eligibility?
+  scraps      Scrap[]
+  calendarEvents CalendarEvent[]
+
+  @@index([category])
+  @@index([receptionEndDate])
+  @@index([parseStatus])
+  @@map("postings")
+}
+
+// 자격요건 (Posting과 1:1)
+model Eligibility {
+  id                   String   @id @default(cuid())
+  postingId            String   @unique
+  majors               String[] @default([]) // canonical 전공 배열
+  regions              String[] @default([]) // canonical 지역 배열
+  grades               Int[]    @default([]) // 1, 2, 3, 4
+  enrollmentStatuses   String[] @default([]) // 재학, 휴학, 졸업예정
+  ageMin               Int?
+  ageMax               Int?
+  incomeMax            Int?     // 소득분위 상한
+  gpaMin               Float?
+  rawEligibilityText   String   // 원문 보존 (검증/디버깅용)
+
+  // Relations
+  posting Posting @relation(fields: [postingId], references: [id], onDelete: Cascade)
+
+  @@map("eligibilities")
+}
+
+// 캘린더 이벤트 (iCalendar 표준)
+model CalendarEvent {
+  id                String            @id @default(cuid())
+  uid               String            @unique @default(cuid()) // iCalendar UID
+  userId            String
+  title             String            @db.VarChar(200)
+  type              CalendarEventType
+  dtstart           DateTime
+  dtend             DateTime
+
+  // 상세 정보 (UI 개선)
+  isAllDay          Boolean           @default(false) // 하루 종일 여부
+  startTime         String?           // HH:mm 형식 (하루종일 false일 때만)
+  endTime           String?           // HH:mm 형식 (하루종일 false일 때만)
+  memo              String?           // 메모
+
+  // 7단계 스마트 매칭 관련
+  hideFromRecommendation Boolean      @default(false) // true면 이 기간에 추천 공고 숨김
+
+  relatedPostingId  String?           // 스크랩 자동 동기화 시 연결
+  source            String            @default("manual") // manual | scrap-sync
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedPosting    Posting?          @relation(fields: [relatedPostingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([dtstart, dtend])
+  @@index([hideFromRecommendation])
+  @@map("calendar_events")
+}
+
+// 스크랩 (사용자-공고 매핑)
+model Scrap {
+  id              String   @id @default(cuid())
+  userId          String
+  postingId       String
+  scrappedAt      DateTime @default(now())
+  notifyEnabled   Boolean  @default(true)
+
+  // Google Calendar 연동
+  googleEventId   String?  // Google Calendar 이벤트 ID
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posting         Posting  @relation(fields: [postingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postingId]) // 중복 스크랩 방지
+  @@index([userId])
+  @@index([postingId])
+  @@map("scraps")
+}
+
+// 웹 푸시 구독 (사용자의 디바이스 구독 정보)
+model PushSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  endpoint        String   // 푸시 서비스 엔드포인트
+  p256dh          String   // 암호화 키
+  auth            String   // 인증 키
+  subscriptionJson String   // 전체 subscription JSON 백업
+  userAgent       String?  // 디바이스 정보
+  subscribedAt    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint]) // 사용자 당 엔드포인트는 하나만
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// GitHub 인기 저장소 (외부 서비스 통합)
+model GithubRepo {
+  id              String   @id @default(cuid())
+  githubId        Int      @unique // GitHub API ID
+  owner           String   // 소유자 (사용자/조직)
+  name            String   // 저장소명
+  fullName        String   @unique // owner/name
+  description     String?  @db.Text // 설명
+  url             String   // GitHub 링크
+
+  // 메트릭
+  stars           Int      @default(0) // Star 개수
+  forks           Int      @default(0) // Fork 개수
+  openIssues      Int      @default(0) // Open Issues
+  language        String?  // 주 언어
+
+  // 콘텐츠
+  readme          String?  @db.Text // 원본 README (마크다운)
+  readmeHtml      String?  @db.Text // HTML 렌더링 (선택)
+  summary         String?  @db.Text // 한국어 요약 (LLM 생성)
+  summaryBullets  String[] @default([]) // 핵심 포인트 (배열, 3-5개)
+
+  // 메타데이터
+  topics          String[] @default([]) // GitHub 토픽/태그
+  license         String?  // 라이선스
+  homepageUrl     String?  // 홈페이지
+
+  // 추적 정보
+  lastFetchedAt   DateTime @default(now()) // 마지막 조회
+  updatedAt       DateTime @updatedAt // 마지막 업데이트
+  createdAt       DateTime @default(now())
+
+  // 사용자 상호작용 (향후 확장)
+  userStars       UserGithubStar[]
+
+  @@index([stars])
+  @@index([language])
+  @@index([lastFetchedAt])
+  @@map("github_repos")
+}
+
+// 사용자가 관심있는 GitHub Repo (나중에 추가)
+model UserGithubStar {
+  id        String   @id @default(cuid())
+  userId    String
+  repoId    String
+  starredAt DateTime @default(now())
+
+  // Relations
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repo      GithubRepo   @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, repoId]) // 중복 방지
+  @@index([userId])
+  @@index([repoId])
+  @@map("user_github_stars")
+}
+</file>
+
+<file path="src/middleware/auth.ts">
+import { Request, Response, NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
+
+export interface AuthRequest extends Request {
+  userId?: string
+}
+
+export const verifyAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: '인증 토큰이 필요합니다' })
+  }
+
+  const token = authHeader.substring(7)
+
+  try {
+    const decoded = jwt.decode(token) as Record<string, any>
+    if (!decoded || !decoded.sub) {
+      return res.status(401).json({ error: '유효하지 않은 토큰입니다' })
+    }
+
+    req.userId = decoded.sub
+    next()
+  } catch (error) {
+    return res.status(401).json({ error: '토큰 검증 실패' })
+  }
+}
+</file>
+
+<file path="src/routes/auth.ts">
+import { Router } from 'express'
+import { PrismaClient } from '@prisma/client'
+import jwt from 'jsonwebtoken'
+import { z } from 'zod'
+import bcrypt from 'bcrypt'
+import { verifyAuth, AuthRequest } from '../middleware/auth.js'
+
+const router = Router()
+const prisma = new PrismaClient()
+
+const SignupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+})
+
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+})
+
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1, '현재 비밀번호를 입력해주세요'),
+  newPassword: z.string().min(6, '새 비밀번호는 6자 이상이어야 합니다'),
+  confirmPassword: z.string().min(6, '비밀번호 확인은 6자 이상이어야 합니다'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: '새 비밀번호와 확인이 일치하지 않습니다',
+  path: ['confirmPassword'],
+})
+
+const generateTokens = (userId: string) => {
+  const accessToken = jwt.sign(
+    { sub: userId, type: 'access' },
+    process.env.JWT_SECRET || 'dev-secret',
+    { expiresIn: '15m' }
+  )
+
+  const refreshToken = jwt.sign(
+    { sub: userId, type: 'refresh' },
+    process.env.JWT_SECRET || 'dev-secret',
+    { expiresIn: '7d' }
+  )
+
+  return { accessToken, refreshToken }
+}
+
+// POST /api/auth/signup - 회원가입 (프로토타입: 실제 Supabase Auth 연동 필요)
+router.post('/signup', async (req, res) => {
+  try {
+    const data = SignupSchema.parse(req.body)
+
+    // 프로토타입: 실제로는 Supabase Auth에서 처리
+    // const { data: authData, error: authError } = await supabase.auth.signUp({
+    //   email: data.email,
+    //   password: data.password,
+    // })
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+    })
+
+    if (existingUser) {
+      return res.status(409).json({ error: '이미 가입된 이메일입니다' })
+    }
+
+    // 프로토타입: UUID를 임시로 생성 (실제로는 Supabase UID 사용)
+    const userId = `temp-user-${Date.now()}`
+
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+
+    const user = await prisma.user.create({
+      data: {
+        id: userId,
+        email: data.email,
+        password: hashedPassword,
+      },
+    })
+
+    const tokens = generateTokens(user.id)
+
+    res.status(201).json({
+      success: true,
+      data: {
+        userId: user.id,
+        email: user.email,
+        ...tokens,
+      },
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 요청입니다', details: error.errors })
+    }
+    console.error('회원가입 실패:', error)
+    res.status(500).json({ error: '회원가입에 실패했습니다' })
+  }
+})
+
+// POST /api/auth/login - 로그인
+router.post('/login', async (req, res) => {
+  try {
+    const data = LoginSchema.parse(req.body)
+
+    // 프로토타입: 실제로는 Supabase Auth 검증
+    // const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    //   email: data.email,
+    //   password: data.password,
+    // })
+
+    const user = await prisma.user.findUnique({
+      where: { email: data.email },
+    })
+
+    if (!user) {
+      return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+    }
+
+    // 비밀번호 검증 (저장된 비밀번호가 있는 경우)
+    if (user.password) {
+      const isPasswordValid = await bcrypt.compare(data.password, user.password)
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+      }
+    }
+
+    const tokens = generateTokens(user.id)
+
+    res.json({
+      success: true,
+      data: {
+        userId: user.id,
+        email: user.email,
+        ...tokens,
+      },
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 요청입니다', details: error.errors })
+    }
+    console.error('로그인 실패:', error)
+    res.status(500).json({ error: '로그인에 실패했습니다' })
+  }
+})
+
+// GET /api/auth/profile-status - 프로필 등록 여부 확인
+router.get('/profile-status', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.json({ hasProfile: false, requiresAuth: true })
+    }
+
+    const token = authHeader.substring(7)
+    const decoded = jwt.decode(token) as Record<string, any>
+
+    if (!decoded?.sub) {
+      return res.json({ hasProfile: false, requiresAuth: true })
+    }
+
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: decoded.sub },
+    })
+
+    res.json({
+      hasProfile: !!profile,
+      profileId: profile?.id,
+    })
+  } catch (error) {
+    console.error('프로필 상태 확인 실패:', error)
+    res.json({ hasProfile: false })
+  }
+})
+
+// PATCH /api/auth/password - 비밀번호 변경
+router.patch('/password', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const data = ChangePasswordSchema.parse(req.body)
+
+    // 현재 사용자 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+    }
+
+    // 비밀번호가 설정되지 않은 경우 (예: OAuth만 사용)
+    if (!user.password) {
+      return res.status(400).json({ error: '비밀번호 기반 인증을 사용하지 않습니다' })
+    }
+
+    // 현재 비밀번호 검증
+    const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password)
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: '현재 비밀번호가 일치하지 않습니다' })
+    }
+
+    // 새 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10)
+
+    // 비밀번호 업데이트
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    })
+
+    res.json({
+      success: true,
+      message: '비밀번호가 성공적으로 변경되었습니다',
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })
+    }
+    console.error('비밀번호 변경 실패:', error)
+    res.status(500).json({ error: '비밀번호 변경에 실패했습니다' })
+  }
+})
+
+// DELETE /api/auth/account - 계정 삭제
+router.delete('/account', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+
+    // 현재 사용자 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+    }
+
+    // 사용자와 관련된 모든 데이터 삭제 (cascade delete)
+    // User 삭제 시 UserProfile, CalendarEvent, Scrap, PushSubscription 자동 삭제
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    res.json({
+      success: true,
+      message: '계정이 완전히 삭제되었습니다',
+    })
+  } catch (error: any) {
+    console.error('계정 삭제 실패:', error)
+    res.status(500).json({ error: '계정 삭제에 실패했습니다' })
+  }
+})
+
+export default router
+</file>
+
+<file path="src/routes/calendar.ts">
+import { Router } from 'express'
+import { OAuth2Client } from 'google-auth-library'
+import { PrismaClient } from '@prisma/client'
+import { verifyAuth, AuthRequest } from '../middleware/auth'
+import { CalendarService } from '../services/calendarService'
+import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider'
+
+const prisma = new PrismaClient()
+
+const router = Router()
+const googleCalendarProvider = new GoogleCalendarProvider()
+const calendarService = new CalendarService(googleCalendarProvider)
+
+// POST /api/calendar/oauth-callback
+// Google OAuth 콜백 — 액세스 토큰 저장
+router.post('/oauth-callback', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { code } = req.body
+    if (!code) {
+      return res.status(400).json({ error: 'No authorization code provided' })
+    }
+
+    const googleClientId = process.env.GOOGLE_CLIENT_ID
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+    const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/calendar/oauth-callback'
+
+    if (!googleClientId || !googleClientSecret) {
+      return res.status(500).json({ error: 'Google OAuth not configured' })
+    }
+
+    const oauth2Client = new OAuth2Client(googleClientId, googleClientSecret, googleRedirectUri)
+
+    console.log('📝 Google OAuth 처리 시작', {
+      code: code.substring(0, 20) + '...',
+      clientId: googleClientId?.substring(0, 20),
+      redirectUri: googleRedirectUri
+    })
+
+    const { tokens } = await oauth2Client.getToken(code)
+    const accessToken = tokens.access_token
+    const refreshToken = tokens.refresh_token
+
+    console.log('✅ 토큰 교환 성공', {
+      accessToken: accessToken?.substring(0, 20) + '...',
+      hasRefreshToken: !!refreshToken
+    })
+
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Failed to get access token' })
+    }
+
+    await prisma.user.update({
+      where: { id: req.userId! },
+      data: {
+        googleAccessToken: accessToken,
+        googleRefreshToken: refreshToken || null,
+        googleConnectedAt: new Date()
+      }
+    })
+
+    console.log('💾 사용자 Google 토큰 저장 완료')
+    res.json({ success: true })
+  } catch (error) {
+    console.error('❌ Google OAuth callback error:', error instanceof Error ? error.message : error)
+    if (error instanceof Error) {
+      console.error('상세:', error.stack)
+    }
+    res.status(400).json({
+      error: 'Failed to connect Google Calendar',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+})
+
+// POST /api/calendar/sync
+// 공고 → Google Calendar 동기화
+router.post('/sync', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { postingId } = req.body
+    if (!postingId) {
+      return res.status(400).json({ error: 'postingId required' })
+    }
+
+    const posting = await prisma.posting.findUnique({
+      where: { id: postingId }
+    })
+
+    if (!posting) {
+      return res.status(404).json({ error: 'Posting not found' })
+    }
+
+    // 마감일 검증: 오늘 이후인지 확인
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const deadline = new Date(posting.receptionEndDate)
+    deadline.setHours(0, 0, 0, 0)
+
+    console.log('📅 마감일 검증:', {
+      postingId,
+      deadline: deadline.toISOString().split('T')[0],
+      today: today.toISOString().split('T')[0],
+      isPast: deadline < today
+    })
+
+    if (deadline < today) {
+      console.log('⏰ 마감일이 과거이므로 Google Calendar 동기화 스킵')
+      return res.json({
+        success: true,
+        eventId: null,
+        message: 'Posting deadline is in the past, skipped Google Calendar sync'
+      })
+    }
+
+    const result = await calendarService.sync(req.userId!, posting)
+    console.log('✅ Google Calendar 동기화 완료:', result.eventId)
+    res.json({ success: true, eventId: result.eventId })
+  } catch (error) {
+    console.error('❌ Calendar sync error:', error instanceof Error ? error.message : error)
+    res.status(400).json({
+      error: 'Sync failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+})
+
+// DELETE /api/calendar/events/:eventId
+// Google Calendar에서 삭제
+router.delete('/events/:eventId', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { eventId } = req.params
+
+    await calendarService.unsync(req.userId!, eventId)
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Calendar delete error:', error)
+    res.status(400).json({ error: 'Delete failed' })
+  }
+})
+
+// GET /api/calendar/status
+// Google Calendar 연동 상태
+router.get('/status', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId! },
+      select: {
+        googleConnectedAt: true,
+        email: true
+      }
+    })
+
+    res.json({
+      connected: !!user?.googleConnectedAt,
+      email: user?.email,
+      connectedAt: user?.googleConnectedAt
+    })
+  } catch (error) {
+    console.error('Calendar status error:', error)
+    res.status(500).json({ error: 'Failed to get calendar status' })
+  }
+})
+
+export default router
+</file>
+
+<file path="src/routes/calendarEvents.ts">
+import { Router, Request, Response } from 'express'
+import { PrismaClient } from '@prisma/client'
+import { verifyAuth } from '../middleware/auth.js'
+
+const router = Router()
+const prisma = new PrismaClient()
+
+// ISO 시간 문자열을 로컬 시간 기준 Date로 파싱
+// "2026-07-15T09:00:00" → 2026년 7월 15일 09:00 (로컬 시간)
+const parseLocalDateTime = (isoString: string): Date => {
+  const match = isoString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+  if (!match) throw new Error(`잘못된 날짜 형식: ${isoString}`)
+
+  const [, year, month, day, hour, minute, second] = match.map(Number)
+  return new Date(year, month - 1, day, hour, minute, second)
+}
+
+// 시간 기반 일정(isAllDay=false)의 날짜 유효성 검증
+const validateEventDates = (dtstart: string, dtend: string, isAllDay: boolean): string | null => {
+  if (isAllDay) return null
+
+  const startDateMatch = dtstart.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  const endDateMatch = dtend.match(/^(\d{4})-(\d{2})-(\d{2})/)
+
+  if (!startDateMatch || !endDateMatch) return '날짜 형식 오류'
+
+  const startDate = startDateMatch.slice(1).join('-')
+  const endDate = endDateMatch.slice(1).join('-')
+
+  if (startDate !== endDate) {
+    return '시간으로 일정을 지정할 때는 같은 날에만 만들 수 있습니다'
+  }
+
+  return null
+}
+
+interface ApiResponse<T> {
+  success?: boolean
+  data?: T
+  error?: string
+}
+
+interface CalendarEventPayload {
+  title: string
+  type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
+  dtstart: string
+  dtend: string
+  isAllDay?: boolean
+  startTime?: string
+  endTime?: string
+  memo?: string
+  hideFromRecommendation?: boolean
+  relatedPostingId?: string
+}
+
+// GET: 사용자의 모든 일정 조회
+router.get('/', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const events = await prisma.calendarEvent.findMany({
+      where: { userId },
+      orderBy: { dtstart: 'asc' },
+    })
+
+    // FullCalendar 오염 방지: startTime/endTime 필드 제거 후 반환
+    // (FullCalendar가 이 필드를 보면 recurring event로 잘못 해석함)
+    const sanitizedEvents = events.map(event => {
+      const { startTime, endTime, ...rest } = event
+      return {
+        ...rest,
+        rawStartTime: startTime,
+        rawEndTime: endTime,
+      }
+    })
+
+    res.json({
+      success: true,
+      data: sanitizedEvents,
+    } as ApiResponse<any>)
+  } catch (error) {
+    console.error('일정 조회 실패:', error)
+    res.status(500).json({ error: '일정 조회 실패' })
+  }
+})
+
+// GET: 특정 기간의 일정 (캘린더 뷰용)
+router.get('/range', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { startDate, endDate } = req.query
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate와 endDate 필수' })
+    }
+
+    const events = await prisma.calendarEvent.findMany({
+      where: {
+        userId,
+        dtstart: {
+          gte: new Date(startDate as string),
+          lte: new Date(endDate as string),
+        },
+      },
+      orderBy: { dtstart: 'asc' },
+    })
+
+    // FullCalendar 오염 방지: startTime/endTime 필드 제거 후 반환
+    const sanitizedEvents = events.map(event => {
+      const { startTime, endTime, ...rest } = event
+      return {
+        ...rest,
+        rawStartTime: startTime,
+        rawEndTime: endTime,
+      }
+    })
+
+    res.json({
+      success: true,
+      data: sanitizedEvents,
+    } as ApiResponse<any>)
+  } catch (error) {
+    console.error('기간별 일정 조회 실패:', error)
+    res.status(500).json({ error: '기간별 일정 조회 실패' })
+  }
+})
+
+// POST: 새 일정 생성
+router.post('/', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { title, type, dtstart, dtend, isAllDay, startTime, endTime, memo, hideFromRecommendation, relatedPostingId } = req.body as CalendarEventPayload
+
+    if (!title || !type || !dtstart || !dtend) {
+      return res.status(400).json({ error: '필수 필드 누락' })
+    }
+
+    // 시간 기반 일정 검증: 같은 날에만 생성 가능
+    const dateValidationError = validateEventDates(dtstart, dtend, isAllDay ?? true)
+    if (dateValidationError) {
+      return res.status(400).json({ error: dateValidationError })
+    }
+
+    console.log('📥 일정 생성 요청:', {
+      title,
+      type,
+      isAllDay,
+      dtstart,
+      dtend,
+      startTime,
+      endTime,
+    })
+
+    // 로컬 시간 기준으로 Date 파싱 (타임존 보정)
+    const dtstartDate = parseLocalDateTime(dtstart)
+    const dtendDate = parseLocalDateTime(dtend)
+
+    console.log('🔄 Date 변환 후 (로컬 기준):', {
+      dtstart: dtstartDate.toISOString(),
+      dtend: dtendDate.toISOString(),
+      dtstartLocal: dtstartDate.toString(),
+      dtendLocal: dtendDate.toString(),
+    })
+
+    const event = await prisma.calendarEvent.create({
+      data: {
+        userId,
+        title,
+        type,
+        dtstart: dtstartDate,
+        dtend: dtendDate,
+        isAllDay: isAllDay ?? true,
+        startTime: startTime,
+        endTime: endTime,
+        memo: memo,
+        hideFromRecommendation: hideFromRecommendation ?? false,
+        relatedPostingId: relatedPostingId,
+        source: 'manual',
+      },
+    })
+
+    console.log('💾 DB 저장 완료:', {
+      id: event.id,
+      dtstart: event.dtstart.toISOString(),
+      dtend: event.dtend.toISOString(),
+      isAllDay: event.isAllDay,
+    })
+
+    res.status(201).json({
+      success: true,
+      data: event,
+    } as ApiResponse<typeof event>)
+  } catch (error) {
+    console.error('일정 생성 실패:', error)
+    res.status(500).json({ error: '일정 생성 실패' })
+  }
+})
+
+// PATCH: 일정 수정
+router.patch('/:id', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { id } = req.params
+    const { title, type, dtstart, dtend, isAllDay, startTime, endTime, memo, hideFromRecommendation } = req.body
+
+    // 소유권 확인
+    const event = await prisma.calendarEvent.findUnique({ where: { id } })
+    if (!event || event.userId !== userId) {
+      return res.status(403).json({ error: '권한 없음' })
+    }
+
+    // 시간 기반 일정 검증: 같은 날에만 수정 가능
+    if (dtstart && dtend) {
+      const finalIsAllDay = isAllDay !== undefined ? isAllDay : event.isAllDay
+      const dateValidationError = validateEventDates(dtstart, dtend, finalIsAllDay)
+      if (dateValidationError) {
+        return res.status(400).json({ error: dateValidationError })
+      }
+    }
+
+    const updated = await prisma.calendarEvent.update({
+      where: { id },
+      data: {
+        ...(title && { title }),
+        ...(type && { type }),
+        ...(dtstart && { dtstart: parseLocalDateTime(dtstart) }),
+        ...(dtend && { dtend: parseLocalDateTime(dtend) }),
+        ...(isAllDay !== undefined && { isAllDay }),
+        ...(startTime !== undefined && { startTime }),
+        ...(endTime !== undefined && { endTime }),
+        ...(memo !== undefined && { memo }),
+        ...(hideFromRecommendation !== undefined && { hideFromRecommendation }),
+      },
+    })
+
+    res.json({
+      success: true,
+      data: updated,
+    } as ApiResponse<typeof updated>)
+  } catch (error) {
+    console.error('일정 수정 실패:', error)
+    res.status(500).json({ error: '일정 수정 실패' })
+  }
+})
+
+// DELETE: 일정 삭제
+router.delete('/:id', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { id } = req.params
+
+    // 소유권 확인
+    const event = await prisma.calendarEvent.findUnique({ where: { id } })
+    if (!event || event.userId !== userId) {
+      return res.status(403).json({ error: '권한 없음' })
+    }
+
+    await prisma.calendarEvent.delete({ where: { id } })
+
+    res.json({
+      success: true,
+      data: { id },
+    })
+  } catch (error) {
+    console.error('일정 삭제 실패:', error)
+    res.status(500).json({ error: '일정 삭제 실패' })
+  }
+})
+
+// DELETE: 제목으로 일정 삭제 (관리자용)
+router.delete('/by-title/:title', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { title } = req.params
+    const decodedTitle = decodeURIComponent(title)
+
+    console.log(`🗑️ 제목으로 일정 삭제 요청: "${decodedTitle}" (사용자: ${userId})`)
+
+    // 현재 사용자의 해당 제목 일정 찾기
+    const event = await prisma.calendarEvent.findFirst({
+      where: {
+        userId,
+        title: decodedTitle,
+      },
+    })
+
+    if (!event) {
+      console.log(`❌ 해당 제목의 일정을 찾을 수 없음: "${decodedTitle}"`)
+      return res.status(404).json({
+        error: '해당 제목의 일정을 찾을 수 없습니다',
+        searched: decodedTitle,
+      })
+    }
+
+    console.log(`🗑️ 일정 삭제 중: ${event.id}`)
+    await prisma.calendarEvent.delete({ where: { id: event.id } })
+
+    res.json({
+      success: true,
+      data: {
+        id: event.id,
+        title: event.title,
+        message: '일정이 삭제되었습니다',
+      },
+    })
+  } catch (error) {
+    console.error('제목으로 일정 삭제 실패:', error)
+    res.status(500).json({ error: '일정 삭제 실패' })
+  }
+})
+
+// GET: ICS 내보내기
+router.get('/export.ics', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const events = await prisma.calendarEvent.findMany({
+      where: { userId },
+      orderBy: { dtstart: 'asc' },
+    })
+
+    // ICS 포맷 생성 (Google Calendar 호환)
+    let ics = `BEGIN:VCALENDAR\r
+VERSION:2.0\r
+PRODID:-//UniBoard//UniBoard Calendar//EN\r
+CALSCALE:GREGORIAN\r
+METHOD:PUBLISH\r
+X-WR-CALNAME:UniBoard 일정\r
+X-WR-TIMEZONE:Asia/Seoul\r
+BEGIN:VTIMEZONE\r
+TZID:Asia/Seoul\r
+BEGIN:STANDARD\r
+DTSTART:19700101T000000\r
+TZOFFSETFROM:+0900\r
+TZOFFSETTO:+0900\r
+TZNAME:KST\r
+END:STANDARD\r
+END:VTIMEZONE\r
+`
+
+    events.forEach(event => {
+      const uid = `${event.id}@uniboard.local`
+      const now = new Date()
+      const dtstamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '') + 'Z'
+
+      // 날짜 포맷 (YYYYMMDD)
+      const dtstart = event.dtstart.toISOString().split('T')[0].replace(/-/g, '')
+      // All-day 이벤트는 종료일을 다음날로 설정해야 함
+      const dtend = new Date(event.dtend.getTime() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0]
+        .replace(/-/g, '')
+
+      const summary = event.title
+        .replace(/\\/g, '\\\\')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;')
+        .replace(/\n/g, '\\n')
+
+      const description = event.memo
+        ? event.memo
+            .replace(/\\/g, '\\\\')
+            .replace(/,/g, '\\,')
+            .replace(/;/g, '\\;')
+            .replace(/\n/g, '\\n')
+        : ''
+
+      ics += `BEGIN:VEVENT\r
+UID:${uid}\r
+DTSTAMP:${dtstamp}\r
+DTSTART;VALUE=DATE:${dtstart}\r
+DTEND;VALUE=DATE:${dtend}\r
+SUMMARY:${summary}\r
+${description ? `DESCRIPTION:${description}\r` : ''}TRANSP:TRANSPARENT\r
+STATUS:CONFIRMED\r
+SEQUENCE:0\r
+END:VEVENT\r
+`
+    })
+
+    ics += `END:VCALENDAR\r\n`
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename="uniboard-calendar.ics"')
+    res.send(ics)
+  } catch (error) {
+    console.error('ICS 내보내기 실패:', error)
+    res.status(500).json({ error: 'ICS 내보내기 실패' })
+  }
+})
+
+// POST: ICS 가져오기
+router.post('/import.ics', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { icsContent } = req.body
+
+    if (!icsContent) {
+      return res.status(400).json({ error: 'ICS 내용이 필요합니다' })
+    }
+
+    // ICS 파싱
+    const eventRegex = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g
+    const events = []
+    let match
+
+    while ((match = eventRegex.exec(icsContent)) !== null) {
+      const eventBlock = match[1]
+
+      // 필드 추출 (줄바꿈 처리)
+      const summaryMatch = eventBlock.match(/SUMMARY:(.+?)(?:\r?\n|$)/)
+      const dtStartMatch = eventBlock.match(/DTSTART(?:;VALUE=DATE)?(?:;[^:]*)?:(\d{8}T?\d{0,6}Z?|[\dT\-Z:]+)/)
+      const dtEndMatch = eventBlock.match(/DTEND(?:;VALUE=DATE)?(?:;[^:]*)?:(\d{8}T?\d{0,6}Z?|[\dT\-Z:]+)/)
+      const descMatch = eventBlock.match(/DESCRIPTION:(.+?)(?:\r?\n|$)/)
+      const categoriesMatch = eventBlock.match(/CATEGORIES:(.+?)(?:\r?\n|$)/)
+
+      if (dtStartMatch) {
+        // 제목 언이스케이프 (SUMMARY가 없으면 기본값)
+        const title = summaryMatch
+          ? summaryMatch[1]
+              .trim()
+              .replace(/\\n/g, '\n')
+              .replace(/\\;/g, ';')
+              .replace(/\\,/g, ',')
+              .replace(/\\\\/g, '\\')
+          : '(제목 없음)'
+
+        const typeStr = categoriesMatch?.[1]?.trim()?.toUpperCase()
+        const type = ['EXAM', 'PART_TIME', 'POSTING', 'OTHER'].includes(typeStr)
+          ? typeStr
+          : 'OTHER'
+
+        // 날짜 파싱
+        const dtStartStr = dtStartMatch[1].trim()
+        let dtstart: Date
+
+        if (dtStartStr.length === 8) {
+          // VALUE=DATE 형식 (YYYYMMDD)
+          const year = parseInt(dtStartStr.substring(0, 4))
+          const month = parseInt(dtStartStr.substring(4, 6)) - 1
+          const day = parseInt(dtStartStr.substring(6, 8))
+          dtstart = new Date(year, month, day)
+        } else if (dtStartStr.match(/^\d{8}T\d{6}Z?$/)) {
+          // Google DateTime 형식 (YYYYMMDDTHHMMSSZ)
+          const year = parseInt(dtStartStr.substring(0, 4))
+          const month = parseInt(dtStartStr.substring(4, 6)) - 1
+          const day = parseInt(dtStartStr.substring(6, 8))
+          const hour = parseInt(dtStartStr.substring(9, 11))
+          const minute = parseInt(dtStartStr.substring(11, 13))
+          const second = parseInt(dtStartStr.substring(13, 15))
+
+          if (dtStartStr.endsWith('Z')) {
+            // UTC 시간을 로컬 시간으로 변환
+            dtstart = new Date(Date.UTC(year, month, day, hour, minute, second))
+          } else {
+            dtstart = new Date(year, month, day, hour, minute, second)
+          }
+        } else if (dtStartStr.includes('T')) {
+          // DateTime 형식 (ISO)
+          dtstart = new Date(dtStartStr.replace('Z', '+00:00'))
+        } else {
+          // ISO 형식
+          dtstart = new Date(dtStartStr)
+        }
+
+        // 종료일 파싱
+        let dtend = new Date(dtstart)
+        if (dtEndMatch) {
+          const dtEndStr = dtEndMatch[1].trim()
+          if (dtEndStr.length === 8) {
+            const year = parseInt(dtEndStr.substring(0, 4))
+            const month = parseInt(dtEndStr.substring(4, 6)) - 1
+            const day = parseInt(dtEndStr.substring(6, 8))
+            // All-day 이벤트의 경우 DTEND는 이미 다음날이므로 하루를 뺌
+            dtend = new Date(year, month, day - 1)
+          } else if (dtEndStr.match(/^\d{8}T\d{6}Z?$/)) {
+            // Google DateTime 형식
+            const year = parseInt(dtEndStr.substring(0, 4))
+            const month = parseInt(dtEndStr.substring(4, 6)) - 1
+            const day = parseInt(dtEndStr.substring(6, 8))
+            const hour = parseInt(dtEndStr.substring(9, 11))
+            const minute = parseInt(dtEndStr.substring(11, 13))
+            const second = parseInt(dtEndStr.substring(13, 15))
+
+            if (dtEndStr.endsWith('Z')) {
+              dtend = new Date(Date.UTC(year, month, day, hour, minute, second))
+            } else {
+              dtend = new Date(year, month, day, hour, minute, second)
+            }
+          } else if (dtEndStr.includes('T')) {
+            dtend = new Date(dtEndStr.replace('Z', '+00:00'))
+          } else {
+            dtend = new Date(dtEndStr)
+          }
+        }
+
+        // 설명 언이스케이프
+        const memo = descMatch?.[1]
+          ?.trim()
+          .replace(/\\n/g, '\n')
+          .replace(/\\;/g, ';')
+          .replace(/\\,/g, ',')
+          .replace(/\\\\/g, '\\') || ''
+
+        events.push({
+          title,
+          type,
+          dtstart,
+          dtend,
+          memo,
+          isAllDay: false, // Google Calendar 이벤트는 시간을 가짐
+          source: 'manual' as const,
+        })
+
+        console.log('📝 ICS 이벤트 파싱:', { title, type, dtstart, dtend })
+      }
+    }
+
+    console.log(`📥 총 ${events.length}개 이벤트 파싱 완료`)
+
+    if (events.length === 0) {
+      return res.status(400).json({
+        error: 'ICS 파일에서 이벤트를 찾을 수 없습니다',
+        details: 'VEVENT 블록이 없거나 필수 필드(SUMMARY, DTSTART)가 없습니다',
+      })
+    }
+
+    // 일정 저장
+    const created = await prisma.calendarEvent.createMany({
+      data: events.map(evt => ({
+        ...evt,
+        userId,
+        hideFromRecommendation: false,
+      })),
+      skipDuplicates: true,
+    })
+
+    console.log(`✅ ${created.count}개 일정 저장 완료`)
+
+    res.json({
+      success: true,
+      message: `${created.count}개 일정을 가져왔습니다`,
+      count: created.count,
+    })
+  } catch (error) {
+    console.error('❌ ICS 가져오기 실패:', error instanceof Error ? error.message : error)
+    res.status(400).json({
+      error: 'ICS 가져오기 실패',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+export default router
+</file>
+
+<file path="src/routes/github.ts">
+import { Router, Response } from 'express'
+import { githubService } from '../services/githubService'
+import { llmService } from '../services/llmService'
+import { AuthRequest, verifyAuth } from '../middleware/auth'
+
+const router = Router()
+
+/**
+ * GET /api/github/trending
+ * 인기 저장소 조회 (선택사항: 언어별, 제한 개수)
+ */
+router.get('/trending', async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 300, 300)
+    const language = req.query.language as string
+
+    console.log(`📥 Fetching trending repos (language: ${language || 'all'}, limit: ${limit})`)
+
+    const repos = await githubService.getTrendingRepos(limit)
+
+    if (language) {
+      const filtered = repos.filter(r => r.language?.toLowerCase() === language.toLowerCase())
+      return res.json({
+        success: true,
+        count: filtered.length,
+        data: filtered,
+      })
+    }
+
+    res.json({
+      success: true,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching trending repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/recent
+ * 최근 저장소 조회
+ */
+router.get('/recent', async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 300, 300)
+    const language = req.query.language as string
+
+    console.log(`📥 Fetching recent repos (language: ${language || 'all'}, limit: ${limit})`)
+
+    const repos = await githubService.fetchRecentRepos(language, limit)
+
+    res.json({
+      success: true,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching recent repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/active
+ * 활발한 저장소 조회
+ */
+router.get('/active', async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 300, 300)
+    const language = req.query.language as string
+
+    console.log(`📥 Fetching active repos (language: ${language || 'all'}, limit: ${limit})`)
+
+    const repos = await githubService.fetchActiveRepos(language, limit)
+
+    res.json({
+      success: true,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching active repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/search
+ * 저장소 검색
+ */
+router.get('/search', async (req: AuthRequest, res: Response) => {
+  try {
+    const query = req.query.q as string
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 50)
+
+    if (!query || query.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query must be at least 2 characters',
+      })
+    }
+
+    const results = await githubService.searchRepos(query, limit)
+
+    res.json({
+      success: true,
+      count: results.length,
+      query,
+      data: results,
+    })
+  } catch (error) {
+    console.error('❌ Error searching repos:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/:githubId
+ * 저장소 상세 조회
+ */
+router.get('/:githubId', async (req: AuthRequest, res: Response) => {
+  try {
+    const githubId = parseInt(req.params.githubId)
+
+    if (isNaN(githubId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid GitHub ID',
+      })
+    }
+
+    const repo = await githubService.getRepoById(githubId)
+
+    if (!repo) {
+      return res.status(404).json({
+        success: false,
+        error: 'Repository not found',
+      })
+    }
+
+    res.json({
+      success: true,
+      data: repo,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching repo details:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/language/:lang
+ * 언어별 저장소 조회
+ */
+router.get('/language/:lang', async (req: AuthRequest, res: Response) => {
+  try {
+    const language = req.params.lang
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 50)
+
+    const repos = await githubService.getReposByLanguage(language, limit)
+
+    res.json({
+      success: true,
+      language,
+      count: repos.length,
+      data: repos,
+    })
+  } catch (error) {
+    console.error('❌ Error fetching repos by language:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * POST /api/github/collect
+ * GitHub에서 인기 저장소 수집 및 요약 (관리자 전용)
+ */
+router.post('/collect', verifyAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { language, limit = 20 } = req.body
+
+    // 백그라운드에서 실행 (즉시 응답)
+    githubService.collectAndSummarizeRepos(language, limit).catch(error => {
+      console.error('❌ Background collection error:', error)
+    })
+
+    res.json({
+      success: true,
+      message: '저장소 수집이 시작되었습니다',
+      params: { language, limit },
+    })
+  } catch (error) {
+    console.error('❌ Error starting collection:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * GET /api/github/llm/status
+ * LLM 상태 확인
+ */
+router.get('/llm/status', async (req: AuthRequest, res: Response) => {
+  try {
+    const info = llmService.getInfo()
+
+    res.json({
+      success: true,
+      llm: info,
+    })
+  } catch (error) {
+    console.error('❌ Error checking LLM status:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+/**
+ * POST /api/github/summarize
+ * 텍스트 요약 API (테스트용)
+ */
+router.post('/summarize', verifyAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { text, type = 'summary' } = req.body
+
+    if (!text || text.length < 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'Text must be at least 10 characters',
+      })
+    }
+
+    let result
+
+    switch (type) {
+      case 'summary':
+        result = await llmService.summarizeReadme(text)
+        break
+      case 'translate':
+        result = await llmService.translateToKorean(text)
+        break
+      case 'bullets':
+        const bullets = await llmService.extractBulletPoints(text, 4)
+        result = { success: true, content: bullets.join('\n'), provider: 'llm' }
+        break
+      default:
+        return res.status(400).json({
+          success: false,
+          error: 'Unknown summary type',
+        })
+    }
+
+    res.json(result)
+  } catch (error) {
+    console.error('❌ Error summarizing:', error)
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+export default router
+</file>
+
+<file path="src/routes/postings.ts">
+import { Router } from 'express'
+import { PrismaClient } from '@prisma/client'
+import { matchUserToPosting } from '../services/matchingService.js'
+import { calculateSmartScore, rankPostingsBySmartScore } from '../services/smartMatchingService.js'
+import { verifyAuth, AuthRequest } from '../middleware/auth.js'
+import { CalendarService } from '../services/calendarService.js'
+import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider.js'
+
+const router = Router()
+const prisma = new PrismaClient()
+const googleCalendarProvider = new GoogleCalendarProvider()
+const calendarService = new CalendarService(googleCalendarProvider)
+
+// GET /api/postings - 필터링된 공고 목록 조회
+router.get('/', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const { limit = '20', offset = '0', category, smart, sortBy = 'deadline' } = req.query
+
+    // 사용자 프로필 조회
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+    })
+
+    if (!userProfile) {
+      return res.status(404).json({ error: '사용자 프로필을 찾을 수 없습니다' })
+    }
+
+    // 기본 쿼리: 마감되지 않은 공고만 조회
+    const now = new Date()
+    const whereClause: any = {
+      receptionEndDate: {
+        gt: now,  // 현재 시간보다 뒤인 공고만
+      },
+    }
+    if (category && category !== 'all') {
+      whereClause.category = category
+    }
+
+    // 스마트 정렬 사용 시 캘린더 이벤트 포함
+    const useSmartMatching = smart === 'true'
+
+    // 총 공고 수
+    const total = await prisma.posting.count({ where: whereClause })
+
+    // matchScore 정렬 시 모든 데이터 조회 (메모리에서 정렬 후 pagination)
+    const shouldFetchAll = sortBy === 'matchScore'
+    const orderByClause = sortBy === 'matchScore' ? undefined : { receptionEndDate: 'asc' }
+
+    // 공고 목록 조회 (자격요건 포함)
+    const postings = await prisma.posting.findMany({
+      where: whereClause,
+      include: {
+        eligibility: true,
+        scraps: {
+          where: { userId },
+          select: { id: true },
+        },
+      },
+      orderBy: orderByClause,
+      ...(shouldFetchAll ? {} : { take: parseInt(limit as string), skip: parseInt(offset as string) }),
+    })
+
+    // 스마트 정렬용 사용자 캘린더 이벤트 조회
+    let userCalendarEvents: any[] = []
+    if (useSmartMatching) {
+      userCalendarEvents = await prisma.calendarEvent.findMany({
+        where: { userId },
+      })
+    }
+
+    // 매칭 스코어 계산
+    let result = postings
+      .filter(posting => posting.eligibility)
+      .map(posting => {
+        const eligibility = posting.eligibility!
+        const match = matchUserToPosting(userProfile, eligibility)
+        const smartScore = useSmartMatching
+          ? calculateSmartScore({
+              ...posting,
+              category: posting.category,
+              receptionEndDate: posting.receptionEndDate,
+              eventStartDate: posting.eventStartDate,
+              eventEndDate: posting.eventEndDate,
+            }, userCalendarEvents)
+          : null
+
+        return {
+          id: posting.id,
+          title: posting.title,
+          category: posting.category,
+          receptionStartDate: posting.receptionStartDate,
+          receptionEndDate: posting.receptionEndDate,
+          eventStartDate: posting.eventStartDate,
+          eventEndDate: posting.eventEndDate,
+          sourceUrl: posting.sourceUrl,
+          parseStatus: posting.parseStatus,
+          isScraped: posting.scraps.length > 0,
+          isEligible: match.isEligible,
+          matchScore: Math.round(match.score),
+          smartScore: smartScore ? {
+            score: smartScore.score,
+            reason: smartScore.reason,
+            isRecommended: smartScore.isRecommended,
+            conflictLevel: smartScore.conflictLevel,
+          } : undefined,
+          eligibility: {
+            majors: eligibility.majors,
+            regions: eligibility.regions,
+            grades: eligibility.grades,
+            enrollmentStatuses: eligibility.enrollmentStatuses,
+            ageMin: eligibility.ageMin,
+            ageMax: eligibility.ageMax,
+            incomeMax: eligibility.incomeMax,
+          },
+        }
+      })
+
+    // 정렬 적용
+    if (sortBy === 'matchScore') {
+      // 1차: 매칭도 높은 순 (내림차순)
+      // 2차: 매칭도 같으면 마감일 빠른 순 (오름차순)
+      result.sort((a, b) => {
+        const scoreDiff = (b.matchScore ?? 0) - (a.matchScore ?? 0)
+        if (scoreDiff !== 0) return scoreDiff
+
+        const dateA = new Date(a.receptionEndDate).getTime()
+        const dateB = new Date(b.receptionEndDate).getTime()
+        return dateA - dateB
+      })
+
+      // matchScore 정렬 시 메모리에서 정렬 후 pagination 적용
+      const limitNum = parseInt(limit as string)
+      const offsetNum = parseInt(offset as string)
+      result = result.slice(offsetNum, offsetNum + limitNum)
+    }
+
+    res.json({
+      success: true,
+      data: {
+        postings: result,
+        pagination: {
+          total,
+          limit: parseInt(limit as string),
+          offset: parseInt(offset as string),
+          hasMore: parseInt(offset as string) + result.length < total,
+        },
+      },
+    })
+  } catch (error) {
+    console.error('공고 조회 실패:', error)
+    res.status(500).json({ error: '공고 조회에 실패했습니다' })
+  }
+})
+
+// GET /api/postings/:id - 공고 상세 조회
+router.get('/:id', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params
+    const userId = req.userId!
+
+    const posting = await prisma.posting.findUnique({
+      where: { id },
+      include: {
+        eligibility: true,
+        scraps: {
+          where: { userId },
+          select: { id: true, notifyEnabled: true },
+        },
+      },
+    })
+
+    if (!posting) {
+      return res.status(404).json({ error: '공고를 찾을 수 없습니다' })
+    }
+
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+    })
+
+    let matchResult = { isEligible: false, score: 0 }
+    if (userProfile && posting.eligibility) {
+      matchResult = matchUserToPosting(userProfile, posting.eligibility)
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...posting,
+        isEligible: matchResult.isEligible,
+        matchScore: Math.round(matchResult.score),
+        isScrapped: posting.scraps.length > 0,
+        scrappedNotify: posting.scraps[0]?.notifyEnabled ?? false,
+      },
+    })
+  } catch (error) {
+    console.error('공고 상세 조회 실패:', error)
+    res.status(500).json({ error: '공고 조회에 실패했습니다' })
+  }
+})
+
+// POST /api/postings/:id/scrap - 공고 스크랩
+router.post('/:id/scrap', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params
+    const userId = req.userId!
+
+    // 공고 존재 확인
+    const posting = await prisma.posting.findUnique({ where: { id } })
+    if (!posting) {
+      return res.status(404).json({ error: '공고를 찾을 수 없습니다' })
+    }
+
+    // 이미 스크랩했으면 삭제
+    const existing = await prisma.scrap.findUnique({
+      where: {
+        userId_postingId: { userId, postingId: id },
+      },
+    })
+
+    if (existing) {
+      // Google Calendar에서 이벤트 삭제
+      if (existing.googleEventId) {
+        try {
+          await calendarService.unsync(userId, existing.googleEventId)
+        } catch (error) {
+          console.error('Google Calendar 이벤트 삭제 실패:', error)
+        }
+      }
+
+      await prisma.scrap.delete({
+        where: {
+          userId_postingId: { userId, postingId: id },
+        },
+      })
+      return res.json({ success: true, data: { isScrapped: false } })
+    }
+
+    // 새로 스크랩 추가
+    const scrap = await prisma.scrap.create({
+      data: {
+        userId,
+        postingId: id,
+        notifyEnabled: true,
+      },
+    })
+
+    // Google Calendar 동기화 (연동된 경우만)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { googleAccessToken: true }
+    })
+
+    if (user?.googleAccessToken) {
+      try {
+        const result = await calendarService.sync(userId, posting)
+        await prisma.scrap.update({
+          where: { id: scrap.id },
+          data: { googleEventId: result.eventId }
+        })
+      } catch (error) {
+        console.error('Google Calendar 동기화 실패:', error)
+      }
+    }
+
+    res.json({ success: true, data: { isScrapped: true } })
+  } catch (error) {
+    console.error('스크랩 실패:', error)
+    res.status(500).json({ error: '스크랩에 실패했습니다' })
+  }
+})
+
+export default router
+</file>
+
+<file path="src/routes/profile.ts">
+import { Router } from 'express'
+import { PrismaClient } from '@prisma/client'
+import { CreateUserProfileSchema, UpdateUserProfileSchema } from '../../../shared/src/schemas/profile.js'
+import { verifyAuth, AuthRequest } from '../middleware/auth.js'
+
+const router = Router()
+const prisma = new PrismaClient()
+
+// GET /api/profile - 현재 유저의 프로필 조회
+router.get('/', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId
+    if (!userId) {
+      return res.status(401).json({ error: '인증이 필요합니다' })
+    }
+
+    // User의 nickname과 UserProfile 함께 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { nickname: true },
+    })
+
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId },
+    })
+
+    if (!profile) {
+      return res.status(404).json({ error: '프로필을 찾을 수 없습니다' })
+    }
+
+    // nickname을 프로필에 포함해서 반환
+    res.json({
+      ...profile,
+      nickname: user?.nickname || null,
+    })
+  } catch (error) {
+    console.error('프로필 조회 실패:', error)
+    res.status(500).json({ error: '프로필 조회에 실패했습니다' })
+  }
+})
+
+// POST /api/profile - 프로필 생성
+router.post('/', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const data = CreateUserProfileSchema.parse(req.body)
+
+    // 기존 프로필 확인
+    const existing = await prisma.userProfile.findUnique({
+      where: { userId },
+    })
+
+    if (existing) {
+      return res.status(400).json({ error: '이미 프로필이 존재합니다' })
+    }
+
+    // User 테이블에 nickname 저장 (있으면)
+    if (data.nickname) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { nickname: data.nickname },
+      })
+    }
+
+    const profile = await prisma.userProfile.create({
+      data: {
+        userId,
+        major: data.major || null,
+        grade: data.grade || null,
+        enrollmentStatus: data.enrollmentStatus || null,
+        residenceRegion: data.residenceRegion || null,
+        incomeBracket: data.incomeBracket || null,
+        age: data.age || null,
+        interestTags: data.interestTags || [],
+      },
+    })
+
+    // nickname을 포함해서 반환
+    res.status(201).json({
+      ...profile,
+      nickname: data.nickname || null,
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })
+    }
+    console.error('프로필 생성 실패:', error)
+    res.status(500).json({ error: '프로필 생성에 실패했습니다' })
+  }
+})
+
+// PATCH /api/profile - 프로필 수정
+router.patch('/', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const data = UpdateUserProfileSchema.parse(req.body)
+
+    // User 테이블 닉네임 업데이트 (있으면)
+    if (data.nickname !== undefined) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { nickname: data.nickname },
+      })
+    }
+
+    const profile = await prisma.userProfile.update({
+      where: { userId },
+      data: {
+        major: data.major !== undefined ? data.major : undefined,
+        grade: data.grade !== undefined ? data.grade : undefined,
+        enrollmentStatus: data.enrollmentStatus !== undefined ? data.enrollmentStatus : undefined,
+        residenceRegion: data.residenceRegion !== undefined ? data.residenceRegion : undefined,
+        incomeBracket: data.incomeBracket !== undefined ? data.incomeBracket : undefined,
+        age: data.age !== undefined ? data.age : undefined,
+        interestTags: data.interestTags !== undefined ? data.interestTags : undefined,
+      },
+    })
+
+    res.json(profile)
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })
+    }
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: '프로필을 찾을 수 없습니다' })
+    }
+    console.error('프로필 수정 실패:', error)
+    res.status(500).json({ error: '프로필 수정에 실패했습니다' })
+  }
+})
+
+export default router
+</file>
+
+<file path="src/routes/scraps.ts">
+import { Router } from 'express'
+import { PrismaClient } from '@prisma/client'
+import { verifyAuth, AuthRequest } from '../middleware/auth.js'
+import { matchUserToPosting } from '../services/matchingService.js'
+
+const router = Router()
+const prisma = new PrismaClient()
+
+// GET /api/scraps - 사용자의 스크랩한 공고 목록
+router.get('/', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const { limit = '20', offset = '0', sortBy = 'dday' } = req.query
+
+    // 사용자 프로필 조회
+    const userProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+    })
+
+    if (!userProfile) {
+      return res.status(404).json({ error: '사용자 프로필을 찾을 수 없습니다' })
+    }
+
+    // 사용자가 스크랩한 공고들 조회
+    const scraps = await prisma.scrap.findMany({
+      where: { userId },
+      include: {
+        posting: {
+          include: {
+            eligibility: true,
+          },
+        },
+      },
+      orderBy:
+        sortBy === 'date'
+          ? { scrappedAt: 'desc' }
+          : { posting: { receptionEndDate: 'asc' } }, // 기본: D-Day 순
+      take: parseInt(limit as string),
+      skip: parseInt(offset as string),
+    })
+
+    // 총 스크랩 수
+    const total = await prisma.scrap.count({ where: { userId } })
+
+    // 응답 데이터 포맷
+    const result = scraps
+      .filter(scrap => scrap.posting?.eligibility)
+      .map(scrap => {
+        const posting = scrap.posting!
+        const eligibility = posting.eligibility!
+        const match = matchUserToPosting(userProfile, eligibility)
+
+        // D-Day 계산
+        const dDay = Math.ceil(
+          (new Date(posting.receptionEndDate!).getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24)
+        )
+
+        return {
+          scrapId: scrap.id,
+          id: posting.id,
+          title: posting.title,
+          category: posting.category,
+          receptionStartDate: posting.receptionStartDate,
+          receptionEndDate: posting.receptionEndDate,
+          eventStartDate: posting.eventStartDate,
+          eventEndDate: posting.eventEndDate,
+          sourceUrl: posting.sourceUrl,
+          parseStatus: posting.parseStatus,
+          isScraped: true,
+          isEligible: match.isEligible,
+          matchScore: Math.round(match.score),
+          dDay,
+          notifyEnabled: scrap.notifyEnabled,
+          scrappedAt: scrap.scrappedAt,
+          eligibility: {
+            majors: eligibility.majors,
+            regions: eligibility.regions,
+            grades: eligibility.grades,
+            enrollmentStatuses: eligibility.enrollmentStatuses,
+            ageMin: eligibility.ageMin,
+            ageMax: eligibility.ageMax,
+            incomeMax: eligibility.incomeMax,
+          },
+        }
+      })
+
+    res.json({
+      success: true,
+      data: {
+        scraps: result,
+        pagination: {
+          total,
+          limit: parseInt(limit as string),
+          offset: parseInt(offset as string),
+          hasMore: parseInt(offset as string) + result.length < total,
+        },
+      },
+    })
+  } catch (error) {
+    console.error('스크랩 목록 조회 실패:', error)
+    res.status(500).json({ error: '스크랩 목록 조회에 실패했습니다' })
+  }
+})
+
+// PATCH /api/scraps/:id - 알림 설정 변경
+router.patch('/:id', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const { id } = req.params
+    const { notifyEnabled } = req.body
+
+    // 소유권 확인
+    const scrap = await prisma.scrap.findUnique({ where: { id } })
+    if (!scrap || scrap.userId !== userId) {
+      return res.status(403).json({ error: '권한 없음' })
+    }
+
+    // 알림 설정 업데이트
+    const updated = await prisma.scrap.update({
+      where: { id },
+      data: { notifyEnabled: notifyEnabled ?? !scrap.notifyEnabled },
+      include: {
+        posting: true,
+      },
+    })
+
+    res.json({
+      success: true,
+      data: {
+        id: updated.id,
+        postingId: updated.postingId,
+        notifyEnabled: updated.notifyEnabled,
+      },
+    })
+  } catch (error) {
+    console.error('알림 설정 변경 실패:', error)
+    res.status(500).json({ error: '알림 설정 변경에 실패했습니다' })
+  }
+})
+
+// POST /api/scraps/subscribe - 웹 푸시 구독 저장
+router.post('/subscribe', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const { subscription, userAgent } = req.body
+
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: '유효한 구독 정보가 필요합니다' })
+    }
+
+    // 푸시 구독 저장 또는 업데이트
+    const pushSubscription = await prisma.pushSubscription.upsert({
+      where: {
+        userId_endpoint: {
+          userId,
+          endpoint: subscription.endpoint,
+        },
+      },
+      update: {
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        subscriptionJson: JSON.stringify(subscription),
+        userAgent,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        subscriptionJson: JSON.stringify(subscription),
+        userAgent,
+      },
+    })
+
+    res.json({
+      success: true,
+      data: {
+        id: pushSubscription.id,
+        subscribed: true,
+      },
+    })
+  } catch (error) {
+    console.error('푸시 구독 저장 실패:', error)
+    res.status(500).json({ error: '푸시 구독 저장에 실패했습니다' })
+  }
+})
+
+export default router
+</file>
+
+<file path="src/services/providers/googleCalendarProvider.ts">
+import { google } from 'googleapis'
+import { OAuth2Client } from 'google-auth-library'
+import { Posting, PrismaClient } from '@prisma/client'
+import { ICalendarProvider } from '../calendarService'
+
+const prisma = new PrismaClient()
+
+export class GoogleCalendarProvider implements ICalendarProvider {
+  private googleClientId: string
+  private googleClientSecret: string
+  private googleRedirectUri: string
+
+  constructor() {
+    this.googleClientId = process.env.GOOGLE_CLIENT_ID || ''
+    this.googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ''
+    this.googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/calendar/oauth-callback'
+  }
+
+  async sync(userId: string, posting: Posting): Promise<{ eventId: string }> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { googleAccessToken: true, googleRefreshToken: true }
+    })
+
+    if (!user?.googleAccessToken) {
+      throw new Error('Google Calendar not connected')
+    }
+
+    const auth = new OAuth2Client(this.googleClientId, this.googleClientSecret, this.googleRedirectUri)
+    auth.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken
+    })
+
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: auth as any
+    })
+
+    // D-Day 계산 (마감일을 전날로 표시)
+    const deadlineDate = posting.receptionEndDate
+    if (!deadlineDate) {
+      throw new Error('Posting has no receptionEndDate')
+    }
+
+    const formattedDate = deadlineDate.toISOString().split('T')[0]
+
+    const event = {
+      summary: `📋 ${posting.title}`,
+      description: `🔗 ${posting.sourceUrl}`,
+      start: {
+        date: formattedDate,
+        timeZone: 'Asia/Seoul'
+      },
+      end: {
+        date: formattedDate,
+        timeZone: 'Asia/Seoul'
+      },
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'notification', minutes: 1440 }, // D-1
+          { method: 'notification', minutes: 4320 } // D-3
+        ]
+      }
+    }
+
+    const result = await calendar.events.insert({
+      calendarId: 'primary',
+      requestBody: event as any
+    })
+
+    const eventId = result.data.id
+    if (!eventId) {
+      throw new Error('Failed to get eventId from Google Calendar')
+    }
+
+    return { eventId }
+  }
+
+  async unsync(userId: string, eventId: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { googleAccessToken: true, googleRefreshToken: true }
+    })
+
+    if (!user?.googleAccessToken) {
+      throw new Error('Google Calendar not connected')
+    }
+
+    const auth = new OAuth2Client(this.googleClientId, this.googleClientSecret, this.googleRedirectUri)
+    auth.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken
+    })
+
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: auth as any
+    })
+
+    await calendar.events.delete({
+      calendarId: 'primary',
+      eventId
+    })
+  }
+
+  async export(userId: string, postingIds?: string[]): Promise<string> {
+    throw new Error('iCalendar export not implemented yet')
+  }
+
+  async getCalendars(userId: string): Promise<Array<{ id: string; name: string }>> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { googleAccessToken: true, googleRefreshToken: true }
+    })
+
+    if (!user?.googleAccessToken) {
+      throw new Error('Google Calendar not connected')
+    }
+
+    const auth = new OAuth2Client(this.googleClientId, this.googleClientSecret, this.googleRedirectUri)
+    auth.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken
+    })
+
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: auth as any
+    })
+
+    const result = await calendar.calendarList.list()
+    return (
+      result.data.items?.map((item) => ({
+        id: item.id || '',
+        name: item.summary || ''
+      })) || []
+    )
+  }
+}
+</file>
+
+<file path="src/services/calendarService.ts">
+import { Posting } from '@prisma/client'
+
+export interface ICalendarProvider {
+  sync(userId: string, posting: Posting): Promise<{ eventId: string }>
+  unsync(userId: string, eventId: string): Promise<void>
+  export(userId: string, postingIds?: string[]): Promise<string>
+  getCalendars(userId: string): Promise<Array<{ id: string; name: string }>>
+}
+
+export class CalendarService {
+  private provider: ICalendarProvider
+
+  constructor(provider: ICalendarProvider) {
+    this.provider = provider
+  }
+
+  async sync(userId: string, posting: Posting) {
+    return this.provider.sync(userId, posting)
+  }
+
+  async unsync(userId: string, eventId: string) {
+    return this.provider.unsync(userId, eventId)
+  }
+
+  async export(userId: string, postingIds?: string[]) {
+    return this.provider.export(userId, postingIds)
+  }
+
+  async getCalendars(userId: string) {
+    return this.provider.getCalendars(userId)
+  }
+}
+</file>
+
+<file path="src/services/githubService.ts">
+/**
+ * GitHub 저장소 정보 조회 및 요약 서비스
+ * LLM과 통합하여 한국어 요약 생성
+ */
+
+import { PrismaClient } from '@prisma/client'
+import { llmService } from './llmService'
+
+const prisma = new PrismaClient()
+
+interface GithubRepoData {
+  id: number
+  owner: string
+  name: string
+  fullName: string
+  description?: string
+  url: string
+  stars: number
+  forks: number
+  openIssues: number
+  language?: string
+  topics: string[]
+  license?: string
+  homepageUrl?: string
+}
+
+interface RepoWithSummary extends GithubRepoData {
+  readme?: string
+  summary?: string
+  summaryBullets?: string[]
+}
+
+class GithubService {
+  /**
+   * GitHub API로 저장소 검색 (필터별)
+   * @param filter - 'trending' (별 순), 'recent' (최근), 'active' (활발)
+   * @param language - 프로그래밍 언어 필터
+   */
+  async fetchReposByFilter(
+    filter: 'trending' | 'recent' | 'active' = 'trending',
+    language?: string,
+    limit: number = 300
+  ): Promise<GithubRepoData[]> {
+    let query = language ? `language:${language}` : ''
+    let sortBy = 'stars'
+    let orderBy = 'desc'
+
+    // 필터별 조건 추가
+    switch (filter) {
+      case 'trending':
+        // 별 1000개 이상 (많은 순)
+        query += (query ? ' ' : '') + 'stars:>1000'
+        sortBy = 'stars'
+        orderBy = 'desc'
+        break
+      case 'recent':
+        // 최근 2개월 내 생성되고 별 1000개 이상 (최신순)
+        query += (query ? ' ' : '') + 'stars:>1000 created:>2026-05-27'
+        sortBy = 'created'
+        orderBy = 'desc'
+        break
+      case 'active':
+        // 최근 2주 내 업데이트되고 별 1000개 이상 (최신순)
+        query += (query ? ' ' : '') + 'stars:>1000 pushed:>2026-07-13'
+        sortBy = 'updated'
+        orderBy = 'desc'
+        break
+    }
+
+    const token = process.env.GITHUB_TOKEN ? `&Authorization: token ${process.env.GITHUB_TOKEN}` : ''
+
+    const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(
+      query
+    )}&sort=${sortBy}&order=${orderBy}&per_page=${limit}`
+
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        ...(token && { 'Authorization': `token ${process.env.GITHUB_TOKEN}` }),
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      items: Array<{
+        id: number
+        owner: { login: string }
+        name: string
+        full_name: string
+        description: string | null
+        html_url: string
+        stargazers_count: number
+        forks_count: number
+        open_issues_count: number
+        language: string | null
+        topics: string[]
+        license: { name: string } | null
+        homepage: string | null
+      }>
+    }
+
+    return data.items.map(item => ({
+      id: item.id,
+      owner: item.owner.login,
+      name: item.name,
+      fullName: item.full_name,
+      description: item.description || undefined,
+      url: item.html_url,
+      stars: item.stargazers_count,
+      forks: item.forks_count,
+      openIssues: item.open_issues_count,
+      language: item.language || undefined,
+      topics: item.topics || [],
+      license: item.license?.name || undefined,
+      homepageUrl: item.homepage || undefined,
+    }))
+  }
+
+  /**
+   * 인기 저장소 검색 (호환성 유지)
+   */
+  async fetchTrendingRepos(language?: string, limit: number = 300): Promise<GithubRepoData[]> {
+    return this.fetchReposByFilter('trending', language, limit)
+  }
+
+  /**
+   * 최근 저장소 검색
+   */
+  async fetchRecentRepos(language?: string, limit: number = 300): Promise<GithubRepoData[]> {
+    try {
+      // 먼저 DB에서 최근 저장소 조회
+      const recentRepos = await prisma.githubRepo.findMany({
+        where: language ? { language } : {},
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      })
+      if (recentRepos.length > 0) {
+        return recentRepos.map(r => ({
+          id: r.githubId,
+          owner: r.owner,
+          name: r.name,
+          fullName: r.fullName,
+          description: r.description || undefined,
+          url: r.url,
+          stars: r.stars,
+          forks: r.forks,
+          openIssues: r.openIssues,
+          language: r.language || undefined,
+          topics: r.topics,
+          license: r.license || undefined,
+          homepageUrl: r.homepageUrl || undefined,
+        }))
+      }
+    } catch (error) {
+      console.error('DB 조회 오류:', error)
+    }
+    // DB에 없으면 GitHub API 호출
+    return this.fetchReposByFilter('recent', language, limit)
+  }
+
+  /**
+   * 활발한 저장소 검색
+   */
+  async fetchActiveRepos(language?: string, limit: number = 300): Promise<GithubRepoData[]> {
+    try {
+      // 먼저 DB에서 활발한 저장소 조회
+      const activeRepos = await prisma.githubRepo.findMany({
+        where: language ? { language } : {},
+        take: limit,
+        orderBy: { updatedAt: 'desc' },
+      })
+      if (activeRepos.length > 0) {
+        return activeRepos.map(r => ({
+          id: r.githubId,
+          owner: r.owner,
+          name: r.name,
+          fullName: r.fullName,
+          description: r.description || undefined,
+          url: r.url,
+          stars: r.stars,
+          forks: r.forks,
+          openIssues: r.openIssues,
+          language: r.language || undefined,
+          topics: r.topics,
+          license: r.license || undefined,
+          homepageUrl: r.homepageUrl || undefined,
+        }))
+      }
+    } catch (error) {
+      console.error('DB 조회 오류:', error)
+    }
+    // DB에 없으면 GitHub API 호출
+    return this.fetchReposByFilter('active', language, limit)
+  }
+
+  /**
+   * GitHub 저장소의 README 파일 가져오기
+   */
+  async fetchReadme(owner: string, repo: string): Promise<string | null> {
+    const token = process.env.GITHUB_TOKEN
+    const headers: HeadersInit = {
+      'Accept': 'application/vnd.github.v3.raw',
+      ...(token && { 'Authorization': `token ${token}` }),
+    }
+
+    // 여러 경로 시도
+    const paths = ['README.md', 'readme.md', 'README', 'Readme.md']
+
+    for (const path of paths) {
+      try {
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`
+        const response = await fetch(url, { headers })
+
+        if (response.ok) {
+          return await response.text()
+        }
+      } catch (error) {
+        // 다음 경로 시도
+        continue
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * 저장소 정보 요약 (README + 메타데이터)
+   */
+  async summarizeRepo(repo: RepoWithSummary): Promise<{
+    summary: string
+    bullets: string[]
+  }> {
+    const content = `
+제목: ${repo.name}
+설명: ${repo.description || 'N/A'}
+주언어: ${repo.language || 'Unknown'}
+별: ${repo.stars}개
+포크: ${repo.forks}개
+
+${repo.readme ? `README 내용:\n${repo.readme}` : ''}
+    `
+
+    // LLM으로 요약 생성
+    const summaryResponse = await llmService.summarizeReadme(content)
+    const bulletsResponse = await llmService.extractBulletPoints(content, 4)
+
+    return {
+      summary: summaryResponse.success ? summaryResponse.content : repo.description || '',
+      bullets: bulletsResponse,
+    }
+  }
+
+  /**
+   * 저장소 정보를 DB에 즉시 저장 (요약 없이)
+   */
+  async saveRepo(repo: RepoWithSummary): Promise<void> {
+    await prisma.githubRepo.upsert({
+      where: { githubId: repo.id },
+      create: {
+        githubId: repo.id,
+        owner: repo.owner,
+        name: repo.name,
+        fullName: repo.fullName,
+        description: repo.description || null,
+        url: repo.url,
+        stars: repo.stars,
+        forks: repo.forks,
+        openIssues: repo.openIssues,
+        language: repo.language || null,
+        topics: repo.topics,
+        license: repo.license || null,
+        homepageUrl: repo.homepageUrl || null,
+        readme: repo.readme || null,
+        summary: null,  // LLM 요약은 나중에 생성
+        summaryBullets: [],
+        lastFetchedAt: new Date(),
+      },
+      update: {
+        stars: repo.stars,
+        forks: repo.forks,
+        openIssues: repo.openIssues,
+        description: repo.description || null,
+        readme: repo.readme || null,
+        lastFetchedAt: new Date(),
+      },
+    })
+
+    console.log(`✅ Saved: ${repo.fullName}`)
+  }
+
+  /**
+   * 저장소에 LLM 요약 추가 (백그라운드 작업)
+   */
+  async generateSummaryForRepo(githubId: number): Promise<void> {
+    const repo = await prisma.githubRepo.findUnique({
+      where: { githubId },
+    })
+
+    if (!repo || repo.summary) return  // 이미 요약이 있으면 스킵
+
+    try {
+      const { summary, bullets } = await this.summarizeRepo({
+        id: repo.id as any,
+        owner: repo.owner,
+        name: repo.name,
+        fullName: repo.fullName,
+        description: repo.description || undefined,
+        url: repo.url,
+        stars: repo.stars,
+        forks: repo.forks,
+        openIssues: repo.openIssues,
+        language: repo.language || undefined,
+        topics: repo.topics,
+        license: repo.license || undefined,
+        homepageUrl: repo.homepageUrl || undefined,
+        readme: repo.readme || undefined,
+      })
+
+      await prisma.githubRepo.update({
+        where: { githubId },
+        data: {
+          summary,
+          summaryBullets: bullets,
+        },
+      })
+
+      console.log(`📝 Summary generated: ${repo.fullName}`)
+    } catch (error) {
+      console.error(`❌ Failed to generate summary for ${repo.fullName}:`, error)
+    }
+  }
+
+  /**
+   * 인기 저장소 수집 및 요약 (일괄 처리)
+   */
+  async collectAndSummarizeRepos(language?: string, limit: number = 300): Promise<void> {
+    console.log(`📥 Fetching ${limit} trending repos...`)
+
+    // GitHub에서 인기 repo 목록 조회
+    const repos = await this.fetchTrendingRepos(language, limit)
+
+    for (let i = 0; i < repos.length; i++) {
+      const repo = repos[i]!
+
+      try {
+        console.log(`[${i + 1}/${repos.length}] Processing ${repo.fullName}...`)
+
+        // README 파일 가져오기
+        const readme = await this.fetchReadme(repo.owner, repo.name)
+
+        // DB에 즉시 저장 (요약 제외)
+        await this.saveRepo({
+          ...repo,
+          readme: readme || undefined,
+        })
+
+        // 레이트 제한 고려 (최소 대기만)
+        await new Promise(resolve => setTimeout(resolve, 50))
+      } catch (error) {
+        console.error(`❌ Error processing ${repo.fullName}:`, error)
+        continue
+      }
+    }
+
+    console.log('✅ Collection completed')
+  }
+
+  /**
+   * DB에서 인기 저장소 조회
+   */
+  async getTrendingRepos(limit: number = 300): Promise<any[]> {
+    return prisma.githubRepo.findMany({
+      take: limit,
+      orderBy: { stars: 'desc' },
+    })
+  }
+
+  /**
+   * 언어별 인기 저장소 조회
+   */
+  async getReposByLanguage(language: string, limit: number = 300): Promise<any[]> {
+    return prisma.githubRepo.findMany({
+      where: { language },
+      take: limit,
+      orderBy: { stars: 'desc' },
+    })
+  }
+
+  /**
+   * 저장소 상세 조회 (ID로)
+   */
+  async getRepoById(githubId: number): Promise<any> {
+    return prisma.githubRepo.findUnique({
+      where: { githubId },
+    })
+  }
+
+  /**
+   * 저장소 검색
+   */
+  async searchRepos(query: string, limit: number = 300): Promise<any[]> {
+    return prisma.githubRepo.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          { summary: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: limit,
+      orderBy: { stars: 'desc' },
+    })
+  }
+}
+
+export const githubService = new GithubService()
+</file>
+
+<file path="src/services/llmService.ts">
+/**
+ * LLM 추상화 서비스
+ * 여러 LLM 제공자 (Ollama, Claude, LlamaCPP 등)를 통일된 인터페이스로 관리
+ * 제공자는 .env의 LLM_PROVIDER로 쉽게 전환 가능
+ */
+
+interface LLMResponse {
+  success: boolean
+  content: string
+  error?: string
+  provider: string
+}
+
+class LLMService {
+  private provider: string
+  private model: string
+
+  constructor() {
+    this.provider = process.env.LLM_PROVIDER || 'ollama'
+    this.model = this.getModel()
+    console.log(`🤖 LLM Service initialized: ${this.provider} (${this.model})`)
+  }
+
+  private getModel(): string {
+    switch (this.provider) {
+      case 'ollama':
+        return process.env.OLLAMA_MODEL || 'qwen2.5:7b'
+      case 'claude':
+        return process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022'
+      case 'llamacpp':
+        return 'local-model' // LlamaCPP는 별도 설정 불필요
+      case 'openai':
+        return process.env.OPENAI_MODEL || 'gpt-4o-mini'
+      default:
+        return 'qwen2.5:7b'
+    }
+  }
+
+  /**
+   * README를 한국어로 요약
+   * @param readme - 원본 README (마크다운)
+   * @returns 요약된 텍스트
+   */
+  async summarizeReadme(readme: string): Promise<LLMResponse> {
+    const prompt = `다음 README의 핵심 기능과 특징을 3~5줄의 한국어로 요약해줘.
+기술 스택, 주요 기능, 사용 용도만 포함해.
+마크다운 형식은 제거하고 일반 텍스트로.
+
+[README]
+${readme.substring(0, 2000)}
+[/README]
+
+요약:`
+
+    return this.callLLM(prompt)
+  }
+
+  /**
+   * 텍스트를 한국어로 번역
+   * @param text - 원본 텍스트
+   * @returns 번역된 텍스트
+   */
+  async translateToKorean(text: string): Promise<LLMResponse> {
+    const prompt = `다음 영어 텍스트를 자연스러운 한국어로 번역해줘.
+기술 용어는 영어로 유지해도 괜찮아.
+
+[TEXT]
+${text}
+[/TEXT]
+
+번역:`
+
+    return this.callLLM(prompt)
+  }
+
+  /**
+   * 텍스트에서 핵심 포인트 추출
+   * @param text - 원본 텍스트
+   * @param count - 추출할 포인트 개수 (기본값: 3)
+   * @returns 핵심 포인트 배열
+   */
+  async extractBulletPoints(text: string, count: number = 3): Promise<string[]> {
+    const prompt = `다음 텍스트에서 ${count}개의 핵심 포인트를 한국어로 뽑아줘.
+각 포인트는 한 줄씩.
+숫자나 특수문자 없이 정의처럼 작성해줘.
+
+[TEXT]
+${text.substring(0, 1500)}
+[/TEXT]
+
+핵심 포인트 ${count}개:`
+
+    const response = await this.callLLM(prompt)
+    if (!response.success) {
+      return []
+    }
+
+    return response.content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .slice(0, count)
+  }
+
+  /**
+   * 실제 LLM 호출 (제공자별 구현)
+   */
+  private async callLLM(prompt: string): Promise<LLMResponse> {
+    try {
+      switch (this.provider) {
+        case 'ollama':
+          return await this.callOllama(prompt)
+        case 'claude':
+          return await this.callClaude(prompt)
+        case 'llamacpp':
+          return await this.callLlamaCPP(prompt)
+        case 'openai':
+          return await this.callOpenAI(prompt)
+        default:
+          return {
+            success: false,
+            content: '',
+            error: `Unknown provider: ${this.provider}`,
+            provider: this.provider,
+          }
+      }
+    } catch (error) {
+      console.error(`❌ LLM Error (${this.provider}):`, error)
+      return {
+        success: false,
+        content: '',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        provider: this.provider,
+      }
+    }
+  }
+
+  /**
+   * Ollama API 호출 (로컬)
+   */
+  private async callOllama(prompt: string): Promise<LLMResponse> {
+    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+    const url = `${baseUrl}/api/generate`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: this.model,
+        prompt,
+        stream: false,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as { response: string }
+    return {
+      success: true,
+      content: data.response.trim(),
+      provider: 'ollama',
+    }
+  }
+
+  /**
+   * Claude API 호출 (Anthropic)
+   */
+  private async callClaude(prompt: string): Promise<LLMResponse> {
+    const apiKey = process.env.CLAUDE_API_KEY
+    if (!apiKey) {
+      throw new Error('CLAUDE_API_KEY is not set')
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: this.model,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      content: Array<{ type: string; text: string }>
+    }
+    const content = data.content[0]?.text || ''
+
+    return {
+      success: true,
+      content: content.trim(),
+      provider: 'claude',
+    }
+  }
+
+  /**
+   * LlamaCPP API 호출 (로컬)
+   */
+  private async callLlamaCPP(prompt: string): Promise<LLMResponse> {
+    const baseUrl = process.env.LLAMACPP_BASE_URL || 'http://localhost:8000'
+    const url = `${baseUrl}/v1/completions`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        max_tokens: 1024,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`LlamaCPP API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      choices: Array<{ text: string }>
+    }
+    const content = data.choices[0]?.text || ''
+
+    return {
+      success: true,
+      content: content.trim(),
+      provider: 'llamacpp',
+    }
+  }
+
+  /**
+   * OpenAI API 호출
+   */
+  private async callOpenAI(prompt: string): Promise<LLMResponse> {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY is not set')
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1024,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as {
+      choices: Array<{ message: { content: string } }>
+    }
+    const content = data.choices[0]?.message?.content || ''
+
+    return {
+      success: true,
+      content: content.trim(),
+      provider: 'openai',
+    }
+  }
+
+  /**
+   * 현재 설정 정보 반환
+   */
+  getInfo() {
+    return {
+      provider: this.provider,
+      model: this.model,
+      status: 'ready',
+    }
+  }
+}
+
+// 싱글톤 인스턴스
+export const llmService = new LLMService()
+</file>
+
+<file path="src/services/matchingService.test.ts">
+import { describe, test, expect } from 'vitest'
+import { matchUserToPosting } from './matchingService'
+
+describe('matchUserToPosting', () => {
+  // 정상 케이스: 모든 조건이 일치하는 경우
+  test('모든 조건이 일치하면 score는 100이다', () => {
+    const user = {
+      major: 'CS',
+      grade: 3,
+      residenceRegion: '서울',
+      enrollmentStatus: '재학',
+      age: 22,
+      incomeBracket: 4,
+    }
+    const eligibility = {
+      majors: ['CS', 'EE'],
+      grades: [3, 4],
+      regions: ['서울', '경기'],
+      enrollmentStatuses: ['재학'],
+      ageMin: 20,
+      ageMax: 25,
+      incomeMax: 5,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(true)
+    expect(result.score).toBe(100)
+    expect(result.matchedCount).toBe(6)
+    expect(result.totalCriteria).toBe(6)
+  })
+
+  // 정상 케이스: 일부만 일치하는 경우
+  test('4개 중 2개만 일치하면 score는 50이다', () => {
+    const user = {
+      major: 'CS',
+      grade: 3,
+      residenceRegion: '부산',
+      enrollmentStatus: '휴학',
+    }
+    const eligibility = {
+      majors: ['CS', 'EE'],
+      grades: [3, 4],
+      regions: ['서울', '경기'],
+      enrollmentStatuses: ['재학'],
+      ageMin: undefined,
+      ageMax: undefined,
+      incomeMax: undefined,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(false)
+    expect(result.score).toBe(50)
+    expect(result.matchedCount).toBe(2)
+    expect(result.totalCriteria).toBe(4)
+  })
+
+  // 정상 케이스: 아무것도 일치하지 않는 경우
+  test('모든 조건이 일치하지 않으면 score는 0이다', () => {
+    const user = {
+      major: '물리학',
+      grade: 1,
+      residenceRegion: '제주',
+      enrollmentStatus: '졸업',
+    }
+    const eligibility = {
+      majors: ['CS', 'EE'],
+      grades: [3, 4],
+      regions: ['서울', '경기'],
+      enrollmentStatuses: ['재학'],
+      ageMin: undefined,
+      ageMax: undefined,
+      incomeMax: undefined,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(false)
+    expect(result.score).toBe(0)
+    expect(result.matchedCount).toBe(0)
+    expect(result.totalCriteria).toBe(4)
+  })
+
+  // 경계값: 조건이 없는 공고
+  test('조건이 전혀 없으면 isEligible은 true, score는 100이다', () => {
+    const user = {
+      major: 'CS',
+      grade: 3,
+    }
+    const eligibility = {
+      majors: [],
+      grades: [],
+      regions: [],
+      enrollmentStatuses: [],
+      ageMin: undefined,
+      ageMax: undefined,
+      incomeMax: undefined,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(true)
+    expect(result.score).toBe(100)
+    expect(result.totalCriteria).toBe(0)
+  })
+
+  // 경계값: 사용자 데이터가 null인 경우
+  test('사용자가 데이터를 가지지 않으면 모두 불일치한다', () => {
+    const user = {
+      major: null,
+      grade: null,
+      residenceRegion: null,
+      enrollmentStatus: null,
+    }
+    const eligibility = {
+      majors: ['CS'],
+      grades: [3],
+      regions: ['서울'],
+      enrollmentStatuses: ['재학'],
+      ageMin: undefined,
+      ageMax: undefined,
+      incomeMax: undefined,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(false)
+    expect(result.score).toBe(0)
+  })
+
+  // 실패 케이스: 나이 범위 (최소값)
+  test('나이가 최소값보다 작으면 불일치한다', () => {
+    const user = {
+      age: 19,
+    }
+    const eligibility = {
+      majors: [],
+      grades: [],
+      regions: [],
+      enrollmentStatuses: [],
+      ageMin: 20,
+      ageMax: 25,
+      incomeMax: undefined,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(false)
+    expect(result.score).toBe(0)
+  })
+
+  // 실패 케이스: 나이 범위 (최대값)
+  test('나이가 최대값보다 크면 불일치한다', () => {
+    const user = {
+      age: 26,
+    }
+    const eligibility = {
+      majors: [],
+      grades: [],
+      regions: [],
+      enrollmentStatuses: [],
+      ageMin: 20,
+      ageMax: 25,
+      incomeMax: undefined,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(false)
+    expect(result.score).toBe(0)
+  })
+
+  // 실패 케이스: 나이 범위 (경계값 통과)
+  test('나이가 정확히 범위 내에 있으면 일치한다', () => {
+    const user = {
+      age: 20,
+    }
+    const eligibility = {
+      majors: [],
+      grades: [],
+      regions: [],
+      enrollmentStatuses: [],
+      ageMin: 20,
+      ageMax: 25,
+      incomeMax: undefined,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(true)
+    expect(result.score).toBe(100)
+  })
+
+  // 실패 케이스: 소득 체크
+  test('소득이 제한값을 초과하면 불일치한다', () => {
+    const user = {
+      incomeBracket: 6,
+    }
+    const eligibility = {
+      majors: [],
+      grades: [],
+      regions: [],
+      enrollmentStatuses: [],
+      ageMin: undefined,
+      ageMax: undefined,
+      incomeMax: 5,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(false)
+    expect(result.score).toBe(0)
+  })
+
+  // 실패 케이스: 소득 체크 (경계값)
+  test('소득이 정확히 제한값이면 일치한다', () => {
+    const user = {
+      incomeBracket: 5,
+    }
+    const eligibility = {
+      majors: [],
+      grades: [],
+      regions: [],
+      enrollmentStatuses: [],
+      ageMin: undefined,
+      ageMax: undefined,
+      incomeMax: 5,
+    }
+
+    const result = matchUserToPosting(user, eligibility)
+
+    expect(result.isEligible).toBe(true)
+    expect(result.score).toBe(100)
+  })
+})
+</file>
+
+<file path="src/services/matchingService.ts">
+// 사용자와 공고 매칭 알고리즘
+
+interface UserProfile {
+  major?: string | null
+  grade?: number | null
+  enrollmentStatus?: string | null
+  residenceRegion?: string | null
+  incomeBracket?: number | null
+  age?: number | null
+}
+
+interface Eligibility {
+  majors: string[]
+  regions: string[]
+  grades: number[]
+  enrollmentStatuses: string[]
+  ageMin?: number | null
+  ageMax?: number | null
+  incomeMax?: number | null
+}
+
+interface MatchScore {
+  isEligible: boolean
+  matchedCount: number
+  totalCriteria: number
+  score: number
+}
+
+export function matchUserToPosting(
+  user: UserProfile,
+  eligibility: Eligibility
+): MatchScore {
+  let matchedCount = 0
+  let totalCriteria = 0
+
+  // 1. 전공 체크
+  if (eligibility.majors.length > 0) {
+    totalCriteria++
+    if (user.major && eligibility.majors.includes(user.major)) {
+      matchedCount++
+    }
+  }
+
+  // 2. 학년 체크
+  if (eligibility.grades.length > 0) {
+    totalCriteria++
+    if (user.grade && eligibility.grades.includes(user.grade)) {
+      matchedCount++
+    }
+  }
+
+  // 3. 거주지 체크
+  if (eligibility.regions.length > 0) {
+    totalCriteria++
+    if (user.residenceRegion && eligibility.regions.includes(user.residenceRegion)) {
+      matchedCount++
+    }
+  }
+
+  // 4. 재학상태 체크
+  if (eligibility.enrollmentStatuses.length > 0) {
+    totalCriteria++
+    if (user.enrollmentStatus && eligibility.enrollmentStatuses.includes(user.enrollmentStatus)) {
+      matchedCount++
+    }
+  }
+
+  // 5. 나이 체크
+  if (eligibility.ageMin !== null && eligibility.ageMin !== undefined || eligibility.ageMax !== null && eligibility.ageMax !== undefined) {
+    totalCriteria++
+    if (user.age) {
+      const minOk = !eligibility.ageMin || user.age >= eligibility.ageMin
+      const maxOk = !eligibility.ageMax || user.age <= eligibility.ageMax
+      if (minOk && maxOk) {
+        matchedCount++
+      }
+    }
+  }
+
+  // 6. 소득 체크
+  if (eligibility.incomeMax !== null && eligibility.incomeMax !== undefined) {
+    totalCriteria++
+    if (user.incomeBracket && user.incomeBracket <= eligibility.incomeMax) {
+      matchedCount++
+    }
+  }
+
+  // 적격 판정: 조건이 있으면 모두 만족해야 함
+  const isEligible = totalCriteria === 0 || matchedCount === totalCriteria
+  const score = totalCriteria === 0 ? 100 : (matchedCount / totalCriteria) * 100
+
+  return {
+    isEligible,
+    matchedCount,
+    totalCriteria,
+    score,
+  }
+}
+
+// 무관(모든 조건 없음)한 공고 체크
+export function isPostingUnrestricted(eligibility: Eligibility): boolean {
+  return (
+    eligibility.majors.length === 0 &&
+    eligibility.regions.length === 0 &&
+    eligibility.grades.length === 0 &&
+    eligibility.enrollmentStatuses.length === 0 &&
+    eligibility.ageMin === null &&
+    eligibility.ageMax === null &&
+    eligibility.incomeMax === null
+  )
+}
+</file>
+
+<file path="src/services/notificationService.ts">
+import cron from 'node-cron'
+import { PrismaClient } from '@prisma/client'
+import webpush from 'web-push'
+
+const prisma = new PrismaClient()
+
+// VAPID 키 설정
+webpush.setVapidDetails(
+  'mailto:naver-challenge@example.com',
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+)
+
+interface NotificationPayload {
+  userId: string
+  postingId: string
+  title: string
+  dDay: number
+  receptionEndDate: Date
+}
+
+/**
+ * D-Day 알림 스케줄링
+ * 매일 자정에 D-3, D-1인 공고 찾아서 알림 발송
+ */
+export function startNotificationScheduler() {
+  // 매일 자정(0시 0분 0초)에 실행
+  cron.schedule('0 0 0 * * *', async () => {
+    console.log('🔔 D-Day 알림 스케줄 실행:', new Date().toLocaleString('ko-KR'))
+
+    try {
+      const today = new Date()
+      const threeDaysLater = new Date(today)
+      threeDaysLater.setDate(today.getDate() + 3)
+      const oneDayLater = new Date(today)
+      oneDayLater.setDate(today.getDate() + 1)
+
+      // D-3인 공고들
+      const threeDayPostings = await prisma.scrap.findMany({
+        where: {
+          notifyEnabled: true,
+          posting: {
+            receptionEndDate: {
+              gte: new Date(threeDaysLater.toDateString()),
+              lt: new Date(new Date(threeDaysLater.toDateString()).getTime() + 86400000), // 다음날
+            },
+          },
+        },
+        include: {
+          posting: true,
+          user: true,
+        },
+      })
+
+      // D-1인 공고들
+      const oneDayPostings = await prisma.scrap.findMany({
+        where: {
+          notifyEnabled: true,
+          posting: {
+            receptionEndDate: {
+              gte: new Date(oneDayLater.toDateString()),
+              lt: new Date(new Date(oneDayLater.toDateString()).getTime() + 86400000),
+            },
+          },
+        },
+        include: {
+          posting: true,
+          user: true,
+        },
+      })
+
+      console.log(`📬 D-3 알림 대상: ${threeDayPostings.length}건`)
+      console.log(`📬 D-1 알림 대상: ${oneDayPostings.length}건`)
+
+      // 알림 생성
+      const allNotifications: NotificationPayload[] = [
+        ...threeDayPostings.map(scrap => ({
+          userId: scrap.userId,
+          postingId: scrap.postingId,
+          title: scrap.posting.title,
+          dDay: 3,
+          receptionEndDate: scrap.posting.receptionEndDate!,
+        })),
+        ...oneDayPostings.map(scrap => ({
+          userId: scrap.userId,
+          postingId: scrap.postingId,
+          title: scrap.posting.title,
+          dDay: 1,
+          receptionEndDate: scrap.posting.receptionEndDate!,
+        })),
+      ]
+
+      // 각 사용자에게 알림 발송 (여기서는 로그만 남기고, 나중에 웹 푸시 연동)
+      for (const notification of allNotifications) {
+        console.log(`📤 알림 발송: ${notification.userId} - "${notification.title}" (D-${notification.dDay})`)
+        await sendPushNotification(notification)
+      }
+
+      console.log(`✅ D-Day 알림 스케줄 완료`)
+    } catch (error) {
+      console.error('❌ D-Day 알림 스케줄 실패:', error)
+    }
+  })
+}
+
+/**
+ * 웹 푸시 알림 발송
+ */
+async function sendPushNotification(payload: NotificationPayload) {
+  try {
+    // 사용자의 푸시 구독 가져오기
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { userId: payload.userId },
+    })
+
+    if (subscriptions.length === 0) {
+      console.log(`  → 구독 정보 없음: ${payload.userId}`)
+      return
+    }
+
+    // 알림 페이로드
+    const notificationPayload = JSON.stringify({
+      title: payload.title,
+      body: `마감까지 D-${payload.dDay}`,
+      icon: '/icon-192x192.png',
+      badge: '/badge-72x72.png',
+      tag: `posting-${payload.postingId}`,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 각 구독에 푸시 발송
+    for (const sub of subscriptions) {
+      try {
+        const subscription = JSON.parse(sub.subscriptionJson)
+        await webpush.sendNotification(subscription, notificationPayload)
+        console.log(`  → 알림 발송 성공: ${payload.userId}`)
+      } catch (error: any) {
+        // 구독이 유효하지 않으면 삭제
+        if (error.statusCode === 410) {
+          console.log(`  → 만료된 구독 제거: ${sub.id}`)
+          await prisma.pushSubscription.delete({ where: { id: sub.id } })
+        } else {
+          console.error(`  → 알림 발송 실패 (${sub.id}):`, error.message)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('  → 알림 발송 중 오류:', error)
+  }
+}
+
+/**
+ * 특정 사용자에게 즉시 알림 발송 (테스트용)
+ */
+export async function sendTestNotification(userId: string) {
+  try {
+    // 사용자의 D-3 이내 공고 찾기
+    const today = new Date()
+    const threeDaysLater = new Date(today)
+    threeDaysLater.setDate(today.getDate() + 3)
+
+    const postings = await prisma.scrap.findMany({
+      where: {
+        userId,
+        notifyEnabled: true,
+        posting: {
+          receptionEndDate: {
+            gte: today,
+            lte: threeDaysLater,
+          },
+        },
+      },
+      include: {
+        posting: true,
+      },
+      take: 1,
+    })
+
+    if (postings.length === 0) {
+      console.log('⚠️ 테스트할 D-Day 공고가 없습니다')
+      return
+    }
+
+    const scrap = postings[0]
+    const dDay = Math.ceil(
+      (scrap.posting.receptionEndDate!.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    )
+
+    await sendPushNotification({
+      userId,
+      postingId: scrap.postingId,
+      title: scrap.posting.title,
+      dDay,
+      receptionEndDate: scrap.posting.receptionEndDate!,
+    })
+
+    console.log(`✅ 테스트 알림 발송 완료`)
+  } catch (error) {
+    console.error('❌ 테스트 알림 실패:', error)
+  }
+}
+</file>
+
+<file path="src/services/smartMatchingService.ts">
+// 유휴 시간 분석 기반 스마트 추천 서비스
+import { CalendarEvent, Posting } from '@prisma/client'
+
+interface HighLoadPeriod {
+  start: Date
+  end: Date
+  type: string
+}
+
+interface SmartMatchScore {
+  score: number
+  reason: string
+  isRecommended: boolean
+  conflictLevel: 'high' | 'medium' | 'low' | 'none'
+}
+
+/**
+ * 사용자의 캘린더 이벤트에서 고부하 기간을 추출
+ * 인접한 이벤트들을 병합하여 연속된 바쁜 기간을 식별
+ */
+export function getHighLoadPeriods(events: CalendarEvent[]): HighLoadPeriod[] {
+  if (events.length === 0) return []
+
+  const sorted = [...events]
+    .filter(e => !e.hideFromRecommendation)
+    .sort((a, b) => a.dtstart.getTime() - b.dtstart.getTime())
+
+  const periods: HighLoadPeriod[] = []
+  let currentStart = sorted[0].dtstart
+  let currentEnd = sorted[0].dtend
+
+  for (let i = 1; i < sorted.length; i++) {
+    const event = sorted[i]
+    const gap = (event.dtstart.getTime() - currentEnd.getTime()) / (1000 * 60 * 60 * 24)
+
+    if (gap <= 3) {
+      // 3일 이내면 병합
+      currentEnd = new Date(Math.max(currentEnd.getTime(), event.dtend.getTime()))
+    } else {
+      // 새 기간 시작
+      periods.push({
+        start: currentStart,
+        end: currentEnd,
+        type: sorted[i - 1].type,
+      })
+      currentStart = event.dtstart
+      currentEnd = event.dtend
+    }
+  }
+
+  periods.push({
+    start: currentStart,
+    end: currentEnd,
+    type: sorted[sorted.length - 1].type,
+  })
+
+  return periods
+}
+
+/**
+ * 공고의 마감일이 고부하 기간과 어떤 관계인지 판단
+ */
+function getConflictLevel(
+  receptionEndDate: Date | null,
+  eventStartDate: Date | null,
+  eventEndDate: Date | null,
+  highLoadPeriods: HighLoadPeriod[]
+): { level: 'high' | 'medium' | 'low' | 'none'; overlappingPeriod?: HighLoadPeriod } {
+  if (!receptionEndDate) return { level: 'none' }
+
+  // 공고 마감일이 고부하 기간과 겹치는지 확인
+  for (const period of highLoadPeriods) {
+    if (receptionEndDate >= period.start && receptionEndDate <= period.end) {
+      return { level: 'high', overlappingPeriod: period }
+    }
+  }
+
+  // 이벤트 수행기간이 있으면, 그것도 체크
+  if (eventStartDate && eventEndDate) {
+    for (const period of highLoadPeriods) {
+      const eventStart = eventStartDate.getTime()
+      const eventEnd = eventEndDate.getTime()
+      const periodStart = period.start.getTime()
+      const periodEnd = period.end.getTime()
+
+      // 완전히 겹치는 경우
+      if (eventStart <= periodEnd && eventEnd >= periodStart) {
+        return { level: 'high', overlappingPeriod: period }
+      }
+    }
+  }
+
+  // 마감일이 고부하 기간 바로 다음주면 medium
+  if (highLoadPeriods.length > 0) {
+    const lastPeriod = highLoadPeriods[highLoadPeriods.length - 1]
+    const daysAfter =
+      (receptionEndDate.getTime() - lastPeriod.end.getTime()) / (1000 * 60 * 60 * 24)
+
+    if (daysAfter > 0 && daysAfter <= 7) {
+      return { level: 'low' }
+    }
+    if (daysAfter > 7 && daysAfter <= 21) {
+      return { level: 'low' }
+    }
+  }
+
+  return { level: 'none' }
+}
+
+/**
+ * 스마트 매칭 스코어 계산
+ * - 고부하 기간과의 관계를 바탕으로 추천점수 산출
+ * - 마감일이 바쁜 기간 이후면 긍정적
+ * - 바쁜 기간 중이면 부정적
+ */
+export function calculateSmartScore(
+  posting: Posting & { calendarEvents?: CalendarEvent[] },
+  userEvents: CalendarEvent[]
+): SmartMatchScore {
+  const highLoadPeriods = getHighLoadPeriods(userEvents)
+
+  if (highLoadPeriods.length === 0) {
+    // 바쁜 기간이 없으면 기본 점수
+    return {
+      score: 50,
+      reason: '캘린더에 일정이 없어 모든 공고를 자유롭게 준비할 수 있어요',
+      isRecommended: true,
+      conflictLevel: 'none',
+    }
+  }
+
+  const { level, overlappingPeriod } = getConflictLevel(
+    posting.receptionEndDate,
+    posting.eventStartDate,
+    posting.eventEndDate,
+    highLoadPeriods
+  )
+
+  const lastPeriod = highLoadPeriods[highLoadPeriods.length - 1]
+  const daysBeforeDeadline =
+    posting.receptionEndDate ?
+      (posting.receptionEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    : 0
+
+  if (level === 'high') {
+    return {
+      score: 20,
+      reason: `바쁜 기간(${overlappingPeriod?.type})과 공고 마감일이 겹쳐요. 시간 관리가 필요합니다.`,
+      isRecommended: false,
+      conflictLevel: 'high',
+    }
+  }
+
+  if (level === 'low') {
+    const daysAfter =
+      posting.receptionEndDate ?
+        (posting.receptionEndDate.getTime() - lastPeriod.end.getTime()) / (1000 * 60 * 60 * 24)
+      : 0
+
+    if (daysAfter > 0 && daysAfter <= 7) {
+      return {
+        score: 85,
+        reason: `바쁜 기간이 끝난 직후 마감입니다. 여유있게 준비할 수 있어요!`,
+        isRecommended: true,
+        conflictLevel: 'low',
+      }
+    }
+
+    if (daysAfter > 7 && daysAfter <= 21) {
+      return {
+        score: 70,
+        reason: `바쁜 기간 이후라 충분한 시간이 남아있습니다.`,
+        isRecommended: true,
+        conflictLevel: 'low',
+      }
+    }
+  }
+
+  // 바쁜 기간이 없거나 멀리 있는 경우
+  if (daysBeforeDeadline > 30) {
+    return {
+      score: 60,
+      reason: `마감까지 넉넉한 시간이 있습니다.`,
+      isRecommended: true,
+      conflictLevel: 'none',
+    }
+  }
+
+  return {
+    score: 50,
+    reason: '준비 시간이 충분한지 캘린더를 확인해주세요.',
+    isRecommended: true,
+    conflictLevel: 'none',
+  }
+}
+
+/**
+ * 여러 공고의 스마트 스코어를 계산하고 정렬
+ */
+export function rankPostingsBySmartScore(
+  postings: (Posting & { calendarEvents?: CalendarEvent[] })[],
+  userEvents: CalendarEvent[]
+): Array<(Posting & { calendarEvents?: CalendarEvent[] }) & { smartScore: SmartMatchScore }> {
+  return postings
+    .map(posting => ({
+      ...posting,
+      smartScore: calculateSmartScore(posting, userEvents),
+    }))
+    .sort((a, b) => {
+      // 추천 여부 우선
+      if (a.smartScore.isRecommended !== b.smartScore.isRecommended) {
+        return a.smartScore.isRecommended ? -1 : 1
+      }
+      // 스코어 높은 순
+      return b.smartScore.score - a.smartScore.score
+    })
+}
+</file>
+
+<file path="src/index.ts">
+import express from 'express'
+import dotenv from 'dotenv'
+import { PrismaClient } from '@prisma/client'
+import authRoutes from './routes/auth.js'
+import profileRoutes from './routes/profile.js'
+import postingsRoutes from './routes/postings.js'
+import calendarRoutes from './routes/calendar.js'
+import calendarEventsRoutes from './routes/calendarEvents.js'
+import scrapsRoutes from './routes/scraps.js'
+import githubRoutes from './routes/github.js'
+import { startNotificationScheduler } from './services/notificationService.js'
+
+dotenv.config()
+
+const app = express()
+const prisma = new PrismaClient()
+const PORT = process.env.PORT || 3000
+
+// CORS 미들웨어
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*'
+  res.header('Access-Control-Allow-Origin', origin)
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.header('Access-Control-Max-Age', '3600')
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200)
+  }
+  next()
+})
+
+// 미들웨어
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+// 라우트
+app.use('/api/auth', authRoutes)
+app.use('/api/profile', profileRoutes)
+app.use('/api/postings', postingsRoutes)
+app.use('/api/calendar', calendarRoutes)
+app.use('/api/calendar-events', calendarEventsRoutes)
+app.use('/api/scraps', scrapsRoutes)
+app.use('/api/github', githubRoutes)
+
+// 헬스 체크
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' })
+})
+
+// 서버 시작
+const server = app.listen(PORT, () => {
+  console.log(`\n🚀 서버 시작: http://localhost:${PORT}`)
+  console.log(`📝 프로필 API: POST http://localhost:${PORT}/api/profile`)
+  console.log(`🔐 인증: Supabase JWT 기반`)
+
+  // D-Day 알림 스케줄 시작
+  console.log(`🔔 D-Day 알림 스케줄러 시작\n`)
+  startNotificationScheduler()
+})
+
+// 종료 처리
+process.on('SIGINT', async () => {
+  console.log('\n✋ 서버 종료 중...')
+  server.close()
+  await prisma.$disconnect()
+  process.exit(0)
+})
+</file>
+
+<file path=".gitignore">
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+*.log
+.vscode/
+.idea/
+*.swp
+*.swo
+</file>
+
+<file path="package.json">
+{
+  "name": "naver-challenge-backend",
+  "version": "1.0.0",
+  "description": "대학생 맞춤형 정보 큐레이션 대시보드 백엔드",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --skipLibCheck",
+    "start": "node dist/index.js",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:validate": "prisma validate",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "@types/node": "^22.0.0",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "google-auth-library": "^10.9.0",
+    "googleapis": "^173.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.6.0",
+    "web-push": "^3.6.7",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "eslint": "^4.0.0",
+    "prisma": "^5.14.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.10"
+  }
+}
+</file>
+
+<file path="render.yaml">
+services:
+  - type: web
+    name: naver-challenge-backend
+    runtime: node
+    buildCommand: npm install --legacy-peer-deps && npm run build && npx prisma generate
+    startCommand: npm run dev
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: LLM_PROVIDER
+        value: claude
+      - key: CLAUDE_API_KEY
+        sync: false
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "lib": ["ES2020"],
+    "types": ["node"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path="vitest.config.ts">
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+  },
+})
+</file>
+
+</files>

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { matchUserToPosting } from './matchingService'
+import { matchUserToPosting } from './matchingService.js'
 
 describe('matchUserToPosting', () => {
   // 정상 케이스: 모든 조건이 일치하는 경우

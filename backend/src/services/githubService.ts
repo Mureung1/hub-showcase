@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { llmService } from './llmService'
+import { llmService } from './llmService.js'
 
 const prisma = new PrismaClient()
 

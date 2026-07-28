@@ -1,7 +1,7 @@
 import { google } from 'googleapis'
 import { OAuth2Client } from 'google-auth-library'
 import { Posting, PrismaClient } from '@prisma/client'
-import { ICalendarProvider } from '../calendarService'
+import { ICalendarProvider } from '../calendarService.js'
 
 const prisma = new PrismaClient()
 

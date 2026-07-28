@@ -1,3 +1,5 @@
 venv/
 .DS_Store
 chatlog_CLAUDE/
+.claude/
+.repomix-output.xml

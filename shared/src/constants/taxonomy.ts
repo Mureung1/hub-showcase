@@ -10,12 +10,12 @@
 
 import taxonomyData from "../../taxonomy.json";
 
-// 전공 8개 고정값
-export const CANONICAL_MAJORS = taxonomyData.canonical_majors as const;
+// 전공 고정값 (as const -> as string[])
+export const CANONICAL_MAJORS = taxonomyData.canonical_majors as string[];
 export type CanonicalMajor = typeof CANONICAL_MAJORS[number];
 
-// 지역 13개 고정값
-export const CANONICAL_REGIONS = taxonomyData.canonical_regions as const;
+// 지역 고정값 (as const -> as string[])
+export const CANONICAL_REGIONS = taxonomyData.canonical_regions as string[];
 export type CanonicalRegion = typeof CANONICAL_REGIONS[number];
 
 // 원문 → Canonical 매핑 테이블

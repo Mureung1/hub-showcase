@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
-import { githubService } from '../services/githubService'
-import { llmService } from '../services/llmService'
-import { AuthRequest, verifyAuth } from '../middleware/auth'
+import { githubService } from '../services/githubService.js'
+import { llmService } from '../services/llmService.js'
+import { AuthRequest, verifyAuth } from '../middleware/auth.js'
 
 const router = Router()
 

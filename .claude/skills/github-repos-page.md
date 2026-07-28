@@ -1,5 +1,5 @@
 ---
-description: GitHub 인기 저장소 요약 페이지 구현 (Ollama + Qwen LLM)
+description: GitHub 인기 저장소 요약 페이지 구현 (Ollama + LLM)
 tags: [github, llm, frontend, backend, integration]
 ---
 
@@ -7,11 +7,11 @@ tags: [github, llm, frontend, backend, integration]
 
 ## 개요
 
-매달 GitHub의 인기 저장소들을 자동으로 수집하고, **로컬 LLM(Qwen2.5 7B)으로 한국어 요약**을 생성한 후, 
+매달 GitHub의 인기 저장소들을 자동으로 수집하고, **로컬 LLM으로 한국어 요약**을 생성한 후, 
 대시보드에 보여주는 독립적인 서비스를 구현합니다.
 
 **핵심 특징:**
-- ✅ Ollama (로컬 LLM) + Qwen2.5로 영어 README를 한국어로 요약
+- ✅ Ollama (로컬 LLM) + LLM모델(Qwen2.5, llama3.1 등)로 영어 README를 한국어로 요약
 - ✅ LLM 제공자 쉽게 전환 가능 (Ollama → Claude → LlamaCPP 등)
 - ✅ 기존 Posting/Eligibility 스키마와 완전히 분리
 - ✅ 프로덕션 배포 가능한 구조

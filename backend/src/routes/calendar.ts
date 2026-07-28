@@ -1,9 +1,9 @@
 import { Router } from 'express'
 import { OAuth2Client } from 'google-auth-library'
 import { PrismaClient } from '@prisma/client'
-import { verifyAuth, AuthRequest } from '../middleware/auth'
-import { CalendarService } from '../services/calendarService'
-import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider'
+import { verifyAuth, AuthRequest } from '../middleware/auth.js'
+import { CalendarService } from '../services/calendarService.js'
+import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider.js'
 
 const prisma = new PrismaClient()
 
