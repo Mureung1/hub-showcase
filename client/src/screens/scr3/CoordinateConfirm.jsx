@@ -312,7 +312,7 @@ export function CoordinateConfirm() {
 
                 {suggestStatus === 'done' && suggestion?.role_suggestions?.length ? (
                   <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>역할 추천</div>
+                    <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>역할 추천</div>
                     {/* 역할 배정 수락/변경 UI는 SCR2(CoordinateRoles) 몫 — 여기서는 추천 내용만 참고용으로 보여준다. */}
                     {suggestion.role_suggestions.map((role, i) => (
                       <InfoCard key={`${role.name}-${i}`}>
@@ -380,14 +380,14 @@ function CandidatePicker({ label, items, selectedId, onSelect, reason, emptyMess
   if (!items.length) {
     return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>{label}</div>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{emptyMessage}</div>
       </div>
     )
   }
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>{label}</div>
       {items.map((item) => (
         <InfoCard key={item.id} selected={item.id === selectedId} onClick={() => onSelect(item.id)}>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--ink)' }}>{item.label}</div>
