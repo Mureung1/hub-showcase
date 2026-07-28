@@ -94,7 +94,7 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <header className="flex flex-col justify-between gap-4 border-b border-slate-300/70 pb-6 sm:flex-row sm:items-end">
+      <header className="flex flex-col justify-between gap-4 border-b border-slate-300 pb-6 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600">
             Overview
@@ -106,7 +106,7 @@ const Dashboard = () => {
       </header>
 
       {/* Summary cards */}
-      <div className="mb-7 grid grid-cols-2 gap-3 border-b border-slate-300/70 pb-7 pt-7 lg:grid-cols-4 lg:gap-4">
+      <div className="mb-7 grid grid-cols-2 gap-3 border-b border-slate-300 pb-7 pt-7 lg:grid-cols-4 lg:gap-4">
         {[
           { label: '오늘 예약', value: todayCount, icon: 'calendar' as const, tone: 'blue' },
           { label: '방문', value: todayVisited, icon: 'check' as const, tone: 'green' },
@@ -115,7 +115,7 @@ const Dashboard = () => {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="group rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+            className="group rounded-xl border border-slate-300 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium text-slate-600">{stat.label}</p>
@@ -143,7 +143,7 @@ const Dashboard = () => {
 
       <div className="grid gap-5 lg:grid-cols-5">
         {/* Attention customers */}
-        <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 lg:col-span-2">
+        <section className="rounded-xl border border-slate-300 bg-white p-5 shadow-sm sm:p-6 lg:col-span-2">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
@@ -162,7 +162,7 @@ const Dashboard = () => {
               <span aria-hidden="true" className="ml-1">→</span>
             </Link>
           </div>
-          <div className="mt-5 border-t border-slate-200 pt-5">
+          <div className="mt-5 border-t border-slate-300 pt-5">
             {attentionCustomers.length === 0 ? (
               <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -199,7 +199,7 @@ const Dashboard = () => {
         </section>
 
         {/* Today's reservations */}
-        <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 lg:col-span-3">
+        <section className="rounded-xl border border-slate-300 bg-white p-5 shadow-sm sm:p-6 lg:col-span-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
@@ -212,12 +212,12 @@ const Dashboard = () => {
             </div>
             <Link
               to="/app/reservations/new"
-              className="inline-flex min-h-10 items-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="inline-flex min-h-10 items-center rounded-lg border border-blue-800 bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               + 예약 등록
             </Link>
           </div>
-          <div className="mt-5 border-t border-slate-200 pt-5">
+          <div className="mt-5 border-t border-slate-300 pt-5">
             {todayReservations.length === 0 ? (
               <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">

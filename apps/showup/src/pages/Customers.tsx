@@ -130,7 +130,7 @@ const Customers = () => {
       <div className="mt-6 flex sm:justify-end">
         <Link
           to="/app/customers/new"
-          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto sm:min-w-36 md:!min-h-10 md:h-10"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-blue-800 bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 sm:w-auto sm:min-w-36 md:!min-h-10 md:h-10"
         >
           + 신규 고객 등록
         </Link>

@@ -139,7 +139,7 @@ const Reservations = () => {
           </div>
           <Link
             to="/app/reservations/new"
-            className="inline-flex h-11 min-w-28 shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 md:!min-h-10 md:h-10"
+            className="inline-flex h-11 min-w-28 shrink-0 items-center justify-center rounded-lg border border-blue-800 bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 md:!min-h-10 md:h-10"
           >
             + 새 예약
           </Link>
@@ -194,7 +194,7 @@ const Reservations = () => {
       </div>
 
       {/* Reservations list */}
-      <section className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+      <section className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">예약 목록</h2>
         
         {isLoading ? (
