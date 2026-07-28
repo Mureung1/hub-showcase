@@ -205,7 +205,7 @@ class _HomeAppBar extends StatelessWidget {
           // 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
           const Flexible(child: ScreenTitle('오늘도 한 걸음.')),
           AppSpacing.gapWSm,
-          CoinPill(amount: coin, compact: true),
+          CoinPill(amount: coin),
         ],
       ),
     );

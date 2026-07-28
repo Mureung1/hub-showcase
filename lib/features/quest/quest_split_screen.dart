@@ -142,6 +142,10 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
         // 재분해 제목은 길어서 좁은 폭에서는 [ScreenTitle.appBar]가 통째로 줄여
         // 그린다(잘라내지 않는다 — 어느 흐름인지가 제목에 걸려 있다).
         toolbarHeight: ScreenTitle.appBarHeight,
+        // 정본 `50:440`은 뒤로가기 버튼 **바로 옆**(간격 4)에 제목을 붙인다.
+        // 테마 기본값(20)은 leading이 없는 루트 AppBar용이라, leading이 있는
+        // 여기서는 그 20이 버튼 뒤에 더해져 제목이 정본보다 한참 밀린다.
+        titleSpacing: AppSpacing.xs,
         title: ScreenTitle.appBar(_isRedecompose ? '멈춘 퀘스트 다시 나누기' : '도전 분해'),
       ),
       body: SafeArea(

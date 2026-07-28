@@ -80,6 +80,11 @@ class CharacterCard extends StatelessWidget {
 /// 이름표와 오른쪽 끝이 스친다 — 폭이 좁을수록 겹침이 준다. 글자도 24 →
 /// [AppTypography.heroName](16)으로 줄였다. 겹치더라도 이름표는 캐릭터 **발치**에
 /// 놓여 얼굴을 가리지 않는다.
+///
+/// ⚠️ **이 오버레이는 Figma 정본에 없다.** 정본(Redesign `65:428`)은 단계명과
+/// 레벨 pill을 캐릭터 **아래에 세로로** 쌓는다. 히어로 안 오버레이는 그 뒤의 사용자
+/// 결정이라, 아래 세 처방(베이스라인 정렬·판 패딩·축소)은 정본 실측이 아니라 이
+/// 배치에서만 생기는 결함을 푼 것이다.
 class _HeroNamePlate extends StatelessWidget {
   const _HeroNamePlate({super.key, required this.stage, required this.level});
 
@@ -90,38 +95,70 @@ class _HeroNamePlate extends StatelessWidget {
   /// 잔디 위에서 글자 대비가 무너진다.
   static const double _plateOpacity = 0.88;
 
+  /// 판 내부 패딩.
+  ///
+  /// 예전 값(좌우 8 · 상하 4)은 안에 든 레벨 pill(높이 28)이 판 가장자리에 거의
+  /// 닿아, 흰 원통이 글자를 **감싼** 것이 아니라 글자에 **끼인** 것처럼 보였다.
+  /// 상하 8이면 pill 위아래로 8씩 남아 원통이 배경 역할을 되찾고, 좌우 12는 pill
+  /// 자신의 좌우 패딩(12, [LevelPill])과 같은 리듬이다.
+  ///
+  /// 판이 36 → 44로 높아지지만 [CharacterHero]의 오버레이는 **아래에 붙어**
+  /// 있으므로(`bottom: _overlayInset`) 캐릭터 접지 좌표는 건드리지 않는다.
+  /// 판 윗변만 8dp 올라가고, 그래도 캐릭터 박스 중심보다 아래(=발치)에 머문다.
+  static const EdgeInsets _platePadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.smd,
+    vertical: AppSpacing.sm,
+  );
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
+      padding: _platePadding,
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest.withValues(alpha: _plateOpacity),
         borderRadius: AppRadius.fullAll,
         boxShadow: AppColors.softShadow,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 단계명은 한글('참새'·'성룡')이라 기본 서체(Pretendard)다.
-          // 긴 단계명('이펙트 독수리')과 큰 글꼴 배율이 겹쳐도 레벨 pill을
-          // 밀어내지 않게 접는다 — 히어로는 높이가 고정이라 줄을 늘릴 수 없다.
-          Flexible(
-            child: Text(
+      // **폭이 모자라면 통째로 줄인다 — 잘라내지 않는다.**
+      //
+      // 예전에는 단계명만 `Flexible` + `ellipsis`였다. 그러면 좁은 폭·큰 배율에서
+      // 「이펙트 독수리」가 「이펙트…」로 잘려 **어느 단계인지 못 읽는다**(AppBar 긴
+      // 제목에 쓴 처방과 같은 이유로 말줄임을 버렸다 — `ScreenTitle.appBar`).
+      //
+      // 축소 대상이 이름 하나가 아니라 `Row` **전체**인 것이 핵심이다. 이름만
+      // `FittedBox`로 감싸면 `RenderFittedBox`가 축소 배율을 baseline 값에 반영하지
+      // 않아, 줄어든 이름과 pill의 밑선이 도로 어긋난다. 한 덩어리로 줄이면 두
+      // 글자의 상대 위치가 그대로 보존된다.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          // **박스 중심이 아니라 글자 밑선을 맞춘다.**
+          //
+          // 기본 정렬(center)은 이름 박스(Pretendard 16/24)와 pill 박스(Sora
+          // 14/20 + 상하 패딩 4 = 28)의 **중심**을 맞춘다. 두 서체는 캡 높이와
+          // 베이스라인 위치가 달라, 박스 중심을 맞추면 글자가 서로 어긋나 한 줄이
+          // 삐뚤어져 보인다. baseline 정렬은 `Container`가 자식 baseline을 자기
+          // 패딩만큼 밀어 전달하므로 pill 안 `Lv.12`와 단계명의 밑선이 실제로 맞는다.
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            // 단계명은 한글('참새'·'성룡')이라 기본 서체(Pretendard)다.
+            // 축소는 바깥 `FittedBox`가 맡으므로 여기서는 줄바꿈만 막는다.
+            Text(
               stage.name,
               style: AppTypography.heroName.copyWith(color: scheme.onSurface),
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
-          ),
-          AppSpacing.gapWSm,
-          // MY 캐릭터 블록과 **같은** pill(`core/widgets/level_pill.dart`).
-          LevelPill(level: level),
-        ],
+            AppSpacing.gapWSm,
+            // MY 캐릭터 블록과 **같은** pill(`core/widgets/level_pill.dart`).
+            LevelPill(level: level),
+          ],
+        ),
       ),
     );
   }

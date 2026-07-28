@@ -456,7 +456,9 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
         // 툴바 높이도 그 크기에 맞춰 키운다(기본 56이면 제목이 바를 거의 채운다).
         toolbarHeight: ScreenTitle.appBarHeight,
         title: const ScreenTitle.appBar('오늘의 퀘스트'),
-        actions: const [_HeaderCoin(), AppSpacing.gapWMd],
+        // 정본 `66:444`의 코인 pill은 오른쪽 끝에서 20(= 화면 좌우 여백)이다.
+        // `AppBar`는 actions 뒤에 여백을 주지 않으므로 직접 붙인다.
+        actions: const [_HeaderCoin(), AppSpacing.gapWBlock],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/quest/new'),
@@ -602,7 +604,7 @@ class _HeaderCoin extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
     if (user == null) return const SizedBox.shrink();
-    return CoinPill(amount: user.coin, compact: true);
+    return CoinPill(amount: user.coin);
   }
 }
 

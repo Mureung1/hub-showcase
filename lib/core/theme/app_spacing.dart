@@ -47,6 +47,11 @@ abstract final class AppSpacing {
   /// 본문 블록(히어로·이름·XP·통계·액션·목록) 사이 간격.
   static const SizedBox gapBlock = SizedBox(height: screenH);
 
+  /// [gapBlock]의 가로판 — 화면 좌우 여백만큼의 가로 간격.
+  /// `AppBar(actions:)` 끝에 붙여 오른쪽 여백을 본문과 같은 20으로 맞춘다
+  /// (`AppBar`는 actions 뒤에 여백을 주지 않아 화면 끝에 딱 붙는다).
+  static const SizedBox gapWBlock = SizedBox(width: screenH);
+
   static const SizedBox gapWXs = SizedBox(width: xs);
   static const SizedBox gapWSm = SizedBox(width: sm);
   static const SizedBox gapWSmd = SizedBox(width: smd);

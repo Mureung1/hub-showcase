@@ -208,6 +208,9 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
       // 제목 크기는 화면 공통([ScreenTitle]) — 5탭에 맞춘 사용자 결정이다.
       appBar: AppBar(
         toolbarHeight: ScreenTitle.appBarHeight,
+        // 뒤로가기 버튼이 있는 AppBar는 제목을 버튼 바로 옆(간격 4)에 붙인다
+        // — 정본 `50:440`. 테마 기본값 20은 leading 없는 루트 AppBar용이다.
+        titleSpacing: AppSpacing.xs,
         title: const ScreenTitle.appBar('퀘스트 등록'),
       ),
       // 등록 버튼은 스크롤과 무관하게 항상 보이도록 본문이 아니라 하단 바에 둔다
