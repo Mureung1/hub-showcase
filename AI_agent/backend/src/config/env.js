@@ -22,4 +22,7 @@ export const env = {
   smtpFrom: process.env.SMTP_FROM || process.env.SMTP_USER || "",
   resendApiKey: process.env.RESEND_API_KEY || "",
   resendFrom: process.env.RESEND_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || "",
+  firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "",
+  firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL || "",
+  firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY || "",
 };
