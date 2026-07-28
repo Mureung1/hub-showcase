@@ -68,7 +68,7 @@ const AppLayout = () => {
       </nav>
 
       {/* PC sidebar */}
-      <aside className="fixed bottom-0 left-0 top-0 hidden w-60 flex-col border-r border-slate-200/80 bg-white md:flex">
+      <aside className="fixed bottom-0 left-0 top-0 hidden w-60 flex-col border-r border-slate-300/80 bg-white md:flex">
         <button
           type="button"
           className="border-b border-slate-100 px-6 py-6 text-left transition-colors hover:bg-slate-50"
