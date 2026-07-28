@@ -4,6 +4,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/context-analysis",
+      "destination": "https://modu-brain-demo.onrender.com/api/context-analysis"
+    },
+    {
       "source": "/api/context-analysis/import",
       "destination": "https://modu-brain-demo.onrender.com/api/context-analysis/import"
     },

@@ -106,4 +106,5 @@ cwd=C:\Users\thats\OneDrive\Desktop\codex project\hub-N031. 새 기능을 추가
 | D08 | 07-23 | 완료 · N031-2026-07-23-modu-brain-tdd · TDD (Red-Green-Refactor) 기반 원문 부분문자열 근거 검증기 모듈 구현 및 unit test 검증 · 없음 |
 | D09 | 07-24 | 완료 · N031-2026-07-24-modu-brain-showcase · 대시보드 등록용 showcase/showcase.json 및 썸네일/스크린샷 셋업 · 없음 |
 | D10 | 07-27 | 완료 · N031-2026-07-27-modu-brain-release-candidate · 배포 연결, 공개 접근 설정 및 흑백/Modu 블루 디자인 시스템 고정 · 없음 |
+| D11 | 07-28 | 완료 · N031-2026-07-28-supabase-vercel-render-sync · Supabase 보안·보관 마이그레이션 적용 및 Render/Vercel 프록시·헬스체크 검증 · 없음 |
 
