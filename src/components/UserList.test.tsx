@@ -30,6 +30,27 @@ describe("UserList", () => {
     });
   });
 
+  it("opens the same public profile from the avatar area", async () => {
+    const onOpenProfile = vi.fn();
+    vi.mocked(fetch).mockResolvedValueOnce(response({
+      data: [
+        { nickname: "잔잔한파도", bio: "밤의 음악", avatarUrl: null, isFollowing: false },
+      ],
+    }));
+    const { container } = render(
+      <UserList
+        apiBaseUrl="http://localhost:3000"
+        accessToken="valid-token"
+        onOpenProfile={onOpenProfile}
+      />,
+    );
+
+    await screen.findByText("잔잔한파도");
+    fireEvent.click(container.querySelector(".user-avatar") as HTMLElement);
+
+    expect(onOpenProfile).toHaveBeenCalledWith("잔잔한파도");
+  });
+
   it("shows the empty state", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(response({ data: [] }));
     render(<UserList apiBaseUrl="http://localhost:3000" accessToken="valid-token" />);

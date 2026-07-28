@@ -48,6 +48,39 @@ describe("FollowingFeed", () => {
     });
   });
 
+  it("opens the author's profile from the feed card", async () => {
+    const onOpenProfile = vi.fn();
+    vi.mocked(fetch).mockResolvedValueOnce(response({
+      data: [{
+        id: 7,
+        spotifyTrackId: "track-1",
+        songTitle: "Ditto",
+        artistName: "NewJeans",
+        albumName: null,
+        albumImageUrl: null,
+        externalUrl: null,
+        emotionText: "오늘의 마음",
+        recordDate: "2026-07-27",
+        liked: false,
+        likeCount: 0,
+        author: { nickname: "잔잔한파도", avatarUrl: null },
+      }],
+      meta: { followingCount: 1 },
+    }));
+
+    render(
+      <FollowingFeed
+        accessToken="valid-token"
+        apiBaseUrl="http://localhost:3000"
+        refreshKey={0}
+        onOpenProfile={onOpenProfile}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "잔잔한파도" }));
+    expect(onOpenProfile).toHaveBeenCalledWith("잔잔한파도");
+  });
+
   it.each([
     [0, "아직 팔로우한 사람이 없어요."],
     [2, "아직 도착한 음악 기록이 없어요."],

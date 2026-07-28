@@ -2,6 +2,7 @@ import { getAuthenticatedSupabaseClient } from "../lib/supabase.js";
 import {
   createMusicRecord,
   getCurrentDate,
+  MusicRecordDateConflictError,
   listMusicRecords,
   MusicRecordValidationError,
 } from "../services/musicRecordsService.js";
@@ -47,6 +48,14 @@ export function createMusicRecordsController(
             error: {
               code: "INVALID_INPUT",
               message: error.message,
+            },
+          });
+        }
+        if (error instanceof MusicRecordDateConflictError) {
+          return response.status(409).json({
+            error: {
+              code: "MUSIC_RECORD_ALREADY_EXISTS",
+              message: "오늘의 음악 기록은 이미 남겼어요.",
             },
           });
         }

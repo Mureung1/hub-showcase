@@ -2,17 +2,17 @@
 
 ## 실행 정보
 
-- 실행일: 2026-07-27
+- 실행일: 2026-07-28
 - 브랜치: `codex/task-2-user-search`
 - 환경: Windows, Node.js, Vite, Express
-- 대상: 좋아요 집계·공개 사용자 목록을 포함한 작업 1~3 통합 상태
+- 대상: 공개 프로필·좋아요 사용자 목록·Monthly Recap 화면을 포함한 작업 1~6 통합 상태
 
 ## 자동 검증
 
 | 명령 | 결과 | 상세 |
 |---|---|---|
 | `npm.cmd run typecheck` | PASS | TypeScript 오류 없음 |
-| `npm.cmd test` | PASS | 프런트엔드 94개, Node 62개 테스트 |
+| `npm.cmd test` | PASS | 프런트엔드 114개, Node 80개 테스트 |
 | `npm.cmd run build` | PASS | Vite 프로덕션 번들 생성 |
 | `git diff --check` | PASS | 공백 오류 없음 |
 | `GET http://127.0.0.1:3000/health` | PASS | 로컬 Express 응답 `{"status":"ok"}` |
@@ -30,6 +30,17 @@
 - 좋아요 사용자 목록의 지연 조회·공개 필드·20명 커서 페이지
 - 직접 RPC 제한값의 `null`·0·음수·과대값·생략 처리
 - 목록 응답을 읽지 못할 때 목록 조회 전용 오류 문구 표시
+- 공개 프로필의 오늘 기록·지난 기록 분리와 20건 cursor 페이지
+- 공개 다이어리의 빈 상태·실패·재시도·더 보기
+- 공개 다이어리 401·404·잘못된 cursor·DB 실패 응답
+- 중간 삽입에도 기록을 건너뛰지 않는 keyset cursor
+- 사용자별 하루 한 기록 제약과 중복 생성 409 응답
+- 공개 프로필 URL 직접 접근·새로고침 복원·popstate 전환
+- 피드 작성자에서 공개 프로필 진입과 이전 프로필 요청 취소
+- 공개 프로필 팔로우·좋아요 성공 및 좋아요 실패 상태 유지
+- 월간 Recap 인증·입력 검증·본인 기록 집계·빈 달·12월 경계·DB 실패
+- Monthly Recap 월 선택·대표 요약·타임라인·빈 달·실패·재시도
+- 잘못된 Monthly Recap 응답을 화면 예외 없이 오류 상태로 처리
 - API 실패 시 기존 UI 상태 유지
 - Auth UUID의 사용자 검색·피드 응답 비노출
 
@@ -99,7 +110,7 @@
 3. 빈 감정과 한 글자 사용자 검색이 화면·서버에서 차단되는지 확인한다.
 4. 팔로우와 좋아요 버튼을 빠르게 반복 클릭해 버튼이 요청 중 비활성화되는지 확인한다.
 5. 계정 B token으로 계정 A의 `follower_id` 또는 `likes.user_id`를 직접 삽입·삭제해 RLS 오류를 확인한다.
-6. 계정 A가 팔로우하지 않은 사용자의 기록 ID로 좋아요 API를 요청해 404를 확인한다.
+6. 존재하지 않는 음악 기록 ID로 좋아요 API를 요청해 404를 확인한다.
 7. Console과 Network에서 다음 API별 공개 범위를 확인한다.
    - 사용자 검색과 팔로잉 피드 응답에는 다른 사용자의 Auth UUID와 이메일이 없어야 한다.
    - 내 음악 기록 응답의 `userId`와 `author.id`는 현재 계약상 로그인 사용자의 Auth UUID를 포함한다.
@@ -120,9 +131,15 @@ select user_id, record_id, count(*)
 from public.likes
 group by user_id, record_id
 having count(*) > 1;
+
+select user_id, record_date, count(*)
+from public.music_records
+where user_id is not null
+group by user_id, record_date
+having count(*) > 1;
 ```
 
-두 결과 모두 0행이어야 한다.
+세 결과 모두 0행이어야 한다.
 
 ## 남은 결함과 주의사항
 

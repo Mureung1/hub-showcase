@@ -4,6 +4,8 @@ import { MusicRecordForm } from "./components/MusicRecordForm";
 import { AuthScreen } from "./components/AuthScreen";
 import { UserList } from "./components/UserList";
 import { FollowingFeed } from "./components/FollowingFeed";
+import { PublicProfile } from "./components/PublicProfile";
+import { MonthlyRecap } from "./components/MonthlyRecap";
 import type { Session } from "@supabase/supabase-js";
 import { getCurrentSession, getProfile, signOut, subscribeToAuthChanges } from "./services/authService";
 import type { AuthProfile } from "./services/authService";
@@ -55,6 +57,11 @@ function toMusicRecord(record: ApiMusicRecord): MusicRecord {
   };
 }
 
+function getProfileFromUrl() {
+  const nickname = new URLSearchParams(window.location.search).get("profile")?.trim();
+  return nickname && nickname.length >= 2 && nickname.length <= 20 ? nickname : null;
+}
+
 async function getErrorMessage(response: Response, fallback: string) {
   try {
     const body = await response.json();
@@ -76,6 +83,8 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [pendingLikeId, setPendingLikeId] = useState<string | null>(null);
   const [likeErrors, setLikeErrors] = useState<Record<string, string>>({});
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(getProfileFromUrl);
+  const [peopleSearch, setPeopleSearch] = useState("");
 
   const applySession = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession);
@@ -113,6 +122,26 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
 
     return unsubscribe;
   }, [applySession, initialView]);
+
+  useEffect(() => {
+    const handlePopState = () => setSelectedProfile(getProfileFromUrl());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const openProfile = useCallback((nickname: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("profile", nickname);
+    window.history.pushState({}, "", url);
+    setSelectedProfile(nickname);
+  }, []);
+
+  const closeProfile = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("profile");
+    window.history.replaceState({}, "", url);
+    setSelectedProfile(null);
+  }, []);
 
   const loadRecords = useCallback(async () => {
     setIsLoading(true);
@@ -224,6 +253,17 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
     )));
   };
 
+  const syncPublicProfileLike = (
+    id: string | number,
+    liked: boolean,
+    likeCount: number,
+  ) => {
+    setRecords((current) => current.map((record) => (
+      String(record.id) === String(id) ? { ...record, liked, likeCount } : record
+    )));
+    setFeedRefreshKey((current) => current + 1);
+  };
+
   const handleSignOut = async () => {
     if (isSigningOut) return;
     setIsSigningOut(true);
@@ -245,6 +285,22 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
 
   if (initialView === "auth" && !session) {
     return <AuthScreen initialNotice={authError} onAuthenticated={(nextSession) => applySession(nextSession).catch(() => undefined)} />;
+  }
+
+  if (session?.access_token && selectedProfile) {
+    return (
+      <main className="app-shell">
+        <PublicProfile
+          nickname={selectedProfile}
+          accessToken={session.access_token}
+          apiBaseUrl={apiBaseUrl}
+          onBack={closeProfile}
+          onFollowChange={() => setFeedRefreshKey((current) => current + 1)}
+          onLikeChange={syncPublicProfileLike}
+          onOpenProfile={openProfile}
+        />
+      </main>
+    );
   }
 
   return (
@@ -313,6 +369,7 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
                   apiBaseUrl={session?.access_token ? apiBaseUrl : undefined}
                   accessToken={session?.access_token}
                   onLikeCountChange={updateLikeCount}
+                  onOpenAuthor={openProfile}
                 />
               ))}
             </div>
@@ -322,15 +379,23 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
 
       {session?.access_token && (
         <>
+          <MonthlyRecap
+            accessToken={session.access_token}
+            apiBaseUrl={apiBaseUrl}
+          />
           <FollowingFeed
             accessToken={session.access_token}
             apiBaseUrl={apiBaseUrl}
             refreshKey={feedRefreshKey}
+            onOpenProfile={openProfile}
           />
           <UserList
             accessToken={session.access_token}
             apiBaseUrl={apiBaseUrl}
             onFollowChange={() => setFeedRefreshKey((current) => current + 1)}
+            onOpenProfile={openProfile}
+            searchValue={peopleSearch}
+            onSearchValueChange={setPeopleSearch}
           />
         </>
       )}

@@ -8,6 +8,7 @@ interface FollowingFeedProps {
   accessToken: string;
   apiBaseUrl: string;
   refreshKey: number;
+  onOpenProfile?: (nickname: string) => void;
 }
 
 const emptyFeed: FollowingFeedResult = {
@@ -19,6 +20,7 @@ export function FollowingFeed({
   accessToken,
   apiBaseUrl,
   refreshKey,
+  onOpenProfile,
 }: FollowingFeedProps) {
   const [feed, setFeed] = useState(emptyFeed);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,6 +141,7 @@ export function FollowingFeed({
               apiBaseUrl={apiBaseUrl}
               accessToken={accessToken}
               onLikeCountChange={updateLikeCount}
+              onOpenAuthor={onOpenProfile}
             />
           ))}
         </div>

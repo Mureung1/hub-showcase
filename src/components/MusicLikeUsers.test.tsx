@@ -54,6 +54,32 @@ describe("MusicLikeUsers", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it("opens a public profile from a like user", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({
+      data: {
+        recordId: "7",
+        likeCount: 1,
+        users: [{ nickname: "잔잔한파도", avatarUrl: null }],
+        nextCursor: null,
+      },
+    }));
+    const onOpenProfile = vi.fn();
+    render(
+      <MusicLikeUsers
+        recordId={7}
+        likeCount={1}
+        apiBaseUrl="http://localhost:3000"
+        accessToken="valid-token"
+        onOpenProfile={onOpenProfile}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "1명이 기억했어요" }));
+    fireEvent.click(await screen.findByRole("button", { name: "잔잔한파도" }));
+
+    expect(onOpenProfile).toHaveBeenCalledWith("잔잔한파도");
+  });
+
   it("loads the next page without duplicating users", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(response({

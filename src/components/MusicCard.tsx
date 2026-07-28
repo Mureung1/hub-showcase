@@ -11,6 +11,7 @@ interface MusicCardProps {
   apiBaseUrl?: string;
   accessToken?: string;
   onLikeCountChange?: (id: string | number, likeCount: number) => void;
+  onOpenAuthor?: (nickname: string) => void;
 }
 
 export function MusicCard({
@@ -22,11 +23,29 @@ export function MusicCard({
   apiBaseUrl,
   accessToken,
   onLikeCountChange,
+  onOpenAuthor,
 }: MusicCardProps) {
   return (
     <article className="music-card">
       <div className="card-date">
-        <span>{record.author?.nickname ?? "Music Record"}</span>
+        {record.author && onOpenAuthor ? (
+          <button
+            className="music-card-author"
+            type="button"
+            onClick={() => onOpenAuthor(record.author!.nickname)}
+          >
+            {record.author.avatarUrl ? (
+              <img src={record.author.avatarUrl} alt="" />
+            ) : (
+              <span className="music-card-author-fallback" aria-hidden="true">
+                {record.author.nickname.slice(0, 1)}
+              </span>
+            )}
+            <span>{record.author.nickname}</span>
+          </button>
+        ) : (
+          <span>{record.author?.nickname ?? "Music Record"}</span>
+        )}
         <time dateTime={record.recordDate}>{formatRecordDate(record.recordDate)}</time>
       </div>
 
@@ -74,6 +93,7 @@ export function MusicCard({
             apiBaseUrl={apiBaseUrl}
             accessToken={accessToken}
             onLikeCountChange={onLikeCountChange}
+            onOpenProfile={onOpenAuthor}
           />
         ) : record.likeCount > 0 ? (
           <p className="like-count">{record.likeCount}명이 기억했어요</p>

@@ -288,6 +288,33 @@ describe("SWIM API", () => {
     });
   });
 
+  it("returns 409 when the user already recorded music today", async () => {
+    const duplicateError = Object.assign(new Error("duplicate key"), { code: "23505" });
+    const query = createSupabaseQuery({ data: null, error: duplicateError });
+    const baseUrl = await startApp({
+      ...createAuthenticatedOptions(query),
+      getCurrentDate: () => "2026-07-16",
+    });
+
+    const response = await fetch(`${baseUrl}/api/music-records`, {
+      method: "POST",
+      headers: { ...authHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        songTitle: "Ditto",
+        artistName: "NewJeans",
+        emotionText: "하루",
+      }),
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), {
+      error: {
+        code: "MUSIC_RECORD_ALREADY_EXISTS",
+        message: "오늘의 음악 기록은 이미 남겼어요.",
+      },
+    });
+  });
+
   it("returns the stable internal error response for a failed insert", async () => {
     const query = createSupabaseQuery({ data: null, error: new Error("database unavailable") });
     const baseUrl = await startApp(createAuthenticatedOptions(query));

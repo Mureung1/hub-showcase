@@ -39,6 +39,26 @@ create index if not exists music_records_user_id_record_date_idx
   on public.music_records (user_id, record_date desc, created_at desc)
   where user_id is not null;
 
+do $$
+begin
+  if exists (
+    select 1
+    from public.music_records
+    where user_id is not null
+    group by user_id, record_date
+    having count(*) > 1
+  ) then
+    raise exception
+      'music_records contains duplicate user_id and record_date values'
+      using errcode = '23505';
+  end if;
+end;
+$$;
+
+create unique index if not exists music_records_user_id_record_date_unique
+  on public.music_records (user_id, record_date)
+  where user_id is not null;
+
 alter table public.music_records enable row level security;
 
 drop policy if exists "music_records_are_publicly_readable" on public.music_records;
@@ -48,15 +68,7 @@ create policy "authenticated_users_can_read_records"
 on public.music_records
 for select
 to authenticated
-using (
-  user_id = (select auth.uid())
-  or exists (
-    select 1
-    from public.follows
-    where follower_id = (select auth.uid())
-      and following_id = music_records.user_id
-  )
-);
+using ((select auth.uid()) is not null);
 
 drop policy if exists "music_records_can_be_created" on public.music_records;
 drop policy if exists "authenticated_users_can_create_owned_records" on public.music_records;
