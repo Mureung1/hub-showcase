@@ -200,7 +200,7 @@
 - [x] 링크 URL에 사용자의 스펙 값(학력·경력·자격증 등 개인 입력값)이 쿼리 파라미터로 들어가지 않음 — 고정 URL만 사용
 - [x] 기존 `.checklist-detail`/`.checklist-detail-fail` 레이아웃 안에 자연스럽게 들어가도록 배치, 별도 팝업이나 모달을 새로 만들지 않음
 - [x] 결과 화면과 마이페이지(북마크) 상세 모달 양쪽 진입점에서 동일하게 동작 (`JobDetailModal` 하나를 공유하므로 자연히 만족됨)
-- [ ] 데스크톱·모바일 뷰포트 양쪽에서 링크 클릭 영역·줄바꿈이 깨지지 않는지 확인 — 사용자 브라우저 확인 대기
+- [x] 데스크톱·모바일 뷰포트 양쪽에서 링크 클릭 영역·줄바꿈이 깨지지 않는지 확인 — 사용자 브라우저 확인 완료 (2026-07-28)
 - [x] 862건 공고를 순회해 어학 4종 각각 최소 1건, 경력 미충족 케이스, 자격증 미충족 케이스에서 링크가 각각 올바른 대상으로 연결되는지 확인
 
 **진행 상황 (2026-07-27)**: 구현 완료, 마지막 뷰포트 확인만 남음. `src/constants/referenceLinks.js`(신규) — `getReferenceLink(category, requirementValue)`. 링크는 WebSearch로 공식 사이트 직접 확인: TOEIC `exam.ybmnet.co.kr/toeic`, TOEIC Speaking `toeicswt.co.kr`, TOEFL `kr.ets.org/toefl.html`, OPIc `opic.or.kr`, 경력 `saramin.co.kr`, 자격증 `q-net.or.kr`. `buildJobDisplay`의 checklist 항목에 `requirementValue`(foreignLanguage만 `job.foreign_lang_test`, 나머지는 `undefined`) 추가. `JobDetailModal.jsx`가 `!c.ok`인 항목에서만 `getReferenceLink` 호출, 자격증 항목에만 시행기관 안내 캡션 추가. 실제 시드 DB(862건) 기준 검증: TOEIC/TOEFL/OPIc/TOEIC Speaking 4종 전부 실존(23/25/31/31건), 경력 미충족·자격증 미충족 케이스 각각 실제 공고로 `evaluateJob` 통과시켜 checks=false + 올바른 링크 확인. FE lint/test 회귀 없음(15/15 통과). 사용자가 브라우저에서 로컬 확인 완료("잘 만들어진 것 같다").
