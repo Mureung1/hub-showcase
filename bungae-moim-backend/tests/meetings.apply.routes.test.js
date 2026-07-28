@@ -279,3 +279,57 @@ describe('POST /api/meetings/:id/apply', () => {
     expect(res.body.error.message).toBe('신청이 거절된 모임입니다');
   });
 });
+
+describe('신청 알림(C)', () => {
+  async function countNotifications(userId, type) {
+    const { rows } = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM notifications WHERE user_id = $1 AND type = $2',
+      [userId, type]
+    );
+    return rows[0].n;
+  }
+
+  it('소모임에 신청하면 모임장에게 new_application 알림이 간다', async () => {
+    const hostId = await createUser('n-f1-h1');
+    const meetingId = await insertMeeting(hostId, { type: 'small', capacity: null });
+    const { agent, userId } = await loginAgent('n-f1-u1');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`);
+    expect(res.status).toBe(201);
+
+    expect(await countNotifications(hostId, 'new_application')).toBe(1);
+    // 신청자 본인에게는 알림이 없다.
+    expect(await countNotifications(userId, 'new_application')).toBe(0);
+
+    const { rows } = await pool.query(
+      'SELECT meeting_id, is_read FROM notifications WHERE user_id = $1',
+      [hostId]
+    );
+    expect(Number(rows[0].meeting_id)).toBe(meetingId);
+    expect(rows[0].is_read).toBe(false);
+  });
+
+  it('번개모임은 즉시 확정이라 알림을 만들지 않는다', async () => {
+    const hostId = await createUser('n-f1-h2');
+    const meetingId = await insertMeeting(hostId, { type: 'flash', capacity: 5 });
+    const { agent } = await loginAgent('n-f1-u2');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`);
+    expect(res.status).toBe(201);
+
+    const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM notifications');
+    expect(rows[0].n).toBe(0);
+  });
+
+  it('신청이 거절되면(중복 신청) 알림도 늘지 않는다', async () => {
+    const hostId = await createUser('n-f1-h3');
+    const meetingId = await insertMeeting(hostId, { type: 'small', capacity: null });
+    const { agent } = await loginAgent('n-f1-u3');
+
+    await agent.post(`/api/meetings/${meetingId}/apply`);
+    const second = await agent.post(`/api/meetings/${meetingId}/apply`);
+    expect(second.status).toBeGreaterThanOrEqual(400);
+
+    expect(await countNotifications(hostId, 'new_application')).toBe(1);
+  });
+});

@@ -4,6 +4,7 @@ const withTransaction = require('../utils/withTransaction');
 const { evaluateApplicability } = require('../utils/participation');
 const { validateUpdateMeeting, validateApplyAnswer } = require('../utils/validators');
 const { isAdult } = require('../utils/age');
+const { createNotification, NOTIFICATION_TYPES } = require('./notificationService');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
@@ -322,6 +323,16 @@ async function applyToMeeting(meetingId, userId, rawAnswer) {
         'INSERT INTO meeting_participants (meeting_id, user_id, status, apply_answer) VALUES ($1, $2, $3, $4)',
         [meetingId, userId, newStatus, applyAnswer]
       );
+    }
+
+    // 소모임 pending 신청만 모임장에게 알린다. flash는 즉시 confirmed라 모임장이 처리할 게 없다.
+    // 같은 트랜잭션 안이라 신청이 롤백되면 알림도 함께 사라진다.
+    if (newStatus === 'pending') {
+      await createNotification(client, {
+        userId: Number(row.host_id),
+        type: NOTIFICATION_TYPES.NEW_APPLICATION,
+        meetingId,
+      });
     }
 
     // flash 정원이 이 신청으로 차면 모임을 마감한다.
