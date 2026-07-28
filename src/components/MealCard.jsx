@@ -114,7 +114,10 @@ const ANALYZE_BUTTON_STYLE = {
 //   알레르기 번호) | 'stacked'(6주차 §4 — 급식. 한 줄에 1개씩 세로·가운데 정렬·불릿 없음·본문보다
 //   한 단계 큰 글자, 위첨자 번호 없이 카드 하단 통합 범례 + "더보기"로만 알레르기 확인).
 // analyzingMenu: 지금 분석 요청이 나가 있는 메뉴명(6주차 §1-B, precisionEngine 호출은 비동기라
-// 캐시 미스 시 몇 초 걸릴 수 있다) — 그 버튼에만 로딩을 표시하고 나머지는 그대로 눌리게 둔다.
+// 캐시 미스 시 몇 초 걸릴 수 있다) — 클릭한 버튼엔 스피너를, 나머지 버튼은 비활성화한다(동시에 두
+// 요청을 보내면 먼저 끝난 쪽만 결과 화면으로 넘어가고 나중 요청은 조용히 버려지므로, 아예 동시
+// 요청 자체를 막는 편이 낫다). 다만 "왜 안 눌리는지" 알 수 있도록 흐리게 표시한다(리뷰에서 발견 —
+// 이전엔 비활성화만 되고 스타일은 그대로라 눌러도 아무 반응 없는 것처럼 보였다).
 function MenuList({ menus, layout, onAnalyzeMenu, analyzingMenu }) {
   if (layout === 'stacked') {
     return (
@@ -159,7 +162,11 @@ function MenuList({ menus, layout, onAnalyzeMenu, analyzingMenu }) {
                 className="tds-press"
                 onClick={() => onAnalyzeMenu(menu.name)}
                 disabled={Boolean(analyzingMenu)}
-                style={ANALYZE_BUTTON_STYLE}
+                style={{
+                  ...ANALYZE_BUTTON_STYLE,
+                  opacity: analyzingMenu && !isAnalyzing ? 0.4 : 1,
+                  cursor: analyzingMenu ? 'not-allowed' : 'pointer',
+                }}
               >
                 {isAnalyzing ? <Spinner size={12} /> : '영양 분석'}
               </button>

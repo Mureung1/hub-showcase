@@ -74,21 +74,37 @@ describe('analyzeTray', () => {
     expect(result.method).toBe('estimated')
   })
 
-  it('officialTotals 없이 비상식적인 총 칼로리면 전체 항목을 한 번 더 Gemini로 교차검증한다', async () => {
-    // "미역국" 1개만 담긴 트레이는 300kcal 미만(sanity 하한 미달)이라 교차검증이 걸려야 한다.
+  it('메뉴 2개 이상이고 officialTotals 없이 비상식적인 총 칼로리면 전체 항목을 한 번 더 Gemini로 교차검증한다', async () => {
+    // "미역국+배추김치" 트레이는 합계 43.2kcal로 300kcal 미만(sanity 하한 미달)이라 교차검증이 걸려야 한다.
     const geminiEstimate = vi.fn().mockResolvedValue({
-      items: [{ name: '미역국', weight: 400, calories: 350, protein: 8, carbs: 40, fat: 8, sodium: 900, fiber: 3 }],
-      total: { calories: 350, protein: 8, carbs: 40, fat: 8, sodium: 900, fiber: 3 },
+      items: [
+        { name: '미역국', weight: 400, calories: 250, protein: 8, carbs: 40, fat: 8, sodium: 900, fiber: 3 },
+        { name: '배추김치', weight: 40, calories: 100, protein: 2, carbs: 10, fat: 1, sodium: 300, fiber: 1 },
+      ],
+      total: { calories: 350, protein: 10, carbs: 50, fat: 9, sodium: 1200, fiber: 4 },
     })
 
+    const result = await analyzeTray(
+      { menus: ['미역국', '배추김치'], mealType: 'lunch', schoolType: 'univ' },
+      { geminiEstimate, calibrate: true, useCache: false },
+    )
+
+    expect(geminiEstimate).toHaveBeenCalledTimes(1)
+    expect(result.method).toBe('llm_reviewed')
+  })
+
+  it('메뉴가 1개뿐이면(단일 항목 모드) 칼로리가 낮아도 sanity 교차검증을 하지 않는다', async () => {
+    // 학식·급식 카드의 메뉴별 [영양 분석](6주차 §1-B)은 반찬 하나만 조회할 수 있는데, KDRI 한 끼
+    // 범위(300~1400kcal)는 트레이 전체 기준이라 반찬 하나엔 안 맞다 — 리뷰에서 발견해 고친 버그.
+    const geminiEstimate = vi.fn()
     const result = await analyzeTray(
       { menus: ['미역국'], mealType: 'lunch', schoolType: 'univ' },
       { geminiEstimate, calibrate: true, useCache: false },
     )
 
-    expect(geminiEstimate).toHaveBeenCalledTimes(1)
-    expect(geminiEstimate.mock.calls[0][0]).toEqual([{ name: '미역국', role: 'soup', weight: 400 }])
-    expect(result.method).toBe('llm_reviewed')
+    expect(geminiEstimate).not.toHaveBeenCalled()
+    expect(result.method).toBe('estimated')
+    expect(result.total.calories).toBe(28)
   })
 
   it('같은 입력이면 캐시로 같은 결과를 반환하고 Gemini를 다시 호출하지 않는다(결정성)', async () => {
@@ -117,5 +133,56 @@ describe('analyzeTray', () => {
 
     expect(first.total.calories).toBe(500)
     expect(second.total.calories).toBe(800)
+  })
+
+  it('칼로리는 같아도 officialTotals의 단백질이 다르면 캐시를 공유하지 않는다(리뷰에서 발견한 버그)', async () => {
+    const first = await analyzeTray(
+      { menus: ['잡곡밥'], mealType: 'lunch', schoolType: 'high', officialTotals: { calories: 500, protein: 20 } },
+      {},
+    )
+    const second = await analyzeTray(
+      { menus: ['잡곡밥'], mealType: 'lunch', schoolType: 'high', officialTotals: { calories: 500, protein: 40 } },
+      {},
+    )
+
+    expect(first.total.protein).not.toBe(second.total.protein)
+  })
+
+  it('Gemini 추정이 요청한 이름 일부를 빠뜨리면 confidence가 low로 떨어진다', async () => {
+    const geminiEstimate = vi.fn().mockResolvedValue({
+      items: [{ name: '창작메뉴XYZ', weight: 120, calories: 300, protein: 10, carbs: 40, fat: 8, sodium: 500, fiber: 2 }],
+      total: { calories: 300, protein: 10, carbs: 40, fat: 8, sodium: 500, fiber: 2 },
+    })
+    // 두 항목이 매칭 실패인데 Gemini는 하나만 돌려준다 — 이름이 다르게 오거나 누락된 상황을 흉내낸다.
+    const result = await analyzeTray(
+      { menus: ['창작메뉴XYZ', '창작메뉴ABC'], mealType: 'lunch', schoolType: 'univ' },
+      { geminiEstimate, calibrate: false, useCache: false },
+    )
+
+    expect(result.confidence).toBe('low')
+    expect(result.items.find((i) => i.name === '창작메뉴ABC').nutrients.calories).toBeNull()
+  })
+
+  it('Gemini 호출 자체가 실패해도 전체 요청이 죽지 않고 해당 항목만 결측 처리한다', async () => {
+    const geminiEstimate = vi.fn().mockRejectedValue(new Error('OpenRouter API error(500)'))
+    const result = await analyzeTray(
+      { menus: ['잡곡밥', '창작메뉴XYZ'], mealType: 'lunch', schoolType: 'univ' },
+      { geminiEstimate, calibrate: false, useCache: false },
+    )
+
+    expect(result.items.find((i) => i.name === '잡곡밥').matched).toBe(true)
+    expect(result.items.find((i) => i.name === '창작메뉴XYZ').nutrients.calories).toBeNull()
+    expect(result.confidence).toBe('low')
+  })
+
+  it('officialTotals가 있어도 캘리브레이션이 실제로 안 걸리면(합계 0) confidence는 high가 아니다', async () => {
+    const geminiEstimate = vi.fn().mockRejectedValue(new Error('실패'))
+    const result = await analyzeTray(
+      { menus: ['창작메뉴XYZ'], mealType: 'lunch', schoolType: 'univ', officialTotals: { calories: 500 } },
+      { geminiEstimate, calibrate: true, useCache: false },
+    )
+
+    expect(result.method).toBe('estimated')
+    expect(result.confidence).not.toBe('high')
   })
 })

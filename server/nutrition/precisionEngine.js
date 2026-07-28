@@ -63,17 +63,20 @@ function round2(n) {
   return typeof n === 'number' && Number.isFinite(n) ? Math.round(n * 100) / 100 : null
 }
 
-// 가이드 원문 스펙(정렬 메뉴명 해시 + schoolType)에 officialTotals.calories를 더한다 — 같은 메뉴
-// 조합이 서로 다른 날짜·학교에서 다른 공식 칼로리로 나올 수 있어(레시피/배식량 차이), 원문 스펙대로만
-// 키를 잡으면 먼저 계산된 캘리브레이션 결과가 다른 날의 요청에도 재사용돼 조용히 틀린 값을 돌려줄
-// 여지가 있다. 공식 수치가 없는 학식은 그대로 메뉴+schoolType만으로 캐시된다.
+// 가이드 원문 스펙(정렬 메뉴명 해시 + schoolType)에 officialTotals 전체를 더한다 — 같은 메뉴 조합이
+// 서로 다른 날짜·학교에서 다른 공식 수치로 나올 수 있어(레시피/배식량 차이), 원문 스펙대로만 키를
+// 잡으면 먼저 계산된 캘리브레이션 결과가 다른 날의 요청에도 재사용돼 조용히 틀린 값을 돌려줄 여지가
+// 있다. 처음엔 calories만 키에 넣었지만, 캘리브레이션(④)은 protein/carbs/fat도 각자 독립적으로
+// 스케일하므로 calories만으로는 부족하다(리뷰에서 발견 — 같은 메뉴·같은 공식 칼로리인데 단백질만
+// 다른 두 요청이 캐시를 잘못 공유할 수 있었다) — 6개 영양소 전부를 키에 넣는다. 공식 수치가 없는
+// 학식은 그대로 메뉴+schoolType만으로 캐시된다.
 function cacheKey(menuNames, schoolType, officialTotals) {
   const sortedNames = [...menuNames]
     .map((n) => n.trim())
     .sort()
     .join('|')
-  const officialKcal = officialTotals?.calories ?? 'none'
-  return `${schoolType}::${officialKcal}::${sortedNames}`
+  const officialPart = officialTotals ? NUTRIENT_KEYS.map((k) => `${k}=${officialTotals[k] ?? ''}`).join(',') : 'none'
+  return `${schoolType}::${officialPart}::${sortedNames}`
 }
 
 function getCached(key) {
@@ -143,13 +146,13 @@ function sumNutrients(items) {
   return total
 }
 
+// total.fat은 sumNutrients가 항상 숫자로 채우고, calories 범위 체크를 이미 통과했다면 calories > 0도
+// 이미 보장돼 있다 — 두 값 모두 여기서 다시 typeof/0 초과를 확인할 필요가 없다(리뷰에서 발견한
+// 도달 불가능한 방어 코드를 제거).
 function isNutritionallyPlausible(total) {
   if (total.calories < PLAUSIBLE_MEAL_KCAL.min || total.calories > PLAUSIBLE_MEAL_KCAL.max) return false
-  if (typeof total.fat === 'number' && total.calories > 0) {
-    const fatCalorieRatio = (total.fat * 9) / total.calories
-    if (fatCalorieRatio > EXTREME_FAT_CALORIE_RATIO) return false
-  }
-  return true
+  const fatCalorieRatio = (total.fat * 9) / total.calories
+  return fatCalorieRatio <= EXTREME_FAT_CALORIE_RATIO
 }
 
 async function fetchWithTimeout(url, options, timeoutMs) {
@@ -197,9 +200,11 @@ async function geminiEstimateDefault(trayItems) {
 }
 
 // 영양소별 독립 스케일 — officialTotals에 값이 있는 항목만 그 값에 정확히 맞춘다. kcal이 없으면
-// (필수 조건) 캘리브레이션 자체를 하지 않는다.
+// (필수 조건) 캘리브레이션 자체를 하지 않는다. referenceTotals.calories > 0은 호출부(analyzeTray)가
+// 이미 확인하고 부르므로 여기서 다시 검사하지 않는다 — currentTotal.calories(항목이 전부 실패해
+// 합계가 0인 경우 등)만 이 함수 자체가 지켜야 하는 조건이다.
 function applyProportionalCalibration(items, referenceTotals, currentTotal) {
-  if (!(referenceTotals?.calories > 0) || !(currentTotal.calories > 0)) return null
+  if (!(currentTotal.calories > 0)) return null
 
   const scales = {}
   for (const key of NUTRIENT_KEYS) {
@@ -255,28 +260,51 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
     nutrients: scaleFromPer100(r.dbItem.nutrientsPer100, r.weight),
   }))
 
+  // 매칭 실패분 추정은 이미 항목 대부분이 DB로 해결된 요청까지 통째로 실패시키면 안 된다 — Gemini
+  // 호출 자체가 실패하거나(API 키 누락·타임아웃) 응답이 요청한 이름 일부를 빠뜨리면, 그 항목만
+  // null 영양값으로 남기고(= sumNutrients가 0으로 취급) 나머지 DB 매칭분은 그대로 살린다. 이
+  // "일부 누락" 상태는 아래 confidence 계산에 반영한다(리뷰에서 발견 — 이전엔 조용히 0으로
+  // 합산되고도 confidence가 그대로 'high'가 나올 수 있었다).
   let estimatedItems = []
+  let hasIncompleteEstimate = false
   if (failed.length > 0) {
-    const estimate = await geminiEstimate(failed.map((r) => ({ name: r.name, role: r.role, weight: r.weight })), mealType)
-    const byName = new Map(estimate.items.map((e) => [e.name, e]))
-    estimatedItems = failed.map((r) => {
-      const est = byName.get(r.name)
-      return {
+    try {
+      const estimate = await geminiEstimate(failed.map((r) => ({ name: r.name, role: r.role, weight: r.weight })), mealType)
+      const byName = new Map(estimate.items.map((e) => [e.name, e]))
+      estimatedItems = failed.map((r) => {
+        const est = byName.get(r.name)
+        if (!est) hasIncompleteEstimate = true
+        return {
+          name: r.name,
+          matched: false,
+          matchType: null,
+          weight: r.weight,
+          nutrients: Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, est && typeof est[k] === 'number' ? est[k] : null])),
+        }
+      })
+    } catch (err) {
+      console.error('precisionEngine 매칭 실패분 추정 실패(해당 항목만 결측 처리):', err.message)
+      hasIncompleteEstimate = true
+      estimatedItems = failed.map((r) => ({
         name: r.name,
         matched: false,
         matchType: null,
         weight: r.weight,
-        nutrients: Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, est && typeof est[k] === 'number' ? est[k] : null])),
-      }
-    })
+        nutrients: Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, null])),
+      }))
+    }
   }
 
   const items = [...matchedItems, ...estimatedItems]
   let total = sumNutrients(items)
   let method = 'estimated' // 화면 표기는 6주차 §1-B에서 이 값을 한국어 문구로 매핑한다
   let calibration = null
+  let calibrated = false
 
-  // ④
+  // ④. sanity 교차검증(officialTotals 없을 때)은 트레이 전체를 대상으로 한 KDRI 한 끼 범위라, 메뉴
+  // 하나만 조회하는 단일 항목 모드(6주차 §1-B의 메뉴별 [영양 분석])에는 애초에 맞지 않는 기준이다 —
+  // 반찬 하나가 300kcal 미만인 건 지극히 정상인데 이 기준을 그대로 적용하면 식약처 DB 실측값이
+  // 불필요한 LLM 재추정으로 덮어써진다(리뷰에서 발견). 메뉴가 2개 이상일 때만 적용한다.
   if (calibrate) {
     if (officialTotals?.calories > 0) {
       const scales = applyProportionalCalibration(items, officialTotals, total)
@@ -287,8 +315,9 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
         }
         calibration = { scales, reason: 'official' }
         method = 'official'
+        calibrated = true
       }
-    } else if (!isNutritionallyPlausible(total)) {
+    } else if (menuNames.length > 1 && !isNutritionallyPlausible(total)) {
       try {
         const reviewed = await geminiEstimate(
           resolved.map((r) => ({ name: r.name, role: r.role, weight: r.weight })),
@@ -300,6 +329,7 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
             total = sumNutrients(items)
             calibration = { scales, reason: 'sanity_check' }
             method = 'llm_reviewed'
+            calibrated = true
           }
         }
       } catch (err) {
@@ -308,8 +338,20 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
     }
   }
 
+  // confidence는 입력(officialTotals 유무)이 아니라 실제로 무슨 일이 있었는지를 반영해야 한다 —
+  // 캘리브레이션이 실제로 적용됐는지(calibrated), Gemini 추정이 온전했는지(hasIncompleteEstimate)를
+  // 먼저 보고, 그다음에야 DB 매칭 비율을 본다(리뷰에서 발견 — 이전엔 officialTotals가 있다는
+  // 이유만으로 캘리브레이션이 끝내 안 걸려도 'high'였다).
   const matchRatio = resolved.length > 0 ? matched.length / resolved.length : 1
-  const confidence = officialTotals?.calories > 0 ? 'high' : matchRatio === 1 ? 'high' : matchRatio >= 0.5 ? 'medium' : 'low'
+  const confidence = calibrated
+    ? 'high'
+    : hasIncompleteEstimate
+      ? 'low'
+      : matchRatio === 1
+        ? 'high'
+        : matchRatio >= 0.5
+          ? 'medium'
+          : 'low'
 
   const result = { items, total, method, confidence, calibration }
   if (useCache && calibrate) setCached(key, result)

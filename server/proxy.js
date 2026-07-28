@@ -393,8 +393,8 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
 // 있어(과금) /api/gemini와 같은 geminiLimiter를 같이 건다.
 app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
   const { menus, mealType, schoolType, officialTotals } = req.body || {}
-  if (!Array.isArray(menus) || menus.length === 0) {
-    return res.status(400).json({ error: 'menus(배열)가 필요합니다' })
+  if (!Array.isArray(menus) || menus.length === 0 || !menus.every((m) => typeof m === 'string' && m.trim())) {
+    return res.status(400).json({ error: 'menus(문자열 배열)가 필요합니다' })
   }
   try {
     const result = await analyzeTray({ menus, mealType, schoolType, officialTotals: officialTotals ?? null })
@@ -407,7 +407,10 @@ app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
 // GET /api/food-serving?name=◯◯ - 6주차 §2 인분 수 조절용 1인분 그램 조회. server/nutrition/foodLookup.js
 // (foodDB.json, 6주차 §0)를 그대로 재사용한다 — 새 데이터소스를 만들지 않는다.
 app.get('/api/food-serving', (req, res) => {
-  const name = (req.query.name || '').toString().trim()
+  if (typeof req.query.name !== 'string') {
+    return res.status(400).json({ error: 'name is required' })
+  }
+  const name = req.query.name.trim()
   if (!name) {
     return res.status(400).json({ error: 'name is required' })
   }

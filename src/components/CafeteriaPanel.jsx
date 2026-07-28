@@ -74,16 +74,26 @@ function toAnalysisItems(items) {
   }))
 }
 
-function buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel }) {
+// isTray: 트레이(여러 메뉴) 분석이면 "(통합)"을 붙이고, 메뉴 하나만 조회하는 단일 항목 모드면
+// 그 메뉴 이름을 그대로 제목으로 쓴다 — 예전엔 항상 "(통합)"을 붙여서 "떡갈비(통합)"처럼 단일
+// 항목인데도 뭔가를 합친 것처럼 보이는 오표기가 있었다(리뷰에서 발견).
+function buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel, isTray = true }) {
   return {
     prefillTrayAnalysis: {
       pendingAnalysis: { items: toAnalysisItems(result.items), total: result.total },
       mealType: mealTypeKey,
-      titleOverride: `${mealTypeLabel}(통합)`,
+      titleOverride: isTray ? `${mealTypeLabel}(통합)` : mealTypeLabel,
       sourceNote: METHOD_SOURCE_NOTE[result.method] ?? '추정',
     },
   }
 }
+
+// CafeteriaPanel이 다시 마운트될 때(학식·급식 탭 재진입)마다 초기화된다 — "이번에 이 화면에 머무는
+// 동안 이미 다른 카드의 분석 요청이 먼저 끝나 결과 화면으로 넘어갔는지"를 추적한다. 카드마다 독립된
+// useTrayAnalysis/useMenuAnalysis 인스턴스를 쓰므로(카드별 로딩 상태를 따로 두려고), 늦게 끝난 다른
+// 카드의 분석 요청(최대 45초 걸릴 수 있음)이 사용자가 이미 보고 있는/편집 중인 결과 화면을 조용히
+// 덮어쓰는 걸 막으려면 카드를 넘나드는 공유 상태가 필요하다(리뷰에서 발견한 레이스 컨디션).
+let hasNavigatedThisVisit = false
 
 // officialCalories: NEIS 급식만 넘긴다 — precisionEngine이 서버에서 직접 공식 수치로 캘리브레이션한다
 // (5주차엔 프론트가 total.calories를 직접 덮어썼지만, 이제 항목별 비례 스케일까지 서버가 계산해준다).
@@ -102,7 +112,9 @@ function useTrayAnalysis(navigate) {
         schoolType,
         officialTotals: Number.isFinite(officialCalories) ? { calories: officialCalories } : null,
       })
-      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel }) })
+      if (hasNavigatedThisVisit) return // 다른 카드의 분석이 먼저 끝나 이미 결과 화면으로 넘어갔다 — 이 결과는 버린다
+      hasNavigatedThisVisit = true
+      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel, isTray: true }) })
     } catch (err) {
       setError(err.message || TRAY_ANALYSIS_FAILURE_MESSAGE)
     } finally {
@@ -127,7 +139,9 @@ function useMenuAnalysis(navigate) {
     setError('')
     try {
       const result = await requestPrecisionAnalysis({ menus: [menuName], mealType: mealTypeKey, schoolType, officialTotals: null })
-      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel: menuName }) })
+      if (hasNavigatedThisVisit) return
+      hasNavigatedThisVisit = true
+      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel: menuName, isTray: false }) })
     } catch (err) {
       setError(err.message || MENU_ANALYSIS_FAILURE_MESSAGE)
     } finally {
@@ -600,6 +614,12 @@ export default function CafeteriaPanel() {
     setBuilding(key)
     setSelectedCnuBuilding(key)
   }
+
+  // 학식·급식 탭에 새로 들어올 때마다 "이번에 이미 분석 결과 화면으로 넘어갔는지" 기록을 지운다 —
+  // 그래야 이전 방문에서 걸린 레이스 컨디션 가드가 이번 방문의 정상적인 분석 요청까지 막지 않는다.
+  useEffect(() => {
+    hasNavigatedThisVisit = false
+  }, [])
 
   if (!school) {
     return <NoSchoolCard />

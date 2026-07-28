@@ -233,10 +233,20 @@ async function searchOccupationPlaces({ x, y }, occupation) {
 // 영양소 추천에 이미 있는 식당은 건너뛰고(중복 제거), 나머지 자리만 채운다(영양소 추천이 항상 우선).
 // occupationPlaces는 attachExpectedIntake를 안 거쳐 place.expected가 없으므로, PlaceList에서
 // "추천 이유"·"예상 섭취량" 없이 그냥 후보 카드로만 뜬다 — 문구로 직업을 언급할 지점 자체가 없다.
+//
+// nutrientPlaces 자체가 이미 MAX_TOTAL_PLACES(8곳)까지 채워져 있는 경우가 많아(상업지구 등), 그냥
+// 뒤에 이어 붙이고 slice하면 직업 매칭분이 들어갈 자리가 사실상 없다(리뷰에서 발견) — 최소
+// RESERVED_OCCUPATION_SLOTS곳은 직업 매칭 전용으로 남겨둔다.
+const RESERVED_OCCUPATION_SLOTS = 2
+
 function mergeOccupationPlaces(nutrientPlaces, occupationPlaces) {
   const seen = new Set(nutrientPlaces.map(placeIdentity))
   const extra = occupationPlaces.filter((place) => !seen.has(placeIdentity(place)))
-  return [...nutrientPlaces, ...extra].slice(0, MAX_TOTAL_PLACES)
+  if (extra.length === 0) return nutrientPlaces.slice(0, MAX_TOTAL_PLACES)
+
+  const nutrientSlots = Math.max(0, MAX_TOTAL_PLACES - RESERVED_OCCUPATION_SLOTS)
+  const capped = nutrientPlaces.slice(0, nutrientSlots)
+  return [...capped, ...extra].slice(0, MAX_TOTAL_PLACES)
 }
 
 // allergyLabels가 비고 나트륨 정상이면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게 나간다.
@@ -278,15 +288,20 @@ ${placeText}
 }
 
 // priceRange가 구형 응답(필드 자체가 없음)이거나 형식이 어긋나면 조용히 null로 떨어뜨린다 — 가격
-// 표시는 부가 정보라 이 값 하나 때문에 장소 카드 전체가 깨지면 안 된다.
+// 표시는 부가 정보라 이 값 하나 때문에 장소 카드 전체가 깨지면 안 된다. Number.isFinite로
+// Infinity/NaN을 걸러내고(Infinity는 typeof가 'number'라 앞의 검사만으로는 통과해버린다 — 리뷰에서
+// 발견, "약 0~∞원" 같은 문구가 뜰 수 있었다) 한 끼 가격으로 비현실적인 상한도 함께 둔다.
+const MAX_PLAUSIBLE_PRICE_WON = 1_000_000
+
 function isValidPriceRange(value) {
   return (
     Boolean(value) &&
     typeof value === 'object' &&
-    typeof value.min === 'number' &&
-    typeof value.max === 'number' &&
+    Number.isFinite(value.min) &&
+    Number.isFinite(value.max) &&
     value.min >= 0 &&
-    value.max >= value.min
+    value.max >= value.min &&
+    value.max <= MAX_PLAUSIBLE_PRICE_WON
   )
 }
 

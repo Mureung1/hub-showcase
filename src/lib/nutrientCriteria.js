@@ -37,8 +37,14 @@ export function isLimitNutrient(key) {
 
 // actual/recommended: 실제 섭취량과 권장량(나트륨은 상한). satisfyRatio: target형에서 "충족"으로
 // 볼 최소 비율(예: 0.8 = 권장량의 80% 이상이면 충족) — limit형은 항상 "actual <= recommended"만 본다.
+//
+// 나눗셈이 아니라 직접 비교/곱셈으로 판정한다 — "actual/recommended >= satisfyRatio"(나눗셈 우선)와
+// "actual >= recommended*satisfyRatio"(곱셈 우선)는 수학적으로는 같지만 IEEE-754 부동소수점에서는
+// 다르다(리뷰에서 실측 발견: recommended=86, actual=68.8일 때 86*0.8===68.8은 참이지만
+// 68.8/86===0.7999999999999999로 미충족 판정이 나온다). 이 앱은 원래 곱셈 우선으로 판정하던
+// 코드였고, calcDayStatus가 "과거 기록의 판정은 절대 소급해서 바뀌면 안 된다"를 명시적으로
+// 전제하므로 원래 계산 순서를 그대로 유지한다.
 export function isMet(key, actual, recommended, satisfyRatio = 1) {
   if (!(recommended > 0)) return false
-  const ratio = actual / recommended
-  return isLimitNutrient(key) ? ratio <= 1 : ratio >= satisfyRatio
+  return isLimitNutrient(key) ? actual <= recommended : actual >= recommended * satisfyRatio
 }

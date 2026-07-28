@@ -49,8 +49,8 @@ function NutrientBarRow({ row }) {
   const isOver = row.percent > 100
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '68px 1fr 76px', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
-      <span style={{ fontSize: font.size.sm, color: colors.textStrong, fontWeight: 600 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr 76px', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+      <span style={{ fontSize: font.size.sm, color: colors.textStrong, fontWeight: 600, whiteSpace: 'nowrap' }}>
         {row.label}
         {isLimitNutrient(row.key) && (
           <span
@@ -61,7 +61,7 @@ function NutrientBarRow({ row }) {
               color: colors.textSub,
               border: `1px solid ${colors.border}`,
               borderRadius: radius.sm,
-              padding: '1px 4px',
+              padding: '1px 3px',
               verticalAlign: 'middle',
             }}
           >
