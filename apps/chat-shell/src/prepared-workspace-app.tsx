@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import {
+  PanelRightClose,
+  PanelRightOpen,
+  Sparkles,
+} from 'lucide-react'
 
 import {
   decodeTargetProductBootstrap,
@@ -7,6 +11,10 @@ import {
 } from '@ay-ple/product-contract'
 
 import { PreparedProductChat } from './prepared-product-chat.js'
+import {
+  PreparedSourceWorkbench,
+  usePreparedWorkspaceSources,
+} from './prepared-source-workbench.js'
 import { usePreparedProductChat } from './use-prepared-product-chat.js'
 import { WorkspaceLifecycleView } from './workspace-lifecycle-view.js'
 import './App.css'
@@ -14,6 +22,7 @@ import './App.css'
 export function PreparedWorkspaceApp() {
   const [bootstrap, setBootstrap] = useState<TargetProductBootstrap>()
   const [failure, setFailure] = useState<string>()
+  const [chatOpen, setChatOpen] = useState(true)
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     const response = await fetch('/api/product/bootstrap', {
@@ -54,6 +63,9 @@ export function PreparedWorkspaceApp() {
     activeOperation: bootstrap?.activeOperation ?? null,
     onSettled: () => refresh().then(() => undefined),
   })
+  const sources = usePreparedWorkspaceSources(
+    bootstrap?.workspaceLifecycle.state === 'active',
+  )
 
   if (failure) {
     return (
@@ -81,7 +93,11 @@ export function PreparedWorkspaceApp() {
   }
 
   return (
-    <div className="product-shell prepared-product-shell">
+    <div
+      className={`product-shell prepared-product-shell ${
+        chatOpen ? 'chat-open' : 'chat-closed'
+      }`}
+    >
       <header className="product-header">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
@@ -93,15 +109,36 @@ export function PreparedWorkspaceApp() {
           </div>
         </div>
         <div className="header-context" aria-label="현재 작업공간">
-          <span>Prepared Git SemesterWorkspace</span>
-          <strong>AY가 actual file에서 직접 작업합니다</strong>
+          <span>자료 중심 SemesterWorkspace</span>
+          <strong>Git actual file · AY Chat</strong>
         </div>
+        <button
+          className="chat-toggle"
+          type="button"
+          aria-expanded={chatOpen}
+          onClick={() => setChatOpen((current) => !current)}
+        >
+          {chatOpen ? (
+            <PanelRightClose size={18} />
+          ) : (
+            <PanelRightOpen size={18} />
+          )}
+          {chatOpen ? 'AY Chat 숨기기' : 'AY Chat 열기'}
+        </button>
       </header>
-      <main className="prepared-chat-main">
-        <aside className="chat-dock" aria-label="AY Chat">
-          <PreparedProductChat controller={chat} />
+      <div className="workbench-grid">
+        <PreparedSourceWorkbench controller={sources} />
+        <aside
+          className="chat-dock"
+          aria-label="AY Chat"
+          hidden={!chatOpen}
+        >
+          <PreparedProductChat
+            controller={chat}
+            onNavigateEvidence={sources.navigateEvidence}
+          />
         </aside>
-      </main>
+      </div>
     </div>
   )
 }

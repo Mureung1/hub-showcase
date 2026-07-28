@@ -35,7 +35,7 @@ import { codexChatIdentity } from '../../server/src/testing/codex-chat-test-supp
 
 const chatShellRoot = fileURLToPath(new URL('../', import.meta.url))
 
-test('default Browser opens prepared AY Chat and settles inline Semantic Review without academic controls', async ({
+test('default Browser opens sources beside prepared AY Chat and settles inline Semantic Review', async ({
   page,
 }) => {
   const workspaceRoot = await realpath(
@@ -48,6 +48,9 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     .update(evidenceText)
     .digest('hex')
   await writeFile(path.join(workspaceRoot, 'assignment.txt'), evidenceText)
+  const lecturePdf = onePagePdf()
+  await writeFile(path.join(workspaceRoot, 'lecture.pdf'), lecturePdf)
+  await writeFile(path.join(workspaceRoot, 'slides.pptx'), 'unsupported preview')
   const runtime = new PreparedBrowserRuntime()
   let lifecycle: ProductWorkspaceLifecycle = {
     state: 'active',
@@ -102,9 +105,70 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
 
     await expect(page.getByRole('complementary', { name: 'AY Chat' })).toBeVisible()
     await expect(page.getByText('2학년 2학기', { exact: true })).toBeVisible()
-    await expect(page.getByRole('complementary', { name: '학기 자료' })).toHaveCount(0)
+    const sources = page.getByRole('complementary', { name: '학기 자료' })
+    await expect(sources).toBeVisible()
+    await expect(
+      page.getByRole('main', { name: '자료 미리보기' }),
+    ).toBeVisible()
+    await sources
+      .getByRole('button', { name: 'assignment.txt 미리보기' })
+      .click()
+    await expect(page.getByLabel('assignment.txt 원문')).toContainText(
+      evidenceQuote,
+    )
+    const pdfLoaded = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        url.pathname === '/api/product/sources/pdf' &&
+        url.searchParams.get('relativePath') === 'lecture.pdf'
+      )
+    })
+    await sources
+      .getByRole('button', { name: 'lecture.pdf 미리보기' })
+      .click()
+    const pdfResponse = await pdfLoaded
+    expect(pdfResponse.status()).toBe(200)
+    expect(pdfResponse.headers()['content-type']).toBe('application/pdf')
+    expect(Number(pdfResponse.headers()['content-length'])).toBe(
+      lecturePdf.byteLength,
+    )
+    const pdfFrame = page.getByTitle('lecture.pdf PDF 미리보기')
+    await expect(pdfFrame).toBeVisible()
+    await expect(pdfFrame).not.toHaveAttribute('sandbox', '')
+    await expect(pdfFrame).toHaveAttribute(
+      'src',
+      /\/api\/product\/sources\/pdf\?relativePath=lecture\.pdf/u,
+    )
+    await sources
+      .getByRole('button', { name: 'slides.pptx 미리보기' })
+      .click()
+    await expect(page.getByText('이 형식은 앱에서 미리볼 수 없습니다')).toBeVisible()
+    await page.getByRole('button', { name: 'AY Chat 숨기기' }).click()
+    await expect(
+      page.getByRole('complementary', { name: 'AY Chat' }),
+    ).toBeHidden()
+    await page.getByRole('button', { name: 'AY Chat 열기' }).click()
+    await expect(
+      page.getByRole('complementary', { name: 'AY Chat' }),
+    ).toBeVisible()
+    await page.setViewportSize({ width: 1920, height: 1080 })
+    const explorerBox = await sources.boundingBox()
+    const previewBox = await page
+      .getByRole('main', { name: '자료 미리보기' })
+      .boundingBox()
+    const chatBox = await page
+      .getByRole('complementary', { name: 'AY Chat' })
+      .boundingBox()
+    if (!explorerBox || !previewBox || !chatBox) {
+      throw new Error('Prepared three-pane layout boxes are missing')
+    }
+    expect(explorerBox.x + explorerBox.width).toBeLessThanOrEqual(
+      previewBox.x + 1,
+    )
+    expect(previewBox.x + previewBox.width).toBeLessThanOrEqual(
+      chatBox.x + 1,
+    )
     await expect(page.getByText('과목을 준비해 주세요')).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /자료/u })).toHaveCount(0)
     await expect(page.getByLabel('Fast mode')).toBeDisabled()
     await page.getByLabel('Codex 모델').selectOption('gpt-fast')
     await page.getByLabel('추론 강도').selectOption('high')
@@ -242,6 +306,12 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     await expect(evidence.locator('blockquote')).toContainText(
       'LMS에서 제출해 주세요.',
     )
+    await evidence
+      .getByRole('button', { name: 'assignment.txt 근거 열기' })
+      .click()
+    await expect(page.getByLabel('선택한 원문 근거')).toHaveText(
+      evidenceQuote,
+    )
     await card.getByRole('button', { name: '수락' }).click()
     const heldResponse = await held
     expect(heldResponse.status).toBe(200)
@@ -251,7 +321,15 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     })
     const settledCard = page.getByRole('region', { name: '수락됨' })
     await expect(settledCard).toContainText('과제 파일 변경')
-    await expect(settledCard.getByRole('button')).toHaveCount(0)
+    await expect(
+      settledCard.getByRole('button', { name: '수락' }),
+    ).toHaveCount(0)
+    await expect(
+      settledCard.getByRole('button', { name: '수정 요청' }),
+    ).toHaveCount(0)
+    await expect(
+      settledCard.getByRole('button', { name: '거절' }),
+    ).toHaveCount(0)
 
     const reviseHeld = fetch(`${apiUrl}/api/_private/interaction-mcp/`, {
       method: 'POST',
@@ -355,7 +433,9 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     runtime.finish()
     await vite?.close()
     await target.application.close()
-    expect((await lifecycleReader?.read())?.done).toBe(true)
+    if (lifecycleReader) {
+      expect((await lifecycleReader.read()).done).toBe(true)
+    }
     await listener.close({ signal: new AbortController().signal })
     await rm(workspaceRoot, { force: true, recursive: true })
   }
@@ -521,4 +601,28 @@ function deferred<T>(): {
     resolve = settle
   })
   return { promise, resolve }
+}
+
+function onePagePdf(): Buffer {
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Count 1 /Kids [3 0 R] >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>',
+    '<< /Length 0 >>\nstream\n\nendstream',
+  ]
+  let body = '%PDF-1.4\n'
+  const offsets = [0]
+  for (const [index, object] of objects.entries()) {
+    offsets.push(Buffer.byteLength(body))
+    body += `${index + 1} 0 obj\n${object}\nendobj\n`
+  }
+  const xrefOffset = Buffer.byteLength(body)
+  body += `xref\n0 ${objects.length + 1}\n`
+  body += '0000000000 65535 f \n'
+  for (const offset of offsets.slice(1)) {
+    body += `${String(offset).padStart(10, '0')} 00000 n \n`
+  }
+  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\n`
+  body += `startxref\n${xrefOffset}\n%%EOF\n`
+  return Buffer.from(body)
 }

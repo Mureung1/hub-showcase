@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  fetchPreparedWorkspaceSources,
+  fetchPreparedWorkspaceText,
   PreparedProductApiError,
+  preparedWorkspacePdfUrl,
   streamPreparedChat,
 } from './prepared-product-api.js'
 
@@ -65,6 +68,118 @@ test('prepared Browser sends the selected Codex settings as one complete triple'
         serviceTier: 'fast',
       },
     })
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('prepared Browser decodes the read-only SemesterWorkspace source projection', async () => {
+  const originalFetch = globalThis.fetch
+  const requested: string[] = []
+  globalThis.fetch = async (input) => {
+    requested.push(String(input))
+    return new Response(
+      JSON.stringify({
+        sources: [
+          {
+            relativePath: '강의/outline.txt',
+            size: 31,
+            previewKind: 'text',
+          },
+          {
+            relativePath: 'lecture.pdf',
+            size: 2048,
+            previewKind: 'pdf',
+          },
+        ],
+      }),
+      {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      },
+    )
+  }
+  try {
+    assert.deepEqual(await fetchPreparedWorkspaceSources(), {
+      sources: [
+        {
+          relativePath: '강의/outline.txt',
+          size: 31,
+          previewKind: 'text',
+        },
+        {
+          relativePath: 'lecture.pdf',
+          size: 2048,
+          previewKind: 'pdf',
+        },
+      ],
+    })
+    assert.deepEqual(requested, ['/api/product/sources'])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('prepared Browser fetches text preview and builds an encoded PDF URL', async () => {
+  const originalFetch = globalThis.fetch
+  const requested: string[] = []
+  globalThis.fetch = async (input) => {
+    requested.push(String(input))
+    return new Response(
+      JSON.stringify({
+        relativePath: '강의 계획/outline.txt',
+        digest: 'a'.repeat(64),
+        text: '마감은 금요일입니다.',
+        truncated: false,
+      }),
+      {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      },
+    )
+  }
+  try {
+    assert.deepEqual(
+      await fetchPreparedWorkspaceText('강의 계획/outline.txt'),
+      {
+        relativePath: '강의 계획/outline.txt',
+        digest: 'a'.repeat(64),
+        text: '마감은 금요일입니다.',
+        truncated: false,
+      },
+    )
+    assert.deepEqual(requested, [
+      '/api/product/sources/text?relativePath=%EA%B0%95%EC%9D%98+%EA%B3%84%ED%9A%8D%2Foutline.txt',
+    ])
+    assert.equal(
+      preparedWorkspacePdfUrl('강의 계획/lecture 01.pdf'),
+      '/api/product/sources/pdf?relativePath=%EA%B0%95%EC%9D%98+%EA%B3%84%ED%9A%8D%2Flecture+01.pdf',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('prepared Browser rejects a text preview for a different relative path', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        relativePath: 'other.txt',
+        digest: 'b'.repeat(64),
+        text: '다른 파일',
+        truncated: false,
+      }),
+      {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      },
+    )
+  try {
+    await assert.rejects(
+      fetchPreparedWorkspaceText('requested.txt'),
+      PreparedProductApiError,
+    )
   } finally {
     globalThis.fetch = originalFetch
   }

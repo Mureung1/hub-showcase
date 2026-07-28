@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import {
   Check,
+  FileSearch,
   MessageCircle,
   Send,
   Sparkles,
@@ -17,13 +18,16 @@ import {
   type PreparedTranscriptEntry,
   usePreparedProductChat,
 } from './use-prepared-product-chat.js'
+import type { PreparedEvidenceTarget } from './prepared-source-workbench.js'
 
 type PreparedChatController = ReturnType<typeof usePreparedProductChat>
 
 export function PreparedProductChat({
   controller,
+  onNavigateEvidence,
 }: {
   readonly controller: PreparedChatController
+  readonly onNavigateEvidence?: (target: PreparedEvidenceTarget) => void
 }) {
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -80,6 +84,7 @@ export function PreparedProductChat({
                 onReview={controller.settleReview}
                 onAnswer={controller.answerClarification}
                 onCancel={controller.cancelClarification}
+                onNavigateEvidence={onNavigateEvidence}
               />
             ))}
           </ol>
@@ -246,6 +251,7 @@ function PreparedTranscriptRow({
   onReview,
   onAnswer,
   onCancel,
+  onNavigateEvidence,
 }: {
   readonly entry: PreparedTranscriptEntry
   readonly responsePending: boolean
@@ -263,6 +269,9 @@ function PreparedTranscriptRow({
   readonly onCancel: (
     interaction: PreparedClarificationEntry,
   ) => Promise<void>
+  readonly onNavigateEvidence:
+    | ((target: PreparedEvidenceTarget) => void)
+    | undefined
 }) {
   if (entry.kind === 'semantic-review') {
     return (
@@ -271,6 +280,7 @@ function PreparedTranscriptRow({
           review={entry}
           disabled={responsePending}
           onReview={onReview}
+          onNavigateEvidence={onNavigateEvidence}
         />
       </li>
     )
@@ -307,6 +317,7 @@ function PreparedReviewCard({
   review,
   disabled,
   onReview,
+  onNavigateEvidence,
 }: {
   readonly review: PreparedSemanticReviewEntry
   readonly disabled: boolean
@@ -317,6 +328,9 @@ function PreparedReviewCard({
       | { readonly outcome: 'revise'; readonly feedback: string }
       | { readonly outcome: 'reject'; readonly feedback?: string },
   ) => Promise<void>
+  readonly onNavigateEvidence:
+    | ((target: PreparedEvidenceTarget) => void)
+    | undefined
 }) {
   const [feedback, setFeedback] = useState('')
   const [revising, setRevising] = useState(false)
@@ -361,6 +375,22 @@ function PreparedReviewCard({
                   <mark>{evidence.quote}</mark>
                   {evidence.contextAfter}
                 </blockquote>
+                {onNavigateEvidence ? (
+                  <button
+                    className="semantic-evidence-open"
+                    type="button"
+                    onClick={() =>
+                      onNavigateEvidence({
+                        relativePath: evidence.relativePath,
+                        contentDigest: evidence.contentDigest,
+                        quote: evidence.quote,
+                      })
+                    }
+                  >
+                    <FileSearch size={13} />
+                    {evidence.relativePath} 근거 열기
+                  </button>
+                ) : null}
               </figure>
             ))}
           </li>

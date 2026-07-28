@@ -6,6 +6,8 @@ import {
   decodeProductInteractionAnswerRequest,
   decodeProductReviewFrame,
   decodeProductReviewResult,
+  decodeProductWorkspaceSourceList,
+  decodeProductWorkspaceTextPreview,
   decodeTargetProductChatRequest,
   decodeTargetProductOperationFrame,
   isProductInteractionId,
@@ -15,6 +17,8 @@ import {
   type ProductInteractionAnswerRequest,
   type ProductReviewFrame,
   type ProductReviewResult,
+  type ProductWorkspaceSourceList,
+  type ProductWorkspaceTextPreview,
   type TargetProductOperationFrame,
 } from '@ay-ple/product-contract'
 
@@ -46,6 +50,46 @@ export async function fetchPreparedCodexSettings(
   })
   if (!response.ok) throw await responseError(response)
   return decodeShared(decodeProductCodexSettings, await responseJson(response))
+}
+
+export async function fetchPreparedWorkspaceSources(
+  signal?: AbortSignal,
+): Promise<ProductWorkspaceSourceList> {
+  const response = await fetch('/api/product/sources', {
+    cache: 'no-store',
+    headers: { accept: 'application/json' },
+    signal,
+  })
+  if (!response.ok) throw await responseError(response)
+  return decodeShared(
+    decodeProductWorkspaceSourceList,
+    await responseJson(response),
+  )
+}
+
+export async function fetchPreparedWorkspaceText(
+  relativePath: string,
+  signal?: AbortSignal,
+): Promise<ProductWorkspaceTextPreview> {
+  const response = await fetch(
+    `/api/product/sources/text?${sourceQuery(relativePath)}`,
+    {
+      cache: 'no-store',
+      headers: { accept: 'application/json' },
+      signal,
+    },
+  )
+  if (!response.ok) throw await responseError(response)
+  const preview = decodeShared(
+    decodeProductWorkspaceTextPreview,
+    await responseJson(response),
+  )
+  if (preview.relativePath !== relativePath) throw invalidResponse()
+  return preview
+}
+
+export function preparedWorkspacePdfUrl(relativePath: string): string {
+  return `/api/product/sources/pdf?${sourceQuery(relativePath)}`
 }
 
 export async function streamPreparedChat(
@@ -236,6 +280,10 @@ function requireOperationInteraction(
   ) {
     throw invalidResponse()
   }
+}
+
+function sourceQuery(relativePath: string): string {
+  return new URLSearchParams({ relativePath }).toString()
 }
 
 async function responseError(
