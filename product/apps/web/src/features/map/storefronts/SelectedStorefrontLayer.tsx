@@ -6,11 +6,14 @@ import type { StorefrontMapLayer, StorefrontMapLayerInput } from "./createStoref
 
 export const SELECTED_STOREFRONT_LAYER_ID = "localtwin-selected-storefront";
 
+export type StorefrontPlacementMode = "replace-building" | "rooftop-marker";
+
 export type SelectedStorefront = {
   id: string;
   longitude: number;
   latitude: number;
   categoryCode: string;
+  placementMode?: StorefrontPlacementMode;
   building?: {
     id: string;
     center: [number, number];
@@ -33,6 +36,7 @@ function layerInput(store: SelectedStorefront, layerId: string): StorefrontMapLa
     longitude: store.longitude,
     latitude: store.latitude,
     categoryCode: store.categoryCode,
+    placementMode: store.placementMode ?? "replace-building",
     source: store.building ? "LocalTwin overlay building" : "LocalTwin search API",
     sourceId: store.building?.id ?? store.id,
     building: store.building,

@@ -1,7 +1,11 @@
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
-import { createStorefront, disposeStorefront } from "./createStorefront";
+import {
+  createStorefront,
+  createStorefrontCategoryMarker,
+  disposeStorefront,
+} from "./createStorefront";
 import { getStorefrontVariant, hasStorefrontVariant } from "./storefrontRegistry";
 
 describe("storefront prototype", () => {
@@ -35,6 +39,36 @@ describe("storefront prototype", () => {
     expect(storefront.getObjectByName("category-attachment")).toBeDefined();
     expect(storefront.getObjectByName(objectName)).toBeDefined();
     disposeStorefront(storefront);
+  });
+
+  it.each([
+    ["I21201", "coffee-cup"],
+    ["I20101", "meal-bowl"],
+    ["I21001", "bakery-loaf"],
+    ["G20405", "convenience-sign"],
+    ["S20801", "sports-dumbbell-handle"],
+  ])("builds a standalone rooftop marker for %s", (code, objectName) => {
+    const marker = createStorefrontCategoryMarker(getStorefrontVariant(code));
+
+    expect(marker.name).toBe(`storefront-category-marker-${code}`);
+    expect(marker.userData.assetStrategy).toBe("procedural-rooftop-category-marker");
+    expect(marker.getObjectByName("shop-body")).toBeUndefined();
+    expect(marker.getObjectByName("category-marker-pedestal")).toBeDefined();
+    expect(marker.getObjectByName(objectName)).toBeDefined();
+    disposeStorefront(marker);
+  });
+
+  it("creates visible rooftop markers for flower and generic service categories", () => {
+    const flowerMarker = createStorefrontCategoryMarker(getStorefrontVariant("G21901"));
+    const serviceMarker = createStorefrontCategoryMarker(
+      getStorefrontVariant("unknown-category-code"),
+    );
+
+    expect(flowerMarker.getObjectByName("category-attachment")).toBeDefined();
+    expect(flowerMarker.getObjectsByProperty("name", "flower-attachment")).toHaveLength(3);
+    expect(serviceMarker.getObjectByName("service-marker-sign")).toBeDefined();
+    disposeStorefront(flowerMarker);
+    disposeStorefront(serviceMarker);
   });
 
   it("recognizes exact and restaurant-family canonical codes", () => {

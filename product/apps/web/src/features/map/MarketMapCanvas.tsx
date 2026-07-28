@@ -38,6 +38,11 @@ import {
   replacementBuildingBaseExpression,
   replacementBuildingHeightExpression,
 } from "./storefronts/replacementBuildingFilter";
+import {
+  buildSupplementalStorefronts,
+  selectSupplementalStorefrontCandidates,
+} from "./storefronts/supplementalStorefrontPlacement";
+import { useStorefrontBuildingPlacements } from "./storefronts/useStorefrontBuildingPlacement";
 
 const StorefrontBuildingLayers = lazy(() =>
   import("./storefronts/StorefrontBuildingLayers").then((module) => ({
@@ -63,7 +68,7 @@ function readMapBounds(map: {
 }
 
 function storefrontReadinessKey(store: SelectedStorefront) {
-  return `${store.id}:${store.categoryCode}:${store.building?.id ?? "unplaced"}`;
+  return `${store.id}:${store.categoryCode}:${store.placementMode ?? "replace-building"}:${store.building?.id ?? "unplaced"}`;
 }
 
 type MarketMapCanvasProps = {
@@ -79,6 +84,7 @@ type MarketMapCanvasProps = {
   boundaryVisible: boolean;
   storesVisible: boolean;
   storefrontBuildings3d: SelectedStorefront[];
+  visibleStores: MarketStore[];
   onStorefrontUnavailable: () => void;
   flowPeople: Array<{ longitude: number; latitude: number; delay: number }>;
   activeHour: number;
@@ -232,6 +238,7 @@ export function MarketMapCanvas({
   boundaryVisible,
   storesVisible,
   storefrontBuildings3d,
+  visibleStores,
   onStorefrontUnavailable,
   flowPeople,
   activeHour,
@@ -245,7 +252,53 @@ export function MarketMapCanvas({
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
   const profile = getMapPresentationProfile(presentationMode);
-  const visibleStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
+  const primaryStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
+  const primaryBuildingIds = useMemo(
+    () =>
+      new Set(
+        primaryStorefronts.flatMap((store) => (store.building ? [store.building.id] : [])),
+      ),
+    [primaryStorefronts],
+  );
+  const supplementalCandidates = useMemo(
+    () =>
+      profile.storefrontsVisible
+        ? selectSupplementalStorefrontCandidates({
+            stores: mapStores,
+            existingObjectCount: primaryStorefronts.length,
+            selected,
+          })
+        : [],
+    [mapStores, primaryStorefronts.length, profile.storefrontsVisible, selected],
+  );
+  const supplementalPlacements = useStorefrontBuildingPlacements(
+    supplementalCandidates,
+    visibleStores,
+  );
+  const supplementalStorefronts = useMemo(
+    () =>
+      buildSupplementalStorefronts({
+        candidates: supplementalCandidates,
+        placements: supplementalPlacements,
+        occupiedBuildingIds: primaryBuildingIds,
+      }),
+    [primaryBuildingIds, supplementalCandidates, supplementalPlacements],
+  );
+  const visibleStorefronts = useMemo(
+    () => [...primaryStorefronts, ...supplementalStorefronts],
+    [primaryStorefronts, supplementalStorefronts],
+  );
+  const representedStoreIds = useMemo(
+    () => new Set(visibleStorefronts.map((store) => store.id)),
+    [visibleStorefronts],
+  );
+  const markerStores = useMemo(
+    () =>
+      profile.storefrontsVisible
+        ? mapStores.filter((store) => !representedStoreIds.has(store.id ?? store.name))
+        : mapStores,
+    [mapStores, profile.storefrontsVisible, representedStoreIds],
+  );
   const [zoom, setZoom] = useState(15.4);
   const [readyStorefrontKeys, setReadyStorefrontKeys] = useState<Set<string>>(() => new Set());
   const densityStores = useMemo(
@@ -270,20 +323,33 @@ export function MarketMapCanvas({
       visibleStorefronts.filter((store) => readyStorefrontKeys.has(storefrontReadinessKey(store))),
     [readyStorefrontKeys, visibleStorefronts],
   );
+  const readyReplacementStorefronts = useMemo(
+    () =>
+      readyStorefronts.filter(
+        (store) => (store.placementMode ?? "replace-building") === "replace-building",
+      ),
+    [readyStorefronts],
+  );
   const markerGroups = useMemo(
-    () => groupStoreMarkers(mapStores, zoom, selected?.name ?? null),
-    [mapStores, selected?.name, zoom],
+    () =>
+      groupStoreMarkers(
+        markerStores,
+        zoom,
+        selected?.name ?? null,
+        profile.storefrontsVisible ? "storefront3d" : "analysis",
+      ),
+    [markerStores, profile.storefrontsVisible, selected?.name, zoom],
   );
   const baseBuildingBase = useMemo(
-    () => replacementBuildingBaseExpression(readyStorefronts),
-    [readyStorefronts],
+    () => replacementBuildingBaseExpression(readyReplacementStorefronts),
+    [readyReplacementStorefronts],
   );
   const baseBuildingHeight = useMemo(
-    () => replacementBuildingHeightExpression(readyStorefronts),
-    [readyStorefronts],
+    () => replacementBuildingHeightExpression(readyReplacementStorefronts),
+    [readyReplacementStorefronts],
   );
 
-  const hiddenOverlayBuildingIds = readyStorefronts.flatMap((store) =>
+  const hiddenOverlayBuildingIds = readyReplacementStorefronts.flatMap((store) =>
     store.building ? [store.building.id] : [],
   );
   const SelectedIcon = selected ? markerIcon(selected.category) : Coffee;
