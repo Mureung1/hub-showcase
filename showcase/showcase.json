@@ -3,6 +3,7 @@
   "title": "Career Mission AI",
   "summary": "취업 준비생의 스펙을 목표 직무 기준으로 분석하고, 맞춤 미션과 AI 피드백을 거쳐 포트폴리오 초안까지 연결하는 커리어 준비 서비스입니다.",
   "githubUser": "samingming(정사임)",
+  "demoUrl": "https://career-mission-ai.vercel.app/",
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/analysis.png",
