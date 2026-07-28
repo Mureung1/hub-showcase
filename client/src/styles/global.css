@@ -789,113 +789,234 @@ h2 {
   margin-bottom: var(--space-md);
 }
 
-/* ---------- History List (인사이트 노트, 2026-07-15 카드형 아코디언 재설계) ---------- */
-/* 기본 상태는 나의 판단 vs marketSentiment만 심플 노출하고, summaryBullets/insight/
-   원문 링크는 "AI 관점 해설 보기" 아코디언 안에 숨긴다(docs/plan.md 인사이트 노트 UX).
-   문장 아코디언과 동일하게 네이티브 <details>/<summary>를 그대로 쓴다. */
-.history-list {
+/* ---------- Insight Note master-detail (3분할 재설계, 2026-07-28) ---------- */
+/* 에버노트류 마스터-디테일: 마스터(30%, 검색+날짜 필터+리스트/캘린더 토글)
+   + 상세(70%, 선택 노트 상시 노출). 뷰포트 높이로 고정해 마스터/상세 각각
+   내부 스크롤되게 한다(전역 Sidebar는 app-shell의 align-items:stretch로
+   같은 높이를 따라가므로 손대지 않는다). */
+.insight-note-layout {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* ---------- Accuracy Trend (판단 적중률 트렌드, 2026-07-26) ---------- */
-.accuracy-trend {
+.insight-master {
+  width: 30%;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.insight-master-header {
+  flex-shrink: 0;
+  padding: var(--space-md);
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.accuracy-trend-text {
+.insight-search {
+  width: 100%;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font: inherit;
   font-size: 14px;
-  line-height: 20px;
-  color: var(--text-secondary);
 }
 
-.spark-row {
+.insight-date-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.insight-date-filter input[type="date"] {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.insight-view-toggle {
   display: flex;
   gap: var(--space-xs);
 }
 
-.spark-block {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-sm);
+.insight-view-toggle button {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  background: var(--surface-bg);
+  color: var(--text-secondary);
 }
 
-.spark-block.hit {
-  background: var(--difficulty-easy-bg);
+.insight-view-toggle button.active {
+  background: var(--brand-blue-light);
+  color: var(--brand-blue);
 }
 
-.spark-block.miss {
-  background: var(--difficulty-hard-bg);
-}
-
-.spark-block.none {
-  background: var(--action-hold-bg);
-  opacity: 0.6;
-}
-
-/* 월별 그룹(적중률 트렌드의 월간 헤더). 향후 "인사이트 노트 날짜별 타임라인"
-   과제에서 이 섹션 구조 위에 sticky 포지셔닝/히트맵을 얹을 예정. */
-.month-group {
+.insight-master-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-xs);
 }
 
-.month-header {
-  font-size: 16px;
-  line-height: 24px;
+.insight-master-empty {
+  padding: var(--space-md);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.insight-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+}
+
+.insight-card:hover {
+  background: var(--surface-bg);
+}
+
+.insight-card.active {
+  background: var(--brand-blue-light);
+}
+
+.insight-card-title {
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.history-date {
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   margin-bottom: var(--space-xs);
 }
 
-.history-card {
-  background: var(--surface-card);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
+.insight-card-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: var(--space-xs);
 }
 
-.history-title {
+.insight-card-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.insight-detail {
+  width: 70%;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+  background: var(--surface-bg);
+}
+
+.insight-detail-empty {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.insight-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.insight-detail-link {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--brand-blue);
+  text-decoration: none;
+}
+
+.insight-detail-link:hover,
+.insight-detail-link:focus-visible {
+  text-decoration: underline;
+}
+
+.insight-context {
+  background: var(--brand-blue-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin: var(--space-lg) 0;
+}
+
+.insight-summary-list {
+  padding-left: var(--space-lg);
   margin-bottom: var(--space-md);
 }
 
-.history-compare {
-  display: flex;
-  gap: var(--space-xl);
-  margin-bottom: var(--space-sm);
+.insight-summary-list li {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
 }
 
-.history-compare-item {
+.insight-summary-list li:last-child {
+  margin-bottom: 0;
+}
+
+.insight-highlight {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.insight-analysis {
+  display: flex;
+  gap: var(--space-xl);
+  margin: var(--space-lg) 0;
+}
+
+.insight-analysis-col {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-xs);
 }
 
-.history-compare-label {
+.insight-analysis-label {
   font-size: 13px;
   line-height: 20px;
   color: var(--text-secondary);
 }
 
-.history-memo {
+.insight-memo {
   margin-bottom: var(--space-sm);
 }
 
-.history-memo-display {
+.insight-memo-display {
   display: block;
   width: 100%;
   text-align: left;
-  background: var(--surface-bg);
+  background: var(--surface-card);
   border: none;
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
@@ -906,10 +1027,10 @@ h2 {
   cursor: pointer;
 }
 
-.history-memo-input {
+.insight-memo-input {
   width: 100%;
   min-height: 60px;
-  background: var(--surface-bg);
+  background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
@@ -920,12 +1041,12 @@ h2 {
   resize: vertical;
 }
 
-.history-memo-actions {
+.insight-memo-actions {
   display: flex;
   gap: var(--space-sm);
 }
 
-.history-memo-actions button {
+.insight-memo-actions button {
   font-size: 13px;
   font-weight: 600;
   padding: var(--space-xs) var(--space-md);
@@ -936,64 +1057,36 @@ h2 {
   color: var(--text-inverse);
 }
 
-.history-memo-actions button:last-child {
-  background: var(--surface-bg);
+.insight-memo-actions button:last-child {
+  background: var(--surface-card);
   color: var(--text-secondary);
 }
 
-.history-detail summary {
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 20px;
+.insight-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-xs);
+}
+
+.insight-calendar-weekday {
+  text-align: center;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--brand-blue);
-  list-style: none;
-  margin-top: var(--space-sm);
+  color: var(--text-secondary);
+  padding: var(--space-sm);
 }
 
-.history-detail summary::-webkit-details-marker {
-  display: none;
-}
-
-.history-detail[open] summary {
-  margin-bottom: var(--space-md);
-}
-
-.history-summary {
-  padding-left: var(--space-lg);
-  margin-bottom: var(--space-md);
-}
-
-.history-summary li {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--text-primary);
-  margin-bottom: var(--space-xs);
-}
-
-.history-summary li:last-child {
-  margin-bottom: 0;
-}
-
-.history-insight {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--text-primary);
-  margin-bottom: var(--space-md);
-}
-
-.history-source-link {
-  display: inline-block;
+.insight-calendar-day {
+  text-align: center;
   font-size: 13px;
-  line-height: 20px;
-  font-weight: 600;
-  color: var(--brand-blue);
-  text-decoration: none;
+  color: var(--text-primary);
+  padding: var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
 }
 
-.history-source-link:hover,
-.history-source-link:focus-visible {
-  text-decoration: underline;
+.insight-calendar-day.empty {
+  border-color: transparent;
 }
 
 /* ---------- Vocabulary ---------- */
