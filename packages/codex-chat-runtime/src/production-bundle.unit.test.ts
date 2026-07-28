@@ -11,7 +11,7 @@ import {
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
-  '570c4325dd19b6d1ad0997ddb7530f638ae54b348f2d3b52a17d25fdd8f4bec1'
+  'f6c82d2d862ae5bb9033c6db0a8ae18b19684181fe70f7ed3ace7f8498149d89'
 const PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
