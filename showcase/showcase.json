@@ -1,15 +1,36 @@
 {
   "schemaVersion": 1,
-  "title": "AI시대 사고력 깨우기 - 깸",
+  "title": "AI 시대 사고력 깨우기 - 깸",
   "summary": "관심사에 맞는 오늘의 글을 읽고, 사고 미션을 수행하며 자신의 생각을 날짜별로 기록하는 서비스입니다.",
   "githubUser": "str-leshs(이은서)",
   "demoUrl": "",
-  "thumbnail": "",
-  "screenshots": [],
-  "problem": "",
-  "targetUsers": [],
-  "features": [],
-  "featureTags": [],
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshots/overview.png",
+    "screenshots/core-flow.png",
+    "screenshots/system-architecture.png",
+    "screenshots/ai-collab.png"
+  ],
+  "problem": "생성형 AI가 검색·요약·글쓰기를 대신하면서 사용자가 원문을 읽고 질문하거나 자신의 언어로 생각을 정리하는 과정이 줄어들고 있습니다. 깸은 관심사 기반 콘텐츠와 짧은 사고 미션을 결합해 정보 소비가 수동적인 읽기에서 끝나지 않고 자기 생각을 남기는 습관으로 이어지도록 돕습니다.",
+  "targetUsers": [
+    "AI의 답을 그대로 받아들이지 않고 스스로 검토하는 습관을 만들고 싶은 사람",
+    "관심 분야의 글을 꾸준히 읽고 자신의 생각을 기록하고 싶은 사람",
+    "긴 글쓰기보다 짧고 부담 없는 사고 훈련을 원하는 사람"
+  ],
+  "features": [
+    "관심사 1~3개 선택",
+    "관심사·최신성·콘텐츠 품질을 반영한 오늘의 깸 추천",
+    "질문·반박·연결·표현 네 가지 사고 미션",
+    "한 줄 생각 및 미션 기록 저장",
+    "월별 캘린더와 날짜별 사고 기록 조회"
+  ],
+  "featureTags": [
+    "콘텐츠 추천",
+    "비판적 사고",
+    "관심사 기반",
+    "사고 미션",
+    "기록 아카이브"
+  ],
   "techStack": [
     "React",
     "TypeScript",
@@ -18,11 +39,72 @@
     "Supabase",
     "PostgreSQL"
   ],
-  "techHighlights": [],
-  "developmentWithAI": "",
+  "techHighlights": [
+    "프론트엔드는 Auth에만 Supabase를 직접 사용하고 모든 서비스 데이터는 FastAPI를 거치게 했습니다.",
+    "사용자 JWT를 Supabase client에 전달해 사용자 데이터에 RLS가 적용되도록 구성했습니다.",
+    "RSS 콘텐츠를 공용 콘텐츠 풀에 저장하고 관심사와 미션 완료 기록에 따라 추천 결과를 구성했습니다.",
+    "RSS 수집 과정에서 접근성·품질·canonical URL과 feed·DB 중복을 구분해 검사했습니다.",
+    "단일 source 수집과 여러 source를 제어하는 batch service의 책임을 분리했습니다.",
+    "dry-run 전후 DB 행 수를 비교해 실제 쓰기가 발생하지 않는 것을 검증했습니다.",
+    "프론트엔드와 백엔드를 기능 중심 구조로 나누고 실제 공통 코드만 shared로 분리했습니다."
+  ],
+  "developmentWithAI": "Codex와 Claude Code의 역할을 설계·검토·구현·검증 단계로 분리했습니다. 요구사항과 완료 기준은 Codex가 설계하고 Claude Code가 누락 조건과 복잡성을 검토한 뒤 구현했습니다. 결과는 Agent의 설명이 아니라 테스트와 실제 Supabase·RSS 통합 검증으로 판단했습니다. 콘텐츠 일괄 수집은 테스트를 먼저 작성하고 RED를 확인한 뒤 최소 구현으로 GREEN을 만드는 TDD 방식으로 개발했습니다.",
   "agent": {
-    "summary": "",
-    "agentTools": [],
-    "workflows": []
+    "summary": "한 Agent가 설계·구현·최종 검증을 모두 담당하지 않도록 역할을 분리하고, 사람의 승인 지점을 포함한 반자동 Red–Green–Refactor 루프를 운영했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Codex Task Planner",
+        "purpose": "요구사항을 독립적으로 완료할 수 있는 태스크와 테스트 가능한 완료 기준으로 나눕니다."
+      },
+      {
+        "type": "agent",
+        "name": "Claude Code Test Writer",
+        "purpose": "승인된 테스트만 작성하고 예상한 이유로 실패하는 RED 상태를 확인한 뒤 멈춥니다."
+      },
+      {
+        "type": "agent",
+        "name": "Claude Code Implementation Agent",
+        "purpose": "확정된 설계와 테스트를 변경하지 않고 최소 production 코드를 작성합니다."
+      },
+      {
+        "type": "agent",
+        "name": "Claude Code Implementation Code Reviewer",
+        "purpose": "구현 직후 과구현·편법 통과·설계 누락과 테스트 결과를 독립적으로 검토합니다."
+      },
+      {
+        "type": "agent",
+        "name": "Codex Implementation Verification",
+        "purpose": "설계 일치 여부와 대상 테스트·전체 회귀·실제 통합 검증 결과를 최종 확인합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "AI 역할 분리 Workflow",
+        "steps": [
+          "Codex가 요구사항과 완료 기준 설계",
+          "Claude Code가 누락 조건과 엣지 케이스 검토",
+          "사람이 MVP 범위와 계약 확정",
+          "Claude Code가 확정된 설계 구현",
+          "Claude Code 리뷰 Agent가 구현 검토",
+          "Codex가 설계 일치 여부와 검증 결과 확인",
+          "사람이 커밋과 다음 단계 승인"
+        ]
+      },
+      {
+        "name": "TDD 반자동 Workflow",
+        "steps": [
+          "테스트 케이스와 예상 RED 원인 설계",
+          "사람이 테스트 계약 승인",
+          "Test Writer Agent가 테스트만 작성",
+          "테스트 실행 후 RED 원인 확인",
+          "사람이 GREEN 구현 승인",
+          "Implementation Agent가 최소 코드 작성",
+          "대상 테스트와 전체 회귀로 GREEN 확인",
+          "과구현과 편법 통과 검토",
+          "사람이 리팩터링과 커밋 승인"
+        ]
+      }
+    ]
   }
 }
