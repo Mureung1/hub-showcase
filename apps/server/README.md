@@ -2,7 +2,7 @@
 
 Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. Canonical `createPreparedServerApplication()`이 product HTTP, 선택한 workspace graph와 bounded Runtime shutdown을 소유한다. Listener bind와 process signal은 별도 host adapter가 소유하되, bind-first host는 Server-owned two-phase listener capability로 기존 cleanup authority에 합류한다. `createServerApplication()`은 listener lifecycle을 독립 검증하는 빈 host seam이다.
 
-`/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, neutral NDJSON line writer, `WorkspaceRegistry`와 transient Interaction Broker binding은 Server에 남는다.
+`/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, active-root `WorkspaceSourceProjection`, neutral NDJSON line writer, `WorkspaceRegistry`와 transient Interaction Broker binding은 Server에 남는다.
 
 Canonical product 구현은 App 시작 전에 준비한 user-owned Git SemesterWorkspace를 explicit `--workspace` 또는 `WorkspaceRegistry` active pointer로 선택한다. Shared listener·Interaction Broker, exact-root Runtime와 project-discovered MCP가 모두 준비된 뒤에만 registry와 Browser lifecycle을 `active`로 전환한다. 제거된 public-preview Account→Setup→Ready composition, in-App chooser·init·candidate transition, managed Browser OAuth route와 v3 setup adapter는 Server의 public graph에 없다.
 
@@ -48,6 +48,8 @@ Canonical `PreparedProductOperationCoordinator`는 normal AY Chat의 process-glo
 
 Canonical normal Chat은 bounded `TextInput`, `workspace_write`, generic child environment와 project-discovered Skill·MCP를 사용한다. Canonical Semantic Review는 Interaction Broker의 transient request/result이고, 일반 Plan clarification은 별도 ephemeral binding으로 같은 Turn에 answer/cancel한다. Server는 academic receipt나 accepted result apply를 소유하지 않는다.
 
+`WorkspaceSourceProjection`은 lifecycle이 `active`인 exact root를 stateless read-only로 읽는다. Bounded recursive scan은 hidden·managed·scaffold·secret-like path와 symlink를 제외하고 regular file의 relative path·size·preview kind만 반환한다. Text는 bounded fatal UTF-8 preview와 full-file SHA-256을 반환하고 PDF는 bounded bytes를 `application/pdf`, `nosniff`, same-origin·sandbox CSP, inline disposition과 `no-store`로 제공한다. App-owned Course·`RawMaterial`, source copy·snapshot·watcher·durable selection이나 filesystem mutation을 만들지 않는다.
+
 `interaction-broker` Module은 `@ay-ple/interaction-mcp`의 strict private wire를 소비한다. Runtime generation마다 fresh token·binding, Adapter status와 pending slot 하나를 만들고, loopback·constant-time credential과 started `product_turn` binding을 모두 확인한 뒤 exact workspace root의 evidence를 한 byte snapshot으로 atomic preflight한다. Adapter는 handshake 뒤 한 held lifecycle channel을 열고 Broker acceptance를 받은 다음에만 MCP initialize를 완료한다. Channel의 unexpected EOF는 loss를 동기적으로 latch해 startup·registry acceptance와 새 Turn admission을 닫으며, Runtime terminal·replacement와 App shutdown이 시작한 expected close는 loss로 오인하지 않는다. In-memory UI Adapter가 `review.requested`를 받은 뒤 한 `accept | revise | reject`만 held capability response로 돌려주며 duplicate·late answer, HTTP abort, UI disconnect, Turn interrupt, Runtime terminal·replacement, Adapter loss와 shutdown은 normal result 없이 닫힌다.
 
 Canonical `createPreparedServerApplication()`은 Broker Router를 같은 loopback listener의 `/api/_private/interaction-mcp`에 mount하고 normal Product Turn NDJSON에 semantic `review.requested | review.resolved | review.failed`를 기록한다. Browser의 exact semantic result는 bodyless `204`로 held call을 해제하고, resolved frame만 transcript settlement authority가 된다. Runtime thread는 project config에서 Adapter를 발견하므로 thread-start private MCP override나 managed `SkillInput`을 받지 않는다. AY 역할의 file apply는 workspace Skill·Interaction 결과 뒤 Runtime graph에서 수행하며 Server가 academic patch·revision을 적용하지 않는다. Listener-independent `createServerApplication()`은 academic Router나 persistence 없이 빈 host seam을 제공한다.
@@ -62,15 +64,18 @@ Prepared host의 startup thread는 effective declaration 검증과 Adapter lifec
 | --- | --- |
 | `GET /api/product/bootstrap` | Path-free `starting | active | recovery_required` prepared-workspace lifecycle와 coarse operation status |
 | `GET /api/product/codex-settings` | Active workspace에서만 visible native model catalog, advertised reasoning effort order와 Fast availability를 반환한다. Non-active lifecycle은 Runtime을 시작하지 않고 `503 workspace_unavailable`이다. |
+| `GET /api/product/sources` | Active exact root의 bounded Browser-safe relative source list를 `no-store`로 반환한다. |
+| `GET /api/product/sources/text?relativePath=...` | 검증한 regular UTF-8 source의 bounded text, full-file digest와 truncation 상태를 반환한다. |
+| `GET /api/product/sources/pdf?relativePath=...` | 검증한 bounded PDF bytes를 same-origin inline preview로 반환한다. |
 | `POST /api/product/chat/messages` | Prepared root의 normal AY Chat stream. Project-discovered Skill·MCP와 `workspace_write`를 사용하며 academic source·Run을 만들지 않음 |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/answer` | General Plan interaction answer |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/cancel` | General Plan interaction cancel |
 | `POST /api/product/reviews/:interactionId` | Exact active Semantic Review의 `accept | revise | reject`를 bodyless `204`로 전달 |
 | `POST /api/product/operations/:operationId/interrupt` | Matching active Turn interrupt acknowledgement |
 
-Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. Interaction Broker는 loopback과 Runtime-generation high-entropy token을 모두 검증한다. Token, native identity, absolute path, complete MCP payload와 traceback은 Browser contract에 없다. Old `/api/product/workspaces/activate`, Course/material/First Assignment/retry, academic Review compatibility route, `/api/product-mcp`, `/api/runtime/*`와 `/api/codex-chat/*`는 canonical composition에서 Express `404`로 닫힌다.
+Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. Interaction Broker는 loopback과 Runtime-generation high-entropy token을 모두 검증한다. Token, native identity, absolute path, complete MCP payload와 traceback은 Browser contract에 없다. Old `/api/product/workspaces/activate`, Course/material mutation/First Assignment/retry, academic Review compatibility route, `/api/product-mcp`, `/api/runtime/*`와 `/api/codex-chat/*`는 canonical composition에서 Express `404`로 닫힌다.
 
-Public cutover 뒤에는 prepared-workspace Browser·target Router·Broker·generic Runtime child environment·project Skill/MCP graph 전체가 한 unit이다. Old Browser workbench, public academic Router/action adapter·shared contract, Server academic persistence·managed Recipe, Runtime private override와 legacy SemesterWorkspace kernel은 제거됐다. 기존 v2/v3 on-disk bytes 자체는 자동 migration·deletion 없이 보존한다.
+Public cutover 뒤에는 prepared-workspace Browser·read-only source projection·target Router·Broker·generic Runtime child environment·project Skill/MCP graph 전체가 한 unit이다. Old app-owned Course/material workflow, public academic action adapter·shared contract, Server academic persistence·managed Recipe, Runtime private override와 legacy SemesterWorkspace kernel은 제거됐다. 기존 v2/v3 on-disk bytes 자체는 자동 migration·deletion 없이 보존한다.
 
 ## NDJSON과 shutdown
 

@@ -7,13 +7,14 @@ Canonical Product Server와 Browser가 공유하는 target-only JSON·NDJSON con
 | 소유하는 내용 | 소유하지 않는 내용 |
 | --- | --- |
 | Account Readiness, prepared workspace의 `starting | active | recovery_required` lifecycle, path 없는 workspace summary와 normal `product_turn` binding | Absolute root, registry bytes, workspace store·revision, Runtime lease와 private startup detail |
-| Material selection이 없는 normal Chat request, 일반 clarification answer, empty mutation request와 safe error envelope | Course, RawMaterial, First Assignment action·retry, academic history와 patch-bound Review |
+| Material selection이 없는 normal Chat request, 일반 clarification answer, empty mutation request와 safe error envelope | Course, RawMaterial registry, First Assignment action·retry, academic history와 patch-bound Review |
+| User-owned SemesterWorkspace 파일의 bounded source list와 text preview projection | Absolute root, app-owned material copy·revision, filesystem read·Git write authority와 PDF byte transport |
 | Browser-safe Codex model catalog·Turn 설정, target operation/activity·interaction·interrupt·terminal frame | Express route composition, HTTP status·NDJSON framing, native App Server event와 raw JSON-RPC identity |
 | Domain-neutral `ProductReviewFrame`·`ProductReviewResult`, ordered semantic before/after change와 bounded evidence preview | Raw MCP contract, Broker credential·binding, native identity, durable Review ledger와 filesystem apply authority |
 
-Public `.` root는 위 target contract만 export한다. Academic `Course`·material registry/preview, action/retry, `ProductStatePatch`, revision-bound Review request/response와 settled history type·decoder는 compatibility alias나 hidden export 없이 제거됐다.
+Public `.` root는 위 target contract만 export한다. User-owned SemesterWorkspace의 source explorer를 위해 relative path·size·preview capability 목록과 content digest를 포함한 bounded text preview를 제공한다. 이는 app-owned `Course`·material registry를 복구하지 않으며 PDF byte transport와 파일 접근 검증은 Server가 소유한다. Academic action/retry, `ProductStatePatch`, revision-bound Review request/response와 settled history type·decoder는 compatibility alias나 hidden export 없이 제거됐다.
 
-Decoder는 missing·extra·unknown field를 거절하고 JSON envelope, text, identifier와 evidence byte bound를 적용한다. Public operation ID는 `operation_<32 hex>` 하나이며 old `chat_*`·`action_*` ID를 받지 않는다. Semantic Review는 `review.requested | review.resolved | review.failed`만 허용하고 token, Runtime binding, native identity, patch·revision과 raw MCP locator를 거절한다.
+Decoder는 missing·extra·unknown field를 거절하고 JSON envelope, text, identifier와 evidence byte bound를 적용한다. Workspace source projection은 absolute path, traversal, control character, duplicate relative path, unknown preview kind와 uppercase/non-SHA-256 digest를 거절한다. Public operation ID는 `operation_<32 hex>` 하나이며 old `chat_*`·`action_*` ID를 받지 않는다. Semantic Review는 `review.requested | review.resolved | review.failed`만 허용하고 token, Runtime binding, native identity, patch·revision과 raw MCP locator를 거절한다.
 
 ## 소비 경계
 
@@ -32,4 +33,4 @@ npm run typecheck -w @ay-ple/product-contract
 npm run build -w @ay-ple/product-contract
 ```
 
-Unit suite는 public root의 exact export inventory, target operation ID, material-free Chat, 일반 clarification, workspace lifecycle과 Semantic Review의 valid·invalid family를 검증한다. `types: []`와 DOM lib로 production module을 typecheck하므로 Node global이나 Express type에 의존하지 않는다.
+Unit suite는 public root의 exact export inventory, target operation ID, material-free Chat, 일반 clarification, workspace lifecycle, source list·text preview와 Semantic Review의 valid·invalid family를 검증한다. `types: []`와 DOM lib로 production module을 typecheck하므로 Node global이나 Express type에 의존하지 않는다.

@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, realpath, rm } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import {
+  mkdtemp,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -21,7 +27,7 @@ import { bindServerApplicationListener } from './server-listener.js'
 import { createPreparedServerApplication } from './prepared-server-application.js'
 import { codexChatIdentity, postJson } from './testing/codex-chat-test-support.js'
 
-test('prepared public composition uses project discovery and exposes only AY Chat plus inline Review', async () => {
+test('prepared public composition exposes workspace sources beside AY Chat and inline Review', async () => {
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(tmpdir(), 'prepared-public-server-')),
   )
@@ -37,6 +43,11 @@ test('prepared public composition uses project discovery and exposes only AY Cha
       label: '2학년 2학기',
     },
   } as const
+  const sourceText = '강의 안내'
+  const sourcePdf = Buffer.from('%PDF-1.4\n%%EOF')
+  await writeFile(path.join(workspaceRoot, 'assignment.txt'), sourceText)
+  await writeFile(path.join(workspaceRoot, 'lecture.pdf'), sourcePdf)
+  await writeFile(path.join(workspaceRoot, 'slides.pptx'), 'slides')
   let listener:
     | Awaited<ReturnType<typeof bindServerApplicationListener>>
     | undefined
@@ -67,6 +78,70 @@ test('prepared public composition uses project discovery and exposes only AY Cha
       activeOperation: null,
       workspaceLifecycle: lifecycle,
     })
+    const sourceList = await fetch(`${baseUrl}/api/product/sources`)
+    assert.equal(sourceList.status, 200)
+    assert.equal(sourceList.headers.get('cache-control'), 'no-store')
+    assert.deepEqual(await sourceList.json(), {
+      sources: [
+        {
+          relativePath: 'assignment.txt',
+          size: Buffer.byteLength(sourceText),
+          previewKind: 'text',
+        },
+        {
+          relativePath: 'lecture.pdf',
+          size: sourcePdf.byteLength,
+          previewKind: 'pdf',
+        },
+        {
+          relativePath: 'slides.pptx',
+          size: 6,
+          previewKind: 'unsupported',
+        },
+      ],
+    })
+    const textPreview = await fetch(
+      `${baseUrl}/api/product/sources/text?relativePath=assignment.txt`,
+    )
+    assert.equal(textPreview.status, 200)
+    assert.equal(textPreview.headers.get('cache-control'), 'no-store')
+    assert.deepEqual(await textPreview.json(), {
+      relativePath: 'assignment.txt',
+      digest: createHash('sha256').update(sourceText).digest('hex'),
+      text: sourceText,
+      truncated: false,
+    })
+    const pdfPreview = await fetch(
+      `${baseUrl}/api/product/sources/pdf?relativePath=lecture.pdf`,
+    )
+    assert.equal(pdfPreview.status, 200)
+    assert.equal(pdfPreview.headers.get('content-type'), 'application/pdf')
+    assert.equal(pdfPreview.headers.get('cache-control'), 'no-store')
+    assert.equal(
+      pdfPreview.headers.get('x-content-type-options'),
+      'nosniff',
+    )
+    assert.equal(
+      pdfPreview.headers.get('cross-origin-resource-policy'),
+      'same-origin',
+    )
+    assert.equal(
+      pdfPreview.headers.get('content-security-policy'),
+      "default-src 'none'; frame-ancestors 'self'; sandbox",
+    )
+    assert.match(
+      String(pdfPreview.headers.get('content-disposition')),
+      /^inline; filename\*=UTF-8''lecture\.pdf$/u,
+    )
+    assert.deepEqual(Buffer.from(await pdfPreview.arrayBuffer()), sourcePdf)
+    assert.equal(
+      (
+        await fetch(
+          `${baseUrl}/api/product/sources/text?relativePath=..%2Foutside.txt`,
+        )
+      ).status,
+      400,
+    )
     for (const path of [
       '/api/product/workspaces/activate',
       '/api/product/courses',
@@ -436,6 +511,14 @@ test('Codex settings fail closed without starting Runtime while the workspace is
       code: 'workspace_unavailable',
       displayMessage: 'AY 작업공간을 사용할 수 없습니다.',
     })
+    assert.equal(
+      (
+        await fetch(
+          `http://127.0.0.1:${listener.port}/api/product/sources`,
+        )
+      ).status,
+      503,
+    )
     assert.equal(runtimeRequested, false)
   } finally {
     await target.application.close()

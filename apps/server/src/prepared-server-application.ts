@@ -19,6 +19,7 @@ import {
   createPreparedProductOperationCoordinator,
 } from './prepared-product-operation-coordinator.js'
 import type { ServerApplication } from './server-application.js'
+import { createWorkspaceSourceProjection } from './workspace-source-projection.js'
 
 export type PreparedServerApplication = {
   readonly application: ServerApplication
@@ -34,6 +35,9 @@ export async function createPreparedServerApplication(options: {
   readonly workspaceRoot: string
   readonly readLifecycle: () => ProductWorkspaceLifecycle
 }): Promise<PreparedServerApplication> {
+  const sources = await createWorkspaceSourceProjection({
+    workspaceRoot: options.workspaceRoot,
+  })
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
   })
@@ -68,6 +72,7 @@ export async function createPreparedServerApplication(options: {
       configuredOrigin: codexChat.origin,
       operations,
       review: interactionBroker,
+      sources,
       readLifecycle: options.readLifecycle,
       readAccountReadiness: async () => {
         const readiness = await codexChat.service.readProductAccountReadiness()

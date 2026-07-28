@@ -31,6 +31,10 @@ import {
   type PreparedProductOperationCoordinator,
   type PreparedProductOperationSink,
 } from './prepared-product-operation-coordinator.js'
+import {
+  WorkspaceSourceProjectionError,
+  type WorkspaceSourceProjection,
+} from './workspace-source-projection.js'
 
 const safeInvalidRequest = '요청을 확인하지 못했습니다.'
 const safeForbidden = '이 요청은 local AY-PLE에서만 사용할 수 있습니다.'
@@ -46,6 +50,7 @@ export function createPreparedProductRouter(options: {
   readonly configuredOrigin?: string
   readonly operations: PreparedProductOperationCoordinator
   readonly review: PreparedProductReviewPort
+  readonly sources: WorkspaceSourceProjection
   readonly readLifecycle: () => ProductWorkspaceLifecycle
   readonly readAccountReadiness: () => Promise<ProductAccountReadiness>
   readonly readCodexSettings: () => Promise<ProductCodexSettings>
@@ -129,6 +134,61 @@ export function createPreparedProductRouter(options: {
         'codex_settings_unavailable',
         'Codex 모델 설정을 확인할 수 없습니다.',
       )
+    }
+  })
+
+  router.get('/sources', async (_request, response) => {
+    response.setHeader('cache-control', 'no-store')
+    if (!hasActiveWorkspace(options.readLifecycle, response)) return
+    try {
+      response.json(await options.sources.list())
+    } catch (error) {
+      sendSourceError(response, error)
+    }
+  })
+
+  router.get('/sources/text', async (request, response) => {
+    response.setHeader('cache-control', 'no-store')
+    if (!hasActiveWorkspace(options.readLifecycle, response)) return
+    const relativePath = readSourceRelativePath(request)
+    if (!relativePath) {
+      sendError(response, 400, 'invalid_request', safeInvalidRequest)
+      return
+    }
+    try {
+      response.json(await options.sources.readText(relativePath))
+    } catch (error) {
+      sendSourceError(response, error)
+    }
+  })
+
+  router.get('/sources/pdf', async (request, response) => {
+    response.setHeader('cache-control', 'no-store')
+    if (!hasActiveWorkspace(options.readLifecycle, response)) return
+    const relativePath = readSourceRelativePath(request)
+    if (!relativePath) {
+      sendError(response, 400, 'invalid_request', safeInvalidRequest)
+      return
+    }
+    try {
+      const pdf = await options.sources.readPdf(relativePath)
+      response.status(200)
+      response.setHeader('content-type', 'application/pdf')
+      response.setHeader('content-length', pdf.bytes.byteLength)
+      response.setHeader('x-content-type-options', 'nosniff')
+      response.setHeader('cross-origin-resource-policy', 'same-origin')
+      response.setHeader(
+        'content-security-policy',
+        "default-src 'none'; frame-ancestors 'self'; sandbox",
+      )
+      response.setHeader('etag', `"sha256-${pdf.digest}"`)
+      response.setHeader(
+        'content-disposition',
+        `inline; filename*=UTF-8''${encodeHeaderFilename(pdf.relativePath)}`,
+      )
+      response.end(pdf.bytes)
+    } catch (error) {
+      sendSourceError(response, error)
     }
   })
 
@@ -383,6 +443,90 @@ function sendOperationError(response: Response, error: unknown): void {
     return
   }
   sendError(response, 500, 'operation_failed', safeUnavailable)
+}
+
+function hasActiveWorkspace(
+  readLifecycle: () => ProductWorkspaceLifecycle,
+  response: Response,
+): boolean {
+  if (readLifecycle().state === 'active') return true
+  sendError(response, 503, 'workspace_unavailable', safeUnavailable)
+  return false
+}
+
+function readSourceRelativePath(request: Request): string | undefined {
+  const keys = Object.keys(request.query)
+  const relativePath = request.query.relativePath
+  if (
+    keys.length !== 1 ||
+    keys[0] !== 'relativePath' ||
+    typeof relativePath !== 'string'
+  ) {
+    return undefined
+  }
+  return relativePath
+}
+
+function sendSourceError(response: Response, error: unknown): void {
+  if (!(error instanceof WorkspaceSourceProjectionError)) {
+    sendError(response, 503, 'source_unavailable', safeUnavailable)
+    return
+  }
+  switch (error.code) {
+    case 'invalid_path':
+      sendError(response, 400, 'invalid_request', safeInvalidRequest)
+      return
+    case 'source_not_found':
+      sendError(
+        response,
+        404,
+        'source_not_found',
+        '자료 파일을 찾을 수 없습니다.',
+      )
+      return
+    case 'unsupported_type':
+    case 'unsupported_encoding':
+    case 'invalid_pdf':
+      sendError(
+        response,
+        415,
+        'source_preview_unsupported',
+        '이 자료 형식은 미리볼 수 없습니다.',
+      )
+      return
+    case 'source_too_large':
+      sendError(
+        response,
+        413,
+        'source_too_large',
+        '미리보기 허용 크기를 초과했습니다.',
+      )
+      return
+    case 'scan_limit_exceeded':
+      sendError(
+        response,
+        413,
+        'source_scan_limit_exceeded',
+        '표시할 수 있는 자료 범위를 초과했습니다.',
+      )
+      return
+    case 'source_unavailable':
+      sendError(
+        response,
+        503,
+        'source_unavailable',
+        '자료를 읽을 수 없습니다.',
+      )
+  }
+}
+
+function encodeHeaderFilename(relativePath: string): string {
+  const basename = relativePath.split('/').at(-1) ?? 'source.pdf'
+  return encodeURIComponent(basename).replace(
+    /['()*]/gu,
+    (character) =>
+      `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  )
 }
 
 function sendError(

@@ -75,3 +75,19 @@ export type {
   ProductWorkspaceSummary,
   TargetProductBootstrap,
 } from './workspace-lifecycle.js'
+
+export {
+  PRODUCT_WORKSPACE_SOURCE_LIST_MAX_BYTES,
+  PRODUCT_WORKSPACE_SOURCE_LIST_MAX_ENTRIES,
+  PRODUCT_WORKSPACE_SOURCE_RELATIVE_PATH_MAX_BYTES,
+  PRODUCT_WORKSPACE_TEXT_PREVIEW_MAX_BYTES,
+  PRODUCT_WORKSPACE_TEXT_PREVIEW_MAX_JSON_BYTES,
+  decodeProductWorkspaceSourceList,
+  decodeProductWorkspaceTextPreview,
+} from './workspace-sources.js'
+export type {
+  ProductWorkspaceSource,
+  ProductWorkspaceSourceList,
+  ProductWorkspaceSourcePreviewKind,
+  ProductWorkspaceTextPreview,
+} from './workspace-sources.js'
