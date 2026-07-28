@@ -73,3 +73,16 @@ export async function done(sessionId) {
 
   return res.json()
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchHistory — 과거 진단 이력 조회
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchHistory(spaceId) {
+  const res = await fetch(`${API_BASE}/sessions/history?space=${spaceId}`)
+
+  if (!res.ok) {
+    throw new Error(`fetchHistory failed: ${res.status}`)
+  }
+
+  return res.json()
+}
