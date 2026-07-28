@@ -79,10 +79,13 @@ export function AddBookDialog({ open, onOpenChange, onCreateBook }) {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    const title = draft.query.trim();
     const initialPage = Number(draft.initialPage);
     const nextErrors = {};
 
-    if (!draft.providerId) {
+    if (!title) {
+      nextErrors.query = '책 이름을 입력해 주세요.';
+    } else if (!draft.providerId) {
       nextErrors.query = '검색 결과에서 책을 선택해 주세요.';
     }
 
@@ -99,7 +102,7 @@ export function AddBookDialog({ open, onOpenChange, onCreateBook }) {
     setSubmitError('');
 
     try {
-      await onCreateBook({ providerId: draft.providerId, initialPage });
+      await onCreateBook({ providerId: draft.providerId, title, initialPage });
       onOpenChange(false);
       resetDialog();
     } catch (requestError) {
@@ -115,7 +118,7 @@ export function AddBookDialog({ open, onOpenChange, onCreateBook }) {
           <p className="section-kicker">ADD A BOOK</p>
           <DialogTitle>읽고 있는 책을 꽂아볼까요?</DialogTitle>
           <DialogDescription>
-            책 이름으로 검색한 뒤, 읽고 있는 판본을 골라 주세요. 마지막 갈피는 읽은 뒤에 남길 수 있어요.
+            읽고 있는 판본을 고른 뒤, 책장에 표시할 이름을 원하는 대로 바꿀 수 있어요.
           </DialogDescription>
         </DialogHeader>
 
@@ -128,11 +131,18 @@ export function AddBookDialog({ open, onOpenChange, onCreateBook }) {
                 name="query"
                 value={draft.query}
                 onChange={(event) => {
+                  const isEditingSelectedTitle = Boolean(draft.providerId);
                   searchRequestId.current += 1;
                   setIsSearching(false);
-                  setDraft((current) => ({ ...current, query: event.target.value, providerId: '' }));
-                  setResults([]);
-                  setHasSearched(false);
+                  setDraft((current) => ({
+                    ...current,
+                    query: event.target.value,
+                    providerId: isEditingSelectedTitle ? current.providerId : '',
+                  }));
+                  if (!isEditingSelectedTitle) {
+                    setResults([]);
+                    setHasSearched(false);
+                  }
                   if (errors.query && event.target.value.trim()) {
                     setErrors((current) => ({ ...current, query: undefined }));
                   }
@@ -142,7 +152,7 @@ export function AddBookDialog({ open, onOpenChange, onCreateBook }) {
                 required
                 aria-invalid={Boolean(errors.query)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
+                  if (event.key === 'Enter' && !draft.providerId) {
                     event.preventDefault();
                     handleSearch();
                   }
@@ -168,7 +178,7 @@ export function AddBookDialog({ open, onOpenChange, onCreateBook }) {
                   role="option"
                   aria-selected={draft.providerId === book.providerId}
                   onClick={() => {
-                    setDraft((current) => ({ ...current, providerId: book.providerId }));
+                    setDraft((current) => ({ ...current, query: book.title, providerId: book.providerId }));
                     setErrors((current) => ({ ...current, query: undefined }));
                   }}
                 >

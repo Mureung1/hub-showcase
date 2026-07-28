@@ -97,6 +97,23 @@ class HubServerApplicationTests {
                         .session(session(otherUserId))
                         .header("X-CSRF-Token", CSRF)
                         .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"providerId\":\"another-volume\",\"title\":\"나만의 책 이름\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("나만의 책 이름"));
+
+        Long pageRangeUserId = userRepository.save(new User("은재", Instant.now())).getId();
+        mockMvc.perform(post("/api/books")
+                        .session(session(pageRangeUserId))
+                        .header("X-CSRF-Token", CSRF)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"providerId\":\"another-volume\",\"title\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_BOOK_TITLE"));
+
+        mockMvc.perform(post("/api/books")
+                        .session(session(pageRangeUserId))
+                        .header("X-CSRF-Token", CSRF)
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"providerId\":\"test-volume\",\"initialPage\":321}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PAGE_RANGE"));

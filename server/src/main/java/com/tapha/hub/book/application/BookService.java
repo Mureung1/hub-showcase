@@ -57,6 +57,10 @@ public class BookService {
         if (metadata.providerId().isBlank() || metadata.title().isBlank()) {
             throw new BookProviderException("선택한 책 정보를 확인할 수 없어요.");
         }
+        String title = request.title() == null ? metadata.title().trim() : request.title().trim();
+        if (title.isBlank()) {
+            throw new InvalidRequestException("INVALID_BOOK_TITLE", "책 이름을 입력해 주세요.");
+        }
         String editionKey = metadata.editionKey();
         if (bookRepository.findByUserIdAndEditionKey(userId, editionKey).isPresent()) {
             throw new DuplicateBookException();
@@ -68,7 +72,7 @@ public class BookService {
 
         Book book = new Book(
                 userId,
-                metadata.title().trim(),
+                title,
                 normalizeAuthor(metadata.author()),
                 initialPage,
                 Instant.now(),

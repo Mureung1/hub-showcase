@@ -77,15 +77,16 @@
 
 ```json
 {
-  "userId": "user-123",
   "providerId": "volume-123",
+  "title": "아주 작은 습관의 힘",
   "initialPage": 1
 }
 ```
 
 - `providerId`는 검색 결과에서 선택한 Google Books volume ID다.
+- `title`은 책장에 표시할 이름이며, 검색 결과 제목을 기본으로 사용자가 수정할 수 있다. 생략하면 외부 메타데이터 제목을 사용한다.
 - `initialPage`는 생략하면 `1`이며, 1 이상의 정수여야 한다.
-- 서버는 선택한 volume을 다시 조회해 제목·저자·ISBN을 저장한다.
+- 서버는 선택한 volume을 다시 조회해 저자·ISBN과 판본 식별 정보를 저장한다.
 - 같은 사용자가 같은 판본을 다시 등록하면 `409 DUPLICATE_BOOK`을 반환한다.
 - 판본 식별 키는 유효한 ISBN-13, ISBN-10을 변환한 ISBN-13, ISBN이 없으면 provider ID 순서로 정한다.
 

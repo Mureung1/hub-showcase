@@ -9,6 +9,9 @@ public record CreateBookRequest(
         @Size(max = 255, message = "검색한 책 정보가 너무 길어요.")
         String providerId,
 
+        @Size(max = 255, message = "책 이름은 255자 이하여야 해요.")
+        String title,
+
         @Min(value = 1, message = "시작 페이지는 1 이상이어야 해요.")
         Integer initialPage
 ) {

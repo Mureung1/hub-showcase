@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.PROD
+  ? ''
+  : (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080');
 let csrfToken = null;
 let sessionRequest = null;
 
@@ -76,10 +78,10 @@ export function searchBooks(query) {
   return request(`/api/books/search?q=${encodeURIComponent(query.trim())}`);
 }
 
-export function createBook({ providerId, initialPage }) {
+export function createBook({ providerId, title, initialPage }) {
   return request('/api/books', {
     method: 'POST',
-    body: JSON.stringify({ providerId, initialPage }),
+    body: JSON.stringify({ providerId, title, initialPage }),
   });
 }
 

@@ -1,9 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/noto-sans-kr";
+@import "@fontsource-variable/noto-serif-kr";
 
 :root {
+  --font-sans: "Noto Sans KR Variable", sans-serif;
+  --font-serif: "Noto Serif KR Variable", serif;
   --canvas: #FFFAF0;
   --paper: #fffdf8;
   --ink: #24211f;
@@ -39,7 +42,9 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--ink);
-  font-family: "Geist Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -87,7 +92,7 @@ input:focus-visible {
   gap: 0.55rem;
   padding: 2rem 0;
   color: var(--ink);
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.04em;
@@ -111,10 +116,10 @@ input:focus-visible {
 .onboarding-copy h1,
 .empty-bookshelf h1 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: clamp(2.35rem, 4vw, 4.15rem);
   font-weight: 600;
-  letter-spacing: -0.075em;
+  letter-spacing: -0.04em;
   line-height: 1.18;
 }
 
@@ -131,7 +136,7 @@ input:focus-visible {
   border-left: 2px solid var(--accent);
   padding-left: 0.75rem;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   line-height: 1.65;
 }
 
@@ -181,7 +186,7 @@ input:focus-visible {
 .field-error {
   min-height: 1.25rem;
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
@@ -232,7 +237,7 @@ input:focus-visible {
   width: 2.8rem;
   padding: 1rem 0.6rem;
   color: var(--paper);
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 0.76rem;
   line-height: 1.2;
   writing-mode: vertical-rl;
@@ -260,7 +265,7 @@ input:focus-visible {
 .onboarding-shelf p {
   margin: 1.3rem 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
 }
 
 .onboarding-values {
@@ -276,17 +281,17 @@ input:focus-visible {
 
 .onboarding-values__intro h2 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: clamp(1.5rem, 2.3vw, 2.1rem);
   font-weight: 600;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.035em;
   line-height: 1.25;
 }
 
 .onboarding-values__intro > p:last-child {
   margin: 0.95rem 0 0;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.7;
 }
 
@@ -313,7 +318,7 @@ input:focus-visible {
 
 .onboarding-values__list h3 {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
@@ -321,7 +326,7 @@ input:focus-visible {
 .onboarding-values__list p {
   margin: 0.6rem 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   line-height: 1.7;
 }
 
@@ -337,7 +342,7 @@ input:focus-visible {
   border-bottom: 1px solid var(--line);
   padding-bottom: 1.25rem;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.9375rem;
 }
 
 .bookshelf-preview__header a {
@@ -345,7 +350,7 @@ input:focus-visible {
   align-items: center;
   gap: 0.55rem;
   color: var(--ink);
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.1rem;
   font-weight: 700;
   text-decoration: none;
@@ -404,7 +409,7 @@ input:focus-visible {
 }
 
 .add-book-dialog__header [data-slot='dialog-title'] {
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.65rem;
   font-weight: 600;
   letter-spacing: -0.06em;
@@ -535,10 +540,10 @@ input:focus-visible {
 
 .continue-reading-card h2 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: clamp(1.35rem, 2.3vw, 1.8rem);
   font-weight: 600;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.03em;
   line-height: 1.25;
 }
 
@@ -547,7 +552,7 @@ input:focus-visible {
 .continue-reading-card__impression {
   margin: 0;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
 }
 
@@ -563,7 +568,7 @@ input:focus-visible {
   max-width: 32rem;
   margin-top: 0.25rem;
   overflow: hidden;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -585,17 +590,17 @@ input:focus-visible {
 
 .reading-bookshelf__heading h1 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: clamp(2.05rem, 3.4vw, 3.2rem);
   font-weight: 600;
-  letter-spacing: -0.07em;
+  letter-spacing: -0.04em;
   line-height: 1.2;
 }
 
 .reading-bookshelf__heading p:not(.section-kicker) {
   margin: 0.85rem 0 0;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .reading-bookshelf__add {
@@ -660,7 +665,7 @@ input:focus-visible {
 .book-spine__title,
 .book-spine__author {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   writing-mode: vertical-rl;
 }
 
@@ -717,7 +722,7 @@ input:focus-visible {
   align-items: center;
   gap: 0.55rem;
   color: var(--ink);
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.1rem;
   font-weight: 700;
   text-decoration: none;
@@ -749,7 +754,7 @@ input:focus-visible {
 
 .reading-note h1 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: clamp(2rem, 4vw, 3.2rem);
   font-weight: 600;
   letter-spacing: -0.07em;
@@ -779,7 +784,7 @@ input:focus-visible {
 
 .bookmark-summary__page {
   margin: 0.65rem 0 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.05em;
@@ -803,7 +808,7 @@ input:focus-visible {
 
 .reading-note__empty-records h2 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.05em;
@@ -823,7 +828,7 @@ input:focus-visible {
 .start-reading-panel h2,
 .record-list h2 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.05em;
@@ -859,7 +864,7 @@ input:focus-visible {
 }
 
 .timer-panel h3 {
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.05rem;
   font-weight: 600;
 }
@@ -917,7 +922,7 @@ input:focus-visible {
 }
 
 .record-page strong {
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.04rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -975,7 +980,7 @@ input:focus-visible {
 }
 
 .record-dialog__header [data-slot='dialog-title'] {
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.65rem;
   font-weight: 600;
   letter-spacing: -0.06em;
@@ -1144,7 +1149,7 @@ input:focus-visible {
 .continue-reading-card__book-title {
   max-height: 4.1rem;
   overflow: hidden;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 0.76rem;
   font-weight: 600;
   line-height: 1.35;
@@ -1497,7 +1502,7 @@ input:focus-visible {
 }
 
 .bookshelf-details__empty strong {
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.05rem;
   font-weight: 600;
 }
@@ -1540,15 +1545,15 @@ input:focus-visible {
 
 .status-shelf__header h2 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.35rem;
   font-weight: 600;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.03em;
 }
 
 .status-shelf__header > span {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1605,7 +1610,7 @@ input:focus-visible {
 
 .status-book__copy strong {
   overflow: hidden;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 0.94rem;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -1616,7 +1621,7 @@ input:focus-visible {
 .status-book__copy em {
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1626,14 +1631,14 @@ input:focus-visible {
   height: auto;
   padding: 0.3rem 0;
   color: var(--accent-dark);
-  font-size: 0.76rem;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 
 .status-shelf__empty {
   margin: 1rem 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
 }
 
 .status-shelves__error {
@@ -1661,7 +1666,7 @@ input:focus-visible {
 }
 
 .status-dialog__header [data-slot='dialog-title'] {
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.55rem;
   font-weight: 600;
   letter-spacing: -0.06em;
@@ -1719,7 +1724,7 @@ input:focus-visible {
 }
 
 .book-status > div > strong {
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.05rem;
   font-weight: 600;
 }
@@ -1764,7 +1769,7 @@ input:focus-visible {
 
 .final-review-page h2 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.05em;
@@ -1924,7 +1929,7 @@ input:focus-visible {
 .three-bookshelf__note {
   margin: 1rem 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
 }
 
 .sr-only {
@@ -1954,7 +1959,7 @@ input:focus-visible {
   }
 
   .onboarding-copy h1 {
-    font-size: clamp(2.25rem, 12vw, 3.1rem);
+    font-size: clamp(2.2rem, 10.5vw, 2.75rem);
   }
 
   .onboarding-form {
@@ -2145,7 +2150,7 @@ input:focus-visible {
 
 .quote-banner blockquote {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.12rem;
   line-height: 1.65;
 }
@@ -2210,14 +2215,14 @@ input:focus-visible {
 
 .reading-activity-calendar__header h2 {
   margin: 0;
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: 600;
 }
 
 .reading-activity-calendar__header > span {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -2287,7 +2292,7 @@ input:focus-visible {
 .reading-activity-calendar__empty {
   margin: 1rem 0 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.9375rem;
   line-height: 1.55;
 }
 
@@ -2342,10 +2347,10 @@ input:focus-visible {
 }
 
 .bookshelf-preview .reading-bookshelf__heading h1 {
-  font-size: clamp(2.8rem, 5vw, 5.2rem);
-  font-weight: 500;
-  letter-spacing: -0.085em;
-  line-height: 0.95;
+  font-size: clamp(2.5rem, 4.2vw, 4.25rem);
+  font-weight: 560;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
 }
 
 .bookshelf-preview .reading-bookshelf__heading p:not(.section-kicker) {
@@ -2427,7 +2432,7 @@ input:focus-visible {
   right: 0;
   color: rgb(181 92 62 / 18%);
   content: '“';
-  font-family: Georgia, "Noto Serif KR", serif;
+  font-family: var(--font-serif);
   font-size: 5rem;
   line-height: 1;
   pointer-events: none;
@@ -2446,9 +2451,10 @@ input:focus-visible {
 }
 
 .quote-banner button {
-  min-height: 2.8rem;
+  min-height: 3rem;
   margin-top: 1.3rem;
   padding-top: 0.9rem;
+  font-size: 0.9375rem;
 }
 
 .bookshelf-details .continue-reading-card {
@@ -2477,7 +2483,8 @@ input:focus-visible {
 }
 
 .bookshelf-details .continue-reading-card h2 {
-  font-size: clamp(1.35rem, 2vw, 1.65rem);
+  font-size: clamp(1.4rem, 2vw, 1.75rem);
+  line-height: 1.35;
   text-wrap: balance;
   word-break: keep-all;
 }
@@ -2508,7 +2515,7 @@ input:focus-visible {
 }
 
 .bookshelf-lower .reading-activity-calendar__header h2 {
-  font-size: clamp(1.45rem, 2.4vw, 2rem);
+  font-size: clamp(1.4rem, 2.2vw, 1.8rem);
 }
 
 .bookshelf-lower .reading-activity-calendar__body {
