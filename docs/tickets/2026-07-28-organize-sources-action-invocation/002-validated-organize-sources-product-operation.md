@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -38,24 +38,34 @@ Closed `POST /api/product/actions` request가 exact active SemesterWorkspace의 
 
 ## Acceptance Criteria
 
-- [ ] Contract decoder가 valid 1개·16개 refs와 optional settings의 order를 보존하고 unknown action, extra/native field, empty·duplicate·17개 refs, invalid path와 oversized envelope를 거절한다.
-- [ ] Chat decoder는 action·files field를 계속 거절하며 source list·preview와 existing operation/review frame contract는 backward-compatible하다.
-- [ ] Source resolver가 current safe text refs만 stat/open preflight하고 order를 보존하며 content·digest·snapshot을 반환하지 않는다.
-- [ ] Missing·renamed·symlink·root escape·hidden/managed/secret/scaffold·non-regular, root replacement, PDF·unsupported·size drift와 inode race가 all-or-nothing preflight failure다.
-- [ ] Expected enabled workspace-local Skill의 real non-symlink `SKILL.md`만 resolve하며 missing, disabled, global-only, wrong-root와 unsafe Skill은 `action_unavailable`로 Turn 전에 실패한다.
-- [ ] Renderer가 exact fixed format, JSON escaping, request order와 `32 KiB` bound를 지킨다.
-- [ ] Public action route가 `workspace_write`, current optional settings, resolved Skill과 rendered text를 deterministic Runtime에 한 번 전달한다.
-- [ ] File·Skill·account·settings·render failure와 preflight disconnect는 Runtime start와 `operation.preparing` frame을 0회로 유지하고 safe JSON error만 반환한다.
-- [ ] Chat과 action이 같은 one-at-a-time lease를 경쟁하며 accepted action은 existing activity, Review, clarification, interrupt, disconnect와 authoritative terminal projection을 재사용한다.
-- [ ] Normal Chat은 Skill 없이 기존 text behavior를 유지하고 removed academic/runtime route는 alias로 복원되지 않는다.
-- [ ] Action failure가 exact HTTP status/code matrix로 투영되고 loopback·Origin admission을 우회하지 않으며 public body와 logs에 path/content/Skill/native/credential/protocol detail을 누출하지 않는다.
-- [ ] Product contract와 Server README가 구현된 action route, trust boundary와 지원 source kind를 자신의 범위에서 설명한다.
+- [x] Contract decoder가 valid 1개·16개 refs와 optional settings의 order를 보존하고 unknown action, extra/native field, empty·duplicate·17개 refs, invalid path와 oversized envelope를 거절한다.
+- [x] Chat decoder는 action·files field를 계속 거절하며 source list·preview와 existing operation/review frame contract는 backward-compatible하다.
+- [x] Source resolver가 current safe text refs만 stat/open preflight하고 order를 보존하며 content·digest·snapshot을 반환하지 않는다.
+- [x] Missing·renamed·symlink·root escape·hidden/managed/secret/scaffold·non-regular, root replacement, PDF·unsupported·size drift와 inode race가 all-or-nothing preflight failure다.
+- [x] Expected enabled workspace-local Skill의 real non-symlink `SKILL.md`만 resolve하며 missing, disabled, global-only, wrong-root와 unsafe Skill은 `action_unavailable`로 Turn 전에 실패한다.
+- [x] Renderer가 exact fixed format, JSON escaping, request order와 `32 KiB` bound를 지킨다.
+- [x] Public action route가 `workspace_write`, current optional settings, resolved Skill과 rendered text를 deterministic Runtime에 한 번 전달한다.
+- [x] File·Skill·account·settings·render failure와 preflight disconnect는 Runtime start와 `operation.preparing` frame을 0회로 유지하고 safe JSON error만 반환한다.
+- [x] Chat과 action이 같은 one-at-a-time lease를 경쟁하며 accepted action은 existing activity, Review, clarification, interrupt, disconnect와 authoritative terminal projection을 재사용한다.
+- [x] Normal Chat은 Skill 없이 기존 text behavior를 유지하고 removed academic/runtime route는 alias로 복원되지 않는다.
+- [x] Action failure가 exact HTTP status/code matrix로 투영되고 loopback·Origin admission을 우회하지 않으며 public body와 logs에 path/content/Skill/native/credential/protocol detail을 누출하지 않는다.
+- [x] Product contract와 Server README가 구현된 action route, trust boundary와 지원 source kind를 자신의 범위에서 설명한다.
 
 ## Verification
 
-- Targeted test or command: `npm test -w @ay-ple/product-contract`, `npm test -w @ay-ple/server`
-- Repository checks: `npm run typecheck -w @ay-ple/product-contract`, `npm run build -w @ay-ple/product-contract`, `npm run typecheck -w @ay-ple/server`, `npm run build -w @ay-ple/server`, `npm test`, `npm run typecheck`, `npm run build`
-- Manual or live smoke: Deterministic Runtime과 temporary safe/hostile filesystem fixture로 public JSON/NDJSON behavior를 검증한다. Ambient workspace와 credential은 사용하지 않는다.
+- Targeted test or command:
+  - `npm test -w @ay-ple/product-contract`: 18/18 passed
+  - `npm test -w @ay-ple/server`: 138/138 passed
+  - `npm run typecheck -w @ay-ple/product-contract`, `npm run build -w @ay-ple/product-contract`, `npm run typecheck -w @ay-ple/server`, `npm run build -w @ay-ple/server`: passed
+- Repository checks:
+  - `npm test`, `npm run typecheck`, `npm run build`: passed
+  - `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`: passed
+- Manual or live smoke: Public JSON/NDJSON boundary에서 deterministic Runtime과 temporary safe/hostile filesystem fixture를 사용해 exact native input, failure matrix, Review·clarification·interrupt·disconnect와 shutdown abort를 검증했다. Ambient workspace와 credential은 사용하지 않았다.
+- Review:
+  - Fixed point `9c9b46f17f48eda0e97483d1910aac5cc10d865f` 이후 diff를 Standards와 Spec 두 축으로 병렬 검토했다.
+  - Standards의 implementation map 불일치, filesystem open 검사·test fixture 중복과 불명확한 error translator 이름을 수정했다.
+  - Spec의 same-inode size drift finding을 pre/post-open exact size 비교와 regression test로 수정하고 root replacement의 stale-context 분류를 보강했다.
+  - 최종 follow-up은 Standards 0건, Spec 0건이다.
 
 ## Blocked By
 
@@ -78,3 +88,11 @@ Closed `POST /api/product/actions` request가 exact active SemesterWorkspace의 
 - `apps/server/src/prepared-server-application.test.ts`
 - `apps/server/src/testing/codex-chat-test-support.ts`
 - `apps/server/README.md`
+
+## Result
+
+- `@ay-ple/product-contract`에 ordered unique text file ref `1..16`개와 optional settings만 받는 closed `organize_sources` ActionInvocation을 추가하고 Chat request와 native-only field를 분리했다.
+- Server는 current file마다 exact root·exclusion·canonical containment·non-symlink regular file·`O_NOFOLLOW` open·device/inode/size를 fresh 검증하고, invocation마다 enabled exact workspace-local `ay-ple-first-assignment` Skill과 real `SKILL.md`를 다시 확인한다.
+- Public `POST /api/product/actions`는 shared Product operation lease에서 account/settings→files→Skill→bounded renderer→continuity 순서를 지킨 뒤 startup-approved thread에 `workspace_write`, optional settings, Skill 하나와 fixed text를 전달한다. Preflight failure는 safe JSON으로 Turn 전에 닫히고 accepted action은 activity, clarification, Semantic Review, interrupt·disconnect와 terminal projection을 재사용한다.
+- Product contract·Server README와 current implementation map을 구현 topology에 맞췄으며 Browser source selection UI와 exact local-provider closeout은 후속 ticket 범위로 남겼다.
+- 구현 커밋: `2501d9851`, `6a45e2f1f`, `6d9516ab4`, `e4a165859`, `6c7d0b29d`, `7824cc930`
