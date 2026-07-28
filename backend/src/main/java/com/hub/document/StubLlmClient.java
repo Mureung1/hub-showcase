@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 /** 로컬 개발용. API 키 없이도 전체 흐름(잡 생성 → 폴링 → 완료)을 돌려볼 수 있다. */
 @Slf4j
 @Component
-@Profile("local")
+@Profile("local & !realllm")
 public class StubLlmClient implements LlmClient {
 
     @Override

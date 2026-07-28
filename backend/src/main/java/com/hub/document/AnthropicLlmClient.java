@@ -12,7 +12,7 @@ import java.util.Map;
 /** 로컬이 아닐 때(실 프로필) 붙는 실제 Anthropic 호출 구현. */
 @Slf4j
 @Component
-@Profile("!local")
+@Profile("!local & !realllm")
 public class AnthropicLlmClient implements LlmClient {
 
     private final RestClient client;
