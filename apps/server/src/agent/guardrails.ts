@@ -66,7 +66,13 @@ function foreignBrandsInTitle(title: string, storeName: string): string[] {
   return candidates.filter((c) => !normalized.includes(c));
 }
 
-/** 텍스트에서 최대 할인율(%)을 추출. 없으면 0. */
+/**
+ * 텍스트에서 최대 할인율(%)을 추출. 없으면 0.
+ *
+ * 뒤에 "할인"이 붙었는지 안 따진다 — "30% 세일"처럼 다르게 쓴 위반도 잡아야 한다.
+ * FE promo.ts의 RATE는 반대로 "N% 할인"만 본다: 저쪽은 숫자를 고치는 쪽이라 넓게 잡으면
+ * "100% 아라비카"를 할인율로 바꿔버린다. 강제는 넓게, 편집은 좁게 — 목적이 반대다.
+ */
 function maxDiscountPct(text: string): number {
   const nums = [...text.matchAll(/(\d+)\s*%/g)].map((m) => Number(m[1]));
   return nums.length > 0 ? Math.max(...nums) : 0;
@@ -76,7 +82,8 @@ function maxDiscountPct(text: string): number {
  * 텍스트에서 최대 정액 할인액(원)을 추출. 없으면 0.
  *
  * "할인"·"쿠폰"이 뒤따르는 금액만 잡는다 — "5,000원 이상 주문 시"처럼 조건으로 쓴 금액을
- * 할인액으로 오인하면 멀쩡한 제안이 위반으로 걸려 재생성 루프에 빠진다.
+ * 할인액으로 오인하면 멀쩡한 제안이 위반으로 걸려 재생성 루프에 빠진다. 금액은 정률과 달리
+ * 조건으로 쓰이는 일이 흔해서, 강제 쪽도 좁게 잡는 게 맞다.
  * FE promo.ts의 AMOUNT와 같은 정규식이다(양쪽이 같은 값을 읽어야 안내와 강제가 어긋나지 않음).
  */
 function maxDiscountWon(text: string): number {

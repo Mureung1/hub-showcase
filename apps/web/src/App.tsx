@@ -187,6 +187,18 @@ export default function WeatherPilotV3() {
   function toggleChannel(id: ChannelId) {
     setChannels((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
   }
+  /**
+   * 쿠폰 혜택 편집 — 쿠폰 라벨과 발송 문구(copy)를 함께 갱신한다. (QW-4)
+   *
+   * copy를 안 따라가게 두면 쿠폰은 12%인데 문자는 "10% 할인"이라고 나가서, 손님에게
+   * 서로 다른 혜택을 약속하는 문자가 실제로 발송된다(buildSmsBody가 copy를 쓴다).
+   * copy는 사장님이 손으로 고치는 값이라 통째로 다시 만들지 않고, 현재 문구에서
+   * 할인 숫자만 바꾼다 — 앞뒤 말과 이모지는 그대로 남는다.
+   */
+  function changePromo(next: PromoEdit) {
+    setPromoEdit(next);
+    setCopy((c) => applyPromo(c, next));
+  }
 
   // 승인(문구·채널 저장) → 발송. 백엔드 없으면 api/client가 MOCK 응답을 돌려준다.
   async function handleSend() {
@@ -291,7 +303,7 @@ export default function WeatherPilotV3() {
         ) : view === "edit" ? (
           <EditView
             copy={copy} setCopy={setCopy}
-            promoEdit={promoEdit} setPromoEdit={setPromoEdit} promoLabel={promoValue}
+            promoEdit={promoEdit} onPromoChange={changePromo} promoLabel={promoValue}
             channels={channels} toggleChannel={toggleChannel}
             nightMode={nightMode} setNightMode={setNightMode}
             onBack={() => setView("dashboard")} onSend={handleSend} sending={sending}
@@ -382,9 +394,9 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
 }
 
 // ---- 검토·편집 (문구 + 채널 + 법적 안전장치) --------------------------------
-function EditView({ copy, setCopy, promoEdit, setPromoEdit, promoLabel, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
+function EditView({ copy, setCopy, promoEdit, onPromoChange, promoLabel, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
   copy: string; setCopy: (v: string) => void;
-  promoEdit: PromoEdit; setPromoEdit: (v: PromoEdit) => void; promoLabel: string;
+  promoEdit: PromoEdit; onPromoChange: (v: PromoEdit) => void; promoLabel: string;
   channels: ChannelId[]; toggleChannel: (id: ChannelId) => void;
   nightMode: boolean; setNightMode: (v: boolean) => void;
   onBack: () => void; onSend: () => void; sending: boolean;
@@ -443,7 +455,7 @@ function EditView({ copy, setCopy, promoEdit, setPromoEdit, promoLabel, channels
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                 <input
                   id="wp-discount" type="number" min={0} max={100} value={promoEdit.pct}
-                  onChange={(e) => setPromoEdit({ kind: "rate", pct: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
+                  onChange={(e) => onPromoChange({ kind: "rate", pct: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
                   style={{ ...numInput, width: 66 }}
                 />
                 <span style={{ fontSize: 14, color: T.sub, fontWeight: 600 }}>%</span>
@@ -455,7 +467,7 @@ function EditView({ copy, setCopy, promoEdit, setPromoEdit, promoLabel, channels
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                 <input
                   id="wp-discount" type="number" min={0} step={100} value={promoEdit.won}
-                  onChange={(e) => setPromoEdit({ kind: "amount", won: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
+                  onChange={(e) => onPromoChange({ kind: "amount", won: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
                   style={{ ...numInput, width: 92 }}
                 />
                 <span style={{ fontSize: 14, color: T.sub, fontWeight: 600 }}>원</span>

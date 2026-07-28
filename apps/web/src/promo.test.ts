@@ -30,6 +30,13 @@ describe("parsePromo — 혜택 형태 판별", () => {
     expect(parsePromo("5,000원 이상 주문 시 사은품")).toEqual({ kind: "none" });
   });
 
+  it("'할인'이 안 붙은 %는 none — 편집 대상이 아니다", () => {
+    // "100% 아라비카"를 할인율로 읽으면 사장님이 안 건드린 숫자가 편집으로 바뀐다.
+    // 못 읽어서 편집이 막히는 쪽이, 잘못 읽어서 문구를 망치는 쪽보다 안전하다.
+    expect(parsePromo("100% 아라비카 원두")).toEqual({ kind: "none" });
+    expect(parsePromo("15% 세일")).toEqual({ kind: "none" });
+  });
+
   it("숫자가 없으면 none", () => {
     expect(parsePromo("아메리카노 증정")).toEqual({ kind: "none" });
     expect(parsePromo("")).toEqual({ kind: "none" });
@@ -66,6 +73,42 @@ describe("applyPromo — 편집값 되쓰기", () => {
     const promo = "따뜻한 세트 2,000원 할인";
     const edit = { kind: "amount", won: 2500 } as const;
     expect(applyPromo(promo, edit)).toBe(applyPromo(promo, edit));
+  });
+});
+
+describe("applyPromo — 발송 문구(copy) 동기화", () => {
+  it("문구 속 할인율도 같이 바뀐다 (쿠폰만 바뀌면 다른 혜택을 약속하는 문자가 나간다)", () => {
+    const copy = SCENARIOS.rain.copy;
+    const next = applyPromo(copy, { kind: "rate", pct: 12 });
+    expect(next).toContain("오늘 픽업 주문 12% 할인");
+    // 앞뒤 말·이모지·줄바꿈은 그대로.
+    expect(next).toContain("☔ 비 오는 오늘, 굳이 나오지 마세요! 🙅‍♀️");
+    expect(next.split("\n")).toHaveLength(copy.split("\n").length);
+  });
+
+  it("문구 속 할인액도 같이 바뀐다", () => {
+    const next = applyPromo(SCENARIOS.cold.copy, { kind: "amount", won: 2500 });
+    expect(next).toContain("세트 2,500원 할인");
+  });
+
+  it("혜택이 두 번 나오면 둘 다 바꾼다", () => {
+    // 하나만 바뀌면 같은 문자 안에서 값이 어긋난다.
+    const copy = "오늘 10% 할인!\n지금 주문하면 10% 할인 그대로 드려요";
+    expect(applyPromo(copy, { kind: "rate", pct: 15 })).toBe(
+      "오늘 15% 할인!\n지금 주문하면 15% 할인 그대로 드려요",
+    );
+  });
+
+  it("할인과 무관한 숫자는 건드리지 않는다", () => {
+    const copy = "100% 아라비카 원두로 만든 커피, 오늘 10% 할인이에요";
+    expect(applyPromo(copy, { kind: "rate", pct: 12 })).toBe(
+      "100% 아라비카 원두로 만든 커피, 오늘 12% 할인이에요",
+    );
+  });
+
+  it("사장님이 할인 언급을 지운 문구는 그대로 둔다", () => {
+    const copy = "오늘 따뜻한 라떼 어때요?";
+    expect(applyPromo(copy, { kind: "rate", pct: 12 })).toBe(copy);
   });
 });
 
