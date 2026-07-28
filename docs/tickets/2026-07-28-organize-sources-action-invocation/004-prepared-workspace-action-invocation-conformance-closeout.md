@@ -51,7 +51,7 @@ Fresh temporary Git SemesterWorkspace의 완성된 Browser→public action→Ser
 ## Verification
 
 - Targeted: `npm run test:prepared-workspace-product-actual` — public action exact Runtime trace와 direct Adapter failure matrix 2/2 green. `npm run test:runtime-local-provider` — exact native local-provider 4/4 green. `npm run test:first-assignment-skill` — 5/5 green.
-- Runtime: `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` — production bundle pre/post digest `f387600fe960173a36b29bde6b96dfa5500faebdced243afee64d27599cf2799`, Node actual 99 tests, native context 23 tests와 local-provider 4 tests green. Action provider cleanup unit을 포함한 Node unit 148 tests와 locked Ruff bridge check도 green.
+- Runtime: `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` — production bundle pre/post digest `f387600fe960173a36b29bde6b96dfa5500faebdced243afee64d27599cf2799`, Node actual 101 tests, native context 23 tests와 local-provider 4 tests green. First Assignment conformance provider cleanup unit을 포함한 Node unit 148 tests와 locked Ruff bridge check도 green.
 - Repository: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell` — green. Public-surface·persistence regression을 포함한 workspace package 전체 suite가 removed route와 durable academic workflow residue 없이 통과했다.
 - Browser·docs: `npm run test:e2e -w @ay-ple/chat-shell` — Chromium desktop 3/3 green. `npm run check:docs-links` — active 28·historical 2 green. `git diff --check` — green.
 - Review: fixed point `d8fc1f3a088e6a1b6f583169f54b006e6922a107` 이후 Standards·Spec 병렬 검토의 actionable finding을 `8dfff3db2`, `9b66b62ad`, `7bdeae0f9`에서 모두 해소했고 최종 재검토는 두 축 모두 0건이다.
@@ -68,8 +68,8 @@ Fresh temporary Git SemesterWorkspace의 완성된 Browser→public action→Ser
 - `apps/server/src/prepared-server-application.test.ts`
 - `apps/server/src/testing/codex-chat-test-support.ts`
 - `packages/codex-chat-runtime/src/local-provider.actual.test.ts`
-- `packages/codex-chat-runtime/src/action-local-provider-server.ts`
-- `packages/codex-chat-runtime/src/testing-action-local-provider.ts`
+- `packages/codex-chat-runtime/src/first-assignment-conformance-provider.ts`
+- `packages/codex-chat-runtime/src/testing-first-assignment-conformance.ts`
 - `packages/codex-chat-runtime/scripts/official_local_provider.py`
 - `apps/chat-shell/e2e/prepared-public-cutover.spec.ts`
 - `apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace/`
