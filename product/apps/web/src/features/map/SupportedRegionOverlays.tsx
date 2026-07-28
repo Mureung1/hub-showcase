@@ -1,21 +1,30 @@
 import { LocalTwinRegionOverlay } from "./LocalTwinRegionOverlay";
-import { READY_OVERLAY_REGIONS } from "./supportedRegions";
+import type { MarketBoundaryGeometry } from "./marketBoundaryGeometry";
+import type { ReadyOverlayRegion } from "./supportedRegions";
 
 type SupportedRegionOverlaysProps = {
+  region: ReadyOverlayRegion | undefined;
   buildingsVisible: boolean;
+  buildingAppearance: "analysis" | "storefront3d";
+  marketBoundaryGeometry: MarketBoundaryGeometry | null;
   hiddenBuildingIds?: string[];
 };
 
 export function SupportedRegionOverlays({
+  region,
   buildingsVisible,
+  buildingAppearance,
+  marketBoundaryGeometry,
   hiddenBuildingIds = [],
 }: SupportedRegionOverlaysProps) {
-  return READY_OVERLAY_REGIONS.map((region) => (
+  if (!region) return null;
+  return (
     <LocalTwinRegionOverlay
-      key={region.id}
       region={region}
       buildingsVisible={buildingsVisible}
+      buildingAppearance={buildingAppearance}
+      marketBoundaryGeometry={marketBoundaryGeometry}
       hiddenBuildingIds={hiddenBuildingIds}
     />
-  ));
+  );
 }
