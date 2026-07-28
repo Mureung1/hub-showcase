@@ -1,11 +1,11 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuthState } from '@/hooks/useAuth'
-import { searchCustomers } from '@/services/customers'
-import { createReservation } from '@/services/reservations'
+import { getCustomer, searchCustomers } from '@/services/customers'
+import { createReservationAndRefresh } from '@/services/riskRefresh'
 import type { CustomerSearchResult } from '@/types/schema'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
@@ -23,6 +23,7 @@ type ReservationForm = z.infer<typeof reservationSchema>
 
 const NewReservation = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuthState()
   const [isLoading, setIsLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -41,6 +42,28 @@ const NewReservation = () => {
       memo: '',
     },
   })
+
+  useEffect(() => {
+    const customerId = searchParams.get('customerId')
+    if (!user || !customerId) return
+
+    const loadCustomer = async () => {
+      try {
+        const customer = await getCustomer(user.uid, customerId)
+        if (!customer) {
+          toast.error('고객을 찾을 수 없습니다')
+          return
+        }
+        setSelectedCustomer(customer)
+        setValue('customerId', customer.id)
+      } catch (error) {
+        console.error('Failed to load selected customer:', error)
+        toast.error('고객 정보를 불러오지 못했습니다')
+      }
+    }
+
+    loadCustomer()
+  }, [searchParams, setValue, user])
 
   // 고객 검색 (300ms debounce)
   const handleSearch = async (query: string) => {
@@ -80,7 +103,7 @@ const NewReservation = () => {
     setIsLoading(true)
     try {
       const resId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await createReservation(user.uid, resId, {
+      await createReservationAndRefresh(user.uid, data.customerId, resId, {
         customerId: data.customerId,
         date: data.date,
         time: data.time,

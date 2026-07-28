@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { getCustomer } from '@/services/customers'
 import { createIncidentAndRefresh, transitionReservationStatusAndRefresh } from '@/services/riskRefresh'
 import { listIncidents } from '@/services/incidents'
@@ -43,6 +43,8 @@ const CustomerDetail = () => {
   const [customer, setCustomer] = useState<CustomerSearchResult | null>(null)
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false)
+  const [activeReservationId, setActiveReservationId] = useState<string | null>(null)
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -62,6 +64,16 @@ const CustomerDetail = () => {
       listIncidents(user.uid, customerId),
       listReservations(user.uid, customerId),
     ])
+
+    const todayStr = getLocalDateString()
+    const activeReservation = reservationsData.find(
+      (reservation) =>
+        reservation.date === todayStr &&
+        (reservation.status === 'pending' || reservation.status === 'confirmed'),
+    ) ?? reservationsData.find(
+      (reservation) => reservation.status === 'pending' || reservation.status === 'confirmed',
+    )
+    setActiveReservationId(activeReservation?.id ?? null)
 
     const events: TimelineEvent[] = [
       ...reservationsData.map((res) => ({
@@ -130,29 +142,19 @@ const CustomerDetail = () => {
   }
 
   const handleStatusChange = async (nextStatus: 'visited' | 'noShow' | 'cancelled') => {
-    if (!user || !id || !customer) return
+    if (!user || !id || !customer || !activeReservationId || isStatusUpdating) return
 
+    setIsStatusUpdating(true)
     try {
-      // 오늘 활성 예약을 우선하고, 없으면 가장 최근 예약을 대상으로 한다.
-      const reservations = await listReservations(user.uid, id)
-      const todayStr = getLocalDateString()
-      const target = reservations.find(
-        (r) => r.date === todayStr && (r.status === 'pending' || r.status === 'confirmed'),
-      ) ?? reservations.find((r) => r.status === 'pending' || r.status === 'confirmed')
-        ?? reservations[0]
-
-      if (!target) {
-        toast.info('상태를 변경할 예약이 없습니다')
-        return
-      }
-
-      await transitionReservationStatusAndRefresh(user.uid, id, target.id, nextStatus)
+      await transitionReservationStatusAndRefresh(user.uid, id, activeReservationId, nextStatus)
       const updatedCustomer = await getCustomer(user.uid, id)
       setCustomer(updatedCustomer)
       await loadTimeline(id)
       toast.success(`상태가 변경되었습니다: ${nextStatus}`)
     } catch (error) {
       toast.error('상태 변경 실패: ' + (error as Error).message)
+    } finally {
+      setIsStatusUpdating(false)
     }
   }
 
@@ -199,6 +201,12 @@ const CustomerDetail = () => {
           <RiskBadge score={customer.riskStats.score} />
         </div>
         <p className="text-gray-600">{customer.phoneMasked ?? '****-****'}</p>
+        <Link
+          to={`/app/reservations/new?customerId=${encodeURIComponent(id ?? '')}`}
+          className="mt-3 inline-flex rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          + 이 고객 예약 등록
+        </Link>
         {showAlert && (
           <div className="mt-3">
             <RiskAlertBanner
@@ -253,10 +261,12 @@ const CustomerDetail = () => {
       </section>
 
       {/* Action buttons */}
+      {activeReservationId ? (
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={() => handleStatusChange('visited')}
-          className="bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+          disabled={isStatusUpdating}
+          className="bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="inline-flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -265,7 +275,8 @@ const CustomerDetail = () => {
         </button>
         <button
           onClick={() => handleStatusChange('noShow')}
-          className="bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
+          disabled={isStatusUpdating}
+          className="bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="inline-flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -274,11 +285,23 @@ const CustomerDetail = () => {
         </button>
         <button
           onClick={() => handleStatusChange('cancelled')}
-          className="bg-yellow-500 text-white py-3 rounded-lg font-medium hover:bg-yellow-600 transition-colors"
+          disabled={isStatusUpdating}
+          className="bg-yellow-500 text-white py-3 rounded-lg font-medium hover:bg-yellow-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           당일취소
         </button>
       </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-gray-300 bg-white p-4 text-center">
+          <p className="text-sm text-gray-500">아직 등록된 예약이 없습니다.</p>
+          <Link
+            to={`/app/reservations/new?customerId=${encodeURIComponent(id ?? '')}`}
+            className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline"
+          >
+            이 고객 예약 등록하기
+          </Link>
+        </div>
+      )}
 
       {/* Incident Modal */}
       <IncidentModal
