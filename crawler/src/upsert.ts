@@ -19,6 +19,8 @@ interface SubsidyRow {
   contact: string
   region: string[]
   industry: string[]
+  support_realm: string
+  support_realm_detail: string | null
   employees: string | null
   employees_max_count: number | null
   revenue: string | null
@@ -46,6 +48,8 @@ function subsidyToRow(subsidy: Subsidy): SubsidyRow {
     contact: subsidy.contact,
     region: subsidy.region,
     industry: subsidy.industry,
+    support_realm: subsidy.supportRealm,
+    support_realm_detail: subsidy.supportRealmDetail ?? null,
     employees: subsidy.employees ?? null,
     employees_max_count: subsidy.employeesMaxCount ?? null,
     revenue: subsidy.revenue ?? null,
