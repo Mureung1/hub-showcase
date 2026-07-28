@@ -33,6 +33,12 @@
 - **NCP 콘솔**: Maps Application의 Web 서비스 URL에 `https://<vercel-url>` 추가 (없으면 리포트 실지도가 인증 오류로 안 뜸)
 - 확인: 홈에서 경로 목록 로드 + `/report/<uuid>` 직접 접속
 
+### 2.5 GitHub Actions — 보초 클라우드 자동화 (완료: 2026-07-28)
+- 워크플로: **main 브랜치**의 `.github/workflows/miricat-sentry.yml` (schedule은 기본 브랜치에서만 트리거 → 코드는 work를 checkout)
+- 매일 KST 07:30 (cron `30 22 * * *` UTC) + Actions 탭 수동 실행 가능
+- 시크릿 4개 (포크 레포 Settings→Actions): SUPABASE_URL · SUPABASE_SERVICE_ROLE_KEY · GEMINI_API_KEY · DISCORD_WEBHOOK_URL
+- ⚠️ 로컬 `scheduler.py`와 동시 상시 실행 금지 — 매일 보고가 두 번 감. 로컬은 데모 수동 트리거(run_scout)용으로만
+
 ### 3. 로컬 워커 — 링크 갱신
 - `miricat/.env`의 `REPORT_BASE_URL`을 `https://<vercel-url>`로 교체
 - 확인: `demo_alert.py` 발사 → 디스코드 경보 제목 클릭 → **Vercel 리포트**가 열림
