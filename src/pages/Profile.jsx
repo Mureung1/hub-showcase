@@ -95,14 +95,17 @@ export default function Profile() {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  // 내 학교(FR-1.1) — 급식·학식 화면이 참조하는 profile.school = null | { type, officeCode, code, name }.
+  // 내 학교(FR-1.1) — 급식·학식 화면이 참조하는 profile.school = null | { type, officeCode, code, name, kind? }.
+  // kind(NEIS SCHUL_KND_SC_NM, "초등학교"/"중학교"/"고등학교" 등)는 6주차 §1 정밀 영양 산출 엔진이
+  // schoolType(급식량 계수)을 정하는 데 쓴다 — 이 필드가 추가되기 전에 학교를 저장한 기존 사용자는
+  // kind가 없어도(undefined) precisionEngine이 계수 1(보정 없음)로 안전하게 폴백한다.
   // 신체정보와 같은 저장 버튼(handleSave)을 공유한다 — 별도 저장 경로를 두면 신체정보 없이 학교만 있는
   // 반쪽짜리 프로필 행이 생겨 온보딩 판정(!profile)이 꼬일 수 있어서다.
   const [selectedSchool, setSelectedSchool] = useState(profile?.school ?? null)
   const [schoolPickerKind, setSchoolPickerKind] = useState('k12')
 
   function handleSelectK12School(school) {
-    setSelectedSchool({ type: 'k12', officeCode: school.officeCode, code: school.schoolCode, name: school.name })
+    setSelectedSchool({ type: 'k12', officeCode: school.officeCode, code: school.schoolCode, name: school.name, kind: school.kind })
   }
 
   function handleSelectUniversity(univ) {

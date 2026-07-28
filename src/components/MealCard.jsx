@@ -81,36 +81,47 @@ const ANALYZE_BUTTON_STYLE = {
 
 // onAnalyzeMenu가 있으면(학식) 메뉴별 가격 + [영양 분석] 버튼이 있는 한 줄씩 배치로,
 // 없으면(급식, 액션 없음) 줄바꿈 인라인으로 공간을 아낀다.
-function MenuList({ menus, onAnalyzeMenu }) {
+// analyzingMenu: 지금 분석 요청이 나가 있는 메뉴명(6주차 §1-B, precisionEngine 호출은 비동기라
+// 캐시 미스 시 몇 초 걸릴 수 있다) — 그 버튼에만 로딩을 표시하고 나머지는 그대로 눌리게 둔다.
+function MenuList({ menus, onAnalyzeMenu, analyzingMenu }) {
   if (onAnalyzeMenu) {
     return (
       <ul style={{ margin: `${spacing.sm}px 0 0`, padding: 0, listStyle: 'none' }}>
-        {menus.map((menu, i) => (
-          <li
-            key={i}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: spacing.sm,
-              padding: `${spacing.xs}px 0`,
-              borderTop: i > 0 ? `1px solid ${colors.border}` : 'none',
-            }}
-          >
-            <span style={{ fontSize: font.size.sm, color: colors.textStrong }}>
-              {menu.name}
-              <MenuAllergyMarks codes={menu.allergyCodes} />
-              {menu.price != null && (
-                <span style={{ color: colors.textSub, fontSize: font.size.xs, marginLeft: 6 }}>
-                  {menu.price.toLocaleString()}원
-                </span>
-              )}
-            </span>
-            <button type="button" className="tds-press" onClick={() => onAnalyzeMenu(menu.name)} style={ANALYZE_BUTTON_STYLE}>
-              영양 분석
-            </button>
-          </li>
-        ))}
+        {menus.map((menu, i) => {
+          const isAnalyzing = analyzingMenu === menu.name
+          return (
+            <li
+              key={i}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: spacing.sm,
+                padding: `${spacing.xs}px 0`,
+                borderTop: i > 0 ? `1px solid ${colors.border}` : 'none',
+              }}
+            >
+              <span style={{ fontSize: font.size.sm, color: colors.textStrong }}>
+                {menu.name}
+                <MenuAllergyMarks codes={menu.allergyCodes} />
+                {menu.price != null && (
+                  <span style={{ color: colors.textSub, fontSize: font.size.xs, marginLeft: 6 }}>
+                    {menu.price.toLocaleString()}원
+                  </span>
+                )}
+              </span>
+              <button
+                type="button"
+                className="tds-press"
+                onClick={() => onAnalyzeMenu(menu.name)}
+                disabled={Boolean(analyzingMenu)}
+                style={ANALYZE_BUTTON_STYLE}
+              >
+                {isAnalyzing ? <Spinner size={12} /> : '영양 분석'}
+              </button>
+            </li>
+          )
+        })}
       </ul>
     )
   }
@@ -130,9 +141,12 @@ function MenuList({ menus, onAnalyzeMenu }) {
 // title: '조식' 등. calories/price: 헤더 우측 표기(있는 것만). menus: [{name, allergyCodes, price?}].
 // nutrients: [{key,label,unit,value}] | undefined(없으면 섹션 자체를 숨김). estimated: 학식(추정) true,
 // 급식(NEIS 공식) false — 범례 앞 배지로만 구분하고 태그 하나하나에는 배지를 달지 않는다.
-// onAnalyzeMenu: 있으면(학식) 메뉴별 [영양 분석] 버튼을 그린다.
-// onAnalyzeTray: 있으면(5주차 §3-B) "한 판 통합 분석" 버튼을 그린다 — 메뉴별 [영양 분석](작은
-// 아웃라인)과 시각적으로 구분되도록 카드 하단에 꽉 찬 주 버튼으로 둔다(이쪽이 주 동선).
+// onAnalyzeMenu: 있으면(학식) 메뉴별 [영양 분석] 버튼을 그린다(6주차 §1-B부터 precisionEngine
+// 단일 항목 모드 — analyzingMenu/menuError로 진행/실패 상태를 받는다).
+// onAnalyzeTray: 있으면(5주차 §3-B, 6주차 §1-B부터 precisionEngine 경유) "한 판 통합 분석" 버튼을
+// 그린다 — 메뉴별 [영양 분석](작은 아웃라인)과 시각적으로 구분되도록 카드 하단에 꽉 찬 주 버튼으로
+// 둔다(이쪽이 주 동선). 캐시 미스 시 식약처 DB 매칭 실패분을 Gemini로 추정하느라 몇 초 걸릴 수
+// 있어 "정밀 분석 중…" 문구로 기다림을 명시한다(캐시 히트면 이 상태를 거의 못 볼 만큼 빠르다).
 export default function MealCard({
   title,
   subtitle,
@@ -142,6 +156,8 @@ export default function MealCard({
   nutrients,
   estimated = false,
   onAnalyzeMenu,
+  analyzingMenu = null,
+  menuError = '',
   onAnalyzeTray,
   trayAnalyzing = false,
   trayError = '',
@@ -160,7 +176,8 @@ export default function MealCard({
       </div>
       {subtitle && <p style={{ margin: '2px 0 0', fontSize: font.size.xs, color: colors.textSub }}>{subtitle}</p>}
 
-      <MenuList menus={menus} onAnalyzeMenu={onAnalyzeMenu} />
+      <MenuList menus={menus} onAnalyzeMenu={onAnalyzeMenu} analyzingMenu={analyzingMenu} />
+      {menuError && <p style={{ ...styles.errorText, textAlign: 'center' }}>{menuError}</p>}
       <AllergyLegend menus={menus} estimated={estimated} />
       <NutrientSection nutrients={nutrients} />
 
@@ -168,7 +185,7 @@ export default function MealCard({
         <div style={{ marginTop: spacing.md }}>
           <AppButton onClick={onAnalyzeTray} disabled={trayAnalyzing}>
             {trayAnalyzing && <Spinner size={16} />}
-            {trayAnalyzing ? '분석 중...' : '한 판 통합 분석'}
+            {trayAnalyzing ? '정밀 분석 중… 최대 10초' : '한 판 통합 분석'}
           </AppButton>
           {trayError && <p style={{ ...styles.errorText, textAlign: 'center' }}>{trayError}</p>}
         </div>

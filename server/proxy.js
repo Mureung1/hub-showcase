@@ -9,6 +9,7 @@ import { mapNeisAllergy } from '../src/lib/allergyRules.js'
 import { resolveCnuWeekResult } from '../src/lib/cnuWeekFallback.js'
 import { isSupportedUniversity } from '../src/lib/universities.js'
 import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
+import { analyzeTray } from './nutrition/precisionEngine.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -381,6 +382,24 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
     res.json({ text })
   } catch (err) {
     respondToProxyError(res, err, 'OpenRouter proxy request')
+  }
+})
+
+// POST /api/precision-analyze - 6주차 §1 정밀 영양 산출 엔진(precisionEngine.analyzeTray) 프록시.
+// menus(메뉴명 배열)만 프론트가 넘기면 나머지(식약처 DB 매칭·Gemini 폴백·캘리브레이션)는 서버가
+// 처리한다 — precisionEngine.js가 server/nutrition/foodLookup.js(파일 시스템 접근)를 쓰기 때문에
+// 프론트에서 직접 부를 수 없어 이 라우트가 필요하다. 매칭 실패분은 내부적으로 Gemini를 호출할 수
+// 있어(과금) /api/gemini와 같은 geminiLimiter를 같이 건다.
+app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
+  const { menus, mealType, schoolType, officialTotals } = req.body || {}
+  if (!Array.isArray(menus) || menus.length === 0) {
+    return res.status(400).json({ error: 'menus(배열)가 필요합니다' })
+  }
+  try {
+    const result = await analyzeTray({ menus, mealType, schoolType, officialTotals: officialTotals ?? null })
+    res.json(result)
+  } catch (err) {
+    respondToProxyError(res, err, '/api/precision-analyze')
   }
 })
 

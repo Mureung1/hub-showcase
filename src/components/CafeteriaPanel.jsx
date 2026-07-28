@@ -14,11 +14,8 @@ import { MILAIZE_ALLERGENS } from '../lib/allergyRules.js'
 import { CNU1_EXTERNAL_LINK, CNU_BUILDINGS, getSelectedCnuBuilding, setSelectedCnuBuilding } from '../lib/cnuBuildings.js'
 import { buildDaySlots, isDayEmpty } from '../lib/cnuDayView.js'
 import { openExternalLink } from '../lib/externalLink.js'
-import { geminiCompleteWithRetry } from '../lib/gemini.js'
-import { GEMINI_TEMPERATURE, TRAY_ANALYSIS_SCHEMA } from '../lib/geminiSchemas.js'
-import { assignTrayWeights } from '../lib/mealPortions.js'
 import { NUTRITION_SOURCE } from '../lib/nutrition.js'
-import { buildTrayAnalysisPrompt, parseTrayAnalysisResult } from '../lib/prompts/trayAnalysis.js'
+import { requestPrecisionAnalysis } from '../lib/precisionAnalysis.js'
 import { getSchoolMeals } from '../lib/schoolMeal.js'
 import { getUnivWeek } from '../lib/univMeal.js'
 import { toDateKey } from '../lib/records.js'
@@ -49,81 +46,63 @@ function buildNutrientRows(nutrients) {
   }))
 }
 
-// ── 한 판 통합 분석(5주차 §3-B) ──────────────────────────────────────────────
-// 식별 단계 없이(무엇을 먹었는지는 이미 앎) 중량만 배분(mealPortions.js)해 영양 성분 추정을
-// Gemini에 맡긴다. 기존 /api/gemini 경로를 그대로 쓰고, 결과는 Analyze.jsx의 기존 결과 카드
-// 상태 머신(STATUS.RESULT → AnalysisResultCard → 저장)에 그대로 얹는다 — 이 파일은 그 입력을
-// 만들어 navigate로 건네주기만 한다.
+// ── 한 판 통합 분석 / 메뉴별 분석(6주차 §1-B) ────────────────────────────────
+// 식별 단계 없이(무엇을 먹었는지는 이미 앎) server/nutrition/precisionEngine.js(정밀 영양 산출
+// 엔진)에 메뉴명만 넘긴다 — 식약처 DB 매칭·중량 배분·Gemini 폴백·NEIS 공식 수치 캘리브레이션을
+// 전부 서버가 처리한다(5주차 §3-B엔 프론트가 직접 Gemini를 불러 추정만 했지만, 이제 식약처 DB
+// 매칭이 성공한 항목은 실측값을 쓴다). 결과는 Analyze.jsx의 기존 결과 카드 상태 머신
+// (STATUS.RESULT → AnalysisResultCard → 저장)에 그대로 얹는다 — 이 파일은 그 입력을 만들어
+// navigate로 건네주기만 한다. 한 판(트레이) 통합 분석과 메뉴별 개별 분석이 이 엔진 하나를
+// 공유해 학식·급식 두 경로가 항상 같은 방식으로 계산된다.
 const TRAY_ANALYSIS_FAILURE_MESSAGE = '통합 분석에 실패했어요. 메뉴별 분석을 이용해주세요.'
+const MENU_ANALYSIS_FAILURE_MESSAGE = '영양 분석에 실패했어요. 잠시 후 다시 시도해주세요.'
 
-async function requestTrayAnalysis(menuNames) {
-  const trayItems = assignTrayWeights(menuNames)
-  const prompt = buildTrayAnalysisPrompt(trayItems)
-  const callOnce = () =>
-    geminiCompleteWithRetry({
-      prompt,
-      schema: TRAY_ANALYSIS_SCHEMA,
-      schemaName: 'tray_analysis',
-      temperature: GEMINI_TEMPERATURE.trayAnalysis,
-    })
-
-  let result = parseTrayAnalysisResult(await callOnce())
-  if (!result) {
-    result = parseTrayAnalysisResult(await callOnce())
-  }
-  if (!result) {
-    throw new Error(TRAY_ANALYSIS_FAILURE_MESSAGE)
-  }
-  return result
+const METHOD_SOURCE_NOTE = {
+  official: '공식 영양정보 기준',
+  llm_reviewed: '식약처 DB 기반 추정(교차검증)',
+  estimated: '식약처 DB 기반 추정',
 }
 
-function toAnalysisItems(trayItems) {
-  return trayItems.map((item) => ({
+// precisionEngine이 준 item.matched(식약처 DB 실측 매칭 여부)를 기존 SourceBadge 배지 체계
+// (AnalysisResultCard가 항목별로 그린다)로 바로 매핑해, 어디까지 실측이고 어디부터 AI 추정인지
+// 항목 단위로 투명하게 보여준다.
+function toAnalysisItems(items) {
+  return items.map((item) => ({
     name: item.name,
-    nutrients: {
-      calories: item.calories,
-      protein: item.protein,
-      carbs: item.carbs,
-      fat: item.fat,
-      fiber: item.fiber,
-      sodium: item.sodium,
-    },
-    source: NUTRITION_SOURCE.ESTIMATED,
+    nutrients: item.nutrients,
+    source: item.matched ? NUTRITION_SOURCE.DB : NUTRITION_SOURCE.ESTIMATED,
   }))
 }
 
-// officialCalories: NEIS 급식만 넘긴다 — 있으면 합계 칼로리를 NEIS 공식값으로 덮어써 "공식
-// 영양정보 기준"으로 표기하고(항목별 배분은 여전히 Gemini 추정 참고용), 없으면(학식) Gemini
-// 합계를 그대로 "추정"으로 표기한다.
-function buildTrayAnalysisNavState(trayResult, { mealTypeKey, mealTypeLabel, officialCalories }) {
-  // NEIS 파싱이 실패하면 meal.calories가 NaN일 수 있다(server/proxy.js가 Number.parseFloat 실패를
-  // null로 거르지 않는 지점이 있음) — NaN은 `!= null`을 통과해버려 그대로 total.calories에 들어가면
-  // isMealAnalysis의 typeof==='number' 체크(NaN도 통과)까지 뚫고 화면·저장 데이터에 NaN이 섞인다.
-  // Number.isFinite로 NaN/null/undefined를 한 번에 걸러 "공식 값이 실제로 유효할 때만" 덮어쓴다.
-  const hasOfficialCalories = Number.isFinite(officialCalories)
-  const items = toAnalysisItems(trayResult.items)
-  const total = hasOfficialCalories ? { ...trayResult.total, calories: officialCalories } : trayResult.total
+function buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel }) {
   return {
     prefillTrayAnalysis: {
-      pendingAnalysis: { items, total },
+      pendingAnalysis: { items: toAnalysisItems(result.items), total: result.total },
       mealType: mealTypeKey,
       titleOverride: `${mealTypeLabel}(통합)`,
-      sourceNote: hasOfficialCalories ? '공식 영양정보 기준' : '추정',
+      sourceNote: METHOD_SOURCE_NOTE[result.method] ?? '추정',
     },
   }
 }
 
+// officialCalories: NEIS 급식만 넘긴다 — precisionEngine이 서버에서 직접 공식 수치로 캘리브레이션한다
+// (5주차엔 프론트가 total.calories를 직접 덮어썼지만, 이제 항목별 비례 스케일까지 서버가 계산해준다).
 function useTrayAnalysis(navigate) {
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
 
-  async function run(menuNames, options) {
+  async function run(menuNames, { mealTypeKey, mealTypeLabel, schoolType, officialCalories = null }) {
     if (analyzing) return
     setAnalyzing(true)
     setError('')
     try {
-      const trayResult = await requestTrayAnalysis(menuNames)
-      navigate('/analyze', { state: buildTrayAnalysisNavState(trayResult, options) })
+      const result = await requestPrecisionAnalysis({
+        menus: menuNames,
+        mealType: mealTypeKey,
+        schoolType,
+        officialTotals: Number.isFinite(officialCalories) ? { calories: officialCalories } : null,
+      })
+      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel }) })
     } catch (err) {
       setError(err.message || TRAY_ANALYSIS_FAILURE_MESSAGE)
     } finally {
@@ -132,6 +111,42 @@ function useTrayAnalysis(navigate) {
   }
 
   return { analyzing, error, run }
+}
+
+// 메뉴별 개별 [영양 분석] — precisionEngine의 단일 항목 모드(menus 배열에 1개만 담아 호출). 예전엔
+// Analyze.jsx로 메뉴명만 넘겨 사용자가 다시 분석을 눌러야 했지만(4주차), 이제 여기서 바로 계산해
+// 한 판 통합 분석과 동일한 결과 카드로 넘어간다. 여러 메뉴가 한 카드에 나열되므로, 지금 분석 중인
+// 메뉴명 하나만 상태로 들고 있다가 그 버튼에만 로딩을 표시한다(다른 메뉴 버튼은 그대로 눌림).
+function useMenuAnalysis(navigate) {
+  const [analyzingMenu, setAnalyzingMenu] = useState(null)
+  const [error, setError] = useState('')
+
+  async function run(menuName, { mealTypeKey, schoolType }) {
+    if (analyzingMenu) return
+    setAnalyzingMenu(menuName)
+    setError('')
+    try {
+      const result = await requestPrecisionAnalysis({ menus: [menuName], mealType: mealTypeKey, schoolType, officialTotals: null })
+      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel: menuName }) })
+    } catch (err) {
+      setError(err.message || MENU_ANALYSIS_FAILURE_MESSAGE)
+    } finally {
+      setAnalyzingMenu(null)
+    }
+  }
+
+  return { analyzingMenu, error, run }
+}
+
+// school.kind(NEIS SCHUL_KND_SC_NM: "초등학교"/"중학교"/"고등학교" 등) → precisionEngine.schoolType.
+// 매칭 안 되면(값이 없거나 못 보던 표기) undefined를 돌려주고, precisionEngine이 계수 1(보정 없음)로
+// 안전하게 폴백한다.
+function mapSchoolKindToType(kind) {
+  if (typeof kind !== 'string') return undefined
+  if (kind.includes('초등')) return 'elementary'
+  if (kind.includes('중학교')) return 'middle'
+  if (kind.includes('고등') || kind.includes('고교')) return 'high'
+  return undefined
 }
 
 function startOfWeek(date) {
@@ -246,7 +261,7 @@ function WeekTabs({ weekDates, selectedKey, todayKey, onSelect }) {
   )
 }
 
-function NeisMealCard({ meal }) {
+function NeisMealCard({ meal, schoolType }) {
   const navigate = useNavigate()
   const { analyzing, error, run } = useTrayAnalysis(navigate)
   const label = MEAL_TYPE_LABEL[meal.mealType] || meal.mealType
@@ -261,7 +276,7 @@ function NeisMealCard({ meal }) {
       onAnalyzeTray={() =>
         run(
           meal.menus.map((m) => m.name),
-          { mealTypeKey: meal.mealType, mealTypeLabel: label, officialCalories: meal.calories },
+          { mealTypeKey: meal.mealType, mealTypeLabel: label, schoolType, officialCalories: meal.calories },
         )
       }
       trayAnalyzing={analyzing}
@@ -271,6 +286,7 @@ function NeisMealCard({ meal }) {
 }
 
 function K12MealSection({ school, weekDates, selectedKey, todayKey, onSelectDay }) {
+  const schoolType = mapSchoolKindToType(school.kind)
   const [daysByKey, setDaysByKey] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -323,7 +339,7 @@ function K12MealSection({ school, weekDates, selectedKey, todayKey, onSelectDay 
           </p>
         </Card>
       )}
-      {!loading && !error && selectedMeals.map((meal) => <NeisMealCard key={meal.mealType} meal={meal} />)}
+      {!loading && !error && selectedMeals.map((meal) => <NeisMealCard key={meal.mealType} meal={meal} schoolType={schoolType} />)}
     </>
   )
 }
@@ -432,6 +448,7 @@ const PERIOD_NOTE_TEXT = {
 function UnivMealSlotCard({ mealKey, label, slot }) {
   const navigate = useNavigate()
   const { analyzing, error, run } = useTrayAnalysis(navigate)
+  const { analyzingMenu, error: menuError, run: runMenu } = useMenuAnalysis(navigate)
 
   return (
     <MealCard
@@ -442,13 +459,15 @@ function UnivMealSlotCard({ mealKey, label, slot }) {
       // 제거함) 그대로 쓴다.
       menus={slot.menus}
       estimated
-      // 학식은 영양 정보가 없어 기존 텍스트 분석 경로로 넘겨 추정한다(FR-1.3) — 새 파이프라인을
-      // 만들지 않고 Analyze.jsx의 4번째 입구(prefillMenuName)만 쓴다.
-      onAnalyzeMenu={(menuName) => navigate('/analyze', { state: { prefillMenuName: menuName } })}
+      // 메뉴별 개별 [영양 분석]도 6주차 §1-B부터 precisionEngine의 단일 항목 모드를 쓴다(4주차엔
+      // Analyze.jsx로 메뉴명만 넘겨 사용자가 직접 분석을 다시 눌러야 했다).
+      onAnalyzeMenu={(menuName) => runMenu(menuName, { mealTypeKey: mealKey, schoolType: 'univ' })}
+      analyzingMenu={analyzingMenu}
+      menuError={menuError}
       onAnalyzeTray={() =>
         run(
           slot.menus.map((m) => m.name),
-          { mealTypeKey: mealKey, mealTypeLabel: label, officialCalories: null },
+          { mealTypeKey: mealKey, mealTypeLabel: label, schoolType: 'univ', officialCalories: null },
         )
       }
       trayAnalyzing={analyzing}
