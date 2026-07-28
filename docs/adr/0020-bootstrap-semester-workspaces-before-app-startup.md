@@ -6,7 +6,7 @@
 
 부분 대체·보완하는 결정: [ADR 0018 — 사용자가 선택한 Git working tree를 SemesterWorkspace로 채택한다](0018-adopt-user-owned-git-semester-workspaces.md)
 
-관련 interaction 결정: [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)
+관련 interaction 결정: [ADR 0021 — Protocol-driven AY–App Interaction Layer](0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), [ADR 0019 — MCP InteractionCapability로 App UI round trip을 제공한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)
 
 ## 맥락
 
@@ -27,7 +27,7 @@ AY-PLE은 소유자 한 명이 native 권한을 열어 둔 개발 checkout에서
 - Current pinned App Server가 trust 미지정 exact Git root를 native user config에 기록하고 같은 start에서 project config를 reload하는 동작은 native startup seam으로 사용한다. 명시적인 `untrusted`는 덮어쓰지 않으며 Bootstrap Skill은 parent directory trust를 대신 기록하지 않는다.
 - Authenticated Interaction MCP handshake와 required server·tool readiness가 성공한 뒤에만 root를 `WorkspaceRegistry`의 known entry와 active pointer로 commit한다. 실패하면 기존 registry pointer를 보존하고 degraded AY-PLE mode로 계속하지 않는다.
 - Workspace Runtime과 thread는 수명 동안 exact SemesterWorkspace root에 고정한다. 학기 변경은 fresh App process·Runtime generation으로 열며 기존 thread의 `cwd`를 바꾸거나 다른 학기 thread를 resume하지 않는다.
-- W-003에서 구현한 process-local non-preemptive operation coordinator와 terminal-only release authority는 normal Chat·Interaction Turn의 survivor다. Candidate/bootstrap Browser union과 `workspace_init` eligibility는 adopted target이 아니며 후속 contract 단계에서 제거한다.
+- W-003에서 구현한 process-local non-preemptive operation coordinator와 terminal-only release authority는 normal Chat·ActionInvocation Turn의 survivor다. InteractionCapability는 그 active Turn 안의 nested round trip으로 별도 operation admission을 만들지 않는다. Candidate/bootstrap Browser union과 `workspace_init` eligibility는 adopted target이 아니며 후속 contract 단계에서 제거한다.
 - `0008-standalone-skill-extra-roots` patch는 workspace-local native Skill discovery가 green일 때 제거한다. 이를 `writableRoots` SDK patch로 대체하지 않고 exact SDK patch stack을 축소한다.
 
 ## 고려한 대안
@@ -43,4 +43,4 @@ AY-PLE은 소유자 한 명이 native 권한을 열어 둔 개발 checkout에서
 
 ## 결과
 
-AY-PLE의 startup input은 “초기화할 candidate”가 아니라 “native Bootstrap이 끝난 SemesterWorkspace”다. App은 prepared root의 validation, exact-root Workspace Runtime, required Interaction MCP와 registry commit만 소유한다. Bootstrap 진행·권한·Git mutation은 App contract와 Runtime SDK에서 빠지고, 기존 candidate lifecycle 구현은 generic coordinator survivor와 분리해 contract한다.
+AY-PLE의 startup input은 “초기화할 candidate”가 아니라 “native Bootstrap이 끝난 SemesterWorkspace”다. App은 prepared root의 validation, exact-root Workspace Runtime, required Interaction MCP와 registry commit만 소유한다. Bootstrap 진행·권한·Git mutation은 App contract와 Runtime SDK에서 빠지고, 기존 candidate lifecycle 구현은 normal Chat·ActionInvocation Turn이 재사용할 generic coordinator survivor와 그 Turn 안의 nested InteractionCapability settlement로 분리해 contract한다.

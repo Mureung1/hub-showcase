@@ -6,7 +6,7 @@
 
 대체한 결정: [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md)
 
-관련 interaction 결정: [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)
+관련 interaction 결정: [ADR 0021 — Protocol-driven AY–App Interaction Layer](0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), [ADR 0019 — MCP InteractionCapability로 App UI round trip을 제공한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)
 
 부분 대체·보완됨: [ADR 0020 — SemesterWorkspace를 App 실행 전에 native Bootstrap으로 준비한다](0020-bootstrap-semester-workspaces-before-app-startup.md)
 
@@ -30,7 +30,7 @@ ADR 0014는 public preview에서 임의의 사용자 자료를 보호하고 firs
 - Current `<SemesterWorkspace>/.ay-ple/workspace-state.json`의 aggregate model을 `<SemesterWorkspace>/workspace-state.json`으로 옮겨 학기 identity와 학업 상태를 담는 plain workspace-local JSON authority로 삼는다. SemesterWorkspace root에는 `AGENTS.md`, `workspace-state.json`, `.agents/skills/`, Codex 표준 project config인 `.codex/config.toml`과 실제 학기 자료를 Git-tracked file로 배치하며 별도 `.ay-ple/` product directory를 두지 않는다.
 - `workspace-state.json`은 학기 identity와 현재 구조화된 학업 snapshot을 담는다. Git commit history가 장기 변경 이력과 rollback을 맡으므로 `statePatches`, `userConfirmations`, `modelingRuns` event 배열을 workspace SSOT에 누적하지 않는다. Exact academic field와 file format은 이 ADR이 고정하지 않는다.
 - 구조화된 학기 snapshot이 `EvidenceRef`를 사용할 때는 `relativePath`, exact `contentDigest`와 문서 내부 `locator`로 근거 byte와 위치를 식별한다. `workspace-state.json`이 포함되는 commit의 SHA를 같은 파일에 넣는 self-reference는 만들지 않으며, Git history는 digest가 가리키는 과거 content를 찾고 비교하는 이력 수단이다.
-- `StatePatch`와 `UserConfirmation`은 ADR 0019의 transient interaction request/result이고 `ModelingRun`은 native Codex Turn으로 대체한다. App이 이 객체를 academic event로 저장하거나 수락 결과를 대신 적용하지 않으며, AY가 interaction 결과에 따라 실제 workspace file을 바꾸고 Git checkpoint를 남긴다.
+- `StatePatch`와 `UserConfirmation`은 ADR 0019의 transient interaction request/result이고 `ModelingRun`은 native Codex Turn과 process-local operation으로 대체한다. ADR 0021의 ActionInvocation도 durable run을 만들지 않는다. App이 이 객체를 academic event로 저장하거나 수락 결과를 대신 적용하지 않으며, AY가 interaction 결과에 따라 실제 workspace file을 바꾸고 Git checkpoint를 남긴다.
 - Historical aggregate의 `executionGuard`, `sourceRecovery` 같은 실행 중 필드는 Git-tracked `workspace-state.json`에서 제거한다. 현재 pending product operation, InteractionCapability와 Broker-owned Adapter lifecycle status는 해당 process의 Runtime generation memory에서만 유지하고 terminal event에서 정산한다. 별도 workspace별 recovery file을 만들지 않으며 restart 뒤 사라진 operation의 성공·결과를 추정하지 않는다.
 - **ADR 0020으로 대체됨:** App이 account 연결 뒤 active workspace가 없으면 hub-rooted Bootstrap Runtime을 열고 초기화·activation을 수행한다는 결정.
 - 앱은 appData에 known SemesterWorkspace 목록과 현재 active workspace pointer만 보존한다. 새 학기 추가·기존 학기 전환은 pre-App native Bootstrap 뒤 launch-time `--workspace`로 명시하고, 이후 재실행은 active pointer를 fresh reopen한다. Workspace 내부 구조나 Git lifecycle을 registry가 소유하지 않는다.
@@ -53,4 +53,4 @@ ADR 0014는 public preview에서 임의의 사용자 자료를 보호하고 firs
 
 ## 결과
 
-제품 실행은 explicit prepared-root launch와 sibling appData의 durable registry reopen을 사용한다. Legacy path selection, app-owned admission·scaffold·bundle verification, fixed `project_root_markers=[]`, managed Skill override와 package-local Runtime fallback은 이 architecture의 authority가 아니다. Commit 동작을 위한 별도 app subsystem과 auto-commit hook은 만들지 않는다. App과 AY의 Review·file mutation 경계는 ADR 0019가 소유하며, `workspace-state.json`의 exact academic schema는 후속 spec에서 별도로 고정한다.
+제품 실행은 explicit prepared-root launch와 sibling appData의 durable registry reopen을 사용한다. Legacy path selection, app-owned admission·scaffold·bundle verification, fixed `project_root_markers=[]`, managed Skill override와 package-local Runtime fallback은 이 architecture의 authority가 아니다. Commit 동작을 위한 별도 app subsystem과 auto-commit hook은 만들지 않는다. App과 AY의 양방향 interaction·file mutation 경계는 ADR 0021, MCP Review 상세는 ADR 0019가 소유하며, `workspace-state.json`의 exact academic schema는 후속 spec에서 별도로 고정한다.

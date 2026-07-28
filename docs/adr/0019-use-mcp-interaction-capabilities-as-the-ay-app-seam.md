@@ -1,8 +1,10 @@
-# MCP InteractionCapability를 AY와 App의 seam으로 사용한다
+# MCP InteractionCapability로 App UI round trip을 제공한다
 
 분류: 활성
 
 성숙도: 구현됨
+
+범위 재정의: [ADR 0021 — Protocol-driven AY–App Interaction Layer](0021-adopt-a-protocol-driven-ay-app-interaction-layer.md)가 AY–App의 전체 seam을 `ActionInvocation`과 `InteractionCapability`의 두 방향으로 정의한다. 이 ADR은 그중 AY가 MCP로 시작하는 `InteractionCapability`의 Interface와 구현 결정을 소유한다.
 
 부분 대체·보완하는 결정: [ADR 0007 — 제품 작업을 native Codex 조합으로 실행한다](0007-use-native-codex-composition-for-product-actions.md)
 
@@ -12,13 +14,13 @@
 
 ## 맥락
 
-AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. AY가 작업 중 사용자 판단이 필요한 순간을 MCP로 표현하면, App이 그 의도를 자료 미리보기·선택지·변경 비교 같은 typed UI로 보여주고, 사용자의 선택을 같은 Codex Turn에 구조화된 결과로 돌려주는 상호작용이 핵심 제품 가치다.
+AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. AY–App Interaction의 AY-originated 방향에서는 AY가 작업 중 사용자 판단이 필요한 순간을 MCP로 표현하고, App이 그 의도를 자료 미리보기·선택지·변경 비교 같은 typed UI로 보여준 뒤 사용자의 선택을 같은 Codex Turn에 구조화된 결과로 돌려준다.
 
 초기 First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능성을 증명했지만, 당시 caller는 `requestKey`, workspace·Course identity와 revision을 알고 App은 `ModelingRun`·`StatePatch`·`UserConfirmation`의 lifecycle과 apply까지 소유했으며 같은 결정을 built-in `request_user_input`으로 한 번 더 운반했다. 이 historical 강결합은 학업 workflow와 native execution correlation을 MCP Interface 밖으로 누출했고, 아래 결정을 채택하는 동기가 됐다.
 
 ## 결정
 
-- AY-PLE App은 **InteractionCapability**를 제공하는 MCP Module을 소유한다. 이 Module의 Interface는 “AY가 표시할 내용과 허용할 응답을 요청하면, 사용자가 App UI에서 결정하고, 구조화된 결과가 같은 Codex Turn으로 반환된다”는 한 번의 round trip이다.
+- AY-PLE App은 AY-originated **InteractionCapability**를 제공하는 MCP Module을 소유한다. 이 Module의 Interface는 “AY가 표시할 내용과 허용할 응답을 요청하면, 사용자가 App UI에서 결정하고, 구조화된 결과가 같은 Codex Turn으로 반환된다”는 한 번의 round trip이다. App-originated ActionInvocation은 ADR 0021의 별도 Interface다.
 - MCP Module은 `hub/`가 소유하는 Codex-facing STDIO Adapter와 App-side Interaction Broker로 나눈다. Private npm workspace package `@ay-ple/interaction-mcp`는 built STDIO executable, capability별 MCP request/result schema·codec와 authenticated Adapter↔Broker transport contract를 소유한다.
 - `apps/server`는 package가 정의한 server-side Interface를 사용해 Broker listener·process-local endpoint와 token, 현재 Runtime binding, pending lifecycle, Browser projection과 사용자 result 반환을 소유한다. `@ay-ple/product-contract`는 Browser-safe projection만, `apps/chat-shell`은 capability별 UI만 소유하며 raw MCP·private Broker transport를 알지 않는다.
 - Adapter↔Broker transport는 Browser API와 **같은 pre-bound loopback HTTP listener**의 Server-private route를 사용한다. 별도 listener·port·daemon, WebSocket 또는 Unix domain socket을 추가하지 않으며 exact route·header 이름은 implementation spec이 고정한다.
@@ -47,7 +49,7 @@ AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. 
 - Browser UI는 capability별 Adapter다. 동일 Interface의 in-memory Adapter가 정상 `request → UI projection → user result → MCP result`와 비정상 `request → MCP failure`를 검증하는 주 테스트 seam이 된다. 테스트 편의를 위해 내부 correlation이나 persistence shape를 공개 Interface에 추가하지 않는다.
 - `propose_state_patch`는 첫 InteractionCapability로 유지한다. 요청은 특정 Assignment·Course schema나 raw Git diff가 아니라 **도메인 중립적인 semantic Review presentation model**이다. 짧은 설명과 순서가 있는 change를 보내며, 각 change는 사람이 이해할 label·설명, 변경 전·후 값과 선택적인 `EvidenceRef`를 가진다. 추가·삭제에서는 전·후 중 한쪽을 생략할 수 있다. 정상 result는 `accept | revise | reject`와 필요한 경우 feedback만 반환한다. Turn interrupt, `busy`, timeout, disconnect와 Runtime terminal은 네 번째 `cancel` result가 아니라 MCP failure다. `StatePatch`는 이 호출 동안의 transient presentation payload이고 `UserConfirmation`은 별도 durable App entity가 아니라 그 호출의 정상 사용자 result다.
 - `EvidenceRef`가 있으면 App Broker는 Browser projection 전에 현재 Runtime binding의 exact SemesterWorkspace에서 workspace-relative path를 on-demand로 bounded read한다. Resolved target이 root 안에 있는 regular file인지 확인하고 exact content digest와 locator를 검증한다. 모든 ref가 통과해야 card를 한 번에 만들며 path escape, missing·oversized file, digest·locator drift 하나라도 있으면 partial card 없이 MCP call 전체를 실패시킨다. 검증한 preview는 현재 interaction의 transient projection일 뿐 `RawMaterial` registry, reusable cache·snapshot이나 durable evidence store가 아니다.
-- Source explorer·preview는 InteractionCapability와 별개의 sibling product surface로 유지한다. App은 active SemesterWorkspace의 안전한 일반 file을 bounded read-only projection으로 나열하고 text·PDF를 보여줄 수 있다. 이 projection은 `Course`·`RawMaterial`, copy·snapshot·watcher·durable selection이나 file/Git mutation authority를 만들지 않으며, Browser-local source 선택을 MCP input이나 AY 작업 지시로 암묵적으로 승격하지 않는다.
+- Source explorer·preview는 InteractionCapability와 별개의 sibling product surface로 유지한다. App은 active SemesterWorkspace의 안전한 일반 file을 bounded read-only projection으로 나열하고 text·PDF를 보여줄 수 있다. 이 projection은 `Course`·`RawMaterial`, copy·snapshot·watcher·durable selection이나 file/Git mutation authority를 만들지 않으며, Browser-local source 선택을 MCP input이나 AY 작업 지시로 **암묵적으로** 승격하지 않는다. 사용자가 명시적인 ActionInvocation을 실행할 때만 선택을 request-scoped 입력으로 동결할 수 있다.
 - 하나의 Review 결정은 `propose_state_patch` 호출 하나로 완료한다. 같은 결정을 built-in `request_user_input`과 custom MCP에 나누어 운반하지 않는다. Built-in `request_user_input`은 AY-PLE 전용 rich UI가 필요 없는 일반 clarification에 계속 사용할 수 있다.
 - `ModelingRun`은 App이 복제해 보존하는 학업 객체가 아니라 native Codex Turn과 그 관측 상태로 대체한다. `RawMaterial`은 App admission을 통과해야 생기는 객체가 아니라 SemesterWorkspace의 일반 사용자 파일이다. `EvidenceRef`는 richer Review UI에 필요한 경우 쓰는 typed presentation data이지 모든 file operation을 App이 추적하게 만드는 전역 계약이 아니다.
 - Native command·file·network approval은 Codex execution 권한을 결정한다. InteractionCapability의 사용자 결과는 AY의 workflow 판단을 돕는다. 어느 한쪽도 다른 쪽의 권한을 암묵적으로 승인하지 않는다.
@@ -94,6 +96,6 @@ AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. 
 
 현재 First Assignment 구현은 채택한 InteractionCapability 경계를 따른다. `@ay-ple/interaction-mcp`의 typed STDIO Adapter·authenticated live lifecycle channel·held capability POST, `apps/server`의 Runtime-generation Broker, Browser inline Review card와 same-call `accept | revise | reject` 반환이 한 graph로 연결된다. Prepared startup은 complete static declaration과 live Broker lifecycle을 분리해 검증하고 승인한 native thread를 Product Turn에 그대로 넘긴다. App-owned `RawMaterial` registry, `ModelingRun` receipt, durable `StatePatch`·`UserConfirmation`, revision-bound apply transaction, MCP+`request_user_input` 이중 흐름과 thread-start private MCP config injection은 canonical product graph에서 제거됐다.
 
-새 interaction을 추가할 때는 “App이 이 workflow를 얼마나 알아야 하는가”가 아니라 “사용자에게 어떤 typed 선택 경험을 제공하고 AY에 어떤 closed result를 돌려줄 것인가”를 설계한다. App 자체 설정을 바꾸는 future capability도 별도 MCP tool로 만들 수 있지만, 그 tool은 자신이 소유한 App mutation만 수행하고 AY의 학업 workflow를 소유하지 않는다. ADR 0020의 initial workspace 선택·Bootstrap은 current InteractionCapability가 아니라 pre-App native flow다.
+새 AY-originated interaction을 추가할 때는 “App이 이 workflow를 얼마나 알아야 하는가”가 아니라 “사용자에게 어떤 typed 선택 경험을 제공하고 AY에 어떤 closed result를 돌려줄 것인가”를 설계한다. App 자체 설정을 바꾸는 future capability도 별도 MCP tool로 만들 수 있지만, 그 tool은 자신이 소유한 App mutation만 수행하고 AY의 학업 workflow를 소유하지 않는다. App-originated 기능은 ADR 0021의 ActionInvocation을 사용하고, ADR 0020의 initial workspace 선택·Bootstrap은 어느 Interface에도 속하지 않는 pre-App native flow다.
 
-Long-lived 기술 mapping은 [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), exact current topology와 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 후속 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
+전체 Layer의 long-lived 기술 mapping은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 이 ADR의 MCP 상세 mapping은 [InteractionCapability 아키텍처](../architecture/ay-app-interaction-capabilities.md), exact current topology와 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 후속 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.

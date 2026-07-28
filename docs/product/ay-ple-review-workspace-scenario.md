@@ -2,19 +2,19 @@
 
 작성일: 2026-07-08
 
-최종 업데이트: 2026-07-22
+최종 업데이트: 2026-07-28
 
 분류: 완료·역사 기록
 
 성숙도: 구현됨
 
-관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)
+관련 문서: [AY-PLE Product Brief](ay-ple-product-brief.md), [AY-PLE Design System Direction](ay-ple-design-system.md), [Protocol-driven AY–App Interaction Layer ADR](../adr/0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [InteractionCapability 상세 아키텍처](../architecture/ay-app-interaction-capabilities.md), [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)
 
 ## 목적
 
 이 문서는 existing current-v2 workspace에 구현했던 첫 학업 action의 사용자 시나리오와 검토 화면 구조를 역사적 증거로 보존한다. 핵심 UX 가설인 **원본 자료와 변경 제안을 함께 보고, 학생의 선택을 같은 AY 작업으로 돌려주는 경험**은 ADR 0019의 첫 InteractionCapability로 이어진다.
 
-본문의 app-owned `RawMaterial`, `ModelingInvocation`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 Server-owned apply는 당시 구현을 설명하며 current target domain model이 아니다. 현재 제품 경계는 Product Brief와 InteractionCapability 아키텍처를 우선한다.
+본문의 app-owned `RawMaterial`, `ModelingInvocation`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 Server-owned apply는 당시 구현을 설명하며 current target domain model이 아니다. 현재 제품 seam은 Product Brief와 AY–App Interaction Layer 아키텍처를 우선한다.
 
 Landing·public command·Browser OAuth·새 workspace setup 여정은 제거됐다. 이 문서는 현재 작업 순서나 새 구현 계약을 정하지 않는다.
 
@@ -186,7 +186,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 ## 검증 산출물
 
-Browser-native prototype은 검토 중심 학업 작업공간의 화면 구조와 자료 선택부터 반영까지의 전환을 확인한 역사적 산출물이다. 현재 First Assignment vertical은 실제 파일·Codex 실행·Review·durable confirmed state까지 구현했지만, prototype을 제품 구현의 컴포넌트 구조나 최종 화면 범위로 간주하지 않는다. 현재 구현 사실은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
+Browser-native prototype은 검토 중심 학업 작업공간의 화면 구조와 자료 선택부터 반영까지의 전환을 확인한 역사적 산출물이다. 당시 First Assignment vertical은 실제 파일·Codex 실행·Review·durable confirmed state까지 구현했지만, prototype을 현재 제품 구현의 Module 구조나 최종 화면 범위로 간주하지 않는다. 현재 구현 사실은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
 
 | 상태 | 실행 링크 | 캡처 asset |
 | --- | --- | --- |

@@ -5,11 +5,11 @@ AY가 사용자 소유 학기 workspace에서 일하고 AY-PLE의 typed UI로 �
 ## 제품과 역할
 
 **AY-PLE**:
-AY가 학생의 한 학기 Git workspace에서 직접 일하고, 사용자 판단이 필요한 순간을 capability-specific UI로 연결하는 local-first 학업 Agent 앱이다.
+학생이 App GUI에서 명시한 작업 맥락을 AY에게 전달하고, AY가 요청한 사용자 판단을 capability-specific UI로 다시 연결하면서 한 학기 Git workspace에서 함께 일하는 local-first 학업 Agent 앱이다.
 _Avoid_: Codex wrapper, Runtime Harness, 범용 Agent 플랫폼
 
 **AY**:
-학생이 AY-PLE 안에서 작업을 맡기고 대화하는 Agent 역할이다. AY는 작업 흐름, InteractionCapability 결과의 해석과 실제 학기 자료 작업을 소유하지만 App의 사용자 상호작용은 소유하지 않는다.
+학생이 AY-PLE 안에서 작업을 맡기고 대화하는 Agent 역할이다. AY는 ActionInvocation으로 받은 목적과 맥락, InteractionCapability 결과를 해석해 작업 흐름과 실제 학기 자료 작업을 소유하지만 App의 사용자 상호작용은 소유하지 않는다.
 _Avoid_: Codex의 별칭, 앱 관리자, 단순 챗봇
 
 ## 학기 작업공간과 학업 객체
@@ -77,12 +77,20 @@ _Avoid_: Agent가 생성한 초안, DraftState 저장소, 검토 대기 목록
 
 ## AY와 App의 상호작용
 
+**AY–App Interaction**:
+학생이 App GUI에서 명시한 작업 맥락이 AY에게 전달되고, AY가 요청한 사용자 판단이 App의 알맞은 UI를 거쳐 같은 작업으로 돌아오는 양방향 제품 상호작용이다. ActionInvocation과 InteractionCapability를 포괄하지만 하나의 저장 객체나 범용 event stream은 아니다.
+_Avoid_: ModelingRun, 채팅 transcript, 범용 event bus, App-owned workflow
+
+**ActionInvocation**:
+학생이 목적이 분명한 GUI action을 명시적으로 실행할 때 App이 검증한 현재 맥락을 한 번의 AY 작업으로 전달하는 일회성 요청이다. Preview와 selection 자체는 ActionInvocation이 아니며 durable run이나 App-owned workflow를 만들지 않는다.
+_Avoid_: DOM event, 암묵적인 selection 주입, ModelingRun, App-owned 실행 기록
+
 **InteractionCapability**:
-AY가 목적이 분명한 사용자 상호작용을 요청하면 AY-PLE이 그에 맞는 UI를 보여주고 구조화된 결과를 같은 작업에 돌려주는 제품 기능이다. App은 사용자 round trip을, AY는 workflow와 결과 적용을 소유한다.
-_Avoid_: App-owned workflow, 범용 event bus, arbitrary schema renderer, durable 학업 객체
+AY가 작업 중 목적이 분명한 사용자 상호작용을 요청하면 AY-PLE이 그에 맞는 UI를 보여주고 구조화된 결과를 같은 작업에 돌려주는 제품 기능이다. AY–App Interaction 중 AY가 시작하는 방향이며, App은 사용자 round trip을, AY는 workflow와 결과 적용을 소유한다.
+_Avoid_: AY–App Interaction 전체, App-owned workflow, 범용 event bus, arbitrary schema renderer, durable 학업 객체
 
 **CoControl**:
-학생의 GUI 선택과 AY의 작업이 InteractionCapability를 통해 하나의 feedback loop를 이루는 제품 원칙이다. App은 모든 학업 상태를 소유하지 않고 자신이 제공하는 UI interaction만 중재한다.
+학생의 명시적인 GUI action이 AY 작업을 시작하고 AY의 typed request가 다시 학생 판단을 받아 작업을 이어 가는 양방향 feedback-loop 원칙이다. App은 자신이 제공하는 interaction을, AY는 workflow와 실제 학기 자료 작업을 소유한다.
 _Avoid_: 범용 event router, 모든 변경의 즉시 주입, App-owned academic workflow
 
 ## 파생 결과와 후속 기능

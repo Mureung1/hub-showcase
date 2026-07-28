@@ -1,4 +1,4 @@
-# AY–App Interaction Capability 아키텍처
+# AY-originated InteractionCapability 아키텍처
 
 작성일: 2026-07-27
 
@@ -8,11 +8,11 @@
 
 성숙도: 구현됨
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [Protocol-driven AY–App Interaction Layer ADR](../adr/0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), [AY–App Interaction Layer 아키텍처](ay-app-interaction-layer.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
-이 문서는 AY의 MCP 요청을 AY-PLE의 typed UI로 바꾸고, 사용자의 structured result를 같은 Codex Turn에 반환하는 long-lived seam을 설명한다. 제품 가치와 MVP 범위는 Product Brief, 결정의 이유는 ADR 0019, exact current package·endpoint topology와 검증 표면은 구현 지도가 소유한다.
+이 문서는 AY의 MCP 요청을 AY-PLE의 typed UI로 바꾸고, 사용자의 structured result를 같은 Codex Turn에 반환하는 **AY-originated InteractionCapability Interface**의 구현된 상세 mapping을 설명한다. 양방향 AY–App Interaction Layer와 App-originated ActionInvocation은 umbrella 아키텍처, 제품 가치와 범위는 Product Brief, 이 Interface 결정의 이유는 ADR 0019, exact current package·endpoint topology와 검증 표면은 구현 지도가 소유한다.
 
 Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합친 deep Module이다. Physical code boundary는 private workspace package `@ay-ple/interaction-mcp`와 `apps/server`에 걸친다. Package는 stable executable·typed capability contract·private transport를, Server는 Broker runtime과 Browser projection을 소유한다. App 실행 전 native Bootstrap이 설치한 project MCP declaration으로 Adapter를 native discovery하고, App Runtime이 environment로 현재 Broker binding을 공급한다.
 
@@ -185,7 +185,7 @@ Source explorer·preview는 InteractionCapability 요청에 딸린 evidence reso
 | Preview | Text는 bounded UTF-8 content와 exact-byte digest를, PDF는 bounded raw bytes와 정확한 content metadata를 current filesystem에서 on-demand read한다. Unsupported file은 목록에는 남기되 content를 해석하지 않는다. |
 | Safety | 매 list·preview에서 root containment, regular-file identity와 size·depth·entry bound를 다시 확인한다. Traversal, root escape, symlink, missing·changed·oversized target와 read failure는 fail closed하고 stale preview를 현재 content로 가장하지 않는다. |
 | State | 목록·preview와 선택은 Browser-local 또는 request-local presentation state다. App은 source watcher, `Course`·`RawMaterial` registry, copy·snapshot, reusable preview cache, durable selection이나 file·Git mutation을 만들지 않는다. |
-| Interaction boundary | Source selection은 Chat request, MCP payload나 AY의 file authority를 암묵적으로 바꾸지 않는다. Review evidence는 계속 caller가 보낸 exact path·digest·locator를 별도로 preflight한다. |
+| Interaction boundary | Source selection은 Chat request, MCP payload나 AY의 file authority를 암묵적으로 바꾸지 않는다. 명시적 ActionInvocation만 선택을 request-scoped input으로 동결할 수 있으며, Review evidence는 계속 caller가 보낸 exact path·digest·locator를 별도로 preflight한다. |
 
 즉 App은 actual file을 읽기 쉽게 **투영**하지만 학기 자료를 소유·등록·복사하거나 변경하지 않는다. AY는 같은 user-owned working tree에서 일반 file·Git 도구로 작업하고, evidence resolver는 explorer 목록을 신뢰 source registry로 재사용하지 않는다.
 
@@ -261,7 +261,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | 자료 | App의 SourceProjection이 exact active root의 안전한 일반 file을 bounded list·text/PDF preview로 투영한다. AY는 같은 actual file을 직접 다루고 Broker evidence resolver는 요청에 포함된 ref만 별도로 on-demand 검증한다. | `Course`·`RawMaterial` registry, source copy·reusable snapshot·cache, durable selection과 App-owned file mutation을 만들지 않는다. |
 | 테스트 | In-memory capability contract, deterministic Browser E2E와 exact actual-child trace가 정상 result·failure settlement·evidence atomicity를 검증한다. | Store revision이나 private correlation을 공개 Interface에 넣지 않는다. |
 
-초기 First Assignment의 app-owned `RawMaterial → ModelingRun → StatePatch → UserConfirmation → apply` graph는 이 seam을 채택하게 한 historical 동기이며 canonical product graph에서 제거됐다. Exact current package와 endpoint topology는 [Codex Chat 구현 지도](codex-chat-implementation-map.md)가, 후속 순서와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
+초기 First Assignment의 app-owned `RawMaterial → ModelingRun → StatePatch → UserConfirmation → apply` graph는 이 Interface를 채택하게 한 historical 동기이며 canonical product graph에서 제거됐다. GUI action에서 native Skill Turn을 시작하는 새 target은 [AY–App Interaction Layer 아키텍처](ay-app-interaction-layer.md)가, exact current package와 endpoint topology는 [Codex Chat 구현 지도](codex-chat-implementation-map.md)가, 후속 순서와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
 
 ## 의도적으로 만들지 않는 것
 

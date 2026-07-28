@@ -8,7 +8,7 @@
 
 역사적 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유한다. ADR 0017의 public-preview managed account lifecycle은 제거됐고 현재 dev·dogfood의 account authority는 전역 `CODEX_HOME`이다.
 
-후속 제품 interaction 결정: [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md). 이 ADR은 native permission과 Runtime mechanics를 계속 소유하고, AY-PLE Review·result·file apply 경계는 ADR 0019가 소유한다.
+후속 제품 interaction 결정: [ADR 0021 — Protocol-driven AY–App Interaction Layer](0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), [ADR 0019 — MCP InteractionCapability로 App UI round trip을 제공한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md). 이 ADR은 native permission과 Runtime mechanics를 계속 소유하고, 양방향 제품 seam은 ADR 0021, AY-originated Review·result 경계는 ADR 0019가 소유한다.
 
 ## 맥락
 

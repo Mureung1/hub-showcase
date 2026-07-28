@@ -19,16 +19,17 @@
 
 ## AY-PLE는 무엇인가
 
-AY-PLE(에이플)는 AY가 사용자의 한 학기 Git workspace에서 실제 파일을 직접 다루고, 판단이 필요한 순간에는 MCP로 App의 typed UI를 요청하는 local-first 학업 Agent 앱입니다. App은 원문·변경·선택지를 작업에 맞는 화면으로 보여주고 사용자의 structured result를 같은 Codex Turn에 돌려줍니다. Skill과 AY는 workflow와 실제 file mutation을 소유합니다.
+AY-PLE(에이플)는 App GUI에서 명시한 학기 작업을 AY가 이해해 사용자의 Git workspace에서 직접 수행하고, 판단이 필요한 순간에는 MCP로 App의 typed UI를 다시 요청하는 local-first 학업 Agent 앱입니다. App은 명시적인 action과 request-scoped context를 native Skill Turn에 전달하고, 원문·변경·선택지를 작업에 맞는 화면으로 보여준 뒤 사용자의 structured result를 같은 Codex Turn에 돌려줍니다. Skill과 AY는 workflow와 실제 file mutation을 소유합니다.
 
-현재 코드베이스는 이 경계를 First Assignment vertical로 구현했습니다. `@ay-ple/interaction-mcp`의 typed request/result, authenticated App Broker, Browser inline Review와 같은 MCP call의 응답 반환이 연결되고, AY가 결과를 해석해 실제 파일을 바꿉니다. 초기 vertical이 사용했던 app-owned `RawMaterial`·`ModelingRun`·durable patch/confirmation과 Server-owned apply graph는 제거됐습니다. Exact current topology와 검증 표면은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 소유합니다.
+현재 코드베이스는 이 양방향 seam 중 AY-originated InteractionCapability를 구현했습니다. `@ay-ple/interaction-mcp`의 typed request/result, authenticated App Broker, Browser inline Review와 같은 MCP call의 응답 반환이 연결되고, AY가 결과를 해석해 실제 파일을 바꿉니다. GUI source selection에서 workspace-local Skill과 file reference를 native Turn에 전달하는 ActionInvocation은 채택됐지만 아직 미구현입니다. 초기 vertical의 app-owned `RawMaterial`·durable `ModelingRun`·patch/confirmation과 Server-owned apply graph는 복원하지 않습니다. Exact current topology와 검증 표면은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 소유합니다.
 
 Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 경계는 [Public repository clean snapshot ADR](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)에 기록합니다.
 
 | 둘러볼 곳 | 무엇을 볼 수 있나 |
 | --- | --- |
 | [AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md) | AI Agent가 앱 안에서 학생을 위해 일하는 대표 사용 흐름 |
-| [AY–App Interaction Capability](docs/architecture/ay-app-interaction-capabilities.md) | MCP 요청, typed UI와 같은 Turn result 반환을 잇는 long-lived seam |
+| [AY–App Interaction Layer](docs/architecture/ay-app-interaction-layer.md) | GUI ActionInvocation과 MCP InteractionCapability를 잇는 양방향 long-lived seam |
+| [AY-originated InteractionCapability](docs/architecture/ay-app-interaction-capabilities.md) | MCP 요청, typed UI와 같은 Turn result 반환의 구현된 상세 mapping |
 | [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md) | 현재 maintained runtime·Server·Chat Shell topology와 남은 연결 지점 |
 | [개발 백로그](docs/product/ay-ple-development-backlog.md) | 구현 완료 항목과 확인된 사용자 필요에 따른 후속 작업 순서 |
 
@@ -79,7 +80,8 @@ npm run demo
 | 제품 기획 | [AY-PLE Product Brief](docs/product/ay-ple-product-brief.md) | 문제 정의, 제품 테제, MVP 경계 |
 | 제품 디자인 | [AY-PLE Design System Direction](docs/product/ay-ple-design-system.md) | 밝은 학업 워크스페이스 중심의 브랜드/UI 기준 |
 | 개발 계획 | [AY-PLE 개발 백로그](docs/product/ay-ple-development-backlog.md) | 날짜 없는 계층형 task list와 작업 순서·완료 조건 |
-| AY↔App 구조 | [AY–App Interaction Capability](docs/architecture/ay-app-interaction-capabilities.md) | MCP request→typed UI→user result→같은 Turn 반환의 deep-module seam |
+| AY↔App 구조 | [AY–App Interaction Layer](docs/architecture/ay-app-interaction-layer.md) | GUI intent→native Skill Turn과 MCP request→typed UI→same-Turn result의 양방향 seam |
+| MCP 상세 | [AY-originated InteractionCapability](docs/architecture/ay-app-interaction-capabilities.md) | 구현된 MCP Adapter·Broker·UI round trip의 상세 mapping |
 | Runtime 구조 | [Codex Runtime 격리](docs/architecture/codex-runtime-isolation.md) | Codex runtime, app data, 사용자 workspace의 실행 경계 |
 | 구현 현황 | [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md) | Codex Chat runtime, Server와 Chat Shell의 현재 모듈 지도·구현 gap |
 | ADR | [0002. First-class academic objects](docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam canonical model과 derived view 결정 |
@@ -91,8 +93,9 @@ npm run demo
 | ADR | [0013. Product-only public surface와 durable v2 baseline](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | Canonical product cutover와 workspace-local current v2의 장기 compatibility 정책 |
 | ADR | [0015. Reviewed clean snapshot public repository](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, Apache-2.0 first-party license와 trust·export authority |
 | ADR | [0018. User-owned Git SemesterWorkspace](docs/adr/0018-adopt-user-owned-git-semester-workspaces.md) | 기존 Git working tree를 직접 workspace·actual-file 작업 경계로 채택한 결정 |
-| ADR | [0019. MCP InteractionCapability를 AY–App seam으로 사용](docs/adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) | Typed MCP request/result와 App UI round trip의 역할 경계 결정 |
+| ADR | [0019. MCP InteractionCapability로 App UI round trip 제공](docs/adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md) | AY-originated typed MCP request/result와 App UI round trip의 역할 경계 결정 |
 | ADR | [0020. Pre-App native SemesterWorkspace Bootstrap](docs/adr/0020-bootstrap-semester-workspaces-before-app-startup.md) | Native client가 App 시작 전에 SemesterWorkspace를 준비하고 App은 prepared root만 여는 결정 |
+| ADR | [0021. Protocol-driven AY–App Interaction Layer](docs/adr/0021-adopt-a-protocol-driven-ay-app-interaction-layer.md) | Skill·MCP를 양방향 제품 확장 protocol로 사용하고 typed ActionInvocation을 채택한 결정 |
 
 ### 기술 참고 문서
 
@@ -110,8 +113,8 @@ npm run demo
 | --- | --- |
 | [캠프 데모](artifacts/camp-demo/README.md) | 캠프 기간 동안 유지하는 발표 deck, 실행 흐름과 fallback |
 | [Review Workspace Scenario](docs/product/ay-ple-review-workspace-scenario.md) | First Assignment의 자료 선택·Review UI와 app-owned workflow 가설 |
-| [Codex-native product composition](docs/architecture/codex-native-product-composition.md) | ADR 0019가 대체한 Recipe·Invocation·Run과 Review mapping |
-| [0007. Native Codex composition](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | Native primitive 재사용 원칙은 유지하고 app-owned workflow 경계는 ADR 0019가 대체 |
+| [Codex-native product composition](docs/architecture/codex-native-product-composition.md) | ADR 0019·0021이 대체한 Recipe·Invocation·Run과 Review mapping |
+| [0007. Native Codex composition](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | Native primitive 재사용 원칙은 유지하고 app-owned workflow는 ADR 0019, typed invocation target은 ADR 0021이 대체 |
 | [0014. App-owned normalized SemesterWorkspace](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md) | ADR 0018이 대체한 scaffold·복사 기반 `ImportSource` 결정 |
 | [0016. Exact npx application과 verified Runtime release](docs/adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 중단한 public release lane의 application↔Runtime binding·delivery·cache와 rollback 결정 |
 | [0017. Codex-managed Browser OAuth](docs/adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | 제거한 managed ChatGPT login과 app-scoped credential 결정 |
@@ -168,4 +171,4 @@ npm run test:local-provider -w @ay-ple/codex-chat-runtime
 npm run test:prepared-workspace-product-actual
 ```
 
-아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 현재 구현에서 App은 typed InteractionCapability와 workspace registry를, AY와 Skill은 workflow·실제 file mutation·Git checkpoint를, SemesterWorkspace는 학기 자료와 history를 소유합니다. 남은 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.
+아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 현재 구현에서 App은 typed InteractionCapability와 workspace registry를, AY와 Skill은 workflow·실제 file mutation·Git checkpoint를, SemesterWorkspace는 학기 자료와 history를 소유합니다. ActionInvocation을 포함한 남은 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.

@@ -7,9 +7,9 @@
 
 ## 문서 목적
 
-이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 초기 First Assignment에서 검증한 interaction round trip은 보존했고, app-owned academic workflow는 user-owned Git SemesterWorkspace와 InteractionCapability seam으로 교체했다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
+이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 초기 First Assignment에서 검증한 native action composition과 MCP round trip을 역사 근거로 보존하고, app-owned academic workflow는 user-owned Git SemesterWorkspace와 protocol-driven AY–App Interaction Layer로 교체한다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), AY↔App mapping은 [Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md)가 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), current durable v2 보존 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), user-owned workspace는 [ADR 0018](../adr/0018-adopt-user-owned-git-semester-workspaces.md), pre-App Bootstrap owner는 [ADR 0020](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), InteractionCapability 경계는 [ADR 0019](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)을 따른다. Current account와 root 배치는 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다. 제거한 app-owned workspace·public distribution·managed account 결정은 historical ADR 0014·0016·0017에 보존한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 양방향 AY↔App mapping은 [Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 구현된 MCP 상세는 [InteractionCapability 아키텍처](../architecture/ay-app-interaction-capabilities.md)가 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), current durable v2 보존 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), user-owned workspace는 [ADR 0018](../adr/0018-adopt-user-owned-git-semester-workspaces.md), pre-App Bootstrap owner는 [ADR 0020](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), 전체 Interaction Layer는 [ADR 0021](../adr/0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), MCP InteractionCapability는 [ADR 0019](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)을 따른다. Current account와 root 배치는 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다. 제거한 app-owned workspace·public distribution·managed account 결정은 historical ADR 0014·0016·0017에 보존한다.
 
 ## 운영 규칙
 
@@ -32,7 +32,7 @@
 
 ## 작업 목록
 
-완료 항목은 당시 구현과 검증 증거를 보존한다. ADR 0018·0019가 대체한 app-owned workspace·Recipe/Run·durable patch/confirmation을 current target contract로 다시 해석하지 않는다.
+완료 항목은 당시 구현과 검증 증거를 보존한다. ADR 0018·0019·0021이 대체한 app-owned workspace·Recipe/Run·durable patch/confirmation을 current target contract로 다시 해석하지 않는다.
 
 - [x] 제품·Codex 실행 기반을 준비한다.
   - [x] 제품 문제, 핵심 사용자와 MVP 경계를 [Product Brief](ay-ple-product-brief.md)로 정리하고, 자료 선택부터 Review까지의 사용자 흐름을 [prototype scenario](ay-ple-review-workspace-scenario.md)로 검증했다.
@@ -101,7 +101,7 @@
   - [x] Runtime managed account·`auth-only` primitive는 제거하고 fresh Account Readiness만 workspace Runtime에 유지했다. 당시 `@ay-ple/semester-workspace` v3 admission·setup kernel은 ADR 0014 target의 구현 증거로 남겼고, 이후 ADR 0018이 그 target을 대체했다.
   - [x] 감사 결과를 구현 지도, Runtime 격리 문서와 이 backlog에 반영했다.
 
-- [x] User-owned Git SemesterWorkspace에서 InteractionCapability 기반 First Assignment vertical을 완성한다.
+- [x] User-owned Git SemesterWorkspace에서 AY-originated InteractionCapability vertical을 완성한다.
   - [x] [InteractionCapability 기반 Semantic Review Spec](../specs/2026-07-27-interaction-capability-semantic-review.md)에 따라 app-neutral Review seam과 joint cutover를 완성한다.
     - [x] Current First Assignment의 MCP→Browser Review→same-Turn continuation을 characterization test로 고정하고, app-owned academic apply와 결합된 부분을 target contract로 승격하지 않는다.
     - [x] Private workspace package `@ay-ple/interaction-mcp`를 추가해 built STDIO executable, `InteractionCapability<Request, Result>` schema·codec와 authenticated Adapter↔Broker transport contract를 소유하게 한다. `apps/server`는 package의 server-side Interface로 production Broker·Browser Adapter를 조합하고 in-memory Adapter로 exact binding, correlation, held lifecycle status, generation별 단일 pending slot, once-only answer, Turn interrupt·disconnect·terminal MCP failure settlement를 독립 검증한다.
@@ -113,7 +113,7 @@
     - [x] Optional `EvidenceRef`를 active Runtime binding의 exact SemesterWorkspace에서 workspace-relative path로만 on-demand resolve한다. Root containment·regular file·bounded read·exact digest·locator를 Browser projection 전에 atomic preflight하고 하나라도 invalid면 partial card 없이 MCP call 전체를 실패시킨다. Browser에는 bounded safe projection만 전달하고 `RawMaterial` registry, source copy·reusable cache·snapshot과 durable evidence history를 만들지 않는다.
     - [x] Review UI를 AY Chat transcript의 inline card 하나로 표시하고 pending 동안 composer·새 Turn·steer를 잠근다. Card에는 `accept | revise | reject`와 optional feedback만 두어 custom MCP call 하나의 closed normal result로 반환하고, 전체 Turn interrupt만 별도 native control로 유지한다. Settled card는 control 없는 read-only outcome으로 남기고 `revise` 뒤 fresh proposal은 새 call·새 card로 append하며 이전 card를 교체·reopen하지 않는다. Modal·별도 approval page·card dismiss·입력 queue와 App-owned settled Review ledger를 만들지 않으며 interrupt, `busy`, timeout, disconnect와 Runtime terminal은 네 번째 `cancel` result가 아니라 MCP failure path로 끝내고, 같은 결정을 built-in `request_user_input`에 다시 걸지 않는다.
     - [x] Interaction result 뒤 App은 accepted result를 대신 적용하지 않고 AY가 같은 Turn에서 actual file action을 소유하게 한다.
-    - [x] App-owned `Course`, material registry·copy·snapshot·refresh mutation·durable selection, First Assignment action/retry, `RawMaterial`, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 revision-bound academic apply transaction을 current product contract와 persistence에서 제거한다. 이 contraction은 active SemesterWorkspace의 read-only source explorer·preview 제거를 뜻하지 않는다.
+    - [x] App-owned `Course`, material registry·copy·snapshot·refresh mutation·durable selection, old First Assignment route/retry, `RawMaterial`, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 revision-bound academic apply transaction을 current product contract와 persistence에서 제거한다. 이 contraction은 active SemesterWorkspace의 read-only source explorer·preview나 ADR 0021의 새 typed ActionInvocation을 영구 거절한다는 뜻이 아니다.
     - [x] 과잉 Chat-only contraction을 교정해 exact active root의 bounded source list·text/PDF preview와 3-pane explorer·preview·AY Chat workbench를 복구했다. App-owned material authority와 old academic workflow는 복구하지 않았고 실제 2학년 1학기 workspace에서 folder-relative 자료 목록, 63-page PDF 렌더링과 Chat 공존을 검증했다.
     - [x] Capability contract test, deterministic Browser E2E와 exact local-provider trace로 inline card pending 중 composer·새 Turn·steer가 닫히고 accept·revise·reject만 정상 result이며 Adapter abort·STDIO EOF, Turn interrupt·disconnect·timeout·Runtime terminal과 concurrent request의 `busy`는 MCP failure임을 고정한다. Valid evidence 전체가 한 card에 투영되고 path escape·missing·oversized·digest/locator drift가 Browser projection 전에 whole-call failure가 되는지 검증한다. Settled card의 control이 사라지고 revise→fresh call이 기존 card mutation 없이 새 card를 append하는지, partial Review·Modal·별도 page·card dismiss·App Review ledger·허위 apply·duplicate result·숨은 queue가 없는지도 검증한다.
   - [x] [User-owned SemesterWorkspace lifecycle과 canonical local roots Spec](../specs/2026-07-27-user-owned-semester-workspace-lifecycle.md)에 따라 pre-App Bootstrap, prepared-root startup과 Git authority를 완성한다.
@@ -132,13 +132,21 @@
     - [x] Runtime payload·`WorkspaceRegistry`·cache·temp와 cross-workspace 운영 metadata·config는 `../.ay-ple/`에 둔다. Pending product operation·InteractionCapability와 Broker-owned Adapter lifecycle status는 workspace별 durable file을 만들지 않고 process-local Runtime generation memory에서 terminal 정산하며, restart 뒤 결과를 추정하지 않는다.
     - [x] 새 canonical layout의 Runtime·global Codex account·active workspace·InteractionCapability smoke가 성공한 뒤에만 legacy dogfood appData, managed development workspace와 package-local Runtime artifact를 scoped cleanup한다.
 
+- [ ] Protocol-driven AY–App Interaction Layer의 첫 ActionInvocation을 end-to-end로 완성한다.
+  - [x] `AY–App Interaction`, `ActionInvocation`과 AY-originated `InteractionCapability`를 구분하고 Skill·MCP를 양방향 제품 확장 protocol로 사용하는 ADR·아키텍처·Product Brief를 채택했다.
+  - [ ] Chat과 분리된 closed ActionInvocation contract를 만들고 unknown action, raw Skill/native input, absolute path와 implicit Chat material 결합을 거절한다. App action definition은 active SemesterWorkspace의 request-scoped file reference를 fresh 검증하고 expected workspace-local Skill을 effective catalog에서 resolve한다.
+  - [ ] `organize_sources`를 첫 action으로 연결한다. Source explorer에서 명시적 multi-file selection과 action control을 제공하되 preview·selection 자체는 Turn을 시작하지 않고, action 실행 시에만 선택을 동결해 기존 Product operation stream에 연결한다.
+  - [ ] Capability-neutral Runtime 입력과 Python bridge가 official SDK의 exact `SkillInput`과 bounded file/text input을 전달하게 한다. Local file carrier는 actual probe로 의미를 확인하고 기존 SDK patch stack을 늘리지 않는다.
+  - [ ] Action-started Turn이 기존 Interaction MCP·inline Review를 그대로 사용하고, AY가 actual workspace file mutation과 Git checkpoint를 소유하는 Browser E2E·deterministic Runtime·actual workspace trace를 닫는다. Durable `ModelingRun`, source registry·copy와 App-owned apply는 복원하지 않는다.
+
 - [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.
+  - [ ] 두 번째 실제 action 또는 MCP capability를 추가할 때 기능별 contract만 더하고 workspace binding·Turn lifecycle·nested interaction settlement를 다시 구현하지 않는 extension test를 고정한다.
   - [ ] 여러 대화를 다시 찾고 이어가는 행동이 확인되면 workspace-scoped `thread/list`·`thread/read`·`thread/resume`, 선택 상태와 최소 catalog UX를 추가한다. Rename·archive·pagination은 각각의 need가 있을 때만 포함한다.
   - [ ] Accepted work의 Browser disconnect가 실제 product journey를 막으면 native status·read를 우선 사용해 honest unknown-outcome 또는 rejoin을 추가한다. Snapshot·cursor·replay journal은 관찰된 gap 없이는 만들지 않는다.
   - [ ] 같은 local companion을 여러 Browser client가 동시에 제어해야 하는 사용 흐름이 확인되면 client ownership·isolation을 별도 capability로 검증한다.
   - [ ] 채택한 Plan mode의 built-in `request_user_input` 외에 실제 command·file·network·다른 additional-input request가 발생하면 해당 native request family와 first-party behavior를 먼저 흡수하고 필요한 policy·UI만 추가한다.
   - [ ] Account plan, rate limit, token usage나 model 상태가 사용자 action에 실제로 필요해지면 읽기 전용 status surface를 추가한다.
-  - [x] 개인 사용에서 확인된 Model 선택 필요에 따라 Browser-session→다음 Product Turn 경계의 설정 UX를 추가했다. Official `model/list`의 visible catalog와 advertised reasoning effort 순서를 사용하고 지원 모델에만 Fast를 노출하며 Chat·Assignment·retry가 같은 선택을 재사용한다. 새로고침은 catalog default로 돌아가고 `config/read`·`config/value/write`나 전역 `config.toml` mutation은 도입하지 않았다.
+  - [x] 개인 사용에서 확인된 Model 선택 필요에 따라 Browser-session→다음 Product Turn 경계의 설정 UX를 추가했다. Official `model/list`의 visible catalog와 advertised reasoning effort 순서를 사용하고 지원 모델에만 Fast를 노출하며 current normal Chat이 같은 선택을 재사용한다. 새로고침은 catalog default로 돌아가고 `config/read`·`config/value/write`나 전역 `config.toml` mutation은 도입하지 않았다. Future ActionInvocation도 별도 설정 저장소 없이 이 Turn 설정 contract를 재사용한다.
   - [ ] 즉시 정정이 새 turn보다 나은 대표 case와 correlation 규칙을 확인하면 active turn 정정 UX를 추가한다. raw 후보: `turn/steer`.
   - [ ] 실제 context 부족이나 history 편집 case를 확인하면 manual compact와 fork를 각각 평가한다. raw 후보: `thread/compact/start`, `thread/fork`. Deprecated `thread/rollback`은 지원되는 대체 method가 생길 때까지 제외한다.
   - [ ] PDF text extraction과 page/range 근거를 지원하고, Assignment 전략을 재사용하는 Exam Skill을 추가한다.
@@ -148,7 +156,7 @@
   - [ ] 여러 workspace를 반복해서 바꾸는 사용 흐름이 확인되면 launch-time handoff와 registry 경계 위에서 최근 workspace 목록과 one-click 전환 UX를 별도 설계한다.
   - [ ] macOS packaged Desktop App을 채택하면 bundled native payload의 third-party notice를 감사하고 signing·notarization, atomic update/rollback과 clean-machine packaging smoke를 완료한다. Windows·Linux 지원은 별도 사용자 필요와 artifact·QA 범위를 승인한 뒤에만 추가한다.
   - [ ] Runtime·bridge diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
-  - [ ] Native `TextInput`·`SkillInput` 조합으로 해결되지 않고 resource mention 필요성이 확인되면 `MentionInput`을 먼저 검증한다. 그 뒤에도 남는 구체적인 case에만 exact official SDK/native contract의 experimental context delivery, background terminal, realtime과 기타 raw capability를 별도로 검증한다.
+  - [ ] ActionInvocation의 local file carrier가 rendered path로 충분하지 않다는 실제 case가 확인되면 native `MentionInput`의 local-file 의미를 먼저 검증한다. 그 뒤에도 남는 구체적인 case에만 exact official SDK/native contract의 experimental context delivery, background terminal, realtime과 기타 raw capability를 별도로 검증한다.
   - [ ] 여러 학기에 걸친 사용에서 필요성이 확인되면 built-in Memories의 consent, eligibility, rollover와 reset UX를 설계한다.
 
 ## 현재 범위에서 제외하는 항목
