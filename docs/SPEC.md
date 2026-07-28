@@ -181,6 +181,7 @@
 | (무응답) | — | 클라이언트 20초 타임아웃 → 실패와 동일 처리 |
 
 - 오류 body는 `{ "error": "<code>" }` — 사용자 표시 문구는 클라이언트가 code로 매핑한다(서버 문구를 그대로 노출하지 않음).
+- 서비스 자체 limiter뿐 아니라 Gemini provider의 429도 재시도하지 않고 public 429 `rate_limited`로 정규화해 같은 대기 안내를 표시한다. 내부 metric status는 원인 구분을 위해 `provider_rate_limited`를 유지한다.
 - **서비스 비저장 원칙**: 요청의 `receivedMessage`/`situation`은 생성 호출에만 사용하고 서비스 로그·분석 이벤트·DB에 남기지 않는다 (EDGE_CASES 1-5).
 - **provider 처리 고지**: AI 경로 원문은 외부 provider(Google Gemini API)로 전송된다. 실 연동 직전에 당시 보존 정책과 ZDR 적용 여부를 확인해 입력 화면에 안내한다. ZDR은 실제 조직 설정·계약이 확인된 경우에만 적용됐다고 표현하며, 확인되지 않은 보존 조건을 단정하지 않는다.
 
