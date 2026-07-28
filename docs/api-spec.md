@@ -345,7 +345,7 @@
 - `SettlementMember`는 생성 시점의 `userId`+`name`을 직접 저장한다(파티원 관계 `PartyMember`를 거치지 않음). 따라서 이후 해당 파티원이 파티에서 나가 `PartyMember`가 삭제되어도 과거 정산 이력 자체(이름/금액/상태)는 전혀 영향이 없어 파티장은 계속 조회할 수 있다 — 단, 내보내진 파티원 본인은 즉시 조회 권한을 잃는다(아래 각 엔드포인트 설명 참고).
 - `amount`는 생성 시점의 `subAmount / memberCount`(1/n) 값을 스냅샷으로 저장. 이후 구독 금액이 바뀌어도 과거 정산 금액은 변하지 않는다.
 - 모든 정산 항목은 `"pending"`으로 시작하며, 파티원의 이체가 (파티장 육안 확인 등으로) 확인되면 파티장이 해당 항목만 `"done"`으로 변경한다 — 입금 자동 확인은 MVP 범위 밖.
-- `transferLink`는 토스/카카오페이 딥링크 URL이며, 정확한 스킴/파라미터는 아직 미확정(하단 TODO 참고). 현재는 플레이스홀더 포맷으로 표기.
+- `transferLink`는 토스 딥링크 URL(`supertoss://send?bank=...&accountNo=...&amount=...`)이며, 정상 동작 확인됨. 카카오페이는 아직 딥링크 로직 자체가 미구현.
 - 카카오톡 공유(정산 요청 메시지 전송)는 FE에서 카카오 SDK를 직접 호출하는 방식으로, 별도 BE 엔드포인트 없음(`3. 파티원`의 초대 링크 공유와 동일한 패턴).
 - 정산은 별도 목록 페이지 없이 구독 상세 화면의 정산 카드로 접근한다. 구독 목록/전환은 기존 `GET /api/subscriptions`(2. 구독 서비스)를 그대로 쓰고, 상세 진입 후에는 `GET /api/subscriptions/:id/settlements`로 해당 구독의 월별 이력을 불러온다.
 - 파티원은 `reportedAt`으로 이체 확인 요청을 할 수 있다(낮은 신뢰도 — `status`는 바뀌지 않음). 파티장은 요청을 보고 실제 확인 후 기존 상태 변경 엔드포인트로 **수락**(`status: "done"`) 또는 **거절**(`status: "pending"`)한다 — 어느 쪽이든 처리 시 `reportedAt`은 `null`로 초기화되어 안내가 사라지고, 거절된 파티원은 다시 요청할 수 있다.
@@ -528,7 +528,7 @@
 
 - 만족도 설문 및 AI 리포트 API는 아직 미작성.
 - 요청 바디 유효성 검증 로직(Zod 등)은 아직 미구현(`backend/src/middleware/errorHandler.js`에는 에러 포맷터만 존재) — 검증 미들웨어 구현 시 `400` 에러의 상세 필드 목록을 이 문서에 추가할 것.
-- `4. 정산`의 `transferLink` 딥링크 스킴/파라미터는 플레이스홀더 — 토스/카카오페이 딥링크 스펙 확인(`docs/plan.md`/`checklist.md` 2주차 기획 항목) 완료 후 실제 포맷으로 갱신 필요.
+- `4. 정산`의 `transferLink`는 카카오페이 딥링크 로직이 아직 미구현(토스는 완료) — 카카오페이 딥링크 스펙 확인(`docs/plan.md`/`checklist.md` 2주차 기획 항목) 후 구현 필요.
 
 ### 확정된 정책 · 구현 주의사항
 
@@ -537,3 +537,4 @@
 - `GET /api/subscriptions/dashboard`는 `GET /api/subscriptions/:id`와 경로가 겹치므로, 백엔드 구현 시 반드시 `/:id`보다 먼저 라우터에 등록할 것(순서가 바뀌면 `dashboard`가 `:id` 파라미터로 매칭돼 영영 도달 불가).
 - 초대용 `state` 파라미터는 `backend/src/lib/jwt.js`의 `signInviteState`/`verifyInviteState`로 서명·검증됨(만료 10분, `purpose: 'invite'` 클레임) — 위변조/만료된 state는 콜백에서 무조건 `/`로 리다이렉트되어 확정.
 - `Subscription.accountNumber`/`accountHolderName`은 `backend/src/lib/crypto.js`(AES-256-GCM, `ACCOUNT_ENCRYPTION_KEY` 환경변수)로 암호화해 저장 — 확정. `bankName`은 평문 유지. API 응답 스키마(필드명/형태)는 변경 없음, DB 저장 형식만 암호문으로 바뀜.
+- 토스 딥링크(`supertoss://send?bank=...&accountNo=...&amount=...`)는 실기기 테스트로 정상 동작 확인됨 — 확정.
