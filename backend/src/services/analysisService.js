@@ -116,7 +116,7 @@ export async function createAnalysis(githubId) {
 // 저장된 분석 조회 (GET /api/analysis/:githubId)
 // - 이력 없음 → 404 ANALYSIS_NOT_FOUND
 // - 7일 이내 → 저장본 그대로 반환
-// - 7일 초과 → 재분석 후 갱신본 반환
+// - 7일 초과 → 재분석 후 갱신본 반환 (GitHub rate limit이면 없는 것보다 나은 stale 저장본으로 폴백)
 export async function getAnalysis(githubId) {
     const record = await findCachedAnalysis(githubId);
     if (!record) {
@@ -127,7 +127,18 @@ export async function getAnalysis(githubId) {
     }
     if (Date.now() - record.analyzedAt.getTime() > STALE_MS) {
         logger.info('저장 분석 7일 경과, 재분석 실행', { githubId: record.githubId, analyzedAt: record.analyzedAt });
-        return createAnalysis(githubId);
+        try {
+            return await createAnalysis(githubId);
+        } catch (error) {
+            if (error.status === 429) {
+                logger.warn('재분석 중 rate limit — stale 분석으로 폴백', {
+                    githubId: record.githubId,
+                    analyzedAt: record.analyzedAt,
+                });
+                return toAnalysisResponse(record);
+            }
+            throw error;
+        }
     }
     return toAnalysisResponse(record);
 }

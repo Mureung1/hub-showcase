@@ -61,6 +61,7 @@
 - 새 API 라우트를 구현·수정한 뒤에는 `api-smoke-test` 스킬(`.claude/skills/api-smoke-test/`)로 실제 기동·요청 검증을 거칠 것
 - 업스트림(connect-AIAgentChallenge-26-1/hub)에 PR을 올릴 때는 `pr-draft` 스킬(`.claude/skills/pr-draft/`)로 `.github/pull_request_template.md` 양식의 초안을 먼저 작성할 것
 - 작업 내용을 "자세히"·"하나하나" 설명해달라는 요청에는 `explain-work` 스킬(`.claude/skills/explain-work/`)로 기능 단위 뭘/왜/어떻게/더 나은 방법을 짚어 답할 것
+- 대회 제출/데모 직전에는 `submission-check` 스킬(`.claude/skills/submission-check/`)로 라이브 URL·문서 정합성·테스트·커밋 상태를 한 번에 점검할 것
 
 ## 작업 시 참고사항
 - 백엔드가 추가되면 이 파일에 백엔드 스택/명령어/디렉토리 구조를 함께 갱신할 것

@@ -83,11 +83,11 @@
       - 참고: [decisions](decisions.md) TanStack Query
 - [x] **[FE/BE] E2E 통합 테스트** — 랜딩→상세 7화면 흐름 전체 검증
       - DoD: 실제 GitHub ID로 끝까지 흐름 성공 ✅ 2026-07-27 (Playwright 도입, `frontend/e2e/full-flow.spec.js`, mock 없이 실제 GitHub/LLM API로 kimsunho2000 계정 통과 확인. 참고: [testing.md](testing.md) §5)
-- [ ] **[BE] rate limit / 엣지케이스 대응** — 비인증 60회 제한, 캐시 만료, 빈 결과 처리
-      - DoD: rate limit 초과·빈 추천 상황에서 정상 폴백/안내
+- [x] **[BE] rate limit / 엣지케이스 대응** — 비인증 60회 제한, 캐시 만료, 빈 결과 처리
+      - DoD: rate limit 초과·빈 추천 상황에서 정상 폴백/안내 ✅ 2026-07-28 (`getAnalysis` 7일 경과 재분석 중 429면 기존 stale 분석으로 폴백. 빈 추천(`items:[]`)·429 그대로 응답은 이미 정상 동작 확인, 통합테스트로 고정)
       - 참고: plan §6 GitHub API 제약, ApiUsage
-- [ ] **[FE/BE] 버그 디버깅 + 필터/재조회 마감** — 조건 변경 재추천
-      - DoD: 조건 바꿔 재추천 동작, 알려진 버그 정리
+- [x] **[FE/BE] 버그 디버깅 + 필터/재조회 마감** — 조건 변경 재추천
+      - DoD: 조건 바꿔 재추천 동작, 알려진 버그 정리 ✅ 2026-07-28 (코드 추적·E2E로 조건 변경 재추천 정상 동작 재확인, 잔존 버그 없음. filterbar는 plan.md상 표시 전용이 원래 설계)
       - 참고: plan §7 재조회/필터링
 - [x] **[FE] 프론트 배포** (github.io 등) — 프로토타입 데모 포함
       - DoD: 공개 URL 접속 가능 ✅ `kimsunho2000.github.io/hub/` (`npm run deploy`)

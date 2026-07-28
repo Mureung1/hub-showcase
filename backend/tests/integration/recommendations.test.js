@@ -467,6 +467,32 @@ describe('POST /api/recommendations — 재추천 다양화', () => {
     });
 });
 
+describe('POST /api/recommendations — rate limit / 빈 결과', () => {
+    const preferences = { languages: ['JavaScript'], difficulty: 'easy', topics: [] };
+
+    it('GitHub 검색이 rate limit(429)이면 그대로 429 RATE_LIMITED를 반환한다', async () => {
+        const rateLimited = new Error('GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+        rateLimited.status = 429;
+        rateLimited.code = 'RATE_LIMITED';
+        fetchReposWithIssues.mockRejectedValueOnce(rateLimited);
+
+        const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+
+        expect(res.status).toBe(429);
+        expect(res.body.error.code).toBe('RATE_LIMITED');
+    });
+
+    it('후보 레포/이슈가 없으면 에러 없이 items: []로 저장·반환한다', async () => {
+        fetchReposWithIssues.mockResolvedValueOnce([]);
+
+        const res = await request(app).post('/api/recommendations').send({ githubId: TEST_GITHUB_ID, preferences });
+
+        expect(res.status).toBe(200);
+        expect(res.body.items).toEqual([]);
+        createdRecommendationIds.push(res.body.id);
+    });
+});
+
 describe('GET /api/recommendations — 전체 검색 이력', () => {
     const preferences = { languages: ['JavaScript'], difficulty: 'easy', topics: [] };
 
