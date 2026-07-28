@@ -1,9 +1,12 @@
+import { useMemo } from "react";
+
 import { MarketFilters } from "../market/MarketFilters";
 import { MarketInspector } from "../market/MarketInspector";
 import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
 import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
 import type { SelectedStorefront } from "../map/storefronts/SelectedStorefrontLayer";
+import { useStorefrontBuildingPlacements } from "../map/storefronts/useStorefrontBuildingPlacement";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 import type { PanelTextSize } from "./usePanelTextSize";
@@ -62,22 +65,49 @@ export function WorkspaceLayout({
   useWorkspaceUrlPersistence(model);
 
   const selectedStore = storefronts.storeSelection.selected;
-  const selectedFocusStorefront: SelectedStorefront | null =
-    viewport.presentationMode === "storefront3d" &&
-    !viewport.storefront3dUnavailable &&
-    selectedStore
-      ? {
-          ...(storefronts.selectedStorefront3d ?? {
-            id: selectedStore.id ?? `${selectedStore.name}:${selectedStore.longitude}:${selectedStore.latitude}`,
+  const selectedFocusCandidate = useMemo<SelectedStorefront | null>(
+    () =>
+      viewport.presentationMode === "storefront3d" &&
+      !viewport.storefront3dUnavailable &&
+      selectedStore
+        ? {
+            id:
+              selectedStore.id ??
+              `${selectedStore.name}:${selectedStore.longitude}:${selectedStore.latitude}`,
             longitude: selectedStore.longitude,
             latitude: selectedStore.latitude,
             categoryCode: focusCategoryCode(selectedStore.category, selectedStore.categoryCode),
+            placementMode: "selected-focus",
             building: null,
-          }),
-          categoryCode: focusCategoryCode(selectedStore.category, selectedStore.categoryCode),
-          placementMode: "selected-focus",
-        }
-      : null;
+          }
+        : null,
+    [selectedStore, viewport.presentationMode, viewport.storefront3dUnavailable],
+  );
+  const selectedFocusCandidates = useMemo(
+    () => (selectedFocusCandidate ? [selectedFocusCandidate] : []),
+    [selectedFocusCandidate],
+  );
+  const selectedFocusPlacements = useStorefrontBuildingPlacements(
+    selectedFocusCandidates,
+    storefronts.visibleStores,
+  );
+  const selectedFocusPlacement = selectedFocusCandidate
+    ? selectedFocusPlacements.find((placement) => placement.storeId === selectedFocusCandidate.id)
+    : undefined;
+  const selectedFocusStorefront: SelectedStorefront | null = selectedFocusCandidate
+    ? {
+        ...selectedFocusCandidate,
+        building: selectedFocusPlacement
+          ? {
+              id: selectedFocusPlacement.building.buildingId,
+              center: selectedFocusPlacement.building.center,
+              plotSizeMeters: selectedFocusPlacement.building.plotSizeMeters,
+              heightMeters: selectedFocusPlacement.building.heightMeters,
+              storeCountInBuilding: selectedFocusPlacement.building.storeCountInBuilding,
+            }
+          : null,
+      }
+    : null;
 
   function selectAndFocusStore(storeName: string) {
     const store = storefronts.visibleStores.find((candidate) => candidate.name === storeName);
