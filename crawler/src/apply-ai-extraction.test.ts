@@ -20,6 +20,7 @@ const baseSubsidy: Subsidy = {
   contact: '000-0000',
   region: [],
   industry: [],
+  supportRealm: '경영',
 }
 
 const EMPTY_FIELDS: ExtractedFields = {

@@ -1,22 +1,64 @@
 {
-    "schemaVersion": 1,
-    "title": "소상공인 정부 지원금 큐레이터",
-    "summary": "정부 지원금 정보가 여러 기관 사이트에 흩어져 있어, 소상공인이 자신에게 맞는 지원금을 한눈에 파악하기 어려운 문제를 해결하는 서비스입니다.",
-    "githubUser": "syd348(신서연)",
-    "demoUrl": "https://hub.syd348.com",
-    "thumbnail": "thumbnail.png",
-    "screenshots": [],
-    "problem": "정부24, 소상공인시장진흥공단, 지자체 등 여러 기관 사이트에 정보가 흩어져 있어, 내 조건에 맞는 지원금을 검색·비교하기가 어렵습니다.",
-    "targetUsers": ["소상공인"],
-    "features": ["지원금 매칭 서비스", "지원금 찾기", "지원금 매칭"],
-    "featureTags": ["지원금 매칭", "지원금 찾기", "지원금 매칭 서비스"],
-    "techStack": ["React", "TypeScript", "Tailwind CSS", "Supabase"],
-    "techHighlights": [],
-    "developmentWithAI": "저는 문제와 핵심 기능을 정했습니다. AI는 요구사항을 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 실행하고 테스트하면서 수정했습니다.",
-    "agent": {
-      "summary": "Cursor, Claude를 사용하여 개발했습니다.",
-      "agentTools": [],
-      "workflows": []
-    }
+  "schemaVersion": 1,
+  "title": "소상공인 정부 지원금 큐레이터",
+  "summary": "정부 지원금 정보가 여러 기관 사이트에 흩어져 있어, 소상공인이 자신에게 맞는 지원금을 한눈에 파악하기 어려운 문제를 해결하는 서비스입니다.",
+  "githubUser": "syd348(신서연)",
+  "demoUrl": "https://hub.syd348.com",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
+  "problem": "정부24, 소상공인시장진흥공단, 지자체 등 여러 기관 사이트에 정보가 흩어져 있어, 내 조건에 맞는 지원금을 검색·비교하기가 어렵습니다.",
+  "targetUsers": [
+    "소상공인",
+    "예비창업자"
+  ],
+  "features": [
+    "업종·지역·사업 규모·업력 등 조건을 입력하면 맞는 정부 지원금을 매칭해 보여줍니다.",
+    "수출·기술·경영·내수·창업·인력·금융 중 관심 있는 지원분야를 복수선택해 필터링합니다.",
+    "마감일(D-day)·지원금액·최신순으로 정렬해 지원금을 비교할 수 있습니다.",
+    "지원금 상세 페이지에서 자격 요건과 신청 방법을 확인하고 외부 기관 사이트로 바로 연결됩니다."
+  ],
+  "featureTags": [
+    "지원금 매칭",
+    "지원분야 필터",
+    "마감일 정렬",
+    "외부 신청 연결"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Express",
+    "Supabase (PostgreSQL)"
+  ],
+  "techHighlights": [
+    "기업마당(bizinfo)·K-Startup 두 곳의 공공 Open API를 매일 자동 수집해 하나의 지원금 DB로 정규화합니다(GitHub Actions 크론).",
+    "Gemini API로 공고 첨부파일(PDF/HWP)에서 지원 자격·금액 조건을 구조화 추출해 매칭 정확도를 높입니다.",
+    "React + TanStack Query로 무한 스크롤 리스트를 구현하고, Express + zod로 요청을 검증하는 REST API와 연동합니다."
+  ],
+  "developmentWithAI": "저는 문제와 핵심 기능을 정했습니다. AI는 요구사항을 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 실행하고 테스트하면서 수정했습니다.",
+  "agent": {
+    "summary": "GitHub 이슈 단위로 계획 문서 작성부터 구현, 테스트, PR 생성까지 이어지는 Skill 워크플로우를 반복 사용해 개발했습니다.",
+    "agentTools": [
+      {
+        "type": "skill",
+        "name": "issue-workflow",
+        "purpose": "이슈별로 계획 문서 작성 → 묶음 단위 구현 → 테스트/린트 검증 → 커밋 → PR 생성까지 표준화된 흐름으로 진행합니다."
+      },
+      {
+        "type": "skill",
+        "name": "gov-subsidy-design",
+        "purpose": "UI 작업 시 디자인 토큰·화면 명세를 참고해 온보딩·홈·상세 화면의 스타일을 일관되게 유지합니다."
+      },
+      {
+        "type": "agent",
+        "name": "Explore",
+        "purpose": "코드베이스 전체를 탐색해 필드 하나를 바꿀 때 영향받는 모든 참조 지점(shared 타입, 서버, 크롤러, 테스트)을 빠짐없이 찾습니다."
+      }
+    ],
+    "workflows": [
+      "GitHub 이슈 등록 → 계획 문서 작성 → 사용자 승인 → 묶음 단위 구현 → npm test/lint 검증 → PR 생성까지 issue-workflow Skill로 반복 수행"
+    ]
   }
-  
+}

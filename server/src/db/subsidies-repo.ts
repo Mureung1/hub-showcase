@@ -123,7 +123,7 @@ export async function findAll(
  */
 export async function findById(
   id: string,
-  profile?: Pick<OnboardingProfile, 'region' | 'industry'>,
+  profile?: Pick<OnboardingProfile, 'region' | 'supportRealm'>,
 ): Promise<Subsidy | null> {
   const { data, error } = await supabase
     .from(SUBSIDIES_TABLE)
@@ -157,15 +157,12 @@ export async function findById(
 const REGION_MATCH_BONUS = 20
 
 /**
- * industry 조건 가점 (이슈 #52). region과 달리 **가점만 주고 불일치 페널티는 없다** —
- * [#43](https://github.com/syd348/hub/issues/43)의 trgetNm 전용 키워드 매칭은 0.2%(3/1500)만
- * 매칭돼 반영을 보류했었는데, bsnsSumryCn까지 포함하고 동의어를 넓혀 실 API 500건으로
- * 오탐(경제과학진흥원 등 substring 충돌, "~업 제외" 부정 문맥)까지 걸러낸 뒤 검증하니
- * 6.6%(33/500)로 개선됐다. 그래도 region(hashtags 기반, ~98% 커버리지)보다는 신뢰도가
- * 낮아 페널티는 넣지 않았다 — subsidy.industry가 비어있으면(대다수, ~93%) "업종 정보 없음"으로
- * 간주해 중립 유지. 상세: docs/week4/issue-52-industry-match-plan.md
+ * 이슈 #91/#92: 온보딩 업종(industry) 질문을 지원분야(supportRealm) 복수선택으로 교체하며
+ * industry 조건 가점(구 이슈 #52)을 제거했다. `Subsidy.industry`(크롤러 추출 업종, 이슈 #52)
+ * 필드 자체는 그대로 남아있지만 더 이상 매칭에 쓰이지 않는 정보성 데이터다 — 전부 걷어낼지는
+ * 후속 결정 필요(`docs/week4/issue-92-onboarding-support-realm-plan.md` 참고). 대신 아래
+ * `matchesSupportRealm`이 hard filter로 새 지원분야 축을 반영한다.
  */
-const INDUSTRY_MATCH_BONUS = 10
 
 /**
  * 이슈 #67: employees/revenue/businessYears 조건 가점.
@@ -206,18 +203,19 @@ const BUSINESS_YEARS_MIN: Record<string, number> = {
   '10년 이상': 10,
 }
 
-type ScoringProfile = Pick<OnboardingProfile, 'region' | 'industry'> &
+type ScoringProfile = Pick<OnboardingProfile, 'region' | 'supportRealm'> &
   Partial<Pick<OnboardingProfile, 'employees' | 'revenue' | 'businessYears'>>
 
+/**
+ * 이슈 #92: supportRealm은 여기서 가점이 아니라 아래 `matchesSupportRealm`으로 hard filter
+ * 처리한다(region과 동일 방식, 사용자 결정) — 그래서 scoreForProfile 자체엔 supportRealm 가점
+ * 로직이 없다.
+ */
 function scoreForProfile(subsidy: Subsidy, profile: ScoringProfile): number {
   let score = subsidy.match
 
   if (subsidy.region.length > 0 && subsidy.region.includes(profile.region)) {
     score = Math.min(100, score + REGION_MATCH_BONUS)
-  }
-
-  if (subsidy.industry.includes(profile.industry)) {
-    score = Math.min(100, score + INDUSTRY_MATCH_BONUS)
   }
 
   if (subsidy.employeesMaxCount != null && profile.employees) {
@@ -250,8 +248,19 @@ function matchesRegion(subsidy: Subsidy, profile: OnboardingProfile): boolean {
 }
 
 /**
+ * 이슈 #92: profile.supportRealm(복수선택)과 subsidy.supportRealm(단일값)을 hard filter로
+ * 비교한다 — region과 달리 subsidy.supportRealm은 실측 결측 0%라 "정보 없음" 예외가 없다.
+ * profile.supportRealm이 비어있으면(zod가 min(1)로 막아 실제로는 안 생기지만 방어적으로)
+ * 필터링하지 않는다.
+ */
+function matchesSupportRealm(subsidy: Subsidy, profile: OnboardingProfile): boolean {
+  return profile.supportRealm.length === 0 || profile.supportRealm.includes(subsidy.supportRealm)
+}
+
+/**
  * 프로필 조건 매칭 + 정렬.
- * region 불일치는 필터링(#62), industry는 가점만 scoreForProfile로 반영된다.
+ * region·supportRealm 불일치는 필터링(#62/#92), employees/revenue/businessYears는 가점만
+ * scoreForProfile로 반영된다.
  */
 export async function match(
   profile: OnboardingProfile,
@@ -260,7 +269,9 @@ export async function match(
   limit: number = DEFAULT_LIMIT,
 ): Promise<PagedResult> {
   const items = await loadAll()
-  const filtered = items.filter((item) => matchesRegion(item, profile))
+  const filtered = items.filter(
+    (item) => matchesRegion(item, profile) && matchesSupportRealm(item, profile),
+  )
   const scored = filtered.map((item) => ({ ...item, match: scoreForProfile(item, profile) }))
   const sorted = applySort(scored, sort)
   return paginate(sorted, page, limit)

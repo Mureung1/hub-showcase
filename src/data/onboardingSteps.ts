@@ -25,14 +25,20 @@ export interface StepMeta {
 
 export const TOTAL_STEPS = 4
 
-/** 업종 (step1) */
-export const INDUSTRY_OPTIONS: SelectOption[] = [
-  { value: '음식점', label: '음식점', icon: '🍽️' },
-  { value: '카페·베이커리', label: '카페·베이커리', icon: '☕' },
-  { value: '소매·유통', label: '소매·유통', icon: '🛒' },
-  { value: '서비스업', label: '서비스업 (미용, 세탁 등)', icon: '💼' },
-  { value: '제조업', label: '제조업', icon: '🏭' },
-  { value: '기타', label: '기타 (직접 입력)', icon: '✏️' },
+/**
+ * 지원분야 복수선택 (step1, 이슈 #91/#92). 예전 업종(industry) 질문을 대체함 — bizinfo
+ * `pldirSportRealmLclasCodeNm`/K-Startup `supt_biz_clsfc`가 공통으로 대응하는 8개 고정
+ * 카테고리 중 "기타"를 제외한 7개(자유 텍스트 입력이 안 맞는 고정 분류라 커스텀 입력 없음).
+ * `crawler/src/mapper.ts`/`kstartup-mapper.ts`의 `supportRealm` 값과 정확히 일치해야 매칭된다.
+ */
+export const SUPPORT_REALM_OPTIONS: SelectOption[] = [
+  { value: '수출', label: '수출', icon: '🚢' },
+  { value: '기술', label: '기술', icon: '🔬' },
+  { value: '경영', label: '경영', icon: '📊' },
+  { value: '내수', label: '내수', icon: '🏪' },
+  { value: '창업', label: '창업', icon: '🚀' },
+  { value: '인력', label: '인력', icon: '👥' },
+  { value: '금융', label: '금융', icon: '💰' },
 ]
 
 /** 직원 수 (step4) */
@@ -71,9 +77,9 @@ export const BUSINESS_YEARS_OPTIONS: string[] = [
 export const STEP_META: Record<number, StepMeta> = {
   1: {
     step: 1,
-    field: 'industry',
-    question: '어떤 업종으로\n사업하고 계세요?',
-    hint: '지원금은 업종별로 다르게 운영돼요',
+    field: 'supportRealm',
+    question: '어떤 분야의\n지원이 필요하세요?',
+    hint: '여러 개 선택할 수 있어요',
   },
   2: {
     step: 2,

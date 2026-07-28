@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import Step1Industry, { isStep1Complete } from '../components/onboarding/Step1Industry'
+import Step1SupportRealm, { isStep1Complete } from '../components/onboarding/Step1SupportRealm'
 import Step2Region, { isStep2Complete } from '../components/onboarding/Step2Region'
 import Step3District, { isStep3Complete } from '../components/onboarding/Step3District'
 import Step4Scale, { isStep4Complete } from '../components/onboarding/Step4Scale'
@@ -47,7 +47,7 @@ export default function OnboardingStep() {
   }
 
   const canProceed = (() => {
-    if (current === 1) return isStep1Complete(profile.industry)
+    if (current === 1) return isStep1Complete(profile.supportRealm)
     if (current === 2) return isStep2Complete(profile.region)
     if (current === 3) return isStep3Complete(profile.region, profile.district)
     if (current === 4) {
@@ -91,7 +91,7 @@ export default function OnboardingStep() {
         <div className="step-hint">{meta.hint}</div>
 
         <div className="step-content" data-step={current}>
-          {current === 1 && <Step1Industry />}
+          {current === 1 && <Step1SupportRealm />}
           {current === 2 && <Step2Region />}
           {current === 3 && <Step3District />}
           {current === 4 && <Step4Scale />}

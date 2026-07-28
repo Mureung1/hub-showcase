@@ -1,4 +1,6 @@
 import { fetchAnnouncements } from './bizinfo-client.js'
+import { fetchKstartupAnnouncements } from './kstartup-client.js'
+import { processKstartupAnnouncements } from './kstartup-pipeline.js'
 import { processAnnouncements } from './pipeline.js'
 import { sweepExpired } from './sweep.js'
 
@@ -8,6 +10,8 @@ import { sweepExpired } from './sweep.js'
  * 최근 공고 위주로만 조회한다 — 전체 백필은 backfill.ts 참고.
  */
 const DAILY_PAGE_UNIT = 200
+/** perPage=300으로 호출 시 500 에러 확인(2026-07-28 실측) — 안전 마진으로 100 사용 */
+const KSTARTUP_PAGE_UNIT = 100
 
 async function main(): Promise<void> {
   const items = await fetchAnnouncements({ pageIndex: 1, pageUnit: DAILY_PAGE_UNIT })
@@ -17,6 +21,19 @@ async function main(): Promise<void> {
     console.log(`[crawler] 이미 마감된 공고 ${expired}건 제외`)
   }
   console.log(`[crawler] ${upserted}건 upsert 완료`)
+
+  /**
+   * K-Startup은 bizinfo와 별도 소스라 실패해도 bizinfo 결과에 영향 주지 않게 격리한다(이슈 #94).
+   */
+  try {
+    const kstartupItems = await fetchKstartupAnnouncements({ page: 1, perPage: KSTARTUP_PAGE_UNIT })
+    const kstartupResult = await processKstartupAnnouncements(kstartupItems)
+    console.log(
+      `[crawler] K-Startup ${kstartupResult.upserted}건 upsert (중복 제외 ${kstartupResult.duplicates}건, 마감 제외 ${kstartupResult.expired}건)`,
+    )
+  } catch (err) {
+    console.error('[crawler] K-Startup 조회 실패 (bizinfo 결과는 유지):', err)
+  }
 
   /**
    * 위 필터는 그날 새로 수집된 공고에만 적용된다 — 이미 DB에 있던 공고는 재수집되지 않으면

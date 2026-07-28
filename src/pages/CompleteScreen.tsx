@@ -38,8 +38,8 @@ export default function CompleteScreen() {
 
       <div className="summary-box">
         <div className="summary-row">
-          <span className="label">업종</span>
-          <span className="value">{profile.industry}</span>
+          <span className="label">지원분야</span>
+          <span className="value">{profile.supportRealm.join(', ')}</span>
         </div>
         <div className="summary-row">
           <span className="label">지역</span>

@@ -7,7 +7,7 @@ import { DEFAULT_LIMIT, DEFAULT_PAGE, match } from '../db/subsidies-repo.js'
 export const matchRouter = Router()
 
 const profileSchema = z.object({
-  industry: z.string(),
+  supportRealm: z.array(z.string()).min(1),
   region: z.string(),
   district: z.string(),
   employees: z.string(),

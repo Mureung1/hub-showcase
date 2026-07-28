@@ -91,9 +91,16 @@ Button active: `scale(0.97)` / card active: `scale(0.98)`
 ## Component States
 
 ### OptionButton (`.opt`)
-- default: white bg, `--border` border
-- hover: `--blue` border, `--blue-soft` bg
-- selected: `--blue` border+text, `--blue-soft` bg, font-weight 500
+- default: white bg, `--border` border(1px)
+- hover: `--blue` border(1px) — 배경은 안 바뀜(white 그대로), `@media (hover: hover) and
+  (pointer: fine)`로 감싸 실제 마우스/트랙패드 기기에만 적용(이슈 #102 — 터치 전용 기기는
+  탭이 :hover를 흉내 내고 안 풀리는 "sticky hover" 현상이 있어 이 가드가 없으면 모바일에서
+  선택 해제해도 hover 스타일이 남음)
+- selected: `--blue` border(1px), `--blue-soft` bg, `--blue` text, font-weight 500
+- 이슈 #92 후속: 원래 hover도 `--blue-soft` bg를 같이 썼는데, 복수선택에서 같은 버튼을 다시
+  눌러 해제할 때 마우스가 버튼 위에 남아있으면 hover가 selected처럼 보이는 문제가 있었다.
+  배경 채움을 selected 전용 신호로 만들어 hover와 selected가 절대 겹치지 않게 함(체크마크
+  아이콘, border-width 2px 둘 다 사용자 피드백으로 되돌리고 배경 채움만 남김)
 
 ### FilterChip (`.home-chip`)
 - default: white, `--text-sub`

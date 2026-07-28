@@ -47,12 +47,14 @@ function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
     business_years: null,
     business_years_max: null,
     atch_file_id: null,
+    support_realm: '경영', // profile 기본값(supportRealm: ['경영'])과 맞춰 hard filter에 안 걸리게 함
+    support_realm_detail: null,
     ...overrides,
   }
 }
 
 const profile: OnboardingProfile = {
-  industry: '음식점',
+  supportRealm: ['경영'],
   region: '서울',
   district: '마포구',
   employees: '1~4명',
@@ -108,49 +110,47 @@ describe('match', () => {
   })
 })
 
-describe('match — industry 가점 (이슈 #52)', () => {
+describe('match — supportRealm hard filter (이슈 #92)', () => {
   beforeEach(() => {
     state.rows = []
   })
 
-  it('subsidy.industry에 profile.industry가 포함되면 가점을 받는다', async () => {
-    state.rows = [makeRow({ id: '1', industry: ['음식점', '카페·베이커리'] })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(60) // 50 + 10 (region은 비어있어 변화 없음)
+  it('subsidy.supportRealm이 profile.supportRealm에 포함되면 결과에 남는다', async () => {
+    state.rows = [makeRow({ id: '1', support_realm: '경영' })]
+    const { items, total } = await match(profile) // profile.supportRealm = ['경영']
+    expect(items).toHaveLength(1)
+    expect(total).toBe(1)
   })
 
-  it('subsidy.industry가 있지만 profile.industry와 다르면 페널티 없이 그대로 유지한다', async () => {
-    state.rows = [makeRow({ id: '1', industry: ['제조업'] })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(50)
+  it('subsidy.supportRealm이 profile.supportRealm에 없으면 결과에서 제외된다', async () => {
+    state.rows = [makeRow({ id: '1', support_realm: '금융' })]
+    const { items, total } = await match(profile)
+    expect(items).toHaveLength(0)
+    expect(total).toBe(0)
   })
 
-  it('subsidy.industry가 비어있으면(업종 정보 없음) 점수를 그대로 유지한다', async () => {
-    state.rows = [makeRow({ id: '1', industry: [] })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(50)
+  it('복수선택된 값 중 하나만 일치해도 결과에 남는다', async () => {
+    const multiProfile = { ...profile, supportRealm: ['금융', '경영'] }
+    state.rows = [makeRow({ id: '1', support_realm: '경영' })]
+    const { items } = await match(multiProfile)
+    expect(items).toHaveLength(1)
   })
 
-  it('region 가점과 industry 가점이 함께 적용된다', async () => {
-    state.rows = [makeRow({ id: '1', region: ['서울'], industry: ['음식점'] })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(80) // 50 + 20(region) + 10(industry)
+  it('profile.supportRealm이 비어있으면(방어적 기본값) 필터링하지 않는다', async () => {
+    const emptyProfile = { ...profile, supportRealm: [] }
+    state.rows = [makeRow({ id: '1', support_realm: '금융' })]
+    const { items } = await match(emptyProfile)
+    expect(items).toHaveLength(1)
   })
 
-  it('industry 가점도 100을 넘지 않는다', async () => {
-    state.rows = [makeRow({ id: '1', industry: ['음식점'], match_score: 95 })]
-    const {
-      items: [result],
-    } = await match(profile)
-    expect(result.match).toBe(100)
+  it('region 필터와 supportRealm 필터가 함께 적용된다', async () => {
+    state.rows = [
+      makeRow({ id: 'match', region: ['서울'], support_realm: '경영' }),
+      makeRow({ id: 'region-mismatch', region: ['부산'], support_realm: '경영' }),
+      makeRow({ id: 'realm-mismatch', region: ['서울'], support_realm: '금융' }),
+    ]
+    const { items } = await match(profile)
+    expect(items.map((r) => r.id)).toEqual(['match'])
   })
 })
 
@@ -262,14 +262,14 @@ describe('findById — 프로필 기반 재계산 (이슈 #61)', () => {
   })
 
   it('profile을 넘기면 리스트(match())와 동일한 공식으로 매칭도를 재계산한다', async () => {
-    state.single = makeRow({ id: '1', region: ['서울'], industry: ['음식점'], match_score: 50 })
-    const result = await findById('1', { region: '서울', industry: '음식점' })
-    expect(result?.match).toBe(80) // 50 + 20(region) + 10(industry) — match() 테스트와 동일 공식
+    state.single = makeRow({ id: '1', region: ['서울'], match_score: 50 })
+    const result = await findById('1', { region: '서울', supportRealm: ['경영'] })
+    expect(result?.match).toBe(70) // 50 + 20(region) — findById는 목록 hard filter를 적용하지 않고 scoreForProfile만 재계산
   })
 
   it('존재하지 않는 id는 null을 반환한다', async () => {
     state.single = null
-    const result = await findById('no-such-id', { region: '서울', industry: '음식점' })
+    const result = await findById('no-such-id', { region: '서울', supportRealm: ['경영'] })
     expect(result).toBeNull()
   })
 })
