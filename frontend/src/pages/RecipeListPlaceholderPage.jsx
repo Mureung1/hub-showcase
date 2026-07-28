@@ -273,9 +273,6 @@ function RecipeListPlaceholderPage() {
             <button type="button" className="min-h-13.25 rounded-lg border border-[#aa8c4b] bg-[rgb(213_178_101/8%)] px-3.25 text-left text-base text-[#eed08b] short-screen:min-h-10.75" disabled>
               레시피북
             </button>
-            <button type="button" className="min-h-13.25 rounded-lg border border-transparent px-3.25 text-left text-base text-[#eed08b] short-screen:min-h-10.75" disabled>
-              검색
-            </button>
             <button
               type="button"
               className="min-h-13.25 rounded-lg border border-transparent px-3.25 text-left text-base text-[#eed08b] hover:bg-[rgb(255_244_204/7%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580] short-screen:min-h-10.75"
