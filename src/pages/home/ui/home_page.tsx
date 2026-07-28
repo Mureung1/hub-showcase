@@ -52,7 +52,7 @@ export function HomePage({
     <section className="home-page" aria-labelledby="retrieve-title">
       <header className="home-page__hero">
         <p className="home-page__kicker">꺼내보기</p>
-        <h2 id="retrieve-title">지금 필요한 인사이트를 다시 꺼내보세요</h2>
+        <h2 id="retrieve-title">지금 필요한 인사이트를 꺼내 보세요</h2>
         <RetrieveSearchPanel
           onClearQuery={onClearQuery}
           onQueryChange={onQueryChange}
@@ -65,12 +65,12 @@ export function HomePage({
       </header>
 
       {libraryState === 'loading' ? (
-        <LoadingState label="꺼내볼 인사이트를 불러오는 중" />
+        <LoadingState label="꺼내볼 인사이트를 불러오고 있어요" />
       ) : libraryState === 'unavailable' ? (
         <div className="home-page__no-results">
           <EmptyState
             actionLabel="다시 불러오기"
-            description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와주세요."
+            description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와 주세요."
             onAction={onRetryLoad}
             title="보관함을 불러오지 못해 꺼내볼 수 없어요"
           />
@@ -78,8 +78,8 @@ export function HomePage({
       ) : insightCount === 0 ? (
         <div className="home-page__no-results">
           <EmptyState
-            actionLabel="링크 저장"
-            description="첫 링크를 저장하면 지금 상황에 맞는 인사이트를 다시 꺼낼 수 있어요."
+            actionLabel="인사이트 저장하기"
+            description="첫 인사이트를 저장하면 지금 상황에 맞는 자료를 다시 꺼낼 수 있어요."
             onAction={onOpenSave}
             title="아직 저장한 인사이트가 없어요"
           />

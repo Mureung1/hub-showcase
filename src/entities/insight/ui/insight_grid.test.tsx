@@ -193,14 +193,18 @@ describe('InsightGrid', () => {
     await user.type(memoInput, '새 메모');
     await user.click(categoryInput);
     await user.click(screen.getByRole('option', { name: 'Design Systems' }));
-    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+    await user.click(
+      screen.getByRole('button', { name: '변경 내용 저장하기' })
+    );
 
     expect(onUpdateInsight).toHaveBeenCalledWith('insight-1', {
       title: '새 제목',
       memo: '새 메모',
       categoryId: DESIGN_SYSTEMS_CATEGORY_ID,
     });
-    expect(screen.queryByRole('button', { name: '변경 저장' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: '변경 내용 저장하기' })
+    ).toBeNull();
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: '수정' })
     );
@@ -230,7 +234,9 @@ describe('InsightGrid', () => {
     await user.click(
       screen.getByRole('option', { name: '새 카테고리 만들기' })
     );
-    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+    await user.click(
+      screen.getByRole('button', { name: '변경 내용 저장하기' })
+    );
 
     expect(onRequestCategoryCreation).toHaveBeenCalledOnce();
     expect(onUpdateInsight).toHaveBeenCalledWith(
@@ -258,7 +264,7 @@ describe('InsightGrid', () => {
       screen.getByRole('textbox', { name: '제목' })
     );
 
-    await user.click(screen.getByRole('button', { name: '취소' }));
+    await user.click(screen.getByRole('button', { name: '닫기' }));
 
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: '수정' })
@@ -285,20 +291,26 @@ describe('InsightGrid', () => {
     const titleInput = screen.getByRole('textbox', { name: '제목' });
     await user.clear(titleInput);
     await user.type(titleInput, '실패해도 남을 제목');
-    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+    await user.click(
+      screen.getByRole('button', { name: '변경 내용 저장하기' })
+    );
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '입력은 유지했어요.'
+      '입력한 내용은 그대로 두었어요.'
     );
     expect((titleInput as HTMLInputElement).value).toBe('실패해도 남을 제목');
 
     await user.type(titleInput, '!');
     expect(screen.queryByRole('alert')).toBeNull();
-    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+    await user.click(
+      screen.getByRole('button', { name: '변경 내용 저장하기' })
+    );
 
     expect(onUpdateInsight).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.queryByRole('button', { name: '다시 시도' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: '변경 내용 다시 저장하기' })
+    ).toBeNull();
   });
 
   it('keeps editing state isolated to the selected card', async () => {
@@ -352,9 +364,9 @@ describe('InsightGrid', () => {
     await user.click(screen.getByRole('button', { name: '삭제' }));
     expect(screen.getByText(/삭제할까요/)).not.toBeNull();
     expect(document.activeElement).toBe(
-      screen.getByRole('button', { name: '삭제 확정' })
+      screen.getByRole('button', { name: '인사이트 삭제하기' })
     );
-    await user.click(screen.getByRole('button', { name: '취소' }));
+    await user.click(screen.getByRole('button', { name: '닫기' }));
 
     expect(onDeleteInsight).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: '삭제 후보' })).not.toBeNull();
@@ -363,14 +375,14 @@ describe('InsightGrid', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '삭제' }));
-    await user.click(screen.getByRole('button', { name: '삭제 확정' }));
+    await user.click(screen.getByRole('button', { name: '인사이트 삭제하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
       '카드는 그대로 두었어요.'
     );
     expect(screen.getByRole('heading', { name: '삭제 후보' })).not.toBeNull();
 
-    await user.click(screen.getByRole('button', { name: '삭제 다시 시도' }));
+    await user.click(screen.getByRole('button', { name: '다시 삭제하기' }));
 
     expect(onDeleteInsight).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('alert')).toBeNull();
@@ -388,7 +400,7 @@ describe('InsightGrid', () => {
     const firstCard = screen.getAllByRole('article')[0]!;
     await user.click(within(firstCard).getByRole('button', { name: '삭제' }));
     await user.click(
-      within(firstCard).getByRole('button', { name: '삭제 확정' })
+      within(firstCard).getByRole('button', { name: '인사이트 삭제하기' })
     );
 
     await waitFor(() => {
@@ -399,7 +411,7 @@ describe('InsightGrid', () => {
     });
 
     await user.click(screen.getByRole('button', { name: '삭제' }));
-    await user.click(screen.getByRole('button', { name: '삭제 확정' }));
+    await user.click(screen.getByRole('button', { name: '인사이트 삭제하기' }));
 
     await waitFor(() => {
       expect(screen.queryByRole('article')).toBeNull();
@@ -425,7 +437,7 @@ describe('InsightGrid', () => {
 
     expect(screen.queryByRole('link', { name: '원문 열기' })).toBeNull();
     expect(screen.getByRole('status').textContent).toContain(
-      '안전하지 않은 주소'
+      '안전하지 않은 링크'
     );
   });
 });

@@ -86,7 +86,7 @@ export function LibraryPage({
             {activeCategory === 'all' ? '전체 인사이트' : activeCategoryLabel}
           </h2>
           <p className="library-page__summary">
-            카테고리와 검색으로 저장한 링크를 빠르게 찾아보세요.
+            카테고리와 검색으로 저장한 인사이트를 빠르게 찾아 보세요.
           </p>
         </div>
         <span className="library-page__count">{insights.length}개</span>
@@ -98,7 +98,7 @@ export function LibraryPage({
             size="small"
             type="button"
           >
-            내 저장물 가져오기
+            인사이트 가져오기
           </Button>
         ) : null}
       </header>
@@ -132,7 +132,7 @@ export function LibraryPage({
             id="global-search"
             onChange={(event) => onQueryChange(event.currentTarget.value)}
             onReset={() => onQueryChange('')}
-            placeholder="제목, 메모, 카테고리, 도메인, URL 검색"
+            placeholder="제목, 메모, 카테고리, 도메인이나 URL 검색"
             ref={searchInputRef}
             size="medium"
             value={query}
@@ -150,22 +150,22 @@ export function LibraryPage({
           </p>
         ) : null}
         {loading ? (
-          <LoadingState label="보관함을 불러오는 중" />
+          <LoadingState label="보관함을 불러오고 있어요" />
         ) : unavailable && totalInsightCount === 0 ? (
           <EmptyState
             actionLabel="다시 불러오기"
-            description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와주세요."
+            description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와 주세요."
             onAction={onRetryLoad}
             title="보관함을 불러오지 못했어요"
           />
         ) : !hasLibraryInsights ? (
           <EmptyState
-            actionLabel="링크 저장"
-            description="아직 저장한 링크가 없습니다. 새 링크를 저장하면 이곳에서 다시 찾을 수 있어요."
+            actionLabel="인사이트 저장하기"
+            description="첫 인사이트를 저장하면 여기에서 다시 찾을 수 있어요."
             onAction={onOpenSave}
             onSecondaryAction={onOpenImport}
-            secondaryActionLabel="내 저장물 가져오기"
-            title="저장된 링크가 없어요"
+            secondaryActionLabel="인사이트 가져오기"
+            title="아직 저장한 인사이트가 없어요"
           />
         ) : insights.length > 0 ? (
           <InsightGrid
@@ -181,20 +181,20 @@ export function LibraryPage({
         ) : hasQuery ? (
           <EmptyState
             actionLabel="검색어 지우기"
-            description="입력한 검색어와 맞는 링크가 없어요. 검색어를 줄이거나 다른 단서로 바꿔보세요."
+            description="검색어를 줄이거나 다른 단서를 입력해 보세요."
             onAction={clearFilters}
             onSecondaryAction={onOpenSave}
-            secondaryActionLabel="링크 저장"
-            title="검색 결과가 없어요"
+            secondaryActionLabel="인사이트 저장하기"
+            title="이 검색어로 찾은 인사이트가 없어요"
           />
         ) : (
           <EmptyState
             actionLabel="전체 보기"
-            description="선택한 카테고리에 저장된 링크가 없어요. 전체 보관함을 확인해보세요."
+            description="전체 보관함을 확인해 보세요."
             onAction={clearFilters}
             onSecondaryAction={onOpenSave}
-            secondaryActionLabel="링크 저장"
-            title="조건에 맞는 인사이트가 없어요"
+            secondaryActionLabel="인사이트 저장하기"
+            title="이 카테고리에 인사이트가 없어요"
           />
         )}
       </div>

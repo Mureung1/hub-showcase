@@ -70,7 +70,7 @@ describe('CategoryManager', () => {
     await user.click(screen.getByRole('button', { name: '새 카테고리' }));
     await user.type(screen.getByLabelText('카테고리 이름'), '개발');
     await user.click(screen.getByRole('button', { name: '초록' }));
-    await user.click(screen.getByRole('button', { name: '만들기' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 만들기' }));
 
     expect(createCategory).toHaveBeenCalledWith({
       colorKey: 'green-2',
@@ -104,7 +104,9 @@ describe('CategoryManager', () => {
     await user.clear(nameInput);
     await user.type(nameInput, '프론트엔드');
     await user.click(screen.getByRole('button', { name: '파랑' }));
-    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+    await user.click(
+      screen.getByRole('button', { name: '변경 내용 저장하기' })
+    );
 
     expect(updateCategory).toHaveBeenCalledWith(DEVELOPMENT_CATEGORY.id, {
       colorKey: 'blue-2',
@@ -115,10 +117,10 @@ describe('CategoryManager', () => {
     await user.click(screen.getByRole('button', { name: '카테고리 삭제' }));
 
     expect(
-      screen.getByText('연결된 인사이트는 삭제되지 않고 미분류로 이동합니다.')
+      screen.getByText('연결된 인사이트는 삭제하지 않고 미분류로 옮겨요.')
     ).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: '삭제하기' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 삭제하기' }));
 
     expect(deleteCategory).toHaveBeenCalledWith(DEVELOPMENT_CATEGORY.id);
   });
@@ -133,13 +135,13 @@ describe('CategoryManager', () => {
 
     await user.click(screen.getByRole('button', { name: '새 카테고리' }));
     await user.type(screen.getByLabelText('카테고리 이름'), '개발');
-    await user.click(screen.getByRole('button', { name: '만들기' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 만들기' }));
 
     expect(
       (screen.getByLabelText('카테고리 이름') as HTMLInputElement).value
     ).toBe('개발');
     const input = screen.getByLabelText('카테고리 이름');
-    const error = screen.getByText('같은 이름의 카테고리가 있습니다.');
+    const error = screen.getByText('같은 이름의 카테고리가 있어요.');
 
     expect(input.getAttribute('aria-invalid')).toBe('true');
     expect(input.getAttribute('aria-describedby')).toBe(error.id);
@@ -154,16 +156,18 @@ describe('CategoryManager', () => {
 
     await user.click(screen.getByRole('button', { name: '새 카테고리' }));
     await user.type(screen.getByLabelText('카테고리 이름'), '개발');
-    await user.click(screen.getByRole('button', { name: '만들기' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 만들기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '저장하지 못했습니다.'
+      '카테고리를 저장하지 못했어요.'
     );
     expect(
       (screen.getByLabelText('카테고리 이름') as HTMLInputElement).value
     ).toBe('개발');
     expect(
-      screen.getByRole('button', { name: '만들기' }).hasAttribute('disabled')
+      screen
+        .getByRole('button', { name: '카테고리 만들기' })
+        .hasAttribute('disabled')
     ).toBe(false);
   });
 
@@ -178,13 +182,15 @@ describe('CategoryManager', () => {
 
     await user.click(screen.getByRole('button', { name: '개발 수정' }));
     await user.click(screen.getByRole('button', { name: '카테고리 삭제' }));
-    await user.click(screen.getByRole('button', { name: '삭제하기' }));
+    await user.click(screen.getByRole('button', { name: '카테고리 삭제하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '저장하지 못했습니다.'
+      '카테고리를 저장하지 못했어요.'
     );
     expect(
-      screen.getByRole('button', { name: '삭제하기' }).hasAttribute('disabled')
+      screen
+        .getByRole('button', { name: '카테고리 삭제하기' })
+        .hasAttribute('disabled')
     ).toBe(false);
   });
 });
