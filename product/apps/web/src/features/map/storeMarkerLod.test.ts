@@ -24,13 +24,29 @@ const stores: MarketStore[] = [
   },
 ];
 
+const widerStores: MarketStore[] = [
+  stores[0],
+  {
+    ...stores[1],
+    longitude: 126.92655,
+    latitude: 37.5661,
+  },
+];
+
 describe("store marker level of detail", () => {
   it("groups nearby stores at wider zoom levels", () => {
     expect(groupStoreMarkers(stores, 14.5, null)).toEqual([{ store: stores[0], count: 2 }]);
   });
 
+  it("uses larger grouping cells for remaining 3D fallback markers", () => {
+    expect(groupStoreMarkers(widerStores, 15.2, null, "analysis")).toHaveLength(2);
+    expect(groupStoreMarkers(widerStores, 15.2, null, "storefront3d")).toEqual([
+      { store: widerStores[0], count: 2 },
+    ]);
+  });
+
   it("keeps the selected store separate from a nearby group", () => {
-    const groups = groupStoreMarkers(stores, 14.5, "카페 B");
+    const groups = groupStoreMarkers(stores, 14.5, "카페 B", "storefront3d");
 
     expect(groups).toHaveLength(2);
     expect(groups.find((group) => group.store.name === "카페 B")).toEqual({
@@ -40,7 +56,7 @@ describe("store marker level of detail", () => {
   });
 
   it("shows every store individually at detailed zoom", () => {
-    expect(groupStoreMarkers(stores, STORE_MARKER_DETAIL_ZOOM, null)).toEqual([
+    expect(groupStoreMarkers(stores, STORE_MARKER_DETAIL_ZOOM, null, "storefront3d")).toEqual([
       { store: stores[0], count: 1 },
       { store: stores[1], count: 1 },
     ]);
