@@ -2,19 +2,32 @@ import { useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import { COLLECTION_POINT_CATEGORIES, useCollectionPoints } from '../features/points/useCollectionPoints'
 import type { CollectionPointCategory } from '../features/points/useCollectionPoints'
+import RegionSelectSheet from '../features/region/RegionSelectSheet'
+import { formatSelectedRegionLabel, useSelectedRegion } from '../features/region/useSelectedRegion'
 import { useLanguage } from '../i18n/LanguageContext'
 import type { TranslationKey } from '../i18n/LanguageContext'
 
 export default function PointsPage() {
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
+  const { region, setRegion } = useSelectedRegion()
+  const [isRegionSheetOpen, setRegionSheetOpen] = useState(false)
   const [category, setCategory] = useState<CollectionPointCategory>(COLLECTION_POINT_CATEGORIES[0])
-  const { data: points = [], isLoading, isError } = useCollectionPoints(category)
+  const { data: points = [], isLoading, isError } = useCollectionPoints(category, region)
 
   return (
     <div>
       <PageHeader title={t('points.title')} backTo="/" />
       <div className="px-5 pt-[18px] pb-[90px]">
-        <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setRegionSheetOpen(true)}
+          className="flex w-full items-center gap-[6px] rounded-pill border border-green-100 bg-green-50 px-[14px] py-[11px] text-left text-[13.5px] font-bold text-green-900"
+        >
+          📍 {region ? formatSelectedRegionLabel(region, lang) : t('home.selectRegionPlaceholder')}
+          <span className="ml-auto">▾</span>
+        </button>
+
+        <div className="mt-3 flex flex-wrap gap-2">
           {COLLECTION_POINT_CATEGORIES.map((option) => (
             <button
               key={option}
@@ -31,7 +44,9 @@ export default function PointsPage() {
           ))}
         </div>
 
-        {isLoading ? (
+        {!region ? (
+          <p className="mt-4 text-sm text-sub">{t('points.selectRegionFirst')}</p>
+        ) : isLoading ? (
           <p className="mt-4 text-sm text-sub">{t('points.loading')}</p>
         ) : isError ? (
           <p className="mt-4 text-sm text-sub">{t('points.error')}</p>
@@ -54,6 +69,17 @@ export default function PointsPage() {
           </ul>
         )}
       </div>
+
+      {isRegionSheetOpen ? (
+        <RegionSelectSheet
+          initialRegion={region}
+          onSave={(next) => {
+            setRegion(next)
+            setRegionSheetOpen(false)
+          }}
+          onClose={() => setRegionSheetOpen(false)}
+        />
+      ) : null}
     </div>
   )
 }

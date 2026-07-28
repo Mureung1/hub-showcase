@@ -102,8 +102,11 @@ export const en = {
   'points.loading': 'Loading collection points...',
   'points.error': "Couldn't load collection points.",
   'points.empty': 'No collection points registered for this category yet.',
+  'points.selectRegionFirst': 'Please select your region first.',
   'points.category.건전지': 'Batteries',
   'points.category.형광등': 'Fluorescent Lamps',
   'points.category.소형가전': 'Small Appliances',
   'points.category.종이팩': 'Paper Cartons',
+  'points.category.폐의약품': 'Expired Medicine',
+  'points.category.의류': 'Clothing',
 } satisfies Record<keyof typeof ko, string>

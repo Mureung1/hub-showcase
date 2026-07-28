@@ -101,8 +101,11 @@ export const ko = {
   'points.loading': '수거함 정보를 불러오는 중...',
   'points.error': '수거함 정보를 불러오지 못했어요.',
   'points.empty': '이 카테고리에 등록된 수거함이 아직 없어요.',
+  'points.selectRegionFirst': '지역을 먼저 선택해 주세요.',
   'points.category.건전지': '건전지',
   'points.category.형광등': '형광등',
   'points.category.소형가전': '소형가전',
   'points.category.종이팩': '종이팩',
+  'points.category.폐의약품': '폐의약품',
+  'points.category.의류': '의류',
 } as const

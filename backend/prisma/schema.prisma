@@ -116,15 +116,23 @@ model BulkyWasteReportSite {
   @@unique([ctpvNm, sggNm])
 }
 
-// 건전지/형광등/소형가전/종이팩 전용 수거함 위치. 1차 범위는 지도 없는 목록(Week 3 스트레치에서
-// 좌표 추가 후 지도 시각화 예정)이라 좌표는 의도적으로 제외 — scripts/seedCollectionPoints.ts로 시드 관리.
+// 건전지/형광등/폐의약품/의류 수거함 위치는 실제 공공데이터(전국폐형광등폐건전지수거함표준데이터·
+// 전국폐의약품수거함표준데이터·전국의류수거함표준데이터, scripts/syncCollectionPoints.ts)로 동기화.
+// 소형가전/종이팩은 확정된 전국 API가 없어 데모 placeholder로 유지(scripts/seedCollectionPoints.ts 참고).
+// ctpvNm/sggNm은 지역 기반 "주변" 필터링용(RegionRule과 동일한 이름 규칙), lat/lng은 실 데이터에서
+// 제공되는 값을 그대로 저장 — 소형가전/종이팩 placeholder 행은 좌표가 없어 null.
 model CollectionPoint {
   id        String   @id @default(cuid())
-  category  String // 건전지 | 형광등 | 소형가전 | 종이팩
+  category  String // 건전지 | 형광등 | 소형가전 | 종이팩 | 폐의약품 | 의류
   name      String
   address   String
   hours     String? // 운영시간 — 상시(24시간) 수거함은 값이 없을 수 있음
+  ctpvNm    String?
+  sggNm     String?
+  lat       Float?
+  lng       Float?
   createdAt DateTime @default(now())
 
   @@index([category])
+  @@index([ctpvNm, sggNm])
 }
