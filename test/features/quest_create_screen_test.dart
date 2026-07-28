@@ -27,6 +27,10 @@ void main() {
   // 주 버튼은 그린 그라디언트 버튼(GradientButton)이다 — AI 분해 결과 화면의
   // 「등록하기」와 같은 위젯이다.
   Finder submitButton() => find.widgetWithText(GradientButton, '등록하기');
+
+  /// 행을 늘리는 보조 버튼. 아웃라인이었다가 🔵 블루 그라디언트로 바뀌었다
+  /// (같은 화면에서 "확정=그린 / 보조=블루"를 색으로 가르기 위해).
+  Finder addRowButton() => find.widgetWithText(GradientButton, '퀘스트 추가');
   Finder goalField() => find.byType(TextField).first;
   Finder questField(int i) => find.byType(TextField).at(i + 1);
 
@@ -132,9 +136,9 @@ void main() {
     // 삭제 버튼은 행이 1개뿐일 땐 숨겨진다.
     expect(find.byTooltip('삭제'), findsNothing);
 
-    await tester.tap(find.widgetWithText(OutlinedButton, '퀘스트 추가'));
+    await tester.tap(addRowButton());
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(OutlinedButton, '퀘스트 추가'));
+    await tester.tap(addRowButton());
     await tester.pumpAndSettle();
 
     // 이제 3개 행.
@@ -157,7 +161,7 @@ void main() {
     await tester.enterText(questField(0), '공고 3개 찾기');
 
     // 둘째 퀘스트 추가 후 제목 입력.
-    await tester.tap(find.widgetWithText(OutlinedButton, '퀘스트 추가'));
+    await tester.tap(addRowButton());
     await tester.pumpAndSettle();
     await tester.enterText(questField(1), '지원서 초안 쓰기');
     await tester.pumpAndSettle();

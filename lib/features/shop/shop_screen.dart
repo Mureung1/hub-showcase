@@ -10,6 +10,7 @@ import '../../core/error/app_failure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_segmented_button.dart';
 import '../../core/widgets/coin_pill.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/pixel_art.dart';
@@ -35,6 +36,13 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
     with TabScrollRegistration {
   @override
   int get tabIndex => 2;
+
+  /// 지금 고른 종류 필터. null = 「전체」.
+  ///
+  /// **화면 로컬 상태다** — 저장하지 않는다. 상점을 다시 열면 전체로 돌아오는 편이
+  /// "지난번에 오라만 보고 있었다"를 기억하는 것보다 예측 가능하다. 구매·장착 결과는
+  /// 저장소가 들고 있으므로 필터를 바꿔도 데이터는 그대로다.
+  ItemSlot? _slotFilter;
 
   /// 지금 처리 중인 아이템 ID. **중복 실행 방지의 핵심.**
   ///
@@ -127,6 +135,10 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 
   Widget _content(AppUser user, Set<String> inventory) {
     final theme = Theme.of(context);
+    // 필터는 카탈로그를 거르기만 한다 — 카드의 상태(보유·장착·잔액) 판정은 그대로다.
+    final items = _slotFilter == null
+        ? kShopItems
+        : itemsForSlot(_slotFilter!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,20 +170,51 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              // 정본 Content 실측: 리드 텍스트 y8~32 · 세그먼트 y52 → 사이 간격 20.
+              AppSpacing.gapBlock,
+              // 종류 필터(전체 / 배경 / 오라). 정본 `43:259` — 가로를 꽉 채운 3분할.
+              //
+              // 정본 컴포넌트 설명에는 "실제 상점에는 탭이 없다"고 적혀 있지만
+              // **사용자 결정(2026-07-29)이 우선**해 넣는다. 선택색은 기본 그린이다
+              // — 여기서 고르는 건 난이도가 아니라 "지금 보고 있는 종류"라 색을
+              // 주입하지 않는다.
+              AppSegmentedButton<ItemSlot?>(
+                expand: true,
+                segments: const [
+                  AppSegment(value: null, label: '전체'),
+                  AppSegment(value: ItemSlot.background, label: '배경'),
+                  AppSegment(value: ItemSlot.aura, label: '오라'),
+                ],
+                selected: _slotFilter,
+                // 처리 중에는 잠근다 — 요청이 날아가 있는 사이에 목록이 갈리면
+                // 어느 카드가 스피너를 돌리는지 흐려진다(카드 잠금과 같은 규칙).
+                onChanged: _busyItemId != null
+                    ? null
+                    : (slot) => setState(() => _slotFilter = slot),
+              ),
             ],
           ),
         ),
-        // 정본 Content의 요소 간 세로 간격 20(리드 텍스트 ↔ 아이템 격자).
+        // 정본 Content 실측: 세그먼트 y52~92 · 격자 y112 → 사이 간격 20.
         AppSpacing.gapBlock,
         Expanded(
-          child: kShopItems.isEmpty
-              // 방어적 빈 상태 — 카탈로그가 비는 일은 없지만 구조로 보장한다.
-              ? const EmptyView(
-                  title: '아직 판매 중인 아이템이 없어요',
-                  message: '곧 새로운 아이템을 준비할게요.',
-                  emoji: '🛍️',
-                  asset: EmptyArt.shop,
-                )
+          child: items.isEmpty
+              // 빈 상태가 두 갈래다. 필터를 걸어 0개가 된 것과 카탈로그 자체가 빈
+              // 것은 사용자가 할 수 있는 일이 다르다(필터를 풀어라 / 기다려라).
+              ? (_slotFilter != null
+                    ? const EmptyView(
+                        title: '이 종류는 아직 없어요',
+                        message: '「전체」를 눌러 다른 아이템을 둘러보세요.',
+                        emoji: '🔎',
+                        asset: EmptyArt.shop,
+                      )
+                    // 방어적 빈 상태 — 카탈로그가 비는 일은 없지만 구조로 보장한다.
+                    : const EmptyView(
+                        title: '아직 판매 중인 아이템이 없어요',
+                        message: '곧 새로운 아이템을 준비할게요.',
+                        emoji: '🛍️',
+                        asset: EmptyArt.shop,
+                      ))
               // 2열 고정 격자. **홀수 개면 마지막 칸은 빈 칸으로 둔다** — 남은 카드를
               // 폭 두 칸으로 늘리지 않는다(정본이 그 자리에 Spacer를 둔다).
               : GridView.builder(
@@ -189,9 +232,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                     crossAxisSpacing: AppSpacing.smd,
                     mainAxisExtent: _cardExtent(context),
                   ),
-                  itemCount: kShopItems.length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final item = kShopItems[index];
+                    final item = items[index];
                     return _ShopItemCard(
                       item: item,
                       owned: inventory.contains(item.id),

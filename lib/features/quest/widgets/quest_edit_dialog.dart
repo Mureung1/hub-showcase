@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/reward_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_segmented_button.dart';
+import '../../../core/widgets/difficulty_pill.dart';
 import '../../../core/widgets/reward_chip.dart';
 import '../../../models/difficulty.dart';
 import '../../../models/quest.dart';
@@ -22,11 +24,12 @@ class QuestEditResult {
 /// 등록된 퀘스트의 **제목·난이도 수정** 다이얼로그 (4주차 B-5b).
 ///
 /// 입력 규칙은 `QuestCreateScreen`을 그대로 따른다: 제목 60자 상한 + 빈 제목 거부
-/// (저장 버튼 비활성 + validator), 난이도 SegmentedButton, 난이도를 바꾸면 예상
+/// (저장 버튼 비활성 + validator), 난이도 [AppSegmentedButton], 난이도를 바꾸면 예상
 /// 보상 미리보기가 함께 갱신된다.
 ///
-/// 색 규칙(one-step-design): 노랑(코인)은 [RewardChip]이 전담한다. 이 파일은
-/// 노랑에 직접 접근하지 않는다. 강조·주요 행동은 그린을 쓴다.
+/// 색 규칙(one-step-design): 노랑(코인)은 [RewardChip]이, 보통 난이도의 노랑은
+/// [difficultyFill]이 전담한다. 이 파일은 노랑에 직접 접근하지 않는다. 강조·주요
+/// 행동은 그린을 쓴다.
 class QuestEditDialog extends StatefulWidget {
   const QuestEditDialog({super.key, required this.quest});
 
@@ -111,19 +114,26 @@ class _QuestEditDialogState extends State<QuestEditDialog> {
 
               Text('난이도', style: theme.textTheme.titleMedium),
               AppSpacing.gapSm,
-              // 좁은 다이얼로그 폭에서 왼쪽 쏠림 없이 가로를 꽉 채운다 — 세그먼트가
-              // 폭을 균등 분할해 등록 화면과 시각적으로 일관된다.
-              SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<Difficulty>(
-                  segments: [
-                    for (final d in Difficulty.values)
-                      ButtonSegment(value: d, label: Text(d.label)),
-                  ],
-                  selected: {_difficulty},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _difficulty = selection.first),
-                ),
+              // 등록 화면과 **같은 위젯**([AppSegmentedButton])이다. 예전엔 M3
+              // [SegmentedButton]이라 선택색이 M3 기본 `secondaryContainer`(🔵 블루)로
+              // 나왔다 — 블루는 AI·정보 전용이라 색 역할이 어긋나고, 무엇보다 한 앱에서
+              // 난이도를 고르는 UI가 두 벌로 갈려 있었다.
+              //
+              // `expand: true`로 정본(`123:660`, 272폭 균등 3분할)처럼 가로를 채운다.
+              AppSegmentedButton<Difficulty>(
+                expand: true,
+                segments: [
+                  for (final d in Difficulty.values)
+                    AppSegment(
+                      value: d,
+                      label: d.label,
+                      // 선택 칸은 그 칸의 난이도 색으로 채운다(등록 화면과 동일).
+                      selectedColor: difficultyFill(context, d).background,
+                      selectedForeground: difficultyFill(context, d).foreground,
+                    ),
+                ],
+                selected: _difficulty,
+                onChanged: (d) => setState(() => _difficulty = d),
               ),
               AppSpacing.gapMd,
 

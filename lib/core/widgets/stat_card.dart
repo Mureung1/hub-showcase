@@ -25,6 +25,16 @@ enum StatAccent {
 /// 쓰도록 공통화했다. 이전에는 화면마다 `_SummaryCard`/`_StatCard`/`_Stat`을 따로
 /// 들고 있어서 셋의 생김새가 조금씩 어긋났다.
 ///
+/// **배치는 세로가 아니라 가로다** (Figma 정본 `StatCard` `20:69` · 인스턴스는 홈
+/// `65:439` · MY `47:417` · 보관함 `45:334`). 실측 169×78 = 패딩 16 + 아이콘 칩 32와
+/// **나란한** 글자 묶음(라벨 12/16 + 간격 2 + 수치 20/28 = 46) + 패딩 16. 예전에는
+/// 칩을 위에 얹은 세로 배치라 같은 내용이 120dp를 먹었고, 두 칸이 화면의 한 블록을
+/// 통째로 차지해 정본과 인상이 달랐다.
+///
+/// 실제 렌더 높이는 80이다 — Figma는 1px 스트로크를 박스 **안쪽**에 그리지만
+/// Flutter의 `BoxDecoration.border`는 패딩 바깥에 1px씩 더한다. 2dp 차이라 패딩을
+/// 15로 깎아 맞추지 않는다(그러면 다른 카드들과 내부 여백이 어긋난다).
+///
 /// **서체 규칙.** [value]는 숫자만 오는 자리라 수치 서체(Sora)로 그린다. 단위처럼
 /// 붙는 한글은 [suffix]로 따로 받아 기본 서체(Pretendard)로 그린다 — Sora에는 한글
 /// 글리프가 없다. 수치가 아닌 문구(예: '아직 없음')를 넣어야 하면 [numeric]을
@@ -92,26 +102,36 @@ class StatCard extends StatelessWidget {
         border: Border.all(color: scheme.outlineVariant),
         boxShadow: AppColors.softShadow,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      // 정본 실측: 칩 ↔ 글자 묶음 간격 12, 세로 중앙 정렬.
+      child: Row(
         children: [
           _IconChip(icon: icon, color: iconColor, background: chipColor),
-          AppSpacing.gapSmd,
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          Text.rich(
-            TextSpan(
+          AppSpacing.gapWSmd,
+          // 남은 폭을 글자가 전부 받는다 — 글꼴 배율을 키우면 여기서 줄바꿈되고
+          // 카드가 아래로 자란다(가로로 넘치지 않는다).
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                TextSpan(text: value, style: valueStyle),
-                if (suffix != null)
-                  TextSpan(text: suffix, style: AppTypography.titleLarge),
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: _labelToValueGap),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: value, style: valueStyle),
+                      if (suffix != null)
+                        TextSpan(text: suffix, style: AppTypography.titleLarge),
+                    ],
+                    style: TextStyle(color: valueColor),
+                  ),
+                ),
               ],
-              style: TextStyle(color: valueColor),
             ),
           ),
         ],
@@ -119,6 +139,9 @@ class StatCard extends StatelessWidget {
     );
   }
 }
+
+/// 라벨 ↔ 수치 사이 간격(정본 실측 2). 8px 리듬 밖의 값이라 토큰이 없다.
+const double _labelToValueGap = 2;
 
 /// 32×32 라운드 사각형 아이콘 칩.
 class _IconChip extends StatelessWidget {

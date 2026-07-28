@@ -8,6 +8,7 @@ import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_segmented_button.dart';
+import '../../core/widgets/difficulty_pill.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/reward_chip.dart';
 import '../../models/analytics_event.dart';
@@ -34,7 +35,10 @@ import '../../providers/providers.dart';
 ///
 /// 색 규칙(one-step-design):
 /// - 주요 행동("등록하기") = 🟢 그린 그라디언트([GradientButtonStyle.growth]).
-/// - 노랑은 직접 쓰지 않는다. 예상 보상은 [RewardChip](allowlist)이 전담한다.
+/// - 보조 행동("퀘스트 추가") = 🔵 블루 그라디언트([GradientButtonStyle.ai]).
+/// - 난이도 세그먼트의 선택 칸 = **그 칸의 난이도 색**([difficultyFill]).
+/// - 노랑은 직접 쓰지 않는다. 예상 보상은 [RewardChip](allowlist)이, 보통 난이도의
+///   노랑은 [difficultyFill](→ `difficulty_pill.dart`, allowlist)이 전담한다.
 class QuestCreateScreen extends ConsumerStatefulWidget {
   const QuestCreateScreen({super.key});
 
@@ -257,12 +261,15 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
               AppSpacing.gapSmd,
             ],
 
-            // 퀘스트 추가 — 보조 행동이라 아웃라인. AI 재요청이 아니므로 블루로 칠하지
-            // 않고 중립 아웃라인 버튼을 쓴다.
-            OutlinedButton.icon(
+            // 퀘스트 추가 — **보조 행동이라 🔵 블루**([GradientButtonStyle.ai]).
+            // 하단의 「등록하기」가 확정(주요 행동)이라 🟢 그린이므로, 이 화면에서는
+            // "확정 = 그린 / 보조 = 블루"가 색만으로 갈린다. (예전엔 중립 아웃라인이라
+            // 두 버튼의 위계가 색으로 읽히지 않았다.)
+            GradientButton(
               onPressed: _submitting ? null : _addRow,
-              icon: const Icon(Symbols.add),
-              label: const Text('퀘스트 추가'),
+              icon: Symbols.add,
+              label: '퀘스트 추가',
+              style: GradientButtonStyle.ai,
             ),
           ],
         ),
@@ -398,13 +405,27 @@ class _QuestRowCard extends StatelessWidget {
             ),
           ),
           AppSpacing.gapSmd,
-          // 정본 `SegmentedButton`(`40:250`) 형태 — 선택 칸만 🟢 그린 그라디언트다.
-          // 이 그린은 "지금 고른 칸"을 뜻할 뿐, **난이도 색이 아니다.** 난이도 자체의
-          // 색(쉬움 그린 / 보통 노랑 / 어려움 빨강)은 [DifficultyPill]만 쓴다.
+          // 정본 `SegmentedButton`(`40:250`) 형태 — 선택 칸만 채운다. 다만 채우는
+          // 색은 기본 그린이 아니라 **그 칸의 난이도 색**이다(사용자 결정
+          // 2026-07-29): 쉬움 그린 · 보통 노랑 · 어려움 빨강. 고른 값과 보상 등급이
+          // 한 번에 읽힌다. 색 쌍은 [difficultyFill]이 대비까지 책임진다 — 이 파일은
+          // 노랑에 직접 닿지 않는다.
+          //
+          // **`expand: true`가 필수다.** 바로 위 제목 TextField는 카드 안쪽 폭을 꽉
+          // 채우는데, 세그먼트만 라벨 폭으로 오므리면 같은 열에서 오른쪽 끝이 어긋나
+          // 왼쪽으로 쏠려 보인다(사용자 보고). 상점 필터·[QuestEditDialog]와 같은
+          // 처방이고, `expand`는 **최소 폭만** 거는 구현이라 큰 글꼴 배율에서 칸이
+          // 다음 줄로 내려가는 `Wrap` 동작은 그대로다(오버플로가 생기지 않는다).
           AppSegmentedButton<Difficulty>(
+            expand: true,
             segments: [
               for (final d in Difficulty.values)
-                AppSegment(value: d, label: d.label),
+                AppSegment(
+                  value: d,
+                  label: d.label,
+                  selectedColor: difficultyFill(context, d).background,
+                  selectedForeground: difficultyFill(context, d).foreground,
+                ),
             ],
             selected: row.difficulty,
             onChanged: enabled ? onChangeDifficulty : null,
