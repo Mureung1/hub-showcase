@@ -94,8 +94,6 @@ export default function GitLabPage() {
     if (!serverMode) return
 
     let cancelled = false
-    setAttemptLoadStatus('loading')
-
     void listGitLabAttempts()
       .then(({ attempts }) => {
         if (cancelled) return
@@ -320,7 +318,10 @@ export default function GitLabPage() {
           {serverMode && attemptLoadStatus === 'error' ? (
             <button
               className={styles.toggleButton}
-              onClick={() => setAttemptReloadKey((current) => current + 1)}
+              onClick={() => {
+                setAttemptLoadStatus('loading')
+                setAttemptReloadKey((current) => current + 1)
+              }}
               type="button"
             >
               완료 기록 다시 불러오기

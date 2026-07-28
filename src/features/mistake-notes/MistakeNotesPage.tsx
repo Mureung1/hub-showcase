@@ -56,7 +56,6 @@ export default function MistakeNotesPage() {
     let cancelled = false
 
     if (serverMode) {
-      setLoadStatus('loading')
       void getMistakeNotes()
         .then(({ notes: serverNotes }) => {
           if (!cancelled) {
@@ -148,7 +147,13 @@ export default function MistakeNotesPage() {
           <div className={styles.emptyState} role="alert">
             <strong>오답노트를 불러오지 못했습니다.</strong>
             <p>서버 연결을 확인한 뒤 다시 시도해 주세요.</p>
-            <button type="button" onClick={() => setReloadKey((current) => current + 1)}>
+            <button
+              type="button"
+              onClick={() => {
+                setLoadStatus('loading')
+                setReloadKey((current) => current + 1)
+              }}
+            >
               다시 불러오기
             </button>
           </div>

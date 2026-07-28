@@ -1,4 +1,4 @@
-# DevChat
+# ICU
 
 DevChat은 새로운 기술을 배워야 하지만 무엇부터 공부해야 할지 막막한 사용자를 위한 AI 코딩 튜터 프로젝트입니다. 사용자가 목표와 현재 수준을 말하면 AI 튜터가 학습 순서, 필요한 개념, 실습 과제를 제안하고 코드 실행과 피드백까지 한 화면에서 이어갈 수 있도록 돕는 것을 목표로 합니다.
 
@@ -62,49 +62,63 @@ DevChat이 목표로 하는 핵심 경험은 다음과 같습니다.
 npm install
 ```
 
-### 2. 개발 서버 실행
+### 2. 환경 변수 설정
 
-```bash
-npm run dev
+`.env.example`을 `.env`로 복사합니다. 프론트엔드는 기본적으로 Express API를 사용하며, 로컬 Vite proxy를 사용할 때 `VITE_API_BASE_URL`은 비워 둡니다.
+
+Supabase를 실제 저장소로 사용할 때는 다음 서버 전용 값을 설정합니다. secret key를 `VITE_*` 변수에 넣지 않습니다.
+
+```env
+VITE_ICU_API_MODE=server
+VITE_API_BASE_URL=
+ICU_REPOSITORY_MODE=supabase
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_...
 ```
 
-실행 후 터미널에 표시되는 주소로 접속합니다. 기본 주소는 보통 다음과 같습니다.
+### 3. 개발 서버 실행
+
+```bash
+npm run dev:server
+```
+
+이 명령은 Express API, Vite 앱, React Preview 서버를 함께 실행합니다. 앱 기본 주소는 다음과 같습니다.
 
 ```text
 http://localhost:5173/
 ```
 
-### 3. 타입 검사
+### 4. 타입 검사
 
 ```bash
 npm run typecheck
 ```
 
-### 4. 린트
+### 5. 린트
 
 ```bash
 npm run lint
 ```
 
-### 5. 포맷 확인
+### 6. 포맷 확인
 
 ```bash
 npm run format:check
 ```
 
-### 6. 테스트
+### 7. 테스트
 
 ```bash
 npm run test
 ```
 
-### 7. 프로덕션 빌드
+### 8. 프로덕션 빌드
 
 ```bash
 npm run build
 ```
 
-### 8. 빌드 결과 미리보기
+### 9. 빌드 결과 미리보기
 
 ```bash
 npm run preview

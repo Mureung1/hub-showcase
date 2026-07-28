@@ -143,7 +143,6 @@ export function TodayLearningHub() {
 
     if (!serverMode) return () => undefined
 
-    setServerDataStatus('loading')
     void Promise.all([
       loadProfile(),
       getTodayProgress(),
@@ -344,7 +343,15 @@ export function TodayLearningHub() {
               <strong>오늘 학습 데이터를 불러오지 못했습니다.</strong>
               <p>서버 연결을 확인한 뒤 다시 시도해 주세요.</p>
             </div>
-            <button type="button" onClick={() => setReloadKey((value) => value + 1)}>다시 시도</button>
+            <button
+              type="button"
+              onClick={() => {
+                setServerDataStatus('loading')
+                setReloadKey((value) => value + 1)
+              }}
+            >
+              다시 시도
+            </button>
           </section>
         </section>
       </main>

@@ -14,18 +14,12 @@ const levelOptions: Array<{ label: string; value: LearningLevel }> = [
 ]
 
 export function ProfileSetup() {
-  const navigate = useNavigate()
   const { profile, status, error, loadProfile, saveProfile, resetProfile } = useLearningProfileStore()
-  const [displayName, setDisplayName] = useState(profile?.displayName ?? '예린')
-  const [learningGoal, setLearningGoal] = useState(
-    profile?.learningGoal ?? 'React state와 이벤트 이해하기',
-  )
-  const [preferredTracks, setPreferredTracks] = useState<string[]>(
-    profile?.preferredTracks ?? ['React', 'BFS'],
-  )
-  const [dailyStudyMinutes, setDailyStudyMinutes] = useState(profile?.dailyStudyMinutes ?? 30)
-  const [level, setLevel] = useState<LearningLevel>(profile?.level ?? 'beginner')
-  const [isSaved, setIsSaved] = useState(Boolean(profile))
+  const formKey = profile
+    ? `profile:${JSON.stringify(profile)}`
+    : status === 'idle' || status === 'loading'
+      ? 'profile:loading'
+      : 'profile:empty'
 
   useEffect(() => {
     if (status === 'idle') {
@@ -33,16 +27,46 @@ export function ProfileSetup() {
     }
   }, [loadProfile, status])
 
-  useEffect(() => {
-    if (!profile) return
+  return (
+    <ProfileSetupForm
+      key={formKey}
+      profile={profile}
+      status={status}
+      error={error}
+      loadProfile={loadProfile}
+      saveProfile={saveProfile}
+      resetProfile={resetProfile}
+    />
+  )
+}
 
-    setDisplayName(profile.displayName)
-    setLearningGoal(profile.learningGoal)
-    setPreferredTracks(profile.preferredTracks)
-    setDailyStudyMinutes(profile.dailyStudyMinutes)
-    setLevel(profile.level)
-    setIsSaved(true)
-  }, [profile])
+type ProfileSetupFormProps = Pick<
+  ReturnType<typeof useLearningProfileStore.getState>,
+  'profile' | 'status' | 'error' | 'loadProfile' | 'saveProfile' | 'resetProfile'
+>
+
+function ProfileSetupForm({
+  profile,
+  status,
+  error,
+  loadProfile,
+  saveProfile,
+  resetProfile,
+}: ProfileSetupFormProps) {
+  const navigate = useNavigate()
+  const emptyServerProfile = !profile && status === 'ready'
+  const [displayName, setDisplayName] = useState(
+    profile?.displayName ?? (emptyServerProfile ? '' : '예린'),
+  )
+  const [learningGoal, setLearningGoal] = useState(
+    profile?.learningGoal ?? (emptyServerProfile ? '' : 'React state와 이벤트 이해하기'),
+  )
+  const [preferredTracks, setPreferredTracks] = useState<string[]>(
+    profile?.preferredTracks ?? (emptyServerProfile ? ['React'] : ['React', 'BFS']),
+  )
+  const [dailyStudyMinutes, setDailyStudyMinutes] = useState(profile?.dailyStudyMinutes ?? 30)
+  const [level, setLevel] = useState<LearningLevel>(profile?.level ?? 'beginner')
+  const [isSaved, setIsSaved] = useState(Boolean(profile))
 
   const canSubmit = displayName.trim().length > 0 && learningGoal.trim().length > 0
 

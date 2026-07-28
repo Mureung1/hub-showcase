@@ -92,8 +92,6 @@ export default function LearningWorkspace() {
     if (!serverMode) return
 
     let cancelled = false
-    setLoadStatus('loading')
-
     void loadWorkspaceServerState({
       loadProfile,
       loadCurriculum: getGeneratedCurriculum,
@@ -149,7 +147,13 @@ export default function LearningWorkspace() {
       <section className={styles.persistenceBanner} data-status="error" role="alert">
         <strong>학습 정보를 불러오지 못했습니다.</strong>
         <span>서버 연결을 확인한 뒤 다시 시도해 주세요.</span>
-        <button type="button" onClick={() => setReloadKey((current) => current + 1)}>
+        <button
+          type="button"
+          onClick={() => {
+            setLoadStatus('loading')
+            setReloadKey((current) => current + 1)
+          }}
+        >
           다시 불러오기
         </button>
       </section>

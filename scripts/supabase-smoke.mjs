@@ -18,7 +18,10 @@ const {
   gitLabAttemptRepository,
   gitLabAttemptRecorder,
   generatedCurriculumRepository,
+  profileRepository,
 } = runtime
+
+const originalProfile = await profileRepository.get()
 
 const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`
 const ids = {
@@ -31,6 +34,21 @@ const ids = {
 const now = new Date().toISOString()
 
 try {
+  const smokeProfile = {
+    displayName: 'ICU smoke',
+    learningGoal: 'Supabase profile roundtrip',
+    preferredTracks: ['frontend'],
+    dailyStudyMinutes: 25,
+    level: 'beginner',
+  }
+  await profileRepository.save(smokeProfile)
+  assert(
+    (await profileRepository.get())?.learningGoal === smokeProfile.learningGoal,
+    'learner_profiles save/get failed',
+  )
+  await profileRepository.remove()
+  assert(!(await profileRepository.get()), 'learner_profiles remove failed')
+
   await progressRepository.saveMission({
     missionId: ids.mission,
     runState: 'passed',
@@ -97,9 +115,10 @@ try {
     .maybeSingle()
   assert(!rollbackLookup.error && !rollbackLookup.data, 'Git Lab transaction did not roll back')
 
-  console.log('Supabase smoke test passed: four repositories and transaction rollback verified.')
+  console.log('Supabase smoke test passed: five repositories and transaction rollback verified.')
 } finally {
   await Promise.all([
+    originalProfile ? profileRepository.save(originalProfile) : profileRepository.remove(),
     supabaseClient.from('learning_progress').delete().eq('mission_id', ids.mission),
     supabaseClient.from('mistake_notes').delete().like('id', `icu-smoke-%-${suffix}`),
     supabaseClient.from('git_lab_attempts').delete().like('id', `icu-smoke-%-${suffix}`),
