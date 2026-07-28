@@ -50,6 +50,11 @@ function CommandListPage() {
     // (server/src/routes/search.js에 같은 취지의 주석을 남겨둠).
     const hasMeaningfulQuery = normalizedQuery !== '' && isMeaningfulQuery(normalizedQuery);
 
+    // 검색어를 입력하긴 했는데(빈 문자열이 아님) 기호/숫자뿐이라 무시된 경우만 true.
+    // 이 경우에만 아래에서 힌트 메시지를 보여준다 — 애초에 아무것도 입력 안 한 상태(normalizedQuery === '')와
+    // 구분하기 위함(그때는 힌트를 보여줄 이유가 없다).
+    const isSymbolsOnlyQuery = normalizedQuery !== '' && !hasMeaningfulQuery;
+
     // 이 컴포넌트의 핵심 루틴: category나 검색어가 바뀔 때마다 BE에 검색을 새로 요청한다.
     useEffect(() => {
         // 1단계: 검색어가 없거나(빈 문자열/기호만) 의미가 없으면 아무 요청도 보내지 않고 바로 끝내고,
@@ -158,7 +163,12 @@ function CommandListPage() {
             <SearchBar category={category} value={query} onChange={setQuery} />
 
             {!hasMeaningfulQuery ? (
-                <CommandBrowseList commands={allCommands} isLoading={isLoadingAll} error={errorAll} />
+                <>
+                    {isSymbolsOnlyQuery && (
+                        <p className="terminal-error">-bash: {query}: 에러: 검색어에 문자(영문)를 포함해주세요</p>
+                    )}
+                    <CommandBrowseList commands={allCommands} isLoading={isLoadingAll} error={errorAll} />
+                </>
             ) : (
                 <SearchResultList
                     query={query}
