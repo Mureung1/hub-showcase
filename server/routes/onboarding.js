@@ -1,7 +1,13 @@
 import { Router } from 'express'
 import { prisma } from '../db.js'
-import { SPLIT_TYPE_BY_DAYS_PER_WEEK, SPLIT_DAY_TYPES } from '../splitPresets.js'
-import { violatesAdjacentAreaRule, findArrangementViolation } from '../scheduleConstraints.js'
+import {
+  SPLIT_TYPE_BY_DAYS_PER_WEEK,
+  SPLIT_DAY_TYPES,
+} from '../splitPresets.js'
+import {
+  violatesAdjacentAreaRule,
+  findArrangementViolation,
+} from '../scheduleConstraints.js'
 
 export const onboardingRouter = Router()
 
@@ -25,7 +31,14 @@ export function getDayArrangement(splitType, daysPerWeek) {
     // 항상 같은 카테고리로 겹친다(순환 인접 위반). 목요일을 강제 휴식으로 비워
     // 앞 3일(월화수)과 뒤 3일(금토일)을 완전히 분리된 두 번의 3일 주기로 만든다.
     if (daysPerWeek === 7) {
-      return { MON: 'Push', TUE: 'Pull', WED: 'Legs', FRI: 'Push', SAT: 'Pull', SUN: 'Legs' }
+      return {
+        MON: 'Push',
+        TUE: 'Pull',
+        WED: 'Legs',
+        FRI: 'Push',
+        SAT: 'Pull',
+        SUN: 'Legs',
+      }
     }
     const cycle = ['Push', 'Pull', 'Legs']
     const arrangement = {}
@@ -44,10 +57,19 @@ export async function assignExercisesForDay(routineDayId, splitType, dayType) {
   const categories = SPLIT_DAY_TYPES[splitType][dayType]
   let order = 1
   for (const category of categories) {
-    const exercise = await prisma.exercise.findFirst({ where: { targetArea: category }, orderBy: { id: 'asc' } })
+    const exercise = await prisma.exercise.findFirst({
+      where: { targetArea: category },
+      orderBy: { id: 'asc' },
+    })
     if (!exercise) continue
     await prisma.routineDayExercise.create({
-      data: { routineDayId, exerciseId: exercise.id, order: order++, targetSets: 3, targetReps: 10 },
+      data: {
+        routineDayId,
+        exerciseId: exercise.id,
+        order: order++,
+        targetSets: 3,
+        targetReps: 10,
+      },
     })
   }
 }
@@ -58,22 +80,36 @@ onboardingRouter.post('/onboarding', async (req, res) => {
   const dayArrangement = getDayArrangement(splitType, daysPerWeek)
 
   if (!dayArrangement) {
-    return res.status(400).json({ error: `daysPerWeek=${daysPerWeek}에 대한 배치 규칙이 없습니다.` })
+    return res.status(400).json({
+      error: `daysPerWeek=${daysPerWeek}에 대한 배치 규칙이 없습니다.`,
+    })
   }
 
   const violatingDay = findArrangementViolation({ dayArrangement, splitType })
   if (violatingDay) {
-    return res.status(400).json({ error: `${violatingDay} 요일이 인접 요일과 부위가 겹칩니다.` })
+    return res
+      .status(400)
+      .json({ error: `${violatingDay} 요일이 인접 요일과 부위가 겹칩니다.` })
   }
 
   const user = await prisma.user.findFirst()
-  const existingRoutine = user ? await prisma.routine.findUnique({ where: { userId: user.id } }) : null
+  const existingRoutine = user
+    ? await prisma.routine.findUnique({ where: { userId: user.id } })
+    : null
 
   if (existingRoutine) {
-    await prisma.exerciseLog.deleteMany({ where: { routineDay: { routineId: existingRoutine.id } } })
-    await prisma.painReport.deleteMany({ where: { routineDay: { routineId: existingRoutine.id } } })
-    await prisma.routineDayExercise.deleteMany({ where: { routineDay: { routineId: existingRoutine.id } } })
-    await prisma.routineDay.deleteMany({ where: { routineId: existingRoutine.id } })
+    await prisma.exerciseLog.deleteMany({
+      where: { routineDay: { routineId: existingRoutine.id } },
+    })
+    await prisma.painReport.deleteMany({
+      where: { routineDay: { routineId: existingRoutine.id } },
+    })
+    await prisma.routineDayExercise.deleteMany({
+      where: { routineDay: { routineId: existingRoutine.id } },
+    })
+    await prisma.routineDay.deleteMany({
+      where: { routineId: existingRoutine.id },
+    })
   }
 
   const activeUser = user ?? (await prisma.user.create({ data: {} }))
@@ -119,16 +155,32 @@ routineDayRouter.patch('/routine/days/:id', async (req, res) => {
       dayOfWeek: d.dayOfWeek,
       targetAreas: [...new Set(d.exercises.map((e) => e.exercise.targetArea))],
     }))
-    const areasToPlace = SPLIT_DAY_TYPES[routineDay.routine.splitType][targetArea] ?? []
+    const areasToPlace =
+      SPLIT_DAY_TYPES[routineDay.routine.splitType][targetArea] ?? []
 
-    if (violatesAdjacentAreaRule({ days: daysWithAreas, candidateDayOfWeek: routineDay.dayOfWeek, areasToPlace })) {
-      return res.status(400).json({ error: '인접한 요일과 부위가 겹쳐서 이 조합으로는 바꿀 수 없습니다.' })
+    if (
+      violatesAdjacentAreaRule({
+        days: daysWithAreas,
+        candidateDayOfWeek: routineDay.dayOfWeek,
+        areasToPlace,
+      })
+    ) {
+      return res.status(400).json({
+        error: '인접한 요일과 부위가 겹쳐서 이 조합으로는 바꿀 수 없습니다.',
+      })
     }
   }
 
   await prisma.routineDayExercise.deleteMany({ where: { routineDayId } })
-  await prisma.routineDay.update({ where: { id: routineDayId }, data: { targetArea } })
-  await assignExercisesForDay(routineDayId, routineDay.routine.splitType, targetArea)
+  await prisma.routineDay.update({
+    where: { id: routineDayId },
+    data: { targetArea },
+  })
+  await assignExercisesForDay(
+    routineDayId,
+    routineDay.routine.splitType,
+    targetArea,
+  )
 
   res.json({ success: true })
 })

@@ -11,7 +11,9 @@ function Onboarding() {
 
   const handleSubmit = async () => {
     setError(null)
-    const result = await postJson('/api/onboarding', { daysPerWeek: selectedDays })
+    const result = await postJson('/api/onboarding', {
+      daysPerWeek: selectedDays,
+    })
     if (!result.ok) {
       setError(result.error)
       return
@@ -26,16 +28,23 @@ function Onboarding() {
           주당 운동 가능 일수를 알려주세요
         </h1>
         <p className="mb-8 text-[14px] leading-relaxed text-text-secondary">
-          가능일수에 맞는 분할을 추천해드려요. 나중에 요일별로 직접 수정할 수 있어요.
+          가능일수에 맞는 분할을 추천해드려요. 나중에 요일별로 직접 수정할 수
+          있어요.
         </p>
 
-        {error && <p className="mb-6 text-[13px] text-text-secondary">⚠ {error}</p>}
+        {error && (
+          <p className="mb-6 text-[13px] text-text-secondary">⚠ {error}</p>
+        )}
 
         <div className="mb-8 flex flex-wrap justify-center gap-3">
           {DAY_OPTIONS.map((day) => {
             const isSelected = selectedDays === day
             return (
-              <button key={day} onClick={() => setSelectedDays(day)} className="flex flex-col items-center gap-2">
+              <button
+                key={day}
+                onClick={() => setSelectedDays(day)}
+                className="flex flex-col items-center gap-2"
+              >
                 <span
                   className={
                     isSelected
@@ -43,7 +52,9 @@ function Onboarding() {
                       : 'flex h-11 w-11 items-center justify-center rounded-full border border-border text-text-secondary'
                   }
                 >
-                  <span className="font-display text-lg font-semibold">{day}</span>
+                  <span className="font-display text-lg font-semibold">
+                    {day}
+                  </span>
                 </span>
                 <span className="text-xs text-text-secondary">일</span>
               </button>

@@ -13,8 +13,12 @@ function DayEditCard({ day, options, onChange }) {
 
   return (
     <div className="rounded-md border border-border bg-day-default p-3">
-      <div className="mb-1 text-sm font-semibold text-text">{KOREAN_DAY_LABEL[day.dayOfWeek]}</div>
-      <div className="mb-2 text-sm text-text-secondary">{isRest ? '휴식' : day.targetArea}</div>
+      <div className="mb-1 text-sm font-semibold text-text">
+        {KOREAN_DAY_LABEL[day.dayOfWeek]}
+      </div>
+      <div className="mb-2 text-sm text-text-secondary">
+        {isRest ? '휴식' : day.targetArea}
+      </div>
       {editing ? (
         <div className="flex flex-wrap gap-1.5">
           {[...options, null].map((option) => (
@@ -31,7 +35,10 @@ function DayEditCard({ day, options, onChange }) {
           ))}
         </div>
       ) : (
-        <button onClick={() => setEditing(true)} className="text-xs text-accent hover:text-link-hover">
+        <button
+          onClick={() => setEditing(true)}
+          className="text-xs text-accent hover:text-link-hover"
+        >
           변경
         </button>
       )}
@@ -50,7 +57,9 @@ function OnboardingReview() {
 
   const handleChange = async (routineDayId, targetArea) => {
     setError(null)
-    const result = await patchJson(`/api/routine/days/${routineDayId}`, { targetArea })
+    const result = await patchJson(`/api/routine/days/${routineDayId}`, {
+      targetArea,
+    })
     if (!result.ok) {
       setError(result.error)
       return
@@ -79,13 +88,22 @@ function OnboardingReview() {
         <h1 className="mb-2 text-[28px] font-extrabold tracking-[-.02em] text-text">
           {data.routine.splitType} 분할을 추천했어요
         </h1>
-        <p className="mb-8 text-[14px] text-text-secondary">마음에 안 드는 요일이 있으면 직접 바꿀 수 있어요.</p>
+        <p className="mb-8 text-[14px] text-text-secondary">
+          마음에 안 드는 요일이 있으면 직접 바꿀 수 있어요.
+        </p>
 
-        {error && <p className="mb-6 text-[13px] text-text-secondary">⚠ {error}</p>}
+        {error && (
+          <p className="mb-6 text-[13px] text-text-secondary">⚠ {error}</p>
+        )}
 
         <div className="mb-8 grid grid-cols-7 gap-3">
           {data.days.map((day) => (
-            <DayEditCard key={day.id} day={day} options={data.availableDayTypes} onChange={handleChange} />
+            <DayEditCard
+              key={day.id}
+              day={day}
+              options={data.availableDayTypes}
+              onChange={handleChange}
+            />
           ))}
         </div>
 

@@ -60,7 +60,9 @@ recordsRouter.get('/exercise-logs', async (req, res) => {
     return res.json({ hasRoutine: false })
   }
 
-  const routine = await prisma.routine.findUnique({ where: { userId: user.id } })
+  const routine = await prisma.routine.findUnique({
+    where: { userId: user.id },
+  })
   if (!routine) {
     return res.json({ hasRoutine: false })
   }
