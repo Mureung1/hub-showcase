@@ -1,9 +1,14 @@
 const taskModel = require('../models/taskModel');
 const activityLogModel = require('../models/activityLogModel');
-const CURRENT_TEAM_ID = require('../currentTeamId');
 const { canMemberChange } = require('../utils/permission');
 
 const VALID_STATUSES = ['pending', 'in_progress', 'done'];
+
+function toId(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const n = Number(raw);
+  return Number.isInteger(n) ? n : null;
+}
 
 function getTodayDateString() {
   const now = new Date();
@@ -14,8 +19,14 @@ function getTodayDateString() {
 }
 
 async function listTasks(req, res) {
+  const teamId = toId(req.query.team_id);
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
+
   try {
-    const tasks = await taskModel.getActiveTasks(CURRENT_TEAM_ID);
+    const tasks = await taskModel.getActiveTasks(teamId);
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -23,8 +34,14 @@ async function listTasks(req, res) {
 }
 
 async function listArchivedTasks(req, res) {
+  const teamId = toId(req.query.team_id);
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
+
   try {
-    const tasks = await taskModel.getArchivedTasks(CURRENT_TEAM_ID);
+    const tasks = await taskModel.getArchivedTasks(teamId);
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -32,7 +49,12 @@ async function listArchivedTasks(req, res) {
 }
 
 async function addTask(req, res) {
+  const teamId = toId(req.body.team_id);
   const { title, assigneeId, dueDate } = req.body;
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
 
   if (!title || !title.trim()) {
     return res.status(400).json({ error: '제목은 필수입니다.' });
@@ -44,7 +66,7 @@ async function addTask(req, res) {
 
   try {
     const task = await taskModel.createTask({
-      teamId: CURRENT_TEAM_ID,
+      teamId,
       title: title.trim(),
       assigneeId: assigneeId || null,
       dueDate: dueDate || null,
@@ -60,8 +82,13 @@ async function addTask(req, res) {
 
 async function updateStatus(req, res) {
   const taskId = Number(req.params.id);
+  const teamId = toId(req.body.team_id);
   const { status } = req.body;
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
 
   if (!VALID_STATUSES.includes(status)) {
     return res.status(400).json({ error: '올바르지 않은 상태입니다.' });
@@ -70,6 +97,10 @@ async function updateStatus(req, res) {
   try {
     const task = await taskModel.getTaskById(taskId);
     if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (task.team_id !== teamId) {
       return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
     }
 
@@ -97,11 +128,20 @@ async function updateStatus(req, res) {
 
 async function archiveTask(req, res) {
   const taskId = Number(req.params.id);
+  const teamId = toId(req.body.team_id);
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
 
   try {
     const task = await taskModel.getTaskById(taskId);
     if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (task.team_id !== teamId) {
       return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
     }
 
@@ -118,8 +158,13 @@ async function archiveTask(req, res) {
 
 async function updateDueDate(req, res) {
   const taskId = Number(req.params.id);
+  const teamId = toId(req.body.team_id);
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
   const dueDate = req.body.dueDate || null;
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
 
   if (dueDate && dueDate < getTodayDateString()) {
     return res.status(400).json({ error: '마감일은 오늘 이후여야 합니다.' });
@@ -128,6 +173,10 @@ async function updateDueDate(req, res) {
   try {
     const task = await taskModel.getTaskById(taskId);
     if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (task.team_id !== teamId) {
       return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
     }
 
@@ -144,8 +193,13 @@ async function updateDueDate(req, res) {
 
 async function updateTitle(req, res) {
   const taskId = Number(req.params.id);
+  const teamId = toId(req.body.team_id);
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
   const title = (req.body.title || '').trim();
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
 
   if (!title) {
     return res.status(400).json({ error: '제목은 필수입니다.' });
@@ -154,6 +208,10 @@ async function updateTitle(req, res) {
   try {
     const task = await taskModel.getTaskById(taskId);
     if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (task.team_id !== teamId) {
       return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
     }
 
@@ -170,12 +228,21 @@ async function updateTitle(req, res) {
 
 async function updateAssignee(req, res) {
   const taskId = Number(req.params.id);
+  const teamId = toId(req.body.team_id);
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
   const assigneeId = req.body.assigneeId != null ? Number(req.body.assigneeId) : null;
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
 
   try {
     const task = await taskModel.getTaskById(taskId);
     if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (task.team_id !== teamId) {
       return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
     }
 
@@ -195,11 +262,20 @@ async function updateAssignee(req, res) {
 
 async function restoreTask(req, res) {
   const taskId = Number(req.params.id);
+  const teamId = toId(req.body.team_id);
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
 
   try {
     const task = await taskModel.getTaskById(taskId);
     if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (task.team_id !== teamId) {
       return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
     }
 
