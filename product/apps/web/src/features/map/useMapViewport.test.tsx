@@ -1,7 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { useMapViewport } from "./useMapViewport";
+
+afterEach(() => window.history.replaceState({}, "", "/"));
 
 describe("useMapViewport", () => {
   it("keeps a draft center separate until the move is confirmed", () => {
@@ -17,6 +19,14 @@ describe("useMapViewport", () => {
     act(() => result.current.commitDraftCenter());
     expect(result.current.committedCenter).toEqual(next);
     expect(result.current.analysisMoveMode).toBe("idle");
+  });
+
+  it("restores the presentation mode recorded in the URL", () => {
+    window.history.replaceState({}, "", "/?view=storefront3d");
+    const { result } = renderHook(() => useMapViewport([126.923, 37.56]));
+
+    expect(result.current.presentationMode).toBe("storefront3d");
+    expect(result.current.prefabMode).toBe(true);
   });
 
   it("restores the analysis presentation during reset", () => {
