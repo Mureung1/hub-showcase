@@ -28,6 +28,9 @@ const hasSmtpConfig = () =>
       isConfiguredValue(env.smtpFrom)
   );
 
+const hasResendConfig = () =>
+  Boolean(isConfiguredValue(env.resendApiKey) && isConfiguredValue(env.resendFrom));
+
 const resolveSmtpHost = async () => {
   const addresses = await resolve4(env.smtpHost);
   return addresses[0] || env.smtpHost;
@@ -61,27 +64,35 @@ const createTransporter = async () => {
 };
 
 export const verifySmtpConnection = async () => {
+  if (hasResendConfig()) {
+    const response = await fetch("https://api.resend.com/domains", {
+      headers: {
+        Authorization: `Bearer ${env.resendApiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Resend API 설정을 확인해 주세요.");
+    }
+
+    return;
+  }
+
   const transporter = await createTransporter();
   await transporter.verify();
 };
 
 export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
-  const transporter = await createTransporter();
   const displayName = name || "사용자";
-
-  try {
-    await transporter.sendMail({
-      from: env.smtpFrom,
-      to,
-      subject: "[Career Mission AI] 이메일 인증을 완료해 주세요",
-      text: [
-        `${displayName}님, Career Mission AI 회원가입을 완료하려면 아래 링크를 열어 주세요.`,
-        "",
-        verificationUrl,
-        "",
-        "본인이 요청하지 않았다면 이 메일은 무시해도 됩니다.",
-      ].join("\n"),
-      html: `
+  const subject = "[Career Mission AI] 이메일 인증을 완료해 주세요";
+  const text = [
+    `${displayName}님, Career Mission AI 회원가입을 완료하려면 아래 링크를 열어 주세요.`,
+    "",
+    verificationUrl,
+    "",
+    "본인이 요청하지 않았다면 이 메일은 무시해도 됩니다.",
+  ].join("\n");
+  const html = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
           <h2 style="margin: 0 0 12px;">Career Mission AI 이메일 인증</h2>
           <p>${displayName}님, 회원가입을 완료하려면 아래 버튼을 눌러 주세요.</p>
@@ -95,7 +106,40 @@ export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
             <a href="${verificationUrl}">${verificationUrl}</a>
           </p>
         </div>
-      `,
+      `;
+
+  if (hasResendConfig()) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: env.resendFrom,
+        to,
+        subject,
+        text,
+        html,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Resend API로 확인 메일을 발송하지 못했습니다.");
+    }
+
+    return;
+  }
+
+  const transporter = await createTransporter();
+
+  try {
+    await transporter.sendMail({
+      from: env.smtpFrom,
+      to,
+      subject,
+      text,
+      html,
     });
   } catch (error) {
     const message =
