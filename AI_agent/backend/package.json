@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
+    "start": "prisma migrate deploy && node src/server.js",
     "test": "node --test",
     "test:integration": "node --test src/routes/*.integration.test.js",
     "db:generate": "prisma generate",
