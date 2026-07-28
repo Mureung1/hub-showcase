@@ -25,7 +25,7 @@ import {
 
 import { isLoopbackAddress } from './codex-chat-config.js'
 import { writeNdjsonLine } from './http-ndjson.js'
-import type { InlineSemanticReviewVertical } from './inline-semantic-review-vertical.js'
+import type { InteractionBroker } from './interaction-broker.js'
 import {
   PreparedProductOperationError,
   type PreparedProductOperationCoordinator,
@@ -37,10 +37,15 @@ const safeForbidden = '이 요청은 local AY-PLE에서만 사용할 수 있습�
 const safeUnavailable = 'AY 작업공간을 사용할 수 없습니다.'
 const defaultWriteDrainMs = 5_000
 
+type PreparedProductReviewPort = Pick<
+  InteractionBroker,
+  'browserDisconnected' | 'settle' | 'turnInterrupted'
+>
+
 export function createPreparedProductRouter(options: {
   readonly configuredOrigin?: string
   readonly operations: PreparedProductOperationCoordinator
-  readonly review: InlineSemanticReviewVertical
+  readonly review: PreparedProductReviewPort
   readonly readLifecycle: () => ProductWorkspaceLifecycle
   readonly readAccountReadiness: () => Promise<ProductAccountReadiness>
   readonly readCodexSettings: () => Promise<ProductCodexSettings>

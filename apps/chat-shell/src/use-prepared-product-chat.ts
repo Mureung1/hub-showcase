@@ -36,6 +36,10 @@ export type PreparedClarificationEntry = {
   readonly interactionId: string
   readonly questions: readonly TargetProductQuestion[]
   readonly resolution?: 'answered' | 'cancelled'
+  readonly failure?:
+    | 'runtime_terminated'
+    | 'transport_failed'
+    | 'turn_interrupted'
 }
 
 export type PreparedTranscriptEntry =
@@ -52,7 +56,7 @@ export type PreparedTranscriptEntry =
       readonly text: string
     }
 
-type PreparedChatState = {
+export type PreparedChatState = {
   readonly phase:
     | 'idle'
     | 'running'
@@ -213,7 +217,8 @@ export function usePreparedProductChat(options: {
             ? {}
             : { codexSettings: codexTurnSettings }),
         },
-        (frame) => transition((current) => reduceFrame(current, frame)),
+        (frame) =>
+          transition((current) => reducePreparedProductFrame(current, frame)),
         controller.signal,
       )
       if (!stateRef.current.terminal) throw invalidStream()
@@ -223,14 +228,9 @@ export function usePreparedProductChat(options: {
         error instanceof PreparedProductApiError
           ? error.displayMessage
           : 'AY 작업 흐름을 계속하지 못했습니다.'
-      transition((current) => ({
-        ...current,
-        phase: 'unknown',
-        terminal: true,
-        semanticReview: undefined,
-        clarification: undefined,
-        failure: message,
-      }))
+      transition((current) =>
+        reducePreparedProductFailure(current, message),
+      )
     } finally {
       if (operation.current === controller) operation.current = undefined
       await options.onSettled().catch(() => undefined)
@@ -414,7 +414,7 @@ export function createCodexTurnSettings(
   }
 }
 
-function reduceFrame(
+export function reducePreparedProductFrame(
   state: PreparedChatState,
   frame: PreparedProductFrame,
 ): PreparedChatState {
@@ -540,16 +540,76 @@ function reduceFrame(
         ],
       }
     case 'operation.terminal':
-      return {
-        ...state,
-        phase:
-          frame.status === 'not_accepted' || frame.status === 'unknown'
-            ? 'unknown'
-            : frame.status,
-        terminal: true,
-        semanticReview: undefined,
-        clarification: undefined,
+      return reducePreparedProductTerminal(state, frame.status)
+  }
+}
+
+export function reducePreparedProductFailure(
+  state: PreparedChatState,
+  message: string,
+): PreparedChatState {
+  const settled = settleUnresolvedInteractions(
+    state,
+    'transport_failed',
+  )
+  return {
+    ...settled,
+    phase: 'unknown',
+    terminal: true,
+    semanticReview: undefined,
+    clarification: undefined,
+    failure: message,
+  }
+}
+
+function reducePreparedProductTerminal(
+  state: PreparedChatState,
+  status:
+    | 'not_accepted'
+    | 'completed'
+    | 'failed'
+    | 'interrupted'
+    | 'unknown',
+): PreparedChatState {
+  const settled = settleUnresolvedInteractions(
+    state,
+    status === 'interrupted' ? 'turn_interrupted' : 'runtime_terminated',
+  )
+  return {
+    ...settled,
+    phase:
+      status === 'not_accepted' || status === 'unknown'
+        ? 'unknown'
+        : status,
+    terminal: true,
+    semanticReview: undefined,
+    clarification: undefined,
+  }
+}
+
+function settleUnresolvedInteractions(
+  state: PreparedChatState,
+  failure: 'runtime_terminated' | 'transport_failed' | 'turn_interrupted',
+): PreparedChatState {
+  return {
+    ...state,
+    transcript: state.transcript.map((entry) => {
+      if (
+        entry.kind === 'semantic-review' &&
+        entry.result === undefined &&
+        entry.failure === undefined
+      ) {
+        return { ...entry, failure }
       }
+      if (
+        entry.kind === 'clarification' &&
+        entry.resolution === undefined &&
+        entry.failure === undefined
+      ) {
+        return { ...entry, failure }
+      }
+      return entry
+    }),
   }
 }
 

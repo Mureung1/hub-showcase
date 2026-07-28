@@ -432,13 +432,22 @@ function PreparedClarificationCard({
   ) => Promise<void>
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  const pending = interaction.resolution === undefined
+  const pending =
+    interaction.resolution === undefined && interaction.failure === undefined
+  const label = interaction.failure
+    ? '질문 실패'
+    : pending
+      ? 'AY 질문'
+      : '질문 응답 완료'
   return (
     <section
       className="product-clarification-card"
       role="region"
-      aria-label={pending ? 'AY 질문' : '질문 응답 완료'}
+      aria-label={label}
     >
+      {interaction.failure ? (
+        <p role="status">질문을 완료하지 못했습니다.</p>
+      ) : null}
       {interaction.questions.map((question) => (
         <QuestionInput
           key={question.id}

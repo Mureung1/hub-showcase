@@ -9,9 +9,10 @@ import {
   type CodexChatBootstrap,
 } from './codex-chat.js'
 import {
-  createInlineSemanticReviewVertical,
-} from './inline-semantic-review-vertical.js'
-import type { InteractionBrokerCredentials } from './interaction-broker.js'
+  createInteractionBroker,
+  type InteractionBroker,
+  type InteractionBrokerCredentials,
+} from './interaction-broker.js'
 import { createPreparedProductRouter } from './prepared-product-http.js'
 import {
   createPreparedProductOperationCoordinator,
@@ -31,9 +32,7 @@ export async function createPreparedServerApplication(options: {
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
   })
-  let inlineReview:
-    | Awaited<ReturnType<typeof createInlineSemanticReviewVertical>>
-    | undefined
+  let interactionBroker: InteractionBroker | undefined
   const operations = createPreparedProductOperationCoordinator({
     service: codexChat.service,
     assertWorkspaceActive() {
@@ -42,23 +41,28 @@ export async function createPreparedServerApplication(options: {
       }
     },
     interactionTurnTerminal: () =>
-      inlineReview?.turnTerminal() ?? Promise.resolve(),
+      interactionBroker?.turnTerminal() ?? Promise.resolve(),
     interactionRuntimeTerminal: () =>
-      inlineReview?.runtimeTerminal() ?? Promise.resolve(),
+      interactionBroker?.runtimeTerminal() ?? Promise.resolve(),
   })
-  inlineReview = await createInlineSemanticReviewVertical({
+  interactionBroker = await createInteractionBroker({
     workspaceRoot: options.workspaceRoot,
-    productOperations: operations,
+    activeProductTurn: () => operations.activeInteractionProductTurn(),
+    uiAdapter: {
+      publish: (frame) => operations.publishInteractionReview(frame),
+    },
+    interruptProductTurn: (turn) =>
+      operations.interruptInteractionProductTurn(turn),
   })
 
   const app = express()
-  app.use('/api/_private/interaction-mcp', inlineReview.router)
+  app.use('/api/_private/interaction-mcp', interactionBroker.router)
   app.use(
     '/api/product',
     createPreparedProductRouter({
       configuredOrigin: codexChat.origin,
       operations,
-      review: inlineReview,
+      review: interactionBroker,
       readLifecycle: options.readLifecycle,
       readAccountReadiness: async () => {
         const readiness = await codexChat.service.readProductAccountReadiness()
@@ -94,7 +98,7 @@ export async function createPreparedServerApplication(options: {
       closePromise ??= (async () => {
         operations.beginShutdown()
         codexChat.beginShutdown()
-        await inlineReview?.appShutdown()
+        await interactionBroker?.appShutdown()
         await codexChat.close()
       })()
       return closePromise
@@ -102,6 +106,6 @@ export async function createPreparedServerApplication(options: {
   }
   return {
     application,
-    credentials: inlineReview.credentials(),
+    credentials: interactionBroker.credentials(),
   }
 }
