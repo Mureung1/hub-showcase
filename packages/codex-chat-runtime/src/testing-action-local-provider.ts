@@ -84,8 +84,22 @@ export async function startCodexActionLocalProviderTestFixture(options: {
       'Official SDK action local provider',
     )
   } catch (error) {
-    await provider.dispose()
-    await rm(fixtureRoot, { recursive: true, force: true })
+    const cleanup = await Promise.allSettled([
+      provider.dispose(),
+      rm(fixtureRoot, { recursive: true, force: true }),
+    ])
+    const cleanupErrors = cleanup
+      .filter(
+        (result): result is PromiseRejectedResult =>
+          result.status === 'rejected',
+      )
+      .map((result) => result.reason)
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(
+        [error, ...cleanupErrors],
+        'Action Runtime fixture setup and cleanup failed',
+      )
+    }
     throw error
   }
 

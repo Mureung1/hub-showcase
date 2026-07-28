@@ -18,7 +18,11 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import type { ProposeStatePatchRequest } from '@ay-ple/interaction-mcp'
-import type { ProductReviewFrame, ProductReviewResult } from '@ay-ple/product-contract'
+import {
+  decodeProductReviewResult,
+  type ProductReviewFrame,
+  type ProductReviewResult,
+} from '@ay-ple/product-contract'
 import {
   startCodexActionLocalProviderTestFixture,
   type CodexActionLocalProviderJournal,
@@ -701,14 +705,9 @@ function uniqueProviderOutputs(
   return outputs
 }
 
-type ReviewResultEvidence = {
-  readonly outcome: string
-  readonly feedback?: string
-}
-
 function reviewResult(
   output: string | undefined,
-): ReviewResultEvidence | undefined {
+): ProductReviewResult | undefined {
   if (output === undefined) return undefined
   for (const line of output.split('\n')) {
     const result = findReviewResult(parseJsonValue(line.trim()))
@@ -717,7 +716,7 @@ function reviewResult(
   return undefined
 }
 
-function findReviewResult(value: unknown): ReviewResultEvidence | undefined {
+function findReviewResult(value: unknown): ProductReviewResult | undefined {
   if (typeof value === 'string') {
     const parsed = parseJsonValue(value)
     return parsed === value ? undefined : findReviewResult(parsed)
@@ -732,11 +731,10 @@ function findReviewResult(value: unknown): ReviewResultEvidence | undefined {
   if (typeof value !== 'object' || value === null) return undefined
   const record = value as Record<string, unknown>
   if (typeof record.outcome === 'string') {
-    return {
-      outcome: record.outcome,
-      ...(typeof record.feedback === 'string'
-        ? { feedback: record.feedback }
-        : {}),
+    try {
+      return decodeProductReviewResult(record)
+    } catch {
+      // Continue through nested provider output wrappers.
     }
   }
   for (const child of Object.values(record)) {
