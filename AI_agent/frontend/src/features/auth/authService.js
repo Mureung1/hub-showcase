@@ -127,14 +127,18 @@ export const loginUser = async ({ account, password }) => {
 
   const idToken = await getIdToken(credential.user, true);
   const profile = getSession();
+  const profileMatchesLogin =
+    profile?.email?.toLowerCase?.() === credential.user.email?.toLowerCase();
   const data = await requestJson("/api/auth/firebase-session", {
     method: "POST",
     body: JSON.stringify({
       idToken,
-      username: profile?.username || credential.user.email?.split("@")[0],
-      name: profile?.name || credential.user.displayName || credential.user.email?.split("@")[0],
-      school: profile?.school || "",
-      major: profile?.major || "",
+      username: profileMatchesLogin ? profile.username : "",
+      name: profileMatchesLogin
+        ? profile.name
+        : credential.user.displayName || credential.user.email?.split("@")[0],
+      school: profileMatchesLogin ? profile.school : "",
+      major: profileMatchesLogin ? profile.major : "",
     }),
   });
 
