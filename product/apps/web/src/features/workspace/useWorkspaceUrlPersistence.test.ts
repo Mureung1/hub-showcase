@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildWorkspaceUrlSearch } from "./useWorkspaceUrlPersistence";
 
 describe("workspace URL persistence", () => {
-  it("serializes filters, map presentation, center, and selected store", () => {
+  it("serializes every filter, map presentation, center, and selected store", () => {
     const parameters = new URLSearchParams(
       buildWorkspaceUrlSearch({
         marketKey: "연남",
@@ -11,6 +11,7 @@ describe("workspace URL persistence", () => {
         selectedCategoryName: "카페",
         selectedCategoryCode: "I21201",
         radius: 300,
+        activeHour: 4,
         layer: "density",
         topic: "competition",
         boundaryVisible: true,
@@ -29,6 +30,7 @@ describe("workspace URL persistence", () => {
       selectedCategory: "카페",
       categoryCode: "I21201",
       radius: "300",
+      hour: "4",
       layer: "density",
       topic: "competition",
       boundary: "1",
@@ -50,6 +52,7 @@ describe("workspace URL persistence", () => {
         selectedCategoryName: "음식점",
         selectedCategoryCode: null,
         radius: 100,
+        activeHour: 1,
         layer: "demand",
         topic: "flow",
         boundaryVisible: false,
@@ -62,6 +65,7 @@ describe("workspace URL persistence", () => {
       }),
     );
 
+    expect(parameters.get("hour")).toBe("1");
     expect(parameters.has("categoryCode")).toBe(false);
     expect(parameters.has("period")).toBe(false);
     expect(parameters.has("store")).toBe(false);
