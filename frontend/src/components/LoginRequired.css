@@ -1,5 +1,5 @@
 .login-required {
-  padding: var(--space-section-gap) 4px;
+  padding: var(--space-section-gap) var(--space-xs);
   color: var(--color-text-muted);
   font-size: var(--font-size-body);
   text-align: center;

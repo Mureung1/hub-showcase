@@ -1,7 +1,10 @@
+import { API_BASE } from '../lib/apiBase'
 import './LoginRequired.css'
 
 const LoginRequired = ({ message, state }) => {
-  const loginHref = state ? `/api/auth/google?state=${state}` : '/api/auth/google'
+  const loginHref = state
+    ? `${API_BASE}/api/auth/google?state=${state}`
+    : `${API_BASE}/api/auth/google`
 
   return (
     <div className="login-required">

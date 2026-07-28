@@ -1,8 +1,9 @@
 import { getToken } from './auth'
+import { API_BASE } from './apiBase'
 
 export async function getMembers(id) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}/members`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/members`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -21,7 +22,7 @@ export async function getMembers(id) {
 
 export async function deleteMember(id, memberId) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}/members/${memberId}`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/members/${memberId}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,

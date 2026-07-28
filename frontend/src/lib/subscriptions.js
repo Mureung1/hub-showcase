@@ -1,8 +1,9 @@
 import { getToken } from './auth'
+import { API_BASE } from './apiBase'
 
 export async function createSubscription(payload) {
   const token = getToken()
-  const res = await fetch('/api/subscriptions', {
+  const res = await fetch(`${API_BASE}/api/subscriptions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -22,7 +23,7 @@ export async function createSubscription(payload) {
 
 export async function getSubscriptions() {
   const token = getToken()
-  const res = await fetch('/api/subscriptions', {
+  const res = await fetch(`${API_BASE}/api/subscriptions`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -39,9 +40,29 @@ export async function getSubscriptions() {
   return data.items
 }
 
+export async function getDashboardSummary(month) {
+  const token = getToken()
+  const query = month ? `?month=${encodeURIComponent(month)}` : ''
+  const res = await fetch(`${API_BASE}/api/subscriptions/dashboard${query}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    const error = new Error(data.error || '대시보드 정보를 불러오지 못했습니다.')
+    error.status = res.status
+    throw error
+  }
+
+  return data
+}
+
 export async function getSubscription(id) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -60,7 +81,7 @@ export async function getSubscription(id) {
 
 export async function updateSubscription(id, payload) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -82,7 +103,7 @@ export async function updateSubscription(id, payload) {
 
 export async function deleteSubscription(id) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -98,7 +119,7 @@ export async function deleteSubscription(id) {
 }
 
 export async function previewSubscription(id) {
-  const res = await fetch(`/api/subscriptions/${id}/preview`)
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/preview`)
 
   const data = await res.json()
 
@@ -113,7 +134,7 @@ export async function previewSubscription(id) {
 
 export async function joinSubscription(id) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}/join`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/join`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

@@ -66,28 +66,30 @@ SUBZIP은 사용자가 임의의 구독 서비스를 자유롭게 등록하는 �
 
 | 레벨 | 크기 | 굵기 | 예시 용도 |
 |---|---|---|---|
-| Display | 32px | 700 | 정산 금액 등 핵심 수치(`.big-amount`) |
-| H1 | 28px | 700 | 페이지 제목(`.page-header h1`) |
-| H2 | 22px | 800 | 히어로/섹션 타이틀(`.hero-title`) |
-| Body-lg | 17px | 600 | 질문형 텍스트(`.question`) |
-| Body | 13~14px | 400~600 | 카드 설명, 리스트 아이템 |
-| Caption | 11~12px | 400~700 | 타임스탬프, 배지, 보조 라벨 |
+| Display | 36px | 700 | 정산 금액 등 핵심 수치(`.big-amount`) |
+| H1 | 30px | 700 | 페이지 제목(`.page-header h1`) |
+| H2 | 24px | 800 | 히어로/섹션 타이틀(`.hero-title`) |
+| Body-lg | 18px | 600 | 질문형 텍스트(`.question`) |
+| Body | 14~16px | 400~600 | 카드 설명, 리스트 아이템 |
+| Caption | 12~14px | 400~700 | 타임스탬프, 배지, 보조 라벨 |
 
 ## 5. 레이아웃 & 그리드
 
-- GNB는 뷰포트 전체 폭을 채우고(풀블리드), 콘텐츠 영역은 최대 폭 1024px로 제한해 중앙 정렬하며 좌우 padding 20px을 기본으로 한다(`.frame-body`). 1024px 미만 뷰포트(대부분의 모바일)에서는 그대로 반응형으로 줄어든다.
-- 카드 간 세로 간격은 14px, 섹션 간 간격은 16~18px을 기본값으로 한다.
-- 가로로 여러 항목을 나열할 때(이모지 선택, 미니 카드 등)는 `flex` + `gap: 8~10px`로 균등 분할한다(`.emoji-row`, `.mini-grid`).
+- GNB는 뷰포트 전체 폭을 채우고(풀블리드), 콘텐츠 영역은 최대 폭 1024px로 제한해 중앙 정렬하며 좌우 padding 22px을 기본으로 한다(`.frame-body`). 1024px 미만 뷰포트(대부분의 모바일)에서는 그대로 반응형으로 줄어든다.
+- 카드 간 세로 간격은 16px, 섹션 간 간격은 18~20px을 기본값으로 한다.
+- 가로로 여러 항목을 나열할 때(이모지 선택, 미니 카드 등)는 `flex` + `gap: 9~12px`로 균등 분할한다(`.emoji-row`, `.mini-grid`).
 - 내비게이션은 상단 GNB(`.gnb`, `.pubnav`) 단일 구조를 기본으로 하고, 필요 시 하단 탭바를 더한다.
 
 위 수치는 CSS 커스텀 프로퍼티로도 승격해 매 화면에서 값을 재입력하지 않도록 한다:
 
 | 토큰 | 값 | 용도 |
 |---|---|---|
-| `space-page-padding` | 20px | 프레임 좌우 기본 padding |
-| `space-card-gap` | 14px | 카드/리스트 아이템 세로 간격 |
-| `space-section-gap` | 18px | 섹션 간 간격(16~18px 중 상한) |
-| `space-inline-gap` | 10px | 가로 나열 flex/grid gap(8~10px 중 상한) |
+| `space-xs` | 4px | 최소 단위 여백(메시지/리스트 아이템의 보조 축 padding 등) |
+| `space-inline-gap` | 12px | 가로 나열 flex/grid gap(9~12px 중 상한) |
+| `space-card-gap` | 16px | 카드/리스트 아이템 세로 간격 |
+| `space-card-padding` | 18px 20px | 카드 내부 padding(세로 18px, 가로 20px) |
+| `space-section-gap` | 20px | 섹션 간 간격(18~20px 중 상한) |
+| `space-page-padding` | 22px | 프레임 좌우 기본 padding |
 
 위 간격 값은 기본값이며, 콘텐츠 밀도가 낮고 폭이 넓게 확장되는 화면(예: 프로젝트 소개 페이지)에서는 섹션 간 여백을 더 넓게 조정할 수 있다.
 
@@ -95,9 +97,9 @@ SUBZIP은 사용자가 임의의 구독 서비스를 자유롭게 등록하는 �
 
 레퍼런스에서 관찰된 패턴을 아래와 같이 일반화하고, 기존 `style.css` 클래스와 매핑한다.
 
-- **카드 (Card)**: 배경색으로 성격을 구분하는 3가지 variant — 기본(`color-card`), 제안(`color-card-suggest`), 경고(`color-card-warning`). border-radius 16px, padding 16px 18px. 감성적 요소(만족도 이모지 등)는 `.emoji-btn` 패턴을 따른다.
+- **카드 (Card)**: 배경색으로 성격을 구분하는 3가지 variant — 기본(`color-card`), 제안(`color-card-suggest`), 경고(`color-card-warning`). `border-radius: 18px`, `padding: 18px 20px`(`space-card-padding` 토큰). 감성적 요소(만족도 이모지 등)는 `.emoji-btn` 패턴을 따른다.
 - **상태 배지/칩 (Badge/Chip)**: pill 형태(`border-radius: 999px`), 배경색 + 텍스트로 상태 표현. 정산 대기(`.member-status.pending`) / 완료(`.member-status.done`) 등.
-- **버튼 (Button)**: 기본 버튼은 `border-radius: 14px`의 block 버튼(`.btn`), 외부 결제 연동 버튼(토스/카카오)은 각 브랜드 컬러를 그대로 사용하고 브랜드 가이드를 우선한다. 보조 액션은 outline(`.btn-outline`) 또는 텍스트 링크(`.link-btn`) 형태로 위계를 낮춘다.
+- **버튼 (Button)**: 기본 버튼은 `border-radius: 16px`의 block 버튼(`.btn`), 외부 결제 연동 버튼(토스/카카오)은 각 브랜드 컬러를 그대로 사용하고 브랜드 가이드를 우선한다. 보조 액션은 outline(`.btn-outline`) 또는 텍스트 링크(`.link-btn`) 형태로 위계를 낮춘다.
 - **리스트 아이템**: 상단 border-top + 항목별 border-bottom으로 구분선을 그리는 방식(`.sub-list`, `.member-list`)을 기본으로 하며, 좌측 도트/아바타 + 중앙 텍스트 + 우측 부가 정보(금액, 상태)의 3분할 구조를 유지한다. 구분선은 `color-border`(여린 톤), 인풋/프레임 테두리는 `color-border-input`(또렷한 톤)으로 구분해 사용한다.
 - **캘린더/날짜 위젯**: 주간 그리드 + 오늘 강조 패턴으로 결제일/정산일을 하이라이트한다(별도 컴포넌트로 신규 정의 필요, 현재 프로토타입에는 없음).
 - **공지·Q&A 리스트**: 제목 + 날짜 + 우측 "더보기" 링크 구조. 안읽음 상태는 배경색(`color-bg` 계열의 옅은 틴트)으로 구분(`.email-row.unread` 패턴 참고).
@@ -107,12 +109,13 @@ SUBZIP은 사용자가 임의의 구독 서비스를 자유롭게 등록하는 �
 
 | 토큰 | 값 | 용도 |
 |---|---|---|
+| `radius-xs` | 6px | 태그/칩 라벨용 작은 라운드 |
 | `radius-sm` | 6~8px | 입력 필드, 작은 아이콘 박스 |
-| `radius-md` | 10~14px | 버튼, 알림 카드 |
-| `radius-lg` | 16px | 콘텐츠 카드 |
+| `radius-md` | 12~16px | 버튼, 알림 카드 |
+| `radius-lg` | 18px | 콘텐츠 카드 |
 | `radius-pill` | 999px | 배지, 칩, 탭, CTA 버튼 |
-| `shadow-card` | `0 6px 16px rgba(31, 157, 85, 0.12)` | 떠 있는 카드/토스트(`.web-toast`) |
-| `shadow-frame` | `0 24px 48px rgba(31, 157, 85, 0.14), 0 4px 10px rgba(0,0,0,0.06)` | 프레임/모달 등 큰 컨테이너 |
+| `shadow-card` | `0 6px 18px rgba(31, 157, 85, 0.12)` | 떠 있는 카드/토스트(`.web-toast`) |
+| `shadow-frame` | `0 26px 52px rgba(31, 157, 85, 0.14), 0 4px 12px rgba(0,0,0,0.06)` | 프레임/모달 등 큰 컨테이너 |
 
 ## 8. 접근성 메모
 

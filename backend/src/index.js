@@ -11,7 +11,9 @@ import settlementsRoutes from './routes/settlements.routes.js'
 const app = express()
 const port = process.env.PORT || 4000
 
-app.use(cors())
+app.set('trust proxy', 1)
+
+app.use(cors({ origin: process.env.FRONTEND_URL }))
 app.use(express.json())
 
 app.get('/api/health', (req, res) => {

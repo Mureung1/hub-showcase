@@ -1,10 +1,16 @@
 import { Router } from 'express'
+import { Prisma } from '@prisma/client'
 import { requireAuth } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
+import { previewRateLimiter } from '../middleware/rateLimit.js'
+
+function isUniqueConstraintError(error) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+}
 
 const router = Router()
 
-router.get('/:id/preview', async (req, res, next) => {
+router.get('/:id/preview', previewRateLimiter, async (req, res, next) => {
   try {
     const subscription = await prisma.subscription.findUnique({
       where: { id: req.params.id },
@@ -50,12 +56,22 @@ router.post('/:id/join', requireAuth, async (req, res, next) => {
       return next(err)
     }
 
-    const member = await prisma.partyMember.create({
-      data: {
-        subscriptionId: subscription.id,
-        userId: req.user.id,
-      },
-    })
+    let member
+    try {
+      member = await prisma.partyMember.create({
+        data: {
+          subscriptionId: subscription.id,
+          userId: req.user.id,
+        },
+      })
+    } catch (e) {
+      if (isUniqueConstraintError(e)) {
+        const err = new Error('이미 파티원으로 등록되어 있습니다.')
+        err.status = 409
+        return next(err)
+      }
+      throw e
+    }
 
     res.status(201).json({
       memberId: member.id,

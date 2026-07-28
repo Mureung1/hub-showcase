@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { getToken } from './auth'
+import { API_BASE } from './apiBase'
 
 export function settlementStatusLabel(status, reportedAt) {
-  if (status === 'done') return '확인 완료'
-  if (reportedAt) return '확인 대기중'
+  if (status === 'done') return '정산 완료'
+  if (reportedAt) return '확인 대기'
   return '정산 대기'
 }
 
@@ -69,7 +70,7 @@ export function useTossTransferFallback(transferLink, status) {
 
 export async function createSettlement(id) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}/settlements`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/settlements`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -89,7 +90,7 @@ export async function createSettlement(id) {
 
 export async function getSettlements(id) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}/settlements`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/settlements`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -108,7 +109,7 @@ export async function getSettlements(id) {
 
 export async function getSettlementDetail(id, settlementId) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}/settlements/${settlementId}`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/settlements/${settlementId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -128,7 +129,7 @@ export async function getSettlementDetail(id, settlementId) {
 export async function reportSettlementMember(id, settlementId, settlementMemberId) {
   const token = getToken()
   const res = await fetch(
-    `/api/subscriptions/${id}/settlements/${settlementId}/members/${settlementMemberId}/report`,
+    `${API_BASE}/api/subscriptions/${id}/settlements/${settlementId}/members/${settlementMemberId}/report`,
     {
       method: 'POST',
       headers: {
@@ -150,7 +151,7 @@ export async function reportSettlementMember(id, settlementId, settlementMemberI
 
 export async function updateSettlementMemberStatus(id, settlementId, settlementMemberId, status) {
   const token = getToken()
-  const res = await fetch(`/api/subscriptions/${id}/settlements/${settlementId}/members/${settlementMemberId}`, {
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/settlements/${settlementId}/members/${settlementMemberId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

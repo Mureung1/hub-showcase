@@ -159,15 +159,16 @@
 - 파티장(owner)으로 소유한 구독과 파티원(member)으로 가입한 구독을 모두 합쳐 반환.
 - `role`은 구독마다 달라질 수 있음.
 - 항상 현재 시점 기준 목록.
+- `createdAt`은 대시보드 월별 추이 계산(아래 `/dashboard` 구현 노트 참고)에 FE가 사용.
 
 **Response `200`**
 
 ```json
 {
   "items": [
-    { "id": "sub_1", "serviceName": "넷플릭스", "billingDay": 15, "memberCount": 4, "myAmount": 4250, "role": "owner" },
-    { "id": "sub_2", "serviceName": "왓챠", "billingDay": 18, "memberCount": 4, "myAmount": 3225, "role": "owner" },
-    { "id": "sub_3", "serviceName": "디즈니플러스", "billingDay": 3, "memberCount": 4, "myAmount": 3225, "role": "member" }
+    { "id": "sub_1", "serviceName": "넷플릭스", "billingDay": 15, "memberCount": 4, "myAmount": 4250, "role": "owner", "createdAt": "2026-05-10T00:00:00.000Z" },
+    { "id": "sub_2", "serviceName": "왓챠", "billingDay": 18, "memberCount": 4, "myAmount": 3225, "role": "owner", "createdAt": "2026-06-02T00:00:00.000Z" },
+    { "id": "sub_3", "serviceName": "디즈니플러스", "billingDay": 3, "memberCount": 4, "myAmount": 3225, "role": "member", "createdAt": "2026-07-01T00:00:00.000Z" }
   ]
 }
 ```
@@ -262,6 +263,7 @@
 
 - 지정한 달 기준, 총 구독료와 실지출 합계를 반환. 소유(owner)/가입(member) 구독의 `myAmount`를 모두 합산.
 - FE는 `GET /subscriptions`를 함께 호출해 화면을 조합.
+- **구현 노트**: 실제 정산(Settlement) 이력이 아니라 `Subscription.createdAt` 기준 추정치다 — 해당 구독이 그 달 말일 이전에 생성됐으면 현재 `subAmount`/`memberCount`만큼 그 달에도 지출했다고 가정해 역산한다. 과거 금액 변경이나 삭제된 구독 이력은 반영되지 않는다. `GET /subscriptions` 목록 응답에도 `createdAt`이 추가되어 FE가 최근 N개월 추이를 동일한 방식으로 클라이언트에서 계산할 수 있다.
 
 **Query**: `month` (예: `2026-07`, 생략 시 이번 달)
 
@@ -343,7 +345,7 @@
 - `SettlementMember`는 생성 시점의 `userId`+`name`을 직접 저장한다(파티원 관계 `PartyMember`를 거치지 않음). 따라서 이후 해당 파티원이 파티에서 나가 `PartyMember`가 삭제되어도 과거 정산 이력 자체(이름/금액/상태)는 전혀 영향이 없어 파티장은 계속 조회할 수 있다 — 단, 내보내진 파티원 본인은 즉시 조회 권한을 잃는다(아래 각 엔드포인트 설명 참고).
 - `amount`는 생성 시점의 `subAmount / memberCount`(1/n) 값을 스냅샷으로 저장. 이후 구독 금액이 바뀌어도 과거 정산 금액은 변하지 않는다.
 - 모든 정산 항목은 `"pending"`으로 시작하며, 파티원의 이체가 (파티장 육안 확인 등으로) 확인되면 파티장이 해당 항목만 `"done"`으로 변경한다 — 입금 자동 확인은 MVP 범위 밖.
-- `transferLink`는 토스/카카오페이 딥링크 URL이며, 정확한 스킴/파라미터는 아직 미확정(하단 TODO 참고). 현재는 플레이스홀더 포맷으로 표기.
+- `transferLink`는 토스 딥링크 URL(`supertoss://send?bank=...&accountNo=...&amount=...`)이며, 정상 동작 확인됨. 카카오페이는 아직 딥링크 로직 자체가 미구현.
 - 카카오톡 공유(정산 요청 메시지 전송)는 FE에서 카카오 SDK를 직접 호출하는 방식으로, 별도 BE 엔드포인트 없음(`3. 파티원`의 초대 링크 공유와 동일한 패턴).
 - 정산은 별도 목록 페이지 없이 구독 상세 화면의 정산 카드로 접근한다. 구독 목록/전환은 기존 `GET /api/subscriptions`(2. 구독 서비스)를 그대로 쓰고, 상세 진입 후에는 `GET /api/subscriptions/:id/settlements`로 해당 구독의 월별 이력을 불러온다.
 - 파티원은 `reportedAt`으로 이체 확인 요청을 할 수 있다(낮은 신뢰도 — `status`는 바뀌지 않음). 파티장은 요청을 보고 실제 확인 후 기존 상태 변경 엔드포인트로 **수락**(`status: "done"`) 또는 **거절**(`status: "pending"`)한다 — 어느 쪽이든 처리 시 `reportedAt`은 `null`로 초기화되어 안내가 사라지고, 거절된 파티원은 다시 요청할 수 있다.
@@ -526,13 +528,13 @@
 
 - 만족도 설문 및 AI 리포트 API는 아직 미작성.
 - 요청 바디 유효성 검증 로직(Zod 등)은 아직 미구현(`backend/src/middleware/errorHandler.js`에는 에러 포맷터만 존재) — 검증 미들웨어 구현 시 `400` 에러의 상세 필드 목록을 이 문서에 추가할 것.
-- `4. 정산`의 `transferLink` 딥링크 스킴/파라미터는 플레이스홀더 — 토스/카카오페이 딥링크 스펙 확인(`docs/plan.md`/`checklist.md` 2주차 기획 항목) 완료 후 실제 포맷으로 갱신 필요.
-- 구글 OAuth 클라이언트 ID/시크릿을 `.env`에 반영 필요(`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` 등).
-- 초대용 `state` 파라미터의 위변조 방지(서명/만료 검증) 방식 결정 필요.
-- 계좌번호 등 민감정보 저장 시 암호화 여부/방식 결정 필요.
+- `4. 정산`의 `transferLink`는 카카오페이 딥링크 로직이 아직 미구현(토스는 완료) — 카카오페이 딥링크 스펙 확인(`docs/plan.md`/`checklist.md` 2주차 기획 항목) 후 구현 필요.
 
 ### 확정된 정책 · 구현 주의사항
 
 - `1. 인증`, `2. 구독 서비스`, `3. 파티원`, `4. 정산` 섹션은 `backend/prisma/schema.prisma`의 `User`/`Subscription`/`PartyMember`/`Settlement`/`SettlementMember` 모델로 DB 설계 완료. 나머지(만족도) 섹션은 아직 스키마 설계 전.
 - 구독 삭제(`DELETE /api/subscriptions/:id`) 시 연관 정산 이력(`Settlement`/`SettlementMember`)도 함께 삭제됨(cascade) — 확정.
 - `GET /api/subscriptions/dashboard`는 `GET /api/subscriptions/:id`와 경로가 겹치므로, 백엔드 구현 시 반드시 `/:id`보다 먼저 라우터에 등록할 것(순서가 바뀌면 `dashboard`가 `:id` 파라미터로 매칭돼 영영 도달 불가).
+- 초대용 `state` 파라미터는 `backend/src/lib/jwt.js`의 `signInviteState`/`verifyInviteState`로 서명·검증됨(만료 10분, `purpose: 'invite'` 클레임) — 위변조/만료된 state는 콜백에서 무조건 `/`로 리다이렉트되어 확정.
+- `Subscription.accountNumber`/`accountHolderName`은 `backend/src/lib/crypto.js`(AES-256-GCM, `ACCOUNT_ENCRYPTION_KEY` 환경변수)로 암호화해 저장 — 확정. `bankName`은 평문 유지. API 응답 스키마(필드명/형태)는 변경 없음, DB 저장 형식만 암호문으로 바뀜.
+- 토스 딥링크(`supertoss://send?bank=...&accountNo=...&amount=...`)는 실기기 테스트로 정상 동작 확인됨 — 확정.

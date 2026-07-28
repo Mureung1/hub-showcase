@@ -1,9 +1,9 @@
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
   background: var(--color-card);
   border-radius: var(--radius-pill);
-  padding: 4px;
+  padding: var(--space-xs);
   margin-bottom: var(--space-section-gap);
 }
 
@@ -12,7 +12,7 @@
   border: none;
   background: transparent;
   border-radius: var(--radius-pill);
-  padding: 10px 0;
+  padding: 12px 0;
   font-size: var(--font-size-body);
   font-weight: 600;
   color: var(--color-text-muted);

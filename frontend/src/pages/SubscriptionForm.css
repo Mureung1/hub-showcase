@@ -12,7 +12,7 @@
   flex-direction: column;
   background: var(--color-card);
   border-radius: var(--radius-lg);
-  padding: 16px 18px;
+  padding: var(--space-card-padding);
   box-shadow: var(--shadow-card);
 }
 
@@ -30,7 +30,7 @@
 
 .form-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--color-border-input);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-body);
@@ -50,13 +50,13 @@
 }
 
 .stepper-btn {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border-input);
   background: var(--color-bg);
   color: var(--color-primary);
-  font-size: 16px;
+  font-size: var(--font-size-body-lg);
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
@@ -73,12 +73,12 @@
   font-size: var(--font-size-body-lg);
   font-weight: 700;
   color: var(--color-text);
-  min-width: 40px;
+  min-width: 44px;
   text-align: center;
 }
 
 .subscription-form .btn-primary {
-  margin-top: 4px;
+  margin-top: var(--space-xs);
   border: none;
 }
 
@@ -86,7 +86,7 @@
   background: var(--color-card-warning);
   color: var(--color-text);
   font-size: var(--font-size-caption);
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: var(--radius-sm);
   margin: 0 0 var(--space-card-gap);
 }
