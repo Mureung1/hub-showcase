@@ -17,9 +17,9 @@ function PeriodSelect({
   const formatPeriod = (period: string) => `${period.slice(0, 4)}년 ${period.slice(4)}분기`;
   const formatAvailability = (period: string) => {
     const available = availability[period] ?? [];
-    return available.includes("sales") && available.includes("flow")
-      ? "전체 분석"
-      : "점포·개폐업";
+    if (available.includes("sales") && available.includes("flow")) return "전체 분석";
+    if (available.includes("flow")) return "점포·유동인구";
+    return "점포 데이터만";
   };
   return (
     <label className="header-control period-control">
@@ -63,7 +63,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           </span>
           <span>LocalTwin</span>
         </a>
-        <nav className="primary-nav" aria-label="주요 메뉴">
+        <div className="primary-nav" role="toolbar" aria-label="분석 도구">
           <button className="nav-item" type="button" onClick={() => setCompareOpen(true)}>
             상권 비교
           </button>
@@ -83,7 +83,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           >
             보고서
           </button>
-        </nav>
+        </div>
         <div className="header-actions">
           <a
             className="header-control header-docs"
@@ -106,6 +106,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <button
             className="icon-button"
             type="button"
+            aria-label="데이터 도움말"
             title="데이터 도움말"
             onClick={() => setEvidenceOpen(true)}
           >

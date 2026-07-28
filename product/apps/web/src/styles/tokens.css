@@ -31,6 +31,13 @@
   --lt-space-6: 24px;
   --lt-space-8: 32px;
 
+  --lt-type-caption: 12px;
+  --lt-type-body: 14px;
+  --lt-type-heading: 16px;
+
+  --lt-control-height-compact: 34px;
+  --lt-control-height-touch: 44px;
+
   --lt-radius-control: 6px;
   --lt-radius-panel: 8px;
 }

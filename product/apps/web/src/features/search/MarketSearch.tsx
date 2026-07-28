@@ -1,5 +1,5 @@
-import { MapPinned, Search, Store } from "lucide-react";
-import { useState } from "react";
+import { MapPinned, Search, Store, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 import type { MarketSearchResult } from "./searchApi";
 import { useMarketSearch } from "./useMarketSearch";
@@ -11,6 +11,7 @@ type MarketSearchProps = {
 
 export function MarketSearch({ onSelect, apiReady = true }: MarketSearchProps) {
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const { state, results, search, retry, clear } = useMarketSearch();
 
   return (
@@ -28,6 +29,7 @@ export function MarketSearch({ onSelect, apiReady = true }: MarketSearchProps) {
           <Search size={17} />
         </button>
         <input
+          ref={inputRef}
           aria-label="상권 또는 점포 검색"
           value={query}
           maxLength={80}
@@ -38,6 +40,21 @@ export function MarketSearch({ onSelect, apiReady = true }: MarketSearchProps) {
             if (state !== "idle") clear();
           }}
         />
+        {query && (
+          <button
+            type="button"
+            className="search-clear-button"
+            aria-label="검색어 지우기"
+            title="검색어 지우기"
+            onClick={() => {
+              setQuery("");
+              clear();
+              inputRef.current?.focus();
+            }}
+          >
+            <X size={15} />
+          </button>
+        )}
       </form>
       {!apiReady && <p className="market-search-status">분석 서버를 준비하고 있습니다.</p>}
       {state !== "idle" && (
