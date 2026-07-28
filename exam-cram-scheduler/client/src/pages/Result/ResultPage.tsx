@@ -142,7 +142,8 @@ export function ResultPage() {
  * 좌표 계산은 buildChart.ts가 하고 여기서는 그리기만 한다.
  */
 function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
-  const { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks } = geometry;
+  const { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks, nowX } =
+    geometry;
 
   if (!linePath) {
     return (
@@ -217,6 +218,32 @@ function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
           strokeWidth="1"
         />
       ))}
+
+      {/* #41 — 지금 시각 세로선. 기간 안일 때만(nowX !== null) 그린다. 위에 "지금" 라벨을
+          붙여 시험 점선(회색 점선)과 구분한다. 곡선 위에 올려 현재 위치가 바로 보이게 맨 뒤에 그린다. */}
+      {nowX !== null && (
+        <g>
+          <line x1={nowX} y1={18} x2={nowX} y2={143} stroke="var(--brand-strong)" strokeWidth="1.5" strokeLinecap="round" />
+          <rect
+            x={Math.min(width - 16, Math.max(16, nowX)) - 15}
+            y={2}
+            width={30}
+            height={13}
+            rx={6.5}
+            fill="var(--brand-strong)"
+          />
+          <text
+            x={Math.min(width - 16, Math.max(16, nowX))}
+            y={11.5}
+            fontSize="8.5"
+            fontWeight="700"
+            textAnchor="middle"
+            fill="#fff"
+          >
+            지금
+          </text>
+        </g>
+      )}
 
       {/* 날짜가 바뀌는 지점의 요일 */}
       {dayTicks.map((tick) => (
