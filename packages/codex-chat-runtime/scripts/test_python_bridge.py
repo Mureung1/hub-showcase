@@ -274,8 +274,7 @@ class ProtocolUnitTests(unittest.TestCase):
             json.dumps(product, separators=(",", ":")).encode() + b"\n"
         )
         self.assertEqual(command.permission_profile, "workspace_write")
-        self.assertIsNone(command.skill_name)
-        self.assertIsNone(command.skill_path)
+        self.assertIsNone(command.skill)
 
         read_only = {
             **product,
@@ -307,9 +306,11 @@ class ProtocolUnitTests(unittest.TestCase):
         command = decode_command_line(
             json.dumps(skilled, separators=(",", ":")).encode() + b"\n"
         )
-        self.assertEqual(command.skill_name, "ay-ple-first-assignment")
+        self.assertIsNotNone(command.skill)
+        assert command.skill is not None
+        self.assertEqual(command.skill.name, "ay-ple-first-assignment")
         self.assertEqual(
-            command.skill_path,
+            command.skill.path,
             "/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md",
         )
 
@@ -322,7 +323,9 @@ class ProtocolUnitTests(unittest.TestCase):
             json.dumps(configured_skilled, separators=(",", ":")).encode() + b"\n"
         )
         self.assertEqual(command.model, "gpt-current")
-        self.assertEqual(command.skill_name, "ay-ple-first-assignment")
+        self.assertIsNotNone(command.skill)
+        assert command.skill is not None
+        self.assertEqual(command.skill.name, "ay-ple-first-assignment")
 
         catalog = decode_command_line(
             b'{"bridgeRequestId":"models","command":"read_model_catalog"}\n'

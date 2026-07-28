@@ -65,7 +65,7 @@ Canonical manifest는 다음을 서로 연결한다.
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
 - tracked `python/bridge` 5-file roster와 installed `bundle/bridge` roster·entrypoint
-- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `5826a26d06a7097ab1c35e1e70949fee2fb4d74dc1a386d35d08cbad0dab785d`
+- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `f387600fe960173a36b29bde6b96dfa5500faebdced243afee64d27599cf2799`
 
 이 package의 current production manifest v1과 ignored materialization은 repository-local SDK·bridge non-regression authority다. 중단한 public release lane의 recipient manifest assembler, download·archive·cache resolver와 production host는 2026-07-24 tracked graph에서 제거했다. 당시 public recipient contract와 구현 증거는 historical ADR·Spec·ticket에만 보존한다.
 

@@ -51,6 +51,12 @@ class StartTurnCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class ProductSkillInput:
+    name: str
+    path: str
+
+
+@dataclass(frozen=True, slots=True)
 class StartProductTurnCommand:
     bridge_request_id: str
     thread_id: str
@@ -58,8 +64,7 @@ class StartProductTurnCommand:
     model: str | None
     reasoning_effort: str | None
     service_tier: Literal["default", "fast"] | None
-    skill_name: str | None
-    skill_path: str | None
+    skill: ProductSkillInput | None
     text: str
     command: Literal["start_product_turn"] = "start_product_turn"
 
@@ -304,13 +309,14 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             reasoning_effort = None
             service_tier = None
         if fields & skill_fields:
-            skill_name = _require_safe_bounded_string(
-                value.get("skillName"), max_bytes=256
+            skill = ProductSkillInput(
+                name=_require_safe_bounded_string(
+                    value.get("skillName"), max_bytes=256
+                ),
+                path=_require_skill_path(value.get("skillPath")),
             )
-            skill_path = _require_skill_path(value.get("skillPath"))
         else:
-            skill_name = None
-            skill_path = None
+            skill = None
         permission_profile = value.get("permissionProfile")
         if permission_profile not in {"read_only", "workspace_write"}:
             raise ProtocolViolation("invalid_command")
@@ -321,8 +327,7 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             model,
             reasoning_effort,
             service_tier,
-            skill_name,
-            skill_path,
+            skill,
             _require_bounded_string(value.get("text"), max_bytes=512 * 1024),
         )
     if command == "answer_user_input":
