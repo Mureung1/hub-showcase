@@ -167,12 +167,13 @@ describe("StaffQueuePage 운영 설정", () => {
 
 describe("StaffQueuePage 현장 접수 알림톡", () => {
   it("현장 환자를 등록하면 알림톡 mock 미리보기와 상태 링크를 표시한다", async () => {
-    const onAddOnsite = vi.fn(async () => ({
+    const onsiteReceipt: NotificationReceipt = {
       id: "50000000-0000-4000-8000-000000000001",
       recipientPhoneMasked: "0101-****-9265",
       templateCode: "onsite_registered",
       openPath: "/onsite-status/mock-token",
-    }));
+    };
+    const onAddOnsite = vi.fn(async () => onsiteReceipt);
     renderPage(
       vi.fn(async () => notifications),
       "connected",
