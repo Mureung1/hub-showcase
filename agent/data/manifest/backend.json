@@ -1228,6 +1228,370 @@
       "collected_on": "2026-07-27",
       "content_file": "onet_software_developers.txt",
       "note": "Tasks, Work Activities, Technology Skills, Knowledge, Skills, Abilities 를 담았다. Technology Skills 각 행 끝의 more 링크는 행마다 별도 요청이라 펼치지 않았고 몇 건이 더 있는지는 원문 표기로 남아 있다. 임금과 고용전망은 직무 내용이 아니라 담지 않았다"
+    },
+    {
+      "source_id": "src_blog_woowahan_dispatch",
+      "url": "https://techblog.woowahan.com/22396/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "배차 정확도를 높이는 실거리 시스템 구축하기: OSRM, Kafka, 그리고 Redis",
+      "posted_at": "2025-06-26",
+      "robots_policy": "allow /; disallow /wp-admin/ (allow /wp-admin/admin-ajax.php). Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_woowahan_dispatch_real_distance.txt"
+    },
+    {
+      "source_id": "src_blog_woowahan_kafka_throttling",
+      "url": "https://techblog.woowahan.com/20156/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "카프카 컨슈머에 동적 쓰로틀링 적용하기",
+      "posted_at": "2025-01-09",
+      "robots_policy": "allow /; disallow /wp-admin/ (allow /wp-admin/admin-ajax.php). Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_woowahan_kafka_consumer_throttling.txt"
+    },
+    {
+      "source_id": "src_blog_woowahan_delivery_infra",
+      "url": "https://techblog.woowahan.com/18254/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "실시간 배달 상황이 궁금해! 배달 인프라 레벨 구축 경험담",
+      "posted_at": "2024-07-09",
+      "robots_policy": "allow /; disallow /wp-admin/ (allow /wp-admin/admin-ajax.php). Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_woowahan_delivery_infra_level.txt"
+    },
+    {
+      "source_id": "src_blog_bucketplace_settlement",
+      "url": "https://www.bucketplace.com/post/2022-05-20-광고-정산-시스템에-kafka-streams-도입하기/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 버킷플레이스",
+      "company_id": "co_bucketplace",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "광고 정산 시스템에 Kafka Streams 도입하기",
+      "posted_at": "2022-05-20",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_bucketplace_ads_settlement_kafka_streams.txt"
+    },
+    {
+      "source_id": "src_blog_bucketplace_msa",
+      "url": "https://www.bucketplace.com/post/2022-01-14-오늘의집-msa-phase-1-백엔드-분리작업/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 버킷플레이스",
+      "company_id": "co_bucketplace",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "오늘의집 MSA Phase 1. 백엔드 분리작업",
+      "posted_at": "2022-01-14",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_bucketplace_msa_backend_separation.txt"
+    },
+    {
+      "source_id": "src_blog_daangn_adserver",
+      "url": "https://careers.daangn.com/blog/post/당근-광고실-개발자-서버-엔지니어-dsp/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 당근마켓",
+      "company_id": "co_daangn",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "사용자를 위한 최적의 광고를 찾아서, AdServer",
+      "posted_at": "2024-12-12",
+      "robots_policy": "allow /; disallow /preview, /jobs/completed, /jobs/role/*/apply. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_daangn_adserver_architecture.txt"
+    },
+    {
+      "source_id": "src_blog_linepay_vitess",
+      "url": "https://techblog.lycorp.co.jp/ko/migrate-payment-system-db-to-vitess-1",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "LY Corporation",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "일 평균 30억 건을 처리하는 결제 시스템의 DB를 Vitess로 교체하기 - 1. 솔루션 선정기",
+      "posted_at": "2025-06-18",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_linepay_payment_db_vitess.txt",
+      "note": "발행 주체는 LY Corporation 의 그룹 기술 블로그이며 라인페이플러스 단독 블로그가 아니다. 글을 쓴 조직은 LINE Billing Platform 팀과 LINE Plus 다. 결제 도메인이 공고와 맞아 co_linepayplus 의 회사 맥락으로 연결한다"
+    },
+    {
+      "source_id": "src_blog_linepay_thundering_herd",
+      "url": "https://techblog.lycorp.co.jp/ko/req-saver-for-thundering-herd-problem-in-cache",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "LY Corporation",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "req-shield로 캐시의 골칫거리 'Thundering Herd 문제' 쉽게 풀기!",
+      "posted_at": "2024-05-25",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_linepay_cache_thundering_herd.txt",
+      "note": "발행 주체는 LY Corporation 의 그룹 기술 블로그이며 라인페이플러스 단독 블로그가 아니다. 글을 쓴 조직은 LINE Billing Platform 팀과 LINE Plus 다. 결제 도메인이 공고와 맞아 co_linepayplus 의 회사 맥락으로 연결한다"
+    },
+    {
+      "source_id": "src_blog_linepay_spring_boot3",
+      "url": "https://techblog.lycorp.co.jp/ko/how-to-migrate-to-spring-boot-3",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "LY Corporation",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "실전! Spring Boot 3 마이그레이션",
+      "posted_at": "2023-11-08",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_linepay_spring_boot3_migration.txt",
+      "note": "발행 주체는 LY Corporation 의 그룹 기술 블로그이며 라인페이플러스 단독 블로그가 아니다. 글을 쓴 조직은 LINE Billing Platform 팀과 LINE Plus 다. 결제 도메인이 공고와 맞아 co_linepayplus 의 회사 맥락으로 연결한다"
+    },
+    {
+      "source_id": "src_blog_channeltalk_spike",
+      "url": "https://tech.channel.io/kr/articles/235661b0",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "급증하는 트래픽 안정적으로 처리하기, 구현편",
+      "posted_at": "2025-03-21",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_channeltalk_spike_traffic.txt"
+    },
+    {
+      "source_id": "src_blog_channeltalk_hot_partition",
+      "url": "https://tech.channel.io/kr/articles/89224b1f",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "DynamoDB 핫 파티션을 해결하는 3가지 방법 (2): 인덱스 테이블로 GSI 떼어내기 구현편",
+      "posted_at": "2026-07-03",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_channeltalk_dynamodb_hot_partition.txt"
+    },
+    {
+      "source_id": "src_blog_channeltalk_modernization",
+      "url": "https://tech.channel.io/kr/articles/686ae8aa",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "DynamoDB와 함께한 아키텍처 현대화 여정(1)",
+      "posted_at": "2024-11-14",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_channeltalk_dynamodb_modernization.txt"
+    },
+    {
+      "source_id": "src_blog_nexon_throttling",
+      "url": "https://www.intelligencelabs.tech/310dadb5-6b2f-81fa-943a-faa008a0ec85",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "ATCS : 게임 서버로 유입되는 폭발적 API 트래픽 대응을 위한 큐 기반 Throttling 전략",
+      "posted_at": "2024-01-03",
+      "robots_policy": "allow /; disallow /_private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_nexon_game_server_throttling.txt",
+      "note": "넥슨코리아 플랫폼본부 테크블로그다. nexon_be_ua 공고 본문이 이 블로그를 직접 링크한다"
+    },
+    {
+      "source_id": "src_blog_nexon_redis_spar",
+      "url": "https://www.intelligencelabs.tech/310dadb5-6b2f-81f2-bdde-cc0970ee7428",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Redis SPAR: 스트림 파티션 리밸런서 개발기 (ATCS 사례)",
+      "posted_at": "2024-10-28",
+      "robots_policy": "allow /; disallow /_private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_nexon_redis_stream_partition.txt"
+    },
+    {
+      "source_id": "src_blog_nexon_msa_automation",
+      "url": "https://www.intelligencelabs.tech/310dadb5-6b2f-811e-9e46-f4b1ddfe6b93",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "보호모드 프로세스의 자동화 도입을 통한 넥슨 계정 보안 프로세스 개선기",
+      "posted_at": "2023-12-01",
+      "robots_policy": "allow /; disallow /_private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_nexon_msa_ops_automation.txt"
     }
   ],
   "unreachable": [
@@ -1422,6 +1786,58 @@
     {
       "source": "esco.ec.europa.eu",
       "reason": "이용 조건 문서 경로가 404 를 반환해 라이선스를 확인하지 못했다"
+    },
+    {
+      "source": "medium.com",
+      "reason": "robots 의 ClaudeBot 그룹이 Disallow / 이고 글 경로가 Allow 목록에 없다. 당근과 미리디의 공식 기술 블로그가 여기 있어 대신 자체 도메인에서 가져왔다"
+    },
+    {
+      "source": "tech.kakaopay.com",
+      "reason": "브라우저 도구의 차단 도메인. 우회하지 않는다"
+    },
+    {
+      "source": "developers.kakaomobility.com",
+      "reason": "브라우저 도구의 차단 도메인. 우회하지 않는다"
+    },
+    {
+      "source": "blog.naver.com",
+      "reason": "브라우저 도구의 차단 도메인. 현대오토에버 기술 글의 본문이 여기 있다"
+    },
+    {
+      "source": "www.lgcns.com 인사이트",
+      "reason": "본문 하단에 사전 동의 없이 2차 가공 및 영리적인 이용을 금한다는 문구가 있다"
+    },
+    {
+      "source": "www.hyundai-autoever.com 솔루션 문서",
+      "reason": "법적고지가 사전 승낙 없는 복사와 복제를 금한다"
+    },
+    {
+      "source": "travel-wallet.career.greetinghr.com/ko/tech",
+      "reason": "발표 제목 목록만 있고 본문이 없다"
+    },
+    {
+      "source": "www.samsungsds.com 리서치 블로그",
+      "reason": "robots 는 ClaudeBot 을 Allow 하지만 이용약관 4.2 가 가공·복제·영리 이용을 금하고 4.6 이 웹 크롤러를 통한 이용을 금한다. 약관이 robots 보다 넓은 금지다"
+    },
+    {
+      "source": "devinn.dev",
+      "reason": "CJ올리브네트웍스의 기술 블로그 도메인이 사라졌다"
+    },
+    {
+      "source": "chamomile.lotteinnovate.com",
+      "reason": "롯데이노베이트의 자사 프레임워크 릴리스 노트만 있고 엔지니어링 글이 없다"
+    },
+    {
+      "source": "engineering-skcc.github.io",
+      "reason": "SK주식회사 C&C 의 기술 블로그다. 이용 조건은 걸리지 않으나 2022년 11월 이후 글이 없고 이 회사의 백엔드 공고가 열려 있지 않아 회사 맥락을 연결할 공고가 없다"
+    },
+    {
+      "source": "careers.skplanet.com",
+      "reason": "robots 가 User-agent * 에 Disallow / 로 전면 차단한다"
+    },
+    {
+      "source": "si_enterprise 기업군의 B 계층",
+      "reason": "LG CNS 와 현대오토에버가 엔지니어링 기술 블로그를 운영하지 않는다. 대체 후보로 삼성SDS, SK주식회사 C&C, CJ올리브네트웍스, 롯데이노베이트, SK플래닛, G마켓, 11번가, 포스코DX, 신세계아이앤씨를 확인했으나 기술 블로그와 백엔드 공고를 함께 갖춘 곳이 없다. B 계층은 통계에 집계하지 않으므로 기업군을 균등하게 채우는 것이 목표가 아니다"
     }
   ],
   "access_notes": [
@@ -1504,6 +1920,10 @@
     {
       "source": "공공데이터포털 NCS 오픈API",
       "method": "c.q-net.or.kr/openapi/Ncs1info/ncsinfo.do 가 능력단위 코드·이름·수준·정의를 JSON 으로 준다. 이용허락범위 제한 없음. data.go.kr 인증키가 필요하다"
+    },
+    {
+      "source": "회사 기술 블로그 선정",
+      "method": "그 회사 백엔드 공고의 자격요건과 우대사항에서 기술과 문제 영역을 먼저 뽑고, 겹치는 글만 고른다. 채용 후기와 행사 소식은 요구 근거가 되지 않는다"
     }
   ]
 }
