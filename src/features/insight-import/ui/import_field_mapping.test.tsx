@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { DesignSystemProvider } from '@/shared/ui/design-system-provider';
 
@@ -35,6 +35,8 @@ beforeAll(() => {
     })),
   });
 });
+
+afterEach(cleanup);
 
 describe('ImportFieldMapping', () => {
   it('source별 URL·제목·메모 선택을 한 번에 제출한다', async () => {
@@ -114,5 +116,49 @@ describe('ImportFieldMapping', () => {
     expect(
       screen.queryByRole('combobox', { name: 'first.csv URL 필드' })
     ).toBeNull();
+  });
+
+  it('대화상자 footer의 외부 버튼으로 form을 제출한다', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const requests: ImportFieldMappingRequest[] = [
+      {
+        fields: ['url'],
+        sourceKey: 'file.csv',
+        suggested: {
+          memoField: null,
+          sourceKey: 'file.csv',
+          titleField: null,
+          urlField: 'url',
+        },
+      },
+    ];
+
+    render(
+      <DesignSystemProvider>
+        <ImportFieldMappingForm
+          formId="import-field-mapping-form"
+          onSubmit={onSubmit}
+          requests={requests}
+          showSubmitButton={false}
+        />
+        <button form="import-field-mapping-form" type="submit">
+          외부 계속
+        </button>
+      </DesignSystemProvider>
+    );
+
+    expect(screen.queryByRole('button', { name: '계속' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '외부 계속' }));
+
+    expect(onSubmit).toHaveBeenCalledWith([
+      {
+        memoField: null,
+        sourceKey: 'file.csv',
+        titleField: null,
+        urlField: 'url',
+      },
+    ]);
   });
 });

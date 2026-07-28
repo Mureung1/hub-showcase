@@ -49,6 +49,9 @@ const FILE_ADAPTERS = [
   genericMarkdownAdapter,
   genericTextAdapter,
 ] as const;
+const IMPORT_FIELD_MAPPING_FORM_ID = 'insight-import-field-mapping-form';
+const NOTION_FIELD_MAPPING_FORM_ID =
+  'insight-import-notion-field-mapping-form';
 
 export type InsightImportDialogProps = {
   categories: readonly Category[];
@@ -201,10 +204,166 @@ export function InsightImportDialog({
     ? `insight-import-${sourceSelected}-title`
     : undefined;
 
+  function renderDialogFooter() {
+    if (isPreviewStage && controller.prepared) {
+      return (
+        <>
+          <Button hierarchy="ghost" onClick={resetSource} type="button">
+            다시 선택
+          </Button>
+          <Button
+            disabled={
+              controller.stage === 'committing' ||
+              !controller.canCommit ||
+              invalidNewCategory
+            }
+            hierarchy="primary"
+            onClick={() => void controller.commit()}
+            type="button"
+          >
+            {controller.stage === 'committing' ? '가져오는 중' : '가져오기'}
+          </Button>
+        </>
+      );
+    }
+
+    if (controller.stage === 'field-mapping') {
+      return (
+        <>
+          <Button hierarchy="ghost" onClick={resetSource} type="button">
+            다시 선택
+          </Button>
+          <Button
+            form={IMPORT_FIELD_MAPPING_FORM_ID}
+            hierarchy="primary"
+            type="submit"
+          >
+            계속
+          </Button>
+        </>
+      );
+    }
+
+    if (
+      controller.stage === 'result' &&
+      controller.prepared &&
+      controller.result
+    ) {
+      return (
+        <>
+          <Button hierarchy="ghost" onClick={resetSource} type="button">
+            다른 링크 가져오기
+          </Button>
+          <Button
+            hierarchy="primary"
+            onClick={() => handleOpenChange(false)}
+            type="button"
+          >
+            완료
+          </Button>
+        </>
+      );
+    }
+
+    if (!isSourceStage) {
+      return null;
+    }
+
+    const closeButton = (
+      <Button
+        hierarchy="ghost"
+        onClick={() => handleOpenChange(false)}
+        type="button"
+      >
+        취소
+      </Button>
+    );
+
+    if (controller.stage === 'analyzing') {
+      return (
+        <>
+          {closeButton}
+          <Button disabled hierarchy="primary" type="button">
+            분석 중
+          </Button>
+        </>
+      );
+    }
+
+    if (sourceSelected === 'paste') {
+      return (
+        <>
+          {closeButton}
+          <Button
+            disabled={pastedText.trim().length === 0}
+            hierarchy="primary"
+            onClick={() => void analyze()}
+            type="button"
+          >
+            분석하기
+          </Button>
+        </>
+      );
+    }
+
+    if (sourceSelected === 'notion') {
+      if (notion.stage === 'idle' || notion.stage === 'error') {
+        return (
+          <>
+            {closeButton}
+            <Button
+              hierarchy="primary"
+              onClick={() => void notion.start(includeNotionPageUrls)}
+              type="button"
+            >
+              Notion 연결하기
+            </Button>
+          </>
+        );
+      }
+
+      if (notion.stage === 'mapping') {
+        return (
+          <>
+            <Button
+              hierarchy="ghost"
+              onClick={() => void notion.cancel()}
+              type="button"
+            >
+              연결 취소
+            </Button>
+            <Button
+              form={NOTION_FIELD_MAPPING_FORM_ID}
+              hierarchy="primary"
+              type="submit"
+            >
+              계속
+            </Button>
+          </>
+        );
+      }
+
+      if (notion.stage === 'connecting' || notion.stage === 'analyzing') {
+        return (
+          <Button
+            hierarchy="secondary"
+            onClick={() => void notion.cancel()}
+            type="button"
+          >
+            연결 취소
+          </Button>
+        );
+      }
+    }
+
+    return closeButton;
+  }
+
   return (
     <Modal
       className="insight-import-dialog"
       description="다른 곳에 저장한 링크를 분석한 뒤 확인하고 가져옵니다."
+      footer={renderDialogFooter()}
       onOpenChange={handleOpenChange}
       open={open}
       size="large"
@@ -283,17 +442,6 @@ export function InsightImportDialog({
                   rows={7}
                   value={pastedText}
                 />
-                <Button
-                  disabled={
-                    controller.stage === 'analyzing' ||
-                    pastedText.trim().length === 0
-                  }
-                  hierarchy="primary"
-                  onClick={() => void analyze()}
-                  type="button"
-                >
-                  {controller.stage === 'analyzing' ? '분석 중' : '분석하기'}
-                </Button>
               </div>
             ) : null}
 
@@ -320,13 +468,6 @@ export function InsightImportDialog({
                       Notion 안에 저장한 외부 링크가 아니라 선택한 페이지도
                       원문으로 보관할 때만 사용합니다.
                     </p>
-                    <Button
-                      hierarchy="primary"
-                      onClick={() => void notion.start(includeNotionPageUrls)}
-                      type="button"
-                    >
-                      Notion 연결하기
-                    </Button>
                   </>
                 ) : null}
 
@@ -340,18 +481,12 @@ export function InsightImportDialog({
                       완료한 요청 {notion.requestCount}개 · 후보{' '}
                       {notion.candidateCount}개
                     </p>
-                    <Button
-                      hierarchy="secondary"
-                      onClick={() => void notion.cancel()}
-                      type="button"
-                    >
-                      연결 취소
-                    </Button>
                   </section>
                 ) : null}
 
                 {notion.stage === 'mapping' ? (
                   <NotionFieldMappingForm
+                    formId={NOTION_FIELD_MAPPING_FORM_ID}
                     onSubmit={(mappings) =>
                       void notion.submitMappings(mappings)
                     }
@@ -382,39 +517,19 @@ export function InsightImportDialog({
             onMappingChange={controller.setCollectionMapping}
             prepared={controller.prepared}
           />
-          <div className="insight-import-dialog__actions">
-            <Button hierarchy="ghost" onClick={resetSource} type="button">
-              다시 선택
-            </Button>
-            <Button
-              disabled={
-                controller.stage === 'committing' ||
-                !controller.canCommit ||
-                invalidNewCategory
-              }
-              hierarchy="primary"
-              onClick={() => void controller.commit()}
-              type="button"
-            >
-              {controller.stage === 'committing' ? '가져오는 중' : '가져오기'}
-            </Button>
-          </div>
         </div>
       ) : null}
 
       {controller.stage === 'field-mapping' ? (
         <div className="insight-import-dialog__stage insight-import-dialog__stage--single">
           <ImportFieldMappingForm
+            formId={IMPORT_FIELD_MAPPING_FORM_ID}
             onSubmit={(mappings) =>
               void controller.submitFieldMappings(mappings)
             }
             requests={controller.fieldMappingRequests}
+            showSubmitButton={false}
           />
-          <div className="insight-import-dialog__actions">
-            <Button hierarchy="ghost" onClick={resetSource} type="button">
-              다시 선택
-            </Button>
-          </div>
         </div>
       ) : null}
 
@@ -484,18 +599,6 @@ export function InsightImportDialog({
             </Button>
           )}
 
-          <div className="insight-import-dialog__actions">
-            <Button hierarchy="ghost" onClick={resetSource} type="button">
-              다른 링크 가져오기
-            </Button>
-            <Button
-              hierarchy="primary"
-              onClick={() => handleOpenChange(false)}
-              type="button"
-            >
-              완료
-            </Button>
-          </div>
         </div>
       ) : null}
     </Modal>
@@ -503,20 +606,28 @@ export function InsightImportDialog({
 }
 
 function NotionFieldMappingForm({
+  formId,
   ...props
 }: {
+  formId: string;
   onSubmit: (mappings: NotionFieldMapping[]) => void;
   requests: NotionFieldMappingRequest[];
 }) {
   return (
-    <NotionFieldMappingFields key={JSON.stringify(props.requests)} {...props} />
+    <NotionFieldMappingFields
+      formId={formId}
+      key={JSON.stringify(props.requests)}
+      {...props}
+    />
   );
 }
 
 function NotionFieldMappingFields({
+  formId,
   onSubmit,
   requests,
 }: {
+  formId: string;
   onSubmit: (mappings: NotionFieldMapping[]) => void;
   requests: NotionFieldMappingRequest[];
 }) {
@@ -533,6 +644,7 @@ function NotionFieldMappingFields({
   return (
     <form
       className="insight-import-dialog__field-mapping"
+      id={formId}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit(mappings);
@@ -613,9 +725,6 @@ function NotionFieldMappingFields({
           </fieldset>
         );
       })}
-      <Button hierarchy="primary" type="submit">
-        계속
-      </Button>
     </form>
   );
 }

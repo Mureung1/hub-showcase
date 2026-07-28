@@ -172,10 +172,16 @@ describe('InsightImportDialog', () => {
     const textarea = screen.getByRole('textbox', { name: '가져올 링크' });
     const analyzeButton = screen.getByRole('button', { name: '분석하기' });
 
+    expect(analyzeButton.closest('.ui-modal__footer')).toBeTruthy();
+
     await user.type(textarea, 'https://example.com/a\nhttps://example.com/b');
     sourceButton.focus();
     await user.tab();
     expect(document.activeElement).toBe(textarea);
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: '취소' })
+    );
     await user.tab();
     expect(document.activeElement).toBe(analyzeButton);
 
@@ -200,6 +206,12 @@ describe('InsightImportDialog', () => {
       '연구'
     );
 
+    expect(
+      screen
+        .getByRole('button', { name: '가져오기' })
+        .closest('.ui-modal__footer')
+    ).toBeTruthy();
+
     await user.click(screen.getByRole('button', { name: '가져오기' }));
 
     expect(service.commit).toHaveBeenCalledTimes(1);
@@ -219,6 +231,11 @@ describe('InsightImportDialog', () => {
         .getByRole('status', { name: '가져오기를 완료했어요' })
         .getAttribute('aria-live')
     ).toBe('polite');
+    expect(
+      screen
+        .getByRole('button', { name: '완료' })
+        .closest('.ui-modal__footer')
+    ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '가져오기 되돌리기' }));
     expect(
