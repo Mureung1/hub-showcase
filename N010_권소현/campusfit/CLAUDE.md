@@ -1,0 +1,137 @@
+# 캠퍼스핏 (CampusFit)
+
+흩어진 장학금·지자체혜택·대외활동·인턴십 정보 중, 온보딩에서 받은 조건(국립/사립, 지역)에
+맞는 것만 걸러 보여주는 서비스. 팀 단위 공고는 인앱 팀원모집 게시판(댓글 지원)으로 실제 지원까지 이어지게 한다.
+자세한 배경은 [캠퍼스핏-기획서.pptx](../../캠퍼스핏-기획서.pptx) 참고.
+
+핵심 기능 3가지 (기획서 우선순위 그대로):
+1. 조건 기반 정보 필터링 — 서비스의 심장
+2. 카테고리별 목록 + 마감 임박
+3. 팀원모집 게시판 (댓글로 지원)
+
+## 절대 규칙
+
+- `design/design-tokens.css`에 없는 색상·radius 값을 임의로 추가하지 않는다.
+- 기획서 MVP 범위 밖 기능(카테고리 내 검색, 스크랩, 커뮤니티, 개인 알림 등)을 먼저 만들지 않는다.
+- 디렉토리 구조·기술 스택처럼 큰 구조를 바꾸기 전엔 먼저 제안하고 사용자 승인을 받는다.
+- git push·PR 생성은 사용자가 명시적으로 요청할 때만 한다.
+
+## 금지 사항
+
+- 요청하지 않은 기능을 먼저 추가하지 않는다.
+- 리스팅 상세 화면에 실제 지원 폼(입력 필드 등)을 만들지 않는다 — "한눈에 정리" 요약 + 공식 페이지
+  링크까지만이고, 실제 지원은 여전히 공식 페이지에서 이뤄진다 (design-system.md 원칙 7,
+  2026-07-14 갱신: 예전엔 일반 공고에 상세 화면 자체를 두지 않았으나 레퍼런스 디자인 반영 후
+  모든 공고가 상세 화면을 거치는 것으로 바뀌었다).
+- PR의 "내가 설명할 수 있는 부분 / 아직 이해 못 한 부분 / 새로 알게 된 것" 회고 3섹션을 AI가
+  대신 써주지 않는다 — 질문만 하고, 사용자 본인의 말로 채운다.
+- 모르는 내용을 아는 척하지 않는다.
+
+## 디렉토리 구조
+
+```
+campusfit/
+  design/                 디자인 시스템 (소스 오브 트루스)
+    prototype.html         클릭형 HTML/CSS 프로토타입
+    design-tokens.css      색상·타이포 토큰
+    design-system.md       컴포넌트 패턴 · 톤 원칙
+  client/                 React + Vite 프론트엔드
+    src/
+      pages/                화면 단위 컴포넌트
+      components/           재사용 UI 조각 (필요해지면 생성)
+      styles/
+        tokens.css            design/design-tokens.css를 복사한 것 — 원본 바뀌면 여기도 동기화
+        components.css        design-system.md의 컴포넌트 패턴 (.frame, .cat-card, .pill, .row, .post-card 등)
+      api/
+        client.js             서버 API 호출 wrapper
+  server/                 Express 백엔드
+    src/
+      index.js              앱 진입점
+      routes/                /api/listings, /api/board (SQLite 조회)
+      db/
+        client.js              better-sqlite3 연결 + 테이블 생성
+        seed.js                client/src/data의 mock 데이터를 DB로 옮기는 시드 스크립트 (npm run db:seed)
+  .claude/skills/
+    campusfit-design/       디자인 검수용 개인 skill
+    pr/                     과제 PR 생성 절차 skill
+```
+
+## 왜 이 구성인가
+
+- **React + Vite**: 미션 기본 스택. 화면 전환이 많은 SPA라 라우팅(react-router-dom)을 같이 둠.
+- **Express**: 별도 백엔드 프레임워크 학습 곡선 없이 REST API만 빠르게 얹기 위함. RAG/LLM 계층이 없는
+  서비스라 Express만으로 충분 — 별도 LLM 계층은 필요 없다 (온보딩 조건이 알바 매니저 프로젝트처럼
+  대화형 인수인계가 아니라 단순 선택형이기 때문).
+- **디자인 토큰을 CSS 변수로**: Tailwind나 CSS-in-JS 대신 순수 CSS 변수를 쓰는 이유는, 프로토타입을
+  그대로 만든 방식(HTML/CSS)과 결과물 사이에 변환 손실이 없게 하기 위함. `design/design-tokens.css`가
+  원본이고 `client/src/styles/tokens.css`는 그걸 복사한 사본이다.
+- **SQLite (better-sqlite3)**: 2026-07-16 결정. 별도 DB 서버 설치 없이 파일 하나로 동작해서 로컬
+  개발에 적합하고, 동기 API라 Express 라우트 코드가 async/await 없이 단순하게 유지된다. `eligibleRegions`/
+  `eligibleGrades`처럼 값이 여러 개인 필드는 정규화된 조인 테이블 대신 JSON 문자열 컬럼으로 저장했다 —
+  이 단계에서는 조회 성능보다 스키마 단순함이 더 중요하다고 판단. `dDay`는 DB에 저장하면 날짜가 지날수록
+  틀어지므로, 실제 마감일(`deadline_date`)만 저장하고 라우트에서 요청 시점 기준으로 계산해 응답한다.
+  `client/src/data/`의 mock 데이터가 여전히 소스이고, `server/src/db/seed.js`가 그걸 DB로 옮긴다
+  (`npm run db:seed`) — 화면 쪽 mock 데이터를 고치면 재시드해야 반영된다.
+- **화면(React) ↔ 서버(API) 연결**: 2026-07-16, `Layout.jsx`가 마운트 시 `api.getCategories()` ·
+  `api.getListings()` · `api.getBoardPosts()`를 한 번에 불러와서 `categories`/`listings`/`boardPosts`를
+  Outlet context로 하위 페이지에 내려준다 — 페이지들이 더 이상 `mockListings.js`/`mockBoardPosts.js`를
+  직접 import하지 않는다 (단, `univOptions`/`regionOptions`/`gradeOptions`/`interestOptionsByCategory`처럼
+  DB에 넣지 않은 고정 옵션 목록은 여전히 정적 import). 글쓰기(`addBoardPost`)·댓글(`addComment`)도
+  서버에 POST하고 응답으로 상태를 갱신 — 새로고침해도 남아있다. 로딩 중엔 `Layout`이 "불러오는 중..."을
+  보여주고, 서버가 꺼져 있으면 에러 메시지를 보여준다. 실행 순서: `server`(`npm run dev`, 4000번) →
+  `client`(`npm run dev`, 5173/5175번) 둘 다 켜져 있어야 화면이 뜬다.
+
+## 작업 절차 스킬
+
+- 화면 디자인·검수: `campusfit-design` — `.claude/skills/campusfit-design/SKILL.md`
+- 과제 PR 생성: `pr` — `.claude/skills/pr/SKILL.md`
+
+## 코딩 컨벤션
+
+- 컴포넌트 파일명: PascalCase (`Main.jsx`), 그 외 파일: camelCase
+- 새 화면을 만들기 전에 `.claude/skills/campusfit-design`의 체크리스트로 디자인 의도와 맞는지 확인
+- 새 CSS 클래스를 추가하기 전에 `client/src/styles/components.css`에 재사용 가능한 게 있는지 먼저 확인
+- API 응답 형식: 목록은 배열을 바로 반환 (래핑 객체 없음), 에러는 `{ error: string }`
+
+## 커밋 메시지 규칙
+
+`<type>: <설명>` 형식, 설명은 한국어.
+
+| type | 용도 |
+|---|---|
+| `feat` | 새 기능 |
+| `fix` | 버그 수정 |
+| `design` | 화면/디자인 시스템 변경 (기능 변경 없음) |
+| `refactor` | 동작은 그대로, 구조만 변경 |
+| `chore` | 설정, 의존성, 잡일 |
+| `docs` | 문서만 변경 |
+
+예: `feat: 팀원모집 게시판 댓글 API 추가`, `design: 마감임박 pill 색상 조정`
+
+## 아직 결정 안 된 것 (2주차 전에 정할 것)
+
+- **로그인/계정**: 기획서엔 온보딩(조건 선택)만 있고 회원가입 언급이 없다. 댓글 지원에 "누가" 썼는지
+  구분하려면 최소한의 세션/닉네임 정도는 필요한지 정해야 한다. (북마크는 2026-07-15에 로그인 없이
+  `localStorage`로 먼저 반영함 — 댓글 작성자 식별처럼 "다른 사람도 봐야 하는" 기능은 여전히 로그인이
+  필요한 채로 남아있음)
+- **배포**: 로컬 개발만 세팅된 상태, 배포 플랫폼 미정. SQLite 파일 기반 DB라 배포 플랫폼에 따라
+  파일시스템 유지가 안 되는 곳(서버리스 등)이면 이 결정도 다시 봐야 함.
+- **팀원모집 상태 변화**: 모집 완료된 글을 어떻게 표시할지 (design-system.md에도 동일하게 남겨둠).
+- **공고 자동 수집**: 지금은 사람이 안 올리고, 한국장학재단·온통청년(청년정책, 공공데이터포털 오픈
+  API 있음, 2026-07-16 확인)부터 자동 연동하는 걸 검토 중. 두 곳 다 회원가입 + API 키 신청(심사 필요)이 있어서 사용자가 직접 계정을 만들어야 진행
+  가능함. 원문 상세페이지로 바로 연결하려면 DB에 출처/원문링크/최종수집일시 컬럼을 추가해야 하는데,
+  지금 `listings` 테이블에는 아직 없음. 한국장학재단은 연동 완료(`server/src/db/sync-kosaf.js`,
+  DB 저장 방식). 온통청년도 연동 완료(`server/src/routes/youthPolicy.js`) — 2026-07-23 기록에는
+  `/opi/youthPlcyList.do`가 `youthcenter.go.kr:8080`으로 리다이렉트되며 응답이 없어 보류라고 적혀
+  있었지만, 이후 `/go/ythip/getPlcy` 엔드포인트로 바꿔서 해결했다. 다만 이쪽은 DB에 저장하지 않고
+  `/api/youth-policy` 라우트가 요청마다 실시간으로 외부 API를 호출해 `Layout.jsx`에서 listings와
+  합쳐서 내려준다 — 마감일(`dDay`)도 실제 날짜가 아니라 999 고정값(TODO로 남겨둠).
+- **공모전 카테고리 제거 (2026-07-28)**: 지역/학년 필터가 거의 안 먹히는 카테고리였고(공모전은
+  대학·지역 무관하게 열려 있는 경우가 대부분), 장학금·청년정책과 달리 공공데이터포털에 오픈 API도
+  없어서(민간 사이트뿐, 크롤링 필요) 5개 카테고리 중 공모전만 뺐다. DB(categories/listings/board_posts/
+  comments)에서도 관련 행을 전부 삭제했다(백업: `server/src/db/backups/contest-2026-07-28.json`).
+  자세한 배경은 [기획서.md](기획서.md)의 "공모전 카테고리 제거 (2026-07-28)" 참고.
+- **지역 필터의 시/군/구 단위 한계**: `sync-kosaf.js`의 지역 매칭은 광역시도 이름(서울/경남 등)이
+  텍스트나 운영기관명에 직접 언급된 경우만 잡는다. "인제군", "거제시"처럼 시/군 단위로만 지역이
+  언급된 지자체 장학금은 광역시도로 못 잡아서 전체 대상으로 새고 있음 — 전국 시/군/구 → 광역시도
+  코드 매핑 테이블이 있어야 완전히 해결됨 (2026-07-23 발견).
