@@ -53,7 +53,7 @@ async function fetchText(url) {
   return res.text();
 }
 
-async function collectPostingsForCategory({ category, listingUrl, targetCount }, startId) {
+async function collectPostingsForCategory({ category, listingUrl, targetCount }) {
   const postings = [];
   const seenIds = new Set();
   let page = 1;
@@ -83,7 +83,7 @@ async function collectPostingsForCategory({ category, listingUrl, targetCount },
           continue;
         }
 
-        const posting = mapActivityToPosting(activity, { id: startId + postings.length, category });
+        const posting = mapActivityToPosting(activity, { category });
         if (!hasReasonableEssayLoad(posting.essayQuestions)) {
           console.warn(
             `[${category}] ${activityId} 자소서 문항이 과도해(${posting.essayQuestions.length}문항) 건너뜀: ${posting.title}`,
@@ -104,17 +104,15 @@ async function collectPostingsForCategory({ category, listingUrl, targetCount },
 }
 
 async function main() {
-  let nextId = 1;
   const allPostings = [];
 
   for (const config of CATEGORY_CONFIG) {
     console.log(`\n[${config.category}] 수집 시작 (목표 ${config.targetCount}건)`);
-    const postings = await collectPostingsForCategory(config, nextId);
+    const postings = await collectPostingsForCategory(config);
     if (postings.length < config.targetCount) {
       console.warn(`[${config.category}] 목표 미달: ${postings.length}/${config.targetCount}건만 수집됨`);
     }
     allPostings.push(...postings);
-    nextId += postings.length;
     await sleep(REQUEST_DELAY_MS);
   }
 

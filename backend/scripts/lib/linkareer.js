@@ -102,9 +102,12 @@ export function hasReasonableEssayLoad(essayQuestions) {
   return essayQuestions.length <= MAX_ESSAY_QUESTIONS && totalLength <= MAX_ESSAY_TOTAL_LENGTH;
 }
 
-export function mapActivityToPosting(activity, { id, category }) {
+export function mapActivityToPosting(activity, { category }) {
   return {
-    id,
+    // 크롤링 순번이 아니라 링커리어 자체의 영구 ID를 그대로 쓴다. 재크롤링해도 같은
+    // 실제 공고는 항상 같은 id를 유지해야, Supabase drafts에 저장된 초안이 재크롤링 후
+    // 엉뚱한 공고로 매칭되는 문제가 생기지 않는다.
+    id: Number(activity.id),
     category,
     org: activity.organizationName,
     title: activity.title,

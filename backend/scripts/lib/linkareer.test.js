@@ -9,6 +9,7 @@ import {
 } from "./linkareer.js";
 
 const RECRUIT_ACTIVITY = {
+  id: "336383",
   organizationName: "LX글라스",
   title: "[LX글라스] 군산공장 생산기능직 채용",
   recruitCloseAt: 1785337199999,
@@ -36,6 +37,7 @@ const RECRUIT_ACTIVITY = {
 };
 
 const CONTEST_ACTIVITY = {
+  id: "207884",
   organizationName: "국가보훈부",
   title: "[국가보훈부] 제27회 보훈문화상 공모전",
   recruitCloseAt: 1789743599999,
@@ -111,8 +113,13 @@ describe("hasReasonableEssayLoad", () => {
 });
 
 describe("mapActivityToPosting", () => {
+  it("id는 크롤링 순번이 아니라 링커리어 실제 activity.id를 그대로 쓴다 (재크롤링해도 안정적인 id 유지)", () => {
+    const posting = mapActivityToPosting(RECRUIT_ACTIVITY, { category: "채용" });
+    expect(posting.id).toBe(Number(RECRUIT_ACTIVITY.id));
+  });
+
   it("duties.questionTemplates가 있으면 실제 자소서 문항과 글자수 제한을 그대로 사용한다", () => {
-    const posting = mapActivityToPosting(RECRUIT_ACTIVITY, { id: 1, category: "채용" });
+    const posting = mapActivityToPosting(RECRUIT_ACTIVITY, { category: "채용" });
 
     expect(posting.essayQuestions).toEqual([
       { question: "1. 지원동기와 입사 후 회사에서 이루고 싶은 꿈은 무엇인가요?", maxLength: 2000 },
@@ -121,8 +128,9 @@ describe("mapActivityToPosting", () => {
   });
 
   it("실제 필드 값을 스키마에 맞게 매핑한다 (org/title/deadline/field/applyMethod/conditions)", () => {
-    const posting = mapActivityToPosting(RECRUIT_ACTIVITY, { id: 1, category: "채용" });
+    const posting = mapActivityToPosting(RECRUIT_ACTIVITY, { category: "채용" });
 
+    expect(posting.id).toBe(336383);
     expect(posting.org).toBe("LX글라스");
     expect(posting.title).toBe("[LX글라스] 군산공장 생산기능직 채용");
     expect(posting.deadline).toBe("2026-07-29");
@@ -134,7 +142,7 @@ describe("mapActivityToPosting", () => {
   });
 
   it("duties가 없는 공모전/대외활동 공고는 범용 자소서 문항으로 대체한다", () => {
-    const posting = mapActivityToPosting(CONTEST_ACTIVITY, { id: 7, category: "공모전" });
+    const posting = mapActivityToPosting(CONTEST_ACTIVITY, { category: "공모전" });
 
     expect(posting.essayQuestions).toEqual([
       { question: "지원 동기를 작성해주세요.", maxLength: 500 },
