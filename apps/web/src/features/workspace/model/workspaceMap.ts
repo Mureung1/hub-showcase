@@ -39,3 +39,34 @@ export const workspaceInteractions: WorkspaceInteraction[] = [
     activationRadius: 88,
   },
 ];
+
+export type WorkspaceRepositorySummary = {
+  id: string;
+  repositoryName: string;
+  challengeTitle: string;
+};
+
+// Existing desks on the map act as monitor slots; these are interaction anchors.
+export const workspaceRepositoryMonitorSlots: WorkspacePoint[] = [
+  { x: 470, y: 270 },
+  { x: 350, y: 420 },
+  { x: 175, y: 500 },
+  { x: 175, y: 690 },
+  { x: 930, y: 190 },
+  { x: 1190, y: 190 },
+  { x: 1010, y: 640 },
+  { x: 1260, y: 690 },
+];
+
+export function getRepositoryWorkspaceInteractions(
+  projects: WorkspaceRepositorySummary[],
+): WorkspaceInteraction[] {
+  return projects.slice(0, workspaceRepositoryMonitorSlots.length).map((project, index) => ({
+    id: `repository-${project.id}`,
+    kind: "repository",
+    label: `${project.repositoryName} 다시 보기`,
+    position: workspaceRepositoryMonitorSlots[index],
+    activationRadius: 76,
+    repositoryId: project.id,
+  }));
+}

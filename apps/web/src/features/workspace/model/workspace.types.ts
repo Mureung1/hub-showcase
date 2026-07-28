@@ -39,4 +39,5 @@ export type WorkspaceGameHandle = {
   destroy: () => void;
   focus: () => void;
   setInputEnabled: (isEnabled: boolean) => void;
+  setRepositoryInteractions: (interactions: WorkspaceInteraction[]) => void;
 };

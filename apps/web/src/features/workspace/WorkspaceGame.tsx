@@ -8,16 +8,22 @@ import type {
 type WorkspaceGameProps = {
   isInputEnabled: boolean;
   onOpenNewAnalysis: () => void;
+  repositoryInteractions?: WorkspaceInteraction[];
+  onOpenRepository?: (repositoryId: string) => void;
 };
 
 export function WorkspaceGame({
   isInputEnabled,
   onOpenNewAnalysis,
+  repositoryInteractions = [],
+  onOpenRepository,
 }: WorkspaceGameProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<WorkspaceGameHandle | null>(null);
   const openAnalysisRef = useRef(onOpenNewAnalysis);
   const inputEnabledRef = useRef(isInputEnabled);
+  const repositoryInteractionsRef = useRef(repositoryInteractions);
+  const openRepositoryRef = useRef(onOpenRepository);
   const [interaction, setInteraction] = useState<WorkspaceInteraction | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadError, setLoadError] = useState("");
@@ -25,6 +31,15 @@ export function WorkspaceGame({
   useEffect(() => {
     openAnalysisRef.current = onOpenNewAnalysis;
   }, [onOpenNewAnalysis]);
+
+  useEffect(() => {
+    repositoryInteractionsRef.current = repositoryInteractions;
+    gameRef.current?.setRepositoryInteractions(repositoryInteractions);
+  }, [repositoryInteractions]);
+
+  useEffect(() => {
+    openRepositoryRef.current = onOpenRepository;
+  }, [onOpenRepository]);
 
   useEffect(() => {
     if (!mountRef.current) {
@@ -48,9 +63,14 @@ export function WorkspaceGame({
           if (event.type === "open-new-analysis") {
             openAnalysisRef.current();
           }
+
+          if (event.type === "open-repository") {
+            openRepositoryRef.current?.(event.repositoryId);
+          }
         });
         gameRef.current = game;
         game.setInputEnabled(inputEnabledRef.current);
+        game.setRepositoryInteractions(repositoryInteractionsRef.current);
         game.focus();
       })
       .catch(() => {
