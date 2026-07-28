@@ -1,3 +1,136 @@
+.history-loading {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+/* Insights는 보조 정보 — 기록(리스트/캘린더)보다 시각적으로 조용해야 한다.
+   구조(카드 4개+7일 그래프)는 그대로 두고 크기/대비/여백만 낮춘다. */
+.history-insights {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel-bg) 60%, transparent);
+}
+
+.history-insights-title {
+  margin: 0 0 8px;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.history-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.history-summary-card {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+}
+
+.history-summary-card dt {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.history-summary-card dd {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.history-summary-note {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 10.5px;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+
+.history-trend {
+  margin: 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+}
+
+.history-trend figcaption {
+  margin-bottom: 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.history-trend-chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  height: 104px;
+}
+
+.history-trend-day {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 16px minmax(52px, 1fr) 16px;
+  gap: 4px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.history-trend-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.history-trend-track {
+  display: flex;
+  min-height: 0;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--line) 45%, transparent);
+}
+
+.history-trend-bar {
+  width: min(28px, 58%);
+  height: max(4px, calc(var(--bar-ratio) * 100%));
+  border-radius: 5px 5px 2px 2px;
+  background: var(--ink-soft);
+  opacity: 0.58;
+}
+
+.history-trend-weekday {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+.history-trend-day.is-today {
+  color: var(--accent);
+}
+
+.history-trend-day.is-today .history-trend-bar {
+  background: var(--accent);
+  opacity: 1;
+}
+
 .view-tabs {
   display: flex;
   gap: 8px;
@@ -5,12 +138,12 @@
 }
 
 .view-tab {
-  background: var(--panel-bg);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 8px 16px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-soft);
   cursor: pointer;
 }
@@ -19,10 +152,66 @@
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+  font-weight: 700;
 }
 
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+}
+
+.history-toggle {
+  display: block;
+  margin: 12px auto 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.history-toggle:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+@media (max-width: 768px) {
+  .history-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-trend-chart {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-summary-grid {
+    gap: 6px;
+  }
+
+  .history-summary-card {
+    padding: 7px 8px;
+  }
+
+  .history-summary-card dd {
+    font-size: 14px;
+  }
+
+  .history-trend {
+    padding: 9px 8px;
+  }
+
+  .history-trend-chart {
+    gap: 3px;
+    height: 96px;
+  }
+
+  .history-trend-bar {
+    width: min(24px, 62%);
+  }
 }

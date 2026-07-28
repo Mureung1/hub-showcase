@@ -26,7 +26,8 @@ describe("HistoryRow completion snapshot", () => {
     expect(screen.getByText(/완료$/)).toBeInTheDocument();
     expect(screen.getByText("집중 02:05")).toBeInTheDocument();
     expect(screen.getByText("Lv2")).toBeInTheDocument();
-    expect(screen.getByText("첫 행동: 첫 문장 쓰기")).toBeInTheDocument();
+    expect(screen.getByText("첫 행동")).toBeInTheDocument();
+    expect(screen.getByText("첫 문장 쓰기")).toBeInTheDocument();
 
     expect(screen.queryByText(/회 미룸/)).not.toBeInTheDocument();
     expect(screen.queryByText("한 번에 완료")).not.toBeInTheDocument();
@@ -51,6 +52,7 @@ describe("HistoryRow completion snapshot", () => {
       />,
     );
 
+    expect(screen.getByText("회피 이유")).toBeInTheDocument();
     expect(screen.getByText("막막해서 못 시작")).toBeInTheDocument();
   });
 
