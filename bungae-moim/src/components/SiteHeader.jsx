@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAppState } from '../context/AppStateContext.jsx'
+import NotificationBell from './NotificationBell.jsx'
 import TrustBadge from './TrustBadge.jsx'
 
 // minimal: 생년월일 게이트에서 쓴다. 어차피 이동할 수 없는 상태라 가운데 nav를 숨긴다.
@@ -40,6 +41,7 @@ export default function SiteHeader({ minimal = false }) {
 
           {!authLoading && isLoggedIn && (
             <>
+              <NotificationBell />
               <span className="site-user">
                 <span className="site-user-name">{currentUser.nickname}</span>
                 {/* MyPage:70과 같은 방식으로 그대로 넘긴다. 서버의 normalizeUser가
