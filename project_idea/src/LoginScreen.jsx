@@ -7,7 +7,7 @@ const GENDER_OPTIONS = [
 ];
 
 function LoginScreen() {
-  const [mode, setMode] = useState("signup"); // "signup" | "login"
+  const [mode, setMode] = useState("login"); // "signup" | "login"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
