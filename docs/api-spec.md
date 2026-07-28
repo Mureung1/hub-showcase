@@ -529,12 +529,11 @@
 - 만족도 설문 및 AI 리포트 API는 아직 미작성.
 - 요청 바디 유효성 검증 로직(Zod 등)은 아직 미구현(`backend/src/middleware/errorHandler.js`에는 에러 포맷터만 존재) — 검증 미들웨어 구현 시 `400` 에러의 상세 필드 목록을 이 문서에 추가할 것.
 - `4. 정산`의 `transferLink` 딥링크 스킴/파라미터는 플레이스홀더 — 토스/카카오페이 딥링크 스펙 확인(`docs/plan.md`/`checklist.md` 2주차 기획 항목) 완료 후 실제 포맷으로 갱신 필요.
-- 구글 OAuth 클라이언트 ID/시크릿을 `.env`에 반영 필요(`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` 등).
-- 초대용 `state` 파라미터의 위변조 방지(서명/만료 검증) 방식 결정 필요.
-- 계좌번호 등 민감정보 저장 시 암호화 여부/방식 결정 필요.
 
 ### 확정된 정책 · 구현 주의사항
 
 - `1. 인증`, `2. 구독 서비스`, `3. 파티원`, `4. 정산` 섹션은 `backend/prisma/schema.prisma`의 `User`/`Subscription`/`PartyMember`/`Settlement`/`SettlementMember` 모델로 DB 설계 완료. 나머지(만족도) 섹션은 아직 스키마 설계 전.
 - 구독 삭제(`DELETE /api/subscriptions/:id`) 시 연관 정산 이력(`Settlement`/`SettlementMember`)도 함께 삭제됨(cascade) — 확정.
 - `GET /api/subscriptions/dashboard`는 `GET /api/subscriptions/:id`와 경로가 겹치므로, 백엔드 구현 시 반드시 `/:id`보다 먼저 라우터에 등록할 것(순서가 바뀌면 `dashboard`가 `:id` 파라미터로 매칭돼 영영 도달 불가).
+- 초대용 `state` 파라미터는 `backend/src/lib/jwt.js`의 `signInviteState`/`verifyInviteState`로 서명·검증됨(만료 10분, `purpose: 'invite'` 클레임) — 위변조/만료된 state는 콜백에서 무조건 `/`로 리다이렉트되어 확정.
+- `Subscription.accountNumber`/`accountHolderName`은 `backend/src/lib/crypto.js`(AES-256-GCM, `ACCOUNT_ENCRYPTION_KEY` 환경변수)로 암호화해 저장 — 확정. `bankName`은 평문 유지. API 응답 스키마(필드명/형태)는 변경 없음, DB 저장 형식만 암호문으로 바뀜.
