@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 import { 
   Bot, User, Send, Upload, RefreshCw, CheckCircle2, AlertTriangle, 
   X, HelpCircle, PlusCircle, Check, Info, FileText, ArrowLeft, Loader2,
@@ -708,7 +710,7 @@ function TimetableGenerator({ user, initialStudentType }) {
     setActiveCourses(initialCoursesList);
 
     // Reset and load Chat Messages from Backend / Supabase
-    axios.get('http://localhost:5000/api/chat')
+    axios.get(`${API_URL}/api/chat`)
       .then(res => {
         if (res.data && res.data.success && res.data.messages && res.data.messages.length > 0) {
           const mapped = res.data.messages.map((m, index) => ({
@@ -1113,7 +1115,7 @@ function TimetableGenerator({ user, initialStudentType }) {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/chat', {
+      await axios.post(`${API_URL}/api/chat`, {
         userMessage: text,
         aiResponse: botResponseText
       });
@@ -1158,7 +1160,7 @@ function TimetableGenerator({ user, initialStudentType }) {
 
       try {
         // Express Backend API Call
-        const response = await axios.post('http://localhost:5000/api/credits/analyze-image', formData, {
+        const response = await axios.post(`${API_URL}/api/credits/analyze-image`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }

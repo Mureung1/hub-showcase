@@ -43,7 +43,7 @@ function Login({ onLogin }) {
 
     try {
       let response;
-      const backendUrl = 'http://localhost:5000';
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
       if (isSignUp) {
         response = await axios.post(`${backendUrl}/api/auth/signup`, {

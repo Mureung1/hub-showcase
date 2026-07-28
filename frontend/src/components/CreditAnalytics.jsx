@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 // Mock Grade Data per student profile
 const STUDENT_GRADES_DATABASE = {
   '2025080081': {
@@ -145,7 +147,7 @@ function CreditAnalytics({ user, initialStudentType }) {
   // Restore saved grades on mount for persistence across refresh
   useEffect(() => {
     // 1. Try fetching from server API
-    axios.get('http://localhost:5000/api/credits/saved-grades')
+    axios.get(`${API_URL}/api/credits/saved-grades`)
       .then(res => {
         if (res.data && res.data.success && res.data.data) {
           setAnalysisResult(res.data.data);
@@ -168,7 +170,7 @@ function CreditAnalytics({ user, initialStudentType }) {
     if (analysisResult) {
       try {
         localStorage.setItem('gnu_saved_analysis_result', JSON.stringify(analysisResult));
-        axios.post('http://localhost:5000/api/credits/save-grades', analysisResult).catch(() => {});
+        axios.post(`${API_URL}/api/credits/save-grades`, analysisResult).catch(() => {});
       } catch (e) {}
     }
   }, [analysisResult]);
