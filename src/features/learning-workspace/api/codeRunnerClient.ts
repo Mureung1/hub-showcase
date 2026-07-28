@@ -29,7 +29,9 @@ export async function executeCode(
   language: CodeRunLanguage,
   options: ExecuteCodeOptions = {},
 ): Promise<CodeRunResult> {
-  const response = await (options.fetchImpl ?? fetch)(apiUrl(codeRunEndpoint), {
+  const codeRunnerBaseUrl =
+    import.meta.env.VITE_CODE_RUNNER_BASE_URL ?? import.meta.env.VITE_API_BASE_URL
+  const response = await (options.fetchImpl ?? fetch)(apiUrl(codeRunEndpoint, codeRunnerBaseUrl), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code, language, css: options.css ?? '' }),

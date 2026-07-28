@@ -6,6 +6,7 @@ describe('codeRunnerClient', () => {
 
   it('sends TSX, CSS, and an abort signal to the code runner', async () => {
     vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8787')
+    vi.stubEnv('VITE_CODE_RUNNER_BASE_URL', 'http://localhost:8790')
     const controller = new AbortController()
     const fetchImpl = vi.fn(async () => ({
       ok: true,
@@ -18,7 +19,7 @@ describe('codeRunnerClient', () => {
       signal: controller.signal,
     })
 
-    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8787/api/code/run', {
+    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8790/api/code/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

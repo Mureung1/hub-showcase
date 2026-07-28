@@ -10,7 +10,6 @@ import { handleHealthApiRequest } from './healthRoutes.mjs'
 import { handleLearningProgressApiRequest } from './learningProgressRoutes.mjs'
 import { handleMistakeNoteApiRequest } from './mistakeNoteRoutes.mjs'
 import { handleProfileApiRequest } from './profileRoutes.mjs'
-import { handleCodeRunApiRequest } from './codeRunRoutes.mjs'
 import { handleTutorApiRequest } from './tutorRoutes.mjs'
 import { loadCurriculumTracks } from '../modules/curriculum/adapters/jsonCurriculumCatalogRepository.mjs'
 import { createInMemoryGeneratedCurriculumRepository } from '../modules/curriculum/adapters/inMemoryGeneratedCurriculumRepository.mjs'
@@ -107,7 +106,6 @@ export function createCurriculumAgentApp({
         (await handleLearningProgressApiRequest(routeContext)) ??
         (await handleMistakeNoteApiRequest(routeContext)) ??
         (await handleGitLabAttemptApiRequest(routeContext)) ??
-        (await handleCodeRunApiRequest(routeContext)) ??
         (await handleTutorApiRequest(routeContext)) ??
         createRouteNotFoundResponse()
 

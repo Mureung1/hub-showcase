@@ -6,10 +6,13 @@ const env = {
   ...process.env,
   VITE_ICU_API_MODE: process.env.VITE_ICU_API_MODE ?? 'server',
   VITE_CURRICULUM_RECOMMENDATION_MODE: process.env.VITE_CURRICULUM_RECOMMENDATION_MODE ?? 'server',
+  VITE_CODE_RUNNER_BASE_URL:
+    process.env.VITE_CODE_RUNNER_BASE_URL ?? 'http://localhost:8790',
 }
 
 const processes = [
   startProcess('backend', ['run', 'server:curriculum']),
+  startProcess('judge', ['run', 'start:judge']),
   startProcess('frontend', ['run', 'dev']),
   startProcess('preview', ['run', 'dev:preview']),
 ]

@@ -142,6 +142,20 @@ describe('curriculum agent Express server', () => {
     expect(body).toMatchObject({ error: 'not_found' })
   })
 
+  it('does not expose code execution from the Core API', async () => {
+    const baseUrl = await listen(createTestServer())
+
+    const response = await fetch(`${baseUrl}/api/code/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: '1 + 1', language: 'javascript' }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(404)
+    expect(body).toMatchObject({ error: 'not_found' })
+  })
+
   it('returns 503 when a repository operation is unavailable', async () => {
     const progressRepository = {
       async listMissions() {
