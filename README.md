@@ -152,6 +152,16 @@ React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데�
 | 개발 Task·백로그 | 4주 일정과 P0·P1·P2 범위 정리 완료 |
 | Supabase·Brevo 연동 | Seoul 개발 DB·Express·Brevo Custom SMTP 연결 완료 |
 | 실제 P0 기능 | 환자·직원 통합 대기열, 자동 알림·만료와 상태 동기화 구현 완료 |
+| 첫 공개 배포 | 환자 웹(Vercel Hobby)·API(Render Free) 배포 및 Supabase 연결 완료 |
+
+## 공개 데모
+
+- 환자 웹: https://baro-jinryo-patient.vercel.app
+- API 상태 확인: https://baro-jinryo-api.onrender.com/api/health/live
+- DB 연결 확인: https://baro-jinryo-api.onrender.com/api/health/ready
+
+모든 배포 서비스는 무료 등급만 사용합니다. 병원 관리자 웹과 플랫폼 관리자 웹은 아직
+공개하지 않았으므로 환자 웹의 `병원 직원` 링크는 현재 로컬 개발 주소를 가리킵니다.
 
 ## 데이터·운영 원칙
 
@@ -189,7 +199,7 @@ MVP에서는 Supabase Auth 이메일 확인에 Brevo Custom SMTP를 실제로 �
 - 화면 갱신: 활성 화면에서 10초 Polling
 - 자동 만료: Express가 1분마다 실행하고 PostgreSQL advisory lock으로 중복 방지
 - 시간: `timestamptz` UTC 저장, 병원 운영일은 `Asia/Seoul`
-- 배포: MVP는 로컬 실행, 외부 공개와 운영용 Supabase 분리는 P2
+- 배포: 환자 웹과 API는 무료 등급으로 공개, 병원·플랫폼 웹과 운영용 Supabase 분리는 P2
 
 ## 정적 프로토타입
 

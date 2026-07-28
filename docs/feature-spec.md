@@ -515,7 +515,7 @@ patientCount = childCount + adultCount + seniorCount
 - 여러 진료과·의사 대기열과 증상 기반 배정
 - 병원 전산 연동과 통계
 - Supabase Cron과 PostgreSQL 함수 기반 자동 만료 처리
-- 외부 공개 배포와 운영용 Supabase 프로젝트 분리
+- 병원·플랫폼 관리자 웹 공개 배포와 운영용 Supabase 프로젝트 분리
 
 ## 17. 완료 조건
 
