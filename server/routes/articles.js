@@ -132,37 +132,22 @@ router.get('/', auth, async (req, res) => {
     return res.json([]);
   }
 
-  await Promise.all(
-    userKeywords.map((uk) => ingestKeywordArticles(uk.keyword_id, uk.keywords.name))
-  );
-
-  const keywordNameById = new Map(userKeywords.map((uk) => [uk.keyword_id, uk.keywords.name]));
-
-  const { data: matches, error: matchError } = await supabase
-    .from('article_keywords')
-    .select('article_id, keyword_id')
-    .in('keyword_id', [...keywordNameById.keys()]);
-
-  if (matchError) {
+  try {
+    await Promise.all(
+      userKeywords.map((uk) => ingestKeywordArticles(uk.keyword_id, uk.keywords.name))
+    );
+  } catch (err) {
     return res.status(500).json({ error: 'db_connection_failed' });
   }
 
-  const keywordsByArticleId = new Map();
-  for (const match of matches) {
-    const names = keywordsByArticleId.get(match.article_id) || [];
-    names.push(keywordNameById.get(match.keyword_id));
-    keywordsByArticleId.set(match.article_id, names);
-  }
+  const keywordNameById = new Map(userKeywords.map((uk) => [uk.keyword_id, uk.keywords.name]));
 
-  const articleIds = [...keywordsByArticleId.keys()];
-  if (articleIds.length === 0) {
-    return res.json([]);
-  }
-
+  // article_id를 따로 모아 .in('id', articleIds)로 재조회하던 방식은 매칭되는 기사가 쌓일수록
+  // URL이 길어지다가 결국 HTTP 헤더 크기 제한(HeadersOverflowError)을 넘겨버림 — 조인 임베딩으로 한 번에 가져옴
   const { data: articles, error: articlesError } = await supabase
     .from('articles')
-    .select('id, title, source, thumbnail_url, published_at')
-    .in('id', articleIds)
+    .select('id, title, source, thumbnail_url, published_at, article_keywords!inner(keyword_id)')
+    .in('article_keywords.keyword_id', [...keywordNameById.keys()])
     .order('published_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
 
@@ -177,7 +162,31 @@ router.get('/', auth, async (req, res) => {
       source: article.source,
       thumbnailUrl: article.thumbnail_url,
       publishedAt: article.published_at,
-      keywords: keywordsByArticleId.get(article.id) || [],
+      keywords: article.article_keywords.map((ak) => keywordNameById.get(ak.keyword_id)),
+    }))
+  );
+});
+
+// '/:id'보다 먼저 등록해야 함 — 안 그러면 '/read'가 :id="read"로 매칭돼버림
+router.get('/read', auth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('read_history')
+    .select('read_at, articles(id, title, source, thumbnail_url, published_at)')
+    .eq('user_id', req.user.id)
+    .order('read_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: 'db_connection_failed' });
+  }
+
+  res.json(
+    data.map((row) => ({
+      id: row.articles.id,
+      title: row.articles.title,
+      source: row.articles.source,
+      thumbnailUrl: row.articles.thumbnail_url,
+      publishedAt: row.articles.published_at,
+      readAt: row.read_at,
     }))
   );
 });

@@ -11,7 +11,7 @@
 #    "Send Request"를 클릭하면 바로 아래에 응답이 붙어서 나옴
 #
 # 순서: 헬스체크 → 키워드 목록 → (최초 1회) Supabase 회원가입 → 로그인해서 토큰 받기 →
-#       http-client.env.json의 token 값에 붙여넣기 → 프로필 관련 요청들
+#       .vscode/settings.json의 rest-client.environmentVariables.local.token 값에 붙여넣기 → 프로필 관련 요청들
 
 ### 헬스체크 (Supabase 연결 확인, 인증 불필요)
 GET {{baseUrl}}/api/health
@@ -71,7 +71,11 @@ GET {{baseUrl}}/api/articles/d7ea5fbf-ee7a-4b0e-9ea6-f9aeecb842d9
 Authorization: Bearer {{token}}
 
 ### 읽음 처리 — read_history UPSERT, 다시 보내면 read_at만 갱신됨
-POST {{baseUrl}}/api/articles/여기에_article_id/read
+POST {{baseUrl}}/api/articles/d7ea5fbf-ee7a-4b0e-9ea6-f9aeecb842d9/read
+Authorization: Bearer {{token}}
+
+### 내가 읽은 기사 목록 — 위 읽음 처리 요청을 먼저 보내야 결과에 뜸, read_at 최신순
+GET {{baseUrl}}/api/articles/read
 Authorization: Bearer {{token}}
 
 ### AI 요약 (난이도 없음) — 처음엔 OpenAI 호출이라 좀 걸림, 재요청하면 article_summaries 캐시라 빠름
