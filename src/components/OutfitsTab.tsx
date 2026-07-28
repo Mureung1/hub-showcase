@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ClothingItem, WeatherType, DestinationType, SituationType, SavedOutfit } from "../types";
 import { PRODUCT_CATALOG } from "../data/productCatalog";
+import { API_URL } from "../services/api";
 import { Sun, Cloud, CloudRain, Snowflake, Coffee, GraduationCap, Briefcase, Sparkles, Home, Heart, Dumbbell, Gamepad2, RefreshCw, Save, ChevronRight, Terminal, Star, Trash2, Plus, Settings, Search, MessageCircle, Send } from "lucide-react";
 import DynamicPixelCharacter from "./DynamicPixelCharacter";
 
@@ -42,6 +43,19 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
     accessoryType: "coffee" | "gamepad" | "umbrella" | "shades" | "dumbbells" | "none";
   } | null>(null);
   const [characterNonce, setCharacterNonce] = useState(0);
+
+  // Wake a sleeping deployment before the user asks for their first recommendation.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${API_URL}/api/health`, {
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => {
+      // The recommendation request below still retries transient startup failures.
+    });
+
+    return () => controller.abort();
+  }, []);
 
   const generateRandomCharacter = () => {
     const bodies: ("bunny" | "kitty" | "bear" | "elf" | "human")[] = ["bunny", "kitty", "bear", "elf", "human"];
@@ -239,30 +253,47 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
       }, step.delay);
     });
 
-    const controller = new AbortController();
-    const requestTimeout = window.setTimeout(() => controller.abort(), 25_000);
-
     try {
-      const response = await fetch("/api/recommend", {
-        method: "POST",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          weather: weather.trim().slice(0, 50),
-          destination: destination.trim().slice(0, 50),
-          situation: situation.trim().slice(0, 80),
-          closet,
-          mode: recommendMode,
-          retrySeed: `${Date.now()}-${Math.random()}`,
-          excludeItemIds: previousItemIds,
-          userInstruction: userInstruction.trim().slice(0, 500)
-        })
-      });
+      const requestBody = {
+        weather: weather.trim().slice(0, 50),
+        destination: destination.trim().slice(0, 50),
+        situation: situation.trim().slice(0, 80),
+        closet,
+        mode: recommendMode,
+        retrySeed: `${Date.now()}-${Math.random()}`,
+        excludeItemIds: previousItemIds,
+        userInstruction: userInstruction.trim().slice(0, 500)
+      };
 
-      if (!response.ok) {
-        throw new Error(`추천 요청 실패: ${response.status}`);
+      const requestRecommendation = async (timeoutMs: number) => {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          return await fetch(`${API_URL}/api/recommend`, {
+            method: "POST",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+            body: JSON.stringify(requestBody)
+          });
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      };
+
+      let response: Response;
+      try {
+        response = await requestRecommendation(60_000);
+        if ([502, 503, 504].includes(response.status)) {
+          throw new Error(`서버 준비 중: ${response.status}`);
+        }
+      } catch (firstError) {
+        console.warn("첫 추천 요청 실패, 서버 준비 후 자동 재시도:", firstError);
+        response = await requestRecommendation(35_000);
       }
+
+      if (!response.ok) throw new Error(`추천 요청 실패: ${response.status}`);
 
       const data = await response.json();
       console.log("추천 출처:", data.source);
@@ -465,7 +496,6 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
 
       setLoadingLog(prev => [...prev, message]);
     } finally {
-      window.clearTimeout(requestTimeout);
       setIsLoading(false);
       setIsRecommending(false);
     }
