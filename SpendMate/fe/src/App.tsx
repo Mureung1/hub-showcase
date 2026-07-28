@@ -9,6 +9,7 @@ import AuthScreen from './screens/AuthScreen'
 import { getCurrentUser, type AuthUser } from './lib/api'
 
 type Tab = 'home' | 'stats' | 'add' | 'coach' | 'mypage'
+export type MyPageIntent = 'survival' | 'subscriptions' | null
 
 export default function App() {
   const [authed, setAuthed] = useState(false)
@@ -19,6 +20,7 @@ export default function App() {
   const [survivalModeOff, setSurvivalModeOff] = useState(false)
   const [coachMessages, setCoachMessages] = useState<Message[]>(INITIAL_COACH_MESSAGES)
   const [hasUnreadCoachMessage, setHasUnreadCoachMessage] = useState(false)
+  const [mypageIntent, setMypageIntent] = useState<MyPageIntent>(null)
 
   // 새로고침해도 세션이 살아있으면 로그인 화면으로 안 튕기도록 마운트 시 한 번 확인한다 (#60).
   useEffect(() => {
@@ -50,6 +52,12 @@ export default function App() {
   const pushAgentMessage = (text: string) => {
     setCoachMessages(prev => [...prev, { id: Date.now(), role: 'ai', text }])
     if (activeTab !== 'coach') setHasUnreadCoachMessage(true)
+  }
+
+  // 홈 화면의 생존모드/구독 카드에서 마이페이지로 넘어갈 때, 어느 패널을 열어둘지 같이 전달한다.
+  const goToMyPage = (intent: MyPageIntent) => {
+    setMypageIntent(intent)
+    setActiveTab('mypage')
   }
 
   return (
@@ -101,6 +109,10 @@ export default function App() {
                 <HomeScreen
                   survivalModeOff={survivalModeOff}
                   onGoToSettings={() => setActiveTab('mypage')}
+                  onGoToStats={() => setActiveTab('stats')}
+                  onGoToCoach={() => { setHasUnreadCoachMessage(false); setActiveTab('coach') }}
+                  onGoToSurvival={() => goToMyPage('survival')}
+                  onGoToSubscriptions={() => goToMyPage('subscriptions')}
                   user={currentUser}
                 />
               )}
@@ -115,6 +127,8 @@ export default function App() {
                   onToggleSurvivalMode={() => setSurvivalModeOff((v) => !v)}
                   user={currentUser}
                   onUserUpdated={setCurrentUser}
+                  openIntent={mypageIntent}
+                  onIntentHandled={() => setMypageIntent(null)}
                 />
               )}
             </>

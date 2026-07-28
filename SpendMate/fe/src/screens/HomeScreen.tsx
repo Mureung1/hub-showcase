@@ -4,6 +4,7 @@ import SurvivalModeScreen from './SurvivalModeScreen'
 import { getCategoryMeta } from '../lib/categoryMeta'
 import {
   getBudget, getPrediction, getSubscriptions, getDailyExpenses, getRecentExpenses, getDailyCalendar, getContext,
+  updateExpense, deleteExpense,
   type Prediction, type Subscription, type DailyAmount, type AuthUser, type RecentExpense, type DailySpend, type Context,
 } from '../lib/api'
 const CALENDAR_DAYS = ['일', '월', '화', '수', '목', '금', '토']
@@ -237,13 +238,166 @@ function AllExpensesModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+/* ── 지출 수정/삭제 모달 ── */
+function EditExpenseModal({ expense, onClose, onSaved, onDeleted }: {
+  expense: RecentExpense
+  onClose: () => void
+  onSaved: (updated: RecentExpense) => void
+  onDeleted: (id: number) => void
+}) {
+  const [amount, setAmount] = useState(String(expense.amount))
+  const [category, setCategory] = useState(expense.category)
+  const [memo, setMemo] = useState(expense.name)
+  const [date, setDate] = useState(expense.spentAt.slice(0, 10))
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const categories = Object.keys(CATEGORY_ICON)
+
+  const handleSave = async () => {
+    const amt = Number(amount)
+    if (!amt || amt <= 0) {
+      setError('금액을 입력해주세요.')
+      return
+    }
+    setError(null)
+    setSaving(true)
+    try {
+      const updated = await updateExpense(expense.id, amt, category, memo, `${date}T00:00:00`)
+      onSaved(updated)
+      onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '수정에 실패했어요.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setError(null)
+    setDeleting(true)
+    try {
+      await deleteExpense(expense.id)
+      onDeleted(expense.id)
+      onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '삭제에 실패했어요.')
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 600, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div style={{ position: 'relative', width: 393, maxHeight: '85%', background: 'var(--background)', borderRadius: '28px 28px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4, flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: 'var(--border)' }} />
+        </div>
+        <div style={{ padding: '8px 20px 32px', overflowY: 'auto' }} className="no-scrollbar">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: 'var(--foreground)' }}>지출 수정</h2>
+            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 99, background: '#F3F4F6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={16} color="var(--muted)" />
+            </button>
+          </div>
+
+          {error && <p style={{ margin: '0 0 12px', fontSize: 13, color: '#FF6B6B', fontWeight: 600 }}>{error}</p>}
+
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>금액</p>
+            <input
+              value={amount}
+              onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{ width: '100%', background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '14px 16px', fontSize: 20, fontWeight: 800, color: 'var(--foreground)', outline: 'none', fontFamily: 'Pretendard', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>카테고리</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {categories.map(cat => {
+                const meta = getCategoryMeta(cat)
+                const Icon = CATEGORY_ICON[cat]
+                const selected = category === cat
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setCategory(cat)}
+                    style={{
+                      padding: '10px 4px', borderRadius: 12, border: `1.5px solid ${selected ? meta.color : 'var(--border)'}`,
+                      background: selected ? meta.bg : 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                      cursor: 'pointer', fontFamily: 'Pretendard',
+                    }}
+                  >
+                    <Icon size={16} color={selected ? meta.color : 'var(--muted)'} />
+                    <span style={{ fontSize: 11, fontWeight: 600, color: selected ? meta.color : 'var(--muted)' }}>{meta.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>날짜</p>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              style={{ width: '100%', background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '14px 16px', fontSize: 14, color: 'var(--foreground)', outline: 'none', fontFamily: 'Pretendard', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>메모</p>
+            <input
+              value={memo}
+              onChange={e => setMemo(e.target.value)}
+              style={{ width: '100%', background: 'white', border: '1.5px solid var(--border)', borderRadius: 14, padding: '14px 16px', fontSize: 14, color: 'var(--foreground)', outline: 'none', fontFamily: 'Pretendard', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={handleDelete}
+              disabled={deleting || saving}
+              style={{
+                flex: 1, height: 52, borderRadius: 16, border: 'none', cursor: deleting ? 'default' : 'pointer',
+                background: '#FFF0F0', color: '#FF6B6B', fontSize: 15, fontWeight: 800, fontFamily: 'Pretendard',
+                opacity: deleting ? 0.6 : 1,
+              }}
+            >
+              {deleting ? '삭제 중...' : '삭제'}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || deleting}
+              style={{
+                flex: 2, height: 52, borderRadius: 16, border: 'none', cursor: saving ? 'default' : 'pointer',
+                background: 'linear-gradient(135deg, #4F8EF7, #6B5CF0)', color: 'white', fontSize: 15, fontWeight: 800, fontFamily: 'Pretendard',
+                opacity: saving ? 0.7 : 1,
+              }}
+            >
+              {saving ? '저장 중...' : '저장하기'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface HomeScreenProps {
   survivalModeOff: boolean
   onGoToSettings: () => void
+  onGoToStats: () => void
+  onGoToCoach: () => void
+  onGoToSurvival: () => void
+  onGoToSubscriptions: () => void
   user: AuthUser | null
 }
 
-export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: HomeScreenProps) {
+export default function HomeScreen({ survivalModeOff, onGoToSettings, onGoToStats, onGoToCoach, onGoToSurvival, onGoToSubscriptions, user }: HomeScreenProps) {
   const { cells, today, month } = buildCalendar()
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [showAllExpenses, setShowAllExpenses] = useState(false)
@@ -252,24 +406,42 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: Ho
   const [prediction, setPrediction] = useState<Prediction | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [dailyExpenses, setDailyExpenses] = useState<DailyAmount[]>([])
-  const [recentExpenses, setRecentExpenses] = useState<RecentExpense[]>([])
+  const [allRecentExpenses, setAllRecentExpenses] = useState<RecentExpense[]>([])
   const [monthlyDaily, setMonthlyDaily] = useState<DailySpend[]>([])
   const [context, setContext] = useState<Context | null>(null)
+  const [editingExpense, setEditingExpense] = useState<RecentExpense | null>(null)
 
   useEffect(() => {
     getBudget().then(b => setBudgetTotal(b.amount)).catch(() => {})
     getPrediction().then(setPrediction).catch(() => {})
     getSubscriptions().then(setSubscriptions).catch(() => {})
     getDailyExpenses().then(setDailyExpenses).catch(() => {})
-    getRecentExpenses(5).then(setRecentExpenses).catch(() => {})
+    getRecentExpenses(200).then(setAllRecentExpenses).catch(() => {})
     getDailyCalendar().then(setMonthlyDaily).catch(() => {})
     getContext().then(setContext).catch(() => {})
   }, [])
+
+  // 지출을 수정/삭제하면 캘린더 점·오늘 지출 카드도 같이 바뀔 수 있어서 다시 불러온다.
+  const refreshAfterExpenseChange = () => {
+    getDailyCalendar().then(setMonthlyDaily).catch(() => {})
+    getDailyExpenses().then(setDailyExpenses).catch(() => {})
+  }
 
   const spendByDay: Record<number, 'low' | 'mid' | 'high'> = {}
   for (const d of monthlyDaily) {
     if (d.amount != null) spendByDay[d.day] = spendLevel(d.amount)
   }
+
+  const realTodayForFilter = new Date()
+  const selectedDayExpenses = selectedDay
+    ? allRecentExpenses.filter(e => {
+        const d = new Date(e.spentAt)
+        return d.getFullYear() === realTodayForFilter.getFullYear()
+          && d.getMonth() === realTodayForFilter.getMonth()
+          && d.getDate() === selectedDay
+      })
+    : null
+  const recentExpenses = selectedDayExpenses ?? allRecentExpenses.slice(0, 5)
 
   const budget = budgetTotal ?? 0
   const remaining = prediction?.remainingBudget ?? 0
@@ -380,10 +552,10 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: Ho
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button style={{ flex: 1, padding: '10px 0', borderRadius: 12, background: '#EBF2FF', border: 'none', color: '#4F8EF7', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard', minHeight: 44 }}>
+            <button onClick={onGoToStats} style={{ flex: 1, padding: '10px 0', borderRadius: 12, background: '#EBF2FF', border: 'none', color: '#4F8EF7', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard', minHeight: 44 }}>
               분석 보기
             </button>
-            <button style={{ flex: 1, padding: '10px 0', borderRadius: 12, background: '#E8F8F6', border: 'none', color: '#3DBD9E', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard', minHeight: 44 }}>
+            <button onClick={onGoToCoach} style={{ flex: 1, padding: '10px 0', borderRadius: 12, background: '#E8F8F6', border: 'none', color: '#3DBD9E', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard', minHeight: 44 }}>
               절약 팁 받기
             </button>
           </div>
@@ -393,7 +565,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: Ho
         <div style={{ margin: '16px 16px 0', borderRadius: 20, background: 'white', padding: '18px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--foreground)' }}>{month}월 캘린더</h2>
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, color: 'var(--muted)', fontSize: 13, minHeight: 44 }}>
+            <button onClick={onGoToStats} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, color: 'var(--muted)', fontSize: 13, minHeight: 44 }}>
               이동 <ChevronRight size={14} />
             </button>
           </div>
@@ -440,24 +612,41 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: Ho
         {/* Recent Expenses */}
         <div style={{ margin: '16px 16px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--foreground)' }}>최근 지출</h2>
-            <button
-              onClick={() => setShowAllExpenses(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, color: '#4F8EF7', fontSize: 13, fontWeight: 600, fontFamily: 'Pretendard', minHeight: 44 }}
-            >
-              전체보기 <ChevronRight size={14} />
-            </button>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--foreground)' }}>
+              {selectedDay ? `${month}월 ${selectedDay}일 지출` : '최근 지출'}
+            </h2>
+            {selectedDay ? (
+              <button
+                onClick={() => setSelectedDay(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, color: 'var(--muted)', fontSize: 13, fontWeight: 600, fontFamily: 'Pretendard', minHeight: 44 }}
+              >
+                선택 해제
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowAllExpenses(true)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, color: '#4F8EF7', fontSize: 13, fontWeight: 600, fontFamily: 'Pretendard', minHeight: 44 }}
+              >
+                전체보기 <ChevronRight size={14} />
+              </button>
+            )}
           </div>
           <div style={{ borderRadius: 20, background: 'white', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
             {recentExpenses.length === 0 ? (
               <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>아직 등록된 지출이 없어요</p>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
+                  {selectedDay ? '이 날짜엔 등록된 지출이 없어요' : '아직 등록된 지출이 없어요'}
+                </p>
               </div>
             ) : recentExpenses.map((item, idx) => {
               const meta = getCategoryMeta(item.category)
               const Icon = CATEGORY_ICON[item.category] ?? Package
               return (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', borderBottom: idx < recentExpenses.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <div
+                  key={item.id}
+                  onClick={() => setEditingExpense(item)}
+                  style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', borderBottom: idx < recentExpenses.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+                >
                   <div style={{ width: 42, height: 42, borderRadius: 14, background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon size={18} color={meta.color} />
                   </div>
@@ -473,7 +662,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: Ho
         </div>
 
         {/* Survival Mode Teaser */}
-        <div style={{ margin: '16px 16px 0', borderRadius: 20, background: '#1A1D27', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div onClick={onGoToSurvival} style={{ margin: '16px 16px 0', borderRadius: 20, background: '#1A1D27', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
           <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #FFC857, #FF6B6B)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <TrendingDown size={20} color="white" strokeWidth={2.5} />
           </div>
@@ -493,13 +682,27 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: Ho
             <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--foreground)' }}>이번 달 구독 결제</p>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>{subLabel}</p>
           </div>
-          <button style={{ background: '#EBF2FF', border: 'none', borderRadius: 10, padding: '8px 12px', color: '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard', whiteSpace: 'nowrap', minHeight: 44 }}>
+          <button onClick={onGoToSubscriptions} style={{ background: '#EBF2FF', border: 'none', borderRadius: 10, padding: '8px 12px', color: '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard', whiteSpace: 'nowrap', minHeight: 44 }}>
             관리
           </button>
         </div>
       </div>
 
       {showAllExpenses && <AllExpensesModal onClose={() => setShowAllExpenses(false)} />}
+      {editingExpense && (
+        <EditExpenseModal
+          expense={editingExpense}
+          onClose={() => setEditingExpense(null)}
+          onSaved={(updated) => {
+            setAllRecentExpenses(prev => prev.map(e => e.id === updated.id ? updated : e))
+            refreshAfterExpenseChange()
+          }}
+          onDeleted={(id) => {
+            setAllRecentExpenses(prev => prev.filter(e => e.id !== id))
+            refreshAfterExpenseChange()
+          }}
+        />
+      )}
     </>
   )
 }

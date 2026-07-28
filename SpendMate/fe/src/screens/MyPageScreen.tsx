@@ -414,9 +414,11 @@ interface MyPageScreenProps {
   onToggleSurvivalMode: () => void
   user: AuthUser | null
   onUserUpdated: (user: AuthUser) => void
+  openIntent?: 'survival' | 'subscriptions' | null
+  onIntentHandled?: () => void
 }
 
-export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode, user, onUserUpdated }: MyPageScreenProps) {
+export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode, user, onUserUpdated, openIntent, onIntentHandled }: MyPageScreenProps) {
   const [showSurvival, setShowSurvival] = useState(false)
   const [showProfileEdit, setShowProfileEdit] = useState(false)
   const [showBudgetEdit, setShowBudgetEdit] = useState(false)
@@ -429,6 +431,13 @@ const [showSubManage, setShowSubManage] = useState(false)
     getPrediction().then(setPrediction).catch(() => {})
     getSavingsMissions().then(setSavingsMissions).catch(() => {})
   }, [])
+
+  // 홈 화면에서 "생존 모드"/"구독 관리" 카드를 눌러 넘어온 경우, 해당 패널을 자동으로 열어준다.
+  useEffect(() => {
+    if (openIntent === 'survival') setShowSurvival(true)
+    if (openIntent === 'subscriptions') setShowSubManage(true)
+    if (openIntent) onIntentHandled?.()
+  }, [openIntent, onIntentHandled])
 
 useEffect(() => {
   getSubscriptions()
