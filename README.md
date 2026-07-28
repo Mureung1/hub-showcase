@@ -104,7 +104,7 @@ CORS_ALLOWED_ORIGIN=http://localhost:5173
 `CORS_ALLOWED_ORIGIN`을 설정하면 해당 Origin의 브라우저 요청만 교차 출처로 허용한다. 로컬 Vite proxy만 사용할 때는 생략할 수 있으며, 배포 환경에서는 실제 프론트엔드 Origin으로 설정한다.
 `OPENAI_API_KEY`, `YOUTUBE_DATA_API_KEY`, `GEMINI_API_KEY`, `TRANSFER_INVITATION_CODE_SECRET`은 백엔드에서만 사용하고 프론트엔드 환경 변수나 로그에 노출하지 않는다. 전달 초대 코드는 32자 이상의 `TRANSFER_INVITATION_CODE_SECRET`을 사용한 HMAC-SHA-256 해시로만 저장한다. YouTube 영상 분석은 `GEMINI_MODEL=gemini-3.6-flash`를 사용한다.
 URL 수집은 DNS 조회와 각 HTTP 요청에 각각 10초 Timeout을 적용하고 Redirect는 최대 3회까지 허용한다. 각 Redirect 목적지는 동일한 URL·IP 규칙으로 다시 검증한다. 응답은 최대 1,048,576바이트, AI에 전달하는 추출 본문은 최대 20,000자로 제한하며 이 값들은 `URL_FETCH_*` 환경 변수로 조정할 수 있다.
-공개 `youtube.com`, `youtu.be` 영상의 제목·채널명은 YouTube Data API로 조회하고, 공개 또는 자동 생성 자막을 우선 구조화 입력으로 사용한다. 자막 조회가 실패하면 Gemini 영상 분석을 한 번 사용한다. Python 3.8 이상과 `pip install -r backend/requirements.txt`가 필요하다. `youtube-transcript-api`의 프록시·쿠키·계정 인증·차단 우회는 사용하지 않으며, 영상·자막·썸네일은 저장하거나 로그에 남기지 않는다. 모든 YouTube 처리 실패는 기존 `URL_FETCH_FAILED` 422 응답과 직접 입력 안내를 사용한다.
+공개 `youtube.com`, `youtu.be` 영상과 YouTube Shorts의 제목·채널명은 YouTube Data API로 조회하고, 공개 또는 자동 생성 자막을 우선 구조화 입력으로 사용한다. 자막 조회가 실패하면 Gemini 영상 분석을 한 번 사용한다. Python 3.8 이상과 `pip install -r backend/requirements.txt`가 필요하다. `youtube-transcript-api`의 프록시·쿠키·계정 인증·차단 우회는 사용하지 않으며, 영상·자막·썸네일은 저장하거나 로그에 남기지 않는다. 모든 YouTube 처리 실패는 기존 `URL_FETCH_FAILED` 422 응답과 직접 입력 안내를 사용한다.
 
 ### AI 운영 기준
 

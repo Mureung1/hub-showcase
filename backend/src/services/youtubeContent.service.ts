@@ -44,11 +44,22 @@ export function parseYoutubeUrl(
     hostname === "youtube.com" ||
     hostname === "www.youtube.com"
   ) {
-    if (parsedUrl.pathname !== "/watch") {
-      throw new YoutubeContentError("INVALID_URL");
-    }
+    if (parsedUrl.pathname === "/watch") {
+      videoId = parsedUrl.searchParams.get("v");
+    } else {
+      const pathSegments = parsedUrl.pathname
+        .split("/")
+        .filter(Boolean);
 
-    videoId = parsedUrl.searchParams.get("v");
+      if (
+        pathSegments.length !== 2 ||
+        pathSegments[0] !== "shorts"
+      ) {
+        throw new YoutubeContentError("INVALID_URL");
+      }
+
+      videoId = pathSegments[1] ?? null;
+    }
   } else if (hostname === "youtu.be") {
     const pathSegments = parsedUrl.pathname
       .split("/")
