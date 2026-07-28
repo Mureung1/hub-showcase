@@ -11,7 +11,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@google/genai": "^2.13.0",
     "@supabase/supabase-js": "^2.110.5",
+    "dotenv": "^16.4.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1"
