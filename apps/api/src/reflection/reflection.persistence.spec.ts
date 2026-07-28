@@ -42,6 +42,7 @@ const draft: ReflectionDraft = {
   motivation: "시작 이유",
   role: "내 역할",
   memorableProblem: "기억나는 문제",
+  postAnalysisReflection: "",
   attempts: "",
   improvement: "",
   customChallengeTitle: "",

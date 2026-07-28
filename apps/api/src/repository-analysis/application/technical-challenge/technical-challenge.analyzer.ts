@@ -46,7 +46,14 @@ export class TechnicalChallengeAnalyzer {
     try {
       const prompt = createTechnicalChallengePrompt(context);
       const rawResponse = await this.aiClient.generate({ ...prompt, model });
-      return { candidates: parseTechnicalChallengeResponse(rawResponse), warning: null };
+      const candidates = parseTechnicalChallengeResponse(rawResponse);
+      const allowedImageUrls = (context.targetActivity.pullRequests ?? []).flatMap(
+        (pullRequest) => pullRequest.imageUrls ?? [],
+      );
+      return {
+        candidates: restrictCandidateEvidenceImages(candidates, allowedImageUrls),
+        warning: null,
+      };
     } catch (error) {
       if (error instanceof TechnicalChallengeResponseValidationError) {
         return { candidates: [], warning: "AI 분석 응답을 검증하지 못했습니다." };
@@ -94,6 +101,23 @@ export function parseTechnicalChallengeResponse(
   return candidates;
 }
 
+export function restrictCandidateEvidenceImages(
+  candidates: TechnicalChallengeCandidate[],
+  allowedImageUrls: string[],
+): TechnicalChallengeCandidate[] {
+  const allowed = new Set(allowedImageUrls);
+
+  return candidates.map((candidate) => ({
+    ...candidate,
+    evidence: candidate.evidence.map((evidence) => ({
+      ...evidence,
+      ...(evidence.imageUrls
+        ? { imageUrls: evidence.imageUrls.filter((url) => allowed.has(url)) }
+        : {}),
+    })),
+  }));
+}
+
 function removeJsonFence(value: string): string {
   const trimmed = value.trim();
   const match = trimmed.match(/^(?:```|~~~)(?:json)?\s*([\s\S]*?)\s*(?:```|~~~)$/i);
@@ -132,7 +156,9 @@ function isEvidenceReference(value: unknown): boolean {
     isNullableString(value.referenceId) &&
     isString(value.title) &&
     isNullableString(value.url) &&
-    isNullableString(value.filePath)
+    isNullableString(value.filePath) &&
+    (value.imageUrls === undefined ||
+      (Array.isArray(value.imageUrls) && value.imageUrls.every(isString)))
   );
 }
 
@@ -141,6 +167,8 @@ function isEvidenceType(value: unknown): value is RepositoryAnalysisEvidenceType
     value === "commit" ||
     value === "pull_request" ||
     value === "issue" ||
+    value === "discussion" ||
+    value === "project" ||
     value === "file" ||
     value === "config" ||
     value === "release"

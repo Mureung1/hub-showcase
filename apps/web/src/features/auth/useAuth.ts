@@ -80,6 +80,9 @@ export function useAuth() {
       provider: "github",
       options: {
         redirectTo: redirectUrl.toString(),
+        queryParams: {
+          prompt: "select_account",
+        },
       },
     });
 

@@ -35,7 +35,7 @@ export function AnalysisLogPanel({ isComplete }: AnalysisLogPanelProps) {
         </span>
         <span>ANALYSIS_LOG.SH</span>
       </header>
-      <div className="max-h-[21rem] overflow-y-auto px-6 py-5 font-mono text-xs leading-[1.65] text-[var(--terminal-accent)] lg:max-h-[25rem]">
+      <div className="px-6 py-5 font-mono text-xs leading-[1.65] text-[var(--terminal-accent)]">
         <p className="m-0 text-[var(--terminal-subtle)]">ptop@analysis:~$ run repository_scan</p>
         {ANALYSIS_LOG_STEPS.slice(0, visibleCount).map((step, index) => (
           <p className="m-0" key={step}>

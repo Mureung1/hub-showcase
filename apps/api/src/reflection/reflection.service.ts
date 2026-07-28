@@ -54,6 +54,7 @@ function isReflectionDraft(value: unknown): value is ReflectionDraft {
     "motivation",
     "role",
     "memorableProblem",
+    "postAnalysisReflection",
     "attempts",
     "improvement",
     "customChallengeTitle",
@@ -66,7 +67,7 @@ function isReflectionDraft(value: unknown): value is ReflectionDraft {
 
   if (
     !Array.isArray(value.selectedChallengeTitles) ||
-    value.selectedChallengeTitles.length > 2 ||
+    value.selectedChallengeTitles.length > 1 ||
     value.selectedChallengeTitles.some((title) => typeof title !== "string")
   ) {
     return false;

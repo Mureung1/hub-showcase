@@ -9,7 +9,10 @@ import {
   getRepositoryUrlError,
   type AnalysisStatus,
 } from "./repositoryAnalysis";
-import { requestRepositoryAnalysis } from "./repositoryAnalysisApi";
+import {
+  getRepositoryAnalysisErrorMessage,
+  requestRepositoryAnalysis,
+} from "./repositoryAnalysisApi";
 import { getRepositoryTerminalStatus } from "../workspace/components/repositoryTerminalViewModel";
 import { AnalysisWorkbench } from "./AnalysisWorkbench";
 
@@ -46,6 +49,7 @@ export function RepositoryAnalyzer({
     ANALYSIS_STATUS.idle,
   );
   const [analysisError, setAnalysisError] = useState("");
+  const [hasEditedGithubLogin, setHasEditedGithubLogin] = useState(false);
   const [reflectionDraft, setReflectionDraft] =
     useState<ReflectionDraft | null>(null);
   const [reflectionAnalysis, setReflectionAnalysis] =
@@ -62,10 +66,10 @@ export function RepositoryAnalyzer({
   );
 
   useEffect(() => {
-    if (!githubLogin && authGithubLogin) {
+    if (!hasEditedGithubLogin && !githubLogin && authGithubLogin) {
       setGithubLogin(authGithubLogin);
     }
-  }, [authGithubLogin, githubLogin]);
+  }, [authGithubLogin, githubLogin, hasEditedGithubLogin]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -89,11 +93,7 @@ export function RepositoryAnalyzer({
       setAnalysisStatus(ANALYSIS_STATUS.success);
       setPendingAnalysisResult(result);
     } catch (requestError) {
-      setAnalysisError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Repository 분석 요청에 실패했습니다.",
-      );
+      setAnalysisError(getRepositoryAnalysisErrorMessage(requestError));
       setAnalysisStatus(ANALYSIS_STATUS.error);
     }
   };
@@ -127,7 +127,7 @@ export function RepositoryAnalyzer({
   return (
     <section className="grid gap-6" aria-label="PtoP Repository 분석 시작">
       {isWorkbenchOpen ? (
-        <div className="max-h-[calc(100vh-120px)] overflow-y-auto">
+        <div className="min-w-0">
           <AnalysisWorkbench
             repositoryUrl={repoUrl}
             isAnalysisComplete={analysisStatus === ANALYSIS_STATUS.success}
@@ -216,10 +216,10 @@ export function RepositoryAnalyzer({
               </span>
             </label>
 
-            <details className="border-t border-[var(--terminal-border)] pt-4">
-              <summary className="cursor-pointer text-sm font-bold text-[var(--terminal-muted)] outline-none marker:text-[var(--terminal-accent)] focus-visible:text-[var(--terminal-accent)]">
-                분석 대상 GitHub ID 선택
-              </summary>
+            <div className="border-t border-[var(--terminal-border)] pt-4">
+              <p className="m-0 text-sm font-bold text-[var(--terminal-muted)]">
+                분석 대상 GitHub ID
+              </p>
               <label className="relative mt-5 grid gap-2 pt-2">
                 <span className="absolute -top-2 left-3 bg-[var(--terminal-bg)] px-2 font-mono text-[0.68rem] font-bold tracking-[0.14em] text-[var(--terminal-muted)]">
                   YOUR GITHUB ID
@@ -231,8 +231,11 @@ export function RepositoryAnalyzer({
                   autoComplete="off"
                   spellCheck={false}
                   value={githubLogin}
-                  onChange={(event) => setGithubLogin(event.target.value)}
-                  placeholder="SubJeeLee"
+                  onChange={(event) => {
+                    setHasEditedGithubLogin(true);
+                    setGithubLogin(event.target.value);
+                  }}
+                  placeholder={authGithubLogin || "SubJeeLee"}
                   aria-describedby="github-login-help"
                   style={terminalInputStyle}
                 />
@@ -240,10 +243,22 @@ export function RepositoryAnalyzer({
                   className="text-sm leading-6 text-[var(--terminal-subtle)]"
                   id="github-login-help"
                 >
-                  입력하면 내 활동을 중심으로 기술적 도전 후보를 찾습니다.
+                  로그인한 GitHub ID가 기본값으로 입력됩니다. 다른 참여자의 ID로 바꿔 해당 사용자의 활동을 분석할 수 있습니다.
                 </span>
               </label>
-            </details>
+              {authGithubLogin && githubLogin !== authGithubLogin && (
+                <button
+                  className="mt-2 cursor-pointer border-0 bg-transparent p-0 text-sm font-bold text-[var(--terminal-accent)] underline underline-offset-4 hover:text-white"
+                  type="button"
+                  onClick={() => {
+                    setHasEditedGithubLogin(false);
+                    setGithubLogin(authGithubLogin);
+                  }}
+                >
+                  내 GitHub ID로 되돌리기
+                </button>
+              )}
+            </div>
 
             <div className="flex flex-wrap items-center gap-4">
               <button

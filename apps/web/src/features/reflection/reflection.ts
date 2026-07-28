@@ -22,6 +22,7 @@ export function createEmptyReflectionDraft(): ReflectionDraft {
     motivation: "",
     role: "",
     memorableProblem: "",
+    postAnalysisReflection: "",
     attempts: "",
     improvement: "",
     customChallengeTitle: "",
@@ -66,11 +67,7 @@ export function addSelectedChallenge(
     return selected.filter((candidate) => candidate !== title);
   }
 
-  if (selected.length >= 2) {
-    return selected;
-  }
-
-  return [...selected, title];
+  return [title];
 }
 
 export function getReflectionStorageKey(repositoryUrl: string): string {
@@ -83,13 +80,14 @@ function normalizeReflectionDraft(value: unknown): ReflectionDraft {
   }
 
   const selectedChallengeTitles = Array.isArray(value.selectedChallengeTitles)
-    ? value.selectedChallengeTitles.filter(isNonEmptyString).slice(0, 2)
+    ? value.selectedChallengeTitles.filter(isNonEmptyString).slice(0, 1)
     : [];
 
   return {
     motivation: getString(value.motivation),
     role: getString(value.role),
     memorableProblem: getString(value.memorableProblem),
+    postAnalysisReflection: getString(value.postAnalysisReflection),
     attempts: getString(value.attempts),
     improvement: getString(value.improvement),
     customChallengeTitle: getString(value.customChallengeTitle),

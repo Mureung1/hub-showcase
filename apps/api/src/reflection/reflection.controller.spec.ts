@@ -11,6 +11,7 @@ const draft: ReflectionDraft = {
   motivation: "",
   role: "",
   memorableProblem: "",
+  postAnalysisReflection: "",
   attempts: "",
   improvement: "",
   customChallengeTitle: "",

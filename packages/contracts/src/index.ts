@@ -19,6 +19,8 @@ export type {
   ReflectionDraft,
   ReflectionAlignment,
   ReflectionAnalysis,
+  PortfolioDraft,
+  PortfolioImplementationStep,
   ReflectionDraftSaveRequest,
   ReflectionDraftSaveResponse,
 } from "./reflection";

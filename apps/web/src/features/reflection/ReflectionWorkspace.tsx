@@ -1,41 +1,92 @@
-import { useEffect, useState } from "react";
-import type { RepositoryAnalysisResult, TechnicalChallengeCandidate } from "@ptop/contracts";
+import { useEffect, useRef, useState } from "react";
+import type {
+  PortfolioDraft,
+  PortfolioImplementationStep,
+  ReflectionAnalysis,
+  RepositoryAnalysisResult,
+  TechnicalChallengeEvidenceReference,
+} from "@ptop/contracts";
+import { saveReflectionDraft, type ReflectionDraft } from "./reflection";
 import {
-  addSelectedChallenge,
-  CHALLENGE_FOLLOW_UP_PROMPTS,
-  saveReflectionDraft,
-  type ReflectionChallengeAnswers,
-  type ReflectionDraft,
-} from "./reflection";
-import { loadReflectionDraftFromApi } from "./reflectionApi";
+  loadReflectionDraftFromApi,
+  type ReflectionDraftSaveResponse,
+} from "./reflectionApi";
+import {
+  getPortfolioDraftLoadingSteps,
+  getPortfolioPdfFileName,
+  normalizeDraftListItems,
+} from "./portfolioDraftView";
 
 type ReflectionWorkspaceProps = {
   result: RepositoryAnalysisResult;
   initialDraft: ReflectionDraft;
-  onSave?: (draft: ReflectionDraft) => Promise<void>;
+  reflectionAnalysis?: ReflectionAnalysis | null;
+  onSave?: (draft: ReflectionDraft) => Promise<ReflectionDraftSaveResponse | void>;
+  onPortfolioDraftCreated?: (
+    analysis: ReflectionAnalysis,
+    draft: ReflectionDraft,
+  ) => Promise<void>;
 };
 
-const mascotUrl = `${import.meta.env.BASE_URL}assets/PtoP_LogoImage.png`;
+const reflectionQuestion =
+  "선택하신 기술적 도전을 해결하기 위해 본인이 어떤 작업을 했나요?";
 
-export function ReflectionWorkspace({ result, initialDraft, onSave }: ReflectionWorkspaceProps) {
+export function ReflectionWorkspace({
+  result,
+  initialDraft,
+  reflectionAnalysis,
+  onSave,
+  onPortfolioDraftCreated,
+}: ReflectionWorkspaceProps) {
   const [draft, setDraft] = useState(initialDraft);
-  const challenges = result.analysis.technicalChallenges;
-  const customChallengeSelected = draft.selectedChallengeTitles.includes(
-    draft.customChallengeTitle,
-  );
+  const [loadedReflectionAnalysis, setLoadedReflectionAnalysis] =
+    useState<ReflectionAnalysis | null>(null);
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [saveMessage, setSaveMessage] = useState("");
+  const generatedAnalysis = reflectionAnalysis ?? loadedReflectionAnalysis;
+  const portfolioDraftSectionRef = useRef<HTMLDivElement | null>(null);
+  const previousSaveStatusRef = useRef(saveStatus);
 
   useEffect(() => {
     saveReflectionDraft(result.repository.url, draft);
   }, [draft, result.repository.url]);
 
   useEffect(() => {
+    if (previousSaveStatusRef.current === saveStatus) {
+      return;
+    }
+
+    previousSaveStatusRef.current = saveStatus;
+    if (saveStatus !== "saving" && saveStatus !== "saved") {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      portfolioDraftSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [saveStatus]);
+
+  useEffect(() => {
     let cancelled = false;
 
     void loadReflectionDraftFromApi(result.id)
       .then((saved) => {
-        if (!cancelled && saved) {
-          setDraft(saved.draft);
-        }
+        if (cancelled || !saved) return;
+
+        setDraft({
+          ...saved.draft,
+          postAnalysisReflection: saved.draft.postAnalysisReflection ?? "",
+          // 후보 선택은 결과 단계에서 현재 세션에 직접 선택한 값만 사용한다.
+          // 서버에 남아 있는 이전 초안의 선택값을 복원하면 선택하지 않은
+          // 후보가 2/2로 표시되고 잘못된 후보로 정합성 검사가 실행된다.
+          selectedChallengeTitles: initialDraft.selectedChallengeTitles,
+        });
+        setLoadedReflectionAnalysis(saved.reflectionAnalysis ?? null);
       })
       .catch(() => {
         // The local draft remains usable when the API is temporarily unavailable.
@@ -44,358 +95,531 @@ export function ReflectionWorkspace({ result, initialDraft, onSave }: Reflection
     return () => {
       cancelled = true;
     };
-  }, [result.id]);
+  }, [initialDraft.selectedChallengeTitles, result.id]);
 
-  const toggleChallenge = (title: string) => {
-    setDraft((current) => ({
-      ...current,
-      selectedChallengeTitles: addSelectedChallenge(current, title),
-    }));
+  const updateAnswer = (value: string) => {
+    setSaveStatus("idle");
+    setSaveMessage("");
+    setDraft((current) => ({ ...current, postAnalysisReflection: value }));
   };
 
-  const updateChallengeAnswer = (
-    title: string,
-    key: keyof ReflectionChallengeAnswers,
-    value: string,
-  ) => {
-    setDraft((current) => ({
-      ...current,
-      challengeAnswers: {
-        ...current.challengeAnswers,
-        [title]: {
-          context: current.challengeAnswers[title]?.context ?? "",
-          decision: current.challengeAnswers[title]?.decision ?? "",
-          contribution: current.challengeAnswers[title]?.contribution ?? "",
-          [key]: value,
-        },
-      },
-    }));
-  };
+  const saveAnswer = async () => {
+    const answer = draft.postAnalysisReflection.trim();
+    if (!answer || saveStatus === "saving") return;
 
-  const updateCustomTitle = (value: string) => {
-    setDraft((current) => ({
-      ...current,
-      customChallengeTitle: value,
-      selectedChallengeTitles: current.selectedChallengeTitles.map((title) =>
-        title === current.customChallengeTitle ? value : title,
-      ),
-    }));
-  };
+    const nextDraft = { ...draft, postAnalysisReflection: answer };
+    setSaveStatus("saving");
+    setSaveMessage(
+      "Repository 근거와 회고를 연결해 포트폴리오 초안을 만드는 중입니다.",
+    );
 
-  const addCustomChallenge = () => {
-    const title = draft.customChallengeTitle.trim();
-    if (!title || customChallengeSelected || draft.selectedChallengeTitles.length >= 2) {
-      return;
+    try {
+      let portfolioSaveFailed = false;
+      if (onSave) {
+        const response = await onSave(nextDraft);
+        const resolvedAnalysis = response?.reflectionAnalysis ?? generatedAnalysis;
+        if (resolvedAnalysis?.portfolioDraft && onPortfolioDraftCreated) {
+          try {
+            await onPortfolioDraftCreated(resolvedAnalysis, nextDraft);
+          } catch (error) {
+            portfolioSaveFailed = true;
+            setSaveMessage(
+              error instanceof Error
+                ? `회고는 저장되었지만 ${error.message}`
+                : "회고는 저장되었지만 작업실 저장에 실패했습니다.",
+            );
+          }
+        }
+      }
+      setSaveStatus("saved");
+      if (!portfolioSaveFailed) {
+        setSaveMessage(
+          "회고가 저장되었습니다. 아래에서 AI가 다듬은 초안을 확인해보세요.",
+        );
+      }
+    } catch (error) {
+      setSaveStatus("error");
+      setSaveMessage(
+        error instanceof Error ? error.message : "회고 저장에 실패했습니다.",
+      );
     }
-
-    setDraft((current) => ({
-      ...current,
-      customChallengeTitle: title,
-      customChallengeNote: current.customChallengeNote.trim(),
-      selectedChallengeTitles: addSelectedChallenge(current, title),
-    }));
   };
 
   return (
     <section className="grid gap-6" aria-label="회고 확장 작업공간">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <span className="text-[0.78rem] font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">From evidence to reflection</span>
-          <h2 className="mb-0 mt-2 text-2xl tracking-[-0.03em]">분석 결과에 나의 경험을 더해보세요</h2>
+          <span className="text-[0.78rem] font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+            From evidence to reflection
+          </span>
+          <h2 className="mb-0 mt-2 text-2xl tracking-[-0.03em]">
+            이유를 한 문장으로 남겨보세요
+          </h2>
+          <p className="mb-0 mt-2 max-w-2xl text-sm leading-6 text-ptop-muted">
+            분석 중 남긴 첫 회고를 우선 참고하고, 선택한 후보에 대한 나의 판단을
+            한 문장으로 보태주세요.
+          </p>
         </div>
-        <span className="rounded-full bg-ptop-mint-soft px-3 py-1 text-xs font-bold text-ptop-mint-dark">이 Repository에 자동 저장</span>
+        <span className="rounded-full bg-ptop-mint-soft px-3 py-1 text-xs font-bold text-ptop-mint-dark">
+          이 Repository에 자동 저장
+        </span>
       </header>
 
-      <div className="grid gap-2 rounded-xl border border-ptop-line bg-ptop-soft-paper p-4">
-        <div>
-          <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">01</span>
-          <strong>포피와 나눈 프로젝트 메모</strong>
-        </div>
-        <p className="m-0 text-sm leading-[1.6] text-ptop-muted">{getDraftSummary(draft)}</p>
-      </div>
+      <SelectedChallenges titles={draft.selectedChallengeTitles} />
 
-      <div className="grid gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">02</span>
-            <h3 className="m-0 inline text-lg">회고할 기술적 도전을 선택하세요</h3>
-          </div>
-          <span className="text-sm font-bold text-ptop-muted">{draft.selectedChallengeTitles.length}/2 선택</span>
-        </div>
-        <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
-          AI의 제안은 후보일 뿐입니다. 실제로 경험한 문제만 선택하고, 부족하면 직접 추가할 수 있습니다.
-        </p>
-
-        {challenges.length > 0 ? (
-          <div className="grid gap-3">
-            {challenges.map((challenge) => (
-              <ChallengeOption
-                key={challenge.title}
-                challenge={challenge}
-                selected={draft.selectedChallengeTitles.includes(challenge.title)}
-                disabled={
-                  draft.selectedChallengeTitles.length >= 2 &&
-                  !draft.selectedChallengeTitles.includes(challenge.title)
-                }
-                onToggle={() => toggleChallenge(challenge.title)}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="m-0 rounded-xl border border-dashed border-ptop-line p-4 text-sm leading-[1.6] text-ptop-muted">
-            현재 분석 근거에서 기술적 도전 후보를 만들지 못했습니다. 직접 경험한 내용을 추가해보세요.
-          </p>
-        )}
-
-        <div className="grid gap-3 rounded-xl border border-dashed border-ptop-mint-line bg-ptop-mint-soft p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-white text-sm font-extrabold text-ptop-mint-dark">＋</span>
-              <strong className="text-sm">내가 생각한 기술적 도전 추가</strong>
-            </div>
-            <span className="text-xs font-bold text-ptop-muted">선택 입력</span>
-          </div>
-          <input
-            className="min-h-10 rounded-lg border border-ptop-line bg-white px-3 text-sm outline-none focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
-            value={draft.customChallengeTitle}
-            onChange={(event) => updateCustomTitle(event.target.value)}
-            placeholder="예: 여러 상태를 하나의 흐름으로 정리하기"
-          />
-          <textarea
-            className="resize-y rounded-lg border border-ptop-line bg-white p-3 text-sm outline-none focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
-            value={draft.customChallengeNote}
-            onChange={(event) =>
-              setDraft((current) => ({ ...current, customChallengeNote: event.target.value }))
-            }
-            placeholder="어떤 상황에서 어려웠는지 한 줄만 적어도 괜찮아요"
-            rows={2}
-          />
-          <button
-            className="min-h-10 w-fit rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-mint-dark transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
-            type="button"
-            disabled={
-              !draft.customChallengeTitle.trim() ||
-              customChallengeSelected ||
-              draft.selectedChallengeTitles.length >= 2
-            }
-            onClick={addCustomChallenge}
-          >
-            {customChallengeSelected ? "추가된 도전" : "이 도전 선택하기"}
-          </button>
-        </div>
-      </div>
-
-      {draft.selectedChallengeTitles.length > 0 && (
-        <div className="grid gap-4">
-          <div className="flex items-center gap-3">
-            <div>
-              <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">03</span>
-              <h3 className="m-0 inline text-lg">선택한 도전에 맥락을 더해주세요</h3>
-            </div>
-          </div>
-          <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
-            포피가 한 번에 하나씩 확인합니다. 모두 답하지 않아도 결과를 확인할 수 있습니다.
-          </p>
-          {draft.selectedChallengeTitles.map((title) => (
-            <ChallengeFollowUp
-              key={title}
-              title={title}
-              answers={draft.challengeAnswers[title]}
-              customNote={title === draft.customChallengeTitle ? draft.customChallengeNote : ""}
-              onChange={(key, value) => updateChallengeAnswer(title, key, value)}
-              onSave={onSave ? () => onSave(draft) : undefined}
-            />
-          ))}
+      {draft.memorableProblem.trim() && (
+        <div className="grid gap-2 rounded-xl border border-ptop-mint-line bg-ptop-mint-soft p-4 text-sm leading-6 text-ptop-ink">
+          <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+            Analysis-time reflection
+          </span>
+          <p className="m-0">{draft.memorableProblem}</p>
+          <span className="text-xs text-ptop-muted">
+            이 내용이 후보 우선순위를 정하는 첫 번째 신호로 사용됩니다.
+          </span>
         </div>
       )}
 
-      <ReflectionOutputPreview draft={draft} />
+      <article className="grid gap-4 rounded-2xl border border-ptop-line bg-white p-5 shadow-ptop-surface sm:p-7">
+        <div className="flex items-center gap-3 border-b border-ptop-line pb-4">
+          <span
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ptop-mint-soft text-lg text-ptop-mint-dark"
+            aria-hidden="true"
+          >
+            ✦
+          </span>
+          <div>
+            <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-ptop-mint-dark">
+              Poppy&apos;s question
+            </span>
+            <strong className="mt-1 block text-base">
+              나의 경험을 들려주세요
+            </strong>
+          </div>
+        </div>
+
+        <div
+          className="grid gap-3 rounded-xl border border-ptop-mint-line bg-white p-4"
+          aria-live="polite"
+        >
+          <span className="text-xs font-extrabold text-ptop-mint-dark">
+            포피의 질문
+          </span>
+          <strong className="text-lg leading-[1.6]">
+            {reflectionQuestion}
+          </strong>
+        </div>
+
+        <label className="grid gap-2">
+          <span className="text-sm font-bold text-ptop-ink">나의 답변</span>
+          <textarea
+            className="min-h-32 w-full resize-y rounded-xl border border-ptop-line bg-ptop-paper p-4 text-sm leading-[1.7] outline-none placeholder:text-ptop-muted focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
+            value={draft.postAnalysisReflection}
+            onChange={(event) => updateAnswer(event.target.value)}
+            placeholder="예: 팀원마다 다른 방식으로 분석 결과를 확인해 회고와 결과가 쉽게 끊겼고, 결과 저장 흐름을 하나로 정리했습니다."
+            rows={4}
+          />
+          <span className="text-xs leading-5 text-ptop-muted">
+            한 문장으로 작성해도 충분합니다. 문제와 내가 한 판단 또는 행동이
+            드러나면 Repository 근거와 비교할 수 있어요.
+          </span>
+        </label>
+
+        <div className="grid gap-2 rounded-xl bg-ptop-soft-paper p-4 text-xs leading-5 text-ptop-muted">
+          <strong className="text-ptop-mint-dark">
+            포트폴리오 초안이 만들어지는 기준
+          </strong>
+          <span>
+            1. 선택한 후보에 PR, Issue, Discussion, Project, Commit, 파일 등
+            연결 가능한 근거가 1건 이상 있어야 합니다.
+          </span>
+          <span>
+            2. 초기 회고 또는 지금 작성한 회고에서 해결하려던 문제와 본인의
+            행동·판단이 확인되어야 합니다.
+          </span>
+          <span>
+            3. AI가 두 내용을 matched 또는 partial로 연결할 때만 초안을 만들며,
+            mismatched·no_evidence이면 사실을 만들지 않고 확인을 요청합니다.
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="m-0 text-sm text-ptop-muted" role="status">
+            {saveMessage || "작성한 답변은 최종 초안의 근거로 사용됩니다."}
+          </p>
+          <button
+            className="min-h-11 rounded-full bg-[var(--button-primary-bg)] px-5 text-sm font-extrabold text-[var(--button-primary-fg)] transition hover:-translate-y-px hover:bg-[var(--button-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            disabled={
+              !draft.postAnalysisReflection.trim() || saveStatus === "saving"
+            }
+            onClick={() => void saveAnswer()}
+          >
+            {saveStatus === "saving"
+              ? "초안 만드는 중"
+              : "포트폴리오 초안 만들기"}
+          </button>
+        </div>
+      </article>
+
+      <div ref={portfolioDraftSectionRef} className="scroll-mt-24">
+      {saveStatus === "saving" ? (
+        <PortfolioDraftLoading />
+      ) : generatedAnalysis?.portfolioDraft ? (
+        <PortfolioDraftPreview
+          draft={generatedAnalysis.portfolioDraft}
+          evidence={generatedAnalysis.matchedChallengeEvidence}
+          pdfFileName={getPortfolioPdfFileName(
+            result.repository.owner,
+            result.repository.name,
+          )}
+        />
+        ) : generatedAnalysis ? (
+          <AlignmentNotice analysis={generatedAnalysis} />
+        ) : null}
+      </div>
     </section>
   );
 }
 
-function ChallengeOption({
-  challenge,
-  selected,
-  disabled,
-  onToggle,
-}: {
-  challenge: TechnicalChallengeCandidate;
-  selected: boolean;
-  disabled: boolean;
-  onToggle: () => void;
-}) {
+function PortfolioDraftLoading() {
   return (
-    <button
-      className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition ${selected ? "border-ptop-mint-dark bg-ptop-mint-soft" : "border-ptop-line bg-white hover:border-ptop-mint-dark"} disabled:cursor-not-allowed disabled:opacity-50`}
-      data-selected={selected}
-      type="button"
-      aria-pressed={selected}
-      disabled={disabled}
-      onClick={onToggle}
+    <article
+      className="grid gap-5 rounded-2xl border border-ptop-mint-line bg-ptop-soft-paper p-6 shadow-ptop-surface sm:p-8"
+      role="status"
+      aria-live="polite"
+      aria-label="포트폴리오 초안 생성 중"
     >
-      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-ptop-line bg-white text-sm font-extrabold text-ptop-mint-dark" aria-hidden="true">
-        {selected ? "✓" : ""}
-      </span>
-      <span className="grid min-w-0 gap-1">
-        <strong className="text-sm">{challenge.title}</strong>
-        <span className="text-sm leading-[1.5] text-ptop-muted">{challenge.summary}</span>
-        <small className="text-xs text-ptop-muted">
-          {challenge.evidence.length}개 근거 · 신뢰도 {getConfidenceLabel(challenge.confidence)}
-        </small>
-      </span>
-    </button>
-  );
-}
-
-function ChallengeFollowUp({
-  title,
-  answers,
-  customNote,
-  onChange,
-  onSave,
-}: {
-  title: string;
-  answers: ReflectionChallengeAnswers | undefined;
-  customNote: string;
-  onChange: (key: keyof ReflectionChallengeAnswers, value: string) => void;
-  onSave?: () => Promise<void>;
-}) {
-  const [step, setStep] = useState(0);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [saveMessage, setSaveMessage] = useState("");
-  const prompt = CHALLENGE_FOLLOW_UP_PROMPTS[step] ?? CHALLENGE_FOLLOW_UP_PROMPTS[0];
-  const isLastStep = step === CHALLENGE_FOLLOW_UP_PROMPTS.length - 1;
-
-  const saveAnswers = async () => {
-    if (!onSave) {
-      setSaveStatus("saved");
-      setSaveMessage("임시 저장되었습니다.");
-      return;
-    }
-
-    setSaveStatus("saving");
-    setSaveMessage("서버에 저장하는 중입니다.");
-
-    try {
-      await onSave();
-      setSaveStatus("saved");
-      setSaveMessage("기술적 도전 답변이 서버에 저장되었습니다.");
-    } catch (error) {
-      setSaveStatus("error");
-      setSaveMessage(error instanceof Error ? error.message : "답변 저장에 실패했습니다.");
-    }
-  };
-
-  const handleChange = (key: keyof ReflectionChallengeAnswers, value: string) => {
-    setSaveStatus("idle");
-    setSaveMessage("");
-    onChange(key, value);
-  };
-
-  return (
-    <div className="grid gap-4 rounded-xl border border-ptop-line bg-white p-4 shadow-ptop-surface">
       <div className="flex items-center gap-3">
-        <img className="h-9 w-9 rounded-full bg-ptop-mint-soft object-contain" src={mascotUrl} alt="" />
-        <strong className="text-sm">{title}</strong>
-      </div>
-      {customNote && step === 0 && <p className="m-0 rounded-lg bg-ptop-soft-paper p-3 text-sm text-ptop-muted">내가 남긴 메모: {customNote}</p>}
-      <div className="grid gap-1 rounded-xl bg-ptop-mint-soft p-4" aria-live="polite">
-        <span className="text-xs font-extrabold text-ptop-mint-dark">포피의 확인 질문</span>
-        <strong className="leading-[1.5]">{prompt.label}</strong>
-      </div>
-      <label className="grid gap-2">
-        <span className="absolute h-px w-px overflow-hidden whitespace-nowrap">기술적 도전 회고 답변</span>
-        <textarea
-          className="min-h-24 w-full resize-y rounded-xl border border-ptop-line bg-ptop-paper p-3 text-sm leading-[1.6] outline-none placeholder:text-ptop-muted focus:border-ptop-mint-dark focus:ring-4 focus:ring-ptop-mint/20"
-          value={answers?.[prompt.key] ?? ""}
-          onChange={(event) => handleChange(prompt.key, event.target.value)}
-          placeholder="한 문장으로 답해도 괜찮아요"
-          rows={3}
-        />
-      </label>
-      <div className="flex flex-wrap justify-end gap-2">
-        <button
-          className="min-h-10 rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-muted transition hover:border-ptop-mint-dark disabled:cursor-not-allowed disabled:opacity-40"
-          type="button"
-          disabled={step === 0}
-          onClick={() => setStep((current) => Math.max(0, current - 1))}
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ptop-mint-dark text-lg text-white motion-safe:animate-pulse"
+          aria-hidden="true"
         >
-          이전
-        </button>
-        <button
-          className="min-h-10 rounded-full bg-[var(--button-primary-bg)] px-5 text-sm font-extrabold text-[var(--button-primary-fg)] transition hover:-translate-y-px hover:bg-[var(--button-primary-hover)] disabled:cursor-wait disabled:opacity-60"
-          type="button"
-          disabled={isLastStep && saveStatus === "saving"}
-          onClick={() => {
-            if (!isLastStep) {
-              setStep((current) => current + 1);
-              return;
-            }
-
-            void saveAnswers();
-          }}
-        >
-          {isLastStep ? (saveStatus === "saving" ? "저장 중" : "답변 저장") : "다음 질문"}
-        </button>
-      </div>
-      {saveMessage && (
-        <p className={`m-0 text-sm ${saveStatus === "error" ? "text-red-700" : "text-ptop-muted"}`} role="status">
-          {saveMessage}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ReflectionOutputPreview({ draft }: { draft: ReflectionDraft }) {
-  const answers = [
-    ["시작 이유", draft.motivation],
-    ["내 역할", draft.role],
-    ["기억나는 문제", draft.memorableProblem],
-  ].filter(([, value]) => value.trim());
-
-  return (
-    <div className="grid gap-4 rounded-xl border border-ptop-line bg-ptop-soft-paper p-5">
-      <div className="flex items-center gap-3">
+          ✦
+        </span>
         <div>
-          <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">04</span>
-          <h3 className="m-0 inline text-lg">결과에 반영될 내 경험</h3>
+          <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-ptop-mint-dark">
+            Portfolio draft
+          </span>
+          <h3 className="m-0 mt-1 text-xl tracking-[-0.03em]">
+            포트폴리오 초안을 정리하고 있어요
+          </h3>
         </div>
       </div>
-      {answers.length > 0 || draft.selectedChallengeTitles.length > 0 ? (
-        <>
-          <dl className="grid gap-3">
-            {answers.map(([label, value]) => (
-              <div className="grid gap-1 rounded-lg bg-white p-3" key={label}>
-                <dt className="text-xs font-bold text-ptop-muted">{label}</dt>
-                <dd className="m-0 text-sm leading-[1.6]">{value}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
-            선택한 기술적 도전과 이 메모는 Repository 근거와 함께 최종 포트폴리오 초안에 반영됩니다.
-          </p>
-        </>
-      ) : (
-        <p className="m-0 text-sm leading-[1.6] text-ptop-muted">아직 작성한 내용이 없습니다. 필요한 만큼만 포피의 질문에 답해보세요.</p>
-      )}
+      <div className="grid gap-2" aria-label="초안 생성 진행 단계">
+        {getPortfolioDraftLoadingSteps().map((step) => (
+          <div
+            className="flex items-center gap-3 rounded-lg border border-ptop-line bg-white px-4 py-3 text-sm text-ptop-muted"
+            key={step}
+          >
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-ptop-mint motion-safe:animate-pulse"
+              aria-hidden="true"
+            />
+            {step}
+          </div>
+        ))}
+      </div>
+      <p className="m-0 text-sm leading-6 text-ptop-muted">
+        작성한 회고와 Repository 근거를 확인한 뒤, 사실에 맞는 Background·Problem·Solution 구조로 다듬습니다.
+      </p>
+    </article>
+  );
+}
+
+function SelectedChallenges({ titles }: { titles: string[] }) {
+  const selectedTitle = titles[0];
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-ptop-line bg-white p-4 shadow-ptop-surface">
+      <div>
+        <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-ptop-mint-dark text-xs font-extrabold text-white">
+          01
+        </span>
+        <strong>선택한 기술적 도전</strong>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {selectedTitle && (
+          <span
+            className="rounded-full bg-ptop-mint-soft px-3 py-1.5 text-sm font-bold text-ptop-mint-dark"
+          >
+            {selectedTitle}
+          </span>
+        )}
+      </div>
+      <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
+        선택한 후보와 나의 한 문장 회고를 근거 중심으로 연결합니다.
+      </p>
     </div>
   );
 }
 
-function getDraftSummary(draft: ReflectionDraft): string {
-  const completedCount = [draft.motivation, draft.role, draft.memorableProblem].filter(
-    (answer) => answer.trim(),
-  ).length;
+export function PortfolioDraftPreview({
+  draft,
+  evidence,
+  pdfFileName,
+}: {
+  draft: PortfolioDraft;
+  evidence: TechnicalChallengeEvidenceReference[];
+  pdfFileName: string;
+}) {
+  const visualReferences = evidence.flatMap((item) =>
+    (item.imageUrls ?? []).map((url) => ({
+      url,
+      sourceTitle: item.title,
+      sourceUrl: item.url,
+    })),
+  );
 
-  if (completedCount === 0) {
-    return "작성한 메모는 자동 저장됩니다. 질문을 건너뛰고 결과를 확인해도 괜찮아요.";
-  }
+  return (
+    <article className="portfolio-draft-print mx-auto grid max-w-4xl gap-8 border border-ptop-line bg-white p-6 shadow-ptop-surface sm:p-10">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-ptop-line pb-4">
+        <div>
+          <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-ptop-mint-dark">
+            Portfolio draft
+          </span>
+          <h3 className="mb-0 mt-2 text-xl tracking-[-0.03em]">
+            AI가 다듬은 포트폴리오 초안
+          </h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {draft.requiresUserReview && (
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+              사용자 확인 필요
+            </span>
+          )}
+          <button
+            className="rounded-full border border-ptop-line bg-white px-4 py-2 text-sm font-bold text-ptop-mint-dark transition hover:-translate-y-px hover:border-ptop-mint-dark"
+            type="button"
+            onClick={() => {
+              const previousTitle = document.title;
+              const restoreTitle = () => {
+                document.title = previousTitle;
+                window.removeEventListener("afterprint", restoreTitle);
+              };
 
-  return `공통 회고 질문 ${completedCount}/3개에 답변했습니다. 작성한 내용은 이 Repository에 임시 저장되어 있습니다.`;
+              document.title = pdfFileName;
+              window.addEventListener("afterprint", restoreTitle, {
+                once: true,
+              });
+              window.print();
+              window.setTimeout(restoreTitle, 1000);
+            }}
+          >
+            PDF로 저장
+          </button>
+        </div>
+        {draft.requiresUserReview && (
+          <span className="hidden rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 print:inline-flex">
+            사용자 확인 필요
+          </span>
+        )}
+      </header>
+      <h4 className="m-0 text-2xl leading-tight tracking-[-0.03em]">
+        {draft.title}
+      </h4>
+      {draft.technicalChallenge && (
+        <h5 className="m-0 border-l-4 border-ptop-mint pl-3 text-xl leading-tight">
+          {draft.technicalChallenge}
+        </h5>
+      )}
+
+      <DraftSection label="Background" value={draft.background} />
+      <PortfolioVisuals references={visualReferences} />
+      <DraftSection label="Problem" value={draft.problem} />
+      <DraftSection label="Solution" value={draft.solution} />
+      {draft.implementationSteps && draft.implementationSteps.length > 0 && (
+        <DraftImplementationSteps steps={draft.implementationSteps} />
+      )}
+      {draft.decisionRationale && draft.decisionRationale.length > 0 && (
+        <DraftListSection label="Why I chose this approach" items={draft.decisionRationale} />
+      )}
+      {draft.tradeoffs && draft.tradeoffs.length > 0 && (
+        <DraftListSection label="Trade-offs" items={draft.tradeoffs} />
+      )}
+      {draft.validation && draft.validation.length > 0 && (
+        <DraftListSection label="Validation" items={draft.validation} />
+      )}
+      <DraftSection label="My contribution" value={draft.contribution} />
+      {draft.keyDecisions && draft.keyDecisions.length > 0 && (
+        <DraftListSection label="Key decisions" items={draft.keyDecisions} />
+      )}
+      {draft.result && <DraftSection label="Result" value={draft.result} />}
+      {draft.learnings && draft.learnings.length > 0 && (
+        <DraftListSection label="What I learned" items={draft.learnings} />
+      )}
+      <div className="grid gap-2 border-t border-ptop-line pt-5">
+        <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+          Evidence used
+        </span>
+        {evidence.length > 0 ? (
+          <ul className="m-0 grid list-none gap-2 p-0 text-sm leading-6 text-ptop-muted">
+            {evidence.map((item, index) => (
+              <li
+                className="flex min-w-0 items-start gap-2"
+                key={`${item.evidenceType}-${item.referenceId ?? item.filePath ?? index}`}
+              >
+                <span className="shrink-0 font-bold text-ptop-mint-dark" aria-hidden="true">-</span>
+                {item.url ? (
+                  <a
+                    className="min-w-0 font-semibold text-ptop-mint-dark underline decoration-ptop-mint/40 underline-offset-2 transition hover:decoration-ptop-mint-dark"
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {item.title} ↗
+                  </a>
+                ) : (
+                  <span>{item.title}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="m-0 grid list-none gap-1.5 p-0 text-sm leading-6 text-ptop-muted">
+            {splitEvidenceSummary(draft.evidenceSummary).map((item, index) => (
+              <li className="flex items-start gap-2" key={`${item}-${index}`}>
+                <span className="shrink-0 font-bold text-ptop-mint-dark" aria-hidden="true">-</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {draft.requiresUserReview && (
+        <p className="m-0 text-sm leading-6 text-amber-800">
+          회고와 Repository 기록의 연결이 충분하지 않을 수 있습니다. 게시 전
+          실제 기여와 표현을 확인해주세요.
+        </p>
+      )}
+    </article>
+  );
 }
 
-function getConfidenceLabel(confidence: TechnicalChallengeCandidate["confidence"]): string {
-  return { high: "높음", medium: "보통", low: "낮음" }[confidence];
+function DraftImplementationSteps({ steps }: { steps: PortfolioImplementationStep[] }) {
+  return (
+    <section className="grid gap-3">
+      <h5 className="m-0 text-sm font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+        Implementation details
+      </h5>
+      <ol className="m-0 grid list-none gap-3 p-0">
+        {steps.map((step, index) => (
+          <li className="grid gap-1 border-l-2 border-ptop-mint pl-4 text-sm leading-7 text-ptop-ink" key={`${step.summary}-${index}`}>
+            <strong>{step.summary}</strong>
+            {step.filePath && (
+              <code className="w-fit rounded bg-ptop-soft-paper px-2 py-0.5 text-xs text-ptop-mint-dark">
+                {step.filePath}
+              </code>
+            )}
+            <span>{step.rationale}</span>
+            {step.evidenceRefs.length > 0 && (
+              <span className="text-xs leading-5 text-ptop-muted">
+                근거: {step.evidenceRefs.join(", ")}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+type PortfolioVisualReference = {
+  url: string;
+  sourceTitle: string;
+  sourceUrl: string | null;
+};
+
+function PortfolioVisuals({ references }: { references: PortfolioVisualReference[] }) {
+  const uniqueReferences = [...new Map(references.map((reference) => [reference.url, reference])).values()];
+
+  if (uniqueReferences.length === 0) {
+    return (
+      <aside className="grid min-h-32 place-items-center gap-2 border border-dashed border-ptop-mint-line bg-ptop-soft-paper p-5 text-center">
+        <strong className="text-sm text-ptop-mint-dark">Background 이미지 자리</strong>
+        <p className="m-0 max-w-lg text-xs leading-5 text-ptop-muted">
+          연결된 PR에 첨부 이미지가 없어 이미지를 추가하지 않았습니다. 프로젝트 배경이나 문제 상황을 보여주는 이미지를 직접 첨부하면 좋습니다.
+        </p>
+      </aside>
+    );
+  }
+
+  return (
+    <figure className="grid gap-2 border border-ptop-line bg-ptop-soft-paper p-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {uniqueReferences.map((reference) => (
+          <a
+            className="block overflow-hidden border border-ptop-line bg-white transition hover:border-ptop-mint-dark"
+            href={reference.sourceUrl ?? reference.url}
+            target="_blank"
+            rel="noreferrer"
+            key={reference.url}
+          >
+            <img
+              className="aspect-video w-full object-contain"
+              src={reference.url}
+              alt={`${reference.sourceTitle}에 첨부된 프로젝트 자료`}
+              loading="lazy"
+            />
+          </a>
+        ))}
+      </div>
+      <figcaption className="text-xs leading-5 text-ptop-muted">
+        선택한 기술적 도전의 PR에 첨부된 자료입니다. 이미지를 클릭하면 원문 PR로 이동합니다.
+      </figcaption>
+    </figure>
+  );
+}
+
+function DraftSection({ label, value }: { label: string; value: string }) {
+  return (
+    <section className="grid gap-2">
+      <h5 className="m-0 text-sm font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">{label}</h5>
+      <p className="m-0 whitespace-pre-line text-sm leading-7 text-ptop-ink">{value}</p>
+    </section>
+  );
+}
+
+function DraftListSection({ label, items }: { label: string; items: string[] }) {
+  const normalizedItems = normalizeDraftListItems(items);
+
+  if (normalizedItems.length === 0) return null;
+
+  return (
+    <section className="grid gap-2">
+      <h5 className="m-0 text-sm font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">{label}</h5>
+      <ul className="m-0 grid list-none gap-2 p-0 text-sm leading-7 text-ptop-ink">
+        {normalizedItems.map((item, index) => (
+          <li className="flex items-start gap-2" key={`${item}-${index}`}>
+            <span className="shrink-0 font-bold text-ptop-mint-dark" aria-hidden="true">-</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function splitEvidenceSummary(value: string): string[] {
+  const items = value
+    .split(/\r?\n|\s*[•·]\s*|\s*;\s*/)
+    .map((item) => item.replace(/^[-*]\s*/, "").trim())
+    .filter(Boolean);
+
+  return items.length > 0 ? items : ["연결된 Repository 근거가 없습니다."];
+}
+
+function AlignmentNotice({ analysis }: { analysis: ReflectionAnalysis }) {
+  return (
+    <div
+      className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"
+      role="status"
+    >
+      <strong>아직 포트폴리오 초안을 만들지 못했습니다.</strong>
+      <p className="m-0">{analysis.message}</p>
+      <p className="m-0">
+        Repository 근거와 나의 실제 경험이 일치하는지 확인한 뒤 다시
+        시도해주세요.
+      </p>
+    </div>
+  );
 }

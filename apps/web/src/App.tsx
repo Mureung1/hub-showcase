@@ -3,10 +3,12 @@ import { useState } from "react";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { LandingPage } from "./pages/LandingPage";
 import { WorkspacePage } from "./pages/WorkspacePage";
+import { SavedPortfolioPage } from "./pages/SavedPortfolioPage";
 import { SiteHeader } from "./components/SiteHeader";
 import type { ReflectionDraft } from "./features/reflection/reflection";
+import type { SavedPortfolioProject } from "./features/portfolio-library/portfolioLibrary";
 
-type AppView = "landing" | "workspace" | "analysis";
+type AppView = "landing" | "workspace" | "analysis" | "saved-portfolio";
 
 type InitialRoute = {
   view: AppView;
@@ -34,12 +36,14 @@ export function App() {
   const [analysisResult, setAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
   const [reflectionDraft, setReflectionDraft] = useState<ReflectionDraft | null>(null);
   const [reflectionAnalysis, setReflectionAnalysis] = useState<ReflectionAnalysis | null>(null);
+  const [savedPortfolio, setSavedPortfolio] = useState<SavedPortfolioProject | null>(null);
 
   const showLanding = () => {
     setView("landing");
     setAnalysisResult(null);
     setReflectionDraft(null);
     setReflectionAnalysis(null);
+    setSavedPortfolio(null);
     const url = new URL(window.location.href);
     url.searchParams.delete("view");
     url.searchParams.delete("start");
@@ -66,6 +70,13 @@ export function App() {
     setAnalysisResult(null);
     setReflectionDraft(null);
     setReflectionAnalysis(null);
+    setSavedPortfolio(null);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  const showSavedPortfolio = (project: SavedPortfolioProject) => {
+    setSavedPortfolio(project);
+    setView("saved-portfolio");
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
@@ -96,7 +107,10 @@ export function App() {
             onBackToLanding={showLanding}
             onAnalysisComplete={showAnalysis}
             openAnalysisOnEntry={openAnalysisOnEntry}
+            onOpenSavedProject={showSavedPortfolio}
           />
+        ) : view === "saved-portfolio" && savedPortfolio ? (
+          <SavedPortfolioPage project={savedPortfolio} onBackToWorkspace={showWorkspace} />
         ) : analysisResult && reflectionDraft ? (
           <AnalysisPage
             result={analysisResult}

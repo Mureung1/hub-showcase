@@ -46,6 +46,7 @@ export class WorkspaceScene extends Phaser.Scene {
   private isInputEnabled = true;
   private isPlayerMoving = false;
   private lastDirection: PlayerDirection = "down";
+  private interactions: WorkspaceInteraction[] = workspaceInteractions;
 
   constructor(notify: WorkspaceEventListener) {
     super({ key: "PtoPWorkspaceScene" });
@@ -137,7 +138,7 @@ export class WorkspaceScene extends Phaser.Scene {
 
     const nextInteraction = findNearestInteraction(
       { x: this.player.x, y: this.player.y },
-      workspaceInteractions,
+      this.interactions,
     );
 
     if (nextInteraction?.id !== this.activeInteraction?.id) {
@@ -153,6 +154,14 @@ export class WorkspaceScene extends Phaser.Scene {
       this.inputManager.didPressInteract()
     ) {
       this.notify({ type: "open-new-analysis" });
+    } else if (
+      nextInteraction?.kind === "repository" &&
+      this.inputManager.didPressInteract()
+    ) {
+      this.notify({
+        type: "open-repository",
+        repositoryId: nextInteraction.repositoryId,
+      });
     }
   }
 
@@ -163,6 +172,11 @@ export class WorkspaceScene extends Phaser.Scene {
     if (!isEnabled) {
       this.player?.setVelocity(0, 0);
     }
+  }
+
+  setRepositoryInteractions(interactions: WorkspaceInteraction[]) {
+    this.interactions = [...workspaceInteractions, ...interactions];
+    this.activeInteraction = null;
   }
 
   private getCameraZoom() {

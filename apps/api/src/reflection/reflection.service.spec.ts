@@ -9,6 +9,7 @@ const validDraft: ReflectionDraft = {
   motivation: "프로젝트를 빠르게 정리하고 싶었습니다.",
   role: "프론트엔드 구현을 맡았습니다.",
   memorableProblem: "분석 결과를 사용자 경험과 연결하는 일이 어려웠습니다.",
+  postAnalysisReflection: "",
   attempts: "",
   improvement: "",
   customChallengeTitle: "",
@@ -89,14 +90,14 @@ describe("ReflectionService", () => {
     expect(persistence.save).toHaveBeenCalledWith("analysis-id", validDraft, reflectionAnalysis);
   });
 
-  it("rejects malformed drafts before calling persistence", async () => {
+  it("rejects drafts with more than one selected challenge before calling persistence", async () => {
     const persistence = { save: jest.fn() };
     const service = new ReflectionService(
       persistence as unknown as ReflectionDraftPersistence,
     );
 
     await expect(
-      service.save("analysis-id", { ...validDraft, selectedChallengeTitles: ["a", "b", "c"] }),
+      service.save("analysis-id", { ...validDraft, selectedChallengeTitles: ["a", "b"] }),
     ).rejects.toBeInstanceOf(InvalidReflectionDraftError);
     expect(persistence.save).not.toHaveBeenCalled();
   });

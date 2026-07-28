@@ -16,6 +16,31 @@ export class RepositoryAnalysisApiError extends Error {
   }
 }
 
+export function getRepositoryAnalysisErrorMessage(error: unknown): string {
+  if (!(error instanceof RepositoryAnalysisApiError)) {
+    return error instanceof Error
+      ? error.message
+      : "Repository 분석 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+
+  switch (error.code) {
+    case "INVALID_REPOSITORY_URL":
+      return "https://github.com/owner/repository 형식의 주소를 입력해 주세요.";
+    case "REPOSITORY_NOT_FOUND":
+      return "Repository를 찾을 수 없거나 접근 권한이 없습니다. 공개 Repository인지 확인해 주세요.";
+    case "GITHUB_RATE_LIMITED":
+      return "GitHub API 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.";
+    case "EXTERNAL_SERVICE_ERROR":
+      return "GitHub에서 분석 데이터를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    case "ANALYSIS_PERSISTENCE_FAILED":
+      return "분석 결과를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    case "AI_ANALYSIS_UNAVAILABLE":
+      return "AI 분석을 사용할 수 없어 Repository 근거만 먼저 확인할 수 있습니다.";
+    default:
+      return "Repository 분석 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+}
+
 export async function requestRepositoryAnalysis(
   request: RepositoryAnalysisRequest,
   fetchImpl: typeof fetch = fetch,
