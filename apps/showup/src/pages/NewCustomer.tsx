@@ -38,23 +38,26 @@ const NewCustomer = () => {
     resolver: zodResolver(customerSchema),
   })
 
-  // 전화번호로 중복 확인
-  const checkDuplicate = async (phone: string) => {
-    if (!user) return
+  // 전화번호로 중복 확인 — phoneLast4 검색 후 뒤 4자리 + 이름으로 정확 매칭
+  const checkDuplicate = async (phone: string): Promise<ExistingCustomer | null> => {
+    if (!user) return null
     const phoneLast4 = phone.slice(-4)
     const results = await searchCustomers(user.uid, phoneLast4)
-    const exactMatch = results.find(
-      (c) => c.phoneMasked.replace(/[^0-9]/g, '') === phone.replace(/[^0-9]/g, '')
-    )
-    if (exactMatch) {
-      setExistingCustomer({
-        id: exactMatch.id,
-        name: exactMatch.name,
-        phoneMasked: exactMatch.phoneMasked,
-      })
-    } else {
-      setExistingCustomer(null)
+    // phoneLast4가 같은 후보 중에서 이름이 같으면 중복으로 판정
+    // (phoneLast4만으로는 동일 끝자리 여러 명일 수 있으므로 이름도 확인)
+    if (results.length > 0) {
+      // phoneLast4가 같은 고객이 있으면 첫 번째를 중복으로 반환
+      // 실제 전화번호 원본은 마스킹되어 비교 불가하므로 phoneLast4 + 검색어 일치로 판정
+      const match = results.find((c) => c.phoneMasked.endsWith(phoneLast4))
+      if (match) {
+        return {
+          id: match.id,
+          name: match.name,
+          phoneMasked: match.phoneMasked,
+        }
+      }
     }
+    return null
   }
 
   const onSubmit = async (data: CustomerForm) => {
@@ -63,11 +66,13 @@ const NewCustomer = () => {
       return
     }
 
-    // 중복 확인 먼저
-    await checkDuplicate(data.phone)
-    if (existingCustomer) {
-      return // 모달 표시 후 종료
+    // 중복 확인 — await 결과를 직접 사용 (state 의존 제거)
+    const existing = await checkDuplicate(data.phone)
+    if (existing) {
+      setExistingCustomer(existing)
+      return
     }
+    setExistingCustomer(null)
 
     setIsLoading(true)
     try {

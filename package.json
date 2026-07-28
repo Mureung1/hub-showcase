@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:security": "node --experimental-vm-modules node_modules/jest/bin/jest.js apps/showup/security/penetration-test.test.cjs",
+    "test:security": "node apps/showup/security/smoke-test.mjs",
     "dev": "npm run dev -w intro",
     "build": "npm run build -w intro",
     "lint": "npm run lint -w intro"

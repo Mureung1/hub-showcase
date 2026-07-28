@@ -13,6 +13,7 @@ const Customers = () => {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [results, setResults] = useState<CustomerSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // 300ms debounce
   useEffect(() => {
@@ -27,15 +28,18 @@ const Customers = () => {
     const runSearch = async () => {
       if (!user || !debouncedQuery.trim()) {
         setResults([])
+        setError(null)
         return
       }
 
       setIsLoading(true)
+      setError(null)
       try {
         const data = await searchCustomers(user.uid, debouncedQuery)
         setResults(data)
-      } catch (error) {
-        console.error('Search failed:', error)
+      } catch (err) {
+        console.error('Search failed:', err)
+        setError('검색 중 오류가 발생했습니다')
         setResults([])
       } finally {
         setIsLoading(false)
@@ -83,6 +87,16 @@ const Customers = () => {
           <div className="text-center py-8 text-gray-500">
             <p>검색 중...</p>
           </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-600 mb-2">{error}</p>
+            <button
+              onClick={() => setDebouncedQuery(debouncedQuery)}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              다시 시도
+            </button>
+          </div>
         ) : results.length === 0 ? (
           debouncedQuery ? (
             <div className="text-center py-8 text-gray-500">
@@ -97,7 +111,7 @@ const Customers = () => {
           results.map((customer) => (
             <Link
               key={customer.id}
-              to={`/customers/${customer.id}`}
+              to={`/app/customers/${customer.id}`}
               className="block bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between">

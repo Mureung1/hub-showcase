@@ -63,13 +63,13 @@ const IncidentModal = ({ isOpen, onClose, onSubmit }: IncidentModalProps) => {
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
             취소
           </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
+          <Button type="submit" form="incident-form" variant="primary" disabled={isSubmitting}>
             {isSubmitting ? '기록 중...' : '기록'}
           </Button>
         </>
       }
     >
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form id="incident-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         {/* 카테고리 선택 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

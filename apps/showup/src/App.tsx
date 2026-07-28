@@ -19,6 +19,7 @@ const Terms = lazy(() => import('./pages/Terms'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const ServerError = lazy(() => import('./pages/ServerError'))
 const Landing = lazy(() => import('./pages/Landing'))
+const StoreSettings = lazy(() => import('./pages/StoreSettings'))
 
 const PageFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -78,6 +79,7 @@ function App() {
               <Route path="customers/:id" element={<CustomerDetail />} />
               <Route path="reservations" element={<Reservations />} />
               <Route path="reservations/new" element={<NewReservation />} />
+              <Route path="settings" element={<StoreSettings />} />
             </Route>
 
             {/* Error routes */}

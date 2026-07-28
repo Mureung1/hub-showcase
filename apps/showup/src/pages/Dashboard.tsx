@@ -10,6 +10,7 @@ import type { ReservationWithId } from '@/services/reservations'
 const Dashboard = () => {
   const { user } = useAuthState()
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [todayCount, setTodayCount] = useState(0)
   const [todayVisited, setTodayVisited] = useState(0)
   const [todayNoShow, setTodayNoShow] = useState(0)
@@ -24,6 +25,7 @@ const Dashboard = () => {
         return
       }
 
+      setError(null)
       try {
         const [todayRes, allReservations, riskyCustomers] = await Promise.all([
           listTodayReservations(user.uid),
@@ -39,8 +41,9 @@ const Dashboard = () => {
         setNoShowRate(stats.month.noShowRate)
         setAttentionCustomers(riskyCustomers)
         setTodayReservations(todayRes)
-      } catch (error) {
-        console.error('Failed to load dashboard:', error)
+      } catch (err) {
+        console.error('Failed to load dashboard:', err)
+        setError('데이터를 불러오지 못했습니다')
       } finally {
         setIsLoading(false)
       }
@@ -53,6 +56,20 @@ const Dashboard = () => {
     return (
       <div className="p-4 text-center text-gray-500">
         <p>로딩 중...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-600 mb-2">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          다시 시도
+        </button>
       </div>
     )
   }
@@ -104,7 +121,7 @@ const Dashboard = () => {
             {attentionCustomers.map((customer) => (
               <Link
                 key={customer.id}
-                to={`/customers/${customer.id}`}
+                to={`/app/customers/${customer.id}`}
                 className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center justify-between">
