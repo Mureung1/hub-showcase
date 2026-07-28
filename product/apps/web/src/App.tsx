@@ -9,6 +9,7 @@ import { useProductWorkspaceModel } from "./features/workspace/useProductWorkspa
 import { PRODUCT_CATALOG_BOOTSTRAP } from "./services/productCatalog";
 import "./styles/global.css";
 import "./styles/mapOverlays.css";
+import "./styles/panelAccessibility.css";
 
 export function App({ useDemoData = false }: { useDemoData?: boolean }) {
   const apiReadiness = useApiReadiness(!useDemoData);
