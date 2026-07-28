@@ -24,9 +24,12 @@
   border-color: var(--blue);
 }
 
-/** 테두리를 두껍게(1px→2px) + 배경 채움 + 텍스트 색상/굵기까지 3중으로 hover와 구분한다 */
+/**
+ * 배경 채움(hover엔 없음) + 텍스트 색상/굵기로 hover와 구분한다 — border-width는 1px 유지
+ * (사용자 확인, 2026-07-28: 2px는 과했음).
+ */
 .opt.selected {
-  border: 2px solid var(--blue);
+  border-color: var(--blue);
   background: var(--blue-soft);
   color: var(--blue);
   font-weight: 500;
