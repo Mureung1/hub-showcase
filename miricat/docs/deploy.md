@@ -20,6 +20,8 @@
   - `SUPABASE_URL`
   - `SUPABASE_SERVICE_ROLE_KEY`
   - `ODSAY_API_KEY`
+  - `NAVER_MAP_CLIENT_ID` / `NAVER_MAP_CLIENT_SECRET` (자가용 Directions 프록시용)
+- **ODsay IP 등록**: ODsay 키는 등록된 공인 IP에서만 호출 가능 — Render의 Outbound IP 전부 + 로컬(워커) 공인 IP를 lab.odsay.com 인증키 관리에 등록. 집 IP는 유동이라 바뀌면 재등록(`curl ifconfig.me`로 확인)
   - (`PORT`는 Render가 자동 주입 — 코드가 `process.env.PORT || 8000`이라 대응됨)
 - 주의: index.js의 dotenv는 `../.env`를 읽는데 배포 환경엔 그 파일이 없음 → dotenv가 조용히 넘어가고 Render 환경변수를 그대로 쓰므로 문제없음
 - 확인: `https://<render-url>/api/health` → `{"ok":true,...}`
