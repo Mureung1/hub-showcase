@@ -11,25 +11,16 @@
           "destination": "/index.html"
         }
       ]
-    },
-    "backend": {
-      "root": "server/",
-      "framework": "express",
-      "buildCommand": "npm --prefix .. run build -w shared && npm run build"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "https://prefertime.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": { "service": "frontend" }
     }
   ]
 }
