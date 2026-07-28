@@ -199,6 +199,42 @@
   line-height: 1.65;
 }
 
+.statusMessage,
+.errorMessage {
+  margin: 0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.statusMessage {
+  border: 1px solid rgb(53 200 244 / 34%);
+  background: #eefcff;
+  color: #07003d;
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  color: #9f1239;
+}
+
+.errorMessage button {
+  flex: 0 0 auto;
+  border: 1px solid #fda4af;
+  border-radius: 9999px;
+  padding: 7px 12px;
+  background: #ffffff;
+  color: #9f1239;
+  cursor: pointer;
+  font-weight: 850;
+}
+
 .field,
 .group {
   display: grid;

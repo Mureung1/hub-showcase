@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useLearningProfileStore } from './model/useLearningProfileStore'
 import type { LearningLevel, LearningProfile } from './model/profileTypes'
@@ -15,7 +15,7 @@ const levelOptions: Array<{ label: string; value: LearningLevel }> = [
 
 export function ProfileSetup() {
   const navigate = useNavigate()
-  const { profile, saveProfile, resetProfile } = useLearningProfileStore()
+  const { profile, status, error, loadProfile, saveProfile, resetProfile } = useLearningProfileStore()
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '예린')
   const [learningGoal, setLearningGoal] = useState(
     profile?.learningGoal ?? 'React state와 이벤트 이해하기',
@@ -26,6 +26,23 @@ export function ProfileSetup() {
   const [dailyStudyMinutes, setDailyStudyMinutes] = useState(profile?.dailyStudyMinutes ?? 30)
   const [level, setLevel] = useState<LearningLevel>(profile?.level ?? 'beginner')
   const [isSaved, setIsSaved] = useState(Boolean(profile))
+
+  useEffect(() => {
+    if (status === 'idle') {
+      void loadProfile().catch(() => undefined)
+    }
+  }, [loadProfile, status])
+
+  useEffect(() => {
+    if (!profile) return
+
+    setDisplayName(profile.displayName)
+    setLearningGoal(profile.learningGoal)
+    setPreferredTracks(profile.preferredTracks)
+    setDailyStudyMinutes(profile.dailyStudyMinutes)
+    setLevel(profile.level)
+    setIsSaved(true)
+  }, [profile])
 
   const canSubmit = displayName.trim().length > 0 && learningGoal.trim().length > 0
 
@@ -53,26 +70,36 @@ export function ProfileSetup() {
     })
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!canSubmit) {
       return
     }
 
-    saveProfile(previewProfile)
-    setIsSaved(true)
-    navigate('/today')
+    try {
+      await saveProfile(previewProfile)
+      setIsSaved(true)
+      navigate('/today')
+    } catch {
+      // Store error is rendered while the current form values stay intact.
+    }
   }
 
-  function handleReset() {
-    resetProfile()
-    setDisplayName('')
-    setLearningGoal('')
-    setPreferredTracks(['React'])
-    setDailyStudyMinutes(30)
-    setLevel('beginner')
-    setIsSaved(false)
+  async function handleReset() {
+    if (!window.confirm('저장된 학습 프로필을 초기화할까요?')) return
+
+    try {
+      await resetProfile()
+      setDisplayName('')
+      setLearningGoal('')
+      setPreferredTracks(['React'])
+      setDailyStudyMinutes(30)
+      setLevel('beginner')
+      setIsSaved(false)
+    } catch {
+      // Store error is rendered and the saved profile remains visible.
+    }
   }
 
   return (
@@ -83,6 +110,20 @@ export function ProfileSetup() {
           <h1 id="profile-title">학습 프로필을 만들어볼까요?</h1>
           <p className={styles.description}>오늘 학습 허브를 개인화합니다.</p>
         </header>
+
+        {status === 'loading' ? (
+          <p className={styles.statusMessage} role="status">저장된 프로필을 불러오는 중입니다.</p>
+        ) : null}
+        {error ? (
+          <div className={styles.errorMessage} role="alert">
+            <span>{error}</span>
+            {status === 'error' && !profile ? (
+              <button type="button" onClick={() => void loadProfile().catch(() => undefined)}>
+                다시 시도
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <label className={styles.field}>
           <span>표시 이름</span>
@@ -160,9 +201,13 @@ export function ProfileSetup() {
         </div>
 
         <div className={styles.actions}>
-          <button className={styles.primary} disabled={!canSubmit} type="submit">
+          <button
+            className={styles.primary}
+            disabled={!canSubmit || status === 'loading' || status === 'saving'}
+            type="submit"
+          >
             <span aria-hidden="true">✦</span>
-            오늘 학습 허브로 이동
+            {status === 'saving' ? '프로필 저장 중…' : '오늘 학습 허브로 이동'}
           </button>
           <Link className={styles.secondary} to="/today">
             나중에 둘러보기
@@ -257,7 +302,12 @@ export default function Counter() {
 
         {isSaved ? <div className={styles.saved}>프로필이 저장되었습니다</div> : null}
         {profile ? (
-          <button className={styles.reset} type="button" onClick={handleReset}>
+          <button
+            className={styles.reset}
+            disabled={status === 'saving'}
+            type="button"
+            onClick={() => void handleReset()}
+          >
             저장된 프로필 초기화
           </button>
         ) : null}
