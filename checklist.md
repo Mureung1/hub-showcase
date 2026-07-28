@@ -53,11 +53,12 @@
 
 ### 1~5. 실제 배포·연결·검증 (Vercel/Render 대시보드 작업, 진행 예정)
 - 배포 대상 브랜치는 `main`이 아니라 **`N179_표정한`**으로 결정함 — Render/Vercel 둘 다 이 브랜치를 보게 설정
-- [ ] Render에 Express(BE) 배포 — Branch `N179_표정한` / Build `npm install` / Start `npm start` / 환경변수 4개(`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) / Health Check Path `/health`
-- [x] Vercel에 React(FE) 배포 — Branch `N179_표정한` / Framework Vite / Build `npm run build` / Output `dist`. 배포 주소: `https://hub-pyo3.vercel.app` (환경변수 `VITE_API_BASE_URL`은 Render 배포 후 추가 예정, 지금은 화면만 뜨는 상태)
+- [x] Render에 Express(BE) 배포 — Branch `N179_표정한` / Build `npm install` / Start `npm start` / 환경변수 5개(`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGIN=https://hub-pyo3.vercel.app`) / Health Check Path `/health`. 배포 주소: `https://hub-20ox.onrender.com` — `/health` 200 확인, `/api/recipes`도 실제 Supabase 데이터로 응답 확인
+- [x] Vercel에 React(FE) 배포 — Branch `N179_표정한` / Framework Vite / Build `npm run build` / Output `dist`. 배포 주소: `https://hub-pyo3.vercel.app`
   - Vercel 수동 배포 시 "GitHub could not associate the committer with a GitHub user" 에러로 막힘 — 커밋 작성자 이메일이 GitHub 계정에 비공개(Private)로 등록돼 있어서 발생. 로컬 git 커밋 이메일을 GitHub 제공 noreply 주소(`107694256+pyojung@users.noreply.github.com`)로 바꿔서 해결
-- [ ] Render `ALLOWED_ORIGIN`을 Vercel 실제 주소로 설정하고 재배포
-- [ ] 배포 환경에서 핵심 플로우(냉장고→홈 추천→레시피 상세→구매 링크) 확인, devtools Network + Render 로그 + Supabase로 끝까지 추적
+  - `/home`처럼 React Router가 처리하는 경로를 직접 열면 404 남 — Vercel이 SPA 라우팅을 모르고 파일을 못 찾은 것. `vercel.json`에 모든 경로를 `index.html`로 돌리는 rewrite 추가해서 해결
+- [x] Vercel에 `VITE_API_BASE_URL=https://hub-20ox.onrender.com` 환경변수 추가 후 재배포 — Render `ALLOWED_ORIGIN`도 Vercel 주소로 처음부터 맞춰서 배포함
+- [x] 배포 환경에서 핵심 플로우 확인 — `https://hub-pyo3.vercel.app`에서 냉장고 재료 선택 → 홈 추천까지 정상 동작, 실제 레시피 데이터(가격·시간 포함)가 Render API를 통해 뜨는 것 확인. 레시피 상세·구매 링크까지의 전체 흐름은 아직 안 눌러봄 — 다음에 이어서 확인
 - [ ] FE/BE 배포 주소를 이 파일에 기록
 
 ## 백로그 (이번 주 범위 아님)
