@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   extractOpportunityTextFromHtml,
+  getKnownHttpFallbackUrl,
   readResponseTextWithLimit,
 } from "../server/services/fetchOpportunityText.js";
 
@@ -51,6 +52,16 @@ test("단일 청크가 제한보다 커도 정확히 제한까지만 보관한�
 
   assert.ok(new TextEncoder().encode(contentWithoutSuffix).byteLength <= 30);
   assert.ok(result.endsWith("</script></style></body></html>"));
+});
+
+test("컴퓨터학부의 인증서 오류 HTTPS 주소만 검증을 끄지 않고 HTTP로 재시도한다", () => {
+  const fallback = getKnownHttpFallbackUrl(new URL(
+    "https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor",
+  ));
+
+  assert.equal(fallback?.toString(), "http://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor");
+  assert.equal(getKnownHttpFallbackUrl(new URL("https://example.com/notices")), null);
+  assert.equal(getKnownHttpFallbackUrl(new URL("http://cse.knu.ac.kr/notices")), null);
 });
 
 test("긴 메뉴보다 게시글 상세 영역을 우선 추출한다", () => {

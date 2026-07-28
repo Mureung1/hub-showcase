@@ -9,6 +9,10 @@ const MIN_EXTRACTED_TEXT_LENGTH = 80;
 const MAX_EXTRACTED_TEXT_LENGTH = 30000;
 const MAX_HTML_BYTES = 12 * 1024 * 1024;
 const TRUNCATED_HTML_SUFFIX = "\n</script></style></body></html>";
+const KNOWN_HTTP_FALLBACK_HOSTS = new Set([
+  "computer.knu.ac.kr",
+  "cse.knu.ac.kr",
+]);
 
 const entityMap = {
   amp: "&",
@@ -83,6 +87,19 @@ function normalizeHostname(hostname) {
     .toLowerCase()
     .replace(/^\[|\]$/g, "")
     .replace(/\.$/, "");
+}
+
+export function getKnownHttpFallbackUrl(parsedTargetUrl) {
+  if (
+    parsedTargetUrl.protocol !== "https:" ||
+    !KNOWN_HTTP_FALLBACK_HOSTS.has(normalizeHostname(parsedTargetUrl.hostname))
+  ) {
+    return null;
+  }
+
+  const fallbackUrl = new URL(parsedTargetUrl);
+  fallbackUrl.protocol = "http:";
+  return fallbackUrl;
 }
 
 function parseIPv4(address) {
@@ -501,6 +518,7 @@ export async function fetchUrlHtml(url) {
   let currentUrl = normalizeKnownPublicUrl(validateHttpUrl(url));
   const cookieJar = new Map();
   let frameDepth = 0;
+  let usedKnownHttpFallback = false;
 
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
     await assertPublicFetchTarget(currentUrl);
@@ -550,6 +568,15 @@ export async function fetchUrlHtml(url) {
     } catch (error) {
       if (error instanceof OpportunityTextFetchError) {
         throw error;
+      }
+
+      // Keep TLS validation enabled. These reviewed KNU list hosts currently
+      // redirect to HTTP but present an HTTPS certificate for another name.
+      const fallbackUrl = usedKnownHttpFallback ? null : getKnownHttpFallbackUrl(currentUrl);
+      if (fallbackUrl) {
+        currentUrl = fallbackUrl;
+        usedKnownHttpFallback = true;
+        continue;
       }
 
       throw new OpportunityTextFetchError(
