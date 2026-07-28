@@ -48,6 +48,7 @@ describe('NavigationBar', () => {
         <NavigationBar
           items={items}
           onValueChange={onValueChange}
+          responsive
           value="home"
         />
       </DesignSystemProvider>
@@ -58,6 +59,9 @@ describe('NavigationBar', () => {
     const library = screen.getByRole('button', { name: '보관함' });
 
     expect(navigation.classList.contains('navigation-bar')).toBe(true);
+    expect(navigation.classList.contains('navigation-bar--responsive')).toBe(
+      true
+    );
     expect(home.getAttribute('aria-current')).toBe('page');
     expect(library.hasAttribute('aria-current')).toBe(false);
 

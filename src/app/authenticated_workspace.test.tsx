@@ -1960,6 +1960,12 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('navigation', { name: '주요 화면' })
     ).not.toBeNull();
+    const navigations = screen.getAllByRole('navigation', {
+      name: '주요 화면',
+    });
+
+    expect(navigations).toHaveLength(1);
+    expect(navigations[0].closest('.workspace-header')).not.toBeNull();
     expect(screen.getByRole('heading', { name: '홈' })).not.toBeNull();
     expect(
       screen.getByRole('button', { name: '홈' }).getAttribute('aria-current')

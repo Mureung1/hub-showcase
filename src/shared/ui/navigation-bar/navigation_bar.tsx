@@ -19,16 +19,27 @@ export type NavigationBarProps<
   className?: string;
   items: TItems;
   onValueChange: (value: NoInfer<NavigationValue<TItems>>) => void;
+  responsive?: boolean;
   value: NoInfer<NavigationValue<TItems>>;
 };
 
 export function NavigationBar<
   const TItems extends readonly NavigationItem<string>[],
->({ className, items, onValueChange, value }: NavigationBarProps<TItems>) {
+>({
+  className,
+  items,
+  onValueChange,
+  responsive = false,
+  value,
+}: NavigationBarProps<TItems>) {
   return (
     <BottomNavigation
       aria-label="주요 화면"
-      className={clsx('navigation-bar', className)}
+      className={clsx(
+        'navigation-bar',
+        responsive && 'navigation-bar--responsive',
+        className
+      )}
       onValueChange={(nextValue) =>
         onValueChange(nextValue as NavigationValue<TItems>)
       }

@@ -34,9 +34,10 @@ export function AppNavigation({
 }) {
   return (
     <NavigationBar
-      className="app-navigation"
+      className={`app-navigation app-navigation--${tab}`}
       items={NAVIGATION_ITEMS}
       onValueChange={onTabChange}
+      responsive
       value={tab}
     />
   );

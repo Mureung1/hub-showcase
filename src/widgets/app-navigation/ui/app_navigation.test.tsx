@@ -36,6 +36,9 @@ describe('AppNavigation', () => {
       </DesignSystemProvider>
     );
 
+    const navigation = screen.getByRole('navigation', { name: '주요 화면' });
+
+    expect(navigation.classList.contains('app-navigation--home')).toBe(true);
     expect(screen.getByRole('button', { name: '보관함' })).not.toBeNull();
     expect(
       screen.getByRole('button', { name: '홈' }).getAttribute('aria-current')

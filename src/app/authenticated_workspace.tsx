@@ -468,17 +468,20 @@ export function AuthenticatedWorkspace({
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
-        <div className="workspace-brand">
-          <BrandLogo className="workspace-brand__mark" />
-          <span className="workspace-brand__name">아맞다</span>
-          <span aria-hidden="true" className="workspace-brand__divider" />
-          <h1>{getScreenTitle(activeTab)}</h1>
+        <div className="workspace-header__inner">
+          <div className="workspace-brand">
+            <BrandLogo className="workspace-brand__mark" />
+            <span className="workspace-brand__name">아맞다</span>
+            <span aria-hidden="true" className="workspace-brand__divider" />
+            <h1>{getScreenTitle(activeTab)}</h1>
+          </div>
+          <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
+          {accountControl ?? (
+            <p className="workspace-connection-status">
+              이 계정의 보관함에 저장해요
+            </p>
+          )}
         </div>
-        {accountControl ?? (
-          <p className="workspace-connection-status">
-            이 계정의 보관함에 저장해요
-          </p>
-        )}
       </header>
 
       <main className="workspace-main">
@@ -634,7 +637,6 @@ export function AuthenticatedWorkspace({
         open={categoryManagerOpen}
         updateCategory={updateCategory}
       />
-      <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
     </div>
   );
 }
