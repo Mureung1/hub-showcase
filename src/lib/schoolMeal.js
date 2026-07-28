@@ -2,11 +2,12 @@
 import { fetchWithTimeout } from './fetchWithTimeout.js'
 
 // 반환 항목 모양: { name, officeCode, officeName, schoolCode, kind }
-export async function searchSchools(name) {
+// signal: 디바운스 검색에서 이전 미완료 요청을 취소하기 위한 AbortSignal (선택).
+export async function searchSchools(name, signal) {
   const trimmed = (name || '').trim()
   if (trimmed.length < 2) return []
 
-  const res = await fetchWithTimeout(`/api/school-search?name=${encodeURIComponent(trimmed)}`)
+  const res = await fetchWithTimeout(`/api/school-search?name=${encodeURIComponent(trimmed)}`, { signal })
   const data = await res.json().catch(() => null)
 
   if (!res.ok) {

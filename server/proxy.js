@@ -775,6 +775,11 @@ app.get('/api/school-search', async (req, res) => {
     return res.status(400).json({ error: 'name은 2자 이상이어야 합니다' })
   }
 
+  // Express 기본 ETag가 붙으면 브라우저가 동일 검색어 재요청 시 304로 응답받는다 — 이 자체는
+  // 무해하지만(브라우저가 캐시된 본문을 그대로 반환), 검색 API는 항상 최신 응답만 다루도록
+  // 캐시 관여 자체를 끈다. 서버 메모리 캐시(당일 TTL)는 별개로 그대로 유지된다.
+  res.set('Cache-Control', 'no-store')
+
   try {
     const url = new URL(NEIS_SCHOOL_INFO_URL)
     url.searchParams.set('KEY', apiKey)

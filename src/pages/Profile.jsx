@@ -7,13 +7,13 @@ import CardSettingsPanel from '../components/CardSettingsPanel.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
 import DataBackupPanel from '../components/DataBackupPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
+import SchoolSearchField from '../components/SchoolSearchField.jsx'
 import StandardComparisonList from '../components/StandardComparisonList.jsx'
 import TagMultiSelect from '../components/TagMultiSelect.jsx'
 import TextField from '../components/TextField.jsx'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS } from '../lib/healthProfile.js'
 import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { OCCUPATION_OPTIONS } from '../lib/occupationKeywords.js'
-import { searchSchools } from '../lib/schoolMeal.js'
 import { getStandardIntake } from '../lib/standardIntake.js'
 import { SUPPORTED_UNIVERSITIES } from '../lib/universities.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -100,35 +100,9 @@ export default function Profile() {
   // 반쪽짜리 프로필 행이 생겨 온보딩 판정(!profile)이 꼬일 수 있어서다.
   const [selectedSchool, setSelectedSchool] = useState(profile?.school ?? null)
   const [schoolPickerKind, setSchoolPickerKind] = useState('k12')
-  const [schoolQuery, setSchoolQuery] = useState('')
-  const [schoolResults, setSchoolResults] = useState([])
-  const [schoolSearching, setSchoolSearching] = useState(false)
-  const [schoolSearchError, setSchoolSearchError] = useState('')
-
-  async function handleSchoolSearch() {
-    const q = schoolQuery.trim()
-    if (q.length < 2) {
-      setSchoolSearchError('학교명을 2자 이상 입력해주세요.')
-      return
-    }
-    setSchoolSearching(true)
-    setSchoolSearchError('')
-    try {
-      const schools = await searchSchools(q)
-      setSchoolResults(schools)
-      if (schools.length === 0) setSchoolSearchError('검색 결과가 없어요. 학교명을 다시 확인해주세요.')
-    } catch (err) {
-      setSchoolSearchError(err.message || '학교 검색에 실패했어요.')
-    } finally {
-      setSchoolSearching(false)
-    }
-  }
 
   function handleSelectK12School(school) {
     setSelectedSchool({ type: 'k12', officeCode: school.officeCode, code: school.schoolCode, name: school.name })
-    setSchoolResults([])
-    setSchoolQuery('')
-    setSchoolSearchError('')
   }
 
   function handleSelectUniversity(univ) {
@@ -353,55 +327,7 @@ export default function Profile() {
             </div>
 
             {schoolPickerKind === 'k12' ? (
-              <>
-                <div style={{ display: 'flex', gap: spacing.sm }}>
-                  <input
-                    type="text"
-                    value={schoolQuery}
-                    onChange={(e) => setSchoolQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleSchoolSearch()
-                      }
-                    }}
-                    placeholder="학교명 검색 (예: 양서고등학교)"
-                    style={{ ...styles.input, flex: 1 }}
-                  />
-                  <AppButton
-                    variant="secondary"
-                    onClick={handleSchoolSearch}
-                    disabled={schoolSearching}
-                    style={{ width: 'auto', padding: `0 ${spacing.lg}px` }}
-                  >
-                    {schoolSearching ? '검색 중...' : '검색'}
-                  </AppButton>
-                </div>
-                {schoolSearchError && <p style={styles.errorText}>{schoolSearchError}</p>}
-                {schoolResults.map((s) => (
-                  <button
-                    key={`${s.officeCode}-${s.schoolCode}`}
-                    type="button"
-                    className="tds-press"
-                    onClick={() => handleSelectK12School(s)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: spacing.md,
-                      marginTop: spacing.sm,
-                      borderRadius: radius.sm,
-                      border: `1px solid ${colors.border}`,
-                      background: '#fff',
-                      cursor: 'pointer',
-                      fontSize: font.size.sm,
-                      color: colors.textStrong,
-                    }}
-                  >
-                    {s.name} <span style={{ color: colors.textSub }}>· {s.officeName} · {s.kind}</span>
-                  </button>
-                ))}
-              </>
+              <SchoolSearchField onSelect={handleSelectK12School} />
             ) : (
               <div style={{ display: 'flex', gap: spacing.sm }}>
                 {SUPPORTED_UNIVERSITIES.map((u) => (
