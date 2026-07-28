@@ -8,6 +8,7 @@ import { useAuth, useMe } from "../features/auth";
 import { acceptInvitation, usePendingInvitations } from "../features/invitation";
 import { createStore, useStores } from "../features/store";
 import { ApiError } from "../shared/api";
+import { StatusNotice } from "../shared/components";
 import { ROUTES } from "../shared/routes";
 import { clearSelectedStoreId, getSelectedStoreId, setSelectedStoreId } from "../shared/utils";
 
@@ -162,10 +163,7 @@ export function StoreSelectPage() {
             <h1 id="profile-complete-title">프로필 완료</h1>
           </div>
 
-          <div className="empty-state">
-            <strong>프로필 생성이 필요합니다.</strong>
-            <span>{user?.email}</span>
-          </div>
+          <StatusNotice description={user?.email} title="프로필 생성이 필요합니다." variant="info" />
 
           <form className="auth-form store-form" onSubmit={onProfileSubmit}>
             <label>
@@ -293,10 +291,10 @@ export function StoreSelectPage() {
             ))}
           </div>
         ) : (
-          <div className="empty-state">
-            <strong>소속된 매장이 없습니다.</strong>
-            <span>사장님이라면 매장을 만들고, 알바생이라면 사장님의 초대를 받은 뒤 다시 확인해주세요.</span>
-          </div>
+          <StatusNotice
+            description="사장님이라면 매장을 만들고, 알바생이라면 사장님의 초대를 받은 뒤 다시 확인해주세요."
+            title="소속된 매장이 없습니다."
+          />
         )}
 
         <form className="auth-form store-form" onSubmit={onSubmit}>

@@ -1034,6 +1034,74 @@ p {
   font-size: 13px;
 }
 
+.status-notice {
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  min-height: 82px;
+}
+
+.status-notice-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-green-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.status-notice-icon::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-primary-deep);
+}
+
+.status-notice-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.status-notice-action {
+  margin-top: 7px;
+}
+
+.status-notice-loading .status-notice-icon::before {
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary-deep);
+  background: transparent;
+  animation: status-spin 0.9s linear infinite;
+}
+
+.status-notice-error {
+  border-color: #f2c8c3;
+  background: #fff6f4;
+}
+
+.status-notice-error .status-notice-icon {
+  border-color: #f2c8c3;
+}
+
+.status-notice-error .status-notice-icon::before {
+  background: #b42318;
+}
+
+.status-notice-info {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-soft);
+}
+
+@keyframes status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .schedule-message {
   margin-bottom: 16px;
 }

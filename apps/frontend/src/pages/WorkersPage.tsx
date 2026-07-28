@@ -7,6 +7,7 @@ import { useAuth, useMe } from "../features/auth";
 import { cancelInvitation, createInvitation } from "../features/invitation";
 import { updateWorker, useWorkers } from "../features/worker";
 import type { Worker } from "../features/worker";
+import { StatusNotice } from "../shared/components";
 import { getSelectedStoreId } from "../shared/utils";
 
 const optionalTimeSchema = z
@@ -238,9 +239,7 @@ export function WorkersPage() {
         <section className="page-panel">
           <p className="label">WORKERS</p>
           <h1>사장님만 접근할 수 있습니다.</h1>
-          <div className="empty-state">
-            <strong>알바생 초대와 정보 관리는 사장님 권한이 필요합니다.</strong>
-          </div>
+          <StatusNotice title="알바생 초대와 정보 관리는 사장님 권한이 필요합니다." variant="info" />
         </section>
       </main>
     );
@@ -308,15 +307,15 @@ export function WorkersPage() {
         </form>
 
         {workersQuery.isLoading ? (
-          <div className="empty-state">
-            <strong>알바생 목록을 불러오는 중입니다.</strong>
-          </div>
+          <StatusNotice title="알바생 목록을 불러오는 중입니다." variant="loading" />
         ) : null}
 
         {workersQuery.error ? (
-          <p className="form-error">
-            {workersQuery.error instanceof Error ? workersQuery.error.message : "알바생 목록을 불러오지 못했습니다."}
-          </p>
+          <StatusNotice
+            description={workersQuery.error instanceof Error ? workersQuery.error.message : "잠시 후 다시 시도해주세요."}
+            title="알바생 목록을 불러오지 못했습니다."
+            variant="error"
+          />
         ) : null}
 
         <section className="worker-section" aria-labelledby="worker-list-title">
@@ -337,10 +336,10 @@ export function WorkersPage() {
               ))}
             </div>
           ) : (
-            <div className="empty-state">
-              <strong>아직 소속된 알바생이 없습니다.</strong>
-              <span>이메일로 초대를 등록하면 알바생이 수락 후 매장에 소속됩니다.</span>
-            </div>
+            <StatusNotice
+              description="이메일로 초대를 등록하면 알바생이 수락 후 매장에 소속됩니다."
+              title="아직 소속된 알바생이 없습니다."
+            />
           )}
         </section>
 
@@ -371,9 +370,7 @@ export function WorkersPage() {
               ))}
             </div>
           ) : (
-            <div className="empty-state">
-              <strong>대기 중인 초대가 없습니다.</strong>
-            </div>
+            <StatusNotice title="대기 중인 초대가 없습니다." />
           )}
         </section>
       </section>

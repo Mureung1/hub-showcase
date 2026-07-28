@@ -9,6 +9,7 @@ import {
   useSubstituteRequests
 } from "../features/substitute";
 import { SubstituteRequestListItem } from "../features/substitute";
+import { StatusNotice } from "../shared/components";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
@@ -145,17 +146,21 @@ export function SubstituteRequestsPage() {
           </div>
 
           {isLoading ? (
-            <div className="empty-state schedule-message">
-              <strong>대타 요청 조회 중</strong>
-              <span>오늘 이후 공개 요청을 확인하고 있습니다.</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description="오늘 이후 공개 요청을 확인하고 있습니다."
+              title="대타 요청 조회 중"
+              variant="loading"
+            />
           ) : null}
 
           {error ? (
-            <div className="empty-state schedule-message">
-              <strong>대타 요청을 불러오지 못했습니다</strong>
-              <span>{error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description={error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}
+              title="대타 요청을 불러오지 못했습니다"
+              variant="error"
+            />
           ) : null}
 
           {applySubstituteRequestMutation.error ||
@@ -178,15 +183,17 @@ export function SubstituteRequestsPage() {
           ) : null}
 
           {!isLoading && !error && substituteRequests.length === 0 ? (
-            <div className="empty-state">
-              <strong>{emptyTitle}</strong>
-              <span>{emptyDescription}</span>
-              {isWorker ? (
-                <Link className="secondary-button inline-empty-link" to={ROUTES.newSubstituteRequest}>
-                  요청 등록
-                </Link>
-              ) : null}
-            </div>
+            <StatusNotice
+              action={
+                isWorker ? (
+                  <Link className="secondary-button inline-empty-link" to={ROUTES.newSubstituteRequest}>
+                    요청 등록
+                  </Link>
+                ) : null
+              }
+              description={emptyDescription}
+              title={emptyTitle}
+            />
           ) : null}
 
           {substituteRequests.length > 0 ? (
