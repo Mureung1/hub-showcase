@@ -4,9 +4,9 @@
   "summary": "오늘의 학습 계획 수립부터 맞춤 커리큘럼 추천, Monaco 에디터 실습, 코드 실행 피드백, Git Lab 명령 학습, 오답노트 관리까지 한 흐름으로 제공하는 AI 코딩 학습 플랫폼입니다.",
   "githubUser": "xxrin",
   "demoUrl": "https://github.com/xxriny/hub",
-  "thumbnail": "../screenshots/0_온보딩.PNG",
+  "thumbnail": "screenshot/00_온보딩.webp",
   "screenshots": [
-    "../screenshots/0_온보딩.PNG"
+    "screenshot/00_온보딩.webp"
   ],
   "problem": "개념 문서, 에디터, 실습 환경, 오답 관리가 여러 도구로 파편화되어 있어 초·중급 학습자가 공부 순서를 잡기 어렵고 연속성 있는 학습 흐름을 유지하기 힘듭니다.",
   "targetUsers": [
