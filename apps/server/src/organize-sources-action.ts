@@ -169,7 +169,7 @@ export function renderOrganizeSourcesActionText(
     'Selected SemesterWorkspace file references:',
     ...files.map(
       ({ relativePath }) =>
-        `- ${renderMarkdownFileReference(relativePath)}`,
+        `- ${renderCodexFileReference(relativePath)}`,
     ),
   ].join('\n')
   if (Buffer.byteLength(text) > actionTextMaxBytes) {
@@ -178,22 +178,24 @@ export function renderOrganizeSourcesActionText(
   return text
 }
 
-function renderMarkdownFileReference(relativePath: string): string {
+// Keep filesystem paths lossless using the same delimiter escaping as the
+// Codex Desktop composer instead of URI-encoding them.
+function renderCodexFileReference(relativePath: string): string {
   const label = path.posix.basename(relativePath)
   return (
-    `[${escapeMarkdownLinkLabel(label)}]` +
-    `(${escapeMarkdownLinkDestination(relativePath)})`
+    `[${escapeCodexFileReferenceLabel(label)}]` +
+    `(${escapeCodexFileReferencePath(relativePath)})`
   )
 }
 
-function escapeMarkdownLinkLabel(value: string): string {
+function escapeCodexFileReferenceLabel(value: string): string {
   return value
     .replaceAll('\\', '\\\\')
     .replaceAll('](', ']\\(')
     .replaceAll(']', '\\]')
 }
 
-function escapeMarkdownLinkDestination(value: string): string {
+function escapeCodexFileReferencePath(value: string): string {
   return value.replaceAll('\\', '\\\\').replaceAll(')', '\\)')
 }
 

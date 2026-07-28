@@ -22,7 +22,7 @@ import {
   type WorkspaceSourceProjection,
 } from './workspace-source-projection.js'
 
-test('organize_sources renderer preserves ordered Markdown file references without a trailing newline', () => {
+test('organize_sources renderer preserves ordered Codex file references without a trailing newline', () => {
   const text = renderOrganizeSourcesActionText([
     { relativePath: '자료/둘째 강의.pdf' },
     { relativePath: '자료/첫째 ](안내).md' },

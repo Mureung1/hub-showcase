@@ -117,7 +117,7 @@ Server의 typed `organize_sources` action definition은 하나의 Product operat
 | Module | 소유하는 책임 | 소유하지 않는 책임 |
 | --- | --- | --- |
 | `@ay-ple/product-contract` | Closed ActionInvocation request type·strict decoder와 file-ref cardinality·path·JSON bound | Absolute root, Skill path, native input, HTTP·NDJSON framing |
-| `apps/chat-shell` source workbench | Preview와 독립적인 text-source selection, selected count, explicit action control | File validity authority, Skill resolution, durable selection |
+| `apps/chat-shell` source workbench | Preview와 독립적인 safe regular-file selection, selected count, explicit action control | File validity authority, Skill resolution, durable selection |
 | `apps/chat-shell` product operation controller | Action request freeze, action transcript entry, existing stream reducer·Review·interrupt 사용 | Native thread identity, App workflow engine, result apply |
 | `apps/server` ActionInvocation Module | Closed action dispatch, active-root file resolver, expected Skill resolver, bounded text renderer와 permission policy | Skill workflow, selected file contents, actual file mutation·Git |
 | `apps/server` Product operation infrastructure | Chat·ActionInvocation의 one-at-a-time admission, account/settings, activity stream, disconnect·interrupt·terminal settlement | Action payload의 학업 의미, durable run |
@@ -200,7 +200,7 @@ Server-private `WorkspaceFileAccess` safe-open boundary는 selected ref마다 �
 3. Candidate를 `lstat`하고 symlink가 아닌 regular file인지 확인한다.
 4. `realpath`가 lexical candidate와 같고 exact root 안에 남는지 확인한다.
 5. `O_RDONLY | O_NOFOLLOW`로 열어 `fstat` device·inode가 pre-open identity와 같은지 확인한다.
-6. Current size와 extension을 existing source classifier에 적용해 `text`인지 확인한다.
+6. Open 전후 directory chain과 file identity·size가 그대로인지 다시 확인한다.
 7. Handle을 닫고 Browser 입력 순서의 relative ref만 반환한다.
 
 모든 ref가 통과한 뒤에만 initial action preflight가 성공한다. 일부만 남겨 Turn을 시작하거나 missing ref를 자동으로 목록에서 제거하지 않는다. `operation.preparing` 전달 뒤 dispatch gate는 effective Skill과 모든 ref를 다시 관찰하고 rendered input이 initial 결과와 같은지 확인한다. Resolver는 file bytes를 읽거나 digest·snapshot·open handle을 Turn 수명까지 보존하지 않는다.
@@ -210,7 +210,7 @@ Server-private `WorkspaceFileAccess` safe-open boundary는 selected ref마다 �
 - Browser preview digest를 request에 포함하지 않는다.
 - 같은 safe relative path의 bytes가 list/preview 뒤 바뀌어도 action은 현재 file을 읽는 요청으로 해석한다.
 - File content가 preflight 뒤 바뀌는 것은 App-owned stale snapshot failure가 아니다. AY와 Skill이 actual file을 읽고 Review 직전·apply 직전 drift를 다시 확인한다.
-- Initial 또는 dispatch gate가 관찰한 missing, symlink, root escape, hidden·secret-like·scaffold path, non-regular file 또는 current non-text classification은 Turn 전 failure다.
+- Initial 또는 dispatch gate가 관찰한 missing, symlink, root escape, hidden·secret-like·scaffold path 또는 non-regular file은 Turn 전 failure다.
 - Dispatch gate도 검증 handle을 닫고 relative path text만 전달하므로 그 뒤 AY의 actual read 전 pathname 교체를 같은 inode에 원자적으로 bind하지 않는다. 이는 current path-reference semantics에서 채택한 boundary이며 App이 보장하지 않는다. Exact-version 처리가 구체적인 제품 요구가 될 때만 별도 native same-open identity 또는 immutable carrier 결정을 다시 연다.
 
 이 구분은 old source snapshot/rebaseline state machine을 복원하지 않으면서 actual-file authority를 유지한다.
@@ -378,7 +378,7 @@ sequenceDiagram
     participant M as Interaction MCP
     participant W as SemesterWorkspace
 
-    U->>UI: Text 자료 checkbox 선택
+    U->>UI: 자료 checkbox 선택
     Note over UI,AY: Preview·selection만으로 Turn 없음
     U->>UI: 선택한 자료 정리하기
     UI->>A: organize_sources + relative refs
@@ -439,7 +439,7 @@ sequenceDiagram
   - Whole JSON envelope overflow
   - Chat decoder가 action·files field를 계속 거절함
 - Server source safety
-- Current safe regular file success, preview kind 독립성과 request order preservation
+  - Current safe regular file success, preview kind 독립성과 request order preservation
   - Missing, renamed, symlink, root escape, hidden/managed/secret/scaffold path
   - Directory, device와 open 전후 inode mismatch
   - PDF, unsupported와 preview limit 초과 file도 action preflight 성공

@@ -136,7 +136,7 @@
   - [x] `AY–App Interaction`, `ActionInvocation`과 AY-originated `InteractionCapability`를 구분하고 Skill·MCP를 양방향 제품 확장 protocol로 사용하는 ADR·아키텍처·Product Brief를 채택했다.
   - [x] Chat과 분리된 closed ActionInvocation contract를 만들고 unknown action, raw Skill/native input, absolute path와 implicit Chat material 결합을 거절한다. App action definition은 active SemesterWorkspace의 request-scoped file reference를 fresh 검증하고 expected workspace-local Skill을 effective catalog에서 resolve한다.
   - [x] `organize_sources`를 첫 action으로 연결한다. Source explorer에서 preview kind와 독립적인 safe regular-file multi-selection과 action control을 제공하되 preview·selection 자체는 Turn을 시작하지 않고, action 실행 시에만 선택을 동결해 기존 Product operation stream에 연결한다.
-  - [x] Capability-neutral Runtime 입력과 Python bridge가 official SDK의 exact `[SkillInput, TextInput]`을 전달하게 한다. Selected file은 basename label·workspace-relative destination의 Markdown reference로 렌더링하며, official Desktop·terminal source에서 generic local file이 user text로 전달되고 `MentionInput`이 app·plugin·Skill resource identity라는 경계를 확인했다. 기존 SDK patch stack은 늘리지 않는다.
+  - [x] Capability-neutral Runtime 입력과 Python bridge가 optional Skill과 current file-reference text를 전달하게 하고 기존 SDK patch stack은 늘리지 않았다. Exact native mapping과 `MentionInput` 경계는 [AY–App Interaction Layer](../architecture/ay-app-interaction-layer.md)가 소유한다.
   - [x] Action-started Turn이 기존 Interaction MCP·inline Review를 그대로 사용하고, AY가 actual workspace file mutation과 Git checkpoint를 소유하는 Browser E2E·deterministic Runtime·exact local-provider actual workspace trace를 닫는다. Durable `ModelingRun`, source registry·copy와 App-owned apply는 복원하지 않는다.
 
 - [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.
