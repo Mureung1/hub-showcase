@@ -1,5 +1,15 @@
 type Position = [number, number];
 
+export type StorefrontBuildingFootprint =
+  | {
+      type: "Polygon";
+      coordinates: Position[][];
+    }
+  | {
+      type: "MultiPolygon";
+      coordinates: Position[][][];
+    };
+
 type OverlayFeature = {
   properties?: {
     layer?: string;
@@ -12,7 +22,7 @@ type OverlayFeature = {
   };
 };
 
-type OverlayCollection = {
+export type OverlayCollection = {
   features?: OverlayFeature[];
 };
 
@@ -54,16 +64,36 @@ function isRing(value: unknown): value is Position[] {
   return Array.isArray(value) && value.every(isPosition);
 }
 
-function polygonRings(feature: OverlayFeature): Position[][] {
-  if (feature.geometry?.type === "Polygon" && Array.isArray(feature.geometry.coordinates)) {
-    return feature.geometry.coordinates.filter(isRing);
+function isPolygonCoordinates(value: unknown): value is Position[][] {
+  return Array.isArray(value) && value.length > 0 && value.every(isRing);
+}
+
+function isMultiPolygonCoordinates(value: unknown): value is Position[][][] {
+  return Array.isArray(value) && value.length > 0 && value.every(isPolygonCoordinates);
+}
+
+function buildingFootprint(feature: OverlayFeature): StorefrontBuildingFootprint | null {
+  if (
+    feature.geometry?.type === "Polygon" &&
+    isPolygonCoordinates(feature.geometry.coordinates)
+  ) {
+    return { type: "Polygon", coordinates: feature.geometry.coordinates };
   }
-  if (feature.geometry?.type === "MultiPolygon" && Array.isArray(feature.geometry.coordinates)) {
-    return feature.geometry.coordinates.flatMap((polygon) =>
-      Array.isArray(polygon) ? polygon.filter(isRing) : [],
-    );
+  if (
+    feature.geometry?.type === "MultiPolygon" &&
+    isMultiPolygonCoordinates(feature.geometry.coordinates)
+  ) {
+    return { type: "MultiPolygon", coordinates: feature.geometry.coordinates };
   }
-  return [];
+  return null;
+}
+
+function polygonOuterRings(feature: OverlayFeature): Position[][] {
+  const footprint = buildingFootprint(feature);
+  if (!footprint) return [];
+  return footprint.type === "Polygon"
+    ? footprint.coordinates.slice(0, 1)
+    : footprint.coordinates.flatMap((polygon) => polygon.slice(0, 1));
 }
 
 function pointInRing([longitude, latitude]: Position, ring: Position[]) {
@@ -144,15 +174,25 @@ function squarePlotSizeMeters(center: Position, ring: Position[]) {
   return null;
 }
 
+export function findBuildingFootprintById(
+  overlay: OverlayCollection,
+  buildingId: string,
+): StorefrontBuildingFootprint | null {
+  const feature = (overlay.features ?? []).find(
+    (candidate) =>
+      candidate.properties?.layer === "building" && candidate.properties.osm_id === buildingId,
+  );
+  return feature ? buildingFootprint(feature) : null;
+}
+
 export function findStorefrontBuilding(
   overlay: OverlayCollection,
   coordinate: Position,
 ): Omit<StorefrontBuildingPlacement, "storeCountInBuilding"> | null {
   for (const feature of overlay.features ?? []) {
     if (feature.properties?.layer !== "building" || !feature.properties.osm_id) continue;
-    const rings = polygonRings(feature);
-    const outerRing = rings[0];
-    if (!outerRing || !pointInRing(coordinate, outerRing)) continue;
+    const outerRing = polygonOuterRings(feature).find((ring) => pointInRing(coordinate, ring));
+    if (!outerRing) continue;
     const center = polygonCenter(outerRing, coordinate);
     const plotSizeMeters = squarePlotSizeMeters(center, outerRing);
     if (plotSizeMeters === null) continue;
