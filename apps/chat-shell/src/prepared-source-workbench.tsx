@@ -13,9 +13,10 @@ import {
   RefreshCw,
 } from 'lucide-react'
 
-import type {
-  ProductWorkspaceSource,
-  ProductWorkspaceTextPreview,
+import {
+  PRODUCT_ACTION_FILE_REF_MAX_ENTRIES,
+  type ProductWorkspaceSource,
+  type ProductWorkspaceTextPreview,
 } from '@ay-ple/product-contract'
 
 import {
@@ -84,8 +85,6 @@ export type PreparedSourceActionControls = {
   readonly selectionLocked: boolean
   readonly onInvoke: (relativePaths: readonly string[]) => void
 }
-
-export const preparedSourceActionLimit = 16
 
 export function usePreparedWorkspaceSources(
   enabled: boolean,
@@ -388,7 +387,10 @@ function SourceExplorer({
       ) : (
         <div className="source-groups">
           {groups.map((group) => (
-            <section className="source-group" key={group.directory}>
+            <section
+              className="source-group"
+              key={group.sources[0]?.relativePath ?? group.directory}
+            >
               <h2>
                 <FolderOpen size={13} />
                 {group.directory || '학기 루트'}
@@ -728,23 +730,22 @@ function groupSources(
   readonly directory: string
   readonly sources: readonly ProductWorkspaceSource[]
 }[] {
-  const grouped = new Map<string, ProductWorkspaceSource[]>()
+  const grouped: {
+    directory: string
+    sources: ProductWorkspaceSource[]
+  }[] = []
   for (const source of sources) {
     const slash = source.relativePath.lastIndexOf('/')
     const directory =
       slash < 0 ? '' : source.relativePath.slice(0, slash)
-    const current = grouped.get(directory) ?? []
-    current.push(source)
-    grouped.set(directory, current)
+    const current = grouped.at(-1)
+    if (current?.directory === directory) {
+      current.sources.push(source)
+    } else {
+      grouped.push({ directory, sources: [source] })
+    }
   }
-  return [...grouped.entries()]
-    .sort(([left], [right]) => left.localeCompare(right, 'ko'))
-    .map(([directory, group]) => ({
-      directory,
-      sources: [...group].sort((left, right) =>
-        left.relativePath.localeCompare(right.relativePath, 'ko'),
-      ),
-    }))
+  return grouped
 }
 
 export function reconcilePreparedActionPaths(
@@ -759,7 +760,7 @@ export function reconcilePreparedActionPaths(
         selected.has(source.relativePath),
     )
     .map((source) => source.relativePath)
-    .slice(0, preparedSourceActionLimit)
+    .slice(0, PRODUCT_ACTION_FILE_REF_MAX_ENTRIES)
 }
 
 export function togglePreparedActionPath(
@@ -772,7 +773,9 @@ export function togglePreparedActionPath(
   if (selected.has(relativePath)) {
     selected.delete(relativePath)
   } else {
-    if (selected.size >= preparedSourceActionLimit) return reconciled
+    if (selected.size >= PRODUCT_ACTION_FILE_REF_MAX_ENTRIES) {
+      return reconciled
+    }
     selected.add(relativePath)
   }
   return reconcilePreparedActionPaths([...selected], sources)
@@ -805,10 +808,13 @@ function actionSelectionDisabledReason(
     return 'AY 작업 중에는 선택을 바꿀 수 없습니다.'
   }
   if (
-    selectedActionPaths.length >= preparedSourceActionLimit &&
+    selectedActionPaths.length >= PRODUCT_ACTION_FILE_REF_MAX_ENTRIES &&
     !selectedActionPaths.includes(source.relativePath)
   ) {
-    return `자료는 최대 ${preparedSourceActionLimit}개까지 선택할 수 있습니다.`
+    return (
+      `자료는 최대 ${PRODUCT_ACTION_FILE_REF_MAX_ENTRIES}개까지 ` +
+      '선택할 수 있습니다.'
+    )
   }
   return undefined
 }

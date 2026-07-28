@@ -34,12 +34,18 @@ const safeInvalidResponse = 'AY 작업 흐름을 확인하지 못했습니다.'
 export class PreparedProductApiError extends Error {
   readonly code: string
   readonly displayMessage: string
+  readonly knownJsonResponse: boolean
 
-  constructor(code: string, displayMessage: string) {
+  constructor(
+    code: string,
+    displayMessage: string,
+    knownJsonResponse = false,
+  ) {
     super(displayMessage)
     this.name = 'PreparedProductApiError'
     this.code = code
     this.displayMessage = displayMessage
+    this.knownJsonResponse = knownJsonResponse
   }
 }
 
@@ -335,7 +341,11 @@ async function responseError(
 ): Promise<PreparedProductApiError> {
   try {
     const error = decodeShared(decodeProductError, await responseJson(response))
-    return new PreparedProductApiError(error.code, error.displayMessage)
+    return new PreparedProductApiError(
+      error.code,
+      error.displayMessage,
+      true,
+    )
   } catch {
     return invalidResponse()
   }

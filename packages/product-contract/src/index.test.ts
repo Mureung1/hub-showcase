@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import * as productContract from '@ay-ple/product-contract'
 import {
+  PRODUCT_ACTION_FILE_REF_MAX_ENTRIES,
   PRODUCT_WORKSPACE_SOURCE_RELATIVE_PATH_MAX_BYTES,
   ProductContractError,
   decodeProductInteractionAnswerRequest,
@@ -14,6 +15,7 @@ import {
 
 test('package root exposes only the target Browser-safe contract', () => {
   assert.deepEqual(Object.keys(productContract).sort(), [
+    'PRODUCT_ACTION_FILE_REF_MAX_ENTRIES',
     'PRODUCT_JSON_ENVELOPE_MAX_BYTES',
     'PRODUCT_REVIEW_EVIDENCE_MAX_BYTES',
     'PRODUCT_REVIEW_REQUESTED_FRAME_MAX_BYTES',
@@ -43,6 +45,10 @@ test('package root exposes only the target Browser-safe contract', () => {
     'isProductOperationId',
     'isProductQuestionId',
   ])
+})
+
+test('target ActionInvocation publishes its maximum file-reference count', () => {
+  assert.equal(PRODUCT_ACTION_FILE_REF_MAX_ENTRIES, 16)
 })
 
 test('target Chat request excludes academic material selection', () => {
@@ -92,9 +98,12 @@ test('target ActionInvocation decodes one ordered workspace file reference', () 
 test('target ActionInvocation preserves sixteen references and optional Turn settings', () => {
   const request = {
     action: 'organize_sources',
-    files: Array.from({ length: 16 }, (_, index) => ({
-      relativePath: `자료/${String(index + 1).padStart(2, '0')}.md`,
-    })),
+    files: Array.from(
+      { length: PRODUCT_ACTION_FILE_REF_MAX_ENTRIES },
+      (_, index) => ({
+        relativePath: `자료/${String(index + 1).padStart(2, '0')}.md`,
+      }),
+    ),
     codexSettings: {
       model: 'gpt-5.4',
       reasoningEffort: 'medium',
@@ -121,9 +130,12 @@ test('target ActionInvocation rejects open, duplicate, unsafe, and oversized inp
     { action: 'organize_sources', files: [file, file] },
     {
       action: 'organize_sources',
-      files: Array.from({ length: 17 }, (_, index) => ({
-        relativePath: `자료/${index}.md`,
-      })),
+      files: Array.from(
+        { length: PRODUCT_ACTION_FILE_REF_MAX_ENTRIES + 1 },
+        (_, index) => ({
+          relativePath: `자료/${index}.md`,
+        }),
+      ),
     },
     { action: 'organize_sources', files: [{ relativePath: '/자료.md' }] },
     { action: 'organize_sources', files: [{ relativePath: '../자료.md' }] },

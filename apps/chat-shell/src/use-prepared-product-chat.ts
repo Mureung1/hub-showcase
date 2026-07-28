@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type {
-  BrowserSafeSemanticReview,
-  ProductAccountReadiness,
-  ProductCodexModel,
-  ProductCodexTurnSettings,
-  ProductReviewResult,
-  TargetProductQuestion,
-  TargetProductBootstrap,
+import {
+  PRODUCT_ACTION_FILE_REF_MAX_ENTRIES,
+  type BrowserSafeSemanticReview,
+  type ProductAccountReadiness,
+  type ProductCodexModel,
+  type ProductCodexTurnSettings,
+  type ProductReviewResult,
+  type TargetProductQuestion,
+  type TargetProductBootstrap,
 } from '@ay-ple/product-contract'
 
 import {
@@ -226,7 +227,7 @@ export function usePreparedProductChat(options: {
     if (
       !canStartOperation ||
       relativePaths.length === 0 ||
-      relativePaths.length > 16
+      relativePaths.length > PRODUCT_ACTION_FILE_REF_MAX_ENTRIES
     ) {
       return
     }
@@ -290,8 +291,15 @@ export function usePreparedProductChat(options: {
         error instanceof PreparedProductApiError
           ? error.displayMessage
           : 'AY 작업 흐름을 계속하지 못했습니다.'
+      const outcome =
+        error instanceof PreparedProductApiError &&
+        error.knownJsonResponse &&
+        !stateRef.current.accepted &&
+        stateRef.current.operationId === undefined
+          ? 'not_accepted'
+          : 'unknown'
       transition((current) =>
-        reducePreparedProductFailure(current, message),
+        reducePreparedProductFailure(current, message, outcome),
       )
     } finally {
       if (operation.current === controller) operation.current = undefined
@@ -627,6 +635,7 @@ export function reducePreparedProductFrame(
 export function reducePreparedProductFailure(
   state: PreparedChatState,
   message: string,
+  outcome: 'not_accepted' | 'unknown' = 'unknown',
 ): PreparedChatState {
   const settled = settleUnresolvedInteractions(
     state,
@@ -634,7 +643,7 @@ export function reducePreparedProductFailure(
   )
   return {
     ...settled,
-    phase: 'unknown',
+    phase: outcome === 'not_accepted' ? 'failed' : 'unknown',
     terminal: true,
     semanticReview: undefined,
     clarification: undefined,
@@ -658,8 +667,8 @@ function reducePreparedProductTerminal(
   return {
     ...settled,
     phase:
-      status === 'not_accepted' || status === 'unknown'
-        ? 'unknown'
+      status === 'not_accepted'
+        ? 'failed'
         : status,
     terminal: true,
     semanticReview: undefined,

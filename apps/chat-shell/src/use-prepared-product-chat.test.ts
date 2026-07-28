@@ -41,6 +41,39 @@ test('unblocks prepared Chat after Codex settings load or fail', () => {
   assert.equal(isCodexSettingsSettled('failed'), true)
 })
 
+test('distinguishes definite not-accepted failures from transport ambiguity', () => {
+  const starting = {
+    phase: 'running',
+    transcript: [],
+    accepted: false,
+    terminal: false,
+  } satisfies PreparedChatState
+
+  const preflightRejected = reducePreparedProductFailure(
+    starting,
+    '요청을 시작하지 못했습니다.',
+    'not_accepted',
+  )
+  const transportFailed = reducePreparedProductFailure(
+    starting,
+    '응답을 확인하지 못했습니다.',
+  )
+  const preparing = reducePreparedProductFrame(starting, {
+    type: 'operation.preparing',
+    operationId: 'operation_0123456789abcdef0123456789abcdef',
+  })
+  const streamedNotAccepted = reducePreparedProductFrame(preparing, {
+    type: 'operation.terminal',
+    operationId: 'operation_0123456789abcdef0123456789abcdef',
+    status: 'not_accepted',
+  })
+
+  assert.equal(preflightRejected.phase, 'failed')
+  assert.equal(preflightRejected.terminal, true)
+  assert.equal(transportFailed.phase, 'unknown')
+  assert.equal(streamedNotAccepted.phase, 'failed')
+})
+
 test('settles a published semantic Review when the stream transport fails', () => {
   const requested = requestReview(activeChatState())
 

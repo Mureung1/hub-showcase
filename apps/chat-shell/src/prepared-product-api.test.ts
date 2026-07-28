@@ -132,6 +132,39 @@ test('prepared Browser sends one exact organize_sources action through the share
   }
 })
 
+test('prepared Browser marks a valid JSON action rejection as a known response', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    for (const status of [400, 409]) {
+      globalThis.fetch = async () =>
+        new Response(
+          JSON.stringify({
+            code: 'action_context_stale',
+            displayMessage:
+              '선택한 자료가 변경되었습니다. 자료를 다시 확인해 주세요.',
+          }),
+          {
+            status,
+            headers: { 'content-type': 'application/json' },
+          },
+        )
+      await assert.rejects(
+        streamPreparedAction(
+          { files: [{ relativePath: 'assignment.txt' }] },
+          () => undefined,
+        ),
+        (error: unknown) => {
+          assert.ok(error instanceof PreparedProductApiError)
+          assert.equal(error.knownJsonResponse, true)
+          return true
+        },
+      )
+    }
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('prepared Browser decodes the read-only SemesterWorkspace source projection', async () => {
   const originalFetch = globalThis.fetch
   const requested: string[] = []

@@ -778,6 +778,13 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
         '선택한 자료가 변경되었습니다. 자료를 다시 확인해 주세요.',
       ),
     ).toBeVisible()
+    await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
+      'data-product-operation-phase',
+      'failed',
+    )
+    await expect(page.locator('[data-product-operation-phase]')).toHaveText(
+      '실패',
+    )
     expect(actionRequestCount).toBe(2)
     expect(runtime.productInputs).toHaveLength(1)
     await expect(assignmentSelection).toBeChecked()

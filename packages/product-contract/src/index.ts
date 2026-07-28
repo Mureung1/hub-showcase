@@ -49,6 +49,7 @@ export type {
 } from './semantic-review.js'
 
 export {
+  PRODUCT_ACTION_FILE_REF_MAX_ENTRIES,
   decodeTargetProductActionInvocationRequest,
   decodeTargetProductChatRequest,
 } from './target-request.js'

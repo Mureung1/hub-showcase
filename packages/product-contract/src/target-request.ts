@@ -10,6 +10,8 @@ import {
 } from './codex-settings.js'
 import { isProductWorkspaceRelativePath } from './workspace-sources.js'
 
+export const PRODUCT_ACTION_FILE_REF_MAX_ENTRIES = 16
+
 export type TargetProductChatRequest = {
   readonly text: string
   readonly codexSettings?: ProductCodexTurnSettings
@@ -40,7 +42,7 @@ export function decodeTargetProductActionInvocationRequest(
     value.action !== 'organize_sources' ||
     !Array.isArray(value.files) ||
     value.files.length < 1 ||
-    value.files.length > 16 ||
+    value.files.length > PRODUCT_ACTION_FILE_REF_MAX_ENTRIES ||
     !value.files.every(
       (file) =>
         isExactObject(file, ['relativePath']) &&
