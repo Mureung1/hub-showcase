@@ -1,3 +1,4 @@
+import type { FilterSpecification } from "maplibre-gl";
 import {
   BedDouble,
   ChevronRight,
@@ -26,23 +27,25 @@ import {
   BASE_MAP_STYLE_URL,
   hideExternalBuildingLayers,
 } from "./baseMap";
+import {
+  outsideSelectedMarketFilter,
+  useMarketBoundaryGeometry,
+} from "./marketBoundaryGeometry";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
 import { groupStoreMarkers, STORE_MARKER_DETAIL_ZOOM } from "./storeMarkerLod";
 import "./storeMarkerLod.css";
 import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
-import type { MapBounds } from "./supportedRegions";
+import { findReadyOverlayRegion, type MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
-import {
-  replacementBuildingBaseExpression,
-  replacementBuildingHeightExpression,
-} from "./storefronts/replacementBuildingFilter";
 import {
   buildSupplementalStorefronts,
   selectSupplementalStorefrontCandidates,
 } from "./storefronts/supplementalStorefrontPlacement";
 import { useStorefrontBuildingPlacements } from "./storefronts/useStorefrontBuildingPlacement";
+
+const DENSITY_MARKER_MIN_ZOOM = 15.7;
 
 const StorefrontBuildingLayers = lazy(() =>
   import("./storefronts/StorefrontBuildingLayers").then((module) => ({
@@ -252,6 +255,18 @@ export function MarketMapCanvas({
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
   const profile = getMapPresentationProfile(presentationMode);
+  const marketBoundaryGeometry = useMarketBoundaryGeometry(marketId);
+  const activeOverlayRegion = useMemo(
+    () => findReadyOverlayRegion(market.center),
+    [market.center],
+  );
+  const baseBuildingFilter = useMemo<FilterSpecification>(
+    () =>
+      profile.localTwinOverlayVisible
+        ? outsideSelectedMarketFilter(marketBoundaryGeometry)
+        : (["all"] as FilterSpecification),
+    [marketBoundaryGeometry, profile.localTwinOverlayVisible],
+  );
   const primaryStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
   const primaryBuildingIds = useMemo(
     () =>
@@ -340,15 +355,8 @@ export function MarketMapCanvas({
       ),
     [markerStores, profile.storefrontsVisible, selected?.name, zoom],
   );
-  const baseBuildingBase = useMemo(
-    () => replacementBuildingBaseExpression(readyReplacementStorefronts),
-    [readyReplacementStorefronts],
-  );
-  const baseBuildingHeight = useMemo(
-    () => replacementBuildingHeightExpression(readyReplacementStorefronts),
-    [readyReplacementStorefronts],
-  );
-
+  const densityMarkersVisible =
+    presentationMode !== "analysis" || layer !== "density" || zoom >= DENSITY_MARKER_MIN_ZOOM;
   const hiddenOverlayBuildingIds = readyReplacementStorefronts.flatMap((store) =>
     store.building ? [store.building.id] : [],
   );
@@ -391,18 +399,22 @@ export function MarketMapCanvas({
           source-layer="building"
           minzoom={14}
           beforeId="boundary_3"
+          filter={baseBuildingFilter}
           layout={{ visibility: baseBuildingsRendered ? "visible" : "none" }}
           paint={{
-            "fill-extrusion-base": baseBuildingBase,
+            "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
             "fill-extrusion-color": "hsl(35, 8%, 85%)",
-            "fill-extrusion-height": baseBuildingHeight,
+            "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
             "fill-extrusion-opacity": 0.8,
             "fill-extrusion-vertical-gradient": true,
           }}
         />
         {profile.localTwinOverlayVisible && (
           <SupportedRegionOverlays
-            buildingsVisible={profile.coloredBuildingsVisible}
+            region={activeOverlayRegion}
+            buildingsVisible={profile.selectedMarketBuildingsVisible}
+            buildingAppearance={presentationMode === "storefront3d" ? "storefront3d" : "analysis"}
+            marketBoundaryGeometry={marketBoundaryGeometry}
             hiddenBuildingIds={hiddenOverlayBuildingIds}
           />
         )}
@@ -452,6 +464,7 @@ export function MarketMapCanvas({
             </Marker>
           ))}
         {storesVisible &&
+          densityMarkersVisible &&
           markerGroups.map(({ store, count }) => (
             <StoreMarker
               key={`${store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}:${count}`}
