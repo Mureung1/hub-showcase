@@ -294,65 +294,27 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
 })
 
 test('public organize_sources starts one Skill-backed Product operation with ordered current files', async () => {
-  const workspaceRoot = await realpath(
-    await mkdtemp(path.join(tmpdir(), 'prepared-organize-sources-')),
+  const fixture = await createOrganizeSourcesServerFixture(
+    'prepared-organize-sources-',
   )
-  const runtime = new PreparedRuntime()
-  const skillRoot = path.join(
+  const {
+    baseUrl,
+    runtime,
+    skillRoot,
+    target,
     workspaceRoot,
-    '.agents',
-    'skills',
-    'ay-ple-first-assignment',
-  )
-  await mkdir(skillRoot, { recursive: true })
+  } = fixture
   await mkdir(path.join(workspaceRoot, '자료'), { recursive: true })
-  await writeFile(path.join(skillRoot, 'SKILL.md'), '# First Assignment')
   await writeFile(path.join(workspaceRoot, '자료', '둘째.txt'), '둘')
   await writeFile(
     path.join(workspaceRoot, '자료', '첫째 "안내".md'),
     '하나',
   )
-  runtime.effectiveSkills = [
-    {
-      name: 'ay-ple-first-assignment',
-      enabled: true,
-      sourceRoot: skillRoot,
-    },
-  ]
   runtime.requestGeneralInput = true
-  const target = await createPreparedServerApplication({
-    codexChat: {
-      ...codexChatIdentity,
-      createRuntime: async () => runtime,
-      acquireProductThread: async (actualRuntime) =>
-        (await actualRuntime.startThread()).threadId,
-    },
-    workspaceRoot,
-    readLifecycle: () => ({
-      state: 'active',
-      workspace: {
-        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
-        semester: {
-          yearLevel: 2,
-          term: { key: 'fall', displayName: '2학기' },
-        },
-        label: '2학년 2학기',
-      },
-    }),
-  })
-  let listener:
-    | Awaited<ReturnType<typeof bindServerApplicationListener>>
-    | undefined
   let lifecycleReader:
     | ReadableStreamDefaultReader<Uint8Array>
     | undefined
   try {
-    listener = await bindServerApplicationListener({
-      host: '127.0.0.1',
-      port: 0,
-      requestHandler: target.application.app,
-    })
-    const baseUrl = `http://127.0.0.1:${listener.port}`
     const response = await postJson(
       `${baseUrl}/api/product/actions`,
       {
@@ -524,66 +486,20 @@ test('public organize_sources starts one Skill-backed Product operation with ord
     await waitForIdleProductOperation(baseUrl)
     assert.equal(runtime.listEffectiveSkillsCalls, 2)
   } finally {
-    await target.application.close()
+    await fixture.close()
     assert.equal((await lifecycleReader?.read())?.done, true)
-    await listener?.close({ signal: new AbortController().signal })
-    await rm(workspaceRoot, { force: true, recursive: true })
   }
 })
 
 test('public organize_sources fails before streaming or Turn start with exact safe errors', async () => {
-  const workspaceRoot = await realpath(
-    await mkdtemp(path.join(tmpdir(), 'prepared-organize-failures-')),
+  const fixture = await createOrganizeSourcesServerFixture(
+    'prepared-organize-failures-',
   )
-  const runtime = new PreparedRuntime()
-  const skillRoot = path.join(
-    workspaceRoot,
-    '.agents',
-    'skills',
-    'ay-ple-first-assignment',
-  )
+  const { baseUrl, runtime, skillRoot, workspaceRoot } = fixture
   const skillPath = path.join(skillRoot, 'SKILL.md')
-  await mkdir(skillRoot, { recursive: true })
-  await writeFile(skillPath, '# First Assignment')
-  await writeFile(path.join(workspaceRoot, 'valid.md'), 'valid')
   await writeFile(path.join(workspaceRoot, 'lecture.pdf'), '%PDF-')
-  runtime.effectiveSkills = [
-    {
-      name: 'ay-ple-first-assignment',
-      enabled: true,
-      sourceRoot: skillRoot,
-    },
-  ]
-  const target = await createPreparedServerApplication({
-    codexChat: {
-      ...codexChatIdentity,
-      createRuntime: async () => runtime,
-      acquireProductThread: async (actualRuntime) =>
-        (await actualRuntime.startThread()).threadId,
-    },
-    workspaceRoot,
-    readLifecycle: () => ({
-      state: 'active',
-      workspace: {
-        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
-        semester: {
-          yearLevel: 2,
-          term: { key: 'fall', displayName: '2학기' },
-        },
-        label: '2학년 2학기',
-      },
-    }),
-  })
-  let listener:
-    | Awaited<ReturnType<typeof bindServerApplicationListener>>
-    | undefined
   try {
-    listener = await bindServerApplicationListener({
-      host: '127.0.0.1',
-      port: 0,
-      requestHandler: target.application.app,
-    })
-    const url = `http://127.0.0.1:${listener.port}/api/product/actions`
+    const url = `${baseUrl}/api/product/actions`
     const request = (relativePath = 'valid.md') => ({
       action: 'organize_sources',
       files: [{ relativePath }],
@@ -701,63 +617,16 @@ test('public organize_sources fails before streaming or Turn start with exact sa
     )
     assert.deepEqual(runtime.productInputs, [])
   } finally {
-    await target.application.close()
-    await listener?.close({ signal: new AbortController().signal })
-    await rm(workspaceRoot, { force: true, recursive: true })
+    await fixture.close()
   }
 })
 
 test('organize_sources preflight rechecks disconnect and aborts on shutdown before Turn start', async () => {
-  const workspaceRoot = await realpath(
-    await mkdtemp(path.join(tmpdir(), 'prepared-organize-continuity-')),
+  const fixture = await createOrganizeSourcesServerFixture(
+    'prepared-organize-continuity-',
   )
-  const runtime = new PreparedRuntime()
-  const skillRoot = path.join(
-    workspaceRoot,
-    '.agents',
-    'skills',
-    'ay-ple-first-assignment',
-  )
-  await mkdir(skillRoot, { recursive: true })
-  await writeFile(path.join(skillRoot, 'SKILL.md'), '# First Assignment')
-  await writeFile(path.join(workspaceRoot, 'valid.md'), 'valid')
-  runtime.effectiveSkills = [
-    {
-      name: 'ay-ple-first-assignment',
-      enabled: true,
-      sourceRoot: skillRoot,
-    },
-  ]
-  const target = await createPreparedServerApplication({
-    codexChat: {
-      ...codexChatIdentity,
-      createRuntime: async () => runtime,
-      acquireProductThread: async (actualRuntime) =>
-        (await actualRuntime.startThread()).threadId,
-    },
-    workspaceRoot,
-    readLifecycle: () => ({
-      state: 'active',
-      workspace: {
-        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
-        semester: {
-          yearLevel: 2,
-          term: { key: 'fall', displayName: '2학기' },
-        },
-        label: '2학년 2학기',
-      },
-    }),
-  })
-  let listener:
-    | Awaited<ReturnType<typeof bindServerApplicationListener>>
-    | undefined
+  const { baseUrl, runtime, target } = fixture
   try {
-    listener = await bindServerApplicationListener({
-      host: '127.0.0.1',
-      port: 0,
-      requestHandler: target.application.app,
-    })
-    const baseUrl = `http://127.0.0.1:${listener.port}`
     const actionUrl = `${baseUrl}/api/product/actions`
     const body = JSON.stringify({
       action: 'organize_sources',
@@ -807,9 +676,7 @@ test('organize_sources preflight rechecks disconnect and aborts on shutdown befo
     })
     assert.deepEqual(runtime.productInputs, [])
   } finally {
-    await target.appShutdown()
-    await listener?.close({ signal: new AbortController().signal })
-    await rm(workspaceRoot, { force: true, recursive: true })
+    await fixture.close()
   }
 })
 
@@ -1177,6 +1044,95 @@ test('Codex settings fail closed without starting Runtime while the workspace is
     await rm(workspaceRoot, { force: true, recursive: true })
   }
 })
+
+async function createOrganizeSourcesServerFixture(prefix: string) {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), prefix)),
+  )
+  const runtime = new PreparedRuntime()
+  const skillRoot = path.join(
+    workspaceRoot,
+    '.agents',
+    'skills',
+    'ay-ple-first-assignment',
+  )
+  await mkdir(skillRoot, { recursive: true })
+  await writeFile(path.join(skillRoot, 'SKILL.md'), '# First Assignment')
+  await writeFile(path.join(workspaceRoot, 'valid.md'), 'valid')
+  runtime.effectiveSkills = [
+    {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot: skillRoot,
+    },
+  ]
+
+  let target:
+    | Awaited<ReturnType<typeof createPreparedServerApplication>>
+    | undefined
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  try {
+    target = await createPreparedServerApplication({
+      codexChat: {
+        ...codexChatIdentity,
+        createRuntime: async () => runtime,
+        acquireProductThread: async (actualRuntime) =>
+          (await actualRuntime.startThread()).threadId,
+      },
+      workspaceRoot,
+      readLifecycle: () => ({
+        state: 'active',
+        workspace: {
+          workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+          semester: {
+            yearLevel: 2,
+            term: { key: 'fall', displayName: '2학기' },
+          },
+          label: '2학년 2학기',
+        },
+      }),
+    })
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+  } catch (error) {
+    await target?.appShutdown().catch(() => undefined)
+    await listener
+      ?.close({ signal: new AbortController().signal })
+      .catch(() => undefined)
+    await rm(workspaceRoot, { force: true, recursive: true })
+    throw error
+  }
+
+  let closePromise: Promise<void> | undefined
+  return {
+    baseUrl: `http://127.0.0.1:${listener.port}`,
+    runtime,
+    skillRoot,
+    target,
+    workspaceRoot,
+    close() {
+      closePromise ??= (async () => {
+        try {
+          await target.appShutdown()
+        } finally {
+          try {
+            await listener.close({
+              signal: new AbortController().signal,
+            })
+          } finally {
+            await rm(workspaceRoot, { force: true, recursive: true })
+          }
+        }
+      })()
+      return closePromise
+    },
+  }
+}
 
 class PreparedRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
