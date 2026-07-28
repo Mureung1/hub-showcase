@@ -220,9 +220,12 @@ const Reservations = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredReservations.map((res) => (
-              <div key={res.id} className="border border-gray-200 rounded-lg p-3">
+              <div
+                key={res.id}
+                className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-semibold text-gray-900">{res.customerName}</p>

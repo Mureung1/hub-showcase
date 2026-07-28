@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { toast } from 'sonner'
 import type { Store } from '@/types/schema'
+import Icon from '@/components/ui/Icon'
 
 const StoreSettings = () => {
   const { user } = useAuthState()
@@ -95,23 +96,31 @@ const StoreSettings = () => {
   const categoryLabel = CATEGORIES.find((c) => c.value === storeCategory)?.label || storeCategory
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <header className="mb-6">
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-7 border-b border-slate-300 pb-6">
         <h1 className="text-2xl font-bold text-gray-900">내 정보</h1>
         <p className="text-sm text-gray-500 mt-1">가게 정보를 확인하고 수정합니다</p>
       </header>
 
       {/* 현재 설정 요약 (상단) */}
-      <section className="bg-white rounded-xl p-4 shadow-sm mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">현재 설정</h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-500">가게 이름</span>
-            <span className="text-gray-900 font-medium">{storeName || '-'}</span>
+      <section className="mb-6 rounded-xl border border-slate-300 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+            <Icon name="dashboard" className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">현재 설정</h2>
+            <p className="mt-1 text-sm text-slate-500">현재 매장에 적용된 기본 정보를 확인하세요.</p>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">업종</span>
-            <span className="text-gray-900 font-medium">{categoryLabel}</span>
+        </div>
+        <div className="mt-5 grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-2">
+          <div className="rounded-lg bg-slate-50 px-4 py-3">
+            <p className="text-xs font-medium text-slate-500">가게 이름</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{storeName || '-'}</p>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-4 py-3">
+            <p className="text-xs font-medium text-slate-500">업종</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{categoryLabel}</p>
           </div>
         </div>
       </section>
