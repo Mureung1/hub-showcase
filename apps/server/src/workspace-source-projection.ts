@@ -71,6 +71,11 @@ type WorkspaceSourceProjectionLimits = {
   readonly pdfMaxBytes: number
 }
 
+type WorkspaceRootIdentity = {
+  readonly device: number
+  readonly inode: number
+}
+
 export class WorkspaceSourceProjectionError extends Error {
   constructor(
     readonly code: WorkspaceSourceProjectionErrorCode,
@@ -97,6 +102,7 @@ export async function createWorkspaceSourceProjection(options: {
   readonly limits?: Partial<WorkspaceSourceProjectionLimits>
 }): Promise<WorkspaceSourceProjection> {
   const workspaceRoot = await canonicalDirectory(options.workspaceRoot)
+  const workspaceRootIdentity = await readWorkspaceRootIdentity(workspaceRoot)
   const limits: WorkspaceSourceProjectionLimits = {
     listMaxEntries:
       options.limits?.listMaxEntries ??
@@ -113,6 +119,10 @@ export async function createWorkspaceSourceProjection(options: {
 
   return {
     async list() {
+      await assertWorkspaceRootIdentity(
+        workspaceRoot,
+        workspaceRootIdentity,
+      )
       const sources: Array<{
         relativePath: string
         size: number
@@ -173,6 +183,10 @@ export async function createWorkspaceSourceProjection(options: {
       }
 
       await walk(workspaceRoot, [], 0)
+      await assertWorkspaceRootIdentity(
+        workspaceRoot,
+        workspaceRootIdentity,
+      )
       sources.sort((left, right) =>
         compareCodeUnits(left.relativePath, right.relativePath),
       )
@@ -190,6 +204,7 @@ export async function createWorkspaceSourceProjection(options: {
       }
       const bytes = await readBoundedRegularFile(
         workspaceRoot,
+        workspaceRootIdentity,
         normalized,
         limits.textSourceMaxBytes,
       )
@@ -214,6 +229,7 @@ export async function createWorkspaceSourceProjection(options: {
       }
       const bytes = await readBoundedRegularFile(
         workspaceRoot,
+        workspaceRootIdentity,
         normalized,
         limits.pdfMaxBytes,
       )
@@ -234,15 +250,29 @@ export async function createWorkspaceSourceProjection(options: {
 
 async function readBoundedRegularFile(
   workspaceRoot: string,
+  workspaceRootIdentity: WorkspaceRootIdentity,
   relativePath: string,
   maximumBytes: number,
 ): Promise<Buffer> {
+  await assertWorkspaceRootIdentity(
+    workspaceRoot,
+    workspaceRootIdentity,
+  )
   const candidate = path.resolve(workspaceRoot, ...relativePath.split('/'))
   const stats = await safeLstat(candidate)
   if (!stats || stats.isSymbolicLink() || !stats.isFile()) {
     throw new WorkspaceSourceProjectionError('source_not_found')
   }
-  if (!(await isCanonicalPathWithinRoot(candidate, workspaceRoot))) {
+  let canonicalCandidate: string
+  try {
+    canonicalCandidate = await realpath(candidate)
+  } catch {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  if (
+    canonicalCandidate !== candidate ||
+    !isPathWithinRoot(canonicalCandidate, workspaceRoot)
+  ) {
     throw new WorkspaceSourceProjectionError('source_not_found')
   }
   if (stats.size > maximumBytes) {
@@ -260,7 +290,11 @@ async function readBoundedRegularFile(
   }
   try {
     const openedStats = await handle.stat()
-    if (!openedStats.isFile()) {
+    if (
+      !openedStats.isFile() ||
+      openedStats.dev !== stats.dev ||
+      openedStats.ino !== stats.ino
+    ) {
       throw new WorkspaceSourceProjectionError('source_not_found')
     }
     if (openedStats.size > maximumBytes) {
@@ -270,6 +304,10 @@ async function readBoundedRegularFile(
     if (bytes.byteLength > maximumBytes) {
       throw new WorkspaceSourceProjectionError('source_too_large')
     }
+    await assertWorkspaceRootIdentity(
+      workspaceRoot,
+      workspaceRootIdentity,
+    )
     return bytes
   } catch (error) {
     if (error instanceof WorkspaceSourceProjectionError) throw error
@@ -400,12 +438,56 @@ async function isCanonicalPathWithinRoot(
 ): Promise<boolean> {
   try {
     const canonical = await realpath(candidate)
-    return (
-      canonical !== workspaceRoot &&
-      canonical.startsWith(`${workspaceRoot}${path.sep}`)
-    )
+    return isPathWithinRoot(canonical, workspaceRoot)
   } catch {
     return false
+  }
+}
+
+function isPathWithinRoot(candidate: string, workspaceRoot: string): boolean {
+  return (
+    candidate !== workspaceRoot &&
+    candidate.startsWith(`${workspaceRoot}${path.sep}`)
+  )
+}
+
+async function readWorkspaceRootIdentity(
+  workspaceRoot: string,
+): Promise<WorkspaceRootIdentity> {
+  try {
+    const stats = await lstat(workspaceRoot)
+    if (!stats.isDirectory() || stats.isSymbolicLink()) {
+      throw new WorkspaceSourceProjectionError('source_unavailable')
+    }
+    return {
+      device: stats.dev,
+      inode: stats.ino,
+    }
+  } catch (error) {
+    if (error instanceof WorkspaceSourceProjectionError) throw error
+    throw new WorkspaceSourceProjectionError('source_unavailable')
+  }
+}
+
+async function assertWorkspaceRootIdentity(
+  workspaceRoot: string,
+  expected: WorkspaceRootIdentity,
+): Promise<void> {
+  try {
+    const [canonical, current] = await Promise.all([
+      realpath(workspaceRoot),
+      readWorkspaceRootIdentity(workspaceRoot),
+    ])
+    if (
+      canonical !== workspaceRoot ||
+      current.device !== expected.device ||
+      current.inode !== expected.inode
+    ) {
+      throw new WorkspaceSourceProjectionError('source_unavailable')
+    }
+  } catch (error) {
+    if (error instanceof WorkspaceSourceProjectionError) throw error
+    throw new WorkspaceSourceProjectionError('source_unavailable')
   }
 }
 

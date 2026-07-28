@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import {
   mkdir,
   mkdtemp,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -110,6 +111,15 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       path.join(fixture.root, 'outside-link.txt'),
     )
     await writeFile(path.join(fixture.root, '.secret.txt'), 'secret')
+    await mkdir(path.join(fixture.root, '.managed'), { recursive: true })
+    await writeFile(
+      path.join(fixture.root, '.managed', 'notes.txt'),
+      'managed',
+    )
+    await symlink(
+      path.join(fixture.root, '.managed'),
+      path.join(fixture.root, 'managed-alias'),
+    )
     await writeFile(
       path.join(fixture.root, 'binary.txt'),
       Buffer.from([0xff, 0xfe, 0xfd]),
@@ -123,6 +133,7 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       '/etc/passwd',
       '.secret.txt',
       'outside-link.txt',
+      'managed-alias/notes.txt',
     ]) {
       await assert.rejects(
         projection.readText(relativePath),
@@ -138,6 +149,35 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       (error: unknown) =>
         error instanceof WorkspaceSourceProjectionError &&
         error.code === 'unsupported_encoding',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('source projection rejects a replaced active root instead of reading the replacement', async () => {
+  const fixture = await createFixture('source-projection-root-replaced-')
+  try {
+    await writeFile(path.join(fixture.root, 'original.txt'), 'original')
+    const projection = await createWorkspaceSourceProjection({
+      workspaceRoot: fixture.root,
+    })
+    const movedRoot = `${fixture.root}-moved`
+    await rename(fixture.root, movedRoot)
+    await mkdir(fixture.root)
+    await writeFile(path.join(fixture.root, 'replacement.txt'), 'replacement')
+
+    await assert.rejects(
+      projection.list(),
+      (error: unknown) =>
+        error instanceof WorkspaceSourceProjectionError &&
+        error.code === 'source_unavailable',
+    )
+    await assert.rejects(
+      projection.readText('replacement.txt'),
+      (error: unknown) =>
+        error instanceof WorkspaceSourceProjectionError &&
+        error.code === 'source_unavailable',
     )
   } finally {
     await fixture.cleanup()
