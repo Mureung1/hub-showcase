@@ -565,10 +565,10 @@ describe('AuthenticatedWorkspace', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '공유한 링크를 보관할까요?',
+        name: '공유한 링크를 저장할까요?',
       })
     ).not.toBeNull();
-    expect((screen.getByLabelText('링크 URL') as HTMLInputElement).value).toBe(
+    expect((screen.getByLabelText('URL') as HTMLInputElement).value).toBe(
       'https://example.com/shared'
     );
     const sharedTitle = screen.getByRole('textbox', {
@@ -604,7 +604,7 @@ describe('AuthenticatedWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: '저장' }));
     await user.type(
-      screen.getByRole('textbox', { name: '링크 URL' }),
+      screen.getByRole('textbox', { name: 'URL' }),
       'https://example.com/install'
     );
     await user.click(screen.getByRole('button', { name: '저장하기' }));
@@ -657,10 +657,12 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장하기' }));
-    expect(screen.getByRole('status').textContent).toContain('저장됨');
+    expect(screen.getByRole('status').textContent).toContain(
+      '인사이트를 저장했어요'
+    );
     expect(
       screen.getByRole('heading', {
-        name: '언제 다시 쓰고 싶은 자료인가요?',
+        name: '언제 다시 쓰고 싶은가요?',
       })
     ).not.toBeNull();
 
@@ -669,19 +671,19 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await waitFor(() => {
-      expect(
-        (screen.getByLabelText('링크 URL') as HTMLInputElement).value
-      ).toBe('https://example.com/pasted');
+      expect((screen.getByLabelText('URL') as HTMLInputElement).value).toBe(
+        'https://example.com/pasted'
+      );
     });
     expect(
-      screen.getByRole('heading', { name: 'URL만 넣고 바로 보관해요' })
+      screen.getByRole('heading', { name: 'URL을 입력하면 바로 저장해요' })
     ).not.toBeNull();
     expect(
       screen.queryByRole('textbox', { name: '공유 제목 (선택)' })
     ).toBeNull();
     expect(
       screen.queryByRole('heading', {
-        name: '언제 다시 쓰고 싶은 자료인가요?',
+        name: '언제 다시 쓰고 싶은가요?',
       })
     ).toBeNull();
 
@@ -707,7 +709,7 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const saveUrl = screen.getByRole('textbox', { name: 'URL' });
     await user.type(saveUrl, 'https://example.com/direct');
     await user.click(
       screen.getByRole('button', { name: '클립보드에서 붙여넣기' })
@@ -754,7 +756,7 @@ describe('AuthenticatedWorkspace', () => {
       name: '클립보드에서 붙여넣기',
     });
     const saveButton = screen.getByRole('button', { name: '저장하기' });
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const saveUrl = screen.getByRole('textbox', { name: 'URL' });
     const sharedTitle = screen.getByRole('textbox', {
       name: '공유 제목 (선택)',
     });
@@ -804,10 +806,10 @@ describe('AuthenticatedWorkspace', () => {
     });
 
     expect((saveUrl as HTMLInputElement).value).toBe('https://example.com/b');
-    expect(screen.queryByText('저장됨')).toBeNull();
+    expect(screen.queryByText('인사이트를 저장했어요')).toBeNull();
     expect(
       screen.queryByRole('heading', {
-        name: '언제 다시 쓰고 싶은 자료인가요?',
+        name: '언제 다시 쓰고 싶은가요?',
       })
     ).toBeNull();
     expect(
@@ -1038,11 +1040,11 @@ describe('AuthenticatedWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: '저장' }));
     await user.type(
-      screen.getByRole('textbox', { name: '링크 URL' }),
+      screen.getByRole('textbox', { name: 'URL' }),
       'https://signal.example/article'
     );
     await user.click(screen.getByRole('button', { name: '저장하기' }));
-    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+    await user.click(screen.getByRole('button', { name: '지금은 건너뛰기' }));
     await user.click(screen.getByRole('button', { name: '홈' }));
 
     expect(screen.getByRole('status').textContent).toContain(
@@ -1430,14 +1432,14 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'URL' }), {
       target: { value: 'https://context.example/article' },
     });
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(
       screen.getByRole('heading', {
-        name: '언제 다시 쓰고 싶은 자료인가요?',
+        name: '언제 다시 쓰고 싶은가요?',
       })
     ).not.toBeNull();
 
@@ -1450,7 +1452,9 @@ describe('AuthenticatedWorkspace', () => {
     );
     await user.click(screen.getByRole('combobox', { name: '카테고리 (선택)' }));
     await user.click(screen.getByRole('option', { name: 'Design Systems' }));
-    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+    await user.click(
+      screen.getByRole('button', { name: '인사이트 정보 저장하기' })
+    );
 
     expect(save).toHaveBeenCalledTimes(2);
     expect(save.mock.calls[1]?.[0][0]).toEqual(
@@ -1465,13 +1469,17 @@ describe('AuthenticatedWorkspace', () => {
     fireEvent.change(titleInput, {
       target: { value: '수정한 디자인 패턴' },
     });
-    expect(screen.queryByRole('status', { name: '맥락 저장 완료' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+    expect(
+      screen.queryByRole('status', { name: '인사이트 정보를 저장했어요' })
+    ).toBeNull();
+    await user.click(
+      screen.getByRole('button', { name: '인사이트 정보 저장하기' })
+    );
 
     expect(save).toHaveBeenCalledTimes(3);
     expect(save.mock.calls[2]?.[0][0]?.title).toBe('수정한 디자인 패턴');
     expect(
-      screen.getByRole('status', { name: '맥락 저장 완료' })
+      screen.getByRole('status', { name: '인사이트 정보를 저장했어요' })
     ).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -1503,11 +1511,11 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'URL' }), {
       target: { value: 'https://skip-context.example/article#source' },
     });
     await user.click(screen.getByRole('button', { name: '저장하기' }));
-    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+    await user.click(screen.getByRole('button', { name: '지금은 건너뛰기' }));
 
     expect(save).toHaveBeenCalledOnce();
     expect(
@@ -1517,16 +1525,15 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '저장' }));
 
     expect(
-      (screen.getByRole('textbox', { name: '링크 URL' }) as HTMLInputElement)
-        .value
+      (screen.getByRole('textbox', { name: 'URL' }) as HTMLInputElement).value
     ).toBe('');
     expect(
       screen.queryByRole('heading', {
-        name: '언제 다시 쓰고 싶은 자료인가요?',
+        name: '언제 다시 쓰고 싶은가요?',
       })
     ).toBeNull();
 
-    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'URL' }), {
       target: { value: 'https://next-save.example/article' },
     });
     await user.click(screen.getByRole('button', { name: '저장하기' }));
@@ -1547,7 +1554,9 @@ describe('AuthenticatedWorkspace', () => {
         name: '카테고리 (선택)',
       }).textContent
     ).toContain('미분류');
-    expect(screen.queryByRole('status', { name: '맥락 저장 완료' })).toBeNull();
+    expect(
+      screen.queryByRole('status', { name: '인사이트 정보를 저장했어요' })
+    ).toBeNull();
   });
 
   it('keeps personal context inputs after a write failure and retries them', async () => {
@@ -1569,7 +1578,7 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'URL' }), {
       target: { value: 'https://context-retry.example/article' },
     });
     await user.click(screen.getByRole('button', { name: '저장하기' }));
@@ -1579,20 +1588,24 @@ describe('AuthenticatedWorkspace', () => {
     fireEvent.change(memoInput, {
       target: { value: '발표 자료를 만들 때 참고하기' },
     });
-    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+    await user.click(
+      screen.getByRole('button', { name: '인사이트 정보 저장하기' })
+    );
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '먼저 저장한 링크와 입력은 그대로 두었어요.'
+      '먼저 저장한 인사이트와 입력한 내용은 그대로 두었어요.'
     );
     expect((memoInput as HTMLTextAreaElement).value).toBe(
       '발표 자료를 만들 때 참고하기'
     );
 
-    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    await user.click(
+      screen.getByRole('button', { name: '인사이트 정보 다시 저장하기' })
+    );
 
     expect(save).toHaveBeenCalledTimes(3);
     expect(
-      screen.getByRole('status', { name: '맥락 저장 완료' })
+      screen.getByRole('status', { name: '인사이트 정보를 저장했어요' })
     ).not.toBeNull();
   });
 
@@ -1614,7 +1627,7 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'URL' }), {
       target: { value: 'https://failed-context.example/article' },
     });
     await user.click(screen.getByRole('button', { name: '저장하기' }));
@@ -1622,8 +1635,10 @@ describe('AuthenticatedWorkspace', () => {
       screen.getByRole('textbox', { name: '한 줄 메모 (선택)' }),
       { target: { value: '저장되지 않을 메모' } }
     );
-    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
-    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+    await user.click(
+      screen.getByRole('button', { name: '인사이트 정보 저장하기' })
+    );
+    await user.click(screen.getByRole('button', { name: '지금은 건너뛰기' }));
 
     expect(screen.getAllByText('failed-context.example')).toHaveLength(2);
     expect(screen.queryByText('저장되지 않을 메모')).toBeNull();
@@ -1658,7 +1673,7 @@ describe('AuthenticatedWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: '저장' }));
     await user.type(
-      screen.getByRole('textbox', { name: '링크 URL' }),
+      screen.getByRole('textbox', { name: 'URL' }),
       'https://Example.com/new-article#details'
     );
     await user.click(screen.getByRole('button', { name: '저장하기' }));
@@ -1689,13 +1704,13 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const saveUrl = screen.getByRole('textbox', { name: 'URL' });
 
     await user.type(saveUrl, 'ftp://example.com/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      'http 또는 https 주소만 저장할 수 있어요.'
+      'http 또는 https URL만 저장할 수 있어요.'
     );
     expect((saveUrl as HTMLInputElement).value).toBe(
       'ftp://example.com/article'
@@ -1706,7 +1721,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '올바른 URL을 입력해주세요.'
+      '올바른 URL을 입력해 주세요.'
     );
     expect((saveUrl as HTMLInputElement).value).toBe('notaurl');
   });
@@ -1734,18 +1749,20 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const saveUrl = screen.getByRole('textbox', { name: 'URL' });
 
     await user.type(saveUrl, 'https://EXAMPLE.com/article#details');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
-    expect(screen.getByRole('status').textContent).toContain('저장됨');
+    expect(screen.getByRole('status').textContent).toContain(
+      '인사이트를 저장했어요'
+    );
     expect((saveUrl as HTMLInputElement).value).toBe(
       'https://EXAMPLE.com/article#details'
     );
     expect(save).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+    await user.click(screen.getByRole('button', { name: '지금은 건너뛰기' }));
 
     expect(
       screen.getByRole('heading', { name: '전체 인사이트' })
@@ -1784,11 +1801,11 @@ describe('AuthenticatedWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: '저장' }));
     await user.type(
-      screen.getByRole('textbox', { name: '링크 URL' }),
+      screen.getByRole('textbox', { name: 'URL' }),
       'https://EXAMPLE.com/article#details'
     );
     await user.click(screen.getByRole('button', { name: '저장하기' }));
-    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+    await user.click(screen.getByRole('button', { name: '지금은 건너뛰기' }));
 
     expect(screen.getByText('다시 보여야 하는 링크')).not.toBeNull();
     expect(
@@ -1821,12 +1838,12 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const saveUrl = screen.getByRole('textbox', { name: 'URL' });
     await user.type(saveUrl, 'https://retry.example/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '원격 저장에 실패했어요.'
+      '보관함에 저장하지 못했어요.'
     );
     expect(screen.getByRole('alert').textContent).toContain('다시 시도');
     expect((saveUrl as HTMLInputElement).value).toBe(
@@ -1836,7 +1853,9 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(save).toHaveBeenCalledTimes(2);
-    expect(screen.getByRole('status').textContent).toContain('저장됨');
+    expect(screen.getByRole('status').textContent).toContain(
+      '인사이트를 저장했어요'
+    );
   });
 
   it('keeps the URL when the common capture service rejects permission', async () => {
@@ -1856,7 +1875,7 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const saveUrl = screen.getByRole('textbox', { name: 'URL' });
     await user.type(saveUrl, 'https://permission.example/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
@@ -1865,7 +1884,7 @@ describe('AuthenticatedWorkspace', () => {
       url: 'https://permission.example/article',
     });
     expect(screen.getByRole('alert').textContent).toContain(
-      '입력한 URL을 그대로 두었으니 다시 로그인한 뒤 시도해주세요.'
+      '입력한 URL은 그대로 두었어요. 다시 로그인한 뒤 시도해 주세요.'
     );
     expect((saveUrl as HTMLInputElement).value).toBe(
       'https://permission.example/article'
@@ -1947,15 +1966,15 @@ describe('AuthenticatedWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: '저장' }));
     expect(
-      screen.getByRole('heading', { name: 'URL만 넣고 바로 보관해요' })
+      screen.getByRole('heading', { name: 'URL을 입력하면 바로 저장해요' })
     ).not.toBeNull();
 
-    const saveUrl = screen.getByLabelText('링크 URL');
+    const saveUrl = screen.getByLabelText('URL');
 
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '올바른 URL을 입력해주세요.'
+      '올바른 URL을 입력해 주세요.'
     );
     expect(saveUrl.getAttribute('aria-invalid')).toBe('true');
     expect(saveUrl.getAttribute('aria-describedby')).toBe('save-url-error');
@@ -1964,14 +1983,16 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '올바른 URL을 입력해주세요.'
+      '올바른 URL을 입력해 주세요.'
     );
 
     await user.clear(saveUrl);
     await user.type(saveUrl, 'https://example.com/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
-    expect(screen.getByRole('status').textContent).toContain('저장됨');
+    expect(screen.getByRole('status').textContent).toContain(
+      '인사이트를 저장했어요'
+    );
   });
 
   it('카테고리 생성부터 연결, 필터, 삭제 후 미분류 이동까지 동기화한다', async () => {
@@ -2056,7 +2077,7 @@ describe('AuthenticatedWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: '저장' }));
     await user.type(
-      screen.getByRole('textbox', { name: '링크 URL' }),
+      screen.getByRole('textbox', { name: 'URL' }),
       'https://context.example/category'
     );
     await user.click(screen.getByRole('button', { name: '저장하기' }));
@@ -2076,7 +2097,9 @@ describe('AuthenticatedWorkspace', () => {
       screen.getByRole('combobox', { name: '카테고리 (선택)' }).textContent
     ).toContain('미분류');
 
-    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+    await user.click(
+      screen.getByRole('button', { name: '인사이트 정보 저장하기' })
+    );
 
     expect(save.mock.calls.at(-1)?.[0][0]?.categoryId).toBeNull();
   }, 15_000);

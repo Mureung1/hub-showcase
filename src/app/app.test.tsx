@@ -268,10 +268,10 @@ describe('App onboarding flow', () => {
     });
 
     expect(
-      ((await screen.findByLabelText('링크 URL')) as HTMLInputElement).value
+      ((await screen.findByLabelText('URL')) as HTMLInputElement).value
     ).toBe('https://example.com/article');
     expect(
-      screen.getByRole('heading', { name: '공유한 링크를 보관할까요?' })
+      screen.getByRole('heading', { name: '공유한 링크를 저장할까요?' })
     ).not.toBeNull();
     await waitFor(() => expect(window.location.hash).toBe(''));
     expect(window.location.pathname).toBe('/');
@@ -291,7 +291,7 @@ describe('App onboarding flow', () => {
         name: '저장한 인사이트를 필요한 순간 다시 꺼내 보세요',
       })
     ).not.toBeNull();
-    expect(screen.queryByLabelText('링크 URL')).toBeNull();
+    expect(screen.queryByLabelText('URL')).toBeNull();
     await waitFor(() => expect(window.location.hash).toBe(''));
     expect(window.location.pathname).toBe('/');
     expect(window.location.search).toBe('?tab=save');
@@ -359,15 +359,17 @@ describe('App onboarding flow', () => {
     expect(
       await screen.findByRole('heading', { name: insight.title })
     ).not.toBeNull();
-    expect(screen.getByText('저장됨')).not.toBeNull();
+    expect(screen.getByText('인사이트를 저장했어요')).not.toBeNull();
     expect(captureService.capture).toHaveBeenCalledWith({
       source: 'android_share',
       title: '공유 기사',
       url: 'https://example.com/article',
     });
 
-    const memoButton = screen.getByRole('button', { name: '메모 추가' });
-    const completeButton = screen.getByRole('button', { name: '완료' });
+    const memoButton = screen.getByRole('button', { name: '메모 추가하기' });
+    const completeButton = screen.getByRole('button', {
+      name: '원래 앱으로 돌아가기',
+    });
 
     expect(
       memoButton.parentElement?.classList.contains('android-share-actions')
@@ -376,7 +378,9 @@ describe('App onboarding flow', () => {
 
     await user.click(memoButton);
     await user.type(screen.getByLabelText('한 줄 메모 (선택)'), '다시 읽기');
-    await user.click(screen.getByRole('button', { name: '완료' }));
+    await user.click(
+      screen.getByRole('button', { name: '원래 앱으로 돌아가기' })
+    );
 
     await waitFor(() => expect(plugin.finishShare).toHaveBeenCalledOnce());
     expect(memoService.updateMemo).toHaveBeenCalledWith(

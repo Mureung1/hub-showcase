@@ -54,10 +54,12 @@ describe('SavePage', () => {
       </DesignSystemProvider>
     );
 
-    expect(screen.getByRole('status').textContent).toContain('저장됨');
+    expect(screen.getByRole('status').textContent).toContain(
+      '인사이트를 저장했어요'
+    );
     expect(
       screen.getByRole('heading', {
-        name: '언제 다시 쓰고 싶은 자료인가요?',
+        name: '언제 다시 쓰고 싶은가요?',
       })
     ).not.toBeNull();
     expect(screen.getByRole('textbox', { name: '제목 (선택)' })).not.toBeNull();
@@ -67,7 +69,9 @@ describe('SavePage', () => {
     expect(
       screen.getByRole('combobox', { name: '카테고리 (선택)' })
     ).not.toBeNull();
-    expect(screen.getByRole('button', { name: '건너뛰기' })).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '지금은 건너뛰기' })
+    ).not.toBeNull();
   });
 
   it('selects a category created from the context selector immediately', async () => {
@@ -125,7 +129,7 @@ describe('SavePage', () => {
       </DesignSystemProvider>
     );
 
-    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'URL' }), {
       target: { value: 'https://example.com/article' },
     });
     fireEvent.submit(container.querySelector('form')!);
@@ -184,7 +188,7 @@ describe('SavePage', () => {
     );
 
     expect(onPasteFromClipboard).toHaveBeenCalledOnce();
-    expect(screen.getByRole('textbox', { name: '링크 URL' })).not.toBeNull();
+    expect(screen.getByRole('textbox', { name: 'URL' })).not.toBeNull();
   });
 
   it('lets the user skip the optional personal context step', () => {
@@ -204,7 +208,7 @@ describe('SavePage', () => {
       </DesignSystemProvider>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '건너뛰기' }));
+    fireEvent.click(screen.getByRole('button', { name: '지금은 건너뛰기' }));
 
     expect(onContextSkip).toHaveBeenCalledOnce();
   });

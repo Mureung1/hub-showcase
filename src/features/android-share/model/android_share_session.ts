@@ -61,12 +61,15 @@ export type AndroidShareTransition = {
   session: AndroidShareSession;
 };
 
-const URL_NOT_FOUND_MESSAGE = '저장할 링크를 찾지 못했어요.';
+const URL_NOT_FOUND_MESSAGE =
+  '저장할 링크를 찾지 못했어요. 링크가 포함된 텍스트를 다시 공유해 주세요.';
 const UNSUPPORTED_PROTOCOL_MESSAGE = 'http 또는 https 링크만 저장할 수 있어요.';
-const AUTHENTICATION_FAILED_MESSAGE = '로그인을 완료하지 못했어요.';
+const AUTHENTICATION_FAILED_MESSAGE =
+  '로그인을 완료하지 못했어요. 공유한 링크는 그대로 두었어요. 다시 시도해 주세요.';
 const SHARE_MEMORY_LOST_MESSAGE =
-  '로그인은 완료됐지만 링크를 다시 받아야 해요.';
-const CAPTURE_FAILED_MESSAGE = '저장하지 못했어요.';
+  '로그인은 완료했지만 공유한 링크를 다시 받아야 해요. 원래 앱에서 다시 공유해 주세요.';
+const CAPTURE_FAILED_MESSAGE =
+  '인사이트를 저장하지 못했어요. 공유한 링크는 그대로 두었어요.';
 const RECENT_SHARE_ID_LIMIT = 32;
 
 export function createAndroidShareSession(): AndroidShareSession {

@@ -44,7 +44,8 @@ type AuthAttempt = {
   startedSignedIn: boolean;
 };
 
-const MEMO_SAVE_ERROR = '메모를 저장하지 못했어요. 입력은 유지했어요.';
+const MEMO_SAVE_ERROR =
+  '메모를 저장하지 못했어요. 입력한 메모는 그대로 두었어요. 다시 시도해 주세요.';
 const COMPLETION_ERROR = '원래 앱으로 돌아가지 못했어요. 다시 시도해 주세요.';
 const MAX_MEMO_LENGTH = 200;
 

@@ -48,7 +48,9 @@ describe('PwaInstallNotice', () => {
       screen.getByRole('region', { name: '더 빠르게 저장하기' })
     ).not.toBeNull();
     const installButton = screen.getByRole('button', { name: '설치하기' });
-    const dismissButton = screen.getByRole('button', { name: '나중에' });
+    const dismissButton = screen.getByRole('button', {
+      name: '나중에 설치하기',
+    });
     expect(installButton.getAttribute('type')).toBe('button');
     expect(dismissButton.getAttribute('type')).toBe('button');
 
@@ -67,10 +69,14 @@ describe('PwaInstallNotice', () => {
     );
 
     expect(
-      screen.getByRole('button', { name: '설치 중' }).hasAttribute('disabled')
+      screen
+        .getByRole('button', { name: '설치하고 있어요' })
+        .hasAttribute('disabled')
     ).toBe(true);
     expect(
-      screen.getByRole('button', { name: '나중에' }).hasAttribute('disabled')
+      screen
+        .getByRole('button', { name: '나중에 설치하기' })
+        .hasAttribute('disabled')
     ).toBe(true);
   });
 

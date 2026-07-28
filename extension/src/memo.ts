@@ -48,12 +48,12 @@ export function mountMemoPage({
   const parameters = new URLSearchParams(location.search);
   const insightId = parameters.get('insightId') ?? '';
 
-  title.textContent = parameters.get('title') || '저장한 링크';
+  title.textContent = parameters.get('title') || '저장한 인사이트';
   closeButton.addEventListener('click', closeWindow);
 
   if (!UUID_PATTERN.test(insightId)) {
     saveButton.disabled = true;
-    showStatus(status, '메모 대상을 확인할 수 없습니다.', 'error');
+    showStatus(status, '메모를 남길 인사이트를 확인하지 못했어요.', 'error');
     return;
   }
 
@@ -62,35 +62,35 @@ export function mountMemoPage({
     const memo = input.value.trim();
 
     if (!memo) {
-      showStatus(status, '메모를 입력하거나 닫기를 선택해 주세요.', 'error');
+      showStatus(status, '메모를 입력하거나 창을 닫아 주세요.', 'error');
       return;
     }
 
     saveButton.disabled = true;
-    saveButton.textContent = '저장 중';
+    saveButton.textContent = '저장하고 있어요';
     clearStatus(status);
 
     void runtime
       .sendMessage({ insightId, memo, type: 'save-insight-memo' })
       .then((result) => {
         if (isSuccessfulMemoResult(result)) {
-          showStatus(status, '메모 저장됨', 'success');
+          showStatus(status, '메모를 저장했어요', 'success');
           schedule(closeWindow, 350);
           return;
         }
 
         showStatus(status, getFailureMessage(result), 'error');
         saveButton.disabled = false;
-        saveButton.textContent = '다시 시도';
+        saveButton.textContent = '메모 다시 저장하기';
       })
       .catch(() => {
         showStatus(
           status,
-          '메모를 저장하지 못했습니다. 다시 시도해 주세요.',
+          '메모를 저장하지 못했어요. 입력한 메모는 그대로 두었어요. 다시 시도해 주세요.',
           'error'
         );
         saveButton.disabled = false;
-        saveButton.textContent = '다시 시도';
+        saveButton.textContent = '메모 다시 저장하기';
       });
   });
 }
@@ -118,10 +118,10 @@ function getFailureMessage(value: unknown) {
     'reason' in value &&
     value.reason === 'permission-denied'
   ) {
-    return '로그인이 만료되었습니다. 확장 아이콘에서 다시 로그인해 주세요.';
+    return '로그인이 만료됐어요. 확장 아이콘에서 다시 로그인해 주세요.';
   }
 
-  return '메모를 저장하지 못했습니다. 다시 시도해 주세요.';
+  return '메모를 저장하지 못했어요. 입력한 메모는 그대로 두었어요. 다시 시도해 주세요.';
 }
 
 function isSuccessfulMemoResult(value: unknown): value is { ok: true } {

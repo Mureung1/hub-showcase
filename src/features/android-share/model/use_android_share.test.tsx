@@ -55,7 +55,7 @@ describe('useAndroidShare', () => {
 
     expect(view.result.current.isCompleting).toBe(false);
     expect(view.result.current.memoError).toBe(
-      '메모를 저장하지 못했어요. 입력은 유지했어요.'
+      '메모를 저장하지 못했어요. 입력한 메모는 그대로 두었어요. 다시 시도해 주세요.'
     );
     expect(view.result.current.state).toMatchObject({
       memo: '다시 읽기',

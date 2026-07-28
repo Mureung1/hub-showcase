@@ -70,12 +70,12 @@ const CATEGORY_LOAD_WARNING_MESSAGES: Record<
   },
 };
 const SAVE_ERROR_MESSAGES: Record<SaveInsightFailureReason, string> = {
-  'invalid-url': '올바른 URL을 입력해주세요.',
+  'invalid-url': '올바른 URL을 입력해 주세요.',
   'permission-denied':
-    '저장 권한을 확인하지 못했어요. 입력한 URL을 그대로 두었으니 다시 로그인한 뒤 시도해주세요.',
-  'unsupported-protocol': 'http 또는 https 주소만 저장할 수 있어요.',
+    '저장 권한을 확인하지 못했어요. 입력한 URL은 그대로 두었어요. 다시 로그인한 뒤 시도해 주세요.',
+  'unsupported-protocol': 'http 또는 https URL만 저장할 수 있어요.',
   'write-failed':
-    '원격 저장에 실패했어요. 입력한 URL을 그대로 두었으니 네트워크를 확인하고 다시 시도해주세요.',
+    '보관함에 저장하지 못했어요. 입력한 URL은 그대로 두었어요. 네트워크를 확인하고 다시 시도해 주세요.',
 };
 const LOAD_WARNING_MESSAGES: Record<
   InsightRepositoryWarning,
@@ -581,7 +581,7 @@ export function AuthenticatedWorkspace({
             contextDraft={contextDraft}
             contextErrorMessage={
               contextSaveFailed
-                ? '먼저 저장한 링크와 입력은 그대로 두었어요. 다시 시도하거나 건너뛸 수 있어요.'
+                ? '먼저 저장한 인사이트와 입력한 내용은 그대로 두었어요. 다시 시도하거나 지금은 건너뛸 수 있어요.'
                 : undefined
             }
             contextSaveComplete={contextSaveComplete}
