@@ -1,6 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { demandFromFlow, flowBucketDurationHours, flowBucketHourlyAverage } from "./model";
+import {
+  categoryClass,
+  demandFromFlow,
+  flowBucketDurationHours,
+  flowBucketHourlyAverage,
+} from "./model";
+
+describe("category marker classes", () => {
+  it("keeps core and extended storefront categories visually distinct", () => {
+    expect(categoryClass("카페")).toBe("green");
+    expect(categoryClass("한식 음식점")).toBe("orange");
+    expect(categoryClass("베이커리")).toBe("blue");
+    expect(categoryClass("편의점")).toBe("navy");
+    expect(categoryClass("꽃집")).toBe("yellow");
+    expect(categoryClass("미용실")).toBe("pink");
+    expect(categoryClass("체육시설")).toBe("red");
+  });
+});
 
 describe("flow bucket normalization", () => {
   it("reads the source bucket durations from their labels", () => {
