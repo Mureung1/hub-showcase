@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
 import { ChevronRight, Bell, Shield, HelpCircle, LogOut, Tv, Music, Cloud, ShoppingBag, CreditCard, TrendingDown, Zap, Target, X, Plus, Trash2, Check, User } from 'lucide-react'
 import ToggleSwithch from '../components/ToggleSwitch'
-import { getSubscriptions, getBudget, setBudget, createSubscription, updateSubscription, deleteSubscription, type Subscription as ApiSubscription } from '../lib/api'
+import {
+  getSubscriptions, getBudget, setBudget, createSubscription, updateSubscription, deleteSubscription,
+  getPrediction, updateProfile, getSavingsMissions,
+  type Subscription as ApiSubscription, type AuthUser, type Prediction, type SavingsMissionResponse,
+} from '../lib/api'
 
 type Subscription = {
   id? : number
@@ -46,14 +50,26 @@ const MENU_ITEMS = [
 type BudgetItem = { label: string; amount: string }
 
 /* ── 프로필 편집 모달 ── */
-function ProfileEditModal({ onClose }: { onClose: () => void }) {
-  const [name, setName] = useState('사용자')
-  const [email, setEmail] = useState('jimin@spendmate.ai')
+function ProfileEditModal({ onClose, user, onUpdated }: { onClose: () => void; user: AuthUser | null; onUpdated: (user: AuthUser) => void }) {
+  const [name, setName] = useState(user?.nickname ?? '')
+  const [email, setEmail] = useState(user?.email ?? '')
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(onClose, 800)
+  const handleSave = async () => {
+    setError(null)
+    setSaving(true)
+    try {
+      const updated = await updateProfile(email, name)
+      onUpdated(updated)
+      setSaved(true)
+      setTimeout(onClose, 800)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '프로필 저장에 실패했어요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -105,17 +121,22 @@ function ProfileEditModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
+          {error && (
+            <p style={{ margin: '12px 0 0', fontSize: 13, color: '#FF6B6B', fontWeight: 600 }}>{error}</p>
+          )}
+
           <button
             onClick={handleSave}
+            disabled={saving}
             style={{
-              marginTop: 24, width: '100%', height: 52, borderRadius: 16, border: 'none', cursor: 'pointer',
+              marginTop: 24, width: '100%', height: 52, borderRadius: 16, border: 'none', cursor: saving ? 'default' : 'pointer',
               fontFamily: 'Pretendard', fontSize: 16, fontWeight: 800,
               background: saved ? '#6ED6C8' : 'linear-gradient(135deg, #4F8EF7, #6B5CF0)',
               color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              transition: 'background 0.3s',
+              transition: 'background 0.3s', opacity: saving ? 0.7 : 1,
             }}
           >
-            {saved ? <><Check size={18} /> 저장됐어요!</> : '저장하기'}
+            {saved ? <><Check size={18} /> 저장됐어요!</> : saving ? '저장 중...' : '저장하기'}
           </button>
         </div>
       </div>
@@ -391,14 +412,23 @@ function SubscriptionManageModal({
 interface MyPageScreenProps {
   survivalModeOff: boolean
   onToggleSurvivalMode: () => void
+  user: AuthUser | null
+  onUserUpdated: (user: AuthUser) => void
 }
 
-export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode }: MyPageScreenProps) {
+export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode, user, onUserUpdated }: MyPageScreenProps) {
   const [showSurvival, setShowSurvival] = useState(false)
   const [showProfileEdit, setShowProfileEdit] = useState(false)
   const [showBudgetEdit, setShowBudgetEdit] = useState(false)
 const [showSubManage, setShowSubManage] = useState(false)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [prediction, setPrediction] = useState<Prediction | null>(null)
+  const [savingsMissions, setSavingsMissions] = useState<SavingsMissionResponse | null>(null)
+
+  useEffect(() => {
+    getPrediction().then(setPrediction).catch(() => {})
+    getSavingsMissions().then(setSavingsMissions).catch(() => {})
+  }, [])
 
 useEffect(() => {
   getSubscriptions()
@@ -419,6 +449,12 @@ useEffect(() => {
   const totalSub = subscriptions.reduce((s, i) => s + i.price, 0)
   const hasUrgentSubscription = subscriptions.some(s => getNextBillingInfo(s.billingDay).dday <= 7)
 
+  const remainingBudget = prediction?.remainingBudget ?? 0
+  const today = new Date()
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+  const daysLeft = lastDayOfMonth - today.getDate() + 1
+  const dailyLimit = daysLeft > 0 ? Math.floor(remainingBudget / daysLeft) : 0
+
   return (
     <>
       <div style={{ padding: '0 0 24px', background: 'var(--background)' }}>
@@ -427,11 +463,11 @@ useEffect(() => {
           <h1 style={{ margin: '0 0 16px', fontSize: 22, fontWeight: 800, color: 'var(--foreground)' }}>마이페이지</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 56, height: 56, borderRadius: 18, background: 'linear-gradient(135deg, #4F8EF7, #6ED6C8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 22, fontWeight: 900 }}>
-              사
+              {user?.nickname?.[0] ?? '?'}
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--foreground)' }}>사용자</p>
-              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>jimin@spendmate.ai</p>
+              <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--foreground)' }}>{user?.nickname ?? '사용자'}</p>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>{user?.email ?? ''}</p>
             </div>
             <button
               onClick={() => setShowProfileEdit(true)}
@@ -464,7 +500,11 @@ useEffect(() => {
             {showSurvival && (
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
-                  {[['남은 예산', '312,600원', '#4F8EF7'], ['남은 일수', '23일', '#6ED6C8'], ['일 한도', '13,591원', '#FFC857']].map(([l, v, c]) => (
+                  {([
+                    ['남은 예산', `${remainingBudget.toLocaleString()}원`, '#4F8EF7'],
+                    ['남은 일수', `${daysLeft}일`, '#6ED6C8'],
+                    ['일 한도', `${dailyLimit.toLocaleString()}원`, '#FFC857'],
+                  ] as const).map(([l, v, c]) => (
                     <div key={l} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: '12px 10px', textAlign: 'center' }}>
                       <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>{l}</p>
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: c }}>{v}</p>
@@ -473,8 +513,12 @@ useEffect(() => {
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: '14px 16px' }}>
                   <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>🎯 AI 절약 미션</p>
-                  {['이번 주 배달 2회 이하 (절약 +18,500원)', '편의점 대신 마트 이용 (절약 +8,000원)', '텀블러 사용으로 카페 절약 (절약 +6,500원)'].map((m, i) => (
-                    <div key={i} style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', padding: '4px 0', lineHeight: 1.5 }}>• {m}</div>
+                  {!savingsMissions || savingsMissions.missions.length === 0 ? (
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', padding: '4px 0' }}>아직 미션을 만들 데이터가 부족해요</div>
+                  ) : savingsMissions.missions.map((m, i) => (
+                    <div key={i} style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', padding: '4px 0', lineHeight: 1.5 }}>
+                      • {m.suggestion} (절약 +{m.estimatedSaving.toLocaleString()}원)
+                    </div>
                   ))}
                 </div>
               </div>
@@ -591,7 +635,7 @@ useEffect(() => {
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 20 }}>SpendMate v1.0.0 · AI 소비 코치</p>
       </div>
 
-      {showProfileEdit && <ProfileEditModal onClose={() => setShowProfileEdit(false)} />}
+      {showProfileEdit && <ProfileEditModal onClose={() => setShowProfileEdit(false)} user={user} onUpdated={onUserUpdated} />}
       {showBudgetEdit && (
         <BudgetEditModal
           totalBudget={totalBudget}

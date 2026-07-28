@@ -46,6 +46,23 @@ public class AuthService {
         return new LoginResponse(user.getId(), user.getEmail(), user.getNickname());
     }
 
+    public LoginResponse updateProfile(Long userId, String email, String nickname) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("이메일을 입력해주세요.");
+        }
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임을 입력해주세요.");
+        }
+        if (!email.equals(user.getEmail()) && userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
+        user.updateProfile(email, nickname);
+        User saved = userRepository.save(user);
+        return new LoginResponse(saved.getId(), saved.getEmail(), saved.getNickname());
+    }
+
     private void validate(String email, String password, String nickname) {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("이메일을 입력해주세요.");

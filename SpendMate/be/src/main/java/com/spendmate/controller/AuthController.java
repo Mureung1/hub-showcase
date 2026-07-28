@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,14 +21,16 @@ public class AuthController {
 
     public record SignupRequest(String email, String password, String nickname) {}
     public record LoginRequest(String email, String password) {}
+    public record UpdateProfileRequest(String email, String nickname) {}
 
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
 
     @PostMapping("/api/auth/signup")
-    public ResponseEntity<AuthService.SignupResponse> signup(@RequestBody SignupRequest request) {
+    public ResponseEntity<AuthService.SignupResponse> signup(@RequestBody SignupRequest request, HttpServletRequest httpRequest) {
         AuthService.SignupResponse response = authService.signup(request.email(), request.password(), request.nickname());
+        httpRequest.getSession(true).setAttribute("userId", response.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -44,6 +47,11 @@ public class AuthController {
     @GetMapping("/api/auth/me")
     public ResponseEntity<AuthService.LoginResponse> me(@CurrentUser Long userId) {
         return ResponseEntity.ok(authService.getCurrentUser(userId));
+    }
+
+    @PatchMapping("/api/auth/me")
+    public ResponseEntity<AuthService.LoginResponse> updateMe(@CurrentUser Long userId, @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(authService.updateProfile(userId, request.email(), request.nickname()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
