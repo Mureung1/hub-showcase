@@ -154,7 +154,9 @@ App-facing contract와 Codex-native input 사이에는 Adapter seam을 둔다.
 
 `WorkspaceFileRef`는 한 invocation이 active SemesterWorkspace의 실제 사용자 file을 가리키는 request-scoped relative reference다. `RawMaterial`, source copy, `EvidenceRef`나 filesystem permission이 아니다.
 
-Initial native mapping은 official SDK가 이미 제공하는 `SkillInput`과 bounded `TextInput`을 우선 재사용한다. Local file carrier를 native `MentionInput`, rendered Markdown path 또는 다른 official input으로 표현할지는 actual probe로 의미를 확인한 Adapter implementation 결정이다. 이 선택은 Browser contract나 action definition을 바꾸지 않아야 하며 새 SDK patch를 기본 전제로 삼지 않는다.
+Initial native mapping은 official SDK가 이미 제공하는 `SkillInput`과 bounded `TextInput`을 순서대로 사용한다. App action definition은 effective catalog에서 확인한 workspace-local Skill의 host-only name·path를 `SkillInput`으로 전달하고, 선택한 actual file은 POSIX workspace-relative reference만 bounded `TextInput`에 명시적으로 렌더링한다. Browser는 Skill path나 native input type을 알지 않는다.
+
+격리 prototype `prototype/action-invocation-native-mapping@b7c1fcd45`은 current pinned Runtime에서 이 순서가 workspace-local Skill body를 주입하고 선택 file을 실제 root에서 읽게 하며, project-discovered Interaction MCP를 같은 Turn에 유지한다는 것을 확인했다. Initial mapping은 `MentionInput`을 사용하지 않고 SDK patch를 추가하지 않는다. 두 번째 action에서 실제 carrier variation이 확인되기 전까지 이 Adapter mapping을 넓히지 않는다.
 
 ### Action 확장
 
@@ -229,7 +231,7 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 | --- | --- | --- |
 | App-originated Turn | Normal Chat의 bounded text·settings | Chat과 별도인 typed ActionInvocation |
 | Source interaction | 단일 preview selection, AY input과 독립 | 명시적 multi-file action에서만 request-scoped input 동결 |
-| Native input | `TextInput` 하나 | Action별 workspace-local `SkillInput`과 bounded file/text composition |
+| Native input | `TextInput` 하나 | Action별 workspace-local `SkillInput` 뒤 POSIX relative file reference를 렌더링한 bounded `TextInput` |
 | Product contract | Chat·source projection·interaction result | 별도 closed ActionInvocation request·stream |
 | Server operation | `sendChat`과 shared interaction lifecycle | 같은 admission·stream 위의 typed action invocation |
 | AY-originated UI | `propose_state_patch` MCP와 general native clarification | 기존 Interface 유지, 새 typed MCP capability 추가 가능 |
