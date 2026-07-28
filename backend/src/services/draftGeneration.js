@@ -28,6 +28,14 @@ function templateDraft(essayQuestion, profile) {
   return draft.slice(0, essayQuestion.maxLength);
 }
 
+// 문항 수·글자 제한이 큰 실제 크롤링 공고(예: 5문항 x 1000자)는 고정 max_tokens로는
+// JSON 출력이 잘려 파싱 실패 → 전체 문항이 폴백 문구로 표시되는 문제가 있었다.
+// 문항별 글자 제한 합계에 비례해 예산을 늘리고, 과도한 응답을 막기 위해 상한을 둔다.
+function calculateMaxTokens(essayQuestions) {
+  const totalMaxLength = essayQuestions.reduce((sum, q) => sum + q.maxLength, 0);
+  return Math.min(16000, Math.max(4096, totalMaxLength * 3 + 1000));
+}
+
 function buildPrompt(profile, posting, essayQuestions) {
   const profileSummary = [
     `전공: ${profile.major}`,
@@ -70,16 +78,23 @@ export async function generateDrafts(profile, posting, essayQuestions) {
 
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 2048,
+      max_tokens: calculateMaxTokens(essayQuestions),
       output_config: { format: { type: "json_schema", schema: DRAFT_SCHEMA } },
       messages: [{ role: "user", content: buildPrompt(profile, posting, essayQuestions) }],
     });
 
     const textBlock = response.content.find((block) => block.type === "text");
     const parsed = JSON.parse(textBlock.text);
-    const draftByQuestion = new Map(parsed.drafts.map((entry) => [entry.question, entry.draft]));
 
-    return essayQuestions.map((q) => draftByQuestion.get(q.question) ?? templateDraft(q, profile));
+    // 실제 문항(번호·줄바꿈 포함)은 모델이 echo할 때 살짝 바뀔 수 있어 question 문자열로
+    // 매칭하면 조용히 다 어긋난다. 요청한 순서 그대로 응답한다고 보고 인덱스로 매칭한다.
+    if (!Array.isArray(parsed.drafts) || parsed.drafts.length !== essayQuestions.length) {
+      throw new Error(
+        `문항 수 불일치: 요청 ${essayQuestions.length}개, 응답 ${parsed.drafts?.length ?? 0}개`,
+      );
+    }
+
+    return essayQuestions.map((q, index) => parsed.drafts[index].draft ?? templateDraft(q, profile));
   } catch (error) {
     console.error("Claude draft generation failed, falling back to template drafts:", error.message);
     return essayQuestions.map((q) => templateDraft(q, profile));

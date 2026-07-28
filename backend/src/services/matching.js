@@ -1,4 +1,7 @@
-const TOP_N = 3;
+// 화면에는 3개씩 보여주고 "다음 추천 보기"로 더 볼 수 있게 한다.
+// 실제 재입력 없이 같은 프로필로 더 볼 수 있는 최대치가 MAX_RECOMMENDATIONS.
+export const RECOMMENDATIONS_PAGE_SIZE = 3;
+const MAX_RECOMMENDATIONS = 9;
 
 const CATEGORY_FIELDS = [
   { label: "전공", getText: (profile) => [profile.major, profile.doubleMajor, profile.minor].filter(Boolean).join(" ") },
@@ -10,9 +13,20 @@ function normalize(text) {
   return text.replace(/\s+/g, "");
 }
 
+// 크롤링된 공고의 keywords는 "생산직/조립/가공"처럼 "/"로 묶인 복합 카테고리 라벨이라
+// 사용자가 입력한 자유 텍스트와 통째로 일치할 일이 거의 없다. "/" 단위로 쪼갠 토큰
+// 각각을 후보 키워드로 취급해야 "기계공학과" 같은 입력이 "기계/자동차/조선"의 "기계"와 매칭된다.
+function expandKeyword(keyword) {
+  return keyword
+    .split("/")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
 function textMatchesAnyKeyword(text, keywords) {
   const normalizedText = normalize(text);
-  return keywords.some((keyword) => normalizedText.includes(normalize(keyword)));
+  const expandedKeywords = keywords.flatMap(expandKeyword);
+  return expandedKeywords.some((keyword) => normalizedText.includes(normalize(keyword)));
 }
 
 function matchedCategories(profile, keywords) {
@@ -34,7 +48,8 @@ export function parseNumber(input) {
 
 function countKeywordOverlap(profileText, keywords) {
   const normalizedProfileText = normalize(profileText);
-  return keywords.filter((keyword) => normalizedProfileText.includes(normalize(keyword))).length;
+  const expandedKeywords = keywords.flatMap(expandKeyword);
+  return expandedKeywords.filter((keyword) => normalizedProfileText.includes(normalize(keyword))).length;
 }
 
 function buildReasonShort(categories, gpaMet) {
@@ -67,5 +82,5 @@ export function scoreAndRank(profile, postings) {
       if (b.score !== a.score) return b.score - a.score;
       return new Date(a.deadline) - new Date(b.deadline);
     })
-    .slice(0, TOP_N);
+    .slice(0, MAX_RECOMMENDATIONS);
 }

@@ -1,172 +1,3145 @@
 [
   {
-    "id": 1,
+    "id": 338608,
     "category": "채용",
-    "org": "삼성전자",
-    "title": "2026 하반기 신입사원 공개채용 (소프트웨어 엔지니어)",
-    "deadline": "2026-09-10",
-    "field": "소프트웨어 엔지니어링",
-    "target": "4년제 대학 졸업 및 졸업예정자",
-    "applyMethod": "온라인 지원 후 서류/면접 전형",
-    "conditions": ["지원 형태: 개인 지원 (졸업예정자 가능)", "근무지: 수원/서울"],
-    "keywords": ["컴퓨터공학", "소프트웨어", "정보처리기사", "백엔드", "개발", "SW"],
-    "gpaMin": 3.0,
+    "org": "카카오게임즈",
+    "title": "[카카오게임즈] 모바일 게임 마케팅PM 영입",
+    "deadline": "2026-08-16",
+    "field": "전체 / IT기획/PM/PO",
+    "target": "신입/경력",
+    "applyMethod": "https://recruit.kakaogames.com/ko/o/229142",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "IT기획/PM/PO",
+      "마케팅/광고",
+      "IT/개발"
+    ],
+    "gpaMin": 0,
     "essayQuestions": [
-      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
-      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
+      {
+        "question": "카카오게임즈에 지원한 이유를 기재해주세요.",
+        "maxLength": 800
+      },
+      {
+        "question": "지원한 직무와 관련해 본인의 강점이 있다면 기재해주세요.",
+        "maxLength": 800
+      },
+      {
+        "question": "카카오게임즈에 지원한 이유를 기재해주세요.",
+        "maxLength": 800
+      },
+      {
+        "question": "지원한 직무와 관련해 본인의 강점이 있다면 기재해주세요.",
+        "maxLength": 800
+      }
     ]
   },
   {
-    "id": 2,
+    "id": 338603,
     "category": "채용",
-    "org": "LG전자",
-    "title": "2026 하반기 신입사원 채용 (SW 직군)",
-    "deadline": "2026-09-20",
-    "field": "임베디드 소프트웨어 개발",
-    "target": "4년제 대학 졸업 및 졸업예정자",
-    "applyMethod": "온라인 지원 후 서류/직무적성검사/면접 전형",
-    "conditions": ["지원 형태: 개인 지원 (졸업예정자 가능)", "근무지: 서울/평택"],
-    "keywords": ["전자공학", "컴퓨터공학", "임베디드", "C언어", "정보처리기사", "SW"],
-    "gpaMin": 3.0,
+    "org": "AJIN USA  ",
+    "title": "[미국/AL] Ajin, Wooshin USA 재경팀 사원 채용 (비자발급비 지원)",
+    "deadline": "2026-08-23",
+    "field": "기획/경영",
+    "target": "신입",
+    "applyMethod": "ceo@ghr.or.kr",
+    "conditions": [
+      "근무지역: 해외",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "기획/경영"
+    ],
+    "gpaMin": 0,
     "essayQuestions": [
-      { "question": "지원 직무와 관련해 본인의 강점을 작성해주세요.", "maxLength": 500 },
-      { "question": "협업 경험 중 어려움을 극복한 사례를 작성해주세요.", "maxLength": 500 }
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
     ]
   },
   {
-    "id": 3,
+    "id": 338598,
     "category": "채용",
-    "org": "쿠팡",
-    "title": "2026 신입 백엔드 개발자 채용",
-    "deadline": "2026-08-25",
-    "field": "백엔드 개발",
-    "target": "전공 무관, 4년제 대학 졸업 및 졸업예정자",
-    "applyMethod": "온라인 지원 후 코딩 테스트/면접 전형",
-    "conditions": ["지원 형태: 개인 지원", "근무지: 서울(잠실)"],
-    "keywords": ["컴퓨터공학", "백엔드", "서버", "정보처리기사", "SQLD", "개발"],
-    "gpaMin": 2.8,
-    "essayQuestions": [
-      { "question": "지원 동기와 입사 후 포부를 작성해주세요.", "maxLength": 500 },
-      { "question": "개발 관련 프로젝트/현장실습 경험을 구체적으로 작성해주세요.", "maxLength": 500 }
-    ]
-  },
-  {
-    "id": 4,
-    "category": "채용",
-    "org": "SK하이닉스",
-    "title": "2026 하반기 신입 채용 (반도체 설계)",
-    "deadline": "2026-09-15",
-    "field": "반도체 설계",
-    "target": "전자/전기/신소재공학 등 관련 전공 4년제 대학 졸업 및 졸업예정자",
-    "applyMethod": "온라인 지원 후 서류/면접 전형",
-    "conditions": ["지원 형태: 개인 지원 (졸업예정자 가능)", "근무지: 이천/청주"],
-    "keywords": ["전자공학", "신소재공학", "반도체", "회로설계", "정보처리기사"],
-    "gpaMin": 3.2,
-    "essayQuestions": [
-      { "question": "지원 분야와 관련된 전공 지식 및 경험을 작성해주세요.", "maxLength": 500 },
-      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 }
-    ]
-  },
-  {
-    "id": 5,
-    "category": "인턴십",
-    "org": "카카오",
-    "title": "하계 인턴십 프로그램",
-    "deadline": "2026-08-05",
-    "field": "IT 서비스 기획 / 개발 보조",
-    "target": "전공 무관, 4년제 대학 재학생",
-    "applyMethod": "온라인 제출",
-    "conditions": ["근무 기간: 8주(전일 근무)", "참가 형태: 개인 지원"],
-    "keywords": ["컴퓨터공학", "정보처리기사", "IT서비스", "기획", "개발"],
-    "gpaMin": 3.0,
-    "essayQuestions": [
-      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
-      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
-    ]
-  },
-  {
-    "id": 6,
-    "category": "인턴십",
-    "org": "토스(비바리퍼블리카)",
-    "title": "2026 하계 프로덕트 인턴십",
+    "org": "SK바이오팜",
+    "title": "[SK바이오팜] RPT 의약화학 연구원 신입 구성원 영입",
     "deadline": "2026-08-10",
-    "field": "프로덕트 기획 / 개발",
-    "target": "전공 무관, 4년제 대학(원) 재학생 및 휴학생",
-    "applyMethod": "온라인 지원 후 과제 전형/면접",
-    "conditions": ["근무 기간: 10주(전일 근무)", "참가 형태: 개인 지원"],
-    "keywords": ["경영학", "산업공학", "컴퓨터공학", "기획", "데이터분석", "SQLD"],
-    "gpaMin": 3.0,
-    "essayQuestions": [
-      { "question": "이 인턴십에 지원한 이유를 작성해주세요.", "maxLength": 500 },
-      { "question": "문제를 정의하고 해결한 경험을 작성해주세요.", "maxLength": 500 }
-    ]
-  },
-  {
-    "id": 7,
-    "category": "공모전",
-    "org": "LG유플러스",
-    "title": "2026 대학생 서비스 아이디어 공모전",
-    "deadline": "2026-08-20",
-    "field": "서비스 기획 / 아이디어 제안",
-    "target": "전국 4년제 대학 재학생",
-    "applyMethod": "온라인 제출",
-    "conditions": ["참가 형태: 개인 또는 3인 이하 팀"],
-    "keywords": ["경영학", "산업공학", "미디어커뮤니케이션", "기획", "창업동아리"],
+    "field": "화학/에너지/환경 / 바이오/제약연구개발",
+    "target": "신입",
+    "applyMethod": "https://www.skcareers.com/Recruit/Detail/R261647",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "화학/에너지/환경",
+      "바이오/제약연구개발",
+      "연구/R&D"
+    ],
     "gpaMin": 0,
     "essayQuestions": [
-      { "question": "제안하는 서비스 아이디어와 기획 배경을 작성해주세요.", "maxLength": 500 },
-      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
+      {
+        "question": "자발적으로 최고 수준의 목표를 세우고 끈질기게 성취한 경험에 대해 서술해 주십시오. (본인이 설정한 목표/ 목표의 수립 과정/ 처음에 생각했던 목표 달성 가능성/ 수행 과정에서 부딪힌 장애물 및 그 때의 감정(생각)/ 목표 달성을 위한 구체적 노력/ 실제 결과/ 경험의 진실성을 증명할 수 있는 근거가 잘 드러나도록 기술)",
+        "maxLength": 1000
+      },
+      {
+        "question": "새로운 것을 접목하거나 남다른 아이디어를 통해 문제를 개선했던 경험에 대해 서술해 주십시오. (기존 방식과 본인이 시도한 방식의 차이/ 새로운 시도를 하게 된 계기/ 새로운 시도를 했을 때의 주변 반응/ 새로운 시도를 위해 감수해야 했던 점/ 구체적인 실행 과정 및 결과/ 경험의 진실성을 증명할 수 있는 근거가 잘 드러나도록 기술)",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원 분야와 관련하여 특정 영역의 전문성을 키우기 위해 꾸준히 노력한 경험에 대해 서술해 주십시오. (전문성의 구체적 영역(예. 통계 분석)/ 전문성을 높이기 위한 학습 과정/ 전문성 획득을 위해 투입한 시간 및 방법/ 습득한 지식 및 기술을 실전적으로 적용해 본 사례/ 전문성을 객관적으로 확인한 경험/ 전문성 향상을 위해 교류하고 있는 네트워크/ 경험의 진실성을 증명할 수 있는 근거가 잘 드러나도록 기술)",
+        "maxLength": 1000
+      },
+      {
+        "question": "혼자 하기 어려운 일에서 다양한 자원 활용, 타인의 협력을 최대한으로 이끌어 내며, Teamwork를 발휘하여 공동의 목표 달성에 기여한 경험에 대해 서술해 주십시오. (관련된 사람들의 관계(예. 친구, 직장 동료) 및 역할/ 혼자 하기 어렵다고 판단한 이유/ 목표 설정 과정/ 자원(예. 사람, 자료 등) 활용 계획 및 행동/ 구성원들의 참여도 및 의견 차이/ 그에 대한 대응 및 협조를 이끌어 내기 위한 구체적 행동/ 목표 달성 정도 및 본인의 기여도/ 경험의 진실성을 증명할 수 있는 근거가 잘 드러나도록 기술)",
+        "maxLength": 1000
+      }
     ]
   },
   {
-    "id": 8,
-    "category": "공모전",
-    "org": "우아한형제들",
-    "title": "2026 대학생 기획 공모전",
-    "deadline": "2026-08-30",
-    "field": "서비스/마케팅 기획",
-    "target": "전국 대학(원) 재학생 및 휴학생",
-    "applyMethod": "온라인 제출",
-    "conditions": ["참가 형태: 개인 또는 4인 이하 팀"],
-    "keywords": ["경영학", "미디어커뮤니케이션", "마케팅", "기획", "콘텐츠"],
+    "id": 338501,
+    "category": "채용",
+    "org": "주식회사 스튜디오좋",
+    "title": "스튜디오좋 주니어 아트디렉터 신입 및 경력 모집",
+    "deadline": "2026-08-07",
+    "field": "마케팅/광고",
+    "target": "신입",
+    "applyMethod": "recruit@studiok110.com",
+    "conditions": [
+      "근무지역: 강남구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "마케팅/광고"
+    ],
     "gpaMin": 0,
     "essayQuestions": [
-      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
-      { "question": "기획안의 핵심 아이디어와 차별점을 작성해주세요.", "maxLength": 500 }
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
     ]
   },
   {
-    "id": 9,
-    "category": "대외활동",
-    "org": "네이버",
-    "title": "대학생 서포터즈 8기 모집",
+    "id": 338375,
+    "category": "채용",
+    "org": "미원상사",
+    "title": "[미원상사] 연구소 대학생 인턴십 채용",
+    "deadline": "2026-08-03",
+    "field": "전체",
+    "target": "신입",
+    "applyMethod": "https://recruit.mwc.co.kr/recruit?mode=detail&nidx=281",
+    "conditions": [
+      "근무지역: 단원구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "성장과정 중 현재의 본인을 있게 한 가장 중요한 사건과, 인생의 목표에 대하여 기술해주세요.(최소 200자 이상 최대 400자 이내) ★",
+        "maxLength": 400
+      },
+      {
+        "question": "본인 성격의 장점/보완점과, 성공적으로 일을 수행했던 경험에 대하여 구체적으로 기술해주세요.(최소 200자 이상 최대 400자 이내) ★",
+        "maxLength": 400
+      },
+      {
+        "question": "직무에 대한 지원동기와 그 직무를 수행하기 위해 어떤 준비를 해왔는지(전공지식/직무경험 등), 그리고 그 직무에 본인이 적합하다고 생각하는 이유를 기술해주세요.(최소 200자 이상 최대 500자 이내) ★",
+        "maxLength": 500
+      },
+      {
+        "question": "연구기술서 · 수상내역 · 프로젝트 기술 (해당하는 경우에만 작성)\n* 연구수행 주제, 보유역량 및 참여정도를 간략히 기술\n\n* 경력의 구체적인 업무 내용, 참여정도 등을 고려하여 기술",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338320,
+    "category": "채용",
+    "org": "모트라스",
+    "title": "[모트라스] [광주공장] 현장(정규)직 모집",
+    "deadline": "2026-08-09",
+    "field": "생산직/조립/가공 / 기계/자동차/조선",
+    "target": "신입",
+    "applyMethod": "https://motras.recruiter.co.kr/career/jobs/123000",
+    "conditions": [
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산직/조립/가공",
+      "기계/자동차/조선",
+      "생산/제조",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 본인의 지원 직무를 어떻게 이해하고 있는지 구체적으로 기술하고, 해당 분야에 본인이 적합하다고 판단할 수 있는 근거를 사례 및 경험을 바탕으로 기재해 주세요. (최소 200자 - 최대 1000자)",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. 목표를 달성하는 과정에서 힘들고 어려운 문제가 발생하였음에도 포기하지 않고 임무를 완수한 사례를 작성해 주세요. (최소 200자 - 최대 1000자)",
+        "maxLength": 1000
+      },
+      {
+        "question": "3. 본인만의 '차별화된 강점'과 '보완해야 할 약점'에 대해 사례를 들어 구체적으로 기술해 주세요. (최소 200자 - 최대 1000자)",
+        "maxLength": 1000
+      },
+      {
+        "question": "4. 입사 후 포부 및 자기 계발 계획을 작성해 주세요. (최소 200자 - 최대 1000자)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338312,
+    "category": "채용",
+    "org": "SK키파운드리",
+    "title": "[SK키파운드리] 경영기획 신입 채용",
+    "deadline": "2026-08-09",
+    "field": "재무/IR / 재무/회계/세무",
+    "target": "신입",
+    "applyMethod": "https://www.skcareers.com/Recruit/Detail/R261643",
+    "conditions": [
+      "근무지역: 흥덕구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "재무/IR",
+      "재무/회계/세무",
+      "기획/경영",
+      "금융"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자발적으로 최고 수준의 목표를 세우고 끈질기게 성취한 경험에 대해 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "팀워크를 발휘해 사람들을 연결하고 공동 목표 달성에 기여한 경험에 대해 서술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원하신 직무 분야의 전문성을 키우기 위해 꾸준히 노력한 경험에 대해 서술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원자님은 어떤 사람인가요? 본 문항은 자유롭게 여러분을 표현할 수 있는 자율 문항입니다. 지원자님을 가장 잘 나타낼수 있는 해시태그(#)를 포함하여, 남들과는 다른 특별한 가치관, 개성, 강점 등을 자유롭게 표현해 주세요",
+        "maxLength": 1000
+      },
+      {
+        "question": "본인의 연구 과제 또는 경력 사항에 대해 상세히 기술하여 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338209,
+    "category": "채용",
+    "org": "모트라스",
+    "title": "[모트라스] 화성공장 생산직(정규직) 사원 모집",
     "deadline": "2026-07-30",
-    "field": "서비스 홍보 / 콘텐츠 제작",
-    "target": "전국 대학(원) 재학생 및 휴학생",
-    "applyMethod": "온라인 제출",
-    "conditions": ["활동 기간: 3개월(주 1회 정기 미팅)", "참가 형태: 개인 지원"],
-    "keywords": ["미디어커뮤니케이션", "콘텐츠", "홍보", "현장실습", "창업동아리"],
+    "field": "생산직/조립/가공 / 자재/재고관리",
+    "target": "신입",
+    "applyMethod": "https://motras.recruiter.co.kr/career/jobs/123064",
+    "conditions": [
+      "근무지역: 화성시",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산직/조립/가공",
+      "자재/재고관리",
+      "생산/제조"
+    ],
     "gpaMin": 0,
     "essayQuestions": [
-      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
-      { "question": "관련 경험과 역량을 작성해주세요.", "maxLength": 500 }
+      {
+        "question": "1. 본인의 지원 직무를 어떻게 이해하고 있는지 구체적으로 기술하고 해당 분야에 본인이 적합하다고 판단할 수 있는 근거를 사례 및 경험을 바탕으로 기재해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. 본인의 성실함을 보여줄 수 있는 구체적인 사례를 작성해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "3. 동료들과 원만하게 지낼 수 있는 자신만의 강점이나 노하우를 알려주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "4. 입사 후 포부 및 자기 개발 계획을 작성해 주세요.",
+        "maxLength": 1000
+      }
     ]
   },
   {
-    "id": 10,
-    "category": "대외활동",
-    "org": "SK텔레콤",
-    "title": "대학생 서포터즈 T-Bright 모집",
-    "deadline": "2026-08-12",
-    "field": "IT/통신 서비스 홍보 및 콘텐츠 제작",
-    "target": "전국 대학(원) 재학생 및 휴학생",
-    "applyMethod": "온라인 제출",
-    "conditions": ["활동 기간: 4개월(월 2회 정기 미팅)", "참가 형태: 개인 지원"],
-    "keywords": ["미디어커뮤니케이션", "경영학", "콘텐츠", "홍보", "현장실습"],
+    "id": 338139,
+    "category": "채용",
+    "org": "기아",
+    "title": "[기아] 26년 엔지니어(생산직) 채용",
+    "deadline": "2026-08-21",
+    "field": "생산/제조",
+    "target": "신입",
+    "applyMethod": "https://career.kia.com/apply/applyView.kc?recuYy=2026&recuType=N4&recuCls=5",
+    "conditions": [
+      "근무지역: 광명시, 화성시",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산/제조"
+    ],
     "gpaMin": 0,
     "essayQuestions": [
-      { "question": "지원 동기를 작성해주세요.", "maxLength": 500 },
-      { "question": "SNS/콘텐츠 제작 관련 경험을 작성해주세요.", "maxLength": 500 }
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338111,
+    "category": "채용",
+    "org": "카카오뱅크",
+    "title": "[카카오뱅크] 서비스 기획자 - 여신",
+    "deadline": "2026-08-14",
+    "field": "경영기획/전략 / 사업기획/신규사업 / 서비스기획/운영",
+    "target": "신입/경력",
+    "applyMethod": "https://kakaobank.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=261109",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "경영기획/전략",
+      "사업기획/신규사업",
+      "서비스기획/운영",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 카카오뱅크에 입사를 희망하게 된 구체적인 이유는 무엇이며, 입사 후 목표를 기술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. 같지만 다른 은행인 카카오뱅크, 본인의 차별화 된 역량 및 기술을 근거로 지원한 직무에 적합한 이유를 기술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "1. 카카오뱅크에 입사를 희망하게 된 구체적인 이유는 무엇이며, 입사 후 목표를 기술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. 같지만 다른 은행인 카카오뱅크, 본인의 차별화 된 역량 및 기술을 근거로 지원한 직무에 적합한 이유를 기술해 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338046,
+    "category": "채용",
+    "org": "KCC실리콘",
+    "title": "[KCC실리콘] 관리부문 신입사원 채용",
+    "deadline": "2026-08-02",
+    "field": "사무/문서관리",
+    "target": "신입",
+    "applyMethod": "https://recruit.kccworld.co.kr/recruit/recruitMain.do?SiteType=C",
+    "conditions": [
+      "근무지역: 서산시",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "사무/문서관리",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "개인의 성장과정 및 차별화된 강점 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "KCC실리콘 지원동기 및 사내에서 이루고 싶은 목표",
+        "maxLength": 500
+      },
+      {
+        "question": "지원분야(직무) 준비한 과정 - 개인의 경험을 토대로 구체적 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "KCC실리콘 인재상 중 자신에게 가장 부합하는 항목을 선택하여 개인의 경험과 함께 구체적으로 기술",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337709,
+    "category": "채용",
+    "org": "딜로이트 안진회계법인",
+    "title": "[딜로이트 안진회계법인] 경영자문부문 I&G 그룹 인프라팀 정규직(Consultant)",
+    "deadline": "2026-08-21",
+    "field": "사업기획/신규사업",
+    "target": "신입",
+    "applyMethod": "https://join.deloitte.co.kr/WiseRecruit2/User/RecruitView.aspx?ridx=5153",
+    "conditions": [
+      "근무지역: 영등포구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "사업기획/신규사업",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 지원동기를 작성해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. Career Goal을 작성해 주십시오.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 337702,
+    "category": "채용",
+    "org": "GS파워",
+    "title": "[GS파워] 2026년 하반기 신입사원 공개채용",
+    "deadline": "2026-07-31",
+    "field": "전체",
+    "target": "신입",
+    "applyMethod": "https://gspower.incruit.com/hire/viewhire.asp?projectid=101",
+    "conditions": [
+      "근무지역: 동안구, 오정구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "* 1. GS파워에 입사하고자 하는 동기에 대해 기술해 주십시오",
+        "maxLength": 500
+      },
+      {
+        "question": "* 2. 새로운 환경이나 조직에서 동료들과의 협업을 통해 성과를 만들었던 경험과 이를 위해 본인이 했던 구체적인 노력을 기술해 주십시오",
+        "maxLength": 500
+      },
+      {
+        "question": "3. 새로운 지식 또는 정보를 활용하거나 남다른 아이디어를 통해 문제를 개선했던 경험에 대해 기술해 주십시오.",
+        "maxLength": 500
+      },
+      {
+        "question": "4. 자신의 경험 중 실패한 사례는 무엇이며, 그 경험을 통해 배운 점은 무엇인지 기술해 주십시오.",
+        "maxLength": 500
+      },
+      {
+        "question": "5. GS파워에 입사 후 본인이 가장 크게 기여할 수 있는 부분은 무엇이며, 입사 후 이루고 싶은 목표에 대해 기술해 주십시오.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337693,
+    "category": "채용",
+    "org": "이크레더블",
+    "title": "[이크레더블] ESG 평가 부문 인재채용",
+    "deadline": "2026-08-16",
+    "field": "전체",
+    "target": "신입",
+    "applyMethod": "https://www.jobkorea.co.kr/Recruit/GI_Read/49633945?Oem_Code=C1",
+    "conditions": [
+      "근무지역: 구로구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "직무경력 혹은 경험\n(제한 없음)",
+        "maxLength": 1000
+      },
+      {
+        "question": "성장과정 및 지원동기\n(제한 없음)",
+        "maxLength": 1000
+      },
+      {
+        "question": "성격의 장단점 및 가치관\n(제한 없음)",
+        "maxLength": 1000
+      },
+      {
+        "question": "사회활동, 포상 및 특기사항\n(제한 없음)",
+        "maxLength": 1000
+      },
+      {
+        "question": "향후 계획 및 기타\n(제한 없음)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 337660,
+    "category": "채용",
+    "org": "현대모비스",
+    "title": "[현대모비스] 2026년 7월 관리직 신입 채용 (~08/03)",
+    "deadline": "2026-08-03",
+    "field": "전체",
+    "target": "신입",
+    "applyMethod": "https://careers.mobis.com/jobs",
+    "conditions": [
+      "근무지역: 강남구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "기획/경영",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "· 1. 지원동기와 입사 후 회사에서 이루고 싶은 꿈은 무엇인가요?\nPlease share your motivation for applying Hyundai Mobis and your career goals in the future.",
+        "maxLength": 1000
+      },
+      {
+        "question": "· 2. 지원한 직무를 위해 필요한 역량은 무엇이라고 생각하며, 이 역량을 갖추기 위한 노력이나 자신만의 특별한 경험을 작성해 주세요.\nPlease describe the key competencies needed for the position, and how you’ve developed them through your efforts or unique experiences.",
+        "maxLength": 1000
+      },
+      {
+        "question": "· 3. 다른 지원자 대비 본인만의 '차별화된 강점'과 '보완해야 할 약점'에 대해 사례를 들어 구체적으로 기술해 주세요.\nPlease share your unique strengths and areas for improvement, with specific examples.",
+        "maxLength": 1000
+      },
+      {
+        "question": "· 1. 지원동기와 입사 후 회사에서 이루고 싶은 꿈은 무엇인가요?\nPlease share your motivation for applying Hyundai Mobis and your career goals in the future.",
+        "maxLength": 1000
+      },
+      {
+        "question": "· 2. 지원한 직무를 위해 필요한 역량은 무엇이라고 생각하며, 이 역량을 갖추기 위한 노력이나 자신만의 특별한 경험을 작성해 주세요.\nPlease describe the key competencies needed for the position, and how you’ve developed them through your efforts or unique experiences.",
+        "maxLength": 1000
+      },
+      {
+        "question": "· 3. 다른 지원자 대비 본인만의 '차별화된 강점'과 '보완해야 할 약점'에 대해 사례를 들어 구체적으로 기술해 주세요.\nPlease share your unique strengths and areas for improvement, with specific examples.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 337523,
+    "category": "채용",
+    "org": "유니투스",
+    "title": "[유니투스] [천안공장]천안지원팀 - 총무 담당자(계약직)",
+    "deadline": "2026-08-09",
+    "field": "전체",
+    "target": "신입/경력",
+    "applyMethod": "https://unitushr.career.greetinghr.com/ko/o/229378",
+    "conditions": [
+      "근무지역: 서북구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 지원 직무에 본인이 적합하다고 생각되는 사례와 경험을 이야기해주세요.",
+        "maxLength": 700
+      },
+      {
+        "question": "2. 목표달성 과정에서 힘들고 어려운 문제 발생 시 포기하지 않고 임무를 수행한 사례가 있다면 작성해주세요.",
+        "maxLength": 700
+      },
+      {
+        "question": "3. 입사 후 포부와 향후 계획을 작성해주세요.",
+        "maxLength": 700
+      },
+      {
+        "question": "1. 지원 직무에 본인이 적합하다고 생각되는 사례와 경험을 이야기해주세요.",
+        "maxLength": 700
+      },
+      {
+        "question": "2. 목표달성 과정에서 힘들고 어려운 문제 발생 시 포기하지 않고 임무를 수행한 사례가 있다면 작성해주세요.",
+        "maxLength": 700
+      },
+      {
+        "question": "3. 입사 후 포부와 향후 계획을 작성해주세요.",
+        "maxLength": 700
+      }
+    ]
+  },
+  {
+    "id": 337348,
+    "category": "채용",
+    "org": "효성화학",
+    "title": "[효성화학] 필름PU 품질보증 신입사원 채용",
+    "deadline": "2026-08-03",
+    "field": "품질관리(QC/QA)",
+    "target": "신입",
+    "applyMethod": "https://hyosung.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=260769",
+    "conditions": [
+      "근무지역: 구미시",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "품질관리(QC/QA)",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원직무 관련 자신이 갖춘 역량에 대하여 구체적으로 기술하여 주십시오. (최대 2,000자 입력가능)",
+        "maxLength": 2000
+      }
+    ]
+  },
+  {
+    "id": 337216,
+    "category": "채용",
+    "org": "CJ프레시웨이",
+    "title": "[CJ프레시웨이] SCM 센터운영(동탄) 신입/경력사원 모집",
+    "deadline": "2026-08-05",
+    "field": "물류/SCM관리 / 배송/운송/화물",
+    "target": "신입/경력",
+    "applyMethod": "https://recruit.cj.net/recruit/ko/recruit/recruit/bestDetail.fo?direct=N&zz_jo_num=J20260612039107",
+    "conditions": [
+      "근무지역: 화성시",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "물류/SCM관리",
+      "배송/운송/화물",
+      "물류/유통"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원하는 회사와 직무의 지원동기가 무엇입니까. 과거 경험과 앞으로의 목표를 중심으로 기술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "직무와 관련된 과거 경험중, 가장 큰 성과는 무엇입니까. 본인의 역할과 과정을 중심으로 기술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원하는 회사와 직무의 지원동기가 무엇입니까. 과거 경험과 앞으로의 목표를 중심으로 기술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "직무와 관련된 과거 경험중, 가장 큰 성과는 무엇입니까. 본인의 역할과 과정을 중심으로 기술해 주십시오.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 337140,
+    "category": "채용",
+    "org": "대한항공",
+    "title": "[대한항공] 2026년 하반기 사내 간호사 모집",
+    "deadline": "2026-08-03",
+    "field": "전체",
+    "target": "신입/경력",
+    "applyMethod": "https://koreanair.recruiter.co.kr/career/jobs/122495",
+    "conditions": [
+      "근무지역: 강서구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 지원동기 및 본인이 생각하는 대한항공 사내 간호사에게 필요한 핵심역량은 무엇인지 작성해 주십시오.\n(최대 1000자 입력가능)",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. 간호사 관련 주요이력 및 경력사항에 대해 작성해 주십시오. \n(최대 500자 입력가능)",
+        "maxLength": 500
+      },
+      {
+        "question": "1. 지원동기 및 본인이 생각하는 대한항공 사내 간호사에게 필요한 핵심역량은 무엇인지 작성해 주십시오.\n(최대 1000자 입력가능)",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. 간호사 관련 주요이력 및 경력사항에 대해 작성해 주십시오. \n(최대 500자 입력가능)",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 336881,
+    "category": "채용",
+    "org": "SK키파운드리",
+    "title": "[SK키파운드리] PDK/Ruledeck 분야 신입 채용",
+    "deadline": "2026-07-29",
+    "field": "기계/자동차/조선 / 전기/전자/반도체 / 기계설계/CAD",
+    "target": "신입",
+    "applyMethod": "https://www.skcareers.com/Recruit/Detail/R261610",
+    "conditions": [
+      "근무지역: 흥덕구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "기계/자동차/조선",
+      "전기/전자/반도체",
+      "기계설계/CAD",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자발적으로 최고 수준의 목표를 세우고 끈질기게 성취한 경험에 대해 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "팀워크를 발휘해 사람들을 연결하고 공동 목표 달성에 기여한 경험에 대해 서술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원하신 직무 분야의 전문성을 키우기 위해 꾸준히 노력한 경험에 대해 서술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원자님은 어떤 사람인가요? 본 문항은 자유롭게 여러분을 표현할 수 있는 자율 문항입니다. 지원자님을 가장 잘 나타낼수 있는 해시태그(#)를 포함하여, 남들과는 다른 특별한 가치관, 개성, 강점 등을 자유롭게 표현해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "본인의 연구 과제 또는 경력 사항에 대해 상세히 기술하여 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 336383,
+    "category": "채용",
+    "org": "LX글라스",
+    "title": "[LX글라스] 군산공장 생산기능직 채용",
+    "deadline": "2026-07-29",
+    "field": "생산/공정관리 / 생산직/조립/가공",
+    "target": "신입",
+    "applyMethod": "https://lx.recruiter.co.kr/career/jobs/122368",
+    "conditions": [
+      "근무지역: 군산시",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산/공정관리",
+      "생산직/조립/가공",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 지원동기와 입사 후 회사에서 이루고 싶은 꿈은 무엇인가요?",
+        "maxLength": 2000
+      },
+      {
+        "question": "2. 지원한 직무를 위해 필요한 역량은 무엇이라고 생각하며, 이 역량을 갖추기 위한 노력이나 자신만의 특별한 경험을 작성해 주세요.",
+        "maxLength": 2000
+      },
+      {
+        "question": "3. 다른 지원자 대비 본인만의 '차별화된 강점'과 '보완해야 할 약점'에 대해 사례를 들어 구체적으로 기술해 주세요.",
+        "maxLength": 2000
+      }
+    ]
+  },
+  {
+    "id": 336362,
+    "category": "채용",
+    "org": "유안타증권",
+    "title": "[유안타증권] 리서치센터 신입/경력 디자이너 채용",
+    "deadline": "2026-08-03",
+    "field": "전체",
+    "target": "신입/경력",
+    "applyMethod": "https://recruit.yuantakorea.com:4433/jobinfo/jobinfo_view.asp?ID=1936",
+    "conditions": [
+      "근무지역: 영등포구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "디자인"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "본인의 VISION을 구체적으로 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원동기와 본인이 지원한 분야를 성공적으로 수행할 수 있다고 생각하는 이유와 성공적인 수행을 위해 본인이 준비해 온 것에 대해 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "본인의 성향 및 특징을 함축적으로 가장 잘 표현할 수 있는 단어 3개를 작성하시고, 그 이유를 자유롭게 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "본인의 VISION을 구체적으로 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원동기와 본인이 지원한 분야를 성공적으로 수행할 수 있다고 생각하는 이유와 성공적인 수행을 위해 본인이 준비해 온 것에 대해 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "본인의 성향 및 특징을 함축적으로 가장 잘 표현할 수 있는 단어 3개를 작성하시고, 그 이유를 자유롭게 서술해 주십시오.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 336069,
+    "category": "채용",
+    "org": "SK키파운드리",
+    "title": "[SK키파운드리] 제조 Engineer 대졸 신입 채용",
+    "deadline": "2026-07-29",
+    "field": "생산/공정관리 / 생산직/조립/가공",
+    "target": "신입",
+    "applyMethod": "https://www.skcareers.com/Recruit/Detail/R261583",
+    "conditions": [
+      "근무지역: 흥덕구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산/공정관리",
+      "생산직/조립/가공",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자발적으로 최고 수준의 목표를 세우고 끈질기게 성취한 경험에 대해 서술해 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "팀워크를 발휘해 사람들을 연결하고 공동 목표 달성에 기여한 경험에 대해 서술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원하신 직무 분야의 전문성을 키우기 위해 꾸준히 노력한 경험에 대해 서술해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원자님은 어떤 사람인가요? 본 문항은 자유롭게 여러분을 표현할 수 있는 자율 문항입니다. 지원자님을 가장 잘 나타낼수 있는 해시태그(#)를 포함하여, 남들과는 다른 특별한 가치관, 개성, 강점 등을 자유롭게 표현해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "본인의 연구 과제 또는 경력 사항에 대해 상세히 기술하여 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 335966,
+    "category": "채용",
+    "org": "한화비전",
+    "title": "[한화비전] 카메라 회로설계",
+    "deadline": "2026-10-14",
+    "field": "기계/자동차/조선 / 전기/전자/반도체",
+    "target": "신입",
+    "applyMethod": "https://hanwhavision.ninehire.site/job_posting/YafVRLeH",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "기계/자동차/조선",
+      "전기/전자/반도체",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자유양식 입니다.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 335783,
+    "category": "채용",
+    "org": "CJ올리브네트웍스",
+    "title": "[CJ올리브네트웍스] [신입] 콘텐츠 유통 서비스 운영",
+    "deadline": "2026-07-28",
+    "field": "서비스기획/운영 / UI/UX디자인",
+    "target": "신입",
+    "applyMethod": "https://recruit.cj.net/recruit/ko/recruit/recruit/bestDetail.fo?direct=N&zz_jo_num=J20260714038334&closeYn=13&schVal0=1&schVal1=&schVal2=&schVal3=E10&schVal4=&schVal5=",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "서비스기획/운영",
+      "UI/UX디자인",
+      "기획/경영",
+      "디자인"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "CJ올리브네트웍스에 지원한 동기와 입사 후 본인의 성장계획을 작성해 주세요.",
+        "maxLength": 3000
+      },
+      {
+        "question": "향후 미디어 시장은 어떠한 형태의 미디어가 주도할 것이라고 생각하십니까? ① 시장을 주도할 미디어에 대해 정의하고, ②그렇게 생각하는 이유에 대하여 작성해주세요. (1,000자 이내)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 335625,
+    "category": "채용",
+    "org": "현대엔지비",
+    "title": "[현대엔지비] [2026년 3분기] 정규직 신입 채용",
+    "deadline": "2026-07-29",
+    "field": "전체 / 전체 / 전체",
+    "target": "신입",
+    "applyMethod": "https://ngv.recruiter.co.kr/career/jobs/122035",
+    "conditions": [
+      "근무지역: 관악구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "기획/경영",
+      "생산/제조",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 지원동기 및 포부 (400자 이내)",
+        "maxLength": 400
+      },
+      {
+        "question": "2. 성장과정 (400자 이내)",
+        "maxLength": 400
+      },
+      {
+        "question": "3. 성격의 장/단점 및 특기 (400자 이내)",
+        "maxLength": 400
+      },
+      {
+        "question": "4. 자기 PR (400자 이내)",
+        "maxLength": 400
+      }
+    ]
+  },
+  {
+    "id": 335438,
+    "category": "채용",
+    "org": "AJIN USA",
+    "title": "[미국/조지아] Ajin/Wooshin USA  품질관리 사원 채용 (비자발급비 지원)",
+    "deadline": "2026-07-28",
+    "field": "생산/제조",
+    "target": "신입",
+    "applyMethod": "ceo@ghr.or.kr",
+    "conditions": [
+      "근무지역: 해외",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 335434,
+    "category": "채용",
+    "org": "AJIN USA",
+    "title": "[미국/조지아] Ajin/Wooshin USA Sales & Logistics 사원 채용 (비자발급비 지원)",
+    "deadline": "2026-07-28",
+    "field": "영업/CS",
+    "target": "신입",
+    "applyMethod": "ceo@ghr.or.kr",
+    "conditions": [
+      "근무지역: 해외",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "영업/CS"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 335427,
+    "category": "채용",
+    "org": "SJG 세종",
+    "title": "[미국인턴] SJG 조지아 영업원가팀 인턴/신입 채용 (~7/31, 비자발급비 지원)",
+    "deadline": "2026-07-28",
+    "field": "기획/경영",
+    "target": "신입",
+    "applyMethod": "ceo@ghr.or.kr",
+    "conditions": [
+      "근무지역: 해외",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 335310,
+    "category": "채용",
+    "org": "KCC글라스",
+    "title": "[KCC글라스] [경남영업소] 유리 영업 직무 신입 채용",
+    "deadline": "2026-10-12",
+    "field": "전체",
+    "target": "신입",
+    "applyMethod": "https://kccglass.career.greetinghr.com/ko/o/226614",
+    "conditions": [
+      "근무지역: 금정구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "영업/CS"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "경력사항을 시기 별 주요업무 및 성과 중심으로 구체적으로 작성하시기 바랍니다.\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 5000
+      },
+      {
+        "question": "\"KCC글라스\"에 대한 지원동기에 대하여 구체적으로 기술하여 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원 직무 관련 본인의 전문지식과 경험을 작성하고, 본인이 지원 직무에 적합한 사유를 기술하시기 바랍니다.",
+        "maxLength": 1000
+      },
+      {
+        "question": "현재 연봉 / 희망 연봉\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 335305,
+    "category": "채용",
+    "org": "KCC글라스",
+    "title": "[KCC글라스] [본사] 파일 영업 직무 신입 채용",
+    "deadline": "2026-10-12",
+    "field": "전체",
+    "target": "신입",
+    "applyMethod": "https://kccglass.career.greetinghr.com/ko/o/227551",
+    "conditions": [
+      "근무지역: 서초구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "영업/CS"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "경력사항을 시기 별 주요업무 및 성과 중심으로 구체적으로 작성하시기 바랍니다.\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 5000
+      },
+      {
+        "question": "\"KCC글라스\"에 대한 지원동기에 대하여 구체적으로 기술하여 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원 직무 관련 본인의 전문지식과 경험을 작성하고, 본인이 지원 직무에 적합한 사유를 기술하시기 바랍니다.",
+        "maxLength": 1000
+      },
+      {
+        "question": "현재 연봉 / 희망 연봉\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 335265,
+    "category": "채용",
+    "org": "KCC글라스",
+    "title": "[KCC글라스] [전의공장] 안전유리 신제품/신기술 개발 직무 신입 채용",
+    "deadline": "2026-10-12",
+    "field": "화학/에너지/환경",
+    "target": "신입",
+    "applyMethod": "https://kccglass.career.greetinghr.com/ko/o/227550",
+    "conditions": [
+      "근무지역: 세종",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "화학/에너지/환경",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "경력사항을 시기 별 주요업무 및 성과 중심으로 구체적으로 작성하시기 바랍니다.\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      },
+      {
+        "question": "\"KCC글라스\"에 대한 지원동기에 대하여 구체적으로 기술하여 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원 직무 관련 본인의 전문지식과 경험을 작성하고, 본인이 지원 직무에 적합한 사유를 기술하시기 바랍니다.",
+        "maxLength": 1000
+      },
+      {
+        "question": "현재 연봉 / 희망 연봉\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 335264,
+    "category": "채용",
+    "org": "KCC글라스",
+    "title": "[KCC글라스] [전의공장] 물류센터 안전관리 직무 신입 채용",
+    "deadline": "2026-10-12",
+    "field": "전기/소방/설비",
+    "target": "신입",
+    "applyMethod": "https://kccglass.career.greetinghr.com/ko/o/227549",
+    "conditions": [
+      "근무지역: 세종",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전기/소방/설비",
+      "건설"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "경력사항을 시기 별 주요업무 및 성과 중심으로 구체적으로 작성하시기 바랍니다.\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      },
+      {
+        "question": "\"KCC글라스\"에 대한 지원동기에 대하여 구체적으로 기술하여 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원 직무 관련 본인의 전문지식과 경험을 작성하고, 본인이 지원 직무에 적합한 사유를 기술하시기 바랍니다.",
+        "maxLength": 1000
+      },
+      {
+        "question": "현재 연봉 / 희망 연봉\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 335260,
+    "category": "채용",
+    "org": "KCC글라스",
+    "title": "[KCC글라스] [전의공장] 품질보증 직무 신입 채용",
+    "deadline": "2026-10-12",
+    "field": "품질관리(QC/QA)",
+    "target": "신입",
+    "applyMethod": "https://kccglass.career.greetinghr.com/ko/o/226731",
+    "conditions": [
+      "근무지역: 세종",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "품질관리(QC/QA)",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "경력사항을 시기 별 주요업무 및 성과 중심으로 구체적으로 작성하시기 바랍니다.\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      },
+      {
+        "question": "\"KCC글라스\"에 대한 지원동기에 대하여 구체적으로 기술하여 주십시오.",
+        "maxLength": 1000
+      },
+      {
+        "question": "지원 직무 관련 본인의 전문지식과 경험을 작성하고, 본인이 지원 직무에 적합한 사유를 기술하시기 바랍니다.",
+        "maxLength": 1000
+      },
+      {
+        "question": "현재 연봉 / 희망 연봉\n경력직 지원자만 작성 (신입 지원자는 작성할 필요 없음)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 334107,
+    "category": "채용",
+    "org": "카카오",
+    "title": "[카카오] LLM Research Engineer (Pre-training) (신입/경력)",
+    "deadline": "2026-10-06",
+    "field": "데이터분석",
+    "target": "신입/경력",
+    "applyMethod": "https://careers.kakao.com/jobs/P-14476",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "데이터분석",
+      "IT/개발"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자유양식 입니다.",
+        "maxLength": 2500
+      },
+      {
+        "question": "자유양식 입니다.",
+        "maxLength": 2500
+      }
+    ]
+  },
+  {
+    "id": 333895,
+    "category": "채용",
+    "org": "넥슨코리아",
+    "title": "[넥슨코리아] [재무관리본부] 회계(결산) 업무 담당자",
+    "deadline": "2026-10-06",
+    "field": "재무/IR / 재무/회계/세무",
+    "target": "신입/경력",
+    "applyMethod": "https://careers.nexon.com/recruit/10036",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "재무/IR",
+      "재무/회계/세무",
+      "기획/경영",
+      "금융"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자유롭게 본인을 소개해 주시고 지원하신 분야에 적합하다고 생각하는 이유를 말씀해 주세요.",
+        "maxLength": 2500
+      },
+      {
+        "question": "자유롭게 본인을 소개해 주시고 지원하신 분야에 적합하다고 생각하는 이유를 말씀해 주세요.",
+        "maxLength": 2500
+      }
+    ]
+  },
+  {
+    "id": 333850,
+    "category": "채용",
+    "org": "켐가스코리아",
+    "title": "[켐가스코리아] 생산팀 신입 채용",
+    "deadline": "2026-08-05",
+    "field": "생산/공정관리",
+    "target": "신입",
+    "applyMethod": "https://recruit.posco.com/h22a01-front/H22A1001.html?id=658002",
+    "conditions": [
+      "근무지역: 음성군",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산/공정관리",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자유양식 입니다.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 333846,
+    "category": "채용",
+    "org": "에이아이에이생명보험",
+    "title": "[에이아이에이생명보험] Actuarial Assumptions Professional",
+    "deadline": "2026-10-05",
+    "field": "보험심사/손해사정",
+    "target": "신입",
+    "applyMethod": "https://aia.wd3.myworkdayjobs.com/ko-KR/External/job/Actuarial-Assumptions-Specialist_JR-67574?locationCountry=7a5a2aadf9d34086a2bfbfd408bc28da",
+    "conditions": [
+      "근무지역: 중구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "보험심사/손해사정",
+      "금융"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자유양식 입니다.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 333282,
+    "category": "채용",
+    "org": "KCC",
+    "title": "[KCC] 본사 총무팀 시설운영 담당 인재 채용",
+    "deadline": "2026-09-22",
+    "field": "총무/법무/비서",
+    "target": "신입",
+    "applyMethod": "https://recruit.kccworld.co.kr/recruit/recruitMain?SiteType=A&SEQ=13832",
+    "conditions": [
+      "근무지역: 서초구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "총무/법무/비서",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원한 직무와 관련하여 다른 사람과 차별화 되는 본인의 강점을 구체적 사례와 함께 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "지금까지 가장 열정을 쏟아부었던 경험이 무엇이었으며, 성공과 실패 여부를 떠나 그 과정을 통해 무엇을 배웠는지 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "공동의 목표를 위해 타인과 협업한 경험이 무엇이었으며, 그 조직의 발전을 위해 본인이 수행한 역할을 구체적으로 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "KCC에 하고 싶은 말",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 333279,
+    "category": "채용",
+    "org": "KCC",
+    "title": "[KCC] 울산공장 색상개발 테크니션 인재 채용",
+    "deadline": "2026-10-01",
+    "field": "화학/에너지/환경",
+    "target": "신입",
+    "applyMethod": "https://recruit.kccworld.co.kr/recruit/recruitMain",
+    "conditions": [
+      "근무지역: 동구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "화학/에너지/환경",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원한 직무와 관련하여 다른 사람과 차별화 되는 본인의 강점을 구체적 사례와 함께 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "지금까지 가장 열정을 쏟아부었던 경험이 무엇이었으며, 성공과 실패 여부를 떠나 그 과정을 통해 무엇을 배웠는지 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "공동의 목표를 위해 타인과 협업한 경험이 무엇이었으며, 그 조직의 발전을 위해 본인이 수행한 역할을 구체적으로 기술",
+        "maxLength": 500
+      },
+      {
+        "question": "KCC에 하고 싶은 말",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338597,
+    "category": "인턴십",
+    "org": "카카오모빌리티",
+    "title": "[Assistant] 리크루팅파트 업무 보조",
+    "deadline": "2026-10-26",
+    "field": "기획/경영",
+    "target": "인턴",
+    "applyMethod": "https://kakaomobility.career.greetinghr.com/ko/o/230838",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338440,
+    "category": "인턴십",
+    "org": "크림(KREAM)",
+    "title": "[크림(KREAM)] Merchandising(바잉) 체험형 인턴 모집",
+    "deadline": "2026-08-05",
+    "field": "전체",
+    "target": "인턴",
+    "applyMethod": "https://recruit.kreamcorp.com/rcrt/view.do?annoId=30005219&lang=ko",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "[필수] 지원 동기가 무엇인지, 입사 후 기여할 수 있는 부분에 대해 구체적으로 작성해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 지원 직무와 관련된 자신의 대표적인 프로젝트 한 가지를 적어 주시되, 어떠한 고민을 가지고 어떻게 결과물을 만들어 냈는지, 기여도는 어떠했는지 구체적으로 설명해 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338437,
+    "category": "인턴십",
+    "org": "크림(KREAM)",
+    "title": "[크림(KREAM)] Strategy RA 체험형 인턴 모집",
+    "deadline": "2026-08-09",
+    "field": "전체 / 전체",
+    "target": "인턴",
+    "applyMethod": "https://recruit.kreamcorp.com/rcrt/view.do?annoId=30005213&lang=ko",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "기획/경영",
+      "마케팅/광고"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "[필수] 본 직무에 지원하게 된 동기와, 내가 이 포지션에 가장 적합한 후보라고 생각하는 이유를 작성해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 2026년, KREAM에서 가장 주목해야 할 브랜드 or 아이템은 무엇이라고 생각하시나요? 그 이유를 논리적으로 작성해주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338429,
+    "category": "인턴십",
+    "org": "카카오페이",
+    "title": "[카카오페이] [어시스턴트] 오프라인 결제 마케팅 업무 지원",
+    "deadline": "2026-10-26",
+    "field": "전체",
+    "target": "인턴",
+    "applyMethod": "https://kakaopay.career.greetinghr.com/ko/o/230275",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "마케팅/광고"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "자유양식 입니다.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338381,
+    "category": "인턴십",
+    "org": "스노우",
+    "title": "[스노우] Trend Insight 미국 담당 체험형 인턴 모집",
+    "deadline": "2026-08-04",
+    "field": "시장조사/리서치",
+    "target": "인턴",
+    "applyMethod": "https://recruit.snowcorp.com/rcrt/view.do?annoId=30005217&lang=ko",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "시장조사/리서치",
+      "마케팅/광고"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "[필수] 지원 동기 중심으로 한 자기소개서를 작성해주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 현재의 관심분야와 그 사유를 설명하고 현재 관심 분야에 대한 어떤 활동을 실제 하고 있는지 작성해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 자사 서비스 중 자주 사용하는 서비스 앱 하나를 정하고 사용성 관점에서 장점과 단점을 정리하여 기술해주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338352,
+    "category": "인턴십",
+    "org": "(주)이노션",
+    "title": "[이노션] 브랜드컬렉션 물류 및 유통 행정 보조 (체험형 인턴)",
+    "deadline": "2026-08-02",
+    "field": "물류/유통",
+    "target": "인턴",
+    "applyMethod": "https://innocean.recruiter.co.kr/career/jobs/123263",
+    "conditions": [
+      "근무지역: 강남구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "물류/유통"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338173,
+    "category": "인턴십",
+    "org": "카카오페이",
+    "title": "[카카오페이] [어시스턴트] 오프라인 결제 서비스 운영 지원",
+    "deadline": "2026-10-25",
+    "field": "서비스기획/운영",
+    "target": "인턴",
+    "applyMethod": "https://kakaopay.career.greetinghr.com/ko/o/230086",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "서비스기획/운영",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "카카오페이에 지원하게 된 동기, 업무 역량 등에 대해 자유롭게 작성해 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338172,
+    "category": "인턴십",
+    "org": "카카오페이",
+    "title": "[카카오페이] [어시스턴트] 굿딜 서비스 운영 지원",
+    "deadline": "2026-10-25",
+    "field": "서비스기획/운영",
+    "target": "인턴",
+    "applyMethod": "https://kakaopay.career.greetinghr.com/ko/o/230088",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "서비스기획/운영",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "카카오페이에 지원하게 된 동기, 업무 역량 등에 대해 자유롭게 작성해 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338120,
+    "category": "인턴십",
+    "org": "CJ푸드빌",
+    "title": "[CJ푸드빌] 음성공장 베이커리 생산직 신입사원 모집",
+    "deadline": "2026-07-29",
+    "field": "생산/공정관리 / 생산직/조립/가공",
+    "target": "인턴",
+    "applyMethod": "https://recruit.cj.net/recruit/ko/recruit/recruit/detail.fo?zz_jo_num=8725&closeYn=5&schVal0=1&schVal1=&schVal2=&schVal3=B40&schVal4=&schVal5=",
+    "conditions": [
+      "근무지역: 음성군",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산/공정관리",
+      "생산직/조립/가공",
+      "생산/제조"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "여러분이 선택한 직무에 대한 지원동기는 무엇인가요? ① 관심 갖게 된 계기, ② 본인이 해당 업무를 잘 수행할 수 있는 이유를 작성해 주세요. (1,000자 이내)",
+        "maxLength": 1000
+      },
+      {
+        "question": "여러분이 선택한 직무에 대한 지원동기는 무엇인가요? ① 관심 갖게 된 계기, ② 본인이 해당 업무를 잘 수행할 수 있는 이유를 작성해 주세요. (1,000자 이내)",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338117,
+    "category": "인턴십",
+    "org": "카카오페이",
+    "title": "[카카오페이] [어시스턴트] 마이데이터 자산관리 서비스 운영 지원",
+    "deadline": "2026-10-25",
+    "field": "서비스기획/운영",
+    "target": "인턴",
+    "applyMethod": "https://kakaopay.career.greetinghr.com/ko/o/230092",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "서비스기획/운영",
+      "기획/경영"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "카카오페이에 지원하게 된 동기, 업무 역량 등에 대해 자유롭게 작성해 주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 338058,
+    "category": "인턴십",
+    "org": "KB자산운용",
+    "title": "[KB자산운용] 디지털마케팅본부 인턴 채용",
+    "deadline": "2026-08-09",
+    "field": "디지털/퍼포먼스마케팅",
+    "target": "인턴",
+    "applyMethod": "https://kbam.careerlink.kr/jobs/RC20260724032422",
+    "conditions": [
+      "근무지역: 영등포구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "디지털/퍼포먼스마케팅",
+      "마케팅/광고"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 지원한 직무와 연관된 본인의 경험사항 상세 기술(1,000자 이내) *",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. KB자산운용 지원동기(500자 이내) *",
+        "maxLength": 500
+      },
+      {
+        "question": "3. 성격의 장∙단점(500자 이내) *",
+        "maxLength": 500
+      },
+      {
+        "question": "4. 입사 후 포부 및 경력개발 계획(500자 이내) *",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338057,
+    "category": "인턴십",
+    "org": "롯데홈쇼핑",
+    "title": "[롯데홈쇼핑] 2026년 7월 체험형 인턴채용(SNS 운영/마케팅)",
+    "deadline": "2026-07-28",
+    "field": "마케팅/광고",
+    "target": "인턴",
+    "applyMethod": "https://www.lottehomeshopping.com/user/apply/notice.lotte",
+    "conditions": [
+      "근무지역: 영등포구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "마케팅/광고"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337840,
+    "category": "인턴십",
+    "org": "크림(KREAM)",
+    "title": "[크림(KREAM)] Brand Designer 체험형 인턴 모집",
+    "deadline": "2026-08-03",
+    "field": "전체",
+    "target": "인턴",
+    "applyMethod": "https://recruit.kreamcorp.com/rcrt/view.do?annoId=30005198&lang=ko#",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "디자인"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "[필수] 자기자신을 자유롭게 소개해 주세요. (예: 성격의 장단점, 가치관, 경력, 지원동기 등)",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 최근 관심있게 보고 있는 기술 또는 산업 트렌드를 간략히 소개해주세요. (기술 및 시장 트렌드에 대한 소개, 관심있게 본 까닭 등)",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 지원 직무와 관련된 자신의 대표적인 프로젝트 한 가지를 적어 주시되, 어떠한 고민을 가지고 어떻게 결과물을 만들어 냈는지, 기여도는 어떠했는지 구체적으로 설명해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 협업 시 중요하게 생각하는 것과 잘하는 것을 설명해주세요. (커뮤니케이션 스킬, 친화력 있는 성격, 전문성 등)",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 함께하게 된다면 기대하는 바(성취하고 싶은 부분)가 무엇인지 말씀해주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 337837,
+    "category": "인턴십",
+    "org": "크림(KREAM)",
+    "title": "[크림(KREAM)] 트렌드 마케팅 기획 체험형 인턴 모집",
+    "deadline": "2026-08-03",
+    "field": "전체",
+    "target": "인턴",
+    "applyMethod": "https://recruit.kreamcorp.com/rcrt/view.do?annoId=30005205&lang=ko",
+    "conditions": [
+      "근무지역: 분당구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "마케팅/광고"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "[필수] 지원동기 및 경력을 중심으로 한 자기소개서를 작성해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 현재 시점 자신이 가장 관심을 가지고 이용하고 있는 서비스를 소개해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 지원 직무와 관련된 자신의 대표적인 프로젝트 한 가지를 적어 주시되, 어떠한 고민을 가지고 어떻게 결과물을 만들어 냈는지, 기여도는 어떠했는지 구체적으로 설명해 주세요.",
+        "maxLength": 1000
+      },
+      {
+        "question": "[필수] 함께하게 된다면 기대하는 바(성취하고 싶은 부분)가 무엇인지 말씀해주세요.",
+        "maxLength": 1000
+      }
+    ]
+  },
+  {
+    "id": 337586,
+    "category": "인턴십",
+    "org": "현대자동차",
+    "title": "[현대자동차] 글로벌 채용전환형 인턴십 (제조솔루션)",
+    "deadline": "2026-10-18",
+    "field": "경영기획/전략 / 사업기획/신규사업 / 서비스기획/운영 / QA/기술지원",
+    "target": "인턴",
+    "applyMethod": "https://talent.hyundai.com/apply/applyView.hc?recuYy=2026&recuType=N3&recuCls=71",
+    "conditions": [
+      "근무지역: 서초구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "경영기획/전략",
+      "사업기획/신규사업",
+      "서비스기획/운영",
+      "QA/기술지원",
+      "기획/경영",
+      "IT/개발"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "해당 직무에 지원한 지원동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "평소 관심을 갖고 탐구해 온 분야(기술, 산업, 트렌드 등)가 있다면, 어떤 계기로 관심을 갖게 되었고 그 과정에서 무엇을 느끼고 배웠는지 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337575,
+    "category": "인턴십",
+    "org": "Daesang America Inc (대상그룹 미국현지법인)",
+    "title": "[미국인턴/캘리포니아주] (주)대상그룹 캘리포니아법인  - 식품 QA 인턴 채용",
+    "deadline": "2026-10-21",
+    "field": "생산/제조 / 연구/R&D",
+    "target": "인턴",
+    "applyMethod": "홈페이지 지원 페이지 참고",
+    "conditions": [
+      "근무지역: 해외",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "생산/제조",
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337572,
+    "category": "인턴십",
+    "org": "ilabs korea ",
+    "title": "[미국인턴] ILABS USA 화장품 연구소 화장품 연구원 인턴 채용 (비자수속비, 항공권 지원)",
+    "deadline": "2026-08-16",
+    "field": "연구/R&D",
+    "target": "인턴",
+    "applyMethod": "ceo@ghr.or.kr",
+    "conditions": [
+      "근무지역: 해외",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "연구/R&D"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337451,
+    "category": "인턴십",
+    "org": "KB자산운용",
+    "title": "[KB자산운용] 글로벌대체투자본부 인턴채용",
+    "deadline": "2026-07-31",
+    "field": "사무/문서관리 / 시장조사/리서치 / 증권/투자/애널리스트 / 보험심사/손해사정",
+    "target": "인턴",
+    "applyMethod": "https://kbam.careerlink.kr/jobs/RC20260722032346",
+    "conditions": [
+      "근무지역: 영등포구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "사무/문서관리",
+      "시장조사/리서치",
+      "증권/투자/애널리스트",
+      "보험심사/손해사정",
+      "기획/경영",
+      "마케팅/광고",
+      "금융"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 지원한 직무와 연관된 본인의 경험사항 상세 기술(1,000자 이내)",
+        "maxLength": 1000
+      },
+      {
+        "question": "2. KB자산운용 지원동기(500자 이내)",
+        "maxLength": 500
+      },
+      {
+        "question": "3. 성격의 장∙단점(500자 이내)",
+        "maxLength": 500
+      },
+      {
+        "question": "4. 입사 후 포부 및 경력개발 계획(500자 이내)",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337420,
+    "category": "인턴십",
+    "org": "한국투자증권",
+    "title": "FY2026 Chat in Seoul - 한국투자증권 해외 대학생 채용 설명회",
+    "deadline": "2026-08-04",
+    "field": "교육",
+    "target": "인턴",
+    "applyMethod": "https://docs.google.com/forms/d/13AcWFYbTh0mluJfMqvSOSyVRmmCU-GP28heD5vYvAh0/viewform?edit_requested=true",
+    "conditions": [
+      "근무지역: 영등포구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "교육"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 337349,
+    "category": "인턴십",
+    "org": "하나자산신탁",
+    "title": "[하나자산신탁] 2026년 하반기 하나자산신탁 채용연계형 인턴사원 채용",
+    "deadline": "2026-08-09",
+    "field": "전체",
+    "target": "인턴",
+    "applyMethod": "https://jrs.jobkorea.co.kr/hanatrust/hanatrust26/Agi/Invite",
+    "conditions": [
+      "근무지역: 강남구",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "전체",
+      "금융"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "1. 하나자산신탁에 지원한 이유와 입사 후 포부를 하나금융그룹 인재상(온기/용기/동기) 중 하나와 연관하여 구체적으로 기술하시오.",
+        "maxLength": 800
+      },
+      {
+        "question": "2. 귀하가 부동산전문가가 되기 위하여 노력했던 경험 및 활동은 무엇이고, 이러한 노력이 하나자산신탁에서 어떤 성과를 이룰 수 있을지 기술하시오",
+        "maxLength": 800
+      },
+      {
+        "question": "3. 귀하가 속한 모임이나 조직에서 관행적으로 수행하던 방식을 본인의 창의성을 발휘하여 바꿈으로써 효율성 또는 효과성을 높였던 경험이나 사례를 기술하시오.",
+        "maxLength": 800
+      },
+      {
+        "question": "4. 최신 부동산 관련 사회적 이슈 중 한 가지를 선택하고, 이에 관한 자신의 견해를 기술하여 주십시오.",
+        "maxLength": 800
+      }
+    ]
+  },
+  {
+    "id": 338691,
+    "category": "공모전",
+    "org": "한국경제신문",
+    "title": "제24회 한국경제신문 경제논문 공모전",
+    "deadline": "2026-10-07",
+    "field": "학술",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://hkinside.co.kr/",
+    "conditions": [
+      "기업형태: 중견기업"
+    ],
+    "keywords": [
+      "학술"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338673,
+    "category": "공모전",
+    "org": "삼인출판사",
+    "title": "[삼인출판사] 『모든 인간은 죽는다』개정판 표지 공모전",
+    "deadline": "2026-09-10",
+    "field": "디자인/순수미술/공예 / 문학/시나리오",
+    "target": "상세 페이지 참고",
+    "applyMethod": "saminbooks@naver.com",
+    "conditions": [
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "디자인/순수미술/공예",
+      "문학/시나리오"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338671,
+    "category": "공모전",
+    "org": "한국산림재난안전기술공단",
+    "title": "[한국산림재난안전기술공단] 대표 캐릭터 공모전",
+    "deadline": "2026-08-21",
+    "field": "기획/아이디어 / 캐릭터/만화/게임",
+    "target": "상세 페이지 참고",
+    "applyMethod": "connect@kifds.or.kr",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "기획/아이디어",
+      "캐릭터/만화/게임"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338666,
+    "category": "공모전",
+    "org": "청주공예비엔날레조직위원회",
+    "title": "2027 청주국제공예공모전",
+    "deadline": "2027-05-05",
+    "field": "디자인/순수미술/공예 / 전시/페스티벌",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.okcj.org/",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "디자인/순수미술/공예",
+      "전시/페스티벌"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338665,
+    "category": "공모전",
+    "org": "사단법인 한국건축가협회 경기건축가회",
+    "title": "2026 제62회 경기건축대전",
+    "deadline": "2026-10-28",
+    "field": "건축/건설/인테리어",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.ggcompe.or.kr/",
+    "conditions": [
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "건축/건설/인테리어"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338663,
+    "category": "공모전",
+    "org": "크래프톤",
+    "title": "[크래프톤] 2026 PUBG 모바일 크래프트 그라운드 공모전",
+    "deadline": "2026-09-02",
+    "field": "캐릭터/만화/게임",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.krafton.com/gamescom2026/",
+    "conditions": [
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "캐릭터/만화/게임"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338661,
+    "category": "공모전",
+    "org": "충청남도",
+    "title": "[충청남도] 제11회 충청남도 인권작품 공모전",
+    "deadline": "2026-09-04",
+    "field": "사진/영상/UCC / 기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.chungnam.go.kr/contest/competition/codeManage/view.do?menuNo=2600003&pssrpDspyCd=10015",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "사진/영상/UCC",
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338658,
+    "category": "공모전",
+    "org": "청주공예비엔날레 조직위원회",
+    "title": "[청주공예비엔날레] 2027 청주국제공예공모전",
+    "deadline": "2027-05-05",
+    "field": "디자인/순수미술/공예",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.okcj.org/",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "디자인/순수미술/공예"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338651,
+    "category": "공모전",
+    "org": "울산종합일보",
+    "title": "2026 전국 청소년 가요제 참가자 모집",
+    "deadline": "2026-08-28",
+    "field": "예체능/패션",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.ujnews.co.kr/bbs/view.php?tn=notice&cate=0&id=285&q=tn%3Dnotice",
+    "conditions": [
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "예체능/패션"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338648,
+    "category": "공모전",
+    "org": "사단법인 제주특별자치도 지속가능환경교육센터",
+    "title": "「2026 제주, 기후의 경고를 담다」 제2회 제주 환경 포토에세이 전국 공모전",
+    "deadline": "2026-10-02",
+    "field": "사진/영상/UCC",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://jejueco.or.kr/index.php",
+    "conditions": [
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "사진/영상/UCC"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338636,
+    "category": "공모전",
+    "org": "서울물재생시설공단",
+    "title": "[서울물재생시설공단] 2026 WATER MARK(워터마크) 아이디어·콘텐츠 공모전(~9/4 18시 까지)",
+    "deadline": "2026-09-04",
+    "field": "기획/아이디어 / 디자인/순수미술/공예",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.워터마크공모전.kr",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "기획/아이디어",
+      "디자인/순수미술/공예"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338623,
+    "category": "공모전",
+    "org": "한국남동발전 주식회사",
+    "title": "대국민 체감형 서비스 아이디어 제안",
+    "deadline": "2026-10-30",
+    "field": "기획/아이디어 / 과학/공학",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.koenergy.kr/kosep/fr/cs/pc/cspc0102/main.do?menuCd=FN0521030401&schGubun=pr&tGubun=2",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "기획/아이디어",
+      "과학/공학"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338591,
+    "category": "공모전",
+    "org": "농민신문사",
+    "title": "[농민신문사] 제36회 중편 동화 공모",
+    "deadline": "2026-11-06",
+    "field": "문학/시나리오",
+    "target": "상세 페이지 참고",
+    "applyMethod": "0237036219",
+    "conditions": [
+      "기업형태: 기타"
+    ],
+    "keywords": [
+      "문학/시나리오"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338581,
+    "category": "공모전",
+    "org": "보건복지부",
+    "title": "[보건복지부·강원특별자치도] 2026년 강원특별자치도민 심폐소생술·응급처치 디자인 공모전",
+    "deadline": "2026-08-21",
+    "field": "디자인/순수미술/공예",
+    "target": "상세 페이지 참고",
+    "applyMethod": "gcpr@yonsei.ac.kr",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "디자인/순수미술/공예"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338579,
+    "category": "공모전",
+    "org": "산림청",
+    "title": "[산림청] 숲으로 체크인! 국립자연휴양림 여행 프로그램 기획 공모전",
+    "deadline": "2026-08-17",
+    "field": "기획/아이디어 / 기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "priories@korea.kr",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "기획/아이디어",
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338577,
+    "category": "공모전",
+    "org": "한국산업인력공단",
+    "title": "2026년 직무능력은행 활용 우수사례 공모전",
+    "deadline": "2026-08-14",
+    "field": "기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "ncs@hrdkorea.or.kr",
+    "conditions": [
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338575,
+    "category": "공모전",
+    "org": "통일부",
+    "title": "통일행정 공공데이터 활용 공모전",
+    "deadline": "2026-08-28",
+    "field": "기획/아이디어",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://unikorea.go.kr/web/unikorea/bbs/bbs_0000000000000001/59695?cp=1&amp;amp;pageSize=15&amp;amp;sortOrder=BA_REGDATE&amp;amp;sortDirection=DESC&amp;amp;bcId=bbs_0000000000000001&amp;amp;baNotice=false&amp;amp;baCommSelec=false&amp;amp;baOpenDay=false&amp;amp;baUse=true",
+    "conditions": [
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "기획/아이디어"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338570,
+    "category": "공모전",
+    "org": "산림청",
+    "title": "숲으로 체크인! 국립자연휴양림 여행 프로그램 기획 공모전",
+    "deadline": "2026-08-17",
+    "field": "기획/아이디어",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://sotong.go.kr/front/epilogue/epilogueNewViewPage.do?menu_id=527&bbs_id=5d9dbc9aed444932bfb282b410cd141a&pagetype=bbs&search_result=&search_result_cnddt=&epilogue_bgnde=&epilogue_endde=&date_range=all&epilogue_bgnde_cnddt=&epilogue_endde_cnddt=&date",
+    "conditions": [
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "기획/아이디어"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338539,
+    "category": "공모전",
+    "org": "동구청년센터the꿈",
+    "title": "[Pre D-Link 5기] 동구 청년 예비창업자 성공 창업 지원사업 참여자 모집 공고",
+    "deadline": "2026-08-07",
+    "field": "창업",
+    "target": "상세 페이지 참고",
+    "applyMethod": "theggum3355@gmail.com",
+    "conditions": [
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "창업"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338496,
+    "category": "공모전",
+    "org": "한국청년기업가정신재단",
+    "title": "2026 한난(On-Lab) 참가팀 모집 연장 안내 (~8/3, 월)",
+    "deadline": "2026-08-03",
+    "field": "기획/아이디어 / 창업",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://forms.gle/d8Puy9p2bUETYtFG6",
+    "conditions": [
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "기획/아이디어",
+      "창업"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338668,
+    "category": "대외활동",
+    "org": "우양",
+    "title": "우양 서포터즈 1기 모집",
+    "deadline": "2026-08-02",
+    "field": "서포터즈",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.instagram.com/p/DbRvAlnj2q5/",
+    "conditions": [
+      "근무지역: 지역 제한없음",
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "서포터즈"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338654,
+    "category": "대외활동",
+    "org": "클라우드컬처스",
+    "title": "2026 뮤지컬 [이육사] 주조연, 앙상블 모집",
+    "deadline": "2026-08-15",
+    "field": "기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://otr.co.kr/audition/?vid=21594",
+    "conditions": [
+      "근무지역: 안동시",
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338650,
+    "category": "대외활동",
+    "org": "고양시",
+    "title": "[고양시] 2026 내일꿈제작소 청년 서포터즈 모집",
+    "deadline": "2026-08-03",
+    "field": "서포터즈",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.goyang.go.kr/www/user/bbs/BD_selectBbs.do?q_bbsCode=1030&q_bbscttSn=20260715154232707&q_currPage=1&q_pClCode=",
+    "conditions": [
+      "근무지역: 고양시",
+      "기업형태: 공공기관/공기업"
+    ],
+    "keywords": [
+      "서포터즈"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338631,
+    "category": "대외활동",
+    "org": "(주)이랜드이츠",
+    "title": "2026 애슐리퀸즈 글로벌 서포터즈 모집",
+    "deadline": "2026-08-02",
+    "field": "서포터즈",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://elandeats.career.greetinghr.com/ko/o/229422",
+    "conditions": [
+      "근무지역: 서울",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "서포터즈"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338614,
+    "category": "대외활동",
+    "org": "VAN",
+    "title": "대기업 임원·정계·학계 전문가와 직접 소통, 네트워킹하면서; 실제 HR업무까지?! [VAN l 인재전략부]",
+    "deadline": "2026-08-07",
+    "field": "서포터즈 / 기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://forms.gle/uNvWMrtdgAwZACWt5",
+    "conditions": [
+      "근무지역: 서울",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "서포터즈",
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338596,
+    "category": "대외활동",
+    "org": "주식회사 빅워크",
+    "title": "(서울) 2026 굿네이버스 레이스 with 띵크어스 자원봉사자 모집",
+    "deadline": "2026-08-31",
+    "field": "기타 / 봉사단-국내",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://docs.google.com/forms/d/e/1FAIpQLSeoJ8uq6vg9QtfpNmWNinRVkMxl_QtD8OOx0Z5Agvgj3pJXHA/viewform?usp=dialog",
+    "conditions": [
+      "근무지역: 서울",
+      "기업형태: 스타트업"
+    ],
+    "keywords": [
+      "기타",
+      "봉사단-국내"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338595,
+    "category": "대외활동",
+    "org": "창원청년자원봉사센터",
+    "title": "2026 돌봄캠프 '신나는 여름운동회'",
+    "deadline": "2026-08-14",
+    "field": "봉사단-국내",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://forms.gle/KKmTRETFuC5tFims6",
+    "conditions": [
+      "근무지역: 창원시",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "봉사단-국내"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338587,
+    "category": "대외활동",
+    "org": "라니쥬",
+    "title": "[라니쥬] 라니쥬 서포터즈 1기 모집",
+    "deadline": "2026-08-09",
+    "field": "서포터즈 / 마케터",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://docs.google.com/forms/d/e/1FAIpQLSdST-thlxnfCJm8MCB8qdFcwp94ID4ZsEHh9s30TLHEgyz1_A/viewform",
+    "conditions": [
+      "근무지역: 지역 제한없음",
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "서포터즈",
+      "마케터"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338582,
+    "category": "대외활동",
+    "org": "FHFP운영위원회",
+    "title": "[FHFP운영위원회] FHFP2027 영화제 운영위원회 모집",
+    "deadline": "2026-08-10",
+    "field": "기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://docs.google.com/forms/d/e/1FAIpQLScYRFUV0ZJUfrCaGrtHhtewTcVfN21sVHNHffCCRUSG1opekA/viewform",
+    "conditions": [
+      "근무지역: 지역 제한없음",
+      "기업형태: 동아리/학생자치단체"
+    ],
+    "keywords": [
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338572,
+    "category": "대외활동",
+    "org": "환경실천연합회, 은평구시설관리공단",
+    "title": "[봉사활동] 불광천 수질 정화 봉사활동 참여자 모집!",
+    "deadline": "2026-11-05",
+    "field": "봉사단-국내",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.ecolink.or.kr/",
+    "conditions": [
+      "근무지역: 은평구",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "봉사단-국내"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338565,
+    "category": "대외활동",
+    "org": "넷마블(주)",
+    "title": "[넷마블] 대학생 서포터즈 마블챌린저 26기 모집",
+    "deadline": "2026-08-10",
+    "field": "서포터즈",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://career.netmarble.com/announce/view?anno_id=1837",
+    "conditions": [
+      "근무지역: 전체",
+      "기업형태: 대기업"
+    ],
+    "keywords": [
+      "서포터즈"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338558,
+    "category": "대외활동",
+    "org": "퍼플스(주)",
+    "title": "퍼플스 서포터즈 - 퍼플스타즈 2기",
+    "deadline": "2026-08-31",
+    "field": "서포터즈",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://www.purples.co.kr/",
+    "conditions": [
+      "근무지역: 지역 제한없음",
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "서포터즈"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338551,
+    "category": "대외활동",
+    "org": "국제청년센터",
+    "title": "국제청년센터 본부 단원 추가 모집 (~7/31)",
+    "deadline": "2026-07-31",
+    "field": "기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://m.site.naver.com/242zv",
+    "conditions": [
+      "근무지역: 서울, 인천, 경기",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338549,
+    "category": "대외활동",
+    "org": "미사노인복지관",
+    "title": "[하남시미사노인복지관] 키오스크 체험 활동 보조 자원봉사자 모집",
+    "deadline": "2026-10-26",
+    "field": "기타 / 봉사단-국내",
+    "target": "상세 페이지 참고",
+    "applyMethod": "07051676736",
+    "conditions": [
+      "근무지역: 지역 제한없음",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "기타",
+      "봉사단-국내"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338548,
+    "category": "대외활동",
+    "org": "사회복지법인 굿네이버스 경기용인지부",
+    "title": "굿네이버스 경기용인지부 아동권리옹호 서포터즈\"Be(ads) THE RIGHT\"  5기 모집",
+    "deadline": "2026-08-18",
+    "field": "서포터즈 / 봉사단-국내",
+    "target": "상세 페이지 참고",
+    "applyMethod": "홈페이지 지원 페이지 참고",
+    "conditions": [
+      "근무지역: 지역 제한없음",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "서포터즈",
+      "봉사단-국내"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338479,
+    "category": "대외활동",
+    "org": "법무법인 해율",
+    "title": "법무법인 해율 청년봉사단] 4기 브랜드마케팅본부 모집 (~8/9)",
+    "deadline": "2026-08-09",
+    "field": "봉사단-국내 / 서포터즈",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://forms.gle/Hh3yFsDQXcL5Ubdj8",
+    "conditions": [
+      "근무지역: 전체, 전체",
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "봉사단-국내",
+      "서포터즈"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338458,
+    "category": "대외활동",
+    "org": "법무법인 해율",
+    "title": "[법무법인 해율 청년봉사단] 4기 임원진 모집 (~8/9)",
+    "deadline": "2026-08-09",
+    "field": "봉사단-국내 / 서포터즈",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://forms.gle/zVzTU3ywSAyPShht5",
+    "conditions": [
+      "근무지역: 전체, 전체",
+      "기업형태: 중소기업"
+    ],
+    "keywords": [
+      "봉사단-국내",
+      "서포터즈"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338450,
+    "category": "대외활동",
+    "org": "재단법인 금정문화재단",
+    "title": "2026 금정산성축제 서포터즈 <금반지> 4기 추가 모집!!!",
+    "deadline": "2026-08-04",
+    "field": "서포터즈 / 기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "baekhkpm@gjfac.org",
+    "conditions": [
+      "근무지역: 금정구",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "서포터즈",
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338443,
+    "category": "대외활동",
+    "org": "전남대학교 광주국제개발협력센터",
+    "title": "2026 국제개발협력 집체교육 참가자 모집!",
+    "deadline": "2026-10-25",
+    "field": "강연 / 멘토링",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://naver.me/5JqTLMZN",
+    "conditions": [
+      "근무지역: 지역 제한없음",
+      "기업형태: 비영리단체/협회/재단"
+    ],
+    "keywords": [
+      "강연",
+      "멘토링"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
+    ]
+  },
+  {
+    "id": 338434,
+    "category": "대외활동",
+    "org": "랄라고고주식회사",
+    "title": "무럭무럭 오아시스마을 1기 모집",
+    "deadline": "2026-08-02",
+    "field": "기타",
+    "target": "상세 페이지 참고",
+    "applyMethod": "https://localro.co.kr/program/239",
+    "conditions": [
+      "근무지역: 서귀포시",
+      "기업형태: 스타트업"
+    ],
+    "keywords": [
+      "기타"
+    ],
+    "gpaMin": 0,
+    "essayQuestions": [
+      {
+        "question": "지원 동기를 작성해주세요.",
+        "maxLength": 500
+      },
+      {
+        "question": "관련 경험과 역량을 작성해주세요.",
+        "maxLength": 500
+      }
     ]
   }
 ]

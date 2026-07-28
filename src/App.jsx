@@ -136,7 +136,7 @@ function App() {
         <InfoInput onSubmit={handleProfileSubmit} isSubmitting={isSubmitting} submitError={submitError} />
       )}
       {step === 'list' && (
-        <RecommendList jobs={jobs} onSelectJob={handleSelectJob} onBack={() => setStep('input')} />
+        <RecommendList key={profileId} jobs={jobs} onSelectJob={handleSelectJob} onBack={() => setStep('input')} />
       )}
       {step === 'detail' && (
         <JobDetail

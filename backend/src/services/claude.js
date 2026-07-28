@@ -65,7 +65,7 @@ export async function generateReasons(profile, rankedPostings) {
 
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: Math.max(1024, rankedPostings.length * 250),
       output_config: { format: { type: "json_schema", schema: REASON_SCHEMA } },
       messages: [{ role: "user", content: buildPrompt(profile, rankedPostings) }],
     });

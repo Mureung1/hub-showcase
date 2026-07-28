@@ -6,11 +6,13 @@
   "demoUrl": "https://hub-two-rosy.vercel.app",
   "thumbnail": "thumbnail.png",
   "screenshots": [
+    "screenshots/recommend-list.png",
     "screenshots/draft-saved.png"
   ],
   "problem": "대학생은 신입 공채·공모전·대외활동·인턴십 공고 중 자신에게 맞는 것을 고르기 어렵고, 자기소개서 문항에 맞춰 자기 경험을 정리해 쓰는 데도 어려움을 겪습니다.",
   "targetUsers": [
-    "신입 공채/인턴/공모전/대외활동을 준비하는 대학생"
+    "전공·학점·자격증에 맞는 공고를 스스로 찾기 어려운 대학생",
+    "공고마다 다른 자소서 문항에 맞춰 경험을 정리해 쓰는 데 시간이 오래 걸리는 취업준비생"
   ],
   "features": [
     "전공·부전공·학점·자격증·경험을 입력하면 맞춤 공고를 추천하고, 추천 이유와 주요 조건을 함께 보여줍니다.",

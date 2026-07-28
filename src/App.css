@@ -190,6 +190,7 @@ h2 {
 .meta-list li {
   padding: var(--space-2) 0;
   border-bottom: 1px dashed var(--color-border);
+  overflow-wrap: break-word;
 }
 
 .meta-list li:last-child {
