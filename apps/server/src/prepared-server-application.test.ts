@@ -306,10 +306,13 @@ test('public organize_sources starts one Skill-backed Product operation with ord
     workspaceRoot,
   } = fixture
   await mkdir(path.join(workspaceRoot, '자료'), { recursive: true })
-  await writeFile(path.join(workspaceRoot, '자료', '둘째.txt'), '둘')
   await writeFile(
-    path.join(workspaceRoot, '자료', '첫째 "안내".md'),
-    '하나',
+    path.join(workspaceRoot, '자료', '둘째 강의.pdf'),
+    'not a PDF',
+  )
+  await writeFile(
+    path.join(workspaceRoot, '자료', '첫째 ](안내).pptx'),
+    'slides',
   )
   runtime.requestGeneralInput = true
   let lifecycleReader:
@@ -321,8 +324,8 @@ test('public organize_sources starts one Skill-backed Product operation with ord
       {
         action: 'organize_sources',
         files: [
-          { relativePath: '자료/둘째.txt' },
-          { relativePath: '자료/첫째 "안내".md' },
+          { relativePath: '자료/둘째 강의.pdf' },
+          { relativePath: '자료/첫째 ](안내).pptx' },
         ],
         codexSettings: {
           model: 'gpt-current',
@@ -355,8 +358,8 @@ test('public organize_sources starts one Skill-backed Product operation with ord
         text: [
           'ActionInvocation: organize_sources',
           'Selected SemesterWorkspace file references:',
-          '- "자료/둘째.txt"',
-          '- "자료/첫째 \\"안내\\".md"',
+          '- [둘째 강의.pdf](자료/둘째 강의.pdf)',
+          '- [첫째 \\]\\(안내).pptx](자료/첫째 ](안내\\).pptx)',
         ].join('\n'),
       },
     ])
@@ -471,7 +474,7 @@ test('public organize_sources starts one Skill-backed Product operation with ord
       `${baseUrl}/api/product/actions`,
       {
         action: 'organize_sources',
-        files: [{ relativePath: '자료/둘째.txt' }],
+        files: [{ relativePath: '자료/둘째 강의.pdf' }],
       },
     )
     assert.equal(disconnectedAction.status, 200)
@@ -496,7 +499,6 @@ test('public organize_sources fails before streaming or Turn start with exact sa
   )
   const { baseUrl, runtime, skillRoot, workspaceRoot } = fixture
   const skillPath = path.join(skillRoot, 'SKILL.md')
-  await writeFile(path.join(workspaceRoot, 'lecture.pdf'), '%PDF-')
   try {
     const url = `${baseUrl}/api/product/actions`
     const request = (relativePath = 'valid.md') => ({
@@ -531,11 +533,6 @@ test('public organize_sources fails before streaming or Turn start with exact sa
       request('missing.md'),
       409,
       'action_context_stale',
-    )
-    await expectFailure(
-      request('lecture.pdf'),
-      409,
-      'action_context_invalid',
     )
     assert.equal(runtime.listEffectiveSkillsCalls, listCallsBeforeFiles)
 

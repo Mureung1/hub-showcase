@@ -68,7 +68,7 @@ test('runs the production bridge against exact Codex and the official local prov
     const actionText = [
       'ActionInvocation: organize_sources',
       'Selected SemesterWorkspace file references:',
-      '- "materials/assignment-notice.md"',
+      '- [assignment-notice.md](materials/assignment-notice.md)',
     ].join('\n')
     await Promise.all([
       mkdir(dirname(skillPath), { recursive: true }),

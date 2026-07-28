@@ -22,10 +22,10 @@ import {
   type WorkspaceSourceProjection,
 } from './workspace-source-projection.js'
 
-test('organize_sources renderer preserves ordered JSON paths without a trailing newline', () => {
+test('organize_sources renderer preserves ordered Markdown file references without a trailing newline', () => {
   const text = renderOrganizeSourcesActionText([
-    { relativePath: '자료/둘째.txt' },
-    { relativePath: '자료/첫째 "안내".md' },
+    { relativePath: '자료/둘째 강의.pdf' },
+    { relativePath: '자료/첫째 ](안내).md' },
   ])
 
   assert.equal(
@@ -33,8 +33,8 @@ test('organize_sources renderer preserves ordered JSON paths without a trailing 
     [
       'ActionInvocation: organize_sources',
       'Selected SemesterWorkspace file references:',
-      '- "자료/둘째.txt"',
-      '- "자료/첫째 \\"안내\\".md"',
+      '- [둘째 강의.pdf](자료/둘째 강의.pdf)',
+      '- [첫째 \\]\\(안내).md](자료/첫째 ](안내\\).md)',
     ].join('\n'),
   )
   assert.equal(text.endsWith('\n'), false)
@@ -59,7 +59,7 @@ test('organize_sources rejects a user-shaped source projection without shared wo
     async list() {
       return { sources: [] }
     },
-    async preflightTextFiles(files) {
+    async preflightFiles(files) {
       return files
     },
     async readText() {
@@ -219,7 +219,7 @@ test('organize_sources prepare leaves validated settings composition to the oper
       text: [
         'ActionInvocation: organize_sources',
         'Selected SemesterWorkspace file references:',
-        '- "selected.md"',
+        '- [selected.md](selected.md)',
       ].join('\n'),
     })
   } finally {

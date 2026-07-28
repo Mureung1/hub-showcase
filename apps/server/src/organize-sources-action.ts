@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import type {
   CodexEffectiveSkill,
   CodexProductSkillInput,
@@ -77,7 +79,7 @@ export async function createOrganizeSourcesAction(options: {
       context.signal.throwIfAborted()
       let files: readonly ProductWorkspaceFileRef[]
       try {
-        files = await options.sources.preflightTextFiles(input.files)
+        files = await options.sources.preflightFiles(input.files)
       } catch (error) {
         throw mapSourceError(error)
       }
@@ -135,7 +137,7 @@ export async function createOrganizeSourcesAction(options: {
 
       let files: readonly ProductWorkspaceFileRef[]
       try {
-        files = await options.sources.preflightTextFiles(input.files)
+        files = await options.sources.preflightFiles(input.files)
       } catch (error) {
         throw mapSourceError(error)
       }
@@ -165,12 +167,34 @@ export function renderOrganizeSourcesActionText(
   const text = [
     'ActionInvocation: organize_sources',
     'Selected SemesterWorkspace file references:',
-    ...files.map(({ relativePath }) => `- ${JSON.stringify(relativePath)}`),
+    ...files.map(
+      ({ relativePath }) =>
+        `- ${renderMarkdownFileReference(relativePath)}`,
+    ),
   ].join('\n')
   if (Buffer.byteLength(text) > actionTextMaxBytes) {
     throw new OrganizeSourcesActionError('action_context_invalid')
   }
   return text
+}
+
+function renderMarkdownFileReference(relativePath: string): string {
+  const label = path.posix.basename(relativePath)
+  return (
+    `[${escapeMarkdownLinkLabel(label)}]` +
+    `(${escapeMarkdownLinkDestination(relativePath)})`
+  )
+}
+
+function escapeMarkdownLinkLabel(value: string): string {
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('](', ']\\(')
+    .replaceAll(']', '\\]')
+}
+
+function escapeMarkdownLinkDestination(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll(')', '\\)')
 }
 
 async function resolveExpectedSkill(

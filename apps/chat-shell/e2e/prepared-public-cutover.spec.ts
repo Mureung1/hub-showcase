@@ -218,20 +218,21 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
         name: '선택한 자료 정리하기 · 2개',
       }),
     ).toBeEnabled()
+    const lectureSelection = sources.getByRole('checkbox', {
+      name: 'lecture.pdf 정리 작업 선택',
+    })
+    const slidesSelection = sources.getByRole('checkbox', {
+      name: 'slides.pptx 정리 작업 선택',
+    })
+    await expect(lectureSelection).toBeEnabled()
+    await expect(slidesSelection).toBeEnabled()
+    await lectureSelection.check()
+    await slidesSelection.check()
     await expect(
-      sources.getByRole('checkbox', {
-        name:
-          'lecture.pdf 정리 작업 선택 불가: ' +
-          '텍스트 자료만 선택할 수 있습니다.',
+      sources.getByRole('button', {
+        name: '선택한 자료 정리하기 · 4개',
       }),
-    ).toBeDisabled()
-    await expect(
-      sources.getByRole('checkbox', {
-        name:
-          'slides.pptx 정리 작업 선택 불가: ' +
-          '텍스트 자료만 선택할 수 있습니다.',
-      }),
-    ).toBeDisabled()
+    ).toBeEnabled()
     await expect(page.locator('.paper-preview')).not.toHaveAttribute(
       'aria-live',
       'polite',
@@ -334,7 +335,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     })
     await sources
       .getByRole('button', {
-        name: '선택한 자료 정리하기 · 2개',
+        name: '선택한 자료 정리하기 · 4개',
       })
       .click()
     await expect(
@@ -344,6 +345,8 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
       action: 'organize_sources',
       files: [
         { relativePath: 'assignment.txt' },
+        { relativePath: 'lecture.pdf' },
+        { relativePath: 'slides.pptx' },
         { relativePath: 'syllabus.txt' },
       ],
       codexSettings: {
@@ -356,6 +359,8 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     const actionEntry = page.locator('.product-transcript-row.is-action')
     await expect(actionEntry).toContainText('선택한 자료 정리하기')
     await expect(actionEntry).toContainText('assignment.txt')
+    await expect(actionEntry).toContainText('lecture.pdf')
+    await expect(actionEntry).toContainText('slides.pptx')
     await expect(actionEntry).toContainText('syllabus.txt')
     await expect(actionEntry).not.toContainText('나')
     await expect(page.getByText('workspace를 확인했습니다.')).toBeVisible()
@@ -370,8 +375,10 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
       [
         'ActionInvocation: organize_sources',
         'Selected SemesterWorkspace file references:',
-        '- "assignment.txt"',
-        '- "syllabus.txt"',
+        '- [assignment.txt](assignment.txt)',
+        '- [lecture.pdf](lecture.pdf)',
+        '- [slides.pptx](slides.pptx)',
+        '- [syllabus.txt](syllabus.txt)',
       ].join('\n'),
     )
     expect(runtime.productInputs[0]?.skill).toEqual({
@@ -393,7 +400,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     ).toBeDisabled()
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 2개',
+        name: '선택한 자료 정리하기 · 4개',
       }),
     ).toBeDisabled()
     await expect(
@@ -416,7 +423,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     await selectedReload
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 1개',
+        name: '선택한 자료 정리하기 · 3개',
       }),
     ).toBeDisabled()
     await expect(
@@ -761,7 +768,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     )
     expect(runtime.interrupts).toHaveLength(1)
     const retainedAction = sources.getByRole('button', {
-      name: '선택한 자료 정리하기 · 1개',
+      name: '선택한 자료 정리하기 · 3개',
     })
     await expect(retainedAction).toBeEnabled()
     await expect(assignmentSelection).toBeChecked()
@@ -798,7 +805,11 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     await retainedAction.click()
     expect((await retryActionRequest).postDataJSON()).toEqual({
       action: 'organize_sources',
-      files: [{ relativePath: 'assignment.txt' }],
+      files: [
+        { relativePath: 'assignment.txt' },
+        { relativePath: 'lecture.pdf' },
+        { relativePath: 'slides.pptx' },
+      ],
       codexSettings: {
         model: 'gpt-fast',
         reasoningEffort: 'high',

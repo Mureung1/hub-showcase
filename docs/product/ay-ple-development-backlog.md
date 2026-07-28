@@ -135,8 +135,8 @@
 - [x] Protocol-driven AY–App Interaction Layer의 첫 ActionInvocation을 end-to-end로 완성한다.
   - [x] `AY–App Interaction`, `ActionInvocation`과 AY-originated `InteractionCapability`를 구분하고 Skill·MCP를 양방향 제품 확장 protocol로 사용하는 ADR·아키텍처·Product Brief를 채택했다.
   - [x] Chat과 분리된 closed ActionInvocation contract를 만들고 unknown action, raw Skill/native input, absolute path와 implicit Chat material 결합을 거절한다. App action definition은 active SemesterWorkspace의 request-scoped file reference를 fresh 검증하고 expected workspace-local Skill을 effective catalog에서 resolve한다.
-  - [x] `organize_sources`를 첫 action으로 연결한다. Source explorer에서 명시적 multi-file selection과 action control을 제공하되 preview·selection 자체는 Turn을 시작하지 않고, action 실행 시에만 선택을 동결해 기존 Product operation stream에 연결한다.
-  - [x] Capability-neutral Runtime 입력과 Python bridge가 official SDK의 exact `SkillInput`과 bounded file/text input을 전달하게 한다. Local file carrier는 actual probe로 의미를 확인하고 기존 SDK patch stack을 늘리지 않는다.
+  - [x] `organize_sources`를 첫 action으로 연결한다. Source explorer에서 preview kind와 독립적인 safe regular-file multi-selection과 action control을 제공하되 preview·selection 자체는 Turn을 시작하지 않고, action 실행 시에만 선택을 동결해 기존 Product operation stream에 연결한다.
+  - [x] Capability-neutral Runtime 입력과 Python bridge가 official SDK의 exact `[SkillInput, TextInput]`을 전달하게 한다. Selected file은 basename label·workspace-relative destination의 Markdown reference로 렌더링하며, official Desktop·terminal source에서 generic local file이 user text로 전달되고 `MentionInput`이 app·plugin·Skill resource identity라는 경계를 확인했다. 기존 SDK patch stack은 늘리지 않는다.
   - [x] Action-started Turn이 기존 Interaction MCP·inline Review를 그대로 사용하고, AY가 actual workspace file mutation과 Git checkpoint를 소유하는 Browser E2E·deterministic Runtime·exact local-provider actual workspace trace를 닫는다. Durable `ModelingRun`, source registry·copy와 App-owned apply는 복원하지 않는다.
 
 - [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.
@@ -156,7 +156,7 @@
   - [ ] 여러 workspace를 반복해서 바꾸는 사용 흐름이 확인되면 launch-time handoff와 registry 경계 위에서 최근 workspace 목록과 one-click 전환 UX를 별도 설계한다.
   - [ ] macOS packaged Desktop App을 채택하면 bundled native payload의 third-party notice를 감사하고 signing·notarization, atomic update/rollback과 clean-machine packaging smoke를 완료한다. Windows·Linux 지원은 별도 사용자 필요와 artifact·QA 범위를 승인한 뒤에만 추가한다.
   - [ ] Runtime·bridge diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
-  - [ ] ActionInvocation의 local file carrier가 rendered path로 충분하지 않다는 실제 case가 확인되면 native `MentionInput`의 local-file 의미를 먼저 검증한다. 그 뒤에도 남는 구체적인 case에만 exact official SDK/native contract의 experimental context delivery, background terminal, realtime과 기타 raw capability를 별도로 검증한다.
+  - [ ] ActionInvocation의 Markdown current-path carrier가 부족한 실제 case가 확인되면 먼저 필요한 보장—content version, byte delivery, reader access 또는 다른 resource identity—을 구체화한다. 그 보장에 맞는 official carrier만 검증하고 generic local file carrier가 아닌 `MentionInput`을 기본 대안으로 가정하지 않는다. Experimental context delivery, background terminal, realtime과 기타 raw capability도 각각 별도 사용자 case가 생길 때만 검증한다.
   - [ ] 여러 학기에 걸친 사용에서 필요성이 확인되면 built-in Memories의 consent, eligibility, rollover와 reset UX를 설계한다.
 
 ## 현재 범위에서 제외하는 항목

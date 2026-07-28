@@ -31,6 +31,7 @@ import {
 import express from 'express'
 
 import type { PreparedServerApplication } from '../prepared-server-application.js'
+import { renderOrganizeSourcesActionText } from '../organize-sources-action.js'
 import { createPreparedServerApplication } from '../prepared-server-application.js'
 import {
   createInteractionBroker,
@@ -548,11 +549,9 @@ async function assertFirstAssignmentConformanceProviderEvidence(
 ): Promise<void> {
   const firstRequest = journal.requests[0]
   assert.ok(firstRequest)
-  const actionText = [
-    'ActionInvocation: organize_sources',
-    'Selected SemesterWorkspace file references:',
-    ...selectedActionPaths.map((relativePath) => `- ${JSON.stringify(relativePath)}`),
-  ].join('\n')
+  const actionText = renderOrganizeSourcesActionText(
+    selectedActionPaths.map((relativePath) => ({ relativePath })),
+  )
   const skillPath = path.join(
     fixture.workspaceRoot,
     '.agents/skills/ay-ple-first-assignment/SKILL.md',

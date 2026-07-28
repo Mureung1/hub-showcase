@@ -231,11 +231,9 @@ export function usePreparedWorkspaceSources(
   const toggleActionSource = useCallback(
     (source: ProductWorkspaceSource) => {
       if (
-        source.previewKind !== 'text' ||
         !sources.some(
           (candidate) =>
-            candidate.relativePath === source.relativePath &&
-            candidate.previewKind === 'text',
+            candidate.relativePath === source.relativePath,
         )
       ) {
         return
@@ -356,7 +354,7 @@ function SourceExplorer({
         </button>
         <p id="source-action-status">
           {controller.selectedActionPaths.length === 0
-            ? '텍스트 자료를 선택하면 AY에게 정리 작업을 맡길 수 있습니다.'
+            ? '자료를 선택하면 AY에게 정리 작업을 맡길 수 있습니다.'
             : action.invocationEnabled
               ? '선택한 actual file만 명시적인 AY 작업에 전달합니다.'
               : '현재 AY 작업을 시작할 수 없어 선택만 유지합니다.'}
@@ -754,11 +752,7 @@ export function reconcilePreparedActionPaths(
 ): readonly string[] {
   const selected = new Set(current)
   return sources
-    .filter(
-      (source) =>
-        source.previewKind === 'text' &&
-        selected.has(source.relativePath),
-    )
+    .filter((source) => selected.has(source.relativePath))
     .map((source) => source.relativePath)
     .slice(0, PRODUCT_ACTION_FILE_REF_MAX_ENTRIES)
 }
@@ -801,9 +795,6 @@ function actionSelectionDisabledReason(
   selectedActionPaths: readonly string[],
   selectionLocked: boolean,
 ): string | undefined {
-  if (source.previewKind !== 'text') {
-    return '텍스트 자료만 선택할 수 있습니다.'
-  }
   if (selectionLocked) {
     return 'AY 작업 중에는 선택을 바꿀 수 없습니다.'
   }

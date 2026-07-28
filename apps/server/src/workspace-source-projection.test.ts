@@ -215,24 +215,34 @@ test('text projection returns a bounded UTF-8 preview with a full-file digest', 
   }
 })
 
-test('action source preflight preserves current text references without content identity', async () => {
+test('action source preflight preserves current regular-file references regardless of preview kind', async () => {
   const fixture = await createFixture('source-action-preflight-')
   try {
     await mkdir(path.join(fixture.root, '자료'), { recursive: true })
     await writeFile(path.join(fixture.root, '자료', '두번째.txt'), '둘')
-    await writeFile(path.join(fixture.root, '자료', '첫번째.md'), '하나')
+    await writeFile(
+      path.join(fixture.root, '자료', '첫번째.pdf'),
+      'not a PDF',
+    )
+    await writeFile(path.join(fixture.root, '자료', '슬라이드.pptx'), 'slides')
+    await writeFile(path.join(fixture.root, '자료', '큰자료.txt'), 'too large')
     const projection = await createWorkspaceSourceProjection({
       workspaceRoot: fixture.root,
+      limits: { textPreviewMaxBytes: 4, textSourceMaxBytes: 4 },
     })
 
     assert.deepEqual(
-      await projection.preflightTextFiles([
+      await projection.preflightFiles([
         { relativePath: '자료/두번째.txt' },
-        { relativePath: '자료/첫번째.md' },
+        { relativePath: '자료/첫번째.pdf' },
+        { relativePath: '자료/슬라이드.pptx' },
+        { relativePath: '자료/큰자료.txt' },
       ]),
       [
         { relativePath: '자료/두번째.txt' },
-        { relativePath: '자료/첫번째.md' },
+        { relativePath: '자료/첫번째.pdf' },
+        { relativePath: '자료/슬라이드.pptx' },
+        { relativePath: '자료/큰자료.txt' },
       ],
     )
   } finally {
@@ -240,7 +250,7 @@ test('action source preflight preserves current text references without content 
   }
 })
 
-test('action source preflight rejects any stale, excluded, non-regular, or non-text reference', async () => {
+test('action source preflight rejects stale, excluded, or non-regular references', async () => {
   const fixture = await createFixture('source-action-rejection-')
   try {
     await mkdir(path.join(fixture.root, 'node_modules'), { recursive: true })
@@ -262,9 +272,6 @@ test('action source preflight rejects any stale, excluded, non-regular, or non-t
       'secret',
     )
     await writeFile(path.join(fixture.root, 'AGENTS.md'), 'scaffold')
-    await writeFile(path.join(fixture.root, 'lecture.pdf'), '%PDF-')
-    await writeFile(path.join(fixture.root, 'slides.pptx'), 'slides')
-    await writeFile(path.join(fixture.root, 'large.txt'), 'too large')
     await writeFile(path.join(fixture.outside, 'outside.md'), 'outside')
     await symlink(
       path.join(fixture.outside, 'outside.md'),
@@ -284,12 +291,9 @@ test('action source preflight rejects any stale, excluded, non-regular, or non-t
       'AGENTS.md',
       'directory.txt',
       'outside.md',
-      'lecture.pdf',
-      'slides.pptx',
-      'large.txt',
     ]) {
       await assert.rejects(
-        projection.preflightTextFiles([
+        projection.preflightFiles([
           { relativePath: 'valid.md' },
           { relativePath },
         ]),
@@ -327,7 +331,7 @@ test('action source preflight rejects an inode swap before no-follow open', asyn
     })
 
     await assert.rejects(
-      projection.preflightTextFiles([{ relativePath: 'selected.md' }]),
+      projection.preflightFiles([{ relativePath: 'selected.md' }]),
       (error: unknown) =>
         error instanceof WorkspaceSourceProjectionError &&
         error.code === 'source_not_found',
@@ -362,7 +366,7 @@ test('action source preflight rejects an intermediate directory replaced by an o
     })
 
     await assert.rejects(
-      projection.preflightTextFiles([
+      projection.preflightFiles([
         { relativePath: 'selected/notes.md' },
       ]),
       (error: unknown) =>
@@ -397,7 +401,7 @@ test('action source preflight rejects size drift before no-follow open', async (
     })
 
     await assert.rejects(
-      projection.preflightTextFiles([{ relativePath: 'selected.md' }]),
+      projection.preflightFiles([{ relativePath: 'selected.md' }]),
       (error: unknown) =>
         error instanceof WorkspaceSourceProjectionError &&
         error.code === 'source_not_found',
@@ -550,7 +554,7 @@ test('source projection rejects a replaced active root instead of reading the re
         error.code === 'source_unavailable',
     )
     await assert.rejects(
-      projection.preflightTextFiles([
+      projection.preflightFiles([
         { relativePath: 'replacement.txt' },
       ]),
       (error: unknown) =>

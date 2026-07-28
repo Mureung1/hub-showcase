@@ -456,7 +456,9 @@ test('deterministic product turn snapshots an optional Skill without adding prod
       path:
         '/deterministic/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
     },
-    text: 'ActionInvocation: organize_sources\n- "materials/notice.md"',
+    text:
+      'ActionInvocation: organize_sources\n' +
+      '- [notice.md](materials/notice.md)',
   }
   const expectedInput = structuredClone(input)
   const runtime = new DeterministicCodexChatRuntime({

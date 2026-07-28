@@ -154,9 +154,9 @@ App-facing contract와 Codex-native input 사이에는 Adapter seam을 둔다.
 
 `WorkspaceFileRef`는 한 invocation이 active SemesterWorkspace의 실제 사용자 file을 가리키는 request-scoped relative reference다. Path 목록은 invocation에 고정되지만 content version은 고정되지 않으므로 같은 safe path의 bytes가 바뀌면 AY는 actual read 시점의 current file을 만난다. Exact version을 Review 근거로 묶는 `EvidenceRef`, `RawMaterial`, source copy나 filesystem permission이 아니다.
 
-Initial native mapping은 official SDK가 이미 제공하는 `SkillInput`과 bounded `TextInput`을 순서대로 사용한다. App action definition은 effective catalog에서 확인한 workspace-local Skill의 host-only name·path를 `SkillInput`으로 전달하고, 선택한 actual file은 POSIX workspace-relative reference만 bounded `TextInput`에 명시적으로 렌더링한다. Browser는 Skill path나 native input type을 알지 않는다.
+Initial native mapping은 official SDK가 이미 제공하는 `SkillInput`과 bounded `TextInput`을 순서대로 사용한다. App action definition은 effective catalog에서 확인한 workspace-local Skill의 host-only name·path를 `SkillInput`으로 전달하고, 선택한 actual file은 basename label·workspace-relative destination의 Markdown file reference로 bounded `TextInput`에 렌더링한다. Absolute path를 사용하는 Desktop composer와 달리 AY-PLE은 exact workspace root를 Runtime `cwd`로 고정하고 Browser에 root를 노출하지 않으므로 POSIX relative path를 link destination으로 사용한다.
 
-격리 prototype `prototype/action-invocation-native-mapping@b7c1fcd45`은 current pinned Runtime에서 이 순서가 workspace-local Skill body를 주입하고 선택 file을 실제 root에서 읽게 하며, project-discovered Interaction MCP를 같은 Turn에 유지한다는 것을 확인했다. Initial mapping은 `MentionInput`을 사용하지 않고 SDK patch를 추가하지 않는다. 두 번째 action에서 실제 carrier variation이 확인되기 전까지 이 Adapter mapping을 넓히지 않는다.
+Official Codex source에서 Desktop rich composer의 local-file link와 terminal file search 결과는 모두 generic user text로 Turn에 전달되고 local file bytes나 `MentionInput`으로 변환되지 않는다. `MentionInput`은 app·plugin·Skill resource identity를 운반하는 별도 입력이다. 격리 prototype `prototype/action-invocation-native-mapping@b7c1fcd45`은 current pinned Runtime에서 `[SkillInput, TextInput]` 순서가 workspace-local Skill body를 주입하고 선택 file을 실제 root에서 읽게 하며, project-discovered Interaction MCP를 같은 Turn에 유지한다는 것을 확인했다. 따라서 initial mapping은 `MentionInput`이나 SDK patch를 추가하지 않는다.
 
 ### Action 확장
 
@@ -231,7 +231,7 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 | 영역 | 현재 구현 | 채택 target |
 | --- | --- | --- |
 | App-originated Turn | Normal Chat의 bounded text·settings와 Chat과 별도인 typed `organize_sources` ActionInvocation | 같은 closed contract로 action별 정의를 추가할 수 있음 |
-| Source interaction | Preview와 독립적인 text-only transient multi-file selection을 명시적 action에서만 동결 | 유지. Source registry·durable selection은 만들지 않음 |
+| Source interaction | Preview와 독립적인 safe regular-file transient multi-file selection을 명시적 action에서만 동결. `text | pdf | unsupported`는 preview capability일 뿐 action 적격성을 제한하지 않음 | 유지. Source registry·durable selection은 만들지 않음 |
 | Native input | Normal Chat은 `[TextInput]`, action은 workspace-local `[SkillInput, TextInput]` | Local file carrier 변경은 actual case와 official contract 검증 뒤 별도 채택 |
 | Product contract | Chat·source projection·interaction result와 별도 closed ActionInvocation request·shared stream | Unknown action·native input·absolute path를 계속 거절 |
 | Server operation | `sendChat`과 validated action이 같은 admission·stream·interaction lifecycle을 사용 | 기능별 validation만 action definition에 추가 |

@@ -116,7 +116,7 @@ export type WorkspaceSourcePdf = {
 
 export type WorkspaceSourceProjection = {
   list(): Promise<ProductWorkspaceSourceList>
-  preflightTextFiles(
+  preflightFiles(
     files: readonly ProductWorkspaceFileRef[],
   ): Promise<readonly ProductWorkspaceFileRef[]>
   readText(relativePath: string): Promise<ProductWorkspaceTextPreview>
@@ -243,13 +243,12 @@ export async function createWorkspaceSourceProjection(options: {
       }
     },
 
-    async preflightTextFiles(files) {
+    async preflightFiles(files) {
       const resolved: ProductWorkspaceFileRef[] = []
       for (const file of files) {
-        await preflightTextFile(
+        await preflightFile(
           options.fileAccess,
           file.relativePath,
-          limits.textSourceMaxBytes,
           options.sourcePreflightTestHook,
         )
         resolved.push({ relativePath: file.relativePath })
@@ -319,10 +318,9 @@ export function workspaceFileAccessForSourceProjection(
   return fileAccess
 }
 
-async function preflightTextFile(
+async function preflightFile(
   fileAccess: WorkspaceFileAccess,
   relativePath: string,
-  maximumBytes: number,
   testHook:
     | ((
         phase: 'before_open',
@@ -331,13 +329,9 @@ async function preflightTextFile(
     | undefined,
 ): Promise<void> {
   const normalized = validateReadablePath(relativePath)
-  if (!isTextPath(normalized)) {
-    throw new WorkspaceSourceProjectionError('unsupported_type')
-  }
   try {
     await fileAccess.useRegularFile({
       segments: normalized.split('/'),
-      maximumBytes,
       beforeOpen: () => testHook?.('before_open', normalized),
       use: async () => undefined,
     })
