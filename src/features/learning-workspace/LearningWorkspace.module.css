@@ -1025,7 +1025,9 @@
 }
 
 .planToggle {
-  position: relative;
+  align-self: flex-start;
+  display: grid;
+  gap: 6px;
 }
 
 .planToggleTrigger {
@@ -1043,11 +1045,8 @@
 }
 
 .planToggleContent {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  z-index: 5;
   width: 280px;
+  max-width: 100%;
   border: 1px solid rgb(196 210 229 / 74%);
   border-radius: 8px;
   background: #ffffff;
