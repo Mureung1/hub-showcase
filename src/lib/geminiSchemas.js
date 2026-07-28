@@ -121,6 +121,14 @@ export const KEYWORDS_SCHEMA = {
 
 // 식당 대표 메뉴 예상 섭취량 응답 (MapPage.jsx attachExpectedIntake와 짝).
 // expected의 관련 없는 키는 null로 — 키를 빼는 대신 null을 쓰는 strict 모드 관례.
+// 6주차 §5 — 대중적으로 가격대가 알려진 메뉴만 범위로 채우고, 확신 없으면 통째로 null(단정 가격 금지).
+const PRICE_RANGE_SCHEMA = {
+  type: ['object', 'null'],
+  properties: { min: { type: 'number' }, max: { type: 'number' } },
+  required: ['min', 'max'],
+  additionalProperties: false,
+}
+
 export const EXPECTED_INTAKE_SCHEMA = {
   type: 'object',
   properties: {
@@ -132,8 +140,9 @@ export const EXPECTED_INTAKE_SCHEMA = {
           place_name: { type: 'string' },
           representativeMenu: { type: 'string' },
           expected: NUTRIENT_SET_OR_NULL_SCHEMA,
+          priceRange: PRICE_RANGE_SCHEMA,
         },
-        required: ['place_name', 'representativeMenu', 'expected'],
+        required: ['place_name', 'representativeMenu', 'expected', 'priceRange'],
         additionalProperties: false,
       },
     },

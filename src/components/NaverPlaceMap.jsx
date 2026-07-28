@@ -13,14 +13,13 @@ function placeIdentity(place) {
   return place.place_url || `${place.place_name}|${place.road_address_name}`
 }
 
-// occupationPlaces: 직업 맞춤 추천(FR-2.2/2.3) — places(부족 영양소 추천, 기본 빨간 핀)와 별개로
-// 파란 원형 핀으로 그린다. 같은 식당이 양쪽에 다 있으면 직업 핀만 남긴다("직업 핀 우선").
-export default function NaverPlaceMap({ myPosition, places = [], occupationPlaces = [] }) {
+// 6주차 §5부터 직업 맞춤 추천은 places 안에 조용히 섞여 들어온다(MapPage.jsx의
+// mergeOccupationPlaces) — 예전엔 여기서 별도 파란 핀으로 구분해 그렸지만, 화면에 "직업 맞춤"이라고
+// 표 나게 노출하지 않기로 하면서 이 컴포넌트도 places 전부를 같은 핀 색으로만 그리도록 단순해졌다.
+export default function NaverPlaceMap({ myPosition, places = [] }) {
   const containerRef = useRef(null)
 
   const markers = useMemo(() => {
-    const occupationIds = new Set(occupationPlaces.map(placeIdentity))
-
     const myLocationMarker = {
       id: 'me',
       lat: myPosition.lat,
@@ -35,36 +34,20 @@ export default function NaverPlaceMap({ myPosition, places = [], occupationPlace
       alwaysOpen: true,
     }
 
-    const placeMarkers = places
-      // 직업 핀과 겹치는 식당은 기본 핀을 생략한다("직업 핀 우선", FR-2.3) — 아래에서 파란 핀으로 그린다.
-      .filter((place) => !occupationIds.has(placeIdentity(place)))
-      .map((place) => ({
-        id: placeIdentity(place),
-        lat: Number(place.y),
-        lng: Number(place.x),
-        content: `<div style="padding:4px 8px;font-size:12px;white-space:nowrap;">${place.place_name}</div>`,
-      }))
-
-    // 직업 맞춤 핀 — 기본 핀(빨강)과 구분되도록 파란 원형 아이콘을 쓴다(colors.info, 범례와 동일 색).
-    const occupationMarkers = occupationPlaces.map((place) => ({
-      id: `occ:${placeIdentity(place)}`,
+    const placeMarkers = places.map((place) => ({
+      id: placeIdentity(place),
       lat: Number(place.y),
       lng: Number(place.x),
-      icon: {
-        content: `<div style="width:14px;height:14px;border-radius:50%;background:${colors.info};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>`,
-        size: [18, 18],
-        anchor: [9, 9],
-      },
       content: `<div style="padding:4px 8px;font-size:12px;white-space:nowrap;">${place.place_name}</div>`,
     }))
 
-    return [myLocationMarker, ...placeMarkers, ...occupationMarkers]
-  }, [myPosition, places, occupationPlaces])
+    return [myLocationMarker, ...placeMarkers]
+  }, [myPosition, places])
 
   // markers에는 내 위치 핀이 항상 포함돼 있어(장소가 0개여도) 훅 내부의 "마커 있음" 판정만으로는
   // fitBounds 여부를 못 정한다 — 장소가 진짜 0개일 때 내 위치 한 점으로만 fitBounds하면 최대 줌으로
   // 조여버리므로(기존 버그였던 지점), 실제 장소(식당) 유무를 여기서 직접 계산해 넘긴다.
-  const hasAnyPlace = places.length > 0 || occupationPlaces.length > 0
+  const hasAnyPlace = places.length > 0
 
   const { loaded, error: loadError } = useNaverMap(containerRef, {
     center: myPosition,
