@@ -31,7 +31,7 @@ const MAP_PRESENTATION_PROFILES: Record<MapPresentationMode, MapPresentationProf
   storefront3d: {
     camera: { pitch: 56, bearing: -24 },
     localTwinOverlayVisible: true,
-    coloredBuildingsVisible: true,
+    coloredBuildingsVisible: false,
     fallbackBuildingsVisible: true,
     storefrontsVisible: true,
   },

@@ -26,6 +26,18 @@ export type StorefrontMapLayer = CustomLayerInterface & {
   setStore: (nextInput: StorefrontMapLayerInput) => void;
 };
 
+function emphasizeCategoryAttachment(storefront: THREE.Group) {
+  const attachment = storefront.getObjectByName("category-attachment");
+  if (attachment) {
+    attachment.position.y += 0.24;
+    attachment.scale.setScalar(1.35);
+    attachment.traverse((object) => {
+      object.renderOrder = 3;
+    });
+  }
+  return storefront;
+}
+
 function storefrontModelMatrix(input: StorefrontMapLayerInput, storefront: THREE.Group) {
   const [longitude, latitude] = input.building?.center ?? [input.longitude, input.latitude];
   const origin = MercatorCoordinate.fromLngLat([longitude, latitude], 0);
@@ -40,7 +52,7 @@ function storefrontModelMatrix(input: StorefrontMapLayerInput, storefront: THREE
   const horizontalScale = plotSizeMeters / localFootprint;
   const verticalScale = heightMeters / localHeight;
 
-  // MapLibre receives Three.js local Y as map Z after rotationX.  The second
+  // MapLibre receives Three.js local Y as map Z after rotationX. The second
   // scale value is therefore depth, while the third is height.
   return new THREE.Matrix4()
     .makeTranslation(origin.x, origin.y, origin.z)
@@ -73,7 +85,7 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
       scene.remove(storefront);
       disposeStorefront(storefront);
     }
-    storefront = nextStorefront;
+    storefront = emphasizeCategoryAttachment(nextStorefront);
     modelMatrix = storefrontModelMatrix(currentInput, storefront);
     storefront.userData.locationSource = currentInput.source;
     storefront.userData.locationSourceId = currentInput.sourceId;

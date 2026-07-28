@@ -79,7 +79,8 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
     baseBuildingsVisible: profile.coloredBuildingsVisible,
     setBaseBuildingsVisible: () => undefined,
     baseBuildingsRendered:
-      profile.fallbackBuildingsVisible && !hasVisibleLocalTwinOverlay,
+      profile.fallbackBuildingsVisible &&
+      (presentationMode === "storefront3d" || !hasVisibleLocalTwinOverlay),
     committedCenter,
     focusCenter: (center: [number, number], store: boolean) => {
       setCommittedCenter(center);

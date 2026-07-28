@@ -114,6 +114,7 @@ export function StorefrontLayer({ layerId, store, onUnavailable, onReady }: Stor
   useEffect(() => {
     try {
       layerRef.current?.setStore(layerInput(store, layerId));
+      if (layerRef.current) onReadyRef.current?.(store.id);
     } catch (error) {
       if (import.meta.env.DEV) console.warn("LocalTwin 3D storefront update fallback", error);
       onUnavailableRef.current();
