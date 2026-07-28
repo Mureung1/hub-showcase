@@ -2,15 +2,16 @@ import type { MarketStore } from "../market/types";
 
 export const STORE_MARKER_DETAIL_ZOOM = 16.2;
 
+export type StoreMarkerGroupingMode = "analysis" | "storefront3d";
+
 export type StoreMarkerGroup = {
   store: MarketStore;
   count: number;
 };
 
-function markerCellMeters(zoom: number) {
-  if (zoom < 14.8) return 180;
-  if (zoom < 15.6) return 95;
-  return 52;
+function markerCellMeters(zoom: number, mode: StoreMarkerGroupingMode) {
+  const base = zoom < 14.8 ? 180 : zoom < 15.6 ? 95 : 52;
+  return mode === "storefront3d" ? base * 1.55 : base;
 }
 
 function storeIdentity(store: MarketStore) {
@@ -21,12 +22,13 @@ export function groupStoreMarkers(
   stores: MarketStore[],
   zoom: number,
   selectedName: string | null,
+  mode: StoreMarkerGroupingMode = "analysis",
 ): StoreMarkerGroup[] {
   if (zoom >= STORE_MARKER_DETAIL_ZOOM) {
     return stores.map((store) => ({ store, count: 1 }));
   }
 
-  const cellMeters = markerCellMeters(zoom);
+  const cellMeters = markerCellMeters(zoom, mode);
   const groups = new Map<string, StoreMarkerGroup>();
   for (const store of stores) {
     const isSelected = selectedName === store.name;
