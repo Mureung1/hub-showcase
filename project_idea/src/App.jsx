@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
+import { API_BASE } from "./apiBase";
 import StepHeader from "./StepHeader";
 import LoginScreen from "./LoginScreen";
 import ProfileScreen from "./ProfileScreen";
@@ -17,6 +18,56 @@ function App() {
   const [viewingProfile, setViewingProfile] = useState(false);
   const [registration, setRegistration] = useState(null);
   const [joinedCandidate, setJoinedCandidate] = useState(null);
+  const hasResumedRef = useRef(false);
+
+  async function resumeActiveRequest(userId) {
+    if (hasResumedRef.current) return;
+    hasResumedRef.current = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/requests/mine/${userId}`);
+      const data = await res.json();
+      if (!data) {
+        setStep((s) => (s === 0 ? 1 : s));
+        return;
+      }
+
+      const reg = {
+        id: data.id,
+        userId: data.user_id,
+        direction: data.direction,
+        departureHub: data.departure_hub_name,
+        destHub: data.destination_hub_name,
+        time: (data.desired_time ?? "").slice(0, 5),
+        arrival: data.arrival_estimate,
+        genderOnly: data.gender_only,
+      };
+      setRegistration(reg);
+
+      if (!data.group_id) {
+        setStep(2);
+        return;
+      }
+
+      const cityHub = reg.direction === "from_school" ? reg.destHub : reg.departureHub;
+      const groupRes = await fetch(`${API_BASE}/api/requests/group/${data.group_id}`);
+      const members = await groupRes.json();
+      const me = Array.isArray(members) ? members.find((m) => m.id === data.id) : null;
+      const groupCount = Array.isArray(members) ? members.filter((m) => m.status === "matched").length : 1;
+
+      setJoinedCandidate({
+        groupId: data.group_id,
+        groupCount,
+        myRequestId: data.id,
+        pending: me?.status === "pending",
+        cityHub,
+      });
+      setStep(3);
+    } catch {
+      // 복귀에 실패하면 1단계(이동 등록)부터 다시 시작
+      setStep((s) => (s === 0 ? 1 : s));
+    }
+  }
 
   useEffect(() => {
     async function handleSession(currentSession) {
@@ -32,7 +83,7 @@ function App() {
       if (profile) {
         setNeedsProfile(false);
         setMyProfile(profile);
-        setStep((s) => (s === 0 ? 1 : s));
+        resumeActiveRequest(currentSession.user.id);
         return;
       }
 
@@ -51,7 +102,7 @@ function App() {
           if (!saveError) {
             setNeedsProfile(false);
             setMyProfile(saved);
-            setStep((s) => (s === 0 ? 1 : s));
+            resumeActiveRequest(currentSession.user.id);
             return;
           }
         } catch {
@@ -79,6 +130,7 @@ function App() {
 
   async function handleFinish() {
     await supabase.auth.signOut();
+    hasResumedRef.current = false;
     setStep(0);
     setNeedsProfile(false);
     setRegistration(null);

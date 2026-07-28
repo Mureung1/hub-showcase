@@ -177,6 +177,37 @@ router.post('/:id/heartbeat', async (req, res) => {
   res.json({ ok: true })
 })
 
+// 주의: '/:id'보다 먼저 등록해야 함. 안 그러면 'mine'이 :id로 잡혀버림
+router.get('/mine/:userId', async (req, res) => {
+  const { userId } = req.params
+
+  const { data, error } = await supabase
+    .from('matching_requests')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  if (!data) {
+    return res.json(null)
+  }
+
+  const hubIds = [data.departure_hub_id, data.destination_hub_id].filter(Boolean)
+  const { data: hubs } = await supabase.from('hubs').select('id, name').in('id', hubIds.length ? hubIds : [''])
+  const hubNameById = Object.fromEntries((hubs ?? []).map((h) => [h.id, h.name]))
+
+  res.json({
+    ...data,
+    departure_hub_name: hubNameById[data.departure_hub_id] ?? null,
+    destination_hub_name: hubNameById[data.destination_hub_id] ?? null,
+  })
+})
+
 router.get('/:id', async (req, res) => {
   const { id } = req.params
 
