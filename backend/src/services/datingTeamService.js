@@ -1,4 +1,10 @@
 import { prisma } from '../config/prismaClient.js'
+import { calculateTeamPairFinalScore } from '../utils/datingOppositeMatchingUtils.js'
+
+// birth_year로부터 현재 나이를 계산한다. (authController.js에서 나이 -> birthYear로 변환하는 로직의 역계산)
+function calculateAgeFromBirthYear(birthYear) {
+  return new Date().getFullYear() - birthYear
+}
 
 // 로그인한 유저의 현재 과팅 팀 구성 현황을 조회한다.
 // 아직 아무도 초대를 주고받지 않아 recruiting 팀이 없다면, 본인 한 명만 있는 상태로 간주한다.
@@ -182,4 +188,102 @@ export async function confirmSoloDatingTeam(userId) {
       status: confirmedTeam.status,
     }
   })
+}
+
+// 로그인한 유저(myUserId)가 현재 속한 팀의 teamId를 찾는다. recruiting/matched 상태의 팀에 속해있지 않으면 null.
+// (getMyDatingTeamStatus에서 "내 팀"을 찾을 때 쓰는 조건과 동일한 패턴)
+// matchRequestService.js에서도 "내 팀(fromTeamId) 찾기" 용도로 재사용하기 위해 export한다.
+export async function findMyActiveTeamId(myUserId) {
+  const membership = await prisma.datingTeamMember.findFirst({
+    where: { userId: BigInt(myUserId), team: { status: { in: ['recruiting', 'matched'] } } },
+    select: { teamId: true },
+  })
+
+  return membership ? membership.teamId : null
+}
+
+// 과팅 이성 그룹 매칭 상세 화면용: teamId 하나로 팀원 개개인의 이름/나이/취미유형/이상형유형을 조회하고,
+// 로그인한 유저(myUserId)가 속한 팀과의 궁합%(matchPercent)도 함께 계산해 반환한다.
+// (기존 GET /:teamId/opposite-matches는 팀 단위 궁합 점수만 계산하고 팀원 개인정보는 포함하지 않아 별도로 추가)
+export async function getDatingTeamDetail(teamId, myUserId) {
+  let parsedTeamId
+  try {
+    parsedTeamId = BigInt(teamId)
+  } catch {
+    const err = new Error('유효하지 않은 팀 ID입니다.')
+    err.status = 400
+    throw err
+  }
+
+  const team = await prisma.datingTeam.findUnique({
+    where: { teamId: parsedTeamId },
+    include: {
+      leader: { select: { nickname: true } },
+      members: {
+        include: {
+          user: {
+            select: {
+              userId: true,
+              nickname: true,
+              birthYear: true,
+              hobbyTestResult: { select: { hobbyTags: true } },
+              // dating 타입 성향 테스트는 유저당 최대 1개라, 첫 번째 결과만 사용한다 (datingOppositeMatchingUtils.js와 동일한 방식)
+              personalityTests: { where: { testType: 'dating' }, select: { scoreSummary: true } },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!team) {
+    const err = new Error('존재하지 않는 팀입니다.')
+    err.status = 404
+    throw err
+  }
+
+  // 로그인한 유저가 아직 어떤 팀에도 속해있지 않으면 궁합을 계산할 기준 팀이 없으므로 matchPercent는 null
+  const myTeamId = await findMyActiveTeamId(myUserId)
+  const matchPercent =
+    myTeamId != null
+      ? Math.round((await calculateTeamPairFinalScore(myTeamId, parsedTeamId)) * 100)
+      : null
+
+  // 내 팀이 상대팀 무관하게 이미 pending 신청을 갖고 있는지, 있다면 그 대상이 지금 보고 있는 이 팀인지 확인
+  // (matchRequestService.js의 "한 팀은 동시에 하나의 신청만 진행 가능" 검증과 같은 조건을 조회용으로 재사용)
+  let myRequestStatus = { hasActiveRequest: false, isForThisTeam: false }
+  if (myTeamId != null) {
+    const myPendingRequest = await prisma.matchRequest.findFirst({
+      where: { fromTeamId: myTeamId, status: 'pending' },
+    })
+
+    if (myPendingRequest) {
+      myRequestStatus = {
+        hasActiveRequest: true,
+        isForThisTeam: myPendingRequest.toTeamId === parsedTeamId,
+      }
+    }
+  }
+
+  return {
+    teamId: team.teamId.toString(),
+    teamName: team.leader?.nickname ?? null,
+    matchPercent,
+    myRequestStatus,
+    members: team.members.map(({ user }) => {
+      const hobbyTags = user.hobbyTestResult?.hobbyTags ?? null
+      const datingScoreSummary = user.personalityTests[0]?.scoreSummary ?? null
+
+      return {
+        userId: user.userId.toString(),
+        nickname: user.nickname,
+        age: calculateAgeFromBirthYear(user.birthYear),
+        // 취미/이상형 테스트를 아직 완료하지 않은 팀원은 null로 내려준다 (프론트에서 방어 처리)
+        hobby: hobbyTags ? { primary: hobbyTags.primary, secondary: hobbyTags.secondary } : null,
+        dating: datingScoreSummary
+          ? { primary: datingScoreSummary.primary, secondary: datingScoreSummary.secondary }
+          : null,
+      }
+    }),
+  }
 }

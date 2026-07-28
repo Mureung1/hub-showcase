@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import NotificationBell from '../components/NotificationBell'
 import './DatingOppositeResultsPage.css'
@@ -21,6 +22,7 @@ function getTeamDisplayName(match) {
 }
 
 export default function DatingOppositeResultsPage() {
+  const navigate = useNavigate()
   const [teamSize, setTeamSize] = useState(null)
   const [matches, setMatches] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -72,9 +74,8 @@ export default function DatingOppositeResultsPage() {
     }
   }, [])
 
-  // 다음 화면(궁합 상세)이 아직 없어서, 클릭 시 콘솔 로그만 남긴다
   const handleDetailClick = (teamId) => {
-    console.log('자세히보기 클릭:', teamId)
+    navigate(`/matching/dating-opposite/${teamId}`)
   }
 
   return (

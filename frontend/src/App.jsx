@@ -11,6 +11,7 @@ import TeamSizeSelectPage from './pages/TeamSizeSelectPage'
 import MatchResultsPage from './pages/MatchResultsPage'
 import DatingSameResultsPage from './pages/DatingSameResultsPage'
 import DatingOppositeResultsPage from './pages/DatingOppositeResultsPage'
+import TeamMatchDetailPage from './pages/TeamMatchDetailPage'
 import TeamSetupPage from './pages/TeamSetupPage'
 import ChatRoomPage from './pages/ChatRoomPage'
 
@@ -30,6 +31,7 @@ function App() {
         <Route path="/matches" element={<MatchResultsPage />} />
         <Route path="/matching/dating-same" element={<DatingSameResultsPage />} />
         <Route path="/matching/dating-opposite" element={<DatingOppositeResultsPage />} />
+        <Route path="/matching/dating-opposite/:teamId" element={<TeamMatchDetailPage />} />
         <Route path="/team-setup" element={<TeamSetupPage />} />
         <Route path="/chat/:chatRoomId" element={<ChatRoomPage />} />
       </Routes>

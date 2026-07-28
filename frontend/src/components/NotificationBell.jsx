@@ -8,10 +8,16 @@ export default function NotificationBell() {
   const navigate = useNavigate()
   const containerRef = useRef(null)
 
-  const [summary, setSummary] = useState({ totalCount: 0, unreadChats: [], pendingInvites: [] })
+  const [summary, setSummary] = useState({
+    totalCount: 0,
+    unreadChats: [],
+    pendingInvites: [],
+    pendingMatchRequests: [],
+  })
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isChatsExpanded, setIsChatsExpanded] = useState(false)
   const [isInvitesExpanded, setIsInvitesExpanded] = useState(false)
+  const [isMatchRequestsExpanded, setIsMatchRequestsExpanded] = useState(false)
   const [respondingInviteId, setRespondingInviteId] = useState(null)
   const [inviteErrorMessage, setInviteErrorMessage] = useState('')
 
@@ -71,8 +77,20 @@ export default function NotificationBell() {
     }
   }
 
+  // 매칭 신청(관심 보내기) 수락/거절은 다음 단계에서 API로 연결한다. 지금은 콘솔 로그만 출력한다.
+  const handleAcceptMatchRequest = (requestId) => {
+    console.log(`매칭 신청 수락: requestId=${requestId}`)
+  }
+
+  const handleRejectMatchRequest = (requestId) => {
+    console.log(`매칭 신청 거절: requestId=${requestId}`)
+  }
+
   const unreadChatTotal = summary.unreadChats.reduce((sum, chat) => sum + chat.unreadCount, 0)
-  const hasNoNotifications = summary.unreadChats.length === 0 && summary.pendingInvites.length === 0
+  const hasNoNotifications =
+    summary.unreadChats.length === 0 &&
+    summary.pendingInvites.length === 0 &&
+    summary.pendingMatchRequests.length === 0
 
   return (
     <div className="notification-bell" ref={containerRef}>
@@ -183,6 +201,52 @@ export default function NotificationBell() {
                             className="notification-bell-invite-button notification-bell-invite-reject"
                             onClick={() => handleRespondInvite(invite.inviteId, 'reject')}
                             disabled={respondingInviteId === invite.inviteId}
+                          >
+                            거절
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="notification-bell-divider" />
+
+              <div className="notification-bell-section">
+                <button
+                  type="button"
+                  className="notification-bell-section-header"
+                  onClick={() => setIsMatchRequestsExpanded((prev) => !prev)}
+                >
+                  <span>관심을 보였어요 {summary.pendingMatchRequests.length}</span>
+                  <span className="notification-bell-chevron">
+                    {isMatchRequestsExpanded ? '▲' : '▼'}
+                  </span>
+                </button>
+
+                {isMatchRequestsExpanded && (
+                  <div className="notification-bell-list">
+                    {summary.pendingMatchRequests.length === 0 && (
+                      <p className="notification-bell-list-empty">받은 매칭 신청이 없어요</p>
+                    )}
+                    {summary.pendingMatchRequests.map((request) => (
+                      <div className="notification-bell-invite-item" key={request.requestId}>
+                        <span className="notification-bell-invite-nickname">
+                          {request.fromTeamName} 팀이 관심을 보였어요
+                        </span>
+                        <div className="notification-bell-invite-actions">
+                          <button
+                            type="button"
+                            className="notification-bell-invite-button notification-bell-invite-accept"
+                            onClick={() => handleAcceptMatchRequest(request.requestId)}
+                          >
+                            수락
+                          </button>
+                          <button
+                            type="button"
+                            className="notification-bell-invite-button notification-bell-invite-reject"
+                            onClick={() => handleRejectMatchRequest(request.requestId)}
                           >
                             거절
                           </button>

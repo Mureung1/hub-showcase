@@ -2,6 +2,7 @@ import {
   getMyDatingTeamStatus,
   confirmDatingTeam,
   confirmSoloDatingTeam,
+  getDatingTeamDetail,
 } from '../services/datingTeamService.js'
 import { calculateAndSaveOppositeTeamMatches } from '../services/datingOppositeMatchingService.js'
 
@@ -71,5 +72,23 @@ export async function confirmSoloTeam(req, res) {
     return res
       .status(status)
       .json({ message: err.status ? err.message : '팀 확정 중 오류가 발생했습니다.' })
+  }
+}
+
+// 과팅 이성 그룹 매칭 상세 화면용: teamId로 팀원 개개인의 이름/나이/취미유형/이상형유형을 조회한다
+export async function getDatingTeamDetailInfo(req, res) {
+  try {
+    const { teamId } = req.params
+    const { userId } = req.user
+
+    const result = await getDatingTeamDetail(teamId, userId)
+
+    return res.status(200).json(result)
+  } catch (err) {
+    console.error(err)
+    const status = err.status || 500
+    return res
+      .status(status)
+      .json({ message: err.status ? err.message : '팀 상세 조회 중 오류가 발생했습니다.' })
   }
 }

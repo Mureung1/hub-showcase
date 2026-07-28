@@ -113,3 +113,19 @@ export async function calculateOppositeTeamMatches(teamId) {
 
   return results
 }
+
+// 지정된 두 팀(teamAId, teamBId) 사이의 궁합 점수(0~1)만 계산한다.
+// calculateOppositeTeamMatches와 동일한 공식(취미0.5 + 이상형0.5 코사인 유사도)을 재사용하되,
+// 후보 목록 전체를 순회하지 않고 특정 팀 쌍 하나만 계산하고 싶을 때 쓴다 (예: 상세 화면의 "내 팀 vs 상대 팀").
+// @param {number|bigint|string} teamAId
+// @param {number|bigint|string} teamBId
+// @returns {Promise<number>} 0~1 사이의 궁합 점수
+export async function calculateTeamPairFinalScore(teamAId, teamBId) {
+  const vectorsA = await getTeamAverageVectors(teamAId)
+  const vectorsB = await getTeamAverageVectors(teamBId)
+
+  const hobbySimilarity = cosineSimilarity(vectorsA.hobbyVector, vectorsB.hobbyVector)
+  const datingSimilarity = cosineSimilarity(vectorsA.datingVector, vectorsB.datingVector)
+
+  return hobbySimilarity * 0.5 + datingSimilarity * 0.5
+}
