@@ -26,14 +26,31 @@ interface CustomerCreateInput {
 }
 
 function enrichCustomer(id: string, storeId: string, data: Customer): CustomerSearchResult {
-  const riskLevel: RiskLevel = resolveRiskLevel(data.riskStats.score, data.riskStats.incidentCounts);
-  const alert = createRiskAlertPayload(data.riskStats);
+  const riskStats = data.riskStats ?? {
+    totalVisits: 0,
+    noShowCount: 0,
+    lateCancelCount: 0,
+    incidentCounts: { abuse: 0, dispute: 0, late: 0, unreasonable: 0 },
+    score: 0,
+    lastNoShowAt: null,
+    updatedAt: null,
+  }
+  const riskLevel: RiskLevel = resolveRiskLevel(riskStats.score, riskStats.incidentCounts);
+  const alert = createRiskAlertPayload(riskStats);
   return {
     id,
     storeId,
     name: data.name,
     phoneMasked: maskPhone(data.phone),
-    riskStats: data.riskStats,
+    riskStats: data.riskStats ?? {
+      totalVisits: 0,
+      noShowCount: 0,
+      lateCancelCount: 0,
+      incidentCounts: { abuse: 0, dispute: 0, late: 0, unreasonable: 0 },
+      score: 0,
+      lastNoShowAt: null,
+      updatedAt: null,
+    },
     riskLevel,
     alert: alert.show,
   };

@@ -1,20 +1,30 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { signOutUser } from '@/services/auth'
+import { useAuthState } from '@/hooks/useAuth'
 import { toast } from 'sonner'
 
 const navItems = [
-  { path: '/app/dashboard', label: '대시보드', icon: '🏠' },
-  { path: '/app/customers', label: '고객', icon: '👥' },
-  { path: '/app/reservations', label: '예약', icon: '📅' },
-  { path: '/app/settings', label: '내 정보', icon: '⚙️' },
+  { path: '/app/dashboard', label: '대시보드' },
+  { path: '/app/customers', label: '고객' },
+  { path: '/app/reservations', label: '예약' },
+  { path: '/app/settings', label: '내 정보' },
 ]
 
 const AppLayout = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuthState()
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path)
+  }
+
+  const handleLogoClick = () => {
+    if (user) {
+      navigate('/app/dashboard')
+    } else {
+      navigate('/login')
+    }
   }
 
   const handleLogout = async () => {
@@ -36,27 +46,25 @@ const AppLayout = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center justify-center w-full h-full ${
-                isActive(item.path) ? 'text-blue-600' : 'text-gray-500'
+              className={`flex flex-col items-center justify-center w-full h-full text-xs ${
+                isActive(item.path) ? 'text-blue-600 font-medium' : 'text-gray-500'
               }`}
             >
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs mt-1">{item.label}</span>
+              {item.label}
             </Link>
           ))}
           <button
             onClick={handleLogout}
-            className="flex flex-col items-center justify-center w-full h-full text-gray-500"
+            className="flex flex-col items-center justify-center w-full h-full text-xs text-gray-500"
           >
-            <span className="text-xl">🚪</span>
-            <span className="text-xs mt-1">로그아웃</span>
+            로그아웃
           </button>
         </div>
       </nav>
 
       {/* PC sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-56 bg-white border-r border-gray-200 flex-col">
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 cursor-pointer" onClick={handleLogoClick}>
           <h1 className="text-xl font-bold text-gray-900">ShowUp</h1>
           <p className="text-xs text-gray-500 mt-1">소상공인 고객 이력 관리</p>
         </div>
@@ -65,24 +73,22 @@ const AppLayout = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-3 rounded-lg mb-1 ${
+              className={`flex items-center px-3 py-3 rounded-lg mb-1 text-sm ${
                 isActive(item.path)
-                  ? 'bg-blue-50 text-blue-600'
+                  ? 'bg-blue-50 text-blue-600 font-medium'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span className="text-xl">{item.icon}</span>
-              <span className="font-medium">{item.label}</span>
+              {item.label}
             </Link>
           ))}
         </nav>
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg w-full"
+            className="flex items-center px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg w-full text-sm"
           >
-            <span className="text-xl">🚪</span>
-            <span className="font-medium">로그아웃</span>
+            로그아웃
           </button>
         </div>
       </aside>

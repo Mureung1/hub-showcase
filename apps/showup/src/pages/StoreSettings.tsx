@@ -101,32 +101,24 @@ const StoreSettings = () => {
         <p className="text-sm text-gray-500 mt-1">가게 정보를 확인하고 수정합니다</p>
       </header>
 
-      {/* 계정 정보 (읽기 전용) */}
+      {/* 현재 설정 요약 (상단) */}
       <section className="bg-white rounded-xl p-4 shadow-sm mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">계정 정보</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">현재 설정</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">이메일</span>
-            <span className="text-gray-900 font-medium">{currentUser?.email || '-'}</span>
+            <span className="text-gray-500">가게 이름</span>
+            <span className="text-gray-900 font-medium">{storeName || '-'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">가입일</span>
-            <span className="text-gray-900 font-medium">
-              {store?.createdAt
-                ? new Date(
-                    typeof store.createdAt === 'object' && 'toDate' in store.createdAt
-                      ? (store.createdAt as { toDate: () => Date }).toDate()
-                      : store.createdAt as unknown as Date
-                  ).toLocaleDateString('ko-KR')
-                : '-'}
-            </span>
+            <span className="text-gray-500">업종</span>
+            <span className="text-gray-900 font-medium">{categoryLabel}</span>
           </div>
         </div>
       </section>
 
       {/* 가게 정보 (수정 가능) */}
       <section className="bg-white rounded-xl p-4 shadow-sm mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">가게 정보</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">가게 정보 수정</h2>
         <div className="space-y-4">
           <Input
             label="가게 이름"
@@ -158,7 +150,7 @@ const StoreSettings = () => {
             type="button"
             variant="primary"
             fullWidth
-            disabled={isSaving || storeName.trim() === store?.name && storeCategory === store?.category}
+            disabled={isSaving || (storeName.trim() === store?.name && storeCategory === store?.category)}
             onClick={handleSave}
           >
             {isSaving ? '저장 중...' : '저장'}
@@ -166,17 +158,25 @@ const StoreSettings = () => {
         </div>
       </section>
 
-      {/* 현재 설정 요약 */}
+      {/* 계정 정보 (읽기 전용) */}
       <section className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">현재 설정</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">계정 정보</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">가게 이름</span>
-            <span className="text-gray-900 font-medium">{storeName || '-'}</span>
+            <span className="text-gray-500">이메일</span>
+            <span className="text-gray-900 font-medium">{currentUser?.email || '-'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">업종</span>
-            <span className="text-gray-900 font-medium">{categoryLabel}</span>
+            <span className="text-gray-500">가입일</span>
+            <span className="text-gray-900 font-medium">
+              {store?.createdAt
+                ? new Date(
+                    typeof store.createdAt === 'object' && 'toDate' in store.createdAt
+                      ? (store.createdAt as { toDate: () => Date }).toDate()
+                      : store.createdAt as unknown as Date
+                  ).toLocaleDateString('ko-KR')
+                : '-'}
+            </span>
           </div>
         </div>
       </section>
