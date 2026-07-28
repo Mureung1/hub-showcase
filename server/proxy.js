@@ -276,11 +276,22 @@ app.use('/api', apiLimiter)
 // 실어 보내고(rewrite destination 참고), 여기서 req.url을 그 값으로 복원한다. 이미 원래 경로가
 // 유지되고 있었다면 이 복원은 같은 값으로 덮어쓰는 것이라 무해하다. 로컬 개발/Render에서는
 // 이 rewrite 자체가 없어 vercelSubpath가 없으므로 이 분기를 타지 않는다.
+//
+// vercelSubpath는 경로만 담고 있다 — 그 외 원래 쿼리 파라미터(?univ=cnu, ?name=... 등)는 Vercel이
+// rewrite destination에 그대로 딸려 보내 req.url에 이미 살아있으므로, 그 문자열에서 vercelSubpath만
+// 제거하고 나머지는 그대로 옮겨 붙여야 한다. 예전에는 vercelSubpath 값만으로 req.url을 통째로
+// 다시 만들어 나머지 쿼리 파라미터가 전부 사라졌다 — POST 바디로만 값을 받는 라우트만 있던 동안은
+// 드러나지 않다가, 쿼리 파라미터가 실제 동작에 필요한 GET 라우트(/api/school-search 등)가 생기며
+// 그 라우트들이 프로덕션(Vercel)에서만 400으로 실패하는 문제로 나타났다.
 if (process.env.VERCEL) {
   app.use((req, res, next) => {
     const subpath = req.query?.vercelSubpath
     if (typeof subpath === 'string') {
-      req.url = `/api/${subpath}`
+      const [, search = ''] = req.url.split('?')
+      const params = new URLSearchParams(search)
+      params.delete('vercelSubpath')
+      const qs = params.toString()
+      req.url = `/api/${subpath}${qs ? `?${qs}` : ''}`
     }
     next()
   })
