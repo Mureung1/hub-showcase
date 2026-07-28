@@ -21,11 +21,13 @@ import { promisify } from 'node:util'
 
 import {
   controlledPythonEnvironment,
+  createLocalProviderEnvironment,
   delay,
   terminateDetachedProcessGroup,
   waitForJsonFile,
   waitForProcessGroupExit,
   withinDuration,
+  writeLocalProviderConfig,
 } from './local-provider-test-support.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
@@ -92,7 +94,7 @@ test('runs the production bridge against exact Codex and the official local prov
         'utf8',
       ),
     ])
-    const environment = await createEnvironmentRoots(root)
+    const environment = await createLocalProviderEnvironment(root)
     provider = await startLocalProvider(bundle, root)
     await writeLocalProviderConfig(environment.codexHome, provider.url)
 
@@ -340,7 +342,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       '.codex/config.toml',
     )
 
-    const environment = await createEnvironmentRoots(root)
+    const environment = await createLocalProviderEnvironment(root)
     provider = await startLocalProvider(bundle, root)
     await writeLocalProviderConfig(environment.codexHome, provider.url)
     const canonicalWorkspace = await realpath(workspace)
@@ -542,7 +544,7 @@ test('records exact trust despite a trusted ancestor and reloads only exact nati
       writeFile(outsideSentinel, outsideSentinelContent, 'utf8'),
     ])
 
-    const environment = await createEnvironmentRoots(root)
+    const environment = await createLocalProviderEnvironment(root)
     const canonicalRoot = await realpath(root)
     const canonicalWorkspace = await realpath(workspace)
     provider = await startLocalProvider(bundle, root, {
@@ -733,7 +735,7 @@ test('preserves explicit untrusted at workspace-write thread start', async () =>
       ),
     ])
 
-    const environment = await createEnvironmentRoots(root)
+    const environment = await createLocalProviderEnvironment(root)
     provider = await startLocalProvider(bundle, root)
     await writeLocalProviderConfig(environment.codexHome, provider.url)
     const canonicalWorkspace = await realpath(workspace)
@@ -973,53 +975,6 @@ async function startLocalProvider(
       return closePromise
     },
   }
-}
-
-async function createEnvironmentRoots(
-  root: string,
-): Promise<CodexChatRuntimeEnvironment> {
-  const environment = {
-    home: join(root, 'runtime-home'),
-    codexHome: join(root, 'runtime-codex-home'),
-    codexSqliteHome: join(root, 'runtime-codex-sqlite-home'),
-    tempDirectory: join(root, 'runtime-temp'),
-  }
-  await Promise.all(
-    Object.values(environment).map((directory) =>
-      mkdir(directory, { recursive: true }),
-    ),
-  )
-  const [home, codexHome, codexSqliteHome, tempDirectory] = await Promise.all([
-    realpath(environment.home),
-    realpath(environment.codexHome),
-    realpath(environment.codexSqliteHome),
-    realpath(environment.tempDirectory),
-  ])
-  return { home, codexHome, codexSqliteHome, tempDirectory }
-}
-
-async function writeLocalProviderConfig(
-  codexHome: string,
-  providerUrl: string,
-): Promise<void> {
-  await writeFile(
-    join(codexHome, 'config.toml'),
-    [
-      'model = "mock-model"',
-      'approval_policy = "never"',
-      'sandbox_mode = "read-only"',
-      'model_provider = "mock_provider"',
-      '',
-      '[model_providers.mock_provider]',
-      'name = "Official SDK local provider"',
-      `base_url = "${providerUrl}/v1"`,
-      'wire_api = "responses"',
-      'request_max_retries = 0',
-      'stream_max_retries = 0',
-      '',
-    ].join('\n'),
-    'utf8',
-  )
 }
 
 function assertNativeTurn(

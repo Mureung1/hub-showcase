@@ -5,6 +5,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readlink,
   realpath,
   rm,
   symlink,
@@ -91,28 +92,29 @@ test(
   { timeout: 120_000 },
   async () => {
     const fixture = await prepareWorkspace()
-    const exact = await startCodexActionLocalProviderTestFixture({
+    const actionRuntimeFixture = await startCodexActionLocalProviderTestFixture({
       runtimeRoot,
       workspace: fixture.workspaceRoot,
     })
-    let target: PreparedServerApplication | undefined
+    let preparedServer: PreparedServerApplication | undefined
     let listener: BoundServerApplicationListener | undefined
     try {
       const lifecycle = await readActiveLifecycle(fixture.workspaceRoot)
-      target = await createPreparedServerApplication({
+      preparedServer = await createPreparedServerApplication({
         codexChat: {
           ...codexChatIdentity,
           origin: 'http://127.0.0.1:4173',
           createRuntime: async () => {
-            assert.ok(target)
+            assert.ok(preparedServer)
             assert.ok(listener)
-            return exact.createRuntime({
+            return actionRuntimeFixture.createRuntime({
               childEnvironment: {
                 AY_PLE_INTERACTION_BROKER_URL:
                   `http://127.0.0.1:${listener.port}/api/_private/interaction-mcp`,
-                AY_PLE_INTERACTION_BROKER_TOKEN: target.credentials.token,
+                AY_PLE_INTERACTION_BROKER_TOKEN:
+                  preparedServer.credentials.token,
                 AY_PLE_INTERACTION_RUNTIME_BINDING:
-                  target.credentials.binding,
+                  preparedServer.credentials.binding,
               },
             })
           },
@@ -125,7 +127,7 @@ test(
       listener = await bindServerApplicationListener({
         host: '127.0.0.1',
         port: 0,
-        requestHandler: target.application.app,
+        requestHandler: preparedServer.application.app,
       })
       const baseUrl = `http://127.0.0.1:${listener.port}`
       const original = await mutationSnapshot(fixture.workspaceRoot)
@@ -191,7 +193,7 @@ test(
       await assertUnchanged(fixture.workspaceRoot, accepted)
       await assertPublicFramesSafe(
         [...acceptedTrace.all(), ...rejectedTrace.all()],
-        target.credentials,
+        preparedServer.credentials,
         fixture,
       )
       assert.equal(
@@ -199,8 +201,8 @@ test(
         'outside evidence\n',
       )
 
-      await target.application.close()
-      target = undefined
+      await preparedServer.application.close()
+      preparedServer = undefined
       const listenerCleanup = await listener.close({
         signal: new AbortController().signal,
       })
@@ -209,18 +211,18 @@ test(
         status: 'closed',
         processTreeGone: true,
       })
-      const journal = await exact.finish()
+      const journal = await actionRuntimeFixture.finish()
       await assertExactActionProviderEvidence(
         journal,
         fixture,
       )
       await assertNoCredentialResidue(fixture.workspaceRoot)
     } finally {
-      await target?.application.close().catch(() => undefined)
+      await preparedServer?.application.close().catch(() => undefined)
       await listener
         ?.close({ signal: new AbortController().signal })
         .catch(() => undefined)
-      await exact.dispose()
+      await actionRuntimeFixture.dispose()
       await fixture.cleanup()
     }
   },
@@ -557,6 +559,7 @@ async function assertExactActionProviderEvidence(
   assert.notEqual(skillIndex, -1)
   assert.notEqual(textIndex, -1)
   const skillBlock = firstRequest.userTexts[skillIndex] as string
+  assert.equal(skillIndex, textIndex + 1)
   assert.match(skillBlock, /<name>ay-ple-first-assignment<\/name>/u)
   assert.equal(skillBlock.includes(`<path>${skillPath}</path>`), true)
   assert.equal(skillBlock.includes(skillBody), true)
@@ -564,6 +567,18 @@ async function assertExactActionProviderEvidence(
     firstRequest.userTexts.some((text) => text.startsWith('<mention>')),
     false,
   )
+  const expectedRuntimeInput = [
+    {
+      type: 'skill',
+      name: 'ay-ple-first-assignment',
+      path: skillPath,
+    },
+    { type: 'text', text: actionText },
+  ] as const
+  assert.deepEqual(journal.runtimeProductInputs, [
+    expectedRuntimeInput,
+    expectedRuntimeInput,
+  ])
   assert.equal(
     journal.requests.filter(({ model }) => model === 'codex-auto-review').length,
     4,
@@ -580,7 +595,9 @@ async function assertExactActionProviderEvidence(
   assert.equal(readCommand.includes(unselectedActionPath), false)
 
   const readEvidence = parseJsonObjectOutput(
-    journal.requests.flatMap((request) => request.functionOutputs),
+    journal.requests.flatMap((request) =>
+      request.functionOutputs.map(({ output }) => output),
+    ),
     'selectedFileDigests',
   )
   assert.deepEqual(readEvidence.selectedFileDigests, {
@@ -603,6 +620,25 @@ async function assertExactActionProviderEvidence(
       'call-action-review-revised',
       'call-action-review-rejected',
     ],
+  )
+  const outputs = uniqueProviderOutputs(journal)
+  assert.equal(
+    reviewOutcome(
+      outputs.get('call-action-review-initial')?.output,
+    ),
+    'revise',
+  )
+  assert.equal(
+    reviewOutcome(
+      outputs.get('call-action-review-revised')?.output,
+    ),
+    'accept',
+  )
+  assert.equal(
+    reviewOutcome(
+      outputs.get('call-action-review-rejected')?.output,
+    ),
+    'reject',
   )
   const mutationCall = calls.find(
     (call) => call.callId === 'call-action-apply-checkpoint',
@@ -645,6 +681,63 @@ function uniqueProviderCalls(
     for (const call of request.functionCalls) calls.set(call.callId, call)
   }
   return [...calls.values()]
+}
+
+function uniqueProviderOutputs(
+  journal: CodexActionLocalProviderJournal,
+): Map<
+  string,
+  CodexActionLocalProviderJournal['requests'][number]['functionOutputs'][number]
+> {
+  const outputs = new Map<
+    string,
+    CodexActionLocalProviderJournal['requests'][number]['functionOutputs'][number]
+  >()
+  for (const request of journal.requests) {
+    for (const output of request.functionOutputs) {
+      outputs.set(output.callId, output)
+    }
+  }
+  return outputs
+}
+
+function reviewOutcome(output: string | undefined): string | undefined {
+  if (output === undefined) return undefined
+  for (const line of output.split('\n')) {
+    const outcome = findReviewOutcome(parseJsonValue(line.trim()))
+    if (outcome !== undefined) return outcome
+  }
+  return undefined
+}
+
+function findReviewOutcome(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    const parsed = parseJsonValue(value)
+    return parsed === value ? undefined : findReviewOutcome(parsed)
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const outcome = findReviewOutcome(item)
+      if (outcome !== undefined) return outcome
+    }
+    return undefined
+  }
+  if (typeof value !== 'object' || value === null) return undefined
+  const record = value as Record<string, unknown>
+  if (typeof record.outcome === 'string') return record.outcome
+  for (const child of Object.values(record)) {
+    const outcome = findReviewOutcome(child)
+    if (outcome !== undefined) return outcome
+  }
+  return undefined
+}
+
+function parseJsonValue(value: string): unknown {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
 }
 
 function parseJsonObjectOutput(
@@ -1206,18 +1299,43 @@ async function assertContinuityFailures(
 }
 
 type MutationSnapshot = {
-  readonly actualBytes: Buffer
+  readonly files: ReadonlyArray<{
+    readonly relativePath: string
+    readonly bytes: Buffer
+  }>
   readonly head: string
   readonly index: string
-  readonly stateBytes: Buffer
+  readonly status: string
+  readonly escapeLinkTarget: string
 }
 
 async function mutationSnapshot(workspaceRoot: string): Promise<MutationSnapshot> {
+  const protectedPaths = [
+    'assignment.md',
+    'workspace-state.json',
+    'syllabus.txt',
+    'dirty-sentinel.txt',
+    'untracked-sentinel.txt',
+    ...selectedActionPaths,
+    unselectedActionPath,
+  ]
   return {
-    actualBytes: await readFile(path.join(workspaceRoot, 'assignment.md')),
+    files: await Promise.all(
+      protectedPaths.map(async (relativePath) => ({
+        relativePath,
+        bytes: await readFile(path.join(workspaceRoot, relativePath)),
+      })),
+    ),
     head: await gitText(workspaceRoot, ['rev-parse', 'HEAD']),
     index: await gitText(workspaceRoot, ['ls-files', '--stage']),
-    stateBytes: await readFile(path.join(workspaceRoot, 'workspace-state.json')),
+    status: await gitText(workspaceRoot, [
+      'status',
+      '--porcelain=v1',
+      '--untracked-files=all',
+    ]),
+    escapeLinkTarget: await readlink(
+      path.join(workspaceRoot, 'escape-link.txt'),
+    ),
   }
 }
 
@@ -1226,10 +1344,7 @@ async function assertUnchanged(
   expected: MutationSnapshot,
 ): Promise<void> {
   const actual = await mutationSnapshot(workspaceRoot)
-  assert.deepEqual(actual.actualBytes, expected.actualBytes)
-  assert.equal(actual.head, expected.head)
-  assert.equal(actual.index, expected.index)
-  assert.deepEqual(actual.stateBytes, expected.stateBytes)
+  assert.deepEqual(actual, expected)
 }
 
 async function applyAcceptedChange(workspaceRoot: string): Promise<void> {

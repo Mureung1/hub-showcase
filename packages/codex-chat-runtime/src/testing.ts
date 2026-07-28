@@ -36,8 +36,10 @@ export {
 export {
   startCodexActionLocalProviderTestFixture,
   type CodexActionLocalProviderFunctionCall,
+  type CodexActionLocalProviderFunctionOutput,
   type CodexActionLocalProviderJournal,
   type CodexActionLocalProviderTestFixture,
+  type CodexActionRuntimeInputItem,
 } from './testing-action-local-provider.js'
 
 export type DeterministicCodexChatRuntimeCall =

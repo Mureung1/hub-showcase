@@ -237,7 +237,7 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 | AY-originated UI | `propose_state_patch` MCP와 general native clarification | 기존 Interface 유지, 새 typed MCP capability 추가 가능 |
 | 실행 기록 | Native Turn과 process-local operation | 유지. Durable `ModelingRun`을 복원하지 않음 |
 
-현재 구현은 reverse InteractionCapability와 normal Chat에 더해 GUI의 explicit source selection에서 workspace Skill과 file reference를 native Turn으로 전달하는 `organize_sources` ActionInvocation을 제공한다. Deterministic Browser composition과 fresh Bootstrap workspace의 exact local-provider trace가 public action→selected-only actual-file read→same-Turn Interaction→revise·accept·reject→AY-owned intended-path mutation/checkpoint와 full teardown을 함께 검증한다. Initial First Assignment vertical은 이 양방향 seam까지 완료됐으며, 두 번째 action·capability와 conversation persistence 같은 후속 범위는 개발 백로그가 소유한다.
+현재 구현은 reverse InteractionCapability와 normal Chat에 더해 GUI의 explicit source selection을 `organize_sources` Product Turn으로 연결한다. Initial First Assignment vertical은 이 양방향 seam까지 완료됐다. 현재 package topology와 검증 표면은 [Codex Chat 구현 지도](codex-chat-implementation-map.md), 후속 범위는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
 
 ## 검증 seam
 

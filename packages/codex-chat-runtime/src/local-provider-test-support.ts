@@ -1,5 +1,10 @@
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import {
+  mkdir,
+  readFile,
+  realpath,
+  writeFile,
+} from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -22,6 +27,61 @@ export interface LocalProviderPythonBundle {
   readonly codexPathDirectory: string
   readonly pythonExecutable: string
   readonly sitePackages: string
+}
+
+export interface LocalProviderRuntimeEnvironment {
+  readonly home: string
+  readonly codexHome: string
+  readonly codexSqliteHome: string
+  readonly tempDirectory: string
+}
+
+export async function createLocalProviderEnvironment(
+  root: string,
+): Promise<LocalProviderRuntimeEnvironment> {
+  const candidates = {
+    home: path.join(root, 'runtime-home'),
+    codexHome: path.join(root, 'runtime-codex-home'),
+    codexSqliteHome: path.join(root, 'runtime-codex-sqlite-home'),
+    tempDirectory: path.join(root, 'runtime-temp'),
+  }
+  await Promise.all(
+    Object.values(candidates).map((directory) =>
+      mkdir(directory, { recursive: true }),
+    ),
+  )
+  const [home, codexHome, codexSqliteHome, tempDirectory] = await Promise.all([
+    realpath(candidates.home),
+    realpath(candidates.codexHome),
+    realpath(candidates.codexSqliteHome),
+    realpath(candidates.tempDirectory),
+  ])
+  return { home, codexHome, codexSqliteHome, tempDirectory }
+}
+
+export async function writeLocalProviderConfig(
+  codexHome: string,
+  providerUrl: string,
+  providerName = 'Official SDK local provider',
+): Promise<void> {
+  await writeFile(
+    path.join(codexHome, 'config.toml'),
+    [
+      'model = "mock-model"',
+      'approval_policy = "never"',
+      'sandbox_mode = "read-only"',
+      'model_provider = "mock_provider"',
+      '',
+      '[model_providers.mock_provider]',
+      `name = ${JSON.stringify(providerName)}`,
+      `base_url = "${providerUrl}/v1"`,
+      'wire_api = "responses"',
+      'request_max_retries = 0',
+      'stream_max_retries = 0',
+      '',
+    ].join('\n'),
+    'utf8',
+  )
 }
 
 export function controlledPythonEnvironment(

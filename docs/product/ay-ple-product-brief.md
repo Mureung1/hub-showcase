@@ -149,7 +149,7 @@ App은 prepared root validation, Workspace Runtime, effective Interaction declar
 
 ## 현재 구현
 
-First Assignment의 **양방향 AY–App Interaction vertical**은 explicit `organize_sources` ActionInvocation에서 native project config의 complete effective Interaction declaration, authenticated held Adapter lifecycle과 capability call별 held Broker POST, Browser inline Review와 같은 MCP call의 structured result 반환까지 연결한다. Exact provider-free prepared-workspace trace와 prior live-provider Interaction trace가 이 경계를 검증했다.
+First Assignment의 **양방향 AY–App Interaction vertical**은 explicit `organize_sources` ActionInvocation, Browser inline Review와 사용자 결과를 해석한 AY의 actual-file 작업을 한 경험으로 연결한다. 기술 mapping은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 현재 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
 
 현재 canonical graph는 다음과 같다.
 
@@ -177,13 +177,13 @@ SemesterWorkspace actual file
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
 | Source-grounded workbench | Active root의 안전한 일반 file을 folder-relative explorer에서 보고 UTF-8 text·PDF를 preview하며, unsupported·stale·read failure는 명시적 상태로 표시한다. 이 read-only projection은 AY Chat·Review와 한 3-pane desktop surface에 공존하되 registry·copy·watcher·durable selection을 만들지 않는다. |
-| `organize_sources` ActionInvocation | Preview와 독립적인 ordered text selection을 explicit action에서만 동결하고, fresh 검증한 relative refs와 exact workspace-local Skill을 `[SkillInput, TextInput]` Product Turn으로 전달한다. |
-| `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Effective declaration이 Bootstrap contract와 다르거나 authenticated held Adapter lifecycle이 없으면 prepared-workspace startup이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
+| `organize_sources` ActionInvocation | Preview와 독립적인 ordered text selection을 explicit action에서만 동결하고, fresh 검증한 자료와 workspace Skill을 한 Product Turn에 전달한다. |
+| `propose_state_patch` MCP | Prepared workspace의 required interaction 연결을 사용해 typed 변경 제안과 `accept | revise | reject` 결과가 한 요청으로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
 | Failure settlement | Turn interrupt·disconnect·Runtime terminal과 invalid evidence가 partial Review나 허위 apply 없이 끝난다. |
-| Deep-module test seam | Deterministic Browser, in-memory Adapter와 exact local-provider prepared-workspace trace가 같은 ActionInvocation·InteractionCapability contract를 통과한다. |
+| End-to-end confidence | Browser action과 prepared workspace가 같은 ActionInvocation·InteractionCapability 사용자 경험을 통과한다. 세부 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. |
 
 ## 의도적으로 만들지 않는 것
 
