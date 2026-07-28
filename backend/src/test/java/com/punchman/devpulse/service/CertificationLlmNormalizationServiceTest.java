@@ -67,7 +67,8 @@ class CertificationLlmNormalizationServiceTest {
         when(certificationLlmMatchRepository.existsByJobPostingIdAndCertificationId(20L, 1L)).thenReturn(false);
         when(groqChatClient.chatCompletion(anyString(), anyString())).thenReturn(
                 envelopeWith("{\"results\":[{\"postingIndex\":0,\"matches\":"
-                        + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\"}]}]}"));
+                        + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\","
+                        + "\"evidence\":\"관련 자격증 소지자 우대\"}]}]}"));
 
         int newMatchCount = service.normalize(JOB_TITLE);
 
@@ -83,13 +84,30 @@ class CertificationLlmNormalizationServiceTest {
         when(jobPostingRepository.findByJobTitle(JOB_TITLE)).thenReturn(List.of(candidate));
         when(groqChatClient.chatCompletion(anyString(), anyString())).thenReturn(
                 envelopeWith("{\"results\":[{\"postingIndex\":0,\"matches\":"
-                        + "[{\"certificationName\":\"존재하지않는자격증\",\"field\":\"PREFERENCE\"}]}]}"));
+                        + "[{\"certificationName\":\"존재하지않는자격증\",\"field\":\"PREFERENCE\","
+                        + "\"evidence\":\"관련 자격증 소지자 우대\"}]}]}"));
 
         int newMatchCount = service.normalize(JOB_TITLE);
 
         assertThat(newMatchCount).isZero();
         verify(certificationLlmMatchRepository, never()).save(any());
         verify(certificationMentionRecalculationService, never()).recalculate(anyString());
+    }
+
+    @Test
+    void evidenceNotFoundInSourceTextIsRejectedAsHallucination() {
+        JobPosting candidate = JobPosting.builder().id(24L)
+                .applicationQualification(null).preferenceDetail("학력 제한 없음").build();
+        when(jobPostingRepository.findByJobTitle(JOB_TITLE)).thenReturn(List.of(candidate));
+        when(groqChatClient.chatCompletion(anyString(), anyString())).thenReturn(
+                envelopeWith("{\"results\":[{\"postingIndex\":0,\"matches\":"
+                        + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\","
+                        + "\"evidence\":\"SQLD 자격증 소지자 우대\"}]}]}"));
+
+        int newMatchCount = service.normalize(JOB_TITLE);
+
+        assertThat(newMatchCount).isZero();
+        verify(certificationLlmMatchRepository, never()).save(any());
     }
 
     @Test
@@ -100,12 +118,30 @@ class CertificationLlmNormalizationServiceTest {
         when(certificationLlmMatchRepository.existsByJobPostingIdAndCertificationId(22L, 1L)).thenReturn(true);
         when(groqChatClient.chatCompletion(anyString(), anyString())).thenReturn(
                 envelopeWith("{\"results\":[{\"postingIndex\":0,\"matches\":"
-                        + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\"}]}]}"));
+                        + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\","
+                        + "\"evidence\":\"관련 자격증 소지자 우대\"}]}]}"));
 
         int newMatchCount = service.normalize(JOB_TITLE);
 
         assertThat(newMatchCount).isZero();
         verify(certificationLlmMatchRepository, never()).save(any());
+    }
+
+    @Test
+    void candidatesLargerThanBatchLimitAreSplitAcrossMultipleGroqCalls() {
+        List<JobPosting> candidates = new java.util.ArrayList<>();
+        for (long i = 0; i < 9; i++) {
+            candidates.add(JobPosting.builder().id(100L + i)
+                    .applicationQualification(null).preferenceDetail("관련 자격증 소지자 우대").build());
+        }
+        when(jobPostingRepository.findByJobTitle(JOB_TITLE)).thenReturn(candidates);
+        when(groqChatClient.chatCompletion(anyString(), anyString())).thenReturn(
+                envelopeWith("{\"results\":[]}"));
+
+        service.normalize(JOB_TITLE);
+
+        // 배치 크기(8)보다 후보가 많으므로(9건) 2번의 Groq 호출로 나뉘어야 한다.
+        verify(groqChatClient, times(2)).chatCompletion(anyString(), anyString());
     }
 
     @Test
