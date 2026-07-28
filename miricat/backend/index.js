@@ -205,6 +205,48 @@ app.get('/api/route-candidates', async (req, res) => {
   res.json({ candidates });
 });
 
+// 경로 지도 이미지 (NCP Static Map 프록시) — 디스코드 embed 이미지용.
+// Static Map은 경로선(폴리라인) 미지원 → 출발·도착 + 영향 정류장(hits, 빨강) 마커로 표현.
+// NCP는 인증 헤더가 필요해 디스코드가 직접 못 불러온다 → 우리가 받아서 이미지를 흘려준다.
+const _norm = (s) => (s || '').toLowerCase().replace(/노선/g, '').replace(/[\s번]/g, ''); // matching.js 미러
+app.get('/api/routes/:id/map.png', async (req, res) => {
+  const { data: route, error } = await supabase
+    .from('routes').select('path').eq('id', req.params.id).single();
+  const points = route?.path;
+  if (error || !points?.length) return res.status(404).json({ error: '경로 좌표가 없습니다.' });
+
+  // 화면 채우기: 좌표들의 중심 + 범위(span)에서 줌 레벨을 어림한다
+  const xs = points.map((p) => p.x), ys = points.map((p) => p.y);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const span = Math.max(Math.max(...xs) - Math.min(...xs), (Math.max(...ys) - Math.min(...ys)) * 1.3, 0.005);
+  const level = Math.max(7, Math.min(16, Math.floor(Math.log2(360 / span)) + 1));
+
+  // 마커: 공지와 겹친 정류장(빨강, hits=쉼표목록) 우선 + 출발(초록)·도착(파랑)
+  // 영향 정류장이 출발/도착과 같은 자리면 빨강만 그린다 (겹치면 가려짐)
+  const hits = (req.query.hits ?? '').split(',').map(_norm).filter(Boolean);
+  const isHit = (p) => p.name && hits.some((h) => h && (_norm(p.name).includes(h) || h.includes(_norm(p.name))));
+  const redPts = points.filter(isHit);
+  const markers = [];
+  if (!isHit(points[0])) markers.push(`type:d|size:mid|color:green|pos:${points[0].x} ${points[0].y}`);
+  if (!isHit(points[points.length - 1])) markers.push(`type:d|size:mid|color:blue|pos:${points[points.length - 1].x} ${points[points.length - 1].y}`);
+  for (const p of redPts) markers.push(`type:d|size:mid|color:red|pos:${p.x} ${p.y}`);
+
+  const url = `https://maps.apigw.ntruss.com/map-static/v2/raster`
+    + `?w=800&h=420&scale=2&format=png&center=${cx},${cy}&level=${level}`
+    + markers.map((m) => `&markers=${encodeURIComponent(m)}`).join('');
+  const r = await fetch(url, {
+    headers: {
+      'x-ncp-apigw-api-key-id': process.env.NAVER_MAP_CLIENT_ID,
+      'x-ncp-apigw-api-key': process.env.NAVER_MAP_CLIENT_SECRET,
+    },
+  });
+  if (!r.ok) return res.status(502).json({ error: `Static Map 오류 (${r.status})` });
+  res.set('Content-Type', 'image/png');
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.send(Buffer.from(await r.arrayBuffer()));
+});
+
 // 진단용: 이 서버가 바깥으로 나갈 때 쓰는 공인 IP (ODsay IP 등록 대조용)
 app.get('/api/debug/egress-ip', async (req, res) => {
   const r = await fetch('https://ifconfig.me', { headers: { 'User-Agent': 'curl' } });

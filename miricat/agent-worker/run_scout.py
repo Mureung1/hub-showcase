@@ -47,6 +47,7 @@ def route_to_dict(route):
     def tokens(s):
         return [t.strip() for t in (s or "").split(",") if t.strip()]
     return {
+        "id": route.get("id"),               # 경보의 지도 이미지 URL에 필요
         "name": route.get("name"),
         "lines": tokens(route.get("lines")),
         "stops": tokens(route.get("stops")),

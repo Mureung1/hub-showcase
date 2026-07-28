@@ -11,6 +11,7 @@ LangGraph 뼈대(State/노드/엣지/compile/invoke)를 익히기 위한 최소 
 import requests
 import os
 import pathlib
+from urllib.parse import quote
 from db import find_notice
 from typing import Optional, TypedDict
 from scout import fetch_list, fetch_body
@@ -143,6 +144,12 @@ def reporter_node(state: State) -> dict:
         "fields": fields,
         "footer": {"text": "제목을 눌러 미리캣 리포트를 확인하세요"},
     }
+    # 경보에 실지도 이미지 — 경로 id가 있을 때만 (백엔드의 Static Map 프록시가 그려준다)
+    route_id = (state.get("route") or {}).get("id")
+    if route_id:
+        api_base = os.environ.get("API_BASE_URL", "https://miricat-api.onrender.com")
+        hit_values = sorted({v for m in analysis.get("matched", []) for v in m.get("matched", [])})
+        embed["image"] = {"url": f"{api_base}/api/routes/{route_id}/map.png?hits={quote(','.join(hit_values))}"}
     try:
         r = requests.post(webhook, json={"embeds": [embed]}, timeout=10)
         return {"report": {"sent": r.status_code in (200, 204), "status": r.status_code}}
