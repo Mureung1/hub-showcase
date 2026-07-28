@@ -323,18 +323,18 @@ describe('HomePage', () => {
           onRetrieve={vi.fn()}
           onRetryLoad={vi.fn()}
           onSituationClick={vi.fn()}
-          query="없는 상황"
+          query="없는 상황!"
           results={[]}
           selectedSituation=""
           situations={situations}
-          submittedQuery="없는 상황"
+          submittedQuery="없는 상황!"
         />
       </DesignSystemProvider>
     );
 
     expect(
       screen.getByRole('heading', {
-        name: '“없는 상황”으로 찾은 인사이트가 없어요',
+        name: '“없는 상황!”으로 찾은 인사이트가 없어요',
       })
     ).not.toBeNull();
     expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
@@ -344,7 +344,7 @@ describe('HomePage', () => {
           name: '지금 꺼내 보고 싶은 상황',
         }) as HTMLInputElement
       ).value
-    ).toBe('없는 상황');
+    ).toBe('없는 상황!');
 
     await user.click(screen.getByRole('button', { name: '보관함 보기' }));
 
@@ -352,7 +352,7 @@ describe('HomePage', () => {
   });
 
   it('gives long unbroken result queries a wrapping mobile layout contract', () => {
-    const longQuery = 'React상태관리와온보딩디자인시스템'.repeat(8);
+    const longQuery = `${'React상태관리와온보딩디자인시스템'.repeat(8)}React`;
 
     render(
       <DesignSystemProvider>
@@ -381,7 +381,7 @@ describe('HomePage', () => {
     expect(
       screen
         .getByRole('heading', {
-          name: `“${longQuery}”으로 찾은 인사이트가 없어요`,
+          name: `“${longQuery}”로 찾은 인사이트가 없어요`,
         })
         .closest('.home-page__no-results')
     ).not.toBeNull();

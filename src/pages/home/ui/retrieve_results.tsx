@@ -51,7 +51,10 @@ export function RetrieveResults({
 }
 
 function getRoParticle(value: string) {
-  const lastCharacter = value.trim().at(-1);
+  const lastCharacter = value
+    .trim()
+    .replace(/[\p{P}\p{S}\s]+$/gu, '')
+    .at(-1);
   if (!lastCharacter) {
     return '로';
   }
