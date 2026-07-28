@@ -182,6 +182,30 @@ router.get('/', auth, async (req, res) => {
   );
 });
 
+// '/:id'보다 먼저 등록해야 함 — 안 그러면 '/read'가 :id="read"로 매칭돼버림
+router.get('/read', auth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('read_history')
+    .select('read_at, articles(id, title, source, thumbnail_url, published_at)')
+    .eq('user_id', req.user.id)
+    .order('read_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: 'db_connection_failed' });
+  }
+
+  res.json(
+    data.map((row) => ({
+      id: row.articles.id,
+      title: row.articles.title,
+      source: row.articles.source,
+      thumbnailUrl: row.articles.thumbnail_url,
+      publishedAt: row.articles.published_at,
+      readAt: row.read_at,
+    }))
+  );
+});
+
 router.get('/:id', auth, async (req, res) => {
   const article = await getArticleWithContent(req.params.id);
 
