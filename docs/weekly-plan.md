@@ -28,10 +28,10 @@
 | 날짜 | 상태 | 큰 작업 | GitHub Issue |
 |---|---|---|---|
 | 7월 13일 월요일 | Done | 기획 문서와 개발 환경 정비 | [#1](https://github.com/DLSTODAKD/hub/issues/1) |
-| 7월 14일 화요일 | In Progress | 주간 계획과 Supabase 기반 구성 | [#2](https://github.com/DLSTODAKD/hub/issues/2) |
-| 7월 15일 수요일 | Todo | 실제 DB 연결과 백엔드 기반 검증 | [#3](https://github.com/DLSTODAKD/hub/issues/3) |
-| 7월 16일 목요일 | Todo | 환자 원격 웨이팅 핵심 화면 | [#4](https://github.com/DLSTODAKD/hub/issues/4) |
-| 7월 17일 금요일 | Todo | 관리자 통합 대기열과 주간 검증 | [#5](https://github.com/DLSTODAKD/hub/issues/5) |
+| 7월 14일 화요일 | Done | 주간 계획과 Supabase 기반 구성 | [#2](https://github.com/DLSTODAKD/hub/issues/2) |
+| 7월 15일 수요일 | Done | 실제 DB 연결과 백엔드 기반 검증 | [#3](https://github.com/DLSTODAKD/hub/issues/3) |
+| 7월 16일 목요일 | Done | 환자 원격 웨이팅 핵심 화면 | [#4](https://github.com/DLSTODAKD/hub/issues/4) |
+| 7월 17일 금요일 | Done | 관리자 통합 대기열과 주간 검증 | [#5](https://github.com/DLSTODAKD/hub/issues/5) |
 
 ### 수요일 완료 목표
 

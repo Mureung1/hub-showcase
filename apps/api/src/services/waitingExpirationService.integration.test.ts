@@ -7,6 +7,7 @@ import { PgNotificationRepository } from "../repositories/pg/pgNotificationRepos
 import { PgWaitingEventRepository } from "../repositories/pg/pgWaitingEventRepository.js";
 import { PgWaitingExpirationRepository } from "../repositories/pg/pgWaitingExpirationRepository.js";
 import { PgWaitingRepository } from "../repositories/pg/pgWaitingRepository.js";
+import { AutomaticNotificationService } from "./automaticNotificationService.js";
 import { NotificationService } from "./notificationService.js";
 import { WaitingExpirationService } from "./waitingExpirationService.js";
 
@@ -18,12 +19,24 @@ class ScopedTransactionManager implements TransactionManager {
 }
 
 function createService(transactionManager: TransactionManager) {
+  const waitingRepository = new PgWaitingRepository();
+  const waitingEventRepository = new PgWaitingEventRepository();
+  const notificationService = new NotificationService(
+    new PgNotificationRepository(),
+    new MockNotificationProvider(),
+  );
   return new WaitingExpirationService(
     transactionManager,
     new PgWaitingExpirationRepository(),
-    new PgWaitingRepository(),
-    new PgWaitingEventRepository(),
-    new NotificationService(new PgNotificationRepository(), new MockNotificationProvider()),
+    waitingRepository,
+    waitingEventRepository,
+    notificationService,
+    new AutomaticNotificationService(
+      waitingRepository,
+      waitingEventRepository,
+      notificationService,
+    ),
+    { patientWebOrigin: "http://127.0.0.1:5173" },
   );
 }
 

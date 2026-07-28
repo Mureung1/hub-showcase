@@ -43,5 +43,5 @@ export function sanitizeLogValue(value: unknown): unknown {
 }
 
 export function redactRequestPath(path: string): string {
-  return path.replace(/(\/api\/onsite-status\/)[^/?#]+/i, `$1${REDACTED}`);
+  return path.replace(/(\/api\/waitings\/status\/)[^/?#]+/i, `$1${REDACTED}`);
 }

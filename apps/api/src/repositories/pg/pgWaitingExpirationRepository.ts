@@ -7,7 +7,11 @@ import type {
 
 const candidateRowSchema = z.object({
   waiting_entry_id: z.uuid(),
+  queue_id: z.uuid(),
   hospital_name: z.string().min(1),
+  average_minutes_per_patient: z.number().int().positive(),
+  preparation_threshold: z.number().int().positive(),
+  entry_threshold: z.number().int().positive(),
 });
 
 const lockRowSchema = z.object({ acquired: z.boolean() });
@@ -16,7 +20,11 @@ function toCandidate(row: unknown): WaitingExpirationCandidate {
   const candidate = candidateRowSchema.parse(row);
   return {
     waitingEntryId: candidate.waiting_entry_id,
+    queueId: candidate.queue_id,
     hospitalName: candidate.hospital_name,
+    averageMinutesPerPatient: candidate.average_minutes_per_patient,
+    preparationThreshold: candidate.preparation_threshold,
+    entryThreshold: candidate.entry_threshold,
   };
 }
 
@@ -34,7 +42,11 @@ export class PgWaitingExpirationRepository implements WaitingExpirationRepositor
   ): Promise<WaitingExpirationCandidate[]> {
     const result = await executor.query(
       `
-        SELECT entry.id AS waiting_entry_id, hospital.name AS hospital_name
+        SELECT entry.id AS waiting_entry_id, queue.id AS queue_id,
+               hospital.name AS hospital_name,
+               queue.average_minutes_per_patient,
+               queue.preparation_threshold,
+               queue.entry_threshold
         FROM public.waiting_entries AS entry
         JOIN public.daily_queues AS queue ON queue.id = entry.queue_id
         JOIN public.hospitals AS hospital ON hospital.id = queue.hospital_id
@@ -55,7 +67,11 @@ export class PgWaitingExpirationRepository implements WaitingExpirationRepositor
   ): Promise<WaitingExpirationCandidate[]> {
     const result = await executor.query(
       `
-        SELECT entry.id AS waiting_entry_id, hospital.name AS hospital_name
+        SELECT entry.id AS waiting_entry_id, queue.id AS queue_id,
+               hospital.name AS hospital_name,
+               queue.average_minutes_per_patient,
+               queue.preparation_threshold,
+               queue.entry_threshold
         FROM public.waiting_entries AS entry
         JOIN public.daily_queues AS queue ON queue.id = entry.queue_id
         JOIN public.hospitals AS hospital ON hospital.id = queue.hospital_id

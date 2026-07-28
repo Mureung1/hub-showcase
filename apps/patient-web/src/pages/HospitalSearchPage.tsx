@@ -2,11 +2,14 @@ import { Clock3, MapPin, Search } from "lucide-react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
+import {
+  koreanAdministrativeDistricts,
+  koreanProvinces,
+  medicalDepartments,
+} from "../data/hospitalSearchFilters";
 import { getApiHealth, getPatientConfig } from "../services/apiClient";
 import {
   filterHospitalsByQuery,
-  getHospitalRegion,
-  getValidHospitalRegionFilter,
 } from "../utils/filterHospitals";
 
 type ApiState = "checking" | "connected" | "disconnected";
@@ -40,7 +43,7 @@ const mockHospitals: MockHospital[] = [
     id: developmentHospitalId,
     name: "서울이비인후과",
     department: "이비인후과",
-    district: "서울 마포구",
+    district: "서울특별시 마포구",
     waitingPatients: 5,
     estimatedMinutes: 50,
     remoteOpen: true,
@@ -49,7 +52,7 @@ const mockHospitals: MockHospital[] = [
     id: "10000000-0000-4000-8000-000000000002",
     name: "연세정형외과의원",
     department: "정형외과",
-    district: "서울 서대문구",
+    district: "서울특별시 서대문구",
     waitingPatients: 4,
     estimatedMinutes: 40,
     remoteOpen: false,
@@ -58,7 +61,7 @@ const mockHospitals: MockHospital[] = [
     id: "10000000-0000-4000-8000-000000000003",
     name: "우리내과의원",
     department: "내과",
-    district: "서울 마포구",
+    district: "서울특별시 마포구",
     waitingPatients: 0,
     estimatedMinutes: 0,
     remoteOpen: false,
@@ -84,14 +87,7 @@ function hospitalSearchReducer(
   const hospitals = state.hospitals.map((hospital) =>
     hospital.id === action.hospital.id ? action.hospital : hospital,
   );
-  const validRegion = getValidHospitalRegionFilter(hospitals, state);
-  const department = hospitals.some(
-    (hospital) => hospital.department === state.department,
-  )
-    ? state.department
-    : "";
-
-  return { ...state, hospitals, ...validRegion, department };
+  return { ...state, hospitals };
 }
 
 export function HospitalSearchPage() {
@@ -152,28 +148,11 @@ export function HospitalSearchPage() {
     };
   }, []);
 
-  const provinces = useMemo(
-    () => [...new Set(hospitals.map(({ district }) => getHospitalRegion(district).province))],
-    [hospitals],
-  );
-  const cityDistricts = useMemo(
-    () =>
-      province
-        ? [
-            ...new Set(
-              hospitals
-                .map(({ district }) => getHospitalRegion(district))
-                .filter((region) => region.province === province)
-                .map((region) => region.cityDistrict),
-            ),
-          ]
-        : [],
-    [hospitals, province],
-  );
-  const departments = useMemo(
-    () => [...new Set(hospitals.map((hospital) => hospital.department))],
-    [hospitals],
-  );
+  const cityDistricts = province
+    ? koreanAdministrativeDistricts[
+        province as keyof typeof koreanAdministrativeDistricts
+      ] ?? []
+    : [];
   const filteredHospitals = useMemo(
     () =>
       filterHospitalsByQuery(
@@ -216,7 +195,7 @@ export function HospitalSearchPage() {
                 }
               >
                 <option value="">시·도 전체</option>
-                {provinces.map((item) => (
+                {koreanProvinces.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>
@@ -251,7 +230,7 @@ export function HospitalSearchPage() {
                 }
               >
                 <option value="">대표 진료과 전체</option>
-                {departments.map((item) => (
+                {medicalDepartments.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>

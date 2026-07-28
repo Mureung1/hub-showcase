@@ -464,10 +464,10 @@ export class StaffQueueService implements StaffQueueOperations {
     hospitalName?: string,
     hospitalId?: string,
   ): Promise<void> {
+    const queue = await this.dailyQueueRepository.findById(executor, queueId);
+    if (!queue) throw new ApiError(404, "DAILY_QUEUE_NOT_FOUND", "Daily queue was not found.");
     let resolvedHospitalName = hospitalName;
     if (!resolvedHospitalName) {
-      const queue = await this.dailyQueueRepository.findById(executor, queueId);
-      if (!queue) throw new ApiError(404, "DAILY_QUEUE_NOT_FOUND", "Daily queue was not found.");
       const hospital = await this.requireApprovedHospital(executor, hospitalId ?? queue.hospitalId);
       resolvedHospitalName = hospital.name;
     }
@@ -475,6 +475,9 @@ export class StaffQueueService implements StaffQueueOperations {
       queueId,
       hospitalName: resolvedHospitalName,
       patientWebOrigin: this.options.patientWebOrigin,
+      averageMinutesPerPatient: queue.averageMinutesPerPatient,
+      preparationThreshold: queue.preparationThreshold,
+      entryThreshold: queue.entryThreshold,
     });
   }
 

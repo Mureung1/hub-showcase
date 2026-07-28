@@ -49,11 +49,19 @@ const baseWaiting: WaitingEntry = {
 function createService(lockAcquired = true) {
   const expiredCandidate = {
     waitingEntryId: baseWaiting.id,
+    queueId: baseWaiting.queueId,
     hospitalName: "서울이비인후과",
+    averageMinutesPerPatient: 15,
+    preparationThreshold: 7,
+    entryThreshold: 3,
   };
   const turnReachedCandidate = {
     waitingEntryId: "55993443-9f20-448a-b9f6-9ca9312f3cf8",
+    queueId: baseWaiting.queueId,
     hospitalName: "서울이비인후과",
+    averageMinutesPerPatient: 15,
+    preparationThreshold: 7,
+    entryThreshold: 3,
   };
   const tryAcquireJobLock = vi.fn(async () => lockAcquired);
   const listExpired = vi.fn(async () => [expiredCandidate]);
@@ -73,12 +81,15 @@ function createService(lockAcquired = true) {
   }));
   const create = vi.fn(async () => ({}));
   const send = vi.fn(async () => ({ duplicate: true as const, notification: null }));
+  const processQueue = vi.fn(async () => undefined);
   const service = new WaitingExpirationService(
     new InlineTransactionManager(),
     { tryAcquireJobLock, listExpired, listTurnReached } as WaitingExpirationRepository,
     { findById, cancelExpired, moveNoShowToEnd } as unknown as WaitingRepository,
     { create } as unknown as WaitingEventRepository,
     { send } satisfies NotificationSender,
+    { processQueue },
+    { patientWebOrigin: "https://patient.example.test" },
   );
   return {
     service,
@@ -89,6 +100,7 @@ function createService(lockAcquired = true) {
     moveNoShowToEnd,
     create,
     send,
+    processQueue,
   };
 }
 
@@ -128,5 +140,15 @@ describe("WaitingExpirationService", () => {
       expect.anything(),
       expect.objectContaining({ dedupeKey: "cancelled:arrival_deadline_expired" }),
     );
+    expect(dependencies.processQueue).toHaveBeenCalledTimes(1);
+    expect(dependencies.processQueue).toHaveBeenCalledWith(expect.anything(), {
+      queueId: baseWaiting.queueId,
+      hospitalName: "서울이비인후과",
+      patientWebOrigin: "https://patient.example.test",
+      averageMinutesPerPatient: 15,
+      preparationThreshold: 7,
+      entryThreshold: 3,
+      now,
+    });
   });
 });

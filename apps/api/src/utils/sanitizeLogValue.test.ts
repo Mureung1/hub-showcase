@@ -37,8 +37,12 @@ describe("sanitizeLogValue", () => {
 
 describe("redactRequestPath", () => {
   it("현장 조회 URL의 조회 토큰을 가린다", () => {
-    expect(redactRequestPath("/api/onsite-status/secret-token-value")).toBe(
-      "/api/onsite-status/[REDACTED]",
+    expect(redactRequestPath("/api/waitings/status/secret-token-value")).toBe(
+      "/api/waitings/status/[REDACTED]",
     );
+  });
+
+  it("조회 토큰이 없는 경로는 변경하지 않는다", () => {
+    expect(redactRequestPath("/api/waitings/status")).toBe("/api/waitings/status");
   });
 });

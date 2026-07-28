@@ -22,6 +22,7 @@ import {
 } from "./services/apiClient";
 
 const pollInterval = Number(import.meta.env.VITE_WAITING_POLL_INTERVAL_MS ?? 10_000);
+const patientWebUrl = import.meta.env.VITE_PATIENT_WEB_URL ?? "http://127.0.0.1:5173";
 const inquiryStatusLabel = {
   submitted: "검토 대기",
   accepted: "수락",
@@ -114,7 +115,7 @@ function PlatformApp() {
   return (
     <div className="platform-shell">
       <header className="staff-header">
-        <a className="brand" href="http://127.0.0.1:5173">
+        <a className="brand" href={patientWebUrl}>
           <span className="brand-mark"><Stethoscope size={20} /></span>
           바로진료 플랫폼
         </a>

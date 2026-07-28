@@ -2,12 +2,17 @@ import type { TransactionManager } from "../db/transactionManager.js";
 import type { WaitingEventRepository } from "../repositories/waitingEventRepository.js";
 import type { WaitingExpirationRepository } from "../repositories/waitingExpirationRepository.js";
 import type { WaitingRepository } from "../repositories/waitingRepository.js";
+import type { AutomaticNotificationProcessor } from "./automaticNotificationService.js";
 import type { NotificationSender } from "./notificationService.js";
 
 export interface WaitingExpirationRunResult {
   lockAcquired: boolean;
   cancelledCount: number;
   movedCount: number;
+}
+
+interface WaitingExpirationOptions {
+  patientWebOrigin: string;
 }
 
 export class WaitingExpirationService {
@@ -17,6 +22,8 @@ export class WaitingExpirationService {
     private readonly waitingRepository: WaitingRepository,
     private readonly waitingEventRepository: WaitingEventRepository,
     private readonly notificationSender: NotificationSender,
+    private readonly automaticNotificationProcessor: AutomaticNotificationProcessor,
+    private readonly options: WaitingExpirationOptions,
   ) {}
 
   async run(now = new Date()): Promise<WaitingExpirationRunResult> {
@@ -26,6 +33,15 @@ export class WaitingExpirationService {
         return { lockAcquired: false, cancelledCount: 0, movedCount: 0 };
       }
 
+      const affectedQueues = new Map<
+        string,
+        {
+          hospitalName: string;
+          averageMinutesPerPatient: number;
+          preparationThreshold: number;
+          entryThreshold: number;
+        }
+      >();
       let cancelledCount = 0;
       const expiredCandidates = await this.expirationRepository.listExpired(executor, now);
       for (const candidate of expiredCandidates) {
@@ -62,6 +78,7 @@ export class WaitingExpirationService {
           },
         });
         cancelledCount += 1;
+        affectedQueues.set(candidate.queueId, candidate);
       }
 
       let movedCount = 0;
@@ -96,6 +113,19 @@ export class WaitingExpirationService {
           },
         });
         movedCount += 1;
+        affectedQueues.set(candidate.queueId, candidate);
+      }
+
+      for (const [queueId, queue] of affectedQueues) {
+        await this.automaticNotificationProcessor.processQueue(executor, {
+          queueId,
+          hospitalName: queue.hospitalName,
+          patientWebOrigin: this.options.patientWebOrigin,
+          averageMinutesPerPatient: queue.averageMinutesPerPatient,
+          preparationThreshold: queue.preparationThreshold,
+          entryThreshold: queue.entryThreshold,
+          now,
+        });
       }
 
       return { lockAcquired: true, cancelledCount, movedCount };

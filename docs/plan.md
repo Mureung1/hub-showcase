@@ -173,7 +173,7 @@ flowchart TD
 - 여러 의사·진료과별 대기열과 간단한 증상 입력
 - 병원 전산 연동, 운영 통계와 다지점 관리
 - Supabase Cron과 PostgreSQL 함수 기반 자동 만료 처리
-- 외부 공개 배포와 운영용 Supabase 프로젝트 분리
+- 병원·플랫폼 관리자 웹 공개 배포와 운영용 Supabase 프로젝트 분리
 
 ## MVP 제외 범위
 

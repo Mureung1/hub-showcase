@@ -1,6 +1,7 @@
 import type { HospitalInformation, HospitalManagementState } from "@baro-jinryo/shared";
 import { ArrowLeft, Building2, Clock3, Save, Stethoscope } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
+import { patientWebUrl } from "../config/publicUrls";
 import {
   getHospitalManagement,
   submitHospitalChangeRequest,
@@ -70,7 +71,7 @@ export function HospitalManagementPage({ onBack, onSignOut }: HospitalManagement
         <button className="icon-button" type="button" title="대기열로 돌아가기" onClick={onBack}>
           <ArrowLeft size={20} />
         </button>
-        <a className="brand" href="http://127.0.0.1:5173">
+        <a className="brand" href={patientWebUrl}>
           <span className="brand-mark"><Stethoscope size={20} /></span>
           바로진료 병원
         </a>

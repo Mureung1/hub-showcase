@@ -35,7 +35,7 @@ describe("HospitalSearchPage 지역 검색", () => {
     renderPage();
 
     fireEvent.change(screen.getByRole("combobox", { name: "시·도 선택" }), {
-      target: { value: "서울" },
+      target: { value: "서울특별시" },
     });
     const cityDistrictSelect = screen.getByRole("combobox", {
       name: "시·군·구 선택",
@@ -60,7 +60,7 @@ describe("HospitalSearchPage 지역 검색", () => {
     renderPage();
 
     fireEvent.change(screen.getByRole("combobox", { name: "시·도 선택" }), {
-      target: { value: "서울" },
+      target: { value: "서울특별시" },
     });
     fireEvent.change(screen.getByRole("combobox", { name: "시·군·구 선택" }), {
       target: { value: "서대문구" },
