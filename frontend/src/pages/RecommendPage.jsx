@@ -26,24 +26,6 @@ export default function RecommendPage() {
     )
   }
 
-  // 위기 신호가 감지된 편지 — 매칭 대신 도움받을 수 있는 곳을 안내한다.
-  if (recommendation.reason_code === 'support_needed') {
-    return (
-      <div className={styles.wrap}>
-        <h1 className={styles.title}>혼자가 아니에요</h1>
-        <p className={styles.hint}>{recommendation.support_message}</p>
-        {recommendation.resources?.map((resource) => (
-          <a key={resource.tel} href={`tel:${resource.tel}`} className={styles.btnPrimary}>
-            {resource.name} · {resource.tel}
-          </a>
-        ))}
-        <button type="button" className={styles.btnOutline} onClick={actions.goMain}>
-          돌아가기
-        </button>
-      </div>
-    )
-  }
-
   // 이 편지 자체의 감정 분석이 아직 안 끝났거나 실패한 경우 — 후보를 찾을 수조차 없는 상태
   if (recommendation.reason_code === 'tagging_pending') {
     return (
@@ -57,7 +39,9 @@ export default function RecommendPage() {
     )
   }
 
-  // 아직 연결할 편지를 못 찾았거나(no_candidates), 편지를 찾지 못한 경우(not_found)
+  // 아직 연결할 편지를 못 찾았거나(no_candidates), 편지를 찾지 못한 경우(not_found),
+  // 위기 신호가 감지된 경우(support_needed — 작성자에게는 일반적인 "아직 못 찾음"과 동일하게
+  // 보여준다. 위기 신호는 관리자만 서버 로그로 확인하고, 작성자 화면에는 티 내지 않는다.)
   if (!recommendation.has_match) {
     return (
       <div className={styles.wrap}>
