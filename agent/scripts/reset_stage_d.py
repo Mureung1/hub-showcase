@@ -114,6 +114,23 @@ SCOPED_MENTIONS = """
 `repositories/statistics.py` 의 `mentions_to_discover` 와 같게 둔다.
 """
 
+SCOPED_EXTRACTED_CHUNKS = """
+    SELECT c.chunk_id
+    FROM source_chunks AS c
+    JOIN posting_versions AS pv ON pv.snapshot_id = c.snapshot_id
+    JOIN postings AS p ON p.posting_id = pv.posting_id
+    WHERE c.dataset_version = %(dataset_version)s
+      AND pv.dataset_version = %(dataset_version)s
+      AND p.job_role_id = %(job_role_id)s
+"""
+"""이 데이터셋·직무의 추출 기록이 가리키는 청크.
+
+`chunk_extractions` 도 `dataset_version` 은 갖지만 직무는 갖지 않는다. 직무는 청크가
+속한 스냅샷에서 공고를 거쳐 붙으므로 `posting_versions` 와 `postings` 를 지나 좁힌다.
+조인을 `repositories/statistics.py` 의 `_POSTING_CHUNKS` 와 같게 둔다. 되돌린 뒤 다시
+대상이 되어야 하는 청크와 기록을 지우는 청크가 같은 집합이어야 한다.
+"""
+
 DOOMED_TAXONOMY_VERSIONS = """
     SELECT tv.taxonomy_version_id
     FROM requirement_taxonomy_versions AS tv
@@ -325,6 +342,16 @@ DELETE_STEPS: tuple[DeleteStep, ...] = (
     ),
     DeleteStep(
         phase=8,
+        table="chunk_extractions",
+        alias="tgt",
+        where=(
+            "tgt.dataset_version = %(dataset_version)s"
+            f" AND tgt.chunk_id IN ({SCOPED_EXTRACTED_CHUNKS})"
+        ),
+        note="추출을 마친 청크의 기록",
+    ),
+    DeleteStep(
+        phase=8,
         table="requirement_mentions",
         alias="tgt",
         where=f"tgt.mention_id IN ({SCOPED_MENTIONS})",
@@ -339,6 +366,10 @@ Phase 번호의 역순이 아니라 외래키의 역순이다. 참조하는 쪽�
 `requirement_mentions` 는 후보 연결과 할당이 가리키므로 맨 뒤다. 순서의 근거는
 docs/erd.md 7장·8장의 외래키와 `migrations/versions/0001_initial_schema.py` 의
 `DROP_ORDER` 다.
+
+`chunk_extractions` 는 Phase 8 이고 `requirement_mentions` 와 서로 가리키지 않는다
+(docs/erd.md 6.2). 둘의 앞뒤는 자유이며, 이 표를 남기면 되돌린 청크가 "처리됨" 인
+채로 남아 다시 실행해도 대상에 들어오지 않으므로 반드시 함께 지운다.
 """
 
 RESTORE_WHERE = """

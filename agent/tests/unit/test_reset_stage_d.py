@@ -135,8 +135,19 @@ def test_Phase_11_을_되돌리면_할당과_그래프를_함께_지운다() -> 
     assert "requirement_mentions" not in tables
 
 
-def test_전체_되돌림은_열세_표를_지운다() -> None:
-    assert len(reset.steps_for(reset.phase_cascade(8))) == 13
+def test_전체_되돌림은_열네_표를_지운다() -> None:
+    assert len(reset.steps_for(reset.phase_cascade(8))) == 14
+
+
+def test_추출_기록을_함께_지운다() -> None:
+    """남기면 되돌린 청크가 처리됨인 채로 남아 다시 실행해도 대상에 들어오지 않는다."""
+    assert "chunk_extractions" in _tables(reset.steps_for(reset.phase_cascade(8)))
+    assert "chunk_extractions" not in _tables(reset.steps_for((9, 10, 11, 12)))
+
+
+def test_추출_기록을_요구_표현과_같은_Phase_에서_지운다() -> None:
+    phases = {step.table: step.phase for step in reset.DELETE_STEPS}  # type: ignore[attr-defined]
+    assert phases["chunk_extractions"] == phases["requirement_mentions"] == 8
 
 
 def test_참조하는_표를_먼저_지운다() -> None:
