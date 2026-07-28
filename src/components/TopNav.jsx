@@ -13,9 +13,9 @@ function TopNav() {
   const location = useLocation()
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b-[3.6px] border-ink bg-bg-surface px-4 py-0.5">
-      <div className="flex items-center gap-1.5">
-        <img src={mascotKkini} alt="끼니픽" className="block h-14 w-auto object-contain" />
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b-[3.6px] border-ink bg-bg-surface px-4 py-0.5 sm:px-6 sm:py-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <img src={mascotKkini} alt="끼니픽" className="block h-14 w-auto object-contain sm:h-16" />
         <span className="font-display text-[28.5px] text-text-primary">끼니픽</span>
       </div>
       <div className="flex flex-wrap gap-5">
