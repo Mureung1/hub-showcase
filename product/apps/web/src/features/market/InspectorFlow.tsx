@@ -100,7 +100,9 @@ export function InspectorFlow({
             : `시간당 약 ${Math.round(activeHourlyAverage).toLocaleString("ko-KR")}명`}
         </strong>
         {activeFlow !== null && (
-          <small>원본 분기 누적 {Math.round(activeFlow).toLocaleString("ko-KR")}명/분기</small>
+          <small>
+            원본 분기 누적 <span>{Math.round(activeFlow).toLocaleString("ko-KR")}명/분기</span>
+          </small>
         )}
       </div>
       <p className="metric-note">
