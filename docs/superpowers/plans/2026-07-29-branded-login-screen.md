@@ -664,3 +664,256 @@ git log -3 --oneline
 ```
 
 Expected: 의도한 구현·문서 커밋만 존재하고 작업 트리가 깨끗하다.
+
+---
+
+> Task 1~3은 `12f6b5386`, `f3a6e5455` 커밋으로 완료되었다. 아래 Task 4는 사용자가 승인한 B안의 후속 범위이며, 왼쪽 브랜드 영역의 메모지 인상만 보강한다.
+
+### Task 4: 로그인 브랜드 영역 메모지 장식
+
+**Files:**
+
+- Modify: `src/pages/login/ui/login_page.tsx`
+- Modify: `src/pages/login/ui/login_page.css`
+- Verify: `src/pages/login/ui/login_page.test.tsx`
+
+- [ ] **Step 1: 로그인 화면의 기존 동작 기준을 확인**
+
+Run:
+
+```powershell
+npm test -- src/pages/login/ui/login_page.test.tsx
+```
+
+Expected: 기존 테스트 파일 1개와 테스트 2개 PASS. 이번 변경은 장식 요소만 추가하므로 새 단위 테스트를 만들지 않는다.
+
+- [ ] **Step 2: 왼쪽 브랜드 영역에 장식용 마크업 추가**
+
+`src/pages/login/ui/login_page.tsx`의 `.login-brand` 바로 아래, `.login-brand-lockup` 앞에 다음 마크업을 추가한다.
+
+```tsx
+<div className="login-note-tabs" aria-hidden="true">
+  <span className="login-note-tab login-note-tab-blue" />
+  <span className="login-note-tab login-note-tab-amber" />
+  <span className="login-note-tab login-note-tab-coral" />
+</div>
+
+<div className="login-note-rules" aria-hidden="true">
+  <span className="login-note-rule" />
+  <span className="login-note-rule" />
+  <span className="login-note-rule" />
+  <span className="login-note-rule" />
+</div>
+```
+
+Expected:
+
+- 장식 요소에 텍스트, 포커스, 클릭 동작을 추가하지 않는다.
+- 두 장식 그룹은 접근성 트리에서 제외한다.
+- 오른쪽 `.login-panel`의 마크업과 로그인 문구는 변경하지 않는다.
+
+- [ ] **Step 3: 데스크톱 메모지 장식과 레이어를 구현**
+
+`src/pages/login/ui/login_page.css`의 `.login-brand`를 다음처럼 변경한다.
+
+```css
+.login-brand {
+  --login-brand-inline-padding: clamp(var(--spacing-8), 5vw, var(--spacing-20));
+
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--spacing-12);
+  min-width: 0;
+  padding: var(--login-brand-inline-padding);
+  overflow: hidden;
+  background: var(--color-paper);
+}
+
+.login-brand::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--login-brand-inline-padding) - var(--spacing-3));
+  z-index: 1;
+  width: 1px;
+  background: var(--color-coral);
+  content: '';
+  pointer-events: none;
+}
+```
+
+`.login-brand-lockup`과 `.login-brand-message`에는 각각 다음 레이어 속성을 추가한다.
+
+```css
+.login-brand-lockup {
+  position: relative;
+  z-index: 2;
+}
+
+.login-brand-message {
+  position: relative;
+  z-index: 2;
+}
+```
+
+같은 파일에서 `.login-brand` 뒤에 다음 장식 스타일을 추가한다.
+
+```css
+.login-note-tabs {
+  position: absolute;
+  top: var(--login-brand-inline-padding);
+  right: 0;
+  z-index: 3;
+  display: grid;
+  gap: var(--spacing-2);
+  pointer-events: none;
+}
+
+.login-note-tab {
+  width: var(--spacing-8);
+  height: var(--spacing-3);
+  border-radius: var(--radius-button) 0 0 var(--radius-button);
+}
+
+.login-note-tab-blue {
+  background: var(--color-electric-blue);
+}
+
+.login-note-tab-amber {
+  background: var(--color-amber);
+}
+
+.login-note-tab-coral {
+  background: var(--color-coral);
+}
+
+.login-note-rules {
+  position: absolute;
+  inset: calc(var(--login-brand-inline-padding) + var(--spacing-12)) 0
+    var(--spacing-6);
+  z-index: 1;
+  display: grid;
+  align-content: space-around;
+  pointer-events: none;
+}
+
+.login-note-rule {
+  height: 1px;
+  background: var(--color-ash);
+}
+```
+
+Expected:
+
+- `768px` 이상에서 오른쪽 색인 탭 3개, 세로 여백선 1개, 가로 규칙선 4개가 보인다.
+- 가로 규칙선은 브랜드 문장보다 뒤에 있고 글자 가독성을 해치지 않는다.
+- 색상은 기존 디자인 토큰만 사용하고, 그라데이션·그림자·테이프·핀·접힌 모서리는 추가하지 않는다.
+- `.login-brand`의 `overflow: hidden`으로 색인 탭이 오른쪽 로그인 영역을 침범하지 않는다.
+
+- [ ] **Step 4: 태블릿과 모바일에서 장식 밀도 조절**
+
+`768px~1199px` 미디어 쿼리의 `.login-brand`를 다음처럼 변경한다.
+
+```css
+.login-brand {
+  --login-brand-inline-padding: var(--spacing-8);
+
+  padding: var(--login-brand-inline-padding);
+}
+```
+
+`767px` 이하 미디어 쿼리의 `.login-brand`를 다음처럼 변경한다.
+
+```css
+.login-brand {
+  --login-brand-inline-padding: var(--spacing-5);
+
+  min-height: min(38svh, 320px);
+  gap: var(--spacing-10);
+  padding: var(--spacing-6) var(--login-brand-inline-padding) var(--spacing-8);
+}
+```
+
+같은 모바일 미디어 쿼리에 다음 스타일을 추가한다.
+
+```css
+.login-note-tabs {
+  top: var(--spacing-6);
+  gap: var(--spacing-1);
+}
+
+.login-note-tab {
+  width: var(--spacing-6);
+  height: var(--spacing-2);
+}
+
+.login-note-tab-coral {
+  display: none;
+}
+
+.login-note-rules {
+  inset: calc(var(--spacing-6) + var(--spacing-10)) 0 var(--spacing-6);
+}
+
+.login-note-rule:nth-child(n + 3) {
+  display: none;
+}
+```
+
+Expected:
+
+- `390px`에서 Electric Blue와 Amber 색인 탭 2개만 보인다.
+- `390px`에서 세로 여백선 1개와 가로 규칙선 2개만 보인다.
+- 브랜드 문장과 로그인 패널이 기존 순서와 높이를 유지하고 가로 스크롤이 생기지 않는다.
+
+- [ ] **Step 5: 변경 파일만 포맷하고 린트**
+
+Run:
+
+```powershell
+npx prettier --write src/pages/login/ui/login_page.tsx src/pages/login/ui/login_page.css
+npx eslint src/pages/login/ui/login_page.tsx
+```
+
+Expected: Prettier 완료, ESLint 오류 0개.
+
+- [ ] **Step 6: 기존 로그인 화면 테스트만 회귀 확인**
+
+Run:
+
+```powershell
+npm test -- src/pages/login/ui/login_page.test.tsx
+```
+
+Expected: 기존 테스트 파일 1개와 테스트 2개 PASS. 장식 개수나 CSS 표현을 검증하는 새 테스트는 추가하지 않는다.
+
+- [ ] **Step 7: 빌드와 세 크기의 화면을 확인**
+
+Run:
+
+```powershell
+npm run build:web
+npm run dev:client -- --host 127.0.0.1 --port 5178 --strictPort
+```
+
+`http://127.0.0.1:5178/`에서 로그인 화면으로 이동하고 `390px`, `768px`, `1280px` viewport만 확인한다.
+
+Expected:
+
+- `390px`: 색인 탭 2개, 세로 여백선 1개, 가로 규칙선 2개가 보이고 로그인 영역까지 정상적으로 이어진다.
+- `768px`, `1280px`: 색인 탭 3개, 세로 여백선 1개, 가로 규칙선 4개가 보인다.
+- 모든 크기: 장식이 브랜드 로고와 문장을 가리지 않고 오른쪽 로그인 패널의 위치·문구·동작은 바뀌지 않는다.
+- 모든 크기: 가로 스크롤, 색인 탭의 패널 침범, 장식으로 인한 포커스 대상이 없다.
+
+- [ ] **Step 8: 장식 구현을 커밋**
+
+Run:
+
+```powershell
+git add -- src/pages/login/ui/login_page.tsx src/pages/login/ui/login_page.css
+git commit -m "feat: 로그인 메모지 장식 추가"
+```
+
+Expected: 로그인 화면 파일 2개만 커밋되고 테스트 파일은 수정되지 않는다.
