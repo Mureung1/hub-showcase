@@ -40,12 +40,12 @@ describe('LandingPage', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
+        name: '저장한 인사이트를 필요한 순간 다시 꺼내 보세요',
       })
     ).not.toBeNull();
     expect(
       screen.getByRole('heading', {
-        name: '발견한 링크가 필요한 순간 다시 쓰이도록, 아맞다가 저장부터 꺼내보기까지 이어드려요.',
+        name: '발견한 링크를 인사이트로 저장하고 필요한 순간 다시 꺼내 보세요.',
       })
     ).not.toBeNull();
     expect(
@@ -55,7 +55,7 @@ describe('LandingPage', () => {
     ).not.toBeNull();
     expect(
       screen.getByText(
-        '버그와 개선 의견을 남겨주세요. 직접 확인하고 다음 개선에 반영할게요.'
+        '버그와 개선 의견을 남겨 주세요. 직접 확인하고 다음 개선에 반영할게요.'
       )
     ).not.toBeNull();
     const contactLink = screen.getByRole('link', {
@@ -108,7 +108,7 @@ describe('LandingPage', () => {
     const onStart = renderLandingPage();
 
     await user.click(screen.getByRole('button', { name: '로그인' }));
-    await user.click(screen.getByRole('button', { name: '서비스 경험하기' }));
+    await user.click(screen.getByRole('button', { name: '아맞다 시작하기' }));
 
     expect(onStart).toHaveBeenCalledTimes(2);
   });
@@ -125,12 +125,12 @@ describe('LandingPage', () => {
     expect(brandLink.querySelector('span.landing-brand__mark')).toBeNull();
 
     const title = screen.getByRole('heading', {
-      name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
+      name: '저장한 인사이트를 필요한 순간 다시 꺼내 보세요',
     });
     const linkHighlight = title.querySelector('.inline-label--blue');
     const retrieveHighlight = title.querySelector('.inline-label--amber');
 
-    expect(linkHighlight?.textContent).toBe('🔖링크');
+    expect(linkHighlight?.textContent).toBe('🔖인사이트');
     expect(retrieveHighlight?.textContent).toBe('🪄다시');
     expect(
       title.querySelectorAll('.inline-label > [aria-hidden="true"]')

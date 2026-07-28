@@ -432,7 +432,7 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     expect((await screen.findByRole('alert')).textContent).toContain(
-      '일부 링크를 제외했어요'
+      '일부 인사이트를 제외했어요'
     );
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -1894,10 +1894,14 @@ describe('AuthenticatedWorkspace', () => {
       .map((alert) => alert.textContent)
       .join(' ');
 
-    expect(warningText).toContain('원격 보관함을 읽지 못했어요.');
-    expect(warningText).toContain('저장 데이터가 손상되어 불러오지 못했어요.');
     expect(warningText).toContain(
-      '일부 손상된 링크를 제외하고 나머지를 불러왔어요.'
+      '보관함을 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.'
+    );
+    expect(warningText).toContain(
+      '저장 데이터가 손상되어 불러오지 못했어요. 새 인사이트는 계속 저장할 수 있어요.'
+    );
+    expect(warningText).toContain(
+      '일부 손상된 인사이트를 제외하고 나머지를 불러왔어요.'
     );
     expect(
       screen.getByRole('heading', {

@@ -59,7 +59,7 @@ describe('LoginPage', () => {
     );
 
     const button = screen.getByRole('button', {
-      name: 'Google 로그인 연결 중',
+      name: 'Google에 연결하고 있어요',
     }) as HTMLButtonElement;
 
     expect(button.disabled).toBe(true);

@@ -44,11 +44,11 @@ function HeroSection({ onStart }: LandingPageProps) {
         <div className="landing-hero__copy">
           <h1
             id="onboarding-title"
-            aria-label="저장한 링크를 필요한 순간 다시 꺼내보세요"
+            aria-label="저장한 인사이트를 필요한 순간 다시 꺼내 보세요"
           >
             저장한{' '}
             <InlineLabel emoji="🔖" tone="blue">
-              링크
+              인사이트
             </InlineLabel>
             를
             <br />
@@ -56,7 +56,7 @@ function HeroSection({ onStart }: LandingPageProps) {
             <InlineLabel emoji="🪄" tone="amber">
               다시
             </InlineLabel>{' '}
-            꺼내보세요
+            꺼내 보세요
           </h1>
           <Button
             className="landing-primary-action"
@@ -65,7 +65,7 @@ function HeroSection({ onStart }: LandingPageProps) {
             size="large"
             type="button"
           >
-            서비스 경험하기
+            아맞다 시작하기
           </Button>
         </div>
       </div>
@@ -90,7 +90,7 @@ function ContactSection() {
           쓰다가 막히거나, 더 좋은 방법이 떠올랐나요?
         </h2>
         <p>
-          버그와 개선 의견을 남겨주세요. 직접 확인하고 다음 개선에 반영할게요.
+          버그와 개선 의견을 남겨 주세요. 직접 확인하고 다음 개선에 반영할게요.
         </p>
         <a
           className="landing-contact__action"

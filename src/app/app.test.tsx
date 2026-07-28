@@ -89,7 +89,7 @@ describe('App onboarding flow', () => {
     renderApp();
 
     expect(
-      screen.getByRole('status', { name: '로그인 상태 확인 중' })
+      screen.getByRole('status', { name: '로그인 상태를 확인하고 있어요' })
     ).not.toBeNull();
     expect(screen.queryByRole('heading', { name: '홈' })).toBeNull();
   });
@@ -99,11 +99,11 @@ describe('App onboarding flow', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
+        name: '저장한 인사이트를 필요한 순간 다시 꺼내 보세요',
       })
     ).not.toBeNull();
     expect(
-      screen.getAllByRole('button', { name: '서비스 경험하기' })
+      screen.getAllByRole('button', { name: '아맞다 시작하기' })
     ).toHaveLength(1);
     expect(screen.getByRole('button', { name: '로그인' })).not.toBeNull();
     expect(
@@ -117,7 +117,7 @@ describe('App onboarding flow', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '발견한 링크가 필요한 순간 다시 쓰이도록, 아맞다가 저장부터 꺼내보기까지 이어드려요.',
+        name: '발견한 링크를 인사이트로 저장하고 필요한 순간 다시 꺼내 보세요.',
       })
     ).not.toBeNull();
     expect(screen.getAllByRole('tab')).toHaveLength(3);
@@ -128,7 +128,7 @@ describe('App onboarding flow', () => {
       })
     ).not.toBeNull();
     expect(
-      screen.getAllByRole('button', { name: '서비스 경험하기' })
+      screen.getAllByRole('button', { name: '아맞다 시작하기' })
     ).toHaveLength(1);
     expect(
       screen.queryByRole('heading', {
@@ -149,10 +149,12 @@ describe('App onboarding flow', () => {
     app.emit(null);
 
     await user.click(
-      screen.getAllByRole('button', { name: '서비스 경험하기' })[0]
+      screen.getAllByRole('button', { name: '아맞다 시작하기' })[0]
     );
 
-    expect(screen.getByRole('heading', { name: '환영합니다!' })).not.toBeNull();
+    expect(
+      screen.getByRole('heading', { name: '아맞다에 오신 걸 환영해요' })
+    ).not.toBeNull();
     expect(
       screen.getByRole('button', { name: 'Google로 시작하기' })
     ).not.toBeNull();
@@ -189,12 +191,12 @@ describe('App onboarding flow', () => {
       .mockResolvedValueOnce(undefined);
 
     await user.click(
-      screen.getAllByRole('button', { name: '서비스 경험하기' })[0]
+      screen.getAllByRole('button', { name: '아맞다 시작하기' })[0]
     );
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      'Google 공급자 연결 실패'
+      'Google 로그인에 실패했어요. 다시 시도해 주세요.'
     );
 
     await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
@@ -212,9 +214,11 @@ describe('App onboarding flow', () => {
 
     app.emit(null);
 
-    expect(screen.getByRole('heading', { name: '환영합니다!' })).not.toBeNull();
+    expect(
+      screen.getByRole('heading', { name: '아맞다에 오신 걸 환영해요' })
+    ).not.toBeNull();
     expect(screen.getByRole('alert').textContent).toContain(
-      'Google 로그인이 취소되었습니다.'
+      'Google 로그인을 취소했어요.'
     );
     expect(
       screen.getByRole('button', { name: 'Google로 시작하기' })
@@ -242,7 +246,7 @@ describe('App onboarding flow', () => {
     expect(screen.queryByRole('heading', { name: '홈' })).toBeNull();
     expect(
       screen.getByRole('heading', {
-        name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
+        name: '저장한 인사이트를 필요한 순간 다시 꺼내 보세요',
       })
     ).not.toBeNull();
   });
@@ -284,7 +288,7 @@ describe('App onboarding flow', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
+        name: '저장한 인사이트를 필요한 순간 다시 꺼내 보세요',
       })
     ).not.toBeNull();
     expect(screen.queryByLabelText('링크 URL')).toBeNull();

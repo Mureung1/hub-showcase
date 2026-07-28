@@ -56,7 +56,7 @@ const CATEGORY_LOAD_WARNING_MESSAGES: Record<
   'corrupted-entry': {
     title: '일부 카테고리를 제외했어요',
     description:
-      '손상된 카테고리를 제외했습니다. 보이는 카테고리는 계속 사용할 수 있어요.',
+      '손상된 카테고리를 제외했어요. 나머지 카테고리는 계속 사용할 수 있어요.',
   },
   'permission-denied': {
     title: '카테고리 접근 권한을 확인하지 못했어요',
@@ -84,20 +84,20 @@ const LOAD_WARNING_MESSAGES: Record<
   'read-failed': {
     title: '보관함을 불러오지 못했어요',
     description:
-      '원격 보관함을 읽지 못했어요. 네트워크를 확인하고 새로고침해주세요.',
+      '보관함을 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.',
   },
   'corrupted-store': {
     title: '저장 데이터를 불러오지 못했어요',
     description:
-      '저장 데이터가 손상되어 불러오지 못했어요. 새 링크는 계속 저장할 수 있어요.',
+      '저장 데이터가 손상되어 불러오지 못했어요. 새 인사이트는 계속 저장할 수 있어요.',
   },
   'corrupted-entry': {
-    title: '일부 링크를 제외했어요',
-    description: '일부 손상된 링크를 제외하고 나머지를 불러왔어요.',
+    title: '일부 인사이트를 제외했어요',
+    description: '일부 손상된 인사이트를 제외하고 나머지를 불러왔어요.',
   },
   'permission-denied': {
     title: '보관함 접근 권한을 확인하지 못했어요',
-    description: '다시 로그인한 뒤 보관함을 열어주세요.',
+    description: '다시 로그인한 뒤 보관함을 열어 주세요.',
   },
 };
 
@@ -131,7 +131,7 @@ function getLoadWarningMessage(
     return {
       title: '저장된 인사이트를 읽지 못했어요',
       description:
-        '원격 보관함의 데이터를 확인하지 못했어요. 다시 불러와도 계속되면 문제를 알려주세요.',
+        '보관함의 데이터를 확인하지 못했어요. 다시 불러와도 계속되면 문제를 알려 주세요.',
     };
   }
 
@@ -476,7 +476,7 @@ export function AuthenticatedWorkspace({
         </div>
         {accountControl ?? (
           <p className="workspace-connection-status">
-            로그인 계정의 원격 보관함에 저장됨
+            이 계정의 보관함에 저장해요
           </p>
         )}
       </header>
@@ -491,7 +491,7 @@ export function AuthenticatedWorkspace({
         ) : null}
 
         {loadWarnings.length > 0 ? (
-          <div className="workspace-warnings" aria-label="저장소 안내">
+          <div className="workspace-warnings" aria-label="보관함 안내">
             {loadWarnings.map((warning) => {
               const message = getLoadWarningMessage(warning, insights.length);
 
