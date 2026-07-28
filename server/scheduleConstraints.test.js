@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { violatesAdjacentAreaRule, findArrangementViolation } from './scheduleConstraints.js'
+import {
+  violatesAdjacentAreaRule,
+  findArrangementViolation,
+} from './scheduleConstraints.js'
 
 describe('violatesAdjacentAreaRule', () => {
   it('정상: 진짜 인접한 요일(화-수)이 같은 부위를 쓰면 위반이다', () => {
@@ -7,7 +10,11 @@ describe('violatesAdjacentAreaRule', () => {
       { dayOfWeek: 'TUE', targetAreas: ['하체'] },
       { dayOfWeek: 'WED', targetAreas: [] },
     ]
-    const result = violatesAdjacentAreaRule({ days, candidateDayOfWeek: 'WED', areasToPlace: ['하체'] })
+    const result = violatesAdjacentAreaRule({
+      days,
+      candidateDayOfWeek: 'WED',
+      areasToPlace: ['하체'],
+    })
     expect(result).toBe(true)
   })
 
@@ -16,7 +23,11 @@ describe('violatesAdjacentAreaRule', () => {
       { dayOfWeek: 'MON', targetAreas: ['하체'] },
       { dayOfWeek: 'WED', targetAreas: [] },
     ]
-    const result = violatesAdjacentAreaRule({ days, candidateDayOfWeek: 'WED', areasToPlace: ['하체'] })
+    const result = violatesAdjacentAreaRule({
+      days,
+      candidateDayOfWeek: 'WED',
+      areasToPlace: ['하체'],
+    })
     expect(result).toBe(false)
   })
 
@@ -25,7 +36,11 @@ describe('violatesAdjacentAreaRule', () => {
       { dayOfWeek: 'SUN', targetAreas: ['상체'] },
       { dayOfWeek: 'TUE', targetAreas: [] },
     ]
-    const result = violatesAdjacentAreaRule({ days, candidateDayOfWeek: 'MON', areasToPlace: ['상체'] })
+    const result = violatesAdjacentAreaRule({
+      days,
+      candidateDayOfWeek: 'MON',
+      areasToPlace: ['상체'],
+    })
     expect(result).toBe(true)
   })
 })
@@ -41,14 +56,23 @@ describe('findArrangementViolation', () => {
 
   it('정상: PPL 5일 배치는 위반이 없다', () => {
     const result = findArrangementViolation({
-      dayArrangement: { MON: 'Push', TUE: 'Pull', WED: 'Legs', THU: 'Push', FRI: 'Pull' },
+      dayArrangement: {
+        MON: 'Push',
+        TUE: 'Pull',
+        WED: 'Legs',
+        THU: 'Push',
+        FRI: 'Pull',
+      },
       splitType: 'PPL',
     })
     expect(result).toBe(null)
   })
 
   it('빈 값: 전부 휴식(빈 배치)이면 위반이 없다', () => {
-    const result = findArrangementViolation({ dayArrangement: {}, splitType: '상하체' })
+    const result = findArrangementViolation({
+      dayArrangement: {},
+      splitType: '상하체',
+    })
     expect(result).toBe(null)
   })
 

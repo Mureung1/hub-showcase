@@ -38,7 +38,9 @@ function withInstrumentalParticle(word) {
   const code = word.trim().at(-1)?.charCodeAt(0)
   if (!code || code < 0xac00 || code > 0xd7a3) return `${word}로`
   const finalConsonantIndex = (code - 0xac00) % 28
-  return finalConsonantIndex === 0 || finalConsonantIndex === 8 ? `${word}로` : `${word}으로`
+  return finalConsonantIndex === 0 || finalConsonantIndex === 8
+    ? `${word}로`
+    : `${word}으로`
 }
 
 function buildReplacementSentence({
@@ -220,7 +222,9 @@ function ExerciseReplacementRow({ routineDayId, painBodyPart, result }) {
             {submitting ? '반영 중...' : '이 운동으로 확정'}
           </button>
           {confirmError && (
-            <p className="mt-2 text-[12px] text-text-secondary">⚠ {confirmError}</p>
+            <p className="mt-2 text-[12px] text-text-secondary">
+              ⚠ {confirmError}
+            </p>
           )}
         </>
       )}
@@ -264,7 +268,10 @@ function PainReportPage() {
         </p>
 
         <div className="mb-8 grid grid-cols-[300px_1fr] items-start gap-6">
-          <BodyMap selected={selectedBodyPart} onSelect={handleSelectBodyPart} />
+          <BodyMap
+            selected={selectedBodyPart}
+            onSelect={handleSelectBodyPart}
+          />
           <div className="flex flex-col gap-4">
             <div className="text-[13px] text-text-secondary">
               부위 목록에서 선택해도 돼요
@@ -285,7 +292,9 @@ function PainReportPage() {
         </div>
 
         {loading && <p className="text-text-secondary">확인 중...</p>}
-        {loadError && <p className="text-[13px] text-text-secondary">⚠ {loadError}</p>}
+        {loadError && (
+          <p className="text-[13px] text-text-secondary">⚠ {loadError}</p>
+        )}
 
         {report && (
           <div className="overflow-hidden rounded-xl border border-border bg-surface">

@@ -8,8 +8,16 @@ const prisma = new PrismaClient({ adapter })
 // E2E 전용 시드. seed.js(MON/WED/FRI만 운동일)를 그대로 쓰면 CI가 어느 요일에
 // 돌든 결과가 같아야 한다는 조건을 못 지켜서, 7일 전부 같은 타겟부위·운동으로 심는다.
 const exercises = [
-  { name: '벤치프레스', targetArea: '가슴', involvedJoints: ['어깨', '팔꿈치'] },
-  { name: '오버헤드프레스', targetArea: '어깨', involvedJoints: ['어깨', '팔꿈치'] },
+  {
+    name: '벤치프레스',
+    targetArea: '가슴',
+    involvedJoints: ['어깨', '팔꿈치'],
+  },
+  {
+    name: '오버헤드프레스',
+    targetArea: '어깨',
+    involvedJoints: ['어깨', '팔꿈치'],
+  },
 ]
 
 const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
