@@ -262,6 +262,13 @@ h1 {
   margin: 0;
   white-space: nowrap;
 }
+/* 좁은 화면에서 white-space:nowrap 문구가 뷰포트보다 넓어져 가로 스크롤이 생기던 문제 (#18) —
+   이 규칙은 위 .footer-desc 선언보다 나중에 나와야 캐스케이드에서 실제로 이긴다(동일 specificity). */
+@media (max-width: 680px) {
+  .footer-desc {
+    white-space: normal;
+  }
+}
 .footer-bottom {
   border-top: 1px solid var(--gray-200);
   margin-top: 28px;
