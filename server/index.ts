@@ -127,9 +127,12 @@ app.get("/", (_request, response) => {
   });
 });
 
-app.get("/health", (_request, response) => {
+function handleHealth(_request: express.Request, response: express.Response) {
   response.json({ status: "ok" });
-});
+}
+
+app.get("/health", handleHealth);
+app.get("/api/health", handleHealth);
 
 app.get("/api/items", async (request, response) => {
   const archivedQuery = request.query.archived;
