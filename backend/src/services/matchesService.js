@@ -97,6 +97,16 @@ export async function findMatchOwnedByUser(matchId, userId) {
   })
 }
 
+// 저장소 "받은 편지" 탭(T11) — 내가 source(추천을 받은 쪽)인 매칭 전체 목록.
+// 'replied' 상태는 답장까지 끝나 "이어진 편지" 탭(T12)에서 스레드로 보여주므로 여기선 제외한다.
+export async function listMatchesForAuthor(authorId) {
+  return prisma.match.findMany({
+    where: { sourceLetter: { authorId }, status: { not: 'replied' } },
+    include: { matchedLetter: { select: MATCHED_LETTER_SELECT } },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 export async function setStatus(matchId, status) {
   return prisma.match.update({
     where: { id: matchId },
@@ -109,6 +119,54 @@ export async function dismissActive(sourceLetterId) {
   return prisma.match.updateMany({
     where: { sourceLetterId, status: { in: ['recommended', 'opened'] } },
     data: { status: 'dismissed' },
+  })
+}
+
+// 이 사용자에게 아직 해결되지 않은 추천(답장도 스쳐 가기도 안 한)이 있는지 확인한다.
+// docs/plan.md 서비스 규칙: "추천 편지를 답장하거나 스쳐 가기로 처리해야 다음 편지 작성 가능".
+export async function findUnresolvedMatchForAuthor(authorId) {
+  return prisma.match.findFirst({
+    where: { status: { in: ['recommended', 'opened'] }, sourceLetter: { authorId } },
+  })
+}
+
+// 답장 작성(T10). matchId로 소유권(내가 받은 추천이 맞는지)을 확인하고, 한 Match당 답장은
+// 한 번만 허용한다(status를 'replied'로 원자적 전이 — 동시 요청 경쟁 시 count로 감지).
+// threadId는 매칭된 Match.id를 재사용 — 상대방 편지에도 같은 threadId를 심어둬야(T12) 양쪽
+// 다 같은 스레드로 조회할 수 있다. 답장 편지는 모음소행이 아니므로 isMatchable=false로 고정.
+export async function replyToMatch({ matchId, userId, title, content }) {
+  return prisma.$transaction(async (tx) => {
+    const match = await tx.match.findFirst({
+      where: { id: matchId, sourceLetter: { authorId: userId } },
+      include: { matchedLetter: { select: { id: true, authorId: true, threadId: true } } },
+    })
+    if (!match) return { notFound: true }
+    if (!['recommended', 'opened'].includes(match.status)) return { alreadyResolved: true }
+
+    const transition = await tx.match.updateMany({
+      where: { id: matchId, status: { in: ['recommended', 'opened'] } },
+      data: { status: 'replied' },
+    })
+    if (transition.count === 0) return { alreadyResolved: true } // 동시 요청 경쟁
+
+    const threadId = match.matchedLetter.threadId || match.id
+    if (!match.matchedLetter.threadId) {
+      await tx.letter.update({ where: { id: match.matchedLetter.id }, data: { threadId } })
+    }
+
+    const reply = await tx.letter.create({
+      data: {
+        authorId: userId,
+        recipientId: match.matchedLetter.authorId,
+        replyToId: match.matchedLetter.id,
+        threadId,
+        title,
+        content,
+        envelope: 'basic',
+        isMatchable: false,
+      },
+    })
+    return { reply }
   })
 }
 

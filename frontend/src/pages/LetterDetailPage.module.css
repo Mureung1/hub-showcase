@@ -22,6 +22,12 @@
   color: var(--color-primary-teal);
 }
 
+.threadList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .letter {
   background: var(--color-paper-white);
   border-radius: 3px;
@@ -57,5 +63,73 @@
 
 .error {
   font-size: 14px;
+  color: var(--color-muted-gray);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btnPrimary {
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: none;
+  background: var(--color-primary-teal);
+  color: var(--color-paper-white);
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btnOutline {
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-cool-gray);
+  background: transparent;
+  color: var(--color-body-slate);
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.replyBox {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-paper-white);
+  border: 1px solid var(--color-border-warm);
+  border-radius: 3px;
+  padding: 24px;
+}
+
+.replyInput {
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  border: none;
+  outline: none;
+  font-family: var(--letter-font);
+  font-size: 16px;
+  line-height: 28px;
+  color: var(--color-body-slate);
+  background: transparent;
+}
+
+.replyInput::placeholder {
+  color: var(--color-muted-gray);
+}
+
+.replyFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.charCount {
+  font-size: 13px;
   color: var(--color-muted-gray);
 }

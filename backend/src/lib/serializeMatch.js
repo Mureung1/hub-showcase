@@ -15,3 +15,23 @@ export function serializeMatch(match) {
     expires_at: match.expiresAt,
   }
 }
+
+// 저장소 목록/상세용 요약 직렬화(T11). 스쳐 지나간(dismissed) 편지는 프로토타입 때부터 내용을
+// 다시 보여주지 않는 게 원칙이라(구 mock.js 'passed' 항목 참고) body를 아예 비워서 내보낸다 —
+// 프론트 UI만 숨기면 응답 JSON엔 그대로 남기 때문에, 여기서부터 막아야 실제로 안전하다.
+const HIDDEN_BODY_STATUSES = new Set(['dismissed', 'expired'])
+
+export function serializeMatchSummary(match) {
+  const hideBody = HIDDEN_BODY_STATUSES.has(match.status)
+  return {
+    match_id: match.id,
+    status: match.status,
+    reason: match.reason,
+    matched_letter: {
+      id: match.matchedLetter.id,
+      body: hideBody ? null : match.matchedLetter.content,
+      created_at: match.matchedLetter.createdAt,
+    },
+    created_at: match.createdAt,
+  }
+}
