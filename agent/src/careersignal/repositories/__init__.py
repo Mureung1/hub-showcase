@@ -5,9 +5,20 @@
 정의는 docs/permission-matrix.md 6.1을 따른다.
 """
 
+from careersignal.repositories.assignment import AssignmentRepository
 from careersignal.repositories.base import Repository, Unit, unit_of_work
 from careersignal.repositories.evaluation import EvaluationRepository
+from careersignal.repositories.graph_paths import (
+    EvidenceSetRepository,
+    GraphPathRepository,
+)
 from careersignal.repositories.indexing import IndexRepository
+from careersignal.repositories.knowledge_graph import (
+    GraphRepository,
+    SemanticGraphRepository,
+)
+from careersignal.repositories.lineage import LineageGraphRepository
+from careersignal.repositories.promotion import PromotionRepository
 from careersignal.repositories.sources import (
     IngestRepository,
     SourceRepository,
@@ -25,11 +36,18 @@ from careersignal.repositories.verification import (
 )
 
 __all__ = [
+    "AssignmentRepository",
     "EvaluationRepository",
+    "EvidenceSetRepository",
+    "GraphPathRepository",
+    "GraphRepository",
     "IndexRepository",
     "IngestRepository",
+    "LineageGraphRepository",
     "OrchestratorRepository",
+    "PromotionRepository",
     "Repository",
+    "SemanticGraphRepository",
     "SourceRepository",
     "StatisticsRepository",
     "TelemetryRepository",

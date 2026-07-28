@@ -38,14 +38,24 @@ class StatisticsRepository(Repository):
         WHERE c.dataset_version = %(dataset_version)s
           AND pv.dataset_version = %(dataset_version)s
           AND p.job_role_id = %(job_role_id)s
+          AND NOT EXISTS (
+                SELECT 1 FROM requirement_mentions m
+                WHERE m.chunk_id = c.chunk_id
+                  AND m.dataset_version = %(dataset_version)s
+              )
         ORDER BY pv.posting_version_id, c.ordinal, c.chunk_id
     """
-    """공고 청크와 그 청크가 속한 공고.
+    """공고 청크와 그 청크가 속한 공고. 아직 표현을 뽑지 않은 것만.
 
     청크는 스냅샷을 가리키고 스냅샷은 출처를 가리킨다. 청크에서 공고로 가는
     길은 `posting_versions.snapshot_id` 하나뿐이라 이 조인이 모집단과 추출
     대상을 같은 기준으로 묶는다. 안쪽 조인이므로 공고로 등록되지 않은
     출처의 청크는 결과에 없다.
+
+    `NOT EXISTS` 가 `LIMIT` 앞에 있어야 한다. `LIMIT` 이 먼저 자르면 이미 뽑은
+    청크가 그 안을 채우고 남은 청크는 경계 너머에 갇혀, 같은 `--limit` 으로 다시
+    돌려도 전부 건너뛰기만 하고 아무것도 진행하지 않는다. 조건은
+    `extracted_chunks()` 와 같다. 청크 단위이며 같은 `dataset_version` 이다.
     """
 
     def chunks_to_extract(
@@ -67,7 +77,8 @@ class StatisticsRepository(Repository):
         있으므로(`pipelines/postings.py` 의 `posting_identifier`) 같은 직무
         안에서는 청크가 한 번만 나온다.
 
-        `limit` 은 청크가 아니라 이 짝의 수를 자른다.
+        이미 표현을 뽑은 청크는 조회가 먼저 뺀다. `limit` 은 남은 짝의 수를
+        자르므로 나눠 돌려도 실행마다 앞으로 나아간다.
         """
         sql = self._POSTING_CHUNKS
         params: dict[str, Any] = {
@@ -84,6 +95,9 @@ class StatisticsRepository(Repository):
 
         청크 단위로 판정한다. 한 청크에서 아무 표현도 나오지 않으면 행이 남지
         않아 다음 실행이 다시 시도한다.
+
+        `_POSTING_CHUNKS` 가 같은 조건을 이미 걸었으므로 정상 경로에서 이 집합에
+        걸리는 청크는 없다. 두 실행이 겹쳐 그 사이에 남은 행을 잡는 자리로 남긴다.
         """
         rows = self.unit.fetch_all(
             "SELECT DISTINCT chunk_id FROM requirement_mentions WHERE dataset_version = %s",
@@ -107,29 +121,7 @@ class StatisticsRepository(Repository):
         )
 
     # ------------------------------------------------------------ 활성 분류체계
-    _ACTIVE_TAXONOMY = """
-        SELECT tv.taxonomy_version_id, tv.taxonomy_id, tv.version_number,
-               tv.taxonomy_policy_version
-        FROM requirement_taxonomy_versions tv
-        JOIN requirement_taxonomies t ON t.taxonomy_id = tv.taxonomy_id
-        WHERE t.job_role_id = %(job_role_id)s
-          AND tv.published_at IS NOT NULL
-          AND tv.superseded_at IS NULL
-    """
-    """직무의 활성 분류체계 버전.
-
-    조건을 `requirement_taxonomy_versions` 의 부분 유니크 인덱스와 같게 둔다
-    (docs/erd.md 7.2). 인덱스가 `published_at IS NOT NULL AND superseded_at IS NULL`
-    인 행을 분류체계마다 하나로 강제하고, `requirement_taxonomies.job_role_id` 가
-    UNIQUE 이므로 이 조회는 많아야 한 행이다. 애플리케이션이 최신 버전을 고르는
-    규칙을 따로 두면 인덱스와 어긋날 수 있다.
-    """
-
-    def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
-        """활성 분류체계 버전 한 행. 발행된 버전이 없으면 비운다."""
-        return self.unit.fetch_one(
-            self._ACTIVE_TAXONOMY, {"job_role_id": job_role_id}
-        )
+    # `active_taxonomy_version` 과 `_ACTIVE_TAXONOMY` 는 `Repository` 가 갖는다.
 
     _ACTIVE_DIMENSIONS = """
         SELECT d.dimension_id, d.dimension_kind, dv.internal_canonical_label,
@@ -187,9 +179,19 @@ class StatisticsRepository(Repository):
         JOIN postings p ON p.posting_id = pv.posting_id
         WHERE m.dataset_version = %(dataset_version)s
           AND p.job_role_id = %(job_role_id)s
+          AND NOT EXISTS (
+                SELECT 1 FROM requirement_candidate_mentions cm
+                WHERE cm.mention_id = m.mention_id
+              )
         ORDER BY m.mention_id
     """
-    """발견에 걸 요구 표현.
+    """발견에 걸 요구 표현. 아직 후보에 붙지 않은 것만.
+
+    `NOT EXISTS` 가 `LIMIT` 앞에 있어야 한다. `LIMIT` 이 먼저 자르면 이미 후보의
+    근거가 된 표현이 그 안을 채우고, 같은 `--limit` 으로 다시 돌려도 전부
+    건너뛰기만 하고 아무것도 진행하지 않는다. 조건은 `candidate_mentions()` 와
+    같다. 바깥 조회가 이미 `dataset_version` 으로 좁혔으므로 `mention_id` 하나로
+    같은 집합이 나온다.
 
     `mention_id` 로 정렬한다. 식별자가 결정적이므로(`mention_identifier`) 이
     정렬은 적재 순서와 무관하게 같은 순서를 준다. 같은 키로 묶인 표현 가운데
@@ -205,9 +207,10 @@ class StatisticsRepository(Repository):
     ) -> list[dict[str, Any]]:
         """차원 후보 발견의 입력.
 
-        `limit` 은 mention 수를 자른다. 같은 표현이 잘린 경계 너머에 남으면
-        다음 실행이 그 근거를 같은 후보에 더한다. 후보 식별자가 표현으로
-        결정되므로 나눠 돌려도 후보가 갈리지 않는다.
+        이미 후보에 붙은 mention 은 조회가 먼저 뺀다. `limit` 은 남은 mention
+        수를 자르므로 나눠 돌려도 실행마다 앞으로 나아간다. 같은 표현이 잘린
+        경계 너머에 남으면 다음 실행이 그 근거를 같은 후보에 더한다. 후보
+        식별자가 표현으로 결정되므로 나눠 돌려도 후보가 갈리지 않는다.
         """
         sql = self._MENTIONS_TO_DISCOVER
         params: dict[str, Any] = {
@@ -233,7 +236,11 @@ class StatisticsRepository(Repository):
     """
 
     def candidate_mentions(self, dataset_version: str) -> set[str]:
-        """이미 후보에 붙은 mention. 다시 판정하지 않는다."""
+        """이미 후보에 붙은 mention. 다시 판정하지 않는다.
+
+        `_MENTIONS_TO_DISCOVER` 가 같은 조건을 이미 걸었으므로 정상 경로에서 이
+        집합에 걸리는 mention 은 없다. 두 실행이 겹칠 때의 방어선으로 남긴다.
+        """
         rows = self.unit.fetch_all(
             self._CANDIDATE_MENTIONS, {"dataset_version": dataset_version}
         )

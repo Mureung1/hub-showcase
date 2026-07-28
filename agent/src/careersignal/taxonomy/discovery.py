@@ -52,8 +52,13 @@ docs/statistics-model.md 3.5 다.
 UNNORMALIZABLE = "매칭 키가 비었다"
 """기호만 남은 표현. 묶을 키가 없어 후보를 만들지 못한다."""
 
-NEIGHBOUR_LIMIT = 5
-"""판정에 거는 기존 차원의 수. 선택지가 많을수록 판정이 흔들린다."""
+NEIGHBOUR_LIMIT = 8
+"""판정에 거는 기존 차원의 수. 선택지가 많을수록 판정이 흔들린다.
+
+겹침이 없는 차원은 애초에 빠지므로(`Vocabulary.neighbours`) 이 수는 상한이다.
+어휘가 커지면 같은 표현에 걸리는 차원이 늘어나며, 상한이 낮으면 정작 동의어인
+차원이 목록 밖으로 밀려 후보가 별개 차원으로 승격된다.
+"""
 
 
 def candidate_identifier(taxonomy_id: str, match_key: str) -> str:
@@ -360,6 +365,11 @@ def _candidate_row(
 
     `lifecycle_status` 는 언제나 `proposed` 다. 판정이 `synonym` 이어도 별칭으로
     올리지 않는다. 승격은 심사를 거친다.
+
+    `judged_against_taxonomy_version_id` 와 `judgment_rationale` 을 함께 남긴다.
+    관계 판정은 판정에 건 기존 차원 목록에 상대적이고 그 목록은 특정 분류체계
+    버전에서 나오므로, 어느 버전 기준의 판정인지 남지 않으면 승격 심사가 판정을
+    그대로 믿을 수 없다. 근거는 docs/adr/0011-candidate-judgment-context.md 다.
     """
     return {
         "candidate_id": candidate_id,
@@ -368,6 +378,8 @@ def _candidate_row(
         "lifecycle_status": PROPOSED,
         "nearest_dimension_id": judgment.nearest_dimension_id,
         "relation_judgment": judgment.relation,
+        "judged_against_taxonomy_version_id": state.taxonomy_version_id,
+        "judgment_rationale": judgment.rationale,
         "discovered_in_run_id": state.context.agent_run_id,
     }
 

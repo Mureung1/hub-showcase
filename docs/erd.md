@@ -38,6 +38,7 @@
 | `mention_` | `requirement_mentions` |
 | `assign_` | `posting_requirement_assignments` |
 | `dim_` | `requirement_dimensions` |
+| `cand_` | `requirement_candidates` |
 | `cap_` | `capabilities` |
 | `node_` / `edge_` | `knowledge_nodes` / `knowledge_edges` |
 | `fact_` | `statistics_facts` |
@@ -497,13 +498,23 @@ CHECK (src_dimension_id <> dst_dimension_id)
 
 | 컬럼 | 타입 | 제약 |
 | --- | --- | --- |
-| `candidate_id` | `text` | PK |
+| `candidate_id` | `text` | PK. `cand_` 접두사 |
 | `taxonomy_id` | `text` | NOT NULL, FK → `requirement_taxonomies` |
 | `proposed_label` | `text` | NOT NULL |
 | `lifecycle_status` | `text` | NOT NULL. 7.4와 같은 값 집합 |
 | `nearest_dimension_id` | `text` | FK → `requirement_dimensions` |
 | `relation_judgment` | `text` | `CHECK IN ('synonym','broader','narrower','related','none')` |
+| `judged_against_taxonomy_version_id` | `text` | FK → `requirement_taxonomy_versions` |
+| `judgment_rationale` | `text` | 판정을 고른 이유 한 문장 |
 | `discovered_in_run_id` | `text` | NOT NULL, FK → `agent_runs` |
+
+```sql
+CREATE INDEX ON requirement_candidates (taxonomy_id, judged_against_taxonomy_version_id);
+```
+
+`relation_judgment`는 판정에 건 기존 차원 목록에 상대적이며 그 목록은 분류체계 버전의 활성 어휘에서 나온다. `judged_against_taxonomy_version_id`가 그 버전을 가리키고, 승격 심사는 판정이 가리킨 차원이 활성 버전에 있는지 확인한다. 근거는 [ADR 0011](adr/0011-candidate-judgment-context.md)에 있다.
+
+두 컬럼은 NULL을 허용한다. 이 컬럼이 생기기 전에 만들어진 후보 행은 값을 갖지 않는다.
 
 ### 7.8 `requirement_candidate_mentions`
 
