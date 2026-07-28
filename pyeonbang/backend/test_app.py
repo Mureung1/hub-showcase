@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest.mock import patch
 import sqlite3
 import io
 import json
@@ -61,9 +62,22 @@ class PyeonbangTestCase(unittest.TestCase):
         response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
 
-    def test_upload_image_and_save_to_db(self):
-        """이미지 업로드 및 DB 저장 테스트"""
-        # test1.jpg 가짜 파일을 전송 (파일명으로 Mock 매핑 발생)
+    @patch('app.parse_nutrition_info_with_gemini')
+    def test_upload_image_and_save_to_db(self, mock_parse):
+        """이미지 업로드 및 DB 저장 테스트 (Gemini API Mocking)"""
+        mock_parse.return_value = {
+            "product_name": "오모리 김치찌개라면",
+            "brand": "GS25",
+            "calories": 485,
+            "carbs": 74,
+            "protein": 10,
+            "fat": 16,
+            "sodium": 1890,
+            "sugar": 4,
+            "is_complete": True
+        }
+
+        # test1.jpg 가짜 파일을 전송
         data = {
             'image': (io.BytesIO(b"dummy image bytes"), 'test1.jpg'),
             'price': '1800',
