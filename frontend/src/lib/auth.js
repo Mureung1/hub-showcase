@@ -1,3 +1,5 @@
+import { API_BASE } from './apiBase'
+
 const TOKEN_KEY = 'subzip_token'
 
 export function getToken() {
@@ -15,7 +17,7 @@ export function clearToken() {
 export async function fetchMe() {
   const token = getToken()
   if (!token) return null
-  const res = await fetch('/api/users/me', {
+  const res = await fetch(`${API_BASE}/api/users/me`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
