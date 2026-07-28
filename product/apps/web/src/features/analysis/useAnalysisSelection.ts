@@ -12,7 +12,7 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
     storeCategorySelection(initial.selectedCategoryName, initial.selectedCategoryCode),
   );
   const [radius, setRadius] = useState(initial.radius);
-  const [activeHour, setActiveHour] = useState(2);
+  const [activeHour, setActiveHour] = useState(initial.activeHour);
   const [layer, setLayer] = useState(initial.layer);
   const analysisScope = "market" as const;
   const [analysisTopic, setAnalysisTopic] = useState(initial.topic);
@@ -83,6 +83,7 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
     resetSelection: () => {
       chooseCategory("카페");
       setRadius(300);
+      setActiveHour(2);
       setLayer("density");
       setAnalysisTopic("overview");
       setBoundaryVisible(true);
