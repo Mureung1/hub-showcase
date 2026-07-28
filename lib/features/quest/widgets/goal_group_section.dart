@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../models/quest.dart';
 import '../../../models/quest_group.dart';
 
@@ -74,9 +75,11 @@ class GoalGroupSection extends StatelessWidget {
                           ),
                         ),
                         AppSpacing.gapWSm,
+                        // 진행률 `2/5` — 숫자뿐이라 수치 서체(Sora).
+                        // 왼쪽 목표 이름은 한글이라 기본 서체(Pretendard)다.
                         Text(
                           '${group.doneCount}/${group.total}',
-                          style: theme.textTheme.labelSmall?.copyWith(
+                          style: AppTypography.numericLabelSmall.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),

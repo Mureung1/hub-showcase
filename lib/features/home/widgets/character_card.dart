@@ -6,6 +6,7 @@ import '../../../core/constants/shop_items.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/reward_colors.dart';
 import '../../../core/widgets/coin_pill.dart';
 import '../../../core/widgets/pixel_art.dart';
@@ -74,17 +75,21 @@ class CharacterCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Flexible(
+                      // 진화 단계명이 한글('참새'·'성룡')이라 **기본 서체
+                      // (Pretendard)** 다. 숫자 하나 때문에 Sora로 돌리면 같은
+                      // 줄의 한글이 시스템 폰트로 폴백돼 서체가 갈라진다.
                       child: Text(
                         'Level ${user.level} · ${stage.name}',
                         style: theme.textTheme.headlineMedium,
                       ),
                     ),
                     Flexible(
+                      // `XP 12 / 100` · `MAX` — 숫자와 라틴 문자뿐이라 수치 서체.
                       child: Text(
                         user.canRebirth
                             ? 'MAX'
                             : 'XP ${user.xp} / ${user.xpForNextLevel}',
-                        style: theme.textTheme.labelMedium?.copyWith(
+                        style: AppTypography.numericLabelMedium.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         // 접혔을 때도 오른쪽 정렬을 유지한다.
@@ -377,6 +382,8 @@ class _StreakPill extends StatelessWidget {
             color: reward.coin,
           ),
           AppSpacing.gapWXs,
+          // 수치가 섞였지만 **한글('일 연속')이 같은 문자열에 있어** 기본 서체
+          // (Pretendard)를 쓴다. 수치 서체(Sora)에는 한글 글리프가 없다.
           Text(
             '$streak일 연속',
             style: theme.textTheme.labelMedium?.copyWith(color: reward.onCoin),

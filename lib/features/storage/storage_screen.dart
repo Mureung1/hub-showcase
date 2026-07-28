@@ -7,6 +7,7 @@ import '../../core/error/app_failure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/utils/proof_image_picker.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
@@ -266,9 +267,11 @@ class _Stat extends StatelessWidget {
       children: [
         Icon(icon, size: 22, fill: 1, color: AppColors.primary),
         AppSpacing.gapXs,
+        // [value]는 정수를 그대로 문자열로 만든 값이라 숫자뿐이다 → 수치 서체(Sora).
+        // 아래 [label]('완료' · '연속 일수')은 한글이라 기본 서체(Pretendard)다.
         Text(
           value,
-          style: theme.textTheme.headlineMedium?.copyWith(
+          style: AppTypography.numericHeadlineMedium.copyWith(
             color: AppColors.primary,
           ),
         ),

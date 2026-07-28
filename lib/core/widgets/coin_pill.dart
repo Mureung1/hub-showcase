@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 import '../theme/reward_colors.dart';
 
 /// 코인 잔액 pill. 🟡 노랑 사용 허용 위젯(코인 = 보상).
@@ -50,13 +51,15 @@ class CoinPill extends StatelessWidget {
                 color: reward.coin,
               ),
               AppSpacing.gapWXs,
+              // 잔액은 숫자·쉼표뿐이라 **수치 서체(Sora)** 를 쓴다.
+              // 아래 '코인' 라벨은 한글이므로 기본 서체(Pretendard)다.
               Text(
                 _format(amount),
                 style:
                     (compact
-                            ? theme.textTheme.labelSmall
-                            : theme.textTheme.labelMedium)
-                        ?.copyWith(color: reward.onCoin),
+                            ? AppTypography.numericLabelSmall
+                            : AppTypography.numericLabelMedium)
+                        .copyWith(color: reward.onCoin),
               ),
             ],
           ),

@@ -168,6 +168,11 @@ abstract final class AppTheme {
         hintStyle: AppTypography.bodyMedium.copyWith(
           color: scheme.onSurfaceVariant,
         ),
+        // 입력 카운터(`0/60`, `0/200`)는 숫자만 있는 수치라 Sora로 쓴다.
+        // Flutter가 helperStyle 기본값 위에 이 스타일을 merge하므로(input_decorator
+        // `_getHelperStyle(...).merge(counterStyle)`), **패밀리만** 얹어 크기·색은
+        // Material 기본값 그대로 둔다.
+        counterStyle: AppTypography.numericOverlay,
       ),
 
       navigationBarTheme: NavigationBarThemeData(
