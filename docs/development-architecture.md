@@ -197,5 +197,6 @@ Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. `/api/health` 
 
 - 로그인 전 흐름과 문구는 `docs/onboarding.md`를 따른다.
 - `꺼내보기` 경험은 `docs/retrieve.md`를 따른다.
+- 제품 UX Writing 계약은 `docs/ux-writing.md`를 따른다.
 - 현재 범위와 우선순위는 `docs/backlog.md`와 `docs/checklist.md`를 따른다.
 - 디자인 런타임 계약은 루트 `DESIGN.md`를 따른다.
