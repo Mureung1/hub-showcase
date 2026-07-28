@@ -1927,9 +1927,9 @@ describe('AuthenticatedWorkspace', () => {
       .map((alert) => alert.textContent)
       .join(' ');
 
-    expect(warningText).toContain(
-      '보관함을 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.'
-    );
+    expect(
+      screen.getByText('네트워크를 확인하고 새로고침해 주세요.')
+    ).not.toBeNull();
     expect(warningText).toContain(
       '저장 데이터가 손상되어 불러오지 못했어요. 새 인사이트는 계속 저장할 수 있어요.'
     );
@@ -1960,6 +1960,13 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('navigation', { name: '주요 화면' })
     ).not.toBeNull();
+    expect(screen.queryByText('이 계정의 보관함에 저장해요')).toBeNull();
+    const navigations = screen.getAllByRole('navigation', {
+      name: '주요 화면',
+    });
+
+    expect(navigations).toHaveLength(1);
+    expect(navigations[0].closest('.workspace-header')).not.toBeNull();
     expect(screen.getByRole('heading', { name: '홈' })).not.toBeNull();
     expect(
       screen.getByRole('button', { name: '홈' }).getAttribute('aria-current')

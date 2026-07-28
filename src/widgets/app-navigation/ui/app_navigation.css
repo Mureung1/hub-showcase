@@ -1,8 +1,11 @@
-div.app-navigation.navigation-bar[wds-component='bottom-navigation'] {
-  position: fixed;
-  z-index: 10;
-  right: 50%;
-  bottom: var(--spacing-5);
-  width: min(420px, calc(100% - var(--spacing-8)));
-  transform: translateX(50%);
+.app-navigation--home {
+  --navigation-active-color: var(--color-retrieve-blue);
+}
+
+.app-navigation--library {
+  --navigation-active-color: var(--color-library-coral);
+}
+
+.app-navigation--save {
+  --navigation-active-color: var(--color-save-green);
 }

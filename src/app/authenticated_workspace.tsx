@@ -83,8 +83,7 @@ const LOAD_WARNING_MESSAGES: Record<
 > = {
   'read-failed': {
     title: '보관함을 불러오지 못했어요',
-    description:
-      '보관함을 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.',
+    description: '네트워크를 확인하고 새로고침해 주세요.',
   },
   'corrupted-store': {
     title: '저장 데이터를 불러오지 못했어요',
@@ -468,17 +467,16 @@ export function AuthenticatedWorkspace({
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
-        <div className="workspace-brand">
-          <BrandLogo className="workspace-brand__mark" />
-          <span className="workspace-brand__name">아맞다</span>
-          <span aria-hidden="true" className="workspace-brand__divider" />
-          <h1>{getScreenTitle(activeTab)}</h1>
+        <div className="workspace-header__inner">
+          <div className="workspace-brand">
+            <BrandLogo className="workspace-brand__mark" />
+            <span className="workspace-brand__name">아맞다</span>
+            <span aria-hidden="true" className="workspace-brand__divider" />
+            <h1>{getScreenTitle(activeTab)}</h1>
+          </div>
+          <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
+          <div className="workspace-account">{accountControl}</div>
         </div>
-        {accountControl ?? (
-          <p className="workspace-connection-status">
-            이 계정의 보관함에 저장해요
-          </p>
-        )}
       </header>
 
       <main className="workspace-main">
@@ -634,7 +632,6 @@ export function AuthenticatedWorkspace({
         open={categoryManagerOpen}
         updateCategory={updateCategory}
       />
-      <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
     </div>
   );
 }

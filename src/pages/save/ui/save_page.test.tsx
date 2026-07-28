@@ -57,11 +57,11 @@ describe('SavePage', () => {
     expect(screen.getByRole('status').textContent).toContain(
       '인사이트를 저장했어요'
     );
-    expect(
-      screen.getByRole('heading', {
-        name: '언제 다시 쓰고 싶은가요?',
-      })
-    ).not.toBeNull();
+    const contextHeading = screen.getByRole('heading', {
+      name: '언제 다시 쓰고 싶은가요?',
+    });
+    expect(contextHeading.closest('.save-page__body')).not.toBeNull();
+    expect(contextHeading.closest('.save-page__stage')).toBeNull();
     expect(screen.getByRole('textbox', { name: '제목 (선택)' })).not.toBeNull();
     expect(
       screen.getByRole('textbox', { name: '한 줄 메모 (선택)' })
@@ -134,6 +134,9 @@ describe('SavePage', () => {
     });
     fireEvent.submit(container.querySelector('form')!);
 
+    expect(
+      screen.getByRole('textbox', { name: 'URL' }).closest('.save-page__stage')
+    ).not.toBeNull();
     expect(onUrlChange).toHaveBeenCalledWith('https://example.com/article');
     expect(onSave).toHaveBeenCalledOnce();
   });
