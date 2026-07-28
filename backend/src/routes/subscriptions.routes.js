@@ -112,7 +112,47 @@ router.get('/', requireAuth, async (req, res, next) => {
         memberCount: subscription.memberCount,
         myAmount: Math.round(subscription.subAmount / subscription.memberCount),
         role: subscription.ownerId === req.user.id ? 'owner' : 'member',
+        createdAt: subscription.createdAt,
       })),
+    })
+  } catch (e) {
+    next(e)
+  }
+})
+
+// /:id 보다 먼저 등록해야 함 — 그렇지 않으면 'dashboard'가 :id로 매칭됨
+router.get('/dashboard', requireAuth, async (req, res, next) => {
+  try {
+    const month = typeof req.query.month === 'string' && /^\d{4}-\d{2}$/.test(req.query.month)
+      ? req.query.month
+      : new Date().toISOString().slice(0, 7)
+
+    const [year, monthNum] = month.split('-').map(Number)
+    const monthEnd = new Date(year, monthNum, 1)
+
+    const subscriptions = await prisma.subscription.findMany({
+      where: {
+        OR: [
+          { ownerId: req.user.id },
+          { members: { some: { userId: req.user.id } } },
+        ],
+        createdAt: { lt: monthEnd },
+      },
+    })
+
+    const totals = subscriptions.reduce(
+      (acc, subscription) => {
+        acc.totalSubAmount += subscription.subAmount
+        acc.totalMyAmount += Math.round(subscription.subAmount / subscription.memberCount)
+        return acc
+      },
+      { totalSubAmount: 0, totalMyAmount: 0 },
+    )
+
+    res.status(200).json({
+      month,
+      totalSubAmount: totals.totalSubAmount,
+      totalMyAmount: totals.totalMyAmount,
     })
   } catch (e) {
     next(e)
