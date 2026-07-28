@@ -38,6 +38,10 @@ PtoP의 핵심 흐름인 `GitHub 로그인 → 작업실 → Repository 분석 �
 | TC-18 | GitHub rate limit | API 403/429 | 제한 원인과 재시도 시점을 안내하고 임의 결과를 만들지 않는다. |
 | TC-19 | 비공개 또는 없는 Repository | API 404 | 권한 또는 주소 확인 안내를 표시한다. |
 | TC-20 | 분석 성공 | 정상 GitHub/API 응답 | 결과를 보관하고 회고 완료 전 자동 이동하지 않는다. |
+| TC-20-1 | 선택 데이터 누락 | README, package.json, Discussion, Project 중 일부가 404/null | 분석은 완료되고 누락 데이터는 warning으로 표시한다. |
+| TC-20-2 | Projects null 노드 | GraphQL `projectsV2.nodes`에 `null` 포함 | 유효한 Project만 정규화하고 500을 반환하지 않는다. |
+| TC-20-3 | GitHub upstream 장애 | 필수 endpoint 5xx | `EXTERNAL_SERVICE_ERROR`와 재시도 안내를 표시한다. |
+| TC-20-4 | 저장 실패 | Supabase insert/update 또는 evidence constraint 오류 | `ANALYSIS_PERSISTENCE_FAILED`를 표시하고 pending 결과를 정리한다. |
 
 ## 4. Poppy 회고
 

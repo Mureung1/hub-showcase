@@ -12,6 +12,7 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | Agent 기본 지침 | `AGENTS.md` | 매 작업에서 지켜야 할 최소 규칙 |
 | 기록용 | `docs/records/agent-record.md` | 프로젝트 배경, 문제 정의, 기술 선택 이유처럼 자주 바뀌지 않는 기록 |
 | 기획용 | `docs/plans/plan.md` | 문제 정의, 사용자 시나리오, 핵심 기능, 화면 흐름 |
+| 최신 PRD | `docs/plans/prd.md` | 현재 구현 기준 제품 요구사항, 사용자 흐름, MVP 완료 기준 |
 | 개발용 | `docs/development/development-guide.md` | 기술 스택, 모노레포 계획, NestJS 선택 이유, 코드/커밋 기준 |
 | 배포용 | `docs/development/deployment.md` | Vercel 웹과 Render API의 배포 설정, 환경변수, 연결 확인 절차 |
 | 데이터 설계 | `docs/development/supabase-data-model.md` | Repository 분석 결과를 저장할 Supabase 테이블, 관계, 중복 처리 기준 |
@@ -34,6 +35,8 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | AI 모델 평가 결과 | `docs/research/model-evaluation-results.md` | 모델별 실제 실행 결과와 임시 선택 기준 |
 | 사용자 조사 | `docs/research/ptop-survey-google-form.gs` | PtoP 사용자 설문 Google Form 생성 스크립트 |
 | 테스트용 | `docs/testing/test-cases.md` | 입력, 분석, 결과, 오류 케이스 |
+| Repository 분석 오류 대응 | `docs/development/repository-analysis-error-handling.md` | 분석 단계별 오류 원인, 수정 방식, API 오류 계약과 검증 범위 |
+| Repository 분석 오류 매트릭스 | `docs/testing/repository-analysis-error-matrix.md` | 예외 시나리오별 재현 방법과 기대 결과 |
 | 템플릿 | `docs/templates/pr-template.md` | AI Agent Challenge PR 작성 템플릿 |
 | 제출/Wiki용 | `docs/wiki/wiki-home.md` | GitHub Wiki에 반영할 요약 문서 |
 | 기획 가이드 | `docs/guides/planning-tip.md` | 루카스 기획 수업 요구사항 정리 |
