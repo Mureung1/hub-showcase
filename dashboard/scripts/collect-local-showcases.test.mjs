@@ -123,6 +123,34 @@ test('일부 내용과 이미지가 없어도 프로젝트를 표시하고 뒤�
   }
 });
 
+test('대표 이미지 경로가 틀려도 showcase 안의 이미지를 자동으로 선택한다', async () => {
+  const outputDir = await mkdtemp(path.join(os.tmpdir(), 'showcase-image-fallback-'));
+  try {
+    const partial = {
+      ...showcase,
+      title: '대표 이미지 자동 선택 시험',
+      thumbnail: 'thumbnail.webp',
+      screenshots: [],
+    };
+    const files = new Map([
+      ['fallback:showcase/showcase.json', Buffer.from(JSON.stringify(partial))],
+      ['fallback:showcase/screenshots/home.webp', Buffer.from('home')],
+    ]);
+    const result = await collectLocalShowcases({
+      branches: ['fallback'],
+      outputDir,
+      readBranchFile: async (branch, filePath) => files.get(`${branch}:${filePath}`) ?? null,
+      listBranchFiles: async () => ['showcase/showcase.json', 'showcase/screenshots/home.webp'],
+    });
+
+    assert.equal(result.realProjectCount, 1);
+    assert.equal(result.projects[0].thumbnailUrl, './showcases/fallback/screenshots/home.webp');
+    assert.equal(result.projects[0].imageFallback, true);
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+});
+
 test('내용이 전혀 없는 JSON은 표시하지 않는다', async () => {
   const outputDir = await mkdtemp(path.join(os.tmpdir(), 'showcase-empty-'));
   try {

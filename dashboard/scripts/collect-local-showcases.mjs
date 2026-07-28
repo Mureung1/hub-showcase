@@ -158,6 +158,44 @@ async function copyImage({ branch, relativePath, outputDir, slug, readBranchFile
   return `./showcases/${slug}/${safePath}`;
 }
 
+const imageNamePriority = ['thumbnail', 'cover', 'main', 'home'];
+
+function imagePathCandidates(files) {
+  return files
+    .filter((file) => file.startsWith('showcase/') && IMAGE_PATTERN.test(file))
+    .map((file) => file.slice('showcase/'.length))
+    .sort((a, b) => {
+      const aName = path.basename(a).replace(IMAGE_PATTERN, '').toLowerCase();
+      const bName = path.basename(b).replace(IMAGE_PATTERN, '').toLowerCase();
+      const aPriority = imageNamePriority.indexOf(aName);
+      const bPriority = imageNamePriority.indexOf(bName);
+      if (aPriority !== -1 || bPriority !== -1) {
+        return (aPriority === -1 ? imageNamePriority.length : aPriority)
+          - (bPriority === -1 ? imageNamePriority.length : bPriority);
+      }
+      return a.localeCompare(b);
+    });
+}
+
+async function copyFirstAvailableImage({ branch, requestedPath, files, outputDir, slug, readBranchFile }) {
+  const candidates = [];
+  if (requestedPath) candidates.push(requestedPath);
+  candidates.push(...imagePathCandidates(files));
+
+  for (const candidate of [...new Set(candidates)]) {
+    try {
+      return {
+        url: await copyImage({ branch, relativePath: candidate, outputDir, slug, readBranchFile }),
+        autoSelected: candidate !== requestedPath,
+      };
+    } catch {
+      // 다음 이미지 후보를 확인합니다.
+    }
+  }
+
+  return { url: './dummy-thumbnail.svg', autoSelected: false };
+}
+
 function fillWithDummyProjects(projects, minimumCount = 16) {
   const result = [...projects];
   const template = projects[0];
@@ -200,7 +238,7 @@ function fillWithDummyProjects(projects, minimumCount = 16) {
   return result;
 }
 
-export async function collectLocalShowcases({ branches, outputDir, readBranchFile }) {
+export async function collectLocalShowcases({ branches, outputDir, readBranchFile, listBranchFiles = async () => [] }) {
   const projects = [];
   const errors = [];
   let skippedMissing = 0;
@@ -230,22 +268,18 @@ export async function collectLocalShowcases({ branches, outputDir, readBranchFil
       if (!validated.ok) warnings.push('showcase.json 형식 확인 필요');
 
       const slug = branchSlug(branch);
-      let thumbnailUrl = './dummy-thumbnail.svg';
-      if (normalized.thumbnail) {
-        try {
-          thumbnailUrl = await copyImage({
-            branch,
-            relativePath: normalized.thumbnail,
-            outputDir,
-            slug,
-            readBranchFile,
-          });
-        } catch {
-          warnings.push('대표 이미지 확인 필요');
-        }
-      } else {
-        warnings.push('대표 이미지 확인 필요');
-      }
+      const branchFiles = await listBranchFiles(branch);
+      const thumbnail = await copyFirstAvailableImage({
+        branch,
+        requestedPath: normalized.thumbnail,
+        files: branchFiles,
+        outputDir,
+        slug,
+        readBranchFile,
+      });
+      const thumbnailUrl = thumbnail.url;
+      if (thumbnail.autoSelected) warnings.push('대표 이미지 자동 선택');
+      if (thumbnailUrl === './dummy-thumbnail.svg') warnings.push('대표 이미지 확인 필요');
 
       const screenshotUrls = [];
       for (const screenshot of normalized.screenshots) {
@@ -269,6 +303,7 @@ export async function collectLocalShowcases({ branches, outputDir, readBranchFil
         thumbnailUrl,
         screenshotUrls,
         dataWarnings: [...new Set(warnings)],
+        imageFallback: thumbnail.autoSelected,
       });
     } catch (error) {
       skippedInvalid += 1;
@@ -317,6 +352,21 @@ export function readGitBranchFile(repoDir, branch, filePath) {
   return null;
 }
 
+export function listGitBranchFiles(repoDir, branch) {
+  safeBranchName(branch);
+  for (const ref of [branch, `origin/${branch}`]) {
+    try {
+      return execFileSync('git', ['-C', repoDir, 'ls-tree', '-r', '--name-only', ref, '--', 'showcase'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).split('\n').filter(Boolean);
+    } catch {
+      // 다음 참조 형식으로 다시 시도합니다.
+    }
+  }
+  return [];
+}
+
 const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url);
 if (isDirectRun) {
   const dashboardDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -344,6 +394,7 @@ if (isDirectRun) {
     branches: selectedBranches,
     outputDir,
     readBranchFile: (branch, filePath) => readGitBranchFile(repoDir, branch, filePath),
+    listBranchFiles: (branch) => listGitBranchFiles(repoDir, branch),
   });
 
   console.log(`${result.projectCount}개 프로젝트를 수집했습니다.`);
