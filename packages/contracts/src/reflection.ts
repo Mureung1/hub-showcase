@@ -27,12 +27,24 @@ export type ReflectionAnalysis = {
   suggestedChallenges?: TechnicalChallengeCandidate[];
 };
 
+export type PortfolioImplementationStep = {
+  summary: string;
+  filePath: string | null;
+  rationale: string;
+  evidenceRefs: string[];
+};
+
 export type PortfolioDraft = {
   title: string;
   technicalChallenge?: string;
   background: string;
   problem: string;
   solution: string;
+  /** Solution을 구현 단위, 작성 이유, 검증 근거로 확장한 정보입니다. */
+  implementationSteps?: PortfolioImplementationStep[];
+  decisionRationale?: string[];
+  tradeoffs?: string[];
+  validation?: string[];
   contribution: string;
   keyDecisions?: string[];
   result?: string;

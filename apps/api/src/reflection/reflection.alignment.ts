@@ -5,6 +5,7 @@ import type {
   ReflectionAnalysis,
   ReflectionDraft,
   PortfolioDraft,
+  PortfolioImplementationStep,
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
 import {
@@ -65,6 +66,10 @@ export class ReflectionAlignmentAnalyzer {
           "matchedChallengeTitle은 제공된 후보 title 중 하나 또는 null만 사용하세요.",
           "포트폴리오 초안은 사용자의 문장을 그대로 복사하지 말고, 사실을 추가하지 않는 범위에서 Background-Problem-Solution-Contribution-Result 구조로 재구성하세요.",
           "portfolioDraft에는 기술적 도전의 핵심을 technicalChallenge에 쓰고, 실제로 확인되는 판단을 keyDecisions에 1~3개, 결과를 result에, 배운 점을 learnings에 1~3개 작성하세요.",
+          "Solution은 한두 문장으로 끝내지 말고 implementationSteps에 실제 구현 단위를 1~5개 작성하세요.",
+          "각 implementationStep에는 구현 내용 summary, 확인 가능한 filePath 또는 null, 왜 그렇게 구현했는지 rationale, 실제 근거의 referenceId·URL·filePath 중 확인 가능한 값만 evidenceRefs에 작성하세요.",
+          "decisionRationale에는 기술적 판단과 선택 이유를 1~3개, tradeoffs에는 확인된 트레이드오프를 최대 3개, validation에는 테스트·검증·결과 확인 방법을 최대 3개 작성하세요.",
+          "코드 변경 내용이나 파일 경로가 제공된 근거에 없으면 추측하지 말고 filePath를 null로 두며 사용자 확인이 필요하다고 표시하세요.",
           "기술명, 성능 수치, 담당 범위, 해결 결과를 입력 근거 없이 만들지 마세요.",
           "근거가 부족하거나 개인 기여가 확인되지 않으면 portfolioDraft를 null로 만들고 requiresUserConfirmation을 true로 설정하세요.",
           "portfolioDraft.evidenceSummary에는 실제 제공된 PR, Issue, Discussion, Project, Commit 근거만 요약하세요.",
@@ -74,7 +79,7 @@ export class ReflectionAlignmentAnalyzer {
           "보완 후보는 제공된 candidates의 Repository 근거만 재사용해야 하며, 새 URL·파일·수치·기술을 만들지 마세요.",
           "제공된 근거로도 보완 후보를 뒷받침할 수 없으면 suggestedChallenges를 빈 배열로 반환하세요.",
           "응답은 설명 없이 아래 JSON 구조만 반환하세요.",
-          '{"alignment":"matched|partial|mismatched|no_evidence","matchedChallengeTitle":"string|null","message":"string","portfolioSummary":"string|null","portfolioDraft":{"title":"string","technicalChallenge":"string","background":"string","problem":"string","solution":"string","contribution":"string","keyDecisions":["string"],"result":"string","learnings":["string"],"evidenceSummary":"string","requiresUserReview":true},"requiresUserConfirmation":true,"suggestedChallenges":[{"title":"string","summary":"string","background":"string|null","problem":"string|null","solution":"string|null","technicalChallenge":"string","whyItMatters":"string","confidence":"high|medium|low","requiresUserConfirmation":true,"evidence":[{"evidenceType":"commit|pull_request|issue|discussion|project|file|config|release","referenceId":"string|null","title":"string","url":"string|null","filePath":"string|null","imageUrls":["string"]}]}]}',
+          '{"alignment":"matched|partial|mismatched|no_evidence","matchedChallengeTitle":"string|null","message":"string","portfolioSummary":"string|null","portfolioDraft":{"title":"string","technicalChallenge":"string","background":"string","problem":"string","solution":"string","implementationSteps":[{"summary":"string","filePath":"string|null","rationale":"string","evidenceRefs":["string"]}],"decisionRationale":["string"],"tradeoffs":["string"],"validation":["string"],"contribution":"string","keyDecisions":["string"],"result":"string","learnings":["string"],"evidenceSummary":"string","requiresUserReview":true},"requiresUserConfirmation":true,"suggestedChallenges":[{"title":"string","summary":"string","background":"string|null","problem":"string|null","solution":"string|null","technicalChallenge":"string","whyItMatters":"string","confidence":"high|medium|low","requiresUserConfirmation":true,"evidence":[{"evidenceType":"commit|pull_request|issue|discussion|project|file|config|release","referenceId":"string|null","title":"string","url":"string|null","filePath":"string|null","imageUrls":["string"]}]}]}',
         ].join("\n"),
         userPrompt: JSON.stringify(
           {
@@ -258,6 +263,13 @@ function isPortfolioDraft(value: unknown): value is PortfolioDraft {
     typeof value.background === "string" &&
     typeof value.problem === "string" &&
     typeof value.solution === "string" &&
+    (value.implementationSteps === undefined ||
+      (Array.isArray(value.implementationSteps) &&
+        value.implementationSteps.length <= 5 &&
+        value.implementationSteps.every(isPortfolioImplementationStep))) &&
+    (value.decisionRationale === undefined || isStringArray(value.decisionRationale, 3)) &&
+    (value.tradeoffs === undefined || isStringArray(value.tradeoffs, 3)) &&
+    (value.validation === undefined || isStringArray(value.validation, 3)) &&
     typeof value.contribution === "string" &&
     (value.keyDecisions === undefined ||
       (Array.isArray(value.keyDecisions) && value.keyDecisions.every((item) => typeof item === "string"))) &&
@@ -266,6 +278,25 @@ function isPortfolioDraft(value: unknown): value is PortfolioDraft {
       (Array.isArray(value.learnings) && value.learnings.every((item) => typeof item === "string"))) &&
     typeof value.evidenceSummary === "string" &&
     typeof value.requiresUserReview === "boolean"
+  );
+}
+
+function isPortfolioImplementationStep(value: unknown): value is PortfolioImplementationStep {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.summary === "string" &&
+    (value.filePath === null || typeof value.filePath === "string") &&
+    typeof value.rationale === "string" &&
+    isStringArray(value.evidenceRefs)
+  );
+}
+
+function isStringArray(value: unknown, maxLength = 5): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= maxLength &&
+    value.every((item) => typeof item === "string")
   );
 }
 

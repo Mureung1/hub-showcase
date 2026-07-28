@@ -52,6 +52,76 @@ describe("parseReflectionAlignmentResponse", () => {
     });
   });
 
+  it("preserves detailed solution context for the portfolio draft", () => {
+    const result = parseReflectionAlignmentResponse(
+      JSON.stringify({
+        alignment: "matched",
+        matchedChallengeTitle: "분석 결과 연결",
+        message: "회고 내용이 후보와 일치합니다.",
+        portfolioSummary: "분석 흐름과 사용자 경험을 연결했습니다.",
+        portfolioDraft: {
+          title: "분석 흐름과 사용자 경험 연결",
+          technicalChallenge: "분석 근거와 회고를 하나의 결과로 연결하는 문제",
+          background: "분석 결과와 회고를 하나의 흐름으로 연결해야 했습니다.",
+          problem: "결과와 회고가 분리되어 경험을 포트폴리오로 정리하기 어려웠습니다.",
+          solution: "분석 근거와 회고를 결합하는 흐름을 구성했습니다.",
+          implementationSteps: [
+            {
+              summary: "선택한 후보의 근거와 회고를 최종 요청에 함께 전달했습니다.",
+              filePath: "apps/api/src/reflection/reflection.alignment.ts",
+              rationale: "Repository 기록만으로는 개인의 판단을 확인하기 어려웠기 때문입니다.",
+              evidenceRefs: ["pr-12"],
+            },
+          ],
+          decisionRationale: ["근거와 사용자 경험을 분리해 검증한 뒤 결합했습니다."],
+          tradeoffs: ["근거가 부족한 내용은 사용자 확인 대상으로 남겼습니다."],
+          validation: ["정합성 응답 스키마를 검증하고 API 테스트로 확인했습니다."],
+          contribution: "분석 결과 화면과 회고 저장 흐름을 구현했습니다.",
+          keyDecisions: ["초기 회고를 후보 우선순위에 반영했습니다."],
+          result: "선택한 후보와 사용자의 경험을 한 화면에서 검토할 수 있게 되었습니다.",
+          learnings: ["근거와 사용자 경험을 함께 검증해야 결과의 신뢰도를 높일 수 있었습니다."],
+          evidenceSummary: "Pull Request #12, reflection service 구현 기록",
+          requiresUserReview: false,
+        },
+        requiresUserConfirmation: false,
+      }),
+    );
+
+    expect(result.portfolioDraft?.implementationSteps?.[0]).toEqual({
+      summary: "선택한 후보의 근거와 회고를 최종 요청에 함께 전달했습니다.",
+      filePath: "apps/api/src/reflection/reflection.alignment.ts",
+      rationale: "Repository 기록만으로는 개인의 판단을 확인하기 어려웠기 때문입니다.",
+      evidenceRefs: ["pr-12"],
+    });
+    expect(result.portfolioDraft?.decisionRationale).toEqual([
+      "근거와 사용자 경험을 분리해 검증한 뒤 결합했습니다.",
+    ]);
+  });
+
+  it("rejects malformed solution implementation details", () => {
+    expect(() =>
+      parseReflectionAlignmentResponse(
+        JSON.stringify({
+          alignment: "matched",
+          matchedChallengeTitle: "분석 결과 연결",
+          message: "회고 내용이 후보와 일치합니다.",
+          portfolioSummary: "분석 흐름과 사용자 경험을 연결했습니다.",
+          portfolioDraft: {
+            title: "분석 흐름과 사용자 경험 연결",
+            background: "분석 결과와 회고를 하나의 흐름으로 연결해야 했습니다.",
+            problem: "결과와 회고가 분리되어 경험을 정리하기 어려웠습니다.",
+            solution: "분석 근거와 회고를 결합했습니다.",
+            implementationSteps: "이 배열이어야 합니다.",
+            contribution: "분석 결과 화면을 구현했습니다.",
+            evidenceSummary: "Pull Request #12",
+            requiresUserReview: false,
+          },
+          requiresUserConfirmation: false,
+        }),
+      ),
+    ).toThrow("회고 정합성 응답을 검증할 수 없습니다.");
+  });
+
   it("accepts evidence-backed challenges suggested from the reflection", () => {
     const candidate = {
       title: "분석 중 발견한 동시성 문제",

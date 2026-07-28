@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   PortfolioDraft,
+  PortfolioImplementationStep,
   ReflectionAnalysis,
   RepositoryAnalysisResult,
   TechnicalChallengeEvidenceReference,
@@ -9,6 +10,7 @@ import { saveReflectionDraft, type ReflectionDraft } from "./reflection";
 import { loadReflectionDraftFromApi } from "./reflectionApi";
 import {
   getPortfolioDraftLoadingSteps,
+  getPortfolioPdfFileName,
   normalizeDraftListItems,
 } from "./portfolioDraftView";
 
@@ -36,10 +38,30 @@ export function ReflectionWorkspace({
   >("idle");
   const [saveMessage, setSaveMessage] = useState("");
   const generatedAnalysis = reflectionAnalysis ?? loadedReflectionAnalysis;
+  const portfolioDraftSectionRef = useRef<HTMLDivElement | null>(null);
+  const previousSaveStatusRef = useRef(saveStatus);
 
   useEffect(() => {
     saveReflectionDraft(result.repository.url, draft);
   }, [draft, result.repository.url]);
+
+  useEffect(() => {
+    if (previousSaveStatusRef.current === saveStatus) {
+      return;
+    }
+
+    previousSaveStatusRef.current = saveStatus;
+    if (saveStatus !== "saving" && saveStatus !== "saved") {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      portfolioDraftSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [saveStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,16 +237,22 @@ export function ReflectionWorkspace({
         </div>
       </article>
 
+      <div ref={portfolioDraftSectionRef} className="scroll-mt-24">
       {saveStatus === "saving" ? (
         <PortfolioDraftLoading />
       ) : generatedAnalysis?.portfolioDraft ? (
         <PortfolioDraftPreview
           draft={generatedAnalysis.portfolioDraft}
           evidence={generatedAnalysis.matchedChallengeEvidence}
+          pdfFileName={getPortfolioPdfFileName(
+            result.repository.owner,
+            result.repository.name,
+          )}
         />
-      ) : generatedAnalysis ? (
-        <AlignmentNotice analysis={generatedAnalysis} />
-      ) : null}
+        ) : generatedAnalysis ? (
+          <AlignmentNotice analysis={generatedAnalysis} />
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -275,6 +303,8 @@ function PortfolioDraftLoading() {
 }
 
 function SelectedChallenges({ titles }: { titles: string[] }) {
+  const selectedTitle = titles[0];
+
   return (
     <div className="grid gap-3 rounded-xl border border-ptop-line bg-white p-4 shadow-ptop-surface">
       <div>
@@ -284,14 +314,13 @@ function SelectedChallenges({ titles }: { titles: string[] }) {
         <strong>선택한 기술적 도전</strong>
       </div>
       <div className="flex flex-wrap gap-2">
-        {titles.map((title) => (
+        {selectedTitle && (
           <span
             className="rounded-full bg-ptop-mint-soft px-3 py-1.5 text-sm font-bold text-ptop-mint-dark"
-            key={title}
           >
-            {title}
+            {selectedTitle}
           </span>
-        ))}
+        )}
       </div>
       <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
         선택한 후보와 나의 한 문장 회고를 근거 중심으로 연결합니다.
@@ -303,9 +332,11 @@ function SelectedChallenges({ titles }: { titles: string[] }) {
 function PortfolioDraftPreview({
   draft,
   evidence,
+  pdfFileName,
 }: {
   draft: PortfolioDraft;
   evidence: TechnicalChallengeEvidenceReference[];
+  pdfFileName: string;
 }) {
   const visualReferences = evidence.flatMap((item) =>
     (item.imageUrls ?? []).map((url) => ({
@@ -335,7 +366,20 @@ function PortfolioDraftPreview({
           <button
             className="rounded-full border border-ptop-line bg-white px-4 py-2 text-sm font-bold text-ptop-mint-dark transition hover:-translate-y-px hover:border-ptop-mint-dark"
             type="button"
-            onClick={() => window.print()}
+            onClick={() => {
+              const previousTitle = document.title;
+              const restoreTitle = () => {
+                document.title = previousTitle;
+                window.removeEventListener("afterprint", restoreTitle);
+              };
+
+              document.title = pdfFileName;
+              window.addEventListener("afterprint", restoreTitle, {
+                once: true,
+              });
+              window.print();
+              window.setTimeout(restoreTitle, 1000);
+            }}
           >
             PDF로 저장
           </button>
@@ -359,6 +403,18 @@ function PortfolioDraftPreview({
       <PortfolioVisuals references={visualReferences} />
       <DraftSection label="Problem" value={draft.problem} />
       <DraftSection label="Solution" value={draft.solution} />
+      {draft.implementationSteps && draft.implementationSteps.length > 0 && (
+        <DraftImplementationSteps steps={draft.implementationSteps} />
+      )}
+      {draft.decisionRationale && draft.decisionRationale.length > 0 && (
+        <DraftListSection label="Why I chose this approach" items={draft.decisionRationale} />
+      )}
+      {draft.tradeoffs && draft.tradeoffs.length > 0 && (
+        <DraftListSection label="Trade-offs" items={draft.tradeoffs} />
+      )}
+      {draft.validation && draft.validation.length > 0 && (
+        <DraftListSection label="Validation" items={draft.validation} />
+      )}
       <DraftSection label="My contribution" value={draft.contribution} />
       {draft.keyDecisions && draft.keyDecisions.length > 0 && (
         <DraftListSection label="Key decisions" items={draft.keyDecisions} />
@@ -412,6 +468,34 @@ function PortfolioDraftPreview({
         </p>
       )}
     </article>
+  );
+}
+
+function DraftImplementationSteps({ steps }: { steps: PortfolioImplementationStep[] }) {
+  return (
+    <section className="grid gap-3">
+      <h5 className="m-0 text-sm font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+        Implementation details
+      </h5>
+      <ol className="m-0 grid list-none gap-3 p-0">
+        {steps.map((step, index) => (
+          <li className="grid gap-1 border-l-2 border-ptop-mint pl-4 text-sm leading-7 text-ptop-ink" key={`${step.summary}-${index}`}>
+            <strong>{step.summary}</strong>
+            {step.filePath && (
+              <code className="w-fit rounded bg-ptop-soft-paper px-2 py-0.5 text-xs text-ptop-mint-dark">
+                {step.filePath}
+              </code>
+            )}
+            <span>{step.rationale}</span>
+            {step.evidenceRefs.length > 0 && (
+              <span className="text-xs leading-5 text-ptop-muted">
+                근거: {step.evidenceRefs.join(", ")}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 

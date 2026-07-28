@@ -9,3 +9,13 @@ export function getPortfolioDraftLoadingSteps(): string[] {
     "포트폴리오 초안 구성",
   ];
 }
+
+export function getPortfolioPdfFileName(
+  githubOwner: string,
+  repositoryName: string,
+): string {
+  const normalizeSegment = (value: string) =>
+    value.trim().replace(/[^a-zA-Z0-9._-]+/g, "_");
+
+  return `${normalizeSegment(githubOwner) || "github-user"}_${normalizeSegment(repositoryName) || "repository"}_PtoP`;
+}

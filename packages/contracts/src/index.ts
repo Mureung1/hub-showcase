@@ -20,6 +20,7 @@ export type {
   ReflectionAlignment,
   ReflectionAnalysis,
   PortfolioDraft,
+  PortfolioImplementationStep,
   ReflectionDraftSaveRequest,
   ReflectionDraftSaveResponse,
 } from "./reflection";
