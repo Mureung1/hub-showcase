@@ -250,7 +250,7 @@ def list_my_stores(db: Session = Depends(get_db)):
 # (예: "카페그라운드" 검색 시 "휴먼그라운드 카페" 같은 무관한 곳까지 섞여 72건으로 잡힘)
 # 지역 좁히기 판단은 total_count가 아니라, 실제 place_name이 검색어와 정확히
 # 일치하는 후보 수(exact_match_count)로 한다. 이 값이 아래 임계값을 넘으면 지역을 물어본다.
-SEARCH_NARROW_THRESHOLD = 5
+SEARCH_NARROW_THRESHOLD = 10
 
 
 def _normalize_name(s: str) -> str:

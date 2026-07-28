@@ -137,12 +137,24 @@ def geocode_region(region: str):
         )
         resp.raise_for_status()
         docs = resp.json().get("documents", [])
-        # 카카오 주소 검색은 행정구역 접미사(동/리 등)를 무시하고 느슨하게 매칭할 때가 있다
-        # (예: '장전동' 검색 시 무관한 '...남양읍 장전리'가 1순위로 뜨고 실제 '부산 금정구
-        # 장전동'은 그 다음 순위로 밀림). 주소명이 검색어로 정확히 끝나는 문서만 신뢰한다.
-        exact_docs = [d for d in docs if d.get("address_name", "").endswith(region)]
-        if exact_docs:
-            return float(exact_docs[0]["x"]), float(exact_docs[0]["y"])
+        # 카카오 주소 검색은 행정구역 접미사(동/리 등)를 무시하고 느슨하게 매칭할 때가 있고,
+        # 그 순위(문서 순서)도 호출 시점마다 달라질 수 있다(예: '장전동' 검색 시 무관한
+        # '...남양읍 장전리'가 1순위로 올 때가 있음). docs[0]를 무조건 신뢰하지 않고,
+        # 구조화된 region_3depth_name(동/읍/면)으로 정확히 매칭되는 문서를 최우선으로 고른다.
+        if docs:
+            chosen = None
+            for d in docs:
+                if (d.get("address") or {}).get("region_3depth_name", "") == region:
+                    chosen = d
+                    break
+            if not chosen:
+                for d in docs:
+                    if region in d.get("address_name", ""):
+                        chosen = d
+                        break
+            if not chosen:
+                chosen = docs[0]
+            return float(chosen["x"]), float(chosen["y"])
     except requests.RequestException:
         pass
 

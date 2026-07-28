@@ -154,6 +154,20 @@ function SearchStep({ storeName, setStoreName, region, setRegion, regionAttempts
         상권 스캐너
       </p>
       <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 16px" }}>내 가게 이름으로 주변 상권 분석하기</h1>
+
+      {showRegionInput && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <button onClick={() => window.history.back()}
+            style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
+            ‹ 이전으로 돌아가기
+          </button>
+          <button onClick={onResearch}
+            style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
+            처음으로 돌아가기
+          </button>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 8 }}>
         <input
           value={storeName}
@@ -199,16 +213,6 @@ function SearchStep({ storeName, setStoreName, region, setRegion, regionAttempts
 
       {showRegionInput && (
         <div style={{ marginTop: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <button onClick={() => window.history.back()}
-              style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
-              ‹ 이전으로 돌아가기
-            </button>
-            <button onClick={onResearch}
-              style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
-              처음으로 돌아가기
-            </button>
-          </div>
           <p style={{ fontSize: 13, color: GREEN, margin: "0 0 8px" }}>{regionMessage}</p>
           <input
             ref={regionInputRef}
