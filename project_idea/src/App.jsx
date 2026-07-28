@@ -129,6 +129,7 @@ function App() {
       {step === 2 && (
         <CandidateListScreen
           myRequest={registration}
+          myProfile={myProfile}
           existingJoin={joinedCandidate}
           onBack={() => setStep(1)}
           onJoin={(candidate) => {

@@ -9,7 +9,7 @@ function formatTime(t) {
   return t ? t.slice(0, 5) : "";
 }
 
-function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
+function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoin }) {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -148,7 +148,7 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
 
         {joinError && <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px" }}>{joinError}</p>}
 
-        {!loading && !error && candidates.length === 0 && (
+        {!loading && !error && candidates.length === 0 && !alreadyJoined && (
           <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>
             아직 같은 방향·시간대에 등록한 학생이 없어요
           </p>
@@ -159,7 +159,7 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
             <div
               style={{
                 background: "#fff",
-                border: "1px solid #C8102E",
+                border: "1px solid rgba(36,21,18,0.08)",
                 borderRadius: 14,
                 padding: 14,
                 display: "flex",
@@ -167,25 +167,35 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
                 gap: 12,
               }}
             >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "#C8102E",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                나
-              </div>
+              {myProfile?.avatar_url ? (
+                <img
+                  src={myProfile.avatar_url}
+                  alt=""
+                  style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    background: AVATAR_COLORS[0],
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {myProfile?.name ? myProfile.name[0] : "?"}
+                </div>
+              )}
               <div style={{ flex: 1, textAlign: "left" }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>내 방</div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{myProfile?.name ?? "내 방"}</div>
+                {myProfile?.college && (
+                  <div style={{ fontSize: 12, color: "#8A7A76" }}>{myProfile.college}</div>
+                )}
                 <div style={{ fontSize: 12, color: "#8A7A76" }}>
                   {cityHub} · {formatTime(myRequest.time)} 출발
                 </div>
@@ -198,8 +208,8 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
                     fontWeight: 700,
                     padding: "2px 8px",
                     borderRadius: 999,
-                    background: "#FCE4E2",
-                    color: "#8C0E22",
+                    background: (existingJoin.groupCount ?? 1) >= 2 ? "#FCE4E2" : "rgba(36,21,18,0.06)",
+                    color: (existingJoin.groupCount ?? 1) >= 2 ? "#8C0E22" : "#8A7A76",
                   }}
                 >
                   {existingJoin.groupCount ?? 1}/4
