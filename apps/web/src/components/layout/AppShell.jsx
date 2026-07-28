@@ -13,6 +13,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 import { NewProjectModal } from '../../features/projects/components/NewProjectModal.jsx'
 import { AiCredentialSettingsModal } from '../../features/settings/AiCredentialSettingsModal.jsx'
+import { NotificationCenterModal } from '../../features/notifications/NotificationCenterModal.jsx'
+import { selectDeadlineNotifications } from '../../features/notifications/deadlineNotifications.js'
 import { useAuth } from '../../auth/useAuth.js'
 import { selectReceivedInvitations } from '../../state/selectors.js'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
@@ -60,6 +62,7 @@ export function Account({ label, compact = false }) {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showAiSettings, setShowAiSettings] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const accountRef = useRef(null)
   const triggerRef = useRef(null)
   const menuId = useId()
@@ -68,6 +71,8 @@ export function Account({ label, compact = false }) {
   const detail = guest ? '읽기 전용 데모' : auth.user?.email || label
   const initial = Array.from(name).slice(0, 1).join('') || 'T'
   const receivedInvitations = selectReceivedInvitations(state)
+  const deadlineNotifications = guest ? [] : selectDeadlineNotifications(state)
+  const notificationCount = receivedInvitations.length + deadlineNotifications.length
 
   useEffect(() => {
     if (!menuOpen) return undefined
@@ -97,8 +102,24 @@ export function Account({ label, compact = false }) {
   }
 
   function openInvitations() {
+    setShowNotifications(false)
     setMenuOpen(false)
     navigate('/projects#received-invitations')
+  }
+
+  function openNotifications() {
+    setMenuOpen(false)
+    setShowNotifications(true)
+  }
+
+  function openDeadlineTask(notification) {
+    setShowNotifications(false)
+    navigate(`/projects/${notification.projectId}/tasks`)
+  }
+
+  function closeNotifications() {
+    setShowNotifications(false)
+    queueMicrotask(() => triggerRef.current?.focus())
   }
 
   function openAiSettings() {
@@ -127,7 +148,7 @@ export function Account({ label, compact = false }) {
         aria-expanded={menuOpen}
         aria-controls={menuId}
       >
-        <AccountAvatar avatarUrl={auth.user?.avatarUrl} guest={guest} initial={initial} invitationCount={receivedInvitations.length} />
+        <AccountAvatar avatarUrl={auth.user?.avatarUrl} guest={guest} initial={initial} notificationCount={notificationCount} />
         {compact ? null : <span className={styles.accountCopy}><strong>{name}</strong><span>{detail}</span></span>}
         {compact ? null : <ChevronUp className={`${styles.accountChevron} ${menuOpen ? styles.accountChevronOpen : ''}`} aria-hidden="true" size={14} />}
       </button>
@@ -159,10 +180,10 @@ export function Account({ label, compact = false }) {
               </div>
             ) : (
               <>
-                <button className={styles.accountSettingRow} type="button" onClick={openInvitations}>
+                <button className={styles.accountSettingRow} type="button" onClick={openNotifications}>
                   <Bell aria-hidden="true" size={16} />
-                  <span>받은 프로젝트 초대</span>
-                  <strong>{receivedInvitations.length}건</strong>
+                  <span>알림</span>
+                  <strong>{notificationCount}건</strong>
                 </button>
                 <button className={styles.accountSettingRow} type="button" onClick={openAiSettings}>
                   <KeyRound aria-hidden="true" size={16} />
@@ -179,18 +200,27 @@ export function Account({ label, compact = false }) {
           </button>
         </div>
       ) : null}
+      {showNotifications && !guest ? (
+        <NotificationCenterModal
+          deadlineNotifications={deadlineNotifications}
+          invitations={receivedInvitations}
+          onClose={closeNotifications}
+          onOpenTask={openDeadlineTask}
+          onOpenInvitations={openInvitations}
+        />
+      ) : null}
       {showAiSettings && !guest ? <AiCredentialSettingsModal onClose={closeAiSettings} /> : null}
     </footer>
   )
 }
 
-function AccountAvatar({ avatarUrl, guest, initial, invitationCount = 0, large = false }) {
+function AccountAvatar({ avatarUrl, guest, initial, notificationCount = 0, large = false }) {
   return (
     <span className={`${styles.accountAvatarWrap} ${large ? styles.accountAvatarWrapLarge : ''}`}>
       {avatarUrl && !guest
         ? <img className={styles.accountAvatarImage} src={avatarUrl} alt="" referrerPolicy="no-referrer" />
         : <span className={styles.accountAvatar}>{initial}</span>}
-      {!large && invitationCount > 0 ? <span className={styles.accountInvitationBadge} aria-hidden="true">{invitationCount > 9 ? '9+' : invitationCount}</span> : null}
+      {!large && notificationCount > 0 ? <span className={styles.accountInvitationBadge} aria-hidden="true">{notificationCount > 9 ? '9+' : notificationCount}</span> : null}
     </span>
   )
 }

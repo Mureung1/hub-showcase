@@ -220,6 +220,12 @@ function throwDatabaseError(operation, error) {
   if (aiValidationField) {
     throw new TeamFlowValidationError(undefined, { [aiValidationField]: 'AI Agent 정보를 확인해 주세요.' })
   }
+  if (message.includes('AI_TASK_STATUS_MANAGED')) {
+    throw new TeamFlowConflictError('AI Agent 할 일의 진행 상태는 실행 흐름에서 자동으로 변경됩니다.')
+  }
+  if (message.includes('AI_TASK_LOCKED')) {
+    throw new TeamFlowConflictError('AI 작업이 진행 중이거나 결과가 반영된 할 일은 변경하거나 삭제할 수 없습니다.')
+  }
   if (error?.code === '23514') {
     throw new TeamFlowValidationError(undefined, { body: '입력값이 데이터 제약조건을 충족하지 않습니다.' })
   }
@@ -585,18 +591,6 @@ export function createSupabaseTeamFlowRepository(
     if (data?.project_id === projectId && data.enabled === false) {
       throw new TeamFlowConflictError('비활성화된 AI 팀원에게는 새 할 일을 배정할 수 없습니다.')
     }
-  }
-
-  async function taskProjectId(taskId) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('project_id')
-      .eq('id', taskId)
-      .maybeSingle()
-
-    if (error) throwDatabaseError('할 일 조회', error)
-    if (!data?.project_id) throw new TeamFlowNotFoundError()
-    return data.project_id
   }
 
   return {
@@ -1180,39 +1174,25 @@ export function createSupabaseTeamFlowRepository(
     },
 
     async updateTask(taskId, patch) {
-      if (hasOwn(patch, 'assigneeId')) {
-        await assertAssigneeIsActive(await taskProjectId(taskId), patch.assigneeId)
-      }
-      const databasePatch = { updated_at: new Date().toISOString() }
-      if (hasOwn(patch, 'title')) databasePatch.title = patch.title
-      if (hasOwn(patch, 'assigneeId')) databasePatch.assignee_id = patch.assigneeId
-      if (hasOwn(patch, 'dueDate')) databasePatch.due_date = patch.dueDate
-      if (hasOwn(patch, 'status')) databasePatch.status = patch.status
-      if (hasOwn(patch, 'description')) databasePatch.description = patch.description || ''
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .update(databasePatch)
-        .eq('id', taskId)
-        .select(TASK_COLUMNS)
-        .maybeSingle()
-
+      const { data, error } = await supabase.rpc('update_task', {
+        p_task_id: taskId,
+        p_patch: patch,
+      })
       if (error) throwDatabaseError('할 일 수정', error)
-      if (!data) throw new TeamFlowNotFoundError()
-      return mapTask(data)
+      const row = unwrapRpcRow(data)
+      if (!row) throw new TeamFlowNotFoundError()
+      return mapTask(row)
     },
 
     async deleteTask(taskId) {
-      const { data, error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId)
-        .select('id')
-        .maybeSingle()
-
+      const { data, error } = await supabase.rpc('delete_task', {
+        p_task_id: taskId,
+      })
       if (error) throwDatabaseError('할 일 삭제', error)
-      if (!data) throw new TeamFlowNotFoundError()
-      return data.id
+      const row = unwrapRpcRow(data)
+      const deletedId = typeof row === 'string' ? row : row?.id
+      if (!deletedId) throw new TeamFlowNotFoundError()
+      return deletedId
     },
 
     async createNote(projectId, input) {

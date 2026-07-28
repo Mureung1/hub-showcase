@@ -1638,6 +1638,13 @@ test('disabled project AI cannot receive a new task or a task reassignment befor
     description: '',
   }
   const supabase = {
+    rpc: async (name) => {
+      assert.equal(name, 'update_task')
+      return {
+        data: null,
+        error: { message: 'TEAMFLOW_CONFLICT:AI_AGENT_DISABLED' },
+      }
+    },
     from(table) {
       if (table === 'ai_agents') return filteredQuery(rows.ai_agents)
       if (table === 'tasks') {
@@ -1654,9 +1661,6 @@ test('disabled project AI cannot receive a new task or a task reassignment befor
           insert() {
             assert.fail('disabled AI must be rejected before task insert')
           },
-          update() {
-            assert.fail('disabled AI must be rejected before task update')
-          },
         }
       }
       assert.fail(`unexpected table ${table}`)
@@ -1672,6 +1676,49 @@ test('disabled project AI cannot receive a new task or a task reassignment befor
     repository.updateTask(taskId, { assigneeId: aiMemberId }),
     TeamFlowConflictError,
   )
+})
+
+test('task update and delete use guarded database RPCs instead of direct table mutations', async () => {
+  const calls = []
+  const updatedTask = {
+    ...aiContextRows().tasks[0],
+    title: '잠금 규칙을 통과한 수정',
+  }
+  const supabase = {
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      if (name === 'update_task') return { data: updatedTask, error: null }
+      if (name === 'delete_task') return { data: taskId, error: null }
+      assert.fail(`unexpected RPC ${name}`)
+    },
+    from: () => assert.fail('task update and delete must not mutate the table directly'),
+  }
+  const repository = createSupabaseTeamFlowRepository(supabase, { id: userId })
+
+  const result = await repository.updateTask(taskId, {
+    title: '잠금 규칙을 통과한 수정',
+    description: '설명',
+  })
+  const deletedId = await repository.deleteTask(taskId)
+
+  assert.equal(result.title, '잠금 규칙을 통과한 수정')
+  assert.equal(deletedId, taskId)
+  assert.deepEqual(calls, [
+    {
+      name: 'update_task',
+      args: {
+        p_task_id: taskId,
+        p_patch: {
+          title: '잠금 규칙을 통과한 수정',
+          description: '설명',
+        },
+      },
+    },
+    {
+      name: 'delete_task',
+      args: { p_task_id: taskId },
+    },
+  ])
 })
 
 test('resource upload intent uses the database RPC before creating a signed upload URL', async () => {
