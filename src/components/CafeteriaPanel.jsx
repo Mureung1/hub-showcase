@@ -273,6 +273,7 @@ function NeisMealCard({ meal, schoolType }) {
       menus={meal.menus}
       nutrients={buildNutrientRows(meal.nutrients)}
       estimated={false}
+      layout="stacked"
       onAnalyzeTray={() =>
         run(
           meal.menus.map((m) => m.name),

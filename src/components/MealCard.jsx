@@ -18,14 +18,45 @@ function MenuAllergyMarks({ codes }) {
 }
 
 // 카드 안 모든 메뉴의 알레르기 코드를 중복 제거·오름차순으로 모아 한 줄로만 보여준다.
-function AllergyLegend({ menus, estimated }) {
+// showPerItemDetail(stacked 레이아웃 전용, 6주차 §4): 메뉴명 옆 위첨자 번호를 렌더링하지 않는 대신,
+// "더보기"를 펼치면 메뉴별 알레르기 번호 목록을 보여줘 정보 손실이 없게 한다.
+function AllergyLegend({ menus, estimated, showPerItemDetail = false }) {
+  const [expanded, setExpanded] = useState(false)
   const allCodes = sortAllergyCodes(menus.flatMap((m) => m.allergyCodes || []))
   if (allCodes.length === 0) return null
+
   return (
-    <p style={{ margin: `${spacing.sm}px 0 0`, fontSize: font.size.xs, color: colors.textSub }}>
-      {estimated && <span style={{ color: colors.primary, fontWeight: 700 }}>추정 </span>}
-      알레르기: {allCodes.map((c) => `${codeNumber(c)} ${getAllergenByCode(c)?.name ?? ''}`).join(' · ')}
-    </p>
+    <>
+      <p style={{ margin: `${spacing.sm}px 0 0`, fontSize: font.size.xs, color: colors.textSub }}>
+        {estimated && <span style={{ color: colors.primary, fontWeight: 700 }}>추정 </span>}
+        알레르기: {allCodes.map((c) => `${codeNumber(c)} ${getAllergenByCode(c)?.name ?? ''}`).join(' · ')}
+      </p>
+      {showPerItemDetail && (
+        <>
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            style={{ ...styles.linkButton, marginTop: spacing.xs, fontSize: font.size.xs }}
+          >
+            {expanded ? '메뉴별 알레르기 접기' : '메뉴별 알레르기 더보기'}
+          </button>
+          {expanded && (
+            <ul style={{ margin: `${spacing.xs}px 0 0`, padding: 0, listStyle: 'none' }}>
+              {menus.map((menu, i) => {
+                const codes = sortAllergyCodes(menu.allergyCodes || [])
+                return (
+                  <li key={i} style={{ fontSize: font.size.xs, color: colors.textSub, padding: '2px 0' }}>
+                    {menu.name}: {codes.length > 0 ? codes.map((c) => codeNumber(c)).join('·') : '없음'}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </>
+      )}
+    </>
   )
 }
 
@@ -79,37 +110,50 @@ const ANALYZE_BUTTON_STYLE = {
   flexShrink: 0,
 }
 
-// onAnalyzeMenu가 있으면(학식) 메뉴별 가격 + [영양 분석] 버튼이 있는 한 줄씩 배치로,
-// 없으면(급식, 액션 없음) 줄바꿈 인라인으로 공간을 아낀다.
+// layout: 'numbered'(기존 — 학식. 메뉴별 가격 + [영양 분석] 버튼이 있는 한 줄씩 배치, 위첨자
+//   알레르기 번호) | 'stacked'(6주차 §4 — 급식. 한 줄에 1개씩 세로·가운데 정렬·불릿 없음·본문보다
+//   한 단계 큰 글자, 위첨자 번호 없이 카드 하단 통합 범례 + "더보기"로만 알레르기 확인).
 // analyzingMenu: 지금 분석 요청이 나가 있는 메뉴명(6주차 §1-B, precisionEngine 호출은 비동기라
 // 캐시 미스 시 몇 초 걸릴 수 있다) — 그 버튼에만 로딩을 표시하고 나머지는 그대로 눌리게 둔다.
-function MenuList({ menus, onAnalyzeMenu, analyzingMenu }) {
-  if (onAnalyzeMenu) {
+function MenuList({ menus, layout, onAnalyzeMenu, analyzingMenu }) {
+  if (layout === 'stacked') {
     return (
-      <ul style={{ margin: `${spacing.sm}px 0 0`, padding: 0, listStyle: 'none' }}>
-        {menus.map((menu, i) => {
-          const isAnalyzing = analyzingMenu === menu.name
-          return (
-            <li
-              key={i}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: spacing.sm,
-                padding: `${spacing.xs}px 0`,
-                borderTop: i > 0 ? `1px solid ${colors.border}` : 'none',
-              }}
-            >
-              <span style={{ fontSize: font.size.sm, color: colors.textStrong }}>
-                {menu.name}
-                <MenuAllergyMarks codes={menu.allergyCodes} />
-                {menu.price != null && (
-                  <span style={{ color: colors.textSub, fontSize: font.size.xs, marginLeft: 6 }}>
-                    {menu.price.toLocaleString()}원
-                  </span>
-                )}
-              </span>
+      <ul style={{ margin: `${spacing.md}px 0 0`, padding: 0, listStyle: 'none', textAlign: 'center' }}>
+        {menus.map((menu, i) => (
+          <li key={i} style={{ fontSize: font.size.lg, color: colors.textStrong, lineHeight: 2, fontWeight: 600 }}>
+            {menu.name}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  return (
+    <ul style={{ margin: `${spacing.sm}px 0 0`, padding: 0, listStyle: 'none' }}>
+      {menus.map((menu, i) => {
+        const isAnalyzing = analyzingMenu === menu.name
+        return (
+          <li
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.sm,
+              padding: `${spacing.xs}px 0`,
+              borderTop: i > 0 ? `1px solid ${colors.border}` : 'none',
+            }}
+          >
+            <span style={{ fontSize: font.size.sm, color: colors.textStrong }}>
+              {menu.name}
+              <MenuAllergyMarks codes={menu.allergyCodes} />
+              {menu.price != null && (
+                <span style={{ color: colors.textSub, fontSize: font.size.xs, marginLeft: 6 }}>
+                  {menu.price.toLocaleString()}원
+                </span>
+              )}
+            </span>
+            {onAnalyzeMenu && (
               <button
                 type="button"
                 className="tds-press"
@@ -119,22 +163,11 @@ function MenuList({ menus, onAnalyzeMenu, analyzingMenu }) {
               >
                 {isAnalyzing ? <Spinner size={12} /> : '영양 분석'}
               </button>
-            </li>
-          )
-        })}
-      </ul>
-    )
-  }
-
-  return (
-    <p style={{ margin: `${spacing.sm}px 0 0`, fontSize: font.size.sm, color: colors.textStrong, lineHeight: 1.9 }}>
-      {menus.map((menu, i) => (
-        <span key={i} style={{ marginRight: spacing.md }}>
-          {menu.name}
-          <MenuAllergyMarks codes={menu.allergyCodes} />
-        </span>
-      ))}
-    </p>
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -155,6 +188,9 @@ export default function MealCard({
   menus,
   nutrients,
   estimated = false,
+  // layout: 'numbered'(기본값 — 학식) | 'stacked'(급식, 6주차 §4). 기본값을 반드시 'numbered'로
+  // 둬야 layout을 넘기지 않는 기존 호출부(학식)가 그대로 동작한다.
+  layout = 'numbered',
   onAnalyzeMenu,
   analyzingMenu = null,
   menuError = '',
@@ -176,9 +212,9 @@ export default function MealCard({
       </div>
       {subtitle && <p style={{ margin: '2px 0 0', fontSize: font.size.xs, color: colors.textSub }}>{subtitle}</p>}
 
-      <MenuList menus={menus} onAnalyzeMenu={onAnalyzeMenu} analyzingMenu={analyzingMenu} />
+      <MenuList menus={menus} layout={layout} onAnalyzeMenu={onAnalyzeMenu} analyzingMenu={analyzingMenu} />
       {menuError && <p style={{ ...styles.errorText, textAlign: 'center' }}>{menuError}</p>}
-      <AllergyLegend menus={menus} estimated={estimated} />
+      <AllergyLegend menus={menus} estimated={estimated} showPerItemDetail={layout === 'stacked'} />
       <NutrientSection nutrients={nutrients} />
 
       {onAnalyzeTray && (
