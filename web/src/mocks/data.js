@@ -12,7 +12,6 @@ export const initialNotifications = [
     origin_url: '',
     keywords: ['장학금'],
     done: false,
-    ddayLabel: 'D-2 · 중요', // 임시 — deadline→D-day 계산은 이후 task
   },
   {
     id: 'n2',
@@ -25,7 +24,6 @@ export const initialNotifications = [
     origin_url: '',
     keywords: ['취업'],
     done: false,
-    ddayLabel: 'D-5',
   },
   {
     id: 'n3',
@@ -38,7 +36,6 @@ export const initialNotifications = [
     origin_url: '',
     keywords: ['학사'],
     done: false,
-    ddayLabel: 'D-9',
   },
   {
     id: 'n4',
@@ -51,6 +48,5 @@ export const initialNotifications = [
     origin_url: '',
     keywords: [],
     done: true,
-    ddayLabel: '완료 ✓',
   },
 ]

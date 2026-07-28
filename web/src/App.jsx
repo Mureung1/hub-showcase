@@ -15,6 +15,8 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const today = new Date()
+
   const loadNotifications = () => {
     setLoading(true)
     setError(null)
@@ -50,7 +52,7 @@ function App() {
 
   return (
     <AppFrame tabBar={<TabBar activeTab="home" />}>
-      <Hero urgentCount={urgentCount} />
+      <Hero urgentCount={urgentCount} today={today} />
       {loading && (
         <div className="status">
           <span className="status-text">불러오는 중...</span>
@@ -68,7 +70,11 @@ function App() {
         <>
           <ChipFilter categories={categories} active={activeFilter} onSelect={setActiveFilter} />
           <SortIndicator />
-          <NotificationList notifications={filteredNotifications} onComplete={markDone} />
+          <NotificationList
+            notifications={filteredNotifications}
+            onComplete={markDone}
+            today={today}
+          />
         </>
       )}
     </AppFrame>
