@@ -14,6 +14,7 @@ import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest_draft.dart';
 import 'package:one_step/providers/providers.dart';
+import 'package:one_step/repositories/decompose/fake_quest_decomposer.dart';
 import 'package:one_step/repositories/quest_decomposer.dart';
 
 import '../helpers/pump_app.dart';
@@ -117,6 +118,31 @@ void main() {
       // 로딩 인디케이터가 계속 도므로 pumpAndSettle은 쓸 수 없다.
       await tester.pump();
       return find.text('AI가 목표를 나누고 있어요');
+    },
+
+    // 결과 확인 화면(Figma 리디자인)에서 **한 줄에 여러 요소가 나란히 놓이는 두 자리**를
+    // 덮는다: ① 초안 카드의 태그 행(난이도 pill + 보상 칩 + 🔄 + ✕), ② 하단 액션 줄
+    // (「다시 나누기」 + 「등록하기」 그라디언트 버튼 각 반쪽 폭).
+    // 둘 다 배율을 키우면 텍스트만 커지는 자리라, 접힐 곳(Wrap/Flexible)이 없으면 넘친다.
+    'AI 분해 결과 (카드 태그 행 + 하단 액션 줄)': (tester, ts) async {
+      await pumpScreen(
+        tester,
+        const QuestSplitScreen(),
+        textScaler: ts,
+        extraOverrides: [
+          questDecomposerProvider.overrideWithValue(
+            // 템플릿 폴백 경로 = 폴백 배너 + 가장 긴 라벨(「다시 AI로 나누기」)까지
+            // 한 프레임에 그린다. 짧은 라벨만 검사하면 최악 조건을 지나친다.
+            FakeQuestDecomposer(scenario: FakeDecomposeScenario.timeout),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '공모전 지원하기');
+      await tester.pump();
+      await tester.tap(find.text('분해하기'));
+      await tester.pumpAndSettle();
+      return find.textContaining('추천 퀘스트로 준비했어요');
     },
 
     '퀘스트 완료 다이얼로그 (인증 보너스 + 상한 절삭)': (tester, ts) async {

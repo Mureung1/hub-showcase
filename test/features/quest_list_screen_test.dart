@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/widgets/difficulty_pill.dart';
+import 'package:one_step/core/widgets/gradient_button.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/quest_source_chip.dart';
 import 'package:one_step/core/widgets/state_views.dart';
+import 'package:one_step/features/quest/widgets/ai_promo_card.dart';
 import 'package:one_step/features/home/widgets/evolve_dialog.dart';
 import 'package:one_step/features/home/widgets/level_up_dialog.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
@@ -70,6 +72,18 @@ Future<void> completeByTitle(WidgetTester tester, String title) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('건너뛰기'));
   await tester.pumpAndSettle();
+}
+
+/// 세로가 넉넉한 뷰포트로 바꾼다.
+///
+/// 기본 800×600은 **목록 상단(AppBar + AI 프로모 카드)이 자리를 차지한 뒤** 카드
+/// 두세 장이면 아래쪽이 화면 밖으로 나가거나 FAB에 가려 탭이 빗나간다. 검증하려는
+/// 것은 완료·그룹 동작이지 좁은 화면의 스크롤이 아니므로 화면을 키운다.
+void useTallViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1200, 2600);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 /// 전부 완료된 그룹은 **기본으로 접혀 있다**(A0 그룹뷰 규칙).
@@ -728,6 +742,7 @@ void main() {
     ];
 
     testWidgets('퀘스트가 목표 라벨 폴더로 묶여 보인다', (tester) async {
+      useTallViewport(tester);
       await pumpScreen(
         tester,
         const QuestListScreen(),
@@ -852,27 +867,38 @@ void main() {
       expect(find.byType(ErrorView), findsNothing);
       expect(find.byType(QuestCard), findsOneWidget);
       expect(find.text('공고 3개 찾기'), findsOneWidget);
-      // 라벨만 폴백으로 떨어진다.
-      expect(find.text(kUnknownGoalLabel), findsOneWidget);
+      // 라벨만 폴백으로 떨어진다. 2개인 이유: 폴더 헤더의 종류 라벨(Figma `24:162`의
+      // 목표명 위에 붙는 '목표')이 [kUnknownGoalLabel]과 문자열이 같아서, 폴백일 때만
+      // 같은 글자가 위아래로 겹쳐 보인다. 정상 목표일 때는 목표명이 따로 뜬다.
+      expect(find.text(kUnknownGoalLabel), findsNWidgets(2));
     });
 
-    testWidgets('AI 진입점은 채운 버튼이다 (2대 핵심 기능의 입구)', (tester) async {
+    testWidgets('★ AI 진입점은 목록 맨 위 프로모 카드다 (2대 핵심 기능의 입구)', (tester) async {
       await pumpScreen(tester, const QuestListScreen());
       await tester.pumpAndSettle();
 
-      // `FilledButton.icon`은 FilledButton의 **하위 타입**을 만든다.
-      // byType은 runtimeType 완전 일치라 잡히지 않으므로 predicate로 본다.
+      // 카드가 "무엇을 해 주는지"를 먼저 말하고, 그 아래 버튼이 문을 연다.
+      expect(find.byType(AiPromoCard), findsOneWidget);
       expect(
-        find.ancestor(
-          of: find.text('AI로 목표 나누기'),
-          matching: find.byWidgetPredicate((w) => w is FilledButton),
-        ),
+        find.text('큰 목표를 입력하면 오늘 시작할 수 있는 작은 퀘스트로 나눠드려요.'),
         findsOneWidget,
       );
-      // 아웃라인(보조 위계)으로 남아 있으면 안 된다.
+
+      // 진입 버튼은 그라디언트 채움이다 — 아웃라인(보조 위계)이면 안 된다.
+      final button = tester.widget<GradientButton>(
+        find.descendant(
+          of: find.byType(AiPromoCard),
+          matching: find.byType(GradientButton),
+        ),
+      );
+      expect(button.label, '분해하기');
+      expect(button.onPressed, isNotNull);
+      // ★ 색 역할: AI 진입점은 🔵 블루다. 그린(주요 행동)으로 바꾸면 수동 등록
+      //   FAB와 역할이 겹쳐 "AI에게 맡기기 / 직접 쓰기"가 색으로 안 갈린다.
+      expect(button.style, same(GradientButtonStyle.ai));
       expect(
         find.ancestor(
-          of: find.text('AI로 목표 나누기'),
+          of: find.text('분해하기'),
           matching: find.byWidgetPredicate((w) => w is OutlinedButton),
         ),
         findsNothing,
@@ -895,7 +921,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(QuestSourceChip), findsNWidgets(2));
-      // 'AI로 목표 나누기' 버튼과 겹치지 않는다 — find.text는 완전 일치다.
+      // 상단 프로모의 'AI 도전 분해' 라벨과 겹치지 않는다 — find.text는 완전 일치다.
       expect(find.text('AI'), findsOneWidget);
       expect(find.text('직접'), findsOneWidget);
     });
@@ -1142,6 +1168,7 @@ void main() {
     const eagle = AppUser(uid: 'test-uid', level: 30, xp: 0);
 
     testWidgets('★ 목표의 마지막 퀘스트를 완료하면 폴더째 이동하고 완수 연출이 뜬다', (tester) async {
+      useTallViewport(tester);
       final repo = await pumpScreen(
         tester,
         const QuestListScreen(),
@@ -1248,10 +1275,7 @@ void main() {
     ) async {
       // 카드 3장(원본+자식2)이 한 화면에 다 들어가도록 세로 여유를 준다 —
       // 기본 800x600에선 하단 카드의 완료 버튼이 FAB에 가려 탭이 빗나간다.
-      tester.view.physicalSize = const Size(1200, 2600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      useTallViewport(tester);
 
       // 뮤테이션 방어의 핵심: 자동완료가 completeQuest(지급)를 타면 원본(p, normal)에
       // 코인 5·성취 1건이 더 붙어 아래 잔액/기록 단언이 깨진다. setStatus여야만 통과한다.

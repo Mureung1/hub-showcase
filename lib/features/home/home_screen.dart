@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/empty_art.dart';
 import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/coin_pill.dart';
+import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/quest_card.dart';
+import '../../core/widgets/stat_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
 import '../../models/quest.dart';
@@ -122,44 +126,164 @@ class _HomeContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final pending = ref.watch(pendingQuestsProvider);
 
+    // **목록 자체에는 좌우 여백이 없다.** 캐릭터 히어로가 화면 폭을 꽉 채워야 해서
+    // (full-bleed) 공통 패딩을 걷고, 여백이 필요한 항목마다 스스로 패딩을 준다.
+    // 하단 여백만 남긴다 — 탭바에 마지막 카드가 가리지 않게.
+    //
+    // **순서는 성장 → 보유 → 행동이다.**
+    // 히어로(캐릭터) → 경험치 → 환생 → 통계(코인·연속) → 오늘의 퀘스트 → 미리보기.
+    // 두 액션 버튼을 한 덩어리로 쌓지 않고 **쪼갠** 이유: 환생은 Lv.50 도달이 조건이라
+    // 경험치 바로 아래에 있어야 "이 게이지를 다 채우면 열린다"가 한눈에 읽힌다.
+    // 「오늘의 퀘스트」는 그 아래 미리보기 목록으로 이어지는 자리에 둔다.
     return ListView(
       controller: scrollController,
-      padding: AppSpacing.screenPadding,
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       children: [
-        Text('One-Step', style: theme.textTheme.headlineLarge),
-        AppSpacing.gapXs,
-        Text(
-          '오늘도 한 걸음.',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        _HomeAppBar(coin: user.coin),
+
+        // 히어로(이름·레벨·환생 훈장은 그 안 오버레이) + 경험치.
+        // 여백 처리는 이 위젯이 안다.
+        CharacterCard(user: user),
+        AppSpacing.gapBlock,
+
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: _RebirthButton(user: user),
+        ),
+        AppSpacing.gapBlock,
+
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: _HomeStats(user: user),
+        ),
+        AppSpacing.gapBlock,
+
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: GradientButton(
+            onPressed: () => context.go('/quest'),
+            icon: Symbols.check,
+            label: '오늘의 퀘스트',
           ),
         ),
-        AppSpacing.gapLg,
+        AppSpacing.gapBlock,
 
-        CharacterCard(user: user),
-        AppSpacing.gapLg,
-
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => context.go('/quest'),
-                icon: const Icon(Symbols.check_circle),
-                label: const Text('오늘의 퀘스트'),
-              ),
-            ),
-            AppSpacing.gapWMd,
-            Expanded(child: _RebirthButton(user: user)),
-          ],
+        const Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: _PendingSectionHeader(),
         ),
-        AppSpacing.gapLg,
+        AppSpacing.gapBlock,
 
-        Text('진행 중인 퀘스트', style: theme.textTheme.titleLarge),
-        AppSpacing.gapMd,
-        _PendingQuests(quests: pending),
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: _PendingQuests(quests: pending),
+        ),
+      ],
+    );
+  }
+}
+
+/// 상단 바 — 인사말 + 코인 잔액.
+///
+/// `AppBar` 위젯이 아니라 스크롤되는 첫 항목이다. 아래 히어로가 화면 폭을 꽉 채우며
+/// 위로 맞물려야 해서, 고정 헤더를 두면 그 경계가 두 겹으로 보인다.
+class _HomeAppBar extends StatelessWidget {
+  const _HomeAppBar({required this.coin});
+
+  final int coin;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenH,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 인사말이 길어지거나 배율이 커져도 코인 pill을 밀어내지 않게 접는다.
+          Flexible(
+            child: Text('오늘도 한 걸음.', style: theme.textTheme.titleLarge),
+          ),
+          AppSpacing.gapWSm,
+          CoinPill(amount: coin, compact: true),
+        ],
+      ),
+    );
+  }
+}
+
+/// 코인 · 연속 출석 2분할 통계.
+///
+/// 둘 다 보상 경제의 수치라 🟡 노랑 계열이다([StatAccent.reward]). 노랑에 직접
+/// 닿는 것은 [StatCard] 하나뿐이라 이 화면은 색 역할 규칙을 신경 쓸 것이 없다.
+class _HomeStats extends StatelessWidget {
+  const _HomeStats({required this.user});
+
+  final AppUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    return StatCardRow(
+      cards: [
+        StatCard(
+          icon: Symbols.monetization_on,
+          label: '코인',
+          value: _formatThousands(user.coin),
+          accent: StatAccent.reward,
+        ),
+        StatCard(
+          icon: Symbols.local_fire_department,
+          label: '연속',
+          value: '${user.streak}',
+          // '일'은 한글이라 수치 서체(Sora)에 넣을 수 없다 — 단위로 따로 넘긴다.
+          suffix: '일',
+          accent: StatAccent.reward,
+        ),
+      ],
+    );
+  }
+}
+
+/// 1,240 처럼 천 단위 구분.
+String _formatThousands(int value) {
+  final digits = value.abs().toString();
+  final buffer = StringBuffer(value < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
+    buffer.write(digits[i]);
+  }
+  return buffer.toString();
+}
+
+/// 「진행 중인 퀘스트」 + 「전체 보기」.
+class _PendingSectionHeader extends StatelessWidget {
+  const _PendingSectionHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text('진행 중인 퀘스트', style: theme.textTheme.titleLarge),
+        ),
+        // 홈은 미리보기 3개뿐이다. 전체 목록은 퀘스트 탭에 있다는 걸 알려 주는
+        // 링크 — 「오늘의 퀘스트」 버튼과 같은 목적지다.
+        TextButton(
+          onPressed: () => context.go('/quest'),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          ),
+          child: const Text('전체 보기'),
+        ),
       ],
     );
   }
@@ -167,9 +291,12 @@ class _HomeContent extends ConsumerWidget {
 
 /// 환생 버튼 + 실행 흐름.
 ///
+/// 주 버튼과 달리 **평평한 중립 버튼**이다(Figma: 비활성 상태 bg `surfaceContainer`
+/// · 글자 `outline`). 보조 행동이라 그라디언트를 주지 않는다.
+///
 /// 상태(중복 방지 잠금)를 들어야 해서 별도 `ConsumerStatefulWidget`으로 뺐다.
-/// - **비활성**: `canRebirth`가 아니거나(Lv.50 미만) 이미 실행 중일 때. 툴팁으로
-///   "Lv.50에 도달하면 열린다"를 정직하게 알린다(과거의 "4주차에 열려요" 대체).
+/// - **비활성**: `canRebirth`가 아니거나(Lv.50 미만) 이미 실행 중일 때. 라벨과
+///   툴팁 둘 다로 "Lv.50에 도달하면 열린다"를 정직하게 알린다.
 /// - **탭**: 확인 다이얼로그 → `rebirth()` → 성공 시 환생 연출. 각 단계 사이에
 ///   `mounted`를 확인하고, `_busy`로 중복 실행을 막는다(완료 흐름과 같은 패턴).
 class _RebirthButton extends ConsumerStatefulWidget {
@@ -215,6 +342,7 @@ class _RebirthButtonState extends ConsumerState<_RebirthButton> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final user = widget.user;
     final enabled = user.canRebirth && !_busy;
 
@@ -222,16 +350,42 @@ class _RebirthButtonState extends ConsumerState<_RebirthButton> {
       message: user.canRebirth
           ? '환생해서 새로 시작해요'
           : 'Lv.$kMaxLevel에 도달하면 환생할 수 있어요',
-      child: OutlinedButton.icon(
+      // `FilledButton.icon`이 아니라 **평범한 `FilledButton` + 직접 짠 Row**다.
+      // `.icon` 팩토리는 비공개 하위 타입(`_FilledButtonWithIcon`)을 돌려주는데,
+      // `find.byType`은 정확한 런타임 타입만 보므로 테스트에서 집히지 않는다.
+      child: FilledButton(
         onPressed: enabled ? _onPressed : null,
-        icon: _busy
-            ? const SizedBox(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(GradientButton.minHeight),
+          backgroundColor: scheme.surfaceContainer,
+          // 열렸을 때만 그린으로 살아난다 — 색이 곧 "이제 누를 수 있다"는 신호다.
+          foregroundColor: scheme.primary,
+          disabledBackgroundColor: scheme.surfaceContainer,
+          disabledForegroundColor: scheme.outline,
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_busy)
+              const SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Icon(Symbols.refresh),
-        label: Text('환생 (Lv.${user.level})'),
+            else
+              const Icon(Symbols.refresh, size: 20),
+            AppSpacing.gapWSm,
+            // 잠겨 있을 때 **현재 레벨**을 되뇌는 대신 열리는 조건을 말한다.
+            // 긴 라벨·큰 배율에서 넘치지 않게 접을 수 있게 둔다.
+            Flexible(
+              child: Text(
+                user.canRebirth ? '환생' : '환생 (Lv.$kMaxLevel 도달 시)',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -252,11 +406,11 @@ class _PendingQuests extends StatelessWidget {
       // 개수가 어긋나면 로딩 → 데이터 전환에서 목록 높이가 튄다.
       loading: () => const Column(
         children: [
-          SkeletonBox(height: 96),
-          AppSpacing.gapSm,
-          SkeletonBox(height: 96),
-          AppSpacing.gapSm,
-          SkeletonBox(height: 96),
+          SkeletonBox(height: 128),
+          AppSpacing.gapSmd,
+          SkeletonBox(height: 128),
+          AppSpacing.gapSmd,
+          SkeletonBox(height: 128),
         ],
       ),
       error: (error, _) => ErrorView(
@@ -268,6 +422,7 @@ class _PendingQuests extends StatelessWidget {
             title: '진행 중인 퀘스트가 없어요',
             message: '큰 목표를 작은 퀘스트로 쪼개서 시작해 보세요.',
             emoji: '🌱',
+            asset: EmptyArt.home,
           );
         }
         // 홈에서는 미리보기만. 전체 목록은 퀘스트 탭에 있다.
@@ -276,15 +431,15 @@ class _PendingQuests extends StatelessWidget {
         final preview = list.take(_previewCount).toList();
         return Column(
           children: [
-            for (final quest in preview) ...[
+            for (var i = 0; i < preview.length; i++) ...[
+              if (i > 0) AppSpacing.gapSmd,
               // 홈 미리보기 카드는 완료 토글 없이 보기 전용이다. 탭하면 개별 상세가
               // 아니라 **오늘의 퀘스트 탭**으로 전환한다 — 전체 목록에서 완료·관리한다
               // ("오늘의 퀘스트" 버튼과 같은 목적지).
               QuestCard(
-                quest: quest,
+                quest: preview[i],
                 onTap: () => context.go('/quest'),
               ),
-              AppSpacing.gapSm,
             ],
           ],
         );
@@ -293,21 +448,47 @@ class _PendingQuests extends StatelessWidget {
   }
 }
 
+/// 로딩 스켈레톤 — 실제 본문과 **같은 실루엣**이다(히어로는 여백 없이 꽉 차고,
+/// 나머지는 좌우 20dp 안에 든다). 실루엣이 어긋나면 로딩 → 데이터 전환에서
+/// 화면이 통째로 튄다.
 class _HomeSkeleton extends StatelessWidget {
   const _HomeSkeleton();
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: AppSpacing.screenPadding,
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       children: const [
-        SkeletonBox(width: 160, height: 40),
-        AppSpacing.gapLg,
-        SkeletonBox(height: 320, radius: AppRadius.lg),
-        AppSpacing.gapLg,
-        SkeletonBox(height: 52),
-        AppSpacing.gapLg,
-        SkeletonBox(height: 96),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenH,
+            vertical: AppSpacing.md,
+          ),
+          child: SkeletonBox(width: 180, height: 28),
+        ),
+        // 히어로(이름·레벨은 그 안이라 별도 블록이 없다) → 경험치 → 환생 →
+        // 통계 → 오늘의 퀘스트. 본문과 같은 순서·같은 높이다.
+        SkeletonBox(height: CharacterHero.height, radius: AppRadius.lg),
+        AppSpacing.gapBlock,
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: SkeletonBox(height: 36),
+        ),
+        AppSpacing.gapBlock,
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: SkeletonBox(height: GradientButton.minHeight),
+        ),
+        AppSpacing.gapBlock,
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: SkeletonBox(height: 120),
+        ),
+        AppSpacing.gapBlock,
+        Padding(
+          padding: AppSpacing.screenHorizontal,
+          child: SkeletonBox(height: GradientButton.minHeight),
+        ),
       ],
     );
   }

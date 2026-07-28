@@ -17,4 +17,10 @@ abstract final class AppRadius {
   static const BorderRadius mdAll = BorderRadius.all(Radius.circular(md));
   static const BorderRadius lgAll = BorderRadius.all(Radius.circular(lg));
   static const BorderRadius fullAll = BorderRadius.all(Radius.circular(full));
+
+  /// **아래 두 모서리만** 라운드 — 화면 상단에 붙어 좌우로 꽉 차는 히어로.
+  /// 위쪽은 상태바/AppBar에 맞물리므로 각지게 둔다.
+  static const BorderRadius lgBottom = BorderRadius.vertical(
+    bottom: Radius.circular(lg),
+  );
 }

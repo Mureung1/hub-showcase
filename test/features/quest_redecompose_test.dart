@@ -49,6 +49,17 @@ class _FailingCreateQuestsRepository extends InMemoryQuestRepository {
 /// - 카드 `⋮`로 멈춤 표시 / 멈춤 해제
 /// - 멈춘 퀘스트를 더 작게 나눠 **원본의 자식으로** 등록
 /// - 원본은 지우지도 상태를 바꾸지도 않는다(「재분해 복귀율」의 분모)
+/// 「등록하기」를 누른다.
+///
+/// 등록 버튼은 하단 고정 바가 아니라 **결과 목록 아래**에 있다(Figma 리디자인).
+/// 초안이 여러 장이면 화면 밖으로 밀리므로 먼저 뷰포트로 올린 뒤 누른다.
+Future<void> tapRegister(WidgetTester tester) async {
+  final button = find.text('등록하기');
+  await tester.ensureVisible(button);
+  await tester.pumpAndSettle();
+  await tester.tap(button);
+}
+
 void main() {
   // ===== 목록 화면 · `⋮` 더보기 =====
 
@@ -305,7 +316,7 @@ void main() {
     expect(find.text('지원서 초안 쓰기'), findsOneWidget);
     expect(find.text('공모전 지원하기'), findsOneWidget);
     // 진입과 동시에 분해가 끝나 결과가 떠 있다.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('분해 결과'), findsOneWidget);
     expect(find.text('등록하기'), findsOneWidget);
   });
 
@@ -316,7 +327,7 @@ void main() {
       seed: const [stuckParent],
     );
 
-    await tester.tap(find.text('등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     final all = await repos.quests.fetchQuests(uid);
@@ -396,7 +407,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('딱 5분만 앉아 있기'), findsOneWidget);
 
-    await tester.tap(find.text('등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     await expectLineageKept(repos, expectedChildren: 3);
@@ -418,9 +429,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // 재생성 뒤에도 결과는 재분해 상한(3개) 그대로다.
-    expect(find.textContaining('이렇게 나눠봤어요 · 3개'), findsOneWidget);
+    expect(find.textContaining('분해 결과 · 3개'), findsOneWidget);
 
-    await tester.tap(find.text('등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     await expectLineageKept(repos, expectedChildren: 3);
@@ -453,7 +464,7 @@ void main() {
       questRepo: failing,
     );
 
-    await tester.tap(find.text('등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('등록에 실패했어요. 잠시 후 다시 시도해 주세요.'), findsOneWidget);

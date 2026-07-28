@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../constants/reward_rules.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 import '../theme/reward_colors.dart';
 
 /// 예상 보상 표시 — `🪙 +5 · XP +10`.
@@ -35,9 +36,11 @@ class RewardChip extends StatelessWidget {
     final coinColor = theme.reward.coin;
 
     final iconSize = large ? 28.0 : 14.0;
+    // `+5` · `XP +10` — 숫자와 라틴 문자뿐이라 **수치 서체(Sora)** 를 쓴다.
+    // 크기·굵기·행간은 기존 titleLarge/labelSmall과 같고 패밀리만 다르다.
     final textStyle = large
-        ? theme.textTheme.titleLarge
-        : theme.textTheme.labelSmall;
+        ? AppTypography.numericTitleLarge
+        : AppTypography.numericLabelSmall;
 
     return Wrap(
       // 코인 묶음과 XP 묶음 사이 간격 — 예전 Row의 gapWMd/gapWSm와 같은 값이다.

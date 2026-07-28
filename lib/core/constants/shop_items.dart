@@ -96,6 +96,20 @@ ShopItem? itemById(String? id) {
   return null;
 }
 
+/// 아이템의 도트아트 자산 경로.
+///
+/// **모델에 필드를 더하지 않는 이유**: 자산 파일명이 [ShopItem.id]와 글자 그대로
+/// 같아서(`bg_forest.png` ↔ `bg_forest`) 규칙으로 유도된다. 필드로 두면 id와
+/// 경로가 따로 놀 여지가 생기고, [tint]·[emoji]를 그대로 둔 카탈로그 계약
+/// (`test/core/shop_items_test.dart`)도 흔들린다. 두 화면(캐릭터 카드·상점
+/// 미리보기)이 같은 경로를 봐야 하므로 순수 함수 하나로 모은다.
+///
+/// [tint]·[emoji]는 지우지 않는다 — 미장착 배경 채움과 자산 로드 실패 폴백이다.
+String shopItemAsset(ShopItem item) => switch (item.slot) {
+  ItemSlot.background => 'assets/backgrounds/${item.id}.png',
+  ItemSlot.aura => 'assets/auras/${item.id}.png',
+};
+
 /// 특정 슬롯의 아이템만 (상점 화면 섹션 구성용).
 List<ShopItem> itemsForSlot(ItemSlot slot) =>
     kShopItems.where((item) => item.slot == slot).toList();

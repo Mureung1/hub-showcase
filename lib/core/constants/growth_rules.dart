@@ -1,22 +1,29 @@
 /// 캐릭터 성장 규칙. `docs/prototype/script.js`의 `stageOf`를 포팅했다.
 ///
-/// 도트아트 자산이 나오기 전까지 캐릭터는 **이모지 목업**으로 렌더한다
-/// (one-step-design `screens.md`: "임의 이미지 대신 이모지 플레이스홀더를 사용한다").
+/// 캐릭터는 도트아트 자산([CharacterStage.asset])으로 렌더하고, 자산을 못 읽으면
+/// [CharacterStage.emoji]로 떨어진다(`docs/checklist.md`의 렌더 PASS 조건).
 library;
 
-/// 진화 단계. 레벨 구간마다 이름·이모지·레벨업에 필요한 XP가 다르다.
+/// 진화 단계. 레벨 구간마다 이름·자산·레벨업에 필요한 XP가 다르다.
 class CharacterStage {
   const CharacterStage({
     required this.name,
     required this.emoji,
+    required this.asset,
     required this.xpPerLevel,
   });
 
   /// 단계명 (알 · 참새 · 매 · 독수리 …).
   final String name;
 
-  /// 도트아트 자산 완성 전까지 쓰는 플레이스홀더.
+  /// **자산 로드 실패 시의 대체 표시.** 도트아트가 들어온 뒤에도 지우지 않는다 —
+  /// checklist가 "자산 로드 실패 시 대체 표시(이모지)가 나온다"를 PASS 조건으로
+  /// 요구하므로 이 필드가 그 조건의 유일한 근거다.
   final String emoji;
+
+  /// 도트아트 자산 경로. 파일명이 `번호_계열_슬러그` 꼴이라 [name]·[emoji]에서
+  /// 유도할 수 없어 명시 필드로 둔다.
+  final String asset;
 
   /// 이 단계에서 레벨 하나를 올리는 데 필요한 XP.
   final int xpPerLevel;
@@ -26,10 +33,11 @@ class CharacterStage {
       other is CharacterStage &&
       other.name == name &&
       other.emoji == emoji &&
+      other.asset == asset &&
       other.xpPerLevel == xpPerLevel;
 
   @override
-  int get hashCode => Object.hash(name, emoji, xpPerLevel);
+  int get hashCode => Object.hash(name, emoji, asset, xpPerLevel);
 
   @override
   String toString() => 'CharacterStage($name, Lv당 $xpPerLevel XP)';
@@ -89,40 +97,58 @@ int _stageIndexOf(int level) {
 /// 레벨 구간별 필요 XP. **계열 불변** — 이게 `applyXpGain` 무회귀의 근거다.
 const List<int> _xpPerLevelByStage = [5, 10, 20, 40, 80];
 
-/// 계열 × 단계(3×5)의 이름·이모지 목업 테이블.
+/// 계열 × 단계(3×5)의 이름·자산·폴백 이모지 테이블.
 ///
-/// 도트아트 자산이 나오기 전까지 계열 느낌이 나는 이모지로 대체한다. 자산이 나오면
-/// 이모지 자리만 교체한다(이름·xpPerLevel·경계는 그대로).
-const Map<CharacterFamily, List<({String name, String emoji})>> _familyStages = {
+/// 자산 파일은 `assets/characters/01~15`가 **이 표의 순서와 정확히 1:1**이다
+/// (01–05 새 · 06–10 용 · 11–15 피닉스). 순서가 곧 계약이므로 표를 재배열하면
+/// 경로도 함께 옮겨야 한다. `test/core/pixel_asset_test.dart`가 15개 경로의
+/// 실재 여부와 번들 선언을 모두 검증한다.
+const Map<CharacterFamily, List<({String name, String emoji, String asset})>>
+_familyStages = {
   CharacterFamily.bird: [
-    (name: '알', emoji: '🥚'),
-    (name: '참새', emoji: '🐤'),
-    (name: '매', emoji: '🕊️'),
-    (name: '독수리', emoji: '🦅'),
-    (name: '이펙트 독수리', emoji: '🦅'),
+    (name: '알', emoji: '🥚', asset: '$_characters/01_bird_egg.png'),
+    (name: '참새', emoji: '🐤', asset: '$_characters/02_bird_sparrow.png'),
+    (name: '매', emoji: '🕊️', asset: '$_characters/03_bird_hawk.png'),
+    (name: '독수리', emoji: '🦅', asset: '$_characters/04_bird_eagle.png'),
+    (
+      name: '이펙트 독수리',
+      emoji: '🦅',
+      asset: '$_characters/05_bird_effect_eagle.png',
+    ),
   ],
   CharacterFamily.dragon: [
-    (name: '용의 알', emoji: '🥚'),
-    (name: '새끼 용', emoji: '🦎'),
-    (name: '어린 용', emoji: '🐲'),
-    (name: '성룡', emoji: '🐉'),
-    (name: '화려한 용', emoji: '🐉'),
+    (name: '용의 알', emoji: '🥚', asset: '$_characters/06_dragon_egg.png'),
+    (
+      name: '새끼 용',
+      emoji: '🦎',
+      asset: '$_characters/07_dragon_hatchling.png',
+    ),
+    (name: '어린 용', emoji: '🐲', asset: '$_characters/08_dragon_young.png'),
+    (name: '성룡', emoji: '🐉', asset: '$_characters/09_dragon_adult.png'),
+    (name: '화려한 용', emoji: '🐉', asset: '$_characters/10_dragon_radiant.png'),
   ],
   CharacterFamily.phoenix: [
-    (name: '피닉스의 알', emoji: '🥚'),
-    (name: '잿빛 피닉스', emoji: '🐣'),
-    (name: '불꽃 피닉스', emoji: '🔥'),
-    (name: '황금 피닉스', emoji: '🦚'),
-    (name: '만개한 피닉스', emoji: '🔥'),
+    (name: '피닉스의 알', emoji: '🥚', asset: '$_characters/11_phoenix_egg.png'),
+    (name: '잿빛 피닉스', emoji: '🐣', asset: '$_characters/12_phoenix_ash.png'),
+    (name: '불꽃 피닉스', emoji: '🔥', asset: '$_characters/13_phoenix_flame.png'),
+    (name: '황금 피닉스', emoji: '🦚', asset: '$_characters/14_phoenix_golden.png'),
+    (
+      name: '만개한 피닉스',
+      emoji: '🔥',
+      asset: '$_characters/15_phoenix_bloomed.png',
+    ),
   ],
 };
+
+/// 캐릭터 자산 디렉터리. 15줄에 같은 접두를 반복해 오타를 만들지 않는다.
+const String _characters = 'assets/characters';
 
 /// 레벨(+ 환생 횟수) → 진화 단계.
 ///
 /// **[rebirth] 기본값은 0이다.** 그래서 `applyXpGain` 내부의 `stageOf(lv)` 호출은
 /// 무변경으로 정확하다 — 거기서 필요한 건 xpPerLevel뿐이고, xpPerLevel은 레벨
 /// 구간(=인덱스)만으로 결정돼 계열과 무관하기 때문이다. 계열(rebirth)로 갈리는 건
-/// 이름·이모지뿐이다.
+/// 이름·자산·이모지뿐이다.
 CharacterStage stageOf(int level, {int rebirth = 0}) {
   final index = _stageIndexOf(level);
   final family = characterFamily(rebirth);
@@ -130,6 +156,7 @@ CharacterStage stageOf(int level, {int rebirth = 0}) {
   return CharacterStage(
     name: entry.name,
     emoji: entry.emoji,
+    asset: entry.asset,
     xpPerLevel: _xpPerLevelByStage[index],
   );
 }

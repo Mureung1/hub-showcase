@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/core/widgets/pixel_art.dart';
 import 'package:one_step/features/home/widgets/evolve_dialog.dart';
 import 'package:one_step/features/home/widgets/level_up_dialog.dart';
 import 'package:one_step/features/quest/widgets/quest_complete_dialog.dart';
@@ -94,8 +95,15 @@ void main() {
   });
 
   group('EvolveDialog', () {
-    testWidgets('★ 이전 → 새 단계 이모지와 진화 문구가 표시된다', (tester) async {
-      // Lv9 알(🥚) → Lv10 참새(🐤).
+    /// 특정 단계의 캐릭터가 그려졌는지. 단계마다 자산 경로가 달라 이게 "그 단계가
+    /// 보인다"의 관찰 가능한 형태다(자산 도입 전 `find.text(stage.emoji)`가 하던 역할).
+    Finder stageArt(CharacterStage stage) => find.byWidgetPredicate(
+      (w) => w is PixelArt && w.asset == stage.asset,
+      description: 'PixelArt(${stage.name})',
+    );
+
+    testWidgets('★ 이전 → 새 단계 캐릭터와 진화 문구가 표시된다', (tester) async {
+      // Lv9 알 → Lv10 참새.
       final from = stageOf(9);
       final to = stageOf(10);
       await tester.pumpWidget(
@@ -103,9 +111,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 이모지 전환.
-      expect(find.text(from.emoji), findsOneWidget);
-      expect(find.text(to.emoji), findsOneWidget);
+      // 전환 한 쌍이 정확히 하나씩. 두 단계의 자산이 다르다는 것도 함께 지킨다.
+      expect(from.asset, isNot(to.asset));
+      expect(stageArt(from), findsOneWidget);
+      expect(stageArt(to), findsOneWidget);
       // "참새로 진화했어요!" — 새 단계 이름이 제목에 들어간다.
       expect(find.textContaining('진화했어요'), findsOneWidget);
       expect(find.textContaining('참새'), findsWidgets);

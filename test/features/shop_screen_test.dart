@@ -64,14 +64,16 @@ void main() {
     expect(buttons, findsWidgets);
     expect(find.text('구매'), findsNothing);
 
-    // 정말 비활성인지 — 버튼의 onPressed가 null.
-    final button = tester.widget<FilledButton>(
+    // 정말 비활성인지 — 탭을 받는 InkWell의 onTap이 null이다.
+    // (상품 카드 버튼은 정본 치수를 따르는 화면 내부 위젯이라 타입으로 잡지 않고
+    //  실제 탭 경로가 끊겼는지를 본다.)
+    final inkWell = tester.widget<InkWell>(
       find.ancestor(
         of: find.text('코인이 부족해요').first,
-        matching: find.byType(FilledButton),
+        matching: find.byType(InkWell),
       ),
     );
-    expect(button.onPressed, isNull);
+    expect(inkWell.onTap, isNull);
   });
 
   testWidgets('구매하면 코인이 차감되고 버튼이 장착으로 바뀐다', (tester) async {

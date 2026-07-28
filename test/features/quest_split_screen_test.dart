@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/theme/app_theme.dart';
 import 'package:one_step/core/widgets/difficulty_pill.dart';
+import 'package:one_step/core/widgets/gradient_button.dart';
 import 'package:one_step/core/widgets/reward_chip.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/quest/quest_split_screen.dart';
@@ -157,22 +158,56 @@ void main() {
     final questRepo = await pumpSplitRouted(tester, goalRepo: goalRepo);
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
     return questRepo;
   }
 
   // 분해 중에는 버튼 라벨이 스피너로 바뀌므로 텍스트가 아니라 타입으로 찾는다.
-  // 이 화면에서 FilledButton은 분해 버튼 하나뿐이다(결과·빈 상태 전에는).
-  FilledButton splitButton(WidgetTester tester) =>
-      tester.widget<FilledButton>(find.byType(FilledButton));
+  // 결과가 뜨면 하단 액션 줄에도 GradientButton 두 개(다시 나누기·등록하기)가 생기므로
+  // **트리 맨 앞**의 것을 집는다 — 입력 카드가 언제나 화면 맨 위에 있다.
+  GradientButton splitButton(WidgetTester tester) =>
+      tester.widget<GradientButton>(find.byType(GradientButton).first);
+
+  /// 진행 중(busy) 상태인 그라디언트 버튼. 화면에 in-flight 요청은 하나뿐이므로
+  /// 스피너를 품은 버튼이 곧 그 요청을 쏜 버튼이다.
+  Finder busyGradientButton() => find.ancestor(
+    of: find.byType(CircularProgressIndicator),
+    matching: find.byType(GradientButton),
+  );
+
+  /// 「등록하기」를 누른다.
+  ///
+  /// 등록 버튼은 이제 하단 고정 바가 아니라 **결과 목록 아래**에 있다(Figma 리디자인).
+  /// 카드가 여러 장이면 화면 밖으로 밀리므로 먼저 뷰포트로 올린 뒤 누른다.
+  /// 버튼은 그린 그라디언트([GradientButton])다.
+  Future<void> tapRegister(WidgetTester tester) async {
+    final button = find.widgetWithText(GradientButton, '등록하기');
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
+  }
+
+  /// 「다시 나누기」(템플릿 폴백이면 「다시 AI로 나누기」)를 누른다.
+  ///
+  /// 등록 버튼과 같은 줄에 있어 결과 목록 아래로 밀리므로 먼저 뷰포트로 올린다.
+  /// 버튼은 블루 그라디언트([GradientButton])다.
+  Future<void> tapRegenerate(WidgetTester tester, {bool isTemplate = false}) async {
+    final button = find.widgetWithText(
+      GradientButton,
+      isTemplate ? '다시 AI로 나누기' : '다시 나누기',
+    );
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
+  }
 
   testWidgets('초기: 입력이 비어 "분해하기" 버튼이 비활성이다', (tester) async {
     await pumpSplit(tester, FakeDecomposeScenario.success);
 
     expect(splitButton(tester).onPressed, isNull);
     // 아직 분해 전이므로 결과 섹션도 없다.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsNothing);
+    expect(find.textContaining('분해 결과'), findsNothing);
   });
 
   testWidgets('목표를 입력하면 버튼이 활성된다', (tester) async {
@@ -226,11 +261,11 @@ void main() {
     // 특수문자·이모지 혼합 입력이 파이프라인을 거쳐도 크래시하지 않아야 한다.
     await tester.enterText(find.byType(TextField), '!@#\$%^&*()_+ 🚀🔥😀 <script>');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('분해 결과'), findsOneWidget);
   });
 
   testWidgets('분해하기(AI 성공) → 결과 목록에 draft가 표시된다', (tester) async {
@@ -238,11 +273,11 @@ void main() {
 
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
 
     // 섹션 제목 + draft 제목(공모전 템플릿 첫 항목) + 난이도/보상 위젯.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('분해 결과'), findsOneWidget);
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
     expect(find.byType(DifficultyPill), findsWidgets);
     expect(find.byType(RewardChip), findsWidgets);
@@ -256,7 +291,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
 
     // source=template 경로 → 폴백 배너가 뜬다(새 문구).
@@ -267,9 +302,9 @@ void main() {
     // #5 제목이 "추천 퀘스트로 준비했어요"로 바뀌어 대체 결과임이 드러난다.
     expect(find.textContaining('추천 퀘스트로 준비했어요'), findsOneWidget);
     // AI 결과용 제목은 뜨지 않는다.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsNothing);
+    expect(find.textContaining('분해 결과'), findsNothing);
     // #5 재생성 버튼 라벨이 "다시 AI로 나누기"로 바뀐다.
-    expect(find.widgetWithText(OutlinedButton, '다시 AI로 나누기'), findsOneWidget);
+    expect(find.widgetWithText(GradientButton, '다시 AI로 나누기'), findsOneWidget);
     // 그래도 퀘스트는 나온다.
     expect(find.byType(DifficultyPill), findsWidgets);
   });
@@ -283,7 +318,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pump(); // 로딩 프레임
 
     // 분해 중: 로딩 안내 + 결과 카드 실루엣 스켈레톤 + 버튼 비활성(중복 탭 방지).
@@ -294,7 +329,7 @@ void main() {
 
     // 지연이 끝나면 결과가 나온다(대기 타이머 정리).
     await tester.pumpAndSettle();
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('분해 결과'), findsOneWidget);
   });
 
   // ===== 커밋6 · 편집 통합(분해 후 조작) =====
@@ -304,7 +339,7 @@ void main() {
     await pumpSplit(tester, FakeDecomposeScenario.success);
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
   }
 
@@ -312,7 +347,7 @@ void main() {
     await decomposeSuccess(tester);
 
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
-    expect(find.textContaining('이렇게 나눠봤어요 · 5개'), findsOneWidget);
+    expect(find.textContaining('분해 결과 · 5개'), findsOneWidget);
 
     // 첫 카드의 삭제 버튼을 누른다. (하단 등록 바 위로 가리지 않게 먼저 뷰포트로 올린다.)
     await tester.ensureVisible(find.byTooltip('삭제').first);
@@ -322,7 +357,7 @@ void main() {
 
     // 그 항목이 사라지고 개수 표시가 갱신된다.
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsNothing);
-    expect(find.textContaining('이렇게 나눠봤어요 · 4개'), findsOneWidget);
+    expect(find.textContaining('분해 결과 · 4개'), findsOneWidget);
   });
 
   testWidgets('난이도 변경 → RewardChip 수치가 함께 갱신된다', (tester) async {
@@ -351,7 +386,7 @@ void main() {
 
     // 첫 제목을 탭해 편집 다이얼로그를 연다. (헤더에 "다시 나누기"가 생겨 목록이
     // 아래로 밀리므로 먼저 스크롤해 대상 카드를 뷰포트로 올린다.)
-    await tester.drag(find.byType(ListView), const Offset(0, -200));
+    await tester.ensureVisible(find.text('공고 페이지 열어 지원 자격 확인하기'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('공고 페이지 열어 지원 자격 확인하기'));
     await tester.pumpAndSettle();
@@ -369,7 +404,7 @@ void main() {
   testWidgets('제목 수정 다이얼로그: 빈 제목이면 저장 버튼이 비활성', (tester) async {
     await decomposeSuccess(tester);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -200));
+    await tester.ensureVisible(find.text('공고 페이지 열어 지원 자격 확인하기'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('공고 페이지 열어 지원 자격 확인하기'));
     await tester.pumpAndSettle();
@@ -405,17 +440,17 @@ void main() {
   testWidgets('분해(success) 후 "다시 나누기" 버튼이 보인다', (tester) async {
     await decomposeSuccess(tester);
 
-    expect(find.widgetWithText(OutlinedButton, '다시 나누기'), findsOneWidget);
+    expect(find.widgetWithText(GradientButton, '다시 나누기'), findsOneWidget);
   });
 
   testWidgets('다시 나누기 탭(success) → 크래시 없이 결과가 유지된다', (tester) async {
     await decomposeSuccess(tester);
 
-    await tester.tap(find.widgetWithText(OutlinedButton, '다시 나누기'));
+    await tapRegenerate(tester);
     await tester.pumpAndSettle();
 
     // 재생성 경로가 크래시 없이 돌고 결과 섹션이 그대로 보인다.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('분해 결과'), findsOneWidget);
     expect(find.byType(DifficultyPill), findsWidgets);
     // 성공이므로 실패 스낵바는 없다.
     expect(find.text('다시 나누지 못했어요. 기존 결과를 유지할게요.'), findsNothing);
@@ -426,7 +461,7 @@ void main() {
     await pumpSplit(tester, FakeDecomposeScenario.timeout);
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
 
     // 재생성 전 카드 개수/내용을 확인. (템플릿 폴백이라 제목은 "추천 퀘스트로 준비했어요".)
@@ -434,7 +469,7 @@ void main() {
     final beforeCards = tester.widgetList(find.byType(DifficultyPill)).length;
 
     // #5 템플릿 맥락이라 버튼 라벨이 "다시 AI로 나누기"다.
-    await tester.tap(find.widgetWithText(OutlinedButton, '다시 AI로 나누기'));
+    await tapRegenerate(tester, isTemplate: true);
     await tester.pumpAndSettle();
 
     // 실패 안내 스낵바 + 기존 결과 보존(카드 그대로).
@@ -453,23 +488,26 @@ void main() {
     );
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
 
     // 재생성 시작 → 다음 프레임에서 버튼 비활성 + 카드는 그대로 보인다.
-    await tester.tap(find.widgetWithText(OutlinedButton, '다시 나누기'));
+    await tapRegenerate(tester);
     await tester.pump();
 
-    final button = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, '다시 나누기'),
-    );
+    // 진행 중에는 라벨이 스피너로 바뀌므로 텍스트로 못 찾는다. 스피너를 품은
+    // 그라디언트 버튼이 곧 방금 누른 「다시 나누기」다(다른 요청은 떠 있지 않다).
+    final button = tester.widget<GradientButton>(busyGradientButton());
+    expect(button.busy, isTrue);
     expect(button.onPressed, isNull);
+    // 라벨이 사라졌다 = 진행 중임이 버튼 자리에서 보인다.
+    expect(find.widgetWithText(GradientButton, '다시 나누기'), findsNothing);
     // 전체 로딩으로 숨기지 않는다 — 카드는 계속 보인다.
     expect(find.byType(DifficultyPill), findsWidgets);
 
     // 지연이 끝나면 재생성 완료(대기 타이머 정리).
     await tester.pumpAndSettle();
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('분해 결과'), findsOneWidget);
   });
 
   testWidgets('결과가 뜬 뒤에도 화면이 크래시하지 않는다(빈/오류 방어)', (tester) async {
@@ -478,7 +516,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), '자격증 공부하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
 
     expect(find.byType(EmptyView), findsNothing);
@@ -492,7 +530,7 @@ void main() {
   testWidgets('분해 결과가 뜨면 하단에 "등록하기" 버튼이 보인다', (tester) async {
     await decomposeSuccess(tester);
 
-    expect(find.widgetWithText(FilledButton, '등록하기'), findsOneWidget);
+    expect(find.widgetWithText(GradientButton, '등록하기'), findsOneWidget);
   });
 
   testWidgets('등록 성공 → 화면이 pop되고 questRepo에 draft가 저장된다', (tester) async {
@@ -501,7 +539,7 @@ void main() {
     // 등록 전에는 저장된 퀘스트가 없다.
     expect(await questRepo.fetchQuests('test-uid'), isEmpty);
 
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     // 분해 화면이 pop되어 목록 자리로 돌아온다.
@@ -522,7 +560,7 @@ void main() {
       goalRepo: InMemoryGoalRepository(failWith: const NetworkFailure()),
     );
 
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     // 실패 안내 스낵바 + 화면 유지(카드 그대로).
@@ -538,16 +576,14 @@ void main() {
       goalRepo: _SlowGoalRepository(const Duration(milliseconds: 300)),
     );
 
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tapRegister(tester);
     await tester.pump(); // 저장 시작 프레임
 
     // 저장 중: 라벨이 스피너로 바뀌므로 텍스트 대신 스피너를 품은 버튼을 찾는다.
     // (데이터 상태라 _DecomposingView가 없어 스피너는 등록 버튼 것 하나뿐이다.)
-    final registerButton = find.ancestor(
-      of: find.byType(CircularProgressIndicator),
-      matching: find.byType(FilledButton),
-    );
-    expect(tester.widget<FilledButton>(registerButton).onPressed, isNull);
+    final registerButton = tester.widget<GradientButton>(busyGradientButton());
+    expect(registerButton.busy, isTrue);
+    expect(registerButton.onPressed, isNull);
     // 전체 로딩으로 숨기지 않는다 — 결과 카드는 그대로 보인다.
     expect(find.byType(DifficultyPill), findsWidgets);
 
@@ -582,7 +618,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
   }
 
@@ -610,7 +646,7 @@ void main() {
     // 원본 항목 제목은 사라지고 하위 스텝이 나타난다.
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsNothing);
     expect(find.text('가장 작은 첫 단계 5분만 해보기'), findsWidgets);
-    expect(find.textContaining('이렇게 나눠봤어요 · 7개'), findsOneWidget);
+    expect(find.textContaining('분해 결과 · 7개'), findsOneWidget);
   });
 
   testWidgets('#6 🔄 성공 → "방금 나눔" 칩 + "…개로 나눴어요" 스낵바, 이후 편집 시 칩 사라짐', (
@@ -681,7 +717,7 @@ void main() {
 
     // 지연이 끝나면 재분해 완료(대기 타이머 정리).
     await tester.pumpAndSettle();
-    expect(find.textContaining('이렇게 나눠봤어요 · 7개'), findsOneWidget);
+    expect(find.textContaining('분해 결과 · 7개'), findsOneWidget);
   });
 
   testWidgets('두 번 쪼갠 카드(depth2)에는 🔄가 없다(계보 2번 제한)', (tester) async {
@@ -692,7 +728,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('더 작게 나누기').first);
     await tester.pumpAndSettle();
-    expect(find.textContaining('이렇게 나눠봤어요 · 7개'), findsOneWidget);
+    expect(find.textContaining('분해 결과 · 7개'), findsOneWidget);
     // depth1 자식들도 아직 🔄가 있다(계보 1회) — 전체 7개 모두 버튼 보유.
     expect(find.byTooltip('더 작게 나누기'), findsNWidgets(7));
 
@@ -701,7 +737,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('더 작게 나누기').first);
     await tester.pumpAndSettle();
-    expect(find.textContaining('이렇게 나눠봤어요 · 9개'), findsOneWidget);
+    expect(find.textContaining('분해 결과 · 9개'), findsOneWidget);
 
     // depth2 손자 3개는 🔄가 사라졌으므로, 남은 depth<2 카드 6개만 버튼을 갖는다
     // (9개 중 손자 3개 제외).

@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/analytics/analytics_logger.dart';
+import '../../core/constants/empty_art.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/coin_pill.dart';
 import '../../core/widgets/quest_actions_menu.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
@@ -21,6 +23,7 @@ import '../home/widgets/evolve_dialog.dart';
 import '../home/widgets/level_up_dialog.dart';
 import '../shell/tab_scroll_registry.dart';
 import 'decompose_notifier.dart';
+import 'widgets/ai_promo_card.dart';
 import 'widgets/goal_complete_dialog.dart';
 import 'widgets/goal_group_section.dart';
 import 'widgets/quest_complete_dialog.dart';
@@ -435,12 +438,17 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // 목표(폴더) 단위로 묶인 목록. 목표를 못 읽어도 퀘스트는 폴백 라벨로 뜬다
     // (questGroupsProvider가 goal 스트림의 실패를 삼킨다).
     final groupsAsync = ref.watch(questGroupsProvider);
 
     return Scaffold(
+      // 제목 + 코인 잔액. 화면 제목을 본문 첫 줄이 아니라 AppBar로 올린 이유는
+      // 목록이 스크롤돼도 "여기가 어디인지"와 잔액이 함께 남아야 해서다(Figma 리디자인).
+      appBar: AppBar(
+        title: const Text('오늘의 퀘스트'),
+        actions: const [_HeaderCoin(), AppSpacing.gapWMd],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/quest/new'),
         icon: const Icon(Symbols.add),
@@ -450,42 +458,24 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenH,
-                AppSpacing.md,
-                AppSpacing.screenH,
-                AppSpacing.sm,
-              ),
-              child: Text('오늘의 퀘스트', style: theme.textTheme.headlineLarge),
-            ),
             // AI 분해 진입점. plan.md의 2대 핵심 기능 중 하나로 들어가는 문이라
-            // 아웃라인이 아니라 **채운 버튼**으로 위계를 올렸다. 색은 블루 유지 —
-            // 그린으로 바꾸면 수동 등록 FAB(그린)와 역할이 겹친다.
+            // 목록 맨 위에 카드로 세운다. 색은 블루 유지 — 그린으로 바꾸면 수동 등록
+            // FAB(그린)와 역할이 겹친다.
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.screenH,
-                0,
-                AppSpacing.screenH,
                 AppSpacing.sm,
+                AppSpacing.screenH,
+                AppSpacing.screenH,
               ),
-              child: FilledButton.icon(
-                onPressed: () => context.go('/quest/split'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.secondary,
-                  foregroundColor: theme.colorScheme.onSecondary,
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                icon: const Icon(Symbols.auto_awesome),
-                label: const Text('AI로 목표 나누기'),
-              ),
+              child: AiPromoCard(onPressed: () => context.go('/quest/split')),
             ),
             const _DailyCapNotice(),
             Expanded(
               child: groupsAsync.when(
                 // 로딩: 스켈레톤 카드 3장.
                 loading: () => ListView(
-                  padding: AppSpacing.screenPadding,
+                  padding: _listPadding,
                   children: const [
                     SkeletonBox(height: 120),
                     AppSpacing.gapSm,
@@ -495,20 +485,25 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                   ],
                 ),
                 // 오류: 빈 상태와 시각적으로 확실히 다르다(에러 색 + 경고 아이콘 + 재시도).
-                error: (error, _) => ErrorView(
-                  message: error is AppFailure
-                      ? error.message
-                      : '퀘스트를 불러오지 못했어요.',
-                  onRetry: () => ref.invalidate(questListProvider),
+                error: (error, _) => _FillViewport(
+                  child: ErrorView(
+                    message: error is AppFailure
+                        ? error.message
+                        : '퀘스트를 불러오지 못했어요.',
+                    onRetry: () => ref.invalidate(questListProvider),
+                  ),
                 ),
                 data: (groups) {
                   if (groups.isEmpty) {
-                    return EmptyView(
-                      title: '아직 퀘스트가 없어요',
-                      message: '큰 목표를 작은 퀘스트로 쪼개면\n오늘 당장 시작할 수 있어요.',
-                      emoji: '🪺',
-                      actionLabel: '퀘스트 등록하기',
-                      onAction: () => context.go('/quest/new'),
+                    return _FillViewport(
+                      child: EmptyView(
+                        title: '아직 퀘스트가 없어요',
+                        message: '큰 목표를 작은 퀘스트로 쪼개면\n오늘 당장 시작할 수 있어요.',
+                        emoji: '🪺',
+                        asset: EmptyArt.quest,
+                        actionLabel: '퀘스트 등록하기',
+                        onAction: () => context.go('/quest/new'),
+                      ),
                     );
                   }
 
@@ -516,7 +511,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                   // 그룹 단위로 바뀌어도 반드시 유지한다.
                   return ListView.builder(
                     controller: scrollController,
-                    padding: AppSpacing.screenPadding,
+                    padding: _listPadding,
                     itemCount: groups.length,
                     itemBuilder: (context, index) {
                       final group = groups[index];
@@ -546,6 +541,59 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
         ),
       ),
     );
+  }
+}
+
+/// 목록 자체의 패딩. 위쪽은 0이다 — 상단 프로모 카드가 이미 자기 아래 여백(20)을
+/// 들고 있어서, 여기서 또 주면 목록이 두 배로 내려앉는다.
+const EdgeInsets _listPadding = EdgeInsets.fromLTRB(
+  AppSpacing.screenH,
+  0,
+  AppSpacing.screenH,
+  AppSpacing.xl,
+);
+
+/// 남은 세로 공간을 채우되, **모자라면 넘치지 않고 스크롤한다.**
+///
+/// 빈 상태·오류 안내는 세로로 중앙 정렬돼야 보기 좋지만([Center]), 위쪽 프로모
+/// 카드·안내 줄이 자리를 많이 먹은 짧은 화면(작은 단말 · 큰 글꼴 배율)에서는
+/// 남은 높이가 안내보다 작아져 그대로 넘친다. 그렇다고 안내를 줄이면 **작은
+/// 화면 사용자만 설명을 덜 받는다.** 남으면 가운데, 모자라면 스크롤이 정답이다.
+class _FillViewport extends StatelessWidget {
+  const _FillViewport({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          // 부모가 높이를 안 정해 주는 자리(스크롤 목록 안 등)에 잘못 놓여도
+          // 무한대를 최소 높이로 요구하지 않도록 막는다.
+          constraints: BoxConstraints(
+            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// AppBar 우측 코인 잔액.
+///
+/// 사용자 문서를 못 읽었으면(로딩·오류) **아무것도 그리지 않는다.** 잔액은 부가
+/// 정보라, 못 읽었다고 AppBar에 오류를 띄우면 정작 목록의 오류 안내와 겹쳐 화면이
+/// 두 번 사과한다(_DailyCapNotice와 같은 판단).
+class _HeaderCoin extends ConsumerWidget {
+  const _HeaderCoin();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    if (user == null) return const SizedBox.shrink();
+    return CoinPill(amount: user.coin, compact: true);
   }
 }
 

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
+import 'package:one_step/core/widgets/coin_pill.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
+import 'package:one_step/core/widgets/stat_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/home/home_screen.dart';
 import 'package:one_step/features/home/widgets/character_card.dart';
@@ -25,21 +27,47 @@ Quest _quest(String id, {DateTime? createdAt, QuestStatus? status}) => Quest(
 /// - 로딩 중 스켈레톤이 표시된다
 /// - 신규 사용자도 기본값(Lv.1, XP 0, 코인 0)으로 정상 렌더된다
 void main() {
+  /// 홈은 리디자인으로 세로가 길어졌다 — 상단 바 + 히어로 195 + 이름 + XP + 통계
+  /// 카드 + **세로로 쌓인** 액션 2개 + 섹션 헤더 + 미리보기 3장.
+  ///
+  /// 기본 테스트 뷰포트(800×600)에서는 액션 버튼부터 아래가 화면 밖이라 탭이 닿지
+  /// 않고 미리보기 카드도 지어지지 않는다. **폭은 그대로 두고**(좁은 폭 레이아웃
+  /// 검증력을 잃지 않는다) 높이만 넉넉히 잡아 화면 전체를 한 프레임에 담는다.
+  void useTallViewport(WidgetTester tester) {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(800, 1600);
+    addTearDown(tester.view.reset);
+  }
+
+  /// 코인 잔액은 두 곳에 나온다 — 상단 바의 [CoinPill]과 통계 카드. 같은 값이라
+  /// `find.text`만으로는 "어느 쪽이 맞게 그려졌는지"를 말할 수 없어 자리를 좁힌다.
+  Finder inCoinPill(String text) =>
+      find.descendant(of: find.byType(CoinPill), matching: find.text(text));
+
+  Finder inStat(String label, String value) => find.descendant(
+    of: find.widgetWithText(StatCard, label),
+    matching: find.text(value),
+  );
+
   testWidgets('신규 사용자는 Lv.1 / XP 0 / 코인 0으로 렌더된다', (tester) async {
+    useTallViewport(tester);
     await pumpScreen(tester, const HomeScreen());
     await tester.pumpAndSettle();
 
     expect(find.byType(CharacterCard), findsOneWidget);
 
-    // 레벨과 진화 단계
-    expect(find.text('Level 1 · 알'), findsOneWidget);
+    // 진화 단계 이름과 레벨 pill(리디자인 뒤 두 위젯으로 갈렸다)
+    expect(find.text('알'), findsOneWidget);
+    expect(find.text('Lv.1'), findsOneWidget);
     // XP (알 단계는 레벨당 5 XP)
-    expect(find.text('XP 0 / 5'), findsOneWidget);
-    // 코인
-    expect(find.text('0'), findsOneWidget);
+    expect(find.text('0 / 5 XP'), findsOneWidget);
+    // 코인 — 상단 바와 통계 카드 양쪽에 같은 값이 나온다.
+    expect(inCoinPill('0'), findsOneWidget);
+    expect(inStat('코인', '0'), findsOneWidget);
   });
 
   testWidgets('저장된 값이 그대로 표시된다', (tester) async {
+    useTallViewport(tester);
     await pumpScreen(
       tester,
       const HomeScreen(),
@@ -48,10 +76,16 @@ void main() {
     await tester.pumpAndSettle();
 
     // Lv.12는 참새 단계, 레벨당 10 XP
-    expect(find.text('Level 12 · 참새'), findsOneWidget);
-    expect(find.text('XP 4 / 10'), findsOneWidget);
-    // 천 단위 구분
-    expect(find.text('1,240'), findsOneWidget);
+    expect(find.text('참새'), findsOneWidget);
+    expect(find.text('Lv.12'), findsOneWidget);
+    expect(find.text('4 / 10 XP'), findsOneWidget);
+    // 천 단위 구분 — 상단 바와 통계 카드 둘 다.
+    expect(inCoinPill('1,240'), findsOneWidget);
+    expect(inStat('코인', '1,240'), findsOneWidget);
+    // 연속 일수는 홈이 출석을 기록하며 바뀌는 값이라 여기서 단정하지 않는다
+    // (`streak_ui_test`가 시계를 고정해 놓고 그 계약을 따로 지킨다). 여기서는
+    // 수치(Sora)와 단위(한글)가 한 문단으로 붙어 나오는 것만 확인한다.
+    expect(inStat('연속', '1일'), findsOneWidget);
   });
 
   testWidgets('로딩 중에는 스켈레톤이 표시된다', (tester) async {
@@ -69,6 +103,7 @@ void main() {
   });
 
   testWidgets('오류 시 오류 화면과 재시도가 표시된다', (tester) async {
+    useTallViewport(tester);
     await pumpScreen(
       tester,
       const HomeScreen(),
@@ -81,9 +116,12 @@ void main() {
   });
 
   group('환생 버튼', () {
-    Finder rebirthButton() => find.byType(OutlinedButton);
+    // 리디자인 뒤 평평한 중립 `FilledButton`이다(주 버튼만 그라디언트를 갖는다).
+    // 홈의 유일한 FilledButton이라 타입으로 집힌다.
+    Finder rebirthButton() => find.byType(FilledButton);
 
-    testWidgets('Lv.50 미만이면 비활성이다', (tester) async {
+    testWidgets('Lv.50 미만이면 비활성이고 열리는 조건을 말한다', (tester) async {
+      useTallViewport(tester);
       await pumpScreen(
         tester,
         const HomeScreen(),
@@ -91,12 +129,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('환생 (Lv.12)'), findsOneWidget);
-      final button = tester.widget<OutlinedButton>(rebirthButton());
+      // 현재 레벨을 되뇌는 대신 **언제 열리는지**를 알린다.
+      expect(find.text('환생 (Lv.$kMaxLevel 도달 시)'), findsOneWidget);
+      final button = tester.widget<FilledButton>(rebirthButton());
       expect(button.onPressed, isNull, reason: 'Lv.50 미만은 눌리면 안 된다');
     });
 
     testWidgets('Lv.50이면 활성이다', (tester) async {
+      useTallViewport(tester);
       await pumpScreen(
         tester,
         const HomeScreen(),
@@ -104,11 +144,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final button = tester.widget<OutlinedButton>(rebirthButton());
+      // 열리면 조건 안내가 사라지고 행동만 남는다.
+      expect(find.text('환생'), findsOneWidget);
+      final button = tester.widget<FilledButton>(rebirthButton());
       expect(button.onPressed, isNotNull, reason: 'Lv.50이면 눌려야 한다');
     });
 
     testWidgets('탭 → 확인 다이얼로그 → 환생 실행 → 연출, 레벨이 1로 리셋된다', (tester) async {
+      useTallViewport(tester);
       final questRepo = await pumpScreen(
         tester,
         const HomeScreen(),
@@ -134,6 +177,7 @@ void main() {
     });
 
     testWidgets('확인 다이얼로그에서 취소하면 환생하지 않는다', (tester) async {
+      useTallViewport(tester);
       final questRepo = await pumpScreen(
         tester,
         const HomeScreen(),
@@ -153,6 +197,7 @@ void main() {
     });
 
     testWidgets('환생 3회 도달 시 용 계열 해금이 강조된다', (tester) async {
+      useTallViewport(tester);
       await pumpScreen(
         tester,
         const HomeScreen(),
@@ -170,6 +215,7 @@ void main() {
   });
 
   testWidgets('환생 표식은 rebirth>0일 때 카드에 등급으로 뜬다', (tester) async {
+    useTallViewport(tester);
     await pumpScreen(
       tester,
       const HomeScreen(),
@@ -180,20 +226,37 @@ void main() {
     // 등급 타이틀(rebirthTitle(3) = 'Master Scholar')과 계열 이모지가 반영된다.
     expect(find.textContaining('환생 3'), findsOneWidget);
     // 용 계열 Lv.12는 '새끼 용'.
-    expect(find.text('Level 12 · 새끼 용'), findsOneWidget);
+    expect(find.text('새끼 용'), findsOneWidget);
+    expect(find.text('Lv.12'), findsOneWidget);
   });
 
-  // 화면 크기는 기본값(800x600) 그대로 쓴다.
-  //
-  // 세 번째 카드는 세로로 뷰포트(600) 아래에 놓이지만 단언은 그대로 성립한다.
-  // `_PendingQuests`가 `ListView`의 **자식 하나**(Column)라, 그 자식이 뷰포트에
-  // 걸리는 순간 Column 전체가 인플레이트되기 때문이다 — 카드 하나하나가 지연
-  // 생성되는 구조가 아니다. 실측: 세 카드의 dy가 631 / 753 / 875로 모두 트리에 있다.
-  //
-  // 화면을 키우고 싶은 유혹이 있지만, 폭을 넓히면 좁은 폭 레이아웃 검증력이 같이
-  // 떨어진다. 필요 없는 확대는 하지 않는다.
+  testWidgets('★ 환생 표식이 좁은 폭에서도 넘치지 않는다 (긴 등급 타이틀)', (tester) async {
+    // 'Master Scholar'는 등급 타이틀 중 가장 길다. 예전에는 이 조합에서 뱃지의
+    // 고정폭 Row가 폭 375dp를 24px 넘겼다 — 환생 1회 이상에서만 렌더돼 E-4
+    // 배율 표본에 걸리지 않았던 결함이다.
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(320, 2400);
+    addTearDown(tester.view.reset);
+
+    await pumpScreen(
+      tester,
+      const HomeScreen(),
+      user: const AppUser(uid: 'test-uid', level: 12, rebirth: 3),
+      textScaler: const TextScaler.linear(1.6),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('환생 3'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  // 미리보기는 본문 **맨 아래**라, 리디자인으로 위쪽이 길어진 지금은 기본 뷰포트
+  // (800×600)에서 아예 지어지지 않는다(`ListView`가 뷰포트+캐시 밖 자식을 만들지
+  // 않는다). 그래서 [useTallViewport]로 높이만 키운다 — **폭은 800 그대로**라
+  // 좁은 폭 레이아웃 검증력은 그대로 남는다.
   group('진행 중인 퀘스트 미리보기 — 최신 등록순 3개', () {
     testWidgets('미완료가 4개여도 3개만, 최신 등록순으로 보인다', (tester) async {
+      useTallViewport(tester);
       // 저장 순서와 등록 시각을 일부러 어긋나게 섞는다. 정렬 없이 앞에서 3개를
       // 자르는 구현이면 이 케이스가 통과하지 못한다.
       await pumpScreen(
@@ -222,6 +285,7 @@ void main() {
     });
 
     testWidgets('createdAt이 null인 퀘스트가 맨 앞에 온다', (tester) async {
+      useTallViewport(tester);
       // serverTimestamp가 아직 확정되지 않은 상태 = 방금 만든 퀘스트.
       await pumpScreen(
         tester,
@@ -240,6 +304,7 @@ void main() {
     });
 
     testWidgets('완료된 퀘스트는 최신이어도 제외된다', (tester) async {
+      useTallViewport(tester);
       await pumpScreen(
         tester,
         const HomeScreen(),
@@ -260,6 +325,7 @@ void main() {
     });
 
     testWidgets('미완료가 하나도 없으면 빈 상태가 뜬다', (tester) async {
+      useTallViewport(tester);
       await pumpScreen(
         tester,
         const HomeScreen(),
@@ -274,6 +340,7 @@ void main() {
     });
 
     testWidgets('카드에 출처 칩이 함께 보인다', (tester) async {
+      useTallViewport(tester);
       await pumpScreen(
         tester,
         const HomeScreen(),

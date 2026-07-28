@@ -87,10 +87,29 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # 도트아트 자산 25장. 디렉터리 단위로 선언하므로 파일이 늘어도 여기는 안 고친다.
+  # 경로 오타·선언 누락은 test/core/pixel_asset_test.dart 가 두 층으로 잡는다
+  # (File.existsSync = 디스크 대조 · rootBundle.load = 이 선언 자체의 검증).
+  assets:
+    - assets/characters/
+    - assets/backgrounds/
+    - assets/auras/
+    - assets/empty/
+    - assets/dialogs/
+
   fonts:
-    # Sora 가변 폰트. 굵기는 AppTypography가 wght 축(FontVariation)으로 지정한다.
+    # 두 가변 폰트를 역할로 나눠 번들한다. 역할 분리의 정본은 AppTypography다.
+    # 굵기는 AppTypography가 wght 축(FontVariation)으로 지정한다.
     # google_fonts 패키지를 쓰지 않는 이유: 런타임에 폰트를 HTTP로 내려받으므로
     # 오프라인 첫 실행이 깨진다(checklist: 네트워크 없이도 크래시 없어야 함).
+    #
+    # 본문 기본 서체. **한글 글리프를 갖춘 쪽이다**(Sora에는 한글이 없다).
+    # 라이선스: assets/fonts/Pretendard-OFL.txt (SIL OFL).
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/PretendardVariable.ttf
+    # 수치 전용 서체(코인·XP·카운터 등 숫자만 있는 문자열).
+    # 라이선스: assets/fonts/OFL.txt (SIL OFL).
     - family: Sora
       fonts:
         - asset: assets/fonts/Sora-Variable.ttf

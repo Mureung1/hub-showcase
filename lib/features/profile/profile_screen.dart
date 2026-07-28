@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/kst_date.dart';
+import '../../core/widgets/stat_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
 import '../../providers/providers.dart';
@@ -21,9 +22,9 @@ import '../shell/tab_scroll_registry.dart';
 /// 소스라 두 화면의 "해낸 도전 수"가 어긋나지 않는다(지급 1건 = 기록 1건). 스트릭·가입일은
 /// 사용자 문서([currentUserProvider])에서 온다.
 ///
-/// **색 규칙(one-step-design).** 노랑은 코인·보상·스트릭 전용이지만, 여기 스트릭은 배지가
-/// 아니라 요약 통계 수치라 보관함 요약 카드와 같은 판단으로 **그린/중립**으로 둔다
-/// (color_role_test 무수정 통과). 이 화면은 노랑에 직접 접근하지 않는다.
+/// **색 규칙(one-step-design).** 스트릭은 🟡 노랑이다 — 보관함·홈과 같은 색을 쓴다
+/// (사용자 결정: 같은 수치가 화면마다 다른 색이면 "노랑 = 보상" 신호가 약해진다).
+/// 이 화면이 노랑 HEX에 직접 닿지는 않는다. 노랑을 아는 것은 [StatCard] 하나뿐이다.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -131,7 +132,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-/// 통계 본문 — 완료 수·연속 일수 2분할 카드 + 가입일 행.
+/// 통계 본문 — 완료 수·연속 출석 2분할 카드 + 가입일 행.
 class _StatsContent extends StatelessWidget {
   const _StatsContent({required this.completedCount, required this.user});
 
@@ -140,47 +141,43 @@ class _StatsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasStreak = user.streak > 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _StatCard(
-          child: Row(
-            children: [
-              Expanded(
-                child: _Stat(
-                  icon: Symbols.check_circle,
-                  value: '$completedCount',
-                  label: '완료한 도전',
-                ),
-              ),
-              const _StatDivider(),
-              Expanded(
-                child: _Stat(
-                  icon: Symbols.local_fire_department,
-                  // 스트릭 0이면 숫자 대신 "아직 없음"으로 — 신규 사용자에게 0은
-                  // 실패처럼 읽힌다. 요약 수치라 색은 중립/그린이다(노랑 아님).
-                  value: user.streak > 0 ? '${user.streak}' : '아직 없음',
-                  label: '연속 출석',
-                ),
-              ),
-            ],
-          ),
+        // 홈·보관함과 같은 공통 [StatCard]. 셋의 생김새가 어긋나지 않게 한 곳에서 온다.
+        StatCardRow(
+          cards: [
+            StatCard(
+              icon: Symbols.check_circle,
+              label: '완료한 도전',
+              value: '$completedCount',
+            ),
+            StatCard(
+              icon: Symbols.local_fire_department,
+              label: '연속 출석',
+              // 스트릭 0이면 숫자 대신 "아직 없음"으로 — 신규 사용자에게 0은
+              // 실패처럼 읽힌다. 한글이라 수치 서체(Sora)를 쓸 수 없어 numeric:false다.
+              value: hasStreak ? '${user.streak}' : '아직 없음',
+              numeric: hasStreak,
+              accent: StatAccent.reward,
+            ),
+          ],
         ),
         // 가입일은 값이 있을 때만 — createdAt이 null(구버전 문서 등)이면 통째로 생략한다.
         if (user.createdAt != null) ...[
-          AppSpacing.gapMd,
-          _StatCard(
-            child: _JoinedRow(createdAt: user.createdAt!),
-          ),
+          AppSpacing.gapSmd,
+          _InfoCard(child: _JoinedRow(createdAt: user.createdAt!)),
         ],
       ],
     );
   }
 }
 
-/// 흰 배경 + 소프트 섀도 카드(보관함 요약 카드와 같은 시각 언어).
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.child});
+/// 흰 배경 + 소프트 섀도 카드([StatCard]와 같은 시각 언어의 한 줄짜리 판).
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({required this.child});
 
   final Widget child;
 
@@ -191,57 +188,11 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: AppRadius.lgAll,
+        borderRadius: AppRadius.mdAll,
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: AppColors.softShadow,
       ),
       child: child,
-    );
-  }
-}
-
-class _StatDivider extends StatelessWidget {
-  const _StatDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 40,
-      color: Theme.of(context).colorScheme.outlineVariant,
-    );
-  }
-}
-
-/// 아이콘 + 큰 수치 + 라벨. 색은 그린/중립(노랑 규칙 준수).
-class _Stat extends StatelessWidget {
-  const _Stat({required this.icon, required this.value, required this.label});
-
-  final IconData icon;
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Icon(icon, size: 22, fill: 1, color: AppColors.primary),
-        AppSpacing.gapXs,
-        Text(
-          value,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            color: AppColors.primary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -291,9 +242,9 @@ class _StatsSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       children: [
-        SkeletonBox(height: 84, radius: AppRadius.lg),
-        AppSpacing.gapMd,
-        SkeletonBox(height: 56, radius: AppRadius.lg),
+        SkeletonBox(height: 120, radius: AppRadius.md),
+        AppSpacing.gapSmd,
+        SkeletonBox(height: 56, radius: AppRadius.md),
       ],
     );
   }

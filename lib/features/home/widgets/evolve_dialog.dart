@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/constants/growth_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/pixel_art.dart';
 
 /// 진화 연출 — `{이전 단계} → {새 단계}` 캐릭터 전환.
 ///
@@ -14,8 +15,8 @@ import '../../../core/theme/app_spacing.dart';
 /// 완료 → (레벨업) → **진화** 순서의 마지막에 뜬다. 진화가 있었다면 레벨업도 반드시
 /// 있었으므로(단계 경계는 레벨 상승으로만 넘는다) 순서가 자연스럽다.
 ///
-/// 도트아트 자산이 나오기 전까지 캐릭터는 **이모지 목업**이다(growth_rules.dart의
-/// `CharacterStage.emoji`). 자산이 나오면 이모지 자리를 교체한다.
+/// 캐릭터는 단계별 도트아트 자산이고, 못 읽으면 `CharacterStage.emoji`로 떨어진다
+/// (`PixelArt`가 그 폴백을 전담한다).
 ///
 /// 색 규칙(one-step-design): 원형·제목·확인 버튼 = 그린(성장). 노랑은 등장하지 않는다.
 class EvolveDialog extends StatefulWidget {
@@ -86,7 +87,7 @@ class _EvolveDialogState extends State<EvolveDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 이전 단계 → 새 단계. 이모지를 크게 세워 캐릭터 전환을 주인공으로.
+            // 이전 단계 → 새 단계. 캐릭터를 크게 세워 전환을 주인공으로.
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -97,9 +98,11 @@ class _EvolveDialogState extends State<EvolveDialog>
                     opacity: (1.0 - _reveal.value * 0.6).clamp(0.0, 1.0),
                     child: child,
                   ),
-                  child: Text(
-                    widget.fromStage.emoji,
-                    style: const TextStyle(fontSize: 44),
+                  child: PixelArt.emoji(
+                    asset: widget.fromStage.asset,
+                    emoji: widget.fromStage.emoji,
+                    size: 44,
+                    semanticLabel: widget.fromStage.name,
                   ),
                 ),
                 AppSpacing.gapWSm,
@@ -119,9 +122,11 @@ class _EvolveDialogState extends State<EvolveDialog>
                       child: child,
                     ),
                   ),
-                  child: Text(
-                    widget.toStage.emoji,
-                    style: const TextStyle(fontSize: 76),
+                  child: PixelArt.emoji(
+                    asset: widget.toStage.asset,
+                    emoji: widget.toStage.emoji,
+                    size: 76,
+                    semanticLabel: widget.toStage.name,
                   ),
                 ),
               ],
