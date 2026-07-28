@@ -51,6 +51,7 @@ from careersignal.taxonomy import (
 from careersignal.taxonomy.discovery import (
     NO_CANDIDATE_EXPRESSION,
     REJUDGE_EXCLUDED,
+    TRANSACTION_LOST,
 )
 
 TAXONOMY_ID = "tax_backend"
@@ -1406,3 +1407,59 @@ def test_without_the_predicate_every_group_is_still_tried() -> None:
 
     assert judge.calls == 6
     assert len(outcome.errors) == 6
+
+
+# ============================================================ 저장 실패
+class SaveFailure(Exception):
+    """항목 하나의 저장 실패. 거래를 죽이지 않는다."""
+
+
+class InFailedSqlTransaction(Exception):
+    """거래가 이미 죽은 뒤의 명령. 이름이 판정의 재료다."""
+
+
+class BrokenStats(FakeStats):
+    """정해진 후보의 저장만 실패하는 대역."""
+
+    def __init__(self, *args: Any, failing: str = "", fatal: bool = False, **kw: Any):
+        super().__init__(*args, **kw)
+        self._failing = failing
+        self._fatal = fatal
+        self.attempts: list[str] = []
+
+    def add_candidate(self, values: dict[str, Any]) -> None:
+        self.attempts.append(values["candidate_id"])
+        if self._fatal and len(self.attempts) > 1:
+            raise InFailedSqlTransaction(
+                "current transaction is aborted, commands ignored until end of "
+                "transaction block"
+            )
+        if values["proposed_label"] == self._failing:
+            raise SaveFailure("후보를 저장하지 못했다")
+        super().add_candidate(values)
+
+
+def test_한_후보의_저장_실패가_뒤_후보의_저장을_막지_않는다() -> None:
+    """되돌림 지점이 실패한 후보만 되돌리고 거래를 살려 둔다."""
+    store = BrokenStats(_many_mentions(4), [_dimension()], failing="기술 2 운영 경험")
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(_context())
+
+    assert outcome.created_candidates == 3
+    assert len(store.attempts) == 4
+    assert len(outcome.errors) == 1
+
+
+def test_거래를_죽이는_오류를_만나면_같은_사유가_반복되지_않는다() -> None:
+    """실행 로그의 860줄 갈래다. 죽은 거래에 계속 저장하지 않는다."""
+    store = BrokenStats(_many_mentions(200), [_dimension()], fatal=True)
+
+    outcome = CandidateDiscovery(StubRelationJudge(), store).run(
+        _context(max_tool_calls=400)
+    )
+
+    reasons = [reason for _, reason in outcome.errors]
+    assert TRANSACTION_LOST in reasons
+    assert len(outcome.errors) <= 4
+    assert len(store.attempts) <= 3
+    assert outcome.pending_groups > 0

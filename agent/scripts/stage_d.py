@@ -563,6 +563,18 @@ class Workload:
     alias_hits: int = 0
     """Phase 11 에서 별칭 일치로 끝나는 표현."""
 
+    def discovery_calls(self) -> int:
+        """Phase 9 가 부를 모델 호출 수.
+
+        첫 판정과 재판정을 함께 센다. 둘 다 모델 호출 하나이며 발견은 하나의 예산에서
+        둘을 꺼내 쓴다(`taxonomy/discovery.py` 의 `_propose` 와 `_rejudge`).
+
+        예상 호출 수와 실행 봉투의 예산이 **이 함수 하나에서** 나온다. 두 자리에서
+        따로 더하면 한쪽만 고쳐졌을 때 값이 갈리고, 예산이 재판정을 빼먹으면 잔여
+        표현이 0 인 실행이 재판정을 시작하기도 전에 `budget_exhausted` 로 끝난다.
+        """
+        return self.judgements + self.rejudgements
+
     def assignment_residual(self) -> int:
         return max(self.assignable - self.alias_hits, 0)
 
@@ -588,7 +600,7 @@ def build_estimates(
             phase=9,
             targets=workload.mentions,
             chat_model=phase_model(9, stub),
-            chat_calls=0 if stub else workload.judgements + workload.rejudgements,
+            chat_calls=0 if stub else workload.discovery_calls(),
             note=(
                 f"잔여 {workload.residual}개 · 재사용 후보 "
                 f"{workload.reused_candidates}개 · 재판정 {workload.rejudgements}개"
@@ -825,8 +837,15 @@ def report_discovery(outcome: Any) -> None:
     print(f"  잔여         {outcome.residual_mentions}개")
     print(f"  새 후보      {outcome.created_candidates}개")
     print(f"  재사용 후보  {outcome.reused_candidates}개")
-    print(f"  재판정 후보  {outcome.rejudged_candidates}개")
+    print(
+        f"  재판정 후보  {outcome.rejudged_candidates}개"
+        f" / 대상 {outcome.stale_candidates}개"
+    )
     print(f"  판정 호출    {outcome.judged}회")
+    print(
+        f"  남은 대상    표현 묶음 {outcome.pending_groups}개 · "
+        f"재판정 {outcome.pending_rejudgements}개"
+    )
     print(f"  판정별       {_spread(outcome.relations)}")
     _report_reasons("  실패 사유", group_reasons(outcome.errors))
     print(f"  종료 사유    {outcome.stop_reason}")
@@ -1095,9 +1114,14 @@ def run_phase_9(session: Session) -> bool:
     """잔여 표현을 묶어 차원 후보를 만든다. `agent_stats` 거래다.
 
     Phase 8 이 방금 만든 mention 이 이 단계의 대상이므로 예산을 다시 센다.
+
+    예산은 `Workload.discovery_calls` 가 준다. 예상 호출 수를 세는 자리
+    (`build_estimates`)와 같은 함수를 부르므로 두 값이 갈릴 수 없다. 재판정을 예산에
+    넣지 않으면 잔여 표현이 0 인 실행의 예산이 0 에 가까워지고, 재판정이 시작되기도
+    전에 `budget_exhausted` 로 끝난다.
     """
     session.refresh()
-    context = session.context("9", session.workload.judgements)
+    context = session.context("9", session.workload.discovery_calls())
     judge = StubRelationJudge() if session.stub else OpenAIRelationJudge()
     with unit_of_work(Component.AGENT_STATS) as unit:
         outcome = CandidateDiscovery(
@@ -1112,7 +1136,25 @@ def run_phase_9(session: Session) -> bool:
         outcome.stop_reason,
         f"후보 {outcome.created_candidates}개 · 판정 {outcome.judged}회",
         outcome.errors,
+        _discovery_incomplete(outcome),
     )
+
+
+def _discovery_incomplete(outcome: Any) -> str:
+    """Phase 9 가 덜 끝낸 것을 한 줄로 적는다. 다 끝났으면 빈 값이다.
+
+    예산이 모자라 `budget_exhausted` 로 끝나는 것 자체는 정상이다. 다만 무엇이 얼마나
+    남았는지가 요약에 보여야 사용자가 다시 돌릴지 예산을 올릴지 판단할 수 있다. 종료
+    사유만으로는 표현이 남았는지 재판정이 남았는지 가릴 수 없다.
+    """
+    parts: list[str] = []
+    if outcome.pending_groups:
+        parts.append(f"잔여 표현 묶음 {outcome.pending_groups}개 남음")
+    if outcome.pending_rejudgements:
+        parts.append(f"재판정 후보 {outcome.pending_rejudgements}개 남음")
+    if outcome.errors:
+        parts.append(f"실패 {len(outcome.errors)}건")
+    return " · ".join(parts)
 
 
 def run_phase_10(session: Session) -> bool:

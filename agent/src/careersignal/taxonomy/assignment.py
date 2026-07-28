@@ -55,11 +55,13 @@ from careersignal.providers.concurrency import DEFAULT_WORKERS, map_ordered
 from careersignal.providers.embeddings import EmbeddingClient
 from careersignal.providers.models import EMBEDDING
 from careersignal.repositories.assignment import AssignmentRepository
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
 from careersignal.taxonomy.depth import judge_depth
 from careersignal.taxonomy.discovery import (
     NEIGHBOUR_LIMIT,
     NO_ACTIVE_TAXONOMY,
     TAXONOMY_MISMATCH,
+    TRANSACTION_LOST,
 )
 from careersignal.taxonomy.requiredness import normalize_requiredness
 from careersignal.taxonomy.vocabulary import DimensionEntry, Vocabulary
@@ -447,13 +449,17 @@ class RequirementAssignment:
         결정적이라 재실행이 같은 결과를 준다.
         """
         residual: list[dict[str, Any]] = []
-        for row in rows:
+        for index, row in enumerate(rows):
             state.visited += 1
             match = state.vocabulary.match(row["raw_expression"])
             if match is None:
                 residual.append(row)
                 continue
             self._store(row, match.dimension_id, ALIAS_EXACT, state)
+            if state.halted_reason is not None:
+                # 거래가 죽었다. 뒤의 표현은 시도하지 않고 남은 수만 넘긴다.
+                residual.extend(rows[index + 1 :])
+                break
         return residual
 
     # ------------------------------------------------------------ 2. 벡터 근접
@@ -490,7 +496,7 @@ class RequirementAssignment:
         state.embedded += len(expressions)
 
         residual: list[dict[str, Any]] = []
-        for row, vector in zip(rows, vectors[len(labels) :]):
+        for index, (row, vector) in enumerate(zip(rows, vectors[len(labels) :])):
             ranked = sorted(
                 (
                     (_cosine(vector, label_vector), dimension_id)
@@ -503,6 +509,10 @@ class RequirementAssignment:
             )
             if ranked and ranked[0][0] >= VECTOR_MATCH_THRESHOLD:
                 self._store(row, ranked[0][1], VECTOR_MATCH, state)
+                if state.halted_reason is not None:
+                    # 거래가 죽었다. 뒤의 표현은 시도하지 않고 남은 수만 넘긴다.
+                    residual.extend(rows[index + 1 :])
+                    break
                 continue
             residual.append(row)
         return residual
@@ -600,6 +610,10 @@ class RequirementAssignment:
                 state.unassigned.append((row["mention_id"], NOT_ASSIGNED))
                 continue
             self._store(row, judgment.dimension_id, MODEL_JUDGMENT, state)
+            if state.halted_reason == TRANSACTION_LOST:
+                # 거래가 죽었다. 뒤의 표현은 시도하지 않고 수만 센다.
+                state.halted_pending = len(plan) - index - 1
+                return
 
     def _plan(
         self, rows: list[dict[str, Any]], state: _State
@@ -656,19 +670,26 @@ class RequirementAssignment:
     def _store(
         self, row: dict[str, Any], dimension_id: str, method: str, state: _State
     ) -> None:
-        """할당 한 줄을 남긴다. 저장에 실패한 표현은 결과에 남는다."""
+        """할당 한 줄을 남긴다. 저장에 실패한 표현은 결과에 남는다.
+
+        저장을 되돌림 지점으로 감싼다(`item_savepoint`). 한 표현의 실패가 거래를
+        죽이면 뒤의 표현이 전부 같은 사유로 실패하므로, 실패한 표현만 되돌리고 거래를
+        살려 둔다. 되돌림으로도 살릴 수 없는 실패면 실행을 멈출 사유를 남긴다.
+        """
         entry = state.entries.get(dimension_id)
         if entry is None:
             state.unassigned.append((row["mention_id"], NOT_ASSIGNED))
             return
         try:
-            self._repository.add_assignment(
-                _assignment_row(row, entry, method, state.taxonomy_version_id)
-            )
+            with item_savepoint(self._repository):
+                self._repository.add_assignment(
+                    _assignment_row(row, entry, method, state.taxonomy_version_id)
+                )
         except Exception as exc:
-            state.errors.append(
-                (row["mention_id"], failure_text(type(exc).__name__, str(exc)))
-            )
+            reason = failure_text(type(exc).__name__, str(exc))
+            state.errors.append((row["mention_id"], reason))
+            if transaction_is_dead(exc):
+                state.halt(TRANSACTION_LOST)
             return
         state.assigned += 1
         state.by_method[method] = state.by_method.get(method, 0) + 1

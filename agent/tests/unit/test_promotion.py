@@ -42,6 +42,7 @@ from careersignal.taxonomy.promotion import (
     ROUTE_NONE,
     ROUTE_RELATION,
     TAXONOMY_MISMATCH,
+    TRANSACTION_LOST,
     UNKNOWN_POLICY,
     UNGROUPED_PREFIX,
     CandidateEvidence,
@@ -70,6 +71,18 @@ STRICT = PromotionPolicy(
     min_independent_companies=3,
 )
 """임계값이 정책 버전에서 온다는 것을 보이는 두 번째 정책."""
+
+
+class UniqueViolation(Exception):
+    """기본키 중복. psycopg 의 같은 이름 예외를 이름만 흉내 낸다.
+
+    거래를 죽이는 실패인지의 판정은 예외 클래스 이름과 메시지 문자열만 보므로
+    (`repositories/base.py` 의 `is_transaction_fatal`) 대역도 같은 갈래를 지난다.
+    """
+
+
+class InFailedSqlTransaction(Exception):
+    """거래가 이미 죽은 뒤의 명령. 이름이 판정의 재료다."""
 
 
 def _evidence(**overrides: Any) -> CandidateEvidence:
@@ -144,7 +157,14 @@ class FakePromotionStore:
         taxonomy_version_id: str,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
-        rows = list(self._candidates)
+        """이 버전에서 이미 결정을 받은 후보를 뺀다. 실제 저장소와 같은 규칙이다."""
+        recorded = {row["decision_id"] for row in self.decisions}
+        rows = [
+            row
+            for row in self._candidates
+            if decision_identifier(row["candidate_id"], taxonomy_version_id)
+            not in recorded
+        ]
         return rows if limit is None else rows[:limit]
 
     def group_evidence(
@@ -197,6 +217,16 @@ class FakePromotionStore:
 
     # ---------------------------------------------------------- 쓰기
     def add_decision(self, values: dict[str, Any]) -> None:
+        """기본키 중복을 실제 데이터베이스처럼 막는다.
+
+        `requirement_candidate_decisions.decision_id` 가 기본키다. 대역이 중복을
+        받아 주면 실행 로그의 `UniqueViolation` 을 재현하지 못한다.
+        """
+        if any(row["decision_id"] == values["decision_id"] for row in self.decisions):
+            raise UniqueViolation(
+                "duplicate key value violates unique constraint "
+                '"requirement_candidate_decisions_pkey"'
+            )
         self.decisions.append(values)
 
     def set_candidate_lifecycle(self, candidate_id: str, lifecycle_status: str) -> None:
@@ -519,13 +549,116 @@ def test_the_decision_row_names_the_run_that_decided() -> None:
     assert row["decided_by"] == "agent_stats:run_promotion_test"
 
 
-def test_the_same_run_gives_the_same_decision_identifier() -> None:
-    assert decision_identifier("cand_kafka", "run_a") == decision_identifier(
-        "cand_kafka", "run_a"
+def test_the_same_version_gives_the_same_decision_identifier() -> None:
+    """같은 버전에서 다시 심사하면 같은 행이다. 실행 식별자는 재료가 아니다."""
+    assert decision_identifier("cand_kafka", "tx_backend_v1") == decision_identifier(
+        "cand_kafka", "tx_backend_v1"
     )
-    assert decision_identifier("cand_kafka", "run_a") != decision_identifier(
-        "cand_kafka", "run_b"
+
+
+def test_a_new_version_gives_a_new_decision_identifier() -> None:
+    """새 버전에서 심사하면 새 행이다. 후보당 여러 행이 허용된다(docs/erd.md 7.9)."""
+    assert decision_identifier("cand_kafka", "tx_backend_v1") != decision_identifier(
+        "cand_kafka", "tx_backend_v2"
     )
+
+
+def test_the_decision_identifier_follows_the_review_basis_version() -> None:
+    """결정 식별자는 심사 기준 버전을 따른다. 발행된 새 버전이 아니다."""
+    evidence = _evidence(reviewed_against_taxonomy_version_id="tx_backend_v1")
+    decision = judge_candidate(evidence, POLICY_V1)
+    row = decision_row(decision, evidence, "run_promotion_test", "tx_backend_v2")
+    assert row["decision_id"] == decision_identifier("cand_kafka", "tx_backend_v1")
+
+
+# ============================================================ 재심사
+def test_the_same_version_never_reviews_the_same_candidate_twice() -> None:
+    """실행 로그의 `UniqueViolation` 갈래다. 두 번째 실행이 같은 행을 다시 넣지 않는다."""
+    store = FakePromotionStore([_candidate()], counts={"cand_kafka": (1, 1)})
+    review = CandidateReview(store)
+
+    first = review.run(_context())
+    assert first.counts.get(HOLD) == 1
+    assert len(store.decisions) == 1
+
+    second = review.run(_context())
+    assert second.reviewed == 0
+    assert second.errors == ()
+    assert len(store.decisions) == 1
+
+
+def test_a_new_version_reviews_the_held_candidate_again() -> None:
+    """새 버전이 발행되면 보류 후보가 다시 올라오고 결정 행이 하나 더 남는다."""
+    store = FakePromotionStore([_candidate()], counts={"cand_kafka": (1, 1)})
+    review = CandidateReview(store)
+    review.run(_context())
+
+    store._active = {
+        "taxonomy_version_id": "tx_backend_v2",
+        "taxonomy_id": TAXONOMY_ID,
+        "version_number": 2,
+        "taxonomy_policy_version": POLICY_VERSION,
+    }
+    again = review.run(_context())
+
+    assert again.reviewed == 1
+    assert len(store.decisions) == 2
+    assert store.decisions[0]["decision_id"] != store.decisions[1]["decision_id"]
+
+
+# ============================================================ 저장 실패
+class BrokenStore(FakePromotionStore):
+    """정해진 후보의 저장만 실패하는 대역."""
+
+    def __init__(self, *args: Any, failing: str = "", fatal: bool = False, **kw: Any):
+        super().__init__(*args, **kw)
+        self._failing = failing
+        self._fatal = fatal
+        self.attempts: list[str] = []
+
+    def add_decision(self, values: dict[str, Any]) -> None:
+        self.attempts.append(values["candidate_id"])
+        if values["candidate_id"] == self._failing:
+            raise UniqueViolation("duplicate key value violates unique constraint")
+        if self._fatal and self.attempts[0] != values["candidate_id"]:
+            raise InFailedSqlTransaction(
+                "current transaction is aborted, commands ignored until end of "
+                "transaction block"
+            )
+        super().add_decision(values)
+
+
+def _held(candidate_id: str, label: str) -> dict[str, Any]:
+    """임계값에 못 미쳐 보류가 되는 후보 한 줄."""
+    return _candidate(candidate_id=candidate_id, proposed_label=label)
+
+
+def test_one_failed_save_does_not_block_the_next_candidate() -> None:
+    """한 항목의 실패가 뒤 항목의 저장을 막지 않는다."""
+    rows = [_held(f"cand_{i}", f"요구 {i}") for i in range(4)]
+    counts = {row["candidate_id"]: (1, 1) for row in rows}
+    store = BrokenStore(rows, counts=counts, failing="cand_1")
+
+    outcome = CandidateReview(store).run(_context())
+
+    saved = [row["candidate_id"] for row in store.decisions]
+    assert saved == ["cand_0", "cand_2", "cand_3"]
+    assert len(outcome.errors) == 1
+
+
+def test_a_dead_transaction_stops_instead_of_repeating_the_same_reason() -> None:
+    """거래를 죽이는 오류를 만나면 같은 사유가 후보 수만큼 반복되지 않는다."""
+    rows = [_held(f"cand_{i}", f"요구 {i}") for i in range(300)]
+    counts = {row["candidate_id"]: (1, 1) for row in rows}
+    store = BrokenStore(rows, counts=counts, fatal=True)
+
+    outcome = CandidateReview(store).run(_context())
+
+    reasons = [reason for _, reason in outcome.errors]
+    assert TRANSACTION_LOST in reasons
+    assert len(outcome.errors) <= 4
+    assert len(store.attempts) <= 3
+    assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
 
 
 # ============================================================ 심사 실행
@@ -751,6 +884,43 @@ def test_a_candidate_with_a_terminal_decision_is_not_reviewed_again() -> None:
     sql = PromotionRepository._CANDIDATES_TO_REVIEW
 
     assert "d.decision <> 'hold'" in sql
+
+
+class FakeUnit:
+    """조회 결과만 돌려주는 거래 대역. SQL 을 실행하지 않는다."""
+
+    component = Component.AGENT_STATS
+
+    def __init__(self, candidates: list[dict[str, Any]], decision_ids: list[str]):
+        self._candidates = candidates
+        self._decision_ids = decision_ids
+
+    def fetch_all(self, sql: str, params: Any = None) -> list[dict[str, Any]]:
+        if "SELECT d.decision_id" in sql:
+            return [{"decision_id": value} for value in self._decision_ids]
+        return list(self._candidates)
+
+
+def test_the_repository_drops_candidates_already_decided_in_this_version() -> None:
+    """조회가 걸러야 심사도 세는 자리도 같은 수를 본다."""
+    rows = [{"candidate_id": "cand_a"}, {"candidate_id": "cand_b"}]
+    unit = FakeUnit(rows, [decision_identifier("cand_a", TAXONOMY_VERSION_ID)])
+    repository = PromotionRepository(unit)  # type: ignore[arg-type]
+
+    left = repository.candidates_to_review(TAXONOMY_ID, TAXONOMY_VERSION_ID)
+
+    assert [row["candidate_id"] for row in left] == ["cand_b"]
+
+
+def test_the_repository_keeps_candidates_decided_in_another_version() -> None:
+    """새 버전에서는 같은 후보가 다시 올라온다."""
+    rows = [{"candidate_id": "cand_a"}]
+    unit = FakeUnit(rows, [decision_identifier("cand_a", TAXONOMY_VERSION_ID)])
+    repository = PromotionRepository(unit)  # type: ignore[arg-type]
+
+    left = repository.candidates_to_review(TAXONOMY_ID, "tx_backend_v2")
+
+    assert [row["candidate_id"] for row in left] == ["cand_a"]
 
 
 # ============================================================ 라벨 묶음

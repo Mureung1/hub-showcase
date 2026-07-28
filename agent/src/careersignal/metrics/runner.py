@@ -54,12 +54,27 @@ from careersignal.metrics.expansion import (
     envelopes,
     expand,
 )
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
+
 if TYPE_CHECKING:  # pragma: no cover - 형 검사에서만 필요하다
     from careersignal.repositories.metrics import MetricRepository
 
 # 저장소를 형 이름으로만 쓴다. `repositories/metrics.py` 가 집계 문장을 세우려고
 # `metrics/families.py` 를 import 하므로 실행 시점에 여기서 저장소를 다시 import 하면
 # 두 모듈이 서로를 기다린다. 주입은 호출자가 하고 이 모듈은 모양만 안다.
+#
+# `repositories/base.py` 는 예외다. 저장소 기반은 `domain/permissions.py` 만 보고
+# `metrics/` 를 전혀 import 하지 않으므로 서로를 기다릴 자리가 없다. 항목 하나의
+# 되돌림 지점과 거래 사망 판정을 지표 실행도 써야 하고, 그 정의를 여기 베끼면 두
+# 자리가 갈린다.
+
+TRANSACTION_LOST = "거래가 죽어 남은 지표를 저장하지 못한다"
+"""저장이 거래를 죽이는 실패를 냈다. 남은 조합을 시도하지 않고 멈춘 사유다.
+
+PostgreSQL 은 거래 안에서 오류가 나면 남은 명령을 전부 거부한다. 죽은 거래에 계속
+저장하면 같은 사유의 실패 줄이 조합 수만큼 쌓인다. 저장하지 못한 조합은
+`metric_facts` 에 자국이 없으므로 다음 실행이 다시 계산한다.
+"""
 
 NO_ACTIVE_TAXONOMY = "활성 분류체계 버전이 없다"
 """분류체계가 발행되지 않았다. 할당이 없으므로 어떤 분자도 세지 못한다."""
@@ -567,12 +582,19 @@ class MetricAggregation:
                 return
             if verdict.suppressed:
                 state.suppressed += 1
+            # measure 하나가 저장의 단위다. 되돌림 지점이 실패한 행만 되돌리고 거래를
+            # 살려 두므로 한 행의 실패가 뒤 행의 저장을 막지 않는다.
             try:
-                self._repository.add_fact(
-                    _fact_row(state.context, combination, point, verdict)
-                )
+                with item_savepoint(self._repository):
+                    self._repository.add_fact(
+                        _fact_row(state.context, combination, point, verdict)
+                    )
             except Exception as exc:
                 state.errors.append((_label(combination), _failure(exc)))
+                if transaction_is_dead(exc):
+                    state.errors.append((_label(combination), TRANSACTION_LOST))
+                    state.transaction_lost = True
+                    return
                 continue
             state.existing.add(key)
             state.stored += 1
@@ -713,13 +735,20 @@ class _State:
         self.by_family: dict[str, int] = {}
         self.missing_input: list[tuple[str, str]] = []
         self.errors: list[tuple[str, str]] = []
+        self.transaction_lost = False
+        """거래가 죽었는가. 참이면 남은 조합을 계산하지도 저장하지도 않는다."""
 
     def reached_limit(self) -> bool:
-        """이번 실행의 한도를 다 썼는가. 닿은 사실을 결과에 남긴다.
+        """이번 실행의 한도를 다 썼거나 거래가 죽었는가. 사실을 결과에 남긴다.
 
         건너뛴 조합은 세지 않는다. 한도는 계산할 조합의 수이지 전개할 조합의 수가
         아니며, 이미 저장된 조합을 세면 이어 돌리는 실행이 앞으로 나아가지 못한다.
+
+        거래가 죽은 뒤에는 한도와 무관하게 참이다. 죽은 거래에 계속 저장하면 같은
+        사유의 실패 줄만 조합 수만큼 쌓인다.
         """
+        if self.transaction_lost:
+            return True
         if self.limit is None or self.computed < self.limit:
             return False
         self.limit_reached = True

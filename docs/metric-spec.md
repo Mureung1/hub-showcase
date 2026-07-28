@@ -79,7 +79,7 @@ WHERE a.taxonomy_version_id = :taxonomy_version_id
 
 `not_comparable`인 행은 기간 비교와 기업군 비교의 입력으로 쓰지 않는다. 단일 값 표시는 허용한다.
 
-`insufficient` 상태의 행도 저장한다. 계산하지 못했다는 사실 자체가 화면의 정보이며, 값을 지우면 "아직 안 돌렸다"와 "돌렸는데 표본이 없다"를 구분할 수 없다.
+`not_computable` 상태의 행도 저장한다. 계산하지 못했다는 사실 자체가 화면의 정보이며, 값을 지우면 "아직 안 돌렸다"와 "돌렸는데 표본이 없다"를 구분할 수 없다.
 
 ### 2.5 불확실성
 
@@ -424,6 +424,8 @@ temporal_delta(base_metric, measure, scope, period_a, period_b)
 
 어떤 지표의 변화인지를 `measure`에 반드시 남긴다. `temporal_delta` 단독으로는 해석할 수 없다.
 
+`temporal_delta`는 `metric_templates`와 `metric_policy_versions`에 행을 두지 않는다. 연산자에는 전개 축이 없고, 최소 표본·억제 정책·불확실성 방법은 `base_metric`의 정책 행을 따른다. `statistics_facts.metric_policy_version`에는 그 정책 행을 담는다.
+
 ## 5. 적용 가능성
 
 지표마다 입력 차수가 다르다. 모든 지표를 모든 차원에 적용하지 않는다.
@@ -473,9 +475,11 @@ MVP 규모는 공고 18~30건이다. `overall` 범위는 `analysis_ready`가 되
 | 분포 합 | `depth_distribution` 세 measure의 분자 합이 분모와 같다 |
 | 표본 판정 | `sample_status`가 정책 버전의 임계값과 일치한다 |
 | 재계산 일치 | 독립 재계산 결과가 저장값과 일치한다 |
-| 버전 일치 | `taxonomy_version_id`, `metric_policy_version`이 실행 컨텍스트와 일치한다 |
+| 버전 일치 | 행의 `metric_policy_version`과 `analysis_version`이 선언한 `taxonomy_version_id`가 실행 컨텍스트와 일치한다 |
 | 적용 가능성 | 적용 불가로 표시된 조합이 계산되지 않았다 |
 | 비교 가능성 | `temporal_delta`와 `cluster_contrast`의 입력이 `analysis_ready`다 |
+
+`statistics_facts`는 분류체계 버전을 컬럼으로 갖지 않는다. 버전 일치 검사는 행이 속한 분석 버전의 `analysis_versions.taxonomy_version_id`를 읽는다. `metric_policy_version`은 행의 지표 family에 유효한 정책 행과 대조한다.
 
 ## 8. 관련 문서
 
