@@ -92,3 +92,9 @@
 
 - 화요일 결과가 깨끗하면 그대로 데모/영상에 사용
 - 문제가 남아있으면 즉시 손 떼고 기존 목업 데이터로 데모 진행(이미 배포·검증된 상태라 리스크 없음) — 영상 제작(이슈 #27)에 집중
+
+## 화요일 구현 중 발견한 것 — 계획 대비 실제 변경 사항
+
+- **`/cover-letter/search` 대신 상세 페이지 자체의 `__NEXT_DATA__`(Next.js SSR 임베디드 JSON)를 사용**: 채용/인턴 상세 페이지에는 `duties[].questionTemplates[]`에 실제 자소서 문항(번호 포함 원문)과 정확한 글자수 제한(`charMaxSize`)이 이미 구조화되어 들어있었음. 회사명으로 별도 아카이브를 검색해 매칭하는 것보다 훨씬 정확(해당 공고 전용 문항)하고 안정적이라 이 방식으로 전환. 공모전/대외활동은 Linkareer 데이터 구조상 `duties`가 비어있어(자소서 문항 개념 자체가 없음) 목업과 동일한 범용 2문항으로 폴백(사용자와 논의 후 결정).
+- **cheerio 불필요**: HTML을 DOM으로 파싱할 필요 없이 목록 페이지는 정규식으로 `/activity/{id}` href만 추출하고, 상세 페이지는 `__NEXT_DATA__` JSON을 그대로 파싱하는 것으로 충분해서 `backend/package.json`에 의존성을 추가하지 않음.
+- 순수 매핑/파싱 로직은 `backend/scripts/lib/linkareer.js`(+ `linkareer.test.js`)로 분리, 오케스트레이션은 `backend/scripts/crawlPostings.mjs`. 실행 결과 실제 10건(채용 4·인턴십 2·공모전 2·대외활동 2) 수집 완료, 기존 목업은 `backend/data/postings.mock.json`으로 백업.
