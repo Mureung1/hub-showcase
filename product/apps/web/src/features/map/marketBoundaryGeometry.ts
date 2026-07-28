@@ -9,6 +9,7 @@ export type MarketBoundaryGeometry = {
 type MarketBoundaryFeature = {
   properties?: {
     market_id?: string;
+    market_key?: string;
   };
   geometry?: MarketBoundaryGeometry | null;
 };
@@ -34,14 +35,17 @@ function loadMarketBoundaryCollection() {
 export function findMarketBoundaryGeometry(
   collection: MarketBoundaryCollection,
   marketId: string,
+  marketKey?: string,
 ): MarketBoundaryGeometry | null {
   const feature = collection.features?.find(
-    (candidate) => candidate.properties?.market_id === marketId,
+    (candidate) =>
+      candidate.properties?.market_id === marketId ||
+      Boolean(marketKey && candidate.properties?.market_key === marketKey),
   );
   return feature?.geometry ?? null;
 }
 
-export function useMarketBoundaryGeometry(marketId: string) {
+export function useMarketBoundaryGeometry(marketId: string, marketKey?: string) {
   const [geometry, setGeometry] = useState<MarketBoundaryGeometry | null>(null);
 
   useEffect(() => {
@@ -49,7 +53,7 @@ export function useMarketBoundaryGeometry(marketId: string) {
     setGeometry(null);
     loadMarketBoundaryCollection()
       .then((collection) => {
-        if (active) setGeometry(findMarketBoundaryGeometry(collection, marketId));
+        if (active) setGeometry(findMarketBoundaryGeometry(collection, marketId, marketKey));
       })
       .catch(() => {
         if (active) setGeometry(null);
@@ -57,7 +61,7 @@ export function useMarketBoundaryGeometry(marketId: string) {
     return () => {
       active = false;
     };
-  }, [marketId]);
+  }, [marketId, marketKey]);
 
   return geometry;
 }
@@ -68,6 +72,17 @@ export function outsideSelectedMarketFilter(
   if (!geometry) return ["all"] as FilterSpecification;
   return [
     ">",
+    ["distance", geometry],
+    MARKET_BOUNDARY_DISTANCE_TOLERANCE_METERS,
+  ] as unknown as FilterSpecification;
+}
+
+export function insideSelectedMarketFilter(
+  geometry: MarketBoundaryGeometry | null,
+): FilterSpecification {
+  if (!geometry) return ["==", 1, 0] as unknown as FilterSpecification;
+  return [
+    "<=",
     ["distance", geometry],
     MARKET_BOUNDARY_DISTANCE_TOLERANCE_METERS,
   ] as unknown as FilterSpecification;
