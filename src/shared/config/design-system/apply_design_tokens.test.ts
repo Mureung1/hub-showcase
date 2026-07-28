@@ -41,12 +41,17 @@ const expectedDesignTokenVariables = {
   '--color-fog': '#C8CAD0',
   '--color-graphite': '#363940',
   '--color-ink': '#151619',
+  '--color-library-coral': '#C94032',
   '--color-light-blue': '#3A8DFF',
   '--color-mist': '#F3F3F5',
   '--color-pale-blue': '#C3D9FF',
+  '--color-paper': '#F4F1E9',
   '--color-pewter': '#B0B3BB',
+  '--color-retrieve-blue': '#1358D8',
+  '--color-save-green': '#08765B',
   '--color-signal-green': '#047857',
   '--color-smoke': '#667085',
+  '--color-surface': '#FFFDF8',
   '--gradient-electric-blue':
     'linear-gradient(90deg, #0560FD 0%, #3A8DFF 50%, #C3D9FF 100%)',
   '--layout-content-width': '1200px',
@@ -96,11 +101,11 @@ afterEach(() => {
 });
 
 describe('createDesignTokenEntries', () => {
-  it('flattens all eight token groups into 78 unique CSS variables', () => {
+  it('flattens all eight token groups into 83 unique CSS variables', () => {
     const entries = createDesignTokenEntries();
 
-    expect(entries).toHaveLength(78);
-    expect(new Set(entries.map(([name]) => name)).size).toBe(78);
+    expect(entries).toHaveLength(83);
+    expect(new Set(entries.map(([name]) => name)).size).toBe(83);
     expect(Object.fromEntries(entries)).toEqual(expectedDesignTokenVariables);
   });
 });
@@ -112,6 +117,10 @@ describe('applyDesignTokens', () => {
     applyDesignTokens(customRoot);
 
     expect(customRoot.style.getPropertyValue('--color-canvas')).toBe('#FFFFFF');
+    expect(customRoot.style.getPropertyValue('--color-paper')).toBe('#F4F1E9');
+    expect(customRoot.style.getPropertyValue('--color-surface')).toBe(
+      '#FFFDF8'
+    );
     expect(customRoot.style.getPropertyValue('--radius-card')).toBe('16px');
   });
 

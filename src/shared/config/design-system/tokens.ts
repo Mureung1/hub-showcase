@@ -9,12 +9,17 @@ type ColorTokenName =
   | 'fog'
   | 'graphite'
   | 'ink'
+  | 'libraryCoral'
   | 'lightBlue'
   | 'mist'
   | 'paleBlue'
+  | 'paper'
   | 'pewter'
+  | 'retrieveBlue'
+  | 'saveGreen'
   | 'signalGreen'
-  | 'smoke';
+  | 'smoke'
+  | 'surface';
 export type CategoryColorKey =
   | 'amber-1'
   | 'amber-2'
@@ -118,12 +123,17 @@ export const designTokens = {
     fog: '#C8CAD0',
     graphite: '#363940',
     ink: '#151619',
+    libraryCoral: '#C94032',
     lightBlue: '#3A8DFF',
     mist: '#F3F3F5',
     paleBlue: '#C3D9FF',
+    paper: '#F4F1E9',
     pewter: '#B0B3BB',
+    retrieveBlue: '#1358D8',
+    saveGreen: '#08765B',
     signalGreen: '#047857',
     smoke: '#667085',
+    surface: '#FFFDF8',
   },
   gradient: {
     electricBlue:

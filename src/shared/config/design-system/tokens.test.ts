@@ -96,12 +96,17 @@ describe('designTokens', () => {
       fog: '#C8CAD0',
       graphite: '#363940',
       ink: '#151619',
+      libraryCoral: '#C94032',
       lightBlue: '#3A8DFF',
       mist: '#F3F3F5',
       paleBlue: '#C3D9FF',
+      paper: '#F4F1E9',
       pewter: '#B0B3BB',
+      retrieveBlue: '#1358D8',
+      saveGreen: '#08765B',
       signalGreen: '#047857',
       smoke: '#667085',
+      surface: '#FFFDF8',
     });
     expect(designTokens.gradient).toEqual({
       electricBlue:
@@ -157,12 +162,28 @@ describe('designTokens', () => {
     });
   });
 
-  it('keeps metadata and success text colors readable on canvas', () => {
+  it('keeps text readable on the approved page and screen backgrounds', () => {
     expect(
       contrastRatio(designTokens.color.smoke, designTokens.color.canvas)
     ).toBeGreaterThanOrEqual(4.5);
     expect(
       contrastRatio(designTokens.color.signalGreen, designTokens.color.canvas)
     ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(designTokens.color.ink, designTokens.color.paper)
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(designTokens.color.ink, designTokens.color.surface)
+    ).toBeGreaterThanOrEqual(4.5);
+
+    for (const background of [
+      designTokens.color.retrieveBlue,
+      designTokens.color.libraryCoral,
+      designTokens.color.saveGreen,
+    ]) {
+      expect(
+        contrastRatio(designTokens.color.surface, background)
+      ).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
