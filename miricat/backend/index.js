@@ -205,5 +205,11 @@ app.get('/api/route-candidates', async (req, res) => {
   res.json({ candidates });
 });
 
+// 진단용: 이 서버가 바깥으로 나갈 때 쓰는 공인 IP (ODsay IP 등록 대조용)
+app.get('/api/debug/egress-ip', async (req, res) => {
+  const r = await fetch('https://ifconfig.me', { headers: { 'User-Agent': 'curl' } });
+  res.json({ egressIp: (await r.text()).trim() });
+});
+
 const PORT = process.env.PORT || 8000; // Vite 프록시(/api → :8000)가 기대하는 포트
 app.listen(PORT, () => console.log(`miricat api on :${PORT}`));
