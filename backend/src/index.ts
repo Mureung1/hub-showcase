@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import { requireAuth } from './middleware/auth';
 import { authRouter } from './routes/auth';
 import { ingredientsRouter } from './routes/ingredients';
@@ -11,6 +12,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
+app.use(morgan('tiny'));
 app.use(express.json());
 
 app.get('/health', (_req, res) => {

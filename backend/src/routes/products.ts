@@ -5,6 +5,20 @@ import { requireAuth } from "../middleware/auth";
 
 export const productsRouter = Router();
 
+const PRODUCT_NAME_SYNONYMS: Record<string, string[]> = {
+  종합비타민: ["멀티비타민"],
+};
+
+function expandWithSynonyms(terms: string[]): string[] {
+  const expanded = new Set(terms);
+  for (const term of terms) {
+    for (const synonym of PRODUCT_NAME_SYNONYMS[term] ?? []) {
+      expanded.add(synonym);
+    }
+  }
+  return [...expanded];
+}
+
 interface UserProfileRow {
   gender: "male" | "female" | null;
   birth_year: number | null;
@@ -124,6 +138,7 @@ productsRouter.post("/check-overlap", requireAuth, async (req, res) => {
   }
 
   const { gender, age } = await getUserNutritionProfile(req.user!.userId);
+  const expandedProductNames = expandWithSynonyms(productNames);
 
   const result = await pool.query<OverlapRow>(
     `SELECT i.id AS ingredient_id, i.name AS ingredient_name,
@@ -143,7 +158,7 @@ productsRouter.post("/check-overlap", requireAuth, async (req, res) => {
        WHERE p.name ILIKE '%' || term || '%'
      )
      GROUP BY i.id, i.name, i.upper_limit_mg, u.upper_limit_mg, u.rda_mg`,
-    [productNames, gender, age]
+    [expandedProductNames, gender, age]
   );
 
   const overlapResults = result.rows.map(buildOverlapResult);
