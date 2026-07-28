@@ -29,6 +29,7 @@ import {
   type MistakeNoteInput,
 } from '../mistake-notes/model/useMistakeNoteStore'
 import styles from './GitLabPage.module.css'
+import { getDisplayedGitLabLevelId, getDisplayedGitLabLevelIds } from './getDisplayedGitLabLevelId'
 import { getPassedGitLabLevelIds } from './getPassedGitLabLevelIds'
 import { persistGitLabAttempt } from './persistGitLabAttempt'
 
@@ -142,6 +143,11 @@ export default function GitLabPage() {
   const hasOpenDuplicate = useMistakeNoteStore((state) => state.hasOpenDuplicate)
 
   const currentGraph = useMemo(() => createGraphSnapshotFromEngineState(engineState), [engineState])
+  const displayedCurrentLevelId = getDisplayedGitLabLevelId(level.id)
+  const displayedClearedLevelIds = useMemo(
+    () => getDisplayedGitLabLevelIds(clearedLevelIds),
+    [clearedLevelIds],
+  )
   const goalCheck = useMemo(
     () => compareGitLabGoal(level, engineState, currentGraph),
     [currentGraph, engineState, level],
@@ -222,7 +228,9 @@ export default function GitLabPage() {
         }
       })
       .catch(() => {
-        appendLogs([createLog('error', '오답노트를 서버에 저장하지 못했습니다. 다시 시도해 주세요.')])
+        appendLogs([
+          createLog('error', '오답노트를 서버에 저장하지 못했습니다. 다시 시도해 주세요.'),
+        ])
       })
   }
 
@@ -236,7 +244,9 @@ export default function GitLabPage() {
       { lessonId: level.id, command, result, reason },
       { serverMode, record: recordGitLabAttempt, onConfirmed },
     ).catch(() => {
-      appendLogs([createLog('error', '시도 기록을 저장하지 못했습니다. 완료 상태는 반영하지 않았습니다.')])
+      appendLogs([
+        createLog('error', '시도 기록을 저장하지 못했습니다. 완료 상태는 반영하지 않았습니다.'),
+      ])
     })
   }
 
@@ -273,7 +283,7 @@ export default function GitLabPage() {
         ? ''
         : result.ok
           ? '레벨 목표가 아직 완료되지 않았습니다.'
-          : result.logs[0] ?? '',
+          : (result.logs[0] ?? ''),
       completesLevel
         ? () => {
             markLevelCleared(level.id)
@@ -327,11 +337,7 @@ export default function GitLabPage() {
               완료 기록 다시 불러오기
             </button>
           ) : null}
-          <button
-            className={styles.toggleButton}
-            onClick={toggleSidebar}
-            type="button"
-          >
+          <button className={styles.toggleButton} onClick={toggleSidebar} type="button">
             {isSidebarCollapsed ? '사이드바 열기' : '사이드바 접기'}
           </button>
           <button
@@ -344,7 +350,11 @@ export default function GitLabPage() {
         </div>
       </header>
 
-      <div className={isSidebarCollapsed ? `${styles.workspace} ${styles.workspaceCollapsed}` : styles.workspace}>
+      <div
+        className={
+          isSidebarCollapsed ? `${styles.workspace} ${styles.workspaceCollapsed}` : styles.workspace
+        }
+      >
         {!isSidebarCollapsed && (
           <nav className={styles.curriculumPanel} aria-label="Pro Git 커리큘럼 레벨">
             <div className={styles.curriculumHeader}>
@@ -376,8 +386,8 @@ export default function GitLabPage() {
                   </div>
                   <div className={styles.lessonList}>
                     {module.items.map((item) => {
-                      const isCurrent = item.id === level.id
-                      const isCleared = clearedLevelIds.includes(item.id)
+                      const isCurrent = item.id === displayedCurrentLevelId
+                      const isCleared = displayedClearedLevelIds.includes(item.id)
                       const buttonClass = [
                         styles.lessonButton,
                         isCurrent ? styles.currentLessonButton : '',
@@ -393,11 +403,9 @@ export default function GitLabPage() {
                           onClick={() => handleCurriculumItemClick(item)}
                           type="button"
                         >
-                          <span>{item.id}</span>
-                          <strong>
-                            {item.title}
-                            {isCleared && <span className={styles.clearedCheckTag}> ✓ 완료</span>}
-                          </strong>
+                          <span className={styles.lessonId}>{item.id}</span>
+                          <strong>{item.title}</strong>
+                          {isCleared && <span className={styles.clearedCheckTag}>✓ 완료</span>}
                           <small>{getLessonStatusText(item)}</small>
                         </button>
                       )

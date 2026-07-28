@@ -95,7 +95,10 @@ function MistakeNoteDetailContent({
   const formId = useId()
   const reviewPath = createMistakeReviewPath(note)
 
-  function handleEdit() {
+  function handleEdit(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+
     setDraft(toMistakeNoteForm(note))
     setError(null)
     setMode('edit')
@@ -200,7 +203,12 @@ function MistakeNoteDetailContent({
                 <Link className={styles.reviewButton} to={reviewPath} onClick={onClose}>
                   다시 풀기
                 </Link>
-                <button type="button" className={styles.editButton} onClick={handleEdit}>
+                <button
+                  type="button"
+                  className={styles.editButton}
+                  onClick={handleEdit}
+                  disabled={isPending}
+                >
                   수정
                 </button>
                 {note.status === 'open' ? (
