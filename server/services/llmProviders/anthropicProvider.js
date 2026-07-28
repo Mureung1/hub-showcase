@@ -5,6 +5,7 @@ import {
   emptyBuckets,
   bucketsFromClassifications,
 } from './prompt.js';
+import { buildCodeQuestionPrompt, CODE_QUESTION_JSON_SCHEMA } from './questionPrompt.js';
 
 let cachedClient = null;
 function getClient() {
@@ -35,5 +36,31 @@ export async function classify(names) {
   } catch (error) {
     console.error('[anthropicProvider] classify 실패:', error.message);
     return emptyBuckets();
+  }
+}
+
+export async function generateCodeQuestion({ file_path, score_reason, chunk }) {
+  try {
+    const client = getClient();
+    const response = await client.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 1024,
+      output_config: {
+        effort: 'low',
+        format: { type: 'json_schema', schema: CODE_QUESTION_JSON_SCHEMA },
+      },
+      messages: [
+        { role: 'user', content: buildCodeQuestionPrompt({ file_path, score_reason, chunk }) },
+      ],
+    });
+
+    const textBlock = response.content.find((block) => block.type === 'text');
+    if (!textBlock) return null;
+
+    const parsed = JSON.parse(textBlock.text);
+    return parsed.question ? { question: parsed.question } : null;
+  } catch (error) {
+    console.error('[anthropicProvider] generateCodeQuestion 실패:', error.message);
+    return null;
   }
 }

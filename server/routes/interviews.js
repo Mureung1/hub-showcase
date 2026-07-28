@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import { repositories, interviews, createId, createInterviewState } from '../state/store.js';
-import { buildFixedQuestion } from '../services/stubData.js';
+import { generateCodeQuestion } from '../services/questionGenerator.js';
 import { buildMarkdown } from '../services/markdownBuilder.js';
 import { ok, fail } from '../services/respond.js';
 
 /**
- * Day 1 Walking Skeleton.
- *
- * - Question Generator: buildFixedQuestion()의 고정 문구 (Day 7에서 실제 LLM 프롬프트로 교체)
+ * - Question Generator: questionGenerator.js가 코드 chunk를 인용해 실제 LLM으로 질문 생성
+ *   (LLM 미설정/실패 시 stubData.js 고정 문구로 폴백, questionGenerator.js 내부에서 처리)
  * - Ambiguity Checker: judgement/content_type을 항상 SUFFICIENT/IMPLEMENTATION_INTRO로 고정 (Day 8에서 교체)
  * - Writer/Tone Agent: 답변을 톤 교정 없이 그대로 markdownBuilder에 붙임 (Day 9에서 교체)
  *
@@ -35,7 +34,7 @@ function advance(state) {
   }
 }
 
-router.post('/interviews', (req, res) => {
+router.post('/interviews', async (req, res) => {
   const { repository_id } = req.body || {};
   const repo = repositories.get(repository_id);
   if (!repo) {
@@ -55,14 +54,22 @@ router.post('/interviews', (req, res) => {
     return fail(res, 400, 'NO_CANDIDATE', '인터뷰할 후보 파일이 없습니다.');
   }
 
-  const { question, cited_code } = buildFixedQuestion(current.chunk);
-  state.pendingQuestion = { question, cited_code };
-  state.portfolioMarkdown = buildMarkdown(state);
+  try {
+    const { question, cited_code } = await generateCodeQuestion({
+      file_path: current.file.file_path,
+      score_reason: current.file.score_reason,
+      chunk: current.chunk,
+    });
+    state.pendingQuestion = { question, cited_code };
+    state.portfolioMarkdown = buildMarkdown(state);
 
-  ok(res, { interview_id: interviewId, question, cited_code }, 201);
+    ok(res, { interview_id: interviewId, question, cited_code }, 201);
+  } catch (error) {
+    fail(res, 500, 'QUESTION_GENERATION_FAILED', '질문을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
 });
 
-router.post('/interviews/:interviewId/messages', (req, res) => {
+router.post('/interviews/:interviewId/messages', async (req, res) => {
   const state = interviews.get(req.params.interviewId);
   if (!state) {
     return fail(res, 404, 'INTERVIEW_NOT_FOUND', '해당 interview_id를 찾을 수 없습니다.');
@@ -96,9 +103,17 @@ router.post('/interviews/:interviewId/messages', (req, res) => {
 
   let nextQuestion = null;
   if (next) {
-    const generated = buildFixedQuestion(next.chunk);
-    state.pendingQuestion = generated;
-    nextQuestion = generated.question;
+    try {
+      const generated = await generateCodeQuestion({
+        file_path: next.file.file_path,
+        score_reason: next.file.score_reason,
+        chunk: next.chunk,
+      });
+      state.pendingQuestion = generated;
+      nextQuestion = generated.question;
+    } catch (error) {
+      return fail(res, 500, 'QUESTION_GENERATION_FAILED', '다음 질문을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
   } else {
     state.pendingQuestion = null;
   }
