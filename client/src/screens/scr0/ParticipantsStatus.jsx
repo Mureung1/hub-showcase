@@ -24,6 +24,7 @@ export function ParticipantsStatus() {
 
   const [status, setStatus] = useState('loading') // loading | error | ready
   const [errorMsg, setErrorMsg] = useState('')
+  const [letter, setLetter] = useState(null)
   const [participants, setParticipants] = useState([])
   const [slotLabelById, setSlotLabelById] = useState({})
 
@@ -51,6 +52,7 @@ export function ParticipantsStatus() {
         labelById[slot.id] = slot.label
       }
       setSlotLabelById(labelById)
+      setLetter(letterResult.data)
       setParticipants(responsesResult.data ?? [])
       setStatus('ready')
     })
@@ -118,7 +120,7 @@ export function ParticipantsStatus() {
               color: 'var(--ink)',
               fontFamily: 'var(--font-body)',
               fontSize: '14px',
-              background: active ? '#FFFFFF' : 'transparent',
+              background: active ? 'var(--surface-raised)' : 'transparent',
               fontWeight: active ? 600 : 400,
               cursor: 'pointer',
             }
@@ -146,9 +148,9 @@ export function ParticipantsStatus() {
         </nav>
 
         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px' }}>
-          <Avatar name="정하은" index={0} size={32} />
+          <Avatar name={letter?.host_name || ''} index={0} size={32} />
           {/* TODO: 실제 값으로 교체 (로그인/프로필 화면 완성 후) */}
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink)' }}>정하은</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink)' }}>{letter?.host_name || '호스트'}</div>
         </div>
       </aside>
 
@@ -165,6 +167,7 @@ export function ParticipantsStatus() {
           height: '100vh',
           alignSelf: 'flex-start',
           zIndex: 5,
+          pointerEvents: 'none',
         }}
       />
 

@@ -32,7 +32,7 @@ export function Chip({ tone = 'wedgwood', sticker = false, selected = false, onC
         cursor: interactive ? 'pointer' : 'default',
         background: selected ? (lemon ? 'var(--lemon-deep)' : 'var(--wedgwood-deep)') : lemon ? 'var(--chip-lemon-bg)' : 'var(--chip-wedgwood-bg)',
         color: selected ? 'var(--text-on-deep)' : lemon ? 'var(--chip-lemon-text)' : 'var(--chip-wedgwood-text)',
-        border: `1px solid ${lemon ? 'var(--lemon)' : 'var(--wedgwood)'}`,
+        border: `1px solid ${lemon ? 'var(--lemon)' : 'var(--wedgwood-mid)'}`,
         boxShadow: sticker ? '0 2px 4px rgba(74,68,56,0.08)' : 'none',
         transition: 'background var(--dur-transition) var(--ease-soft), color var(--dur-transition) var(--ease-soft)',
         ...style,

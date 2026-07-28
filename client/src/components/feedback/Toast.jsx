@@ -20,7 +20,7 @@ export function Toast({ icon = 'leaf', children, style }) {
         alignItems: 'center',
         gap: 'var(--space-2)',
         background: 'var(--surface-card)',
-        border: '1px solid var(--wedgwood)',
+        border: '1px solid var(--wedgwood-mid)',
         borderRadius: 'var(--radius-lg)',
         padding: '10px 16px',
         fontFamily: 'var(--font-body)',

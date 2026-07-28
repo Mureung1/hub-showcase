@@ -29,7 +29,7 @@ function isRoleDone(role) {
 function FlowerProgressBar({ pct }) {
   return (
     <div style={{ position: 'relative', flex: 1, height: '16px' }}>
-      <div style={{ position: 'absolute', left: 0, top: '50%', height: '4px', borderRadius: '999px 0 0 999px', transform: 'translateY(-50%)', width: `${pct}%`, background: 'hsl(206,45%,90%)' }} />
+      <div style={{ position: 'absolute', left: 0, top: '50%', height: '4px', borderRadius: '999px 0 0 999px', transform: 'translateY(-50%)', width: `${pct}%`, background: 'var(--wedgwood-pale)' }} />
       <div style={{ position: 'absolute', right: 0, top: '50%', height: '4px', borderRadius: '0 999px 999px 0', transform: 'translateY(-50%)', width: `${100 - pct}%`, background: 'hsl(96,45%,90%)' }} />
       <div style={{ position: 'absolute', top: '50%', left: `${pct}%`, transform: 'translate(-50%,-50%)', width: '16px', height: '16px' }}>
         {[0, 72, 144, 216, 288].map((rot) => (
@@ -61,6 +61,7 @@ export function ProgressWorkspace() {
 
   const [loadStatus, setLoadStatus] = useState('loading') // loading | error | ready
   const [errorMsg, setErrorMsg] = useState('')
+  const [letter, setLetter] = useState(null)
   const [participantNameById, setParticipantNameById] = useState({})
   const [roles, setRoles] = useState([])
   const [index, setIndex] = useState(0)
@@ -94,6 +95,7 @@ export function ProgressWorkspace() {
         nameById[p.id] = p.name
       }
       setParticipantNameById(nameById)
+      setLetter(letterResult.data)
       setRoles(rolesResult.data ?? [])
       setLoadStatus('ready')
     })
@@ -177,7 +179,7 @@ export function ProgressWorkspace() {
               color: 'var(--ink)',
               fontFamily: 'var(--font-body)',
               fontSize: '14px',
-              background: active ? '#FFFFFF' : 'transparent',
+              background: active ? 'var(--surface-raised)' : 'transparent',
               fontWeight: active ? 600 : 400,
               cursor: 'pointer',
             }
@@ -208,9 +210,9 @@ export function ProgressWorkspace() {
         </nav>
 
         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px' }}>
-          <Avatar name="정하은" index={0} size={32} />
+          <Avatar name={letter?.host_name || ''} index={0} size={32} />
           {/* TODO: 실제 값으로 교체 (로그인/프로필 화면 완성 후) */}
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink)' }}>정하은</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink)' }}>{letter?.host_name || '호스트'}</div>
         </div>
       </aside>
 
@@ -227,6 +229,7 @@ export function ProgressWorkspace() {
           height: '100vh',
           alignSelf: 'flex-start',
           zIndex: 5,
+          pointerEvents: 'none',
         }}
       />
 

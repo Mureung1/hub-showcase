@@ -6,9 +6,10 @@
   --paper-warm: #F7F2E4;
   --paper-cool: #EFEADC;
   --cream: #FBF9F3;          /* 카드 배경 */
-  --wedgwood: #8CA3C2;       /* 구조/버튼 */
-  --wedgwood-pale: #E4EBF2;
-  --wedgwood-deep: #4F6B8C;
+  --wedgwood: #C6DAE7;       /* 구조 (면·워시·장식) */
+  --wedgwood-pale: #E8F1F7;
+  --wedgwood-mid: #6E8FA8;   /* 테두리·포커스링 — 크림 위 3.24:1 (WCAG AA 비텍스트) */
+  --wedgwood-deep: #456B85;  /* 버튼·강조 텍스트 — 흰 글자 대비 5.68:1 (WCAG AA) */
   --lemon: #F2D774;          /* 강조 */
   --lemon-pale: #FBF3D6;
   --lemon-deep: #8C6A1B;
@@ -27,7 +28,7 @@
   --text-caption: var(--ink-soft);
   --text-on-deep: #FFFFFF;
   --border-card: var(--line);
-  --border-postcard: var(--wedgwood);
+  --border-postcard: var(--wedgwood-mid);
   --btn-primary: var(--wedgwood-deep);
   --btn-accent: var(--lemon-deep);
   --btn-disabled-bg: #EDE7D8;
@@ -36,7 +37,7 @@
   --chip-lemon-text: var(--lemon-deep);
   --chip-wedgwood-bg: var(--wedgwood-pale);
   --chip-wedgwood-text: var(--wedgwood-deep);
-  --focus-ring: var(--wedgwood);
+  --focus-ring: var(--wedgwood-mid);
   /* 오류도 잉크브라운 톤 — 빨강 금지 */
   --error-border: var(--ink-soft);
   --error-text: var(--ink);

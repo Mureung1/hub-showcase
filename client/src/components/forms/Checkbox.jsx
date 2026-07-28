@@ -27,7 +27,7 @@ export function Checkbox({ checked = false, onChange, label, style }) {
         }}
       >
         {checked ? (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-on-deep)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12.5L10 17.5L19 6.5" />
           </svg>
         ) : null}

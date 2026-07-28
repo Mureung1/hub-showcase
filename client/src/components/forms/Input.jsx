@@ -4,7 +4,7 @@ import React, { useState } from 'react';
     (손글씨 밑줄 — 초대 문구 입력 등 letter-paper 전용). Lemon never used on inputs (§7). */
 export function Input({ variant = 'box', label, placeholder, value, onChange, style, ...rest }) {
   const [focus, setFocus] = useState(false);
-  const borderColor = focus ? 'var(--wedgwood)' : 'var(--line)';
+  const borderColor = focus ? 'var(--wedgwood-mid)' : 'var(--line)';
   const base = {
     fontFamily: 'var(--font-body)',
     fontSize: 'var(--text-body-size)',
