@@ -250,6 +250,35 @@
   line-height: 1.6;
 }
 
+.guide-faq h2 {
+  margin-bottom: 14px;
+}
+
+.faq-list {
+  display: grid;
+  gap: 8px;
+}
+
+.faq-list details {
+  padding: 13px 14px;
+  border: 1px solid #e0e7e3;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.faq-list summary {
+  color: #182536;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.faq-list details p {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #e7ece9;
+}
+
 @media (max-width: 600px) {
   .guide-page {
     padding: 36px 16px 64px;
