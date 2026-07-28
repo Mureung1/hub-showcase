@@ -4,7 +4,7 @@
   "summary": "여러 매체의 뉴스를 키워드로 모아 AI가 해설하고, 읽은 기사를 클러스터링해 개인화된 시사 흐름을 설명해주는 서비스입니다.",
   "githubUser": "yeontteo(남연서)",
   "demoUrl": "https://naver-ai-agent-challenge-newssist.vercel.app/",
-  "thumbnail": "thumbnail.png",
+  "thumbnail": "thumbnail.jpg",
   "screenshots": [],
   "problem": "면접이나 프로젝트를 준비하며 시사 흐름을 알고 싶어도 어떤 뉴스를 찾아봐야 할지 막막하고, 어려운 용어 때문에 기사를 읽다가 포기하게 됩니다.",
   "targetUsers": [
