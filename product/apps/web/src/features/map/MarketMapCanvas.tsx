@@ -257,7 +257,12 @@ export function MarketMapCanvas({
     [mapStores, selectedCategoryName],
   );
   const readinessKeyByStoreId = useMemo(
-    () => new Map(visibleStorefronts.map((store) => [store.id, storefrontReadinessKey(store)])),
+    () =>
+      new Map<string, string>(
+        visibleStorefronts.map(
+          (store) => [store.id, storefrontReadinessKey(store)] as const,
+        ),
+      ),
     [visibleStorefronts],
   );
   const readyStorefronts = useMemo(
