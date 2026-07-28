@@ -9,6 +9,7 @@ import { createAuthToken } from "../services/tokenService.js";
 import {
   loginUser,
   registerUser,
+  resolveFirebaseLoginEmail,
   syncFirebaseUser,
   updateUserProfile,
   verifyEmailToken,
@@ -111,6 +112,60 @@ authRouter.post("/login", async (request, response, next) => {
     const token = createAuthToken(user);
 
     response.json({ ok: true, user, token });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post("/firebase-login-email", async (request, response, next) => {
+  try {
+    const account = String(request.body.account || "").trim();
+
+    const email = await resolveFirebaseLoginEmail(account);
+
+    response.json({ ok: true, email });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post("/firebase-profile", async (request, response, next) => {
+  try {
+    const idToken = String(request.body.idToken || "").trim();
+    const username = String(request.body.username || "").trim();
+    const name = String(request.body.name || "").trim();
+    const school = String(request.body.school || "").trim();
+    const major = String(request.body.major || "").trim();
+
+    if (!idToken) {
+      response.status(400).json({ message: "Firebase ID token이 필요합니다." });
+      return;
+    }
+
+    if (!username || !isValidUsername(username)) {
+      response.status(400).json({ message: "아이디는 영문과 숫자를 모두 포함해야 합니다." });
+      return;
+    }
+
+    const decodedToken = await verifyFirebaseIdToken(idToken);
+    const email = String(decodedToken.email || "").trim();
+
+    if (!email || !isValidEmail(email)) {
+      response.status(400).json({ message: "Firebase 계정 이메일을 확인할 수 없습니다." });
+      return;
+    }
+
+    const user = await syncFirebaseUser({
+      firebaseUid: decodedToken.uid,
+      email,
+      emailVerified: Boolean(decodedToken.email_verified),
+      username,
+      name: name || decodedToken.name || email.split("@")[0],
+      school,
+      major,
+    });
+
+    response.json({ ok: true, user });
   } catch (error) {
     next(error);
   }

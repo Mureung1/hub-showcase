@@ -69,6 +69,19 @@ export const registerUser = async (user) => {
     url: `${window.location.origin}/login`,
   });
 
+  const idToken = await getIdToken(credential.user, true);
+
+  await requestJson("/api/auth/firebase-profile", {
+    method: "POST",
+    body: JSON.stringify({
+      idToken,
+      username: user.username,
+      name: user.name,
+      school: user.school,
+      major: user.major,
+    }),
+  });
+
   saveSession({
     id: "",
     email: user.email,
@@ -94,7 +107,14 @@ export const registerUser = async (user) => {
 export const loginUser = async ({ account, password }) => {
   assertFirebaseConfigured();
 
-  const credential = await signInWithEmailAndPassword(firebaseAuth, account, password);
+  const loginEmail = account.includes("@")
+    ? account.trim().toLowerCase()
+    : (await requestJson("/api/auth/firebase-login-email", {
+        method: "POST",
+        body: JSON.stringify({ account }),
+      })).email;
+
+  const credential = await signInWithEmailAndPassword(firebaseAuth, loginEmail, password);
   await credential.user.reload();
 
   if (!credential.user.emailVerified) {

@@ -153,6 +153,30 @@ export const syncFirebaseUser = async ({
   return publicUserFields(user);
 };
 
+export const resolveFirebaseLoginEmail = async (account) => {
+  const trimmedAccount = String(account || "").trim();
+  const normalizedAccount = trimmedAccount.toLowerCase();
+
+  if (!trimmedAccount) {
+    throw createHttpError("로그인 계정을 입력해 주세요.", 400);
+  }
+
+  if (normalizedAccount.includes("@")) {
+    return normalizedAccount;
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { username: trimmedAccount },
+    select: { email: true },
+  });
+
+  if (!user) {
+    throw createHttpError("가입된 계정을 찾을 수 없습니다.", 404);
+  }
+
+  return user.email;
+};
+
 export const verifyEmailToken = async (token) => {
   const user = await prisma.user.findUnique({
     where: { verificationToken: token.trim() },
