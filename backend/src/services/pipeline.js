@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../db/supabaseClient.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -89,7 +90,8 @@ async function runStep1(jobId) {
     if (!imagePath.startsWith('http')) {
       // /uploads/... 형태 또는 uploads/... 형태를 절대경로로
       const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-      imagePath = path.resolve(process.cwd(), cleanPath);
+      // backend 폴더를 기준으로 절대경로 생성
+      imagePath = path.resolve(__dirname, `../../${cleanPath}`);
     }
 
     let result;
@@ -97,6 +99,25 @@ async function runStep1(jobId) {
       const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/yolov8_crop.py');
       console.log('[Step 1] YOLOv8 스크립트 경로:', pythonScriptPath);
       console.log('[Step 1] 이미지 경로:', imagePath);
+
+      // 파일 존재 확인 (중요!)
+      const fileExists = fs.existsSync(imagePath);
+      console.log('[Step 1] 파일 존재 여부:', fileExists);
+      console.log('[Step 1] fs.existsSync():', fileExists);
+
+      if (!fileExists) {
+        // uploads 폴더 존재 확인
+        const uploadsDir = path.resolve(__dirname, '../../uploads');
+        console.log('[Step 1] uploads 폴더:', uploadsDir);
+        console.log('[Step 1] uploads 폴더 존재:', fs.existsSync(uploadsDir));
+
+        if (fs.existsSync(uploadsDir)) {
+          const files = fs.readdirSync(uploadsDir);
+          console.log('[Step 1] uploads 폴더 내 파일들:', files);
+        }
+
+        throw new Error(`파일을 찾을 수 없습니다: ${imagePath}`);
+      }
 
       const { stdout, stderr } = await execFileAsync('python', [
         pythonScriptPath,
