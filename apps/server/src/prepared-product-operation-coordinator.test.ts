@@ -181,15 +181,7 @@ test('the Product executor revalidates a prepared action after preparing and bef
     TargetProductOperationFrame | ProductReviewFrame
   > = []
   let runtimeTerminalCalls = 0
-  let revalidationSignal: AbortSignal | undefined
-  let releasePreparing!: () => void
-  let observePreparing!: () => void
-  const preparingReleased = new Promise<void>((resolve) => {
-    releasePreparing = resolve
-  })
-  const preparingObserved = new Promise<void>((resolve) => {
-    observePreparing = resolve
-  })
+  let revalidationCalls = 0
   const action = {
     async prepare() {
       return {
@@ -201,11 +193,8 @@ test('the Product executor revalidates a prepared action after preparing and bef
         text: 'prepared action input',
       }
     },
-    async revalidateForDispatch(_input, _prepared, context) {
-      revalidationSignal = context.signal
-      assert.equal(context.signal.aborted, false)
-      assert.equal(frames.at(-1)?.type, 'operation.preparing')
-      await context.listEffectiveSkills(context.signal)
+    async revalidateForDispatch() {
+      revalidationCalls += 1
       throw new OrganizeSourcesActionError('action_context_stale')
     },
   } satisfies OrganizeSourcesAction
@@ -229,29 +218,15 @@ test('the Product executor revalidates a prepared action after preparing and bef
         sink: {
           async write(frame) {
             frames.push(structuredClone(frame))
-            if (frame.type === 'operation.preparing') {
-              observePreparing()
-              await preparingReleased
-            }
             return true
           },
           end: () => undefined,
         },
       },
     )
-    await preparingObserved
-
-    assert.equal(revalidationSignal, undefined)
-    assert.equal(
-      runtime.calls.some(
-        (call) => call.operation === 'startProductTurn',
-      ),
-      false,
-    )
-
-    releasePreparing()
     await invocation
 
+    assert.equal(revalidationCalls, 1)
     assert.deepEqual(
       frames.map((frame) => frame.type),
       ['operation.preparing', 'operation.terminal'],
@@ -262,7 +237,6 @@ test('the Product executor revalidates a prepared action after preparing and bef
       status: 'failed',
       failureCode: 'action_context_stale',
     })
-    assert.equal(revalidationSignal?.aborted, true)
     assert.equal(
       runtime.calls.some(
         (call) => call.operation === 'startProductTurn',

@@ -181,7 +181,7 @@ PDF와 `unsupported` file은 source explorer에서 계속 preview하거나 unsup
 
 Action은 Browser source list나 preview cache를 authority로 사용하지 않는다. Product operation lease를 claim한 뒤, native Turn을 시작하기 직전에 active root의 current filesystem에서 request refs를 모두 다시 확인한다.
 
-Server-private source safety Module은 selected ref마다 다음을 수행한다.
+Server-private `WorkspaceFileAccess` safe-open boundary는 selected ref마다 다음을 수행한다.
 
 1. Existing source path syntax와 excluded path policy를 다시 적용한다.
 2. Exact active root를 기준으로 resolve하고 root identity가 startup 때 고정한 identity와 같은지 확인한다.
@@ -193,13 +193,13 @@ Server-private source safety Module은 selected ref마다 다음을 수행한다
 
 모든 ref가 통과한 뒤에만 initial action preflight가 성공한다. 일부만 남겨 Turn을 시작하거나 missing ref를 자동으로 목록에서 제거하지 않는다. `operation.preparing` 전달 뒤 dispatch gate는 effective Skill과 모든 ref를 다시 관찰하고 rendered input이 initial 결과와 같은지 확인한다. Resolver는 file bytes를 읽거나 digest·snapshot·open handle을 Turn 수명까지 보존하지 않는다.
 
-이 action의 `WorkspaceFileRef`는 **path identity에 대한 request-scoped reference**이지 `EvidenceRef`가 아니다.
+이 action의 `WorkspaceFileRef`는 **current-path lookup을 위한 request-scoped reference**이지 `EvidenceRef`가 아니다.
 
 - Browser preview digest를 request에 포함하지 않는다.
 - 같은 safe relative path의 bytes가 list/preview 뒤 바뀌어도 action은 현재 file을 읽는 요청으로 해석한다.
 - File content가 preflight 뒤 바뀌는 것은 App-owned stale snapshot failure가 아니다. AY와 Skill이 actual file을 읽고 Review 직전·apply 직전 drift를 다시 확인한다.
 - Initial 또는 dispatch gate가 관찰한 missing, symlink, root escape, hidden·secret-like·scaffold path, non-regular file 또는 current non-text classification은 Turn 전 failure다.
-- Dispatch gate도 검증 handle을 닫고 relative path text만 전달하므로 그 뒤 AY의 actual read 전 pathname 교체를 같은 inode에 원자적으로 bind하지 않는다. 이는 current path-reference semantics의 unsupported reader boundary이며 별도 native same-open identity 또는 immutable carrier를 채택하기 전까지 App이 보장하지 않는다.
+- Dispatch gate도 검증 handle을 닫고 relative path text만 전달하므로 그 뒤 AY의 actual read 전 pathname 교체를 같은 inode에 원자적으로 bind하지 않는다. 이는 current path-reference semantics에서 채택한 boundary이며 App이 보장하지 않는다. Exact-version 처리가 구체적인 제품 요구가 될 때만 별도 native same-open identity 또는 immutable carrier 결정을 다시 연다.
 
 이 구분은 old source snapshot/rebaseline state machine을 복원하지 않으면서 actual-file authority를 유지한다.
 
@@ -287,12 +287,10 @@ Action의 순서는 다음과 같다.
 strict HTTP decode
 → Product operation reserve
 → account/settings validation
-→ all file refs fresh resolve
-→ expected Skill fresh resolve
-→ action text render
+→ current file refs + expected Skill + rendered input initial validation
 → client continuity recheck
 → operation.preparing
-→ all file refs → effective Skill → all file refs + rendered input dispatch revalidation
+→ current file refs + effective Skill + prepared input dispatch revalidation
 → client continuity recheck
 → native Product Turn start
 → existing stream / nested interaction / terminal

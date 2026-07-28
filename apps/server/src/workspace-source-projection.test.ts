@@ -15,15 +15,15 @@ import test from 'node:test'
 
 import {
   WorkspaceSourceProjectionError,
-  createWorkspaceSourceProjection as createAuthorityBackedWorkspaceSourceProjection,
+  createWorkspaceSourceProjection as createFileAccessBackedWorkspaceSourceProjection,
 } from './workspace-source-projection.js'
-import { createWorkspaceFilesystemAuthority } from './workspace-filesystem-authority.js'
+import { createWorkspaceFileAccess } from './workspace-file-access.js'
 
 type TestProjectionOptions = Omit<
   Parameters<
-    typeof createAuthorityBackedWorkspaceSourceProjection
+    typeof createFileAccessBackedWorkspaceSourceProjection
   >[0],
-  'authority'
+  'fileAccess'
 > & {
   readonly workspaceRoot: string
 }
@@ -32,10 +32,10 @@ async function createWorkspaceSourceProjection(
   options: TestProjectionOptions,
 ) {
   const { workspaceRoot, ...projectionOptions } = options
-  const authority =
-    await createWorkspaceFilesystemAuthority(workspaceRoot)
-  return createAuthorityBackedWorkspaceSourceProjection({
-    authority,
+  const fileAccess =
+    await createWorkspaceFileAccess(workspaceRoot)
+  return createFileAccessBackedWorkspaceSourceProjection({
+    fileAccess,
     ...projectionOptions,
   })
 }

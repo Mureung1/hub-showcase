@@ -99,7 +99,7 @@ Persistent bridge와 workspace native-context sidecar는 모두 exact SemesterWo
 | `GET /api/product/sources/text?relativePath=...` | Fresh root containment·regular-file·size·fatal UTF-8 검증 뒤 bounded text, full-file SHA-256과 truncation 상태를 반환한다. |
 | `GET /api/product/sources/pdf?relativePath=...` | Fresh 검증한 bounded PDF bytes를 exact MIME·`nosniff`·same-origin inline preview header로 반환한다. |
 | `POST /api/product/chat/messages` | Prepared Git root에서 text-only normal AY Chat을 `workspace_write`로 실행한다. Project config가 Skill·MCP를 발견하지만 App은 selected source나 managed `SkillInput`을 이 request에 주입하지 않는다. |
-| `POST /api/product/actions` | Closed `organize_sources` request의 current text refs와 enabled exact workspace-local Skill을 fresh 검증하고, `operation.preparing` 뒤 dispatch 직전에 selected refs → effective Skill catalog → selected refs·rendered input 순서로 다시 검증한 다음 `workspace_write`, optional settings, Skill 하나와 bounded action text로 shared Product operation NDJSON을 시작한다. |
+| `POST /api/product/actions` | Closed `organize_sources` request의 current text refs와 enabled exact workspace-local Skill을 initial preflight하고, `operation.preparing` 뒤 dispatch 직전에 current refs·effective Skill·prepared input을 각각 한 번 final validation한 다음 `workspace_write`, optional settings, Skill 하나와 bounded action text로 shared Product operation NDJSON을 시작한다. |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/answer|cancel` | Active 일반 Plan interaction을 same-Turn native response로 번역한다. Academic state는 바꾸지 않는다. |
 | `POST /api/product/reviews/:interactionId` | Exact Semantic Review binding의 `accept | revise | reject`를 held MCP call에 전달한다. Bodyless `204`는 전달 ACK이고 resolved NDJSON frame이 settlement authority다. |
 | `POST /api/product/operations/:operationId/interrupt` | Matching Turn의 interrupt acknowledgement를 반환하고 stream terminal을 authoritative outcome으로 유지한다. |
@@ -147,14 +147,14 @@ ADR 0018 target의 root v4 identity codec, external `WorkspaceRegistry` v1 codec
 
 Deterministic Browser green은 exact native identity·bundle·process cleanup을 대신하지 않고 exact local-provider도 Browser reducer·HTTP fail-closed behavior를 대신하지 않는다.
 
-## 현재 미지원 경계
+## 현재 미지원·채택 경계
 
-| Gap | 현재 사실 | 정본 |
+| 경계 | 현재 사실 | 정본 |
 | --- | --- | --- |
 | Rollback boundary | Cutover 전 rollback은 current Browser·Server·v2 store·private Runtime/MCP graph 전체, cutover 뒤 rollback은 prepared lifecycle Browser·target Router·Broker·generic Runtime environment·project Skill/MCP graph 전체다. Target Server/old Browser 또는 target Browser/old academic Runtime 같은 half-state는 지원하지 않는다. | [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, multi-thread catalog와 client별 isolation은 없다. 반영된 학업 결과의 durability는 user-owned Git workspace와 checkpoint가 소유한다. | [Chat Shell README](../../apps/chat-shell/README.md) |
 | Interactive Codex approval | Normal Product Turn과 Plan interaction은 검증됐지만 generic command·file·network approval center는 채택하지 않았다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
-| Path-based reader identity binding | Runtime은 startup root와 dispatch 직전 root→`SKILL.md` ancestor·leaf identity를 검증하고 Server는 selected refs를 dispatch gate에서 다시 연다. 그러나 official `SkillInput`은 name·path만 운반하고 selected refs도 relative path text뿐이라 native core·AY가 이후 path를 다시 읽을 때 검증 handle과 actual reader inode 사이의 post-validation pathname 교체·ABA를 원자적으로 배제하지 못한다. 완전한 closure에는 native same-open identity/digest, descriptor capability 또는 immutable snapshot carrier 중 하나의 별도 architecture 결정이 필요하다. | [Runtime README](../../packages/codex-chat-runtime/README.md), [ActionInvocation Spec](../specs/2026-07-28-organize-sources-action-invocation.md) |
+| Current-path carrier boundary (채택한 한계) | Source ref와 workspace-local Skill은 dispatch 전 current safe path로 검증되지만 carrier는 path만 운반하고 native reader는 이후 workspace의 current file·Skill copy를 연다. Same-inode 또는 content-version binding은 보장하지 않으며 이는 current actual-file semantics의 미완료 hardening task가 아니다. Exact-version 처리가 구체적인 제품 요구가 될 때만 별도 carrier 결정을 다시 연다. | [ADR 0018](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [ADR 0021](../adr/0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), [AY–App Interaction Layer](ay-app-interaction-layer.md) |
 | Packaged Desktop | `.app`·`.dmg`, Developer ID signing·notarization, automatic updater와 다른 platform은 지원하지 않는다. | [macOS-first ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md) |
 
 중단한 public npx release lane의 `@ay-ple/runtime-release`, `apps/ay-ple` production host와 public-preview Server·Browser graph는 tracked graph에서 제거했다. 이는 현재 gap이나 후속 목표가 아니며 당시 결정과 구현 증거만 historical ADR 0016·0017과 완료 ticket에 남는다. Runtime의 managed account·`auth-only` surface와 AY-PLE-owned Python login/logout bridge command, managed-login 전용 patch는 제거됐다. Current Runtime은 workspace-only contract, fresh Account Readiness와 exact seven-patch stack만 유지한다.

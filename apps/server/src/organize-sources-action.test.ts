@@ -16,7 +16,7 @@ import {
   createOrganizeSourcesAction,
   renderOrganizeSourcesActionText,
 } from './organize-sources-action.js'
-import { createWorkspaceFilesystemAuthority } from './workspace-filesystem-authority.js'
+import { createWorkspaceFileAccess } from './workspace-file-access.js'
 import {
   createWorkspaceSourceProjection,
   type WorkspaceSourceProjection,
@@ -54,7 +54,7 @@ test('organize_sources renderer rejects text beyond its UTF-8 bound', () => {
   )
 })
 
-test('organize_sources rejects a user-shaped source projection without the shared workspace authority', async () => {
+test('organize_sources rejects a user-shaped source projection without shared workspace file access', async () => {
   const sources = {
     async list() {
       return { sources: [] }
@@ -78,11 +78,14 @@ test('organize_sources rejects a user-shaped source projection without the share
   )
 })
 
-test('organize_sources prepare rejects a selected file replaced by an outside symlink during Skill discovery', async () => {
+test('organize_sources prepare rejects a selected ref that is unsafe at the initial gate', async () => {
   const fixture = await createActionFixture(
-    'organize-sources-file-race-',
+    'organize-sources-initial-file-gate-',
   )
   try {
+    await rm(fixture.selectedPath)
+    await symlink(fixture.outsidePath, fixture.selectedPath)
+
     await assert.rejects(
       fixture.action.prepare(
         {
@@ -91,17 +94,7 @@ test('organize_sources prepare rejects a selected file replaced by an outside sy
         },
         {
           signal: new AbortController().signal,
-          listEffectiveSkills: async () => {
-            await rm(fixture.selectedPath)
-            await symlink(fixture.outsidePath, fixture.selectedPath)
-            return [
-              {
-                name: 'ay-ple-first-assignment',
-                enabled: true,
-                sourceRoot: fixture.skillRoot,
-              },
-            ]
-          },
+          listEffectiveSkills: async () => [],
         },
       ),
       (error: unknown) =>
@@ -113,7 +106,7 @@ test('organize_sources prepare rejects a selected file replaced by an outside sy
   }
 })
 
-test('organize_sources dispatch revalidation rejects a selected file replaced by an outside symlink after prepare', async () => {
+test('organize_sources dispatch rejects a selected ref that is unsafe at the final gate', async () => {
   const fixture = await createActionFixture(
     'organize-sources-dispatch-file-race-',
   )
@@ -156,7 +149,7 @@ test('organize_sources dispatch revalidation rejects a selected file replaced by
   }
 })
 
-test('organize_sources dispatch revalidation rejects a Skill removed from the effective catalog after prepare', async () => {
+test('organize_sources dispatch rejects an unavailable expected Skill at the final gate', async () => {
   const fixture = await createActionFixture(
     'organize-sources-dispatch-skill-race-',
   )
@@ -184,50 +177,6 @@ test('organize_sources dispatch revalidation rejects a Skill removed from the ef
       (error: unknown) =>
         error instanceof OrganizeSourcesActionError &&
         error.code === 'action_unavailable',
-    )
-  } finally {
-    await fixture.cleanup()
-  }
-})
-
-test('organize_sources dispatch revalidation rechecks selected files after final Skill discovery', async () => {
-  const fixture = await createActionFixture(
-    'organize-sources-dispatch-skill-file-race-',
-  )
-  const input = {
-    action: 'organize_sources',
-    files: [{ relativePath: 'selected.md' }],
-  } as const
-  try {
-    const prepared = await fixture.action.prepare(input, {
-      signal: new AbortController().signal,
-      listEffectiveSkills: async () => [
-        {
-          name: 'ay-ple-first-assignment',
-          enabled: true,
-          sourceRoot: fixture.skillRoot,
-        },
-      ],
-    })
-
-    await assert.rejects(
-      fixture.action.revalidateForDispatch(input, prepared, {
-        signal: new AbortController().signal,
-        listEffectiveSkills: async () => {
-          await rm(fixture.selectedPath)
-          await symlink(fixture.outsidePath, fixture.selectedPath)
-          return [
-            {
-              name: 'ay-ple-first-assignment',
-              enabled: true,
-              sourceRoot: fixture.skillRoot,
-            },
-          ]
-        },
-      }),
-      (error: unknown) =>
-        error instanceof OrganizeSourcesActionError &&
-        error.code === 'action_context_stale',
     )
   } finally {
     await fixture.cleanup()
@@ -309,9 +258,9 @@ async function createActionFixture(prefix: string): Promise<{
     writeFile(outsidePath, 'outside'),
     writeFile(path.join(skillRoot, 'SKILL.md'), '# Skill'),
   ])
-  const authority =
-    await createWorkspaceFilesystemAuthority(workspaceRoot)
-  const sources = await createWorkspaceSourceProjection({ authority })
+  const fileAccess =
+    await createWorkspaceFileAccess(workspaceRoot)
+  const sources = await createWorkspaceSourceProjection({ fileAccess })
   const action = await createOrganizeSourcesAction({
     sources,
   })

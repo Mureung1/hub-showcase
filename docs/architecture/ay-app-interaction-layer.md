@@ -125,7 +125,7 @@ sequenceDiagram
 
 ## `ActionInvocation`: App이 시작하는 작업
 
-`ActionInvocation`은 명시적인 GUI action과 그 시점의 검증된 App 맥락을 한 번의 AY 작업으로 전달한다. 첫 채택 사례는 source explorer에서 선택한 실제 workspace file을 `organize_sources` action으로 동결하고 workspace-local Skill과 함께 native Turn에 전달하는 흐름이다.
+`ActionInvocation`은 명시적인 GUI action과 그 시점의 검증된 App 맥락을 한 번의 AY 작업으로 전달한다. 첫 채택 사례는 source explorer에서 선택한 ordered relative file ref 목록을 `organize_sources` action request로 동결하고 workspace-local Skill과 함께 native Turn에 전달하는 흐름이다.
 
 ### Interface 규칙
 
@@ -133,7 +133,7 @@ sequenceDiagram
 | --- | --- |
 | Explicit invocation | Preview, tab 이동, checkbox와 selection 변화만으로 AY 입력을 바꾸지 않는다. 사용자가 목적이 분명한 action을 실행해야 invocation이 생긴다. |
 | Typed intent | Browser는 raw click이나 arbitrary payload가 아니라 `organize_sources`처럼 closed action contract를 보낸다. |
-| Request-scoped context | 선택 file은 invocation 시작 시점에 동결하고 active SemesterWorkspace 안의 relative reference로 fresh 검증한다. Durable selection이나 source registry를 만들지 않는다. |
+| Request-scoped context | Invocation 시작 시 선택한 relative path 목록을 동결하고 active SemesterWorkspace 안의 current safe path인지 fresh 검증한다. File bytes나 content version, durable selection과 source registry는 만들지 않는다. |
 | Host-owned binding | Browser는 workspace root, absolute path, Skill path, `threadId`·`turnId`와 native input type을 보내지 않는다. |
 | One invocation, one Turn | 유효한 invocation 하나는 startup-approved thread에 fresh native Turn 하나를 시작한다. Retry는 fresh invocation과 Turn이다. |
 | Fail closed | Unknown action, invalid·stale·out-of-root file, missing expected Skill, busy operation과 Runtime failure는 Turn을 부분 시작하거나 다른 action으로 낮추지 않는다. |
@@ -152,7 +152,7 @@ App-facing contract와 Codex-native input 사이에는 Adapter seam을 둔다.
 | Action settings | Current advertised model·reasoning·service tier와 action permission policy를 native Turn 설정으로 번역한다. |
 | Product operation | Native thread·turn identity와 activity stream을 Browser-safe frame, interrupt와 terminal 상태로 투영한다. |
 
-`WorkspaceFileRef`는 한 invocation이 active SemesterWorkspace의 실제 사용자 file을 가리키는 request-scoped relative reference다. `RawMaterial`, source copy, `EvidenceRef`나 filesystem permission이 아니다.
+`WorkspaceFileRef`는 한 invocation이 active SemesterWorkspace의 실제 사용자 file을 가리키는 request-scoped relative reference다. Path 목록은 invocation에 고정되지만 content version은 고정되지 않으므로 같은 safe path의 bytes가 바뀌면 AY는 actual read 시점의 current file을 만난다. Exact version을 Review 근거로 묶는 `EvidenceRef`, `RawMaterial`, source copy나 filesystem permission이 아니다.
 
 Initial native mapping은 official SDK가 이미 제공하는 `SkillInput`과 bounded `TextInput`을 순서대로 사용한다. App action definition은 effective catalog에서 확인한 workspace-local Skill의 host-only name·path를 `SkillInput`으로 전달하고, 선택한 actual file은 POSIX workspace-relative reference만 bounded `TextInput`에 명시적으로 렌더링한다. Browser는 Skill path나 native input type을 알지 않는다.
 
@@ -217,13 +217,14 @@ ActionInvocation으로 시작한 Turn도 project-discovered Interaction MCP를 �
 | --- | --- | --- |
 | 사용자 | 명시적 GUI action, capability UI의 최종 선택, 학기 자료의 의미 | Native protocol과 correlation |
 | AY·Skill | Workflow, 자료 해석, InteractionCapability 호출 시점과 result 해석, 실제 file mutation·Git checkpoint | App UI lifecycle과 Browser transport |
-| App action definition | GUI intent 의미, request-scoped context validation, workspace Skill 요구와 native composition 요청 | Skill prompt sequence, file apply와 Git |
+| App SourceProjection | Current filesystem의 bounded on-demand read-only list·preview와 request-boundary safety validation | Actual file authority, reusable snapshot·cache, file mutation·Git |
+| App action definition | GUI intent 의미, request-scoped path 목록과 freshness semantics, Turn 전 안전 검증, workspace Skill 요구와 native composition 요청 | Exact content snapshot, AY reader identity, Skill prompt sequence, file apply와 Git |
 | Interaction MCP Module | AY-originated typed request/result와 App UI round trip | ActionInvocation과 학업 workflow |
 | Product operation infrastructure | Active Runtime·thread admission, stream, interrupt와 terminal settlement | Durable run history와 기능 payload 의미 |
 | Codex Runtime Adapter | Capability-neutral native input·Turn 실행과 activity projection | App action·MCP UI의 제품 의미 |
 | SemesterWorkspace | 실제 학기 file, workspace-local Skill·config와 Git history | Pending invocation·interaction과 Runtime identity |
 
-Durable state는 actual workspace file, tracked Skill·config, Git history, `WorkspaceRegistry`와 native conversation에 둔다. Browser selection, ActionInvocation input snapshot, Product operation, pending InteractionCapability, validated evidence preview와 settled inline presentation은 transient다.
+Durable state는 actual workspace file, tracked Skill·config, Git history, `WorkspaceRegistry`와 native conversation에 둔다. Browser selection, ActionInvocation의 frozen path 목록, Product operation, pending InteractionCapability, validated evidence preview와 settled inline presentation은 transient다. `WorkspaceFileRef`의 current-path semantics와 `EvidenceRef`의 exact content-version semantics를 서로 대신 사용하지 않는다.
 
 ## 현재 구현과 확장 target
 

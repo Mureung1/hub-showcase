@@ -7,11 +7,11 @@ import type {
   TargetProductActionInvocationRequest,
 } from '@ay-ple/product-contract'
 
-import type { WorkspaceFilesystemAuthority } from './workspace-filesystem-authority.js'
+import type { WorkspaceFileAccess } from './workspace-file-access.js'
 import {
   WorkspaceSourceProjectionError,
   type WorkspaceSourceProjection,
-  workspaceFilesystemAuthorityForSourceProjection,
+  workspaceFileAccessForSourceProjection,
 } from './workspace-source-projection.js'
 
 const actionTextMaxBytes = 32 * 1024
@@ -58,12 +58,12 @@ export class OrganizeSourcesActionError extends Error {
 export async function createOrganizeSourcesAction(options: {
   readonly sources: WorkspaceSourceProjection
 }): Promise<OrganizeSourcesAction> {
-  let authority: WorkspaceFilesystemAuthority
+  let fileAccess: WorkspaceFileAccess
   let expectedSkillRoot: string
   try {
-    authority =
-      workspaceFilesystemAuthorityForSourceProjection(options.sources)
-    expectedSkillRoot = authority.pathFor([
+    fileAccess =
+      workspaceFileAccessForSourceProjection(options.sources)
+    expectedSkillRoot = fileAccess.pathFor([
       '.agents',
       'skills',
       skillName,
@@ -95,18 +95,11 @@ export async function createOrganizeSourcesAction(options: {
       try {
         skill = await resolveExpectedSkill(skills, {
           expectedSkillRoot,
-          authority,
+          fileAccess,
         })
       } catch (error) {
-        await assertCurrentActionWorkspace(authority)
+        await assertCurrentActionWorkspace(fileAccess)
         throw error
-      }
-      context.signal.throwIfAborted()
-
-      try {
-        files = await options.sources.preflightTextFiles(input.files)
-      } catch (error) {
-        throw mapSourceError(error)
       }
       context.signal.throwIfAborted()
 
@@ -120,14 +113,6 @@ export async function createOrganizeSourcesAction(options: {
 
     async revalidateForDispatch(input, prepared, context) {
       assertDispatchActive(context.signal)
-      let files: readonly ProductWorkspaceFileRef[]
-      try {
-        files = await options.sources.preflightTextFiles(input.files)
-      } catch (error) {
-        throw mapSourceError(error)
-      }
-      assertDispatchActive(context.signal)
-
       let skills: readonly CodexEffectiveSkill[]
       try {
         skills = await context.listEffectiveSkills(context.signal)
@@ -140,14 +125,15 @@ export async function createOrganizeSourcesAction(options: {
       try {
         skill = await resolveExpectedSkill(skills, {
           expectedSkillRoot,
-          authority,
+          fileAccess,
         })
       } catch (error) {
-        await assertCurrentActionWorkspace(authority)
+        await assertCurrentActionWorkspace(fileAccess)
         throw error
       }
       assertDispatchActive(context.signal)
 
+      let files: readonly ProductWorkspaceFileRef[]
       try {
         files = await options.sources.preflightTextFiles(input.files)
       } catch (error) {
@@ -191,7 +177,7 @@ async function resolveExpectedSkill(
   skills: readonly CodexEffectiveSkill[],
   options: {
     readonly expectedSkillRoot: string
-    readonly authority: WorkspaceFilesystemAuthority
+    readonly fileAccess: WorkspaceFileAccess
   },
 ): Promise<CodexProductSkillInput> {
   const matches = skills.filter(
@@ -211,8 +197,8 @@ async function resolveExpectedSkill(
       skillName,
       'SKILL.md',
     ] as const
-    const skillPath = options.authority.pathFor(skillSegments)
-    await options.authority.assertRegularFile(skillSegments)
+    const skillPath = options.fileAccess.pathFor(skillSegments)
+    await options.fileAccess.assertRegularFile(skillSegments)
     return { name: skillName, path: skillPath }
   } catch (error) {
     if (error instanceof OrganizeSourcesActionError) throw error
@@ -239,10 +225,10 @@ function mapSourceError(error: unknown): OrganizeSourcesActionError {
 }
 
 async function assertCurrentActionWorkspace(
-  authority: WorkspaceFilesystemAuthority,
+  fileAccess: WorkspaceFileAccess,
 ): Promise<void> {
   try {
-    await authority.assertCurrentWorkspace()
+    await fileAccess.assertPinnedWorkspaceCurrent()
   } catch (error) {
     if (error instanceof OrganizeSourcesActionError) throw error
     throw new OrganizeSourcesActionError('action_context_stale')

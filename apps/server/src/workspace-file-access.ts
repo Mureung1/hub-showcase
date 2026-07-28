@@ -21,7 +21,7 @@ type RegularFileSnapshot = FilesystemIdentity & {
   readonly size: number
 }
 
-export class WorkspaceFilesystemAuthorityError extends Error {
+export class WorkspaceFileAccessError extends Error {
   constructor(
     readonly code:
       | 'workspace_unavailable'
@@ -29,11 +29,11 @@ export class WorkspaceFilesystemAuthorityError extends Error {
       | 'path_too_large',
   ) {
     super(code)
-    this.name = 'WorkspaceFilesystemAuthorityError'
+    this.name = 'WorkspaceFileAccessError'
   }
 }
 
-export class WorkspaceFilesystemAuthority {
+export class WorkspaceFileAccess {
   private constructor(
     readonly workspaceRoot: string,
     private readonly workspaceRootIdentity: FilesystemIdentity,
@@ -41,13 +41,13 @@ export class WorkspaceFilesystemAuthority {
 
   static async create(
     workspaceRoot: string,
-  ): Promise<WorkspaceFilesystemAuthority> {
+  ): Promise<WorkspaceFileAccess> {
     try {
       if (
         !path.isAbsolute(workspaceRoot) ||
         path.normalize(workspaceRoot) !== workspaceRoot
       ) {
-        throw new WorkspaceFilesystemAuthorityError(
+        throw new WorkspaceFileAccessError(
           'workspace_unavailable',
         )
       }
@@ -60,17 +60,17 @@ export class WorkspaceFilesystemAuthority {
         stats.isSymbolicLink() ||
         !stats.isDirectory()
       ) {
-        throw new WorkspaceFilesystemAuthorityError(
+        throw new WorkspaceFileAccessError(
           'workspace_unavailable',
         )
       }
-      return new WorkspaceFilesystemAuthority(workspaceRoot, {
+      return new WorkspaceFileAccess(workspaceRoot, {
         device: stats.dev,
         inode: stats.ino,
       })
     } catch (error) {
-      if (error instanceof WorkspaceFilesystemAuthorityError) throw error
-      throw new WorkspaceFilesystemAuthorityError(
+      if (error instanceof WorkspaceFileAccessError) throw error
+      throw new WorkspaceFileAccessError(
         'workspace_unavailable',
       )
     }
@@ -89,19 +89,19 @@ export class WorkspaceFilesystemAuthority {
           segment.includes('\\'),
       )
     ) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
     const candidate = path.join(this.workspaceRoot, ...segments)
     if (
       path.normalize(candidate) !== candidate ||
       !isPathWithinRoot(candidate, this.workspaceRoot)
     ) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
     return candidate
   }
 
-  async assertCurrentWorkspace(): Promise<void> {
+  async assertPinnedWorkspaceCurrent(): Promise<void> {
     try {
       const [canonical, stats] = await Promise.all([
         realpath(this.workspaceRoot),
@@ -114,13 +114,13 @@ export class WorkspaceFilesystemAuthority {
         stats.dev !== this.workspaceRootIdentity.device ||
         stats.ino !== this.workspaceRootIdentity.inode
       ) {
-        throw new WorkspaceFilesystemAuthorityError(
+        throw new WorkspaceFileAccessError(
           'workspace_unavailable',
         )
       }
     } catch (error) {
-      if (error instanceof WorkspaceFilesystemAuthorityError) throw error
-      throw new WorkspaceFilesystemAuthorityError(
+      if (error instanceof WorkspaceFileAccessError) throw error
+      throw new WorkspaceFileAccessError(
         'workspace_unavailable',
       )
     }
@@ -165,13 +165,13 @@ export class WorkspaceFilesystemAuthority {
       (!Number.isSafeInteger(options.maximumBytes) ||
         options.maximumBytes <= 0)
     ) {
-      throw new WorkspaceFilesystemAuthorityError(
+      throw new WorkspaceFileAccessError(
         'workspace_unavailable',
       )
     }
 
     const candidate = this.pathFor(options.segments)
-    await this.assertCurrentWorkspace()
+    await this.assertPinnedWorkspaceCurrent()
     const directories = await this.captureDirectoryChain(
       options.segments.slice(0, -1),
     )
@@ -187,7 +187,7 @@ export class WorkspaceFilesystemAuthority {
         constants.O_RDONLY | constants.O_NOFOLLOW,
       )
     } catch {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
 
     let result: Result
@@ -203,7 +203,7 @@ export class WorkspaceFilesystemAuthority {
     try {
       await handle.close()
     } catch {
-      throw new WorkspaceFilesystemAuthorityError(
+      throw new WorkspaceFileAccessError(
         'workspace_unavailable',
       )
     }
@@ -228,11 +228,11 @@ export class WorkspaceFilesystemAuthority {
     directories: readonly DirectorySnapshot[],
     file: RegularFileSnapshot,
   ): Promise<void> {
-    await this.assertCurrentWorkspace()
+    await this.assertPinnedWorkspaceCurrent()
     for (const expected of directories) {
       const current = await readDirectorySnapshot(expected.absolutePath)
       if (!hasSameIdentity(current, expected)) {
-        throw new WorkspaceFilesystemAuthorityError('path_not_found')
+        throw new WorkspaceFileAccessError('path_not_found')
       }
       await assertCanonicalPath(
         expected.absolutePath,
@@ -244,17 +244,17 @@ export class WorkspaceFilesystemAuthority {
       !hasSameIdentity(currentFile, file) ||
       currentFile.size !== file.size
     ) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
     await assertCanonicalPath(file.absolutePath, this.workspaceRoot)
-    await this.assertCurrentWorkspace()
+    await this.assertPinnedWorkspaceCurrent()
   }
 }
 
-export async function createWorkspaceFilesystemAuthority(
+export async function createWorkspaceFileAccess(
   workspaceRoot: string,
-): Promise<WorkspaceFilesystemAuthority> {
-  return WorkspaceFilesystemAuthority.create(workspaceRoot)
+): Promise<WorkspaceFileAccess> {
+  return WorkspaceFileAccess.create(workspaceRoot)
 }
 
 async function readDirectorySnapshot(
@@ -263,7 +263,7 @@ async function readDirectorySnapshot(
   try {
     const stats = await lstat(absolutePath)
     if (stats.isSymbolicLink() || !stats.isDirectory()) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
     return {
       absolutePath,
@@ -271,11 +271,11 @@ async function readDirectorySnapshot(
       inode: stats.ino,
     }
   } catch (error) {
-    if (error instanceof WorkspaceFilesystemAuthorityError) throw error
+    if (error instanceof WorkspaceFileAccessError) throw error
     if (isMissingPathError(error)) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
-    throw new WorkspaceFilesystemAuthorityError(
+    throw new WorkspaceFileAccessError(
       'workspace_unavailable',
     )
   }
@@ -287,7 +287,7 @@ async function readRegularFileSnapshot(
   try {
     const stats = await lstat(absolutePath)
     if (stats.isSymbolicLink() || !stats.isFile()) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
     return {
       absolutePath,
@@ -296,11 +296,11 @@ async function readRegularFileSnapshot(
       size: stats.size,
     }
   } catch (error) {
-    if (error instanceof WorkspaceFilesystemAuthorityError) throw error
+    if (error instanceof WorkspaceFileAccessError) throw error
     if (isMissingPathError(error)) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
-    throw new WorkspaceFilesystemAuthorityError(
+    throw new WorkspaceFileAccessError(
       'workspace_unavailable',
     )
   }
@@ -316,14 +316,14 @@ async function assertCanonicalPath(
       canonical !== candidate ||
       !isPathWithinRoot(canonical, workspaceRoot)
     ) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
   } catch (error) {
-    if (error instanceof WorkspaceFilesystemAuthorityError) throw error
+    if (error instanceof WorkspaceFileAccessError) throw error
     if (isMissingPathError(error)) {
-      throw new WorkspaceFilesystemAuthorityError('path_not_found')
+      throw new WorkspaceFileAccessError('path_not_found')
     }
-    throw new WorkspaceFilesystemAuthorityError(
+    throw new WorkspaceFileAccessError(
       'workspace_unavailable',
     )
   }
@@ -338,7 +338,7 @@ async function assertOpenedFile(
   try {
     stats = await handle.stat()
   } catch {
-    throw new WorkspaceFilesystemAuthorityError(
+    throw new WorkspaceFileAccessError(
       'workspace_unavailable',
     )
   }
@@ -347,11 +347,11 @@ async function assertOpenedFile(
     stats.dev !== expected.device ||
     stats.ino !== expected.inode
   ) {
-    throw new WorkspaceFilesystemAuthorityError('path_not_found')
+    throw new WorkspaceFileAccessError('path_not_found')
   }
   assertMaximumBytes(stats.size, maximumBytes)
   if (stats.size !== expected.size) {
-    throw new WorkspaceFilesystemAuthorityError('path_not_found')
+    throw new WorkspaceFileAccessError('path_not_found')
   }
 }
 
@@ -360,7 +360,7 @@ function assertMaximumBytes(
   maximumBytes: number | undefined,
 ): void {
   if (maximumBytes !== undefined && size > maximumBytes) {
-    throw new WorkspaceFilesystemAuthorityError('path_too_large')
+    throw new WorkspaceFileAccessError('path_too_large')
   }
 }
 

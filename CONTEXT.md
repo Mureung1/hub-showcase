@@ -35,8 +35,12 @@ _Avoid_: 학기 이해 완료, 학업 action 준비 완료, 자료 분석 완료
 SemesterWorkspace 안에서 한 과목을 나타내는 학업 객체다. 정체성과 관계는 workspace-local 학기 정보가 기준이며 관련 폴더와 파일을 연결할 수 있지만 폴더 자체와 같지는 않다.
 _Avoid_: 디렉터리, thread, 태그
 
+**WorkspaceFileRef**:
+ActionInvocation이 한 번의 요청에서 active SemesterWorkspace 안의 현재 file path를 가리키는 상대 참조다. Action을 실행할 때 참조할 path 목록은 고정하지만 file의 content version은 고정하지 않는다. Exact content version에 대한 근거가 필요하면 EvidenceRef를 사용한다.
+_Avoid_: EvidenceRef, file snapshot, App-owned source identity, durable selection, 열린 file handle
+
 **EvidenceRef**:
-AY가 제안한 값이 어느 학기 자료의 어떤 content version과 위치에 근거하는지 Review에 전달할 수 있는 선택적 field-level 참조다. App은 Review 요청 때 active SemesterWorkspace의 relative path를 on-demand로 bounded read하고 exact content digest와 locator를 검증해 transient preview를 만들 뿐, 모든 file operation을 추적하지 않는다.
+WorkspaceFileRef와 달리 relative path, exact content digest와 locator로 AY가 제안한 값의 특정 content version과 위치를 Review에 전달하는 선택적 field-level 참조다. App은 Review 요청 때 active SemesterWorkspace의 relative path를 on-demand로 bounded read하고 exact content digest와 locator를 검증해 transient preview를 만들 뿐, 모든 file operation을 추적하지 않는다.
 _Avoid_: 필수 global file registry, 최신 파일만 가리키는 링크, App-owned source copy·cache, 일부만 검증된 preview, Agent 활동 로그
 
 **SemesterModel**:

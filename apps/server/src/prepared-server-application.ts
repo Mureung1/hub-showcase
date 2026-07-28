@@ -20,7 +20,7 @@ import {
 } from './prepared-product-operation-coordinator.js'
 import { createOrganizeSourcesAction } from './organize-sources-action.js'
 import type { ServerApplication } from './server-application.js'
-import { createWorkspaceFilesystemAuthority } from './workspace-filesystem-authority.js'
+import { createWorkspaceFileAccess } from './workspace-file-access.js'
 import { createWorkspaceSourceProjection } from './workspace-source-projection.js'
 
 export type PreparedServerApplication = {
@@ -37,11 +37,11 @@ export async function createPreparedServerApplication(options: {
   readonly workspaceRoot: string
   readonly readLifecycle: () => ProductWorkspaceLifecycle
 }): Promise<PreparedServerApplication> {
-  const workspaceAuthority = await createWorkspaceFilesystemAuthority(
+  const workspaceFileAccess = await createWorkspaceFileAccess(
     options.workspaceRoot,
   )
   const sources = await createWorkspaceSourceProjection({
-    authority: workspaceAuthority,
+    fileAccess: workspaceFileAccess,
   })
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,

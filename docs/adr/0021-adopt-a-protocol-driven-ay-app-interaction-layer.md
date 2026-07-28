@@ -2,7 +2,7 @@
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 부분 대체·보완하는 결정: [ADR 0007 — 제품 작업을 native Codex 조합으로 실행한다](0007-use-native-codex-composition-for-product-actions.md), [ADR 0019 — MCP InteractionCapability로 App UI round trip을 제공한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)
 
@@ -25,6 +25,7 @@ AY-PLE을 일반 Codex client와 구분하는 제품 가치는 별도 Agent work
   - **InteractionCapability**는 AY가 MCP로 목적이 분명한 사용자 상호작용을 요청하고, App이 capability-specific UI에서 수집한 closed result를 같은 MCP call과 Codex Turn에 돌려주는 `AY → App → User → AY` Interface다.
 - Source explorer의 preview·selection과 일반 App state 변화는 AY 입력을 암묵적으로 바꾸지 않는다. ActionInvocation은 사용자의 명시적인 action에서만 현재 입력을 동결하며, raw click event가 아니라 `organize_sources`처럼 제품 의미가 닫힌 typed intent를 받는다.
 - ActionInvocation의 App-facing Interface는 native `SkillInput`, `TextInput`, `MentionInput`, Skill path, absolute path와 raw thread·turn identity를 노출하지 않는다. App-owned action definition이 active SemesterWorkspace의 request-scoped file reference와 입력을 검증하고, project에서 발견한 workspace-local Skill과 bounded native Turn input으로 번역한다.
+- ActionInvocation은 request가 가리킬 `WorkspaceFileRef` 목록을 동결할 뿐 file content version을 동결하지 않는다. 각 action definition이 reference freshness 의미를 소유하며, current `organize_sources`는 Turn 직전 safe path를 다시 검증한 뒤 AY가 actual file의 현재 bytes를 읽는 current-path semantics를 사용한다. App의 검증 handle과 이후 AY reader를 같은 inode에 원자적으로 bind하거나 source snapshot을 만드는 것은 이 Interface의 보장이 아니다. Exact content binding이 필요한 기능은 `EvidenceRef` 같은 version-bound contract를 별도로 채택해야 한다.
 - `SkillInput + file reference`, `SkillInput + structured text` 같은 조합은 특정 `ModelingRun` 기능이 아니라 여러 ActionInvocation이 재사용할 수 있는 native composition primitive다. Local file을 실제 native `MentionInput`, rendered path 또는 다른 official input으로 운반할지는 검증된 Codex Adapter mapping이 소유하며 제품 Interface에 고정하지 않는다.
 - InteractionCapability는 ADR 0019의 typed MCP tool, closed result, capability-specific UI, authenticated Broker binding, once-only settlement와 failure semantics를 유지한다. `propose_state_patch`는 이 Interface의 첫 capability일 뿐 catalog 전체나 AY–App Interaction 전체가 아니다.
 - 새 제품 기능은 목적이 분명한 typed GUI action과 Skill, typed MCP capability와 UI Adapter 중 하나 또는 둘을 조합해 추가한다. 기능을 추가하기 위해 공통 Runtime·operation lifecycle을 다시 구현하지 않으며, 반대로 arbitrary payload를 받는 `emit_event`, dynamic workflow registry 또는 arbitrary JSON schema renderer를 만들지 않는다.
@@ -49,4 +50,4 @@ AY-PLE을 일반 Codex client와 구분하는 제품 가치는 별도 Agent work
 - `ModelingRun`은 AY–App Interaction의 이름이나 필수 제품 객체가 아니다. Native Turn과 process-local operation이 실행을 관측하며, durable run history가 실제로 필요해질 때 별도 결정으로 다룬다.
 - ADR 0007의 native Skill·text/file input·Turn 조합과 별도 workflow runtime 거절은 유지한다. `ModelingRecipe → ModelingInvocation → ModelingRun`을 canonical 제품 경계로 삼은 부분과 재사용 가능한 typed invocation seam까지 함께 금지한 해석은 이 결정이 대체한다.
 - ADR 0019는 AY가 시작하는 MCP InteractionCapability의 상세 결정으로 유지한다. `InteractionCapability`가 AY–App의 전체 seam이라는 제목·해석은 이 결정이 대체한다.
-- 현재 구현은 normal Chat과 InteractionCapability 방향을 제공하지만 ActionInvocation은 제공하지 않는다. 채택한 target과 current topology의 차이는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 장기 기술 mapping은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 후속 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
+- 현재 구현은 normal Chat, `organize_sources` ActionInvocation과 `propose_state_patch` InteractionCapability를 같은 Product Turn lifecycle에서 제공한다. Exact current topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 장기 기술 mapping은 [AY–App Interaction Layer 아키텍처](../architecture/ay-app-interaction-layer.md), 후속 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
