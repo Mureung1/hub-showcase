@@ -4,13 +4,12 @@ import type { MapRef } from "react-map-gl/maplibre";
 import type { AnalysisMoveMode } from "../analysis/types";
 import type { MapMode } from "../market/types";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
-import {
-  doesMapBoundsIntersectReadyOverlay,
-  findReadyOverlayRegion,
-  type MapBounds,
-} from "./supportedRegions";
+import { findReadyOverlayRegion, type MapBounds } from "./supportedRegions";
 
-export function useMapViewport(initialCenter: [number, number], preventOverlayCollisions = true) {
+export function useMapViewport(
+  initialCenter: [number, number],
+  _preventOverlayCollisions = true,
+) {
   const [presentationMode, setPresentationModeState] = useState<MapPresentationMode>("analysis");
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
   const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialCenter);
@@ -29,13 +28,6 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
   const draftSupportedRegion = useMemo(
     () => (draftCenter ? findReadyOverlayRegion(draftCenter) : undefined),
     [draftCenter],
-  );
-  const hasVisibleLocalTwinOverlay = useMemo(
-    () =>
-      preventOverlayCollisions && visibleMapBounds
-        ? doesMapBoundsIntersectReadyOverlay(visibleMapBounds)
-        : visibleSupportedRegion !== undefined,
-    [preventOverlayCollisions, visibleMapBounds, visibleSupportedRegion],
   );
 
   function moveCamera(mode: MapPresentationMode, duration = 500) {
@@ -76,11 +68,9 @@ export function useMapViewport(initialCenter: [number, number], preventOverlayCo
     setPrefabMode,
     storefront3dUnavailable,
     setStorefront3dUnavailable,
-    baseBuildingsVisible: profile.coloredBuildingsVisible,
+    baseBuildingsVisible: profile.selectedMarketBuildingsVisible,
     setBaseBuildingsVisible: () => undefined,
-    baseBuildingsRendered:
-      profile.fallbackBuildingsVisible &&
-      (presentationMode === "storefront3d" || !hasVisibleLocalTwinOverlay),
+    baseBuildingsRendered: profile.fallbackBuildingsVisible,
     committedCenter,
     focusCenter: (center: [number, number], store: boolean) => {
       setCommittedCenter(center);
