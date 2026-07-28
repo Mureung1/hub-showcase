@@ -258,7 +258,7 @@ hub/
 ├─ apps/
 │  ├─ patient-web/      # 환자용 React 앱
 │  ├─ staff-web/        # 병원 관리자용 React 앱
-│  ├─ platform-admin-web/ # 플랫폼 관리자 문의·상세 신청 검토
+│  ├─ platform-admin-web/ # 플랫폼 관리자 입점 문의·병원 정보 변경 검토
 │  └─ api/              # 세 앱이 공유하는 Express API
 ├─ packages/
 │  ├─ shared/           # 공통 타입, Zod 스키마, 대기열 계산

@@ -19,7 +19,7 @@
 - 현장 접수 완료와 4번째 진료 임박 알림
 - 카카오 알림톡을 가정한 mock provider와 발송 이력
 - 병원 간단 입점 문의와 플랫폼 관리자의 약식 수락·거절
-- 병원 상세 신청, 증빙 이미지 mock 업로드와 플랫폼 관리자 승인·거절
+- 병원 상세 신청과 증빙 이미지 mock 업로드. 플랫폼 관리자 승인·거절 연결은 P1 잔여 작업
 - 병원명·지역·대표 진료과 검색과 `내 주변` mock 데이터
 
 ### 1.3 제외 범위
@@ -39,7 +39,7 @@
 |---|---|
 | 환자 | 회원가입·로그인, 병원 검색, 원격 웨이팅 등록, 본인 상태 조회, 1회 미루기, 직접 취소 |
 | 병원 관리자 | 병원 입점 신청, 현장 환자 등록, 통합 대기열 조회, 원격 환자 도착 처리, 호출·보류·취소·순서 변경, 운영 설정 |
-| 플랫폼 관리자 | 간단 입점 문의와 상세 신청 목록 조회·승인·거절. 승인 병원 이용 중지는 P2 |
+| 플랫폼 관리자 | 간단 입점 문의와 병원 정보 변경 요청 승인·거절. 상세 신청 검토와 승인 병원 이용 중지는 후속 작업 |
 | 시스템 | 순서·예상 시간 계산, 자동 알림 판정, 미도착 처리, 상태·알림 이력 저장 |
 
 - 환자용과 병원 관리자용 가입·로그인 화면은 분리합니다.
@@ -107,7 +107,9 @@
 - 요양기관기호 등 의료기관 식별정보
 - 사업자등록증과 의료기관 개설신고증명서 이미지
 
-MVP에서는 입력 형식과 mock 파일 메타데이터를 검증하고 `verificationProvider = mock` 결과를 저장합니다. 상세 신청은 `pending`으로 제출되며 플랫폼 관리자가 신청 정보와 mock 결과를 확인해 승인하거나 거절합니다. 병원별 진행 중 상세 신청은 1개만 허용하고, 거절 후 재신청은 이전 신청을 수정하지 않고 새 기록으로 저장합니다. 승인 상태가 `approved`인 병원만 대기열을 열 수 있습니다. 실제 DB 승인 상태에 따른 검색 노출 제한은 P2입니다.
+목표 흐름에서는 입력 형식과 mock 파일 메타데이터를 검증하고 `verificationProvider = mock` 결과를 저장합니다. 상세 신청은 `pending`으로 제출되며 플랫폼 관리자가 신청 정보와 mock 결과를 확인해 승인하거나 거절합니다. 병원별 진행 중 상세 신청은 1개만 허용하고, 거절 후 재신청은 이전 신청을 수정하지 않고 새 기록으로 저장합니다. 승인 상태가 `approved`인 병원만 대기열을 열 수 있습니다.
+
+현재 데모 구현은 서버 메모리의 mock 입점 상태를 사용합니다. 상세 신청 제출 시 mock 검증 후 즉시 `approved`로 바뀌며 서버를 재시작하면 초기화됩니다. DB 기반 `pending` 저장과 플랫폼 관리자의 상세 신청 승인·거절 연결은 P1 잔여 작업이고, 실제 DB 승인 상태에 따른 검색 노출 제한은 P2입니다.
 
 ### 4.3 승인 병원의 정보 관리
 
@@ -401,9 +403,9 @@ patientCount = childCount + adultCount + seniorCount
 
 | 메서드 | 경로 | 역할 |
 |---|---|---|
-| `POST` | `/api/hospital-inquiries` | 간단 입점 문의 제출 |
-| `GET` | `/api/hospital-inquiries/me` | 본인이 제출한 문의 상태 조회 |
-| `POST` | `/api/hospital-applications` | 수락된 문의의 상세 신청과 mock 증빙 제출 |
+| `GET` | `/api/mock/hospital-onboarding` | 서버 메모리의 mock 입점 진행 상태 조회 |
+| `POST` | `/api/mock/hospital-inquiries` | 간단 입점 문의 mock 제출 |
+| `POST` | `/api/mock/hospital-applications` | 수락된 문의의 상세 신청과 mock 증빙 제출 후 즉시 mock 승인 |
 | `GET` | `/api/staff/queue` | 오늘의 통합 대기열 조회 |
 | `GET` | `/api/staff/hospital` | 소속 병원 정보와 검토 중 변경 요청 조회 |
 | `POST` | `/api/staff/hospital-change-requests` | 병원 정보 변경사항 검토 요청 |
@@ -420,16 +422,24 @@ patientCount = childCount + adultCount + seniorCount
 
 ### 14.4 플랫폼 관리자
 
-MVP 플랫폼 관리자는 간단 입점 문의, 상세 신청의 mock 검증 결과와 승인 병원의 정보 변경 요청을 확인해 승인·거절합니다.
+현재 플랫폼 관리자는 mock 간단 입점 문의와 DB에 저장된 승인 병원의 정보 변경 요청을 확인해 승인·거절합니다.
 
 | 메서드 | 경로 | 역할 |
 |---|---|---|
-| `GET` | `/api/platform/hospital-inquiries` | 간단 입점 문의 목록 조회 |
-| `PATCH` | `/api/platform/hospital-inquiries/:id` | 문의 수락·거절. 수락 시 병원 레코드 생성과 상세 신청 단계 개방 |
-| `GET` | `/api/platform/hospital-applications` | 상세 검증 신청 목록 조회 |
-| `PATCH` | `/api/platform/hospital-applications/:id` | 상세 신청 승인·거절 |
+| `GET` | `/api/mock/platform/hospital-inquiries` | 서버 메모리의 간단 입점 문의 목록 조회 |
+| `PATCH` | `/api/mock/platform/hospital-inquiries/:id` | mock 문의 수락·거절과 상세 신청 단계 개방 |
 | `GET` | `/api/platform/hospital-change-requests` | 병원 정보 변경 요청과 기존값·제안값 조회 |
 | `PATCH` | `/api/platform/hospital-change-requests/:id` | 변경 요청 승인 후 반영 또는 거절 |
+
+다음 API는 아직 화면과 라우터에 연결되지 않았습니다.
+
+| 메서드 | 경로 | 역할 |
+|---|---|---|
+| `POST` | `/api/hospital-inquiries` | DB 기반 간단 입점 문의 제출 |
+| `GET` | `/api/hospital-inquiries/me` | 본인이 제출한 DB 문의 상태 조회 |
+| `POST` | `/api/hospital-applications` | DB 기반 상세 신청과 증빙 메타데이터 제출 |
+| `GET` | `/api/platform/hospital-applications` | 상세 검증 신청 목록 조회 |
+| `PATCH` | `/api/platform/hospital-applications/:id` | 상세 신청 승인·거절 |
 
 다음 기능은 P2에서 추가합니다.
 
@@ -489,7 +499,7 @@ MVP 플랫폼 관리자는 간단 입점 문의, 상세 신청의 mock 검증 �
 
 - mock 병원 검색과 `내 주변` mock
 - 병원 간단 입점 문의와 플랫폼 관리자의 약식 수락·거절
-- 병원 상세 신청·증빙 mock 업로드와 플랫폼 관리자의 승인·거절
+- 병원 상세 신청·증빙 mock 업로드. DB `pending` 저장과 플랫폼 승인·거절 연결은 잔여 작업
 - 운영 설정, 미루기, 취소와 미도착 자동 처리
 - 보류, 순서 조정, 상태·알림 이력
 - 접근성, 반응형과 오류 상태
