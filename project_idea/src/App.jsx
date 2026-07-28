@@ -33,9 +33,33 @@ function App() {
         setNeedsProfile(false);
         setMyProfile(profile);
         setStep((s) => (s === 0 ? 1 : s));
-      } else {
-        setNeedsProfile(true);
+        return;
       }
+
+      // 회원가입 화면에서 미리 입력해둔 프로필이 있으면(이메일 확인 전 임시 저장분), 세션이 생긴 지금 자동으로 저장
+      const pendingRaw = localStorage.getItem("ridesplit_pending_profile");
+      if (pendingRaw) {
+        try {
+          const pending = JSON.parse(pendingRaw);
+          const effectiveEmail = currentSession.user.email || `guest-${currentSession.user.id}@ridesplit.local`;
+          const { data: saved, error: saveError } = await supabase
+            .from("users")
+            .upsert({ id: currentSession.user.id, email: effectiveEmail, ...pending })
+            .select()
+            .single();
+          localStorage.removeItem("ridesplit_pending_profile");
+          if (!saveError) {
+            setNeedsProfile(false);
+            setMyProfile(saved);
+            setStep((s) => (s === 0 ? 1 : s));
+            return;
+          }
+        } catch {
+          localStorage.removeItem("ridesplit_pending_profile");
+        }
+      }
+
+      setNeedsProfile(true);
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {

@@ -1,18 +1,39 @@
 import { useState } from "react";   // react에서 핵심인 usestate
 import { supabase } from "./supabaseClient";
 
+const GENDER_OPTIONS = [
+  { value: "male", label: "남" },
+  { value: "female", label: "여" },
+];
+
 function LoginScreen() {
   const [mode, setMode] = useState("signup"); // "signup" | "login"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [college, setCollege] = useState("");
+  const [gender, setGender] = useState(null);
+  const [hideGender, setHideGender] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState(null);
   const [guestLoading, setGuestLoading] = useState(false);
 
   async function handleSubmit() {
-    setSubmitting(true);
     setError(null);
+
+    if (mode === "signup") {
+      if (!name.trim()) {
+        setError("이름을 입력해주세요.");
+        return;
+      }
+      if (!gender) {
+        setError("성별을 선택해주세요.");
+        return;
+      }
+    }
+
+    setSubmitting(true);
 
     if (mode === "signup") {
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -24,11 +45,19 @@ function LoginScreen() {
       if (signUpError) {
         console.error("signUp error:", signUpError);
         setError("회원가입에 실패했어요. 이미 가입된 이메일일 수 있어요.");
-      } else if (!data.session) {
-        // 이메일 확인이 필요한 경우: 세션이 바로 오지 않고, 메일의 링크를 눌러야 로그인이 완료됨
-        setSent(true);
+      } else {
+        // 세션이 생기기 전(이메일 확인 전)이라 프로필을 바로 저장할 수 없어서, 확인 링크를 누른 직후
+        // App.jsx가 자동으로 저장하도록 브라우저에 임시로 남겨둠
+        localStorage.setItem(
+          "ridesplit_pending_profile",
+          JSON.stringify({ name, college, gender, hide_gender: hideGender })
+        );
+        if (!data.session) {
+          // 이메일 확인이 필요한 경우: 세션이 바로 오지 않고, 메일의 링크를 눌러야 로그인이 완료됨
+          setSent(true);
+        }
+        // data.session이 바로 오면 App.jsx가 onAuthStateChange로 감지해서 자동으로 넘어감
       }
-      // data.session이 바로 오면 App.jsx가 onAuthStateChange로 감지해서 자동으로 넘어감
     } else {
       const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) {
@@ -172,6 +201,120 @@ function LoginScreen() {
               style={{ width: "100%", fontSize: 15, fontWeight: 600, border: "none", outline: "none", boxSizing: "border-box" }}
             />
           </div>
+
+          {mode === "signup" && (
+            <>
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid rgba(36,21,18,0.08)",
+                  borderRadius: 16,
+                  padding: 16,
+                  textAlign: "left",
+                  margin: "0 0 14px",
+                }}
+              >
+                <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
+                  이름
+                </div>
+                <input
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={{ width: "100%", fontSize: 15, fontWeight: 600, border: "none", outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid rgba(36,21,18,0.08)",
+                  borderRadius: 16,
+                  padding: 16,
+                  textAlign: "left",
+                  margin: "0 0 14px",
+                }}
+              >
+                <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
+                  단과대
+                </div>
+                <input
+                  value={college}
+                  onChange={(e) => setCollege(e.target.value)}
+                  placeholder="예: 경영학과"
+                  style={{ width: "100%", fontSize: 15, fontWeight: 600, border: "none", outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14, textAlign: "left" }}>
+                <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 8, fontWeight: 600 }}>
+                  성별
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {GENDER_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setGender(opt.value)}
+                      style={{
+                        flex: 1,
+                        padding: 10,
+                        borderRadius: 999,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        border: gender === opt.value ? "none" : "1px solid rgba(36,21,18,0.12)",
+                        background: gender === opt.value ? "#C8102E" : "#fff",
+                        color: gender === opt.value ? "#fff" : "#241512",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "#fff",
+                  border: "1px solid rgba(36,21,18,0.08)",
+                  borderRadius: 14,
+                  padding: "12px 16px",
+                  marginBottom: 14,
+                }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600 }}>다른 사람에게 성별 비공개</span>
+                <button
+                  type="button"
+                  onClick={() => setHideGender(!hideGender)}
+                  style={{
+                    width: 40,
+                    height: 24,
+                    borderRadius: 999,
+                    border: "none",
+                    background: hideGender ? "#C8102E" : "rgba(36,21,18,0.15)",
+                    position: "relative",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 3,
+                      left: hideGender ? 19 : 3,
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      background: "#fff",
+                    }}
+                  />
+                </button>
+              </div>
+            </>
+          )}
 
           {error && (
             <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 8px" }}>{error}</p>
