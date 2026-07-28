@@ -116,8 +116,14 @@ export function patchCampaign(
  * 채울 값은 **실제로 게시된 게시물의 permalink만** — 없는 게시물을 가리키면
  * 데모에서 링크가 깨지고, 존재하지 않는 게시를 성공으로 꾸미는 셈이 된다.
  * (실연동 경로는 이 상수를 쓰지 않는다 — 서버가 게시 후 받은 permalink를 그대로 준다.)
+ *
+ * 실존 확인은 HTTP 상태로 하면 안 된다 — 인스타는 없는 게시물에도 200을 준다.
+ * og:title에 `@계정 on Instagram: …`이 나오는지로 봐야 한다:
+ *   curl -s -A "Mozilla/5.0" https://www.instagram.com/p/<코드>/ | grep 'og:title'
  */
-const DEMO_IG_PERMALINK = "https://www.instagram.com/p/DbSE6HDkmpB/";
+// 2026-07-27 실게시분(WeatherPilot이 만든 흐린 날 문구). 이전 값 DbSE6HDkmpB는
+// 계정에 없는 게시물이라 데모에서 링크가 깨져 있었다(200이 와서 못 알아챘다).
+const DEMO_IG_PERMALINK = "https://www.instagram.com/p/DbSzcwRiaQ8/";
 
 /** POST /campaigns/:id/send — 발송(야간이면 예약). */
 export function sendCampaign(

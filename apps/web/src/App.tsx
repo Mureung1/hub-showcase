@@ -619,6 +619,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
   const igPosted = igOn && (sendResult.sns?.posted ?? false);
   const permalink = sendResult.sns?.permalink;
   const caption = sendResult.sns?.caption ?? snsCaption;
+  // 실패 사유는 서버가 준 것을 쓴다 — 원인을 화면이 임의로 단정하면 틀린다.
+  // (실례: "토큰·이미지 미설정"이라 적어뒀는데 실제 원인은 인스타 계정 차단이었다.
+  //  둘 다 설정돼 있어서, 화면만 보고는 어디를 봐야 하는지 알 수 없었다)
+  const igError = sendResult.sns?.error;
 
   // SNS 전용 발송 안내 — 채널명은 바로 윗줄(names)에 이미 나오므로 반복하지 않는다.
   // 단, 인스타(자동 게시)와 X(수동 복사)를 같이 보낸 경우엔 처리가 달라 구분해 준다.
@@ -728,7 +732,7 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
             {igPosted
               ? "인스타그램 본인 계정에 자동 게시됐어요. 문구는 필요하면 복사해 쓰세요."
               : igOn
-                ? "자동 게시가 안 됐어요(토큰·이미지 미설정). 문구를 복사해 직접 올려주세요."
+                ? `자동 게시가 안 됐어요${igError ? ` (${igError})` : ""}. 문구를 복사해 직접 올려주세요.`
                 : "X(트위터)는 문구를 복사해 직접 올려주세요."}
           </p>
           {/* 귀속 방법 안내 — SNS는 공개 채널이라 개인별 쿠폰 코드를 못 준다(shared/sns.ts).
