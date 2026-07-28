@@ -4,22 +4,49 @@
   "summary": "ChatGPT 대화 기록을 분석해 고민과 감정의 흐름을 타임라인으로 보여주는 회고 웹 서비스",
   "githubUser": "dabinnida(백다빈)",
   "demoUrl": "",
-  "thumbnail": "showcase/thumbnail.webp",
-  "screenshots": [],
+  "thumbnail": "home.png",
+  "screenshots": [
+    "home.png",
+    "timeline.png"
+  ],
   "problem": "기록의 중요성은 커지고 있지만 많은 사람들이 일기를 꾸준히 쓰지 못한다. 반면 ChatGPT와의 대화에는 고민, 목표, 감정이 자연스럽게 남아있다.",
-  "targetUsers": [],
+  "targetUsers": [
+    "일기나 기록을 꾸준히 쓰기 어려워하는 사람",
+    "이미 ChatGPT나 Claude와 일상적인 대화를 자주 나누는 사람",
+    "자신의 고민과 감정이 시간에 따라 어떻게 변해왔는지 되돌아보고 싶은 사람"
+  ],
   "features": [
     "홈 화면 - 이번 달 AI 한 줄 요약 및 자주 언급된 키워드 카드",
     "타임라인 화면 - 키워드별로 시간순 흐름과 우세 감정 확인",
     "월별 기록 - 그 달의 고민, 목표, 감정을 모달로 확인"
   ],
-  "featureTags": ["AI", "회고", "웹서비스"],
-  "techStack": ["React", "Node.js", "Express", "Supabase", "Gemini API"],
-  "techHighlights": [],
+  "featureTags": [
+    "AI",
+    "회고",
+    "웹서비스"
+  ],
+  "techStack": [
+    "React",
+    "Node.js",
+    "Express",
+    "Supabase",
+    "Gemini API"
+  ],
+  "techHighlights": [
+    "하루 단위로 여러 대화를 묶어 맥락을 파악하는 배치 분석 로직",
+    "같은 주제여도 감정이 상반되면 분리 저장해 감정 정보 손실을 방지하는 프롬프트 설계",
+    "대화 uuid 기반 중복 업로드 방지로 겹치는 기간을 다시 올려도 안전하게 처리",
+    "날씨, 코드 문법 등 정보 요청형 질문을 자동으로 걸러내는 필터링 로직"
+  ],
   "developmentWithAI": "React 화면 디자인부터 Express API, LLM 프롬프트 설계까지 AI와 단계별로 대화하며 개발했습니다.",
   "agent": {
-    "summary": "",
-    "agentTools": [],
-    "workflows": []
+    "summary": "Claude와 대화하며 DB 스키마 설계, 프롬프트 튜닝, API 구현, React 연동까지 단계별로 진행했습니다. 문제가 생길 때마다 원인을 화면·서버·DB로 나눠 확인하며 하나씩 해결했습니다.",
+    "agentTools": [
+      "Claude"
+    ],
+    "workflows": [
+      "프롬프트 설계 → 여러 날짜의 실제와 유사한 데이터로 배치 테스트 → 문제 발견 시 규칙 추가 → 재검증 반복",
+      "설계 결정마다 트레이드오프를 먼저 확인하고 확정한 뒤 구현하는 방식으로 진행"
+    ]
   }
 }

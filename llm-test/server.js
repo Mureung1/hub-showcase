@@ -547,7 +547,7 @@ app.post("/api/upload-conversations", async (req, res) => {
     let totalSkipped = 0;
 
     for (const date of dates) {
-      const response = await fetch("http://localhost:3000/api/analyze-batch", {
+      const response = await fetch(`http://localhost:${process.env.PORT || 3000}/api/analyze-batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date, messages: grouped[date] }),
@@ -587,7 +587,15 @@ app.post("/api/upload-conversations", async (req, res) => {
   }
 });
 
-const PORT = 3000;
+// ============================================
+// GET /api/health
+// 배포 상태 확인용 (Render health check)
+// ============================================
+app.get("/api/health", (req, res) => {
+  res.json({ success: true, status: "ok", timestamp: new Date().toISOString() });
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`서버 실행 중: http://localhost:${PORT}`);
 });
