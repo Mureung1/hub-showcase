@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: `/to-tickets`
+- Next actor: none
 
 ## Problem Statement
 
@@ -522,6 +522,15 @@ Blocking open question은 없다.
 | 두 번째 App-originated action | 실제 composition variation을 확인한 뒤 static definition의 공통 primitive를 추출한다. |
 | Rendered relative path가 부족한 file case | 구체적 failure를 재현한 뒤에만 `MentionInput` 또는 다른 official carrier를 probe한다. |
 | Action transcript 재표시 | Native thread read/resume UX가 채택될 때 conversation projection으로 다루고 App action ledger는 만들지 않는다. |
+
+## Completion
+
+네 implementation ticket이 모두 완료됐다.
+
+- [001 — Capability-neutral Skill product Turn](../tickets/2026-07-28-organize-sources-action-invocation/001-capability-neutral-skill-product-turn.md)
+- [002 — Validated `organize_sources` product operation](../tickets/2026-07-28-organize-sources-action-invocation/002-validated-organize-sources-product-operation.md)
+- [003 — Source workbench `organize_sources` action](../tickets/2026-07-28-organize-sources-action-invocation/003-source-workbench-organize-sources-action.md)
+- [004 — Prepared SemesterWorkspace ActionInvocation conformance closeout](../tickets/2026-07-28-organize-sources-action-invocation/004-prepared-workspace-action-invocation-conformance-closeout.md)
 
 ## Further Notes
 

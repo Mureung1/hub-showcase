@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -37,22 +37,25 @@ Fresh temporary Git SemesterWorkspace의 완성된 Browser→public action→Ser
 
 ## Acceptance Criteria
 
-- [ ] Fresh Bootstrap workspace의 public action이 exact workspace-local Skill과 두 selected refs만 native Turn에 전달하고 unselected file을 읽지 않는다.
-- [ ] Exact provider evidence가 `[SkillInput, TextInput]`, Skill body·relative refs, no `MentionInput`과 unchanged SDK patch roster를 확인한다.
-- [ ] Action-started native Turn이 existing Interaction MCP와 Browser-safe Review를 사용하고 accepted result가 같은 MCP call과 Turn으로 돌아간다.
-- [ ] Review 전 bytes·index·HEAD가 불변이며 accept 뒤 AY-owned intended-file mutation과 meaningful checkpoint만 생기고 unrelated dirty·untracked state는 보존된다.
-- [ ] Revise는 fresh proposal로 이어질 수 있고 reject·preflight/interaction/continuity failure에는 mutation·checkpoint·retry·synthetic success가 없다.
-- [ ] Repeated trace teardown 뒤 child process, listener, held response와 reusable credential이 남지 않고 temporary root 밖 mutation이 없다.
-- [ ] Browser E2E, exact Runtime/local-provider trace, actual prepared-workspace trace와 repository-wide gates가 함께 green이다.
-- [ ] 구현 지도는 ActionInvocation을 current implemented topology로, backlog는 첫 ActionInvocation vertical을 완료 상태로 기록한다.
-- [ ] Package/App README와 root document index가 final document ownership과 current commands에 맞고 Markdown link·format 검사가 green이다.
-- [ ] Public surface와 persistence regression에서 old Course/material/First Assignment/retry route, `/api/product-mcp`, `/api/runtime/*`, `/api/codex-chat/*`, durable source/Run/apply state가 없다.
+- [x] Fresh Bootstrap workspace의 public action이 exact workspace-local Skill과 두 selected refs만 native Turn에 전달하고 unselected file을 읽지 않는다.
+- [x] Exact provider evidence가 `[SkillInput, TextInput]`, Skill body·relative refs, no `MentionInput`과 unchanged SDK patch roster를 확인한다.
+- [x] Action-started native Turn이 existing Interaction MCP와 Browser-safe Review를 사용하고 accepted result가 같은 MCP call과 Turn으로 돌아간다.
+- [x] Review 전 bytes·index·HEAD가 불변이며 accept 뒤 AY-owned intended-file mutation과 meaningful checkpoint만 생기고 unrelated dirty·untracked state는 보존된다.
+- [x] Revise는 fresh proposal로 이어질 수 있고 reject·preflight/interaction/continuity failure에는 mutation·checkpoint·retry·synthetic success가 없다.
+- [x] Repeated trace teardown 뒤 child process, listener, held response와 reusable credential이 남지 않고 temporary root 밖 mutation이 없다.
+- [x] Browser E2E, exact Runtime/local-provider trace, actual prepared-workspace trace와 repository-wide gates가 함께 green이다.
+- [x] 구현 지도는 ActionInvocation을 current implemented topology로, backlog는 첫 ActionInvocation vertical을 완료 상태로 기록한다.
+- [x] Package/App README와 root document index가 final document ownership과 current commands에 맞고 Markdown link·format 검사가 green이다.
+- [x] Public surface와 persistence regression에서 old Course/material/First Assignment/retry route, `/api/product-mcp`, `/api/runtime/*`, `/api/codex-chat/*`, durable source/Run/apply state가 없다.
 
 ## Verification
 
-- Targeted test or command: `npm run test:runtime-local-provider`, `npm run test:prepared-workspace-product-actual`, `npm run test:first-assignment-skill`
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:e2e -w @ay-ple/chat-shell`, `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: Provider-free exact local-provider와 disposable temporary Git workspace가 필수 gate다. Ambient dogfood·live credential smoke는 수행하지 않는다.
+- Targeted: `npm run test:prepared-workspace-product-actual` — public action exact Runtime trace와 direct Adapter failure matrix 2/2 green. `npm run test:runtime-local-provider` — exact native local-provider 4/4 green. `npm run test:first-assignment-skill` — 5/5 green.
+- Runtime: `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` — production bundle pre/post digest `f387600fe960173a36b29bde6b96dfa5500faebdced243afee64d27599cf2799`, Node actual 99 tests, native context 23 tests와 local-provider 4 tests green. Action provider cleanup unit을 포함한 Node unit 148 tests와 locked Ruff bridge check도 green.
+- Repository: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell` — green. Public-surface·persistence regression을 포함한 workspace package 전체 suite가 removed route와 durable academic workflow residue 없이 통과했다.
+- Browser·docs: `npm run test:e2e -w @ay-ple/chat-shell` — Chromium desktop 3/3 green. `npm run check:docs-links` — active 28·historical 2 green. `git diff --check` — green.
+- Review: fixed point `d8fc1f3a088e6a1b6f583169f54b006e6922a107` 이후 Standards·Spec 병렬 검토의 actionable finding을 `8dfff3db2`, `9b66b62ad`, `7bdeae0f9`에서 모두 해소했고 최종 재검토는 두 축 모두 0건이다.
+- Manual/live: Provider-free exact local-provider와 disposable temporary Git workspace만 사용했다. Ambient dogfood workspace·credential과 external live-provider smoke는 수행하지 않았다.
 
 ## Blocked By
 
@@ -65,6 +68,8 @@ Fresh temporary Git SemesterWorkspace의 완성된 Browser→public action→Ser
 - `apps/server/src/prepared-server-application.test.ts`
 - `apps/server/src/testing/codex-chat-test-support.ts`
 - `packages/codex-chat-runtime/src/local-provider.actual.test.ts`
+- `packages/codex-chat-runtime/src/action-local-provider-server.ts`
+- `packages/codex-chat-runtime/src/testing-action-local-provider.ts`
 - `packages/codex-chat-runtime/scripts/official_local_provider.py`
 - `apps/chat-shell/e2e/prepared-public-cutover.spec.ts`
 - `apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace/`
@@ -76,3 +81,11 @@ Fresh temporary Git SemesterWorkspace의 완성된 Browser→public action→Ser
 - `packages/product-contract/README.md`
 - `apps/server/README.md`
 - `apps/chat-shell/README.md`
+
+## Result
+
+- Fresh native Bootstrap Git workspace의 public `organize_sources` route를 exact verified Runtime에 연결했다. 두 selected TXT만 actual-file digest read에 포함되고 unselected control은 제외되며, workspace-local First Assignment Skill body·canonical path·relative refs·no `MentionInput`을 확인한다.
+- Test-only TypeScript Responses provider와 fixture가 exact Runtime boundary의 ordered Skill→text input, MCP `call_id`별 `revise | accept | reject` 결과와 feedback, `auto_review`, accepted intended-path write·commit을 journal로 남긴다. Graceful close 실패, setup failure와 개별 cleanup failure에서도 Runtime process group, provider listener와 temporary root 정산을 끝까지 시도한다.
+- 같은 action-started Turn에서 revise→fresh Review→accept와 별도 reject를 왕복한다. Review 전 target bytes·Git index·HEAD, selected·unselected·dirty·untracked bytes가 불변이고 accept 뒤 `assignment.md`만 meaningful checkpoint가 되며 reject와 direct failure matrix는 no-mutation을 유지한다.
+- 구현 지도·backlog·root index·제품 문서와 package/App README를 완료된 양방향 seam 및 문서 소유권에 맞췄다. Python exact-provider controller, official SDK source·seven-patch roster, old academic/public route와 durable workflow state는 변경하거나 복원하지 않았다.
+- 구현 checkpoint: `9f7a7907f`(public exact trace), `bdf8ad6fa`(current topology closeout), `8dfff3db2`(TypeScript provider·oracle 강화), `9b66b62ad`와 `7bdeae0f9`(review cleanup).
