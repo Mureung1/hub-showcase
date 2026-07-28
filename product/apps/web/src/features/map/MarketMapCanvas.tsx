@@ -3,12 +3,16 @@ import {
   ChevronRight,
   Coffee,
   Dumbbell,
+  Flower2,
   GraduationCap,
   Scissors,
   Shirt,
+  ShoppingBasket,
   Store,
   Target,
+  Utensils,
   UsersRound,
+  Wheat,
   type LucideIcon,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useState, type RefObject } from "react";
@@ -157,6 +161,25 @@ function StoreMarker({
 
 function markerIcon(category: string): LucideIcon {
   if (category.includes("카페") || category.includes("커피")) return Coffee;
+  if (
+    category.includes("음식점") ||
+    category.includes("한식") ||
+    category.includes("중식") ||
+    category.includes("일식") ||
+    category.includes("분식") ||
+    category.includes("주점")
+  )
+    return Utensils;
+  if (
+    category.includes("베이커리") ||
+    category.includes("제과") ||
+    category.includes("빵") ||
+    category.includes("도넛")
+  )
+    return Wheat;
+  if (category.includes("편의점") || category.includes("슈퍼") || category.includes("마트"))
+    return ShoppingBasket;
+  if (category.includes("꽃") || category.includes("화원")) return Flower2;
   if (
     category.includes("미용") ||
     category.includes("헤어") ||
