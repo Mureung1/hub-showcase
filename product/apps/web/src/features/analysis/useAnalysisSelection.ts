@@ -12,7 +12,7 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
     storeCategorySelection(initial.selectedCategoryName, initial.selectedCategoryCode),
   );
   const [radius, setRadius] = useState(initial.radius);
-  const [activeHour, setActiveHour] = useState(initial.activeHour);
+  const [activeHour, setActiveHour] = useState(initial.activeHour ?? 2);
   const [layer, setLayer] = useState(initial.layer);
   const analysisScope = "market" as const;
   const [analysisTopic, setAnalysisTopic] = useState(initial.topic);
