@@ -66,10 +66,6 @@ function readMapBounds(map: {
   };
 }
 
-function storefrontReadinessKey(store: SelectedStorefront) {
-  return `${store.id}:${store.categoryCode}:${store.placementMode ?? "replace-building"}:${store.building?.id ?? "unplaced"}`;
-}
-
 type MarketMapCanvasProps = {
   market: Market;
   marketKey: MarketKey;
@@ -84,7 +80,6 @@ type MarketMapCanvasProps = {
   boundaryVisible: boolean;
   storesVisible: boolean;
   storefrontBuildings3d: SelectedStorefront[];
-  visibleStores: MarketStore[];
   onStorefrontUnavailable: () => void;
   flowPeople: Array<{ longitude: number; latitude: number; delay: number }>;
   activeHour: number;
@@ -239,7 +234,6 @@ export function MarketMapCanvas({
   boundaryVisible,
   storesVisible,
   storefrontBuildings3d,
-  visibleStores: _visibleStores,
   onStorefrontUnavailable,
   flowPeople,
   activeHour,
@@ -262,7 +256,7 @@ export function MarketMapCanvas({
     () =>
       profile.localTwinOverlayVisible
         ? outsideSelectedMarketFilter(marketBoundaryGeometry)
-        : (["all"] as const),
+        : outsideSelectedMarketFilter(null),
     [marketBoundaryGeometry, profile.localTwinOverlayVisible],
   );
   const insideBuildingFilter = useMemo(
@@ -285,7 +279,6 @@ export function MarketMapCanvas({
     [mapStores, profile.storefrontsVisible, representedStoreIds],
   );
   const [zoom, setZoom] = useState(15.4);
-  const [readyStorefrontKeys, setReadyStorefrontKeys] = useState<Set<string>>(() => new Set());
   const densityStores = useMemo(
     () =>
       mapStores.filter(
@@ -293,15 +286,6 @@ export function MarketMapCanvas({
           store.category === selectedCategoryName || store.category.includes(selectedCategoryName),
       ),
     [mapStores, selectedCategoryName],
-  );
-  const readinessKeyByStoreId = useMemo(
-    () =>
-      new globalThis.Map<string, string>(
-        visibleStorefronts.map(
-          (store) => [store.id, storefrontReadinessKey(store)] as const,
-        ),
-      ),
-    [visibleStorefronts],
   );
   const markerGroups = useMemo(
     () =>
@@ -407,13 +391,7 @@ export function MarketMapCanvas({
             <StorefrontBuildingLayers
               stores={visibleStorefronts}
               onUnavailable={onStorefrontUnavailable}
-              onReady={(storeId) => {
-                const key = readinessKeyByStoreId.get(storeId);
-                if (!key) return;
-                setReadyStorefrontKeys((current) =>
-                  current.has(key) ? current : new Set(current).add(key),
-                );
-              }}
+              onReady={() => undefined}
             />
           </Suspense>
         )}
@@ -456,11 +434,7 @@ export function MarketMapCanvas({
             />
           ))}
         {presentationMode === "storefront3d" && selected && (
-          <Marker
-            longitude={selected.longitude}
-            latitude={selected.latitude}
-            anchor="center"
-          >
+          <Marker longitude={selected.longitude} latitude={selected.latitude} anchor="center">
             <span className="selected-store-focus-anchor" aria-label={`${selected.name} 선택 위치`}>
               <SelectedIcon size={20} strokeWidth={2.6} aria-hidden="true" />
             </span>
