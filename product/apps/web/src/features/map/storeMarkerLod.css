@@ -27,6 +27,48 @@
     0 8px 20px rgba(25, 55, 34, 0.28);
 }
 
+.live-map .map-marker.navy {
+  background: #416fa8;
+}
+
+.live-map .map-marker.yellow {
+  background: #d99c25;
+}
+
+.live-map .prefab-building.navy .prefab-face i,
+.live-map .prefab-building.navy .prefab-sign {
+  background: #416fa8;
+}
+
+.live-map .prefab-building.navy .prefab-side {
+  background: #b7cae0;
+}
+
+.live-map .prefab-building.navy .prefab-roof {
+  background: #6289b8;
+}
+
+.live-map .prefab-building.navy .prefab-awning {
+  background: repeating-linear-gradient(90deg, #f7fbff 0 5px, #527dae 5px 10px);
+}
+
+.live-map .prefab-building.yellow .prefab-face i,
+.live-map .prefab-building.yellow .prefab-sign {
+  background: #c88b1c;
+}
+
+.live-map .prefab-building.yellow .prefab-side {
+  background: #ead29a;
+}
+
+.live-map .prefab-building.yellow .prefab-roof {
+  background: #dda83c;
+}
+
+.live-map .prefab-building.yellow .prefab-awning {
+  background: repeating-linear-gradient(90deg, #fffdf4 0 5px, #dda83c 5px 10px);
+}
+
 .store-marker-count {
   position: absolute;
   top: -8px;
