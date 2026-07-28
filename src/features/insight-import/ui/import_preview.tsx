@@ -43,8 +43,8 @@ export function ImportPreview({
           aria-labelledby="insight-import-collections-title"
           className="insight-import-dialog__collections"
         >
-          <h3 id="insight-import-collections-title">분류 연결</h3>
-          <p>가져온 모음을 기존 분류나 새 분류에 연결할 수 있습니다.</p>
+          <h3 id="insight-import-collections-title">카테고리 연결</h3>
+          <p>가져온 모음을 기존 카테고리나 새 카테고리에 연결할 수 있어요.</p>
           {prepared.collections.map((collectionPath) => {
             const collectionKey = JSON.stringify(collectionPath);
             const mapping = mappings.find(
@@ -78,9 +78,9 @@ function ImportSummary({ prepared }: { prepared: PreparedImport }) {
       aria-label="가져오기 분석 요약"
       className="insight-import-dialog__summary"
     >
-      <SummaryItem label="신규" value={summary.newCount} />
-      <SummaryItem label="기존 중복" value={summary.duplicateCount} />
-      <SummaryItem label="입력 중복" value={summary.inputDuplicateCount} />
+      <SummaryItem label="새 인사이트" value={summary.newCount} />
+      <SummaryItem label="보관함에 있음" value={summary.duplicateCount} />
+      <SummaryItem label="입력 안 중복" value={summary.inputDuplicateCount} />
       <SummaryItem label="제외" value={summary.excludedCount} />
     </dl>
   );
@@ -152,15 +152,15 @@ function CollectionMappingField({
     <fieldset className="insight-import-dialog__collection">
       <legend id={labelId}>{collectionLabel}</legend>
       <Select
-        aria-label={`${collectionLabel} 분류`}
+        aria-label={`${collectionLabel} 카테고리`}
         onValueChange={selectTarget}
         options={[
           { label: '미분류', value: 'uncategorized' },
           ...categories.map((category) => ({
-            label: `기존 분류: ${category.name}`,
+            label: `기존 카테고리: ${category.name}`,
             value: `existing:${category.id}`,
           })),
-          { label: '새 분류', value: 'new' },
+          { label: '새 카테고리', value: 'new' },
         ]}
         value={selectedValue}
       />
@@ -168,11 +168,11 @@ function CollectionMappingField({
       {newTarget ? (
         <div className="insight-import-dialog__new-category">
           <label>
-            <span>{collectionLabel} 새 분류 이름</span>
+            <span>{collectionLabel} 새 카테고리 이름</span>
             <TextField
               aria-describedby={hasInvalidName ? nameErrorId : undefined}
               aria-invalid={hasInvalidName}
-              aria-label={`${collectionLabel} 새 분류 이름`}
+              aria-label={`${collectionLabel} 새 카테고리 이름`}
               onChange={(event) =>
                 updateNewTarget({ name: event.currentTarget.value })
               }
@@ -181,13 +181,13 @@ function CollectionMappingField({
           </label>
           {hasInvalidName ? (
             <p className="insight-import-dialog__field-error" id={nameErrorId}>
-              분류 이름은 1자 이상 50자 이하로 입력해 주세요.
+              카테고리 이름은 1자 이상 50자 이하로 입력해 주세요.
             </p>
           ) : null}
           <label>
-            <span>{collectionLabel} 새 분류 색상</span>
+            <span>{collectionLabel} 새 카테고리 색상</span>
             <Select
-              aria-label={`${collectionLabel} 새 분류 색상`}
+              aria-label={`${collectionLabel} 새 카테고리 색상`}
               onValueChange={(value) =>
                 updateNewTarget({ colorKey: value as CategoryColorKey })
               }
@@ -220,7 +220,7 @@ export function ImportIssueDetails({
           </li>
         ))}
       </ul>
-      {items.length > 50 ? <p>처음 50개 항목만 표시합니다.</p> : null}
+      {items.length > 50 ? <p>처음 50개 항목만 보여요.</p> : null}
     </details>
   );
 }

@@ -177,7 +177,7 @@ export function useNotionImport({
       activeConnectionRef.current = null;
       setConnectionId(null);
       setStage('error');
-      setErrorMessage('Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.');
+      setErrorMessage('Notion 연결을 승인하지 않았어요. 다시 연결해 주세요.');
       onConnectionFinishedRef.current();
     } else if (initialConnectionId && !initialCallbackHandledRef.current) {
       initialCallbackHandledRef.current = true;
@@ -218,7 +218,7 @@ export function useNotionImport({
           await api.cancel(currentConnectionId);
         } catch {
           setErrorMessage(
-            '연결 정리가 예약되었어요. 보관함 내용은 바뀌지 않았습니다.'
+            '연결 해제를 다시 시도할게요. 보관함 내용은 바뀌지 않았어요.'
           );
         }
       }
@@ -239,12 +239,12 @@ export function useNotionImport({
         const result = await api.complete(currentConnectionId);
         if (result.status === 'cleanup-pending') {
           setErrorMessage(
-            '가져오기는 완료됐고 연결 해제는 자동으로 다시 시도합니다.'
+            '인사이트는 가져왔어요. 연결 해제는 자동으로 다시 시도할게요.'
           );
         }
       } catch {
         setErrorMessage(
-          '가져오기는 완료됐고 연결 해제는 자동으로 다시 시도합니다.'
+          '인사이트는 가져왔어요. 연결 해제는 자동으로 다시 시도할게요.'
         );
       } finally {
         activeConnectionRef.current = null;
@@ -319,7 +319,7 @@ function getErrorMessage(error: unknown) {
     return '로그인 정보를 확인하지 못했어요. 다시 로그인한 뒤 시도해 주세요.';
   }
 
-  return 'Notion 내용을 가져오지 못했어요. 입력은 유지되니 다시 시도해 주세요.';
+  return 'Notion 내용을 가져오지 못했어요. 입력한 내용은 그대로 두었어요. 다시 시도해 주세요.';
 }
 
 function wait(milliseconds: number, signal: AbortSignal) {

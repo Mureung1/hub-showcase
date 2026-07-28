@@ -151,9 +151,9 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     expect(
-      await screen.findByRole('dialog', { name: '보관함 가져오기' })
+      await screen.findByRole('dialog', { name: '인사이트 가져오기' })
     ).toBeTruthy();
-    expect(await screen.findByText('신규')).toBeTruthy();
+    expect(await screen.findByText('새 인사이트')).toBeTruthy();
     expect(notionApi.status).toHaveBeenCalledWith(
       connectionId,
       expect.any(AbortSignal)
@@ -207,11 +207,11 @@ describe('AuthenticatedWorkspace', () => {
       </DesignSystemProvider>
     );
 
-    await screen.findByRole('dialog', { name: '보관함 가져오기' });
+    await screen.findByRole('dialog', { name: '인사이트 가져오기' });
     await user.click(screen.getByRole('button', { name: '닫기' }));
 
     expect(
-      screen.queryByRole('dialog', { name: '보관함 가져오기' })
+      screen.queryByRole('dialog', { name: '인사이트 가져오기' })
     ).toBeNull();
     expect(window.location.search).toBe('?tab=home');
   });
@@ -243,7 +243,7 @@ describe('AuthenticatedWorkspace', () => {
 
     expect(
       await screen.findByText(
-        'Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.'
+        'Notion 연결을 승인하지 않았어요. 다시 연결해 주세요.'
       )
     ).toBeTruthy();
     expect(notionApi.status).not.toHaveBeenCalled();
@@ -319,12 +319,16 @@ describe('AuthenticatedWorkspace', () => {
       screen.getByRole('textbox', { name: '가져올 링크' }),
       'https://example.com/imported'
     );
-    await user.click(screen.getByRole('button', { name: '분석하기' }));
-    await user.click(screen.getByRole('button', { name: '가져오기' }));
+    await user.click(
+      screen.getByRole('button', { name: '가져올 내용 확인하기' })
+    );
+    await user.click(screen.getByRole('button', { name: '인사이트 가져오기' }));
 
     await waitFor(() => expect(insightList).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(categoryList).toHaveBeenCalledTimes(2));
-    await user.click(screen.getByRole('button', { name: '완료' }));
+    await user.click(
+      screen.getByRole('button', { name: '보관함으로 돌아가기' })
+    );
 
     expect(await screen.findByText('가져온 인사이트')).not.toBeNull();
     expect(screen.getByRole('button', { name: '가져온 분류' })).not.toBeNull();

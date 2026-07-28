@@ -65,7 +65,9 @@ describe('ImportFieldMapping', () => {
     await user.click(screen.getByRole('option', { name: 'backup_link' }));
     await user.click(screen.getByRole('combobox', { name: 'file 제목 필드' }));
     await user.click(screen.getByRole('option', { name: '사용하지 않음' }));
-    await user.click(screen.getByRole('button', { name: '계속' }));
+    await user.click(
+      screen.getByRole('button', { name: '가져올 내용 확인하기' })
+    );
 
     expect(onSubmit).toHaveBeenCalledWith([
       {
@@ -148,7 +150,9 @@ describe('ImportFieldMapping', () => {
       </DesignSystemProvider>
     );
 
-    expect(screen.queryByRole('button', { name: '계속' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: '가져올 내용 확인하기' })
+    ).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '외부 계속' }));
 

@@ -191,7 +191,7 @@ describe('useNotionImport', () => {
 
     await waitFor(() => expect(result.current.stage).toBe('error'));
     expect(result.current.errorMessage).toBe(
-      'Notion 연결이 승인되지 않았어요. 다시 연결해 주세요.'
+      'Notion 연결을 승인하지 않았어요. 다시 연결해 주세요.'
     );
     expect(api.status).not.toHaveBeenCalled();
     expect(api.analyze).not.toHaveBeenCalled();

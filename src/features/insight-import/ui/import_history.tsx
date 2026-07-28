@@ -81,10 +81,10 @@ export function ImportHistory({
       className="insight-import-dialog__history"
     >
       <h3 id="insight-import-history-title">최근 가져오기</h3>
-      {loading ? <p role="status">기록을 불러오는 중입니다.</p> : null}
+      {loading ? <p role="status">기록을 불러오고 있어요.</p> : null}
       {errorMessage ? <p role="alert">{errorMessage}</p> : null}
       {!loading && entries.length === 0 ? (
-        <p>아직 완료한 가져오기가 없습니다.</p>
+        <p>아직 완료한 가져오기가 없어요.</p>
       ) : null}
 
       <ul className="insight-import-dialog__history-list">
@@ -98,7 +98,7 @@ export function ImportHistory({
                 <span>{formatCompletedAt(entry.completedAt)}</span>
               </div>
               <p>
-                생성 {entry.summary.createdCount}개 · 중복{' '}
+                추가 {entry.summary.createdCount}개 · 중복{' '}
                 {entry.summary.duplicateCount}개 · 제외{' '}
                 {entry.summary.excludedCount}개
               </p>
@@ -107,19 +107,20 @@ export function ImportHistory({
                 {canUndo ? (
                   undoConfirmationId === entry.id ? (
                     <>
-                      <p>이 작업에서 새로 만든 인사이트만 삭제합니다.</p>
+                      <p>이 가져오기를 되돌릴까요?</p>
+                      <p>이 작업에서 새로 만든 인사이트만 삭제해요.</p>
                       <Button
                         onClick={() => void confirmUndo(entry.id)}
                         type="button"
                       >
-                        정말 되돌리기
+                        가져오기 되돌리기
                       </Button>
                       <Button
                         hierarchy="ghost"
                         onClick={() => setUndoConfirmationId(null)}
                         type="button"
                       >
-                        취소
+                        닫기
                       </Button>
                     </>
                   ) : (
@@ -139,21 +140,21 @@ export function ImportHistory({
                   <>
                     <p>
                       {canUndo
-                        ? '인사이트는 유지되고 되돌리기 권한과 기록이 사라집니다.'
-                        : '인사이트는 유지되고 가져오기 기록만 사라집니다.'}
+                        ? '인사이트는 유지하고 되돌리기 권한과 기록만 삭제해요.'
+                        : '인사이트는 유지하고 가져오기 기록만 삭제해요.'}
                     </p>
                     <Button
                       onClick={() => void confirmDelete(entry.id)}
                       type="button"
                     >
-                      기록 삭제하기
+                      가져오기 기록 삭제하기
                     </Button>
                     <Button
                       hierarchy="ghost"
                       onClick={() => setDeleteConfirmationId(null)}
                       type="button"
                     >
-                      취소
+                      닫기
                     </Button>
                   </>
                 ) : (
@@ -162,7 +163,7 @@ export function ImportHistory({
                     onClick={() => setDeleteConfirmationId(entry.id)}
                     type="button"
                   >
-                    기록 삭제
+                    가져오기 기록 삭제
                   </Button>
                 )}
               </div>
