@@ -25,10 +25,13 @@ const stores: MarketStore[] = [
 ];
 
 const widerStores: MarketStore[] = [
-  stores[0],
+  {
+    ...stores[0],
+    longitude: 126.9261193211658,
+  },
   {
     ...stores[1],
-    longitude: 126.92655,
+    longitude: 126.92670863739883,
     latitude: 37.5661,
   },
 ];
