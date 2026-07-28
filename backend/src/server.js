@@ -8,8 +8,14 @@ import { requireAuth } from "./middleware/requireAuth.js";
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = ["http://localhost:5173", "https://hub-two-rosy.vercel.app"];
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 app.use("/api/auth", requireAuth, authRouter);
 app.use("/api/profiles", requireAuth, profilesRouter);
