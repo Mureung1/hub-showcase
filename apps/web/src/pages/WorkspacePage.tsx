@@ -5,6 +5,13 @@ import { useAuth } from "../features/auth/useAuth";
 import type { ReflectionDraft } from "../features/reflection/reflection";
 import { RepositoryTerminal } from "../features/workspace/components/RepositoryTerminal";
 import { WorkspaceGame } from "../features/workspace/WorkspaceGame";
+import {
+  listPortfolioProjects,
+} from "../features/portfolio-library/portfolioLibraryApi";
+import {
+  getRepositoryWorkspaceInteractions,
+} from "../features/workspace/model/workspaceMap";
+import type { SavedPortfolioProject } from "../features/portfolio-library/portfolioLibrary";
 
 type WorkspacePageProps = {
   onBackToLanding: () => void;
@@ -14,11 +21,13 @@ type WorkspacePageProps = {
     reflectionDraft: ReflectionDraft,
     reflectionAnalysis: ReflectionAnalysis | null,
   ) => void;
+  onOpenSavedProject: (project: SavedPortfolioProject) => void;
 };
 
-export function WorkspacePage({ onBackToLanding, openAnalysisOnEntry, onAnalysisComplete }: WorkspacePageProps) {
+export function WorkspacePage({ onBackToLanding, openAnalysisOnEntry, onAnalysisComplete, onOpenSavedProject }: WorkspacePageProps) {
   const { user, isLoading, error, signInWithGitHub } = useAuth();
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [savedProjects, setSavedProjects] = useState<SavedPortfolioProject[]>([]);
   const isDevelopmentPreview =
     import.meta.env.DEV
     && new URLSearchParams(window.location.search).get("preview") === "workspace";
@@ -30,6 +39,26 @@ export function WorkspacePage({ onBackToLanding, openAnalysisOnEntry, onAnalysis
       openTerminal();
     }
   }, [isLoading, openAnalysisOnEntry, openTerminal, user]);
+
+  useEffect(() => {
+    if (!user) {
+      setSavedProjects([]);
+      return;
+    }
+
+    let cancelled = false;
+    void listPortfolioProjects(user.id)
+      .then((projects) => {
+        if (!cancelled) setSavedProjects(projects);
+      })
+      .catch(() => {
+        if (!cancelled) setSavedProjects([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   if (isLoading) {
     return null;
@@ -68,6 +97,11 @@ export function WorkspacePage({ onBackToLanding, openAnalysisOnEntry, onAnalysis
       <WorkspaceGame
         isInputEnabled={!isTerminalOpen}
         onOpenNewAnalysis={openTerminal}
+        repositoryInteractions={getRepositoryWorkspaceInteractions(savedProjects)}
+        onOpenRepository={(repositoryId) => {
+          const project = savedProjects.find((item) => item.id === repositoryId);
+          if (project) onOpenSavedProject(project);
+        }}
       />
 
       <aside className="absolute bottom-[22px] left-7 z-[5] flex items-center gap-6 rounded-md border border-white/80 bg-white/[0.78] px-3 py-[9px] text-[0.8rem] text-ptop-muted shadow-[0_10px_24px_rgb(21_24_23/12%)] max-[720px]:right-4 max-[720px]:bottom-4 max-[720px]:left-4 max-[720px]:justify-center" aria-label="작업실 조작법">
