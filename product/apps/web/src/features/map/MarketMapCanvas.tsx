@@ -258,7 +258,7 @@ export function MarketMapCanvas({
   );
   const readinessKeyByStoreId = useMemo(
     () =>
-      new Map<string, string>(
+      new globalThis.Map<string, string>(
         visibleStorefronts.map(
           (store) => [store.id, storefrontReadinessKey(store)] as const,
         ),
