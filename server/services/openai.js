@@ -91,4 +91,31 @@ async function extractTerms(content) {
   return parsed.terms || [];
 }
 
-module.exports = { createEmbedding, describeCluster, summarizeArticle, simplifyArticle, extractTerms };
+async function generateWeeklyReport(clusters) {
+  const response = await client.chat.completions.create({
+    model: CHAT_MODEL,
+    messages: [
+      {
+        role: 'system',
+        content:
+          '너는 뉴스 큐레이션 서비스의 어시스턴트야. 아래는 사용자가 이번 주에 읽은 기사들을 클러스터링한 결과(흐름 이름과 설명)야. ' +
+          '이걸 바탕으로 이번 주 시사 흐름을 정리하는 주간 리포트를 4~6문장으로 작성해줘. 클러스터를 단순 나열하지 말고, 흐름들 사이에 맥락이 있으면 엮어서 설명해.',
+      },
+      {
+        role: 'user',
+        content: clusters.map((c, i) => `${i + 1}. ${c.title}: ${c.description}`).join('\n'),
+      },
+    ],
+  });
+
+  return response.choices[0].message.content;
+}
+
+module.exports = {
+  createEmbedding,
+  describeCluster,
+  summarizeArticle,
+  simplifyArticle,
+  extractTerms,
+  generateWeeklyReport,
+};
