@@ -33,6 +33,12 @@ export {
   type CodexChatProcessTreeTestFixture,
   type CodexChatTestProcessTree,
 } from './testing-process-tree.js'
+export {
+  startCodexActionLocalProviderTestFixture,
+  type CodexActionLocalProviderFunctionCall,
+  type CodexActionLocalProviderJournal,
+  type CodexActionLocalProviderTestFixture,
+} from './testing-action-local-provider.js'
 
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }

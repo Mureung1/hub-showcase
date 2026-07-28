@@ -25,6 +25,11 @@ from app_server_helpers import streaming_response
 _SANDBOX_EXEC_CALL_ID = "call-workspace-sandbox-exec"
 _SANDBOX_MARKER_CONTENT = "workspace-write-ok\n"
 _SANDBOX_SENTINEL_REPLACEMENT = "sandbox-escape\n"
+_ACTION_SELECTED_PATHS = (
+    "materials/lms-outline-notice.txt",
+    "materials/problem-solving-syllabus.txt",
+)
+_ACTION_ACCEPTED_ASSIGNMENT = "# 첫 과제\n\n마감: 2026-08-03 23:59\n제출: LMS 과제함\n"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -43,6 +48,10 @@ def _parser() -> argparse.ArgumentParser:
     serve = commands.add_parser("serve")
     serve.add_argument("--ready-file", required=True)
     serve.add_argument("--journal-file", required=True)
+
+    serve_action = commands.add_parser("serve-action")
+    serve_action.add_argument("--ready-file", required=True)
+    serve_action.add_argument("--journal-file", required=True)
 
     serve_sandbox = commands.add_parser("serve-sandbox")
     serve_sandbox.add_argument("--ready-file", required=True)
@@ -107,14 +116,62 @@ def _request_journal(responses: MockResponsesServer) -> dict[str, Any]:
         requests.append(
             {
                 "method": request.method,
+                "model": body.get("model"),
                 "path": request.path,
                 "instructions": body.get("instructions"),
                 "developerTexts": request.message_input_texts("developer"),
+                "functionCalls": _journal_function_calls(body),
                 "functionOutputs": _journal_function_outputs(body),
+                "toolNames": _journal_tool_names(body),
                 "userTexts": request.message_input_texts("user"),
             }
         )
     return {"requests": requests}
+
+
+def _journal_tool_names(body: dict[str, Any]) -> list[str]:
+    tools = body.get("tools")
+    if not isinstance(tools, list):
+        return []
+    return [
+        name
+        for tool in tools
+        if isinstance(tool, dict)
+        for name in [tool.get("name")]
+        if isinstance(name, str)
+    ]
+
+
+def _journal_function_calls(body: dict[str, Any]) -> list[dict[str, Any]]:
+    inputs = body.get("input")
+    if not isinstance(inputs, list):
+        return []
+    calls = []
+    for item in inputs:
+        if not isinstance(item, dict) or item.get("type") != "function_call":
+            continue
+        call_id = item.get("call_id")
+        name = item.get("name")
+        namespace = item.get("namespace")
+        arguments = item.get("arguments")
+        if not isinstance(call_id, str) or not isinstance(name, str):
+            continue
+        if isinstance(namespace, str):
+            name = f"{namespace}__{name}"
+        parsed_arguments: Any = arguments
+        if isinstance(arguments, str):
+            try:
+                parsed_arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                parsed_arguments = arguments
+        calls.append(
+            {
+                "arguments": parsed_arguments,
+                "callId": call_id,
+                "name": name,
+            }
+        )
+    return calls
 
 
 def _journal_function_outputs(body: dict[str, Any]) -> list[str]:
@@ -168,21 +225,25 @@ def _response_with_call(
     call_id: str,
     name: str,
     arguments: dict[str, Any],
+    namespace: str | None = None,
 ) -> MockSseResponse:
+    function_call = ev_function_call(
+        call_id,
+        name,
+        json.dumps(
+            arguments,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ),
+    )
+    if namespace is not None:
+        function_call["item"]["namespace"] = namespace
     return MockSseResponse(
         body=sse(
             [
                 ev_response_created(response_id),
-                ev_function_call(
-                    call_id,
-                    name,
-                    json.dumps(
-                        arguments,
-                        ensure_ascii=False,
-                        separators=(",", ":"),
-                        sort_keys=True,
-                    ),
-                ),
+                function_call,
                 ev_completed(response_id),
             ]
         )
@@ -239,6 +300,210 @@ def _serve(args: argparse.Namespace) -> int:
             journal.join(timeout=2)
             if journal.is_alive():
                 raise RuntimeError("local provider journal did not stop")
+    return 0
+
+
+def _selected_read_command() -> str:
+    python_source = (
+        "from pathlib import Path;import hashlib,json,sys;"
+        "values={value:hashlib.sha256(Path(value).read_bytes()).hexdigest()"
+        " for value in sys.argv[1:]};"
+        "print(json.dumps({'selectedFileDigests':values},"
+        "separators=(',',':'),sort_keys=True))"
+    )
+    return " ".join(
+        [
+            "/usr/bin/python3",
+            "-c",
+            shlex.quote(python_source),
+            *(shlex.quote(value) for value in _ACTION_SELECTED_PATHS),
+        ]
+    )
+
+
+def _accepted_checkpoint_command() -> str:
+    python_source = (
+        "from pathlib import Path;import json,sys;"
+        "Path(sys.argv[1]).write_text(sys.argv[2],encoding='utf-8');"
+        "print(json.dumps({'intendedMutation':sys.argv[1]},"
+        "separators=(',',':'),sort_keys=True))"
+    )
+    write_command = " ".join(
+        [
+            "/usr/bin/python3",
+            "-c",
+            shlex.quote(python_source),
+            "assignment.md",
+            shlex.quote(_ACTION_ACCEPTED_ASSIGNMENT),
+        ]
+    )
+    return " && ".join(
+        [
+            write_command,
+            "/usr/bin/git add -- assignment.md",
+            (
+                "/usr/bin/git commit --quiet --only "
+                "-m 'feat: record accepted first assignment' -- assignment.md"
+            ),
+        ]
+    )
+
+
+def _action_review(summary: str, description: str) -> dict[str, Any]:
+    return {
+        "changes": [
+            {
+                "after": "2026-08-03 23:59 / LMS 과제함",
+                "before": "미정",
+                "description": description,
+                "label": "첫 과제 정보",
+            }
+        ],
+        "question": "이 변경을 실제 과제 파일에 반영할까요?",
+        "summary": summary,
+    }
+
+
+def _guardian_allow_response(response_id: str, message_id: str) -> MockSseResponse:
+    return streaming_response(
+        response_id,
+        message_id,
+        ['{"outcome":"allow"}'],
+    )
+
+
+def _serve_action(args: argparse.Namespace) -> int:
+    ready_path = Path(args.ready_file)
+    journal_path = Path(args.journal_file)
+    read_arguments = {
+        "cmd": _selected_read_command(),
+        "login": False,
+        "yield_time_ms": 10_000,
+    }
+    stop = threading.Event()
+    with MockResponsesServer() as responses:
+        responses.enqueue_sse(
+            _response_with_call(
+                "action-read-response",
+                "call-action-read-selected",
+                "exec_command",
+                read_arguments,
+            ).body
+        )
+        responses.enqueue_sse(
+            _response_with_call(
+                "action-review-initial-response",
+                "call-action-review-initial",
+                "propose_state_patch",
+                _action_review(
+                    "첫 과제 정보를 정리합니다.",
+                    "선택한 두 자료에서 확인한 정보를 반영합니다.",
+                ),
+                namespace="mcp__ay_ple_interaction",
+            ).body
+        )
+        responses.enqueue_sse(
+            _guardian_allow_response(
+                "action-review-initial-guardian-response",
+                "action-review-initial-guardian-message",
+            )
+        )
+        responses.enqueue_sse(
+            _response_with_call(
+                "action-review-revised-response",
+                "call-action-review-revised",
+                "propose_state_patch",
+                _action_review(
+                    "피드백을 반영해 과제 정보를 다시 정리합니다.",
+                    "제출 방식을 더 분명하게 반영합니다.",
+                ),
+                namespace="mcp__ay_ple_interaction",
+            ).body
+        )
+        responses.enqueue_sse(
+            _guardian_allow_response(
+                "action-review-revised-guardian-response",
+                "action-review-revised-guardian-message",
+            )
+        )
+        responses.enqueue_sse(
+            _response_with_call(
+                "action-apply-response",
+                "call-action-apply-checkpoint",
+                "exec_command",
+                {
+                    "cmd": _accepted_checkpoint_command(),
+                    "justification": (
+                        "Record the accepted SemesterWorkspace checkpoint."
+                    ),
+                    "login": False,
+                    "sandbox_permissions": "require_escalated",
+                    "yield_time_ms": 10_000,
+                },
+            ).body
+        )
+        responses.enqueue_sse(
+            _guardian_allow_response(
+                "action-apply-guardian-response",
+                "action-apply-guardian-message",
+            )
+        )
+        responses.enqueue_sse(
+            streaming_response(
+                "action-accepted-terminal-response",
+                "action-accepted-terminal-message",
+                ["accepted ", "action ", "completed"],
+            )
+        )
+        responses.enqueue_sse(
+            _response_with_call(
+                "action-reject-read-response",
+                "call-action-read-rejected",
+                "exec_command",
+                read_arguments,
+            ).body
+        )
+        responses.enqueue_sse(
+            _response_with_call(
+                "action-review-rejected-response",
+                "call-action-review-rejected",
+                "propose_state_patch",
+                _action_review(
+                    "추가 변경을 제안합니다.",
+                    "현재 자료를 다시 확인한 추가 제안입니다.",
+                ),
+                namespace="mcp__ay_ple_interaction",
+            ).body
+        )
+        responses.enqueue_sse(
+            _guardian_allow_response(
+                "action-review-rejected-guardian-response",
+                "action-review-rejected-guardian-message",
+            )
+        )
+        responses.enqueue_sse(
+            streaming_response(
+                "action-rejected-terminal-response",
+                "action-rejected-terminal-message",
+                ["rejected ", "action ", "completed"],
+            )
+        )
+        journal = threading.Thread(
+            target=_publish_journal,
+            args=(responses, journal_path, stop),
+            name="action-local-provider-journal",
+        )
+        journal.start()
+        try:
+            _atomic_json(ready_path, {"url": responses.url})
+            for line in sys.stdin:
+                if line.strip() == "close":
+                    break
+        finally:
+            stop.set()
+            journal.join(timeout=2)
+            if journal.is_alive():
+                raise RuntimeError("action local provider journal did not stop")
     return 0
 
 
@@ -338,6 +603,8 @@ def main(argv: list[str] | None = None) -> int:
         return _policy(args)
     if args.command == "serve":
         return _serve(args)
+    if args.command == "serve-action":
+        return _serve_action(args)
     if args.command == "serve-sandbox":
         return _serve_sandbox(args)
     raise AssertionError(f"unexpected command {args.command}")

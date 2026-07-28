@@ -18,8 +18,14 @@ import { promisify } from 'node:util'
 
 import type { ProposeStatePatchRequest } from '@ay-ple/interaction-mcp'
 import type { ProductReviewFrame, ProductReviewResult } from '@ay-ple/product-contract'
+import {
+  startCodexActionLocalProviderTestFixture,
+  type CodexActionLocalProviderJournal,
+} from '@ay-ple/codex-chat-runtime/testing'
 import express from 'express'
 
+import type { PreparedServerApplication } from '../prepared-server-application.js'
+import { createPreparedServerApplication } from '../prepared-server-application.js'
 import {
   createInteractionBroker,
   type InteractionBroker,
@@ -34,6 +40,7 @@ import {
   bindServerApplicationListener,
   type BoundServerApplicationListener,
 } from '../server-listener.js'
+import { codexChatIdentity } from './codex-chat-test-support.js'
 
 const execFileAsync = promisify(execFile)
 const repositoryRoot = path.resolve(
@@ -44,6 +51,19 @@ const bootstrapScript = path.join(
   repositoryRoot,
   '.agents/skills/semester-workspace-init/scripts/bootstrap.mts',
 )
+const runtimeRoot = path.resolve(
+  repositoryRoot,
+  '../.ay-ple/runtime/production-runtime-darwin-arm64',
+)
+const browserFixtureRoot = path.join(
+  repositoryRoot,
+  'apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace',
+)
+const selectedActionPaths = [
+  'materials/lms-outline-notice.txt',
+  'materials/problem-solving-syllabus.txt',
+] as const
+const unselectedActionPath = 'materials/unselected-control.txt'
 const initialAssignment = [
   '# 첫 과제',
   '',
@@ -65,6 +85,146 @@ const syllabus = [
   '제출 방식은 LMS 과제함입니다.',
   '',
 ].join('\n')
+
+test(
+  'invokes public organize_sources through exact Runtime, same-Turn Review, and AY-owned checkpoint',
+  { timeout: 120_000 },
+  async () => {
+    const fixture = await prepareWorkspace()
+    const exact = await startCodexActionLocalProviderTestFixture({
+      runtimeRoot,
+      workspace: fixture.workspaceRoot,
+    })
+    let target: PreparedServerApplication | undefined
+    let listener: BoundServerApplicationListener | undefined
+    try {
+      const lifecycle = await readActiveLifecycle(fixture.workspaceRoot)
+      target = await createPreparedServerApplication({
+        codexChat: {
+          ...codexChatIdentity,
+          origin: 'http://127.0.0.1:4173',
+          createRuntime: async () => {
+            assert.ok(target)
+            assert.ok(listener)
+            return exact.createRuntime({
+              childEnvironment: {
+                AY_PLE_INTERACTION_BROKER_URL:
+                  `http://127.0.0.1:${listener.port}/api/_private/interaction-mcp`,
+                AY_PLE_INTERACTION_BROKER_TOKEN: target.credentials.token,
+                AY_PLE_INTERACTION_RUNTIME_BINDING:
+                  target.credentials.binding,
+              },
+            })
+          },
+          acquireProductThread: async (runtime) =>
+            (await runtime.startThread()).threadId,
+        },
+        workspaceRoot: fixture.workspaceRoot,
+        readLifecycle: () => lifecycle,
+      })
+      listener = await bindServerApplicationListener({
+        host: '127.0.0.1',
+        port: 0,
+        requestHandler: target.application.app,
+      })
+      const baseUrl = `http://127.0.0.1:${listener.port}`
+      const original = await mutationSnapshot(fixture.workspaceRoot)
+
+      const acceptedTrace = await invokePublicOrganizeSources(baseUrl)
+      const acceptedOperation = await acceptedTrace.until(
+        (frame) => frame.type === 'operation.accepted',
+      )
+      const revisionReview = await acceptedTrace.until(
+        (frame) => frame.type === 'review.requested',
+      )
+      await assertUnchanged(fixture.workspaceRoot, original)
+      await settlePublicReview(baseUrl, revisionReview, {
+        outcome: 'revise',
+        feedback: '제출 방식을 더 분명하게 써 주세요.',
+      })
+      await acceptedTrace.until(
+        (frame) =>
+          frame.type === 'review.resolved' &&
+          frame.interactionId === revisionReview.interactionId,
+      )
+
+      const acceptedReview = await acceptedTrace.until(
+        (frame) =>
+          frame.type === 'review.requested' &&
+          frame.interactionId !== revisionReview.interactionId,
+      )
+      await assertUnchanged(fixture.workspaceRoot, original)
+      await settlePublicReview(baseUrl, acceptedReview, {
+        outcome: 'accept',
+      })
+      await acceptedTrace.until(
+        (frame) =>
+          frame.type === 'review.resolved' &&
+          frame.interactionId === acceptedReview.interactionId,
+      )
+      const acceptedTerminal = await acceptedTrace.until(
+        (frame) => frame.type === 'operation.terminal',
+      )
+      assert.equal(acceptedTerminal.operationId, acceptedOperation.operationId)
+      assert.equal(acceptedTerminal.status, 'completed')
+      await assertAcceptedCheckpoint(fixture)
+      const accepted = await mutationSnapshot(fixture.workspaceRoot)
+
+      const rejectedTrace = await invokePublicOrganizeSources(baseUrl)
+      const rejectedReview = await rejectedTrace.until(
+        (frame) => frame.type === 'review.requested',
+      )
+      await assertUnchanged(fixture.workspaceRoot, accepted)
+      await settlePublicReview(baseUrl, rejectedReview, {
+        outcome: 'reject',
+        feedback: '추가 변경은 하지 않습니다.',
+      })
+      await rejectedTrace.until(
+        (frame) =>
+          frame.type === 'review.resolved' &&
+          frame.interactionId === rejectedReview.interactionId,
+      )
+      const rejectedTerminal = await rejectedTrace.until(
+        (frame) => frame.type === 'operation.terminal',
+      )
+      assert.equal(rejectedTerminal.status, 'completed')
+      await assertUnchanged(fixture.workspaceRoot, accepted)
+      await assertPublicFramesSafe(
+        [...acceptedTrace.all(), ...rejectedTrace.all()],
+        target.credentials,
+        fixture,
+      )
+      assert.equal(
+        await readFile(path.join(fixture.root, 'outside-evidence.txt'), 'utf8'),
+        'outside evidence\n',
+      )
+
+      await target.application.close()
+      target = undefined
+      const listenerCleanup = await listener.close({
+        signal: new AbortController().signal,
+      })
+      listener = undefined
+      assert.deepEqual(listenerCleanup, {
+        status: 'closed',
+        processTreeGone: true,
+      })
+      const journal = await exact.finish()
+      await assertExactActionProviderEvidence(
+        journal,
+        fixture,
+      )
+      await assertNoCredentialResidue(fixture.workspaceRoot)
+    } finally {
+      await target?.application.close().catch(() => undefined)
+      await listener
+        ?.close({ signal: new AbortController().signal })
+        .catch(() => undefined)
+      await exact.dispose()
+      await fixture.cleanup()
+    }
+  },
+)
 
 test(
   'traces a bootstrapped Git SemesterWorkspace through Review and AY-owned checkpoint',
@@ -179,6 +339,7 @@ async function prepareWorkspace(): Promise<WorkspaceFixture> {
   const workspaceRoot = path.join(root, 'semester-workspace')
   const outside = path.join(root, 'outside-evidence.txt')
   await mkdir(workspaceRoot)
+  await mkdir(path.join(workspaceRoot, 'materials'))
   await git(workspaceRoot, ['init', '--quiet'])
   await git(workspaceRoot, ['config', 'user.name', 'AY-PLE Product Trace'])
   await git(workspaceRoot, ['config', 'user.email', 'trace@ay-ple.invalid'])
@@ -186,6 +347,24 @@ async function prepareWorkspace(): Promise<WorkspaceFixture> {
     writeFile(path.join(workspaceRoot, 'assignment.md'), initialAssignment),
     writeFile(path.join(workspaceRoot, 'syllabus.txt'), syllabus),
     writeFile(path.join(workspaceRoot, 'dirty-sentinel.txt'), 'tracked\n'),
+    writeFile(
+      path.join(workspaceRoot, selectedActionPaths[0]),
+      await readFile(
+        path.join(browserFixtureRoot, path.basename(selectedActionPaths[0])),
+      ),
+    ),
+    writeFile(
+      path.join(workspaceRoot, selectedActionPaths[1]),
+      await readFile(
+        path.join(browserFixtureRoot, path.basename(selectedActionPaths[1])),
+      ),
+    ),
+    writeFile(
+      path.join(workspaceRoot, unselectedActionPath),
+      await readFile(
+        path.join(browserFixtureRoot, path.basename(unselectedActionPath)),
+      ),
+    ),
     writeFile(outside, 'outside evidence\n'),
   ])
   await git(workspaceRoot, [
@@ -194,6 +373,8 @@ async function prepareWorkspace(): Promise<WorkspaceFixture> {
     'assignment.md',
     'syllabus.txt',
     'dirty-sentinel.txt',
+    ...selectedActionPaths,
+    unselectedActionPath,
   ])
   await git(workspaceRoot, ['commit', '--quiet', '-m', 'chore: seed semester files'])
   await Promise.all([
@@ -259,6 +440,268 @@ async function runBootstrap(workspaceRoot: string): Promise<string> {
       },
     )
   ).stdout
+}
+
+async function readActiveLifecycle(workspaceRoot: string) {
+  const state = JSON.parse(
+    await readFile(path.join(workspaceRoot, 'workspace-state.json'), 'utf8'),
+  ) as {
+    readonly workspaceId: string
+    readonly semester: {
+      readonly yearLevel: number
+      readonly term: {
+        readonly key: string
+        readonly displayName: string
+      }
+    }
+  }
+  return {
+    state: 'active' as const,
+    workspace: {
+      workspaceId: state.workspaceId,
+      semester: state.semester,
+      label: `${state.semester.yearLevel}학년 ${state.semester.term.displayName}`,
+    },
+  }
+}
+
+async function invokePublicOrganizeSources(
+  baseUrl: string,
+): Promise<ActualNdjsonTrace> {
+  const response = await fetch(`${baseUrl}/api/product/actions`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      action: 'organize_sources',
+      files: selectedActionPaths.map((relativePath) => ({ relativePath })),
+    }),
+  })
+  assert.equal(response.status, 200)
+  assert.ok(response.body)
+  return new ActualNdjsonTrace(response.body.getReader())
+}
+
+async function settlePublicReview(
+  baseUrl: string,
+  frame: Record<string, unknown>,
+  result: ProductReviewResult,
+): Promise<void> {
+  assert.equal(typeof frame.interactionId, 'string')
+  const response = await fetch(
+    `${baseUrl}/api/product/reviews/${String(frame.interactionId)}`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(result),
+    },
+  )
+  assert.equal(response.status, 204)
+}
+
+class ActualNdjsonTrace {
+  private readonly frames: Array<Record<string, unknown>> = []
+  private buffer = ''
+
+  constructor(
+    private readonly reader: ReadableStreamDefaultReader<Uint8Array>,
+  ) {}
+
+  async until(
+    predicate: (frame: Record<string, unknown>) => boolean,
+  ): Promise<Record<string, unknown>> {
+    for (;;) {
+      const found = this.frames.find(predicate)
+      if (found) return found
+      const next = await this.reader.read()
+      if (next.done) {
+        throw new Error(
+          `Actual NDJSON stream ended before target frame: ${JSON.stringify(this.frames)}`,
+        )
+      }
+      this.buffer += new TextDecoder().decode(next.value, { stream: true })
+      const lines = this.buffer.split('\n')
+      this.buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (line) {
+          this.frames.push(JSON.parse(line) as Record<string, unknown>)
+        }
+      }
+    }
+  }
+
+  all(): readonly Record<string, unknown>[] {
+    return structuredClone(this.frames)
+  }
+}
+
+async function assertExactActionProviderEvidence(
+  journal: CodexActionLocalProviderJournal,
+  fixture: WorkspaceFixture,
+): Promise<void> {
+  const firstRequest = journal.requests[0]
+  assert.ok(firstRequest)
+  const actionText = [
+    'ActionInvocation: organize_sources',
+    'Selected SemesterWorkspace file references:',
+    ...selectedActionPaths.map((relativePath) => `- ${JSON.stringify(relativePath)}`),
+  ].join('\n')
+  const skillPath = path.join(
+    fixture.workspaceRoot,
+    '.agents/skills/ay-ple-first-assignment/SKILL.md',
+  )
+  const skillBody = await readFile(skillPath, 'utf8')
+  const skillIndex = firstRequest.userTexts.findIndex((text) =>
+    text.startsWith('<skill>'),
+  )
+  const textIndex = firstRequest.userTexts.indexOf(actionText)
+  assert.notEqual(skillIndex, -1)
+  assert.notEqual(textIndex, -1)
+  const skillBlock = firstRequest.userTexts[skillIndex] as string
+  assert.match(skillBlock, /<name>ay-ple-first-assignment<\/name>/u)
+  assert.equal(skillBlock.includes(`<path>${skillPath}</path>`), true)
+  assert.equal(skillBlock.includes(skillBody), true)
+  assert.equal(
+    firstRequest.userTexts.some((text) => text.startsWith('<mention>')),
+    false,
+  )
+  assert.equal(
+    journal.requests.filter(({ model }) => model === 'codex-auto-review').length,
+    4,
+  )
+
+  const calls = uniqueProviderCalls(journal)
+  const readCall = calls.find((call) => call.callId === 'call-action-read-selected')
+  assert.ok(readCall)
+  assert.equal(readCall.name, 'exec_command')
+  const readCommand = String(readCall.arguments.cmd)
+  for (const selected of selectedActionPaths) {
+    assert.equal(readCommand.includes(selected), true)
+  }
+  assert.equal(readCommand.includes(unselectedActionPath), false)
+
+  const readEvidence = parseJsonObjectOutput(
+    journal.requests.flatMap((request) => request.functionOutputs),
+    'selectedFileDigests',
+  )
+  assert.deepEqual(readEvidence.selectedFileDigests, {
+    [selectedActionPaths[0]]: sha256(
+      await readFile(path.join(fixture.workspaceRoot, selectedActionPaths[0])),
+    ),
+    [selectedActionPaths[1]]: sha256(
+      await readFile(path.join(fixture.workspaceRoot, selectedActionPaths[1])),
+    ),
+  })
+
+  assert.deepEqual(
+    calls
+      .filter((call) =>
+        call.name === 'mcp__ay_ple_interaction__propose_state_patch',
+      )
+      .map((call) => call.callId),
+    [
+      'call-action-review-initial',
+      'call-action-review-revised',
+      'call-action-review-rejected',
+    ],
+  )
+  const mutationCall = calls.find(
+    (call) => call.callId === 'call-action-apply-checkpoint',
+  )
+  assert.ok(mutationCall)
+  assert.equal(mutationCall.name, 'exec_command')
+  const mutationCommand = String(mutationCall.arguments.cmd)
+  assert.match(mutationCommand, /assignment\.md/u)
+  assert.match(mutationCommand, /git[^&]+commit/u)
+  for (const unrelated of [
+    'dirty-sentinel.txt',
+    'untracked-sentinel.txt',
+    unselectedActionPath,
+  ]) {
+    assert.equal(mutationCommand.includes(unrelated), false)
+  }
+
+  const serialized = JSON.stringify(journal)
+  assert.doesNotMatch(
+    serialized,
+    /courseId|runId|patchId|decisionKey|requestKey|UserConfirmation|RawMaterial|ModelingRun/,
+  )
+  for (const selected of selectedActionPaths) {
+    const selectedContent = await readFile(
+      path.join(fixture.workspaceRoot, selected),
+      'utf8',
+    )
+    assert.equal(serialized.includes(selectedContent), false)
+  }
+}
+
+function uniqueProviderCalls(
+  journal: CodexActionLocalProviderJournal,
+): CodexActionLocalProviderJournal['requests'][number]['functionCalls'] {
+  const calls = new Map<
+    string,
+    CodexActionLocalProviderJournal['requests'][number]['functionCalls'][number]
+  >()
+  for (const request of journal.requests) {
+    for (const call of request.functionCalls) calls.set(call.callId, call)
+  }
+  return [...calls.values()]
+}
+
+function parseJsonObjectOutput(
+  outputs: readonly string[],
+  requiredKey: string,
+): Record<string, unknown> {
+  for (const output of outputs) {
+    for (const line of output.split('\n')) {
+      const candidate = line.trim()
+      if (!candidate.startsWith('{') || !candidate.endsWith('}')) continue
+      let value: unknown
+      try {
+        value = JSON.parse(candidate)
+      } catch {
+        continue
+      }
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value) &&
+        requiredKey in value
+      ) {
+        return value as Record<string, unknown>
+      }
+    }
+  }
+  throw new Error(`Provider output did not contain ${requiredKey}`)
+}
+
+async function assertPublicFramesSafe(
+  frames: readonly Record<string, unknown>[],
+  credentials: { readonly token: string; readonly binding: string },
+  fixture: WorkspaceFixture,
+): Promise<void> {
+  const serialized = JSON.stringify(frames)
+  for (const privateValue of [
+    credentials.token,
+    credentials.binding,
+    fixture.workspaceRoot,
+    path.join(
+      fixture.workspaceRoot,
+      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+    ),
+  ]) {
+    assert.equal(serialized.includes(privateValue), false)
+  }
+  for (const selected of selectedActionPaths) {
+    const selectedContent = await readFile(
+      path.join(fixture.workspaceRoot, selected),
+      'utf8',
+    )
+    assert.equal(serialized.includes(selectedContent), false)
+  }
+  assert.doesNotMatch(
+    serialized,
+    /thread[-_][0-9a-z]|turn[-_][0-9a-z]|courseId|runId|RawMaterial|ModelingRun/,
+  )
 }
 
 async function assertBootstrapOutput(fixture: WorkspaceFixture): Promise<void> {
