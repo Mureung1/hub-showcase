@@ -30,7 +30,10 @@ import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
 import type { MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
-import { loadReplacementBuildingFilter } from "./storefronts/replacementBuildingFilter";
+import {
+  replacementBuildingBaseExpression,
+  replacementBuildingHeightExpression,
+} from "./storefronts/replacementBuildingFilter";
 
 const StorefrontBuildingLayers = lazy(() =>
   import("./storefronts/StorefrontBuildingLayers").then((module) => ({
@@ -100,9 +103,7 @@ function StoreMarker({
   const isPrefab = prefabMode && isSelected && count === 1 && !detailed;
   const Icon = markerIcon(store.category);
   const label =
-    count > 1
-      ? `${store.category} 점포 ${count}개 묶음 보기`
-      : `${store.name} 후보 보기`;
+    count > 1 ? `${store.category} 점포 ${count}개 묶음 보기` : `${store.name} 후보 보기`;
   return (
     <Marker longitude={store.longitude} latitude={store.latitude} anchor="bottom">
       <button
@@ -220,9 +221,9 @@ export function MarketMapCanvas({
   const visibleStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
   const [zoom, setZoom] = useState(15.4);
   const [readyStorefrontIds, setReadyStorefrontIds] = useState<Set<string>>(() => new Set());
-  const [baseBuildingFilter, setBaseBuildingFilter] =
-    useState<Awaited<ReturnType<typeof loadReplacementBuildingFilter>>>(undefined);
-  const storefrontKey = `${presentationMode}:${visibleStorefronts.map((store) => store.id).join(",")}`;
+  const storefrontKey = `${presentationMode}:${visibleStorefronts
+    .map((store) => `${store.id}:${store.categoryCode}:${store.building?.id ?? "unplaced"}`)
+    .join(",")}`;
   const densityStores = useMemo(
     () =>
       mapStores.filter(
@@ -239,32 +240,18 @@ export function MarketMapCanvas({
     () => groupStoreMarkers(mapStores, zoom, selected?.name ?? null),
     [mapStores, selected?.name, zoom],
   );
+  const baseBuildingBase = useMemo(
+    () => replacementBuildingBaseExpression(readyStorefronts),
+    [readyStorefronts],
+  );
+  const baseBuildingHeight = useMemo(
+    () => replacementBuildingHeightExpression(readyStorefronts),
+    [readyStorefronts],
+  );
 
   useEffect(() => {
     setReadyStorefrontIds(new Set());
-    setBaseBuildingFilter(undefined);
   }, [storefrontKey]);
-
-  useEffect(() => {
-    let active = true;
-    if (readyStorefronts.length === 0) {
-      setBaseBuildingFilter(undefined);
-      return () => {
-        active = false;
-      };
-    }
-    void loadReplacementBuildingFilter(readyStorefronts)
-      .then((filter) => {
-        if (active) setBaseBuildingFilter(filter);
-      })
-      .catch((error) => {
-        if (import.meta.env.DEV) console.warn("LocalTwin base building replacement filter", error);
-        if (active) setBaseBuildingFilter(undefined);
-      });
-    return () => {
-      active = false;
-    };
-  }, [readyStorefronts]);
 
   const hiddenOverlayBuildingIds = readyStorefronts.flatMap((store) =>
     store.building ? [store.building.id] : [],
@@ -308,12 +295,11 @@ export function MarketMapCanvas({
           source-layer="building"
           minzoom={14}
           beforeId="boundary_3"
-          filter={baseBuildingFilter}
           layout={{ visibility: baseBuildingsRendered ? "visible" : "none" }}
           paint={{
-            "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
+            "fill-extrusion-base": baseBuildingBase,
             "fill-extrusion-color": "hsl(35, 8%, 85%)",
-            "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
+            "fill-extrusion-height": baseBuildingHeight,
             "fill-extrusion-opacity": 0.8,
             "fill-extrusion-vertical-gradient": true,
           }}
