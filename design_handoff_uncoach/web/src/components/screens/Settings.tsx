@@ -30,7 +30,8 @@ export default function Settings({ nav }: { nav: (k: ScreenKey) => void }) {
         <div className="bg-white rounded-xl p-padding-card border border-border-light shadow-card mb-4">
           <div className="font-medium text-on-surface mb-3">내 정보</div>
           <div className="text-sm text-on-surface-variant space-y-1">
-            <div>목표: {app.profile?.goal || "-"}</div>
+            <div>직업: {app.profile?.role || "-"}</div>
+            <div>관심 분야: {app.profile?.interests?.length ? app.profile.interests.join(", ") : app.profile?.goal || "-"}</div>
             <div>세션 {app.history.length}개 · 잘 쓴 표현 {app.assets.length}개</div>
           </div>
           <button

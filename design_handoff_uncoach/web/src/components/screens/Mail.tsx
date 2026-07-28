@@ -7,7 +7,7 @@ import { scoreDraft, type ScoreResult } from "@/lib/client/api";
 import type { Situation } from "@/lib/domain/types";
 import type { ScreenKey } from "@/components/AppShell";
 import ProfileChip from "@/components/stitch/ProfileChip";
-import { ScoreCard, RubricTable, FeedbackItem, FeedbackHeading, axisMetrics, situationRubricRows } from "@/components/stitch/Feedback";
+import { ScoreCard, RubricTable, FeedbackItem, FeedbackHeading, DemoBadge, axisMetrics, situationRubricRows } from "@/components/stitch/Feedback";
 
 const DEFAULT_BODY = `안녕하세요, 담당자님.\n\n진행 중인 프로젝트 일정에 대해 안내드립니다.\n\n초기 단계에서 예상치 못한 지연이 있었으나, 최종 납기에는 영향이 없도록 조치하고 있습니다.\n\n자세한 내용은 내일 다시 공유드리겠습니다.\n\n감사합니다.`;
 
@@ -118,6 +118,7 @@ export default function Mail({ situation, onExit, nav }: { situation?: Situation
             </div>
 
             {/* 종합 점수 (공용) — 상황별 루브릭이 있으면 축별 1·2·3점 기준을 펼친 채점표로 */}
+            {attempt?.demo && <DemoBadge />}
             {attempt && sit.rubric ? (
               <RubricTable rows={situationRubricRows(sit.rubric, attempt.scores, attempt.reasons)} total={attempt.total} />
             ) : (

@@ -178,6 +178,15 @@ export function FeedbackItem({ accent = "primary", icon = "lightbulb", title, bo
   );
 }
 
+/** 데모(예시) 채점 배지 — Gemini 사용량 소진 시 실제 AI 채점이 아님을 명확히 알린다. */
+export function DemoBadge() {
+  return (
+    <div className="rounded-lg bg-progress-orange/10 border border-progress-orange/30 px-3 py-2 text-xs text-on-surface-variant leading-relaxed">
+      <span className="font-bold text-progress-orange">예시(데모) 채점</span> · AI 사용량이 회복되면 실제 채점이 다시 동작해요.
+    </div>
+  );
+}
+
 /** 피드백 영역 섹션 제목 */
 export function FeedbackHeading({ children }: { children: ReactNode }) {
   return <h3 className="font-label-sm text-label-sm text-slate-muted uppercase tracking-wider pl-1">{children}</h3>;

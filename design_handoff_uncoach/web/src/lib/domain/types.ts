@@ -61,6 +61,8 @@ export interface Attempt {
   fix: string;
   best: string | null;
   counterpartReply: string;
+  /** true면 실제 AI 채점이 아니라 사용량 소진 시의 예시(데모) 채점 — 화면에 라벨 표시 */
+  demo?: boolean;
 }
 
 /** 궤적 세션 기록 */
@@ -117,6 +119,8 @@ export interface SummaryResult {
   coach: string;
   scores: { grasp: number; accuracy: number; concision: number };
   reasons: Partial<Record<'grasp' | 'accuracy' | 'concision', string>>;
+  /** true면 사용량 소진 시의 예시(데모) 채점 */
+  demo?: boolean;
 }
 
 /** 카톡 캡쳐에서 추출한 상황 정보 */

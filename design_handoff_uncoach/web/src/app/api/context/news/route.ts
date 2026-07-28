@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callGemini, extractText, extractSource, parseLooseJson, GEMINI_MODEL } from "@/lib/scoring/gemini";
+import { callGemini, extractText, extractSource, parseLooseJson, GEMINI_MODEL, isUnavailable } from "@/lib/scoring/gemini";
+import { curatedNews } from "@/lib/scoring/fallback";
 import { NEWS_FETCH_SYSTEM } from "@/lib/scoring/context-system";
 import { NEWS_CATEGORIES } from "@/lib/domain/news-categories";
 import { sameOrigin, rateLimit, clientIp } from "@/lib/server/guard";
@@ -51,11 +52,11 @@ export async function POST(req: NextRequest) {
     };
     return NextResponse.json({ passage });
   } catch (e) {
-    const msg = (e as Error).message;
-    if (msg === "NO_KEY") {
-      return NextResponse.json({ error: "GEMINI_API_KEY가 서버에 설정되지 않았습니다." }, { status: 503 });
+    // 뉴스 지문은 '판단'이 아니라 '재료' — 일시적 불가면 카테고리별 큐레이션 지문으로 조용히 대체한다.
+    if (isUnavailable(e)) {
+      return NextResponse.json({ passage: curatedNews(cat.key) });
     }
     console.error("[api/context/news]", e);
-    return NextResponse.json({ error: msg || "뉴스를 불러오지 못했어요." }, { status: 500 });
+    return NextResponse.json({ error: (e as Error).message || "뉴스를 불러오지 못했어요." }, { status: 500 });
   }
 }

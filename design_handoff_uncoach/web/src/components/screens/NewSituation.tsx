@@ -48,6 +48,7 @@ export default function NewSituation({
   const [preview, setPreview] = useState<Situation | null>(null);
   const [captureBusy, setCaptureBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
 
   const back = () => nav(defaultMedium === "email" ? "mailPicker" : "chatPicker");
 
@@ -77,6 +78,8 @@ export default function NewSituation({
           setText((t) => t || ex.title || "");
           setWho((w) => w || ex.who || "");
           setTension((t) => t || ex.tension || "");
+          // 캡처가 상대·걱정거리까지 읽었으면 접힌 칸을 펼쳐 무엇을 채웠는지 보이게 한다.
+          if (detailsRef.current && (ex.who || ex.tension)) detailsRef.current.open = true;
         } catch (err) {
           setError((err as Error).message);
         } finally {
@@ -215,7 +218,7 @@ export default function NewSituation({
               </div>
             </div>
 
-            <details className="group">
+            <details ref={detailsRef} className="group">
               <summary className="flex items-center gap-1.5 cursor-pointer font-label-sm text-on-surface-variant hover:text-primary transition-colors list-none w-fit">
                 <span className="material-symbols-outlined text-[16px] transition-transform group-open:rotate-90">chevron_right</span>
                 상대나 걱정되는 점을 더 알려주기
@@ -241,7 +244,7 @@ export default function NewSituation({
               disabled={captureBusy}
               className="flex items-center gap-3 p-4 rounded-xl border border-dashed border-border-light text-left hover:border-primary/40 hover:bg-surface-container-low transition-colors disabled:opacity-60"
             >
-              <span className="material-symbols-outlined text-slate-muted">{captureBusy ? "progress_activity" : "add_photo_alternate"}</span>
+              <span className={"material-symbols-outlined text-slate-muted" + (captureBusy ? " animate-spin" : "")}>{captureBusy ? "progress_activity" : "add_photo_alternate"}</span>
               <span className="min-w-0">
                 <span className="block text-sm font-medium text-on-surface">{captureBusy ? "캡처를 읽는 중…" : "대화 캡처로 채우기"}</span>
                 <span className="block font-label-sm text-outline">카톡 캡처를 올리면 상황을 대신 적어드려요. 이름·번호는 지웁니다.</span>

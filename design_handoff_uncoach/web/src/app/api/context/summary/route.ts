@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callGemini, extractText, parseLooseJson, GEMINI_MODEL } from "@/lib/scoring/gemini";
+import { callGemini, extractText, parseLooseJson, GEMINI_MODEL, isUnavailable } from "@/lib/scoring/gemini";
+import { demoSummary } from "@/lib/scoring/fallback";
 import { NEWS_SUMMARY_SYSTEM } from "@/lib/scoring/context-system";
 import { clampLevel, toScores, isCopied } from "@/lib/domain/news-score";
 import { totalOf } from "@/lib/domain/situations";
@@ -79,11 +80,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ captured, missed, verdict, scores, reasons, coach });
   } catch (e) {
-    const msg = (e as Error).message;
-    if (msg === "NO_KEY") {
-      return NextResponse.json({ error: "GEMINI_API_KEY가 서버에 설정되지 않았습니다." }, { status: 503 });
+    // 일시적 불가면 예시(데모) 채점으로 대체. 복붙 탐지는 오프라인에서도 살아있다.
+    if (isUnavailable(e)) {
+      return NextResponse.json(demoSummary({ text: passage.text, keyPoints: passage.keyPoints }, draft));
     }
     console.error("[api/context/summary]", e);
-    return NextResponse.json({ error: msg || "채점에 실패했습니다." }, { status: 500 });
+    return NextResponse.json({ error: (e as Error).message || "채점에 실패했습니다." }, { status: 500 });
   }
 }

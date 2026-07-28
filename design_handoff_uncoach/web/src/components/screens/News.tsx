@@ -8,7 +8,7 @@ import { newsSid, totalOf } from "@/lib/domain/situations";
 import type { NewsPassage, SummaryResult } from "@/lib/domain/types";
 import type { ScreenKey } from "@/components/AppShell";
 import ProfileChip from "@/components/stitch/ProfileChip";
-import { FeedbackItem, RubricTable } from "@/components/stitch/Feedback";
+import { FeedbackItem, RubricTable, DemoBadge } from "@/components/stitch/Feedback";
 
 const VERDICT_META = {
   pass: { label: "훌륭해요", cls: "text-tertiary", icon: "check_circle" },
@@ -165,6 +165,7 @@ export default function News({ category, onExit, nav }: { category?: string; onE
                 </div>
               </div>
 
+              {result?.demo && <DemoBadge />}
               {result && newsTotal != null ? (
                 <RubricTable rows={rows} total={newsTotal} labels={NEWS_LEVEL_LABEL} />
               ) : (
