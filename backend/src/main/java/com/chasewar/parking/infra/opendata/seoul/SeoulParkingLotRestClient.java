@@ -5,8 +5,13 @@ import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.UnknownContentTypeException;
 
 @Slf4j
 @Component
@@ -22,6 +27,15 @@ public class SeoulParkingLotRestClient implements SeoulParkingLotClient {
         this.apiKey = apiKey;
     }
 
+    @Retryable(
+            retryFor = {
+                    ResourceAccessException.class,
+                    HttpServerErrorException.class,
+                    UnknownContentTypeException.class
+            },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 200, multiplier = 2)
+    )
     @Override
     public SeoulParkingLotResponse fetchPage(int startIndex, int endIndex) {
 
