@@ -47,7 +47,7 @@ Task Progress:
 |-------------------|----------------|------|
 | `.welcome` | `WelcomeScreen` | 진입·기능 소개 |
 | `.screen` + progress | `OnboardingStep` | step 1~4 공통 레이아웃 |
-| `.opt` / `.options-grid` | `OptionButton` | single select |
+| `.opt` / `.options-grid` | `OptionButton` | 단일/복수 선택 공용 (이슈 #92부터 step1 지원분야는 복수선택) |
 | `.home-header` | `HomeHeader` | 프로필 요약 + 알림(placeholder) |
 | `.home-chip` | `FilterChip` | 정렬 필터 |
 | `.home-card` | `SubsidyCard` | 리스트 아이템 |

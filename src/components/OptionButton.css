@@ -30,3 +30,18 @@
   font-size: 18px;
   flex-shrink: 0;
 }
+
+.opt-label {
+  flex: 1;
+}
+
+/**
+ * 색상(hover/selected 배경 공유)에 의존하지 않는 선택 표시 — hover 중에 같은 버튼을 눌러
+ * 해제해도(마우스가 버튼 위에 그대로 있어 hover 스타일이 남아있어도) 체크마크 유무로 바로
+ * 구분된다.
+ */
+.opt-check {
+  flex-shrink: 0;
+  color: var(--blue);
+  font-weight: 700;
+}

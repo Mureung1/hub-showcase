@@ -93,7 +93,10 @@ Button active: `scale(0.97)` / card active: `scale(0.98)`
 ### OptionButton (`.opt`)
 - default: white bg, `--border` border
 - hover: `--blue` border, `--blue-soft` bg
-- selected: `--blue` border+text, `--blue-soft` bg, font-weight 500
+- selected: `--blue` border+text, `--blue-soft` bg, font-weight 500, 우측에 `--blue` 체크마크(`.opt-check`)
+- 이슈 #92: hover와 selected가 border/bg를 공유해서 색상만으로는 선택 상태 구분이 약함(특히
+  복수선택에서 같은 버튼을 다시 눌러 해제할 때 마우스가 버튼 위에 남아있으면 hover 스타일이
+  selected처럼 보임) — 그래서 체크마크를 hover/마우스 위치와 무관한 선택 신호로 추가함
 
 ### FilterChip (`.home-chip`)
 - default: white, `--text-sub`
