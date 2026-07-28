@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/analytics/analytics_logger.dart';
+import '../../core/constants/empty_art.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
@@ -507,6 +508,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                       title: '아직 퀘스트가 없어요',
                       message: '큰 목표를 작은 퀘스트로 쪼개면\n오늘 당장 시작할 수 있어요.',
                       emoji: '🪺',
+                      asset: EmptyArt.quest,
                       actionLabel: '퀘스트 등록하기',
                       onAction: () => context.go('/quest/new'),
                     );

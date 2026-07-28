@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/empty_art.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -163,6 +164,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
                   title: '아직 끝낸 도전이 없어요',
                   message: '퀘스트를 완료하면 여기로 하나씩 옮겨져요.',
                   emoji: '🗂️',
+                  asset: EmptyArt.storage,
                 )
               : ListView.builder(
                   controller: scrollController,

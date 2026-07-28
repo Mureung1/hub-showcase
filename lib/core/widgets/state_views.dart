@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
+import 'pixel_art.dart';
 
 /// 로딩 · 빈 상태 · 오류 상태 공통 위젯.
 ///
@@ -65,15 +66,27 @@ class EmptyView extends StatelessWidget {
     required this.title,
     this.message,
     this.emoji = '🪺',
+    this.asset,
     this.actionLabel,
     this.onAction,
   });
 
   final String title;
   final String? message;
+
+  /// [asset]을 못 읽을 때의 대체 표시. 자산이 없는 호출부는 이것만 쓴다.
   final String emoji;
+
+  /// 빈 화면 일러스트 자산. **선택 사항이다** — 넘기지 않으면 예전처럼 이모지만
+  /// 그린다(자산 없는 호출부가 무수정으로 계속 컴파일된다).
+  final String? asset;
+
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  /// 일러스트 변의 길이. 이모지 목업(48)보다 크게 잡는다 — 512px 일러스트라
+  /// 48로는 무엇을 그렸는지 안 보인다.
+  static const double _artSize = 96;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +97,19 @@ class EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 48)),
+            if (asset == null)
+              Text(emoji, style: const TextStyle(fontSize: 48))
+            else
+              // 여기만 filterQuality가 medium이다. 다른 도트 자산은 원본 크기
+              // 근처거나 확대라 최근접(none)이 맞지만, 빈 화면 일러스트는
+              // 512 → 96 = 0.19배 **축소**라 최근접이면 픽셀 행·열이 통째로
+              // 버려져 그림이 깨진다.
+              PixelArt.emoji(
+                asset: asset!,
+                emoji: emoji,
+                size: _artSize,
+                filterQuality: FilterQuality.medium,
+              ),
             AppSpacing.gapMd,
             Text(
               title,

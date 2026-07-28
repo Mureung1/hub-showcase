@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/empty_art.dart';
 import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
@@ -268,6 +269,7 @@ class _PendingQuests extends StatelessWidget {
             title: '진행 중인 퀘스트가 없어요',
             message: '큰 목표를 작은 퀘스트로 쪼개서 시작해 보세요.',
             emoji: '🌱',
+            asset: EmptyArt.home,
           );
         }
         // 홈에서는 미리보기만. 전체 목록은 퀘스트 탭에 있다.

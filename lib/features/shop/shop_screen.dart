@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/empty_art.dart';
 import '../../core/constants/shop_items.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/coin_pill.dart';
+import '../../core/widgets/pixel_art.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
 import '../../providers/providers.dart';
@@ -165,6 +167,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                   title: '아직 판매 중인 아이템이 없어요',
                   message: '곧 새로운 아이템을 준비할게요.',
                   emoji: '🛍️',
+                  asset: EmptyArt.shop,
                 )
               : GridView.builder(
                   controller: scrollController,
@@ -362,12 +365,17 @@ class _ShopItemCard extends StatelessWidget {
   }
 }
 
-/// 아이템 미리보기 — 배경은 색 스와치, 오라는 이모지.
+/// 아이템 미리보기 — 배경은 풍경 도트아트, 오라는 스프라이트.
+///
+/// 카드 그리드의 높이 계산(`_cardExtent`)이 이 72px에 걸려 있어 **고정 높이를
+/// 유지한다.** 자산을 못 읽으면 배경은 원래의 색 스와치로, 오라는 이모지로 떨어진다.
 class _Preview extends StatelessWidget {
   const _Preview({required this.item, required this.equipped});
 
   final ShopItem item;
   final bool equipped;
+
+  static const double _height = 72;
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +385,7 @@ class _Preview extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          height: 72,
+          height: _height,
           width: double.infinity,
           decoration: BoxDecoration(
             color: isBackground
@@ -386,10 +394,32 @@ class _Preview extends StatelessWidget {
                 : theme.colorScheme.surfaceContainerHigh,
             borderRadius: AppRadius.mdAll,
           ),
+          clipBehavior: Clip.antiAlias,
           alignment: Alignment.center,
           child: isBackground
-              ? null
-              : Text(item.emoji ?? '', style: const TextStyle(fontSize: 34)),
+              // 배경은 스와치 색 위에 풍경을 덮는다. 로드 실패 시 그 색이 그대로
+              // 남아 예전 미리보기가 된다(별도 폴백 위젯이 필요 없다).
+              //
+              // filterQuality가 기본(none)이 아닌 이유: 1024×512 원본을 2열 그리드
+              // 카드 폭(약 140dp)에 담으므로 **약 0.14배 축소**다. 빈 화면 일러스트
+              // (0.19배)보다 더 줄어드는데 최근접 보간을 쓰면 픽셀 행·열이 통째로
+              // 버려져 풍경이 지저분해진다 — `pixel_art.dart`의 "크게 축소하는
+              // 자산만 예외로 올린다" 규칙을 그대로 따른다.
+              ? PixelArt(
+                  asset: shopItemAsset(item),
+                  fallback: const SizedBox.shrink(),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: _height,
+                  filterQuality: FilterQuality.medium,
+                  semanticLabel: item.name,
+                )
+              : PixelArt.emoji(
+                  asset: shopItemAsset(item),
+                  emoji: item.emoji ?? '',
+                  size: 34,
+                  semanticLabel: item.name,
+                ),
         ),
         if (equipped)
           Positioned(

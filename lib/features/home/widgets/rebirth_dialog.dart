@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/constants/growth_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/pixel_art.dart';
 
 /// 환생 **확인** 다이얼로그.
 ///
@@ -125,7 +126,12 @@ class _RebirthCelebrationDialogState extends State<RebirthCelebrationDialog>
                   child: child,
                 ),
               ),
-              child: Text(stage.emoji, style: const TextStyle(fontSize: 76)),
+              child: PixelArt.emoji(
+                asset: stage.asset,
+                emoji: stage.emoji,
+                size: 76,
+                semanticLabel: stage.name,
+              ),
             ),
             AppSpacing.gapMd,
             Text(
@@ -151,7 +157,7 @@ class _RebirthCelebrationDialogState extends State<RebirthCelebrationDialog>
             if (unlocked != null) ...[
               AppSpacing.gapMd,
               _FamilyUnlockBanner(
-                emoji: stage.emoji,
+                stage: stage,
                 familyLabel: characterFamilyLabel(unlocked),
               ),
             ],
@@ -214,9 +220,12 @@ class _RebirthBadge extends StatelessWidget {
 
 /// 계열 해금 강조 배너 (환생 3·6회에만 뜬다).
 class _FamilyUnlockBanner extends StatelessWidget {
-  const _FamilyUnlockBanner({required this.emoji, required this.familyLabel});
+  const _FamilyUnlockBanner({required this.stage, required this.familyLabel});
 
-  final String emoji;
+  /// 새로 열린 계열의 1단계. 자산·폴백 이모지를 함께 들고 있어야 해서 문자열이
+  /// 아니라 단계 자체를 받는다.
+  final CharacterStage stage;
+
   final String familyLabel;
 
   @override
@@ -233,7 +242,12 @@ class _FamilyUnlockBanner extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 32)),
+          PixelArt.emoji(
+            asset: stage.asset,
+            emoji: stage.emoji,
+            size: 32,
+            semanticLabel: stage.name,
+          ),
           AppSpacing.gapXs,
           Text(
             '$familyLabel 계열이 열렸어요!',

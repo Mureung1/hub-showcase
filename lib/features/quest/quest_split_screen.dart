@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/decompose_limits.dart';
+import '../../core/constants/empty_art.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/state_views.dart';
@@ -178,6 +179,7 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
                     title: '나눠줄 퀘스트가 없어요',
                     message: '다른 목표로 다시 시도해 볼까요?',
                     emoji: '🧩',
+                    asset: EmptyArt.split,
                     actionLabel: '다시 시도',
                     onAction: _isDecomposing
                         ? null
