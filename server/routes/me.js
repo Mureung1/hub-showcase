@@ -421,3 +421,31 @@ me.delete('/api/me/uploads/:uploadId', async (req, res) => {
     res.status(err.status ?? 500).json({ error: err.message })
   }
 })
+
+// ── 프로젝트 관리 탭: 내 프로젝트 순서 변경 (개인별 sort_order 일괄 갱신) ──
+me.post('/api/me/projects/reorder', async (req, res) => {
+  try {
+    const user = await currentUser(req)
+    const ids = Array.isArray(req.body?.projectIds) ? req.body.projectIds : []
+    if (ids.length === 0) throw fail(400, '순서를 지정할 프로젝트가 없습니다.')
+
+    // 전부 내 멤버십인지 확인 (남의 프로젝트 순서는 못 바꿈)
+    const { data: mine, error: e1 } = await supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', user.id)
+    throwIf(e1, '내 멤버십 조회')
+    const mineSet = new Set(mine.map((m) => m.project_id))
+    if (!ids.every((id) => mineSet.has(id))) throw fail(400, '내 프로젝트만 순서를 바꿀 수 있습니다.')
+
+    // 보낸 순서대로 sort_order = index (내 멤버십 행만 한정)
+    const updates = ids.map((id, i) =>
+      supabase.from('project_members').update({ sort_order: i }).eq('user_id', user.id).eq('project_id', id),
+    )
+    for (const { error } of await Promise.all(updates)) throwIf(error, '순서 저장')
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})

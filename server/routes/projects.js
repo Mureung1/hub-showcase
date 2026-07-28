@@ -734,3 +734,63 @@ projects.post('/api/projects/:id/swap', async (req, res) => {
     res.status(err.status ?? 500).json({ error: err.message })
   }
 })
+
+// ── 프로젝트 삭제: 생성자만. 되돌릴 수 없음(자식 테이블은 cascade로 정리) ──
+projects.delete('/api/projects/:id', async (req, res) => {
+  try {
+    const { project } = await loadCreatorProject(req, 'id, creator_id')
+    const { error } = await supabase.from('projects').delete().eq('id', project.id)
+    throwIf(error, '프로젝트 삭제')
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 완료 처리 / 완료 취소: 생성자만 (assigned·active ↔ completed) ──
+projects.post('/api/projects/:id/complete', async (req, res) => {
+  try {
+    const { project } = await loadCreatorProject(req, 'id, status, creator_id')
+    const completed = Boolean(req.body?.completed)
+
+    if (completed) {
+      if (!['assigned', 'active'].includes(project.status)) {
+        throw fail(409, '배정이 끝난 프로젝트만 완료 처리할 수 있습니다.')
+      }
+    } else if (project.status !== 'completed') {
+      throw fail(409, '완료된 프로젝트만 되돌릴 수 있습니다.')
+    }
+    const nextStatus = completed ? 'completed' : 'active'
+
+    const { error } = await supabase.from('projects').update({ status: nextStatus }).eq('id', project.id)
+    throwIf(error, '완료 상태 갱신')
+    res.json({ status: nextStatus })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 메인 지정: 팀원 개인 설정 (1인 1메인). 완료 프로젝트는 메인 불가 ──
+projects.post('/api/projects/:id/main', async (req, res) => {
+  try {
+    const { user, project } = await loadMember(req)
+    if (project.status === 'completed') throw fail(409, '완료된 프로젝트는 메인으로 지정할 수 없습니다.')
+
+    // 내 다른 멤버십의 메인 해제 → 이 프로젝트만 메인
+    const { error: e1 } = await supabase
+      .from('project_members')
+      .update({ is_main: false })
+      .eq('user_id', user.id)
+    throwIf(e1, '기존 메인 해제')
+    const { error: e2 } = await supabase
+      .from('project_members')
+      .update({ is_main: true })
+      .eq('user_id', user.id)
+      .eq('project_id', project.id)
+    throwIf(e2, '메인 지정')
+
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})

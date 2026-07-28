@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useApi } from '../../api/client'
+import { useApi, apiPost, apiDelete } from '../../api/client'
 import './tabs.css'
 
-function ProjectCard({ project, onDelete }) {
+function ProjectCard({ project, section, canUp, canDown, busy, onDelete, onComplete, onSetMain, onMove }) {
+  const active = section === 'active'
   return (
     <li className={`proj-card${project.status === 'completed' ? ' proj-done' : ''}`}>
       <div className="proj-info">
@@ -29,8 +30,23 @@ function ProjectCard({ project, onDelete }) {
         <div className="bar-track"><div className="bar-fill" style={{ width: `${project.progress}%` }} /></div>
       </div>
       <div className="proj-actions">
+        {active && !project.isMain && (
+          <div className="proj-reorder">
+            <button type="button" className="reorder-btn" disabled={busy || !canUp} aria-label="위로" onClick={() => onMove(project, -1)}>↑</button>
+            <button type="button" className="reorder-btn" disabled={busy || !canDown} aria-label="아래로" onClick={() => onMove(project, 1)}>↓</button>
+          </div>
+        )}
+        {active && !project.isMain && (
+          <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onSetMain(project)}>⭐ 메인 지정</button>
+        )}
+        {project.isCreator && active && (
+          <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onComplete(project, true)}>📁 완료 처리</button>
+        )}
+        {project.isCreator && !active && (
+          <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onComplete(project, false)}>↩ 완료 취소</button>
+        )}
         {project.isCreator && (
-          <button type="button" className="btn-danger-ghost" onClick={() => onDelete(project)}>🗑 삭제</button>
+          <button type="button" className="btn-danger-ghost" disabled={busy} onClick={() => onDelete(project)}>🗑 삭제</button>
         )}
       </div>
     </li>
@@ -40,6 +56,7 @@ function ProjectCard({ project, onDelete }) {
 export default function ProjectsTab() {
   const { loading, error, data, reload } = useApi('/api/me/projects')
   const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false)
 
   if (loading) return <div className="tab-page"><p className="tab-status">불러오는 중…</p></div>
   if (error) {
@@ -52,10 +69,39 @@ export default function ProjectsTab() {
   }
 
   const { active, completed } = data
+  const firstNonMain = active.findIndex((p) => !p.isMain) // 메인은 최상단 고정 → 그 아래에서만 순서 변경
+
+  // 쓰기 요청 공통 래퍼 — 실행 중 버튼 잠금, 성공 시 목록 새로고침, 실패 시 안내
+  async function run(fn) {
+    setNotice('')
+    setBusy(true)
+    try {
+      await fn()
+      reload()
+    } catch (err) {
+      setNotice(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   function handleDelete(project) {
-    const ok = window.confirm('프로젝트를 삭제하시겠습니까? 삭제된 프로젝트는 복구가 불가능합니다')
-    if (ok) setNotice(`"${project.title}" 삭제는 실데이터 연결 단계(4단계)에서 활성화됩니다.`)
+    const ok = window.confirm(`"${project.title}" 프로젝트를 삭제하시겠습니까? 삭제된 프로젝트는 복구가 불가능합니다.`)
+    if (ok) run(() => apiDelete(`/api/projects/${project.id}`))
+  }
+  function handleComplete(project, completed) {
+    run(() => apiPost(`/api/projects/${project.id}/complete`, { completed }))
+  }
+  function handleSetMain(project) {
+    run(() => apiPost(`/api/projects/${project.id}/main`))
+  }
+  function handleMove(project, delta) {
+    const idx = active.findIndex((p) => p.id === project.id)
+    const target = idx + delta
+    if (idx < 0 || target < 0 || target >= active.length) return
+    const ids = active.map((p) => p.id)
+    ;[ids[idx], ids[target]] = [ids[target], ids[idx]]
+    run(() => apiPost('/api/me/projects/reorder', { projectIds: ids }))
   }
 
   return (
@@ -76,7 +122,20 @@ export default function ProjectsTab() {
         </div>
       ) : (
         <ul className="proj-list">
-          {active.map((p) => <ProjectCard key={p.id} project={p} onDelete={handleDelete} />)}
+          {active.map((p, i) => (
+            <ProjectCard
+              key={p.id}
+              project={p}
+              section="active"
+              canUp={!p.isMain && i > firstNonMain}
+              canDown={!p.isMain && i < active.length - 1}
+              busy={busy}
+              onDelete={handleDelete}
+              onComplete={handleComplete}
+              onSetMain={handleSetMain}
+              onMove={handleMove}
+            />
+          ))}
         </ul>
       )}
 
@@ -87,7 +146,16 @@ export default function ProjectsTab() {
         <p className="card-empty">완료된 프로젝트가 없습니다.</p>
       ) : (
         <ul className="proj-list">
-          {completed.map((p) => <ProjectCard key={p.id} project={p} onDelete={handleDelete} />)}
+          {completed.map((p) => (
+            <ProjectCard
+              key={p.id}
+              project={p}
+              section="completed"
+              busy={busy}
+              onDelete={handleDelete}
+              onComplete={handleComplete}
+            />
+          ))}
         </ul>
       )}
     </div>

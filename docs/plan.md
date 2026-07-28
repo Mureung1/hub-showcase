@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 생성~배정·설명·맞교환·태스크(담당자 자동배정+상태 변경)·링크 업로드 완료 (파일 업로드·관리 쓰기·알림 남음) |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 생성~배정·설명·맞교환·태스크(담당자 자동배정+상태 변경)·링크 업로드·관리 탭 쓰기 완료 (파일 업로드·알림 남음) |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -37,7 +37,7 @@
 - [x] 태스크 상태 변경 (할 일 / 진행 중 / 완료) — `POST /api/me/tasks/:taskId/status` (자기 태스크만), `ProgressTab.jsx` 상태 버튼 3개
 - [x] 링크 업로드 + 코멘트(100자) — `POST /api/me/tasks/:taskId/uploads` · `DELETE /api/me/uploads/:uploadId` (자기 태스크·본인 자료만), `ProgressTab.jsx` UploadForm/✕, `activity_log 'upload'` → 잔디·최근활동
 - [ ] 파일 업로드 (multer + Storage 비공개 버킷 + 서명 URL 다운로드) — 후속
-- [ ] 프로젝트 삭제 / 완료 처리 / 메인 지정 / 순서 변경
+- [x] 프로젝트 삭제 / 완료(취소) / 메인 지정 / 순서 변경 — `DELETE /api/projects/:id`·`POST /:id/complete`·`/:id/main`(생성자/팀원 권한 구분) + `POST /api/me/projects/reorder`, `ProjectsTab.jsx` 액션 4종
 
 ### 프로젝트 생성 ~ 배정 플로우 — ⬜ 화면만 완성, BE/DB 미연결
 - [x] 화면 5종 UI (계획검토·초대·join·설문·배정결과)
@@ -63,7 +63,7 @@
 - [ ] 인앱 알림 (합류·마감·공개·교환·업로드)
 - [ ] 진행률 주간 스냅샷 자동화 (KST)
 - [ ] 검증 에이전트 `.claude/agents/verifier.md` + 결함 수정
-
+- [ ] vercel에 배포
 ### 알려진 후속 과제
 - ~~**조장 DB 정합**: 조장이 "조장+실무" 2역이 되면 `assignments`의 `unique(project_id, member_id)`와 충돌~~ → **해결**: unique를 `(project_id, member_id, role_id)`로 변경해 한 사람이 여러 역할(조장 표식 + 실무)을 각각 1행으로 저장. me.js가 member별 역할을 묶어 표시
 - `shell-quote`(concurrently 하위 의존성) high 취약점 — 개발 도구라 배포 영향 없음, 추후 정리
@@ -256,6 +256,14 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-28 · 프로젝트 관리 탭 쓰기 (삭제·완료·메인·순서)
+- **왜**: 관리 탭이 읽기만 가능했고 `🗑 삭제`는 목업, 완료/메인/순서 버튼은 아예 없었다. 체크리스트의 "삭제/완료/메인/순서"를 실동작시켜 관리 탭 쓰기를 연다. 권한은 **데이터 모델이 규정** — 삭제·완료는 프로젝트 전역이라 생성자만, 메인·순서는 `project_members`의 개인별 설정(`is_main`/`sort_order`)이라 각 팀원이 자기 것만.
+- **방식**:
+  - `projects.js` — 기존 `loadCreatorProject`/`loadMember` 재사용. `DELETE /api/projects/:id`(생성자, `projects` 한 행 삭제로 자식 전부 **cascade** 정리). `POST /:id/complete { completed }`(생성자, `assigned`/`active` ↔ `completed` 토글, 그 외 409 — 실수 방지 위해 되돌리기 포함). `POST /:id/main`(팀원, 완료 프로젝트면 409, 내 멤버십 전체 `is_main=false` 후 이 프로젝트만 true → 1인 1메인).
+  - `me.js` — `POST /api/me/projects/reorder { projectIds }`: 전부 내 멤버십인지 검증(아니면 400) 후 `sort_order = index` 일괄 갱신. 조회는 이미 `isMain desc, sortOrder asc` 정렬이라 무변경.
+  - `ProjectsTab.jsx` — 목업 제거, `run()` 래퍼(버튼 잠금·reload·에러 notice)로 삭제(`window.confirm` 유지)·완료/취소·메인·↑↓ 연결. `apiDelete` 재사용. **메인은 최상단 고정**이라 순서 화살표는 비메인 카드에만, 양 끝(첫 비메인 위/마지막) 비활성. `tabs.css`에 `.proj-actions`(세로 flex)·`.proj-reorder`/`.reorder-btn` 추가(토큰만). 마이그레이션·새 의존성 없음.
+- **검증**: 풀플로우 Node 스크립트(생성자·A메인/B/C 3개) — 순서 `[A,C,B]`→`[A,B,C]` 반영 · 메인 B로 이동 후 A 복귀 · **planning 완료 409** · C를 배정까지 끌어 완료 처리→완료 섹션 이동·**완료 프로젝트 메인 409**·완료 취소→진행중 복귀 · **B 삭제 + roles/tasks 0건(cascade)** · 팀원 m2의 삭제 403·완료 403·본인 메인 200 · 비멤버 삭제 403 — **18/18 통과**, 테스트 데이터 정리. `oxlint`(exit 0)·`build` 통과. 관리 탭 액션(메인/비메인/완료 카드) 헤드리스 스크린샷(실 `tabs.css`) 확인.
 
 ### 2026-07-28 · 태스크 자료 링크 업로드 (URL + 100자 코멘트)
 - **왜**: 진행 탭 태스크 카드의 `📎 업로드`는 목업이었고(클릭 시 안내만), `GET /api/me/progress`는 이미 `uploads`를 내려주지만 **쓰기 API가 없고** 응답이 raw snake_case(`task_id`/`link_url`)라 프론트의 camelCase(`u.taskId`/`u.linkUrl`) 기대와 어긋난 **잠복 버그**가 있었다(실 업로드가 없어 안 드러남). 링크+코멘트 업로드를 실동작시켜 "산출물 공유 + 잔디 기록"을 연다. **파일(Storage) 업로드는 분리** — multer 의존성·비공개 버킷 수동 생성이 필요해 다음 슬라이스로.
