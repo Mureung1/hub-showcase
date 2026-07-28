@@ -23,6 +23,7 @@ function createInterventionSession(overrides = {}) {
     startedAt: NOW,
     entryMode: "intervention",
     entryLevel: 2,
+    journeyLevel: 2,
     microTask: "첫 문장 쓰기",
     generationSource: "gemini",
     memoryEvidence: null,
@@ -45,6 +46,7 @@ describe("focusSession v2", () => {
       startedAt: NOW,
       entryMode: "intervention",
       entryLevel: 2,
+      journeyLevel: 2,
       microTask: "첫 문장 쓰기",
       generationSource: "gemini",
       memoryEvidence: null,
@@ -60,10 +62,58 @@ describe("focusSession v2", () => {
       startedAt: NOW,
       entryMode: "direct",
       entryLevel: null,
+      journeyLevel: 0,
       microTask: null,
       generationSource: "none",
       memoryEvidence: null,
     });
+  });
+
+  it("신규 세션은 유효한 Journey 레벨만 허용한다", () => {
+    expect(() =>
+      createFocusSession({
+        taskId: "task-1",
+        startedAt: NOW,
+        journeyLevel: 5,
+      }),
+    ).toThrow("Journey 레벨");
+
+    expect(() =>
+      createInterventionSession({ journeyLevel: 3 }),
+    ).toThrow("진입 레벨과 같아야");
+  });
+
+  it("journeyLevel이 없는 기존 v2 세션을 복구한다", () => {
+    const stored = {
+      version: 2,
+      taskId: "task-1",
+      startedAt: NOW,
+      entryMode: "direct",
+      entryLevel: null,
+      microTask: null,
+      generationSource: "none",
+      memoryEvidence: null,
+    };
+    sessionStorage.setItem(FOCUS_SESSION_KEY, JSON.stringify(stored));
+
+    expect(readFocusSession({ now: NOW })).toEqual(stored);
+  });
+
+  it("유효하지 않은 기존 journeyLevel도 세션 복구를 막지 않는다", () => {
+    const stored = {
+      version: 2,
+      taskId: "task-1",
+      startedAt: NOW,
+      entryMode: "direct",
+      entryLevel: null,
+      journeyLevel: 9,
+      microTask: null,
+      generationSource: "none",
+      memoryEvidence: null,
+    };
+    sessionStorage.setItem(FOCUS_SESSION_KEY, JSON.stringify(stored));
+
+    expect(readFocusSession({ now: NOW })).toEqual(stored);
   });
 
   it("신규 v2 생성 함수는 unknown 출처를 거부한다", () => {

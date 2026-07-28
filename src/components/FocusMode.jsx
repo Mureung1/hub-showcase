@@ -49,6 +49,7 @@ function FocusMode({
   entryMode = "direct",
   microTask = null,
   entryLevel = null,
+  journeyLevel = null,
   generationSource = "none",
   memoryEvidence = null,
   onSessionCompleted,
@@ -64,7 +65,7 @@ function FocusMode({
   const completionInFlightRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
   const stopInFlightRef = useRef(false);
-  const journeyAssets = getFocusJourneyAssets(entryLevel);
+  const journeyAssets = getFocusJourneyAssets(journeyLevel);
 
   useEffect(() => {
     // 완료 화면에서는 집중 시간이 더 이상 흐르지 않도록 멈춘다(Completion에 표시할
@@ -93,7 +94,8 @@ function FocusMode({
     try {
       setErrorMessage(null);
       // 현재 "멈추기"는 일시정지가 아니라 Focus 세션을 명시적으로 종료하는 동작이다.
-      await recordEvent("stopped");
+      const durationSeconds = calculateElapsed(startedAt);
+      await recordEvent("stopped", { durationSeconds });
       onStop?.();
     } catch (err) {
       console.error(err);
