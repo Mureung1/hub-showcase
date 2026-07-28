@@ -165,6 +165,7 @@ LocalTwin/
 - [공공데이터 기반 상권 분석](../features/market-analysis.md)
 - [상권 점수 산정 방법론](../features/market-score-methodology.md)
 - [상권 지도, 2.5D 건물과 핵심 3D Store Marker](../features/market-map-experience.md)
+- [지도 점포 건물 교체](../features/map-storefront-building-replacement.md)
 - [Gaussian Splatting 현장 상세보기](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리](../features/person-anonymization-preprocessing.md)
 
