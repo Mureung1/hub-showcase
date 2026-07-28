@@ -321,7 +321,7 @@ export default function GitLabPage() {
       <header className={styles.levelBar}>
         <div>
           <p className={styles.eyebrow}>Git Lab · {level.chapterTitle}</p>
-          <h1 id="git-lab-title">Level {level.title}</h1>
+          <h1 id="git-lab-title">{level.title}</h1>
           <p className={styles.sectionLabel}>{level.proGitSection}</p>
         </div>
         <div className={styles.headerActions}>
