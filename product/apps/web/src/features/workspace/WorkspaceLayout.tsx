@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { categoryMatchesSelection } from "../market/categorySelection";
 import { MarketFilters } from "../market/MarketFilters";
 import { MarketInspector } from "../market/MarketInspector";
 import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
@@ -65,6 +66,13 @@ export function WorkspaceLayout({
   useWorkspaceUrlPersistence(model);
 
   const selectedStore = storefronts.storeSelection.selected;
+  const selectedCategoryStores = useMemo(
+    () =>
+      storefronts.visibleStores.filter((store) =>
+        categoryMatchesSelection(store.category, selection.categorySelection),
+      ),
+    [selection.categorySelection, storefronts.visibleStores],
+  );
   const selectedFocusCandidate = useMemo<SelectedStorefront | null>(
     () =>
       viewport.presentationMode === "storefront3d" &&
@@ -183,7 +191,7 @@ export function WorkspaceLayout({
             flowPeople={storefronts.flowPeople}
             activeHour={selection.activeHour}
             activeDemandLabel={storefronts.activeDemandLabel}
-            mapStores={storefronts.mapStores}
+            mapStores={selectedCategoryStores}
             selected={selectedStore}
             score={storefronts.score}
             sameCategoryCount={storefronts.sameCategoryCount}
