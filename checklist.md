@@ -43,6 +43,21 @@
 - [ ] 두 서비스에서 본인 포크 저장소가 보이는지 확인 — 내일 실제 배포할 때 같이 확인하기로 하고 오늘은 보류
 - 완료 기준: Vercel과 Render에서 본인 포크 저장소를 선택할 수 있으면 준비 완료
 
+## 오늘 (7/28, 화요일) — 서비스 첫 배포
+
+### 0. 배포 전 코드 준비
+- [x] `server/app.js`에 상태 확인 라우트 추가 — `GET /health` → `{ ok: true }`, Render Health Check Path로 사용 예정
+- [x] `package.json`에 `start` 스크립트 추가 — `node scripts/dev-server.js` (`--env-file` 없이. Render는 대시보드 환경변수로 값을 주입하므로 로컬처럼 파일을 강제로 읽으면 배포가 실패함)
+- [x] `cors` 패키지 설치 + `server/app.js`에 미들웨어 추가 — `ALLOWED_ORIGIN` 환경변수가 있으면 그 출처만 허용, 없으면(로컬) 전체 허용. Vercel 배포 후 실제 주소로 좁혀서 Render 재배포 예정
+- [x] 로컬 검증 — `.env.local` 값을 프로세스 환경변수로 주입한 채(Render 방식 재현) `npm start`로 서버 기동, `curl localhost:3001/health` → `{"ok":true}` 200 확인, 기존 `/api/recipes`도 정상 응답 확인
+
+### 1~5. 실제 배포·연결·검증 (Vercel/Render 대시보드 작업, 진행 예정)
+- [ ] Render에 Express(BE) 배포 — Build `npm install` / Start `npm start` / 환경변수 4개(`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) / Health Check Path `/health`
+- [ ] Vercel에 React(FE) 배포 — Framework Vite / Build `npm run build` / Output `dist` / 환경변수 `VITE_API_BASE_URL`에 Render 주소
+- [ ] Render `ALLOWED_ORIGIN`을 Vercel 실제 주소로 설정하고 재배포
+- [ ] 배포 환경에서 핵심 플로우(냉장고→홈 추천→레시피 상세→구매 링크) 확인, devtools Network + Render 로그 + Supabase로 끝까지 추적
+- [ ] FE/BE 배포 주소를 이 파일에 기록
+
 ## 백로그 (이번 주 범위 아님)
 - [ ] 네이버 최저가 매칭이 검색어와 관련 없는 상품을 1위로 잡는 문제 — `naverClient.js`(2026-07-27 확인: "소금"으로 검색하면 최저가가 실제 조리용 소금이 아니라 "히말라야 핑크솔트 결혼식 답례품"). 지금 있는 `isBundleCandidate` 필터는 묶음상품만 걸러내고 상품명 관련성은 안 봄 — 데모에서 이 재료가 노출되지 않게 시연 재료를 고르는 걸로 우선 우회, 관련성 필터링 로직 추가는 이번 주 범위 밖
 - [ ] 네이버 카탈로그(가격비교) 상품의 표시 가격이 실제 판매 페이지 가격과 다른 문제 — `naverClient.js`(2026-07-27 확인: "농심 짜파게티 더 블랙 116g 4개"가 검색 API `lprice` 기준 3,980원으로 잡히는데, 같은 옵션인데도 실제 네이버 카탈로그 페이지(`isCatalogMatch: true`)에서는 6,690원으로 표시됨). 검색 API 가격이 실시간이 아니라 크롤링 주기로 갱신되는 스냅숏이라 시차가 있거나, 카탈로그 페이지가 최저가 판매처를 기본으로 안 보여주는 것으로 추정 — 원인 특정과 대응은 이번 주 범위 밖
