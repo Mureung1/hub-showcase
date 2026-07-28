@@ -31,6 +31,10 @@ router.get('/', async (req, res, next) => {
     }
 
     // 3단계: 실제 검색. Day 2에서 정한 필드 스펙대로 name/summary만 검색 대상, category만 필터 대상.
+    // 참고: q가 빈 문자열/기호만 있는 "의미 없는 검색어"인지에 대한 검증은 여기 없음 — 지금은
+    // FE(CommandListPage.jsx의 isMeaningfulQuery)가 그런 요청 자체를 안 보내므로 이 API를 부르는
+    // 클라이언트가 FE 하나뿐인 한 중복시킬 실익이 없음. 이 API를 다른 클라이언트가 직접 호출하게
+    // 되면, 그때 이 라우트에도 같은 검증을 추가할 것.
     try {
         const index = meiliSearchClient.index('commands');
         const searchResult = await index.search(q || '', {

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { CATEGORY_LABELS } from '../data/commands';
 // import CommandCard from '../components/CommandCard';
 // import { compareByRelevance } from '../utils/commandSort';
+import { isMeaningfulQuery } from '../utils/isMeaningfulQuery';
 import { searchCommands } from '../services/searchService';
 import { fetchCommands } from '../services/commandsService';
 import SearchBar from '../components/SearchBar';
@@ -42,11 +43,18 @@ function CommandListPage() {
     // 아직 선언되지 않은 변수를 참조하게 돼서 "Cannot access before initialization" 에러가 남.
     const normalizedQuery = query.trim().toLowerCase();
 
+    // 검색어가 비어있거나(""), 기호/숫자만 있어 의미 있는 문자(영문/한글)가 하나도 없으면
+    // "검색어 없음"과 동일하게 취급한다. 이 판단은 FE에서만 하고 BE(server/src/routes/search.js)엔
+    // 중복시키지 않음 — 지금은 이 API를 부르는 클라이언트가 이 FE 하나뿐이라 실익이 없고,
+    // 나중에 다른 클라이언트가 이 API를 직접 호출하게 되면 그때 BE에도 같은 검증을 추가할 것
+    // (server/src/routes/search.js에 같은 취지의 주석을 남겨둠).
+    const hasMeaningfulQuery = normalizedQuery !== '' && isMeaningfulQuery(normalizedQuery);
+
     // 이 컴포넌트의 핵심 루틴: category나 검색어가 바뀔 때마다 BE에 검색을 새로 요청한다.
     useEffect(() => {
-        // 1단계: 검색어가 비어있는 경우엔 아무 요청도 보내지 않고 바로 끝내고,
-        // 비어있지 않은 경우에만 아래 2~5단계(로딩→요청→응답 처리)로 이어진다.
-        if (normalizedQuery === '') {
+        // 1단계: 검색어가 없거나(빈 문자열/기호만) 의미가 없으면 아무 요청도 보내지 않고 바로 끝내고,
+        // 의미 있는 검색어일 때만 아래 2~5단계(로딩→요청→응답 처리)로 이어진다.
+        if (!hasMeaningfulQuery) {
             // results/isLoading/error를 여기서 굳이 초기화하지 않는 이유:
             // 검색어가 빈 상태에서는 아래 return문이 SearchResultList 대신 CommandBrowseList를
             // 렌더링해서 이 세 값을 애초에 참조하지 않는다. 즉 값이 남아있어도 화면에는
@@ -56,6 +64,11 @@ function CommandListPage() {
             // setError(null);
             return;
         }
+
+        // 경쟁 상태(race condition) 방지: 이 effect가 다시 실행되거나(검색어가 더 바뀜) 컴포넌트가
+        // unmount되면 cleanup에서 ignore를 true로 바꾼다. 느린 이전 요청이 나중에 응답으로 와도
+        // ignore가 true면 그 결과를 state에 반영하지 않아, 최신 검색어의 결과를 옛 응답이 덮어쓰는 걸 막는다.
+        let ignore = false;
 
         // 2단계: 검색어가 있으면 로딩 상태로 전환하고, 혹시 이전 요청에서 남아있을 에러를 지운다.
         // 이 두 setState는 실제 요청(fetch)을 시작하기 "직전"에, effect 본문에서 곧바로 실행돼야
@@ -69,14 +82,18 @@ function CommandListPage() {
         // 3단계: 실제 검색 요청. category/normalizedQuery는 위쪽 클로저에서 그대로 캡처해서 씀.
         searchCommands(category, normalizedQuery)
             // 4-a단계(성공): BE가 돌려준 배열을 그대로 results에 반영 → SearchResultList가 다시 그려짐
-            .then((data) => setResults(data))
+            .then((data) => { if (!ignore) setResults(data); })
             // 4-b단계(실패): err.message를 그대로 노출 — searchService.js가 "서버에 연결할 수
             // 없습니다"(네트워크 자체가 안 됨)와 "서버에서 오류가 발생했습니다"(응답은 왔지만 실패)를
             // 서로 다른 Error로 던지므로, 여기서 하나의 문구로 뭉뚱그리지 않고 그 메시지를 그대로 씀
-            .catch((err) => setError(err.message))
+            .catch((err) => { if (!ignore) setError(err.message); })
             // 5단계: 성공하든 실패하든 로딩 상태는 끝났으니 항상 꺼준다
-            .finally(() => setIsLoading(false));
-    }, [category, normalizedQuery]);
+            .finally(() => { if (!ignore) setIsLoading(false); });
+
+        return () => {
+            ignore = true;
+        };
+    }, [category, normalizedQuery, hasMeaningfulQuery]);
 
     // 검색어와 무관하게, category가 바뀔 때마다 전체 목록을 한 번 받아온다(#36 알파벳 인덱스용).
     // 검색 useEffect와 분리해둔 이유: 저건 매 검색어 변경마다 재요청해야 하고, 이건 category
@@ -140,7 +157,7 @@ function CommandListPage() {
 
             <SearchBar category={category} value={query} onChange={setQuery} />
 
-            {normalizedQuery === '' ? (
+            {!hasMeaningfulQuery ? (
                 <CommandBrowseList commands={allCommands} isLoading={isLoadingAll} error={errorAll} />
             ) : (
                 <SearchResultList
