@@ -1,35 +1,71 @@
 import { describe, expect, it } from "vitest";
 
-import { replacementFootprintsFilter } from "./replacementBuildingFilter";
+import type { SelectedStorefront } from "./SelectedStorefrontLayer";
+import {
+  replacementBuildingBaseExpression,
+  replacementBuildingHeightExpression,
+} from "./replacementBuildingFilter";
 
-const polygon = {
-  type: "Polygon" as const,
-  coordinates: [
-    [
-      [126.9, 37.5] as [number, number],
-      [126.901, 37.5] as [number, number],
-      [126.901, 37.501] as [number, number],
-      [126.9, 37.501] as [number, number],
-      [126.9, 37.5] as [number, number],
-    ],
-  ],
+const readyStorefront: SelectedStorefront = {
+  id: "store-a",
+  longitude: 126.9,
+  latitude: 37.5,
+  categoryCode: "I21201",
+  building: {
+    id: "building-a",
+    center: [126.9001, 37.5001],
+    plotSizeMeters: 8,
+    heightMeters: 7,
+    storeCountInBuilding: 1,
+  },
 };
 
-describe("replacement building filter", () => {
-  it("leaves the base building layer unfiltered when no storefront is ready", () => {
-    expect(replacementFootprintsFilter([])).toBeUndefined();
+describe("replacement building paint expressions", () => {
+  it("keeps the original building dimensions when no storefront is ready", () => {
+    expect(replacementBuildingBaseExpression([])).toEqual([
+      "to-number",
+      ["get", "render_min_height"],
+      0,
+    ]);
+    expect(replacementBuildingHeightExpression([])).toEqual([
+      "to-number",
+      ["get", "render_height"],
+      8,
+    ]);
   });
 
-  it("excludes only buildings contained by ready storefront footprints", () => {
-    expect(replacementFootprintsFilter([polygon])).toEqual([
-      "!",
+  it("collapses only buildings touching a ready storefront center", () => {
+    expect(replacementBuildingHeightExpression([readyStorefront])).toEqual([
+      "case",
       [
-        "within",
-        {
-          type: "MultiPolygon",
-          coordinates: [polygon.coordinates],
-        },
+        "<=",
+        [
+          "distance",
+          {
+            type: "MultiPoint",
+            coordinates: [[126.9001, 37.5001]],
+          },
+        ],
+        0.75,
       ],
+      0,
+      ["to-number", ["get", "render_height"], 8],
+    ]);
+    expect(replacementBuildingBaseExpression([readyStorefront])).toEqual([
+      "case",
+      [
+        "<=",
+        [
+          "distance",
+          {
+            type: "MultiPoint",
+            coordinates: [[126.9001, 37.5001]],
+          },
+        ],
+        0.75,
+      ],
+      0,
+      ["to-number", ["get", "render_min_height"], 0],
     ]);
   });
 });
