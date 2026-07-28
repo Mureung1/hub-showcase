@@ -229,15 +229,15 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 
 | 영역 | 현재 구현 | 채택 target |
 | --- | --- | --- |
-| App-originated Turn | Normal Chat의 bounded text·settings | Chat과 별도인 typed ActionInvocation |
-| Source interaction | 단일 preview selection, AY input과 독립 | 명시적 multi-file action에서만 request-scoped input 동결 |
-| Native input | `TextInput` 하나 | Action별 workspace-local `SkillInput` 뒤 POSIX relative file reference를 렌더링한 bounded `TextInput` |
-| Product contract | Chat·source projection·interaction result | 별도 closed ActionInvocation request·stream |
-| Server operation | `sendChat`과 shared interaction lifecycle | 같은 admission·stream 위의 typed action invocation |
+| App-originated Turn | Normal Chat의 bounded text·settings와 Chat과 별도인 typed `organize_sources` ActionInvocation | 같은 closed contract로 action별 정의를 추가할 수 있음 |
+| Source interaction | Preview와 독립적인 text-only transient multi-file selection을 명시적 action에서만 동결 | 유지. Source registry·durable selection은 만들지 않음 |
+| Native input | Normal Chat은 `[TextInput]`, action은 workspace-local `[SkillInput, TextInput]` | Local file carrier 변경은 actual case와 official contract 검증 뒤 별도 채택 |
+| Product contract | Chat·source projection·interaction result와 별도 closed ActionInvocation request·shared stream | Unknown action·native input·absolute path를 계속 거절 |
+| Server operation | `sendChat`과 validated action이 같은 admission·stream·interaction lifecycle을 사용 | 기능별 validation만 action definition에 추가 |
 | AY-originated UI | `propose_state_patch` MCP와 general native clarification | 기존 Interface 유지, 새 typed MCP capability 추가 가능 |
 | 실행 기록 | Native Turn과 process-local operation | 유지. Durable `ModelingRun`을 복원하지 않음 |
 
-현재 구현은 reverse InteractionCapability와 normal Chat을 end-to-end 검증했지만, GUI source selection에서 workspace Skill과 file reference를 native Turn으로 전달하는 ActionInvocation은 제거된 상태다. 구현 지도와 테스트는 이 gap을 완료된 First Assignment로 표현하지 않는다.
+현재 구현은 reverse InteractionCapability와 normal Chat에 더해 GUI의 explicit source selection에서 workspace Skill과 file reference를 native Turn으로 전달하는 `organize_sources` ActionInvocation을 deterministic Browser composition으로 검증한다. Exact local-provider와 actual prepared-workspace action→same-Turn Interaction→AY-owned mutation/checkpoint trace는 아직 남아 있으므로 구현 지도와 테스트는 First Assignment 전체를 완료로 표현하지 않는다.
 
 ## 검증 seam
 
@@ -250,7 +250,7 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 | Browser E2E | Preview·selection만으로 Turn이 시작되지 않고 명시적 action에서만 선택 file이 전달된다. |
 | Actual workspace trace | Workspace-local Skill이 actual file을 읽고 InteractionCapability round trip 뒤 AY가 실제 file과 Git checkpoint를 소유한다. |
 
-ActionInvocation 구현 시 production Browser→Server Adapter와 deterministic in-memory Adapter는 같은 ActionInvocation contract를 검증해야 한다. 현재 production Broker와 in-memory UI Adapter는 같은 InteractionCapability Interface를 검증한다. Raw SDK·MCP identity를 테스트 편의를 위해 제품 Interface에 추가하지 않는다.
+Production Browser→Server Adapter와 deterministic Browser fixture는 같은 ActionInvocation contract와 Product operation frame decoder를 검증한다. Production Broker와 in-memory UI Adapter는 같은 InteractionCapability Interface를 검증한다. Raw SDK·MCP identity를 테스트 편의를 위해 제품 Interface에 추가하지 않는다.
 
 ## 의도적으로 만들지 않는 것
 
