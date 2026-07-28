@@ -3,9 +3,9 @@ import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnal
 import { PanelTextSizeControl } from "../workspace/PanelTextSizeControl";
 import type { PanelTextSize } from "../workspace/usePanelTextSize";
 import { EvidenceCoverageSummary } from "./EvidenceCoverageSummary";
+import { InspectorFlow } from "./InspectorFlow";
 import {
   InspectorFootfall,
-  InspectorFlow,
   InspectorHeader,
   InspectorDecisionSummary,
   InspectorPopulation,
