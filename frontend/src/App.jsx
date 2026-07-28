@@ -4,7 +4,6 @@ import { useAppState } from './state/useAppState'
 import AppLayout from './components/layout/AppLayout'
 import StartPage from './pages/StartPage'
 import MainPage from './pages/MainPage'
-import SendPage from './pages/SendPage'
 import SentPage from './pages/SentPage'
 import RecommendPage from './pages/RecommendPage'
 import StoragePage from './pages/StoragePage'
@@ -25,7 +24,6 @@ function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<StartPage />} />
         <Route path="/main" element={<RequireAuth><MainPage /></RequireAuth>} />
-        <Route path="/send" element={<RequireAuth><SendPage /></RequireAuth>} />
         <Route path="/sent" element={<RequireAuth><SentPage /></RequireAuth>} />
         <Route path="/recommend" element={<RequireAuth><RecommendPage /></RequireAuth>} />
         <Route path="/storage" element={<RequireAuth><StoragePage /></RequireAuth>} />

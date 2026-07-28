@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAppState } from '../state/useAppState'
-import { fetchLetterById } from '../lib/api'
+import { fetchLetterById, fetchMatchById, fetchThreadById } from '../lib/api'
 import { dateShort } from '../lib/format'
-import { RECEIVED_LETTERS, LINKED_THREADS } from '../data/mock'
 import styles from './LetterDetailPage.module.css'
-
-const MOCK_SOURCES = {
-  received: RECEIVED_LETTERS,
-  linked: LINKED_THREADS,
-}
 
 function BackButton({ onClick }) {
   return (
@@ -49,6 +43,10 @@ export default function LetterDetailPage() {
   const { actions } = useAppState()
   const [mineLetter, setMineLetter] = useState(null)
   const [mineError, setMineError] = useState(false)
+  const [match, setMatch] = useState(null)
+  const [matchError, setMatchError] = useState(false)
+  const [thread, setThread] = useState(null)
+  const [threadError, setThreadError] = useState(false)
 
   useEffect(() => {
     if (type !== 'mine') return undefined
@@ -65,18 +63,59 @@ export default function LetterDetailPage() {
     }
   }, [type, id])
 
-  if (type !== 'mine') {
-    // 받은 편지 중 '스쳐감' 상태는 저장소에 흔적만 남기고 전체 내용은 보여주지 않는다.
-    const found = MOCK_SOURCES[type]?.find((item) => item.id === id)
-    if (!found || found.status === 'passed') {
-      return <NotFoundView onBack={actions.openStorage} />
+  useEffect(() => {
+    if (type !== 'received') return undefined
+    let cancelled = false
+    fetchMatchById(id)
+      .then((data) => {
+        if (!cancelled) setMatch(data)
+      })
+      .catch(() => {
+        if (!cancelled) setMatchError(true)
+      })
+    return () => {
+      cancelled = true
     }
+  }, [type, id])
+
+  useEffect(() => {
+    if (type !== 'linked') return undefined
+    let cancelled = false
+    fetchThreadById(id)
+      .then((data) => {
+        if (!cancelled) setThread(data)
+      })
+      .catch(() => {
+        if (!cancelled) setThreadError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [type, id])
+
+  if (type === 'received') {
+    // 스쳐감(dismissed/expired)은 백엔드가 애초에 404를 주므로 자연히 여기서 걸러진다.
+    if (matchError) return <NotFoundView onBack={actions.openStorage} />
+    if (!match) return null
     return (
       <LetterView
-        from={found.from}
-        date={found.date}
-        title={found.title}
-        body={found.text}
+        from="모음소 · 익명"
+        date={dateShort(match.created_at)}
+        body={match.matched_letter.body}
+        onBack={actions.openStorage}
+      />
+    )
+  }
+
+  if (type === 'linked') {
+    if (threadError) return <NotFoundView onBack={actions.openStorage} />
+    if (!thread) return null
+    return (
+      <LetterView
+        from="이어진 대화"
+        date={dateShort(thread.created_at)}
+        title={thread.title}
+        body={thread.body}
         onBack={actions.openStorage}
       />
     )

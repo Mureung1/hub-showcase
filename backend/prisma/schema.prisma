@@ -44,7 +44,15 @@ model Letter {
 
   // --- 매칭 풀 관련 ---
   matchExposureCount Int     @default(0) // 이 편지가 남에게 추천된 횟수
-  isMatchable        Boolean @default(true) // 매칭 풀 포함 여부 (위기 편지는 false)
+  isMatchable        Boolean @default(true) // 매칭 풀 포함 여부 (위기 편지·답장은 false)
+
+  // --- 답장 스레드 (T10, 2026-07-21 설계) ---
+  threadId    String? // 스레드 식별자. 매칭이 성사된 Match.id를 그대로 재사용한다.
+  replyToId   String? // 자기참조 — 어느 편지에 대한 답장인지 (답장 편지에만 채워짐)
+  recipientId String? // 이 편지가 향하는 사람 (답장 편지에만 채워짐 — 모음소행 일반 편지는 null)
+
+  replyTo Letter?  @relation("LetterReply", fields: [replyToId], references: [id])
+  replies Letter[] @relation("LetterReply")
 
   matchesAsSource Match[] @relation("MatchSource")
   matchesAsTarget Match[] @relation("MatchTarget")
@@ -52,6 +60,7 @@ model Letter {
   // primaryEmotion을 선행 컬럼으로 하는 후보조회용 부분 인덱스(WHERE done+matchable)와
   // keywordsNorm GIN 인덱스는 Prisma DSL로 표현이 안 되어 마이그레이션 SQL에 직접 추가한다.
   @@index([taggingStatus, isMatchable, matchExposureCount]) // 재처리/관리자 스캔용 (taggingStatus 선행)
+  @@index([threadId]) // 저장소 "이어진 편지" 탭 조회용 (T12)
 }
 
 // 추천(매칭) 결과 모델

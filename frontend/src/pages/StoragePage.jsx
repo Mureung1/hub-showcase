@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppState } from '../state/useAppState'
-import { fetchMyLetters } from '../lib/api'
+import { fetchMyLetters, fetchMyMatches, fetchMyThreads } from '../lib/api'
 import { dateShort } from '../lib/format'
-import { RECEIVED_LETTERS, LINKED_THREADS } from '../data/mock'
 import styles from './StoragePage.module.css'
 
 const TABS = [
@@ -12,10 +11,13 @@ const TABS = [
   { id: 'linked', label: '이어진 편지' },
 ]
 
+// 백엔드 Match.status(recommended/opened/dismissed/expired) → 배지 표시 매핑.
+// 'replied'는 목록 API 자체에서 제외됨(답장 완료 건은 "이어진 편지" 탭으로 이동).
 const RECEIVED_META = {
-  unread: { icon: 'mark_email_unread', badgeClass: 'badgeUnread', label: '미읽음' },
-  read: { icon: 'drafts', badgeClass: 'badgeRead', label: '읽음 · 답장 안 함' },
-  passed: { icon: 'drafts', badgeClass: 'badgePassed', label: '스쳐감' },
+  recommended: { icon: 'mark_email_unread', badgeClass: 'badgeUnread', label: '미읽음' },
+  opened: { icon: 'drafts', badgeClass: 'badgeRead', label: '읽음 · 답장 안 함' },
+  dismissed: { icon: 'drafts', badgeClass: 'badgePassed', label: '스쳐감' },
+  expired: { icon: 'drafts', badgeClass: 'badgePassed', label: '스쳐감' },
 }
 
 const LINKED_META = {
@@ -28,11 +30,21 @@ export default function StoragePage() {
   const navigate = useNavigate()
   const [myLetters, setMyLetters] = useState([])
   const [loadError, setLoadError] = useState(false)
+  const [myMatches, setMyMatches] = useState([])
+  const [matchesError, setMatchesError] = useState(false)
+  const [myThreads, setMyThreads] = useState([])
+  const [threadsError, setThreadsError] = useState(false)
 
   useEffect(() => {
     fetchMyLetters()
       .then(setMyLetters)
       .catch(() => setLoadError(true))
+    fetchMyMatches()
+      .then(setMyMatches)
+      .catch(() => setMatchesError(true))
+    fetchMyThreads()
+      .then(setMyThreads)
+      .catch(() => setThreadsError(true))
   }, [])
 
   return (
@@ -75,51 +87,58 @@ export default function StoragePage() {
       )}
 
       {state.tab === 'received' && (
-        <ul className={styles.list}>
-          {RECEIVED_LETTERS.map((item) => {
-            const meta = RECEIVED_META[item.status]
-            const isPassed = item.status === 'passed'
-            return (
-              <li
-                key={item.id}
-                className={`${styles.item} ${isPassed ? '' : styles.itemClickable}`}
-                onClick={isPassed ? undefined : () => navigate(`/storage/received/${item.id}`)}
-              >
-                <span className={styles.iconBox}>
-                  <span className="msym">{meta.icon}</span>
-                </span>
-                <div className={styles.itemBody}>
-                  <p className={styles.itemFrom}>{item.from}</p>
-                  <p className={`${styles.itemPreview} ${item.status === 'passed' ? styles.itemPreviewPassed : ''}`}>
-                    {item.text}
-                  </p>
-                </div>
-                <span className={`${styles.badge} ${styles[meta.badgeClass]}`}>{meta.label}</span>
-              </li>
-            )
-          })}
-        </ul>
+        <>
+          {matchesError && <p className={styles.itemPreview}>받은 편지를 불러오지 못했어요.</p>}
+          <ul className={styles.list}>
+            {myMatches.map((item) => {
+              const meta = RECEIVED_META[item.status]
+              const isPassed = item.matched_letter.body === null
+              const preview = isPassed
+                ? '스쳐 지나간 편지예요.'
+                : `${item.matched_letter.body.slice(0, 40)}…`
+              return (
+                <li
+                  key={item.match_id}
+                  className={`${styles.item} ${isPassed ? '' : styles.itemClickable}`}
+                  onClick={isPassed ? undefined : () => navigate(`/storage/received/${item.match_id}`)}
+                >
+                  <span className={styles.iconBox}>
+                    <span className="msym">{meta.icon}</span>
+                  </span>
+                  <div className={styles.itemBody}>
+                    <p className={styles.itemFrom}>모음소 · 익명</p>
+                    <p className={`${styles.itemPreview} ${isPassed ? styles.itemPreviewPassed : ''}`}>{preview}</p>
+                  </div>
+                  <span className={`${styles.badge} ${styles[meta.badgeClass]}`}>{meta.label}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </>
       )}
 
       {state.tab === 'linked' && (
-        <ul className={styles.list}>
-          {LINKED_THREADS.map((item) => (
-            <li
-              key={item.id}
-              className={`${styles.item} ${styles.itemClickable}`}
-              onClick={() => navigate(`/storage/linked/${item.id}`)}
-            >
-              <span className={styles.iconBox}>
-                <span className="msym">forum</span>
-              </span>
-              <div className={styles.itemBody}>
-                <p className={styles.itemTitle}>{item.title}</p>
-                <p className={styles.itemPreview}>{item.text}</p>
-              </div>
-              <span className={`${styles.badge} ${styles.badgeLinked}`}>{LINKED_META[item.status]}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {threadsError && <p className={styles.itemPreview}>이어진 편지를 불러오지 못했어요.</p>}
+          <ul className={styles.list}>
+            {myThreads.map((item) => (
+              <li
+                key={item.letter_id}
+                className={`${styles.item} ${styles.itemClickable}`}
+                onClick={() => navigate(`/storage/linked/${item.letter_id}`)}
+              >
+                <span className={styles.iconBox}>
+                  <span className="msym">forum</span>
+                </span>
+                <div className={styles.itemBody}>
+                  <p className={styles.itemTitle}>이어진 대화</p>
+                  <p className={styles.itemPreview}>{item.preview}</p>
+                </div>
+                <span className={`${styles.badge} ${styles.badgeLinked}`}>{LINKED_META[item.status]}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   )
