@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import { getBulkyWasteFeeHandler, getBulkyWasteItemsHandler } from '../controllers/bulkyWasteController'
+import { getCollectionPointsHandler } from '../controllers/collectionPointController'
 import { getItemDisposalRuleHandler, searchItemsHandler } from '../controllers/itemController'
 import { recognizeItemHandler } from '../controllers/recognizeController'
 import {
@@ -40,3 +41,4 @@ router.get('/regions/zones', getZoneOptionsHandler)
 router.get('/regions/rules', getRegionRuleHandler)
 router.get('/bulky-waste/items', getBulkyWasteItemsHandler)
 router.get('/bulky-waste', getBulkyWasteFeeHandler)
+router.get('/collection-points', getCollectionPointsHandler)

@@ -1,7 +1,7 @@
 import { ApiError, GoogleGenAI, type Schema } from '@google/genai'
 
-// 무료 티어 사용 — gemini-2.5-flash가 일일 한도(RPD)에 걸리면 gemini-2.5-flash-lite로 자동 폴백
-const MODEL_FALLBACK_CHAIN = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
+// 무료 티어 사용 — gemini-flash-latest가 일일 한도(RPD)에 걸리면 gemini-flash-lite-latest로 자동 폴백
+const MODEL_FALLBACK_CHAIN = ['gemini-flash-latest', 'gemini-flash-lite-latest']
 
 export type GeminiContentPart = string | { inlineData: { data: string; mimeType: string } }
 
