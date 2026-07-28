@@ -1,6 +1,12 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import {
+  getStringParam,
+  sendBadRequest,
+  sendValidationError,
+  uuidSchema
+} from "../../common/validation/requestValidation";
+import {
   applyToSubstituteRequest,
   approveSubstituteRequest,
   createStoreSubstituteRequest,
@@ -9,14 +15,14 @@ import {
 } from "./substituteRequests.service";
 
 const createSubstituteRequestSchema = z.object({
-  scheduleId: z.string().uuid("근무 일정을 선택해주세요."),
+  scheduleId: uuidSchema("근무 일정을 선택해주세요."),
   reason: z
     .string()
     .trim()
     .min(1, "대타 요청 사유를 입력해주세요.")
     .max(200, "대타 요청 사유는 200자 이하로 입력해주세요.")
 });
-const requestIdSchema = z.string().uuid("대타 요청 ID를 확인해주세요.");
+const requestIdSchema = uuidSchema("대타 요청 ID를 확인해주세요.");
 const rejectSubstituteRequestSchema = z.object({
   rejectReason: z
     .string()
@@ -25,21 +31,11 @@ const rejectSubstituteRequestSchema = z.object({
     .max(200, "거절 사유는 200자 이하로 입력해주세요.")
 });
 
-function getStringParam(value: string | string[] | undefined) {
-  if (!value || Array.isArray(value)) {
-    return null;
-  }
-
-  return value;
-}
-
 export async function createSubstituteRequestController(req: Request, res: Response) {
   const storeId = getStringParam(req.params.storeId);
 
   if (!storeId) {
-    res.status(400).json({
-      message: "매장 ID가 필요합니다."
-    });
+    sendBadRequest(res, "매장 ID가 필요합니다.", "STORE_ID_REQUIRED");
     return;
   }
 
@@ -53,9 +49,7 @@ export async function createSubstituteRequestController(req: Request, res: Respo
   const result = createSubstituteRequestSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      message: result.error.issues[0]?.message ?? "입력값을 확인해주세요."
-    });
+    sendValidationError(res, result.error, "입력값을 확인해주세요.");
     return;
   }
 
@@ -73,9 +67,7 @@ export async function listSubstituteRequestsController(req: Request, res: Respon
   const storeId = getStringParam(req.params.storeId);
 
   if (!storeId) {
-    res.status(400).json({
-      message: "매장 ID가 필요합니다."
-    });
+    sendBadRequest(res, "매장 ID가 필요합니다.", "STORE_ID_REQUIRED");
     return;
   }
 
@@ -99,18 +91,14 @@ export async function applySubstituteRequestController(req: Request, res: Respon
   const requestId = getStringParam(req.params.requestId);
 
   if (!requestId) {
-    res.status(400).json({
-      message: "대타 요청 ID가 필요합니다."
-    });
+    sendBadRequest(res, "대타 요청 ID가 필요합니다.", "SUBSTITUTE_REQUEST_ID_REQUIRED");
     return;
   }
 
   const requestIdResult = requestIdSchema.safeParse(requestId);
 
   if (!requestIdResult.success) {
-    res.status(400).json({
-      message: requestIdResult.error.issues[0]?.message ?? "대타 요청 ID를 확인해주세요."
-    });
+    sendValidationError(res, requestIdResult.error, "대타 요청 ID를 확인해주세요.");
     return;
   }
 
@@ -133,18 +121,14 @@ export async function approveSubstituteRequestController(req: Request, res: Resp
   const requestId = getStringParam(req.params.requestId);
 
   if (!requestId) {
-    res.status(400).json({
-      message: "대타 요청 ID가 필요합니다."
-    });
+    sendBadRequest(res, "대타 요청 ID가 필요합니다.", "SUBSTITUTE_REQUEST_ID_REQUIRED");
     return;
   }
 
   const requestIdResult = requestIdSchema.safeParse(requestId);
 
   if (!requestIdResult.success) {
-    res.status(400).json({
-      message: requestIdResult.error.issues[0]?.message ?? "대타 요청 ID를 확인해주세요."
-    });
+    sendValidationError(res, requestIdResult.error, "대타 요청 ID를 확인해주세요.");
     return;
   }
 
@@ -167,18 +151,14 @@ export async function rejectSubstituteRequestController(req: Request, res: Respo
   const requestId = getStringParam(req.params.requestId);
 
   if (!requestId) {
-    res.status(400).json({
-      message: "대타 요청 ID가 필요합니다."
-    });
+    sendBadRequest(res, "대타 요청 ID가 필요합니다.", "SUBSTITUTE_REQUEST_ID_REQUIRED");
     return;
   }
 
   const requestIdResult = requestIdSchema.safeParse(requestId);
 
   if (!requestIdResult.success) {
-    res.status(400).json({
-      message: requestIdResult.error.issues[0]?.message ?? "대타 요청 ID를 확인해주세요."
-    });
+    sendValidationError(res, requestIdResult.error, "대타 요청 ID를 확인해주세요.");
     return;
   }
 
@@ -192,9 +172,7 @@ export async function rejectSubstituteRequestController(req: Request, res: Respo
   const result = rejectSubstituteRequestSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      message: result.error.issues[0]?.message ?? "거절 사유를 확인해주세요."
-    });
+    sendValidationError(res, result.error, "거절 사유를 확인해주세요.");
     return;
   }
 

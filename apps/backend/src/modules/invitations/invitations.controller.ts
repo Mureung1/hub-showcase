@@ -1,15 +1,21 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import {
+  getStringParam,
+  sendBadRequest,
+  sendValidationError,
+  timeTextSchema,
+  uuidSchema
+} from "../../common/validation/requestValidation";
+import {
   acceptPendingInvitation,
   cancelPendingInvitation,
   createInvitation,
   listPendingInvitationsForUser
 } from "./invitations.service";
 
-const timeSchema = z
-  .string()
-  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "시간은 HH:mm 형식으로 입력해주세요.");
+const timeSchema = timeTextSchema;
+const invitationIdSchema = uuidSchema("초대 ID를 확인해주세요.");
 
 const createInvitationSchema = z
   .object({
@@ -29,14 +35,6 @@ const createInvitationSchema = z
     }
   );
 
-function getStringParam(value: string | string[] | undefined) {
-  if (!value || Array.isArray(value)) {
-    return null;
-  }
-
-  return value;
-}
-
 export async function createInvitationController(req: Request, res: Response) {
   if (!req.authUser) {
     res.status(401).json({
@@ -48,18 +46,14 @@ export async function createInvitationController(req: Request, res: Response) {
   const storeId = getStringParam(req.params.storeId);
 
   if (!storeId) {
-    res.status(400).json({
-      message: "매장 ID가 필요합니다."
-    });
+    sendBadRequest(res, "매장 ID가 필요합니다.", "STORE_ID_REQUIRED");
     return;
   }
 
   const result = createInvitationSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      message: result.error.issues[0]?.message ?? "입력값을 확인해주세요."
-    });
+    sendValidationError(res, result.error, "입력값을 확인해주세요.");
     return;
   }
 
@@ -80,15 +74,20 @@ export async function cancelInvitationController(req: Request, res: Response) {
   const invitationId = getStringParam(req.params.invitationId);
 
   if (!storeId || !invitationId) {
-    res.status(400).json({
-      message: "매장 ID와 초대 ID가 필요합니다."
-    });
+    sendBadRequest(res, "매장 ID와 초대 ID가 필요합니다.", "INVITATION_PARAMS_REQUIRED");
+    return;
+  }
+
+  const invitationIdResult = invitationIdSchema.safeParse(invitationId);
+
+  if (!invitationIdResult.success) {
+    sendValidationError(res, invitationIdResult.error, "초대 ID를 확인해주세요.");
     return;
   }
 
   const response = await cancelPendingInvitation({
     storeId,
-    invitationId
+    invitationId: invitationIdResult.data
   });
 
   res.status(200).json(response);
@@ -118,14 +117,19 @@ export async function acceptInvitationController(req: Request, res: Response) {
   const invitationId = getStringParam(req.params.invitationId);
 
   if (!invitationId) {
-    res.status(400).json({
-      message: "초대 ID가 필요합니다."
-    });
+    sendBadRequest(res, "초대 ID가 필요합니다.", "INVITATION_ID_REQUIRED");
+    return;
+  }
+
+  const invitationIdResult = invitationIdSchema.safeParse(invitationId);
+
+  if (!invitationIdResult.success) {
+    sendValidationError(res, invitationIdResult.error, "초대 ID를 확인해주세요.");
     return;
   }
 
   const response = await acceptPendingInvitation({
-    invitationId,
+    invitationId: invitationIdResult.data,
     userId: req.authUser.id,
     userEmail: req.authUser.email
   });
