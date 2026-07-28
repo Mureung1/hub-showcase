@@ -94,7 +94,7 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-      <header className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <header className="flex flex-col justify-between gap-4 border-b border-slate-200/70 pb-6 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600">
             Overview
@@ -106,7 +106,7 @@ const Dashboard = () => {
       </header>
 
       {/* Summary cards */}
-      <div className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <div className="mb-7 grid grid-cols-2 gap-3 border-b border-slate-200/70 pb-7 pt-7 lg:grid-cols-4 lg:gap-4">
         {[
           { label: '오늘 예약', value: todayCount, icon: 'calendar' as const, tone: 'blue' },
           { label: '방문', value: todayVisited, icon: 'check' as const, tone: 'green' },
@@ -162,7 +162,7 @@ const Dashboard = () => {
               <span aria-hidden="true" className="ml-1">→</span>
             </Link>
           </div>
-          <div className="mt-5">
+          <div className="mt-5 border-t border-slate-100 pt-5">
             {attentionCustomers.length === 0 ? (
               <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -217,7 +217,7 @@ const Dashboard = () => {
               + 예약 등록
             </Link>
           </div>
-          <div className="mt-5">
+          <div className="mt-5 border-t border-slate-100 pt-5">
             {todayReservations.length === 0 ? (
               <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
