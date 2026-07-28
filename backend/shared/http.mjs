@@ -1,11 +1,12 @@
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 
+//cors 설정
 export function createCorsHeaders(allowedOrigin = process.env.ICU_ALLOWED_ORIGIN || '*') {
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
   }
 }
 
