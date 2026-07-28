@@ -55,14 +55,14 @@ const Customers = () => {
   )
 
   return (
-    <div className="p-4">
-      <header className="mb-4">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">고객 관리</h1>
         <p className="text-sm text-gray-500 mt-1">전화번호 뒤 4 자리 또는 이름으로 검색하세요</p>
       </header>
 
       {/* Search */}
-      <div className="mb-4">
+      <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
         <Input
           type="text"
           placeholder="전화 뒤 4 자리 또는 이름"
@@ -127,10 +127,10 @@ const Customers = () => {
       </div>
 
       {/* Add new customer */}
-      <div className="mt-6">
+      <div className="mt-6 flex sm:justify-end">
         <Link
           to="/app/customers/new"
-          className="block w-full bg-blue-600 text-white text-center py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto sm:min-w-36 md:!min-h-10 md:h-10"
         >
           + 신규 고객 등록
         </Link>

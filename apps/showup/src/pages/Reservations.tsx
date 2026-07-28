@@ -139,7 +139,7 @@ const Reservations = () => {
           </div>
           <Link
             to="/app/reservations/new"
-            className="inline-flex h-11 min-w-28 shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="inline-flex h-11 min-w-28 shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 md:!min-h-10 md:h-10"
           >
             + 새 예약
           </Link>

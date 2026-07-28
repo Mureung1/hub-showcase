@@ -187,7 +187,7 @@ const NewReservation = () => {
             type="button"
             variant="secondary"
             size="sm"
-            className="h-11 min-w-28 px-4"
+            className="h-11 min-w-28 px-4 md:!min-h-10 md:h-10"
             onClick={() => navigate('/app/reservations')}
           >
             취소
@@ -196,7 +196,7 @@ const NewReservation = () => {
             type="submit"
             variant="primary"
             size="sm"
-            className="h-11 min-w-28 px-4"
+            className="h-11 min-w-28 px-4 md:!min-h-10 md:h-10"
             disabled={isLoading}
           >
             {isLoading ? '등록 중...' : '예약 생성'}
