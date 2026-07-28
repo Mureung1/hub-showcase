@@ -6,4 +6,5 @@ html,
 body {
   background-color: #fbf3e7;
   color: #2b2620;
+  min-height: 100dvh;
 }

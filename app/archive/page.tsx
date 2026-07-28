@@ -122,7 +122,7 @@ export default function ArchivePage() {
       )}
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-creamDeep">
-        <div className="max-w-md mx-auto flex justify-around py-3 text-xs text-muted">
+        <div className="max-w-md mx-auto flex justify-around pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted">
           <Link href="/">홈</Link>
           <Link href="/categories">카테고리</Link>
           <Link href="/archive" className="text-accentDark font-medium">
