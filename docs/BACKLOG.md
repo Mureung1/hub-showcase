@@ -428,9 +428,58 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 - [x] 기존 랭킹/재계산 경로 회귀 없음
 
 **이번엔 하지 않은 것**
-- 실제 Groq 응답 스키마 최종 확정 — JSON 모드 파라미터명, 실제 무료 모델 로스터는 사용자가 실키로 로컬 검증 필요(가정: OpenAI 호환 `response_format: {"type": "json_object"}`, 기본 모델 `llama-3.3-70b-versatile`, 환경변수로 오버라이드 가능)
-- LLM 신뢰도(`llmAssisted`)의 프론트 화면 표시 — API까지만, 카드 UI 반영은 후속
-- 대량 후보 시 여러 배치로 분할하는 로직 — 현재 데이터 규모(공고당 후보 수십 건)에서는 한 번의 배치 호출로 충분, 필요해지면 재검토
+- LLM 신뢰도(`llmAssisted`)의 프론트 화면 표시 — API까지만, 카드 UI 반영은 후속(데모에서도 의도적으로 미노출, 아래 한계 참고)
+
+**실키 라이브 검증 후 추가 구현(2026-07-28)**
+- 사용자가 실제 `DEVPULSE_GROQ_API_KEY`로 라이브 테스트하는 과정에서 애초 가정("공고당 후보 수십 건이면 한 번의 배치 호출로 충분")이 틀렸음을 실측으로 확인 — 반도체 품질관리 후보 32건 = 15923 토큰 요청, Groq 무료 tier 분당 토큰 한도(TPM 12000) 초과로 413. `MAX_CANDIDATES_PER_BATCH`(8건)로 쪼개 여러 번 호출하도록 `CertificationLlmNormalizationService`를 리팩터링, 배치 사이 간격(`BATCH_INTERVAL_MILLIS`) 삽입 + 429 발생 시 1회 재시도 추가
+- 최초 실측에서 카탈로그 존재 여부 가드만으로는 할루시네이션을 못 막는 게 확인돼(아래 한계 참고), `GroqNormalizationResult.CertificationMatch`에 `evidence`(원문 그대로 인용) 필드를 추가하고 `CertificationLlmNormalizationService.evidenceExistsInSourceText()`로 그 인용이 실제 원문에 있는지 기계적으로 재검증하는 2차 가드 추가 — 그럼에도 완전히 막지는 못함(아래 한계 참고)
+
+---
+
+## Issue 16 — 알려진 한계: LLM 매칭 정확도 (실키 라이브 검증 결과, 2026-07-28)
+
+**결론: 현재 상태로는 `auto-apply 금지`. 랭킹에 영향 주지 않는 격리 상태로 유지한다.**
+
+사용자가 실제 발급받은 Groq API 키로 3라운드에 걸쳐 라이브 검증한 결과, `llama-3.3-70b-versatile`(Groq 무료 tier) 기준 매칭 정확도가 신뢰할 수 있는 수준이 아님을 확인했다:
+
+- **1라운드(카탈로그 존재 가드만 있던 상태)**: 11건 매칭 발견, 그중 6건을 원문과 직접 대조 — 5건이 명백한 오매칭/할루시네이션. 2건은 원문에 자격증 언급 자체가 아예 없는데 지어냄, 나머지는 "산업기사"(등급을 뜻하는 일반 명사, 예: 전기산업기사)를 "산업안전기사"(우리 카탈로그의 구체적 자격증)로 표면적 글자 유사성만으로 혼동
+- **2라운드(evidence-quote 가드 추가 후)**: 프롬프트에 위 실패 사례를 반례로 명시하고, "원문 그대로 인용을 못 하면 답하지 마라"는 지시 + 그 인용이 실제 원문에 있는지 기계적 재검증을 추가 — "반도체 품질관리"/"전산직"에서는 할루시네이션이 0건으로 줄었으나(모델이 아예 답을 안 함), "안전"에서 나온 2건은 **evidence 자체는 원문에 실존하는 구절이었지만 그 구절이 가리키는 자격증명을 엉뚱하게 붙인 경우**(전기기능사/기계기능사/운전면허 관련 구절을 인용하면서 "정보처리기사"/"컴퓨터활용능력 1급"이라고 라벨링)였음. 즉 "인용문이 원문에 있는가"만으로는 "그 인용문이 실제로 이 자격증을 가리키는가"까지는 검증이 안 됨 — 가드의 구조적 사각지대
+- **정리**: 두 라운드 다 합쳐 실제로 원문과 대조 검증한 매칭 중 신뢰할 수 있던 건 사실상 0건. 발견된 매칭은 전부 삭제하고 `certification_mention`을 순수 룰 기반 상태로 복원함(재확인: `certification_llm_match` 0행, 4개 job_title 전부 `essential+preferred == mention_count` 불변식 성립 — 즉 현재 랭킹에 LLM 데이터가 전혀 섞여있지 않음)
+
+**다음에 시도해볼 방향**
+- (a) 2차 검증 단계 추가 — 1차로 찾은 매칭 후보를 별도 프롬프트로 "이 인용문이 정말 이 자격증을 가리키는가"만 다시 확인하는 검증 전용 LLM 호출
+- (b) 사람이 확인 후 반영하는 리뷰 큐 방식으로 전환 — `certification_llm_match`를 "확정 매칭"이 아니라 "검토 대기" 상태로 두고, 관리자가 승인해야 `recalculate()`에 반영되게 상태 필드 추가
+- (c) 다른 무료 모델(Gemini 등)로 교차 검증 — 서로 다른 모델이 동의하는 매칭만 채택
+
+**지금 상태**
+- 엔드포인트(`POST /api/certification-mentions/normalize-llm`)와 코드는 그대로 유지 — 이미 완전히 분리된 테이블(`certification_llm_match`)/엔드포인트 구조라 격리 자체는 잘 돼 있었음
+- 랭킹 API의 `llmAssisted` 필드는 이번 데모에서 노출하지 않음(현재 값도 전부 `false` — 실제로 반영된 LLM 매칭이 없으므로)
+- `CertificationMentionRecalculationService`는 원장이 비어 있으면 항상 순수 룰 기반 결과와 동일 — 이 기능을 트리거하지 않는 한 기존 동작에 아무 영향 없음
+
+---
+
+## Issue 17. Kafka 컨슈머 정식화
+
+**요구사항**
+`JobPostingCollectedConsumer`는 Issue 10 때 만든 최소 뼈대였지만, Issue 11(ingest 연결)/12(recalculate 연결)를 거치며 이미 실질적 파이프라인이 됨. Issue 10이 "실제 메시지 스키마 확정 후 설계"로 미뤄뒀던 컨슈머 에러 처리 정책을, `JobPostingCollectedEvent` 스키마가 안정된 지금 정식화.
+
+**범위 결정** (planner 검토 + 사용자 확인)
+- 에러 처리: 프레임워크 암묵적 기본값(`FixedBackOff(0, 9)` — 즉시 9회 재시도 후 조용히 스킵)을 명시적 `DefaultErrorHandler(FixedBackOff(1000, 2))`(1초 간격 2회 재시도 후 스킵)로 교체. 신규 의존성 없음(spring-kafka 내장 기능).
+- **DLQ는 이 규모에서 과설계로 기각**: 데이터 규모(수십~백 건), 단일 컨슈머 인스턴스, 재수집 트리거(`POST /api/job-postings/collect`)가 이미 실질적 복구 수단으로 존재·실사용 중이라는 점 — 별도 DLQ 토픽+모니터링을 볼 대상이 없음
+- 멱등성: 이미 확보돼 있음을 재확인만 함(코드 변경 없음) — `JobPostingIngestService.ingest()`는 upsert, `CertificationMentionRecalculationService.recalculate()`는 매번 전체 재계산(덮어쓰기)이라 재시도/중복 처리돼도 최종 상태 동일
+- 컨슈머 그룹/파티션 전략(`.partitions(1).replicas(1)`, 단일 인스턴스): 현행 유지 확정 — 병렬 처리할 이유가 없는 규모에서 파티션을 늘리는 건 순수 오버엔지니어링
+
+**작업 단계**
+- [x] `KafkaTopicConfig`에 `kafkaErrorHandler()` 빈 추가 — `DefaultErrorHandler(new FixedBackOff(1000L, 2))`
+- [x] `JobPostingCollectedConsumerTest`에 중복 이벤트 재전송 멱등성 테스트 추가 — 동일 이벤트 2회 발행 시 `JobPosting` 중복 없음, `certification_mention` 카운트가 1회 처리 때와 동일함을 확인
+- [x] `JobPostingCollectedConsumerTest`에 재시도-후-스킵 테스트 추가 — `title` 컬럼(`VARCHAR(500)`) 제약을 넘는 값(501자)으로 실제 DB 제약 위반을 재현해 지속적으로 실패하는 메시지가 결국 스킵되고, 스킵 후에도 컨슈머가 죽지 않고 다음 메시지를 정상 처리하는지 확인
+
+**설계 노트 — Mockito 스파이로 재시도 횟수를 세려던 시도는 폐기**
+처음엔 `CertificationMentionRecalculationService`를 `@MockitoSpyBean`으로 감싸 특정 jobTitle 호출만 강제로 던지게 하고 정확히 3회(최초 1회+재시도 2회) 호출됐는지 `verify(times(3))`로 세려 했음. 실측 결과 스파이가 항상 "zero interactions"로 실패 — DB를 직접 확인해보니 실제로는 spy가 아니라 진짜 구현이 그대로 실행되고 있었음(certification_mention이 정상적으로 채워짐). 즉 `@KafkaListener` 빈이 참조하는 인스턴스와 테스트가 검증하는 spy 인스턴스가 일치하지 않는 구조적 문제였고, 원인을 스프링 카프카 내부(`FailedBatchProcessor`/`FailedRecordProcessor`)까지 리플렉션으로 파고드는 건 이 프로젝트 규모에 맞지 않는 과설계라 판단해 중단. 대신 `title` 컬럼 길이 제약이라는 **진짜 DB 제약 위반**으로 목(mock) 없이 재현하는 방식으로 바꿈 — 정확한 재시도 횟수 검증은 포기하고(스프링 카프카 프레임워크 자체의 동작이라 신뢰), "결국 스킵되고 컨슈머가 살아있는지"라는 우리 코드가 실제로 신경 써야 할 지점만 확인
+
+**완료 기준**
+- [x] `./gradlew test` 전체 통과 (신규 2개 테스트 포함)
+- [x] `docs/BACKLOG.md` 갱신 — 컨슈머 재시도/DLQ 정책을 Todo에서 Done으로 전환, DLQ 기각 근거·컨슈머 그룹/파티션 현행 유지 결론 기록
 
 ---
 
@@ -440,9 +489,9 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 |---|---|---|---|---|
 | ALIO Collector | Feign 클라이언트, 채용공고 실제 수집 + Kafka 프로듀서/컨슈머 원문 저장. **주의**: MyBatis 집계 쿼리가 `total_posting_count=0`일 때 division-by-zero(500)를 던짐 — 실 데이터 수집 전 방어 로직 필요 (Issue 8 참고) | P0 | - | Done (Issue 11) |
 | `recrutPbancTtl` 검색 파라미터 재확인 | 원인 규명 완료 — ALIO 검색 폼이 요구하는 15개 필드 중 9개를 키째로 누락해서 발생. `AlioJobPostingCollectorService`에 반영 완료, 실제 공고 41건 수집 검증 | P0 | - | Done (Issue 11) |
-| 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화(Groq), 완전 분리된 신규 엔드포인트로 구현 | P0 | - | Done (Issue 16) |
-| Groq 응답 스키마 실키 검증 | JSON 모드 파라미터명/무료 모델 로스터를 사용자 로컬 실키 테스트로 최종 확정 필요 | P0 | 다음 슬라이스 | Todo |
-| `llmAssisted` 신뢰도 프론트 표시 | API 필드는 노출 완료(Issue 16), 카드 UI에 "LLM 추정 포함" 등 반영은 후속 | P2 | 다음 슬라이스 | Todo |
+| 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화(Groq), 완전 분리된 신규 엔드포인트로 구현 — **단, 실키 라이브 검증 결과 매칭 정확도 미달로 auto-apply 금지, 랭킹 미반영 격리 상태 유지** (Issue 16 알려진 한계 참고) | P0 | - | Done (Issue 16, 정확도 이슈로 격리) |
+| LLM 매칭 정확도 개선 | 2차 검증 단계 / 사람 리뷰 큐 / 타 모델(Gemini) 교차검증 중 하나로 신뢰도 확보 필요 — 그 전까지 `certification_llm_match` auto-apply 금지 유지 | P0 | 다음 슬라이스 | Todo |
+| `llmAssisted` 신뢰도 프론트 표시 | API 필드는 노출 완료(Issue 16)이나 매칭 정확도 이슈로 이번 데모에서 의도적으로 미노출. 정확도 개선 후 재검토 | P2 | 다음 슬라이스 | Todo |
 | 강조도 분류 (필수/우대) | 문맥 기반(자격요건 vs 우대사항 필드) 분류 로직 구현, `certification_mention`에 essential/preferred 카운트 저장 | P1 | - | Done (Issue 13) |
 | MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 | P1 | - | Done (Issue 8) |
 | Kafka 파이프라인 분리 | `jobposting.collected` 토픽·컨슈머 뼈대, docker-compose 인프라 | P1 | - | Done (Issue 10) |
@@ -455,7 +504,7 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 | ALIO 페이지네이션 방어 로직 | `AlioResponseParser`가 `data.totalCount`를 버리고 `pageNo=1` 고정이라 단일 NCS 코드 결과가 100건을 넘으면 조용히 유실됨(Issue 15에서 발견, 현재는 전부 100 미만이라 당장 영향 없음) — `totalCount`를 반환에 포함시키고 `search()`에 페이지 루프 + 최대 페이지 캡 추가 필요 | P1 | 다음 슬라이스 | Todo |
 | ALIO NCS 코드 경로 JUnit 테스트 | `AlioJobTitleNcsMapping`/`searchByNcsCodes` 병합·중복제거 로직에 대한 테스트(Issue 12에서 미룸, Issue 15에서도 재확인만 하고 미룸) — 페이지네이션 리팩터링과 같은 파일이라 함께 진행 권장 | P1 | 다음 슬라이스 | Todo |
 | 랭킹 API에 certificationId 추가 | `CertificationRankingResponse`에 id 노출 — 랭킹 카드 → 진행 상황 크로스탭 "추적하기" 연동의 선행 조건 (Issue 9에서 범위 밖으로 분리) | P2 | 추후 | Todo |
-| 컨슈머 재시도/DLQ 정책 | `JobPostingCollectedConsumer` 에러 핸들링 — 실제 메시지 스키마 확정 후 설계 (Issue 10에서 범위 밖으로 분리) | P2 | 추후 | Todo |
+| 컨슈머 재시도/DLQ 정책 | 명시적 `DefaultErrorHandler(FixedBackOff(1000, 2))` 등록 완료. DLQ는 이 규모(재수집 트리거가 실질적 복구 수단)에서 과설계로 기각, 컨슈머 그룹/파티션(1개)도 현행 유지 확정 | P2 | - | Done (Issue 17) |
 | 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
 | 최종 문서화 · 데모 준비 | README/위키 최신화, 발표 자료 | P2 | 추후 | Todo |
 

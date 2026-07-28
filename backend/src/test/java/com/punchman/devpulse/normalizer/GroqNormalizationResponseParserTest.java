@@ -12,7 +12,7 @@ class GroqNormalizationResponseParserTest {
     @Test
     void parsesValidOpenAiCompatibleEnvelope() {
         String content = "{\"results\":[{\"postingIndex\":0,\"matches\":"
-                + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\"}]}]}";
+                + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\",\"evidence\":\"SQLD 소지자 우대\"}]}]}";
         String rawResponse = envelopeWith(content);
 
         GroqNormalizationResult result = GroqNormalizationResponseParser.parse(objectMapper, rawResponse);
@@ -20,7 +20,7 @@ class GroqNormalizationResponseParserTest {
         assertThat(result.results()).hasSize(1);
         assertThat(result.results().get(0).postingIndex()).isEqualTo(0);
         assertThat(result.results().get(0).matches()).containsExactly(
-                new GroqNormalizationResult.CertificationMatch("SQLD", "PREFERENCE"));
+                new GroqNormalizationResult.CertificationMatch("SQLD", "PREFERENCE", "SQLD 소지자 우대"));
     }
 
     @Test
@@ -44,15 +44,26 @@ class GroqNormalizationResponseParserTest {
     @Test
     void matchWithoutCertificationNameIsSkippedButRestOfBatchSurvives() {
         String content = "{\"results\":[{\"postingIndex\":0,\"matches\":["
-                + "{\"field\":\"QUALIFICATION\"},"
-                + "{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\"}"
+                + "{\"field\":\"QUALIFICATION\",\"evidence\":\"뭔가\"},"
+                + "{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\",\"evidence\":\"SQLD 소지자 우대\"}"
                 + "]}]}";
         String rawResponse = envelopeWith(content);
 
         GroqNormalizationResult result = GroqNormalizationResponseParser.parse(objectMapper, rawResponse);
 
         assertThat(result.results().get(0).matches()).containsExactly(
-                new GroqNormalizationResult.CertificationMatch("SQLD", "PREFERENCE"));
+                new GroqNormalizationResult.CertificationMatch("SQLD", "PREFERENCE", "SQLD 소지자 우대"));
+    }
+
+    @Test
+    void matchWithoutEvidenceIsSkipped() {
+        String content = "{\"results\":[{\"postingIndex\":0,\"matches\":"
+                + "[{\"certificationName\":\"SQLD\",\"field\":\"PREFERENCE\"}]}]}";
+        String rawResponse = envelopeWith(content);
+
+        GroqNormalizationResult result = GroqNormalizationResponseParser.parse(objectMapper, rawResponse);
+
+        assertThat(result.results().get(0).matches()).isEmpty();
     }
 
     @Test

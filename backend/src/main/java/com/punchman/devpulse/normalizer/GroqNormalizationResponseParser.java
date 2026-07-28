@@ -68,10 +68,12 @@ public final class GroqNormalizationResponseParser {
         for (JsonNode matchNode : postingNode.path("matches")) {
             String certificationName = matchNode.path("certificationName").asText(null);
             String field = matchNode.path("field").asText(null);
-            if (certificationName == null || certificationName.isBlank() || field == null) {
+            String evidence = matchNode.path("evidence").asText(null);
+            if (certificationName == null || certificationName.isBlank() || field == null
+                    || evidence == null || evidence.isBlank()) {
                 continue;
             }
-            matches.add(new GroqNormalizationResult.CertificationMatch(certificationName, field));
+            matches.add(new GroqNormalizationResult.CertificationMatch(certificationName, field, evidence));
         }
         return new GroqNormalizationResult.PostingMatch(postingIndex, matches);
     }
