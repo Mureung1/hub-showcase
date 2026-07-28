@@ -88,6 +88,11 @@ const CustomerDetail = () => {
 
       try {
         const customerData = await getCustomer(user.uid, id)
+        if (!customerData) {
+          setCustomer(null)
+          setIsLoading(false)
+          return
+        }
         setCustomer(customerData)
         await loadTimeline(id)
       } catch (err) {
