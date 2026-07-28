@@ -1,0 +1,183 @@
+/* ============================================================
+   ThingDong / "Fresh Share Modern" Design Tokens
+   순수 HTML/CSS 컴포넌트 작업 시 이 파일을 그대로 <style> 또는
+   별도 CSS 파일로 포함하고, 색상/폰트/라운딩/여백은 반드시
+   아래 변수(var(--...))로만 참조한다. 하드코딩 금지.
+   ============================================================ */
+
+:root {
+  /* ---- Color: Surface ---- */
+  --td-surface: #f6fbf4;
+  --td-surface-dim: #d7dbd5;
+  --td-surface-bright: #f6fbf4;
+  --td-surface-container-lowest: #ffffff;
+  --td-surface-container-low: #f0f5ee;
+  --td-surface-container: #ebefe8;
+  --td-surface-container-high: #e5e9e3;
+  --td-surface-container-highest: #dfe4dd;
+  --td-surface-variant: #dfe4dd;
+  --td-surface-muted: #f6f7f9; /* product card 등 중립 스테이징 영역 */
+
+  --td-on-surface: #181d19;
+  --td-on-surface-variant: #3f4941;
+  --td-inverse-surface: #2d322d;
+  --td-inverse-on-surface: #eef2eb;
+
+  --td-outline: #6f7a70;
+  --td-outline-variant: #bec9be;
+  --td-border-light: #e7e8ec;
+
+  --td-background: #f6fbf4;
+  --td-on-background: #181d19;
+
+  /* ---- Color: Brand / Primary (Green) ---- */
+  --td-primary: #00522d;
+  --td-on-primary: #ffffff;
+  --td-primary-container: #006d3e;
+  --td-on-primary-container: #92ecb1;
+  --td-inverse-primary: #80d99f;
+  --td-surface-tint: #006d3e;
+  --td-vibrant-green: #2ecc71; /* 브랜드 강조/인터랙션 포인트 */
+  --td-mint-green: #e8f8f0;    /* 버튼 hover, 소프트 배경 */
+
+  --td-primary-fixed: #9cf6ba;
+  --td-primary-fixed-dim: #80d99f;
+  --td-on-primary-fixed: #00210f;
+  --td-on-primary-fixed-variant: #00522d;
+
+  /* ---- Color: Secondary (Blue, utility/functional) ---- */
+  --td-secondary: #085cbc;
+  --td-on-secondary: #ffffff;
+  --td-secondary-container: #609afe;
+  --td-on-secondary-container: #00316c;
+  --td-secondary-fixed: #d7e2ff;
+  --td-secondary-fixed-dim: #acc7ff;
+  --td-on-secondary-fixed: #001a40;
+  --td-on-secondary-fixed-variant: #004491;
+
+  /* ---- Color: Tertiary (Berry red, accent only) ---- */
+  --td-tertiary: #7c2b33;
+  --td-on-tertiary: #ffffff;
+  --td-tertiary-container: #9a4249;
+  --td-on-tertiary-container: #ffcccd;
+  --td-tertiary-fixed: #ffdada;
+  --td-tertiary-fixed-dim: #ffb3b5;
+  --td-on-tertiary-fixed: #40000c;
+  --td-on-tertiary-fixed-variant: #7c2b33;
+
+  /* ---- Color: Semantic ---- */
+  --td-error: #ba1a1a;
+  --td-on-error: #ffffff;
+  --td-error-container: #ffdad6;
+  --td-on-error-container: #93000a;
+  --td-danger: #f04452;   /* 긴급 마감/에러 강조 텍스트·아이콘 */
+  --td-warning: #f5a623;  /* 경고 */
+
+  /* ---- Typography ---- */
+  --td-font-family: 'Be Vietnam Pro', sans-serif;
+
+  /* ---- Radius ---- */
+  --td-radius-sm: 0.25rem;   /* 4px */
+  --td-radius: 0.5rem;       /* 8px  — 버튼/기본 컴포넌트 */
+  --td-radius-md: 0.75rem;   /* 12px */
+  --td-radius-lg: 1rem;      /* 16px — 카테고리 아이콘 스퀴클 */
+  --td-radius-xl: 1.5rem;    /* 24px — 히어로 배너 */
+  --td-radius-full: 9999px;  /* pill — 검색바/상태버튼 */
+  --td-radius-card: 20px;    /* 카드 전용 (스케일 밖 커스텀 값) */
+
+  /* ---- Spacing ---- */
+  --td-margin-mobile: 20px;
+  --td-margin-desktop: 60px;
+  --td-gutter: 24px;
+  --td-stack-sm: 12px;
+  --td-stack-md: 24px;
+  --td-stack-lg: 48px;
+
+  /* ---- Elevation ---- */
+  --td-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --td-shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --td-scale-hover: 1.02;
+}
+
+/* ============================================================
+   Typography utility classes
+   본문/헤드라인 텍스트는 항상 이 클래스를 사용한다.
+   (font-family, size, weight, line-height, letter-spacing 세트로 묶어 관리)
+   ============================================================ */
+
+.td-headline-xl {
+  font-family: var(--td-font-family);
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 56px;
+  letter-spacing: -1px;
+}
+
+.td-headline-lg {
+  font-family: var(--td-font-family);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+  letter-spacing: -0.5px;
+}
+
+/* 모바일 뷰포트(≤640px)에서는 headline-lg 대신 이 클래스를 사용 */
+.td-headline-lg-mobile {
+  font-family: var(--td-font-family);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+.td-headline-md {
+  font-family: var(--td-font-family);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+}
+
+.td-body-lg {
+  font-family: var(--td-font-family);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.td-body-md {
+  font-family: var(--td-font-family);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.td-label-md {
+  font-family: var(--td-font-family);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.2px;
+}
+
+.td-label-sm {
+  font-family: var(--td-font-family);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   Base reset (컴포넌트 예제가 가정하는 최소 전제)
+   ============================================================ */
+
+.td-root {
+  font-family: var(--td-font-family);
+  background: var(--td-background);
+  color: var(--td-on-background);
+}
+
+.td-root *,
+.td-root *::before,
+.td-root *::after {
+  box-sizing: border-box;
+}

@@ -1,0 +1,627 @@
+import { useState, useEffect, useRef } from 'react';
+import {
+  cancelGroupPurchaseJoin,
+  confirmGroupPurchasePayment,
+  getGroupPurchaseById,
+  joinGroupPurchase,
+  markGroupPurchaseReceipt,
+  markGroupPurchasePayment,
+  addFavoriteGroupPurchase,
+  removeFavoriteGroupPurchase,
+  updateGroupPurchaseStatus,
+} from '../api/groupPurchase';
+import './GroupPurchaseDetailPage.css';
+import KakaoMap from '../components/KakaoMap';
+import { getProfileImageUrl } from '../utils/profileImage';
+
+const mockPurchase = {
+  id: 1,
+  category: '신선식품',
+  deadline: 'D-2',
+  title: '유기농 아보카도 1박스(20개입) 공동구매',
+  totalPrice: 40000,
+  perPersonPrice: 10000,
+  targetParticipants: 4,
+  currentParticipants: 3,
+  pickupPlace: '센트럴파크 아파트, 메인 로비 (A동)',
+};
+
+const images = [
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDwQY-Lso4qEhyEFancWjmu3Ol2MC7HLh2ZVUTYIpLqu8g3TKffzWWPaFuRG9e330wpbn9Ybviijw7agnijtNN6-OMGM_1-VCgyUtrYxeUcnL9t6OAqomHvxrDYaWttM_GdJtsKvjhcEmX7EqHP7pt744YSV94txYaQ8n3BX0G6eIjbRdSngdf2mgFO0EJikRCj4iFeYv_5x3su-m8CtE7ea1214BMKAc_ulvLD6NxuRuyubO8LQv8',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDSabiK06Kp5e7j7GfbnHOoKKBr6NKC9jl6fArDqPL4tJhGZwu4-HBoOiJz-Hng7WcaPCTcRa7hNbWx7UvPYzRXt52pq-LCsbF6b1ZKYdJhaZJyzbdu1g3-YoC3F34wDbBZ6ct15VjKfMXx5QaV_-4gA-diP9bsHkYGJ9Jf81APgl8heqTh1ZeXXd8gQ7Q8BWOlYx45cxB4lRrWgLXXBw2W4Z8GllQTO2nAMIuUsgbxqleV_tyvUaU',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDD99qRDlTBleJ8PiMTz6dertLLSbd2X9y6dykZTcni3_SWqBO2-hU0x73LNC8Y_YklwA2ZZzlGWWoU_B-FkGVRSufGPuLEAQ_i40xtY_MxiOcn9MMe9_QwlENj8cNqVbNB9PBURpc-gvCh1um93C3f4Yc_1gFAlyI_-SidkPQzb19TuN433vV9Y0wAc7tONMPR8Fs4JJj4f_gNek5Q9KMXsDndnq9OGPLkIerjTVq_M8D4FtWGlHE',
+];
+
+const won = (value) => `${new Intl.NumberFormat('ko-KR').format(value)}원`;
+
+const statusSteps = ['RECRUITING', 'COMPLETED', 'ORDERED', 'WAITING_PICKUP', 'FINISHED'];
+const hostActions = {
+  COMPLETED: { status: 'ORDERED', label: '주문 완료 처리' },
+  ORDERED: { status: 'WAITING_PICKUP', label: '픽업 가능 처리' },
+  WAITING_PICKUP: { status: 'FINISHED', label: '공동구매 완료 처리' },
+};
+
+const getDeadlineLabel = (deadlineAt) => {
+  const remainingMs = new Date(deadlineAt).getTime() - Date.now();
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) return '모집 마감';
+  return `D-${Math.ceil(remainingMs / (1000 * 60 * 60 * 24))}`;
+};
+
+export default function GroupPurchaseDetailPage({ onNavigate, id }) {
+  const [purchase, setPurchase] = useState(null);
+  const [joinState, setJoinState] = useState('idle');
+  const [workflowState, setWorkflowState] = useState('idle');
+  const [message, setMessage] = useState('');
+  const [isLiked, setIsLiked] = useState(false);
+  const [isFavoriteUpdating, setIsFavoriteUpdating] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const hasOpenedPaymentModal = useRef(false);
+  const galleryImages = purchase?.imageUrls?.length ? purchase.imageUrls : (purchase?.imageUrl ? [purchase.imageUrl] : []);
+  const activeStepIndex = purchase?.status === 'FAILED' ? -1 : Math.max(statusSteps.indexOf(purchase?.status), 0);
+  const progress = purchase ? Math.min((purchase.currentParticipants / purchase.targetParticipants) * 100, 100) : 0;
+
+  useEffect(() => {
+    hasOpenedPaymentModal.current = false;
+    async function fetchDetail() {
+      try {
+        const result = await getGroupPurchaseById(id);
+        if (result.success) {
+          const data = result.data;
+          // Map DB keys to frontend component keys
+          setPurchase({
+            id: data.id,
+            category: data.category === 'FOOD' ? '식자재' : data.category === 'NECESSITY' ? '생활용품' : '기타',
+            deadline: getDeadlineLabel(data.deadlineAt),
+            deadlineAt: data.deadlineAt,
+            title: data.title,
+            totalPrice: data.totalPrice,
+            perPersonPrice: data.perPersonPrice,
+            targetParticipants: data.targetParticipants,
+            currentParticipants: data.currentParticipants,
+            pickupPlace: data.pickupPlace || data.pickupTimeSlot || '지정 위치',
+            pickupDetailAddress: data.pickupDetailAddress,
+            pickupTimeSlot: data.pickupTimeSlot,
+            pickupLatitude: data.pickupLatitude,
+            pickupLongitude: data.pickupLongitude,
+            paymentAccount: data.paymentAccount,
+            description: data.description,
+            productUrl: data.productUrl,
+            imageUrl: data.imageUrl,
+            imageUrls: data.imageUrls,
+            status: data.status,
+            viewer: data.viewer,
+            paymentSummary: data.viewer?.paymentSummary,
+            paymentParticipants: data.viewer?.paymentParticipants,
+            host: data.host,
+          });
+          setJoinState(data.viewer?.application ? 'joined' : 'idle');
+          setIsLiked(Boolean(data.viewer?.isFavorite));
+          if (data.status === 'COMPLETED' && data.viewer?.application && !data.viewer.application.isPaid && data.paymentAccount && !hasOpenedPaymentModal.current) {
+            setIsPaymentModalOpen(true);
+            hasOpenedPaymentModal.current = true;
+          }
+          setMessage('');
+        }
+      } catch (err) {
+        console.warn('Failed to fetch details:', err.message || err);
+      }
+    }
+    if (id) {
+      fetchDetail();
+      const intervalId = window.setInterval(fetchDetail, 10000);
+      return () => window.clearInterval(intervalId);
+    }
+  }, [id]);
+
+  if (!purchase) {
+    return <main className="td-detail-page__content">공동구매 정보를 불러오는 중입니다.</main>;
+  }
+
+  async function handleJoin() {
+    setJoinState('loading');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 우측 상단 프로필을 클릭하여 개발자 로그인을 먼저 진행해주세요.');
+      }
+
+      const result = await joinGroupPurchase(purchase.id);
+      
+      if (!result.success) {
+        throw new Error(result.error?.message || '참여 신청에 실패했습니다.');
+      }
+      
+      setPurchase((current) => ({ 
+        ...current, 
+        currentParticipants: result.data.groupPurchase.currentParticipants,
+        status: result.data.groupPurchase.status,
+        viewer: {
+          ...current.viewer,
+          application: result.data.application,
+        },
+      }));
+      setJoinState('joined');
+      if (result.data.groupPurchase.status === 'COMPLETED' && purchase.paymentAccount) setIsPaymentModalOpen(true);
+      setMessage('참여 신청이 완료되었습니다!');
+    } catch (error) {
+      setJoinState('error');
+      setMessage(error.message);
+    }
+  }
+
+  async function handleCancelJoin() {
+    setJoinState('cancelling');
+    setMessage('');
+    try {
+      const result = await cancelGroupPurchaseJoin(purchase.id);
+      if (!result.success) {
+        throw new Error(result.error?.message || '참여 취소에 실패했습니다.');
+      }
+
+      setPurchase((current) => ({
+        ...current,
+        currentParticipants: result.data.groupPurchase.currentParticipants,
+        status: result.data.groupPurchase.status,
+        viewer: { ...current.viewer, application: null },
+      }));
+      setJoinState('idle');
+      setMessage('참여를 취소했습니다.');
+    } catch (error) {
+      setJoinState('joined');
+      setMessage(error.message);
+    }
+  }
+
+  async function handleHostStatus() {
+    const action = hostActions[purchase.status];
+    if (!action) return;
+
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await updateGroupPurchaseStatus(purchase.id, action.status);
+      if (!result.success) throw new Error(result.error?.message || '상태 변경에 실패했습니다.');
+      setPurchase((current) => ({ ...current, status: result.data.status }));
+      setMessage(`${action.label}이 완료되었습니다.`);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
+    }
+  }
+
+  async function handleReceipt() {
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await markGroupPurchaseReceipt(purchase.id);
+      if (!result.success) throw new Error(result.error?.message || '수령 완료 처리에 실패했습니다.');
+      setPurchase((current) => ({
+        ...current,
+        viewer: { ...current.viewer, application: { ...current.viewer.application, isReceived: true } },
+      }));
+      setMessage('수령 완료로 기록했습니다.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
+    }
+  }
+
+  async function handlePayment() {
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await markGroupPurchasePayment(purchase.id);
+      if (!result.success) throw new Error(result.error?.message || '입금 완료 처리에 실패했습니다.');
+      setPurchase((current) => ({
+        ...current,
+        viewer: { ...current.viewer, application: { ...current.viewer.application, isPaid: true, isPaymentConfirmed: false } },
+      }));
+      setIsPaymentModalOpen(false);
+      setMessage('입금 완료로 기록했습니다. 방장이 확인 후 주문을 진행합니다.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
+    }
+  }
+
+  async function handlePaymentConfirmation(applicationId) {
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await confirmGroupPurchasePayment(purchase.id, applicationId);
+      if (!result.success) throw new Error(result.error?.message || '입금 확인에 실패했습니다.');
+      setPurchase((current) => ({
+        ...current,
+        paymentParticipants: current.paymentParticipants.map((participant) => (
+          participant.id === applicationId ? { ...participant, isPaymentConfirmed: true } : participant
+        )),
+        paymentSummary: {
+          ...current.paymentSummary,
+          confirmedCount: (current.paymentSummary?.confirmedCount || 0) + 1,
+        },
+      }));
+      setMessage('입금을 확인했어요. 모든 참여자를 확인하면 주문할 수 있어요.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
+    }
+  }
+
+  async function handleFavorite() {
+    if (!localStorage.getItem('accessToken')) {
+      setMessage('찜하려면 먼저 로그인해 주세요.');
+      return;
+    }
+
+    setIsFavoriteUpdating(true);
+    try {
+      const result = isLiked
+        ? await removeFavoriteGroupPurchase(purchase.id)
+        : await addFavoriteGroupPurchase(purchase.id);
+      if (!result.success) throw new Error(result.error?.message || '찜 상태를 바꾸지 못했습니다.');
+      setIsLiked(result.data.isFavorite);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsFavoriteUpdating(false);
+    }
+  }
+
+  return (
+    <div className="td-root td-detail-page">
+      <main id="top" className="td-detail-page__content">
+        
+        {/* Breadcrumb */}
+        <a 
+          className="td-detail-page__back-btn" 
+          href="#back" 
+          onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('home'); }}
+        >
+          <span className="material-symbols-outlined text-sm mr-1">arrow_back</span>
+          홈 피드로 돌아가기
+        </a>
+
+        <div className="td-detail-page__layout-columns">
+          {/* Left Column: Details */}
+          <div className="td-detail-page__main-column">
+            
+            {/* Header Card */}
+            <div className="td-detail-page__card td-detail-page__header-card">
+              <div className="td-detail-page__chips">
+                <span className="td-detail-page__chip">{purchase.category}</span>
+                <span className="td-detail-page__chip td-detail-page__chip--deadline">{getDeadlineLabel(purchase.pickupTimeSlot || purchase.deadlineAt)}</span>
+              </div>
+              <h1 className="td-detail-page__title">{purchase.title}</h1>
+              
+              {/* Bento Grid Images */}
+              {galleryImages.length > 0 && (
+                <div className={`td-detail-page__gallery-bento td-detail-page__gallery-bento--${Math.min(galleryImages.length, 5)}`}>
+                  {galleryImages.map((imageUrl, index) => (
+                    <button
+                      type="button"
+                      className="td-detail-page__gallery-item"
+                      key={`${imageUrl}-${index}`}
+                      onClick={() => setSelectedImageIndex(index)}
+                      aria-label={`이미지 ${index + 1} 크게 보기`}
+                    >
+                      <img className="td-detail-page__gallery-img" src={imageUrl} alt={`${purchase.title} ${index + 1}`} />
+                      {index === 0 && <span className="td-detail-page__gallery-representative">대표 이미지</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Price Cards */}
+              <div className="td-detail-page__prices-flex">
+                <div className="td-detail-page__price-card">
+                  <span className="td-label-md td-detail-page__price-label">총 가격 (목표)</span>
+                  <div className="td-detail-page__price-amount">
+                    {won(purchase.totalPrice)}
+                  </div>
+                </div>
+                <div className="td-detail-page__price-card td-detail-page__price-card--highlight">
+                  <span className="td-label-md td-detail-page__price-label-highlight">인당 금액 ({purchase.targetParticipants}명 기준)</span>
+                  <div className="td-detail-page__price-amount-highlight">
+                    {won(purchase.perPersonPrice)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Tracker */}
+              <div className="td-detail-page__progress-wrapper">
+                <div className="td-detail-page__progress-header">
+                  <span className="td-label-md td-detail-page__progress-title">모집 현황</span>
+                  <div className="td-detail-page__progress-count">
+                    {purchase.currentParticipants} 
+                    <span className="td-detail-page__progress-total"> / {purchase.targetParticipants} 명</span>
+                  </div>
+                </div>
+                <div className="td-detail-page__progress-bar">
+                  <div className="td-detail-page__progress-fill" style={{ width: `${progress}%` }}></div>
+                </div>
+                <p className="td-detail-page__progress-desc">
+                  공동구매 성사까지 {purchase.targetParticipants - purchase.currentParticipants}명 남았습니다!
+                </p>
+              </div>
+
+              {/* 5-Step Tracker */}
+              <div className="td-detail-page__tracker-section">
+                <span className="td-label-md td-detail-page__tracker-title">공동구매 상태</span>
+                <div className="td-detail-page__tracker-steps">
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 0 ? 'td-detail-page__tracker-step--active' : ''}`}>
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">group</span>
+                    </div>
+                    <span className="td-label-sm">모집중</span>
+                  </div>
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 1 ? 'td-detail-page__tracker-step--active' : ''}`}>
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">shopping_bag</span>
+                    </div>
+                    <span className="td-label-sm">모집완료</span>
+                  </div>
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 2 ? 'td-detail-page__tracker-step--active' : ''}`}>
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">local_shipping</span>
+                    </div>
+                    <span className="td-label-sm">주문완료</span>
+                  </div>
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 3 ? 'td-detail-page__tracker-step--active' : ''}`}>
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">inventory_2</span>
+                    </div>
+                    <span className="td-label-sm">픽업대기</span>
+                  </div>
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 4 ? 'td-detail-page__tracker-step--active' : ''}`}>
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">check_circle</span>
+                    </div>
+                    <span className="td-label-sm">공동구매 완료</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Description Card */}
+            <div className="td-detail-page__card td-detail-page__desc-card">
+              <h2 className="td-headline-md td-detail-page__section-title">상세 설명</h2>
+              <div className="td-detail-page__desc-content">
+                <p className="td-detail-page__user-description">{purchase.description || '방장이 아직 상세 설명을 작성하지 않았습니다.'}</p>
+                {purchase.productUrl && <a className="td-detail-page__product-link" href={purchase.productUrl} target="_blank" rel="noreferrer">상품 페이지 열기 <span className="material-symbols-outlined">open_in_new</span></a>}
+                <p>지역 농장 공급업체에서 유기농 해스 아보카도 대용량 박스를 좋은 가격에 발견했습니다! 지금은 단단하지만 며칠 내로 완벽하게 후숙될 거예요. 저 혼자서 20개를 다 먹기에는 너무 많아서 같이 나눌 이웃 3분을 찾습니다.</p>
+                <p>도착하면 저희 아파트 1층 메인 로비에서 픽업하시면 됩니다. 가져가실 수 있도록 종이봉투는 제가 준비해둘게요.</p>
+                <ul className="td-detail-page__desc-bullets">
+                  <li>품종: 유기농 해스</li>
+                  <li>원산지: 지역 농장 협동조합</li>
+                  <li>도착 예정일: 내일 오후</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Sticky Sidebar */}
+          <div className="td-detail-page__side-column">
+            <div className="td-detail-page__sticky-sidebar">
+              
+              {/* Map Card */}
+              <div className="td-detail-page__card td-detail-page__sidebar-card">
+                <h3 className="td-detail-page__sidebar-title">
+                  <span className="material-symbols-outlined text-primary">location_on</span>
+                  픽업 장소·시간
+                </h3>
+                <div className="td-detail-page__map-wrapper">
+                  <KakaoMap latitude={purchase.pickupLatitude} longitude={purchase.pickupLongitude} height={192} />
+                </div>
+                <p className="td-body-md td-detail-page__map-text">{purchase.pickupPlace}{purchase.pickupDetailAddress ? ` · ${purchase.pickupDetailAddress}` : ''}</p>
+                {purchase.pickupTimeSlot && <p className="td-body-sm td-detail-page__map-text">픽업 시간: {new Date(purchase.pickupTimeSlot).toLocaleString('ko-KR')}</p>}
+              </div>
+
+              {/* Host Info Card */}
+              <div className="td-detail-page__card td-detail-page__sidebar-card">
+                <h3 className="td-detail-page__sidebar-title">방장 정보</h3>
+                <div className="td-detail-page__host-header">
+                  <div className="td-detail-page__host-avatar-wrapper">
+                    <img 
+                      className="td-detail-page__host-avatar" 
+                      src={getProfileImageUrl(purchase.host?.id)}
+                      alt={`${purchase.host?.nickname || '방장'} 프로필 사진`}
+                    />
+                  </div>
+                  <div>
+                    <div className="td-label-md">{purchase.host?.nickname || '방장'}</div>
+                    <div className="td-detail-page__host-subtext">가입일: {purchase.host?.createdAt ? new Date(purchase.host.createdAt).toLocaleDateString('ko-KR') : '-'}</div>
+                  </div>
+                </div>
+                <div className="td-detail-page__host-stats-grid">
+                  <div className="td-detail-page__host-stat-box">
+                    <span className="td-detail-page__host-stat-label">매너 온도</span>
+                    <strong className="td-label-md td-detail-page__host-stat-temp">
+                      {purchase.host?.mannerTemperature ?? 36.5}°C
+                      <span className="material-symbols-outlined text-sm">sentiment_satisfied</span>
+                    </strong>
+                  </div>
+                  <div className="td-detail-page__host-stat-box">
+                    <span className="td-detail-page__host-stat-label">노쇼 횟수</span>
+                    <strong className="td-label-md td-detail-page__host-stat-value">
+                      {purchase.host?.noShowCount ?? 0} <span className="td-detail-page__host-stat-unit">회</span>
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Area */}
+              <div className="td-detail-page__card td-detail-page__action-card">
+                <div className="td-detail-page__action-price-row">
+                  <span className="td-body-md td-detail-page__action-price-label">나의 총 결제금액</span>
+                  <strong className="td-headline-md td-detail-page__action-price-value">{won(purchase.perPersonPrice)}</strong>
+                </div>
+
+                {purchase.viewer?.isHost && purchase.status === 'COMPLETED' && (
+                  <div className="td-detail-page__payment-summary">
+                    <strong>입금 관리</strong>
+                    <p className="td-body-md">신고 {purchase.paymentSummary?.reportedCount || 0}명 · 확인 {purchase.paymentSummary?.confirmedCount || 0}/{purchase.paymentSummary?.participantCount || 0}명</p>
+                    <div className="td-detail-page__payment-participants">
+                      {purchase.paymentParticipants?.map((participant) => (
+                        <div className="td-detail-page__payment-participant" key={participant.id}>
+                          <span>{participant.nickname}</span>
+                          {participant.isPaymentConfirmed ? (
+                            <span className="td-detail-page__payment-state td-detail-page__payment-state--confirmed">확인 완료</span>
+                          ) : participant.isPaid ? (
+                            <button className="td-detail-page__payment-confirm-btn" onClick={() => handlePaymentConfirmation(participant.id)} disabled={workflowState === 'loading'}>입금 확인</button>
+                          ) : (
+                            <span className="td-detail-page__payment-state">입금 대기</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {purchase.viewer?.application && purchase.status === 'COMPLETED' && !purchase.viewer.application.isPaid && (
+                  <button
+                    className="td-detail-page__action-primary-btn"
+                    onClick={() => setIsPaymentModalOpen(true)}
+                    disabled={workflowState === 'loading'}
+                  >
+                    계좌 확인 · 입금 완료하기
+                  </button>
+                )}
+
+                {purchase.viewer?.application?.isPaid && purchase.status === 'COMPLETED' && (
+                  <p className="td-detail-page__action-message td-body-md td-detail-page__action-message--success">
+                    {purchase.viewer.application.isPaymentConfirmed ? '방장이 입금을 확인했어요. 주문 진행을 기다려 주세요.' : '입금 신고가 전달됐어요. 방장의 확인을 기다려 주세요.'}
+                  </p>
+                )}
+                
+                {purchase.viewer?.isHost && hostActions[purchase.status] && (
+                  <button
+                    className="td-detail-page__action-primary-btn"
+                    onClick={handleHostStatus}
+                    disabled={workflowState === 'loading'}
+                  >
+                    {workflowState === 'loading' ? '처리 중...' : hostActions[purchase.status].label}
+                  </button>
+                )}
+
+                {purchase.viewer?.application && purchase.status === 'WAITING_PICKUP' && !purchase.viewer.application.isReceived && (
+                  <button
+                    className="td-detail-page__action-primary-btn"
+                    onClick={handleReceipt}
+                    disabled={workflowState === 'loading'}
+                  >
+                    {workflowState === 'loading' ? '처리 중...' : '수령 완료'}
+                  </button>
+                )}
+
+                {purchase.viewer?.application?.isReceived && purchase.status === 'WAITING_PICKUP' && (
+                  <p className="td-detail-page__action-message td-body-md td-detail-page__action-message--success">수령 완료가 기록되었습니다.</p>
+                )}
+
+                <button
+                  style={{ display: purchase.status === 'RECRUITING' && !purchase.viewer?.isHost ? undefined : 'none' }}
+                  className={`td-detail-page__action-primary-btn ${joinState === 'joined' ? 'td-detail-page__action-primary-btn--joined' : ''}`}
+                  onClick={joinState === 'joined' ? handleCancelJoin : handleJoin}
+                  disabled={joinState === 'loading' || joinState === 'cancelling' || (joinState !== 'joined' && purchase.currentParticipants >= purchase.targetParticipants)}
+                >
+                  {joinState === 'loading'
+                    ? '참여 신청 중...'
+                    : joinState === 'cancelling'
+                      ? '참여 취소 중...'
+                      : joinState === 'joined'
+                          ? '참여 중 · 취소하기'
+                          : '공동구매 참여하기'}
+                </button>
+
+                {message && (
+                  <p className={`td-detail-page__action-message td-body-md ${joinState === 'joined' ? 'td-detail-page__action-message--success' : ''}`}>
+                    {message}
+                  </p>
+                )}
+
+                <div className="td-detail-page__action-secondary-row">
+                  <button 
+                    className={`td-detail-page__action-sec-btn ${isLiked ? 'td-detail-page__action-sec-btn--liked' : ''}`}
+                    onClick={handleFavorite}
+                    disabled={isFavoriteUpdating}
+                  >
+                    <span className="material-symbols-outlined text-sm">{isLiked ? 'favorite' : 'favorite_border'}</span>
+                    찜하기
+                  </button>
+                  <button className="td-detail-page__action-sec-btn">
+                    <span className="material-symbols-outlined text-sm">share</span>
+                    공유하기
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      {isPaymentModalOpen && (
+        <div className="td-detail-page__payment-modal-backdrop" role="dialog" aria-modal="true" aria-label="입금 계좌 안내">
+          <section className="td-detail-page__payment-modal">
+            <span className="material-symbols-outlined text-primary">account_balance</span>
+            <h2 className="td-headline-md">모집이 완료됐어요!</h2>
+            <p className="td-body-md">아래 방장 계좌로 {won(purchase.perPersonPrice)}을 입금해 주세요.</p>
+            <strong className="td-detail-page__payment-account">{purchase.paymentAccount || '방장에게 계좌 정보를 확인해 주세요.'}</strong>
+            <p className="td-body-sm">입금한 뒤에만 입금 완료 버튼을 눌러 주세요.</p>
+            <div className="td-detail-page__payment-modal-actions">
+              <button className="td-detail-page__payment-later-btn" onClick={() => setIsPaymentModalOpen(false)}>나중에</button>
+              <button className="td-detail-page__payment-submit-btn" onClick={handlePayment} disabled={workflowState === 'loading'}>
+                {workflowState === 'loading' ? '처리 중...' : '입금 완료했어요'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {selectedImageIndex !== null && galleryImages[selectedImageIndex] && (
+        <div
+          className="td-detail-page__image-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="이미지 크게 보기"
+          onClick={() => setSelectedImageIndex(null)}
+        >
+          <section className="td-detail-page__image-modal" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="td-detail-page__image-modal-close"
+              onClick={() => setSelectedImageIndex(null)}
+              aria-label="이미지 크게 보기 닫기"
+            >
+              ×
+            </button>
+            <img src={galleryImages[selectedImageIndex]} alt={`${purchase.title} 크게 보기`} />
+            <p>{selectedImageIndex + 1} / {galleryImages.length}</p>
+          </section>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="td-detail-page__footer">
+        <div className="td-detail-page__footer-brand-container">
+          <span className="td-detail-page__footer-logo">ThingDong</span>
+          <span className="td-detail-page__footer-copy">© 2024 ThingDong. Sharing for a fresher life.</span>
+        </div>
+        <div className="td-detail-page__footer-links">
+          <a className="td-detail-page__footer-link" href="#terms">이용약관</a>
+          <a className="td-detail-page__footer-link" href="#privacy">개인정보처리방침</a>
+          <a className="td-detail-page__footer-link" href="#partnership">제휴문의</a>
+          <a className="td-detail-page__footer-link" href="#help">고객센터</a>
+        </div>
+      </footer>
+    </div>
+  );
+}

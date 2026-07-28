@@ -1,0 +1,4 @@
+interface:
+  display_name: "테스트 우선 생성기"
+  short_description: "Jest와 Supertest 테스트를 구현보다 먼저 설계합니다."
+  default_prompt: "공동구매 기능의 TDD 테스트를 먼저 만들어줘."

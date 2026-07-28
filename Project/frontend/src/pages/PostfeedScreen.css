@@ -1,0 +1,551 @@
+/* ============================================================
+   ThingDong PostfeedScreen CSS
+   References tailwind colors & layouts in AGENT/EveryPost.html
+   ============================================================ */
+
+:root {
+  /* EveryPost theme colors overrides or matches if not specified in tokens.css */
+  --ep-background: #f8f9ff;
+  --ep-on-background: #0b1c30;
+  --ep-surface-lowest: #ffffff;
+  --ep-surface-low: #eff4ff;
+  --ep-surface-high: #dce9ff;
+  --ep-outline-variant: #dfdfe3;
+  --ep-text-secondary: #5d5e62;
+}
+
+.td-postfeed-page {
+  min-height: 100vh;
+  background-color: var(--ep-background);
+  color: var(--ep-on-background);
+}
+
+.td-postfeed-page__content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px var(--td-margin-desktop);
+  display: flex;
+  flex-direction: row;
+  gap: var(--td-gutter);
+}
+
+/* Sidebar Styling */
+.td-postfeed-page__sidebar {
+  width: 256px; /* 64 equivalent */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.td-postfeed-page__create-btn {
+  width: 100%;
+  background-color: var(--td-primary-container);
+  color: var(--td-on-primary);
+  padding: 16px;
+  border-radius: 12px; /* xl equivalent */
+  font-family: var(--td-font-family);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.td-postfeed-page__create-btn:hover {
+  filter: brightness(1.1);
+}
+
+.td-postfeed-page__create-btn:active {
+  transform: scale(0.95);
+}
+
+/* Location Card */
+.td-postfeed-page__location-card {
+  background-color: var(--ep-surface-lowest);
+  border: 1px solid var(--ep-outline-variant);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.td-postfeed-page__location-info {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.td-postfeed-page__location-pin {
+  color: var(--td-vibrant-green);
+  margin-top: 4px;
+}
+
+.td-postfeed-page__location-title {
+  font-family: var(--td-font-family);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.td-postfeed-page__location-subtitle {
+  font-family: var(--td-font-family);
+  font-size: 14px;
+  color: var(--ep-text-secondary);
+  margin: 4px 0 0 0;
+}
+
+.td-postfeed-page__location-change-btn {
+  width: 100%;
+  padding: 8px 0;
+  background-color: var(--ep-surface-low);
+  border: 1px solid var(--ep-outline-variant);
+  border-radius: 8px;
+  font-family: var(--td-font-family);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.td-postfeed-page__location-change-btn:hover {
+  background-color: var(--td-surface-container);
+  border-color: var(--td-outline-variant);
+}
+
+.td-postfeed-page__avail-filter {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--ep-outline-variant);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.td-postfeed-page__checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border-color: var(--td-outline);
+  color: var(--td-primary-container);
+  cursor: pointer;
+}
+
+.td-postfeed-page__checkbox:focus {
+  border-color: var(--td-primary-container);
+}
+
+.td-postfeed-page__checkbox-label {
+  font-family: var(--td-font-family);
+  font-size: 14px;
+  color: var(--td-on-surface-variant);
+  cursor: pointer;
+}
+
+/* Categories in Sidebar */
+.td-postfeed-page__categories {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.td-postfeed-page__categories-title {
+  font-family: var(--td-font-family);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ep-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 16px;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.td-postfeed-page__category-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ep-on-background);
+  font-family: var(--td-font-family);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.td-postfeed-page__category-btn span.material-symbols-outlined {
+  color: var(--ep-text-secondary);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.td-postfeed-page__category-btn:hover {
+  background-color: var(--td-surface-container);
+}
+
+.td-postfeed-page__category-btn:hover span.material-symbols-outlined {
+  color: var(--td-primary-container);
+}
+
+.td-postfeed-page__category-btn--active {
+  background-color: var(--td-mint-green);
+  color: var(--td-primary-container);
+  font-weight: 700;
+}
+
+.td-postfeed-page__category-btn--active span.material-symbols-outlined {
+  color: var(--td-primary-container);
+}
+
+/* Main Area Content */
+.td-postfeed-page__main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.td-postfeed-page__main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.td-postfeed-page__header-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.td-postfeed-page__near-icon {
+  color: var(--td-vibrant-green);
+}
+
+.td-postfeed-page__main-header h2 {
+  font-size: 30px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.td-postfeed-page__header-subtitle {
+  color: var(--td-on-surface-variant);
+  margin: 4px 0 0 0;
+}
+
+/* Sorting pills */
+.td-postfeed-page__sorting {
+  display: flex;
+  background-color: var(--ep-surface-high);
+  padding: 4px;
+  border-radius: var(--td-radius-full);
+}
+
+.td-postfeed-page__sort-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 24px;
+  border-radius: var(--td-radius-full);
+  font-family: var(--td-font-family);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ep-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.td-postfeed-page__sort-btn:hover {
+  color: var(--ep-on-background);
+}
+
+.td-postfeed-page__sort-btn--active {
+  background-color: var(--ep-surface-lowest);
+  color: var(--ep-on-background);
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Bento Grid */
+.td-postfeed-page__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--td-gutter);
+}
+
+.td-postfeed-page__card {
+  background-color: var(--ep-surface-lowest);
+  border-radius: 12px;
+  border: 1px solid var(--ep-outline-variant);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.td-postfeed-page__card:hover {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+
+.td-postfeed-page__card-image-wrapper {
+  height: 192px; /* h-48 */
+  overflow: hidden;
+  position: relative;
+}
+
+.td-postfeed-page__favorite-btn { position: absolute; top: 14px; left: 14px; z-index: 2; width: 38px; height: 38px; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: #89938f; font-size: 21px; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.td-postfeed-page__favorite-btn--active { color: #e84d67; }
+.td-postfeed-page__favorite-btn:hover { background: #fff0f3; color: #e84d67; transform: scale(1.12); }
+.td-postfeed-page__favorite-btn:active { transform: scale(.94); }
+.td-postfeed-page__card:has(.td-postfeed-page__favorite-btn:hover), .td-postfeed-page__card:has(.td-postfeed-page__card-btn:hover) { transform: none; box-shadow: none; }
+
+.td-postfeed-page__card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.td-postfeed-page__card:hover .td-postfeed-page__card-image {
+  transform: scale(1.05);
+}
+
+.td-postfeed-page__card-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  padding: 4px 12px;
+  border-radius: var(--td-radius-full);
+  font-family: var(--td-font-family);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.td-postfeed-page__card-badge--info {
+  color: var(--td-primary-container);
+}
+
+.td-postfeed-page__card-badge--danger {
+  color: var(--td-danger);
+}
+
+.td-postfeed-page__card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.td-postfeed-page__card-category {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ep-text-secondary);
+}
+
+.td-postfeed-page__card-title {
+  font-family: var(--td-font-family);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ep-on-background);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.td-postfeed-page__card:hover .td-postfeed-page__card-title {
+  color: var(--td-primary-container);
+}
+
+.td-postfeed-page__card-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 4px;
+}
+
+.td-postfeed-page__meta-label {
+  font-family: var(--td-font-family);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--td-on-surface-variant);
+  margin: 0 0 4px 0;
+}
+
+.td-postfeed-page__meta-price {
+  font-family: var(--td-font-family);
+  font-size: 20px; /* text-xl */
+  font-weight: 700;
+  color: var(--td-vibrant-green);
+}
+
+.td-postfeed-page__meta-stats {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.td-postfeed-page__stats-item {
+  font-family: var(--td-font-family);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ep-on-background);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0;
+}
+
+.td-postfeed-page__stats-item--sub {
+  font-size: 10px;
+  color: var(--ep-text-secondary);
+}
+
+.td-postfeed-page__card-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 8px;
+  border: 1px solid var(--td-primary-container);
+  color: var(--td-primary-container);
+  background-color: transparent;
+  font-family: var(--td-font-family);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.td-postfeed-page__card-btn:hover:not(:disabled) {
+  background-color: var(--td-mint-green);
+}
+.td-postfeed-page__card-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(0, 120, 70, .22); }
+
+.td-postfeed-page__card-btn--joined {
+  background-color: var(--td-surface-container);
+  color: var(--td-on-surface-variant);
+  border-color: transparent;
+  cursor: default;
+}
+
+/* Footer Styling */
+.td-postfeed-page__footer {
+  background-color: var(--td-surface-container-low);
+  margin-top: 48px;
+  padding: 48px var(--td-margin-desktop);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.td-postfeed-page__footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.td-postfeed-page__footer-logo {
+  font-family: var(--td-font-family);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--td-vibrant-green);
+}
+
+.td-postfeed-page__footer-copy {
+  font-family: var(--td-font-family);
+  font-size: 14px;
+  color: var(--td-on-surface-variant);
+  margin: 0;
+}
+
+.td-postfeed-page__footer-links {
+  display: flex;
+  gap: 32px;
+}
+
+.td-postfeed-page__footer-link {
+  color: var(--td-on-surface-variant);
+  font-family: var(--td-font-family);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.td-postfeed-page__footer-link:hover {
+  opacity: 1;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 900px) {
+  .td-postfeed-page__content,
+  .td-postfeed-page__footer {
+    padding-left: var(--td-margin-mobile);
+    padding-right: var(--td-margin-mobile);
+  }
+
+  .td-postfeed-page__content {
+    flex-direction: column;
+  }
+
+  .td-postfeed-page__sidebar {
+    width: 100%;
+  }
+
+  .td-postfeed-page__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .td-postfeed-page__main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .td-postfeed-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .td-postfeed-page__footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    text-align: center;
+  }
+
+  .td-postfeed-page__footer-brand {
+    align-items: center;
+  }
+
+  .td-postfeed-page__footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+  }
+}
