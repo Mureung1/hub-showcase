@@ -157,7 +157,7 @@ export async function refreshCustomerRiskStats(
   });
 }
 /**
- * riskStats 기반 상위 주의 고객 조회.
+ * 위험(high) 등급 고객 조회.
  * score 내림차순 상위 limit 명을 반환한다.
  */
 export async function getTopRiskyCustomers(
@@ -172,6 +172,6 @@ export async function getTopRiskyCustomers(
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => enrichCustomer(d.id, storeId, d.data() as Customer))
-    .filter((customer) => customer.riskStats.score > 0)
+    .filter((customer) => customer.riskLevel === 'high')
     .slice(0, limit);
 }

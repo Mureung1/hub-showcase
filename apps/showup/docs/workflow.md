@@ -80,8 +80,8 @@ npm run verify:seed --workspace showup   # 시드 데이터 테스트
 # 빌드
 npm run build --workspace showup
 
-# Firebase Hosting 배포
-cd apps/showup && npx firebase deploy --only hosting
+# Firebase Hosting 배포 + 데모 계정/10명 시드 주입
+cd apps/showup && npm run deploy:demo
 
 # Firestore 인덱스 배포
 npx firebase deploy --only firestore:indexes

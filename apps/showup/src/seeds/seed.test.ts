@@ -16,6 +16,20 @@ console.table(
 
 // 검증: 노쇼 3회 이상 또는 abuse 1회 이상이면 alert=true
 let failed = 0;
+
+if (previews.length !== 10) {
+  failed += 1;
+  console.error(`시드 고객 수=${previews.length}, expected=10`);
+}
+
+const levels = new Set(previews.map((preview) => preview.riskLevel));
+for (const requiredLevel of ['low', 'medium', 'high'] as const) {
+  if (!levels.has(requiredLevel)) {
+    failed += 1;
+    console.error(`시드 위험 등급 누락: ${requiredLevel}`);
+  }
+}
+
 for (const p of previews) {
   const expectedAlert = p.noShowCount >= 3 || p.abuseCount >= 1;
   if (p.alert !== expectedAlert) {

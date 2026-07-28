@@ -15,7 +15,8 @@
     "verify:search": "tsx src/utils/search.test.ts",
     "seed:upload": "tsx src/seeds/upload.ts",
     "seed:download": "tsx src/seeds/download.ts",
-    "seed:demo": "tsx src/seeds/createDemoStore.ts"
+    "seed:demo": "tsx src/seeds/createDemoStore.ts",
+    "deploy:demo": "npm run build && firebase deploy --only hosting && npm run seed:demo"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

@@ -69,12 +69,13 @@ const reservationInputs: {
   { customerIndex: 0, date: '2026-07-01', time: '12:00', status: 'noShow' },
   { customerIndex: 0, date: '2026-06-20', time: '13:00', status: 'visited' },
 
-  // 이영희: 노쇼 5회 (위험)
+  // 이영희: 노쇼 6회 (위험)
   { customerIndex: 1, date: '2026-05-01', time: '11:00', status: 'noShow' },
   { customerIndex: 1, date: '2026-05-15', time: '11:30', status: 'noShow' },
   { customerIndex: 1, date: '2026-06-01', time: '12:00', status: 'noShow' },
   { customerIndex: 1, date: '2026-06-10', time: '10:30', status: 'noShow' },
   { customerIndex: 1, date: '2026-06-25', time: '14:00', status: 'noShow' },
+  { customerIndex: 1, date: '2026-07-10', time: '16:00', status: 'noShow' },
   { customerIndex: 1, date: '2026-07-02', time: '15:00', status: 'visited' },
 
   // 박준호: 당일 취소 2회

@@ -13,6 +13,7 @@ import {
   demoCustomersWithRisk,
   demoIncidents,
   demoReservations,
+  incidentInputs,
   incidentIds,
 } from './seed';
 
@@ -37,6 +38,19 @@ const db = getFirestore(app);
 
 const DEMO_EMAIL = 'demo@showup.example';
 const DEMO_PASSWORD = 'demoPassword123!';
+
+function toDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  if (
+    value &&
+    typeof value === 'object' &&
+    'toDate' in value &&
+    typeof value.toDate === 'function'
+  ) {
+    return value.toDate();
+  }
+  throw new Error('시드 Timestamp 형식이 올바르지 않습니다.');
+}
 
 async function createDemoStore(): Promise<void> {
   let uid: string;
@@ -83,10 +97,14 @@ async function createDemoStore(): Promise<void> {
         name: customer.name,
         phone: customer.phone,
         phoneLast4: customer.phoneLast4,
-        createdAt: AdminTimestamp.fromDate(
-          (customer.createdAt as { toDate: () => Date }).toDate(),
-        ),
-        riskStats: customer.riskStats,
+        createdAt: AdminTimestamp.fromDate(toDate(customer.createdAt)),
+        riskStats: {
+          ...customer.riskStats,
+          lastNoShowAt: customer.riskStats.lastNoShowAt
+            ? AdminTimestamp.fromDate(toDate(customer.riskStats.lastNoShowAt))
+            : null,
+          updatedAt: AdminTimestamp.fromDate(toDate(customer.riskStats.updatedAt)),
+        },
       },
       { merge: true },
     );
@@ -108,9 +126,7 @@ async function createDemoStore(): Promise<void> {
         status: reservation.status,
         cancelledSameDay: reservation.cancelledSameDay,
         memo: reservation.memo,
-        createdAt: AdminTimestamp.fromDate(
-          (reservation.createdAt as { toDate: () => Date }).toDate(),
-        ),
+        createdAt: AdminTimestamp.fromDate(toDate(reservation.createdAt)),
       },
       { merge: true },
     );
@@ -121,11 +137,11 @@ async function createDemoStore(): Promise<void> {
   // 사건 생성/갱신
   const incidentBatch = db.batch();
   for (const [i, incident] of demoIncidents.entries()) {
-    const customerId = incidentInputs[i].customerIndex;
+    const customerIndex = incidentInputs[i].customerIndex;
     const incidentId = incidentIds[i];
     const incidentRef = storeRef
       .collection('customers')
-      .doc(customerIds[customerId])
+      .doc(customerIds[customerIndex])
       .collection('incidents')
       .doc(incidentId);
     incidentBatch.set(
@@ -133,12 +149,8 @@ async function createDemoStore(): Promise<void> {
       {
         type: incident.type,
         memo: incident.memo,
-        occurredAt: AdminTimestamp.fromDate(
-          (incident.occurredAt as { toDate: () => Date }).toDate(),
-        ),
-        createdAt: AdminTimestamp.fromDate(
-          (incident.createdAt as { toDate: () => Date }).toDate(),
-        ),
+        occurredAt: AdminTimestamp.fromDate(toDate(incident.occurredAt)),
+        createdAt: AdminTimestamp.fromDate(toDate(incident.createdAt)),
       },
       { merge: true },
     );
@@ -152,18 +164,6 @@ async function createDemoStore(): Promise<void> {
   console.log(`비밀번호: ${DEMO_PASSWORD}`);
   console.log(`storeId: ${uid}`);
 }
-
-// incidentInputs 는 seed.ts 에 비공개라 여기서 복원
-const incidentInputs = [
-  { customerIndex: 0 },
-  { customerIndex: 4 },
-  { customerIndex: 5 },
-  { customerIndex: 5 },
-  { customerIndex: 6 },
-  { customerIndex: 6 },
-  { customerIndex: 7 },
-  { customerIndex: 8 },
-];
 
 createDemoStore()
   .then(() => process.exit(0))
