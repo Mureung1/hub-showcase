@@ -5,7 +5,9 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "npm:ignore-scripts": "echo skip",
+    "postinstall": "echo skip puppeteer download"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",

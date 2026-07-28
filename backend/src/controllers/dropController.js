@@ -22,9 +22,6 @@ async function getAllDrops(req, res) {
       },
       include: {
         votes: true,
-        priceHistories: {
-          orderBy: { createdAt: 'asc' }
-        },
         _count: {
           select: { votes: true }
         }
@@ -118,9 +115,6 @@ async function getDropById(req, res) {
       where: { id },
       include: {
         votes: true,
-        priceHistories: {
-          orderBy: { createdAt: 'asc' }
-        },
         _count: {
           select: { votes: true }
         }
