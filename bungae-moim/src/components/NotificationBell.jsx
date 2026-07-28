@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { fetchNotifications, markNotificationsRead } from '../api/notifications.js'
 
@@ -59,15 +59,25 @@ export default function NotificationBell() {
     }
   }, [])
 
+  // 패널을 닫는 유일한 통로. setOpen(false)와 openRequestRef 증가를 항상 함께 묶어서,
+  // "패널 밖 클릭 / Esc / 항목 클릭(라우트 이동) / toggle()의 닫기 분기" 중 어느 경로로
+  // 닫히든 그 시점에 열기 도중이던 재조회를 무효화한다. SiteHeader는 라우트가 바뀌어도
+  // 언마운트되지 않으므로, openMeeting(항목 클릭)에서 이 헬퍼를 쓰지 않으면 언마운트
+  // cleanup 가드가 걸리지 않아 닫힌 뒤에도 낡은 재조회가 조용히 읽음 처리를 실행할 수 있다.
+  const closePanel = useCallback(() => {
+    setOpen(false)
+    openRequestRef.current += 1
+  }, [])
+
   // 패널 밖 클릭 / Esc로 닫는다.
   useEffect(() => {
     if (!open) return undefined
 
     function onPointerDown(e) {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false)
+      if (rootRef.current && !rootRef.current.contains(e.target)) closePanel()
     }
     function onKeyDown(e) {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') closePanel()
     }
 
     document.addEventListener('mousedown', onPointerDown)
@@ -76,25 +86,25 @@ export default function NotificationBell() {
       document.removeEventListener('mousedown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open])
+  }, [open, closePanel])
 
   // 패널을 여는 순간 먼저 최신 목록을 재조회하고, 그 결과 기준으로 미읽음이 있으면
   // 읽음 처리한다(개별 읽음 없음). 마지막 라우트 이동 이후 도착한 알림이 뱃지로 한 번도
   // 안 보인 채 읽음 처리되는 것을 막기 위한 재조회다 — 폴링은 아니고, 여는 동작이 트리거다.
   function toggle() {
-    const next = !open
-    setOpen(next)
-    if (!next) {
-      // 닫을 때는 아무 요청도 보내지 않는다. 열기 도중이던 요청이 있었다면 무효화한다.
-      openRequestRef.current += 1
+    if (open) {
+      closePanel()
       return
     }
+    setOpen(true)
 
     const requestId = ++openRequestRef.current
     fetchNotifications()
       .then((data) => {
-        // 그 사이 닫히거나(위에서 증가) 다시 열리거나(새 requestId 발급) 언마운트됐으면
-        // (unmount cleanup에서 증가) 이 결과는 낡은 것이므로 버린다.
+        // 그 사이 닫히거나(closePanel이 증가) 다시 열리거나(새 requestId 발급) 언마운트됐으면
+        // (unmount cleanup에서 증가) 이 결과는 낡은 것이므로 버린다. 닫힘은 toggle()의 닫기
+        // 분기뿐 아니라 onPointerDown·onKeyDown·openMeeting까지 전부 closePanel을 거치므로
+        // 어떤 경로로 닫혀도 여기서 걸러진다.
         if (openRequestRef.current !== requestId) return
 
         if (data.unreadCount > 0) {
@@ -116,7 +126,7 @@ export default function NotificationBell() {
   }
 
   function openMeeting(meetingId) {
-    setOpen(false)
+    closePanel()
     navigate(`/meetings/${meetingId}`)
   }
 
