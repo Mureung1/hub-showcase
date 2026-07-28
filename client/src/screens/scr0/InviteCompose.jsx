@@ -23,7 +23,8 @@ export function InviteCompose() {
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
-  const [members] = useState(() => GROUP.members.slice(0, 3))
+  const [members, setMembers] = useState([])
+  const [memberDraft, setMemberDraft] = useState(null) // null: 입력 없음, string: 입력 중
   const [slots, setSlots] = useState(() => [{ id: uid(), label: '' }])
   const [locations, setLocations] = useState(() => [{ id: uid(), name: '' }])
   const [phase, setPhase] = useState('writing') // writing | sending | sent
@@ -51,6 +52,20 @@ export function InviteCompose() {
   }
   function removeLocation(id) {
     setLocations((prev) => (prev.length > 1 ? prev.filter((l) => l.id !== id) : prev))
+  }
+
+  function addMember() {
+    setMemberDraft('')
+  }
+  function commitMember() {
+    const name = memberDraft.trim()
+    if (name && !members.includes(name)) {
+      setMembers((prev) => [...prev, name])
+    }
+    setMemberDraft(null)
+  }
+  function removeMember(name) {
+    setMembers((prev) => prev.filter((m) => m !== name))
   }
 
   async function send() {
@@ -183,13 +198,41 @@ export function InviteCompose() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>함께할 사람</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
                     {members.map((m) => (
                       <Chip key={m} tone="wedgwood" sticker>
                         {m}
+                        <button
+                          type="button"
+                          onClick={() => removeMember(m)}
+                          aria-label={`${m} 삭제`}
+                          style={{ background: 'none', border: 'none', color: 'inherit', fontSize: '11px', cursor: 'pointer', padding: 0, marginLeft: '2px', lineHeight: 1 }}
+                        >
+                          ✕
+                        </button>
                       </Chip>
                     ))}
-                    <Chip tone="lemon" sticker>+ 추가</Chip>
+                    {memberDraft !== null ? (
+                      <Input
+                        variant="underline"
+                        placeholder="이름을 입력하세요"
+                        value={memberDraft}
+                        autoFocus
+                        onChange={(e) => setMemberDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            commitMember()
+                          } else if (e.key === 'Escape') {
+                            setMemberDraft(null)
+                          }
+                        }}
+                        onBlur={() => setMemberDraft(null)}
+                        style={{ width: '120px' }}
+                      />
+                    ) : (
+                      <Chip tone="lemon" sticker onClick={addMember}>+ 추가</Chip>
+                    )}
                   </div>
                 </div>
               </div>
