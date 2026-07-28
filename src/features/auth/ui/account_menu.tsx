@@ -73,7 +73,7 @@ export function AccountMenu({
             {user.email ? <span>{user.email}</span> : null}
           </div>
           {errorMessage ? (
-            <StatusMessage title="로그아웃하지 못했습니다" variant="error">
+            <StatusMessage title="로그아웃하지 못했어요" variant="error">
               <p>{errorMessage}</p>
             </StatusMessage>
           ) : null}
@@ -85,7 +85,7 @@ export function AccountMenu({
             onClick={onSignOut}
             type="button"
           >
-            {isSigningOut ? '로그아웃 처리 중' : '로그아웃'}
+            {isSigningOut ? '로그아웃하고 있어요' : '로그아웃'}
           </Button>
         </section>
       ) : null}

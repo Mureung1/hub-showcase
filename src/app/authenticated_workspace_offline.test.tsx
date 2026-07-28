@@ -68,13 +68,13 @@ describe('AuthenticatedWorkspace 원격 실패 수용 기준', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const saveUrl = screen.getByRole('textbox', { name: 'URL' });
     await user.type(saveUrl, 'https://offline.example/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(create).toHaveBeenCalledOnce();
     expect(screen.getByRole('alert').textContent).toContain(
-      '원격 저장에 실패했어요.'
+      '보관함에 저장하지 못했어요.'
     );
     expect((saveUrl as HTMLInputElement).value).toBe(
       'https://offline.example/article'

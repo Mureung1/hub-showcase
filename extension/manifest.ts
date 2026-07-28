@@ -22,7 +22,7 @@ export function createChromeExtensionManifest({
       service_worker: 'background.js',
       type: 'module',
     },
-    description: '현재 탭을 한 번에 저장하고 필요할 때만 메모를 남깁니다.',
+    description: '현재 탭을 저장하고 필요할 때 메모를 남겨요.',
     host_permissions: hostPermissions,
     icons: {
       192: 'icons/amadda-192.png',

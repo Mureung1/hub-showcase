@@ -14,13 +14,10 @@ export function readAuthCallbackError(search: string) {
   }
 
   if (error === 'access_denied') {
-    return 'Google 로그인이 취소되었습니다. 다시 시도해 주세요.';
+    return 'Google 로그인을 취소했어요. 다시 시도해 주세요.';
   }
 
-  const description = params.get('error_description')?.trim();
-  const reason = description || error;
-
-  return `Google 로그인에 실패했습니다. ${reason}`;
+  return 'Google 로그인에 실패했어요. 다시 시도해 주세요.';
 }
 
 function removeAuthErrorParameters(params: URLSearchParams) {

@@ -10,8 +10,10 @@ const UNUSED_FIELD = '__unused__';
 
 export type ImportFieldMappingProps = {
   disabled?: boolean;
+  formId?: string;
   onSubmit: (mappings: ImportFieldMappingValue[]) => void;
   requests: readonly ImportFieldMappingRequest[];
+  showSubmitButton?: boolean;
 };
 
 export function ImportFieldMappingForm({ ...props }: ImportFieldMappingProps) {
@@ -22,8 +24,10 @@ export function ImportFieldMappingForm({ ...props }: ImportFieldMappingProps) {
 
 function ImportFieldMappingFields({
   disabled = false,
+  formId,
   onSubmit,
   requests,
+  showSubmitButton = true,
 }: ImportFieldMappingProps) {
   const [mappings, setMappings] = useState<ImportFieldMappingValue[]>(() =>
     requests.map(({ suggested }) => suggested)
@@ -56,7 +60,11 @@ function ImportFieldMappingFields({
   }
 
   return (
-    <form className="insight-import-dialog__field-mapping" onSubmit={submit}>
+    <form
+      className="insight-import-dialog__field-mapping"
+      id={formId}
+      onSubmit={submit}
+    >
       <div>
         <h3>필드 연결</h3>
         <p>링크가 담긴 열을 확인해 주세요.</p>
@@ -122,9 +130,11 @@ function ImportFieldMappingFields({
         );
       })}
 
-      <Button disabled={disabled} hierarchy="primary" type="submit">
-        계속
-      </Button>
+      {showSubmitButton ? (
+        <Button disabled={disabled} hierarchy="primary" type="submit">
+          가져올 내용 확인하기
+        </Button>
+      ) : null}
     </form>
   );
 }

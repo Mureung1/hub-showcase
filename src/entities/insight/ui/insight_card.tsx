@@ -266,8 +266,8 @@ export function InsightCard({
 
           {editFailed ? (
             <p className="insight-card__error" role="alert">
-              수정 내용을 저장하지 못했어요. 입력은 유지했어요. 다시 시도하거나
-              취소해주세요.
+              수정 내용을 저장하지 못했어요. 입력한 내용은 그대로 두었어요. 다시
+              시도하거나 닫아 주세요.
             </p>
           ) : null}
 
@@ -279,7 +279,11 @@ export function InsightCard({
               size="small"
               type="submit"
             >
-              {isUpdating ? '저장 중' : editFailed ? '다시 시도' : '변경 저장'}
+              {isUpdating
+                ? '변경 내용을 저장하고 있어요'
+                : editFailed
+                  ? '변경 내용 다시 저장하기'
+                  : '변경 내용 저장하기'}
             </Button>
             <Button
               disabled={isUpdating}
@@ -288,7 +292,7 @@ export function InsightCard({
               size="small"
               type="button"
             >
-              취소
+              닫기
             </Button>
           </div>
         </form>
@@ -320,14 +324,12 @@ export function InsightCard({
 
           {cardMode === 'deleting' ? (
             <div className="insight-card__delete-confirmation">
-              <p>
-                <strong>{insight.title}</strong>을(를) 삭제할까요?
-              </p>
-              <p>삭제하면 보관함에서 사라집니다.</p>
+              <p>“{insight.title}” 인사이트를 삭제할까요?</p>
+              <p>삭제하면 보관함에서 사라지고 되돌릴 수 없어요.</p>
               {deleteFailed ? (
                 <p className="insight-card__error" role="alert">
-                  삭제하지 못했어요. 카드는 그대로 두었어요. 다시 시도하거나
-                  취소해주세요.
+                  인사이트를 삭제하지 못했어요. 카드는 그대로 두었어요. 다시
+                  시도하거나 닫아 주세요.
                 </p>
               ) : null}
               <div className="insight-card__actions">
@@ -341,10 +343,10 @@ export function InsightCard({
                   type="button"
                 >
                   {isDeleting
-                    ? '삭제 중'
+                    ? '인사이트를 삭제하고 있어요'
                     : deleteFailed
-                      ? '삭제 다시 시도'
-                      : '삭제 확정'}
+                      ? '다시 삭제하기'
+                      : '인사이트 삭제하기'}
                 </Button>
                 <Button
                   disabled={isDeleting}
@@ -353,7 +355,7 @@ export function InsightCard({
                   size="small"
                   type="button"
                 >
-                  취소
+                  닫기
                 </Button>
               </div>
             </div>
@@ -401,7 +403,7 @@ function SourceAction({ insight }: { insight: Insight }) {
   if (!normalizedUrl.ok) {
     return (
       <p className="insight-card__unsafe-source" role="status">
-        안전하지 않은 주소라 원문을 열 수 없어요.
+        안전하지 않은 링크라 원문을 열 수 없어요.
       </p>
     );
   }

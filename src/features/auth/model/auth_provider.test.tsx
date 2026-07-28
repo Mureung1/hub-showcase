@@ -164,7 +164,7 @@ describe('AuthProvider', () => {
     );
 
     expect(
-      screen.getByText('Google 로그인이 취소되었습니다. 다시 시도해 주세요.')
+      screen.getByText('Google 로그인을 취소했어요. 다시 시도해 주세요.')
     ).not.toBeNull();
     expect(window.location.search).toBe('?keep=value');
     expect(window.location.hash).toBe('#section');
@@ -181,9 +181,7 @@ describe('AuthProvider', () => {
     act(() => auth.emitSignInFailure('android-share'));
 
     expect(
-      screen.getByText(
-        'Google 로그인에 실패했습니다. 로그인을 완료하지 못했어요.'
-      )
+      screen.getByText('Google 로그인에 실패했어요. 다시 시도해 주세요.')
     ).not.toBeNull();
     expect(screen.getByText('공유 OAuth 복귀 1')).not.toBeNull();
   });

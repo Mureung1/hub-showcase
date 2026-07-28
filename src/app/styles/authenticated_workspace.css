@@ -1,17 +1,29 @@
 .workspace-shell {
-  width: min(var(--layout-content-width), calc(100% - 32px));
+  --color-canvas: var(--color-surface);
+
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
-  margin: 0 auto;
-  padding: var(--spacing-4) 0 calc(88px + var(--spacing-6));
+  background: var(--color-paper);
 }
 
 .workspace-header {
-  display: flex;
-  min-height: var(--spacing-12);
+  border-bottom: 1px solid var(--color-ash);
+  background: var(--color-canvas);
+}
+
+.workspace-header__inner {
+  display: grid;
+  width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));
+  min-height: 64px;
   align-items: center;
-  justify-content: space-between;
+  margin-inline: auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: var(--spacing-4);
-  padding-bottom: var(--spacing-4);
+}
+
+.workspace-account {
+  justify-self: end;
 }
 
 .workspace-brand {
@@ -51,22 +63,16 @@
   white-space: nowrap;
 }
 
-.workspace-connection-status {
-  color: var(--color-graphite);
-  font-size: var(--typography-label-size);
-  line-height: var(--typography-label-line-height);
-  white-space: nowrap;
-}
-
 .workspace-main {
   min-height: 680px;
-  border-top: 1px solid var(--color-ash);
-  padding: var(--spacing-8) 0 var(--spacing-20);
+  padding: 0 0 var(--spacing-20);
+  background: var(--color-paper);
 }
 
 .workspace-warnings {
   display: grid;
-  margin-bottom: var(--spacing-6);
+  width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));
+  margin: var(--spacing-6) auto;
   gap: var(--spacing-3);
 }
 
@@ -76,4 +82,21 @@
   border-radius: var(--radius-card);
   background: var(--color-mist);
   color: var(--color-graphite);
+}
+
+@media (max-width: 767px) {
+  .workspace-header__inner {
+    width: min(calc(100% - var(--spacing-6)), var(--layout-content-width));
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--spacing-3);
+  }
+
+  .workspace-brand__divider,
+  .workspace-header h1 {
+    display: none;
+  }
+
+  .workspace-main {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
 }

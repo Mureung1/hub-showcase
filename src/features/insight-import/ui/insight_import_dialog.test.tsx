@@ -1,5 +1,12 @@
 /* @vitest-environment jsdom */
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -54,6 +61,39 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('InsightImportDialog', () => {
+  it('가져올 위치를 하나의 선택 그룹으로 제공한다', async () => {
+    const user = userEvent.setup();
+    renderDialog({ service: createService() });
+
+    const sourceGroup = screen.getByRole('group', { name: '가져올 위치' });
+    const fileButton = within(sourceGroup).getByRole('button', {
+      name: '파일에서 가져오기',
+    });
+    const notionButton = within(sourceGroup).getByRole('button', {
+      name: 'Notion에서 가져오기',
+    });
+    const pasteButton = within(sourceGroup).getByRole('button', {
+      name: '링크 붙여넣기',
+    });
+
+    expect(
+      within(fileButton).getByText('파일').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(
+      within(notionButton).getByText('Notion').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(
+      within(pasteButton).getByText('링크').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(fileButton.getAttribute('aria-pressed')).toBe('false');
+
+    await user.click(fileButton);
+
+    expect(fileButton.getAttribute('aria-pressed')).toBe('true');
+    expect(notionButton.getAttribute('aria-pressed')).toBe('false');
+    expect(pasteButton.getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('원본 파일을 업로드하지 않고 자동 감지한 후보만 준비 요청한다', async () => {
     const user = userEvent.setup();
     const service = createService();
@@ -67,9 +107,7 @@ describe('InsightImportDialog', () => {
     renderDialog({ service });
 
     await user.click(screen.getByRole('button', { name: '파일에서 가져오기' }));
-    expect(
-      screen.getByText(/원본 파일은 서버에 업로드하지 않으며/)
-    ).toBeTruthy();
+    expect(screen.getByText(/원본 파일은 서버에 올리지 않아요/)).toBeTruthy();
 
     await user.upload(
       screen.getByLabelText('가져올 파일'),
@@ -78,7 +116,7 @@ describe('InsightImportDialog', () => {
       })
     );
 
-    expect(await screen.findByText('신규')).toBeTruthy();
+    expect(await screen.findByText('새 인사이트')).toBeTruthy();
     expect(service.prepare).toHaveBeenCalledWith(
       expect.objectContaining({
         adapterKey: 'generic-text',
@@ -130,12 +168,22 @@ describe('InsightImportDialog', () => {
     });
     await user.click(sourceButton);
     const textarea = screen.getByRole('textbox', { name: '가져올 링크' });
-    const analyzeButton = screen.getByRole('button', { name: '분석하기' });
+    const analyzeButton = screen.getByRole('button', {
+      name: '가져올 내용 확인하기',
+    });
+
+    expect(analyzeButton.closest('.ui-modal__footer')).toBeTruthy();
 
     await user.type(textarea, 'https://example.com/a\nhttps://example.com/b');
     sourceButton.focus();
     await user.tab();
     expect(document.activeElement).toBe(textarea);
+    await user.tab();
+    expect(document.activeElement).toBe(
+      within(
+        analyzeButton.closest('.ui-modal__footer') as HTMLElement
+      ).getByRole('button', { name: '닫기' })
+    );
     await user.tab();
     expect(document.activeElement).toBe(analyzeButton);
 
@@ -143,24 +191,32 @@ describe('InsightImportDialog', () => {
 
     expect(onLibraryChanged).not.toHaveBeenCalled();
     expect(onCategoriesChanged).not.toHaveBeenCalled();
-    expect(screen.getByText('신규')).toBeTruthy();
-    expect(screen.getByText('기존 중복')).toBeTruthy();
-    expect(screen.getByText('입력 중복')).toBeTruthy();
+    expect(screen.getByText('새 인사이트')).toBeTruthy();
+    expect(screen.getByText('보관함에 있음')).toBeTruthy();
+    expect(screen.getByText('입력 안 중복')).toBeTruthy();
     expect(screen.getByText('제외')).toBeTruthy();
     expect(
       screen.getByText('제외된 항목 확인', { selector: 'summary' })
     ).toBeTruthy();
 
-    await user.click(screen.getByRole('combobox', { name: '개발 분류' }));
-    await user.click(screen.getByRole('option', { name: '기존 분류: 저장됨' }));
-    await user.click(screen.getByRole('combobox', { name: '개발 분류' }));
-    await user.click(screen.getByRole('option', { name: '새 분류' }));
+    await user.click(screen.getByRole('combobox', { name: '개발 카테고리' }));
+    await user.click(
+      screen.getByRole('option', { name: '기존 카테고리: 저장됨' })
+    );
+    await user.click(screen.getByRole('combobox', { name: '개발 카테고리' }));
+    await user.click(screen.getByRole('option', { name: '새 카테고리' }));
     await user.type(
-      screen.getByRole('textbox', { name: '개발 새 분류 이름' }),
+      screen.getByRole('textbox', { name: '개발 새 카테고리 이름' }),
       '연구'
     );
 
-    await user.click(screen.getByRole('button', { name: '가져오기' }));
+    expect(
+      screen
+        .getByRole('button', { name: '인사이트 가져오기' })
+        .closest('.ui-modal__footer')
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '인사이트 가져오기' }));
 
     expect(service.commit).toHaveBeenCalledTimes(1);
     expect(service.commit).toHaveBeenCalledWith(JOB_ID, [
@@ -172,24 +228,35 @@ describe('InsightImportDialog', () => {
     expect(onLibraryChanged).toHaveBeenCalledTimes(1);
     expect(onCategoriesChanged).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByText('분석 후 다른 경로에서 저장된 1개를 중복으로 제외했어요')
+      screen.getByText(
+        '분석 후 다른 경로에서 저장된 인사이트 1개를 중복으로 제외했어요'
+      )
     ).toBeTruthy();
     expect(
       screen
-        .getByRole('status', { name: '가져오기를 완료했어요' })
+        .getByRole('status', {
+          name: '인사이트 1개를 보관함에 추가했어요',
+        })
         .getAttribute('aria-live')
     ).toBe('polite');
+    expect(
+      screen
+        .getByRole('button', { name: '보관함으로 돌아가기' })
+        .closest('.ui-modal__footer')
+    ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '가져오기 되돌리기' }));
     expect(
-      screen.getByText('이 작업에서 새로 만든 인사이트만 삭제합니다.')
+      screen.getByText('이 작업에서 새로 만든 인사이트만 삭제해요.')
     ).toBeTruthy();
     expect(service.undo).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '정말 되돌리기' }));
+    await user.click(screen.getByRole('button', { name: '가져오기 되돌리기' }));
 
     expect(service.undo).toHaveBeenCalledWith(JOB_ID);
-    expect(screen.getByText('인사이트 1개를 되돌렸어요.')).toBeTruthy();
+    expect(
+      screen.getByText('인사이트 1개를 보관함에서 삭제했어요.')
+    ).toBeTruthy();
   }, 15_000);
 
   it('분석 중 액션을 비활성화하고 안전한 오류를 alert로 알린다', async () => {
@@ -205,22 +272,53 @@ describe('InsightImportDialog', () => {
       screen.getByRole('textbox', { name: '가져올 링크' }),
       'https://example.com'
     );
-    await user.click(screen.getByRole('button', { name: '분석하기' }));
+    await user.click(
+      screen.getByRole('button', { name: '가져올 내용 확인하기' })
+    );
 
     expect(
       (
         screen.getByRole('button', {
-          name: '분석 중',
+          name: '가져올 내용을 확인하고 있어요',
         }) as HTMLButtonElement
       ).disabled
     ).toBe(true);
 
+    const sourceGroup = screen.getByRole('group', { name: '가져올 위치' });
+    const sourceButtons = within(sourceGroup).getAllByRole('button');
+
+    expect(
+      sourceButtons.every((button) => (button as HTMLButtonElement).disabled)
+    ).toBe(true);
+
     deferred.resolve({ ok: false, reason: 'write-failed' });
 
-    const alert = await screen.findByRole('alert', {
+    const pastePanel = screen.getByRole('region', {
+      name: '링크 붙여넣기',
+    });
+    const alert = await within(pastePanel).findByRole('alert', {
       name: '가져오기를 진행하지 못했어요',
     });
     expect(alert.textContent).not.toContain('https://example.com');
+
+    await user.click(
+      within(sourceGroup).getByRole('button', {
+        name: '파일에서 가져오기',
+      })
+    );
+
+    expect(
+      screen.queryByRole('alert', {
+        name: '가져오기를 진행하지 못했어요',
+      })
+    ).toBeNull();
+
+    await user.click(
+      within(sourceGroup).getByRole('button', {
+        name: '링크 붙여넣기',
+      })
+    );
+
     expect(
       (
         screen.getByRole('textbox', {
@@ -242,16 +340,20 @@ describe('InsightImportDialog', () => {
 
     expect(await screen.findByText('최근 가져오기')).toBeTruthy();
     expect(service.listIssues).not.toHaveBeenCalled();
-    expect(screen.getByText(/생성 1개 · 중복 0개 · 제외 1개/)).toBeTruthy();
+    expect(screen.getByText(/추가 1개 · 중복 0개 · 제외 1개/)).toBeTruthy();
     expect(screen.queryByText('제외된 항목 확인')).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: '기록 삭제' }));
+    await user.click(
+      screen.getByRole('button', { name: '가져오기 기록 삭제' })
+    );
     expect(
-      screen.getByText('인사이트는 유지되고 되돌리기 권한과 기록이 사라집니다.')
+      screen.getByText('인사이트는 유지하고 되돌리기 권한과 기록만 삭제해요.')
     ).toBeTruthy();
     expect(service.deleteRecord).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '기록 삭제하기' }));
+    await user.click(
+      screen.getByRole('button', { name: '가져오기 기록 삭제하기' })
+    );
 
     expect(service.deleteRecord).toHaveBeenCalledWith(JOB_ID);
     await waitFor(() =>
@@ -306,9 +408,7 @@ describe('InsightImportDialog', () => {
       render(
         <DesignSystemProvider>
           <ImportHistory
-            entries={[
-              { ...createHistoryEntry(), undoRemainingMs: 1_000 },
-            ]}
+            entries={[{ ...createHistoryEntry(), undoRemainingMs: 1_000 }]}
             errorMessage={null}
             loading={false}
             onDelete={vi.fn()}
@@ -351,7 +451,7 @@ describe('InsightImportDialog', () => {
     );
     expect(
       screen.getByText(
-        'Notion 공식 화면에서 가져올 페이지를 직접 선택합니다. 읽기 권한만 사용하고 가져오기가 끝나면 연결을 해제합니다.'
+        'Notion에서 가져올 페이지를 직접 선택해요. 읽기 권한만 사용하고 가져오기가 끝나면 연결을 해제해요.'
       )
     ).toBeTruthy();
     const includePages = screen.getByRole('checkbox', {

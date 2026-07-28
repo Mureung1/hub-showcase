@@ -76,7 +76,8 @@ describe('Android 공유 메모리 세션', () => {
     expect(transition.effect).toBe('none');
     expect(transition.session.state).toEqual({
       status: 'error',
-      message: '저장할 링크를 찾지 못했어요.',
+      message:
+        '저장할 링크를 찾지 못했어요. 링크가 포함된 텍스트를 다시 공유해 주세요.',
       retry: 'share',
     });
   });
@@ -124,7 +125,8 @@ describe('Android 공유 메모리 세션', () => {
 
     expect(transition.session.state).toEqual({
       status: 'error',
-      message: '로그인은 완료됐지만 링크를 다시 받아야 해요.',
+      message:
+        '로그인은 완료했지만 공유한 링크를 다시 받아야 해요. 원래 앱에서 다시 공유해 주세요.',
       retry: 'share',
     });
   });
@@ -149,7 +151,7 @@ describe('Android 공유 메모리 세션', () => {
 
     expect(transition.session.state).toEqual({
       status: 'error',
-      message: '저장하지 못했어요.',
+      message: '인사이트를 저장하지 못했어요. 공유한 링크는 그대로 두었어요.',
       retry: 'save',
       pending: {
         share,

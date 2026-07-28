@@ -9,9 +9,16 @@ const appNavigationStyles = readFileSync(
 );
 
 describe('AppNavigation style contract', () => {
-  it('keeps the fixed navigation within the planned 420px width', () => {
-    expect(appNavigationStyles).toMatch(
-      /div\.app-navigation\.navigation-bar\[wds-component='bottom-navigation'\][\s\S]*width:\s*min\(420px,\s*calc\(100%\s*-\s*var\(--spacing-8\)\)\)/
+  it('provides screen colors without reaching into vendor DOM', () => {
+    expect(appNavigationStyles).toContain(
+      '--navigation-active-color: var(--color-retrieve-blue);'
     );
+    expect(appNavigationStyles).toContain(
+      '--navigation-active-color: var(--color-library-coral);'
+    );
+    expect(appNavigationStyles).toContain(
+      '--navigation-active-color: var(--color-save-green);'
+    );
+    expect(appNavigationStyles).not.toContain('wds-component');
   });
 });

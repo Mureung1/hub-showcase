@@ -1,28 +1,30 @@
 {
   "schemaVersion": 1,
   "title": "아맞다! (Amadda)",
-  "summary": "저장한 링크를 개인 보관함에 정리하고, 나중에 맥락으로 빠르게 찾아 열람할 수 있는 인사이트 관리 서비스입니다.",
+  "summary": "저장한 인사이트를 현재 상황에 맞춰 다시 꺼내고, 원문을 바로 열어 실제 작업에 활용하도록 돕는 개인 인사이트 저장소입니다.",
   "githubUser": "ppre1ude",
   "demoUrl": "https://hub-ppre1udes-projects.vercel.app",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp"
   ],
-  "problem": "유용한 글과 자료를 저장해두어도, 시간이 지나며 저장 맥락이 흐려져 실제로 다시 열람할 때 찾기 어렵고 재탐색 비용이 늘어납니다.",
+  "problem": "대학생과 개인 창작자는 과제, 프로젝트, 공부, 개발과 디자인에 필요한 자료를 여러 서비스에 저장합니다. 시간이 지나면 저장 위치와 정확한 제목뿐 아니라 왜 저장했는지, 언제 쓰려 했는지도 잊습니다. 결국 유용했던 자료가 필요한 순간의 행동으로 이어지지 않습니다. 아맞다는 저장 마찰을 낮추고 개인이 남긴 메모·카테고리·출처를 다시 찾기의 단서로 연결해, 현재 하려는 일에 맞는 인사이트를 다시 꺼내 원문을 활용하게 합니다.",
   "targetUsers": [
-    "정보를 수집해두고 나중에 다시 찾아보는 개인 사용자",
-    "웹/모바일에서 링크를 빠르게 저장하는 사용자"
+    "과제·팀 프로젝트·공부를 위해 웹 자료를 모으는 대학생",
+    "개발·디자인·창작 과정에서 참고 자료를 반복해서 찾는 개인 창작자",
+    "브라우저·Notion·파일 등에 흩어진 저장물을 한곳으로 옮겨 활용하려는 개인"
   ],
   "features": [
-    "Google 로그인 기반 개인 보관함에서 링크, 제목, 설명, 메모, 카테고리를 함께 저장합니다.",
-    "모바일 공유, Chrome 확장, 웹 URL 입력으로 수집 경로를 통합합니다.",
-    "저장 시 부여한 라벨·메모를 반영해 검색과 `꺼내보기` 정렬 품질을 개선합니다.",
-    "저장 항목에서 원문 열기, 메모 수정, 삭제까지 한 흐름으로 처리합니다."
+    "모바일 공유, Chrome 확장과 웹 URL 입력으로 발견한 링크를 흐름을 끊지 않고 같은 개인 보관함에 저장합니다.",
+    "URL을 먼저 저장하고 제목, 한 줄 메모와 카테고리는 선택적으로 덧붙여 저장 부담을 낮춥니다.",
+    "기억나는 단서는 보관함 검색으로 찾고, 현재 상황이나 목적을 입력하면 관련 인사이트를 최대 6개의 작업팩으로 꺼내봅니다.",
+    "Chrome 북마크와 CSV·JSON·HTML·Markdown·텍스트·ZIP 파일, Notion 보관함을 분석해 신규·중복·오류를 확인한 뒤 가져옵니다.",
+    "연결 단서를 확인하고 원문을 바로 열며, 보관함에서 인사이트를 수정·삭제하거나 가져오기를 24시간 안에 되돌립니다."
   ],
   "featureTags": [
-    "개인 인사이트 저장",
-    "맥락 기반 재검색",
-    "멀티 채널 수집"
+    "상황 기반 꺼내보기",
+    "멀티 채널 저장",
+    "안전한 보관함 가져오기"
   ],
   "techStack": [
     "React",
@@ -30,38 +32,104 @@
     "Vite",
     "Express",
     "Supabase",
-    "Tailwind CSS",
-    "TanStack Query",
-    "Zustand"
+    "Capacitor",
+    "Kotlin",
+    "WDS",
+    "Vitest",
+    "Vercel"
   ],
   "techHighlights": [
-    "클라이언트는 React와 WDS 컴포넌트를 중심으로 저장·조회 UI를 구성했습니다.",
-    "Express API와 Supabase 저장소를 통해 사용자별 보관함(검색, 메모, 권한)을 운영합니다.",
-    "Chrome 확장, 모바일 공유, 웹 입력 경로에서 동일한 백엔드 계약으로 수집 흐름을 통합했습니다."
+    "웹·Android·Chrome 확장이 Express 캡처 API와 Supabase RLS 저장 계약을 공유해, 채널이 달라도 같은 계정·중복 판정·보관함 결과를 유지합니다.",
+    "범용 파일은 브라우저에서만 파싱하고 Notion OAuth 토큰은 서버에서 암호화하며, 반영과 24시간 되돌리기를 Supabase RPC로 원자적으로 처리합니다.",
+    "React 앱은 FSD 경계와 WDS 어댑터·디자인 토큰으로 구성하고, Vitest·Testing Library·Supertest·pgTAP과 Vercel Preview로 회귀와 배포를 검증합니다."
   ],
-  "developmentWithAI": "요구사항 정리와 문장 정제, 실행 계획 수립 단계에서 코딩 어시스턴트를 활용해 작업 속도와 정합성을 높였습니다.",
+  "developmentWithAI": "저는 문제 정의, 제품 원칙, 기능 우선순위, 디자인 선택과 최종 병합을 직접 결정했습니다. Codex는 저장소·Wiki·GitHub 상태를 바탕으로 설계와 구현 계획을 작성하고, 승인된 범위를 TDD와 서브에이전트 분업으로 구현했습니다. Office Hours와 grill-me로 제품 가정을 압박 검토하고, plan review로 디자인·기술·실행 계획을 구현 전에 재검토했습니다. 직접 만든 작업반장 Skill은 이슈 선택, 브랜치, 한국어 PR, 리뷰 반영, 병합 후 Project 정리를 상태 기반으로 이어갑니다. gstack 브라우저 QA와 CodeRabbit 리뷰로 반응형 화면·접근성·회귀를 확인했으며, 저는 각 단계의 결과와 실제 화면을 검수하고 최종 의사결정을 유지했습니다.",
   "agent": {
-    "summary": "요구사항을 기능 단위로 쪼개고, 가이드 확인 후 `showcase` 산출물을 구성했습니다.",
+    "summary": "제품 판단은 사람이 유지하고, Agent와 Skill은 문제 탐색, 설계 검증, 구현, 테스트, 시각 QA, 리뷰와 GitHub 운영을 역할별로 나누어 담당했습니다. 단일 프롬프트로 코드를 생성하지 않고, 제품 가설 검토부터 설계·계획·TDD 구현·독립 검토·실제 브라우저 QA·PR 리뷰까지 증거 기반 흐름을 반복했습니다. 저장소 전용 작업반장 Skill을 직접 만들어 GitHub Issues와 Project 상태를 읽고 올바른 단계에서 개발 사이클을 재개하도록 했으며, 제품 결정과 최종 병합은 항상 사람에게 남겼습니다.",
     "agentTools": [
       {
         "type": "agent",
         "name": "Codex",
-        "purpose": "요청 수렴, 파일 구성, 실무적 문구 정제"
+        "purpose": "저장소·Wiki·GitHub 상태를 조사하고, 승인된 제품 결정에 따라 설계·구현·검증·문서와 PR 작업을 이어갑니다."
+      },
+      {
+        "type": "agent",
+        "name": "구현·명세·품질 서브에이전트",
+        "purpose": "구현, 요구사항 일치 검토와 코드 품질 검토를 분리해 같은 작성자가 자신의 결과만 확인하는 편향을 줄입니다."
+      },
+      {
+        "type": "agent",
+        "name": "CodeRabbit",
+        "purpose": "Pull Request 변경을 자동 검토하고, 제안은 코드와 제품 계약에 대조해 타당한 항목만 반영합니다."
       },
       {
         "type": "skill",
-        "name": "browser",
-        "purpose": "showcase 작성 가이드의 샘플 형식과 항목 규칙 확인"
+        "name": "작업반장",
+        "purpose": "GitHub Issues와 Project 상태를 읽어 다음 작업 선택부터 브랜치·한국어 PR·리뷰 반영·병합 후 정리까지 올바른 단계에서 재개합니다."
+      },
+      {
+        "type": "skill",
+        "name": "Office Hours·grill-me",
+        "purpose": "사용자 문제, 제품 가설, 성공 기준과 숨은 전제를 구현 전에 질문하고 반박해 제품 판단을 선명하게 만듭니다."
+      },
+      {
+        "type": "skill",
+        "name": "brainstorming·writing-plans",
+        "purpose": "여러 접근의 장단점을 비교해 설계를 승인받고, 승인된 명세를 파일·단계·검증 기준이 분명한 구현 계획으로 바꿉니다."
+      },
+      {
+        "type": "skill",
+        "name": "plan-ceo-review·plan-design-review·plan-eng-review",
+        "purpose": "제품 가치, 사용자 경험과 기술 실행 가능성의 서로 다른 관점에서 계획을 구현 전에 검토합니다."
+      },
+      {
+        "type": "skill",
+        "name": "subagent-driven-development",
+        "purpose": "계획을 독립적인 작업으로 나누고 구현 뒤 명세 검토와 품질 검토를 순서대로 통과시킵니다."
+      },
+      {
+        "type": "skill",
+        "name": "test-driven-development",
+        "purpose": "실패를 재현하는 테스트를 먼저 확인하고 최소 구현으로 통과시킨 뒤, 필요한 범위에서만 회귀를 검증합니다."
+      },
+      {
+        "type": "skill",
+        "name": "gstack QA·Review",
+        "purpose": "실제 브라우저에서 반응형 화면, 접근성, 핵심 사용자 흐름과 회귀를 확인하고 PR 전후 품질을 점검합니다."
       }
     ],
     "workflows": [
       {
-        "name": "showcase 산출물 준비 Workflow",
+        "name": "제품 발견과 설계 Workflow",
         "steps": [
-          "샘플 가이드 형식 확인",
-          "showcase.json 작성",
-          "썸네일/스크린샷 준비",
-          "main 브랜치에서 커밋"
+          "Office Hours와 grill-me로 문제·가설·성공 기준 압박 검토",
+          "brainstorming으로 제품과 UI 접근 2~3개 비교",
+          "CEO·디자인·엔지니어링 관점의 plan review 수행",
+          "사용자가 제품 결정과 설계 명세 승인",
+          "writing-plans로 구현 순서와 검증 범위 확정"
+        ]
+      },
+      {
+        "name": "이슈 기반 구현 Workflow",
+        "steps": [
+          "작업반장이 GitHub Project에서 실행 가능한 이슈와 현재 단계 확인",
+          "최신 main에서 격리된 브랜치와 worktree 준비",
+          "변경 행동을 재현하는 실패 테스트 또는 기존 검증 확인",
+          "구현 서브에이전트가 승인 범위의 최소 코드 작성",
+          "명세 검토와 코드 품질 검토를 독립적으로 수행",
+          "변경 범위에 필요한 테스트·정적 검사·빌드만 실행",
+          "한국어 PR을 만들고 Project 상태를 검토 중으로 전환"
+        ]
+      },
+      {
+        "name": "리뷰·시각 QA·마무리 Workflow",
+        "steps": [
+          "CodeRabbit 의견을 코드와 제품 계약에 대조",
+          "유효한 리뷰만 최소 수정하고 관련 검증 재실행",
+          "gstack으로 390px·768px·1280px 실제 화면과 핵심 흐름 확인",
+          "Vercel Preview와 필수 CI 결과 확인",
+          "사용자가 실제 화면과 변경 내용을 검수하고 최종 병합",
+          "작업반장이 이슈·Project·로컬 브랜치와 다음 작업 상태 정리"
         ]
       }
     ]

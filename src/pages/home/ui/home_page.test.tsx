@@ -68,7 +68,9 @@ describe('HomePage', () => {
       join(process.cwd(), 'src/pages/home/ui/home_page.css'),
       'utf8'
     );
+    const stageRule = getCssRule(styles, '.home-page__stage');
     const heroRule = getCssRule(styles, '.home-page__hero');
+    const bodyRule = getCssRule(styles, '.home-page__body');
     const suggestionsRule = getCssRule(styles, '.home-page__suggestions');
     const tabletStyles = styles.slice(
       styles.indexOf('@media (max-width: 1199px)')
@@ -77,9 +79,12 @@ describe('HomePage', () => {
       styles.indexOf('@media (max-width: 767px)')
     );
 
+    expect(stageRule).toContain('background: var(--color-retrieve-blue);');
     expect(heroRule).toContain('width: min(820px, 100%);');
     expect(heroRule).toContain('margin-inline: auto;');
-    expect(heroRule).toContain('text-align: center;');
+    expect(bodyRule).toContain(
+      'width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));'
+    );
     expect(suggestionsRule).toContain(
       'grid-template-columns: repeat(3, minmax(0, 1fr));'
     );
@@ -96,7 +101,7 @@ describe('HomePage', () => {
 
     expect(
       screen.getByRole('status', {
-        name: '꺼내볼 인사이트를 불러오는 중',
+        name: '꺼내볼 인사이트를 불러오고 있어요',
       })
     ).not.toBeNull();
     expect(
@@ -122,7 +127,7 @@ describe('HomePage', () => {
       })
     ).not.toBeNull();
 
-    await user.click(screen.getByRole('button', { name: '링크 저장' }));
+    await user.click(screen.getByRole('button', { name: '인사이트 저장하기' }));
 
     expect(onOpenSave).toHaveBeenCalledOnce();
   });
@@ -187,8 +192,9 @@ describe('HomePage', () => {
     expect(
       screen.queryByRole('heading', { name: '이런 상황에서 시작해보세요' })
     ).toBeNull();
+    expect(screen.getByRole('group', { name: '추천 상황' })).not.toBeNull();
     expect(
-      screen.getByText('떠오르는 단어나 지금 하고 있는 일을 짧게 적어보세요.')
+      screen.getByText('떠오르는 단어나 지금 하는 일을 짧게 적어 보세요.')
     ).not.toBeNull();
     expect(screen.queryByText('작업팩')).toBeNull();
     expect(
@@ -209,6 +215,16 @@ describe('HomePage', () => {
     expect(
       screen.getByRole('button', { name: '저장해둔 영상 골라보기' })
     ).not.toBeNull();
+    const queryInput = screen.getByRole('textbox', {
+      name: '지금 꺼내 보고 싶은 상황',
+    });
+    const suggestion = screen.getByRole('button', {
+      name: '과제 참고자료 다시 찾기',
+    });
+
+    expect(queryInput.closest('.home-page__stage')).not.toBeNull();
+    expect(suggestion.closest('.home-page__body')).not.toBeNull();
+    expect(suggestion.closest('.home-page__stage')).toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
   });
 
@@ -323,28 +339,28 @@ describe('HomePage', () => {
           onRetrieve={vi.fn()}
           onRetryLoad={vi.fn()}
           onSituationClick={vi.fn()}
-          query="없는 상황"
+          query="없는 상황!"
           results={[]}
           selectedSituation=""
           situations={situations}
-          submittedQuery="없는 상황"
+          submittedQuery="없는 상황!"
         />
       </DesignSystemProvider>
     );
 
     expect(
       screen.getByRole('heading', {
-        name: '“없는 상황” 결과가 없어요',
+        name: '“없는 상황!”으로 찾은 인사이트가 없어요',
       })
     ).not.toBeNull();
     expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
     expect(
       (
         screen.getByRole('textbox', {
-          name: '지금 꺼내보고 싶은 상황',
+          name: '지금 꺼내 보고 싶은 상황',
         }) as HTMLInputElement
       ).value
-    ).toBe('없는 상황');
+    ).toBe('없는 상황!');
 
     await user.click(screen.getByRole('button', { name: '보관함 보기' }));
 
@@ -352,7 +368,7 @@ describe('HomePage', () => {
   });
 
   it('gives long unbroken result queries a wrapping mobile layout contract', () => {
-    const longQuery = 'React상태관리와온보딩디자인시스템'.repeat(8);
+    const longQuery = `${'React상태관리와온보딩디자인시스템'.repeat(8)}React`;
 
     render(
       <DesignSystemProvider>
@@ -381,7 +397,7 @@ describe('HomePage', () => {
     expect(
       screen
         .getByRole('heading', {
-          name: `“${longQuery}” 결과가 없어요`,
+          name: `“${longQuery}”로 찾은 인사이트가 없어요`,
         })
         .closest('.home-page__no-results')
     ).not.toBeNull();
