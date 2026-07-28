@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import ReportHypothesisCards, { type ReportHypothesis } from '../components/ReportHypothesisCards'
 import '../App.css'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 interface Project {
   id: string
