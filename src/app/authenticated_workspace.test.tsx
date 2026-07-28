@@ -1960,6 +1960,7 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('navigation', { name: '주요 화면' })
     ).not.toBeNull();
+    expect(screen.queryByText('이 계정의 보관함에 저장해요')).toBeNull();
     const navigations = screen.getAllByRole('navigation', {
       name: '주요 화면',
     });

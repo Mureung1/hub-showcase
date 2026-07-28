@@ -21,7 +21,7 @@
   gap: var(--spacing-4);
 }
 
-.workspace-header__inner > :last-child {
+.workspace-account {
   justify-self: end;
 }
 
@@ -62,13 +62,6 @@
   white-space: nowrap;
 }
 
-.workspace-connection-status {
-  color: var(--color-graphite);
-  font-size: var(--typography-label-size);
-  line-height: var(--typography-label-line-height);
-  white-space: nowrap;
-}
-
 .workspace-main {
   min-height: 680px;
   padding: 0 0 var(--spacing-20);
@@ -100,14 +93,6 @@
   .workspace-brand__divider,
   .workspace-header h1 {
     display: none;
-  }
-
-  .workspace-connection-status {
-    max-width: 160px;
-    overflow: hidden;
-    font-size: var(--typography-meta-size);
-    line-height: var(--typography-meta-line-height);
-    text-overflow: ellipsis;
   }
 
   .workspace-main {

@@ -58,6 +58,9 @@ describe('LibraryPage', () => {
     expect(
       getCssRule(mobileStyles, '.library-page__filter > .category-filter')
     ).toContain('justify-content: flex-start;');
+    expect(
+      getCssRule(mobileStyles, 'button.library-page__import-action')
+    ).toContain('width: 100%;');
   });
 
   it('distinguishes an unavailable remote library from an empty library', async () => {

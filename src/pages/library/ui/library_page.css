@@ -120,7 +120,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .library-page__import-action {
+  button.library-page__import-action {
     width: 100%;
   }
 
