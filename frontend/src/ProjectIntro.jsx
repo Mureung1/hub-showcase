@@ -110,6 +110,7 @@ export default function ProjectIntro() {
     setServerConsent,
     serverMsg,
     serverCount,
+    serverPending,
     saveToServer,
     listFromServer,
     deleteFromServer,
@@ -594,16 +595,27 @@ export default function ProjectIntro() {
                 익명 요약을 서버에 저장하는 데 동의합니다.
               </label>
               <div className="actions">
-                <button className="secondary" disabled={!serverConsent} onClick={handleServerSave} type="button">
-                  서버에 익명 저장
+                <button
+                  className="secondary"
+                  disabled={!serverConsent || serverPending !== null}
+                  onClick={handleServerSave}
+                  type="button"
+                >
+                  {serverPending === "save" ? "저장 중…" : "서버에 익명 저장"}
                 </button>
-                <button className="secondary" onClick={listFromServer} type="button">
-                  내 서버 기록 보기
+                <button className="secondary" disabled={serverPending !== null} onClick={listFromServer} type="button">
+                  {serverPending === "list" ? "불러오는 중…" : "내 서버 기록 보기"}
                 </button>
-                <button className="secondary" onClick={deleteFromServer} type="button">
-                  내 서버 기록 삭제
+                <button className="secondary" disabled={serverPending !== null} onClick={deleteFromServer} type="button">
+                  {serverPending === "delete" ? "삭제 중…" : "내 서버 기록 삭제"}
                 </button>
               </div>
+              {/* 무료 티어 콜드스타트가 실측 15초라, 기다리는 이유를 화면에 남긴다(멈춘 것처럼 보이지 않게). */}
+              {serverPending !== null && (
+                <p className="hint" style={{ marginTop: 6 }}>
+                  서버가 잠들어 있으면 첫 응답까지 최대 1분이 걸릴 수 있습니다.
+                </p>
+              )}
               {serverMsg && <div className="saved">{serverMsg}</div>}
               {serverCount !== null && <p className="hint" style={{ marginTop: 6 }}>현재 서버에 내 익명 기록 {serverCount}개.</p>}
             </div>

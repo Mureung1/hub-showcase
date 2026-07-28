@@ -4,11 +4,29 @@
 const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 const ANON_KEY = "hub-anon-id";
 
-async function request(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+// 무료 티어(Render)는 15분 미사용 시 슬립하고, 첫 요청이 깨우는 데 수십 초가 걸린다(2026-07-28 실측 15.4초).
+// 타임아웃이 없으면 백엔드가 죽어 있을 때 화면이 무한 대기한다 — 상한을 두고 명확한 에러로 끝낸다.
+const DEFAULT_TIMEOUT_MS = 20000;
+const WAKEUP_TIMEOUT_MS = 60000; // health: 콜드스타트 웨이크업을 기다려 준다
+
+async function request(path, { timeoutMs = DEFAULT_TIMEOUT_MS, ...options } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      ...options,
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(`api timeout ${timeoutMs}ms`, { cause: error });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
     throw new Error(`api ${res.status}`);
   }
@@ -26,7 +44,7 @@ export function getAnonId() {
 }
 
 export function getHealth() {
-  return request("/api/health");
+  return request("/api/health", { timeoutMs: WAKEUP_TIMEOUT_MS });
 }
 
 export function getAnalysis() {
@@ -51,6 +69,8 @@ export function deleteResults(anonId) {
 export function estimateMbtiFromChat(messages, knownMbti = "") {
   return request("/api/mbti-chat", {
     method: "POST",
+    // 콜드스타트 + 외부 LLM 왕복이라 기본 20초로는 짧다.
+    timeoutMs: WAKEUP_TIMEOUT_MS,
     body: JSON.stringify({ consent: true, messages, knownMbti }),
   });
 }

@@ -24,8 +24,20 @@ app.use(
 app.use(express.json({ limit: "16kb" }));
 
 // 표준 헬스체크 — 서버가 살아있는지 확인(의료 아님).
+// try/catch 필수: countAll()은 Supabase를 실제로 찌른다. Supabase가 휴면·중단이면 여기서 throw 되는데,
+// Express 4는 async 핸들러의 rejection을 잡지 않아 그대로 프로세스가 종료된다(2026-07-27 Render
+// "Exited with status 1" 장애의 원인 — 2026-07-28 재현 확인). Render가 주기적으로 찌르는 경로라 가장 먼저 터진다.
+// 저장소가 죽었으면 프로세스를 죽이는 대신 503 degraded 로 알린다.
 app.get("/api/health", async (_req, res) => {
-  res.json({ status: "ok", backend: STORE_BACKEND, storedCount: await countAll(), time: new Date().toISOString() });
+  const base = { backend: STORE_BACKEND, time: new Date().toISOString() };
+  try {
+    return res.json({ status: "ok", ...base, storedCount: await countAll() });
+  } catch (error) {
+    // STORE_BACKEND 가 "supabase" 여도 실제 연결은 끊겨 있을 수 있다(store.js 폴백은 import 실패만 잡는다).
+    // 배포 판정은 이 status 로 한다 — "supabase" 라는 이름값만으로 성공을 판단하지 않는다.
+    console.error(`[health] 저장소 조회 실패: ${error.message}`);
+    return res.status(503).json({ status: "degraded", ...base, storedCount: null, storeError: error.message });
+  }
 });
 
 // 연구용 비식별 필드만 허용한다. 이름·자유응답·PII는 저장하지 않는다.
@@ -193,6 +205,27 @@ app.post("/api/mbti-chat", async (req, res) => {
   } catch (error) {
     return res.status(200).json({ available: true, mbti: null, fallback: true, detail: error.message });
   }
+});
+
+// 없는 경로는 404 JSON 으로 답한다(HTML 스택트레이스가 새어나가지 않게).
+app.use((req, res) => {
+  res.status(404).json({ error: "not_found", path: req.path });
+});
+
+// 전역 에러 미들웨어 — 위 라우트들이 놓친 예외를 여기서 500으로 마무리한다.
+// eslint-disable-next-line no-unused-vars -- Express 4는 인자 4개여야 에러 미들웨어로 인식한다
+app.use((error, _req, res, _next) => {
+  console.error(`[error] ${error.message}`);
+  res.status(500).json({ error: "internal_error" });
+});
+
+// 마지막 안전망. 무료 티어라 프로세스가 죽으면 자동 재시작이 없고 그대로 서비스 중단이 된다.
+// 로그만 남기고 살려 둔다 — 죽은 서버보다 로그가 남는 서버가 낫다.
+process.on("unhandledRejection", (reason) => {
+  console.error(`[unhandledRejection] ${reason instanceof Error ? reason.stack : reason}`);
+});
+process.on("uncaughtException", (error) => {
+  console.error(`[uncaughtException] ${error.stack ?? error.message}`);
 });
 
 app.listen(PORT, () => {
