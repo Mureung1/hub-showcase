@@ -7,8 +7,9 @@ import styles from './MistakeNoteDetailModal.module.css'
 export type MistakeNoteDetailModalProps = {
   note: MistakeNote | null
   onClose: () => void
-  onStatusChange: (note: MistakeNote, status: MistakeNoteStatus) => void
-  onDelete: (id: string) => void
+  onStatusChange: (note: MistakeNote, status: MistakeNoteStatus) => boolean | Promise<boolean>
+  onDelete: (id: string) => boolean | Promise<boolean>
+  isPending?: boolean
 }
 
 export function MistakeNoteDetailModal({
@@ -16,6 +17,7 @@ export function MistakeNoteDetailModal({
   onClose,
   onStatusChange,
   onDelete,
+  isPending = false,
 }: MistakeNoteDetailModalProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -41,11 +43,11 @@ export function MistakeNoteDetailModal({
   const formattedCreatedAt = formatDate(note.createdAt)
   const formattedReviewedAt = note.reviewedAt ? formatDate(note.reviewedAt) : '-'
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!note) return
     if (confirm('이 오답 기록을 삭제하시겠습니까?')) {
-      onDelete(note.id)
-      onClose()
+      const deleted = await onDelete(note.id)
+      if (deleted) onClose()
     }
   }
 
@@ -122,7 +124,8 @@ export function MistakeNoteDetailModal({
               <button
                 type="button"
                 className={styles.statusToggle}
-                onClick={() => onStatusChange(note, 'resolved')}
+                onClick={() => void onStatusChange(note, 'resolved')}
+                disabled={isPending}
               >
                 해결로 표시
               </button>
@@ -130,12 +133,13 @@ export function MistakeNoteDetailModal({
               <button
                 type="button"
                 className={styles.statusToggle}
-                onClick={() => onStatusChange(note, 'open')}
+                onClick={() => void onStatusChange(note, 'open')}
+                disabled={isPending}
               >
                 미해결로 되돌리기
               </button>
             )}
-            <button type="button" className={styles.deleteButton} onClick={handleDelete}>
+            <button type="button" className={styles.deleteButton} onClick={() => void handleDelete()} disabled={isPending}>
               삭제
             </button>
           </div>

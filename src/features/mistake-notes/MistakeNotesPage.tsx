@@ -10,6 +10,10 @@ import { deleteMistakeNote, getMistakeNotes, updateMistakeNoteStatus } from './a
 import { MistakeNoteDetailModal } from './components/MistakeNoteDetailModal'
 import styles from './MistakeNotesPage.module.css'
 import { createMistakeReviewPath, getMistakeNoteSourceLabel } from './mistakeNoteRoutes'
+import {
+  deleteServerMistakeNote,
+  updateServerMistakeNoteStatus,
+} from './persistMistakeNoteMutation'
 type MistakeFilter = 'all' | MistakeNoteStatus
 
 const filterLabels: Record<MistakeFilter, string> = {
@@ -20,6 +24,7 @@ const filterLabels: Record<MistakeFilter, string> = {
 
 
 export default function MistakeNotesPage() {
+  const serverMode = shouldUseServerApi()
   const notes = useMistakeNoteStore((state) => state.notes)
   const hydrateMistakeNotes = useMistakeNoteStore((state) => state.hydrateMistakeNotes)
   const upsertMistakeNote = useMistakeNoteStore((state) => state.upsertMistakeNote)
@@ -28,6 +33,12 @@ export default function MistakeNotesPage() {
   const removeMistake = useMistakeNoteStore((state) => state.removeMistake)
   const [filter, setFilter] = useState<MistakeFilter>('all')
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
+  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>(
+    serverMode ? 'loading' : 'ready',
+  )
+  const [reloadKey, setReloadKey] = useState(0)
+  const [pendingNoteId, setPendingNoteId] = useState<string | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
 
   const sortedNotes = useMemo(() => sortMistakeNotes(notes), [notes])
   const filteredNotes = useMemo(
@@ -44,51 +55,70 @@ export default function MistakeNotesPage() {
   useEffect(() => {
     let cancelled = false
 
-    if (shouldUseServerApi()) {
+    if (serverMode) {
+      setLoadStatus('loading')
       void getMistakeNotes()
         .then(({ notes: serverNotes }) => {
           if (!cancelled) {
             hydrateMistakeNotes(serverNotes)
+            setLoadStatus('ready')
           }
         })
         .catch(() => {
-          // Keep local mistake notes available when the backend is not running.
+          if (!cancelled) setLoadStatus('error')
         })
     }
 
     return () => {
       cancelled = true
     }
-  }, [hydrateMistakeNotes])
+  }, [hydrateMistakeNotes, reloadKey, serverMode])
 
-  function handleStatusChange(note: MistakeNote, status: MistakeNoteStatus) {
-    if (status === 'resolved') {
-      markResolved(note.id)
-    } else {
-      reopenMistake(note.id)
+  async function handleStatusChange(note: MistakeNote, status: MistakeNoteStatus) {
+    setMutationError(null)
+
+    if (!serverMode) {
+      if (status === 'resolved') markResolved(note.id)
+      else reopenMistake(note.id)
+      return true
     }
 
-    if (!shouldUseServerApi()) {
-      return
-    }
-
-    void updateMistakeNoteStatus(note.id, status)
-      .then(({ note: serverNote }) => upsertMistakeNote(serverNote))
-      .catch(() => {
-        // The optimistic local state remains available for mock-first learning.
+    setPendingNoteId(note.id)
+    try {
+      await updateServerMistakeNoteStatus(note.id, status, {
+        update: updateMistakeNoteStatus,
+        upsert: upsertMistakeNote,
       })
+      return true
+    } catch {
+      setMutationError('오답 상태를 저장하지 못했습니다. 다시 시도해 주세요.')
+      return false
+    } finally {
+      setPendingNoteId(null)
+    }
   }
 
-  function handleRemoveMistake(id: string) {
-    removeMistake(id)
+  async function handleRemoveMistake(id: string) {
+    setMutationError(null)
 
-    if (!shouldUseServerApi()) {
-      return
+    if (!serverMode) {
+      removeMistake(id)
+      return true
     }
 
-    void deleteMistakeNote(id).catch(() => {
-      // The local removal already happened; the user can refresh after backend recovery.
-    })
+    setPendingNoteId(id)
+    try {
+      await deleteServerMistakeNote(id, {
+        delete: deleteMistakeNote,
+        remove: removeMistake,
+      })
+      return true
+    } catch {
+      setMutationError('오답을 삭제하지 못했습니다. 기록은 그대로 유지되었습니다.')
+      return false
+    } finally {
+      setPendingNoteId(null)
+    }
   }
 
   return (
@@ -109,6 +139,25 @@ export default function MistakeNotesPage() {
       </header>
 
       <section className={styles.panel} aria-label="오답 목록">
+        {loadStatus === 'loading' ? (
+          <div className={styles.emptyState} role="status">
+            <strong>오답노트를 불러오는 중입니다.</strong>
+          </div>
+        ) : null}
+        {loadStatus === 'error' ? (
+          <div className={styles.emptyState} role="alert">
+            <strong>오답노트를 불러오지 못했습니다.</strong>
+            <p>서버 연결을 확인한 뒤 다시 시도해 주세요.</p>
+            <button type="button" onClick={() => setReloadKey((current) => current + 1)}>
+              다시 불러오기
+            </button>
+          </div>
+        ) : null}
+        {mutationError ? (
+          <div className={styles.emptyState} role="alert">
+            <strong>{mutationError}</strong>
+          </div>
+        ) : null}
         <div className={styles.tabs} role="tablist" aria-label="오답노트 범위">
           <button className={styles.activeTab} type="button" role="tab" aria-selected="true">
             내가 저장한 오답
@@ -197,8 +246,9 @@ export default function MistakeNotesPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleStatusChange(note, 'resolved')
+                              void handleStatusChange(note, 'resolved')
                             }}
+                            disabled={pendingNoteId === note.id}
                           >
                             해결
                           </button>
@@ -207,8 +257,9 @@ export default function MistakeNotesPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleStatusChange(note, 'open')
+                              void handleStatusChange(note, 'open')
                             }}
+                            disabled={pendingNoteId === note.id}
                           >
                             다시 열기
                           </button>
@@ -218,8 +269,9 @@ export default function MistakeNotesPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleRemoveMistake(note.id)
+                            void handleRemoveMistake(note.id)
                           }}
+                          disabled={pendingNoteId === note.id}
                         >
                           삭제
                         </button>
@@ -231,7 +283,7 @@ export default function MistakeNotesPage() {
             </tbody>
           </table>
 
-          {filteredNotes.length === 0 ? (
+          {loadStatus === 'ready' && filteredNotes.length === 0 ? (
             <div className={styles.emptyState}>
               <strong>표시할 오답이 없습니다.</strong>
               <p>Git Lab에서 실패한 명령을 오답노트에 추가하면 이곳에 표시됩니다.</p>
@@ -259,6 +311,7 @@ export default function MistakeNotesPage() {
         onClose={() => setSelectedNoteId(null)}
         onStatusChange={handleStatusChange}
         onDelete={handleRemoveMistake}
+        isPending={Boolean(selectedNote && pendingNoteId === selectedNote.id)}
       />
     </main>
   )

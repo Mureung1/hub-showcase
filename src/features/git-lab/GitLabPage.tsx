@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
-import { recordGitLabAttempt } from './api/gitLabAttemptClient'
+import { listGitLabAttempts, recordGitLabAttempt } from './api/gitLabAttemptClient'
 import CommitGraphSvg from './components/CommitGraphSvg'
 import GitTerminalPanel, {
   type MistakeAction,
@@ -23,11 +23,14 @@ import {
 } from './levels/gitLabCurriculumAdapter'
 import levelsData from './levels/gitLabLevels.json'
 import { createMistakeNote } from '../mistake-notes/api/mistakeNoteClient'
+import { persistMistakeNote } from '../mistake-notes/model/persistMistakeNote'
 import {
   useMistakeNoteStore,
   type MistakeNoteInput,
 } from '../mistake-notes/model/useMistakeNoteStore'
 import styles from './GitLabPage.module.css'
+import { getPassedGitLabLevelIds } from './getPassedGitLabLevelIds'
+import { persistGitLabAttempt } from './persistGitLabAttempt'
 
 const levels = createPlayableLevels(levelsData)
 const curriculumModules = createCurriculumNavigation(levelsData)
@@ -63,6 +66,7 @@ function loadInitialSidebarCollapsed(): boolean {
 }
 
 export default function GitLabPage() {
+  const serverMode = shouldUseServerApi()
   const [searchParams] = useSearchParams()
   const lessonQuery = searchParams.get('lesson')
   const requestedLevel = getPlayableLevel(lessonQuery)
@@ -77,8 +81,40 @@ export default function GitLabPage() {
   const [showGoal, setShowGoal] = useState(true)
   const [showClearModal, setShowClearModal] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(loadInitialSidebarCollapsed)
-  const [clearedLevelIds, setClearedLevelIds] = useState<string[]>(loadClearedLevelIds)
+  const [clearedLevelIds, setClearedLevelIds] = useState<string[]>(() =>
+    serverMode ? [] : loadClearedLevelIds(),
+  )
+  const [attemptLoadStatus, setAttemptLoadStatus] = useState<'loading' | 'ready' | 'error'>(
+    serverMode ? 'loading' : 'ready',
+  )
+  const [attemptReloadKey, setAttemptReloadKey] = useState(0)
   const [mistakeCandidate, setMistakeCandidate] = useState<MistakeCandidate | null>(null)
+
+  useEffect(() => {
+    if (!serverMode) return
+
+    let cancelled = false
+    setAttemptLoadStatus('loading')
+
+    void listGitLabAttempts()
+      .then(({ attempts }) => {
+        if (cancelled) return
+        setClearedLevelIds(getPassedGitLabLevelIds(attempts))
+        setAttemptLoadStatus('ready')
+      })
+      .catch(() => {
+        if (cancelled) return
+        setAttemptLoadStatus('error')
+        setLogs((current) => [
+          ...current,
+          createLog('error', '완료 기록을 불러오지 못했습니다. 다시 불러오기를 실행해 주세요.'),
+        ])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [attemptReloadKey, serverMode])
 
   function toggleSidebar() {
     setIsSidebarCollapsed((prev) => {
@@ -98,7 +134,7 @@ export default function GitLabPage() {
         return prev
       }
       const next = [...prev, levelId]
-      saveClearedLevelIds(next)
+      if (!serverMode) saveClearedLevelIds(next)
       return next
     })
   }
@@ -176,36 +212,33 @@ export default function GitLabPage() {
       return
     }
 
-    if (!shouldUseServerApi()) {
-      addMistakeNote(candidate)
-      if (logResult) {
-        appendLogs([createLog('success', '오답노트에 저장했습니다.')])
-      }
-      return
-    }
-
-    void createMistakeNote(candidate)
-      .then(({ note }) => {
-        upsertMistakeNote(note)
+    void persistMistakeNote(candidate, {
+      serverMode,
+      createServer: createMistakeNote,
+      addLocal: addMistakeNote,
+      upsert: upsertMistakeNote,
+    })
+      .then(() => {
         if (logResult) {
           appendLogs([createLog('success', '오답노트에 저장했습니다.')])
         }
       })
       .catch(() => {
-        addMistakeNote(candidate)
-        appendLogs([createLog('error', 'Server sync failed. The mistake note was saved locally.')])
+        appendLogs([createLog('error', '오답노트를 서버에 저장하지 못했습니다. 다시 시도해 주세요.')])
       })
   }
 
-  function syncGitLabAttempt(command: string, result: 'passed' | 'failed', reason = '') {
-    if (!shouldUseServerApi()) {
-      return
-    }
-
-    void recordGitLabAttempt({ lessonId: level.id, command, result, reason }).catch(() => {
-      appendLogs([
-        createLog('error', 'Server sync failed. The attempt was kept in this session only.'),
-      ])
+  function syncGitLabAttempt(
+    command: string,
+    result: 'passed' | 'failed',
+    reason = '',
+    onConfirmed?: () => void,
+  ) {
+    void persistGitLabAttempt(
+      { lessonId: level.id, command, result, reason },
+      { serverMode, record: recordGitLabAttempt, onConfirmed },
+    ).catch(() => {
+      appendLogs([createLog('error', '시도 기록을 저장하지 못했습니다. 완료 상태는 반영하지 않았습니다.')])
     })
   }
 
@@ -234,7 +267,25 @@ export default function GitLabPage() {
       createLog('command', command),
       ...result.logs.map((logLine) => createLog(resultKind, logLine)),
     ]
-    syncGitLabAttempt(command, result.ok ? 'passed' : 'failed', result.logs[0] ?? '')
+    const completesLevel = result.ok && nextGoalCheck.cleared
+    syncGitLabAttempt(
+      command,
+      completesLevel ? 'passed' : 'failed',
+      completesLevel
+        ? ''
+        : result.ok
+          ? '레벨 목표가 아직 완료되지 않았습니다.'
+          : result.logs[0] ?? '',
+      completesLevel
+        ? () => {
+            markLevelCleared(level.id)
+            if (!goalCheck.cleared) {
+              appendLogs([createLog('success', '목표 그래프와 일치합니다.')])
+              setShowClearModal(true)
+            }
+          }
+        : undefined,
+    )
 
     if (!result.ok && command.startsWith('git ')) {
       const nextMistakeCandidate = {
@@ -247,24 +298,10 @@ export default function GitLabPage() {
       }
 
       setMistakeCandidate(nextMistakeCandidate)
-      persistMistakeCandidate(nextMistakeCandidate, false)
-      nextLogs.push(
-        createLog(
-          'info',
-          '실패한 명령을 오답노트에 자동 기록했습니다. 오답노트에서 다시 풀 수 있습니다.',
-        ),
-      )
+      persistMistakeCandidate(nextMistakeCandidate, true)
     } else if (!result.ok) {
       setMistakeCandidate(null)
     }
-    if (result.ok && nextGoalCheck.cleared) {
-      markLevelCleared(level.id)
-      if (!goalCheck.cleared) {
-        nextLogs.push(createLog('success', '목표 그래프와 일치합니다.'))
-        setShowClearModal(true)
-      }
-    }
-
     setEngineState(result.state)
     appendLogs(nextLogs)
   }
@@ -280,6 +317,15 @@ export default function GitLabPage() {
           <p className={styles.sectionLabel}>{level.proGitSection}</p>
         </div>
         <div className={styles.headerActions}>
+          {serverMode && attemptLoadStatus === 'error' ? (
+            <button
+              className={styles.toggleButton}
+              onClick={() => setAttemptReloadKey((current) => current + 1)}
+              type="button"
+            >
+              완료 기록 다시 불러오기
+            </button>
+          ) : null}
           <button
             className={styles.toggleButton}
             onClick={toggleSidebar}
