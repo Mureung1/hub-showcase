@@ -58,8 +58,10 @@
   - Vercel 수동 배포 시 "GitHub could not associate the committer with a GitHub user" 에러로 막힘 — 커밋 작성자 이메일이 GitHub 계정에 비공개(Private)로 등록돼 있어서 발생. 로컬 git 커밋 이메일을 GitHub 제공 noreply 주소(`107694256+pyojung@users.noreply.github.com`)로 바꿔서 해결
   - `/home`처럼 React Router가 처리하는 경로를 직접 열면 404 남 — Vercel이 SPA 라우팅을 모르고 파일을 못 찾은 것. `vercel.json`에 모든 경로를 `index.html`로 돌리는 rewrite 추가해서 해결
 - [x] Vercel에 `VITE_API_BASE_URL=https://hub-20ox.onrender.com` 환경변수 추가 후 재배포 — Render `ALLOWED_ORIGIN`도 Vercel 주소로 처음부터 맞춰서 배포함
-- [x] 배포 환경에서 핵심 플로우 확인 — `https://hub-pyo3.vercel.app`에서 냉장고 재료 선택 → 홈 추천까지 정상 동작, 실제 레시피 데이터(가격·시간 포함)가 Render API를 통해 뜨는 것 확인. 레시피 상세·구매 링크까지의 전체 흐름은 아직 안 눌러봄 — 다음에 이어서 확인
-- [ ] FE/BE 배포 주소를 이 파일에 기록
+- [x] 배포 환경에서 핵심 플로우 확인 — `https://hub-pyo3.vercel.app`에서 냉장고 재료 선택 → 홈 추천 → 레시피 상세(오이무침) → 있는/없는 재료 구분 → "오이" 클릭 시 네이버 최저가(5,900원, 100g당 가격, 판매처별 비교) 실시간 조회까지 전부 정상 동작 확인. 화면·서버·DB·외부 API 전체 연결이 배포 환경에서 끝까지 이어짐
+- [x] FE/BE 배포 주소 — FE `https://hub-pyo3.vercel.app`, BE `https://hub-20ox.onrender.com`
+
+**오늘(화요일) 목표 달성**: 서비스 첫 배포 + FE-BE 연결 + 배포 환경 핵심 흐름 검증 전부 완료.
 
 ## 백로그 (이번 주 범위 아님)
 - [ ] 네이버 최저가 매칭이 검색어와 관련 없는 상품을 1위로 잡는 문제 — `naverClient.js`(2026-07-27 확인: "소금"으로 검색하면 최저가가 실제 조리용 소금이 아니라 "히말라야 핑크솔트 결혼식 답례품"). 지금 있는 `isBundleCandidate` 필터는 묶음상품만 걸러내고 상품명 관련성은 안 봄 — 데모에서 이 재료가 노출되지 않게 시연 재료를 고르는 걸로 우선 우회, 관련성 필터링 로직 추가는 이번 주 범위 밖
