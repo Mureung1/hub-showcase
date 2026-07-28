@@ -52,8 +52,9 @@
 - [x] 로컬 검증 — `.env.local` 값을 프로세스 환경변수로 주입한 채(Render 방식 재현) `npm start`로 서버 기동, `curl localhost:3001/health` → `{"ok":true}` 200 확인, 기존 `/api/recipes`도 정상 응답 확인
 
 ### 1~5. 실제 배포·연결·검증 (Vercel/Render 대시보드 작업, 진행 예정)
-- [ ] Render에 Express(BE) 배포 — Build `npm install` / Start `npm start` / 환경변수 4개(`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) / Health Check Path `/health`
-- [ ] Vercel에 React(FE) 배포 — Framework Vite / Build `npm run build` / Output `dist` / 환경변수 `VITE_API_BASE_URL`에 Render 주소
+- 배포 대상 브랜치는 `main`이 아니라 **`N179_표정한`**으로 결정함 — Render/Vercel 둘 다 이 브랜치를 보게 설정
+- [ ] Render에 Express(BE) 배포 — Branch `N179_표정한` / Build `npm install` / Start `npm start` / 환경변수 4개(`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) / Health Check Path `/health`
+- [ ] Vercel에 React(FE) 배포 — Branch `N179_표정한` / Framework Vite / Build `npm run build` / Output `dist` / 환경변수 `VITE_API_BASE_URL`에 Render 주소
 - [ ] Render `ALLOWED_ORIGIN`을 Vercel 실제 주소로 설정하고 재배포
 - [ ] 배포 환경에서 핵심 플로우(냉장고→홈 추천→레시피 상세→구매 링크) 확인, devtools Network + Render 로그 + Supabase로 끝까지 추적
 - [ ] FE/BE 배포 주소를 이 파일에 기록
