@@ -13,12 +13,8 @@ import com.chasewar.parking.repository.ParkingLotRealtimeRepository;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.parking.repository.dto.ParkingLotDetailProjection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +30,6 @@ public class ParkingLotService {
     private final ParkingLotRepository parkingLotRepository;
     private final ParkingLotRealtimeRepository parkingLotRealtimeRepository;
     private final WalkingRouteClient walkingRouteClient;
-    private final Executor walkingRouteExecutor;
 
     @Transactional(readOnly = true)
     public List<ParkingLotSearchResponse> search(Coordinates destinationCoordinates) {
@@ -53,7 +48,8 @@ public class ParkingLotService {
     private List<ParkingLotSearchResponse> findNearbyParkingLots(Coordinates destinationCoordinates) {
         List<ParkingLot> parkingLots = findWithinRadius(destinationCoordinates);
         Map<String, ParkingLotRealtime> realtimeByPkltCd = findRealtimeByPkltCd(parkingLots);
-        Map<Long, WalkingRoute> walkingRouteById = findWalkingRoutes(parkingLots, destinationCoordinates);
+        Map<Long, WalkingRoute> walkingRouteById = walkingRouteClient.findRoutes(toOriginById(parkingLots),
+                destinationCoordinates);
 
         return parkingLots.stream()
                 .map(parkingLot -> ParkingLotSearchResponse.from(
@@ -86,32 +82,9 @@ public class ParkingLotService {
                 .collect(Collectors.toMap(ParkingLotRealtime::getPkltCd, parkingLotRealtime -> parkingLotRealtime));
     }
 
-    private Map<Long, WalkingRoute> findWalkingRoutes(
-            List<ParkingLot> parkingLots,
-            Coordinates destinationCoordinates
-    ) {
-        Map<Long, CompletableFuture<Optional<WalkingRoute>>> futures = parkingLots.stream()
-                .collect(Collectors.toMap(
-                        ParkingLot::getId,
-                        parkingLot -> requestWalkingRoute(parkingLot, destinationCoordinates)
-                ));
-
-        Map<Long, WalkingRoute> walkingRouteById = new HashMap<>();
-        futures.forEach((parkingLotId, future) ->
-                future.join().ifPresent(walkingRoute -> walkingRouteById.put(parkingLotId,
-                        walkingRoute)));
-
-        return walkingRouteById;
-    }
-
-    private CompletableFuture<Optional<WalkingRoute>> requestWalkingRoute(
-            ParkingLot parkingLot,
-            Coordinates destinationCoordinates
-    ) {
-        return CompletableFuture.supplyAsync(
-                () -> walkingRouteClient.findRoute(parkingLot.getCoordinates(), destinationCoordinates),
-                walkingRouteExecutor
-        );
+    private Map<Long, Coordinates> toOriginById(List<ParkingLot> parkingLots) {
+        return parkingLots.stream()
+                .collect(Collectors.toMap(ParkingLot::getId, ParkingLot::getCoordinates));
     }
 
     private WalkingRoute findWalkingRoute(

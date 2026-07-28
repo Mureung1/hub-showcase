@@ -20,6 +20,7 @@ import com.chasewar.support.IntegrationTest;
 import com.chasewar.support.fixture.ParkingLotFixtureBuilder;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -160,13 +161,16 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         @Test
         void success_sortedByWalkingDistance() {
             // given
-            persistParkingLot("10001", "직선이 가깝고 도보가 먼 주차장", NEAR);
-            persistParkingLot("10002", "직선이 멀고 도보가 가까운 주차장", FAR);
+            ParkingLot near = persistParkingLot("10001", "직선이 가깝고 도보가 먼 주차장", NEAR);
+            ParkingLot far = persistParkingLot("10002", "직선이 멀고 도보가 가까운 주차장", FAR);
 
-            given(walkingRouteClient.findRoute(NEAR, destinationCoordinates))
-                    .willReturn(Optional.of(new WalkingRoute(900, 750)));
-            given(walkingRouteClient.findRoute(FAR, destinationCoordinates))
-                    .willReturn(Optional.of(new WalkingRoute(400, 300)));
+            given(walkingRouteClient.findRoutes(
+                    Map.of(near.getId(), NEAR, far.getId(), FAR),
+                    destinationCoordinates))
+                    .willReturn(Map.of(
+                            near.getId(), new WalkingRoute(900, 750),
+                            far.getId(), new WalkingRoute(400, 300)
+                    ));
 
             // when
             List<ParkingLotSearchResponse> results = parkingLotService.search(destinationCoordinates);
@@ -306,13 +310,13 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
         }
     }
 
-    private void persistParkingLot(String pkltCd, String name, Coordinates coordinates) {
+    private ParkingLot persistParkingLot(String pkltCd, String name, Coordinates coordinates) {
         ParkingLot parkingLot = ParkingLotFixtureBuilder.builder()
                 .pkltCd(pkltCd)
                 .name(name)
                 .coordinates(coordinates)
                 .build();
 
-        parkingLotRepository.save(parkingLot);
+        return parkingLotRepository.save(parkingLot);
     }
 }
