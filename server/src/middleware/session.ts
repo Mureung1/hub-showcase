@@ -24,10 +24,12 @@ export async function sessionMiddleware(req: Request, res: Response, next: NextF
     }
   }
 
+  const isProduction = process.env.NODE_ENV === 'production'
   const session = await prisma.session.create({ data: {} })
   res.cookie(SESSION_COOKIE, session.id, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
     maxAge: ONE_YEAR_MS,
   })
   req.sessionId = session.id

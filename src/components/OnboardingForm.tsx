@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import type { Profile } from '../types'
 import './OnboardingForm.css'
 
@@ -18,20 +18,30 @@ function OnboardingForm({ onComplete, initialProfile }: OnboardingFormProps) {
   const [hasEmployee, setHasEmployee] = useState(initialProfile?.hasEmployee ?? false)
   const [isRented, setIsRented] = useState(initialProfile?.isRented ?? false)
   const [closureDate, setClosureDate] = useState(initialProfile?.closureDate ?? '')
+  const [justNavigated, setJustNavigated] = useState(false)
 
   const isLastStep = step === stepLabels.length - 1
 
   function goNext() {
     setStep((prev) => Math.min(prev + 1, stepLabels.length - 1))
+    setJustNavigated(true)
   }
 
   function goBack() {
     setStep((prev) => Math.max(prev - 1, 0))
   }
 
+  // "다음" 클릭 직후 제출 버튼이 즉시 활성화되면 연속 클릭으로 step 4가 건너뛰어지는
+  // 문제를 방지하기 위해 200ms 동안 제출 버튼을 비활성화한다
+  useEffect(() => {
+    if (!justNavigated) return
+    const t = setTimeout(() => setJustNavigated(false), 200)
+    return () => clearTimeout(t)
+  }, [justNavigated])
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!closureDate) return
+    if (step !== stepLabels.length - 1 || !closureDate) return
     onComplete({ industry, isCorporation, hasEmployee, isRented, closureDate })
   }
 
@@ -206,7 +216,7 @@ function OnboardingForm({ onComplete, initialProfile }: OnboardingFormProps) {
             )}
 
             {isLastStep ? (
-              <button type="submit" className="onboarding__submit" disabled={!closureDate}>
+              <button type="submit" className="onboarding__submit" disabled={!closureDate || justNavigated}>
                 {initialProfile ? '조건 저장하고 돌아가기' : '맞춤 체크리스트 보기'}
               </button>
             ) : (

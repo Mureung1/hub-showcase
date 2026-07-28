@@ -7,7 +7,11 @@ progressRouter.get('/', async (req, res) => {
   const rows = await prisma.taskProgress.findMany({ where: { sessionId: req.sessionId } })
   const progress = Object.fromEntries(rows.map((row) => [
     row.taskId,
-    { checked: row.checked, completedAt: row.checked ? row.updatedAt.toISOString() : null },
+    {
+      checked: row.checked,
+      completedAt: row.checked ? row.updatedAt.toISOString() : null,
+      memo: row.memo,
+    },
   ]))
   res.json(progress)
 })
@@ -32,7 +36,23 @@ progressRouter.post('/:taskId/toggle', async (req, res) => {
   })
 })
 
+progressRouter.patch('/:taskId/memo', async (req, res) => {
+  const { taskId } = req.params
+  const { memo } = req.body as { memo: string }
+
+  const row = await prisma.taskProgress.upsert({
+    where: { sessionId_taskId: { sessionId: req.sessionId, taskId } },
+    create: { sessionId: req.sessionId, taskId, checked: false, memo },
+    update: { memo },
+  })
+
+  res.json({ taskId: row.taskId, memo: row.memo })
+})
+
 progressRouter.post('/reset', async (req, res) => {
-  await prisma.taskProgress.deleteMany({ where: { sessionId: req.sessionId } })
+  await prisma.taskProgress.updateMany({
+    where: { sessionId: req.sessionId },
+    data: { checked: false },
+  })
   res.status(204).end()
 })

@@ -45,6 +45,16 @@
   background: var(--accent-dark-hover);
 }
 
+.dashboard__pill-btn--outline {
+  background: transparent;
+  color: var(--text-h);
+  border-color: var(--border-soft);
+}
+
+.dashboard__pill-btn--outline:hover {
+  background: var(--bg-muted);
+}
+
 .dashboard__body {
   flex: 1;
   display: flex;
@@ -230,8 +240,8 @@
 .dashboard__tax-office-result {
   margin-top: 0.6rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.4rem;
   font-size: 0.8rem;
 }
 
@@ -239,14 +249,30 @@
   color: var(--text-muted);
 }
 
-.dashboard__tax-office-result a {
+.dashboard__tax-office-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dashboard__tax-office-actions a {
   font-weight: 700;
   color: var(--text-h);
   text-decoration: none;
+  flex-shrink: 0;
 }
 
-.dashboard__tax-office-result a:hover {
+.dashboard__tax-office-actions a:hover {
   color: var(--accent);
+}
+
+.dashboard__tax-office-map {
+  font-size: 0.78rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-soft);
+  background: var(--bg);
 }
 
 /* 관련 전화번호 */

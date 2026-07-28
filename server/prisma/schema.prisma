@@ -32,6 +32,7 @@ model TaskProgress {
   session   Session  @relation(fields: [sessionId], references: [id])
   taskId    String
   checked   Boolean  @default(true)
+  memo      String   @default("")
   updatedAt DateTime @updatedAt
 
   @@unique([sessionId, taskId])

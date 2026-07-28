@@ -141,3 +141,43 @@
 @keyframes task-card-spin {
   to { transform: rotate(360deg); }
 }
+
+/* 메모 */
+.task-card__memo {
+  position: relative;
+  margin-top: 0.6rem;
+}
+
+.task-card__memo-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--bg-muted);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: var(--sans);
+  resize: none;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.task-card__memo-input::placeholder {
+  color: var(--text-muted);
+}
+
+.task-card__memo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #ffffff;
+}
+
+.task-card__memo-saved {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  pointer-events: none;
+}

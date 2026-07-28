@@ -98,16 +98,9 @@
 </div>
 ```
 
-### 토글 스위치 — 불리언 상태
+### 토글 스위치 — 불리언 상태 (현재 미사용)
 
-`OnboardingForm.css`: `.toggle-row`(`<button type="button">`) + `.switch` / `.switch__knob`.
-
-- **기본:** 흰 배경 + `1px solid var(--text-h)` 테두리
-- **켜짐(`.toggle-row--active`):** `var(--bg-muted)` 배경
-- **스위치 on(`.switch--on`):** `var(--accent)` (앰버) 배경 + knob이 오른쪽(`left: 23px`)으로 이동
-- **스위치 off:** `#d9ddce` 배경 + knob 왼쪽(`left: 3px`)
-
-예시: 직원 유무, 임대 여부.
+`OnboardingForm.css`에 `.toggle-row` / `.switch` / `.switch__knob` 클래스가 남아 있으나, 직원 유무·임대 여부는 현재 예/아니요 pill 방식으로 전환됐다. 필요 시 재활용 가능.
 
 ### 대시보드 사이드바 카테고리 버튼
 
@@ -122,8 +115,8 @@
 
 `Dashboard.css`: `.dashboard__pill-btn` — "조건 다시 입력", "체크 상태 초기화" 등 액션 버튼.
 
-- `var(--text-h)` 채움 + 흰 텍스트 + `var(--radius-pill)` 반지름
-- hover: `var(--accent-dark-hover)` 배경
+- **기본(`.dashboard__pill-btn`):** `var(--text-h)` 채움 + 흰 텍스트 + `var(--radius-pill)` 반지름, hover: `var(--accent-dark-hover)`
+- **아웃라인(`.dashboard__pill-btn--outline`):** 투명 배경 + `var(--text-h)` 텍스트 + `var(--border-soft)` 테두리, hover: `var(--bg-muted)` 배경 — "알림 받기" 등 보조 액션에 사용
 
 ### 태스크 카드 + D-day 배지
 
@@ -134,6 +127,9 @@
 - **체크박스:** native `<input type="checkbox">` + `accent-color: var(--text-h)` (다크)
 - **D-day 배지(`.task-card__dday`):** `var(--bg-muted)` 배경 + `var(--text-muted)` 텍스트
 - **임박 배지(`.task-card__dday--urgent`):** `var(--danger-soft-bg)` 배경 + `var(--danger)` 텍스트 — **7일 이내일 때만** 적용. 모든 배지를 빨강으로 칠하지 않는다.
+- **완료 날짜(`.task-card__completed-at`):** `var(--accent)` 앰버 텍스트 + `font-weight: 600` — 체크 완료 시 "2026년 7월 28일 처리완료" 형태로 표시
+- **준비 서류 sub-체크리스트(`.task-card__docs`):** `var(--bg-muted)` 배경 + `border-radius: 8px`. 체크 완료된 항목은 `.task-card__doc-label--done`(취소선 + `var(--text-muted)`)
+- **메모(`.task-card__memo-input`):** `var(--bg-muted)` 배경 + `var(--border-soft)` 테두리, focus 시 `var(--accent)` 테두리 + 흰 배경. 저장 확인 텍스트(`.task-card__memo-saved`)는 `var(--accent)` 색상으로 카드 우하단에 표시
 
 ### 진행률 바
 
@@ -184,8 +180,11 @@
 - 모바일(`≤860px`): column 전환, aside가 상단 수평 헤더로 축소, steps는 row 방향
 
 ### 대시보드 (`Dashboard`)
-- 2패널: topbar + `flex` row (사이드바 240px 고정 + 콘텐츠 `flex: 1`)
+- 2패널: topbar + `flex` row (사이드바 280px 고정 + 콘텐츠 `flex: 1`)
 - 사이드바: `position: sticky`, `top: 0`, `min-height: 100svh`
+- 사이드바 구성 순서: 진행률 바 → 카테고리 필터 → 관할 세무서 찾기 → 관련 전화번호
+- 에러 배너(`.dashboard__error-banner`): `#fff3f3` 배경 + `#fca5a5` 테두리 + `#b91c1c` 텍스트, `role="alert"` — API 실패 시 콘텐츠 상단에 표시
+- 스켈레톤(`.task-card--skeleton`): shimmer 애니메이션으로 로딩 중 카드 자리 표시
 - 모바일(`≤720px`): column 전환, 사이드바가 상단으로 이동, 카테고리 버튼이 가로 스크롤
 
 ---

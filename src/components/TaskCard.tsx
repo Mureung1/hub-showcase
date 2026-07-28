@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Profile, Task } from '../types'
 import './TaskCard.css'
 
@@ -7,20 +7,21 @@ interface TaskCardProps {
   profile: Profile
   checked: boolean
   completedAt?: string | null
+  memo?: string
   isLoading?: boolean
   onToggle: (taskId: string) => void
+  onMemo?: (taskId: string, memo: string) => void
 }
 
 // 오늘부터 dueDate까지 남은 일수 계산. 음수면 마감 지남
 function daysUntil(dueDate: Date): number {
   const today = new Date()
-  today.setHours(0, 0, 0, 0) // 시간을 00:00:00으로 맞춰 날짜 단위로만 비교
+  today.setHours(0, 0, 0, 0)
   const due = new Date(dueDate)
   due.setHours(0, 0, 0, 0)
   return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-// diffDays를 "D-7", "D-DAY", "D+3 지남" 형태 문자열로 변환
 function formatDday(diffDays: number): string {
   if (diffDays === 0) return 'D-DAY'
   if (diffDays > 0) return `D-${diffDays}`
@@ -32,18 +33,33 @@ function formatCompletedAt(iso: string): string {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 처리완료`
 }
 
-function TaskCard({ task, profile, checked, completedAt, isLoading = false, onToggle }: TaskCardProps) {
+function TaskCard({ task, profile, checked, completedAt, memo = '', isLoading = false, onToggle, onMemo }: TaskCardProps) {
   const [docChecks, setDocChecks] = useState<boolean[]>(
     () => (task.documents ?? []).map(() => false)
   )
+  const [memoText, setMemoText] = useState(memo)
+  const [saved, setSaved] = useState(false)
+  const isFocusedRef = useRef(false)
+
+  // 서버에서 memo 로드 완료 시 로컬 상태 동기화 (포커스 중엔 덮어쓰지 않음)
+  useEffect(() => {
+    if (!isFocusedRef.current) setMemoText(memo)
+  }, [memo])
 
   function toggleDoc(i: number) {
     setDocChecks((prev) => prev.map((v, j) => (j === i ? !v : v)))
   }
-  // dueDate 함수가 없는 항목(예: 교육 정보)은 배지를 표시하지 않음
+
+  function handleMemoBlur() {
+    isFocusedRef.current = false
+    if (memoText === memo) return
+    onMemo?.(task.id, memoText)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1500)
+  }
+
   const dueDate = task.dueDate?.(profile)
   const diffDays = dueDate ? daysUntil(dueDate) : null
-  // 7일 이내일 때만 urgent 스타일 적용 — 모든 배지를 빨강으로 칠하지 않는다
   const isUrgent = diffDays !== null && diffDays <= 7
 
   return (
@@ -67,7 +83,6 @@ function TaskCard({ task, profile, checked, completedAt, isLoading = false, onTo
             </span>
           )}
         </div>
-        {/* 이 항목이 왜 나에게 해당하는지 근거 표시 (예: "직원이 있다고 답하셔서...") */}
         <p className="task-card__reason">{task.reason(profile)}</p>
         <p className="task-card__description">{task.description}</p>
         {task.documents && task.documents.length > 0 && (
@@ -94,6 +109,18 @@ function TaskCard({ task, profile, checked, completedAt, isLoading = false, onTo
         {checked && completedAt && (
           <p className="task-card__completed-at">{formatCompletedAt(completedAt)}</p>
         )}
+        <div className="task-card__memo">
+          <textarea
+            className="task-card__memo-input"
+            placeholder="메모"
+            value={memoText}
+            rows={2}
+            onChange={(e) => setMemoText(e.target.value)}
+            onFocus={() => { isFocusedRef.current = true }}
+            onBlur={handleMemoBlur}
+          />
+          {saved && <span className="task-card__memo-saved">저장됨</span>}
+        </div>
       </div>
     </article>
   )
