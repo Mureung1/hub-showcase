@@ -131,3 +131,40 @@ describe('DELETE /api/meetings/:id', () => {
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 });
+
+describe('모임 취소 알림(C)', () => {
+  it('취소 직전 활성 참여자에게만 알림이 간다', async () => {
+    const { agent, userId: hostId } = await loginAgent('n-e5-h1', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const pending = await createUser('n-e5-p1', '대기');
+    const approved = await createUser('n-e5-a1', '승인');
+    const rejectedUser = await createUser('n-e5-r1', '거절');
+    const cancelledUser = await createUser('n-e5-c1', '취소');
+    await insertParticipant(meetingId, pending, 'pending');
+    await insertParticipant(meetingId, approved, 'approved');
+    await insertParticipant(meetingId, rejectedUser, 'rejected');
+    await insertParticipant(meetingId, cancelledUser, 'cancelled');
+
+    const res = await agent.delete(`/api/meetings/${meetingId}`);
+    expect(res.status).toBe(200);
+
+    const { rows } = await pool.query(
+      'SELECT user_id, type FROM notifications ORDER BY user_id'
+    );
+    expect(rows.map((r) => Number(r.user_id)).sort((a, b) => a - b)).toEqual(
+      [pending, approved].sort((a, b) => a - b)
+    );
+    expect(rows.every((r) => r.type === 'meeting_cancelled')).toBe(true);
+  });
+
+  it('참여자가 없으면 알림도 없다', async () => {
+    const { agent, userId: hostId } = await loginAgent('n-e5-h2', '모임장');
+    const meetingId = await insertMeeting(hostId);
+
+    const res = await agent.delete(`/api/meetings/${meetingId}`);
+    expect(res.status).toBe(200);
+
+    const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM notifications');
+    expect(rows[0].n).toBe(0);
+  });
+});

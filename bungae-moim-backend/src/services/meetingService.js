@@ -4,7 +4,7 @@ const withTransaction = require('../utils/withTransaction');
 const { evaluateApplicability } = require('../utils/participation');
 const { validateUpdateMeeting, validateApplyAnswer } = require('../utils/validators');
 const { isAdult } = require('../utils/age');
-const { createNotification, NOTIFICATION_TYPES } = require('./notificationService');
+const { createNotification, createNotifications, NOTIFICATION_TYPES } = require('./notificationService');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
@@ -525,11 +525,27 @@ async function cancelMeeting(meetingId, hostId) {
   }
 
   await withTransaction(async (client) => {
+    // UPDATE는 거절·취소 이력까지 전원을 cancelled로 바꾼다. 그래서 알림 대상은
+    // 반드시 UPDATE **전에** 잡아둔다 — 순서를 바꾸면 이미 거절당한 사람에게도
+    // "모임이 취소됐어요"가 가서 노이즈가 된다.
+    const activeRes = await client.query(
+      `SELECT user_id FROM meeting_participants
+        WHERE meeting_id = $1 AND status IN ('pending','confirmed','approved')`,
+      [meetingId]
+    );
+
     await client.query("UPDATE meetings SET status = 'cancelled' WHERE id = $1", [meetingId]);
     await client.query(
       "UPDATE meeting_participants SET status = 'cancelled' WHERE meeting_id = $1",
       [meetingId]
     );
+
+    await createNotifications(client, {
+      // user_id는 bigint라 문자열로 온다.
+      userIds: activeRes.rows.map((r) => Number(r.user_id)),
+      type: NOTIFICATION_TYPES.MEETING_CANCELLED,
+      meetingId,
+    });
   });
 
   return { status: 'cancelled' };
