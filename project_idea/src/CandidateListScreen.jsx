@@ -129,7 +129,7 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>매칭 후보</h1>
         <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 12px" }}>
-          같은 방향 · 희망 시간 ±15분 이내로 조회된 실제 등록 데이터예요
+          같은 방향 · 희망 시간 ±10분 이내로 조회된 실제 등록 데이터예요
         </p>
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           {fareTiers.map((tier) => (
@@ -330,8 +330,8 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
           마음에 드는 방이 없다면 새로 만들어보세요
         </p>
         <button
-          onClick={() => (joinedId === myRequest.id ? resumeChat() : handleStartNew())}
-          disabled={joinedId !== null && joinedId !== myRequest.id}
+          onClick={handleStartNew}
+          disabled={joinedId !== null}
           style={{
             width: "100%",
             padding: 14,
@@ -339,12 +339,12 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
             fontSize: 14,
             fontWeight: 700,
             border: "1px solid #C8102E",
-            background: joinedId === myRequest.id ? "#2F8F5B" : "transparent",
-            color: joinedId === myRequest.id ? "#fff" : joinedId !== null ? "#8A7A76" : "#C8102E",
-            cursor: joinedId === myRequest.id || joinedId === null ? "pointer" : "default",
+            background: "transparent",
+            color: joinedId !== null ? "#8A7A76" : "#C8102E",
+            cursor: joinedId !== null ? "default" : "pointer",
           }}
         >
-          {joinedId === myRequest.id ? "채팅방 보기" : "새로 방 만들기"}
+          새로 방 만들기
         </button>
       </div>
     </div>

@@ -14,11 +14,11 @@ export function baseFareForHub(hubName) {
   return TIER_BASE_FARE[tier]
 }
 
-export function describeCost(won) {
-  if (won <= 3500) return { icon: '🥤', label: '음료 한 잔 값' }
-  if (won <= 5000) return { icon: '☕', label: '커피 한 잔 값' }
-  if (won <= 8000) return { icon: '🍔', label: '햄버거 한 개 값' }
-  return { icon: '🍗', label: '치킨 한 마리 값' }
+export function describeCost(headcount) {
+  if (headcount === 1) return { icon: '👑', label: '황제 값' }
+  if (headcount === 2) return { icon: '💰', label: '부자 값' }
+  if (headcount === 3) return { icon: '🍔', label: '햄버거 한 개 값' }
+  return { icon: '🥤', label: '음료 한 잔 값' }
 }
 
 export function estimateCost(headcount, hubName) {
@@ -29,6 +29,6 @@ export function estimateCost(headcount, hubName) {
 export function fareTiersFor(hubName) {
   return [1, 2, 3, 4].map((headcount) => {
     const won = estimateCost(headcount, hubName)
-    return { headcount, won, ...describeCost(won) }
+    return { headcount, won, ...describeCost(headcount) }
   })
 }

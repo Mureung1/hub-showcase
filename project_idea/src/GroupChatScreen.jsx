@@ -109,7 +109,7 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
   const isFull = count >= 4;
   const canBoard = isFull || confirmed;
   const cost = estimateCost(count, candidate?.cityHub);
-  const costInfo = describeCost(cost);
+  const costInfo = describeCost(count);
 
   async function respond(requestId, accept) {
     setRespondError(null);
