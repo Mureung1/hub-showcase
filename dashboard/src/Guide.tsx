@@ -166,7 +166,7 @@ export default function Guide() {
       <section className="guide-section guide-faq">
         <h2>자주 묻는 질문</h2>
         <div className="faq-list">
-          <details>
+          <details open>
             <summary>이미지 경로는 어떻게 작성하나요?</summary>
             <p><code>showcase</code> 폴더 안의 파일 경로를 JSON에 적습니다.</p>
             <pre className="faq-example"><code>{`{
@@ -176,23 +176,23 @@ export default function Guide() {
   ]
 }`}</code></pre>
           </details>
-          <details>
+          <details open>
             <summary>이미지 URL을 적어도 되나요?</summary>
             <p><code>"thumbnail": "https://..."</code>처럼 외부 주소를 적을 수 없습니다. 이미지를 저장소에 추가하고 <code>"thumbnail": "thumbnail.webp"</code>처럼 작성하세요.</p>
           </details>
-          <details>
+          <details open>
             <summary>이미지 파일이 없으면 프로젝트가 사라지나요?</summary>
             <p>프로젝트 내용은 표시됩니다. 파일이 없거나 경로·파일명이 실제 파일과 다르면 대표 이미지는 기본 이미지로 바뀝니다. 추가 화면은 문제가 있는 이미지만 빠집니다.</p>
           </details>
-          <details>
+          <details open>
             <summary>내용을 모두 작성해야 하나요?</summary>
             <p><code>features: []</code>처럼 비워도 됩니다. 해당 영역만 숨깁니다. 제목, 설명, 문제, 기능처럼 표시할 내용이 모두 없을 때만 제외됩니다.</p>
           </details>
-          <details>
+          <details open>
             <summary>배포 링크와 시연 영상 링크는 어디에 넣나요?</summary>
             <p><code>demoUrl</code>에는 배포 주소를 적습니다. 영상은 <code>demoVideoUrl</code>에 YouTube나 Drive의 <code>https://</code> 주소를 적습니다. 비워두면 링크를 표시하지 않습니다.</p>
           </details>
-          <details>
+          <details open>
             <summary>작성한 내용은 언제 사이트에 나오나요?</summary>
             <p>PR이 머지된 뒤 수집 작업이 실행되면 반영됩니다. 파일을 고친 뒤에는 수정 내용을 다시 PR에 포함해야 합니다.</p>
           </details>
