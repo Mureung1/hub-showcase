@@ -95,6 +95,8 @@ function renderInspector(
         coverage: "full",
       }}
       categoryCoverageReason="전체 지원"
+      panelTextSize="default"
+      onPanelTextSizeChange={vi.fn()}
       activeHour={0}
       sameCategoryCount={1}
       analysis={analysis}
