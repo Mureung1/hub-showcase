@@ -245,8 +245,12 @@ def upload_image():
     except Exception as e:
         print(f"DB Insert Error: {e}")
 
+    is_complete = parsed_data.get("is_complete", False)
+    error_msg = parsed_data.get("error") or (parsed_data.get("warning_messages")[0] if parsed_data.get("warning_messages") else None)
+
     return jsonify({
-        'status': 'success',
+        'status': 'success' if is_complete else 'fail',
+        'error': error_msg,
         'product_name': data["name"],
         'brand': data["brand"],
         'price': data["price"],
@@ -265,7 +269,7 @@ def upload_image():
         'sodium_tip': sodium_tip,
         'saved_price': saved_price,
         'saved_calories': saved_calories,
-        'is_complete': parsed_data.get("is_complete", True),
+        'is_complete': is_complete,
         'warning_messages': parsed_data.get("warning_messages", [])
     })
 
