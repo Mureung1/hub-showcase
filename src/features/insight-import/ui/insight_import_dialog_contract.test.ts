@@ -17,18 +17,27 @@ describe('가져오기 대화상자 계약', () => {
     expect(sources.join('\n')).toContain("from '@/shared/ui'");
   });
 
-  it('White Canvas 토큰과 모바일 2열·세로 액션 계약을 지킨다', () => {
+  it('Desktop source rail과 Mobile 전체 화면 계약을 지킨다', () => {
     const css = readFileSync(
       resolve(UI_DIRECTORY, 'insight_import_dialog.css'),
       'utf8'
     );
 
-    expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr))');
+    expect(css).toMatch(
+      /grid-template-columns:\s*calc\(var\(--spacing-20\) \+ var\(--spacing-20\)\)\s*minmax\(0, 1fr\)/iu
+    );
+    expect(css).toContain('.insight-import-dialog__source-navigation');
+    expect(css).toContain('.insight-import-dialog__source-panel');
+    expect(css).toContain('overflow-y: auto');
+    expect(css).toContain('@media (max-width: 767px)');
+    expect(css).toContain('grid-template-columns: 1fr');
+    expect(css).toContain('flex-direction: row');
+    expect(css).toContain('width: 100vw');
+    expect(css).toContain('max-width: 100vw');
+    expect(css).toContain('height: 100dvh');
+    expect(css).toContain('env(safe-area-inset-bottom)');
     expect(css).toContain('border: 1px solid var(--color-ash)');
     expect(css).toContain('border-radius: var(--radius-card)');
-    expect(css).toContain('@media (max-width: 767px)');
-    expect(css).toContain('grid-template-columns: 1fr 1fr');
-    expect(css).toContain('flex-direction: column');
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/iu);
     expect(css).not.toMatch(/box-shadow|gradient|animation/iu);
   });

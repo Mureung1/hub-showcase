@@ -34,9 +34,9 @@ import { ImportHistory } from './import_history';
 import { ImportIssueDetails, ImportPreview } from './import_preview';
 import {
   INSIGHT_IMPORT_SOURCE_LABELS,
-  InsightImportSourceSelector,
   type InsightImportSource,
-} from './insight_import_source_selector';
+} from './insight_import_source';
+import { InsightImportSourceSelector } from './insight_import_source_selector';
 
 import './insight_import_dialog.css';
 
@@ -50,8 +50,7 @@ const FILE_ADAPTERS = [
   genericTextAdapter,
 ] as const;
 const IMPORT_FIELD_MAPPING_FORM_ID = 'insight-import-field-mapping-form';
-const NOTION_FIELD_MAPPING_FORM_ID =
-  'insight-import-notion-field-mapping-form';
+const NOTION_FIELD_MAPPING_FORM_ID = 'insight-import-notion-field-mapping-form';
 
 export type InsightImportDialogProps = {
   categories: readonly Category[];
@@ -425,9 +424,9 @@ export function InsightImportDialog({
                   type="file"
                 />
                 <p id="insight-import-file-help">
-                  CSV, JSON, HTML, Markdown, 텍스트, ZIP을 지원합니다. 원본 파일은
-                  서버에 업로드하지 않으며, 일반 파일은 10 MiB, ZIP은 20 MiB까지
-                  선택할 수 있습니다.
+                  CSV, JSON, HTML, Markdown, 텍스트, ZIP을 지원합니다. 원본
+                  파일은 서버에 업로드하지 않으며, 일반 파일은 10 MiB, ZIP은 20
+                  MiB까지 선택할 수 있습니다.
                 </p>
               </div>
             ) : null}
@@ -598,7 +597,6 @@ export function InsightImportDialog({
               가져오기 되돌리기
             </Button>
           )}
-
         </div>
       ) : null}
     </Modal>

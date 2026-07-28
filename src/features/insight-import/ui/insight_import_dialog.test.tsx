@@ -232,9 +232,7 @@ describe('InsightImportDialog', () => {
         .getAttribute('aria-live')
     ).toBe('polite');
     expect(
-      screen
-        .getByRole('button', { name: '완료' })
-        .closest('.ui-modal__footer')
+      screen.getByRole('button', { name: '완료' }).closest('.ui-modal__footer')
     ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '가져오기 되돌리기' }));
@@ -392,9 +390,7 @@ describe('InsightImportDialog', () => {
       render(
         <DesignSystemProvider>
           <ImportHistory
-            entries={[
-              { ...createHistoryEntry(), undoRemainingMs: 1_000 },
-            ]}
+            entries={[{ ...createHistoryEntry(), undoRemainingMs: 1_000 }]}
             errorMessage={null}
             loading={false}
             onDelete={vi.fn()}
