@@ -7,7 +7,9 @@
   "thumbnail": "screenshot/00_온보딩.webp",
   "screenshots": [
     "screenshot/00_온보딩.webp",
-    "screenshot/깃시뮬레이터.webp"
+    "screenshot/깃시뮬레이터.webp",
+    "screenshot/보관함.webp",
+    "screenshot/워크스페이스.webp"
   ],
   "problem": "개념 문서, 에디터, 실습 환경, 오답 관리가 여러 도구로 파편화되어 있어 초·중급 학습자가 공부 순서를 잡기 어렵고 연속성 있는 학습 흐름을 유지하기 힘듭니다.",
   "targetUsers": [
