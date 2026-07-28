@@ -2,11 +2,11 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-27
+최종 업데이트: 2026-07-28
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 관련 문서: [CONTEXT.md](../../CONTEXT.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), [개발 백로그](ay-ple-development-backlog.md)
 
@@ -105,7 +105,7 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 | 학기 identity와 선택적인 구조화 snapshot | Root `workspace-state.json` |
 | 변경 history와 rollback | Git commit history |
 | Known·active SemesterWorkspace | Sibling `../.ay-ple/`의 `WorkspaceRegistry` |
-| Runtime payload·cache·transient operation state | Sibling `../.ay-ple/` |
+| Runtime payload, cross-workspace 운영 metadata·config, cache·temp | Sibling `../.ay-ple/` |
 | Initial Bootstrap Skill과 repository 개발 harness | `hub/.agents/skills/` |
 | AY-PLE built-in Skill source catalog | `hub/skills/` |
 | 해당 학기에서 실행하는 Skill byte | SemesterWorkspace의 Git-tracked `.agents/skills/` |
@@ -113,14 +113,15 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 | Interaction MCP endpoint·token·Runtime binding | App이 공급하는 process environment |
 | Codex account·config·session | 사용자의 기존 `~/.codex/` |
 | Pending InteractionCapability | 현재 Turn에 결합된 Interaction MCP Module memory |
+| Pending product operation과 Adapter health | 현재 App process의 Runtime generation memory |
 
-`workspace-state.json`의 exact academic schema는 아직 이 Product Brief가 고정하지 않는다. 중요한 불변 조건은 학기 정보가 App database가 아니라 사용자 소유 workspace에 있고, interaction request/result나 native Turn history를 학기 SSOT에 누적하지 않는다는 점이다.
+`workspace-state.json`의 exact academic schema는 아직 이 Product Brief가 고정하지 않는다. 중요한 불변 조건은 학기 정보가 App database가 아니라 사용자 소유 workspace에 있고, interaction request/result나 native Turn history를 학기 SSOT에 누적하지 않는다는 점이다. Process-local interaction·operation·Adapter health는 terminal event에서 정산하며 App restart 뒤 durable record가 없는 결과를 성공이나 복구 대상으로 추정하지 않는다.
 
 ## 제공 형태와 lifecycle
 
 현재 제공 형태는 개발 checkout에서 `npm run dev`로 local companion과 Browser UI를 여는 macOS-first local web app이다. Public `npx`, packaged Desktop, Landing과 AY-PLE 자체 cloud account는 현재 범위가 아니다.
 
-채택한 목표 lifecycle은 다음과 같다.
+현재 구현한 lifecycle은 다음과 같다.
 
 1. 사용자가 `hub/`를 연 Codex CLI 같은 native client에서 `semester-workspace-init`을 직접 실행한다.
 2. Skill이 existing bytes와 dirty tree를 존중하면서 Git root, 최소 workspace file, 선택한 `.agents/skills/` copy와 정적인 `.codex/config.toml`을 준비하고 checkpoint를 남긴다.
@@ -131,28 +132,28 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 
 App은 prepared root validation, Workspace Runtime·Interaction readiness와 active pointer만 소유한다. Git repository 생성·cleanliness·commit 정책, Bootstrap Runtime·candidate·init Turn을 별도 subsystem으로 구현하지 않으며, native Bootstrap과 AY가 일반 file·Git 도구 및 `AGENTS.md`의 간단한 지침에 따라 작업한다.
 
-## 현재 구현과 채택한 목표
+## 현재 구현
 
-First Assignment vertical은 custom MCP 요청을 Browser Review로 보여주고 사용자의 선택을 같은 Turn으로 돌려줄 수 있음을 이미 증명했다. Exact local-provider와 live-provider trace도 이 round trip을 검증했다.
+First Assignment vertical은 native project config의 required Interaction MCP부터 authenticated held-POST Broker, Browser inline Review와 같은 MCP call의 structured result 반환까지 연결한다. Exact local-provider와 live-provider trace도 이 round trip을 검증했다.
 
-다만 현재 코드는 다음 app-owned workflow를 구현한다.
+현재 canonical graph는 다음과 같다.
 
 ```text
-RawMaterial registry
-→ ModelingInvocation / durable ModelingRun
-→ durable StatePatch
-→ built-in request_user_input
-→ durable UserConfirmation
-→ Server-owned SemesterModel apply
+SemesterWorkspace actual file
+→ AY / native Codex Turn
+→ InteractionCapability request
+→ App typed UI
+→ same-call user result
+→ AY-owned file mutation / Git checkpoint
 ```
 
-이 흐름은 구현 증거이지 채택한 target architecture가 아니다. Target은 `workspace file → AY → InteractionCapability → user result → AY file mutation`으로 줄인다. Current topology와 exact endpoint는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 전환 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
+초기 구현이 사용했던 app-owned `RawMaterial → ModelingRun → durable StatePatch → UserConfirmation → Server-owned apply` 흐름은 interaction round trip을 확인한 historical 동기다. 이 객체와 apply transaction은 current product contract와 persistence에서 제거됐다. Exact package·endpoint topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 후속 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 
-## 현재 MVP 목표
+## 현재 구현된 MVP vertical
 
-다음 target vertical은 하나의 Review capability가 새 경계로 end-to-end 동작함을 증명한다.
+하나의 Review capability가 다음 경계로 end-to-end 동작한다.
 
-| 포함 | 완료 의미 |
+| 포함 | 구현 결과 |
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
 | `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Authenticated Broker handshake가 없으면 prepared-workspace startup이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
@@ -195,7 +196,5 @@ RawMaterial registry
 | 질문 | 소유할 후속 결정 |
 | --- | --- |
 | `workspace-state.json`에 반드시 필요한 최소 학기 metadata는 무엇인가? | SemesterWorkspace init spec |
-| `propose_state_patch` semantic Review model의 exact field name, cardinality와 길이 제한은 무엇인가? | InteractionCapability implementation spec |
-| Inline card 안에서 semantic change와 validated evidence preview를 어떤 시각 hierarchy로 보여주는가? | Product scenario/prototype |
-| Evidence preview가 처음 지원할 file codec, locator와 exact byte bound는 무엇인가? | InteractionCapability implementation spec |
+| Text 이외 evidence preview가 실제로 필요할 때 어떤 file codec과 locator를 추가할 것인가? | 관찰된 사용 사례에 따른 capability spec |
 | 첫 Review 뒤 추가할 두 번째 capability는 무엇인가? | 실제 dogfood에서 반복되는 사용자 판단을 관찰한 뒤 결정 |

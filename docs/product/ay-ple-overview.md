@@ -2,7 +2,7 @@
 
 작성일: 2026-07-10
 
-최종 업데이트: 2026-07-27
+최종 업데이트: 2026-07-28
 
 분류: 활성
 
@@ -110,8 +110,8 @@ App은 별도 복사본이나 normalized child workspace를 만들지 않는다.
 
 ## 지금 어디까지 만들어졌나
 
-현재 First Assignment vertical은 custom MCP 요청을 Browser Review로 보여주고 사용자 응답을 같은 native Turn으로 되돌리는 흐름을 이미 검증했다. 다만 구현은 app-owned `RawMaterial`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 Server-owned apply transaction에 강하게 묶여 있다.
+현재 First Assignment vertical은 native project config로 발견한 required Interaction MCP, authenticated App Broker, AY Chat의 inline Review card와 같은 MCP call의 structured result 반환을 end-to-end로 연결한다. App은 active Runtime generation의 pending interaction만 process memory에서 정산하고, AY가 result를 해석해 실제 workspace file을 변경한다.
 
-채택한 목표는 이 구현에서 유효한 interaction round trip은 보존하고, App이 학업 workflow와 file apply까지 소유하는 결합은 걷어내는 것이다. 정확한 현재 topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 목표 seam은 [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
+초기 vertical이 사용했던 app-owned `RawMaterial`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 Server-owned apply transaction은 이 round trip의 historical 동기이며 current product graph에는 없다. 정확한 현재 topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), long-lived seam은 [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), 후속 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 
 `local-first`는 `offline`을 뜻하지 않는다. Workspace와 App state는 로컬에 있지만 Codex가 읽은 content는 실행 중 provider로 전송될 수 있다. 과제 정답 생성, 시험 답안 대행, 자동 제출과 학교 정책을 우회하는 자동화는 제품 범위 밖이다.

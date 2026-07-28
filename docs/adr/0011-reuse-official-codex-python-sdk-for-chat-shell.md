@@ -2,7 +2,7 @@
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 대체한 결정: 기존 `HeadlessCodexClientHost` 제품 seam과 community TypeScript fork 기반 자체 runtime 계획
 
@@ -40,7 +40,7 @@ Exact `MessageRouter`의 login, active turn, pending turn과 global notification
 
 Codex approval은 command·file·network 같은 실행 권한에 대한 native Codex 결정이고, sandbox는 그 실행에 기술적으로 허용되는 capability 경계다. AY-PLE InteractionCapability의 Review result는 사용자의 학업 판단을 같은 AY Turn에 돌려준다. 어느 한쪽의 승인이 다른 쪽을 승인하거나 대체하지 않으며, 두 UI도 같은 approval로 합치지 않는다.
 
-현재 First Assignment의 `read-only extraction`은 app-owned Review가 끝나기 전까지 confirmed store를 바꾸지 않는다는 당시 제품 효과다. Target에서는 AY가 InteractionCapability result를 받은 뒤 실제 workspace file을 변경한다. 어느 경우도 이 문구만으로 Codex `Sandbox.read_only`, network 차단 또는 예상 밖 request의 client-side reject를 채택하지 않는다. 실제 action에 필요한 native permission profile, 설정 소유자와 request projection은 Codex semantics와 public SDK seam을 먼저 따른 뒤 action별로 명시한다.
+초기 First Assignment의 `read-only extraction`은 app-owned Review가 끝나기 전까지 confirmed store를 바꾸지 않았던 historical 제품 효과다. 현재 First Assignment는 InteractionCapability result를 받은 뒤 AY가 실제 workspace file을 변경한다. 이 workflow 순서는 Codex `Sandbox.read_only`, network 차단 또는 예상 밖 request의 client-side reject를 뜻하지 않는다. 실제 action에 필요한 native permission profile, 설정 소유자와 request projection은 Codex semantics와 public SDK seam을 먼저 따른 뒤 action별로 명시한다.
 
 Exact SDK의 high-level `thread_start` 기본값은 `ApprovalMode.auto_review`, `sandbox=None`이고, current bridge는 exact SemesterWorkspace Git root thread를 `auto_review + workspace_write`로 시작한다. Low-level default handler는 command/file approval request에 `accept`를 반환하며 synthetic harness가 이를 관찰했다. 이는 실행 권한 disposition의 입력이지 AY-PLE 제품 확인 실패나 즉시 patch할 blocker가 아니다. Current maintained patch stack은 direct reuse blocker와 adopted product seam만 좁게 보완하고 approval handler·policy나 AY-PLE managed account lifecycle을 추가하지 않는다. Exact ordered roster와 current package behavior는 [runtime package README](../../packages/codex-chat-runtime/README.md)가 소유한다. Native 설정과 public seam을 검토한 뒤에도 실제 제품 action에 필요한 gap이 확인될 때만 upstream extension 또는 좁은 port를 검토하고, monkey patch나 private override는 production 대안으로 취급하지 않는다.
 
@@ -73,6 +73,6 @@ Safe live gate를 실행할 명시적 provider/auth가 없으면 `blocked`로 �
 
 ## 결과
 
-Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 runtime·Server·UI tracer로 확장한다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
+Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 runtime·Server·UI tracer를 구현한다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
 
-Legacy cutover 결정은 첫 tracer 완료만으로 자동 추론한 결과가 아니라 consumer·survivor·recovery 경계를 별도로 검토한 ADR 0012가 소유한다. InteractionCapability 전환, multi-thread sidebar, `thread/read`·`thread/resume`, 다른 action의 Codex 실행 권한 profile·request UX, disposable-auth automation과 packaging은 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.
+Legacy cutover 결정은 첫 tracer 완료만으로 자동 추론한 결과가 아니라 consumer·survivor·recovery 경계를 별도로 검토한 ADR 0012가 소유한다. InteractionCapability 구현 이후의 multi-thread sidebar, `thread/read`·`thread/resume`, 다른 action의 Codex 실행 권한 profile·request UX, disposable-auth automation과 packaging은 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.

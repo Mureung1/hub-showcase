@@ -2,15 +2,17 @@
 
 작성일: 2026-07-27
 
+최근 갱신: 2026-07-28
+
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 관련 문서: [CONTEXT.md](../../CONTEXT.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [User-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
-이 문서는 AY의 MCP 요청을 AY-PLE의 typed UI로 바꾸고, 사용자의 structured result를 같은 Codex Turn에 반환하는 long-lived seam을 설명한다. 제품 가치와 MVP 범위는 Product Brief, 결정의 이유는 ADR 0019, 현재 코드의 강결합 topology와 gap은 구현 지도가 소유한다.
+이 문서는 AY의 MCP 요청을 AY-PLE의 typed UI로 바꾸고, 사용자의 structured result를 같은 Codex Turn에 반환하는 long-lived seam을 설명한다. 제품 가치와 MVP 범위는 Product Brief, 결정의 이유는 ADR 0019, exact current package·endpoint topology와 검증 표면은 구현 지도가 소유한다.
 
 Interaction MCP Module은 Codex-facing STDIO Adapter와 App-side Broker를 합친 deep Module이다. Physical code boundary는 private workspace package `@ay-ple/interaction-mcp`와 `apps/server`에 걸친다. Package는 stable executable·typed capability contract·private transport를, Server는 Broker runtime과 Browser projection을 소유한다. App 실행 전 native Bootstrap이 설치한 project MCP declaration으로 Adapter를 native discovery하고, App Runtime이 environment로 현재 Broker binding을 공급한다.
 
@@ -215,21 +217,21 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | Settled Review card | 별도 App durable owner 없음 | 현재 transcript에서 read-only projection으로만 유지한다. Native conversation history 없이 App ledger로 복원하지 않는다. |
 | Native conversation | Codex Runtime | Browser-safe projection만 제공한다. |
 
-`RawMaterial`, `ModelingRun`, durable `StatePatch`와 durable `UserConfirmation`은 target App domain model에 포함하지 않는다. Workspace file, native Turn, transient capability request/result가 각각 그 책임을 맡는다.
+`RawMaterial`, `ModelingRun`, durable `StatePatch`와 durable `UserConfirmation`은 current App domain model에 포함하지 않는다. Workspace file, native Turn, transient capability request/result가 각각 그 책임을 맡는다.
 
-## 현재 구현과 채택한 목표
+## 구현된 mapping
 
-| 영역 | 현재 구현 | 채택한 목표 |
+| 영역 | 현재 구현 | 유지하는 경계 |
 | --- | --- | --- |
-| MCP discovery | Thread start가 private URL·token을 config override로 주입한다. | Tracked project config가 Workspace root에서 `@ay-ple/interaction-mcp` built STDIO Adapter까지의 relative command를 `cwd` 없이 선언한다. Server가 dynamic binding을 만들고 capability-neutral Runtime이 env만 전달하며, Adapter의 Broker handshake 뒤에만 initialize가 성공한다. |
-| Review 시작 | `propose_state_patch`가 Server-private key와 academic binding을 요구한다. | 표시할 proposal만 보내며 host binding은 Module 내부다. |
-| 사용자 응답 | 별도 `/reviews/:interactionId`와 built-in `request_user_input`을 함께 사용하고 replacement가 active Review를 교체한다. | AY Chat inline card 하나가 composer·steer를 잠그고 MCP call의 closed result를 반환한다. Settled card는 read-only로 남고 fresh proposal은 새 card로 append하며 전체 Turn interrupt만 별도 control로 유지한다. |
-| Apply | Server가 durable patch·confirmation transaction으로 `SemesterModel`을 갱신한다. | AY가 result를 해석해 실제 workspace file을 변경한다. |
-| 실행 기록 | App-owned `ModelingRun` receipt를 저장한다. | Native Turn과 일반 Codex history를 재사용한다. |
-| 자료 | App-owned `RawMaterial` registry·snapshot을 사용한다. | AY가 SemesterWorkspace의 실제 파일을 직접 다룬다. |
-| 테스트 | Store revision·private correlation·Browser workflow 전체에 결합된다. | Capability contract와 UI Adapter를 독립적으로 검증한다. |
+| MCP discovery | Tracked project config가 Workspace root에서 `@ay-ple/interaction-mcp` built STDIO Adapter까지의 relative command를 `cwd` 없이 선언한다. Server가 dynamic binding을 만들고 capability-neutral Runtime이 env만 전달하며 Adapter의 Broker handshake 뒤에만 initialize가 성공한다. | Secret·process binding은 Git config에 쓰지 않고 Runtime package는 capability schema를 알지 않는다. |
+| Review 시작 | `propose_state_patch`는 표시할 semantic proposal과 optional `EvidenceRef`만 보내며 host binding은 Module 내부에서 결합한다. | Caller에게 workspace·revision·native correlation을 요구하지 않는다. |
+| 사용자 응답 | AY Chat inline card 하나가 composer·steer를 잠그고 MCP call의 closed result를 반환한다. Settled card는 read-only로 남고 fresh proposal은 새 card로 append하며 전체 Turn interrupt만 별도 control로 유지한다. | Built-in `request_user_input` 이중 confirmation, replacement card와 App Review ledger를 만들지 않는다. |
+| Apply | AY가 result를 해석해 실제 workspace file을 변경하고 Git checkpoint를 남긴다. | App은 수락 결과를 대신 적용하지 않는다. |
+| 실행 기록 | Native Turn과 일반 Codex history를 재사용한다. | App-owned `ModelingRun` receipt를 저장하지 않는다. |
+| 자료 | AY가 SemesterWorkspace의 실제 파일을 직접 다루고 Broker는 요청에 포함된 evidence만 on-demand 검증한다. | `RawMaterial` registry·source copy·reusable snapshot을 만들지 않는다. |
+| 테스트 | In-memory capability contract, deterministic Browser E2E와 exact actual-child trace가 정상 result·failure settlement·evidence atomicity를 검증한다. | Store revision이나 private correlation을 공개 Interface에 넣지 않는다. |
 
-Current implementation을 target처럼 기술하지 않는다. Exact current package와 endpoint topology는 [Codex Chat 구현 지도](codex-chat-implementation-map.md)가, 전환 순서와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
+초기 First Assignment의 app-owned `RawMaterial → ModelingRun → StatePatch → UserConfirmation → apply` graph는 이 seam을 채택하게 한 historical 동기이며 canonical product graph에서 제거됐다. Exact current package와 endpoint topology는 [Codex Chat 구현 지도](codex-chat-implementation-map.md)가, 후속 순서와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
 
 ## 의도적으로 만들지 않는 것
 

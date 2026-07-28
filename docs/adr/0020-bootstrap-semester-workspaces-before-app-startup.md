@@ -2,7 +2,7 @@
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 부분 대체·보완하는 결정: [ADR 0018 — 사용자가 선택한 Git working tree를 SemesterWorkspace로 채택한다](0018-adopt-user-owned-git-semester-workspaces.md)
 

@@ -2,11 +2,11 @@
 
 작성일: 2026-07-07
 
-최근 갱신: 2026-07-27
+최근 갱신: 2026-07-28
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [user-owned Git SemesterWorkspace ADR](../adr/0018-adopt-user-owned-git-semester-workspaces.md), [pre-App native Bootstrap ADR](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), [InteractionCapability ADR](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [AY–App Interaction Capability 아키텍처](ay-app-interaction-capabilities.md), [historical app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [Official Codex Python SDK ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [single Runtime graph ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [product-only cutover·durable v2 ADR](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Codex Chat 구현 지도](codex-chat-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
@@ -16,17 +16,17 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 ru
 
 Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저수준 기술 경계는 이 문서가 소유한다. 제품 문제와 AY↔App interaction, package의 exact 동작, 작업 순서는 각각 Product Brief·Interaction Capability 아키텍처, 구현 지도·package README, Development Backlog를 따른다.
 
-## 현재 구현, 제품 목표와 후속
+## 현재 구현과 후속
 
-| 영역 | 현재 product 구현 | 채택한 목표 | 후속 |
-| --- | --- | --- | --- |
-| Runtime stack | `@ay-ple/codex-chat-runtime` materializer와 verifier가 explicit external app data의 `runtime/production-runtime-darwin-arm64`를 tracked canonical manifest와 complete tree에 대해 검증하고 product startup이 이 root만 사용한다. Exact SDK 재현 cache도 external `cache/exact-sdk/`에 둔다. | 동일 | 없음 |
-| Runtime state | Canonical composition이 sibling `../.ay-ple/` 아래 controlled `state/runtime/home`, `temp/`와 Runtime cache를 계산하고 caller의 전역 `CODEX_HOME`을 account·config·session authority로 사용한다. External `state/workspace-registry.json`의 strict v1 CAS store는 required-readiness 뒤 active pointer를 commit하며 current public composition의 reopen authority다. Separate `CODEX_SQLITE_HOME` directory는 만들지 않는다. | 동일 | 없음 |
-| Account lifecycle | Current dev·dogfood는 workspace-only `CodexWorkspaceRuntime`을 통해 caller의 `CODEX_HOME`, 또는 미설정 시 `~/.codex`에서 fresh account readiness만 읽는다. 별도 auth profile·device-auth helper·credential copy·Browser OAuth UI와 Node login·logout surface는 없다. | 개인용 실행에서는 전역 Codex account를 단일 authority로 사용한다. | Read-only account plan·usage가 실제 제품 행동에 필요할 때 별도 surface 검토 |
-| 작업 `cwd` | Native Bootstrap이 끝난 한 학기 Git root를 explicit launch input 또는 registry에서 resolve하고 project root와 정상 thread의 고정 `cwd`로 사용한다. No-root startup은 fail closed하고 `CODEX_CHAT_WORKSPACE`·ambient `cwd`를 fallback으로 쓰지 않는다. | 동일 | 없음 |
-| 학기 제품 상태 | Git-tracked root `workspace-state.json`은 strict v4 identity와 opaque JSON snapshot만 제공한다. 학업 결과는 actual files와 Git checkpoint에 남고 Interaction request/result·academic event history는 App store에 저장하지 않는다. 기존 v2/v3/malformed/future bytes는 지원하지 않는 상태로 보존한다. | 동일 | Snapshot 구조가 실제 사용자 필요로 안정될 때 별도 schema 결정 |
-| Native context | Runtime의 persistent bridge와 one-shot official App Server sidecar가 모두 exact workspace Git root `cwd`, native `.git` project boundary와 controlled environment를 사용한다. Sidecar의 `config/read`·`skills/list` raw protocol은 Runtime-private이고 Server는 atomic high-level snapshot만 소비한다. Process-wide managed Skill root, package-owned bundle/context guard와 `skills/extraRoots/set` injection은 없다. | 동일 | User-added Skill 지원 policy가 필요할 때 별도 결정 |
-| Transport·policy | Local companion이 detached Node→Python→App Server tree를 supervise한다. First Assignment product Turn은 `auto_review + workspace_write`를 explicit하게 보낸다. | Codex execution permission과 InteractionCapability result를 분리하고 Browser에는 allowlisted product activity와 capability UI만 전달한다. | Interactive native approval UX과 cloud threat model |
+| 영역 | 현재 product 구현 | 후속 |
+| --- | --- | --- |
+| Runtime stack | `@ay-ple/codex-chat-runtime` materializer와 verifier가 explicit external app data의 `runtime/production-runtime-darwin-arm64`를 tracked canonical manifest와 complete tree에 대해 검증하고 product startup이 이 root만 사용한다. Exact SDK 재현 cache도 external `cache/exact-sdk/`에 둔다. | 없음 |
+| Runtime state | Canonical composition이 sibling `../.ay-ple/` 아래 controlled `state/runtime/home`, `temp/`와 Runtime cache를 계산하고 caller의 전역 `CODEX_HOME`을 account·config·session authority로 사용한다. External `state/workspace-registry.json`의 strict v1 CAS store는 required-readiness 뒤 active pointer를 commit하며 current product composition의 reopen authority다. Separate `CODEX_SQLITE_HOME`이나 per-workspace durable operation file은 만들지 않는다. Pending interaction·operation·Adapter health는 process-local Runtime generation memory에서 terminal 정산한다. | 없음 |
+| Account lifecycle | Current dev·dogfood는 workspace-only `CodexWorkspaceRuntime`을 통해 caller의 `CODEX_HOME`, 또는 미설정 시 `~/.codex`에서 fresh account readiness만 읽는다. 별도 auth profile·device-auth helper·credential copy·Browser OAuth UI와 Node login·logout surface는 없다. | Read-only account plan·usage가 실제 제품 행동에 필요할 때 별도 surface 검토 |
+| 작업 `cwd` | Native Bootstrap이 끝난 한 학기 Git root를 explicit launch input 또는 registry에서 resolve하고 project root와 정상 thread의 고정 `cwd`로 사용한다. No-root startup은 fail closed하고 `CODEX_CHAT_WORKSPACE`·ambient `cwd`를 fallback으로 쓰지 않는다. | 없음 |
+| 학기 제품 상태 | Git-tracked root `workspace-state.json`은 strict v4 identity와 opaque JSON snapshot만 제공한다. 학업 결과는 actual files와 Git checkpoint에 남고 Interaction request/result·academic event history는 App store에 저장하지 않는다. 기존 v2/v3/malformed/future bytes는 지원하지 않는 상태로 보존한다. | Snapshot 구조가 실제 사용자 필요로 안정될 때 별도 schema 결정 |
+| Native context | Runtime의 persistent bridge와 one-shot official App Server sidecar가 모두 exact workspace Git root `cwd`, native `.git` project boundary와 controlled environment를 사용한다. Sidecar의 `config/read`·`skills/list` raw protocol은 Runtime-private이고 Server는 atomic high-level snapshot만 소비한다. Process-wide managed Skill root, package-owned bundle/context guard와 `skills/extraRoots/set` injection은 없다. | User-added Skill 지원 policy가 필요할 때 별도 결정 |
+| Transport·policy | Local companion이 detached Node→Python→App Server tree를 supervise한다. First Assignment product Turn은 `auto_review + workspace_write`를 explicit하게 보내고 Codex execution permission과 InteractionCapability result를 분리하며, Browser에는 allowlisted product activity와 capability UI만 전달한다. | Interactive native approval UX과 cloud threat model |
 
 Current product startup·Runtime command는 canonical `../.ay-ple/`의 external Runtime·controlled state, 전역 `CODEX_HOME`과 prepared Git root를 조합한다. First open·학기 변경은 explicit `--workspace`, 이후 start는 registry active pointer를 fresh reopen하며 required root가 없으면 fail closed한다. Legacy dogfood profile·managed development materializer와 package-local Runtime/cache command는 tracked graph에서 제거됐고 validated clone-local residue도 one-shot cleanup으로 정리했다. Public application host, Runtime release resolver, public-preview Account→Setup→Ready graph와 app-owned v3 scaffold·bundle kernel도 tracked product graph에 없다.
 
@@ -41,7 +41,7 @@ Current product startup·Runtime command는 canonical `../.ay-ple/`의 external 
 | Workspace | Native Bootstrap이 App 시작 전에 준비한 한 학기 Git repository만 launch input 또는 registry에서 resolve해 active `SemesterWorkspace`와 exact native `cwd`로 전달 | Bootstrap 진행·권한, Auth·Runtime state 저장소 격리, AY의 file operation 정확성 |
 | Native context | Pre-App native client는 canonical `hub/`에서 init Skill을 발견하고, App의 Workspace Runtime·probe는 canonical Git root를 같은 `cwd`로 사용해 그 project의 config·instruction·Skill을 발견한다. Raw App Server protocol은 Runtime-private이며 opt-in Memories는 별도 비권위적 맥락이다. | Workspace identity, official system capability, 학업 사실의 정확성, 모든 작업의 memory 생성 |
 | Sandbox·approval | Product Turn의 permission profile과 InteractionCapability의 사용자 result를 서로 다른 경계로 유지 | OS process 보안 경계, path-level filesystem immutability, generic approval center |
-| Transport | Local companion이 private Node↔Python NDJSON과 `stdio://` App Server process를 소유한다. Target Interaction Adapter는 Browser API와 같은 pre-bound loopback HTTP listener의 Server-private Broker route를 Runtime-scoped token·binding으로 사용한다. | Protocol 변경과 packaging risk 제거, Browser Origin만으로 private process를 인증 |
+| Transport | Local companion이 private Node↔Python NDJSON과 `stdio://` App Server process를 소유한다. Interaction Adapter는 Browser API와 같은 pre-bound loopback HTTP listener의 Server-private Broker route를 Runtime-scoped token·binding으로 사용한다. | Protocol 변경과 packaging risk 제거, Browser Origin만으로 private process를 인증 |
 
 ## Canonical product layout seam
 
@@ -49,12 +49,12 @@ Current product startup·Runtime command는 canonical `../.ay-ple/`의 external 
 
 Root `npm run dev`는 repository sibling `../.ay-ple/`의 Runtime·controlled state, caller-global Codex home과 prepared Git workspace를 직접 조합한다. First open·학기 변경은 explicit absolute `--workspace`, 이후 start는 registry active pointer를 사용한다. Caller가 legacy path를 맞추거나 environment에서 root model을 다시 만들지 않으며 unprepared·legacy root는 Runtime spawn 전에 fail closed한다.
 
-### 채택한 personal canonical layout
+### 현재 personal canonical layout
 
 | Root | Canonical path | 소유권 |
 | --- | --- | --- |
 | `packageRoot` | `hub/` | Tracked source, built-in Skill과 `@ay-ple/interaction-mcp` source, rebuildable `node_modules`·`dist` |
-| `appDataRoot` | `../.ay-ple/` | Verified Runtime payload, `WorkspaceRegistry`, cache와 temp |
+| `appDataRoot` | `../.ay-ple/` | Verified Runtime payload, `WorkspaceRegistry`, cross-workspace 운영 metadata·config, cache와 temp |
 | Semester parent | `../workspace/` | 학기별 독립 Git repository |
 | Global Codex | `~/.codex/` | 기존 account, config, Skill과 Codex-managed session state |
 
@@ -99,9 +99,9 @@ hub/
 
 ../.ay-ple/
   runtime/                    # verified Python/Codex Runtime dependency
-  state/                      # WorkspaceRegistry
-    workspaces/<workspaceId>/
-      runtime-state.json      # non-tracked transient operation state
+  state/
+    runtime/home/             # controlled Runtime process HOME
+    workspace-registry.json   # known roots와 active pointer의 durable CAS authority
   cache/
   temp/
 
@@ -121,6 +121,8 @@ hub/
 
 Workspace Runtime start 전 App은 Browser API와 공유할 loopback listener를 먼저 bind하고 Server-private Broker route, fresh Runtime-generation token과 opaque binding을 준비한다. 이 선행 단계가 실패하면 Codex child를 spawn하지 않는다. Adapter handshake와 effective required MCP status까지 성공한 뒤에만 prepared root를 verified `workspaceId`와 함께 registry known entry·active pointer로 CAS commit하고, 그 durable transaction의 synchronous acceptance에서 coordinator-owned lifecycle reader를 active로 바꾼다. Acceptance 전 Runtime terminal은 같은 writer lease에서 prior pointer를 exact 복원하고 normal active를 열지 않는다. Durable writer phase와 new-file proof는 process death reconciliation에서도 pending first open을 제거하고 pending switch를 prior authority로 되돌린다. No-argument authoritative reopen은 registry read 전에 이 dead pending writer reconciliation을 수행하므로 새 writer가 없어도 unaccepted target을 active로 관찰하지 않는다. Broker는 generation마다 pending interaction slot 하나만 유지하며 slot이 찬 상태의 후속 request를 queue·preempt하지 않고 즉시 `busy`로 끝낸다. Runtime replacement·close와 App shutdown은 binding을 닫고 pending interaction을 terminal 정산한 뒤 token을 폐기하며, Broker → Runtime → listener cleanup을 하나의 5초 deadline 안에서 모두 시도하고 stale credential을 다음 Runtime generation에 재사용하지 않는다.
 
+Registry의 durable writer transaction 외의 pending product operation, InteractionCapability와 Adapter health는 현재 App process의 Runtime generation memory에만 존재한다. Terminal event에서 intake를 닫고 pending work를 실패로 정산하며, process restart 뒤 별도 recovery record가 없는 operation의 성공이나 사용자 result를 추정하지 않는다.
+
 Target workspace의 `AGENTS.md`와 Skills는 App-owned exact bundle이 아니다. Init Skill은 existing bytes를 존중하면서 최소 지침과 Skill copy를 준비하고, AY는 exact Git root에서 Codex의 native project config·instruction·Skill discovery를 사용한다. Current Runtime은 fixed `project_root_markers=[]`와 process-wide managed Skill root를 제거했고, persistent bridge와 one-shot `config/read`·`skills/list` probe가 같은 native `.git` boundary를 사용한다. Package-owned v3 bundle verifier와 context guard도 제거되어 일반 사용자 context를 drift로 차단하지 않는다.
 
 Pre-App native Bootstrap이 설치하는 `.codex/config.toml`은 exact SemesterWorkspace root에서 `hub/packages/interaction-mcp`의 built STDIO Adapter까지 계산한 상대 `command`, forwarded env 이름, capability allowlist와 `required = true`를 담고 MCP server `cwd`와 `tool_timeout_sec`은 생략한다. Current pinned local STDIO launcher가 Runtime fallback `cwd`를 쓰므로 relative command의 기준은 `.codex/`가 아니라 Workspace Runtime의 exact Git root이며, MCP tool timeout은 current pinned native default 300초다. Timeout은 정상 result 없이 pending interaction을 MCP failure로 정산하고 retry는 fresh capability call로 시작한다. App-level countdown·연장·keepalive·자동 retry는 만들지 않으며 Codex pin upgrade 때 native default를 재검증한다. `apps/server`가 App endpoint·token·Runtime binding을 소유하고, capability-neutral `@ay-ple/codex-chat-runtime`은 그 값을 Codex child environment로만 전달하며, Codex가 STDIO Adapter로 allowlist 전달한다. Adapter는 current App Broker와 authenticated handshake를 끝낸 뒤에만 initialize를 성공시킨다. App startup은 effective MCP status에서 expected server·handshake를 별도로 확인해 project config 자체가 무시된 경우도 잡는다. Current thread-start private MCP config injection은 제거하며, project config가 load되지 않거나 Broker binding이 실패한 Runtime은 active workspace로 열지 않는다.
@@ -137,12 +139,12 @@ Workspace-local file과 Git은 app data나 native session과 다른 durable auth
 | --- | --- | --- |
 | Artifact drift | Canonical appData Runtime byte가 바뀌면 검토한 Runtime과 달라진다. | Tracked manifest와 complete tree를 composition preflight와 spawn 경계에서 fail closed로 검증한다. |
 | Silent Runtime fallback | 손상된 canonical Runtime에서 package-local residue, system Python이나 ambient executable로 넘어가면 application contract가 바뀐다. | Factory는 `../.ay-ple/runtime/`의 exact verified bundle만 시작하고 실패 시 닫는다. |
-| Runtime state root 분리 | 전역 Codex state, AY-PLE operation state와 학기 authority의 수명·복구 책임이 다르다. | Codex-managed account·config·session은 `~/.codex`, Runtime payload·registry·cache·temp·workspace별 transient guard는 `../.ay-ple/`, 학기 상태는 workspace에 둔다. |
+| Runtime state root 분리 | 전역 Codex state, AY-PLE의 durable 운영 state, process-local operation과 학기 authority의 수명·복구 책임이 다르다. | Codex-managed account·config·session은 `~/.codex`, Runtime payload·registry·cross-workspace metadata·config·cache·temp는 `../.ay-ple/`, 학기 상태는 workspace에 둔다. Pending operation·interaction·Adapter health는 process memory에서만 terminal 정산한다. |
 | Credential authority 분열 | AY-PLE token store와 global Codex home를 함께 쓰면 refresh·logout owner가 갈라진다. | Current startup은 AY-PLE credential store를 만들지 않고 전역 `CODEX_HOME` 하나만 사용한다. |
 | Workspace 오선택 | Registry나 development override가 사용자 의도와 다른 root를 가리킬 수 있다. | 한 학기 전용 Git root와 workspace-local JSON identity를 재검증하고 thread 생성·재개 전 recorded `cwd`가 canonical root와 정확히 같은지 확인한다. Registry는 pointer로만 사용한다. |
 | Bootstrap owner 혼입 | App이 pre-App native setup 대화를 resume하거나 candidate 상태를 추적하면 app source context와 제품 lifecycle이 다시 결합된다. | Native Bootstrap은 App 시작 전에 끝내고 App은 prepared root만 입력받아 exact Git root에서 새 Workspace Runtime·thread를 시작한다. |
 | Workspace authority 분열 | Current store 옆에 새 manifest sidecar를 만들면 같은 workspace·Course identity를 각각 소유한다. | Current aggregate model을 root `workspace-state.json`으로 옮기고 별도 sidecar를 만들지 않는다. |
-| Split-store recovery | Workspace write와 appData의 transient operation state가 서로 다른 시점에 중단될 수 있다. | `workspace-state.json`의 confirmed bytes만 학기 authority로 취급하고 runtime state는 재검증 가능한 operation hint로 한정한다. |
+| Process restart 중 pending work | Restart 전 interaction이나 operation의 terminal response가 실제로 전달됐는지 알 수 없는데 durable marker로 성공을 추정하면 workspace와 AY의 상태가 갈릴 수 있다. | Registry writer transaction만 정해진 crash reconciliation을 수행하고, 그 밖의 process-local pending work는 복구·성공으로 추정하지 않는다. 새 Runtime generation과 fresh call로 다시 시작한다. |
 | 이력 중복 | Git history와 `statePatches`·`userConfirmations`·`modelingRuns` 배열이 같은 변경을 서로 다른 방식으로 기록하면 rollback 의미가 갈린다. | Workspace SSOT는 current confirmed snapshot만 저장하고 장기 변경 이력은 Git checkpoint 하나로 통일한다. |
 | Evidence self-reference | `workspace-state.json`을 포함하는 commit SHA를 같은 JSON에 넣으면 commit identity를 계산할 수 없다. | `EvidenceRef`는 relative path, exact content digest와 locator를 저장하고 Git history는 해당 content version을 찾는 수단으로만 사용한다. |
 | Evidence path escape·drift | Agent-supplied path가 workspace 밖을 읽거나 digest가 달라진 최신 file을 원래 근거처럼 표시할 수 있다. | Broker가 active Runtime의 exact root 안에서 bounded regular-file read, digest·locator 검증을 atomic preflight하고 하나라도 실패하면 Browser projection 없이 MCP call을 닫는다. |
@@ -162,7 +164,6 @@ Workspace-local file과 Git은 app data나 native session과 다른 durable auth
 | Native context 오해 | Workspace의 `AGENTS.override.md`, project `.codex/`와 Skills는 AY behavior를 바꿀 수 있다. | App-owned exact bundle로 덮어쓰거나 일반 사용자 context를 drift로 차단하지 않는다. Init Skill은 existing bytes를 존중하고 Runtime은 실제 effective context를 관측 가능한 범위에서 표시한다. |
 | Ancestor native context 혼입 | SemesterWorkspace가 독립 Git root가 아니거나 Runtime이 descendant·parent를 cwd로 사용하면 다른 project의 `AGENTS.md`, `.codex/`와 Skills를 읽을 수 있다. | 선택한 canonical directory가 한 학기 전용 Git root임을 확인하고 persistent bridge·one-shot probe·thread가 모두 그 exact root를 cwd로 사용한다. Native `.git` boundary의 effective config·Skill 결과를 provider-free smoke로 검증한다. |
 | 기존 자료 손실 | Existing Git workspace를 app-owned scaffold로 정규화하거나 복사하면 실제 사용자 자료와 history가 갈라질 수 있다. | 사용자가 선택한 repository를 그 자리에서 채택하고 init Skill과 AY가 일반 Git 안전 원칙을 따른다. |
-| Workspace authority drift | Registered TXT나 store가 Turn·Server 수명 중 바뀌면 stale authority로 덮어쓸 수 있다. | Source drift는 interrupt·explicit rebaseline, store drift는 compare-before-rename·explicit reactivation으로 원본을 보존한다. |
 | 민감 상태 혼입 | `CODEX_HOME`을 workspace에 두면 auth·session·log가 사용자 자료와 섞인다. | 전역 `CODEX_HOME`과 workspace의 root 비중첩을 검증한다. |
 | Host context 혼입 | Custom home만으로 ambient provider·environment가 모두 차단된다고 볼 수 없다. | Child environment를 allowlist로 재구성하고 exact local-provider에서 effective state를 검증한다. |
 | Sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | Local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |

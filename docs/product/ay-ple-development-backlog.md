@@ -7,7 +7,7 @@
 
 ## 문서 목적
 
-이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. Current First Assignment의 interaction round trip은 보존하되, app-owned academic workflow는 user-owned Git SemesterWorkspace와 InteractionCapability seam으로 교체한다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
+이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 초기 First Assignment에서 검증한 interaction round trip은 보존했고, app-owned academic workflow는 user-owned Git SemesterWorkspace와 InteractionCapability seam으로 교체했다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
 제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), AY↔App mapping은 [Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md)가 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), current durable v2 보존 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), user-owned workspace는 [ADR 0018](../adr/0018-adopt-user-owned-git-semester-workspaces.md), pre-App Bootstrap owner는 [ADR 0020](../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), InteractionCapability 경계는 [ADR 0019](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)을 따른다. Current account와 root 배치는 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다. 제거한 app-owned workspace·public distribution·managed account 결정은 historical ADR 0014·0016·0017에 보존한다.
 
@@ -117,8 +117,8 @@
     - [x] Capability contract test, deterministic Browser E2E와 exact local-provider trace로 inline card pending 중 composer·새 Turn·steer가 닫히고 accept·revise·reject만 정상 result이며 Adapter abort·STDIO EOF, Turn interrupt·disconnect·timeout·Runtime terminal과 concurrent request의 `busy`는 MCP failure임을 고정한다. Valid evidence 전체가 한 card에 투영되고 path escape·missing·oversized·digest/locator drift가 Browser projection 전에 whole-call failure가 되는지 검증한다. Settled card의 control이 사라지고 revise→fresh call이 기존 card mutation 없이 새 card를 append하는지, partial Review·Modal·별도 page·card dismiss·App Review ledger·허위 apply·duplicate result·숨은 queue가 없는지도 검증한다.
   - [x] [User-owned SemesterWorkspace lifecycle과 canonical local roots Spec](../specs/2026-07-27-user-owned-semester-workspace-lifecycle.md)에 따라 pre-App Bootstrap, prepared-root startup과 Git authority를 완성한다.
     - [x] Canonical `hub/`, sibling `../.ay-ple/`, global Codex home와 optional external workspace root를 분리하고 verified Runtime·controlled state를 external appData에서 시작한다.
-    - [x] Root v4 identity codec과 durable `WorkspaceRegistry` v1 CAS·fresh reopen seam을 구현하되 current public startup에는 아직 연결하지 않았다.
-    - [x] Process-local `ProductOperationCoordinator`가 product Turn을 non-preemptive하게 admit하고 native terminal·completed Runtime close만 release authority가 되게 했다. 함께 구현된 candidate/bootstrap union과 `workspace_init` eligibility는 ADR 0020 이후 correction residue다.
+    - [x] Root v4 identity codec과 durable `WorkspaceRegistry` v1 CAS·fresh reopen seam을 canonical prepared-workspace startup에 연결했다.
+    - [x] Process-local `ProductOperationCoordinator`가 product Turn을 non-preemptive하게 admit하고 native terminal·completed Runtime close만 release authority가 되게 했다. Candidate/bootstrap union과 `workspace_init` eligibility는 ADR 0020 정정에 따라 제거하고 generic coordinator만 유지했다.
     - [x] App-owned Bootstrap Runtime, `BootstrapCandidate`, init Product Turn과 candidate route/UI를 target contract에서 제거하고 generic coordinator survivor만 유지한다.
     - [x] Runtime의 fixed `project_root_markers=[]`와 process-wide managed Skill override를 제거하고, exact Git root의 native project config·`AGENTS.md`·Skill discovery를 사용한다. Persistent Runtime과 context probe가 같은 effective project boundary를 관측하고 hostile ancestor를 넘지 않는지 검증한다.
     - [x] Initial Bootstrap Skill은 repository 개발 harness와 함께 `hub/.agents/skills/`에 두고 사용자가 App 실행 전 Codex CLI 같은 native client에서 직접 실행한다. Skill이 Git, 최소 root files와 선택한 `hub/skills/` source의 workspace-local `.agents/skills/` copy를 준비하며 App Runtime과 SDK permission profile은 이 실행을 소유하지 않는다.
@@ -128,7 +128,7 @@
     - [x] Shared listener와 Interaction Broker 준비 뒤에만 exact-root Workspace Runtime을 spawn하고 readiness port가 exact server·tool roster를 확인한 뒤에만 active registry pointer를 commit한다. Broker 준비·Runtime start·readiness 또는 ignored project config failure는 MCP 없는 degraded AY-PLE mode로 낮추지 않는다.
     - [x] Current pinned App Server에서 exact Git-root `cwd`와 standard `workspace-write` thread start가 unset trust를 native user config에 기록하고 같은 start에서 project MCP를 reload하며, explicit `untrusted`와 parent-only trust를 덮어쓰거나 상속하지 않는지 regression test로 고정한다.
     - [x] Native Bootstrap과 AY가 actual file을 직접 변경하고 의미 있는 checkpoint에서 Git commit하게 한다. App은 Git command를 실행하거나 clean working tree를 startup 선행조건으로 요구하지 않고 additional `writableRoots` SDK patch도 만들지 않는다.
-    - [x] Runtime payload를 verified `../.ay-ple/runtime/`에서 시작하고 workspace별 transient operation state를 Git 밖 `../.ay-ple/state/workspaces/<workspaceId>/`에 둔다.
+    - [x] Runtime payload·`WorkspaceRegistry`·cache·temp와 cross-workspace 운영 metadata·config는 `../.ay-ple/`에 둔다. Pending product operation·InteractionCapability·Adapter health는 workspace별 durable file을 만들지 않고 process-local Runtime generation memory에서 terminal 정산하며, restart 뒤 결과를 추정하지 않는다.
     - [x] 새 canonical layout의 Runtime·global Codex account·active workspace·InteractionCapability smoke가 성공한 뒤에만 legacy dogfood appData, managed development workspace와 package-local Runtime artifact를 scoped cleanup한다.
 
 - [ ] 확인된 사용자 필요에 따라 나머지 post-Ready capability를 순서대로 추가한다.

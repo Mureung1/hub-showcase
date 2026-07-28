@@ -21,7 +21,7 @@
 
 AY-PLE(에이플)는 AY가 사용자의 한 학기 Git workspace에서 실제 파일을 직접 다루고, 판단이 필요한 순간에는 MCP로 App의 typed UI를 요청하는 local-first 학업 Agent 앱입니다. App은 원문·변경·선택지를 작업에 맞는 화면으로 보여주고 사용자의 structured result를 같은 Codex Turn에 돌려줍니다. Skill과 AY는 workflow와 실제 file mutation을 소유합니다.
 
-현재 코드베이스는 이 interaction round trip을 First Assignment vertical로 증명했지만, app-owned `RawMaterial`·`ModelingRun`·durable patch/confirmation과 Server-owned apply에 강하게 결합돼 있습니다. 채택한 목표는 유효한 MCP↔UI round trip을 보존하면서 App을 InteractionCapability host로, AY를 workflow·file apply owner로 다시 나누는 것입니다. Current topology와 target gap은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 구분합니다.
+현재 코드베이스는 이 경계를 First Assignment vertical로 구현했습니다. `@ay-ple/interaction-mcp`의 typed request/result, authenticated App Broker, Browser inline Review와 같은 MCP call의 응답 반환이 연결되고, AY가 결과를 해석해 실제 파일을 바꿉니다. 초기 vertical이 사용했던 app-owned `RawMaterial`·`ModelingRun`·durable patch/confirmation과 Server-owned apply graph는 제거됐습니다. Exact current topology와 검증 표면은 [구현 지도](docs/architecture/codex-chat-implementation-map.md)가 소유합니다.
 
 Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 경계는 [Public repository clean snapshot ADR](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)에 기록합니다.
 
@@ -30,24 +30,29 @@ Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 �
 | [AY-PLE는 어떤 앱인가](docs/product/ay-ple-overview.md) | AI Agent가 앱 안에서 학생을 위해 일하는 대표 사용 흐름 |
 | [AY–App Interaction Capability](docs/architecture/ay-app-interaction-capabilities.md) | MCP 요청, typed UI와 같은 Turn result 반환을 잇는 long-lived seam |
 | [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md) | 현재 maintained runtime·Server·Chat Shell topology와 남은 연결 지점 |
-| [개발 백로그](docs/product/ay-ple-development-backlog.md) | 현재 강결합에서 채택한 interaction seam으로 옮기는 작업 순서 |
+| [개발 백로그](docs/product/ay-ple-development-backlog.md) | 구현 완료 항목과 확인된 사용자 필요에 따른 후속 작업 순서 |
 
 ## 빠른 시작
 
 ```bash
 npm install
+```
+
+Fresh clone에서는 App을 열기 전에 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 production bundle을 materialize합니다. 이어서 `hub/`를 연 Codex CLI 같은 native client에서 `semester-workspace-init` Skill을 실행해 strict v4 `workspace-state.json`, 실제 `.git` directory, workspace-local Skill과 required Interaction MCP declaration을 가진 prepared SemesterWorkspace를 만듭니다.
+
+첫 open과 학기 변경에는 prepared Git root의 absolute path를 명시합니다.
+
+```bash
+npm run dev -- --workspace /absolute/path/to/prepared-semester
+```
+
+Required Runtime·Interaction readiness가 성공하면 App이 그 root를 `WorkspaceRegistry`의 active pointer로 기록합니다. 이후 같은 학기를 다시 열 때만 인자 없이 시작합니다.
+
+```bash
 npm run dev
 ```
 
-Fresh clone에서는 `npm run dev` 전에 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 production bundle을 materialize해야 합니다. Canonical development command는 검증한 external Runtime과 operating state로 Express Server와 Vite Chat Shell을 함께 시작합니다.
-
-Canonical root ownership과 Runtime state layout은 [Server README](apps/server/README.md)와 [Codex Runtime 격리 문서](docs/architecture/codex-runtime-isolation.md)가 소유합니다. Default startup은 SemesterWorkspace를 자동 선택하지 않으며 필요할 때만 absolute path를 명시합니다.
-
-Current-v2 compatibility workspace를 개발 중 명시적으로 열어야 할 때만 absolute path를 전달합니다.
-
-```bash
-npm run dev -- --workspace /absolute/path/to/semester
-```
+Explicit prepared root와 valid active pointer가 모두 없으면 Browser와 Workspace Runtime을 열지 않고 fail closed합니다. Canonical root ownership과 Runtime state layout은 [Server README](apps/server/README.md)와 [Codex Runtime 격리 문서](docs/architecture/codex-runtime-isolation.md)가 소유합니다.
 
 ## 캠프 데모
 
@@ -163,4 +168,4 @@ npm run test:local-provider -w @ay-ple/codex-chat-runtime
 npm run test:prepared-workspace-product-actual
 ```
 
-아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 채택한 target에서 App은 typed InteractionCapability와 workspace registry를, AY와 Skill은 workflow·실제 file mutation·Git checkpoint를, SemesterWorkspace는 학기 자료와 history를 소유합니다. 현재 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.
+아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. Current dev·dogfood는 전역 `CODEX_HOME`을 사용합니다. 현재 구현에서 App은 typed InteractionCapability와 workspace registry를, AY와 Skill은 workflow·실제 file mutation·Git checkpoint를, SemesterWorkspace는 학기 자료와 history를 소유합니다. 남은 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.

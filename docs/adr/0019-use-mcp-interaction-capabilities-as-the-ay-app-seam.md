@@ -2,7 +2,7 @@
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 부분 대체·보완하는 결정: [ADR 0007 — 제품 작업을 native Codex 조합으로 실행한다](0007-use-native-codex-composition-for-product-actions.md)
 
@@ -14,7 +14,7 @@
 
 AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. AY가 작업 중 사용자 판단이 필요한 순간을 MCP로 표현하면, App이 그 의도를 자료 미리보기·선택지·변경 비교 같은 typed UI로 보여주고, 사용자의 선택을 같은 Codex Turn에 구조화된 결과로 돌려주는 상호작용이 핵심 제품 가치다.
 
-First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능성을 증명했다. 그러나 현재 구현은 caller가 `requestKey`, workspace·Course identity와 revision을 알고, App이 `ModelingRun`·`StatePatch`·`UserConfirmation`의 lifecycle과 apply까지 소유하며, 같은 결정을 built-in `request_user_input`으로 한 번 더 운반한다. 이 구조는 학업 workflow와 native execution correlation을 MCP Interface 밖으로 누출해 새 interaction을 추가할수록 App, Skill과 Server가 함께 바뀌게 한다.
+초기 First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능성을 증명했지만, 당시 caller는 `requestKey`, workspace·Course identity와 revision을 알고 App은 `ModelingRun`·`StatePatch`·`UserConfirmation`의 lifecycle과 apply까지 소유했으며 같은 결정을 built-in `request_user_input`으로 한 번 더 운반했다. 이 historical 강결합은 학업 workflow와 native execution correlation을 MCP Interface 밖으로 누출했고, 아래 결정을 채택하는 동기가 됐다.
 
 ## 결정
 
@@ -90,8 +90,8 @@ First Assignment vertical의 `propose_state_patch`는 이 round trip의 가능�
 
 ## 결과
 
-현재 First Assignment 구현은 interaction round trip의 유효한 증거지만 채택한 경계의 구현은 아니다. Server의 app-owned `RawMaterial` registry, `ModelingRun` receipt, durable `StatePatch`·`UserConfirmation`, revision-bound apply transaction, MCP+`request_user_input` 이중 흐름과 thread-start private MCP config injection은 contraction 대상이다.
+현재 First Assignment 구현은 채택한 InteractionCapability 경계를 따른다. `@ay-ple/interaction-mcp`의 typed STDIO Adapter와 authenticated held-POST transport, `apps/server`의 Runtime-generation Broker, Browser inline Review card와 same-call `accept | revise | reject` 반환이 한 graph로 연결된다. App-owned `RawMaterial` registry, `ModelingRun` receipt, durable `StatePatch`·`UserConfirmation`, revision-bound apply transaction, MCP+`request_user_input` 이중 흐름과 thread-start private MCP config injection은 canonical product graph에서 제거됐다.
 
 새 interaction을 추가할 때는 “App이 이 workflow를 얼마나 알아야 하는가”가 아니라 “사용자에게 어떤 typed 선택 경험을 제공하고 AY에 어떤 closed result를 돌려줄 것인가”를 설계한다. App 자체 설정을 바꾸는 future capability도 별도 MCP tool로 만들 수 있지만, 그 tool은 자신이 소유한 App mutation만 수행하고 AY의 학업 workflow를 소유하지 않는다. ADR 0020의 initial workspace 선택·Bootstrap은 current InteractionCapability가 아니라 pre-App native flow다.
 
-Long-lived 기술 mapping은 [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), 현재 강결합 구현과 전환 gap은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
+Long-lived 기술 mapping은 [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), exact current topology와 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 후속 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.

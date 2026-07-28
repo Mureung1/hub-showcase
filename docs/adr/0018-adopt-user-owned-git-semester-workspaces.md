@@ -2,7 +2,7 @@
 
 분류: 활성
 
-성숙도: 채택
+성숙도: 구현됨
 
 대체한 결정: [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md)
 
@@ -24,13 +24,13 @@ ADR 0014는 public preview에서 임의의 사용자 자료를 보호하고 firs
 - **ADR 0020으로 대체됨:** Active SemesterWorkspace가 없을 때 AY-PLE이 `hub/`를 exact `cwd`로 쓰는 Bootstrap Runtime·thread를 연다는 결정.
 - **ADR 0020으로 대체됨:** Bootstrap candidate를 App이 보존하고 명시적인 activation transition을 시작한다는 결정.
 - **ADR 0020으로 대체됨:** App이 Bootstrap Runtime을 종료해 candidate root의 Workspace Runtime으로 전환하고 두 Runtime phase를 소유한다는 결정. Listener·Broker→exact-root Runtime→required MCP readiness→registry commit 순서 자체는 prepared-root startup에서 유지한다.
-- 정상 workspace Runtime은 root의 `.git`을 Codex의 native project marker로 사용한다. App은 `project_root_markers=[]`로 project-root discovery를 덮어쓰거나 broad CLI config로 workspace context를 재정의하지 않는다. 이 target에서는 root부터 `cwd`까지의 native project config·instruction·Skill discovery가 곧 SemesterWorkspace context다.
+- 정상 workspace Runtime은 root의 `.git`을 Codex의 native project marker로 사용한다. App은 `project_root_markers=[]`로 project-root discovery를 덮어쓰거나 broad CLI config로 workspace context를 재정의하지 않는다. 현재 제품에서는 root부터 `cwd`까지의 native project config·instruction·Skill discovery가 곧 SemesterWorkspace context다.
 - AY-PLE은 채택을 위해 별도 app-owned workspace copy나 normalized child leaf를 만들지 않고, repository 안의 실제 사용자 파일을 작업 대상으로 삼는다.
 - Current `<SemesterWorkspace>/.ay-ple/workspace-state.json`의 aggregate model을 `<SemesterWorkspace>/workspace-state.json`으로 옮겨 학기 identity와 학업 상태를 담는 plain workspace-local JSON authority로 삼는다. SemesterWorkspace root에는 `AGENTS.md`, `workspace-state.json`, `.agents/skills/`, Codex 표준 project config인 `.codex/config.toml`과 실제 학기 자료를 Git-tracked file로 배치하며 별도 `.ay-ple/` product directory를 두지 않는다.
 - `workspace-state.json`은 학기 identity와 현재 구조화된 학업 snapshot을 담는다. Git commit history가 장기 변경 이력과 rollback을 맡으므로 `statePatches`, `userConfirmations`, `modelingRuns` event 배열을 workspace SSOT에 누적하지 않는다. Exact academic field와 file format은 이 ADR이 고정하지 않는다.
 - 구조화된 학기 snapshot이 `EvidenceRef`를 사용할 때는 `relativePath`, exact `contentDigest`와 문서 내부 `locator`로 근거 byte와 위치를 식별한다. `workspace-state.json`이 포함되는 commit의 SHA를 같은 파일에 넣는 self-reference는 만들지 않으며, Git history는 digest가 가리키는 과거 content를 찾고 비교하는 이력 수단이다.
 - `StatePatch`와 `UserConfirmation`은 ADR 0019의 transient interaction request/result이고 `ModelingRun`은 native Codex Turn으로 대체한다. App이 이 객체를 academic event로 저장하거나 수락 결과를 대신 적용하지 않으며, AY가 interaction 결과에 따라 실제 workspace file을 바꾸고 Git checkpoint를 남긴다.
-- Current aggregate의 `executionGuard`, `sourceRecovery`와 이후 같은 수명의 실행 중 상태는 Git-tracked `workspace-state.json`에서 제거하고 `../.ay-ple/state/workspaces/<workspaceId>/runtime-state.json`에 비추적으로 둔다. 이 operation state는 confirmed 학기 상태의 authority가 아니며 appData 손실 뒤 workspace의 confirmed state를 바꾸거나 복구 대상으로 추측하지 않는다.
+- Historical aggregate의 `executionGuard`, `sourceRecovery` 같은 실행 중 필드는 Git-tracked `workspace-state.json`에서 제거한다. 현재 pending product operation, InteractionCapability와 Adapter health는 해당 process의 Runtime generation memory에서만 유지하고 terminal event에서 정산한다. 별도 workspace별 recovery file을 만들지 않으며 restart 뒤 사라진 operation의 성공·결과를 추정하지 않는다.
 - **ADR 0020으로 대체됨:** App이 account 연결 뒤 active workspace가 없으면 hub-rooted Bootstrap Runtime을 열고 초기화·activation을 수행한다는 결정.
 - 앱은 appData에 known SemesterWorkspace 목록과 현재 active workspace pointer만 보존한다. 새 학기 추가·기존 학기 전환은 pre-App native Bootstrap 뒤 launch-time `--workspace`로 명시하고, 이후 재실행은 active pointer를 fresh reopen한다. Workspace 내부 구조나 Git lifecycle을 registry가 소유하지 않는다.
 - 처음 여는 workspace에서는 App 실행 전 native Codex client에서 AY의 init Skill을 실행한다. 이 Skill은 사용자에게 입력·권한·충돌 해결을 확인하고 작업 순서를 안내하는 Bootstrap surface이고, Skill에 포함된 repository-owned deterministic script가 Git 초기화, 최소 `AGENTS.md`, `workspace-state.json`, built-in Skill copy, 정적인 `.codex/config.toml`과 명시적인 첫 checkpoint를 준비한다. Exact managed byte와 root-relative MCP command를 재현하고, 기존 repository의 dirty·unrelated byte를 보존하며, 충돌 시 no-clobber로 중단하고, 승인한 경로만 stage해야 하므로 instruction-only file 조작 대신 이 script를 채택한다. 이 script는 App-owned scaffold subsystem이 아니며 App Runtime이나 Product Turn에서 실행하지 않는다.
@@ -48,7 +48,7 @@ ADR 0014는 public preview에서 임의의 사용자 자료를 보호하고 firs
 - Sibling appData `../.ay-ple/`은 여러 SemesterWorkspace를 가로지르는 운영 metadata와 config, Runtime payload, `WorkspaceRegistry`, cache와 temp를 소유한다. 학기 identity·Course·자료·학업 상태나 Skill copy를 저장하지 않는다. Bootstrap source는 `hub/.agents/skills/`, AY-PLE built-in Skill source는 `hub/skills/`, 실행 copy는 각 SemesterWorkspace의 `.agents/skills/`가 소유하며 mutable Runtime payload와 재현 cache도 sibling appData에만 둔다.
 - Canonical path 전환은 legacy appData를 통째로 복사하지 않는다. Runtime은 `../.ay-ple/runtime/`에 새로 materialize·검증하고, generated ModelingRecipe, assignment staging, isolated Codex home과 managed development workspace는 재사용하지 않는다. 사용자가 소유한 실제 SemesterWorkspace만 보존한다.
 - 새 canonical layout에서 Runtime 검증, 전역 Codex 연결, active SemesterWorkspace open과 기본 smoke가 모두 성공한 뒤 ownership marker·canonical path·expected layout을 재검증한 exact legacy target만 one-shot cleanup한다. 이 cleanup은 normal install/start에 포함하지 않는다.
-- ADR 0014의 v3 scaffold·setup journey·복사 기반 `ImportSource` 경계와 이를 위한 package primitive는 current product target이 아니다. Existing code는 별도 contraction 전까지 구현 흔적으로 남을 수 있지만 adopted capability로 해석하지 않는다.
+- ADR 0014의 v3 scaffold·setup journey·복사 기반 `ImportSource` 경계와 이를 위한 package primitive는 current product contract와 canonical graph에서 제거됐다. 당시 판단과 구현 증거는 ADR 0014와 완료 artifact에서만 역사 기록으로 보존한다.
 
 ## 결과
 
