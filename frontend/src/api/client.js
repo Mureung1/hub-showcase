@@ -23,9 +23,9 @@ const getApiBase = () => {
 const API_BASE = getApiBase();
 
 // 디버깅용
-if (import.meta.env.DEV) {
-  console.log("🔗 API_BASE:", API_BASE);
-}
+console.log("🔗 API_BASE:", API_BASE); // 항상 출력
+console.log("🌍 VITE_API_URL:", import.meta.env.VITE_API_URL); // 환경변수 확인
+console.log("🖥️ Hostname:", window.location.hostname);
 
 export async function saveStoreInfo(data) {
   try {
