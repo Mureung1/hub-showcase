@@ -5,6 +5,7 @@ import {
   Dumbbell,
   Flower2,
   GraduationCap,
+  MapPinned,
   Scissors,
   Shirt,
   ShoppingBasket,
@@ -33,7 +34,11 @@ import {
 } from "./marketBoundaryGeometry";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
-import { groupStoreMarkers, STORE_MARKER_DETAIL_ZOOM } from "./storeMarkerLod";
+import {
+  groupStoreMarkers,
+  isStoreMarkerDeemphasized,
+  STORE_MARKER_DETAIL_ZOOM,
+} from "./storeMarkerLod";
 import "./storeMarkerLod.css";
 import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
@@ -110,6 +115,11 @@ function StoreMarker({
 }) {
   const isSelected = selectedName === store.name;
   const isPrefab = prefabMode && isSelected && count === 1 && !detailed;
+  const isDeemphasized = isStoreMarkerDeemphasized(
+    store,
+    selectedName,
+    prefabMode ? "storefront3d" : "analysis",
+  );
   const Icon = markerIcon(store.category);
   const label =
     count > 1 ? `${store.category} 점포 ${count}개 묶음 보기` : `${store.name} 후보 보기`;
@@ -126,6 +136,7 @@ function StoreMarker({
                 "map-marker",
                 categoryClass(store.category),
                 isSelected ? "is-selected" : "",
+                isDeemphasized ? "is-deemphasized" : "",
                 detailed ? "is-detailed" : "is-compact",
                 count > 1 ? "is-clustered" : "",
                 prefabMode ? "is-storefront-fallback" : "",
@@ -279,6 +290,7 @@ export function MarketMapCanvas({
     [mapStores, profile.storefrontsVisible, representedStoreIds],
   );
   const [zoom, setZoom] = useState(15.4);
+  const [mapReady, setMapReady] = useState(false);
   const densityStores = useMemo(
     () =>
       mapStores.filter(
@@ -304,7 +316,7 @@ export function MarketMapCanvas({
   if (isTestEnvironment())
     return <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>;
   return (
-    <div className="live-map">
+    <div className="live-map" aria-busy={!mapReady}>
       <Map
         ref={mapRef}
         initialViewState={{
@@ -324,6 +336,7 @@ export function MarketMapCanvas({
           setZoom(event.target.getZoom());
           onVisibleBoundsChange(readMapBounds(event.target));
         }}
+        onIdle={() => setMapReady(true)}
         onStyleData={(event) => hideExternalBuildingLayers(event.target)}
         onMove={(event) => {
           setZoom(event.viewState.zoom);
@@ -480,7 +493,21 @@ export function MarketMapCanvas({
           </Popup>
         )}
       </Map>
-      {!visibleSupportedRegion && (
+      {!mapReady && (
+        <div className="map-loading-overlay" role="status" aria-live="polite">
+          <div className="map-loading-pattern" aria-hidden="true" />
+          <div className="map-loading-card">
+            <span className="map-loading-icon" aria-hidden="true">
+              <MapPinned size={20} />
+            </span>
+            <span>
+              <b>지도를 불러오는 중</b>
+              <small>도로와 건물 정보를 준비하고 있습니다.</small>
+            </span>
+          </div>
+        </div>
+      )}
+      {!visibleSupportedRegion && mapReady && (
         <div className="map-support-status" role="status">
           <b>LocalTwin 분석 지원 범위 밖</b>
           <span>기본 지도는 계속 탐색할 수 있으며 새 분석은 지원 지역에서 시작합니다.</span>
