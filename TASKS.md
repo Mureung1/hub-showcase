@@ -204,11 +204,11 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 - [x] **P0** — [#41](https://github.com/rldbs5353/hub/issues/41) 전체 플로우(정상/에러/반복 문제 감지) 통합 테스트 및 버그 픽스 (완료. `feature-verifier`로 전 항목 재검증 중 레거시 데이터의 스키마 밖 키워드가 통계·반복문제 감지·내 리뷰 목록에서 그대로 노출되던 버그 추가 발견·수정 — `countKeywords`/`getReviewsByUser`에도 `sanitizeKeywords` 적용)
 - [x] **P0** — [#40](https://github.com/rldbs5353/hub/issues/40) 배포 준비 — Vercel(프론트)/Render(백엔드) 결정 (완료. `api.js`의 하드코딩된 `localhost:4000`을 `VITE_API_BASE_URL` 환경변수로 전환, `vercel.json`으로 SPA rewrite 추가, 루트 `render.yaml`로 백엔드 배포 설정 선언, `CLAUDE.md`에 배포 결정 기록)
 
-### 화요일(7/28) — Vercel·Render 첫 배포
+### 화요일(7/28) — Vercel·Render 첫 배포 (완료)
 
-- [ ] **P0** — [#42](https://github.com/rldbs5353/hub/issues/42) Render 백엔드 배포
-- [ ] **P0** — [#43](https://github.com/rldbs5353/hub/issues/43) Vercel 프론트엔드 배포 및 백엔드 연동
-- [ ] **P0** — [#44](https://github.com/rldbs5353/hub/issues/44) 배포 환경 전체 회귀 검증
+- [x] **P0** — [#42](https://github.com/rldbs5353/hub/issues/42) Render 백엔드 배포 (완료. **BE**: [review-assistant-server.onrender.com](https://review-assistant-server.onrender.com) — `/health` 200 확인)
+- [x] **P0** — [#43](https://github.com/rldbs5353/hub/issues/43) Vercel 프론트엔드 배포 및 백엔드 연동 (완료. **FE**: [hub-lovat-omega.vercel.app](https://hub-lovat-omega.vercel.app) — Root Directory를 `review-assistant-react`로 지정, `VITE_API_BASE_URL`에 BE 주소 등록. 배포 중 GitHub 포크의 기본 브랜치가 `main`이라 `N112_엄기윤`의 실제 코드가 안 보이던 문제 발견 — 기본 브랜치를 임시로 `N112_엄기윤`로 바꿔서 해결)
+- [x] **P0** — [#44](https://github.com/rldbs5353/hub/issues/44) 배포 환경 전체 회귀 검증 (핵심 플로우 확인 완료 — `/health`, SPA 라우팅(`/dashboard` 직접 접속), CORS preflight(Vercel→Render 허용 확인, 처음엔 `CORS_ORIGIN`이 로컬 임시값으로 남아있어 수정), 실제 리뷰 분석 end-to-end curl 테스트 전부 통과. 에러 케이스 전체(429/400 6종)까지의 배포 환경 재검증은 `#54`에서 이어서 진행)
 
 ### 수요일(7/29) — 보완·재배포·워크플로우 정리 + 영상 제출
 
