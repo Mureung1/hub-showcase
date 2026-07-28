@@ -60,6 +60,10 @@ function LoginPage() {
           </label>
         </div>
 
+        <p className="sub" style={{ textAlign: 'right', margin: '-10px 0 0' }}>
+          <Link to="/forgot-password">비밀번호를 잊으셨나요?</Link>
+        </p>
+
         {error && <p className="checklist-detail-fail">{error}</p>}
 
         <button type="submit" className="btn-primary" disabled={submitting}>

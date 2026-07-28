@@ -35,7 +35,30 @@ export function AuthProvider({ children }) {
     return supabase.auth.signOut()
   }
 
-  const value = { user: session?.user ?? null, session, loading, signUp, signIn, signOut }
+  // 재설정 이메일의 링크가 이 redirectTo로 돌아온다 — /reset-password가 그 도착 페이지다.
+  // 이 URL은 Supabase 대시보드의 Redirect URLs 허용목록에 등록돼 있어야 실제로 동작한다.
+  function resetPasswordForEmail({ email }) {
+    return supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+  }
+
+  // 재설정 링크를 클릭하면 Supabase가 이미 세션(user)을 심어준 상태이므로, 이 호출은 그 세션으로
+  // 비밀번호만 바꾼다 — 별도 로그인 호출 없이 그대로 로그인 상태가 유지된다.
+  function updatePassword({ password }) {
+    return supabase.auth.updateUser({ password })
+  }
+
+  const value = {
+    user: session?.user ?? null,
+    session,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    resetPasswordForEmail,
+    updatePassword,
+  }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
