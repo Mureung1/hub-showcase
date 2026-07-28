@@ -1,23 +1,38 @@
 import { useState, useEffect } from 'react'
-import { Bell, ChevronRight, TrendingUp, TrendingDown, Coffee, ShoppingCart, Utensils, Car, Zap, Package, X, Search } from 'lucide-react'
+import { Bell, ChevronRight, TrendingUp, TrendingDown, Coffee, ShoppingCart, Utensils, Zap, Package, X, Search } from 'lucide-react'
 import SurvivalModeScreen from './SurvivalModeScreen'
-import { getBudget, getPrediction, getSubscriptions, getDailyExpenses, type Prediction, type Subscription, type DailyAmount } from '../lib/api'
+import { getCategoryMeta } from '../lib/categoryMeta'
+import {
+  getBudget, getPrediction, getSubscriptions, getDailyExpenses, getRecentExpenses, getDailyCalendar, getContext,
+  type Prediction, type Subscription, type DailyAmount, type AuthUser, type RecentExpense, type DailySpend, type Context,
+} from '../lib/api'
 const CALENDAR_DAYS = ['일', '월', '화', '수', '목', '금', '토']
 
-const ALL_EXPENSES = [
-  { id: 1, name: '스타벅스', category: '카페', amount: 6500, time: '오늘 08:30', icon: Coffee, color: '#6F4E37', bg: '#FFF3E0' },
-  { id: 2, name: 'GS25 편의점', category: '편의점', amount: 4200, time: '오늘 11:15', icon: Package, color: '#4F8EF7', bg: '#EBF2FF' },
-  { id: 3, name: '배달의민족', category: '외식', amount: 18500, time: '어제', icon: Utensils, color: '#00C4B3', bg: '#E8F8F6' },
-  { id: 4, name: '이마트', category: '식료품', amount: 32700, time: '어제', icon: ShoppingCart, color: '#FF6B6B', bg: '#FFF0F0' },
-  { id: 5, name: '카카오T', category: '교통', amount: 9800, time: '2일 전', icon: Car, color: '#FFC857', bg: '#FFF8E8' },
-  { id: 6, name: '쿠팡', category: '쇼핑', amount: 45200, time: '3일 전', icon: Package, color: '#9B8FFF', bg: '#F0EFFF' },
-  { id: 7, name: '파리바게뜨', category: '카페', amount: 8900, time: '3일 전', icon: Coffee, color: '#6F4E37', bg: '#FFF3E0' },
-  { id: 8, name: '버스', category: '교통', amount: 1350, time: '4일 전', icon: Car, color: '#FFC857', bg: '#FFF8E8' },
-  { id: 9, name: '세븐일레븐', category: '편의점', amount: 3600, time: '4일 전', icon: Package, color: '#4F8EF7', bg: '#EBF2FF' },
-  { id: 10, name: '홈플러스', category: '식료품', amount: 54100, time: '5일 전', icon: ShoppingCart, color: '#FF6B6B', bg: '#FFF0F0' },
-  { id: 11, name: '요기요', category: '외식', amount: 22000, time: '5일 전', icon: Utensils, color: '#00C4B3', bg: '#E8F8F6' },
-  { id: 12, name: 'CGV', category: '문화', amount: 14000, time: '6일 전', icon: TrendingUp, color: '#9B8FFF', bg: '#F0EFFF' },
-]
+const CATEGORY_ICON: Record<string, typeof Coffee> = {
+  CAFE: Coffee,
+  CONVENIENCE_STORE: Package,
+  DELIVERY: Utensils,
+  MART: ShoppingCart,
+  MEAL_KIT: Package,
+  CAMPUS_MEAL: Utensils,
+  SHOPPING: Package,
+  OTHER: Package,
+}
+
+/** "오늘 08:30" / "어제" / "N일 전" 형태로 상대 시간을 표시 */
+function formatRelativeTime(spentAt: string) {
+  const date = new Date(spentAt)
+  const now = new Date()
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const diffDays = Math.round((startOfDay(now).getTime() - startOfDay(date).getTime()) / 86400000)
+
+  if (diffDays === 0) {
+    return `오늘 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+  }
+  if (diffDays === 1) return '어제'
+  if (diffDays > 1) return `${diffDays}일 전`
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`
+}
 
 function buildCalendar() {
   const today = new Date()
@@ -29,28 +44,68 @@ function buildCalendar() {
   for (let i = 0; i < firstDay; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
   while (cells.length % 7 !== 0) cells.push(null)
-  return { cells, today: today.getDate() }
+  return { cells, today: today.getDate(), month: month + 1 }
 }
 
-const SPEND_DAYS: Record<number, 'low' | 'mid' | 'high'> = {
-  1: 'low', 2: 'mid', 3: 'low', 4: 'high', 5: 'mid',
-  7: 'low', 8: 'mid', 10: 'high', 11: 'low', 14: 'mid',
+/** 하루 지출 합계를 캘린더 점 색깔(low/mid/high)로 나눈다 — 임의 기준이 아니라 실제 금액 구간으로 나눈 것 */
+function spendLevel(amount: number): 'low' | 'mid' | 'high' {
+  if (amount >= 30000) return 'high'
+  if (amount >= 10000) return 'mid'
+  return 'low'
+}
+
+/** 홈 화면 AI 코치 카드 문구를 실제 Context 수치로 구성한다 (신호 → 코칭, 가짜 확신도 숫자 없이) */
+function renderHomeInsight(ctx: Context | null) {
+  if (!ctx) {
+    return <>데이터를 불러오는 중이에요...</>
+  }
+  const { deliveryIncreaseRate, budgetUsageRate } = ctx
+  if (deliveryIncreaseRate !== null && deliveryIncreaseRate > 20) {
+    return (
+      <>
+        이번 달 <strong style={{ color: '#FF6B6B' }}>배달비가 {Math.round(deliveryIncreaseRate)}% 증가</strong>했어요. 배달 대신 학식이나 집밥으로 대체해보는 건 어떨까요?
+      </>
+    )
+  }
+  if (budgetUsageRate !== null && budgetUsageRate >= 80) {
+    return (
+      <>
+        이번 달 예산을 <strong style={{ color: '#FF6B6B' }}>{Math.round(budgetUsageRate)}% 사용</strong>했어요. 남은 기간 지출에 조금 더 신경 써보세요.
+      </>
+    )
+  }
+  if (budgetUsageRate !== null) {
+    return (
+      <>
+        이번 달 예산 사용률은 <strong style={{ color: '#4F8EF7' }}>{Math.round(budgetUsageRate)}%</strong>예요. 지금 페이스면 여유 있어요 👍
+      </>
+    )
+  }
+  return <>아직 분석할 데이터가 부족해요. 지출을 기록하면 AI 코치가 소비 패턴을 분석해드려요 ✨</>
 }
 
 /* ── 전체 지출 목록 모달 ── */
 function AllExpensesModal({ onClose }: { onClose: () => void }) {
   const [search, setSearch] = useState('')
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
+  const [expenses, setExpenses] = useState<RecentExpense[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const categories = ['전체', '카페', '외식', '식료품', '편의점', '교통', '쇼핑', '문화']
+  useEffect(() => {
+    getRecentExpenses(100).then(setExpenses).catch(() => {}).finally(() => setLoading(false))
+  }, [])
 
-  const filtered = ALL_EXPENSES.filter(e => {
-    const matchSearch = e.name.includes(search) || e.category.includes(search)
-    const matchCat = !selectedCat || selectedCat === '전체' || e.category === selectedCat
+  const categories = Object.keys(CATEGORY_ICON)
+
+  const filtered = expenses.filter(e => {
+    const label = getCategoryMeta(e.category).label
+    const matchSearch = e.name.includes(search) || label.includes(search)
+    const matchCat = !selectedCat || e.category === selectedCat
     return matchSearch && matchCat
   })
 
   const totalAmount = filtered.reduce((s, e) => s + e.amount, 0)
+  const month = new Date().getMonth() + 1
 
   return (
     <div
@@ -76,7 +131,7 @@ function AllExpensesModal({ onClose }: { onClose: () => void }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: 'var(--foreground)' }}>전체 지출 내역</h2>
-              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>7월 · 총 {filtered.length}건 · {totalAmount.toLocaleString()}원</p>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>{month}월 · 총 {filtered.length}건 · {totalAmount.toLocaleString()}원</p>
             </div>
             <button
               onClick={onClose}
@@ -99,37 +154,58 @@ function AllExpensesModal({ onClose }: { onClose: () => void }) {
 
           {/* Category Filter */}
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }} className="no-scrollbar">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCat(cat === '전체' ? null : cat)}
-                style={{
-                  whiteSpace: 'nowrap', padding: '6px 14px', borderRadius: 99, border: '1.5px solid',
-                  borderColor: (selectedCat === cat || (!selectedCat && cat === '전체')) ? '#4F8EF7' : 'var(--border)',
-                  background: (selectedCat === cat || (!selectedCat && cat === '전체')) ? '#EBF2FF' : 'white',
-                  color: (selectedCat === cat || (!selectedCat && cat === '전체')) ? '#4F8EF7' : 'var(--muted)',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Pretendard',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {cat}
-              </button>
-            ))}
+            <button
+              onClick={() => setSelectedCat(null)}
+              style={{
+                whiteSpace: 'nowrap', padding: '6px 14px', borderRadius: 99, border: '1.5px solid',
+                borderColor: !selectedCat ? '#4F8EF7' : 'var(--border)',
+                background: !selectedCat ? '#EBF2FF' : 'white',
+                color: !selectedCat ? '#4F8EF7' : 'var(--muted)',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Pretendard',
+                transition: 'all 0.15s',
+              }}
+            >
+              전체
+            </button>
+            {categories.map(cat => {
+              const meta = getCategoryMeta(cat)
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCat(cat)}
+                  style={{
+                    whiteSpace: 'nowrap', padding: '6px 14px', borderRadius: 99, border: '1.5px solid',
+                    borderColor: selectedCat === cat ? '#4F8EF7' : 'var(--border)',
+                    background: selectedCat === cat ? '#EBF2FF' : 'white',
+                    color: selectedCat === cat ? '#4F8EF7' : 'var(--muted)',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Pretendard',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {meta.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {/* Expense List */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 24px' }} className="no-scrollbar">
-          {filtered.length === 0 ? (
+          {loading ? null : filtered.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0', gap: 8 }}>
               <span style={{ fontSize: 40 }}>🔍</span>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--foreground)' }}>검색 결과가 없어요</p>
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>다른 키워드로 검색해보세요</p>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--foreground)' }}>
+                {expenses.length === 0 ? '아직 등록된 지출이 없어요' : '검색 결과가 없어요'}
+              </p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
+                {expenses.length === 0 ? '지출을 추가하면 여기에 표시돼요' : '다른 키워드로 검색해보세요'}
+              </p>
             </div>
           ) : (
             <div style={{ background: 'white', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
               {filtered.map((item, idx) => {
-                const Icon = item.icon
+                const meta = getCategoryMeta(item.category)
+                const Icon = CATEGORY_ICON[item.category] ?? Package
                 return (
                   <div
                     key={item.id}
@@ -139,14 +215,14 @@ function AllExpensesModal({ onClose }: { onClose: () => void }) {
                       cursor: 'pointer', transition: 'background 0.1s',
                     }}
                   >
-                    <div style={{ width: 42, height: 42, borderRadius: 14, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon size={18} color={item.color} />
+                    <div style={{ width: 42, height: 42, borderRadius: 14, background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon size={18} color={meta.color} />
                     </div>
                     <div style={{ flex: 1, marginLeft: 12 }}>
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>{item.name}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: item.color, background: item.bg, padding: '2px 6px', borderRadius: 99 }}>{item.category}</span>
-                        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{item.time}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: meta.color, background: meta.bg, padding: '2px 6px', borderRadius: 99 }}>{meta.label}</span>
+                        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{formatRelativeTime(item.spentAt)}</span>
                       </div>
                     </div>
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--foreground)' }}>-{item.amount.toLocaleString()}원</p>
@@ -164,25 +240,36 @@ function AllExpensesModal({ onClose }: { onClose: () => void }) {
 interface HomeScreenProps {
   survivalModeOff: boolean
   onGoToSettings: () => void
+  user: AuthUser | null
 }
 
-export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScreenProps) {
-  const { cells, today } = buildCalendar()
+export default function HomeScreen({ survivalModeOff, onGoToSettings, user }: HomeScreenProps) {
+  const { cells, today, month } = buildCalendar()
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [showAllExpenses, setShowAllExpenses] = useState(false)
-  const recentExpenses = ALL_EXPENSES.slice(0, 5)
 
   const [budgetTotal, setBudgetTotal] = useState<number | null>(null)
   const [prediction, setPrediction] = useState<Prediction | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [dailyExpenses, setDailyExpenses] = useState<DailyAmount[]>([])
+  const [recentExpenses, setRecentExpenses] = useState<RecentExpense[]>([])
+  const [monthlyDaily, setMonthlyDaily] = useState<DailySpend[]>([])
+  const [context, setContext] = useState<Context | null>(null)
 
   useEffect(() => {
     getBudget().then(b => setBudgetTotal(b.amount)).catch(() => {})
     getPrediction().then(setPrediction).catch(() => {})
     getSubscriptions().then(setSubscriptions).catch(() => {})
     getDailyExpenses().then(setDailyExpenses).catch(() => {})
+    getRecentExpenses(5).then(setRecentExpenses).catch(() => {})
+    getDailyCalendar().then(setMonthlyDaily).catch(() => {})
+    getContext().then(setContext).catch(() => {})
   }, [])
+
+  const spendByDay: Record<number, 'low' | 'mid' | 'high'> = {}
+  for (const d of monthlyDaily) {
+    if (d.amount != null) spendByDay[d.day] = spendLevel(d.amount)
+  }
 
   const budget = budgetTotal ?? 0
   const remaining = prediction?.remainingBudget ?? 0
@@ -218,7 +305,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px 16px' }}>
           <div>
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>안녕하세요, 사용자님 👋</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>안녕하세요, {user?.nickname ?? '사용자'}님 👋</p>
             <h1 style={{ margin: '2px 0 0', fontSize: 22, fontWeight: 800, color: 'var(--foreground)' }}>SpendMate</h1>
           </div>
           <button style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: 8, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -288,7 +375,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
                 <span style={{ fontSize: 10, fontWeight: 600, color: '#4F8EF7', background: '#EBF2FF', padding: '2px 6px', borderRadius: 99 }}>오늘 분석</span>
               </div>
               <p style={{ margin: 0, fontSize: 14, color: 'var(--foreground)', lineHeight: 1.55, fontWeight: 500 }}>
-                이번 주 <strong style={{ color: '#FF6B6B' }}>배달비가 42% 증가</strong>했어요. 편의점 도시락으로 대체하면 주 <strong style={{ color: '#4F8EF7' }}>12,000원</strong> 절약 가능해요! 🍱
+                {renderHomeInsight(context)}
               </p>
             </div>
           </div>
@@ -305,7 +392,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
         {/* Calendar */}
         <div style={{ margin: '16px 16px 0', borderRadius: 20, background: 'white', padding: '18px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--foreground)' }}>7월 캘린더</h2>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--foreground)' }}>{month}월 캘린더</h2>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, color: 'var(--muted)', fontSize: 13, minHeight: 44 }}>
               이동 <ChevronRight size={14} />
             </button>
@@ -319,7 +406,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
             {cells.map((day, i) => {
               const isToday = day === today
               const isSelected = day === selectedDay
-              const spend = day ? SPEND_DAYS[day] : null
+              const spend = day ? spendByDay[day] : null
               return (
                 <div
                   key={i}
@@ -362,16 +449,21 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
             </button>
           </div>
           <div style={{ borderRadius: 20, background: 'white', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
-            {recentExpenses.map((item, idx) => {
-              const Icon = item.icon
+            {recentExpenses.length === 0 ? (
+              <div style={{ padding: '24px 16px', textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>아직 등록된 지출이 없어요</p>
+              </div>
+            ) : recentExpenses.map((item, idx) => {
+              const meta = getCategoryMeta(item.category)
+              const Icon = CATEGORY_ICON[item.category] ?? Package
               return (
                 <div key={item.id} style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', borderBottom: idx < recentExpenses.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 14, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon size={18} color={item.color} />
+                  <div style={{ width: 42, height: 42, borderRadius: 14, background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={18} color={meta.color} />
                   </div>
                   <div style={{ flex: 1, marginLeft: 12 }}>
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>{item.name}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>{item.time} · {item.category}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>{formatRelativeTime(item.spentAt)} · {meta.label}</p>
                   </div>
                   <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--foreground)' }}>-{item.amount.toLocaleString()}원</p>
                 </div>

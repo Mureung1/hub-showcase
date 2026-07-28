@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { TrendingDown, TrendingUp } from 'lucide-react'
-import { getExpenseSummary, getDailyExpenses, type CategorySummaryItem, type DailyAmount, type SummaryPeriod } from '../lib/api'
+import { getExpenseSummary, getDailyExpenses, getCategoryChanges, type CategorySummaryItem, type DailyAmount, type SummaryPeriod, type CategoryChange } from '../lib/api'
 import { getCategoryMeta } from '../lib/categoryMeta'
 
 const PERIODS: { label: string; value: SummaryPeriod }[] = [
@@ -10,11 +10,33 @@ const PERIODS: { label: string; value: SummaryPeriod }[] = [
   { label: '최근 3개월', value: '3months' },
 ]
 
-// AI_INSIGHTS는 F16(AI 소비 코치 Agent) 연동 전까지의 임시 mock — 실데이터 연결 대상 아님
-const AI_INSIGHTS = [
-  { icon: TrendingUp, color: '#FF6B6B', bg: '#FFF0F0', text: '외식 지출이 지난달 대비 23% 증가했어요. 주 2회 이상 직접 요리하면 월 3만원 절약 가능해요!' },
-  { icon: TrendingDown, color: '#6ED6C8', bg: '#E8F8F6', text: '교통비가 지난달보다 15% 줄었어요. 대중교통 이용 습관이 좋아지고 있어요 👍' },
-]
+type Insight = { icon: typeof TrendingUp; color: string; bg: string; text: string }
+
+/** 카테고리별 이번 달 vs 지난달 실데이터에서 가장 눈에 띄는 증가/감소 1건씩을 뽑아 인사이트 문장을 만든다 */
+function buildInsights(changes: CategoryChange[]): Insight[] {
+  const increases = changes.filter(c => c.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent)
+  const decreases = changes.filter(c => c.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent)
+  const insights: Insight[] = []
+
+  if (increases.length > 0) {
+    const top = increases[0]
+    const label = getCategoryMeta(top.category).label
+    const saving = top.thisMonthAmount - top.lastMonthAmount
+    insights.push({
+      icon: TrendingUp, color: '#FF6B6B', bg: '#FFF0F0',
+      text: `${label} 지출이 지난달 대비 ${top.changePercent}% 증가했어요. 지난달 수준으로 줄이면 ${saving.toLocaleString()}원 절약할 수 있어요.`,
+    })
+  }
+  if (decreases.length > 0) {
+    const top = decreases[0]
+    const label = getCategoryMeta(top.category).label
+    insights.push({
+      icon: TrendingDown, color: '#6ED6C8', bg: '#E8F8F6',
+      text: `${label} 지출이 지난달보다 ${Math.abs(top.changePercent)}% 줄었어요. 좋은 습관이 자리잡고 있어요 👍`,
+    })
+  }
+  return insights
+}
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: { value: number }[] }) {
   if (active && payload?.length) {
@@ -32,6 +54,7 @@ export default function StatsScreen() {
   const [categories, setCategories] = useState<CategorySummaryItem[]>([])
   const [total, setTotal] = useState(0)
   const [dailyData, setDailyData] = useState<DailyAmount[]>([])
+  const [categoryChanges, setCategoryChanges] = useState<CategoryChange[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,12 +63,13 @@ export default function StatsScreen() {
     setLoading(true)
     setError(null)
 
-    Promise.all([getExpenseSummary(PERIODS[periodIndex].value), getDailyExpenses()])
-      .then(([summary, daily]) => {
+    Promise.all([getExpenseSummary(PERIODS[periodIndex].value), getDailyExpenses(), getCategoryChanges()])
+      .then(([summary, daily, changes]) => {
         if (cancelled) return
         setCategories(summary.categories)
         setTotal(summary.total)
         setDailyData(daily)
+        setCategoryChanges(changes)
       })
       .catch(() => {
         if (cancelled) return
@@ -169,17 +193,27 @@ export default function StatsScreen() {
           <div style={{ margin: '16px 16px 0' }}>
             <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 800, color: 'var(--foreground)' }}>AI 인사이트</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {AI_INSIGHTS.map((insight, i) => {
-                const Icon = insight.icon
-                return (
-                  <div key={i} style={{ background: 'white', borderRadius: 18, padding: '14px 16px', display: 'flex', gap: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 12, background: insight.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon size={16} color={insight.color} />
+              {(() => {
+                const insights = buildInsights(categoryChanges)
+                if (insights.length === 0) {
+                  return (
+                    <div style={{ background: 'white', borderRadius: 18, padding: '16px', textAlign: 'center', border: '1px solid var(--border)' }}>
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>아직 비교할 지난달 데이터가 없어요. 데이터가 쌓이면 지난달과 비교해드릴게요.</p>
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: 'var(--foreground)', lineHeight: 1.6, fontWeight: 500 }}>{insight.text}</p>
-                  </div>
-                )
-              })}
+                  )
+                }
+                return insights.map((insight, i) => {
+                  const Icon = insight.icon
+                  return (
+                    <div key={i} style={{ background: 'white', borderRadius: 18, padding: '14px 16px', display: 'flex', gap: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 12, background: insight.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon size={16} color={insight.color} />
+                      </div>
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--foreground)', lineHeight: 1.6, fontWeight: 500 }}>{insight.text}</p>
+                    </div>
+                  )
+                })
+              })()}
             </div>
           </div>
         </>

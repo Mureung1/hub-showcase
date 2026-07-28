@@ -21,7 +21,6 @@ import java.util.List;
 @Service
 public class ReceiptService {
 
-    private static final Long SEED_USER_ID = 1L; // TODO: 로그인 붙으면 실제 로그인 유저로 교체
     private static final List<String> ALLOWED_CONTENT_TYPES = List.of("image/jpeg", "image/png", "image/jpg");
 
     private final FileStorageService fileStorageService;
@@ -57,13 +56,13 @@ public class ReceiptService {
      * 업로드 + OCR + 파싱까지만 하고, Expense는 아직 저장하지 않는다 (미리보기).
      * 사용자가 fe에서 결과를 확인/수정한 뒤 confirm()을 호출해야 실제로 저장된다.
      */
-    public UploadResult upload(MultipartFile file, ReceiptSourceType sourceType) throws IOException {
+    public UploadResult upload(Long userId, MultipartFile file, ReceiptSourceType sourceType) throws IOException {
         if (file.isEmpty() || !ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
             throw new IllegalArgumentException("이미지 파일(jpg/png)만 업로드할 수 있습니다.");
         }
 
-        User user = userRepository.findById(SEED_USER_ID)
-                .orElseThrow(() -> new IllegalStateException("시드 유저가 없습니다. psql로 users 테이블 확인해보세요."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
 
         byte[] fileBytes = file.getBytes();
         String imageUrl = fileStorageService.store(fileBytes, file.getOriginalFilename());
@@ -99,10 +98,13 @@ public class ReceiptService {
     /**
      * 사용자가 확인(또는 수정)한 항목들을 실제 Expense로 저장한다.
      */
-    public List<Expense> confirm(Long receiptId, List<ExpenseDraft> items, LocalDateTime spentAt) {
+    public List<Expense> confirm(Long userId, Long receiptId, List<ExpenseDraft> items, LocalDateTime spentAt) {
         Receipt receipt = receiptRepository.findById(receiptId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 영수증입니다: " + receiptId));
         User user = receipt.getUser();
+        if (!user.getId().equals(userId)) {
+            throw new IllegalArgumentException("존재하지 않는 영수증입니다: " + receiptId);
+        }
 
         ExpenseInputType inputType = receipt.getSourceType() == ReceiptSourceType.PAPER_RECEIPT
                 ? ExpenseInputType.PAPER_RECEIPT

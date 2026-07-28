@@ -37,14 +37,14 @@ class ExpenseServiceTest {
 
     @Test
     void 이번달_누적_일평균은_총지출을_경과일수로_나눈값이다() {
-        int before = expenseService.getSummary("month").total();
-        expenseService.createManual(20000, Category.DELIVERY, "테스트지출1", LocalDateTime.now());
-        expenseService.createManual(10000, Category.CAFE, "테스트지출2", LocalDateTime.now());
+        int before = expenseService.getSummary(SEED_USER_ID, "month").total();
+        expenseService.createManual(SEED_USER_ID, 20000, Category.DELIVERY, "테스트지출1", LocalDateTime.now());
+        expenseService.createManual(SEED_USER_ID, 10000, Category.CAFE, "테스트지출2", LocalDateTime.now());
 
         int daysElapsed = LocalDate.now().getDayOfMonth();
         double expected = (before + 30000) / (double) daysElapsed;
 
-        double actual = expenseService.getDailyAverageThisMonth();
+        double actual = expenseService.getDailyAverageThisMonth(SEED_USER_ID);
 
         assertEquals(expected, actual, 0.01);
     }
@@ -53,7 +53,7 @@ class ExpenseServiceTest {
     void 예산이_설정되지_않았으면_소진_예상일을_계산할_수_없다() {
         budgetRepository.deleteAll();
 
-        LocalDate actual = expenseService.predictDepletionDate();
+        LocalDate actual = expenseService.predictDepletionDate(SEED_USER_ID);
 
         assertNull(actual);
     }
@@ -63,14 +63,14 @@ class ExpenseServiceTest {
         budgetRepository.deleteAll();
         subscriptionRepository.deleteAll();
 
-        int before = expenseService.getSummary("month").total();
-        expenseService.createManual(50000, Category.SHOPPING, "소진테스트", LocalDateTime.now());
+        int before = expenseService.getSummary(SEED_USER_ID, "month").total();
+        expenseService.createManual(SEED_USER_ID, 50000, Category.SHOPPING, "소진테스트", LocalDateTime.now());
         int totalSpend = before + 50000;
 
         User user = userRepository.findById(SEED_USER_ID).orElseThrow();
         budgetRepository.save(new Budget(user, null, totalSpend)); // 예산을 누적지출과 정확히 같게 설정 → 남은 예산 0
 
-        LocalDate actual = expenseService.predictDepletionDate();
+        LocalDate actual = expenseService.predictDepletionDate(SEED_USER_ID);
 
         assertEquals(LocalDate.now(), actual);
     }

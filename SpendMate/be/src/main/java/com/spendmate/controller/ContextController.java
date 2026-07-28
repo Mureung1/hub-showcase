@@ -1,5 +1,6 @@
 package com.spendmate.controller;
 
+import com.spendmate.config.CurrentUser;
 import com.spendmate.service.ContextService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +16,7 @@ public class ContextController {
     }
 
     @GetMapping("/api/context")
-    public ResponseEntity<ContextService.Context> getContext() {
-        return ResponseEntity.ok(contextService.getContext());
+    public ResponseEntity<ContextService.Context> getContext(@CurrentUser Long userId) {
+        return ResponseEntity.ok(contextService.getContext(userId));
     }
 }

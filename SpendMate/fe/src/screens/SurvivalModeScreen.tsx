@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import { getSavingsMissions, type SavingsMissionResponse } from '../lib/api'
+
 interface SurvivalModeScreenProps {
   remaining: number
   total: number
@@ -8,6 +11,11 @@ interface SurvivalModeScreenProps {
 export default function SurvivalModeScreen({ remaining, total, daysLeft, onGoToSettings }: SurvivalModeScreenProps) {
   const todayLimit = Math.floor(remaining / daysLeft)
   const depleted = Math.round(((total - remaining) / total) * 100)
+
+  const [savingsMissions, setSavingsMissions] = useState<SavingsMissionResponse | null>(null)
+  useEffect(() => {
+    getSavingsMissions().then(setSavingsMissions).catch(() => {})
+  }, [])
 
   return (
     <div style={{
@@ -86,22 +94,22 @@ export default function SurvivalModeScreen({ remaining, total, daysLeft, onGoToS
           <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>AI 절약 미션</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {[
-            { text: '배달 주 2회 이하로 줄이기', save: '+18,500원' },
-            { text: '편의점 대신 마트 이용', save: '+8,000원' },
-            { text: '텀블러 지참 카페 절약', save: '+6,500원' },
-          ].map((m) => (
-            <div key={m.text} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{m.text}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#4ADE80' }}>{m.save}</span>
+          {!savingsMissions || savingsMissions.missions.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '8px 0' }}>아직 미션을 만들 데이터가 부족해요</div>
+          ) : savingsMissions.missions.map((m) => (
+            <div key={m.category} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{m.suggestion}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#4ADE80' }}>+{m.estimatedSaving.toLocaleString()}원</span>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 12, background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.2)' }}>
-          <span style={{ fontSize: 12, color: '#6ED6C8' }}>
-            미션 완료 시 예상 절약 총액 <strong style={{ color: '#4F8EF7' }}>+33,000원</strong>
-          </span>
-        </div>
+        {savingsMissions && savingsMissions.missions.length > 0 && (
+          <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 12, background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.2)' }}>
+            <span style={{ fontSize: 12, color: '#6ED6C8' }}>
+              미션 완료 시 예상 절약 총액 <strong style={{ color: '#4F8EF7' }}>+{savingsMissions.totalEstimatedSaving.toLocaleString()}원</strong>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Tip */}

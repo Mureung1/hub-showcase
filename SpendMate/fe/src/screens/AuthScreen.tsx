@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, User, ChevronLeft, Check, AlertCircle } from 'lucide-react'
+import { login, signup, type AuthUser } from '../lib/api'
 
 type AuthView = 'login' | 'signup' | 'verify'
 
@@ -63,7 +64,7 @@ function InputField({
 }
 
 /* ── 로그인 ── */
-function LoginView({ onLogin, onGoSignup }: { onLogin: () => void; onGoSignup: () => void }) {
+function LoginView({ onLogin, onGoSignup }: { onLogin: (user: AuthUser) => void; onGoSignup: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -80,10 +81,17 @@ function LoginView({ onLogin, onGoSignup }: { onLogin: () => void; onGoSignup: (
     return Object.keys(e).length === 0
   }
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!validate()) return
     setLoading(true)
-    setTimeout(() => { setLoading(false); onLogin() }, 1200)
+    try {
+      const user = await login(email, password)
+      onLogin(user)
+    } catch (err) {
+      setErrors({ password: err instanceof Error ? err.message : '로그인에 실패했어요.' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -185,7 +193,7 @@ function LoginView({ onLogin, onGoSignup }: { onLogin: () => void; onGoSignup: (
 }
 
 /* ── 회원가입 ── */
-function SignupView({ onSignup, onBack }: { onSignup: () => void; onBack: () => void }) {
+function SignupView({ onSignup, onBack }: { onSignup: (user: AuthUser) => void; onBack: () => void }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -208,10 +216,17 @@ function SignupView({ onSignup, onBack }: { onSignup: () => void; onBack: () => 
     return Object.keys(e).length === 0
   }
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!validate()) return
     setLoading(true)
-    setTimeout(() => { setLoading(false); onSignup() }, 1400)
+    try {
+      const user = await signup(email, password, name)
+      onSignup(user)
+    } catch (err) {
+      setErrors({ email: err instanceof Error ? err.message : '회원가입에 실패했어요.' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const pwStrength = password.length === 0 ? 0 : password.length < 8 ? 1 : password.length < 12 ? 2 : 3
@@ -402,14 +417,20 @@ function VerifyView({ onContinue }: { onContinue: () => void }) {
 }
 
 /* ── Main AuthScreen ── */
-export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
+export default function AuthScreen({ onAuth }: { onAuth: (user: AuthUser) => void }) {
   const [view, setView] = useState<AuthView>('login')
+  const [pendingUser, setPendingUser] = useState<AuthUser | null>(null)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--background)' }}>
       {view === 'login' && <LoginView onLogin={onAuth} onGoSignup={() => setView('signup')} />}
-      {view === 'signup' && <SignupView onSignup={() => setView('verify')} onBack={() => setView('login')} />}
-      {view === 'verify' && <VerifyView onContinue={onAuth} />}
+      {view === 'signup' && (
+        <SignupView
+          onSignup={(user) => { setPendingUser(user); setView('verify') }}
+          onBack={() => setView('login')}
+        />
+      )}
+      {view === 'verify' && <VerifyView onContinue={() => pendingUser && onAuth(pendingUser)} />}
     </div>
   )
 }

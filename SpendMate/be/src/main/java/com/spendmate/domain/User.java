@@ -50,4 +50,9 @@ public class User {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public void updateProfile(String email, String nickname) {
+        this.email = email;
+        this.nickname = nickname;
+    }
 }

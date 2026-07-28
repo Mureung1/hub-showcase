@@ -1,5 +1,6 @@
 package com.spendmate.controller;
 
+import com.spendmate.config.CurrentUser;
 import com.spendmate.domain.Subscription;
 import com.spendmate.service.SubscriptionService;
 import org.springframework.http.HttpStatus;
@@ -30,13 +31,13 @@ public class SubscriptionController {
     public record SubscriptionRequest(String name, Integer price, Integer billingDay) {}
 
     @GetMapping("/api/subscriptions")
-    public ResponseEntity<List<SubscriptionService.SubscriptionResponse>> getAll() {
-        return ResponseEntity.ok(subscriptionService.getAll());
+    public ResponseEntity<List<SubscriptionService.SubscriptionResponse>> getAll(@CurrentUser Long userId) {
+        return ResponseEntity.ok(subscriptionService.getAll(userId));
     }
 
     @PostMapping("/api/subscriptions")
-    public ResponseEntity<Map<String, Object>> create(@RequestBody SubscriptionRequest request) {
-        Subscription saved = subscriptionService.create(request.name(), request.price(), request.billingDay());
+    public ResponseEntity<Map<String, Object>> create(@CurrentUser Long userId, @RequestBody SubscriptionRequest request) {
+        Subscription saved = subscriptionService.create(userId, request.name(), request.price(), request.billingDay());
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", saved.getId());
@@ -47,8 +48,8 @@ public class SubscriptionController {
     }
 
     @PutMapping("/api/subscriptions/{id}")
-    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @RequestBody SubscriptionRequest request) {
-        Subscription saved = subscriptionService.update(id, request.name(), request.price(), request.billingDay());
+    public ResponseEntity<Map<String, Object>> update(@CurrentUser Long userId, @PathVariable Long id, @RequestBody SubscriptionRequest request) {
+        Subscription saved = subscriptionService.update(userId, id, request.name(), request.price(), request.billingDay());
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", saved.getId());
@@ -59,8 +60,8 @@ public class SubscriptionController {
     }
 
     @DeleteMapping("/api/subscriptions/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        subscriptionService.delete(id);
+    public ResponseEntity<Void> delete(@CurrentUser Long userId, @PathVariable Long id) {
+        subscriptionService.delete(userId, id);
         return ResponseEntity.noContent().build();
     }
 

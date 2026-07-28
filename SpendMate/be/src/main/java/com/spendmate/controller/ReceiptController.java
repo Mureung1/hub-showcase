@@ -1,7 +1,9 @@
 package com.spendmate.controller;
 
+import com.spendmate.config.CurrentUser;
 import com.spendmate.domain.Expense;
 import com.spendmate.domain.ReceiptSourceType;
+import com.spendmate.service.AgentService;
 import com.spendmate.service.ReceiptService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,36 +25,45 @@ import java.util.Map;
 public class ReceiptController {
 
     private final ReceiptService receiptService;
+    private final AgentService agentService;
 
-    public ReceiptController(ReceiptService receiptService) {
+    public ReceiptController(ReceiptService receiptService, AgentService agentService) {
         this.receiptService = receiptService;
+        this.agentService = agentService;
     }
 
     public record ConfirmRequest(LocalDateTime spentAt, List<ReceiptService.ExpenseDraft> items) {}
 
     @PostMapping("/api/receipts/upload")
     public ResponseEntity<ReceiptService.UploadResult> upload(
+            @CurrentUser Long userId,
             @RequestParam("file") MultipartFile file,
             @RequestParam(defaultValue = "PAPER_RECEIPT") ReceiptSourceType sourceType) throws IOException {
 
-        ReceiptService.UploadResult result = receiptService.upload(file, sourceType);
+        ReceiptService.UploadResult result = receiptService.upload(userId, file, sourceType);
         return ResponseEntity.ok(result);
     }
 
     @PostMapping("/api/receipts/{id}/confirm")
-    public ResponseEntity<List<Map<String, Object>>> confirm(
+    public ResponseEntity<Map<String, Object>> confirm(
+            @CurrentUser Long userId,
             @PathVariable("id") Long receiptId,
             @RequestBody ConfirmRequest request) {
 
-        List<Expense> saved = receiptService.confirm(receiptId, request.items(), request.spentAt());
+        List<Expense> saved = receiptService.confirm(userId, receiptId, request.items(), request.spentAt());
+        AgentService.JudgeResponse judge = agentService.judgeAfterExpense(userId);
 
-        List<Map<String, Object>> response = saved.stream().map(e -> {
+        List<Map<String, Object>> expenses = saved.stream().map(e -> {
             Map<String, Object> m = new HashMap<>();
             m.put("id", e.getId());
             m.put("itemName", e.getItemName());
             m.put("amount", e.getAmount());
             return m;
         }).toList();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("expenses", expenses);
+        response.put("agentMessage", judge.message());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
