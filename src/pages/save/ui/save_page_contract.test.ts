@@ -9,6 +9,15 @@ const savePageStyles = readFileSync(
 );
 
 describe('save page interaction contract', () => {
+  it('separates the first save action from optional follow-up fields', () => {
+    expect(savePageStyles).toMatch(
+      /\.save-page__stage\s*\{[^}]*background:\s*var\(--color-save-green\);[^}]*\}/s
+    );
+    expect(savePageStyles).toMatch(
+      /\.save-page__body\s*\{[^}]*width:\s*min\(720px,\s*calc\(100%\s*-\s*var\(--spacing-8\)\)\);[^}]*\}/s
+    );
+  });
+
   it('keeps the clipboard action touch-safe and full-width on mobile', () => {
     expect(savePageStyles).toMatch(
       /button\.save-page__clipboard-action\s*\{[^}]*width:\s*fit-content;[^}]*min-height:\s*44px;[^}]*\}/s
