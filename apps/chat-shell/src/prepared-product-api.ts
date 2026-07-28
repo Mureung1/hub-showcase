@@ -88,8 +88,24 @@ export async function fetchPreparedWorkspaceText(
   return preview
 }
 
-export function preparedWorkspacePdfUrl(relativePath: string): string {
-  return `/api/product/sources/pdf?${sourceQuery(relativePath)}`
+export async function fetchPreparedWorkspacePdf(
+  relativePath: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const response = await fetch(
+    `/api/product/sources/pdf?${sourceQuery(relativePath)}`,
+    {
+      cache: 'no-store',
+      headers: { accept: 'application/pdf' },
+      signal,
+    },
+  )
+  if (!response.ok) throw await responseError(response)
+  const contentType = response.headers.get('content-type')?.split(';', 1)[0]
+  if (contentType !== 'application/pdf') throw invalidResponse()
+  const pdf = await response.blob()
+  if (pdf.type !== 'application/pdf') throw invalidResponse()
+  return pdf
 }
 
 export async function streamPreparedChat(

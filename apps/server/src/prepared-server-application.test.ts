@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { request as httpRequest } from 'node:http'
 import {
   mkdtemp,
   realpath,
@@ -275,6 +276,120 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
     await rm(workspaceRoot, { force: true, recursive: true })
   }
 })
+
+test('workspace source reads require loopback local-host and same-site admission', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-source-admission-')),
+  )
+  const runtime = new PreparedRuntime()
+  await writeFile(path.join(workspaceRoot, 'assignment.txt'), 'assignment')
+  await writeFile(path.join(workspaceRoot, 'lecture.pdf'), '%PDF-1.4\n%%EOF')
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      origin: 'http://127.0.0.1:4173',
+      createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
+    },
+    workspaceRoot,
+    readLifecycle: () => ({
+      state: 'active',
+      workspace: {
+        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+        label: '2학년 2학기',
+      },
+    }),
+  })
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const baseUrl = `http://127.0.0.1:${listener.port}`
+    for (const sourceUrl of [
+      `${baseUrl}/api/product/sources`,
+      `${baseUrl}/api/product/sources/text?relativePath=assignment.txt`,
+      `${baseUrl}/api/product/sources/pdf?relativePath=lecture.pdf`,
+    ]) {
+      assert.equal((await fetch(sourceUrl)).status, 200, sourceUrl)
+
+      const hostileOrigin = await fetch(sourceUrl, {
+        headers: { origin: 'https://hostile.example' },
+      })
+      assert.equal(hostileOrigin.status, 403, sourceUrl)
+      assert.deepEqual(await hostileOrigin.json(), {
+        code: 'forbidden',
+        displayMessage: '이 요청은 local AY-PLE에서만 사용할 수 있습니다.',
+      })
+
+      assert.equal(
+        await getStatusWithHeaders(sourceUrl, {
+          host: 'hostile.example',
+          origin: 'http://127.0.0.1:4173',
+        }),
+        403,
+        sourceUrl,
+      )
+      assert.equal(
+        await getStatusWithHeaders(sourceUrl, {
+          host: '127.0.0.1:4173',
+          origin: 'http://127.0.0.1:4173',
+          'sec-fetch-site': 'same-site',
+        }),
+        200,
+        sourceUrl,
+      )
+
+      const crossSite = await fetch(sourceUrl, {
+        headers: {
+          origin: 'http://127.0.0.1:4173',
+          'sec-fetch-site': 'cross-site',
+        },
+      })
+      assert.equal(crossSite.status, 403, sourceUrl)
+
+      const allowedOrigin = await fetch(sourceUrl, {
+        headers: {
+          origin: 'http://127.0.0.1:4173',
+          'sec-fetch-site': 'same-site',
+        },
+      })
+      assert.equal(allowedOrigin.status, 200, sourceUrl)
+      assert.equal(
+        allowedOrigin.headers.get('access-control-allow-origin'),
+        'http://127.0.0.1:4173',
+      )
+    }
+  } finally {
+    await target.application.close()
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+async function getStatusWithHeaders(
+  url: string,
+  headers: Readonly<Record<string, string>>,
+): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    const request = httpRequest(url, { headers }, (response) => {
+      const status = response.statusCode ?? 0
+      response.resume()
+      response.once('end', () => resolve(status))
+    })
+    request.once('error', reject)
+    request.end()
+  })
+}
 
 test('prepared Adapter loss preserves transport_failed through the public Review stream', async () => {
   const workspaceRoot = await realpath(

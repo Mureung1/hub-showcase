@@ -41,15 +41,17 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(tmpdir(), 'prepared-public-browser-')),
   )
-  const evidenceText =
-    '강의계획서 안내: 마감은 8월 3일입니다. LMS에서 제출해 주세요.'
   const evidenceQuote = '마감은 8월 3일입니다.'
+  const evidenceText =
+    `초기 안내: ${evidenceQuote}\n` +
+    `강의계획서 안내: ${evidenceQuote} LMS에서 제출해 주세요.`
   const evidenceDigest = createHash('sha256')
     .update(evidenceText)
     .digest('hex')
   await writeFile(path.join(workspaceRoot, 'assignment.txt'), evidenceText)
   const lecturePdf = onePagePdf()
   await writeFile(path.join(workspaceRoot, 'lecture.pdf'), lecturePdf)
+  await writeFile(path.join(workspaceRoot, 'broken.pdf'), 'not a PDF')
   await writeFile(path.join(workspaceRoot, 'slides.pptx'), 'unsupported preview')
   const runtime = new PreparedBrowserRuntime()
   let lifecycle: ProductWorkspaceLifecycle = {
@@ -135,10 +137,12 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     const pdfFrame = page.getByTitle('lecture.pdf PDF 미리보기')
     await expect(pdfFrame).toBeVisible()
     await expect(pdfFrame).not.toHaveAttribute('sandbox', '')
-    await expect(pdfFrame).toHaveAttribute(
-      'src',
-      /\/api\/product\/sources\/pdf\?relativePath=lecture\.pdf/u,
-    )
+    await expect(pdfFrame).toHaveAttribute('src', /^blob:/u)
+    await sources
+      .getByRole('button', { name: 'broken.pdf 미리보기' })
+      .click()
+    await expect(page.getByText('원문을 열지 못했습니다')).toBeVisible()
+    await expect(page.getByTitle('broken.pdf PDF 미리보기')).toHaveCount(0)
     await sources
       .getByRole('button', { name: 'slides.pptx 미리보기' })
       .click()
@@ -284,7 +288,7 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
                   locator: {
                     type: 'text_quote',
                     quote: evidenceQuote,
-                    occurrence: 1,
+                    occurrence: 2,
                   },
                 },
               ],
@@ -297,7 +301,7 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     await expect(card).toContainText('과제 파일 변경')
     const evidence = card.locator('figure.semantic-evidence')
     await expect(evidence).toContainText('assignment.txt')
-    await expect(evidence).toContainText('occurrence 1')
+    await expect(evidence).toContainText('occurrence 2')
     await expect(evidence).toContainText(`SHA-256 ${evidenceDigest}`)
     await expect(evidence.locator('blockquote')).toContainText(
       '강의계획서 안내:',
@@ -306,12 +310,57 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     await expect(evidence.locator('blockquote')).toContainText(
       'LMS에서 제출해 주세요.',
     )
+    await sources
+      .getByRole('button', { name: 'assignment.txt 미리보기' })
+      .click()
+    await expect(page.getByLabel('assignment.txt 원문')).toContainText(
+      evidenceText,
+    )
+    await writeFile(
+      path.join(workspaceRoot, 'assignment.txt'),
+      `${evidenceText}\n파일이 변경되었습니다.`,
+    )
+    const driftRead = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        url.pathname === '/api/product/sources/text' &&
+        url.searchParams.get('relativePath') === 'assignment.txt'
+      )
+    })
     await evidence
       .getByRole('button', { name: 'assignment.txt 근거 열기' })
       .click()
-    await expect(page.getByLabel('선택한 원문 근거')).toHaveText(
-      evidenceQuote,
+    await driftRead
+    await expect(
+      page.getByText(
+        '검토 근거와 현재 파일의 내용이 달라 근거 위치를 표시하지 못했습니다.',
+      ),
+    ).toBeVisible()
+    await expect(page.getByLabel('선택한 원문 근거')).toHaveCount(0)
+    await writeFile(
+      path.join(workspaceRoot, 'assignment.txt'),
+      evidenceText,
     )
+    const restoredRead = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        url.pathname === '/api/product/sources/text' &&
+        url.searchParams.get('relativePath') === 'assignment.txt'
+      )
+    })
+    await evidence
+      .getByRole('button', { name: 'assignment.txt 근거 열기' })
+      .click()
+    await restoredRead
+    const focusedEvidence = page.getByLabel('선택한 원문 근거')
+    await expect(focusedEvidence).toHaveText(evidenceQuote)
+    expect(
+      await focusedEvidence.evaluate((element) =>
+        element.previousSibling?.textContent?.endsWith(
+          '강의계획서 안내: ',
+        ),
+      ),
+    ).toBe(true)
     await card.getByRole('button', { name: '수락' }).click()
     const heldResponse = await held
     expect(heldResponse.status).toBe(200)

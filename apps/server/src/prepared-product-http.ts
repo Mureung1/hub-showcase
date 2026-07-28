@@ -58,6 +58,17 @@ export function createPreparedProductRouter(options: {
 }): Router {
   const router = express.Router()
   const writeDrainMs = options.writeDrainMs ?? defaultWriteDrainMs
+  const admitSourceRead = (
+    request: Request,
+    response: Response,
+    next: NextFunction,
+  ): void => {
+    if (!isAllowedSourceRead(request, options.configuredOrigin)) {
+      sendError(response, 403, 'forbidden', safeForbidden)
+      return
+    }
+    next()
+  }
 
   router.use((request, response, next) => {
     if (
@@ -137,7 +148,7 @@ export function createPreparedProductRouter(options: {
     }
   })
 
-  router.get('/sources', async (_request, response) => {
+  router.get('/sources', admitSourceRead, async (_request, response) => {
     response.setHeader('cache-control', 'no-store')
     if (!hasActiveWorkspace(options.readLifecycle, response)) return
     try {
@@ -147,7 +158,7 @@ export function createPreparedProductRouter(options: {
     }
   })
 
-  router.get('/sources/text', async (request, response) => {
+  router.get('/sources/text', admitSourceRead, async (request, response) => {
     response.setHeader('cache-control', 'no-store')
     if (!hasActiveWorkspace(options.readLifecycle, response)) return
     const relativePath = readSourceRelativePath(request)
@@ -162,7 +173,7 @@ export function createPreparedProductRouter(options: {
     }
   })
 
-  router.get('/sources/pdf', async (request, response) => {
+  router.get('/sources/pdf', admitSourceRead, async (request, response) => {
     response.setHeader('cache-control', 'no-store')
     if (!hasActiveWorkspace(options.readLifecycle, response)) return
     const relativePath = readSourceRelativePath(request)
@@ -418,6 +429,60 @@ function isAllowedMutation(
   return (
     origin === undefined ||
     (configuredOrigin !== undefined && origin === configuredOrigin)
+  )
+}
+
+function isAllowedSourceRead(
+  request: Request,
+  configuredOrigin: string | undefined,
+): boolean {
+  if (
+    !isLoopbackAddress(request.socket.remoteAddress) ||
+    !isAllowedLocalHost(request)
+  ) {
+    return false
+  }
+  const origin = request.headers.origin
+  if (
+    origin !== undefined &&
+    (configuredOrigin === undefined || origin !== configuredOrigin)
+  ) {
+    return false
+  }
+  const fetchSite = request.headers['sec-fetch-site']
+  return (
+    fetchSite === undefined ||
+    fetchSite === 'none' ||
+    fetchSite === 'same-origin' ||
+    fetchSite === 'same-site'
+  )
+}
+
+function isAllowedLocalHost(request: Request): boolean {
+  const host = request.headers.host
+  if (!host) return false
+  let parsed: URL
+  try {
+    parsed = new URL(`http://${host}`)
+  } catch {
+    return false
+  }
+  const hostname = parsed.hostname
+  const hostPort =
+    parsed.port.length > 0 ? Number(parsed.port) : undefined
+  return (
+    parsed.username.length === 0 &&
+    parsed.password.length === 0 &&
+    parsed.pathname === '/' &&
+    parsed.search.length === 0 &&
+    parsed.hash.length === 0 &&
+    (hostPort === undefined ||
+      (Number.isSafeInteger(hostPort) &&
+        hostPort >= 1 &&
+        hostPort <= 65_535)) &&
+    (hostname === 'localhost' ||
+      hostname === '[::1]' ||
+      isLoopbackAddress(hostname))
   )
 }
 

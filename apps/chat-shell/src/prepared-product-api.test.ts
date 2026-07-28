@@ -4,8 +4,8 @@ import test from 'node:test'
 import {
   fetchPreparedWorkspaceSources,
   fetchPreparedWorkspaceText,
+  fetchPreparedWorkspacePdf,
   PreparedProductApiError,
-  preparedWorkspacePdfUrl,
   streamPreparedChat,
 } from './prepared-product-api.js'
 
@@ -120,11 +120,19 @@ test('prepared Browser decodes the read-only SemesterWorkspace source projection
   }
 })
 
-test('prepared Browser fetches text preview and builds an encoded PDF URL', async () => {
+test('prepared Browser fetches text and validated PDF previews', async () => {
   const originalFetch = globalThis.fetch
   const requested: string[] = []
   globalThis.fetch = async (input) => {
     requested.push(String(input))
+    if (String(input).startsWith('/api/product/sources/pdf?')) {
+      return new Response(new Blob(['%PDF-1.4'], {
+        type: 'application/pdf',
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/pdf' },
+      })
+    }
     return new Response(
       JSON.stringify({
         relativePath: '강의 계획/outline.txt',
@@ -151,9 +159,47 @@ test('prepared Browser fetches text preview and builds an encoded PDF URL', asyn
     assert.deepEqual(requested, [
       '/api/product/sources/text?relativePath=%EA%B0%95%EC%9D%98+%EA%B3%84%ED%9A%8D%2Foutline.txt',
     ])
+    const pdf = await fetchPreparedWorkspacePdf(
+      '강의 계획/lecture 01.pdf',
+    )
+    assert.equal(pdf.type, 'application/pdf')
+    assert.equal(await pdf.text(), '%PDF-1.4')
     assert.equal(
-      preparedWorkspacePdfUrl('강의 계획/lecture 01.pdf'),
+      requested.at(-1),
       '/api/product/sources/pdf?relativePath=%EA%B0%95%EC%9D%98+%EA%B3%84%ED%9A%8D%2Flecture+01.pdf',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('prepared Browser rejects failed and non-PDF preview responses', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          code: 'invalid_pdf',
+          displayMessage: '자료를 미리볼 수 없습니다.',
+        }),
+        {
+          status: 415,
+          headers: { 'content-type': 'application/json' },
+        },
+      )
+    await assert.rejects(
+      fetchPreparedWorkspacePdf('broken.pdf'),
+      PreparedProductApiError,
+    )
+
+    globalThis.fetch = async () =>
+      new Response('%PDF-1.4', {
+        status: 200,
+        headers: { 'content-type': 'text/plain' },
+      })
+    await assert.rejects(
+      fetchPreparedWorkspacePdf('wrong-content-type.pdf'),
+      PreparedProductApiError,
     )
   } finally {
     globalThis.fetch = originalFetch

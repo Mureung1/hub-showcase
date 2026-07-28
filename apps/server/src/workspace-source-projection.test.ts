@@ -24,6 +24,30 @@ test('source projection lists only bounded user material in relative path order'
       recursive: true,
     })
     await mkdir(path.join(fixture.root, '.agents'), { recursive: true })
+    await mkdir(path.join(fixture.root, 'secrets'), { recursive: true })
+    await mkdir(path.join(fixture.root, 'course', 'oauth'), {
+      recursive: true,
+    })
+    for (const secretDirectory of [
+      'client_secret',
+      'service-account',
+      'private-key',
+      'oauth-token',
+      'refresh_token',
+    ]) {
+      await mkdir(path.join(fixture.root, 'course', secretDirectory), {
+        recursive: true,
+      })
+      await writeFile(
+        path.join(
+          fixture.root,
+          'course',
+          secretDirectory,
+          'config.json',
+        ),
+        '{}',
+      )
+    }
     await mkdir(path.join(fixture.root, 'node_modules', 'package'), {
       recursive: true,
     })
@@ -32,6 +56,31 @@ test('source projection lists only bounded user material in relative path order'
     await writeFile(path.join(fixture.root, 'slides.pptx'), 'slides')
     await writeFile(path.join(fixture.root, '.env.local'), 'TOKEN=secret')
     await writeFile(path.join(fixture.root, 'credentials.json'), '{}')
+    await writeFile(path.join(fixture.root, 'client_secret.json'), '{}')
+    await writeFile(path.join(fixture.root, 'service-account.json'), '{}')
+    await writeFile(path.join(fixture.root, 'private-key.json'), '{}')
+    await writeFile(path.join(fixture.root, 'refresh_token.txt'), 'secret')
+    await writeFile(
+      path.join(fixture.root, 'secrets', 'config.json'),
+      '{}',
+    )
+    await writeFile(
+      path.join(fixture.root, 'course', 'oauth', 'config.json'),
+      '{}',
+    )
+    await writeFile(
+      path.join(fixture.root, 'course', 'oauth', 'lecture-notes.md'),
+      'OAuth 강의',
+    )
+    await writeFile(path.join(fixture.root, 'oauth.json'), '{}')
+    await writeFile(
+      path.join(fixture.root, 'tokenization-notes.md'),
+      '학습 자료',
+    )
+    await writeFile(
+      path.join(fixture.root, 'private-key-cryptography-notes.md'),
+      '암호학 자료',
+    )
     await writeFile(path.join(fixture.root, 'AGENTS.md'), '# instructions')
     await writeFile(path.join(fixture.root, 'workspace-state.json'), '{}')
     await writeFile(path.join(fixture.root, '.agents', 'SKILL.md'), 'managed')
@@ -56,14 +105,34 @@ test('source projection lists only bounded user material in relative path order'
     assert.deepEqual(await projection.list(), {
       sources: [
         {
+          relativePath: 'course/oauth/config.json',
+          size: 2,
+          previewKind: 'text',
+        },
+        {
+          relativePath: 'course/oauth/lecture-notes.md',
+          size: Buffer.byteLength('OAuth 강의'),
+          previewKind: 'text',
+        },
+        {
           relativePath: 'lecture.pdf',
           size: 14,
           previewKind: 'pdf',
         },
         {
+          relativePath: 'private-key-cryptography-notes.md',
+          size: Buffer.byteLength('암호학 자료'),
+          previewKind: 'text',
+        },
+        {
           relativePath: 'slides.pptx',
           size: 6,
           previewKind: 'unsupported',
+        },
+        {
+          relativePath: 'tokenization-notes.md',
+          size: Buffer.byteLength('학습 자료'),
+          previewKind: 'text',
         },
         {
           relativePath: '과목/week-01/안내.md',
@@ -124,6 +193,19 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       path.join(fixture.root, 'binary.txt'),
       Buffer.from([0xff, 0xfe, 0xfd]),
     )
+    await mkdir(path.join(fixture.root, 'secrets'), { recursive: true })
+    await mkdir(path.join(fixture.root, 'client_secret'), {
+      recursive: true,
+    })
+    await writeFile(
+      path.join(fixture.root, 'secrets', 'lecture-notes.txt'),
+      'secret',
+    )
+    await writeFile(path.join(fixture.root, 'client_secret.txt'), 'secret')
+    await writeFile(
+      path.join(fixture.root, 'client_secret', 'lecture-notes.txt'),
+      'secret',
+    )
     const projection = await createWorkspaceSourceProjection({
       workspaceRoot: fixture.root,
     })
@@ -134,6 +216,9 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       '.secret.txt',
       'outside-link.txt',
       'managed-alias/notes.txt',
+      'secrets/lecture-notes.txt',
+      'client_secret.txt',
+      'client_secret/lecture-notes.txt',
     ]) {
       await assert.rejects(
         projection.readText(relativePath),
@@ -247,6 +332,28 @@ test('source listing fails visibly when entry or depth bounds are exceeded', asy
     })
     await assert.rejects(
       depthBound.list(),
+      (error: unknown) =>
+        error instanceof WorkspaceSourceProjectionError &&
+        error.code === 'scan_limit_exceeded',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('source listing charges excluded entries against the scan budget', async () => {
+  const fixture = await createFixture('source-projection-scan-budget-')
+  try {
+    await writeFile(path.join(fixture.root, '.hidden-one'), 'one')
+    await writeFile(path.join(fixture.root, '.hidden-two'), 'two')
+
+    const projection = await createWorkspaceSourceProjection({
+      workspaceRoot: fixture.root,
+      limits: { listMaxEntries: 1 },
+    })
+
+    await assert.rejects(
+      projection.list(),
       (error: unknown) =>
         error instanceof WorkspaceSourceProjectionError &&
         error.code === 'scan_limit_exceeded',

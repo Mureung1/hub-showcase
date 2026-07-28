@@ -327,7 +327,7 @@
   overflow-x: auto;
 }
 
-.source-tabs button {
+.source-current-file {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -345,7 +345,7 @@
   white-space: nowrap;
 }
 
-.source-tabs button::after {
+.source-current-file::after {
   position: absolute;
   right: 12px;
   bottom: 0;

@@ -19,16 +19,17 @@ import type {
 } from '@ay-ple/product-contract'
 
 import {
+  fetchPreparedWorkspacePdf,
   fetchPreparedWorkspaceSources,
   fetchPreparedWorkspaceText,
   PreparedProductApiError,
-  preparedWorkspacePdfUrl,
 } from './prepared-product-api.js'
 
 export type PreparedEvidenceTarget = {
   readonly relativePath: string
   readonly contentDigest: string
   readonly quote: string
+  readonly occurrence: number
 }
 
 type SourceListView =
@@ -86,7 +87,9 @@ export function usePreparedWorkspaceSources(
   })
   const [evidenceFocus, setEvidenceFocus] = useState<PreparedEvidenceTarget>()
   const [evidenceNotice, setEvidenceNotice] = useState<string>()
+  const [previewRefresh, setPreviewRefresh] = useState(0)
   const listGeneration = useRef(0)
+  const previewGeneration = useRef(0)
 
   const sources =
     listView.state === 'loaded' ? listView.sources : []
@@ -129,6 +132,7 @@ export function usePreparedWorkspaceSources(
   useEffect(() => {
     if (!enabled) {
       listGeneration.current += 1
+      previewGeneration.current += 1
       setListView({ state: 'idle' })
       setSelectedPath(undefined)
       setPreviewView({ state: 'idle' })
@@ -142,16 +146,10 @@ export function usePreparedWorkspaceSources(
   }, [enabled, loadSources])
 
   useEffect(() => {
+    const generation = previewGeneration.current + 1
+    previewGeneration.current = generation
     if (!selectedSource) {
       setPreviewView({ state: 'idle' })
-      return
-    }
-    if (selectedSource.previewKind === 'pdf') {
-      setPreviewView({
-        state: 'pdf',
-        source: selectedSource,
-        url: preparedWorkspacePdfUrl(selectedSource.relativePath),
-      })
       return
     }
     if (selectedSource.previewKind === 'unsupported') {
@@ -161,15 +159,73 @@ export function usePreparedWorkspaceSources(
 
     const controller = new AbortController()
     setPreviewView({ state: 'loading', source: selectedSource })
+    if (selectedSource.previewKind === 'pdf') {
+      let objectUrl: string | undefined
+      void fetchPreparedWorkspacePdf(
+        selectedSource.relativePath,
+        controller.signal,
+      )
+        .then((pdf) => {
+          if (
+            controller.signal.aborted ||
+            generation !== previewGeneration.current
+          ) {
+            return
+          }
+          objectUrl = URL.createObjectURL(pdf)
+          if (
+            controller.signal.aborted ||
+            generation !== previewGeneration.current
+          ) {
+            URL.revokeObjectURL(objectUrl)
+            objectUrl = undefined
+            return
+          }
+          setPreviewView({
+            state: 'pdf',
+            source: selectedSource,
+            url: objectUrl,
+          })
+        })
+        .catch((error: unknown) => {
+          if (
+            controller.signal.aborted ||
+            generation !== previewGeneration.current
+          ) {
+            return
+          }
+          setPreviewView({
+            state: 'error',
+            source: selectedSource,
+            displayMessage: sourceErrorMessage(error),
+          })
+        })
+      return () => {
+        controller.abort()
+        if (objectUrl) URL.revokeObjectURL(objectUrl)
+      }
+    }
+
     void fetchPreparedWorkspaceText(
       selectedSource.relativePath,
       controller.signal,
     )
       .then((preview) => {
+        if (
+          controller.signal.aborted ||
+          generation !== previewGeneration.current
+        ) {
+          return
+        }
         setPreviewView({ state: 'text', source: selectedSource, preview })
       })
       .catch((error: unknown) => {
-        if (controller.signal.aborted) return
+        if (
+          controller.signal.aborted ||
+          generation !== previewGeneration.current
+        ) {
+          return
+        }
         setPreviewView({
           state: 'error',
           source: selectedSource,
@@ -177,7 +233,7 @@ export function usePreparedWorkspaceSources(
         })
       })
     return () => controller.abort()
-  }, [selectedSource])
+  }, [previewRefresh, selectedSource])
 
   const reload = useCallback(
     () => loadSources(),
@@ -187,6 +243,7 @@ export function usePreparedWorkspaceSources(
     setEvidenceFocus(undefined)
     setEvidenceNotice(undefined)
     setSelectedPath(source.relativePath)
+    setPreviewRefresh((current) => current + 1)
   }, [])
   const navigateEvidence = useCallback(
     (target: PreparedEvidenceTarget) => {
@@ -204,6 +261,7 @@ export function usePreparedWorkspaceSources(
       setEvidenceNotice(undefined)
       setEvidenceFocus(target)
       setSelectedPath(target.relativePath)
+      setPreviewRefresh((current) => current + 1)
     },
     [listView],
   )
@@ -356,11 +414,11 @@ function SourcePreview({
         </span>
       </header>
       {controller.selectedSource ? (
-        <div className="source-tabs" role="tablist" aria-label="열린 자료">
-          <button type="button" role="tab" aria-selected="true">
+        <div className="source-tabs" aria-label="열린 자료">
+          <div className="source-current-file">
             <SourceIcon source={controller.selectedSource} />
             {controller.selectedSource.relativePath}
-          </button>
+          </div>
         </div>
       ) : null}
       {controller.evidenceNotice ? (
@@ -456,10 +514,18 @@ function TextPreview({
   readonly evidenceFocus: PreparedEvidenceTarget | undefined
 }) {
   const marker = useRef<HTMLElement>(null)
-  const focusedQuote =
+  const evidenceMatchesFile =
     evidenceFocus?.relativePath === source.relativePath &&
-    evidenceFocus.contentDigest === preview.digest &&
-    preview.text.includes(evidenceFocus.quote)
+    evidenceFocus.contentDigest === preview.digest
+  const quoteIndex = evidenceMatchesFile
+    ? findOccurrence(
+        preview.text,
+        evidenceFocus.quote,
+        evidenceFocus.occurrence,
+      )
+    : -1
+  const focusedQuote =
+    evidenceMatchesFile && quoteIndex >= 0
       ? evidenceFocus.quote
       : undefined
   const evidenceMismatch =
@@ -471,9 +537,6 @@ function TextPreview({
     marker.current?.focus({ preventScroll: true })
   }, [focusedQuote])
 
-  const quoteIndex = focusedQuote
-    ? preview.text.indexOf(focusedQuote)
-    : -1
   return (
     <article className="source-document">
       <div className="source-document-meta">
@@ -552,6 +615,21 @@ function groupSources(
 
 function fileName(relativePath: string): string {
   return relativePath.slice(relativePath.lastIndexOf('/') + 1)
+}
+
+function findOccurrence(
+  text: string,
+  quote: string,
+  occurrence: number,
+): number {
+  let from = 0
+  for (let index = 1; index <= occurrence; index += 1) {
+    const found = text.indexOf(quote, from)
+    if (found < 0) return -1
+    if (index === occurrence) return found
+    from = found + quote.length
+  }
+  return -1
 }
 
 function previewKindLabel(

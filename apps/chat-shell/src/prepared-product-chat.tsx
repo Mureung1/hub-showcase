@@ -384,6 +384,7 @@ function PreparedReviewCard({
                         relativePath: evidence.relativePath,
                         contentDigest: evidence.contentDigest,
                         quote: evidence.quote,
+                        occurrence: evidence.occurrence,
                       })
                     }
                   >

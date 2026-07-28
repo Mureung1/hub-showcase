@@ -3,7 +3,7 @@ import { constants } from 'node:fs'
 import {
   lstat,
   open,
-  readdir,
+  opendir,
   realpath,
 } from 'node:fs/promises'
 import path from 'node:path'
@@ -135,27 +135,38 @@ export async function createWorkspaceSourceProjection(options: {
         segments: readonly string[],
         depth: number,
       ): Promise<void> => {
-        let names: string[]
+        let directoryHandle
         try {
-          names = await readdir(directory)
+          directoryHandle = await opendir(directory)
         } catch {
+          throw new WorkspaceSourceProjectionError('source_unavailable')
+        }
+        const names: string[] = []
+        try {
+          for await (const entry of directoryHandle) {
+            scannedEntries += 1
+            if (scannedEntries > limits.listMaxEntries) {
+              throw new WorkspaceSourceProjectionError(
+                'scan_limit_exceeded',
+              )
+            }
+            names.push(entry.name)
+          }
+        } catch (error) {
+          if (error instanceof WorkspaceSourceProjectionError) throw error
           throw new WorkspaceSourceProjectionError('source_unavailable')
         }
         names.sort(compareCodeUnits)
         for (const name of names) {
-          if (isHiddenOrManagedName(name)) continue
-          scannedEntries += 1
-          if (scannedEntries > limits.listMaxEntries) {
-            throw new WorkspaceSourceProjectionError('scan_limit_exceeded')
-          }
-
           const childSegments = [...segments, name]
+          if (isHiddenOrManagedName(name)) continue
           const relativePath = childSegments.join('/')
           if (!isAllowedRelativePath(relativePath)) continue
           const candidate = path.join(directory, name)
           const stats = await safeLstat(candidate)
           if (!stats || stats.isSymbolicLink()) continue
           if (stats.isDirectory()) {
+            if (isExcludedDirectoryPath(childSegments)) continue
             if (depth >= limits.listMaxDepth) {
               throw new WorkspaceSourceProjectionError(
                 'scan_limit_exceeded',
@@ -169,7 +180,7 @@ export async function createWorkspaceSourceProjection(options: {
           }
           if (
             !stats.isFile() ||
-            isExcludedFile(childSegments) ||
+            isExcludedFilePath(childSegments) ||
             !(await isCanonicalPathWithinRoot(candidate, workspaceRoot))
           ) {
             continue
@@ -300,10 +311,26 @@ async function readBoundedRegularFile(
     if (openedStats.size > maximumBytes) {
       throw new WorkspaceSourceProjectionError('source_too_large')
     }
-    const bytes = await handle.readFile()
-    if (bytes.byteLength > maximumBytes) {
+    const chunks: Buffer[] = []
+    let bytesReadTotal = 0
+    while (bytesReadTotal <= maximumBytes) {
+      const chunk = Buffer.allocUnsafe(
+        Math.min(64 * 1024, maximumBytes + 1 - bytesReadTotal),
+      )
+      const { bytesRead } = await handle.read(
+        chunk,
+        0,
+        chunk.byteLength,
+        null,
+      )
+      if (bytesRead === 0) break
+      chunks.push(chunk.subarray(0, bytesRead))
+      bytesReadTotal += bytesRead
+    }
+    if (bytesReadTotal > maximumBytes) {
       throw new WorkspaceSourceProjectionError('source_too_large')
     }
+    const bytes = Buffer.concat(chunks, bytesReadTotal)
     await assertWorkspaceRootIdentity(
       workspaceRoot,
       workspaceRootIdentity,
@@ -320,7 +347,7 @@ async function readBoundedRegularFile(
 function validateReadablePath(relativePath: string): string {
   if (
     !isAllowedRelativePath(relativePath) ||
-    isExcludedFile(relativePath.split('/'))
+    isExcludedFilePath(relativePath.split('/'))
   ) {
     throw new WorkspaceSourceProjectionError('invalid_path')
   }
@@ -347,10 +374,20 @@ function isAllowedRelativePath(relativePath: string): boolean {
   )
 }
 
-function isExcludedFile(segments: readonly string[]): boolean {
+function isExcludedFilePath(segments: readonly string[]): boolean {
   const basename = segments.at(-1)
   if (!basename) return true
-  return scaffoldFileNames.has(basename) || isSecretLikeFile(basename)
+  return (
+    scaffoldFileNames.has(basename) ||
+    segments
+      .slice(0, -1)
+      .some((segment) => isSecretContainerName(segment)) ||
+    isSecretLikeFile(basename)
+  )
+}
+
+function isExcludedDirectoryPath(segments: readonly string[]): boolean {
+  return segments.some((segment) => isSecretContainerName(segment))
 }
 
 function isHiddenOrManagedName(name: string): boolean {
@@ -359,13 +396,25 @@ function isHiddenOrManagedName(name: string): boolean {
 
 function isSecretLikeFile(name: string): boolean {
   const lower = name.toLowerCase()
+  const stem = lower.replace(/\.[^.]+$/u, '')
   return (
-    lower === 'id_rsa' ||
-    lower === 'id_ed25519' ||
+    /^id_(?:rsa|dsa|ecdsa|ed25519)$/u.test(stem) ||
     /\.(?:key|p12|pfx|pem)$/u.test(lower) ||
     /^(?:api[-_]?keys?|credentials?|passwords?|secrets?|tokens?)(?:\.[^.]+)?$/u.test(
       lower,
+    ) ||
+    /^(?:client[-_]?secrets?|service[-_]?accounts?(?:[-_]?(?:credentials?|keys?|secrets?))?|private[-_]?keys?|oauth(?:2)?(?:[-_]?(?:tokens?|credentials?|client[-_]?secrets?))?|(?:access|refresh|auth|bearer)[-_]?tokens?)$/u.test(
+      stem,
+    ) ||
+    /^client[-_]?secrets?[-_][a-z0-9]+\.apps\.googleusercontent\.com$/u.test(
+      stem,
     )
+  )
+}
+
+function isSecretContainerName(name: string): boolean {
+  return /^(?:credentials?|passwords?|secrets?|client[-_]?secrets?|service[-_]?accounts?(?:[-_]?(?:credentials?|keys?|secrets?))?|private[-_]?keys?|oauth(?:2)?[-_]?(?:tokens?|credentials?|client[-_]?secrets?)|(?:access|refresh|auth|bearer)[-_]?tokens?)(?:[-_](?:backup|dev|local|old|prod|production|staging|test))?$/u.test(
+    name.toLowerCase(),
   )
 }
 
