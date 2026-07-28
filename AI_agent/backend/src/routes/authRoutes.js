@@ -7,6 +7,7 @@ import {
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { createAuthToken } from "../services/tokenService.js";
 import {
+  assertRegistrationAvailable,
   loginUser,
   registerUser,
   resolveFirebaseLoginEmail,
@@ -112,6 +113,29 @@ authRouter.post("/login", async (request, response, next) => {
     const token = createAuthToken(user);
 
     response.json({ ok: true, user, token });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post("/firebase-registration-check", async (request, response, next) => {
+  try {
+    const email = String(request.body.email || "").trim();
+    const username = String(request.body.username || "").trim();
+
+    if (!isValidEmail(email)) {
+      response.status(400).json({ message: "유효한 이메일 주소를 입력해 주세요." });
+      return;
+    }
+
+    if (!isValidUsername(username)) {
+      response.status(400).json({ message: "아이디는 영문과 숫자를 모두 포함해야 합니다." });
+      return;
+    }
+
+    await assertRegistrationAvailable({ email, username });
+
+    response.json({ ok: true });
   } catch (error) {
     next(error);
   }

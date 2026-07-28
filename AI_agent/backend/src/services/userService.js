@@ -25,6 +25,21 @@ const publicUserFields = (user) => ({
   verifiedAt: user.verifiedAt,
 });
 
+export const assertRegistrationAvailable = async ({ email, username }) => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedUsername = String(username || "").trim();
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: normalizedEmail }, { username: normalizedUsername }],
+    },
+  });
+
+  if (existingUser) {
+    throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);
+  }
+};
+
 export const registerUser = async ({
   email,
   username,
@@ -110,11 +125,30 @@ export const syncFirebaseUser = async ({
     return publicUserFields(updatedUser);
   }
 
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: normalizedEmail }, { username: normalizedUsername }],
-    },
-  });
+  const existingByEmail = normalizedEmail
+    ? await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    : null;
+  const existingByUsername = normalizedUsername
+    ? await prisma.user.findUnique({ where: { username: normalizedUsername } })
+    : null;
+
+  const existingUser = existingByEmail || existingByUsername;
+
+  if (
+    existingByUsername &&
+    existingByEmail &&
+    existingByUsername.id !== existingByEmail.id
+  ) {
+    throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);
+  }
+
+  if (existingByUsername && !existingByEmail) {
+    throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);
+  }
+
+  if (existingUser?.email === normalizedEmail) {
+    existingUser.firebaseUid = firebaseUid;
+  }
 
   if (existingUser && existingUser.firebaseUid && existingUser.firebaseUid !== firebaseUid) {
     throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);

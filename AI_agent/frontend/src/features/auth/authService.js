@@ -1,6 +1,7 @@
 import { clearSession, getAuthToken, getSession, saveSession } from "./authStorage";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   getIdToken,
   sendEmailVerification,
   signInWithEmailAndPassword,
@@ -59,6 +60,14 @@ export const getCurrentSession = () => {
 export const registerUser = async (user) => {
   assertFirebaseConfigured();
 
+  await requestJson("/api/auth/firebase-registration-check", {
+    method: "POST",
+    body: JSON.stringify({
+      email: user.email,
+      username: user.username,
+    }),
+  });
+
   const credential = await createUserWithEmailAndPassword(
     firebaseAuth,
     user.email,
@@ -71,16 +80,22 @@ export const registerUser = async (user) => {
 
   const idToken = await getIdToken(credential.user, true);
 
-  await requestJson("/api/auth/firebase-profile", {
-    method: "POST",
-    body: JSON.stringify({
-      idToken,
-      username: user.username,
-      name: user.name,
-      school: user.school,
-      major: user.major,
-    }),
-  });
+  try {
+    await requestJson("/api/auth/firebase-profile", {
+      method: "POST",
+      body: JSON.stringify({
+        idToken,
+        username: user.username,
+        name: user.name,
+        school: user.school,
+        major: user.major,
+      }),
+    });
+  } catch (error) {
+    await deleteUser(credential.user).catch(() => {});
+    await signOut(firebaseAuth).catch(() => {});
+    throw error;
+  }
 
   saveSession({
     id: "",
