@@ -51,8 +51,8 @@ export default function MyPage() {
       {error && <p className="font-body-md text-body-md text-error">{error}</p>}
 
       {!loading && !error && (
-        <>
-          <section className="mb-stack-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-stack-lg items-start">
+          <section>
             <h2 className="font-headline-md text-headline-md text-on-surface mb-stack-md">
               읽은 기사
             </h2>
@@ -61,7 +61,7 @@ export default function MyPage() {
                 아직 읽은 기사가 없어요.
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+              <div className="grid grid-cols-1 gap-stack-md">
                 {readHistory.map((article) => (
                   <ArticleCard
                     key={article.id}
@@ -74,7 +74,7 @@ export default function MyPage() {
             )}
           </section>
 
-          <section>
+          <section className="lg:border-l lg:border-outline-variant lg:pl-stack-lg">
             <h2 className="font-headline-md text-headline-md text-on-surface mb-stack-md">
               북마크
             </h2>
@@ -83,7 +83,7 @@ export default function MyPage() {
                 아직 북마크한 기사가 없어요.
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+              <div className="grid grid-cols-1 gap-stack-md">
                 {bookmarks.map((bookmark) => (
                   <ArticleCard
                     key={bookmark.id}
@@ -95,7 +95,7 @@ export default function MyPage() {
               </div>
             )}
           </section>
-        </>
+        </div>
       )}
     </div>
   );
