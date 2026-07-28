@@ -38,4 +38,5 @@ test("a participant can see member details without stable user identifiers", () 
   ]);
   assert.equal(result.userJoined, true);
   assert.equal(result.userVote, "중앙도서관 앞");
+  assert.equal(result.userQuantity, 1);
 });
