@@ -3,7 +3,7 @@ import { pool } from './pool.js'
 import { withTransaction } from './withTransaction.js'
 
 /*
- * 데모 시딩 (T-02) — 대학가(신촌) 클러스터 기준
+ * 데모 시딩 (T-02) — 분당 정자동 클러스터 기준 (기준점: 네이버 1784, 정자일로 95)
  * 멱등: TRUNCATE ... RESTART IDENTITY CASCADE 후 재삽입하므로 반복 실행해도 결과가 같다.
  */
 
@@ -20,9 +20,9 @@ const USERS = [
     email: 'consumer1@hub.test',
     nickname: '규현',
     role: 'consumer',
-    baseAddress: '서울 서대문구 신촌로 83',
-    baseLat: 37.558,
-    baseLng: 126.936,
+    baseAddress: '경기 성남시 분당구 정자일로 95',
+    baseLat: 37.3595,
+    baseLng: 127.1052,
     notiLocationMode: 'radius',
     notiRadiusKm: 2.0,
     interests: ['베이커리', '디저트'],
@@ -31,9 +31,10 @@ const USERS = [
     email: 'consumer2@hub.test',
     nickname: '소진',
     role: 'consumer',
-    baseAddress: '서울 마포구 백범로 35',
-    baseLat: 37.565,
-    baseLng: 126.95,
+    // 반경(2km) 밖에 두어 'always' 모드가 거리와 무관함을 시연한다 (1784에서 약 4km)
+    baseAddress: '경기 성남시 분당구 판교역로 166',
+    baseLat: 37.3948,
+    baseLng: 127.1112,
     notiLocationMode: 'always',
     notiRadiusKm: 2.0,
     interests: ['반찬'],
@@ -47,25 +48,25 @@ const STORES = [
     ownerEmail: 'owner1@hub.test',
     name: '한입 베이커리',
     category: '베이커리',
-    address: '서울 서대문구 연세로 12',
-    lat: 37.5585,
-    lng: 126.9368,
+    address: '경기 성남시 분당구 정자일로 135',
+    lat: 37.367,
+    lng: 127.108,
   },
   {
     ownerEmail: 'owner2@hub.test',
     name: '달콤 디저트랩',
     category: '디저트',
-    address: '서울 서대문구 명물길 24',
-    lat: 37.5571,
-    lng: 126.9345,
+    address: '경기 성남시 분당구 정자동 178',
+    lat: 37.3648,
+    lng: 127.1065,
   },
   {
     ownerEmail: 'owner3@hub.test',
     name: '엄마손 반찬',
     category: '반찬',
-    address: '서울 서대문구 신촌역로 41',
-    lat: 37.5602,
-    lng: 126.9422,
+    address: '경기 성남시 분당구 미금로 55',
+    lat: 37.3502,
+    lng: 127.1085,
   },
 ]
 

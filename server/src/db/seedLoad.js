@@ -48,7 +48,7 @@ async function seedLoad() {
       await client.query(
         `INSERT INTO users (email, password_hash, nickname, role,
                             base_address, base_lat, base_lng, noti_location_mode, noti_radius_km)
-         VALUES ($1, $2, $3, 'consumer', '서울 서대문구 신촌로 83', 37.558, 126.936, 'radius', 2.0)
+         VALUES ($1, $2, $3, 'consumer', '경기 성남시 분당구 정자일로 95', 37.3595, 127.1052, 'radius', 2.0)
          ON CONFLICT (email) DO NOTHING`,
         [`${LOAD_EMAIL_PREFIX}${i}@hub.test`, PASSWORD_HASH, `부하${i}`],
       )

@@ -19,9 +19,9 @@ function arg(name, fallback) {
   return Number.isFinite(v) && v > 0 ? v : fallback
 }
 
-// 신촌 기준 (데모 시딩의 소비자 기준 주소와 동일)
-const BASE_LAT = 37.558
-const BASE_LNG = 126.936
+// 네이버 1784 기준 (데모 시딩의 소비자 기준 주소와 동일)
+const BASE_LAT = 37.3595
+const BASE_LNG = 127.1052
 
 // dealRepository.findNearby 와 동일
 const NEARBY_SQL = `SELECT * FROM (
