@@ -88,6 +88,11 @@ test('prepared public composition uses project discovery and exposes only AY Cha
     )
     const stream = await postJson(`${baseUrl}/api/product/chat/messages`, {
       text: '과제 파일을 확인해 줘.',
+      codexSettings: {
+        model: 'gpt-current',
+        reasoningEffort: 'medium',
+        serviceTier: 'default',
+      },
     })
     assert.equal(stream.status, 200)
     assert.ok(stream.body)
@@ -106,6 +111,11 @@ test('prepared public composition uses project discovery and exposes only AY Cha
     )
     assert.equal(runtime.startThreadCalls, 1)
     assert.equal(runtime.productInputs[0]?.permissionProfile, 'workspace_write')
+    assert.deepEqual(runtime.productInputs[0]?.settings, {
+      model: 'gpt-current',
+      reasoningEffort: 'medium',
+      serviceTier: 'default',
+    })
     assert.equal(Object.hasOwn(runtime.productInputs[0] ?? {}, 'skill'), false)
 
     const headers = {
@@ -174,6 +184,73 @@ test('prepared public composition uses project discovery and exposes only AY Cha
       ).activeOperation,
       null,
     )
+  } finally {
+    await target.application.close()
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+test('prepared public composition rejects settings outside the advertised catalog', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-public-settings-')),
+  )
+  const runtime = new PreparedRuntime()
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      createRuntime: async () => runtime,
+    },
+    workspaceRoot,
+    readLifecycle: () => ({
+      state: 'active',
+      workspace: {
+        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+        label: '2학년 2학기',
+      },
+    }),
+  })
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const baseUrl = `http://127.0.0.1:${listener.port}`
+    for (const codexSettings of [
+      {
+        model: 'gpt-unknown',
+        reasoningEffort: 'medium',
+        serviceTier: 'default',
+      },
+      {
+        model: 'gpt-current',
+        reasoningEffort: 'unknown',
+        serviceTier: 'default',
+      },
+      {
+        model: 'gpt-current',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast',
+      },
+    ] as const) {
+      const response = await postJson(
+        `${baseUrl}/api/product/chat/messages`,
+        {
+          text: '과제 파일을 확인해 줘.',
+          codexSettings,
+        },
+      )
+      assert.equal(response.status, 400)
+    }
+    assert.equal(runtime.productInputs.length, 0)
   } finally {
     await target.application.close()
     await listener?.close({ signal: new AbortController().signal })

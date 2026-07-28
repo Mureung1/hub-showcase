@@ -273,6 +273,38 @@
   line-height: 1.45;
 }
 
+.semantic-evidence {
+  margin: 8px 0 0;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.semantic-evidence figcaption {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.semantic-evidence figcaption span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.semantic-evidence blockquote {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.semantic-evidence mark {
+  padding: 1px 2px;
+  color: inherit;
+  background: rgba(242, 184, 75, 0.3);
+}
+
 .product-review-card > label,
 .product-clarification-card > label {
   display: grid;
@@ -363,6 +395,80 @@
   color: var(--text);
   background: white;
   resize: none;
+}
+
+.codex-turn-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.codex-turn-controls > label:not(.fast-mode-control) {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.codex-turn-controls > label > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.codex-turn-controls select {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 24px 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: #f8f6f1;
+  font-size: 11px;
+}
+
+.codex-turn-controls:disabled {
+  opacity: 0.58;
+}
+
+.fast-mode-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: #f8f6f1;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.fast-mode-control.is-enabled {
+  color: #9a6410;
+  border-color: rgba(242, 184, 75, 0.55);
+  background: rgba(242, 184, 75, 0.12);
+}
+
+.fast-mode-control input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #d99a24;
+}
+
+.codex-settings-status {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .send-button {

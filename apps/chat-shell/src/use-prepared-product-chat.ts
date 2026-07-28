@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   BrowserSafeSemanticReview,
   ProductAccountReadiness,
+  ProductCodexModel,
+  ProductCodexTurnSettings,
   ProductReviewResult,
   TargetProductQuestion,
   TargetProductBootstrap,
@@ -70,6 +72,8 @@ type PreparedChatState = {
   readonly failure?: string
 }
 
+export type CodexSettingsState = 'idle' | 'loading' | 'loaded' | 'failed'
+
 const initialState: PreparedChatState = {
   phase: 'idle',
   transcript: [],
@@ -86,7 +90,15 @@ export function usePreparedProductChat(options: {
   const [state, setState] = useState(initialState)
   const stateRef = useRef(state)
   const [draft, setDraft] = useState('')
-  const [settingsReady, setSettingsReady] = useState(false)
+  const [codexModels, setCodexModels] = useState<
+    readonly ProductCodexModel[]
+  >([])
+  const [codexSettingsState, setCodexSettingsState] =
+    useState<CodexSettingsState>('idle')
+  const [selectedModelId, setSelectedModelId] = useState<string>()
+  const [selectedReasoningEffort, setSelectedReasoningEffort] =
+    useState<string>()
+  const [fastMode, setFastMode] = useState(false)
   const [responsePending, setResponsePending] = useState(false)
   const operation = useRef<AbortController | undefined>(undefined)
 
@@ -105,13 +117,39 @@ export function usePreparedProductChat(options: {
       options.lifecycle?.state !== 'active' ||
       options.accountReadiness.state !== 'ready'
     ) {
-      setSettingsReady(false)
+      setCodexModels([])
+      setSelectedModelId(undefined)
+      setSelectedReasoningEffort(undefined)
+      setFastMode(false)
+      setCodexSettingsState('idle')
       return
     }
     const controller = new AbortController()
+    setCodexSettingsState('loading')
     void fetchPreparedCodexSettings(controller.signal).then(
-      () => setSettingsReady(true),
-      () => setSettingsReady(false),
+      ({ models }) => {
+        if (controller.signal.aborted) return
+        const defaultModel =
+          models.find(({ isDefault }) => isDefault) ?? models[0]
+        setCodexModels(models)
+        setSelectedModelId(defaultModel?.model)
+        setSelectedReasoningEffort(defaultModel?.defaultReasoningEffort)
+        setFastMode(defaultModel?.fastModeDefault ?? false)
+        setCodexSettingsState('loaded')
+      },
+      (error: unknown) => {
+        if (
+          controller.signal.aborted ||
+          (error instanceof DOMException && error.name === 'AbortError')
+        ) {
+          return
+        }
+        setCodexModels([])
+        setSelectedModelId(undefined)
+        setSelectedReasoningEffort(undefined)
+        setFastMode(false)
+        setCodexSettingsState('failed')
+      },
     )
     return () => controller.abort()
   }, [options.accountReadiness.state, options.lifecycle?.state])
@@ -124,12 +162,25 @@ export function usePreparedProductChat(options: {
   )
 
   const locallyActive = !state.terminal
+  const selectedModel = codexModels.find(
+    ({ model }) => model === selectedModelId,
+  )
+  const codexTurnSettings = createCodexTurnSettings(
+    selectedModel,
+    selectedReasoningEffort,
+    fastMode,
+  )
   const available =
     options.lifecycle?.state === 'active' &&
     options.accountReadiness.state === 'ready' &&
-    settingsReady
+    isCodexSettingsSettled(codexSettingsState)
   const canCompose =
     available &&
+    !locallyActive &&
+    options.activeOperation === null &&
+    !responsePending
+  const canConfigureCodex =
+    codexSettingsState === 'loaded' &&
     !locallyActive &&
     options.activeOperation === null &&
     !responsePending
@@ -156,7 +207,12 @@ export function usePreparedProductChat(options: {
     }))
     try {
       await streamPreparedChat(
-        { text },
+        {
+          text,
+          ...(codexTurnSettings === undefined
+            ? {}
+            : { codexSettings: codexTurnSettings }),
+        },
         (frame) => transition((current) => reduceFrame(current, frame)),
         controller.signal,
       )
@@ -277,23 +333,84 @@ export function usePreparedProductChat(options: {
     }))
   }
 
+  function selectCodexModel(modelId: string): void {
+    if (!canConfigureCodex) return
+    const model = codexModels.find((candidate) => candidate.model === modelId)
+    if (!model) return
+    setSelectedModelId(model.model)
+    setSelectedReasoningEffort(model.defaultReasoningEffort)
+    setFastMode(model.fastModeDefault)
+  }
+
+  function selectReasoningEffort(reasoningEffort: string): void {
+    if (
+      !canConfigureCodex ||
+      !selectedModel?.supportedReasoningEfforts.some(
+        (option) => option.reasoningEffort === reasoningEffort,
+      )
+    ) {
+      return
+    }
+    setSelectedReasoningEffort(reasoningEffort)
+  }
+
+  function toggleFastMode(enabled: boolean): void {
+    if (!canConfigureCodex || !selectedModel?.fastModeAvailable) return
+    setFastMode(enabled)
+  }
+
   return {
     state,
     draft,
     setDraft,
     canCompose,
     canSubmit: canCompose && draft.trim().length > 0,
+    canConfigureCodex,
     canInterrupt:
       locallyActive &&
       state.accepted &&
       state.phase !== 'stopping' &&
       !responsePending,
     responsePending,
+    codexModels,
+    codexSettingsState,
+    selectedModel,
+    selectedReasoningEffort,
+    fastMode,
+    selectCodexModel,
+    selectReasoningEffort,
+    toggleFastMode,
     submitMessage,
     settleReview,
     answerClarification,
     cancelClarification,
     interrupt,
+  }
+}
+
+export function isCodexSettingsSettled(state: CodexSettingsState): boolean {
+  return state === 'loaded' || state === 'failed'
+}
+
+export function createCodexTurnSettings(
+  model: ProductCodexModel | undefined,
+  reasoningEffort: string | undefined,
+  fastMode: boolean,
+): ProductCodexTurnSettings | undefined {
+  if (
+    !model ||
+    !reasoningEffort ||
+    !model.supportedReasoningEfforts.some(
+      (option) => option.reasoningEffort === reasoningEffort,
+    )
+  ) {
+    return undefined
+  }
+  return {
+    model: model.model,
+    reasoningEffort,
+    serviceTier:
+      fastMode && model.fastModeAvailable ? 'fast' : 'default',
   }
 }
 

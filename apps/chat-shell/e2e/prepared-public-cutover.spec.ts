@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto'
 import {
   mkdtemp,
   realpath,
   rm,
+  writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -39,6 +41,13 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(tmpdir(), 'prepared-public-browser-')),
   )
+  const evidenceText =
+    '강의계획서 안내: 마감은 8월 3일입니다. LMS에서 제출해 주세요.'
+  const evidenceQuote = '마감은 8월 3일입니다.'
+  const evidenceDigest = createHash('sha256')
+    .update(evidenceText)
+    .digest('hex')
+  await writeFile(path.join(workspaceRoot, 'assignment.txt'), evidenceText)
   const runtime = new PreparedBrowserRuntime()
   let lifecycle: ProductWorkspaceLifecycle = {
     state: 'active',
@@ -91,6 +100,10 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     await expect(page.getByRole('complementary', { name: '학기 자료' })).toHaveCount(0)
     await expect(page.getByText('과목을 준비해 주세요')).toHaveCount(0)
     await expect(page.getByRole('button', { name: /자료/u })).toHaveCount(0)
+    await expect(page.getByLabel('Fast mode')).toBeDisabled()
+    await page.getByLabel('Codex 모델').selectOption('gpt-fast')
+    await page.getByLabel('추론 강도').selectOption('high')
+    await page.getByLabel('Fast mode').check()
 
     await page
       .getByRole('textbox', { name: '메시지', exact: true })
@@ -99,6 +112,11 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     await expect(page.getByText('workspace를 확인했습니다.')).toBeVisible()
     expect(runtime.startThreadCalls).toBe(1)
     expect(runtime.productInputs[0]?.permissionProfile).toBe('workspace_write')
+    expect(runtime.productInputs[0]?.settings).toEqual({
+      model: 'gpt-fast',
+      reasoningEffort: 'high',
+      serviceTier: 'fast',
+    })
     expect(Object.hasOwn(runtime.productInputs[0] ?? {}, 'skill')).toBe(false)
     const activeBootstrap = (await (
       await fetch(`${apiUrl}/api/product/bootstrap`)
@@ -166,6 +184,17 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
               description: '마감 정보를 actual file에 반영합니다.',
               before: '미정',
               after: '8월 3일',
+              evidence: [
+                {
+                  relativePath: 'assignment.txt',
+                  contentDigest: evidenceDigest,
+                  locator: {
+                    type: 'text_quote',
+                    quote: evidenceQuote,
+                    occurrence: 1,
+                  },
+                },
+              ],
             },
           ],
         },
@@ -173,6 +202,17 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     })
     const card = page.getByRole('region', { name: '검토 대기' })
     await expect(card).toContainText('과제 파일 변경')
+    const evidence = card.locator('figure.semantic-evidence')
+    await expect(evidence).toContainText('assignment.txt')
+    await expect(evidence).toContainText('occurrence 1')
+    await expect(evidence).toContainText(`SHA-256 ${evidenceDigest}`)
+    await expect(evidence.locator('blockquote')).toContainText(
+      '강의계획서 안내:',
+    )
+    await expect(evidence.locator('mark')).toHaveText(evidenceQuote)
+    await expect(evidence.locator('blockquote')).toContainText(
+      'LMS에서 제출해 주세요.',
+    )
     await card.getByRole('button', { name: '수락' }).click()
     const heldResponse = await held
     expect(heldResponse.status).toBe(200)
@@ -318,6 +358,18 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
             { reasoningEffort: 'medium', description: 'Balanced' },
           ],
           serviceTiers: ['default'],
+        },
+        {
+          model: 'gpt-fast',
+          displayName: 'GPT Fast',
+          description: 'Fast model',
+          isDefault: false,
+          defaultReasoningEffort: 'low',
+          supportedReasoningEfforts: [
+            { reasoningEffort: 'low', description: 'Quick' },
+            { reasoningEffort: 'high', description: 'Deep' },
+          ],
+          serviceTiers: ['default', 'fast'],
         },
       ],
     })

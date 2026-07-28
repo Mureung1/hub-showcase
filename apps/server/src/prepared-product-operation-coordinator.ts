@@ -389,6 +389,11 @@ export function createPreparedProductOperationCoordinator(options: {
             'Codex에 로그인한 뒤 다시 시도해 주세요.',
           )
         }
+        await validateCodexTurnSettings(
+          input.codexSettings,
+          options.service,
+          operation.serviceLease,
+        )
         streamOpened = true
         if (
           !(await operation.sink.write({
@@ -567,6 +572,32 @@ function sanitize(value: string, redactions: readonly string[]): string {
     if (redaction) safe = safe.replaceAll(redaction, '[redacted]')
   }
   return safe
+}
+
+async function validateCodexTurnSettings(
+  settings: ProductCodexTurnSettings | undefined,
+  service: CodexChatService,
+  lease: ProductOperationLease,
+): Promise<void> {
+  if (!settings) return
+  const catalog = await service.readProductModelCatalog(lease)
+  const model = catalog.models.find(
+    (candidate) => candidate.model === settings.model,
+  )
+  const reasoningSupported = model?.supportedReasoningEfforts.some(
+    (candidate) =>
+      candidate.reasoningEffort === settings.reasoningEffort,
+  )
+  const fastSupported =
+    settings.serviceTier === 'default' ||
+    model?.serviceTiers.includes('fast') === true
+  if (!model || !reasoningSupported || !fastSupported) {
+    throw new PreparedProductOperationError(
+      'action_invalid',
+      400,
+      '현재 Codex 모델 설정을 다시 선택해 주세요.',
+    )
+  }
 }
 
 function targetOperationId(): string {
