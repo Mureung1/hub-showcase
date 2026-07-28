@@ -99,13 +99,116 @@ rm -rf node_modules && npm install --legacy-peer-deps && npm run db:generate && 
 - 그래야 tsc가 Prisma 타입을 찾을 수 있음
 - `npx prisma generate`를 직접 사용하면 최신 Prisma를 다운로드할 위험
 
+### 2.1.1 Prisma 마이그레이션 (스키마 변경 시)
+
+**DB 테이블/컬럼 변경이 있을 때:**
+
+```bash
+rm -rf node_modules && npm install --legacy-peer-deps && npm run db:generate && npx prisma migrate deploy && npm run build
+```
+
+또는 Start Command에 마이그레이션 통합:
+
+```bash
+npx prisma migrate deploy && node dist/backend/src/index.js
+```
+
+**선택 가이드:**
+
+| 상황 | 권장 방법 | 이유 |
+|------|---------|------|
+| 새 테이블/컬럼 추가 | Build에 추가 | 배포 중 DB 스키마 먼저 변경 |
+| 단순 타입 생성만 필요 | `npm run db:generate`만 | 마이그레이션 불필요 |
+| 프로덕션 DB 즉시 동기화 | Start에 추가 | 배포 직후 자동 실행 |
+
+**주의사항:**
+- `npx prisma migrate deploy`는 프로덕션(Supabase)에만 실행
+- 로컬 개발 중에는 `npm run db:migrate` (dev) 사용
+- 마이그레이션 파일(`prisma/migrations/`)이 git에 커밋되어야 함
+
+---
+
 ### 2.2 Start Command (Render Dashboard)
 
+**기본:**
 ```bash
 node dist/backend/src/index.js
 ```
 
+**DB 마이그레이션 자동 실행 포함:**
+```bash
+npx prisma migrate deploy && node dist/backend/src/index.js
+```
+
 **주의:** `dist/index.js`가 아니라 `dist/backend/src/index.js`
+
+---
+
+## 2.3 render.yaml과 Render 대시보드 동기화
+
+### 코드베이스에 포함된 render.yaml
+
+**`backend/render.yaml`:**
+```yaml
+services:
+  - type: web
+    name: naver-challenge-backend
+    runtime: node
+    buildCommand: rm -rf node_modules && npm install --legacy-peer-deps && npm run db:generate && npm run build
+    startCommand: node dist/backend/src/index.js
+```
+
+### ⚠️ 동기화 규칙 (필수)
+
+**Infrastructure as Code (IaC) 관점:**
+- Render 대시보드(GUI)에서 변경한 Build/Start Command
+- **반드시 `backend/render.yaml`에도 동일하게 반영해야 함**
+
+**이유:**
+1. **대시보드 설정 (즉시 적용)** — 현재 배포에 반영
+2. **render.yaml (Blueprint 참고)** — 향후 재배포 시 참고
+3. 둘이 다르면 나중에 배포할 때 혼란 발생
+
+### 동기화 체크리스트
+
+```
+Render 대시보드에서 수정 후:
+
+1. 변경한 명령어 복사
+   ├─ Build Command: rm -rf node_modules && ...
+   └─ Start Command: node dist/...
+
+2. backend/render.yaml 열기
+   ├─ buildCommand 필드 업데이트
+   └─ startCommand 필드 업데이트
+
+3. git에 커밋
+   └─ git commit -m "chore: sync render.yaml with dashboard settings"
+```
+
+### 예시: DB 마이그레이션 추가 시
+
+**Step 1: Render 대시보드 수정**
+```
+Build Command:
+rm -rf node_modules && npm install --legacy-peer-deps && npm run db:generate && npx prisma migrate deploy && npm run build
+
+Start Command:
+node dist/backend/src/index.js
+```
+
+**Step 2: render.yaml도 수정**
+```yaml
+buildCommand: rm -rf node_modules && npm install --legacy-peer-deps && npm run db:generate && npx prisma migrate deploy && npm run build
+startCommand: node dist/backend/src/index.js
+```
+
+**Step 3: 커밋**
+```bash
+git add backend/render.yaml
+git commit -m "chore: add prisma migrate deploy to build command"
+git push origin main
+```
 
 ---
 
@@ -333,25 +436,59 @@ CLAUDE_API_KEY        (LLM 사용 시)
 
 ## 9. 배포 체크리스트
 
-배포 전/후 확인 사항:
+### Before Deploy (배포 전)
 
+**코드 검증:**
 ```
-Before Deploy:
 ☑ Prisma 버전이 5.22.0으로 고정되어 있는가?
 ☑ package-lock.json이 최신 상태인가?
 ☑ 모든 상대 import에 .js 확장자가 있는가?
 ☑ tsconfig.json이 ESNext + bundler로 설정되어 있는가?
 ☑ rootDir: ".."로 설정되어 있는가?
-☑ Start Command가 "node dist/backend/src/index.js"인가?
-☑ Build Command가 정확히 명시되어 있는가?
-☑ 환경 변수가 모두 설정되어 있는가?
+```
 
-After Deploy:
+**DB 마이그레이션 (스키마 변경 시):**
+```
+☑ prisma/schema.prisma 변경사항 확인?
+☑ npx prisma migrate dev로 로컬에서 테스트?
+☑ prisma/migrations/ 폴더에 마이그레이션 파일 생성됨?
+☑ 마이그레이션 파일들이 git에 커밋됨?
+```
+
+**Render 대시보드 설정:**
+```
+☑ Build Command가 정확히 명시되어 있는가?
+☑ Start Command가 정확히 명시되어 있는가?
+☑ backend/render.yaml과 대시보드 설정이 동기화?
+☑ 환경 변수가 모두 설정되어 있는가?
+  └─ DATABASE_URL, JWT_SECRET, GOOGLE_*, VAPID_* 등
+```
+
+### After Deploy (배포 후)
+
+**빌드 검증:**
+```
 ☑ Render Build 로그에서 "Build successful 🎉" 표시?
+☑ "npm run db:generate" 성공?
+☑ (마이그레이션 포함 시) "prisma migrate deploy" 성공?
+☑ "npm run build" 완료?
 ☑ "dist/backend/src/index.js" 파일 생성 확인?
+```
+
+**배포 검증:**
+```
 ☑ Start 로그에서 "🚀 서버 시작" 메시지?
-☑ /health 엔드포인트 정상 응답?
+☑ /health 엔드포인트 정상 응답 (HTTP 200)?
 ☑ 데이터베이스 연결 정상?
+☑ (마이그레이션 포함 시) DB 스키마 변경 반영됨?
+```
+
+**기능 검증:**
+```
+☑ Frontend에서 회원가입 가능?
+☑ 로그인 후 공고 목록 조회?
+☑ API 호출에서 에러 없음?
+☑ 데이터베이스 쿼리 정상 실행?
 ```
 
 ---
@@ -371,25 +508,72 @@ After Deploy:
    - backend와 shared 동시 컴파일 가능
    - 하지만 dist 경로가 변경됨을 인식해야 함
 
-4. **Build 순서**: Prisma Generate는 TypeScript Build 전에
-   - 타입 체크를 위해 Prisma Client가 미리 생성되어야 함
+4. **Build 순서**: Prisma 작업의 순차 실행 중요성
+   - `npm run db:generate` → `npm run build` (타입 생성 후 빌드)
+   - `npx prisma migrate deploy` → `npm run build` (스키마 변경 후 코드 빌드)
+   - 순서 역전 시 타입 미스매치 또는 마이그레이션 누락
 
 5. **캐시 관리**: 의존성 변경 시 node_modules 명시적 제거
    - Render의 캐시는 편리하지만 때로 문제의 원인
+
+6. **Infrastructure as Code**: 코드베이스와 대시보드 동기화
+   - render.yaml과 Render 대시보드 GUI 설정 일치 필수
+   - Blueprint 배포 시 render.yaml을 참고하므로 중요
+   - 소규모 변경이라도 yaml에 반영할 것
+
+7. **마이그레이션 전략**: 프로덕션 DB 변경 자동화
+   - `prisma migrate deploy`를 빌드/시작 단계에 통합
+   - DB 스키마 변경이 자동으로 프로덕션 DB에 반영
+   - 수동 실행보다 자동화가 휴먼 에러 방지
 
 ---
 
 ## 11. 다음 배포를 위한 참고사항
 
-이 문서를 기반으로 다시 배포할 때:
+### 정기 배포 프로세스
 
-1. `docs/deployment-changes-summary.md` 참고
-2. Render Build/Start Command 그대로 사용
-3. 환경 변수 목록 확인
-4. 빌드 체크리스트 통과 확인
-5. 새로운 오류 발생 시 "실제 Render 배포 중 발생했던 문제" 섹션 참고
+```
+1. 기능 개발 완료 (로컬)
+   ├─ npm run dev로 테스트
+   └─ git commit & push
+
+2. DB 스키마 변경이 있으면
+   ├─ npx prisma migrate dev (로컬 생성)
+   ├─ prisma/migrations/ 커밋
+   └─ Render Build Command에 "npx prisma migrate deploy" 추가
+
+3. Render 대시보드 설정 변경
+   ├─ Build/Start Command 수정
+   └─ backend/render.yaml도 동시에 수정 후 커밋
+
+4. Render Manual Deploy 클릭
+   ├─ Build 로그 확인
+   ├─ Start 로그 확인
+   └─ 기능 테스트
+
+5. 문제 발생 시
+   └─ "실제 Render 배포 중 발생했던 문제" 섹션 참고
+```
+
+### 체크리스트 (Quick Reference)
+
+```
+매 배포마다 확인:
+□ prisma/migrations/이 최신인가? (스키마 변경 시)
+□ backend/render.yaml과 대시보드 명령어 동기화?
+□ 환경 변수 설정 완료?
+□ Render Build "Build successful" 로그?
+□ Frontend에서 회원가입/로그인 테스트?
+```
+
+### 문서 버전 히스토리
+
+| 버전 | 날짜 | 주요 변경 |
+|------|------|---------|
+| 1.0 | 2026-07-28 | 초판 작성 |
+| 2.0 | 2026-07-28 | Prisma 마이그레이션, render.yaml 동기화 추가 |
 
 ---
 
 **문서 최종 수정:** 2026-07-28  
-**버전:** 2.0 (실제 배포 경험 반영)
+**버전:** 2.0 (실제 배포 경험 + IaC 전략 반영)
