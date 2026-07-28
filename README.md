@@ -53,3 +53,7 @@ npm run lint      # client ESLint
 npm run test      # client Vitest
 npm run preview   # client 빌드 결과 미리보기
 ```
+
+## CI
+
+`work` 브랜치로 PR을 열면 GitHub Actions(`.github/workflows/ci.yml`)가 자동으로 client/server lint·단위테스트와 Playwright E2E 테스트 1개("오늘의 루틴에 실제 운동이 표시된다")를 돌린다. E2E는 프로덕션 Supabase 대신 CI 전용 임시 Postgres와 전용 시드(`server/prisma/seed-e2e.js`)를 사용한다.
