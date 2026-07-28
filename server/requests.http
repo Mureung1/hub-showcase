@@ -114,3 +114,15 @@ Authorization: Bearer {{token}}
 ### 북마크 해제
 DELETE {{baseUrl}}/api/bookmarks/여기에_article_id
 Authorization: Bearer {{token}}
+
+### 주간 리포트 조회 — 아직 생성 전이면 404 report_not_found가 정상
+GET {{baseUrl}}/api/reports/weekly
+Authorization: Bearer {{token}}
+
+### 주간 리포트 생성 — 이번 주 클러스터가 하나도 없으면 404 not_found (먼저 클러스터링 배치가 한 번 돌아야 함)
+POST {{baseUrl}}/api/reports/weekly/generate
+Authorization: Bearer {{token}}
+
+### 주간 리포트 재조회 — 방금 생성한 내용이 그대로 뜨면 정상
+GET {{baseUrl}}/api/reports/weekly
+Authorization: Bearer {{token}}
