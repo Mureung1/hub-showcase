@@ -13,6 +13,8 @@ function App() {
   const [step, setStep] = useState(0);
   const [session, setSession] = useState(null);
   const [needsProfile, setNeedsProfile] = useState(false);
+  const [myProfile, setMyProfile] = useState(null);
+  const [viewingProfile, setViewingProfile] = useState(false);
   const [registration, setRegistration] = useState(null);
   const [joinedCandidate, setJoinedCandidate] = useState(null);
 
@@ -23,12 +25,13 @@ function App() {
 
       const { data: profile } = await supabase
         .from("users")
-        .select("id")
+        .select("*")
         .eq("id", currentSession.user.id)
         .maybeSingle();
 
       if (profile) {
         setNeedsProfile(false);
+        setMyProfile(profile);
         setStep((s) => (s === 0 ? 1 : s));
       } else {
         setNeedsProfile(true);
@@ -46,6 +49,10 @@ function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  function updateJoinedCandidate(patch) {
+    setJoinedCandidate((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
   async function handleFinish() {
     await supabase.auth.signOut();
     setStep(0);
@@ -56,14 +63,30 @@ function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-      <StepHeader step={step} />
+      <StepHeader
+        step={step}
+        avatarUrl={myProfile?.avatar_url}
+        onProfileClick={session && !needsProfile ? () => setViewingProfile(true) : null}
+      />
       {session && needsProfile ? (
         <ProfileScreen
           userId={session.user.id}
           email={session.user.email}
-          onSaved={() => {
+          onSaved={(saved) => {
+            setMyProfile({ id: session.user.id, email: session.user.email, ...saved });
             setNeedsProfile(false);
             setStep(1);
+          }}
+        />
+      ) : viewingProfile ? (
+        <ProfileScreen
+          userId={session.user.id}
+          email={session.user.email}
+          existingProfile={myProfile}
+          onBack={() => setViewingProfile(false)}
+          onSaved={(saved) => {
+            setMyProfile((prev) => ({ ...prev, ...saved }));
+            setViewingProfile(false);
           }}
         />
       ) : (
@@ -82,6 +105,7 @@ function App() {
       {step === 2 && (
         <CandidateListScreen
           myRequest={registration}
+          existingJoin={joinedCandidate}
           onBack={() => setStep(1)}
           onJoin={(candidate) => {
             setJoinedCandidate(candidate);
@@ -90,9 +114,14 @@ function App() {
         />
       )}
       {step === 3 && (
-        <GroupChatScreen candidate={joinedCandidate} onComplete={() => setStep(4)} />
+        <GroupChatScreen
+          candidate={joinedCandidate}
+          onBack={() => setStep(2)}
+          onComplete={() => setStep(4)}
+          onUpdateCandidate={updateJoinedCandidate}
+        />
       )}
-      {step === 4 && <RatingScreen candidate={joinedCandidate} onFinish={handleFinish} />}
+      {step === 4 && <RatingScreen candidate={joinedCandidate} onBack={() => setStep(3)} onFinish={handleFinish} />}
         </>
       )}
     </div>

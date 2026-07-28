@@ -17,7 +17,7 @@ function Stars({ value, onChange }) {
   );
 }
 
-function RatingScreen({ candidate, onFinish }) {
+function RatingScreen({ candidate, onBack, onFinish }) {
   const [rating, setRating] = useState(0);
   const [noshow, setNoshow] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,6 +52,14 @@ function RatingScreen({ candidate, onFinish }) {
 
   return (
     <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0", cursor: "pointer" }}
+        >
+          ‹ 이전
+        </button>
+      )}
       <h1 style={{ fontSize: 20, fontWeight: 800, margin: "14px 0 20px" }}>이동이 끝났어요</h1>
 
       <div

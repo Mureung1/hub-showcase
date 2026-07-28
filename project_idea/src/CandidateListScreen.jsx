@@ -9,12 +9,18 @@ function formatTime(t) {
   return t ? t.slice(0, 5) : "";
 }
 
-function CandidateListScreen({ myRequest, onBack, onJoin }) {
+function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [joinedId, setJoinedId] = useState(null);
+  // '이전'으로 나갔다가 돌아와서 이 화면이 다시 마운트돼도, 이미 참여한 방이면 그 상태를 그대로 복원함
+  const alreadyJoined = existingJoin && existingJoin.myRequestId === myRequest.id;
+  const [joinedId, setJoinedId] = useState(alreadyJoined ? existingJoin.id ?? myRequest.id : null);
   const [joinError, setJoinError] = useState(null);
+
+  function resumeChat() {
+    if (alreadyJoined) onJoin(existingJoin);
+  }
 
   const cityHub = myRequest.direction === "from_school" ? myRequest.destHub : myRequest.departureHub;
   const fareTiers = fareTiersFor(cityHub);
@@ -162,29 +168,40 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
               gap: 12,
             }}
           >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: AVATAR_COLORS[i % AVATAR_COLORS.length],
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              ?
-            </div>
+            {c.profile?.avatar_url ? (
+              <img
+                src={c.profile.avatar_url}
+                alt=""
+                style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: AVATAR_COLORS[i % AVATAR_COLORS.length],
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {c.profile?.name ? c.profile.name[0] : "?"}
+              </div>
+            )}
             <div style={{ flex: 1, textAlign: "left" }}>
               <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                동행 대기 중인 학생
+                {c.profile?.name ?? "동행 대기 중인 학생"}
                 {c.activity?.isActive && (
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
                 )}
               </div>
+              {c.profile?.college && (
+                <div style={{ fontSize: 12, color: "#8A7A76" }}>{c.profile.college}</div>
+              )}
               <div style={{ fontSize: 12, color: "#8A7A76" }}>
                 {c.destination_hub_name} · {formatTime(c.desired_time)} 출발
               </div>
@@ -208,8 +225,8 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
               </span>
               <button
                 className="btn-primary"
-                onClick={() => handleClick(c)}
-                disabled={joinedId !== null}
+                onClick={() => (joinedId === c.id ? resumeChat() : handleClick(c))}
+                disabled={joinedId !== null && joinedId !== c.id}
                 style={{
                   padding: "6px 12px",
                   borderRadius: 999,
@@ -218,7 +235,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
                   border: joinedId === c.id ? "none" : "1px solid #C8102E",
                   background: joinedId === c.id ? "#2F8F5B" : "transparent",
                   color: joinedId === c.id ? "#fff" : joinedId !== null ? "#8A7A76" : "#C8102E",
-                  cursor: joinedId !== null ? "default" : "pointer",
+                  cursor: joinedId === c.id || joinedId === null ? "pointer" : "default",
                 }}
               >
                 {joinedId === c.id ? "채팅방 보기" : joinedId !== null ? "참여 불가" : "신청"}
@@ -234,8 +251,8 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
           마음에 드는 방이 없다면, 직접 새로 만들어서 다른 사람을 기다릴 수 있어요
         </p>
         <button
-          onClick={handleStartNew}
-          disabled={joinedId !== null}
+          onClick={() => (joinedId === myRequest.id ? resumeChat() : handleStartNew())}
+          disabled={joinedId !== null && joinedId !== myRequest.id}
           style={{
             width: "100%",
             padding: 14,
@@ -245,7 +262,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
             border: "1px solid #C8102E",
             background: joinedId === myRequest.id ? "#2F8F5B" : "transparent",
             color: joinedId === myRequest.id ? "#fff" : joinedId !== null ? "#8A7A76" : "#C8102E",
-            cursor: joinedId !== null ? "default" : "pointer",
+            cursor: joinedId === myRequest.id || joinedId === null ? "pointer" : "default",
           }}
         >
           {joinedId === myRequest.id ? "채팅방 보기" : "새로 방 만들기"}

@@ -129,17 +129,26 @@ router.get('/', async (req, res) => {
   const { myRequestId } = req.query
   const me = myRequestId ? data.find((r) => r.id === myRequestId) : null
 
-  if (!me) {
-    return res.json(rooms.map((room) => ({ ...room, activity: describeActivity(room.last_seen_at) })))
-  }
-
-  // 성별 필터 적용: 나와 각 방 대표자의 gender를 users 테이블에서 한 번에 조회
-  const userIds = [...new Set([me.user_id, ...rooms.map((r) => r.user_id)].filter(Boolean))]
+  // 각 방 대표자의 프로필(이름/단과대/사진)과 성별을 users 테이블에서 한 번에 조회
+  const userIds = [...new Set([me?.user_id, ...rooms.map((r) => r.user_id)].filter(Boolean))]
   const { data: userRows } = await supabase
     .from('users')
-    .select('id, gender')
+    .select('id, gender, name, college, avatar_url')
     .in('id', userIds.length ? userIds : [''])
   const genderById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.gender]))
+  const profileById = Object.fromEntries(
+    (userRows ?? []).map((u) => [u.id, { name: u.name, college: u.college, avatar_url: u.avatar_url }])
+  )
+
+  const withExtras = (room) => ({
+    ...room,
+    activity: describeActivity(room.last_seen_at),
+    profile: profileById[room.user_id] ?? null,
+  })
+
+  if (!me) {
+    return res.json(rooms.map(withExtras))
+  }
 
   const myGenderInfo = { gender: genderById[me.user_id] ?? 'unknown', genderOnly: me.gender_only }
 
@@ -148,7 +157,7 @@ router.get('/', async (req, res) => {
     return passesGenderFilter(myGenderInfo, candidateGenderInfo)
   })
 
-  res.json(filteredRooms.map((room) => ({ ...room, activity: describeActivity(room.last_seen_at) })))
+  res.json(filteredRooms.map(withExtras))
 })
 
 router.post('/:id/heartbeat', async (req, res) => {
