@@ -6,9 +6,16 @@
   "demoUrl": "",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/brain-dump.webp",
+    "screenshots/input.webp",
+    "screenshots/brain-dump-followup.webp",
+    "screenshots/preview.webp",
     "screenshots/one-focus.webp",
-    "screenshots/timer.webp"
+    "screenshots/reason-chips.webp",
+    "screenshots/proposal-card.webp",
+    "screenshots/timer.webp",
+    "screenshots/timer-pause.webp",
+    "screenshots/timer-confirm.webp",
+    "screenshots/complete.webp"
   ],
   "problem": "ADHD 특성이 있으면 할 일이 커 보일수록 시작 자체가 안 되고, 미룬 걸 벌점처럼 보여주는 앱은 오히려 이탈로 이어집니다. 콕은 Agent가 대신 작게 쪼개고, 미룬 것도 죄책감 없이 다시 배치해주는 방식으로 이 문제를 완화합니다.",
   "targetUsers": [
