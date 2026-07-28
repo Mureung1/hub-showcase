@@ -490,6 +490,11 @@
   font-size: 11px;
 }
 
+/* 파일 첨부 라벨(버튼처럼) + 업로드 진행 표시 */
+.file-attach { cursor: pointer; }
+.file-attach-busy { opacity: 0.45; pointer-events: none; }
+.upload-busy { color: var(--color-text-muted); font-size: 11px; }
+
 .task-input-row input {
   flex: 1;
   min-width: 0;

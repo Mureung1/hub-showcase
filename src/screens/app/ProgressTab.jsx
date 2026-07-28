@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useApi, apiPost, apiDelete } from '../../api/client'
+import { useApi, apiPost, apiDelete, apiUpload } from '../../api/client'
 import { parseDate, toDateInputValue } from '../../utils/dates'
 import ProgressRing from './ProgressRing'
 import './tabs.css'
@@ -104,6 +104,26 @@ function UploadForm({ taskId, onDone }) {
     }
   }
 
+  async function pickFile(e) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // 같은 파일 다시 선택 허용
+    if (!file) return
+    setBusy(true)
+    setErr('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      if (comment.trim()) fd.append('comment', comment.trim())
+      await apiUpload(`/api/me/tasks/${taskId}/uploads/file`, fd)
+      setComment('')
+      onDone()
+    } catch (e2) {
+      setErr(e2.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <form className="task-input-row" onSubmit={submit}>
       <input
@@ -121,9 +141,18 @@ function UploadForm({ taskId, onDone }) {
         disabled={busy}
         placeholder="코멘트 (선택, 최대 100자)"
       />
-      <button type="submit" className="btn btn-ghost btn-sm" disabled={busy}>
-        📎 {busy ? '올리는 중…' : '올리기'}
-      </button>
+      <button type="submit" className="btn btn-ghost btn-sm" disabled={busy}>🔗 링크</button>
+      <label className={`btn btn-ghost btn-sm file-attach${busy ? ' file-attach-busy' : ''}`}>
+        📁 파일
+        <input
+          type="file"
+          hidden
+          accept=".png,.jpg,.jpeg,.pdf,.docx,.pptx,.xlsx,.zip"
+          disabled={busy}
+          onChange={pickFile}
+        />
+      </label>
+      {busy && <span className="upload-busy">올리는 중…</span>}
       {err && <span className="upload-err">{err}</span>}
     </form>
   )
@@ -251,7 +280,9 @@ export default function ProgressTab() {
                     <StatusButtons status={t.status} busy={busyId === t.id} onChange={(s) => handleStatus(t.id, s)} />
                     {(uploadsByTask.get(t.id) ?? []).map((u) => (
                       <p key={u.id} className="task-upload">
-                        📎 {u.kind === 'link' ? <a href={u.linkUrl} target="_blank" rel="noreferrer">{u.linkUrl}</a> : u.fileName}
+                        📎 {u.kind === 'link'
+                          ? <a href={u.linkUrl} target="_blank" rel="noreferrer">{u.linkUrl}</a>
+                          : <a href={`/api/me/uploads/${u.id}/download`}>{u.fileName}</a>}
                         {u.comment && <span className="upload-comment"> — {u.comment}</span>}
                         <button
                           type="button"

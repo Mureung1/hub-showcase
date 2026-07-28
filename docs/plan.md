@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 생성~배정·설명·맞교환·태스크(담당자 자동배정+상태 변경)·링크 업로드·관리 탭 쓰기 완료 (파일 업로드·알림 남음) |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | ✅ 생성~배정·설명·맞교환·태스크(담당자 자동배정+상태 변경)·링크/파일 업로드·관리 탭 쓰기·인앱 알림 완료 |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -36,7 +36,7 @@
 - [x] 프로젝트 관리 조회 — `ProjectsTab.jsx` ↔ `/api/me/projects`
 - [x] 태스크 상태 변경 (할 일 / 진행 중 / 완료) — `POST /api/me/tasks/:taskId/status` (자기 태스크만), `ProgressTab.jsx` 상태 버튼 3개
 - [x] 링크 업로드 + 코멘트(100자) — `POST /api/me/tasks/:taskId/uploads` · `DELETE /api/me/uploads/:uploadId` (자기 태스크·본인 자료만), `ProgressTab.jsx` UploadForm/✕, `activity_log 'upload'` → 잔디·최근활동
-- [ ] 파일 업로드 (multer + Storage 비공개 버킷 + 서명 URL 다운로드) — 후속
+- [x] 파일 업로드 (multer + Storage 비공개 버킷 + 서명 URL 다운로드) — `POST /api/me/tasks/:taskId/uploads/file`(화이트리스트·10MB·태스크당 5개) · `GET /api/me/uploads/:id/download`(팀원, 1시간 서명 URL 302), 삭제 시 Storage 객체 정리, `ProgressTab.jsx` 📁 파일/다운로드 링크
 - [x] 프로젝트 삭제 / 완료(취소) / 메인 지정 / 순서 변경 — `DELETE /api/projects/:id`·`POST /:id/complete`·`/:id/main`(생성자/팀원 권한 구분) + `POST /api/me/projects/reorder`, `ProjectsTab.jsx` 액션 4종
 
 ### 프로젝트 생성 ~ 배정 플로우 — ⬜ 화면만 완성, BE/DB 미연결
@@ -60,7 +60,7 @@
 - [x] 스키마 13테이블 + RLS 활성화 — `server/db/schema.sql`
 - [x] 목업 시드 — `server/db/seed.js` (계정 minji/junho/seoyeon, 비번 teamplease1)
 - [ ] 화면 폴링 동기화 (단계 전환·알림 반영)
-- [ ] 인앱 알림 (합류·마감·공개·교환·업로드)
+- [x] 인앱 알림 (합류·공개·교환·업로드) — `notifyProjectMembers`(server/lib/notify.js) 이벤트 팬아웃 + `GET /api/me/notifications`·`POST …/read-all`, 헤더 `NotificationBell`(안 읽음 배지·드롭다운·45s 폴링). *마감은 배정(reveal)에 통합*
 - [ ] 진행률 주간 스냅샷 자동화 (KST)
 - [ ] 검증 에이전트 `.claude/agents/verifier.md` + 결함 수정
 - [ ] vercel에 배포
@@ -256,6 +256,24 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-28 · 인앱 알림 (팀 이벤트 → 개인 알림 + 헤더 벨) — phase ④ 완료
+- **왜**: 팀 이벤트가 `activity_log`(프로젝트 피드)에만 남고 **각 팀원 개인에게 도달하는 알림이 없었다**. `notifications` 테이블은 있는데 `AppLayout`의 🔔은 목업이었다. 합류·공개·교환·업로드 시 팀원에게 알림을 쌓고 헤더 벨로 확인·읽음 처리 → phase ④ 마무리.
+- **방식**:
+  - `server/lib/notify.js` — `notifyProjectMembers(projectId, { type, payload, exceptUserId })`: 팀원 `user_id` 조회 → 행위자 제외 → `notifications` 벌크 insert. **best-effort**(자체 try/catch — 알림 실패가 본 작업을 안 깨뜨림). `activity_log`가 프로젝트 단위 1행인 것과 달리 알림은 **수신자별 1행 + 읽음 상태**.
+  - 이벤트 배선(각 1줄): `join.js` 합류(기존 팀원에게, 본인 제외) · `projects.js` `assign`→`reveal`·`swap`→`swap`(둘 다 생성자 제외) · `me.js` 링크/파일 업로드→`upload`(payload `{task, by:nickname}`, 업로더 제외; `loadOwnTask`가 nickname도 반환하도록 확장). "설문 마감"은 배정이 마감+공개를 한 번에 처리하므로 **reveal로 통합**.
+  - `me.js` — `GET /api/me/notifications`(최근 20건 + `unreadCount`, `projects(title)` 조인, camelCase) · `POST …/read-all`(내 안 읽음만 `is_read=true`).
+  - `NotificationBell.jsx`(신규) — 마운트+45s 폴링으로 배지, 클릭 시 드롭다운 + **열 때 read-all**(배지 낙관적 0), `notifText`(대시보드 `activityText` 미러), 바깥 클릭 닫기. `AppLayout` 헤더 목업 벨을 교체. `NotificationBell.css`(Soft Mint 토큰). 마이그레이션·새 의존성 없음.
+- **검증**: 풀플로우 Node 스크립트(c1 생성 + m2·m3 합류) — 합류(기존 팀원만·본인 제외, 프로젝트명 포함)·배정 reveal(m2·m3, 생성자 제외)·맞교환 swap·업로드(생성자·m3에 `{task,by}`, 업로더 제외) 각 **수신자/발신자 제외** 정확 · m3 알림 구성(reveal·swap·upload=3, join 0) · `read-all` 후 unread 0·`is_read` 반영 · 미로그인 401 — **16/16 통과**, 데이터 정리. `oxlint`(exit 0)·`build`(103 모듈) 통과. 헤더 벨+배지+열린 드롭다운(업로드/교환/공개 unread + 합류 read) 헤드리스 스크린샷(실 CSS) 확인.
+
+### 2026-07-28 · 태스크 파일 업로드 (Supabase Storage + 서명 URL)
+- **왜**: 링크 업로드는 됐지만 실제 파일은 못 올렸다(`uploads.file_path` 항상 빈 값). 팀 산출물(문서·이미지)을 **비공개 버킷에 저장하고 서명 URL로 내려받는** 흐름을 완성해 협업을 마무리한다. **게이트웨이 유지** — 브라우저는 `/api`로만 multipart를 보내고 **서버가 Secret key로 Storage에 업로드**(브라우저가 Storage에 직접 접근하지 않음).
+- **방식**:
+  - `npm i multer`(2.x). `me.js`에 정책 상수(화이트리스트 png·jpg·pdf·docx·pptx·xlsx·zip / 10MB / 태스크당 5개)와 `multer.memoryStorage`(용량 limit + 확장자 fileFilter). `POST /api/me/tasks/:taskId/uploads/file` — multer를 **라우트 안에서 호출**해 용량·형식 에러를 기존 try/catch·`fail`로 처리(에러 미들웨어 불필요). `loadOwnTask` 재사용, 파일 5개 초과 400, 저장 키 `${projectId}/${taskId}/${uuid}${ext}`(원본명은 DB에만)로 `storage.upload` → `uploads`(kind='file') insert → `activity_log 'upload'`. insert 실패 시 방금 올린 객체 롤백.
+  - `GET /api/me/uploads/:uploadId/download`(팀원) — `createSignedUrl(path, 3600, { download: fileName })` → `res.redirect`. `DELETE`에 `kind==='file'`이면 `storage.remove`로 객체 정리(고아 방지).
+  - `client.js` `apiUpload`(FormData, Content-Type 미지정). `ProgressTab.jsx` `UploadForm`에 `📁 파일`(hidden `input[type=file]` + accept) → 선택 즉시 `apiUpload`; 파일 자료는 **다운로드 링크**(`/api/me/uploads/:id/download`)로 표시. `tabs.css` `.file-attach` 최소 스타일.
+  - **사전(수동)**: Supabase 비공개 버킷 `uploads`(README 4번). 검증 스크립트가 없으면 생성(멱등).
+- **검증**: 풀플로우 Node 스크립트(`FormData`/`Blob` 내장) — 파일 업로드 201·progress에 `kind:file`·fileName 표시·잔디 · 다운로드 **200 + `/storage/v1/object/sign/uploads/…token=` 경유 + 바이트 일치** · 확장자(.exe) 400·10MB 초과 400·남의 태스크 403·링크에 다운로드 400·비팀원 다운로드 403·**태스크당 5개 제한(6번째 400)** · 삭제 200 → 다운로드 404 + **Storage 객체도 제거(Object not found)** — **16/16 통과**, 데이터·객체 정리. `oxlint`(exit 0)·`build` 통과. 진행 중 카드 `🔗 링크`/`📁 파일` + 파일 다운로드 링크 헤드리스 스크린샷(실 `tabs.css`) 확인.
 
 ### 2026-07-28 · 프로젝트 관리 탭 쓰기 (삭제·완료·메인·순서)
 - **왜**: 관리 탭이 읽기만 가능했고 `🗑 삭제`는 목업, 완료/메인/순서 버튼은 아예 없었다. 체크리스트의 "삭제/완료/메인/순서"를 실동작시켜 관리 탭 쓰기를 연다. 권한은 **데이터 모델이 규정** — 삭제·완료는 프로젝트 전역이라 생성자만, 메인·순서는 `project_members`의 개인별 설정(`is_main`/`sort_order`)이라 각 팀원이 자기 것만.

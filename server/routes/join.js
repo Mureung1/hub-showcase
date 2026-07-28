@@ -4,6 +4,7 @@ import { Router } from 'express'
 import { supabase } from '../db/supabase.js'
 import { createUser } from './auth.js'
 import { signToken, setAuthCookie } from '../lib/auth.js'
+import { notifyProjectMembers } from '../lib/notify.js'
 
 function throwIf(error, where) {
   if (error) throw new Error(`${where}: ${error.message}`)
@@ -100,6 +101,8 @@ join.post('/api/join/:token', async (req, res) => {
 
     // 활동 로그(대시보드 "최근 활동"에 합류 표시) — 실패해도 합류는 성공 처리(best-effort)
     await supabase.from('activity_log').insert({ project_id: project.id, member_id: member.id, type: 'join' })
+    // 기존 팀원에게 합류 알림 (본인 제외)
+    await notifyProjectMembers(project.id, { type: 'join', payload: { nickname }, exceptUserId: user.id })
 
     // 자동 로그인
     setAuthCookie(res, signToken(user.id))

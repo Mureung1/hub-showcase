@@ -6,6 +6,7 @@ import { generatePlan } from '../services/planner.js'
 import { explainAssignment } from '../services/explainer.js'
 import { assignRoles, computeTeamStats } from '../../src/logic/assignRoles.js'
 import { parseDate, toDateInputValue } from '../../src/utils/dates.js'
+import { notifyProjectMembers } from '../lib/notify.js'
 
 // 쿠키의 JWT에서 로그인 사용자를 확인한다. 미로그인이면 401을 던진다. (me.js와 동일 패턴)
 async function currentUser(req) {
@@ -539,7 +540,7 @@ projects.post('/api/projects/:id/survey', async (req, res) => {
 // ── 배정 실행: 생성자가 설문을 마감하고 결정적 점수 로직으로 역할을 배정·공개한다 ──
 projects.post('/api/projects/:id/assign', async (req, res) => {
   try {
-    const { project } = await loadCreatorProject(req, 'id, status, creator_id')
+    const { user, project } = await loadCreatorProject(req, 'id, status, creator_id')
     if (project.status !== 'recruiting') throw fail(409, '배정할 수 있는 단계가 아닙니다.')
 
     // 설문 제출자 = 참여자 (미제출자는 배정에서 제외)
@@ -598,6 +599,9 @@ projects.post('/api/projects/:id/assign', async (req, res) => {
       })
       .eq('id', project.id)
     throwIf(eu, '배정 상태 갱신')
+
+    // 팀원에게 결과 공개 알림 (생성자 제외)
+    await notifyProjectMembers(project.id, { type: 'reveal', exceptUserId: user.id })
 
     res.json({ ok: true })
   } catch (err) {
@@ -666,7 +670,7 @@ projects.get('/api/projects/:id/result', async (req, res) => {
 // ── 역할 맞교환: 공개 후 10분 내, 생성자가 두 팀원의 실무 역할을 1회 맞교환 ──
 projects.post('/api/projects/:id/swap', async (req, res) => {
   try {
-    const { project } = await loadCreatorProject(req, 'id, status, revealed_at, swap_used, creator_id')
+    const { user, project } = await loadCreatorProject(req, 'id, status, revealed_at, swap_used, creator_id')
     if (project.status !== 'assigned') throw fail(409, '배정 공개 후에만 맞교환할 수 있습니다.')
     if (project.swap_used) throw fail(409, '역할 맞교환은 한 번만 가능합니다.')
     const revealed = project.revealed_at ? new Date(project.revealed_at).getTime() : 0
@@ -728,6 +732,8 @@ projects.post('/api/projects/:id/swap', async (req, res) => {
     const { error: e3 } = await supabase.from('projects').update({ swap_used: true }).eq('id', project.id)
     throwIf(e3, '맞교환 상태 갱신')
     await supabase.from('activity_log').insert({ project_id: project.id, member_id: memberA, type: 'swap' })
+    // 팀원에게 역할 교환 알림 (생성자 제외)
+    await notifyProjectMembers(project.id, { type: 'swap', exceptUserId: user.id })
 
     res.json({ ok: true })
   } catch (err) {

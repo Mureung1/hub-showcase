@@ -32,6 +32,19 @@ export async function apiSend(path, method, body) {
 export const apiPost = (path, body) => apiSend(path, 'POST', body)
 export const apiDelete = (path) => apiSend(path, 'DELETE')
 
+// 파일 업로드(multipart) — FormData를 그대로 보낸다. Content-Type은 지정하지 않아야
+// 브라우저가 boundary를 붙인다. 비 2xx면 서버 error 메시지로 throw.
+export async function apiUpload(path, formData) {
+  const res = await fetch(path, { method: 'POST', credentials: 'same-origin', body: formData })
+  if (!res.ok) {
+    const b = await res.json().catch(() => null)
+    const err = new Error(b?.error ?? `요청 실패 (${res.status})`)
+    err.status = res.status
+    throw err
+  }
+  return res.status === 204 ? null : res.json()
+}
+
 // GET 데이터 로딩 훅 — 로딩/에러/데이터 3상태 + 재시도
 export function useApi(path) {
   const [state, setState] = useState({ loading: true, error: null, data: null })

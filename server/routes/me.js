@@ -1,6 +1,30 @@
 import { Router } from 'express'
+import path from 'node:path'
+import { randomUUID } from 'node:crypto'
+import multer from 'multer'
 import { supabase } from '../db/supabase.js'
 import { userIdFromReq } from '../lib/auth.js'
+import { notifyProjectMembers } from '../lib/notify.js'
+
+// 파일 업로드 정책 (기획서 "파일 남용" 규칙)
+const FILE_BUCKET = 'uploads'
+const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10MB
+const MAX_FILES_PER_TASK = 5
+const ALLOWED_EXT = new Set(['.png', '.jpg', '.jpeg', '.pdf', '.docx', '.pptx', '.xlsx', '.zip'])
+
+// 메모리 저장 → 서버가 Secret key로 Storage에 업로드(게이트웨이 유지). 확장자 화이트리스트.
+const fileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_BYTES },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase()
+    if (!ALLOWED_EXT.has(ext)) {
+      cb(fail(400, '허용되지 않는 파일 형식입니다. (png·jpg·pdf·docx·pptx·xlsx·zip)'))
+      return
+    }
+    cb(null, true)
+  },
+})
 
 // 쿠키의 JWT에서 로그인 사용자를 확인한다. 미로그인이면 401을 던진다.
 async function currentUser(req) {
@@ -44,7 +68,7 @@ async function loadOwnTask(user, taskId) {
 
   const { data: membership, error: e2 } = await supabase
     .from('project_members')
-    .select('id')
+    .select('id, nickname')
     .eq('project_id', task.project_id)
     .eq('user_id', user.id)
     .maybeSingle()
@@ -382,6 +406,12 @@ me.post('/api/me/tasks/:taskId/uploads', async (req, res) => {
       type: 'upload',
       payload: { task: task.title },
     })
+    // 다른 팀원에게 업로드 알림 (올린 사람 제외)
+    await notifyProjectMembers(task.project_id, {
+      type: 'upload',
+      payload: { task: task.title, by: membership.nickname },
+      exceptUserId: user.id,
+    })
 
     res.status(201).json({ ok: true })
   } catch (err) {
@@ -396,7 +426,7 @@ me.delete('/api/me/uploads/:uploadId', async (req, res) => {
 
     const { data: upload, error: e1 } = await supabase
       .from('uploads')
-      .select('id, project_id, member_id')
+      .select('id, project_id, member_id, kind, file_path')
       .eq('id', req.params.uploadId)
       .maybeSingle()
     throwIf(e1, '자료 조회')
@@ -415,6 +445,11 @@ me.delete('/api/me/uploads/:uploadId', async (req, res) => {
 
     const { error: e3 } = await supabase.from('uploads').delete().eq('id', upload.id)
     throwIf(e3, '자료 삭제')
+
+    // 파일형이면 Storage 객체도 정리 (고아 파일 방지). 실패해도 요청은 성공 처리.
+    if (upload.kind === 'file' && upload.file_path) {
+      await supabase.storage.from(FILE_BUCKET).remove([upload.file_path])
+    }
 
     res.json({ ok: true })
   } catch (err) {
@@ -444,6 +479,159 @@ me.post('/api/me/projects/reorder', async (req, res) => {
     )
     for (const { error } of await Promise.all(updates)) throwIf(error, '순서 저장')
 
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 태스크 파일 업로드: 비공개 버킷 저장 (자기 태스크만) ──
+// multer를 라우트 안에서 호출해 용량·형식 에러를 기존 try/catch·fail로 처리한다.
+me.post('/api/me/tasks/:taskId/uploads/file', (req, res) => {
+  fileUpload.single('file')(req, res, async (mErr) => {
+    try {
+      if (mErr) {
+        if (mErr.code === 'LIMIT_FILE_SIZE') throw fail(400, '파일은 10MB 이하만 올릴 수 있습니다.')
+        throw mErr.status ? mErr : fail(400, mErr.message)
+      }
+      if (!req.file) throw fail(400, '파일을 선택해 주세요.')
+
+      const user = await currentUser(req)
+      const { task, membership } = await loadOwnTask(user, req.params.taskId)
+
+      const comment = String(req.body?.comment ?? '').trim()
+      if (comment.length > 100) throw fail(400, '코멘트는 100자까지 입력할 수 있습니다.')
+
+      // 태스크당 파일 5개 제한
+      const { count, error: ec } = await supabase
+        .from('uploads')
+        .select('id', { count: 'exact', head: true })
+        .eq('task_id', task.id)
+        .eq('kind', 'file')
+      throwIf(ec, '파일 수 조회')
+      if ((count ?? 0) >= MAX_FILES_PER_TASK) throw fail(400, `태스크당 파일은 ${MAX_FILES_PER_TASK}개까지 올릴 수 있습니다.`)
+
+      // 저장 키는 UUID로 안전화(원본 파일명은 DB에만 보관)
+      const ext = path.extname(req.file.originalname).toLowerCase()
+      const key = `${task.project_id}/${task.id}/${randomUUID()}${ext}`
+      const { error: eu } = await supabase.storage
+        .from(FILE_BUCKET)
+        .upload(key, req.file.buffer, { contentType: req.file.mimetype })
+      if (eu) throw fail(502, `파일 저장에 실패했습니다: ${eu.message}`)
+
+      const { error: ei } = await supabase.from('uploads').insert({
+        project_id: task.project_id,
+        task_id: task.id,
+        member_id: membership.id,
+        kind: 'file',
+        file_path: key,
+        file_name: req.file.originalname,
+        comment: comment || null,
+      })
+      if (ei) {
+        await supabase.storage.from(FILE_BUCKET).remove([key]) // 롤백: 방금 올린 객체 정리
+        throw new Error(`자료 저장: ${ei.message}`)
+      }
+
+      await supabase.from('activity_log').insert({
+        project_id: task.project_id,
+        member_id: membership.id,
+        type: 'upload',
+        payload: { task: task.title },
+      })
+      await notifyProjectMembers(task.project_id, {
+        type: 'upload',
+        payload: { task: task.title, by: membership.nickname },
+        exceptUserId: user.id,
+      })
+
+      res.status(201).json({ ok: true })
+    } catch (err) {
+      res.status(err.status ?? 500).json({ error: err.message })
+    }
+  })
+})
+
+// ── 태스크 파일 다운로드: 팀원에게 1시간 서명 URL로 302 리다이렉트 ──
+me.get('/api/me/uploads/:uploadId/download', async (req, res) => {
+  try {
+    const user = await currentUser(req)
+
+    const { data: upload, error: e1 } = await supabase
+      .from('uploads')
+      .select('id, project_id, kind, file_path, file_name')
+      .eq('id', req.params.uploadId)
+      .maybeSingle()
+    throwIf(e1, '자료 조회')
+    if (!upload) throw fail(404, '자료를 찾을 수 없습니다.')
+    if (upload.kind !== 'file' || !upload.file_path) throw fail(400, '다운로드할 파일이 없습니다.')
+
+    const { data: membership, error: e2 } = await supabase
+      .from('project_members')
+      .select('id')
+      .eq('project_id', upload.project_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    throwIf(e2, '멤버 확인')
+    if (!membership) throw fail(403, '이 프로젝트의 팀원만 내려받을 수 있습니다.')
+
+    const { data: signed, error: e3 } = await supabase.storage
+      .from(FILE_BUCKET)
+      .createSignedUrl(upload.file_path, 3600, { download: upload.file_name })
+    if (e3 || !signed?.signedUrl) throw fail(502, '다운로드 링크 생성에 실패했습니다.')
+
+    res.redirect(signed.signedUrl)
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 인앱 알림 조회: 내 알림 최근 20건 + 안 읽음 수 ──
+me.get('/api/me/notifications', async (req, res) => {
+  try {
+    const user = await currentUser(req)
+
+    const { data: rows, error: e1 } = await supabase
+      .from('notifications')
+      .select('id, type, payload, is_read, created_at, projects(title)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    throwIf(e1, '알림 조회')
+
+    const { count, error: e2 } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    throwIf(e2, '안 읽은 알림 수 조회')
+
+    res.json({
+      unreadCount: count ?? 0,
+      items: rows.map((n) => ({
+        id: n.id,
+        type: n.type,
+        payload: n.payload,
+        isRead: n.is_read,
+        createdAt: n.created_at,
+        projectTitle: n.projects?.title ?? null,
+      })),
+    })
+  } catch (err) {
+    res.status(err.status ?? 500).json({ error: err.message })
+  }
+})
+
+// ── 인앱 알림 모두 읽음 처리 ──
+me.post('/api/me/notifications/read-all', async (req, res) => {
+  try {
+    const user = await currentUser(req)
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    throwIf(error, '알림 읽음 처리')
     res.json({ ok: true })
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.message })

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router'
 import logo from '../assets/logo.png'
 import { useApi, apiPost } from '../api/client'
+import NotificationBell from './NotificationBell'
 import './AppLayout.css'
 
 const MENU = [
@@ -100,7 +101,7 @@ export default function AppLayout() {
             ☰
           </button>
           <div className="app-header-actions">
-            <button type="button" className="icon-btn" aria-label="알림">🔔</button>
+            <NotificationBell />
             <button type="button" className="icon-btn" aria-label="프로필">👤</button>
           </div>
         </header>
