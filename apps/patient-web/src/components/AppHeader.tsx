@@ -7,6 +7,8 @@ interface AppHeaderProps {
   apiState?: "checking" | "connected" | "disconnected";
 }
 
+const staffWebUrl = import.meta.env.VITE_STAFF_WEB_URL ?? "http://127.0.0.1:5174";
+
 export function AppHeader({ apiLabel, apiState }: AppHeaderProps) {
   const { session, signOut } = usePatientAuth();
   return (
@@ -25,7 +27,7 @@ export function AppHeader({ apiLabel, apiState }: AppHeaderProps) {
         {apiLabel && apiState && (
           <span className={`api-status api-status--${apiState}`}>{apiLabel}</span>
         )}
-        <a className="icon-text-button" href="http://127.0.0.1:5174">
+        <a className="icon-text-button" href={staffWebUrl}>
           <Building2 size={18} aria-hidden="true" />
           병원 직원
         </a>

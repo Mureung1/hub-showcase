@@ -4,9 +4,9 @@
 
 | 서비스 | 위치 | 배포 후보 | 빌드 명령 | 결과 또는 시작 명령 |
 | --- | --- | --- | --- | --- |
-| 환자 웹 | `apps/patient-web` | Vercel | `npm run build -w @baro-jinryo/patient-web` | `apps/patient-web/dist` |
-| 병원 관리자 웹 | `apps/staff-web` | Vercel | `npm run build -w @baro-jinryo/staff-web` | `apps/staff-web/dist` |
-| 플랫폼 관리자 웹 | `apps/platform-admin-web` | Vercel | `npm run build -w @baro-jinryo/platform-admin-web` | `apps/platform-admin-web/dist` |
+| 환자 웹 | `apps/patient-web` | Vercel | `npm run build -w @baro-jinryo/shared -w @baro-jinryo/web-shared -w @baro-jinryo/patient-web` | `apps/patient-web/dist` |
+| 병원 관리자 웹 | `apps/staff-web` | Vercel | `npm run build -w @baro-jinryo/shared -w @baro-jinryo/web-shared -w @baro-jinryo/staff-web` | `apps/staff-web/dist` |
+| 플랫폼 관리자 웹 | `apps/platform-admin-web` | Vercel | `npm run build -w @baro-jinryo/shared -w @baro-jinryo/web-shared -w @baro-jinryo/platform-admin-web` | `apps/platform-admin-web/dist` |
 | Express API | `apps/api` | Render | `npm run build -w @baro-jinryo/shared -w @baro-jinryo/api` | `npm run start -w @baro-jinryo/api` |
 
 모노레포의 workspace 패키지를 함께 설치해야 하므로 모든 배포 서비스는 저장소 최상위를 기준으로 `npm install`을 실행합니다.
@@ -18,11 +18,17 @@
 | 변수 | 용도 | 공개 여부 |
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | Render API 주소와 `/api` 경로 | 공개 가능 |
+| `VITE_PATIENT_WEB_URL` | 환자 웹으로 이동할 공개 주소 | 공개 가능 |
+| `VITE_STAFF_WEB_URL` | 병원 관리자 웹으로 이동할 공개 주소 | 공개 가능 |
 | `VITE_SUPABASE_URL` | Supabase 프로젝트 URL | 공개 가능 |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | 브라우저용 Supabase publishable key | 공개 가능 |
 | `VITE_WAITING_POLL_INTERVAL_MS` | 대기 상태 조회 주기 | 공개 가능 |
 
 로컬의 `VITE_API_BASE_URL=/api`는 Vite 프록시를 사용합니다. Vercel과 Render를 분리 배포하면 `https://<render-service>/api`와 같은 절대 주소로 변경해야 합니다.
+
+각 Vercel 프로젝트에는 실제로 사용하는 화면 이동 주소만 등록합니다. 환자 웹에는
+`VITE_STAFF_WEB_URL`, 병원 관리자 웹에는 `VITE_PATIENT_WEB_URL`과
+`VITE_STAFF_WEB_URL`, 플랫폼 관리자 웹에는 `VITE_PATIENT_WEB_URL`을 설정합니다.
 
 ## 3. API 환경변수
 
@@ -47,7 +53,8 @@ Render 서비스에 다음 변수를 설정합니다.
 
 `DEVELOPMENT_PATIENT_PASSWORD`, `DEVELOPMENT_STAFF_PASSWORD`, `DEVELOPMENT_PLATFORM_PASSWORD`는 개발 시드 전용입니다. production 환경변수에 등록하지 않습니다.
 
-Render의 Health Check Path에는 DB 연결까지 확인하는 `/api/health/ready`를 사용합니다. `/api/health/live`는 Express 프로세스 실행 여부만 확인합니다.
+첫 배포의 Render Health Check Path에는 `/api/health/live`를 사용합니다. 배포 후
+`/api/health/ready`를 직접 열어 Supabase 연결도 별도로 확인합니다.
 
 ## 4. 서비스 간 연결
 
@@ -68,6 +75,10 @@ Render의 Health Check Path에는 DB 연결까지 확인하는 `/api/health/read
 ## 6. 배포 전 남은 작업
 
 - [ ] Vercel과 Render에서 포크 저장소가 선택되는지 확인
+- [ ] Render Runtime을 `Node`로 설정하고 저장소 루트를 Root Directory로 사용
+- [ ] Render Build Command를 `npm ci && npm run build -w @baro-jinryo/shared -w @baro-jinryo/api`로 설정
+- [ ] Render Start Command를 `npm run start -w @baro-jinryo/api`로 설정
+- [ ] Render Health Check Path를 `/api/health/live`로 설정
 - [ ] Render API 서비스 생성 및 환경변수 등록
 - [ ] 환자 웹 Vercel 프로젝트 생성
 - [ ] 병원 관리자 웹 Vercel 프로젝트 생성

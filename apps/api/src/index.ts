@@ -6,13 +6,14 @@ import { createShutdownHandler } from "./server/shutdown.js";
 import { createRecurringTask } from "./server/recurringTask.js";
 
 const SHUTDOWN_TIMEOUT_MS = 30_000;
+const API_HOST = "0.0.0.0";
 
 async function startServer(): Promise<void> {
   await waitForDatabaseAtStartup();
 
   const app = createApp();
-  const server = app.listen(env.API_PORT, "127.0.0.1", () => {
-    console.info(`바로진료 API: http://127.0.0.1:${env.API_PORT}`);
+  const server = app.listen(env.API_PORT, API_HOST, () => {
+    console.info(`바로진료 API가 ${API_HOST}:${env.API_PORT}에서 실행 중입니다.`);
   });
   const expirationService = createWaitingExpirationService();
   const expirationTask = createRecurringTask({
