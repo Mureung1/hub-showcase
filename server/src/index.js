@@ -13,6 +13,11 @@ const PORT = process.env.PORT ?? 4000
 app.use(cors())
 app.use(express.json())
 
+// 배포 플랫폼(Render 등)의 상태 확인용 — 외부 의존성 없이 프로세스 생존만 확인
+app.get("/api/health", (_req, res) => {
+  res.json({ success: true, data: { status: "ok" } })
+})
+
 app.use("/api/dashboard", dashboardRouter)
 app.use("/api/article", articleRouter)
 app.use("/api/decisions", decisionsRouter)
