@@ -118,7 +118,7 @@ export function InviteCompose() {
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '520px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
         <div style={{ '--text-script-lg': '48px', '--text-h2': '26px' }}>
-          <SectionTitle script="Invite" title="초대장을 써볼까요" subtitle="SCR·1 초대장 작성" align="left" />
+          <SectionTitle script="Invite" title="초대장을 써볼까요" align="left" />
         </div>
 
         {phase === 'writing' ? (

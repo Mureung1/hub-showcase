@@ -66,7 +66,6 @@ export function Start() {
             <div style={{ fontFamily: "'Signatie', var(--font-script)", fontSize: '54px', lineHeight: 1, color: 'var(--wedgwood-deep)', marginTop: '22px' }}>Letter&amp;Co</div>
             <div style={{ width: '34px', height: '1px', background: 'var(--line)', margin: '2px 0' }} />
             <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', color: 'var(--ink)' }}>모임 조율을 편지처럼</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.22em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>SCR · 0 시작하기</div>
             <img src={pearls} alt="" style={{ width: '118px', opacity: 0.85, marginTop: '4px' }} />
           </div>
         </div>
