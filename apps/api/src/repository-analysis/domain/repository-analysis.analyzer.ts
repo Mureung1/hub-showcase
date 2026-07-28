@@ -205,23 +205,6 @@ function createEvidence(
 ): RepositoryAnalysisDetails["evidence"] {
   const evidence: RepositoryAnalysisDetails["evidence"] = [];
 
-  for (const commit of source.commits) {
-    evidence.push({
-      evidenceType: "commit",
-      referenceId: commit.sha,
-      title: firstLine(commit.message),
-      url: commit.url,
-      filePath: null,
-      occurredAt: commit.committedAt,
-      contributorLogin: commit.authorLogin,
-      metadata: {
-        changedFileCount: commit.changedFiles?.length ?? 0,
-        additions: commit.additions ?? 0,
-        deletions: commit.deletions ?? 0,
-      },
-    });
-  }
-
   for (const pullRequest of source.pullRequests ?? []) {
     evidence.push({
       evidenceType: "pull_request",
@@ -234,6 +217,7 @@ function createEvidence(
       metadata: {
         state: pullRequest.state,
         merged: Boolean(pullRequest.mergedAt),
+        bodyExcerpt: pullRequest.bodyExcerpt ?? null,
         reviewCount: pullRequest.reviewCount,
         changedFiles: pullRequest.changedFiles,
         additions: pullRequest.additions,
@@ -253,7 +237,58 @@ function createEvidence(
       contributorLogin: issue.authorLogin,
       metadata: {
         state: issue.state,
+        bodyExcerpt: issue.bodyExcerpt ?? null,
         commentCount: issue.commentCount,
+      },
+    });
+  }
+
+  for (const discussion of source.discussions ?? []) {
+    evidence.push({
+      evidenceType: "discussion",
+      referenceId: String(discussion.number),
+      title: discussion.title,
+      url: discussion.url,
+      filePath: null,
+      occurredAt: discussion.createdAt,
+      contributorLogin: discussion.authorLogin,
+      metadata: {
+        category: discussion.category,
+        bodyExcerpt: discussion.bodyExcerpt,
+        commentCount: discussion.commentCount,
+      },
+    });
+  }
+
+  for (const project of source.projects ?? []) {
+    evidence.push({
+      evidenceType: "project",
+      referenceId: String(project.number),
+      title: project.title,
+      url: project.url,
+      filePath: null,
+      occurredAt: project.updatedAt,
+      contributorLogin: null,
+      metadata: {
+        description: project.description,
+        itemCount: project.itemCount,
+      },
+    });
+  }
+
+  for (const commit of source.commits) {
+    evidence.push({
+      evidenceType: "commit",
+      referenceId: commit.sha,
+      title: firstLine(commit.message),
+      url: commit.url,
+      filePath: null,
+      occurredAt: commit.committedAt,
+      contributorLogin: commit.authorLogin,
+      metadata: {
+        changedFileCount: commit.changedFiles?.length ?? 0,
+        additions: commit.additions ?? 0,
+        deletions: commit.deletions ?? 0,
       },
     });
   }

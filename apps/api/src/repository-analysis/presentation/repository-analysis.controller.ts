@@ -13,6 +13,7 @@ import {
   InvalidRepositoryUrlError,
   RepositoryAnalysisService,
 } from "../application/repository-analysis.service";
+import { RepositoryAnalysisPersistenceError } from "../infrastructure/persistence/repository-analysis.persistence";
 
 @Controller("repository-analyses")
 export class RepositoryAnalysisController {
@@ -53,6 +54,14 @@ export class RepositoryAnalysisController {
         "EXTERNAL_SERVICE_ERROR",
         "GitHub 데이터를 가져오지 못했습니다.",
         HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    if (error instanceof RepositoryAnalysisPersistenceError) {
+      return this.createException(
+        "ANALYSIS_PERSISTENCE_FAILED",
+        "Repository 분석 결과를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
 

@@ -9,6 +9,7 @@ import {
   InvalidRepositoryUrlError,
   type RepositoryAnalysisService,
 } from "../application/repository-analysis.service";
+import { RepositoryAnalysisPersistenceError } from "../infrastructure/persistence/repository-analysis.persistence";
 
 describe("RepositoryAnalysisController", () => {
   function createController(error?: Error) {
@@ -26,6 +27,7 @@ describe("RepositoryAnalysisController", () => {
     [new GitHubRepositoryNotFoundError(), HttpStatus.NOT_FOUND, "REPOSITORY_NOT_FOUND"],
     [new GitHubRateLimitError(), HttpStatus.TOO_MANY_REQUESTS, "GITHUB_RATE_LIMITED"],
     [new GitHubRequestError(500), HttpStatus.BAD_GATEWAY, "EXTERNAL_SERVICE_ERROR"],
+    [new RepositoryAnalysisPersistenceError(), HttpStatus.SERVICE_UNAVAILABLE, "ANALYSIS_PERSISTENCE_FAILED"],
   ])("maps domain failures to stable API errors", async (error, status, code) => {
     const controller = createController(error);
 

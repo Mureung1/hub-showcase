@@ -203,4 +203,65 @@ describe("RepositoryAnalysisPersistence", () => {
     await expect(persistence.save(input)).rejects.toThrow("Repository 분석 저장에 실패했습니다.");
     expect(operations).toContain("analysis_results:delete");
   });
+
+  it("passes Discussion and Project evidence through to persistence", async () => {
+    const { persistence, payloads } = createPersistence(
+      new Map([
+        ["repositories", [{ data: { id: "repository-id" }, error: null }]],
+        [
+          "analysis_results",
+          [
+            { data: null, error: null },
+            { data: { id: "analysis-id" }, error: null },
+            { data: null, error: null },
+          ],
+        ],
+        [
+          "contributor_metrics",
+          [{ data: [{ id: "contributor-id", github_login: "SubJeeLee" }], error: null }],
+        ],
+        ["analysis_evidence", [{ data: null, error: null }]],
+      ]),
+    );
+
+    await persistence.save({
+      ...input,
+      analysis: {
+        repositorySnapshot: {},
+        techStack: {},
+        projectStructure: {},
+        qualitySignals: {},
+        collaborationSummary: {},
+        technicalChallenges: [],
+        warnings: [],
+        evidence: [
+          {
+            evidenceType: "discussion",
+            referenceId: "discussion-1",
+            title: "설계 결정",
+            url: "https://github.com/SubJeeLee/hub/discussions/1",
+            filePath: null,
+            occurredAt: null,
+            contributorLogin: "SubJeeLee",
+            metadata: {},
+          },
+          {
+            evidenceType: "project",
+            referenceId: "project-1",
+            title: "Roadmap",
+            url: null,
+            filePath: null,
+            occurredAt: null,
+            contributorLogin: null,
+            metadata: {},
+          },
+        ],
+      },
+    });
+
+    expect(payloads.get("analysis_evidence")).toEqual([
+      expect.objectContaining({ evidence_type: "discussion", reference_id: "discussion-1" }),
+      expect.objectContaining({ evidence_type: "project", reference_id: "project-1" }),
+    ]);
+  });
 });

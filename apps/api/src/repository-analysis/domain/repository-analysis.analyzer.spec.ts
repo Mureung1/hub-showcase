@@ -152,9 +152,9 @@ describe("repository-analysis.analyzer", () => {
       reviewCount: 1,
     });
     expect(details.evidence.map((item) => item.evidenceType)).toEqual([
-      "commit",
       "pull_request",
       "issue",
+      "commit",
       "file",
       "config",
       "file",
