@@ -65,6 +65,52 @@ test("모든 등록 사이트가 저장된 출처이면 추천 결과가 비어 
   assert.deepEqual(result.recommendations, []);
 });
 
+test("다른 학교 프로필에는 학교 전용 사이트를 추천하지 않는다", () => {
+  const otherUniversityProfile = {
+    ...profile,
+    school: "서울대학교",
+    regions: ["서울", "온라인"],
+  };
+  const result = recommendSites({
+    profile: otherUniversityProfile,
+    candidateSites: siteRegistry,
+    desiredInformation: ["contest", "research"],
+  });
+
+  const recommendedIds = result.recommendations.map((item) => item.siteId);
+
+  assert.equal(recommendedIds.includes("university-general-notices"), false);
+  assert.equal(recommendedIds.includes("department-notices"), false);
+  assert.equal(recommendedIds.includes("nrf"), true);
+});
+
+test("여러 대학교 가상 프로필에서 학교 전용 사이트를 정확히 구분한다", () => {
+  const profiles = [
+    { school: "경북대학교", shouldIncludeKnu: true },
+    { school: "경북 대학교", shouldIncludeKnu: true },
+    { school: "서울대학교", shouldIncludeKnu: false },
+    { school: "부산대학교", shouldIncludeKnu: false },
+    { school: "고려대학교", shouldIncludeKnu: false },
+    { school: "한국과학기술원", shouldIncludeKnu: false },
+  ];
+
+  profiles.forEach(({ school, shouldIncludeKnu }) => {
+    const result = recommendSites({
+      profile: { ...profile, school },
+      candidateSites: siteRegistry,
+      desiredInformation: ["contest", "research"],
+    });
+    const recommendedIds = result.recommendations.map((item) => item.siteId);
+    const hasKnuOnlySite = recommendedIds.some((siteId) => [
+      "university-general-notices",
+      "department-notices",
+    ].includes(siteId));
+
+    assert.equal(hasKnuOnlySite, shouldIncludeKnu, `${school} 프로필의 경북대 전용 사이트 처리`);
+    assert.equal(recommendedIds.includes("nrf"), true, `${school} 프로필의 전국 연구 사이트 추천`);
+  });
+});
+
 test("Gemini 설명 생성이 실패해도 규칙 기반 추천을 반환한다", async () => {
   const service = createSiteRecommendationService({
     registry: siteRegistry,

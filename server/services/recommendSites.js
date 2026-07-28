@@ -85,6 +85,20 @@ function siteMatchesMajor(site, profile) {
   ].includes(type));
 }
 
+function normalizeSchoolName(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function siteMatchesSchool(site, profile) {
+  const targetSchools = Array.isArray(site?.targetSchools) ? site.targetSchools : [];
+  if (!targetSchools.length) return true;
+
+  const profileSchool = normalizeSchoolName(profile?.school);
+  return Boolean(profileSchool) && targetSchools.some(
+    (school) => normalizeSchoolName(school) === profileSchool,
+  );
+}
+
 function isOnlineOnlySite(site) {
   const regions = site?.regions ?? [];
   return regions.includes("온라인") && !regions.some((region) => !["온라인", "전국"].includes(region));
@@ -110,6 +124,9 @@ function buildProfileReasons(site, profile, interestTypes, regionMatch) {
   }
   if (siteMatchesMajor(site, profile)) {
     reasons.push("전공과 연관된 연구·교육·공모전 정보를 함께 확인할 수 있습니다.");
+  }
+  if (Array.isArray(site.targetSchools) && site.targetSchools.length) {
+    reasons.push("소속 학교 구성원을 위한 공식 공지를 확인할 수 있습니다.");
   }
   if (regionMatch) {
     reasons.push("설정한 활동 가능 지역 또는 온라인 범위와 함께 검토할 수 있습니다.");
@@ -221,6 +238,7 @@ export function recommendSites({
   const recommendationLimit = normalizedSettings?.recommendationLimit ?? MAX_RECOMMENDATIONS;
   const recommendations = candidateSites
     .filter((site) => site?.active && !trackedSiteIds.has(site.id))
+    .filter((site) => siteMatchesSchool(site, profile))
     .filter((site) => normalizedSettings?.includeOnline !== false || !isOnlineOnlySite(site))
     .map((site) => createRecommendation(site, {
       currentlyCovered,
