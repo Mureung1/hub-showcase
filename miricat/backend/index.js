@@ -73,7 +73,7 @@ async function sendFirstReport(route, check) {
   } else if (check.covered) {
     payload = { content: `🐾 새 보초 — **${route.name}** 등록. 모아둔 공지 ${check.checked}건과 대조했고, 지금 영향 주는 공지는 없어요.` };
   } else {
-    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 대전·세종·경기 게시판을 확인하고 있어요.` };
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 서울·경기·대전·세종 게시판을 확인하고 있어요.` };
   }
   const r = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   return r.ok;   // 화면이 "보냈어요"를 사실일 때만 말하게

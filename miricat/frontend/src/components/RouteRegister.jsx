@@ -124,7 +124,7 @@ export default function RouteRegister({ onSaved }) {
             )}
             {saved.check && !saved.check.covered && (
               <p style={{ color: "#C98A00" }}>
-                📍 이 지역은 아직 감시 범위 밖이에요 — 지금은 대전·세종·경기 게시판을 확인하고 있어요.
+                📍 이 지역은 아직 감시 범위 밖이에요 — 지금은 서울·경기·대전·세종 게시판을 확인하고 있어요.
               </p>
             )}
           </div>
