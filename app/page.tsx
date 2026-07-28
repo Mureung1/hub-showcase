@@ -166,7 +166,7 @@ export default function Home() {
 
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-creamDeep">
-        <div className="max-w-md mx-auto flex justify-around py-3 text-xs text-muted">
+        <div className="max-w-md mx-auto flex justify-around pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted">
           <Link href="/" className="text-accentDark font-medium">
             홈
           </Link>
