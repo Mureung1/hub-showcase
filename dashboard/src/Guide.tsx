@@ -182,7 +182,8 @@ export default function Guide() {
           </details>
           <details open>
             <summary>이미지 파일이 없으면 프로젝트가 사라지나요?</summary>
-            <p>프로젝트 내용은 표시됩니다. 파일이 없거나 경로·파일명이 실제 파일과 다르면 대표 이미지는 기본 이미지로 바뀝니다. 추가 화면은 문제가 있는 이미지만 빠집니다.</p>
+            <p>프로젝트 내용은 표시됩니다. 적은 경로의 파일을 찾지 못하면 <code>thumbnail</code>, <code>cover</code>, <code>main</code>, <code>home</code> 이름의 이미지를 차례로 찾습니다. 이미지가 하나라도 있으면 대표 이미지로 사용합니다.</p>
+            <p>자동으로 찾은 이미지는 카드에 <code>대표 이미지 자동 선택</code>으로 표시합니다. 이미지가 하나도 없으면 기본 이미지를 사용합니다. 추가 화면은 문제가 있는 이미지만 빠집니다.</p>
           </details>
           <details open>
             <summary>내용을 모두 작성해야 하나요?</summary>
