@@ -1,6 +1,9 @@
+import dns from "node:dns";
 import nodemailer from "nodemailer";
 
 import { env } from "../config/env.js";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const placeholderValues = new Set([
   "your_email@gmail.com",
