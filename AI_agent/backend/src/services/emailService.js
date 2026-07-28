@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
 dns.setDefaultResultOrder("ipv4first");
+const { resolve4 } = dns.promises;
 
 const placeholderValues = new Set([
   "your_email@gmail.com",
@@ -27,15 +28,22 @@ const hasSmtpConfig = () =>
       isConfiguredValue(env.smtpFrom)
   );
 
-const createTransporter = () => {
+const resolveSmtpHost = async () => {
+  const addresses = await resolve4(env.smtpHost);
+  return addresses[0] || env.smtpHost;
+};
+
+const createTransporter = async () => {
   if (!hasSmtpConfig()) {
     throw new Error(
       "SMTP 설정이 필요합니다. backend/.env의 SMTP_USER, SMTP_PASS, SMTP_FROM 값을 실제 메일 계정 정보로 입력해 주세요."
     );
   }
 
+  const smtpHost = await resolveSmtpHost();
+
   return nodemailer.createTransport({
-    host: env.smtpHost,
+    host: smtpHost,
     port: env.smtpPort,
     secure: env.smtpSecure,
     family: 4,
@@ -46,16 +54,19 @@ const createTransporter = () => {
       user: env.smtpUser,
       pass: env.smtpPass,
     },
+    tls: {
+      servername: env.smtpHost,
+    },
   });
 };
 
 export const verifySmtpConnection = async () => {
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   await transporter.verify();
 };
 
 export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
   const displayName = name || "사용자";
 
   try {
