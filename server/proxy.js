@@ -9,6 +9,8 @@ import { mapNeisAllergy } from '../src/lib/allergyRules.js'
 import { resolveCnuWeekResult } from '../src/lib/cnuWeekFallback.js'
 import { isSupportedUniversity } from '../src/lib/universities.js'
 import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
+import { lookupFood } from './nutrition/foodLookup.js'
+import { analyzeTray } from './nutrition/precisionEngine.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -276,11 +278,22 @@ app.use('/api', apiLimiter)
 // 실어 보내고(rewrite destination 참고), 여기서 req.url을 그 값으로 복원한다. 이미 원래 경로가
 // 유지되고 있었다면 이 복원은 같은 값으로 덮어쓰는 것이라 무해하다. 로컬 개발/Render에서는
 // 이 rewrite 자체가 없어 vercelSubpath가 없으므로 이 분기를 타지 않는다.
+//
+// vercelSubpath는 경로만 담고 있다 — 그 외 원래 쿼리 파라미터(?univ=cnu, ?name=... 등)는 Vercel이
+// rewrite destination에 그대로 딸려 보내 req.url에 이미 살아있으므로, 그 문자열에서 vercelSubpath만
+// 제거하고 나머지는 그대로 옮겨 붙여야 한다. 예전에는 vercelSubpath 값만으로 req.url을 통째로
+// 다시 만들어 나머지 쿼리 파라미터가 전부 사라졌다 — POST 바디로만 값을 받는 라우트만 있던 동안은
+// 드러나지 않다가, 쿼리 파라미터가 실제 동작에 필요한 GET 라우트(/api/school-search 등)가 생기며
+// 그 라우트들이 프로덕션(Vercel)에서만 400으로 실패하는 문제로 나타났다.
 if (process.env.VERCEL) {
   app.use((req, res, next) => {
     const subpath = req.query?.vercelSubpath
     if (typeof subpath === 'string') {
-      req.url = `/api/${subpath}`
+      const [, search = ''] = req.url.split('?')
+      const params = new URLSearchParams(search)
+      params.delete('vercelSubpath')
+      const qs = params.toString()
+      req.url = `/api/${subpath}${qs ? `?${qs}` : ''}`
     }
     next()
   })
@@ -371,6 +384,43 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
   } catch (err) {
     respondToProxyError(res, err, 'OpenRouter proxy request')
   }
+})
+
+// POST /api/precision-analyze - 6주차 §1 정밀 영양 산출 엔진(precisionEngine.analyzeTray) 프록시.
+// menus(메뉴명 배열)만 프론트가 넘기면 나머지(식약처 DB 매칭·Gemini 폴백·캘리브레이션)는 서버가
+// 처리한다 — precisionEngine.js가 server/nutrition/foodLookup.js(파일 시스템 접근)를 쓰기 때문에
+// 프론트에서 직접 부를 수 없어 이 라우트가 필요하다. 매칭 실패분은 내부적으로 Gemini를 호출할 수
+// 있어(과금) /api/gemini와 같은 geminiLimiter를 같이 건다.
+app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
+  const { menus, mealType, schoolType, officialTotals } = req.body || {}
+  if (!Array.isArray(menus) || menus.length === 0 || !menus.every((m) => typeof m === 'string' && m.trim())) {
+    return res.status(400).json({ error: 'menus(문자열 배열)가 필요합니다' })
+  }
+  try {
+    const result = await analyzeTray({ menus, mealType, schoolType, officialTotals: officialTotals ?? null })
+    res.json(result)
+  } catch (err) {
+    respondToProxyError(res, err, '/api/precision-analyze')
+  }
+})
+
+// GET /api/food-serving?name=◯◯ - 6주차 §2 인분 수 조절용 1인분 그램 조회. server/nutrition/foodLookup.js
+// (foodDB.json, 6주차 §0)를 그대로 재사용한다 — 새 데이터소스를 만들지 않는다.
+app.get('/api/food-serving', (req, res) => {
+  if (typeof req.query.name !== 'string') {
+    return res.status(400).json({ error: 'name is required' })
+  }
+  const name = req.query.name.trim()
+  if (!name) {
+    return res.status(400).json({ error: 'name is required' })
+  }
+  res.set('Cache-Control', 'no-store')
+
+  const result = lookupFood(name)
+  if (!result) {
+    return res.json({ servingGram: null, matched: false, matchType: null })
+  }
+  res.json({ servingGram: result.item.servingGram ?? null, matched: true, matchType: result.matchType })
 })
 
 // POST /api/places - 카카오 키워드 장소 검색 프록시 (KAKAO_REST_API_KEY는 서버에서만 사용)
@@ -763,6 +813,11 @@ app.get('/api/school-search', async (req, res) => {
   if (name.length < 2) {
     return res.status(400).json({ error: 'name은 2자 이상이어야 합니다' })
   }
+
+  // Express 기본 ETag가 붙으면 브라우저가 동일 검색어 재요청 시 304로 응답받는다 — 이 자체는
+  // 무해하지만(브라우저가 캐시된 본문을 그대로 반환), 검색 API는 항상 최신 응답만 다루도록
+  // 캐시 관여 자체를 끈다. 서버 메모리 캐시(당일 TTL)는 별개로 그대로 유지된다.
+  res.set('Cache-Control', 'no-store')
 
   try {
     const url = new URL(NEIS_SCHOOL_INFO_URL)

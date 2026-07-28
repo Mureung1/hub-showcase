@@ -29,6 +29,9 @@ create table if not exists public.profiles (
   school_office_code text,  -- k12: NEIS 시도교육청코드(예: J10). university: 사용 안 함(NULL).
   school_code        text,  -- k12: NEIS 학교코드. university: 지원 대학 id(예: 'cnu').
   school_name        text,  -- 화면 표시용 학교명(예: '양서고등학교', '충남대학교').
+  -- k12: NEIS SCHUL_KND_SC_NM("초등학교"/"중학교"/"고등학교" 등, 자유 문자열). university: NULL.
+  -- 정밀 영양 산출 엔진의 학교급별 배식량 보정 계수에 쓰인다(6주차 §1, CafeteriaPanel.jsx).
+  school_kind        text,
   occupation         text check (occupation in ('elementary', 'middle_high', 'university', 'worker', 'other')),
 
   -- 하루 권장 영양정보. calcRecommendedNutrients() 결과 그대로 저장.
@@ -153,13 +156,14 @@ create trigger trg_profiles_updated_at
 
 -- ---------------------------------------------------------------------
 -- 7) 오늘의 순위(리더보드): profiles.recommended(개인별 하루 권장량) 대비 오늘 meals 합계로
---    "달성률" 점수(0~100)를 서버(Postgres)에서 계산해, 등수/점수/본인 여부만 반환한다 — 다른
+--    100점 배점 점수를 서버(Postgres)에서 계산해, 등수/점수/본인 여부만 반환한다 — 다른
 --    사용자의 이름·이메일·신체정보·식사 내역은 절대 클라이언트로 나가지 않는다(RLS를 우회하는
 --    SECURITY DEFINER 함수이지만, RETURNS TABLE의 컬럼 자체가 rank/score/is_me뿐이라 그 이상은
---    애초에 반환할 수 없는 구조). src/lib/nutritionScore.js의 calcNutritionScore와 완전히 동일한
---    채점 공식을 SQL로 옮긴 것 — 두 곳 중 하나만 고치면 랭킹과 개인 점수 표시가 어긋나니, 채점
---    공식을 바꿀 때는 항상 같이 고칠 것. 게스트는 Supabase 계정 자체가 없어 랭킹에 낄 수 없다
---    (그래서 authenticated 사용자만 대상으로 하고, 실행 권한도 authenticated에만 준다).
+--    애초에 반환할 수 없는 구조). src/lib/nutritionScore.js의 calcScore/getScoreBreakdown과
+--    완전히 동일한 채점 공식(칼로리 적정성 40 / 단백질·탄수화물·지방 각 10 / 나트륨 30, 식이섬유는
+--    배점에서 제외 — 5주차 §4)을 SQL로 옮긴 것 — 두 곳 중 하나만 고치면 랭킹과 개인 점수 표시가
+--    어긋나니, 채점 공식을 바꿀 때는 항상 같이 고칠 것. 게스트는 Supabase 계정 자체가 없어 랭킹에
+--    낄 수 없다(그래서 authenticated 사용자만 대상으로 하고, 실행 권한도 authenticated에만 준다).
 -- ---------------------------------------------------------------------
 create or replace function public.get_daily_leaderboard()
 returns table (rank bigint, score numeric, is_me boolean)
@@ -174,7 +178,6 @@ as $$
       sum((m.total->>'protein')::numeric)  as protein,
       sum((m.total->>'carbs')::numeric)    as carbs,
       sum((m.total->>'fat')::numeric)      as fat,
-      sum((m.total->>'fiber')::numeric)    as fiber,
       sum((m.total->>'sodium')::numeric)   as sodium
     from public.meals m
     -- "오늘"은 앱이 기록할 때 쓰는 한국 시각(KST) 기준 날짜여야 한다. current_date는 DB 타임존(Supabase
@@ -184,32 +187,46 @@ as $$
     group by m.user_id
   ),
   scored as (
-    -- 영양소별 점수를 배열로 만들고 NULL(권장량이 0/없어 채점 불가한 항목)은 avg가 자동으로 무시한다.
-    -- 이렇게 해야 src/lib/nutritionScore.js의 calcNutritionScore(채점 가능한 항목만 평균)와 공식이 같다.
-    -- (기존엔 6개 합÷6 + nullif라, 한 항목이라도 권장량이 0이면 전체 score가 NULL이 돼 정렬에서 1위로
-    --  올라가고, 나트륨 분모엔 nullif가 없어 0이면 0으로 나누는 오류까지 났다.)
+    -- 항목별 점수(정수로 반올림)를 배열로 만들고 sum()으로 더한다 — NULL(권장량이 0/없어 채점
+    -- 불가한 항목)은 sum이 자동으로 무시하고, 전부 NULL이면 sum 결과도 NULL(채점 불가 → 랭킹 제외).
+    -- src/lib/nutritionScore.js의 calcScore(항목별 반올림 points의 합계)와 정확히 같은 결과가
+    -- 나오도록, 여기서도 각 항목을 개별적으로 반올림한 뒤 합산한다(합산 후 한 번에 반올림하지 않음).
     select
       t.user_id,
       (
-        select avg(s) from unnest(array[
-          case when (p.recommended->>'calories')::numeric > 0
-               then least(coalesce(t.calories, 0) / (p.recommended->>'calories')::numeric * 100, 100) end,
-          case when (p.recommended->>'protein')::numeric > 0
-               then least(coalesce(t.protein, 0) / (p.recommended->>'protein')::numeric * 100, 100) end,
-          case when (p.recommended->>'carbs')::numeric > 0
-               then least(coalesce(t.carbs, 0) / (p.recommended->>'carbs')::numeric * 100, 100) end,
-          case when (p.recommended->>'fat')::numeric > 0
-               then least(coalesce(t.fat, 0) / (p.recommended->>'fat')::numeric * 100, 100) end,
-          case when (p.recommended->>'fiber')::numeric > 0
-               then least(coalesce(t.fiber, 0) / (p.recommended->>'fiber')::numeric * 100, 100) end,
-          -- 나트륨은 상한 지표라 방향이 반대(한도 이하면 100점, 넘으면 초과 비율만큼 감점, 0점 미만은 자름).
-          case when (p.recommended->>'sodium')::numeric > 0
-               then greatest(
-                 case
-                   when coalesce(t.sodium, 0) <= (p.recommended->>'sodium')::numeric then 100
-                   else 100 * (1 - (t.sodium - (p.recommended->>'sodium')::numeric) / (p.recommended->>'sodium')::numeric)
-                 end, 0) end
-        ]) s
+        select sum(pts) from unnest(array[
+          -- 칼로리 적정성(40): 목표의 90~110%면 만점, 그 밖은 50%/150% 지점에서 0점까지 선형 감점.
+          case when (p.recommended->>'calories')::numeric > 0 then
+            round(40 * least(1, greatest(0,
+              case
+                when coalesce(t.calories, 0) / (p.recommended->>'calories')::numeric between 0.9 and 1.1 then 1
+                when coalesce(t.calories, 0) / (p.recommended->>'calories')::numeric < 0.9 then
+                  (coalesce(t.calories, 0) / (p.recommended->>'calories')::numeric - 0.5) / (0.9 - 0.5)
+                else
+                  (1.5 - coalesce(t.calories, 0) / (p.recommended->>'calories')::numeric) / (1.5 - 1.1)
+              end
+            )))
+          end,
+          -- 단백질·탄수화물·지방(각 10): 목표 달성률, 100%에서 만점(그 이상은 자름).
+          case when (p.recommended->>'protein')::numeric > 0 then
+            round(least(10, greatest(0, coalesce(t.protein, 0) / (p.recommended->>'protein')::numeric * 10)))
+          end,
+          case when (p.recommended->>'carbs')::numeric > 0 then
+            round(least(10, greatest(0, coalesce(t.carbs, 0) / (p.recommended->>'carbs')::numeric * 10)))
+          end,
+          case when (p.recommended->>'fat')::numeric > 0 then
+            round(least(10, greatest(0, coalesce(t.fat, 0) / (p.recommended->>'fat')::numeric * 10)))
+          end,
+          -- 나트륨(30): 상한 지표라 방향이 반대 — 한도 이내면 만점, 넘으면 초과 비율만큼 감점.
+          case when (p.recommended->>'sodium')::numeric > 0 then
+            round(
+              case
+                when coalesce(t.sodium, 0) <= (p.recommended->>'sodium')::numeric then 30
+                else greatest(0, 30 * (1 - (t.sodium - (p.recommended->>'sodium')::numeric) / (p.recommended->>'sodium')::numeric))
+              end
+            )
+          end
+        ]) pts
       ) as score
     from today_totals t
     join public.profiles p on p.id = t.user_id
@@ -217,7 +234,7 @@ as $$
   )
   select
     row_number() over (order by score desc) as rank,
-    round(score, 0) as score,
+    score,
     user_id = auth.uid() as is_me
   from scored
   where score is not null  -- 채점 가능한 영양소가 하나도 없는 프로필은 순위에서 제외

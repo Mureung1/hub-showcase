@@ -31,6 +31,8 @@ describe('buildDietSummary', () => {
     expect(summary.endDate).toBe('2026-07-27')
     expect(summary.recordedDays).toBe(7)
     expect(summary.avgCalories).toBe(1000)
+    // avgIntake는 프롬프트가 인용할 절대 섭취량 — achievementRates(%)와 별개로 실제 그램/mg을 담는다.
+    expect(summary.avgIntake).toEqual({ calories: 1000, protein: 90, carbs: 150, fat: 20, fiber: 5, sodium: 2600 })
     // protein: 90/60=150% → 과다, fiber: 5/25=20% → 부족, sodium: 2600/2000=130%(초과 임계값 130% 자체는 포함 안 됨)
     expect(summary.achievementRates.protein).toBe(150)
     expect(summary.achievementRates.fiber).toBe(20)
@@ -47,6 +49,29 @@ describe('buildDietSummary', () => {
     }
     const summary = buildDietSummary(mealsByDate, RECOMMENDED)
     expect(summary.recordedDays).toBe(2)
+  })
+
+  it('나트륨을 적게 먹은 날은 달성률이 낮아도 "부족 섭취 경향"에 넣지 않는다(6주차 §3 버그 수정)', () => {
+    // sodium 400/2000 = 20% — DEFICIENT_THRESHOLD(70%) 미만이지만, 나트륨은 상한형이라 적게
+    // 먹을수록 좋다. 고치기 전엔 이 케이스가 "나트륨 부족"으로 잘못 분류돼 AI에게 "더 드세요"로
+    // 잘못 전달됐다.
+    const mealsByDate = {
+      '2026-07-26': [meal('샐러드', { calories: 500, protein: 30, carbs: 60, fat: 15, fiber: 10, sodium: 400 })],
+      '2026-07-27': [meal('샐러드', { calories: 500, protein: 30, carbs: 60, fat: 15, fiber: 10, sodium: 400 })],
+    }
+    const summary = buildDietSummary(mealsByDate, RECOMMENDED)
+    expect(summary.achievementRates.sodium).toBe(20)
+    expect(summary.deficientNutrients).not.toContain('나트륨')
+  })
+
+  it('나트륨을 과다 섭취한 날은 여전히 "과다 섭취 경향"으로 잡힌다', () => {
+    const mealsByDate = {
+      '2026-07-26': [meal('라면', { calories: 500, protein: 10, carbs: 90, fat: 8, fiber: 3, sodium: 3000 })],
+      '2026-07-27': [meal('라면', { calories: 500, protein: 10, carbs: 90, fat: 8, fiber: 3, sodium: 3000 })],
+    }
+    const summary = buildDietSummary(mealsByDate, RECOMMENDED)
+    expect(summary.deficientNutrients).not.toContain('나트륨')
+    expect(summary.exceededNutrients).toContain('나트륨')
   })
 
   it('recommended가 없으면 달성률/과다/부족 계산 없이도 나머지 요약은 계산된다', () => {

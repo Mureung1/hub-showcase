@@ -102,6 +102,13 @@ export default function PlaceList({ places, todayTotal, recommended, deficientRo
             {place.representativeMenu && (
               <p style={{ margin: `${spacing.sm}px 0 0`, color: colors.textStrong, fontSize: font.size.sm }}>
                 대표메뉴: <strong style={{ fontWeight: 700 }}>{place.representativeMenu}</strong>
+                {/* 6주차 §5 — 대중적으로 가격이 알려진 메뉴만 범위로 온다. 확신 없으면 priceRange 자체가
+                    null이라 이 자리를 통째로 생략한다(단정 가격 표시 금지). */}
+                {place.priceRange && (
+                  <span style={{ color: colors.textSub, fontSize: font.size.xs, marginLeft: 6 }}>
+                    약 {place.priceRange.min.toLocaleString()}~{place.priceRange.max.toLocaleString()}원 (추정)
+                  </span>
+                )}
               </p>
             )}
 

@@ -1,0 +1,14 @@
+{
+  "name": "Mealyze",
+  "short_name": "Mealyze",
+  "description": "사진 한 장으로 오늘 먹은 음식의 영양을 분석하고, 부족한 영양소를 채울 식당을 찾아주는 앱",
+  "start_url": "/analyze",
+  "display": "standalone",
+  "background_color": "#f2f4f6",
+  "theme_color": "#ffffff",
+  "lang": "ko",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "any", "type": "image/png", "purpose": "any" },
+    { "src": "/apple-touch-icon.png", "sizes": "any", "type": "image/png", "purpose": "any" }
+  ]
+}

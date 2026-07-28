@@ -6,6 +6,7 @@ import Card from '../components/Card.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import TextField from '../components/TextField.jsx'
 import { normalizeLoginId } from '../lib/authId.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
 // 아이디 + 비밀번호 로그인(PRD v2.0 FR-1.2). 소셜 로그인은 없다 — 웹뷰(APK)에서 임베디드 브라우저
@@ -13,6 +14,7 @@ import { colors, font, spacing, styles } from '../styles/theme.js'
 // 자동 로그인(세션 유지)은 supabase-js가 세션을 localStorage에 보관하는 기본 동작이라 항상 켜져 있다 —
 // 사용자가 끌 수 있는 옵션이 아니므로 체크박스 대신 안내 문구 한 줄로 알린다.
 export default function Login() {
+  useDocumentTitle('로그인')
   const { authUser, authLoading, login } = useUser()
   const navigate = useNavigate()
   const [loginId, setLoginId] = useState('')

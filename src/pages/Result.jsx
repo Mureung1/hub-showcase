@@ -16,6 +16,7 @@ import { GEMINI_TEMPERATURE, RECOMMENDATION_SCHEMA } from '../lib/geminiSchemas.
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutrition.js'
 import { buildDeficiencyRows, calcAchievementPercent, isSodiumExceeded, NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
 // allergyLabels/conditionLabels가 비고 나트륨 정상이면(프로필 미입력 등) 기존 프롬프트와 완전히
@@ -103,9 +104,22 @@ function AchievementRing({ percent, size = 160, strokeWidth = 14 }) {
 }
 
 export default function Result() {
-  const { profile, todayMeal, effectiveRecommended, isTempRecommended } = useUser()
+  useDocumentTitle('영양 진단')
+  const {
+    profile,
+    todayMeals,
+    todayMealsTotal,
+    todayMealsLoading,
+    todayMealsError,
+    refetchTodayMeals,
+    effectiveRecommended,
+    isTempRecommended,
+  } = useUser()
   const recommended = effectiveRecommended
-  const todayTotal = todayMeal?.total
+  // 오늘 저장한 모든 끼니의 누적 합계(식단 탭과 동일한 소스) — 마지막 한 끼가 아니라 하루 전체 기준으로
+  // 달성률을 계산한다. sumMealRecordsNutrients([])는 0으로 채운 객체를 반환해 항상 truthy이므로,
+  // "기록 없음"은 이 값의 존재 여부가 아니라 todayMeals.length로 판정해야 한다.
+  const todayTotal = todayMealsTotal
   const visible = useVisibleNutrients()
 
   const allergyLabels = useMemo(
@@ -186,11 +200,13 @@ export default function Result() {
   }
 
   useEffect(() => {
-    if (top3Rows.length > 0 && !triedRef.current) {
+    // todayMealsLoading 중엔 todayTotal이 아직 실제 값이 아닐 수 있어(초기값 []→0) 여기서 발사하면
+    // 전부 0인 합계로 잘못된 추천을 만들고 공유 리미터의 Gemini 호출을 낭비한다.
+    if (!todayMealsLoading && top3Rows.length > 0 && !triedRef.current) {
       triedRef.current = true
       fetchRecommendations()
     }
-  }, [top3Rows])
+  }, [top3Rows, todayMealsLoading])
 
   if (!recommended) {
     // 게스트든 로그인 계정이든 여기 도달하는 건 "성별도 프로필도 아직 고르지 않음" 하나의 경우뿐이다
@@ -212,7 +228,33 @@ export default function Result() {
     )
   }
 
-  if (!todayTotal) {
+  if (todayMealsLoading) {
+    return (
+      <div style={styles.page}>
+        <ScreenHeader title="오늘의 영양 진단" />
+        <Card style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Skeleton height={160} width={160} style={{ borderRadius: '50%' }} />
+          <Skeleton height={14} width="40%" style={{ marginTop: spacing.sm }} />
+        </Card>
+      </div>
+    )
+  }
+
+  if (todayMealsError) {
+    return (
+      <div style={styles.page}>
+        <ScreenHeader title="오늘의 영양 진단" />
+        <Card style={{ textAlign: 'center' }}>
+          <p style={{ ...styles.errorText, margin: `0 0 ${spacing.md}px` }}>{todayMealsError}</p>
+          <AppButton variant="secondary" onClick={refetchTodayMeals}>
+            다시 시도
+          </AppButton>
+        </Card>
+      </div>
+    )
+  }
+
+  if (todayMeals.length === 0) {
     return (
       <div style={styles.page}>
         <ScreenHeader title="오늘의 영양 진단" />

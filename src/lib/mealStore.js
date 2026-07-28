@@ -74,6 +74,10 @@ export function addMealRecord(userId, dateKey, { items, mealType } = {}) {
       brand: item.brand,
       nutrients: item.nutrients,
       source: item.source ?? (item.brand ? '공식' : '추정'),
+      // 6주차 §2 인분 조절 — 없으면(구버전 기록) undefined로 저장되고, 읽는 쪽(재열람 UI)이 1인분으로
+      // 해석한다. 마이그레이션은 하지 않는다(PRD 규칙).
+      baseNutrients: item.baseNutrients,
+      servings: item.servings,
     })),
   }
 
@@ -87,6 +91,26 @@ export function addMealRecord(userId, dateKey, { items, mealType } = {}) {
 export function setMeals(userId, dateKey, mealRecords) {
   if (!userId || !dateKey) return
   set(storageKey(userId, dateKey), Array.isArray(mealRecords) ? mealRecords : [])
+}
+
+// 저장된 끼니의 음식 목록을 통째로 교체한다(트랙 2 §5, 저장 전 항목 하나만 값을 고치고 나머지는 그대로
+// 넘기는 식으로 쓴다 — addMealRecord처럼 id를 새로 만들지 않고 호출부가 넘긴 항목을 그대로 믿는다).
+// 없는 mealRecordId면 아무 것도 바꾸지 않고 null을 반환한다(호출부가 "수정할 기록을 못 찾음"으로 처리).
+export function updateMealRecord(userId, dateKey, mealRecordId, { items } = {}) {
+  if (!userId || !dateKey || !Array.isArray(items) || items.length === 0) return null
+
+  const raw = get(storageKey(userId, dateKey), [])
+  const records = Array.isArray(raw) ? raw : []
+  let updated = null
+  const next = records.map((record) => {
+    if (record.id !== mealRecordId) return record
+    updated = { ...record, items }
+    return updated
+  })
+  if (!updated) return null
+
+  set(storageKey(userId, dateKey), next)
+  return updated
 }
 
 // 끼니 카드 삭제 = 그 끼니를 구성하는 음식 전체 제거(끼니 단위 삭제만 지원, 개별 음식 삭제는 없음).

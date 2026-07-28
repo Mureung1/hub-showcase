@@ -2,12 +2,14 @@ import { NUTRITION_SOURCE } from '../lib/nutrition.js'
 import { colors, font, radius } from '../styles/theme.js'
 
 // 음식 항목의 영양수치 출처 배지: 식약처DB/식약처DB(가공)(신뢰 최상, 같은 블루 톤) / 공식 영양표(프랜차이즈) /
-// 라벨 추출(포장지 영양성분표를 그대로 읽은 값, 공식 영양표와 같은 신뢰 등급) / 추정
+// 라벨 추출(포장지 영양성분표를 그대로 읽은 값, 공식 영양표와 같은 신뢰 등급) / 직접입력(사용자가 저장
+// 전에 값을 고침, 트랙 2 §4) / 추정
 const SOURCE_STYLE = {
   [NUTRITION_SOURCE.DB]: { label: '식약처DB', bg: colors.infoSurface, color: colors.info },
   [NUTRITION_SOURCE.DB_PROCESS]: { label: '식약처DB(가공)', bg: colors.infoSurface, color: colors.info },
   [NUTRITION_SOURCE.OFFICIAL]: { label: '공식 영양표', bg: colors.primarySurface, color: colors.primary },
   [NUTRITION_SOURCE.LABEL]: { label: '라벨 추출', bg: colors.primarySurface, color: colors.primary },
+  [NUTRITION_SOURCE.MANUAL]: { label: '직접입력', bg: colors.primarySurface, color: colors.primary },
 }
 const DEFAULT_STYLE = { label: '추정', bg: colors.bg, color: colors.textSub }
 

@@ -23,7 +23,7 @@ export default function DeficiencyBar({ label, unit, recommended, actual, defici
               style={{
                 fontSize: font.size.xs,
                 fontWeight: 700,
-                color: colors.deficient,
+                color: colors.deficientText,
                 background: '#fff',
                 borderRadius: radius.pill,
                 padding: '2px 8px',

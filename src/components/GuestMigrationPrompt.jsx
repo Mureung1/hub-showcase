@@ -1,12 +1,14 @@
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
+import { useFocusTrap } from '../lib/useFocusTrap.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
 // 게스트로 쓰던 중 로그인/회원가입하면 뜨는 1회성 확인 모달. UserContext.migrationPrompt가 null이
 // 아닐 때만 어느 화면 위에든 오버레이로 뜬다(router.jsx에서 Header 바로 아래, 전역에 렌더).
 export default function GuestMigrationPrompt() {
   const { migrationPrompt, migrating, migrationError, acceptGuestMigration, declineGuestMigration } = useUser()
+  const containerRef = useFocusTrap(Boolean(migrationPrompt), migrating ? undefined : declineGuestMigration)
 
   if (!migrationPrompt) return null
 
@@ -17,6 +19,11 @@ export default function GuestMigrationPrompt() {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guest-migration-title"
+      ref={containerRef}
+      tabIndex={-1}
       style={{
         position: 'fixed',
         inset: 0,
@@ -29,7 +36,7 @@ export default function GuestMigrationPrompt() {
       }}
     >
       <Card style={{ maxWidth: 360, width: '100%', margin: 0 }}>
-        <h3 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.sm}px`, color: colors.textStrong }}>
+        <h3 id="guest-migration-title" style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.sm}px`, color: colors.textStrong }}>
           기존 게스트 데이터를 계정에 저장할까요?
         </h3>
         <p style={{ margin: `0 0 ${spacing.lg}px`, color: colors.textSub, fontSize: font.size.sm }}>

@@ -7,12 +7,15 @@ import { useUser } from '../context/UserContext.jsx'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
+import CnuCafeteriaLocationCard from './CnuCafeteriaLocationCard.jsx'
 import MealCard from './MealCard.jsx'
 import Skeleton from './Skeleton.jsx'
 import { MILAIZE_ALLERGENS } from '../lib/allergyRules.js'
 import { CNU1_EXTERNAL_LINK, CNU_BUILDINGS, getSelectedCnuBuilding, setSelectedCnuBuilding } from '../lib/cnuBuildings.js'
 import { buildDaySlots, isDayEmpty } from '../lib/cnuDayView.js'
 import { openExternalLink } from '../lib/externalLink.js'
+import { NUTRITION_SOURCE } from '../lib/nutrition.js'
+import { requestPrecisionAnalysis } from '../lib/precisionAnalysis.js'
 import { getSchoolMeals } from '../lib/schoolMeal.js'
 import { getUnivWeek } from '../lib/univMeal.js'
 import { toDateKey } from '../lib/records.js'
@@ -41,6 +44,126 @@ function buildNutrientRows(nutrients) {
     unit,
     value: nutrients[key],
   }))
+}
+
+// ── 한 판 통합 분석 / 메뉴별 분석(6주차 §1-B) ────────────────────────────────
+// 식별 단계 없이(무엇을 먹었는지는 이미 앎) server/nutrition/precisionEngine.js(정밀 영양 산출
+// 엔진)에 메뉴명만 넘긴다 — 식약처 DB 매칭·중량 배분·Gemini 폴백·NEIS 공식 수치 캘리브레이션을
+// 전부 서버가 처리한다(5주차 §3-B엔 프론트가 직접 Gemini를 불러 추정만 했지만, 이제 식약처 DB
+// 매칭이 성공한 항목은 실측값을 쓴다). 결과는 Analyze.jsx의 기존 결과 카드 상태 머신
+// (STATUS.RESULT → AnalysisResultCard → 저장)에 그대로 얹는다 — 이 파일은 그 입력을 만들어
+// navigate로 건네주기만 한다. 한 판(트레이) 통합 분석과 메뉴별 개별 분석이 이 엔진 하나를
+// 공유해 학식·급식 두 경로가 항상 같은 방식으로 계산된다.
+const TRAY_ANALYSIS_FAILURE_MESSAGE = '통합 분석에 실패했어요. 메뉴별 분석을 이용해주세요.'
+const MENU_ANALYSIS_FAILURE_MESSAGE = '영양 분석에 실패했어요. 잠시 후 다시 시도해주세요.'
+
+const METHOD_SOURCE_NOTE = {
+  official: '공식 영양정보 기준',
+  llm_reviewed: '식약처 DB 기반 추정(교차검증)',
+  estimated: '식약처 DB 기반 추정',
+}
+
+// precisionEngine이 준 item.matched(식약처 DB 실측 매칭 여부)를 기존 SourceBadge 배지 체계
+// (AnalysisResultCard가 항목별로 그린다)로 바로 매핑해, 어디까지 실측이고 어디부터 AI 추정인지
+// 항목 단위로 투명하게 보여준다. matchType(exact/alias/partial/fuzzy/null)도 함께 넘겨 트랙 2 §2의
+// 항목별 매칭 방식 칩이 그릴 수 있게 한다 — 지금까지는 응답에만 실려오고 화면 어디서도 안 썼다.
+function toAnalysisItems(items) {
+  return items.map((item) => ({
+    name: item.name,
+    nutrients: item.nutrients,
+    source: item.matched ? NUTRITION_SOURCE.DB : NUTRITION_SOURCE.ESTIMATED,
+    matchType: item.matchType ?? null,
+  }))
+}
+
+// isTray: 트레이(여러 메뉴) 분석이면 "(통합)"을 붙이고, 메뉴 하나만 조회하는 단일 항목 모드면
+// 그 메뉴 이름을 그대로 제목으로 쓴다 — 예전엔 항상 "(통합)"을 붙여서 "떡갈비(통합)"처럼 단일
+// 항목인데도 뭔가를 합친 것처럼 보이는 오표기가 있었다(리뷰에서 발견).
+function buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel, isTray = true }) {
+  return {
+    prefillTrayAnalysis: {
+      pendingAnalysis: { items: toAnalysisItems(result.items), total: result.total },
+      mealType: mealTypeKey,
+      titleOverride: isTray ? `${mealTypeLabel}(통합)` : mealTypeLabel,
+      sourceNote: METHOD_SOURCE_NOTE[result.method] ?? '추정',
+      confidence: result.confidence,
+    },
+  }
+}
+
+// CafeteriaPanel이 다시 마운트될 때(학식·급식 탭 재진입)마다 초기화된다 — "이번에 이 화면에 머무는
+// 동안 이미 다른 카드의 분석 요청이 먼저 끝나 결과 화면으로 넘어갔는지"를 추적한다. 카드마다 독립된
+// useTrayAnalysis/useMenuAnalysis 인스턴스를 쓰므로(카드별 로딩 상태를 따로 두려고), 늦게 끝난 다른
+// 카드의 분석 요청(최대 45초 걸릴 수 있음)이 사용자가 이미 보고 있는/편집 중인 결과 화면을 조용히
+// 덮어쓰는 걸 막으려면 카드를 넘나드는 공유 상태가 필요하다(리뷰에서 발견한 레이스 컨디션).
+let hasNavigatedThisVisit = false
+
+// officialCalories: NEIS 급식만 넘긴다 — precisionEngine이 서버에서 직접 공식 수치로 캘리브레이션한다
+// (5주차엔 프론트가 total.calories를 직접 덮어썼지만, 이제 항목별 비례 스케일까지 서버가 계산해준다).
+function useTrayAnalysis(navigate) {
+  const [analyzing, setAnalyzing] = useState(false)
+  const [error, setError] = useState('')
+
+  async function run(menuNames, { mealTypeKey, mealTypeLabel, schoolType, officialCalories = null }) {
+    if (analyzing) return
+    setAnalyzing(true)
+    setError('')
+    try {
+      const result = await requestPrecisionAnalysis({
+        menus: menuNames,
+        mealType: mealTypeKey,
+        schoolType,
+        officialTotals: Number.isFinite(officialCalories) ? { calories: officialCalories } : null,
+      })
+      if (hasNavigatedThisVisit) return // 다른 카드의 분석이 먼저 끝나 이미 결과 화면으로 넘어갔다 — 이 결과는 버린다
+      hasNavigatedThisVisit = true
+      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel, isTray: true }) })
+    } catch (err) {
+      setError(err.message || TRAY_ANALYSIS_FAILURE_MESSAGE)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  return { analyzing, error, run }
+}
+
+// 메뉴별 개별 [영양 분석] — precisionEngine의 단일 항목 모드(menus 배열에 1개만 담아 호출). 예전엔
+// Analyze.jsx로 메뉴명만 넘겨 사용자가 다시 분석을 눌러야 했지만(4주차), 이제 여기서 바로 계산해
+// 한 판 통합 분석과 동일한 결과 카드로 넘어간다. 여러 메뉴가 한 카드에 나열되므로, 지금 분석 중인
+// 메뉴명 하나만 상태로 들고 있다가 그 버튼에만 로딩을 표시한다(다른 메뉴 버튼은 그대로 눌림).
+function useMenuAnalysis(navigate) {
+  const [analyzingMenu, setAnalyzingMenu] = useState(null)
+  const [error, setError] = useState('')
+
+  async function run(menuName, { mealTypeKey, schoolType }) {
+    if (analyzingMenu) return
+    setAnalyzingMenu(menuName)
+    setError('')
+    try {
+      const result = await requestPrecisionAnalysis({ menus: [menuName], mealType: mealTypeKey, schoolType, officialTotals: null })
+      if (hasNavigatedThisVisit) return
+      hasNavigatedThisVisit = true
+      navigate('/analyze', { state: buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel: menuName, isTray: false }) })
+    } catch (err) {
+      setError(err.message || MENU_ANALYSIS_FAILURE_MESSAGE)
+    } finally {
+      setAnalyzingMenu(null)
+    }
+  }
+
+  return { analyzingMenu, error, run }
+}
+
+// school.kind(NEIS SCHUL_KND_SC_NM: "초등학교"/"중학교"/"고등학교" 등) → precisionEngine.schoolType.
+// 매칭 안 되면(값이 없거나 못 보던 표기) undefined를 돌려주고, precisionEngine이 계수 1(보정 없음)로
+// 안전하게 폴백한다.
+function mapSchoolKindToType(kind) {
+  if (typeof kind !== 'string') return undefined
+  if (kind.includes('초등')) return 'elementary'
+  if (kind.includes('중학교')) return 'middle'
+  if (kind.includes('고등') || kind.includes('고교')) return 'high'
+  return undefined
 }
 
 function startOfWeek(date) {
@@ -155,19 +278,35 @@ function WeekTabs({ weekDates, selectedKey, todayKey, onSelect }) {
   )
 }
 
-function NeisMealCard({ meal }) {
+function NeisMealCard({ meal, schoolType }) {
+  const navigate = useNavigate()
+  const { profile } = useUser()
+  const { analyzing, error, run } = useTrayAnalysis(navigate)
+  const label = MEAL_TYPE_LABEL[meal.mealType] || meal.mealType
+
   return (
     <MealCard
-      title={MEAL_TYPE_LABEL[meal.mealType] || meal.mealType}
+      title={label}
       calories={meal.calories}
       menus={meal.menus}
       nutrients={buildNutrientRows(meal.nutrients)}
       estimated={false}
+      layout="stacked"
+      profileAllergies={profile?.allergies}
+      onAnalyzeTray={() =>
+        run(
+          meal.menus.map((m) => m.name),
+          { mealTypeKey: meal.mealType, mealTypeLabel: label, schoolType, officialCalories: meal.calories },
+        )
+      }
+      trayAnalyzing={analyzing}
+      trayError={error}
     />
   )
 }
 
 function K12MealSection({ school, weekDates, selectedKey, todayKey, onSelectDay }) {
+  const schoolType = mapSchoolKindToType(school.kind)
   const [daysByKey, setDaysByKey] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -220,7 +359,7 @@ function K12MealSection({ school, weekDates, selectedKey, todayKey, onSelectDay 
           </p>
         </Card>
       )}
-      {!loading && !error && selectedMeals.map((meal) => <NeisMealCard key={meal.mealType} meal={meal} />)}
+      {!loading && !error && selectedMeals.map((meal) => <NeisMealCard key={meal.mealType} meal={meal} schoolType={schoolType} />)}
     </>
   )
 }
@@ -323,10 +462,45 @@ const PERIOD_NOTE_TEXT = {
   unknown: '정보를 확인할 수 없어요',
 }
 
+// 열린 한 끼(조식/중식/석식) 카드 — 메뉴별 분석(기존)과 한 판 통합 분석(5주차 §3-B) 버튼을 함께
+// 그린다. 자체 useTrayAnalysis 인스턴스를 가지므로, 같은 날 조식 카드가 분석 중이어도 중식 카드는
+// 영향받지 않는다(카드별로 독립된 로딩/에러).
+function UnivMealSlotCard({ mealKey, label, slot }) {
+  const navigate = useNavigate()
+  const { profile } = useUser()
+  const { analyzing, error, run } = useTrayAnalysis(navigate)
+  const { analyzingMenu, error: menuError, run: runMenu } = useMenuAnalysis(navigate)
+
+  return (
+    <MealCard
+      title={label}
+      price={slot.price}
+      // slot.menus는 이미 cnuWeeklyParser.js가 allergyCodes까지 계산해서 준다(주석 기반 태깅 +
+      // 키워드 태깅 합집합) — 여기서 다시 추정하면 오히려 정확도가 떨어져(주석은 서버가 이미
+      // 제거함) 그대로 쓴다.
+      menus={slot.menus}
+      estimated
+      profileAllergies={profile?.allergies}
+      // 메뉴별 개별 [영양 분석]도 6주차 §1-B부터 precisionEngine의 단일 항목 모드를 쓴다(4주차엔
+      // Analyze.jsx로 메뉴명만 넘겨 사용자가 직접 분석을 다시 눌러야 했다).
+      onAnalyzeMenu={(menuName) => runMenu(menuName, { mealTypeKey: mealKey, schoolType: 'univ' })}
+      analyzingMenu={analyzingMenu}
+      menuError={menuError}
+      onAnalyzeTray={() =>
+        run(
+          slot.menus.map((m) => m.name),
+          { mealTypeKey: mealKey, mealTypeLabel: label, schoolType: 'univ', officialCalories: null },
+        )
+      }
+      trayAnalyzing={analyzing}
+      trayError={error}
+    />
+  )
+}
+
 // 선택한 날짜·건물·트랙(학생/직원)의 조식/중식/석식을 그린다. open만 전체 MealCard, 나머지
 // (closed/suspended/unknown)는 한 줄 안내로 공간을 아낀다 — 하루 전체가 비면 기존 빈 상태 문구.
 function UnivDayMeals({ meals, track, source, updatedAt }) {
-  const navigate = useNavigate()
   const slots = buildDaySlots(meals, track)
 
   if (isDayEmpty(slots)) {
@@ -357,33 +531,18 @@ function UnivDayMeals({ meals, track, source, updatedAt }) {
         }
         if (slot.status === 'suspended') {
           return (
-            <p key={key} style={{ margin: '4px 0', fontSize: font.size.xs, color: colors.deficient, textAlign: 'center' }}>
+            <p key={key} style={{ margin: '4px 0', fontSize: font.size.xs, color: colors.deficientText, textAlign: 'center' }}>
               {label} · {slot.note || '운영 중단'}
             </p>
           )
         }
-        return (
-          <MealCard
-            key={key}
-            title={label}
-            price={slot.price}
-            // slot.menus는 이미 cnuWeeklyParser.js가 allergyCodes까지 계산해서 준다(주석 기반 태깅 +
-            // 키워드 태깅 합집합) — 여기서 다시 추정하면 오히려 정확도가 떨어져(주석은 서버가 이미
-            // 제거함) 그대로 쓴다.
-            menus={slot.menus}
-            estimated
-            // 학식은 영양 정보가 없어 기존 텍스트 분석 경로로 넘겨 추정한다(FR-1.3) — 새 파이프라인을
-            // 만들지 않고 Analyze.jsx의 4번째 입구(prefillMenuName)만 쓴다.
-            onAnalyzeMenu={(menuName) => navigate('/analyze', { state: { prefillMenuName: menuName } })}
-          />
-        )
+        return <UnivMealSlotCard key={key} mealKey={key} label={label} slot={slot} />
       })}
     </>
   )
 }
 
-function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectDay }) {
-  const [building, setBuilding] = useState(() => getSelectedCnuBuilding())
+function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectDay, building, onSelectBuilding }) {
   const [track, setTrack] = useState('student')
   const [weekResult, setWeekResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -412,17 +571,12 @@ function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectD
     }
   }, [univCode])
 
-  function handleSelectBuilding(key) {
-    setBuilding(key)
-    setSelectedCnuBuilding(key)
-  }
-
   const selectedDay = weekResult?.days?.find((d) => `${d.date.slice(0, 4)}-${d.date.slice(4, 6)}-${d.date.slice(6, 8)}` === selectedKey)
   const cafeteria = selectedDay?.cafeterias?.[building]
 
   return (
     <>
-      <CnuBuildingSelector selected={building} onSelect={handleSelectBuilding} />
+      <CnuBuildingSelector selected={building} onSelect={onSelectBuilding} />
       <WeekTabs weekDates={weekDates} selectedKey={selectedKey} todayKey={todayKey} onSelect={onSelectDay} />
 
       {loading && <Skeleton height={140} radius={radius.lg} />}
@@ -459,6 +613,21 @@ export default function CafeteriaPanel() {
   const todayKey = toDateKey(anchorDate)
   const [selectedKey, setSelectedKey] = useState(todayKey)
 
+  // 식비 선택은 대학 학식에서만 의미가 있지만, 위치 카드(CnuCafeteriaLocationCard)가 건물 선택 버튼
+  // (UnivMealSection 안)과는 형제 컴포넌트라 같은 선택값을 공유하려면 여기 최상위로 끌어올려야 한다.
+  const [building, setBuilding] = useState(() => getSelectedCnuBuilding())
+
+  function handleSelectBuilding(key) {
+    setBuilding(key)
+    setSelectedCnuBuilding(key)
+  }
+
+  // 학식·급식 탭에 새로 들어올 때마다 "이번에 이미 분석 결과 화면으로 넘어갔는지" 기록을 지운다 —
+  // 그래야 이전 방문에서 걸린 레이스 컨디션 가드가 이번 방문의 정상적인 분석 요청까지 막지 않는다.
+  useEffect(() => {
+    hasNavigatedThisVisit = false
+  }, [])
+
   if (!school) {
     return <NoSchoolCard />
   }
@@ -481,9 +650,12 @@ export default function CafeteriaPanel() {
           selectedKey={selectedKey}
           todayKey={todayKey}
           onSelectDay={setSelectedKey}
+          building={building}
+          onSelectBuilding={handleSelectBuilding}
         />
       )}
       <AllergyCodeSheet />
+      {school.type === 'university' && <CnuCafeteriaLocationCard selectedBuilding={building} />}
     </>
   )
 }

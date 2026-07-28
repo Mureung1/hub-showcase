@@ -52,16 +52,23 @@ export default function NationalComparisonCard() {
   const average = getKoreanAverageIntake(profile?.sex, profile?.age)
 
   // 성별/나이가 없으면 평균을 고를 수 없다 — 프로필 입력으로 유도.
+  // 성별·나이는 있지만(=youth) 비교할 국민건강영양조사 통계가 없는 경우엔 다른 문구를 보여준다 —
+  // "입력하면 비교해드려요"라고 하면 이미 입력한 학생 사용자에게 거짓 안내가 된다.
   if (!average) {
+    const isYouthWithoutComparison = Number(profile?.age) > 0 && Number(profile.age) < 19
     return (
       <Card>
         <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.sm}px`, color: colors.textStrong }}>한국 평균과 비교</h2>
         <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
-          성별·나이를 입력하면 같은 또래 한국 평균과 오늘 섭취를 비교해드려요.
+          {isYouthWithoutComparison
+            ? '아직 초·중·고 학생 평균 통계는 준비돼 있지 않아요.'
+            : '성별·나이를 입력하면 같은 또래 한국 평균과 오늘 섭취를 비교해드려요.'}
         </p>
-        <Link to="/profile" className="tds-press" style={{ ...styles.buttonSecondary, display: 'inline-block', textDecoration: 'none' }}>
-          신체정보 입력하러 가기
-        </Link>
+        {!isYouthWithoutComparison && (
+          <Link to="/profile" className="tds-press" style={{ ...styles.buttonSecondary, display: 'inline-block', textDecoration: 'none' }}>
+            신체정보 입력하러 가기
+          </Link>
+        )}
       </Card>
     )
   }

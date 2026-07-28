@@ -61,7 +61,9 @@
 
 ```bash
 npm install -D @capacitor/assets
-# 1024x1024 아이콘 원본을 assets/icon.png 로 두고(예: public/apk logo.png 를 1024로 리사이즈),
+# 1024x1024 아이콘 원본을 assets/icon.png 로 두고(예: branding/apk logo.png 를 1024로 리사이즈 —
+# public/이 아니라 branding/에 있다. public/은 그대로 빌드에 포함되므로, 빌드에 안 쓰이는 원본
+# 마케팅 이미지를 public/에 두면 배포마다 불필요하게 ~20MB가 함께 나간다),
 # 스플래시 배경용 assets/splash.png(2732x2732 권장)도 두면 좋습니다.
 npx @capacitor/assets generate --android
 ```

@@ -308,7 +308,85 @@ flowchart TD
 
 ---
 
-## 9. 그림을 그리며 발견한 것 (다음 작업 후보)
+## 9. 5주차 추가 — 한 판 통합 분석 / 점수 100점 개편 / 식비 지도 / 학교 검색 안정화
+
+```mermaid
+flowchart TD
+    menus["학식·급식 카드의<br/>메뉴명 목록"] --> weights["mealPortions.js<br/>assignTrayWeights()<br/>(role 8종 → 표준 중량)"]
+    weights --> prompt["trayAnalysis.js<br/>중량 근거로 영양 성분만 추정<br/>(식별 단계 없음)"]
+    prompt -->|"/api/gemini"| result["{items, total}"]
+    result -->|"NEIS 급식"| override["total.calories를<br/>NEIS 공식값으로 덮어씀"]
+    result -->|"학식"| asis["total 그대로(추정)"]
+    override & asis --> nav["navigate('/analyze',<br/>state.prefillTrayAnalysis)"]
+    nav --> existing["Analyze.jsx 기존 STATUS.RESULT<br/>→ AnalysisResultCard → 저장<br/>(신규 상태 머신 없음)"]
+```
+
+- **한 판 통합 분석**(§3)은 새 파이프라인이 아니라 기존 사진/텍스트 분석과 같은 결과 카드·저장
+  상태 머신에 입력만 다르게 얹는 방식이다 — `AnalysisResultCard`에 `titleOverride`/`sourceNote` 두
+  선택적 prop만 추가해 "중식(통합)"/"공식 영양정보 기준" 표시만 바꾸고, 나머지(항목별 펼치기·시간대
+  선택·저장)는 전부 그대로 재사용한다. 단, 저장된 뒤 식단 탭에서 보이는 이름은 여전히 기존 규칙
+  ("첫 음식명 외 N개")을 따른다 — meal record 스키마 자체는 바꾸지 않았기 때문(dataStore 규칙 유지).
+- **영양 점수**(§4)는 리더보드/오늘의 점수 전용 공식(`nutritionScore.js`)을 배점표 기반으로
+  다시 짰다 — 앱이 실제로 추적하는 5개 영양소(칼로리·단백질·탄수화물·지방·나트륨)만 채점하고,
+  달력의 하루 상태 판정(`calcDayStatus`)은 기존 6개 기준을 그대로 유지한다(둘은 원래도 다른 목적이라
+  같은 기준일 필요가 없다). SQL(`get_daily_leaderboard()`)도 같은 공식으로 다시 짜여 있어, 배포된
+  Supabase 프로젝트는 `supabase/migrations/2026-07-28_score-v2-leaderboard.sql` 재적용이 필요하다.
+- **식비 위치 지도**(§2)는 네이버 지도 초기화 로직을 `useNaverMap.js` 공용 훅으로 뽑아 주변 식당
+  지도와 공유한다 — SDK 로딩 자체는 이미 `useNaverMapLoader.js`가 모듈 전역으로 한 번만 하고 있어서
+  (5주차 이전부터), 이번에 새로 추린 건 "지도 인스턴스 생성·마커 배치·bounds/리사이즈" 쪽이다. 건물
+  좌표(5곳)는 카카오/네이버 장소 검색으로 실측한 값을 정적 파일로 하드코딩했다 — 2·4학생회관은 그
+  이름의 POI가 지도 서비스에 아예 없어(실측 확인), 건물 내 매장/동일 건물의 다른 이름(각각
+  "2학생회관커피점", "상록회관")으로 대신 찾았다.
+- **NEIS 학교 검색**(§1)은 버튼 클릭식이던 걸 `SchoolSearchField.jsx`로 분리해 입력 300ms
+  디바운스 + AbortController 자동 검색으로 바꿨다. `fetchWithTimeout`이 이제 호출부가 넘긴
+  외부 `signal`도 받아들여, 내부 타임아웃과 별개로 "이전 검색어 요청 취소"를 구분해서 처리한다
+  (취소는 조용히 무시, 진짜 타임아웃만 에러 메시지로 표시).
+
+---
+
+## 10. 6주차 추가 — 정밀 영양 산출 엔진 / 인분 조절 / 나트륨 상한형 / 급식 카드 / 직업 배경화
+
+```mermaid
+flowchart TD
+    csv["scripts/buildFoodDB.js<br/>(CSV 대신 식약처 API 벌크수집)"] --> db["server/data/foodDB.json<br/>11,347종"]
+    db --> lookup["server/nutrition/foodLookup.js<br/>정규화→완전일치→별칭→부분포함→편집거리"]
+    menus["학식·급식 메뉴명"] --> engine["server/nutrition/precisionEngine.js<br/>analyzeTray()"]
+    lookup --> engine
+    engine -->|"매칭 성공"| direct["per100 × 중량/100<br/>(schoolType 계수)"]
+    engine -->|"매칭 실패분만"| gemini["Gemini 1회 일괄 추정"]
+    direct & gemini --> calib{"officialTotals<br/>있음?"}
+    calib -->|"NEIS 급식"| official["영양소별 비례 캘리브레이션"]
+    calib -->|"학식(없음)"| sanity["KDRIs 범위 벗어나면<br/>전체 재검증 1회"]
+    official & sanity --> route["POST /api/precision-analyze"]
+    route --> ui["한 판 통합 분석 / 메뉴별 영양 분석<br/>(5주차 trayAnalysis.js 프롬프트 재사용)"]
+```
+
+- **정밀 영양 산출 엔진**(§0-1)이 5주차의 "한 판 통합 분석"(순수 Gemini 추정)을 대체한다 — 식약처
+  DB에 실제로 매칭되는 항목은 실측값을 쓰고, 매칭 실패분만 Gemini로 채운다. `foodDB.json`은 CSV
+  수동 다운로드 대신 서버가 이미 가진 API 키로 직접 수집했고, 학교·기관 급식 출처를 최우선해
+  1인분 그램이 실제 학생 트레이 기준에 가깝게 나온다(외식/가정식 출처는 "탕"류 등에서 식당용
+  큰 그릇 단위가 섞여 있었다 — 실측으로 발견해 우선순위를 바꿨다). 실측 매칭률·정확도 둘 다
+  가이드 목표(80%, 16/20) 미달이나, 구조적 한계(원재료 DB 미보유)와 5주차 기능이 공유하는 상수를
+  더 건드릴 수 없다는 제약이 원인이라 있는 그대로 기록하고 진행했다.
+- **인분 수 조절**(§2)은 `baseNutrients`(1인분 원본)를 절대 덮어쓰지 않고 표시·저장 시점에만
+  배율을 곱하는 구조다 — 이 원칙을 어기면 인분을 여러 번 오갈 때 부동소수점 오차가 쌓인다.
+  저장 기록에 `servings`를 추가로 남기지만, 기존 레코드는 이 필드가 없어도 1인분으로 해석되므로
+  마이그레이션이 필요 없다.
+- **나트륨 상한형**(§3)은 애초에 "6개 중 4개 충족" 같은 이분법이 이 앱에 없었다는 걸 조사로
+  확인한 뒤, 실제로 있던 3단계 카운트 판정(`calcDayStatus`)은 그대로 두고 "영양소별 방향
+  (target/limit)" 규칙만 `nutrientCriteria.js` 하나로 모았다. 그 과정에서 `dietSummary.js`(AI
+  식습관 분석)가 나트륨 방향을 반전하지 않아 "적게 먹어 잘하고 있는 날"을 "부족"으로 잘못
+  판정하던 실제 버그를 찾아 고쳤다.
+- **급식 카드**(§4)는 `MealCard.jsx`에 `layout='numbered'|'stacked'` prop 하나만 추가해 급식만
+  세로·가운데 정렬로 바꿨다 — 학식 카드(`layout` 미지정 → 기본값 `'numbered'`)는 코드 변경 없이
+  기존 그대로 동작한다.
+- **직업 추천**(§5)은 화면 노출(별도 섹션·범례·다른 색 지도 핀)만 제거하고 검색 결과 자체는
+  영양소 추천 목록에 조용히 섞어 넣는다 — 직업 매칭 장소는 예상 섭취량 계산을 안 거쳐 "추천
+  이유"가 애초에 안 뜨므로, 텍스트로 직업을 언급할 자리 자체가 없다.
+
+---
+
+## 11. 그림을 그리며 발견한 것 (다음 작업 후보)
 
 다이어그램으로 옮겨 적으면서 **실제로 어긋나 있던 연결**들이다. 이번 작업에서는 코드를 고치지 않았고, 여기 기록만 남긴다.
 

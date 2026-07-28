@@ -13,8 +13,9 @@ export default mergeConfig(
       environment: 'jsdom',
       // @testing-library/jest-dom 매처(toBeInTheDocument 등) 등록
       setupFiles: ['./vitest.setup.js'],
-      // 테스트 파일 위치: src 아래 *.test.js(x) / *.spec.js(x)
-      include: ['src/**/*.{test,spec}.{js,jsx}'],
+      // 테스트 파일 위치: src 아래 *.test.js(x)/*.spec.js(x) + server 아래 순수 Node 로직 테스트
+      // (6주차 §0/§1 — foodLookup.js/precisionEngine.js는 server/ 소속이라 src/ 밖에 산다)
+      include: ['src/**/*.{test,spec}.{js,jsx}', 'server/**/*.{test,spec}.js'],
       exclude: ['node_modules', 'dist', 'android', 'build'],
       css: false,
     },

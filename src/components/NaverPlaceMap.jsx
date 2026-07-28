@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { useNaverMapLoader } from '../lib/useNaverMapLoader.js'
+import { useMemo, useRef } from 'react'
+import { useNaverMap } from '../lib/useNaverMap.js'
 import { colors, radius, spacing, styles } from '../styles/theme.js'
 
 // 기존 PlaceMap(카카오)의 네이버 버전. 카카오 쪽은 롤백용으로 그대로 둔다.
@@ -13,114 +13,47 @@ function placeIdentity(place) {
   return place.place_url || `${place.place_name}|${place.road_address_name}`
 }
 
-// occupationPlaces: 직업 맞춤 추천(FR-2.2/2.3) — places(부족 영양소 추천, 기본 빨간 핀)와 별개로
-// 파란 원형 핀으로 그린다. 같은 식당이 양쪽에 다 있으면 직업 핀만 남긴다("직업 핀 우선").
-export default function NaverPlaceMap({ myPosition, places = [], occupationPlaces = [] }) {
-  const { loaded, error: loadError } = useNaverMapLoader()
+// 6주차 §5부터 직업 맞춤 추천은 places 안에 조용히 섞여 들어온다(MapPage.jsx의
+// mergeOccupationPlaces) — 예전엔 여기서 별도 파란 핀으로 구분해 그렸지만, 화면에 "직업 맞춤"이라고
+// 표 나게 노출하지 않기로 하면서 이 컴포넌트도 places 전부를 같은 핀 색으로만 그리도록 단순해졌다.
+export default function NaverPlaceMap({ myPosition, places = [] }) {
   const containerRef = useRef(null)
-  const mapRef = useRef(null)
 
-  useEffect(() => {
-    if (!loaded || !containerRef.current) return
-
-    const { naver } = window
-    const center = new naver.maps.LatLng(myPosition.lat, myPosition.lng)
-    const map = new naver.maps.Map(containerRef.current, { center, zoom: 15 })
-    mapRef.current = map
-
-    const bounds = new naver.maps.LatLngBounds(center, center)
-
-    // 내 위치는 식당 마커(기본 빨간 핀)와 구분되도록 포인트 컬러의 원형 아이콘을 쓴다.
-    const myMarker = new naver.maps.Marker({
-      map,
-      position: center,
+  const markers = useMemo(() => {
+    const myLocationMarker = {
+      id: 'me',
+      lat: myPosition.lat,
+      lng: myPosition.lng,
+      // 내 위치는 식당 마커(기본 빨간 핀)와 구분되도록 포인트 컬러의 원형 아이콘을 쓴다.
       icon: {
         content: `<div style="width:16px;height:16px;border-radius:50%;background:${colors.primary};border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>`,
-        size: new naver.maps.Size(22, 22),
-        anchor: new naver.maps.Point(11, 11),
+        size: [22, 22],
+        anchor: [11, 11],
       },
-    })
-    const myInfoWindow = new naver.maps.InfoWindow({
       content: '<div style="padding:4px 8px;font-size:12px;">내 위치</div>',
-    })
-    myInfoWindow.open(map, myMarker)
-
-    const occupationIds = new Set(occupationPlaces.map(placeIdentity))
-
-    places.forEach((place) => {
-      // 직업 핀과 겹치는 식당은 기본 핀을 생략한다("직업 핀 우선", FR-2.3) — 아래에서 파란 핀으로 그린다.
-      if (occupationIds.has(placeIdentity(place))) return
-
-      const position = new naver.maps.LatLng(Number(place.y), Number(place.x))
-      bounds.extend(position)
-
-      const marker = new naver.maps.Marker({ map, position })
-      const infoWindow = new naver.maps.InfoWindow({
-        content: `<div style="padding:4px 8px;font-size:12px;white-space:nowrap;">${place.place_name}</div>`,
-      })
-
-      naver.maps.Event.addListener(marker, 'click', () => {
-        infoWindow.open(map, marker)
-      })
-    })
-
-    // 직업 맞춤 핀 — 기본 핀(빨강)과 구분되도록 파란 원형 아이콘을 쓴다(colors.info, 범례와 동일 색).
-    occupationPlaces.forEach((place) => {
-      const position = new naver.maps.LatLng(Number(place.y), Number(place.x))
-      bounds.extend(position)
-
-      const marker = new naver.maps.Marker({
-        map,
-        position,
-        icon: {
-          content: `<div style="width:14px;height:14px;border-radius:50%;background:${colors.info};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>`,
-          size: new naver.maps.Size(18, 18),
-          anchor: new naver.maps.Point(9, 9),
-        },
-      })
-      const infoWindow = new naver.maps.InfoWindow({
-        content: `<div style="padding:4px 8px;font-size:12px;white-space:nowrap;">${place.place_name}</div>`,
-      })
-
-      naver.maps.Event.addListener(marker, 'click', () => {
-        infoWindow.open(map, marker)
-      })
-    })
-
-    const hasAnyPlace = places.length > 0 || occupationPlaces.length > 0
-
-    // 장소가 없을 때(내 위치 핀만)는 fitBounds가 최대 줌으로 조여버리므로 중심만 잡는다.
-    if (hasAnyPlace) {
-      map.fitBounds(bounds)
+      alwaysOpen: true,
     }
 
-    // 컨테이너가 처음 그려질 때 아직 레이아웃 크기가 확정되지 않아 지도가 깨져 보이는 경우가 있어,
-    // 다음 틱에 리사이즈 이벤트를 한 번 더 쏴서 바로잡는다.
-    const relayoutTimer = setTimeout(() => {
-      naver.maps.Event.trigger(map, 'resize')
-      if (hasAnyPlace) {
-        map.fitBounds(bounds)
-      } else {
-        map.setCenter(center)
-      }
-    }, 0)
+    const placeMarkers = places.map((place) => ({
+      id: placeIdentity(place),
+      lat: Number(place.y),
+      lng: Number(place.x),
+      content: `<div style="padding:4px 8px;font-size:12px;white-space:nowrap;">${place.place_name}</div>`,
+    }))
 
-    return () => clearTimeout(relayoutTimer)
-  }, [loaded, myPosition, places, occupationPlaces])
+    return [myLocationMarker, ...placeMarkers]
+  }, [myPosition, places])
 
-  // 탭/아코디언 등으로 지도 컨테이너가 숨겨졌다(display:none 등) 나중에 다시 보이는 경우, 네이버 지도는
-  // 스스로 크기 변화를 감지하지 못해 레이아웃이 깨진 채로 남을 수 있다 — 컨테이너 크기 변화를 직접
-  // 감지해 리사이즈 이벤트를 쏴준다.
-  useEffect(() => {
-    if (!loaded || !containerRef.current) return
+  // markers에는 내 위치 핀이 항상 포함돼 있어(장소가 0개여도) 훅 내부의 "마커 있음" 판정만으로는
+  // fitBounds 여부를 못 정한다 — 장소가 진짜 0개일 때 내 위치 한 점으로만 fitBounds하면 최대 줌으로
+  // 조여버리므로(기존 버그였던 지점), 실제 장소(식당) 유무를 여기서 직접 계산해 넘긴다.
+  const hasAnyPlace = places.length > 0
 
-    const observer = new ResizeObserver(() => {
-      if (!mapRef.current) return
-      window.naver.maps.Event.trigger(mapRef.current, 'resize')
-    })
-    observer.observe(containerRef.current)
-    return () => observer.disconnect()
-  }, [loaded])
+  const { loaded, error: loadError } = useNaverMap(containerRef, {
+    center: myPosition,
+    markers,
+    fitToMarkers: hasAnyPlace,
+  })
 
   if (loadError) {
     return (

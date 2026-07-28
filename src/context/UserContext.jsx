@@ -31,7 +31,6 @@ export function UserProvider({ children }) {
   const [profileLoading, setProfileLoading] = useState(true)
   const [profileError, setProfileError] = useState('')
   const [tempSexByUser, setTempSexByUser] = useState(() => get(TEMP_SEX_KEY, {}))
-  const [todayMeal, setTodayMeal] = useState(null) // MealAnalysis, /analyze -> /result 전달용(메모리만)
   const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 끼니 목록(meal record[], dataStore 조회)
   const [todayMealsLoading, setTodayMealsLoading] = useState(true)
   const [todayMealsError, setTodayMealsError] = useState('')
@@ -324,6 +323,16 @@ export function UserProvider({ children }) {
     setTodayMeals((prev) => prev.filter((m) => m.id !== mealRecordId))
   }, [])
 
+  // 트랙 2 §5 — 저장된 끼니 수정. items: 그 끼니의 새 음식 배열 전체(값을 고친 항목 포함, addTodayMeal과
+  // 같은 "통째로 넘긴다" 규칙). 실패하면 그대로 던져서 호출부가 재시도 안내를 보여줄 수 있게 한다.
+  const updateTodayMeal = useCallback(async (mealRecordId, items) => {
+    const dateKey = toDateKey(new Date())
+    const total = sumNutrients(items)
+    const updated = await dataStore.updateMeal(mealRecordId, dateKey, items, total)
+    setTodayMeals((prev) => prev.map((m) => (m.id === mealRecordId ? updated : m)))
+    return updated
+  }, [])
+
   const todayMealsTotal = useMemo(() => sumMealRecordsNutrients(todayMeals), [todayMeals])
 
   const value = useMemo(
@@ -345,8 +354,6 @@ export function UserProvider({ children }) {
       login,
       logout,
       saveProfile,
-      todayMeal,
-      setTodayMeal,
       todayMeals,
       todayMealsLoading,
       todayMealsError,
@@ -354,6 +361,7 @@ export function UserProvider({ children }) {
       todayMealsTotal,
       addTodayMeal,
       removeTodayMeal,
+      updateTodayMeal,
       migrationPrompt,
       migrating,
       migrationError,
@@ -378,7 +386,6 @@ export function UserProvider({ children }) {
       login,
       logout,
       saveProfile,
-      todayMeal,
       todayMeals,
       todayMealsLoading,
       todayMealsError,
@@ -386,6 +393,7 @@ export function UserProvider({ children }) {
       todayMealsTotal,
       addTodayMeal,
       removeTodayMeal,
+      updateTodayMeal,
       migrationPrompt,
       migrating,
       migrationError,

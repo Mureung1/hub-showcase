@@ -1,6 +1,11 @@
 // 권장 영양소 계산(BMR/TDEE 기반) 순수함수
 // 음식별 기준 데이터(1인분 무게 범위·현실 영양 범위·표준 검색명)는 foodData.js 통합 테이블이 단일 소스다.
 import { getPlausibility, getPortionRange } from './foodData.js'
+// 영양소별 "어느 방향이 좋은가"(target/limit) 판정은 nutrientCriteria.js가 단일 소스다(6주차 §3).
+import { isLimitNutrient, isMet, SODIUM_LIMIT_MG } from './nutrientCriteria.js'
+// 6~18세 권장량은 youthIntake.js가 단일 소스다(트랙 3 §1) — 성인 공식(Mifflin-St Jeor)과 계산
+// 방식 자체가 다르므로(청소년은 IOM EER 회귀식 + KDRIs 공식 단백질/식이섬유 표) 별도 leaf 모듈로 뒀다.
+import { calcYouthRecommendedNutrients, isYouthAge } from './youthIntake.js'
 
 const ACTIVITY_FACTORS = {
   low: 1.375,
@@ -25,7 +30,6 @@ const FIBER_G = {
   female: 25,
 }
 
-const SODIUM_LIMIT_MG = 2000
 
 // 6대 영양소 표시 정보(키/라벨/단위) 단일 소스. 화면에서 이 순서/라벨/단위를 공통으로 사용한다.
 export const NUTRIENT_LABELS = [
@@ -61,6 +65,33 @@ export function isMealAnalysis(value) {
   )
 }
 
+// 6주차 §2 — 인분 수 조절. 0.5 스텝, 최대 10인분까지 허용한다(그 이상은 개인 섭취량 기록 취지에서
+// 벗어남).
+export const SERVINGS_MIN = 0.5
+export const SERVINGS_MAX = 10
+export const SERVINGS_STEP = 0.5
+
+function scaleNutrientSet(nutrients, servings) {
+  const scaled = {}
+  for (const key of NUTRIENT_KEYS) {
+    const v = nutrients?.[key]
+    // 반올림은 표시 시점(formatNutrient) 1회만 — 여기서 미리 반올림하면 인분을 오가며(예: 2인분 →
+    // 1인분 → 2인분) 원래 값과 미세하게 어긋나는 오차가 누적된다.
+    scaled[key] = typeof v === 'number' ? v * servings : null
+  }
+  return scaled
+}
+
+// analysis: { items, total } — baseNutrients(1인분 기준, servings=1일 때 값)를 그대로 두고 표시용으로만
+// 배율을 곱한 새 객체를 반환한다. 원본(analysis)은 절대 변형하지 않는다 — baseNutrients 불변 규칙
+// (PRD 6주차 §2)의 핵심으로, 이걸 어기면 인분을 여러 번 오갈 때마다 부동소수점 오차가 쌓인다.
+export function scaleMealAnalysisByServings(analysis, servings) {
+  return {
+    items: analysis.items.map((item) => ({ ...item, nutrients: scaleNutrientSet(item.nutrients, servings) })),
+    total: scaleNutrientSet(analysis.total, servings),
+  }
+}
+
 // 음식 항목의 영양수치 출처. DB(가공)은 식약처 가공식품DB(편의점/포장/프랜차이즈 제품) 매칭을 뜻한다.
 // LABEL은 영양성분표 사진에서 그대로 읽어낸 값(추정이 아니라 추출)이라 ESTIMATED와 구분한다.
 export const NUTRITION_SOURCE = {
@@ -69,6 +100,9 @@ export const NUTRITION_SOURCE = {
   OFFICIAL: '공식',
   LABEL: '라벨 추출',
   ESTIMATED: '추정',
+  // 트랙 2 §4 — 저장 전 결과 카드에서 사용자가 직접 수치를 고쳤을 때만 붙는다(DB 매칭/AI 추정과
+  // 구분해 "이 값은 사용자가 확인·수정한 값"임을 그대로 보여준다).
+  MANUAL: '직접입력',
 }
 
 const ESTIMATED_GRAMS_MIN = 20
@@ -188,9 +222,11 @@ export function formatExpectedIntake(expected) {
 // - 칼로리는 다른 영양소의 합산 결과라 "칼로리가 부족해요"는 실질적 조언이 못 되고,
 // - 나트륨은 상한형이라 "부족" 개념 자체가 성립하지 않는다.
 // 이 둘은 화면 표시(섭취량 기록)와 초과 경고에서만 쓴다. 단, 달력의 하루 상태 판정
-// (calcDayStatus)과 리더보드 점수(nutritionScore.js + supabase SQL)는 기존 6개 기준을
-// 의도적으로 유지한다 — 바꾸면 과거 기록의 상태가 소급해서 달라지고, SQL 채점 공식과
-// 어긋난다(CLAUDE.md의 "채점 공식은 반드시 동일하게 유지" 규칙).
+// (calcDayStatus)은 기존 6개 기준을 의도적으로 유지한다 — 바꾸면 과거 기록의 상태가
+// 소급해서 달라진다. 리더보드/오늘의 점수(nutritionScore.js + supabase SQL)는 5주차부터
+// 5개 기준(식이섬유 제외, 배점표는 nutritionScore.js 헤더 참고)으로 별도 운영 — 두 판정은
+// 원래도 서로 다른 목적(과거 소급 안정성 vs 오늘 하루 점수)이라 같은 기준일 필요가 없다.
+// SQL 채점 공식은 여전히 nutritionScore.js와 반드시 동일하게 유지해야 한다(CLAUDE.md).
 export const DEFICIENCY_TARGET_KEYS = ['carbs', 'protein', 'fat', 'fiber']
 export const RECORD_ONLY_KEYS = ['calories', 'sodium']
 export const UPPER_LIMIT_KEYS = ['sodium']
@@ -227,8 +263,9 @@ export function buildDeficiencyRows(recommended, total, { max = 3 } = {}) {
 export function isSodiumExceeded(recommended, total) {
   const limit = Number(recommended?.sodium) || 0
   const actual = Number(total?.sodium) || 0
-  return limit > 0 && actual > limit
+  return limit > 0 && !isMet('sodium', actual, limit)
 }
+
 
 // ── 하루 영양 상태 3단계 판정 ──────────────────────────────────────────────
 // 목표형 영양소(칼로리·단백·탄수·지방·식이섬유)는 권장량의 NUTRIENT_SATISFY_RATIO 이상 도달 시 "충족",
@@ -240,11 +277,10 @@ export const DAY_STATUS_THRESHOLDS = { good: 5, normal: 2 }
 
 export function countSatisfiedNutrients(recommended, total) {
   if (!isNutrientSet(recommended) || !isNutrientSet(total)) return 0
-  return NUTRIENT_KEYS.reduce((count, key) => {
-    const satisfied =
-      key === 'sodium' ? total[key] <= recommended[key] : total[key] >= recommended[key] * NUTRIENT_SATISFY_RATIO
-    return count + (satisfied ? 1 : 0)
-  }, 0)
+  return NUTRIENT_KEYS.reduce(
+    (count, key) => count + (isMet(key, total[key], recommended[key], NUTRIENT_SATISFY_RATIO) ? 1 : 0),
+    0,
+  )
 }
 
 // 'good' | 'normal' | 'bad' (판정 불가면 null)
@@ -269,12 +305,12 @@ export const NUTRIENT_EXCEED_RATIO = 1.5
 
 export const NUTRIENT_STATUS = { SATISFIED: 'satisfied', DEFICIENT: 'deficient', EXCEEDED: 'exceeded' }
 
-// 나트륨은 상한형이라 "부족"이 없다(상한 이하=충족, 상한 초과=초과). 나머지 5개는 목표형(부족/충족/초과 3단계).
+// 나트륨(상한형)은 "부족"이 없다(상한 이하=충족, 상한 초과=초과). 나머지 5개(목표형)는 부족/충족/초과 3단계.
 export function classifyNutrientStatus(key, actual, recommended) {
   const rec = Number(recommended) || 0
   const ratio = rec > 0 ? Number(actual) / rec : 0
 
-  if (key === 'sodium') {
+  if (isLimitNutrient(key)) {
     return ratio <= 1 ? NUTRIENT_STATUS.SATISFIED : NUTRIENT_STATUS.EXCEEDED
   }
   if (ratio < NUTRIENT_SATISFY_RATIO) return NUTRIENT_STATUS.DEFICIENT
@@ -313,6 +349,14 @@ export function calcTDEE(bmr, activity) {
 }
 
 export function calcRecommendedNutrients({ age, heightCm, weightKg, sex, activity, conditions = [] }) {
+  // 6~18세는 성인 공식(Mifflin-St Jeor BMR) 대신 청소년 전용 계산으로 분기한다 — 이 분기를 타지
+  // 않던 이전에는 초·중·고 학생도 전부 성인 기준으로 계산됐다(급식이 이 앱의 간판 기능인데 정작 그
+  // 연령대 권장량이 없던 버그). age<19가 아니라 isYouthAge(6~18)로 좁혀, 5세 이하(기존에도 이미
+  // 성인 공식이던 구간)의 동작은 이번 변경으로 바뀌지 않는다.
+  if (isYouthAge(age)) {
+    return calcYouthRecommendedNutrients({ age, heightCm, weightKg, sex, activity })
+  }
+
   const bmr = calcBMR({ sex, weightKg, heightCm, age })
   const tdee = calcTDEE(bmr, activity)
 

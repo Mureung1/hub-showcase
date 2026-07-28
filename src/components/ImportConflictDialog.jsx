@@ -1,4 +1,5 @@
 import AppButton from './AppButton.jsx'
+import { useFocusTrap } from '../lib/useFocusTrap.js'
 import { colors, font, layout, radius, shadow, spacing } from '../styles/theme.js'
 
 // CSV 가져오기에서 이미 기록이 있는 날짜를 만났을 때 "덮어쓰기 / 건너뛰기"를 고르게 하는 다이얼로그
@@ -6,12 +7,15 @@ import { colors, font, layout, radius, shadow, spacing } from '../styles/theme.j
 export default function ImportConflictDialog({ duplicateDates, totalDates, busy, onOverwrite, onSkip, onCancel }) {
   const preview = duplicateDates.slice(0, 5)
   const rest = duplicateDates.length - preview.length
+  const containerRef = useFocusTrap(true, busy ? undefined : onCancel)
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="import-conflict-title"
+      ref={containerRef}
+      tabIndex={-1}
       style={{
         position: 'fixed',
         inset: 0,

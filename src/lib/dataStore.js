@@ -5,7 +5,14 @@
 //   · 로그인(세션 있음) -> Supabase(db.js, profiles/meals 테이블)
 import { supabase } from './supabase.js'
 import * as db from './db.js'
-import { addMealRecord, getDatesWithMeals, getMeals as getLocalMeals, removeMealRecord, setMeals } from './mealStore.js'
+import {
+  addMealRecord,
+  getDatesWithMeals,
+  getMeals as getLocalMeals,
+  removeMealRecord,
+  setMeals,
+  updateMealRecord,
+} from './mealStore.js'
 import { get, set } from './storage.js'
 
 // 게스트는 로그인이 없어 사용자를 구분할 방법이 없으므로, 브라우저(기기) 하나당 로컬 데이터 버킷
@@ -68,6 +75,20 @@ export async function deleteMeal(mealId, date) {
     return
   }
   return db.deleteMeal(mealId)
+}
+
+// 저장된 끼니의 items를 통째로 교체한다(트랙 2 §5, 저장 전 수정). date는 deleteMeal과 같은 이유로
+// 게스트 로컬 경로에서만 필요하다(어느 날짜 버킷을 고칠지 알아야 함). total은 Supabase 경로에만
+// 쓰인다 — 게스트 로컬 기록은 원래 total을 저장하지 않고 항상 items에서 다시 계산한다(addMeal과
+// 동일한 비대칭, mealStore.js 주석 참고).
+export async function updateMeal(mealId, date, items, total) {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    const updated = updateMealRecord(GUEST_ID, date, mealId, { items })
+    if (!updated) throw new Error('수정할 기록을 찾을 수 없어요.')
+    return updated
+  }
+  return db.updateMeal(mealId, items, total)
 }
 
 export async function getMealsByDateRange(startDate, endDate) {

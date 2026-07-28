@@ -12,6 +12,7 @@ import {
   validatePassword,
   validatePasswordConfirm,
 } from '../lib/authId.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 회원가입(PRD v2.0 FR-1.1). 입력은 아이디/비밀번호/비밀번호 확인/닉네임 4개뿐이고, 통과하면 이메일
@@ -21,6 +22,7 @@ import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 // 들어오자마자 빈 칸 4개에 빨간 글씨가 뜨는 걸 막으면서도, PRD가 요구하는 "실시간 인라인 에러"는
 // 그대로 만족한다(비밀번호 확인은 입력하는 즉시 불일치가 보인다).
 export default function Signup() {
+  useDocumentTitle('회원가입')
   const { authUser, authLoading, signup } = useUser()
   const navigate = useNavigate()
 

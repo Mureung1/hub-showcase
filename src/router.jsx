@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, Link } from 'react-router-dom'
 import { useUser } from './context/UserContext.jsx'
 import AppButton from './components/AppButton.jsx'
 import Header from './components/Header.jsx'
@@ -14,6 +14,7 @@ import Result from './pages/Result.jsx'
 import Calendar from './pages/Calendar.jsx'
 import MapPage from './pages/MapPage.jsx'
 import MealsPage from './pages/MealsPage.jsx'
+import { useDocumentTitle } from './lib/useDocumentTitle.js'
 import { spacing, styles } from './styles/theme.js'
 
 function CenteredSpinner() {
@@ -30,6 +31,22 @@ function ProfileErrorCard({ message, onRetry }) {
       <Card style={{ textAlign: 'center' }}>
         <p style={{ ...styles.errorText, margin: `0 0 ${spacing.lg}px` }}>{message}</p>
         <AppButton onClick={onRetry}>다시 시도</AppButton>
+      </Card>
+    </div>
+  )
+}
+
+// 잘못된 경로(오타, 낡은 북마크 등)로 들어오면 이전엔 빈 흰 화면이었다 — 탭바가 있는 AppShell 안에
+// 두어(아래 라우트 트리 참고) 사용자가 어디로도 돌아갈 수 있게 한다.
+function NotFound() {
+  useDocumentTitle('페이지를 찾을 수 없음')
+  return (
+    <div style={styles.page}>
+      <Card style={{ textAlign: 'center' }}>
+        <p style={{ marginBottom: spacing.lg }}>페이지를 찾을 수 없어요.</p>
+        <Link to="/analyze" className="tds-press" style={{ ...styles.buttonPrimary, display: 'flex', textDecoration: 'none' }}>
+          홈으로 가기
+        </Link>
       </Card>
     </div>
   )
@@ -86,6 +103,7 @@ export default function AppRouter() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/map" element={<MapPage />} />
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Route>
         <Route element={<AppShell hideTabBar />}>
           <Route path="/login" element={<Login />} />

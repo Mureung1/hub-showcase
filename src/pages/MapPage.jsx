@@ -5,7 +5,6 @@ import CafeteriaPanel from '../components/CafeteriaPanel.jsx'
 import Card from '../components/Card.jsx'
 import FoodCategoryChips from '../components/FoodCategoryChips.jsx'
 import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
-import OccupationPlaceList from '../components/OccupationPlaceList.jsx'
 import PlaceList from '../components/PlaceList.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -24,6 +23,8 @@ import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutritio
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { buildDeficiencyRows, isSodiumExceeded } from '../lib/nutrition.js'
 import { getOccupationRecommendation } from '../lib/occupationKeywords.js'
+import { TABS } from '../lib/tabs.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 위치 권한 거부/실패 시 지도를 띄울 기본 위치(대전 유성구 충남대학교 인근)
@@ -229,6 +230,27 @@ async function searchOccupationPlaces({ x, y }, occupation) {
   return places.map((place) => ({ ...place, isOccupationMatch: true }))
 }
 
+// 6주차 §5 — 직업은 검색 결과에 조용히 반영하되(참고), 화면에 "직업 맞춤"이라고 이름 붙여 노출하지
+// 않는다(별도 섹션·범례·다른 색 핀 전부 제거). 그래서 두 결과를 같은 목록·같은 핀 색으로 합친다 —
+// 영양소 추천에 이미 있는 식당은 건너뛰고(중복 제거), 나머지 자리만 채운다(영양소 추천이 항상 우선).
+// occupationPlaces는 attachExpectedIntake를 안 거쳐 place.expected가 없으므로, PlaceList에서
+// "추천 이유"·"예상 섭취량" 없이 그냥 후보 카드로만 뜬다 — 문구로 직업을 언급할 지점 자체가 없다.
+//
+// nutrientPlaces 자체가 이미 MAX_TOTAL_PLACES(8곳)까지 채워져 있는 경우가 많아(상업지구 등), 그냥
+// 뒤에 이어 붙이고 slice하면 직업 매칭분이 들어갈 자리가 사실상 없다(리뷰에서 발견) — 최소
+// RESERVED_OCCUPATION_SLOTS곳은 직업 매칭 전용으로 남겨둔다.
+const RESERVED_OCCUPATION_SLOTS = 2
+
+function mergeOccupationPlaces(nutrientPlaces, occupationPlaces) {
+  const seen = new Set(nutrientPlaces.map(placeIdentity))
+  const extra = occupationPlaces.filter((place) => !seen.has(placeIdentity(place)))
+  if (extra.length === 0) return nutrientPlaces.slice(0, MAX_TOTAL_PLACES)
+
+  const nutrientSlots = Math.max(0, MAX_TOTAL_PLACES - RESERVED_OCCUPATION_SLOTS)
+  const capped = nutrientPlaces.slice(0, nutrientSlots)
+  return [...capped, ...extra].slice(0, MAX_TOTAL_PLACES)
+}
+
 // allergyLabels가 비고 나트륨 정상이면(프로필 미입력 등) 기존 프롬프트와 완전히 동일하게 나간다.
 function buildExpectedPrompt(places, deficientRows, allergyLabels = [], { sodiumExceeded = false } = {}) {
   const placeText = places.map((p) => `- ${p.place_name} (${p.category_name || '분류 없음'})`).join('\n')
@@ -252,6 +274,9 @@ function buildExpectedPrompt(places, deficientRows, allergyLabels = [], { sodium
 - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 숫자로 포함하고, 나머지 키도 아는 값이면 숫자로, 확신이 없으면 null로 채워라.
 - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg).
 - place_name은 아래 목록의 이름과 정확히 같아야 한다.${allergyLine}${sodiumLine}
+- priceRange: 그 대표 메뉴가 대중적으로 가격대가 잘 알려진 음식(예: 김밥, 국밥, 짜장면)이면 현실적인
+  원화 가격 범위를 {min, max}로 추정해라. 특정 식당·지역마다 가격이 크게 다르거나 확신이 없으면
+  절대 숫자를 지어내지 말고 priceRange 전체를 null로 남겨라. 단정적인 가격이나 허위 가격은 금지다.
 
 식당 목록:
 ${placeText}
@@ -259,9 +284,27 @@ ${placeText}
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
   "places": [
-    { "place_name": "식당 이름", "representativeMenu": "대표 메뉴명", "expected": { "protein": 0 } }
+    { "place_name": "식당 이름", "representativeMenu": "대표 메뉴명", "expected": { "protein": 0 }, "priceRange": { "min": 8000, "max": 9000 } }
   ]
 }`
+}
+
+// priceRange가 구형 응답(필드 자체가 없음)이거나 형식이 어긋나면 조용히 null로 떨어뜨린다 — 가격
+// 표시는 부가 정보라 이 값 하나 때문에 장소 카드 전체가 깨지면 안 된다. Number.isFinite로
+// Infinity/NaN을 걸러내고(Infinity는 typeof가 'number'라 앞의 검사만으로는 통과해버린다 — 리뷰에서
+// 발견, "약 0~∞원" 같은 문구가 뜰 수 있었다) 한 끼 가격으로 비현실적인 상한도 함께 둔다.
+const MAX_PLAUSIBLE_PRICE_WON = 1_000_000
+
+function isValidPriceRange(value) {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    Number.isFinite(value.min) &&
+    Number.isFinite(value.max) &&
+    value.min >= 0 &&
+    value.max >= value.min &&
+    value.max <= MAX_PLAUSIBLE_PRICE_WON
+  )
 }
 
 // 장소별 "대표 메뉴 1인분 예상 섭취량"을 한 번의 호출로 계산해 붙인다. 실패해도 목록 자체는 그대로 보여준다.
@@ -281,7 +324,11 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = [], {
         .filter((p) => p && typeof p.place_name === 'string' && p.expected && typeof p.expected === 'object')
         .map((p) => [
           p.place_name,
-          { expected: p.expected, representativeMenu: typeof p.representativeMenu === 'string' ? p.representativeMenu : null },
+          {
+            expected: p.expected,
+            representativeMenu: typeof p.representativeMenu === 'string' ? p.representativeMenu : null,
+            priceRange: isValidPriceRange(p.priceRange) ? p.priceRange : null,
+          },
         ]),
     )
     return places.map((place) => (byName.has(place.place_name) ? { ...place, ...byName.get(place.place_name) } : place))
@@ -292,6 +339,7 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = [], {
 }
 
 export default function MapPage() {
+  useDocumentTitle(TABS.find((t) => t.key === 'map').label)
   const { profile, todayMealsTotal, effectiveRecommended } = useUser()
   const recommended = effectiveRecommended
   const todayTotal = todayMealsTotal
@@ -313,11 +361,6 @@ export default function MapPage() {
   // 쓰면 places가 null인 동안(검색 전) 리렌더마다 새 배열이 생겨 지도가 매번 통째로 재생성된다.
   // 스폰서 식당(광고, isAd)은 실제 좌표가 없는 목업 항목이라 지도 마커 대상에서는 제외한다(목록에는 남긴다).
   const mapPlaces = useMemo(() => (places ?? []).filter((place) => !place.isAd), [places])
-  // OccupationPlaceList의 "부족한 영양소도 채울 수 있어요" 겹침 표시(FR-2.3)에 쓴다.
-  const nutrientPlaceIds = useMemo(() => new Set((places ?? []).map(placeIdentity)), [places])
-  // 직업 맞춤 추천 핀(FR-2.3) — 부족 영양소 추천(places)과 별개 배열로 들고 있다가 지도에 다른
-  // 색으로 함께 그린다. 직업 미설정/기타면 항상 빈 배열(기존 지도 동작과 완전히 동일).
-  const [occupationPlaces, setOccupationPlaces] = useState([])
   const [myPosition, setMyPosition] = useState(null)
   const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
@@ -454,13 +497,13 @@ export default function MapPage() {
 
   // 직업 맞춤 검색(searchOccupationPlaces)은 항상 자체 .catch로 감싸 빈 배열로 떨어뜨린다 — 이 새
   // 검색이 실패하거나 느려도 기존 부족 영양소 검색(searchAroundPosition)의 동작·에러 메시지는
-  // 전혀 영향받지 않는다(PRD "한쪽 실패가 다른 쪽을 막지 않게").
+  // 전혀 영향받지 않는다(PRD "한쪽 실패가 다른 쪽을 막지 않게"). 두 결과는 mergeOccupationPlaces로
+  // 합쳐 하나의 목록·하나의 지도 핀 색으로만 보여준다(6주차 §5 — 직업 표면 노출 제거).
   async function handleFindNearby() {
     setNearbyLoading(true)
     setNearbyError('')
     setCategoryNotice('')
     setPlaces(null)
-    setOccupationPlaces([])
     try {
       const { x, y } = await getCurrentPosition()
       const [{ places: results, categoryNotice }, occupationResults] = await Promise.all([
@@ -470,8 +513,9 @@ export default function MapPage() {
           return []
         }),
       ])
+      const merged = mergeOccupationPlaces(results, occupationResults)
 
-      if (results.length === 0 && occupationResults.length === 0) {
+      if (merged.length === 0) {
         setNearbyError(emptyResultMessage('주변'))
         return
       }
@@ -480,8 +524,7 @@ export default function MapPage() {
       setLocationNotice('')
       setCategoryNotice(categoryNotice)
       setSearchedCategory(categoryKey)
-      setPlaces(results)
-      setOccupationPlaces(occupationResults)
+      setPlaces(merged)
     } catch (err) {
       console.error('nearby search failed:', err)
       setNearbyError(err.message || '주변 식당을 찾지 못했습니다.')
@@ -501,7 +544,6 @@ export default function MapPage() {
     setNearbyError('')
     setCategoryNotice('')
     setPlaces(null)
-    setOccupationPlaces([])
     try {
       const { x, y, label } = await geocodeLocation(query)
       const [{ places: results, categoryNotice }, occupationResults] = await Promise.all([
@@ -511,8 +553,9 @@ export default function MapPage() {
           return []
         }),
       ])
+      const merged = mergeOccupationPlaces(results, occupationResults)
 
-      if (results.length === 0 && occupationResults.length === 0) {
+      if (merged.length === 0) {
         setNearbyError(emptyResultMessage('이 위치 주변'))
         return
       }
@@ -521,8 +564,7 @@ export default function MapPage() {
       setLocationNotice(label ? `"${label}" 주변 결과예요.` : '')
       setCategoryNotice(categoryNotice)
       setSearchedCategory(categoryKey)
-      setPlaces(results)
-      setOccupationPlaces(occupationResults)
+      setPlaces(merged)
     } catch (err) {
       console.error('location search failed:', err)
       setNearbyError(err.message || '위치를 찾지 못했습니다.')
@@ -571,25 +613,12 @@ export default function MapPage() {
       <>
       <div style={{ marginBottom: spacing.md }}>
         {myPosition ? (
-          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} occupationPlaces={occupationPlaces} />
+          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} />
         ) : (
           <Skeleton height={320} radius={radius.lg} />
         )}
         {locationNotice && (
           <p style={{ ...styles.helperText, margin: `${spacing.sm}px 0 0`, textAlign: 'center' }}>{locationNotice}</p>
-        )}
-        {/* 색만으로 구분하지 않도록 범례는 항상 색 점 + 글자 라벨을 함께 둔다(FR-2.3 접근성 요구사항). */}
-        {occupationPlaces.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.sm }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: font.size.xs, color: colors.textSub }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EA4335', display: 'inline-block' }} />
-              영양소 추천
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: font.size.xs, color: colors.textSub }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: colors.info, display: 'inline-block' }} />
-              직업 맞춤
-            </span>
-          </div>
         )}
       </div>
 
@@ -650,9 +679,6 @@ export default function MapPage() {
           )}
           <PlaceList places={places} todayTotal={todayTotal} recommended={recommended} deficientRows={top3Rows} />
         </>
-      )}
-      {!nearbyLoading && (
-        <OccupationPlaceList places={occupationPlaces} nutrientPlaceIds={nutrientPlaceIds} />
       )}
       </>
       )}

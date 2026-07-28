@@ -20,7 +20,8 @@ body {
   margin: 0;
   background: #f2f4f6;
   color: #191f28;
-  padding-top: env(safe-area-inset-top);
+  /* 상단 안전영역은 Header.jsx가 자체적으로 calc(12px + env(safe-area-inset-top))로 이미 적용한다 —
+     여기서도 적용하면 노치/펀치홀 기기에서 인셋이 두 번 먹혀 헤더 위가 한 뼘 비게 된다. */
 }
 
 #root {
