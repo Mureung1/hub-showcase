@@ -47,6 +47,7 @@ export function useMapViewport(
   }
 
   function setPresentationMode(mode: MapPresentationMode) {
+    if (mode === "storefront3d") setStorefront3dUnavailable(false);
     setPresentationModeState(mode);
     moveCamera(mode);
   }
@@ -84,6 +85,7 @@ export function useMapViewport(
     baseBuildingsRendered: profile.fallbackBuildingsVisible,
     committedCenter,
     focusCenter: (center: [number, number], store: boolean) => {
+      if (store) setStorefront3dUnavailable(false);
       setCommittedCenter(center);
       mapRef.current?.flyTo({
         center,
@@ -116,6 +118,7 @@ export function useMapViewport(
     resetViewport: (center: [number, number]) => {
       const mode: MapPresentationMode = "analysis";
       setPresentationModeState(mode);
+      setStorefront3dUnavailable(false);
       setCommittedCenter(center);
       setDraftCenter(null);
       setAnalysisMoveMode("idle");
