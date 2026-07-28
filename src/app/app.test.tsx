@@ -178,7 +178,7 @@ describe('App onboarding flow', () => {
     expect(createInsightRepository).toHaveBeenCalledWith('user-1');
     expect(
       screen.getByRole('heading', {
-        name: '지금 필요한 인사이트를 다시 꺼내보세요',
+        name: '지금 필요한 인사이트를 꺼내 보세요',
       })
     ).not.toBeNull();
   });
