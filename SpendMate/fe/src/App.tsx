@@ -6,12 +6,13 @@ import AICoachScreen, { INITIAL_COACH_MESSAGES, type Message } from './screens/A
 import AddExpenseScreen from './screens/AddExpenseScreen'
 import MyPageScreen from './screens/MyPageScreen'
 import AuthScreen from './screens/AuthScreen'
-import { getCurrentUser } from './lib/api'
+import { getCurrentUser, type AuthUser } from './lib/api'
 
 type Tab = 'home' | 'stats' | 'add' | 'coach' | 'mypage'
 
 export default function App() {
   const [authed, setAuthed] = useState(false)
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
   const [checkingSession, setCheckingSession] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const [showAdd, setShowAdd] = useState(false)
@@ -22,9 +23,17 @@ export default function App() {
   // 새로고침해도 세션이 살아있으면 로그인 화면으로 안 튕기도록 마운트 시 한 번 확인한다 (#60).
   useEffect(() => {
     getCurrentUser()
-      .then(user => setAuthed(user !== null))
+      .then(user => {
+        setCurrentUser(user)
+        setAuthed(user !== null)
+      })
       .finally(() => setCheckingSession(false))
   }, [])
+
+  const handleAuth = (user: AuthUser) => {
+    setCurrentUser(user)
+    setAuthed(true)
+  }
 
   const handleTabPress = (tab: Tab) => {
     if (tab === 'add') {
@@ -85,13 +94,14 @@ export default function App() {
           {checkingSession ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }} />
           ) : !authed ? (
-            <AuthScreen onAuth={() => setAuthed(true)} />
+            <AuthScreen onAuth={handleAuth} />
           ) : (
             <>
               {activeTab === 'home' && (
                 <HomeScreen
                   survivalModeOff={survivalModeOff}
                   onGoToSettings={() => setActiveTab('mypage')}
+                  user={currentUser}
                 />
               )}
               {activeTab === 'stats' && <StatsScreen />}
@@ -103,6 +113,8 @@ export default function App() {
                 <MyPageScreen
                   survivalModeOff={survivalModeOff}
                   onToggleSurvivalMode={() => setSurvivalModeOff((v) => !v)}
+                  user={currentUser}
+                  onUserUpdated={setCurrentUser}
                 />
               )}
             </>
