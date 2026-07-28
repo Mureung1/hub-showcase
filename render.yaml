@@ -1,0 +1,19 @@
+# Render 배포 설정(Blueprint).
+# Render 대시보드에서 New → Blueprint 로 이 저장소를 연결하면 이 파일대로 서비스가 만들어진다.
+# 손으로 Web Service 를 만들 때도 아래 값(rootDir/build/start/health)을 그대로 넣으면 된다.
+services:
+  - type: web
+    name: exam-priority-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      # node:sqlite 내장 모듈을 쓰므로 Node 22 미만에서는 뜨지 않는다.
+      - key: NODE_VERSION
+        value: 24.17.0
+      # Vercel 주소. 값은 대시보드에서 직접 입력한다(sync: false).
+      - key: CORS_ORIGIN
+        sync: false
