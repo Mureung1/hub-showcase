@@ -90,6 +90,9 @@ class MentionCollector:
         **입력 순서대로** 하나씩 저장한다. 저장이 주 갈래에서만 일어나므로 저장소
         연결을 여러 갈래가 함께 쓰지 않고, `mention_identifier` 가 기대는 순서도
         흔들리지 않는다.
+
+        시도를 마친 청크는 표현이 0개여도 `chunk_extractions` 에 남긴다. 그 기록이
+        다음 실행의 대상을 가른다(docs/erd.md 6.2).
         """
         done = self._repository.extracted_chunks(context.dataset_version)
         rows = self._repository.chunks_to_extract(
@@ -106,6 +109,14 @@ class MentionCollector:
         created = 0
         discarded: list[tuple[str, str, str]] = []
         errors: list[tuple[str, str]] = []
+        counts: dict[str, int] = {}
+        """청크마다 이 실행이 저장한 표현 수. 0 도 담는다.
+
+        한 스냅샷이 같은 직무의 공고 여럿과 짝지어지면 같은 청크가 결과에 두 번
+        나올 수 있다. `chunk_extractions` 의 기본키가 (chunk_id, dataset_version)
+        이므로 청크마다 한 행만 남기고 수는 합친다. 사전이 삽입 순서를 지키므로
+        기록 순서도 청크 순서다.
+        """
 
         results = map_ordered(
             lambda row: self._extractor.extract(row["section"], row["text"]),
@@ -127,6 +138,7 @@ class MentionCollector:
                 continue
 
             resolver = SpanResolver(row["text"])
+            stored = 0
             for candidate in record.value or ():
                 span = resolver.resolve(candidate.raw_expression)
                 if span is None:
@@ -142,6 +154,21 @@ class MentionCollector:
                     self._row(context, row, candidate, span)
                 )
                 created += 1
+                stored += 1
+
+            counts[row["chunk_id"]] = counts.get(row["chunk_id"], 0) + stored
+
+        # 예외로 끝난 청크는 여기에 없다. 모델이 답하지 못한 것을 "표현 없음" 으로
+        # 굳히면 다음 실행이 다시 시도하지 못한다.
+        for chunk_id, count in counts.items():
+            self._repository.record_extraction(
+                {
+                    "chunk_id": chunk_id,
+                    "dataset_version": context.dataset_version,
+                    "extraction_run_id": context.agent_run_id,
+                    "mention_count": count,
+                }
+            )
 
         return ExtractionOutcome(
             agent_run_id=context.agent_run_id,

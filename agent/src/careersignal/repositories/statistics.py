@@ -39,20 +39,26 @@ class StatisticsRepository(Repository):
           AND pv.dataset_version = %(dataset_version)s
           AND p.job_role_id = %(job_role_id)s
           AND NOT EXISTS (
-                SELECT 1 FROM requirement_mentions m
-                WHERE m.chunk_id = c.chunk_id
-                  AND m.dataset_version = %(dataset_version)s
+                SELECT 1 FROM chunk_extractions e
+                WHERE e.chunk_id = c.chunk_id
+                  AND e.dataset_version = %(dataset_version)s
               )
         ORDER BY pv.posting_version_id, c.ordinal, c.chunk_id
     """
-    """공고 청크와 그 청크가 속한 공고. 아직 표현을 뽑지 않은 것만.
+    """공고 청크와 그 청크가 속한 공고. 아직 추출을 돌리지 않은 것만.
 
     청크는 스냅샷을 가리키고 스냅샷은 출처를 가리킨다. 청크에서 공고로 가는
     길은 `posting_versions.snapshot_id` 하나뿐이라 이 조인이 모집단과 추출
     대상을 같은 기준으로 묶는다. 안쪽 조인이므로 공고로 등록되지 않은
     출처의 청크는 결과에 없다.
 
-    `NOT EXISTS` 가 `LIMIT` 앞에 있어야 한다. `LIMIT` 이 먼저 자르면 이미 뽑은
+    제외 기준은 `chunk_extractions` 이지 `requirement_mentions` 가 아니다
+    (docs/erd.md 6.2). 회사 소개·복리후생·전형 절차 청크는 요구 표현이 하나도
+    없는 것이 정상이므로 mention 을 자국으로 삼으면 그 청크가 영구히 다시 대상이
+    된다. `chunk_extractions` 는 표현이 0개여도 행이 남으므로 처리 여부를 한 번만
+    묻는다.
+
+    `NOT EXISTS` 가 `LIMIT` 앞에 있어야 한다. `LIMIT` 이 먼저 자르면 이미 처리한
     청크가 그 안을 채우고 남은 청크는 경계 너머에 갇혀, 같은 `--limit` 으로 다시
     돌려도 전부 건너뛰기만 하고 아무것도 진행하지 않는다. 조건은
     `extracted_chunks()` 와 같다. 청크 단위이며 같은 `dataset_version` 이다.
@@ -77,7 +83,7 @@ class StatisticsRepository(Repository):
         있으므로(`pipelines/postings.py` 의 `posting_identifier`) 같은 직무
         안에서는 청크가 한 번만 나온다.
 
-        이미 표현을 뽑은 청크는 조회가 먼저 뺀다. `limit` 은 남은 짝의 수를
+        이미 추출을 돌린 청크는 조회가 먼저 뺀다. `limit` 은 남은 짝의 수를
         자르므로 나눠 돌려도 실행마다 앞으로 나아간다.
         """
         sql = self._POSTING_CHUNKS
@@ -91,16 +97,17 @@ class StatisticsRepository(Repository):
         return self.unit.fetch_all(sql, params)
 
     def extracted_chunks(self, dataset_version: str) -> set[str]:
-        """이미 mention 을 뽑은 청크. 증분 재실행이 여기서 갈린다.
+        """이미 추출을 돌린 청크. 증분 재실행이 여기서 갈린다.
 
-        청크 단위로 판정한다. 한 청크에서 아무 표현도 나오지 않으면 행이 남지
-        않아 다음 실행이 다시 시도한다.
+        청크 단위로 판정한다. 표현이 하나도 나오지 않은 청크도 여기에 있다.
+        `chunk_extractions` 는 `mention_count = 0` 을 정상값으로 담기 때문이다
+        (docs/erd.md 6.2).
 
         `_POSTING_CHUNKS` 가 같은 조건을 이미 걸었으므로 정상 경로에서 이 집합에
         걸리는 청크는 없다. 두 실행이 겹쳐 그 사이에 남은 행을 잡는 자리로 남긴다.
         """
         rows = self.unit.fetch_all(
-            "SELECT DISTINCT chunk_id FROM requirement_mentions WHERE dataset_version = %s",
+            "SELECT chunk_id FROM chunk_extractions WHERE dataset_version = %s",
             (dataset_version,),
         )
         return {r["chunk_id"] for r in rows}
@@ -113,6 +120,15 @@ class StatisticsRepository(Repository):
         한다. 실행 봉투는 `orchestration/envelope.py` 가 만든다.
         """
         self.unit.insert("requirement_mentions", dict(values))
+
+    def record_extraction(self, values: dict[str, Any]) -> None:
+        """청크 하나의 추출을 마쳤다는 기록.
+
+        표현이 0개여도 남긴다. 이 행이 없으면 그 청크가 다음 실행의 대상에 다시
+        들어온다. mention 저장과 같은 거래에서 부른다. 거래가 되돌아가면 표현과
+        기록이 함께 사라지므로 "표현은 지워졌는데 처리됨으로 남는" 상태가 없다.
+        """
+        self.unit.insert("chunk_extractions", dict(values))
 
     def mention_count(self, dataset_version: str) -> int:
         return self.unit.fetch_value(

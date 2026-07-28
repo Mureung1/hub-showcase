@@ -35,7 +35,7 @@ Express와 서빙 파이프라인은 같은 role을 쓴다. 둘 다 활성 버�
 | 오케스트레이터 | `analysis_versions`, `active_analysis_versions`, `dataset_versions`, `knowledge_versions`, `research_requests`(상태 갱신) |
 | 데이터 수집 | `sources`, `source_snapshots`(INSERT만), `source_observations`(INSERT만), `source_assessments` |
 | 지식 구축 | `knowledge_nodes`·`knowledge_edges`의 사전 semantic 묶음, `capabilities`, `capability_dimension_links`, `wiki_pages`, `wiki_revisions`, `wiki_evidence` |
-| 통계 분석 | `requirement_mentions`, `requirement_candidates`, `requirement_candidate_mentions`, `requirement_candidate_decisions`, `requirement_dimensions`, `requirement_dimension_versions`, `requirement_aliases`, `requirement_dimension_relations`, `requirement_taxonomy_versions`, `posting_requirement_assignments`, `saturation_observations`, `research_requests`(INSERT) |
+| 통계 분석 | `requirement_mentions`, `chunk_extractions`, `requirement_candidates`, `requirement_candidate_mentions`, `requirement_candidate_decisions`, `requirement_dimensions`, `requirement_dimension_versions`, `requirement_aliases`, `requirement_dimension_relations`, `requirement_taxonomy_versions`, `posting_requirement_assignments`, `saturation_observations`, `research_requests`(INSERT) |
 | 채용공고 해석 | `analysis_claims`, `analysis_claim_evidence`, `coverage_assertions`, `analysis_outputs`, `research_requests`(INSERT) |
 | 합격 전략 | `checklist_concepts`, `checklist_items`, `checklist_item_mappings`, `analysis_outputs`, `research_requests`(INSERT) |
 | 준비 로드맵 | `roadmap_items`, `roadmap_item_fills`, `study_tracks`, `analysis_outputs`, `research_requests`(INSERT) |

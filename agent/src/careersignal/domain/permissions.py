@@ -107,6 +107,7 @@ _WRITE_SCOPE: dict[Component, frozenset[str]] = {
     Component.AGENT_STATS: frozenset(
         {
             "requirement_mentions",
+            "chunk_extractions",
             "requirement_candidates",
             "requirement_candidate_mentions",
             "requirement_candidate_decisions",

@@ -23,18 +23,30 @@ from careersignal.verification.checks.source_policy import (
     SourcePolicyReader,
     source_policy_check,
 )
+from careersignal.verification.checks.statistics import (
+    TARGET_AGGREGATION,
+    TARGET_FACT,
+    StatisticsReader,
+    numerical_consistency_check,
+    repair_action_for,
+)
 
 __all__ = [
     "CLAIM_TYPE_USE",
     "SCHEMA_RULES",
+    "TARGET_AGGREGATION",
     "TARGET_CLAIM",
+    "TARGET_FACT",
     "TARGET_MENTION",
     "TARGET_WIKI",
     "WIKI_FIELD_USE",
     "CitationReader",
     "SchemaRule",
     "SourcePolicyReader",
+    "StatisticsReader",
     "citation_span_check",
+    "numerical_consistency_check",
+    "repair_action_for",
     "rules_for",
     "schema_check",
     "source_policy_check",

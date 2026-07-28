@@ -395,6 +395,31 @@ CREATE INDEX ON requirement_mentions (dataset_version);
 
 `evidence_span_*`은 `source_chunks.text` 기준 오프셋이다. 검증의 근거 위치 검사가 이 구간을 원문과 대조한다.
 
+### 6.2 `chunk_extractions`
+
+| 컬럼 | 타입 | 제약 |
+| --- | --- | --- |
+| `chunk_id` | `text` | NOT NULL, FK → `source_chunks` |
+| `dataset_version` | `text` | NOT NULL, FK → `dataset_versions` |
+| `extraction_run_id` | `text` | NOT NULL, FK → `agent_runs` |
+| `mention_count` | `integer` | NOT NULL, `CHECK >= 0` |
+| `extracted_at` | `timestamptz` | NOT NULL DEFAULT `now()` |
+
+```sql
+PRIMARY KEY (chunk_id, dataset_version)
+CREATE INDEX ON chunk_extractions (dataset_version);
+```
+
+추출을 마친 청크를 표현이 나왔는지와 무관하게 기록한다. `mention_count = 0`은 정상값이며 0을 담는 것이 이 테이블의 존재 이유다. 회사 소개·복리후생·전형 절차 청크는 요구 표현이 하나도 없는 것이 정상이므로, `requirement_mentions`의 행을 처리 여부의 근거로 삼으면 그 청크가 매 실행마다 다시 대상이 된다.
+
+증분 재실행의 대상 조회가 이 테이블을 `NOT EXISTS`로 읽는다. 조회 위치는 `LIMIT` 앞이다(6.1과 같은 규칙).
+
+복합 기본키가 "한 데이터셋 버전에서 한 청크는 한 번 처리한다"를 강제한다. 청크는 스냅샷에서 결정적으로 나오고 스냅샷은 변경되지 않으므로 같은 데이터셋 버전 안에서 다시 뽑을 이유가 없다. 데이터셋 버전이 다르면 다시 뽑는다. 식별자 컬럼이 없으므로 2.2의 접두사 규약은 이 테이블에 적용되지 않는다.
+
+기록은 mention 저장과 같은 트랜잭션에서 이루어진다. 트랜잭션이 되돌아가면 표현과 기록이 함께 사라지므로 "표현은 없는데 처리됨으로 남는" 상태가 생기지 않는다. 모델 호출이 예외로 끝난 청크는 기록하지 않는다. 답하지 못한 것을 표현 없음으로 굳히면 다시 시도할 수 없다.
+
+`mention_count = 0`의 비율은 추출 프롬프트의 품질 지표로 읽을 수 있다. 비율이 갑자기 오르면 프롬프트나 모델이 요구 표현을 놓치기 시작했다는 신호다.
+
 ## 7. D3a 분류체계
 
 ### 7.1 `requirement_taxonomies`
