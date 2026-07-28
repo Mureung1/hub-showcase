@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface GlobalHeaderProps {
   lang: 'KO' | 'EN';
@@ -8,6 +9,11 @@ interface GlobalHeaderProps {
 }
 
 function GlobalHeader({ lang, setLang, currentView, setCurrentView }: GlobalHeaderProps) {
+  const { user, signInWithGoogle, signOut } = useAuth();
+
+  const userAvatar = user?.user_metadata?.avatar_url;
+  const userName = user?.user_metadata?.full_name || user?.email || 'User';
+
   return (
     <header className="global-header">
       <div className="header-left">
@@ -40,9 +46,35 @@ function GlobalHeader({ lang, setLang, currentView, setCurrentView }: GlobalHead
         >
           🌐 {lang === 'KO' ? 'KO / EN' : 'EN / KO'}
         </button>
-        <div className="user-profile">
-          <span className="user-icon" role="img" aria-label="user">👤</span>
-        </div>
+
+        {user ? (
+          <div className="user-profile-group">
+            <div className="user-profile" title={userName}>
+              {userAvatar ? (
+                <img 
+                  src={userAvatar} 
+                  alt={userName} 
+                  className="user-avatar"
+                />
+              ) : (
+                <span className="user-icon" role="img" aria-label="user">👤</span>
+              )}
+            </div>
+            <button 
+              className="auth-btn"
+              onClick={signOut}
+            >
+              로그아웃
+            </button>
+          </div>
+        ) : (
+          <button 
+            className="auth-btn"
+            onClick={signInWithGoogle}
+          >
+            Google 로그인
+          </button>
+        )}
       </div>
     </header>
   );

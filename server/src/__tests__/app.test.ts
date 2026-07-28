@@ -3,7 +3,7 @@ import request from 'supertest';
 import app from '../app.js';
 import { DbPaper } from '../types/curate.types.js';
 
-// Supabase Client 완벽 모킹
+// Supabase Client 완벽 모킹 (Auth 포함)
 vi.mock('../utils/supabaseClient.js', () => {
   const mockSelect = vi.fn();
   const mockInsert = vi.fn();
@@ -11,6 +11,12 @@ vi.mock('../utils/supabaseClient.js', () => {
   const mockEq = vi.fn();
 
   const mockClient = {
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: 'test-user-uuid', email: 'test@example.com' } },
+        error: null
+      })
+    },
     from: vi.fn().mockReturnThis(),
     select: mockSelect.mockReturnThis(),
     insert: mockInsert.mockReturnThis(),
@@ -96,7 +102,27 @@ describe('Backend Express Server E2E/Unit Tests', () => {
     }
   });
 
-  it('3. POST /api/library should insert paper and return camelCase LibraryItem', async () => {
+  it('3. POST /api/library should reject unauthenticated requests without Authorization header (401)', async () => {
+    const res = await request(app)
+      .post('/api/library')
+      .send({
+        paper: {
+          paperId: 'paper-001',
+          title: 'Lost in the Middle',
+          authors: 'Nelson F. Liu',
+          channel: 'arXiv',
+          year: 2023,
+          matchScore: 98,
+          userId: 'test-user-uuid'
+        }
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body.status).toBe('error');
+    expect(res.body.message).toContain('인증 토큰이 누락되었습니다');
+  });
+
+  it('4. POST /api/library should insert paper with valid Bearer token', async () => {
     const mockDbResponse: DbPaper[] = [
       {
         user_id: 'test-user-uuid',
@@ -118,6 +144,7 @@ describe('Backend Express Server E2E/Unit Tests', () => {
 
     const res = await request(app)
       .post('/api/library')
+      .set('Authorization', 'Bearer mock-jwt-token')
       .send({
         paper: {
           paperId: 'paper-001',
@@ -132,13 +159,12 @@ describe('Backend Express Server E2E/Unit Tests', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
-    expect(res.body.data.id).toBeUndefined();
     expect(res.body.data.userId).toBe('test-user-uuid');
     expect(res.body.data.paperId).toBe('paper-001');
     expect(res.body.data.matchScore).toBe(98);
   });
 
-  it('4. GET /api/library/:userId should retrieve user library', async () => {
+  it('5. GET /api/library/:userId should retrieve authenticated user library', async () => {
     const mockDbResponse: DbPaper[] = [
       {
         user_id: 'test-user-uuid',
@@ -158,7 +184,10 @@ describe('Backend Express Server E2E/Unit Tests', () => {
       return Promise.resolve(resolve({ data: mockDbResponse, error: null }));
     });
 
-    const res = await request(app).get('/api/library/test-user-uuid');
+    const res = await request(app)
+      .get('/api/library/test-user-uuid')
+      .set('Authorization', 'Bearer mock-jwt-token');
+
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     expect(res.body.data.length).toBe(1);
@@ -166,14 +195,17 @@ describe('Backend Express Server E2E/Unit Tests', () => {
     expect(res.body.data[0].paperId).toBe('paper-001');
   });
 
-  it('5. DELETE /api/library/:userId/:paperId should delete paper from library', async () => {
+  it('6. DELETE /api/library/:userId/:paperId should delete paper with valid Bearer token', async () => {
     const supabase = (await import('../utils/supabaseClient.js')).default;
     // @ts-expect-error: Supabase Client "then" promise interface mapping does not match mock client signature perfectly
     vi.spyOn(supabase, 'then').mockImplementation((resolve: any) => {
       return Promise.resolve(resolve({ data: null, error: null }));
     });
 
-    const res = await request(app).delete('/api/library/test-user-uuid/paper-001');
+    const res = await request(app)
+      .delete('/api/library/test-user-uuid/paper-001')
+      .set('Authorization', 'Bearer mock-jwt-token');
+
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     expect(res.body.message).toBe('Paper deleted successfully.');

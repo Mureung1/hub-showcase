@@ -26,11 +26,8 @@ function MyLibrary({ savedPapers, handleRemovePaper }: MyLibraryProps) {
       ) : (
         <div className="library-grid">
           {savedPapers.map((item) => (
-            <div key={item.paperId} className="paper-card library-card-content" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div 
-                className="ribbon-badge"
-                style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', display: 'inline-block', marginBottom: '12px', alignSelf: 'flex-start', borderRadius: '4px' }}
-              >
+            <div key={item.paperId} className="paper-card library-card-content">
+              <div className="ribbon-badge ribbon-badge-inline">
                 {item.matchScore}% Match
               </div>
 
@@ -39,59 +36,24 @@ function MyLibrary({ savedPapers, handleRemovePaper }: MyLibraryProps) {
                 <p className="paper-authors">{item.authors}</p>
               </div>
 
-              <div className="library-card-bottom" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column' }}>
+              <div className="library-card-bottom">
                 <div className="paper-meta library-card-meta">
                   <span className="paper-channel">{item.channel}</span> • <span className="paper-year">{item.year}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'stretch' }}>
+                <div className="library-card-actions">
                   {item.url && (
                     <a 
                       href={item.url} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="archive-btn"
-                      style={{
-                        flex: 1,
-                        height: 'auto',
-                        margin: 0,
-                        alignSelf: 'stretch',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textDecoration: 'none',
-                        textAlign: 'center',
-                        backgroundColor: 'rgba(77, 171, 247, 0.1)',
-                        border: '1px solid #4dabf7',
-                        borderColor: '#4dabf7',
-                        color: '#4dabf7',
-                        fontSize: '11px',
-                        padding: '6px 12px',
-                        whiteSpace: 'nowrap',
-                        boxSizing: 'border-box',
-                        borderRadius: '4px'
-                      }}
+                      className="library-btn-outline"
                     >
                       📖 원문 보기
                     </a>
                   )}
                   <button 
-                    className="remove-btn library-remove-btn" 
+                    className="remove-btn library-remove-btn library-btn-primary" 
                     onClick={() => handleRemovePaper(item.paperId)}
-                    style={{
-                      flex: 1,
-                      height: 'auto',
-                      margin: 0,
-                      alignSelf: 'stretch',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      padding: '6px 12px',
-                      fontSize: '11px',
-                      whiteSpace: 'nowrap',
-                      boxSizing: 'border-box',
-                      border: '1px solid transparent'
-                    }}
                   >
                     🗑️ 서재에서 제거
                   </button>

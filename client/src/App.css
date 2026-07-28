@@ -156,6 +156,36 @@ body {
   font-size: 16px;
 }
 
+.user-profile-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.auth-btn {
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.auth-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
 /* 4. Bento Grid (2x2 Asymmetric Layout) */
 .bento-grid {
   flex-grow: 1;
@@ -634,6 +664,116 @@ body {
   background-color: var(--primary-teal-dark);
 }
 
+/* Card & Action Button semantic classes */
+.ribbon-badge-inline {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  display: inline-block;
+  margin-bottom: 12px;
+  align-self: flex-start;
+  border-radius: 4px;
+}
+
+.paper-meta-bottom {
+  margin-top: auto;
+}
+
+.card-action-group,
+.insight-action-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+.insight-action-group {
+  margin-top: 12px;
+}
+
+.action-btn-primary {
+  flex: 1;
+  height: auto;
+  margin: 0;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  background-color: var(--primary-teal);
+  color: #FFFFFF;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: var(--font-body);
+}
+
+.action-btn-primary:hover {
+  background-color: var(--primary-teal-dark);
+}
+
+.action-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.action-btn-secondary {
+  flex: 1;
+  height: auto;
+  margin: 0;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  text-decoration: none;
+  color: #0284C7;
+  border: 1px solid #0284C7;
+  background-color: rgba(2, 132, 199, 0.08);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-body);
+}
+
+.action-btn-secondary:hover {
+  background-color: rgba(2, 132, 199, 0.18);
+}
+
+.action-btn-secondary-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #0284C7;
+  border: 1px solid #0284C7;
+  background-color: rgba(2, 132, 199, 0.08);
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.insight-placeholder {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.library-empty-text {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* My Library Panel on Right */
 .library-panel {
   border: 1px solid #E2E8F0;
@@ -686,6 +826,154 @@ body {
 
 .remove-btn:hover {
   background-color: #FCA5A5;
+}
+
+/* 학술 채널 동적 토글 버튼 클래스 (100% Zero Visual Regression) */
+.channel-toggle-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid #E2E8F0;
+  background-color: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.channel-toggle-btn:hover {
+  background-color: #F1F5F9;
+  border-color: #CBD5E1;
+}
+
+.channel-toggle-btn.active {
+  background-color: #00f2fe;
+  border-color: #00f2fe;
+  color: #000000;
+  font-weight: 600;
+}
+
+/* ProfileBoard 전용 세부 클래스 */
+.profile-flex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-edit-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.info-label-bold {
+  font-weight: 600;
+}
+
+.info-value-clickable {
+  cursor: pointer;
+}
+
+.edit-icon {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.section-label-bold {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.keyword-input-sm {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.add-btn-sm {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  background-color: rgba(0, 242, 254, 0.1);
+  border: 1px solid #00f2fe;
+  border-radius: 12px;
+}
+
+.badge-delete-x {
+  cursor: pointer;
+  margin-left: 4px;
+  color: #ff4d4f;
+  font-weight: bold;
+}
+
+/* MyLibrary 페이지 전용 시맨틱 클래스 */
+.library-card-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.library-card-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.library-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+.library-btn-outline {
+  flex: 1;
+  height: auto;
+  margin: 0;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  text-align: center;
+  background-color: rgba(77, 171, 247, 0.1);
+  border: 1px solid #4dabf7;
+  color: #4dabf7;
+  font-size: 11px;
+  padding: 6px 12px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.library-btn-outline:hover {
+  background-color: rgba(77, 171, 247, 0.2);
+}
+
+.library-btn-primary {
+  flex: 1;
+  height: auto;
+  margin: 0;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 /* 5. Responsive Resizing Stack (Viewport < 1024px) */

@@ -6,12 +6,14 @@ import CurationWorkspace from './components/CurationWorkspace'
 import MyLibrary from './components/MyLibrary'
 import { CurationData, LibraryItem } from './types'
 import { useProfileSession } from './hooks/useProfileSession'
+import { useAuth } from './context/AuthContext'
 
 function App() {
   const [lang, setLang] = useState<'KO' | 'EN'>('KO')
   const [curationData, setCurationData] = useState<CurationData | null>(null)
+  const { session } = useAuth();
   
-  // Custom Hook: Container A 연구 프로필 로컬스토리지 영속화 및 UUID 세션 관리
+  // Custom Hook: Container A 연구 프로필 로컬스토리지 영속화 및 Auth 세션 관리
   const {
     userId,
     major,
@@ -26,12 +28,17 @@ function App() {
   const [savedPapers, setSavedPapers] = useState<LibraryItem[]>([])
   const [currentView, setCurrentView] = useState<'dashboard' | 'library'>('dashboard')
 
-  // 초기 렌더링 시 내 서재 데이터 로드 (Path Variable 사용)
+  // 초기 렌더링 시 내 서재 데이터 로드 (Path Variable & JWT Header 사용)
   useEffect(() => {
     if (!userId) return;
     
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-    fetch(`${baseUrl}/api/library/${userId}`)
+    const headers: Record<string, string> = {};
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    fetch(`${baseUrl}/api/library/${userId}`, { headers })
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch library');
         return res.json() as Promise<{ status: string; data: LibraryItem[] }>;
@@ -42,14 +49,20 @@ function App() {
         }
       })
       .catch(err => console.error('❌ Fetch library error:', err));
-  }, [userId]);
+  }, [userId, session]);
 
   // 서재 논문 삭제 처리 핸들러 (Lifting Up)
   const handleRemovePaper = async (paperId: string): Promise<void> => {
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const headers: Record<string, string> = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`${baseUrl}/api/library/${userId}/${paperId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
 
       if (response.ok) {

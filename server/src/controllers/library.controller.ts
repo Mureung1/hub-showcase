@@ -6,6 +6,14 @@ import { DbPaper } from '../types/curate.types.js';
 
 export async function addPaperToLibraryController(req: Request, res: Response) {
   try {
+    const authenticatedUser = (req as any).user;
+    if (!authenticatedUser || !authenticatedUser.id) {
+      return res.status(401).json({
+        status: 'error',
+        message: '인증 정보가 올바르지 않습니다.'
+      });
+    }
+
     const validationResult = librarySchema.safeParse(req.body);
     if (!validationResult.success) {
       return res.status(400).json({
@@ -19,6 +27,7 @@ export async function addPaperToLibraryController(req: Request, res: Response) {
     }
 
     const { paper } = validationResult.data;
+    const authenticatedUserId = authenticatedUser.id;
 
     if (!supabase) {
       throw new Error('Supabase client is not initialized. Please configure env variables.');
@@ -34,7 +43,7 @@ export async function addPaperToLibraryController(req: Request, res: Response) {
           channel: paper.channel ? paper.channel.substring(0, 50).trim() : '',
           year: paper.year,
           match_score: paper.matchScore,
-          user_id: paper.userId,
+          user_id: authenticatedUserId,
           url: paper.url || null
         }
       ])
@@ -54,10 +63,15 @@ export async function addPaperToLibraryController(req: Request, res: Response) {
 
 export async function getUserLibraryController(req: Request, res: Response) {
   try {
-    const { userId } = req.params;
-    if (!userId) {
-      return res.status(400).json({ status: 'error', message: 'User ID is required.' });
+    const authenticatedUser = (req as any).user;
+    if (!authenticatedUser || !authenticatedUser.id) {
+      return res.status(401).json({
+        status: 'error',
+        message: '인증 정보가 올바르지 않습니다.'
+      });
     }
+
+    const targetUserId = authenticatedUser.id;
 
     if (!supabase) {
       throw new Error('Supabase client is not initialized.');
@@ -66,7 +80,7 @@ export async function getUserLibraryController(req: Request, res: Response) {
     const { data, error } = await supabase
       .from('saved_papers')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', targetUserId);
 
     if (error) {
       throw error;
@@ -82,10 +96,20 @@ export async function getUserLibraryController(req: Request, res: Response) {
 
 export async function deletePaperFromLibraryController(req: Request, res: Response) {
   try {
-    const { userId, paperId } = req.params;
-    if (!userId || !paperId) {
-      return res.status(400).json({ status: 'error', message: 'User ID and Paper ID are required.' });
+    const authenticatedUser = (req as any).user;
+    if (!authenticatedUser || !authenticatedUser.id) {
+      return res.status(401).json({
+        status: 'error',
+        message: '인증 정보가 올바르지 않습니다.'
+      });
     }
+
+    const { paperId } = req.params;
+    if (!paperId) {
+      return res.status(400).json({ status: 'error', message: 'Paper ID is required.' });
+    }
+
+    const targetUserId = authenticatedUser.id;
 
     if (!supabase) {
       throw new Error('Supabase client is not initialized.');
@@ -94,7 +118,7 @@ export async function deletePaperFromLibraryController(req: Request, res: Respon
     const { error } = await supabase
       .from('saved_papers')
       .delete()
-      .eq('user_id', userId)
+      .eq('user_id', targetUserId)
       .eq('paper_id', paperId);
 
     if (error) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CurationData, Paper, LibraryItem } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface CurationWorkspaceProps {
   lang: 'KO' | 'EN';
@@ -13,6 +14,7 @@ interface CurationWorkspaceProps {
 function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPapers, handleRemovePaper }: CurationWorkspaceProps) {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [savingIds, setSavingIds] = useState<string[]>([]);
+  const { session } = useAuth();
 
   useEffect(() => {
     if (curationData?.papers && curationData.papers.length > 0) {
@@ -24,6 +26,12 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
 
   const handleSavePaper = async (paper: Paper): Promise<void> => {
     try {
+      // 1. 비로그인 유저 원천 차단 (FE Guard)
+      if (!session || !session.access_token) {
+        alert('내 서재에 보관하려면 로그인이 필요합니다.');
+        return;
+      }
+
       if (savingIds.includes(paper.paperId)) return;
       
       // 이미 저장된 논문인지 중복 검사
@@ -34,24 +42,28 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
 
       setSavingIds(prev => [...prev, paper.paperId]);
 
-      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성 (userId 병합, authors 배열 안전 변환, url 연동)
+      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성
       const { paperId, title, authors, channel, year, matchScore, url } = paper;
       const formattedAuthors = Array.isArray(authors) ? authors.join(', ') : authors;
       const paperPayload = { paperId, title, authors: formattedAuthors, channel, year, matchScore, userId, url: url || '' };
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`${baseUrl}/api/library`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({ paper: paperPayload })
       });
 
       if (response.ok) {
         const resJson = await response.json() as { status: string; data: LibraryItem };
         if (resJson.status === 'success') {
-          // 시니어 피드백: 전체 목록 GET 대신 응답으로 받아온 DTO 객체를 append
           setSavedPapers(prev => [...prev, resJson.data]);
           alert('서재에 안전하게 보관되었습니다!');
         }
@@ -87,7 +99,7 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
         <div className="sub-card-header">
           <h2 className="card-title">Container C (좌측): 큐레이션 결과</h2>
         </div>
-        <div className="sub-card-content">
+        <div className="sub-card-content scroll-y">
           <p className="placeholder-text">매칭 스코어(%) 기준 정렬 논문 목록</p>
           
           {!curationData.papers || curationData.papers.length === 0 ? (
@@ -98,30 +110,25 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                 key={paper.paperId} 
                 className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'} ${selectedPaper?.paperId === paper.paperId ? 'active' : ''}`}
                 onClick={() => setSelectedPaper(paper)}
-                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
               >
-                <div 
-                  className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}
-                  style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', display: 'inline-block', marginBottom: '12px', alignSelf: 'flex-start', borderRadius: '4px' }}
-                >
+                <div className={`ribbon-badge ribbon-badge-inline ${paper.matchScore >= 90 ? '' : 'yellow'}`}>
                   {paper.matchScore}% Match
                 </div>
                 <h3 className="paper-title">{paper.title}</h3>
                 <p className="paper-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
-                <div className="paper-meta" style={{ marginTop: 'auto' }}>
+                <div className="paper-meta paper-meta-bottom">
                   <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
                 </div>
                 
-                {/* 보관 및 원문보기 버튼 액션 그룹 (50:50 대칭 세로 높이 동기화 및 CSS 강제 리셋) */}
-                <div className="card-action-group" style={{ display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'stretch' }}>
+                {/* 보관 및 원문보기 버튼 액션 그룹 */}
+                <div className="card-action-group">
                   <button 
-                    className="archive-btn save-paper-btn" 
+                    className="action-btn-primary" 
                     onClick={(e) => {
-                      e.stopPropagation(); // 카드 클릭 이벤트 전파 차단
+                      e.stopPropagation();
                       handleSavePaper(paper);
                     }}
                     disabled={savingIds.includes(paper.paperId)}
-                    style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', border: '1px solid transparent' }}
                   >
                     {savingIds.includes(paper.paperId) ? '💾 보관 중...' : '💾 내 서재 보관'}
                   </button>
@@ -130,9 +137,8 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                       href={paper.url} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="archive-btn"
+                      className="action-btn-secondary"
                       onClick={(e) => e.stopPropagation()}
-                      style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', borderRadius: '4px' }}
                     >
                       📖 원문 보기
                     </a>
@@ -159,31 +165,30 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
               <div className="insight-item">
                 <div className="number-circle">1</div>
                 <div className="insight-text">
-                  <strong>연구 배경 및 한계 원인 (Research Background & Limitations):</strong> {selectedPaper.insights.background}
+                  <strong>연구 배경 및 한계 원인 (Research Background & Limitations):</strong> {selectedPaper.insights?.background || selectedPaper.reasoning}
                 </div>
               </div>
 
               <div className="insight-item">
                 <div className="number-circle">2</div>
                 <div className="insight-text">
-                  <strong>제안하는 핵심 방법론 (Proposed Core Method):</strong> {selectedPaper.insights.coreMethod}
+                  <strong>제안하는 핵심 방법론 (Proposed Core Method):</strong> {selectedPaper.insights?.coreMethod || selectedPaper.reasoning}
                 </div>
               </div>
 
               <div className="insight-item">
                 <div className="number-circle">3</div>
                 <div className="insight-text">
-                  <strong>구체적 개선 결과 및 수치 (Specific Results & Metrics):</strong> {selectedPaper.insights.quantitativeResult}
+                  <strong>구체적 개선 결과 및 수치 (Specific Results & Metrics):</strong> {selectedPaper.insights?.quantitativeResult || selectedPaper.reasoning}
                 </div>
               </div>
               
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px', alignItems: 'stretch' }}>
+              <div className="insight-action-group">
                 <button 
                   id="add-to-library-btn" 
-                  className="archive-btn"
+                  className="action-btn-primary"
                   onClick={() => handleSavePaper(selectedPaper)}
                   disabled={savingIds.includes(selectedPaper.paperId)}
-                  style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', border: '1px solid transparent' }}
                 >
                   {savingIds.includes(selectedPaper.paperId) ? '💾 보관 중...' : '💾 내 서재 보관'}
                 </button>
@@ -192,8 +197,7 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                     href={selectedPaper.url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="archive-btn"
-                    style={{ flex: 1, height: 'auto', margin: 0, alignSelf: 'stretch', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px', fontSize: '11px', whiteSpace: 'nowrap', boxSizing: 'border-box', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', borderRadius: '4px' }}
+                    className="action-btn-secondary"
                   >
                     📖 원문 보기
                   </a>
@@ -201,7 +205,7 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
               </div>
             </div>
           ) : (
-            <div className="insight-panel" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div className="insight-panel insight-placeholder">
               <p>원하는 논문을 선택하시면 에이전트 분석 요약이 제공됩니다.</p>
             </div>
           )}
@@ -211,21 +215,20 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
             <h4 className="panel-subtitle">📚 내 서재 보관함 (My Library)</h4>
             <ul className="library-list">
               {savedPapers.length === 0 ? (
-                <p className="empty-result" style={{ fontSize: '11px' }}>보관된 논문이 없습니다.</p>
+                <p className="empty-result library-empty-text">보관된 논문이 없습니다.</p>
               ) : (
                 savedPapers.map((item) => (
-                  <li key={item.paperId} className="library-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="library-paper-title" title={item.title} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>
+                  <li key={item.paperId} className="library-item">
+                    <span className="library-paper-title text-truncate" title={item.title}>
                       {item.title}
                     </span>
-                    <div className="library-btn-group" style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                    <div className="library-btn-group">
                       {item.url && (
                         <a 
                           href={item.url} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="remove-btn"
-                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#4dabf7', borderColor: '#4dabf7', backgroundColor: 'rgba(77, 171, 247, 0.1)', border: '1px solid #4dabf7', whiteSpace: 'nowrap' }}
+                          className="action-btn-secondary-sm"
                         >
                           📖 원문
                         </a>
