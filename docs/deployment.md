@@ -142,7 +142,8 @@ FE 를 `localhost:4173`, BE 를 `localhost:3999` 로 띄우고 `CORS_ORIGIN=http
 | `CORS_ORIGIN` 을 틀린 주소로 두고 요청 | `Failed to fetch` 로 막힘 (의도한 동작) |
 | Vercel 용 빌드(`npm run build`) | 자산 경로 `/assets/...` |
 | Pages 용 빌드(`npm run build:pages`) | 자산 경로 `/hub/assets/...` |
-| 프론트 테스트 27개 | 전부 통과 |
+| 브라우저에서 다른 오리진의 API 로 과목 목록·점수 불러오기 | 14개 과목과 순위판이 그대로 표시됨 |
+| 프론트 테스트 59개 · `npm run lint` | 전부 통과, 오류 0 |
 
 로컬 개발(`npm run dev`)도 그대로 동작한다. `VITE_API_BASE_URL` 이 비어 있으면 예전처럼
 `/api` 로 요청하고 Vite 프록시가 3001 로 넘긴다.
