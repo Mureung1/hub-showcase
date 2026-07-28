@@ -4,8 +4,8 @@ export const initialNotifications = [
   {
     id: 'n1',
     title: '2026-2학기 국가장학금 1차 신청 마감',
-    summary: '7월 12일(일) 18:00 마감. 신입생도 1차 신청 대상 — 놓치면 2차는 성적 기준이 붙어요.',
-    deadline: '2026-07-12 (일) 18:00',
+    summary: '7월 30일(수) 12:00 마감. 신입생도 1차 신청 대상 — 놓치면 2차는 성적 기준이 붙어요.',
+    deadline: '2026-07-30T12:00:00+09:00',
     priority: 'urgent',
     source: '포털',
     source_category: '장학안내',
