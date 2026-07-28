@@ -10,6 +10,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/notice_box.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/quest_draft.dart';
 import 'decompose_notifier.dart';
@@ -118,9 +119,7 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
     if (ok) {
       // 목록으로 복귀 → questListProvider 스트림이 방금 저장한 퀘스트로 자동 갱신된다.
       context.pop();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('퀘스트를 등록했어요.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('퀘스트를 등록했어요.')));
     } else {
       // 실패: 편집 결과는 그대로 보존되므로 화면은 유지되고 스낵바만 안내한다.
       messenger.showSnackBar(
@@ -139,7 +138,11 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
       // 이고, 재분해는 그 화면에 없다 — 어느 대상을 나누는 중인지 제목이 말해 주지
       // 않으면 사용자가 두 흐름을 구분할 수 없어 기존 문구를 유지한다.
       appBar: AppBar(
-        title: Text(_isRedecompose ? '멈춘 퀘스트 다시 나누기' : '도전 분해'),
+        // 제목 크기는 화면 공통([ScreenTitle]) — 5탭에 맞춘 사용자 결정이다.
+        // 재분해 제목은 길어서 좁은 폭에서는 [ScreenTitle.appBar]가 통째로 줄여
+        // 그린다(잘라내지 않는다 — 어느 흐름인지가 제목에 걸려 있다).
+        toolbarHeight: ScreenTitle.appBarHeight,
+        title: ScreenTitle.appBar(_isRedecompose ? '멈춘 퀘스트 다시 나누기' : '도전 분해'),
       ),
       body: SafeArea(
         child: ListView(
@@ -260,7 +263,10 @@ class _RedecomposeCard extends StatelessWidget {
               ),
               AppSpacing.gapWMd,
               Expanded(
-                child: Text('막힌 퀘스트 나누기', style: theme.textTheme.headlineMedium),
+                child: Text(
+                  '막힌 퀘스트 나누기',
+                  style: theme.textTheme.headlineMedium,
+                ),
               ),
             ],
           ),
@@ -570,11 +576,15 @@ class _ResultSection extends ConsumerWidget {
       // #6 성공: 몇 개로 나눠졌는지 스낵바로 알린다. count는 방금 세팅된 하이라이트
       // 집합 크기(= 새로 생긴 하위 초안 수)에서 읽는다. 칩과 같은 근거라 항상 일치한다.
       final count =
-          ref.read(decomposeNotifierProvider).valueOrNull?.justSplitIds.length ??
+          ref
+              .read(decomposeNotifierProvider)
+              .valueOrNull
+              ?.justSplitIds
+              .length ??
           0;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('1개를 $count개로 나눴어요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('1개를 $count개로 나눴어요')));
     } else {
       // 실패: 원본 항목이 그대로 남으며 스낵바만 안내한다(현행 유지).
       ScaffoldMessenger.of(context).showSnackBar(
@@ -601,10 +611,7 @@ class _ResultSection extends ConsumerWidget {
         Text(sectionTitle, style: theme.textTheme.titleLarge),
         AppSpacing.gapSmd,
         // 폴백 배너는 **template 출처일 때만** 뜬다(checklist #13).
-        if (isTemplate) ...[
-          const _FallbackBanner(),
-          AppSpacing.gapSmd,
-        ],
+        if (isTemplate) ...[const _FallbackBanner(), AppSpacing.gapSmd],
         for (final draft in state.drafts) ...[
           QuestDraftCard(
             draft: draft,
@@ -794,7 +801,10 @@ class _EditTitleDialogState extends State<_EditTitleDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('취소'),
         ),
-        FilledButton(onPressed: _canSave ? _save : null, child: const Text('저장')),
+        FilledButton(
+          onPressed: _canSave ? _save : null,
+          child: const Text('저장'),
+        ),
       ],
     );
   }

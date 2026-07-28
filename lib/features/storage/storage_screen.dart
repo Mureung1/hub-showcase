@@ -8,6 +8,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/proof_image_picker.dart';
 import '../../core/widgets/quest_card.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/stat_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/quest.dart';
@@ -27,6 +28,10 @@ import 'widgets/achievement_detail_sheet.dart';
 ///
 /// 이 화면은 **읽기만** 한다. 목표는 통째로, 직접 등록은 낱개로 옮겨져 오지만 화면은
 /// 어느 쪽인지 구분할 필요가 없다 — 그룹뷰가 폴더/직접 등록을 이미 갈라 준다.
+///
+/// 정본은 Redesign 페이지 `45:329`다. AppBar(`45:330`, **코인 pill 없음**) · 리드
+/// 텍스트 · StatCard 2장(`45:334`) · 펼친 그룹(`45:347`)과 접힌 그룹(`45:376`) 순이고,
+/// 블록 사이 간격은 20 일괄이다.
 class StorageScreen extends ConsumerStatefulWidget {
   const StorageScreen({super.key});
 
@@ -77,7 +82,9 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
       // 사진만 독립 갱신한다 — updateProof는 완료·보상 트랜잭션과 무관하다.
       onSavePhoto: (base64) async {
         final uid = await ref.read(sessionProvider.future);
-        await ref.read(questRepositoryProvider).updateProof(uid, quest.id, base64);
+        await ref
+            .read(questRepositoryProvider)
+            .updateProof(uid, quest.id, base64);
       },
       pickImage: pickCompressedProofImage,
     );
@@ -144,20 +151,27 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('보관함', style: theme.textTheme.headlineLarge),
-              AppSpacing.gapXs,
+              // 정본 AppBar(`45:330`)에는 **코인 pill이 없다** — 상점·홈·퀘스트
+              // 목록과 다르다. 보관함에서 할 수 있는 일이 "보기"뿐이라 잔액이
+              // 판단에 쓰이지 않는다. 지금 코드도 이미 그렇다(변경 없음).
+              // 제목 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
+              const ScreenTitle('보관함'),
+              // 정본 실측: AppBar 아래 패딩 8 + Content 위 패딩 8 = 16.
+              AppSpacing.gapMd,
               Text(
                 '끝낸 도전을 모아 뒀어요.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              AppSpacing.gapMd,
+              // 정본 Content는 블록 사이 간격이 20 일괄이다(리드 y8~32 · Stats y52).
+              AppSpacing.gapBlock,
               _SummaryCard(completedCount: completedCount, streak: streak),
             ],
           ),
         ),
-        AppSpacing.gapMd,
+        // Stats y52~130 · 첫 그룹 y150 → 20.
+        AppSpacing.gapBlock,
         Expanded(
           child: groups.isEmpty
               ? const EmptyView(
@@ -168,9 +182,11 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
                 )
               : ListView.builder(
                   controller: scrollController,
+                  // 위 간격은 바깥 [AppSpacing.gapBlock]이 이미 줬다. 아래는
+                  // 탭바에 마지막 카드가 가리지 않게 넉넉히(정본 Content pb 32).
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.screenH,
-                    AppSpacing.sm,
+                    0,
                     AppSpacing.screenH,
                     AppSpacing.xl,
                   ),
@@ -178,13 +194,19 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
                   itemBuilder: (context, index) {
                     final group = groups[index];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      // 그룹 사이 20 (정본: 첫 그룹 y150~644 · 둘째 y664).
+                      padding: const EdgeInsets.only(
+                        bottom: AppSpacing.screenH,
+                      ),
                       child: GoalGroupSection(
                         group: group,
                         expanded: _isExpanded(group),
                         onToggleExpanded: () => setState(() {
                           _expanded[group.key] = !_isExpanded(group);
                         }),
+                        // 보관함 정본(`45:347`·`45:376`)에는 진행바가 없다 —
+                        // 여기 그룹은 전부 100%라 꽉 찬 막대가 정보를 주지 않는다.
+                        showProgress: false,
                         // 보기 전용 카드 — 완료 토글도 `⋮` 메뉴도 없다. 보관함은
                         // 끝낸 일을 되돌리지 않으므로 상호작용을 걷어낸다. 탭하면
                         // 완료 당시 메모·사진·보상을 보는 상세 시트만 연다(수정 없음).
@@ -229,6 +251,9 @@ class _SummaryCard extends StatelessWidget {
           icon: Symbols.local_fire_department,
           label: '연속 일수',
           value: '$streak',
+          // 정본 실측 값은 `5일`이다. '일'은 한글이라 수치 서체(Sora)에 넣을 수
+          // 없어 단위로 따로 넘긴다(홈 stat과 같은 방식).
+          suffix: '일',
           accent: StatAccent.reward,
         ),
       ],
@@ -241,18 +266,20 @@ class _StorageSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 실루엣은 실제 화면과 같은 리듬이다 — 제목 28 → 리드 24 → stat 줄 80 →
+    // 그룹 카드. 블록 사이 간격은 본문과 같은 20([AppSpacing.gapBlock]).
     return ListView(
       padding: AppSpacing.screenPadding,
       children: const [
-        SkeletonBox(width: 120, height: 40),
-        AppSpacing.gapLg,
-        SkeletonBox(height: 120, radius: AppRadius.md),
-        AppSpacing.gapLg,
-        SkeletonBox(height: 96, radius: AppRadius.md),
+        SkeletonBox(width: 120, height: 28),
         AppSpacing.gapMd,
-        SkeletonBox(height: 96, radius: AppRadius.md),
-        AppSpacing.gapMd,
-        SkeletonBox(height: 96, radius: AppRadius.md),
+        SkeletonBox(width: 200, height: 24),
+        AppSpacing.gapBlock,
+        SkeletonBox(height: 80, radius: AppRadius.md),
+        AppSpacing.gapBlock,
+        SkeletonBox(height: 200, radius: AppRadius.md),
+        AppSpacing.gapBlock,
+        SkeletonBox(height: 74, radius: AppRadius.md),
       ],
     );
   }

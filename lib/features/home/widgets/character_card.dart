@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/growth_rules.dart';
 import '../../../core/constants/shop_items.dart';
@@ -7,7 +6,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/level_pill.dart';
 import '../../../core/widgets/pixel_art.dart';
+import '../../../core/widgets/rebirth_badge.dart';
 import '../../../models/app_user.dart';
 
 /// 홈 캐릭터 블록 — full-bleed 히어로 + XP.
@@ -80,11 +81,7 @@ class CharacterCard extends StatelessWidget {
 /// [AppTypography.heroName](16)으로 줄였다. 겹치더라도 이름표는 캐릭터 **발치**에
 /// 놓여 얼굴을 가리지 않는다.
 class _HeroNamePlate extends StatelessWidget {
-  const _HeroNamePlate({
-    super.key,
-    required this.stage,
-    required this.level,
-  });
+  const _HeroNamePlate({super.key, required this.stage, required this.level});
 
   final CharacterStage stage;
   final int level;
@@ -122,35 +119,9 @@ class _HeroNamePlate extends StatelessWidget {
             ),
           ),
           AppSpacing.gapWSm,
-          _LevelPill(level: level),
+          // MY 캐릭터 블록과 **같은** pill(`core/widgets/level_pill.dart`).
+          LevelPill(level: level),
         ],
-      ),
-    );
-  }
-}
-
-/// `Lv.12` — 그린 틴트 pill. 숫자와 라틴 문자뿐이라 수치 서체(Sora)를 쓴다.
-class _LevelPill extends StatelessWidget {
-  const _LevelPill({required this.level});
-
-  final int level;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.smd,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.primarySurface,
-        borderRadius: AppRadius.fullAll,
-      ),
-      child: Text(
-        'Lv.$level',
-        style: AppTypography.numericLabelMedium.copyWith(
-          color: AppColors.primary,
-        ),
       ),
     );
   }
@@ -204,63 +175,6 @@ class _XpBlock extends StatelessWidget {
         AppSpacing.gapXs,
         _XpBar(progress: user.levelProgress),
       ],
-    );
-  }
-}
-
-/// 환생 표식 — ★ N · {등급}. 환생 횟수와 등급 타이틀을 함께 보여 준다.
-///
-/// 🟡 노랑 금지 위젯이다. 표식은 코인·보상이 아니라 **성장의 훈장**이라 그린 계열
-/// (`primaryContainer`) 틴트를 쓴다.
-///
-/// **히어로 좌상단 오버레이라 풍경 위에 얹힌다.** 채움이 불투명(`#22c55e`)이라
-/// 글자 대비는 배경과 무관하게 `onPrimaryContainer`(#00391a) 대 5.6:1로 고정이다
-/// (WCAG AA 통과). 다만 밝은 하늘 위에서는 **판의 경계**가 흐려질 수 있어
-/// 소프트 섀도로 풍경에서 한 겹 띄운다.
-class _RebirthBadge extends StatelessWidget {
-  const _RebirthBadge({super.key, required this.rebirth});
-
-  final int rebirth;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: AppRadius.fullAll,
-        boxShadow: AppColors.softShadow,
-      ),
-      // `mainAxisSize.min`만으로는 넘침을 못 막는다 — 등급 타이틀이 길면
-      // ('환생 3 · Master Scholar') 고유 폭이 부모 폭을 넘어 폭 375dp에서 24px가
-      // 잘렸다(E-4에서 쓸어담은 고정폭 Row 결함과 같은 계열이고, 환생 1회
-      // 이상에서만 렌더돼 그때 표본에 안 걸렸다). 글자 쪽을 접을 수 있게 둔다.
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Symbols.star,
-            fill: 1,
-            size: 16,
-            color: scheme.onPrimaryContainer,
-          ),
-          AppSpacing.gapWXs,
-          Flexible(
-            child: Text(
-              '환생 $rebirth · ${rebirthTitle(rebirth)}',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onPrimaryContainer,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -421,7 +335,7 @@ class CharacterHero extends StatelessWidget {
                 right: _overlayInset,
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: _RebirthBadge(key: rebirthBadgeKey, rebirth: rebirth),
+                  child: RebirthBadge(key: rebirthBadgeKey, rebirth: rebirth),
                 ),
               ),
             Positioned(

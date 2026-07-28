@@ -11,6 +11,7 @@ import '../../core/widgets/app_segmented_button.dart';
 import '../../core/widgets/difficulty_pill.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/reward_chip.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../models/analytics_event.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest_draft.dart';
@@ -204,7 +205,11 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
     final canRemove = _rows.length > 1;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('퀘스트 등록')),
+      // 제목 크기는 화면 공통([ScreenTitle]) — 5탭에 맞춘 사용자 결정이다.
+      appBar: AppBar(
+        toolbarHeight: ScreenTitle.appBarHeight,
+        title: const ScreenTitle.appBar('퀘스트 등록'),
+      ),
       // 등록 버튼은 스크롤과 무관하게 항상 보이도록 본문이 아니라 하단 바에 둔다
       // (긴 목록에서도 주요 행동이 화면 밖으로 밀리지 않는다 — AI 분해 화면과 같은 패턴).
       bottomNavigationBar: _SubmitBar(
@@ -400,9 +405,7 @@ class _QuestRowCard extends StatelessWidget {
             enabled: enabled,
             maxLength: 60,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              hintText: '예: 공모전 공고 3개 찾아보기',
-            ),
+            decoration: const InputDecoration(hintText: '예: 공모전 공고 3개 찾아보기'),
           ),
           AppSpacing.gapSmd,
           // 정본 `SegmentedButton`(`40:250`) 형태 — 선택 칸만 채운다. 다만 채우는

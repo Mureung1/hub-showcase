@@ -12,6 +12,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/coin_pill.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/quest_card.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/stat_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
@@ -101,17 +102,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: userAsync.when(
           loading: () => const _HomeSkeleton(),
           error: (error, _) => ErrorView(
-            message: error is AppFailure
-                ? error.message
-                : '화면을 불러오지 못했어요.',
+            message: error is AppFailure ? error.message : '화면을 불러오지 못했어요.',
             onRetry: () => ref.invalidate(sessionProvider),
           ),
           // 문서가 없는 신규 사용자도 저장소가 AppUser.initial을 흘리므로
           // 특수 분기 없이 이 경로로 Lv.1 / XP 0 / 코인 0이 렌더된다.
-          data: (user) => _HomeContent(
-            user: user,
-            scrollController: scrollController,
-          ),
+          data: (user) =>
+              _HomeContent(user: user, scrollController: scrollController),
         ),
       ),
     );
@@ -196,8 +193,6 @@ class _HomeAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenH,
@@ -207,9 +202,8 @@ class _HomeAppBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 인사말이 길어지거나 배율이 커져도 코인 pill을 밀어내지 않게 접는다.
-          Flexible(
-            child: Text('오늘도 한 걸음.', style: theme.textTheme.titleLarge),
-          ),
+          // 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
+          const Flexible(child: ScreenTitle('오늘도 한 걸음.')),
           AppSpacing.gapWSm,
           CoinPill(amount: coin, compact: true),
         ],
@@ -272,9 +266,7 @@ class _PendingSectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Flexible(
-          child: Text('진행 중인 퀘스트', style: theme.textTheme.titleLarge),
-        ),
+        Flexible(child: Text('진행 중인 퀘스트', style: theme.textTheme.titleLarge)),
         // 홈은 미리보기 3개뿐이다. 전체 목록은 퀘스트 탭에 있다는 걸 알려 주는
         // 링크 — 「오늘의 퀘스트」 버튼과 같은 목적지다.
         TextButton(
@@ -436,10 +428,7 @@ class _PendingQuests extends StatelessWidget {
               // 홈 미리보기 카드는 완료 토글 없이 보기 전용이다. 탭하면 개별 상세가
               // 아니라 **오늘의 퀘스트 탭**으로 전환한다 — 전체 목록에서 완료·관리한다
               // ("오늘의 퀘스트" 버튼과 같은 목적지).
-              QuestCard(
-                quest: preview[i],
-                onTap: () => context.go('/quest'),
-              ),
+              QuestCard(quest: preview[i], onTap: () => context.go('/quest')),
             ],
           ],
         );

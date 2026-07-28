@@ -35,7 +35,8 @@ void main() {
 
       expect(find.text('$count'), findsOneWidget);
       expect(find.text('완료한 도전'), findsOneWidget);
-      expect(find.text('$streak'), findsOneWidget);
+      // 스트릭 값은 단위까지 붙어 `7일`로 그려진다(정본 실측 · 홈·보관함과 같다).
+      expect(find.text('$streak일'), findsOneWidget);
       expect(find.text('연속 출석'), findsOneWidget);
     });
   }
@@ -152,6 +153,11 @@ void main() {
 
     expect(find.text('Google 계정 연동'), findsOneWidget);
     expect(find.text('준비 중'), findsOneWidget);
+
+    // 캐릭터 도트아트가 120으로 커지면서 설정 항목이 800×600 테스트 뷰포트 밖으로
+    // 밀렸다. MY는 스크롤 화면이라 정상 동작이고, 탭하려면 먼저 보이게 해야 한다.
+    await tester.ensureVisible(find.text('Google 계정 연동'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Google 계정 연동'));
     await tester.pump(); // 스낵바 등장

@@ -14,6 +14,7 @@ import '../../core/widgets/app_segmented_button.dart';
 import '../../core/widgets/coin_pill.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/pixel_art.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
 import '../../providers/providers.dart';
@@ -136,9 +137,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
   Widget _content(AppUser user, Set<String> inventory) {
     final theme = Theme.of(context);
     // 필터는 카탈로그를 거르기만 한다 — 카드의 상태(보유·장착·잔액) 판정은 그대로다.
-    final items = _slotFilter == null
-        ? kShopItems
-        : itemsForSlot(_slotFilter!);
+    final items = _slotFilter == null ? kShopItems : itemsForSlot(_slotFilter!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,9 +154,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: Text('상점', style: theme.textTheme.headlineLarge),
-                  ),
+                  // 5탭 공통 제목([ScreenTitle]) — 다른 화면이 이 크기에 맞췄다.
+                  const Expanded(child: ScreenTitle('상점')),
                   // 코인 잔액 — 노랑 허용 위젯(CoinPill).
                   CoinPill(amount: user.coin),
                 ],
