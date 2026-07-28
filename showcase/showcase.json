@@ -32,10 +32,10 @@
   "agent": {
     "summary": "(초안) 기능 단위 계획 수립부터 검증까지 전용 Agent/Skill을 만들어 반복 사용했습니다. Claude Code와 Plan mode로 단계별 승인을 거치며 작업했습니다.",
     "agentTools": [
-      "feature-slice (계획 수립)",
-      "feature-verify (기능 검증)",
-      "design-check (디자인 일관성 검증)",
-      "test-writer (테스트 작성)"
+      { "type": "skill", "name": "feature-slice", "purpose": "요구사항을 작업 단위로 나누고 우선순위/구현 순서를 정합니다." },
+      { "type": "skill", "name": "feature-verify", "purpose": "완성된 기능이 요구사항대로 동작하는지 점검합니다." },
+      { "type": "skill", "name": "design-check", "purpose": "화면이 디자인 시스템 규칙(색상/폰트 등)을 따르는지 검증합니다." },
+      { "type": "skill", "name": "test-writer", "purpose": "코드 변경에 맞는 테스트 코드 초안을 작성합니다." }
     ],
     "workflows": []
   }
