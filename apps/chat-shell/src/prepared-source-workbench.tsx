@@ -19,9 +19,9 @@ import type {
 } from '@ay-ple/product-contract'
 
 import {
-  fetchPreparedWorkspacePdf,
   fetchPreparedWorkspaceSources,
   fetchPreparedWorkspaceText,
+  preparedWorkspacePdfUrl,
   PreparedProductApiError,
 } from './prepared-product-api.js'
 import {
@@ -54,6 +54,7 @@ type SourcePreviewView =
       readonly state: 'pdf'
       readonly source: ProductWorkspaceSource
       readonly url: string
+      readonly requestGeneration: number
     }
   | {
       readonly state: 'unsupported'
@@ -158,49 +159,18 @@ export function usePreparedWorkspaceSources(
       return
     }
 
-    const controller = new AbortController()
-    setPreviewView({ state: 'loading', source: selectedSource })
     if (selectedSource.previewKind === 'pdf') {
-      void fetchPreparedWorkspacePdf(
-        selectedSource.relativePath,
-        controller.signal,
-      )
-        .then(async (pdf) => {
-          if (
-            controller.signal.aborted ||
-            generation !== previewGeneration.current
-          ) {
-            return
-          }
-          const url = await readBlobDataUrl(pdf, controller.signal)
-          if (
-            controller.signal.aborted ||
-            generation !== previewGeneration.current
-          ) {
-            return
-          }
-          setPreviewView({
-            state: 'pdf',
-            source: selectedSource,
-            url,
-          })
-        })
-        .catch((error: unknown) => {
-          if (
-            controller.signal.aborted ||
-            generation !== previewGeneration.current
-          ) {
-            return
-          }
-          setPreviewView({
-            state: 'error',
-            source: selectedSource,
-            displayMessage: sourceErrorMessage(error),
-          })
-        })
-      return () => controller.abort()
+      setPreviewView({
+        state: 'pdf',
+        source: selectedSource,
+        url: preparedWorkspacePdfUrl(selectedSource.relativePath),
+        requestGeneration: generation,
+      })
+      return
     }
 
+    const controller = new AbortController()
+    setPreviewView({ state: 'loading', source: selectedSource })
     void fetchPreparedWorkspaceText(
       selectedSource.relativePath,
       controller.signal,
@@ -487,12 +457,10 @@ function PreviewBody({
   }
   if (preview.state === 'pdf') {
     return (
-      <iframe
-        className="pdf-preview"
-        aria-label={`${preview.source.relativePath} PDF 미리보기`}
-        title={`${preview.source.relativePath} PDF 미리보기`}
-        src={preview.url}
-        referrerPolicy="no-referrer"
+      <PdfPreview
+        key={`${preview.source.relativePath}:${preview.requestGeneration}`}
+        source={preview.source}
+        url={preview.url}
       />
     )
   }
@@ -501,6 +469,46 @@ function PreviewBody({
       source={preview.source}
       preview={preview.preview}
       evidenceFocus={evidenceFocus}
+    />
+  )
+}
+
+function PdfPreview({
+  source,
+  url,
+}: {
+  readonly source: ProductWorkspaceSource
+  readonly url: string
+}) {
+  const [failed, setFailed] = useState(false)
+  if (failed) {
+    return (
+      <div className="preview-empty-state is-error" role="alert">
+        <FileText size={24} />
+        <h3>원문을 열지 못했습니다</h3>
+        <p>현재 workspace의 PDF를 안전하게 확인하지 못했습니다.</p>
+      </div>
+    )
+  }
+  return (
+    <iframe
+      className="pdf-preview"
+      aria-label={`${source.relativePath} PDF 미리보기`}
+      title={`${source.relativePath} PDF 미리보기`}
+      src={url}
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      onLoad={(event) => {
+        try {
+          const contentType =
+            event.currentTarget.contentDocument?.contentType
+          if (contentType && contentType !== 'application/pdf') {
+            setFailed(true)
+          }
+        } catch {
+          // A valid CSP-sandboxed PDF is intentionally cross-origin here.
+        }
+      }}
     />
   )
 }
@@ -659,32 +667,4 @@ function sourceErrorMessage(error: unknown): string {
   return error instanceof PreparedProductApiError
     ? error.displayMessage
     : '현재 workspace의 자료를 확인하지 못했습니다.'
-}
-
-function readBlobDataUrl(
-  blob: Blob,
-  signal: AbortSignal,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    const abort = () => reader.abort()
-    signal.addEventListener('abort', abort, { once: true })
-    reader.addEventListener('load', () => {
-      signal.removeEventListener('abort', abort)
-      if (typeof reader.result === 'string') {
-        resolve(reader.result)
-        return
-      }
-      reject(new Error('invalid PDF data URL'))
-    }, { once: true })
-    reader.addEventListener('error', () => {
-      signal.removeEventListener('abort', abort)
-      reject(reader.error ?? new Error('PDF read failed'))
-    }, { once: true })
-    reader.addEventListener('abort', () => {
-      signal.removeEventListener('abort', abort)
-      reject(new DOMException('Aborted', 'AbortError'))
-    }, { once: true })
-    reader.readAsDataURL(blob)
-  })
 }

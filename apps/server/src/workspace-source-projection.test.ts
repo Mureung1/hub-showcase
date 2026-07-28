@@ -33,6 +33,7 @@ test('source projection lists only bounded user material in relative path order'
       'api_keys-development',
       'client_secret',
       'credentials-prod',
+      'secrets.prod',
       'service-account',
       'private-key',
       'oauth-token',
@@ -62,8 +63,11 @@ test('source projection lists only bounded user material in relative path order'
     await writeFile(path.join(fixture.root, '.env.local'), 'TOKEN=secret')
     await writeFile(path.join(fixture.root, 'credentials.json'), '{}')
     await writeFile(path.join(fixture.root, 'credentials-prod.json'), '{}')
+    await writeFile(path.join(fixture.root, 'credentials.prod.json'), '{}')
     await writeFile(path.join(fixture.root, 'api_keys-local.yaml'), 'key: secret')
+    await writeFile(path.join(fixture.root, 'api-keys.local.yaml'), 'key: secret')
     await writeFile(path.join(fixture.root, 'client_secret.json'), '{}')
+    await writeFile(path.join(fixture.root, 'client_secret.json.bak'), '{}')
     await writeFile(path.join(fixture.root, 'service-account.json'), '{}')
     await writeFile(path.join(fixture.root, 'private-key.json'), '{}')
     await writeFile(path.join(fixture.root, 'refresh_token.txt'), 'secret')
@@ -88,6 +92,10 @@ test('source projection lists only bounded user material in relative path order'
     await writeFile(
       path.join(fixture.root, 'private-key-cryptography-notes.md'),
       '암호학 자료',
+    )
+    await writeFile(
+      path.join(fixture.root, 'credentials-and-identity-notes.md'),
+      '인증 강의',
     )
     await writeFile(path.join(fixture.root, 'AGENTS.md'), '# instructions')
     await writeFile(path.join(fixture.root, 'workspace-state.json'), '{}')
@@ -120,6 +128,11 @@ test('source projection lists only bounded user material in relative path order'
         {
           relativePath: 'course/oauth/lecture-notes.md',
           size: Buffer.byteLength('OAuth 강의'),
+          previewKind: 'text',
+        },
+        {
+          relativePath: 'credentials-and-identity-notes.md',
+          size: Buffer.byteLength('인증 강의'),
           previewKind: 'text',
         },
         {
@@ -209,6 +222,9 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
     await mkdir(path.join(fixture.root, 'client_secret'), {
       recursive: true,
     })
+    await mkdir(path.join(fixture.root, 'secrets.prod'), {
+      recursive: true,
+    })
     await writeFile(
       path.join(fixture.root, 'secrets', 'lecture-notes.txt'),
       'secret',
@@ -223,7 +239,10 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
     )
     await writeFile(path.join(fixture.root, 'client_secret.txt'), 'secret')
     await writeFile(path.join(fixture.root, 'credentials-prod.json'), '{}')
+    await writeFile(path.join(fixture.root, 'credentials.prod.json'), '{}')
     await writeFile(path.join(fixture.root, 'api_keys-local.yaml'), 'secret')
+    await writeFile(path.join(fixture.root, 'api-keys.local.yaml'), 'secret')
+    await writeFile(path.join(fixture.root, 'client_secret.json.bak'), 'secret')
     await writeFile(path.join(fixture.root, 'tokens-staging.txt'), 'secret')
     await writeFile(
       path.join(fixture.root, 'client_secret', 'lecture-notes.txt'),
@@ -252,7 +271,10 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       'tokens-backup/lecture-notes.txt',
       'client_secret.txt',
       'credentials-prod.json',
+      'credentials.prod.json',
       'api_keys-local.yaml',
+      'api-keys.local.yaml',
+      'client_secret.json.bak',
       'tokens-staging.txt',
       'client_secret/lecture-notes.txt',
     ]) {

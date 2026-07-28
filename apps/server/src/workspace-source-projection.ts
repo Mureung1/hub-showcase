@@ -27,6 +27,32 @@ const managedDirectoryNames = new Set(['node_modules'])
 const scaffoldFileNames = new Set(['AGENTS.md', 'workspace-state.json'])
 const secretNameVariantPattern =
   /^(?:api[-_]?keys?|credentials?|passwords?|secrets?|tokens?|client[-_]?secrets?|service[-_]?accounts?(?:[-_]?(?:credentials?|keys?|secrets?))?|private[-_]?keys?|oauth(?:2)?[-_]?(?:tokens?|credentials?|client[-_]?secrets?)|(?:access|refresh|auth|bearer)[-_]?tokens?)(?:[-_](?:backup|dev|development|local|old|prod|production|staging|test))?$/u
+const secretDotSuffixes = new Set([
+  'bak',
+  'backup',
+  'conf',
+  'config',
+  'dev',
+  'development',
+  'enc',
+  'env',
+  'ini',
+  'json',
+  'local',
+  'old',
+  'prod',
+  'production',
+  'qa',
+  'stage',
+  'staging',
+  'test',
+  'toml',
+  'txt',
+  'uat',
+  'xml',
+  'yaml',
+  'yml',
+])
 const textExtensions = new Set([
   '.c',
   '.cpp',
@@ -403,6 +429,7 @@ function isSecretLikeFile(name: string): boolean {
     /^id_(?:rsa|dsa|ecdsa|ed25519)$/u.test(stem) ||
     /\.(?:key|p12|pfx|pem)$/u.test(lower) ||
     secretNameVariantPattern.test(stem) ||
+    isSecretDotVariant(lower) ||
     /^oauth(?:2)?(?:[-_](?:backup|dev|development|local|old|prod|production|staging|test))?\.(?:conf|ini|json|toml|ya?ml)$/u.test(
       lower,
     ) ||
@@ -413,7 +440,23 @@ function isSecretLikeFile(name: string): boolean {
 }
 
 function isSecretContainerName(name: string): boolean {
-  return secretNameVariantPattern.test(name.toLowerCase())
+  const lower = name.toLowerCase()
+  return secretNameVariantPattern.test(lower) || isSecretDotVariant(lower)
+}
+
+function isSecretDotVariant(name: string): boolean {
+  const [base, ...suffixes] = name.split('.')
+  if (
+    !base ||
+    suffixes.length === 0 ||
+    !secretNameVariantPattern.test(base)
+  ) {
+    return false
+  }
+  return (
+    suffixes.length === 1 ||
+    suffixes.every((suffix) => secretDotSuffixes.has(suffix))
+  )
 }
 
 function previewKindFor(

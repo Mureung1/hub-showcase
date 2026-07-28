@@ -88,25 +88,10 @@ export async function fetchPreparedWorkspaceText(
   return preview
 }
 
-export async function fetchPreparedWorkspacePdf(
+export function preparedWorkspacePdfUrl(
   relativePath: string,
-  signal?: AbortSignal,
-): Promise<Blob> {
-  const url = `/api/product/sources/pdf?${sourceQuery(relativePath)}`
-  const response = await fetch(
-    url,
-    {
-      cache: 'no-store',
-      headers: { accept: 'application/pdf' },
-      signal,
-    },
-  )
-  if (!response.ok) throw await responseError(response)
-  const contentType = response.headers.get('content-type')?.split(';', 1)[0]
-  if (contentType !== 'application/pdf') throw invalidResponse()
-  const pdf = await response.blob()
-  if (pdf.type !== 'application/pdf') throw invalidResponse()
-  return pdf
+): string {
+  return `/api/product/sources/pdf?${sourceQuery(relativePath)}`
 }
 
 export async function streamPreparedChat(

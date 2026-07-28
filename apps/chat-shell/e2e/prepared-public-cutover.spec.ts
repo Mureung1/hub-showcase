@@ -150,6 +150,9 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     const pdfResponse = await pdfLoaded
     expect(pdfResponse.status()).toBe(200)
     expect(pdfResponse.headers()['content-type']).toBe('application/pdf')
+    expect(pdfResponse.headers()['content-security-policy']).toContain(
+      'sandbox',
+    )
     expect(Number(pdfResponse.headers()['content-length'])).toBe(
       lecturePdf.byteLength,
     )
@@ -157,9 +160,37 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     await expect(pdfFrame).toBeVisible()
     await expect(pdfFrame).toHaveAttribute(
       'src',
-      /^data:application\/pdf;base64,/u,
+      /\/api\/product\/sources\/pdf\?relativePath=lecture\.pdf/u,
     )
     expect(lecturePdfRequests).toHaveLength(1)
+    await writeFile(path.join(workspaceRoot, 'lecture.pdf'), 'not a PDF')
+    const invalidPdfReloaded = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        url.pathname === '/api/product/sources/pdf' &&
+        url.searchParams.get('relativePath') === 'lecture.pdf'
+      )
+    })
+    await sources
+      .getByRole('button', { name: 'lecture.pdf 미리보기' })
+      .click()
+    expect((await invalidPdfReloaded).status()).toBe(415)
+    expect(lecturePdfRequests).toHaveLength(2)
+    await expect(page.getByText('원문을 열지 못했습니다')).toBeVisible()
+    await writeFile(path.join(workspaceRoot, 'lecture.pdf'), lecturePdf)
+    const recoveredPdfReloaded = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        url.pathname === '/api/product/sources/pdf' &&
+        url.searchParams.get('relativePath') === 'lecture.pdf'
+      )
+    })
+    await sources
+      .getByRole('button', { name: 'lecture.pdf 미리보기' })
+      .click()
+    expect((await recoveredPdfReloaded).status()).toBe(200)
+    await expect(page.getByLabel('lecture.pdf PDF 미리보기')).toBeVisible()
+    expect(lecturePdfRequests).toHaveLength(3)
     await sources
       .getByRole('button', { name: 'broken.pdf 미리보기' })
       .click()
