@@ -192,6 +192,161 @@ test('text projection returns a bounded UTF-8 preview with a full-file digest', 
   }
 })
 
+test('action source preflight preserves current text references without content identity', async () => {
+  const fixture = await createFixture('source-action-preflight-')
+  try {
+    await mkdir(path.join(fixture.root, '자료'), { recursive: true })
+    await writeFile(path.join(fixture.root, '자료', '두번째.txt'), '둘')
+    await writeFile(path.join(fixture.root, '자료', '첫번째.md'), '하나')
+    const projection = await createWorkspaceSourceProjection({
+      workspaceRoot: fixture.root,
+    })
+
+    assert.deepEqual(
+      await projection.preflightTextFiles([
+        { relativePath: '자료/두번째.txt' },
+        { relativePath: '자료/첫번째.md' },
+      ]),
+      [
+        { relativePath: '자료/두번째.txt' },
+        { relativePath: '자료/첫번째.md' },
+      ],
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('action source preflight rejects any stale, excluded, non-regular, or non-text reference', async () => {
+  const fixture = await createFixture('source-action-rejection-')
+  try {
+    await mkdir(path.join(fixture.root, 'node_modules'), { recursive: true })
+    await mkdir(path.join(fixture.root, 'secrets'), { recursive: true })
+    await mkdir(path.join(fixture.root, 'directory.txt'))
+    await writeFile(path.join(fixture.root, 'valid.md'), 'valid')
+    await writeFile(path.join(fixture.root, 'renamed.md'), 'renamed')
+    await rename(
+      path.join(fixture.root, 'renamed.md'),
+      path.join(fixture.root, 'moved.md'),
+    )
+    await writeFile(path.join(fixture.root, '.hidden.md'), 'hidden')
+    await writeFile(
+      path.join(fixture.root, 'node_modules', 'managed.md'),
+      'managed',
+    )
+    await writeFile(
+      path.join(fixture.root, 'secrets', 'secret.md'),
+      'secret',
+    )
+    await writeFile(path.join(fixture.root, 'AGENTS.md'), 'scaffold')
+    await writeFile(path.join(fixture.root, 'lecture.pdf'), '%PDF-')
+    await writeFile(path.join(fixture.root, 'slides.pptx'), 'slides')
+    await writeFile(path.join(fixture.root, 'large.txt'), 'too large')
+    await writeFile(path.join(fixture.outside, 'outside.md'), 'outside')
+    await symlink(
+      path.join(fixture.outside, 'outside.md'),
+      path.join(fixture.root, 'outside.md'),
+    )
+    const projection = await createWorkspaceSourceProjection({
+      workspaceRoot: fixture.root,
+      limits: { textPreviewMaxBytes: 8, textSourceMaxBytes: 8 },
+    })
+
+    for (const relativePath of [
+      'missing.md',
+      'renamed.md',
+      '.hidden.md',
+      'node_modules/managed.md',
+      'secrets/secret.md',
+      'AGENTS.md',
+      'directory.txt',
+      'outside.md',
+      'lecture.pdf',
+      'slides.pptx',
+      'large.txt',
+    ]) {
+      await assert.rejects(
+        projection.preflightTextFiles([
+          { relativePath: 'valid.md' },
+          { relativePath },
+        ]),
+        WorkspaceSourceProjectionError,
+        relativePath,
+      )
+    }
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('action source preflight rejects an inode swap before no-follow open', async () => {
+  const fixture = await createFixture('source-action-inode-race-')
+  try {
+    const selected = path.join(fixture.root, 'selected.md')
+    const replacement = path.join(fixture.root, 'replacement.md')
+    await writeFile(selected, 'original')
+    await writeFile(replacement, 'replacement')
+    let swapped = false
+    const projection = await createWorkspaceSourceProjection({
+      workspaceRoot: fixture.root,
+      sourcePreflightTestHook: async (phase, relativePath) => {
+        if (
+          phase !== 'before_open' ||
+          relativePath !== 'selected.md' ||
+          swapped
+        ) {
+          return
+        }
+        swapped = true
+        await rename(selected, path.join(fixture.root, 'original.md'))
+        await rename(replacement, selected)
+      },
+    })
+
+    await assert.rejects(
+      projection.preflightTextFiles([{ relativePath: 'selected.md' }]),
+      (error: unknown) =>
+        error instanceof WorkspaceSourceProjectionError &&
+        error.code === 'source_not_found',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('action source preflight rejects size drift before no-follow open', async () => {
+  const fixture = await createFixture('source-action-size-race-')
+  try {
+    const selected = path.join(fixture.root, 'selected.md')
+    await writeFile(selected, 'short')
+    let grown = false
+    const projection = await createWorkspaceSourceProjection({
+      workspaceRoot: fixture.root,
+      limits: { textPreviewMaxBytes: 8, textSourceMaxBytes: 8 },
+      sourcePreflightTestHook: async (phase, relativePath) => {
+        if (
+          phase !== 'before_open' ||
+          relativePath !== 'selected.md' ||
+          grown
+        ) {
+          return
+        }
+        grown = true
+        await writeFile(selected, 'content grew past the bound')
+      },
+    })
+
+    await assert.rejects(
+      projection.preflightTextFiles([{ relativePath: 'selected.md' }]),
+      (error: unknown) =>
+        error instanceof WorkspaceSourceProjectionError &&
+        error.code === 'source_too_large',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('source reads reject traversal, hidden targets, symlinks, and binary text', async () => {
   const fixture = await createFixture('source-projection-safety-')
   try {
@@ -330,6 +485,14 @@ test('source projection rejects a replaced active root instead of reading the re
     )
     await assert.rejects(
       projection.readText('replacement.txt'),
+      (error: unknown) =>
+        error instanceof WorkspaceSourceProjectionError &&
+        error.code === 'source_unavailable',
+    )
+    await assert.rejects(
+      projection.preflightTextFiles([
+        { relativePath: 'replacement.txt' },
+      ]),
       (error: unknown) =>
         error instanceof WorkspaceSourceProjectionError &&
         error.code === 'source_unavailable',

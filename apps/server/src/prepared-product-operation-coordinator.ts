@@ -9,6 +9,7 @@ import type {
   ProductCodexTurnSettings,
   ProductInteractionAnswerRequest,
   ProductReviewFrame,
+  TargetProductActionInvocationRequest,
   TargetProductOperationFrame,
   TargetProductQuestion,
 } from '@ay-ple/product-contract'
@@ -17,9 +18,14 @@ import {
   CodexChatService,
   type CodexProductStreamSink,
   type ProductOperationLease,
+  type ProductTurnInput,
   type ProductTurnSettlement,
 } from './codex-chat-service.js'
 import type { ActiveInteractionProductTurn } from './interaction-broker.js'
+import {
+  OrganizeSourcesActionError,
+  type OrganizeSourcesAction,
+} from './organize-sources-action.js'
 import {
   createProductTurnCoordinator,
   type ProductTurnLease,
@@ -56,6 +62,10 @@ export type PreparedProductOperationCoordinator = {
     },
     options: PreparedProductOperationOptions,
   ): Promise<void>
+  invokeAction(
+    input: TargetProductActionInvocationRequest,
+    options: PreparedProductOperationOptions,
+  ): Promise<void>
   respondToInteraction(input: {
     readonly operationId: string
     readonly interactionId: string
@@ -86,6 +96,7 @@ type ActiveOperation = {
   readonly turnLease: ProductTurnLease
   readonly sink: PreparedProductOperationSink
   readonly redactions: string[]
+  preflightAbort?: AbortController
   turn?: CodexProductTurn
   interaction?: ActiveGeneralInteraction
   releaseAuthority?: ProductTurnReleaseAuthority
@@ -95,7 +106,10 @@ export class PreparedProductOperationError extends Error {
   readonly code:
     | 'account_not_ready'
     | 'action_busy'
+    | 'action_context_invalid'
+    | 'action_context_stale'
     | 'action_invalid'
+    | 'action_unavailable'
     | 'action_unknown'
     | 'interaction_invalid'
     | 'product_unavailable'
@@ -117,6 +131,7 @@ export class PreparedProductOperationError extends Error {
 
 export function createPreparedProductOperationCoordinator(options: {
   readonly service: CodexChatService
+  readonly organizeSourcesAction: OrganizeSourcesAction
   readonly assertWorkspaceActive: () => void
   readonly interactionTurnTerminal?: () => Promise<void>
   readonly interactionRuntimeTerminal?: () => Promise<void>
@@ -161,6 +176,7 @@ export function createPreparedProductOperationCoordinator(options: {
       turnLease,
       sink,
       redactions: [],
+      preflightAbort: new AbortController(),
       releaseAuthority: 'start_failed',
     }
     active = operation
@@ -168,6 +184,7 @@ export function createPreparedProductOperationCoordinator(options: {
   }
 
   async function release(operation: ActiveOperation): Promise<void> {
+    operation.preflightAbort?.abort()
     try {
       await options.service.releaseProductOperation(operation.serviceLease)
     } finally {
@@ -326,6 +343,91 @@ export function createPreparedProductOperationCoordinator(options: {
     }
   }
 
+  async function executeProductTurn(
+    input: {
+      readonly codexSettings?: ProductCodexTurnSettings
+      readonly prepare: (
+        operation: ActiveOperation,
+        signal: AbortSignal,
+      ) => Promise<ProductTurnInput>
+    },
+    operationOptions: PreparedProductOperationOptions,
+  ): Promise<void> {
+    const operationId = targetOperationId()
+    const operation = reserve(operationId, operationOptions.sink)
+    let streamOpened = false
+    try {
+      const readiness = await options.service.readProductAccountReadiness(
+        operation.serviceLease,
+      )
+      if (readiness.state !== 'ready') {
+        throw new PreparedProductOperationError(
+          'account_not_ready',
+          409,
+          'Codex에 로그인한 뒤 다시 시도해 주세요.',
+        )
+      }
+      await validateCodexTurnSettings(
+        input.codexSettings,
+        options.service,
+        operation.serviceLease,
+      )
+      const preflightAbort = operation.preflightAbort
+      if (!preflightAbort) throw unavailable()
+      const turnInput = await input.prepare(
+        operation,
+        preflightAbort.signal,
+      )
+      operation.preflightAbort = undefined
+      if (operationOptions.disconnected()) return
+      streamOpened = true
+      if (
+        !(await operation.sink.write({
+          type: 'operation.preparing',
+          operationId,
+        }))
+      ) {
+        return
+      }
+      const turn = await options.service.startProductTurn(
+        turnInput,
+        operationOptions.disconnected,
+        operation.serviceLease,
+      )
+      if (!turn) {
+        await writeTerminal(operation, {
+          status: 'not_accepted',
+          failureCode: 'client_disconnected',
+        })
+        return
+      }
+      markTurnStarted(operation, turn)
+      const settlement = await options.service.streamProductTurn(
+        turn,
+        streamSink(operation),
+      )
+      recordSettlement(operation, settlement)
+      operation.interaction = undefined
+      if (settlement.type === 'unknown') await recycleUnknown(operation)
+      await writeTerminal(
+        operation,
+        settlement.type === 'terminal'
+          ? { status: settlement.event.status }
+          : { status: 'unknown', failureCode: settlement.code },
+      )
+    } catch (error) {
+      if (!streamOpened) throw present(error)
+      await options.interactionRuntimeTerminal?.()
+      await writeTerminal(operation, {
+        status: 'unknown',
+        failureCode: safeOperationCode(error),
+      })
+    } finally {
+      await release(operation)
+      if (streamOpened) operation.sink.end()
+    }
+  }
+
   return {
     operationStatus: () => (active ? 'active' : 'idle'),
     activeOperation: () => turnCoordinator.activeOperation(),
@@ -375,77 +477,41 @@ export function createPreparedProductOperationCoordinator(options: {
           '메시지를 확인해 주세요.',
         )
       }
-      const operationId = targetOperationId()
-      const operation = reserve(operationId, operationOptions.sink)
-      let streamOpened = false
-      try {
-        const readiness = await options.service.readProductAccountReadiness(
-          operation.serviceLease,
-        )
-        if (readiness.state !== 'ready') {
-          throw new PreparedProductOperationError(
-            'account_not_ready',
-            409,
-            'Codex에 로그인한 뒤 다시 시도해 주세요.',
-          )
-        }
-        await validateCodexTurnSettings(
-          input.codexSettings,
-          options.service,
-          operation.serviceLease,
-        )
-        streamOpened = true
-        if (
-          !(await operation.sink.write({
-            type: 'operation.preparing',
-            operationId,
-          }))
-        ) {
-          return
-        }
-        const turn = await options.service.startProductTurn(
-          {
+      await executeProductTurn(
+        {
+          ...(input.codexSettings === undefined
+            ? {}
+            : { codexSettings: input.codexSettings }),
+          prepare: async () => ({
             permissionProfile: 'workspace_write',
             ...(input.codexSettings === undefined
               ? {}
               : { settings: input.codexSettings }),
             text,
-          },
-          operationOptions.disconnected,
-          operation.serviceLease,
-        )
-        if (!turn) {
-          await writeTerminal(operation, {
-            status: 'not_accepted',
-            failureCode: 'client_disconnected',
-          })
-          return
-        }
-        markTurnStarted(operation, turn)
-        const settlement = await options.service.streamProductTurn(
-          turn,
-          streamSink(operation),
-        )
-        recordSettlement(operation, settlement)
-        operation.interaction = undefined
-        if (settlement.type === 'unknown') await recycleUnknown(operation)
-        await writeTerminal(
-          operation,
-          settlement.type === 'terminal'
-            ? { status: settlement.event.status }
-            : { status: 'unknown', failureCode: settlement.code },
-        )
-      } catch (error) {
-        if (!streamOpened) throw present(error)
-        await options.interactionRuntimeTerminal?.()
-        await writeTerminal(operation, {
-          status: 'unknown',
-          failureCode: safeOperationCode(error),
-        })
-      } finally {
-        await release(operation)
-        if (streamOpened) operation.sink.end()
-      }
+          }),
+        },
+        operationOptions,
+      )
+    },
+
+    async invokeAction(input, operationOptions) {
+      await executeProductTurn(
+        {
+          ...(input.codexSettings === undefined
+            ? {}
+            : { codexSettings: input.codexSettings }),
+          prepare: (operation, signal) =>
+            options.organizeSourcesAction.prepare(input, {
+              signal,
+              listEffectiveSkills: (observationSignal) =>
+                options.service.listProductEffectiveSkills(
+                  { signal: observationSignal },
+                  operation.serviceLease,
+                ),
+            }),
+        },
+        operationOptions,
+      )
     },
 
     async respondToInteraction(input) {
@@ -516,6 +582,7 @@ export function createPreparedProductOperationCoordinator(options: {
     beginShutdown() {
       shuttingDown = true
       turnCoordinator.beginShutdown()
+      active?.preflightAbort?.abort()
       if (active?.turn) options.service.disconnectProductTurn(active.turn)
     },
   }
@@ -639,9 +706,30 @@ function safeOperationCode(error: unknown): string {
 }
 
 function present(error: unknown): PreparedProductOperationError {
-  return error instanceof PreparedProductOperationError
-    ? error
-    : unavailable()
+  if (error instanceof PreparedProductOperationError) return error
+  if (!(error instanceof OrganizeSourcesActionError)) return unavailable()
+  switch (error.code) {
+    case 'action_context_stale':
+      return new PreparedProductOperationError(
+        error.code,
+        409,
+        '선택한 자료가 변경되었습니다. 자료를 다시 확인해 주세요.',
+      )
+    case 'action_context_invalid':
+      return new PreparedProductOperationError(
+        error.code,
+        409,
+        '선택한 자료는 이 작업에서 사용할 수 없습니다.',
+      )
+    case 'action_unavailable':
+      return new PreparedProductOperationError(
+        error.code,
+        409,
+        '이 작업에 필요한 AY Skill을 사용할 수 없습니다.',
+      )
+    case 'product_unavailable':
+      return unavailable()
+  }
 }
 
 function unavailable(): PreparedProductOperationError {

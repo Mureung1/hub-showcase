@@ -4,6 +4,7 @@ import {
   type CancelUserInput,
   type CodexAccountReadiness,
   type CodexModelCatalog,
+  type CodexEffectiveSkill,
   type CodexProductActivity,
   type CodexProductTurn,
   type CodexWorkspaceRuntime,
@@ -178,6 +179,24 @@ export class CodexChatService {
     return read
   }
 
+  async listProductEffectiveSkills(
+    input: { readonly signal: AbortSignal },
+    lease: ProductOperationLease,
+  ): Promise<readonly CodexEffectiveSkill[]> {
+    this.requireAvailable()
+    this.requireProductLease(lease)
+    try {
+      input.signal.throwIfAborted()
+      const runtime = await this.getRuntime()
+      this.requireProductLease(lease)
+      input.signal.throwIfAborted()
+      return await runtime.listEffectiveSkills(input)
+    } catch (error) {
+      await this.handleUnknownOutcome(error)
+      throw error
+    }
+  }
+
   async startProductTurn(
     input: ProductTurnInput,
     disconnected: () => boolean,
@@ -222,6 +241,7 @@ export class CodexChatService {
         threadId,
         permissionProfile: input.permissionProfile,
         ...(input.settings === undefined ? {} : { settings: input.settings }),
+        ...(input.skill === undefined ? {} : { skill: input.skill }),
         text: input.text,
       })
       reservation.phase = 'streaming'

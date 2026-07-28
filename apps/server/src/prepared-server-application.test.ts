@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { request as httpRequest } from 'node:http'
 import {
+  mkdir,
   mkdtemp,
   realpath,
+  rename,
   rm,
+  symlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -26,7 +29,12 @@ import type {
 
 import { bindServerApplicationListener } from './server-listener.js'
 import { createPreparedServerApplication } from './prepared-server-application.js'
-import { codexChatIdentity, postJson } from './testing/codex-chat-test-support.js'
+import {
+  codexChatIdentity,
+  postJson,
+  postUntilFirstLine,
+  waitFor,
+} from './testing/codex-chat-test-support.js'
 
 test('prepared public composition exposes workspace sources beside AY Chat and inline Review', async () => {
   const workspaceRoot = await realpath(
@@ -198,6 +206,19 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
       serviceTier: 'default',
     })
     assert.equal(Object.hasOwn(runtime.productInputs[0] ?? {}, 'skill'), false)
+    const busyAction = await postJson(
+      `${baseUrl}/api/product/actions`,
+      {
+        action: 'organize_sources',
+        files: [{ relativePath: 'assignment.txt' }],
+      },
+    )
+    assert.equal(busyAction.status, 409)
+    assert.deepEqual(await busyAction.json(), {
+      code: 'action_busy',
+      displayMessage: '다른 AY 작업이 진행 중입니다.',
+    })
+    assert.equal(runtime.listEffectiveSkillsCalls, 0)
 
     const headers = {
       authorization: `Bearer ${target.credentials.token}`,
@@ -272,6 +293,524 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
   } finally {
     await target.application.close()
     assert.equal((await lifecycleReader?.read())?.done, true)
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+test('public organize_sources starts one Skill-backed Product operation with ordered current files', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-organize-sources-')),
+  )
+  const runtime = new PreparedRuntime()
+  const skillRoot = path.join(
+    workspaceRoot,
+    '.agents',
+    'skills',
+    'ay-ple-first-assignment',
+  )
+  await mkdir(skillRoot, { recursive: true })
+  await mkdir(path.join(workspaceRoot, '자료'), { recursive: true })
+  await writeFile(path.join(skillRoot, 'SKILL.md'), '# First Assignment')
+  await writeFile(path.join(workspaceRoot, '자료', '둘째.txt'), '둘')
+  await writeFile(
+    path.join(workspaceRoot, '자료', '첫째 "안내".md'),
+    '하나',
+  )
+  runtime.effectiveSkills = [
+    {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot: skillRoot,
+    },
+  ]
+  runtime.requestGeneralInput = true
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
+    },
+    workspaceRoot,
+    readLifecycle: () => ({
+      state: 'active',
+      workspace: {
+        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+        label: '2학년 2학기',
+      },
+    }),
+  })
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  let lifecycleReader:
+    | ReadableStreamDefaultReader<Uint8Array>
+    | undefined
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const baseUrl = `http://127.0.0.1:${listener.port}`
+    const response = await postJson(
+      `${baseUrl}/api/product/actions`,
+      {
+        action: 'organize_sources',
+        files: [
+          { relativePath: '자료/둘째.txt' },
+          { relativePath: '자료/첫째 "안내".md' },
+        ],
+        codexSettings: {
+          model: 'gpt-current',
+          reasoningEffort: 'medium',
+          serviceTier: 'default',
+        },
+      },
+    )
+
+    assert.equal(response.status, 200)
+    assert.ok(response.body)
+    const trace = new NdjsonTrace(response.body.getReader())
+    await trace.until((frame) => frame.type === 'operation.preparing')
+    const accepted = await trace.until(
+      (frame) => frame.type === 'operation.accepted',
+    )
+    assert.equal(runtime.listEffectiveSkillsCalls, 1)
+    assert.deepEqual(runtime.productInputs, [
+      {
+        threadId: 'thread-prepared',
+        permissionProfile: 'workspace_write',
+        settings: {
+          model: 'gpt-current',
+          reasoningEffort: 'medium',
+          serviceTier: 'default',
+        },
+        skill: {
+          name: 'ay-ple-first-assignment',
+          path: path.join(skillRoot, 'SKILL.md'),
+        },
+        text: [
+          'ActionInvocation: organize_sources',
+          'Selected SemesterWorkspace file references:',
+          '- "자료/둘째.txt"',
+          '- "자료/첫째 \\"안내\\".md"',
+        ].join('\n'),
+      },
+    ])
+
+    const busyChat = await postJson(
+      `${baseUrl}/api/product/chat/messages`,
+      { text: '동시에 시작할 수 없어야 합니다.' },
+    )
+    assert.equal(busyChat.status, 409)
+    assert.deepEqual(await busyChat.json(), {
+      code: 'action_busy',
+      displayMessage: '다른 AY 작업이 진행 중입니다.',
+    })
+
+    const generalRequest = await trace.until(
+      (frame) => frame.type === 'interaction.requested',
+    )
+    const generalInteractionId = String(generalRequest.interactionId)
+    const questions = generalRequest.questions as Array<{
+      readonly id: string
+    }>
+    assert.equal(questions.length, 1)
+    const continuation = await postJson(
+      [
+        `${baseUrl}/api/product/operations`,
+        String(accepted.operationId),
+        'interactions',
+        generalInteractionId,
+        'answer',
+      ].join('/'),
+      {
+        answers: {
+          [questions[0].id]: ['정리해 주세요.'],
+        },
+      },
+    )
+    assert.equal(continuation.status, 202)
+    await trace.until(
+      (frame) =>
+        frame.type === 'interaction.resolved' &&
+        frame.interactionId === generalInteractionId,
+    )
+
+    const headers = {
+      authorization: `Bearer ${target.credentials.token}`,
+      'x-ay-ple-runtime-binding': target.credentials.binding,
+    }
+    assert.equal(
+      (
+        await postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          {
+            protocolVersion: 1,
+            kind: 'handshake',
+            serverName: 'ay_ple_interaction',
+            capabilities: ['propose_state_patch'],
+          },
+          headers,
+        )
+      ).status,
+      200,
+    )
+    lifecycleReader = await openBrokerLifecycle(
+      baseUrl,
+      target.credentials,
+    )
+    const held = postJson(
+      `${baseUrl}/api/_private/interaction-mcp/`,
+      {
+        protocolVersion: 1,
+        kind: 'capability_call',
+        capability: 'propose_state_patch',
+        request: {
+          summary: '자료 정리 결과',
+          question: '정리 결과를 반영할까요?',
+          changes: [
+            {
+              label: '자료 순서',
+              description: '선택한 자료의 순서를 반영합니다.',
+              before: '정리 전',
+              after: '정리 후',
+            },
+          ],
+        },
+      },
+      headers,
+    )
+    const requested = await trace.until(
+      (frame) => frame.type === 'review.requested',
+    )
+    const interactionId = String(requested.interactionId)
+    const answer = postJson(
+      `${baseUrl}/api/product/reviews/${interactionId}`,
+      { outcome: 'accept' },
+    )
+    assert.equal((await held).status, 200)
+    assert.equal((await answer).status, 204)
+    await trace.until(
+      (frame) =>
+        frame.type === 'review.resolved' &&
+        frame.interactionId === interactionId,
+    )
+
+    const interrupt = await postJson(
+      `${baseUrl}/api/product/operations/${String(accepted.operationId)}/interrupt`,
+      {},
+    )
+    assert.equal(interrupt.status, 202)
+    await trace.until((frame) => frame.type === 'operation.terminal')
+
+    const disconnectedAction = postUntilFirstLine(
+      `${baseUrl}/api/product/actions`,
+      {
+        action: 'organize_sources',
+        files: [{ relativePath: '자료/둘째.txt' }],
+      },
+    )
+    assert.equal(
+      JSON.parse(await disconnectedAction.firstLine).type,
+      'operation.preparing',
+    )
+    await waitFor(() => runtime.productInputs.length === 2)
+    disconnectedAction.destroy()
+    await disconnectedAction.closed
+    await waitForIdleProductOperation(baseUrl)
+    assert.equal(runtime.listEffectiveSkillsCalls, 2)
+  } finally {
+    await target.application.close()
+    assert.equal((await lifecycleReader?.read())?.done, true)
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+test('public organize_sources fails before streaming or Turn start with exact safe errors', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-organize-failures-')),
+  )
+  const runtime = new PreparedRuntime()
+  const skillRoot = path.join(
+    workspaceRoot,
+    '.agents',
+    'skills',
+    'ay-ple-first-assignment',
+  )
+  const skillPath = path.join(skillRoot, 'SKILL.md')
+  await mkdir(skillRoot, { recursive: true })
+  await writeFile(skillPath, '# First Assignment')
+  await writeFile(path.join(workspaceRoot, 'valid.md'), 'valid')
+  await writeFile(path.join(workspaceRoot, 'lecture.pdf'), '%PDF-')
+  runtime.effectiveSkills = [
+    {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot: skillRoot,
+    },
+  ]
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
+    },
+    workspaceRoot,
+    readLifecycle: () => ({
+      state: 'active',
+      workspace: {
+        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+        label: '2학년 2학기',
+      },
+    }),
+  })
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const url = `http://127.0.0.1:${listener.port}/api/product/actions`
+    const request = (relativePath = 'valid.md') => ({
+      action: 'organize_sources',
+      files: [{ relativePath }],
+    })
+    const expectFailure = async (
+      body: unknown,
+      status: number,
+      code: string,
+      headers: Record<string, string> = {},
+    ) => {
+      const response = await postJson(url, body, headers)
+      assert.equal(response.status, status)
+      assert.match(
+        String(response.headers.get('content-type')),
+        /^application\/json/u,
+      )
+      const error = (await response.json()) as {
+        code: string
+        displayMessage: string
+      }
+      assert.equal(error.code, code)
+      const encoded = JSON.stringify(error)
+      assert.equal(encoded.includes(workspaceRoot), false)
+      assert.equal(encoded.includes(skillRoot), false)
+      assert.equal(encoded.includes('# First Assignment'), false)
+    }
+
+    const listCallsBeforeFiles = runtime.listEffectiveSkillsCalls
+    await expectFailure(
+      request('missing.md'),
+      409,
+      'action_context_stale',
+    )
+    await expectFailure(
+      request('lecture.pdf'),
+      409,
+      'action_context_invalid',
+    )
+    assert.equal(runtime.listEffectiveSkillsCalls, listCallsBeforeFiles)
+
+    runtime.effectiveSkills = []
+    await expectFailure(request(), 409, 'action_unavailable')
+    runtime.effectiveSkills = [
+      {
+        name: 'ay-ple-first-assignment',
+        enabled: false,
+        sourceRoot: skillRoot,
+      },
+    ]
+    await expectFailure(request(), 409, 'action_unavailable')
+    runtime.effectiveSkills = [
+      {
+        name: 'ay-ple-first-assignment',
+        enabled: true,
+        sourceRoot: path.join(workspaceRoot, 'other-skill'),
+      },
+    ]
+    await expectFailure(request(), 409, 'action_unavailable')
+
+    runtime.effectiveSkills = [
+      {
+        name: 'ay-ple-first-assignment',
+        enabled: true,
+        sourceRoot: skillRoot,
+      },
+    ]
+    await rm(skillPath)
+    await symlink(path.join(workspaceRoot, 'valid.md'), skillPath)
+    await expectFailure(request(), 409, 'action_unavailable')
+    await rm(skillPath)
+    await writeFile(skillPath, '# First Assignment')
+
+    const movedSkillRoot = path.join(workspaceRoot, 'actual-skill')
+    await rename(skillRoot, movedSkillRoot)
+    await symlink(movedSkillRoot, skillRoot, 'dir')
+    await expectFailure(request(), 409, 'action_unavailable')
+    await rm(skillRoot)
+    await rename(movedSkillRoot, skillRoot)
+
+    runtime.listEffectiveSkillsError = new Error(
+      `unsafe observation ${workspaceRoot}`,
+    )
+    await expectFailure(request(), 503, 'product_unavailable')
+    runtime.listEffectiveSkillsError = undefined
+
+    await expectFailure(
+      {
+        ...request(),
+        codexSettings: {
+          model: 'gpt-unknown',
+          reasoningEffort: 'medium',
+          serviceTier: 'default',
+        },
+      },
+      400,
+      'action_invalid',
+    )
+    runtime.accountReadiness = {
+      state: 'not_ready',
+      reason: 'authentication_required',
+    }
+    await expectFailure(request(), 409, 'account_not_ready')
+    runtime.accountReadiness = { state: 'ready' }
+
+    await expectFailure(
+      { action: 'organize_sources', files: [], skillPath },
+      400,
+      'invalid_request',
+    )
+    await expectFailure(
+      request(),
+      403,
+      'forbidden',
+      { origin: 'https://hostile.example' },
+    )
+    assert.deepEqual(runtime.productInputs, [])
+  } finally {
+    await target.application.close()
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+test('organize_sources preflight rechecks disconnect and aborts on shutdown before Turn start', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-organize-continuity-')),
+  )
+  const runtime = new PreparedRuntime()
+  const skillRoot = path.join(
+    workspaceRoot,
+    '.agents',
+    'skills',
+    'ay-ple-first-assignment',
+  )
+  await mkdir(skillRoot, { recursive: true })
+  await writeFile(path.join(skillRoot, 'SKILL.md'), '# First Assignment')
+  await writeFile(path.join(workspaceRoot, 'valid.md'), 'valid')
+  runtime.effectiveSkills = [
+    {
+      name: 'ay-ple-first-assignment',
+      enabled: true,
+      sourceRoot: skillRoot,
+    },
+  ]
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
+    },
+    workspaceRoot,
+    readLifecycle: () => ({
+      state: 'active',
+      workspace: {
+        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+        label: '2학년 2학기',
+      },
+    }),
+  })
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const baseUrl = `http://127.0.0.1:${listener.port}`
+    const actionUrl = `${baseUrl}/api/product/actions`
+    const body = JSON.stringify({
+      action: 'organize_sources',
+      files: [{ relativePath: 'valid.md' }],
+    })
+
+    const disconnectGate = deferred<void>()
+    const disconnectStarted = deferred<void>()
+    runtime.effectiveSkillsGate = disconnectGate
+    runtime.effectiveSkillsStarted = disconnectStarted
+    const abort = new AbortController()
+    const disconnectedRequest = fetch(actionUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+      signal: abort.signal,
+    })
+    await disconnectStarted.promise
+    abort.abort()
+    disconnectGate.resolve()
+    await assert.rejects(
+      disconnectedRequest,
+      (error: unknown) =>
+        error instanceof Error && error.name === 'AbortError',
+    )
+    await waitForIdleProductOperation(baseUrl)
+    assert.deepEqual(runtime.productInputs, [])
+
+    const shutdownGate = deferred<void>()
+    const shutdownStarted = deferred<void>()
+    runtime.effectiveSkillsGate = shutdownGate
+    runtime.effectiveSkillsStarted = shutdownStarted
+    const shutdownRequest = fetch(actionUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+    })
+    await shutdownStarted.promise
+    const shuttingDown = target.appShutdown()
+    await shuttingDown
+    const shutdownResponse = await shutdownRequest
+    assert.equal(runtime.effectiveSkillsSignal?.aborted, true)
+    assert.equal(shutdownResponse.status, 503)
+    assert.deepEqual(await shutdownResponse.json(), {
+      code: 'product_unavailable',
+      displayMessage: 'AY 작업공간을 사용할 수 없습니다.',
+    })
+    assert.deepEqual(runtime.productInputs, [])
+  } finally {
+    await target.appShutdown()
     await listener?.close({ signal: new AbortController().signal })
     await rm(workspaceRoot, { force: true, recursive: true })
   }
@@ -646,10 +1185,29 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   startThreadCalls = 0
   readonly productInputs: StartProductTurnInput[] = []
-  private readonly turnGate = deferred<void>()
+  effectiveSkills: Array<{
+    readonly name: string
+    readonly enabled: boolean
+    readonly sourceRoot: string
+  }> = []
+  listEffectiveSkillsCalls = 0
+  listEffectiveSkillsError?: Error
+  effectiveSkillsGate?: ReturnType<typeof deferred<void>>
+  effectiveSkillsStarted?: ReturnType<typeof deferred<void>>
+  effectiveSkillsSignal?: AbortSignal
+  requestGeneralInput = false
+  accountReadiness:
+    | { readonly state: 'ready' }
+    | {
+      readonly state: 'not_ready'
+        readonly reason: 'authentication_required'
+      } = { state: 'ready' }
+  private turnGate = deferred<void>()
+  private readonly generalInputGate = deferred<void>()
+  private generalInputResolution: 'answered' | 'cancelled' = 'answered'
 
   readAccountReadiness() {
-    return Promise.resolve({ state: 'ready' as const })
+    return Promise.resolve(this.accountReadiness)
   }
 
   readModelCatalog() {
@@ -680,6 +1238,7 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
   ): Promise<CodexProductTurn> {
     this.productInputs.push(structuredClone(input))
     const gate = this.turnGate.promise
+    const runtime = this
     return {
       threadId: input.threadId,
       turnId: 'turn-prepared',
@@ -690,6 +1249,33 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
           turnId: 'turn-prepared',
           itemId: 'item-prepared',
           text: '작업을 확인했습니다.',
+        }
+        if (runtime.requestGeneralInput) {
+          yield {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId: 'turn-prepared',
+            itemId: 'item-general-input',
+            interactionId: 'native-general-input',
+            questions: [
+              {
+                id: 'native-question',
+                header: '자료 정리',
+                question: '자료를 어떤 기준으로 정리할까요?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          }
+          await runtime.generalInputGate.promise
+          yield {
+            type: 'user_input.resolved',
+            threadId: input.threadId,
+            turnId: 'turn-prepared',
+            itemId: 'item-general-input',
+            interactionId: 'native-general-input',
+            resolution: runtime.generalInputResolution,
+          }
         }
         await gate
         yield {
@@ -703,7 +1289,9 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
   }
 
   finish() {
-    this.turnGate.resolve()
+    const current = this.turnGate
+    this.turnGate = deferred<void>()
+    current.resolve()
   }
 
   startTurn(_input: StartTurnInput): Promise<never> {
@@ -711,10 +1299,14 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
   }
 
   answerUserInput(_input: AnswerUserInput) {
+    this.generalInputResolution = 'answered'
+    this.generalInputGate.resolve()
     return Promise.resolve()
   }
 
   cancelUserInput(_input: CancelUserInput) {
+    this.generalInputResolution = 'cancelled'
+    this.generalInputGate.resolve()
     return Promise.resolve()
   }
 
@@ -735,8 +1327,21 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
     })
   }
 
-  listEffectiveSkills() {
-    return Promise.resolve([])
+  async listEffectiveSkills(input: { readonly signal: AbortSignal }) {
+    this.listEffectiveSkillsCalls += 1
+    this.effectiveSkillsSignal = input.signal
+    this.effectiveSkillsStarted?.resolve()
+    input.signal.throwIfAborted()
+    if (this.listEffectiveSkillsError) {
+      throw this.listEffectiveSkillsError
+    }
+    if (this.effectiveSkillsGate) {
+      await waitForSignalOrPromise(
+        this.effectiveSkillsGate.promise,
+        input.signal,
+      )
+    }
+    return structuredClone(this.effectiveSkills)
   }
 
   close() {
@@ -803,6 +1408,49 @@ async function openBrokerLifecycle(
     },
   )
   return reader
+}
+
+async function waitForIdleProductOperation(baseUrl: string): Promise<void> {
+  const deadline = Date.now() + 1_000
+  for (;;) {
+    const response = await fetch(`${baseUrl}/api/product/bootstrap`)
+    const bootstrap = (await response.json()) as {
+      readonly activeOperation: unknown
+    }
+    if (bootstrap.activeOperation === null) return
+    if (Date.now() >= deadline) {
+      throw new Error('Timed out waiting for the Product operation lease')
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+}
+
+function waitForSignalOrPromise(
+  promise: Promise<void>,
+  signal: AbortSignal,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => signal.removeEventListener('abort', onAbort)
+    const onAbort = () => {
+      cleanup()
+      reject(signal.reason)
+    }
+    if (signal.aborted) {
+      onAbort()
+      return
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    void promise.then(
+      () => {
+        cleanup()
+        resolve()
+      },
+      (error: unknown) => {
+        cleanup()
+        reject(error)
+      },
+    )
+  })
 }
 
 function deferred<T>(): {

@@ -11,6 +11,7 @@ import {
   decodeEmptyProductRequest,
   decodeProductInteractionAnswerRequest,
   decodeProductReviewResult,
+  decodeTargetProductActionInvocationRequest,
   decodeTargetProductChatRequest,
   isProductInteractionId,
   isProductOperationId,
@@ -231,6 +232,28 @@ export function createPreparedProductRouter(options: {
           },
           streamOptions,
         ),
+      disconnect: (operationId) => {
+        void options.review.browserDisconnected()
+        options.operations.disconnect(operationId)
+      },
+    }).catch((error: unknown) => sendOperationError(response, error))
+  })
+
+  router.post('/actions', async (request, response) => {
+    const input = tryDecode(
+      decodeTargetProductActionInvocationRequest,
+      request.body,
+    )
+    if (!input) {
+      sendError(response, 400, 'invalid_request', safeInvalidRequest)
+      return
+    }
+    await runProductStream({
+      request,
+      response,
+      writeDrainMs,
+      run: (streamOptions) =>
+        options.operations.invokeAction(input, streamOptions),
       disconnect: (operationId) => {
         void options.review.browserDisconnected()
         options.operations.disconnect(operationId)

@@ -18,6 +18,7 @@ import {
   type ProductWorkspaceSourceList,
   type ProductWorkspaceSourcePreviewKind,
   type ProductWorkspaceTextPreview,
+  type ProductWorkspaceFileRef,
 } from '@ay-ple/product-contract'
 
 const defaultListMaxDepth = 32
@@ -121,6 +122,9 @@ export type WorkspaceSourcePdf = {
 
 export type WorkspaceSourceProjection = {
   list(): Promise<ProductWorkspaceSourceList>
+  preflightTextFiles(
+    files: readonly ProductWorkspaceFileRef[],
+  ): Promise<readonly ProductWorkspaceFileRef[]>
   readText(relativePath: string): Promise<ProductWorkspaceTextPreview>
   readPdf(relativePath: string): Promise<WorkspaceSourcePdf>
 }
@@ -128,6 +132,11 @@ export type WorkspaceSourceProjection = {
 export async function createWorkspaceSourceProjection(options: {
   readonly workspaceRoot: string
   readonly limits?: Partial<WorkspaceSourceProjectionLimits>
+  /** Test-only fault injection at the filesystem boundary. */
+  readonly sourcePreflightTestHook?: (
+    phase: 'before_open',
+    relativePath: string,
+  ) => void | Promise<void>
 }): Promise<WorkspaceSourceProjection> {
   const workspaceRoot = await canonicalDirectory(options.workspaceRoot)
   const workspaceRootIdentity = await readWorkspaceRootIdentity(workspaceRoot)
@@ -236,6 +245,25 @@ export async function createWorkspaceSourceProjection(options: {
       }
     },
 
+    async preflightTextFiles(files) {
+      const resolved: ProductWorkspaceFileRef[] = []
+      for (const file of files) {
+        await preflightTextFile(
+          workspaceRoot,
+          workspaceRootIdentity,
+          file.relativePath,
+          limits.textSourceMaxBytes,
+          options.sourcePreflightTestHook,
+        )
+        resolved.push({ relativePath: file.relativePath })
+      }
+      await assertWorkspaceRootIdentity(
+        workspaceRoot,
+        workspaceRootIdentity,
+      )
+      return resolved
+    },
+
     async readText(relativePath) {
       const normalized = validateReadablePath(relativePath)
       if (!isTextPath(normalized)) {
@@ -284,6 +312,83 @@ export async function createWorkspaceSourceProjection(options: {
         bytes,
       }
     },
+  }
+}
+
+async function preflightTextFile(
+  workspaceRoot: string,
+  workspaceRootIdentity: WorkspaceRootIdentity,
+  relativePath: string,
+  maximumBytes: number,
+  testHook:
+    | ((
+        phase: 'before_open',
+        relativePath: string,
+      ) => void | Promise<void>)
+    | undefined,
+): Promise<void> {
+  await assertWorkspaceRootIdentity(
+    workspaceRoot,
+    workspaceRootIdentity,
+  )
+  const normalized = validateReadablePath(relativePath)
+  if (!isTextPath(normalized)) {
+    throw new WorkspaceSourceProjectionError('unsupported_type')
+  }
+  const candidate = path.resolve(workspaceRoot, ...normalized.split('/'))
+  const stats = await safeLstat(candidate)
+  if (!stats || stats.isSymbolicLink() || !stats.isFile()) {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  let canonicalCandidate: string
+  try {
+    canonicalCandidate = await realpath(candidate)
+  } catch {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  if (
+    canonicalCandidate !== candidate ||
+    !isPathWithinRoot(canonicalCandidate, workspaceRoot)
+  ) {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  if (stats.size > maximumBytes) {
+    throw new WorkspaceSourceProjectionError('source_too_large')
+  }
+
+  await testHook?.('before_open', normalized)
+  let handle
+  try {
+    handle = await open(
+      candidate,
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    )
+  } catch {
+    throw new WorkspaceSourceProjectionError('source_not_found')
+  }
+  let closeFailed = false
+  try {
+    const openedStats = await handle.stat()
+    if (
+      !openedStats.isFile() ||
+      openedStats.dev !== stats.dev ||
+      openedStats.ino !== stats.ino
+    ) {
+      throw new WorkspaceSourceProjectionError('source_not_found')
+    }
+    if (openedStats.size > maximumBytes) {
+      throw new WorkspaceSourceProjectionError('source_too_large')
+    }
+  } catch (error) {
+    if (error instanceof WorkspaceSourceProjectionError) throw error
+    throw new WorkspaceSourceProjectionError('source_unavailable')
+  } finally {
+    await handle.close().catch(() => {
+      closeFailed = true
+    })
+  }
+  if (closeFailed) {
+    throw new WorkspaceSourceProjectionError('source_unavailable')
   }
 }
 
