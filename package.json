@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:server": "node server/index.js",
-    "test": "vitest",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
+  "dev": "vite",
+  "dev:server": "node server/index.js",
+  "start": "node server/index.js",
+  "test": "vitest",
+  "build": "vite build",
+  "preview": "vite preview"
+},
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",
     "dotenv": "^16.4.1",
