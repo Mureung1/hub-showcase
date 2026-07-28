@@ -29,18 +29,18 @@ Canonical lifecycle의 `active`는 exact prepared Git root에서 listener·Broke
 | Runtime와 workspace는 어떻게 선택하는가? | Startup은 sibling `../.ay-ple/`의 verified Runtime과 canonical root contract를 사용한다. 첫 open·학기 변경은 explicit `--workspace` prepared Git root, 이후 인자 없는 실행은 registry active pointer를 fresh reopen한다. |
 | Durable product state는 어디에 있는가? | External `WorkspaceRegistry`는 canonical root와 active pointer만 보존하고 workspace의 tracked v4 identity가 일치할 때만 사용한다. 학업 결과는 user-owned Git workspace 파일과 AY-owned checkpoint에 남는다. 기존 current-v2/v3 bytes는 자동 변환하지 않는 지원 외 역사 데이터다. |
 | First Assignment vertical은 닫혔는가? | Prepared Git workspace의 normal AY Chat→Interaction MCP proposal→inline Semantic Review→AY-owned actual-file apply/checkpoint가 deterministic Browser·actual Runtime trace로 검증됐다. |
-| 채택된 public workflow는 무엇인가? | ADR 0018·0019·0020의 prepared Git workspace, project-discovered Skill·MCP, transient Interaction request/result와 AY-owned file apply다. Old app-owned source·Run·patch·confirmation·apply는 public Router에 mount되지 않는다. |
+| 채택된 public workflow는 무엇인가? | ADR 0018·0019·0020의 prepared Git workspace, read-only source explorer·preview, project-discovered Skill·MCP, transient Interaction request/result와 AY-owned file apply다. Old app-owned source registry·Run·patch·confirmation·apply는 public Router에 mount되지 않는다. |
 
 ## Tracked 구성
 
 | 위치 | 책임 | 공개 경계 |
 | --- | --- | --- |
 | `packages/interaction-mcp` | Domain-neutral `propose_state_patch` codec, strict private Broker wire와 authenticated handshake·held lifecycle channel·capability call별 한 held POST를 수행하는 built STDIO Adapter | Server가 소비할 package root와 executable `dist/stdio.js`. Runtime package·Browser contract·active workspace 선택은 포함하지 않음 |
-| `packages/product-contract` | Prepared-workspace lifecycle, normal Chat, Browser-safe semantic Review·interaction·interrupt request/response와 closed target operation frame을 위한 dependency-free exact type·decoder | Browser-safe `.` 하나. Course·material·academic action/history contract, raw MCP, private credential·binding, HTTP framing, persistence, Server domain과 native Runtime protocol은 포함하지 않음 |
+| `packages/product-contract` | Prepared-workspace lifecycle, bounded source list·text preview, normal Chat, Browser-safe semantic Review·interaction·interrupt request/response와 closed target operation frame을 위한 dependency-free exact type·decoder | Browser-safe `.` 하나. Course·RawMaterial registry·academic action/history contract, PDF byte transport, raw MCP, private credential·binding, HTTP framing, persistence, Server domain과 native Runtime protocol은 포함하지 않음 |
 | `packages/codex-chat-runtime` | Exact bundle verification, official SDK, private Node↔Python bridge, workspace-only `CodexWorkspaceRuntime`, fresh Account Readiness, bounded effective MCP declaration, exact native conversation·Plan·interaction projection, one-shot native-context probe·atomic coordinator, deadline·bound·fatal settlement과 process-group reap | Package root, Server·Runtime regression용 `./contract`, test-only `./testing`. Production과 lower-level verified factory는 exact workspace 하나만 받고 Node account command family는 `read_account`로 닫힘. Live MCP health와 Broker lifecycle은 소유하지 않음 |
 | `packages/semester-workspace` | User-owned Git root v4 identity codec·classification과 shared identity validators | V4 envelope의 opaque snapshot을 academic schema로 해석하지 않는다. V2/v3 payload decoder, admission·setup·bundle·context authority와 package-managed workspace resource는 없음 |
-| `apps/server` | Prepared launch·registry·startup coordinator, target Product Router, Interaction Broker, generic Product Turn, neutral NDJSON writer와 listener·Runtime close ordering | Canonical entrypoint의 `/api/product/*`는 lifecycle·settings·normal Chat·semantic Review·general interaction·interrupt만 제공. Private Broker Router는 same listener loopback+credential 경계이며 academic persistence·apply는 없음 |
-| `apps/chat-shell` | Candidate-free lifecycle, full-width AY Chat, inline semantic Review card·settlement reducer와 recovery | `@ay-ple/product-contract`를 strict decode하는 fetch/NDJSON adapter와 cross-frame reducer. Semantic `204`는 delivery ACK이고 resolved frame만 settlement authority |
+| `apps/server` | Prepared launch·registry·startup coordinator, read-only active-root SourceProjection, target Product Router, Interaction Broker, generic Product Turn, neutral NDJSON writer와 listener·Runtime close ordering | Canonical entrypoint의 `/api/product/*`는 lifecycle·settings·source list/text/PDF preview·normal Chat·semantic Review·general interaction·interrupt를 제공. Private Broker Router는 same listener loopback+credential 경계이며 academic persistence·apply는 없음 |
+| `apps/chat-shell` | Candidate-free lifecycle, 3-pane source explorer·preview·AY Chat, inline semantic Review card·settlement reducer와 recovery | `@ay-ple/product-contract`를 strict decode하는 fetch/NDJSON adapter와 cross-frame reducer. Source selection은 transient presentation state이고 Semantic `204`는 delivery ACK이며 resolved frame만 settlement authority |
 | `references/openai-codex` | Exact official source review와 pin upgrade diff를 위한 dev-only oracle | Production dependency가 아닌 fixed Git submodule |
 
 `apps/inspector`, legacy runtime packages, `/api/runtime/*`, `/api/codex-chat/*`, `dev:chat-only`, `useChatShell`과 Browser compatibility consumer는 tracked product graph에 없다. Runtime의 internal text contract·regression export는 product lifecycle 검증을 위해 유지된다.
@@ -62,10 +62,13 @@ flowchart LR
   Context["One-shot native-context App Server"]
   Adapter["Built Interaction STDIO Adapter"]
   Broker["Interaction Broker"]
+  Sources["WorkspaceSourceProjection"]
   Registry["WorkspaceRegistry"]
   Workspace["Prepared Git workspace"]
 
   Shell -->|"exact JSON / NDJSON"| ProductHttp
+  ProductHttp -->|"bounded read-only source GET"| Sources
+  Sources --> Workspace
   ProductHttp --> Coordinator
   Coordinator --> Service
   Service -->|"reuses startup-approved thread"| Runtime
@@ -91,12 +94,15 @@ Persistent bridge와 workspace native-context sidecar는 모두 exact SemesterWo
 | --- | --- |
 | `GET /api/product/bootstrap` | Path-free `starting | active | recovery_required` prepared-workspace lifecycle와 coarse `operationStatus`를 `no-store`로 반환한다. |
 | `GET /api/product/codex-settings` | Active workspace에서만 전역 Codex account가 광고한 visible model, reasoning effort 순서와 Fast availability를 Browser-safe하게 반환한다. Non-active lifecycle은 Runtime을 시작하지 않고 `503 workspace_unavailable`로 닫는다. |
+| `GET /api/product/sources` | Active exact root를 bounded recursive scan해 hidden·managed·secret-like path와 symlink를 제외한 relative source list를 `no-store`로 반환한다. |
+| `GET /api/product/sources/text?relativePath=...` | Fresh root containment·regular-file·size·fatal UTF-8 검증 뒤 bounded text, full-file SHA-256과 truncation 상태를 반환한다. |
+| `GET /api/product/sources/pdf?relativePath=...` | Fresh 검증한 bounded PDF bytes를 exact MIME·`nosniff`·same-origin inline preview header로 반환한다. |
 | `POST /api/product/chat/messages` | Prepared Git root에서 normal AY Chat을 `workspace_write`로 실행한다. Project config가 Skill·MCP를 발견하며 App은 academic source·Run이나 managed Skill을 주입하지 않는다. |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/answer|cancel` | Active 일반 Plan interaction을 same-Turn native response로 번역한다. Academic state는 바꾸지 않는다. |
 | `POST /api/product/reviews/:interactionId` | Exact Semantic Review binding의 `accept | revise | reject`를 held MCP call에 전달한다. Bodyless `204`는 전달 ACK이고 resolved NDJSON frame이 settlement authority다. |
 | `POST /api/product/operations/:operationId/interrupt` | Matching Turn의 interrupt acknowledgement를 반환하고 stream terminal을 authoritative outcome으로 유지한다. |
 
-Mutation은 loopback socket과 absent 또는 exact configured local Origin에서만 허용한다. `@ay-ple/product-contract`가 field roster를 단독 소유하고 Server는 request decoder와 public projection, Chat Shell은 JSON·NDJSON decoder를 사용한다. Raw protocol, hidden reasoning, traceback, absolute path, credential과 private correlation은 공개 경계를 넘지 않는다. Old chooser/Course/material/First Assignment/retry, `/api/product-mcp`와 patch/revision Review alias는 canonical Router에서 `404`다.
+Mutation은 loopback socket과 absent 또는 exact configured local Origin에서만 허용한다. Source GET은 여기에 loopback `Host`와 non-cross-site Fetch Metadata admission을 더해 DNS rebinding·cross-site read를 거절한다. `@ay-ple/product-contract`가 field roster를 단독 소유하고 Server는 request decoder와 public projection, Chat Shell은 JSON·NDJSON decoder를 사용한다. Raw protocol, hidden reasoning, traceback, absolute path, credential과 private correlation은 공개 경계를 넘지 않는다. Source projection은 App-owned registry·copy·watcher·durable selection·mutation을 만들지 않는다. Old chooser/Course/material mutation/First Assignment/retry, `/api/product-mcp`와 patch/revision Review alias는 canonical Router에서 `404`다.
 
 ## Runtime과 lifecycle
 
@@ -126,7 +132,7 @@ ADR 0018 target의 root v4 identity codec, external `WorkspaceRegistry` v1 codec
 | 명령 | 증명하는 것 |
 | --- | --- |
 | `npm test` | Product contract, Runtime, Server, Chat Shell과 repository-owned tooling의 unit·integration contract |
-| `npm run test:e2e` | Default Browser route의 prepared lifecycle, normal Chat, general clarification·interrupt와 inline Semantic Review accept·revise·reject. Removed academic control과 route가 없는 public trace도 함께 검증 |
+| `npm run test:e2e` | Default Browser route의 prepared lifecycle, 3-pane source list·text/PDF/unsupported preview와 evidence navigation, normal Chat, general clarification·interrupt, inline Semantic Review accept·revise·reject. Removed academic mutation control과 route가 없는 public trace도 함께 검증 |
 | `npm run typecheck` / `npm run build` | Product contract→Runtime→Server→Shell TypeScript graph |
 | `npm run lint -w @ay-ple/chat-shell` | Browser production source와 Playwright harness lint |
 | `npm run check:docs-links` | Active/current Markdown link와 삭제된 owner reference |

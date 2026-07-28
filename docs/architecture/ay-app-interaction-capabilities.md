@@ -58,9 +58,10 @@ App은 STDIO Adapter에서 Broker·UI·사용자를 거쳐 같은 MCP call로 �
 | Skill·AY workflow | `<SemesterWorkspace>/.agents/skills/` | MCP capability request와 result | 작업 순서, 재질문 여부, file mutation 전략 |
 | Workspace MCP declaration | `<SemesterWorkspace>/.codex/config.toml` | Workspace-root-relative STDIO entrypoint, forwarded env 이름과 capability allowlist | App endpoint·token value와 host identity |
 | Capability contract·STDIO Adapter | `packages/interaction-mcp` | Built executable, capability별 typed MCP request/result와 authenticated Broker transport | Project config loading, MCP wire와 process environment |
-| App-side Interaction Broker | `apps/server` | Package의 server-side Interface와 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle, on-demand evidence resolution과 failure settlement |
+| App-side Interaction Broker | `apps/server` | Package의 server-side Interface와 capability별 Browser-safe projection | Endpoint·token value, Runtime binding, correlation, pending lifecycle, exact evidence resolution과 failure settlement |
+| Read-only SourceProjection | `apps/server` | Active root의 bounded source list·text/PDF preview | Root containment, regular-file identity, read admission과 scan/content bound |
 | Browser wire | `packages/product-contract` | Capability별 Browser-safe request·result projection | Raw MCP와 private Broker transport |
-| UI Adapter | `apps/chat-shell` | UI projection과 user result | 화면 state, 입력 validation, focus와 view composition |
+| UI Adapter | `apps/chat-shell` | Capability UI projection·user result와 read-only source explorer·preview | 화면 state, transient source selection, 입력 validation, focus와 view composition |
 | Codex Runtime Adapter | `packages/codex-chat-runtime` | Generic child environment 전달과 effective native config의 bounded projection | Capability schema, Broker protocol, live Adapter health, `threadId`·`turnId`·`requestId` |
 | SemesterWorkspace | User-owned Git repository | 일반 file·Git interface | 실제 학기 자료와 선택적인 구조화 snapshot의 형식 |
 
@@ -171,7 +172,22 @@ App 자체가 소유하는 state를 바꾸는 future capability도 같은 규칙
 | Atomic projection | 모든 evidence를 검증한 뒤에만 하나의 Browser card를 publish한다. 하나라도 missing, out-of-root, oversized, stale 또는 malformed이면 card를 전혀 만들지 않고 call 전체를 MCP failure로 끝낸다. |
 | Lifetime | 검증한 bounded preview는 현재 pending/settled transcript card의 transient Browser-safe projection으로만 전달한다. Server-side registry·reusable cache·snapshot이나 durable evidence history를 만들지 않는다. |
 
-따라서 Browser는 filesystem path로 직접 읽지 않고, App도 SemesterWorkspace 전체를 scan·register하지 않는다. Evidence가 필요 없는 proposal은 ref를 생략할 수 있지만, 첨부한 ref를 자동으로 버리고 evidence 없는 partial Review로 낮추지는 않는다.
+따라서 **Evidence resolution 경로에서는** Browser가 filesystem path를 직접 읽거나 App이 SemesterWorkspace 전체를 scan·register하지 않는다. Broker는 요청에 포함된 exact ref만 검증한다. Evidence가 필요 없는 proposal은 ref를 생략할 수 있지만, 첨부한 ref를 자동으로 버리고 evidence 없는 partial Review로 낮추지는 않는다.
+
+## Read-only source projection
+
+Source explorer·preview는 InteractionCapability 요청에 딸린 evidence resolver가 아니라 active SemesterWorkspace를 사용자가 직접 살펴보는 sibling product surface다. App은 이 표면을 위해 exact active root를 bounded scan하고 안전한 일반 file을 on-demand read할 수 있다.
+
+| 항목 | 계약 |
+| --- | --- |
+| Authority | 현재 active lifecycle이 가리키는 exact SemesterWorkspace root 하나다. Browser는 absolute path나 다른 root를 선택하지 않는다. |
+| Listing | Server가 hidden·managed·secret-like tree와 symlink를 제외한 regular file을 bounded recursive scan하고 folder-relative path·size·지원 preview kind만 Browser에 투영한다. |
+| Preview | Text는 bounded UTF-8 content와 exact-byte digest를, PDF는 bounded raw bytes와 정확한 content metadata를 current filesystem에서 on-demand read한다. Unsupported file은 목록에는 남기되 content를 해석하지 않는다. |
+| Safety | 매 list·preview에서 root containment, regular-file identity와 size·depth·entry bound를 다시 확인한다. Traversal, root escape, symlink, missing·changed·oversized target와 read failure는 fail closed하고 stale preview를 현재 content로 가장하지 않는다. |
+| State | 목록·preview와 선택은 Browser-local 또는 request-local presentation state다. App은 source watcher, `Course`·`RawMaterial` registry, copy·snapshot, reusable preview cache, durable selection이나 file·Git mutation을 만들지 않는다. |
+| Interaction boundary | Source selection은 Chat request, MCP payload나 AY의 file authority를 암묵적으로 바꾸지 않는다. Review evidence는 계속 caller가 보낸 exact path·digest·locator를 별도로 preflight한다. |
+
+즉 App은 actual file을 읽기 쉽게 **투영**하지만 학기 자료를 소유·등록·복사하거나 변경하지 않는다. AY는 같은 user-owned working tree에서 일반 file·Git 도구로 작업하고, evidence resolver는 explorer 목록을 신뢰 source registry로 재사용하지 않는다.
 
 ## 첫 capability: `propose_state_patch`
 
@@ -227,6 +243,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | Known·active workspace | `../.ay-ple/`의 `WorkspaceRegistry` | App이 직접 소유한다. |
 | Pending interaction | App-side Interaction Broker memory의 Runtime generation별 단일 slot | Queue나 Turn 수명을 넘는 academic record로 승격하지 않는다. |
 | Validated evidence preview | 별도 durable owner 없음 | Active workspace에서 on-demand로 검증해 current card에만 투영하고 registry·cache·snapshot으로 재사용하지 않는다. |
+| Source explorer 목록·preview와 선택 | 별도 durable owner 없음 | Exact active root를 bounded read-only projection하고 Browser-local presentation state로만 유지한다. Registry·copy·watcher·reusable cache나 file mutation을 만들지 않는다. |
 | Settled Review card | 별도 App durable owner 없음 | 현재 transcript에서 read-only projection으로만 유지한다. Native conversation history 없이 App ledger로 복원하지 않는다. |
 | Native conversation | Codex Runtime | Browser-safe projection만 제공한다. |
 
@@ -241,7 +258,7 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 | 사용자 응답 | AY Chat inline card 하나가 composer·steer를 잠그고 MCP call의 closed result를 반환한다. Settled card는 read-only로 남고 fresh proposal은 새 card로 append하며 전체 Turn interrupt만 별도 control로 유지한다. | Built-in `request_user_input` 이중 confirmation, replacement card와 App Review ledger를 만들지 않는다. |
 | Apply | AY가 result를 해석해 실제 workspace file을 변경하고 Git checkpoint를 남긴다. | App은 수락 결과를 대신 적용하지 않는다. |
 | 실행 기록 | Native Turn과 일반 Codex history를 재사용한다. | App-owned `ModelingRun` receipt를 저장하지 않는다. |
-| 자료 | AY가 SemesterWorkspace의 실제 파일을 직접 다루고 Broker는 요청에 포함된 evidence만 on-demand 검증한다. | `RawMaterial` registry·source copy·reusable snapshot을 만들지 않는다. |
+| 자료 | App의 SourceProjection이 exact active root의 안전한 일반 file을 bounded list·text/PDF preview로 투영한다. AY는 같은 actual file을 직접 다루고 Broker evidence resolver는 요청에 포함된 ref만 별도로 on-demand 검증한다. | `Course`·`RawMaterial` registry, source copy·reusable snapshot·cache, durable selection과 App-owned file mutation을 만들지 않는다. |
 | 테스트 | In-memory capability contract, deterministic Browser E2E와 exact actual-child trace가 정상 result·failure settlement·evidence atomicity를 검증한다. | Store revision이나 private correlation을 공개 Interface에 넣지 않는다. |
 
 초기 First Assignment의 app-owned `RawMaterial → ModelingRun → StatePatch → UserConfirmation → apply` graph는 이 seam을 채택하게 한 historical 동기이며 canonical product graph에서 제거됐다. Exact current package와 endpoint topology는 [Codex Chat 구현 지도](codex-chat-implementation-map.md)가, 후속 순서와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
@@ -263,5 +280,6 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 - Review modal·별도 approval page와 pending 중 composer·steer
 - Fresh proposal로 기존 settled card를 교체·reopen하는 replacement lifecycle
 - App-owned settled Review ledger와 별도 card hydration store
-- Workspace file registry·source copy·reusable preview cache와 invalid evidence를 숨기는 partial Review
+- Workspace file registry·source copy·reusable preview cache·durable source selection. 이는 exact active root의 bounded read-only source projection을 금지하지 않는다.
+- Invalid evidence를 숨기는 partial Review나 explorer selection을 evidence authority로 재사용하는 결합
 - `accept | revise | reject`와 Turn interrupt·continuity failure를 섞는 네 번째 `cancel` result

@@ -19,6 +19,19 @@
 
 아래 normative contract와 acceptance wording은 이 correction을 반영한다. 과거 ticket 이름이나 완료 순서를 향후 구현 지시로 재해석해서 제거된 Runtime readiness port와 patch 0008을 다시 만들면 안 된다.
 
+## Post-implementation product-scope correction — 2026-07-28
+
+이 Spec의 기존 contraction 문구는 App-owned `Course`·`RawMaterial` authority 제거를 자료 explorer·preview UI 제거까지 확장했다. 이는 user-owned Git SemesterWorkspace 전환의 의도와 [ADR 0019](../adr/0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md), [AY-PLE Design System](../product/ay-ple-design-system.md)의 source-grounded product surface에 어긋나는 해석 오류였다.
+
+교정된 경계는 다음과 같다.
+
+- App은 `Course`, `RawMaterial` registry, source copy·snapshot, durable selection과 refresh/rebaseline mutation을 소유하지 않는다.
+- App은 active SemesterWorkspace의 안전한 일반 file을 stateless read-only projection으로 나열하고 text·PDF를 preview할 수 있다. 이 projection은 actual file이나 Git을 변경하지 않는다.
+- AY가 actual file mutation과 Git checkpoint를 소유하고, App은 normal Chat·inline Semantic Review와 source explorer·preview를 한 desktop workbench에 함께 제공한다.
+- First Assignment action/retry와 durable academic history는 계속 제거 상태다. Read-only source UX 복구를 old academic workflow 복원으로 해석하면 안 된다.
+
+아래 normative contract와 Ticket 008은 이 correction을 반영한다. 과거 “material preview UI 없음” 검증 결과는 당시 과잉 contraction의 역사적 증거일 뿐 현재 acceptance criterion이 아니다.
+
 ## Problem Statement
 
 AY-PLE의 First Assignment vertical은 Codex가 `propose_state_patch`를 호출하고 Browser가 제안을 Review한 뒤 사용자 선택을 같은 Turn으로 돌려주는 round trip을 증명했다. 그러나 current 구현은 이 interaction을 caller-supplied `requestKey`, workspace·Course identity, `ModelingRun`, durable `StatePatch`·`UserConfirmation`, revision-bound `SemesterModel` apply와 built-in `request_user_input`에 결합한다.
@@ -58,6 +71,7 @@ Private `@ay-ple/interaction-mcp` package는 Codex-facing STDIO Adapter, capabil
 8. As a maintainer, I want Runtime이 generic child environment와 effective config projection만 알기를 원한다, so that 새 InteractionCapability가 native lifecycle package를 바꾸지 않는다.
 9. As a maintainer, I want InteractionCapability를 in-memory UI Adapter로 독립 검증하기를 원한다, so that academic store나 live provider 없이 round trip과 failure를 재현할 수 있다.
 10. As a maintainer, I want timeout·interrupt·disconnect·Runtime terminal을 사용자 result와 구분하기를 원한다, so that continuity loss가 accept·reject로 오인되지 않는다.
+11. As a student, I want active SemesterWorkspace의 실제 자료를 목록과 preview로 보면서 AY Chat과 Review를 함께 사용하기를 원한다, so that App-owned 자료 registry 없이도 원본을 기준으로 판단할 수 있다.
 
 ## Current State and Constraints
 
@@ -71,6 +85,7 @@ Private `@ay-ple/interaction-mcp` package는 Codex-facing STDIO Adapter, capabil
 | Evidence | `RawMaterial` registry·snapshot과 material ID를 전제로 한다. | Active Runtime root의 optional workspace-relative evidence만 on-demand 검증한다. |
 | Apply | Server가 durable confirmation transaction으로 `SemesterModel`을 갱신한다. | AY가 result 뒤 actual file을 바꾸며 App은 apply하지 않는다. |
 | Runtime | Thread start가 private MCP URL·token과 literal tool allowlist를 product-specific input으로 받는다. | Project MCP config, generic child env와 capability-neutral effective config projection을 사용하고 live Adapter health는 Broker가 소유한다. |
+| Source UX | App-owned Course·material registry가 list·preview·selection authority다. | Active prepared root를 stateless read-only로 projection해 source explorer와 text·PDF preview를 제공한다. |
 
 ### Governing decisions and split boundary
 
@@ -89,8 +104,8 @@ Private `@ay-ple/interaction-mcp` package는 Codex-facing STDIO Adapter, capabil
 | `@ay-ple/interaction-mcp` | Built STDIO executable, `propose_state_patch` request/result codec, private HTTP codec와 safe error mapping | Listener, Browser UI, active workspace selection |
 | `apps/server` Interaction Broker | Runtime credential·handshake, persistent Adapter lifecycle과 `adapterStatus`, active product-turn lease 소비, single pending slot, evidence resolution, Browser projection·once-only settlement | Product operation admission, capability result 적용, Agent retry, Git command |
 | `@ay-ple/codex-chat-runtime` | Generic child env 전달, fixed Runtime generation, bounded effective config projection과 close | Capability schema, Broker route 의미, live Adapter health, Browser frame |
-| `@ay-ple/product-contract` | Browser-safe Review request/result/frame codec | Raw MCP, private credential, filesystem authority |
-| `apps/chat-shell` | Transcript inline card, pending lock, result action과 Turn interrupt | Raw MCP response, App apply, Review ledger |
+| `@ay-ple/product-contract` | Browser-safe Review request/result/frame와 read-only source projection codec | Raw MCP, private credential, filesystem authority |
+| `apps/chat-shell` | Source explorer·preview, transcript inline card, pending lock, result action과 Turn interrupt | Raw MCP response, source mutation, App apply, Review ledger |
 | `hub/skills/ay-ple-first-assignment/`와 workspace-installed copy | Review 요청 시점, result 해석, actual file mutation instruction | Skill copy·merge, Browser correlation, endpoint·token |
 
 `apps/server`는 Interaction package와 Runtime을 조합하지만 두 package는 서로 import하지 않는다. Chat Shell은 계속 `@ay-ple/product-contract`만 shared production contract로 사용한다.
@@ -213,7 +228,16 @@ Normal success는 `structuredContent`에 exact result와 짧은 text content를 
 - 모든 ref와 projection bound가 통과한 뒤 card 하나를 publish한다. 하나라도 실패하면 partial card, evidence drop과 evidence-free fallback 없이 whole call을 실패시킨다.
 - Preview는 current card의 transient payload다. `RawMaterial` registry, reusable cache·snapshot과 durable evidence history를 만들지 않는다.
 
-#### 4. Private Adapter↔Broker wire와 Turn binding
+#### 4. Read-only workspace source projection
+
+- Authority는 active lifecycle이 가리키는 exact SemesterWorkspace root 하나다. Browser가 absolute path나 다른 root를 선택하지 않는다.
+- `GET /api/product/sources`는 bounded recursive scan으로 안전한 regular file의 `relativePath`, byte `size`, `text | pdf | unsupported` preview kind만 반환한다.
+- Hidden·managed tree, scaffold metadata, secret-like file과 symlink는 목록에서 제외한다. Path traversal, root escape, non-regular target와 bound 초과는 fail closed한다.
+- Text preview는 bounded UTF-8 projection과 exact-byte SHA-256 digest를 반환한다. PDF preview는 bounded raw bytes를 exact MIME, `nosniff`, inline disposition과 `no-store`로 제공한다. Unsupported file은 목록에는 남지만 App이 content를 해석하지 않는다.
+- List와 preview는 reusable registry·cache·snapshot, durable selection과 watcher를 만들지 않는다. Refresh는 current filesystem을 다시 읽는 명시적 GET일 뿐 mutation이 아니다.
+- Source explorer·preview는 AY Chat과 inline Review의 sibling product surface다. 선택은 Browser-local presentation state이며 Chat request, MCP payload나 AY file authority를 암묵적으로 바꾸지 않는다.
+
+#### 5. Private Adapter↔Broker wire와 Turn binding
 
 | 항목 | Contract |
 | --- | --- |
@@ -241,7 +265,7 @@ Error envelope는 `{ protocolVersion: 1, kind: "error", code, displayMessage }`�
 - Coordinator는 Turn start failure, authoritative native terminal 또는 completed Runtime close 뒤에만 outer lease를 once-only 해제한다. Valid binding에 active lease가 없으면 `runtime_inactive`다.
 - Browser answer 뒤 held response write를 먼저 시도하고 terminal settlement를 once-only로 수렴한다. Delivery ambiguity를 success로 추정하거나 replay하지 않는다.
 
-#### 5. Browser wire와 inline Review
+#### 6. Browser wire와 inline Review
 
 ```ts
 type BrowserSafeTextQuoteEvidence = {
@@ -307,7 +331,7 @@ type ProductReviewFrame =
 - Evidence preflight 전 failure는 requested frame을 만들지 않는다. Browser disconnect는 pending call과 Turn을 failure로 끝내지만 disconnected client에 failure frame delivery를 성공 조건으로 요구하지 않는다.
 - Settled request/result를 workspace store나 App Review ledger에 persist하지 않고 reload 뒤 App store에서 복원하지 않는다.
 
-#### 6. AY-owned mutation boundary
+#### 7. AY-owned mutation boundary
 
 - Tracked built-in source는 `hub/skills/ay-ple-first-assignment/`다. 이 Skill은 actual file read, mutation-before-proposal 금지, result별 다음 행동과 meaningful checkpoint 요청을 domain workflow로 소유한다. Workspace에 copy·merge하는 lifecycle은 sibling Spec이 소유한다.
 - Review가 필요한 mutation은 MCP call 전 actual file에 적용하지 않는다.
@@ -367,7 +391,7 @@ type ProductReviewFrame =
 2. Interaction package, codec, Broker와 in-memory UI Adapter를 current graph 옆에 추가한다.
 3. Generic child env·effective config projection, Broker-owned persistent Adapter lifecycle과 active Turn lease를 추가하고 temporary Git workspace의 project config로 real Adapter startup을 검증한다.
 4. Sibling workspace Spec이 pre-App native Bootstrap, canonical prepared-root Workspace Runtime, complete declaration validation과 live Adapter lifecycle을 연결한다.
-5. Joint product gate가 green이면 sibling Workspace Spec의 active prepared-workspace surface와 이 Spec의 inline Review를 public composition에 atomic하게 hard cutover한다. Candidate/init routes나 Browser chooser를 중간 compatibility surface로 추가하지 않는다. App-owned `Course`, material refresh·selection·preview routes/types/UI, First Assignment action/retry, `RawMaterial`, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`, revision-bound apply와 old current MCP override를 compatibility alias 없이 제거한다.
+5. Joint product gate가 green이면 sibling Workspace Spec의 active prepared-workspace surface와 이 Spec의 inline Review를 public composition에 atomic하게 hard cutover한다. Candidate/init routes나 Browser chooser를 중간 compatibility surface로 추가하지 않는다. App-owned `Course`, material registry·copy·snapshot·refresh mutation·durable selection, First Assignment action/retry, `RawMaterial`, `ModelingRecipe`·`ModelingInvocation`·durable `ModelingRun`, durable `StatePatch`·`UserConfirmation`, revision-bound apply와 old current MCP override를 compatibility alias 없이 제거한다. Active root의 read-only source explorer·text/PDF preview는 보존한다.
 
 Workspace v2/v3 bytes, registry, Runtime payload와 canonical root cleanup은 이 Spec이 바꾸지 않는다. Joint cutover 전 rollback은 current source와 matching current store/runtime graph를 한 단위로 사용한다.
 
@@ -398,11 +422,13 @@ Workspace v2/v3 bytes, registry, Runtime payload와 canonical root cleanup은 �
 
 - Request/result·private wire·Browser frame exact codec과 모든 byte/cardinality bound
 - Evidence containment, symlink, size, digest, UTF-8, quote occurrence와 all-or-nothing projection
+- SourceProjection의 loopback peer·local Host·Origin·Fetch Metadata read admission, exact active-root containment, traversal·symlink·hidden·managed·secret-like exclusion, bounded scan/read와 regular-file 재검증. Text는 current bytes의 fresh digest/content를, PDF는 bounded bytes와 정확한 response metadata를 반환하고 changed·deleted·oversized·malformed target이나 read failure를 stale 성공 화면으로 숨기지 않는다.
 - Broker handshake, held lifecycle acceptance, `adapterStatus` latch, expected close 구분, token/binding, active lease, single slot, held capability response와 once-only answer를 포함한 every continuity failure
 - Built STDIO executable/shebang/mode, env validation, lifecycle acceptance 전 initialize failure, one call→one POST→one result
 - Generic Runtime child env, protected-key rejection, Node PATH, complete effective static declaration projection과 official status polling 부재
 - Exact-root trust/config reload 뒤 startup thread와 Product Turn thread가 동일하다는 actual trace
 - Browser pending lock, interrupt, settled card, revise→fresh append와 no ledger
+- 1440×900과 1920px-class desktop에서 source explorer·text/PDF/unsupported·error preview와 AY Chat·Review가 3-pane으로 공존한다. File 선택·evidence navigation은 current filesystem을 다시 읽어 fresh digest를 확인하고, Browser-local selection이 Chat·MCP authority나 durable source state가 되지 않는다.
 - Proposal-before-mutation, accept 뒤 actual file change, revise/reject no mutation과 App apply 0
 - Joint cutover 뒤 removed academic routes/types/store consumer와 Browser bundle의 private credential 0
 

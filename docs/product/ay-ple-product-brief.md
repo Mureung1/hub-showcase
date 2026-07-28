@@ -38,7 +38,7 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 
 | 문제 | 일반적인 방식 | AY-PLE의 역할 |
 | --- | --- | --- |
-| 자료가 흩어져 있음 | 파일을 하나씩 열고 긴 prompt와 경로를 반복한다. | AY가 선택한 SemesterWorkspace의 실제 파일에서 직접 작업한다. |
+| 자료가 흩어져 있음 | 파일을 하나씩 열고 긴 prompt와 경로를 반복한다. | App에서 actual file을 탐색·preview하고 AY가 같은 SemesterWorkspace의 실제 파일에서 직접 작업한다. |
 | Agent 판단을 검토하기 어려움 | 채팅 답변과 원문을 사용자가 따로 비교한다. | AY가 MCP로 Review를 요청하면 App이 변경·근거·선택지를 함께 보여준다. |
 | GUI 선택과 Agent 작업이 분리됨 | UI에서 고른 내용이 대화 맥락과 따로 움직인다. | 사용자 선택을 structured result로 같은 Codex Turn에 반환한다. |
 | 별도 복사본이 실제 자료와 갈라짐 | 앱 전용 저장소와 원본을 둘 다 관리한다. | 사용자 소유 Git working tree 하나를 학기 workspace로 사용한다. |
@@ -68,7 +68,7 @@ App은 interaction round trip을 소유하고, Skill과 AY는 workflow와 결과
 | --- | --- | --- |
 | 사용자 | SemesterWorkspace 선택, App UI에서의 최종 판단, 학기 자료의 의미 | Native protocol과 correlation |
 | AY·Skill | 작업 계획, 파일 읽기·수정, interaction 요청 시점, 결과 해석과 Git checkpoint | Browser UI lifecycle |
-| AY-PLE App | Prepared-root resolution·registry, Runtime host, capability-specific UI와 interaction round trip | Bootstrap·학업 workflow, app-owned file copy, accepted result의 대리 적용 |
+| AY-PLE App | Prepared-root resolution·registry, Runtime host, active root의 bounded read-only source explorer·preview, capability-specific UI와 interaction round trip | Bootstrap·학업 workflow, source ownership·registry·copy·mutation, accepted result의 대리 적용 |
 | Interaction MCP Module | Typed request/result, Turn binding, pending·failure·disconnect lifecycle | SemesterWorkspace file mutation |
 | Codex Runtime | Thread·Turn, Skills, MCP와 native permission | 학기 SSOT와 AY-PLE UI 의미 |
 | SemesterWorkspace | 실제 학기 파일, 선택적인 구조화 snapshot, Git history | Runtime secret과 pending interaction |
@@ -114,6 +114,7 @@ AY-PLE은 App을 최소화하는 제품이 아니다. App이 잘할 수 있는 �
 | Codex account·config·session | 사용자의 기존 `~/.codex/` |
 | Pending InteractionCapability | 현재 Turn에 결합된 Interaction MCP Module memory |
 | Pending product operation과 Broker-owned Adapter lifecycle status | 현재 App process의 Runtime generation memory |
+| Source explorer 목록·preview와 선택 | Durable owner 없음. Exact active root의 on-demand read-only projection과 Browser-local presentation state |
 
 `workspace-state.json`의 exact academic schema는 아직 이 Product Brief가 고정하지 않는다. 중요한 불변 조건은 학기 정보가 App database가 아니라 사용자 소유 workspace에 있고, interaction request/result나 native Turn history를 학기 SSOT에 누적하지 않는다는 점이다. Process-local interaction·operation과 Broker-owned Adapter lifecycle status는 terminal event에서 정산하며 App restart 뒤 durable record가 없는 결과를 성공이나 복구 대상으로 추정하지 않는다.
 
@@ -140,12 +141,15 @@ First Assignment vertical은 native project config의 complete effective Interac
 
 ```text
 SemesterWorkspace actual file
-→ AY / native Codex Turn
-→ InteractionCapability request
-→ App typed UI
-→ same-call user result
-→ AY-owned file mutation / Git checkpoint
+├→ App bounded read-only projection → source explorer / text·PDF preview
+└→ AY / native Codex Turn
+   → InteractionCapability request
+   → App typed UI
+   → same-call user result
+   → AY-owned file mutation / Git checkpoint
 ```
+
+두 경로는 같은 actual file을 가리키지만 authority는 다르다. Source explorer·preview는 current filesystem을 읽어 보여주는 transient UI이고, AY만 일반 file·Git 도구로 내용을 변경한다. Explorer의 선택은 Chat request나 Review evidence를 암묵적으로 바꾸지 않는다.
 
 초기 구현이 사용했던 app-owned `RawMaterial → ModelingRun → durable StatePatch → UserConfirmation → Server-owned apply` 흐름은 interaction round trip을 확인한 historical 동기다. 이 객체와 apply transaction은 current product contract와 persistence에서 제거됐다. Exact package·endpoint topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 후속 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 
@@ -156,6 +160,7 @@ SemesterWorkspace actual file
 | 포함 | 구현 결과 |
 | --- | --- |
 | User-owned SemesterWorkspace | 선택한 Git root가 exact Codex project·thread `cwd`이고, descendant cwd나 App-owned source copy가 없다. |
+| Source-grounded workbench | Active root의 안전한 일반 file을 folder-relative explorer에서 보고 UTF-8 text·PDF를 preview하며, unsupported·stale·read failure는 명시적 상태로 표시한다. 이 read-only projection은 AY Chat·Review와 한 3-pane desktop surface에 공존하되 registry·copy·watcher·durable selection을 만들지 않는다. |
 | `propose_state_patch` MCP | `required = true`인 tracked project declaration과 process-local env binding으로 연결된다. Effective declaration이 Bootstrap contract와 다르거나 authenticated held Adapter lifecycle이 없으면 prepared-workspace startup이 실패하고, 연결되면 host field 없는 typed request와 `accept | revise | reject` result가 한 호출로 왕복한다. |
 | Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
@@ -166,7 +171,7 @@ SemesterWorkspace actual file
 ## 의도적으로 만들지 않는 것
 
 - AY-PLE 전용 학업 workflow engine
-- App-owned source archive나 모든 file의 registry
+- App-owned source archive, reusable file registry·preview cache나 durable source selection. Exact active root의 bounded read-only explorer·preview는 제공한다.
 - Duplicate `ModelingRun`·academic event ledger
 - 모든 GUI event를 Agent에게 보내는 generic event bus
 - Arbitrary JSON schema를 자동으로 UI로 만드는 renderer
@@ -181,6 +186,7 @@ SemesterWorkspace actual file
 | 기준 | 확인할 질문 |
 | --- | --- |
 | 실제 자료 사용 | AY가 복사본이 아니라 선택한 학기 Git workspace의 파일을 직접 다루는가? |
+| 원문 가시성 | 사용자가 actual file의 folder-relative 목록과 text·PDF preview를 AY Chat·Review와 같은 workbench에서 보되 App-owned copy·registry 없이 current content와 오류를 정직하게 확인할 수 있는가? |
 | App의 차별화 | 일반 채팅보다 나은 capability-specific 판단 UI를 제공하는가? |
 | 왕복 완결성 | 한 MCP call 안에서 요청·UI·사용자 선택·structured result 반환이 끝나는가? |
 | 근거 정직성 | Evidence가 active workspace의 exact content version과 일치할 때만 card 전체가 표시되는가? |

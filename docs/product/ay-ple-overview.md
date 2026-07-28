@@ -27,6 +27,8 @@ flowchart LR
 
 핵심은 App이 AY의 일을 대신하는 것이 아니다. AY가 사용자에게 물어보고 싶은 내용을 MCP로 보내면 App이 그 작업에 맞는 UI로 보여주고, 사용자의 선택을 같은 작업으로 돌려준다.
 
+사용자는 같은 desktop workbench에서 active SemesterWorkspace의 실제 파일을 folder-relative explorer로 찾고 text·PDF 원문을 preview하면서 AY와 대화하거나 Review할 수 있다. 이 화면은 current file을 읽어 보여주는 read-only projection이며 App이 자료를 별도 등록·복사·저장하거나 수정한다는 뜻이 아니다.
+
 ## 예: 새 과제 정리하기
 
 학생은 `문제해결글쓰기` 공지와 강의계획서가 있는 SemesterWorkspace에서 AY에게 새 과제를 정리해 달라고 한다.
@@ -75,12 +77,12 @@ AY-PLE은 Codex 위에 별도 Agent 운영체제를 만들지 않는다.
 | AY-PLE App | AY·Skill |
 | --- | --- |
 | Known·active SemesterWorkspace를 관리한다. | 학업 workflow와 작업 순서를 판단한다. |
-| Codex Runtime과 Browser를 연결한다. | Workspace의 실제 파일을 읽고 수정한다. |
+| Codex Runtime과 Browser를 연결하고 active root의 안전한 file을 bounded read-only explorer·preview로 투영한다. | Workspace의 실제 파일을 읽고 수정한다. |
 | MCP 요청을 capability-specific UI로 보여준다. | 언제 어떤 InteractionCapability를 요청할지 정한다. |
 | 사용자 입력을 검증해 같은 MCP call에 반환한다. | Result를 해석하고 다음 행동을 정한다. |
 | Pending interaction의 cancel·disconnect를 정산한다. | 의미 있는 checkpoint에서 Git commit을 만든다. |
 
-이 선 덕분에 App은 일반 coding Agent보다 나은 UX를 제공하면서도, RawMaterial registry·학업 workflow engine·duplicate execution history를 소유하지 않는다.
+이 선 덕분에 App은 일반 coding Agent보다 나은 UX를 제공하면서도, RawMaterial registry·source copy·watcher·durable selection·학업 workflow engine·duplicate execution history를 소유하지 않는다. Explorer 선택은 Browser-local presentation state일 뿐 AY의 Chat request나 file authority를 암묵적으로 바꾸지 않는다.
 
 ## SemesterWorkspace는 무엇인가
 
@@ -110,7 +112,9 @@ App은 별도 복사본이나 normalized child workspace를 만들지 않는다.
 
 ## 지금 어디까지 만들어졌나
 
-현재 First Assignment vertical은 native project config로 발견한 required Interaction MCP, authenticated App Broker, AY Chat의 inline Review card와 같은 MCP call의 structured result 반환을 end-to-end로 연결한다. App은 active Runtime generation의 pending interaction만 process memory에서 정산하고, AY가 result를 해석해 실제 workspace file을 변경한다.
+현재 제품은 active SemesterWorkspace의 actual file을 folder-relative explorer, text·PDF preview와 명시적인 unsupported·read error 상태로 보여주고, AY Chat·inline Review와 한 3-pane desktop workbench에 배치한다. 이 SourceProjection은 exact active root만 bounded read하며 registry·copy·snapshot·watcher·durable selection이나 file mutation을 만들지 않는다.
+
+First Assignment vertical은 native project config로 발견한 required Interaction MCP, authenticated App Broker, AY Chat의 inline Review card와 같은 MCP call의 structured result 반환을 end-to-end로 연결한다. App은 active Runtime generation의 pending interaction만 process memory에서 정산하고, AY가 result를 해석해 실제 workspace file을 변경한다.
 
 초기 vertical이 사용했던 app-owned `RawMaterial`, `ModelingRun`, durable `StatePatch`·`UserConfirmation`과 Server-owned apply transaction은 이 round trip의 historical 동기이며 current product graph에는 없다. 정확한 현재 topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), long-lived seam은 [AY–App Interaction Capability 아키텍처](../architecture/ay-app-interaction-capabilities.md), 후속 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 
