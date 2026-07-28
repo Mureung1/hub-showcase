@@ -72,6 +72,7 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 - When the user explicitly invokes a Product Design skill such as `product-design:design-qa`, follow that skill in addition to the local ICU design workflow skill.
 - Do not add Tailwind, icon libraries, Electron, RAG, Notion API integration, or other new dependencies unless the user explicitly asks or the task requires it. Monaco and Express are approved project dependencies.
 - Design and generated code must be user-friendly and easy to learn, especially for beginner developers using the app repeatedly.
+
 ## Commit Convention
 
 - **Pre-Commit Report Rule**: `git commit`을 실행하기 전에 **반드시 사용자에게 무엇이 어떻게 변경되었는지(수정된 파일 및 변경 핵심 내역) 사전 보고**합니다.
@@ -86,8 +87,9 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 
 ## Issue Tracking Documents
 
-- `docs/issues/**` files are working tracking notes and must not be staged or committed.
-- Update issue files locally when tracking progress, but exclude them from `git add`, commits, and pull requests unless the user explicitly asks for a documentation commit.
+- `docs/issues/**` files are the user's local working notes. Read and update them whenever task progress or completion status changes.
+- These files are editable; the restriction is only on Git inclusion. Do not stage, commit, push, or include them in pull requests unless the user explicitly asks to publish a specific issue document.
+- When staging other work, explicitly exclude `docs/issues/**` even if an issue file was updated during the task.
 
 ## Source Of Truth
 
@@ -108,4 +110,3 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 - Monaco and Express are already approved for the Workspace editor and local API boundary; keep their usage scoped to those flows.
 - Prefer small, typed mock data over hardcoded screen-only strings once a UI surface becomes part of the app.
 - Keep implementation aligned with the existing ICU design direction: practical IDE structure, beginner-friendly Today Hub entry, light/dark readiness, and restrained Workday-inspired orange/cyan/deep-blue accents.
-
