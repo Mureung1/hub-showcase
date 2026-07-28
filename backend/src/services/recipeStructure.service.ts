@@ -1,4 +1,5 @@
 import {
+  getStructureRecipeValidationFailure,
   RECIPE_STRUCTURE_SCHEMA,
   isStructureRecipeResult,
   type RecipeSource,
@@ -127,6 +128,10 @@ export async function structureRecipe(
     }
 
     if (!isStructureRecipeResult(parsedResult)) {
+      console.warn("OpenAI structured response failed validation.", {
+        reason: getStructureRecipeValidationFailure(parsedResult),
+        requestId: response.headers.get("x-request-id"),
+      });
       throw new RecipeStructureError("AI_RESPONSE_INVALID");
     }
 

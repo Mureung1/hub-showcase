@@ -262,27 +262,40 @@ export async function collectYoutubeContentFromEnvironment(
   return collectYoutubeContent(sourceUrl, {
     youtubeApiKey,
     fetchMetadata: fetchYoutubeMetadata,
-    fetchTranscript: (videoId) =>
-      runYoutubeTranscript({
+    fetchTranscript: async (videoId) => {
+      const transcript = await runYoutubeTranscript({
         videoId,
         pythonExecutable:
           process.platform === "win32" ? "python" : "python3",
         scriptPath: YOUTUBE_TRANSCRIPT_SCRIPT_PATH,
         timeoutMs: 10_000,
         maxOutputLength: 20_000,
-      }),
-    analyzeWithGemini: (input) => {
+      });
+
+      console.info("YouTube content collected.", {
+        method: "transcript",
+      });
+
+      return transcript;
+    },
+    analyzeWithGemini: async (input) => {
       const apiKey = process.env.GEMINI_API_KEY?.trim();
 
       if (!apiKey) {
         throw new YoutubeContentError("URL_FETCH_FAILED");
       }
 
-      return analyzeYoutubeWithGemini(input, {
+      const analysis = await analyzeYoutubeWithGemini(input, {
         apiKey,
         model: process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash",
         timeoutMs: 30_000,
       });
+
+      console.info("YouTube content collected.", {
+        method: "gemini",
+      });
+
+      return analysis;
     },
   });
 }
