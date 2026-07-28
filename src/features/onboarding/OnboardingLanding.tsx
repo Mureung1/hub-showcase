@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router'
+import icuBrandLogo from './assets/icu-brand.png'
 import styles from './OnboardingLanding.module.css'
 
 type OnboardingField = {
@@ -95,7 +96,9 @@ export function OnboardingLanding() {
       <div className={styles.shell}>
         <div className={styles.topBar}>
           <div className={styles.brand} aria-label="ICU I CODE U">
-            <span className={styles.brandMark}>ICU</span>
+            <span className={styles.brandMark} aria-hidden="true">
+              <img src={icuBrandLogo} alt="" />
+            </span>
             <span>I CODE U</span>
           </div>
 

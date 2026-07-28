@@ -5,6 +5,7 @@
   align-content: start;
   padding: 28px 30px 34px;
   color: #111827;
+  background: var(--icu-page-background);
 }
 
 .header {

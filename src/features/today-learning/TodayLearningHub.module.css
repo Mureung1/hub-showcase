@@ -1,9 +1,7 @@
 .page {
   min-height: 100vh;
   color: #111827;
-  background:
-    linear-gradient(135deg, #ffecd2 0%, transparent 24%),
-    linear-gradient(160deg, #e8f1fa 0%, #d7e8fb 100%);
+  background: var(--icu-page-background);
 }
 
 .content {

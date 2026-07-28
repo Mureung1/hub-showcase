@@ -6,7 +6,7 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 16px;
   padding: 18px 20px 22px;
-  background: transparent;
+  background: var(--icu-page-background);
   color: #102346;
 }
 

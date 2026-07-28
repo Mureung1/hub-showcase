@@ -2,12 +2,7 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  background:
-    radial-gradient(circle at 5% 10%, rgb(255 138 28 / 44%), transparent 28%),
-    radial-gradient(circle at 38% 0%, rgb(243 184 216 / 34%), transparent 30%),
-    radial-gradient(circle at 70% 8%, rgb(53 200 244 / 42%), transparent 32%),
-    radial-gradient(circle at 100% 0%, rgb(7 0 61 / 62%), transparent 34%),
-    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
+  background: var(--icu-page-background);
 }
 
 .navigator {

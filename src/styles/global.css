@@ -33,6 +33,10 @@
     format('woff2');
 }
 :root {
+  --icu-page-background:
+    linear-gradient(161deg, #fff5e8 0%, transparent 24%),
+    linear-gradient(160deg, #ffffff 0%, #c0deff 100%);
+
   font-family:
     'LINE Seed KR',
     Inter,
@@ -43,7 +47,7 @@
     'Segoe UI',
     sans-serif;
   color: #172033;
-  background: #0a0a0f;
+  background: var(--icu-page-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -59,6 +63,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  background: var(--icu-page-background);
 }
 
 button,
