@@ -3,8 +3,8 @@
   "title": "TasteFit",
   "summary": "사용자의 취향과 비슷한 사람들이 작성한 리뷰를 우선적으로 보여주고, 이용 상황에 맞는 가게를 추천하는 맞춤형 맛집 탐색 서비스입니다.",
   "githubUser": "wjstpdnjs25-oss(전세원)",
-  "demoUrl": "https://drive.google.com/file/d/1-g371xrgLxknX4HVeiIFu48LymESAMxv/view?usp=sharing",
-  "thumbnail": "thumbnail.jpg",
+  "demoUrl": "",
+  "thumbnail": "thumnail.jpg",
   "screenshots": [
     "screenshots/SituationiSelection.jpg",
     "screenshots/searchResult.jpg",
