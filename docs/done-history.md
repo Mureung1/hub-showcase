@@ -62,6 +62,11 @@ This file records work that has already been installed, created, implemented, or
   - Related files: `src/utils/stamp.js`
   - Verification: `node --input-type=module -e "...stamp utils checks..."`; `cmd /c npm run verify`
   - Do not suggest again: fixing the first garbled QR/member lookup validation messages
+- Deployed the MVP to Vercel and confirmed the production pilot flow.
+  - Production URL: `https://moang.vercel.app/login`
+  - Related files: `vercel.json`, Vercel project settings, Supabase Auth URL Configuration
+  - Verification: deployed Vercel project; Supabase Site URL `https://moang.vercel.app`; Redirect URL `https://moang.vercel.app/**`; customer login; owner login; owner member lookup; stamp award; customer refresh reflecting the updated stamp/notification/coupon state
+  - Do not suggest again: first Vercel deployment setup for the Moang MVP
 
 ### Verify Only
 - Check the owner dashboard visually with a real owner account and live Supabase data.
