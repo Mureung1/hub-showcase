@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './Row.module.css';
-import { ChevronRightIcon, PlusIcon } from '../icons';
+import { ChevronRightIcon, PlusIcon, TrashIcon } from '../icons';
 
 type IconVariant = 'sleep' | 'study' | 'caffeine' | 'exam';
 
@@ -17,6 +17,13 @@ interface RowProps {
   right?: ReactNode;
   href?: string;
   onClick?: () => void;
+  /**
+   * #40 — 있으면 로우 오른쪽 끝에 삭제(휴지통) 버튼을 붙인다. 이 버튼은 로우 본체(클릭 시
+   * 열기) 버튼 "밖"에 나란히 놓는다 — 버튼 안에 버튼을 넣으면 안 되는(HTML 규칙) 문제를 피한다.
+   */
+  onDelete?: () => void;
+  /** 삭제 버튼의 스크린리더용 설명. 기본 "삭제" */
+  deleteLabel?: string;
 }
 
 /**
@@ -34,8 +41,13 @@ export function Row({
   right,
   href,
   onClick,
+  onDelete,
+  deleteLabel,
 }: RowProps) {
-  const className = isAdd ? `${styles.row} ${styles.isAdd}` : styles.row;
+  // 삭제 버튼이 붙으면 본체가 공간을 다 먹지 않게 flex 아이템으로 만든다(rowInWrap)
+  const className = [styles.row, isAdd && styles.isAdd, onDelete && styles.rowInWrap]
+    .filter(Boolean)
+    .join(' ');
 
   const content = (
     <>
@@ -56,21 +68,33 @@ export function Row({
     </>
   );
 
-  if (href) {
+  const main = href ? (
+    <Link to={href} className={className}>
+      {content}
+    </Link>
+  ) : onClick ? (
+    <button type="button" className={className} onClick={onClick}>
+      {content}
+    </button>
+  ) : (
+    <div className={className}>{content}</div>
+  );
+
+  if (onDelete) {
     return (
-      <Link to={href} className={className}>
-        {content}
-      </Link>
+      <div className={styles.rowWrap}>
+        {main}
+        <button
+          type="button"
+          className={styles.rowDelete}
+          onClick={onDelete}
+          aria-label={deleteLabel ?? '삭제'}
+        >
+          <TrashIcon />
+        </button>
+      </div>
     );
   }
 
-  if (onClick) {
-    return (
-      <button type="button" className={className} onClick={onClick}>
-        {content}
-      </button>
-    );
-  }
-
-  return <div className={className}>{content}</div>;
+  return main;
 }
