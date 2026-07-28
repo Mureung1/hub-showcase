@@ -517,6 +517,10 @@ export default function Analyze() {
   // PhotoUpload가 canvas.toDataURL로 만든 **data URL**이라 URL.revokeObjectURL 대상이 아니다
   // (objectURL이 아니라 문자열이라 참조가 끊기면 그대로 회수된다). 상태를 비우는 것으로 충분하다.
   const [resultPhotoUrl, setResultPhotoUrl] = useState(null)
+  // 한 판 통합 분석(5주차 §3-B, CafeteriaPanel의 5번째 입구)에서만 채워지는 결과 카드 표시 오버라이드
+  // — titleOverride("중식(통합)" 등)·sourceNote("공식 영양정보 기준"/"추정"). 일반 사진/텍스트/라벨
+  // 분석에서는 항상 빈 객체라 AnalysisResultCard의 기존 표시 로직이 그대로 쓰인다.
+  const [resultMeta, setResultMeta] = useState({})
 
   // 학식(대학) 화면의 "영양 분석" 버튼처럼, 다른 화면에서 메뉴 이름을 미리 채운 채 이 화면으로 들어오는
   // 4번째 입구(PRD 4주차 FR-1.3) — 새 분석 파이프라인을 만들지 않고 기존 텍스트 경로 입력만 채워준다.
@@ -529,11 +533,27 @@ export default function Analyze() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state])
 
+  // 5번째 입구 — 학식·급식 카드의 "한 판 통합 분석"(CafeteriaPanel.jsx)이 이미 완성된
+  // { items, total }을 들고 여기로 곧장 들어온다. 식별·DB조회 단계 없이 바로 STATUS.RESULT로
+  // 점프한다는 점만 다르고, 그 다음(시간대 선택 → 저장)은 기존 흐름과 완전히 동일하다.
+  useEffect(() => {
+    const trayPrefill = location.state?.prefillTrayAnalysis
+    if (!trayPrefill || !isMealAnalysis(trayPrefill.pendingAnalysis)) return
+    setPendingAnalysis(trayPrefill.pendingAnalysis)
+    setResultPhotoUrl(null)
+    setResultMeta({ titleOverride: trayPrefill.titleOverride, sourceNote: trayPrefill.sourceNote })
+    setMealType(trayPrefill.mealType || getRecommendedMealType())
+    setStatus(STATUS.RESULT)
+    navigate(location.pathname, { replace: true, state: {} })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
+
   // IDLE로 되돌리며 입력까지 전부 비운다. 저장 완료와 "다시 찍기"가 공유한다.
   function resetToIdle() {
     setStatus(STATUS.IDLE)
     setPendingAnalysis(null)
     setResultPhotoUrl(null)
+    setResultMeta({})
     setPhoto(null)
     setMenuName('')
     setBrand('')
@@ -658,6 +678,8 @@ export default function Analyze() {
           onSave={handleConfirmSave}
           onRetake={resetToIdle}
           saving={saving}
+          titleOverride={resultMeta.titleOverride}
+          sourceNote={resultMeta.sourceNote}
         />
       ) : mode === 'food' ? (
         // key={status}: IDLE과 ANALYZING이 같은 <Card>라 React가 DOM 노드를 재사용하는데, 그러면

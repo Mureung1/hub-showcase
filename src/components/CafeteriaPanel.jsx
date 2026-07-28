@@ -14,6 +14,11 @@ import { MILAIZE_ALLERGENS } from '../lib/allergyRules.js'
 import { CNU1_EXTERNAL_LINK, CNU_BUILDINGS, getSelectedCnuBuilding, setSelectedCnuBuilding } from '../lib/cnuBuildings.js'
 import { buildDaySlots, isDayEmpty } from '../lib/cnuDayView.js'
 import { openExternalLink } from '../lib/externalLink.js'
+import { geminiCompleteWithRetry } from '../lib/gemini.js'
+import { GEMINI_TEMPERATURE, TRAY_ANALYSIS_SCHEMA } from '../lib/geminiSchemas.js'
+import { assignTrayWeights } from '../lib/mealPortions.js'
+import { NUTRITION_SOURCE } from '../lib/nutrition.js'
+import { buildTrayAnalysisPrompt, parseTrayAnalysisResult } from '../lib/prompts/trayAnalysis.js'
 import { getSchoolMeals } from '../lib/schoolMeal.js'
 import { getUnivWeek } from '../lib/univMeal.js'
 import { toDateKey } from '../lib/records.js'
@@ -42,6 +47,86 @@ function buildNutrientRows(nutrients) {
     unit,
     value: nutrients[key],
   }))
+}
+
+// ── 한 판 통합 분석(5주차 §3-B) ──────────────────────────────────────────────
+// 식별 단계 없이(무엇을 먹었는지는 이미 앎) 중량만 배분(mealPortions.js)해 영양 성분 추정을
+// Gemini에 맡긴다. 기존 /api/gemini 경로를 그대로 쓰고, 결과는 Analyze.jsx의 기존 결과 카드
+// 상태 머신(STATUS.RESULT → AnalysisResultCard → 저장)에 그대로 얹는다 — 이 파일은 그 입력을
+// 만들어 navigate로 건네주기만 한다.
+const TRAY_ANALYSIS_FAILURE_MESSAGE = '통합 분석에 실패했어요. 메뉴별 분석을 이용해주세요.'
+
+async function requestTrayAnalysis(menuNames) {
+  const trayItems = assignTrayWeights(menuNames)
+  const prompt = buildTrayAnalysisPrompt(trayItems)
+  const callOnce = () =>
+    geminiCompleteWithRetry({
+      prompt,
+      schema: TRAY_ANALYSIS_SCHEMA,
+      schemaName: 'tray_analysis',
+      temperature: GEMINI_TEMPERATURE.trayAnalysis,
+    })
+
+  let result = parseTrayAnalysisResult(await callOnce())
+  if (!result) {
+    result = parseTrayAnalysisResult(await callOnce())
+  }
+  if (!result) {
+    throw new Error(TRAY_ANALYSIS_FAILURE_MESSAGE)
+  }
+  return result
+}
+
+function toAnalysisItems(trayItems) {
+  return trayItems.map((item) => ({
+    name: item.name,
+    nutrients: {
+      calories: item.calories,
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat,
+      fiber: item.fiber,
+      sodium: item.sodium,
+    },
+    source: NUTRITION_SOURCE.ESTIMATED,
+  }))
+}
+
+// officialCalories: NEIS 급식만 넘긴다 — 있으면 합계 칼로리를 NEIS 공식값으로 덮어써 "공식
+// 영양정보 기준"으로 표기하고(항목별 배분은 여전히 Gemini 추정 참고용), 없으면(학식) Gemini
+// 합계를 그대로 "추정"으로 표기한다.
+function buildTrayAnalysisNavState(trayResult, { mealTypeKey, mealTypeLabel, officialCalories }) {
+  const items = toAnalysisItems(trayResult.items)
+  const total = officialCalories != null ? { ...trayResult.total, calories: officialCalories } : trayResult.total
+  return {
+    prefillTrayAnalysis: {
+      pendingAnalysis: { items, total },
+      mealType: mealTypeKey,
+      titleOverride: `${mealTypeLabel}(통합)`,
+      sourceNote: officialCalories != null ? '공식 영양정보 기준' : '추정',
+    },
+  }
+}
+
+function useTrayAnalysis(navigate) {
+  const [analyzing, setAnalyzing] = useState(false)
+  const [error, setError] = useState('')
+
+  async function run(menuNames, options) {
+    if (analyzing) return
+    setAnalyzing(true)
+    setError('')
+    try {
+      const trayResult = await requestTrayAnalysis(menuNames)
+      navigate('/analyze', { state: buildTrayAnalysisNavState(trayResult, options) })
+    } catch (err) {
+      setError(err.message || TRAY_ANALYSIS_FAILURE_MESSAGE)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  return { analyzing, error, run }
 }
 
 function startOfWeek(date) {
@@ -157,13 +242,25 @@ function WeekTabs({ weekDates, selectedKey, todayKey, onSelect }) {
 }
 
 function NeisMealCard({ meal }) {
+  const navigate = useNavigate()
+  const { analyzing, error, run } = useTrayAnalysis(navigate)
+  const label = MEAL_TYPE_LABEL[meal.mealType] || meal.mealType
+
   return (
     <MealCard
-      title={MEAL_TYPE_LABEL[meal.mealType] || meal.mealType}
+      title={label}
       calories={meal.calories}
       menus={meal.menus}
       nutrients={buildNutrientRows(meal.nutrients)}
       estimated={false}
+      onAnalyzeTray={() =>
+        run(
+          meal.menus.map((m) => m.name),
+          { mealTypeKey: meal.mealType, mealTypeLabel: label, officialCalories: meal.calories },
+        )
+      }
+      trayAnalyzing={analyzing}
+      trayError={error}
     />
   )
 }
@@ -324,10 +421,40 @@ const PERIOD_NOTE_TEXT = {
   unknown: '정보를 확인할 수 없어요',
 }
 
+// 열린 한 끼(조식/중식/석식) 카드 — 메뉴별 분석(기존)과 한 판 통합 분석(5주차 §3-B) 버튼을 함께
+// 그린다. 자체 useTrayAnalysis 인스턴스를 가지므로, 같은 날 조식 카드가 분석 중이어도 중식 카드는
+// 영향받지 않는다(카드별로 독립된 로딩/에러).
+function UnivMealSlotCard({ mealKey, label, slot }) {
+  const navigate = useNavigate()
+  const { analyzing, error, run } = useTrayAnalysis(navigate)
+
+  return (
+    <MealCard
+      title={label}
+      price={slot.price}
+      // slot.menus는 이미 cnuWeeklyParser.js가 allergyCodes까지 계산해서 준다(주석 기반 태깅 +
+      // 키워드 태깅 합집합) — 여기서 다시 추정하면 오히려 정확도가 떨어져(주석은 서버가 이미
+      // 제거함) 그대로 쓴다.
+      menus={slot.menus}
+      estimated
+      // 학식은 영양 정보가 없어 기존 텍스트 분석 경로로 넘겨 추정한다(FR-1.3) — 새 파이프라인을
+      // 만들지 않고 Analyze.jsx의 4번째 입구(prefillMenuName)만 쓴다.
+      onAnalyzeMenu={(menuName) => navigate('/analyze', { state: { prefillMenuName: menuName } })}
+      onAnalyzeTray={() =>
+        run(
+          slot.menus.map((m) => m.name),
+          { mealTypeKey: mealKey, mealTypeLabel: label, officialCalories: null },
+        )
+      }
+      trayAnalyzing={analyzing}
+      trayError={error}
+    />
+  )
+}
+
 // 선택한 날짜·건물·트랙(학생/직원)의 조식/중식/석식을 그린다. open만 전체 MealCard, 나머지
 // (closed/suspended/unknown)는 한 줄 안내로 공간을 아낀다 — 하루 전체가 비면 기존 빈 상태 문구.
 function UnivDayMeals({ meals, track, source, updatedAt }) {
-  const navigate = useNavigate()
   const slots = buildDaySlots(meals, track)
 
   if (isDayEmpty(slots)) {
@@ -363,21 +490,7 @@ function UnivDayMeals({ meals, track, source, updatedAt }) {
             </p>
           )
         }
-        return (
-          <MealCard
-            key={key}
-            title={label}
-            price={slot.price}
-            // slot.menus는 이미 cnuWeeklyParser.js가 allergyCodes까지 계산해서 준다(주석 기반 태깅 +
-            // 키워드 태깅 합집합) — 여기서 다시 추정하면 오히려 정확도가 떨어져(주석은 서버가 이미
-            // 제거함) 그대로 쓴다.
-            menus={slot.menus}
-            estimated
-            // 학식은 영양 정보가 없어 기존 텍스트 분석 경로로 넘겨 추정한다(FR-1.3) — 새 파이프라인을
-            // 만들지 않고 Analyze.jsx의 4번째 입구(prefillMenuName)만 쓴다.
-            onAnalyzeMenu={(menuName) => navigate('/analyze', { state: { prefillMenuName: menuName } })}
-          />
-        )
+        return <UnivMealSlotCard key={key} mealKey={key} label={label} slot={slot} />
       })}
     </>
   )

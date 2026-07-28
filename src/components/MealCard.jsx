@@ -3,7 +3,9 @@
 // 알레르기는 메뉴마다 칩을 반복하지 않고 번호 위첨자 + 카드 하단 범례 1줄로 축약한다 — 같은 성분이
 // 메뉴 수만큼 반복 등장해 카드가 세로로 길어지던 문제를 없앤다.
 import { useState } from 'react'
+import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
+import Spinner from './Spinner.jsx'
 import { getAllergenByCode } from '../lib/allergyRules.js'
 import { codeNumber, sortAllergyCodes, toSuperscript } from '../lib/allergyDisplay.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -129,7 +131,21 @@ function MenuList({ menus, onAnalyzeMenu }) {
 // nutrients: [{key,label,unit,value}] | undefined(없으면 섹션 자체를 숨김). estimated: 학식(추정) true,
 // 급식(NEIS 공식) false — 범례 앞 배지로만 구분하고 태그 하나하나에는 배지를 달지 않는다.
 // onAnalyzeMenu: 있으면(학식) 메뉴별 [영양 분석] 버튼을 그린다.
-export default function MealCard({ title, subtitle, calories, price, menus, nutrients, estimated = false, onAnalyzeMenu }) {
+// onAnalyzeTray: 있으면(5주차 §3-B) "한 판 통합 분석" 버튼을 그린다 — 메뉴별 [영양 분석](작은
+// 아웃라인)과 시각적으로 구분되도록 카드 하단에 꽉 찬 주 버튼으로 둔다(이쪽이 주 동선).
+export default function MealCard({
+  title,
+  subtitle,
+  calories,
+  price,
+  menus,
+  nutrients,
+  estimated = false,
+  onAnalyzeMenu,
+  onAnalyzeTray,
+  trayAnalyzing = false,
+  trayError = '',
+}) {
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -147,6 +163,16 @@ export default function MealCard({ title, subtitle, calories, price, menus, nutr
       <MenuList menus={menus} onAnalyzeMenu={onAnalyzeMenu} />
       <AllergyLegend menus={menus} estimated={estimated} />
       <NutrientSection nutrients={nutrients} />
+
+      {onAnalyzeTray && (
+        <div style={{ marginTop: spacing.md }}>
+          <AppButton onClick={onAnalyzeTray} disabled={trayAnalyzing}>
+            {trayAnalyzing && <Spinner size={16} />}
+            {trayAnalyzing ? '분석 중...' : '한 판 통합 분석'}
+          </AppButton>
+          {trayError && <p style={{ ...styles.errorText, textAlign: 'center' }}>{trayError}</p>}
+        </div>
+      )}
     </Card>
   )
 }

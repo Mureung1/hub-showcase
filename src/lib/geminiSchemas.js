@@ -14,6 +14,7 @@
 // │ 식당 대표 메뉴 예상 섭취량 │ EXPECTED_INTAKE_SCHEMA       │ 0.2  │ 수치 일관성
 // │ 보충 추천 메뉴(결과 화면)  │ RECOMMENDATION_SCHEMA        │ 0.6  │ 메뉴 다양성 + 자연스러운 이유
 // │ AI 식습관 분석(달력 탭)    │ DIET_ANALYSIS_SCHEMA         │ 0.5  │ 근거 기반이되 표현은 다양하게
+// │ 한 판 통합 분석(학식·급식) │ TRAY_ANALYSIS_SCHEMA         │ 0.2  │ 수치 추정 일관성
 // └───────────────────────────┴──────────────────────────────┴──────┘
 // strict 모드 규칙: 모든 property는 required에 있어야 하고 additionalProperties: false여야 한다.
 // "없을 수 있는 값"은 키를 빼는 게 아니라 null을 허용(type: ['x','null'])하는 방식으로 표현한다.
@@ -186,6 +187,30 @@ export const DIET_ANALYSIS_SCHEMA = {
   additionalProperties: false,
 }
 
+// 한 판 통합 분석 응답 (trayAnalysis.js parseTrayAnalysisResult와 짝). items는 요청에 담긴 메뉴
+// 개수만큼, 각 항목 6개 영양소 + total 6개 영양소 전부 숫자 필수.
+export const TRAY_ANALYSIS_SCHEMA = {
+  type: 'object',
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          weight: { type: 'number' },
+          ...Object.fromEntries(NUTRIENT_KEYS.map((key) => [key, { type: 'number' }])),
+        },
+        required: ['name', 'weight', ...NUTRIENT_KEYS],
+        additionalProperties: false,
+      },
+    },
+    total: NUTRIENT_SET_SCHEMA,
+  },
+  required: ['items', 'total'],
+  additionalProperties: false,
+}
+
 // 호출별 temperature (위 표와 동일 — 값을 바꿀 땐 표도 갱신).
 export const GEMINI_TEMPERATURE = {
   identification: 0.2,
@@ -194,4 +219,5 @@ export const GEMINI_TEMPERATURE = {
   expectedIntake: 0.2,
   recommendation: 0.6,
   dietAnalysis: 0.5,
+  trayAnalysis: 0.2,
 }

@@ -76,9 +76,15 @@ export default function AnalysisResultCard({
   onSave,
   onRetake,
   saving,
+  // 한 판 통합 분석(5주차 §3-B) 전용 — 둘 다 생략하면 기존 사진/텍스트 분석과 완전히 동일하게 동작한다.
+  // titleOverride: titleOf(items) 대신 쓸 표시 이름("중식(통합)" 등). items·저장 데이터는 그대로다.
+  // sourceNote: 합계 kcal 아래에 붙는 작은 안내("공식 영양정보 기준" | "추정") — NEIS 공식 열량을
+  // 썼는지, 전부 AI 추정인지 구분해준다.
+  titleOverride,
+  sourceNote,
 }) {
   const { items, total } = analysis
-  const title = titleOf(items)
+  const title = titleOverride || titleOf(items)
   // 음식이 2개 이상일 때만 펼치기를 준다 — 1개면 위의 합계 막대가 곧 그 음식의 막대라 똑같은 내용이
   // 두 번 나온다. 기본은 접힘: 결과 카드가 촬영 카드 자리를 대신하는 만큼, 처음엔 합계만 보여 한눈에
   // 들어오게 하고 필요한 사람만 펼치게 한다.
@@ -123,6 +129,7 @@ export default function AnalysisResultCard({
           <p style={{ margin: 0, fontSize: font.size.sm, color: colors.textSub }}>
             총 <strong style={{ color: colors.textStrong }}>{formatNutrient(total.calories)}</strong> kcal
           </p>
+          {sourceNote && <p style={{ margin: '2px 0 0', fontSize: font.size.xs, color: colors.muted }}>{sourceNote}</p>}
         </div>
       </div>
 
