@@ -95,17 +95,25 @@ describe('LibraryPage', () => {
 
   it('keeps a no-result query and offers clear and save actions', async () => {
     const user = userEvent.setup();
+    const onCategoryChange = vi.fn();
     const onOpenSave = vi.fn();
     const onQueryChange = vi.fn();
 
     render(
       <DesignSystemProvider>
         <LibraryPage
-          activeCategory="all"
-          categoryOptions={[{ colorKey: null, label: '전체', value: 'all' }]}
+          activeCategory={DEVELOPMENT_CATEGORY_ID}
+          categoryOptions={[
+            { colorKey: null, label: '전체', value: 'all' },
+            {
+              colorKey: 'blue-2',
+              label: '개발',
+              value: DEVELOPMENT_CATEGORY_ID,
+            },
+          ]}
           insights={[]}
           totalInsightCount={1}
-          onCategoryChange={vi.fn()}
+          onCategoryChange={onCategoryChange}
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           onOpenImport={vi.fn()}
           onOpenSave={onOpenSave}
@@ -129,6 +137,7 @@ describe('LibraryPage', () => {
     await user.click(screen.getByRole('button', { name: '검색어 지우기' }));
 
     expect(onQueryChange).toHaveBeenCalledWith('');
+    expect(onCategoryChange).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(search);
 
     await user.click(screen.getByRole('button', { name: '인사이트 저장하기' }));

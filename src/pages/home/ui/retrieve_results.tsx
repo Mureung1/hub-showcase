@@ -42,10 +42,25 @@ export function RetrieveResults({
             actionLabel="보관함 보기"
             description="검색어를 줄이거나 다른 상황을 입력해 보세요."
             onAction={onOpenLibrary}
-            title={`“${submittedQuery}”로 찾은 인사이트가 없어요`}
+            title={`“${submittedQuery}”${getRoParticle(submittedQuery)} 찾은 인사이트가 없어요`}
           />
         </div>
       )}
     </section>
   );
+}
+
+function getRoParticle(value: string) {
+  const lastCharacter = value.trim().at(-1);
+  if (!lastCharacter) {
+    return '로';
+  }
+
+  const codePoint = lastCharacter.codePointAt(0);
+  if (codePoint === undefined || codePoint < 0xac00 || codePoint > 0xd7a3) {
+    return '로';
+  }
+
+  const finalConsonantIndex = (codePoint - 0xac00) % 28;
+  return finalConsonantIndex === 0 || finalConsonantIndex === 8 ? '로' : '으로';
 }

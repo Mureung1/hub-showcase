@@ -46,7 +46,10 @@ const FORBIDDEN_PATTERNS = [
   { label: '중복 주소 용어', pattern: /링크 URL/u },
   { label: '카테고리 용어 충돌', pattern: /(?<!미)분류/u },
   { label: '명사형 저장 상태', pattern: /저장됨/u },
-  { label: '모호한 다이얼로그 닫기', pattern: />\s*취소\s*</u },
+  {
+    label: '모호한 다이얼로그 닫기',
+    pattern: /(?:>\s*취소\s*<|(?:aria-label|title)\s*=\s*["']취소["'])/u,
+  },
 ] as const;
 
 function userFacingSource(source: string) {
@@ -67,7 +70,9 @@ function findViolations(source: string) {
 describe('제품 UX Writing 계약', () => {
   it('금지 문체와 모호한 닫기 행동을 찾는다', () => {
     expect(
-      findViolations('<button>취소</button> 저장했습니다. 저장됨 링크 URL')
+      findViolations(
+        '<button>취소</button><button aria-label="취소" title="취소"></button> 저장했습니다. 저장됨 링크 URL'
+      )
     ).toEqual([
       '하십시오체',
       '중복 주소 용어',

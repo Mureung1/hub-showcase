@@ -79,7 +79,9 @@ export function SavePage({
   return (
     <section className="save-page" aria-labelledby="save-title">
       <header className="save-page__header">
-        <p className="save-page__kicker">URL을 입력하면 바로 저장해요</p>
+        {!isSharedSave ? (
+          <p className="save-page__kicker">URL을 입력하면 바로 저장해요</p>
+        ) : null}
         <h2 id="save-title">
           {isSharedSave
             ? '공유한 링크를 저장할까요?'

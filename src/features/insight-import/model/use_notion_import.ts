@@ -218,7 +218,7 @@ export function useNotionImport({
           await api.cancel(currentConnectionId);
         } catch {
           setErrorMessage(
-            '연결 해제를 다시 시도할게요. 보관함 내용은 바뀌지 않았어요.'
+            'Notion 연결이 남아 있을 수 있어요. Notion 설정에서 직접 연결을 해제해 주세요. 보관함 내용은 바뀌지 않았어요.'
           );
         }
       }
@@ -244,7 +244,7 @@ export function useNotionImport({
         }
       } catch {
         setErrorMessage(
-          '인사이트는 가져왔어요. 연결 해제는 자동으로 다시 시도할게요.'
+          '인사이트는 가져왔어요. Notion 연결이 남아 있을 수 있어요. Notion 설정에서 직접 연결을 해제해 주세요.'
         );
       } finally {
         activeConnectionRef.current = null;

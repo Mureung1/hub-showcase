@@ -334,7 +334,7 @@ describe('HomePage', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '“없는 상황”로 찾은 인사이트가 없어요',
+        name: '“없는 상황”으로 찾은 인사이트가 없어요',
       })
     ).not.toBeNull();
     expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
@@ -381,7 +381,7 @@ describe('HomePage', () => {
     expect(
       screen
         .getByRole('heading', {
-          name: `“${longQuery}”로 찾은 인사이트가 없어요`,
+          name: `“${longQuery}”으로 찾은 인사이트가 없어요`,
         })
         .closest('.home-page__no-results')
     ).not.toBeNull();

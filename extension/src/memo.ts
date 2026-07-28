@@ -74,7 +74,7 @@ export function mountMemoPage({
       .sendMessage({ insightId, memo, type: 'save-insight-memo' })
       .then((result) => {
         if (isSuccessfulMemoResult(result)) {
-          showStatus(status, '메모를 저장했어요', 'success');
+          showStatus(status, '메모를 저장했어요.', 'success');
           schedule(closeWindow, 350);
           return;
         }

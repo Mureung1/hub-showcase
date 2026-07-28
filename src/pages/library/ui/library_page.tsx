@@ -77,6 +77,11 @@ export function LibraryPage({
     searchInputRef.current?.focus();
   }
 
+  function clearQuery() {
+    onQueryChange('');
+    searchInputRef.current?.focus();
+  }
+
   return (
     <section className="library-page" aria-labelledby="library-title">
       <header className="library-page__header">
@@ -182,7 +187,7 @@ export function LibraryPage({
           <EmptyState
             actionLabel="검색어 지우기"
             description="검색어를 줄이거나 다른 단서를 입력해 보세요."
-            onAction={clearFilters}
+            onAction={clearQuery}
             onSecondaryAction={onOpenSave}
             secondaryActionLabel="인사이트 저장하기"
             title="이 검색어로 찾은 인사이트가 없어요"

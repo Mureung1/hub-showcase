@@ -55,7 +55,7 @@ describe('mountMemoPage', () => {
       type: 'save-insight-memo',
     });
     expect(getByRole(document.body, 'status')).toHaveTextContent(
-      '메모를 저장했어요'
+      '메모를 저장했어요.'
     );
     expect(closeWindow).toHaveBeenCalledOnce();
   });
