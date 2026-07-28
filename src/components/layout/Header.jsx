@@ -130,14 +130,9 @@ function Header() {
                 </button>
               </>
             ) : (
-              <>
-                <Link className="nav-link" to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>
-                  로그인
-                </Link>
-                <Link className="nav-link pill" to={`/signup?redirect=${encodeURIComponent(location.pathname)}`}>
-                  회원가입
-                </Link>
-              </>
+              <Link className="nav-link" to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>
+                로그인
+              </Link>
             )
           )}
         </nav>
