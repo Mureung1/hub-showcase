@@ -3,6 +3,7 @@
   "title": "리뷰 매니저 AI",
   "summary": "손님 리뷰를 붙여넣으면 감정 분석, AI 관심도 점수, 답변 초안까지 한 번에 확인하는 소상공인용 리뷰 관리 도구입니다.",
   "githubUser": "rldbs5353(엄기윤)",
+  "demoUrl": "https://hub-lovat-omega.vercel.app",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/guide.webp",
