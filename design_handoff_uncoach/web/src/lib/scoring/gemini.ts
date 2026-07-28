@@ -36,22 +36,35 @@ function retryAfterSec(data: GeminiResponse | null): number | null {
   return m ? parseFloat(m[1]) : null;
 }
 
-function friendlyError(status: number, data: GeminiResponse | null): Error {
+/** 폴백(데모/큐레이션)으로 대체해도 되는 '일시적 이용 불가'인지 표시. 키오류·안전필터 등 설정/내용 문제와 구분한다. */
+export function isUnavailable(e: unknown): boolean {
+  return !!(e as { unavailable?: boolean })?.unavailable;
+}
+function unavail(e: Error): Error {
+  (e as Error & { unavailable?: boolean }).unavailable = true;
+  return e;
+}
+
+export function friendlyError(status: number, data: GeminiResponse | null): Error {
   const raw = data?.error?.message || `HTTP ${status}`;
-  if (status === 429) {
-    const s = retryAfterSec(data);
-    if (!s || s > 300) {
-      const when = s ? `약 ${Math.ceil(s / 60)}분 뒤` : "내일";
-      return new Error(`Gemini 무료 사용량 한도를 다 썼습니다. ${when}에 다시 시도해주세요.`);
-    }
-    return new Error(`Gemini 요청 한도에 걸렸습니다. 약 ${Math.ceil(s)}초 뒤에 다시 시도해주세요.`);
-  }
+  // 429(사용량 소진)·5xx(서버 불안정)는 잠시 후 회복되는 일시적 불가 → 폴백 허용. 키/권한 오류는 제외.
+  if (status === 429 || status >= 500) return unavail(new Error(rawFriendly(status, data)));
   if (status === 400 && /API[_ ]key not valid|API_KEY_INVALID/i.test(raw)) {
     return new Error("Gemini API 키가 올바르지 않습니다.");
   }
   if (status === 403) return new Error("이 Gemini API 키로는 요청이 거부되었습니다.");
-  if (status >= 500) return new Error("Gemini 서버가 일시적으로 불안정합니다. 잠시 뒤 다시 시도해주세요.");
   return new Error(raw);
+}
+
+/** 429/5xx의 사용자 메시지 문자열(분류는 friendlyError가 이미 함). */
+function rawFriendly(status: number, data: GeminiResponse | null): string {
+  if (status >= 500) return "Gemini 서버가 일시적으로 불안정합니다. 잠시 뒤 다시 시도해주세요.";
+  const s = retryAfterSec(data);
+  if (!s || s > 300) {
+    const when = s ? `약 ${Math.ceil(s / 60)}분 뒤` : "내일";
+    return `Gemini 무료 사용량 한도를 다 썼습니다. ${when}에 다시 시도해주세요.`;
+  }
+  return `Gemini 요청 한도에 걸렸습니다. 약 ${Math.ceil(s)}초 뒤에 다시 시도해주세요.`;
 }
 
 /** Gemini 응답에서 첫 JSON 블록을 관대하게 파싱한다(트레일링 콤마·스마트따옴표 허용). */
@@ -87,7 +100,7 @@ export function extractSource(data: GeminiResponse): { uri: string; title: strin
 /** Gemini generateContent 호출. 429/5xx는 RetryInfo 기반 자동 재시도(최대 3회, 45초 상한). */
 export async function callGemini(model: string, body: GeminiBody): Promise<GeminiResponse> {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("NO_KEY");
+  if (!key) throw unavail(new Error("NO_KEY"));
   const MAX_ATTEMPTS = 3;
   const MAX_WAIT_SEC = 45;
   for (let attempt = 1; ; attempt++) {

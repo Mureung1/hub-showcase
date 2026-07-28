@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { scoreDraft } from '@/lib/scoring/score';
+import { isUnavailable } from '@/lib/scoring/gemini';
+import { demoScore } from '@/lib/scoring/fallback';
 import { getSituation } from '@/lib/domain/situations';
 import { sameOrigin, rateLimit, clientIp } from '@/lib/server/guard';
 import type { Situation } from '@/lib/domain/types';
@@ -45,14 +47,19 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(result);
   } catch (e) {
-    const msg = (e as Error).message;
-    if (msg === 'NO_KEY') {
+    // Gemini 사용량 소진·키 없음 등 일시적 불가면 예시(데모) 채점으로 대체(demo:true 라벨). 그 외는 실제 에러.
+    if (isUnavailable(e)) {
       return NextResponse.json(
-        { error: 'GEMINI_API_KEY가 서버에 설정되지 않았습니다.' },
-        { status: 503 },
+        demoScore({
+          situation,
+          draft,
+          thread: body.thread,
+          profile: body.profile,
+          emailSubject: body.emailSubject,
+        }),
       );
     }
     console.error('[api/score]', e);
-    return NextResponse.json({ error: '채점 중 문제가 발생했습니다: ' + msg }, { status: 500 });
+    return NextResponse.json({ error: '채점 중 문제가 발생했습니다: ' + (e as Error).message }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseLooseJson, extractText, extractSource } from "./gemini";
+import { parseLooseJson, extractText, extractSource, friendlyError, isUnavailable } from "./gemini";
 
 describe("parseLooseJson", () => {
   it("정상 JSON을 그대로 파싱", () => {
@@ -31,6 +31,24 @@ describe("extractText", () => {
   it("텍스트 없는 파트는 빈 문자열로 취급", () => {
     const data = { candidates: [{ content: { parts: [{ text: "a" }, {}] } }] };
     expect(extractText(data)).toBe("a");
+  });
+});
+
+describe("friendlyError — 폴백 발동 분류", () => {
+  // 이게 어긋나면 키 문제인데도 조용히 데모 채점이 나가거나(오진), 일시적 한도인데 앱이 죽는다.
+  it("429(사용량 소진)는 unavailable → 폴백 허용", () => {
+    expect(isUnavailable(friendlyError(429, null))).toBe(true);
+  });
+  it("5xx(서버 불안정)는 unavailable → 폴백 허용", () => {
+    expect(isUnavailable(friendlyError(503, null))).toBe(true);
+  });
+  it("400 키 오류는 unavailable 아님 → 정직한 에러", () => {
+    const e = friendlyError(400, { error: { message: "API key not valid" } });
+    expect(isUnavailable(e)).toBe(false);
+    expect(e.message).toMatch(/키/);
+  });
+  it("403 권한 거부는 unavailable 아님 → 정직한 에러", () => {
+    expect(isUnavailable(friendlyError(403, null))).toBe(false);
   });
 });
 

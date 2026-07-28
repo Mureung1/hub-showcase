@@ -1,12 +1,26 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useApp } from "@/lib/client/store";
-import { getSituation, totalOf, modeOf, MODE_LABEL } from "@/lib/domain/situations";
+import { getSituation, totalOf, modeOf, MODE_LABEL, AXES, type ModeKey } from "@/lib/domain/situations";
+import { NEWS_AXES, fromScores } from "@/lib/domain/news-score";
 import { DEMO_SITS } from "@/lib/domain/demo-sits";
+import type { Scores } from "@/lib/domain/types";
 import DashboardLayout from "@/components/stitch/DashboardLayout";
 import type { ScreenKey } from "@/components/AppShell";
 
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 기록의 축별 점수를 화면에 되짚을 때, 뉴스는 자체 축(핵심 포착·사실 정확성·압축)으로 라벨을 붙인다.
+// 저장 슬롯(context/register/strategy)은 가중치로만 짝지은 것이라, 뉴스 기록을 대화·메일 라벨로
+// 읽으면 뜻이 어긋난다(예: '격식' 슬롯이 뉴스에선 '사실 정확성'). 모드로 갈라 올바른 이름을 쓴다.
+function axisRows(mode: ModeKey, scores: Scores): { name: string; score: number }[] {
+  if (mode === "news") {
+    const n = fromScores(scores);
+    return NEWS_AXES.map((ax) => ({ name: ax.name, score: n[ax.key] }));
+  }
+  return AXES.map((ax) => ({ name: ax.name, score: scores[ax.key] }));
+}
+const scoreTone = (s: number) => (s >= 3 ? "text-tertiary" : s >= 2 ? "text-progress-orange" : "text-error");
 
 function grade(t: number) {
   if (t >= 95) return "A+";
@@ -128,6 +142,7 @@ export default function History({ nav }: { nav: (k: ScreenKey) => void }) {
                   const sit = getSituation(h.sid, [...app.customSits, ...DEMO_SITS]);
                   const tot = totalOf(h.scores);
                   const done = tot >= 80;
+                  const mode = modeOf(h.sid, sit);
                   return (
                     <div key={i} className="bg-surface rounded-xl p-4 border border-border-light flex gap-4 items-start">
                       <div className={"w-2 rounded-full self-stretch " + (done ? "bg-tertiary" : "bg-progress-orange")} />
@@ -137,7 +152,12 @@ export default function History({ nav }: { nav: (k: ScreenKey) => void }) {
                           <span className="font-label-sm text-outline">{tot}점</span>
                         </div>
                         <h5 className="font-body-md font-semibold text-on-surface mb-1">{sit?.title || h.title || h.sid}</h5>
-                        <p className="font-label-sm text-on-surface-variant">{MODE_LABEL[modeOf(h.sid, sit)]} 세션</p>
+                        <p className="font-label-sm text-on-surface-variant">{MODE_LABEL[mode]} 세션</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+                          {axisRows(mode, h.scores).map((r) => (
+                            <span key={r.name} className="font-label-sm text-outline">{r.name} <b className={scoreTone(r.score)}>{r.score}</b></span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateSituation } from "@/lib/scoring/generate";
+import { isUnavailable } from "@/lib/scoring/gemini";
+import { situationFromInput } from "@/lib/scoring/fallback";
 import { sameOrigin, rateLimit, clientIp } from "@/lib/server/guard";
 
 export const runtime = "nodejs";
@@ -30,14 +32,14 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ situation });
   } catch (e) {
-    const msg = (e as Error).message;
-    if (msg === "NO_KEY") {
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY가 서버에 설정되지 않았습니다." },
-        { status: 503 },
-      );
+    // 일시적 불가면 사용자가 쓴 입력만으로 최소 상황 카드를 구성해 흐름을 잇는다(AI 다듬기 없음).
+    if (isUnavailable(e)) {
+      const medium = body.medium === "email" ? "email" : "chat";
+      return NextResponse.json({
+        situation: situationFromInput({ title, who: body.who, goal: body.goal, tension: body.tension, medium }),
+      });
     }
     console.error("[api/situation]", e);
-    return NextResponse.json({ error: "상황 생성 중 문제가 발생했습니다: " + msg }, { status: 500 });
+    return NextResponse.json({ error: "상황 생성 중 문제가 발생했습니다: " + (e as Error).message }, { status: 500 });
   }
 }

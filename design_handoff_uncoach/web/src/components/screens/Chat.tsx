@@ -7,7 +7,7 @@ import { scoreDraft, type ScoreResult } from "@/lib/client/api";
 import type { Situation, ThreadItem } from "@/lib/domain/types";
 import type { ScreenKey } from "@/components/AppShell";
 import ProfileChip from "@/components/stitch/ProfileChip";
-import { ScoreCard, RubricTable, FeedbackItem, FeedbackHeading, axisMetrics, situationRubricRows } from "@/components/stitch/Feedback";
+import { ScoreCard, RubricTable, FeedbackItem, FeedbackHeading, DemoBadge, axisMetrics, situationRubricRows } from "@/components/stitch/Feedback";
 
 // 제안 답변 패턴 — 누르면 예시 초안이 입력창에 채워진다.
 const SUGGESTIONS: { label: string; draft: string }[] = [
@@ -184,6 +184,7 @@ export default function Chat({ situation, onExit, nav }: { situation?: Situation
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {/* 실시간 평가 (공용) — 상황별 루브릭이 있으면 축별 1·2·3점 기준을 펼친 채점표로 */}
+            {attempt?.demo && <DemoBadge />}
             {attempt && sit.rubric ? (
               <RubricTable rows={situationRubricRows(sit.rubric, attempt.scores, attempt.reasons)} total={attempt.total} />
             ) : (
