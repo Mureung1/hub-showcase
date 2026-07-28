@@ -26,6 +26,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { patientWebUrl } from "../config/publicUrls";
 import { NotificationReceiptModal } from "../components/NotificationReceiptModal";
 import { OnsiteRegistrationModal } from "../components/OnsiteRegistrationModal";
 import { PatientCategorySettingsModal } from "../components/PatientCategorySettingsModal";
@@ -157,7 +158,7 @@ export function StaffQueuePage({
   return (
     <div className="staff-shell">
       <header className="staff-header">
-        <a className="brand" href="http://127.0.0.1:5173">
+        <a className="brand" href={patientWebUrl}>
           <span className="brand-mark">
             <Stethoscope size={20} />
           </span>
@@ -191,7 +192,7 @@ export function StaffQueuePage({
             병원 관리
           </button>
         </nav>
-        <a href="http://127.0.0.1:5173">환자 화면 보기</a>
+        <a href={patientWebUrl}>환자 화면 보기</a>
       </aside>
       <main className="staff-main" id="queue">
         {connectionStatus === "retrying" && (

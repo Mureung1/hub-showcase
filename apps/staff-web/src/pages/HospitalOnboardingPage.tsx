@@ -15,6 +15,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { staffWebUrl } from "../config/publicUrls";
 
 interface HospitalOnboardingPageProps {
   state: MockHospitalOnboardingState;
@@ -113,7 +114,7 @@ export function HospitalOnboardingPage({
         >
           <ArrowLeft size={20} />
         </button>
-        <a className="brand" href="http://127.0.0.1:5174">
+        <a className="brand" href={staffWebUrl}>
           <span className="brand-mark">
             <Stethoscope size={20} />
           </span>

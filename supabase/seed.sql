@@ -1,7 +1,7 @@
 -- Local development fixtures. Never reuse these credentials in production.
--- patient@admin  / admin123!
--- staff@admin    / admin123!
--- platform@admin / admin123!
+-- patient@admin.local  / admin123!
+-- staff@admin.local    / admin123!
+-- platform@admin.local / admin123!
 
 insert into auth.users (
   instance_id,
@@ -26,7 +26,7 @@ values
     '20000000-0000-4000-8000-000000000001',
     'authenticated',
     'authenticated',
-    'patient@admin',
+    'patient@admin.local',
     crypt('admin123!', gen_salt('bf')),
     now(),
     '',
@@ -43,7 +43,7 @@ values
     '20000000-0000-4000-8000-000000000002',
     'authenticated',
     'authenticated',
-    'staff@admin',
+    'staff@admin.local',
     crypt('admin123!', gen_salt('bf')),
     now(),
     '',
@@ -60,7 +60,7 @@ values
     '20000000-0000-4000-8000-000000000003',
     'authenticated',
     'authenticated',
-    'platform@admin',
+    'platform@admin.local',
     crypt('admin123!', gen_salt('bf')),
     now(),
     '',
@@ -99,7 +99,7 @@ values
     '21000000-0000-4000-8000-000000000001',
     '20000000-0000-4000-8000-000000000001',
     '20000000-0000-4000-8000-000000000001',
-    '{"sub":"20000000-0000-4000-8000-000000000001","email":"patient@admin"}'::jsonb,
+    '{"sub":"20000000-0000-4000-8000-000000000001","email":"patient@admin.local"}'::jsonb,
     'email',
     now(),
     now(),
@@ -109,7 +109,7 @@ values
     '21000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000002',
-    '{"sub":"20000000-0000-4000-8000-000000000002","email":"staff@admin"}'::jsonb,
+    '{"sub":"20000000-0000-4000-8000-000000000002","email":"staff@admin.local"}'::jsonb,
     'email',
     now(),
     now(),
@@ -119,7 +119,7 @@ values
     '21000000-0000-4000-8000-000000000003',
     '20000000-0000-4000-8000-000000000003',
     '20000000-0000-4000-8000-000000000003',
-    '{"sub":"20000000-0000-4000-8000-000000000003","email":"platform@admin"}'::jsonb,
+    '{"sub":"20000000-0000-4000-8000-000000000003","email":"platform@admin.local"}'::jsonb,
     'email',
     now(),
     now(),

@@ -30,6 +30,9 @@ export interface ProcessQueueNotificationsInput {
   queueId: string;
   hospitalName: string;
   patientWebOrigin: string;
+  averageMinutesPerPatient: number;
+  preparationThreshold: number;
+  entryThreshold: number;
   now?: Date;
 }
 
@@ -71,6 +74,7 @@ export class AutomaticNotificationService implements AutomaticNotificationProces
         registeredAt: waiting.createdAt.toISOString(),
         deferred: waiting.patientDeferCount > 0,
       })),
+      input.averageMinutesPerPatient,
     );
 
     for (const position of positions) {
@@ -86,6 +90,8 @@ export class AutomaticNotificationService implements AutomaticNotificationProces
           ? { statusUrl: `${input.patientWebOrigin}/my-waiting` }
           : {}),
         now: input.now ?? new Date(),
+        preparationThreshold: input.preparationThreshold,
+        entryThreshold: input.entryThreshold,
       });
     }
   }
