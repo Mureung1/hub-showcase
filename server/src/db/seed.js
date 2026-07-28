@@ -10,6 +10,9 @@ import { withTransaction } from './withTransaction.js'
 // 로그인 미구현 단계의 자리표시자. 회원가입(Backlog) 구현 시 bcrypt 해시로 대체한다.
 const PASSWORD_HASH = 'seed-password-hash(temp)'
 
+// 기획서 §3.1 — client/src/lib/constants.js, storeService.CATEGORIES와 동일하게 유지
+const CATEGORIES = ['베이커리', '디저트', '신선식품', '반찬', '음료']
+
 const USERS = [
   // 사장님 3명 (가게당 1명 — stores.owner_id UNIQUE)
   { email: 'owner1@hub.test', nickname: '베이커리사장', role: 'owner' },
@@ -129,11 +132,24 @@ const FAVORITES = [
   { userEmail: 'consumer2@hub.test', store: '엄마손 반찬' },
 ]
 
+/*
+ * 시연용 소비자 풀 (로그인 미구현 단계의 임시 장치).
+ * 부스 방문자가 QR로 들어올 때 한 명씩 배정받아 서로의 예약·알림이 섞이지 않게 한다.
+ * 기준 위치는 전원 시연 장소(네이버 1784) — 방문자가 그 자리에 있다는 전제.
+ */
+const DEMO_POOL_SIZE = 40
+const POOL_BASE = {
+  address: '경기 성남시 분당구 정자일로 95',
+  lat: 37.3595,
+  lng: 127.1052,
+  radiusKm: 2.0,
+}
+
 async function seed() {
   const counts = await withTransaction(async (client) => {
     await client.query(`
       TRUNCATE users, stores, user_interest_categories, favorites,
-               deals, reservations, device_tokens, notifications
+               deals, reservations, device_tokens, notifications, demo_pool
       RESTART IDENTITY CASCADE
     `)
 
@@ -203,8 +219,43 @@ async function seed() {
       ])
     }
 
+    // 시연용 소비자 풀 — 관심 카테고리를 고루 섞어 알림 대상 판정이 다양하게 걸리도록 한다
+    for (let i = 1; i <= DEMO_POOL_SIZE; i++) {
+      const { rows } = await client.query(
+        `INSERT INTO users
+           (email, password_hash, nickname, role,
+            base_address, base_lat, base_lng, noti_location_mode, noti_radius_km)
+         VALUES ($1, $2, $3, 'consumer', $4, $5, $6, 'radius', $7)
+         RETURNING id`,
+        [
+          `demo${i}@hub.test`,
+          PASSWORD_HASH,
+          `방문자${i}`,
+          POOL_BASE.address,
+          POOL_BASE.lat,
+          POOL_BASE.lng,
+          POOL_BASE.radiusKm,
+        ],
+      )
+      const poolUserId = rows[0].id
+
+      const category = CATEGORIES[i % CATEGORIES.length]
+      await client.query(
+        'INSERT INTO user_interest_categories (user_id, category) VALUES ($1, $2)',
+        [poolUserId, category],
+      )
+      await client.query('INSERT INTO demo_pool (user_id) VALUES ($1)', [poolUserId])
+    }
+
     const result = {}
-    for (const table of ['users', 'stores', 'deals', 'favorites', 'user_interest_categories']) {
+    for (const table of [
+      'users',
+      'stores',
+      'deals',
+      'favorites',
+      'user_interest_categories',
+      'demo_pool',
+    ]) {
       const { rows } = await client.query(`SELECT count(*)::int AS n FROM ${table}`)
       result[table] = rows[0].n
     }

@@ -10,6 +10,7 @@ import notificationsRouter from './routes/notifications.js'
 import usersRouter from './routes/users.js'
 import favoritesRouter from './routes/favorites.js'
 import deviceTokensRouter from './routes/deviceTokens.js'
+import demoRouter from './routes/demo.js'
 
 const app = express()
 
@@ -49,6 +50,7 @@ app.use('/api/notifications', notificationsRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/favorites', favoritesRouter)
 app.use('/api/device-tokens', deviceTokensRouter)
+app.use('/api/demo', demoRouter)
 
 // 공통 에러 응답: { message }
 app.use((err, req, res, next) => {
