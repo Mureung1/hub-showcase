@@ -5,15 +5,18 @@ const { executeTool } = require('../chat/toolHandlers');
 const { SYSTEM_PROMPT } = require('../chat/systemPrompt');
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-// test-gemini.js에서 이미 응답 확인한 것과 같은 모델을 재사용한다.
-const MODEL = 'gemini-3.5-flash';
+// gemini-3.5-flash는 free tier RPD가 20으로 너무 낮아서 금방 소진됨.
+// gemini-2.5-flash-lite는 이 API 키 기준 "신규 사용자에게 더 이상 제공되지 않음"(404)
+// 이라 대신 같은 3.5 세대의 lite 버전(gemini-3.5-flash-lite)으로 전환 — 실제 이 키로
+// generateContent 호출 성공 확인함. lite 계열은 같은 세대 flash보다 무료 할당량이 넉넉하다.
+const MODEL = 'gemini-3.5-flash-lite';
 const MAX_TOOL_LOOPS = 5; // 모델이 tool 호출을 무한 반복하는 걸 막는 안전장치
 
 exports.postChat = async (req, res) => {
   const {
     message,
     targets,
-    completedCourses = [],
+    progressSubmitted,
     basketCourses = [],
     track,
     currentSemester,
@@ -25,7 +28,9 @@ exports.postChat = async (req, res) => {
 
   // 이번 요청의 상태 스냅샷. 서버는 이걸 저장하지 않고 응답 후 그대로 버린다(stateless) —
   // client가 매 요청마다 localStorage에 있는 값을 그대로 실어 보내는 방식으로 가기로 했다.
-  const ctx = { targets, completedCourses, basketCourses, track, currentSemester };
+  // completedCourses는 과목별 리스트로 넘어오지 않는다 — 이미 이수한 학점은
+  // progressSubmitted(총점/전공/교양 숫자 합계)로만 받는다.
+  const ctx = { targets, progressSubmitted, basketCourses, track, currentSemester };
 
   const contents = [{ role: 'user', parts: [{ text: message }] }];
 

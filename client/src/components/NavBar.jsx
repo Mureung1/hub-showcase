@@ -4,7 +4,6 @@ const NAV_ITEMS = [
   { to: '/', label: '홈', end: true },
   { to: '/basket', label: '수강 바구니' },
   { to: '/simulation', label: '시뮬레이션' },
-  { to: '/chat', label: '챗봇' },
 ];
 
 function NavBar() {
