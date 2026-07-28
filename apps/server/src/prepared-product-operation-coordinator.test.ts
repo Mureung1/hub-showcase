@@ -182,6 +182,14 @@ test('the Product executor revalidates a prepared action after preparing and bef
   > = []
   let runtimeTerminalCalls = 0
   let revalidationCalls = 0
+  let releasePreparing!: () => void
+  let observePreparing!: () => void
+  const preparingReleased = new Promise<void>((resolve) => {
+    releasePreparing = resolve
+  })
+  const preparingObserved = new Promise<void>((resolve) => {
+    observePreparing = resolve
+  })
   const action = {
     async prepare() {
       return {
@@ -218,12 +226,27 @@ test('the Product executor revalidates a prepared action after preparing and bef
         sink: {
           async write(frame) {
             frames.push(structuredClone(frame))
+            if (frame.type === 'operation.preparing') {
+              observePreparing()
+              await preparingReleased
+            }
             return true
           },
           end: () => undefined,
         },
       },
     )
+    await preparingObserved
+
+    assert.equal(revalidationCalls, 0)
+    assert.equal(
+      runtime.calls.some(
+        (call) => call.operation === 'startProductTurn',
+      ),
+      false,
+    )
+
+    releasePreparing()
     await invocation
 
     assert.equal(revalidationCalls, 1)
