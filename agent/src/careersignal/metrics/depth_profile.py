@@ -35,7 +35,16 @@ from careersignal.contracts.run_context import RunContext, StopReason
 from careersignal.domain.depth import DepthLevel, rank
 from careersignal.metrics import policy as metric_policy
 from careersignal.metrics.expansion import Envelope, MetricFamily
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
 from careersignal.repositories.profiles import DepthProfileRepository
+
+TRANSACTION_LOST = "거래가 죽어 남은 프로파일을 저장하지 못한다"
+"""저장이 거래를 죽이는 실패를 냈다. 남은 프로파일을 시도하지 않고 멈춘 사유다.
+
+PostgreSQL 은 거래 안에서 오류가 나면 남은 명령을 전부 거부한다. 죽은 거래에 계속
+저장하면 같은 사유의 실패 줄이 프로파일 수만큼 쌓인다. 저장하지 못한 프로파일은
+자국이 없으므로 다음 실행이 다시 만든다.
+"""
 
 DEPTH_ORDER: tuple[DepthLevel, ...] = tuple(sorted(DepthLevel, key=rank))
 """얕은 등급부터의 순서. 순서 자체는 `domain/depth.py` 가 갖는다.
@@ -397,6 +406,9 @@ class CapabilityDepthProfiles:
 
         for envelope in sorted(facts, key=lambda item: item.sort_key):
             for capability_id in capabilities:
+                if state.transaction_lost:
+                    # 거래가 죽었다. 남은 프로파일은 시도하지 않는다.
+                    return state.outcome()
                 self._build(
                     capability_id,
                     links.get(capability_id, ()),
@@ -472,10 +484,18 @@ class CapabilityDepthProfiles:
             "confidence": confidence_of(merged, level),
             "analysis_version": state.context.analysis_version,
         }
+        # 프로파일 하나가 저장의 단위다. 되돌림 지점이 실패한 행만 되돌리고 거래를
+        # 살려 두므로 한 행의 실패가 뒤 행의 저장을 막지 않는다.
         try:
-            self._repository.add_profile(row)
+            with item_savepoint(self._repository):
+                self._repository.add_profile(row)
         except Exception as exc:
             state.errors.append((_label(capability_id, envelope), _failure(exc)))
+            if transaction_is_dead(exc):
+                state.errors.append(
+                    (_label(capability_id, envelope), TRANSACTION_LOST)
+                )
+                state.transaction_lost = True
             return
         state.existing.add(key)
         state.stored += 1
@@ -566,6 +586,8 @@ class _State:
         self.taxonomy_version_id = taxonomy_version_id
         self.limit = limit
         self.limit_reached = False
+        self.transaction_lost = False
+        """거래가 죽었는가. 참이면 남은 프로파일을 저장하지 않는다."""
 
         self.capability_count = 0
         self.envelope_count = 0

@@ -25,7 +25,16 @@ from careersignal.agents.statistics.extractor import MentionExtractor
 from careersignal.agents.statistics.spans import SpanResolver, quoted
 from careersignal.contracts.run_context import RunContext, StopReason
 from careersignal.providers.concurrency import DEFAULT_WORKERS, map_ordered
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
 from careersignal.repositories.statistics import StatisticsRepository
+
+TRANSACTION_LOST = "거래가 죽어 남은 청크를 저장하지 못한다"
+"""저장이 거래를 죽이는 실패를 냈다. 남은 청크를 시도하지 않고 멈춘 사유다.
+
+PostgreSQL 은 거래 안에서 오류가 나면 남은 명령을 전부 거부한다. 죽은 거래에 계속
+저장하면 같은 사유의 실패 줄이 청크 수만큼 쌓인다. 멈춘 자리 뒤의 청크는
+`chunk_extractions` 에 기록이 남지 않으므로 다음 실행이 다시 집는다.
+"""
 
 
 def mention_identifier(chunk_id: str, posting_version_id: str, start: int, end: int) -> str:
@@ -138,7 +147,7 @@ class MentionCollector:
                 continue
 
             resolver = SpanResolver(row["text"])
-            stored = 0
+            rows_to_store: list[tuple[Any, Any]] = []
             for candidate in record.value or ():
                 span = resolver.resolve(candidate.raw_expression)
                 if span is None:
@@ -150,25 +159,46 @@ class MentionCollector:
                         )
                     )
                     continue
-                self._repository.add_mention(
-                    self._row(context, row, candidate, span)
-                )
-                created += 1
-                stored += 1
+                rows_to_store.append((candidate, span))
 
-            counts[row["chunk_id"]] = counts.get(row["chunk_id"], 0) + stored
+            # 청크 하나가 저장의 단위다. 되돌림 지점이 실패한 청크의 표현만 되돌리고
+            # 거래를 살려 두므로, 한 청크의 실패가 뒤 청크의 저장을 막지 않는다.
+            try:
+                with item_savepoint(self._repository):
+                    for candidate, span in rows_to_store:
+                        self._repository.add_mention(
+                            self._row(context, row, candidate, span)
+                        )
+            except Exception as exc:
+                errors.append((row["chunk_id"], f"{type(exc).__name__}: {exc}"))
+                if transaction_is_dead(exc):
+                    errors.append((row["chunk_id"], TRANSACTION_LOST))
+                    break
+                continue
+
+            created += len(rows_to_store)
+            counts[row["chunk_id"]] = counts.get(row["chunk_id"], 0) + len(
+                rows_to_store
+            )
 
         # 예외로 끝난 청크는 여기에 없다. 모델이 답하지 못한 것을 "표현 없음" 으로
         # 굳히면 다음 실행이 다시 시도하지 못한다.
         for chunk_id, count in counts.items():
-            self._repository.record_extraction(
-                {
-                    "chunk_id": chunk_id,
-                    "dataset_version": context.dataset_version,
-                    "extraction_run_id": context.agent_run_id,
-                    "mention_count": count,
-                }
-            )
+            try:
+                with item_savepoint(self._repository):
+                    self._repository.record_extraction(
+                        {
+                            "chunk_id": chunk_id,
+                            "dataset_version": context.dataset_version,
+                            "extraction_run_id": context.agent_run_id,
+                            "mention_count": count,
+                        }
+                    )
+            except Exception as exc:
+                errors.append((chunk_id, f"{type(exc).__name__}: {exc}"))
+                if transaction_is_dead(exc):
+                    errors.append((chunk_id, TRANSACTION_LOST))
+                    break
 
         return ExtractionOutcome(
             agent_run_id=context.agent_run_id,

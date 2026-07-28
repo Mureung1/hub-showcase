@@ -578,7 +578,7 @@ PRIMARY KEY (candidate_id, mention_id)
 CHECK (decision <> 'promote' OR promoted_to_version_id IS NOT NULL)
 ```
 
-### 7.10 `capabilities`
+결정 행은 후보와 심사가 기준 삼은 분류체계 버전으로 식별한다. 후보 하나가 버전마다 결정 행 하나를 갖는다. `hold`는 종결이 아니므로 새 버전이 발행되면 그 후보는 새 어휘로 다시 심사되고 결정 행이 하나 더 쌓인다.
 
 | 컬럼 | 타입 | 제약 |
 | --- | --- | --- |
@@ -839,6 +839,10 @@ FOREIGN KEY (metric_family, formula_version) REFERENCES metric_templates
 CHECK (minimum_n <= minimum_n_comparison)
 ```
 
+`metric_family`가 NOT NULL이므로 한 행은 정책 세대와 지표 family의 짝이다. 한 세대는 family마다 행을 하나씩 갖는다.
+
+`analysis_versions.metric_policy_version`(11.1)은 실행 하나가 선 정책 세대를 가리키는 단일 값이다. `statistics_facts.metric_policy_version`(10.5)은 그 행의 지표 family에 해당하는 정책 행을 가리킨다. 표본 판정과 억제는 family별 정책 행의 값으로 수행한다.
+
 v1 값은 `minimum_n = 5`, `minimum_n_comparison = 10`, `uncertainty_method = 'wilson_95'`다. 실공고를 적재한 뒤 P13에서 재검토한다.
 
 ### 10.4 `dimension_metric_applicability`
@@ -889,6 +893,16 @@ CREATE INDEX ON statistics_facts
   (analysis_version, scope_level, scope_id, entry_segment, period_id, metric_family);
 CREATE INDEX ON statistics_facts (dimension_id);
 ```
+
+`scope_id`는 `scope_level`이 가리키는 대상의 식별자다.
+
+| `scope_level` | `scope_id` |
+| --- | --- |
+| `overall` | `job_roles.job_role_id` |
+| `cluster` | `company_clusters.cluster_id` |
+| `posting` | `postings.posting_id` |
+
+`overall`은 직무 모집단을 더 좁히지 않는다. 컬럼이 NOT NULL이므로 어느 직무의 전체인지를 담는다. `scope_level`별 모집단 조건은 [지표 명세](metric-spec.md) 2.1에 있다.
 
 `entry_segment`는 지표의 대상군 축이다. `all`은 대상군으로 제한하지 않은 모집단 전체이며 화면의 기준선이다. 정의와 `entry_label` 대응은 [지표 명세](metric-spec.md) 2.7에 있다. 마지막 `CHECK`는 분모에 이미 대상군이 반영된 지표가 다른 대상군으로 저장되는 것을 막는다.
 

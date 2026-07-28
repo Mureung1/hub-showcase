@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Sequence
 from typing import Any
 
@@ -32,6 +33,27 @@ from careersignal.repositories.base import Repository
 
 TERMINAL_DECISIONS: tuple[str, ...] = ("promote", "merge", "reject")
 """다시 심사하지 않는 판정. `hold` 는 근거가 쌓이면 결론이 바뀐다."""
+
+
+def decision_identifier(candidate_id: str, taxonomy_version_id: str) -> str:
+    """결정 행의 기본키. 후보 하나와 심사 기준 버전 하나가 결정한다.
+
+    심사는 특정 분류체계 버전을 기준으로 이뤄진다
+    (docs/adr/0011-candidate-judgment-context.md). 그래서 같은 버전에서 같은 후보를
+    다시 심사하면 같은 행이고, 새 버전에서 심사하면 새 행이다.
+    `requirement_candidate_decisions` 의 기본키는 `decision_id` 하나뿐이고 후보에
+    유니크 제약이 없으므로(docs/erd.md 7.9) 후보당 여러 행이 허용된다.
+
+    실행 식별자를 재료에 넣지 않는다. `hold` 는 종결 판정이 아니라 다음 실행에 다시
+    올라오는데, 실행마다 식별자가 갈리면 같은 버전의 같은 결론이 행 여럿이 되고 실행
+    식별자가 같으면 기본키를 어긴다. 어느 실행이 판정했는지는 `decided_by` 가 담는다.
+
+    자리가 저장소인 이유는 이 값이 이 저장소가 쓰는 표의 기본키 형식이기 때문이다.
+    `repositories/sources.py` 의 `content_hash` 와 같은 성격이며, 심사 대상 조회가
+    같은 함수로 이미 결정된 후보를 걸러야 하므로 두 자리가 같은 정의를 봐야 한다.
+    """
+    material = f"{candidate_id}:{taxonomy_version_id}".encode()
+    return f"dec_{hashlib.sha256(material).hexdigest()[:24]}"
 
 DIMENSION_ASSIGNMENT = "dimension_assignment"
 """평가 세트에서 기대 차원을 담는 케이스 종류. docs/erd.md 13장의 CHECK 값이다."""
@@ -84,10 +106,35 @@ class PromotionRepository(Repository):
     종결 판정을 받은 후보를 뺀다. `hold` 는 종결이 아니므로 다시 올라오고, 근거가
     임계값을 채우면 다음 실행에서 판정이 바뀐다.
 
+    `hold` 후보를 무한히 다시 올리지는 않는다. 같은 버전에서 이미 결정이 있는 후보는
+    `candidates_to_review` 가 결정 식별자로 걸러 낸다. 그 조건이 SQL 이 아닌 이유는
+    식별자가 `decision_identifier` 의 해시이고, 같은 해시를 SQL 에 한 번 더 적으면 두
+    정의가 갈리기 때문이다. 조건을 세는 자리와 거르는 자리가 하나여야 한다.
+
     상대 차원의 표시 라벨을 활성 버전에서 함께 읽는다. 관계 판정은 특정 분류체계
     버전을 기준으로 나오므로(docs/adr/0011-candidate-judgment-context.md) 그 사이
     상대 차원이 사라졌으면 이 조인이 비고 심사가 보류로 가른다.
     """
+
+    _RECORDED_DECISION_IDS = """
+        SELECT d.decision_id
+        FROM requirement_candidate_decisions d
+        JOIN requirement_candidates c ON c.candidate_id = d.candidate_id
+        WHERE c.taxonomy_id = %(taxonomy_id)s
+    """
+    """이 분류체계의 후보에 이미 남은 결정 식별자.
+
+    식별자가 후보와 심사 기준 버전을 담으므로(`decision_identifier`) 이 집합만 있으면
+    "이 버전에서 이미 심사한 후보" 를 가릴 수 있다. 결정 행에 분류체계 버전 컬럼이
+    없어도(docs/erd.md 7.9) 스키마를 바꾸지 않고 판정할 수 있는 이유가 이것이다.
+    """
+
+    def recorded_decision_ids(self, taxonomy_id: str) -> set[str]:
+        """이미 저장된 결정 식별자 집합."""
+        rows = self.unit.fetch_all(
+            self._RECORDED_DECISION_IDS, {"taxonomy_id": taxonomy_id}
+        )
+        return {row["decision_id"] for row in rows}
 
     def candidates_to_review(
         self,
@@ -99,6 +146,12 @@ class PromotionRepository(Repository):
 
         `candidate_id` 로 정렬한다. 식별자가 결정적이므로(`candidate_identifier`)
         이 정렬은 적재 순서와 무관하게 같은 차례를 준다.
+
+        이 버전에서 이미 결정을 받은 후보를 뺀다. 같은 버전·같은 근거로 다시 심사하면
+        같은 결론이 나오고, 그 결론을 저장하면 결정 식별자가 같아 기본키를 어긴다.
+        새 버전이 발행되면 식별자가 달라지므로 `hold` 후보가 다시 올라온다.
+
+        `limit` 은 상한이다. 거르고 난 뒤의 수가 그보다 적을 수 있다.
         """
         sql = self._CANDIDATES_TO_REVIEW
         params: dict[str, Any] = {
@@ -108,7 +161,16 @@ class PromotionRepository(Repository):
         if limit is not None:
             sql = f"{sql}        LIMIT %(limit)s\n"
             params["limit"] = limit
-        return self.unit.fetch_all(sql, params)
+        rows = self.unit.fetch_all(sql, params)
+        recorded = self.recorded_decision_ids(taxonomy_id)
+        if not recorded:
+            return rows
+        return [
+            row
+            for row in rows
+            if decision_identifier(row["candidate_id"], taxonomy_version_id)
+            not in recorded
+        ]
 
     _CANDIDATE_EVIDENCE = """
         SELECT count(DISTINCT pv.posting_id)  AS independent_posting_count,

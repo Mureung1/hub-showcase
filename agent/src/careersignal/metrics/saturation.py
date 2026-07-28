@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from careersignal.contracts.run_context import RunContext, StopReason
 from careersignal.domain.scope import ScopeLevel
+from careersignal.repositories.base import item_savepoint
 from careersignal.repositories.saturation import SaturationRepository
 
 MARGINAL_GAIN_DIGITS = 6
@@ -338,8 +339,12 @@ class SaturationTracking:
             "marginal_gain": observation.marginal_gain,
             "observed_at": observed_at(context.as_of_date),
         }
+        # 관측은 실행 하나에 한 행이라 반복될 자리가 없다. 그래도 되돌림 지점 안에서
+        # 저장한다. 이 저장이 거래를 죽이면 같은 거래에 이어 도는 다른 단계가 전부
+        # `InFailedSqlTransaction` 으로 실패한다.
         try:
-            self._repository.add_observation(row)
+            with item_savepoint(self._repository):
+                self._repository.add_observation(row)
         except Exception as exc:
             return SaturationOutcome(
                 agent_run_id=context.agent_run_id,

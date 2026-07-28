@@ -57,12 +57,21 @@ from careersignal.agents.statistics.judge import (
 )
 from careersignal.contracts.run_context import RunContext, StopReason
 from careersignal.providers.concurrency import DEFAULT_WORKERS, map_ordered
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
 from careersignal.repositories.statistics import StatisticsRepository
 from careersignal.taxonomy.lifecycle import ACTIVE, TERMINAL_STATUSES
 from careersignal.taxonomy.vocabulary import Vocabulary, normalize_expression
 
 PROPOSED = "proposed"
 """후보의 생명주기 첫 상태. 정의는 docs/statistics-model.md 3.3 이다."""
+
+TRANSACTION_LOST = "거래가 죽어 남은 후보를 저장하지 못한다"
+"""저장이 거래를 죽이는 실패를 냈다. 남은 후보를 시도하지 않고 멈춘 사유다.
+
+PostgreSQL 은 거래 안에서 오류가 나면 남은 명령을 전부 거부한다. 죽은 거래에 계속
+저장하면 같은 사유의 실패 줄이 후보 수만큼 쌓인다. 멈춘 자리 뒤의 후보는 저장소에
+자국이 없으므로 다음 실행이 다시 집는다.
+"""
 
 REJUDGE_EXCLUDED: tuple[str, ...] = tuple(sorted(TERMINAL_STATUSES | {ACTIVE}))
 """다시 판정하지 않는 생명주기 상태.
@@ -171,6 +180,19 @@ class DiscoveryOutcome(BaseModel):
     """관계 판정 호출 수. 예산의 단위다.
 
     첫 판정과 재판정을 함께 센다. 둘 다 모델 호출 하나이며 예산은 호출을 센다.
+    """
+
+    stale_candidates: int = 0
+    """이 실행이 본 재판정 대상 수. 예산이 닿지 못한 것까지 전부 센다."""
+
+    pending_groups: int = 0
+    """예산이나 실패로 시도하지 못한 잔여 표현 묶음 수."""
+
+    pending_rejudgements: int = 0
+    """예산이나 실패로 시도하지 못한 재판정 후보 수.
+
+    `budget_exhausted` 로 끝난 실행이 무엇을 얼마나 남겼는지 여기서 읽는다. 종료
+    사유만으로는 다음 실행에 무엇이 남았는지 알 수 없다.
     """
 
     known_assignments: tuple[tuple[str, str], ...] = ()
@@ -321,17 +343,25 @@ class CandidateDiscovery:
         state.judged += len(results)
         judged = {entry[0]: record for entry, record in zip(fresh, results)}
 
-        for key, members in window:
+        for index, (key, members) in enumerate(window):
             candidate_id = candidate_identifier(state.taxonomy_id, key)
             if candidate_id in existing:
+                try:
+                    with item_savepoint(self._repository):
+                        self._link(candidate_id, members, state)
+                except Exception as exc:
+                    if self._save_failed(key, exc, state):
+                        state.pending_groups = len(window) - index
+                        return
+                    continue
                 state.reused += 1
-                self._link(candidate_id, members, state)
                 continue
 
             record = judged.get(key)
             if record is None:
                 # 되살릴 수 없는 실패로 멈춘 뒤의 묶음. 보내지 않았으므로 저장소에
                 # 자국이 없고 다음 실행이 같은 자리에서 다시 집는다.
+                state.pending_groups = len(window) - index
                 break
             if record.error is not None:
                 state.errors.append(
@@ -341,14 +371,22 @@ class CandidateDiscovery:
 
             judgment = record.value
             assert judgment is not None
-            self._repository.add_candidate(
-                _candidate_row(candidate_id, state, judgment)
-            )
+            try:
+                with item_savepoint(self._repository):
+                    self._repository.add_candidate(
+                        _candidate_row(candidate_id, state, judgment)
+                    )
+                    self._link(candidate_id, members, state)
+            except Exception as exc:
+                if self._save_failed(key, exc, state):
+                    state.pending_groups = len(window) - index
+                    return
+                continue
+
             state.created += 1
             state.relations[judgment.relation] = (
                 state.relations.get(judgment.relation, 0) + 1
             )
-            self._link(candidate_id, members, state)
             state.candidates.append(
                 CandidateSummary(
                     candidate_id=candidate_id,
@@ -361,6 +399,20 @@ class CandidateDiscovery:
                     mention_count=len(members),
                 )
             )
+
+    def _save_failed(self, target: str, exc: Exception, state: _State) -> bool:
+        """저장 실패 한 건을 결과에 적고 멈춰야 하는지 판정한다.
+
+        되돌림 지점이 항목 하나만 되돌리므로 보통은 거짓이고 다음 항목으로 넘어간다.
+        되돌림으로도 살릴 수 없는 실패면 참이며, 부르는 쪽은 남은 항목을 시도하지
+        않는다.
+        """
+        state.errors.append((target, f"{type(exc).__name__}: {exc}"))
+        if not transaction_is_dead(exc):
+            return False
+        state.errors.append((target, TRANSACTION_LOST))
+        state.transaction_lost = True
+        return True
 
     def _within_budget(
         self,
@@ -414,11 +466,13 @@ class CandidateDiscovery:
         rows = self._repository.stale_candidates(
             state.taxonomy_id, state.taxonomy_version_id, REJUDGE_EXCLUDED
         )
+        state.stale_candidates = len(rows)
 
         tasks: list[tuple[str, tuple[str, ...]]] = []
-        for row in rows:
+        for index, row in enumerate(rows):
             if state.judged + len(tasks) >= state.context.budget.max_tool_calls:
                 state.budget_exhausted = True
+                state.pending_rejudgements = len(rows) - index
                 break
 
             candidate_id = row["candidate_id"]
@@ -443,8 +497,10 @@ class CandidateDiscovery:
             self._stop_when,
         )
         state.judged += len(results)
+        # 보내지 않은 재판정 대상. 되살릴 수 없는 실패로 멈추면 여기서 늘어난다.
+        state.pending_rejudgements += max(len(tasks) - len(results), 0)
 
-        for record in results:
+        for index, record in enumerate(results):
             candidate_id, expressions = record.item
             if record.error is not None:
                 state.errors.append(
@@ -454,9 +510,16 @@ class CandidateDiscovery:
 
             judgment = record.value
             assert judgment is not None
-            self._repository.update_candidate_judgment(
-                candidate_id, _judgment_update(state, judgment)
-            )
+            try:
+                with item_savepoint(self._repository):
+                    self._repository.update_candidate_judgment(
+                        candidate_id, _judgment_update(state, judgment)
+                    )
+            except Exception as exc:
+                if self._save_failed(candidate_id, exc, state):
+                    state.pending_rejudgements += len(results) - index
+                    return
+                continue
             state.rejudged += 1
             state.relations[judgment.relation] = (
                 state.relations.get(judgment.relation, 0) + 1
@@ -477,10 +540,14 @@ class CandidateDiscovery:
     def _link(
         self, candidate_id: str, members: list[dict[str, Any]], state: _State
     ) -> None:
-        """근거 mention 을 후보에 붙인다. `requirement_candidate_mentions` 다."""
+        """근거 mention 을 후보에 붙인다. `requirement_candidate_mentions` 다.
+
+        센 수를 전부 붙인 뒤에 더한다. 중간에 실패하면 되돌림 지점이 붙인 행을 전부
+        되돌리므로, mention 마다 세면 저장되지 않은 행이 결과에 남는다.
+        """
         for row in members:
             self._repository.link_candidate_mention(candidate_id, row["mention_id"])
-            state.linked += 1
+        state.linked += len(members)
 
     def _options(
         self, expression: str, vocabulary: Vocabulary
@@ -539,6 +606,10 @@ class _State:
         self.linked = 0
         self.judged = 0
         self.budget_exhausted = False
+        self.transaction_lost = False
+        self.stale_candidates = 0
+        self.pending_groups = 0
+        self.pending_rejudgements = 0
 
         self.known: list[tuple[str, str]] = []
         self.candidates: list[CandidateSummary] = []
@@ -569,6 +640,9 @@ class _State:
             rejudged_candidates=self.rejudged,
             linked_mentions=self.linked,
             judged=self.judged,
+            stale_candidates=self.stale_candidates,
+            pending_groups=self.pending_groups,
+            pending_rejudgements=self.pending_rejudgements,
             known_assignments=tuple(self.known),
             candidates=tuple(self.candidates),
             rejudged=tuple(self.rejudged_candidates),

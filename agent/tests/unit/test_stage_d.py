@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -292,6 +293,106 @@ def test_Phase_9_는_새_후보_수만큼_부른다() -> None:
     (estimate,) = stage_d.build_estimates((9,), _workload())
     assert estimate.targets == 12000
     assert estimate.chat_calls == 1800
+
+
+def test_Phase_9_의_호출_수는_재판정을_포함한다() -> None:
+    """재판정도 모델 호출 하나다. 빼면 예산이 재판정을 담지 못한다."""
+    workload = stage_d.Workload(judgements=12, rejudgements=868)
+    (estimate,) = stage_d.build_estimates((9,), workload)
+    assert estimate.chat_calls == 880
+
+
+def test_잔여_표현이_없어도_재판정_예산이_남는다() -> None:
+    """실행 로그의 갈래다. 잔여 0·재판정 868 에서 예산이 0 이면 아무것도 못 한다."""
+    workload = stage_d.Workload(judgements=0, rejudgements=868)
+    assert workload.discovery_calls() == 868
+
+
+def test_Phase_9_의_예상_호출_수와_예산이_같은_계산에서_나온다() -> None:
+    """두 자리에서 따로 더하면 한쪽만 고쳐졌을 때 값이 갈린다."""
+    workload = stage_d.Workload(judgements=45, rejudgements=868)
+    (estimate,) = stage_d.build_estimates((9,), workload)
+    assert estimate.chat_calls == workload.discovery_calls()
+
+    session = stage_d.Session(
+        manifest=None,
+        job_role_id="backend",
+        limit=None,
+        stub=True,
+        analysis_version=None,
+        workload=workload,
+    )
+    assert session.workload.discovery_calls() == estimate.chat_calls
+
+
+def test_Phase_9_가_실행_봉투에_넘기는_예산이_재판정을_담는다(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """실행 로그의 결함이다. 예산이 판정 수만 담으면 재판정이 한 건도 돌지 않는다."""
+    workload = stage_d.Workload(judgements=0, rejudgements=868)
+    session = stage_d.Session(
+        manifest=None,
+        job_role_id="backend",
+        limit=None,
+        stub=True,
+        analysis_version=None,
+        workload=workload,
+    )
+    budgets: list[int] = []
+
+    def _context(step: str, calls: int, taxonomy_version_id: str | None = None) -> Any:
+        budgets.append(calls)
+        return object()
+
+    monkeypatch.setattr(session, "refresh", lambda: None)
+    monkeypatch.setattr(session, "context", _context)
+    monkeypatch.setattr(stage_d, "unit_of_work", _null_unit_of_work)
+    monkeypatch.setattr(stage_d, "StatisticsRepository", lambda unit: object())
+    monkeypatch.setattr(
+        stage_d, "CandidateDiscovery", lambda *a, **k: _DiscoveryDouble()
+    )
+    monkeypatch.setattr(stage_d, "report_discovery", lambda outcome: None)
+
+    stage_d.run_phase_9(session)
+    assert budgets == [868]
+
+
+@contextmanager
+def _null_unit_of_work(component: Any) -> Any:
+    """저장소에 붙지 않는 거래 대역."""
+    yield object()
+
+
+class _DiscoveryDouble:
+    """모델도 저장소도 부르지 않는 발견 대역."""
+
+    def run(self, context: Any, limit: int | None = None) -> Any:
+        return DiscoveryOutcome(
+            agent_run_id="run_stage_d_test",
+            stop_reason=StopReason.BUDGET_EXHAUSTED,
+            pending_rejudgements=800,
+        )
+
+
+def test_예산이_모자란_Phase_9_는_남은_대상을_요약에_적는다() -> None:
+    """`budget_exhausted` 자체는 정상이다. 무엇이 얼마나 남았는지가 보여야 한다."""
+    outcome = DiscoveryOutcome(
+        agent_run_id="run_stage_d_test",
+        stop_reason=StopReason.BUDGET_EXHAUSTED,
+        pending_groups=12,
+        pending_rejudgements=856,
+    )
+    line = stage_d._discovery_incomplete(outcome)
+    assert "12" in line
+    assert "856" in line
+
+
+def test_다_끝낸_Phase_9_는_남은_대상을_적지_않는다() -> None:
+    outcome = DiscoveryOutcome(
+        agent_run_id="run_stage_d_test",
+        stop_reason=StopReason.FRONTIER_EXHAUSTED,
+    )
+    assert stage_d._discovery_incomplete(outcome) == ""
 
 
 def test_Phase_10_과_12_는_모델을_부르지_않는다() -> None:

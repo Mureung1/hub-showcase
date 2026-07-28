@@ -41,6 +41,7 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, ConfigDict
 
 from careersignal.contracts.run_context import RunContext, StopReason
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
 from careersignal.repositories.promotion import PromotionRepository
 from careersignal.taxonomy import lifecycle
 from careersignal.taxonomy.promotion import (
@@ -48,6 +49,7 @@ from careersignal.taxonomy.promotion import (
     REASON_NO_ALIAS_TARGET,
     ROUTE_ALIAS,
     ROUTE_RELATION,
+    TRANSACTION_LOST,
     UNMAPPED,
     CandidateDecision,
     CandidateReview,
@@ -334,7 +336,9 @@ class TaxonomyPublication:
     def _apply(self, state: _State) -> None:
         """판정별 경로로 후보를 새 버전에 넣는다.
 
-        한 후보의 실패가 나머지를 막지 않는다.
+        한 후보의 실패가 나머지를 막지 않는다. 후보 하나의 저장을 되돌림 지점으로
+        감싸므로(`item_savepoint`) 실패한 후보만 되돌아가고 거래는 살아 있다. 되돌림
+        으로도 살릴 수 없는 실패를 만나면 거기서 멈춘다.
 
         차례가 의미를 갖는다. 묶음의 대표를 먼저 넣는다. 대표가 아닌 후보는 대표가
         만든 차원에 표기를 붙이므로, 대표의 차원이 아직 없으면 붙일 곳이 없다.
@@ -345,21 +349,25 @@ class TaxonomyPublication:
         """
         for decision in _lead_first(state.review.promotable):
             try:
-                if decision.route == ROUTE_ALIAS:
-                    blocked = self._add_alias(decision, state)
-                    if blocked is not None:
-                        self._record(hold_alias(decision, blocked), state)
-                        state.alias_conflicts += 1
-                        continue
-                else:
-                    self._add_dimension(decision, state)
-                    if decision.route == ROUTE_RELATION:
-                        self._add_relation(decision, state)
-                self._record(decision, state)
+                with item_savepoint(self._repository):
+                    if decision.route == ROUTE_ALIAS:
+                        blocked = self._add_alias(decision, state)
+                        if blocked is not None:
+                            self._record(hold_alias(decision, blocked), state)
+                            state.alias_conflicts += 1
+                            continue
+                    else:
+                        self._add_dimension(decision, state)
+                        if decision.route == ROUTE_RELATION:
+                            self._add_relation(decision, state)
+                    self._record(decision, state)
             except Exception as exc:
                 state.errors.append(
                     (decision.candidate_id, f"{type(exc).__name__}: {exc}")
                 )
+                if transaction_is_dead(exc):
+                    state.errors.append((decision.candidate_id, TRANSACTION_LOST))
+                    break
 
     def _add_dimension(self, decision: CandidateDecision, state: _State) -> None:
         """신규 차원의 정체성과 버전 행. `active` 로 넣는다.
