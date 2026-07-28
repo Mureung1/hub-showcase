@@ -2,15 +2,21 @@ import type { CustomLayerInterface, Map as MapLibreMap } from "maplibre-gl";
 import { MercatorCoordinate } from "maplibre-gl";
 import * as THREE from "three";
 
-import { createStorefront, disposeStorefront } from "./createStorefront";
+import {
+  createStorefront,
+  createStorefrontCategoryMarker,
+  disposeStorefront,
+} from "./createStorefront";
 import { storefrontAssetCache } from "./storefrontAssets";
 import { getStorefrontVariant } from "./storefrontRegistry";
+import type { StorefrontPlacementMode } from "./SelectedStorefrontLayer";
 
 export type StorefrontMapLayerInput = {
   id: string;
   longitude: number;
   latitude: number;
   categoryCode: string;
+  placementMode?: StorefrontPlacementMode;
   source: string;
   sourceId: string;
   building?: {
@@ -26,6 +32,10 @@ export type StorefrontMapLayer = CustomLayerInterface & {
   setStore: (nextInput: StorefrontMapLayerInput) => void;
 };
 
+function placementMode(input: StorefrontMapLayerInput): StorefrontPlacementMode {
+  return input.placementMode ?? "replace-building";
+}
+
 function emphasizeCategoryAttachment(storefront: THREE.Group) {
   const attachment = storefront.getObjectByName("category-attachment");
   if (attachment) {
@@ -38,13 +48,17 @@ function emphasizeCategoryAttachment(storefront: THREE.Group) {
   return storefront;
 }
 
-function storefrontModelMatrix(input: StorefrontMapLayerInput, storefront: THREE.Group) {
+function modelDimensions(model: THREE.Group) {
+  const bounds = new THREE.Box3().setFromObject(model);
+  model.position.y -= bounds.min.y;
+  return bounds.setFromObject(model).getSize(new THREE.Vector3());
+}
+
+function replacementModelMatrix(input: StorefrontMapLayerInput, storefront: THREE.Group) {
   const [longitude, latitude] = input.building?.center ?? [input.longitude, input.latitude];
   const origin = MercatorCoordinate.fromLngLat([longitude, latitude], 0);
   const unitScale = origin.meterInMercatorCoordinateUnits();
-  const bounds = new THREE.Box3().setFromObject(storefront);
-  storefront.position.y -= bounds.min.y;
-  const dimensions = bounds.setFromObject(storefront).getSize(new THREE.Vector3());
+  const dimensions = modelDimensions(storefront);
   const localFootprint = Math.max(dimensions.x, dimensions.z, 0.001);
   const localHeight = Math.max(dimensions.y, 0.001);
   const plotSizeMeters = input.building?.plotSizeMeters ?? 8;
@@ -66,6 +80,45 @@ function storefrontModelMatrix(input: StorefrontMapLayerInput, storefront: THREE
     .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
 }
 
+function rooftopMarkerMatrix(input: StorefrontMapLayerInput, marker: THREE.Group) {
+  const [longitude, latitude] = input.building?.center ?? [input.longitude, input.latitude];
+  const buildingHeightMeters = Math.max(3.4, Math.min(80, input.building?.heightMeters ?? 8));
+  const origin = MercatorCoordinate.fromLngLat(
+    [longitude, latitude],
+    buildingHeightMeters + 0.7,
+  );
+  const unitScale = origin.meterInMercatorCoordinateUnits();
+  const dimensions = modelDimensions(marker);
+  const localFootprint = Math.max(dimensions.x, dimensions.z, 0.001);
+  const localHeight = Math.max(dimensions.y, 0.001);
+  const targetHeightMeters = Math.max(5.5, Math.min(9, buildingHeightMeters * 0.3));
+  const targetFootprintMeters = Math.max(
+    4.5,
+    Math.min(7.5, (input.building?.plotSizeMeters ?? 5) * 0.95),
+  );
+  const uniformScale = Math.min(
+    targetHeightMeters / localHeight,
+    targetFootprintMeters / localFootprint,
+  );
+
+  return new THREE.Matrix4()
+    .makeTranslation(origin.x, origin.y, origin.z)
+    .scale(
+      new THREE.Vector3(
+        unitScale * uniformScale,
+        -unitScale * uniformScale,
+        unitScale * uniformScale,
+      ),
+    )
+    .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+}
+
+function storefrontModelMatrix(input: StorefrontMapLayerInput, storefront: THREE.Group) {
+  return placementMode(input) === "rooftop-marker"
+    ? rooftopMarkerMatrix(input, storefront)
+    : replacementModelMatrix(input, storefront);
+}
+
 export function createStorefrontMapLayer(input: StorefrontMapLayerInput): StorefrontMapLayer {
   let renderer: THREE.WebGLRenderer | null = null;
   let scene: THREE.Scene | null = null;
@@ -85,10 +138,17 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
       scene.remove(storefront);
       disposeStorefront(storefront);
     }
-    storefront = emphasizeCategoryAttachment(nextStorefront);
+    storefront =
+      placementMode(currentInput) === "rooftop-marker"
+        ? nextStorefront
+        : emphasizeCategoryAttachment(nextStorefront);
+    storefront.traverse((object) => {
+      object.renderOrder = placementMode(currentInput) === "rooftop-marker" ? 4 : object.renderOrder;
+    });
     modelMatrix = storefrontModelMatrix(currentInput, storefront);
     storefront.userData.locationSource = currentInput.source;
     storefront.userData.locationSourceId = currentInput.sourceId;
+    storefront.userData.placementMode = placementMode(currentInput);
     scene.add(storefront);
     mapInstance?.triggerRepaint();
   }
@@ -98,8 +158,13 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
     currentInput = nextInput;
     if (!scene) return;
     const variant = getStorefrontVariant(nextInput.categoryCode);
-    installStorefront(createStorefront(variant));
 
+    if (placementMode(nextInput) === "rooftop-marker") {
+      installStorefront(createStorefrontCategoryMarker(variant));
+      return;
+    }
+
+    installStorefront(createStorefront(variant));
     void storefrontAssetCache
       .load(variant)
       .then((assets) => {
