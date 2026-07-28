@@ -26,8 +26,11 @@ vi.mock("../lib/api", () => ({
 }));
 
 vi.mock("./TaskCard", () => ({
-  default: ({ task, onClick, onDelete }) => (
-    <div data-testid={`card-${task.id}`}>
+  default: ({ task, onClick, onDelete, nextNudgeAt }) => (
+    <div
+      data-testid={`card-${task.id}`}
+      data-next-nudge-at={nextNudgeAt ?? ""}
+    >
       <button data-testid={`task-${task.id}`} onClick={onClick}>
         {task.title}
       </button>
@@ -302,9 +305,9 @@ describe("HomePage response-driven nudge scheduling", () => {
 
   it.each([
     { label: "Lv.1", initialLevel: 0, openAfter: 0, blockedFor: 30_000 },
-    { label: "Lv.2", initialLevel: 1, openAfter: 3_000, blockedFor: 30_000 },
+    { label: "Lv.2", initialLevel: 1, openAfter: 10_000, blockedFor: 30_000 },
     { label: "Lv.3", initialLevel: 2, openAfter: 6_000, blockedFor: 30_000 },
-    { label: "Lv.4", initialLevel: 3, openAfter: 10_000, blockedFor: 60_000 },
+    { label: "Lv.4", initialLevel: 3, openAfter: 3_000, blockedFor: 60_000 },
   ])(
     "$label modal pauses further notifications and level changes",
     async ({ initialLevel, openAfter, blockedFor }) => {
@@ -321,25 +324,26 @@ describe("HomePage response-driven nudge scheduling", () => {
   );
 
   it("restarts every active task with a full interval from explicit close", async () => {
+    // modal-task는 Lv0→1(항상 즉시)로 모달을 띄우고, other-task는 기본
+    // deadline(overdue)이라 Lv2 지연이 짧다. close 이후 modal-task는 far
+    // 버킷의 Lv2(40000ms)로 재예약돼 other-task의 Lv2(overdue, 10000ms)보다
+    // 훨씬 늦게 다시 개입하므로, 레벨이 높을수록 간격이 짧아지는 현재
+    // 정책에서도 other-task가 방해받지 않고 자신의 새 간격을 완주할 수 있다.
     const api = setupApi([
       makeTask({
         id: "modal-task",
-        level: 1,
-        deadline: "2026-07-24T12:00:00.000Z",
+        level: 0,
+        deadline: "2026-08-02T12:00:00.000Z", // far
       }),
-      makeTask({
-        id: "other-task",
-        level: 1,
-        deadline: "2026-07-26T12:00:00.000Z",
-      }),
+      makeTask({ id: "other-task", level: 1 }), // 기본 deadline → overdue
     ]);
     await renderHome();
 
-    await advance(6_000);
+    await advance(0);
     expect(screen.getByTestId("nudge-modal")).toHaveTextContent("modal-task");
     expect(api.callsFor("other-task")).toBe(0);
 
-    await advance(20_000);
+    await advance(30_000);
     expect(api.callsFor("other-task")).toBe(0);
     fireEvent.click(screen.getByText("close-modal"));
 
@@ -362,11 +366,11 @@ describe("HomePage response-driven nudge scheduling", () => {
 
     await advance(0);
     fireEvent.click(screen.getByText("close-modal"));
-    await advance(3_000);
+    await advance(10_000);
     fireEvent.click(screen.getByText("close-modal"));
     await advance(6_000);
     fireEvent.click(screen.getByText("close-modal"));
-    await advance(10_000);
+    await advance(3_000);
 
     expect(api.callsFor("repeating-task")).toBe(4);
     expect(api.callsFor("deferred-task")).toBe(0);
@@ -379,7 +383,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     const api = setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
       "data-level",
       "2",
@@ -396,7 +400,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     expect(JSON.parse(sessionStorage.getItem(FOCUS_SESSION_KEY))).toEqual({
       version: 2,
       taskId: "a",
-      startedAt: NOW.getTime() + 3_000,
+      startedAt: NOW.getTime() + 10_000,
       entryMode: "intervention",
       entryLevel: 2,
       journeyLevel: 2,
@@ -407,6 +411,90 @@ describe("HomePage response-driven nudge scheduling", () => {
 
     await advance(60_000);
     expect(api.callsFor("a")).toBe(1);
+  });
+
+  it("clears every active task's timer and countdown when Focus starts on one of them", async () => {
+    setupApi([makeTask({ id: "a", level: 1 }), makeTask({ id: "b", level: 1 })]);
+    await renderHome();
+
+    // 마운트 직후엔 a/b 둘 다 다음 알림이 예약돼 있어야 한다.
+    expect(screen.getByTestId("card-a").dataset.nextNudgeAt).not.toBe("");
+    expect(screen.getByTestId("card-b").dataset.nextNudgeAt).not.toBe("");
+
+    fireEvent.click(screen.getByTestId("task-a"));
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute("data-task-id", "a");
+
+    // Focus 대상(a)뿐 아니라 다른 active task(b)의 카운트다운도 함께 사라져야 한다.
+    expect(screen.getByTestId("card-a").dataset.nextNudgeAt).toBe("");
+    expect(screen.getByTestId("card-b").dataset.nextNudgeAt).toBe("");
+  });
+
+  it("does not send notification_sent for other active tasks while Focus is running", async () => {
+    const api = setupApi([
+      makeTask({ id: "a", level: 1 }),
+      makeTask({ id: "b", level: 1 }),
+    ]);
+    await renderHome();
+
+    fireEvent.click(screen.getByTestId("task-a"));
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute("data-task-id", "a");
+
+    // b의 Lv2 지연(overdue 버킷, 10_000ms)을 한참 넘겨도 요청 자체가 나가지 않아야 한다.
+    await advance(60_000);
+    expect(api.callsFor("a")).toBe(0);
+    expect(api.callsFor("b")).toBe(0);
+  });
+
+  it("reschedules every active task with a fresh full interval after Focus ends", async () => {
+    // tick 자체를 기다려 확인하면, 먼저 반응하는 task가 레벨업하며 자동으로 모달을
+    // 띄우는(기존 동작) 순간 다른 task의 타이머까지 함께 지워져 이 테스트의 관심사(재예약
+    // 여부)와 무관한 레이스가 섞인다. 그래서 실제 tick을 기다리는 대신, 종료 직후
+    // nextNudgeAt에 기록된 "다음 알림 시각"이 완전히 새로운 전체 간격만큼(남은 시간을
+    // 이어받지 않고) 미래로 잡혔는지를 직접 확인한다.
+    setupApi([makeTask({ id: "a", level: 1 }), makeTask({ id: "b", level: 1 })]);
+    await renderHome();
+
+    fireEvent.click(screen.getByTestId("task-a"));
+    expect(screen.getByTestId("card-a").dataset.nextNudgeAt).toBe("");
+    expect(screen.getByTestId("card-b").dataset.nextNudgeAt).toBe("");
+
+    await advance(6_000); // Focus 도중 시간 경과(부분 경과가 이어지지 않아야 함)
+    fireEvent.click(screen.getByText("stop-session"));
+
+    const freshNextNudgeAt = String(NOW.getTime() + 6_000 + 10_000); // overdue Lv2 = 10_000ms
+    expect(screen.getByTestId("card-a").dataset.nextNudgeAt).toBe(
+      freshNextNudgeAt,
+    );
+    expect(screen.getByTestId("card-b").dataset.nextNudgeAt).toBe(
+      freshNextNudgeAt,
+    );
+  });
+
+  it("also pauses every active task's notifications when a Focus session is restored after reload", async () => {
+    const api = setupApi([
+      makeTask({ id: "a", level: 1 }),
+      makeTask({ id: "b", level: 1 }),
+    ]);
+    const session = createFocusSession({
+      taskId: "a",
+      startedAt: NOW.getTime() - 5_000,
+      entryMode: "direct",
+      entryLevel: null,
+      journeyLevel: 1,
+      microTask: null,
+      generationSource: "none",
+      memoryEvidence: null,
+    });
+    sessionStorage.setItem(FOCUS_SESSION_KEY, JSON.stringify(session));
+
+    await renderHome();
+
+    expect(screen.getByTestId("focus-mode")).toHaveAttribute("data-task-id", "a");
+    expect(screen.getByTestId("card-b").dataset.nextNudgeAt).toBe("");
+
+    await advance(60_000);
+    expect(api.callsFor("a")).toBe(0);
+    expect(api.callsFor("b")).toBe(0);
   });
 
   it.each([1, 2, 3, 4])(
@@ -576,7 +664,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     const api = setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     fireEvent.change(screen.getByLabelText("reason-input"), {
       target: { value: "still deciding" },
     });
@@ -627,7 +715,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     setupApi([makeTask({ id: "a", level: 1 })]);
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     expect(screen.getByTestId("nudge-modal")).toHaveAttribute(
       "data-level",
       "2",
@@ -734,7 +822,7 @@ describe("HomePage response-driven nudge scheduling", () => {
     );
     await renderHome();
 
-    await advance(3_000);
+    await advance(10_000);
     expect(api.callsFor("fails")).toBe(1);
     await advance(3_000);
 
@@ -757,7 +845,7 @@ describe("HomePage response-driven nudge scheduling", () => {
         <HomePage />
       </MemoryRouter>,
     );
-    await advance(3_000);
+    await advance(10_000);
 
     expect(api.callsFor("a")).toBe(1);
   });
