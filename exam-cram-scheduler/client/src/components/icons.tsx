@@ -34,6 +34,20 @@ export function BackIcon() {
   );
 }
 
+export function TrashIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0v12a1 1 0 01-1 1H7a1 1 0 01-1-1V7m4 4v6m4-6v6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function WarningIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
