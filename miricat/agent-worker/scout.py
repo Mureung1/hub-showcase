@@ -27,10 +27,42 @@ def _gbis_fetch_body(source, seq):
     return " ".join(re.sub(r"<[^>]+>", " ", m.group(1)).split())
 
 
+_topis_cache = {}   # TOPIS는 목록 JSON에 본문(HTML)이 같이 온다 — 캐시해두고 body에서 재사용
+
+
+def _topis_fetch_list(source):
+    """서울 TOPIS 전용: 목록이 JSON API(POST)이고 본문까지 포함."""
+    resp = requests.post(source["list_url"], data={"pageIndex": "1"},
+                         headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"}, timeout=10)
+    items = []
+    for row in resp.json().get("rows", []):
+        # 원문 URL에 게시판 구분(bdwrDivCd)과 글번호가 둘 다 필요해서 합성 id로 만든다
+        seq = f"{row.get('bdwrDivCd')}&bdwrSeq={row.get('bdwrSeq')}"
+        _topis_cache[seq] = row
+        items.append((seq, " ".join((row.get("bdwrTtlNm") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _topis_fetch_body(source, seq):
+    row = _topis_cache.get(str(seq))
+    if not row:
+        return ""
+    text = re.sub(r"<[^>]+>", " ", row.get("bdwrCts") or "").replace("&nbsp;", " ")
+    return " ".join(text.split())
+
+
+# 표준(HTML+정규식) 틀을 못 따르는 소스들의 전용 페처 (목록 함수, 본문 함수)
+FETCHERS = {
+    "gbis_route_change": (_gbis_fetch_list, _gbis_fetch_body),
+    "topis": (_topis_fetch_list, _topis_fetch_body),
+}
+
+
 def fetch_list(source):
     """소스 하나의 게시판 목록에서 (글번호, 제목) 리스트를 뽑는다."""
-    if source.get("fetcher") == "gbis_route_change":   # 표준(HTML+정규식)과 다른 소스는 전용 페처로
-        return _gbis_fetch_list(source)
+    custom = FETCHERS.get(source.get("fetcher"))
+    if custom:
+        return custom[0](source)
     resp = requests.get(source["list_url"], headers=HEADERS, timeout=10)
     resp.encoding = resp.apparent_encoding      # 인코딩 자동 감지 (한글 깨짐 방지)
 
@@ -46,8 +78,9 @@ def fetch_list(source):
 
 def fetch_body(source, seq):
     """글번호 하나로 본문 페이지를 긁어 텍스트를 뽑는다."""
-    if source.get("fetcher") == "gbis_route_change":
-        return _gbis_fetch_body(source, seq)
+    custom = FETCHERS.get(source.get("fetcher"))
+    if custom:
+        return custom[1](source, seq)
 
     url = source["view_url"].format(id=seq)      # ① 틀에 글번호 끼우기
     resp = requests.get(url, headers=HEADERS, timeout=10)
