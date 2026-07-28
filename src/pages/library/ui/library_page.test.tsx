@@ -36,7 +36,9 @@ describe('LibraryPage', () => {
       join(process.cwd(), 'src/pages/library/ui/library_page.css'),
       'utf8'
     );
+    const stageRule = getCssRule(styles, '.library-page__stage');
     const headerRule = getCssRule(styles, '.library-page__header');
+    const bodyRule = getCssRule(styles, '.library-page__body');
     const workAreaRule = getCssRule(styles, '.library-page__work-area');
     const filterRule = getCssRule(
       styles,
@@ -46,11 +48,12 @@ describe('LibraryPage', () => {
       styles.indexOf('@media (max-width: 767px)')
     );
 
+    expect(stageRule).toContain('background: var(--color-library-coral);');
     expect(headerRule).toContain('width: min(820px, 100%);');
-    expect(headerRule).toContain('margin-inline: auto;');
-    expect(headerRule).toContain('text-align: center;');
-    expect(workAreaRule).toContain('width: min(820px, 100%);');
-    expect(workAreaRule).toContain('margin-inline: auto;');
+    expect(bodyRule).toContain(
+      'width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));'
+    );
+    expect(workAreaRule).toContain('display: grid;');
     expect(filterRule).toContain('justify-content: center;');
     expect(
       getCssRule(mobileStyles, '.library-page__filter > .category-filter')
@@ -133,6 +136,7 @@ describe('LibraryPage', () => {
         name: '이 검색어로 찾은 인사이트가 없어요',
       })
     ).not.toBeNull();
+    expect(screen.getByText('검색 결과 0개')).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '검색어 지우기' }));
 
@@ -214,6 +218,7 @@ describe('LibraryPage', () => {
     expect(
       screen.queryByRole('heading', { name: '아직 저장한 인사이트가 없어요' })
     ).toBeNull();
+    expect(screen.getByText('개발 0개')).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '전체 보기' }));
 
@@ -293,6 +298,7 @@ describe('LibraryPage', () => {
     expect(
       screen.getByRole('button', { name: '인사이트 가져오기' })
     ).not.toBeNull();
+    expect(screen.getByText('인사이트 1개')).not.toBeNull();
 
     rerender(
       <DesignSystemProvider>
