@@ -6,12 +6,12 @@ const DEFAULT_BUILDING_BASE = [
   "to-number",
   ["get", "render_min_height"],
   0,
-] as ExpressionSpecification;
+] as unknown as ExpressionSpecification;
 const DEFAULT_BUILDING_HEIGHT = [
   "to-number",
   ["get", "render_height"],
   8,
-] as ExpressionSpecification;
+] as unknown as ExpressionSpecification;
 
 function readyBuildingCenters(stores: SelectedStorefront[]) {
   return stores.flatMap((store) => (store.building ? [store.building.center] : []));
@@ -30,7 +30,7 @@ function replacementCondition(stores: SelectedStorefront[]): ExpressionSpecifica
       },
     ],
     0.75,
-  ] as ExpressionSpecification;
+  ] as unknown as ExpressionSpecification;
 }
 
 export function replacementBuildingBaseExpression(
@@ -38,7 +38,7 @@ export function replacementBuildingBaseExpression(
 ): ExpressionSpecification {
   const condition = replacementCondition(stores);
   return condition
-    ? (["case", condition, 0, DEFAULT_BUILDING_BASE] as ExpressionSpecification)
+    ? (["case", condition, 0, DEFAULT_BUILDING_BASE] as unknown as ExpressionSpecification)
     : DEFAULT_BUILDING_BASE;
 }
 
@@ -47,6 +47,6 @@ export function replacementBuildingHeightExpression(
 ): ExpressionSpecification {
   const condition = replacementCondition(stores);
   return condition
-    ? (["case", condition, 0, DEFAULT_BUILDING_HEIGHT] as ExpressionSpecification)
+    ? (["case", condition, 0, DEFAULT_BUILDING_HEIGHT] as unknown as ExpressionSpecification)
     : DEFAULT_BUILDING_HEIGHT;
 }
