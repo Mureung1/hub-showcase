@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, realpath, rm } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -8,6 +8,10 @@ import {
   resolveCanonicalProductArguments,
   runCanonicalProduct,
 } from './product-canonical.mjs'
+import {
+  ProductDevelopmentLaunchError,
+  startProductDevelopment,
+} from './product-development-bootstrap.mjs'
 
 test('canonical local startup defaults only app data and does not adopt ambient workspace input', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'ay-ple-canonical-local-'))
@@ -77,4 +81,25 @@ test('canonical local startup accepts an explicit workspace argument without a h
       ),
     /workspace must be an explicit absolute directory/,
   )
+})
+
+test('canonical startup requires a prepared root before app data or processes are created', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'ay-ple-canonical-local-'))
+  const canonicalRoot = await realpath(root)
+  const appDataRoot = path.join(canonicalRoot, 'missing-app-data')
+  try {
+    await assert.rejects(
+      startProductDevelopment({
+        appDataRoot,
+        environment: {},
+        workspaceRoot: undefined,
+      }),
+      (error: unknown) =>
+        error instanceof ProductDevelopmentLaunchError &&
+        error.code === 'prepared_workspace_required',
+    )
+    await assert.rejects(lstat(appDataRoot), { code: 'ENOENT' })
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
 })

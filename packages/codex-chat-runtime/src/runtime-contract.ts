@@ -9,15 +9,7 @@ import type {
 } from './contract.js'
 import type { CodexNativeContextPort } from './native-context-contract.js'
 
-export type CodexProductSkillInput = {
-  readonly name: string
-  readonly path: string
-}
-
-export type CodexPrivateMcpServerInput = {
-  readonly url: string
-  readonly token: string
-}
+export type CodexChildEnvironment = Readonly<Record<string, string>>
 
 export type CodexProductPermissionProfile =
   | 'read_only'
@@ -49,16 +41,16 @@ export type CodexProductTurnSettings = {
   readonly serviceTier: 'default' | 'fast'
 }
 
-export type StartThreadInput = {
-  readonly workspace: string
-  readonly mcp: CodexPrivateMcpServerInput
+export type CodexProductSkillInput = {
+  readonly name: string
+  readonly path: string
 }
 
 export type StartProductTurnInput = {
   readonly threadId: CodexThreadId
-  readonly skill?: CodexProductSkillInput
   readonly permissionProfile: CodexProductPermissionProfile
   readonly settings?: CodexProductTurnSettings
+  readonly skill?: CodexProductSkillInput
   readonly text: string
 }
 
@@ -79,7 +71,6 @@ export type CancelUserInput = {
 
 export interface CodexProductCapableRuntime extends CodexChatRuntime {
   startThread(): Promise<CodexChatThread>
-  startThread(input: StartThreadInput): Promise<CodexChatThread>
   readAccountReadiness(): Promise<CodexAccountReadiness>
   startProductTurn(input: StartProductTurnInput): Promise<CodexProductTurn>
   answerUserInput(input: AnswerUserInput): Promise<void>

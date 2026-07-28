@@ -91,7 +91,7 @@ DEFAULT_SOURCE_ROOT = REPOSITORY_ROOT / "references" / "openai-codex"
 SNAPSHOT_ROOT = PACKAGE_ROOT / "python" / "openai-codex"
 UNPATCHED_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "unpatched.json"
 PATCHED_SOURCE_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "patched-source.json"
-ARTIFACT_ROOT = PACKAGE_ROOT / ".artifacts" / "exact-sdk"
+ARTIFACT_ROOT = REPOSITORY_ROOT.parent / ".ay-ple" / "cache" / "exact-sdk"
 UPSTREAM_ROOT = PACKAGE_ROOT / "upstream"
 PATCH_ROOT = UPSTREAM_ROOT / "patches"
 PROVENANCE_FILES = ("LICENSE", "NOTICE")
@@ -158,18 +158,6 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/scripts/update_sdk_artifacts.py",
             "sdk/python/src/openai_codex/api.py",
             "sdk/python/tests/test_public_api_runtime_behavior.py",
-        ),
-    ),
-    (
-        "0008-standalone-skill-extra-roots",
-        PATCH_ROOT / "0008-standalone-skill-extra-roots.patch",
-        (
-            "sdk/python/scripts/update_sdk_artifacts.py",
-            "sdk/python/src/openai_codex/api.py",
-            "sdk/python/src/openai_codex/async_client.py",
-            "sdk/python/src/openai_codex/client.py",
-            "sdk/python/tests/test_public_api_runtime_behavior.py",
-            "sdk/python/tests/test_public_api_signatures.py",
         ),
     ),
 )

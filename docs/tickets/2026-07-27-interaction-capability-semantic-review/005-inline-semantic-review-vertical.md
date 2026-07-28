@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,19 +33,30 @@ Broker가 preflight한 Semantic Review를 current product Turn NDJSON transcript
 
 ## Acceptance Criteria
 
-- [ ] Valid requested frame이 summary, question, ordered semantic changes와 bounded evidence context를 한 inline card에 exact 투영한다.
-- [ ] Accept, non-empty-feedback revise와 reject가 한 `204` answer 및 한 `review.resolved` frame으로 same held call을 정산한다.
-- [ ] Revise 후 fresh call이 previous read-only card 아래 새 card를 append하고 old interaction에 다시 답할 수 없다.
-- [ ] Duplicate·late·wrong answer, invalid feedback와 delivery 전 close가 `409` 또는 failure frame으로 끝나며 두 번째 result를 만들지 않는다.
-- [ ] Pending 동안 composer·새 Turn·steer가 disabled이고 Turn interrupt만 동작하며, interrupt·disconnect·runtime failure 뒤 control 없는 failure card가 남는다.
-- [ ] Reload가 App store에서 settled Review를 복원하지 않고, Browser bundle과 network payload에 private credential·native identity가 없다.
-- [ ] Current public composition의 기존 behavior는 internal target vertical 추가 뒤에도 green이다.
+- [x] Valid requested frame이 summary, question, ordered semantic changes와 bounded evidence context를 한 inline card에 exact 투영한다.
+- [x] Accept, non-empty-feedback revise와 reject가 한 `204` answer 및 한 `review.resolved` frame으로 same held call을 정산한다.
+- [x] Revise 후 fresh call이 previous read-only card 아래 새 card를 append하고 old interaction에 다시 답할 수 없다.
+- [x] Duplicate·late·wrong answer, invalid feedback와 delivery 전 close가 `409` 또는 failure frame으로 끝나며 두 번째 result를 만들지 않는다.
+- [x] Pending 동안 composer·새 Turn·steer가 disabled이고 Turn interrupt만 동작하며, interrupt·disconnect·runtime failure 뒤 control 없는 failure card가 남는다.
+- [x] Reload가 App store에서 settled Review를 복원하지 않고, Browser bundle과 network payload에 private credential·native identity가 없다.
+- [x] Current public composition의 기존 behavior는 internal target vertical 추가 뒤에도 green이다.
 
 ## Verification
 
-- Targeted test or command: `npm test -w @ay-ple/product-contract && npm test -w @ay-ple/server && npm test -w @ay-ple/chat-shell`
-- Repository checks: `npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test`
-- Manual or live smoke: Internal target composition을 1440×900 및 1920px-class에서 열어 accept, revise→fresh append, reject, interrupt와 pending keyboard/focus behavior를 확인한다.
+- Targeted: `npm test -w @ay-ple/product-contract && npm test -w @ay-ple/server && npm test -w @ay-ple/chat-shell` — 각각 21/21, 167/167, 47/47 green.
+- Browser: `npm run test:e2e -w @ay-ple/chat-shell -- --grep 'internal inline Semantic Review target'` — Chromium desktop 1/1 green. 1440×900에서 exact change·evidence digest, disabled composer·interrupt와 accept autofocus를, 1920×1080에서 revise→fresh append·accept·reject·interrupt failure와 single native interrupt를 검증했다.
+- Repository: `npm run lint -w @ay-ple/chat-shell && npm run typecheck && npm run build && npm test`와 `npm run check:docs-links` — 최종 코드 기준 전체 green.
+- Additional Browser regression: 전체 33개 Playwright trace에서 32개가 green이었고 기존 same-root restart scenario가 store-authority race로 한 번 실패했다. 같은 scenario의 즉시 isolated 재실행은 1/1 green이었다.
+- Review: Fixed point `cd6bc5d94776e2d724cfa460a5ffa3235978d570` 기준 Standards·Spec 병렬 review에서 stale pending mirror, Runtime terminal 미연결과 evidence digest 비표시를 수정했다. 재검토에서 normal Turn terminal과 Runtime-generation terminal의 credential lifecycle을 분리했고, 최종 두 축 모두 actionable finding 0건이었다.
+
+## Result
+
+Opt-in `internalInteractionTarget`을 같은 Server listener에 composition해 authenticated Broker call을 current Product Turn NDJSON의 inline Semantic Review card로 전달하고, exact `accept | revise | reject`를 bodyless `204`와 한 `review.resolved` frame으로 held call에 정산한다. Card는 ordered before/after change, relative evidence path·occurrence·whole-file SHA-256·bounded quote context를 표시하며 settled·failed chronology를 read-only로 보존한다. Turn interrupt·disconnect·Turn terminal·Runtime failure와 shutdown은 normal result 없이 `review.failed`로 닫히고, normal Turn terminal은 Runtime-generation credential을 revoke하지 않는다. Current public First Assignment route와 old Review wire는 변경하지 않았다.
+
+Implementation commits:
+
+- `547952d25` — `feat: add inline semantic review vertical`
+- `8e2491071` — `fix: close semantic reviews on turn loss`
 
 ## Blocked By
 

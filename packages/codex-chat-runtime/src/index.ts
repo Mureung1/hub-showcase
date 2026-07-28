@@ -7,6 +7,8 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 export type {
   CodexEffectiveConfig,
+  CodexEffectiveMcpEnvironmentVariable,
+  CodexEffectiveMcpServer,
   CodexEffectiveSkill,
   CodexNativeContextPort,
 } from './native-context-contract.js'
@@ -34,18 +36,17 @@ export type {
 export type {
   AnswerUserInput,
   CancelUserInput,
-  CodexPrivateMcpServerInput,
+  CodexChildEnvironment,
   CodexProductCapableRuntime,
   CodexProductPermissionProfile,
   CodexModelCatalog,
   CodexModelCatalogEntry,
   CodexModelCatalogRuntime,
   CodexModelReasoningEffort,
-  CodexProductTurnSettings,
   CodexProductSkillInput,
+  CodexProductTurnSettings,
   CodexProductTurn,
   CodexWorkspaceRuntime,
-  StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
 export {
@@ -59,6 +60,7 @@ export interface CreateCodexChatWorkspaceRuntimeOptions {
   readonly runtimeRoot: string
   readonly workspace: string
   readonly environment: CodexChatRuntimeEnvironment
+  readonly childEnvironment?: import('./runtime-contract.js').CodexChildEnvironment
 }
 
 export type { CodexChatRuntimeEnvironment } from './runtime.js'
@@ -81,6 +83,7 @@ export async function createCodexChatRuntime(
     bundle,
     workspace: options.workspace,
     environment: options.environment,
+    childEnvironment: options.childEnvironment,
   })
   return spawned.runtime
 }

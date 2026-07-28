@@ -61,7 +61,6 @@ test('decodes exact command-specific results and rejects extra wire fields', () 
       threadId: 'native-thread',
     },
   )
-
   assert.throws(
     () =>
       decodeBridgeOutputFrame(

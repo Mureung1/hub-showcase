@@ -8,7 +8,7 @@
 
 보존하는 결정: [ADR 0011 — Official Codex Python SDK를 Chat Shell runtime baseline으로 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md), ADR 0012의 single maintained Runtime graph와 no-alias hard cutover 원칙
 
-후속 결정과의 관계: [ADR 0018 — 사용자가 선택한 Git working tree를 SemesterWorkspace로 채택한다](0018-adopt-user-owned-git-semester-workspaces.md)와 [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)가 장기 workspace·interaction target을 대체한다. 이 ADR은 전환 전 current v2 original bytes 보존과 explicit schema transition 원칙을 계속 소유한다. [ADR 0014](0014-create-app-owned-normalized-semester-workspaces.md)는 historical 결정이다.
+후속 결정과의 관계: [ADR 0018 — 사용자가 선택한 Git working tree를 SemesterWorkspace로 채택한다](0018-adopt-user-owned-git-semester-workspaces.md), [ADR 0021 — Protocol-driven AY–App Interaction Layer](0021-adopt-a-protocol-driven-ay-app-interaction-layer.md)와 [ADR 0019 — MCP InteractionCapability로 App UI round trip을 제공한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)가 장기 workspace·interaction target을 대체한다. 이 ADR은 전환 전 current v2 original bytes 보존과 explicit schema transition 원칙을 계속 소유한다. [ADR 0014](0014-create-app-owned-normalized-semester-workspaces.md)는 historical 결정이다.
 
 ## 맥락
 

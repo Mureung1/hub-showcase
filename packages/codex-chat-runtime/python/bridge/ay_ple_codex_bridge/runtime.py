@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -27,9 +26,6 @@ from openai_codex.generated.v2_all import (
     AgentMessageThreadItem,
     ErrorNotification,
     ItemCompletedNotification,
-    ItemStartedNotification,
-    McpToolCallStatus,
-    McpToolCallThreadItem,
     PlanDeltaNotification,
     PlanThreadItem,
     ReasoningEffort,
@@ -138,12 +134,6 @@ def _error_code(error: Any) -> str:
     return "turn_error"
 
 
-def _skill_extra_roots(skill_path: str | None) -> tuple[str, ...]:
-    if skill_path is None:
-        return ()
-    return (os.path.dirname(skill_path),)
-
-
 def project_notification(
     notification: Notification,
     *,
@@ -167,26 +157,6 @@ def project_notification(
             "itemId": payload.item_id,
             "delta": payload.delta,
         }
-    if (
-        is_product
-        and notification.method == "item/started"
-        and isinstance(payload, ItemStartedNotification)
-        and payload.thread_id == thread_id
-        and payload.turn_id == turn_id
-    ):
-        item = payload.item.root
-        if (
-            isinstance(item, McpToolCallThreadItem)
-            and item.tool == "propose_state_patch"
-        ):
-            return {
-                "type": "mcp_call.started",
-                "threadId": thread_id,
-                "turnId": turn_id,
-                "itemId": item.id,
-                "tool": "propose_state_patch",
-            }
-        return None
     if (
         notification.method == "item/agentMessage/delta"
         and isinstance(payload, AgentMessageDeltaNotification)
@@ -223,28 +193,6 @@ def project_notification(
                 "itemId": item.id,
                 "text": item.text,
             }
-        if (
-            is_product
-            and isinstance(item, McpToolCallThreadItem)
-            and item.tool == "propose_state_patch"
-        ):
-            if item.status is McpToolCallStatus.completed:
-                return {
-                    "type": "mcp_call.completed",
-                    "threadId": thread_id,
-                    "turnId": turn_id,
-                    "itemId": item.id,
-                    "tool": "propose_state_patch",
-                }
-            if item.status is McpToolCallStatus.failed:
-                return {
-                    "type": "mcp_call.failed",
-                    "threadId": thread_id,
-                    "turnId": turn_id,
-                    "itemId": item.id,
-                    "tool": "propose_state_patch",
-                    "displayMessage": "The product proposal tool failed.",
-                }
         return None
     if (
         notification.method == "error"
@@ -542,30 +490,11 @@ class BridgeWorker:
                 _, victim_id = min(idle)
                 self._threads[victim_id].eviction_reserved = True
             try:
-                cwd = command.workspace or self._workspace
-                config = None
-                if command.private_mcp is not None:
-                    config = {
-                        "features": {"fast_mode": True},
-                        "mcp_servers": {
-                            "ay_ple": {
-                                "url": command.private_mcp.url,
-                                "http_headers": {
-                                    "X-AY-PLE-MCP-Token": command.private_mcp.token,
-                                },
-                                "enabled_tools": ["propose_state_patch"],
-                                "default_tools_approval_mode": "approve",
-                                "required": True,
-                            }
-                        },
-                    }
                 thread_start_options: dict[str, Any] = {
-                    "cwd": cwd,
-                    "approval_mode": ApprovalMode.deny_all,
-                    "sandbox": Sandbox.read_only,
+                    "cwd": self._workspace,
+                    "approval_mode": ApprovalMode.auto_review,
+                    "sandbox": Sandbox.workspace_write,
                 }
-                if config is not None:
-                    thread_start_options["config"] = config
                 handle = await self._codex.thread_start(**thread_start_options)
             except Exception as exc:
                 if victim_id is not None and victim_id in self._threads:
@@ -575,7 +504,7 @@ class BridgeWorker:
             if victim_id is not None:
                 self._threads.pop(victim_id, None)
             self._threads[handle.id] = ThreadRecord(
-                handle=handle, cwd=cwd, last_used=self._tick()
+                handle=handle, cwd=self._workspace, last_used=self._tick()
             )
             self._result(
                 command.bridge_request_id,
@@ -718,7 +647,6 @@ class BridgeWorker:
 
     async def _start_turn(self, command: StartTurnCommand) -> None:
         async def start_chat_turn(record: ThreadRecord) -> AsyncTurnHandle:
-            await self._codex.set_skill_extra_roots(())
             return await record.handle.turn(
                 command.text,
                 cwd=record.cwd,
@@ -736,17 +664,19 @@ class BridgeWorker:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))
 
     async def _start_product_turn(self, command: StartProductTurnCommand) -> None:
-        turn_input = [TextInput(text=command.text)]
-        if command.skill_name is not None and command.skill_path is not None:
-            turn_input.insert(
-                0,
-                SkillInput(name=command.skill_name, path=command.skill_path),
-            )
+        turn_input = (
+            [TextInput(text=command.text)]
+            if command.skill is None
+            else [
+                SkillInput(
+                    name=command.skill.name,
+                    path=command.skill.path,
+                ),
+                TextInput(text=command.text),
+            ]
+        )
 
         async def start_product_turn(record: ThreadRecord) -> AsyncTurnHandle:
-            await self._codex.set_skill_extra_roots(
-                _skill_extra_roots(command.skill_path)
-            )
             effective_model = command.model or record.handle.initial_model
             if not effective_model:
                 raise EffectiveModelResolutionError
@@ -788,17 +718,6 @@ class BridgeWorker:
             )
         if turn is None:
             return
-        if command.skill_name is not None:
-            if not self._offer_turn_event(
-                turn,
-                {
-                    "type": "skill.requested",
-                    "threadId": command.thread_id,
-                    "turnId": turn.handle.id,
-                    "skillName": command.skill_name,
-                },
-            ):
-                return
         await self._bind_pending_interactions(turn)
         if self._fatal_code is None:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))

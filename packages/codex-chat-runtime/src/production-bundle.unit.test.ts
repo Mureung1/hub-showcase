@@ -11,7 +11,7 @@ import {
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
-  'ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9'
+  'e9bee416c02ff419dc961f092de85df54b40e7456a304d62470ac19ff64f7a8b'
 const PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
@@ -20,7 +20,6 @@ const PATCH_IDS = [
   '0005-strict-response-classification',
   '0006-plan-user-input-seam',
   '0007-thread-start-settings',
-  '0008-standalone-skill-extra-roots',
 ] as const
 const BUNDLE_ROSTER_SHA256 =
   '72f3c18b81c3441ca8ddea2d2bef3ef844fc4270edde878edf183d4361a53e78'
@@ -316,13 +315,13 @@ test('rejects exact source, runtime, and ordered patch provenance drift', async 
       expected: /patch order drift/,
     },
     {
-      name: 'obsolete extra ninth patch',
+      name: 'obsolete extra eighth patch',
       mutate: (manifest) => {
         const source = manifest.source as JsonObject
         source.patches = [
           ...(source.patches as JsonObject[]),
           {
-            id: ['0009', 'managed-chatgpt-login'].join('-'),
+            id: ['0009', 'standalone-skill-extra-roots'].join('-'),
             order: 9,
           },
         ]

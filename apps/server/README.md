@@ -1,10 +1,12 @@
 # @ay-ple/server
 
-Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. `createServerApplication()`은 listener-independent application factory이며 product HTTP, 선택한 workspace graph와 bounded Runtime shutdown을 소유한다. Listener bind와 process signal은 별도 host adapter가 소유하되, bind-first host는 Server-owned two-phase listener capability로 기존 cleanup authority에 합류한다.
+Explicit workspace authority와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. Canonical `createPreparedServerApplication()`이 product HTTP, 선택한 workspace graph와 bounded Runtime shutdown을 소유한다. Listener bind와 process signal은 별도 host adapter가 소유하되, bind-first host는 Server-owned two-phase listener capability로 기존 cleanup authority에 합류한다. `createServerApplication()`은 listener lifecycle을 독립 검증하는 빈 host seam이다.
 
-`/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, neutral NDJSON line writer, workspace store와 private Runtime/MCP binding은 Server에 남는다.
+`/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, active-root `WorkspaceSourceProjection`, neutral NDJSON line writer, `WorkspaceRegistry`와 transient Interaction Broker binding은 Server에 남는다.
 
-Canonical product 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. 제거된 public-preview Account→Setup→Ready composition, managed Browser OAuth route와 v3 setup adapter는 Server의 실행·export·test graph에 남지 않는다. [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 v3 kernel은 현재 Server consumer가 없는 package-private 기반이며 current product authority가 아니다.
+Canonical product 구현은 App 시작 전에 준비한 user-owned Git SemesterWorkspace를 explicit `--workspace` 또는 `WorkspaceRegistry` active pointer로 선택한다. Shared listener·Interaction Broker, exact-root Runtime와 project-discovered MCP가 모두 준비된 뒤에만 registry와 Browser lifecycle을 `active`로 전환한다. 제거된 public-preview Account→Setup→Ready composition, in-App chooser·init·candidate transition, managed Browser OAuth route와 v3 setup adapter는 Server의 public graph에 없다.
+
+`workspace-registry` Module은 canonical external app data의 `state/workspace-registry.json`을 exact v1 envelope로 읽고 compare-before-replace한다. Canonical root command의 read-only `prepared-workspace-launch` resolver는 explicit prepared root를 registry보다 우선하고, 인자가 없으면 active pointer를 fresh reopen한다. Canonical·exact Git root·strict v4 identity가 아니거나 active pointer가 없으면 fail closed한다. `prepared-workspace-startup` coordinator는 fresh validation → shared listener → Broker generation → exact-root Runtime·native thread start → bounded effective project config → authenticated Adapter lifecycle → fresh thread context → Product thread handoff → registry transaction → active projection 순서를 고정한다. Thread start가 exact-root trust와 project config reload를 먼저 성립시키고, 이 startup thread를 정상 Product Turn에도 그대로 재사용하므로 별도 health-only thread나 두 번째 Product thread를 만들지 않는다. Native config의 `ay_ple_interaction` declaration은 exact root-relative `command`, 빈 `args`, source 없는 exact 세 `env_vars`, 생략된 `cwd`·`tool_timeout_sec`, 빈 static `env`, `enabled=true`, `required=true`, exact `enabled_tools=["propose_state_patch"]`, empty `disabled_tools=[]`를 모두 만족해야 한다. 다른 user MCP server의 valid `local | remote` env-var source는 projection에서 보존하지만 Required Interaction check에는 관여하지 않는다. Native Codex가 `enabled_tools` 뒤에 `disabled_tools`를 적용하므로 denylist가 하나라도 있으면 fail closed한다. 실제 Adapter는 handshake 뒤 Broker가 accept한 held lifecycle channel을 열어야 MCP initialize가 성공하며, Broker의 generation status가 startup readiness와 이후 live loss의 authority다. Lifecycle reader는 readiness 동안 path-free `starting`, accepted registry transaction 반환 뒤 live generation이면 `active`, startup readiness failure·active Runtime terminal·자동 감지한 Adapter loss 뒤 `runtime_unavailable` recovery를 투영한다. Canonical host는 recovery 동안 HTTP listener를 유지해 Browser가 이 상태를 읽게 하고, App shutdown에서만 listener를 닫는다. Missing/moved/reused registry root는 Runtime spawn 전에 `workspace_unavailable`이며 malformed/future registry는 original bytes를 보존한 `registry_incompatible`다. Registry CAS는 verified `workspaceId`를 replace 직전까지 다시 확인하고 synchronous acceptance callback을 되돌릴 수 없는 cutover로 사용한다. Runtime terminal이나 Broker의 synchronous `isLost()`가 acceptance보다 먼저 관찰되면 같은 writer lease에서 prior pointer를 복원한다. Acceptance 뒤 housekeeping 오류는 committed authority와 residue reconciliation으로 수렴하며, 그 직후 continuity를 잃으면 새 pointer를 유지한 채 active를 잠깐 합성하지 않고 recovery를 공개한다. Explicit relaunch의 acceptance 이전 failure 뒤 no-argument reopen은 previous root를 fresh Runtime·thread·Broker credential로 다시 열며 cross-generation identity를 재사용하지 않는다.
 
 ## Canonical 시작과 root 소유권
 
@@ -21,9 +23,11 @@ Canonical product composition은 다음 root authority를 명시적으로 분리
 | `packageRoot` | Current `hub/` source root다. Tracked source와 rebuildable output을 찾으며 사용자 상태를 쓰지 않는다. |
 | `appDataRoot` | 기본값은 canonical sibling `../.ay-ple/`다. Verified Runtime은 `runtime/production-runtime-darwin-arm64`, controlled `HOME`은 `state/runtime/home`, temporary state는 `temp/`에 둔다. |
 | `CODEX_HOME` | Caller의 전역 `CODEX_HOME`을 그대로 사용하며, 미설정이면 OS user의 `~/.codex`를 사용한다. Canonical dev는 별도 auth profile이나 credential copy를 만들지 않는다. |
-| `workspaceRoot` | Default는 선택하지 않는다. Transitional current-v2 개발 확인이 필요할 때만 `--workspace <absolute-path>`를 명시하며 `CODEX_CHAT_WORKSPACE`와 ambient `cwd`를 fallback으로 사용하지 않는다. |
+| `workspaceRoot` | 첫 open·학기 변경은 `--workspace <absolute-prepared-git-root>`를 사용하고, 이후 인자 없는 canonical start는 `WorkspaceRegistry.activeWorkspaceId`를 fresh reopen한다. `CODEX_CHAT_WORKSPACE`와 ambient `cwd`는 fallback으로 사용하지 않는다. |
 
 Package, app data, global Codex home와 workspace는 canonical realpath 기준 same-path·ancestor 관계가 없어야 하고 symlink·non-directory는 mutation 전에 fail closed한다. Controlled child state만 app data 아래에 중첩된다. Fresh clone은 Runtime bundle이 tracked되지 않으므로 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)에 따라 external app data에 materialize한다.
+
+`WorkspaceRegistry` store는 최대 `64`개 canonical realpath root와 active pointer만 보존한다. `256 KiB` strict codec, synced temporary file, opened-byte compare, no-clobber initial publish, atomic replacement rename와 directory sync를 사용하며 실제 process death 뒤 owned writer residue만 정리한다. Malformed·future registry는 original bytes를 보존하고 missing file만 empty v1 시작점으로 취급한다. Active reopen과 explicit reselect는 root `workspace-state.json` v4 identity를 fresh read하며 registry root와 `workspaceId`가 일치할 때만 available로 반환한다. Explicit commit caller는 readiness에서 검증한 `expectedWorkspaceId`를 함께 넘기며 store는 initial identity read와 final replace boundary 모두에서 같은 identity를 요구한다.
 
 Canonical root command는 ambient `PORT`를 무시하고 Server `PORT`를 `3000`으로 고정해 Chat Shell Vite proxy target과 일치시킨다. Direct Server entrypoint는 caller environment를 local `.env`보다 우선하고 `PORT`가 없으면 `3000`, listener address는 `127.0.0.1`을 사용한다. Root command가 exact Chat Shell Origin을 설정한다. `dev:chat-only`와 `/api/codex-chat/*`는 supported entrypoint·route·alias가 아니다.
 
@@ -34,87 +38,65 @@ npm run build -w @ay-ple/server
 npm run start -w @ay-ple/server
 ```
 
-## Legacy development workspace input
+## Legacy bytes 보존 경계
 
-아래 materializer와 dogfood profile helper는 final scoped cleanup 전 rollback evidence로만 남아 있으며 canonical `npm run dev`가 호출하지 않는다. 대표 First Assignment seed와 managed development workspace는 default selection authority가 아니다.
-
-```bash
-npm run materialize:dev-workspace
-```
-
-Materializer가 발급한 ownership marker가 있는 exact leaf만 재생성할 수 있다. Unmarked directory, broad parent, symlink와 caller-owned workspace는 reset·cleanup하지 않는다. `CODEX_CHAT_WORKSPACE`가 명시되면 manual-development materializer의 workspace selection을 caller-owned absolute directory로 override할 뿐 seed copy·reset·cleanup을 하지 않는다. 이 env는 Runtime artifact, controlled directory, native `cwd` owner 또는 장기 product identity를 대신하지 않는다.
-
-`SemesterWorkspaceController.nativeCwd()`는 current active internal-`ready` directory의 canonical root만 반환한다. Ready snapshot에 recovery marker가 있으면 같은 `cwd` authority는 유지하되 product mutation admission이 복구 전까지 새 work를 닫는다. `incompatible/readOnly`, cancel·invalid selection은 Runtime start 전에 fail closed한다. Browser snapshot에 absolute root를 노출하지 않는다.
-
-## Workspace-local durable store
-
-Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 지원한다. [ADR 0013](../../docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 이 format을 첫 durable compatibility baseline으로 채택한다.
-
-Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 adopted target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 한다. V3 codec·admission은 workspace package에 구현됐지만 current Server controller·product API는 아직 이를 사용하지 않으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
-
-| 영역 | Current behavior |
-| --- | --- |
-| Product aggregate | Stable workspace ID, confirmed revision, one `Course`, `RawMaterial`, Assignment, `StatePatch`, `UserConfirmation`, `ModelingRun`, execution guard와 nullable source-recovery marker를 한 authority로 보존한다. |
-| Read | Server가 JSON parse와 physical no-follow/read-only I/O를 소유하고 package의 `decodeCurrentSemesterWorkspaceV2`로 current v2를 검증한다. Decoded value는 narrow clone adapter로 current `PersistedWorkspaceState`에 옮기며 original serialized bytes를 authority로 열고 startup에서 rewrite하지 않는다. |
-| Write | Internal `semester-workspace-store` module이 codec·physical I/O·temporary rename·exact opened-byte comparison을 소유한다. Controller는 serialized transaction ordering과 in-memory authority 교체를 소유한다. |
-| Incompatible | v1, decoder-invalid pre-baseline·malformed current v2, future version, symlink·non-regular·unreadable store는 historical recognizer·migration·reset 없이 original bytes를 보존한 `incompatible/readOnly`로 연다. Decoder-valid v2의 whitespace·key order 같은 serialization 차이는 original bytes 그대로 지원한다. |
-| Future schema | Physical shape를 바꾸려면 explicit version bump와 migration을 제공하거나 bytes-preserving fail-closed rejection을 사용한다. Silent reset과 same-version shape drift는 허용하지 않는다. |
-| Restart | Express `ServerApplication`을 같은 `appDataRoot`·workspace로 stop/start하면 confirmed Assignment·revision·settled history를 다시 연다. Transient transcript와 unanswered Review는 복원하지 않는다. |
-
-App version rollback이나 public-surface cutover는 workspace-local confirmed state·history를 삭제하지 않는다. Older code가 newer format을 이해하지 못하면 bytes를 유지한 read-only로 멈춰야 한다. Generic migration framework, backup·restore journal은 current support surface가 아니다.
-
-## Material·guard·recovery
-
-Eligible regular UTF-8 `.txt`는 bounded scan을 통해 opaque material ID, relative display path, SHA-256 digest, media type과 size로 등록된다. Preview는 ID·digest·live file을 재검증하고 original TXT를 이동·rename·rewrite하지 않는다.
-
-Assignment action은 selected source를 appDataRoot staging에 byte-preserving snapshot하고 workspace-local scratch와 source/revision guard를 준비한다. Registered source drift는 matching native Turn을 interrupt하고 `source_conflict`로 멈춘다. Explicit material refresh만 current TXT를 stable-ID 새 baseline으로 채택한다. Store drift는 external bytes를 덮어쓰지 않고 `store_conflict`로 멈추며 matching operation release 후 same-root explicit reactivation이 authority를 다시 연다. Stale guard·scratch cleanup은 next open 전 bounded reconciliation을 거친다.
+Server production source에는 app-owned v2 academic store, Course·material registry, Assignment receipt, durable patch·confirmation·revision apply와 recovery I/O가 없다. `@ay-ple/semester-workspace`도 v4 identity codec·classification과 shared validators만 남기고 current-v2 decoder·v3 kernel을 제거했다. 기존 workspace의 v2/v3 파일은 읽거나 재작성·삭제하지 않으며 지원하지 않는 prepared root로 보존한다. Canonical authority는 root v4 identity, external `WorkspaceRegistry`와 user-owned Git workspace다.
 
 ## Product operation·Review authority
 
-`ProductOperationCoordinator`는 Assignment action과 free-form product Chat이 process-global active operation lease 하나를 공유하게 한다. Assignment은 native call 전 durable `ModelingRun(starting)`을 기록하고 exact managed `SkillInput`·bounded `TextInput`, active workspace `cwd`와 private MCP를 Runtime에 전달한다. Source를 선택하지 않은 일반 Chat은 Course 생성 전에도 workspace `cwd`에서 `deny_all + read_only`로 시작하며 academic state를 보호할 durable guard를 만들지 않는다. Course가 있는 Chat은 source/revision guard를 사용하고 optional source selection으로 proposal context를 만들 수 있지만 `ModelingRun`을 만들지 않는다.
+Canonical `PreparedProductOperationCoordinator`는 normal AY Chat과 static `organize_sources` action의 process-global operation lease를 소유한다. Shared `product-turn-coordinator`는 `product_turn` eligibility 확인과 lease claim을 같은 synchronous critical section에서 수행하고, Chat/action busy loser를 `409 action_busy`로 끝낸다. Lease는 start failure, authoritative native terminal 또는 completed Runtime close authority로만 once-only release된다.
 
-Private `propose_state_patch` MCP는 selected source·base revision·exact quote를 검증한 pending `StatePatch`만 만든다. Exact Plan question이 active patch와 bind될 때만 product Review가 된다. Accept/reject는 product transaction을 native answer보다 먼저 commit하고, revise는 `UserConfirmation` 없이 bounded feedback·fresh private request key로 replacement를 기다린다. General Plan clarification은 별도 ephemeral binding으로 answer/cancel하며 academic state를 바꾸지 않는다.
+Canonical normal Chat은 bounded `TextInput`, `workspace_write`, generic child environment와 project-discovered Skill·MCP를 사용한다. Canonical Semantic Review는 Interaction Broker의 transient request/result이고, 일반 Plan clarification은 별도 ephemeral binding으로 같은 Turn에 answer/cancel한다. Server는 academic receipt나 accepted result apply를 소유하지 않는다.
 
-`CodexChatService`는 account lifecycle이나 Runtime role이 없는 `CodexWorkspaceRuntime`을 받아 Account Readiness, model catalog, product thread·active Turn, interaction·interrupt, native context, terminal observation, Runtime recycle와 bounded close를 캡슐화하는 deep product lifecycle Module다. Public tracer route가 사라져도 이 lifecycle owner와 Runtime의 internal text regression은 이름만으로 분해·제거하지 않는다.
+`organize_sources`는 dynamic manifest가 아닌 Server-owned 단일 action definition이다. Strict request decode와 shared lease 예약 뒤 account/settings를 확인하고, 선택한 `1..16`개 text file을 request order대로 fresh preflight한 다음 invocation마다 effective Skill을 관찰한다. Skill 관찰 뒤 selected file을 다시 preflight하고, `operation.preparing` 전달이 끝난 뒤 Runtime dispatch 직전에 selected file precheck → effective Skill catalog 재관찰 → selected file 재확인 → rendered input 비교 순서로 final gate를 수행한다. Exact workspace의 enabled `.agents/skills/ay-ple-first-assignment`와 canonical non-symlink `SKILL.md`만 허용하고, `workspace_write`, optional current settings, resolved Skill 하나와 `32 KiB` 이하 fixed action text 하나를 startup-approved thread의 Product Turn에 전달한다. Initial File·Skill·Runtime context failure는 Turn과 NDJSON을 열기 전에 safe JSON으로 닫고, `operation.preparing` 대기 중 생긴 drift는 Runtime 호출 없이 safe `action_context_stale | action_context_invalid | action_unavailable | product_unavailable` streamed `failed` terminal로 닫는다. Preflight disconnect는 Turn을 시작하지 않고 shutdown은 final revalidation까지 같은 signal을 abort한다. Accepted action은 normal Chat과 같은 activity, general clarification, Semantic Review, interrupt·disconnect와 terminal projection을 사용한다.
+
+Selected source 검증 handle은 dispatch 뒤 보존하지 않고 relative path만 bounded `TextInput`에 남긴다. 따라서 final gate 뒤 AY actual read 전의 pathname 교체를 reader inode에 원자적으로 bind하지 않으며, current actual-file semantics와 Review 전 drift 확인을 사용한다. 이 path-only reader 경계와 완전한 closure에 필요한 별도 carrier 결정은 [Codex Chat 구현 지도](../../docs/architecture/codex-chat-implementation-map.md)에 기록한다.
+
+`WorkspaceSourceProjection`은 lifecycle이 `active`인 exact root를 stateless read-only로 읽는다. Bounded recursive scan은 hidden·managed·scaffold·secret-like path와 symlink를 제외하고 regular file의 relative path·size·preview kind만 반환한다. Action preflight는 exact root identity, exclusion, current text size classification, canonical containment와 non-symlink regular-file identity를 확인하고 `O_NOFOLLOW` open 전후 device·inode·size를 비교하되 file bytes·digest·snapshot을 읽거나 handle을 Turn까지 보존하지 않는다. Text preview는 bounded fatal UTF-8와 full-file SHA-256을 반환하고 PDF는 bounded bytes를 `application/pdf`, `nosniff`, same-origin·sandbox CSP, inline disposition과 `no-store`로 제공한다. Source GET admission은 loopback peer·loopback `Host`, absent 또는 exact configured local `Origin`과 non-cross-site Fetch Metadata를 요구해 DNS rebinding·cross-site read를 거절한다. App-owned Course·`RawMaterial`, source copy·snapshot·watcher·durable selection이나 filesystem mutation을 만들지 않는다.
+
+`interaction-broker` Module은 `@ay-ple/interaction-mcp`의 strict private wire를 소비한다. Runtime generation마다 fresh token·binding, Adapter status와 pending slot 하나를 만들고, loopback·constant-time credential과 started `product_turn` binding을 모두 확인한 뒤 exact workspace root의 evidence를 한 byte snapshot으로 atomic preflight한다. Adapter는 handshake 뒤 한 held lifecycle channel을 열고 Broker acceptance를 받은 다음에만 MCP initialize를 완료한다. Channel의 unexpected EOF는 loss를 동기적으로 latch해 startup·registry acceptance와 새 Turn admission을 닫으며, Runtime terminal·replacement와 App shutdown이 시작한 expected close는 loss로 오인하지 않는다. In-memory UI Adapter가 `review.requested`를 받은 뒤 한 `accept | revise | reject`만 held capability response로 돌려주며 duplicate·late answer, HTTP abort, UI disconnect, Turn interrupt, Runtime terminal·replacement, Adapter loss와 shutdown은 normal result 없이 닫힌다.
+
+Canonical `createPreparedServerApplication()`은 Broker Router를 같은 loopback listener의 `/api/_private/interaction-mcp`에 mount하고 normal Product Turn NDJSON에 semantic `review.requested | review.resolved | review.failed`를 기록한다. Browser의 exact semantic result는 bodyless `204`로 held call을 해제하고, resolved frame만 transcript settlement authority가 된다. Runtime thread는 project config에서 Adapter를 발견하므로 thread-start private MCP override나 Skill override를 받지 않는다. `organize_sources` Turn만 fresh effective discovery로 검증한 workspace-local Skill을 explicit `SkillInput`으로 받는다. AY 역할의 file apply는 workspace Skill·Interaction 결과 뒤 Runtime graph에서 수행하며 Server가 academic patch·revision을 적용하지 않는다. Listener-independent `createServerApplication()`은 academic Router나 persistence 없이 빈 host seam을 제공한다.
+
+`CodexChatService`는 account lifecycle이나 Runtime role이 없는 `CodexWorkspaceRuntime`을 받아 Account Readiness, model catalog, bounded effective Skill observation, startup에서 readiness를 통과한 project-owned Product thread·active Turn, interaction·interrupt, native context, terminal observation, Runtime recycle와 bounded close를 캡슐화하는 deep product lifecycle Module다. Prepared host가 공급한 startup thread를 획득해 재사용하며 service가 별도 thread를 만들지 않는다. Public tracer route가 사라져도 이 lifecycle owner와 Runtime의 internal text regression은 이름만으로 분해·제거하지 않는다.
+
+Prepared host의 startup thread는 effective declaration 검증과 Adapter lifecycle readiness를 통과한 뒤 Product Turn thread가 된다. Runtime은 bounded generic child environment와 effective native config projection만 소유하며 `waitForMcpServerReady`, official `mcpServerStatus/list` polling 또는 live MCP health API를 제공하지 않는다. Broker가 보유한 lifecycle channel이 끊기면 Adapter loss를 `transport_failed`로 pending interaction에 전달하고 lifecycle을 recovery로 바꾸며 Broker·Runtime을 bounded cleanup으로 정산한다. Runtime terminal은 별도의 `runtime_terminated` 경로로 처리하고, 정상 App shutdown은 expected lifecycle close로 표시해 transport loss로 오인하지 않는다.
 
 ## Public product API
 
 | Endpoint | 동작 |
 | --- | --- |
-| `GET /api/product/bootstrap` | Account Readiness, coarse operation status, active workspace·Course·material, confirmed revision·settled history |
-| `GET /api/product/codex-settings` | Visible native model catalog, advertised reasoning effort order와 Fast availability |
-| `POST /api/product/workspaces/activate` | Current Server-owned chooser directory activation, current-store adoption과 read-only incompatible boundary. `WorkspaceManifest` scaffold endpoint가 아님 |
-| `POST /api/product/courses` | Empty internal-ready current workspace의 first-vertical Course 생성 |
-| `POST /api/product/materials/refresh` | Normal refresh 또는 explicit source rebaseline |
-| `GET /api/product/materials/:materialId/preview?digest=...` | Digest-bound bounded TXT preview |
-| `POST /api/product/actions/first-assignment` | Durable Run·guard·curated Assignment stream |
-| `POST /api/product/actions/first-assignment/retry` | Prior canonical input·ancestry의 one-child explicit retry |
-| `POST /api/product/chat/messages` | Optional selection을 갖는 no-Run product Chat stream |
+| `GET /api/product/bootstrap` | Path-free `starting | active | recovery_required` prepared-workspace lifecycle와 coarse operation status |
+| `GET /api/product/codex-settings` | Active workspace에서만 visible native model catalog, advertised reasoning effort order와 Fast availability를 반환한다. Non-active lifecycle은 Runtime을 시작하지 않고 `503 workspace_unavailable`이다. |
+| `GET /api/product/sources` | Active exact root의 bounded Browser-safe relative source list를 `no-store`로 반환한다. |
+| `GET /api/product/sources/text?relativePath=...` | 검증한 regular UTF-8 source의 bounded text, full-file digest와 truncation 상태를 반환한다. |
+| `GET /api/product/sources/pdf?relativePath=...` | 검증한 bounded PDF bytes를 same-origin inline preview로 반환한다. |
+| `POST /api/product/chat/messages` | Prepared root의 normal AY Chat stream. Project-discovered Skill·MCP와 `workspace_write`를 사용하며 academic source·Run을 만들지 않음 |
+| `POST /api/product/actions` | Closed `organize_sources` request의 current text refs와 exact workspace-local Skill을 fresh 검증한 뒤 shared Product operation NDJSON을 시작한다. |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/answer` | General Plan interaction answer |
 | `POST /api/product/operations/:operationId/interactions/:interactionId/cancel` | General Plan interaction cancel |
-| `POST /api/product/reviews/:interactionId` | Exact active Review의 accept·revise·reject |
+| `POST /api/product/reviews/:interactionId` | Exact active Semantic Review의 `accept | revise | reject`를 bodyless `204`로 전달 |
 | `POST /api/product/operations/:operationId/interrupt` | Matching active Turn interrupt acknowledgement |
 
-Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. MCP host는 loopback과 per-process high-entropy token을 모두 검증한다. Token, native identity, absolute source·scratch path, complete MCP payload, traceback과 persistence metadata는 Browser contract에 없다. 제거한 `/api/product/public-preview`, `/api/health`, `/api/runtime/*`와 `/api/codex-chat/*`는 compatibility alias가 아니며 Express `404`로 닫힌다.
+Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. Interaction Broker는 loopback과 Runtime-generation high-entropy token을 모두 검증한다. Token, native identity, absolute path, selected content·digest, Skill path/body, complete MCP payload와 traceback은 Browser contract에 없다. Old `/api/product/workspaces/activate`, Course/material mutation, `/api/product/actions/first-assignment`와 retry, academic Review compatibility route, `/api/product-mcp`, `/api/runtime/*`와 `/api/codex-chat/*`는 canonical composition에서 Express `404`로 닫힌다.
+
+Public cutover 뒤에는 prepared-workspace Browser·read-only source projection·target Router·Broker·generic Runtime child environment·project Skill/MCP graph 전체가 한 unit이다. Old app-owned Course/material workflow, public academic action adapter·shared contract, Server academic persistence·managed Recipe, Runtime private override와 legacy SemesterWorkspace kernel은 제거됐다. 기존 v2/v3 on-disk bytes 자체는 자동 migration·deletion 없이 보존한다.
 
 ## NDJSON과 shutdown
 
-Neutral Server-private NDJSON writer는 product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. `createServerApplication().close()`는 새 work·listener restart를 막고 listener close를 시작한 뒤 active operation을 drain하고 Runtime close를 single-flight promise로 수렴한다. Python·native process group과 pipe가 사라진 뒤에만 close를 완료한다. Listener bind 또는 address 확인 뒤 cleanup이 실패하면 root-exported `ServerStartupCleanupError`가 Runtime을 노출하지 않는 high-level retry closure를 보존한다.
+Neutral Server-private NDJSON writer는 product stream의 backpressure·disconnect와 bounded drain을 소유한다. `CodexChatService`는 Runtime terminal을 한 번 관찰하고 accepted operation의 interrupt·terminal·unknown settlement를 관리한다. Canonical prepared host는 Runtime terminal과 held Broker lifecycle channel이 감지한 Adapter continuity loss 때 Broker intake와 Runtime을 정산하되 listener를 recovery bootstrap용으로 유지한다. App shutdown은 새 work를 막고 Broker의 expected lifecycle close → Runtime → listener를 bounded하게 닫으며 Python·native process group과 pipe가 사라진 뒤에만 완료한다.
 
-`npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. `npm run test:product-shutdown-actual -w @ay-ple/server`는 product-capable Runtime process tree에서 listener refusal, close ordering과 child-of-child reap을 별도로 증명한다.
-
-Existing Playwright harness의 same-root durability trace는 실제 Express `ServerApplication`과 Runtime generation을 닫고 같은 `appDataRoot`·workspace·API port로 다시 만든 뒤 Browser를 reload한다. 이 trace가 confirmed Assignment·revision·settled history를 다시 열고 transient transcript·unanswered Review를 복원하지 않음을 검증하며 별도 store·Runtime workflow를 만들지 않는다.
+`npm run test:product-entrypoint`는 root canonical command가 explicit `appDataRoot`와 workspace selection만으로 product API·Browser를 열고 legacy path를 무시하며 SIGINT 뒤 OS process graph와 port를 bounded하게 정리하는지 검증한다. Prepared startup·application tests는 listener refusal, close ordering과 recovery listener 유지를 검증한다.
 
 ## Exact·live conformance
 
+Canonical prepared public graph의 actual conformance는 다음 명령으로 검증한다.
+
 ```bash
-npm run test:first-assignment-product-actual -w @ay-ple/server
-npm run trace:first-assignment-live -w @ay-ple/server -- --codex-home /absolute/path/to/isolated-auth-seed
+npm run test:prepared-workspace-product-actual
 ```
 
-Product actual은 verified production Runtime·exact local Responses provider·managed Recipe·real Server HTTP·private MCP host를 통과한다. Active internal-ready fixture directory의 exact `cwd`, selected source, representative Python/command, `auto_review + workspace_write`, proposal→Plan→Review revision→replacement→accept→same-Turn terminal, durable outcome과 process-group disappearance를 검증한다.
-
-Live gate는 caller가 명시한 owner-only auth seed만 fresh `CODEX_HOME`으로 복사하고 disjoint `HOME`·SQLite·temp·appDataRoot·workspace를 사용한다. Credential content·token·digest를 출력하지 않는다. Prerequisite 부재는 `blocked`, product mismatch는 `failed`로 구분한다. Isolated live evidence는 complete Assignment action·Review·confirmed outcome과 clean shutdown을 통과했지만 external credential은 mandatory product cutover gate가 아니다.
+Prepared-workspace product actual은 native Bootstrap Skill의 exact CLI를 fresh temporary Git root에서 실행한 뒤, 그 root의 tracked v4 identity·`AGENTS.md`·project MCP declaration과 installed First Assignment Skill을 사용한다. Public `organize_sources`에는 두 selected text ref만 보내고, exact verified Runtime·isolated TypeScript First Assignment conformance provider가 workspace Skill body와 file-ref text, selected-only actual-file read, project MCP call과 `auto_review`를 관찰한다. 같은 native Turn의 revise→fresh Review→accept 흐름은 Review 전 bytes·index·HEAD 불변, accept 뒤 AY 역할의 explicit intended-path mutation·Git checkpoint와 unrelated dirty·untracked 보존을 검증하고, 두 번째 reject는 no-mutation으로 끝낸다. 기존 direct Adapter trace는 evidence digest·quote·path·symlink failure, busy, Turn interrupt, Browser disconnect와 Runtime·Adapter loss가 normal result·file mutation·checkpoint 없이 정산되는지 보완한다. Teardown은 credential 재사용 거절, Adapter held response, exact Node·Python·native process group, provider listener, Server listener와 temporary root를 완전히 닫고 production startup resolver·registry나 workspace 밖 bytes를 바꾸지 않는다.
 
 일반 package 검증은 다음 명령으로 실행한다.
 

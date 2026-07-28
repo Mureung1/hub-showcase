@@ -27,6 +27,9 @@ import {
   verifyProductionBundle,
   type VerifiedProductionBundle,
 } from './production-bundle.js'
+import {
+  EXTERNAL_PRODUCTION_RUNTIME_ROOT_FOR_TEST as ARTIFACT_ROOT,
+} from './runtime-test-support.js'
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -37,12 +40,6 @@ const FAKE_APP_SERVER = path.join(
   'scripts',
   'fake_native_context_app_server.mts',
 )
-const ARTIFACT_ROOT = path.join(
-  PACKAGE_ROOT,
-  '.artifacts',
-  'production-runtime-darwin-arm64',
-)
-
 interface Fixture {
   readonly root: string
   readonly workspace: string
@@ -158,6 +155,7 @@ test('queries exact native context, omits system Skills, and fully reaps before 
       config: {
         projectRootMarkers: [],
         globalInstructionsFile: null,
+        mcpServers: [],
       },
       skills: [
         {
@@ -325,6 +323,72 @@ test('queries the pinned native App Server provider-free', async () => {
         mkdir(directory),
       ),
     )
+    execFileSync('git', ['init', '--quiet', root])
+    await mkdir(path.join(root, '.codex'))
+    const hostileProjectInstructions = path.join(
+      root,
+      'hostile-project-instructions.md',
+    )
+    await writeFile(
+      path.join(root, 'AGENTS.md'),
+      '# Hostile ancestor instructions\n',
+      'utf8',
+    )
+    await writeFile(
+      hostileProjectInstructions,
+      '# Hostile ancestor project instructions\n',
+      'utf8',
+    )
+    await writeFile(
+      path.join(root, '.codex', 'config.toml'),
+      `model_instructions_file = "${hostileProjectInstructions}"\n`,
+      'utf8',
+    )
+    const hostileSkillRoot = path.join(
+      root,
+      '.agents',
+      'skills',
+      'hostile-ancestor-skill',
+    )
+    await mkdir(hostileSkillRoot, { recursive: true })
+    await writeFile(
+      path.join(hostileSkillRoot, 'SKILL.md'),
+      [
+        '---',
+        'name: hostile-ancestor-skill',
+        'description: Must not cross the nested Git boundary.',
+        '---',
+        '',
+        '# Hostile ancestor',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
+    execFileSync('git', ['init', '--quiet', workspace])
+    await mkdir(path.join(workspace, '.codex'))
+    const projectInstructions = path.join(
+      workspace,
+      'project-instructions.md',
+    )
+    await writeFile(
+      projectInstructions,
+      '# Exact workspace project instructions\n',
+      'utf8',
+    )
+    await writeFile(
+      path.join(workspace, '.codex', 'config.toml'),
+      `model_instructions_file = "${projectInstructions}"\n`,
+      'utf8',
+    )
+    await writeFile(
+      path.join(environment.codexHome, 'config.toml'),
+      [
+        `[projects."${workspace}"]`,
+        'trust_level = "trusted"',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
     const skillRoot = path.join(
       workspace,
       '.agents',
@@ -351,7 +415,7 @@ test('queries the pinned native App Server provider-free', async () => {
       'utf8',
     )
     const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
-    const snapshot = await runNativeContextProbe({
+    const probeOptions = {
       bundle,
       workspace: await realpath(workspace),
       environment: {
@@ -366,12 +430,14 @@ test('queries the pinned native App Server provider-free', async () => {
         version: '0.0.0',
       },
       signal: new AbortController().signal,
-    })
+    } as const
+    const snapshot = await runNativeContextProbe(probeOptions)
 
     assert.deepEqual(snapshot, {
       config: {
-        projectRootMarkers: [],
-        globalInstructionsFile: null,
+        projectRootMarkers: ['.git'],
+        globalInstructionsFile: projectInstructions,
+        mcpServers: [],
       },
       skills: [
         {
@@ -381,6 +447,37 @@ test('queries the pinned native App Server provider-free', async () => {
         },
       ],
     })
+
+    for (const trustConfig of [
+      [
+        `[projects."${workspace}"]`,
+        'trust_level = "untrusted"',
+        '',
+      ].join('\n'),
+      [
+        `[projects."${root}"]`,
+        'trust_level = "trusted"',
+        '',
+      ].join('\n'),
+    ]) {
+      const configPath = path.join(environment.codexHome, 'config.toml')
+      await writeFile(configPath, trustConfig, 'utf8')
+      assert.deepEqual(await runNativeContextProbe(probeOptions), {
+        config: {
+          projectRootMarkers: ['.git'],
+          globalInstructionsFile: null,
+          mcpServers: [],
+        },
+        skills: [
+          {
+            name: 'ay-native-context-smoke',
+            enabled: true,
+            sourceRoot: skillRoot,
+          },
+        ],
+      })
+      assert.equal(await readFile(configPath, 'utf8'), trustConfig)
+    }
   } finally {
     await rm(root, { recursive: true, force: true })
   }

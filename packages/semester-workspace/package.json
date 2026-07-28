@@ -10,11 +10,6 @@
       "development": "./src/index.ts",
       "types": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./testing/legacy-v2-parity-vectors": {
-      "development": "./src/testing/legacy-v2-parity-vectors.ts",
-      "types": "./src/testing/legacy-v2-parity-vectors.ts",
-      "default": "./dist/testing/legacy-v2-parity-vectors.js"
     }
   },
   "scripts": {

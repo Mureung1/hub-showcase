@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import {
   chmod,
+  link,
   mkdir,
   mkdtemp,
   readFile,
   realpath,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -22,17 +24,17 @@ import type { NativeContextProbeRunner } from './native-context-coordinator.js'
 import { NativeContextProbeError } from './native-context-probe.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
-  startVerifiedCodexChatRuntime,
+  startVerifiedCodexChatRuntime as startRuntimeAtExactGitRoot,
   type NodeRuntimeDeadlines,
   type SpawnedCodexChatRuntime,
+  type StartVerifiedCodexChatRuntimeOptions,
 } from './runtime.js'
+import {
+  EXTERNAL_PRODUCTION_RUNTIME_ROOT_FOR_TEST as ARTIFACT_ROOT,
+  initializeGitRootForTest,
+} from './runtime-test-support.js'
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const ARTIFACT_ROOT = join(
-  PACKAGE_ROOT,
-  '.artifacts',
-  'production-runtime-darwin-arm64',
-)
 const FAKE_APP_SERVER = join(
   PACKAGE_ROOT,
   'scripts',
@@ -43,6 +45,16 @@ const FAKE_NODE_WORKER = join(
   'scripts',
   'fake_node_runtime_worker.py',
 )
+
+async function startVerifiedCodexChatRuntime(
+  options: Parameters<typeof startRuntimeAtExactGitRoot>[0],
+) {
+  await initializeGitRootForTest(options.workspace)
+  return startRuntimeAtExactGitRoot({
+    ...options,
+    workspace: await realpath(options.workspace),
+  })
+}
 
 let bundle: Awaited<ReturnType<typeof verifyProductionBundle>>
 const roots: string[] = []
@@ -96,10 +108,7 @@ test('streams one nominal native turn to its authoritative terminal', async () =
         readonly params?: Record<string, unknown>
       }[]
     }
-    assert.deepEqual(journal.launchArgs, [
-      '--config',
-      'project_root_markers=[]',
-    ])
+    assert.deepEqual(journal.launchArgs, [])
     const threadStart = journal.messages.find(
       ({ method }) => method === 'thread/start',
     )
@@ -227,6 +236,7 @@ test('projects one atomic native-context generation through the workspace Runtim
         config: {
           projectRootMarkers: [],
           globalInstructionsFile: null,
+          mcpServers: [],
         },
         skills: [
           {
@@ -252,6 +262,7 @@ test('projects one atomic native-context generation through the workspace Runtim
       {
         projectRootMarkers: [],
         globalInstructionsFile: null,
+        mcpServers: [],
       },
     )
     assert.deepEqual(
@@ -321,8 +332,9 @@ test('runs the pinned workspace Runtime and native-context sidecar provider-free
   try {
     const signal = new AbortController().signal
     assert.deepEqual(await harness.runtime.readEffectiveConfig({ signal }), {
-      projectRootMarkers: [],
+      projectRootMarkers: ['.git'],
       globalInstructionsFile: null,
+      mcpServers: [],
     })
     assert.deepEqual(await harness.runtime.listEffectiveSkills({ signal }), [
       {
@@ -580,117 +592,89 @@ test('rejects noncanonical application SemVer before spawning workspace Runtime'
   )
 })
 
-test('validates isolated product thread inputs before native mutation', async () => {
-  const harness = await startHarness('isolated-thread-validation')
-  try {
-    const token = 'private-token-must-not-leak'
-    const invalid = [
-      {
-        workspace: 'relative/workspace',
-        mcp: { url: 'http://127.0.0.1:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: { url: 'https://127.0.0.1:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: { url: 'http://example.com:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: { url: 'http://127.evil.example:43127/mcp', token },
-      },
-      {
-        workspace: '/workspace/semester-a',
-        mcp: {
-          url: 'http://127.0.0.1:43127/mcp',
-          token: `${token}\nunsafe`,
-        },
-      },
-    ]
+test('rejects unprepared, indirect, and noncanonical Git roots before spawn', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-git-root-'))
+  roots.push(root)
+  const environment = await createEnvironmentRoots(root)
+  const targetRepository = join(root, 'target-repository')
+  await mkdir(targetRepository)
+  await initializeGitRootForTest(targetRepository)
 
-    for (const input of invalid) {
-      assert.throws(
-        () => harness.runtime.startThread(input),
-        (error: unknown) => {
-          assert.ok(error instanceof TypeError)
-          assert.equal(error.message.includes(token), false)
-          return true
-        },
+  const missingMarker = join(root, 'missing-marker')
+  const fakeMarker = join(root, 'fake-marker')
+  const linkedMarker = join(root, 'linked-marker')
+  const canonicalRepository = join(root, 'canonical-repository')
+  await Promise.all([
+    mkdir(missingMarker),
+    mkdir(join(fakeMarker, '.git'), { recursive: true }),
+    mkdir(linkedMarker),
+    mkdir(canonicalRepository),
+  ])
+  await Promise.all([
+    symlink(join(targetRepository, '.git'), join(linkedMarker, '.git')),
+    initializeGitRootForTest(canonicalRepository),
+  ])
+  const [canonicalMissingMarker, canonicalFakeMarker, canonicalLinkedMarker] =
+    await Promise.all([
+      realpath(missingMarker),
+      realpath(fakeMarker),
+      realpath(linkedMarker),
+    ])
+
+  for (const [label, workspace, message] of [
+    [
+      'missing marker',
+      canonicalMissingMarker,
+      'Codex workspace must be an exact Git root',
+    ],
+    [
+      'fake marker',
+      canonicalFakeMarker,
+      'Codex workspace must be an exact Git root',
+    ],
+    [
+      'linked marker',
+      canonicalLinkedMarker,
+      'Codex workspace must be an exact Git root',
+    ],
+    [
+      'noncanonical path',
+      join(canonicalRepository, '..', basename(canonicalRepository)),
+      'Codex workspace must be canonical',
+    ],
+  ] as const) {
+    await t.test(label, async () => {
+      const processJournalPath = join(
+        root,
+        `${label.replaceAll(' ', '-')}-process-journal.json`,
       )
-    }
-
-    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
-      messages: readonly { readonly method?: string }[]
-    }
-    assert.equal(
-      journal.messages.some(({ method }) => method === 'thread/start'),
-      false,
-    )
-  } finally {
-    await harness.runtime.close()
-  }
-})
-
-test('binds isolated thread cwd to the exact workspace before native mutation', async () => {
-  const harness = await startHarness('isolated-thread-workspace-binding')
-  try {
-    const workspace = await realpath(dirname(harness.journalPath))
-    const mcp = {
-      url: 'http://127.0.0.1:43127/mcp',
-      token: 'private-mcp-token',
-    } as const
-
-    for (const deniedWorkspace of [
-      join(dirname(workspace), 'sibling-workspace'),
-      `${workspace}/../${basename(workspace)}`,
-      '/wrong/workspace',
-    ]) {
       await assert.rejects(
-        () =>
-          harness.runtime.startThread({
-            workspace: deniedWorkspace,
-            mcp,
-          }),
-        (error: unknown) => {
-          assert.ok(error instanceof CodexChatRuntimeError)
-          assert.equal(error.code, 'workspace_mismatch')
-          assert.equal(
-            error.displayMessage,
-            'The requested workspace does not match this Codex runtime.',
-          )
-          assert.equal(error.displayMessage.includes(deniedWorkspace), false)
-          assert.equal(error.unknownOutcome, false)
-          return true
-        },
+        startRuntimeAtExactGitRoot({
+          bundle,
+          workspace,
+          environment,
+          bridgeEntrypointOverride: FAKE_NODE_WORKER,
+          bridgeArgsOverride: [
+            '--scenario=response-hang',
+            `--process-journal=${processJournalPath}`,
+          ],
+        }),
+        (error: unknown) =>
+          error instanceof TypeError && error.message === message,
       )
-    }
-
-    const before = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
-      messages: readonly { readonly method?: string }[]
-    }
-    assert.equal(
-      before.messages.some(({ method }) => method === 'thread/start'),
-      false,
-    )
-    assert.deepEqual(
-      await harness.runtime.startThread({ workspace, mcp }),
-      { threadId: 'thread-1' },
-    )
-  } finally {
-    await harness.runtime.close()
+      await assert.rejects(
+        readFile(processJournalPath),
+        (error: unknown) =>
+          (error as NodeJS.ErrnoException).code === 'ENOENT',
+      )
+    })
   }
 })
 
-test('forwards fixed workspace cwd and private MCP config and supports a text-only product turn', async () => {
+test('forwards the fixed project cwd without thread-start overrides and supports a text-only product turn', async () => {
   const harness = await startHarness('isolated-product-thread')
   try {
     const workspace = await realpath(dirname(harness.journalPath))
-    const mcp = {
-      url: 'http://127.0.0.1:43127/mcp',
-      token: 'private-mcp-token',
-    } as const
     assert.deepEqual(await harness.runtime.readModelCatalog(), {
       models: [
         {
@@ -723,10 +707,7 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
         },
       ],
     })
-    const { threadId } = await harness.runtime.startThread({
-      workspace,
-      mcp,
-    })
+    const { threadId } = await harness.runtime.startThread()
 
     const chat = await harness.runtime.startTurn({
       threadId,
@@ -746,14 +727,11 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
     })
     const iterator = product.events[Symbol.asyncIterator]()
     const { requested, events } = await readUntilUserInput(iterator)
-    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
     const cancelled = harness.runtime.cancelUserInput({
       interactionId: requested.interactionId,
     })
     events.push(...(await collectIterator(iterator)))
     await cancelled
-    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
-    assert.equal(JSON.stringify(events).includes(mcp.token), false)
 
     const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
       messages: readonly {
@@ -765,20 +743,9 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
       ({ method }) => method === 'thread/start',
     )
     assert.equal(threadStart?.params?.cwd, workspace)
-    assert.deepEqual(threadStart?.params?.config, {
-      features: { fast_mode: true },
-      mcp_servers: {
-        ay_ple: {
-          default_tools_approval_mode: 'approve',
-          enabled_tools: ['propose_state_patch'],
-          http_headers: {
-            'X-AY-PLE-MCP-Token': mcp.token,
-          },
-          required: true,
-          url: mcp.url,
-        },
-      },
-    })
+    assert.equal(threadStart?.params?.approvalPolicy, 'on-request')
+    assert.equal(threadStart?.params?.sandbox, 'workspace-write')
+    assert.equal(Object.hasOwn(threadStart?.params ?? {}, 'config'), false)
     const turnStarts = journal.messages.filter(
       ({ method }) => method === 'turn/start',
     )
@@ -802,11 +769,9 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
         .filter((method) => method === 'model/list' || method === 'turn/start'),
       ['model/list', 'turn/start', 'turn/start'],
     )
-    assert.deepEqual(
-      journal.messages
-        .filter(({ method }) => method === 'skills/extraRoots/set')
-        .map(({ params }) => params),
-      [{ extraRoots: [] }, { extraRoots: [] }],
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'skills/extraRoots/set'),
+      false,
     )
     assert.deepEqual(turnStarts[1]?.params?.collaborationMode, {
       mode: 'plan',
@@ -824,39 +789,377 @@ test('forwards fixed workspace cwd and private MCP config and supports a text-on
   }
 })
 
-test('rejects a non-SKILL.md product skill path before native turn mutation', async () => {
-  const harness = await startHarness('product-skill-path-validation')
+test('snapshots one workspace Skill before asynchronous validation and native turn mutation', async () => {
+  const harness = await startHarness('product-skill-input')
   try {
+    const workspace = await realpath(dirname(harness.journalPath))
+    const skillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'ay-ple-first-assignment',
+      'SKILL.md',
+    )
+    await mkdir(dirname(skillPath), { recursive: true })
+    await writeFile(
+      skillPath,
+      [
+        '---',
+        'name: ay-ple-first-assignment',
+        'description: Test Skill.',
+        '---',
+        '',
+        'Use the selected SemesterWorkspace files.',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
     const { threadId } = await harness.runtime.startThread()
-    assert.throws(
-      () =>
-        harness.runtime.startProductTurn({
-          threadId,
-          text: 'Missing permission profile.',
-        } as StartProductTurnInput),
-      /permission profile/i,
+    const input = {
+      threadId,
+      permissionProfile: 'workspace_write' as const,
+      settings: {
+        model: 'fake-model',
+        reasoningEffort: 'medium',
+        serviceTier: 'fast' as const,
+      },
+      skill: {
+        name: 'ay-ple-first-assignment',
+        path: skillPath,
+      },
+      text: 'Continue the product conversation.',
+    }
+
+    const pendingTurn = harness.runtime.startProductTurn(input)
+    input.settings.model = 'caller-mutated-model'
+    input.skill.name = 'caller-mutated-skill'
+    input.skill.path = '/caller-mutated/SKILL.md'
+    input.text = 'caller-mutated text'
+    const turn = await pendingTurn
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested } = await readUntilUserInput(iterator)
+    const cancelled = harness.runtime.cancelUserInput({
+      interactionId: requested.interactionId,
+    })
+    await collectIterator(iterator)
+    await cancelled
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    const turnStart = journal.messages.find(
+      ({ method }) => method === 'turn/start',
     )
-    assert.throws(
-      () =>
-        harness.runtime.startProductTurn({
-          threadId,
-          skill: {
-            name: 'assignment-modeling',
-            path: '/managed/assignment-modeling/OTHER.md',
-          },
-          permissionProfile: 'workspace_write',
-          text: 'Review staged Markdown at /staged/assignment.md',
-        }),
-      TypeError,
-    )
-    const journal = JSON.parse(
-      await readFile(harness.journalPath, 'utf8'),
-    ) as { messages: readonly { readonly method?: string }[] }
+    assert.deepEqual(turnStart?.params?.input, [
+      {
+        type: 'skill',
+        name: 'ay-ple-first-assignment',
+        path: skillPath,
+      },
+      {
+        type: 'text',
+        text: 'Continue the product conversation.',
+      },
+    ])
+    assert.equal(turnStart?.params?.model, 'fake-model')
+    assert.equal(turnStart?.params?.effort, 'medium')
+    assert.equal(turnStart?.params?.serviceTier, 'fast')
     assert.equal(
       journal.messages.some(
-        ({ method }) =>
-          method === 'skills/extraRoots/set' || method === 'turn/start',
+        ({ method }) => method === 'skills/extraRoots/set',
       ),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('rejects malformed or unsafe Product Skill input before native turn mutation', async () => {
+  const harness = await startHarness('product-skill-validation')
+  try {
+    const workspace = await realpath(dirname(harness.journalPath))
+    const validSkillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'valid-skill',
+      'SKILL.md',
+    )
+    await mkdir(dirname(validSkillPath), { recursive: true })
+    await writeFile(validSkillPath, '# Valid test Skill\n', 'utf8')
+
+    const outsideRoot = await mkdtemp(
+      join(tmpdir(), 'ay-ple-product-skill-outside-'),
+    )
+    roots.push(outsideRoot)
+    const outsideSkillPath = join(await realpath(outsideRoot), 'SKILL.md')
+    await writeFile(outsideSkillPath, '# Outside test Skill\n', 'utf8')
+
+    const directorySkillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'directory-skill',
+      'SKILL.md',
+    )
+    await mkdir(directorySkillPath, { recursive: true })
+
+    const linkedSkillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'linked-skill',
+      'SKILL.md',
+    )
+    await mkdir(dirname(linkedSkillPath), { recursive: true })
+    await symlink(validSkillPath, linkedSkillPath)
+
+    const linkedParent = join(
+      workspace,
+      '.agents',
+      'skills',
+      'linked-parent',
+    )
+    await symlink(dirname(validSkillPath), linkedParent)
+
+    const { threadId } = await harness.runtime.startThread()
+    const base = {
+      threadId,
+      permissionProfile: 'workspace_write',
+      text: 'Continue the product conversation.',
+    }
+    const invalidInputs = [
+      {
+        threadId,
+        text: base.text,
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: validSkillPath },
+        extra: true,
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill' },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: validSkillPath,
+          version: 'v1',
+        },
+      },
+      {
+        ...base,
+        skill: { name: '', path: validSkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'é'.repeat(129), path: validSkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'unsafe\nname', path: validSkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: 'relative/SKILL.md' },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path:
+            `${workspace}/.agents/skills/valid-skill/` +
+            '../valid-skill/SKILL.md',
+        },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: join(dirname(validSkillPath), 'README.md'),
+        },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: outsideSkillPath },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: join(workspace, '.agents', 'skills', 'missing', 'SKILL.md'),
+        },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: directorySkillPath },
+      },
+      {
+        ...base,
+        skill: { name: 'valid-skill', path: linkedSkillPath },
+      },
+      {
+        ...base,
+        skill: {
+          name: 'valid-skill',
+          path: join(linkedParent, 'SKILL.md'),
+        },
+      },
+    ]
+
+    for (const invalidInput of invalidInputs) {
+      await assert.rejects(
+        async () =>
+          harness.runtime.startProductTurn(
+            invalidInput as StartProductTurnInput,
+          ),
+        TypeError,
+      )
+    }
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'turn/start'),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('rejects a Product Skill when its parent directory is replaced during validation', async () => {
+  let swapSkillParent: (() => Promise<void>) | undefined
+  const harness = await startHarness(
+    'product-skill-parent-swap',
+    undefined,
+    async ({ phase }) => {
+      assert.equal(phase, 'before_open')
+      await swapSkillParent?.()
+    },
+  )
+  try {
+    const workspace = await realpath(dirname(harness.journalPath))
+    const skillsRoot = join(workspace, '.agents', 'skills')
+    const skillRoot = join(skillsRoot, 'swapped-skill')
+    const replacementRoot = join(skillsRoot, 'replacement-skill')
+    const displacedRoot = join(skillsRoot, 'displaced-skill')
+    const skillPath = join(skillRoot, 'SKILL.md')
+    const replacementSkillPath = join(replacementRoot, 'SKILL.md')
+    await Promise.all([
+      mkdir(skillRoot, { recursive: true }),
+      mkdir(replacementRoot, { recursive: true }),
+    ])
+    await writeFile(skillPath, '# Parent swap test Skill\n', 'utf8')
+    await link(skillPath, replacementSkillPath)
+    swapSkillParent = async () => {
+      await rename(skillRoot, displacedRoot)
+      await rename(replacementRoot, skillRoot)
+    }
+
+    const { threadId } = await harness.runtime.startThread()
+    await assert.rejects(
+      harness.runtime.startProductTurn({
+        threadId,
+        permissionProfile: 'workspace_write',
+        skill: {
+          name: 'swapped-skill',
+          path: skillPath,
+        },
+        text: 'Do not start this Product Turn.',
+      }),
+      (error: unknown) =>
+        error instanceof TypeError &&
+        error.message ===
+          'Product Skill path ancestry changed during validation',
+    )
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'turn/start'),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('rejects a Product Skill when the startup workspace root is replaced before native turn mutation', async () => {
+  const harness = await startHarness('product-skill-workspace-root-replacement')
+  const workspace = await realpath(dirname(harness.journalPath))
+  const displacedWorkspace = `${workspace}-displaced`
+  roots.push(displacedWorkspace)
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const startupJournal = await readFile(harness.journalPath, 'utf8')
+
+    await rename(workspace, displacedWorkspace)
+    await mkdir(workspace)
+    await initializeGitRootForTest(workspace)
+    const skillPath = join(
+      workspace,
+      '.agents',
+      'skills',
+      'replacement-root-skill',
+      'SKILL.md',
+    )
+    await mkdir(dirname(skillPath), { recursive: true })
+    await writeFile(skillPath, '# Replacement root test Skill\n', 'utf8')
+    await writeFile(harness.journalPath, startupJournal, 'utf8')
+
+    await assert.rejects(
+      harness.runtime.startProductTurn({
+        threadId,
+        permissionProfile: 'workspace_write',
+        skill: {
+          name: 'replacement-root-skill',
+          path: skillPath,
+        },
+        text: 'Do not start this Product Turn.',
+      }),
+      TypeError,
+    )
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'turn/start'),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('rejects a no-Skill Product Turn when the startup workspace root is replaced before native turn mutation', async () => {
+  const harness = await startHarness('product-turn-workspace-root-replacement')
+  const workspace = await realpath(dirname(harness.journalPath))
+  const displacedWorkspace = `${workspace}-displaced`
+  roots.push(displacedWorkspace)
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const startupJournal = await readFile(harness.journalPath, 'utf8')
+
+    await rename(workspace, displacedWorkspace)
+    await mkdir(workspace)
+    await initializeGitRootForTest(workspace)
+    await writeFile(harness.journalPath, startupJournal, 'utf8')
+
+    await assert.rejects(
+      harness.runtime.startProductTurn({
+        threadId,
+        permissionProfile: 'workspace_write',
+        text: 'Do not start this Product Turn.',
+      }),
+      (error: unknown) =>
+        error instanceof TypeError &&
+        error.message ===
+          'Product workspace changed after Runtime startup',
+    )
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'turn/start'),
       false,
     )
   } finally {
@@ -917,17 +1220,13 @@ test('runs a structured product turn through one pending native interaction', as
       if (next.done) break
       events.push(next.value)
     }
-    assert.equal(events[0]?.type, 'skill.requested')
     assert.deepEqual(
       [...events.map(({ type }) => type)].sort(),
       [
         'agent_message.completed',
         'agent_message.delta',
-        'mcp_call.completed',
-        'mcp_call.started',
         'plan.completed',
         'plan.delta',
-        'skill.requested',
         'turn.completed',
         'user_input.requested',
         'user_input.resolved',
@@ -957,11 +1256,9 @@ test('runs a structured product turn through one pending native interaction', as
         readonly params?: Record<string, unknown>
       }[]
     }
-    assert.deepEqual(
-      journal.messages
-        .filter(({ method }) => method === 'skills/extraRoots/set')
-        .map(({ params }) => params),
-      [{ extraRoots: ['/managed/assignment-modeling'] }],
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'skills/extraRoots/set'),
+      false,
     )
     const nativeTurn = journal.messages.find(
       ({ method }) => method === 'turn/start',
@@ -1369,6 +1666,13 @@ test('constructs a controlled child environment without ambient authority', asyn
       bundle,
       workspace,
       environment,
+      childEnvironment: {
+        AY_PLE_INTERACTION_BROKER_TOKEN: 'runtime-token',
+        AY_PLE_INTERACTION_BROKER_URL:
+          'http://127.0.0.1:43127/api/_private/interaction-mcp',
+        AY_PLE_INTERACTION_RUNTIME_BINDING:
+          'runtime_0123456789abcdef0123456789abcdef',
+      },
       launchArgsOverride: [
         bundle.pythonExecutable,
         '-B',
@@ -1383,6 +1687,11 @@ test('constructs a controlled child environment without ambient authority', asyn
       environment: Record<string, unknown>
     }
     assert.deepEqual(journal.environment, {
+      AY_PLE_INTERACTION_BROKER_TOKEN: 'runtime-token',
+      AY_PLE_INTERACTION_BROKER_URL:
+        'http://127.0.0.1:43127/api/_private/interaction-mcp',
+      AY_PLE_INTERACTION_RUNTIME_BINDING:
+        'runtime_0123456789abcdef0123456789abcdef',
       CODEX_HOME: environment.codexHome,
       CODEX_SQLITE_HOME: environment.codexSqliteHome,
       HOME: environment.home,
@@ -1391,6 +1700,7 @@ test('constructs a controlled child environment without ambient authority', asyn
       PATH: [
         bundle.codexPathDirectory,
         dirname(bundle.pythonExecutable),
+        dirname(process.execPath),
         '/usr/bin',
         '/bin',
         '/usr/sbin',
@@ -1398,6 +1708,9 @@ test('constructs a controlled child environment without ambient authority', asyn
       ].join(':'),
       TMPDIR: environment.tempDirectory,
       keys: [
+        'AY_PLE_INTERACTION_BROKER_TOKEN',
+        'AY_PLE_INTERACTION_BROKER_URL',
+        'AY_PLE_INTERACTION_RUNTIME_BINDING',
         'CODEX_HOME',
         'CODEX_SQLITE_HOME',
         'HOME',
@@ -1426,6 +1739,44 @@ test('rejects invalid operational options before spawning any child', async (t) 
   for (const [label, overrides] of [
     ['budget', { budgets: { operationMaxFrames: 0 } }],
     ['deadline', { deadlines: { responseMs: 0 } }],
+    ['entry-count', {
+      childEnvironment: Object.fromEntries(
+        Array.from({ length: 17 }, (_value, index) => [
+          `AY_PLE_TEST_${index}`,
+          'value',
+        ]),
+      ),
+    }],
+    ['invalid-key', { childEnvironment: { 'invalid-key': 'value' } }],
+    ['value-bytes', {
+      childEnvironment: { AY_PLE_TEST_VALUE: '가'.repeat(2_731) },
+    }],
+    ['aggregate-bytes', {
+      childEnvironment: Object.fromEntries(
+        Array.from({ length: 9 }, (_value, index) => [
+          `AY_PLE_TEST_${index}`,
+          'x'.repeat(8 * 1024),
+        ]),
+      ),
+    }],
+    ['protected-home', { childEnvironment: { HOME: '/tmp/override' } }],
+    ['protected-codex-home', {
+      childEnvironment: { CODEX_HOME: '/tmp/override' },
+    }],
+    ['protected-codex-sqlite-home', {
+      childEnvironment: { CODEX_SQLITE_HOME: '/tmp/override' },
+    }],
+    ['protected-temp', { childEnvironment: { TMPDIR: '/tmp/override' } }],
+    ['protected-path', { childEnvironment: { PATH: '/tmp/override' } }],
+    ['protected-python', {
+      childEnvironment: { PYTHONPATH: '/tmp/override' },
+    }],
+    ['protected-dynamic-loader', {
+      childEnvironment: { DYLD_LIBRARY_PATH: '/tmp/override' },
+    }],
+    ['protected-runtime-key', {
+      childEnvironment: { LANG: 'ko_KR.UTF-8' },
+    }],
   ] as const) {
     await t.test(label, async () => {
       const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-invalid-${label}-`))
@@ -2670,6 +3021,8 @@ async function startHarness(
     aggregateMaxFrames: number
     aggregateMaxBytes: number
   },
+  productSkillValidationTestHook?:
+    StartVerifiedCodexChatRuntimeOptions['productSkillValidationTestHook'],
 ): Promise<SpawnedCodexChatRuntime> {
   const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-bridge-${label}-`))
   roots.push(workspace)
@@ -2682,6 +3035,7 @@ async function startHarness(
     workspace,
     environment,
     budgets,
+    productSkillValidationTestHook,
     launchArgsOverride: [
       bundle.pythonExecutable,
       '-B',
@@ -2911,10 +3265,6 @@ async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {
 function productTurnInput(threadId: string) {
   return {
     threadId,
-    skill: {
-      name: 'assignment-modeling',
-      path: '/managed/assignment-modeling/SKILL.md',
-    },
     permissionProfile: 'workspace_write' as const,
     text: 'Review staged Markdown at /staged/assignment.md',
   }

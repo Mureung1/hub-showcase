@@ -27,7 +27,6 @@ test('the host application seam is listener-independent and closes idempotently'
   assert.deepEqual(Object.keys(application).sort(), [
     'app',
     'close',
-    'semesterWorkspace',
   ])
   assert.equal('listen' in application, false)
 

@@ -29,12 +29,16 @@ const BUNDLE: VerifiedProductionBundle = {
 function configResult(input: {
   readonly markers?: unknown
   readonly instructions?: unknown
+  readonly mcpServers?: unknown
   readonly omitMarkers?: boolean
   readonly omitInstructions?: boolean
 } = {}): Record<string, unknown> {
   return {
     config: {
       model: 'private-model',
+      ...(Object.hasOwn(input, 'mcpServers')
+        ? { mcp_servers: input.mcpServers }
+        : {}),
       ...(input.omitMarkers
         ? {}
         : {
@@ -113,8 +117,6 @@ test('resolves the exact manifest-attested native App Server command', () => {
     nativeContextProbeTesting.resolveCommand(BUNDLE, undefined),
     [
       '/runtime/bin/codex',
-      '--config',
-      'project_root_markers=[]',
       'app-server',
       '--listen',
       'stdio://',
@@ -179,23 +181,114 @@ test('projects and freezes only the high-level effective config', () => {
     configResult({
       markers: ['.git', '.hg'],
       instructions: '/private/tmp/AGENTS.md',
+      mcpServers: {
+        ignored_server: {
+          args: null,
+          command: null,
+          cwd: null,
+          enabled: false,
+          env: null,
+          env_vars: null,
+          future_transport_field: 'capability-neutral',
+          required: false,
+          tool_timeout_sec: null,
+        },
+        ay_ple_interaction: {
+          args: ['adapter.mjs', '--stdio'],
+          command: '../bin/node',
+          cwd: '/private/tmp/ay-ple-semester',
+          enabled: true,
+          enabled_tools: ['propose_state_patch'],
+          disabled_tools: ['unsafe_tool'],
+          env: {
+            AY_PLE_STATIC_MODE: 'review',
+          },
+          env_vars: [
+            'AY_PLE_INTERACTION_BROKER_URL',
+            {
+              name: 'AY_PLE_INTERACTION_BROKER_TOKEN',
+              source: 'local',
+            },
+          ],
+          required: true,
+          tool_timeout_sec: 300,
+        },
+      },
     }),
   )
 
   assert.deepEqual(projected, {
     projectRootMarkers: ['.git', '.hg'],
     globalInstructionsFile: '/private/tmp/AGENTS.md',
+    mcpServers: [
+      {
+        name: 'ay_ple_interaction',
+        command: '../bin/node',
+        args: ['adapter.mjs', '--stdio'],
+        envVars: [
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_URL',
+            source: null,
+          },
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_TOKEN',
+            source: 'local',
+          },
+        ],
+        cwd: '/private/tmp/ay-ple-semester',
+        toolTimeoutSec: 300,
+        env: {
+          AY_PLE_STATIC_MODE: 'review',
+        },
+        enabled: true,
+        required: true,
+        enabledTools: ['propose_state_patch'],
+        disabledTools: ['unsafe_tool'],
+      },
+      {
+        name: 'ignored_server',
+        command: null,
+        args: [],
+        envVars: [],
+        cwd: null,
+        toolTimeoutSec: null,
+        env: {},
+        enabled: false,
+        required: false,
+        enabledTools: null,
+        disabledTools: [],
+      },
+    ],
   })
   assert.equal(Object.isFrozen(projected), true)
   assert.equal(Object.isFrozen(projected.projectRootMarkers), true)
+  assert.equal(Object.isFrozen(projected.mcpServers), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]?.args), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]?.envVars), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]?.envVars[0]), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]?.env), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]?.enabledTools), true)
+  assert.equal(Object.isFrozen(projected.mcpServers[0]?.disabledTools), true)
   assert.equal(Object.hasOwn(projected, 'model'), false)
+
+  const nativeDefault = nativeContextProbeTesting.decodeConfigResult(
+    configResult({ markers: null }),
+  )
+  assert.deepEqual(nativeDefault, {
+    projectRootMarkers: ['.git'],
+    globalInstructionsFile: null,
+    mcpServers: [],
+  })
+  assert.equal(Object.isFrozen(nativeDefault.projectRootMarkers), true)
+  assert.equal(Object.isFrozen(nativeDefault.mcpServers), true)
 })
 
 test('rejects missing, malformed, or unbounded native config fields', async (t) => {
   const cases: Array<[string, unknown]> = [
     ['missing markers', configResult({ omitMarkers: true })],
     ['missing instructions', configResult({ omitInstructions: true })],
-    ['non-array markers', configResult({ markers: null })],
+    ['non-array markers', configResult({ markers: 42 })],
     [
       'too many markers',
       configResult({ markers: Array.from({ length: 1025 }, () => '.git') }),
@@ -213,6 +306,196 @@ test('rejects missing, malformed, or unbounded native config fields', async (t) 
     [
       'unnormalized instruction path',
       configResult({ instructions: '/private/tmp/../AGENTS.md' }),
+    ],
+    [
+      'non-object MCP declarations',
+      configResult({ mcpServers: [] }),
+    ],
+    [
+      'non-boolean MCP required flag',
+      configResult({
+        mcpServers: {
+          ay_ple_interaction: {
+            required: 'true',
+          },
+        },
+      }),
+    ],
+    [
+      'malformed MCP command',
+      configResult({
+        mcpServers: {
+          server: {
+            command: 42,
+          },
+        },
+      }),
+    ],
+    [
+      'control character MCP command',
+      configResult({
+        mcpServers: {
+          server: {
+            command: 'node\n--inspect',
+          },
+        },
+      }),
+    ],
+    [
+      'oversized MCP command',
+      configResult({
+        mcpServers: {
+          server: {
+            command: 'x'.repeat(16 * 1024 + 1),
+          },
+        },
+      }),
+    ],
+    [
+      'unbounded MCP args',
+      configResult({
+        mcpServers: {
+          server: {
+            args: Array.from({ length: 129 }, () => 'argument'),
+          },
+        },
+      }),
+    ],
+    [
+      'malformed MCP arg',
+      configResult({
+        mcpServers: {
+          server: {
+            args: ['argument', 42],
+          },
+        },
+      }),
+    ],
+    [
+      'unsupported inherited MCP environment source',
+      configResult({
+        mcpServers: {
+          server: {
+            env_vars: [
+              {
+                name: 'TOKEN',
+                source: 'unsupported',
+              },
+            ],
+          },
+        },
+      }),
+    ],
+    [
+      'control character inherited MCP environment variable',
+      configResult({
+        mcpServers: {
+          server: {
+            env_vars: ['BAD\nTOKEN'],
+          },
+        },
+      }),
+    ],
+    [
+      'malformed MCP cwd',
+      configResult({
+        mcpServers: {
+          server: {
+            cwd: false,
+          },
+        },
+      }),
+    ],
+    [
+      'non-positive MCP tool timeout',
+      configResult({
+        mcpServers: {
+          server: {
+            tool_timeout_sec: 0,
+          },
+        },
+      }),
+    ],
+    [
+      'non-finite MCP tool timeout',
+      configResult({
+        mcpServers: {
+          server: {
+            tool_timeout_sec: Number.POSITIVE_INFINITY,
+          },
+        },
+      }),
+    ],
+    [
+      'unbounded static MCP environment',
+      configResult({
+        mcpServers: {
+          server: {
+            env: Object.fromEntries(
+              Array.from({ length: 129 }, (_, index) => [
+                `KEY_${index}`,
+                'value',
+              ]),
+            ),
+          },
+        },
+      }),
+    ],
+    [
+      'non-string static MCP environment value',
+      configResult({
+        mcpServers: {
+          server: {
+            env: {
+              TOKEN: 42,
+            },
+          },
+        },
+      }),
+    ],
+    [
+      'control character static MCP environment value',
+      configResult({
+        mcpServers: {
+          server: {
+            env: {
+              TOKEN: 'bad\nvalue',
+            },
+          },
+        },
+      }),
+    ],
+    [
+      'oversized static MCP environment value',
+      configResult({
+        mcpServers: {
+          server: {
+            env: {
+              TOKEN: 'x'.repeat(16 * 1024 + 1),
+            },
+          },
+        },
+      }),
+    ],
+    [
+      'malformed enabled MCP tool roster',
+      configResult({
+        mcpServers: {
+          ay_ple_interaction: {
+            enabled_tools: ['propose_state_patch', 42],
+          },
+        },
+      }),
+    ],
+    [
+      'malformed disabled MCP tool roster',
+      configResult({
+        mcpServers: {
+          ay_ple_interaction: {
+            disabled_tools: ['propose_state_patch', 42],
+          },
+        },
+      }),
     ],
     [
       'unexpected response key',

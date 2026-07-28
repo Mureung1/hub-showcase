@@ -3,6 +3,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import concurrently from 'concurrently'
 
+import {
+  resolvePreparedWorkspaceLaunch,
+  type PreparedWorkspaceLaunchFailure,
+} from '../apps/server/src/prepared-workspace-launch.js'
 import { resolveCanonicalProductRoots } from '../apps/server/src/product-roots.js'
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
@@ -57,21 +61,27 @@ export async function startProductDevelopment(options: {
   readonly environment: NodeJS.ProcessEnv
   readonly workspaceRoot: string | undefined
 }): Promise<void> {
+  const launch = await resolvePreparedWorkspaceLaunch({
+    appDataRoot: options.appDataRoot,
+    ...(options.workspaceRoot === undefined
+      ? {}
+      : { explicitWorkspaceRoot: options.workspaceRoot }),
+  })
+  if (launch.status === 'failure') {
+    throw new ProductDevelopmentLaunchError(launch)
+  }
   const roots = await resolveCanonicalProductRoots({
     appDataRoot: options.appDataRoot,
     environment: options.environment,
     packageRoot: repositoryRoot,
-    ...(options.workspaceRoot === undefined
-      ? {}
-      : { workspaceRoot: options.workspaceRoot }),
+    workspaceRoot: launch.canonicalRoot,
   })
   const appDataRoot = roots.appDataRoot
   const workspaceRoot = roots.workspaceRoot
-  if (workspaceRoot !== undefined) {
-    console.log(`SemesterWorkspace: ${workspaceRoot} (caller-owned)`)
-  } else {
-    console.log('SemesterWorkspace: not selected')
+  if (workspaceRoot === undefined) {
+    throw new Error('Prepared SemesterWorkspace selection was lost.')
   }
+  console.log(`SemesterWorkspace: ${workspaceRoot} (${launch.source})`)
   console.log(`Product app data: ${appDataRoot}`)
 
   const productEnvironment = {
@@ -79,9 +89,9 @@ export async function startProductDevelopment(options: {
     AY_PLE_PRODUCT_MODE: '1',
     AY_PLE_PACKAGE_ROOT: repositoryRoot,
     AY_PLE_APP_DATA_ROOT: appDataRoot,
-    ...(workspaceRoot === undefined
-      ? {}
-      : { AY_PLE_WORKSPACE_ROOT: workspaceRoot }),
+    AY_PLE_WORKSPACE_ROOT: workspaceRoot,
+    AY_PLE_WORKSPACE_SELECTION:
+      options.workspaceRoot === undefined ? 'registry' : 'explicit',
   }
   const { result } = concurrently(
     [
@@ -103,6 +113,31 @@ export async function startProductDevelopment(options: {
     },
   )
   await result
+}
+
+export class ProductDevelopmentLaunchError extends Error {
+  readonly code: PreparedWorkspaceLaunchFailure['code']
+
+  constructor(failure: PreparedWorkspaceLaunchFailure) {
+    super(launchFailureMessage(failure))
+    this.name = 'ProductDevelopmentLaunchError'
+    this.code = failure.code
+  }
+}
+
+function launchFailureMessage(
+  failure: PreparedWorkspaceLaunchFailure,
+): string {
+  switch (failure.code) {
+    case 'prepared_workspace_required':
+      return 'A prepared SemesterWorkspace is required. Run the native Bootstrap Skill, then launch with --workspace /absolute/prepared-root.'
+    case 'prepared_workspace_invalid':
+      return `The explicit prepared SemesterWorkspace is invalid (${failure.reason}).`
+    case 'registered_workspace_unavailable':
+      return `The registered SemesterWorkspace is unavailable (${failure.reason}).`
+    case 'registry_incompatible':
+      return `WorkspaceRegistry is incompatible (${failure.reason}); its bytes were preserved.`
+  }
 }
 
 export async function runProductDevelopment(options: {

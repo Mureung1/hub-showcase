@@ -1,0 +1,4 @@
+interface:
+  display_name: "Semester Workspace Init"
+  short_description: "Prepare a safe AY-PLE semester Git workspace"
+  default_prompt: "Use $semester-workspace-init to prepare my semester workspace before launching AY-PLE."

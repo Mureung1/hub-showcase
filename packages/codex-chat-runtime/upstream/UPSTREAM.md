@@ -29,6 +29,8 @@ Pinned source의 Python SDK metadata와 generated output은 과거 native runtim
 
 이 adaptation은 SDK distribution version을 `0.144.4`로 바꾸거나 handwritten conversation lifecycle을 수정하지 않는다. Behavioral source patch는 [PATCHES.md](PATCHES.md)에 별도 순서와 regression oracle을 기록하고 unpatched snapshot의 temporary copy에만 적용한다.
 
+Behavioral patch roster는 `0007-thread-start-settings`에서 끝난다. Live Interaction Adapter의 준비성과 연결 수명은 Server Interaction Broker가 소유하므로 high-level SDK에 별도 MCP readiness seam을 추가하지 않는다.
+
 ## Tracked provenance
 
 | 경로 | 내용 |
@@ -42,7 +44,6 @@ Pinned source의 Python SDK metadata와 generated output은 과거 native runtim
 | `patches/0005-strict-response-classification.patch` | Correlated response의 result/error 배타성과 error code/message type을 waiter release 전에 검증해 malformed mutation을 sticky SDK failure로 분류하는 좁은 router correction |
 | `patches/0006-plan-user-input-seam.patch` | Typed Plan `collaborationMode`와 request-local user-input answer·cancel seam을 public high-level API에 추가한다. |
 | `patches/0007-thread-start-settings.patch` | Native `thread/start`의 effective model·reasoning setting을 high-level Thread에 보존한다. |
-| `patches/0008-standalone-skill-extra-roots.patch` | Process-wide standalone Skill extra root를 typed sync·async API로 노출한다. |
 | `../manifests/patched-source.json` | Unpatched manifest digest, ordered patch digest와 derived source roster를 담은 source-only evidence |
 | `../python/bridge/` | Official public conversation API를 소비하는 AY-PLE-owned private worker; upstream SDK patch가 아님 |
 | `LICENSE` | Exact source root Apache-2.0 license copy |
@@ -68,7 +69,7 @@ npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime
 | Input | Exact evidence |
 | --- | --- |
 | Build backend | `pyproject.toml`의 `uv_build==0.11.19`; reviewed macOS arm64 wheel SHA-256 `7033cf1398d05293dca9d2265730ae35ffd49631fea844c75742f0f332c4f45b`만으로 `--no-index --offline` build |
-| Patched SDK wheel | `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007 → 0008` source에서 source epoch로 두 번 build, `openai_codex-0.0.0.dev0-py3-none-any.whl`, SHA-256 `9259319c79132ffa16e1ba46d3e20a88be3b5851501f8ab7812bfb42ce6427aa` |
+| Patched SDK wheel | `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007` source에서 source epoch로 두 번 build한 `openai_codex-0.0.0.dev0-py3-none-any.whl`, SHA-256 `0cca6e81ed5086b9b11b79c66d9eaf6ddfec5c7cf768643b9b6c07f07fb34cb9` |
 | Native Codex wheel | Exact SDK lock의 macOS arm64 `openai_codex_cli_bin-0.144.4-py3-none-macosx_11_0_arm64.whl`, SHA-256 `05db505a9c7f020f58b70837a94e00d32a50086986c267bcc44ea97b573d4a05` |
 | Standalone Python | Astral `python-build-standalone` release `20250818`, CPython `3.10.18` macOS arm64 `install_only_stripped`, SHA-256 `f38f5fcbe39e657742e21a12c890f9f12d20d2c0eefaa2e6cd4a975f3f7f9dcd` |
 | Dependency closure | Exact 7-wheel production roster와 installed distribution/tree digest는 canonical production manifest가 소유한다. |

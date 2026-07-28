@@ -32,64 +32,6 @@ test('deterministic runtime returns caller-supplied native thread identities', a
   ])
 })
 
-test('deterministic runtime binds an isolated thread to its workspace root', async () => {
-  const workspaceRoot = '/workspace/semester-a'
-  const runtime = new DeterministicCodexChatRuntime({
-    workspace: workspaceRoot,
-    threadIds: ['thread-product'],
-  })
-  const input = {
-    workspace: workspaceRoot,
-    mcp: {
-      url: 'http://127.0.0.1:43127/mcp',
-      token: 'private-mcp-token',
-    },
-  } as const
-
-  assert.deepEqual(await runtime.startThread(input), {
-    threadId: 'thread-product',
-  })
-  assert.deepEqual(runtime.calls, [
-    { operation: 'startThread', input },
-  ])
-})
-
-test('deterministic runtime rejects a different workspace root before consuming a thread identity', async () => {
-  const workspaceRoot = '/workspace/semester-a'
-  const runtime = new DeterministicCodexChatRuntime({
-    workspace: workspaceRoot,
-    threadIds: ['thread-must-remain-unused'],
-  })
-  const mcp = {
-    url: 'http://127.0.0.1:43127/mcp',
-    token: 'private-mcp-token',
-  } as const
-
-  for (const workspace of [
-    '/workspace/semester-b',
-    '/workspace/semester-a/../semester-a',
-  ]) {
-    await assert.rejects(
-      () => runtime.startThread({ workspace, mcp }),
-      (error: unknown) => {
-        assert.ok(error instanceof CodexChatRuntimeError)
-        assert.equal(error.code, 'workspace_mismatch')
-        assert.equal(
-          error.displayMessage,
-          'The requested workspace does not match this Codex runtime.',
-        )
-        assert.equal(error.displayMessage.includes(workspace), false)
-        assert.equal(error.unknownOutcome, false)
-        return true
-      },
-    )
-  }
-
-  assert.deepEqual(await runtime.startThread({ workspace: workspaceRoot, mcp }), {
-    threadId: 'thread-must-remain-unused',
-  })
-})
-
 test('deterministic runtime reports account not-ready without starting native work', async () => {
   const runtime = new DeterministicCodexChatRuntime({
     accountReadiness: [
@@ -115,6 +57,28 @@ test('deterministic runtime returns isolated native-context projections and reco
   const scriptedConfig = {
     projectRootMarkers: ['.git'],
     globalInstructionsFile: '/deterministic/workspace/AGENTS.md',
+    mcpServers: [
+      {
+        name: 'ay_ple_interaction',
+        command: '../hub/packages/interaction-mcp/dist/stdio.js',
+        args: ['--stdio'],
+        envVars: [
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_URL',
+            source: null,
+          },
+        ],
+        cwd: null,
+        toolTimeoutSec: 300,
+        env: {
+          AY_PLE_STATIC_MODE: 'review',
+        },
+        enabled: true,
+        required: true,
+        enabledTools: ['propose_state_patch'],
+        disabledTools: [],
+      },
+    ],
   }
   const scriptedSkills = [
     {
@@ -137,14 +101,38 @@ test('deterministic runtime returns isolated native-context projections and reco
   assert.deepEqual(skills, scriptedSkills)
   assert.notEqual(config, scriptedConfig)
   assert.notEqual(config.projectRootMarkers, scriptedConfig.projectRootMarkers)
+  assert.notEqual(config.mcpServers, scriptedConfig.mcpServers)
+  assert.notEqual(config.mcpServers[0], scriptedConfig.mcpServers[0])
+  assert.notEqual(config.mcpServers[0]?.args, scriptedConfig.mcpServers[0]?.args)
+  assert.notEqual(
+    config.mcpServers[0]?.envVars,
+    scriptedConfig.mcpServers[0]?.envVars,
+  )
+  assert.notEqual(
+    config.mcpServers[0]?.envVars[0],
+    scriptedConfig.mcpServers[0]?.envVars[0],
+  )
+  assert.notEqual(config.mcpServers[0]?.env, scriptedConfig.mcpServers[0]?.env)
+  assert.notEqual(
+    config.mcpServers[0]?.enabledTools,
+    scriptedConfig.mcpServers[0]?.enabledTools,
+  )
   assert.notEqual(skills, scriptedSkills)
   assert.notEqual(skills[0], scriptedSkills[0])
 
   const returnedMarkers = config.projectRootMarkers as string[]
+  const returnedArgs = config.mcpServers[0]!.args as string[]
+  const returnedEnv = config.mcpServers[0]!.env as Record<string, string>
   const returnedSkills = skills as Array<{ enabled: boolean }>
   returnedMarkers.push('package.json')
+  returnedArgs.push('--mutated')
+  returnedEnv.AY_PLE_STATIC_MODE = 'mutated'
   returnedSkills[0]!.enabled = false
   assert.deepEqual(scriptedConfig.projectRootMarkers, ['.git'])
+  assert.deepEqual(scriptedConfig.mcpServers[0]!.args, ['--stdio'])
+  assert.deepEqual(scriptedConfig.mcpServers[0]!.env, {
+    AY_PLE_STATIC_MODE: 'review',
+  })
   assert.equal(scriptedSkills[0]!.enabled, true)
   assert.deepEqual(runtime.calls, [
     { operation: 'readEffectiveConfig' },
@@ -159,6 +147,7 @@ test('deterministic native-context calls honor AbortSignal without closing the r
       {
         projectRootMarkers: [],
         globalInstructionsFile: null,
+        mcpServers: [],
       },
     ],
     threadIds: ['thread-after-abort'],
@@ -186,6 +175,7 @@ test('deterministic native-context calls honor AbortSignal without closing the r
     {
       projectRootMarkers: [],
       globalInstructionsFile: null,
+      mcpServers: [],
     },
   )
   assert.deepEqual(await runtime.startThread(), {
@@ -234,7 +224,11 @@ test('deterministic native-context calls reject a pre-aborted signal before cons
 test('deterministic native-context calls reject a closed runtime before consuming scripts', async () => {
   let scriptConsumed = false
   const scriptedConfig = observeConsumption(
-    { projectRootMarkers: [], globalInstructionsFile: null },
+    {
+      projectRootMarkers: [],
+      globalInstructionsFile: null,
+      mcpServers: [],
+    },
     () => {
       scriptConsumed = true
     },
@@ -312,10 +306,6 @@ test('deterministic product turn preserves structured input and same-turn user-i
   const input = {
     threadId: 'thread-product',
     permissionProfile: 'workspace_write',
-    skill: {
-      name: 'assignment-modeling',
-      path: '/managed/assignment-modeling/SKILL.md',
-    },
     text: 'Use [공지](/staged/lms-outline-notice.md) with course=자료구조.',
   } as const
   const runtime = new DeterministicCodexChatRuntime({
@@ -325,12 +315,6 @@ test('deterministic product turn preserves structured input and same-turn user-i
         input,
         turnId: 'turn-product',
         events: [
-          {
-            type: 'skill.requested',
-            threadId: 'thread-product',
-            turnId: 'turn-product',
-            skillName: 'assignment-modeling',
-          },
           {
             type: 'user_input.requested',
             threadId: 'thread-product',
@@ -369,7 +353,6 @@ test('deterministic product turn preserves structured input and same-turn user-i
 
   const turn = await runtime.startProductTurn(input)
   const events = turn.events[Symbol.asyncIterator]()
-  assert.equal((await events.next()).value.type, 'skill.requested')
   assert.equal((await events.next()).value.type, 'user_input.requested')
 
   const acknowledgement = runtime.answerUserInput({
@@ -459,11 +442,67 @@ test('deterministic product turn supports text-only input without a requested Sk
   ])
 })
 
+test('deterministic product turn snapshots an optional Skill without adding product activity', async () => {
+  const input = {
+    threadId: 'thread-product',
+    permissionProfile: 'workspace_write' as const,
+    settings: {
+      model: 'gpt-current',
+      reasoningEffort: 'high',
+      serviceTier: 'fast' as const,
+    },
+    skill: {
+      name: 'ay-ple-first-assignment',
+      path:
+        '/deterministic/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+    },
+    text: 'ActionInvocation: organize_sources\n- "materials/notice.md"',
+  }
+  const expectedInput = structuredClone(input)
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'completed',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+
+  const turnPromise = runtime.startProductTurn(input)
+  input.settings.model = 'caller-mutated-model'
+  input.skill.name = 'caller-mutated-skill'
+  input.skill.path = '/caller-mutated/SKILL.md'
+  input.text = 'caller-mutated text'
+  const turn = await turnPromise
+
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'turn.completed',
+      threadId: expectedInput.threadId,
+      turnId: 'turn-product',
+      status: 'completed',
+    },
+  ])
+  assert.deepEqual(runtime.calls, [
+    { operation: 'startThread' },
+    { operation: 'startProductTurn', input: expectedInput },
+  ])
+})
+
 test('deterministic product continuation rejects a scripted resolution that disagrees with cancel', async () => {
   const input = {
     threadId: 'thread-product',
     permissionProfile: 'workspace_write',
-    skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const
   const runtime = new DeterministicCodexChatRuntime({
@@ -524,7 +563,6 @@ test('deterministic cleanup rejects an in-flight acknowledgement without resolve
   const input = {
     threadId: 'thread-product',
     permissionProfile: 'workspace_write',
-    skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const
   const runtime = new DeterministicCodexChatRuntime({
@@ -580,7 +618,6 @@ test('deterministic runtime failure rejects an in-flight interaction mutation wi
       const input = {
         threadId: 'thread-product',
         permissionProfile: 'workspace_write',
-        skill: { name: 'model', path: '/managed/model/SKILL.md' },
         text: 'Review staged Markdown.',
       } as const
       const runtime = new DeterministicCodexChatRuntime({
@@ -649,7 +686,6 @@ test('deterministic product interrupt settles its pending interaction once', asy
   const input = {
     threadId: 'thread-product',
     permissionProfile: 'workspace_write',
-    skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const
   const runtime = new DeterministicCodexChatRuntime({
@@ -715,7 +751,6 @@ test('deterministic product terminal makes a pending interaction late', async ()
   const input = {
     threadId: 'thread-product',
     permissionProfile: 'workspace_write',
-    skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
   } as const
   const runtime = new DeterministicCodexChatRuntime({

@@ -4,7 +4,7 @@
 
 성숙도: 채택
 
-부분 대체·보완됨: [ADR 0019 — MCP InteractionCapability를 AY와 App의 seam으로 사용한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)가 App-owned `ModelingRecipe`·`ModelingInvocation`·`ModelingRun`과 `StatePatch` apply lifecycle을 current target에서 제거한다. Native Codex primitive와 Skill을 재사용하고 별도 workflow runtime을 만들지 않는 원칙은 유지한다.
+부분 대체·보완됨: [ADR 0019 — MCP InteractionCapability로 App UI round trip을 제공한다](0019-use-mcp-interaction-capabilities-as-the-ay-app-seam.md)가 App-owned `ModelingRecipe`·`ModelingInvocation`·`ModelingRun`과 `StatePatch` apply lifecycle을 current target에서 제거한다. [ADR 0021 — Protocol-driven AY–App Interaction Layer](0021-adopt-a-protocol-driven-ay-app-interaction-layer.md)는 native composition을 특정 ModelingRun이 아니라 typed ActionInvocation이 재사용하는 제품 확장 seam으로 다시 채택한다. Native Codex primitive와 Skill을 재사용하고 별도 workflow runtime·범용 event router를 만들지 않는 원칙은 유지한다.
 
 AY-PLE는 Codex 위에 별도 workflow runtime이나 범용 interaction framework를 만들지 않는다. 앱이 제공하는 학업 기능은 native Codex의 Skill, rendered text input, 기능별 구조화 계약과 `turn` 제어를 조합하고, AY-PLE만의 가치는 학기 상태와 Review·UserConfirmation 경계에 집중한다.
 

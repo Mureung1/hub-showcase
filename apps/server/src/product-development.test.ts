@@ -12,12 +12,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 
-import {
-  resolveCodexChatRuntimeSource,
-} from './codex-chat-config.js'
 import { resolveProductDevelopmentBootstrap } from './product-development.js'
 import {
-  createServerApplication,
   startConfiguredServerApplication,
 } from './server.js'
 
@@ -37,12 +33,7 @@ test('product development defaults to sibling app data without selecting an ambi
 
     assert.ok(product)
     const canonicalTestRoot = await realpath(testRoot)
-    assert.equal(
-      product.runtimeWorkspaceRoot,
-      path.join(canonicalTestRoot, 'hub'),
-    )
     assert.equal(product.selectedWorkspaceRoot, undefined)
-    assert.equal(product.semesterWorkspace, undefined)
     assert.equal(
       product.runtime.appDataRoot,
       path.join(canonicalTestRoot, '.ay-ple'),
@@ -86,13 +77,6 @@ test('product development bootstrap activates and reports its explicit selected 
       CODEX_HOME: codexHome,
     })
     assert.ok(product)
-    assert.equal(
-      resolveCodexChatRuntimeSource({
-        productRuntime: product.runtime,
-        workspace: () => product.selectedWorkspaceRoot,
-      }).kind,
-      'candidate',
-    )
     assert.equal(product.selectedWorkspaceRoot, await realpath(workspaceRoot))
     assert.deepEqual(product.runtime, {
       appDataRoot: await realpath(appDataRoot),
@@ -112,26 +96,6 @@ test('product development bootstrap activates and reports its explicit selected 
       },
       origin: 'http://127.0.0.1:4173',
     })
-
-    const application = await createServerApplication({
-      productRuntime: product.runtime,
-      semesterWorkspace: product.semesterWorkspace,
-    })
-    try {
-      const activation = await application.semesterWorkspace?.activate()
-      assert.equal(activation?.status, 'activated')
-      assert.equal(
-        application.semesterWorkspace?.nativeCwd(),
-        await realpath(workspaceRoot),
-      )
-      assert.deepEqual(
-        (await application.semesterWorkspace?.refreshMaterials())?.workspace
-          .materials,
-        [],
-      )
-    } finally {
-      await application.close()
-    }
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }
@@ -228,7 +192,7 @@ test('product development bootstrap falls back to the user-global Codex home', a
   }
 })
 
-test('canonical product startup preserves caller-owned bytes and serves an incompatible snapshot', async () => {
+test('unprepared startup ignores caller-owned workspace bytes and exposes no academic router', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-product-incompatible-startup-test-'),
   )
@@ -265,33 +229,7 @@ test('canonical product startup preserves caller-owned bytes and serves an incom
       const response = await fetch(
         `http://127.0.0.1:${started.port}/api/product/bootstrap`,
       )
-      assert.equal(response.status, 200)
-      const internalSnapshot = started.application.semesterWorkspace?.snapshot()
-      assert.equal(internalSnapshot?.state, 'incompatible')
-      if (internalSnapshot?.state === 'incompatible') {
-        assert.equal(internalSnapshot.supportedStoreFormatVersion, 2)
-        assert.equal(internalSnapshot.foundStoreFormatVersion, 3)
-      }
-      assert.deepEqual(await response.json(), {
-        accountReadiness: {
-          state: 'unavailable',
-          displayMessage:
-            'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
-        },
-        operationStatus: 'idle',
-        workspace: {
-          state: 'incompatible',
-          readOnly: true,
-          displayMessage:
-            '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
-        },
-        history: {
-          assignments: [],
-          statePatches: [],
-          userConfirmations: [],
-          modelingRuns: [],
-        },
-      })
+      assert.equal(response.status, 404)
       const removedTracerRoutes = await Promise.all([
         fetch(`http://127.0.0.1:${started.port}/api/codex-chat/status`),
         fetch(`http://127.0.0.1:${started.port}/api/codex-chat/threads`, {

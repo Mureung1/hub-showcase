@@ -10,7 +10,7 @@ AY-PLE는 4주 캠프 동안 Codex App Server 직접 통합을 유일한 우선 
 
 - 첫 제품 수직 흐름은 AY-PLE와 Codex 사이에 ACP를 넣지 않고, 앱이 소유하고 버전을 고정한 Codex App Server 경로를 사용한다.
 - Codex가 제공하는 workspace, `AGENTS.md`, Skills와 thread·turn을 native 방식으로 사용하고, built-in Memories는 명시적인 opt-in·eligibility 검증 뒤 사용한다. AY-PLE 전용 memory engine은 만들지 않는다.
-- AY-PLE는 학기 상태와 Review 권한을 소유하고 Codex는 실행을 담당한다. 제품 작업 조합은 [ADR 0007](0007-use-native-codex-composition-for-product-actions.md), runtime root 소유권은 [ADR 0006](0006-separate-package-app-data-and-semester-workspace-roots.md)을 따른다.
+- AY-PLE는 제품 interaction을, Codex는 실행을 담당한다. Historical 제품 작업 조합은 [ADR 0007](0007-use-native-codex-composition-for-product-actions.md), 현재 양방향 제품 확장 seam은 [ADR 0021](0021-adopt-a-protocol-driven-ay-app-interaction-layer.md), runtime root 소유권은 [ADR 0006](0006-separate-package-app-data-and-semester-workspace-roots.md)을 따른다.
 - Codex 통합은 관측과 correlation에 필요한 `thread`/`turn`/`item`/`request` 식별자를 통합 내부에서 보존한다. 필요한 결과만 제품 의미로 변환하며, 생성된 protocol type과 raw event는 `SemesterModel`, 제품 API 또는 `WorkspaceHistory`의 계약으로 노출하지 않는다.
 - Maintained 실행 경로는 [ADR 0011](0011-reuse-official-codex-python-sdk-for-chat-shell.md)의 official SDK 기반 `CodexChatRuntime` 하나다. Browser-safe Chat contract와 deterministic test implementation은 같은 좁은 Interface를 사용하지만, 이를 두 번째 제품 실행 엔진의 근거로 해석하지 않는다.
 - ACP, OpenCode, Claude Code, 범용 capability taxonomy와 다중 엔진 설정 UI는 캠프 이후 또는 실제 두 번째 제품 실행 엔진을 승인한 시점까지 미룬다.

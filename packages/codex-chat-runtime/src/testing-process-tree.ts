@@ -20,12 +20,12 @@ import {
   startVerifiedCodexChatRuntime,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
+import { initializeGitRootForTest } from './runtime-test-support.js'
 import type {
   AnswerUserInput,
   CancelUserInput,
   CodexWorkspaceRuntime,
   StartProductTurnInput,
-  StartThreadInput,
 } from './runtime-contract.js'
 
 const PACKAGE_ROOT = path.resolve(
@@ -74,6 +74,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
         mkdir(directory, { recursive: true }),
       ),
     )
+    await initializeGitRootForTest(workspace)
     const [canonicalWorkspace, home, codexHome, codexSqliteHome, tempDirectory] =
       await Promise.all([
         realpath(workspace),
@@ -118,10 +119,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
         spawned!.runtime.readEffectiveConfig(input),
       listEffectiveSkills: (input) =>
         spawned!.runtime.listEffectiveSkills(input),
-      startThread: (input?: StartThreadInput) =>
-        input === undefined
-          ? spawned!.runtime.startThread()
-          : spawned!.runtime.startThread(input),
+      startThread: () => spawned!.runtime.startThread(),
       readAccountReadiness: () => spawned!.runtime.readAccountReadiness(),
       readModelCatalog: () => spawned!.runtime.readModelCatalog(),
       startTurn: (input: StartTurnInput) => spawned!.runtime.startTurn(input),

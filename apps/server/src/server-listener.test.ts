@@ -1,24 +1,16 @@
 import assert from 'node:assert/strict'
-import { mkdir } from 'node:fs/promises'
 import type { RequestListener } from 'node:http'
 import {
   createConnection,
   createServer as createNetServer,
 } from 'node:net'
-import path from 'node:path'
 import test from 'node:test'
 
-import { DeterministicCodexProductRuntime } from '@ay-ple/codex-chat-runtime/testing'
-
-import {
-  materializeE2eSemesterWorkspace,
-} from '../../../scripts/semester-workspace-materializer.mjs'
 import { createServerApplication } from './server-application.js'
 import {
   bindServerApplicationListener,
   listenToServerApplication,
 } from './server-listener.js'
-import { configuredBootstrap } from './testing/codex-chat-test-support.js'
 
 test('the TCP listener composes around the host application and refuses intake after close', async () => {
   const application = await createServerApplication()
@@ -30,22 +22,7 @@ test('the TCP listener composes around the host application and refuses intake a
 
   try {
     const response = await fetch(`${baseUrl}/api/product/bootstrap`)
-    assert.equal(response.status, 200)
-    assert.deepEqual(await response.json(), {
-      accountReadiness: {
-        state: 'unavailable',
-        displayMessage:
-          'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
-      },
-      operationStatus: 'idle',
-      workspace: null,
-      history: {
-        assignments: [],
-        statePatches: [],
-        userConfirmations: [],
-        modelingRuns: [],
-      },
-    })
+    assert.equal(response.status, 404)
     assert.equal(
       (await fetch(`${baseUrl}/api/product/public-preview`)).status,
       404,
@@ -91,7 +68,7 @@ test('a pre-bound listener serves a bootstrap delegate before attaching one appl
     )
 
     const ready = await fetch(`${baseUrl}/api/product/bootstrap`)
-    assert.equal(ready.status, 200)
+    assert.equal(ready.status, 404)
 
     const closeSignal = new AbortController().signal
     assert.deepEqual(
@@ -243,7 +220,7 @@ test('a pre-bound listener cannot steal an application claimed by another listen
           `http://127.0.0.1:${existing.port}/api/product/bootstrap`,
         )
       ).status,
-      200,
+      404,
     )
     assert.equal(
       (await fetch(`http://127.0.0.1:${pending.port}/`)).status,
@@ -278,7 +255,7 @@ test('one Server application can claim only one listener lifecycle', async () =>
           `http://127.0.0.1:${started.port}/api/product/bootstrap`,
         )
       ).status,
-      200,
+      404,
     )
   } finally {
     await started.application.close()
@@ -331,90 +308,6 @@ test('listener refusal preserves the bind failure after complete application cle
     })
   }
 })
-
-test('application close refuses listener intake before Runtime close completes', async () => {
-  const materialized = await materializeE2eSemesterWorkspace()
-  const runtime = new DeferredCloseRuntime({
-    accountReadiness: [{ state: 'ready' }],
-  })
-  const packageRoot = path.join(materialized.runRoot, 'package')
-  const appDataRoot = path.join(materialized.runRoot, 'app-data')
-  await Promise.all([packageRoot, appDataRoot].map((root) => mkdir(root)))
-  const application = await createServerApplication({
-    codexChat: configuredBootstrap(runtime),
-    semesterWorkspace: {
-      appDataRoot,
-      packageRoot,
-      chooseDirectory: async () => materialized.workspaceRoot,
-    },
-  })
-  const activation = await application.semesterWorkspace?.activate()
-  assert.equal(activation?.status, 'activated')
-  const started = await listenToServerApplication(application, {
-    host: '127.0.0.1',
-    port: 0,
-  })
-  const baseUrl = `http://127.0.0.1:${started.port}`
-
-  try {
-    assert.equal((await fetch(`${baseUrl}/api/product/bootstrap`)).status, 200)
-
-    const closing = application.close()
-    await runtime.closeStarted
-    await assert.rejects(fetch(`${baseUrl}/api/product/bootstrap`))
-    assert.equal(await settlesBeforeImmediate(closing), false)
-
-    runtime.releaseClose()
-    await closing
-  } finally {
-    runtime.releaseClose()
-    try {
-      await started.application.close()
-    } finally {
-      await materialized.cleanup()
-    }
-  }
-})
-
-class DeferredCloseRuntime extends DeterministicCodexProductRuntime {
-  private readonly closeStartedDeferred = deferred<void>()
-  private readonly closeReleased = deferred<void>()
-
-  get closeStarted(): Promise<void> {
-    return this.closeStartedDeferred.promise
-  }
-
-  releaseClose(): void {
-    this.closeReleased.resolve()
-  }
-
-  override async close(): Promise<void> {
-    this.closeStartedDeferred.resolve()
-    await this.closeReleased.promise
-    await super.close()
-  }
-}
-
-function deferred<T>(): {
-  readonly promise: Promise<T>
-  resolve(value?: T): void
-} {
-  let resolve!: (value?: T) => void
-  const promise = new Promise<T>((settle) => {
-    resolve = (value) => settle(value as T)
-  })
-  return { promise, resolve }
-}
-
-function settlesBeforeImmediate(promise: Promise<void>): Promise<boolean> {
-  return Promise.race([
-    promise.then(
-      () => true,
-      () => true,
-    ),
-    new Promise<false>((resolve) => setImmediate(() => resolve(false))),
-  ])
-}
 
 function settleWithin<T>(
   promise: Promise<T>,

@@ -16,6 +16,28 @@ const FIRST_SNAPSHOT: NativeContextProbeSnapshot = {
   config: {
     projectRootMarkers: ['.git'],
     globalInstructionsFile: '/workspace/AGENTS.md',
+    mcpServers: [
+      {
+        name: 'ay_ple_interaction',
+        command: '../hub/packages/interaction-mcp/dist/stdio.js',
+        args: ['--stdio'],
+        envVars: [
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_URL',
+            source: null,
+          },
+        ],
+        cwd: null,
+        toolTimeoutSec: 300,
+        env: {
+          AY_PLE_STATIC_MODE: 'review',
+        },
+        enabled: true,
+        required: true,
+        enabledTools: ['propose_state_patch'],
+        disabledTools: ['unsafe_tool'],
+      },
+    ],
   },
   skills: [
     {
@@ -30,6 +52,7 @@ const SECOND_SNAPSHOT: NativeContextProbeSnapshot = {
   config: {
     projectRootMarkers: [],
     globalInstructionsFile: null,
+    mcpServers: [],
   },
   skills: [
     {
@@ -79,6 +102,13 @@ test('sequential config and Skill reads share one fully-settled generation', asy
   assert.notEqual(skills, FIRST_SNAPSHOT.skills)
   assert.equal(Object.isFrozen(config), true)
   assert.equal(Object.isFrozen(config.projectRootMarkers), true)
+  assert.equal(Object.isFrozen(config.mcpServers), true)
+  assert.equal(Object.isFrozen(config.mcpServers[0]), true)
+  assert.equal(Object.isFrozen(config.mcpServers[0]?.args), true)
+  assert.equal(Object.isFrozen(config.mcpServers[0]?.envVars), true)
+  assert.equal(Object.isFrozen(config.mcpServers[0]?.envVars[0]), true)
+  assert.equal(Object.isFrozen(config.mcpServers[0]?.env), true)
+  assert.equal(Object.isFrozen(config.mcpServers[0]?.enabledTools), true)
   assert.equal(Object.isFrozen(skills), true)
   assert.equal(Object.isFrozen(skills[0]), true)
 })
