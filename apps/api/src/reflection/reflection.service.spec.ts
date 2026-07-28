@@ -9,6 +9,7 @@ const validDraft: ReflectionDraft = {
   motivation: "프로젝트를 빠르게 정리하고 싶었습니다.",
   role: "프론트엔드 구현을 맡았습니다.",
   memorableProblem: "분석 결과를 사용자 경험과 연결하는 일이 어려웠습니다.",
+  postAnalysisReflection: "",
   attempts: "",
   improvement: "",
   customChallengeTitle: "",

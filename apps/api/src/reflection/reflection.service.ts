@@ -54,6 +54,7 @@ function isReflectionDraft(value: unknown): value is ReflectionDraft {
     "motivation",
     "role",
     "memorableProblem",
+    "postAnalysisReflection",
     "attempts",
     "improvement",
     "customChallengeTitle",
