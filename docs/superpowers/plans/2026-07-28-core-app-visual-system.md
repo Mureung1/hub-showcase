@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**진행 상태:** 구현과 검증은 완료했으며, 대표 이미지 최종 비교는 사용자 확인을 기다리고 있다.
+
 **Goal:** 인증 후 홈·보관함·저장에 눈이 편안한 기본 배경색, 화면별 대표 색상 영역, 기기별 상·하단 내비게이션을 적용한다.
 
 **Architecture:** 디자인 토큰에 인증 후 화면 전용 배경색과 화면별 대표 색상을 추가하고, `AuthenticatedWorkspace`에서만 공용 카드·입력 배경색을 새 값으로 범위 지정한다. 공통 셸은 전체 너비 상단바와 본문을 제공하고, 각 페이지는 첫 행동을 담는 전체 너비 색상 영역과 결과를 담는 본문으로 나눈다. 기존 기능 컴포넌트, API, 데이터 형식과 단일 `AppNavigation` 인스턴스는 유지한다.
@@ -73,7 +75,7 @@ PR 본문은 “토큰을 추가했다”가 아니라 “순백색 면적을 �
 - Modify: `src/shared/config/design-system/apply_design_tokens.test.ts`
 - Modify: `src/shared/config/design-system/tokens.ts`
 
-- [ ] **Step 1: 기존 토큰 테스트에 승인된 값과 대비 기준을 반영한다**
+- [x] **Step 1: 기존 토큰 테스트에 승인된 값과 대비 기준을 반영한다**
 
 `tokens.test.ts`의 `designTokens.color` 기대값을 다음과 같이 바꾼다. `canvas`는 범위 밖 화면을 보호하기 위해 `#FFFFFF`을 유지한다.
 
@@ -149,7 +151,7 @@ expect(customRoot.style.getPropertyValue('--color-paper')).toBe('#F4F1E9');
 expect(customRoot.style.getPropertyValue('--color-surface')).toBe('#FFFDF8');
 ```
 
-- [ ] **Step 2: 토큰 테스트가 승인된 새 값 때문에 실패하는지 확인한다**
+- [x] **Step 2: 토큰 테스트가 승인된 새 값 때문에 실패하는지 확인한다**
 
 Run:
 
@@ -159,7 +161,7 @@ npm test -- src/shared/config/design-system/tokens.test.ts src/shared/config/des
 
 Expected: `designTokens.color`에 새 키가 없고 CSS 변수 개수가 `78`이라서 FAIL.
 
-- [ ] **Step 3: 색상 타입과 런타임 값을 추가한다**
+- [x] **Step 3: 색상 타입과 런타임 값을 추가한다**
 
 `tokens.ts`의 `ColorTokenName`에 다음 이름을 추가한다.
 
@@ -190,7 +192,7 @@ type ColorTokenName =
 
 `designTokens.color`는 Step 1의 기대값과 같은 키 순서와 값으로 바꾼다. `apply_design_tokens.ts`는 기존의 모든 그룹 자동 변환 방식을 그대로 사용하므로 수정하지 않는다.
 
-- [ ] **Step 4: 토큰 테스트가 통과하는지 확인한다**
+- [x] **Step 4: 토큰 테스트가 통과하는지 확인한다**
 
 Run:
 
@@ -200,7 +202,7 @@ npm test -- src/shared/config/design-system/tokens.test.ts src/shared/config/des
 
 Expected: 두 파일의 테스트가 모두 PASS.
 
-- [ ] **Step 5: 토큰 변경을 커밋한다**
+- [x] **Step 5: 토큰 변경을 커밋한다**
 
 ```powershell
 git add src/shared/config/design-system/tokens.ts src/shared/config/design-system/tokens.test.ts src/shared/config/design-system/apply_design_tokens.test.ts
@@ -223,7 +225,7 @@ git commit -m "feat: 인증 후 화면 색상 토큰 추가"
 - Modify: `src/app/authenticated_workspace.tsx`
 - Modify: `src/app/styles/authenticated_workspace.css`
 
-- [ ] **Step 1: 기존 테스트에 단일 내비게이션과 반응형 배치 계약을 추가한다**
+- [x] **Step 1: 기존 테스트에 단일 내비게이션과 반응형 배치 계약을 추가한다**
 
 `app_navigation.test.tsx`의 기존 테스트에서 내비게이션을 가져와 현재 화면 클래스를 확인한다.
 
@@ -292,7 +294,7 @@ expect(navigations).toHaveLength(1);
 expect(navigations[0].closest('.workspace-header')).not.toBeNull();
 ```
 
-- [ ] **Step 2: 새 배치 계약이 현재 구조에서 실패하는지 확인한다**
+- [x] **Step 2: 새 배치 계약이 현재 구조에서 실패하는지 확인한다**
 
 Run:
 
@@ -302,7 +304,7 @@ npm test -- src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/n
 
 Expected: 현재 내비게이션이 `workspace-header` 밖에 있고 데스크톱 CSS가 없어서 FAIL.
 
-- [ ] **Step 3: 현재 화면 클래스를 내비게이션에 전달한다**
+- [x] **Step 3: 현재 화면 클래스를 내비게이션에 전달한다**
 
 `navigation_bar.tsx`의 props에 `responsive?: boolean`을 추가하고 public class로 변환한다.
 
@@ -369,7 +371,7 @@ export function NavigationBar<
 />
 ```
 
-- [ ] **Step 4: 내비게이션 인스턴스를 상단바 안으로 이동한다**
+- [x] **Step 4: 내비게이션 인스턴스를 상단바 안으로 이동한다**
 
 `authenticated_workspace.tsx`의 상단바를 다음 구조로 바꾼다.
 
@@ -396,7 +398,7 @@ export function NavigationBar<
 <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
 ```
 
-- [ ] **Step 5: 인증 후 셸에만 새 배경색을 범위 지정한다**
+- [x] **Step 5: 인증 후 셸에만 새 배경색을 범위 지정한다**
 
 `authenticated_workspace.css`의 셸과 상단바, 본문 규칙을 다음과 같이 바꾼다.
 
@@ -469,7 +471,7 @@ export function NavigationBar<
 
 기존 `.workspace-brand`, `.workspace-brand__mark`, `.workspace-brand__name`, `.workspace-brand__divider`, `.workspace-header h1`, `.workspace-connection-status`, `.workspace-note` 규칙은 색상 토큰만 상속하도록 유지한다. `.workspace-warnings`는 위의 가운데 정렬 규칙으로 교체한다.
 
-- [ ] **Step 6: 넓은 화면과 모바일 내비게이션 CSS를 구현한다**
+- [x] **Step 6: 넓은 화면과 모바일 내비게이션 CSS를 구현한다**
 
 `app_navigation.css`는 화면별 변수만 남긴다.
 
@@ -539,7 +541,7 @@ WDS 내부 DOM을 보정할 수 있는 `navigation_bar.css`에 다음 responsive
 }
 ```
 
-- [ ] **Step 7: 공통 셸과 내비게이션 테스트가 통과하는지 확인한다**
+- [x] **Step 7: 공통 셸과 내비게이션 테스트가 통과하는지 확인한다**
 
 Run:
 
@@ -549,7 +551,7 @@ npm test -- src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/n
 
 Expected: 선택한 세 계약이 PASS.
 
-- [ ] **Step 8: 공통 셸 변경을 커밋한다**
+- [x] **Step 8: 공통 셸 변경을 커밋한다**
 
 ```powershell
 git add src/app/authenticated_workspace.tsx src/app/styles/authenticated_workspace.css src/app/authenticated_workspace.test.tsx src/shared/ui/navigation-bar/navigation_bar.tsx src/shared/ui/navigation-bar/navigation_bar.css src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/navigation-bar/navigation_bar_contract.test.ts src/widgets/app-navigation/ui/app_navigation.tsx src/widgets/app-navigation/ui/app_navigation.css src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts
@@ -565,7 +567,7 @@ git commit -m "feat: 반응형 내비게이션과 공통 셸 개편"
 - Modify: `src/pages/home/ui/home_page.tsx`
 - Modify: `src/pages/home/ui/home_page.css`
 
-- [ ] **Step 1: 기존 홈 테스트에 영역 분리 계약을 추가한다**
+- [x] **Step 1: 기존 홈 테스트에 영역 분리 계약을 추가한다**
 
 `defines a centered retrieval axis with responsive suggestion columns` 테스트가 다음 규칙을 확인하도록 바꾼다.
 
@@ -597,7 +599,7 @@ expect(suggestion.closest('.home-page__body')).not.toBeNull();
 expect(suggestion.closest('.home-page__stage')).toBeNull();
 ```
 
-- [ ] **Step 2: 현재 한 컴포넌트에 섞인 제안 영역 때문에 테스트가 실패하는지 확인한다**
+- [x] **Step 2: 현재 한 컴포넌트에 섞인 제안 영역 때문에 테스트가 실패하는지 확인한다**
 
 Run:
 
@@ -607,7 +609,7 @@ npm test -- src/pages/home/ui/home_page.test.tsx -t "defines a centered retrieva
 
 Expected: `.home-page__stage`와 `.home-page__body`가 없어 FAIL.
 
-- [ ] **Step 3: `RetrieveSearchPanel`을 첫 검색 행동만 렌더링하도록 줄인다**
+- [x] **Step 3: `RetrieveSearchPanel`을 첫 검색 행동만 렌더링하도록 줄인다**
 
 `RetrieveSearchPanelProps`에서 `onSituationClick`, `selectedSituation`, `situations`를 제거한다. `SuggestedSituation` 타입은 외부 공개 타입 호환을 위해 같은 파일에 유지한다.
 
@@ -643,7 +645,7 @@ return (
 
 `ChoiceChip` import는 `retrieve_search_panel.tsx`에서 제거한다.
 
-- [ ] **Step 4: 홈을 색상 영역과 본문으로 조합한다**
+- [x] **Step 4: 홈을 색상 영역과 본문으로 조합한다**
 
 `home_page.tsx`에서 `ChoiceChip`을 `@/shared/ui`에서 import하고 `return`의 최상위 구조를 다음과 같이 바꾼다.
 
@@ -715,7 +717,7 @@ return (
 );
 ```
 
-- [ ] **Step 5: 홈 색상 영역과 본문 CSS를 적용한다**
+- [x] **Step 5: 홈 색상 영역과 본문 CSS를 적용한다**
 
 `home_page.css`에서 최상위 영역 규칙을 다음 값으로 바꾸고, 기존 결과 카드 규칙은 유지한다.
 
@@ -779,7 +781,7 @@ return (
 }
 ```
 
-- [ ] **Step 6: 홈의 직접 영향 테스트가 통과하는지 확인한다**
+- [x] **Step 6: 홈의 직접 영향 테스트가 통과하는지 확인한다**
 
 Run:
 
@@ -789,7 +791,7 @@ npm test -- src/pages/home/ui/home_page.test.tsx -t "defines a centered retrieva
 
 Expected: 색상 영역, 고정 제안 영역과 기존 제안 클릭 동작이 PASS.
 
-- [ ] **Step 7: 홈 변경을 커밋한다**
+- [x] **Step 7: 홈 변경을 커밋한다**
 
 ```powershell
 git add src/pages/home/ui/retrieve_search_panel.tsx src/pages/home/ui/home_page.tsx src/pages/home/ui/home_page.css src/pages/home/ui/home_page.test.tsx
@@ -804,7 +806,7 @@ git commit -m "feat: 홈 첫 행동과 결과 영역 분리"
 - Modify: `src/pages/library/ui/library_page.tsx`
 - Modify: `src/pages/library/ui/library_page.css`
 
-- [ ] **Step 1: 기존 테스트에 영역과 문맥별 개수 계약을 추가한다**
+- [x] **Step 1: 기존 테스트에 영역과 문맥별 개수 계약을 추가한다**
 
 첫 CSS 테스트에서 다음 값을 확인한다.
 
@@ -833,7 +835,7 @@ expect(screen.getByText('개발 0개')).not.toBeNull();
 expect(screen.getByText('인사이트 1개')).not.toBeNull();
 ```
 
-- [ ] **Step 2: 현재 장식적 개수 배치 때문에 테스트가 실패하는지 확인한다**
+- [x] **Step 2: 현재 장식적 개수 배치 때문에 테스트가 실패하는지 확인한다**
 
 Run:
 
@@ -843,7 +845,7 @@ npm test -- src/pages/library/ui/library_page.test.tsx -t "centers the library h
 
 Expected: `.library-page__stage`, `.library-page__body`와 문맥별 개수 문구가 없어 FAIL.
 
-- [ ] **Step 3: 현재 조건을 설명하는 개수 문구를 계산한다**
+- [x] **Step 3: 현재 조건을 설명하는 개수 문구를 계산한다**
 
 `activeCategoryLabel` 계산 다음에 아래 값을 추가한다.
 
@@ -857,7 +859,7 @@ const resultCountLabel = hasQuery
 
 기존 헤더의 절대 배치된 `{insights.length}개` span과 검색 결과용 `visually-hidden` status는 삭제한다.
 
-- [ ] **Step 4: 검색을 대표 색상 영역으로 옮기고 카테고리와 개수를 본문에 둔다**
+- [x] **Step 4: 검색을 대표 색상 영역으로 옮기고 카테고리와 개수를 본문에 둔다**
 
 `LibraryPage`의 헤더부터 content 시작 전까지를 다음 구조로 바꾼다.
 
@@ -937,7 +939,7 @@ const resultCountLabel = hasQuery
 
 기존 `.library-page__content`의 loading, unavailable, empty, `InsightGrid` 분기는 그대로 유지하고 닫는 태그를 `body`, `section` 순서로 맞춘다.
 
-- [ ] **Step 5: 보관함 색상 영역과 결과 본문 CSS를 적용한다**
+- [x] **Step 5: 보관함 색상 영역과 결과 본문 CSS를 적용한다**
 
 다음 영역 규칙을 사용한다.
 
@@ -1028,7 +1030,7 @@ const resultCountLabel = hasQuery
 }
 ```
 
-- [ ] **Step 6: 보관함의 직접 영향 테스트가 통과하는지 확인한다**
+- [x] **Step 6: 보관함의 직접 영향 테스트가 통과하는지 확인한다**
 
 Run:
 
@@ -1038,7 +1040,7 @@ npm test -- src/pages/library/ui/library_page.test.tsx -t "centers the library h
 
 Expected: 검색, 카테고리, 전체 보관함의 개수와 영역 배치가 PASS.
 
-- [ ] **Step 7: 보관함 변경을 커밋한다**
+- [x] **Step 7: 보관함 변경을 커밋한다**
 
 ```powershell
 git add src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.css src/pages/library/ui/library_page.test.tsx
@@ -1054,7 +1056,7 @@ git commit -m "feat: 보관함 검색과 결과 개수 재배치"
 - Modify: `src/pages/save/ui/save_page.tsx`
 - Modify: `src/pages/save/ui/save_page.css`
 
-- [ ] **Step 1: 기존 저장 테스트에 전·후 영역 계약을 추가한다**
+- [x] **Step 1: 기존 저장 테스트에 전·후 영역 계약을 추가한다**
 
 `asks for optional personal context only after the URL is saved` 테스트에서 다음 경계를 확인한다.
 
@@ -1086,7 +1088,7 @@ expect(savePageStyles).toMatch(
 );
 ```
 
-- [ ] **Step 2: 현재 단일 카드 구조에서 새 영역 테스트가 실패하는지 확인한다**
+- [x] **Step 2: 현재 단일 카드 구조에서 새 영역 테스트가 실패하는지 확인한다**
 
 Run:
 
@@ -1096,7 +1098,7 @@ npm test -- src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_con
 
 Expected: `.save-page__stage`와 `.save-page__body`가 없어 FAIL.
 
-- [ ] **Step 3: 제목과 URL 저장 form을 대표 색상 영역으로 묶는다**
+- [x] **Step 3: 제목과 URL 저장 form을 대표 색상 영역으로 묶는다**
 
 `save_page.tsx`의 section 안에서 header와 첫 form을 다음 wrapper로 감싼다.
 
@@ -1128,7 +1130,7 @@ Expected: `.save-page__stage`와 `.save-page__body`가 없어 FAIL.
 
 기존 URL form의 모든 필드, 오류 `StatusMessage`, 저장 버튼을 이 form 안에 그대로 유지하고 `form`, `stage-inner`, `stage` 순서로 닫는다. 입력 오류는 URL 필드 바로 뒤에 남아 첫 행동의 오류 문맥을 유지한다.
 
-- [ ] **Step 4: 저장 완료 이후 내용만 본문에 렌더링한다**
+- [x] **Step 4: 저장 완료 이후 내용만 본문에 렌더링한다**
 
 기존 `saveComplete` 분기를 다음 body 안으로 옮긴다.
 
@@ -1148,7 +1150,7 @@ Expected: `.save-page__stage`와 `.save-page__body`가 없어 FAIL.
 
 기존 제목, 메모, 카테고리, 저장 상태와 건너뛰기 동작은 이 form 안에 그대로 유지하고 `form`, `followup`, `body` 순서로 닫는다.
 
-- [ ] **Step 5: 저장 색상 영역과 후속 입력 본문 CSS를 적용한다**
+- [x] **Step 5: 저장 색상 영역과 후속 입력 본문 CSS를 적용한다**
 
 `save_page.css`의 최상위 카드 규칙을 다음 구조로 교체한다.
 
@@ -1224,7 +1226,7 @@ Expected: `.save-page__stage`와 `.save-page__body`가 없어 FAIL.
 }
 ```
 
-- [ ] **Step 6: 저장의 직접 영향 테스트가 통과하는지 확인한다**
+- [x] **Step 6: 저장의 직접 영향 테스트가 통과하는지 확인한다**
 
 Run:
 
@@ -1234,7 +1236,7 @@ npm test -- src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_con
 
 Expected: URL 첫 행동은 색상 영역, 후속 맥락은 본문에 있고 기존 저장·붙여넣기 동작이 PASS.
 
-- [ ] **Step 7: 저장 변경을 커밋한다**
+- [x] **Step 7: 저장 변경을 커밋한다**
 
 ```powershell
 git add src/pages/save/ui/save_page.tsx src/pages/save/ui/save_page.css src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_contract.test.ts
@@ -1247,7 +1249,7 @@ git commit -m "feat: 저장 첫 행동과 후속 입력 분리"
 
 - Modify: `DESIGN.md`
 
-- [ ] **Step 1: 실행 중인 디자인 계약을 새 화면과 일치시킨다**
+- [x] **Step 1: 실행 중인 디자인 계약을 새 화면과 일치시킨다**
 
 `DESIGN.md`에 다음 내용을 반영한다.
 
@@ -1269,7 +1271,7 @@ git commit -m "feat: 저장 첫 행동과 후속 입력 분리"
 GitHub 이슈와 PR 본문은 `Paper`, `Surface`, 토큰명 같은 구현 내부 용어 대신 `기본 배경색`, `카드·입력 배경색`, `화면별 대표 색상`처럼 결과를 바로 이해할 수 있는 표현을 사용한다.
 ```
 
-- [ ] **Step 2: 수정한 파일만 포맷과 린트로 확인한다**
+- [x] **Step 2: 수정한 파일만 포맷과 린트로 확인한다**
 
 Run:
 
@@ -1280,7 +1282,7 @@ npx eslint src/shared/config/design-system/tokens.ts src/shared/config/design-sy
 
 Expected: 두 명령 모두 exit code `0`.
 
-- [ ] **Step 3: 변경 범위에 직접 연결된 테스트만 한 번 더 실행한다**
+- [x] **Step 3: 변경 범위에 직접 연결된 테스트만 한 번 더 실행한다**
 
 Run:
 
@@ -1294,7 +1296,7 @@ npm test -- src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_con
 
 Expected: 선택한 토큰, 내비게이션, 홈, 보관함, 저장 테스트만 PASS. 랜딩, 로그인, 가져오기, 확장 프로그램 테스트는 실행하지 않는다.
 
-- [ ] **Step 4: 웹 빌드로 TypeScript와 번들 계약을 확인한다**
+- [x] **Step 4: 웹 빌드로 TypeScript와 번들 계약을 확인한다**
 
 Run:
 
@@ -1304,7 +1306,7 @@ npm run build:web
 
 Expected: TypeScript build, Vite web build와 클라이언트 번들 검증이 exit code `0`. Chrome 확장 빌드는 실행하지 않는다.
 
-- [ ] **Step 5: 세 기준 너비에서 실제 화면을 확인한다**
+- [x] **Step 5: 세 기준 너비에서 실제 화면을 확인한다**
 
 개발 서버를 실행한다.
 
@@ -1340,16 +1342,16 @@ npm run dev
 
 대표 이미지는 사용자가 두 후보를 확인한 뒤 확정한다.
 
-- [ ] **Step 7: 디자인 계약 문서와 검증 결과를 커밋한다**
+- [x] **Step 7: 디자인 계약 문서와 검증 결과를 커밋한다**
 
 ```powershell
 git add DESIGN.md
 git commit -m "docs: 인증 후 핵심 앱 디자인 계약 갱신"
 ```
 
-- [ ] **Step 8: 공개 이슈와 PR에는 직관적인 표현만 사용한다**
+- [x] **Step 8: 공개 이슈와 PR에는 직관적인 표현만 사용한다**
 
-#90 완료 체크와 PR 본문은 다음 결과 중심 표현으로 작성한다.
+이슈 #90 완료 체크와 PR 본문은 다음 결과 중심 표현으로 작성한다.
 
 ```markdown
 ## 변경 이유

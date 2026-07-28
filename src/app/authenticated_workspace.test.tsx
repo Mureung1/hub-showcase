@@ -1927,9 +1927,9 @@ describe('AuthenticatedWorkspace', () => {
       .map((alert) => alert.textContent)
       .join(' ');
 
-    expect(warningText).toContain(
-      '보관함을 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.'
-    );
+    expect(
+      screen.getByText('네트워크를 확인하고 새로고침해 주세요.')
+    ).not.toBeNull();
     expect(warningText).toContain(
       '저장 데이터가 손상되어 불러오지 못했어요. 새 인사이트는 계속 저장할 수 있어요.'
     );

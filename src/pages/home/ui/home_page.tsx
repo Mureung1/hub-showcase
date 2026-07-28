@@ -64,7 +64,11 @@ export function HomePage({
       </div>
 
       <div className="home-page__body">
-        <div className="home-page__suggestion-panel" aria-label="추천 상황">
+        <div
+          className="home-page__suggestion-panel"
+          aria-label="추천 상황"
+          role="group"
+        >
           <div className="home-page__suggestions">
             {situations.map((situation) => (
               <ChoiceChip

@@ -155,7 +155,9 @@ export function LibraryPage({
           </div>
         </div>
 
-        {!loading && !unavailable && hasLibraryInsights ? (
+        {!loading &&
+        !(unavailable && totalInsightCount === 0) &&
+        hasLibraryInsights ? (
           <p className="library-page__result-count" role="status">
             {resultCountLabel}
           </p>

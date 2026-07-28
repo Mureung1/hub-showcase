@@ -11,6 +11,18 @@ import { DesignSystemProvider } from '@/shared/ui';
 import { LibraryPage } from './library_page';
 
 const DEVELOPMENT_CATEGORY_ID = '10000000-0000-4000-8000-000000000001';
+const EXISTING_INSIGHT = {
+  categoryId: null,
+  createdAt: '2026-07-14T00:00:00.000Z',
+  domain: 'example.com',
+  id: '10000000-0000-4000-8000-000000000001',
+  memo: null,
+  normalizedUrl: 'https://example.com',
+  originalUrl: 'https://example.com',
+  title: '기존 인사이트',
+  titleOrigin: 'fallback' as const,
+  updatedAt: '2026-07-14T00:00:00.000Z',
+};
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -67,7 +79,7 @@ describe('LibraryPage', () => {
     const user = userEvent.setup();
     const onRetryLoad = vi.fn();
 
-    render(
+    const { rerender } = render(
       <DesignSystemProvider>
         <LibraryPage
           activeCategory="all"
@@ -97,6 +109,29 @@ describe('LibraryPage', () => {
     await user.click(screen.getByRole('button', { name: '다시 불러오기' }));
 
     expect(onRetryLoad).toHaveBeenCalledOnce();
+
+    rerender(
+      <DesignSystemProvider>
+        <LibraryPage
+          activeCategory="all"
+          categoryOptions={[{ colorKey: null, label: '전체', value: 'all' }]}
+          insights={[EXISTING_INSIGHT]}
+          totalInsightCount={1}
+          onCategoryChange={vi.fn()}
+          onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          onOpenImport={vi.fn()}
+          onOpenSave={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetryLoad={onRetryLoad}
+          onUpdateInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          query=""
+          unavailable
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByText('기존 인사이트')).not.toBeNull();
+    expect(screen.getByText('인사이트 1개')).not.toBeNull();
   });
 
   it('keeps a no-result query and offers clear and save actions', async () => {
@@ -267,18 +302,6 @@ describe('LibraryPage', () => {
 
   it('기존 보관함에는 가져오기 보조 액션을 유지하고 로딩 중에는 숨긴다', () => {
     const onOpenImport = vi.fn();
-    const insight = {
-      categoryId: null,
-      createdAt: '2026-07-14T00:00:00.000Z',
-      domain: 'example.com',
-      id: '10000000-0000-4000-8000-000000000001',
-      memo: null,
-      normalizedUrl: 'https://example.com',
-      originalUrl: 'https://example.com',
-      title: '기존 인사이트',
-      titleOrigin: 'fallback' as const,
-      updatedAt: '2026-07-14T00:00:00.000Z',
-    };
     const commonProps = {
       activeCategory: 'all',
       categoryOptions: [{ colorKey: null, label: '전체', value: 'all' }],
@@ -294,7 +317,7 @@ describe('LibraryPage', () => {
     };
     const { rerender } = render(
       <DesignSystemProvider>
-        <LibraryPage {...commonProps} insights={[insight]} />
+        <LibraryPage {...commonProps} insights={[EXISTING_INSIGHT]} />
       </DesignSystemProvider>
     );
 
@@ -305,7 +328,7 @@ describe('LibraryPage', () => {
 
     rerender(
       <DesignSystemProvider>
-        <LibraryPage {...commonProps} insights={[insight]} loading />
+        <LibraryPage {...commonProps} insights={[EXISTING_INSIGHT]} loading />
       </DesignSystemProvider>
     );
 

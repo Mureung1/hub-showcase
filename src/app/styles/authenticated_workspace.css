@@ -1,5 +1,6 @@
 .workspace-shell {
   --color-canvas: var(--color-surface);
+
   width: 100%;
   min-width: 0;
   min-height: 100vh;

@@ -83,8 +83,7 @@ const LOAD_WARNING_MESSAGES: Record<
 > = {
   'read-failed': {
     title: '보관함을 불러오지 못했어요',
-    description:
-      '보관함을 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.',
+    description: '네트워크를 확인하고 새로고침해 주세요.',
   },
   'corrupted-store': {
     title: '저장 데이터를 불러오지 못했어요',

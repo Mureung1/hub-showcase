@@ -192,6 +192,7 @@ describe('HomePage', () => {
     expect(
       screen.queryByRole('heading', { name: '이런 상황에서 시작해보세요' })
     ).toBeNull();
+    expect(screen.getByRole('group', { name: '추천 상황' })).not.toBeNull();
     expect(
       screen.getByText('떠오르는 단어나 지금 하는 일을 짧게 적어 보세요.')
     ).not.toBeNull();
