@@ -271,6 +271,31 @@ def test_analysis_periods_keep_store_only_quarters_selectable(tmp_path: Path) ->
     engine.dispose()
 
 
+def test_analysis_periods_reflect_flow_coverage_for_the_selected_market(tmp_path: Path) -> None:
+    canonical_database = tmp_path / "canonical.db"
+    build_market_database(canonical_database)
+    with sqlite3.connect(canonical_database) as connection:
+        connection.execute("DELETE FROM flow_metrics WHERE market_code = 'm2'")
+
+    missing_flow = analyze_market("m2", "카페", database=canonical_database)
+    assert "길단위인구" not in {evidence.metric for evidence in missing_flow.evidence}
+
+    runtime_url = f"sqlite:///{tmp_path / 'runtime.db'}"
+    command.upgrade(alembic_config(runtime_url), "head")
+    engine = create_database_engine(runtime_url, require_postgresql=False)
+    seed_canonical(canonical_database, engine)
+    factory = create_session_factory(engine)
+    client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
+
+    response = client.get(
+        "/api/v1/analysis/periods", params={"category": "카페", "market_id": "m2"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["period_availability"] == {"20251": ["stores", "sales"]}
+    engine.dispose()
+
+
 def test_analysis_periods_prefer_the_richest_available_quarter_when_none_are_complete(
     tmp_path: Path,
 ) -> None:

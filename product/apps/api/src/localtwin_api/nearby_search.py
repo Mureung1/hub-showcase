@@ -22,6 +22,7 @@ from localtwin_api.db_models import (
     StorePoint,
 )
 from localtwin_api.product_catalog import (
+    CATEGORY_FILTER_TERMS,
     CATEGORY_NAME_TERMS,
     SUPPORTED_MARKET_CODES,
     SUPPORTED_RADII,
@@ -121,7 +122,10 @@ def category_matches(store: StorePoint, requested_category: str | None) -> bool:
     if not requested_category:
         return False
     normalized = requested_category.casefold()
-    search_terms = CATEGORY_ALIASES.get(normalized, (normalized,))
+    search_terms = CATEGORY_FILTER_TERMS.get(
+        requested_category,
+        CATEGORY_ALIASES.get(normalized, (normalized,)),
+    )
     return any(
         any(term in value.casefold() for term in search_terms)
         for value in (
@@ -264,6 +268,7 @@ class NearbyStoreRepository:
             stores_with_distance=within_radius,
             category=category,
             aggregation_scope="radius",
+            max_returned_stores=MAX_RETURNED_STORES,
         )
 
     def market(
@@ -310,6 +315,7 @@ class NearbyStoreRepository:
             stores_with_distance=stores_with_distance,
             category=category,
             aggregation_scope="market",
+            max_returned_stores=None,
         )
 
     def _response(
@@ -321,6 +327,7 @@ class NearbyStoreRepository:
         stores_with_distance: list[tuple[float, StorePoint]],
         category: str | None,
         aggregation_scope: Literal["radius", "market"],
+        max_returned_stores: int | None,
     ) -> NearbyStoreResponse:
         longitude, latitude = center
         category_counter = Counter(
@@ -334,7 +341,11 @@ class NearbyStoreRepository:
             if category
             else stores_with_distance
         )
-        returned = display_candidates[:MAX_RETURNED_STORES]
+        returned = (
+            display_candidates
+            if max_returned_stores is None
+            else display_candidates[:max_returned_stores]
+        )
         snapshot_ids = sorted({store.source_snapshot_id for _, store in stores_with_distance})
         sources = (
             self.session.scalars(
@@ -369,7 +380,7 @@ class NearbyStoreRepository:
             same_category_count=same_category_count,
             category_counts=dict(sorted(category_counter.items())),
             returned_count=len(stores),
-            truncated=len(display_candidates) > len(returned),
+            truncated=max_returned_stores is not None and len(display_candidates) > len(returned),
             stores=stores,
             evidence=[
                 NearbyEvidence(
