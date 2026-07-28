@@ -6,7 +6,13 @@
   "demoUrl": "",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/home.webp"
+    "screenshots/home.webp",
+    "screenshots/fridge.webp",
+    "screenshots/receipt.webp",
+    "screenshots/recipes.webp",
+    "screenshots/recipe-detail.webp",
+    "screenshots/shopping-sets.webp",
+    "screenshots/meal-plan.webp"
   ],
   "problem": "요리 초보 자취생은 냉장고에 어떤 재료가 있는지 기억하기 어렵고, 그 재료로 무슨 요리를 할 수 있는지 몰라 장보기와 식사 준비를 계속 미루게 됩니다.",
   "targetUsers": [
