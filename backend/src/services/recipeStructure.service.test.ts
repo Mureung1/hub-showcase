@@ -11,9 +11,14 @@ test("OpenAI 구조화 결과에 검증된 YouTube 출처를 주입한다", asyn
   process.env.OPENAI_API_KEY = "openai-api-key";
 
   let requestCount = 0;
+  let requestedBody = "";
 
-  const fetchMock = (async () => {
+  const fetchMock = (async (
+    _input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
     requestCount += 1;
+    requestedBody = String(init?.body);
 
     return new Response(
       JSON.stringify({
@@ -75,6 +80,30 @@ test("OpenAI 구조화 결과에 검증된 YouTube 출처를 주입한다", asyn
 
     assert.deepEqual(result.draft.source, source);
     assert.equal(requestCount, 1);
+
+    const requestBody = JSON.parse(requestedBody) as {
+      input: Array<{ role: string; content: string }>;
+    };
+    const systemPrompt = requestBody.input.find(
+      ({ role }) => role === "system",
+    )?.content;
+
+    assert.match(
+      systemPrompt ?? "",
+      /order는 배열 순서와 일치하도록 1부터 중복과 누락 없이 연속/,
+    );
+    assert.match(
+      systemPrompt ?? "",
+      /공백을 제거한 뒤에도 비어 있지 않아야 한다/,
+    );
+    assert.match(
+      systemPrompt ?? "",
+      /실제 존재하는 ingredients\[n\].*steps\[n\]\.description/,
+    );
+    assert.match(
+      systemPrompt ?? "",
+      /경고가 없으면 빈 배열로 반환한다/,
+    );
   } finally {
     if (originalApiKey === undefined) {
       delete process.env.OPENAI_API_KEY;
