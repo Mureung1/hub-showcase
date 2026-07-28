@@ -220,7 +220,7 @@ function HomePage() {
       !isMountedRef.current ||
       !task ||
       task.status !== "active" ||
-      task.id === stateRef.current.selectedTaskId ||
+      stateRef.current.selectedTaskId !== null ||
       modalOpenRef.current !== null ||
       timersRef.current.has(task.id)
     ) {
@@ -284,9 +284,12 @@ function HomePage() {
     async (id) => {
       if (modalOpenRef.current !== null) return;
       const { tasks: cur, selectedTaskId: sel } = stateRef.current;
+      // Focus 중(어떤 task든)에는 전체 task의 무응답 tick을 차단한다 — 자기 자신뿐
+      // 아니라 다른 active task까지 전부 멈춰야 Web Push도 함께 억제된다.
+      if (sel !== null) return;
       const before = cur.find((t) => t.id === id);
-      // 완료/삭제/포커스 진입 등으로 더 이상 대상이 아니면 skip(재예약도 하지 않음)
-      if (!before || before.status !== "active" || id === sel) return;
+      // 완료/삭제 등으로 더 이상 대상이 아니면 skip(재예약도 하지 않음)
+      if (!before || before.status !== "active") return;
       if (tickingRef.current.has(id)) return;
       if (notificationInFlightRef.current) return;
       tickingRef.current.add(id);
@@ -427,10 +430,19 @@ function HomePage() {
     loadTasks();
   }
 
+  // Focus 진입 시 이 task뿐 아니라 다른 모든 active task의 타이머/카운트다운도
+  // 함께 멈춘다 — 서버는 폴링(notification_sent 요청)에 전적으로 의존하는 구조라,
+  // 클라이언트에서 요청 자체를 막으면 레벨업과 Web Push 발송까지 함께 억제된다.
+  function pauseAllTaskTimersForFocus() {
+    clearAllTaskTimers();
+    setNextNudgeAtByTaskId(new Map());
+  }
+
   function startFocus(task, overrides = {}) {
     const existing = getRestorableFocusSession(stateRef.current.tasks);
     if (existing) {
       if (modalOpenRef.current !== null) closeModalWithoutReschedule();
+      pauseAllTaskTimersForFocus();
       setFocusSession(existing.session);
       setSelectedTaskId(existing.task.id);
       return;
@@ -447,6 +459,7 @@ function HomePage() {
     });
     saveFocusSession(session);
     if (modalOpenRef.current !== null) closeModalWithoutReschedule();
+    pauseAllTaskTimersForFocus();
     setFocusSession(session);
     setSelectedTaskId(task.id);
   }
