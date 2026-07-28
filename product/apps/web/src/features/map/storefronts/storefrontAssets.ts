@@ -20,6 +20,11 @@ const atlasCellByAttachment: Record<StorefrontVariant["attachment"], number> = {
   meal: 2,
   bakery: 3,
   convenience: 4,
+  beauty: 0,
+  apparel: 0,
+  academy: 0,
+  lodging: 0,
+  sports: 0,
 };
 
 export function createStorefrontAssetCache(loaders: StorefrontAssetLoaders) {

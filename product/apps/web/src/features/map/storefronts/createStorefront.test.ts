@@ -22,6 +22,11 @@ describe("storefront prototype", () => {
     ["I20101", "LocalTwin Restaurant", "meal-bowl"],
     ["I21001", "LocalTwin Bakery", "bakery-loaf"],
     ["G20405", "LocalTwin Convenience", "convenience-sign"],
+    ["S20701", "LocalTwin Beauty", "beauty-mirror"],
+    ["G20901", "LocalTwin Apparel", "apparel-rack-bar"],
+    ["P10501", "LocalTwin Academy", "academy-book"],
+    ["I10103", "LocalTwin Lodging", "lodging-bed-base"],
+    ["S20801", "LocalTwin Sports", "sports-dumbbell-handle"],
   ])("builds a direction-neutral %s category attachment", (code, label, objectName) => {
     const storefront = createStorefront(getStorefrontVariant(code));
 
@@ -36,13 +41,14 @@ describe("storefront prototype", () => {
     expect(hasStorefrontVariant("G21901")).toBe(true);
     expect(hasStorefrontVariant("I21201")).toBe(true);
     expect(hasStorefrontVariant("I20107")).toBe(true);
-    expect(hasStorefrontVariant("S20701")).toBe(false);
+    expect(hasStorefrontVariant("S20701")).toBe(true);
+    expect(hasStorefrontVariant("unknown-category-code")).toBe(true);
   });
 
-  it("uses the generic variant for an unmapped category", () => {
-    const storefront = createStorefront(getStorefrontVariant("S20701"));
+  it("creates a neutral service storefront for an unmapped category", () => {
+    const storefront = createStorefront(getStorefrontVariant("unknown-category-code"));
 
-    expect(storefront.userData.categoryCode).toBe("generic");
+    expect(storefront.userData.categoryCode).toBe("unknown-category-code");
     expect(storefront.getObjectsByProperty("name", "flower-attachment")).toHaveLength(0);
     disposeStorefront(storefront);
   });

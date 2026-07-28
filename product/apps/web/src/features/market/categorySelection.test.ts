@@ -36,4 +36,9 @@ describe("category selection", () => {
     expect(categoryMatchesSelection("한식 음식점업", quickCategorySelection("음식점"))).toBe(true);
     expect(categoryMatchesSelection("중식", storeCategorySelection("한식 음식점업"))).toBe(false);
   });
+
+  it("keeps top-category aliases returned by the API visible", () => {
+    expect(categoryMatchesSelection("네일샵", quickCategorySelection("미용"))).toBe(true);
+    expect(categoryMatchesSelection("피트니스센터", quickCategorySelection("체육"))).toBe(true);
+  });
 });
