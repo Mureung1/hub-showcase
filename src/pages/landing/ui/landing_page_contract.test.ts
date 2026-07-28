@@ -35,7 +35,7 @@ describe('landing page interaction contract', () => {
 
   it('uses a centered single-column hero without removed marketing blocks', () => {
     expect(landingPageStyles).toMatch(
-      /\.landing-hero__content\s*\{[^}]*display:\s*grid;[^}]*min-height:\s*calc\(100svh\s*-\s*72px\);[^}]*align-items:\s*center;[^}]*\}/s
+      /\.landing-hero__content\s*\{[^}]*display:\s*grid;[^}]*min-height:\s*calc\(84svh\s*-\s*72px\);[^}]*align-items:\s*center;[^}]*\}/s
     );
     expect(landingPageStyles).toMatch(
       /\.landing-hero__copy\s*\{[^}]*justify-items:\s*center;[^}]*text-align:\s*center;[^}]*\}/s

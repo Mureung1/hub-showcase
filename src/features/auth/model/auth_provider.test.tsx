@@ -180,9 +180,7 @@ describe('AuthProvider', () => {
 
     act(() => auth.emitSignInFailure('android-share'));
 
-    expect(
-      screen.getByText('Google 로그인에 실패했어요. 다시 시도해 주세요.')
-    ).not.toBeNull();
+    expect(screen.getByText('다시 시도해 주세요.')).not.toBeNull();
     expect(screen.getByText('공유 OAuth 복귀 1')).not.toBeNull();
   });
 });

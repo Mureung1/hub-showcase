@@ -70,7 +70,7 @@ function getInitialAuthError() {
 
 function getActionErrorMessage(action: AuthAction) {
   return action === 'sign-in'
-    ? 'Google 로그인에 실패했어요. 다시 시도해 주세요.'
+    ? '다시 시도해 주세요.'
     : '로그아웃하지 못했어요. 다시 시도해 주세요.';
 }
 
