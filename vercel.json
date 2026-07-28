@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://hub-l8cf.onrender.com/api/:path*"
+    }
+  ]
+}
