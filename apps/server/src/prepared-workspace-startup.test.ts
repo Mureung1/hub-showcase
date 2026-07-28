@@ -673,10 +673,9 @@ test('root validation fails before listener, Broker, Runtime, or registry mutati
   }
 })
 
-test('Runtime terminal, Adapter loss, and shutdown revoke one generation and bound teardown', async () => {
+test('Runtime terminal and shutdown revoke one generation and bound teardown', async () => {
   for (const reason of [
     'runtime_terminal',
-    'adapter_lost',
     'shutdown',
   ] as const) {
     const fixture = await createFixture()
@@ -692,8 +691,6 @@ test('Runtime terminal, Adapter loss, and shutdown revoke one generation and bou
         await waitFor(
           () => harness.events.includes('listener.close'),
         )
-      } else if (reason === 'adapter_lost') {
-        await session.adapterLost()
       } else {
         await session.close()
       }
@@ -713,9 +710,7 @@ test('Runtime terminal, Adapter loss, and shutdown revoke one generation and bou
       const brokerEvent =
         reason === 'runtime_terminal'
           ? 'broker.runtime-terminal'
-          : reason === 'adapter_lost'
-            ? 'broker.adapter-lost'
-            : 'broker.shutdown'
+          : 'broker.shutdown'
       assert.equal(harness.events.includes(brokerEvent), true)
       assert.equal(
         harness.events.filter((event) => event === 'runtime.close')

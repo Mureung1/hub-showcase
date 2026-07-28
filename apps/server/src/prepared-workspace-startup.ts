@@ -97,7 +97,6 @@ export type PreparedWorkspaceStartupPorts = {
 export type PreparedWorkspaceActiveSession = {
   readonly lifecycle: PreparedWorkspaceActiveLifecycle
   readLifecycle(): ProductWorkspaceLifecycle
-  adapterLost(): Promise<void>
   close(): Promise<void>
 }
 
@@ -288,7 +287,6 @@ export async function startPreparedWorkspace(options: {
     return Object.freeze({
       lifecycle: activeLifecycle,
       readLifecycle: () => lifecycle,
-      adapterLost: onAdapterLost,
       close: () => cleanup('shutdown'),
     })
   } catch (cause) {

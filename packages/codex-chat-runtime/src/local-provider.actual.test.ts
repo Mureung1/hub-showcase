@@ -294,6 +294,25 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
         postKillMs: 2_000,
       },
     })
+    assert.deepEqual(
+      await within(
+        runtime.runtime.readEffectiveConfig({
+          signal: new AbortController().signal,
+        }),
+      ),
+      {
+        projectRootMarkers: ['.git'],
+        globalInstructionsFile: null,
+        mcpServers: [
+          {
+            name: 'ay_ple_interaction',
+            enabled: true,
+            required: true,
+            enabledTools: ['propose_state_patch'],
+          },
+        ],
+      },
+    )
     const thread = await within(runtime.runtime.startThread())
     await within(
       runtime.runtime.waitForMcpServerReady({
