@@ -168,27 +168,27 @@ export default function Guide() {
         <div className="faq-list">
           <details>
             <summary>이미지 경로는 어떻게 작성하나요?</summary>
-            <p><code>showcase</code> 폴더를 기준으로 작성합니다. 썸네일은 <code>thumbnail.webp</code>, 추가 화면은 <code>screenshots/home.webp</code>처럼 적습니다.</p>
+            <p><code>showcase/thumbnail.webp</code> 파일은 <code>"thumbnail": "thumbnail.webp"</code>로 적습니다. <code>showcase/screenshots/home.webp</code> 파일은 <code>"screenshots": ["screenshots/home.webp"]</code>로 적습니다.</p>
           </details>
           <details>
             <summary>이미지 URL을 적어도 되나요?</summary>
-            <p>외부 URL은 사용할 수 없습니다. 이미지를 <code>showcase</code> 폴더에 넣고 상대 경로를 작성하세요.</p>
+            <p><code>"thumbnail": "https://..."</code>처럼 외부 주소를 적을 수 없습니다. 이미지를 저장소에 추가하고 <code>"thumbnail": "thumbnail.webp"</code>처럼 작성하세요.</p>
           </details>
           <details>
             <summary>이미지 파일이 없으면 프로젝트가 사라지나요?</summary>
-            <p>프로젝트 내용은 표시됩니다. 대표 이미지는 기본 이미지로 바뀌고, 없는 추가 화면은 표시하지 않습니다.</p>
+            <p>프로젝트 내용은 표시됩니다. <code>thumbnail.webp</code>가 없으면 기본 이미지가 나옵니다. <code>screenshots/home.webp</code>가 없으면 그 화면만 빠집니다.</p>
           </details>
           <details>
             <summary>내용을 모두 작성해야 하나요?</summary>
-            <p>일부 내용이 비어 있어도 표시됩니다. 값이 없는 항목은 화면에서 숨깁니다. 제목과 설명 등 표시할 내용이 전혀 없으면 제외됩니다.</p>
+            <p><code>features: []</code>처럼 비워도 됩니다. 해당 영역만 숨깁니다. 제목, 설명, 문제, 기능처럼 표시할 내용이 모두 없을 때만 제외됩니다.</p>
           </details>
           <details>
             <summary>배포 링크와 시연 영상 링크는 어디에 넣나요?</summary>
-            <p><code>demoUrl</code>에는 서비스 주소를, <code>demoVideoUrl</code>에는 YouTube나 Drive 같은 시연 영상의 <code>https://</code> 주소를 넣습니다.</p>
+            <p><code>demoUrl</code>에는 배포 주소를 적습니다. 영상은 <code>demoVideoUrl</code>에 YouTube나 Drive의 <code>https://</code> 주소를 적습니다. 비워두면 링크를 표시하지 않습니다.</p>
           </details>
           <details>
             <summary>작성한 내용은 언제 사이트에 나오나요?</summary>
-            <p>PR이 머지된 뒤 정해진 수집 작업이 실행되면 반영됩니다. 이미지와 JSON을 함께 확인한 뒤 다음 수집 결과에서 표시합니다.</p>
+            <p>PR이 머지된 뒤 수집 작업이 실행되면 반영됩니다. 파일을 고친 뒤에는 수정 내용을 다시 PR에 포함해야 합니다.</p>
           </details>
         </div>
       </section>
