@@ -29,11 +29,16 @@ test('source projection lists only bounded user material in relative path order'
       recursive: true,
     })
     for (const secretDirectory of [
+      'api-keys',
+      'api_keys-development',
       'client_secret',
+      'credentials-prod',
       'service-account',
       'private-key',
       'oauth-token',
       'refresh_token',
+      'tokens',
+      'tokens-backup',
     ]) {
       await mkdir(path.join(fixture.root, 'course', secretDirectory), {
         recursive: true,
@@ -56,10 +61,13 @@ test('source projection lists only bounded user material in relative path order'
     await writeFile(path.join(fixture.root, 'slides.pptx'), 'slides')
     await writeFile(path.join(fixture.root, '.env.local'), 'TOKEN=secret')
     await writeFile(path.join(fixture.root, 'credentials.json'), '{}')
+    await writeFile(path.join(fixture.root, 'credentials-prod.json'), '{}')
+    await writeFile(path.join(fixture.root, 'api_keys-local.yaml'), 'key: secret')
     await writeFile(path.join(fixture.root, 'client_secret.json'), '{}')
     await writeFile(path.join(fixture.root, 'service-account.json'), '{}')
     await writeFile(path.join(fixture.root, 'private-key.json'), '{}')
     await writeFile(path.join(fixture.root, 'refresh_token.txt'), 'secret')
+    await writeFile(path.join(fixture.root, 'tokens-staging.txt'), 'secret')
     await writeFile(
       path.join(fixture.root, 'secrets', 'config.json'),
       '{}',
@@ -194,6 +202,10 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       Buffer.from([0xff, 0xfe, 0xfd]),
     )
     await mkdir(path.join(fixture.root, 'secrets'), { recursive: true })
+    await mkdir(path.join(fixture.root, 'api-keys'), { recursive: true })
+    await mkdir(path.join(fixture.root, 'tokens-backup'), {
+      recursive: true,
+    })
     await mkdir(path.join(fixture.root, 'client_secret'), {
       recursive: true,
     })
@@ -201,10 +213,29 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       path.join(fixture.root, 'secrets', 'lecture-notes.txt'),
       'secret',
     )
+    await writeFile(
+      path.join(fixture.root, 'api-keys', 'lecture-notes.txt'),
+      'secret',
+    )
+    await writeFile(
+      path.join(fixture.root, 'tokens-backup', 'lecture-notes.txt'),
+      'secret',
+    )
     await writeFile(path.join(fixture.root, 'client_secret.txt'), 'secret')
+    await writeFile(path.join(fixture.root, 'credentials-prod.json'), '{}')
+    await writeFile(path.join(fixture.root, 'api_keys-local.yaml'), 'secret')
+    await writeFile(path.join(fixture.root, 'tokens-staging.txt'), 'secret')
     await writeFile(
       path.join(fixture.root, 'client_secret', 'lecture-notes.txt'),
       'secret',
+    )
+    await writeFile(
+      path.join(fixture.root, 'tokenization-notes.md'),
+      '학습 자료',
+    )
+    await writeFile(
+      path.join(fixture.root, 'private-key-cryptography-notes.md'),
+      '암호학 자료',
     )
     const projection = await createWorkspaceSourceProjection({
       workspaceRoot: fixture.root,
@@ -217,7 +248,12 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       'outside-link.txt',
       'managed-alias/notes.txt',
       'secrets/lecture-notes.txt',
+      'api-keys/lecture-notes.txt',
+      'tokens-backup/lecture-notes.txt',
       'client_secret.txt',
+      'credentials-prod.json',
+      'api_keys-local.yaml',
+      'tokens-staging.txt',
       'client_secret/lecture-notes.txt',
     ]) {
       await assert.rejects(
@@ -234,6 +270,18 @@ test('source reads reject traversal, hidden targets, symlinks, and binary text',
       (error: unknown) =>
         error instanceof WorkspaceSourceProjectionError &&
         error.code === 'unsupported_encoding',
+    )
+    assert.equal(
+      (await projection.readText('tokenization-notes.md')).text,
+      '학습 자료',
+    )
+    assert.equal(
+      (
+        await projection.readText(
+          'private-key-cryptography-notes.md',
+        )
+      ).text,
+      '암호학 자료',
     )
   } finally {
     await fixture.cleanup()

@@ -24,13 +24,12 @@ import {
   fetchPreparedWorkspaceText,
   PreparedProductApiError,
 } from './prepared-product-api.js'
+import {
+  resolvePreparedEvidenceHighlight,
+  type PreparedEvidenceTarget,
+} from './prepared-source-evidence.js'
 
-export type PreparedEvidenceTarget = {
-  readonly relativePath: string
-  readonly contentDigest: string
-  readonly quote: string
-  readonly occurrence: number
-}
+export type { PreparedEvidenceTarget } from './prepared-source-evidence.js'
 
 type SourceListView =
   | { readonly state: 'idle' | 'loading' }
@@ -103,7 +102,7 @@ export function usePreparedWorkspaceSources(
     setListView({ state: 'loading' })
     try {
       const result = await fetchPreparedWorkspaceSources(signal)
-      if (generation !== listGeneration.current) return
+      if (generation !== listGeneration.current) return undefined
       setListView({ state: 'loaded', sources: result.sources })
       setSelectedPath((current) => {
         if (
@@ -114,18 +113,20 @@ export function usePreparedWorkspaceSources(
         }
         return result.sources[0]?.relativePath
       })
+      return result.sources
     } catch (error) {
       if (
         signal?.aborted ||
         generation !== listGeneration.current
       ) {
-        return
+        return undefined
       }
       setListView({
         state: 'error',
         displayMessage: sourceErrorMessage(error),
       })
       setSelectedPath(undefined)
+      return undefined
     }
   }, [])
 
@@ -164,7 +165,14 @@ export function usePreparedWorkspaceSources(
         selectedSource.relativePath,
         controller.signal,
       )
-        .then((url) => {
+        .then(async (pdf) => {
+          if (
+            controller.signal.aborted ||
+            generation !== previewGeneration.current
+          ) {
+            return
+          }
+          const url = await readBlobDataUrl(pdf, controller.signal)
           if (
             controller.signal.aborted ||
             generation !== previewGeneration.current
@@ -223,7 +231,9 @@ export function usePreparedWorkspaceSources(
   }, [previewRefresh, selectedSource])
 
   const reload = useCallback(
-    () => loadSources(),
+    async () => {
+      await loadSources()
+    },
     [loadSources],
   )
   const selectSource = useCallback((source: ProductWorkspaceSource) => {
@@ -234,23 +244,26 @@ export function usePreparedWorkspaceSources(
   }, [])
   const navigateEvidence = useCallback(
     (target: PreparedEvidenceTarget) => {
-      if (
-        listView.state !== 'loaded' ||
-        !listView.sources.some(
-          (source) => source.relativePath === target.relativePath,
-        )
-      ) {
-        setEvidenceNotice(
-          '이 근거 파일은 현재 안전한 자료 목록에서 열 수 없습니다.',
-        )
-        return
-      }
+      setEvidenceFocus(undefined)
       setEvidenceNotice(undefined)
-      setEvidenceFocus(target)
-      setSelectedPath(target.relativePath)
-      setPreviewRefresh((current) => current + 1)
+      void loadSources().then((freshSources) => {
+        if (!freshSources) return
+        if (
+          !freshSources.some(
+            (source) => source.relativePath === target.relativePath,
+          )
+        ) {
+          setEvidenceNotice(
+            '이 근거 파일은 현재 안전한 자료 목록에서 열 수 없습니다.',
+          )
+          return
+        }
+        setEvidenceFocus(target)
+        setSelectedPath(target.relativePath)
+        setPreviewRefresh((current) => current + 1)
+      })
     },
-    [listView],
+    [loadSources],
   )
 
   return {
@@ -413,7 +426,7 @@ function SourcePreview({
           {controller.evidenceNotice}
         </div>
       ) : null}
-      <section className="paper-preview" aria-live="polite">
+      <section className="paper-preview">
         <PreviewBody
           preview={controller.previewView}
           evidenceFocus={controller.evidenceFocus}
@@ -476,6 +489,7 @@ function PreviewBody({
     return (
       <iframe
         className="pdf-preview"
+        aria-label={`${preview.source.relativePath} PDF 미리보기`}
         title={`${preview.source.relativePath} PDF 미리보기`}
         src={preview.url}
         referrerPolicy="no-referrer"
@@ -501,22 +515,16 @@ function TextPreview({
   readonly evidenceFocus: PreparedEvidenceTarget | undefined
 }) {
   const marker = useRef<HTMLElement>(null)
-  const evidenceMatchesFile =
-    evidenceFocus?.relativePath === source.relativePath &&
-    evidenceFocus.contentDigest === preview.digest
-  const quoteIndex = evidenceMatchesFile
-    ? findOccurrence(
-        preview.text,
-        evidenceFocus.quote,
-        evidenceFocus.occurrence,
-      )
-    : -1
+  const evidence = resolvePreparedEvidenceHighlight(
+    source.relativePath,
+    preview,
+    evidenceFocus,
+  )
+  const quoteIndex = evidence.state === 'focused' ? evidence.quoteIndex : -1
   const focusedQuote =
-    evidenceMatchesFile && quoteIndex >= 0
-      ? evidenceFocus.quote
+    evidence.state === 'focused'
+      ? evidenceFocus?.quote
       : undefined
-  const evidenceMismatch =
-    evidenceFocus?.relativePath === source.relativePath && !focusedQuote
 
   useEffect(() => {
     if (!focusedQuote) return
@@ -531,12 +539,7 @@ function TextPreview({
         <span>{formatBytes(source.size)}</span>
         <span>현재 파일 확인됨</span>
       </div>
-      {evidenceMismatch ? (
-        <p className="preview-notice is-error">
-          검토 근거와 현재 파일의 내용이 달라 근거 위치를 표시하지
-          못했습니다.
-        </p>
-      ) : null}
+      <EvidenceStatus evidence={evidence} />
       <pre aria-label={`${preview.relativePath} 원문`}>
         {focusedQuote ? (
           <>
@@ -561,6 +564,38 @@ function TextPreview({
       ) : null}
     </article>
   )
+}
+
+function EvidenceStatus({
+  evidence,
+}: {
+  readonly evidence: ReturnType<typeof resolvePreparedEvidenceHighlight>
+}) {
+  if (evidence.state === 'digest_mismatch') {
+    return (
+      <p className="preview-notice is-error" role="status">
+        검토 근거와 현재 파일의 내용이 달라 근거 위치를 표시하지
+        못했습니다.
+      </p>
+    )
+  }
+  if (evidence.state === 'outside_preview') {
+    return (
+      <p className="preview-notice" role="status">
+        현재 파일은 검토 근거와 일치하지만 근거 위치가 안전한 미리보기
+        범위 밖에 있습니다.
+      </p>
+    )
+  }
+  if (evidence.state === 'locator_mismatch') {
+    return (
+      <p className="preview-notice is-error" role="status">
+        현재 파일은 검토 근거와 일치하지만 지정된 근거 위치를 찾지
+        못했습니다.
+      </p>
+    )
+  }
+  return null
 }
 
 function SourceIcon({
@@ -604,21 +639,6 @@ function fileName(relativePath: string): string {
   return relativePath.slice(relativePath.lastIndexOf('/') + 1)
 }
 
-function findOccurrence(
-  text: string,
-  quote: string,
-  occurrence: number,
-): number {
-  let from = 0
-  for (let index = 1; index <= occurrence; index += 1) {
-    const found = text.indexOf(quote, from)
-    if (found < 0) return -1
-    if (index === occurrence) return found
-    from = found + quote.length
-  }
-  return -1
-}
-
 function previewKindLabel(
   previewKind: ProductWorkspaceSource['previewKind'],
 ): string {
@@ -639,4 +659,32 @@ function sourceErrorMessage(error: unknown): string {
   return error instanceof PreparedProductApiError
     ? error.displayMessage
     : '현재 workspace의 자료를 확인하지 못했습니다.'
+}
+
+function readBlobDataUrl(
+  blob: Blob,
+  signal: AbortSignal,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    const abort = () => reader.abort()
+    signal.addEventListener('abort', abort, { once: true })
+    reader.addEventListener('load', () => {
+      signal.removeEventListener('abort', abort)
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+        return
+      }
+      reject(new Error('invalid PDF data URL'))
+    }, { once: true })
+    reader.addEventListener('error', () => {
+      signal.removeEventListener('abort', abort)
+      reject(reader.error ?? new Error('PDF read failed'))
+    }, { once: true })
+    reader.addEventListener('abort', () => {
+      signal.removeEventListener('abort', abort)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }, { once: true })
+    reader.readAsDataURL(blob)
+  })
 }

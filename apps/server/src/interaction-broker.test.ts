@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
+  appendFile,
   mkdtemp,
   mkdir,
+  open as openFile,
   realpath,
+  rename,
   symlink,
   writeFile,
 } from 'node:fs/promises'
@@ -292,6 +295,232 @@ test('evidence failures are all-or-nothing and do not publish a card', async () 
     }
     assert.deepEqual(frames, [])
   } finally {
+    await broker.appShutdown()
+    await close(server)
+  }
+})
+
+test('evidence rejects a replacement at the pinned workspace root', async () => {
+  const fixture = await createFixture()
+  const content = 'replacement needle'
+  await writeFile(path.join(fixture.workspaceRoot, 'notes.txt'), content)
+  const frames: unknown[] = []
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: { publish: (frame) => frames.push(frame) },
+  })
+  const server = await listen(broker.router)
+
+  try {
+    const movedRoot = `${fixture.workspaceRoot}-moved`
+    await rename(fixture.workspaceRoot, movedRoot)
+    await mkdir(fixture.workspaceRoot)
+    await writeFile(path.join(fixture.workspaceRoot, 'notes.txt'), content)
+    await acceptHandshake(server, broker)
+
+    const call = postBroker(
+      server,
+      broker,
+      capabilityCall(
+        requestWithEvidence({
+          relativePath: 'notes.txt',
+          contentDigest: sha256(Buffer.from(content)),
+          quote: 'needle',
+        }),
+      ),
+    )
+    await Promise.race([
+      call.then(() => undefined),
+      waitFor(() => frames.length > 0),
+    ])
+    if (frames.length > 0) await broker.runtimeTerminal()
+    const response = await call
+
+    assert.equal(response.kind, 'error')
+    assert.equal(response.code, 'evidence_invalid')
+    assert.deepEqual(frames, [])
+  } finally {
+    await broker.appShutdown()
+    await close(server)
+  }
+})
+
+test('evidence rejects final and ancestor symlink aliases inside the workspace', async () => {
+  const fixture = await createFixture()
+  const content = 'inside needle'
+  const realDirectory = path.join(fixture.workspaceRoot, 'real')
+  await mkdir(realDirectory)
+  await writeFile(path.join(fixture.workspaceRoot, 'notes.txt'), content)
+  await writeFile(path.join(realDirectory, 'notes.txt'), content)
+  await symlink(
+    path.join(fixture.workspaceRoot, 'notes.txt'),
+    path.join(fixture.workspaceRoot, 'notes-alias.txt'),
+  )
+  await symlink(
+    realDirectory,
+    path.join(fixture.workspaceRoot, 'directory-alias'),
+  )
+  const frames: unknown[] = []
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: { publish: (frame) => frames.push(frame) },
+  })
+  const server = await listen(broker.router)
+
+  try {
+    await acceptHandshake(server, broker)
+    for (const relativePath of [
+      'notes-alias.txt',
+      'directory-alias/notes.txt',
+    ]) {
+      const priorFrameCount = frames.length
+      const call = postBroker(
+        server,
+        broker,
+        capabilityCall(
+          requestWithEvidence({
+            relativePath,
+            contentDigest: sha256(Buffer.from(content)),
+            quote: 'needle',
+          }),
+        ),
+      )
+      await Promise.race([
+        call.then(() => undefined),
+        waitFor(() => frames.length > priorFrameCount),
+      ])
+      if (frames.length > priorFrameCount) {
+        const interactionId = (
+          frames[priorFrameCount] as { interactionId: string }
+        ).interactionId
+        await Promise.all([
+          broker.settle(interactionId, { outcome: 'reject' }),
+          call,
+        ])
+      }
+      const response = await call
+      assert.equal(response.kind, 'error', relativePath)
+      assert.equal(response.code, 'evidence_invalid', relativePath)
+    }
+    assert.deepEqual(frames, [])
+  } finally {
+    await broker.appShutdown()
+    await close(server)
+  }
+})
+
+test('evidence rejects an inode swap between path validation and open', async () => {
+  const fixture = await createFixture()
+  const content = 'swapped needle'
+  const evidencePath = path.join(fixture.workspaceRoot, 'notes.txt')
+  await writeFile(evidencePath, content)
+  let swapped = false
+  const frames: unknown[] = []
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: { publish: (frame) => frames.push(frame) },
+    async evidenceReadTestHook(phase) {
+      if (phase !== 'before_open' || swapped) return
+      swapped = true
+      await rename(
+        evidencePath,
+        path.join(fixture.workspaceRoot, 'notes-original.txt'),
+      )
+      await writeFile(evidencePath, content)
+    },
+  })
+  const server = await listen(broker.router)
+
+  try {
+    await acceptHandshake(server, broker)
+    const call = postBroker(
+      server,
+      broker,
+      capabilityCall(
+        requestWithEvidence({
+          relativePath: 'notes.txt',
+          contentDigest: sha256(Buffer.from(content)),
+          quote: 'needle',
+        }),
+      ),
+    )
+    await Promise.race([
+      call.then(() => undefined),
+      waitFor(() => frames.length > 0),
+    ])
+    if (frames.length > 0) {
+      const interactionId = (
+        frames[0] as { interactionId: string }
+      ).interactionId
+      await Promise.all([
+        broker.settle(interactionId, { outcome: 'reject' }),
+        call,
+      ])
+    }
+    const response = await call
+
+    assert.equal(response.kind, 'error')
+    assert.equal(response.code, 'evidence_invalid')
+    assert.deepEqual(frames, [])
+  } finally {
+    await broker.appShutdown()
+    await close(server)
+  }
+})
+
+test('evidence growth is rejected without an unbounded FileHandle read', async () => {
+  const fixture = await createFixture()
+  const content = 'growing needle'
+  const evidencePath = path.join(fixture.workspaceRoot, 'notes.txt')
+  await writeFile(evidencePath, content)
+  let grown = false
+  const frames: unknown[] = []
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: { publish: (frame) => frames.push(frame) },
+    async evidenceReadTestHook(phase) {
+      if (phase !== 'after_open_stat' || grown) return
+      grown = true
+      await appendFile(evidencePath, Buffer.alloc(1024 * 1024 + 1, 97))
+    },
+  })
+  const server = await listen(broker.router)
+  const inspectionHandle = await openFile(evidencePath, 'r')
+  const fileHandlePrototype = Object.getPrototypeOf(inspectionHandle) as {
+    readFile: typeof inspectionHandle.readFile
+  }
+  await inspectionHandle.close()
+  const originalReadFile = fileHandlePrototype.readFile
+  let unboundedReadCalled = false
+  fileHandlePrototype.readFile = function (...args) {
+    unboundedReadCalled = true
+    return Reflect.apply(originalReadFile, this, args)
+  }
+
+  try {
+    await acceptHandshake(server, broker)
+    const response = await postBroker(
+      server,
+      broker,
+      capabilityCall(
+        requestWithEvidence({
+          relativePath: 'notes.txt',
+          contentDigest: sha256(Buffer.from(content)),
+          quote: 'needle',
+        }),
+      ),
+    )
+
+    assert.equal(response.kind, 'error')
+    assert.equal(response.code, 'evidence_invalid')
+    assert.equal(unboundedReadCalled, false)
+    assert.deepEqual(frames, [])
+  } finally {
+    fileHandlePrototype.readFile = originalReadFile
     await broker.appShutdown()
     await close(server)
   }

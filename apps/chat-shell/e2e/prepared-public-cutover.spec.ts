@@ -48,6 +48,11 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
   const evidenceDigest = createHash('sha256')
     .update(evidenceText)
     .digest('hex')
+  const lateEvidenceQuote = 'AY가 새로 만든 요약 자료입니다.'
+  const lateEvidenceText = `${lateEvidenceQuote}\n검토 후 제출해 주세요.`
+  const lateEvidenceDigest = createHash('sha256')
+    .update(lateEvidenceText)
+    .digest('hex')
   await writeFile(path.join(workspaceRoot, 'assignment.txt'), evidenceText)
   const lecturePdf = onePagePdf()
   await writeFile(path.join(workspaceRoot, 'lecture.pdf'), lecturePdf)
@@ -118,6 +123,20 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     await expect(page.getByLabel('assignment.txt 원문')).toContainText(
       evidenceQuote,
     )
+    await expect(page.locator('.paper-preview')).not.toHaveAttribute(
+      'aria-live',
+      'polite',
+    )
+    const lecturePdfRequests: string[] = []
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      if (
+        url.pathname === '/api/product/sources/pdf' &&
+        url.searchParams.get('relativePath') === 'lecture.pdf'
+      ) {
+        lecturePdfRequests.push(request.url())
+      }
+    })
     const pdfLoaded = page.waitForResponse((response) => {
       const url = new URL(response.url())
       return (
@@ -134,18 +153,18 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     expect(Number(pdfResponse.headers()['content-length'])).toBe(
       lecturePdf.byteLength,
     )
-    const pdfFrame = page.getByTitle('lecture.pdf PDF 미리보기')
+    const pdfFrame = page.getByLabel('lecture.pdf PDF 미리보기')
     await expect(pdfFrame).toBeVisible()
-    await expect(pdfFrame).not.toHaveAttribute('sandbox', '')
     await expect(pdfFrame).toHaveAttribute(
       'src',
-      /\/api\/product\/sources\/pdf\?relativePath=lecture\.pdf/u,
+      /^data:application\/pdf;base64,/u,
     )
+    expect(lecturePdfRequests).toHaveLength(1)
     await sources
       .getByRole('button', { name: 'broken.pdf 미리보기' })
       .click()
     await expect(page.getByText('원문을 열지 못했습니다')).toBeVisible()
-    await expect(page.getByTitle('broken.pdf PDF 미리보기')).toHaveCount(0)
+    await expect(page.getByLabel('broken.pdf PDF 미리보기')).toHaveCount(0)
     await sources
       .getByRole('button', { name: 'slides.pptx 미리보기' })
       .click()
@@ -268,6 +287,15 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
       protocolVersion: 1,
       kind: 'lifecycle_accepted',
     })
+    await expect(
+      sources.getByRole('button', {
+        name: 'generated-summary.txt 미리보기',
+      }),
+    ).toHaveCount(0)
+    await writeFile(
+      path.join(workspaceRoot, 'generated-summary.txt'),
+      lateEvidenceText,
+    )
     const held = fetch(`${apiUrl}/api/_private/interaction-mcp/`, {
       method: 'POST',
       headers,
@@ -296,13 +324,35 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
                 },
               ],
             },
+            {
+              label: '새 요약 자료',
+              description: 'AY가 방금 만든 actual file을 검토합니다.',
+              before: '없음',
+              after: 'generated-summary.txt',
+              evidence: [
+                {
+                  relativePath: 'generated-summary.txt',
+                  contentDigest: lateEvidenceDigest,
+                  locator: {
+                    type: 'text_quote',
+                    quote: lateEvidenceQuote,
+                    occurrence: 1,
+                  },
+                },
+              ],
+            },
           ],
         },
       }),
     })
     const card = page.getByRole('region', { name: '검토 대기' })
     await expect(card).toContainText('과제 파일 변경')
-    const evidence = card.locator('figure.semantic-evidence')
+    const evidence = card
+      .locator('figure.semantic-evidence')
+      .filter({ hasText: 'assignment.txt' })
+    const lateEvidence = card
+      .locator('figure.semantic-evidence')
+      .filter({ hasText: 'generated-summary.txt' })
     await expect(evidence).toContainText('assignment.txt')
     await expect(evidence).toContainText('occurrence 2')
     await expect(evidence).toContainText(`SHA-256 ${evidenceDigest}`)
@@ -312,6 +362,34 @@ test('default Browser opens sources beside prepared AY Chat and settles inline S
     await expect(evidence.locator('mark')).toHaveText(evidenceQuote)
     await expect(evidence.locator('blockquote')).toContainText(
       'LMS에서 제출해 주세요.',
+    )
+    await expect(lateEvidence).toContainText('generated-summary.txt')
+    const refreshedList = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return url.pathname === '/api/product/sources'
+    })
+    const lateEvidenceRead = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        url.pathname === '/api/product/sources/text' &&
+        url.searchParams.get('relativePath') === 'generated-summary.txt'
+      )
+    })
+    await lateEvidence
+      .getByRole('button', { name: 'generated-summary.txt 근거 열기' })
+      .click()
+    await refreshedList
+    await lateEvidenceRead
+    await expect(
+      sources.getByRole('button', {
+        name: 'generated-summary.txt 미리보기',
+      }),
+    ).toBeVisible()
+    await expect(
+      page.getByLabel('generated-summary.txt 원문'),
+    ).toContainText(lateEvidenceText)
+    await expect(page.getByLabel('선택한 원문 근거')).toHaveText(
+      lateEvidenceQuote,
     )
     await sources
       .getByRole('button', { name: 'assignment.txt 미리보기' })

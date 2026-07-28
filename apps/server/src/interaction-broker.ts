@@ -4,7 +4,8 @@ import {
   randomUUID,
   timingSafeEqual,
 } from 'node:crypto'
-import { open, realpath } from 'node:fs/promises'
+import { constants } from 'node:fs'
+import { lstat, open, realpath } from 'node:fs/promises'
 import type { IncomingMessage } from 'node:http'
 import path from 'node:path'
 
@@ -66,6 +67,11 @@ export type CreateInteractionBrokerOptions = {
   ) => void | Promise<void>
   readonly teardownRuntime?: () => void | Promise<void>
   readonly lifecycleDeadlineMs?: number
+  /** Test-only fault injection at the filesystem boundary. */
+  readonly evidenceReadTestHook?: (
+    phase: 'before_open' | 'after_open_stat',
+    relativePath: string,
+  ) => void | Promise<void>
 }
 
 export type InteractionBrokerCredentials = {
@@ -119,6 +125,17 @@ type EvidenceSnapshot = {
   readonly text: string
 }
 
+type FileIdentity = {
+  readonly device: number
+  readonly inode: number
+}
+
+type EvidenceCandidate = {
+  readonly path: string
+  readonly relativePath: string
+  readonly identity: FileIdentity
+}
+
 export class InteractionSettlementError extends Error {
   readonly code: 'conflict' | 'delivery_failed'
 
@@ -132,9 +149,10 @@ export class InteractionSettlementError extends Error {
 export async function createInteractionBroker(
   options: CreateInteractionBrokerOptions,
 ): Promise<InteractionBroker> {
-  const workspaceRoot = await requireExactWorkspaceRoot(
+  const workspace = await requireExactWorkspaceRoot(
     options.workspaceRoot,
   )
+  const workspaceRoot = workspace.path
   const credentials = Object.freeze({
     token: randomBytes(32).toString('base64url'),
     binding: `runtime_${randomBytes(16).toString('hex')}`,
@@ -356,7 +374,9 @@ export async function createInteractionBroker(
     try {
       const review = await resolveReviewEvidence(
         workspaceRoot,
+        workspace.identity,
         decoded.request,
+        options.evidenceReadTestHook,
       )
       requested = {
         type: 'review.requested',
@@ -605,8 +625,16 @@ export async function createInteractionBroker(
 
 async function resolveReviewEvidence(
   workspaceRoot: string,
+  workspaceRootIdentity: FileIdentity,
   request: ProposeStatePatchRequest,
+  testHook:
+    | CreateInteractionBrokerOptions['evidenceReadTestHook']
+    | undefined,
 ): Promise<BrowserSafeSemanticReview> {
+  await assertWorkspaceRootIdentity(
+    workspaceRoot,
+    workspaceRootIdentity,
+  )
   const snapshots = new Map<string, EvidenceSnapshot>()
   let aggregateBytes = 0
   const changes: BrowserSafeSemanticReview['changes'][number][] = []
@@ -616,16 +644,20 @@ async function resolveReviewEvidence(
     for (const reference of change.evidence ?? []) {
       const resolvedPath = await resolveContainedPath(
         workspaceRoot,
+        workspaceRootIdentity,
         reference.relativePath,
       )
-      let snapshot = snapshots.get(resolvedPath)
+      let snapshot = snapshots.get(resolvedPath.path)
       if (!snapshot) {
-        snapshot = await readEvidenceSnapshot(resolvedPath)
+        snapshot = await readEvidenceSnapshot(
+          resolvedPath,
+          testHook,
+        )
         aggregateBytes += snapshot.bytes.byteLength
         if (aggregateBytes > aggregateFileMaxBytes) {
           throw new EvidenceError()
         }
-        snapshots.set(resolvedPath, snapshot)
+        snapshots.set(resolvedPath.path, snapshot)
       }
       evidence.push(projectEvidence(reference, snapshot))
     }
@@ -640,23 +672,45 @@ async function resolveReviewEvidence(
     }
     changes.push(projected)
   }
-  return {
+  const review = {
     summary: request.summary,
     question: request.question,
     changes,
   }
+  await assertWorkspaceRootIdentity(
+    workspaceRoot,
+    workspaceRootIdentity,
+  )
+  return review
 }
 
 async function resolveContainedPath(
   workspaceRoot: string,
+  workspaceRootIdentity: FileIdentity,
   relativePath: string,
-): Promise<string> {
+): Promise<EvidenceCandidate> {
   const candidate = path.resolve(workspaceRoot, relativePath)
+  const relativeCandidate = path.relative(workspaceRoot, candidate)
+  if (
+    relativeCandidate.length === 0 ||
+    relativeCandidate.startsWith(`..${path.sep}`) ||
+    relativeCandidate === '..' ||
+    path.isAbsolute(relativeCandidate)
+  ) {
+    throw new EvidenceError()
+  }
+  const candidateStats = await lstat(candidate).catch(() => {
+    throw new EvidenceError()
+  })
+  if (!candidateStats.isFile() || candidateStats.isSymbolicLink()) {
+    throw new EvidenceError()
+  }
   const resolved = await realpath(candidate).catch(() => {
     throw new EvidenceError()
   })
   const relative = path.relative(workspaceRoot, resolved)
   if (
+    resolved !== candidate ||
     relative.length === 0 ||
     relative.startsWith(`..${path.sep}`) ||
     relative === '..' ||
@@ -664,21 +718,45 @@ async function resolveContainedPath(
   ) {
     throw new EvidenceError()
   }
-  return resolved
+  await assertWorkspaceRootIdentity(
+    workspaceRoot,
+    workspaceRootIdentity,
+  )
+  return {
+    path: resolved,
+    relativePath,
+    identity: {
+      device: candidateStats.dev,
+      inode: candidateStats.ino,
+    },
+  }
 }
 
 async function readEvidenceSnapshot(
-  resolvedPath: string,
+  candidate: EvidenceCandidate,
+  testHook:
+    | CreateInteractionBrokerOptions['evidenceReadTestHook']
+    | undefined,
 ): Promise<EvidenceSnapshot> {
-  const handle = await open(resolvedPath, 'r').catch(() => {
+  await testHook?.('before_open', candidate.relativePath)
+  const handle = await open(
+    candidate.path,
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  ).catch(() => {
     throw new EvidenceError()
   })
   try {
     const stat = await handle.stat()
-    if (!stat.isFile() || stat.size > uniqueFileMaxBytes) {
+    if (
+      !stat.isFile() ||
+      stat.dev !== candidate.identity.device ||
+      stat.ino !== candidate.identity.inode ||
+      stat.size > uniqueFileMaxBytes
+    ) {
       throw new EvidenceError()
     }
-    const bytes = await handle.readFile()
+    await testHook?.('after_open_stat', candidate.relativePath)
+    const bytes = await readBoundedFile(handle, uniqueFileMaxBytes)
     if (
       bytes.byteLength > uniqueFileMaxBytes ||
       bytes.byteLength !== stat.size
@@ -695,6 +773,30 @@ async function readEvidenceSnapshot(
   } finally {
     await handle.close()
   }
+}
+
+async function readBoundedFile(
+  handle: Awaited<ReturnType<typeof open>>,
+  maximumBytes: number,
+): Promise<Buffer> {
+  const chunks: Buffer[] = []
+  let bytesReadTotal = 0
+  while (bytesReadTotal <= maximumBytes) {
+    const chunk = Buffer.allocUnsafe(
+      Math.min(64 * 1024, maximumBytes + 1 - bytesReadTotal),
+    )
+    const { bytesRead } = await handle.read(
+      chunk,
+      0,
+      chunk.byteLength,
+      null,
+    )
+    if (bytesRead === 0) break
+    chunks.push(chunk.subarray(0, bytesRead))
+    bytesReadTotal += bytesRead
+  }
+  if (bytesReadTotal > maximumBytes) throw new EvidenceError()
+  return Buffer.concat(chunks, bytesReadTotal)
 }
 
 function projectEvidence(
@@ -765,7 +867,10 @@ function suffixWithinBytes(value: string, maximumBytes: number): string {
   return result
 }
 
-async function requireExactWorkspaceRoot(input: string): Promise<string> {
+async function requireExactWorkspaceRoot(input: string): Promise<{
+  readonly path: string
+  readonly identity: FileIdentity
+}> {
   if (!path.isAbsolute(input)) {
     throw new TypeError('The interaction workspace root is invalid.')
   }
@@ -774,15 +879,59 @@ async function requireExactWorkspaceRoot(input: string): Promise<string> {
   if (canonical !== normalized) {
     throw new TypeError('The interaction workspace root is invalid.')
   }
-  const handle = await open(canonical, 'r')
+  const candidateStats = await lstat(canonical)
+  if (!candidateStats.isDirectory() || candidateStats.isSymbolicLink()) {
+    throw new TypeError('The interaction workspace root is invalid.')
+  }
+  const handle = await open(
+    canonical,
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  )
+  let identity: FileIdentity
   try {
-    if (!(await handle.stat()).isDirectory()) {
+    const stats = await handle.stat()
+    if (
+      !stats.isDirectory() ||
+      stats.dev !== candidateStats.dev ||
+      stats.ino !== candidateStats.ino
+    ) {
       throw new TypeError('The interaction workspace root is invalid.')
+    }
+    identity = {
+      device: stats.dev,
+      inode: stats.ino,
     }
   } finally {
     await handle.close()
   }
-  return canonical
+  await assertWorkspaceRootIdentity(canonical, identity).catch(() => {
+    throw new TypeError('The interaction workspace root is invalid.')
+  })
+  return {
+    path: canonical,
+    identity,
+  }
+}
+
+async function assertWorkspaceRootIdentity(
+  workspaceRoot: string,
+  expected: FileIdentity,
+): Promise<void> {
+  const [canonical, stats] = await Promise.all([
+    realpath(workspaceRoot),
+    lstat(workspaceRoot),
+  ]).catch(() => {
+    throw new EvidenceError()
+  })
+  if (
+    canonical !== workspaceRoot ||
+    !stats.isDirectory() ||
+    stats.isSymbolicLink() ||
+    stats.dev !== expected.device ||
+    stats.ino !== expected.inode
+  ) {
+    throw new EvidenceError()
+  }
 }
 
 function authenticate(

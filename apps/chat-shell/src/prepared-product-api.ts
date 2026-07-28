@@ -91,7 +91,7 @@ export async function fetchPreparedWorkspaceText(
 export async function fetchPreparedWorkspacePdf(
   relativePath: string,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<Blob> {
   const url = `/api/product/sources/pdf?${sourceQuery(relativePath)}`
   const response = await fetch(
     url,
@@ -104,8 +104,9 @@ export async function fetchPreparedWorkspacePdf(
   if (!response.ok) throw await responseError(response)
   const contentType = response.headers.get('content-type')?.split(';', 1)[0]
   if (contentType !== 'application/pdf') throw invalidResponse()
-  await response.body?.cancel()
-  return url
+  const pdf = await response.blob()
+  if (pdf.type !== 'application/pdf') throw invalidResponse()
+  return pdf
 }
 
 export async function streamPreparedChat(

@@ -25,6 +25,8 @@ const defaultTextSourceMaxBytes = 16 * 1024 * 1024
 const defaultPdfMaxBytes = 32 * 1024 * 1024
 const managedDirectoryNames = new Set(['node_modules'])
 const scaffoldFileNames = new Set(['AGENTS.md', 'workspace-state.json'])
+const secretNameVariantPattern =
+  /^(?:api[-_]?keys?|credentials?|passwords?|secrets?|tokens?|client[-_]?secrets?|service[-_]?accounts?(?:[-_]?(?:credentials?|keys?|secrets?))?|private[-_]?keys?|oauth(?:2)?[-_]?(?:tokens?|credentials?|client[-_]?secrets?)|(?:access|refresh|auth|bearer)[-_]?tokens?)(?:[-_](?:backup|dev|development|local|old|prod|production|staging|test))?$/u
 const textExtensions = new Set([
   '.c',
   '.cpp',
@@ -400,11 +402,9 @@ function isSecretLikeFile(name: string): boolean {
   return (
     /^id_(?:rsa|dsa|ecdsa|ed25519)$/u.test(stem) ||
     /\.(?:key|p12|pfx|pem)$/u.test(lower) ||
-    /^(?:api[-_]?keys?|credentials?|passwords?|secrets?|tokens?)(?:\.[^.]+)?$/u.test(
+    secretNameVariantPattern.test(stem) ||
+    /^oauth(?:2)?(?:[-_](?:backup|dev|development|local|old|prod|production|staging|test))?\.(?:conf|ini|json|toml|ya?ml)$/u.test(
       lower,
-    ) ||
-    /^(?:client[-_]?secrets?|service[-_]?accounts?(?:[-_]?(?:credentials?|keys?|secrets?))?|private[-_]?keys?|oauth(?:2)?(?:[-_]?(?:tokens?|credentials?|client[-_]?secrets?))?|(?:access|refresh|auth|bearer)[-_]?tokens?)$/u.test(
-      stem,
     ) ||
     /^client[-_]?secrets?[-_][a-z0-9]+\.apps\.googleusercontent\.com$/u.test(
       stem,
@@ -413,9 +413,7 @@ function isSecretLikeFile(name: string): boolean {
 }
 
 function isSecretContainerName(name: string): boolean {
-  return /^(?:credentials?|passwords?|secrets?|client[-_]?secrets?|service[-_]?accounts?(?:[-_]?(?:credentials?|keys?|secrets?))?|private[-_]?keys?|oauth(?:2)?[-_]?(?:tokens?|credentials?|client[-_]?secrets?)|(?:access|refresh|auth|bearer)[-_]?tokens?)(?:[-_](?:backup|dev|local|old|prod|production|staging|test))?$/u.test(
-    name.toLowerCase(),
-  )
+  return secretNameVariantPattern.test(name.toLowerCase())
 }
 
 function previewKindFor(
