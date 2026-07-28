@@ -26,8 +26,13 @@ void main() {
     //   tokens.md의 난이도 매핑을 그대로 구현하기 위한 의도적 허용이며,
     //   사용자와 합의된 예외다(2026-07-14).
     'lib/core/widgets/difficulty_pill.dart',
-    // 홈 캐릭터 카드의 코인 배너.
-    'lib/features/home/widgets/character_card.dart',
+    // 코인·스트릭 통계 카드(홈·보관함·MY 공용).
+    //
+    // 스트릭 수치를 세 화면에서 모두 노랑으로 통일하기로 하면서(사용자 결정,
+    // 2026-07-28) 노랑이 필요해진 자리다. **화면 파일 3개를 여는 대신 이 위젯
+    // 하나만** 허용한다 — 노랑을 아는 코드가 늘어날수록 규칙은 약해진다.
+    // (홈 `character_card.dart`는 코인 배너를 이 카드에 넘기고 노랑에서 손을 뗐다.)
+    'lib/core/widgets/stat_card.dart',
   };
 
   List<File> dartFiles() {

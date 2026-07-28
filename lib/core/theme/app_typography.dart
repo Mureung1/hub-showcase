@@ -9,7 +9,14 @@ import 'package:flutter/material.dart';
 ///
 /// 왜 나누나: 한글은 Pretendard가 훨씬 잘 읽히고(Sora에는 한글 글리프 자체가 없어
 /// 지금까지 시스템 폰트로 폴백돼 왔다), 수치는 Sora의 기하학적 숫자꼴이 게임 UI의
-/// 정체성이다. **크기·굵기·행간 스케일은 두 서체가 완전히 같다** — 패밀리만 갈린다.
+/// 정체성이다. **크기·행간·자간 스케일은 두 서체가 완전히 같다.**
+///
+/// **굵기만 의도적으로 갈린다(Figma 리디자인).** 한글은 같은 wght에서 라틴보다 획이
+/// 가늘어 보여, 제목·라벨급([headlineMedium]·[titleLarge]·[labelMedium])의 한글은
+/// **700**으로 올리고 짝이 되는 Sora 수치는 **600**에 둔다. 나란히 놓았을 때 두
+/// 서체의 시각 무게가 맞는 짝이다. 본문급(400)·캡션급(500)은 원래 굵기가 낮아
+/// 보정이 필요 없으므로 양쪽이 같다.
+/// (`test/theme/typography_family_test.dart`가 이 짝을 값으로 못 박는다.)
 ///
 /// ⚠️ **`numeric*` 스타일에 한글을 넣지 말 것.** Sora에 한글 글리프가 없다.
 /// 실수로 섞여도 `fontFamilyFallback`이 Pretendard로 받아내지만(글자가 깨지지는
@@ -99,11 +106,11 @@ abstract final class AppTypography {
   /// 32/600/40 — 페이지 타이틀(모바일 24 → [headlineMedium] 사용).
   static final headlineLarge = _pretendard(size: 32, weight: 600, height: 40);
 
-  /// 24/600/32 — 카드 제목.
-  static final headlineMedium = _pretendard(size: 24, weight: 600, height: 32);
+  /// 24/**700**/32 — 카드 제목 · 캐릭터 이름. 짝: [numericHeadlineMedium](600).
+  static final headlineMedium = _pretendard(size: 24, weight: 700, height: 32);
 
-  /// 20/600/28 — 섹션 제목.
-  static final titleLarge = _pretendard(size: 20, weight: 600, height: 28);
+  /// 20/**700**/28 — 섹션 제목 · AppBar 제목. 짝: [numericTitleLarge](600).
+  static final titleLarge = _pretendard(size: 20, weight: 700, height: 28);
 
   /// 18/400/28 — 설명문 · 퀘스트 제목.
   static final bodyLarge = _pretendard(size: 18, weight: 400, height: 28);
@@ -114,10 +121,22 @@ abstract final class AppTypography {
   /// 14/400/20 — 보조 본문.
   static final bodySmall = _pretendard(size: 14, weight: 400, height: 20);
 
-  /// 14/600/20 — 뱃지 · 버튼 · 수치.
+  /// 16/**700**/24 — **풍경 위에 얹히는 이름표.** 홈 히어로 우하단 오버레이 전용.
+  ///
+  /// [bodyMedium]과 크기·행간이 같고 굵기만 700이다. 새 스케일 단을 만들지 않으려고
+  /// 기존 16/24 단에 굵기만 올렸다 — 도트아트 풍경 위에서는 400이 뭉개져 읽힌다.
+  ///
+  /// [headlineMedium](24/700)의 축소판이다. 이름표가 히어로 **밖**에 있던 시절에는
+  /// 24였지만, 안으로 들어오면서 캐릭터와 겹치게 돼 폭·높이를 함께 줄였다.
+  ///
+  /// `textTheme`에 넣지 않는다. 이 자리 하나에만 쓰는 값이라 슬롯으로 공개하면
+  /// 다른 화면이 의미 없이 집어 쓰게 된다.
+  static final heroName = _pretendard(size: 16, weight: 700, height: 24);
+
+  /// 14/**700**/20 — 뱃지 · 버튼 · 링크. 짝: [numericLabelMedium](600).
   static final labelMedium = _pretendard(
     size: 14,
-    weight: 600,
+    weight: 700,
     height: 20,
     letterSpacing: 0.14, // 0.01em
   );
@@ -125,7 +144,8 @@ abstract final class AppTypography {
   /// 12/500/16 — 캡션 · pill.
   static final labelSmall = _pretendard(size: 12, weight: 500, height: 16);
 
-  // ── 수치 전용(Sora). 위 스케일과 크기·굵기·행간이 1:1로 같고 패밀리만 다르다. ──
+  // ── 수치 전용(Sora). 크기·행간·자간은 위 스케일과 1:1이고, 굵기는 한글 보정분
+  //    (제목·라벨급 700 ↔ 수치 600)만큼 낮다. 파일 상단 주석 참고. ──
 
   /// 24/600/32 — 큰 통계 수치(보관함 완료 수 · 연속 일수).
   static final numericHeadlineMedium = _sora(
@@ -150,6 +170,17 @@ abstract final class AppTypography {
 
   /// 12/500/16 — pill 안의 작은 수치(축소 코인 · 보상 칩).
   static final numericLabelSmall = _sora(size: 12, weight: 500, height: 16);
+
+  /// 12/600/16 — 진행 수치(홈 XP `4 / 10 XP`).
+  ///
+  /// [numericLabelSmall]과 크기는 같고 한 단 굵다. 라벨('경험치', Pretendard 14/400)
+  /// 과 같은 줄에 놓여 **수치 쪽이 먼저 읽혀야** 하는 자리라 Figma가 600을 지정했다.
+  /// Pretendard 쌍둥이가 없는 유일한 수치 스타일이다(한글이 올 자리가 아니다).
+  static final numericLabelSmallStrong = _sora(
+    size: 12,
+    weight: 600,
+    height: 16,
+  );
 
   /// **패밀리만** 수치용으로 바꾸는 오버레이.
   ///

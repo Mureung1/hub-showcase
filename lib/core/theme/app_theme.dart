@@ -180,7 +180,8 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
         elevation: 0,
-        height: 72,
+        // 88 — 라벨이 두 줄로 접히지 않을 여유 + 하단 제스처 영역(Figma 리디자인).
+        height: 88,
         indicatorColor: scheme.primary,
         indicatorShape: const RoundedRectangleBorder(
           borderRadius: AppRadius.mdAll,

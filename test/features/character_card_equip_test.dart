@@ -65,7 +65,9 @@ void main() {
     // (bg_forest를 공짜로 주는 셈이 된다).
     expect(art(forest), findsNothing);
     // 캐릭터 본체(알 단계)와 레벨 텍스트는 그대로.
-    expect(find.textContaining('Level 1'), findsOneWidget);
+    // 이름(진화 단계)과 레벨 pill은 리디자인 뒤 두 위젯으로 갈렸다.
+    expect(find.text('알'), findsOneWidget);
+    expect(find.text('Lv.1'), findsOneWidget);
   });
 
   testWidgets('없는 아이템 id를 장착해도(고아) 카드가 죽지 않고 오라 없음', (tester) async {
@@ -77,7 +79,9 @@ void main() {
     // 예외 없이 렌더되고, 깨진 장착은 무시된다.
     expect(tester.takeException(), isNull);
     expect(art(sparkle), findsNothing);
-    expect(find.textContaining('Level 1'), findsOneWidget);
+    // 이름(진화 단계)과 레벨 pill이 리디자인 뒤 두 위젯으로 갈렸다.
+    expect(find.text('알'), findsOneWidget);
+    expect(find.text('Lv.1'), findsOneWidget);
   });
 
   testWidgets('슬롯이 어긋난 장착(배경 슬롯에 오라 id)은 무시된다', (tester) async {

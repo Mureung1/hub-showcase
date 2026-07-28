@@ -4,12 +4,11 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/empty_art.dart';
 import '../../core/error/app_failure.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
 import '../../core/utils/proof_image_picker.dart';
 import '../../core/widgets/quest_card.dart';
+import '../../core/widgets/stat_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/quest.dart';
 import '../../models/quest_group.dart';
@@ -205,8 +204,12 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
 
 /// 완료 수 · 연속 일수 2분할 요약.
 ///
-/// 요약 수치는 **그린/중립**이다 — 노랑은 코인·보상·스트릭 규칙이지만 여기 스트릭은
-/// 배지가 아니라 요약 통계 수치라 중립으로 둔다(color_role_test 무수정 통과).
+/// 홈·MY와 **같은 [StatCard]** 를 쓴다(예전에는 화면마다 따로 그려 셋의 생김새가
+/// 조금씩 어긋나 있었다).
+///
+/// 색: 완료 수는 성장(그린), 연속 일수는 🟡 노랑이다. 스트릭을 홈에서만 노랑으로
+/// 쓰고 여기서는 중립으로 두던 예전 판단을 접었다 — 같은 수치가 화면마다 다른 색을
+/// 입으면 "노랑 = 보상"이라는 신호 자체가 약해진다(사용자 결정).
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.completedCount, required this.streak});
 
@@ -215,71 +218,18 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: AppRadius.lgAll,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: AppColors.softShadow,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _Stat(
-              icon: Symbols.check_circle,
-              value: '$completedCount',
-              label: '완료',
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: theme.colorScheme.outlineVariant,
-          ),
-          Expanded(
-            child: _Stat(
-              icon: Symbols.local_fire_department,
-              value: '$streak',
-              label: '연속 일수',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.icon, required this.value, required this.label});
-
-  final IconData icon;
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      children: [
-        Icon(icon, size: 22, fill: 1, color: AppColors.primary),
-        AppSpacing.gapXs,
-        // [value]는 정수를 그대로 문자열로 만든 값이라 숫자뿐이다 → 수치 서체(Sora).
-        // 아래 [label]('완료' · '연속 일수')은 한글이라 기본 서체(Pretendard)다.
-        Text(
-          value,
-          style: AppTypography.numericHeadlineMedium.copyWith(
-            color: AppColors.primary,
-          ),
+    return StatCardRow(
+      cards: [
+        StatCard(
+          icon: Symbols.check_circle,
+          label: '완료',
+          value: '$completedCount',
         ),
-        Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        StatCard(
+          icon: Symbols.local_fire_department,
+          label: '연속 일수',
+          value: '$streak',
+          accent: StatAccent.reward,
         ),
       ],
     );
@@ -296,7 +246,7 @@ class _StorageSkeleton extends StatelessWidget {
       children: const [
         SkeletonBox(width: 120, height: 40),
         AppSpacing.gapLg,
-        SkeletonBox(height: 84, radius: AppRadius.lg),
+        SkeletonBox(height: 120, radius: AppRadius.md),
         AppSpacing.gapLg,
         SkeletonBox(height: 96, radius: AppRadius.md),
         AppSpacing.gapMd,

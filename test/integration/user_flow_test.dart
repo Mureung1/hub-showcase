@@ -254,8 +254,10 @@ void main() {
     expect(done.rewardedAt, isNotNull);
 
     // 홈 탭에서도 성장이 보인다(다른 계층에서의 반영 확인).
+    // 리디자인으로 이름(진화 단계)과 레벨 pill이 두 위젯으로 갈렸다.
     await tapTab(tester, '홈');
-    expect(find.text('Level 2 · 알'), findsOneWidget);
+    expect(find.text('알'), findsOneWidget);
+    expect(find.text('Lv.2'), findsOneWidget);
   });
 
   testWidgets('② 중간 실패 폴백: AI 분해 실패 → 템플릿 폴백으로 결과가 뜨고 등록까지 이어진다',

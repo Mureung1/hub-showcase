@@ -16,6 +16,11 @@ abstract final class AppColors {
   static const onPrimaryContainer = Color(0xFF00391A);
   static const inversePrimary = Color(0xFF4AE176);
 
+  /// 그린 아주 옅은 틴트 — 레벨 pill 배경 · 성장 stat 아이콘 칩 배경.
+  /// (Figma 홈 `#e9f9ef`. `primaryContainer`를 알파로 깎아 쓰면 배경색에 따라
+  ///  값이 흔들리므로 불투명 토큰으로 못 박는다.)
+  static const primarySurface = Color(0xFFE9F9EF);
+
   // 블루 — AI · 정보 · 링크 · 보조 행동
   static const secondary = Color(0xFF0058BE);
   static const secondaryContainer = Color(0xFF2170E4);
@@ -61,6 +66,16 @@ abstract final class AppColors {
       blurRadius: 15,
       offset: Offset(0, 10),
       spreadRadius: -3,
+    ),
+  ];
+
+  /// 그라디언트 주 버튼이 띄워진 느낌을 내는 드롭섀도.
+  /// Figma: `drop-shadow(0 8px 5px rgba(34,197,94,.2))` — [primaryContainer] 20%.
+  static const List<BoxShadow> primaryButtonShadow = [
+    BoxShadow(
+      color: Color(0x3322C55E),
+      blurRadius: 5,
+      offset: Offset(0, 8),
     ),
   ];
 }

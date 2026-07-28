@@ -14,6 +14,11 @@ import 'package:one_step/core/theme/app_typography.dart';
 ///
 /// 반대 방향도 함께 건다 — 수치 스타일이 Pretendard로 흘러가면 Sora 숫자꼴이라는
 /// 게임 UI 정체성이 조용히 사라진다.
+///
+/// **굵기는 더 이상 두 서체가 같지 않다**(Figma 리디자인). 한글이 같은 wght에서
+/// 얇아 보여 제목·라벨급 한글만 700으로 올리고 Sora는 600에 뒀다. 계약이 "완전
+/// 동일"에서 "크기·행간·자간은 동일, 굵기는 표대로"로 바뀌었을 뿐, **수치 스타일이
+/// Sora라는 핵심은 그대로다.**
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -55,41 +60,92 @@ void main() {
     }
   });
 
-  group('수치 스타일은 Sora이고, 스케일은 기본 서체 쌍둥이와 완전히 같다', () {
-    // 패밀리만 갈린다 — 크기·굵기·행간·자간이 하나라도 달라지면 레이아웃이 흔들린다.
-    final pairs = <String, (TextStyle, TextStyle)>{
+  group('수치 스타일은 Sora이고, 크기·행간·자간은 기본 서체 쌍둥이와 같다', () {
+    // **굵기만 의도적으로 갈린다.** 한글은 같은 wght에서 라틴보다 가늘어 보이므로
+    // 제목·라벨급 한글을 700으로 올리고 짝이 되는 Sora 수치는 600에 둔다
+    // (Figma 리디자인). 본문급(400)·캡션급(500)은 보정이 필요 없어 양쪽이 같다.
+    //
+    // 굵기를 "그냥 다르기만 하면 통과"로 두지 않고 **양쪽 값을 표로 못 박는다** —
+    // 한쪽만 손대면(예: 한글을 다시 600으로 내리거나 Sora를 700으로 올리면)
+    // 짝이 어긋난 채 조용히 통과하는 일이 없어야 한다.
+    //
+    // 크기·행간·자간이 갈리면 두 서체가 섞인 줄에서 베이스라인·줄높이가 흔들리므로
+    // 그쪽은 계속 완전 일치를 요구한다.
+    final pairs = <String, (TextStyle, TextStyle, int, int)>{
+      // 이름: (Pretendard, Sora, Pretendard wght, Sora wght)
       'headlineMedium': (
         AppTypography.headlineMedium,
         AppTypography.numericHeadlineMedium,
+        700,
+        600,
       ),
       'titleLarge': (
         AppTypography.titleLarge,
         AppTypography.numericTitleLarge,
+        700,
+        600,
       ),
-      'bodySmall': (AppTypography.bodySmall, AppTypography.numericBodySmall),
+      'bodySmall': (
+        AppTypography.bodySmall,
+        AppTypography.numericBodySmall,
+        400,
+        400,
+      ),
       'labelMedium': (
         AppTypography.labelMedium,
         AppTypography.numericLabelMedium,
+        700,
+        600,
       ),
       'labelSmall': (
         AppTypography.labelSmall,
         AppTypography.numericLabelSmall,
+        500,
+        500,
       ),
     };
 
+    /// 가변축(wght)에 실제로 실린 값. `fontWeight`는 논리값일 뿐이라 둘 다 본다.
+    double axis(TextStyle style) => style.fontVariations!
+        .firstWhere((v) => v.axis == 'wght')
+        .value;
+
     for (final entry in pairs.entries) {
       test(entry.key, () {
-        final (base, numeric) = entry.value;
+        final (base, numeric, baseWeight, numericWeight) = entry.value;
+
         expect(numeric.fontFamily, AppTypography.numericFamily);
         // 한글이 섞여 들어와도 시스템 폰트가 아니라 앱 서체로 받아낸다.
         expect(numeric.fontFamilyFallback, [AppTypography.family]);
+        expect(base.fontFamily, AppTypography.family);
+
+        // 크기·행간·자간은 완전 일치.
         expect(numeric.fontSize, base.fontSize);
-        expect(numeric.fontWeight, base.fontWeight);
-        expect(numeric.fontVariations, base.fontVariations);
         expect(numeric.height, base.height);
         expect(numeric.letterSpacing, base.letterSpacing);
+
+        // 굵기는 표에 적힌 값 그대로.
+        expect(axis(base), baseWeight.toDouble(), reason: '한글 굵기가 어긋났다');
+        expect(axis(numeric), numericWeight.toDouble(), reason: '수치 굵기가 어긋났다');
+        expect(base.fontWeight, FontWeight.values[(baseWeight ~/ 100) - 1]);
+        expect(
+          numeric.fontWeight,
+          FontWeight.values[(numericWeight ~/ 100) - 1],
+        );
+
+        // 수치가 한글보다 굵어지는 일은 없다(보정 방향이 뒤집히면 잡는다).
+        expect(axis(numeric), lessThanOrEqualTo(axis(base)));
       });
     }
+
+    test('numericLabelSmallStrong — 쌍둥이가 없는 수치 스타일(12/600)', () {
+      // 홈 XP 수치 자리. 한글이 올 자리가 아니라 Pretendard 짝을 두지 않았다.
+      final style = AppTypography.numericLabelSmallStrong;
+      expect(style.fontFamily, AppTypography.numericFamily);
+      expect(style.fontFamilyFallback, [AppTypography.family]);
+      expect(style.fontSize, 12);
+      expect(axis(style), 600);
+    });
   });
 
   test('입력 카운터는 패밀리만 Sora로 얹는다(크기·색은 Material 기본값 유지)', () {
