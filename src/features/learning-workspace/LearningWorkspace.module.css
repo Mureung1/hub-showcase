@@ -113,6 +113,37 @@
   align-items: stretch;
 }
 
+.persistenceBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 18px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.persistenceBanner[data-status='saved'] {
+  color: #047857;
+}
+
+.persistenceBanner[data-status='error'] {
+  background: #fff7f7;
+  color: #9f1239;
+}
+
+.persistenceBanner button {
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  padding: 6px 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .guidePanel {
   min-width: 0;
   min-height: 0;

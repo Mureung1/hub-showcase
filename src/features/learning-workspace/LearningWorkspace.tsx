@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
-import { createFallbackCurriculumPlan } from '../curriculum/api/curriculumClient'
+import {
+  createFallbackCurriculumPlan,
+  getGeneratedCurriculum,
+} from '../curriculum/api/curriculumClient'
 import type { GeneratedCurriculumPlan } from '../curriculum/model/curriculumGenerator'
 import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
-import { saveMissionProgress } from '../learning-progress/api/learningProgressClient'
+import {
+  getTodayProgress,
+  saveMissionProgress,
+  type SaveLearningProgressRequest,
+} from '../learning-progress/api/learningProgressClient'
 import { executeCode, type ReactPreviewBundle } from './api/codeRunnerClient'
 import { askTutor } from './api/tutorClient'
 import {
@@ -30,6 +37,8 @@ import { useLearningProfileStore } from '../profile/model/useLearningProfileStor
 import { createMistakeNote as createMistakeNoteApi } from '../mistake-notes/api/mistakeNoteClient'
 import { useMistakeNoteStore } from '../mistake-notes/model/useMistakeNoteStore'
 import { buildTutorMistakeNoteInput, hasCompletedTutorExchange, type TutorMessage } from './tutorConversation'
+import { loadWorkspaceServerState } from './loadWorkspaceServerState'
+import { saveWorkspaceProgress } from './saveWorkspaceProgress'
 import styles from './LearningWorkspace.module.css'
 import {
   generatedMissionId,
@@ -64,8 +73,52 @@ type LearningWorkspaceViewProps = {
 
 export default function LearningWorkspace() {
   const [searchParams] = useSearchParams()
-  const { profile } = useLearningProfileStore()
+  const navigate = useNavigate()
+  const serverMode = shouldUseServerApi()
+  const { profile, loadProfile } = useLearningProfileStore()
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
+  const hydrateGeneratedCurriculum = useGeneratedCurriculumStore(
+    (state) => state.hydrateGeneratedCurriculum,
+  )
+  const hydrateMissionProgress = useLearningProgressStore(
+    (state) => state.hydrateMissionProgress,
+  )
+  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>(
+    serverMode ? 'loading' : 'ready',
+  )
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    if (!serverMode) return
+
+    let cancelled = false
+    setLoadStatus('loading')
+
+    void loadWorkspaceServerState({
+      loadProfile,
+      loadCurriculum: getGeneratedCurriculum,
+      loadProgress: getTodayProgress,
+      hydrateCurriculum: hydrateGeneratedCurriculum,
+      hydrateProgress: hydrateMissionProgress,
+    })
+      .then(() => {
+        if (!cancelled) setLoadStatus('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setLoadStatus('error')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    hydrateGeneratedCurriculum,
+    hydrateMissionProgress,
+    loadProfile,
+    reloadKey,
+    serverMode,
+  ])
+
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
   const fallbackGeneratedPlan = useMemo(
@@ -81,6 +134,39 @@ export default function LearningWorkspace() {
     () => resolveWorkspaceMission(selectedMissionId, generatedPlan),
     [generatedPlan, selectedMissionId],
   )
+
+  if (loadStatus === 'loading') {
+    return (
+      <section className={styles.persistenceBanner} role="status">
+        <strong>학습 정보를 불러오는 중입니다.</strong>
+        <span>저장된 커리큘럼과 진행 상태를 확인하고 있어요.</span>
+      </section>
+    )
+  }
+
+  if (loadStatus === 'error') {
+    return (
+      <section className={styles.persistenceBanner} data-status="error" role="alert">
+        <strong>학습 정보를 불러오지 못했습니다.</strong>
+        <span>서버 연결을 확인한 뒤 다시 시도해 주세요.</span>
+        <button type="button" onClick={() => setReloadKey((current) => current + 1)}>
+          다시 불러오기
+        </button>
+      </section>
+    )
+  }
+
+  if (serverMode && !generatedCurriculum) {
+    return (
+      <section className={styles.persistenceBanner} role="status">
+        <strong>아직 생성된 커리큘럼이 없습니다.</strong>
+        <span>학습 목표를 설정하면 오늘 미션을 시작할 수 있어요.</span>
+        <button type="button" onClick={() => navigate('/today/goal')}>
+          학습 목표 설정하기
+        </button>
+      </section>
+    )
+  }
 
   return (
     <LearningWorkspaceView
@@ -123,6 +209,11 @@ function LearningWorkspaceView({
   const [tutorMessages, setTutorMessages] = useState<TutorMessage[]>([])
   const [tutorQuestion, setTutorQuestion] = useState('')
   const [isAskingTutor, setIsAskingTutor] = useState(false)
+  const [persistenceStatus, setPersistenceStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [pendingProgress, setPendingProgress] = useState<{
+    missionId: string
+    request: SaveLearningProgressRequest
+  } | null>(null)
   const runAbortControllerRef = useRef<AbortController | null>(null)
   const tutorAbortControllerRef = useRef<AbortController | null>(null)
   const curriculumSteps = useMemo(
@@ -334,21 +425,6 @@ function LearningWorkspaceView({
     setTutorMessages([])
   }
 
-  function recordServerSyncFailure(missionId: string, stepOffset: number) {
-    setActivityLog((currentLog) => {
-      const nextLog = prependActivity(
-        currentLog,
-        createActivity(
-          '서버 동기화 실패',
-          '로컬 진행 기록은 저장했습니다. 백엔드를 실행한 뒤 다시 시도하세요.',
-        ),
-      )
-      recordMissionActivity({ missionId, activeStepOffset: stepOffset, activityLog: nextLog })
-
-      return nextLog
-    })
-  }
-
   function syncMissionProgressToServer(input: {
     missionId: string
     runState: LearningRunState
@@ -362,16 +438,35 @@ function LearningWorkspaceView({
       return
     }
 
-    void saveMissionProgress(input.missionId, {
+    const request: SaveLearningProgressRequest = {
       runState: input.runState,
       runAttemptCount: input.runAttemptCount,
       activeStepOffset: input.activeStepOffset,
       completedAt: input.completedAt,
       activityLog: input.activityLog,
       lastTestResult: input.lastTestResult,
+    }
+    setPendingProgress({ missionId: input.missionId, request })
+    setPersistenceStatus('saving')
+
+    void saveWorkspaceProgress(input.missionId, request, {
+      save: saveMissionProgress,
+      upsert: upsertMissionProgress,
     })
-      .then(({ progress }) => upsertMissionProgress(progress))
-      .catch(() => recordServerSyncFailure(input.missionId, input.activeStepOffset))
+      .then(() => {
+        setPendingProgress(null)
+        setPersistenceStatus('saved')
+      })
+      .catch(() => setPersistenceStatus('error'))
+  }
+
+  function retryPendingProgress() {
+    if (!pendingProgress) return
+
+    syncMissionProgressToServer({
+      missionId: pendingProgress.missionId,
+      ...pendingProgress.request,
+    })
   }
 
   async function handleRun() {
@@ -679,6 +774,19 @@ function LearningWorkspaceView({
         practiceDetail={activeMission.practiceDetail}
         criteria={activeMission.criteria}
       />
+
+      {persistenceStatus !== 'idle' ? (
+        <div className={styles.persistenceBanner} data-status={persistenceStatus} role="status">
+          <span>
+            {persistenceStatus === 'saving' ? '학습 진행 상태를 저장하는 중입니다.' : null}
+            {persistenceStatus === 'saved' ? '학습 진행 상태가 서버에 저장되었습니다.' : null}
+            {persistenceStatus === 'error' ? '실행 결과는 유지했지만 진행 상태를 저장하지 못했습니다.' : null}
+          </span>
+          {persistenceStatus === 'error' ? (
+            <button type="button" onClick={retryPendingProgress}>저장 다시 시도</button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className={styles.workspaceGrid}>
         <WorkspaceGuidePanel
