@@ -230,6 +230,24 @@ export const INVITATION_STATUS = Object.freeze({
  */
 
 /**
+ * @typedef {object} AgentSelfReview
+ * @property {boolean} roleFollowed
+ * @property {boolean} requirementsMet
+ * @property {boolean} selectedContextOnly
+ * @property {string[]} issues
+ */
+
+/**
+ * @typedef {object} AgentTrace
+ * @property {1} version
+ * @property {string[]} plan
+ * @property {AgentSelfReview} selfReview
+ * @property {string} suggestedNextAction
+ * @property {1 | 2} attemptCount
+ * @property {boolean} repaired
+ */
+
+/**
  * @typedef {object} AIRun
  * @property {string} id
  * @property {string} projectId
@@ -246,6 +264,7 @@ export const INVITATION_STATUS = Object.freeze({
  * @property {string | null} model
  * @property {{inputTokens: number | null, outputTokens: number | null, totalTokens: number | null}} usage
  * @property {number | null} durationMs
+ * @property {AgentTrace | null} agentTrace
  * @property {string} createdAt ISO 8601 timestamp
  * @property {string} updatedAt ISO 8601 timestamp
  */

@@ -108,6 +108,7 @@ const AI_RUN_COLUMNS = [
   'model',
   'usage',
   'duration_ms',
+  'agent_trace',
   'created_at',
   'updated_at',
 ].join(',')
@@ -361,6 +362,7 @@ function mapAiRun(row) {
     model: row.model ?? null,
     usage,
     durationMs: row.duration_ms ?? 0,
+    agentTrace: row.agent_trace ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -905,9 +907,10 @@ export function createSupabaseTeamFlowRepository(
       }
 
       const completeRun = async (runId, generated) => {
-        const { data, error } = await supabase.rpc('complete_ai_run', {
+        const { data, error } = await supabase.rpc('complete_agentic_ai_run', {
           p_run_id: runId,
           p_result_markdown: generated.resultMarkdown,
+          p_agent_trace: generated.agentTrace,
           p_usage: generated.usage ?? {},
           p_duration_ms: generated.durationMs ?? 0,
         })
@@ -963,6 +966,7 @@ export function createSupabaseTeamFlowRepository(
           const invalidCredential = typedError.code === 'AI_CREDENTIAL_INVALID'
           const failed = await failRun(started.aiRun.id, {
             message: typedError.message,
+            usage: typedError.usage ?? {},
             durationMs: typedError.durationMs ?? 0,
             restoreTaskStatus: invalidCredential,
           })
@@ -1015,6 +1019,7 @@ export function createSupabaseTeamFlowRepository(
 
       return completeRun(started.aiRun.id, {
         resultMarkdown: generated.resultMarkdown,
+        agentTrace: generated.agentTrace,
         usage: {},
         durationMs: 0,
       })

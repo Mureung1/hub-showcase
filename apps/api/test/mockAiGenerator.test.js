@@ -133,6 +133,23 @@ test('generateMockAiResult is byte-identical for normalized and reordered equiva
     first.resultMarkdown.indexOf('## Mock 작업 결과') <
       first.resultMarkdown.indexOf('## 제안하는 다음 행동'),
   )
+  assert.deepEqual(first.agentTrace, {
+    version: 1,
+    plan: [
+      '배정된 할 일과 역할 프롬프트를 확인합니다.',
+      '활성화된 프로젝트 컨텍스트를 고정된 순서로 정리합니다.',
+      '검토 가능한 Mock 결과와 다음 행동을 작성합니다.',
+    ],
+    selfReview: {
+      roleFollowed: true,
+      requirementsMet: true,
+      selectedContextOnly: true,
+      issues: [],
+    },
+    suggestedNextAction: '결과를 검토하고 유효하면 공유 노트로 반영합니다.',
+    attemptCount: 1,
+    repaired: false,
+  })
 })
 
 test('buildMockAiContext excludes disabled context and resource URLs or bodies', () => {

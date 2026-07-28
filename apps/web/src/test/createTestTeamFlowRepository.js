@@ -179,6 +179,22 @@ export const testTeamFlowRepository = {
       errorMessage: null, appliedNoteId: null, createdBy: 'auth-user-1',
       executionMode: 'mock', provider: null, model: null,
       usage: { inputTokens: null, outputTokens: null, totalTokens: null }, durationMs: 2,
+      agentTrace: {
+        version: 1,
+        plan: [
+          '배정된 할 일과 역할 프롬프트를 확인합니다.',
+          '선택된 컨텍스트로 결과를 작성하고 자체 점검합니다.',
+        ],
+        selfReview: {
+          roleFollowed: true,
+          requirementsMet: true,
+          selectedContextOnly: true,
+          issues: [],
+        },
+        suggestedNextAction: '결과를 검토하고 공유 노트 반영 여부를 결정합니다.',
+        attemptCount: 1,
+        repaired: false,
+      },
       createdAt: '2026-07-24T02:00:00.000Z', updatedAt: '2026-07-24T02:00:00.000Z',
     }
     createdAiRuns.set(aiRun.id, aiRun)
