@@ -1,6 +1,6 @@
 import 'dotenv/config'
-import { pool } from './pool.js'
-import { haversineKm } from '../repositories/sql.js'
+import { pool } from '../src/db/pool.js'
+import { haversineKm } from '../src/repositories/sql.js'
 
 /*
  * 위치 쿼리 실행 계획·소요 측정 (최적화.md §6).

@@ -2,8 +2,8 @@ import 'dotenv/config'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pool } from './pool.js'
-import { withTransaction } from './withTransaction.js'
+import { pool } from '../src/db/pool.js'
+import { withTransaction } from '../src/db/withTransaction.js'
 
 /*
  * 부하 테스트 픽스처 (T-15).
@@ -91,7 +91,7 @@ async function seedLoad() {
   })
 
   // k6가 init 컨텍스트에서 open()으로 읽는다 (레포 루트 기준 load/fixture.json)
-  const fixturePath = resolve(dirname(fileURLToPath(import.meta.url)), '../../../load/fixture.json')
+  const fixturePath = resolve(dirname(fileURLToPath(import.meta.url)), '../../load/fixture.json')
   mkdirSync(dirname(fixturePath), { recursive: true })
   writeFileSync(fixturePath, JSON.stringify(result, null, 2))
 

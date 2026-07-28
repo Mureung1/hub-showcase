@@ -103,7 +103,7 @@ export function handleSummary(data) {
       Object.entries(summary)
         .map(([k, v]) => `${k.padEnd(12)} ${v}`)
         .join('\n') +
-      '\n\n최종 판정은 `node server/src/db/verifyLoad.js` 의 DB 검증 결과를 따른다.\n',
+      '\n\n최종 판정은 `npm run verify:load -w server` 의 DB 검증 결과를 따른다.\n',
     'load/summary.json': JSON.stringify(summary, null, 2),
   }
 }

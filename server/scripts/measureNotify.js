@@ -1,7 +1,7 @@
 import 'dotenv/config'
-import { pool } from './pool.js'
-import { withTransaction } from './withTransaction.js'
-import * as notificationRepo from '../repositories/notificationRepository.js'
+import { pool } from '../src/db/pool.js'
+import { withTransaction } from '../src/db/withTransaction.js'
+import * as notificationRepo from '../src/repositories/notificationRepository.js'
 
 /*
  * 알림 대상 판정 시나리오 측정 (최적화.md §6 — bbox 전후 비교용).

@@ -1,6 +1,6 @@
 import 'dotenv/config'
-import { pool } from './pool.js'
-import { withTransaction } from './withTransaction.js'
+import { pool } from '../src/db/pool.js'
+import { withTransaction } from '../src/db/withTransaction.js'
 
 /*
  * 위치 쿼리 측정용 대용량 시딩 (최적화.md §6).
