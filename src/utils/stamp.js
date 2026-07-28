@@ -2,8 +2,6 @@ function buildQrValue(memberNumber) {
   return `cafe-stamp:${memberNumber}`
 }
 
-
-
 function parseMemberLookupInput(input) {
   const trimmedInput = input.trim()
 
@@ -42,7 +40,5 @@ function parseMemberLookupInput(input) {
     error: '',
   }
 }
-
-
 
 export { buildQrValue, parseMemberLookupInput }

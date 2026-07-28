@@ -6,18 +6,19 @@ import { StatusCard } from '../components/common'
 import { buildQrValue } from '../utils/stamp'
 
 const tabs = [
-  { id: 'home', label: '홈', symbol: 'H', path: '/customer' },
-  { id: 'coupons', label: '쿠폰', symbol: 'C', path: '/customer/coupons' },
+  { id: 'home', label: '홈', iconClass: 'home-icon', path: '/customer' },
+  { id: 'coupons', label: '쿠폰', iconClass: 'ticket-icon', path: '/customer/coupons' },
   {
     id: 'notifications',
     label: '알림',
-    symbol: 'N',
+    iconClass: 'bell-icon',
     path: '/customer/notifications',
   },
-  { id: 'mypage', label: '마이페이지', symbol: 'M', path: '/customer/mypage' },
+  { id: 'mypage', label: '마이페이지', iconClass: 'user-icon', path: '/customer/mypage' },
 ]
 
-
+const badgeThemes = ['brown', 'beige', 'green']
+const rewardIcons = ['icon-coffee', 'icon-cake', 'icon-cup']
 
 function CustomerLayout({ profile }) {
   const [nickname, setNickname] = useState('테스트 손님')
@@ -32,16 +33,6 @@ function CustomerLayout({ profile }) {
 
   return (
     <div className="app-shell customer-shell">
-      <header className="customer-header">
-        <div>
-          <p className="eyebrow">손님 모드</p>
-          <h1>{nickname}님</h1>
-        </div>
-        <button className="ghost-button" type="button" onClick={handleLogout}>
-          로그아웃
-        </button>
-      </header>
-
       <main className="customer-main">
         {activeTab === 'home' && <CustomerHome profile={profile} onLoadCustomer={setNickname} />}
         {activeTab === 'coupons' && <CustomerCoupons profile={profile} />}
@@ -63,9 +54,7 @@ function CustomerLayout({ profile }) {
             type="button"
             onClick={() => navigate(tab.path)}
           >
-            <span className="nav-symbol" aria-hidden="true">
-              {tab.symbol}
-            </span>
+            <span className={`nav-icon ${tab.iconClass}`} aria-hidden="true" />
             <span>{tab.label}</span>
           </button>
         ))}
@@ -73,8 +62,6 @@ function CustomerLayout({ profile }) {
     </div>
   )
 }
-
-
 
 function getCustomerTab(pathname) {
   if (pathname === '/customer/coupons') {
@@ -91,8 +78,6 @@ function getCustomerTab(pathname) {
 
   return 'home'
 }
-
-
 
 function CustomerCoupons({ profile }) {
   const [couponStatus, setCouponStatus] = useState('loading')
@@ -141,9 +126,8 @@ function CustomerCoupons({ profile }) {
   return <CouponsView coupons={customerCoupons} />
 }
 
-
-
 function CustomerHome({ profile, onLoadCustomer }) {
+  const navigate = useNavigate()
   const [customerStatus, setCustomerStatus] = useState('loading')
   const [customerError, setCustomerError] = useState('')
   const [customerData, setCustomerData] = useState(null)
@@ -204,7 +188,7 @@ function CustomerHome({ profile, onLoadCustomer }) {
   }, [profile?.customer_id, onLoadCustomer, customerRefreshKey])
 
   if (customerStatus === 'loading') {
-    return <StatusCard title="스탬프 정보를 불러오고 있어요" />
+    return <StatusCard title="스탬프 정보를 불러오고 있습니다." />
   }
 
   if (customerStatus === 'error') {
@@ -212,59 +196,65 @@ function CustomerHome({ profile, onLoadCustomer }) {
   }
 
   return (
-    <section className="screen-stack">
-      <div className="qr-panel">
-        <div>
-          <p className="eyebrow">적립용 QR</p>
-          <h2>{customerData.member_number}</h2>
-          <p>결제할 때 이 회원번호를 보여주세요.</p>
-        </div>
-        <div
-          className="qr-code"
-          aria-label={`${customerData.member_number} 적립용 QR `}
-        >
-          <QRCodeSVG
-           value={buildQrValue(customerData.member_number)}
-           size={164}
-           level="M"
-           includeMargin={false}/>
-        </div>
-      </div>
-
-      <section>
-        <div className="section-title">
-          <h2>내 카페 목록</h2>
-          <p>{stampCards.length}곳에서 스탬프를 모으는 중</p>
-        </div>
+    <section className="customer-home-screen">
+      <header className="customer-hero">
+        <h1>
+          <span>안녕하세요</span>
+          <span>{customerData.name} 님</span>
+        </h1>
         <button
-          className="ghost-button refresh-button"
+          className="profile-button"
           type="button"
-          onClick={() => setCustomerRefreshKey((current) => current + 1)}
+          aria-label="마이페이지로 이동"
+          onClick={() => navigate('/customer/mypage')}
         >
-          새로고침
+          <span aria-hidden="true" />
         </button>
+      </header>
+
+      <article className="customer-qr-card">
+        <div className="qr-card-head">
+          <span className="tiny-qr-icon" aria-hidden="true" />
+          <h2>내 QR 코드</h2>
+        </div>
+        <div className="qr-layout">
+          <div className="qr-code" aria-label={`${customerData.member_number} 적립용 QR`}>
+            <QRCodeSVG
+              value={buildQrValue(customerData.member_number)}
+              size={150}
+              level="M"
+              includeMargin={false}
+            />
+          </div>
+          <div className="qr-meta">
+            <span>회원번호</span>
+            <strong>{customerData.member_number}</strong>
+            <small>{buildQrValue(customerData.member_number)}</small>
+          </div>
+        </div>
+      </article>
+
+      <section className="content-section cafe-section">
+        <div className="customer-section-head">
+          <div>
+            <h2>내 카페</h2>
+            <p>{stampCards.length}곳에서 스탬프를 모으는 중</p>
+          </div>
+          <button
+            className="refresh-chip"
+            type="button"
+            onClick={() => setCustomerRefreshKey((current) => current + 1)}
+          >
+            새로고침
+          </button>
+        </div>
+
         {stampCards.length === 0 ? (
           <StatusCard title="아직 연결된 카페 스탬프가 없습니다." />
         ) : (
-          <div className="card-list">
-            {stampCards.map((cafe) => (
-              <article className="cafe-card" key={cafe.id}>
-                <div>
-                  <h3>{cafe.name}</h3>
-                  <p>{cafe.reward}</p>
-                </div>
-                <div className="stamp-row" aria-label={`${cafe.currentStamps}개 적립`}>
-                  {Array.from({ length: cafe.goalStamps }).map((_, index) => (
-                    <span
-                      className={index < cafe.currentStamps ? 'stamp filled' : 'stamp'}
-                      key={`${cafe.cafeId}-${index}`}
-                    />
-                  ))}
-                </div>
-                <p className="progress-text">
-                  {cafe.currentStamps} / {cafe.goalStamps}개
-                </p>
-              </article>
+          <div className="cafe-list">
+            {stampCards.map((cafe, index) => (
+              <CafeStampCard cafe={cafe} index={index} key={cafe.id} />
             ))}
           </div>
         )}
@@ -273,26 +263,63 @@ function CustomerHome({ profile, onLoadCustomer }) {
   )
 }
 
+function CafeStampCard({ cafe, index }) {
+  const remainingStamps = Math.max(cafe.goalStamps - cafe.currentStamps, 0)
+  const badgeTheme = badgeThemes[index % badgeThemes.length]
+  const rewardIcon = rewardIcons[index % rewardIcons.length]
 
+  return (
+    <article className="cafe-card">
+      <div className={`brand-badge ${badgeTheme}`}>
+        <span className={`brand-icon mono-icon ${rewardIcon}`} aria-hidden="true" />
+      </div>
+      <div className="cafe-main">
+        <h3>{cafe.name}</h3>
+        <div className="stamp-strip" aria-label={`${cafe.currentStamps}개 적립`}>
+          {Array.from({ length: cafe.goalStamps }).map((_, stampIndex) => (
+            <span
+              className={stampIndex < cafe.currentStamps ? 'stamp filled' : 'stamp'}
+              key={`${cafe.cafeId}-${stampIndex}`}
+            />
+          ))}
+        </div>
+        <p>
+          <strong>{cafe.currentStamps}</strong> / {cafe.goalStamps} · 쿠폰까지 {remainingStamps}개
+        </p>
+      </div>
+      <div className="reward-side">
+        <span className={`mono-icon ${rewardIcon}`} aria-hidden="true" />
+        <p>{cafe.reward}</p>
+      </div>
+    </article>
+  )
+}
 
 function CouponsView({ coupons }) {
   return (
-    <section className="screen-stack">
-      <div className="section-title">
-        <h2>쿠폰</h2>
-        <p>발급된 쿠폰을 확인하세요.</p>
+    <section className="screen-stack customer-page-screen">
+      <div className="page-header">
+        <div>
+          <h1>내 쿠폰</h1>
+          <p>사용 가능한 쿠폰 {coupons.length}장</p>
+        </div>
       </div>
 
       {coupons.length === 0 ? (
         <StatusCard title="아직 발급된 쿠폰이 없습니다." />
       ) : (
-        <div className="card-list">
+        <div className="coupon-cards">
           {coupons.map((coupon) => (
-            <article className="coupon-card" key={coupon.id}>
-              <p>{coupon.cafes?.name}</p>
-              <h3>{coupon.title}</h3>
-              <span>{coupon.barcode}</span>
-              <span>{new Date(coupon.issued_at).toLocaleDateString()}</span>
+            <article className="ticket-card" key={coupon.id}>
+              <div className="ticket-art">
+                <span className="mono-icon icon-coffee" aria-hidden="true" />
+              </div>
+              <div className="ticket-info">
+                <p>{coupon.cafes?.name}</p>
+                <h2>{coupon.title}</h2>
+                <span>{coupon.barcode}</span>
+                <span>{new Date(coupon.issued_at).toLocaleDateString()}</span>
+              </div>
             </article>
           ))}
         </div>
@@ -300,8 +327,6 @@ function CouponsView({ coupons }) {
     </section>
   )
 }
-
-
 
 function NotificationsView({ profile }) {
   const [noticeStatus, setNoticeStatus] = useState('loading')
@@ -347,21 +372,35 @@ function NotificationsView({ profile }) {
   }
 
   return (
-    <section className="screen-stack">
-      <div className="section-title">
-        <h2>알림</h2>
-        <p>스탬프와 쿠폰 소식을 확인하세요.</p>
+    <section className="screen-stack customer-page-screen">
+      <div className="page-header">
+        <div>
+          <h1>알림</h1>
+          <p>스탬프와 쿠폰 소식을 확인하세요</p>
+        </div>
       </div>
 
       {customerNotifications.length === 0 ? (
         <StatusCard title="아직 알림이 없습니다." />
       ) : (
-        <div className="card-list">
+        <div className="notice-list">
           {customerNotifications.map((notification) => (
             <article className="notice-card" key={notification.id}>
-              <h3>{notification.type === 'coupon_issued' ? '쿠폰 발급' : '스탬프 적립'}</h3>
-              <p>{notification.message}</p>
-              <p>{new Date(notification.created_at).toLocaleString()}</p>
+              <div
+                className={
+                  notification.type === 'coupon_issued'
+                    ? 'notice-art coupon-mark'
+                    : 'notice-art stamp-mark'
+                }
+                aria-hidden="true"
+              />
+              <div className="notice-copy">
+                <h2>{notification.type === 'coupon_issued' ? '쿠폰 발급' : '스탬프 적립'}</h2>
+                <p>{notification.message}</p>
+                <time dateTime={notification.created_at}>
+                  {new Date(notification.created_at).toLocaleString()}
+                </time>
+              </div>
             </article>
           ))}
         </div>
@@ -370,15 +409,24 @@ function NotificationsView({ profile }) {
   )
 }
 
-
-
 function MyPage({ nickname, onChangeNickname, onLogout }) {
   return (
-    <section className="screen-stack">
-      <div className="section-title">
-        <h2>마이페이지</h2>
-        <p>테스트 손님 정보를 관리합니다.</p>
+    <section className="screen-stack customer-page-screen">
+      <div className="page-header simple">
+        <h1>마이페이지</h1>
       </div>
+
+      <article className="profile-card">
+        <div className="profile-avatar" aria-hidden="true">
+          <span />
+        </div>
+        <div className="profile-copy">
+          <span className="login-chip">테스트 로그인</span>
+          <p>테스트 사용자</p>
+          <h2>{nickname}</h2>
+          <small>손님 계정</small>
+        </div>
+      </article>
 
       <form className="profile-form">
         <label htmlFor="nickname">닉네임</label>
@@ -390,13 +438,11 @@ function MyPage({ nickname, onChangeNickname, onLogout }) {
         />
       </form>
 
-      <button className="primary-button" type="button" onClick={onLogout}>
+      <button className="logout-button" type="button" onClick={onLogout}>
         로그아웃
       </button>
     </section>
   )
 }
-
-
 
 export { CustomerLayout }

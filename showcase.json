@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "title": "모앙(Moang)",
+  "summary": "개인 카페 손님은 모바일에서 스탬프와 쿠폰을 확인하고, 사장님은 웹 화면에서 회원번호를 조회해 스탬프를 적립하는 파일럿 MVP입니다.",
+  "githubUser": "seonghazel-c",
+  "demoUrl": "https://moang.vercel.app/login",
+  "demoVideoUrl": "",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "개인 카페 손님은 종이 쿠폰이나 여러 매장의 스탬프를 따로 관리해야 해서 적립 현황을 놓치기 쉽고, 사장님은 손님 정보를 빠르게 확인해 스탬프를 적립하는 간단한 도구가 필요합니다.",
+  "targetUsers": [
+    "개인 카페를 이용하는 손님",
+    "개인 카페를 운영하는 사장님",
+    "매장에서 손님 응대를 돕는 직원"
+  ],
+  "features": [
+    "손님은 로그인 후 본인의 회원번호와 QR 값을 확인할 수 있습니다.",
+    "손님은 카페별 스탬프 개수, 보상, 쿠폰까지 남은 개수를 모바일 화면에서 확인할 수 있습니다.",
+    "손님은 발급된 쿠폰과 스탬프 적립 알림을 확인할 수 있습니다.",
+    "사장님은 회원번호 또는 cafe-stamp 형식의 QR 값을 입력해 손님을 조회할 수 있습니다.",
+    "사장님은 조회한 손님에게 스탬프 1개를 적립할 수 있습니다.",
+    "목표 스탬프에 도달하면 쿠폰이 발급되고 손님 화면에 반영됩니다."
+  ],
+  "featureTags": [
+    "스탬프 적립",
+    "QR 회원번호",
+    "쿠폰 발급",
+    "손님 모바일 화면",
+    "사장님 운영 화면",
+    "Supabase 인증"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "JavaScript",
+    "CSS",
+    "Supabase Auth",
+    "Supabase PostgreSQL",
+    "Supabase RPC",
+    "Vercel"
+  ],
+  "techHighlights": [
+    "React Router로 로그인, 손님 화면, 쿠폰, 알림, 마이페이지, 사장님 화면을 분리했습니다.",
+    "Supabase Auth와 profiles 테이블을 연결해 손님과 사장님 역할에 따라 다른 화면으로 이동합니다.",
+    "Supabase PostgreSQL에 customers, cafes, stamp_cards, coupons, notifications 데이터를 저장합니다.",
+    "award_stamp RPC로 스탬프 적립, 쿠폰 발급, 알림 생성을 하나의 흐름으로 처리합니다.",
+    "Vercel SPA rewrite 설정을 추가해 /login, /customer, /owner 같은 직접 접속 경로에서도 React 앱이 열리도록 했습니다."
+  ],
+  "developmentWithAI": "저는 서비스 아이디어, 화면 방향, 배포 확인을 직접 결정했습니다. AI는 기존 프로토타입을 React 화면에 적용하고, 작업 순서를 설명하고, 오류를 함께 확인하며 배포 전 QA와 Vercel 설정 문제 해결을 도왔습니다.",
+  "agent": {
+    "summary": "기획 문서 확인, 이슈별 구현 방향 정리, 화면 개선, QA, 배포 문제 해결에 Agent와 Skill을 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Codex 개발 Agent",
+        "purpose": "프로젝트 문서를 읽고 이슈별 작업 범위, 구현 파일, 검증 방법을 정리했습니다."
+      },
+      {
+        "type": "skill",
+        "name": "Beginner Issue Day Plan",
+        "purpose": "week3_todos의 이슈 5, 6, 7, 8을 초보자도 따라갈 수 있게 작업 순서로 풀어 설명했습니다."
+      },
+      {
+        "type": "skill",
+        "name": "Superpowers Brainstorming",
+        "purpose": "화면을 바로 수정하기 전에 프로토타입을 실제 React 화면에 어떻게 적용할지 방향을 잡았습니다."
+      },
+      {
+        "type": "skill",
+        "name": "Systematic Debugging",
+        "purpose": "Vercel 배포 후 /login 404 문제의 원인을 SPA 라우팅 설정으로 추적하고 해결했습니다."
+      },
+      {
+        "type": "skill",
+        "name": "Verification Before Completion",
+        "purpose": "npm run verify, 라우트 응답 확인, QR 파싱 확인 등 배포 전 검증을 수행했습니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "화면 개선 Workflow",
+        "steps": [
+          "week3_todos에서 이슈 범위 확인",
+          "owner-prototype.html과 user_proto.html 구조 확인",
+          "사장님 화면을 넓은 운영 대시보드로 적용",
+          "손님 화면을 모바일 앱 스타일로 적용",
+          "로그인 화면을 Moang 브랜드 톤으로 정리",
+          "npm run verify로 빌드와 린트 확인"
+        ]
+      },
+      {
+        "name": "배포 QA Workflow",
+        "steps": [
+          "Vercel 프로젝트 생성",
+          "Supabase 환경변수 등록",
+          "Supabase Auth Site URL과 Redirect URL 설정",
+          "Vercel SPA rewrite 설정 추가",
+          "손님 로그인 확인",
+          "사장님 로그인 확인",
+          "회원번호 조회와 스탬프 적립 확인",
+          "손님 화면 새로고침 후 스탬프, 알림, 쿠폰 반영 확인"
+        ]
+      }
+    ]
+  }
+}
