@@ -1,15 +1,17 @@
 import { Layer, Source } from "react-map-gl/maplibre";
 
+import type { MarketKey } from "../market/types";
 import { marketBoundaryFilter } from "./marketBoundary";
 
 const BOUNDARY_SOURCE_ID = "localtwin-selected-market-boundary";
 
 type SelectedMarketBoundaryProps = {
   marketId: string;
+  marketKey: MarketKey;
 };
 
-export function SelectedMarketBoundary({ marketId }: SelectedMarketBoundaryProps) {
-  const filter = marketBoundaryFilter(marketId);
+export function SelectedMarketBoundary({ marketId, marketKey }: SelectedMarketBoundaryProps) {
+  const filter = marketBoundaryFilter(marketId, marketKey);
 
   return (
     <Source id={BOUNDARY_SOURCE_ID} type="geojson" data="/data/market-boundaries.geojson">
