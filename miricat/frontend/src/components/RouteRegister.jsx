@@ -114,12 +114,12 @@ export default function RouteRegister({ onSaved }) {
             {/* 즉시 첫 점검 결과 — 경보 / 이상 없음 / 관할 밖 3분기 */}
             {saved.check?.alertCount > 0 && (
               <p style={{ color: "#E4572E", fontWeight: 600 }}>
-                🚨 지금 영향 주는 공지를 찾았어요 — 디스코드로 첫 경보를 보냈어요!
+                🚨 지금 영향 주는 공지를 찾았어요{saved.check.notified ? " — 디스코드로 첫 경보를 보냈어요!" : "."}
               </p>
             )}
             {saved.check && saved.check.alertCount === 0 && saved.check.covered && (
               <p style={{ color: "#8B7863" }}>
-                🔎 모아둔 공지 {saved.check.checked}건과 대조 — 영향 없음. 디스코드로 첫 보고를 보냈어요.
+                🔎 모아둔 공지 {saved.check.checked}건과 대조 — 영향 없음{saved.check.notified ? ". 디스코드로 첫 보고를 보냈어요." : "이에요."}
               </p>
             )}
             {saved.check && !saved.check.covered && (

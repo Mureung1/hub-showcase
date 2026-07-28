@@ -52,7 +52,7 @@ async function instantCheck(route) {
 
 async function sendFirstReport(route, check) {
   const webhook = process.env.DISCORD_WEBHOOK_URL;
-  if (!webhook) return;
+  if (!webhook) return false;
   const reportBase = process.env.REPORT_BASE_URL ?? 'https://hub-pi-lime.vercel.app';
   const apiBase = process.env.API_BASE_URL ?? 'https://miricat-api.onrender.com';
   let payload;
@@ -75,7 +75,8 @@ async function sendFirstReport(route, check) {
   } else {
     payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 대전·세종·경기 게시판을 확인하고 있어요.` };
   }
-  await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const r = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  return r.ok;   // 화면이 "보냈어요"를 사실일 때만 말하게
 }
 
 // 경로 등록 저장: 화면 입력을 routes 테이블에 insert + 즉시 첫 점검.
@@ -94,15 +95,16 @@ app.post('/api/routes', async (req, res) => {
 
   // 즉시 첫 점검 — 실패해도 등록 자체는 성공으로 (점검은 부가 서비스)
   let check = null;
+  let notified = false;
   try {
     check = await instantCheck(data);
-    await sendFirstReport(data, check);
+    notified = await sendFirstReport(data, check);
   } catch (e) {
     console.error('즉시 점검 실패:', e.message);
   }
   res.status(201).json({
     route: data,
-    check: check && { covered: check.covered, checked: check.checked, alertCount: check.alerts.length },
+    check: check && { covered: check.covered, checked: check.checked, alertCount: check.alerts.length, notified },
   });
 });
 
