@@ -18,6 +18,7 @@ export const initialState = {
   feedback: '',
   currentLetterId: null, // 방금 보낸 편지의 id — 추천 조회/생성 API에 쓴다
   recommendation: null, // 백엔드가 준 추천 응답 {has_match, match_id, matched_letter, reason, ...} 또는 {has_match:false, reason_code}
+  replyTargetMatchId: null, // 지금 답장 중인 matchId — RecommendPage든 저장소(받은 편지) 상세든 어디서 답장을 시작했든 sendReply가 이 값 하나만 본다
 }
 
 export function reducer(state, action) {
@@ -60,9 +61,9 @@ export function reducer(state, action) {
     case 'UNFOLD':
       return { ...state, opened: true }
     case 'START_REPLY':
-      return { ...state, replying: true, opened: false }
+      return { ...state, replying: true, opened: false, replyTargetMatchId: action.matchId }
     case 'CANCEL_REPLY':
-      return { ...state, replying: false }
+      return { ...state, replying: false, replyTargetMatchId: null }
     case 'SHOW_FEEDBACK':
       return { ...state, showFeedback: true }
     case 'SET_FEEDBACK':
@@ -85,6 +86,7 @@ export function reducer(state, action) {
         waitSecs: WAIT_SECS_INITIAL,
         currentLetterId: null,
         recommendation: null,
+        replyTargetMatchId: null,
       }
     default:
       return state

@@ -1,6 +1,6 @@
 // 편지 라우트의 요청/응답 처리.
 // 검증은 zod 스키마로, 실제 DB 작업은 서비스 레이어로 위임한다.
-import { createLetterSchema } from '../schemas/letterSchema.js'
+import { createLetterSchema, replyLetterSchema } from '../schemas/letterSchema.js'
 import {
   createLetter,
   getLetterById,
@@ -8,9 +8,15 @@ import {
   hasLetterToday,
   listMyLetters,
   listThreadLettersForUser,
+  replyToLetter,
 } from '../services/lettersService.js'
 import { findUnresolvedMatchForAuthor } from '../services/matchesService.js'
 import { tagLetter } from '../services/taggingService.js'
+
+// 배포 전까지 테스트 중엔 편지를 여러 통 보내봐야 해서 .env의 DAILY_LETTER_LIMIT_ENABLED=false로
+// 끌 수 있게 한다. 기본값은 켜짐(제한 적용)이라 설정을 깜빡해도 안전한 쪽으로 동작한다.
+// 배포 전 반드시 다시 켜져 있는지(.env에서 이 줄을 지우거나 true로) 확인할 것.
+const DAILY_LETTER_LIMIT_ENABLED = process.env.DAILY_LETTER_LIMIT_ENABLED !== 'false'
 
 export async function postLetter(req, res, next) {
   try {
@@ -18,10 +24,10 @@ export async function postLetter(req, res, next) {
 
     // 하루 1편 제한 + 미해결 추천 시 차단 (docs/plan.md 서비스 규칙, 배포 직전에 다루기로 미뤄둔 항목)
     const [todayLetter, unresolvedMatch] = await Promise.all([
-      hasLetterToday(req.userId),
+      DAILY_LETTER_LIMIT_ENABLED ? hasLetterToday(req.userId) : null,
       findUnresolvedMatchForAuthor(req.userId),
     ])
-    if (todayLetter) {
+    if (DAILY_LETTER_LIMIT_ENABLED && todayLetter) {
       return res
         .status(409)
         .json({ error: '오늘은 이미 편지를 보냈어요. 내일 다시 써주세요.', reason_code: 'daily_limit' })
@@ -94,13 +100,43 @@ export async function getMyThreads(req, res, next) {
   }
 }
 
+// 상세 화면은 목록과 달리 스레드에 오간 편지 전체(원본+답장)를 시간순으로 보여준다.
+// authorId는 여기서 딱 한 번, is_mine(boolean)으로만 변환하고 그대로는 절대 내보내지 않는다.
 export async function getThreadLetter(req, res, next) {
   try {
-    const letter = await getThreadLetterForUser(req.params.id, req.userId)
-    if (!letter) {
+    const letters = await getThreadLetterForUser(req.params.id, req.userId)
+    if (!letters) {
       return res.status(404).json({ error: '편지를 찾을 수 없어요.' })
     }
-    res.json(serializeThreadLetter(letter))
+    res.json({
+      thread_id: letters[0].threadId,
+      messages: letters.map((letter) => ({
+        letter_id: letter.id,
+        title: letter.title,
+        body: letter.content,
+        created_at: letter.createdAt,
+        is_mine: letter.authorId === req.userId,
+      })),
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// 왕복 대화 — 스레드 안 특정 메시지(letter)에 답장. 첫 답장은 여전히
+// POST /api/matches/:matchId/reply 전용(추천 상태 관리가 얽혀 있어서).
+export async function postThreadReply(req, res, next) {
+  try {
+    const data = replyLetterSchema.parse(req.body)
+    const result = await replyToLetter({ letterId: req.params.id, userId: req.userId, ...data })
+
+    if (result.notFound) {
+      return res.status(404).json({ error: '편지를 찾을 수 없어요.' })
+    }
+    if (result.alreadyResolved) {
+      return res.status(409).json({ error: '이미 답장이 달린 편지예요.' })
+    }
+    res.status(201).json(result.reply)
   } catch (err) {
     next(err)
   }

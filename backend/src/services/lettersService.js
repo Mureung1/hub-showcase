@@ -52,9 +52,50 @@ export async function listThreadLettersForUser(userId) {
   })
 }
 
-export function getThreadLetterForUser(id, userId) {
-  return prisma.letter.findFirst({
+// 스레드 상세(T12 후속 수정). 원본 편지는 recipientId가 안 채워져 있어서(threadId만 backfill됨),
+// "내가 작성했거나 나에게 왔거나" 조건만으로는 답장을 보낸 사람 입장에서 원본 편지가 안 걸린다.
+// 그래서 여기선 2단계로 확인한다: ① 클릭한 편지 하나로 "내가 이 스레드에 속해 있는지"만 인가하고,
+// ② 통과하면 그 threadId의 편지 전체(원본+답장)를 시간순으로 가져온다. is_mine 계산을 위해
+// authorId도 같이 가져오되, 이건 절대 응답 그대로 내보내지 않고 컨트롤러에서 boolean으로만 변환한다.
+export async function getThreadLetterForUser(id, userId) {
+  const anchor = await prisma.letter.findFirst({
     where: { id, threadId: { not: null }, OR: [{ authorId: userId }, { recipientId: userId }] },
-    select: THREAD_LETTER_SELECT,
+    select: { threadId: true },
   })
+  if (!anchor) return null
+
+  return prisma.letter.findMany({
+    where: { threadId: anchor.threadId },
+    orderBy: { createdAt: 'asc' },
+    select: { ...THREAD_LETTER_SELECT, authorId: true },
+  })
+}
+
+// 왕복 대화 — 스레드 안의 특정 메시지에 답장한다(첫 답장 이후, 두 번째 메시지부터).
+// 첫 답장(matchesService.replyToMatch)과 달리 Match가 아니라 "나에게 온 메시지 하나"가
+// 기준이다. recipientId가 나인 메시지만 답장 대상이 될 수 있고(= 이미 스레드 안의 메시지라
+// threadId도 항상 같이 채워져 있음), 그 메시지에 이미 답장이 달려 있으면 다시 답장할 수 없다.
+export async function replyToLetter({ letterId, userId, title, content }) {
+  const target = await prisma.letter.findFirst({
+    where: { id: letterId, recipientId: userId },
+    select: { id: true, authorId: true, threadId: true },
+  })
+  if (!target) return { notFound: true }
+
+  const existingReply = await prisma.letter.findFirst({ where: { replyToId: target.id } })
+  if (existingReply) return { alreadyResolved: true }
+
+  const reply = await prisma.letter.create({
+    data: {
+      authorId: userId,
+      recipientId: target.authorId,
+      replyToId: target.id,
+      threadId: target.threadId,
+      title,
+      content,
+      envelope: 'basic',
+      isMatchable: false,
+    },
+  })
+  return { reply }
 }

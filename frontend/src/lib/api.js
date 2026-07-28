@@ -50,6 +50,14 @@ export function fetchThreadById(id) {
   return request(`/api/letters/threads/${id}`)
 }
 
+// 왕복 대화 — 스레드 안 특정 메시지(letterId)에 답장(두 번째 메시지부터). 첫 답장은 replyToMatch.
+export function replyToThreadLetter(letterId, { title, content }) {
+  return request(`/api/letters/threads/${letterId}/reply`, {
+    method: 'POST',
+    body: JSON.stringify({ title, content }),
+  })
+}
+
 // 현재 유효한 추천 조회만 (부수효과 없음, AI 호출 없음)
 export function fetchCurrentRecommendation(letterId) {
   return request(`/api/letters/${letterId}/recommendations/current`)

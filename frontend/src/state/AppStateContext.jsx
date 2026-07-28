@@ -159,8 +159,15 @@ export function AppStateProvider({ children }) {
         patchMatch(state.recommendation.match_id, 'opened').catch(() => {})
       }
     },
+    // RecommendPage(방금 받은 추천)에서 답장을 시작하는 경로.
     startReply: () => {
-      dispatch({ type: 'START_REPLY' })
+      dispatch({ type: 'START_REPLY', matchId: state.recommendation?.match_id ?? null })
+      navigate('/main')
+    },
+    // 저장소 "받은 편지" 상세 화면 등, 세션에 남아있는 recommendation 없이도 matchId만 알면
+    // 답장을 시작할 수 있는 경로. 새로고침/재로그인 후 예전 미해결 추천을 처리할 때 필요하다.
+    startReplyToMatch: (matchId) => {
+      dispatch({ type: 'START_REPLY', matchId })
       navigate('/main')
     },
     cancelReply: () => dispatch({ type: 'CANCEL_REPLY' }),
@@ -179,7 +186,7 @@ export function AppStateProvider({ children }) {
       if (sending.current) return
       sending.current = true
       try {
-        await replyToMatch(state.recommendation.match_id, { title: state.title, content: state.letter })
+        await replyToMatch(state.replyTargetMatchId, { title: state.title, content: state.letter })
         showToast('답장을 보냈어요. 8시간 뒤 상대에게 전달돼요.')
         dispatch({ type: 'RESET_AFTER_SEND' })
         navigate('/main')
@@ -206,6 +213,17 @@ export function AppStateProvider({ children }) {
         patchMatch(state.recommendation.match_id, 'dismissed').catch(() => {})
       }
       dispatch({ type: 'SHOW_FEEDBACK' })
+    },
+    // 저장소 "받은 편지" 상세에서 바로 스쳐 가기 — RecommendPage의 피드백 모달 흐름과 달리
+    // 지금 작성 중일 수 있는 편지(state.letter/title)를 건드리지 않는 독립적인 처리다.
+    dismissMatchById: async (matchId) => {
+      try {
+        await patchMatch(matchId, 'dismissed')
+        showToast('스쳐 갔어요.')
+        navigate('/storage')
+      } catch (err) {
+        showToast(err.message || '처리하지 못했어요. 잠시 후 다시 시도해주세요.')
+      }
     },
     setFeedback: (value) => dispatch({ type: 'SET_FEEDBACK', value }),
     closeFeedback: () => {

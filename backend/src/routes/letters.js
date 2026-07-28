@@ -6,6 +6,7 @@ import {
   getMyThreads,
   getThreadLetter,
   postLetter,
+  postThreadReply,
 } from '../controllers/lettersController.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { recommendationsRouter } from './recommendations.js'
@@ -19,6 +20,7 @@ lettersRouter.get('/', requireAuth, getMyLetters)
 // id 파라미터로 먼저 먹어버린다(Express는 등록 순서대로 매칭).
 lettersRouter.get('/threads', requireAuth, getMyThreads)
 lettersRouter.get('/threads/:id', requireAuth, getThreadLetter)
+lettersRouter.post('/threads/:id/reply', requireAuth, postThreadReply)
 lettersRouter.get('/:id', requireAuth, getLetter)
 
 // /api/letters/:id/recommendations, /current, /refresh
