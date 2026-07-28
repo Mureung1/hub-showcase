@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import apiClient from '../api/apiClient';
 import { deleteMyNotification, getFavoriteGroupPurchases, getMyNotifications } from '../api/groupPurchase';
 import { defaultProfileImageUrl, getProfileImageUrl } from '../utils/profileImage';
 import './Header.css';
@@ -55,12 +56,9 @@ export default function Header({ currentPage, onNavigate }) {
 
   const handleDevLogin = async (userId, role) => {
     try {
-      const response = await fetch('/auth/dev-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
-      const result = await response.json();
+      // Use the shared API client so deployed requests go to Render rather
+      // than the Vercel frontend origin.
+      const result = await apiClient.post('/auth/dev-login', { userId });
       if (result.success) {
         localStorage.setItem('accessToken', result.data.accessToken);
         const profileKey = result.data.user?.id === 1 ? 'host' : result.data.user?.id === 2 ? 'participant' : 'neighbor';
