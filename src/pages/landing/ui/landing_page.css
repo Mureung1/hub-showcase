@@ -53,7 +53,7 @@
 
 .landing-hero__content {
   display: grid;
-  min-height: calc(100svh - 72px);
+  min-height: calc(84svh - 72px);
   align-items: center;
   padding: var(--spacing-12) 0 var(--spacing-16);
 }
@@ -133,6 +133,7 @@
 
 .feature-showcase {
   display: grid;
+  min-height: 84svh;
   align-content: center;
   gap: var(--spacing-8);
   padding: calc(var(--layout-section-gap-mobile) + var(--spacing-4)) 0;
@@ -472,7 +473,7 @@
 .landing-contact {
   position: relative;
   display: grid;
-  min-height: 64svh;
+  min-height: 84svh;
   overflow: hidden;
   background: var(--color-electric-blue);
   color: var(--color-canvas);
@@ -482,7 +483,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  min-height: 64svh;
+  min-height: 84svh;
   align-content: center;
   justify-items: center;
   gap: var(--spacing-5);

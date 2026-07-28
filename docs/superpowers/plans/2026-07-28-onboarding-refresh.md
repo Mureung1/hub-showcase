@@ -77,3 +77,17 @@
 1. 기능 소개 섹션의 `100svh` 최소 높이를 제거한다.
 2. 기존 반응형 섹션 간격에 16px을 더해 위아래 여백을 모바일 64px, 태블릿 80px, 데스크톱 96px로 맞춘다.
 3. 랜딩 관련 기존 테스트와 390px, 768px, 1280px 화면을 다시 확인한다.
+
+## 작업 7: 세 장면 높이 리듬 통일
+
+**파일**
+
+- 수정: `src/pages/landing/ui/landing_page.css`
+- 수정: `src/pages/landing/ui/landing_page_contract.test.ts`
+- 수정: `docs/onboarding.md`
+- 수정: `docs/superpowers/specs/2026-07-28-onboarding-refresh-design.md`
+
+1. 상단바를 포함한 Hero, 기능 소개, 소통 섹션의 최소 높이를 `84svh`로 통일한다.
+2. 콘텐츠가 최소 높이를 넘으면 섹션이 자연스럽게 늘어나는 구조를 유지한다.
+3. 기존 Hero 높이 계약 테스트의 기대값을 `84svh`로 갱신한다.
+4. 랜딩 관련 기존 테스트와 390px, 768px, 1280px 화면에서 장면 전환 리듬을 확인한다.
