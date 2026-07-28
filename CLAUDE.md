@@ -40,8 +40,8 @@ npm run preview   # vite preview (static preview of dist/, no API — use npm ru
 
 **Vitest + jsdom + @testing-library/react** (`vitest.config.js` merges `vite.config.js` so plugins/
 aliases stay shared; `vitest.setup.js` registers jest-dom matchers and auto-`cleanup()`s). `globals:
-true`, so `describe`/`it`/`expect` need no import. Only `src/**/*.{test,spec}.{js,jsx}` is collected —
-`android/` and `dist/` are excluded.
+true`, so `describe`/`it`/`expect` need no import. `src/**/*.{test,spec}.{js,jsx}` and
+`server/**/*.{test,spec}.js` are collected — `android/` and `dist/` are excluded.
 
 ```bash
 npm run test                                   # vitest run (one-shot)

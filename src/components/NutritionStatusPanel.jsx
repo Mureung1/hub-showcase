@@ -16,6 +16,14 @@ const STATUS_META = {
   [NUTRIENT_STATUS.EXCEEDED]: { label: '초과', color: colors.danger, surface: colors.dangerSurface },
 }
 
+// meta.color는 막대 채우기(ProgressBarFill)·배지 픽셀을 그대로 유지하기 위한 값이라 손대지 않고,
+// 아래 NutrientBarRow의 퍼센트+상태 라벨처럼 흰 배경 위 순수 텍스트로 쓰는 자리만 이 맵을 쓴다.
+const STATUS_TEXT_COLOR = {
+  [NUTRIENT_STATUS.SATISFIED]: colors.satisfied,
+  [NUTRIENT_STATUS.DEFICIENT]: colors.deficientText,
+  [NUTRIENT_STATUS.EXCEEDED]: colors.dangerText,
+}
+
 const STATUS_ORDER = [NUTRIENT_STATUS.SATISFIED, NUTRIENT_STATUS.DEFICIENT, NUTRIENT_STATUS.EXCEEDED]
 
 function StatusCountBadge({ status, count }) {
@@ -72,7 +80,9 @@ function NutrientBarRow({ row }) {
       <div style={{ height: 10, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
         <ProgressBarFill percent={fillPercent} color={meta.color} />
       </div>
-      <span style={{ fontSize: font.size.xs, fontWeight: 700, color: meta.color, textAlign: 'right', lineHeight: 1.4 }}>
+      <span
+        style={{ fontSize: font.size.xs, fontWeight: 700, color: STATUS_TEXT_COLOR[row.status], textAlign: 'right', lineHeight: 1.4 }}
+      >
         {row.percent}%{isOver ? '!' : ''}
         <br />
         {meta.label}

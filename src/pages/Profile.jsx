@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import CardSettingsPanel from '../components/CardSettingsPanel.jsx'
@@ -8,14 +9,19 @@ import ChevronIcon from '../components/ChevronIcon.jsx'
 import DataBackupPanel from '../components/DataBackupPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SchoolSearchField from '../components/SchoolSearchField.jsx'
+import SegmentedControl from '../components/SegmentedControl.jsx'
 import StandardComparisonList from '../components/StandardComparisonList.jsx'
 import TagMultiSelect from '../components/TagMultiSelect.jsx'
 import TextField from '../components/TextField.jsx'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS } from '../lib/healthProfile.js'
 import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { OCCUPATION_OPTIONS } from '../lib/occupationKeywords.js'
+import { validateBodyInfo } from '../lib/profileValidation.js'
+import { OCCUPATION_FOR_UNIVERSITY, occupationForSchoolKind } from '../lib/schoolOccupation.js'
 import { getStandardIntake } from '../lib/standardIntake.js'
+import { TABS } from '../lib/tabs.js'
 import { SUPPORTED_UNIVERSITIES } from '../lib/universities.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 const SEX_OPTIONS = [
@@ -31,44 +37,22 @@ const ACTIVITY_OPTIONS = [
   { key: 'high', label: '높음' },
 ]
 
-function SegmentedControl({ label, options, value, onChange }) {
+// 성별/활동량 세그먼트 위에 붙는 라벨 한 줄 — SegmentedControl 자체는 라벨을 그리지 않아 호출부가 감싼다.
+function LabeledSegmentedControl({ label, ...rest }) {
   return (
     <div style={styles.field}>
       <span style={styles.label}>{label}</span>
-      <div style={{ display: 'flex', gap: spacing.sm }}>
-        {options.map((opt) => {
-          const active = value === opt.key
-          return (
-            <button
-              key={opt.key}
-              type="button"
-              className="tds-press"
-              onClick={() => onChange(opt.key)}
-              style={{
-                flex: 1,
-                padding: `${spacing.md}px 0`,
-                borderRadius: radius.sm,
-                border: 'none',
-                background: active ? colors.primary : colors.bg,
-                color: active ? '#fff' : colors.textStrong,
-                fontWeight: 700,
-                fontSize: font.size.md,
-                cursor: 'pointer',
-              }}
-            >
-              {opt.label}
-            </button>
-          )
-        })}
-      </div>
+      <SegmentedControl inactiveTextColor={colors.textStrong} {...rest} />
     </div>
   )
 }
 
 export default function Profile() {
   const { profile, recommended, tempSex, saveProfile, authMode, logout } = useUser()
+  const { showToast } = useToast()
   const navigate = useNavigate()
   const isOnboarding = !profile
+  useDocumentTitle(isOnboarding ? '내 정보 입력' : TABS.find((t) => t.key === 'my').label)
 
   async function handleLogout() {
     await logout()
@@ -104,12 +88,21 @@ export default function Profile() {
   const [selectedSchool, setSelectedSchool] = useState(profile?.school ?? null)
   const [schoolPickerKind, setSchoolPickerKind] = useState('k12')
 
+  // 트랙 3 §4 — 학교를 고르면 직업도 맞춰준다. 이미 직업을 직접 고른 뒤라면(기본값 'other'가
+  // 아니면) 덮어쓰지 않는다 — 학교 선택이 그 결정을 조용히 되돌리면 안 된다.
+  function suggestOccupation(next) {
+    if (!next) return
+    setForm((f) => (f.occupation === 'other' ? { ...f, occupation: next } : f))
+  }
+
   function handleSelectK12School(school) {
     setSelectedSchool({ type: 'k12', officeCode: school.officeCode, code: school.schoolCode, name: school.name, kind: school.kind })
+    suggestOccupation(occupationForSchoolKind(school.kind))
   }
 
   function handleSelectUniversity(univ) {
     setSelectedSchool({ type: 'university', officeCode: null, code: univ.code, name: univ.name })
+    suggestOccupation(OCCUPATION_FOR_UNIVERSITY)
   }
 
   // form은 마운트 시 한 번만 profile에서 초기화되는데, 마운트된 채로 profile 자체가 바뀌는 경우가
@@ -134,7 +127,11 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
 
-  const isComplete = form.age && form.heightCm && form.weightKg
+  const validation = useMemo(
+    () => validateBodyInfo({ age: form.age, heightCm: form.heightCm, weightKg: form.weightKg }),
+    [form.age, form.heightCm, form.weightKg],
+  )
+  const isComplete = validation.valid
 
   const preview = useMemo(() => {
     if (!isComplete) return null
@@ -177,7 +174,14 @@ export default function Profile() {
       // saveProfile이 Supabase profiles 테이블에 upsert하고, 저장된 진짜 프로필이 생겼으니
       // tempSex(임시 수단)도 함께 지운다.
       await saveProfile({ profile, recommended: preview })
-      navigate('/analyze', { replace: true })
+      if (isOnboarding) {
+        // 온보딩은 "완료 후 홈으로" 흐름이라 이동 자체가 성공 피드백을 겸한다.
+        navigate('/analyze', { replace: true })
+      } else {
+        // MY 탭에서 수정한 경우엔 그 자리에 머문다 — navigate만 하고 아무 표시가 없으면 저장이
+        // 됐는지 알 방법이 없어 사용자가 다시 누르게 되던 문제였다.
+        showToast('저장되었습니다', { tone: 'success' })
+      }
     } catch (err) {
       setSaveError(err.message || '저장에 실패했어요. 잠시 후 다시 시도해주세요.')
     } finally {
@@ -205,8 +209,9 @@ export default function Profile() {
         placeholder="25"
         value={form.age}
         onChange={(e) => updateField('age', e.target.value)}
+        error={validation.errors.age}
       />
-      <SegmentedControl label="성별" options={SEX_OPTIONS} value={form.sex} onChange={(v) => updateField('sex', v)} />
+      <LabeledSegmentedControl label="성별" options={SEX_OPTIONS} value={form.sex} onChange={(v) => updateField('sex', v)} />
       <TextField
         label="키 (cm)"
         id="profile-height"
@@ -215,6 +220,7 @@ export default function Profile() {
         placeholder="170"
         value={form.heightCm}
         onChange={(e) => updateField('heightCm', e.target.value)}
+        error={validation.errors.heightCm}
       />
       <TextField
         label="몸무게 (kg)"
@@ -224,8 +230,14 @@ export default function Profile() {
         placeholder="65"
         value={form.weightKg}
         onChange={(e) => updateField('weightKg', e.target.value)}
+        error={validation.errors.weightKg}
       />
-      <SegmentedControl label="활동량" options={ACTIVITY_OPTIONS} value={form.activity} onChange={(v) => updateField('activity', v)} />
+      <LabeledSegmentedControl
+        label="활동량"
+        options={ACTIVITY_OPTIONS}
+        value={form.activity}
+        onChange={(v) => updateField('activity', v)}
+      />
       <div style={{ marginBottom: spacing.md }}>
         <TagMultiSelect
           label="알레르기 (해당 시 선택)"

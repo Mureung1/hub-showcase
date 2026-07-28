@@ -44,7 +44,13 @@ function rowToApp(row) {
       conditions: row.conditions ?? [],
       allergies: row.allergies ?? [],
       school: row.school_type
-        ? { type: row.school_type, officeCode: row.school_office_code, code: row.school_code, name: row.school_name }
+        ? {
+            type: row.school_type,
+            officeCode: row.school_office_code,
+            code: row.school_code,
+            name: row.school_name,
+            kind: row.school_kind,
+          }
         : null,
       occupation: row.occupation ?? null,
     },
@@ -82,6 +88,7 @@ export async function upsertProfile({ profile, recommended }) {
     school_office_code: profile.school?.officeCode ?? null,
     school_code: profile.school?.code ?? null,
     school_name: profile.school?.name ?? null,
+    school_kind: profile.school?.kind ?? null,
     occupation: profile.occupation ?? null,
     recommended: recommended ?? {},
   }
@@ -135,6 +142,27 @@ export async function addMeal(date, mealType, items, total) {
 
   const { data, error } = await supabase.from('meals').insert(row).select().single()
   if (error) await throwFriendly(error)
+  return mealRowToApp(data)
+}
+
+// 저장된 끼니의 items(+total)를 통째로 교체한다(트랙 2 §5, 저장 전 항목 하나만 값을 고치고 나머지는
+// 그대로 넘기는 식으로 쓴다). schema.sql의 meals_update_own 정책이 이미 있어 별도 소유권 검사 없이
+// update만 호출하면 된다 — 본인 행이 아니면 RLS가 애초에 그 행을 안 보여줘 0행 업데이트로 끝나고,
+// 그건 mealId가 틀렸을 때와 구분이 안 되므로 둘 다 "수정할 기록을 찾을 수 없어요"로 알린다.
+export async function updateMeal(mealId, items, total) {
+  if (!Array.isArray(items) || items.length === 0) return null
+
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error('로그인이 필요합니다.')
+
+  const row = {
+    items: items.map(normalizeItem),
+    total: total ?? {},
+  }
+
+  const { data, error } = await supabase.from('meals').update(row).eq('id', mealId).select().maybeSingle()
+  if (error) await throwFriendly(error)
+  if (!data) throw new Error('수정할 기록을 찾을 수 없어요.')
   return mealRowToApp(data)
 }
 

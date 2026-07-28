@@ -93,6 +93,26 @@ export function setMeals(userId, dateKey, mealRecords) {
   set(storageKey(userId, dateKey), Array.isArray(mealRecords) ? mealRecords : [])
 }
 
+// 저장된 끼니의 음식 목록을 통째로 교체한다(트랙 2 §5, 저장 전 항목 하나만 값을 고치고 나머지는 그대로
+// 넘기는 식으로 쓴다 — addMealRecord처럼 id를 새로 만들지 않고 호출부가 넘긴 항목을 그대로 믿는다).
+// 없는 mealRecordId면 아무 것도 바꾸지 않고 null을 반환한다(호출부가 "수정할 기록을 못 찾음"으로 처리).
+export function updateMealRecord(userId, dateKey, mealRecordId, { items } = {}) {
+  if (!userId || !dateKey || !Array.isArray(items) || items.length === 0) return null
+
+  const raw = get(storageKey(userId, dateKey), [])
+  const records = Array.isArray(raw) ? raw : []
+  let updated = null
+  const next = records.map((record) => {
+    if (record.id !== mealRecordId) return record
+    updated = { ...record, items }
+    return updated
+  })
+  if (!updated) return null
+
+  set(storageKey(userId, dateKey), next)
+  return updated
+}
+
 // 끼니 카드 삭제 = 그 끼니를 구성하는 음식 전체 제거(끼니 단위 삭제만 지원, 개별 음식 삭제는 없음).
 // 그 날짜의 마지막 끼니를 지운 경우 빈 배열을 남기지 않고 키 자체를 지운다 — getDatesWithMeals가
 // 키의 "존재 여부"로 날짜를 세므로, 빈 배열만 남기면 실제로는 끼니가 없는 날짜가 계속 "끼니가 있는

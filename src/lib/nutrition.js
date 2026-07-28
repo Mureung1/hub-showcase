@@ -3,6 +3,9 @@
 import { getPlausibility, getPortionRange } from './foodData.js'
 // 영양소별 "어느 방향이 좋은가"(target/limit) 판정은 nutrientCriteria.js가 단일 소스다(6주차 §3).
 import { isLimitNutrient, isMet, SODIUM_LIMIT_MG } from './nutrientCriteria.js'
+// 6~18세 권장량은 youthIntake.js가 단일 소스다(트랙 3 §1) — 성인 공식(Mifflin-St Jeor)과 계산
+// 방식 자체가 다르므로(청소년은 IOM EER 회귀식 + KDRIs 공식 단백질/식이섬유 표) 별도 leaf 모듈로 뒀다.
+import { calcYouthRecommendedNutrients, isYouthAge } from './youthIntake.js'
 
 const ACTIVITY_FACTORS = {
   low: 1.375,
@@ -97,6 +100,9 @@ export const NUTRITION_SOURCE = {
   OFFICIAL: '공식',
   LABEL: '라벨 추출',
   ESTIMATED: '추정',
+  // 트랙 2 §4 — 저장 전 결과 카드에서 사용자가 직접 수치를 고쳤을 때만 붙는다(DB 매칭/AI 추정과
+  // 구분해 "이 값은 사용자가 확인·수정한 값"임을 그대로 보여준다).
+  MANUAL: '직접입력',
 }
 
 const ESTIMATED_GRAMS_MIN = 20
@@ -343,6 +349,14 @@ export function calcTDEE(bmr, activity) {
 }
 
 export function calcRecommendedNutrients({ age, heightCm, weightKg, sex, activity, conditions = [] }) {
+  // 6~18세는 성인 공식(Mifflin-St Jeor BMR) 대신 청소년 전용 계산으로 분기한다 — 이 분기를 타지
+  // 않던 이전에는 초·중·고 학생도 전부 성인 기준으로 계산됐다(급식이 이 앱의 간판 기능인데 정작 그
+  // 연령대 권장량이 없던 버그). age<19가 아니라 isYouthAge(6~18)로 좁혀, 5세 이하(기존에도 이미
+  // 성인 공식이던 구간)의 동작은 이번 변경으로 바뀌지 않는다.
+  if (isYouthAge(age)) {
+    return calcYouthRecommendedNutrients({ age, heightCm, weightKg, sex, activity })
+  }
+
   const bmr = calcBMR({ sex, weightKg, heightCm, age })
   const tdee = calcTDEE(bmr, activity)
 

@@ -65,12 +65,14 @@ const METHOD_SOURCE_NOTE = {
 
 // precisionEngine이 준 item.matched(식약처 DB 실측 매칭 여부)를 기존 SourceBadge 배지 체계
 // (AnalysisResultCard가 항목별로 그린다)로 바로 매핑해, 어디까지 실측이고 어디부터 AI 추정인지
-// 항목 단위로 투명하게 보여준다.
+// 항목 단위로 투명하게 보여준다. matchType(exact/alias/partial/fuzzy/null)도 함께 넘겨 트랙 2 §2의
+// 항목별 매칭 방식 칩이 그릴 수 있게 한다 — 지금까지는 응답에만 실려오고 화면 어디서도 안 썼다.
 function toAnalysisItems(items) {
   return items.map((item) => ({
     name: item.name,
     nutrients: item.nutrients,
     source: item.matched ? NUTRITION_SOURCE.DB : NUTRITION_SOURCE.ESTIMATED,
+    matchType: item.matchType ?? null,
   }))
 }
 
@@ -84,6 +86,7 @@ function buildTrayAnalysisNavState(result, { mealTypeKey, mealTypeLabel, isTray 
       mealType: mealTypeKey,
       titleOverride: isTray ? `${mealTypeLabel}(통합)` : mealTypeLabel,
       sourceNote: METHOD_SOURCE_NOTE[result.method] ?? '추정',
+      confidence: result.confidence,
     },
   }
 }
@@ -277,6 +280,7 @@ function WeekTabs({ weekDates, selectedKey, todayKey, onSelect }) {
 
 function NeisMealCard({ meal, schoolType }) {
   const navigate = useNavigate()
+  const { profile } = useUser()
   const { analyzing, error, run } = useTrayAnalysis(navigate)
   const label = MEAL_TYPE_LABEL[meal.mealType] || meal.mealType
 
@@ -288,6 +292,7 @@ function NeisMealCard({ meal, schoolType }) {
       nutrients={buildNutrientRows(meal.nutrients)}
       estimated={false}
       layout="stacked"
+      profileAllergies={profile?.allergies}
       onAnalyzeTray={() =>
         run(
           meal.menus.map((m) => m.name),
@@ -462,6 +467,7 @@ const PERIOD_NOTE_TEXT = {
 // 영향받지 않는다(카드별로 독립된 로딩/에러).
 function UnivMealSlotCard({ mealKey, label, slot }) {
   const navigate = useNavigate()
+  const { profile } = useUser()
   const { analyzing, error, run } = useTrayAnalysis(navigate)
   const { analyzingMenu, error: menuError, run: runMenu } = useMenuAnalysis(navigate)
 
@@ -474,6 +480,7 @@ function UnivMealSlotCard({ mealKey, label, slot }) {
       // 제거함) 그대로 쓴다.
       menus={slot.menus}
       estimated
+      profileAllergies={profile?.allergies}
       // 메뉴별 개별 [영양 분석]도 6주차 §1-B부터 precisionEngine의 단일 항목 모드를 쓴다(4주차엔
       // Analyze.jsx로 메뉴명만 넘겨 사용자가 직접 분석을 다시 눌러야 했다).
       onAnalyzeMenu={(menuName) => runMenu(menuName, { mealTypeKey: mealKey, schoolType: 'univ' })}
@@ -524,7 +531,7 @@ function UnivDayMeals({ meals, track, source, updatedAt }) {
         }
         if (slot.status === 'suspended') {
           return (
-            <p key={key} style={{ margin: '4px 0', fontSize: font.size.xs, color: colors.deficient, textAlign: 'center' }}>
+            <p key={key} style={{ margin: '4px 0', fontSize: font.size.xs, color: colors.deficientText, textAlign: 'center' }}>
               {label} · {slot.note || '운영 중단'}
             </p>
           )

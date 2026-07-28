@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import AnalysisResultCard from '../components/AnalysisResultCard.jsx'
+import DailyMissionCard from '../components/DailyMissionCard.jsx'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import LabelScan from '../components/LabelScan.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -8,6 +9,9 @@ import Skeleton from '../components/Skeleton.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
+import SchoolMealNutritionSummary from '../components/SchoolMealNutritionSummary.jsx'
+import SegmentedControl from '../components/SegmentedControl.jsx'
+import StreakBadge from '../components/StreakBadge.jsx'
 import TextField from '../components/TextField.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
@@ -15,8 +19,9 @@ import { pickBestFoodMatch, searchFoodDB } from '../lib/fooddb.js'
 import { normalizeFoodSearchName } from '../lib/foodNameMap.js'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { GEMINI_TEMPERATURE, IDENTIFICATION_SCHEMA, LABEL_SCAN_SCHEMA } from '../lib/geminiSchemas.js'
-import { getRecommendedMealType } from '../lib/mealType.js'
+import { getRecommendedMealType, MEAL_TYPE_LABELS } from '../lib/mealType.js'
 import { sumNutrients } from '../lib/mealStore.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import {
   clampEstimatedGrams,
   clampToPlausibleNutrients,
@@ -394,39 +399,18 @@ const ANALYZE_MODES = [
 ]
 
 // 사진/텍스트(둘은 이미 하나로 합쳐진 "음식 분석")와 라벨 스캔을 탭으로 명확히 구분한다.
-// Profile.jsx의 SegmentedControl과 같은 톤(선택된 탭만 채운 배경)을 재사용한다.
 // disabled: 분석 중이거나 결과를 띄워둔 동안에는 탭을 잠근다 — 탭을 바꿔도 결과 카드는 같은 자리를
 // 지키므로, 잠그지 않으면 "라벨 스캔 탭인데 사진 분석 결과가 떠 있는" 어긋난 상태가 보인다.
 function ModeTabs({ mode, onChange, disabled = false }) {
   return (
-    <div style={{ display: 'flex', gap: spacing.sm, marginBottom: spacing.md }}>
-      {ANALYZE_MODES.map((m) => {
-        const active = mode === m.key
-        return (
-          <button
-            key={m.key}
-            type="button"
-            className="tds-press"
-            onClick={() => onChange(m.key)}
-            disabled={disabled}
-            style={{
-              flex: 1,
-              padding: `${spacing.md}px 0`,
-              borderRadius: radius.sm,
-              border: 'none',
-              background: active ? colors.primary : colors.bg,
-              color: active ? '#fff' : colors.textStrong,
-              fontWeight: 700,
-              fontSize: font.size.md,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-              opacity: disabled && !active ? 0.5 : 1,
-            }}
-          >
-            {m.label}
-          </button>
-        )
-      })}
-    </div>
+    <SegmentedControl
+      options={ANALYZE_MODES}
+      value={mode}
+      onChange={onChange}
+      disabled={disabled}
+      inactiveTextColor={colors.textStrong}
+      style={{ marginBottom: spacing.md }}
+    />
   )
 }
 
@@ -493,7 +477,8 @@ const STATUS = {
 }
 
 export default function Analyze() {
-  const { authUser, profile, tempSex, setTodayMeal, addTodayMeal, setTempSex } = useUser()
+  useDocumentTitle('홈')
+  const { authUser, profile, tempSex, addTodayMeal, setTempSex, effectiveRecommended } = useUser()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -552,9 +537,18 @@ export default function Analyze() {
     }
     setPendingAnalysis(trayPrefill.pendingAnalysis)
     setResultPhotoUrl(null)
-    setResultMeta({ titleOverride: trayPrefill.titleOverride, sourceNote: trayPrefill.sourceNote })
+    setResultMeta({
+      titleOverride: trayPrefill.titleOverride,
+      sourceNote: trayPrefill.sourceNote,
+      confidence: trayPrefill.confidence,
+      // 트랙 3 §3 — 이 입구로 들어온 결과만 "오늘 급식 체크" 카드를 보여준다(일반 사진/텍스트/라벨
+      // 분석은 학교 급식이 아니므로 대상이 아니다).
+      isSchoolMeal: true,
+    })
     setMealType(trayPrefill.mealType || getRecommendedMealType())
-    setServings(1)
+    // 트랙 2 §3(다시 기록) — 기록에서 되돌아올 땐 원래 먹었던 인분 수를 그대로 다시 보여준다.
+    // CafeteriaPanel의 한 판 통합 분석은 이 값을 넘기지 않아(항상 새 1인분 기준) 여기서도 그대로 1이다.
+    setServings(trayPrefill.servings ?? 1)
     setStatus(STATUS.RESULT)
     navigate(location.pathname, { replace: true, state: {} })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -662,14 +656,12 @@ export default function Analyze() {
       baseNutrients: pendingAnalysis.items[i].nutrients,
       servings,
     }))
-    const parsed = { items, total: scaled.total }
 
     setSaving(true)
     try {
       // 이번 분석에서 나온 음식 전체를 하나의 끼니 기록으로 저장
       // (음식이 1개면 단일 메뉴, 2개 이상이면 한 끼 세트로 식단 탭에서 구분해 보여준다)
-      await addTodayMeal(parsed.items, mealType)
-      setTodayMeal(parsed)
+      await addTodayMeal(items, mealType)
       resetToIdle()
       // 결과 카드가 사라지므로 "오늘의 영양 진단 보기" 진입점을 토스트 액션으로 남긴다.
       showToast('식단이 저장되었습니다', {
@@ -683,9 +675,37 @@ export default function Analyze() {
     }
   }
 
+  // 트랙 2 §4 — 저장 전 수동 보정. AnalysisResultCard가 화면에 보이는(인분 배율 적용) 값을 이미
+  // 1인분 기준으로 되돌려 넘겨준다 — 여기서는 그 값을 pendingAnalysis(항상 1인분 기준)에 그대로
+  // 반영하고 출처만 "직접입력"으로 바꾸면 된다. 음식이 여러 개일 땐 카드 쪽에서 이 진입점 자체를
+  // 막으므로 itemIndex는 항상 0이다.
+  function handleEditItemNutrients(itemIndex, baseNutrients) {
+    setPendingAnalysis((prev) => {
+      if (!prev) return prev
+      const items = prev.items.map((item, i) =>
+        i === itemIndex ? { ...item, nutrients: baseNutrients, source: NUTRITION_SOURCE.MANUAL, matchType: null } : item,
+      )
+      return { items, total: sumNutrients(items) }
+    })
+  }
+
   return (
     <div style={styles.page}>
-      <ScreenHeader title={`안녕하세요, ${greetingName}님 👋`} subtitle="오늘 점심을 찍어볼까요?" />
+      {/* "을/를" 조사는 한국어에서 앞말 받침 유무에 따라 달라져(점심을/기타를) 변수에 그대로 붙일 수
+          없다 — "오늘의 X, 찍어볼까요" 형태로 조사가 필요 없게 문장을 구성한다. */}
+      <ScreenHeader
+        title={`안녕하세요, ${greetingName}님 👋`}
+        subtitle={`오늘의 ${MEAL_TYPE_LABELS[getRecommendedMealType()]}, 사진으로 기록해볼까요?`}
+      />
+
+      {/* 앱의 모든 개인화(권장 섭취량 등)를 여는 단 하나의 질문이라 분석 카드보다 먼저 보여야 한다 —
+          카드들 뒤에 있으면 작은 화면에서 스크롤해야만 보였다. */}
+      {showSexPrompt && <SexPromptCard onPick={setTempSex} />}
+
+      {/* 연속 기록 배지 + 오늘의 미션(트랙 1) — 연속이 0일이거나 recommended가 없으면(위
+          SexPromptCard가 뜬 상태) 각자 스스로 아무 것도 그리지 않으므로 중복/공허한 안내가 되지 않는다. */}
+      <StreakBadge />
+      <DailyMissionCard />
 
       {/* 분석 중에는 탭을 바꿔 결과가 뒤섞이지 않게 잠근다. */}
       <ModeTabs mode={mode} onChange={setMode} disabled={status !== STATUS.IDLE} />
@@ -703,8 +723,10 @@ export default function Analyze() {
           saving={saving}
           titleOverride={resultMeta.titleOverride}
           sourceNote={resultMeta.sourceNote}
+          confidence={resultMeta.confidence}
           servings={servings}
           onServingsChange={setServings}
+          onEditNutrients={handleEditItemNutrients}
         />
       ) : mode === 'food' ? (
         // key={status}: IDLE과 ANALYZING이 같은 <Card>라 React가 DOM 노드를 재사용하는데, 그러면
@@ -753,7 +775,14 @@ export default function Analyze() {
         </Card>
       )}
 
-      {showSexPrompt && <SexPromptCard onPick={setTempSex} />}
+      {/* 트랙 3 §3 — 급식 기반 하루 설계. 한 판 통합 분석(prefillTrayAnalysis) 결과일 때만 보인다. */}
+      {status === STATUS.RESULT && resultMeta.isSchoolMeal && (
+        <SchoolMealNutritionSummary
+          recommended={effectiveRecommended}
+          mealTotal={scaleMealAnalysisByServings(pendingAnalysis, servings).total}
+          mealType={mealType}
+        />
+      )}
     </div>
   )
 }

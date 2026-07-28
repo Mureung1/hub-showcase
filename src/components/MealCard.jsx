@@ -6,6 +6,7 @@ import { useState } from 'react'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import Spinner from './Spinner.jsx'
+import { findAllergyConflicts } from '../lib/allergyConflicts.js'
 import { getAllergenByCode } from '../lib/allergyRules.js'
 import { codeNumber, sortAllergyCodes, toSuperscript } from '../lib/allergyDisplay.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -57,6 +58,43 @@ function AllergyLegend({ menus, estimated, showPerItemDetail = false }) {
         </>
       )}
     </>
+  )
+}
+
+// 이 카드에 담긴 메뉴 전체를 훑어 프로필 알레르기와 겹치는 M코드를 하나로 모은다(중복 제거).
+// 트랙 3 §2 — 프로필 알레르기와 급식/학식 메뉴의 M코드가 둘 다 있었는데 여태 서로 대조된 적이 없었다.
+function collectCardConflicts(menus, profileAllergies) {
+  const codes = new Set()
+  for (const menu of menus) {
+    for (const code of findAllergyConflicts(profileAllergies, menu.allergyCodes)) codes.add(code)
+  }
+  return sortAllergyCodes([...codes])
+}
+
+// 카드 상단 경고 배너 — "겹치는 게 없음"은 절대 "안전함"으로 표시하지 않는다(경고가 있을 때만 렌더).
+// estimated(학식)면 실제 재료 확인을 한 번 더 당부한다 — 키워드 추정이라 놓칠 수 있어서다.
+function ConflictBanner({ codes, estimated }) {
+  if (codes.length === 0) return null
+  const names = codes.map((c) => getAllergenByCode(c)?.name).filter(Boolean).join('·')
+
+  return (
+    <div
+      style={{
+        marginTop: spacing.sm,
+        padding: spacing.md,
+        borderRadius: radius.sm,
+        background: colors.dangerSurface,
+      }}
+    >
+      <p style={{ margin: 0, fontSize: font.size.sm, fontWeight: 700, color: colors.dangerText }}>
+        ⚠️ 등록한 알레르기({names})가 포함된 메뉴가 있어요
+      </p>
+      {estimated && (
+        <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, color: colors.dangerText }}>
+          이 메뉴는 이름 기반 추정 정보예요 — 실제 재료를 꼭 확인하세요.
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -118,13 +156,24 @@ const ANALYZE_BUTTON_STYLE = {
 // 요청을 보내면 먼저 끝난 쪽만 결과 화면으로 넘어가고 나중 요청은 조용히 버려지므로, 아예 동시
 // 요청 자체를 막는 편이 낫다). 다만 "왜 안 눌리는지" 알 수 있도록 흐리게 표시한다(리뷰에서 발견 —
 // 이전엔 비활성화만 되고 스타일은 그대로라 눌러도 아무 반응 없는 것처럼 보였다).
-function MenuList({ menus, layout, onAnalyzeMenu, analyzingMenu }) {
+// 메뉴 하나가 프로필 알레르기와 겹칠 때만 보이는 작은 경고 표시. 카드 상단 배너(ConflictBanner)가
+// "이 카드 어딘가에 있다"를 알리는 자리라면, 이건 "정확히 어느 메뉴인지"를 짚어주는 자리다.
+function ConflictMark() {
+  return (
+    <span aria-label="알레르기 주의" style={{ color: colors.dangerText, marginLeft: 4 }}>
+      ⚠️
+    </span>
+  )
+}
+
+function MenuList({ menus, layout, onAnalyzeMenu, analyzingMenu, profileAllergies }) {
   if (layout === 'stacked') {
     return (
       <ul style={{ margin: `${spacing.md}px 0 0`, padding: 0, listStyle: 'none', textAlign: 'center' }}>
         {menus.map((menu, i) => (
           <li key={i} style={{ fontSize: font.size.lg, color: colors.textStrong, lineHeight: 2, fontWeight: 600 }}>
             {menu.name}
+            {findAllergyConflicts(profileAllergies, menu.allergyCodes).length > 0 && <ConflictMark />}
           </li>
         ))}
       </ul>
@@ -150,6 +199,7 @@ function MenuList({ menus, layout, onAnalyzeMenu, analyzingMenu }) {
             <span style={{ fontSize: font.size.sm, color: colors.textStrong }}>
               {menu.name}
               <MenuAllergyMarks codes={menu.allergyCodes} />
+              {findAllergyConflicts(profileAllergies, menu.allergyCodes).length > 0 && <ConflictMark />}
               {menu.price != null && (
                 <span style={{ color: colors.textSub, fontSize: font.size.xs, marginLeft: 6 }}>
                   {menu.price.toLocaleString()}원
@@ -204,7 +254,11 @@ export default function MealCard({
   onAnalyzeTray,
   trayAnalyzing = false,
   trayError = '',
+  // 트랙 3 §2 — profile.allergies 그대로 넘기면 된다(빈 배열/undefined면 경고 자체가 안 뜬다).
+  profileAllergies = [],
 }) {
+  const cardConflicts = collectCardConflicts(menus, profileAllergies)
+
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -218,8 +272,9 @@ export default function MealCard({
         )}
       </div>
       {subtitle && <p style={{ margin: '2px 0 0', fontSize: font.size.xs, color: colors.textSub }}>{subtitle}</p>}
+      <ConflictBanner codes={cardConflicts} estimated={estimated} />
 
-      <MenuList menus={menus} layout={layout} onAnalyzeMenu={onAnalyzeMenu} analyzingMenu={analyzingMenu} />
+      <MenuList menus={menus} layout={layout} onAnalyzeMenu={onAnalyzeMenu} analyzingMenu={analyzingMenu} profileAllergies={profileAllergies} />
       {menuError && <p style={{ ...styles.errorText, textAlign: 'center' }}>{menuError}</p>}
       <AllergyLegend menus={menus} estimated={estimated} showPerItemDetail={layout === 'stacked'} />
       <NutrientSection nutrients={nutrients} />

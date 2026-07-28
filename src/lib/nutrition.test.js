@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildDeficiencyRows,
   calcDayStatus,
+  calcRecommendedNutrients,
   countSatisfiedNutrients,
   DAY_STATUS_THRESHOLDS,
   DEFICIENCY_TARGET_KEYS,
@@ -159,5 +160,42 @@ describe('scaleMealAnalysisByServings', () => {
   it('경계값 상수: 최소 0.5, 최대 10', () => {
     expect(SERVINGS_MIN).toBe(0.5)
     expect(SERVINGS_MAX).toBe(10)
+  })
+})
+
+// 트랙 3 §1 회귀 가드 — 청소년(youthIntake.js) 분기를 추가하면서 성인(19세 이상) 계산이 단 1비트도
+// 바뀌면 안 된다(calcDayStatus가 "과거 기록의 판정은 소급해서 바뀌지 않는다"를 전제하므로, 계산식이
+// 조금이라도 달라지면 과거 기록의 하루 상태가 조용히 바뀔 수 있다). 아래 기대값은 youthIntake.js
+// 통합 *이전*의 실제 calcRecommendedNutrients 실행 결과를 그대로 캡처한 것이다(임의로 계산한 값이 아님).
+describe('calcRecommendedNutrients — 성인 회귀 가드(청소년 분기 추가 전후 동일해야 함)', () => {
+  it('성인(19세 이상) 각 케이스의 출력이 청소년 분기 도입 전과 정확히 같다', () => {
+    expect(calcRecommendedNutrients({ age: 25, heightCm: 170, weightKg: 65, sex: 'male', activity: 'moderate', conditions: [] })).toEqual(
+      { calories: 2468, protein: 123, carbs: 309, fat: 82, fiber: 30, sodium: 2000 },
+    )
+    expect(calcRecommendedNutrients({ age: 35, heightCm: 160, weightKg: 55, sex: 'female', activity: 'low', conditions: [] })).toEqual({
+      calories: 1669,
+      protein: 83,
+      carbs: 209,
+      fat: 56,
+      fiber: 25,
+      sodium: 2000,
+    })
+    expect(calcRecommendedNutrients({ age: 70, heightCm: 175, weightKg: 80, sex: 'male', activity: 'high', conditions: [] })).toEqual({
+      calories: 2672,
+      protein: 134,
+      carbs: 334,
+      fat: 89,
+      fiber: 30,
+      sodium: 2000,
+    })
+    // 기저질환(당뇨) 보정이 걸리는 경로도 함께 고정한다.
+    expect(
+      calcRecommendedNutrients({ age: 30, heightCm: 165, weightKg: 60, sex: 'female', activity: 'moderate', conditions: ['diabetes'] }),
+    ).toEqual({ calories: 2046, protein: 128, carbs: 230, fat: 68, fiber: 25, sodium: 2000 })
+    // 성인 최연소 경계(19세) — 청소년 분기(isYouthAge)가 18세까지만 잡아야 이 케이스가 여전히
+    // 성인 공식(Mifflin-St Jeor)을 타는지 확인한다.
+    expect(calcRecommendedNutrients({ age: 19, heightCm: 172, weightKg: 68, sex: 'male', activity: 'moderate', conditions: [] })).toEqual(
+      { calories: 2581, protein: 129, carbs: 323, fat: 86, fiber: 30, sodium: 2000 },
+    )
   })
 })

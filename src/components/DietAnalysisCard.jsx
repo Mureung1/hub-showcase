@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
+import SegmentedControl from './SegmentedControl.jsx'
 import Skeleton from './Skeleton.jsx'
 import Spinner from './Spinner.jsx'
 import { getMealsByDateRange } from '../lib/dataStore.js'
@@ -162,32 +163,16 @@ export default function DietAnalysisCard() {
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
         <h3 style={{ margin: 0, fontSize: font.size.md, fontWeight: 700, color: colors.textStrong }}>AI 식습관 분석</h3>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {PERIOD_OPTIONS.map((opt) => {
-            const active = periodDays === opt.key
-            return (
-              <button
-                key={opt.key}
-                type="button"
-                className="tds-press"
-                onClick={() => setPeriodDays(opt.key)}
-                disabled={analyzing}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: radius.sm,
-                  border: 'none',
-                  background: active ? colors.primary : colors.bg,
-                  color: active ? '#fff' : colors.textSub,
-                  fontSize: font.size.xs,
-                  fontWeight: 700,
-                  cursor: analyzing ? 'default' : 'pointer',
-                }}
-              >
-                {opt.label}
-              </button>
-            )
-          })}
-        </div>
+        <SegmentedControl
+          options={PERIOD_OPTIONS}
+          value={periodDays}
+          onChange={setPeriodDays}
+          disabled={analyzing}
+          fill={false}
+          gap={4}
+          padding="4px 10px"
+          fontSize={font.size.xs}
+        />
       </div>
 
       {analyzing && (

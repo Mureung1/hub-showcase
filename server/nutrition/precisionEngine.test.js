@@ -23,6 +23,21 @@ describe('analyzeTray', () => {
     expect(result.confidence).toBe('high')
   })
 
+  // 트랙 2 §2 — confidence/matchType은 이제 내부 값이 아니라 클라이언트(ConfidenceBadge,
+  // AnalysisResultCard의 항목별 칩)가 그대로 그리는 UI 계약이다. 값의 집합이 바뀌면 화면에 아무
+  // 배지도 안 뜨는 조용한 회귀가 생기므로 여기서 못 박아둔다.
+  it('confidence/matchType이 클라이언트가 아는 값 집합 안에서만 나온다(UI 계약)', async () => {
+    const result = await analyzeTray(
+      { menus: ['잡곡밥', '미역국'], mealType: 'lunch', schoolType: 'univ' },
+      { calibrate: false, useCache: false },
+    )
+
+    expect(['high', 'medium', 'low']).toContain(result.confidence)
+    for (const item of result.items) {
+      expect([null, 'exact', 'alias', 'partial', 'fuzzy']).toContain(item.matchType)
+    }
+  })
+
   it('schoolType 계수가 중량(→영양값)에 그대로 반영된다', async () => {
     const base = { menus: ['잡곡밥'], mealType: 'lunch' }
     const elementary = await analyzeTray({ ...base, schoolType: 'elementary' }, { calibrate: false, useCache: false })

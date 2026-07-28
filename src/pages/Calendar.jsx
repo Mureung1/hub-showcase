@@ -8,20 +8,33 @@ import DateRangeExport from '../components/DateRangeExport.jsx'
 import DietAnalysisCard from '../components/DietAnalysisCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
+import SegmentedControl from '../components/SegmentedControl.jsx'
 import Spinner from '../components/Spinner.jsx'
+import StreakBadge from '../components/StreakBadge.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { getMealsByDateRange } from '../lib/dataStore.js'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { flattenMealItems, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { calcDayStatus, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { getAllRecords, toDateKey } from '../lib/records.js'
+import { TABS } from '../lib/tabs.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 const STATUS_COLORS = { good: colors.satisfied, normal: colors.deficient, bad: colors.danger }
-const AUTO_STATUS_LABELS = { good: '좋음', normal: '보통', bad: '위험' }
-const MANUAL_STATUS_LABELS = { good: '좋음', normal: '보통', bad: '나쁨' }
+// 자동판정과 수동선택이 같은 빨강(bad)을 서로 다른 단어("위험"/"나쁨")로 불러 화면마다 다르게
+// 읽히던 것을 하나로 통일한다 — 스크린리더 aria-label도 이 맵 하나만 참조한다(리뷰에서 발견:
+// 이전엔 aria-label이 상황과 무관하게 항상 AUTO_STATUS_LABELS를 썼다).
+const STATUS_LABELS = { good: '좋음', normal: '보통', bad: '나쁨' }
+// 수동 상태 선택 SegmentedControl의 옵션 — 좋음/보통/나쁨마다 선택됐을 때의 배경색이 서로 달라야 해서
+// (전부 초록인 다른 세그먼트 컨트롤과 달리) 옵션마다 activeColor를 함께 싣는다.
+const MANUAL_STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([key, label]) => ({
+  key,
+  label,
+  activeColor: STATUS_COLORS[key],
+}))
 
 function buildMonthCells(year, month) {
   const startWeekday = new Date(year, month, 1).getDay()
@@ -94,6 +107,7 @@ function MiniMealCard({ item }) {
 }
 
 export default function Calendar() {
+  useDocumentTitle(TABS.find((t) => t.key === 'calendar').label)
   const { effectiveUserId, effectiveRecommended } = useUser()
   const today = new Date()
   const todayKey = toDateKey(today)
@@ -223,6 +237,9 @@ export default function Calendar() {
     <div style={styles.page}>
       {/* 화면 제목("달력")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주고,
           달력 UI 자체가 무슨 화면인지 바로 보여준다. */}
+      {/* 연속 기록 배지(트랙 1 §4) — 홈과 같은 컴포넌트를 그대로 재사용한다. 달력이 보여주는 월과
+          무관하게 항상 "오늘 기준" 연속 기록이라, 보고 있는 달이 지난 달이어도 값이 바뀌지 않는다. */}
+      <StreakBadge />
       <Card>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
           <button
@@ -288,7 +305,7 @@ export default function Calendar() {
                 type="button"
                 className="tds-press"
                 onClick={() => handleSelectDay(dateKey)}
-                aria-label={`${cursor.month + 1}월 ${day}일${info ? ` · ${AUTO_STATUS_LABELS[info.status]}` : ''}`}
+                aria-label={`${cursor.month + 1}월 ${day}일${info ? ` · ${STATUS_LABELS[info.status]}` : ''}`}
                 style={{
                   border: 'none',
                   background: 'none',
@@ -356,7 +373,7 @@ export default function Calendar() {
               {selectedDateKey}
               {selectedDateKey === todayKey && <span style={{ color: colors.primary }}> · 오늘</span>}
             </h3>
-            <StatusBadge status={selectedInfo.status} label={`자동 판정 · ${AUTO_STATUS_LABELS[selectedInfo.status]}`} />
+            <StatusBadge status={selectedInfo.status} label={`자동 판정 · ${STATUS_LABELS[selectedInfo.status]}`} />
           </div>
 
           <NutritionStatusPanel recommended={effectiveRecommended} total={selectedInfo.total} />
@@ -430,38 +447,17 @@ export default function Calendar() {
               {selectedDateKey === todayKey && <span style={{ color: colors.primary }}> · 오늘</span>}
             </h3>
             {selectedInfo?.source === 'manual' && (
-              <StatusBadge status={selectedInfo.status} label={`내가 선택 · ${MANUAL_STATUS_LABELS[selectedInfo.status]}`} />
+              <StatusBadge status={selectedInfo.status} label={`내가 선택 · ${STATUS_LABELS[selectedInfo.status]}`} />
             )}
           </div>
           <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
             분석 기록이 없는 날이에요. 이 날의 영양 상태를 직접 선택해보세요.
           </p>
-          <div style={{ display: 'flex', gap: spacing.sm }}>
-            {Object.entries(MANUAL_STATUS_LABELS).map(([status, label]) => {
-              const active = selectedInfo?.status === status
-              return (
-                <button
-                  key={status}
-                  type="button"
-                  className="tds-press"
-                  onClick={() => handlePickManualStatus(status)}
-                  style={{
-                    flex: 1,
-                    padding: `${spacing.md}px 0`,
-                    borderRadius: radius.sm,
-                    border: 'none',
-                    background: active ? STATUS_COLORS[status] : colors.bg,
-                    color: active ? '#fff' : colors.textSub,
-                    fontWeight: 700,
-                    fontSize: font.size.md,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
+          <SegmentedControl
+            options={MANUAL_STATUS_OPTIONS}
+            value={selectedInfo?.status ?? null}
+            onChange={handlePickManualStatus}
+          />
         </Card>
       )}
 

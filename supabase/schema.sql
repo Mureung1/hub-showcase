@@ -29,6 +29,9 @@ create table if not exists public.profiles (
   school_office_code text,  -- k12: NEIS 시도교육청코드(예: J10). university: 사용 안 함(NULL).
   school_code        text,  -- k12: NEIS 학교코드. university: 지원 대학 id(예: 'cnu').
   school_name        text,  -- 화면 표시용 학교명(예: '양서고등학교', '충남대학교').
+  -- k12: NEIS SCHUL_KND_SC_NM("초등학교"/"중학교"/"고등학교" 등, 자유 문자열). university: NULL.
+  -- 정밀 영양 산출 엔진의 학교급별 배식량 보정 계수에 쓰인다(6주차 §1, CafeteriaPanel.jsx).
+  school_kind        text,
   occupation         text check (occupation in ('elementary', 'middle_high', 'university', 'worker', 'other')),
 
   -- 하루 권장 영양정보. calcRecommendedNutrients() 결과 그대로 저장.

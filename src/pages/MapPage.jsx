@@ -23,6 +23,8 @@ import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutritio
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { buildDeficiencyRows, isSodiumExceeded } from '../lib/nutrition.js'
 import { getOccupationRecommendation } from '../lib/occupationKeywords.js'
+import { TABS } from '../lib/tabs.js'
+import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 위치 권한 거부/실패 시 지도를 띄울 기본 위치(대전 유성구 충남대학교 인근)
@@ -337,6 +339,7 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = [], {
 }
 
 export default function MapPage() {
+  useDocumentTitle(TABS.find((t) => t.key === 'map').label)
   const { profile, todayMealsTotal, effectiveRecommended } = useUser()
   const recommended = effectiveRecommended
   const todayTotal = todayMealsTotal

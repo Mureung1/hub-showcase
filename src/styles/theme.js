@@ -23,6 +23,13 @@ export const colors = {
   danger: '#F04452',
   dangerSurface: '#FDEEEF',
 
+  // deficient/danger를 "텍스트"로 쓸 때만 쓰는 더 짙은 톤 — 흰 배경 대비 각각 2.05:1/3.71:1로
+  // WCAG AA(4.5:1) 미달이었다(6주차 다각도 리뷰에서 발견). deficient/danger 원래 값은 막대 채우기·
+  // 배지처럼 "면"으로 쓰는 곳의 픽셀을 그대로 유지하기 위해 손대지 않고, 텍스트 전용 토큰을
+  // 새로 추가해 그 자리만 바꾼다.
+  deficientText: '#C2410C', // vs #fff 5.18:1 · vs #F2F4F6 4.70:1
+  dangerText: '#C81E2C', // vs #fff 5.71:1 · vs #F2F4F6 5.18:1
+
   // "식약처DB"(신뢰 최상) 출처 배지 전용 블루. 포인트 컬러(그린)와 겹치지 않게 구분한다.
   info: '#3182F6',
   infoSurface: '#EAF2FE',
@@ -37,7 +44,9 @@ export const colors = {
   textStrong: '#191F28',
   body: '#4E5968',
   textSub: '#4E5968',
-  muted: '#8B95A1',
+  // #8B95A1(3.04:1)은 WCAG AA 미달이었다 — 거의 전부 보조/안내 텍스트로만 쓰여(막대·배지 채우기용이
+  // 아님) 다른 톤처럼 별도 텍스트 토큰을 만들 필요 없이 이 값 자체를 더 짙게 바꾼다.
+  muted: '#64707D', // vs #fff 5.05:1 · vs #F2F4F6 4.58:1
 
   // 로고 워드마크("Mealyze") 전용 잉크색. 로고 심볼(bowl+arrow)의 짙은 청록 끝단과 맞춘 값이라
   // 심볼 옆에 나란히 놓았을 때 하나의 로고로 읽힌다.
@@ -149,6 +158,13 @@ export const styles = {
     gap: spacing.sm,
   },
   buttonSecondary: {
+    // inline-flex(= 내용만큼만 차지, buttonPrimary처럼 100% 폭으로 늘어나지 않음)로 스피너+텍스트를
+    // 가운데 정렬하고 사이 간격을 준다 — 기존엔 이 셋이 없어 스피너가 텍스트에 바로 붙어 보이던 곳이
+    // 있었다. 폭/높이는 호출부마다 의도가 달라(로그아웃 버튼처럼 좁아야 하는 곳도 있다) 강제하지 않는다.
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
     padding: `${spacing.sm}px ${spacing.lg}px`,
     borderRadius: radius.pill,
     border: 'none',
@@ -188,7 +204,7 @@ export const styles = {
     padding: 0,
   },
   errorText: {
-    color: colors.danger,
+    color: colors.dangerText,
     fontSize: font.size.sm,
     margin: `${spacing.sm}px 0 0`,
   },
