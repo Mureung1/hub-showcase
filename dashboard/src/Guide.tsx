@@ -168,7 +168,13 @@ export default function Guide() {
         <div className="faq-list">
           <details>
             <summary>이미지 경로는 어떻게 작성하나요?</summary>
-            <p><code>showcase/thumbnail.webp</code> 파일은 <code>"thumbnail": "thumbnail.webp"</code>로 적습니다. <code>showcase/screenshots/home.webp</code> 파일은 <code>"screenshots": ["screenshots/home.webp"]</code>로 적습니다.</p>
+            <p><code>showcase</code> 폴더 안의 파일 경로를 JSON에 적습니다.</p>
+            <pre className="faq-example"><code>{`{
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp"
+  ]
+}`}</code></pre>
           </details>
           <details>
             <summary>이미지 URL을 적어도 되나요?</summary>
