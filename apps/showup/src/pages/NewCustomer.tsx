@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuthState } from '@/hooks/useAuth'
-import { searchCustomers, createCustomer } from '@/services/customers'
+import { createCustomer, findCustomerByPhone } from '@/services/customers'
 import { isValidPhone } from '@/utils/phone'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -12,7 +12,7 @@ import Modal from '@/components/ui/Modal'
 import { toast } from 'sonner'
 
 const customerSchema = z.object({
-  name: z.string().min(2, '이름은 2 자 이상입니다'),
+  name: z.string().min(2, '이름은 2 자 이상입니다').max(100, '이름은 100자 이하여야 합니다'),
   phone: z.string().refine((val) => isValidPhone(val), '전화번호 형식이 아닙니다'),
 })
 
@@ -38,23 +38,13 @@ const NewCustomer = () => {
     resolver: zodResolver(customerSchema),
   })
 
-  // 전화번호로 중복 확인
-  const checkDuplicate = async (phone: string) => {
-    if (!user) return
-    const phoneLast4 = phone.slice(-4)
-    const results = await searchCustomers(user.uid, phoneLast4)
-    const exactMatch = results.find(
-      (c) => c.phoneMasked.replace(/[^0-9]/g, '') === phone.replace(/[^0-9]/g, '')
-    )
-    if (exactMatch) {
-      setExistingCustomer({
-        id: exactMatch.id,
-        name: exactMatch.name,
-        phoneMasked: exactMatch.phoneMasked,
-      })
-    } else {
-      setExistingCustomer(null)
-    }
+  // 원본 번호 비교는 서비스 레이어 내부에서만 하고 화면에는 마스킹 결과만 반환한다.
+  const checkDuplicate = async (phone: string): Promise<ExistingCustomer | null> => {
+    if (!user) return null
+    const match = await findCustomerByPhone(user.uid, phone)
+    return match
+      ? { id: match.id, name: match.name, phoneMasked: match.phoneMasked }
+      : null
   }
 
   const onSubmit = async (data: CustomerForm) => {
@@ -63,11 +53,13 @@ const NewCustomer = () => {
       return
     }
 
-    // 중복 확인 먼저
-    await checkDuplicate(data.phone)
-    if (existingCustomer) {
-      return // 모달 표시 후 종료
+    // 중복 확인 — await 결과를 직접 사용 (state 의존 제거)
+    const existing = await checkDuplicate(data.phone)
+    if (existing) {
+      setExistingCustomer(existing)
+      return
     }
+    setExistingCustomer(null)
 
     setIsLoading(true)
     try {

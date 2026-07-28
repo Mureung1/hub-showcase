@@ -14,6 +14,23 @@ function toTs(date: Date): Timestamp {
 export const DEMO_STORE_ID = 'demo-store-001';
 export const DEMO_OWNER_UID = 'demo-owner-001';
 
+function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number): string {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return formatDate(next);
+}
+
+const demoToday = new Date();
+const demoTodayString = formatDate(demoToday);
+const demoTomorrowString = addDays(demoToday, 1);
+
 export const demoStore: Store = {
   ownerUid: DEMO_OWNER_UID,
   name: '카페 마루',
@@ -69,12 +86,13 @@ const reservationInputs: {
   { customerIndex: 0, date: '2026-07-01', time: '12:00', status: 'noShow' },
   { customerIndex: 0, date: '2026-06-20', time: '13:00', status: 'visited' },
 
-  // 이영희: 노쇼 5회 (위험)
+  // 이영희: 노쇼 6회 (위험)
   { customerIndex: 1, date: '2026-05-01', time: '11:00', status: 'noShow' },
   { customerIndex: 1, date: '2026-05-15', time: '11:30', status: 'noShow' },
   { customerIndex: 1, date: '2026-06-01', time: '12:00', status: 'noShow' },
   { customerIndex: 1, date: '2026-06-10', time: '10:30', status: 'noShow' },
   { customerIndex: 1, date: '2026-06-25', time: '14:00', status: 'noShow' },
+  { customerIndex: 1, date: '2026-07-10', time: '16:00', status: 'noShow' },
   { customerIndex: 1, date: '2026-07-02', time: '15:00', status: 'visited' },
 
   // 박준호: 당일 취소 2회
@@ -109,17 +127,17 @@ const reservationInputs: {
   { customerIndex: 8, date: '2026-06-28', time: '11:30', status: 'visited' },
 
   // 강동원: pending 예약 (오늘)
-  { customerIndex: 9, date: '2026-07-27', time: '10:00', status: 'pending' },
+  { customerIndex: 9, date: demoTodayString, time: '10:00', status: 'pending' },
 
-  // === 데모용 오늘(7/27) 예약 ===
+  // === 데모용 오늘 예약 ===
   // 김철수: pending 오늘 — RiskAlertBanner 시연용 (주의 고객)
-  { customerIndex: 0, date: '2026-07-27', time: '14:00', status: 'pending' },
+  { customerIndex: 0, date: demoTodayString, time: '14:00', status: 'pending' },
   // 최수진: visited 오늘 — 정상 방문 시연용 (안심 고객)
-  { customerIndex: 3, date: '2026-07-27', time: '12:00', status: 'visited' },
+  { customerIndex: 3, date: demoTodayString, time: '12:00', status: 'visited' },
 
-  // === 데모용 내일(7/28) 예약 ===
+  // === 데모용 내일 예약 ===
   // 박준호: pending 내일 — 예정 예약 시연용
-  { customerIndex: 2, date: '2026-07-28', time: '13:00', status: 'pending' },
+  { customerIndex: 2, date: demoTomorrowString, time: '13:00', status: 'pending' },
 ];
 
 export const demoReservations: Reservation[] = reservationInputs.map((input) => ({

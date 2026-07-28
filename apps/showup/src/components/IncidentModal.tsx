@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 
 const incidentSchema = z.object({
   type: z.enum(['abuse', 'dispute', 'late', 'unreasonable']),
-  memo: z.string().min(1, '사실 메모를 입력해주세요'),
+  memo: z.string().min(1, '사실 메모를 입력해주세요').max(500, '사실 메모는 500자 이하여야 합니다'),
   occurredAt: z.string().min(1, '발생일을 선택해주세요'),
 })
 
@@ -63,13 +63,13 @@ const IncidentModal = ({ isOpen, onClose, onSubmit }: IncidentModalProps) => {
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
             취소
           </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
+          <Button type="submit" form="incident-form" variant="primary" disabled={isSubmitting}>
             {isSubmitting ? '기록 중...' : '기록'}
           </Button>
         </>
       }
     >
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form id="incident-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         {/* 카테고리 선택 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

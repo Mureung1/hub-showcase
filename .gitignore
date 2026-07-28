@@ -37,6 +37,7 @@ apps/showup/src/**/*.js
 apps/showup/security/**/*.js
 apps/showup/security/**/*.cjs
 apps/showup/security/**/*.mjs
+!apps/showup/security/smoke-test.mjs
 
 # TypeScript incremental build cache
 *.tsbuildinfo

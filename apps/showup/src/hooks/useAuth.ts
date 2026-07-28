@@ -1,5 +1,5 @@
 // ShowUp 인증 상태 관리
-// FE 세션에서 사용할 Zustand 스토어 또는 React Hook 용도.
+// React Hook 기반 인증 상태 관리.
 // 실제 상태는 Firebase Auth 가 소유한다.
 
 import { useEffect, useState } from 'react';

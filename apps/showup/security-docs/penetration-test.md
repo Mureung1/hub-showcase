@@ -1,54 +1,38 @@
-# Security Test Scenarios (ShowUp)
+# ShowUp Security Test Scenarios
 
-## 1. Unauthenticated Access
-- Attempt to read any `/stores/{storeId}` collection without authentication.
-- Expected: **Permission denied**.
+> 기준일: 2026-07-28. 실행 가능한 원본은 `security/smoke-test.mjs`다.
 
-## 2. Cross‑Store Read
-- Authenticated as user A (owner of Store A). Try to read `/stores/StoreB/...`.
-- Expected: **Permission denied**.
+## 자동화된 Rules 시나리오
 
-## 3. Owner UID Spoofing
-- Attempt to write a new store document with a forged `ownerUid` that does not match `request.auth.uid`.
-- Expected: **Permission denied**.
+1. 비로그인 접근 차단
+2. 타 가게 store 접근 차단
+3. ownerUid 위조 생성 차단
+4. ownerUid 변경·store 직접 삭제 차단
+5. 타 가게 고객 CRUD 차단
+6. 고객 필수 필드·전화번호 형식 검증
+7. phoneLast4 단독 변경 차단
+8. riskStats 완전한 스키마 검증
+9. 타 가게 사건 CRUD 차단
+10. 사건 type·memo 길이 검증
+11. 사건 임의 필드 차단
+12. 타 가게 예약 CRUD 차단
+13. 예약 status·customerId 불변 검증
+14. 정상 owner CRUD 허용
+15. 예약 고객 존재·상태 역행 차단
+16. 존재하지 않는 고객 사건 생성 차단
+17. 고객 삭제 후 orphan 예약·사건 직접 read 차단 및 목록 필터 기준 확인
+18. 전화번호·예약 날짜·시간 형식 검증
 
-## 4. Invalid Incident Type
-- Submit an incident with `type` = `spam` (not in the whitelist).
-- Expected: **Permission denied** by rule validation.
+## 코드·운영 확인
 
-## 5. Phone Number Exposure
-- Query a customer document and try to retrieve the full `phone` field from the client UI.
-- Expected: The UI should only receive `phoneMasked`; any attempt to read `phone` directly should be blocked by service layer masking.
-- **기준 정의**: Firestore Rules는 필드 단위 읽기 제한을 지원하지 않음. 따라서:
-  1. `getCustomer()` 서비스 함수는 `CustomerSearchResult` (phoneMasked만 포함)를 반환 — 원본 `phone` 필드 미반환
-  2. FE 컴포넌트는 `phoneMasked`만 사용 — `customer.phone` 직접 참조 금지
-  3. 보안 세션은 코드 검색으로 누락 0건 확인 (4일차 완료)
+- UI가 `phoneMasked`만 렌더링하는지 검색
+- Firebase CLI로 Functions 배포 목록 확인
+- Hosting `/`, `/privacy`, `/terms` HTTP·화면 확인
+- 고객 삭제 시 고객·예약·사건을 서비스가 함께 삭제하는지 별도 통합 테스트 권장
+- 서비스 코드/화면에 낙인 표현이 없는지 확인
+- 데모 계정 공개 범위와 초기화 정책 확인
 
-## 6. Deletion Cascade
-- Delete a customer document and verify that all sub‑collections (`reservations`, `incidents`) are also removed.
-- Expected: All related documents are deleted; no orphan data remains.
+## 현재 예외
 
-## 7. RiskStats Write Restriction
-- From the client, attempt to update `riskStats` directly.
-- Expected: **Permission denied** – only Cloud Function service account may write.
-
-## 8. Compliance Check – "Blacklist" Term
-- Search the codebase for the string `blacklist`.
-- Expected: No occurrences in code/UI; the term is replaced with "risk indicator" or similar.
-- **13일차 (7/27) 최종 재확인**: 코드/화면 0건, 보안 문서 내 금지 규정 언급 2건만 존재.
-
-## 9. Owner UID Spoofing on Customer Update
-- Attempt to update a customer's `phoneLast4` without also updating `phone`.
-- Expected: **Permission denied** — `phoneLast4` must be accompanied by `phone` in the same update.
-
-## 10. Reservation Status Validation
-- Submit a reservation with `status` = `blacklist` (not in the whitelist).
-- Expected: **Permission denied** by rule validation.
-
-## 11. Customer Create Field Validation
-- Submit a customer document missing `name` or `phoneLast4`.
-- Expected: **Permission denied** — all three fields (`name`, `phone`, `phoneLast4`) are required.
-
-## 12. Normal Owner CRUD
-- Authenticated owner performs full CRUD on their own store's data.
-- Expected: All operations succeed (store, customer, reservation, incident create/update).
+- Cloud Functions가 미배포라 owner의 완전한 `riskStats` 갱신을 허용한다.
+- 이 허용은 보안 PASS가 아니라 MVP 기술 부채다. Blaze 이관 시 차단 테스트로 바꿔야 한다.

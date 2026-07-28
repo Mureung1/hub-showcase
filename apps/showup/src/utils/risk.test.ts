@@ -129,6 +129,14 @@ const cases = [
     expectedLevel: 'medium',
     expectedAlert: true,
   },
+  {
+    name: '미래 시각 노쇼는 최근 보너스 제외',
+    reservations: [makeReservation('noShow', -1)],
+    incidents: [] as Incident[],
+    expectedScore: 8,
+    expectedLevel: 'low',
+    expectedAlert: false,
+  },
 ];
 
 let failed = 0;

@@ -42,6 +42,10 @@ export interface RiskInputs {
   now?: Date;
 }
 
+function getReservationEventDate(reservation: Reservation): Date | null {
+  return toDate(reservation.statusChangedAt) ?? toDate(reservation.createdAt);
+}
+
 /**
  * 예약과 사건 이력으로 riskStats 를 계산한다.
  * - score 는 0 이하로 내려가지 않음.
@@ -99,13 +103,14 @@ export function calculateRiskStats(
 
   for (const r of reservations) {
     if (r.status !== 'noShow') continue;
-    const createdAtDate = toDate(r.createdAt);
-    if (!createdAtDate) continue;
-    if (!lastNoShowAt || toDate(lastNoShowAt)! < createdAtDate) {
-      lastNoShowAt = r.createdAt as Timestamp;
+    const eventDate = getReservationEventDate(r);
+    if (!eventDate) continue;
+    const lastNoShowDate = toDate(lastNoShowAt);
+    if (!lastNoShowDate || lastNoShowDate < eventDate) {
+      lastNoShowAt = r.statusChangedAt ?? (r.createdAt as Timestamp);
     }
-    const diffMs = now.getTime() - createdAtDate.getTime();
-    if (diffMs <= recentThresholdMs) {
+    const diffMs = now.getTime() - eventDate.getTime();
+    if (diffMs >= 0 && diffMs <= recentThresholdMs) {
       hasRecentNoShow = true;
     }
   }

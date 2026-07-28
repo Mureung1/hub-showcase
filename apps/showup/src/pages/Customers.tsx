@@ -13,6 +13,8 @@ const Customers = () => {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [results, setResults] = useState<CustomerSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [searchAttempt, setSearchAttempt] = useState(0)
 
   // 300ms debounce
   useEffect(() => {
@@ -27,15 +29,18 @@ const Customers = () => {
     const runSearch = async () => {
       if (!user || !debouncedQuery.trim()) {
         setResults([])
+        setError(null)
         return
       }
 
       setIsLoading(true)
+      setError(null)
       try {
         const data = await searchCustomers(user.uid, debouncedQuery)
         setResults(data)
-      } catch (error) {
-        console.error('Search failed:', error)
+      } catch (err) {
+        console.error('Search failed:', err)
+        setError('검색 중 오류가 발생했습니다')
         setResults([])
       } finally {
         setIsLoading(false)
@@ -43,22 +48,22 @@ const Customers = () => {
     }
 
     runSearch()
-  }, [user, debouncedQuery])
+  }, [user, debouncedQuery, searchAttempt])
 
   // 경고 배너 표시 (결과 중 위험 고객)
-  const showAlert = results.some(
+  const alertingCustomer = results.find(
     (r) => r.riskStats.noShowCount >= 3 || r.riskStats.incidentCounts.abuse >= 1
   )
 
   return (
-    <div className="p-4">
-      <header className="mb-4">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">고객 관리</h1>
         <p className="text-sm text-gray-500 mt-1">전화번호 뒤 4 자리 또는 이름으로 검색하세요</p>
       </header>
 
       {/* Search */}
-      <div className="mb-4">
+      <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
         <Input
           type="text"
           placeholder="전화 뒤 4 자리 또는 이름"
@@ -68,11 +73,11 @@ const Customers = () => {
       </div>
 
       {/* Alert Banner */}
-      {showAlert && (
+      {alertingCustomer && (
         <div className="mb-4">
           <RiskAlertBanner
-            noShowCount={results.find((r) => r.riskStats.noShowCount >= 3)?.riskStats.noShowCount || 0}
-            incidentCounts={results.find((r) => r.riskStats.incidentCounts.abuse >= 1)?.riskStats.incidentCounts || { abuse: 0, dispute: 0, late: 0, unreasonable: 0 }}
+            noShowCount={alertingCustomer.riskStats.noShowCount}
+            incidentCounts={alertingCustomer.riskStats.incidentCounts}
           />
         </div>
       )}
@@ -82,6 +87,16 @@ const Customers = () => {
         {isLoading ? (
           <div className="text-center py-8 text-gray-500">
             <p>검색 중...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-600 mb-2">{error}</p>
+            <button
+              onClick={() => setSearchAttempt((attempt) => attempt + 1)}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              다시 시도
+            </button>
           </div>
         ) : results.length === 0 ? (
           debouncedQuery ? (
@@ -97,7 +112,7 @@ const Customers = () => {
           results.map((customer) => (
             <Link
               key={customer.id}
-              to={`/customers/${customer.id}`}
+              to={`/app/customers/${customer.id}`}
               className="block bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between">
@@ -105,7 +120,7 @@ const Customers = () => {
                   <p className="font-semibold text-gray-900">{customer.name}</p>
                   <p className="text-sm text-gray-500 mt-1">{customer.phoneMasked}</p>
                 </div>
-                <RiskBadge score={customer.riskStats.score} />
+                <RiskBadge score={customer.riskStats.score} riskLevel={customer.riskLevel} />
               </div>
             </Link>
           ))
@@ -113,10 +128,10 @@ const Customers = () => {
       </div>
 
       {/* Add new customer */}
-      <div className="mt-6">
+      <div className="mt-6 flex sm:justify-end">
         <Link
           to="/app/customers/new"
-          className="block w-full bg-blue-600 text-white text-center py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-blue-800 bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 sm:w-auto sm:min-w-36 md:!min-h-10 md:h-10"
         >
           + 신규 고객 등록
         </Link>

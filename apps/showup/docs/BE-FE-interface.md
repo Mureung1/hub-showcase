@@ -31,10 +31,11 @@
 | 함수 | 파라미터 | 반환 | 설명 |
 |------|----------|------|------|
 | `searchCustomers(storeId, keyword)` | storeId, 검색어 | `CustomerSearchResult[]` | 이름 prefix 또는 phoneLast4 검색, score 내림차순 |
+| `findCustomerByPhone(storeId, rawPhone)` | storeId, 전체 전화번호 | `CustomerSearchResult \| null` | 신규 등록 중복 확인용 정확 일치, 원본 번호 미반환 |
 | `createCustomer(storeId, customerId, { name, phone })` | storeId, 고객ID, 입력 | `CustomerSearchResult` | phoneLast4 자동 생성, riskStats 초기화 |
-| `getCustomer(storeId, customerId)` | storeId, 고객ID | `Customer \| null` | 원본 포함 |
+| `getCustomer(storeId, customerId)` | storeId, 고객ID | `CustomerSearchResult \| null` | 원본 전화번호 제외, 마스킹 반환 |
 | `updateCustomer(...)` | storeId, customerId, Partial | void | 이름/전화 변경, phoneLast4 자동 갱신 |
-| `deleteCustomer(...)` | storeId, customerId | void | 하위 예약/사건은 FE/BE에서 함께 처리 |
+| `deleteCustomer(...)` | storeId, customerId | void | 연결 예약·사건·고객을 500개 단위 batch로 삭제 |
 | `getTopRiskyCustomers(storeId, limit)` | storeId, 개수 | `CustomerSearchResult[]` | score 내림차순 Top N |
 
 ### CustomerSearchResult
@@ -63,8 +64,8 @@
 | `listReservations(storeId, customerId?)` | 전체 또는 고객별 예약, date/time 내림차순, `{ id, ...Reservation }` 반환 |
 | `listTodayReservations(storeId, today?)` | 오늘 날짜 예약, time 오름차순, `{ id, ...Reservation }` 반환 |
 | `getReservation(storeId, resId)` | 단일 예약 조회, `{ id, ...Reservation }` 반환 |
-| `updateReservation(storeId, resId, input)` | 날짜/시간/메모 수정 |
-| `transitionReservationStatus(storeId, resId, nextStatus, now?)` | `visited/noShow/cancelled` 등 상태 전환, 당일취소 자동 판별 |
+| `updateReservation(storeId, resId, input)` | 대기/확정 예약의 날짜·시간·메모 수정 (`customerId` 변경 불가; 완료 상태는 메모만 수정 가능) |
+| `transitionReservationStatus(storeId, resId, nextStatus, now?)` | 대기/확정 예약만 상태 전환, 당일취소와 `statusChangedAt` 기록 |
 | `deleteReservation(storeId, resId)` | 예약 삭제 |
 
 ### FE 사용 예시 (오늘의 예약 + 상태 변경)
@@ -81,8 +82,8 @@ await transitionReservationStatus(user.uid, reservations[0].id, 'visited');
 | 함수 | 설명 |
 |------|------|
 | `createIncident(storeId, customerId, incidentId, input)` | type/memo/occurredAt |
-| `listIncidents(storeId, customerId)` | occurredAt 내림차순 |
-| `getIncident(...)` | 단일 조회 |
+| `listIncidents(storeId, customerId)` | occurredAt 내림차순, `{ id, ...Incident }` 반환 |
+| `getIncident(...)` | `{ id, ...Incident } \| null` |
 | `updateIncident(...)` | 수정 |
 | `deleteIncident(...)` | 삭제 |
 

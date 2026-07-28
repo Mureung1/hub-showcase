@@ -1,32 +1,43 @@
-# Privacy Policy (ShowUp)
+# ShowUp 개인정보처리방침 운영 초안
 
-## 1. Purpose of Data Collection
-- Collect personal information (name, phone number, reservation history) to provide risk‑warning and customer‑history services for store owners.
+> 기준일: 2026-07-28. 화면 `/privacy`와 같은 정책을 설명하는 내부 원본이다.
+> 실제 상용 운영 전 법률 전문가 검토와 사업자 정보 보완이 필요하다.
 
-## 2. Types of Data Collected
-- **Contact**: phone number (full), `phoneLast4` (search key).
-- **Reservation**: date, time, status.
-- **Incident**: predefined categories (abuse, dispute, late, unreasonable) and factual memo.
+## 처리 목적과 항목
 
-## 3. Storage & Retention
-- Data is stored in Firestore under each store’s own namespace. Only the store owner (authenticated UID) can read/write.
-- When a customer requests deletion (Phase 2), all related documents are permanently removed.
+- 목적: 고객 식별, 예약·방문·노쇼·사건 이력 관리, 참고용 위험 지표 제공
+- 가게 계정: 이메일, 가게명, 업종
+- 고객: 이름, 전화번호, 예약 일시·상태·메모, 사건 유형·사실 메모
+- 전화번호 원본은 Firestore에 저장하고 UI에는 마스킹해 표시한다.
 
-## 4. Access Control
-- **Owner‑only**: `ownerUid` must match `request.auth.uid` for any read/write.
-- **No cross‑store sharing**: Data never leaves the store’s collection.
+## 보유·삭제
 
-## 5. Phone Number Masking
-- The full phone number is stored but never sent to the client UI or logs. UI displays only `phoneLast4` in the format `010‑****‑1234`.
+- MVP에서는 가게 운영자가 기록을 삭제할 때까지 보유한다.
+- `deleteCustomer()`는 고객 문서와 연결된 예약·사건을 batch로 함께 삭제한다.
+- 가게 계정 탈퇴 및 전체 데이터 자동 삭제는 아직 미구현이다.
 
-## 6. User Rights
-- **Access**: Store owners can view all data they own.
-- **Correction**: Owners can edit phone number, incident memo, etc., through the app.
-- **Deletion**: Owners may delete a customer; all sub‑collections are cascaded.
+## 공유·위탁
 
-## 7. Security Measures
-- Firestore Security Rules enforce owner‑UID checks (see `firestore.rules`).
-- All write operations are validated with Zod schemas on the client and replicated on the server side.
+- 가게 간 고객 이력 자동 공유 없음
+- 제3자 판매·광고 제공 없음
+- 인증·DB·호스팅 제공자: Google Firebase
+- Firebase의 처리 위치와 조건은 Google 정책을 따른다.
 
-## 8. Contact
-- For any privacy‑related questions, contact the ShowUp admin at `privacy@showup.example.com`.
+## 정보주체 권리
+
+- 열람·정정·삭제는 해당 가게 운영자 또는 GitHub `@Min0504`를 통해 요청한다.
+- 본인 인증 기반 셀프서비스는 Phase 2 범위다.
+
+## 보호 조치
+
+- Firebase Authentication
+- Firestore Security Rules 기반 가게 격리
+- 화면 전화번호 마스킹
+- 사건 유형 제한과 사실 중심 메모 안내
+
+## 남은 법무 작업
+
+- 개인정보 보호책임자·사업자 정보 확정
+- 구체적 보유기간 및 파기 절차 확정
+- Firebase 국외 이전·위탁 고지 세부 검토
+- 계정 탈퇴 및 전체 데이터 삭제 구현

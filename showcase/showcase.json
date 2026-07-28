@@ -15,8 +15,6 @@
     "Tailwind CSS",
     "Firebase Auth/Firestore/Hosting",
     "React Hook Form + Zod",
-    "TanStack Query",
-    "Zustand",
     "Hermes Agent + Ollama"
   ],
   "featureTags": [
@@ -29,7 +27,7 @@
     "위험도 조회 + 자동 경고 — 3등급 표시, 노쇼 3회+/abuse 1회+ 시 경고",
     "가게 단위 데이터 격리 — Firestore Rules로 ownerUid 검증",
     "전화번호 마스킹 — 화면 표시는 항상 010-****-1234",
-    "코드 스플리팅 — React.lazy, 메인 청크 8KB"
+    "코드 스플리팅 — React.lazy와 Auth/Firestore 지연 청크, 2026-07-28 빌드 메인 청크 10.86KB"
   ],
   "screenshots": [
     "screenshots/landing.png",
@@ -50,12 +48,12 @@
       {
         "type": "agent",
         "name": "Frontend Agent",
-        "purpose": "React UI, TanStack Query, 위험도 경고 배너 구현"
+        "purpose": "React UI, hooks 기반 데이터 흐름, 위험도 경고 배너 구현"
       },
       {
         "type": "agent",
         "name": "Backend Agent",
-        "purpose": "Firestore 스키마, riskStats, Cloud Functions 연동"
+        "purpose": "Firestore 스키마, riskStats, Cloud Functions 이관용 코드"
       },
       {
         "type": "agent",

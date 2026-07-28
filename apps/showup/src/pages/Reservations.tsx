@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthState } from '@/hooks/useAuth'
 import { listReservations } from '@/services/reservations'
 import { transitionReservationStatusAndRefresh } from '@/services/riskRefresh'
@@ -129,15 +130,25 @@ const Reservations = () => {
   })
 
   return (
-    <div className="p-4">
-      <header className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">예약 관리</h1>
-        <p className="text-sm text-gray-500 mt-1">예약을 확인하고 상태를 기록하세요</p>
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">예약 관리</h1>
+            <p className="text-sm text-gray-500 mt-1">예약을 확인하고 상태를 기록하세요</p>
+          </div>
+          <Link
+            to="/app/reservations/new"
+            className="inline-flex h-11 min-w-28 shrink-0 items-center justify-center rounded-lg border border-blue-800 bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 md:!min-h-10 md:h-10"
+          >
+            + 새 예약
+          </Link>
+        </div>
       </header>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="filterDate" className="block text-sm font-medium text-gray-700 mb-1">
               날짜 필터
@@ -183,7 +194,7 @@ const Reservations = () => {
       </div>
 
       {/* Reservations list */}
-      <section className="bg-white rounded-xl p-4 shadow-sm">
+      <section className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">예약 목록</h2>
         
         {isLoading ? (
@@ -209,9 +220,12 @@ const Reservations = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredReservations.map((res) => (
-              <div key={res.id} className="border border-gray-200 rounded-lg p-3">
+              <div
+                key={res.id}
+                className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-semibold text-gray-900">{res.customerName}</p>

@@ -2,71 +2,184 @@
 // Owner UID based store isolation and field validation
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper: store owner 검증 — 동일 요청 내 get() 결과 캐싱됨 (비용 1회)
     function isStoreOwner(storeId) {
       return request.auth != null
         && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
     }
 
-    // Store level isolation: only owner can read/write the store document
-    match /stores/{storeId} {
-      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
-      allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+    function customerExists(storeId, customerId) {
+      return exists(/databases/$(database)/documents/stores/$(storeId)/customers/$(customerId));
+    }
 
-      // Customers sub-collection: only store owner can access
+    function hasValidStore(data) {
+      return data.keys().hasAll(['ownerUid', 'name', 'category', 'createdAt'])
+        && data.keys().hasOnly(['ownerUid', 'name', 'category', 'createdAt'])
+        && data.ownerUid is string
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 50
+        && data.createdAt is timestamp;
+    }
+
+    function hasValidPhone(data) {
+      return data.phone is string
+        && data.phone.matches('^01[0-9][0-9]{7,8}$')
+        && data.phoneLast4 is string
+        && data.phoneLast4.matches('^[0-9]{4}$')
+        && data.phone.matches('.*' + data.phoneLast4 + '$');
+    }
+
+    function hasValidIncidentCounts(data) {
+      return data.keys().hasAll(['abuse', 'dispute', 'late', 'unreasonable'])
+        && data.keys().hasOnly(['abuse', 'dispute', 'late', 'unreasonable'])
+        && data.abuse is int && data.abuse >= 0
+        && data.dispute is int && data.dispute >= 0
+        && data.late is int && data.late >= 0
+        && data.unreasonable is int && data.unreasonable >= 0;
+    }
+
+    function hasValidRiskStats(data) {
+      return data is map
+        && data.keys().hasAll([
+          'totalVisits', 'noShowCount', 'lateCancelCount', 'incidentCounts',
+          'score', 'lastNoShowAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'totalVisits', 'noShowCount', 'lateCancelCount', 'incidentCounts',
+          'score', 'lastNoShowAt', 'updatedAt'
+        ])
+        && data.totalVisits is int && data.totalVisits >= 0
+        && data.noShowCount is int && data.noShowCount >= 0
+        && data.lateCancelCount is int && data.lateCancelCount >= 0
+        && hasValidIncidentCounts(data.incidentCounts)
+        && data.score is int && data.score >= 0
+        && (data.lastNoShowAt == null || data.lastNoShowAt is timestamp)
+        && data.updatedAt is timestamp;
+    }
+
+    function hasValidCustomer(data) {
+      return data.keys().hasAll(['name', 'phone', 'phoneLast4', 'createdAt', 'riskStats'])
+        && data.keys().hasOnly(['name', 'phone', 'phoneLast4', 'createdAt', 'riskStats'])
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && hasValidPhone(data)
+        && data.createdAt is timestamp
+        && hasValidRiskStats(data.riskStats);
+    }
+
+    function hasValidIncident(data) {
+      return data.keys().hasAll(['type', 'memo', 'occurredAt', 'createdAt'])
+        && data.keys().hasOnly(['type', 'memo', 'occurredAt', 'createdAt'])
+        && data.type is string
+        && data.type in ['abuse', 'dispute', 'late', 'unreasonable']
+        && data.memo is string && data.memo.size() <= 500
+        && data.occurredAt is timestamp
+        && data.createdAt is timestamp;
+    }
+
+    function hasValidReservation(data) {
+      return data.keys().hasAll([
+          'customerId', 'date', 'time', 'status', 'cancelledSameDay', 'memo', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'customerId', 'date', 'time', 'status', 'cancelledSameDay',
+          'statusChangedAt', 'memo', 'createdAt'
+        ])
+        && data.customerId is string && data.customerId.size() > 0
+        && data.date is string && data.date.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+        && data.time is string && data.time.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')
+        && data.status is string
+        && data.status in ['pending', 'confirmed', 'visited', 'noShow', 'cancelled']
+        && data.cancelledSameDay is bool
+        && (data.status == 'cancelled' || data.cancelledSameDay == false)
+        && (!('statusChangedAt' in data)
+          || data.statusChangedAt == null
+          || data.statusChangedAt is timestamp)
+        && data.memo is string && data.memo.size() <= 500
+        && data.createdAt is timestamp;
+    }
+
+    function reservationStatusChangedAt(data) {
+      return ('statusChangedAt' in data) ? data.statusChangedAt : null;
+    }
+
+    function hasValidReservationTransition() {
+      return (
+          request.resource.data.status == resource.data.status
+          && request.resource.data.cancelledSameDay == resource.data.cancelledSameDay
+          && reservationStatusChangedAt(request.resource.data)
+            == reservationStatusChangedAt(resource.data)
+          && (
+            resource.data.status in ['pending', 'confirmed']
+            || (
+              request.resource.data.date == resource.data.date
+              && request.resource.data.time == resource.data.time
+            )
+          )
+        )
+        || (
+          resource.data.status == 'pending'
+          && request.resource.data.status == 'confirmed'
+          && request.resource.data.cancelledSameDay == false
+          && reservationStatusChangedAt(request.resource.data) == null
+        )
+        || (
+          resource.data.status in ['pending', 'confirmed']
+          && request.resource.data.status in ['visited', 'noShow', 'cancelled']
+          && request.resource.data.statusChangedAt is timestamp
+        );
+    }
+
+    match /stores/{storeId} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && hasValidStore(request.resource.data);
+      allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'category'])
+        && hasValidStore(request.resource.data);
+      // Store 삭제는 하위 컬렉션 orphan을 막기 위해 서버 cascade 도입 전까지 차단한다.
+      allow delete: if false;
+
       match /customers/{customerId} {
         allow read: if isStoreOwner(storeId);
         allow create: if isStoreOwner(storeId)
-          && request.resource.data.name is string
-          && request.resource.data.name.size() > 0
-          && request.resource.data.phone is string
-          && request.resource.data.phoneLast4 is string;
+          && hasValidCustomer(request.resource.data);
         allow update: if isStoreOwner(storeId)
-          // riskStats 클라이언트 갱신 허용 (Spark 요금제 — Cloud Functions 미배포)
-          // TODO: Blaze 업그레이드 시 riskStats 쓰기 차단 + Cloud Functions 트리거로 이관
-          // phoneLast4는 phone과 함께만 변경 가능
-          && (!('phoneLast4' in request.resource.data.keys())
-            || 'phone' in request.resource.data.keys())
-          // 변경 시 타입 검증
-          && (!('name' in request.resource.data.keys())
-            || request.resource.data.name is string && request.resource.data.name.size() > 0)
-          && (!('phone' in request.resource.data.keys())
-            || request.resource.data.phone is string)
-          && (!('phoneLast4' in request.resource.data.keys())
-            || request.resource.data.phoneLast4 is string);
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['name', 'phone', 'phoneLast4', 'riskStats'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['phone', 'phoneLast4'])
+            || request.resource.data.diff(resource.data).affectedKeys().hasAll(['phone', 'phoneLast4']))
+          && hasValidCustomer(request.resource.data);
         allow delete: if isStoreOwner(storeId);
 
-        // Incidents sub-collection under a customer: only store owner can access
         match /incidents/{incidentId} {
-          allow read: if isStoreOwner(storeId);
+          allow read: if isStoreOwner(storeId) && customerExists(storeId, customerId);
           allow create: if isStoreOwner(storeId)
-            && request.resource.data.type is string
-            && request.resource.data.type in ['abuse', 'dispute', 'late', 'unreasonable']
-            && request.resource.data.memo is string;
+            && customerExists(storeId, customerId)
+            && hasValidIncident(request.resource.data);
           allow update: if isStoreOwner(storeId)
-            && (!('type' in request.resource.data.keys())
-              || request.resource.data.type is string
-              && request.resource.data.type in ['abuse', 'dispute', 'late', 'unreasonable'])
-            && (!('memo' in request.resource.data.keys())
-              || request.resource.data.memo is string);
+            && customerExists(storeId, customerId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['type', 'memo', 'occurredAt'])
+            && hasValidIncident(request.resource.data);
           allow delete: if isStoreOwner(storeId);
         }
       }
 
-      // Reservations sub-collection: only store owner can access
       match /reservations/{reservationId} {
-        allow read: if isStoreOwner(storeId);
+        allow get: if isStoreOwner(storeId)
+          && customerExists(storeId, resource.data.customerId);
+        allow list: if isStoreOwner(storeId);
         allow create: if isStoreOwner(storeId)
-          && request.resource.data.customerId is string
-          && request.resource.data.date is string
-          && request.resource.data.time is string
-          && request.resource.data.status is string
-          && request.resource.data.status in ['pending', 'confirmed', 'visited', 'noShow', 'cancelled'];
+          && customerExists(storeId, request.resource.data.customerId)
+          && hasValidReservation(request.resource.data);
         allow update: if isStoreOwner(storeId)
-          && (!('status' in request.resource.data.keys())
-            || request.resource.data.status is string
-            && request.resource.data.status in ['pending', 'confirmed', 'visited', 'noShow', 'cancelled']);
+          && customerExists(storeId, resource.data.customerId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['date', 'time', 'status', 'cancelledSameDay', 'statusChangedAt', 'memo'])
+          && hasValidReservationTransition()
+          && hasValidReservation(request.resource.data);
         allow delete: if isStoreOwner(storeId);
       }
     }

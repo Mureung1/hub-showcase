@@ -1,25 +1,26 @@
-# RiskStats Client Update Exception Policy
+# riskStats 클라이언트 갱신 임시 정책
 
-## Scope
-- This document defines when a client‑side update to `riskStats` is **allowed** despite the default rule that only Cloud Functions may write to this field.
+> 기준일: 2026-07-28
 
-## Allowed Scenarios
-1. **Stale‑Data Refresh**
-   - If the client detects that its cached `riskStats.updatedAt` timestamp is older than **30 minutes**, it may issue a **PATCH** request to update **only** the `updatedAt` field to trigger a re‑fetch.
-   - No other fields (`score`, `noShowCount`, `incidentCounts.*`) may be modified.
-2. **Manual Admin Override (internal tool only)**
-   - A privileged admin UI (protected by a custom claim `admin: true`) may request a full `riskStats` overwrite.
-   - This route is separate (`/admin/riskStats`) and guarded by a dedicated security rule.
+## 현재 상태
 
-## Validation Rules (Server‑Side)
-- `updatedAt` must be a valid ISO‑8601 timestamp and **must be newer** than the current stored value.
-- If any other field is present in the update payload, the rule **rejects** the write.
-- All updates are logged to `audit/riskStatsUpdates` with `request.auth.uid`, timestamp, and diff.
+- Firebase CLI `functions:list --project showup-project` 결과 배포 Functions 0개.
+- Spark 요금제 MVP라 `riskRefresh.ts`가 예약·사건 원본을 다시 읽고 `riskStats`를 계산한다.
+- Firestore Rules는 가게 owner만 완전한 `riskStats` 스키마를 쓸 수 있게 허용한다.
+- 임의 admin route, custom claim, audit 컬렉션, timestamp-only 예외는 구현되어 있지 않다.
 
-## Client Implementation Notes
-- Use the helper `updateRiskStatsTimestamp()` in `src/utils/risk.ts` which builds the minimal payload `{ updatedAt: new Date().toISOString() }` and sends it via the existing Firestore SDK.
-- The UI should display a toast if the write is rejected, prompting the user to retry later.
+## 위험
 
-## Rationale
-- Prevents accidental or malicious manipulation of the scoring algorithm while still allowing the client to keep its cache in sync during periods of low connectivity.
-- Keeps the **single‑source‑of‑truth** principle: the authoritative `score` value is always calculated by Cloud Functions.
+- 가게 owner가 개발자 도구로 자기 가게 점수를 임의 조작할 수 있다.
+- 원본 쓰기와 캐시 갱신이 원자적이지 않아 실패·동시 변경 시 잠시 불일치할 수 있다.
+- 타 가게 접근은 `isStoreOwner()`로 차단되지만 자기 가게 무결성은 완전하지 않다.
+
+## 이관 조건
+
+Blaze 전환 후:
+
+1. `functions/`의 Firestore trigger 배포
+2. `src/services/riskRefresh.ts` 호출 제거
+3. Rules에서 클라이언트 `riskStats` 변경 차단
+4. 서버 트리거·재시도·동시성 회귀 테스트
+5. 프로덕션 Functions 목록과 로그 확인

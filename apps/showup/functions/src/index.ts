@@ -15,6 +15,7 @@ interface ReservationDoc {
   time: string;
   status: 'pending' | 'confirmed' | 'visited' | 'noShow' | 'cancelled';
   cancelledSameDay: boolean;
+  statusChangedAt?: unknown | null;
   memo: string;
   createdAt: unknown;
 }
@@ -28,8 +29,8 @@ interface IncidentDoc {
 
 /**
  * 예약 문서가 생성/수정/삭제될 때 해당 고객의 riskStats 를 재계산한다.
- * Firestore Security Rules 에서 riskStats 직접 쓰기를 차단했기 때문에,
- * Cloud Function 이 유일한 갱신 경로가 된다.
+ * Blaze 이관 시 Firestore Security Rules 에서 riskStats 직접 쓰기를 차단하고,
+ * 이 Cloud Function 을 유일한 갱신 경로로 사용한다.
  */
 export const recalculateRiskOnReservationChange = onDocumentWritten(
   'stores/{storeId}/reservations/{reservationId}',
@@ -37,11 +38,17 @@ export const recalculateRiskOnReservationChange = onDocumentWritten(
     const storeId = event.params.storeId;
     const afterData = event.data?.after?.data() as ReservationDoc | undefined;
     const beforeData = event.data?.before?.data() as ReservationDoc | undefined;
-    const customerId = afterData?.customerId ?? beforeData?.customerId;
+    const customerIds = new Set(
+      [afterData?.customerId, beforeData?.customerId].filter(
+        (value): value is string => Boolean(value),
+      ),
+    );
 
-    if (!customerId) return;
-
-    await recalculateAndSaveRiskStats(storeId, customerId);
+    await Promise.all(
+      [...customerIds].map((customerId) =>
+        recalculateAndSaveRiskStats(storeId, customerId),
+      ),
+    );
   },
 );
 
@@ -62,6 +69,13 @@ async function recalculateAndSaveRiskStats(
   storeId: string,
   customerId: string,
 ): Promise<void> {
+  const customerRef = db
+    .collection('stores')
+    .doc(storeId)
+    .collection('customers')
+    .doc(customerId);
+  if (!(await customerRef.get()).exists) return;
+
   const reservationsSnap = await db
     .collection('stores')
     .doc(storeId)
@@ -82,10 +96,5 @@ async function recalculateAndSaveRiskStats(
 
   const stats = calculateRiskStats({ reservations, incidents });
 
-  await db
-    .collection('stores')
-    .doc(storeId)
-    .collection('customers')
-    .doc(customerId)
-    .update({ riskStats: stats });
+  await customerRef.update({ riskStats: stats });
 }

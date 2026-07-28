@@ -45,7 +45,6 @@ ShowUp의 개인정보 보호, Firestore Security Rules, 입력 검증, 전화�
 - `apps/showup/firestore.rules`
 - `apps/showup/storage.rules`
 - `apps/showup/firebase.json`의 emulator 설정 (파일 소유는 BE — emulator 부분만 협의 수정)
-- `apps/showup/src/utils/validation.ts`
 - `apps/showup/src/pages/Privacy.tsx` — 문안 소유, 라우팅/레이아웃은 FE
 - `apps/showup/src/pages/Terms.tsx` — 문안 소유, 라우팅/레이아웃은 FE
 - `apps/showup/.env.example`
@@ -114,7 +113,7 @@ match /stores/{storeId}/{document=**} {
 - incident type은 `abuse`, `dispute`, `late`, `unreasonable`만 허용한다.
 - incident memo에는 "사실만 기록해주세요" 안내를 표시한다.
 - 예약 status는 `pending`, `confirmed`, `visited`, `noShow`, `cancelled`만 허용한다.
-- riskStats는 원칙적으로 Cloud Function이 갱신한다.
+- 2026-07-28 현재 배포 Functions는 0개다. MVP에서는 owner 클라이언트 `riskRefresh`가 갱신하며 Blaze 이관 후 Rules 차단한다.
 - MVP 대안으로 클라이언트 갱신을 허용할 경우, 허용 필드와 검증 범위를 별도 문서(보안 테스트 문서)에 정리하고 그 외 필드의 클라이언트 쓰기는 규칙으로 차단한다.
 
 ## 작업 순서

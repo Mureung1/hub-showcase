@@ -1,55 +1,44 @@
-# ShowUp 통합 QA 버그 목록 (11일차)
+# ShowUp 통합 QA 버그 목록
 
-> 10일차 통합 QA + 코드 검증 기반. 심각도별 정렬.
+> 최종 갱신: 2026-07-28. 상태는 로컬 코드와 읽기 전용 프로덕션 조회 기준이다.
 
-## P0 - 배포 전 필수 수정
+## P0 — 제출 전 필수
 
-| # | 세션 | 파일:줄 | 문제 | 상태 |
-|---|---|---|---|---|
-| 1 | FE | CustomerDetail.tsx:25 | `useState<any>` 타입 미사용 — Customer 타입 적용 필요 | 미수정 |
-| 2 | FE | CustomerDetail.tsx:61,124 | `occurredAt as any` 타입 캐스팅 — Timestamp 변환 로직 필요 | 미수정 |
+| # | 항목 | 상태 | 조치 |
+|---|------|------|------|
+| 1 | 수정 코드 프로덕션 미배포 | 미완료 | Hosting·Firestore Rules·Storage Rules 배포 후 핵심 플로우 재확인 |
+| 2 | 데모 영상·`demoVideoUrl` | 미완료 | 7/29 녹화·업로드 후 루트 `showcase/showcase.json` 갱신 |
+| 3 | 최종 push·PR | 미완료 | 7/29 밤 10시 전 제출 |
 
-## P1 - 배포 전 권장 수정
+## P1 — 이번 감사에서 수정
 
-| # | 세션 | 파일:줄 | 문제 | 상태 |
-|---|---|---|---|---|
-| 3 | FE | src/mock/ | mock 데이터 잔존 (import 0건이나 파일 존재) — cleanup 대상 | 미수정 |
-| 4 | FE | services/storeFlow.ts | 데드 코드 (import 0건) — 삭제 대상 | 미수정 |
+| # | 문제 | 수정 |
+|---|------|------|
+| 4 | 고객 검색 배너가 서로 다른 고객의 noShow/incident 값을 혼합 | 한 명의 alert 고객 데이터만 사용 |
+| 5 | 예약 생성 화면에 위험 고객 경고 없음 | 선택 고객 `RiskAlertBanner` 추가 |
+| 6 | 신규 고객 중복 판정이 전화번호 뒤 4자리만 확인 | 전체 정규화 전화번호 정확 일치 조회로 변경 |
+| 7 | 고객 상세가 과거/미래 예약을 임의 상태 변경 | 오늘 활성 예약만 버튼 노출 |
+| 8 | 사건 타임라인 key 충돌·UTC 날짜 하루 밀림 | Firestore 문서 ID + 로컬 날짜 변환 |
+| 9 | 노쇼 최신성이 예약 생성일 기준, 미래 시각에도 +5 | `statusChangedAt` 우선 + 미래 제외 테스트 |
+| 10 | 고객 삭제 시 예약·사건 orphan | 500개 단위 batch cascade 삭제 |
+| 11 | Functions 이관 코드가 고객 변경·삭제 race 미처리 | 이전/새 고객 재계산 + 없는 고객 skip |
+| 12 | Storage Rules 문법 손상·인증 사용자 read 허용 | 정상 문법으로 교체, MVP 전체 deny |
+| 13 | Rules가 ownerUid 변경·임의 필드·불완전 riskStats 허용 | 허용 키·필수 필드·형식·불변 필드 검증 강화 |
+| 14 | 보안 테스트 `.mjs`가 git ignore되어 clone 재현 불가 | `smoke-test.mjs`만 추적 예외, 18개 회귀 테스트 작성 |
+| 15 | `/privacy`·`/terms`가 placeholder | MVP 운영 초안과 법률 검토 경고로 교체 |
+| 16 | Firebase 10 취약점·workspace React 타입 충돌 | Firebase 12.16.0·React 19.2.7로 정합화, Firebase production 취약점 제거 |
+| 17 | 수동 청크가 미사용 TanStack Query를 참조하고 Firestore를 공개 화면에 preload | stale 참조 제거, Auth/Firestore 청크와 초기화 분리 |
+| 18 | 예약 완료 후 날짜·시간·상태 메타데이터 변조 가능 | Rules에서 완료 예약은 메모만 수정 허용, 전환 이력 필드 불변 검증 추가 |
+| 19 | 고객 삭제 중 남은 예약이 전체 목록에 섞일 수 있음 | Rules direct get 차단 + 전체 예약 목록은 기존 고객 ID 집합으로 필터링 |
 
-## P2 - 데모/발표 전 확인
+## P2 — 알려진 제한
 
-| # | 세션 | 항목 | 문제 | 상태 |
-|---|---|---|---|---|
-|| 5 | BE | Cloud Functions 배포 | onWrite 트리거가 프로덕션에서 동작하는지 미확인 | **Spark 요금제 불가. 클라이언트 갱신(riskRefresh.ts)으로 대체, functions/ 유지** |
-|| 6 | BE | Firestore 인덱스 배포 | 복합 인덱스가 프로덕션에 배포되었는지 미확인 | **배포 완료 (2026-07-23)** |
-|| 7 | 보안 | 프로덕션 규칙 배포 | firestore.rules가 프로덕션에 배포되었는지 미확인 | **배포 완료 (2026-07-23)** |
-| 8 | FE | Lighthouse 실측 | 코드 스플리팅 적용했으나 실제 Lighthouse 점수 미측정 | 미측정 |
-
-## 이미 해결된 항목 (6일차)
-
-| # | 항목 | 해결 커밋 |
-|---|---|---|
-| - | Reservations.tsx id 덮어쓰기 | 232b07e8 |
-| - | CustomerDetail 액션 버튼 미연결 | 53ff161c |
-| - | riskRefresh 미연동 | 232b07e8 (Cloud Functions로 이관) |
-| - | riskStats 쓰기 차단 규칙 누락 | 07baef33 |
-| - | phone 원본 노출 | 232b07e8 (getCustomer 마스킹) |
-| - | penetration-test.ts 빈 껍데기 | 07baef33 |
-| - | isSameDay 타임존 버그 | 232b07e8 |
-| - | updatedAt 미갱신 | 232b07e8 |
-| - | incidents occurredAt 캐스팅 | 232b07e8 |
-
-## 세션별 할당
-
-### FE (P0 + P1)
-- CustomerDetail.tsx `any` 타입 3건 -> Customer/Timestamp 타입 적용
-- src/mock/ 삭제
-- services/storeFlow.ts 삭제
-
-### BE (P2)
-- Cloud Functions 프로덕션 배포
-- Firestore 인덕스 프로덕션 배포
-- 데모용 가게 계정 생성 + 시드 데이터 확정
-
-### 보안 (P2)
-- firestore.rules 프로덕션 배포 + 스모크 테스트
+| 항목 | 현재 상태 | 다음 조치 |
+|------|----------|----------|
+| Cloud Functions | Firebase CLI 조회 결과 0개 | Blaze 전환 후 trigger 배포·Rules 차단 |
+| riskStats 무결성 | owner 클라이언트가 자기 가게 캐시 갱신 가능 | Blaze 전환 후 서버 trigger 전환 |
+| 계정 탈퇴 | 전체 데이터 cascade UI 없음 | Phase 2 구현 |
+| 데모 계정 | 공개 비밀번호, 데이터 변경 가능 | 제출 후 비활성화/초기화 |
+| 법적 문안 | MVP 운영 초안 | 상용화 전 전문가 검토·사업자 정보 보완 |
+| Lighthouse | 최신 실측 없음 | 배포 후 실제 URL로 측정 |
+| React Router advisory | RSC 모드 CSRF high 2건; 현재 SPA는 RSC·Action 미사용 | 패치 버전 공개 시 즉시 업그레이드 |

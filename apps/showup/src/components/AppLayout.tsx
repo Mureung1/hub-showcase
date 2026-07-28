@@ -1,33 +1,31 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { signOutUser } from '@/services/auth'
+import { useAuthState } from '@/hooks/useAuth'
 import { toast } from 'sonner'
-import type { ReactNode } from 'react'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
-const DashboardIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-)
-const CustomersIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-)
-const CalendarIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-)
-const LogoutIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-)
-
-const navItems: { path: string; label: string; icon: ReactNode }[] = [
-  { path: '/app/dashboard', label: '대시보드', icon: <DashboardIcon /> },
-  { path: '/app/customers', label: '고객', icon: <CustomersIcon /> },
-  { path: '/app/reservations', label: '예약', icon: <CalendarIcon /> },
+const navItems = [
+  { path: '/app/dashboard', label: '대시보드', icon: 'dashboard' as IconName },
+  { path: '/app/customers', label: '고객', icon: 'users' as IconName },
+  { path: '/app/reservations', label: '예약', icon: 'calendar' as IconName },
+  { path: '/app/settings', label: '내 정보', icon: 'users' as IconName },
 ]
 
 const AppLayout = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuthState()
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path)
+  }
+
+  const handleLogoClick = () => {
+    if (user) {
+      navigate('/app/dashboard')
+    } else {
+      navigate('/login')
+    }
   }
 
   const handleLogout = async () => {
@@ -41,67 +39,84 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen pb-16 md:pb-0 md:pl-56">
+    <div className="min-h-screen bg-slate-100 pb-16 md:pb-0 md:pl-56">
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden">
-        <div className="flex justify-around items-center h-16">
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white md:hidden">
+        <div className="flex h-16 items-center justify-around">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center justify-center w-full h-full ${
-                isActive(item.path) ? 'text-blue-600' : 'text-gray-500'
+              aria-current={isActive(item.path) ? 'page' : undefined}
+              className={`flex h-full w-full flex-col items-center justify-center gap-1 text-xs transition-colors ${
+                isActive(item.path) ? 'font-semibold text-blue-700' : 'text-slate-500'
               }`}
             >
-              {item.icon}
-              <span className="text-xs mt-1">{item.label}</span>
+              <Icon name={item.icon} className="h-5 w-5" />
+              {item.label}
             </Link>
           ))}
           <button
             onClick={handleLogout}
-            className="flex flex-col items-center justify-center w-full h-full text-gray-500"
+            className="flex h-full w-full flex-col items-center justify-center gap-1 text-xs text-slate-500 transition-colors hover:text-slate-800"
+            aria-label="로그아웃"
           >
-            <LogoutIcon />
-            <span className="text-xs mt-1">로그아웃</span>
+            <Icon name="logout" className="h-5 w-5" />
+            로그아웃
           </button>
         </div>
       </nav>
 
       {/* PC sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-56 bg-white border-r border-gray-200 flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">ShowUp</h1>
-          <p className="text-xs text-gray-500 mt-1">소상공인 고객 이력 관리</p>
-        </div>
-        <nav className="flex-1 p-4">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-3 py-3 rounded-lg mb-1 ${
-                isActive(item.path)
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {item.icon}
-              <span className="font-medium">{item.label}</span>
-            </Link>
-          ))}
+      <aside className="fixed bottom-0 left-0 top-0 hidden w-56 flex-col border-r border-slate-300/80 bg-white md:flex">
+        <button
+          type="button"
+          className="border-b border-slate-100 px-6 py-6 text-left transition-colors hover:bg-slate-50"
+          onClick={handleLogoClick}
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
+              S
+            </span>
+            <h1 className="text-lg font-bold tracking-tight text-slate-900">ShowUp</h1>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">소상공인 고객 이력 관리</p>
+        </button>
+        <nav className="flex-1 px-3 py-6" aria-label="주요 메뉴">
+          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            관리
+          </p>
+          <div className="space-y-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-current={isActive(item.path) ? 'page' : undefined}
+                className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors focus-visible:outline-none ${
+                  isActive(item.path)
+                    ? 'bg-blue-50 font-semibold text-blue-700 before:absolute before:left-0 before:h-6 before:w-1 before:rounded-r-full before:bg-blue-600'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <Icon name={item.icon} className="h-[18px] w-[18px]" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </div>
         </nav>
-        <div className="p-4 border-t border-gray-200">
+        <div className="border-t border-slate-100 p-3">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg w-full"
+            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
           >
-            <LogoutIcon />
-            <span className="font-medium">로그아웃</span>
+            <Icon name="logout" className="h-[18px] w-[18px]" />
+            로그아웃
           </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="bg-gray-50 min-h-screen">
+      <main className="min-h-screen bg-slate-100">
         <Outlet />
       </main>
     </div>

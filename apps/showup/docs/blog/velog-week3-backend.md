@@ -1,5 +1,7 @@
 # AI Agent Challenge 3주차 백엔드 회고 — ShowUp: 대시보드·에러 핸들링·통합 QA·배포
 
+> 역사적 회고 문서(3주차 작성 시점). 당시 10개 보안 회귀, 삭제 미구현, 배포 상태 등은 이후 변경됐다. 2026-07-28 현재 기준은 [ShowUp README](../../README.md), [작업 체크리스트](../checklist.md)다.
+
 > **ShowUp**은 소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스입니다.
 >
 > 2주차까지 핵심 기능 구현을 마치고, 3주차(7/20~7/24)부터는 완성도 높이기 — 대시보드 집계, 에러 핸들링 표준화, 모바일 QA, 침투 테스트, 통합 QA, Firebase Hosting 배포를 진행했습니다.
@@ -193,7 +195,7 @@ export async function withErrorHandling<T>(fn: () => Promise<T>): Promise<T> {
 | 3 | 위조 ownerUid store 생성 | PASS |
 | 4 | 허용되지 않은 incident type | PASS |
 | 5 | 원본 전화번호 노출 | PASS |
-| 6 | 삭제 cascade (현재 미구현, 규칙으로 잔여 데이터 접근 차단) | PASS |
+| 6 | 삭제 cascade (당시 미구현, 규칙으로 잔여 데이터 접근 차단) | PASS |
 | 7 | 클라이언트 riskStats 직접 수정 | PASS (현재 허용, Blaze 이관 후 차단) |
 | 8 | "블랙리스트" 용어 | PASS (0건) |
 | 9 | 동의 없는 가입 | PASS |
@@ -205,10 +207,10 @@ export async function withErrorHandling<T>(fn: () => Promise<T>): Promise<T> {
 
 ```
 // firestore.rules — 현재: riskStats 쓰기 허용 (TODO로 차단 예정 표시)
-// TODO: Blaze 업그레이드 시 riskStats 쓰기 차단 + Cloud Functions 트리거로 이관
+// Blaze 이관 시 riskStats 쓰기 차단 + Cloud Functions 트리거로 전환
 ```
 
-현재는 허용하되 `TODO` 주석으로 "나중에 차단하겠다"를 명시해뒀습니다. 이건 기술 부채를 명시적으로 관리하는 방법이라고 생각합니다 — 숨기지 않고 보이게 두는 것.
+당시에는 허용하되 주석으로 이관 조건을 명시했습니다. 현재 구현과 기술 부채를 함께 기록한 회고입니다.
 
 ---
 

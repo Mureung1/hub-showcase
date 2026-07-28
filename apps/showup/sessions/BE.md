@@ -113,6 +113,8 @@ stores/{storeId}/customers/{customerId}/incidents/{incidentId}
 - incident가 생성, 수정, 삭제될 때 riskStats 재계산
 - 고객 삭제 시 관련 예약과 사건 처리 정책을 보안과 함께 확인
 
+> 2026-07-28 운영 상태: 배포 Functions 0개. 현재 앱은 `riskRefresh.ts` 클라이언트 갱신을 사용하며 `functions/`는 Blaze 이관 준비용이다.
+
 MVP 초기에 Cloud Function 구현이 부담되면 `src/utils/risk.ts` 순수 함수를 먼저 만들고,
 이벤트 기록 시점에 같은 함수를 사용해 riskStats를 갱신한다. 계산 로직은 한 곳에만 둔다.
 

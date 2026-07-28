@@ -1,28 +1,30 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuthState } from '@/hooks/useAuth'
-import { searchCustomers } from '@/services/customers'
-import { createReservation } from '@/services/reservations'
+import { getCustomer, searchCustomers } from '@/services/customers'
+import { createReservationAndRefresh } from '@/services/riskRefresh'
 import type { CustomerSearchResult } from '@/types/schema'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import RiskAlertBanner from '@/components/RiskAlertBanner'
 import { toast } from 'sonner'
 
 const reservationSchema = z.object({
   customerId: z.string().min(1, '고객을 선택해주세요'),
   date: z.string().min(1, '날짜를 선택해주세요'),
   time: z.string().min(1, '시간을 선택해주세요'),
-  memo: z.string().optional(),
+  memo: z.string().max(500, '메모는 500자 이하여야 합니다').optional(),
 })
 
 type ReservationForm = z.infer<typeof reservationSchema>
 
 const NewReservation = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuthState()
   const [isLoading, setIsLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -42,21 +44,51 @@ const NewReservation = () => {
     },
   })
 
-  // 고객 검색 (300ms debounce)
-  const handleSearch = async (query: string) => {
-    if (!user || !query.trim()) {
-      setSearchResults([])
-      return
+  useEffect(() => {
+    const customerId = searchParams.get('customerId')
+    if (!user || !customerId) return
+
+    const loadCustomer = async () => {
+      try {
+        const customer = await getCustomer(user.uid, customerId)
+        if (!customer) {
+          toast.error('고객을 찾을 수 없습니다')
+          return
+        }
+        setSelectedCustomer(customer)
+        setValue('customerId', customer.id)
+      } catch (error) {
+        console.error('Failed to load selected customer:', error)
+        toast.error('고객 정보를 불러오지 못했습니다')
+      }
     }
 
-    try {
-      const results = await searchCustomers(user.uid, query)
-      setSearchResults(results)
-    } catch (error) {
-      console.error('Search failed:', error)
-      setSearchResults([])
+    loadCustomer()
+  }, [searchParams, setValue, user])
+
+  // 고객 검색 (300ms debounce)
+  useEffect(() => {
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      if (!user || !searchQuery.trim()) {
+        setSearchResults([])
+        return
+      }
+
+      try {
+        const results = await searchCustomers(user.uid, searchQuery)
+        if (!cancelled) setSearchResults(results)
+      } catch (error) {
+        console.error('Search failed:', error)
+        if (!cancelled) setSearchResults([])
+      }
+    }, 300)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
     }
-  }
+  }, [searchQuery, user])
 
   const handleSelectCustomer = (customer: CustomerSearchResult) => {
     setSelectedCustomer(customer)
@@ -80,7 +112,7 @@ const NewReservation = () => {
     setIsLoading(true)
     try {
       const resId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await createReservation(user.uid, resId, {
+      await createReservationAndRefresh(user.uid, data.customerId, resId, {
         customerId: data.customerId,
         date: data.date,
         time: data.time,
@@ -96,13 +128,16 @@ const NewReservation = () => {
   }
 
   return (
-    <div className="p-4">
-      <header className="mb-4">
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">새 예약</h1>
         <p className="text-sm text-gray-500 mt-1">고객을 선택하고 예약 정보를 입력하세요</p>
       </header>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-5 rounded-xl bg-white p-4 shadow-sm sm:p-6"
+      >
         {/* 고객 선택 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">고객</label>
@@ -122,6 +157,13 @@ const NewReservation = () => {
               )}
             </button>
           </div>
+          {selectedCustomer && (
+            <RiskAlertBanner
+              className="mt-3"
+              noShowCount={selectedCustomer.riskStats.noShowCount}
+              incidentCounts={selectedCustomer.riskStats.incidentCounts}
+            />
+          )}
           {errors.customerId && (
             <p className="mt-1 text-sm text-red-600">{errors.customerId.message}</p>
           )}
@@ -156,11 +198,23 @@ const NewReservation = () => {
           />
         </div>
 
-        <div className="flex gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={() => navigate('/app/reservations')}>
+        <div className="flex justify-end gap-3 pt-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="h-11 min-w-28 px-4 md:!min-h-10 md:h-10"
+            onClick={() => navigate('/app/reservations')}
+          >
             취소
           </Button>
-          <Button type="submit" variant="primary" disabled={isLoading}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            className="h-11 min-w-28 px-4 md:!min-h-10 md:h-10"
+            disabled={isLoading}
+          >
             {isLoading ? '등록 중...' : '예약 생성'}
           </Button>
         </div>
@@ -181,10 +235,7 @@ const NewReservation = () => {
             type="text"
             placeholder="전화번호 뒤 4 자리 또는 이름"
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              handleSearch(e.target.value)
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
 
           <div className="max-h-60 overflow-y-auto space-y-2">

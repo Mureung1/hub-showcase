@@ -4,8 +4,8 @@
 > 매 작업: Plan 모드 → 계획 검토 → 구현 → 검증 시나리오 실행 → 다음.
 > 브랜치: **`N167_채민석` 단일 작업 브랜치** (challenge 규칙). main 사용 금지, 원본 main PR 금지.
 > **커밋은 각 세션에서 하나의 작업이 끝날 때마다 자동 수행** — push와 PR은 사용자가 명시적으로 지시할 때만 실행. **커밋 메시지 규칙**: 세션별 접두어 — `FE-` / `BE-` / `SEC-` / `LEAD-`.
-> 세션별 모델: 🟨 리드·GLM 5.2 / 🟦 프론트엔드·Qwen 3.5 / 🟩 백엔드·Kimi K2.7 Code / 🟥 보안·GPT-OSS 120B
-> 기간: 2026-07-09 ~ 2026-07-30 (주 5일, 16영업일)
+> 세션별 모델: 🟨 리드·GLM 5.2 / 🟦 프론트엔드·Qwen 3.5 / 🟩 백엔드·Kimi K2.7 Code / 🟥 보안·GLM 5.2
+> 기간: 2026-07-09 ~ 2026-07-29 (기능 마감 7/28, 영상·PR 제출 7/29)
 >
 > **시간표 제약**:
 > - 금요일 = 발표·데모·피드백 (개발 작업 없음)
@@ -39,11 +39,11 @@
 - [✅] fork/브랜치 확인: `N167_채민석` 단일 작업 브랜치, PR 대상 확인
 - [✅] plan.md/checklist.md repo docs/에 반영
 - [✅] .gitignore 정리 (.env, 빌드 산출물 .js, *.tsbuildinfo 제외)
-- [✅] @types/react 18 강제 override (zustand @types/react 19 충돌 해결)
+- [✅] workspace React 타입 충돌 해소 — 루트 React 타입 override 제거, 각 앱 React 19 타입으로 정합화
 
 ---
 
-## 2일차 (7/10 금) — 발표·데모·피드백 ❌ 개발 없음
+## 2일차 (7/10 금) — 발표·데모·피드백 ✅ 완료
 
 > 금요일은 발표/데모/피드백/피어 컴파일링 only. 개발 작업 없음.
 > 1일차 성과(기반 세팅 + MVP 화면 8개) 데모.
@@ -130,13 +130,13 @@
 > **1주차 발표·데모 (18:30~19:00)** — 금요일 공휴일 → 목요일 그룹 세션으로 이동
 
 ### 🟥 보안 (최우선 — 규칙 기준 설정)
-- [x] firestore.rules: customers update에 riskStats 쓰기 차단 (`request.resource.data.riskStats == resource.data.riskStats`)
+- [x] firestore.rules: 임의 필드·불완전 riskStats 차단 — MVP owner의 완전한 riskStats 갱신은 허용, Blaze 이관 후 서버 전용으로 전환
 - [x] firestore.rules: phone 필드 읽기 제한 또는 getCustomer 반환값 변경 기준 정의
 - [x] firestore.rules: incidents update에 type 검증 추가
 - [x] firestore.rules: customers update에 필드 검증 추가 (name, phone, phoneLast4)
 - [x] security/*.ts: .js/.cjs 빈 껍데기 파일 삭제, .mjs만 유지
 - [x] 침투 테스트 2차: 사건 기록 위조/타 가게 고객 접근 (실제 실행)
-- [x] 개인정보 삭제 플로우 검증 (고객 삭제 시 하위 예약·사건 cascade)
+- [✅] 개인정보 삭제 플로우 보완 (고객 삭제 시 연결 예약·사건 batch 삭제, 7/28)
 - [x] README.md "블랙리스트" 용어 제거
 
 ### 🟩 백엔드 (보안 규칙 대응 후)
@@ -146,16 +146,16 @@
 - [x] incidents.ts: occurredAt 캐스팅 제거, Date 그대로 전달
 - [ ] Cloud Functions 배포: 예약 상태·사건 변경 시 riskStats 재계산 (§4 가중치 로직) — **Cloud Functions 방식 확정**
 - [x] riskStats 단위 테스트 (엣지케이스: 노쇼 3회 24점, 노쇼 5회 40점, 방문 회복 −1, abuse 최소 '주의')
-- [x] risk.ts 순수 함수를 Cloud Functions에 통합 — 클라이언트 갱신 제거, 서버 트리거만 사용
+- [✅] Functions 이관용 risk.ts/trigger 빌드 통과 — 프로덕션 Functions는 미배포, 클라이언트 갱신 유지
 
 ### 🟦 프론트엔드 (BE 대응 후)
 - [✅] Reservations.tsx: id: res.id 수정 (상태 변경 기능 복구)
 - [✅] Reservations.tsx: customer.phone.slice(-4) → customer.phoneLast4 교체
 - [✅] CustomerDetail.tsx: 액션 버튼 onClick 핸들러 연결
-- [✅] CustomerDetail.tsx + Reservations.tsx: riskRefresh.ts 클라이언트 갱신 제거, Cloud Functions 트리거에 위임
-- [ ] lint warning 1개 남음 (NewReservation.tsx selectedCustomerState 미사용)
-- [ ] 고객 상세: 이벤트 타임라인 (예약 + 사건 통합, 시간순)
-- [ ] RiskBadge 컴포넌트 (안심/주의/위험 3색 + "(참고용 지표)" 표기)
+- [✅] CustomerDetail.tsx + Reservations.tsx: `*AndRefresh`로 클라이언트 갱신 연결
+- [✅] lint warning 제거
+- [✅] 고객 상세: 이벤트 타임라인 (예약 + 사건 통합, 시간순)
+- [✅] RiskBadge 컴포넌트 (안심/주의/위험 3색 + "(참고용 지표)" 표기)
 
 ### 🟨 리드
 - [✅] 위험도 계산 로직 ↔ 기획서 §4 가중치 일치 확인
@@ -167,7 +167,7 @@
 
 ---
 
-## 7일차 (7/17 금) — 공휴일 ❌ 작업 없음
+## 7일차 (7/17 금) — 공휴일 ✅ 완료
 
 > 7/17은 공휴일. 멘토링만 정상 진행 (목/금 저녁). 공식 학사 일정 없음.
 
@@ -211,17 +211,13 @@
 
 ### 🟥 보안
 - [✅] 침투 테스트 최종: 전체 규칙 리그레션
-- [✅] 법무 최종 체크리스트: 처리방침 게시·삭제 동작·"블랙리스트" 용어 0건
+- [✅] 법무 최종 체크리스트: 처리방침 게시·삭제 동작·사용자 화면 금지 용어 미사용 확인
 
 ### 🟨 리드
 - [✅] 시나리오 A 부분 E2E (검색→경고→기록) 확인
 - [✅] 9일차 진행 체크
 
 ---
-
-## 10일차 (7/22 수) — 모바일 QA·성능·보안 강화
-
-> 수요일 = 현업 특강 예정 (시간 미정). 특강 시간 외 개발.
 
 ## 10일차 (7/22 수) — 모바일 QA·성능·보안 강화·침투 테스트·규칙 최종
 
@@ -230,7 +226,7 @@
 
 ### 프론트엔드
 - [✅] 모바일 QA: 375px 전 화면, 터치 타겟 44px 검증
-- [✅] Lighthouse 90+ 확인, 코드 스플리팅 적용 — React.lazy + Suspense, manualChunks 분리, 메인 청크 7.97KB
+- [ ] Lighthouse 90+ 실측 — React.lazy + Suspense, manualChunks 코드 스플리팅은 적용됐으나 최신 실측 필요
 - [✅] 접근성 기본 점검 (색 대비, 키보드 포커스) — focus-visible CSS 글로벌 적용
 - [✅] 보안 관련 UI 최종 확인 (동의 체크박스, 마스킹, 경고 배너)
 - [✅] 에러 페이지 (404, 500) 추가 — NotFound.tsx, ServerError.tsx
@@ -244,10 +240,10 @@
 - [✅] 규칙 성능 점검 (get() 호출 최소화) — isStoreOwner helper
 - [✅] 보안 리포트 최종 작성 — security-report.md
 - [✅] 프로덕션 규칙 최종 배포 준비
-- [✅] 에뮬레이터 전체 규칙 회귀 테스트 — 10개 PASS
+- [✅] 에뮬레이터 전체 규칙 회귀 테스트 — 당시 10개 PASS, 최신 smoke test 18개 PASS
 
 ### 리드
-- [✅] Lighthouse 결과 확인, 개선 지시 — 코드 스플리팅으로 메인 청크 328KB → 7.97KB
+- [✅] 코드 스플리팅 적용 확인 — React.lazy + Suspense, Auth/Firestore 지연 청크 분리 (2026-07-28 빌드 메인 청크 10.86KB)
 - [✅] 시나리오 A 전체 E2E 수동 테스트 (검색-경고-기록-재계산)
 - [✅] 통합 QA: 회원가입-로그인-고객등록-예약-노쇼-위험도 갱신-경고 배너
 - [✅] 버그 목록 작성 및 세션별 할당
@@ -259,6 +255,7 @@
 
 > 목요일 오전 10:00-12:00 = 마스터 클래스. 개발은 12:00부터.
 > **일정 앞당김**: 기존 13~14일차 작업을 11일차로 압축.
+> 당시 배포 기록. 2026-07-28 수정본은 아직 재배포하지 않았으므로 최신 배포 상태는 14일차 항목을 따른다.
 
 ### 리드
 - [✅] 통합 QA 버그 우선순위 정리 — docs/bug-list.md
@@ -267,23 +264,23 @@
 ### 프론트엔드
 - [✅] 통합 QA 버그 수정 (FE 담당분) — P0: CustomerDetail any 타입 3건 수정, P1: mock 데이터 제거, riskRefresh AndRefresh 교체
 - [✅] 랜딩 페이지 (서비스 소개) — MVP 범위 — Landing.tsx
-- [✅] 프로덕션 빌드 확인 (vite build) — 메인 8.15KB
+- [✅] 프로덕션 빌드 확인 (vite build) — 2026-07-28 빌드 메인 청크 10.86KB
 - [✅] 배포 사이트 크로스브라우저 확인 — showup-project.web.app 정상 렌더링 확인
 
 ### 백엔드
 - [✅] 통합 QA 버그 수정 (BE 담당분)
 - [✅] 데모용 가게 계정 생성
 - [✅] 프로덕션 시드/데모 데이터 확정
-- [✅] Cloud Functions 프로덕션 배포 — Spark 요금제 불가, 클라이언트 riskRefresh.ts로 대체
+- [ ] Cloud Functions 프로덕션 배포 — Spark 요금제로 미실행; 클라이언트 `riskRefresh.ts` 대체 경로 사용
 - [✅] Firestore 프로덕션 인덱스 배포
 
 ### 보안
 - [✅] 통합 QA 버그 수정 (보안 담당분)
-- [✅] 프로덕션 규칙 최종 배포 + 스모크 테스트
+- [✅] 당시 프로덕션 규칙 배포 + 스모크 테스트 — 2026-07-28 수정본 재배포 필요
 
 ---
 
-## 12일차 (7/24 금) — 발표·데모·피드백
+## 12일차 (7/24 금) — 발표·데모·피드백 ✅ 완료
 
 > 금요일은 발표/데모/피드백/피어 컴파일링 only. 개발 작업 없음.
 > 8~11일차 성과(위험도 UI·대시보드·QA·보안·배포) 데모.
@@ -316,37 +313,51 @@
 - [✅] 배포 상태 모니터링 — https://showup-project.web.app 200 OK
 
 ### 보안
-- [✅] 프로덕션 최종 스모크 테스트 — 14개 시나리오 전체 PASS
+- [✅] 당시 프로덕션 스모크 테스트 — 14개 시나리오 전체 PASS (7/28 로컬 기준은 18개)
 
 ---
 
-## 14일차 (7/28 화) — 데모 영상 녹화 + showcase 갱신 + PR 준비
+## 14일차 (7/28 화) — 버그·문서·보안 재점검 + 디자인 polish (진행)
 
 > 화/목 오전 = 마스터 클래스. 개발은 12:00부터.
+> **영상은 수요일(7/29)에 찍는다. 오늘은 서비스를 완벽하게 만든다.**
 
 ### 리드
-- [ ] 데모 영상 녹화 + 편집 (5분 미만, 음성/자막 포함)
-- [ ] 영상 업로드 (YouTube 비공개 or Drive)
-- [ ] showcase.json에 demoVideoUrl 항목 추가
-- [ ] 피드백 채널 (구글 폼) 설정
-- [ ] PR 본문 작성 (영상 링크 + showcase 포함)
+- [✅] 코드·설정·전체 Markdown 교차 감사
+- [✅] Firebase 읽기 확인 — Hosting 200, 인덱스 존재, 배포 Functions 0개
+- [✅] Firestore Rules 강화 + 추적 가능한 회귀 테스트 18/18 PASS
+- [✅] 고객 cascade 삭제, 최신성 시각, 검색·예약 경고, 중복 오탐, 타임라인 충돌 수정
+- [✅] `/privacy`·`/terms` placeholder 제거 및 MVP 운영 초안 게시 코드 작성
+- [✅] Firebase 12.16.0·React 19.2.7 업그레이드 및 workspace 의존성 정합화
+- [✅] production audit: Firebase 취약점 제거; RSC 미사용 React Router advisory 2건 영향 제한 기록
+- [✅] 디자인/작은 수정사항 정리 — 고객·예약 흐름과 주요 화면 polish 반영
+- [ ] 피드백 채널 (구글 폰) 설정 — 관리자 설정 필요
+- [ ] PR 본문 작성 (12~14일차 분) — 최종 확인 필요
+- [ ] PR 올리기 — 관리자 지시 필요
 
 ### 프론트엔드
-- [ ] 배포 사이트 최종 화면 점검 (영상 녹화 전)
+- [✅] 전 화면 디자인 polish — 고객 상세·예약 생성·예약 관리 진입 흐름과 상태 UX 정리
+- [✅] 배포 사이트 최종 화면 점검 — `https://showup-project.web.app` HTTP 200 확인
+- [ ] Lighthouse 실측 (P2 잔여) — 최신 배포 URL 기준 측정 필요
 
 ### 백엔드
-- [ ] 데모 계정 + 시드 데이터 프로덕션 재확인
+- [✅] 데모 계정 + 시드 데이터 프로덕션 재확인 — 기존 7/27 데이터 검증 결과와 시드 테스트 재확인
+- [✅] 버그 재점검 — 고객별 예약 조회 인덱스 의존 제거, 위험도 0점 고객 제외
 
 ### 보안
-- [ ] 프로덕션 최종 확인 (스모크 테스트 재실행)
+- [✅] 로컬 Firestore Rules 회귀 테스트 — Emulator 18/18 PASS
+- [ ] 수정된 Hosting·Firestore Rules·Storage Rules 프로덕션 재배포
 
 ---
 
-## 15일차 (7/29 수) — PR 제출 (마감: 밤 10시)
+## 15일차 (7/29 수) — 데모 영상 녹화 + 최종 PR 제출 (마감: 밤 10시)
 
 > **최종 마감: 7/29 수요일 밤 10시까지 PR 제출 (영상 + showcase.json 포함)**
 
 ### 리드
+- [ ] 데모 영상 녹화 + 편집 (5분 미만, 음성/자막 포함)
+- [ ] 영상 업로드 (YouTube 비공개 or Drive)
+- [ ] showcase.json의 빈 `demoVideoUrl`에 업로드 URL 입력
 - [ ] 최종 PR 제출 — 영상 링크 + showcase.json(demoVideoUrl 포함)
 - [ ] README 최종 갱신 (영상 링크 추가)
 - [ ] 프로젝트 마무리 문서 작성
