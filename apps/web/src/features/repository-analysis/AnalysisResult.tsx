@@ -4,7 +4,7 @@ import type {
   RepositoryAnalysisResult,
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   createCustomTechnicalChallengeCandidate,
   getSelectionBlockMessage,
@@ -209,25 +209,8 @@ function CandidateReport({
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeCandidate = candidates[activeIndex] ?? candidates[0];
-  const selectedCandidates = candidates.filter((candidate) =>
-    selectedChallengeTitles.includes(candidate.title),
-  );
   const [customTitle, setCustomTitle] = useState("");
   const [customNote, setCustomNote] = useState("");
-
-  useEffect(() => {
-    const activeTitle = candidates[activeIndex]?.title;
-    if (selectedCandidates.length === 0 || selectedChallengeTitles.includes(activeTitle ?? "")) {
-      return;
-    }
-
-    const fallbackIndex = candidates.findIndex(
-      (candidate) => candidate.title === selectedCandidates[0]?.title,
-    );
-    if (fallbackIndex >= 0) {
-      setActiveIndex(fallbackIndex);
-    }
-  }, [activeIndex, candidates, selectedCandidates, selectedChallengeTitles]);
 
   if (!activeCandidate) {
     return null;
@@ -248,9 +231,6 @@ function CandidateReport({
   };
 
   const isActiveCandidateSelected = selectedChallengeTitles.includes(activeCandidate.title);
-  const selectedCandidatePosition = selectedCandidates.findIndex(
-    (candidate) => candidate.title === activeCandidate.title,
-  );
   const matchedReflection = reflectionAnalysis &&
     reflectionAnalysis.matchedChallengeTitle === activeCandidate.title
     ? reflectionAnalysis
@@ -281,9 +261,9 @@ function CandidateReport({
             <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#008d59]">Candidates</span>
             <h3 className="m-0 mt-1 text-lg font-extrabold">기술적 도전 후보</h3>
           </div>
-          <span className="text-xs font-bold text-[#66736e]">{selectedChallengeTitles.length}개 선택</span>
+          <span className="text-xs font-bold text-[#66736e]">{selectedChallengeTitles.length}/1 선택</span>
         </div>
-        <p className="m-0 text-sm leading-6 text-[#66736e]">실제로 경험한 후보를 최대 2개까지 선택하세요.</p>
+        <p className="m-0 text-sm leading-6 text-[#66736e]">실제로 경험한 기술적 도전 후보 하나를 선택하세요. 다른 후보를 누르면 선택이 바뀝니다.</p>
         <div className="grid gap-2">
           {candidates.map((candidate, index) => (
             <button
@@ -336,7 +316,6 @@ function CandidateReport({
       <article className="grid min-w-0 gap-6 rounded-2xl border border-black/10 bg-white p-5 shadow-[0_12px_36px_rgba(23,33,30,0.06)] sm:p-7">
         {!isActiveCandidateSelected ? (
           <CandidateDashboardEmpty
-            onContinueToReflection={onContinueToReflection}
             onSelectionBlocked={onSelectionBlocked}
           />
         ) : (
@@ -381,45 +360,22 @@ function CandidateReport({
         {matchedReflection && <ReflectionConnection reflectionAnalysis={matchedReflection} />}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-5">
-          <p className="m-0 text-sm text-[#66736e]">
-            {selectedCandidates.length > 1
-              ? "선택한 기술적 도전을 모두 확인한 뒤 회고를 작성할 수 있어요."
-              : "후보를 확인한 뒤 나의 경험을 회고해보세요."}
-          </p>
+          <p className="m-0 text-sm text-[#66736e]">후보를 확인한 뒤 나의 경험을 회고해보세요.</p>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {selectedCandidates.length > 1 && selectedCandidatePosition > 0 && (
-              <button
-                className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-extrabold text-[#52605a] transition hover:border-[#00915a] hover:text-[#008d59]"
-                type="button"
-                onClick={() => setActiveIndex(candidates.findIndex((candidate) => candidate.title === selectedCandidates[selectedCandidatePosition - 1]?.title))}
-              >
-                ← 이전으로
-              </button>
-            )}
-            {selectedCandidates.length > 1 && selectedCandidatePosition < selectedCandidates.length - 1 ? (
-              <button
-                className="rounded-full bg-[#17211e] px-5 py-3 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#008d59]"
-                type="button"
-                onClick={() => setActiveIndex(candidates.findIndex((candidate) => candidate.title === selectedCandidates[selectedCandidatePosition + 1]?.title))}
-              >
-                다음 기술적 도전 →
-              </button>
-            ) : (
-              <button
-                className="rounded-full bg-[#17211e] px-5 py-3 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#008d59]"
-                type="button"
-                onClick={() => {
-                  if (selectedChallengeTitles.length === 0) {
-                    onSelectionBlocked?.(getSelectionBlockMessage(selectedChallengeTitles));
-                    return;
-                  }
+            <button
+              className="rounded-full bg-[#17211e] px-5 py-3 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#008d59]"
+              type="button"
+              onClick={() => {
+                if (selectedChallengeTitles.length === 0) {
+                  onSelectionBlocked?.(getSelectionBlockMessage(selectedChallengeTitles));
+                  return;
+                }
 
-                  onContinueToReflection?.();
-                }}
-              >
-                {selectedCandidates.length > 1 ? "회고 작성하러 가기 →" : "다음: 나의 경험 적기 →"}
-              </button>
-            )}
+                onContinueToReflection?.();
+              }}
+            >
+              다음: 나의 경험 적기 →
+            </button>
           </div>
         </div>
           </>
@@ -430,10 +386,8 @@ function CandidateReport({
 }
 
 function CandidateDashboardEmpty({
-  onContinueToReflection,
   onSelectionBlocked,
 }: {
-  onContinueToReflection?: () => void;
   onSelectionBlocked?: (message: string) => void;
 }) {
   return (
@@ -448,14 +402,11 @@ function CandidateDashboardEmpty({
         </p>
       </div>
       <button
-        className="rounded-full bg-[#17211e] px-5 py-3 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#008d59]"
+        className="rounded-full border border-[#17211e] bg-white px-5 py-3 text-sm font-extrabold text-[#17211e] transition hover:border-[#008d59] hover:text-[#008d59]"
         type="button"
-        onClick={() => {
-          onSelectionBlocked?.(getSelectionBlockMessage([]));
-          onContinueToReflection?.();
-        }}
+        onClick={() => onSelectionBlocked?.(getSelectionBlockMessage([]))}
       >
-        다음: 나의 경험 적기 →
+        후보를 먼저 선택해주세요
       </button>
     </div>
   );

@@ -67,11 +67,7 @@ export function addSelectedChallenge(
     return selected.filter((candidate) => candidate !== title);
   }
 
-  if (selected.length >= 2) {
-    return selected;
-  }
-
-  return [...selected, title];
+  return [title];
 }
 
 export function getReflectionStorageKey(repositoryUrl: string): string {
@@ -84,7 +80,7 @@ function normalizeReflectionDraft(value: unknown): ReflectionDraft {
   }
 
   const selectedChallengeTitles = Array.isArray(value.selectedChallengeTitles)
-    ? value.selectedChallengeTitles.filter(isNonEmptyString).slice(0, 2)
+    ? value.selectedChallengeTitles.filter(isNonEmptyString).slice(0, 1)
     : [];
 
   return {

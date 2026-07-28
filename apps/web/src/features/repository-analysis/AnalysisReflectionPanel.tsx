@@ -5,6 +5,7 @@ import {
   type ReflectionDraft,
 } from "../reflection/reflection";
 import {
+  canSendReflection,
   canSubmitReflection,
   type ReflectionSaveStatus,
 } from "./analysisReflectionState";
@@ -34,7 +35,7 @@ export function AnalysisReflectionPanel({
   const [saveStatus, setSaveStatus] = useState<ReflectionSaveStatus>("idle");
   const [saveMessage, setSaveMessage] = useState("");
   const saveLockRef = useRef(false);
-  const autoSaveKeyRef = useRef("");
+  const draftVersionRef = useRef(0);
 
   useEffect(() => {
     const restoredDraft = loadReflectionDraft(repositoryUrl);
@@ -50,7 +51,7 @@ export function AnalysisReflectionPanel({
     setSaveStatus("idle");
     setSaveMessage("");
     saveLockRef.current = false;
-    autoSaveKeyRef.current = "";
+    draftVersionRef.current = 0;
     onChange(draftForCurrentAnalysis);
   }, [onChange, repositoryUrl]);
 
@@ -64,7 +65,8 @@ export function AnalysisReflectionPanel({
   }, [draft, onChange, repositoryUrl]);
 
   const updateAnswer = (value: string) => {
-    if (saveStatus === "idle" || saveStatus === "error") {
+    draftVersionRef.current += 1;
+    if (saveStatus !== "saving") {
       setSaveStatus("idle");
       setSaveMessage("");
     }
@@ -80,21 +82,44 @@ export function AnalysisReflectionPanel({
       return;
     }
 
-    if (!onSave) {
+    if (!isAnalysisComplete) {
       setSaveStatus("queued");
-      setSaveMessage("분석이 끝나면 회고를 자동으로 저장합니다.");
+      setSaveMessage("분석이 끝나면 회고를 Repository 근거와 함께 분석합니다.");
+      return;
+    }
+
+    if (!draft[promptKey].trim()) {
+      setSaveMessage("회고 내용을 한 줄 이상 작성해 주세요.");
+      return;
+    }
+
+    if (!onSave) {
+      return;
+    }
+
+    if (!canSubmitReflection(saveStatus) && !hasQueuedSave) {
       return;
     }
 
     saveLockRef.current = true;
+    const draftToSave = draft;
+    const saveVersion = draftVersionRef.current;
 
     setSaveStatus("saving");
     setSaveMessage("회고를 저장하는 중입니다.");
 
     try {
-      await onSave(draft);
-      setSaveStatus("saved");
-      setSaveMessage("회고를 저장했습니다. 결과 페이지에서 함께 확인할 수 있어요.");
+      await onSave(draftToSave);
+      if (saveVersion === draftVersionRef.current) {
+        setSaveStatus("saved");
+        setSaveMessage(
+          "회고를 저장했습니다. 결과 페이지에서 함께 확인할 수 있어요.",
+        );
+      } else {
+        setSaveStatus("idle");
+        setSaveMessage("새로 작성한 회고가 있어 다시 전송해 주세요.");
+      }
+      saveLockRef.current = false;
     } catch (error) {
       saveLockRef.current = false;
       setSaveStatus("error");
@@ -105,27 +130,10 @@ export function AnalysisReflectionPanel({
   };
 
   useEffect(() => {
-    if (saveStatus === "queued" && onSave) {
+    if (saveStatus === "queued" && onSave && isAnalysisComplete) {
       void saveAnswer();
     }
-  }, [onSave, saveStatus]);
-
-  useEffect(() => {
-    const initialReflection = draft.memorableProblem.trim();
-    if (!isAnalysisComplete || !onSave || !initialReflection || saveStatus !== "idle") {
-      return;
-    }
-
-    // 분석이 끝나는 순간 분석 중에 작성한 회고를 한 번 자동 전달한다.
-    // 사용자는 별도의 전송 동작 없이도 Repository 근거와 회고를 함께 분석받는다.
-    if (autoSaveKeyRef.current === initialReflection) {
-      return;
-    }
-
-    autoSaveKeyRef.current = initialReflection;
-    setSaveMessage("분석 중 작성한 회고를 Repository 근거와 함께 분석하는 중입니다.");
-    void saveAnswer();
-  }, [draft.memorableProblem, isAnalysisComplete, onSave, saveStatus]);
+  }, [isAnalysisComplete, onSave, saveStatus]);
 
   return (
     <section
@@ -199,15 +207,21 @@ export function AnalysisReflectionPanel({
           className="min-h-11 border-2 border-[var(--terminal-accent)] bg-[var(--terminal-accent)] px-5 font-mono text-sm font-bold text-[#00210c] transition hover:bg-[#8affae] focus-visible:outline-2 focus-visible:outline-[var(--terminal-accent)] focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-60"
           type="button"
           onClick={() => void saveAnswer()}
-          disabled={!canSubmitReflection(saveStatus)}
+          disabled={
+            !canSendReflection(
+              saveStatus,
+              isAnalysisComplete,
+              draft[promptKey],
+            )
+          }
         >
           {saveStatus === "saving"
             ? "SAVING..."
             : saveStatus === "queued"
               ? "QUEUED"
-              : saveStatus === "saved"
-                ? "SENT"
-                : "SEND  >"}
+            : saveStatus === "saved"
+              ? "SENT"
+              : "SEND  >"}
         </button>
         {isAnalysisComplete && onViewResults && saveStatus === "saved" && (
           <button

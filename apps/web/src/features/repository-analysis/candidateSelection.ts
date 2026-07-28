@@ -3,7 +3,7 @@ import type {
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
 
-export const MAX_SELECTED_CHALLENGES = 2;
+export const MAX_SELECTED_CHALLENGES = 1;
 
 export function toggleSelectedChallengeTitles(
   selectedTitles: string[],
@@ -16,17 +16,15 @@ export function toggleSelectedChallengeTitles(
     };
   }
 
-  if (selectedTitles.length >= MAX_SELECTED_CHALLENGES) {
-    return { titles: selectedTitles, blocked: true };
-  }
-
-  return { titles: [...selectedTitles, title], blocked: false };
+  // MVP에서는 후보와 회고, 포트폴리오 초안을 하나의 흐름으로 연결한다.
+  // 다른 후보를 누르면 기존 선택을 새 후보로 교체해 별도의 해제 동작을 요구하지 않는다.
+  return { titles: [title], blocked: false };
 }
 
 export function getSelectionBlockMessage(selectedTitles: string[]): string {
   return selectedTitles.length === 0
     ? "기술적 도전 후보를 하나 이상 선택해야 다음 단계로 이동할 수 있어요."
-    : "기술적 도전 후보는 최대 2개까지 선택할 수 있어요.";
+    : "기술적 도전 후보는 하나만 선택할 수 있어요.";
 }
 
 export function createCustomTechnicalChallengeCandidate(

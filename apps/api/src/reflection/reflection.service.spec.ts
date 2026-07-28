@@ -90,14 +90,14 @@ describe("ReflectionService", () => {
     expect(persistence.save).toHaveBeenCalledWith("analysis-id", validDraft, reflectionAnalysis);
   });
 
-  it("rejects malformed drafts before calling persistence", async () => {
+  it("rejects drafts with more than one selected challenge before calling persistence", async () => {
     const persistence = { save: jest.fn() };
     const service = new ReflectionService(
       persistence as unknown as ReflectionDraftPersistence,
     );
 
     await expect(
-      service.save("analysis-id", { ...validDraft, selectedChallengeTitles: ["a", "b", "c"] }),
+      service.save("analysis-id", { ...validDraft, selectedChallengeTitles: ["a", "b"] }),
     ).rejects.toBeInstanceOf(InvalidReflectionDraftError);
     expect(persistence.save).not.toHaveBeenCalled();
   });
