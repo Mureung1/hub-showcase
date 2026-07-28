@@ -17,6 +17,7 @@ const rows = mockRecipes.map((recipe) => ({
   total_cost: recipe.totalCost,
   ingredients: recipe.ingredients,
   steps: recipe.steps ?? null,
+  tip: recipe.tip ?? null,
 }))
 
 const { error } = await supabase.from('recipes').upsert(rows)
