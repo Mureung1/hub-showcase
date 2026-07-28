@@ -6,11 +6,14 @@
 """
 
 from careersignal.repositories.base import Repository, Unit, unit_of_work
+from careersignal.repositories.evaluation import EvaluationRepository
+from careersignal.repositories.indexing import IndexRepository
 from careersignal.repositories.sources import (
     IngestRepository,
     SourceRepository,
     content_hash,
 )
+from careersignal.repositories.statistics import StatisticsRepository
 from careersignal.repositories.telemetry import (
     OrchestratorRepository,
     TelemetryRepository,
@@ -22,10 +25,13 @@ from careersignal.repositories.verification import (
 )
 
 __all__ = [
+    "EvaluationRepository",
+    "IndexRepository",
     "IngestRepository",
     "OrchestratorRepository",
     "Repository",
     "SourceRepository",
+    "StatisticsRepository",
     "TelemetryRepository",
     "Unit",
     "VerificationRepository",

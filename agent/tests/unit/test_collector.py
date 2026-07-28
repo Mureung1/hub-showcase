@@ -373,3 +373,14 @@ def test_manifest_entry_carries_the_author_to_the_target() -> None:
     )
 
     assert entry.to_target().author == "Peter Bailis"
+
+
+def test_reliability_score_is_optional_and_bounded() -> None:
+    """제3자 자료의 편입은 내용 판정으로 결정하고 결과를 신뢰도로 남긴다."""
+    scored = _entry(
+        "src_expert", SourceType.EXTERNAL_EXPERT, reliability_score=0.72
+    )
+    plain = _entry("src_posting", SourceType.JOB_POSTING)
+
+    assert scored.reliability_score == 0.72
+    assert plain.reliability_score is None

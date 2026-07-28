@@ -49,8 +49,15 @@ from careersignal.contracts.run_context import Budget, RunContext  # noqa: E402
 from careersignal.domain.permissions import Component  # noqa: E402
 from careersignal.domain.scope import ScopeLevel  # noqa: E402
 from careersignal.pipelines.ingest import SourceIngestPipeline  # noqa: E402
+from careersignal.pipelines.postings import (  # noqa: E402
+    PostingRegistrar,
+    RegisterOutcome,
+)
 from careersignal.repositories.base import unit_of_work  # noqa: E402
-from careersignal.repositories.sources import SourceRepository  # noqa: E402
+from careersignal.repositories.sources import (  # noqa: E402
+    IngestRepository,
+    SourceRepository,
+)
 
 DEFAULT_MANIFEST = ROOT / "data" / "manifest" / "backend.json"
 CONTENT_BASE = ROOT / "data" / "sources"
@@ -148,6 +155,7 @@ def assess_snapshots(
             tier=entry.tier,
             allowed_uses=frozenset(entry.allowed_uses),
             assessment_version=assessment_version,
+            reliability_score=entry.reliability_score,
         )
         created += 1
     return created, skipped
@@ -164,6 +172,25 @@ def report(manifest: SourceManifest, missing: tuple[str, ...]) -> None:
     if counts:
         spread = "  ".join(f"{k} {v}" for k, v in sorted(counts.items()))
         print(f"대상군        {spread}")
+
+
+def register_postings(manifest: SourceManifest) -> RegisterOutcome:
+    """채용공고를 모집단으로 등록한다.
+
+    거래를 따로 여는 이유는 `postings` 와 `posting_versions` 가 적재 파이프라인의 쓰기
+    범위이기 때문이다. 근거는 docs/permission-matrix.md 3장이다.
+
+    게시일을 밝히지 않은 공고에는 매니페스트의 기준일을 넣는다. 기간 축이 이 값으로
+    갈리므로 비워 두면 어떤 지표도 성립하지 않는다. 정의는 docs/metric-spec.md 2.1이다.
+    """
+    with unit_of_work(Component.PIPE_INGEST) as unit:
+        repository = IngestRepository(unit)
+        return PostingRegistrar(repository).register(
+            drafts=manifest.posting_drafts(),
+            snapshot_of=repository.latest_snapshots(manifest.dataset_version),
+            dataset_version=manifest.dataset_version,
+            posted_at=manifest.as_of_date,
+        )
 
 
 def main() -> int:
@@ -213,6 +240,16 @@ def main() -> int:
     print(f"  내용 없음   {empty}건")
     print(f"  평가 신규   {assessed}건  기존 {already}건")
     print(f"  종료 사유   {outcome.stop_reason}")
+
+    registered = register_postings(manifest)
+    print("\n모집단")
+    print(f"  신규 공고   {registered.created_postings}건  기존 {registered.existing_postings}건")
+    print(f"  신규 버전   {registered.created_versions}건  기존 {registered.existing_versions}건")
+    print(f"  모집단 크기 {registered.population}건")
+    if registered.skipped:
+        print("  등록 못 함")
+        for source_id, reason in registered.skipped:
+            print(f"    {source_id}  {reason}")
 
     if failed:
         print("\n가져오기 오류")

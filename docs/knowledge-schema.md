@@ -770,8 +770,8 @@ Express가 사용하는 service role은 행 수준 정책을 우회하므로 권
 | A | 기업 공식 채용공고 | 사용 | 사용 | 사용 | `why_required` |
 | B | 회사 공식 채용·기술 자료 | 미사용 | 회사 맥락으로 사용 | 사용 | `why_required`, `depth_criteria` |
 | C | 공공·직무 표준 | 용어 연결에만 | 사용 | 사용 | `definition`, `prerequisites` |
-| D | 검증된 외부 전문가 자료 | 미사용 | 교차 확인에만 | 사용 | `depth_criteria`, `common_misconceptions`, `interview_verification`, `learning_sequence` |
-| E | 출처를 확인하기 어려운 자료 | 미사용 | 미사용 | 후보 탐색에만 | 없음 |
+| D | 직무 요구와 이어지는 제3자 자료 | 미사용 | 교차 확인에만 | 사용 | `depth_criteria`, `common_misconceptions`, `interview_verification`, `learning_sequence` |
+| E | 원문을 확인할 수 없거나 직무 요구와 이어지지 않는 자료 | 미사용 | 미사용 | 후보 탐색에만 | 없음 |
 
 회사 공식 자료에서 반복되는 주제는 그 회사의 맥락 신호이며 해당 공고의 명시 요구사항과 구분한다. 구분의 정의는 [데이터 전략](data-strategy.md)을 따른다.
 

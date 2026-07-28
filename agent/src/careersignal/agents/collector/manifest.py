@@ -18,6 +18,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from careersignal.agents.collector.contract import CollectionTarget, SourceType
+from careersignal.pipelines.postings import PostingDraft
 from careersignal.domain.segment import EntryLabel
 from careersignal.domain.source_policy import AllowedUse, SourceTier
 
@@ -80,6 +81,13 @@ class ManifestEntry(BaseModel):
     posted_at: date | None = None
     closed_at: date | None = None
 
+    reliability_score: float | None = None
+    """자료를 근거로 삼을 수 있는 정도. 0과 1 사이다.
+
+    D 계층의 편입은 출처 확인이 아니라 내용 판정으로 결정하고 그 결과를 여기 담는다.
+    근거는 docs/adr/0009-third-party-reliability.md 다. 주장 단위의 신뢰도와 다르다.
+    """
+
     robots_policy: str | None = None
     license_note: str | None = None
     collected_on: date | None = None
@@ -98,6 +106,56 @@ class ManifestEntry(BaseModel):
         if self.positions:
             return tuple(p.entry_label for p in self.positions if p.entry_label is not None)
         return (self.entry_label,) if self.entry_label is not None else ()
+
+    def to_postings(self) -> tuple[PostingDraft, ...]:
+        """이 출처가 모집단에 넣는 공고들.
+
+        채용공고가 아닌 출처는 아무것도 만들지 않는다. 모집분야가 여럿이면 분야마다
+        만들되 같은 직무의 모집분야는 하나로 합친다. 규칙은 docs/metric-spec.md 2.8이다.
+        """
+        if self.source_type is not SourceType.JOB_POSTING:
+            return ()
+        if self.company_id is None:
+            raise ValueError(f"{self.source_id} 는 회사가 없어 모집단에 넣지 못한다")
+
+        grouped: dict[str, list[tuple[str | None, EntryLabel | None, str | None]]] = {}
+        if self.positions:
+            for position in self.positions:
+                for role in position.job_role_ids:
+                    grouped.setdefault(role, []).append(
+                        (position.position_name, position.entry_label,
+                         position.entry_label_raw)
+                    )
+        else:
+            for role in self.job_role_ids:
+                grouped.setdefault(role, []).append(
+                    (None, self.entry_label, self.entry_label_raw)
+                )
+
+        drafts: list[PostingDraft] = []
+        for role, members in grouped.items():
+            labels = {label for _, label, _ in members}
+            if None in labels:
+                raise ValueError(f"{self.source_id} 의 {role} 은 대상군 표기가 없다")
+            if len(labels) > 1:
+                raise ValueError(
+                    f"{self.source_id} 의 {role} 은 모집분야마다 대상군이 다르다. "
+                    "합칠 수 없으므로 매니페스트에서 정리한다"
+                )
+            names = [name for name, _, _ in members if name]
+            raws = [raw for _, _, raw in members if raw]
+            drafts.append(
+                PostingDraft(
+                    source_id=self.source_id,
+                    company_id=self.company_id,
+                    job_role_id=role,
+                    title=" / ".join([self.title or self.source_id, *names]),
+                    entry_label=str(labels.pop()),
+                    entry_label_raw=" / ".join(raws) or None,
+                    platform_bound=self.platform_bound,
+                )
+            )
+        return tuple(drafts)
 
     def to_target(self) -> CollectionTarget:
         return CollectionTarget(
@@ -147,6 +205,10 @@ class SourceManifest(BaseModel):
             + "\n",
             encoding="utf-8",
         )
+
+    def posting_drafts(self) -> tuple[PostingDraft, ...]:
+        """매니페스트가 모집단에 넣는 공고 전체."""
+        return tuple(d for e in self.entries for d in e.to_postings())
 
     def by_tier(self, tier: SourceTier) -> tuple[ManifestEntry, ...]:
         return tuple(e for e in self.entries if e.tier is tier)

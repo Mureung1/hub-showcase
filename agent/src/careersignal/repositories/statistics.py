@@ -1,0 +1,279 @@
+"""요구 표현과 차원 후보 저장소.
+
+통계 분석 에이전트가 사용한다. 쓰기 범위는 docs/permission-matrix.md 3장이며,
+컬럼은 docs/erd.md 6.1과 7.7·7.8이다.
+
+추출 대상은 언제나 채용공고의 청크다. 모집단이 `posting_versions` 이므로
+공고로 등록되지 않은 출처의 청크는 어떤 지표의 분모에도 들어가지 못한다.
+근거는 docs/metric-spec.md 2.1이다.
+
+발견의 입력도 같은 모집단으로 제한한다. 분류체계는 직무마다 하나이므로
+(docs/erd.md 7.1) 다른 직무의 표현이 이 직무의 후보가 되어서는 안 된다.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from careersignal.domain.permissions import Component
+from careersignal.repositories.base import Repository
+
+
+class StatisticsRepository(Repository):
+    """통계 분석 에이전트의 저장소.
+
+    `requirement_mentions` 가 이 구성요소의 쓰기 범위에 있다. 근거는
+    docs/permission-matrix.md 3장이고 코드의 정의는
+    `domain/permissions.py` 의 `_WRITE_SCOPE[Component.AGENT_STATS]` 다.
+    """
+
+    component = Component.AGENT_STATS
+
+    # ------------------------------------------------------------ 추출 대상
+    _POSTING_CHUNKS = """
+        SELECT c.chunk_id, c.snapshot_id, pv.posting_version_id, c.section, c.text
+        FROM source_chunks c
+        JOIN posting_versions pv ON pv.snapshot_id = c.snapshot_id
+        JOIN postings p ON p.posting_id = pv.posting_id
+        WHERE c.dataset_version = %(dataset_version)s
+          AND pv.dataset_version = %(dataset_version)s
+          AND p.job_role_id = %(job_role_id)s
+        ORDER BY pv.posting_version_id, c.ordinal, c.chunk_id
+    """
+    """공고 청크와 그 청크가 속한 공고.
+
+    청크는 스냅샷을 가리키고 스냅샷은 출처를 가리킨다. 청크에서 공고로 가는
+    길은 `posting_versions.snapshot_id` 하나뿐이라 이 조인이 모집단과 추출
+    대상을 같은 기준으로 묶는다. 안쪽 조인이므로 공고로 등록되지 않은
+    출처의 청크는 결과에 없다.
+    """
+
+    def chunks_to_extract(
+        self,
+        dataset_version: str,
+        job_role_id: str,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """요구 표현을 뽑을 청크.
+
+        한 행은 청크 하나와 그 청크가 근거가 될 공고 하나의 짝이다.
+        `requirement_mentions` 가 `posting_version_id` 를 NOT NULL 로 요구하므로
+        청크만으로는 mention 을 만들 수 없다.
+
+        한 스냅샷에서 공고가 여럿 나오면(모집분야가 서로 다른 직무로 갈리는
+        경우) 그 스냅샷의 청크가 공고마다 한 번씩 나온다. 중복을 지우지 않는
+        이유는 같은 문장이 두 공고의 요구를 동시에 증명하기 때문이다.
+        `job_role_id` 로 거르면 같은 직무의 모집분야는 하나의 공고로 합쳐져
+        있으므로(`pipelines/postings.py` 의 `posting_identifier`) 같은 직무
+        안에서는 청크가 한 번만 나온다.
+
+        `limit` 은 청크가 아니라 이 짝의 수를 자른다.
+        """
+        sql = self._POSTING_CHUNKS
+        params: dict[str, Any] = {
+            "dataset_version": dataset_version,
+            "job_role_id": job_role_id,
+        }
+        if limit is not None:
+            sql = f"{sql}        LIMIT %(limit)s\n"
+            params["limit"] = limit
+        return self.unit.fetch_all(sql, params)
+
+    def extracted_chunks(self, dataset_version: str) -> set[str]:
+        """이미 mention 을 뽑은 청크. 증분 재실행이 여기서 갈린다.
+
+        청크 단위로 판정한다. 한 청크에서 아무 표현도 나오지 않으면 행이 남지
+        않아 다음 실행이 다시 시도한다.
+        """
+        rows = self.unit.fetch_all(
+            "SELECT DISTINCT chunk_id FROM requirement_mentions WHERE dataset_version = %s",
+            (dataset_version,),
+        )
+        return {r["chunk_id"] for r in rows}
+
+    # ------------------------------------------------------------ mention
+    def add_mention(self, values: dict[str, Any]) -> None:
+        """요구 표현 하나.
+
+        `extraction_run_id` 는 `agent_runs` 를 참조하므로 실행 행이 먼저 있어야
+        한다. 실행 봉투는 `orchestration/envelope.py` 가 만든다.
+        """
+        self.unit.insert("requirement_mentions", dict(values))
+
+    def mention_count(self, dataset_version: str) -> int:
+        return self.unit.fetch_value(
+            "SELECT count(*) FROM requirement_mentions WHERE dataset_version = %s",
+            (dataset_version,),
+        )
+
+    # ------------------------------------------------------------ 활성 분류체계
+    _ACTIVE_TAXONOMY = """
+        SELECT tv.taxonomy_version_id, tv.taxonomy_id, tv.version_number,
+               tv.taxonomy_policy_version
+        FROM requirement_taxonomy_versions tv
+        JOIN requirement_taxonomies t ON t.taxonomy_id = tv.taxonomy_id
+        WHERE t.job_role_id = %(job_role_id)s
+          AND tv.published_at IS NOT NULL
+          AND tv.superseded_at IS NULL
+    """
+    """직무의 활성 분류체계 버전.
+
+    조건을 `requirement_taxonomy_versions` 의 부분 유니크 인덱스와 같게 둔다
+    (docs/erd.md 7.2). 인덱스가 `published_at IS NOT NULL AND superseded_at IS NULL`
+    인 행을 분류체계마다 하나로 강제하고, `requirement_taxonomies.job_role_id` 가
+    UNIQUE 이므로 이 조회는 많아야 한 행이다. 애플리케이션이 최신 버전을 고르는
+    규칙을 따로 두면 인덱스와 어긋날 수 있다.
+    """
+
+    def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
+        """활성 분류체계 버전 한 행. 발행된 버전이 없으면 비운다."""
+        return self.unit.fetch_one(
+            self._ACTIVE_TAXONOMY, {"job_role_id": job_role_id}
+        )
+
+    _ACTIVE_DIMENSIONS = """
+        SELECT d.dimension_id, d.dimension_kind, dv.internal_canonical_label,
+               dv.display_label, dv.definition
+        FROM requirement_dimension_versions dv
+        JOIN requirement_dimensions d ON d.dimension_id = dv.dimension_id
+        WHERE dv.taxonomy_version_id = %(taxonomy_version_id)s
+          AND dv.lifecycle_status = 'active'
+        ORDER BY d.dimension_id
+    """
+    """활성 분류체계 버전의 차원과 라벨.
+
+    `lifecycle_status` 가 `active` 인 행만 고른다. 근거는 docs/erd.md 7.4 와
+    docs/statistics-model.md 3.3 이며, 승격 전 후보를 어휘로 쓰면 심사를 거치지
+    않은 차원이 기지 추출을 맞히게 된다.
+
+    첫 실행에서 이 조회는 빈 목록을 준다. 시드가 분류체계와 활성 버전만 만들고
+    차원을 만들지 않으므로, 어휘가 빈 상태가 정상 시작점이다.
+    """
+
+    def active_dimensions(self, taxonomy_version_id: str) -> list[dict[str, Any]]:
+        """기지 추출이 대조할 차원."""
+        return self.unit.fetch_all(
+            self._ACTIVE_DIMENSIONS, {"taxonomy_version_id": taxonomy_version_id}
+        )
+
+    _ACTIVE_ALIASES = """
+        SELECT a.alias_id, a.dimension_id, a.alias_text, a.alias_source
+        FROM requirement_aliases a
+        JOIN requirement_dimension_versions dv
+          ON dv.dimension_id = a.dimension_id
+         AND dv.taxonomy_version_id = a.taxonomy_version_id
+        WHERE a.taxonomy_version_id = %(taxonomy_version_id)s
+          AND dv.lifecycle_status = 'active'
+        ORDER BY a.alias_text
+    """
+    """활성 차원의 별칭.
+
+    별칭은 분류체계 버전 안에서 하나의 표현이 한 차원에만 붙는다
+    (docs/erd.md 7.5). 차원 버전과 함께 조인해 활성이 아닌 차원의 별칭이
+    어휘에 들어가지 않게 한다.
+    """
+
+    def active_aliases(self, taxonomy_version_id: str) -> list[dict[str, Any]]:
+        return self.unit.fetch_all(
+            self._ACTIVE_ALIASES, {"taxonomy_version_id": taxonomy_version_id}
+        )
+
+    # ------------------------------------------------------------ 발견 대상
+    _MENTIONS_TO_DISCOVER = """
+        SELECT m.mention_id, m.raw_expression, m.posting_version_id, m.section,
+               m.stated_requiredness
+        FROM requirement_mentions m
+        JOIN posting_versions pv ON pv.posting_version_id = m.posting_version_id
+        JOIN postings p ON p.posting_id = pv.posting_id
+        WHERE m.dataset_version = %(dataset_version)s
+          AND p.job_role_id = %(job_role_id)s
+        ORDER BY m.mention_id
+    """
+    """발견에 걸 요구 표현.
+
+    `mention_id` 로 정렬한다. 식별자가 결정적이므로(`mention_identifier`) 이
+    정렬은 적재 순서와 무관하게 같은 순서를 준다. 같은 키로 묶인 표현 가운데
+    무엇이 먼저 오는지가 후보의 근거 목록 순서를 정하므로, 순서가 흔들리면
+    재실행 결과를 대조할 수 없다.
+    """
+
+    def mentions_to_discover(
+        self,
+        dataset_version: str,
+        job_role_id: str,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """차원 후보 발견의 입력.
+
+        `limit` 은 mention 수를 자른다. 같은 표현이 잘린 경계 너머에 남으면
+        다음 실행이 그 근거를 같은 후보에 더한다. 후보 식별자가 표현으로
+        결정되므로 나눠 돌려도 후보가 갈리지 않는다.
+        """
+        sql = self._MENTIONS_TO_DISCOVER
+        params: dict[str, Any] = {
+            "dataset_version": dataset_version,
+            "job_role_id": job_role_id,
+        }
+        if limit is not None:
+            sql = f"{sql}        LIMIT %(limit)s\n"
+            params["limit"] = limit
+        return self.unit.fetch_all(sql, params)
+
+    _CANDIDATE_MENTIONS = """
+        SELECT DISTINCT cm.mention_id
+        FROM requirement_candidate_mentions cm
+        JOIN requirement_mentions m ON m.mention_id = cm.mention_id
+        WHERE m.dataset_version = %(dataset_version)s
+    """
+    """이미 후보의 근거가 된 mention.
+
+    `requirement_candidate_mentions` 는 데이터셋 버전을 갖지 않으므로
+    (docs/erd.md 7.8) mention 을 거쳐 범위를 좁힌다. 증분 재실행이 이 집합에서
+    갈리고, 기본키 `(candidate_id, mention_id)` 가 중복 삽입을 막는다.
+    """
+
+    def candidate_mentions(self, dataset_version: str) -> set[str]:
+        """이미 후보에 붙은 mention. 다시 판정하지 않는다."""
+        rows = self.unit.fetch_all(
+            self._CANDIDATE_MENTIONS, {"dataset_version": dataset_version}
+        )
+        return {r["mention_id"] for r in rows}
+
+    def candidate_ids(self, taxonomy_id: str) -> set[str]:
+        """이 분류체계에 이미 있는 후보.
+
+        같은 표현이 다시 나오면 후보를 새로 만들지 않고 근거만 더한다. 판정을
+        다시 부르지 않으므로 재실행이 모델 호출을 늘리지 않는다.
+        """
+        rows = self.unit.fetch_all(
+            "SELECT candidate_id FROM requirement_candidates WHERE taxonomy_id = %s",
+            (taxonomy_id,),
+        )
+        return {r["candidate_id"] for r in rows}
+
+    # ------------------------------------------------------------ 후보
+    def add_candidate(self, values: dict[str, Any]) -> None:
+        """차원 후보 하나. 컬럼은 docs/erd.md 7.7 이다.
+
+        `discovered_in_run_id` 는 `agent_runs` 를 참조하므로 실행 행이 먼저 있어야
+        한다. 실행 봉투는 `orchestration/envelope.py` 가 만든다.
+        """
+        self.unit.insert("requirement_candidates", dict(values))
+
+    def link_candidate_mention(self, candidate_id: str, mention_id: str) -> None:
+        """후보와 근거 표현을 잇는다.
+
+        같은 표현이 여러 공고에서 나오면 후보 하나에 근거가 여럿 붙는다. 승격
+        심사의 독립 공고 수와 독립 회사 수가 이 연결에서 나온다
+        (docs/statistics-model.md 3.4).
+        """
+        self.unit.insert(
+            "requirement_candidate_mentions",
+            {"candidate_id": candidate_id, "mention_id": mention_id},
+        )
+
+    def candidate_count(self, taxonomy_id: str) -> int:
+        return self.unit.fetch_value(
+            "SELECT count(*) FROM requirement_candidates WHERE taxonomy_id = %s",
+            (taxonomy_id,),
+        )

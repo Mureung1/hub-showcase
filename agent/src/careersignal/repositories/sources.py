@@ -175,6 +175,30 @@ class SourceRepository(Repository):
 class IngestRepository(Repository):
     component = Component.PIPE_INGEST
 
+    def find_posting(self, posting_id: str) -> dict[str, Any] | None:
+        return self.unit.fetch_one(
+            "SELECT * FROM postings WHERE posting_id = %s", (posting_id,)
+        )
+
+    def find_posting_version(self, version_id: str) -> dict[str, Any] | None:
+        return self.unit.fetch_one(
+            "SELECT * FROM posting_versions WHERE posting_version_id = %s",
+            (version_id,),
+        )
+
+    def latest_snapshots(self, dataset_version: str) -> dict[str, str]:
+        """출처마다 가장 최근 스냅샷. 모집단 등록이 어느 내용을 가리킬지 정한다."""
+        rows = self.unit.fetch_all(
+            """
+            SELECT DISTINCT ON (source_id) source_id, snapshot_id
+            FROM source_snapshots
+            WHERE dataset_version = %s
+            ORDER BY source_id, fetched_at DESC, snapshot_id DESC
+            """,
+            (dataset_version,),
+        )
+        return {r["source_id"]: r["snapshot_id"] for r in rows}
+
     def add_posting(self, values: dict[str, Any]) -> None:
         self.unit.insert("postings", values)
 

@@ -12,6 +12,12 @@ from careersignal.domain.confidence import (
     assess,
 )
 from careersignal.domain.depth import DepthLevel, is_advanced_signal, is_deeper
+from careersignal.domain.permissions import (
+    DB_ROLE,
+    Component,
+    can_write,
+    require_write,
+)
 from careersignal.domain.sampling import (
     MetricPolicy,
     SampleStatus,
@@ -177,3 +183,51 @@ def test_absence_requires_complete_coverage() -> None:
 def test_unresolved_contradiction_lowers() -> None:
     c = _components(contradiction_status=ContradictionStatus.UNRESOLVED)
     assert assess(ClaimType.POSTING_FACT, c) is ConfidenceLevel.LOW
+
+
+# ---------------------------------------------------------------- permissions
+EVALUATION_TABLES = (
+    "evaluation_sets",
+    "evaluation_cases",
+    "evaluation_expected_items",
+    "evaluation_runs",
+    "evaluation_metrics",
+    "evaluation_failures",
+)
+"""docs/erd.md 13장의 평가 표 여섯 개."""
+
+ANALYSIS_OUTPUT_TABLES = (
+    "analysis_outputs",
+    "analysis_claims",
+    "statistics_facts",
+    "requirement_mentions",
+    "roadmap_items",
+)
+
+
+def test_every_component_has_one_role() -> None:
+    assert set(DB_ROLE) == set(Component)
+    assert len(set(DB_ROLE.values())) == len(Component)
+
+
+@pytest.mark.parametrize("table", EVALUATION_TABLES)
+def test_eval_runner_writes_evaluation_tables(table: str) -> None:
+    assert can_write(Component.EVAL_RUNNER, table)
+
+
+@pytest.mark.parametrize("table", ANALYSIS_OUTPUT_TABLES)
+def test_eval_runner_cannot_write_analysis_outputs(table: str) -> None:
+    """평가는 분석 실행 경로 밖에 있다. 채점 대상을 고쳐 쓰지 못한다."""
+    assert not can_write(Component.EVAL_RUNNER, table)
+    with pytest.raises(PermissionError):
+        require_write(Component.EVAL_RUNNER, table)
+
+
+@pytest.mark.parametrize("table", EVALUATION_TABLES)
+def test_evaluation_tables_belong_to_eval_runner_only(table: str) -> None:
+    others = [
+        component
+        for component in Component
+        if component is not Component.EVAL_RUNNER and can_write(component, table)
+    ]
+    assert others == []
