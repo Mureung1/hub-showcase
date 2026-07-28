@@ -37,6 +37,13 @@ export interface StructureRecipeResult {
   warnings: RecipeWarning[];
 }
 
+export type StructureRecipeValidationFailure =
+  | "ingredient_order"
+  | "step_order"
+  | "warning_field"
+  | "blank_value"
+  | "schema_mismatch";
+
 export const RECIPE_STRUCTURE_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -267,19 +274,23 @@ function isRecipeWarning(
   );
 }
 
-export function isStructureRecipeResult(
+function validateStructureRecipeResult(
   value: unknown,
-): value is StructureRecipeResult {
+): StructureRecipeValidationFailure | null {
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, ["draft", "warnings"]) ||
     !isRecord(value.draft) ||
     !Array.isArray(value.warnings)
   ) {
-    return false;
+    return "schema_mismatch";
   }
 
   const draft = value.draft;
+
+  if (typeof draft.title === "string" && !draft.title.trim()) {
+    return "blank_value";
+  }
 
   if (
     !hasOnlyKeys(draft, [
@@ -292,14 +303,13 @@ export function isStructureRecipeResult(
       "steps",
     ]) ||
     typeof draft.title !== "string" ||
-    draft.title.trim().length === 0 ||
     !isNullableString(draft.description) ||
     !isNullableString(draft.servings) ||
     draft.source !== null ||
     !Array.isArray(draft.ingredients) ||
     !Array.isArray(draft.steps)
   ) {
-    return false;
+    return "schema_mismatch";
   }
 
   const isValidCookingTime =
@@ -308,22 +318,88 @@ export function isStructureRecipeResult(
       Number.isInteger(draft.cookingTimeMinutes) &&
       draft.cookingTimeMinutes >= 0);
 
+  if (!isValidCookingTime) {
+    return "schema_mismatch";
+  }
+
   if (
-    !isValidCookingTime ||
+    draft.ingredients.some(
+      (ingredient) =>
+        isRecord(ingredient) &&
+        typeof ingredient.name === "string" &&
+        !ingredient.name.trim(),
+    ) ||
+    draft.steps.some(
+      (step) =>
+        isRecord(step) &&
+        typeof step.description === "string" &&
+        !step.description.trim(),
+    )
+  ) {
+    return "blank_value";
+  }
+
+  if (
     draft.ingredients.length === 0 ||
     !draft.ingredients.every(isIngredient) ||
-    !hasSequentialOrders(draft.ingredients) ||
     draft.steps.length === 0 ||
-    !draft.steps.every(isRecipeStep) ||
-    !hasSequentialOrders(draft.steps)
+    !draft.steps.every(isRecipeStep)
   ) {
-    return false;
+    return "schema_mismatch";
+  }
+
+  if (!hasSequentialOrders(draft.ingredients)) {
+    return "ingredient_order";
+  }
+
+  if (!hasSequentialOrders(draft.steps)) {
+    return "step_order";
   }
 
   const ingredientCount = draft.ingredients.length;
   const stepCount = draft.steps.length;
 
+  for (const warning of value.warnings) {
+    if (
+      isRecord(warning) &&
+      ((typeof warning.field === "string" && !warning.field.trim()) ||
+        (typeof warning.message === "string" && !warning.message.trim()))
+    ) {
+      return "blank_value";
+    }
+
+    if (
+      isRecord(warning) &&
+      typeof warning.field === "string" &&
+      !isEditableWarningField(
+        warning.field,
+        ingredientCount,
+        stepCount,
+      )
+    ) {
+      return "warning_field";
+    }
+  }
+
   return value.warnings.every((warning) =>
-    isRecipeWarning(warning, ingredientCount, stepCount),
-  );
+    isRecipeWarning(
+      warning,
+      ingredientCount,
+      stepCount,
+    ),
+  )
+    ? null
+    : "schema_mismatch";
+}
+
+export function getStructureRecipeValidationFailure(
+  value: unknown,
+): StructureRecipeValidationFailure | null {
+  return validateStructureRecipeResult(value);
+}
+
+export function isStructureRecipeResult(
+  value: unknown,
+): value is StructureRecipeResult {
+  return validateStructureRecipeResult(value) === null;
 }

@@ -28,6 +28,17 @@ test("지원하는 YouTube URL에서 video ID를 추출한다", () => {
       videoId: "dQw4w9WgXcQ",
     },
   );
+
+  assert.deepEqual(
+    parseYoutubeUrl(
+      "https://www.youtube.com/shorts/dQw4w9WgXcQ?si=test",
+    ),
+    {
+      sourceUrl:
+        "https://www.youtube.com/shorts/dQw4w9WgXcQ?si=test",
+      videoId: "dQw4w9WgXcQ",
+    },
+  );
 });
 
 test("지원하지 않는 호스트와 잘못된 video ID를 거부한다", () => {
@@ -35,6 +46,8 @@ test("지원하지 않는 호스트와 잘못된 video ID를 거부한다", () =
     "https://example.com/watch?v=dQw4w9WgXcQ",
     "https://youtube.com.example.com/watch?v=dQw4w9WgXcQ",
     "https://www.youtube.com/watch",
+    "https://www.youtube.com/shorts/short",
+    "https://www.youtube.com/shorts/dQw4w9WgXcQ/extra",
     "https://youtu.be/short",
     "ftp://youtu.be/dQw4w9WgXcQ",
   ];
@@ -58,6 +71,12 @@ test("YouTube 호스트만 전용 수집 경로로 분기한다", () => {
   );
   assert.equal(
     isYoutubeSourceUrl("https://youtu.be/dQw4w9WgXcQ"),
+    true,
+  );
+  assert.equal(
+    isYoutubeSourceUrl(
+      "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+    ),
     true,
   );
   assert.equal(
@@ -222,7 +241,7 @@ test("자막 조회 실패 시 Gemini 영상 분석 결과를 사용한다", asy
   let geminiCallCount = 0;
 
   const result = await collectYoutubeContent(
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "https://www.youtube.com/shorts/dQw4w9WgXcQ",
     {
       youtubeApiKey: "youtube-api-key",
       fetchMetadata: async () => ({
@@ -238,7 +257,7 @@ test("자막 조회 실패 시 Gemini 영상 분석 결과를 사용한다", asy
 
         assert.deepEqual(input, {
           sourceUrl:
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://www.youtube.com/shorts/dQw4w9WgXcQ",
           title: "된장찌개 만들기",
           author: "매일 요리",
         });
@@ -254,7 +273,7 @@ test("자막 조회 실패 시 Gemini 영상 분석 결과를 사용한다", asy
   );
   assert.deepEqual(result.source, {
     url:
-      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "https://www.youtube.com/shorts/dQw4w9WgXcQ",
     title: "된장찌개 만들기",
     author: "매일 요리",
   });

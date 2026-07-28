@@ -51,7 +51,7 @@ test("원본 URL과 제목·채널명만 Gemini 영상 분석에 전달한다", 
     {
       apiKey: "gemini-api-key",
       model: "gemini-3.6-flash",
-      timeoutMs: 15_000,
+      timeoutMs: 30_000,
       fetchImpl: fetchMock,
     },
   );
@@ -170,7 +170,7 @@ test("Gemini 제공자 오류와 잘못된 응답을 실패로 처리한다", as
       analyzeYoutubeWithGemini(input, {
         apiKey: "gemini-api-key",
         model: "gemini-3.6-flash",
-        timeoutMs: 15_000,
+        timeoutMs: 30_000,
         fetchImpl,
       }),
       GeminiYoutubeError,

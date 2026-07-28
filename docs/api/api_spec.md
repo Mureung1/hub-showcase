@@ -269,7 +269,7 @@ Authorization: Bearer firebase-id-token
 - 외부 요청에 timeout과 redirect 횟수 제한을 적용한다.
 - 외부 응답 크기와 AI에 전달하는 추출 본문 길이를 제한한다.
 - HTML 전체를 AI에 그대로 전달하지 않고 레시피 관련 텍스트만 추출한다.
-- 공개 `youtube.com`, `youtu.be` 영상은 YouTube Data API로 제목·채널명을 조회하고, 공개 또는 자동 생성 자막을 우선 구조화 입력으로 사용한다.
+- 공개 `youtube.com`, `youtu.be` 영상과 YouTube Shorts는 YouTube Data API로 제목·채널명을 조회하고, 공개 또는 자동 생성 자막을 우선 구조화 입력으로 사용한다.
 - 자막 조회가 실패하면 Gemini가 원본 URL·제목·채널명을 분석한 결과를 기존 OpenAI 구조화·검증 단계로 전달한다. 프록시, 쿠키, 계정 인증, 차단 우회, 영상·자막·썸네일 저장은 지원하지 않는다. 모든 YouTube 처리 실패에는 새 전용 오류 코드 없이 기존 `URL_FETCH_FAILED` 422 및 직접 입력 안내를 사용한다.
 - `blog.naver.com`과 하위 도메인은 현재 MVP/P0의 성공 입력 범위에서 제외하며 외부 요청 전에 기존 `URL_FETCH_FAILED` 422 및 직접 입력 안내로 처리한다.
 
@@ -280,7 +280,7 @@ Authorization: Bearer firebase-id-token
 - OpenAI Responses API와 `gpt-5.6-luna`를 사용한다.
 - 비밀 키는 백엔드의 `OPENAI_API_KEY`, 모델은 `OPENAI_MODEL`로 설정한다.
 - YouTube 메타데이터용 `YOUTUBE_DATA_API_KEY`와 영상 분석용 `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.6-flash`를 백엔드에서만 사용한다. Gemini는 자막 조회 실패 시에만 호출하며 최종 `RecipeDraft` 구조화와 검증은 계속 OpenAI가 담당한다.
-- AI 제공자 요청은 15초 후 중단하며 자동으로 재시도하지 않는다.
+- OpenAI 요청은 15초, Gemini 영상 분석 요청은 30초 후 중단하며 자동으로 재시도하지 않는다.
 - 공백을 제거한 `rawText`는 최대 20,000자까지 허용한다.
 - 인증된 사용자별 구조화 요청은 10분에 10회로 제한한다.
 - OpenAI 요청은 `store: false`로 보내며 요청 원문과 응답 전문을 애플리케이션 로그에 남기지 않는다.
