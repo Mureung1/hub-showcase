@@ -5,9 +5,10 @@ import { usePayrollSummary } from "../features/payroll";
 import {
   getHoursLabel,
   getMonthlyScheduleSummary,
-  sortMonthlySchedules,
+  getUpcomingSchedules,
   useSchedules
 } from "../features/schedule";
+import { StatusNotice } from "../shared/components";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
@@ -34,10 +35,7 @@ export function MyWorkPage() {
   const schedules = schedulesQuery.data?.schedules ?? [];
   const currentUserId = me?.profile.id;
   const { myMonthHours, myMonthSchedules } = getMonthlyScheduleSummary(schedules, currentMonth, currentUserId);
-  const todayKey = format(new Date(), "yyyy-MM-dd");
-  const upcomingSchedules = sortMonthlySchedules(
-    myMonthSchedules.filter((schedule) => schedule.workDate >= todayKey)
-  ).slice(0, 4);
+  const upcomingSchedules = getUpcomingSchedules(myMonthSchedules).slice(0, 4);
 
   if (isMeLoading) {
     return (
@@ -67,9 +65,11 @@ export function MyWorkPage() {
         <section className="page-panel">
           <p className="label">MY WORK</p>
           <h1>알바생 전용 화면입니다.</h1>
-          <div className="empty-state">
-            <strong>사장님은 근무표와 알바생 관리 화면에서 매장 현황을 확인할 수 있습니다.</strong>
-          </div>
+          <StatusNotice
+            description="근무표와 알바생 관리 화면에서 매장 현황을 확인할 수 있습니다."
+            title="사장님 계정으로 접속 중입니다."
+            variant="info"
+          />
           <div className="auth-actions-row">
             <Link className="secondary-button" to={ROUTES.schedule}>
               근무표
@@ -124,24 +124,28 @@ export function MyWorkPage() {
           </div>
 
           {schedulesQuery.isLoading ? (
-            <div className="empty-state schedule-message">
-              <strong>근무표 조회 중</strong>
-              <span>{format(currentMonth, "M월")} 내 근무를 확인하고 있습니다.</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description={`${format(currentMonth, "M월")} 내 근무를 확인하고 있습니다.`}
+              title="근무표 조회 중"
+              variant="loading"
+            />
           ) : null}
 
           {schedulesQuery.error ? (
-            <div className="empty-state schedule-message">
-              <strong>근무표를 불러오지 못했습니다</strong>
-              <span>{schedulesQuery.error instanceof Error ? schedulesQuery.error.message : "잠시 후 다시 시도해주세요."}</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description={schedulesQuery.error instanceof Error ? schedulesQuery.error.message : "잠시 후 다시 시도해주세요."}
+              title="근무표를 불러오지 못했습니다"
+              variant="error"
+            />
           ) : null}
 
           {!schedulesQuery.isLoading && !schedulesQuery.error && upcomingSchedules.length === 0 ? (
-            <div className="empty-state">
-              <strong>다가오는 내 근무 없음</strong>
-              <span>{format(currentMonth, "M월")}에 남은 내 근무 일정이 없습니다.</span>
-            </div>
+            <StatusNotice
+              description={`${format(currentMonth, "M월")}에 남은 내 근무 일정이 없습니다.`}
+              title="다가오는 내 근무 없음"
+            />
           ) : null}
 
           {upcomingSchedules.length > 0 ? (

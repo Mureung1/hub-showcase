@@ -3,7 +3,7 @@
   "title": "알바노트",
   "summary": "사장님과 알바생이 근무표, 공개 대타 요청, 근무 시간, 급여 계산 정보를 한곳에서 확인하고 관리하는 근무 관리 서비스입니다.",
   "githubUser": "psm300418(박세민)",
-  "demoUrl": "",
+  "demoUrl": "https://albanote-frontend.vercel.app",
   "thumbnail": "main.png",
   "screenshots": [
     "img/daily.png",

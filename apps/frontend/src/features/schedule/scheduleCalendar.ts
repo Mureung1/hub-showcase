@@ -159,3 +159,13 @@ export function sortMonthlySchedules(schedules: Schedule[]) {
     return first.startTime.localeCompare(second.startTime);
   });
 }
+
+export function getUpcomingSchedules(schedules: Schedule[], now = new Date()) {
+  return sortMonthlySchedules(
+    schedules.filter((schedule) => {
+      const scheduleEndDate = new Date(`${schedule.workDate}T${schedule.endTime}`);
+
+      return scheduleEndDate > now;
+    })
+  );
+}

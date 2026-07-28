@@ -2,6 +2,9 @@
   "name": "albanote",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "workspaces": [
     "apps/*"
   ],
@@ -11,8 +14,8 @@
     "dev:backend": "npm run dev --workspace @albanote/backend",
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
-    "test": "vitest run --config apps/frontend/vite.config.ts",
-    "test:watch": "vitest --config apps/frontend/vite.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.0",

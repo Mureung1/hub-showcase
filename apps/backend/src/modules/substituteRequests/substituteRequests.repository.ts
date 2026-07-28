@@ -1,7 +1,9 @@
 import { supabaseAdminClient } from "../../common/config/supabase";
 import {
   ApplySubstituteRequestInput,
+  ApproveSubstituteRequestInput,
   CreateSubstituteRequestInput,
+  RejectSubstituteRequestInput,
   SubstituteApplicationRecord,
   SubstituteRequestProfileRecord,
   SubstituteRequestRecord,
@@ -15,12 +17,15 @@ const SUBSTITUTE_APPLICATION_COLUMNS = "id,request_id,worker_id,created_at";
 const SUBSTITUTE_REQUEST_SCHEDULE_COLUMNS = "id,worker_id,work_date,start_time,end_time,position,memo";
 const SUBSTITUTE_REQUEST_PROFILE_COLUMNS = "id,name";
 
-export async function findOpenSubstituteRequestsByStoreId(storeId: string) {
+export async function findSubstituteRequestsByStoreIdAndStatuses(
+  storeId: string,
+  statuses: SubstituteRequestStatus[]
+) {
   const { data, error } = await supabaseAdminClient
     .from("substitute_requests")
     .select(SUBSTITUTE_REQUEST_COLUMNS)
     .eq("store_id", storeId)
-    .eq("status", "OPEN");
+    .in("status", statuses);
 
   if (error) {
     throw new Error(error.message);
@@ -141,6 +146,44 @@ export async function updateSubstituteRequestCandidate(input: ApplySubstituteReq
     })
     .eq("id", input.requestId)
     .eq("status", "OPEN")
+    .select(SUBSTITUTE_REQUEST_COLUMNS)
+    .maybeSingle<SubstituteRequestRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function approveSubstituteRequestById(input: ApproveSubstituteRequestInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("substitute_requests")
+    .update({
+      status: "APPROVED",
+      reject_reason: null
+    })
+    .eq("id", input.requestId)
+    .eq("status", "PENDING_APPROVAL")
+    .select(SUBSTITUTE_REQUEST_COLUMNS)
+    .maybeSingle<SubstituteRequestRecord>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function rejectSubstituteRequestById(input: RejectSubstituteRequestInput) {
+  const { data, error } = await supabaseAdminClient
+    .from("substitute_requests")
+    .update({
+      status: "REJECTED",
+      reject_reason: input.rejectReason
+    })
+    .eq("id", input.requestId)
+    .eq("status", "PENDING_APPROVAL")
     .select(SUBSTITUTE_REQUEST_COLUMNS)
     .maybeSingle<SubstituteRequestRecord>();
 

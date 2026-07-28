@@ -8,6 +8,7 @@ import { errorHandler } from "./common/middlewares/errorHandler";
 import { authRouter, meRouter } from "./modules/auth/auth.routes";
 import { healthRouter } from "./modules/health/health.routes";
 import { invitationsRouter, storeInvitationsRouter } from "./modules/invitations/invitations.routes";
+import { notificationsRouter } from "./modules/notifications";
 import { payrollRouter } from "./modules/payroll";
 import { storesRouter } from "./modules/stores/stores.routes";
 import { recurringSchedulesRouter, scheduleItemRouter, schedulesRouter } from "./modules/schedules/schedules.routes";
@@ -38,6 +39,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/me", meRouter);
   app.use("/api/health", healthRouter);
+  app.use("/api/notifications", notificationsRouter);
   app.use("/api/schedules", scheduleItemRouter);
   app.use("/api/substitute-requests", substituteRequestItemRouter);
   app.use("/api/stores/:storeId/invitations", storeInvitationsRouter);

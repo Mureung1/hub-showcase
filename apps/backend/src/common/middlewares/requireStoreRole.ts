@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { findStoreMembership } from "../repositories/storeMembership.repository";
 import { UserRole } from "../types/role";
+import { sendBadRequest, sendValidationError, uuidSchema } from "../validation/requestValidation";
+
+const storeIdSchema = uuidSchema("매장 ID를 확인해주세요.");
 
 export function requireStoreRole(allowedRoles: UserRole[]) {
   return async function requireStoreRoleMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -14,13 +17,18 @@ export function requireStoreRole(allowedRoles: UserRole[]) {
     const storeId = req.params.storeId;
 
     if (!storeId || Array.isArray(storeId)) {
-      res.status(400).json({
-        message: "매장 ID가 필요합니다."
-      });
+      sendBadRequest(res, "매장 ID가 필요합니다.", "STORE_ID_REQUIRED");
       return;
     }
 
-    const membership = await findStoreMembership(storeId, req.authUser.id);
+    const storeIdResult = storeIdSchema.safeParse(storeId);
+
+    if (!storeIdResult.success) {
+      sendValidationError(res, storeIdResult.error, "매장 ID를 확인해주세요.");
+      return;
+    }
+
+    const membership = await findStoreMembership(storeIdResult.data, req.authUser.id);
 
     if (!membership) {
       res.status(403).json({

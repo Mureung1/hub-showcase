@@ -1,8 +1,11 @@
 import { apiRequest } from "../../shared/api";
 import {
   ApplySubstituteRequestResponse,
+  ApproveSubstituteRequestResponse,
   CreateSubstituteRequestInput,
   CreateSubstituteRequestResponse,
+  RejectSubstituteRequestInput,
+  RejectSubstituteRequestResponse,
   SubstituteRequestsResponse
 } from "./substituteTypes";
 
@@ -28,5 +31,24 @@ export async function applySubstituteRequest(accessToken: string, requestId: str
   return apiRequest<ApplySubstituteRequestResponse>(`/substitute-requests/${requestId}/apply`, {
     method: "PATCH",
     accessToken
+  });
+}
+
+export async function approveSubstituteRequest(accessToken: string, requestId: string) {
+  return apiRequest<ApproveSubstituteRequestResponse>(`/substitute-requests/${requestId}/approve`, {
+    method: "PATCH",
+    accessToken
+  });
+}
+
+export async function rejectSubstituteRequest(
+  accessToken: string,
+  requestId: string,
+  input: RejectSubstituteRequestInput
+) {
+  return apiRequest<RejectSubstituteRequestResponse>(`/substitute-requests/${requestId}/reject`, {
+    method: "PATCH",
+    accessToken,
+    body: input
   });
 }
