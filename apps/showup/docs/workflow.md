@@ -12,7 +12,7 @@ ShowUp은 Hermes Agent 프레임워크 + Ollama Pro 모델로 4세션 역할 분
 |------|------|------|
 | Hermes Agent | AI 에이전트 프레임워크 (세션 관리, 도구 호출) | `hermes setup` |
 | Ollama | 로컬 LLM 실행 (Pro 모델 연결) | https://ollama.com |
-| Node.js | 프론트엔드 빌드 | v20+ |
+| Node.js | 프론트엔드 빌드·Functions 이관용 코드 | v22+ (Functions Admin SDK 기준) |
 | Firebase CLI | 배포/인덱스 관리 | `npm i -g firebase-tools` |
 
 ### 2.2 세션 구성
@@ -72,6 +72,7 @@ npm run verify:risk --workspace showup   # 위험도 계산 테스트
 npm run verify:phone --workspace showup # 전화번호 처리 테스트
 npm run verify:search --workspace showup # 검색 함수 테스트
 npm run verify:seed --workspace showup   # 시드 데이터 테스트
+cd apps/showup && firebase emulators:exec --only firestore "npm run verify:security"
 ```
 
 ### 3.4 배포
@@ -121,8 +122,13 @@ apps/showup/
 │   ├── BE.md              ← 백엔드 세션 역할
 │   └── SECURITY.md        ← 보안 세션 역할
 ├── security-docs/         ← 보안 산출물
-├── showcase/              ← showcase.json + 스크린샷
-└── outputs/               ← 발표 자료 (weeks3/ 등)
+└── outputs/               ← 앱 발표 자료 (weeks3/ 등)
+```
+
+모노레포 루트에는 제출용 `showcase/showcase.json`과 스크린샷이 별도로 있다.
+
+```text
+hub/showcase/              ← 모노레포 루트의 showcase.json + 스크린샷
 ```
 
 ## 6. 기술 선택 이유
@@ -140,7 +146,7 @@ ShowUp은 가게별 데이터 격리가 핵심인데, Firestore Security Rules�
 
 ### 클라이언트 riskRefresh (Cloud Functions 대신)
 
-Spark(무료) 요금제에서는 Cloud Functions 배포가 불가능하다. 위험도 갱신을 클라이언트 `riskRefresh.ts`로 대체하고, 계산 로직은 `risk.ts` 순수 함수에만 두어 향후 Cloud Functions 이관 시 한 줄 수정으로 가능하도록 설계했다.
+Spark(무료) 요금제에서는 Cloud Functions를 배포하지 않았다. 위험도 갱신을 클라이언트 `riskRefresh.ts`로 대체했다. `src/utils/risk.ts`와 `functions/src/risk.ts` 복사본은 수동 동기화 대상이라 변경 시 양쪽 빌드·테스트가 필요하다.
 
 ### Hermes Agent + Ollama (Claude 대신)
 

@@ -4,6 +4,8 @@
 > **소요:** 약 5~7분 (라이브 데모 4분 + 아키텍처 설명 2분)  
 > **브랜치:** `N167_채민석` · **기간:** 7/13(월) ~ 7/16(목)
 
+> 역사적 시연 스크립트(2026-07-16). 현재 Spark MVP는 클라이언트 `riskRefresh.ts`로 위험도를 갱신하고, 프로덕션 Cloud Functions는 배포하지 않았다. 최신 시연 전 README의 데모 계정·검증 상태를 확인한다.
+
 ---
 
 ## 사전 준비
@@ -20,7 +22,7 @@ npm run seed   # 또는 src/seeds/upload.ts 실행
 ```
 
 **시연 계정:** 테스트용 가게 계정 1개 준비  
-**주의:** `riskStats`는 클라이언트에서 직접 쓸 수 없음 → Functions 에뮬레이터 또는 배포 환경 필요
+**주의:** 당시 계획상 `riskStats` 직접 쓰기를 막으려 했으나, 현재 Spark MVP에서는 owner 클라이언트 갱신을 Rules가 허용한다. Functions 에뮬레이터는 이관 검증용이다.
 
 ---
 
@@ -39,9 +41,9 @@ npm run seed   # 또는 src/seeds/upload.ts 실행
 | **고객 검색·등록** | `/customers` | `customers.ts`, `Customers.tsx` |
 | **예약 생성·상태 변경** | `/reservations` | `reservations.ts`, `Reservations.tsx` |
 | **사건 기록** | `/customers/:id` | `incidents.ts`, `IncidentModal.tsx` |
-| **위험도 재계산·경고** | 검색 결과, 상세 | `functions/index.ts`, `RiskAlertBanner.tsx` |
+| **위험도 재계산·경고** | 검색 결과, 상세 | `riskRefresh.ts`, `RiskAlertBanner.tsx` |
 
-> "5일간 인증부터 위험도 서버 재계산까지 **핵심 순환 루프**를 구현했습니다."
+> "5일간 인증부터 위험도 재계산까지 **핵심 순환 루프**를 구현했습니다."
 
 ---
 
@@ -51,16 +53,16 @@ npm run seed   # 또는 src/seeds/upload.ts 실행
 [화면]  React 페이지 + services/*.ts
    ↓  Firebase SDK (읽기/쓰기)
 [DB]    Firestore — stores/{uid}/customers|reservations|incidents
-   ↓  onDocumentWritten 트리거
-[서버]  Cloud Functions — recalculateRiskOn*
-   ↓  riskStats 갱신 (클라이언트 쓰기 차단)
+   ↓  쓰기 성공 후 클라이언트 재계산
+[앱]    riskRefresh.ts — calculateRiskStats
+   ↓  riskStats 갱신 (owner의 완전한 스키마 쓰기만 허용)
 [화면]  RiskBadge · RiskAlertBanner 다시 표시
 ```
 
 **강조 포인트**
 - `storeId = user.uid` → 가게 간 데이터 격리 (`firestore.rules`)
 - 전화번호는 UI에 **마스킹**만 노출 (`010-****-1234`)
-- `riskStats`는 **서버만** 갱신 (Rules로 클라이언트 쓰기 차단)
+- `riskStats`는 현재 owner 클라이언트가 갱신하며, Blaze 이관 후 서버 전용으로 전환
 
 ---
 
@@ -121,13 +123,13 @@ NewReservation.tsx
 2. 유형 선택 (폭언/분쟁/지각/무리한 요구) + 사실 메모 → 저장
 3. `createIncident(storeId, customerId, incidentId, { type, memo })`
 
-**화면 → DB → 서버**
+**화면 → DB → 위험도 갱신**
 ```
 예약/사건 문서 write
   ↓
-Cloud Functions (onDocumentWritten)
-  recalculateRiskOnReservationChange
-  recalculateRiskOnIncidentChange
+riskRefresh.ts
+  transitionReservationAndRefresh
+  createIncidentAndRefresh
   ↓
 calculateRiskStats() — 노쇼 +8, 당일취소 +4, 방문 −1, abuse +10 ...
   ↓
@@ -149,7 +151,7 @@ customers/{customerId}.riskStats 업데이트
 
 ### Act 6 · 보안 한 줄 (15초)
 
-> "클라이언트에서 `riskStats`를 직접 수정하려 하면 Firestore Rules가 거부합니다. 침투 테스트 8건 PASS."
+> "타 가게 접근과 불완전한 `riskStats` 쓰기는 Firestore Rules가 거부합니다. 현재 회귀 테스트는 18건 PASS입니다."
 
 ---
 
@@ -166,8 +168,8 @@ stores/{storeId}/
 
 ## 슬라이드 9 — 마무리 (20초)
 
-> "이번 주에 **검색 → 경고 → 예약 → 기록 → 서버 재계산** 순환이 돌아갑니다.  
-> 다음 주는 대시보드 연동, Functions 배포, 모바일 QA로 데모 완성도를 올입니다.  
+> "이번 주에 **검색 → 경고 → 예약 → 기록 → 위험도 갱신** 순환을 구현했습니다.
+> 다음 주는 대시보드 연동, Functions 이관 준비, 모바일 QA로 데모 완성도를 올립니다.
 > 질문 받겠습니다."
 
 ---
@@ -176,10 +178,10 @@ stores/{storeId}/
 
 | 질문 | 답변 |
 |------|------|
-| 왜 riskStats를 서버에서만? | 조작 방지 + 단일 계산 로직 유지 (`docs/riskStats-strategy.md`) |
+| 왜 장기적으로 riskStats를 서버에서 갱신하나요? | 조작·경쟁 조건 방지 (`docs/riskStats-strategy.md`) |
 | 자동 차단 안 하나요? | 원칙: 참고 지표. 최종 판단은 사장님 |
 | 다른 가게 데이터 볼 수 있나요? | `ownerUid` 검증으로 차단 (침투 테스트 1차) |
-| Functions 없이 데모 가능? | 예약·사건 기록까지는 가능. 점수 갱신은 CF 필요 |
+| Functions 없이 데모 가능? | 가능. 현재 Spark MVP는 클라이언트 `riskRefresh.ts`가 점수를 갱신 |
 
 ---
 

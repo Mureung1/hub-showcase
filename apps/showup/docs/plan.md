@@ -2,7 +2,7 @@
 
 **ShowUp: 소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스**
 
-- 프로젝트 기간: **2026-07-09 ~ 2026-07-30** (주 5일, 16영업일)
+- 프로젝트 기간: **2026-07-09 ~ 2026-07-29** (기능 마감 7/28, 영상·PR 제출 7/29)
 - 프론트엔드: **React** (Vite + TypeScript)
 - 진행 방식: **Hermes Agent 프레임워크 + Ollama Pro 모델 4세션** (프론트엔드 / 백엔드 / 보안 / 리드)
 - 세션별 모델 (Ollama 연결):
@@ -12,7 +12,7 @@
 | **리드** | GLM 5.2 |
 | **프론트엔드** | Qwen 3.5 |
 | **백엔드** | Kimi K2.7 Code |
-| **보안** | GPT-OSS 120B |
+| **보안** | GLM 5.2 |
 
 ---
 
@@ -143,11 +143,11 @@ flowchart TD
 /                  랜딩
 /login             로그인
 /register          회원가입 + 가게 등록 + 개인정보 동의
-/dashboard         오늘 예약 + 주의 고객 목록
-/customers         고객 검색 + 목록          ← 핵심 기능 2
-/customers/:id     고객 상세: 이벤트 타임라인, 위험도, 사건 기록 버튼
-/reservations      예약 목록 + 상태 원터치    ← 핵심 기능 1
-/reservations/new  예약 생성 (위험 고객이면 경고 배너)
+/app/dashboard     오늘 예약 + 주의 고객 목록
+/app/customers     고객 검색 + 목록          ← 핵심 기능 2
+/app/customers/:id 고객 상세: 이벤트 타임라인, 위험도, 사건 기록 버튼
+/app/reservations  예약 목록 + 상태 원터치    ← 핵심 기능 1
+/app/reservations/new  예약 생성 (위험 고객이면 경고 배너)
 /stats             월별 통계 (Phase 1.5)
 /privacy, /terms   법적 필수 페이지
 /me                고객 본인 조회 (Phase 2)
@@ -157,9 +157,9 @@ flowchart TD
 
 | 구분 | 화면 |
 |------|------|
-| MVP 필수 | `/login` `/register` `/dashboard` `/customers` `/customers/:id` `/reservations` `/reservations/new` |
+| MVP 필수 | `/` `/login` `/register` `/app/dashboard` `/app/customers` `/app/customers/:id` `/app/reservations` `/app/reservations/new` |
 | 필수 문서 (최소 정적 페이지) | `/privacy` `/terms` |
-| MVP 제외 | `/` 랜딩 (막판 배포 시 프론트엔드 담당) · `/stats` (Phase 1.5) · `/me` (Phase 2) |
+| MVP 제외 | `/stats` (Phase 1.5) · `/me` (Phase 2) |
 
 ## 7. 와이어프레임 (텍스트 스펙)
 
@@ -204,7 +204,7 @@ flowchart TD
 | 영역 | 선택 |
 |------|------|
 | 프론트엔드 | **React** + Vite + TypeScript + Tailwind CSS |
-| 상태 | TanStack Query(서버) / Zustand(UI) — 서버 데이터는 Zustand 금지 |
+| 상태 | React hooks + Firebase 서비스 레이어 |
 | 폼 | React Hook Form + Zod |
 | 백엔드 | Firebase: Auth / Firestore / Cloud Functions / Hosting |
 | 결제(P2) | 토스페이먼츠 |
@@ -222,12 +222,13 @@ stores/{storeId}/customers/{customerId}
     totalVisits, noShowCount, lateCancelCount,
     incidentCounts: { abuse, dispute, late, unreasonable },
     score, lastNoShowAt, updatedAt
-  }   ← 비정규화 캐시, Cloud Function이 갱신 (검색 1회 = 읽기 1회)
+  }   ← 비정규화 캐시, 현재 클라이언트 riskRefresh가 갱신 (검색 1회 = 읽기 1회)
 
 stores/{storeId}/reservations/{resId}
   customerId, date, time,
   status: pending → confirmed → visited | noShow | cancelled,
   cancelledSameDay: boolean (cancelled일 때 당일 취소 여부 — lateCancel +4 판정용),
+  statusChangedAt (완료 상태 전환 시각),
   memo, createdAt
 
 stores/{storeId}/customers/{customerId}/incidents/{incidentId}
@@ -235,16 +236,16 @@ stores/{storeId}/customers/{customerId}/incidents/{incidentId}
   memo(사실 기록), occurredAt, createdAt
 ```
 
-### riskStats 갱신 트리거
+### riskStats 갱신 전략
 
 ```
-Cloud Function 트리거 (확정):
+Blaze 전환 후 Cloud Function 트리거:
 - reservations/{resId}.status → visited | noShow | cancelled 로 변경될 때
 - incidents/{incidentId} 생성/수정/삭제될 때
 → 해당 customer의 riskStats 재계산 (§4 가중치 로직)
 ```
 
-> **riskStats 갱신 방식 (Spark 요금제 대안)**: Cloud Functions는 Blaze 요금제 필요. Spark 요금제에서는 클라이언트 `riskRefresh.ts`로 갱신. `firestore.rules`에서 `riskStats` 쓰기를 허용하되 `ownerUid` 검증은 유지. Blaze 업그레이드 시 Cloud Functions 트리거로 이관 가능 — `functions/` 디렉토리와 `risk.ts` 순수 함수는 유지. 계산 로직은 **한 곳(risk.ts)에만** 존재.
+> **현재 상태 (2026-07-28 확인)**: Firebase CLI 조회 결과 배포 Functions 0개. Spark MVP는 클라이언트 `riskRefresh.ts`로 갱신하고 Rules는 owner의 완전한 `riskStats` 스키마 쓰기를 허용한다. `functions/`는 Blaze 이관 준비용이다. 클라이언트·Functions 계산 파일은 복사본이므로 변경 시 동기화 검증이 필요하다.
 
 ### 보안 규칙 (가게 격리 — 서버 강제)
 ```
@@ -259,13 +260,13 @@ match /stores/{storeId}/{document=**} {
 
 ---
 
-## 9. 일정 (7/09 → 7/28, 주 5일, 14영업일)
+## 9. 일정 (7/09 → 7/29)
 
 > **시간표 제약 반영**:
 > - 금요일 = 발표·데모·피드백 (개발 작업 없음)
 > - PR 제출 = 월~목 18:30~22:00 (금요일 PR 불가)
 > - 화/목 오전 = 마스터 클래스 (개발 아님)
-> - 수요일 = 현업 특강 예정 (시간 미정)
+> - 수요일 = 영상 녹화·제출일
 > - 월/수 = 전일 개발 가능
 >
 > **일정 2일 앞당김**: 기존 7/30 마감 → 7/28 마감.
@@ -287,10 +288,10 @@ match /stores/{storeId}/{document=**} {
 | 11일차 | 7/23 | 목 | ✅ | 통합 QA·버그 수정·데모 데이터·배포 준비 |
 | 12일차 | 7/24 | 금 | ✅ | 발표·데모·피드백 (8~11일차 성과) — 완료 |
 | 13일차 | 7/27 | 월 | ✅ | 워크플로우 문서 + 영상 시나리오 + 디버깅 |
-| 14일차 | 7/28 | 화 | ✅ | 버그 재점검 + 디자인 polish + 완벽하게 만들기 |
-| 15일차 | 7/29 | 수 | ❌ | 데모 영상 녹화 + **PR 제출 마감 (밤 10시)** |
+| 14일차 | 7/28 | 화 | 진행 | 버그·문서·보안 재점검 + 디자인 polish |
+| 15일차 | 7/29 | 수 | 예정 | 데모 영상 녹화 + **PR 제출 마감 (밤 10시)** |
 
-**개발일 요약**: 10일 (1~11일차 완료, 13~14일차 워크플로우/영상)
+**2026-07-28 현재**: 기능·문서 감사 중. 영상·`demoVideoUrl`·최종 PR은 미완료.
 **PR 제출 마감**: 15일차(7/29 수) 밤 10시 — 영상 + showcase.json 포함
 
 Phase 1.5(통계 차트)·Phase 2(본인 조회/정정·삭제 요청/이의제기)·Phase 3(플랫폼 연동)는 7/29 이후.
@@ -306,7 +307,7 @@ Phase 1.5(통계 차트)·Phase 2(본인 조회/정정·삭제 요청/이의제�
 | **리드** | 기획·통합·배포 | plan/checklist 관리, PR 리뷰·머지, 통합 QA, Hosting 배포, 발표 문서 | GLM 5.2 |
 | **프론트엔드** | `src/` UI 전부 | 페이지·컴포넌트·폼·라우팅·상태관리·모바일 QA | Qwen 3.5 |
 | **백엔드** | Firebase 설정·Functions | Firestore 모델, riskStats 갱신 Function, 시드 데이터, 인덱스 | Kimi K2.7 Code |
-| **보안** | 규칙·개인정보 | Security Rules 작성·침투 테스트(에뮬레이터), 마스킹·삭제 검증, /privacy·/terms 문안 | GPT-OSS 120B |
+| **보안** | 규칙·개인정보 | Security Rules 작성·침투 테스트(에뮬레이터), 마스킹·삭제 검증, /privacy·/terms 문안 | GLM 5.2 |
 
 **협업 규칙 (Git — challenge 구조 기준)**
 - 실제 작업 브랜치: **`N167_채민석` 단일 브랜치**
@@ -349,7 +350,7 @@ Phase 1.5(통계 차트)·Phase 2(본인 조회/정정·삭제 요청/이의제�
 | 기능 검증 | 각 세션 | 체크리스트 항목별 검증 시나리오 통과 |
 | 보안 검증 | 보안 | 에뮬레이터 타 가게 접근 차단, 규칙 침투 테스트 |
 | 법무 체크 | 보안 | 처리방침·약관·동의·삭제 동작, 사건 기록 "사실만" 가이드 |
-| 성능 | 프론트엔드 | Lighthouse 90+, 코드 스플리팅 |
+| 성능 | 프론트엔드 | Lighthouse 실측 후 기준 확인, 코드 스플리팅 |
 | 통합 QA | 리드 | 시나리오 A 전체 플로우 E2E 수동 테스트 |
 | 문서·발표 | 리드 | README 갱신, 발표 자료 |
 

@@ -14,6 +14,7 @@ const Customers = () => {
   const [results, setResults] = useState<CustomerSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchAttempt, setSearchAttempt] = useState(0)
 
   // 300ms debounce
   useEffect(() => {
@@ -47,10 +48,10 @@ const Customers = () => {
     }
 
     runSearch()
-  }, [user, debouncedQuery])
+  }, [user, debouncedQuery, searchAttempt])
 
   // 경고 배너 표시 (결과 중 위험 고객)
-  const showAlert = results.some(
+  const alertingCustomer = results.find(
     (r) => r.riskStats.noShowCount >= 3 || r.riskStats.incidentCounts.abuse >= 1
   )
 
@@ -72,11 +73,11 @@ const Customers = () => {
       </div>
 
       {/* Alert Banner */}
-      {showAlert && (
+      {alertingCustomer && (
         <div className="mb-4">
           <RiskAlertBanner
-            noShowCount={results.find((r) => r.riskStats.noShowCount >= 3)?.riskStats.noShowCount || 0}
-            incidentCounts={results.find((r) => r.riskStats.incidentCounts.abuse >= 1)?.riskStats.incidentCounts || { abuse: 0, dispute: 0, late: 0, unreasonable: 0 }}
+            noShowCount={alertingCustomer.riskStats.noShowCount}
+            incidentCounts={alertingCustomer.riskStats.incidentCounts}
           />
         </div>
       )}
@@ -91,7 +92,7 @@ const Customers = () => {
           <div className="text-center py-8">
             <p className="text-red-600 mb-2">{error}</p>
             <button
-              onClick={() => setDebouncedQuery(debouncedQuery)}
+              onClick={() => setSearchAttempt((attempt) => attempt + 1)}
               className="text-sm text-blue-600 hover:underline"
             >
               다시 시도
@@ -119,7 +120,7 @@ const Customers = () => {
                   <p className="font-semibold text-gray-900">{customer.name}</p>
                   <p className="text-sm text-gray-500 mt-1">{customer.phoneMasked}</p>
                 </div>
-                <RiskBadge score={customer.riskStats.score} />
+                <RiskBadge score={customer.riskStats.score} riskLevel={customer.riskLevel} />
               </div>
             </Link>
           ))

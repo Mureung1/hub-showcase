@@ -11,8 +11,12 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../lib/firestore';
 import type { Incident } from '../types/schema';
+
+export interface IncidentWithId extends Incident {
+  id: string;
+}
 
 const incidentsRef = (storeId: string, customerId: string) =>
   collection(db, 'stores', storeId, 'customers', customerId, 'incidents');
@@ -33,16 +37,16 @@ export async function getIncident(
   storeId: string,
   customerId: string,
   incidentId: string,
-): Promise<Incident | null> {
+): Promise<IncidentWithId | null> {
   const snap = await getDoc(incidentRef(storeId, customerId, incidentId));
   if (!snap.exists()) return null;
-  return snap.data() as Incident;
+  return { id: snap.id, ...(snap.data() as Incident) };
 }
 
-export async function listIncidents(storeId: string, customerId: string): Promise<Incident[]> {
+export async function listIncidents(storeId: string, customerId: string): Promise<IncidentWithId[]> {
   const q = query(incidentsRef(storeId, customerId), orderBy('occurredAt', 'desc'));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as Incident);
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Incident) }));
 }
 
 export async function createIncident(

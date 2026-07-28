@@ -12,7 +12,7 @@ const registerSchema = z.object({
   email: z.string().email('이메일 형식이 아닙니다'),
   password: z.string().min(6, '비밀번호는 6 자 이상입니다'),
   confirmPassword: z.string(),
-  storeName: z.string().min(2, '가게 이름을 입력해주세요'),
+  storeName: z.string().min(2, '가게 이름을 입력해주세요').max(100, '가게 이름은 100자 이하여야 합니다'),
   storeCategory: z.string().min(2, '업종을 선택해주세요'),
   agreePrivacy: z.boolean().refine((val) => val === true, '동의해야 합니다'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -124,7 +124,15 @@ const Register = () => {
               {...register('agreePrivacy')}
             />
             <label htmlFor="agreePrivacy" className="text-sm text-gray-700">
-              <span className="font-medium">[필수]</span> 개인정보처리방침 및 이용약관에 동의합니다
+              <span className="font-medium">[필수]</span>{' '}
+              <Link to="/privacy" target="_blank" rel="noreferrer" className="text-blue-600 underline">
+                개인정보처리방침
+              </Link>{' '}
+              및{' '}
+              <Link to="/terms" target="_blank" rel="noreferrer" className="text-blue-600 underline">
+                이용약관
+              </Link>
+              에 동의합니다
             </label>
           </div>
           {errors.agreePrivacy && (

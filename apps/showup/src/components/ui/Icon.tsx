@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react'
+import type { ReactElement, SVGProps } from 'react'
 
 export type IconName =
   | 'calendar'
@@ -13,7 +13,7 @@ interface IconProps extends SVGProps<SVGSVGElement> {
   name: IconName
 }
 
-const paths: Record<IconName, JSX.Element> = {
+const paths: Record<IconName, ReactElement> = {
   dashboard: (
     <>
       <rect x="3" y="3" width="7" height="7" rx="1" />

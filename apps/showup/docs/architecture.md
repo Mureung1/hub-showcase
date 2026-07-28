@@ -53,7 +53,7 @@ flowchart TB
 
     subgraph Rules["Firestore Security Rules"]
         RULE_OWNER["isStoreOwner(storeId)\n→ stores/{storeId}.ownerUid == auth.uid"]
-        RULE_CUST["customers: create/update/delete\n→ isStoreOwner + 필드 타입 검증\n(riskStats 클라이언트 쓰기 허용 — TODO: CF 이관)"]
+        RULE_CUST["customers: create/update/delete\n→ isStoreOwner + 필드 타입 검증\n(riskStats 전체 스키마만 client 갱신 허용 — Blaze 후 차단)"]
         RULE_INC["incidents: create/update\n→ isStoreOwner + type enum 검증"]
         RULE_RES["reservations: create/update\n→ isStoreOwner + status enum 검증"]
     end
@@ -186,7 +186,8 @@ stores/{storeId}/reservations/{reservationId} ← reservations.ts
 ### 3. Firebase Auth 연동 흐름
 
 ```
-firebase.ts → initializeApp() → getAuth(), getFirestore()
+firebase.ts → initializeApp() → getAuth()
+firestore.ts → getFirestore(app) (Firestore 화면 진입 시 지연 로드)
      ↓
 auth.ts → signIn() / signUp() / signOutUser() / subscribeToAuth()
      ↓
@@ -228,7 +229,7 @@ App.tsx → ProtectedRoute → useAuthState().user 검사
          └── score = max(0, 총합)
          │
          ▼
-  ④ updateDoc(customerRef, { riskStats, updatedAt })
+  ④ updateDoc(customerRef, { riskStats: { ...stats, updatedAt: serverTimestamp() } })
      → customer 문서의 riskStats 필드 갱신
          │
          ▼
@@ -236,7 +237,7 @@ App.tsx → ProtectedRoute → useAuthState().user 검사
      (RiskBadge, RiskAlertBanner 컴포넌트로 시각화)
 ```
 
-> **현재 상태**: Spark 요금제로 Cloud Functions 미배포 → 클라이언트에서 직접 riskStats 쓰기. Security Rules에서 허용 중. Blaze 업그레이드 시 Cloud Functions 트리거로 이관 예정.
+> **현재 상태 (2026-07-28 Firebase CLI 확인)**: 배포 Functions 0개. 클라이언트 `riskRefresh.ts`가 직접 갱신하며, Rules는 owner의 완전한 `riskStats` 스키마 쓰기를 허용한다. Blaze 업그레이드 후 Functions trigger와 클라이언트 차단으로 이관한다.
 
 ### 5. Firestore Security Rules 적용 지점
 
@@ -251,8 +252,8 @@ flowchart LR
     end
 
     subgraph Collections["컬렉션별 규칙"]
-        R_STORE["stores/{storeId}\n• create: ownerUid == auth.uid\n• read/update/delete: ownerUid == auth.uid"]
-        R_CUST["customers/{customerId}\n• CRUD: isStoreOwner\n• create/update: name·phone·phoneLast4 타입 검증\n• riskStats 클라이언트 쓰기 허용 (TODO: CF 이관)"]
+        R_STORE["stores/{storeId}\n• create: ownerUid == auth.uid\n• read/update: ownerUid == auth.uid\n• delete: client denied"]
+        R_CUST["customers/{customerId}\n• CRUD: isStoreOwner\n• create/update: name·phone·phoneLast4 타입 검증\n• riskStats 전체 스키마 client 갱신 허용 (Blaze 후 CF 전용)"]
         R_INC["incidents/{incidentId}\n• CRUD: isStoreOwner\n• create/update: type enum + memo 타입 검증"]
         R_RES["reservations/{reservationId}\n• CRUD: isStoreOwner\n• create/update: customerId·date·time·status enum 검증"]
     end
@@ -274,8 +275,10 @@ flowchart LR
     R_RES --> ALLOW
 ```
 
-**핵심 보안 모델:**
+**핵심 보안 모델 (2026-07-28 로컬 코드):**
 - **Owner UID 기반 스토어 격리**: `storeId == ownerUid == auth.uid`. 모든 데이터 접근은 `isStoreOwner(storeId)` 검증을 통과해야 함.
 - **필드 검증**: `customers`는 name/phone/phoneLast4 타입, `incidents`는 type enum (`abuse`, `dispute`, `late`, `unreasonable`), `reservations`는 status enum (`pending`, `confirmed`, `visited`, `noShow`, `cancelled`) 검증.
-- **riskStats 쓰기**: 현재 Security Rules에서 허용 (Spark 요금제). `customers.ts`의 주석에는 "Cloud Function 전용. 클라이언트에서는 직접 호출할 수 없다 (Security Rules 차단)"라고 되어 있으나, 실제 rules에서는 `update`를 허용하고 있어 클라이언트 riskRefresh가 동작함.
+- **riskStats 쓰기**: 현재 Security Rules에서 owner의 완전한 스키마 갱신만 허용. Firebase CLI 조회 결과 배포 Functions 0개라 클라이언트 `riskRefresh`가 실제 경로다.
 - **phoneLast4 동시 변경 규칙**: `phoneLast4`는 `phone`과 함께만 변경 가능 (단독 변경 차단).
+- **추가 검증**: 허용 키 목록, 필수 필드, 전화번호·날짜·시간 형식, 메모 길이, `ownerUid` 불변, 예약 `customerId` 불변을 Rules에서 확인한다.
+- **Storage**: MVP 미사용. `storage.rules`는 전체 read/write를 거부한다.

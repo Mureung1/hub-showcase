@@ -11,7 +11,7 @@ import {
   orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../lib/firestore';
 import type { Reservation } from '../types/schema';
 
 export interface ReservationWithId extends Reservation {
@@ -19,6 +19,9 @@ export interface ReservationWithId extends Reservation {
 }
 
 const reservationsRef = (storeId: string) => collection(db, 'stores', storeId, 'reservations');
+const customersRef = (storeId: string) => collection(db, 'stores', storeId, 'customers');
+const customerRef = (storeId: string, customerId: string) =>
+  doc(db, 'stores', storeId, 'customers', customerId);
 const reservationRef = (storeId: string, resId: string) =>
   doc(db, 'stores', storeId, 'reservations', resId);
 
@@ -26,6 +29,12 @@ export interface ReservationCreateInput {
   customerId: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
+  memo?: string;
+}
+
+export interface ReservationUpdateInput {
+  date?: string;
+  time?: string;
   memo?: string;
 }
 
@@ -53,8 +62,20 @@ export async function listReservations(
   const q = customerId
     ? query(reservationsRef(storeId), where('customerId', '==', customerId))
     : query(reservationsRef(storeId), orderBy('date', 'desc'), orderBy('time', 'desc'));
-  const snap = await getDocs(q);
-  const reservations = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Reservation) }));
+  const existingCustomerIdsPromise = customerId
+    ? getDoc(customerRef(storeId, customerId)).then((snapshot) =>
+        snapshot.exists() ? new Set([customerId]) : new Set<string>(),
+      )
+    : getDocs(customersRef(storeId)).then(
+        (snapshot) => new Set(snapshot.docs.map((customer) => customer.id)),
+      );
+  const [snap, existingCustomerIds] = await Promise.all([
+    getDocs(q),
+    existingCustomerIdsPromise,
+  ]);
+  const reservations = snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as Reservation) }))
+    .filter((reservation) => existingCustomerIds.has(reservation.customerId));
 
   if (customerId) {
     reservations.sort((a, b) =>
@@ -93,6 +114,7 @@ export async function createReservation(
     time: input.time,
     status: 'pending',
     cancelledSameDay: false,
+    statusChangedAt: null,
     memo: input.memo ?? '',
     createdAt: serverTimestamp(),
   };
@@ -103,10 +125,9 @@ export async function createReservation(
 export async function updateReservation(
   storeId: string,
   resId: string,
-  input: Partial<ReservationCreateInput>,
+  input: ReservationUpdateInput,
 ): Promise<void> {
   const updates: Partial<Reservation> = {};
-  if (input.customerId !== undefined) updates.customerId = input.customerId;
   if (input.date !== undefined) updates.date = input.date;
   if (input.time !== undefined) updates.time = input.time;
   if (input.memo !== undefined) updates.memo = input.memo;
@@ -125,9 +146,16 @@ export async function transitionReservationStatus(
 ): Promise<void> {
   const reservation = await getReservation(storeId, resId);
   if (!reservation) return;
+  if (reservation.status !== 'pending' && reservation.status !== 'confirmed') {
+    throw new Error('방문 처리 전 예약만 상태를 변경할 수 있습니다.');
+  }
 
   const updates: Partial<Reservation> = {
     status: nextStatus,
+    statusChangedAt:
+      nextStatus === 'visited' || nextStatus === 'noShow' || nextStatus === 'cancelled'
+        ? serverTimestamp()
+        : null,
   };
 
   if (nextStatus === 'cancelled') {

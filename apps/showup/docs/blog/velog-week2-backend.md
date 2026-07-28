@@ -8,6 +8,8 @@
 - 백엔드: Firebase (Auth / Firestore / Cloud Functions / Hosting)
 - 백엔드 세션 모델: Kimi K2.7 Code (Ollama)
 
+> 역사적 회고 문서(2주차 작성 시점). 당시 계획·예정·검증 수치는 현재 상태를 나타내지 않는다. 2026-07-28 현재 운영 상태와 검증 결과는 [ShowUp README](../../README.md), [작업 체크리스트](../checklist.md)를 기준으로 한다.
+
 ---
 
 ## 2주차 백엔드 작업 요약

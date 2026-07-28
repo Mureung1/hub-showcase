@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 
 const incidentSchema = z.object({
   type: z.enum(['abuse', 'dispute', 'late', 'unreasonable']),
-  memo: z.string().min(1, '사실 메모를 입력해주세요'),
+  memo: z.string().min(1, '사실 메모를 입력해주세요').max(500, '사실 메모는 500자 이하여야 합니다'),
   occurredAt: z.string().min(1, '발생일을 선택해주세요'),
 })
 

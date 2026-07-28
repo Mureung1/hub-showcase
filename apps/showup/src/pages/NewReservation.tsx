@@ -10,13 +10,14 @@ import type { CustomerSearchResult } from '@/types/schema'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import RiskAlertBanner from '@/components/RiskAlertBanner'
 import { toast } from 'sonner'
 
 const reservationSchema = z.object({
   customerId: z.string().min(1, '고객을 선택해주세요'),
   date: z.string().min(1, '날짜를 선택해주세요'),
   time: z.string().min(1, '시간을 선택해주세요'),
-  memo: z.string().optional(),
+  memo: z.string().max(500, '메모는 500자 이하여야 합니다').optional(),
 })
 
 type ReservationForm = z.infer<typeof reservationSchema>
@@ -66,20 +67,28 @@ const NewReservation = () => {
   }, [searchParams, setValue, user])
 
   // 고객 검색 (300ms debounce)
-  const handleSearch = async (query: string) => {
-    if (!user || !query.trim()) {
-      setSearchResults([])
-      return
-    }
+  useEffect(() => {
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      if (!user || !searchQuery.trim()) {
+        setSearchResults([])
+        return
+      }
 
-    try {
-      const results = await searchCustomers(user.uid, query)
-      setSearchResults(results)
-    } catch (error) {
-      console.error('Search failed:', error)
-      setSearchResults([])
+      try {
+        const results = await searchCustomers(user.uid, searchQuery)
+        if (!cancelled) setSearchResults(results)
+      } catch (error) {
+        console.error('Search failed:', error)
+        if (!cancelled) setSearchResults([])
+      }
+    }, 300)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
     }
-  }
+  }, [searchQuery, user])
 
   const handleSelectCustomer = (customer: CustomerSearchResult) => {
     setSelectedCustomer(customer)
@@ -148,6 +157,13 @@ const NewReservation = () => {
               )}
             </button>
           </div>
+          {selectedCustomer && (
+            <RiskAlertBanner
+              className="mt-3"
+              noShowCount={selectedCustomer.riskStats.noShowCount}
+              incidentCounts={selectedCustomer.riskStats.incidentCounts}
+            />
+          )}
           {errors.customerId && (
             <p className="mt-1 text-sm text-red-600">{errors.customerId.message}</p>
           )}
@@ -219,10 +235,7 @@ const NewReservation = () => {
             type="text"
             placeholder="전화번호 뒤 4 자리 또는 이름"
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              handleSearch(e.target.value)
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
 
           <div className="max-h-60 overflow-y-auto space-y-2">

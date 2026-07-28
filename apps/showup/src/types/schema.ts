@@ -60,6 +60,8 @@ export interface Reservation {
   status: ReservationStatus;
   // status === 'cancelled' 일 때만 의미 있음. 당일 취소면 true.
   cancelledSameDay: boolean;
+  // 상태가 실제로 변경된 시각. 기존 문서에는 없을 수 있다.
+  statusChangedAt?: FirestoreTimestamp | null;
   memo: string;
   createdAt: FirestoreTimestamp;
 }

@@ -1,25 +1,39 @@
-# Terms of Service (ShowUp)
+# ShowUp 이용약관 운영 초안
 
-## 1. Service Overview
-ShowUp provides a risk‑warning service for small‑business owners to track customer behavior (no‑shows, incidents) and make informed reservation decisions.
+> 기준일: 2026-07-28. 화면 `/terms`와 같은 정책을 설명하는 내부 원본이다.
+> 실제 상용 운영 전 법률 전문가 검토와 사업자 정보 보완이 필요하다.
 
-## 2. User Obligations
-- Provide accurate phone numbers and personal information.
-- Do not submit false or defamatory incident records. The system includes a mandatory "Fact‑only" memo guideline.
-- The term **"blacklist"** is prohibited; use only "reference‑client" or "risk indicator" in UI and documentation.
+## 서비스 성격
 
-## 3. Data Use
-- Collected data is used solely for risk scoring and display within the owner's store dashboard. No data is shared between stores or with third parties.
-- Risk scores are advisory; final reservation decisions remain the store owner’s discretion.\n## 4. Liability
-- ShowUp is a decision‑support tool only. The service does not automatically block reservations; the owner decides based on displayed risk information.
-- ShowU​p is not liable for any business losses arising from reliance on the risk scores.
+- 소상공인의 고객 예약·방문·노쇼·사건 이력 관리 도구
+- 위험 점수와 경고는 참고용이며 예약을 자동 차단하지 않음
+- 현재 무료 테스트 MVP
 
-## 5. Termination & Deletion
-- Owners may delete any customer record; this permanently removes all related data from Firestore.
-- Upon termination of the service, all stored data will be deleted within 30 days.
+## 이용자 의무
 
-## 6. Governing Law
-- This service complies with applicable data‑protection regulations (e.g., Korea Personal Information Protection Act).
+- 적법하게 수집한 정보만 입력
+- 사건 메모에는 확인 가능한 사실만 기록
+- 허위·비방·차별적 기록 금지
+- 계정 공유 및 타 가게 데이터 접근 시도 금지
 
-## 7. Contact
-- For legal inquiries, contact `terms@showup.example.com`.
+## 데이터 관리
+
+- 가게 운영자는 자신이 입력한 기록의 정확성을 관리한다.
+- 고객 삭제 시 연결된 예약과 사건도 삭제한다.
+- 계정 탈퇴 자동 삭제는 아직 제공하지 않는다.
+
+## 서비스 변경·책임 제한
+
+- 기능 변경·점검·중단 가능
+- Firebase 등 외부 서비스 장애로 일시 중단 가능
+- 고의 또는 중대한 과실이 없는 한 참고 지표 의존이나 이용자가 입력한 부정확한 기록에서 발생한 간접 손해에 책임을 지지 않음
+
+## 문의
+
+- GitHub `@Min0504`
+
+## 남은 법무 작업
+
+- 사업자 정보, 준거법, 분쟁 처리 절차 확정
+- 개인정보처리방침과 보유·파기 정책 교차 검토
+- 실제 유료화 전 전자상거래·소비자 보호 조항 추가

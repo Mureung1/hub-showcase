@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { useAuthState } from '@/hooks/useAuth'
 import AppLayout from './components/AppLayout'
@@ -41,55 +40,44 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>
 }
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-})
-
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
+    <BrowserRouter>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/app"
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/app/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="customers/new" element={<NewCustomer />} />
-              <Route path="customers/:id" element={<CustomerDetail />} />
-              <Route path="reservations" element={<Reservations />} />
-              <Route path="reservations/new" element={<NewReservation />} />
-              <Route path="settings" element={<StoreSettings />} />
-            </Route>
+          {/* Protected routes */}
+          <Route
+            path="/app"
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="customers/new" element={<NewCustomer />} />
+            <Route path="customers/:id" element={<CustomerDetail />} />
+            <Route path="reservations" element={<Reservations />} />
+            <Route path="reservations/new" element={<NewReservation />} />
+            <Route path="settings" element={<StoreSettings />} />
+          </Route>
 
-            {/* Error routes */}
-            <Route path="/500" element={<ServerError />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-        <Toaster position="bottom-center" richColors />
-      </BrowserRouter>
-    </QueryClientProvider>
+          {/* Error routes */}
+          <Route path="/500" element={<ServerError />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+      <Toaster position="bottom-center" richColors />
+    </BrowserRouter>
   )
 }
 

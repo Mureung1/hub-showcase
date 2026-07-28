@@ -10,7 +10,6 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { createStore } from './stores';
 
 export interface SignUpInput {
   email: string;
@@ -44,6 +43,7 @@ export async function signUp({
   await updateProfile(user, { displayName: storeName });
 
   // 회원가입 직후 stores 문서 생성
+  const { createStore } = await import('./stores');
   await createStore(user.uid, {
     ownerUid: user.uid,
     name: storeName,

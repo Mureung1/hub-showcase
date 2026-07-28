@@ -23,12 +23,12 @@
 
 | 단계 | 행동 | 화면 | 비고 |
 |------|------|------|------|
-| 1 | 전화 뒤 4자리/이름 검색 | `/customers` | 300ms debounce. 결과는 항상 **후보 목록** — 단일 자동 매칭 금지, 이름+마스킹 번호 확인 후 선택 |
-| 2 | 경고 배너 자동 표시 | `/customers`, `/reservations/new` | `noShowCount >= 3 || incidentCounts.abuse >= 1` 충족 시 강제 표시 |
-| 3 | 예약 생성 or 거절/예약금 판단 | `/reservations/new` | 자동 차단 아님 — 최종 판단은 사장님 |
-| 4 | 예약 당일 상태 원터치 + 사건 기록 | `/reservations`, `/customers/:id` | 방문 −1 / 노쇼 +8 / 당일취소 +4. 사건은 카테고리 선택 + 사실 메모 |
-| 5 | riskStats 재계산 | (백그라운드) | 원칙 Cloud Function, MVP 대안은 `risk.ts` 클라이언트 갱신 — 로직은 한 곳만 |
-| 6 | 등급·주의 고객 목록 갱신 | `/dashboard` | 다음 검색(1단계)에 반영 → 순환 |
+| 1 | 전화 뒤 4자리/이름 검색 | `/app/customers` | 300ms debounce. 결과는 항상 **후보 목록** — 단일 자동 매칭 금지, 이름+마스킹 번호 확인 후 선택 |
+| 2 | 경고 배너 자동 표시 | `/app/customers`, `/app/reservations/new` | `noShowCount >= 3 || incidentCounts.abuse >= 1` 충족 시 강제 표시 |
+| 3 | 예약 생성 or 거절/예약금 판단 | `/app/reservations/new` | 자동 차단 아님 — 최종 판단은 사장님 |
+| 4 | 예약 당일 상태 원터치 + 사건 기록 | `/app/reservations`, `/app/customers/:id` | 방문 −1 / 노쇼 +8 / 당일취소 +4. 사건은 카테고리 선택 + 사실 메모 |
+| 5 | riskStats 재계산 | 저장 직후 | 현재 Spark MVP는 `riskRefresh.ts` 클라이언트 갱신. Functions는 미배포 이관 준비용 |
+| 6 | 등급·주의 고객 목록 갱신 | `/app/dashboard` | 다음 검색(1단계)에 반영 → 순환 |
 
 ---
 
@@ -84,11 +84,11 @@ flowchart TD
 | 라우트 | 플로우 단계 | 핵심 컴포넌트 |
 |--------|------------|--------------|
 | `/login`, `/register` | 진입 | 동의 체크박스(필수) |
-| `/dashboard` | 6 | 요약 카드, 주의 고객 Top 5 |
-| `/customers` | 1, 2 | CustomerSearch, RiskAlertBanner, CustomerCard |
-| `/customers/:id` | 4 | CustomerTimeline, IncidentFormModal, RiskBadge |
-| `/reservations` | 4 | ReservationStatusActions (방문/노쇼/취소 원터치, 44px+) |
-| `/reservations/new` | 2, 3 | RiskAlertBanner |
+| `/app/dashboard` | 6 | 요약 카드, 주의 고객 Top 5 |
+| `/app/customers` | 1, 2 | CustomerSearch, RiskAlertBanner, CustomerCard |
+| `/app/customers/:id` | 4 | CustomerTimeline, IncidentFormModal, RiskBadge |
+| `/app/reservations` | 4 | ReservationStatusActions (방문/노쇼/취소 원터치, 44px+) |
+| `/app/reservations/new` | 2, 3 | RiskAlertBanner |
 | `/privacy`, `/terms` | — | 정적 문서 (보안 문안) |
 
 `/stats`(Phase 1.5), `/me`(Phase 2)는 MVP 제외.

@@ -5,13 +5,13 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  deleteDoc,
+  writeBatch,
   query,
   where,
   orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../lib/firestore';
 import type { Customer, CustomerSearchResult, Incident, Reservation, RiskLevel } from '../types/schema';
 import { calculateRiskStats, createRiskAlertPayload, resolveRiskLevel } from '../utils/risk';
 import { maskPhone, parsePhone } from '../utils/phone';
@@ -94,6 +94,16 @@ export async function searchCustomers(
   return Array.from(results.values()).sort((a, b) => b.riskStats.score - a.riskStats.score);
 }
 
+export async function findCustomerByPhone(
+  storeId: string,
+  rawPhone: string,
+): Promise<CustomerSearchResult | null> {
+  const { phone } = parsePhone(rawPhone);
+  const snap = await getDocs(query(customersRef(storeId), where('phone', '==', phone)));
+  const match = snap.docs[0];
+  return match ? enrichCustomer(match.id, storeId, match.data() as Customer) : null;
+}
+
 export async function createCustomer(
   storeId: string,
   customerId: string,
@@ -136,12 +146,27 @@ export async function updateCustomer(
 }
 
 export async function deleteCustomer(storeId: string, customerId: string): Promise<void> {
-  await deleteDoc(customerRef(storeId, customerId));
+  const customer = customerRef(storeId, customerId);
+  const [reservationSnap, incidentSnap] = await Promise.all([
+    getDocs(query(collection(db, 'stores', storeId, 'reservations'), where('customerId', '==', customerId))),
+    getDocs(collection(db, 'stores', storeId, 'customers', customerId, 'incidents')),
+  ]);
+  const refs = [
+    ...reservationSnap.docs.map((snapshot) => snapshot.ref),
+    ...incidentSnap.docs.map((snapshot) => snapshot.ref),
+    customer,
+  ];
+
+  for (let index = 0; index < refs.length; index += 500) {
+    const batch = writeBatch(db);
+    refs.slice(index, index + 500).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
 }
 
 /**
  * customer 의 riskStats 를 예약/사건 이력으로 갱신한다.
- * Cloud Function 전용. 클라이언트에서는 직접 호출할 수 없다 (Security Rules 차단).
+ * MVP에서는 클라이언트가 호출하며, Cloud Functions 배포 후 서버 트리거로 대체한다.
  */
 export async function refreshCustomerRiskStats(
   storeId: string,
@@ -152,8 +177,7 @@ export async function refreshCustomerRiskStats(
   const stats = calculateRiskStats({ reservations, incidents });
 
   await updateDoc(customerRef(storeId, customerId), {
-    riskStats: stats,
-    updatedAt: serverTimestamp(),
+    riskStats: { ...stats, updatedAt: serverTimestamp() },
   });
 }
 /**

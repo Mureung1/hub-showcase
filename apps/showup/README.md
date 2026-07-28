@@ -7,7 +7,8 @@
 > 위험도를 관리하고 예약 전에 경고하는 데 초점을 둔다.
 
 - **배포 URL**: https://showup-project.web.app
-- **기간**: 2026-07-07 ~ 2026-07-28 (사전 세팅 7/7~7/8, 개발 7/9~7/28, 주 5일 14영업일)
+- **기간**: 2026-07-07 ~ 2026-07-29 (사전 세팅 7/7~7/8, 개발·제출 7/9~7/29)
+- **현재 상태 (2026-07-28)**: MVP 구현·Hosting 배포 완료, 영상·`demoVideoUrl`·최종 PR은 7/29 마감 작업
 - **진행**: Hermes Agent 프레임워크 + Ollama Pro 모델 4세션 (프론트엔드 / 백엔드 / 보안 / 리드)
 - **세션별 모델**: 리드·GLM 5.2 / 프론트엔드·Qwen 3.5 / 백엔드·Kimi K2.7 Code / 보안·GLM 5.2 (Ollama)
 
@@ -44,10 +45,11 @@
 ## 기술 스택
 
 - 프론트엔드: Vite + React + TypeScript + Tailwind CSS
-- 상태 관리: TanStack Query(서버 상태) + Zustand(UI 상태)
+- 상태 관리: React hooks + Firebase 서비스 레이어
 - 폼: React Hook Form + Zod
 - 백엔드: Firebase (Auth / Firestore / Hosting)
-- 코드 스플리팅: React.lazy + Suspense, manualChunks (메인 청크 9.82KB)
+- 위험도 갱신: Spark 요금제 MVP는 클라이언트 `riskRefresh.ts`; `functions/`는 Blaze 이관 준비용이며 프로덕션 미배포
+- 코드 스플리팅: React.lazy + Suspense, Auth/Firestore 지연 청크 분리 (2026-07-28 빌드 메인 청크 10.86KB)
 - 개발 도구: Hermes Agent (AI 에이전트 프레임워크) + Ollama Pro 모델
 - 버전 관리: Git (단일 브랜치 `N167_채민석`, GitHub fork PR 구조)
 
@@ -67,7 +69,7 @@ stores/{storeId}/reservations/{reservationId}  ← customerId, date, time, statu
 ## 보안
 
 - **가게 격리**: `isStoreOwner(storeId)` → `ownerUid == auth.uid` 검증
-- **침투 테스트**: 14개 시나리오 전부 PASS (security/smoke-test.mjs)
+- **Rules 회귀 테스트**: Firestore Emulator 18개 시나리오 PASS (`security/smoke-test.mjs`)
 - **필드 검증**: name/phone/phoneLast4 타입, incident type enum, reservation status enum
 - **마스킹**: 원본 전화번호 화면 노출 0건
 - **용어**: "블랙리스트" 금지 → "고객 이력" / "참고 지표"
@@ -78,12 +80,15 @@ stores/{storeId}/reservations/{reservationId}  ← customerId, date, time, statu
 |------|------|
 | lint | ✅ PASS (warning 0, error 0) |
 | typecheck | ✅ PASS (tsc -b) |
-| build | ✅ PASS (메인 청크 9.82KB) |
-| risk 단위 테스트 | ✅ PASS |
+| build | ✅ PASS (메인 청크 10.86KB) |
+| risk 단위 테스트 | ✅ 9개 PASS |
 | phone 단위 테스트 | ✅ PASS |
 | search 단위 테스트 | ✅ 13 passed, 0 failed |
 | seed 단위 테스트 | ✅ PASS |
-| 보안 스모크 테스트 | ✅ 14개 PASS |
+| Firestore Rules 테스트 | ✅ 18개 PASS (로컬 Emulator) |
+| production dependency audit | ⚠️ Firebase 취약점 0건, React Router RSC 전용 high 2건 잔존 (현재 SPA는 RSC/Action 미사용) |
+
+> 2026-07-28 검증 기준. Hosting `/`·`/privacy`·`/terms`는 HTTP 200, 프로덕션 인덱스는 조회 확인했다. Firebase CLI 조회 결과 배포 Functions는 0개다. 수정된 Hosting/Rules/Storage 코드는 아직 재배포하지 않았다.
 
 ## 문서
 
@@ -106,11 +111,26 @@ stores/{storeId}/reservations/{reservationId}  ← customerId, date, time, statu
 - 전화번호 화면 표시는 항상 마스킹 (`010-****-1234`)
 - 가게 간 자동 공유 없음 — 고객 동의 기반 신뢰 프로필(Phase 2)로 설계
 
-## 로드맵 (7/28 이후)
+## 제출 전 남은 작업 (7/29 밤 10시)
+
+- 5분 미만 데모 영상 녹화·업로드
+- 루트 `showcase/showcase.json`의 빈 `demoVideoUrl` 갱신
+- 수정된 Hosting·Firestore Rules·Storage Rules 배포 후 프로덕션 재검증
+- 최종 push·PR 제출
+
+## 로드맵 (7/29 이후)
 
 - **Phase 1.5**: 월별 노쇼·사건 통계 차트 (Recharts)
 - **Phase 2**: 고객 본인 인증 조회 (/me) + 정정·삭제 요청·이의제기 접수
 - **Phase 3**: 예약금 결제 (토스페이먼츠) + 외부 예약 플랫폼 연동
+
+## 알려진 제한·리스크
+
+- `riskStats`를 가게 owner 클라이언트가 갱신하므로 자기 가게 점수 조작·동시성 위험이 남는다. Blaze 전환 후 Functions 트리거와 Rules 차단 필요.
+- 계정 탈퇴 및 가게 전체 데이터 cascade 삭제 UI는 미구현. 고객 단위 삭제 서비스는 연결 예약·사건까지 제거하도록 구현됨.
+- `/privacy`, `/terms`는 MVP 운영 초안. 상용화 전 법률 검토와 사업자·보유기간·국외 이전 세부 고지 필요.
+- 데모 계정 비밀번호가 공개되어 누구나 데모 데이터를 변경할 수 있다. 제출 종료 후 비활성화 또는 주기적 초기화 필요.
+- React Router 7.18.1은 RSC 모드 CSRF advisory가 남아 있다. ShowUp은 declarative SPA로 RSC와 Action을 사용하지 않지만, 패치 버전 공개 시 즉시 갱신해야 한다.
 
 ## 데모 계정
 

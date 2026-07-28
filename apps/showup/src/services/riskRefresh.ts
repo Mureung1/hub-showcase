@@ -1,10 +1,15 @@
 // ShowUp riskStats 연동 갱신 헬퍼
-// Cloud Functions 배포 전까지 클라이언트에서 직접 갱신한다.
-// Firestore Security Rules 에서 riskStats 쓰기를 허용해야 한다.
+// Cloud Functions 미배포 환경에서 사용하는 MVP용 클라이언트 갱신 경로.
+// 서버 트리거를 배포하면 이 모듈을 제거하고 Rules에서 riskStats 쓰기를 차단한다.
 
 import type { IncidentCreateInput } from './incidents';
 import type { ReservationCreateInput } from './reservations';
-import { createIncident, listIncidents } from './incidents';
+import {
+  createIncident,
+  deleteIncident,
+  listIncidents,
+  updateIncident,
+} from './incidents';
 import {
   createReservation,
   listReservations,
@@ -48,7 +53,6 @@ export async function updateIncidentAndRefresh(
   incidentId: string,
   input: Partial<IncidentCreateInput>,
 ): Promise<void> {
-  const { updateIncident } = await import('./incidents');
   await updateIncident(storeId, customerId, incidentId, input);
   await refreshRiskStats(storeId, customerId);
 }
@@ -58,7 +62,6 @@ export async function deleteIncidentAndRefresh(
   customerId: string,
   incidentId: string,
 ): Promise<void> {
-  const { deleteIncident } = await import('./incidents');
   await deleteIncident(storeId, customerId, incidentId);
   await refreshRiskStats(storeId, customerId);
 }

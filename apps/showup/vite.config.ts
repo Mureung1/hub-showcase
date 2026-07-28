@@ -14,9 +14,17 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          'ui-vendor': ['@tanstack/react-query', 'react-hook-form', 'zod', '@hookform/resolvers', 'sonner'],
+          'react-vendor': [
+            'react',
+            'react/jsx-runtime',
+            'react-dom',
+            'react-dom/client',
+            'react-router-dom',
+          ],
+          'firebase-auth': ['firebase/app', 'firebase/auth'],
+          'firebase-firestore': ['firebase/firestore'],
+          'form-vendor': ['react-hook-form', 'zod', '@hookform/resolvers'],
+          'toast-vendor': ['sonner'],
         },
       },
     },

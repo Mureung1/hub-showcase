@@ -1,16 +1,21 @@
+import type { RiskLevel } from '@/types/schema'
+
 interface RiskBadgeProps {
   score: number
+  riskLevel?: RiskLevel
   className?: string
 }
 
-const RiskBadge = ({ score, className = '' }: RiskBadgeProps) => {
+const RiskBadge = ({ score, riskLevel, className = '' }: RiskBadgeProps) => {
   const getRiskLevel = (score: number) => {
     if (score >= 40) return { level: 'high', label: '위험', color: 'bg-risk-high text-white' }
     if (score >= 24) return { level: 'medium', label: '주의', color: 'bg-risk-medium text-white' }
     return { level: 'low', label: '안심', color: 'bg-risk-low text-white' }
   }
 
-  const { label, color } = getRiskLevel(score)
+  const scoreRisk = getRiskLevel(score)
+  const resolvedRisk = riskLevel ? getRiskLevel(riskLevel === 'high' ? 40 : riskLevel === 'medium' ? 24 : 0) : scoreRisk
+  const { label, color } = resolvedRisk
 
   return (
     <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${color} ${className}`}>

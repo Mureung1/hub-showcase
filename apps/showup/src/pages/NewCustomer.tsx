@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuthState } from '@/hooks/useAuth'
-import { searchCustomers, createCustomer } from '@/services/customers'
+import { createCustomer, findCustomerByPhone } from '@/services/customers'
 import { isValidPhone } from '@/utils/phone'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -12,7 +12,7 @@ import Modal from '@/components/ui/Modal'
 import { toast } from 'sonner'
 
 const customerSchema = z.object({
-  name: z.string().min(2, '이름은 2 자 이상입니다'),
+  name: z.string().min(2, '이름은 2 자 이상입니다').max(100, '이름은 100자 이하여야 합니다'),
   phone: z.string().refine((val) => isValidPhone(val), '전화번호 형식이 아닙니다'),
 })
 
@@ -38,26 +38,13 @@ const NewCustomer = () => {
     resolver: zodResolver(customerSchema),
   })
 
-  // 전화번호로 중복 확인 — phoneLast4 검색 후 뒤 4자리 + 이름으로 정확 매칭
+  // 원본 번호 비교는 서비스 레이어 내부에서만 하고 화면에는 마스킹 결과만 반환한다.
   const checkDuplicate = async (phone: string): Promise<ExistingCustomer | null> => {
     if (!user) return null
-    const phoneLast4 = phone.slice(-4)
-    const results = await searchCustomers(user.uid, phoneLast4)
-    // phoneLast4가 같은 후보 중에서 이름이 같으면 중복으로 판정
-    // (phoneLast4만으로는 동일 끝자리 여러 명일 수 있으므로 이름도 확인)
-    if (results.length > 0) {
-      // phoneLast4가 같은 고객이 있으면 첫 번째를 중복으로 반환
-      // 실제 전화번호 원본은 마스킹되어 비교 불가하므로 phoneLast4 + 검색어 일치로 판정
-      const match = results.find((c) => c.phoneMasked.endsWith(phoneLast4))
-      if (match) {
-        return {
-          id: match.id,
-          name: match.name,
-          phoneMasked: match.phoneMasked,
-        }
-      }
-    }
-    return null
+    const match = await findCustomerByPhone(user.uid, phone)
+    return match
+      ? { id: match.id, name: match.name, phoneMasked: match.phoneMasked }
+      : null
   }
 
   const onSubmit = async (data: CustomerForm) => {

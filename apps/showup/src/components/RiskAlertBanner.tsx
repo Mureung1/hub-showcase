@@ -21,9 +21,11 @@ const RiskAlertBanner = ({
   }
 
   const abuseCount = incidentCounts.abuse
-  const message = abuseCount >= 1
-    ? `노쇼 ${noShowCount}회 · 응대 사건 ${abuseCount}회`
-    : `노쇼 ${noShowCount}회`
+  const messageParts = [
+    noShowCount > 0 ? `노쇼 ${noShowCount}회` : null,
+    abuseCount > 0 ? `응대 사건 ${abuseCount}회` : null,
+  ].filter(Boolean)
+  const message = messageParts.join(' · ')
 
   return (
     <div className={`bg-red-50 border border-red-200 rounded-lg p-3 ${className}`}>

@@ -17,10 +17,9 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 
 - 서비스: 소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스
 - 프론트엔드: Vite + React + TypeScript + Tailwind CSS
-- 서버 상태: TanStack Query
-- UI 상태: Zustand
+- 서버/UI 상태: 현재 주요 화면은 React hooks + Firebase 서비스 레이어 사용. TanStack Query/Zustand 미사용
 - 폼: React Hook Form + Zod
-- 백엔드: Firebase Auth, Firestore, Cloud Functions, Hosting
+- 백엔드: Firebase Auth, Firestore, Hosting; `functions/`는 Blaze 이관 준비용
 
 ## Git 규칙
 
@@ -43,7 +42,6 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 
 - `apps/showup/src/components/`
 - `apps/showup/src/pages/`
-- `apps/showup/src/routes/`
 - `apps/showup/src/hooks/`
 - `apps/showup/src/utils/` — 프론트엔드 전용 util만
 - `apps/showup/src/types/` — 프론트엔드 전용 타입만
@@ -54,18 +52,17 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 - `src/types/schema.ts` — BE
 - `src/utils/risk.ts`, `src/utils/phone.ts` — BE
 - `src/lib/firebase.ts`, `src/services/` — BE
-- `src/utils/validation.ts` — 보안
 - `src/pages/Privacy.tsx`, `src/pages/Terms.tsx` — 문안은 보안 소유, FE는 라우팅 연결과 레이아웃 래핑만
 
 ## MVP 화면
 
 - `/login`
 - `/register`
-- `/dashboard`
-- `/customers`
-- `/customers/:id`
-- `/reservations`
-- `/reservations/new`
+- `/app/dashboard`
+- `/app/customers`
+- `/app/customers/:id`
+- `/app/reservations`
+- `/app/reservations/new`
 - `/privacy`
 - `/terms`
 
@@ -119,7 +116,7 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 3. BE가 확정한 `types/schema.ts`가 있으면 우선 사용한다.
 4. Firestore 연결 전에는 mock 데이터로 UI를 먼저 만든다.
 5. 폼은 React Hook Form + Zod 기준으로 작성한다.
-6. 서버 데이터는 Zustand에 넣지 않고 TanStack Query를 사용한다.
+6. 서버 데이터는 현재 React hooks + Firebase 서비스 레이어로 관리한다.
 7. 모바일 375px 기준으로 레이아웃을 확인한다.
 8. 긴 이름, 긴 메모, 빈 목록, 에러 상태를 확인한다.
 9. 완료 후 사용자가 확인할 수 있는 시나리오 3개를 남긴다.

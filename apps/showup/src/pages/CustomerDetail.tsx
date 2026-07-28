@@ -16,10 +16,10 @@ function toDateString(value: FirestoreTimestamp): string {
   if (value && typeof value === 'object' && 'toDate' in value) {
     const ts = value as { toDate: () => Date }
     if (typeof ts.toDate === 'function') {
-      return ts.toDate().toISOString().split('T')[0]
+      return getLocalDateString(ts.toDate())
     }
   }
-  return new Date(value as unknown as Date).toISOString().split('T')[0]
+  return getLocalDateString(new Date(value as unknown as Date))
 }
 
 function getLocalDateString(date = new Date()): string {
@@ -70,8 +70,6 @@ const CustomerDetail = () => {
       (reservation) =>
         reservation.date === todayStr &&
         (reservation.status === 'pending' || reservation.status === 'confirmed'),
-    ) ?? reservationsData.find(
-      (reservation) => reservation.status === 'pending' || reservation.status === 'confirmed',
     )
     setActiveReservationId(activeReservation?.id ?? null)
 
@@ -84,7 +82,7 @@ const CustomerDetail = () => {
         memo: res.memo,
       })),
       ...incidentsData.map((inc) => ({
-        id: `${inc.type}-${toDateString(inc.occurredAt)}`,
+        id: inc.id,
         date: toDateString(inc.occurredAt),
         type: getIncidentTypeLabel(inc.type),
         icon: 'warning',
@@ -198,7 +196,7 @@ const CustomerDetail = () => {
       <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
-          <RiskBadge score={customer.riskStats.score} />
+          <RiskBadge score={customer.riskStats.score} riskLevel={customer.riskLevel} />
         </div>
         <p className="text-gray-600">{customer.phoneMasked ?? '****-****'}</p>
         <Link

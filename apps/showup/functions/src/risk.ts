@@ -27,6 +27,7 @@ interface Reservation {
   time: string;
   status: ReservationStatus;
   cancelledSameDay: boolean;
+  statusChangedAt?: unknown | null;
   memo: string;
   createdAt: unknown;
 }
@@ -67,6 +68,10 @@ function toDate(value: unknown): Date | null {
     return value.toDate();
   }
   return null;
+}
+
+function getReservationEventDate(reservation: Reservation): Date | null {
+  return toDate(reservation.statusChangedAt) ?? toDate(reservation.createdAt);
 }
 
 export function calculateRiskStats(
@@ -117,14 +122,14 @@ export function calculateRiskStats(
 
   for (const r of reservations) {
     if (r.status !== 'noShow') continue;
-    const createdAtDate = toDate(r.createdAt);
-    if (!createdAtDate) continue;
+    const eventDate = getReservationEventDate(r);
+    if (!eventDate) continue;
     const lastNoShowDate = lastNoShowAt ? toDate(lastNoShowAt) : null;
-    if (!lastNoShowDate || lastNoShowDate < createdAtDate) {
-      lastNoShowAt = r.createdAt;
+    if (!lastNoShowDate || lastNoShowDate < eventDate) {
+      lastNoShowAt = r.statusChangedAt ?? r.createdAt;
     }
-    const diffMs = now.getTime() - createdAtDate.getTime();
-    if (diffMs <= recentThresholdMs) {
+    const diffMs = now.getTime() - eventDate.getTime();
+    if (diffMs >= 0 && diffMs <= recentThresholdMs) {
       hasRecentNoShow = true;
     }
   }

@@ -3,10 +3,9 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../lib/firestore';
 import type { Store } from '../types/schema';
 
 const storeRef = (storeId: string) => doc(db, 'stores', storeId);
@@ -32,8 +31,4 @@ export async function updateStore(
   data: Partial<Pick<Store, 'name' | 'category'>>,
 ): Promise<void> {
   await updateDoc(storeRef(storeId), data);
-}
-
-export async function deleteStore(storeId: string): Promise<void> {
-  await deleteDoc(storeRef(storeId));
 }

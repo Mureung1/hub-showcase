@@ -150,29 +150,29 @@ Blaze 후:  React → Firestore → Cloud Functions (서버 트리거) → Fires
 
 | 항목 | 미션 요구 | ShowUp 현황 |
 |------|----------|------------|
-| 법적 문안 | 실제 서비스에 맞는 문안 게시 | "보안 세션이 법적 문안을 작성합니다 (MVP 제외)" placeholder |
-| 회원가입 동의 | 실제 동의 받기 | 체크박스는 있으나 문안이 placeholder |
+| 법적 문안 | 실제 서비스에 맞는 문안 게시 | 2026-07-28 MVP 운영 초안 게시, 상용화 전 법률 검토 필요 |
+| 회원가입 동의 | 실제 동의 받기 | 체크박스 + `/privacy`, `/terms` 링크 페이지 존재 |
 | 미구현 기능 표시 | 문서와 일치해야 함 | plan.md에 삭제·이의제기·정정 명시되어 있으나 미구현 |
 
-**차이**: 미션은 출시 전 실제 법적 문안을 요구하나, ShowUp은 MVP 범위에서 placeholder로 둠. 회원가입 시 동의 체크박스는 작동하지만, 동의하는 내용이 실제 문안이 아님.
+**차이**: placeholder는 제거했지만 사업자 정보·보유기간·국외 이전 세부 고지는 상용화 전 보완해야 한다.
 
 ### 7.2 고객 삭제 시 하위 데이터 처리
 
 | 항목 | 미션 요구 | ShowUp 현황 |
 |------|----------|------------|
-| 고객 삭제 | 하위 데이터 처리 정책 확정 | `deleteCustomer()`가 부모 문서만 삭제, 하위 reservations/incidents는 잔존 |
+| 고객 삭제 | 하위 데이터 처리 정책 확정 | `deleteCustomer()`가 연결 reservations/incidents/customer를 batch 삭제 |
 
-**차이**: Firestore는 하위 컬렉션이 자동 삭제되지 않는다. 고객을 삭제해도 예약과 사건 기록이 남아있음. 미션에서 말하는 "삭제 요청" 대응이 되지 않음.
+**차이**: 클라이언트 batch cascade를 구현했다. 500개 초과 데이터는 여러 batch라 완전 원자적이지 않으며 계정 전체 삭제는 별도 과제다.
 
 ### 7.3 보안 테스트 추적 가능성
 
-| 항목 | 미션 요구 | ShowUn 현황 |
+| 항목 | 미션 요구 | ShowUp 현황 |
 |------|----------|------------|
-| 테스트 코드 추적 | Git에 추적되어 재현 가능 | `.mjs` 파일이 `.gitignore`로 무시됨, `.ts` 파일만 추적됨 |
-| 테스트 실행 | 누구나 clone 후 실행 가능 | `smoke-test.mjs`가 Git에 없어 clone 환경에서 실행 불가 |
-| "14개 PASS" 재현 | 문서와 실행 결과가 일치해야 함 | 로컬에서는 PASS지만 새 clone에서는 재현 불가 |
+| 테스트 코드 추적 | Git에 추적되어 재현 가능 | `security/smoke-test.mjs` 추적 예외 추가 |
+| 테스트 실행 | 누구나 clone 후 실행 가능 | `firebase emulators:exec --only firestore "npm run verify:security"` |
+| "18개 PASS" 재현 | 문서와 실행 결과가 일치해야 함 | 2026-07-28 로컬 18/18 PASS |
 
-**차이**: 보안 테스트 코드(`smoke-test.mjs`, `penetration-test.test.mjs`)가 `.gitignore`에 의해 추적되지 않아, 리뷰어가 clone 후 "14개 PASS"를 재현할 수 없다.
+**차이**: 오래된 중복 테스트 대신 한 개의 추적 가능한 Rules 회귀 테스트를 기준으로 통일했다.
 
 ### 7.4 데모 계정 보안
 
@@ -196,7 +196,7 @@ Blaze 후:  React → Firestore → Cloud Functions (서버 트리거) → Fires
 |------|----------|------------|
 | 5분 미만 영상 | 수요일 밤 10시까지 PR에 포함 | 미녹화 (7/29 예정) |
 | 음성/자막 | 설명 포함 | 미녹화 |
-| showcase.json | `demoVideoUrl` 추가 | 빈 문자열 (영상 후 채울 예정) |
+| showcase.json | `demoVideoUrl` 입력 | 필드는 있으나 값은 빈 문자열 (영상 후 URL 입력 예정) |
 
 ### 7.7 환경변수 관리
 
@@ -225,8 +225,8 @@ Blaze 후:  React → Firestore → Cloud Functions (서버 트리거) → Fires
 
 | 항목 | 시급성 | 해결 방법 |
 |------|--------|----------|
-| 보안 테스트 .mjs Git 추적 | 중 | .gitignore에서 .mjs 제외 |
-| 데모 계정 비밀번호 공개 | 낮 | 데모 종료 후 비활성화 (README에는 남겨둬도 됨 — 의도적 데모) |
-| 법적 문안 placeholder | 낮 | Phase 2에서 실제 문안 작성 |
-| 고객 삭제 cascade | 낮 | Phase 2에서 batch delete 구현 |
-| 영상 제출 | 높 | 7/29 수요일 녹화 예정 |
+| 보안 테스트 추적 | 완료 | `security/smoke-test.mjs`를 Git 추적 대상으로 유지하고 Emulator 18개 회귀 테스트 실행 |
+| 데모 계정 비밀번호 공개 | 낮 | 제출 후 계정 비활성화 또는 데이터 초기화 |
+| 법적 문안 | 중 | MVP 운영 초안 게시 완료; 상용화 전 사업자·보유기간·국외 이전 고지와 법률 검토 필요 |
+| 고객 삭제 cascade | 낮 | 고객 단위 reservations/incidents cascade 완료; 계정·가게 전체 삭제는 별도 구현 |
+| 영상 제출 | 높 | 7/29 수요일 녹화·업로드·`demoVideoUrl` 갱신 예정 |
