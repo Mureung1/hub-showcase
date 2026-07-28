@@ -69,19 +69,32 @@ type SourcePreviewView =
 export type PreparedWorkspaceSourcesController = {
   readonly listView: SourceListView
   readonly selectedSource: ProductWorkspaceSource | undefined
+  readonly selectedActionPaths: readonly string[]
   readonly previewView: SourcePreviewView
   readonly evidenceFocus: PreparedEvidenceTarget | undefined
   readonly evidenceNotice: string | undefined
   readonly reload: () => Promise<void>
   readonly selectSource: (source: ProductWorkspaceSource) => void
+  readonly toggleActionSource: (source: ProductWorkspaceSource) => void
   readonly navigateEvidence: (target: PreparedEvidenceTarget) => void
 }
+
+export type PreparedSourceActionControls = {
+  readonly invocationEnabled: boolean
+  readonly selectionLocked: boolean
+  readonly onInvoke: (relativePaths: readonly string[]) => void
+}
+
+export const preparedSourceActionLimit = 16
 
 export function usePreparedWorkspaceSources(
   enabled: boolean,
 ): PreparedWorkspaceSourcesController {
   const [listView, setListView] = useState<SourceListView>({ state: 'idle' })
   const [selectedPath, setSelectedPath] = useState<string>()
+  const [selectedActionPaths, setSelectedActionPaths] = useState<
+    readonly string[]
+  >([])
   const [previewView, setPreviewView] = useState<SourcePreviewView>({
     state: 'idle',
   })
@@ -105,6 +118,9 @@ export function usePreparedWorkspaceSources(
       const result = await fetchPreparedWorkspaceSources(signal)
       if (generation !== listGeneration.current) return undefined
       setListView({ state: 'loaded', sources: result.sources })
+      setSelectedActionPaths((current) =>
+        reconcilePreparedActionPaths(current, result.sources),
+      )
       setSelectedPath((current) => {
         if (
           current &&
@@ -137,6 +153,7 @@ export function usePreparedWorkspaceSources(
       previewGeneration.current += 1
       setListView({ state: 'idle' })
       setSelectedPath(undefined)
+      setSelectedActionPaths([])
       setPreviewView({ state: 'idle' })
       setEvidenceFocus(undefined)
       setEvidenceNotice(undefined)
@@ -212,6 +229,24 @@ export function usePreparedWorkspaceSources(
     setSelectedPath(source.relativePath)
     setPreviewRefresh((current) => current + 1)
   }, [])
+  const toggleActionSource = useCallback(
+    (source: ProductWorkspaceSource) => {
+      if (
+        source.previewKind !== 'text' ||
+        !sources.some(
+          (candidate) =>
+            candidate.relativePath === source.relativePath &&
+            candidate.previewKind === 'text',
+        )
+      ) {
+        return
+      }
+      setSelectedActionPaths((current) =>
+        togglePreparedActionPath(current, source.relativePath, sources),
+      )
+    },
+    [sources],
+  )
   const navigateEvidence = useCallback(
     (target: PreparedEvidenceTarget) => {
       setEvidenceFocus(undefined)
@@ -239,23 +274,27 @@ export function usePreparedWorkspaceSources(
   return {
     listView,
     selectedSource,
+    selectedActionPaths,
     previewView,
     evidenceFocus,
     evidenceNotice,
     reload,
     selectSource,
+    toggleActionSource,
     navigateEvidence,
   }
 }
 
 export function PreparedSourceWorkbench({
   controller,
+  action,
 }: {
   readonly controller: PreparedWorkspaceSourcesController
+  readonly action: PreparedSourceActionControls
 }) {
   return (
     <>
-      <SourceExplorer controller={controller} />
+      <SourceExplorer controller={controller} action={action} />
       <SourcePreview controller={controller} />
     </>
   )
@@ -263,8 +302,10 @@ export function PreparedSourceWorkbench({
 
 function SourceExplorer({
   controller,
+  action,
 }: {
   readonly controller: PreparedWorkspaceSourcesController
+  readonly action: PreparedSourceActionControls
 }) {
   const groups = useMemo(
     () =>
@@ -300,6 +341,28 @@ function SourceExplorer({
       <p className="materials-description">
         Git으로 관리되는 actual file을 읽기 전용으로 탐색합니다.
       </p>
+      <div className="source-action-control">
+        <button
+          type="button"
+          aria-describedby="source-action-status"
+          disabled={
+            controller.selectedActionPaths.length === 0 ||
+            !action.invocationEnabled
+          }
+          onClick={() =>
+            action.onInvoke([...controller.selectedActionPaths])
+          }
+        >
+          선택한 자료 정리하기 · {controller.selectedActionPaths.length}개
+        </button>
+        <p id="source-action-status">
+          {controller.selectedActionPaths.length === 0
+            ? '텍스트 자료를 선택하면 AY에게 정리 작업을 맡길 수 있습니다.'
+            : action.invocationEnabled
+              ? '선택한 actual file만 명시적인 AY 작업에 전달합니다.'
+              : '현재 AY 작업을 시작할 수 없어 선택만 유지합니다.'}
+        </p>
+      </div>
 
       {controller.listView.state === 'idle' ||
       controller.listView.state === 'loading' ? (
@@ -333,27 +396,68 @@ function SourceExplorer({
               <ul>
                 {group.sources.map((source) => (
                   <li key={source.relativePath}>
-                    <button
-                      className="source-row"
-                      type="button"
-                      aria-label={`${source.relativePath} 미리보기`}
-                      aria-current={
-                        source.relativePath ===
-                        controller.selectedSource?.relativePath
-                          ? 'true'
-                          : undefined
-                      }
-                      onClick={() => controller.selectSource(source)}
-                    >
-                      <SourceIcon source={source} />
-                      <span>
-                        <strong>{fileName(source.relativePath)}</strong>
-                        <small>
-                          {previewKindLabel(source.previewKind)} ·{' '}
-                          {formatBytes(source.size)}
-                        </small>
-                      </span>
-                    </button>
+                    <div className="source-row-shell">
+                      <input
+                        className="source-action-checkbox"
+                        type="checkbox"
+                        checked={controller.selectedActionPaths.includes(
+                          source.relativePath,
+                        )}
+                        aria-disabled={
+                          actionSelectionDisabledReason(
+                            source,
+                            controller.selectedActionPaths,
+                            action.selectionLocked,
+                          )
+                            ? 'true'
+                            : undefined
+                        }
+                        aria-label={actionSelectionLabel(
+                          source,
+                          controller.selectedActionPaths,
+                          action.selectionLocked,
+                        )}
+                        title={
+                          actionSelectionDisabledReason(
+                            source,
+                            controller.selectedActionPaths,
+                            action.selectionLocked,
+                          ) ?? undefined
+                        }
+                        onChange={() => {
+                          if (
+                            !actionSelectionDisabledReason(
+                              source,
+                              controller.selectedActionPaths,
+                              action.selectionLocked,
+                            )
+                          ) {
+                            controller.toggleActionSource(source)
+                          }
+                        }}
+                      />
+                      <button
+                        className="source-row"
+                        type="button"
+                        aria-label={`${source.relativePath} 미리보기`}
+                        aria-current={
+                          source.relativePath ===
+                          controller.selectedSource?.relativePath
+                            ? 'true'
+                            : undefined
+                        }
+                        onClick={() => controller.selectSource(source)}
+                      >
+                        <SourceIcon source={source} />
+                        <span>
+                          <strong>{fileName(source.relativePath)}</strong>
+                          <small>
+                            {previewKindLabel(source.previewKind)} ·{' '}
+                            {formatBytes(source.size)}
+                          </small>
+                        </span>
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -641,6 +745,72 @@ function groupSources(
         left.relativePath.localeCompare(right.relativePath, 'ko'),
       ),
     }))
+}
+
+export function reconcilePreparedActionPaths(
+  current: readonly string[],
+  sources: readonly ProductWorkspaceSource[],
+): readonly string[] {
+  const selected = new Set(current)
+  return sources
+    .filter(
+      (source) =>
+        source.previewKind === 'text' &&
+        selected.has(source.relativePath),
+    )
+    .map((source) => source.relativePath)
+    .slice(0, preparedSourceActionLimit)
+}
+
+export function togglePreparedActionPath(
+  current: readonly string[],
+  relativePath: string,
+  sources: readonly ProductWorkspaceSource[],
+): readonly string[] {
+  const reconciled = reconcilePreparedActionPaths(current, sources)
+  const selected = new Set(reconciled)
+  if (selected.has(relativePath)) {
+    selected.delete(relativePath)
+  } else {
+    if (selected.size >= preparedSourceActionLimit) return reconciled
+    selected.add(relativePath)
+  }
+  return reconcilePreparedActionPaths([...selected], sources)
+}
+
+function actionSelectionLabel(
+  source: ProductWorkspaceSource,
+  selectedActionPaths: readonly string[],
+  selectionLocked: boolean,
+): string {
+  const reason = actionSelectionDisabledReason(
+    source,
+    selectedActionPaths,
+    selectionLocked,
+  )
+  return reason
+    ? `${source.relativePath} 정리 작업 선택 불가: ${reason}`
+    : `${source.relativePath} 정리 작업 선택`
+}
+
+function actionSelectionDisabledReason(
+  source: ProductWorkspaceSource,
+  selectedActionPaths: readonly string[],
+  selectionLocked: boolean,
+): string | undefined {
+  if (source.previewKind !== 'text') {
+    return '텍스트 자료만 선택할 수 있습니다.'
+  }
+  if (selectionLocked) {
+    return 'AY 작업 중에는 선택을 바꿀 수 없습니다.'
+  }
+  if (
+    selectedActionPaths.length >= preparedSourceActionLimit &&
+    !selectedActionPaths.includes(source.relativePath)
+  ) {
+    return `자료는 최대 ${preparedSourceActionLimit}개까지 선택할 수 있습니다.`
+  }
+  return undefined
 }
 
 function fileName(relativePath: string): string {

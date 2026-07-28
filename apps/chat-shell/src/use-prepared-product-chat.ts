@@ -16,6 +16,7 @@ import {
   cancelPreparedInteraction,
   fetchPreparedCodexSettings,
   interruptPreparedOperation,
+  streamPreparedAction,
   streamPreparedChat,
   submitPreparedReview,
   type PreparedProductFrame,
@@ -42,12 +43,20 @@ export type PreparedClarificationEntry = {
     | 'turn_interrupted'
 }
 
+export type PreparedActionEntry = {
+  readonly kind: 'action'
+  readonly id: string
+  readonly label: string
+  readonly relativePaths: readonly string[]
+}
+
 export type PreparedTranscriptEntry =
   | {
       readonly kind: 'user' | 'agent' | 'plan'
       readonly id: string
       readonly text: string
     }
+  | PreparedActionEntry
   | PreparedSemanticReviewEntry
   | PreparedClarificationEntry
   | {
@@ -178,11 +187,12 @@ export function usePreparedProductChat(options: {
     options.lifecycle?.state === 'active' &&
     options.accountReadiness.state === 'ready' &&
     isCodexSettingsSettled(codexSettingsState)
-  const canCompose =
+  const canStartOperation =
     available &&
     !locallyActive &&
     options.activeOperation === null &&
     !responsePending
+  const canCompose = canStartOperation
   const canConfigureCodex =
     codexSettingsState === 'loaded' &&
     !locallyActive &&
@@ -192,16 +202,74 @@ export function usePreparedProductChat(options: {
   async function submitMessage(): Promise<void> {
     const text = draft.trim()
     if (!canCompose || !text) return
+    const settings = copyCodexTurnSettings(codexTurnSettings)
+    setDraft('')
+    await startOperation(
+      { kind: 'user', id: crypto.randomUUID(), text },
+      (onFrame, signal) =>
+        streamPreparedChat(
+          {
+            text,
+            ...(settings === undefined
+              ? {}
+              : { codexSettings: settings }),
+          },
+          onFrame,
+          signal,
+        ),
+    )
+  }
+
+  async function invokeOrganizeSources(
+    relativePaths: readonly string[],
+  ): Promise<void> {
+    if (
+      !canStartOperation ||
+      relativePaths.length === 0 ||
+      relativePaths.length > 16
+    ) {
+      return
+    }
+    const frozenPaths = relativePaths.map((relativePath) => relativePath)
+    const frozenFiles = frozenPaths.map((relativePath) => ({
+      relativePath,
+    }))
+    const settings = copyCodexTurnSettings(codexTurnSettings)
+    await startOperation(
+      {
+        kind: 'action',
+        id: crypto.randomUUID(),
+        label: '선택한 자료 정리하기',
+        relativePaths: frozenPaths,
+      },
+      (onFrame, signal) =>
+        streamPreparedAction(
+          {
+            files: frozenFiles,
+            ...(settings === undefined
+              ? {}
+              : { codexSettings: settings }),
+          },
+          onFrame,
+          signal,
+        ),
+    )
+  }
+
+  async function startOperation(
+    entry: PreparedTranscriptEntry,
+    stream: (
+      onFrame: (frame: PreparedProductFrame) => void,
+      signal: AbortSignal,
+    ) => Promise<void>,
+  ): Promise<void> {
+    if (!stateRef.current.terminal || operation.current) return
     const controller = new AbortController()
     operation.current = controller
-    setDraft('')
     transition((current) => ({
       ...current,
       phase: 'running',
-      transcript: [
-        ...current.transcript,
-        { kind: 'user', id: crypto.randomUUID(), text },
-      ],
+      transcript: [...current.transcript, entry],
       operationId: undefined,
       accepted: false,
       terminal: false,
@@ -210,13 +278,7 @@ export function usePreparedProductChat(options: {
       failure: undefined,
     }))
     try {
-      await streamPreparedChat(
-        {
-          text,
-          ...(codexTurnSettings === undefined
-            ? {}
-            : { codexSettings: codexTurnSettings }),
-        },
+      await stream(
         (frame) =>
           transition((current) => reducePreparedProductFrame(current, frame)),
         controller.signal,
@@ -363,6 +425,7 @@ export function usePreparedProductChat(options: {
     state,
     draft,
     setDraft,
+    canStartOperation,
     canCompose,
     canSubmit: canCompose && draft.trim().length > 0,
     canConfigureCodex,
@@ -371,6 +434,10 @@ export function usePreparedProductChat(options: {
       state.accepted &&
       state.phase !== 'stopping' &&
       !responsePending,
+    operationActive:
+      locallyActive ||
+      options.activeOperation !== null ||
+      responsePending,
     responsePending,
     codexModels,
     codexSettingsState,
@@ -381,6 +448,7 @@ export function usePreparedProductChat(options: {
     selectReasoningEffort,
     toggleFastMode,
     submitMessage,
+    invokeOrganizeSources,
     settleReview,
     answerClarification,
     cancelClarification,
@@ -412,6 +480,18 @@ export function createCodexTurnSettings(
     serviceTier:
       fastMode && model.fastModeAvailable ? 'fast' : 'default',
   }
+}
+
+function copyCodexTurnSettings(
+  settings: ProductCodexTurnSettings | undefined,
+): ProductCodexTurnSettings | undefined {
+  return settings === undefined
+    ? undefined
+    : {
+        model: settings.model,
+        reasoningEffort: settings.reasoningEffort,
+        serviceTier: settings.serviceTier,
+      }
 }
 
 export function reducePreparedProductFrame(

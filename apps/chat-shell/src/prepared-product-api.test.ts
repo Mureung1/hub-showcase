@@ -6,6 +6,7 @@ import {
   fetchPreparedWorkspaceText,
   preparedWorkspacePdfUrl,
   PreparedProductApiError,
+  streamPreparedAction,
   streamPreparedChat,
 } from './prepared-product-api.js'
 
@@ -68,6 +69,64 @@ test('prepared Browser sends the selected Codex settings as one complete triple'
         serviceTier: 'fast',
       },
     })
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('prepared Browser sends one exact organize_sources action through the shared stream', async () => {
+  const originalFetch = globalThis.fetch
+  let requestUrl: string | undefined
+  let requestBody: string | undefined
+  const frames: unknown[] = []
+  globalThis.fetch = async (input, init) => {
+    requestUrl = String(input)
+    requestBody = String(init?.body)
+    return new Response(
+      `${JSON.stringify({
+        type: 'operation.preparing',
+        operationId: `operation_${'1'.repeat(32)}`,
+      })}\n`,
+      {
+        status: 200,
+        headers: { 'content-type': 'application/x-ndjson' },
+      },
+    )
+  }
+  try {
+    await streamPreparedAction(
+      {
+        files: [
+          { relativePath: 'materials/notice.md' },
+          { relativePath: 'materials/syllabus.txt' },
+        ],
+        codexSettings: {
+          model: 'gpt-current',
+          reasoningEffort: 'high',
+          serviceTier: 'fast',
+        },
+      },
+      (frame) => frames.push(frame),
+    )
+    assert.equal(requestUrl, '/api/product/actions')
+    assert.deepEqual(JSON.parse(requestBody ?? ''), {
+      action: 'organize_sources',
+      files: [
+        { relativePath: 'materials/notice.md' },
+        { relativePath: 'materials/syllabus.txt' },
+      ],
+      codexSettings: {
+        model: 'gpt-current',
+        reasoningEffort: 'high',
+        serviceTier: 'fast',
+      },
+    })
+    assert.deepEqual(frames, [
+      {
+        type: 'operation.preparing',
+        operationId: `operation_${'1'.repeat(32)}`,
+      },
+    ])
   } finally {
     globalThis.fetch = originalFetch
   }

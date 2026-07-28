@@ -127,7 +127,19 @@ export function PreparedWorkspaceApp() {
         </button>
       </header>
       <div className="workbench-grid">
-        <PreparedSourceWorkbench controller={sources} />
+        <PreparedSourceWorkbench
+          controller={sources}
+          action={{
+            invocationEnabled:
+              chat.canStartOperation &&
+              sources.listView.state === 'loaded',
+            selectionLocked: chat.operationActive,
+            onInvoke: (relativePaths) => {
+              setChatOpen(true)
+              void chat.invokeOrganizeSources(relativePaths)
+            },
+          }}
+        />
         <aside
           className="chat-dock"
           aria-label="AY Chat"

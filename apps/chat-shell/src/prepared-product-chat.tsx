@@ -297,6 +297,19 @@ function PreparedTranscriptRow({
       </li>
     )
   }
+  if (entry.kind === 'action') {
+    return (
+      <li className="product-transcript-row is-action">
+        <strong>자료 정리 Action</strong>
+        <p>{entry.label}</p>
+        <ul className="action-source-list" aria-label="정리할 자료">
+          {entry.relativePaths.map((relativePath) => (
+            <li key={relativePath}>{relativePath}</li>
+          ))}
+        </ul>
+      </li>
+    )
+  }
   return (
     <li className={`product-transcript-row is-${entry.kind}`}>
       <strong>

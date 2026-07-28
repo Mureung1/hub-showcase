@@ -8,6 +8,7 @@ import {
   decodeProductReviewResult,
   decodeProductWorkspaceSourceList,
   decodeProductWorkspaceTextPreview,
+  decodeTargetProductActionInvocationRequest,
   decodeTargetProductChatRequest,
   decodeTargetProductOperationFrame,
   isProductInteractionId,
@@ -19,6 +20,7 @@ import {
   type ProductReviewResult,
   type ProductWorkspaceSourceList,
   type ProductWorkspaceTextPreview,
+  type ProductWorkspaceFileRef,
   type TargetProductOperationFrame,
 } from '@ay-ple/product-contract'
 
@@ -108,7 +110,47 @@ export async function streamPreparedChat(
       ? {}
       : { codexSettings: input.codexSettings }),
   })
-  const response = await fetch('/api/product/chat/messages', {
+  await streamPreparedOperation(
+    '/api/product/chat/messages',
+    request,
+    onFrame,
+    signal,
+  )
+}
+
+export async function streamPreparedAction(
+  input: {
+    readonly files: readonly ProductWorkspaceFileRef[]
+    readonly codexSettings?: ProductCodexTurnSettings
+  },
+  onFrame: (frame: PreparedProductFrame) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const request = decodeShared(
+    decodeTargetProductActionInvocationRequest,
+    {
+      action: 'organize_sources',
+      files: input.files,
+      ...(input.codexSettings === undefined
+        ? {}
+        : { codexSettings: input.codexSettings }),
+    },
+  )
+  await streamPreparedOperation(
+    '/api/product/actions',
+    request,
+    onFrame,
+    signal,
+  )
+}
+
+async function streamPreparedOperation(
+  url: string,
+  request: unknown,
+  onFrame: (frame: PreparedProductFrame) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       accept: 'application/x-ndjson, application/json',
