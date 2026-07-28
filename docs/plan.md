@@ -231,3 +231,4 @@ s3.html/s2.html 화면에 실제로 렌더되는 필드를 역산한 결과. 초
 | D-day 뱃지 규칙: done이면 "완료 ✓" / deadline 있으면 "D-N" / deadline 없으면 뱃지를 그리지 않음 | "상시" 같은 새 단어를 만들면 화면·DB·에이전트 세 곳에서 뜻을 맞춰야 해 정의 비용이 생김 |
 | D-day 계산 함수는 기준일을 인자로 받는다 — calculateDday(deadline, today) | 내부에서 new Date()를 부르면 테스트가 "오늘"을 조종할 수 없어 내일이면 저절로 깨짐 |
 | MSW→실서버 교체는 Vite proxy 방식 | App.jsx의 fetch가 상대 경로라 화면 코드를 안 고쳐도 됨. MSW 도입 시 내건 "화면 코드 무변경" 약속과 일치 |
+| calculateDday 입력 계약: deadline은 문자열(함수가 파싱), today는 Date 객체 | today를 toISOString()으로 UTC 문자열화하면 한국 새벽(KST 오전 9시 이전)에 날짜가 하루 밀림. today를 Date로 유지해 문자열 왕복을 제거하면 이 버그가 구조적으로 발생 불가능. TDD로 발견 — TZ를 UTC로 stub한 테스트가 버그를 재현했고(화면엔 안 보이는 새벽 버그), 감시 테스트 대신 버그 불가능 구조를 택함. deadline은 DB에서 문자열로 오므로 함수가 파싱을 흡수(부르는 쪽이 변환 안 해도 됨) |
