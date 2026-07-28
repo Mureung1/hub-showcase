@@ -47,7 +47,13 @@ function GuidedChatFrame({ children, mode, scenario, step }: GuidedChatFrameProp
         </span>
         <div className="chat-header-copy">
           <strong>{assistantName}</strong>
-          <span>{activeScenario ? `${activeScenario.name} 말을 함께 골라요` : '빠른 선택으로 같이 골라요'}</span>
+          <span>
+            {step === 'manual'
+              ? '직접 설명으로 맞춤 작성 중'
+              : activeScenario
+                ? `${activeScenario.name} 말을 함께 골라요`
+                : '빠른 선택으로 같이 골라요'}
+          </span>
         </div>
         <div className="chat-progress-copy">
           <span>

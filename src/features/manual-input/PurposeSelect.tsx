@@ -8,7 +8,7 @@ type PurposeSelectProps = {
 function PurposeSelect({ selectedPurposeId, onSelect }: PurposeSelectProps) {
   return (
     <fieldset className="purpose-fieldset">
-      <legend>메시지 목적</legend>
+      <legend>어떤 말을 전하고 싶나요? (필수)</legend>
       <div className="purpose-list">
         {purposes.map((purpose) => (
           <button

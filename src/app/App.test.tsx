@@ -718,13 +718,36 @@ describe('App', () => {
     chooseProfessorMessenger()
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
 
+    const receivedMessageInput = screen.getByLabelText('받은 메시지 붙여넣기 (필수)')
+    const situationInput = screen.getByLabelText('상황 설명 (선택)')
+    const purposeFieldset = screen.getByRole('group', {
+      name: '어떤 말을 전하고 싶나요? (필수)',
+    })
+    const speechStyleFieldset = screen.getByRole('group', {
+      name: '평소 어떤 말투를 쓰나요? (필수)',
+    })
+
+    expect(screen.getByText('직접 설명으로 맞춤 작성 중')).toBeInTheDocument()
+    expect(receivedMessageInput).toHaveAttribute(
+      'placeholder',
+      '예: “과제 제출 기한을 다시 확인해 주세요.”',
+    )
+    expect(receivedMessageInput.compareDocumentPosition(situationInput)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(situationInput.compareDocumentPosition(purposeFieldset)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(purposeFieldset.compareDocumentPosition(speechStyleFieldset)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
     expect(screen.getByText('메시지 목적을 골라주세요.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     chooseHaeyoSpeechStyle()
 
-    fireEvent.change(screen.getByLabelText('받은 메시지 붙여넣기'), {
+    fireEvent.change(receivedMessageInput, {
       target: { value: '과제 기한 연장 문의 주셔서 확인했습니다.' },
     })
 
@@ -1067,7 +1090,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
 
     expect(screen.getByLabelText('상황 설명 (선택)')).toHaveValue('')
-    expect(screen.getByLabelText('받은 메시지 붙여넣기')).toHaveValue('')
+    expect(screen.getByLabelText('받은 메시지 붙여넣기 (필수)')).toHaveValue('')
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
   })
 
@@ -1120,7 +1143,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
 
-    expect(screen.getByText('메시지 목적')).toBeInTheDocument()
+    expect(screen.getByText('어떤 말을 전하고 싶나요? (필수)')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '질문하기' })).toHaveAttribute('aria-pressed', 'false')
 
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))

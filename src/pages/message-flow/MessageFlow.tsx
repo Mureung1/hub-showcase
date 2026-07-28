@@ -1366,12 +1366,36 @@ function MessageFlow({
             <AssistantPrompt
               assistantName={selectedScenario.helper}
               avatarAsset={catAssistantAssets[selectedScenario.id]}
-              description="받은 내용이나 구체적인 사정을 평소 말하듯 적어주세요. 예: 약속을 미뤄야 해서 정중하게 사과하고 싶어요."
+              description={
+                mode === 'reply'
+                  ? '받은 메시지를 붙여넣고, 더 알려줄 상황이 있으면 덧붙여주세요.'
+                  : '구체적인 사정을 평소 말하듯 적어주세요. 예: 약속을 미뤄야 해서 정중하게 사과하고 싶어요.'
+              }
               headingRef={stepHeadingRef}
               title={mode === 'reply' ? '받은 말을 조금 보여주라냥' : '상황을 조금 더 들려주라냥'}
             />
 
             <div className="chat-form-surface">
+              {mode === 'reply' && (
+                <ReceivedMessageInput
+                  onChange={(value) => {
+                    cancelGeneration()
+                    setReceivedMessage(value)
+                  }}
+                  placeholder={selectedScenario.receivedMessagePlaceholder}
+                  value={receivedMessage}
+                />
+              )}
+              <SituationInput
+                onChange={(value) => {
+                  cancelGeneration()
+                  setSituation(value)
+                }}
+                optional={mode === 'reply'}
+                placeholder={selectedScenario.example}
+                value={situation}
+              />
+
               <PurposeSelect
                 onSelect={(purposeId) => {
                   cancelGeneration()
@@ -1384,25 +1408,6 @@ function MessageFlow({
                 onSelect={selectSpeechStyle}
                 scenarioId={selectedScenario.id}
                 selectedSpeechStyleId={speechStyleId}
-              />
-
-              {mode === 'reply' && (
-                <ReceivedMessageInput
-                  onChange={(value) => {
-                    cancelGeneration()
-                    setReceivedMessage(value)
-                  }}
-                  value={receivedMessage}
-                />
-              )}
-              <SituationInput
-                onChange={(value) => {
-                  cancelGeneration()
-                  setSituation(value)
-                }}
-                optional={mode === 'reply'}
-                placeholder={selectedScenario.example}
-                value={situation}
               />
 
               <p className="privacy-note">
