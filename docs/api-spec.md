@@ -5,7 +5,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 ## 공통 사항
 
 - Base URL: `http://localhost:4000/api` (환경변수 `VITE_API_BASE_URL`로 프론트에서 주입, [client.js](../src/api/client.js) 참고)
-- 인증: MVP 단계는 단일 사장님 = 단일 브랜드로 가정하고 인증 생략. 추후 세션/JWT 도입 시 이 문서에 추가
+- 인증: MVP 단계는 단일 사장님 = 단일 브랜드로 가정하고 API 자체엔 인증(세션/JWT)이 없다. 온보딩의 네이버 로그인(2-3, `/auth/naver*`)은 지금은 blogId를 알아내기 위한 용도로만 쓰고, 로그인 이후 요청을 보호하는 세션까지는 만들지 않는다 — 보안 강화 차원에서 필요하다고 판단되면 별도로 세션/JWT 인증을 도입한다 (8. 이후 과제 참고)
 - 요청/응답: `Content-Type: application/json`
 - 공통 에러 포맷
 
@@ -36,6 +36,9 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
   goal: string                // 홍보 목표
   summary: string             // AI가 생성한 한 줄 요약
   keywords: string[]          // AI가 생성한 브랜드 키워드 (# 없이 저장)
+  naverId: string | null      // 네이버 로그인(OAuth)으로 확인된 사용자 식별자
+  blogId: string | null       // 연동된 네이버 블로그 ID (blog.naver.com/{blogId})
+  blogIdConfirmed: boolean    // blogId를 사용자가 확정했는지 (자동 후보 확인 또는 수동 입력)
   createdAt: string
   updatedAt: string
 }
@@ -59,6 +62,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
   status: "draft" | "scheduled" | "published"
   scheduledAt: string | null
   publishedAt: string | null
+  publishedUrl: string | null  // 반자동 발행 후 사용자가 직접 입력한 실제 네이버 게시글 URL
   suggestedPublishTime: { datetime: string; reason: string } | null
   createdAt: string
   updatedAt: string
@@ -176,8 +180,24 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 
 | Method | Path | 설명 |
 | --- | --- | --- |
-| POST | `/blog/connect` | 네이버 블로그 연동 (blogId 또는 OAuth 콜백 처리) |
+| GET | `/auth/naver` | 네이버 로그인(OAuth) 시작 — 브라우저를 네이버 인증 페이지로 리다이렉트 |
+| GET | `/auth/naver/callback` | 네이버 OAuth 콜백 — 로그인 처리 후 온보딩 화면으로 다시 리다이렉트 |
 | GET | `/blog/analysis` | 연동된 블로그의 운영 패턴 분석 결과 조회 |
+
+**네이버 로그인 + blogId 확보 흐름 (2026-07-28 결정)**: 네이버 블로그 데이터 API는 폐지됐지만 "네이버 아이디로 로그인"(OAuth)은 지금도 공식 지원된다. 다만 이 OAuth의 프로필 응답(`/v1/nid/me`)엔 blogId가 없어서, 로그인 후 얻은 `id`/`닉네임`으로 실제 `blog.naver.com/{후보}`가 존재하는지 서버가 확인하고 사용자에게 "맞나요?" 확인을 받는 방식을 쓴다. fetch 기반 API 호출이 아니라 **브라우저 전체 리다이렉트**로 동작한다.
+
+1. 프론트: "네이버로 로그인" 클릭 → 온보딩 1단계 입력값을 `sessionStorage`에 저장 → `window.location.href`로 `GET /auth/naver` 이동 (풀 페이지 이동, fetch 아님)
+2. 서버: 네이버 인증 페이지로 리다이렉트. 사용자는 네이버의 실제 로그인 페이지에 본인이 직접 로그인한다 — 비밀번호가 이 서버를 거치지 않는다
+3. 네이버 → `GET /auth/naver/callback?code=...&state=...`로 콜백
+4. 서버: `code`를 토큰으로 교환 → `/v1/nid/me`로 `{ id, nickname }` 조회 → `nickname`(우선) 또는 `id`로 `blog.naver.com/{후보}` 존재 여부 확인
+5. 서버 → 프론트 `/onboarding`으로 리다이렉트하며 쿼리 파라미터로 결과 전달:
+   - 성공 + 후보 존재: `?naverId=...&blogIdCandidate=...&candidateExists=true`
+   - 성공 + 후보 불명: `?naverId=...&blogIdCandidate=...&candidateExists=false` (후보는 확인 안 된 추정값, 수동 입력 폼 프리필용)
+   - 실패: `?naverAuthError=NAVER_OAUTH_NOT_CONFIGURED|NAVER_OAUTH_TOKEN_FAILED|NAVER_OAUTH_PROFILE_FAILED|NAVER_OAUTH_STATE_INVALID`
+6. 프론트: `sessionStorage`에서 1단계 입력값을 복원하고, `candidateExists=true`면 "blog.naver.com/{후보} 맞나요?" 확인 카드를, 아니면(또는 "아니요" 선택 시) blogId 직접 입력 폴백을 보여준다
+7. 최종 확정된 `naverId`/`blogId`/`blogIdConfirmed`는 온보딩 3단계의 `POST /brand-profile` 호출에 함께 실려 저장된다 (이 단계 전까지는 서버에 저장하지 않음)
+
+blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는 블로그입니다" 문구 유무로 추정하는 휴리스틱이다 — 그래서 항상 사용자 확인을 거치게 하고 최종 신뢰 소스로 쓰지 않는다. `GET /blog/analysis`(게시물 개수 등)는 여전히 고정 mock — Day 17에서 RSS/검색API로 교체 예정.
 
 ### 2-4. AI 홍보글 작성
 
@@ -263,10 +283,22 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 | GET | `/posts/:id` | 단건 조회 |
 | PATCH | `/posts/:id` | 사용자 수정 내용 반영 |
 | GET | `/posts/:id/suggested-time` | 업종/계절/게시 패턴 기반 추천 발행 시간 조회 |
-| POST | `/posts/:id/schedule` | 예약 발행 시간 확정 (`{ "scheduledAt": "..." }`) |
-| DELETE | `/posts/:id/schedule` | 예약 취소 |
+| GET | `/posts/:id/detect-published` | 연동된 블로그 RSS에서 이 글과 비슷한 최근 글 자동 탐지 |
+| POST | `/posts/:id/schedule` | (현재 프론트에서는 미사용) 예약 발행 시간 확정 `{ "scheduledAt": "..." }` — 실제 예약 실행은 네이버 자체 기능에 맡기므로 지금은 호출하는 화면이 없음 |
+| DELETE | `/posts/:id/schedule` | 위 예약 취소 |
 
-실제 발행은 서버 스케줄러(node-cron 등)가 `scheduledAt`을 감시하다 네이버 블로그 API로 발행 후 `status`를 `published`로 갱신하는 방식을 가정. 수동 즉시발행이 필요하면 `POST /posts/:id/publish` 추가 예정.
+**반자동 발행 흐름 (2026-07-27 결정, 2026-07-28 게시 완료 확인 방식 보강)**: 네이버 블로그 포스팅 공식 API가 폐지되어 완전 자동 발행(Playwright 등) 대신 반자동 방식을 쓴다. 서버가 대신 발행하지 않고, 프론트에서 아래 순서로 처리한다.
+
+1. 사용자가 "네이버에 게시" 클릭 → 프론트가 `title`+`content`를 클립보드에 복사하고 네이버 블로그 글쓰기 페이지를 새 탭으로 연다 (백엔드 호출 없음)
+2. 사용자가 네이버 에디터에 붙여넣고 직접 게시(또는 네이버 자체 예약 발행 기능으로 예약)
+3. 앱으로 돌아와 "게시 확인하기" 클릭 → `GET /posts/:id/detect-published`가 연동된 블로그의 RSS(`rss.blog.naver.com/{blogId}.xml`)에서 제목이 비슷하고 30분 이내에 올라온 글을 찾아본다
+   - 찾으면(`{ "found": true, "url": "..." }`) "이 글이 맞나요?" 확인 후 맞으면 확정
+   - 못 찾으면(`{ "found": false, "reason": "NO_BLOG_ID" | "NOT_FOUND" }`, 또는 "아니요" 선택 시) 게시된 글 URL을 직접 입력하는 폴백으로 넘어감
+4. 확정되면 `PATCH /posts/:id`에 `{ "status": "published", "publishedAt": "...", "publishedUrl": "..." }` 전달
+
+RSS 제목 매칭은 네이버가 "이 글이 그 글이다"를 확인해주는 API가 없어서 쓰는 휴리스틱이라 오탐/누락 가능성이 있다 — 그래서 항상 사용자 확인을 거치게 하고 최종 신뢰 소스로 쓰지 않는다.
+
+`GET /posts/:id/suggested-time`은 여전히 AI가 추천 요일/시간을 보여주는 용도로 쓰이지만, 실제 예약 실행은 네이버 자체 기능에 맡기고 이 서버는 시간을 추천만 한다 — 무인 자동 발행(서버 스케줄러 + 네이버 API)은 [backlog-12days.md](backlog-12days.md)의 "8. 이후 과제"로 유지.
 
 ### 2-7. AI 운영 인사이트
 
@@ -279,7 +311,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 
 ## 미결정 사항 (다음에 정하기)
 
-- 네이버 블로그 실제 발행 연동 방식 (공식 API 권한 범위 vs 스크래핑)
+- ~~네이버 블로그 실제 발행 연동 방식~~ → 2026-07-27 반자동(클립보드+새 탭) 방식으로 결정, 2-6 섹션 참고
 - 이미지 저장소 (S3 등) 및 업로드 용량 제한
 - 인증/세션 방식 도입 시점
 - LLM 호출 비용 관리 (인터뷰 단계별 호출 vs 배치 생성)

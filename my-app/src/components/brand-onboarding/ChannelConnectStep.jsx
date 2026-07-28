@@ -1,4 +1,30 @@
-function ChannelConnectStep({ connected, onConnect, onDisconnect, onPrev, onNext }) {
+import { useEffect, useState } from "react";
+
+function ChannelConnectStep({
+  connected,
+  blogId,
+  candidate,
+  suggestedBlogId,
+  hasAttempted,
+  authError,
+  onStartOAuth,
+  onConfirmCandidate,
+  onRejectCandidate,
+  onConnectManual,
+  onDisconnect,
+  onPrev,
+  onNext,
+}) {
+  const [manualBlogId, setManualBlogId] = useState("");
+
+  // 자동으로 못 찾았을 때(suggestedBlogId)는 그 추정값을 입력창에 미리 채워둬서
+  // 사용자가 확인/수정만 하면 되게 한다.
+  useEffect(() => {
+    if (suggestedBlogId) setManualBlogId(suggestedBlogId);
+  }, [suggestedBlogId]);
+
+  const showManualFallback = !connected && !candidate && hasAttempted;
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-md">
       <div className="w-full max-w-[800px] bg-white rounded-xl border border-outline-variant shadow-soft overflow-hidden">
@@ -35,7 +61,9 @@ function ChannelConnectStep({ connected, onConnect, onDisconnect, onPrev, onNext
               </div>
               <div>
                 <h3 className="font-headline-sm text-headline-sm">네이버 블로그</h3>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">네이버 블로그 자동 포스팅 활성화</p>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  {connected ? `blog.naver.com/${blogId}` : "네이버 로그인 한 번으로 blogId를 찾아드려요"}
+                </p>
               </div>
             </div>
             {connected ? (
@@ -57,15 +85,78 @@ function ChannelConnectStep({ connected, onConnect, onDisconnect, onPrev, onNext
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={onConnect}
-                className="px-lg py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-all active:scale-95 shadow-soft"
-              >
-                연결하기
-              </button>
+              !candidate && (
+                <button
+                  type="button"
+                  onClick={onStartOAuth}
+                  className="px-lg py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-all active:scale-95 shadow-soft"
+                >
+                  {hasAttempted ? "다시 시도" : "네이버로 로그인"}
+                </button>
+              )
             )}
           </div>
+
+          {candidate && (
+            <div className="p-lg bg-primary-container/10 border-2 border-dashed border-primary/30 rounded-xl flex flex-col gap-sm">
+              <p className="font-label-md text-label-md font-bold text-primary">이 블로그가 맞나요?</p>
+              <a
+                href={`https://blog.naver.com/${candidate.blogId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-body-md text-body-md text-primary underline break-all"
+              >
+                blog.naver.com/{candidate.blogId}
+              </a>
+              <div className="flex gap-sm mt-xs">
+                <button
+                  type="button"
+                  onClick={onRejectCandidate}
+                  className="flex-1 px-lg py-sm border border-outline-variant rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-all"
+                >
+                  아니요
+                </button>
+                <button
+                  type="button"
+                  onClick={onConfirmCandidate}
+                  className="flex-1 px-lg py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-all"
+                >
+                  맞아요
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showManualFallback && (
+            <div className="p-md bg-error-container/20 border border-error/30 rounded-lg flex flex-col gap-sm">
+              {authError && (
+                <p className="font-body-sm text-body-sm text-error">네이버 로그인에 실패했습니다 ({authError}).</p>
+              )}
+              <p className="font-body-sm text-body-sm text-on-surface-variant">
+                {suggestedBlogId
+                  ? "이 블로그가 맞는지 확인하거나 직접 수정해주세요."
+                  : "자동으로 블로그를 찾지 못했어요. 블로그 주소를 직접 입력해주세요."}{" "}
+                (예: blog.naver.com/mycafe123 → mycafe123)
+              </p>
+              <div className="flex gap-sm">
+                <input
+                  type="text"
+                  value={manualBlogId}
+                  onChange={(e) => setManualBlogId(e.target.value)}
+                  placeholder="blogId"
+                  className="flex-1 bg-white border border-outline-variant rounded-lg px-md py-sm font-body-sm focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => onConnectManual(manualBlogId)}
+                  disabled={!manualBlogId.trim()}
+                  className="px-lg rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  직접 연결
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="mt-md p-md bg-secondary-container/20 border border-secondary/20 rounded-lg flex items-start gap-sm">
             <span className="material-symbols-outlined text-secondary mt-0.5">auto_awesome</span>
