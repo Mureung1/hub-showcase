@@ -12,7 +12,7 @@ import { HISTORY, PLATFORM_CHAR_LIMITS } from "./data/mockData";
 import { loadBusinessProfile, saveBusinessProfile } from "./utils/businessProfile";
 
 // 백엔드 주소. 로컬 개발 기준. 배포 시 실제 서버 주소로 바꿔야 함.
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://haso-ai-backend.onrender.com";
 
 export default function App() {
   // 입력 관련 상태
