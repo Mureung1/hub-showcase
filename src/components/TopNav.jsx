@@ -14,8 +14,8 @@ function TopNav() {
 
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b-[3.6px] border-ink bg-bg-surface px-4 py-0.5">
-      <div className="flex items-center">
-        <img src={mascotKkini} alt="끼니픽" className="-mr-5 block h-[90px] w-[90px] object-contain" />
+      <div className="flex items-center gap-1.5">
+        <img src={mascotKkini} alt="끼니픽" className="block h-14 w-auto object-contain" />
         <span className="font-display text-[28.5px] text-text-primary">끼니픽</span>
       </div>
       <div className="flex flex-wrap gap-5">
