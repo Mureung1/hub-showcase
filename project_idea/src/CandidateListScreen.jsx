@@ -155,6 +155,75 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {alreadyJoined && (
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #C8102E",
+                borderRadius: 14,
+                padding: 14,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "#C8102E",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                나
+              </div>
+              <div style={{ flex: 1, textAlign: "left" }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>내 방</div>
+                <div style={{ fontSize: 12, color: "#8A7A76" }}>
+                  {cityHub} · {formatTime(myRequest.time)} 출발
+                </div>
+                <div style={{ fontSize: 12, color: "#8A7A76" }}>도착 소요시간 {myRequest.arrival}</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    background: "#FCE4E2",
+                    color: "#8C0E22",
+                  }}
+                >
+                  {existingJoin.groupCount ?? 1}/4
+                </span>
+                <button
+                  className="btn-primary"
+                  onClick={resumeChat}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: "none",
+                    background: "#2F8F5B",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  채팅방 보기
+                </button>
+              </div>
+            </div>
+          )}
+
           {candidates.map((c, i) => (
           <div
             key={c.id}
