@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "batch": "node batch/collect.js",
+    "api": "node api-server.js",
     "test": "node --test"
   },
   "dependencies": {

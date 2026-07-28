@@ -8,6 +8,8 @@ import ConditionPanel from "../components/ConditionPanel";
 import ResultSection from "../components/ResultSection";
 import Card from "../components/Card";
 import Hero from "../components/Hero";
+import RecommendBox from "../components/RecommendBox";
+import BottomBar from "../components/BottomBar";
 
 // 홈 화면. App이 가진 state를 Outlet context(props)로 받아서 조건 입력 + 결과를 보여준다.
 export default function HomePage() {
@@ -39,6 +41,9 @@ export default function HomePage() {
   return (
     <>
       <Hero count={liveCount} updatedAt={lastCollected} />
+      {!c.loading && !c.loadError && (
+        <RecommendBox postings={c.postings} favorites={c.favorites} onToggleFav={c.toggleFav} onOpen={openDetail} />
+      )}
       <ConditionPanel
         profile={c.profile} setField={c.setField}
         showScholarship={c.showScholarship} setShowScholarship={c.setShowScholarship}
@@ -70,12 +75,12 @@ export default function HomePage() {
             </select>
           </div>
 
-          <ResultSection title="지원 가능" items={eligible} cls="eligible" favorites={c.favorites} onToggleFav={c.toggleFav} onOpen={openDetail} />
-          <ResultSection title="확인 필요" items={review} cls="review" favorites={c.favorites} onToggleFav={c.toggleFav} onOpen={openDetail} />
-          <ResultSection title="거의 가능 (조건 하나만 맞추면)" items={near} cls="near" favorites={c.favorites} onToggleFav={c.toggleFav} onOpen={openDetail} />
+          <ResultSection id="sec-eligible" title="지원 가능" items={eligible} cls="eligible" favorites={c.favorites} onToggleFav={c.toggleFav} onOpen={openDetail} />
+          <ResultSection id="sec-review" title="확인 필요" items={review} cls="review" favorites={c.favorites} onToggleFav={c.toggleFav} onOpen={openDetail} />
+          <ResultSection id="sec-near" title="거의 가능 (조건 하나만 맞추면)" items={near} cls="near" favorites={c.favorites} onToggleFav={c.toggleFav} onOpen={openDetail} />
 
           {ineligible.length > 0 && (
-            <div className="section ineligible">
+            <div id="sec-ineligible" className="section ineligible">
               <button className="fold" onClick={() => setShowIneligible((s) => !s)}>
                 지원 불가 {ineligible.length}건 {showIneligible ? "접기" : "펼치기"}
               </button>
@@ -91,6 +96,12 @@ export default function HomePage() {
 
           {total === 0 && <p className="empty">조건에 맞는 공고가 없어요. 필터나 검색어를 바꿔보세요.</p>}
         </section>
+      )}
+      {!c.loading && !c.loadError && total > 0 && (
+        <BottomBar
+          counts={{ eligible: eligible.length, review: review.length, near: near.length, ineligible: ineligible.length }}
+          onJumpIneligible={() => setShowIneligible(true)}
+        />
       )}
     </>
   );

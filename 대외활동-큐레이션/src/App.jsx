@@ -28,10 +28,6 @@ export default function App() {
   const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify([...favorites]));
-  }, [favorites]);
-
-  useEffect(() => {
     loadPostings()
       .then(setPostings)
       .catch(setLoadError)
@@ -48,6 +44,7 @@ export default function App() {
   const toggleFav = (id) => setFavorites((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
+    try { localStorage.setItem("favorites", JSON.stringify([...next])); } catch { /* 저장 실패는 무시 */ }
     return next;
   });
   const toggleCat = (c) => setCats((prev) => {
