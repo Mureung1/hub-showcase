@@ -130,6 +130,14 @@ export default function DietAnalysisCard() {
       }
 
       if (!findings) {
+        // raw가 비어 있거나(네트워크는 성공했지만 text 필드가 없는 경우) 공백뿐이면 "폴백 문단"으로
+        // 취급하지 않는다 — rawFallback이 falsy라 폴백 렌더링 조건(`rawFallback &&`)에 안 걸리고,
+        // 그렇다고 analysis도 없어서 아무 설명 없이 조용히 [분석하기] 버튼으로만 되돌아가 버린다
+        // (재시도 2번을 이미 태운 뒤라 사용자가 영문도 모르고 또 누르게 됨). 명시적으로 에러로 처리한다.
+        if (!raw || !raw.trim()) {
+          setError('분석 결과를 제대로 받지 못했어요. 잠시 후 다시 시도해주세요.')
+          return
+        }
         setRawFallback(raw)
         return
       }

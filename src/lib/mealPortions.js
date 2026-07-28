@@ -22,9 +22,14 @@ const NOODLE_WEIGHT_WHEN_WITH_RICE = 150
 
 // (패턴, role) 목록 — classifyMenuRole이 긴 패턴을 우선 매칭한다. 배열 안 순서는 "같은 길이의
 // 패턴끼리 충돌할 때"의 우선순위로도 쓰인다(안정 정렬 기준 — 나중에 오는 kimchi의 짧은 '김치'가
-// "참치김치찌개"의 '찌개'(soup, 같은 2글자)에 밀리는 식). "김치볶음밥"처럼 김치를 포함하지만
-// 실제로는 다른 역할인 메뉴는 별도 예외 없이 길이 우선 매칭만으로 올바르게 rice가 된다
-// ('볶음밥' 3글자 > '김치' 2글자).
+// "참치김치찌개"의 '찌개'(soup, 같은 2글자)에 밀리는 식).
+//
+// 매칭은 "긴 패턴이면 아무 데나 포함돼도 이김"이 아니라 "끝(suffix)에 오는 패턴을 먼저 찾고,
+// 그중 가장 긴 것"이다 — 한국어 음식명은 머리(수식어)+꼬리(그릇 종류) 구조라 마지막 단어가 실제
+// 역할을 결정한다("짬뽕밥"은 짬뽕맛 "밥"이지 면이 아니고, "닭갈비덮밥"은 닭갈비를 얹은 "덮밥"이지
+// main이 아니다). "볶음"(side)·"까스"(main) 같은 짧은 패턴이 "오징어볶음밥"·"돈까스덮밥" 같은
+// 문자열 중간에 우연히 포함돼 끝의 "밥"/"덮밥"보다 길다는 이유로 이겨버리는 걸 막는다. 접미사로
+// 안 끝나는(포함만 되는) 패턴은 접미사 매칭이 하나도 없을 때만 안전망으로 쓴다.
 const ROLE_PATTERNS = [
   // rice
   ...['국밥', '덮밥', '볶음밥', '비빔밥', '카레라이스', '오므라이스', '김밥', '주먹밥', '리조또', '초밥', '쌈밥', '솥밥', '진지', '흰쌀밥', '잡곡밥', '보리밥', '현미밥', '밥'].map(
@@ -119,7 +124,8 @@ const ROLE_PATTERNS = [
 
 export function classifyMenuRole(menuName) {
   const name = (menuName || '').trim()
-  const matched = ROLE_PATTERNS.find(({ pattern }) => name.includes(pattern))
+  const matched =
+    ROLE_PATTERNS.find(({ pattern }) => name.endsWith(pattern)) ?? ROLE_PATTERNS.find(({ pattern }) => name.includes(pattern))
   const role = matched ? matched.role : DEFAULT_ROLE
   return { role, weight: PORTION_WEIGHTS[role] }
 }

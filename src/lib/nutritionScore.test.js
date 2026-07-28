@@ -47,6 +47,15 @@ describe('getScoreBreakdown / calcScore', () => {
     expect(sodiumRow.points).toBe(SCORE_WEIGHTS.sodium)
   })
 
+  it('나트륨이 한도를 살짝 넘어 반올림하면 만점이어도 기준 문구는 "이내" 라고 하지 않는다', () => {
+    // 코드 리뷰에서 발견: points는 반올림 때문에 30(만점)이 나올 수 있어도, 실제로는 한도를
+    // 넘었으므로(2001 > 2000) 문구가 "이내로 섭취했어요"면 안 된다.
+    const rows = getScoreBreakdown({ calories: 0, protein: 0, carbs: 0, fat: 0, sodium: 2001 }, TARGET)
+    const sodiumRow = rows.find((r) => r.key === 'sodium')
+    expect(sodiumRow.points).toBe(SCORE_WEIGHTS.sodium)
+    expect(sodiumRow.criterion).not.toContain('이내로 섭취했어요')
+  })
+
   it('breakdown의 points 합계가 항상 calcScore와 정확히 같다', () => {
     const actual = { calories: 1500, protein: 30, carbs: 200, fat: 90, sodium: 2600 }
     const rows = getScoreBreakdown(actual, TARGET)

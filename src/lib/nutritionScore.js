@@ -70,10 +70,10 @@ function statusOf(ratio) {
   return 'bad'
 }
 
-function criterionText(key, unit, actual, target, isMaxed) {
+function criterionText(key, unit, actual, target, withinLimit) {
   const pct = Math.round((actual / target) * 100)
   if (key === 'sodium') {
-    return isMaxed
+    return withinLimit
       ? `권장 ${formatAmount(target)}${unit} 이내로 섭취했어요.`
       : `권장 ${formatAmount(target)}${unit} 대비 ${pct}% 섭취`
   }
@@ -97,7 +97,10 @@ export function getScoreBreakdown(actual, target) {
       status: statusOf(points / maxPoints),
       points,
       maxPoints,
-      criterion: criterionText(key, unit, a, t, points >= maxPoints),
+      // sodium 문구는 반올림된 points(>= maxPoints)가 아니라 실제 섭취량 vs 한도를 직접 비교한다 —
+      // target=2000/actual=2001처럼 점수는 반올림으로 만점(30)이 나와도 실제로는 한도를 넘었으므로
+      // "이내로 섭취했어요"라고 하면 안 된다.
+      criterion: criterionText(key, unit, a, t, a <= t),
     }
   }).filter(Boolean)
 }

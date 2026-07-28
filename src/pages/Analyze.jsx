@@ -538,7 +538,15 @@ export default function Analyze() {
   // 점프한다는 점만 다르고, 그 다음(시간대 선택 → 저장)은 기존 흐름과 완전히 동일하다.
   useEffect(() => {
     const trayPrefill = location.state?.prefillTrayAnalysis
-    if (!trayPrefill || !isMealAnalysis(trayPrefill.pendingAnalysis)) return
+    if (!trayPrefill) return
+    if (!isMealAnalysis(trayPrefill.pendingAnalysis)) {
+      // 정상적으로는 절대 일어나지 않아야 하는 방어 분기(CafeteriaPanel이 항상 유효한 모양을 만들어
+      // 보낸다) — 그래도 형식이 깨진 채 들어오면 화면이 아무 설명 없이 그대로 IDLE로 남는 대신
+      // 원인을 알 수 있는 안내를 띄운다(이 앱의 무음 실패 금지 원칙).
+      showToast('통합 분석 결과를 불러오지 못했어요. 메뉴별 분석을 이용해주세요.', { tone: 'error' })
+      navigate(location.pathname, { replace: true, state: {} })
+      return
+    }
     setPendingAnalysis(trayPrefill.pendingAnalysis)
     setResultPhotoUrl(null)
     setResultMeta({ titleOverride: trayPrefill.titleOverride, sourceNote: trayPrefill.sourceNote })

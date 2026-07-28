@@ -96,14 +96,19 @@ function toAnalysisItems(trayItems) {
 // 영양정보 기준"으로 표기하고(항목별 배분은 여전히 Gemini 추정 참고용), 없으면(학식) Gemini
 // 합계를 그대로 "추정"으로 표기한다.
 function buildTrayAnalysisNavState(trayResult, { mealTypeKey, mealTypeLabel, officialCalories }) {
+  // NEIS 파싱이 실패하면 meal.calories가 NaN일 수 있다(server/proxy.js가 Number.parseFloat 실패를
+  // null로 거르지 않는 지점이 있음) — NaN은 `!= null`을 통과해버려 그대로 total.calories에 들어가면
+  // isMealAnalysis의 typeof==='number' 체크(NaN도 통과)까지 뚫고 화면·저장 데이터에 NaN이 섞인다.
+  // Number.isFinite로 NaN/null/undefined를 한 번에 걸러 "공식 값이 실제로 유효할 때만" 덮어쓴다.
+  const hasOfficialCalories = Number.isFinite(officialCalories)
   const items = toAnalysisItems(trayResult.items)
-  const total = officialCalories != null ? { ...trayResult.total, calories: officialCalories } : trayResult.total
+  const total = hasOfficialCalories ? { ...trayResult.total, calories: officialCalories } : trayResult.total
   return {
     prefillTrayAnalysis: {
       pendingAnalysis: { items, total },
       mealType: mealTypeKey,
       titleOverride: `${mealTypeLabel}(통합)`,
-      sourceNote: officialCalories != null ? '공식 영양정보 기준' : '추정',
+      sourceNote: hasOfficialCalories ? '공식 영양정보 기준' : '추정',
     },
   }
 }

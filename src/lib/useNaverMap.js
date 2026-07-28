@@ -16,6 +16,10 @@ export function useNaverMap(containerRef, { center, zoom = 15, markers = [], fit
   const { loaded, error } = useNaverMapLoader()
   const mapRef = useRef(null)
 
+  // markers는 매 렌더마다 새 배열/객체로 넘어오기 쉬워 참조가 아니라 내용 조합(좌표 + 강조 여부로
+  // 바뀌는 아이콘 모양)으로 변경을 감지한다.
+  const markersSignature = JSON.stringify(markers.map((m) => [m.id, m.lat, m.lng, m.icon?.content, m.content, m.alwaysOpen]))
+
   useEffect(() => {
     if (!loaded || !containerRef.current || !center) return
 
@@ -65,9 +69,8 @@ export function useNaverMap(containerRef, { center, zoom = 15, markers = [], fit
     }, 0)
 
     return () => clearTimeout(relayoutTimer)
-    // markers는 매 렌더마다 새 배열/객체로 넘어오기 쉬워 참조가 아니라 좌표 조합으로 변경을 감지한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, containerRef, center?.lat, center?.lng, zoom, fitToMarkers, JSON.stringify(markers.map((m) => [m.id, m.lat, m.lng]))])
+  }, [loaded, containerRef, center?.lat, center?.lng, zoom, fitToMarkers, markersSignature])
 
   // 탭/아코디언 등으로 지도 컨테이너가 숨겨졌다(display:none 등) 나중에 다시 보이는 경우, 네이버 지도는
   // 스스로 크기 변화를 감지하지 못해 레이아웃이 깨진 채로 남을 수 있다 — 컨테이너 크기 변화를 직접

@@ -50,6 +50,15 @@ describe('classifyMenuRole — 긴 패턴 우선 매칭(우선순위 케이스)'
     expect(classifyMenuRole('김치볶음밥').role).toBe('rice')
   })
 
+  it('접미사(그릇 종류)가 실제 역할을 정한다 — 중간에 낀 다른 역할 키워드보다 우선', () => {
+    // 코드 리뷰에서 발견: "볶음"(side)·"까스"/"닭갈비"(main) 같은 패턴이 문자열 중간에 있다고
+    // 끝의 "밥"/"덮밥"보다 이겨버리면 전부 틀린 role이 된다 — 전부 rice(210g)여야 한다.
+    expect(classifyMenuRole('짬뽕밥').role).toBe('rice')
+    expect(classifyMenuRole('잡채밥').role).toBe('rice')
+    expect(classifyMenuRole('오징어볶음밥').role).toBe('rice')
+    expect(classifyMenuRole('닭갈비덮밥').role).toBe('rice')
+  })
+
   it('"참치김치찌개" → kimchi가 아니라 soup(같은 길이 충돌에서도 soup 우선)', () => {
     expect(classifyMenuRole('참치김치찌개').role).toBe('soup')
   })

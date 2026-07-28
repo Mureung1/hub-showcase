@@ -8,7 +8,14 @@ export async function searchSchools(name, signal) {
   if (trimmed.length < 2) return []
 
   const res = await fetchWithTimeout(`/api/school-search?name=${encodeURIComponent(trimmed)}`, { signal })
-  const data = await res.json().catch(() => null)
+  // 헤더는 이미 받은 뒤(res.ok 확정) 본문을 읽는 도중에 signal이 abort될 수 있다 — 이때도
+  // AbortError가 나는데, 그걸 여기서 null로 삼켜버리면 "취소된 요청"이 "결과 0건"으로 둔갑해
+  // 호출부(SchoolSearchField)가 방금 취소한 검색어에 대해 잠깐 "검색 결과가 없어요"를 보여준다.
+  // AbortError만은 그대로 던져 호출부의 기존 취소 처리(err.name === 'AbortError')로 넘긴다.
+  const data = await res.json().catch((err) => {
+    if (err.name === 'AbortError') throw err
+    return null
+  })
 
   if (!res.ok) {
     throw new Error(data?.error || `학교 검색 요청 실패 (${res.status})`)
