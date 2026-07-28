@@ -1,1 +1,0 @@
-export interface PaymentCheckoutInput { readonly externalReference: string; readonly userId: string; readonly challengeId: string; readonly amountMinor: number; readonly currency: string; readonly pointDiscount: number; readonly returnUrl: string }

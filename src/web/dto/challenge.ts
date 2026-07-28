@@ -20,7 +20,7 @@ export interface FeaturedOfficialChallengeDto {
   readonly challengeStartsAt: string;
   readonly challengeEndsAt: string;
   readonly dailyMinutes: number;
-  readonly price: { readonly currency: string; readonly amountMinor: number; readonly maxPointDiscount: number };
+  readonly entryPoints: number;
   readonly sections: {
     readonly outcomes: readonly CampaignContentBlock[];
     readonly forWhom: readonly CampaignContentBlock[];

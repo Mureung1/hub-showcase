@@ -143,8 +143,8 @@ export const pointWallets = pgTable(
 //
 // 공식/사용자 챌린지를 `kind` 로 구분하는 단일 타입-구분 테이블. `check` 로 종류별
 // 필드 정합성을 강제한다:
-//   - kind_deposit_consistency: User_Challenge=point(+host 필수),
-//     Official_Challenge=cash (Req 4.4)
+//   - kind_deposit_consistency: 모든 챌린지는 point,
+//     User_Challenge만 host 필수
 //   - valid_dates / valid_capacity / valid_amount: 기간·모집 인원·금액 정합성
 // `idx_challenges_open` 부분 인덱스는 모집 중(status='recruiting') 챌린지 조회를
 // 가속한다 (Req 2.1 공개 모집 목록).
@@ -172,7 +172,7 @@ export const challenges = pgTable(
     capacity: integer('capacity').notNull(),
     participantCount: integer('participant_count').notNull().default(0),
 
-    depositKind: depositKind('deposit_kind').notNull(), // official=cash, user=point
+    depositKind: depositKind('deposit_kind').notNull(), // 모든 신규 챌린지는 point
     entryAmount: numeric('entry_amount', { precision: 14, scale: 2 }).notNull(),
     serviceFeeRate: numeric('service_fee_rate', { precision: 5, scale: 4 })
       .notNull()
@@ -190,11 +190,11 @@ export const challenges = pgTable(
       sql`${t.capacity} > 0 AND ${t.participantCount} >= 0 AND ${t.participantCount} <= ${t.capacity}`,
     ),
     validAmount: check('valid_amount', sql`${t.entryAmount} >= 0`),
-    // Req 4.4: User_Challenge=point(+host), Official_Challenge=cash
+    // 모든 신규 챌린지는 point. User_Challenge만 Host가 필요하다.
     kindDepositConsistency: check(
       'kind_deposit_consistency',
       sql`
-    (${t.kind} = 'official' AND ${t.depositKind} = 'cash')
+    (${t.kind} = 'official' AND ${t.depositKind} = 'point' AND ${t.hostId} IS NULL)
     OR (${t.kind} = 'user' AND ${t.depositKind} = 'point' AND ${t.hostId} IS NOT NULL)`,
     ),
     openIdx: index('idx_challenges_open')
@@ -304,13 +304,10 @@ export const dailyVerifications = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// payment_transactions (Requirement 3.5, 9, 12.3) — design.md → "Data Models" /
-// "payment_transactions"
+// payment_transactions
 //
-// 현금 결제/환불 원장. `external_ref` UNIQUE 로 결제 webhook 멱등성을 보장한다
-// (중복 webhook 무시, Req 3.5). `direction_check` 로 'charge'/'refund' 만 허용하고
-// `amount_non_negative` 로 금액 음수를 방지한다. `point_discount` 는 포인트 할인
-// 적용 금액을 기록한다 (Req 12.3).
+// 포인트 전환 이전의 현금 챌린지 정산 이력을 보존하기 위한 레거시 원장.
+// 신규 참가에서는 쓰지 않으며, 기존 현금 예치의 환불 처리만 지원한다.
 // ---------------------------------------------------------------------------
 
 export const paymentTransactions = pgTable(

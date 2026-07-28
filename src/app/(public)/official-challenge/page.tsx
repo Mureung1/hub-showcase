@@ -4,7 +4,7 @@ import { getCoreAdapter } from '../../../web/adapters/core/registry';
 import { EmptyState } from '../../../web/components/empty-state';
 import { ErrorState } from '../../../web/components/error-state';
 import { OfficialCountdown } from '../../../web/components/client/official-countdown';
-import { OfficialCheckoutButton } from '../../../web/components/client/official-checkout-button';
+import { OfficialJoinButton } from '../../../web/components/client/official-join-button';
 import { OfficialFaqDisclosure } from '../../../web/components/client/official-faq-disclosure';
 import { OfficialSectionNav } from '../../../web/components/client/official-section-nav';
 import styles from './official-challenge.module.css';
@@ -58,7 +58,7 @@ export default async function OfficialChallengePage() {
   }
 
   const joined = challenge.viewerState === 'joined' && challenge.participation;
-  const price = `${challenge.price.amountMinor.toLocaleString('ko-KR')}원`;
+  const entryPoints = `${challenge.entryPoints.toLocaleString('ko-KR')}P`;
   const statusLabel = challenge.status === 'recruiting' ? '지금 모집 중' : challenge.status === 'in-progress' ? '진행 중' : '모집 마감';
 
   return (
@@ -103,7 +103,7 @@ export default async function OfficialChallengePage() {
         <div className={styles.heroMetrics}>
           <div><span>DURATION</span><strong>30 DAYS</strong></div>
           <div><span>DAILY MISSION</span><strong>{challenge.dailyMinutes} MIN</strong></div>
-          <div><span>ENTRY</span><strong>{price}</strong></div>
+          <div><span>ENTRY</span><strong>{entryPoints}</strong></div>
           <div className={styles.deadline}><span>RECRUITMENT</span><strong><OfficialCountdown endsAt={challenge.recruitmentEndsAt} now={challenge.now} /></strong></div>
         </div>
       </section>
@@ -302,7 +302,7 @@ export default async function OfficialChallengePage() {
             <div key={item.label}><dt><span>{String(index + 1).padStart(2, '0')}</span>{item.label}</dt><dd>{item.value}</dd></div>
           ))}
           <div><dt><span>04</span>인증 범위</dt><dd>강의 · 독서 · 자격증 · 프로젝트</dd></div>
-          <div><dt><span>05</span>참가 비용</dt><dd>{price} · 최대 {challenge.price.maxPointDiscount.toLocaleString('ko-KR')}P 사용</dd></div>
+          <div><dt><span>05</span>참가 포인트</dt><dd>{entryPoints} · 참가 시 보유 포인트에서 차감</dd></div>
         </dl>
       </section>
 
@@ -334,24 +334,24 @@ export default async function OfficialChallengePage() {
           </div>
         </div>
 
-        <aside className={styles.checkoutCard} aria-label="챌린지 참가 신청">
-          <div className={styles.checkoutTop}><span>OFFICIAL / 001</span><span>{statusLabel}</span></div>
+        <aside className={styles.joinCard} aria-label="챌린지 참가 신청">
+          <div className={styles.joinCardTop}><span>OFFICIAL / 001</span><span>{statusLabel}</span></div>
           <p>30일 집중 생존 스터디</p>
-          <strong className={styles.checkoutPrice}>{price}</strong>
+          <strong className={styles.joinPoints}>{entryPoints}</strong>
           <ul>
             <li>2026년 8월 1일 시작</li>
             <li>매일 {challenge.dailyMinutes}분 집중 및 인증</li>
             <li>30일 개인 완주 리포트</li>
           </ul>
-          <div className={styles.checkoutDeadline}><span>모집 마감</span><OfficialCountdown endsAt={challenge.recruitmentEndsAt} now={challenge.now} /></div>
+          <div className={styles.joinDeadline}><span>모집 마감</span><OfficialCountdown endsAt={challenge.recruitmentEndsAt} now={challenge.now} /></div>
           {joined ? (
-            <Link className={styles.checkoutAction} href={`/study/${challenge.participation?.participationId}`}>오늘 학습하러 가기 <span>↗</span></Link>
+            <Link className={styles.joinAction} href={`/study/${challenge.participation?.participationId}`}>오늘 학습하러 가기 <span>↗</span></Link>
           ) : challenge.status === 'recruiting' ? (
-            <OfficialCheckoutButton maxPointDiscount={challenge.price.maxPointDiscount} />
+            <OfficialJoinButton challengeId={challenge.challengeId} entryPoints={challenge.entryPoints} />
           ) : (
             <p className={styles.closedMessage}>현재 참가 신청이 마감되었습니다.</p>
           )}
-          <small>결제 전 최종 금액과 포인트 사용 내역을 확인할 수 있습니다.</small>
+          <small>참가 포인트는 신청 즉시 보유 포인트에서 차감되며 지갑 내역에서 확인할 수 있습니다.</small>
         </aside>
       </section>
     </main>

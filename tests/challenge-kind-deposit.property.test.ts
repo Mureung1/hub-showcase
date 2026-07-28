@@ -15,7 +15,8 @@ import {
  * Property 13: 챌린지 종류-예치 정합성 (challenge kind ↔ deposit consistency)
  *
  * *For any* 생성되는 챌린지에 대해, `kind = 'user'` 이면 `deposit_kind = 'point'`
- * 이고 host가 존재하며, `kind = 'official'` 이면 `deposit_kind = 'cash'` 이다.
+ * 이고 host가 존재하며, `kind = 'official'` 이면 `deposit_kind = 'point'`
+ * 이고 host는 존재하지 않는다.
  * (design.md → "Correctness Properties" / Property 13. `kind_deposit_consistency`
  * CHECK가 강제)
  *
@@ -33,11 +34,11 @@ import {
  *
  *   2. **kind_deposit_consistency invariant (DB layer).** There is no
  *      Official_Challenge create function yet (that is a later spec), so the
- *      `official → cash` side of Property 13 — and the rejection of every
+ *      `official → point` side of Property 13 — and the rejection of every
  *      inconsistent combination — is proven directly at the DB constraint by
- *      attempting raw INSERTs: `user+cash`, `official+point`, and
+ *      attempting raw INSERTs: `user+cash`, `official+cash`, and
  *      `user+point` with a NULL host are each REJECTED by the CHECK, while a
- *      consistent `official+cash` row is ACCEPTED.
+ *      consistent `official+point` row is ACCEPTED.
  *
  * Each created row is cleaned up immediately (per iteration for half 1, inline
  * for the control row in half 2) so the property leaves no residue.
@@ -227,7 +228,7 @@ describe.skipIf(!dbReachable)(
       300_000,
     );
 
-    it('kind_deposit_consistency CHECK rejects every inconsistent combination and accepts official→cash (Req 4.4)', async () => {
+    it('kind_deposit_consistency CHECK rejects cash deposits and accepts official→point (Req 4.4)', async () => {
       const { client } = harness;
 
       /** Raw INSERT of a challenge with the given kind/deposit_kind/host. */
@@ -253,9 +254,8 @@ describe.skipIf(!dbReachable)(
       await expect(insertRaw('user', 'cash', hostId)).rejects.toThrow(
         /kind_deposit_consistency/,
       );
-      // official + point → invalid (Official_Challenge must be cash-based) —
-      // this is the official→cash side of Property 13.
-      await expect(insertRaw('official', 'point', null)).rejects.toThrow(
+      // official + cash → invalid (Official_Challenge must be point-based).
+      await expect(insertRaw('official', 'cash', null)).rejects.toThrow(
         /kind_deposit_consistency/,
       );
       // user + point but NO host → invalid (User_Challenge requires a Host).
@@ -263,8 +263,13 @@ describe.skipIf(!dbReachable)(
         /kind_deposit_consistency/,
       );
 
-      // Control: a consistent official → cash row IS accepted.
-      const rows = await insertRaw('official', 'cash', null);
+      // Official challenges do not have a user host.
+      await expect(insertRaw('official', 'point', hostId)).rejects.toThrow(
+        /kind_deposit_consistency/,
+      );
+
+      // Control: a consistent official → point row IS accepted.
+      const rows = await insertRaw('official', 'point', null);
       const officialId = rows[0]?.id as string | undefined;
       expect(officialId).toBeTruthy();
       if (officialId) {

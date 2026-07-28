@@ -8,6 +8,13 @@
       "when": 1784110916706,
       "tag": "0000_init_survival_study_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785243255422,
+      "tag": "0001_official_challenges_use_points",
+      "breakpoints": true
     }
   ]
 }

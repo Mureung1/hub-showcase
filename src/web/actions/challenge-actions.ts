@@ -1,13 +1,10 @@
 'use server';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { getCoreAdapter } from '../adapters/core/registry';
 import type { ActionState } from '../errors/action-state';
 import { toActionState } from '../errors/domain-error-map';
 import { requireSession } from '../auth/session';
-import { headers } from 'next/headers';
-import { getPaymentAdapter } from '../adapters/payment/registry';
-import { getServerEnv } from '../config/server-env';
 
 export async function joinUserChallengeAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const challengeId = String(formData.get('challengeId') ?? '');
@@ -35,16 +32,20 @@ export async function createUserChallengeAction(_previous: ActionState, formData
   redirect(`/challenges/${result.value.challengeId}`);
 }
 
-export async function startOfficialCheckoutAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const pointDiscount = Math.max(0, Number(formData.get('pointDiscount') ?? 0));
+export async function joinOfficialChallengeAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const challengeId = String(formData.get('challengeId') ?? '');
+  if (!challengeId) return { status: 'error', message: '챌린지 식별자가 필요합니다.' };
   const ctx = await requireSession('/official-challenge');
-  const quote = await getCoreAdapter().getOfficialCheckoutQuote(ctx, { pointDiscount });
-  if (!quote.ok) return toActionState(quote.error);
-  if (quote.value.status !== 'recruiting') return { status: 'error', message: '현재 공식 챌린지 모집이 마감되었습니다.' };
-  const provider = getPaymentAdapter(getServerEnv().paymentProvider);
-  if (!provider.isConfigured()) return { status: 'error', message: `결제 Provider가 아직 구성되지 않았습니다. 결제 예정 금액은 ${quote.value.amountMinor.toLocaleString()}원입니다.` };
-  const origin = (await headers()).get('origin') ?? 'http://localhost:3000';
-  const checkout = await provider.createCheckoutSession({ externalReference: quote.value.externalReference, userId: ctx.sessionUserId, challengeId: quote.value.challengeId, amountMinor: quote.value.amountMinor, currency: quote.value.currency, pointDiscount: quote.value.pointDiscount, returnUrl: new URL('/official-challenge/payment/return', origin).toString() });
-  if (!checkout.ok) return toActionState(checkout.error);
-  redirect(checkout.value.checkoutUrl);
+  const result = await getCoreAdapter().joinOfficialChallenge(ctx, { challengeId });
+  if (!result.ok) return toActionState(result.error);
+  revalidatePath('/official-challenge');
+  revalidatePath('/wallet');
+  return {
+    status: 'success',
+    message: `포인트로 참가했습니다. 잔여 포인트는 ${result.value.balanceAfter.toLocaleString('ko-KR')}P입니다.`,
+    data: {
+      participationId: result.value.participationId,
+      balanceAfter: result.value.balanceAfter,
+    },
+  };
 }

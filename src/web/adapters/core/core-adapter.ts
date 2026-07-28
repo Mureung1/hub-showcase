@@ -1,5 +1,4 @@
 import type { CreateUserChallengeInput, FeaturedOfficialChallengeDto, JoinResultDto, UserChallengeDetailDto, UserChallengeListDto, UserChallengeSearchInput } from '../../dto/challenge';
-import type { NormalizedPaymentEvent, OfficialCheckoutQuoteDto, PaymentStatusDto } from '../../dto/payment';
 import type { LearningReportDto, ProfileDto } from '../../dto/profile';
 import type { SettlementRunDto } from '../../dto/cron';
 import type { DailyGoalInput, DailyProgressDto, LeaderboardDto, ProgressDto, StudyWorkspaceDto, SurpriseMissionDto, TimerSessionInput, VerificationInput, VerificationStatusDto } from '../../dto/study';
@@ -11,9 +10,7 @@ export interface CoreAdapter {
   getUserChallengeDetail(challengeId: string): Promise<AdapterResult<UserChallengeDetailDto>>;
   createUserChallenge(ctx: AdapterContext, input: CreateUserChallengeInput): Promise<AdapterResult<{ challengeId: string }>>;
   joinUserChallenge(ctx: AdapterContext, input: { challengeId: string }): Promise<AdapterResult<JoinResultDto>>;
-  getOfficialCheckoutQuote(ctx: AdapterContext, input: { pointDiscount: number }): Promise<AdapterResult<OfficialCheckoutQuoteDto>>;
-  getOfficialPaymentReturnStatus(ctx: AdapterContext): Promise<AdapterResult<PaymentStatusDto>>;
-  handlePaymentEvent(input: NormalizedPaymentEvent): Promise<AdapterResult<{ duplicate: boolean; participationId?: string }>>;
+  joinOfficialChallenge(ctx: AdapterContext, input: { challengeId: string }): Promise<AdapterResult<JoinResultDto>>;
   getStudyWorkspace(ctx: AdapterContext, participationId: string): Promise<AdapterResult<StudyWorkspaceDto>>;
   authorizeEvidenceUpload(ctx: AdapterContext, input: { participationId: string; date: string }): Promise<AdapterResult<{ userId: string; challengeId: string; date: string }>>;
   submitDailyGoal(ctx: AdapterContext, input: DailyGoalInput): Promise<AdapterResult<DailyProgressDto>>;
