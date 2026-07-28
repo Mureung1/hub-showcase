@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../api/supabaseClient';
 
 // 게시글 수정 모달 컴포넌트
 const EditPostModal = ({ isOpen, onClose, onPostEdited, initialData }) => {
@@ -53,9 +54,14 @@ const EditPostModal = ({ isOpen, onClose, onPostEdited, initialData }) => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       const res = await fetch(`${apiUrl}/api/posts/${initialData.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           title,
           content,

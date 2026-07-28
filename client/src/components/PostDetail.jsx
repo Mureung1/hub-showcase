@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../api/supabaseClient';
 import ChatRequestModal from './ChatRequestModal';
 import EditPostModal from './EditPostModal';
 
@@ -57,7 +58,14 @@ const PostDetail = ({ post, onBack, onStartChat, onChatCreated, onPostDeleted, o
     if (!window.confirm('정말로 이 고민글을 삭제하시겠습니까?')) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/posts/${post.id}`, { method: 'DELETE' });
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch(`${API_URL}/api/posts/${post.id}`, { 
+        method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       if (!res.ok) throw new Error('삭제 실패');
       alert('게시글이 삭제되었습니다.');
       if (onPostDeleted) onPostDeleted();
@@ -76,12 +84,15 @@ const PostDetail = ({ post, onBack, onStartChat, onChatCreated, onPostDeleted, o
     setIsChatModalOpen(false);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       const res = await fetch(`${API_URL}/api/posts/${post.id}/requests`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
-          helper_id: currentUser.id,
-          helper_name: currentUser.username || currentUser.email,
           message
         })
       });
@@ -104,12 +115,15 @@ const PostDetail = ({ post, onBack, onStartChat, onChatCreated, onPostDeleted, o
     if (!window.confirm(`이 지원자의 신청을 수락하고 1:1 대화를 시작하시겠습니까?`)) return;
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       const res = await fetch(`${API_URL}/api/posts/${post.id}/requests/${req.id}/accept`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ 
-          host_id: currentUser.id,
-          host_name: currentUser.username || currentUser.email,
           post_title: post.title 
         })
       });

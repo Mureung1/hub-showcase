@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../api/supabaseClient';
 
 // 게시글 작성 모달 컴포넌트
 // - index.html의 #modal-create-post 디자인을 React로 이식
@@ -49,9 +50,14 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       const res = await fetch(`${apiUrl}/api/posts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           title,
           content,
@@ -61,7 +67,6 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
           grade_tag: gradeTag || '미상',
           major_tag: majorTag || '미상',
           reward,
-          author_id: currentUser?.id,
           author_name: currentUser?.username,
         }),
       });
