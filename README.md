@@ -98,3 +98,17 @@ flowchart TB
 | 과목 저장·조회 | App → `subjectsApi` → `/api/subjects` → controller·service → **SQLite** | 재시작·새로고침에도 유지 |
 | 우선순위 계산 | App → `priorityApi` → `POST /api/priority` → `priorityService` | 6개 요인 가중 합산, DB 미접근 |
 | 폴백 | 서버 없으면 과목은 `localStorage`, 점수는 `priorityCalculator` | 서버 없는 정적 배포에서도 동작 |
+
+---
+
+## 배포
+
+프론트엔드는 **Vercel**, API 서버는 **Render** 에 올린다. 로컬과 달리 두 주소가 서로 달라서
+Vite 프록시가 없고, 아래 환경변수로 연결한다.
+
+| 환경변수 | 어디에 | 값 |
+|---|---|---|
+| `VITE_API_BASE_URL` | Vercel | Render API 서버 주소 |
+| `CORS_ORIGIN` | Render | Vercel 화면 주소 |
+
+설정 순서, 확인 방법, 안 될 때 보는 표는 [docs/deployment.md](docs/deployment.md) 에 있다.
