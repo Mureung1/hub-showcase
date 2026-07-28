@@ -21,6 +21,20 @@ AY-PLE의 seam은 특정 `ModelingRun`이나 MCP tool이 아니다. App이 이�
 
 두 Interface는 시작 방향, 정상 결과와 failure lifecycle이 다르므로 하나의 generic envelope로 합치지 않는다. ActionInvocation은 Product Turn admission을 사용하고 InteractionCapability는 그 Turn 안에 nested된다. Active SemesterWorkspace·thread binding, activity projection과 interrupt·terminal coordination처럼 실제로 맞닿는 implementation만 재사용한다.
 
+## 기록하는 아키텍처 관점
+
+터미널이나 일반 Codex client도 SemesterWorkspace의 파일을 읽고 수정할 수 있다. AY-PLE이 별도로 존재하는 이유는 그 file capability를 다시 구현하기 위해서가 아니라, **App GUI에서 이미 표현된 사용자 의도와 맥락을 AY가 native하게 이해하고, AY가 필요한 사용자 판단을 다시 App-native UI로 요청할 수 있게 하기 위해서**다.
+
+이 관점에서 Skill과 MCP는 개별 기능에 묶인 편의 도구가 아니라 AY–App Interaction을 확장하는 protocol이다.
+
+| Protocol 역할 | 전달하는 의미 | App이 얻는 leverage |
+| --- | --- | --- |
+| Skill을 사용하는 `ActionInvocation` | 명시적 GUI action과 검증된 request-scoped context를 AY 작업으로 전달한다. | 사용자가 App에서 이미 고른 자료·옵션을 긴 prompt로 다시 설명하지 않는다. |
+| MCP를 사용하는 `InteractionCapability` | AY가 작업 중 필요한 사용자 판단을 capability-specific UI에 요청하고 closed result를 같은 Turn에 돌려받는다. | 일반 텍스트 질문보다 원문·비교·선택지에 맞는 UX를 제공한다. |
+| 두 protocol의 조합 | App action으로 시작한 AY 작업이 필요할 때 App UI round trip을 nested한다. | 기능별 App workflow engine 없이도 양방향 interaction을 구성한다. |
+
+따라서 AY-PLE의 확장 seam은 `ModelingRun`, 특정 버튼이나 단일 MCP tool이 아니다. App과 AY 사이의 두 typed Interface가 seam이고, Skill·MCP·native Turn은 그 Interface 뒤에 숨기는 implementation이다.
+
 ## 제품 seam
 
 ```mermaid
@@ -45,6 +59,69 @@ flowchart LR
 ```
 
 App이 제공하는 leverage는 사용자가 GUI에서 이미 표현한 의도와 맥락을 다시 prompt로 번역하지 않아도 되고, AY가 필요한 판단을 일반 텍스트가 아니라 기능에 맞는 UI로 요청할 수 있다는 점이다. App은 이 interaction을 소유하지만 작업 절차와 실제 file mutation을 대신 소유하지 않는다.
+
+### 대표 양방향 sequence
+
+아래 sequence는 채택 target인 `organize_sources` ActionInvocation과 현재 구현된 `propose_state_patch` InteractionCapability가 한 Turn에서 조합되는 대표 흐름이다.
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant G as AY-PLE GUI
+    participant I as ActionInvocation Module
+    participant A as AY / Codex Turn
+    participant M as Interaction MCP
+    participant B as App Broker
+    participant W as SemesterWorkspace
+
+    U->>G: 자료 선택·preview
+    G-->>U: 현재 actual file 표시
+    Note over G,A: Selection만으로 Turn이나 AY context는 바뀌지 않는다
+
+    U->>G: 선택한 자료 정리하기 실행
+    G->>I: organize_sources + relative file refs
+    I->>I: Active root 검증·Skill resolve·input compose
+    I->>A: SkillInput + bounded file/text input으로 Turn 시작
+    A->>W: Actual file 읽기
+
+    opt AY가 제품별 사용자 판단을 필요로 함
+        A->>M: propose_state_patch(request)
+        M->>B: Authenticated typed request
+        B->>G: Inline Review projection
+        G-->>U: 원문·변경안·선택지 표시
+        U->>G: accept | revise | reject
+        G->>B: Closed user result
+        B-->>M: 같은 MCP call의 result
+        M-->>A: 같은 Turn으로 result 반환
+
+        alt accept
+            A->>W: Actual file 변경·Git checkpoint
+        else revise
+            A->>A: Feedback 해석·작업 계속
+        else reject
+            A->>A: 제안 적용 없이 계속 또는 종료
+        end
+    end
+
+    A-->>I: Native activity·terminal
+    I-->>G: Browser-safe stream·outcome
+    G-->>U: 작업 결과 표시
+    Note over A,W: Workflow·file mutation·Git은 AY가 소유한다
+```
+
+이 sequence에서 App은 action 의미, file reference 검증과 사용자 UI round trip을 소유한다. AY는 Skill을 해석해 작업 순서를 정하고, MCP를 호출할지 판단하며, 결과를 실제 file에 적용한다. InteractionCapability는 별도 Product operation이 아니라 ActionInvocation이 시작한 Turn 안의 nested call이다.
+
+## Protocol 중심 확장 모델
+
+새 기능은 공통 Runtime에 기능별 분기를 계속 추가하는 방식이 아니라, 필요한 방향의 typed interaction을 더하는 방식으로 확장한다.
+
+| 추가하려는 경험 | 추가하는 것 | 그대로 재사용하는 것 |
+| --- | --- | --- |
+| App의 명시적 조작으로 AY 작업 시작 | Typed GUI action, action definition, workspace-local Skill | Active workspace binding, Product Turn admission, activity·interrupt·terminal projection |
+| AY가 새로운 형태의 사용자 판단 요청 | Typed MCP tool, closed result, capability-specific UI Adapter | Authenticated Broker binding, same-call settlement, failure lifecycle |
+| 시작과 판단 왕복이 모두 필요한 기능 | 위 두 조합 | 같은 native Turn과 existing Interaction MCP lifecycle |
+
+이 모델은 기능 추가를 “App interaction + Skill 또는 MCP”로 작게 유지하지만 arbitrary action registry나 generic event bus를 뜻하지 않는다. 각 action과 capability는 사용자 의미가 닫힌 typed Interface를 가지며, 공통 Module은 실제 두 번째 variation에서 확인된 mechanics만 숨긴다. Codex Runtime Adapter는 어떤 학업 기능인지 알지 않는 capability-neutral implementation으로 남는다.
 
 ## `ActionInvocation`: App이 시작하는 작업
 
