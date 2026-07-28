@@ -44,6 +44,12 @@ class CollectionTarget(BaseModel):
     url: str
     source_type: SourceType
     publisher: str | None = None
+    author: str | None = None
+    """자료를 쓴 사람. D 계층은 작성자를 확인해야 수집 대상이 된다.
+
+    조건은 docs/data-strategy.md 3장과 5장이다.
+    """
+
     company_id: str | None = None
     job_role_ids: tuple[str, ...] = ()
     robots_policy: str | None = None

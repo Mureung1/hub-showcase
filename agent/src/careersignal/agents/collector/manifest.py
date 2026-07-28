@@ -54,6 +54,13 @@ class ManifestEntry(BaseModel):
     allowed_uses: tuple[AllowedUse, ...]
 
     publisher: str | None = None
+    author: str | None = None
+    """자료를 쓴 사람. 발행자와 다르다.
+
+    D 계층은 작성자와 전문성을 확인한 자료만 담는다. 확인하지 못한 자료는 E 계층이며
+    저장하지 않는다. 근거는 docs/data-strategy.md 3장이다.
+    """
+
     company_id: str | None = None
     cluster_id: str | None = None
     job_role_ids: tuple[str, ...] = ("backend",)
@@ -98,6 +105,7 @@ class ManifestEntry(BaseModel):
             url=self.url,
             source_type=self.source_type,
             publisher=self.publisher,
+            author=self.author,
             company_id=self.company_id,
             job_role_ids=self.job_role_ids,
             robots_policy=self.robots_policy,

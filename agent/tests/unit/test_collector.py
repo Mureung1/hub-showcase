@@ -340,3 +340,36 @@ def test_segment_counts_ignore_sources_without_a_label() -> None:
     )
 
     assert manifest.segment_counts() == {"experienced": 1, "entry_junior": 1}
+
+
+def test_author_reaches_the_source_row() -> None:
+    """D 계층은 작성자를 확인한 자료만 담는다. 그 값이 저장소까지 간다."""
+    store = Store()
+    collector = SourceCollector(
+        PreparedFetcher({"src_expert": POSTING}),
+        SourceIngestPipeline(store),
+        store,
+    )
+
+    collector.collect(
+        _context(),
+        (
+            CollectionTarget(
+                source_id="src_expert",
+                url="https://example.test/expert",
+                source_type=SourceType.EXTERNAL_EXPERT,
+                publisher="Martin Kleppmann",
+                author="Martin Kleppmann",
+            ),
+        ),
+    )
+
+    assert store.sources["src_expert"]["author"] == "Martin Kleppmann"
+
+
+def test_manifest_entry_carries_the_author_to_the_target() -> None:
+    entry = _entry(
+        "src_expert", SourceType.EXTERNAL_EXPERT, author="Peter Bailis"
+    )
+
+    assert entry.to_target().author == "Peter Bailis"

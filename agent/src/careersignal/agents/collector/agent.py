@@ -108,6 +108,7 @@ class SourceCollector:
                 "source_type": str(target.source_type),
                 "url": target.url,
                 "publisher": target.publisher,
+                "author": target.author,
                 "company_id": target.company_id,
                 "job_role_ids": list(target.job_role_ids),
                 "robots_policy": target.robots_policy,

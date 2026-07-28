@@ -1592,6 +1592,395 @@
       "robots_policy": "allow /; disallow /_private/. Content-Signal 미선언",
       "collected_on": "2026-07-27",
       "content_file": "blog_nexon_msa_ops_automation.txt"
+    },
+    {
+      "source_id": "src_blog_skcc_was",
+      "url": "https://engineering-skcc.github.io/cloud/tomcat/apache/java/빈번한-JSP-Compile에-의한-성능저하-WAS-Troubleshooting-사례(1)/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "SK주식회사 C&C",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "빈번한 JSP 변경여부 체크에 의한 성능저하 - WAS Troubleshooting 사례(1)",
+      "posted_at": "2022-06-28",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_skcc_was_tomcat_troubleshooting.txt",
+      "note": "이 회사의 채용공고는 데이터셋에 없다. 회사 맥락이 아니라 SI 도메인에서 이 기술이 어느 깊이로 쓰이는지 보이는 근거로만 쓴다. 그래서 허용 용도에서 interpretation_context 를 뺐다. 근거는 docs/knowledge-schema.md 8.5다"
+    },
+    {
+      "source_id": "src_blog_skcc_oracle_tuning",
+      "url": "https://engineering-skcc.github.io/oracle%20tuning/펑션을_이용한_튜닝사례/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "SK주식회사 C&C",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "펑션을 이용한 튜닝사례",
+      "posted_at": "2020-04-08",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_skcc_oracle_sql_function_tuning.txt",
+      "note": "이 회사의 채용공고는 데이터셋에 없다. 회사 맥락이 아니라 SI 도메인에서 이 기술이 어느 깊이로 쓰이는지 보이는 근거로만 쓴다. 그래서 허용 용도에서 interpretation_context 를 뺐다. 근거는 docs/knowledge-schema.md 8.5다"
+    },
+    {
+      "source_id": "src_blog_skcc_msa_outer",
+      "url": "https://engineering-skcc.github.io/microservice%20outer%20achitecture/outer-architecture-1/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "SK주식회사 C&C",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "마이크로서비스 외부 아키텍처1 - 클라우드 인프라 패턴",
+      "posted_at": "2020-02-12",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_skcc_msa_outer_architecture_cloud_infra.txt",
+      "note": "이 회사의 채용공고는 데이터셋에 없다. 회사 맥락이 아니라 SI 도메인에서 이 기술이 어느 깊이로 쓰이는지 보이는 근거로만 쓴다. 그래서 허용 용도에서 interpretation_context 를 뺐다. 근거는 docs/knowledge-schema.md 8.5다"
+    },
+    {
+      "source_id": "src_docs_kotlin_basic_syntax",
+      "url": "https://kotlinlang.org/docs/basic-syntax.html",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "JetBrains / Kotlin Foundation",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Basic syntax overview",
+      "robots_policy": "Disallow 없음. Content-Signal 미선언",
+      "license_note": "Apache License 2.0. Kotlin is protected under the Kotlin Foundation",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_kotlin_basic_syntax.txt"
+    },
+    {
+      "source_id": "src_docs_spring_ioc",
+      "url": "https://docs.spring.io/spring-framework/reference/core/beans/basics.html",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "Broadcom / Spring",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Container Overview",
+      "robots_policy": "crawl-delay 1; disallow /autorepo/. Content-Signal 미선언",
+      "license_note": "Apache License 2.0",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_spring_ioc_container_overview.txt"
+    },
+    {
+      "source_id": "src_docs_postgresql_isolation",
+      "url": "https://www.postgresql.org/docs/current/transaction-iso.html",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "The PostgreSQL Global Development Group",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "13.2. Transaction Isolation",
+      "robots_policy": "disallow /admin/, /account/, /docs/devel/, /list/, /search/. /docs/current/ 는 허용",
+      "license_note": "PostgreSQL License. 사용·복제·수정·배포가 저작권 표시를 조건으로 허용된다",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_postgresql_transaction_isolation.txt"
+    },
+    {
+      "source_id": "src_docs_kafka_intro",
+      "url": "https://kafka.apache.org/intro",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "The Apache Software Foundation",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Introduction",
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "license_note": "Apache License v2",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_kafka_introduction.txt"
+    },
+    {
+      "source_id": "src_docs_kubernetes_overview",
+      "url": "https://kubernetes.io/docs/concepts/overview/",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "The Kubernetes Authors / CNCF",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Overview",
+      "robots_policy": "disallow /legacy/, /v1.0/, /v1.1/, /404/. Content-Signal 미선언",
+      "license_note": "CC BY 4.0",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_kubernetes_overview.txt"
+    },
+    {
+      "source_id": "src_docs_redis_data_types",
+      "url": "https://redis.io/docs/latest/develop/data-types/",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "Redis Ltd.",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Redis data types",
+      "robots_policy": "Content-Signal search=yes, ai-input=yes, ai-train=no; allow /; disallow /docs/staging/, /search/",
+      "license_note": "CC BY-NC-SA 4.0. 비영리 이용만 허용하고 파생물에 같은 조건이 붙는다. 상업적 성격을 띠면 교체한다",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_redis_data_types.txt"
+    },
+    {
+      "source_id": "src_expert_yegge_google_interview",
+      "url": "https://steve-yegge.blogspot.com/2008/03/get-that-job-at-google.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "publisher": "Steve Yegge",
+      "author": "Steve Yegge",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Get that job at Google",
+      "posted_at": "2008-03-12",
+      "robots_policy": "allow /; disallow /search, /share-widget. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_yegge_get_that_job_at_google.txt",
+      "note": "본문에서 본인이 면접관이었음을 밝힌다. 자료구조·알고리즘·운영체제를 면접이 어떻게 확인하는지 다룬다"
+    },
+    {
+      "source_id": "src_expert_kaplanmoss_question_types",
+      "url": "https://jacobian.org/2021/mar/1/types-of-interview-questions/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "publisher": "Jacob Kaplan-Moss",
+      "author": "Jacob Kaplan-Moss",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Types of Interview Questions",
+      "posted_at": "2021-03-01",
+      "robots_policy": "robots.txt 가 비어 있다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kaplanmoss_types_of_interview_questions.txt",
+      "note": "Django 를 만든 세 사람 중 하나임을 본문에서 밝힌다"
+    },
+    {
+      "source_id": "src_expert_kaplanmoss_explain_topic",
+      "url": "https://jacobian.org/2021/feb/8/interview-questions-explain-a-topic/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "publisher": "Jacob Kaplan-Moss",
+      "author": "Jacob Kaplan-Moss",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Explain a Topic At Multiple Levels",
+      "posted_at": "2021-02-08",
+      "robots_policy": "robots.txt 가 비어 있다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kaplanmoss_explain_topic_multiple_levels.txt"
+    },
+    {
+      "source_id": "src_expert_kleppmann_locking",
+      "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "publisher": "Martin Kleppmann",
+      "author": "Martin Kleppmann",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "How to do distributed locking",
+      "posted_at": "2016-02-08",
+      "robots_policy": "주석만 있고 지시어 줄이 없다. use 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kleppmann_distributed_locking.txt",
+      "note": "Designing Data-Intensive Applications 저자다. Redis 분산 락을 정합성 보장으로 오해하는 문제를 다룬다"
+    },
+    {
+      "source_id": "src_expert_bailis_acid",
+      "url": "https://www.bailis.org/blog/when-is-acid-acid-rarely/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "publisher": "Peter Bailis",
+      "author": "Peter Bailis",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "When is \"ACID\" ACID? Rarely.",
+      "posted_at": "2013-01-22",
+      "robots_policy": "allow /, /blog/; disallow /private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_bailis_acid_isolation_rarely.txt",
+      "note": "스탠퍼드 전산학 조교수를 지냈고 DAWN 프로젝트를 만들었다"
+    },
+    {
+      "source_id": "src_expert_brooker_snapshot_isolation",
+      "url": "https://brooker.co.za/blog/2024/12/17/occ-and-isolation.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "publisher": "Marc Brooker",
+      "author": "Marc Brooker",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Snapshot Isolation vs Serializability",
+      "posted_at": "2024-12-17",
+      "robots_policy": "robots.txt 가 404 다. 지시어 없음",
+      "license_note": "CC BY 4.0",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_brooker_snapshot_isolation_vs_serializability.txt",
+      "note": "AWS 엔지니어이며 EC2, EBS, Aurora DSQL 작업 이력을 프로필에 밝힌다"
+    },
+    {
+      "source_id": "src_expert_hodges_distributed",
+      "url": "https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "Jeff Hodges",
+      "author": "Jeff Hodges",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Notes on Distributed Systems for Young Bloods",
+      "posted_at": "2013-01-14",
+      "robots_policy": "robots.txt 가 404 다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_hodges_distributed_systems_young_bloods.txt",
+      "note": "Twitter 성장기에 분산 시스템 엔지니어로 일했고 Let's Encrypt 출시에 참여했다"
+    },
+    {
+      "source_id": "src_expert_norvig_ten_years",
+      "url": "https://norvig.com/21-days.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "Peter Norvig",
+      "author": "Peter Norvig",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Teach Yourself Programming in Ten Years",
+      "robots_policy": "disallow /logs/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_norvig_teach_yourself_programming_ten_years.txt",
+      "note": "구글 연구 책임자이며 Artificial Intelligence: A Modern Approach 공저자다. 게시일이 2001~2014 범위로만 표기된다"
+    },
+    {
+      "source_id": "src_expert_brooker_scalability",
+      "url": "https://brooker.co.za/blog/2024/01/18/scalability.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "Marc Brooker",
+      "author": "Marc Brooker",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "What is Scalability Anyway?",
+      "posted_at": "2024-01-18",
+      "robots_policy": "robots.txt 가 404 다. 지시어 없음",
+      "license_note": "CC BY 4.0",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_brooker_what_is_scalability_anyway.txt"
     }
   ],
   "unreachable": [
@@ -1838,6 +2227,26 @@
     {
       "source": "si_enterprise 기업군의 B 계층",
       "reason": "LG CNS 와 현대오토에버가 엔지니어링 기술 블로그를 운영하지 않는다. 대체 후보로 삼성SDS, SK주식회사 C&C, CJ올리브네트웍스, 롯데이노베이트, SK플래닛, G마켓, 11번가, 포스코DX, 신세계아이앤씨를 확인했으나 기술 블로그와 백엔드 공고를 함께 갖춘 곳이 없다. B 계층은 통계에 집계하지 않으므로 기업군을 균등하게 채우는 것이 목표가 아니다"
+    },
+    {
+      "source": "docs.oracle.com / dev.java",
+      "reason": "Oracle Web Sites Terms of Use 가 자료의 개인적·비상업적 이용만 허용하고 재배포와 자동화 수단 접근을 금한다. Java 가 25건으로 요구 1위지만 공식 문서를 담지 않는다"
+    },
+    {
+      "source": "dev.mysql.com 레퍼런스 매뉴얼",
+      "reason": "Use of This Documentation 이 개인 열람용 인쇄만 허용하고 다른 출판물에서의 이용에 사전 서면 동의를 요구한다"
+    },
+    {
+      "source": "use-the-index-luke.com",
+      "reason": "robots 가 GPTBot, ChatGPT-User, CCBot, Google-Extended 를 전면 차단한다. ClaudeBot 그룹은 없으나 AI 크롤러를 지목해 막는 의도가 명확하다"
+    },
+    {
+      "source": "www.youngju.dev",
+      "reason": "37일 동안 한국어 글 263편에 네 언어 자동 생성으로 URL 9967개다. 개인이 전문성으로 쓴 글로 보기 어려워 D 계층 조건을 충족하지 않는다"
+    },
+    {
+      "source": "D 계층의 국내 필자",
+      "reason": "작성자와 전문성과 게시일 셋을 모두 확인할 수 있으면서 면접 검증·흔한 오해·깊이 기준에 맞는 국내 개인 글을 찾지 못했다. 국내 전문가 블로그는 검색 경로가 robots 로 막혀 있고 검색 상위는 작성자 불명의 요약 모음이다. URL 을 지정해 받는 방식이 필요하다"
     }
   ],
   "access_notes": [
