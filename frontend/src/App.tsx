@@ -61,7 +61,7 @@ export default function App() {
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  const API_BASE = 'http://localhost:5000/api';
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://dropcast-jh37.onrender.com/api';
 
   const handleLoginSuccess = (user: UserSession) => {
     setUserSession(user);

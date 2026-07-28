@@ -80,9 +80,10 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
     setIsLoading(true);
 
     try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://dropcast-jh37.onrender.com/api';
       const endpoint = mode === 'login' 
-        ? 'http://localhost:5000/api/auth/login'
-        : 'http://localhost:5000/api/auth/register';
+        ? `${API_BASE}/auth/login`
+        : `${API_BASE}/auth/register`;
 
       const payload = mode === 'login' 
         ? { email: email.trim(), password }
