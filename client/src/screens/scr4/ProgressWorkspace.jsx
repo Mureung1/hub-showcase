@@ -29,7 +29,7 @@ function isRoleDone(role) {
 function FlowerProgressBar({ pct }) {
   return (
     <div style={{ position: 'relative', flex: 1, height: '16px' }}>
-      <div style={{ position: 'absolute', left: 0, top: '50%', height: '4px', borderRadius: '999px 0 0 999px', transform: 'translateY(-50%)', width: `${pct}%`, background: 'hsl(206,45%,90%)' }} />
+      <div style={{ position: 'absolute', left: 0, top: '50%', height: '4px', borderRadius: '999px 0 0 999px', transform: 'translateY(-50%)', width: `${pct}%`, background: 'var(--wedgwood-pale)' }} />
       <div style={{ position: 'absolute', right: 0, top: '50%', height: '4px', borderRadius: '0 999px 999px 0', transform: 'translateY(-50%)', width: `${100 - pct}%`, background: 'hsl(96,45%,90%)' }} />
       <div style={{ position: 'absolute', top: '50%', left: `${pct}%`, transform: 'translate(-50%,-50%)', width: '16px', height: '16px' }}>
         {[0, 72, 144, 216, 288].map((rot) => (
@@ -177,7 +177,7 @@ export function ProgressWorkspace() {
               color: 'var(--ink)',
               fontFamily: 'var(--font-body)',
               fontSize: '14px',
-              background: active ? '#FFFFFF' : 'transparent',
+              background: active ? 'var(--surface-raised)' : 'transparent',
               fontWeight: active ? 600 : 400,
               cursor: 'pointer',
             }

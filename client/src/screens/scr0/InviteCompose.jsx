@@ -98,7 +98,7 @@ export function InviteCompose() {
         position: 'relative',
         overflow: 'hidden',
         background:
-          'radial-gradient(ellipse 65% 50% at 82% 0%, rgba(140,163,194,0.20), transparent 62%), radial-gradient(ellipse 60% 50% at 10% 100%, rgba(242,215,116,0.10), transparent 65%), var(--paper-cool)',
+          'radial-gradient(ellipse 65% 50% at 82% 0%, rgba(198,218,231,0.20), transparent 62%), radial-gradient(ellipse 60% 50% at 10% 100%, rgba(242,215,116,0.10), transparent 65%), var(--paper-cool)',
       }}
     >
       <style>{`

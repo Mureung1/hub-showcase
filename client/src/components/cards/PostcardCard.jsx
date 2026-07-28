@@ -25,7 +25,7 @@ export function PostcardCard({ stamp = true, children, style }) {
             right: '10px',
             width: '24px',
             height: '30px',
-            border: '1px dashed var(--wedgwood)',
+            border: '1px dashed var(--wedgwood-mid)',
             borderRadius: '2px',
             opacity: 0.8,
             display: 'flex',
@@ -33,7 +33,7 @@ export function PostcardCard({ stamp = true, children, style }) {
             justifyContent: 'center',
           }}
         >
-          <Icon name="leaf" size={16} color="var(--wedgwood)" style={{ opacity: 0.9 }} />
+          <Icon name="leaf" size={16} color="var(--wedgwood-mid)" style={{ opacity: 0.9 }} />
         </span>
       ) : null}
       {children}

@@ -17,7 +17,7 @@ const GLYPHS = {
       {[0, 72, 144, 216, 288].map((a) => (
         <ellipse key={a} cx="12" cy="6.8" rx="2.5" ry="3.3" transform={`rotate(${a} 12 12)`} fill={filled ? 'var(--wedgwood-pale)' : 'none'} />
       ))}
-      <circle cx="12" cy="12" r="2" fill={filled ? 'var(--wedgwood)' : 'none'} />
+      <circle cx="12" cy="12" r="2" fill={filled ? 'var(--wedgwood-mid)' : 'none'} />
     </g>
   ),
   vine: (filled) => (

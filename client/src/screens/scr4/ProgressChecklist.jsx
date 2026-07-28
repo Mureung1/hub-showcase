@@ -166,7 +166,7 @@ export function ProgressChecklist() {
               color: 'var(--ink)',
               fontFamily: 'var(--font-body)',
               fontSize: '14px',
-              background: active ? '#FFFFFF' : 'transparent',
+              background: active ? 'var(--surface-raised)' : 'transparent',
               fontWeight: active ? 600 : 400,
               cursor: 'pointer',
             }

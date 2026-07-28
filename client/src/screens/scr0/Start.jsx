@@ -26,7 +26,7 @@ export function Start() {
         position: 'relative',
         overflow: 'hidden',
         background:
-          'radial-gradient(ellipse 70% 55% at 50% 6%, rgba(140,163,194,0.26), transparent 60%), radial-gradient(ellipse 60% 50% at 50% 100%, rgba(242,215,116,0.10), transparent 65%), var(--paper-cool)',
+          'radial-gradient(ellipse 70% 55% at 50% 6%, rgba(198,218,231,0.26), transparent 60%), radial-gradient(ellipse 60% 50% at 50% 100%, rgba(242,215,116,0.10), transparent 65%), var(--paper-cool)',
       }}
     >
       <div
@@ -78,7 +78,7 @@ export function Start() {
             variant="accent"
             block
             onClick={() => setShowJoin((s) => !s)}
-            style={{ height: '48px', background: 'transparent', border: '1.5px solid var(--wedgwood)', color: 'var(--wedgwood-deep)' }}
+            style={{ height: '48px', background: 'transparent', border: '1.5px solid var(--wedgwood-mid)', color: 'var(--wedgwood-deep)' }}
           >
             🌿 링크로 입장
           </Button>

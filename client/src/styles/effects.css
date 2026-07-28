@@ -22,7 +22,7 @@
   --btn-highlight: rgba(255, 255, 255, 0.25);            /* 상단 1px 하이라이트 */
 
   /* 인풋 focus 링 */
-  --shadow-focus-wedgwood: 0 0 0 3px rgba(140, 163, 194, 0.18);
+  --shadow-focus-wedgwood: 0 0 0 3px rgba(110, 143, 168, 0.18);
 
   /* motion */
   --press-scale: 0.97; /* @kind other */ /* 체크박스 등 순수 스케일 반응 */

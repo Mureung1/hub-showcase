@@ -4,7 +4,7 @@ import React from 'react';
 export function EmptyState({ message = '아직 아무도 초대하지 않았어요, 첫 편지를 보내볼까요?', action, style }) {
   return (
     <div style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)', ...style }}>
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--wedgwood)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto var(--space-4)' }} aria-hidden="true">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--wedgwood-mid)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto var(--space-4)' }} aria-hidden="true">
         <path d="M12 20.5V11" />
         <path d="M12 12.5C8.4 12.5 6 10 6 6.6C9.8 6.6 12 9 12 12.5Z" />
         <path d="M12 10.5C12 7.6 14 5.2 17.4 5.2C17.4 8.6 15 10.5 12 10.5Z" />
