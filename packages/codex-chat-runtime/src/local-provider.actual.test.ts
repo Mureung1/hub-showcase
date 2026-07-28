@@ -82,14 +82,7 @@ test('runs the production bridge against exact Codex and the official local prov
       {
         projectRootMarkers: ['.git'],
         globalInstructionsFile: null,
-        mcpServers: [
-          {
-            name: 'ay_ple_interaction',
-            enabled: true,
-            required: true,
-            enabledTools: ['propose_state_patch'],
-          },
-        ],
+        mcpServers: [],
       },
     )
     const thread = await within(runtime.runtime.startThread())
