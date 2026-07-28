@@ -36,15 +36,6 @@ class ReadModelCatalogCommand:
 
 
 @dataclass(frozen=True, slots=True)
-class WaitForMcpServerReadyCommand:
-    bridge_request_id: str
-    thread_id: str
-    server_name: str
-    expected_tools: tuple[str, ...]
-    command: Literal["wait_for_mcp_server_ready"] = "wait_for_mcp_server_ready"
-
-
-@dataclass(frozen=True, slots=True)
 class StartThreadCommand:
     bridge_request_id: str
     command: Literal["start_thread"] = "start_thread"
@@ -109,7 +100,6 @@ class CloseCommand:
 BridgeCommand: TypeAlias = (
     ReadAccountCommand
     | ReadModelCatalogCommand
-    | WaitForMcpServerReadyCommand
     | StartThreadCommand
     | StartTurnCommand
     | StartProductTurnCommand
@@ -222,15 +212,6 @@ def _require_answers(value: object) -> dict[str, tuple[str, ...]]:
     return answers
 
 
-def _require_tool_roster(value: object) -> tuple[str, ...]:
-    if not isinstance(value, list) or not value or len(value) > 128:
-        raise ProtocolViolation("invalid_command")
-    tools = tuple(_require_bounded_string(tool, max_bytes=256) for tool in value)
-    if len(set(tools)) != len(tools):
-        raise ProtocolViolation("invalid_command")
-    return tools
-
-
 def decode_command_line(line: bytes) -> BridgeCommand:
     if len(line) > MAX_FRAME_BYTES:
         raise ProtocolViolation("frame_too_large")
@@ -257,23 +238,6 @@ def decode_command_line(line: bytes) -> BridgeCommand:
     if command == "read_model_catalog":
         _require_exact_fields(value, {"bridgeRequestId", "command"})
         return ReadModelCatalogCommand(request_id)
-    if command == "wait_for_mcp_server_ready":
-        _require_exact_fields(
-            value,
-            {
-                "bridgeRequestId",
-                "command",
-                "threadId",
-                "serverName",
-                "expectedTools",
-            },
-        )
-        return WaitForMcpServerReadyCommand(
-            request_id,
-            _require_nonempty_string(value.get("threadId")),
-            _require_bounded_string(value.get("serverName"), max_bytes=256),
-            _require_tool_roster(value.get("expectedTools")),
-        )
     if command == "start_thread":
         _require_exact_fields(value, {"bridgeRequestId", "command"})
         return StartThreadCommand(request_id)

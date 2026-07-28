@@ -25,12 +25,6 @@ type ReadModelCatalogResultFrame = {
   readonly catalog: CodexModelCatalog
 }
 
-type WaitForMcpServerReadyResultFrame = {
-  readonly type: 'result'
-  readonly bridgeRequestId: string
-  readonly command: 'wait_for_mcp_server_ready'
-}
-
 type StartThreadResultFrame = {
   readonly type: 'result'
   readonly bridgeRequestId: string
@@ -104,7 +98,6 @@ export type BridgeOutputFrame =
   | ReadyFrame
   | ReadAccountResultFrame
   | ReadModelCatalogResultFrame
-  | WaitForMcpServerReadyResultFrame
   | StartThreadResultFrame
   | StartTurnResultFrame
   | StartProductTurnResultFrame
@@ -276,18 +269,6 @@ function parseResult(frame: Record<string, unknown>): BridgeOutputFrame {
       bridgeRequestId,
       command,
       catalog: parseModelCatalog(frame.catalog),
-    }
-  }
-  if (command === 'wait_for_mcp_server_ready') {
-    requireExactKeys(frame, [
-      'type',
-      'bridgeRequestId',
-      'command',
-    ])
-    return {
-      type: 'result',
-      bridgeRequestId,
-      command,
     }
   }
   if (command === 'start_thread') {

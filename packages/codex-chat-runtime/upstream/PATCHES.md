@@ -184,21 +184,10 @@ Regression oracle은 다음과 같다.
 
 Pinned first-party client는 `thread/start`에서 `configured → advertised default → first available`로 결정한 effective `model`·`reasoningEffort`를 response에 넣지만 high-level Python Thread는 이 값을 버렸다. 0007은 sync·async high-level Thread에 그 값을 보존하고 generator가 같은 surface를 재생성하게 한다. Product policy disposition은 `adapt`로, Bridge는 caller override나 별도 `model/list`없이 native effective setting을 Plan Turn에 재사용하고 model이 없으면 acceptance 전 fail closed한다. Official runtime behavior test와 bridge actual-child의 zero·multiple·failed advertised model-list condition이 regression oracle다.
 
-### 0008 — Expose thread-scoped MCP inventory
-
-| 항목 | 값 |
-| --- | --- |
-| Patch | `upstream/patches/0008-thread-mcp-status.patch` |
-| 적용 순서 | 8 |
-| Disposition | `adapt` |
-| 변경 파일 | `sdk/python/src/openai_codex/api.py`, `sdk/python/tests/test_public_api_runtime_behavior.py` |
-
-Pinned App Server의 `mcpServerStatus/list`는 `threadId`를 받아 해당 thread의 project-local config로 MCP server와 tool inventory를 다시 확인하지만 high-level Python API에는 이 요청이 없었다. 0008은 sync·async `Codex.mcp_server_statuses(thread_id)`를 최소 typed seam으로 추가하고 `toolsAndAuthOnly` detail과 exact `threadId` 직렬화를 regression test로 고정한다. Bridge는 이 generated response를 package 밖으로 내보내지 않고 server readiness와 exact tool roster 결과로만 축약한다.
-
 ## Production wheel derivation
 
-`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 여덟 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
+`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 일곱 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
 
 ## AY-PLE bridge disposition
 
-`python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007 → 0008` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, fixed workspace-write thread start와 scalar product permission profile, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.
+`python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, fixed workspace-write thread start와 scalar product permission profile, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.

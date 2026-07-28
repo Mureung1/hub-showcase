@@ -115,14 +115,6 @@ async function prepareFixture(): Promise<Fixture> {
       'command = "./missing-interaction-adapter"',
     ),
   )
-  await writeFile(
-    path.join(codexHome, 'config.toml'),
-    [
-      `[projects.${JSON.stringify(canonicalWorkspace)}]`,
-      'trust_level = "trusted"',
-      '',
-    ].join('\n'),
-  )
   await execFileAsync(
     'uv',
     [
@@ -199,6 +191,13 @@ async function runProductRecoveryCase(
       true,
       `the smoke must reach and fail the exact Adapter handshake gate\n${started.output.stdout}`,
     )
+    assert.match(
+      await readFile(path.join(fixture.codexHome, 'config.toml'), 'utf8'),
+      new RegExp(
+        `\\[projects\\.${escapeRegExp(JSON.stringify(fixture.workspaceRoot))}\\][^[]*trust_level = "trusted"`,
+        's',
+      ),
+    )
     await assert.rejects(
       access(
         path.join(
@@ -215,6 +214,10 @@ async function runProductRecoveryCase(
   } finally {
     await stopProduct(started.child)
   }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function startProduct(

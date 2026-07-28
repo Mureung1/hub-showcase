@@ -73,8 +73,15 @@ export type InteractionBrokerCredentials = {
   readonly binding: string
 }
 
+export type InteractionAdapterStatus = {
+  readonly ready: Promise<void>
+  readonly lost: Promise<void>
+  isLost(): boolean
+}
+
 export type InteractionBroker = {
   readonly router: Router
+  readonly adapterStatus: InteractionAdapterStatus
   credentials(): InteractionBrokerCredentials
   settle(
     interactionId: string,
@@ -135,8 +142,19 @@ export async function createInteractionBroker(
   let credentialActive = true
   let intakeOpen = true
   let handshakeAccepted = false
+  let lifecycleResponse: Response | undefined
+  let lifecycleAccepted = false
+  let lifecycleCloseExpected = false
+  let adapterLostLatched = false
   let pending: PendingInteraction | undefined
   let terminalPromise: Promise<void> | undefined
+  const adapterReady = deferred<void>()
+  const adapterLost = deferred<void>()
+  const adapterStatus: InteractionAdapterStatus = Object.freeze({
+    ready: adapterReady.promise,
+    lost: adapterLost.promise,
+    isLost: () => adapterLostLatched,
+  })
   const router = express.Router()
 
   router.post('/', (request, response) => {
@@ -145,6 +163,7 @@ export async function createInteractionBroker(
 
   const broker: InteractionBroker = {
     router,
+    adapterStatus,
     credentials: () => credentials,
     async settle(interactionId, result) {
       const current = pending
@@ -188,7 +207,7 @@ export async function createInteractionBroker(
     },
     runtimeTerminal: () => terminate('runtime_terminated', false),
     runtimeReplaced: () => terminate('runtime_terminated', true),
-    adapterLost: () => terminate('transport_failed', true),
+    adapterLost: latchAdapterLoss,
     appShutdown: () => terminate('runtime_terminated', true),
   }
   return broker
@@ -245,6 +264,44 @@ export async function createInteractionBroker(
     }
 
     if (!handshakeAccepted) {
+      await writeResponse(
+        response,
+        errorResponse('broker_unavailable'),
+        503,
+      )
+      return
+    }
+    if (decoded.kind === 'lifecycle_open') {
+      if (lifecycleResponse) {
+        await writeResponse(response, errorResponse('busy'), 409)
+        return
+      }
+      lifecycleResponse = response
+      const onLifecycleClose = () => {
+        if (lifecycleResponse === response) {
+          lifecycleResponse = undefined
+          lifecycleAccepted = false
+        }
+        if (!lifecycleCloseExpected && !response.writableFinished) {
+          void latchAdapterLoss()
+        }
+      }
+      response.once('close', onLifecycleClose)
+      response.once('error', onLifecycleClose)
+      const accepted = await writeLifecycleAccepted(response)
+      if (!accepted) {
+        void latchAdapterLoss()
+        return
+      }
+      lifecycleAccepted = true
+      adapterReady.resolve()
+      return
+    }
+    if (
+      !lifecycleResponse ||
+      !lifecycleAccepted ||
+      adapterLostLatched
+    ) {
       await writeResponse(
         response,
         errorResponse('broker_unavailable'),
@@ -481,6 +538,7 @@ export async function createInteractionBroker(
     teardown: boolean,
   ): Promise<void> {
     if (terminalPromise) return terminalPromise
+    lifecycleCloseExpected = true
     terminalPromise = (async () => {
       intakeOpen = false
       const current = pending
@@ -488,12 +546,47 @@ export async function createInteractionBroker(
         ? failPending(current, reason, { abortDelivery: true })
         : Promise.resolve()
       credentialActive = false
+      const lifecycleClose = closeLifecycle()
       const runtimeTeardown = teardown
         ? boundedLifecycleCall(options.teardownRuntime).catch(() => undefined)
         : Promise.resolve()
-      await Promise.all([pendingFailure, runtimeTeardown])
+      await Promise.all([
+        pendingFailure,
+        lifecycleClose,
+        runtimeTeardown,
+      ])
     })()
     return terminalPromise
+  }
+
+  function latchAdapterLoss(): Promise<void> {
+    if (!adapterLostLatched && !lifecycleCloseExpected) {
+      adapterLostLatched = true
+      adapterLost.resolve()
+    }
+    return terminate('transport_failed', true)
+  }
+
+  function closeLifecycle(): Promise<void> {
+    const response = lifecycleResponse
+    lifecycleResponse = undefined
+    lifecycleAccepted = false
+    if (!response || response.destroyed || response.writableEnded) {
+      return Promise.resolve()
+    }
+    return new Promise((resolve) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        response.off('close', finish)
+        response.off('error', finish)
+        resolve()
+      }
+      response.once('close', finish)
+      response.once('error', finish)
+      response.end(finish)
+    })
   }
 
   function publishUi(frame: ProductReviewFrame): Promise<void> {
@@ -800,6 +893,40 @@ function writeResponse(
     response.setHeader('cache-control', 'no-store')
     response.setHeader('content-type', 'application/json; charset=utf-8')
     response.end(JSON.stringify(body), () => finish(true))
+  })
+}
+
+function writeLifecycleAccepted(response: Response): Promise<boolean> {
+  if (response.destroyed || response.writableEnded) {
+    return Promise.resolve(false)
+  }
+  const body = JSON.stringify({
+    protocolVersion: INTERACTION_BROKER_PROTOCOL_VERSION,
+    kind: 'lifecycle_accepted',
+  } satisfies InteractionBrokerResponse)
+  if (
+    Buffer.byteLength(body, 'utf8') + 1 >
+    INTERACTION_BROKER_BODY_MAX_BYTES
+  ) {
+    return Promise.resolve(false)
+  }
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (value: boolean) => {
+      if (settled) return
+      settled = true
+      response.off('close', onClose)
+      response.off('error', onError)
+      resolve(value)
+    }
+    const onClose = () => finish(false)
+    const onError = () => finish(false)
+    response.once('close', onClose)
+    response.once('error', onError)
+    response.status(200)
+    response.setHeader('cache-control', 'no-store')
+    response.setHeader('content-type', 'application/json; charset=utf-8')
+    response.write(`${body}\n`, () => finish(true))
   })
 }
 

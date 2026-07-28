@@ -69,12 +69,16 @@ test('target contract rejects donor academic durability and double-confirmation 
   }
 })
 
-test('private Broker wire decodes only exact handshake, call, result, and safe error envelopes', () => {
+test('private Broker wire decodes only exact handshake, lifecycle, call, result, and safe error envelopes', () => {
   const handshake = {
     protocolVersion: 1,
     kind: 'handshake',
     serverName: 'ay_ple_interaction',
     capabilities: ['propose_state_patch'],
+  } as const
+  const lifecycleOpen = {
+    protocolVersion: 1,
+    kind: 'lifecycle_open',
   } as const
   const capabilityCall = {
     protocolVersion: 1,
@@ -84,6 +88,7 @@ test('private Broker wire decodes only exact handshake, call, result, and safe e
   } as const
   const responses = [
     { protocolVersion: 1, kind: 'handshake_accepted' },
+    { protocolVersion: 1, kind: 'lifecycle_accepted' },
     {
       protocolVersion: 1,
       kind: 'capability_result',
@@ -106,6 +111,10 @@ test('private Broker wire decodes only exact handshake, call, result, and safe e
     parseInteractionBrokerRequest(JSON.stringify(capabilityCall)),
     capabilityCall,
   )
+  assert.deepEqual(
+    parseInteractionBrokerRequest(JSON.stringify(lifecycleOpen)),
+    lifecycleOpen,
+  )
   for (const response of responses) {
     assert.deepEqual(
       parseInteractionBrokerResponse(JSON.stringify(response)),
@@ -115,6 +124,7 @@ test('private Broker wire decodes only exact handshake, call, result, and safe e
 
   for (const invalid of [
     { ...handshake, capabilities: ['propose_state_patch', 'other'] },
+    { ...lifecycleOpen, generation: 'untrusted' },
     { ...capabilityCall, operationId: `operation_${'1'.repeat(32)}` },
     { ...responses[1], result: { outcome: 'timeout' } },
     { ...responses[2], code: 'raw_transport_error' },
@@ -122,7 +132,9 @@ test('private Broker wire decodes only exact handshake, call, result, and safe e
   ]) {
     assert.throws(
       () =>
-        invalid.kind === 'handshake' || invalid.kind === 'capability_call'
+        invalid.kind === 'handshake' ||
+        invalid.kind === 'lifecycle_open' ||
+        invalid.kind === 'capability_call'
           ? parseInteractionBrokerRequest(JSON.stringify(invalid))
           : parseInteractionBrokerResponse(JSON.stringify(invalid)),
       InteractionContractError,

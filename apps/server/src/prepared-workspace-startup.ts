@@ -1,3 +1,6 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import type {
   CodexChildEnvironment,
   CodexEffectiveConfig,
@@ -17,6 +20,14 @@ import {
 
 const requiredInteractionServer = 'ay_ple_interaction'
 const requiredInteractionTools = ['propose_state_patch'] as const
+const requiredInteractionEnvironment = [
+  'AY_PLE_INTERACTION_BROKER_URL',
+  'AY_PLE_INTERACTION_BROKER_TOKEN',
+  'AY_PLE_INTERACTION_RUNTIME_BINDING',
+] as const
+const interactionAdapterPath = fileURLToPath(
+  new URL('../../../packages/interaction-mcp/dist/stdio.js', import.meta.url),
+)
 const defaultCleanupDeadlineMs = 5_000
 
 export type PreparedWorkspaceStartupStage =
@@ -26,8 +37,9 @@ export type PreparedWorkspaceStartupStage =
   | 'workspace_runtime'
   | 'native_project_config'
   | 'adapter_handshake'
-  | 'required_tool_roster'
+  | 'adapter_lifecycle'
   | 'thread_context'
+  | 'product_thread_handoff'
   | 'registry_transaction'
 
 type PreparedWorkspaceActiveLifecycle = Extract<
@@ -47,6 +59,11 @@ export type PreparedWorkspaceSharedListener = {
 
 export type PreparedWorkspaceBrokerGeneration = {
   readonly childEnvironment: CodexChildEnvironment
+  readonly adapterStatus: {
+    readonly ready: Promise<void>
+    readonly lost: Promise<void>
+    isLost(): boolean
+  }
   runtimeTerminal(): Promise<void>
   adapterLost(): Promise<void>
   appShutdown(): Promise<void>
@@ -56,27 +73,12 @@ export type PreparedWorkspaceRuntimeGeneration = {
   readonly terminal: Promise<unknown>
   loadNativeProjectConfig(): Promise<CodexEffectiveConfig>
   startWorkspaceThread(): Promise<{ readonly threadId: string }>
-  waitForRequiredMcp(input: {
-    readonly threadId: string
-    readonly serverName: string
-    readonly expectedTools: readonly string[]
-    readonly signal: AbortSignal
-  }): Promise<void>
   confirmThreadContext(input: {
     readonly canonicalRoot: string
     readonly threadId: string
     readonly workspaceId: string
   }): Promise<void>
-  monitorRequiredMcp(input: {
-    readonly threadId: string
-    readonly serverName: string
-    readonly expectedTools: readonly string[]
-  }): PreparedWorkspaceMcpMonitor
-  close(): Promise<void>
-}
-
-export type PreparedWorkspaceMcpMonitor = {
-  readonly lost: Promise<unknown>
+  handoffProductThread(threadId: string): Promise<void>
   close(): Promise<void>
 }
 
@@ -139,7 +141,6 @@ export async function startPreparedWorkspace(options: {
   let listener: PreparedWorkspaceSharedListener | undefined
   let broker: PreparedWorkspaceBrokerGeneration | undefined
   let runtime: PreparedWorkspaceRuntimeGeneration | undefined
-  let mcpMonitor: PreparedWorkspaceMcpMonitor | undefined
   let lifecycle: ProductWorkspaceLifecycle = {
     state: 'starting',
     workspace: workspaceSummary(selection.workspace),
@@ -154,7 +155,6 @@ export async function startPreparedWorkspace(options: {
       const failures: unknown[] = []
       const deadline = Date.now() + cleanupDeadlineMs
       for (const close of [
-        () => mcpMonitor?.close() ?? Promise.resolve(),
         () =>
           (reason === 'runtime_terminal'
             ? broker?.runtimeTerminal()
@@ -201,21 +201,22 @@ export async function startPreparedWorkspace(options: {
       canonicalRoot: selection.canonicalRoot,
       listenerPort: listener.port,
     })
+    const activeBroker = broker
+    void activeBroker.adapterStatus.lost.then(
+      () => {
+        void onAdapterLost().catch(() => undefined)
+      },
+      () => {
+        void onAdapterLost().catch(() => undefined)
+      },
+    )
 
     stage = 'workspace_runtime'
     runtime = await options.ports.spawnWorkspaceRuntime({
       canonicalRoot: selection.canonicalRoot,
-      childEnvironment: broker.childEnvironment,
+      childEnvironment: activeBroker.childEnvironment,
     })
     void runtime.terminal.then(onRuntimeTerminal, onRuntimeTerminal)
-
-    stage = 'native_project_config'
-    requireInteractionMcpDeclaration(
-      await raceRuntimeTerminal(
-        runtime.loadNativeProjectConfig(),
-        runtime,
-      ),
-    )
 
     stage = 'adapter_handshake'
     const thread = await raceRuntimeTerminal(
@@ -223,14 +224,18 @@ export async function startPreparedWorkspace(options: {
       runtime,
     )
 
-    stage = 'required_tool_roster'
+    stage = 'native_project_config'
+    requireInteractionMcpDeclaration(
+      await raceRuntimeTerminal(
+        runtime.loadNativeProjectConfig(),
+        runtime,
+      ),
+      selection.canonicalRoot,
+    )
+
+    stage = 'adapter_lifecycle'
     await raceRuntimeTerminal(
-      runtime.waitForRequiredMcp({
-        threadId: thread.threadId,
-        serverName: requiredInteractionServer,
-        expectedTools: requiredInteractionTools,
-        signal: new AbortController().signal,
-      }),
+      requireLiveAdapter(activeBroker),
       runtime,
     )
 
@@ -247,43 +252,71 @@ export async function startPreparedWorkspace(options: {
       }),
       runtime,
     )
-    if (generationUnavailable) throw new RuntimeTerminatedDuringStartup()
-
-    stage = 'required_tool_roster'
-    mcpMonitor = runtime.monitorRequiredMcp({
-      threadId: thread.threadId,
-      serverName: requiredInteractionServer,
-      expectedTools: requiredInteractionTools,
-    })
-    void mcpMonitor.lost.then(
-      () => {
-        if (!cleanupPromise) void onAdapterLost().catch(() => undefined)
-      },
-      () => {
-        if (!cleanupPromise) void onAdapterLost().catch(() => undefined)
-      },
+    stage = 'product_thread_handoff'
+    await raceRuntimeTerminal(
+      runtime.handoffProductThread(thread.threadId),
+      runtime,
     )
+    if (generationUnavailable || activeBroker.adapterStatus.isLost()) {
+      throw new RuntimeTerminatedDuringStartup()
+    }
 
     const activeLifecycle = {
       state: 'active',
       workspace: workspaceSummary(fresh.workspace),
     } satisfies PreparedWorkspaceActiveLifecycle
+    let registryAccepted = false
     const acceptCommit = (): boolean => {
-      if (generationUnavailable) return false
-      lifecycle = activeLifecycle
+      if (registryAccepted) return true
+      if (
+        generationUnavailable ||
+        activeBroker.adapterStatus.isLost()
+      ) {
+        return false
+      }
+      registryAccepted = true
       return true
     }
 
     stage = 'registry_transaction'
-    await commitRegistryAuthority(
+    const registryStore =
       options.registryStore ??
-        createWorkspaceRegistryStore({
-          appDataRoot: options.appDataRoot,
-        }),
-      selection,
-      acceptCommit,
-    )
+      createWorkspaceRegistryStore({
+        appDataRoot: options.appDataRoot,
+      })
+    try {
+      await commitRegistryAuthority(
+        registryStore,
+        selection,
+        acceptCommit,
+      )
+    } catch (cause) {
+      if (
+        !registryAccepted ||
+        !(await registryAuthorityMatchesSelection(
+          registryStore,
+          selection,
+        ))
+      ) {
+        throw cause
+      }
+    }
+    if (!registryAccepted) {
+      throw new TypeError(
+        'Workspace registry transaction did not accept the generation',
+      )
+    }
 
+    const adapterLostAfterCutover =
+      activeBroker.adapterStatus.isLost()
+    if (generationUnavailable || adapterLostAfterCutover) {
+      lifecycle = runtimeUnavailableLifecycle(selection.workspace)
+      if (adapterLostAfterCutover) {
+        void onAdapterLost().catch(() => undefined)
+      }
+    } else {
+      lifecycle = activeLifecycle
+    }
     return Object.freeze({
       lifecycle: activeLifecycle,
       readLifecycle: () => lifecycle,
@@ -327,17 +360,32 @@ async function requirePreparedSelection(options: {
 
 function requireInteractionMcpDeclaration(
   config: CodexEffectiveConfig,
+  canonicalRoot: string,
 ): void {
   const declarations = config.mcpServers.filter(
     ({ name }) => name === requiredInteractionServer,
   )
   const declaration = declarations[0]
+  const requiredCommand = path
+    .relative(canonicalRoot, interactionAdapterPath)
+    .split(path.sep)
+    .join('/')
   if (
     declarations.length !== 1 ||
     !declaration ||
+    declaration.command !== requiredCommand ||
+    declaration.args.length !== 0 ||
+    !sameEnvironmentVariables(
+      declaration.envVars,
+      requiredInteractionEnvironment,
+    ) ||
+    declaration.cwd !== null ||
+    declaration.toolTimeoutSec !== null ||
+    Object.keys(declaration.env).length !== 0 ||
     !declaration.enabled ||
     !declaration.required ||
     declaration.enabledTools === null ||
+    declaration.disabledTools.length !== 0 ||
     !sameStringSet(
       declaration.enabledTools,
       requiredInteractionTools,
@@ -347,6 +395,22 @@ function requireInteractionMcpDeclaration(
       'The required Interaction MCP declaration is invalid',
     )
   }
+}
+
+function sameEnvironmentVariables(
+  left: readonly {
+    readonly name: string
+    readonly source: 'local' | 'remote' | null
+  }[],
+  right: readonly string[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (value, index) =>
+        value.name === right[index] && value.source === null,
+    )
+  )
 }
 
 function sameStringSet(
@@ -416,6 +480,29 @@ async function commitRegistryAuthority(
   }
 }
 
+async function registryAuthorityMatchesSelection(
+  store: WorkspaceRegistryStore,
+  selection: PreparedWorkspaceLaunchSelection,
+): Promise<boolean> {
+  try {
+    const observed = await store.read()
+    if (
+      observed.status !== 'current' ||
+      observed.registry.activeWorkspaceId !==
+        selection.workspace.workspaceId
+    ) {
+      return false
+    }
+    return observed.registry.workspaces.some(
+      (entry) =>
+        entry.workspaceId === selection.workspace.workspaceId &&
+        entry.canonicalRoot === selection.canonicalRoot,
+    )
+  } catch {
+    return false
+  }
+}
+
 async function raceRuntimeTerminal<T>(
   operation: Promise<T>,
   runtime: PreparedWorkspaceRuntimeGeneration,
@@ -427,6 +514,20 @@ async function raceRuntimeTerminal<T>(
     operation,
     runtime.terminal.then<never>(rejectTerminal, rejectTerminal),
   ])
+}
+
+async function requireLiveAdapter(
+  broker: PreparedWorkspaceBrokerGeneration,
+): Promise<void> {
+  const rejectLoss = (): never => {
+    throw new AdapterLostDuringStartup()
+  }
+  if (broker.adapterStatus.isLost()) rejectLoss()
+  await Promise.race([
+    broker.adapterStatus.ready,
+    broker.adapterStatus.lost.then<never>(rejectLoss, rejectLoss),
+  ])
+  if (broker.adapterStatus.isLost()) rejectLoss()
 }
 
 function workspaceSummary(
@@ -509,6 +610,8 @@ function launchFailureLifecycle(
 }
 
 class RuntimeTerminatedDuringStartup extends Error {}
+
+class AdapterLostDuringStartup extends Error {}
 
 class PreparedWorkspaceCleanupDeadlineError extends Error {
   constructor() {

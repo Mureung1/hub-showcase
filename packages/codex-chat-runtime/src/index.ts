@@ -7,6 +7,7 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 export type {
   CodexEffectiveConfig,
+  CodexEffectiveMcpEnvironmentVariable,
   CodexEffectiveMcpServer,
   CodexEffectiveSkill,
   CodexNativeContextPort,
@@ -41,7 +42,6 @@ export type {
   CodexModelCatalog,
   CodexModelCatalogEntry,
   CodexModelCatalogRuntime,
-  CodexMcpReadinessPort,
   CodexModelReasoningEffort,
   CodexProductTurnSettings,
   CodexProductTurn,

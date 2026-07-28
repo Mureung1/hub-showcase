@@ -10,9 +10,11 @@ import {
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import test from 'node:test'
 
+import type { CodexEffectiveConfig } from '@ay-ple/codex-chat-runtime'
 import {
   INTERACTION_BROKER_PROTOCOL_VERSION,
 } from '@ay-ple/interaction-mcp'
@@ -55,23 +57,73 @@ const registryRelativePath = path.join(
   'state',
   'workspace-registry.json',
 )
-const requiredNativeConfig = {
-  projectRootMarkers: ['.git'],
-  globalInstructionsFile: null,
-  mcpServers: [
-    {
-      name: 'ay_ple_interaction',
-      enabled: true,
-      required: true,
-      enabledTools: ['propose_state_patch'],
-    },
-  ],
-} as const
+const interactionAdapterPath = fileURLToPath(
+  new URL('../../../packages/interaction-mcp/dist/stdio.js', import.meta.url),
+)
+
+function requiredNativeConfig(
+  canonicalRoot: string,
+): CodexEffectiveConfig {
+  return {
+    projectRootMarkers: ['.git'],
+    globalInstructionsFile: null,
+    mcpServers: [
+      {
+        name: 'ay_ple_interaction',
+        command: path
+          .relative(canonicalRoot, interactionAdapterPath)
+          .split(path.sep)
+          .join('/'),
+        args: [],
+        envVars: [
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_URL',
+            source: null,
+          },
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_TOKEN',
+            source: null,
+          },
+          {
+            name: 'AY_PLE_INTERACTION_RUNTIME_BINDING',
+            source: null,
+          },
+        ],
+        cwd: null,
+        toolTimeoutSec: null,
+        env: {},
+        enabled: true,
+        required: true,
+        enabledTools: ['propose_state_patch'],
+        disabledTools: [],
+      },
+    ],
+  }
+}
+
+function overrideRequiredMcp(
+  canonicalRoot: string,
+  overrides: Partial<CodexEffectiveConfig['mcpServers'][number]>,
+): CodexEffectiveConfig {
+  const config = requiredNativeConfig(canonicalRoot)
+  return {
+    ...config,
+    mcpServers: [
+      {
+        ...config.mcpServers[0]!,
+        ...overrides,
+      },
+    ],
+  }
+}
 
 test('real shared listener and Broker authenticate one generation before active publication', async () => {
   const fixture = await createFixture()
   const terminal = deferred<void>()
   let readLifecycle: () => unknown = () => undefined
+  let lifecycleReader:
+    | ReadableStreamDefaultReader<Uint8Array>
+    | undefined
   try {
     const app = express()
     app.get('/api/product/workspace-lifecycle', (_request, response) => {
@@ -110,6 +162,7 @@ test('real shared listener and Broker authenticate one generation before active 
             AY_PLE_INTERACTION_BROKER_TOKEN: credentials.token,
             AY_PLE_INTERACTION_RUNTIME_BINDING: credentials.binding,
           },
+          adapterStatus: broker.adapterStatus,
           runtimeTerminal: () => broker.runtimeTerminal(),
           adapterLost: () => broker.adapterLost(),
           appShutdown: () => broker.appShutdown(),
@@ -132,7 +185,7 @@ test('real shared listener and Broker authenticate one generation before active 
               ].join('\n'),
               'utf8',
             )
-            return requiredNativeConfig
+            return requiredNativeConfig(input.canonicalRoot)
           },
           async startWorkspaceThread() {
             const response = await fetch(
@@ -160,14 +213,37 @@ test('real shared listener and Broker authenticate one generation before active 
               protocolVersion: INTERACTION_BROKER_PROTOCOL_VERSION,
               kind: 'handshake_accepted',
             })
+            const lifecycle = await fetch(
+              input.childEnvironment.AY_PLE_INTERACTION_BROKER_URL,
+              {
+                method: 'POST',
+                headers: {
+                  authorization:
+                    `Bearer ${input.childEnvironment.AY_PLE_INTERACTION_BROKER_TOKEN}`,
+                  'content-type': 'application/json',
+                  'x-ay-ple-runtime-binding':
+                    input.childEnvironment.AY_PLE_INTERACTION_RUNTIME_BINDING,
+                },
+                body: JSON.stringify({
+                  protocolVersion:
+                    INTERACTION_BROKER_PROTOCOL_VERSION,
+                  kind: 'lifecycle_open',
+                }),
+              },
+            )
+            assert.equal(lifecycle.status, 200)
+            assert.ok(lifecycle.body)
+            lifecycleReader = lifecycle.body.getReader()
+            const accepted = await lifecycleReader.read()
+            assert.equal(accepted.done, false)
+            assert.deepEqual(
+              JSON.parse(new TextDecoder().decode(accepted.value)),
+              {
+                protocolVersion: INTERACTION_BROKER_PROTOCOL_VERSION,
+                kind: 'lifecycle_accepted',
+              },
+            )
             return { threadId: 'thread/real-broker' }
-          },
-          async waitForRequiredMcp(input) {
-            assert.equal(input.serverName, 'ay_ple_interaction')
-            assert.equal(input.threadId, 'thread/real-broker')
-            assert.deepEqual(input.expectedTools, [
-              'propose_state_patch',
-            ])
           },
           async confirmThreadContext(input) {
             assert.equal(
@@ -183,11 +259,8 @@ test('real shared listener and Broker authenticate one generation before active 
             )
             assert.equal(input.workspaceId, targetWorkspaceId)
           },
-          monitorRequiredMcp() {
-            return {
-              lost: never(),
-              async close() {},
-            }
+          async handoffProductThread(threadId) {
+            assert.equal(threadId, 'thread/real-broker')
           },
           async close() {},
         }
@@ -205,6 +278,7 @@ test('real shared listener and Broker authenticate one generation before active 
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), session.lifecycle)
     await session.close()
+    assert.equal((await lifecycleReader?.read())?.done, true)
   } finally {
     await fixture.cleanup()
   }
@@ -233,11 +307,11 @@ test('opens the active surface only after the exact required startup order and r
       'listener.bind',
       'broker.prepare',
       'runtime.spawn',
-      'config.load',
       'adapter.handshake',
-      'roster.ready',
+      'config.load',
+      'adapter.ready',
       'context.confirm',
-      'mcp.monitor',
+      'thread.handoff',
       'registry.commit',
       'surface.active',
     ])
@@ -272,6 +346,143 @@ test('opens the active surface only after the exact required startup order and r
   }
 })
 
+test('a post-accept registry store error reconciles the committed authority as a successful cutover', async () => {
+  const fixture = await createFixture()
+  try {
+    const harness = createHarness()
+    const registry = registryWithCommit(
+      fixture.store,
+      async (input) => {
+        const committed =
+          await fixture.store.commitActiveWorkspace(input)
+        assert.equal(committed.status, 'written')
+        assert.equal(harness.readLifecycle?.().state, 'starting')
+        throw new Error('post-commit store fault')
+      },
+    )
+
+    const session = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      explicitWorkspaceRoot: fixture.targetRoot,
+      ports: harness.ports,
+      registryStore: registry,
+    })
+    assert.equal(session.readLifecycle().state, 'active')
+    const reopened = await fixture.store.resolveActiveWorkspace()
+    assert.equal(reopened.status, 'available')
+    if (reopened.status !== 'available') {
+      assert.fail('accepted workspace must reopen')
+    }
+    assert.equal(reopened.workspace.workspaceId, targetWorkspaceId)
+    assert.equal(reopened.canonicalRoot, fixture.targetRoot)
+    await session.close()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a premature registry acceptance callback cannot publish an uncommitted cutover', async () => {
+  const fixture = await createFixture()
+  try {
+    const before = await registryBytes(fixture.appDataRoot)
+    const harness = createHarness()
+    const registry = registryWithCommit(
+      fixture.store,
+      async (input) => {
+        assert.equal(input.acceptCommit?.(), true)
+        throw new Error('store failed before authority commit')
+      },
+    )
+
+    await assert.rejects(
+      startPreparedWorkspace({
+        appDataRoot: fixture.appDataRoot,
+        explicitWorkspaceRoot: fixture.targetRoot,
+        ports: harness.ports,
+        registryStore: registry,
+      }),
+      (error: unknown) =>
+        error instanceof PreparedWorkspaceStartupError &&
+        error.stage === 'registry_transaction',
+    )
+    assert.equal(harness.events.includes('surface.active'), false)
+    assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('accepted registry housekeeping failure keeps the committed workspace active', async () => {
+  const fixture = await createFixture()
+  try {
+    const harness = createHarness()
+    const registry = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+      fault(point) {
+        if (point === 'after_acceptance') {
+          throw new Error('post-acceptance housekeeping fault')
+        }
+      },
+    })
+
+    const session = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      explicitWorkspaceRoot: fixture.targetRoot,
+      ports: harness.ports,
+      registryStore: registry,
+    })
+    assert.equal(session.readLifecycle().state, 'active')
+    const reopened = await fixture.store.resolveActiveWorkspace()
+    assert.equal(reopened.status, 'available')
+    if (reopened.status !== 'available') {
+      assert.fail('accepted workspace must reopen')
+    }
+    assert.equal(reopened.workspace.workspaceId, targetWorkspaceId)
+    assert.equal(reopened.canonicalRoot, fixture.targetRoot)
+    await session.close()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('Adapter loss after registry acceptance keeps the new pointer and enters recovery', async () => {
+  const fixture = await createFixture()
+  try {
+    const harness = createHarness()
+    const registry = registryWithCommit(
+      fixture.store,
+      (input) =>
+        fixture.store.commitActiveWorkspace({
+          ...input,
+          acceptCommit: () => {
+            const accepted = input.acceptCommit?.() ?? true
+            if (accepted) harness.loseAdapter()
+            return accepted
+          },
+        }),
+    )
+
+    const session = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      explicitWorkspaceRoot: fixture.targetRoot,
+      ports: harness.ports,
+      registryStore: registry,
+    })
+    assert.equal(session.lifecycle.state, 'active')
+    assert.equal(session.readLifecycle().state, 'recovery_required')
+    await waitFor(() => harness.events.includes('listener.close'))
+    const reopened = await fixture.store.resolveActiveWorkspace()
+    assert.equal(reopened.status, 'available')
+    if (reopened.status !== 'available') {
+      assert.fail('accepted workspace must remain selected')
+    }
+    assert.equal(reopened.workspace.workspaceId, targetWorkspaceId)
+    assert.equal(reopened.canonicalRoot, fixture.targetRoot)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('Runtime terminal during the registry transaction restores the previous pointer without active publication', async () => {
   const fixture = await createFixture()
   try {
@@ -282,6 +493,39 @@ test('Runtime terminal during the registry transaction restores the previous poi
       async fault(point) {
         if (point === 'before_final_compare') {
           harness.terminal.resolve()
+        }
+      },
+    })
+
+    await assert.rejects(
+      startPreparedWorkspace({
+        appDataRoot: fixture.appDataRoot,
+        explicitWorkspaceRoot: fixture.targetRoot,
+        ports: harness.ports,
+        registryStore: registry,
+      }),
+      (error: unknown) =>
+        error instanceof PreparedWorkspaceStartupError &&
+        error.stage === 'registry_transaction',
+    )
+    await waitFor(() => harness.events.includes('listener.close'))
+    assert.equal(harness.readLifecycle?.().state, 'recovery_required')
+    assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('synchronous Adapter loss at registry acceptance restores the previous pointer', async () => {
+  const fixture = await createFixture()
+  try {
+    const before = await registryBytes(fixture.appDataRoot)
+    const harness = createHarness()
+    const registry = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+      async fault(point) {
+        if (point === 'before_final_compare') {
+          harness.loseAdapter()
         }
       },
     })
@@ -345,7 +589,7 @@ test('a failed explicit relaunch preserves the previous pointer for a fresh no-a
   const fixture = await createFixture()
   try {
     const before = await registryBytes(fixture.appDataRoot)
-    const failed = createHarness({ fault: 'roster' })
+    const failed = createHarness({ fault: 'adapter_lifecycle' })
     await assert.rejects(
       startPreparedWorkspace({
         appDataRoot: fixture.appDataRoot,
@@ -414,8 +658,17 @@ for (const [name, stage, fault] of [
   ['Runtime spawn', 'workspace_runtime', 'runtime'],
   ['native project config load', 'native_project_config', 'config'],
   ['authenticated Adapter handshake', 'adapter_handshake', 'handshake'],
-  ['required MCP roster', 'required_tool_roster', 'roster'],
+  [
+    'live Adapter lifecycle',
+    'adapter_lifecycle',
+    'adapter_lifecycle',
+  ],
   ['thread cwd and identity', 'thread_context', 'context'],
+  [
+    'Product thread handoff',
+    'product_thread_handoff',
+    'handoff',
+  ],
   ['registry transaction', 'registry_transaction', 'registry'],
 ] as const satisfies readonly [
   string,
@@ -468,100 +721,183 @@ for (const [name, stage, fault] of [
   })
 }
 
-for (const reason of [
-  'missing',
-  'disabled',
-  'ignored',
-  'wrong_roster',
-  'stale_generation',
-] as const) {
-  test(`${reason} required server state is a safe roster failure`, async () => {
-    const fixture = await createFixture()
-    try {
-      const before = await registryBytes(fixture.appDataRoot)
-      const harness = createHarness({
-        fault: 'roster',
-        rosterReason: reason,
-      })
-      await assert.rejects(
-        startPreparedWorkspace({
-          appDataRoot: fixture.appDataRoot,
-          explicitWorkspaceRoot: fixture.targetRoot,
-          ports: harness.ports,
-        }),
-        (error: unknown) =>
-          error instanceof PreparedWorkspaceStartupError &&
-          error.stage === 'required_tool_roster',
-      )
-      assert.equal(harness.events.includes('surface.active'), false)
-      assert.deepEqual(
-        await registryBytes(fixture.appDataRoot),
-        before,
-      )
-    } finally {
-      await fixture.cleanup()
-    }
-  })
-}
+test('unavailable live Adapter status is a safe lifecycle failure', async () => {
+  const fixture = await createFixture()
+  try {
+    const before = await registryBytes(fixture.appDataRoot)
+    const harness = createHarness({
+      fault: 'adapter_lifecycle',
+    })
+    await assert.rejects(
+      startPreparedWorkspace({
+        appDataRoot: fixture.appDataRoot,
+        explicitWorkspaceRoot: fixture.targetRoot,
+        ports: harness.ports,
+      }),
+      (error: unknown) =>
+        error instanceof PreparedWorkspaceStartupError &&
+        error.stage === 'adapter_lifecycle',
+    )
+    assert.equal(harness.events.includes('surface.active'), false)
+    assert.deepEqual(await registryBytes(fixture.appDataRoot), before)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('an unrelated MCP server may use sourced environment variables', async () => {
+  const fixture = await createFixture()
+  try {
+    const harness = createHarness({
+      effectiveConfig(canonicalRoot) {
+        const required = requiredNativeConfig(canonicalRoot)
+        return {
+          ...required,
+          mcpServers: [
+            ...required.mcpServers,
+            {
+              name: 'user_remote_server',
+              command: null,
+              args: [],
+              envVars: [
+                {
+                  name: 'REMOTE_TOKEN',
+                  source: 'remote',
+                },
+              ],
+              cwd: null,
+              toolTimeoutSec: null,
+              env: {},
+              enabled: true,
+              required: false,
+              enabledTools: null,
+              disabledTools: [],
+            },
+          ],
+        }
+      },
+    })
+    const session = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      explicitWorkspaceRoot: fixture.targetRoot,
+      ports: harness.ports,
+    })
+    assert.equal(session.readLifecycle().state, 'active')
+    await session.close()
+  } finally {
+    await fixture.cleanup()
+  }
+})
 
 for (const [reason, effectiveConfig] of [
   [
     'missing',
-    {
-      ...requiredNativeConfig,
+    (canonicalRoot: string) => ({
+      ...requiredNativeConfig(canonicalRoot),
       mcpServers: [],
-    },
+    }),
+  ],
+  [
+    'wrong Adapter command',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, {
+        command: '../wrong-adapter.js',
+      }),
+  ],
+  [
+    'unexpected Adapter arguments',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, {
+        args: ['--unexpected'],
+      }),
+  ],
+  [
+    'wrong inherited environment',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, {
+        envVars: [
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_URL',
+            source: null,
+          },
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_TOKEN',
+            source: null,
+          },
+        ],
+      }),
+  ],
+  [
+    'sourced required environment',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, {
+        envVars: [
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_URL',
+            source: 'remote',
+          },
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_TOKEN',
+            source: null,
+          },
+          {
+            name: 'AY_PLE_INTERACTION_RUNTIME_BINDING',
+            source: null,
+          },
+        ],
+      }),
+  ],
+  [
+    'explicit Adapter cwd',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, { cwd: '.' }),
+  ],
+  [
+    'explicit tool timeout',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, { toolTimeoutSec: 300 }),
+  ],
+  [
+    'static Adapter environment',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, {
+        env: { AY_PLE_INTERACTION_BROKER_TOKEN: 'stale' },
+      }),
+  ],
+  [
+    'disabled required tool',
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, {
+        disabledTools: ['propose_state_patch'],
+      }),
   ],
   [
     'not required',
-    {
-      ...requiredNativeConfig,
-      mcpServers: [
-        {
-          ...requiredNativeConfig.mcpServers[0],
-          required: false,
-        },
-      ],
-    },
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, { required: false }),
   ],
   [
     'disabled',
-    {
-      ...requiredNativeConfig,
-      mcpServers: [
-        {
-          ...requiredNativeConfig.mcpServers[0],
-          enabled: false,
-        },
-      ],
-    },
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, { enabled: false }),
   ],
   [
     'undeclared tool roster',
-    {
-      ...requiredNativeConfig,
-      mcpServers: [
-        {
-          ...requiredNativeConfig.mcpServers[0],
-          enabledTools: null,
-        },
-      ],
-    },
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, { enabledTools: null }),
   ],
   [
     'wrong declared tool roster',
-    {
-      ...requiredNativeConfig,
-      mcpServers: [
-        {
-          ...requiredNativeConfig.mcpServers[0],
-          enabledTools: ['unexpected_tool'],
-        },
-      ],
-    },
+    (canonicalRoot: string) =>
+      overrideRequiredMcp(canonicalRoot, {
+        enabledTools: ['unexpected_tool'],
+      }),
   ],
-] as const) {
-  test(`${reason} effective MCP declaration fails before Adapter handshake`, async () => {
+] as const satisfies readonly [
+  string,
+  (canonicalRoot: string) => CodexEffectiveConfig,
+][]) {
+  test(`${reason} effective MCP declaration fails after trusted thread and live Adapter startup`, async () => {
     const fixture = await createFixture()
     try {
       const harness = createHarness({ effectiveConfig })
@@ -575,7 +911,8 @@ for (const [reason, effectiveConfig] of [
           error instanceof PreparedWorkspaceStartupError &&
           error.stage === 'native_project_config',
       )
-      assert.equal(harness.events.includes('adapter.handshake'), false)
+      assert.equal(harness.events.includes('adapter.handshake'), true)
+      assert.equal(harness.events.includes('adapter.ready'), true)
     } finally {
       await fixture.cleanup()
     }
@@ -728,7 +1065,7 @@ test('Runtime terminal and shutdown revoke one generation and bound teardown', a
   }
 })
 
-test('active MCP monitor loss automatically enters recovery and tears down the generation', async () => {
+test('live Adapter lifecycle loss automatically enters recovery and tears down the generation', async () => {
   const fixture = await createFixture()
   try {
     const harness = createHarness()
@@ -738,7 +1075,7 @@ test('active MCP monitor loss automatically enters recovery and tears down the g
       ports: harness.ports,
     })
 
-    harness.mcpLost.resolve()
+    harness.loseAdapter()
     await waitFor(() => harness.events.includes('listener.close'))
 
     assert.equal(session.readLifecycle().state, 'recovery_required')
@@ -780,33 +1117,26 @@ type HarnessFault =
   | 'runtime'
   | 'config'
   | 'handshake'
-  | 'roster'
+  | 'adapter_lifecycle'
   | 'context'
+  | 'handoff'
   | 'registry'
 
 function createHarness(
   options: {
     readonly fault?: Exclude<HarnessFault, 'registry'>
-    readonly rosterReason?: string
     readonly afterRoster?: () => void | Promise<void>
     readonly hangBrokerCleanup?: boolean
     readonly expectedWorkspaceId?: string
-    readonly effectiveConfig?: typeof requiredNativeConfig | {
-      readonly projectRootMarkers: readonly string[]
-      readonly globalInstructionsFile: string | null
-      readonly mcpServers: readonly {
-        readonly name: string
-        readonly enabled: boolean
-        readonly required: boolean
-        readonly enabledTools: readonly string[] | null
-      }[]
-    }
+    readonly effectiveConfig?: (
+      canonicalRoot: string,
+    ) => CodexEffectiveConfig
   } = {},
 ): {
   readonly events: string[]
   readonly ports: PreparedWorkspaceStartupPorts
   readonly terminal: Deferred<void>
-  readonly mcpLost: Deferred<void>
+  readonly loseAdapter: () => void
   readonly childEnvironment: Record<string, string>
   readonly threadId: string
   readLifecycle?: () => ProductWorkspaceLifecycle
@@ -816,7 +1146,14 @@ function createHarness(
 } {
   const events: string[] = []
   const terminal = deferred<void>()
-  const mcpLost = deferred<void>()
+  const adapterReady = deferred<void>()
+  const adapterLost = deferred<void>()
+  let adapterLostLatched = false
+  const loseAdapter = (): void => {
+    if (adapterLostLatched) return
+    adapterLostLatched = true
+    adapterLost.resolve()
+  }
   const generation = (++harnessGeneration)
     .toString(16)
     .padStart(32, '0')
@@ -831,7 +1168,7 @@ function createHarness(
   const result: ReturnType<typeof createHarness> = {
     events,
     terminal,
-    mcpLost,
+    loseAdapter,
     childEnvironment,
     threadId,
     ports: {
@@ -855,6 +1192,11 @@ function createHarness(
         if (options.fault === 'broker') throw new Error('broker fault')
         return {
           childEnvironment,
+          adapterStatus: {
+            ready: adapterReady.promise,
+            lost: adapterLost.promise,
+            isLost: () => adapterLostLatched,
+          },
           async runtimeTerminal() {
             result.readLifecycle?.()
             events.push('broker.runtime-terminal')
@@ -880,9 +1222,20 @@ function createHarness(
         return {
           terminal: terminal.promise,
           async loadNativeProjectConfig() {
+            assert.equal(events.includes('adapter.handshake'), true)
             events.push('config.load')
             if (options.fault === 'config') throw new Error('config fault')
-            return options.effectiveConfig ?? requiredNativeConfig
+            events.push('adapter.ready')
+            if (options.fault === 'adapter_lifecycle') {
+              loseAdapter()
+            } else {
+              adapterReady.resolve()
+            }
+            await options.afterRoster?.()
+            return (
+              options.effectiveConfig?.(input.canonicalRoot) ??
+              requiredNativeConfig(input.canonicalRoot)
+            )
           },
           async startWorkspaceThread() {
             events.push('adapter.handshake')
@@ -890,20 +1243,6 @@ function createHarness(
               throw new Error('handshake fault')
             }
             return { threadId }
-          },
-          async waitForRequiredMcp(input) {
-            events.push('roster.ready')
-            assert.equal(input.serverName, 'ay_ple_interaction')
-            assert.equal(input.threadId, threadId)
-            assert.deepEqual(input.expectedTools, [
-              'propose_state_patch',
-            ])
-            if (options.fault === 'roster') {
-              throw new Error(
-                `roster fault: ${options.rosterReason ?? 'unknown'}`,
-              )
-            }
-            await options.afterRoster?.()
           },
           async confirmThreadContext(input) {
             events.push('context.confirm')
@@ -917,18 +1256,11 @@ function createHarness(
               throw new Error('context fault')
             }
           },
-          monitorRequiredMcp(input) {
-            events.push('mcp.monitor')
-            assert.equal(input.threadId, threadId)
-            assert.equal(input.serverName, 'ay_ple_interaction')
-            assert.deepEqual(input.expectedTools, [
-              'propose_state_patch',
-            ])
-            return {
-              lost: mcpLost.promise,
-              async close() {
-                events.push('mcp.monitor-close')
-              },
+          async handoffProductThread(inputThreadId) {
+            events.push('thread.handoff')
+            assert.equal(inputThreadId, threadId)
+            if (options.fault === 'handoff') {
+              throw new Error('handoff fault')
             }
           },
           async close() {
@@ -983,8 +1315,9 @@ function startupGate(events: readonly string[]): readonly string[] {
       'runtime.spawn',
       'config.load',
       'adapter.handshake',
-      'roster.ready',
+      'adapter.ready',
       'context.confirm',
+      'thread.handoff',
       'surface.active',
     ].includes(event),
   )

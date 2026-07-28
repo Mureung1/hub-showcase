@@ -50,7 +50,6 @@ from .protocol import (
     RequestLeaseTable,
     ReadAccountCommand,
     ReadModelCatalogCommand,
-    WaitForMcpServerReadyCommand,
     ReleaseThreadCommand,
     StartThreadCommand,
     StartProductTurnCommand,
@@ -66,8 +65,6 @@ SAFE_MESSAGES = {
     "interaction_not_pending": "The user-input interaction is not pending.",
     "invalid_user_input_answer": "The user-input answer is invalid.",
     "live_thread_limit": "The bridge live-thread limit was reached.",
-    "mcp_server_not_ready": "The required Codex MCP server is not ready.",
-    "mcp_server_tools_mismatch": "The required Codex MCP server tool roster did not match.",
     "operation_limit": "The bridge pending-operation limit was reached.",
     "sdk_request_failed": "Codex rejected the requested operation.",
     "unknown_thread": "The native thread is not live in this bridge.",
@@ -318,7 +315,6 @@ class BridgeWorker:
             (
                 ReadAccountCommand,
                 ReadModelCatalogCommand,
-                WaitForMcpServerReadyCommand,
                 StartThreadCommand,
                 StartTurnCommand,
                 StartProductTurnCommand,
@@ -346,8 +342,6 @@ class BridgeWorker:
             coroutine = self._read_account(command)
         elif isinstance(command, ReadModelCatalogCommand):
             coroutine = self._read_model_catalog(command)
-        elif isinstance(command, WaitForMcpServerReadyCommand):
-            coroutine = self._wait_for_mcp_server_ready(command)
         elif isinstance(command, StartThreadCommand):
             coroutine = self._start_thread(command)
         elif isinstance(command, StartTurnCommand):
@@ -570,48 +564,6 @@ class BridgeWorker:
                     if not model.hidden
                 ]
             },
-        )
-
-    async def _wait_for_mcp_server_ready(
-        self,
-        command: WaitForMcpServerReadyCommand,
-    ) -> None:
-        if command.thread_id not in self._threads:
-            self._operation_error(
-                command.bridge_request_id,
-                "mcp_server_not_ready",
-            )
-            return
-        try:
-            response = await self._codex.mcp_server_statuses(command.thread_id)
-        except Exception as exc:
-            self._sdk_failure(command.bridge_request_id, exc)
-            return
-        matches = [
-            status for status in response.data if status.name == command.server_name
-        ]
-        if len(matches) != 1:
-            self._operation_error(
-                command.bridge_request_id,
-                "mcp_server_not_ready",
-            )
-            return
-        actual_tools = set(matches[0].tools)
-        if not actual_tools:
-            self._operation_error(
-                command.bridge_request_id,
-                "mcp_server_not_ready",
-            )
-            return
-        if actual_tools != set(command.expected_tools):
-            self._operation_error(
-                command.bridge_request_id,
-                "mcp_server_tools_mismatch",
-            )
-            return
-        self._result(
-            command.bridge_request_id,
-            command.command,
         )
 
     async def _fresh_account_state(self) -> str:

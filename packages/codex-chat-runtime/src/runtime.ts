@@ -32,7 +32,6 @@ import type {
   AnswerUserInput,
   CancelUserInput,
   CodexChildEnvironment,
-  CodexMcpReadinessPort,
   CodexModelCatalog,
   CodexProductTurn,
   CodexWorkspaceRuntime,
@@ -47,8 +46,6 @@ import {
   RUNTIME_CLOSED_MESSAGE,
   RUNTIME_CLOSE_TIMEOUT_MESSAGE,
   RUNTIME_LOST_MESSAGE,
-  MCP_SERVER_NOT_READY_MESSAGE,
-  MCP_SERVER_TOOLS_MISMATCH_MESSAGE,
   RUNTIME_RESPONSE_TIMEOUT_MESSAGE,
   RUNTIME_START_FAILED_MESSAGE,
   RUNTIME_START_TIMEOUT_MESSAGE,
@@ -67,11 +64,6 @@ import {
   NativeContextGenerationCoordinator,
   type NativeContextProbeRunner,
 } from './native-context-coordinator.js'
-import {
-  abortableMcpReadinessOperation,
-  mcpReadinessAbortedError,
-  requireMcpReadinessInput,
-} from './mcp-readiness.js'
 import type { VerifiedProductionBundle } from './production-bundle.js'
 import { SerializedBridgeWriter } from './serialized-writer.js'
 
@@ -80,7 +72,6 @@ type RuntimeState = 'starting' | 'ready' | 'closing' | 'closed' | 'failed'
 type CommandName =
   | 'read_account'
   | 'read_model_catalog'
-  | 'wait_for_mcp_server_ready'
   | 'start_thread'
   | 'start_turn'
   | 'start_product_turn'
@@ -118,8 +109,6 @@ const BRIDGE_OPERATION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   interaction_not_pending: 'The user-input interaction is not pending.',
   invalid_user_input_answer: 'The user-input answer is invalid.',
   live_thread_limit: 'The bridge live-thread limit was reached.',
-  mcp_server_not_ready: MCP_SERVER_NOT_READY_MESSAGE,
-  mcp_server_tools_mismatch: MCP_SERVER_TOOLS_MISMATCH_MESSAGE,
   operation_limit: 'The bridge pending-operation limit was reached.',
   sdk_request_failed: 'Codex rejected the requested operation.',
   unknown_thread: 'The native thread is not live in this bridge.',
@@ -571,32 +560,6 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
         return frame.catalog
       },
     )
-  }
-
-  waitForMcpServerReady(
-    input: Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
-  ): Promise<void> {
-    requireMcpReadinessInput(input)
-    if (input.signal.aborted) {
-      return Promise.reject(mcpReadinessAbortedError())
-    }
-    const operation = this.sendOperation(
-      'wait_for_mcp_server_ready',
-      false,
-      (bridgeRequestId) => ({
-        bridgeRequestId,
-        command: 'wait_for_mcp_server_ready',
-        threadId: input.threadId,
-        serverName: input.serverName,
-        expectedTools: [...input.expectedTools],
-      }),
-      (frame) => {
-        if (frame.command !== 'wait_for_mcp_server_ready') {
-          throw new BridgeProtocolError('mismatch')
-        }
-      },
-    )
-    return abortableMcpReadinessOperation(operation, input.signal)
   }
 
   readEffectiveConfig(input: {

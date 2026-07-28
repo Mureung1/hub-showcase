@@ -39,6 +39,9 @@ import { bindServerApplicationListener } from '../../server/src/server-listener.
 
 const execFileAsync = promisify(execFile)
 const chatShellRoot = fileURLToPath(new URL('../', import.meta.url))
+const interactionAdapterPath = fileURLToPath(
+  new URL('../../../packages/interaction-mcp/dist/stdio.js', import.meta.url),
+)
 const registryRelativePath = path.join(
   'state',
   'workspace-registry.json',
@@ -211,7 +214,9 @@ test('uses the prepared startup seam for fresh reopen and failed-switch recovery
 
     const registryBeforeFailure = await registryBytes(fixture.appDataRoot)
     const userBytesBeforeFailure = await readFile(fixture.userFile)
-    const failed = createDeterministicPorts({ fault: 'roster' })
+    const failed = createDeterministicPorts({
+      fault: 'adapter_lifecycle',
+    })
     await assert.rejects(
       startPreparedWorkspace({
         appDataRoot: fixture.appDataRoot,
@@ -220,7 +225,7 @@ test('uses the prepared startup seam for fresh reopen and failed-switch recovery
       }),
       (error: unknown) =>
         error instanceof PreparedWorkspaceStartupError &&
-        error.stage === 'required_tool_roster',
+        error.stage === 'adapter_lifecycle',
     )
     assert.deepEqual(
       await registryBytes(fixture.appDataRoot),
@@ -326,7 +331,7 @@ async function bindLifecycleSource(
 function createDeterministicPorts(
   options: {
     readonly expectedWorkspaceId?: string
-    readonly fault?: 'roster'
+    readonly fault?: 'adapter_lifecycle'
     readonly holdStartup?: boolean
   } = {},
 ): {
@@ -343,6 +348,9 @@ function createDeterministicPorts(
   const listenerBound = deferred<void>()
   const startupGate = deferred<void>()
   const terminal = deferred<void>()
+  const adapterReady = deferred<void>()
+  const adapterLost = deferred<void>()
+  let adapterLostLatched = false
   let runtimeRoot: string | undefined
 
   return {
@@ -380,6 +388,11 @@ function createDeterministicPorts(
             AY_PLE_INTERACTION_RUNTIME_BINDING:
               `runtime_${id}`,
           },
+          adapterStatus: {
+            ready: adapterReady.promise,
+            lost: adapterLost.promise,
+            isLost: () => adapterLostLatched,
+          },
           async runtimeTerminal() {},
           async adapterLost() {},
           async appShutdown() {},
@@ -391,31 +404,53 @@ function createDeterministicPorts(
           terminal: terminal.promise,
           async loadNativeProjectConfig() {
             if (options.holdStartup) await startupGate.promise
+            if (options.fault === 'adapter_lifecycle') {
+              adapterLostLatched = true
+              adapterLost.resolve(undefined)
+            } else {
+              adapterReady.resolve(undefined)
+            }
             return {
               projectRootMarkers: ['.git'],
               globalInstructionsFile: null,
               mcpServers: [
                 {
                   name: 'ay_ple_interaction',
+                  command: path
+                    .relative(
+                      input.canonicalRoot,
+                      interactionAdapterPath,
+                    )
+                    .split(path.sep)
+                    .join('/'),
+                  args: [],
+                  envVars: [
+                    {
+                      name: 'AY_PLE_INTERACTION_BROKER_URL',
+                      source: null,
+                    },
+                    {
+                      name: 'AY_PLE_INTERACTION_BROKER_TOKEN',
+                      source: null,
+                    },
+                    {
+                      name: 'AY_PLE_INTERACTION_RUNTIME_BINDING',
+                      source: null,
+                    },
+                  ],
+                  cwd: null,
+                  toolTimeoutSec: null,
+                  env: {},
                   enabled: true,
                   required: true,
                   enabledTools: ['propose_state_patch'],
+                  disabledTools: [],
                 },
               ],
             }
           },
           async startWorkspaceThread() {
             return { threadId }
-          },
-          async waitForRequiredMcp(waitInput) {
-            assert.equal(waitInput.threadId, threadId)
-            assert.equal(waitInput.serverName, 'ay_ple_interaction')
-            assert.deepEqual(waitInput.expectedTools, [
-              'propose_state_patch',
-            ])
-            if (options.fault === 'roster') {
-              throw new Error('deterministic roster failure')
-            }
           },
           async confirmThreadContext(context) {
             const canonicalRoot = (
@@ -433,12 +468,8 @@ function createDeterministicPorts(
               options.expectedWorkspaceId ?? targetWorkspaceId,
             )
           },
-          monitorRequiredMcp(monitorInput) {
-            assert.equal(monitorInput.threadId, threadId)
-            return {
-              lost: new Promise(() => undefined),
-              async close() {},
-            }
+          async handoffProductThread(inputThreadId) {
+            assert.equal(inputThreadId, threadId)
           },
           async close() {},
         }

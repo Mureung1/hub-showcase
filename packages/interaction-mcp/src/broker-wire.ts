@@ -35,6 +35,10 @@ export type InteractionBrokerRequest =
     }
   | {
       readonly protocolVersion: 1
+      readonly kind: 'lifecycle_open'
+    }
+  | {
+      readonly protocolVersion: 1
       readonly kind: 'capability_call'
       readonly capability: 'propose_state_patch'
       readonly request: ProposeStatePatchRequest
@@ -44,6 +48,10 @@ export type InteractionBrokerResponse =
   | {
       readonly protocolVersion: 1
       readonly kind: 'handshake_accepted'
+    }
+  | {
+      readonly protocolVersion: 1
+      readonly kind: 'lifecycle_accepted'
     }
   | {
       readonly protocolVersion: 1
@@ -83,6 +91,14 @@ export function parseInteractionBrokerResponse(
 export function decodeInteractionBrokerRequest(
   value: unknown,
 ): InteractionBrokerRequest {
+  if (
+    isExactObject(value, ['kind', 'protocolVersion']) &&
+    value.protocolVersion === INTERACTION_BROKER_PROTOCOL_VERSION &&
+    value.kind === 'lifecycle_open'
+  ) {
+    return value as unknown as InteractionBrokerRequest
+  }
+
   if (
     isExactObject(value, [
       'capabilities',
@@ -124,6 +140,14 @@ export function decodeInteractionBrokerResponse(
     isExactObject(value, ['kind', 'protocolVersion']) &&
     value.protocolVersion === INTERACTION_BROKER_PROTOCOL_VERSION &&
     value.kind === 'handshake_accepted'
+  ) {
+    return value as unknown as InteractionBrokerResponse
+  }
+
+  if (
+    isExactObject(value, ['kind', 'protocolVersion']) &&
+    value.protocolVersion === INTERACTION_BROKER_PROTOCOL_VERSION &&
+    value.kind === 'lifecycle_accepted'
   ) {
     return value as unknown as InteractionBrokerResponse
   }

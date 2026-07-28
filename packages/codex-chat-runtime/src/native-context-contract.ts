@@ -1,8 +1,20 @@
+export type CodexEffectiveMcpEnvironmentVariable = {
+  readonly name: string
+  readonly source: 'local' | 'remote' | null
+}
+
 export type CodexEffectiveMcpServer = {
   readonly name: string
+  readonly command: string | null
+  readonly args: readonly string[]
+  readonly envVars: readonly CodexEffectiveMcpEnvironmentVariable[]
+  readonly cwd: string | null
+  readonly toolTimeoutSec: number | null
+  readonly env: Readonly<Record<string, string>>
   readonly enabled: boolean
   readonly required: boolean
   readonly enabledTools: readonly string[] | null
+  readonly disabledTools: readonly string[]
 }
 
 export type CodexEffectiveConfig = {

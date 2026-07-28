@@ -15,7 +15,6 @@ import type {
   AnswerUserInput,
   CancelUserInput,
   CodexModelCatalog,
-  CodexMcpReadinessPort,
   CodexProductTurn,
   CodexWorkspaceRuntime,
   StartProductTurnInput,
@@ -28,14 +27,6 @@ import {
   CodexChatRuntimeError,
   INTERACTION_NOT_PENDING_MESSAGE,
 } from './errors.js'
-import {
-  abortableMcpReadinessOperation,
-  mcpReadinessAbortedError,
-  mcpServerNotReadyError,
-  mcpServerToolsMismatchError,
-  requireMcpReadinessInput,
-  sameMcpToolRoster,
-} from './mcp-readiness.js'
 
 export {
   startCodexChatProcessTreeTestFixture,
@@ -48,13 +39,6 @@ export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readModelCatalog' }
   | { readonly operation: 'readEffectiveConfig' }
   | { readonly operation: 'listEffectiveSkills' }
-  | {
-      readonly operation: 'waitForMcpServerReady'
-      readonly input: Omit<
-        Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
-        'signal'
-      >
-    }
   | { readonly operation: 'startThread' }
   | {
       readonly operation: 'startTurn'
@@ -109,21 +93,12 @@ export type DeterministicCodexChatRuntimeOptions = {
   readonly effectiveSkills?: readonly DeterministicValue<
     readonly CodexEffectiveSkill[]
   >[]
-  readonly mcpServerStatuses?: readonly DeterministicValue<
-    readonly DeterministicCodexMcpServerStatus[]
-  >[]
   readonly threadIds?: readonly CodexThreadId[]
   readonly productTurns?: readonly DeterministicCodexProductTurn[]
   readonly turns?: readonly DeterministicCodexChatTurn[]
 }
 
 type DeterministicValue<T> = T | PromiseLike<T>
-
-export type DeterministicCodexMcpServerStatus = {
-  readonly state: 'starting' | 'ready' | 'failed'
-  readonly serverName: string
-  readonly tools: readonly string[]
-}
 
 export type DeterministicCodexProductRuntimeCall =
   DeterministicCodexChatRuntimeCall
@@ -153,9 +128,6 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
   private readonly effectiveSkills: DeterministicValue<
     readonly CodexEffectiveSkill[]
   >[]
-  private readonly mcpServerStatuses: DeterministicValue<
-    readonly DeterministicCodexMcpServerStatus[]
-  >[]
   private readonly threadIds: CodexThreadId[]
   private readonly productTurns: DeterministicCodexProductTurn[]
   private readonly turns: DeterministicCodexChatTurn[]
@@ -174,7 +146,6 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
     this.modelCatalogs = [...structuredClone(options.modelCatalogs ?? [])]
     this.effectiveConfigs = [...(options.effectiveConfigs ?? [])]
     this.effectiveSkills = [...(options.effectiveSkills ?? [])]
-    this.mcpServerStatuses = [...(options.mcpServerStatuses ?? [])]
     this.threadIds = [...(options.threadIds ?? [])]
     this.productTurns = (options.productTurns ?? []).map((turn) => ({
       input: cloneProductTurnInput(turn.input),
@@ -232,42 +203,6 @@ export class DeterministicCodexChatRuntime implements CodexWorkspaceRuntime {
       'effective Skill list',
       input.signal,
     )
-  }
-
-  async waitForMcpServerReady(
-    input: Parameters<CodexMcpReadinessPort['waitForMcpServerReady']>[0],
-  ): Promise<void> {
-    requireMcpReadinessInput(input)
-    this.callLog.push({
-      operation: 'waitForMcpServerReady',
-      input: {
-        threadId: input.threadId,
-        serverName: input.serverName,
-        expectedTools: [...input.expectedTools],
-      },
-    })
-    this.requireOpen()
-    if (input.signal.aborted) throw mcpReadinessAbortedError()
-    if (!this.liveThreads.has(input.threadId)) {
-      throw mcpServerNotReadyError()
-    }
-    const scripted = this.mcpServerStatuses.shift()
-    if (scripted === undefined) {
-      throw new Error('No deterministic MCP server status snapshot remains')
-    }
-    const statuses = await abortableMcpReadinessOperation(
-      Promise.resolve(scripted),
-      input.signal,
-    )
-    const matches = statuses.filter(
-      ({ serverName }) => serverName === input.serverName,
-    )
-    if (matches.length !== 1 || matches[0]?.state !== 'ready') {
-      throw mcpServerNotReadyError()
-    }
-    if (!sameMcpToolRoster(matches[0].tools, input.expectedTools)) {
-      throw mcpServerToolsMismatchError()
-    }
   }
 
   async startThread(): Promise<CodexChatThread> {

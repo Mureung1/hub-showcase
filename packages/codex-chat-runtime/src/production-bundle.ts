@@ -34,7 +34,7 @@ const EXPECTED_RUNTIME_VERSION = '0.144.4'
 const EXPECTED_RUNTIME_BINARY_VERSION = 'codex-cli 0.144.4'
 const EXPECTED_RUNTIME_DISTRIBUTION = 'openai-codex-cli-bin'
 const EXPECTED_PATCH_STACK_SHA256 =
-  'f6c82d2d862ae5bb9033c6db0a8ae18b19684181fe70f7ed3ace7f8498149d89'
+  'e9bee416c02ff419dc961f092de85df54b40e7456a304d62470ac19ff64f7a8b'
 const EXPECTED_PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
@@ -43,7 +43,6 @@ const EXPECTED_PATCH_IDS = [
   '0005-strict-response-classification',
   '0006-plan-user-input-seam',
   '0007-thread-start-settings',
-  '0008-thread-mcp-status',
 ] as const
 const EXPECTED_TARGET = {
   architecture: 'arm64',

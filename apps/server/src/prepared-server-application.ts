@@ -10,6 +10,7 @@ import {
 } from './codex-chat.js'
 import {
   createInteractionBroker,
+  type InteractionAdapterStatus,
   type InteractionBroker,
   type InteractionBrokerCredentials,
 } from './interaction-broker.js'
@@ -21,7 +22,11 @@ import type { ServerApplication } from './server-application.js'
 
 export type PreparedServerApplication = {
   readonly application: ServerApplication
+  readonly adapterStatus: InteractionAdapterStatus
   readonly credentials: InteractionBrokerCredentials
+  runtimeTerminal(): Promise<void>
+  adapterLost(): Promise<void>
+  appShutdown(): Promise<void>
 }
 
 export async function createPreparedServerApplication(options: {
@@ -92,20 +97,33 @@ export async function createPreparedServerApplication(options: {
   )
 
   let closePromise: Promise<void> | undefined
+  const close = (
+    reason: 'runtime_terminal' | 'adapter_lost' | 'app_shutdown',
+  ): Promise<void> => {
+    closePromise ??= (async () => {
+      operations.beginShutdown()
+      codexChat.beginShutdown()
+      if (reason === 'adapter_lost') {
+        await interactionBroker?.adapterLost()
+      } else if (reason === 'runtime_terminal') {
+        await interactionBroker?.runtimeTerminal()
+      } else {
+        await interactionBroker?.appShutdown()
+      }
+      await codexChat.close()
+    })()
+    return closePromise
+  }
   const application: ServerApplication = {
     app,
-    close() {
-      closePromise ??= (async () => {
-        operations.beginShutdown()
-        codexChat.beginShutdown()
-        await interactionBroker?.appShutdown()
-        await codexChat.close()
-      })()
-      return closePromise
-    },
+    close: () => close('app_shutdown'),
   }
   return {
     application,
+    adapterStatus: interactionBroker.adapterStatus,
     credentials: interactionBroker.credentials(),
+    runtimeTerminal: () => close('runtime_terminal'),
+    adapterLost: () => close('adapter_lost'),
+    appShutdown: () => close('app_shutdown'),
   }
 }

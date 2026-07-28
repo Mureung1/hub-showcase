@@ -36,6 +36,8 @@ export function configuredBootstrap(
     ...codexChatIdentity,
     ...options,
     createRuntime: async () => runtime,
+    acquireProductThread: async (actualRuntime) =>
+      (await actualRuntime.startThread()).threadId,
   }
 }
 
@@ -189,12 +191,6 @@ export class ControlledRuntime implements CodexWorkspaceRuntime {
       displayMessage: 'The controlled test Runtime is unavailable.',
       unknownOutcome: false,
     })
-  }
-
-  async waitForMcpServerReady(
-    input: Parameters<CodexWorkspaceRuntime['waitForMcpServerReady']>[0],
-  ): Promise<void> {
-    input.signal.throwIfAborted()
   }
 
   async readModelCatalog(): Promise<CodexModelCatalog> {

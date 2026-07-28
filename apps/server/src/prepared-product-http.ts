@@ -111,6 +111,15 @@ export function createPreparedProductRouter(options: {
 
   router.get('/codex-settings', async (_request, response) => {
     response.setHeader('cache-control', 'no-store')
+    if (options.readLifecycle().state !== 'active') {
+      sendError(
+        response,
+        503,
+        'workspace_unavailable',
+        safeUnavailable,
+      )
+      return
+    }
     try {
       response.json(await options.readCodexSettings())
     } catch {

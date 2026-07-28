@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
   mkdtemp,
@@ -11,6 +12,7 @@ import { createServer, type Server } from 'node:http'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import express from 'express'
 
@@ -23,6 +25,117 @@ import {
 const operationId = 'operation_0123456789abcdef0123456789abcdef'
 const nativeThreadId = 'native-thread-secret'
 const nativeTurnId = 'native-turn-secret'
+
+test('Interaction Broker admits one authenticated live Adapter lifecycle and closes it intentionally', async () => {
+  const fixture = await createFixture()
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: { publish() {} },
+  })
+  const server = await listen(broker.router)
+
+  try {
+    assert.equal(Object.isFrozen(broker.adapterStatus), true)
+    assert.equal(broker.adapterStatus.isLost(), false)
+    assert.equal(
+      (
+        await postBroker(server, broker, {
+          protocolVersion: 1,
+          kind: 'lifecycle_open',
+        })
+      ).code,
+      'broker_unavailable',
+    )
+    await acceptHandshakeOnly(server, broker)
+    assert.equal(
+      (
+        await postBroker(
+          server,
+          broker,
+          { protocolVersion: 1, kind: 'lifecycle_open' },
+          { token: 'wrong' },
+        )
+      ).code,
+      'forbidden',
+    )
+    assert.equal(
+      (
+        await postBroker(server, broker, {
+          protocolVersion: 1,
+          kind: 'lifecycle_open',
+          generation: 'fake',
+        })
+      ).code,
+      'invalid_request',
+    )
+
+    const lifecycle = await openLifecycle(server, broker)
+    await broker.adapterStatus.ready
+    assert.equal(broker.adapterStatus.isLost(), false)
+    assert.equal(
+      (
+        await postBroker(server, broker, {
+          protocolVersion: 1,
+          kind: 'lifecycle_open',
+        })
+      ).code,
+      'busy',
+    )
+
+    await broker.appShutdown()
+    await lifecycle.closed
+    assert.equal(broker.adapterStatus.isLost(), false)
+    assert.equal(
+      await settlesSoon(broker.adapterStatus.lost),
+      false,
+    )
+  } finally {
+    await broker.appShutdown()
+    await close(server)
+  }
+})
+
+test('actual built Adapter termination synchronously latches Broker loss', async () => {
+  const fixture = await createFixture()
+  let teardowns = 0
+  const broker = await createInteractionBroker({
+    workspaceRoot: fixture.workspaceRoot,
+    activeProductTurn: () => activeTurn(),
+    uiAdapter: { publish() {} },
+    teardownRuntime() {
+      teardowns += 1
+    },
+  })
+  const server = await listen(broker.router)
+  const adapter = startBuiltAdapter(server, broker)
+
+  try {
+    adapter.send({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'broker-lifecycle-test', version: '1' },
+      },
+    })
+    const initialized = await adapter.read()
+    assert.equal(initialized.id, 1)
+    assert.ok(initialized.result)
+    await broker.adapterStatus.ready
+
+    await adapter.kill()
+    await broker.adapterStatus.lost
+    assert.equal(broker.adapterStatus.isLost(), true)
+    await waitFor(() => teardowns === 1)
+  } finally {
+    await adapter.kill()
+    await broker.appShutdown()
+    await close(server)
+  }
+})
 
 test('Interaction Broker returns one held result after atomic evidence projection', async () => {
   const fixture = await createFixture()
@@ -685,6 +798,19 @@ async function acceptHandshake(
   server: Server & { readonly testPort: number },
   broker: Awaited<ReturnType<typeof createInteractionBroker>>,
 ): Promise<void> {
+  await acceptHandshakeOnly(server, broker)
+  const lifecycle = await openLifecycle(server, broker)
+  assert.deepEqual(lifecycle.accepted, {
+    protocolVersion: 1,
+    kind: 'lifecycle_accepted',
+  })
+  await broker.adapterStatus.ready
+}
+
+async function acceptHandshakeOnly(
+  server: Server & { readonly testPort: number },
+  broker: Awaited<ReturnType<typeof createInteractionBroker>>,
+): Promise<void> {
   assert.deepEqual(
     await postBroker(server, broker, {
       protocolVersion: 1,
@@ -697,6 +823,45 @@ async function acceptHandshake(
       kind: 'handshake_accepted',
     },
   )
+}
+
+async function openLifecycle(
+  server: Server & { readonly testPort: number },
+  broker: Awaited<ReturnType<typeof createInteractionBroker>>,
+): Promise<{
+  readonly accepted: Record<string, any>
+  readonly closed: Promise<void>
+}> {
+  const credentials = broker.credentials()
+  const response = await fetch(
+    `http://127.0.0.1:${server.testPort}/api/_private/interaction-mcp`,
+    {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${credentials.token}`,
+        'content-type': 'application/json',
+        'x-ay-ple-runtime-binding': credentials.binding,
+      },
+      body: JSON.stringify({
+        protocolVersion: 1,
+        kind: 'lifecycle_open',
+      }),
+    },
+  )
+  assert.equal(response.status, 200)
+  assert.ok(response.body)
+  const reader = response.body.getReader()
+  const prefix = await reader.read()
+  assert.equal(prefix.done, false)
+  const accepted = JSON.parse(
+    new TextDecoder().decode(prefix.value).replace(/\n$/, ''),
+  ) as Record<string, any>
+  const closed = (async () => {
+    while (!(await reader.read()).done) {
+      // A lifecycle response contains only its accepted prefix.
+    }
+  })()
+  return { accepted, closed }
 }
 
 async function postRaw(
@@ -729,6 +894,74 @@ async function postRaw(
 
 function sha256(bytes: Buffer): string {
   return createHash('sha256').update(bytes).digest('hex')
+}
+
+function startBuiltAdapter(
+  server: Server & { readonly testPort: number },
+  broker: Awaited<ReturnType<typeof createInteractionBroker>>,
+): {
+  send(value: unknown): void
+  read(): Promise<Record<string, any>>
+  kill(): Promise<void>
+} {
+  const credentials = broker.credentials()
+  const executable = fileURLToPath(
+    new URL('../../../packages/interaction-mcp/dist/stdio.js', import.meta.url),
+  )
+  const child = spawn(process.execPath, [executable], {
+    env: {
+      ...process.env,
+      AY_PLE_INTERACTION_BROKER_URL:
+        `http://127.0.0.1:${server.testPort}/api/_private/interaction-mcp`,
+      AY_PLE_INTERACTION_BROKER_TOKEN: credentials.token,
+      AY_PLE_INTERACTION_RUNTIME_BINDING: credentials.binding,
+    },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+  const output: Record<string, any>[] = []
+  const waiters: ((value: Record<string, any>) => void)[] = []
+  let buffer = ''
+  child.stdout.setEncoding('utf8')
+  child.stdout.on('data', (chunk: string) => {
+    buffer += chunk
+    while (true) {
+      const newline = buffer.indexOf('\n')
+      if (newline < 0) return
+      const line = buffer.slice(0, newline)
+      buffer = buffer.slice(newline + 1)
+      if (line.length === 0) continue
+      const value = JSON.parse(line) as Record<string, any>
+      const waiter = waiters.shift()
+      if (waiter) waiter(value)
+      else output.push(value)
+    }
+  })
+  return {
+    send(value) {
+      child.stdin.write(`${JSON.stringify(value)}\n`)
+    },
+    read() {
+      const value = output.shift()
+      if (value) return Promise.resolve(value)
+      return new Promise((resolve) => waiters.push(resolve))
+    },
+    kill: () => killChild(child),
+  }
+}
+
+async function killChild(
+  child: ChildProcessWithoutNullStreams,
+): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) return
+  child.kill('SIGKILL')
+  await new Promise<void>((resolve) => child.once('exit', () => resolve()))
+}
+
+async function settlesSoon(promise: Promise<void>): Promise<boolean> {
+  return Promise.race([
+    promise.then(() => true),
+    new Promise<false>((resolve) => setTimeout(resolve, 25, false)),
+  ])
 }
 
 async function waitFor(predicate: () => boolean): Promise<void> {

@@ -627,50 +627,6 @@ class FakeAppServer:
                 }
             )
             return
-        if method == "mcpServerStatus/list":
-            params = message.get("params")
-            if params != {
-                "detail": "toolsAndAuthOnly",
-                "threadId": "thread-1",
-            }:
-                raise RuntimeError(
-                    "MCP status lookup must use the live thread project context"
-                )
-            delay_path = self._journal_path.parent / "delay-mcp-status-ms"
-            if delay_path.is_file():
-                delay_ms = int(delay_path.read_text(encoding="utf-8"))
-                delay_path.unlink()
-                time.sleep(delay_ms / 1000)
-            _write(
-                {
-                    "id": message["id"],
-                    "result": {
-                        "data": [
-                            {
-                                "authStatus": "unsupported",
-                                "name": "ay_ple_interaction",
-                                "resourceTemplates": [],
-                                "resources": [],
-                                "serverInfo": {
-                                    "name": "ay-ple-interaction",
-                                    "version": "0.0.0-test",
-                                },
-                                "tools": {
-                                    "propose_state_patch": {
-                                        "inputSchema": {
-                                            "properties": {},
-                                            "type": "object",
-                                        },
-                                        "name": "propose_state_patch",
-                                    }
-                                },
-                            }
-                        ],
-                        "nextCursor": None,
-                    },
-                }
-            )
-            return
         if method == "turn/start":
             if (self._journal_path.parent / "hold-turn-start").is_file():
                 return

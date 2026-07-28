@@ -17,6 +17,7 @@ const brokerTokenEnvironment = 'AY_PLE_INTERACTION_BROKER_TOKEN'
 const runtimeBindingEnvironment = 'AY_PLE_INTERACTION_RUNTIME_BINDING'
 const brokerRoute = '/api/_private/interaction-mcp'
 const mcpInputMaximumBytes = 2 * 1024 * 1024
+const lifecyclePrefixMaximumBytes = 1024
 const safeUnavailableMessage = 'The interaction Broker is unavailable.'
 const safeInvalidMessage = 'The interaction request is invalid.'
 const safeInterruptedMessage = 'The interaction was interrupted.'
@@ -108,6 +109,11 @@ class BrokerUnavailableError extends Error {
 const activeCalls = new Map<string, AbortController>()
 let initialized = false
 let startupPromise: Promise<void> | undefined
+let adapterConnectionAbortController: AbortController | undefined
+let lifecycleReader:
+  | ReadableStreamDefaultReader<Uint8Array>
+  | undefined
+let adapterStopped = false
 let inputBuffer = ''
 let discardingOversizedLine = false
 
@@ -116,17 +122,17 @@ process.stdin.on('data', (chunk: string) => {
   consumeInput(chunk)
 })
 process.stdin.on('end', () => {
-  abortActiveCalls()
+  stopAdapter()
 })
 process.stdin.on('error', () => {
-  abortActiveCalls()
+  stopAdapter()
 })
 process.once('SIGINT', () => {
-  abortActiveCalls()
+  stopAdapter()
   process.exitCode = 130
 })
 process.once('SIGTERM', () => {
-  abortActiveCalls()
+  stopAdapter()
   process.exitCode = 143
 })
 
@@ -228,6 +234,9 @@ async function initialize(id: JsonRpcId, params: unknown): Promise<void> {
   }
   try {
     await ensureBrokerHandshake()
+    if (adapterStopped || !lifecycleReader) {
+      throw new BrokerUnavailableError()
+    }
   } catch {
     sendJsonRpcError(id, -32000, safeUnavailableMessage)
     return
@@ -296,26 +305,88 @@ async function callTool(id: JsonRpcId, params: unknown): Promise<void> {
 }
 
 function ensureBrokerHandshake(): Promise<void> {
+  if (adapterStopped) return Promise.reject(new BrokerUnavailableError())
   if (!startupPromise) {
+    const abortController = new AbortController()
+    adapterConnectionAbortController = abortController
     startupPromise = (async () => {
-      const response = await postToBroker({
-        protocolVersion: INTERACTION_BROKER_PROTOCOL_VERSION,
-        kind: 'handshake',
-        serverName: INTERACTION_MCP_SERVER_NAME,
-        capabilities: [PROPOSE_STATE_PATCH_CAPABILITY],
-      })
+      const response = await postToBroker(
+        {
+          protocolVersion: INTERACTION_BROKER_PROTOCOL_VERSION,
+          kind: 'handshake',
+          serverName: INTERACTION_MCP_SERVER_NAME,
+          capabilities: [PROPOSE_STATE_PATCH_CAPABILITY],
+        },
+        abortController.signal,
+      )
       if (response.kind !== 'handshake_accepted') {
         throw new BrokerUnavailableError()
       }
+      if (adapterStopped || abortController.signal.aborted) {
+        throw new BrokerUnavailableError()
+      }
+      await openBrokerLifecycle(abortController)
     })()
   }
   return startupPromise
+}
+
+async function openBrokerLifecycle(
+  abortController: AbortController,
+): Promise<void> {
+  try {
+    const response = await fetchBroker(
+      {
+        protocolVersion: INTERACTION_BROKER_PROTOCOL_VERSION,
+        kind: 'lifecycle_open',
+      },
+      abortController.signal,
+    )
+    if (response.status !== 200 || !response.body) {
+      await readBoundedResponseBody(response).catch(() => undefined)
+      throw new BrokerUnavailableError()
+    }
+    const reader = response.body.getReader()
+    const accepted = await readLifecyclePrefix(reader)
+    if (accepted.kind !== 'lifecycle_accepted') {
+      await reader.cancel().catch(() => undefined)
+      throw new BrokerUnavailableError()
+    }
+    if (adapterStopped || abortController.signal.aborted) {
+      await reader.cancel().catch(() => undefined)
+      throw new BrokerUnavailableError()
+    }
+    lifecycleReader = reader
+    void monitorBrokerLifecycle(reader)
+  } catch {
+    abortController.abort()
+    if (adapterConnectionAbortController === abortController) {
+      adapterConnectionAbortController = undefined
+    }
+    throw new BrokerUnavailableError()
+  }
 }
 
 async function postToBroker(
   request: InteractionBrokerRequest,
   signal?: AbortSignal,
 ): Promise<InteractionBrokerResponse> {
+  const response = await fetchBroker(request, signal)
+  const responseBody = await readBoundedResponseBody(response)
+  const decoded = parseInteractionBrokerResponse(responseBody)
+  if (
+    response.status !== 200 &&
+    (response.status < 400 || decoded.kind !== 'error')
+  ) {
+    throw new BrokerUnavailableError()
+  }
+  return decoded
+}
+
+async function fetchBroker(
+  request: InteractionBrokerRequest,
+  signal?: AbortSignal,
+): Promise<Response> {
   const configuration = readBrokerConfiguration()
   const body = JSON.stringify(request)
   if (Buffer.byteLength(body, 'utf8') > INTERACTION_BROKER_BODY_MAX_BYTES) {
@@ -337,15 +408,60 @@ async function postToBroker(
   } catch {
     throw new BrokerUnavailableError()
   }
-  const responseBody = await readBoundedResponseBody(response)
-  const decoded = parseInteractionBrokerResponse(responseBody)
-  if (
-    response.status !== 200 &&
-    (response.status < 400 || decoded.kind !== 'error')
-  ) {
-    throw new BrokerUnavailableError()
+  return response
+}
+
+async function readLifecyclePrefix(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+): Promise<InteractionBrokerResponse> {
+  const chunks: Buffer[] = []
+  let total = 0
+  while (true) {
+    const next = await reader.read().catch(() => {
+      throw new BrokerUnavailableError()
+    })
+    if (next.done) throw new BrokerUnavailableError()
+    const bytes = Buffer.from(next.value)
+    const newline = bytes.indexOf(0x0a)
+    if (newline < 0) {
+      total += bytes.byteLength
+      if (total > lifecyclePrefixMaximumBytes) {
+        throw new BrokerUnavailableError()
+      }
+      chunks.push(bytes)
+      continue
+    }
+    if (
+      newline !== bytes.byteLength - 1 ||
+      total + newline > lifecyclePrefixMaximumBytes
+    ) {
+      throw new BrokerUnavailableError()
+    }
+    chunks.push(bytes.subarray(0, newline))
+    return parseInteractionBrokerResponse(Buffer.concat(chunks))
   }
-  return decoded
+}
+
+async function monitorBrokerLifecycle(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+): Promise<void> {
+  try {
+    const next = await reader.read()
+    if (!next.done) {
+      await reader.cancel()
+    }
+  } catch {
+    // The Broker owns whether this close is expected; the Adapter only
+    // stops accepting calls once its held lifecycle channel is gone.
+  } finally {
+    if (lifecycleReader === reader) {
+      lifecycleReader = undefined
+      adapterConnectionAbortController = undefined
+      startupPromise = undefined
+      initialized = false
+      abortActiveCalls()
+    }
+  }
 }
 
 async function readBoundedResponseBody(response: Response): Promise<Uint8Array> {
@@ -466,6 +582,15 @@ function cancelRequest(params: unknown): void {
   const id = readJsonRpcId(params.requestId)
   if (id === undefined) return
   activeCalls.get(jsonRpcIdKey(id))?.abort()
+}
+
+function stopAdapter(): void {
+  if (adapterStopped) return
+  adapterStopped = true
+  initialized = false
+  abortActiveCalls()
+  adapterConnectionAbortController?.abort()
+  void lifecycleReader?.cancel().catch(() => undefined)
 }
 
 function readJsonRpcId(value: unknown): JsonRpcId | undefined {

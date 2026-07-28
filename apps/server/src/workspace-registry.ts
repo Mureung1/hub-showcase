@@ -96,6 +96,7 @@ export type WorkspaceRegistryStoreFaultPoint =
   | 'before_final_compare'
   | 'after_replace'
   | 'after_directory_sync'
+  | 'after_acceptance'
 
 export type WorkspaceRegistryStoreOptions = {
   readonly appDataRoot: string
@@ -549,6 +550,9 @@ async function writeRegistry(
     if (commitAccepted) {
       try {
         lease = await markWriterLeaseAccepted(directory, lease)
+        await inject(options, 'after_acceptance')
+        await unlink(commitProof)
+        commitProofExists = false
       } catch {
         return {
           status: 'written',
@@ -556,9 +560,10 @@ async function writeRegistry(
           authority: written.authority,
         }
       }
+    } else {
+      await unlink(commitProof)
+      commitProofExists = false
     }
-    await unlink(commitProof)
-    commitProofExists = false
     if (guardExists) {
       if (commitAccepted) {
         try {

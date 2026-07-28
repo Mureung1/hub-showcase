@@ -174,7 +174,7 @@ test('runs the production bridge against exact Codex and the official local prov
 test('discovers the built Interaction Adapter from a tracked trusted Git project', async () => {
   const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
   const root = await realpath(
-    await mkdtemp(join(tmpdir(), 'ay-ple-project-mcp-readiness-')),
+    await mkdtemp(join(tmpdir(), 'ay-ple-project-mcp-declaration-')),
   )
   const brokerRequests: unknown[] = []
   const broker = createServer((request, response) => {
@@ -184,12 +184,22 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       body += chunk
     })
     request.on('end', () => {
+      const parsedBody = JSON.parse(body) as { readonly kind?: unknown }
       brokerRequests.push({
         authorization: request.headers.authorization,
-        body: JSON.parse(body),
+        body: parsedBody,
         runtimeBinding: request.headers['x-ay-ple-runtime-binding'],
       })
       response.writeHead(200, { 'content-type': 'application/json' })
+      if (parsedBody.kind === 'lifecycle_open') {
+        response.write(
+          `${JSON.stringify({
+            protocolVersion: 1,
+            kind: 'lifecycle_accepted',
+          })}\n`,
+        )
+        return
+      }
       response.end(
         JSON.stringify({
           protocolVersion: 1,
@@ -306,39 +316,36 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
         mcpServers: [
           {
             name: 'ay_ple_interaction',
+            command: adapterCommand,
+            args: [],
+            envVars: [
+              {
+                name: 'AY_PLE_INTERACTION_BROKER_URL',
+                source: null,
+              },
+              {
+                name: 'AY_PLE_INTERACTION_BROKER_TOKEN',
+                source: null,
+              },
+              {
+                name: 'AY_PLE_INTERACTION_RUNTIME_BINDING',
+                source: null,
+              },
+            ],
+            cwd: null,
+            toolTimeoutSec: null,
+            env: {},
             enabled: true,
             required: true,
             enabledTools: ['propose_state_patch'],
+            disabledTools: [],
           },
         ],
       },
     )
-    const thread = await within(runtime.runtime.startThread())
-    await within(
-      runtime.runtime.waitForMcpServerReady({
-        threadId: thread.threadId,
-        serverName: 'ay_ple_interaction',
-        expectedTools: ['propose_state_patch'],
-        signal: new AbortController().signal,
-      }),
-    )
-    await assert.rejects(
-      within(
-        runtime.runtime.waitForMcpServerReady({
-          threadId: thread.threadId,
-          serverName: 'ay_ple_interaction',
-          expectedTools: ['wrong_tool'],
-          signal: new AbortController().signal,
-        }),
-      ),
-      (error: unknown) =>
-        error instanceof Error &&
-        'code' in error &&
-        error.code === 'mcp_server_tools_mismatch',
-    )
-    assert.equal(brokerRequests.length, 3)
-    for (const request of brokerRequests) {
-      assert.deepEqual(request, {
+    await within(runtime.runtime.startThread())
+    assert.deepEqual(brokerRequests, [
+      {
         authorization: `Bearer ${token}`,
         body: {
           protocolVersion: 1,
@@ -347,8 +354,16 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
           capabilities: ['propose_state_patch'],
         },
         runtimeBinding,
-      })
-    }
+      },
+      {
+        authorization: `Bearer ${token}`,
+        body: {
+          protocolVersion: 1,
+          kind: 'lifecycle_open',
+        },
+        runtimeBinding,
+      },
+    ])
   } finally {
     await runtime?.runtime.close().catch(() => undefined)
     await provider?.close().catch(() => undefined)

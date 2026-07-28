@@ -65,6 +65,8 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
       ...codexChatIdentity,
       origin: 'http://127.0.0.1:4173',
       createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
     },
     workspaceRoot,
     readLifecycle: () => lifecycle,
@@ -76,6 +78,9 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
   })
   const apiUrl = `http://127.0.0.1:${listener.port}`
   let vite: ViteDevServer | undefined
+  let lifecycleReader:
+    | ReadableStreamDefaultReader<Uint8Array>
+    | undefined
   try {
     vite = await createViteServer({
       appType: 'spa',
@@ -168,6 +173,30 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
         })
       ).status,
     ).toBe(200)
+    const lifecycleResponse = await fetch(
+      `${apiUrl}/api/_private/interaction-mcp/`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          protocolVersion: 1,
+          kind: 'lifecycle_open',
+        }),
+      },
+    )
+    expect(lifecycleResponse.status).toBe(200)
+    if (!lifecycleResponse.body) {
+      throw new Error('Adapter lifecycle response is missing')
+    }
+    lifecycleReader = lifecycleResponse.body.getReader()
+    const lifecycleAccepted = await lifecycleReader.read()
+    expect(lifecycleAccepted.done).toBe(false)
+    expect(
+      JSON.parse(new TextDecoder().decode(lifecycleAccepted.value)),
+    ).toEqual({
+      protocolVersion: 1,
+      kind: 'lifecycle_accepted',
+    })
     const held = fetch(`${apiUrl}/api/_private/interaction-mcp/`, {
       method: 'POST',
       headers,
@@ -326,6 +355,7 @@ test('default Browser opens prepared AY Chat and settles inline Semantic Review 
     runtime.finish()
     await vite?.close()
     await target.application.close()
+    expect((await lifecycleReader?.read())?.done).toBe(true)
     await listener.close({ signal: new AbortController().signal })
     await rm(workspaceRoot, { force: true, recursive: true })
   }
@@ -461,10 +491,6 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
   }
 
   releaseThread(_input: ReleaseThreadInput) {
-    return Promise.resolve()
-  }
-
-  waitForMcpServerReady() {
     return Promise.resolve()
   }
 

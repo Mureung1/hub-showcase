@@ -469,15 +469,18 @@ export class CodexChatService {
     runtime: CodexWorkspaceRuntime,
   ): Promise<string> {
     if (this.currentThreadId) return this.currentThreadId
-    let thread
+    const prepared = this.prepared
+    if (!prepared) throw stateError('codex_chat_unavailable')
+    let threadId
     try {
-      thread = await runtime.startThread()
+      threadId = await prepared.acquireProductThread(runtime)
+      requireNativeProductThreadId(threadId)
     } catch (error) {
       await this.handleUnknownOutcome(error)
       throw error
     }
-    this.currentThreadId = thread.threadId
-    return thread.threadId
+    this.currentThreadId = threadId
+    return threadId
   }
 
   private requireStartedRuntime(): CodexWorkspaceRuntime {
@@ -619,6 +622,14 @@ function stateError(code: CodexChatServiceErrorCode): CodexChatServiceError {
 
 function safeFailureCode(code: string): string {
   return /^[a-z][a-z0-9_]{0,63}$/.test(code) ? code : 'runtime_failed'
+}
+
+function requireNativeProductThreadId(value: unknown): asserts value is string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new TypeError(
+      'Native Codex thread identity must be a nonempty string',
+    )
+  }
 }
 
 async function safelyWrite(

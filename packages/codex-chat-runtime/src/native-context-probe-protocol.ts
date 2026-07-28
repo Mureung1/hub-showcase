@@ -250,35 +250,173 @@ function decodeEffectiveMcpServers(
           throw new Error('invalid config/read response')
         }
 
+        const command = decodeNullableBoundedString(
+          declaration.command,
+          16 * 1024,
+          true,
+        )
+        const args = decodeBoundedStringList(
+          declaration.args,
+          128,
+          16 * 1024,
+          false,
+        )
+        const envVars = decodeEnvironmentVariables(
+          declaration.env_vars,
+        )
+        const cwd = decodeNullableBoundedString(
+          declaration.cwd,
+          16 * 1024,
+          true,
+        )
+        const rawToolTimeoutSec = declaration.tool_timeout_sec
+        const toolTimeoutSec =
+          rawToolTimeoutSec === undefined ||
+          rawToolTimeoutSec === null
+            ? null
+            : rawToolTimeoutSec
+        if (
+          toolTimeoutSec !== null &&
+          (typeof toolTimeoutSec !== 'number' ||
+            !Number.isFinite(toolTimeoutSec) ||
+            toolTimeoutSec <= 0)
+        ) {
+          throw new Error('invalid config/read response')
+        }
+        const env = decodeStaticEnvironment(declaration.env)
+
         const rawEnabledTools = declaration.enabled_tools
         let enabledTools: readonly string[] | null = null
         if (rawEnabledTools !== undefined && rawEnabledTools !== null) {
-          if (
-            !Array.isArray(rawEnabledTools) ||
-            rawEnabledTools.length > 128
-          ) {
-            throw new Error('invalid config/read response')
-          }
-          const tools: string[] = []
-          for (const tool of rawEnabledTools) {
-            if (!isBoundedString(tool, 256, true)) {
-              throw new Error('invalid config/read response')
-            }
-            tools.push(tool)
-          }
-          if (new Set(tools).size !== tools.length) {
-            throw new Error('invalid config/read response')
-          }
-          enabledTools = Object.freeze(tools)
+          enabledTools = decodeBoundedStringList(
+            rawEnabledTools,
+            128,
+            256,
+            true,
+          )
         }
+        const disabledTools = decodeBoundedStringList(
+          declaration.disabled_tools,
+          128,
+          256,
+          true,
+        )
 
         return Object.freeze({
           name,
+          command,
+          args,
+          envVars,
+          cwd,
+          toolTimeoutSec,
+          env,
           enabled,
           required,
           enabledTools,
+          disabledTools,
         })
       }),
+  )
+}
+
+function decodeNullableBoundedString(
+  value: unknown,
+  maxBytes: number,
+  nonempty: boolean,
+): string | null {
+  if (value === undefined || value === null) return null
+  if (!isBoundedString(value, maxBytes, nonempty)) {
+    throw new Error('invalid config/read response')
+  }
+  return value
+}
+
+function decodeBoundedStringList(
+  value: unknown,
+  maxEntries: number,
+  maxBytes: number,
+  nonempty: boolean,
+): readonly string[] {
+  if (value === undefined || value === null) return Object.freeze([])
+  if (!Array.isArray(value) || value.length > maxEntries) {
+    throw new Error('invalid config/read response')
+  }
+  const projected: string[] = []
+  for (const entry of value) {
+    if (!isBoundedString(entry, maxBytes, nonempty)) {
+      throw new Error('invalid config/read response')
+    }
+    projected.push(entry)
+  }
+  return Object.freeze(projected)
+}
+
+function decodeStaticEnvironment(
+  value: unknown,
+): Readonly<Record<string, string>> {
+  if (value === undefined || value === null) return Object.freeze({})
+  if (!isJsonObject(value) || Object.keys(value).length > 128) {
+    throw new Error('invalid config/read response')
+  }
+  const entries = Object.entries(value).sort(([left], [right]) =>
+    left < right ? -1 : left > right ? 1 : 0,
+  )
+  const projected: Array<[string, string]> = []
+  for (const [name, staticValue] of entries) {
+    if (
+      !isBoundedString(name, 256, true) ||
+      !isBoundedString(staticValue, 16 * 1024, false)
+    ) {
+      throw new Error('invalid config/read response')
+    }
+    projected.push([name, staticValue])
+  }
+  return Object.freeze(Object.fromEntries(projected))
+}
+
+function decodeEnvironmentVariables(
+  value: unknown,
+): readonly {
+  readonly name: string
+  readonly source: 'local' | 'remote' | null
+}[] {
+  if (value === undefined || value === null) return Object.freeze([])
+  if (!Array.isArray(value) || value.length > 128) {
+    throw new Error('invalid config/read response')
+  }
+  return Object.freeze(
+    value.map((entry) => {
+      if (isBoundedString(entry, 256, true)) {
+        return Object.freeze({
+          name: entry,
+          source: null,
+        })
+      }
+      if (
+        !isJsonObject(entry) ||
+        !Object.keys(entry).every(
+          (key) => key === 'name' || key === 'source',
+        ) ||
+        !isBoundedString(entry.name, 256, true)
+      ) {
+        throw new Error('invalid config/read response')
+      }
+      const source =
+        entry.source === undefined || entry.source === null
+          ? null
+          : entry.source
+      if (
+        source !== null &&
+        source !== 'local' &&
+        source !== 'remote'
+      ) {
+        throw new Error('invalid config/read response')
+      }
+      return Object.freeze({
+        name: entry.name,
+        source,
+      })
+    }),
   )
 }
 

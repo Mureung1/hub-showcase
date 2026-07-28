@@ -361,6 +361,53 @@ test('process death before startup acceptance restores missing or previous regis
   }
 })
 
+test('process death after startup acceptance preserves the committed authority', async () => {
+  const fixture = await createFixture('accepted-process-death')
+  try {
+    await Promise.all([
+      writeIdentity(fixture.firstRoot, firstWorkspaceId),
+      writeIdentity(fixture.secondRoot, secondWorkspaceId),
+    ])
+    const store = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+    })
+    const previous = await store.commitActiveWorkspace({
+      expectedAuthority: null,
+      canonicalRoot: fixture.firstRoot,
+      expectedWorkspaceId: firstWorkspaceId,
+    })
+    assert.equal(previous.status, 'written')
+    if (previous.status !== 'written') {
+      assert.fail('previous authority must be written')
+    }
+
+    await runCrashWriter({
+      appDataRoot: fixture.appDataRoot,
+      expectedAuthority: previous.authority,
+      registry: registry(secondWorkspaceId, fixture.secondRoot),
+      faultPoint: 'after_acceptance',
+      activeCommit: {
+        canonicalRoot: fixture.secondRoot,
+        expectedWorkspaceId: secondWorkspaceId,
+      },
+    })
+
+    const reopened = await store.resolveActiveWorkspace()
+    assert.equal(reopened.status, 'available')
+    if (reopened.status !== 'available') {
+      assert.fail('accepted authority must reopen')
+    }
+    assert.equal(reopened.workspace.workspaceId, secondWorkspaceId)
+    assert.equal(reopened.canonicalRoot, fixture.secondRoot)
+    assert.deepEqual(
+      (await readdir(path.join(fixture.appDataRoot, 'state'))).sort(),
+      ['workspace-registry.json'],
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('fresh reopen only returns a registry entry whose canonical root still has the matching v4 identity', async () => {
   const fixture = await createFixture('reopen')
   try {
@@ -496,6 +543,55 @@ test('declined commit acceptance restores the exact previous active bytes', asyn
   }
 })
 
+test('accepted active commit absorbs post-acceptance housekeeping failure', async () => {
+  const fixture = await createFixture('accepted-housekeeping')
+  try {
+    await Promise.all([
+      writeIdentity(fixture.firstRoot, firstWorkspaceId),
+      writeIdentity(fixture.secondRoot, secondWorkspaceId),
+    ])
+    const initialStore = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+    })
+    const first = await initialStore.commitActiveWorkspace({
+      expectedAuthority: null,
+      canonicalRoot: fixture.firstRoot,
+      expectedWorkspaceId: firstWorkspaceId,
+    })
+    assert.equal(first.status, 'written')
+    if (first.status !== 'written') assert.fail('first commit must win')
+
+    const faultingStore = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+      fault(point) {
+        if (point === 'after_acceptance') {
+          throw new Error('post-acceptance housekeeping fault')
+        }
+      },
+    })
+    const second = await faultingStore.commitActiveWorkspace({
+      expectedAuthority: first.authority,
+      canonicalRoot: fixture.secondRoot,
+      expectedWorkspaceId: secondWorkspaceId,
+      acceptCommit: () => true,
+    })
+    assert.equal(second.status, 'written')
+    const reopened = await initialStore.resolveActiveWorkspace()
+    assert.equal(reopened.status, 'available')
+    if (reopened.status !== 'available') {
+      assert.fail('accepted workspace must remain authoritative')
+    }
+    assert.equal(reopened.workspace.workspaceId, secondWorkspaceId)
+    assert.equal(reopened.canonicalRoot, fixture.secondRoot)
+    assert.deepEqual(
+      (await readdir(path.join(fixture.appDataRoot, 'state'))).sort(),
+      ['workspace-registry.json'],
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('malformed and future registry bytes remain byte-for-byte incompatible and are never reset to empty', async () => {
   const fixture = await createFixture('incompatible')
   try {
@@ -593,6 +689,7 @@ async function runCrashWriter(input: {
     | 'after_temporary_sync'
     | 'after_replace'
     | 'after_directory_sync'
+    | 'after_acceptance'
   readonly activeCommit?: {
     readonly canonicalRoot: string
     readonly expectedWorkspaceId: string

@@ -9,6 +9,9 @@ export type CodexChatUnavailableReason =
 
 export type CodexChatPreparedRuntime = CodexChatRuntimeEvidence & {
   readonly createRuntime: () => Promise<CodexWorkspaceRuntime>
+  readonly acquireProductThread: (
+    runtime: CodexWorkspaceRuntime,
+  ) => Promise<string>
 }
 
 export type CodexChatRuntimeSource =
@@ -26,6 +29,9 @@ export type CodexChatRuntimeSource =
 export interface CodexChatBootstrap extends CodexChatRuntimeEvidence {
   readonly origin?: string
   readonly createRuntime: () => Promise<CodexWorkspaceRuntime>
+  readonly acquireProductThread: (
+    runtime: CodexWorkspaceRuntime,
+  ) => Promise<string>
   /** Test-only operational override. Production uses the five-second bound. */
   readonly disconnectDrainMs?: number
   /** Test-only HTTP writer override. Production uses the five-second bound. */
@@ -49,6 +55,7 @@ export function resolveCodexChatRuntimeSource(
       sourceCommit: bootstrap.sourceCommit,
       runtimeVersion: bootstrap.runtimeVersion,
       createRuntime: bootstrap.createRuntime,
+      acquireProductThread: bootstrap.acquireProductThread,
     },
   }
 }

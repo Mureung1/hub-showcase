@@ -29,6 +29,8 @@ Pinned source의 Python SDK metadata와 generated output은 과거 native runtim
 
 이 adaptation은 SDK distribution version을 `0.144.4`로 바꾸거나 handwritten conversation lifecycle을 수정하지 않는다. Behavioral source patch는 [PATCHES.md](PATCHES.md)에 별도 순서와 regression oracle을 기록하고 unpatched snapshot의 temporary copy에만 적용한다.
 
+Behavioral patch roster는 `0007-thread-start-settings`에서 끝난다. Live Interaction Adapter의 준비성과 연결 수명은 Server Interaction Broker가 소유하므로 high-level SDK에 별도 MCP readiness seam을 추가하지 않는다.
+
 ## Tracked provenance
 
 | 경로 | 내용 |

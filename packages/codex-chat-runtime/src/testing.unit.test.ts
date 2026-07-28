@@ -57,7 +57,28 @@ test('deterministic runtime returns isolated native-context projections and reco
   const scriptedConfig = {
     projectRootMarkers: ['.git'],
     globalInstructionsFile: '/deterministic/workspace/AGENTS.md',
-    mcpServers: [],
+    mcpServers: [
+      {
+        name: 'ay_ple_interaction',
+        command: '../hub/packages/interaction-mcp/dist/stdio.js',
+        args: ['--stdio'],
+        envVars: [
+          {
+            name: 'AY_PLE_INTERACTION_BROKER_URL',
+            source: null,
+          },
+        ],
+        cwd: null,
+        toolTimeoutSec: 300,
+        env: {
+          AY_PLE_STATIC_MODE: 'review',
+        },
+        enabled: true,
+        required: true,
+        enabledTools: ['propose_state_patch'],
+        disabledTools: [],
+      },
+    ],
   }
   const scriptedSkills = [
     {
@@ -80,14 +101,38 @@ test('deterministic runtime returns isolated native-context projections and reco
   assert.deepEqual(skills, scriptedSkills)
   assert.notEqual(config, scriptedConfig)
   assert.notEqual(config.projectRootMarkers, scriptedConfig.projectRootMarkers)
+  assert.notEqual(config.mcpServers, scriptedConfig.mcpServers)
+  assert.notEqual(config.mcpServers[0], scriptedConfig.mcpServers[0])
+  assert.notEqual(config.mcpServers[0]?.args, scriptedConfig.mcpServers[0]?.args)
+  assert.notEqual(
+    config.mcpServers[0]?.envVars,
+    scriptedConfig.mcpServers[0]?.envVars,
+  )
+  assert.notEqual(
+    config.mcpServers[0]?.envVars[0],
+    scriptedConfig.mcpServers[0]?.envVars[0],
+  )
+  assert.notEqual(config.mcpServers[0]?.env, scriptedConfig.mcpServers[0]?.env)
+  assert.notEqual(
+    config.mcpServers[0]?.enabledTools,
+    scriptedConfig.mcpServers[0]?.enabledTools,
+  )
   assert.notEqual(skills, scriptedSkills)
   assert.notEqual(skills[0], scriptedSkills[0])
 
   const returnedMarkers = config.projectRootMarkers as string[]
+  const returnedArgs = config.mcpServers[0]!.args as string[]
+  const returnedEnv = config.mcpServers[0]!.env as Record<string, string>
   const returnedSkills = skills as Array<{ enabled: boolean }>
   returnedMarkers.push('package.json')
+  returnedArgs.push('--mutated')
+  returnedEnv.AY_PLE_STATIC_MODE = 'mutated'
   returnedSkills[0]!.enabled = false
   assert.deepEqual(scriptedConfig.projectRootMarkers, ['.git'])
+  assert.deepEqual(scriptedConfig.mcpServers[0]!.args, ['--stdio'])
+  assert.deepEqual(scriptedConfig.mcpServers[0]!.env, {
+    AY_PLE_STATIC_MODE: 'review',
+  })
   assert.equal(scriptedSkills[0]!.enabled, true)
   assert.deepEqual(runtime.calls, [
     { operation: 'readEffectiveConfig' },
@@ -201,148 +246,6 @@ test('deterministic native-context calls reject a closed runtime before consumin
     /closed/,
   )
   assert.equal(scriptConsumed, false)
-})
-
-test('deterministic MCP readiness requires one ready server with the exact tool roster', async () => {
-  const runtime = new DeterministicCodexChatRuntime({
-    threadIds: ['thread-mcp'],
-    mcpServerStatuses: [
-      [
-        {
-          state: 'ready',
-          serverName: 'ay_ple_interaction',
-          tools: ['propose_state_patch'],
-        },
-      ],
-      [],
-      [
-        {
-          state: 'starting',
-          serverName: 'ay_ple_interaction',
-          tools: [],
-        },
-      ],
-      [
-        {
-          state: 'failed',
-          serverName: 'ay_ple_interaction',
-          tools: [],
-        },
-      ],
-      [
-        {
-          state: 'ready',
-          serverName: 'ay_ple_interaction',
-          tools: ['propose_state_patch', 'unexpected_tool'],
-        },
-      ],
-    ],
-  })
-  const thread = await runtime.startThread()
-  const input = {
-    threadId: thread.threadId,
-    serverName: 'ay_ple_interaction',
-    expectedTools: ['propose_state_patch'],
-    signal: new AbortController().signal,
-  } as const
-
-  await runtime.waitForMcpServerReady(input)
-  for (const code of [
-    'mcp_server_not_ready',
-    'mcp_server_not_ready',
-    'mcp_server_not_ready',
-    'mcp_server_tools_mismatch',
-  ]) {
-    await assert.rejects(
-      () => runtime.waitForMcpServerReady(input),
-      (error: unknown) => {
-        assert.ok(error instanceof CodexChatRuntimeError)
-        assert.equal(error.code, code)
-        assert.equal(error.unknownOutcome, false)
-        return true
-      },
-    )
-  }
-})
-
-test('deterministic MCP readiness aborts without consuming the next status snapshot', async () => {
-  const runtime = new DeterministicCodexChatRuntime({
-    threadIds: ['thread-mcp'],
-    mcpServerStatuses: [
-      [
-        {
-          state: 'ready',
-          serverName: 'ay_ple_interaction',
-          tools: ['propose_state_patch'],
-        },
-      ],
-    ],
-  })
-  const aborted = new AbortController()
-  aborted.abort()
-  const thread = await runtime.startThread()
-
-  await assert.rejects(
-    () =>
-      runtime.waitForMcpServerReady({
-        threadId: thread.threadId,
-        serverName: 'ay_ple_interaction',
-        expectedTools: ['propose_state_patch'],
-        signal: aborted.signal,
-      }),
-    (error: unknown) => {
-      assert.ok(error instanceof CodexChatRuntimeError)
-      assert.equal(error.code, 'runtime_operation_aborted')
-      assert.equal(error.unknownOutcome, false)
-      return true
-    },
-  )
-  await runtime.waitForMcpServerReady({
-    threadId: thread.threadId,
-    serverName: 'ay_ple_interaction',
-    expectedTools: ['propose_state_patch'],
-    signal: new AbortController().signal,
-  })
-})
-
-test('deterministic MCP readiness validates the public input shape before consuming status', async () => {
-  const runtime = new DeterministicCodexChatRuntime({
-    threadIds: ['thread-mcp'],
-    mcpServerStatuses: [
-      [
-        {
-          state: 'ready',
-          serverName: 'ay_ple_interaction',
-          tools: ['propose_state_patch'],
-        },
-      ],
-    ],
-  })
-  const thread = await runtime.startThread()
-  const input = {
-    threadId: thread.threadId,
-    serverName: 'ay_ple_interaction',
-    expectedTools: ['propose_state_patch'],
-    signal: new AbortController().signal,
-  } as const
-
-  await assert.rejects(
-    () =>
-      runtime.waitForMcpServerReady({
-        ...input,
-        unexpected: true,
-      } as typeof input),
-    /MCP readiness input fields are invalid/,
-  )
-  await assert.rejects(
-    () =>
-      runtime.waitForMcpServerReady({
-        ...input,
-        signal: {} as AbortSignal,
-      }),
-    /Abort signal is invalid/,
-  )
-  await runtime.waitForMcpServerReady(input)
 })
 
 test('deterministic runtime preserves native turn identity and event FIFO', async () => {

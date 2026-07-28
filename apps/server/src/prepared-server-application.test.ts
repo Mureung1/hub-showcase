@@ -40,10 +40,15 @@ test('prepared public composition uses project discovery and exposes only AY Cha
   let listener:
     | Awaited<ReturnType<typeof bindServerApplicationListener>>
     | undefined
+  let lifecycleReader:
+    | ReadableStreamDefaultReader<Uint8Array>
+    | undefined
   const target = await createPreparedServerApplication({
     codexChat: {
       ...codexChatIdentity,
       createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
     },
     workspaceRoot,
     readLifecycle: () => lifecycle,
@@ -137,6 +142,10 @@ test('prepared public composition uses project discovery and exposes only AY Cha
       ).status,
       200,
     )
+    lifecycleReader = await openBrokerLifecycle(
+      baseUrl,
+      target.credentials,
+    )
     const held = postJson(
       `${baseUrl}/api/_private/interaction-mcp/`,
       {
@@ -186,6 +195,131 @@ test('prepared public composition uses project discovery and exposes only AY Cha
     )
   } finally {
     await target.application.close()
+    assert.equal((await lifecycleReader?.read())?.done, true)
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+test('prepared Adapter loss preserves transport_failed through the public Review stream', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-adapter-loss-')),
+  )
+  const runtime = new PreparedRuntime()
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
+    },
+    workspaceRoot,
+    readLifecycle: () => ({
+      state: 'active',
+      workspace: {
+        workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+        semester: {
+          yearLevel: 2,
+          term: { key: 'fall', displayName: '2학기' },
+        },
+        label: '2학년 2학기',
+      },
+    }),
+  })
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  let lifecycleReader:
+    | ReadableStreamDefaultReader<Uint8Array>
+    | undefined
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const baseUrl = `http://127.0.0.1:${listener.port}`
+    const stream = await postJson(`${baseUrl}/api/product/chat/messages`, {
+      text: '과제 파일을 확인해 줘.',
+      codexSettings: {
+        model: 'gpt-current',
+        reasoningEffort: 'medium',
+        serviceTier: 'default',
+      },
+    })
+    assert.equal(stream.status, 200)
+    assert.ok(stream.body)
+    const trace = new NdjsonTrace(stream.body.getReader())
+    await trace.until((frame) => frame.type === 'operation.accepted')
+
+    const headers = {
+      authorization: `Bearer ${target.credentials.token}`,
+      'x-ay-ple-runtime-binding': target.credentials.binding,
+    }
+    assert.equal(
+      (
+        await postJson(
+          `${baseUrl}/api/_private/interaction-mcp/`,
+          {
+            protocolVersion: 1,
+            kind: 'handshake',
+            serverName: 'ay_ple_interaction',
+            capabilities: ['propose_state_patch'],
+          },
+          headers,
+        )
+      ).status,
+      200,
+    )
+    lifecycleReader = await openBrokerLifecycle(
+      baseUrl,
+      target.credentials,
+    )
+    const held = postJson(
+      `${baseUrl}/api/_private/interaction-mcp/`,
+      {
+        protocolVersion: 1,
+        kind: 'capability_call',
+        capability: 'propose_state_patch',
+        request: {
+          summary: '연결 종료 검증',
+          question: '이 변경을 반영할까요?',
+          changes: [
+            {
+              label: '상태',
+              description: 'Adapter 연결 종료 사유를 검증합니다.',
+              before: '연결됨',
+              after: '종료됨',
+            },
+          ],
+        },
+      },
+      headers,
+    )
+    const requested = await trace.until(
+      (frame) => frame.type === 'review.requested',
+    )
+    const closing = target.adapterLost()
+    const failed = await trace.until(
+      (frame) =>
+        frame.type === 'review.failed' &&
+        frame.interactionId === requested.interactionId,
+    )
+    assert.equal(failed.reason, 'transport_failed')
+    const heldResponse = await held
+    assert.equal(heldResponse.status, 503)
+    assert.equal(
+      (
+        (await heldResponse.json()) as {
+          code: string
+        }
+      ).code,
+      'interaction_interrupted',
+    )
+    await closing
+    assert.equal((await lifecycleReader.read()).done, true)
+  } finally {
+    await target.appShutdown()
     await listener?.close({ signal: new AbortController().signal })
     await rm(workspaceRoot, { force: true, recursive: true })
   }
@@ -200,6 +334,8 @@ test('prepared public composition rejects settings outside the advertised catalo
     codexChat: {
       ...codexChatIdentity,
       createRuntime: async () => runtime,
+      acquireProductThread: async (actualRuntime) =>
+        (await actualRuntime.startThread()).threadId,
     },
     workspaceRoot,
     readLifecycle: () => ({
@@ -251,6 +387,56 @@ test('prepared public composition rejects settings outside the advertised catalo
       assert.equal(response.status, 400)
     }
     assert.equal(runtime.productInputs.length, 0)
+  } finally {
+    await target.application.close()
+    await listener?.close({ signal: new AbortController().signal })
+    await rm(workspaceRoot, { force: true, recursive: true })
+  }
+})
+
+test('Codex settings fail closed without starting Runtime while the workspace is unavailable', async () => {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(tmpdir(), 'prepared-settings-recovery-')),
+  )
+  let runtimeRequested = false
+  const target = await createPreparedServerApplication({
+    codexChat: {
+      ...codexChatIdentity,
+      createRuntime: () => {
+        runtimeRequested = true
+        return new Promise<CodexWorkspaceRuntime>(() => undefined)
+      },
+      acquireProductThread: async () => {
+        throw new Error('Product thread must not be requested')
+      },
+    },
+    workspaceRoot,
+    readLifecycle: () => ({
+      state: 'recovery_required',
+      workspace: null,
+      reason: 'runtime_unavailable',
+      displayMessage: 'Runtime을 사용할 수 없습니다.',
+    }),
+  })
+  let listener:
+    | Awaited<ReturnType<typeof bindServerApplicationListener>>
+    | undefined
+  try {
+    listener = await bindServerApplicationListener({
+      host: '127.0.0.1',
+      port: 0,
+      requestHandler: target.application.app,
+    })
+    const response = await fetch(
+      `http://127.0.0.1:${listener.port}/api/product/codex-settings`,
+      { signal: AbortSignal.timeout(1_000) },
+    )
+    assert.equal(response.status, 503)
+    assert.deepEqual(await response.json(), {
+      code: 'workspace_unavailable',
+      displayMessage: 'AY 작업공간을 사용할 수 없습니다.',
+    })
+    assert.equal(runtimeRequested, false)
   } finally {
     await target.application.close()
     await listener?.close({ signal: new AbortController().signal })
@@ -343,10 +529,6 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
     return Promise.resolve()
   }
 
-  waitForMcpServerReady() {
-    return Promise.resolve()
-  }
-
   readEffectiveConfig() {
     return Promise.resolve({
       projectRootMarkers: [],
@@ -389,6 +571,40 @@ class NdjsonTrace {
       }
     }
   }
+}
+
+async function openBrokerLifecycle(
+  baseUrl: string,
+  credentials: { readonly token: string; readonly binding: string },
+): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+  const response = await fetch(
+    `${baseUrl}/api/_private/interaction-mcp/`,
+    {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${credentials.token}`,
+        'content-type': 'application/json',
+        'x-ay-ple-runtime-binding': credentials.binding,
+      },
+      body: JSON.stringify({
+        protocolVersion: 1,
+        kind: 'lifecycle_open',
+      }),
+    },
+  )
+  assert.equal(response.status, 200)
+  assert.ok(response.body)
+  const reader = response.body.getReader()
+  const accepted = await reader.read()
+  assert.equal(accepted.done, false)
+  assert.deepEqual(
+    JSON.parse(new TextDecoder().decode(accepted.value)),
+    {
+      protocolVersion: 1,
+      kind: 'lifecycle_accepted',
+    },
+  )
+  return reader
 }
 
 function deferred<T>(): {
