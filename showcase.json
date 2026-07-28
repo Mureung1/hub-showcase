@@ -3,7 +3,7 @@
   "title": "We should do..",
   "summary": "할 일에 동기부여를 해주는 소셜 스케줄러 어플입니다.",
   "githubUser": "95x8x9(금소현)",
-  "demoUrl": "",
+  "demoUrl": "https://hub-gilt-three.vercel.app/",
   "thumbnail": "docs/myhome-preview.png",
   "screenshots": [
     "docs/friend-add-preview.png",
