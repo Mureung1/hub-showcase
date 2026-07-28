@@ -280,7 +280,7 @@ Authorization: Bearer firebase-id-token
 - OpenAI Responses API와 `gpt-5.6-luna`를 사용한다.
 - 비밀 키는 백엔드의 `OPENAI_API_KEY`, 모델은 `OPENAI_MODEL`로 설정한다.
 - YouTube 메타데이터용 `YOUTUBE_DATA_API_KEY`와 영상 분석용 `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.6-flash`를 백엔드에서만 사용한다. Gemini는 자막 조회 실패 시에만 호출하며 최종 `RecipeDraft` 구조화와 검증은 계속 OpenAI가 담당한다.
-- AI 제공자 요청은 15초 후 중단하며 자동으로 재시도하지 않는다.
+- OpenAI 요청은 15초, Gemini 영상 분석 요청은 30초 후 중단하며 자동으로 재시도하지 않는다.
 - 공백을 제거한 `rawText`는 최대 20,000자까지 허용한다.
 - 인증된 사용자별 구조화 요청은 10분에 10회로 제한한다.
 - OpenAI 요청은 `store: false`로 보내며 요청 원문과 응답 전문을 애플리케이션 로그에 남기지 않는다.

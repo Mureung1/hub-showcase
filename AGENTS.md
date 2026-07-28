@@ -460,7 +460,7 @@ POST /api/transfer-invitations/:invitationId/accept
 
 * 백엔드는 `OPENAI_API_KEY`, `OPENAI_MODEL`과 YouTube 처리용 `YOUTUBE_DATA_API_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`을 사용하며 프론트엔드에 비밀 키를 전달하지 않는다. YouTube 분석의 MVP 모델은 `gemini-3.6-flash`다.
 * MVP 모델은 `gpt-5.6-luna`이며 모델 변경은 비용과 품질을 다시 확인한 뒤 문서에 반영한다.
-* OpenAI와 Gemini 요청에는 각각 15초 Timeout을 적용하고 자동으로 재시도하지 않는다.
+* OpenAI 요청에는 15초, Gemini 요청에는 30초 Timeout을 적용하고 자동으로 재시도하지 않는다.
 * 공백을 제거한 직접 입력은 최대 20,000자까지 허용한다.
 * 인증된 사용자별 AI 구조화 요청은 10분에 10회로 제한한다.
 * 요청 원문, AI 응답 전문과 API 키를 로그에 남기지 않는다.

@@ -110,7 +110,7 @@ URL 수집은 DNS 조회와 각 HTTP 요청에 각각 10초 Timeout을 적용하
 
 MVP는 OpenAI Responses API와 `gpt-5.6-luna`를 사용한다. 2026-07-22 기준 공식 가격은 입력 100만 토큰당 1달러, 출력 100만 토큰당 6달러이며, 구조화 출력을 지원해 레시피 초안 스키마를 요청 단계에서 제한할 수 있다. 자세한 사양과 변경된 가격은 [GPT-5.6 Luna 공식 문서](https://developers.openai.com/api/docs/models/gpt-5.6-luna)에서 확인한다.
 
-AI 요청은 15초 후 중단하며 자동으로 재시도하지 않는다. 직접 입력은 공백 제거 후 최대 20,000자, 인증된 사용자별 구조화 요청은 10분에 10회로 제한한다. Timeout이나 제공자 장애가 발생하면 입력을 유지한 채 재시도할 수 있는 오류를 반환한다.
+OpenAI 요청은 15초, Gemini 영상 분석 요청은 30초 후 중단하며 자동으로 재시도하지 않는다. 직접 입력은 공백 제거 후 최대 20,000자, 인증된 사용자별 구조화 요청은 10분에 10회로 제한한다. Timeout이나 제공자 장애가 발생하면 입력을 유지한 채 재시도할 수 있는 오류를 반환한다.
 
 요청에는 Responses API의 `store: false`를 사용해 응답을 애플리케이션 상태로 보관하지 않는다. 이는 OpenAI의 별도 abuse monitoring 보존 정책까지 제거한다는 의미는 아니므로 운영 전 [공식 데이터 정책](https://developers.openai.com/api/docs/guides/your-data)을 다시 확인한다.
 

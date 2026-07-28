@@ -281,7 +281,7 @@ export async function collectYoutubeContentFromEnvironment(
       return analyzeYoutubeWithGemini(input, {
         apiKey,
         model: process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash",
-        timeoutMs: 15_000,
+        timeoutMs: 30_000,
       });
     },
   });

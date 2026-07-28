@@ -357,7 +357,7 @@ QA-CORE-001 상태 알려줘
     - [x] 공개 또는 자동 생성 자막을 우선 수집한다.
       - 완료 기준: 고정된 `youtube-transcript-api` Python 의존성으로 자막을 한 번만 조회하고, 프록시·쿠키·계정 인증·차단 우회·자막 저장을 사용하지 않는다. 검증된 video ID만 shell 없이 Python 프로세스에 전달하고 10초 timeout과 20,000자 출력 길이 제한을 적용한다.
     - [x] 자막 실패 시 Gemini 영상 분석으로 대체한다.
-      - 완료 기준: `GEMINI_MODEL=gemini-3.6-flash`에는 원본 URL·제목·채널명만 전달하고 15초 timeout·무재시도를 적용한다. 자막 또는 Gemini 결과는 기존 OpenAI `RecipeDraft` 구조화·검증 단계로 전달하며 API 키·영상·자막 원문·Gemini 응답 전문은 로그에 남기지 않는다.
+      - 완료 기준: `GEMINI_MODEL=gemini-3.6-flash`에는 원본 URL·제목·채널명만 전달하고 30초 timeout·무재시도를 적용한다. 자막 또는 Gemini 결과는 기존 OpenAI `RecipeDraft` 구조화·검증 단계로 전달하며 API 키·영상·자막 원문·Gemini 응답 전문은 로그에 남기지 않는다.
     - [x] YouTube 실패 계약과 직접 입력 대체를 유지한다.
       - 완료 기준: 메타데이터, 자막과 Gemini 경로가 모두 실패하면 기존 `URL_FETCH_FAILED` 422와 직접 입력 안내를 반환하고 URL·직접 입력 혼합 요청의 보완 정보는 유지한다.
   - 검증:
