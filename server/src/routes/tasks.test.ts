@@ -3,6 +3,7 @@ import request from "supertest";
 import app from "../app.js";
 import { prisma } from "../db/client.js";
 import { broadcastLevelUpPush } from "../lib/broadcastPush.js";
+import { calculateDateStreak } from "../lib/dateStreak.js";
 
 // #35: 실제 발송(webpush → FCM)까지 통합 테스트에서 태우지 않도록 모킹한다.
 // broadcastLevelUpPush 자체의 동작(구독 조회, 병렬 발송, 실패 무시)은 sendPush.test.ts에서
@@ -92,7 +93,26 @@ describe.skipIf(!isTestDb)("GET /api/tasks", () => {
     expect(task.reason).toBe("temptation");
   });
 
-  it("현재 스트릭을 streak 필드로 함께 반환한다", async () => {
+  it("여러 task를 등록하면 최신 등록순으로 반환한다", async () => {
+    const first = await createTestTask();
+    const second = await createTestTask();
+    const third = await createTestTask();
+
+    const res = await request(app).get("/api/tasks");
+
+    const ids = res.body.data.map((t: { id: string }) => t.id);
+    const firstIndex = ids.indexOf(first.id);
+    const secondIndex = ids.indexOf(second.id);
+    const thirdIndex = ids.indexOf(third.id);
+    expect(thirdIndex).toBeLessThan(secondIndex);
+    expect(secondIndex).toBeLessThan(firstIndex);
+  });
+
+  it("AppState가 아니라 done 이벤트로 계산한 streak를 함께 반환한다", async () => {
+    const task = await createTestTask();
+    await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({ eventType: "done" });
     await prisma.appState.upsert({
       where: { id: "singleton" },
       create: { id: "singleton", streak: 5 },
@@ -102,7 +122,38 @@ describe.skipIf(!isTestDb)("GET /api/tasks", () => {
     const res = await request(app).get("/api/tasks");
 
     expect(res.status).toBe(200);
-    expect(res.body.streak).toBe(5);
+    expect(res.body.streak).toBe(1);
+  });
+
+  it("완료 Task 삭제로 cascade 삭제된 done 이벤트는 streak 계산에서 제외한다", async () => {
+    const task = await createTestTask();
+    await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({ eventType: "done" });
+    const now = new Date();
+    const beforeDelete = await prisma.taskEvent.findMany({
+      where: { taskId: task.id, eventType: "done" },
+      select: { occurredAt: true },
+    });
+    expect(
+      calculateDateStreak(
+        beforeDelete.map((event) => event.occurredAt),
+        now,
+      ),
+    ).toBe(1);
+
+    await request(app).delete(`/api/tasks/${task.id}`);
+    const afterDelete = await prisma.taskEvent.findMany({
+      where: { taskId: task.id, eventType: "done" },
+      select: { occurredAt: true },
+    });
+    expect(
+      calculateDateStreak(
+        afterDelete.map((event) => event.occurredAt),
+        now,
+      ),
+    ).toBe(0);
+    expect(afterDelete).toHaveLength(0);
   });
 });
 
@@ -190,7 +241,7 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
     expect(res.body.data.level).toBe(1);
   });
 
-  it("59초 중단은 레벨을 유지하고 stopped 시간을 기록한다", async () => {
+  it("599초 중단은 레벨을 유지하고 stopped 시간을 기록한다", async () => {
     const created = await createTestTask();
     await prisma.task.update({
       where: { id: created.id },
@@ -199,7 +250,7 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
 
     const res = await request(app)
       .post(`/api/tasks/${created.id}/events`)
-      .send({ eventType: "stopped", durationSeconds: 59 });
+      .send({ eventType: "stopped", durationSeconds: 599 });
 
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
@@ -210,24 +261,24 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
     const event = await prisma.taskEvent.findFirstOrThrow({
       where: { taskId: created.id, eventType: "stopped" },
     });
-    expect(event.durationSeconds).toBe(59);
+    expect(event.durationSeconds).toBe(599);
   });
 
-  it("60초 중단은 Lv4를 정확히 Lv3으로 완화하고 스트릭을 0으로 리셋한다", async () => {
+  it("600초 중단은 Lv4를 정확히 Lv3으로 완화하고 날짜 streak에 영향을 주지 않는다", async () => {
+    const completed = await createTestTask();
+    await request(app)
+      .post(`/api/tasks/${completed.id}/events`)
+      .send({ eventType: "done" });
     const created = await createTestTask();
     await prisma.task.update({
       where: { id: created.id },
       data: { status: "active", skipCount: 6, level: 4 },
     });
-    await prisma.appState.upsert({
-      where: { id: "singleton" },
-      create: { id: "singleton", streak: 3 },
-      update: { streak: 3 },
-    });
+    const streakBefore = (await request(app).get("/api/tasks")).body.streak;
 
     const res = await request(app)
       .post(`/api/tasks/${created.id}/events`)
-      .send({ eventType: "stopped", durationSeconds: 60 });
+      .send({ eventType: "stopped", durationSeconds: 600 });
 
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
@@ -238,10 +289,9 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
     const event = await prisma.taskEvent.findFirstOrThrow({
       where: { taskId: created.id, eventType: "stopped" },
     });
-    expect(event.durationSeconds).toBe(60);
-    expect(
-      await prisma.appState.findUnique({ where: { id: "singleton" } }),
-    ).toMatchObject({ streak: 0 });
+    expect(event.durationSeconds).toBe(600);
+    const streakAfter = (await request(app).get("/api/tasks")).body.streak;
+    expect(streakAfter).toBe(streakBefore);
   });
 
   it(
@@ -326,16 +376,17 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
     expect(event?.memoryEvidence).toBeNull();
   });
 
-  it("무응답을 겪고 완료해도(skipCount > 0) 스트릭이 증가한다", async () => {
+  it("무응답을 겪고 완료해도 done 이벤트를 남기고 AppState를 변경하지 않는다", async () => {
     const task = await createTestTask();
     await prisma.task.update({
       where: { id: task.id },
       data: { status: "active", skipCount: 3, level: 2 },
     });
-    const appStateBefore = await prisma.appState.findUnique({
+    await prisma.appState.upsert({
       where: { id: "singleton" },
+      create: { id: "singleton", streak: 7 },
+      update: { streak: 7 },
     });
-    const streakBefore = appStateBefore?.streak ?? 0;
 
     const res = await request(app)
       .post(`/api/tasks/${task.id}/events`)
@@ -345,7 +396,12 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
     const appStateAfter = await prisma.appState.findUniqueOrThrow({
       where: { id: "singleton" },
     });
-    expect(appStateAfter.streak).toBe(streakBefore + 1);
+    expect(appStateAfter.streak).toBe(7);
+    expect(
+      await prisma.taskEvent.count({
+        where: { taskId: task.id, eventType: "done" },
+      }),
+    ).toBe(1);
   });
 
   it("세 값 없이 보내도(카드 직접 클릭 경로) 기존처럼 완료 처리되고 세 필드는 null로 저장된다 (회귀)", async () => {
@@ -610,13 +666,14 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
   });
 
   it(
-    "동일 task의 동시 done 요청 두 개 중 하나만 이벤트와 streak를 기록한다 (동시성)",
+    "동일 task의 동시 done 요청 두 개 중 하나만 이벤트를 기록하고 AppState는 변경하지 않는다 (동시성)",
     async () => {
       const task = await createTestTask();
-      const appStateBefore = await prisma.appState.findUnique({
+      await prisma.appState.upsert({
         where: { id: "singleton" },
+        create: { id: "singleton", streak: 11 },
+        update: { streak: 11 },
       });
-      const streakBefore = appStateBefore?.streak ?? 0;
 
       const [first, second] = await Promise.all([
         request(app)
@@ -659,7 +716,7 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
 
       expect(completedTask.status).toBe("done");
       expect(doneEvents).toHaveLength(1);
-      expect(appStateAfter.streak).toBe(streakBefore + 1);
+      expect(appStateAfter.streak).toBe(11);
     },
     30000,
   );

@@ -26,6 +26,13 @@ function renderFocusMode(props = {}) {
         entryLevel={
           Object.hasOwn(props, "entryLevel") ? props.entryLevel : 2
         }
+        journeyLevel={
+          Object.hasOwn(props, "journeyLevel")
+            ? props.journeyLevel
+            : Object.hasOwn(props, "entryLevel")
+              ? props.entryLevel
+              : 2
+        }
         generationSource={props.generationSource ?? "gemini"}
         memoryEvidence={props.memoryEvidence ?? null}
         onSessionCompleted={props.onSessionCompleted}
@@ -210,6 +217,29 @@ describe("FocusMode completion request guard", () => {
     expect(stopButton).toBeEnabled();
   });
 
+  it.each([
+    [59_000, 59],
+    [60_000, 60],
+  ])(
+    "sends the click-time elapsed duration for stopped at %sms",
+    async (elapsedMs, expectedSeconds) => {
+      const now = new Date("2026-07-27T12:00:00.000Z").getTime();
+      vi.spyOn(Date, "now").mockReturnValue(now);
+      apiFetch.mockResolvedValue({ data: { id: "task-1", status: "active" } });
+      renderFocusMode({ startedAt: now - elapsedMs, onStop: vi.fn() });
+
+      fireEvent.click(screen.getByRole("button", { name: "멈추기" }));
+
+      await waitFor(() => {
+        expect(apiFetch).toHaveBeenCalledTimes(1);
+      });
+      expect(JSON.parse(apiFetch.mock.calls[0][1].body)).toEqual({
+        eventType: "stopped",
+        durationSeconds: expectedSeconds,
+      });
+    },
+  );
+
   it("removes the stored session after stop succeeds", async () => {
     sessionStorage.setItem(FOCUS_SESSION_KEY, '{"saved":true}');
     apiFetch.mockResolvedValue({ data: { id: "task-1", status: "active" } });
@@ -249,19 +279,53 @@ describe("FocusMode Shared Journey asset mapping", () => {
     [null, "nagbot_walk_lv0.png", "journey_lv0_clear.png"],
     [9, "nagbot_walk_lv0.png", "journey_lv0_clear.png"],
   ])(
-    "maps entryLevel %s to the expected character and background",
-    (entryLevel, characterFile, backgroundFile) => {
-      const { container } = renderFocusMode({ entryLevel });
+    "maps journeyLevel %s to the expected character and background",
+    (journeyLevel, characterFile, backgroundFile) => {
+      const { container } = renderFocusMode({ journeyLevel });
       const journey = container.querySelector(".focus-mode-journey");
       const character = container.querySelector(".focus-journey-character");
 
       expect(character.getAttribute("src")).toContain(characterFile);
       expect(character).toHaveClass(
-        `focus-journey-character-lv${Number.isInteger(entryLevel) && entryLevel >= 0 && entryLevel <= 4 ? entryLevel : 0}`,
+        `focus-journey-character-lv${Number.isInteger(journeyLevel) && journeyLevel >= 0 && journeyLevel <= 4 ? journeyLevel : 0}`,
       );
       expect(journey.style.backgroundImage).toContain(backgroundFile);
     },
   );
+
+  it("keeps Journey assets tied to journeyLevel when entryLevel changes", () => {
+    const { container, rerender } = renderFocusMode({
+      entryLevel: null,
+      journeyLevel: 4,
+      microTask: null,
+      entryMode: "direct",
+      generationSource: "none",
+    });
+
+    expect(
+      container.querySelector(".focus-journey-character").getAttribute("src"),
+    ).toContain("nagbot_walk_lv4.png");
+
+    rerender(
+      <MemoryRouter>
+        <FocusMode
+          taskId="task-1"
+          title="테스트 과제"
+          startedAt={Date.now()}
+          entryMode="direct"
+          entryLevel={3}
+          journeyLevel={4}
+          microTask={null}
+          generationSource="none"
+          memoryEvidence={null}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(
+      container.querySelector(".focus-journey-character").getAttribute("src"),
+    ).toContain("nagbot_walk_lv4.png");
+  });
 });
 
 describe("FocusMode elapsed time recovery", () => {

@@ -10,22 +10,18 @@ import { getMicrotask } from "./microtask.js";
 
 // Lv1: plan.md 3번 시나리오("회피 이유를 다시 확인하고, 가볍게 시작을 독려한다") 기준.
 // 회피 이유 재확인은 ReasonCheckpoint가 이미 담당하므로 여기서는 마이크로태스크 없이
-// 가벼운 톤의 시작 독려 문구만 둔다. 여러 개를 두고 skipCount로 로테이션해
-// 매번 같은 문구가 반복되지 않게 한다(microtaskTemplates.js와 동일한 패턴).
-export const LV1_MESSAGES = [
-  "아직 시작 못 하셨네요. 지금 딱 한 걸음만 떼어볼까요?",
-  "살짝 미뤄지고 있어요. 가볍게 한 번 시작해볼까요?",
-  "아직이네요. 부담 갖지 말고 살짝만 움직여볼까요?",
-];
+// 가벼운 톤의 시작 독려 문구만 둔다. 고정 문구 하나만 두되, 배열 형태는 그대로 유지해
+// skipCount 로테이션 코드를 바꾸지 않는다(길이 1이면 항상 같은 인덱스로 순환).
+export const LV1_MESSAGES = ["가볍게 한 번 시작해볼까요?"];
 
 // Lv2: plan.md 3번 시나리오("유형과 회피 이유를 기반으로 현재 상황에 맞는 첫 행동을
 // 제안한다") 기준. 본문 앞부분은 유형/이유에 맞춰 제안한다는 톤만 담고, 실제 마이크로태스크는
 // getMicrotask()가 만든 문구를 그대로 이어붙인다 — 두 곳에서 마이크로태스크 문구를
-// 따로 만들지 않기 위함(#20 microtaskTemplates.js 재사용).
-const LV2_LEAD_INS = [
-  "지금 상황엔 이 정도로 시작해보는 게 좋을 것 같아요.",
-  "이유를 보니, 이렇게 작게 시작해보는 게 딱 맞을 것 같아요.",
-];
+// 따로 만들지 않기 위함(#20 microtaskTemplates.js 재사용). 고정 문구 하나만 두되, 배열
+// 형태는 유지해 기존 skipCount 로테이션 코드를 바꾸지 않는다.
+// 화면(NudgeMessage.jsx)은 이 리드인만 "핵심 메시지"로, 뒤이은 microtask는
+// 별도의 "추천 행동" 줄로 나눠서 보여주기 위해 이 상수를 그대로 export한다.
+export const LV2_LEAD_INS = ["아직 막막하다면 행동을 더 작게 줄여볼게요."];
 
 // Lv2 본문 조립을 순수 함수로 분리한다. microtask를 생략하면 기존 룰베이스를 그대로
 // 사용하고, Gemini 결과를 넘기면 동일한 문장 구조 안에 그 결과만 넣는다.
@@ -64,9 +60,18 @@ export const LV3_SAFE_FALLBACKS = {
   기타: "5분 안에 남길 결과 한 줄 작성하기",
 };
 
-export function buildLv3FallbackMessage(task) {
+// microtaskOverride가 있으면(서버가 200 + source:"rule_based"로 이미 골라준 microTask)
+// 클라이언트 테이블을 다시 계산하지 않고 그 값을 그대로 쓴다 — 서버/클라이언트 fallback
+// 테이블이 나중에 어긋나도 화면·Focus·History가 항상 서버가 실제로 응답한 값을 쓰게 하기
+// 위함. override가 없을 때만(요청 자체 실패 등 진짜 클라이언트 fallback 상황) 기존처럼
+// LV3_SAFE_FALLBACKS에서 유형별로 고른다.
+/**
+ * @param {{ type: string, skipCount: number }} task
+ * @param {string | null} [microtaskOverride]
+ */
+export function buildLv3FallbackMessage(task, microtaskOverride = null) {
   const microtask =
-    LV3_SAFE_FALLBACKS[task.type] ?? LV3_SAFE_FALLBACKS.기타;
+    microtaskOverride ?? (LV3_SAFE_FALLBACKS[task.type] ?? LV3_SAFE_FALLBACKS.기타);
   return {
     body: `이 할일, 벌써 ${task.skipCount}번이나 미뤄졌어요. 이번엔 이렇게 시작해볼까요? ${microtask}`,
     microtask,
@@ -137,11 +142,14 @@ export function formatDday(deadline, now = new Date()) {
   return `D+${-diff}`;
 }
 
-// 레벨 4에서는 "지금 시작하기"만 남기고 다른 선택지(닫기 등)를 잠근다(plan.md 3번 Lv4:
-// "즉시 시작을 유도하는 강한 개입"). NudgeModal이 이 값으로 닫기 버튼을 숨긴다.
-export function isLockedToStart(level) {
-  return level === 4;
-}
+// 모달 상단의 "몇 번째 알림"인지 문구 — 레벨별 고정 톤(Lv1/2 존댓말, Lv3/4 반말).
+// 실제 skipCount 숫자를 노출하지 않고 레벨과 1:1로 고정한다(디자인 확정 문구).
+export const NUDGE_TOP_STATUS_BY_LEVEL = {
+  1: "첫 번째 알림이에요.",
+  2: "두 번째 알림이에요.",
+  3: "벌써 세 번째 알림이야.",
+  4: "네 번째 알림이야. 이제 시작할 때야.",
+};
 
 // { [level]: (input) => { body, microtask } } — microtask는 Lv1에서 항상 null이고,
 // Lv2부터 실제 마이크로태스크 문구가 채워질 자리.
@@ -157,13 +165,17 @@ export const NUDGE_MESSAGE_BUILDERS = {
   // 요청이 실패하거나 응답 품질 검사를 통과하지 못했을 때의 로컬 fallback이다.
   3: (task) => buildLv3FallbackMessage(task),
   // Lv4: 마감 임박 경고. 실제 마감 D-day 숫자를 언급하며 즉시 시작을 유도하는 가장 강한
-  // 개입(plan.md 3번). 톤을 높이고, "지금 시작하기"만 남긴다(isLockedToStart + NudgeModal).
+  // 개입(plan.md 3번). 톤을 반말로 높이고 즉시 시작을 강하게 유도한다("생각은 여기까지").
+  // D-day는 "핵심" 문장 안에 길게 넣지 않고 별도 필드(dday)로 분리해 화면(NudgeMessage.jsx)이
+  // 작고 낮은 대비의 보조 정보로 따로 보여주게 한다 — microtask도 body에 엮지 않고
+  // "추천 행동" 줄로 별도 표시한다.
   4: ({ type, reason, deadline }) => {
     const dday = formatDday(deadline);
     const microtask = getMicrotask({ type, reason });
     return {
-      body: `마감이 ${dday}예요. 더 미루면 진짜 늦어요 — 지금 딱 이것만 시작해요: ${microtask}`,
+      body: "생각은 여기까지.\n지금 바로 시작해.",
       microtask,
+      dday,
       generationSource: "rule_based",
       memoryEvidence: null,
     };

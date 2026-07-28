@@ -1,6 +1,6 @@
 // 넛지 엔진 관련 설정값 모음.
 // 매직넘버를 컴포넌트 곳곳에 박지 않고 여기 한 곳에서만 관리한다.
-import { getUrgencyBucket } from "./nudgeInterval.js";
+import { getUrgencyBucket, getLevelDelayMinutes } from "./nudgeInterval.js";
 
 // 대기중(waiting) 할일의 시작 예정 시각 경과 여부를 확인하는 간격(ms).
 // 도달 즉시 active로 전환하기 위한 가벼운 폴링 주기라 tick보다 짧게 둔다.
@@ -19,12 +19,41 @@ export const DEMO_LEVEL_DELAY_MS = {
   overdue: { 2: 3000, 3: 6000, 4: 10000 },
 };
 
+// 알림 간격 모드 결정 — 우선순위:
+//   1. 테스트 환경(vitest가 자동 설정하는 MODE==="test")은 항상 demo로 고정한다.
+//      기존 HomePage.test.jsx가 advance(3000) 등 데모 ms 값에 그대로 결합돼 있어
+//      이 규칙이 깨지면 그 테스트들이 전부 실패한다.
+//   2. VITE_NUDGE_MODE가 정확히 "demo"|"production"이면 그 값을 그대로 쓴다
+//      (챌린지 시연 배포에서 VITE_NUDGE_MODE=demo로 초 단위 속도를 강제할 수 있음).
+//   3. 값이 있는데 "demo"/"production"이 아니면 경고만 남기고 무시한다(3번으로 폴백).
+//   4. 환경변수가 없으면 빌드 모드로 안전하게 기본값을 정한다 — production 빌드에서
+//      배포 환경변수를 깜빡해도 분 단위(느린) 간격이 나가야지, 초 단위가 나가면 안 된다.
+export function resolveNudgeMode() {
+  if (import.meta.env.MODE === "test") return "demo";
+
+  const raw = import.meta.env.VITE_NUDGE_MODE;
+  if (raw === "demo" || raw === "production") return raw;
+  if (typeof raw === "string" && raw.length > 0) {
+    console.warn(
+      `[nudgeConfig] 알 수 없는 VITE_NUDGE_MODE="${raw}" — 무시하고 환경 기본값을 사용합니다.`,
+    );
+  }
+
+  return import.meta.env.PROD ? "production" : "demo";
+}
+
 // HomePage.jsx가 호출하는 진입점. currentLevel 기준 다음으로 도달할 레벨(최대 4,
-// Lv4는 계속 Lv4 지연을 재사용 — 휴지기 없음, 기존 동작 유지)의 데모 지연(ms)을 반환한다.
-// 레벨 1(활성화 직후 첫 체크)은 대기 없이 즉시 발생한다.
-export function getDemoNudgeDelayMs(currentLevel, deadline, now = new Date()) {
+// Lv4는 계속 Lv4 지연을 재사용 — 휴지기 없음, 기존 동작 유지)까지의 지연(ms)을
+// 반환한다. 레벨 1(활성화 직후 첫 체크)은 어느 모드에서든 대기 없이 즉시 발생한다.
+// 데모/프로덕션 모두 이 함수 하나로 처리하므로(과거 getDemoNudgeDelayMs) 이름을
+// 그에 맞게 바꿨다.
+export function getNudgeDelayMs(currentLevel, deadline, now = new Date()) {
   const nextLevel = Math.min(currentLevel + 1, 4);
   if (nextLevel === 1) return 0;
   const bucket = getUrgencyBucket(deadline, now);
+
+  if (resolveNudgeMode() === "production") {
+    return getLevelDelayMinutes(nextLevel, bucket) * 60_000;
+  }
   return DEMO_LEVEL_DELAY_MS[bucket][nextLevel];
 }

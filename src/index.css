@@ -24,6 +24,15 @@
   --gauge3: #c24e5b;
   --gauge4: #d9822b;
 
+  /* 개입 레벨(Lv1~4) 공통 색상 — TaskCard/JourneyHero/NudgeModal이 각자 hex를
+     복제해 정의하던 것을 여기 하나로 모음. 값은 기존 Home(TaskCard/JourneyHero)
+     기준을 그대로 유지(새 팔레트 아님). NudgeModal도 self-contained 원칙과 별개로
+     이 레벨 토큰만은 공유해서 참조한다. */
+  --level-1: #78cfc3;
+  --level-2: #9285bc;
+  --level-3: #d77f91;
+  --level-4: #c94a43;
+
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;

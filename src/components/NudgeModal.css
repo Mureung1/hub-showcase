@@ -1,211 +1,269 @@
-/* 개입 팝업 전용 스타일. 디자인 Skill의 "개입 팝업 전용" 팔레트를 그대로 적용한다.
-   전역 :root에 아직 토큰이 정의돼 있지 않아, 팝업 색은 여기서 self-contained하게 둔다.
-   레벨 포인트 컬러(민트/블루/옐로우/레드)는 팝업 안에서만 쓴다. */
+/* Nudge Modal 전용 스타일.
+   레벨 색상은 Badge, 메시지 accent, 주요 CTA에만 제한한다.
+   레벨(--lv) 색상만은 index.css의 공통 --level-1~4 토큰을 참조한다 —
+   TaskCard/JourneyHero와 값이 서로 갈라지지 않도록 하기 위함(그 외 토큰은 self-contained 유지). */
 
 .nudge-backdrop {
   position: fixed;
   inset: 0;
-  /* 딤은 레벨과 무관하게 항상 동일한 톤(홈 focus-overlay와 통일) */
   background: rgba(15, 42, 58, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  z-index: 200; /* 포커스 오버레이(100)보다 위. 단, 포커스 중엔 렌더 자체를 막는다 */
+  padding: 16px;
+  z-index: 200;
 }
 
 .nudge-content {
-  /* 레벨별로 바뀌는 값은 이 두 변수 하나로 모은다 */
-  --lv: #e8694f; /* 레벨 미부여(0) 기본 액션색 = 코랄 */
-  --lv-ink: #fff;
+  --lv: var(--level-1);
+  --lv-ink: #0f2a3a;
 
   width: 100%;
-  max-width: 540px;
-  background: #0f2a3a; /* 팝업 배경 고정 */
-  color: #eaf0f4;
-  border: 1px solid var(--lv);
-  border-radius: 22px;
-  padding: 30px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  max-width: 940px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  background: #f7fafb;
+  color: #173544;
+  border: 1px solid color-mix(in srgb, var(--lv) 55%, #d8e2e7);
+  border-radius: 24px;
+  padding: 31px 34px;
+  box-shadow: 0 22px 56px rgba(15, 42, 58, 0.28);
 }
 
 .nudge-content[data-level="1"] {
-  --lv: #8fbdb6; /* 민트 → 밝은 색이라 다크 네이비 글자 */
+  --lv: var(--level-1);
   --lv-ink: #0f2a3a;
 }
+
 .nudge-content[data-level="2"] {
-  --lv: #209ebb; /* 블루 → 흰 글자 */
+  --lv: var(--level-2);
   --lv-ink: #fff;
 }
+
 .nudge-content[data-level="3"] {
-  --lv: #ffb701; /* 옐로우 → 다크 네이비 글자 */
+  --lv: var(--level-3);
   --lv-ink: #0f2a3a;
 }
+
 .nudge-content[data-level="4"] {
-  --lv: #e8362e; /* 레드 → 흰 글자 */
+  --lv: var(--level-4);
   --lv-ink: #fff;
-  animation: nudge-shake 0.5s ease-in-out infinite;
+  animation:
+    nudge-lv4-enter 360ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    nudge-lv4-border-emphasis 4s ease-out both,
+    nudge-lv4-border-breathe 3.5s ease-in-out 4s infinite;
 }
 
 .nudge-top {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.nudge-avatar {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #5b6472; /* 아바타 배경 = 쿨그레이, 브랜드 액션색과 분리 */
-  font-size: 18px;
+  gap: 8px;
+  min-height: 30px;
 }
 
 .nudge-name {
+  flex: 0 0 auto;
+  color: #173544;
   font-weight: 800;
-  color: #fff;
+}
+
+/* 오른쪽 그룹(자동 닫힘 카운트다운 + 닫기) — 브랜드명과 겹치지 않게 남는 공간만
+   차지하고, 카운트다운 문구는 줄바꿈되지 않는다(360px 요구사항). */
+.nudge-top-right {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.nudge-countdown {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 라벨("자동 닫힘")은 중립색, 숫자만 현재 레벨 색상(--lv, 배지·CTA와 동일 토큰)을 쓴다. */
+.nudge-countdown-label {
+  color: #78909c;
+}
+
+.nudge-countdown-value {
+  color: var(--lv);
 }
 
 .nudge-close {
-  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border: 0;
   background: transparent;
-  border: none;
-  color: #9fb0bc;
+  color: #667a86;
   font-size: 13px;
+  white-space: nowrap;
   cursor: pointer;
-  padding: 4px 6px;
 }
 
 .nudge-close:hover {
-  color: #eaf0f4;
+  color: #173544;
+}
+
+.nudge-close:focus-visible,
+.nudge-primary:focus-visible,
+.reason-checkpoint-opt:focus-visible,
+.reason-checkpoint-confirm:focus-visible,
+.free-text-prompt-confirm:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--lv) 55%, white);
+  outline-offset: 2px;
+}
+
+.nudge-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.nudge-chip {
+  display: inline-block;
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--lv);
+  color: var(--lv-ink);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .nudge-status {
-  margin-top: 14px;
-  font-size: 13px;
-  color: #9fb0bc;
+  color: #667a86;
+  font-size: 13.5px;
 }
 
-/* 회피 이유 재확인 체크포인트 (Lv1/Lv3에서만 조건부 노출) */
-.reason-checkpoint {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
+.nudge-main {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr);
+  align-items: center;
+  gap: 41px;
+  margin-top: 20px;
 }
 
-.reason-checkpoint-q {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #eaf0f4;
-  line-height: 1.45;
-}
-
-.reason-checkpoint-options {
+.nudge-character-panel {
+  position: relative;
+  top: -6px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+}
+
+.nudge-character {
+  display: block;
+  width: 205px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Lv2 원본 캔버스가 다른 레벨보다 커 보여 공통값 대비 약 2.5%만 보정한다. */
+.nudge-character-lv2 {
+  width: 200px;
+}
+
+.nudge-interaction {
+  min-width: 0;
+}
+
+.reason-checkpoint,
+.free-text-prompt {
+  margin-top: 0;
+  padding: 17px;
+  border: 1px solid #d8e2e7;
+  border-left: 3px solid var(--lv);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.free-text-prompt {
+  margin-bottom: 14px;
+}
+
+.reason-checkpoint-q,
+.free-text-prompt-q {
+  margin: 0 0 14px;
+  color: #173544;
+  font-size: 15.75px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* 이유 선택지 4개를 균형 있는 2+2로 고정한다(모달 폭과 무관하게 3+1로 어색하게
+   떨어지지 않도록) — 데스크톱만 grid, 모바일은 아래 미디어쿼리에서 1열로 바꾼다. */
+.reason-checkpoint-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .reason-checkpoint-opt {
-  background: rgba(255, 255, 255, 0.08);
-  color: #eaf0f4;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 7px 16px;
+  border: 1px solid #cbd8de;
   border-radius: 999px;
-  padding: 7px 13px;
+  background: #fff;
+  color: #314d5b;
   font-size: 13px;
   font-weight: 600;
+  text-align: center;
   cursor: pointer;
 }
 
 .reason-checkpoint-opt:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: #edf3f5;
 }
 
 .reason-checkpoint-opt-on {
+  border-color: var(--lv);
   background: var(--lv);
   color: var(--lv-ink);
-  border-color: var(--lv);
 }
 
-.reason-checkpoint-custom {
+.reason-checkpoint-custom,
+.free-text-prompt-row {
   display: flex;
   gap: 8px;
   margin-top: 10px;
 }
 
-.reason-checkpoint-input {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  color: #eaf0f4;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  padding: 8px 11px;
-  font-size: 13px;
-}
-
-.reason-checkpoint-input::placeholder {
-  color: #9fb0bc;
-}
-
-.reason-checkpoint-confirm {
-  background: var(--lv);
-  color: var(--lv-ink);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* Lv2 자유 텍스트(공감용, 로직 미반영) */
-.free-text-prompt {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.free-text-prompt-q {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #eaf0f4;
-  line-height: 1.45;
-}
-
 .free-text-prompt-row {
-  display: flex;
-  gap: 8px;
+  margin-top: 0;
 }
 
+.reason-checkpoint-input,
 .free-text-prompt-input {
+  min-width: 0;
   flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  color: #eaf0f4;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
   padding: 8px 11px;
+  border: 1px solid #cbd8de;
+  border-radius: 8px;
+  background: #fff;
+  color: #173544;
   font-size: 13px;
 }
 
+.reason-checkpoint-input::placeholder,
 .free-text-prompt-input::placeholder {
-  color: #9fb0bc;
+  color: #7d909a;
 }
 
+.reason-checkpoint-confirm,
 .free-text-prompt-confirm {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
   background: var(--lv);
   color: var(--lv-ink);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -213,108 +271,287 @@
 
 .free-text-prompt-ack {
   margin: 10px 0 0;
+  color: #667a86;
   font-size: 13px;
-  color: #9fb0bc;
-}
-
-/* Lv4 전용 "캘린더에 추가" 정적 카드(#28) — 실제 연동은 4주차, 지금은 데모 카드만 */
-.calendar-slot-card {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.calendar-slot-title {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #eaf0f4;
-}
-
-.calendar-slot-detail {
-  margin: 0;
-  font-size: 13px;
-  color: #9fb0bc;
-}
-
-.calendar-slot-detail strong {
-  color: #eaf0f4;
-}
-
-.calendar-slot-btn {
-  margin-top: 12px;
-  width: 100%;
-  background: transparent;
-  color: var(--lv);
-  border: 1px solid var(--lv);
-  border-radius: 9px;
-  padding: 9px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.calendar-slot-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
 }
 
 .nudge-body {
-  margin-top: 12px;
+  padding-left: 16px;
+  border-left: 3px solid var(--lv);
 }
 
-.nudge-chip {
-  display: inline-block;
-  background: var(--lv);
-  color: var(--lv-ink);
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 4px 12px;
+.reason-checkpoint + .nudge-body {
+  margin-top: 16px;
 }
 
 .nudge-message {
-  margin: 12px 0 0;
-  font-size: 15px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+  color: #314d5b;
+  font-size: 18.5px;
+  font-weight: 700;
   line-height: 1.5;
-  color: #eaf0f4;
 }
 
 .nudge-message strong {
-  color: #fff;
+  color: #173544;
+}
+
+/* Lv4 전용: D-day는 핵심 문장에 길게 엮지 않고 작고 낮은 대비의 보조 정보로 분리한다. */
+.nudge-deadline-note {
+  margin: 6px 0 0;
+  color: #78909c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 추천 행동 — 일반 설명 문장과 섞이지 않도록 label + 화살표를 붙인 별도 블록으로 분리한다.
+   기존 세로 accent(.nudge-body의 border-left)와 겹치지 않게 padding-left로만 들여쓴다. */
+.nudge-action-block {
+  margin: 12px 0 0;
+}
+
+.nudge-action-label {
+  display: block;
+  margin: 0 0 4px;
+  color: #78909c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.nudge-action {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.nudge-action-arrow {
+  flex: 0 0 auto;
+  color: #78909c;
+  font-size: 14px;
+}
+
+.nudge-action-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #173544;
+  font-size: 17.5px;
+  font-weight: 700;
 }
 
 .nudge-buttons {
-  margin-top: 20px;
+  margin-top: 22px;
 }
 
 .nudge-primary {
-  width: 100%;
-  background: var(--lv);
-  color: var(--lv-ink);
-  border: none;
-  border-radius: 9px;
+  min-height: 49px;
+  border-radius: 10px;
   padding: 12px 16px;
-  font-size: 15px;
+  font-size: 16.5px;
   font-weight: 800;
   cursor: pointer;
 }
 
-.nudge-primary:hover {
-  filter: brightness(0.95);
+.nudge-primary {
+  width: 100%;
+  border: 0;
+  background: var(--lv);
+  color: var(--lv-ink);
 }
 
-@keyframes nudge-shake {
+.nudge-primary:hover {
+  filter: brightness(0.96);
+}
+
+/* 비활성 상태(예: Lv3 이유 확인 전)는 같은 --lv에서 옅게 파생한 배경 + 낮은 대비
+   텍스트로 "선택 가능"과 명확히 구분한다 — 활성 상태는 var(--lv) 원색 그대로 유지해
+   다른 레벨의 활성 CTA와 동일한 강도를 갖는다(레벨별 새 hex 추가 없음). */
+.nudge-primary:disabled {
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--lv) 32%, #fff);
+  color: color-mix(in srgb, var(--lv-ink) 55%, #7d909a);
+}
+
+@media (max-width: 900px) and (min-width: 621px) {
+  .nudge-main {
+    grid-template-columns: 175px minmax(0, 1fr);
+    gap: 27px;
+  }
+
+  .nudge-character {
+    width: 175px;
+  }
+
+  .nudge-character-lv2 {
+    width: 171px;
+  }
+}
+
+@media (max-width: 620px) {
+  .nudge-backdrop {
+    padding: 12px;
+  }
+
+  .nudge-content {
+    max-height: calc(100dvh - 24px);
+    padding: 20px 18px;
+    border-radius: 20px;
+  }
+
+  .nudge-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .nudge-main {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 19px;
+    margin-top: 14px;
+  }
+
+  .nudge-character-panel {
+    top: -4px;
+    min-height: 154px;
+  }
+
+  .nudge-character {
+    width: 140px;
+  }
+
+  .nudge-character-lv2 {
+    width: 137px;
+  }
+
+  .nudge-body {
+    padding-left: 12px;
+  }
+
+  /* 모바일에서는 위계는 유지하되 크기만 축소 — CTA가 잘리거나 밀리지 않게 한다. */
+  .nudge-status {
+    font-size: 12.5px;
+  }
+
+  .nudge-message {
+    font-size: 16.5px;
+  }
+
+  .nudge-action-text {
+    font-size: 15.5px;
+  }
+
+  .reason-checkpoint-q,
+  .free-text-prompt-q {
+    font-size: 14px;
+  }
+
+  .nudge-primary {
+    font-size: 15px;
+  }
+
+  .reason-checkpoint-options {
+    grid-template-columns: 1fr;
+  }
+
+  .reason-checkpoint-custom,
+  .free-text-prompt-row {
+    flex-direction: column;
+  }
+
+  .reason-checkpoint-confirm,
+  .free-text-prompt-confirm {
+    min-height: 42px;
+  }
+}
+
+/* 360px처럼 아주 좁은 화면에서도 "잔소리봇 / 자동 닫힘 00:30 / X"가 한 줄에서
+   겹치거나 줄바꿈되지 않도록 글자 크기·간격만 더 줄인다(카운트다운 문구 생략 금지). */
+@media (max-width: 380px) {
+  .nudge-top {
+    gap: 5px;
+  }
+
+  .nudge-name {
+    font-size: 13px;
+  }
+
+  .nudge-top-right {
+    gap: 4px;
+  }
+
+  .nudge-countdown {
+    font-size: 11px;
+  }
+
+  .nudge-close {
+    padding: 5px 4px;
+    font-size: 11.5px;
+  }
+}
+
+@keyframes nudge-lv4-enter {
+  0% {
+    opacity: 0.65;
+    transform: translateY(14px) scale(0.97);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.008);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* border-color/box-shadow는 전부 --level-4에서 color-mix로 파생한다 — 이 애니메이션만의
+   새 hex(예전 #b93d37/#bf4540/rgba(201,74,67,...))를 두지 않기 위함. */
+@keyframes nudge-lv4-border-emphasis {
+  0% {
+    border-color: var(--level-4);
+    box-shadow: 0 22px 56px rgba(15, 42, 58, 0.28);
+  }
+
+  12%,
+  28% {
+    border-color: color-mix(in srgb, var(--level-4) 92%, black);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--level-4) 78%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--level-4) 18%, transparent),
+      0 20px 60px color-mix(in srgb, var(--level-4) 30%, transparent);
+  }
+
+  55% {
+    border-color: var(--level-4);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--level-4) 36%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--level-4) 9%, transparent),
+      0 21px 58px color-mix(in srgb, var(--level-4) 16%, transparent);
+  }
+
+  100% {
+    border-color: var(--level-4);
+    box-shadow: 0 22px 56px rgba(15, 42, 58, 0.28);
+  }
+}
+
+@keyframes nudge-lv4-border-breathe {
   0%,
   100% {
-    transform: translateX(0);
+    border-color: var(--level-4);
+    box-shadow: 0 22px 56px rgba(15, 42, 58, 0.28);
   }
-  25% {
-    transform: translateX(-4px);
-  }
-  75% {
-    transform: translateX(4px);
+
+  50% {
+    border-color: color-mix(in srgb, var(--level-4) 95%, black);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--level-4) 10%, transparent),
+      0 22px 58px color-mix(in srgb, var(--level-4) 14%, transparent);
   }
 }
 

@@ -27,16 +27,12 @@
   text-decoration: none;
 }
 
-.brand-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
+.brand-logo {
+  display: block;
+  width: 35px;
+  max-height: 32px;
+  flex-shrink: 0;
+  object-fit: contain;
 }
 
 .nav-links {
@@ -94,4 +90,52 @@
   background: var(--accent);
   color: #fff;
   opacity: 1;
+}
+
+.brand:focus-visible,
+.nav-link:focus-visible,
+.nav-perm-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 390px) {
+  .navbar-inner {
+    display: grid;
+    grid-template-areas:
+      "brand permission"
+      "links links";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    padding: 8px 14px;
+  }
+
+  .brand {
+    grid-area: brand;
+    justify-self: start;
+    min-width: 0;
+  }
+
+  .nav-links {
+    grid-area: links;
+    width: 100%;
+    gap: 2px;
+  }
+
+  .nav-link {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 40px;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 8px;
+    text-align: center;
+  }
+
+  .nav-perm-btn {
+    grid-area: permission;
+    justify-self: end;
+    white-space: nowrap;
+  }
 }

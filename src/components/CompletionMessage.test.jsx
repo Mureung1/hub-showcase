@@ -4,11 +4,21 @@ import CompletionMessage from "./CompletionMessage.jsx";
 
 describe("CompletionMessage", () => {
   it("완료 문구는 props와 무관하게 항상 보인다 (기본)", () => {
-    render(<CompletionMessage />);
+    const { container } = render(<CompletionMessage />);
 
     expect(
       screen.getByText("완료했어요! 오늘도 한 걸음 나아갔어요."),
     ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "완료했어요! 오늘도 한 걸음 나아갔어요.",
+    );
+
+    const character = container.querySelector(".completion-character");
+    const sparkles = container.querySelector(".completion-sparkles");
+    expect(character).toHaveAttribute("alt", "");
+    expect(character).toHaveAttribute("aria-hidden", "true");
+    expect(sparkles).toHaveAttribute("alt", "");
+    expect(sparkles).toHaveAttribute("aria-hidden", "true");
   });
 
   it("모든 props가 있으면 4개 항목이 모두 보인다 (happy path)", () => {

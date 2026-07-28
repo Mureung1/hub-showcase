@@ -138,6 +138,48 @@ describe.skipIf(!isTestDb)("GET /api/history", () => {
     expect(taskIds).not.toContain(activeTask.id);
   });
 
+  it("완료 시점의 회피 이유를 reason/customReasonText로 반환한다 (happy path)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app).get("/api/history");
+    const beforeDone = res.body.data.find(
+      (e: { taskId: string }) => e.taskId === task.id,
+    );
+    expect(beforeDone).toBeUndefined();
+
+    await request(app).post(`/api/tasks/${task.id}/events`).send({ eventType: "done" });
+
+    const afterDone = await request(app).get("/api/history");
+    const entry = afterDone.body.data.find(
+      (e: { taskId: string }) => e.taskId === task.id,
+    );
+    expect(entry).toMatchObject({
+      reason: "overwhelm",
+      customReasonText: null,
+    });
+  });
+
+  it(
+    "완료 전 재확인으로 회피 이유가 바뀌면 완료 시점(가장 최근) 값을 반환한다 (경계)",
+    async () => {
+      const task = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${task.id}/avoidance-reasons`)
+        .send({ level: 1, reason: "custom", customText: "완벽하게 하고 싶어서" });
+
+      await request(app).post(`/api/tasks/${task.id}/events`).send({ eventType: "done" });
+
+      const res = await request(app).get("/api/history");
+      const entry = res.body.data.find(
+        (e: { taskId: string }) => e.taskId === task.id,
+      );
+      expect(entry).toMatchObject({
+        reason: "custom",
+        customReasonText: "완벽하게 하고 싶어서",
+      });
+    },
+  );
+
   it(
     "최근 완료 순으로 정렬한다 (happy path)",
     async () => {

@@ -57,6 +57,14 @@ function isValidEntryLevel(entryLevel) {
   );
 }
 
+function isValidJourneyLevel(journeyLevel) {
+  return (
+    Number.isInteger(journeyLevel) &&
+    journeyLevel >= 0 &&
+    journeyLevel <= 4
+  );
+}
+
 function isValidMicroTask(microTask) {
   return microTask === null || typeof microTask === "string";
 }
@@ -100,6 +108,10 @@ function assertValidNewContext(session) {
     throw new TypeError("신규 Focus 세션에는 unknown 출처를 사용할 수 없습니다.");
   }
 
+  if (!isValidJourneyLevel(session.journeyLevel)) {
+    throw new TypeError("신규 Focus 세션의 Journey 레벨이 올바르지 않습니다.");
+  }
+
   if (session.entryMode === "direct") {
     if (
       session.entryLevel !== null ||
@@ -119,6 +131,12 @@ function assertValidNewContext(session) {
     session.entryLevel > 4
   ) {
     throw new TypeError("개입 시작 Focus 세션의 레벨이 올바르지 않습니다.");
+  }
+
+  if (session.journeyLevel !== session.entryLevel) {
+    throw new TypeError(
+      "개입 시작 Focus 세션의 Journey 레벨은 진입 레벨과 같아야 합니다.",
+    );
   }
 
   if (session.entryLevel === 1) {
@@ -153,6 +171,7 @@ export function createFocusSession({
   startedAt = Date.now(),
   entryMode = "direct",
   entryLevel = null,
+  journeyLevel = 0,
   microTask = null,
   generationSource = "none",
   memoryEvidence = null,
@@ -163,6 +182,7 @@ export function createFocusSession({
     startedAt,
     entryMode,
     entryLevel,
+    journeyLevel,
     microTask,
     generationSource,
     memoryEvidence,

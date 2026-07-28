@@ -61,7 +61,7 @@ describe("broadcastLevelUpPush", () => {
       vi.mocked(prisma.pushSubscription.findMany).mockResolvedValue([subscription("sub-1")]);
       vi.mocked(sendPush).mockResolvedValue({
         ok: false,
-        error: { code: "push_failed", message: "Gone", statusCode },
+        error: { code: "push_failed", message: "Gone", statusCode, classification: "permanent" },
       });
       vi.mocked(prisma.pushSubscription.delete).mockResolvedValue(subscription("sub-1"));
 
@@ -79,7 +79,12 @@ describe("broadcastLevelUpPush", () => {
       vi.mocked(prisma.pushSubscription.findMany).mockResolvedValue([subscription("sub-1")]);
       vi.mocked(sendPush).mockResolvedValue({
         ok: false,
-        error: { code: "push_failed", message: "실패", statusCode },
+        error: {
+          code: "push_failed",
+          message: "실패",
+          statusCode,
+          classification: statusCode === 429 ? "rate_limited" : statusCode === 400 ? "unknown" : "config",
+        },
       });
 
       await broadcastLevelUpPush(TASK);
@@ -92,7 +97,7 @@ describe("broadcastLevelUpPush", () => {
     vi.mocked(prisma.pushSubscription.findMany).mockResolvedValue([subscription("sub-1")]);
     vi.mocked(sendPush).mockResolvedValue({
       ok: false,
-      error: { code: "push_failed", message: "network down" },
+      error: { code: "push_failed", message: "network down", classification: "temporary" },
     });
 
     await broadcastLevelUpPush(TASK);
@@ -107,7 +112,10 @@ describe("broadcastLevelUpPush", () => {
     ]);
     vi.mocked(sendPush).mockImplementation(async (id) =>
       id === "sub-gone"
-        ? { ok: false, error: { code: "push_failed", message: "Gone", statusCode: 410 } }
+        ? {
+            ok: false,
+            error: { code: "push_failed", message: "Gone", statusCode: 410, classification: "permanent" },
+          }
         : { ok: true },
     );
 
@@ -123,7 +131,7 @@ describe("broadcastLevelUpPush", () => {
     vi.mocked(prisma.pushSubscription.findMany).mockResolvedValue([subscription("sub-1")]);
     vi.mocked(sendPush).mockResolvedValue({
       ok: false,
-      error: { code: "push_failed", message: "Gone", statusCode: 410 },
+      error: { code: "push_failed", message: "Gone", statusCode: 410, classification: "permanent" },
     });
     vi.mocked(prisma.pushSubscription.delete).mockRejectedValue(
       new Error("Record to delete does not exist."),
@@ -137,6 +145,22 @@ describe("broadcastLevelUpPush", () => {
     vi.mocked(sendPush).mockRejectedValue(new Error("unexpected"));
 
     await expect(broadcastLevelUpPush(TASK)).resolves.toBeUndefined();
+    expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
+  });
+
+  it("temporary 실패는 classification을 로그에 남기고 삭제하지 않는다 (#58)", async () => {
+    vi.mocked(prisma.pushSubscription.findMany).mockResolvedValue([subscription("sub-1")]);
+    vi.mocked(sendPush).mockResolvedValue({
+      ok: false,
+      error: { code: "push_failed", message: "network down", classification: "temporary" },
+    });
+
+    await broadcastLevelUpPush(TASK);
+
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("classification=temporary"),
+      expect.objectContaining({ classification: "temporary" }),
+    );
     expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
   });
 });

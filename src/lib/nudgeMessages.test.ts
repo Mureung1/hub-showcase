@@ -5,7 +5,6 @@ import {
   buildLv2NudgeMessage,
   buildLv3MemoryNudgeMessage,
   buildLv3PersonalizedNudgeMessage,
-  isLockedToStart,
   LV1_MESSAGES,
   LV3_SAFE_FALLBACKS,
 } from "./nudgeMessages.js";
@@ -24,7 +23,7 @@ describe("buildNudgeMessage", () => {
   it("skipCount가 LV1_MESSAGES 길이를 넘어가도 순환해서 유효한 문구를 고른다 (경계)", () => {
     const len = LV1_MESSAGES.length;
     const result = buildNudgeMessage(1, { title: "리포트", skipCount: len * 3 + 1 });
-    expect(result.body).toBe(LV1_MESSAGES[1]);
+    expect(result.body).toBe(LV1_MESSAGES[(len * 3 + 1) % len]);
   });
 
   it("빌더가 없는 레벨(0)은 null을 반환한다 (경계)", () => {
@@ -197,7 +196,9 @@ describe("buildNudgeMessage", () => {
   });
 
   describe("레벨 4 (마감 임박 경고)", () => {
-    it("실제 deadline 기준 D-day 숫자가 본문에 표시된다 (happy path)", () => {
+    // D-day는 이제 body(핵심 문장)가 아니라 별도 dday 필드로 분리된다 —
+    // 화면이 이 값을 작고 낮은 대비의 보조 정보로 따로 표시한다.
+    it("실제 deadline 기준 D-day 숫자가 dday 필드에 표시된다 (happy path)", () => {
       // 마감이 3일 뒤 → D-3
       const result = buildNudgeMessage(4, {
         title: "기말 리포트",
@@ -206,7 +207,7 @@ describe("buildNudgeMessage", () => {
         skipCount: 5,
         deadline: addDays(new Date(), 3).toISOString(),
       });
-      expect(result.body).toContain("D-3");
+      expect(result.dday).toBe("D-3");
     });
 
     it("deadline이 바뀌면 D-day 숫자도 그에 맞게 바뀐다 (실제 마감 기준임을 확인)", () => {
@@ -217,15 +218,8 @@ describe("buildNudgeMessage", () => {
         skipCount: 8,
         deadline: addDays(new Date(), 10).toISOString(),
       });
-      expect(result.body).toContain("D-10");
+      expect(result.dday).toBe("D-10");
     });
 
-    it("레벨 4에서는 '지금 시작하기' 외 다른 선택지를 잠근다 (다른 버튼 미노출)", () => {
-      // 레벨 4만 true, 그 외 레벨은 false — NudgeModal이 이 값으로 닫기 등 다른 버튼을 숨긴다.
-      expect(isLockedToStart(4)).toBe(true);
-      for (const level of [0, 1, 2, 3]) {
-        expect(isLockedToStart(level)).toBe(false);
-      }
-    });
   });
 });
