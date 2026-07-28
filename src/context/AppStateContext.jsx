@@ -11,9 +11,9 @@ export const DEFAULT_SPEC = {
   isExperienced: false,
   career_months: 0,
   major: MAJOR_OPTIONS[0],
+  minor_major: '',
   certificates: [],
-  foreign_lang_test: '',
-  foreign_lang_score: 0,
+  foreign_languages: [],
   has_computer_skill: false,
 }
 

@@ -367,6 +367,60 @@ h1 {
   color: #fff;
   border-color: var(--chip-active);
 }
+.lang-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 7px 8px 7px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--chip-active);
+  color: #fff;
+}
+.lang-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lang-tag-remove:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+.btn-add-small {
+  flex: none;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  color: var(--gray-900);
+  border: 1px solid var(--gray-200);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-add-small:hover {
+  background: var(--gray-50);
+  border-color: var(--border-hover);
+}
+.btn-add-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.field-hint {
+  font-size: 11.5px;
+  color: var(--gray-500);
+  margin-top: 6px;
+}
 .btn-primary,
 .btn-secondary {
   padding: 15px;

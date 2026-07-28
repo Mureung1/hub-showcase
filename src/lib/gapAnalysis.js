@@ -43,16 +43,15 @@ export function describeRequirement(category, job, spec) {
   }
   if (category === 'major') {
     if (MAJOR_ANY_VALUES.has(job.major)) return '전공 무관 (조건 없음)'
-    return `요구: ${job.major} · 보유: ${spec.major}`
+    const heldText = spec.minor_major ? `${spec.major} (부전공: ${spec.minor_major})` : spec.major
+    return `요구: ${job.major} · 보유: ${heldText}`
   }
   if (category === 'foreignLanguage') {
     if (!job.foreign_lang_test) return '외국어 성적 불필요'
     const requiredScore = formatForeignLangScore(job.foreign_lang_test, job.foreign_lang_score)
-    if (!spec.foreign_lang_test) return `요구: ${job.foreign_lang_test} ${requiredScore} 이상 · 보유: 미입력`
-    if (spec.foreign_lang_test !== job.foreign_lang_test) {
-      return `요구: ${job.foreign_lang_test} ${requiredScore} 이상 · 보유: ${spec.foreign_lang_test} 성적만 있음 (${job.foreign_lang_test} 성적 없음)`
-    }
-    const heldScore = formatForeignLangScore(spec.foreign_lang_test, spec.foreign_lang_score ?? 0)
+    const held = (spec.foreign_languages ?? []).find((item) => item.test === job.foreign_lang_test)
+    if (!held) return `요구: ${job.foreign_lang_test} ${requiredScore} 이상 · 보유: 미입력`
+    const heldScore = formatForeignLangScore(job.foreign_lang_test, held.score)
     return `요구: ${job.foreign_lang_test} ${requiredScore} 이상 · 보유: ${heldScore}`
   }
   return ''

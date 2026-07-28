@@ -32,18 +32,22 @@ function compareCertificates(job, spec) {
   return required.every((cert) => held.includes(cert))
 }
 
+// 복수전공(부전공) 보유자는 주전공/부전공 둘 중 하나만 요구 전공과 일치해도 통과한다.
 function compareMajor(job, spec) {
   if (MAJOR_ANY_VALUES.has(job.major)) return true
-  return spec.major === job.major
+  return spec.major === job.major || (Boolean(spec.minor_major) && spec.minor_major === job.major)
 }
 
+// spec.foreign_languages는 여러 시험 성적을 동시에 보유할 수 있으므로 배열이다 — 공고가 요구하는
+// 시험과 같은 test를 가진 항목이 있는지 찾아서 그 항목의 score만 비교한다(그 외 보유 시험은 무관).
 function compareForeignLanguage(job, spec) {
   if (!job.foreign_lang_test) return true
-  if (spec.foreign_lang_test !== job.foreign_lang_test) return false
+  const held = (spec.foreign_languages ?? []).find((item) => item.test === job.foreign_lang_test)
+  if (!held) return false
   if (job.foreign_lang_test === 'OPIc') {
-    return (OPIC_RANK[spec.foreign_lang_score] ?? -1) >= OPIC_RANK[job.foreign_lang_score]
+    return (OPIC_RANK[held.score] ?? -1) >= OPIC_RANK[job.foreign_lang_score]
   }
-  return (spec.foreign_lang_score ?? 0) >= job.foreign_lang_score
+  return (held.score ?? 0) >= job.foreign_lang_score
 }
 
 // 5항목 AND 판정. computer_skill(컴퓨터활용능력)은 참고용 우대 항목이라 여기서 절대 비교하지 않는다.
