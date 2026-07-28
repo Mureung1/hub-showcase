@@ -35,8 +35,6 @@ function SchedulePublish() {
   const { data: suggested, error } = useSchedulePublish(id);
   const { data: post, error: postError } = usePostResult(id);
   const [selected, setSelected] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [isPublishSubmitting, setIsPublishSubmitting] = useState(false);
   const [publishError, setPublishError] = useState(null);
@@ -65,18 +63,6 @@ function SchedulePublish() {
   const suggestedDisplay = formatDisplay(toDateTimeLocalValue(suggested.datetime));
   const { date: publishDate, time: publishTime } = formatDisplay(selected);
 
-  const handleSchedule = async () => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      await apiClient.post(`/posts/${id}/schedule`, { scheduledAt: new Date(selected).toISOString() });
-      navigate("/");
-    } catch (err) {
-      setSubmitError(err.message);
-      setIsSubmitting(false);
-    }
-  };
-
   // 반자동 발행: 서버가 대신 게시하지 않고, 제목+본문을 클립보드에 복사한 뒤
   // 네이버 블로그 글쓰기 페이지를 새 탭으로 열어준다. 실제 게시(또는 네이버 자체
   // 예약 발행)는 사용자가 그 탭에서 직접 한다.
@@ -91,6 +77,10 @@ function SchedulePublish() {
     setPublishError(null);
     setShowPublishConfirm(true);
   };
+
+  // 네이버 RSS에서 이 글과 제목이 비슷한 최근 글을 찾아본다 — 못 찾을 수 있는
+  // 휴리스틱이라 PublishConfirmCard가 항상 사용자 확인을 거치게 한다.
+  const handleDetectPublished = () => apiClient.get(`/posts/${id}/detect-published`);
 
   const handleConfirmPublish = async (url) => {
     setIsPublishSubmitting(true);
@@ -141,6 +131,7 @@ function SchedulePublish() {
 
           {showPublishConfirm && (
             <PublishConfirmCard
+              onDetect={handleDetectPublished}
               onConfirm={handleConfirmPublish}
               onCancel={() => setShowPublishConfirm(false)}
               isSubmitting={isPublishSubmitting}
@@ -148,14 +139,7 @@ function SchedulePublish() {
             />
           )}
 
-          {submitError && <p className="font-body-sm text-body-sm text-error">{submitError}</p>}
-
-          <ScheduleActions
-            onBack={() => navigate(-1)}
-            onPublishNow={handlePublishNow}
-            onSchedule={handleSchedule}
-            isSubmitting={isSubmitting}
-          />
+          <ScheduleActions onBack={() => navigate(-1)} onPublishNow={handlePublishNow} />
         </section>
       </main>
     </div>

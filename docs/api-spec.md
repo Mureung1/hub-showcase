@@ -283,14 +283,20 @@ blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는
 | GET | `/posts/:id` | 단건 조회 |
 | PATCH | `/posts/:id` | 사용자 수정 내용 반영 |
 | GET | `/posts/:id/suggested-time` | 업종/계절/게시 패턴 기반 추천 발행 시간 조회 |
-| POST | `/posts/:id/schedule` | 예약 발행 시간 확정 (`{ "scheduledAt": "..." }`) |
-| DELETE | `/posts/:id/schedule` | 예약 취소 |
+| GET | `/posts/:id/detect-published` | 연동된 블로그 RSS에서 이 글과 비슷한 최근 글 자동 탐지 |
+| POST | `/posts/:id/schedule` | (현재 프론트에서는 미사용) 예약 발행 시간 확정 `{ "scheduledAt": "..." }` — 실제 예약 실행은 네이버 자체 기능에 맡기므로 지금은 호출하는 화면이 없음 |
+| DELETE | `/posts/:id/schedule` | 위 예약 취소 |
 
-**반자동 발행 흐름 (2026-07-27 결정)**: 네이버 블로그 포스팅 공식 API가 폐지되어 완전 자동 발행(Playwright 등) 대신 반자동 방식을 쓴다. 서버가 대신 발행하지 않고, 프론트에서 아래 순서로 처리한다.
+**반자동 발행 흐름 (2026-07-27 결정, 2026-07-28 게시 완료 확인 방식 보강)**: 네이버 블로그 포스팅 공식 API가 폐지되어 완전 자동 발행(Playwright 등) 대신 반자동 방식을 쓴다. 서버가 대신 발행하지 않고, 프론트에서 아래 순서로 처리한다.
 
 1. 사용자가 "네이버에 게시" 클릭 → 프론트가 `title`+`content`를 클립보드에 복사하고 네이버 블로그 글쓰기 페이지를 새 탭으로 연다 (백엔드 호출 없음)
 2. 사용자가 네이버 에디터에 붙여넣고 직접 게시(또는 네이버 자체 예약 발행 기능으로 예약)
-3. 사용자가 앱으로 돌아와 게시된 글 URL을 입력하고 "게시 완료" 클릭 → `PATCH /posts/:id`에 `{ "status": "published", "publishedAt": "...", "publishedUrl": "..." }` 전달
+3. 앱으로 돌아와 "게시 확인하기" 클릭 → `GET /posts/:id/detect-published`가 연동된 블로그의 RSS(`rss.blog.naver.com/{blogId}.xml`)에서 제목이 비슷하고 30분 이내에 올라온 글을 찾아본다
+   - 찾으면(`{ "found": true, "url": "..." }`) "이 글이 맞나요?" 확인 후 맞으면 확정
+   - 못 찾으면(`{ "found": false, "reason": "NO_BLOG_ID" | "NOT_FOUND" }`, 또는 "아니요" 선택 시) 게시된 글 URL을 직접 입력하는 폴백으로 넘어감
+4. 확정되면 `PATCH /posts/:id`에 `{ "status": "published", "publishedAt": "...", "publishedUrl": "..." }` 전달
+
+RSS 제목 매칭은 네이버가 "이 글이 그 글이다"를 확인해주는 API가 없어서 쓰는 휴리스틱이라 오탐/누락 가능성이 있다 — 그래서 항상 사용자 확인을 거치게 하고 최종 신뢰 소스로 쓰지 않는다.
 
 `GET /posts/:id/suggested-time`은 여전히 AI가 추천 요일/시간을 보여주는 용도로 쓰이지만, 실제 예약 실행은 네이버 자체 기능에 맡기고 이 서버는 시간을 추천만 한다 — 무인 자동 발행(서버 스케줄러 + 네이버 API)은 [backlog-12days.md](backlog-12days.md)의 "8. 이후 과제"로 유지.
 

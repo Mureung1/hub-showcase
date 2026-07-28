@@ -6,6 +6,7 @@ import { buildPromotionPost, buildNoticePost } from "../services/postContent.js"
 import { createPost, listPosts, getPostById, updatePost } from "../services/postsRepo.js";
 import { buildSuggestedPublishTime } from "../services/scheduleSuggestion.js";
 import { getProfile } from "../services/brandProfileRepo.js";
+import { findRecentMatchingPost } from "../services/naverBlogRss.js";
 
 const router = Router();
 
@@ -55,6 +56,26 @@ router.get("/:id/suggested-time", async (req, res) => {
   if (!post) throw new ApiError(404, "POST_NOT_FOUND", "게시글을 찾을 수 없습니다.");
   const profile = await getProfile();
   res.json(buildSuggestedPublishTime(profile));
+});
+
+// 반자동 발행 후 "게시 완료" 확인용: 연동된 블로그의 RSS에서 이 글과 제목이 비슷한
+// 최근 글을 찾아본다. 못 찾을 수 있는 휴리스틱이라 프론트가 항상 사용자 확인을
+// 거치게 하고, 여기 응답만으로 status를 바꾸지 않는다(확정은 PATCH /:id로 별도 처리).
+router.get("/:id/detect-published", async (req, res) => {
+  const post = await getPostById(req.params.id);
+  if (!post) throw new ApiError(404, "POST_NOT_FOUND", "게시글을 찾을 수 없습니다.");
+
+  const profile = await getProfile();
+  if (!profile?.blogId) {
+    return res.json({ found: false, reason: "NO_BLOG_ID" });
+  }
+
+  const match = await findRecentMatchingPost(profile.blogId, post.title);
+  if (!match) {
+    return res.json({ found: false, reason: "NOT_FOUND" });
+  }
+
+  res.json({ found: true, url: match.url });
 });
 
 router.post("/:id/schedule", async (req, res) => {
