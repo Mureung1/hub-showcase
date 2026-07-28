@@ -191,14 +191,15 @@ Server-private source safety Module은 selected ref마다 다음을 수행한다
 6. Current size와 extension을 existing source classifier에 적용해 `text`인지 확인한다.
 7. Handle을 닫고 Browser 입력 순서의 relative ref만 반환한다.
 
-모든 ref가 통과한 뒤에만 action preflight가 성공한다. 일부만 남겨 Turn을 시작하거나 missing ref를 자동으로 목록에서 제거하지 않는다. Resolver는 file bytes를 읽거나 digest·snapshot·open handle을 Turn 수명까지 보존하지 않는다.
+모든 ref가 통과한 뒤에만 initial action preflight가 성공한다. 일부만 남겨 Turn을 시작하거나 missing ref를 자동으로 목록에서 제거하지 않는다. `operation.preparing` 전달 뒤 dispatch gate는 effective Skill과 모든 ref를 다시 관찰하고 rendered input이 initial 결과와 같은지 확인한다. Resolver는 file bytes를 읽거나 digest·snapshot·open handle을 Turn 수명까지 보존하지 않는다.
 
 이 action의 `WorkspaceFileRef`는 **path identity에 대한 request-scoped reference**이지 `EvidenceRef`가 아니다.
 
 - Browser preview digest를 request에 포함하지 않는다.
 - 같은 safe relative path의 bytes가 list/preview 뒤 바뀌어도 action은 현재 file을 읽는 요청으로 해석한다.
 - File content가 preflight 뒤 바뀌는 것은 App-owned stale snapshot failure가 아니다. AY와 Skill이 actual file을 읽고 Review 직전·apply 직전 drift를 다시 확인한다.
-- Missing, symlink, root escape, hidden·secret-like·scaffold path, non-regular file 또는 current non-text classification은 Turn 전 failure다.
+- Initial 또는 dispatch gate가 관찰한 missing, symlink, root escape, hidden·secret-like·scaffold path, non-regular file 또는 current non-text classification은 Turn 전 failure다.
+- Dispatch gate도 검증 handle을 닫고 relative path text만 전달하므로 그 뒤 AY의 actual read 전 pathname 교체를 같은 inode에 원자적으로 bind하지 않는다. 이는 current path-reference semantics의 unsupported reader boundary이며 별도 native same-open identity 또는 immutable carrier를 채택하기 전까지 App이 보장하지 않는다.
 
 이 구분은 old source snapshot/rebaseline state machine을 복원하지 않으면서 actual-file authority를 유지한다.
 
@@ -291,12 +292,15 @@ strict HTTP decode
 → action text render
 → client continuity recheck
 → operation.preparing
+→ all file refs → effective Skill → all file refs + rendered input dispatch revalidation
+→ client continuity recheck
 → native Product Turn start
 → existing stream / nested interaction / terminal
 → lease release
 ```
 
-- File·Skill·render preflight failure는 `operation.preparing`이나 native Turn을 만들지 않고 JSON error로 끝낸다.
+- Initial File·Skill·render preflight failure는 `operation.preparing`이나 native Turn을 만들지 않고 JSON error로 끝낸다.
+- `operation.preparing` 뒤 dispatch revalidation failure는 native Turn 없이 existing NDJSON `failed` terminal로 끝낸다. Stale source 또는 prepared-input mismatch는 `action_context_stale`, current-invalid source는 `action_context_invalid`, missing·unsafe·disabled expected Skill은 `action_unavailable`, effective catalog observation·shutdown failure는 `product_unavailable`다.
 - `operation.preparing` 뒤 start failure는 existing stream failure/terminal 규칙을 따른다.
 - 한 invocation은 fresh Turn 하나다. Automatic retry, operation replay와 idempotency ledger를 만들지 않는다.
 - InteractionCapability는 action이 시작한 active Turn을 Broker binding으로 관찰할 뿐 별도 Product operation lease를 claim하지 않는다.
@@ -342,6 +346,8 @@ Chat operation hook은 Chat과 action의 request 시작 전 transcript entry만 
 | 다른 Chat/Action Turn active | `409 action_busy` JSON | 시작하지 않음 |
 | Account not ready | `409 account_not_ready` JSON | 시작하지 않음 |
 | Codex settings가 current catalog와 불일치 | `400 action_invalid` JSON | 시작하지 않음 |
+| `operation.preparing` 대기 중 source 또는 prepared input drift | `operation.terminal`의 `failed/action_context_stale` 또는 `failed/action_context_invalid` | 시작하지 않음 |
+| `operation.preparing` 대기 중 expected Skill drift 또는 catalog/shutdown failure | `operation.terminal`의 `failed/action_unavailable` 또는 `failed/product_unavailable` | 시작하지 않음 |
 | `operation.preparing` 뒤 native start failure | Existing `operation.terminal` failure/unknown | 성공으로 추정하지 않음 |
 | Accepted Turn interrupt·Runtime/Adapter loss | Existing interrupt/unknown terminal과 pending MCP failure | retry하지 않음 |
 
@@ -437,7 +443,8 @@ sequenceDiagram
 - Hub authoring Skill과 digest equality를 요구하거나 workspace copy를 rewrite하지 않는다.
 - Renderer가 fixed header, JSON-escaped ordered refs와 `32 KiB` bound를 지킨다.
 - Action이 `workspace_write`, current optional settings, one Skill과 one text를 service에 전달한다.
-- File/Skill/settings/account failure는 Runtime `startProductTurn` 호출과 `operation.preparing` frame이 0회다.
+- Initial File/Skill/settings/account failure는 Runtime `startProductTurn` 호출과 `operation.preparing` frame이 0회다.
+- Preparing 대기 중 File/Skill/render drift는 dispatch revalidation 뒤 Runtime start 없이 exact safe `failed` terminal로 끝난다.
 - Chat과 action이 같은 busy lease를 경쟁하고 loser는 `409`다.
 - Action accepted 뒤 기존 activity, clarification, interrupt, disconnect와 terminal projection이 Chat과 같다.
 - Action-started Turn의 Review가 같은 `operationId`에 publish되고 Broker는 별도 operation을 claim하지 않는다.
@@ -445,7 +452,7 @@ sequenceDiagram
 
 ### Runtime and bridge tests
 
-- Node contract는 valid `skill` all-or-none와 workspace-contained `SKILL.md`만 허용한다.
+- Node contract는 모든 Product Turn에서 startup workspace root identity를 다시 확인하고 valid `skill` all-or-none와 workspace-contained `SKILL.md`만 허용한다.
 - Private protocol은 no-skill/skill command field roster를 strict decode한다.
 - Python bridge journal은 Chat의 `["TextInput"]`, action의 `["SkillInput", "TextInput"]` exact order를 확인한다.
 - Official SDK input test에서 Skill body, name·path와 relative-ref text가 provider input에 나타난다.

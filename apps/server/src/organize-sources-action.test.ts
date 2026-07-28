@@ -139,6 +139,91 @@ test('organize_sources dispatch revalidation rejects a selected file replaced by
     await assert.rejects(
       fixture.action.revalidateForDispatch(input, prepared, {
         signal: new AbortController().signal,
+        listEffectiveSkills: async () => [
+          {
+            name: 'ay-ple-first-assignment',
+            enabled: true,
+            sourceRoot: fixture.skillRoot,
+          },
+        ],
+      }),
+      (error: unknown) =>
+        error instanceof OrganizeSourcesActionError &&
+        error.code === 'action_context_stale',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('organize_sources dispatch revalidation rejects a Skill removed from the effective catalog after prepare', async () => {
+  const fixture = await createActionFixture(
+    'organize-sources-dispatch-skill-race-',
+  )
+  const input = {
+    action: 'organize_sources',
+    files: [{ relativePath: 'selected.md' }],
+  } as const
+  try {
+    const prepared = await fixture.action.prepare(input, {
+      signal: new AbortController().signal,
+      listEffectiveSkills: async () => [
+        {
+          name: 'ay-ple-first-assignment',
+          enabled: true,
+          sourceRoot: fixture.skillRoot,
+        },
+      ],
+    })
+
+    await assert.rejects(
+      fixture.action.revalidateForDispatch(input, prepared, {
+        signal: new AbortController().signal,
+        listEffectiveSkills: async () => [],
+      }),
+      (error: unknown) =>
+        error instanceof OrganizeSourcesActionError &&
+        error.code === 'action_unavailable',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('organize_sources dispatch revalidation rechecks selected files after final Skill discovery', async () => {
+  const fixture = await createActionFixture(
+    'organize-sources-dispatch-skill-file-race-',
+  )
+  const input = {
+    action: 'organize_sources',
+    files: [{ relativePath: 'selected.md' }],
+  } as const
+  try {
+    const prepared = await fixture.action.prepare(input, {
+      signal: new AbortController().signal,
+      listEffectiveSkills: async () => [
+        {
+          name: 'ay-ple-first-assignment',
+          enabled: true,
+          sourceRoot: fixture.skillRoot,
+        },
+      ],
+    })
+
+    await assert.rejects(
+      fixture.action.revalidateForDispatch(input, prepared, {
+        signal: new AbortController().signal,
+        listEffectiveSkills: async () => {
+          await rm(fixture.selectedPath)
+          await symlink(fixture.outsidePath, fixture.selectedPath)
+          return [
+            {
+              name: 'ay-ple-first-assignment',
+              enabled: true,
+              sourceRoot: fixture.skillRoot,
+            },
+          ]
+        },
       }),
       (error: unknown) =>
         error instanceof OrganizeSourcesActionError &&

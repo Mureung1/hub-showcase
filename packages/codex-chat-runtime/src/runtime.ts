@@ -686,6 +686,10 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
   private async startValidatedProductTurn(
     input: StartProductTurnInput,
   ): Promise<CodexProductTurn> {
+    await validateProductWorkspaceRoot(
+      this.workspace,
+      this.workspaceIdentity,
+    )
     if (input.skill !== undefined) {
       await validateProductSkillFile(
         input.skill.path,
@@ -1948,6 +1952,36 @@ function requireExactInputKeys(
     actual.some((key, index) => key !== sortedExpected[index])
   ) {
     throw new TypeError(`${label} fields are invalid`)
+  }
+}
+
+async function validateProductWorkspaceRoot(
+  workspace: string,
+  expected: ProductSkillPathIdentity,
+): Promise<void> {
+  try {
+    const stats = await lstat(workspace)
+    const actual: ProductSkillPathIdentity = {
+      path: workspace,
+      kind: 'directory',
+      device: stats.dev,
+      inode: stats.ino,
+    }
+    if (
+      stats.isSymbolicLink() ||
+      !stats.isDirectory() ||
+      (await realpath(workspace)) !== workspace ||
+      !sameProductSkillPathIdentity(expected, actual)
+    ) {
+      throw new TypeError(
+        'Product workspace changed after Runtime startup',
+      )
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError(
+      'Product workspace changed after Runtime startup',
+    )
   }
 }
 

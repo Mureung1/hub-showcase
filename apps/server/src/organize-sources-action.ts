@@ -23,22 +23,22 @@ export type PreparedOrganizeSourcesAction = {
   readonly text: string
 }
 
+type OrganizeSourcesActionContext = {
+  readonly signal: AbortSignal
+  readonly listEffectiveSkills: (
+    signal: AbortSignal,
+  ) => Promise<readonly CodexEffectiveSkill[]>
+}
+
 export type OrganizeSourcesAction = {
   prepare(
     input: TargetProductActionInvocationRequest,
-    context: {
-      readonly signal: AbortSignal
-      readonly listEffectiveSkills: (
-        signal: AbortSignal,
-      ) => Promise<readonly CodexEffectiveSkill[]>
-    },
+    context: OrganizeSourcesActionContext,
   ): Promise<PreparedOrganizeSourcesAction>
   revalidateForDispatch(
     input: TargetProductActionInvocationRequest,
     prepared: PreparedOrganizeSourcesAction,
-    context: {
-      readonly signal: AbortSignal
-    },
+    context: OrganizeSourcesActionContext,
   ): Promise<void>
 }
 
@@ -119,43 +119,57 @@ export async function createOrganizeSourcesAction(options: {
     },
 
     async revalidateForDispatch(input, prepared, context) {
-      context.signal.throwIfAborted()
+      assertDispatchActive(context.signal)
       let files: readonly ProductWorkspaceFileRef[]
       try {
         files = await options.sources.preflightTextFiles(input.files)
       } catch (error) {
         throw mapSourceError(error)
       }
-      context.signal.throwIfAborted()
+      assertDispatchActive(context.signal)
 
-      const expectedSkillPath = authority.pathFor([
-        '.agents',
-        'skills',
-        skillName,
-        'SKILL.md',
-      ])
+      let skills: readonly CodexEffectiveSkill[]
       try {
-        await authority.assertRegularFile([
-          '.agents',
-          'skills',
-          skillName,
-          'SKILL.md',
-        ])
+        skills = await context.listEffectiveSkills(context.signal)
+      } catch {
+        throw new OrganizeSourcesActionError('product_unavailable')
+      }
+      assertDispatchActive(context.signal)
+
+      let skill: CodexProductSkillInput
+      try {
+        skill = await resolveExpectedSkill(skills, {
+          expectedSkillRoot,
+          authority,
+        })
       } catch (error) {
         await assertCurrentActionWorkspace(authority)
-        throw new OrganizeSourcesActionError('action_unavailable')
+        throw error
       }
-      context.signal.throwIfAborted()
+      assertDispatchActive(context.signal)
+
+      try {
+        files = await options.sources.preflightTextFiles(input.files)
+      } catch (error) {
+        throw mapSourceError(error)
+      }
+      assertDispatchActive(context.signal)
 
       if (
         prepared.permissionProfile !== 'workspace_write' ||
-        prepared.skill.name !== skillName ||
-        prepared.skill.path !== expectedSkillPath ||
+        prepared.skill.name !== skill.name ||
+        prepared.skill.path !== skill.path ||
         prepared.text !== renderOrganizeSourcesActionText(files)
       ) {
         throw new OrganizeSourcesActionError('action_context_stale')
       }
     },
+  }
+}
+
+function assertDispatchActive(signal: AbortSignal): void {
+  if (signal.aborted) {
+    throw new OrganizeSourcesActionError('product_unavailable')
   }
 }
 

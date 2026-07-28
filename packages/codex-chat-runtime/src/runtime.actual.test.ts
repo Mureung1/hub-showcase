@@ -1131,6 +1131,42 @@ test('rejects a Product Skill when the startup workspace root is replaced before
   }
 })
 
+test('rejects a no-Skill Product Turn when the startup workspace root is replaced before native turn mutation', async () => {
+  const harness = await startHarness('product-turn-workspace-root-replacement')
+  const workspace = await realpath(dirname(harness.journalPath))
+  const displacedWorkspace = `${workspace}-displaced`
+  roots.push(displacedWorkspace)
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const startupJournal = await readFile(harness.journalPath, 'utf8')
+
+    await rename(workspace, displacedWorkspace)
+    await mkdir(workspace)
+    await initializeGitRootForTest(workspace)
+    await writeFile(harness.journalPath, startupJournal, 'utf8')
+
+    await assert.rejects(
+      harness.runtime.startProductTurn({
+        threadId,
+        permissionProfile: 'workspace_write',
+        text: 'Do not start this Product Turn.',
+      }),
+      (error: unknown) =>
+        error instanceof TypeError &&
+        error.message ===
+          'Product workspace changed after Runtime startup',
+    )
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'turn/start'),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
 test('runs a structured product turn through one pending native interaction', async () => {
   const harness = await startHarness('product-turn')
   try {

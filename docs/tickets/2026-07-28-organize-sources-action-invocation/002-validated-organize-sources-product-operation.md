@@ -29,9 +29,9 @@ Closed `POST /api/product/actions` request가 exact active SemesterWorkspace의 
 - Skill preflight는 invocation마다 bounded `listEffectiveSkills({signal})`를 호출해 enabled exact workspace root의 expected Skill만 허용한다. Expected Skill root directory와 그 안의 `SKILL.md`가 각각 canonical non-symlink directory·regular file이고 exact workspace 안에 포함되는지 확인한다. Global/user/hub copy, same-name wrong root, disabled·moved·symlink Skill로 fallback하거나 workspace copy를 rewrite하지 않는다.
 - Rendered action text는 Parent Spec의 fixed header, JSON-escaped ordered paths, `\n`, no trailing newline과 `32 KiB` UTF-8 bound를 정확히 따른다. Content·digest·absolute root·Skill path와 workflow prompt를 넣지 않는다.
 - `PreparedProductOperationCoordinator`는 `sendChat()`과 별도 `invokeAction()`을 제공하되 admission, account/settings, preparing, native start, stream, Interaction Broker binding, disconnect·interrupt·terminal, unknown recycle와 lease release를 private shared executor 하나로 유지한다.
-- 순서는 strict HTTP decode → reserve → account/settings → all file refs → expected Skill → render → client continuity recheck → `operation.preparing` → native Turn이다. Preflight failure는 NDJSON stream과 native Turn을 만들지 않는다.
+- 순서는 strict HTTP decode → reserve → account/settings → all file refs → expected Skill → all file refs → render → client continuity recheck → `operation.preparing` → all file refs → effective Skill → all file refs·rendered input dispatch revalidation → client continuity recheck → native Turn이다. Initial preflight failure는 NDJSON stream과 native Turn을 만들지 않고, late dispatch-gate failure는 native Turn 없이 streamed `failed` terminal로 닫는다.
 - Preflight 관찰은 shutdown에서 abort되고 disconnect를 bounded observation 뒤 다시 확인한다. Accepted Turn 이후에는 existing Review·general clarification·interrupt·unknown lifecycle만 사용한다.
-- HTTP failure mapping은 Parent Spec의 exact status/code를 유지한다: malformed request는 `400 invalid_request`, stale filesystem context는 `409 action_context_stale`, unsupported/current-invalid context는 `409 action_context_invalid`, missing/unsafe expected Skill은 `409 action_unavailable`, Runtime observation·cleanup failure는 `503 product_unavailable`, busy operation은 `409 action_busy`, account failure는 `409 account_not_ready`, settings failure는 `400 action_invalid`다.
+- Initial HTTP failure mapping은 Parent Spec의 exact status/code를 유지한다: malformed request는 `400 invalid_request`, stale filesystem context는 `409 action_context_stale`, unsupported/current-invalid context는 `409 action_context_invalid`, missing/unsafe expected Skill은 `409 action_unavailable`, Runtime observation·cleanup failure는 `503 product_unavailable`, busy operation은 `409 action_busy`, account failure는 `409 account_not_ready`, settings failure는 `400 action_invalid`다. Late dispatch gate는 같은 safe action code 중 `action_context_stale | action_context_invalid | action_unavailable | product_unavailable`을 200 NDJSON `failed` terminal로 투영한다.
 - Action POST는 existing loopback socket·Origin mutation admission과 JSON body limit를 그대로 통과해야 한다. Public error에는 absolute path, selected content, Skill path/body, native identity, Broker credential, traceback과 raw protocol payload가 없다.
 - App-owned mutation, Git command, durable selection, retry ledger, source registry와 `ModelingRun`을 추가하지 않는다.
 - 이 ticket은 Browser selection UI와 exact local-provider conformance closeout을 포함하지 않는다.
@@ -45,17 +45,17 @@ Closed `POST /api/product/actions` request가 exact active SemesterWorkspace의 
 - [x] Expected enabled workspace-local Skill의 real non-symlink `SKILL.md`만 resolve하며 missing, disabled, global-only, wrong-root와 unsafe Skill은 `action_unavailable`로 Turn 전에 실패한다.
 - [x] Renderer가 exact fixed format, JSON escaping, request order와 `32 KiB` bound를 지킨다.
 - [x] Public action route가 `workspace_write`, current optional settings, resolved Skill과 rendered text를 deterministic Runtime에 한 번 전달한다.
-- [x] File·Skill·account·settings·render failure와 preflight disconnect는 Runtime start와 `operation.preparing` frame을 0회로 유지하고 safe JSON error만 반환한다.
+- [x] Initial File·Skill·account·settings·render failure와 preflight disconnect는 Runtime start와 `operation.preparing` frame을 0회로 유지하고 safe JSON error만 반환한다. `operation.preparing` 대기 중 생긴 File·Skill·render drift는 final dispatch gate에서 Runtime start 0회와 safe streamed `failed` terminal로 닫는다.
 - [x] Chat과 action이 같은 one-at-a-time lease를 경쟁하며 accepted action은 existing activity, Review, clarification, interrupt, disconnect와 authoritative terminal projection을 재사용한다.
 - [x] Normal Chat은 Skill 없이 기존 text behavior를 유지하고 removed academic/runtime route는 alias로 복원되지 않는다.
-- [x] Action failure가 exact HTTP status/code matrix로 투영되고 loopback·Origin admission을 우회하지 않으며 public body와 logs에 path/content/Skill/native/credential/protocol detail을 누출하지 않는다.
+- [x] Action failure가 exact initial HTTP 및 late streamed failure-code matrix로 투영되고 loopback·Origin admission을 우회하지 않으며 public body와 logs에 path/content/Skill/native/credential/protocol detail을 누출하지 않는다.
 - [x] Product contract와 Server README가 구현된 action route, trust boundary와 지원 source kind를 자신의 범위에서 설명한다.
 
 ## Verification
 
 - Targeted test or command:
-  - `npm test -w @ay-ple/product-contract`: 18/18 passed
-  - `npm test -w @ay-ple/server`: 138/138 passed
+  - `npm test -w @ay-ple/product-contract`: 19/19 passed
+  - `npm test -w @ay-ple/server`: 148/148 passed
   - `npm run typecheck -w @ay-ple/product-contract`, `npm run build -w @ay-ple/product-contract`, `npm run typecheck -w @ay-ple/server`, `npm run build -w @ay-ple/server`: passed
 - Repository checks:
   - `npm test`, `npm run typecheck`, `npm run build`: passed

@@ -167,6 +167,7 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
 test('the Product executor revalidates a prepared action after preparing and before Runtime start', async () => {
   const runtime = new DeterministicCodexProductRuntime({
     accountReadiness: [{ state: 'ready' }],
+    effectiveSkills: [[]],
   })
   const composition = createCodexChatComposition({
     bootstrap: {
@@ -204,6 +205,7 @@ test('the Product executor revalidates a prepared action after preparing and bef
       revalidationSignal = context.signal
       assert.equal(context.signal.aborted, false)
       assert.equal(frames.at(-1)?.type, 'operation.preparing')
+      await context.listEffectiveSkills(context.signal)
       throw new OrganizeSourcesActionError('action_context_stale')
     },
   } satisfies OrganizeSourcesAction

@@ -355,6 +355,7 @@ export function createPreparedProductOperationCoordinator(options: {
         signal: AbortSignal,
       ) => Promise<Prepared>
       readonly revalidateForDispatch?: (
+        operation: ActiveOperation,
         prepared: Prepared,
         signal: AbortSignal,
       ) => Promise<void>
@@ -408,6 +409,7 @@ export function createPreparedProductOperationCoordinator(options: {
         return
       }
       await input.revalidateForDispatch?.(
+        operation,
         preparedTurnInput,
         preflightAbort.signal,
       )
@@ -541,11 +543,18 @@ export function createPreparedProductOperationCoordinator(options: {
                   operation.serviceLease,
                 ),
             }),
-          revalidateForDispatch: (prepared, signal) =>
+          revalidateForDispatch: (operation, prepared, signal) =>
             options.organizeSourcesAction.revalidateForDispatch(
               input,
               prepared,
-              { signal },
+              {
+                signal,
+                listEffectiveSkills: (observationSignal) =>
+                  options.service.listProductEffectiveSkills(
+                    { signal: observationSignal },
+                    operation.serviceLease,
+                  ),
+              },
             ),
         },
         operationOptions,

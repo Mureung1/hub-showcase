@@ -339,7 +339,7 @@ test('public organize_sources starts one Skill-backed Product operation with ord
     const accepted = await trace.until(
       (frame) => frame.type === 'operation.accepted',
     )
-    assert.equal(runtime.listEffectiveSkillsCalls, 1)
+    assert.equal(runtime.listEffectiveSkillsCalls, 2)
     assert.deepEqual(runtime.productInputs, [
       {
         threadId: 'thread-prepared',
@@ -485,7 +485,7 @@ test('public organize_sources starts one Skill-backed Product operation with ord
     )
     await disconnectedTrace.cancel()
     await waitForIdleProductOperation(baseUrl)
-    assert.equal(runtime.listEffectiveSkillsCalls, 2)
+    assert.equal(runtime.listEffectiveSkillsCalls, 4)
   } finally {
     await fixture.close()
     assert.equal((await lifecycleReader?.read())?.done, true)
