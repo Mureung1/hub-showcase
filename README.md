@@ -113,6 +113,12 @@ flowchart LR
 
 서버 상태 확인 (배포 모니터링용).
 
+## 배포 주소
+
+- **프론트엔드 (Vercel)**: https://hub-lyart-three.vercel.app/
+- **백엔드 (Render)**: https://sanggwon-scanner-api.onrender.com
+  - 상태 확인: https://sanggwon-scanner-api.onrender.com/health
+
 ## 실행 방법
 
 ### 사전 설정 (처음 한 번)

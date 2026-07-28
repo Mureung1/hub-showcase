@@ -13,6 +13,7 @@ KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
 
 BLOG_SEARCH_URL = "https://openapi.naver.com/v1/search/blog.json"
 KAKAO_LOCAL_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
+KAKAO_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json"
 
 # API 키가 없을 때 사용할 폴백 더미 데이터 (MVP 검증용)
 FALLBACK_REVIEWS = [
@@ -111,3 +112,57 @@ def search_local_kakao(query: str, x: float = None, y: float = None,
         total_count = data.get("meta", {}).get("total_count", len(results))
         return results, total_count
     return results
+
+
+def geocode_region(region: str):
+    """
+    지역 문자열(예: '장전동', '강남구')을 좌표로 변환.
+    1) 카카오 주소 검색 API로 시도 (행정동/지번/도로명 주소에 정확)
+    2) 실패하면 키워드 검색(search_local_kakao)의 첫 결과 좌표로 폴백
+       (예: '부산대'처럼 행정구역은 아니지만 실존 장소인 경우 대비)
+    반환: (longitude, latitude) 튜플. 둘 다 실패하면 None — 예외를 던지지 않고
+    호출부가 안전하게 기존 방식으로 폴백할 수 있게 한다.
+    """
+    if not KAKAO_REST_API_KEY:
+        return None
+
+    region = region.strip()
+
+    try:
+        resp = requests.get(
+            KAKAO_ADDRESS_URL,
+            headers={"Authorization": f"KakaoAK {KAKAO_REST_API_KEY}"},
+            params={"query": region, "size": 5},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        docs = resp.json().get("documents", [])
+        # 카카오 주소 검색은 행정구역 접미사(동/리 등)를 무시하고 느슨하게 매칭할 때가 있고,
+        # 그 순위(문서 순서)도 호출 시점마다 달라질 수 있다(예: '장전동' 검색 시 무관한
+        # '...남양읍 장전리'가 1순위로 올 때가 있음). docs[0]를 무조건 신뢰하지 않고,
+        # 구조화된 region_3depth_name(동/읍/면)으로 정확히 매칭되는 문서를 최우선으로 고른다.
+        if docs:
+            chosen = None
+            for d in docs:
+                if (d.get("address") or {}).get("region_3depth_name", "") == region:
+                    chosen = d
+                    break
+            if not chosen:
+                for d in docs:
+                    if region in d.get("address_name", ""):
+                        chosen = d
+                        break
+            if not chosen:
+                chosen = docs[0]
+            return float(chosen["x"]), float(chosen["y"])
+    except requests.RequestException:
+        pass
+
+    try:
+        results = search_local_kakao(region, size=1)
+        if results:
+            return results[0]["longitude"], results[0]["latitude"]
+    except (RuntimeError, requests.RequestException):
+        pass
+
+    return None

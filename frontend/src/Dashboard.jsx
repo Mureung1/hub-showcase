@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 
-const API_BASE = import.meta.env.PROD ? "" : "http://localhost:8000";
+const API_BASE = import.meta.env.PROD ? import.meta.env.VITE_API_BASE : "http://localhost:8000";
 
 const GREEN = "#03C75A";
 const BG_PAGE = "#F5F6F8";
@@ -81,7 +81,7 @@ function HowToGuide() {
     },
     {
       title: "2. 주변 업체 확인",
-      desc: "반경 내 경쟁업체를 거리순으로 확인",
+      desc: "반경 내 가게를 거리순으로 확인",
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z" />
@@ -118,13 +118,15 @@ function HowToGuide() {
     );
     if (i < steps.length - 1) {
       items.push(
-        <span key={`arrow-${i}`} style={{ color: GREEN, fontWeight: 700, fontSize: 16 }}>›</span>
+        <div key={`arrow-${i}`} style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ color: GREEN, fontWeight: 700, fontSize: 16 }}>›</span>
+        </div>
       );
     }
   });
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 40 }}>
+    <div style={{ display: "flex", alignItems: "stretch", gap: 12, marginTop: 20 }}>
       {items}
     </div>
   );
@@ -151,7 +153,21 @@ function SearchStep({ storeName, setStoreName, region, setRegion, regionAttempts
       <p style={{ fontSize: 11, color: GREEN, fontWeight: 700, letterSpacing: "0.15em", margin: "0 0 6px" }}>
         상권 스캐너
       </p>
-      <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 16px" }}>가게 이름으로 경쟁업체 찾기</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 16px" }}>내 가게 이름으로 주변 상권 분석하기</h1>
+
+      {showRegionInput && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <button onClick={() => window.history.back()}
+            style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
+            ‹ 이전으로 돌아가기
+          </button>
+          <button onClick={onResearch}
+            style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
+            처음으로 돌아가기
+          </button>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 8 }}>
         <input
           value={storeName}
@@ -167,23 +183,36 @@ function SearchStep({ storeName, setStoreName, region, setRegion, regionAttempts
       </div>
 
       {!error && !showRegionInput && (
-        <p style={{ fontSize: 14, color: TEXT_SECONDARY, lineHeight: 1.6, marginTop: 16 }}>
-          내 가게 이름으로 검색하고, 주변 경쟁업체를 분석해 우리 가게를 개선해보세요
-        </p>
+        <div style={{
+          backgroundColor: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 20,
+          marginTop: 16, marginBottom: 12,
+        }}>
+          <span style={{
+            display: "inline-block", backgroundColor: "#EAF7EF", color: "#00A344",
+            fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, marginBottom: 10,
+          }}>
+            이렇게 활용해보세요
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: "50%", backgroundColor: "#EAF7EF",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03C75A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l1-5h16l1 5" />
+                <path d="M4 9v10h16V9" />
+                <path d="M9 21V13h6v8" />
+              </svg>
+            </div>
+            <p style={{ fontSize: 15, color: TEXT_PRIMARY, lineHeight: 1.6, textAlign: "left", margin: 0 }}>
+              내 가게 이름을 입력하면 <span style={{ color: "#00A344", fontWeight: 700 }}>주변 가게들</span>을 분석해드려요
+            </p>
+          </div>
+        </div>
       )}
 
       {showRegionInput && (
         <div style={{ marginTop: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <button onClick={() => window.history.back()}
-              style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
-              ‹ 이전으로 돌아가기
-            </button>
-            <button onClick={onResearch}
-              style={{ background: "none", border: "none", color: GREEN, fontSize: 13, cursor: "pointer", padding: 0 }}>
-              처음으로 돌아가기
-            </button>
-          </div>
           <p style={{ fontSize: 13, color: GREEN, margin: "0 0 8px" }}>{regionMessage}</p>
           <input
             ref={regionInputRef}
@@ -582,7 +611,7 @@ export default function Dashboard() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "경쟁업체 조회에 실패했습니다.");
+      if (!res.ok) throw new Error(data.detail || "주변 가게 조회에 실패했습니다.");
       const newCompetitors = data.competitors.map((c) => ({ ...c, ...generateMockAnalysis() }));
       setCompetitors(newCompetitors);
       pushHistory({
@@ -668,11 +697,11 @@ export default function Dashboard() {
             {!loading && !error && competitors && (
               <>
                 <p style={{ fontSize: 12, color: TEXT_MUTED, margin: "0 0 12px" }}>
-                  반경 2km 내 경쟁업체 {competitors.length}곳
+                  반경 2km 내 가게 {competitors.length}곳
                 </p>
                 {competitors.length === 0 ? (
                   <p style={{ fontSize: 13, color: TEXT_MUTED, textAlign: "center", padding: "20px 0" }}>
-                    반경 2km 내 경쟁업체가 없습니다.
+                    반경 2km 내 가게가 없습니다.
                   </p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

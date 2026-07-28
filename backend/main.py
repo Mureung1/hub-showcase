@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from langchain_google_genai import ChatGoogleGenerativeAI
 from database import init_db, get_db, Competitor, Review, MyStore
-from collector import fetch_reviews, search_local_kakao
+from collector import fetch_reviews, search_local_kakao, geocode_region
 
 # ── 목(Mock) 모드 설정 ────────────────────────────────────────
 # .env에 USE_MOCK=true 를 넣으면 LLM 호출 없이 고정 데이터 반환 (Gemini 할당량과 무관하게 화면 작업 가능)
@@ -250,7 +250,7 @@ def list_my_stores(db: Session = Depends(get_db)):
 # (예: "카페그라운드" 검색 시 "휴먼그라운드 카페" 같은 무관한 곳까지 섞여 72건으로 잡힘)
 # 지역 좁히기 판단은 total_count가 아니라, 실제 place_name이 검색어와 정확히
 # 일치하는 후보 수(exact_match_count)로 한다. 이 값이 아래 임계값을 넘으면 지역을 물어본다.
-SEARCH_NARROW_THRESHOLD = 5
+SEARCH_NARROW_THRESHOLD = 10
 
 
 def _normalize_name(s: str) -> str:
@@ -299,9 +299,17 @@ def search_store(req: SearchStoreRequest):
     if not name:
         raise HTTPException(status_code=400, detail="가게 이름을 입력하세요.")
     region = req.region.strip()
-    query = f"{name} {region}" if region else name
+    coords = geocode_region(region) if region else None
+
     try:
-        raw_candidates, total_count = search_local_kakao(query, size=15, return_meta=True)
+        if coords:
+            x, y = coords
+            raw_candidates, total_count = search_local_kakao(
+                name, x=x, y=y, radius=3000, size=15, return_meta=True
+            )
+        else:
+            query = f"{name} {region}" if region else name
+            raw_candidates, total_count = search_local_kakao(query, size=15, return_meta=True)
     except (RuntimeError, requests.RequestException) as e:
         raise HTTPException(status_code=502, detail=f"카카오 API 호출에 실패했습니다: {e}")
     if not raw_candidates:
