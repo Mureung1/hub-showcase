@@ -461,34 +461,48 @@ async function respondToApplicant(meetingId, hostId, targetUserId, status) {
     throw new ApiError('VALIDATION_ERROR', '소모임에서만 승인/거절할 수 있습니다');
   }
 
-  // 상태 확인과 갱신을 한 문장에 담는다. 그래서 F1/F2와 달리 트랜잭션·FOR UPDATE가 필요 없다 —
-  // 같은 신청을 동시에 두 번 처리해도 두 번째 UPDATE는 0 rows가 되어 아래 분기로 떨어진다.
+  // 상태 확인과 갱신은 여전히 한 문장(CAS)이다 — 같은 신청을 동시에 두 번 처리해도
+  // 두 번째 UPDATE는 0 rows가 되어 아래 분기로 떨어진다. 트랜잭션을 새로 감싼 이유는
+  // 오직 알림 INSERT를 이 UPDATE와 원자적으로 묶기 위해서다(행위는 커밋됐는데 알림만
+  // 유실되면 신청자가 승인·거절을 영영 모른다). 조건을 SELECT로 쪼개면 안 된다.
   //
   // WHERE status = 'pending' 때문에 승인 철회(approved → rejected)는 불가능하다. 이걸 열려면
   // 확정 참여자를 강제로 내보내는 셈이므로, 먼저 신뢰도 감점 여부(F2는 본인 취소에 -3)와
   // flash 재오픈 대상인지를 정해야 한다. 조건만 넓히면 정책 없이 동작이 생긴다.
-  const updated = await pool.query(
-    `UPDATE meeting_participants
-        SET status = $3, responded_at = now()
-      WHERE meeting_id = $1 AND user_id = $2 AND status = 'pending'
-     RETURNING status`,
-    [meetingId, targetUserId, status]
-  );
-
-  if (updated.rowCount === 0) {
-    // 0 rows인 이유가 "신청이 없어서"인지 "이미 처리돼서"인지를 여기서만 구분한다.
-    // 이 조회는 에러 메시지를 고르기 위한 것이라, 그 사이 상태가 또 바뀌어도 데이터는 이미 안전하다.
-    const existing = await pool.query(
-      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
-      [meetingId, targetUserId]
+  return withTransaction(async (client) => {
+    const updated = await client.query(
+      `UPDATE meeting_participants
+          SET status = $3, responded_at = now()
+        WHERE meeting_id = $1 AND user_id = $2 AND status = 'pending'
+       RETURNING status`,
+      [meetingId, targetUserId, status]
     );
-    if (existing.rows.length === 0) {
-      throw new ApiError('NOT_FOUND', '신청을 찾을 수 없습니다');
-    }
-    throw new ApiError('VALIDATION_ERROR', '이미 처리된 신청입니다');
-  }
 
-  return { userId: targetUserId, status: updated.rows[0].status };
+    if (updated.rowCount === 0) {
+      // 0 rows인 이유가 "신청이 없어서"인지 "이미 처리돼서"인지를 여기서만 구분한다.
+      // 이 조회는 에러 메시지를 고르기 위한 것이라, 그 사이 상태가 또 바뀌어도 데이터는 이미 안전하다.
+      const existing = await client.query(
+        'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+        [meetingId, targetUserId]
+      );
+      if (existing.rows.length === 0) {
+        throw new ApiError('NOT_FOUND', '신청을 찾을 수 없습니다');
+      }
+      throw new ApiError('VALIDATION_ERROR', '이미 처리된 신청입니다');
+    }
+
+    // rowCount > 0 = 이번 호출이 실제로 처리한 경우에만 알린다.
+    await createNotification(client, {
+      userId: targetUserId,
+      type:
+        status === 'approved'
+          ? NOTIFICATION_TYPES.APPLICATION_APPROVED
+          : NOTIFICATION_TYPES.APPLICATION_REJECTED,
+      meetingId,
+    });
+
+    return { userId: targetUserId, status: updated.rows[0].status };
+  });
 }
 
 // DELETE /api/meetings/:id — 모임 취소(E5). 모임장만.
