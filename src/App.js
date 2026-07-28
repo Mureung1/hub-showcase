@@ -480,11 +480,26 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
     );
   }
 
+  function handleMobileReviewAction() {
+    if (!accountProps.user) {
+      accountProps.onLogin();
+      return;
+    }
+
+    const selectedPlace = places.find((place) => place.id === selectedPlaceId);
+    if (selectedPlace) {
+      openPlaceAndPreserveMap(selectedPlace);
+      return;
+    }
+
+    setPlaceError("리뷰를 작성할 업체를 먼저 선택해 주세요.");
+  }
+
   return (
     <main className="map-screen">
       <header className="top-nav"><button aria-label="검색창으로 이동" className="mobile-top-action" onClick={() => document.querySelector(".ui-search input")?.focus()} type="button">⌕</button><a className="top-nav__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><span>영수증 인증 리뷰 지도</span><AccountControl {...accountProps} /></header>
       <aside className="place-sidebar">
-        <div className="sidebar-search"><div className="sidebar-title-row"><div><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변을 먼저 검색하고, 결과가 없으면 전체 지역에서 찾습니다.</p></div><button className="saved-places-link" onClick={accountProps.onSavedPlaces} type="button">♡ 관심 장소</button></div><div className="search-autocomplete"><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => { setSearchInput(""); setSuggestions([]); }} onSubmit={handleSearchSubmit} />{suggestions.length > 0 && <div aria-label="장소 자동완성" className="search-suggestions">{suggestions.map((place) => <button key={place.id} onClick={() => searchPlaces(place.title)} type="button"><strong>{place.title}</strong><span>{place.category} · {place.address || "주소 정보 없음"}</span></button>)}</div>}</div><div className="mobile-filter-chips" aria-label="빠른 검색"><button onClick={() => searchPlaces("음식점")} type="button">음식점</button><button onClick={() => searchPlaces("카페")} type="button">카페</button><button className="is-active" onClick={moveToCurrentLocation} type="button">현재 위치</button></div><div className="search-scope"><span>{searchScope === "all" ? "주변 결과가 없어 전체 지역에서 찾았어요" : `지도 중심에서 약 ${(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내`}</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
+        <div className="sidebar-search"><div className="sidebar-title-row"><div><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변을 먼저 검색하고, 결과가 없으면 전체 지역에서 찾습니다.</p></div><button className="saved-places-link" onClick={accountProps.onSavedPlaces} type="button">♡ 관심 장소</button></div><div className="search-autocomplete"><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => { setSearchInput(""); setSuggestions([]); }} onSubmit={handleSearchSubmit} />{suggestions.length > 0 && <div aria-label="장소 자동완성" className="search-suggestions">{suggestions.map((place) => <button key={place.id} onClick={() => searchPlaces(place.title)} type="button"><strong>{place.title}</strong><span>{place.category} · {place.address || "주소 정보 없음"}</span></button>)}</div>}</div><div className="mobile-filter-chips" aria-label="빠른 검색"><button onClick={() => searchPlaces("음식점")} type="button">음식점</button><button onClick={() => searchPlaces("카페")} type="button">카페</button></div><div className="search-scope"><span>{searchScope === "all" ? "주변 결과가 없어 전체 지역에서 찾았어요" : `지도 중심에서 약 ${(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내`}</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
         <div className={`place-results place-results--${placeStatus} ${places.length ? "has-results" : ""}`} aria-live="polite" ref={resultsRef}>
           {placeStatus === "ready" && places.length > 0 && <div className="place-results__header"><strong>검색 결과</strong><span>{places.length}곳</span></div>}
           {placeStatus === "idle" && <div className="empty-search"><strong>검색 결과가 여기에 표시됩니다</strong><span>식당이나 카페 이름을 입력해 주세요.</span></div>}
@@ -494,8 +509,8 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
           {places.map((place) => <button aria-label={`${place.title} 상세 보기`} className={`place-list-item ${selectedPlaceId === place.id ? "is-selected" : ""}`} key={place.id} onClick={() => openPlaceAndPreserveMap(place)} type="button"><span className="place-list-item__pin">⌖</span><span className="place-list-item__content"><strong>{place.title}</strong><span>{place.category}</span><small>{place.address || "주소 정보 없음"}</small></span><span aria-hidden="true">›</span></button>)}
         </div>
       </aside>
-      <section className="map-canvas" aria-label="카카오맵 영역"><div className="kakao-map" ref={mapElementRef} aria-label="카카오맵" />{mapStatus !== "ready" && <section className="map-state-panel"><h2>{mapStatus === "missing-key" ? "지도 키가 필요합니다" : "지도를 불러오는 중입니다"}</h2><p>{mapError || "카카오맵 연결을 확인하고 있습니다."}</p></section>}</section>
-      <nav className="mobile-bottom-nav" aria-label="모바일 메뉴"><button className="is-active" onClick={resetAndGoHome} type="button"><span>⌂</span><small>홈</small></button><button onClick={accountProps.onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button onClick={() => selectedPlaceId ? openPlaceAndPreserveMap(places.find((place) => place.id === selectedPlaceId)) : setPlaceError("리뷰를 작성할 업체를 먼저 선택해 주세요.")} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={accountProps.onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
+      <section className="map-canvas" aria-label="카카오맵 영역"><div className="kakao-map" ref={mapElementRef} aria-label="카카오맵" />{mapStatus !== "ready" && <section className="map-state-panel"><h2>{mapStatus === "missing-key" ? "지도 키가 필요합니다" : "지도를 불러오는 중입니다"}</h2><p>{mapError || "카카오맵 연결을 확인하고 있습니다."}</p></section>}<button aria-label="현재 위치로 이동" className={`map-current-location${locationStatus === "loading" ? " is-loading" : ""}`} onClick={moveToCurrentLocation} type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle className="map-current-location-dot" cx="12" cy="12" r="1.5" /></svg></button></section>
+      <nav className="mobile-bottom-nav" aria-label="모바일 메뉴"><button className="is-active" onClick={resetAndGoHome} type="button"><span>⌂</span><small>홈</small></button><button onClick={accountProps.onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button onClick={handleMobileReviewAction} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={accountProps.onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
     </main>
   );
 }

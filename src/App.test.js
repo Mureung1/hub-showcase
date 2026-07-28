@@ -54,6 +54,16 @@ test("검색 버튼 없이 Enter로 검색하고 X 버튼으로 검색어를 지
   expect(screen.queryByRole("button", { name: "검색어 지우기" })).not.toBeInTheDocument();
 });
 
+test("비로그인 사용자가 홈에서 리뷰작성을 누르면 로그인 화면으로 이동한다", async () => {
+  mockAuthUser = null;
+  window.history.pushState({}, "", "/");
+  render(<App />);
+
+  fireEvent.click(screen.getByRole("button", { name: /리뷰작성/ }));
+
+  expect(await screen.findByRole("heading", { name: "다시 만나서 반가워요" })).toBeInTheDocument();
+});
+
 test("업체 상세에서 지도로 돌아오면 이전 검색 결과를 복원한다", () => {
   sessionStorage.setItem("jigeum-review:map-screen", JSON.stringify({
     searchInput: "성수 카페",

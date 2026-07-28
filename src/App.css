@@ -12,7 +12,7 @@ button,a { -webkit-tap-highlight-color: transparent; }
 .brand-home-link { color:inherit; text-decoration:none; }
 .top-nav__brand { color:var(--blue); font-size:22px; font-weight:800; letter-spacing:-.04em; }
 .top-nav span { color:var(--muted); font-size:13px; }
-.mobile-top-action,.mobile-filter-chips,.mobile-bottom-nav { display:none; }
+.mobile-top-action,.mobile-filter-chips,.mobile-bottom-nav,.map-current-location { display:none; }
 .account-button { margin-left:auto; padding:8px 14px; border:1px solid rgba(0,122,255,.18); border-radius:999px; background:rgba(0,122,255,.08); color:var(--blue); cursor:pointer; font-weight:700; }
 .account-loading { margin-left:auto; }
 .account-menu { display:flex; margin-left:auto; align-items:center; gap:9px; }
@@ -96,6 +96,12 @@ button,a { -webkit-tap-highlight-color: transparent; }
 @media (max-width:768px) {
   .map-screen { height:100dvh; min-height:100dvh; overflow:hidden; }
   .map-canvas { z-index:1; inset:0; }
+  .map-current-location { position:absolute; z-index:35; right:16px; bottom:calc(68px + env(safe-area-inset-bottom)); display:grid; width:46px; height:46px; padding:0; place-items:center; border:.5px solid rgba(60,60,67,.22); border-radius:50%; background:rgba(255,255,255,.94); color:var(--blue); box-shadow:0 4px 16px rgba(20,30,50,.18); backdrop-filter:blur(18px); cursor:pointer; }
+  .map-current-location:active { transform:scale(.96); }
+  .map-current-location svg { width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
+  .map-current-location .map-current-location-dot { fill:currentColor; stroke:none; }
+  .map-current-location.is-loading svg { animation:location-pulse 1s ease-in-out infinite; }
+  @keyframes location-pulse { 50% { opacity:.45; transform:scale(.9); } }
   .top-nav { z-index:50; top:max(8px,env(safe-area-inset-top)); right:12px; left:12px; height:42px; padding:0; border:0; background:transparent; backdrop-filter:none; pointer-events:none; }
   .top-nav__brand { display:inline-flex; height:42px; align-items:center; padding:0 13px; border:1px solid rgba(0,0,0,.06); border-radius:13px; background:rgba(255,255,255,.94); box-shadow:0 5px 18px rgba(0,0,0,.13); font-size:18px; pointer-events:auto; }
   .top-nav > span { display:none; }
