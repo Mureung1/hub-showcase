@@ -137,6 +137,20 @@ app.get('/api/notices/:id', async (req, res) => {
   res.json({ notice: data });
 })
 
+// 보초 상태 — "살아있는 서비스"의 증거. 마지막 순찰 시각·보관 공지 수·감시 게시판 수.
+app.get('/api/status', async (req, res) => {
+  const { data, error } = await supabase
+    .from('notices')
+    .select('source, collected_at')
+    .order('collected_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({
+    lastPatrol: data[0]?.collected_at ?? null,        // 가장 최근 수집 시각 = 마지막 순찰
+    noticeCount: data.length,
+    sourceCount: new Set(data.map((n) => n.source)).size,
+  });
+});
+
 // 미리캣이 확인한 공지 목록 (최신순) — Python 에이전트가 notices에 저장한 추출 결과를 화면에 보여준다.
 app.get('/api/notices', async (req, res) => {
   const { data, error } = await supabase

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import RouteRegister from "../components/RouteRegister";
 import SavedRoutes from "../components/SavedRoutes";
 import NoticesPanel from "../components/NoticesPanel";
+import SentryStatus from "../components/SentryStatus";
 
 // 홈 화면: 경로 등록 → 등록 목록 → 공지 대조. (원래 App.jsx 본문이 통째로 이사 왔다)
 export default function HomePage() {
@@ -21,6 +22,7 @@ export default function HomePage() {
 
   return (
     <>
+      <SentryStatus />
       <RouteRegister onSaved={loadRoutes} />
       <SavedRoutes routes={routes} onRefresh={loadRoutes} />
       <NoticesPanel routes={routes} />

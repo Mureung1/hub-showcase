@@ -12,13 +12,15 @@ _sb = create_client(
 )
 
 def save_notice(source, source_url, title, raw_text, extraction):
-    """공지 1건을 저장. source_url이 같으면 갱신(upsert)."""
+    """공지 1건을 저장. source_url이 같으면 갱신(upsert).
+    collected_at을 매번 갱신 = '마지막으로 확인한 시각' (보초 상태의 마지막 순찰 근거)."""
     row = {
         "source": source,
         "source_url": source_url,
         "title": title,
         "raw_text": raw_text,
         "extraction": extraction,
+        "collected_at": datetime.now(timezone.utc).isoformat(),
     }
     res = _sb.table("notices").upsert(row, on_conflict="source_url").execute()
     return res.data
