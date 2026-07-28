@@ -11,6 +11,7 @@ export type WorkspaceUrlSnapshot = {
   selectedCategoryName: string;
   selectedCategoryCode: string | null;
   radius: AnalysisRadius;
+  activeHour: number;
   layer: LayerMode;
   topic: AnalysisTopic;
   boundaryVisible: boolean;
@@ -29,6 +30,7 @@ export function buildWorkspaceUrlSearch(snapshot: WorkspaceUrlSnapshot) {
   parameters.set("selectedCategory", snapshot.selectedCategoryName);
   if (snapshot.selectedCategoryCode) parameters.set("categoryCode", snapshot.selectedCategoryCode);
   parameters.set("radius", String(snapshot.radius));
+  parameters.set("hour", String(snapshot.activeHour));
   parameters.set("layer", snapshot.layer);
   parameters.set("topic", snapshot.topic);
   parameters.set("boundary", snapshot.boundaryVisible ? "1" : "0");
@@ -53,6 +55,7 @@ export function useWorkspaceUrlPersistence(model: ProductWorkspaceModel) {
       selectedCategoryName: selection.categorySelection.name,
       selectedCategoryCode: selection.categorySelection.code,
       radius: selection.radius,
+      activeHour: selection.activeHour,
       layer: selection.layer,
       topic: selection.analysisTopic,
       boundaryVisible: selection.boundaryVisible,
@@ -68,6 +71,7 @@ export function useWorkspaceUrlPersistence(model: ProductWorkspaceModel) {
   }, [
     selectedReference.id,
     selectedReference.name,
+    selection.activeHour,
     selection.analysisTopic,
     selection.boundaryVisible,
     selection.category,

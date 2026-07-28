@@ -119,6 +119,7 @@ export function WorkspaceLayout({
 
   function selectAndFocusStore(storeName: string) {
     const store = storefronts.visibleStores.find((candidate) => candidate.name === storeName);
+    viewport.setStorefront3dUnavailable(false);
     actions.chooseListedStore(storeName);
     if (store) viewport.focusCenter([store.longitude, store.latitude], true);
   }
@@ -150,8 +151,14 @@ export function WorkspaceLayout({
           onNearbyRetry={nearby.retry}
           onClose={() => panels.setFiltersOpen(false)}
           onReset={actions.resetAnalysis}
-          onMarketChange={actions.chooseMarket}
-          onCategoryChange={actions.chooseCategory}
+          onMarketChange={(nextMarket) => {
+            viewport.setStorefront3dUnavailable(false);
+            actions.chooseMarket(nextMarket);
+          }}
+          onCategoryChange={(nextCategory) => {
+            viewport.setStorefront3dUnavailable(false);
+            actions.chooseCategory(nextCategory);
+          }}
           onLayerChange={actions.chooseLayer}
           onTopicChange={(topic) => {
             selection.chooseTopic(topic);
@@ -169,12 +176,16 @@ export function WorkspaceLayout({
         toolbarStart={
           <MarketSearch
             apiReady={apiReadiness.state === "ready"}
-            onSelect={actions.chooseSearchResult}
+            onSelect={(result) => {
+              viewport.setStorefront3dUnavailable(false);
+              actions.chooseSearchResult(result);
+            }}
           />
         }
         mapBody={
           <MarketMapCanvas
             market={market}
+            marketKey={selection.marketKey}
             marketId={catalogState.marketIdByKey[selection.marketKey]}
             mapRef={viewport.mapRef}
             onVisibleCenterChange={viewport.updateVisibleCenter}
@@ -186,7 +197,6 @@ export function WorkspaceLayout({
             boundaryVisible={selection.boundaryVisible}
             storesVisible={selection.storesVisible}
             storefrontBuildings3d={selectedFocusStorefront ? [selectedFocusStorefront] : []}
-            visibleStores={storefronts.visibleStores}
             onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
             flowPeople={storefronts.flowPeople}
             activeHour={selection.activeHour}
@@ -210,7 +220,10 @@ export function WorkspaceLayout({
         }
         market={market}
         presentationMode={viewport.presentationMode}
-        onPresentationModeChange={viewport.setPresentationMode}
+        onPresentationModeChange={(mode) => {
+          if (mode === "storefront3d") viewport.setStorefront3dUnavailable(false);
+          viewport.setPresentationMode(mode);
+        }}
         layer={selection.layer}
         onLayerChange={actions.chooseLayer}
         densityLabel={storefronts.densityLabel}
