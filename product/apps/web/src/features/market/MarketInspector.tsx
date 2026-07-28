@@ -2,6 +2,7 @@ import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
 import { PanelTextSizeControl } from "../workspace/PanelTextSizeControl";
 import type { PanelTextSize } from "../workspace/usePanelTextSize";
+import { EvidenceCoverageSummary } from "./EvidenceCoverageSummary";
 import {
   InspectorFootfall,
   InspectorFlow,
@@ -87,6 +88,7 @@ export function MarketInspector({
         onClosePanel={onClosePanel}
         onClearSelection={onClearSelection}
       />
+      <EvidenceCoverageSummary categorySelection={categorySelection} analysis={analysis} />
       <InspectorScoreAndCompetition
         market={market}
         categorySelection={categorySelection}
