@@ -1,3 +1,12 @@
+// 배포 환경에서는 프론트(Vercel)와 백엔드(Render)가 서로 다른 도메인이라
+// 절대경로 API_BASE가 필요하고, 세션 쿠키를 주고받으려면 credentials: 'include'가 필수다.
+// 로컬 개발에서는 VITE_API_BASE_URL이 없어서 ''로 비워지고, Vite 프록시가 그대로 처리한다.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
+function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, { ...init, credentials: 'include' })
+}
+
 export interface ExpenseDraft {
   name: string
   amount: number
@@ -19,7 +28,7 @@ export async function uploadReceipt(
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await fetch(`/api/receipts/upload?sourceType=${sourceType}`, {
+  const res = await apiFetch(`/api/receipts/upload?sourceType=${sourceType}`, {
     method: 'POST',
     body: formData,
   })
@@ -40,7 +49,7 @@ export async function confirmReceipt(
   items: ExpenseDraft[],
   spentAt: string
 ): Promise<ConfirmReceiptResult> {
-  const res = await fetch(`/api/receipts/${receiptId}/confirm`, {
+  const res = await apiFetch(`/api/receipts/${receiptId}/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ spentAt, items }),
@@ -67,7 +76,7 @@ export async function createManualExpense(
   memo: string,
   spentAt: string
 ): Promise<CreateExpenseResult> {
-  const res = await fetch('/api/expenses', {
+  const res = await apiFetch('/api/expenses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ amount, category, memo, spentAt }),
@@ -98,7 +107,7 @@ export interface DailyAmount {
 }
 
 export async function getExpenseSummary(period: SummaryPeriod): Promise<ExpenseSummary> {
-  const res = await fetch(`/api/expenses/summary?period=${period}`)
+  const res = await apiFetch(`/api/expenses/summary?period=${period}`)
   if (!res.ok) {
     throw new Error('소비 요약을 불러오지 못했어요.')
   }
@@ -106,7 +115,7 @@ export async function getExpenseSummary(period: SummaryPeriod): Promise<ExpenseS
 }
 
 export async function getDailyExpenses(): Promise<DailyAmount[]> {
-  const res = await fetch('/api/expenses/summary/daily')
+  const res = await apiFetch('/api/expenses/summary/daily')
   if (!res.ok) {
     throw new Error('일별 지출을 불러오지 못했어요.')
   }
@@ -120,7 +129,7 @@ export interface Subscription {
 }
 
 export async function getSubscriptions(): Promise<Subscription[]> {
-  const res = await fetch('/api/subscriptions')
+  const res = await apiFetch('/api/subscriptions')
   if (!res.ok) {
     throw new Error('구독 목록을 불러오지 못했어요.')
   }
@@ -128,7 +137,7 @@ export async function getSubscriptions(): Promise<Subscription[]> {
 }
 
 export async function createSubscription(name: string, price: number, billingDay: number): Promise<Subscription> {
-  const res = await fetch('/api/subscriptions', {
+  const res = await apiFetch('/api/subscriptions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, price, billingDay }),
@@ -140,7 +149,7 @@ export async function createSubscription(name: string, price: number, billingDay
 }
 
 export async function updateSubscription(id: number, name: string, price: number, billingDay: number): Promise<Subscription> {
-  const res = await fetch(`/api/subscriptions/${id}`, {
+  const res = await apiFetch(`/api/subscriptions/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, price, billingDay }),
@@ -152,7 +161,7 @@ export async function updateSubscription(id: number, name: string, price: number
 }
 
 export async function deleteSubscription(id: number): Promise<void> {
-  const res = await fetch(`/api/subscriptions/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`/api/subscriptions/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     throw new Error('구독 삭제에 실패했어요.')
   }
@@ -163,7 +172,7 @@ export interface Budget {
 }
 
 export async function getBudget(): Promise<Budget> {
-  const res = await fetch('/api/budget')
+  const res = await apiFetch('/api/budget')
   if (!res.ok) {
     throw new Error('예산을 불러오지 못했어요.')
   }
@@ -171,7 +180,7 @@ export async function getBudget(): Promise<Budget> {
 }
 
 export async function setBudget(amount: number): Promise<Budget> {
-  const res = await fetch('/api/budget', {
+  const res = await apiFetch('/api/budget', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ amount }),
@@ -191,7 +200,7 @@ export interface Prediction {
 }
 
 export async function getPrediction(): Promise<Prediction> {
-  const res = await fetch('/api/expenses/prediction')
+  const res = await apiFetch('/api/expenses/prediction')
   if (!res.ok) {
     throw new Error('소비 예측을 불러오지 못했어요.')
   }
@@ -207,7 +216,7 @@ export interface RecentExpense {
 }
 
 export async function getRecentExpenses(limit = 20): Promise<RecentExpense[]> {
-  const res = await fetch(`/api/expenses/recent?limit=${limit}`)
+  const res = await apiFetch(`/api/expenses/recent?limit=${limit}`)
   if (!res.ok) {
     throw new Error('최근 지출을 불러오지 못했어요.')
   }
@@ -220,7 +229,7 @@ export interface DailySpend {
 }
 
 export async function getDailyCalendar(): Promise<DailySpend[]> {
-  const res = await fetch('/api/expenses/daily-calendar')
+  const res = await apiFetch('/api/expenses/daily-calendar')
   if (!res.ok) {
     throw new Error('캘린더 데이터를 불러오지 못했어요.')
   }
@@ -239,7 +248,7 @@ export interface Context {
 }
 
 export async function getContext(): Promise<Context> {
-  const res = await fetch('/api/context')
+  const res = await apiFetch('/api/context')
   if (!res.ok) {
     throw new Error('소비 신호를 불러오지 못했어요.')
   }
@@ -251,7 +260,7 @@ export interface AgentChatResponse {
 }
 
 export async function sendAgentMessage(message: string): Promise<AgentChatResponse> {
-  const res = await fetch('/api/agent/chat', {
+  const res = await apiFetch('/api/agent/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message }),
@@ -278,7 +287,7 @@ async function authErrorMessage(res: Response, fallback: string): Promise<string
 }
 
 export async function signup(email: string, password: string, nickname: string): Promise<AuthUser> {
-  const res = await fetch('/api/auth/signup', {
+  const res = await apiFetch('/api/auth/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, nickname }),
@@ -290,7 +299,7 @@ export async function signup(email: string, password: string, nickname: string):
 }
 
 export async function login(email: string, password: string): Promise<AuthUser> {
-  const res = await fetch('/api/auth/login', {
+  const res = await apiFetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -303,7 +312,7 @@ export async function login(email: string, password: string): Promise<AuthUser> 
 
 /** 새로고침 시 세션이 아직 살아있는지 확인. 로그인 안 된 상태면 null을 반환한다 (에러를 던지지 않음). */
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const res = await fetch('/api/auth/me')
+  const res = await apiFetch('/api/auth/me')
   if (!res.ok) {
     return null
   }
@@ -311,7 +320,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 }
 
 export async function updateProfile(email: string, nickname: string): Promise<AuthUser> {
-  const res = await fetch('/api/auth/me', {
+  const res = await apiFetch('/api/auth/me', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, nickname }),
@@ -334,7 +343,7 @@ export interface SavingsMissionResponse {
 }
 
 export async function getSavingsMissions(): Promise<SavingsMissionResponse> {
-  const res = await fetch('/api/expenses/savings-missions')
+  const res = await apiFetch('/api/expenses/savings-missions')
   if (!res.ok) {
     throw new Error('절약 미션을 불러오지 못했어요.')
   }
@@ -349,7 +358,7 @@ export interface CategoryChange {
 }
 
 export async function getCategoryChanges(): Promise<CategoryChange[]> {
-  const res = await fetch('/api/expenses/category-changes')
+  const res = await apiFetch('/api/expenses/category-changes')
   if (!res.ok) {
     throw new Error('카테고리 변화를 불러오지 못했어요.')
   }
