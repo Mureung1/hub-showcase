@@ -24,10 +24,13 @@ import {
 } from "./baseMap";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
+import { groupStoreMarkers, STORE_MARKER_DETAIL_ZOOM } from "./storeMarkerLod";
+import "./storeMarkerLod.css";
 import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
 import type { MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
+import { loadReplacementBuildingFilter } from "./storefronts/replacementBuildingFilter";
 
 const StorefrontBuildingLayers = lazy(() =>
   import("./storefronts/StorefrontBuildingLayers").then((module) => ({
@@ -82,25 +85,43 @@ function StoreMarker({
   store,
   selectedName,
   prefabMode,
+  detailed,
+  count,
   onSelect,
 }: {
   store: MarketStore;
   selectedName: string | null;
   prefabMode: boolean;
+  detailed: boolean;
+  count: number;
   onSelect: (name: string) => void;
 }) {
   const isSelected = selectedName === store.name;
-  const isPrefab = prefabMode && isSelected;
+  const isPrefab = prefabMode && isSelected && count === 1 && !detailed;
   const Icon = markerIcon(store.category);
+  const label =
+    count > 1
+      ? `${store.category} 점포 ${count}개 묶음 보기`
+      : `${store.name} 후보 보기`;
   return (
     <Marker longitude={store.longitude} latitude={store.latitude} anchor="bottom">
       <button
         type="button"
-        aria-label={`${store.name} 후보 보기`}
+        aria-label={label}
+        title={count > 1 ? `${store.category} 점포 ${count}개` : `${store.name} · ${store.category}`}
         className={
           isPrefab
             ? `prefab-building ${categoryClass(store.category)} ${isSelected ? "is-selected" : ""}`
-            : `map-marker ${categoryClass(store.category)} ${isSelected ? "is-selected" : ""}`
+            : [
+                "map-marker",
+                categoryClass(store.category),
+                isSelected ? "is-selected" : "",
+                detailed ? "is-detailed" : "is-compact",
+                count > 1 ? "is-clustered" : "",
+                prefabMode ? "is-storefront-fallback" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")
         }
         onClick={() => onSelect(store.name)}
       >
@@ -108,7 +129,11 @@ function StoreMarker({
           <>
             <span className="prefab-shadow" />
             <span className="prefab-side" />
-            <span className="prefab-face"><i><Icon size={10} strokeWidth={2.5} /></i></span>
+            <span className="prefab-face">
+              <i>
+                <Icon size={10} strokeWidth={2.5} />
+              </i>
+            </span>
             <span className="prefab-awning" />
             <span className="prefab-door" />
             <span className="prefab-sign" />
@@ -117,7 +142,12 @@ function StoreMarker({
             <span className="prefab-chimney" />
           </>
         ) : (
-          <span><Icon size={16} strokeWidth={2.4} /></span>
+          <>
+            <span>
+              <Icon size={detailed ? 21 : 16} strokeWidth={2.5} />
+            </span>
+            {count > 1 && <small className="store-marker-count">{count}</small>}
+          </>
         )}
       </button>
     </Marker>
@@ -126,11 +156,38 @@ function StoreMarker({
 
 function markerIcon(category: string): LucideIcon {
   if (category.includes("카페") || category.includes("커피")) return Coffee;
-  if (category.includes("미용") || category.includes("헤어") || category.includes("네일") || category.includes("피부관리")) return Scissors;
-  if (category.includes("의류") || category.includes("의복") || category.includes("패션") || category.includes("신발")) return Shirt;
-  if (category.includes("학원") || category.includes("교습") || category.includes("교육원")) return GraduationCap;
-  if (category.includes("숙박") || category.includes("호텔") || category.includes("모텔") || category.includes("여관")) return BedDouble;
-  if (category.includes("체육") || category.includes("헬스") || category.includes("피트니스") || category.includes("스포츠") || category.includes("요가") || category.includes("필라테스")) return Dumbbell;
+  if (
+    category.includes("미용") ||
+    category.includes("헤어") ||
+    category.includes("네일") ||
+    category.includes("피부관리")
+  )
+    return Scissors;
+  if (
+    category.includes("의류") ||
+    category.includes("의복") ||
+    category.includes("패션") ||
+    category.includes("신발")
+  )
+    return Shirt;
+  if (category.includes("학원") || category.includes("교습") || category.includes("교육원"))
+    return GraduationCap;
+  if (
+    category.includes("숙박") ||
+    category.includes("호텔") ||
+    category.includes("모텔") ||
+    category.includes("여관")
+  )
+    return BedDouble;
+  if (
+    category.includes("체육") ||
+    category.includes("헬스") ||
+    category.includes("피트니스") ||
+    category.includes("스포츠") ||
+    category.includes("요가") ||
+    category.includes("필라테스")
+  )
+    return Dumbbell;
   return Store;
 }
 
@@ -161,7 +218,10 @@ export function MarketMapCanvas({
 }: MarketMapCanvasProps) {
   const profile = getMapPresentationProfile(presentationMode);
   const visibleStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
+  const [zoom, setZoom] = useState(15.4);
   const [readyStorefrontIds, setReadyStorefrontIds] = useState<Set<string>>(() => new Set());
+  const [baseBuildingFilter, setBaseBuildingFilter] =
+    useState<Awaited<ReturnType<typeof loadReplacementBuildingFilter>>>(undefined);
   const storefrontKey = `${presentationMode}:${visibleStorefronts.map((store) => store.id).join(",")}`;
   const densityStores = useMemo(
     () =>
@@ -171,14 +231,46 @@ export function MarketMapCanvas({
       ),
     [mapStores, selectedCategoryName],
   );
+  const readyStorefronts = useMemo(
+    () => visibleStorefronts.filter((store) => readyStorefrontIds.has(store.id)),
+    [readyStorefrontIds, visibleStorefronts],
+  );
+  const markerGroups = useMemo(
+    () => groupStoreMarkers(mapStores, zoom, selected?.name ?? null),
+    [mapStores, selected?.name, zoom],
+  );
 
   useEffect(() => {
     setReadyStorefrontIds(new Set());
+    setBaseBuildingFilter(undefined);
   }, [storefrontKey]);
 
-  const hiddenOverlayBuildingIds = visibleStorefronts.flatMap((store) =>
-    store.building && readyStorefrontIds.has(store.id) ? [store.building.id] : [],
+  useEffect(() => {
+    let active = true;
+    if (readyStorefronts.length === 0) {
+      setBaseBuildingFilter(undefined);
+      return () => {
+        active = false;
+      };
+    }
+    void loadReplacementBuildingFilter(readyStorefronts)
+      .then((filter) => {
+        if (active) setBaseBuildingFilter(filter);
+      })
+      .catch((error) => {
+        if (import.meta.env.DEV) console.warn("LocalTwin base building replacement filter", error);
+        if (active) setBaseBuildingFilter(undefined);
+      });
+    return () => {
+      active = false;
+    };
+  }, [readyStorefronts]);
+
+  const hiddenOverlayBuildingIds = readyStorefronts.flatMap((store) =>
+    store.building ? [store.building.id] : [],
   );
+  const SelectedIcon = selected ? markerIcon(selected.category) : Coffee;
+
   if (isTestEnvironment())
     return <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>;
   return (
@@ -199,12 +291,14 @@ export function MarketMapCanvas({
         onLoad={(event) => {
           event.target.on("styleimagemissing", addMissingStyleImageFallback);
           hideExternalBuildingLayers(event.target);
+          setZoom(event.target.getZoom());
           onVisibleBoundsChange(readMapBounds(event.target));
         }}
         onStyleData={(event) => hideExternalBuildingLayers(event.target)}
-        onMove={(event) =>
-          onVisibleCenterChange([event.viewState.longitude, event.viewState.latitude])
-        }
+        onMove={(event) => {
+          setZoom(event.viewState.zoom);
+          onVisibleCenterChange([event.viewState.longitude, event.viewState.latitude]);
+        }}
         onMoveEnd={(event) => onVisibleBoundsChange(readMapBounds(event.target))}
       >
         <Layer
@@ -214,6 +308,7 @@ export function MarketMapCanvas({
           source-layer="building"
           minzoom={14}
           beforeId="boundary_3"
+          filter={baseBuildingFilter}
           layout={{ visibility: baseBuildingsRendered ? "visible" : "none" }}
           paint={{
             "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
@@ -248,7 +343,12 @@ export function MarketMapCanvas({
           </Suspense>
         )}
         {market.landmarks.map((place) => (
-          <Marker key={place.name} longitude={place.longitude} latitude={place.latitude} anchor="bottom">
+          <Marker
+            key={place.name}
+            longitude={place.longitude}
+            latitude={place.latitude}
+            anchor="bottom"
+          >
             <span className="landmark-label">{place.name}</span>
           </Marker>
         ))}
@@ -268,12 +368,14 @@ export function MarketMapCanvas({
             </Marker>
           ))}
         {storesVisible &&
-          mapStores.map((store) => (
+          markerGroups.map(({ store, count }) => (
             <StoreMarker
-              key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
+              key={`${store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}:${count}`}
               store={store}
               selectedName={selected?.name ?? null}
               prefabMode={profile.storefrontsVisible}
+              detailed={zoom >= STORE_MARKER_DETAIL_ZOOM}
+              count={count}
               onSelect={onSelectStore}
             />
           ))}
@@ -288,19 +390,27 @@ export function MarketMapCanvas({
             className="selected-store-popup"
           >
             <div className="selected-location">
-              <span className="selected-store-icon"><Coffee size={18} aria-hidden="true" /></span>
+              <span className="selected-store-icon">
+                <SelectedIcon size={18} aria-hidden="true" />
+              </span>
               <div className="selected-store-heading">
                 <div>
                   <b>{selected.name}</b>
-                  <small>{selected.category} · {selected.distance}</small>
+                  <small>
+                    {selected.category} · {selected.distance}
+                  </small>
                 </div>
                 <strong title="선택 점포가 속한 상권의 입지 점수">
                   {score === null ? "분석 중" : `${score}점`}
                 </strong>
               </div>
               <div className="selected-store-factors">
-                <span><UsersRound size={13} aria-hidden="true" /> {market.footfall}</span>
-                <span><Target size={13} aria-hidden="true" /> 경쟁 {sameCategoryCount}개</span>
+                <span>
+                  <UsersRound size={13} aria-hidden="true" /> {market.footfall}
+                </span>
+                <span>
+                  <Target size={13} aria-hidden="true" /> 경쟁 {sameCategoryCount}개
+                </span>
               </div>
               <button type="button" onClick={onEvidenceOpen}>
                 점수 근거 보기 <ChevronRight size={14} />
