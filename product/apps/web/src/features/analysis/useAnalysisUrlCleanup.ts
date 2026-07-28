@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 type AnalysisUrlCleanupOptions = {
+  hasInitialUrlState?: boolean;
   period: string;
   availablePeriods: string[];
   defaultPeriod: string | null;
