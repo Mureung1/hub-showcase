@@ -36,6 +36,7 @@ model Drop {
   totalUpStaked   Int        @default(0) // Polymarket: Total points staked on UP
   totalDownStaked Int        @default(0) // Polymarket: Total points staked on DOWN
   votes           Vote[] 
+  priceHistories PriceHistory[]
   createdAt       DateTime   @default(now())
 }
 
@@ -63,4 +64,13 @@ enum DropStatus {
 enum VoteDirection {
   UP
   DOWN
+}
+
+model PriceHistory {
+  id        String   @id @default(uuid())
+  drop      Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  dropId    String
+  dateLabel String
+  price     Int
+  createdAt DateTime @default(now())
 }

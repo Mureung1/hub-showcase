@@ -268,6 +268,11 @@ async function scrapeKreamSneakers() {
             marketPrice: marketPrice,
             imageUrl: item.imageUrl || null,
             status: 'RELEASED',
+            priceHistories: {
+              create: [
+                { dateLabel: todayLabel, price: basePrice }
+              ]
+            }
           },
         });
       }
