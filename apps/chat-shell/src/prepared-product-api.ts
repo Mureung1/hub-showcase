@@ -31,21 +31,25 @@ export type PreparedProductFrame =
 const maximumLineBytes = 1024 * 1024
 const safeInvalidResponse = 'AY 작업 흐름을 확인하지 못했습니다.'
 
+export type PreparedProductApiErrorProvenance =
+  | 'server_rejection'
+  | 'invalid_transport'
+
 export class PreparedProductApiError extends Error {
   readonly code: string
   readonly displayMessage: string
-  readonly knownJsonResponse: boolean
+  readonly provenance: PreparedProductApiErrorProvenance
 
   constructor(
     code: string,
     displayMessage: string,
-    knownJsonResponse = false,
+    provenance: PreparedProductApiErrorProvenance = 'invalid_transport',
   ) {
     super(displayMessage)
     this.name = 'PreparedProductApiError'
     this.code = code
     this.displayMessage = displayMessage
-    this.knownJsonResponse = knownJsonResponse
+    this.provenance = provenance
   }
 }
 
@@ -344,7 +348,7 @@ async function responseError(
     return new PreparedProductApiError(
       error.code,
       error.displayMessage,
-      true,
+      'server_rejection',
     )
   } catch {
     return invalidResponse()

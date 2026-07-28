@@ -293,7 +293,7 @@ export function usePreparedProductChat(options: {
           : 'AY 작업 흐름을 계속하지 못했습니다.'
       const outcome =
         error instanceof PreparedProductApiError &&
-        error.knownJsonResponse &&
+        error.provenance === 'server_rejection' &&
         !stateRef.current.accepted &&
         stateRef.current.operationId === undefined
           ? 'not_accepted'

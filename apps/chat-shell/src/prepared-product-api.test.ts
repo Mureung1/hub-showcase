@@ -29,7 +29,11 @@ test('prepared Browser stream rejects an unknown operation frame', async () => {
   try {
     await assert.rejects(
       streamPreparedChat({ text: '학기 작업을 도와 줘.' }, () => undefined),
-      PreparedProductApiError,
+      (error: unknown) => {
+        assert.ok(error instanceof PreparedProductApiError)
+        assert.equal(error.provenance, 'invalid_transport')
+        return true
+      },
     )
     assert.deepEqual(JSON.parse(requestBody ?? ''), {
       text: '학기 작업을 도와 줘.',
@@ -132,7 +136,7 @@ test('prepared Browser sends one exact organize_sources action through the share
   }
 })
 
-test('prepared Browser marks a valid JSON action rejection as a known response', async () => {
+test('prepared Browser marks a valid JSON action rejection as server provenance', async () => {
   const originalFetch = globalThis.fetch
   try {
     for (const status of [400, 409]) {
@@ -155,7 +159,7 @@ test('prepared Browser marks a valid JSON action rejection as a known response',
         ),
         (error: unknown) => {
           assert.ok(error instanceof PreparedProductApiError)
-          assert.equal(error.knownJsonResponse, true)
+          assert.equal(error.provenance, 'server_rejection')
           return true
         },
       )
