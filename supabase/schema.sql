@@ -76,6 +76,11 @@ create table if not exists public.match_requests (
 -- 서버는 service_role 키로 접근하므로 RLS를 켜두되 anon 정책은 두지 않는다.
 alter table public.match_requests enable row level security;
 
+-- 이슈 #91/#92: 온보딩 업종(industry) 질문을 지원분야(supportRealm) 복수선택으로 완전히
+-- 교체하며 추가. 기존 industry 컬럼은 이 프로젝트의 기존 관례대로 드롭하지 않고 그대로 둔다
+-- (region/industry/employees 등 추가 시에도 컬럼을 삭제한 적 없음 — 사용 안 하는 legacy 컬럼).
+alter table public.match_requests add column if not exists support_realm text[] not null default '{}';
+
 -- 이슈 #67: 첨부파일 AI 구조화 추출 결과 캐시 (atchFileId 기준, 재호출 방지 목적)
 -- 크롤러(묶음 2)는 이 테이블에만 쓰고, subsidies 반영은 별도 단계(묶음 3)에서 처리한다.
 -- extracted 컬럼 형태는 crawler/src/gemini-extract.ts의 ExtractedFields와 1:1 매핑.

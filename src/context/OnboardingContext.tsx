@@ -11,7 +11,7 @@ import type { OnboardingProfile } from '@hub/shared'
 const STORAGE_KEY = 'onboarding-profile'
 
 const EMPTY_PROFILE: OnboardingProfile = {
-  industry: '',
+  supportRealm: [],
   region: '',
   district: '',
   employees: '',
@@ -23,7 +23,7 @@ export type OnboardingField = keyof OnboardingProfile
 
 interface OnboardingContextValue {
   profile: OnboardingProfile
-  setField: (field: OnboardingField, value: string) => void
+  setField: <K extends OnboardingField>(field: K, value: OnboardingProfile[K]) => void
   reset: () => void
 }
 
@@ -51,13 +51,16 @@ function persist(profile: OnboardingProfile) {
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<OnboardingProfile>(loadProfile)
 
-  const setField = useCallback((field: OnboardingField, value: string) => {
-    setProfile((prev) => {
-      const next = { ...prev, [field]: value }
-      persist(next)
-      return next
-    })
-  }, [])
+  const setField = useCallback(
+    <K extends OnboardingField>(field: K, value: OnboardingProfile[K]) => {
+      setProfile((prev) => {
+        const next = { ...prev, [field]: value }
+        persist(next)
+        return next
+      })
+    },
+    [],
+  )
 
   const reset = useCallback(() => {
     setProfile(EMPTY_PROFILE)

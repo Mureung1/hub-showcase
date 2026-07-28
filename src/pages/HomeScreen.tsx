@@ -33,7 +33,7 @@ export default function HomeScreen() {
 
   const profileText = [
     profile.district || '내 지역',
-    profile.industry || '내 업종',
+    profile.supportRealm.join(', ') || '관심 분야',
     profile.employees || '',
   ]
     .filter(Boolean)

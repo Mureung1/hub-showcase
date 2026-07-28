@@ -94,7 +94,7 @@ export function subsidyToRow(subsidy: Subsidy): Omit<SubsidyRow, 'created_at'> {
 
 /** match_requests 테이블 row (snake_case) */
 export interface MatchRequestRow {
-  industry: string
+  support_realm: string[]
   region: string
   district: string
   employees: string
@@ -110,7 +110,7 @@ export function profileToMatchRequestRow(
   sort: SortOption,
 ): MatchRequestRow {
   return {
-    industry: profile.industry,
+    support_realm: profile.supportRealm,
     region: profile.region,
     district: profile.district,
     employees: profile.employees,

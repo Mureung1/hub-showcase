@@ -41,7 +41,7 @@ const sample: Subsidy = {
 }
 
 const validProfile = {
-  industry: '음식점',
+  supportRealm: ['경영'],
   region: '서울',
   district: '마포구',
   employees: '1~4명',
@@ -113,7 +113,7 @@ describe('POST /api/match', () => {
   it('profile 필드가 누락되면 400을 반환한다', async () => {
     const res = await request(app)
       .post('/api/match')
-      .send({ profile: { industry: '음식점' } })
+      .send({ profile: { supportRealm: ['경영'] } })
     expect(res.status).toBe(400)
     expect(mockMatch).not.toHaveBeenCalled()
   })
