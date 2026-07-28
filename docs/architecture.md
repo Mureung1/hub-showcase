@@ -8,7 +8,7 @@
 flowchart TB
     subgraph FE["Frontend Screens (react-router-dom)"]
         Layout["Layout\n(공통 레이아웃 + 인증 체크)"]
-        Home["Home /\n(SubscriptionList)"]
+        Home["Home /\n(Dashboard + SubscriptionList)"]
         About["ProjectInfo\n/about"]
         New["SubscriptionForm\n/subscriptions/new"]
         Detail["SubscriptionDetail\n/subscriptions/:id"]
@@ -37,7 +37,7 @@ flowchart TB
         Health["GET /api/health"]
         AuthRoutes["/api/auth\nGET /google\nGET /google/callback"]
         UsersRoutes["/api/users\nGET /me"]
-        SubsRoutes["/api/subscriptions\nPOST / · GET / · GET /:id\nPATCH /:id · DELETE /:id"]
+        SubsRoutes["/api/subscriptions\nPOST / · GET / · GET /dashboard\nGET /:id · PATCH /:id · DELETE /:id"]
         PreviewRoute["GET /api/subscriptions/:id/preview\n(인증 불필요)"]
         JoinRoute["POST /api/subscriptions/:id/join"]
         MW["requireAuth\n(JWT, middleware/auth.js)"]
@@ -87,7 +87,7 @@ flowchart TB
 
 | 경로 | 컴포넌트 | 비고 |
 | --- | --- | --- |
-| `/` | `Home` (`SubscriptionList`) | Layout 하위 |
+| `/` | `Home` (`Dashboard` + `SubscriptionList`) | Layout 하위 |
 | `/about` | `ProjectInfo` | Layout 하위 |
 | `/subscriptions/new` | `SubscriptionForm` | Layout 하위 |
 | `/subscriptions/:id` | `SubscriptionDetail` | Layout 하위 |
@@ -96,7 +96,7 @@ flowchart TB
 | `/oauth/callback` | `OAuthCallback` | Layout 밖 (OAuth 리다이렉트 전용) |
 | `*` | `NotFound` | Layout 하위 |
 
-API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubscriptions`, `getSubscription`, `updateSubscription`, `deleteSubscription`, `previewSubscription`, `joinSubscription`)와 `frontend/src/lib/auth.js`(`fetchMe`)가 담당. 둘 다 axios 없이 순수 `fetch` 기반.
+API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubscriptions`, `getDashboardSummary`, `getSubscription`, `updateSubscription`, `deleteSubscription`, `previewSubscription`, `joinSubscription`)와 `frontend/src/lib/auth.js`(`fetchMe`)가 담당. 둘 다 axios 없이 순수 `fetch` 기반.
 
 ### Backend — 라우트 (`backend/src/index.js` 마운트 기준)
 
@@ -105,7 +105,7 @@ API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubs
 | `GET /api/health` | `index.js` (인라인) | 불필요 |
 | `GET /api/auth/google`, `GET /api/auth/google/callback` | `routes/auth.routes.js` | 불필요 (로그인 자체) |
 | `GET /api/users/me` | `routes/users.routes.js` | `requireAuth` |
-| `POST /api/subscriptions`, `GET /api/subscriptions`, `GET /api/subscriptions/:id` | `routes/subscriptions.routes.js` | `requireAuth` |
+| `POST /api/subscriptions`, `GET /api/subscriptions`, `GET /api/subscriptions/dashboard`, `GET /api/subscriptions/:id` | `routes/subscriptions.routes.js` | `requireAuth` |
 | `PATCH /api/subscriptions/:id`, `DELETE /api/subscriptions/:id` | `routes/subscriptions.routes.js` | `requireAuth` (소유자만) |
 | `GET /api/subscriptions/:id/preview` | `routes/subscriptions.routes.js` | 불필요 (초대 링크 미리보기) |
 | `POST /api/subscriptions/:id/join` | `routes/subscriptions.routes.js` | `requireAuth` |
@@ -125,7 +125,7 @@ API 호출은 `frontend/src/lib/subscriptions.js`(`createSubscription`, `getSubs
 ## docs/api-spec.md 대비 구현 범위
 
 - **1. Auth `[확정]`**: 구현된 라우트와 일치.
-- **2. Subscription `[초안]`**: 등록/목록/상세/수정/삭제, 초대 링크 미리보기/가입까지 구현. 월별 실지출 대시보드 엔드포인트는 아직 미구현.
+- **2. Subscription `[초안]`**: 등록/목록/상세/수정/삭제, 초대 링크 미리보기/가입, 월별 실지출 대시보드(`GET /dashboard`, `createdAt` 기준 추정치)까지 구현.
 - **3. Party Member `[초안]`**: 초대 링크를 통한 가입은 구현됨. 파티원 목록 조회/삭제 전용 API는 미구현.
 - **4. Settlement `[초안]`**: DB 스키마(`Settlement`, `SettlementMember`)만 존재, API 라우트 없음.
 
