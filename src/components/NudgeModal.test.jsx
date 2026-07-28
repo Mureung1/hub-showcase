@@ -6,14 +6,14 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MICROTASK_TEMPLATES } from "../lib/microtaskTemplates";
 import {
   requestLv2Microtask,
   requestLv3Microtask,
 } from "../lib/microtaskApi";
 import { LV3_SAFE_FALLBACKS } from "../lib/nudgeMessages";
-import NudgeModal from "./NudgeModal";
+import NudgeModal, { NUDGE_AUTO_CLOSE_MS } from "./NudgeModal";
 
 vi.mock("../lib/microtaskApi", () => ({
   requestLv2Microtask: vi.fn(),
@@ -34,6 +34,7 @@ const TASK = {
 
 function renderModal(overrides = {}, props = {}) {
   const onStart = vi.fn();
+  const onClose = props.onClose ?? vi.fn();
   const onReconfirmReason =
     props.onReconfirmReason ?? vi.fn();
   const onLv2ActionResolved =
@@ -42,23 +43,78 @@ function renderModal(overrides = {}, props = {}) {
     <NudgeModal
       task={{ ...TASK, ...overrides }}
       onStart={onStart}
-      onClose={vi.fn()}
+      onClose={onClose}
       checkpointLevel={props.checkpointLevel ?? null}
       onReconfirmReason={onReconfirmReason}
       onLv2ActionResolved={onLv2ActionResolved}
       lv2MicroTask={props.lv2MicroTask ?? null}
       lv3ReasonChanged={props.lv3ReasonChanged ?? null}
-      onAddToCalendar={vi.fn()}
       completedTasks={[]}
     />,
   );
   return {
     onStart,
+    onClose,
     onReconfirmReason,
     onLv2ActionResolved,
     ...renderResult,
   };
 }
+
+// "자동 닫힘 00:30"이 라벨/숫자 두 span으로 나뉘어 있어(색상 분리) getByText로 전체
+// 문자열을 한 번에 찾을 수 없다 — 컨테이너의 정규화된 textContent로 확인한다.
+function getCountdownText() {
+  return document
+    .querySelector(".nudge-countdown")
+    .textContent.replace(/\s+/g, " ")
+    .trim();
+}
+
+describe("NudgeModal 레벨별 캐릭터 UI", () => {
+  beforeEach(() => {
+    vi.mocked(requestLv2Microtask).mockReset();
+    vi.mocked(requestLv3Microtask).mockReset();
+    vi.mocked(requestLv2Microtask).mockResolvedValue({
+      microTask: "문서 제목 한 줄 쓰기",
+      generationSource: "gemini",
+    });
+    vi.mocked(requestLv3Microtask).mockRejectedValue(new Error("timeout"));
+  });
+
+  it.each([
+    [1, "nagbot_lv1.png", "가벼운 알림"],
+    [2, "nagbot_lv2.png", "마이크로태스크 제안"],
+    [3, "nagbot_lv3.png", "강화된 첫 행동"],
+    [4, "nagbot_lv4.png", "마감 임박 경고"],
+  ])(
+    "Lv%s는 올바른 장식 캐릭터와 텍스트 Badge를 표시한다",
+    async (level, fileName, label) => {
+      const { container } = renderModal({ level, skipCount: level });
+
+      if (level === 2) {
+        await screen.findByText(/문서 제목 한 줄 쓰기/);
+      }
+      if (level === 3) {
+        await screen.findByText(/강화된 첫 행동/);
+      }
+
+      const character = container.querySelector(
+        `.nudge-character-lv${level}`,
+      );
+      expect(character).not.toBeNull();
+      expect(character).toHaveAttribute("src", expect.stringContaining(fileName));
+      expect(character).toHaveAttribute("alt", "");
+      expect(character).toHaveAttribute("aria-hidden", "true");
+      expect(screen.getByText(new RegExp(label))).toBeInTheDocument();
+    },
+  );
+
+  it("기존 이모지 아바타를 렌더링하지 않는다", () => {
+    const { container } = renderModal({ level: 1, skipCount: 1 });
+
+    expect(container.querySelector(".nudge-avatar")).toBeNull();
+  });
+});
 
 describe("NudgeModal Lv.2 Gemini microTask", () => {
   beforeEach(() => {
@@ -94,6 +150,7 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
       expect.objectContaining({
         entryMode: "intervention",
         entryLevel: 2,
+        journeyLevel: 2,
         microTask: sentinel,
         generationSource: "gemini",
         memoryEvidence: null,
@@ -177,7 +234,6 @@ describe("NudgeModal Lv.2 Gemini microTask", () => {
           onClose={vi.fn()}
           checkpointLevel={null}
           onReconfirmReason={vi.fn()}
-          onAddToCalendar={vi.fn()}
           completedTasks={[]}
         />
       </StrictMode>,
@@ -214,13 +270,13 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
       screen.getByText(/지금 막는 이유가 처음과 같나요/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/지금 막는 이유를 먼저 확인해 주세요/),
+      screen.getByText(/지금 막는 이유부터 다시 확인하자/),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/지금 할 수 있는 첫 행동을 찾고 있어요/),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "이유 확인 후 시작하기" }),
+      screen.getByRole("button", { name: "이유 확인하고 시작하기" }),
     ).toBeDisabled();
   });
 
@@ -343,6 +399,7 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
     expect(onStart).toHaveBeenCalledWith({
       entryMode: "intervention",
       entryLevel: 3,
+      journeyLevel: 3,
       microTask,
       generationSource: "gemini",
       memoryEvidence: { sourceDoneEventId: "done-event-1" },
@@ -373,6 +430,7 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
     expect(onStart).toHaveBeenCalledWith({
       entryMode: "intervention",
       entryLevel: 3,
+      journeyLevel: 3,
       microTask,
       generationSource: "gemini",
       memoryEvidence: null,
@@ -400,6 +458,42 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
     );
   });
 
+  it("서버가 200 + source:rule_based로 응답하면 서버 microTask를 그대로 표시하고, lv3FallbackRef의 다른 문구는 쓰지 않는다", async () => {
+    // 서버가 Gemini 실패 시 자체 규칙 기반 fallback을 200으로 돌려주는 경우 —
+    // Promise가 reject되지 않으므로 위 "provider 실패" 테스트(.catch 경로)와는 다른
+    // 분기(result.status==="generated" && generationSource==="rule_based")를 검증한다.
+    // 서버/클라이언트 fallback 테이블이 어긋나도 화면·Focus·History가 항상 서버 응답
+    // 값을 쓰도록, lv3FallbackRef를 다시 계산하지 않고 서버가 준 microTask를 그대로 쓴다.
+    const serverMicroTask = "서버 행동";
+    vi.mocked(requestLv3Microtask).mockResolvedValue({
+      status: "generated",
+      microTask: serverMicroTask,
+      generationSource: "rule_based",
+      memoryEvidence: null,
+    });
+    const clientFallback = LV3_SAFE_FALLBACKS["리포트/글쓰기"];
+    const { onStart } = renderModal({ level: 3, skipCount: 5 });
+
+    expect(await screen.findByText(new RegExp(serverMicroTask))).toBeInTheDocument();
+    // 서버/클라이언트 fallback 테이블이 다른 값을 낼 수 있는 상황을 가정 — 클라이언트
+    // 테이블의 다른 문구(clientFallback)가 화면에 나타나면 안 된다.
+    expect(clientFallback).not.toBe(serverMicroTask);
+    expect(screen.queryByText(new RegExp(clientFallback))).not.toBeInTheDocument();
+    expect(screen.queryByText(/지난 완료 기록/)).not.toBeInTheDocument();
+    expect(screen.getByText("Lv3 · 강화된 첫 행동")).toBeInTheDocument();
+    expect(requestLv3Microtask).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
+    expect(onStart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryLevel: 3,
+        microTask: serverMicroTask,
+        generationSource: "rule_based",
+        memoryEvidence: null,
+      }),
+    );
+  });
+
   it("fallback 확정 후 task 객체가 바뀌어도 재요청하거나 행동을 바꾸지 않는다", async () => {
     vi.mocked(requestLv3Microtask).mockRejectedValue(new Error("timeout"));
     const { rerender } = renderModal({ level: 3, skipCount: 5 });
@@ -419,7 +513,6 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
         onClose={vi.fn()}
         checkpointLevel={null}
         onReconfirmReason={vi.fn()}
-        onAddToCalendar={vi.fn()}
         completedTasks={[]}
       />,
     );
@@ -441,7 +534,6 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
       onClose: vi.fn(),
       checkpointLevel: null,
       onReconfirmReason: vi.fn(),
-      onAddToCalendar: vi.fn(),
       completedTasks: [],
     };
     const { rerender } = render(
@@ -510,7 +602,6 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
       onClose: vi.fn(),
       checkpointLevel: null,
       onReconfirmReason: vi.fn(),
-      onAddToCalendar: vi.fn(),
       completedTasks: [],
     };
     const { rerender } = render(
@@ -531,7 +622,7 @@ describe("NudgeModal Lv.3 기억 기반 microTask", () => {
     expect(
       screen.queryByText(/늦게 도착한 행동 한 줄 작성하기/),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/마감이/)).toBeInTheDocument();
+    expect(screen.getByText(/생각은 여기까지/)).toBeInTheDocument();
   });
 });
 
@@ -550,6 +641,7 @@ describe("NudgeModal 레벨별 Focus 컨텍스트", () => {
     expect(onStart).toHaveBeenCalledWith({
       entryMode: "intervention",
       entryLevel: 1,
+      journeyLevel: 1,
       microTask: null,
       generationSource: "none",
       memoryEvidence: null,
@@ -564,7 +656,9 @@ describe("NudgeModal 레벨별 Focus 컨텍스트", () => {
       await screen.findByText(
         new RegExp(LV3_SAFE_FALLBACKS["리포트/글쓰기"]),
       );
-      const message = document.querySelector(".nudge-message");
+      // 추천 행동은 이제 .nudge-message가 아니라 .nudge-action-block으로 분리 표시된다
+      // (#5 시각 구분) — 둘을 함께 담는 .nudge-body 기준으로 확인한다.
+      const message = document.querySelector(".nudge-body");
       expect(message).not.toBeNull();
 
       fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
@@ -573,6 +667,7 @@ describe("NudgeModal 레벨별 Focus 컨텍스트", () => {
       expect(context).toMatchObject({
         entryMode: "intervention",
         entryLevel: level,
+        journeyLevel: level,
         generationSource: "rule_based",
         memoryEvidence: null,
       });
@@ -586,7 +681,9 @@ describe("NudgeModal 레벨별 Focus 컨텍스트", () => {
   it("Lv.4는 기존 rule_based action 전달을 유지한다", () => {
     const level = 4;
     const { onStart } = renderModal({ level, skipCount: level });
-    const message = document.querySelector(".nudge-message");
+    // 추천 행동은 이제 .nudge-message가 아니라 .nudge-action-block으로 분리 표시된다
+    // (#5 시각 구분) — 둘을 함께 담는 .nudge-body 기준으로 확인한다.
+    const message = document.querySelector(".nudge-body");
     expect(message).not.toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
@@ -595,9 +692,238 @@ describe("NudgeModal 레벨별 Focus 컨텍스트", () => {
     expect(context).toMatchObject({
       entryMode: "intervention",
       entryLevel: level,
+      journeyLevel: level,
       generationSource: "rule_based",
       memoryEvidence: null,
     });
     expect(message).toHaveTextContent(context.microTask);
+  });
+
+  it("Lv.4도 다른 레벨과 동일하게 지금 시작하기 단일 CTA + X 닫기만 제공한다", () => {
+    const onClose = vi.fn();
+    const { onStart } = renderModal(
+      { level: 4, skipCount: 4 },
+      { onClose, checkpointLevel: 3 },
+    );
+
+    expect(
+      screen.getByRole("button", { name: "지금 시작하기" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "나중에" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "캘린더에 추가" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "이번 알림 닫기" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onStart).not.toHaveBeenCalled();
+  });
+});
+
+describe("NudgeModal 자동 닫힘 카운트다운", () => {
+  beforeEach(() => {
+    vi.mocked(requestLv2Microtask).mockReset();
+    vi.mocked(requestLv3Microtask).mockReset();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("X 버튼은 표시되고, 별도 '나중에' 텍스트 버튼은 없다", () => {
+    renderModal({ level: 1, skipCount: 0 });
+
+    expect(
+      screen.getByRole("button", { name: "이번 알림 닫기" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "나중에" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("화면에는 '닫기' 텍스트 없이 X 아이콘만 표시되고, 접근성 이름/title은 유지된다", () => {
+    renderModal({ level: 1, skipCount: 0 });
+
+    const closeButton = screen.getByRole("button", { name: "이번 알림 닫기" });
+    expect(closeButton).toHaveTextContent("✕");
+    expect(closeButton).not.toHaveTextContent("닫기");
+    expect(closeButton).toHaveAttribute("title", "이번 알림 닫기");
+  });
+
+  it("카운트다운 라벨은 중립색 클래스, 숫자는 Lv 클래스를 사용한다", () => {
+    renderModal({ level: 1, skipCount: 0 });
+
+    expect(
+      document.querySelector(".nudge-countdown-label"),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector(".nudge-countdown-value"),
+    ).toBeInTheDocument();
+  });
+
+  it.each([1, 4])(
+    "Lv%s에서도 카운트다운 숫자가 해당 레벨의 --lv 토큰이 적용되는 data-level 안에서 렌더링된다",
+    (level) => {
+      // Lv2/3는 이 describe의 beforeEach가 requestLv2/3Microtask를 mockReset()만 해둬서
+      // (resolvedValue 없음) 비동기 fetch가 섞이므로, 순수 룰베이스인 Lv1/4로 구조만 검증한다.
+      renderModal({ level, skipCount: 0 });
+
+      const content = document.querySelector(
+        `.nudge-content[data-level="${level}"]`,
+      );
+      expect(content).toBeInTheDocument();
+      expect(
+        content.querySelector(".nudge-countdown-value"),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("자동 닫힘 00:30부터 시작하고, 1초 후 00:29로 갱신된다", () => {
+    renderModal({ level: 1, skipCount: 0 });
+
+    expect(getCountdownText()).toBe("자동 닫힘 00:30");
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(getCountdownText()).toBe("자동 닫힘 00:29");
+  });
+
+  it("30초가 지나면 자동으로 onClose가 호출된다(모달 닫힘)", () => {
+    const { onClose } = renderModal({ level: 1, skipCount: 0 });
+
+    act(() => {
+      vi.advanceTimersByTime(NUDGE_AUTO_CLOSE_MS);
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("자동 종료 시 새로운 API 요청(skipCount 증가·notification_sent 등)을 전혀 만들지 않는다", () => {
+    renderModal({ level: 1, skipCount: 0 });
+
+    act(() => {
+      vi.advanceTimersByTime(NUDGE_AUTO_CLOSE_MS);
+    });
+
+    // 모달 자체는 API를 직접 호출하지 않는다 — Lv2/Lv3 생성 요청만 감시 대상이며,
+    // Lv1은 애초에 호출하지 않으므로 "추가로 발생하지 않았다"를 0회로 확인한다.
+    expect(requestLv2Microtask).not.toHaveBeenCalled();
+    expect(requestLv3Microtask).not.toHaveBeenCalled();
+  });
+
+  it("자동 종료 시 Focus 진입 콜백(onStart)이 호출되지 않는다", () => {
+    const { onStart } = renderModal({ level: 1, skipCount: 0 });
+
+    act(() => {
+      vi.advanceTimersByTime(NUDGE_AUTO_CLOSE_MS);
+    });
+
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it("이유를 선택해도 카운트다운이 멈추거나 30초로 초기화되지 않는다", () => {
+    renderModal(
+      { level: 1, skipCount: 0 },
+      { checkpointLevel: 1 },
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(8000);
+    });
+    expect(getCountdownText()).toBe("자동 닫힘 00:22");
+
+    fireEvent.click(screen.getByRole("button", { name: "막막해서 못 시작" }));
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(getCountdownText()).toBe("자동 닫힘 00:21");
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(getCountdownText()).toBe("자동 닫힘 00:20");
+  });
+
+  it("나중에(X) 클릭 시 즉시 닫히고 Focus 콜백은 호출되지 않는다", () => {
+    const { onClose, onStart } = renderModal({ level: 1, skipCount: 0 });
+
+    fireEvent.click(screen.getByRole("button", { name: "이번 알림 닫기" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onStart).not.toHaveBeenCalled();
+
+    // 닫힌 뒤 시간이 더 지나도 onClose가 추가로 호출되지 않는다(정리 확인).
+    act(() => {
+      vi.advanceTimersByTime(NUDGE_AUTO_CLOSE_MS);
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("지금 시작하기 클릭 시 기존 Focus 값이 그대로 전달되고, 이후 타이머가 추가로 실행되지 않는다", () => {
+    const { onStart, onClose, unmount } = renderModal(
+      { level: 1, skipCount: 0 },
+      {},
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "지금 시작하기" }));
+
+    expect(onStart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryMode: "intervention",
+        entryLevel: 1,
+        journeyLevel: 1,
+        generationSource: "none",
+      }),
+    );
+
+    // 실제 앱에서는 onStart 직후 부모가 모달을 unmount한다 — 여기서도 동일하게
+    // unmount해 interval cleanup을 검증하고, 이후 시간 경과로 onClose가 추가
+    // 호출되지 않는지 확인한다.
+    unmount();
+    act(() => {
+      vi.advanceTimersByTime(NUDGE_AUTO_CLOSE_MS);
+    });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("unmount 후에는 자동 닫힘 timer callback이 실행되지 않는다", () => {
+    const { onClose, unmount } = renderModal({ level: 1, skipCount: 0 });
+
+    unmount();
+
+    act(() => {
+      vi.advanceTimersByTime(NUDGE_AUTO_CLOSE_MS);
+    });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("React StrictMode에서도 자동 닫힘 interval이 중복되지 않는다(30초에 정확히 1번만 호출)", () => {
+    const onClose = vi.fn();
+    render(
+      <StrictMode>
+        <NudgeModal
+          task={{ ...TASK, level: 1, skipCount: 0 }}
+          onStart={vi.fn()}
+          onClose={onClose}
+          checkpointLevel={null}
+          onReconfirmReason={vi.fn()}
+          completedTasks={[]}
+        />
+      </StrictMode>,
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(NUDGE_AUTO_CLOSE_MS);
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
