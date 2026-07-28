@@ -2,17 +2,13 @@ import { useState } from "react";   // react에서 핵심인 usestate
 import { supabase } from "./supabaseClient";
 
 function LoginScreen() {
-  const [email, setEmail] = useState("jieun@univ.ac.kr");
+  const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [sendError, setSendError] = useState(null);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   async function handleSendEmail() {
-    if (!email.endsWith(".ac.kr")) {
-      setSendError("학교 이메일(.ac.kr)만 사용할 수 있어요.");
-      return;
-    }
-
     setSending(true);
     setSendError(null);
 
@@ -28,6 +24,20 @@ function LoginScreen() {
       setSent(true);
     }
     setSending(false);
+  }
+
+  async function handleGuestLogin() {
+    setGuestLoading(true);
+    setSendError(null);
+
+    const { error } = await supabase.auth.signInAnonymously();
+
+    if (error) {
+      console.error("signInAnonymously error:", error);
+      setSendError("게스트 로그인에 실패했어요.");
+      setGuestLoading(false);
+    }
+    // 성공하면 App.jsx의 onAuthStateChange가 세션을 감지해서 자동으로 화면을 넘겨줌
   }
 
   return (
@@ -74,7 +84,12 @@ function LoginScreen() {
           메일함에서 링크를 눌러 로그인을 완료해주세요.
         </p>
       ) : (
-        <>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendEmail();
+          }}
+        >
       <p style={{ fontSize: 13, color: "#8A7A76", lineHeight: 1.5 }}>
         대학교 학생만 이용할 수 있는
         <br />
@@ -96,6 +111,11 @@ function LoginScreen() {
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <input
+            type="email"
+            required
+            pattern=".+\.ac\.kr"
+            title="학교 이메일(.ac.kr) 형식으로 입력해주세요"
+            placeholder="jieun@univ.ac.kr"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{ fontSize: 15, fontWeight: 600, border: "none", outline: "none", flex: 1 }}
@@ -120,7 +140,7 @@ function LoginScreen() {
       )}
 
       <button
-        onClick={handleSendEmail}
+        type="submit"
         disabled={sending}
         className="btn-primary"
         style={{
@@ -138,7 +158,39 @@ function LoginScreen() {
       >
         {sending ? "보내는 중..." : "인증 메일 받기"}
       </button>
-      </>
+        </form>
+      )}
+
+      {!sent && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0" }}>
+            <div style={{ flex: 1, height: 1, background: "rgba(36,21,18,0.1)" }} />
+            <span style={{ fontSize: 11, color: "#8A7A76" }}>또는</span>
+            <div style={{ flex: 1, height: 1, background: "rgba(36,21,18,0.1)" }} />
+          </div>
+
+          <button
+            onClick={handleGuestLogin}
+            disabled={guestLoading}
+            style={{
+              width: "100%",
+              padding: 14,
+              background: "#fff",
+              color: "#241512",
+              border: "1px solid rgba(36,21,18,0.12)",
+              borderRadius: 999,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: guestLoading ? "default" : "pointer",
+              opacity: guestLoading ? 0.7 : 1,
+            }}
+          >
+            {guestLoading ? "접속 중..." : "게스트로 체험하기"}
+          </button>
+          <p style={{ fontSize: 11, color: "#8A7A76", margin: "8px 0 0" }}>
+            이메일 인증 없이 둘러볼 수 있어요. 실제 학생 계정은 아니에요.
+          </p>
+        </>
       )}
     </div>
   );

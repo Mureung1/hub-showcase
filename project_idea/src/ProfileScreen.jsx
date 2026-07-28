@@ -6,13 +6,42 @@ const GENDER_OPTIONS = [
   { value: "female", label: "여" },
 ];
 
-function ProfileScreen({ userId, email, onSaved }) {
-  const [name, setName] = useState("");
-  const [college, setCollege] = useState("");
-  const [gender, setGender] = useState(null);
-  const [hideGender, setHideGender] = useState(false);
+function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
+  const isEdit = !!existingProfile;
+  const [name, setName] = useState(existingProfile?.name ?? "");
+  const [college, setCollege] = useState(existingProfile?.college ?? "");
+  const [gender, setGender] = useState(existingProfile?.gender ?? null);
+  const [hideGender, setHideGender] = useState(existingProfile?.hide_gender ?? false);
+  const [avatarUrl, setAvatarUrl] = useState(existingProfile?.avatar_url ?? null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  async function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError(null);
+
+    const ext = file.name.split(".").pop();
+    const path = `${userId}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      setError("사진 업로드에 실패했어요.");
+      setUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    // 같은 경로로 덮어써도 브라우저가 이전 사진을 캐시하지 않도록 매번 다른 쿼리스트링을 붙임
+    setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`);
+    setUploading(false);
+  }
 
   async function handleSubmit() {
     if (!name.trim()) {
@@ -26,30 +55,95 @@ function ProfileScreen({ userId, email, onSaved }) {
     setSaving(true);
     setError(null);
 
-    const { error: insertError } = await supabase.from("users").insert({
+    // 게스트(익명) 로그인은 이메일이 없어서, users.email의 NOT NULL + UNIQUE 제약을 만족시킬 대체 값을 씀
+    const effectiveEmail = email || `guest-${userId}@ridesplit.local`;
+
+    const { error: saveError } = await supabase.from("users").upsert({
       id: userId,
-      email,
+      email: effectiveEmail,
       name,
       college,
       gender,
       hide_gender: hideGender,
+      avatar_url: avatarUrl,
     });
 
-    if (insertError) {
+    if (saveError) {
       setError("저장하지 못했어요. 다시 시도해주세요.");
       setSaving(false);
       return;
     }
 
-    onSaved();
+    onSaved({ name, college, gender, hide_gender: hideGender, avatar_url: avatarUrl });
   }
 
   return (
     <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 800, margin: "40px 0 4px" }}>프로필을 알려주세요</h1>
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0", cursor: "pointer" }}
+        >
+          ‹ 이전
+        </button>
+      )}
+
+      <h1 style={{ fontSize: 20, fontWeight: 800, margin: onBack ? "10px 0 4px" : "40px 0 4px" }}>
+        {isEdit ? "내 프로필" : "프로필을 알려주세요"}
+      </h1>
       <p style={{ fontSize: 13, color: "#8A7A76", margin: "0 0 24px" }}>
-        동행자에게 보여질 정보예요. 최초 1회만 입력해요.
+        {isEdit ? "동행자에게 보여지는 정보예요." : "동행자에게 보여질 정보예요. 최초 1회만 입력해요."}
       </p>
+
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <label style={{ position: "relative", cursor: "pointer" }}>
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhotoChange} style={{ display: "none" }} />
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover", opacity: uploading ? 0.5 : 1 }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 84,
+                height: 84,
+                borderRadius: "50%",
+                background: "#EFE7E3",
+                color: "#8A7A76",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 28,
+                fontWeight: 700,
+                opacity: uploading ? 0.5 : 1,
+              }}
+            >
+              {name ? name[0] : "+"}
+            </div>
+          )}
+          <span
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: 26,
+              height: 26,
+              borderRadius: "50%",
+              background: "#C8102E",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 13,
+              border: "2px solid #FBF5F1",
+            }}
+          >
+            {uploading ? "…" : "✎"}
+          </span>
+        </label>
+      </div>
 
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>이름</div>
@@ -138,7 +232,7 @@ function ProfileScreen({ userId, email, onSaved }) {
 
       <button
         onClick={handleSubmit}
-        disabled={saving}
+        disabled={saving || uploading}
         className="btn-primary"
         style={{
           width: "100%",
@@ -154,7 +248,7 @@ function ProfileScreen({ userId, email, onSaved }) {
           marginTop: "auto",
         }}
       >
-        {saving ? "저장 중..." : "시작하기"}
+        {saving ? "저장 중..." : isEdit ? "저장하기" : "시작하기"}
       </button>
     </div>
   );

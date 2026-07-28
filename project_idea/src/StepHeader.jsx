@@ -1,4 +1,4 @@
-function StepHeader({ step }) { // 로고 + "RideSplit" + 진행 도트 5개
+function StepHeader({ step, avatarUrl, onProfileClick }) { // 로고 + "RideSplit" + 진행 도트 5개 + 내 프로필 버튼
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -24,19 +24,47 @@ function StepHeader({ step }) { // 로고 + "RideSplit" + 진행 도트 5개
         </div>
         <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.3px" }}>RideSplit</span>
       </div>
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            style={{
-              width: i === step ? 18 : 6,
-              height: 6,
-              borderRadius: 999,
-              background: i === step ? "#C8102E" : "rgba(36,21,18,0.15)",
-              transition: "width 0.2s",
-            }}
-          />
-        ))}
+      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: i === step ? 18 : 6,
+                height: 6,
+                borderRadius: 999,
+                background: i === step ? "#C8102E" : "rgba(36,21,18,0.15)",
+                transition: "width 0.2s",
+              }}
+            />
+          ))}
+        </div>
+
+        {onProfileClick && (
+          <button
+            onClick={onProfileClick}
+            style={{ border: "none", background: "none", padding: 0, cursor: "pointer", borderRadius: "50%", lineHeight: 0 }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} />
+            ) : (
+              <div
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  background: "#EFE7E3",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                }}
+              >
+                👤
+              </div>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

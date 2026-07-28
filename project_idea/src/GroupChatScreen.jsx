@@ -9,15 +9,26 @@ function formatMessageTime(iso) {
   return new Date(iso).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
 }
 
-function GroupChatScreen({ candidate, onComplete }) {
+function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate }) {
   const groupId = candidate?.groupId ?? null;
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(!!groupId);
-  const [confirmed, setConfirmed] = useState(false);
+  // '이전'으로 나갔다가 돌아와도 이 화면 상태가 초기화되지 않도록, App.jsx의 candidate 객체에 백업해둔 값에서 복원함
+  const [confirmed, setConfirmedState] = useState(candidate?.confirmed ?? false);
   const [respondError, setRespondError] = useState(null);
   const [boarding, setBoarding] = useState(false);
-  const [boardingResult, setBoardingResult] = useState(null);
+  const [boardingResult, setBoardingResultState] = useState(candidate?.boardingResult ?? null);
   const [boardingError, setBoardingError] = useState(null);
+
+  function setConfirmed(value) {
+    setConfirmedState(value);
+    onUpdateCandidate?.({ confirmed: value });
+  }
+
+  function setBoardingResult(value) {
+    setBoardingResultState(value);
+    onUpdateCandidate?.({ boardingResult: value });
+  }
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
@@ -151,19 +162,16 @@ function GroupChatScreen({ candidate, onComplete }) {
     );
   }
 
-  if (iAmPending) {
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center", padding: "0 28px" }}>
-        <p style={{ fontSize: 15, fontWeight: 700 }}>수락을 기다리는 중이에요</p>
-        <p style={{ fontSize: 13, color: "#8A7A76", marginTop: 8 }}>
-          방에 있는 다른 동행자가 신청을 확인하면 알려드릴게요.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0 0", cursor: "pointer" }}
+        >
+          ‹ 이전
+        </button>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0" }}>
         <div style={{ display: "flex" }}>
           {Array.from({ length: count }).map((_, i) => (
@@ -194,15 +202,21 @@ function GroupChatScreen({ candidate, onComplete }) {
         </span>
       </div>
 
-      <h1 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 16px" }}>
-        {isFull || confirmed ? "그룹이 확정됐어요" : "동행자를 모으는 중이에요"}
+      <h1 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>
+        {iAmPending ? "수락을 기다리는 중이에요" : isFull || confirmed ? "그룹이 확정됐어요" : "동행자를 모으는 중이에요"}
       </h1>
+
+      {iAmPending && (
+        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 16px" }}>
+          다른 동행자가 신청을 확인하면 알려드릴게요. 그동안 채팅으로 먼저 인사해보세요!
+        </p>
+      )}
 
       {respondError && (
         <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px" }}>{respondError}</p>
       )}
 
-      {pendingOthers.map((p) => (
+      {!iAmPending && pendingOthers.map((p) => (
         <div key={p.id} style={{ background: "#fff", border: "1px solid rgba(36,21,18,0.08)", borderRadius: 14, padding: 14, marginBottom: 12 }}>
           <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 6 }}>
             새로운 동행 신청이 왔어요
@@ -296,7 +310,7 @@ function GroupChatScreen({ candidate, onComplete }) {
         </button>
       </div>
 
-      {!isFull && !confirmed && (
+      {!iAmPending && !isFull && !confirmed && (
         <div style={{ background: "#FCE4E2", borderRadius: 14, padding: 14, marginBottom: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 10px" }}>정원이 다 차지 않았어요</p>
           <button
@@ -330,11 +344,17 @@ function GroupChatScreen({ candidate, onComplete }) {
         </div>
       </div>
 
-      {boardingError && (
+      {iAmPending && (
+        <p style={{ fontSize: 12, color: "#8A7A76", textAlign: "center", margin: "0 0 10px" }}>
+          수락되면 탑승 확인을 진행할 수 있어요.
+        </p>
+      )}
+
+      {!iAmPending && boardingError && (
         <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px", textAlign: "center" }}>{boardingError}</p>
       )}
 
-      {boardingResult && (
+      {!iAmPending && boardingResult && (
         <p
           style={{
             fontSize: 13,
@@ -350,7 +370,7 @@ function GroupChatScreen({ candidate, onComplete }) {
         </p>
       )}
 
-      {boardingResult ? (
+      {!iAmPending && (boardingResult ? (
         <button
           onClick={onComplete}
           className="btn-primary"
@@ -389,7 +409,7 @@ function GroupChatScreen({ candidate, onComplete }) {
         >
           {boarding ? "확인 중..." : "탑승 확인"}
         </button>
-      )}
+      ))}
     </div>
   );
 }
