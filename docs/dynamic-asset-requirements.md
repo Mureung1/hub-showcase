@@ -201,16 +201,27 @@ interface SoundAsset {
 
 Needed sounds:
 
+- Desktop click/select
 - Quest complete
 - Recovery success
 - Level up
 - Window open
 - Gentle hover or select
 - Default cyber-purr voice for each manager/persona
+- Electronic manager laugh reaction
+- Electronic manager disappointed reaction
+- Electronic manager encouragement reaction
 - Blink transition soft focus sound
 - Ladder climb
 - Platform jump/land
 - Window escape
+
+Music window assets:
+
+- Use preselected `.wav` files under `public/assets/sounds/music/`.
+- The first implementation uses a fixed playlist manifest, not user file upload.
+- Controls: play, pause, next track.
+- Next track wraps from the last track back to the first track.
 
 Default behavior:
 

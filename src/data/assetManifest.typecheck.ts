@@ -85,8 +85,16 @@ if (resolvePetStageFromLevel(3) !== "stage-2" || !getUnlockedPetStages(6).includ
   throw new Error("Pet stage unlock rules must follow level thresholds");
 }
 
-if (getRenderablePetStage(defaultLumiPetId, "stage-1") !== "stage-2") {
-  throw new Error("Stage-1 must fall back to renderable stage-2 for accepted managers");
+if (getRenderablePetStage(defaultLumiPetId, "stage-1") !== "stage-1") {
+  throw new Error("Pink manager Stage 1 idle candidate must be renderable for accepted managers");
+}
+
+if (getLumiAnimationAsset("idle", defaultLumiPetId, "stage-1").stage !== "stage-1") {
+  throw new Error("Pink manager Stage 1 idle must use the baby idle candidate");
+}
+
+if (getLumiAnimationAsset("happy", defaultLumiPetId, "stage-1").stage !== "stage-2") {
+  throw new Error("Locked Pink manager Stage 1 motions must fall back to Stage 2 assets");
 }
 
 if (getRenderablePetStage("planaria", "stage-4") !== "stage-1") {

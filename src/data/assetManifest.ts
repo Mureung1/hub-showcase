@@ -177,6 +177,7 @@ export interface FutureAssetSlot {
 }
 
 const planariaStage1Path = "/assets/lumi/planaria-stage-1";
+const pinkManagerStage1CandidatePath = "/assets/lumi/pink-manager-stage-1-production-candidates";
 const planariaFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 60 };
 const stage2PetFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
 const stage2PetHangingAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
@@ -308,6 +309,23 @@ const stage2PetCatalog = Object.fromEntries(
   };
 };
 
+const pinkManagerStage1IdleAnimation: SpriteAnimationAsset = {
+  id: "pink-manager-stage-1-idle",
+  petId: "pink-manager",
+  stage: "stage-1",
+  src: `${pinkManagerStage1CandidatePath}/pink-manager-stage-1-idle-sheet-v1.png`,
+  sheetWidth: 256,
+  sheetHeight: 64,
+  frameWidth: 64,
+  frameHeight: 64,
+  frameCount: 4,
+  fps: 4,
+  loop: true,
+  states: ["idle"],
+  reducedMotionFrame: 0,
+  anchor: stage2PetFloatAnchor,
+};
+
 export const petAnimationCatalog: PetAnimationCatalog = {
   planaria: {
     "stage-1": {
@@ -320,7 +338,13 @@ export const petAnimationCatalog: PetAnimationCatalog = {
       hiding: planariaStage1Animation("hiding", 5, { type: "peek-edge", x: 53, y: 32 }),
     },
   },
-  ...stage2PetCatalog,
+  "pink-manager": {
+    "stage-1": {
+      idle: pinkManagerStage1IdleAnimation,
+    },
+    ...stage2PetCatalog["pink-manager"],
+  },
+  "glass-frog": stage2PetCatalog["glass-frog"],
 };
 
 function getAvailablePetStage(petId: PetId, stage: PetStageId): PetStageId {
@@ -329,6 +353,14 @@ function getAvailablePetStage(petId: PetId, stage: PetStageId): PetStageId {
   if (catalog?.[fallbackLumiStage]) return fallbackLumiStage;
   const firstAvailableStage = (Object.keys(catalog ?? {}) as PetStageId[])[0];
   return firstAvailableStage ?? fallbackLumiStage;
+}
+
+function getAvailablePetStageForState(petId: PetId, stage: PetStageId, state: PetAnimationState): PetStageId {
+  const catalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>> | undefined;
+  if (catalog?.[stage]?.[state]) return stage;
+  if (catalog?.[fallbackLumiStage]?.[state]) return fallbackLumiStage;
+  const firstStageWithState = (Object.keys(catalog ?? {}) as PetStageId[]).find((candidateStage) => catalog?.[candidateStage]?.[state]);
+  return firstStageWithState ?? getAvailablePetStage(petId, stage);
 }
 
 function getRenderablePetId(petId: PetId): PetId {
@@ -352,7 +384,8 @@ export function getRenderablePetStage(petId: PetId, stage: PetStageId): PetStage
 
 export function getLumiAnimationAsset(state: LumiSpriteState, petId: PetId = defaultLumiPetId, stage: PetStageId = fallbackLumiStage) {
   const renderablePetId = getRenderablePetId(petId);
-  const renderableStage = getAvailablePetStage(renderablePetId, stage);
+  const requestedState = state === "resting" ? "idle" : state === "hover" ? "happy" : state;
+  const renderableStage = getAvailablePetStageForState(renderablePetId, stage, requestedState);
 
   if (state === "resting") {
     const idle = getPetAnimationAsset(renderablePetId, renderableStage, "idle");

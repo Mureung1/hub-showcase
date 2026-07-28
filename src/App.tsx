@@ -9,6 +9,7 @@ import {
   getUnlockedPetStages,
   projectionModeAssets,
   interactionObjectAssets,
+  soundAssets,
   defaultLumiPetId,
   lumiMoodToSpriteState,
   resolvePetStageFromLevel,
@@ -35,13 +36,16 @@ import type { ManagerBehaviorIntent } from "./domain/managerBehaviorIntent";
 import { getPersonaLine, resolveManagerPersona, type ManagerPersona } from "./domain/managerPersonaPolicy";
 import type { BehaviorContext, PetBehaviorMood, PetBehaviorRecentEvent, PetBehaviorStyle } from "./domain/petBehaviorStateMachine";
 import { createRecoveryQuest, type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
+import { getRecoveryRewardCandidates } from "./domain/rewardProgression";
+import { resolveSoundAssetId, type SoundEvent } from "./domain/soundPolicy";
+import { createRuleFallbackStatEvaluation, type StatDelta, type StatKey } from "./domain/statGrowth";
 import "./styles.css";
 
 type AppScreen = "manager-select" | "wizard" | "manager-created" | "desktop";
 type QuestStatus = "draft" | "active" | "success" | "failed" | "recovery";
 type ManagerTone = "calm" | "friendly" | "firm";
 type QuestSize = "tiny" | "balanced" | "challenge";
-type WindowId = "quest" | "runner" | "failure" | "recovery" | "manager" | "profile" | "journal" | "trash" | "pixelTvProperties" | "ladderObject" | "platformObject";
+type WindowId = "quest" | "runner" | "failure" | "recovery" | "manager" | "profile" | "journal" | "trash" | "settings" | "pixelTvProperties" | "ladderObject" | "platformObject";
 type QuestLogSyncStatus = "idle" | "loading" | "saving" | "success" | "error";
 type BlinkFocusMode = "start_day" | "end_day" | "outside_transition";
 type PixelTvMode = "default" | "projection";
@@ -72,6 +76,7 @@ interface ManagerState {
   behaviorStyle: PetBehaviorStyle;
   unlockedStages: PetStageId[];
   selectedStage: PetStageId | null;
+  soundEnabled: boolean;
 }
 
 
@@ -145,7 +150,6 @@ interface ManagerRuntimeStateInput {
 interface StartMenuProps {
   questStatus: QuestStatus;
   onOpenWindow: (id: WindowId) => void;
-  onOpenQuest: () => void;
   onExitService: () => void;
   onRestart: () => void;
 }
@@ -213,6 +217,12 @@ interface ManagerWindowProps {
   petAway?: boolean;
 }
 
+interface SettingsWindowProps {
+  manager: ManagerState;
+  onSelectStage: (stage: PetStageId) => void;
+  onToggleSound: () => void;
+}
+
 interface ProfileWindowProps {
   profile: UserProfile;
   onSave: (profile: UserProfile) => void;
@@ -238,6 +248,7 @@ interface XpWindowProps {
   onMove?: (position: WindowPosition) => void;
   onResize?: (size: WindowSize) => void;
   onMeasure?: (rect: WindowRect) => void;
+  onMinimize?: (() => void) | undefined;
   onClose?: (() => void) | undefined;
 }
 
@@ -295,6 +306,7 @@ const initialWindowPositions: Record<WindowId, WindowPosition> = {
   profile: { x: 170, y: 104 },
   journal: { x: 285, y: 392 },
   trash: { x: 895, y: 405 },
+  settings: { x: 610, y: 142 },
   pixelTvProperties: { x: 360, y: 185 },
   ladderObject: { x: 650, y: 294 },
   platformObject: { x: 735, y: 350 },
@@ -331,6 +343,7 @@ const windowLabels: Record<WindowId, string> = {
   profile: "내 프로필",
   journal: "기록 노트",
   trash: "휴지통",
+  settings: "설정",
   pixelTvProperties: "Pixel TV 속성",
   ladderObject: "사다리",
   platformObject: "평지",
@@ -345,6 +358,7 @@ const windowTitleIcons: Record<WindowId, string> = {
   profile: "P",
   journal: "N",
   trash: "T",
+  settings: "S",
   pixelTvProperties: "TV",
   ladderObject: "L",
   platformObject: "_",
@@ -356,6 +370,7 @@ const desktopIconAssetIds: Partial<Record<WindowId, DesktopIconId>> = {
   profile: "profile",
   journal: "journal",
   trash: "trash",
+  settings: "theme-settings",
   pixelTvProperties: "pixel-tv",
 };
 
@@ -367,6 +382,7 @@ const windowIconAssetIds: Partial<Record<WindowId, DesktopIconId>> = {
   profile: "profile",
   journal: "journal",
   trash: "trash",
+  settings: "theme-settings",
 };
 
 const legacyWindowIconAssets: Partial<Record<WindowId, string>> = {
@@ -391,6 +407,32 @@ const questTypeLabels: Record<QuestType, string> = {
   time: "시간형",
   quantity: "수량형",
   action: "행동형",
+};
+
+const statLabels: Record<StatKey, string> = {
+  diligence: "성실성",
+  persistence: "끈기",
+  creativity: "창의성",
+  knowledge: "지식",
+  strength: "힘",
+  agility: "민첩함",
+  stamina: "체력",
+  charm: "매력",
+};
+
+const rewardCandidateLabels: Record<string, string> = {
+  character_animation: "동작",
+  desktop_theme: "테마",
+  sound: "사운드",
+  memory_fragment: "기억 조각",
+  gentle_recovery_tone: "복구 톤",
+};
+
+const stageLabels: Record<PetStageId, string> = {
+  "stage-1": "Stage 1",
+  "stage-2": "Stage 2",
+  "stage-3": "Stage 3",
+  "stage-4": "Stage 4",
 };
 
 const toneLines: Record<ManagerTone, string> = {
@@ -438,6 +480,7 @@ const defaultManager: ManagerState = {
   behaviorStyle: "balanced",
   unlockedStages: ["stage-1"],
   selectedStage: null,
+  soundEnabled: false,
 };
 
 const selectableManagerPets: Array<{
@@ -482,7 +525,14 @@ function writeStorage<T>(key: string, value: T) {
 function normalizeManager(manager: ManagerState): ManagerState {
   const unlockedStages = manager.unlockedStages?.length ? manager.unlockedStages : getUnlockedPetStages(manager.level);
   const selectedStage = manager.selectedStage && unlockedStages.includes(manager.selectedStage) ? manager.selectedStage : null;
-  return { ...manager, petId: manager.petId ?? defaultLumiPetId, behaviorStyle: normalizeBehaviorStyle(manager.behaviorStyle), unlockedStages, selectedStage };
+  return {
+    ...manager,
+    petId: manager.petId ?? defaultLumiPetId,
+    behaviorStyle: normalizeBehaviorStyle(manager.behaviorStyle),
+    unlockedStages,
+    selectedStage,
+    soundEnabled: manager.soundEnabled === true,
+  };
 }
 
 function normalizeBehaviorStyle(value: unknown): PetBehaviorStyle {
@@ -610,6 +660,10 @@ function getManagerDisplayStage(manager: ManagerState): PetStageId {
   return manager.selectedStage ?? resolvePetStageFromLevel(manager.level);
 }
 
+function getNewlyUnlockedStages(previousStages: PetStageId[], nextStages: PetStageId[]) {
+  return nextStages.filter((stage) => !previousStages.includes(stage));
+}
+
 function toDeadlineAt(deadline: string) {
   const match = deadline.match(/오늘\s+(\d{2}):(\d{2})/);
   if (!match) return null;
@@ -624,10 +678,29 @@ function createQuestEventRequest(
   result: NonNullable<CreateQuestEventRequest["result"]>,
   expDelta: number,
   managerMoodAfter: ManagerState["mood"],
-  options: { failureReason?: string | null; previousQuestTitle?: string | null; managerLine?: string | null } = {},
+  options: {
+    failureReason?: string | null;
+    previousQuestTitle?: string | null;
+    managerLine?: string | null;
+    managerBefore?: ManagerState;
+    managerAfter?: ManagerState;
+    soundEnabled?: boolean;
+  } = {},
 ): CreateQuestEventRequest {
+  const eventType = getQuestEventType(result);
+  const growthQuestType = result === "recovery" ? "recovery" : quest.type;
+  const growthEventType = result === "recovery" ? "recovery_completed" : result === "failed" ? "quest_failed" : "quest_completed";
+  const statEvaluation = createRuleFallbackStatEvaluation({ questType: growthQuestType, eventType: growthEventType, difficulty: quest.difficulty });
+  const statDeltas = statEvaluation.statDeltas;
+  const rewardCandidates = getRewardCandidates(result);
+  const recoveryRewardCandidates = getRecoveryRewardCandidates(growthEventType);
+  const unlockedStagesAfter = options.managerAfter?.unlockedStages ?? options.managerBefore?.unlockedStages ?? [];
+  const stageUnlocked = options.managerBefore && options.managerAfter ? getNewlyUnlockedStages(options.managerBefore.unlockedStages, options.managerAfter.unlockedStages) : [];
+  const soundEvent = getSoundEventForResult(result, options.managerAfter);
+  const soundAssetId = soundEvent ? getRuntimeSoundAssetId(soundEvent, options.soundEnabled === true) : null;
+
   return {
-    type: getQuestEventType(result),
+    type: eventType,
     quest: {
       title: quest.title,
       type: quest.type,
@@ -646,7 +719,16 @@ function createQuestEventRequest(
     metadata: {
       questType: quest.type,
       difficulty: quest.difficulty,
-      rewardCandidates: getRewardCandidates(result),
+      statDeltas,
+      statBudget: statEvaluation.statBudget,
+      primaryStats: statEvaluation.primaryStats,
+      statEvaluationReason: statEvaluation.reason,
+      statEvaluationSource: "rule_fallback",
+      rewardCandidates: [...new Set([...rewardCandidates, ...recoveryRewardCandidates])],
+      unlockedStagesAfter,
+      stageUnlocked,
+      soundEvent,
+      soundAssetId,
       futureContextTargets: ["personalized_manager", "web_day_flow", "reward_system"],
     },
   };
@@ -662,6 +744,56 @@ function getRewardCandidates(result: NonNullable<CreateQuestEventRequest["result
   if (result === "failed") return ["gentle_recovery_tone"];
   if (result === "recovery") return ["memory_fragment", "character_animation"];
   return ["character_animation", "desktop_theme", "sound"];
+}
+
+function getSoundEventForResult(result: NonNullable<CreateQuestEventRequest["result"]>, manager?: ManagerState): SoundEvent {
+  if (manager && manager.exp === 0 && manager.level > 1) return "level_up";
+  if (result === "recovery") return "recovery";
+  return result === "success" ? "complete" : "cyber_purr";
+}
+
+function getRuntimeSoundAssetId(event: SoundEvent, soundEnabled: boolean) {
+  const assetId = resolveSoundAssetId(soundAssets, event, soundEnabled);
+  if (!assetId) return null;
+  const asset = soundAssets.find((candidate) => candidate.id === assetId);
+  if (!asset || asset.src.includes("placeholder")) return null;
+  return asset.id;
+}
+
+function getQuestLogStatDeltas(log: QuestLog): StatDelta[] {
+  const value = log.metadata?.statDeltas;
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+    const stat = item.stat;
+    const amount = item.amount;
+    if (!isStatKey(stat) || typeof amount !== "number") return [];
+    return [{ stat, amount }];
+  });
+}
+
+function getQuestLogRewardCandidates(log: QuestLog) {
+  const value = log.metadata?.rewardCandidates;
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function getQuestLogStageUnlocks(log: QuestLog) {
+  const value = log.metadata?.stageUnlocked;
+  if (!Array.isArray(value)) return [];
+  return value.filter(isPetStageId);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStatKey(value: unknown): value is StatKey {
+  return typeof value === "string" && value in statLabels;
+}
+
+function isPetStageId(value: unknown): value is PetStageId {
+  return typeof value === "string" && value in stageLabels;
 }
 
 function createManagerContextLine(context: ManagerContext, persona: ManagerPersona) {
@@ -680,14 +812,33 @@ function useWindowManager(
   const [windowPositions, setWindowPositions] = useState<Record<WindowId, WindowPosition>>(initialPositions);
   const [windowSizes, setWindowSizes] = useState<Partial<Record<WindowId, WindowSize>>>(initialSizes);
   const [windowRects, setWindowRects] = useState<Partial<Record<WindowId, WindowRect>>>({});
-  const activeWindow = openWindows[openWindows.length - 1];
+  const [minimizedWindows, setMinimizedWindows] = useState<WindowId[]>([]);
+  const [focusedWindow, setFocusedWindow] = useState<WindowId | null>(initialOpenWindows[initialOpenWindows.length - 1] ?? null);
+  const visibleWindows = openWindows.filter((windowId) => !minimizedWindows.includes(windowId));
+  const activeWindow = focusedWindow && visibleWindows.includes(focusedWindow) ? focusedWindow : visibleWindows[visibleWindows.length - 1];
 
   function openWindow(id: WindowId) {
-    setOpenWindows((current) => [...current.filter((windowId) => windowId !== id), id]);
+    setOpenWindows((current) => (current.includes(id) ? current : [...current, id]));
+    setMinimizedWindows((current) => current.filter((windowId) => windowId !== id));
+    setFocusedWindow(id);
   }
 
   function closeWindow(id: WindowId) {
-    setOpenWindows((current) => current.filter((windowId) => windowId !== id));
+    setOpenWindows((current) => {
+      const nextWindows = current.filter((windowId) => windowId !== id);
+      setFocusedWindow((currentFocused) => (currentFocused === id ? nextWindows[nextWindows.length - 1] ?? null : currentFocused));
+      return nextWindows;
+    });
+    setMinimizedWindows((current) => current.filter((windowId) => windowId !== id));
+  }
+
+  function minimizeWindow(id: WindowId) {
+    setMinimizedWindows((current) => (current.includes(id) ? current : [...current, id]));
+    setFocusedWindow((currentFocused) => {
+      if (currentFocused !== id) return currentFocused;
+      const nextVisibleWindows = openWindows.filter((windowId) => windowId !== id && !minimizedWindows.includes(windowId));
+      return nextVisibleWindows[nextVisibleWindows.length - 1] ?? null;
+    });
   }
 
   function moveWindow(id: WindowId, position: WindowPosition) {
@@ -716,11 +867,18 @@ function useWindowManager(
   }
 
   function setWorkflowWindows(nextWindows: WindowId[]) {
-    setOpenWindows((current) => replaceWorkflowWindows(current, nextWindows));
+    setOpenWindows((current) => {
+      const nextOpenWindows = replaceWorkflowWindows(current, nextWindows);
+      setMinimizedWindows((minimized) => minimized.filter((windowId) => nextOpenWindows.includes(windowId) && !nextWindows.includes(windowId)));
+      return nextOpenWindows;
+    });
+    setFocusedWindow(nextWindows[nextWindows.length - 1] ?? null);
   }
 
   function resetOpenWindows(nextWindows: WindowId[]) {
     setOpenWindows(nextWindows);
+    setMinimizedWindows([]);
+    setFocusedWindow(nextWindows[nextWindows.length - 1] ?? null);
   }
 
   function resetWindowPositions() {
@@ -732,18 +890,24 @@ function useWindowManager(
       id,
       position: windowPositions[id],
       size: windowSizes[id],
-      zIndex: 10 + openWindows.indexOf(id),
+      zIndex: (activeWindow === id ? 40 : 10) + openWindows.indexOf(id),
       isActive: activeWindow === id,
       onFocus: () => openWindow(id),
       onMove: (position: WindowPosition) => moveWindow(id, position),
       onResize: (size: WindowSize) => resizeWindow(id, size),
       onMeasure: (rect: WindowRect) => measureWindow(id, rect),
+      onMinimize: () => minimizeWindow(id),
       onClose: () => closeWindow(id),
     };
   }
 
+  function isWindowVisible(id: WindowId) {
+    return openWindows.includes(id) && !minimizedWindows.includes(id);
+  }
+
   return {
     activeWindow,
+    isWindowVisible,
     closeWindow,
     openWindow,
     openWindows,
@@ -789,6 +953,7 @@ export default function App() {
   const [questStatus, setQuestStatus] = useState<QuestStatus>("draft");
   const {
     activeWindow,
+    isWindowVisible,
     openWindow,
     openWindows,
     resetOpenWindows,
@@ -1193,8 +1358,9 @@ export default function App() {
     const result = questStatus === "recovery" ? "recovery" : "success";
     recordOutcomeStreak("success");
     const eventLine = getPersonaLine("quest_completed", getManagerPersona(manager, profile));
+    const nextManager = addExp(manager, quest.rewardExp, eventLine);
     setManager((current) => addExp(current, quest.rewardExp, getPersonaLine("quest_completed", getManagerPersona(current, profile))));
-    void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: eventLine }));
+    void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: eventLine, managerBefore: manager, managerAfter: nextManager, soundEnabled: manager.soundEnabled }));
     setQuestStatus("success");
     setWorkflowWindows(["manager"]);
   }
@@ -1208,7 +1374,7 @@ export default function App() {
   function createRecovery() {
     recordOutcomeStreak("failed");
     setPreviousQuestTitle(quest.title);
-    void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: getPersonaLine("quest_failed", getManagerPersona(manager, profile)) }));
+    void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: getPersonaLine("quest_failed", getManagerPersona(manager, profile)), managerBefore: manager, managerAfter: manager, soundEnabled: manager.soundEnabled }));
     setQuest(createRecoveryQuest(quest));
     setQuestStatus("recovery");
     setWorkflowWindows(["recovery", "manager"]);
@@ -1225,13 +1391,28 @@ export default function App() {
     if (questStatus === "draft") setQuest(createQuest(nextProfile));
   }
 
-  const showRecoveryHidingPet = questStatus === "recovery" && openWindows.includes("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
-  const showQuestHangingPet = questStatus === "draft" && openWindows.includes("quest") && questOutcomeStreak.result === "success" && questOutcomeStreak.count >= 2;
+  function selectManagerStage(stage: PetStageId) {
+    setManager((current) => {
+      if (!current.unlockedStages.includes(stage)) return current;
+      return { ...current, selectedStage: stage };
+    });
+  }
+
+  function toggleManagerSound() {
+    setManager((current) => ({ ...current, soundEnabled: !current.soundEnabled }));
+  }
+
+  const showRecoveryHidingPet = questStatus === "recovery" && isWindowVisible("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
+  const showQuestHangingPet = questStatus === "draft" && isWindowVisible("quest") && questOutcomeStreak.result === "success" && questOutcomeStreak.count >= 2;
   const showOutsidePet = outsidePet.phase !== "inside" && outsidePet.phase !== "blink";
+  const renderedOutsidePet = useMemo(
+    () => resolveRenderedOutsidePet(outsidePet, interactionObjects),
+    [outsidePet, interactionObjects],
+  );
   const managerRuntimeState = createManagerRuntimeState({
     manager,
     displayStage: managerDisplayStage,
-    outsidePet,
+    outsidePet: renderedOutsidePet,
     showQuestHangingPet,
     showRecoveryHidingPet,
     showOutsidePet,
@@ -1272,27 +1453,28 @@ export default function App() {
         />
       )}
 
-      {openWindows.includes("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
+      {isWindowVisible("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
       {managerRuntimeState.windowInteraction === "quest_hanging" && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerRuntimeState.stage} placement="below-quest" position={windowPositions.quest} measuredRect={windowRects.quest} zIndex={10 + openWindows.indexOf("quest")} />}
-      {openWindows.includes("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
-      {openWindows.includes("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
-      {openWindows.includes("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
+      {isWindowVisible("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
+      {isWindowVisible("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
+      {isWindowVisible("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
       {managerRuntimeState.windowInteraction === "recovery_hiding" && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerRuntimeState.stage} placement="beside-recovery" position={windowPositions.recovery} measuredRect={windowRects.recovery} zIndex={10 + openWindows.indexOf("recovery")} />}
-      {openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={managerRuntimeState.petAwayFromManagerWindow} /></XpWindow>}
-      {openWindows.includes("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
-      {openWindows.includes("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
-      {openWindows.includes("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}
-      {openWindows.includes("pixelTvProperties") && (
+      {isWindowVisible("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={managerRuntimeState.petAwayFromManagerWindow} /></XpWindow>}
+      {isWindowVisible("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
+      {isWindowVisible("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
+      {isWindowVisible("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}
+      {isWindowVisible("settings") && <XpWindow className="settings-window" title="설정" {...windowChrome("settings")}><SettingsWindow manager={manager} onSelectStage={selectManagerStage} onToggleSound={toggleManagerSound} /></XpWindow>}
+      {isWindowVisible("pixelTvProperties") && (
         <XpWindow className="pixel-tv-properties-window" title="Pixel TV 속성" {...windowChrome("pixelTvProperties")}>
           <PixelTvPropertiesWindow connected={pixelTvConnected} onToggle={togglePixelTvMode} />
         </XpWindow>
       )}
-      {openWindows.includes("ladderObject") && (
+      {isWindowVisible("ladderObject") && (
         <XpWindow className="interaction-object-window ladder-object-window" title="사다리" resizeAxis="vertical" {...windowChrome("ladderObject")}>
           <LadderObjectWindow />
         </XpWindow>
       )}
-      {openWindows.includes("platformObject") && (
+      {isWindowVisible("platformObject") && (
         <XpWindow className="interaction-object-window platform-object-window" title="평지" resizeAxis="horizontal" {...windowChrome("platformObject")}>
           <PlatformObjectWindow />
         </XpWindow>
@@ -1301,7 +1483,7 @@ export default function App() {
       <BlinkFocusOverlay effect={blinkFocus} onDone={finishBlinkFocus} />
       <footer className="taskbar">
         <button className="start-button" type="button" onClick={() => setStartOpen((value) => !value)}><span className="start-mark" />시작</button>
-        {startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openAppWindow} onOpenQuest={openTodayQuest} onExitService={exitService} onRestart={restartService} />}
+        {startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openAppWindow} onExitService={exitService} onRestart={restartService} />}
         <div className="taskbar-items">
           {openWindows.map((windowId) => (
             <button className={activeWindow === windowId ? "active" : ""} key={windowId} type="button" onClick={() => openWindow(windowId)}>
@@ -1316,31 +1498,19 @@ export default function App() {
   );
 }
 
-function StartMenu({ questStatus, onOpenWindow, onOpenQuest, onExitService, onRestart }: StartMenuProps) {
+function StartMenu({ questStatus, onOpenWindow, onExitService, onRestart }: StartMenuProps) {
   return (
     <div className="start-menu">
       <strong>Manager.exe</strong>
-      <button type="button" onClick={onOpenQuest}>
-        <WindowIconMark id="quest" className="menu-icon" />
-        <span>오늘의 퀘스트</span>
-      </button>
       {questStatus === "active" && (
         <button type="button" onClick={() => onOpenWindow("runner")}>
           <WindowIconMark id="runner" className="menu-icon" />
           <span>QuestRunner.exe</span>
         </button>
       )}
-      <button type="button" onClick={() => onOpenWindow("manager")}>
-        <WindowIconMark id="manager" className="menu-icon" />
-        <span>매니저</span>
-      </button>
-      <button type="button" onClick={() => onOpenWindow("profile")}>
-        <WindowIconMark id="profile" className="menu-icon" />
-        <span>내 프로필</span>
-      </button>
-      <button type="button" onClick={() => onOpenWindow("journal")}>
-        <WindowIconMark id="journal" className="menu-icon" />
-        <span>기록 노트</span>
+      <button type="button" onClick={() => onOpenWindow("settings")}>
+        <WindowIconMark id="settings" className="menu-icon" />
+        <span>설정</span>
       </button>
       <button type="button" onClick={onRestart}>
         <span className="menu-icon text-icon" aria-hidden="true">RS</span>
@@ -1570,16 +1740,88 @@ function ManagerWindow({ manager, petAway }: ManagerWindowProps) {
   );
 }
 
+function SettingsWindow({ manager, onSelectStage, onToggleSound }: SettingsWindowProps) {
+  const displayStage = getManagerDisplayStage(manager);
+  return (
+    <section className="settings-panel">
+      <div className="settings-group">
+        <strong>외형</strong>
+        <span>해금된 모습 중 하나를 선택할 수 있어.</span>
+        <div className="stage-switcher" aria-label="해금 외형 선택">
+          {manager.unlockedStages.map((stage) => (
+            <button className={displayStage === stage ? "selected" : ""} key={stage} type="button" onClick={() => onSelectStage(stage)}>
+              {stageLabels[stage]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="settings-group">
+        <strong>사운드</strong>
+        <span>효과음과 매니저 소리를 켜거나 끌 수 있어.</span>
+        <button className={`sound-toggle ${manager.soundEnabled ? "enabled" : ""}`} type="button" onClick={onToggleSound}>
+          {manager.soundEnabled ? "사운드 켜짐" : "사운드 꺼짐"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function ProfileWindow({ profile, onSave }: ProfileWindowProps) {
   const [draft, setDraft] = useState(profile);
   return <form className="profile-edit" onSubmit={(event) => { event.preventDefault(); onSave(draft); }}><div className="profile-form"><label htmlFor="profile-edit-name">이름</label><input className="xp-input" id="profile-edit-name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /><label htmlFor="profile-edit-nickname">닉네임</label><input className="xp-input" id="profile-edit-nickname" value={draft.nickname} onChange={(event) => setDraft({ ...draft, nickname: event.target.value })} /><label htmlFor="profile-edit-goal">주요 목표</label><textarea className="xp-textarea" id="profile-edit-goal" value={draft.goal} onChange={(event) => setDraft({ ...draft, goal: event.target.value })} /><label htmlFor="profile-edit-minutes">가능 시간</label><select className="xp-select" id="profile-edit-minutes" value={draft.dailyMinutes} onChange={(event) => setDraft({ ...draft, dailyMinutes: Number(event.target.value) })}><option value={15}>15분</option><option value={30}>30분</option><option value={45}>45분</option><option value={60}>60분</option></select></div><div className="window-actions"><button className="xp-button primary" type="submit">저장</button></div></form>;
 }
 
 function JournalWindow({ logs, sync }: JournalWindowProps) {
-  return <section className="journal-panel">{sync.message && <p className={`sync-notice ${sync.status}`}>{sync.message}</p>}{logs.length === 0 ? <div className="journal-empty"><strong>아직 기록이 없어.</strong><p>퀘스트를 완료하거나 복구하면 이곳에 기록돼.</p></div> : <div className="notes-list">{logs.map((log) => <div className="note-row" key={log.id}><span className={`log-mark ${log.result}`}>{questLogMarks[log.result]}</span><span>{log.title} <small>{log.reason ?? questLogResultLabels[log.result]}</small></span><strong>EXP +{log.exp}</strong></div>)}</div>}</section>;
+  return (
+    <section className="journal-panel">
+      {sync.message && <p className={`sync-notice ${sync.status}`}>{sync.message}</p>}
+      {logs.length === 0 ? (
+        <div className="journal-empty">
+          <strong>아직 기록이 없어.</strong>
+          <p>퀘스트를 완료하거나 복구하면 이곳에 기록돼.</p>
+        </div>
+      ) : (
+        <div className="notes-list">
+          {logs.map((log) => {
+            const statDeltas = getQuestLogStatDeltas(log);
+            const rewards = getQuestLogRewardCandidates(log);
+            const stageUnlocks = getQuestLogStageUnlocks(log);
+            return (
+              <div className="note-row" key={log.id}>
+                <span className={`log-mark ${log.result}`}>{questLogMarks[log.result]}</span>
+                <span>
+                  {log.title} <small>{log.reason ?? questLogResultLabels[log.result]}</small>
+                  {(statDeltas.length > 0 || rewards.length > 0 || stageUnlocks.length > 0) && (
+                    <span className="log-chips">
+                      {statDeltas.map((delta) => (
+                        <span className="log-chip stat" key={`${log.id}-${delta.stat}`}>
+                          {statLabels[delta.stat]} +{delta.amount}
+                        </span>
+                      ))}
+                      {stageUnlocks.map((stage) => (
+                        <span className="log-chip reward" key={`${log.id}-${stage}`}>
+                          {stageLabels[stage]} 해금
+                        </span>
+                      ))}
+                      {rewards.map((reward) => (
+                        <span className="log-chip reward" key={`${log.id}-${reward}`}>
+                          {rewardCandidateLabels[reward] ?? reward}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </span>
+                <strong>EXP +{log.exp}</strong>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
 }
 
-function XpWindow({ id, title, titlebarIcon, className, children, position, size, resizeAxis = "none", zIndex, isActive, onFocus, onMove, onResize, onMeasure, onClose }: XpWindowProps) {
+function XpWindow({ id, title, titlebarIcon, className, children, position, size, resizeAxis = "none", zIndex, isActive, onFocus, onMove, onResize, onMeasure, onMinimize, onClose }: XpWindowProps) {
   const windowRef = useRef<HTMLElement | null>(null);
   const [dragOffset, setDragOffset] = useState<WindowPosition | null>(null);
   const [resizeStart, setResizeStart] = useState<{ pointerX: number; pointerY: number; size: WindowSize } | null>(null);
@@ -1705,7 +1947,7 @@ function XpWindow({ id, title, titlebarIcon, className, children, position, size
         <WindowIconMark id={id} fallback={icon} className="titlebar-icon" />
         <span className="titlebar-name">{title}</span>
         <div className="window-buttons">
-          <button type="button" aria-label="minimize" disabled />
+          <button type="button" aria-label="minimize" onClick={onMinimize} disabled={!onMinimize} />
           <button type="button" aria-label="maximize" disabled />
           <button type="button" aria-label="close" onClick={onClose} disabled={!onClose} />
         </div>
@@ -2043,6 +2285,18 @@ function resolveOutsidePetAttachmentPosition(object: InteractionObject, animatio
   }
 
   return { x: object.rect.x + object.rect.width / 2 - outsidePetSpriteSize / 2, y: outsidePetFieldRect.y };
+}
+
+function resolveRenderedOutsidePet(pet: OutsidePetState, objects: InteractionObject[]): OutsidePetState {
+  if (pet.phase !== "free_roam" || pet.animation !== "climbing" || !pet.attachedObjectId) return pet;
+
+  const attachedObject = objects.find((object) => object.id === pet.attachedObjectId);
+  if (!attachedObject || attachedObject.type !== "ladder") return pet;
+
+  return {
+    ...pet,
+    position: resolveOutsidePetAttachmentPosition(attachedObject, "climbing"),
+  };
 }
 
 function resolveOutsidePetDirection(pet: OutsidePetState, objects: InteractionObject[]): 1 | -1 {

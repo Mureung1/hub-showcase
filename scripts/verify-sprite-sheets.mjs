@@ -18,6 +18,21 @@ const canonicalStage2PetIds = [
   "glass-frog",
 ];
 
+const candidateSheets = [
+  {
+    petId: "pink-manager",
+    stage: "stage-1",
+    state: "idle",
+    frameCount: 4,
+    fps: 4,
+    loop: true,
+    playbackFrames: [0, 1, 2, 3],
+    anchor: "float x=32 y=58",
+    folder: "pink-manager-stage-1-production-candidates",
+    filename: "pink-manager-stage-1-idle-sheet-v1.png",
+  },
+];
+
 const motionSpecs = [
   { state: "idle", frameCount: 4, fps: 4, loop: true, playbackFrames: [0, 1, 2, 3] },
   { state: "focused", frameCount: 4, fps: 6, loop: true, playbackFrames: [0, 1, 2, 3] },
@@ -55,8 +70,9 @@ let failures = 0;
 
 function verifySheet(sheet) {
   const stage = sheet.stage ?? "stage-2";
-  const filename = `${sheet.petId}-${stage}-${sheet.state}-sheet.png`;
-  const path = join(root, "public", "assets", "lumi", `${sheet.petId}-${stage}`, filename);
+  const filename = sheet.filename ?? `${sheet.petId}-${stage}-${sheet.state}-sheet.png`;
+  const folder = sheet.folder ?? `${sheet.petId}-${stage}`;
+  const path = join(root, "public", "assets", "lumi", folder, filename);
 
   try {
     const png = readPngSize(path);
@@ -81,6 +97,10 @@ function verifySheet(sheet) {
 
 for (const sheet of planariaSheets) {
   verifySheet({ ...sheet, stage: "stage-1", loop: true, playbackFrames: Array.from({ length: sheet.frameCount }, (_, frame) => frame) });
+}
+
+for (const sheet of candidateSheets) {
+  verifySheet(sheet);
 }
 
 for (const petId of canonicalStage2PetIds) {
