@@ -1,6 +1,6 @@
 ﻿# 현재 진행 상황
 
-마지막 갱신: 2026-07-24
+마지막 갱신: 2026-07-28
 
 ## 완료
 
@@ -84,8 +84,11 @@
 - 2026-07-24 `managerRuntimeState` 상위 모델 도입: manager mood, window edge interaction, outside transition/free roam, sprite animation 우선순위를 하나의 runtime view model로 묶고, 창 밖 free roam 후보 선택을 `petBehaviorStateMachine` 도메인 규칙에 연결
 - 2026-07-27 `T-709/T-711` 1순위 연결: `ManagerBehaviorIntent`와 `ManagerBehaviorAdapter`를 React outside free roam runtime에 rule fallback으로 연결하고, 매니저 선택/말투/성공·실패 streak가 제한된 persona behaviorStyle과 behavior bias로 반영되도록 정리
 - 2026-07-27 Persona 범위 재정의: 현재 sprite motion 수가 제한적이므로 Persona의 핵심은 응원 문구, 피드백 방식, 퀘스트 제안 성향으로 두고, animation은 공통 motion set에 약한 behavior bias만 주는 구조로 정리
+- 2026-07-28 `T-712/T-703/T-713` 2순위 연결: Quest Event metadata에 stat delta, reward 후보, stage 해금, sound hint를 추가하고, 기록 노트 chip과 시작 메뉴의 설정 창 stage 선택/사운드 toggle로 확인할 수 있게 연결. 실제 cyber-purr 음원은 아직 placeholder/fallback 상태로 유지
+- 2026-07-28 LLM-style 퀘스트 능력치 평가 경계 추가: 난이도별 stat budget을 `easy=3`, `normal=7`, `hard=15`로 두고, LLM이 제안한 능력치 분배는 총합/주요 능력치 비율/단일 능력치 최대치 검증을 통과해야 저장되는 구조로 정리. 현재 runtime은 같은 계약의 `rule_fallback` 평가를 사용
 - 2026-07-24 창 밖 `returning` phase 추가: Lumi가 free roam 이후 가까운 화면 끝으로 걸어가며 `hiding`을 연출하고 manager window 상태로 복귀할 수 있게 했으며, reduced-motion 설정은 behavior animation mapping에 반영
 - 2026-07-24 매니저 선택 flow 추가: 첫 실행 시 `Manager.exe 선택` 창에서 pink-manager/glass-frog/planaria를 고른 뒤 설치 마법사로 이어지고, 시작 메뉴의 `다시 시작`으로 profile/manager/log flow를 초기화해 다시 선택할 수 있음
+- 2026-07-27 핑크 매니저 baby Stage 1 idle-only 후보를 생성하고 manifest/review set에 연결: `public/assets/lumi/pink-manager-stage-1-production-candidates/pink-manager-stage-1-idle-sheet-v1.png`. Stage 1은 사다리 등 상호작용 motion을 잠그는 단계로 두고, idle 외 요청은 Stage 2 asset fallback을 사용한다
 
 ## 검증
 
@@ -128,15 +131,18 @@
 - 2026-07-24 manager runtime state 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 2026-07-24 outside returning/reduced-motion 연결 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 2026-07-24 manager selection/restart flow 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
+- 2026-07-27 핑크 매니저 Stage 1 idle sheet 규격 확인 통과: `256x64`, `64x64 x 4 frames`, RGBA. `npm.cmd run verify:sprites`, `npm.cmd run typecheck` 통과
+- 2026-07-28 2순위 성장/보상/사운드 연결 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
+- 2026-07-28 LLM-style stat evaluation TDD 검증 통과: `npm.cmd test -- src/domain/statGrowth.test.ts`, `npm.cmd run typecheck`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
 ## 다음 작업
 
 - 최종 목표 1순위: `T-709`, `T-711` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결. TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 `managerRuntimeState`와 React Lumi animation state에 연결하고, 실제 LLM API 없이 rule fallback으로 검증한다.
-- 최종 목표 2순위: `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반. 퀘스트 능력치 growth, 외적 성장 보상, cyber-purr 사운드 후보를 Quest Event metadata, 기록 노트, 매니저 상태와 연결한다.
+- 최종 목표 2순위: `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반. metadata/기록 노트/stage 선택/sound toggle 1차 연결은 완료했고, 브라우저 Network 수동 확인과 실제 cyber-purr 음원 제작/검수가 남았다.
 - 최종 목표 3순위: `T-721`, `T-724`, `T-725` Pixel TV 묶음. 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 flow로 정리한다.
-- 최종 목표 4순위: `T-708` 하루의 흐름 Web theme. 현실 시간 기반 해/달 asset, 빛의 강도/색상, XP desktop 배경 상태를 연결한다.
+- 최종 목표 4순위: `T-708`, `T-726`, `T-727` 하루의 흐름/사운드 분위기. 현실 시간 기반 해/달 asset, 빛의 강도/색상, XP desktop 배경 상태를 연결하고, 음악창 wav playlist와 클릭/전자매니저 웃음·실망·격려 효과음을 muted 기본값으로 연결한다.
 - 공통 flow 정돈: 첫 진입, 매니저 선택, 퀘스트 실행, 기록 노트, Pixel TV, 시작 메뉴 재시작 흐름이 자연스럽게 이어지는지 계속 수동 검수한다.
 - React 화면은 이미 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 중심으로 분리되어 있고, 다음 분리는 UI 파일 추가보다 `useQuestFlow`, `useQuestLogSync`, `usePixelTvMode` 같은 상태 hook 단위가 우선
 - 기록 노트 API 로딩/빈 상태/실패 상태 polish
@@ -151,4 +157,5 @@
 - Supabase env가 없는 새 환경에서는 서버가 memory store로 fallback하므로 `/api/health`로 storage mode를 먼저 확인해야 함
 - 이번 세션에서는 dev server가 실행 중이 아니어서 `/api/health` UI 재검증은 수행하지 못함
 - 현재 PowerShell 환경에 `Path`/`PATH` 중복이 있어 `Start-Process` 기반 자동 dev-server smoke test는 실패할 수 있음. 수동 브라우저 검증 또는 깨끗한 shell에서 `npm.cmd run dev`로 확인 필요
+- cyber-purr 사운드는 manifest placeholder만 있으므로 현재는 사운드를 켜도 깨진 오디오를 재생하지 않도록 fallback 처리하며, 실제 음원 파일 제작 후 재검증 필요
 - GitHub Wiki는 코드 PR에 포함되지 않아 별도 동기화 필요

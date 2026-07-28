@@ -21,6 +21,7 @@
 | `06-api-db-vertical-slice.md` | API 계약, Supabase 저장, FE-BE-DB 연결, Data API 권한 |
 | `07-react-migration-timeline.md` | React 전환 이후 전체 작업 흐름 |
 | `08-tdd-domain-rules.md` | TDD, 도메인 규칙, 행동 state machine, LLM intent 경계 |
+| `09-manager-runtime-interaction.md` | 매니저 runtime state, outside roaming, ladder/platform interaction |
 
 ## ChatGPT 프로젝트에 넣을 추천 파일
 

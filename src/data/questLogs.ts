@@ -7,6 +7,7 @@ export interface QuestLog {
   exp: number;
   reason?: string;
   createdAt: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface QuestLogInput {
@@ -14,6 +15,7 @@ export interface QuestLogInput {
   result: QuestLogResult;
   exp: number;
   reason?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export const questLogResultLabels: Record<QuestLogResult, string> = {
@@ -40,6 +42,7 @@ export function createQuestLog(input: QuestLogInput, now = new Date()): QuestLog
     exp: input.exp,
     reason: input.reason,
     createdAt: formatQuestLogDate(now),
+    metadata: input.metadata,
   };
 }
 

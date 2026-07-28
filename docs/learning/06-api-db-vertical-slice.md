@@ -19,10 +19,13 @@
 - Vite middleware
 - /api/health storage mode
 - service_role key
+- Quest Event metadata
+- manager context
+- refresh persistence
 
 ## Why It Matters
 
-This topic explains how quest completion, failure, recovery, server storage, and journal rendering connect without breaking the XP desktop flow.
+This topic explains how quest completion, failure, recovery, server storage, manager context, and journal rendering connect without breaking the XP desktop flow.
 
 ## Reference Code Paths
 
@@ -49,11 +52,13 @@ This topic explains how quest completion, failure, recovery, server storage, and
 - `fetchManagerContextViaApi` and how Lumi state is updated
 - `QuestLogSyncState` and journal error notice rendering
 - `CreateQuestEventRequest`, `QuestEventResponseItem`, `ManagerContext`, and common API error shape
+- Quest Event `metadata`: stat deltas, reward candidates, stage unlocks, sound event
 - Supabase REST insert/select mapping in `createSupabaseQuestEventStore`
 - Memory store behavior when Supabase env is not configured
 - `/api/health` result: `memory` vs `supabase`
 - Data API permission gap: table exists but REST insert/select can still fail without grants
 - `.env.example` names only: no real keys
+- refresh/reconnect: local profile and manager are loaded first, then server logs and manager context are fetched
 
 ## ChatGPT Questions
 
@@ -63,3 +68,4 @@ This topic explains how quest completion, failure, recovery, server storage, and
 - How should API failure states be designed so the user flow does not break?
 - Explain why `service_role` belongs in the Hono server environment, not React code.
 - Why can `/api/health` show Supabase configured while `POST /api/quest-events` still fails?
+- Explain how `ManagerContext` is derived from quest event records and then reflected back into React state.

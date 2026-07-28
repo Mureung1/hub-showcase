@@ -136,6 +136,7 @@ function toQuestLog(item: QuestEventResponseItem & { result: QuestLogResult }): 
     exp: item.expDelta,
     reason: item.failureReason ?? undefined,
     createdAt: item.createdAt,
+    metadata: item.metadata,
   };
 }
 

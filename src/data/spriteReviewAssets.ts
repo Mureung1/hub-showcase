@@ -24,10 +24,12 @@ export interface SpriteReviewSet {
   petId: PetId;
   stage: PetStageId;
   path: string;
+  states?: readonly PetMotionState[];
   fileForState: (state: PetMotionState) => string;
 }
 
 const pinkManagerCanonicalPath = "/assets/lumi/pink-manager-stage-2";
+const pinkManagerStage1CandidatePath = "/assets/lumi/pink-manager-stage-1-production-candidates";
 const pinkManagerCandidatePath = "/assets/lumi/pink-manager-stage-2-production-candidates";
 const glassFrogCanonicalPath = "/assets/lumi/glass-frog-stage-2";
 const glassFrogCandidatePath = "/assets/lumi/glass-frog-stage-2-production-candidates";
@@ -139,6 +141,17 @@ const specs: readonly SpriteReviewSpec[] = [
 
 export const spriteReviewSets = [
   {
+    id: "pink-manager-stage-1-production-candidates",
+    label: "Pink Manager Stage 1 - Idle Candidate",
+    description:
+      "Baby pink manager Stage 1 candidate. Stage 1 intentionally exposes idle only while interaction motions stay locked.",
+    petId: "pink-manager",
+    stage: "stage-1",
+    path: pinkManagerStage1CandidatePath,
+    states: ["idle"],
+    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet-v1.png`,
+  },
+  {
     id: "pink-manager-stage-2-canonical",
     label: "Pink Manager Stage 2 - Canonical",
     description: "Main app runtime sheets in the stable canonical folder.",
@@ -224,7 +237,9 @@ export function getSpriteReviewSet(id: SpriteReviewSetId): SpriteReviewSet {
 
 export function getSpriteReviewAnimations(setId: SpriteReviewSetId) {
   const reviewSet = getSpriteReviewSet(setId);
-  return specs.map((spec): SpriteAnimationAsset & { notes: string } => ({
+  const reviewSpecs = reviewSet.states ? specs.filter((spec) => reviewSet.states?.includes(spec.state)) : specs;
+
+  return reviewSpecs.map((spec): SpriteAnimationAsset & { notes: string } => ({
     id: `${reviewSet.id}-${spec.state}-review`,
     petId: reviewSet.petId,
     stage: reviewSet.stage,

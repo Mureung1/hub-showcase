@@ -83,7 +83,7 @@
 |---|---|---|---|---|---|
 | T-701 | P1 | Done | 확장 기능 asset/data manifest 설계 | sprite, icon, theme, reward, sound, projection, interaction object manifest가 코드와 문서에 정의됐고, runtime/candidate/review naming 기준이 정리됐다 | dynamic-asset-requirements.md |
 | T-702 | P1 | Review | 캐릭터 애니메이션 적용 | 루미 상태별 Canvas sprite animation과 hover/reaction 상태가 적용됐고, 브라우저 시각 확인이 남았다 | design-system.md |
-| T-703 | P1 | Backlog | 외적 성장 보상 구현 | 레벨 또는 보상 해금에 따라 루미 accessory/growth variant가 바뀐다 | future-expansion-plan.md |
+| T-703 | P1 | Review | 외적 성장 보상 구현 | 레벨에 따른 stage 해금과 해금된 stage 선택 UI가 시작 메뉴의 설정 창에 연결됐고, Stage 3/4 실제 sprite asset은 fallback 상태로 남았다 | future-expansion-plan.md |
 | T-704 | P1 | Backlog | 데스크톱 배경 테마 구현 | 해금된 wallpaper theme를 선택하고 XP desktop에 적용할 수 있다 | future-expansion-plan.md |
 | T-705 | P1 | Backlog | 창 테마 구현 | 제목 표시줄, 창 프레임, taskbar skin이 theme token으로 바뀐다 | future-expansion-plan.md |
 | T-706 | P1 | Backlog | 기억 조각 구현 | 완료/복구 Quest Event가 기록 노트 또는 월드에 memory fragment로 표시된다 | db-schema.md |
@@ -92,8 +92,8 @@
 | T-709 | P1 | Review | 개인화 AI 매니저 adapter 구현 | ManagerBehaviorIntent 정규화와 behavior adapter가 React manager runtime에 rule fallback으로 연결됐고, 실제 LLM API 연결은 `T-603` 고도화 범위로 분리됐다 | agent-design.md |
 | T-710 | P1 | Review | blink focus scene 구현 | 서비스 진입과 서비스 나가기 직전에 눈 깜빡임/blur/fade overlay가 동작하고, 새로고침 시에는 재생되지 않으며 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
 | T-711 | P1 | Review | 전자 매니저 Persona와 제한 선택지 설계 | 매니저 선택과 말투 선택이 `balanced/adventurous/shy` behaviorStyle로 제한 매핑되고, 성공/실패 streak가 behavior bias로 반영된다. 브라우저 체감 검수가 남았다 | future-expansion-plan.md |
-| T-712 | P1 | In Progress | 퀘스트 능력치 growth 설계 | 퀘스트 타입/결과별 stat delta 도메인 규칙이 TDD로 추가됐고, Quest Event metadata 저장/표시 연결이 남았다 | db-schema.md |
-| T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
+| T-712 | P1 | Review | 퀘스트 능력치 growth 설계 | 퀘스트 타입/결과별 stat delta가 Quest Event metadata와 기록 노트 chip 표시로 연결됐고, 브라우저 Network 수동 확인이 남았다 | db-schema.md |
+| T-713 | P1 | In Progress | cyber-purr 사운드 탐색 및 적용 후보 정리 | muted 기본값, sound policy, 설정 창 sound toggle, placeholder asset fallback은 연결됐고 실제 cyber-purr 음원 제작/검수가 남았다 | dynamic-asset-requirements.md |
 | T-718 | P1 | Backlog | Supabase 확장 테이블 정규화 계획 | `quest_logs.metadata`에서 반복 조회가 필요한 profile, persona, stats, reward, appearance, memory, theme, device preference 데이터를 별도 테이블 후보로 승격하는 계획이 있다 | db-schema.md |
 | T-714 | P2 | Review | 사다리 interaction prototype | 사다리 오브젝트가 XP 창 안 pixel-art로 전환됐고, 창 하단 테두리 resize가 interaction rect와 연결됐다. 브라우저 위치/조작감 수동 검수가 남았다 | dynamic-asset-requirements.md |
 | T-715 | P2 | Review | 평지 interaction prototype | 평지 오브젝트가 XP 창 안 pixel-art로 전환됐고, 창 오른쪽 테두리 resize가 interaction rect와 연결됐다. 브라우저 위치/조작감 수동 검수가 남았다 | dynamic-asset-requirements.md |
@@ -109,6 +109,8 @@
 | T-723 | P2 | Backlog | 웹캠 손 제스처 탐색 prototype | 손 제스처가 공개 탐색 화면의 보조 입력으로 동작하고 마우스/터치 fallback이 유지된다 | future-expansion-plan.md |
 | T-724 | P2 | Review | Single-plane Pepper projection mode 설계 | Pixel TV 우클릭 속성 창에서 projection 연결 변환/원복이 가능하고, 변환된 TV 아이콘 실행 시 hidden route `?projection=pepper`로 연결된다 | dynamic-asset-requirements.md |
 | T-725 | P2 | Backlog | Pixel TV photo capture 설계 | TV에 나온 사용자 화면과 전자 매니저 projection 장면을 함께 캡처하는 screenshot flow, 권한 안내, 저장/공유 범위가 정의된다 | future-expansion-plan.md |
+| T-726 | P2 | Backlog | 음악창 desktop player 구현 | 음악창 desktop icon을 클릭하면 재생 패널이 열리고, 미리 지정한 wav playlist를 재생/일시정지/다음곡으로 조작하며 마지막 곡 다음은 첫 곡으로 순환한다 | dynamic-asset-requirements.md |
+| T-727 | P2 | Backlog | XP/매니저 효과음 set 구현 | 클릭음, 전자매니저 웃음/실망/격려 효과음을 muted 기본값과 함께 UI action 및 manager mood에 연결한다 | dynamic-asset-requirements.md |
 
 ## 3~4주차 P2: 문서·발표·운영
 
@@ -156,7 +158,7 @@
 1. `T-709`, `T-711` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결: ManagerContext, rule fallback, 제한된 ManagerBehaviorIntent, Persona style을 React manager runtime에 연결한다.
 2. `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반: 퀘스트 능력치 growth, 외적 성장 보상, cyber-purr 사운드 후보를 묶어 매니저 성장감을 만든다.
 3. `T-721`, `T-724`, `T-725` Pixel TV 묶음: 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 흐름으로 정리한다.
-4. `T-708` 하루의 흐름 web theme: 현실 시간 기반 해/달 asset, 빛의 강도/색상, 배경 상태를 XP desktop에 반영한다.
+4. `T-708`, `T-726`, `T-727` 하루의 흐름/사운드 분위기: 현실 시간 기반 해/달 asset, 빛의 강도/색상, 배경 상태를 XP desktop에 반영하고, 음악창 wav playlist와 클릭/웃음/실망/격려 효과음을 muted 기본값으로 연결한다.
 
 공통 보조 작업: 첫 진입, 매니저 선택, 퀘스트 실행, 기록 노트, Pixel TV, 시작 메뉴 재시작 흐름이 자연스럽게 이어지도록 flow polish를 병행한다.
 

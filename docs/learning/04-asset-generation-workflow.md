@@ -1,71 +1,53 @@
 # Asset Generation Workflow
 
-## 키워드
+## Keywords
 
-- reference image
-- prompt
-- negative prompt
-- transparent background
+- pixel art asset
 - sprite sheet
-- animation manifest
+- canonical runtime folder
+- production candidate
+- asset manifest
+- sprite review tool
+- contact sheet
 - idle/hover icon pair
-- state-based character sheet
+- interaction object tiles
+- transparent background
+- alpha cleanup
+- animation placement
 - reduced-motion fallback
-- desktop wallpaper
-- icon kit
-- reward object sheet
-- visual FX sheet
-- public assets
-- image-rendering: pixelated
 
-## 왜 공부하나
+## Why It Matters
 
-ChatGPT로 이미지를 생성해도 웹에서 쓰려면 파일명, 위치, 투명 배경, 크기, CSS 적용 규칙이 맞아야 한다.
+생성한 PNG를 앱에서 안정적으로 쓰려면 파일명, 프레임 수, 투명 배경, 중심축, runtime 경로가 맞아야 한다. 특히 캐릭터 얼굴이나 몸통 alpha가 약하면 배경이 sprite에 비쳐 보일 수 있다.
 
-## 폴더 위치
+## Reference Code Paths
 
-- docs/design-references
-- docs/asset-prompts
-- public/assets
-- public/assets/background
-- public/assets/icons
-- public/assets/lumi
-- public/assets/lumi/planaria-stage-1
-- src/data/assetManifest.ts
-- src/data/assetManifest.typecheck.ts
-- docs/dynamic-asset-requirements.md
+- `src/data/assetManifest.ts`
+- `src/data/spriteReviewAssets.ts`
+- `src/components/SpriteSheetReviewTool.tsx`
+- `src/components/CanvasSpriteAnimator.tsx`
+- `src/data/windowPetPlacements.ts`
+- `scripts/verify-sprite-sheets.mjs`
+- `docs/dynamic-asset-requirements.md`
+- `docs/asset-prompts/README.md`
+- `docs/asset-prompts/08-interaction-objects/window-platform-ladder-tiles.md`
+- `public/assets/lumi/`
+- `public/assets/interaction-objects/`
+- `public/assets/_review/`
 
-## 생성 순서
+## Parts To Check
 
-1. docs/design-references에 기준 이미지 저장
-2. docs/asset-prompts에서 프롬프트 선택
-3. ChatGPT 이미지 생성
-4. 결과물을 public/assets 아래로 저장
-5. `src/data/assetManifest.ts`에서 상태별 경로로 연결
-6. 작은 크기에서 식별 가능한지 확인
-7. sprite sheet는 중심축, 기준선, frame count를 확인
+- `SpriteAnimationAsset`: `frameWidth`, `frameHeight`, `frameCount`, `fps`, `playbackFrames`, `anchor`
+- `CanvasSpriteAnimator`: canvas draw, mirrorX, reduced motion frame
+- `getPetAnimationAsset()` and `getRenderablePetStage()`
+- `getInteractionObjectAsset()`: ladder/platform tile asset mapping
+- review tool placement localStorage와 runtime `WindowPetInteraction`
+- sprite 얼굴/몸통의 불투명도와 transparent background 품질
+- ladder/platform tile이 repeat-x 또는 repeat-y에 적합한지
 
-## 에셋별 저장 기준
+## ChatGPT Questions
 
-- 배경: public/assets/background/background.png
-- 매니저/Lumi: public/assets/lumi
-- 상태별 sprite sample: public/assets/lumi/planaria-stage-1
-- 아이콘: public/assets/icons
-- 보상: public/assets/rewards
-- FX: public/assets/fx
-- 검수용 contact sheet: public/assets/_review
-
-## 확인할 부분
-
-- `DesktopIconAsset`의 idle/hover 경로
-- `SpriteAnimationAsset`의 frame 크기와 fps
-- `image-rendering: pixelated` 적용 위치
-- hover/reaction 상태가 UI에 노출되는 시점
-
-## ChatGPT 질문 예시
-
-- 이 프롬프트를 Windows XP 픽셀 배경 생성용으로 더 구체화해줘.
-- 투명 배경 캐릭터 스프라이트를 만들려면 프롬프트에 무엇을 넣어야 해?
-- 생성한 PNG를 React/Vite 프로젝트에서 관리하는 폴더 구조를 추천해줘.
-- sprite sheet에서 중심축이 흔들리면 React/CSS 재생 시 어떤 문제가 생겨?
-- asset manifest를 쓰면 컴포넌트 코드가 어떻게 단순해져?
+- sprite sheet에서 중심축과 바닥선이 흔들리면 React canvas 재생에서 어떤 문제가 생겨?
+- production candidate와 canonical runtime folder를 나누는 이유를 이 프로젝트 기준으로 설명해줘.
+- ladder/platform 같은 반복 타일 asset을 만들 때 어떤 조건을 지켜야 해?
+- PNG alpha가 약해서 배경이 비쳐 보일 때 asset 쪽과 CSS 쪽에서 각각 어떻게 보정할 수 있어?
