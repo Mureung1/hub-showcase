@@ -39,19 +39,13 @@ function checkEnvironmentVariables() {
 
 checkEnvironmentVariables();
 
-// CORS 설정 (개발/프로덕션 환경 구분)
-const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    process.env.FRONTEND_URL || 'https://hub-opal-five.vercel.app'
-  ],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
-// Middleware
-app.use(cors(corsOptions));
+// CORS 설정 (모든 origin 허용 - 프로덕션에서는 제한 권장)
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.static('uploads')); // 업로드된 파일 정적 서빙
 app.use('/ai-output', express.static('ai-pipeline/output')); // AI 생성 파일 정적 서빙
