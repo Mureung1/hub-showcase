@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Home, CalendarClock, CircleUser, Upload } from "lucide-react";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000"
 
 // 베이지 배경(#F3EEE4)과 겹치지 않는 파스텔 팔레트
 // bg: 카드 전체 배경 / iconBg: 아이콘 원(칩 테두리) / text: 텍스트·화살표 색
