@@ -141,7 +141,11 @@ function SaveFeaturePreview() {
         <div className="feature-save-followup">
           <strong>인사이트를 저장했어요</strong>
           <p>제목·메모·분류는 저장 후에도 더할 수 있어요</p>
-          <div className="feature-save-options" aria-label="선택 정보 예시">
+          <div
+            aria-label="선택 정보 예시"
+            className="feature-save-options"
+            role="group"
+          >
             <span>제목 (선택)</span>
             <span>한 줄 메모 (선택)</span>
             <span>카테고리 (선택)</span>
@@ -174,7 +178,11 @@ function CategoryFeaturePreview() {
       <div className="feature-scene__body">
         <div className="feature-category-filter">
           <strong>카테고리</strong>
-          <div aria-label="카테고리 예시" className="feature-category-chips">
+          <div
+            aria-label="카테고리 예시"
+            className="feature-category-chips"
+            role="group"
+          >
             <span>전체</span>
             <span className="is-selected">디자인</span>
             <span>개발</span>
@@ -216,7 +224,11 @@ function RetrieveFeaturePreview() {
         </div>
       </div>
       <div className="feature-scene__body">
-        <div className="feature-suggestions" aria-label="추천 상황 예시">
+        <div
+          aria-label="추천 상황 예시"
+          className="feature-suggestions"
+          role="group"
+        >
           <span>과제 참고자료 다시 찾기</span>
           <span>프로젝트에 쓸 자료 꺼내기</span>
           <span>디자인·개발 레퍼런스 찾기</span>

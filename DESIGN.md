@@ -7,29 +7,29 @@
 - `src/shared/config/design-system/tokens.ts`의 `designTokens`가 디자인 값의 단일 원천이다.
 - `src/shared/config/design-system/apply_design_tokens.ts`의 `applyDesignTokens()`만 토큰을 DOM의 CSS custom property로 주입한다.
 - 제품 CSS는 주입된 `var(--...)`만 소비한다. raw 색상이나 별도 런타임 테마 값을 화면 CSS에 복제하지 않는다.
-- 전역 순백색 `canvas`는 로그인 전 화면의 호환성을 위해 유지한다.
+- 전역 순백색 `canvas`는 기존 컴포넌트 호환과 명시적인 순백색 강조에 제한해 유지한다.
 - 인증 후 공통 셸은 기존 컴포넌트가 소비하는 `--color-canvas`를 `--color-surface`로 한정해, 카드와 입력을 따뜻한 흰색으로 맞춘다.
 
 ## 팔레트 역할
 
-| 역할                | 값        | TypeScript 원천                   | CSS 소비 변수           | 사용처                                |
-| ------------------- | --------- | --------------------------------- | ----------------------- | ------------------------------------- |
-| 인증 후 기본 배경색 | `#F4F1E9` | `designTokens.color.paper`        | `--color-paper`         | 인증 후 페이지 본문                   |
-| 카드·입력 배경색    | `#FFFDF8` | `designTokens.color.surface`      | `--color-surface`       | 카드, 입력, 상단바                    |
-| 전역 순백색         | `#FFFFFF` | `designTokens.color.canvas`       | `--color-canvas`        | 로그인 전 화면과 기존 컴포넌트 호환   |
-| 홈 대표 색상        | `#1358D8` | `designTokens.color.retrieveBlue` | `--color-retrieve-blue` | 홈의 제목과 검색 영역                 |
-| 보관함 대표 색상    | `#C94032` | `designTokens.color.libraryCoral` | `--color-library-coral` | 보관함의 제목과 검색 영역             |
-| 저장 대표 색상      | `#08765B` | `designTokens.color.saveGreen`    | `--color-save-green`    | 저장의 제목과 URL 입력 영역           |
-| Ink                 | `#151619` | `designTokens.color.ink`          | `--color-ink`           | 제목과 핵심 본문                      |
-| Charcoal            | `#25272D` | `designTokens.color.charcoal`     | `--color-charcoal`      | Primary action과 강한 경계            |
-| Graphite            | `#363940` | `designTokens.color.graphite`     | `--color-graphite`      | 일반 본문과 보조 설명                 |
-| Smoke               | `#667085` | `designTokens.color.smoke`        | `--color-smoke`         | 메타데이터와 placeholder              |
-| Ash                 | `#E1E2E5` | `designTokens.color.ash`          | `--color-ash`           | 기본 1px 경계와 구분선                |
-| Mist                | `#F3F3F5` | `designTokens.color.mist`         | `--color-mist`          | 선택 상태와 정적 loading 표면         |
-| Electric Blue       | `#0560FD` | `designTokens.color.electricBlue` | `--color-electric-blue` | focus, 정보 연결 강조, 로고 기본 색면 |
-| Signal Green        | `#047857` | `designTokens.color.signalGreen`  | `--color-signal-green`  | 성공 상태                             |
-| Amber               | `#F59E0B` | `designTokens.color.amber`        | `--color-amber`         | 주의, 카테고리 구분, 로고 강조 색면   |
-| Coral               | `#F04438` | `designTokens.color.coral`        | `--color-coral`         | 강한 주의와 카테고리 구분             |
+| 역할             | 값        | TypeScript 원천                   | CSS 소비 변수           | 사용처                                       |
+| ---------------- | --------- | --------------------------------- | ----------------------- | -------------------------------------------- |
+| 기본 배경색      | `#F4F1E9` | `designTokens.color.paper`        | `--color-paper`         | 인증 후 본문, 랜딩·로그인 브랜드와 기능 영역 |
+| 카드·입력 배경색 | `#FFFDF8` | `designTokens.color.surface`      | `--color-surface`       | 카드, 입력, 상단바, 로그인 영역              |
+| 전역 순백색      | `#FFFFFF` | `designTokens.color.canvas`       | `--color-canvas`        | 기존 호환 요소와 순백색 강조                 |
+| 홈 대표 색상     | `#1358D8` | `designTokens.color.retrieveBlue` | `--color-retrieve-blue` | 홈의 제목과 검색 영역                        |
+| 보관함 대표 색상 | `#C94032` | `designTokens.color.libraryCoral` | `--color-library-coral` | 보관함의 제목과 검색 영역                    |
+| 저장 대표 색상   | `#08765B` | `designTokens.color.saveGreen`    | `--color-save-green`    | 저장의 제목과 URL 입력 영역                  |
+| Ink              | `#151619` | `designTokens.color.ink`          | `--color-ink`           | 제목과 핵심 본문                             |
+| Charcoal         | `#25272D` | `designTokens.color.charcoal`     | `--color-charcoal`      | Primary action과 강한 경계                   |
+| Graphite         | `#363940` | `designTokens.color.graphite`     | `--color-graphite`      | 일반 본문과 보조 설명                        |
+| Smoke            | `#667085` | `designTokens.color.smoke`        | `--color-smoke`         | 메타데이터와 placeholder                     |
+| Ash              | `#E1E2E5` | `designTokens.color.ash`          | `--color-ash`           | 기본 1px 경계와 구분선                       |
+| Mist             | `#F3F3F5` | `designTokens.color.mist`         | `--color-mist`          | 선택 상태와 정적 loading 표면                |
+| Electric Blue    | `#0560FD` | `designTokens.color.electricBlue` | `--color-electric-blue` | focus, 정보 연결 강조, 로고 기본 색면        |
+| Signal Green     | `#047857` | `designTokens.color.signalGreen`  | `--color-signal-green`  | 성공 상태                                    |
+| Amber            | `#F59E0B` | `designTokens.color.amber`        | `--color-amber`         | 주의, 카테고리 구분, 로고 강조 색면          |
+| Coral            | `#F04438` | `designTokens.color.coral`        | `--color-coral`         | 강한 주의와 카테고리 구분                    |
 
 입력 오류는 `designTokens.color.errorInk`와 `--color-error-ink`를 사용한다. 상태는 색만으로 전달하지 않는다.
 
