@@ -176,7 +176,7 @@ export default function Guide() {
           </details>
           <details>
             <summary>이미지 파일이 없으면 프로젝트가 사라지나요?</summary>
-            <p>프로젝트 내용은 표시됩니다. <code>thumbnail.webp</code>가 없으면 기본 이미지가 나옵니다. <code>screenshots/home.webp</code>가 없으면 그 화면만 빠집니다.</p>
+            <p>프로젝트 내용은 표시됩니다. 파일이 없거나 경로·파일명이 실제 파일과 다르면 대표 이미지는 기본 이미지로 바뀝니다. 추가 화면은 문제가 있는 이미지만 빠집니다.</p>
           </details>
           <details>
             <summary>내용을 모두 작성해야 하나요?</summary>
