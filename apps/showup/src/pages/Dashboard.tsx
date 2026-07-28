@@ -6,6 +6,21 @@ import { getTopRiskyCustomers } from '@/services/customers'
 import { calculateDashboardStats } from '@/utils/dashboard'
 import type { CustomerSearchResult } from '@/types/schema'
 import type { ReservationWithId } from '@/services/reservations'
+import Icon from '@/components/ui/Icon'
+
+const dashboardDate = new Intl.DateTimeFormat('ko-KR', {
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long',
+})
+
+const statusLabel: Record<ReservationWithId['status'], string> = {
+  pending: '대기',
+  confirmed: '확정',
+  visited: '방문',
+  noShow: '노쇼',
+  cancelled: '취소',
+}
 
 const Dashboard = () => {
   const { user } = useAuthState()
@@ -54,19 +69,22 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="p-4 text-center text-gray-500">
-        <p>로딩 중...</p>
+      <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-slate-500 sm:px-6 lg:px-8">
+        로딩 중...
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-red-600 mb-2">{error}</p>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-xl border border-red-100 bg-red-50 p-5 text-sm">
+          <p className="font-medium text-red-700">{error}</p>
+          <p className="mt-1 text-red-600">잠시 후 다시 시도해 주세요.</p>
+        </div>
         <button
           onClick={() => window.location.reload()}
-          className="text-sm text-blue-600 hover:underline"
+          className="mt-4 min-h-11 rounded-lg bg-white px-4 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           다시 시도
         </button>
@@ -75,114 +93,176 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-4">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
-        <p className="text-sm text-gray-500 mt-1">오늘의 예약과 주의 고객을 확인하세요</p>
+    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+      <header className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600">
+            Overview
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">대시보드</h1>
+          <p className="mt-2 text-sm text-slate-600">오늘의 예약과 주의 고객을 한눈에 확인하세요.</p>
+        </div>
+        <p className="text-sm font-medium text-slate-500">{dashboardDate.format(new Date())}</p>
       </header>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500">오늘 예약</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{todayCount}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500">방문</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{todayVisited}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500">노쇼</p>
-          <p className="text-2xl font-bold text-red-600 mt-1">{todayNoShow}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500">월 노쇼율</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{noShowRate}%</p>
-        </div>
+      <div className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {[
+          { label: '오늘 예약', value: todayCount, icon: 'calendar' as const, tone: 'blue' },
+          { label: '방문', value: todayVisited, icon: 'check' as const, tone: 'green' },
+          { label: '노쇼', value: todayNoShow, icon: 'warning' as const, tone: 'red' },
+          { label: '월 노쇼율', value: `${noShowRate}%`, icon: 'dashboard' as const, tone: 'slate' },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="group rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium text-slate-600">{stat.label}</p>
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                  stat.tone === 'blue'
+                    ? 'bg-blue-50 text-blue-600'
+                    : stat.tone === 'green'
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : stat.tone === 'red'
+                        ? 'bg-rose-50 text-rose-600'
+                        : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                <Icon name={stat.icon} className="h-5 w-5" />
+              </span>
+            </div>
+            <p className="mt-5 text-3xl font-bold tracking-tight text-slate-900">{stat.value}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {stat.label === '월 노쇼율' ? '이번 달 기준' : '오늘 기준'}
+            </p>
+          </div>
+        ))}
       </div>
 
-      {/* Attention customers */}
-      <section className="bg-white rounded-xl p-4 shadow-sm mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">주의 고객</h2>
-          <Link
-            to="/app/customers"
-            className="text-sm text-blue-600 hover:underline font-medium"
-          >
-            전체 보기 →
-          </Link>
-        </div>
-        {attentionCustomers.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>등록된 주의 고객이 없습니다</p>
+      <div className="grid gap-5 lg:grid-cols-5">
+        {/* Attention customers */}
+        <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 lg:col-span-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                <Icon name="warning" className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">주의 고객</h2>
+                <p className="mt-0.5 text-xs text-slate-500">위험 등급 고객만 표시합니다</p>
+              </div>
+            </div>
+            <Link
+              to="/app/customers"
+              className="inline-flex min-h-10 items-center rounded-lg px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              전체 보기
+              <span aria-hidden="true" className="ml-1">→</span>
+            </Link>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {attentionCustomers.map((customer) => (
-              <Link
-                key={customer.id}
-                to={`/app/customers/${customer.id}`}
-                className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{customer.name}</p>
-                    <p className="text-sm text-gray-500 mt-1">{customer.phoneMasked}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-red-600">
-                      위험 {customer.riskStats.score}점
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      노쇼 {customer.riskStats.noShowCount}회
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="mt-5">
+            {attentionCustomers.length === 0 ? (
+              <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                  <Icon name="check" className="h-5 w-5" />
+                </span>
+                <p className="mt-3 text-sm font-semibold text-slate-800">현재 주의가 필요한 고객이 없습니다</p>
+                <p className="mt-1 max-w-xs text-xs leading-5 text-slate-500">
+                  고객 예약과 방문 기록이 쌓이면 위험 고객을 분석해 드립니다.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {attentionCustomers.map((customer) => (
+                  <Link
+                    key={customer.id}
+                    to={`/app/customers/${customer.id}`}
+                    className="block rounded-lg border border-slate-200 p-3.5 transition hover:border-rose-200 hover:bg-rose-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">{customer.name}</p>
+                        <p className="mt-1 text-xs text-slate-500">{customer.phoneMasked}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-bold text-rose-600">{customer.riskStats.score}점</p>
+                        <p className="mt-1 text-[11px] text-slate-500">노쇼 {customer.riskStats.noShowCount}회</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </section>
+        </section>
 
-      {/* Today's reservations */}
-      <section className="bg-white rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">오늘의 예약</h2>
-          <Link
-            to="/app/reservations"
-            className="text-sm text-blue-600 hover:underline font-medium"
-          >
-            전체 보기 →
-          </Link>
-        </div>
-        {todayReservations.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>오늘 예약이 없습니다</p>
+        {/* Today's reservations */}
+        <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 lg:col-span-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <Icon name="calendar" className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">오늘의 예약</h2>
+                <p className="mt-0.5 text-xs text-slate-500">{dashboardDate.format(new Date())}</p>
+              </div>
+            </div>
+            <Link
+              to="/app/reservations/new"
+              className="inline-flex min-h-10 items-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              + 예약 등록
+            </Link>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {todayReservations.map((res) => (
-              <Link
-                key={res.id}
-                to={`/app/reservations`}
-                className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{res.time}</p>
-                    <p className="text-sm text-gray-500 mt-1">{res.memo || '메모 없음'}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-700">
-                      {res.status === 'visited' ? '방문' : res.status === 'noShow' ? '노쇼' : res.status === 'cancelled' ? '취소' : '대기'}
-                    </p>
-                  </div>
+          <div className="mt-5">
+            {todayReservations.length === 0 ? (
+              <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <Icon name="calendar" className="h-5 w-5" />
+                </span>
+                <p className="mt-3 text-sm font-semibold text-slate-800">오늘 예정된 예약이 없습니다</p>
+                <p className="mt-1 text-xs text-slate-500">새 예약을 등록하면 이곳에서 확인할 수 있습니다.</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-slate-200">
+                <div className="hidden grid-cols-[5rem_1fr_auto] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:grid">
+                  <span>시간</span>
+                  <span>메모</span>
+                  <span>상태</span>
                 </div>
-              </Link>
-            ))}
+                <div className="divide-y divide-slate-100">
+                  {todayReservations.map((res) => (
+                    <Link
+                      key={res.id}
+                      to="/app/reservations"
+                      className="grid min-h-16 grid-cols-[4.5rem_1fr_auto] items-center gap-3 px-4 py-3 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:grid-cols-[5rem_1fr_auto] sm:gap-4"
+                    >
+                      <p className="text-sm font-bold text-slate-900">{res.time}</p>
+                      <p className="min-w-0 truncate text-sm text-slate-600">{res.memo || '메모 없음'}</p>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          res.status === 'visited'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : res.status === 'noShow'
+                              ? 'bg-rose-50 text-rose-700'
+                              : res.status === 'cancelled'
+                                ? 'bg-slate-100 text-slate-600'
+                                : 'bg-blue-50 text-blue-700'
+                        }`}
+                      >
+                        {statusLabel[res.status]}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </section>
+        </section>
+      </div>
     </div>
   )
 }
