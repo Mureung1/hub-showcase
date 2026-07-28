@@ -623,8 +623,15 @@ const loadFinancialStatements = async () => {
               <strong>-</strong>
             )}
           </article>
+ 
 
+          <article className="card stat-card">
+            <span></span>
+</article>
 
+ <article className="card stat-card">
+            <span></span>
+</article>
         </section>
 
         <section className="dashboard-grid">
