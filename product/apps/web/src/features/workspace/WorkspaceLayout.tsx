@@ -5,6 +5,7 @@ import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
+import { usePanelTextSize } from "./usePanelTextSize";
 
 export function WorkspaceLayout({
   model,
@@ -27,11 +28,13 @@ export function WorkspaceLayout({
     apiReadiness,
   } = model;
   const { market, nearby, marketAnalysis } = marketData;
+  const panelText = usePanelTextSize();
 
   return (
     <section
       id="analysis"
       className={`analysis-layout ${panels.filtersOpen ? "" : "is-filter-closed"} ${panels.inspectorOpen ? "" : "is-inspector-closed"}`}
+      data-panel-text-size={panelText.size}
       aria-label="상권 분석 작업 공간"
     >
       {panels.filtersOpen && (
@@ -41,6 +44,8 @@ export function WorkspaceLayout({
           supportedCategories={catalog.categories}
           catalogState={catalogDisplayState}
           onCatalogRetry={onCatalogRetry}
+          panelTextSize={panelText.size}
+          onPanelTextSizeChange={panelText.setSize}
           category={selection.categorySelection.name}
           categorySelection={selection.categorySelection}
           categoryCoverageReason={storefronts.categoryCoverageReason}
@@ -137,6 +142,8 @@ export function WorkspaceLayout({
           score={storefronts.score}
           categorySelection={selection.categorySelection}
           categoryCoverageReason={storefronts.categoryCoverageReason}
+          panelTextSize={panelText.size}
+          onPanelTextSizeChange={panelText.setSize}
           activeHour={selection.activeHour}
           sameCategoryCount={storefronts.sameCategoryCount}
           analysis={marketAnalysis.analysis}
