@@ -130,8 +130,8 @@ const Reservations = () => {
   })
 
   return (
-    <div className="p-4">
-      <header className="mb-4">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">예약 관리</h1>
@@ -139,7 +139,7 @@ const Reservations = () => {
           </div>
           <Link
             to="/app/reservations/new"
-            className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex h-11 min-w-28 shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             + 새 예약
           </Link>
@@ -147,8 +147,8 @@ const Reservations = () => {
       </header>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="mb-6 rounded-xl bg-white p-4 shadow-sm sm:p-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="filterDate" className="block text-sm font-medium text-gray-700 mb-1">
               날짜 필터
@@ -194,7 +194,7 @@ const Reservations = () => {
       </div>
 
       {/* Reservations list */}
-      <section className="bg-white rounded-xl p-4 shadow-sm">
+      <section className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">예약 목록</h2>
         
         {isLoading ? (

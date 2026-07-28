@@ -119,13 +119,16 @@ const NewReservation = () => {
   }
 
   return (
-    <div className="p-4">
-      <header className="mb-4">
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">새 예약</h1>
         <p className="text-sm text-gray-500 mt-1">고객을 선택하고 예약 정보를 입력하세요</p>
       </header>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-5 rounded-xl bg-white p-4 shadow-sm sm:p-6"
+      >
         {/* 고객 선택 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">고객</label>
@@ -179,11 +182,23 @@ const NewReservation = () => {
           />
         </div>
 
-        <div className="flex gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={() => navigate('/app/reservations')}>
+        <div className="flex justify-end gap-3 pt-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="h-11 min-w-28 px-4"
+            onClick={() => navigate('/app/reservations')}
+          >
             취소
           </Button>
-          <Button type="submit" variant="primary" disabled={isLoading}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            className="h-11 min-w-28 px-4"
+            disabled={isLoading}
+          >
             {isLoading ? '등록 중...' : '예약 생성'}
           </Button>
         </div>
