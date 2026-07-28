@@ -39,6 +39,26 @@ export async function getSubscriptions() {
   return data.items
 }
 
+export async function getDashboardSummary(month) {
+  const token = getToken()
+  const query = month ? `?month=${encodeURIComponent(month)}` : ''
+  const res = await fetch(`/api/subscriptions/dashboard${query}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    const error = new Error(data.error || '대시보드 정보를 불러오지 못했습니다.')
+    error.status = res.status
+    throw error
+  }
+
+  return data
+}
+
 export async function getSubscription(id) {
   const token = getToken()
   const res = await fetch(`/api/subscriptions/${id}`, {

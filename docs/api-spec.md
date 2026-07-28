@@ -159,15 +159,16 @@
 - 파티장(owner)으로 소유한 구독과 파티원(member)으로 가입한 구독을 모두 합쳐 반환.
 - `role`은 구독마다 달라질 수 있음.
 - 항상 현재 시점 기준 목록.
+- `createdAt`은 대시보드 월별 추이 계산(아래 `/dashboard` 구현 노트 참고)에 FE가 사용.
 
 **Response `200`**
 
 ```json
 {
   "items": [
-    { "id": "sub_1", "serviceName": "넷플릭스", "billingDay": 15, "memberCount": 4, "myAmount": 4250, "role": "owner" },
-    { "id": "sub_2", "serviceName": "왓챠", "billingDay": 18, "memberCount": 4, "myAmount": 3225, "role": "owner" },
-    { "id": "sub_3", "serviceName": "디즈니플러스", "billingDay": 3, "memberCount": 4, "myAmount": 3225, "role": "member" }
+    { "id": "sub_1", "serviceName": "넷플릭스", "billingDay": 15, "memberCount": 4, "myAmount": 4250, "role": "owner", "createdAt": "2026-05-10T00:00:00.000Z" },
+    { "id": "sub_2", "serviceName": "왓챠", "billingDay": 18, "memberCount": 4, "myAmount": 3225, "role": "owner", "createdAt": "2026-06-02T00:00:00.000Z" },
+    { "id": "sub_3", "serviceName": "디즈니플러스", "billingDay": 3, "memberCount": 4, "myAmount": 3225, "role": "member", "createdAt": "2026-07-01T00:00:00.000Z" }
   ]
 }
 ```
@@ -262,6 +263,7 @@
 
 - 지정한 달 기준, 총 구독료와 실지출 합계를 반환. 소유(owner)/가입(member) 구독의 `myAmount`를 모두 합산.
 - FE는 `GET /subscriptions`를 함께 호출해 화면을 조합.
+- **구현 노트**: 실제 정산(Settlement) 이력이 아니라 `Subscription.createdAt` 기준 추정치다 — 해당 구독이 그 달 말일 이전에 생성됐으면 현재 `subAmount`/`memberCount`만큼 그 달에도 지출했다고 가정해 역산한다. 과거 금액 변경이나 삭제된 구독 이력은 반영되지 않는다. `GET /subscriptions` 목록 응답에도 `createdAt`이 추가되어 FE가 최근 N개월 추이를 동일한 방식으로 클라이언트에서 계산할 수 있다.
 
 **Query**: `month` (예: `2026-07`, 생략 시 이번 달)
 
