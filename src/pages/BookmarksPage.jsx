@@ -92,7 +92,7 @@ function BookmarksPage() {
       {status === 'done' && displayJobs.length === 0 && (
         <EmptyState
           title="아직 북마크한 공고가 없어요"
-          description="갭 분석 결과에서 별 아이콘을 눌러 공고를 저장해보세요."
+          description="갭 분석 결과에서 체크 아이콘을 눌러 공고를 저장해보세요."
           actionLabel="갭 분석 시작하기"
           onAction={() => navigate('/filter')}
         />

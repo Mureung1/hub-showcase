@@ -1,10 +1,11 @@
 import { JOB_CATEGORY_STYLE, DEFAULT_CATEGORY_STYLE, STATUS_STYLE } from '../../constants/resultDisplay'
+import BookmarkIcon from '../icons/BookmarkIcon'
 
 function JobCard({ job, onClick, bookmarked, onToggleBookmark }) {
   const categoryStyle = JOB_CATEGORY_STYLE[job.job_category] || DEFAULT_CATEGORY_STYLE
   const statusStyle = STATUS_STYLE[job.status] || STATUS_STYLE.match
 
-  // job-card 자체가 <button>이라 별 아이콘을 진짜 <button>으로 중첩할 수 없다(무효한 HTML) —
+  // job-card 자체가 <button>이라 북마크 아이콘을 진짜 <button>으로 중첩할 수 없다(무효한 HTML) —
   // role="button" span으로 대체하고 클릭/키보드 둘 다 처리한다.
   function handleBookmarkClick(event) {
     event.stopPropagation()
@@ -51,7 +52,7 @@ function JobCard({ job, onClick, bookmarked, onToggleBookmark }) {
             aria-label={bookmarked ? '북마크 해제' : '북마크 추가'}
             title={bookmarked ? '북마크 해제' : '북마크 추가'}
           >
-            {bookmarked ? '★' : '☆'}
+            <BookmarkIcon filled={bookmarked} />
           </span>
         )}
         {job.statusLabel && (

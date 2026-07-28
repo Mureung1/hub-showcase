@@ -152,7 +152,7 @@ function ResultPage() {
   const matchCount = displayJobs.filter((j) => j.overallMatch).length
   const missingCount = displayJobs.length - matchCount
 
-  // 비로그인 상태에서 별 아이콘을 클릭하면 토글하지 않고 로그인 화면으로 보낸다(redirect로 현재 경로 유지).
+  // 비로그인 상태에서 북마크 아이콘을 클릭하면 토글하지 않고 로그인 화면으로 보낸다(redirect로 현재 경로 유지).
   function handleToggleBookmark(jobId) {
     if (!user) {
       navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`)

@@ -2,6 +2,7 @@ import { JOB_CATEGORY_STYLE, DEFAULT_CATEGORY_STYLE, STATUS_STYLE } from '../../
 import { describeComputerSkill } from '../../lib/gapAnalysis'
 import { getReferenceLink, getReferenceCaption } from '../../constants/referenceLinks'
 import { useModalA11y } from '../../hooks/useModalA11y'
+import BookmarkIcon from '../icons/BookmarkIcon'
 
 function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
   const boxRef = useModalA11y(Boolean(job), onClose)
@@ -30,7 +31,7 @@ function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
               aria-label={bookmarked ? '북마크 해제' : '북마크 추가'}
               title={bookmarked ? '북마크 해제' : '북마크 추가'}
             >
-              {bookmarked ? '★' : '☆'}
+              <BookmarkIcon filled={bookmarked} />
             </button>
           )}
         </div>
