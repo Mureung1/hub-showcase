@@ -7,9 +7,12 @@ import com.spendmate.service.AgentService;
 import com.spendmate.service.ExpenseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -82,6 +85,18 @@ public class ExpenseController {
     @GetMapping("/api/expenses/category-changes")
     public ResponseEntity<List<ExpenseService.CategoryChange>> categoryChanges(@CurrentUser Long userId) {
         return ResponseEntity.ok(expenseService.getCategoryChanges(userId));
+    }
+
+    @PutMapping("/api/expenses/{id}")
+    public ResponseEntity<ExpenseService.RecentExpense> update(
+            @CurrentUser Long userId, @PathVariable Long id, @RequestBody ManualExpenseRequest request) {
+        return ResponseEntity.ok(expenseService.update(userId, id, request.amount(), request.category(), request.memo(), request.spentAt()));
+    }
+
+    @DeleteMapping("/api/expenses/{id}")
+    public ResponseEntity<Void> delete(@CurrentUser Long userId, @PathVariable Long id) {
+        expenseService.delete(userId, id);
+        return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -141,6 +141,42 @@ public class ExpenseService {
                 .toList();
     }
 
+    /**
+     * 지출 수동 수정 (홈 화면 최근 지출 목록에서 항목 눌러서 편집). 본인 소유가 아니면 거부한다.
+     */
+    public RecentExpense update(Long userId, Long expenseId, Integer amount, Category category, String memo, LocalDateTime spentAt) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("지출 내역을 찾을 수 없습니다."));
+        if (!expense.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 지출만 수정할 수 있습니다.");
+        }
+        if (amount == null || amount == 0) {
+            throw new IllegalArgumentException("금액을 입력해주세요.");
+        }
+        expense.updateManual(amount, category != null ? category : Category.OTHER, memo,
+                spentAt != null ? spentAt : expense.getSpentAt());
+        Expense saved = expenseRepository.save(expense);
+        return new RecentExpense(
+                saved.getId(),
+                saved.getStoreName() != null ? saved.getStoreName() : (saved.getItemName() != null ? saved.getItemName() : "지출"),
+                saved.getCategory(),
+                saved.getAmount(),
+                saved.getSpentAt()
+        );
+    }
+
+    /**
+     * 지출 삭제. 본인 소유가 아니면 거부한다.
+     */
+    public void delete(Long userId, Long expenseId) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("지출 내역을 찾을 수 없습니다."));
+        if (!expense.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 지출만 삭제할 수 있습니다.");
+        }
+        expenseRepository.delete(expense);
+    }
+
     public record DailySpend(int day, Integer amount) {}
 
     /**
