@@ -21,6 +21,22 @@ const initialState = {
     studentContext: {
       campus: '서울',
     },
+    courses: [
+      {
+        title: '문제해결글쓰기',
+        assignments: [
+          {
+            title: '첫 과제',
+            dueAt: {
+              knowledge: 'unknown',
+              explanation: '선택 자료를 확인하기 전입니다.',
+            },
+            submissionMethod: '미정',
+            notes: '학생 메모 보존',
+          },
+        ],
+      },
+    ],
   },
 } as const
 
@@ -40,6 +56,7 @@ function proposedState(submissionMethod: string) {
                 value: '2026-08-03 23:59',
               },
               submissionMethod,
+              notes: '학생 메모 보존',
             },
           ],
         },
@@ -59,6 +76,10 @@ test('SemesterModeling Skill defines the incremental Review harness', async () =
       accept: { file: 'apply', next: 'stop' },
       revise: { file: 'unchanged', next: 'fresh-call' },
       reject: { file: 'unchanged', next: 'stop' },
+    },
+    drift: {
+      file: 'unchanged',
+      next: 'fresh-review',
     },
     fileAuthority: 'native',
     gitAuthority: 'native',
@@ -223,6 +244,48 @@ test('Review acceptance cannot substitute for native file permission', async () 
   })
 })
 
+test('Review acceptance cannot rebase a drifted SemesterModel input', async () => {
+  await withWorkspaceState(async (statePath) => {
+    const fixture = createFixture(statePath, [
+      { outcome: 'accept' },
+      { outcome: 'reject' },
+    ])
+    const driftedState = {
+      ...initialState,
+      snapshot: {
+        ...initialState.snapshot,
+        externalFact: 'concurrent user edit',
+      },
+    }
+
+    const result = await executeInstructions({
+      contract: await loadInstructionContract(),
+      initialProposal: encodeState(proposedState('LMS 과제함')),
+      meaningfulCheckpoint: true,
+      reviseProposal: (proposal) => proposal,
+      async afterReview(_result, reviewIndex) {
+        if (reviewIndex === 0) {
+          await writeFile(statePath, encodeState(driftedState))
+        }
+      },
+      reconcileAfterDrift: async () => encodeState(driftedState),
+      ports: fixture.ports,
+    })
+
+    assert.equal(result.outcome, 'reject')
+    assert.deepEqual(fixture.observation.proposalFileBytes, [
+      encodeState(initialState),
+      encodeState(driftedState),
+    ])
+    assert.deepEqual(fixture.observation.reviewIds, ['review_1', 'review_2'])
+    assert.deepEqual(fixture.observation.native, {
+      fileWrites: 0,
+      gitCommands: 0,
+    })
+    assert.deepEqual(JSON.parse(await readFile(statePath, 'utf8')), driftedState)
+  })
+})
+
 type Outcome = 'accept' | 'revise' | 'reject'
 type OutcomeRule = {
   readonly file: 'apply' | 'unchanged'
@@ -230,6 +293,10 @@ type OutcomeRule = {
 }
 type InstructionContract = {
   readonly outcomes: Record<Outcome, OutcomeRule>
+  readonly drift: {
+    readonly file: 'unchanged'
+    readonly next: 'fresh-review'
+  }
   readonly fileAuthority: 'app' | 'native'
   readonly gitAuthority: 'app' | 'native'
   readonly permissionBeforeWrite: boolean
@@ -255,6 +322,7 @@ function parseInstructionContract(skill: string): InstructionContract {
       revise: inferOutcomeRule('revise', bodies.revise),
       reject: inferOutcomeRule('reject', bodies.reject),
     },
+    drift: parseDriftContract(skill),
     fileAuthority:
       /apply only the reviewed snapshot\s+changes with native file tools/.test(
         bodies.accept ?? '',
@@ -274,6 +342,21 @@ function parseInstructionContract(skill: string): InstructionContract {
     checkpointOnlyWhenMeaningful:
       /When the change is a meaningful\s+checkpoint/.test(skill),
   }
+}
+
+function parseDriftContract(skill: string): {
+  readonly file: 'unchanged'
+  readonly next: 'fresh-review'
+} {
+  const acceptBody = skill.match(
+    /- On `accept`,([\s\S]*?)(?=\n   - On `revise`)/,
+  )?.[1]
+  assert.ok(acceptBody, 'Skill must define an accept instruction')
+  assert.match(
+    acceptBody,
+    /If a reviewed input drifted, keep the state unchanged and start a fresh\s+reconciliation and Review instead of rebasing/,
+  )
+  return { file: 'unchanged', next: 'fresh-review' }
 }
 
 function inferOutcomeRule(
@@ -328,6 +411,7 @@ type Observation = {
 }
 type FixturePorts = {
   readonly review: (proposal: string) => Promise<ScriptedResult>
+  readonly readActualFile: () => Promise<string>
   readonly requestNativeFilePermission: () => Promise<void>
   readonly writeActualFile: Record<
     InstructionContract['fileAuthority'],
@@ -355,6 +439,7 @@ function createFixture(
   return {
     observation,
     ports: {
+      readActualFile: () => readFile(actualPath, 'utf8'),
       async review(proposal) {
         const result = scriptedResults.shift()
         assert.ok(result, 'every fresh Review needs one scripted result')
@@ -393,14 +478,36 @@ async function executeInstructions(input: {
   readonly initialProposal: string
   readonly meaningfulCheckpoint: boolean
   readonly reviseProposal: (proposal: string, feedback: string) => string
+  readonly afterReview?: (
+    result: ScriptedResult,
+    reviewIndex: number,
+  ) => Promise<void>
+  readonly reconcileAfterDrift?: () => Promise<string>
   readonly ports: FixturePorts
 }): Promise<{ readonly outcome: 'accept' | 'reject' }> {
   let proposal = input.initialProposal
+  let reviewIndex = 0
 
   while (true) {
+    const reviewedInputBytes = await input.ports.readActualFile()
     const result = await input.ports.review(proposal)
+    await input.afterReview?.(result, reviewIndex)
+    reviewIndex += 1
     const rule = input.contract.outcomes[result.outcome]
     if (rule.file === 'apply') {
+      const currentInputBytes = await input.ports.readActualFile()
+      if (currentInputBytes !== reviewedInputBytes) {
+        assert.deepEqual(input.contract.drift, {
+          file: 'unchanged',
+          next: 'fresh-review',
+        })
+        assert.ok(
+          input.reconcileAfterDrift,
+          'input drift requires a fresh reconciled proposal',
+        )
+        proposal = await input.reconcileAfterDrift()
+        continue
+      }
       if (input.contract.permissionBeforeWrite) {
         await input.ports.requestNativeFilePermission()
       }

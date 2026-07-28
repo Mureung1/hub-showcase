@@ -31,17 +31,20 @@ App code나 native tool schema를 고치지 않고도 사용자가 체감하는 
   필요하면 Tool이라고 경계를 긋는다.
   ([공식 주장과 경계](https://github.com/NousResearch/hermes-agent/blob/f228e145ba35cbbf785eded2021ae6682285b91b/website/docs/developer-guide/creating-skills.md#L7-L24))
 
-따라서 AY-PLE에는 다음 해석이 가장 적합하다.
+이 조사에서 도출한 AY-PLE 적용 가설은 다음과 같다.
 
 > 새로운 학업 workflow는 우선 built-in Skill로 제공하고, 기존 native tool과
 > InteractionCapability로 완결되지 않는 사용자 맥락·typed 판단 UI·실행 primitive가 확인될 때만
 > App Interface를 확장한다.
 
-이 원칙은 “Skill directory 하나가 곧 완성된 App feature”라는 뜻이 아니다. Skill은 workflow와
-도구 조합을 소유하고, App은 typed interaction·UI lifecycle·runtime binding을 소유한다. 현재
-development 단계에서는 `hub/skills/`를 자유롭게 고치고 disposable SemesterWorkspace에 complete
-tree를 명시적으로 다시 복사하는 방식이 타당하다. 두 사례의 대규모 update·marketplace infrastructure는
-배포·공유·사용자 수정 보존 요구가 생긴 뒤 도입해도 된다.
+이 가설은 “Skill directory 하나가 곧 완성된 App feature”라는 뜻이 아니다. Skill은 workflow와
+도구 조합을 소유하고, App은 typed interaction·UI lifecycle·runtime binding을 소유한다는
+연구 해석이다. 채택된 현재 제품 원칙은
+[Product Brief](../../product/ay-ple-product-brief.md#skill-first-capability-expansion),
+workspace materialization 결정은
+[ADR 0018](../../adr/0018-adopt-user-owned-git-semester-workspaces.md),
+작업 상태와 adoption gate는
+[개발 백로그](../../product/ay-ple-development-backlog.md)가 각각 소유한다.
 
 ## 근거를 읽는 방법
 
@@ -293,11 +296,14 @@ checkpoint를 거쳐야 한다.
 OpenClaw와 Hermes의 built-in catalog는 1번을 빠르고 싸게 반복하는 제품 표면이다. 2번은 Skill의
 존재가 아니라 실제 runtime gap이 증명할 때만 필요하다.
 
-## AY-PLE에 적용할 패턴
+## AY-PLE 적용 후보와 채택 문서
 
-### 1. Skill-first Capability Expansion
+아래 항목은 외부 사례에서 도출한 추천안이다. 현재 정책이나 구현 상태를 독립적으로 정의하지
+않으며, 각 항목에 연결한 활성 문서의 채택 결과를 우선한다.
 
-AY-PLE의 capability를 다음 세 단계로 분류한다.
+### 1. Skill-first Capability Expansion 후보
+
+AY-PLE capability를 다음 세 단계로 분류하는 방식을 추천할 수 있다.
 
 | 단계 | 판정 | 기본 구현 |
 | --- | --- | --- |
@@ -305,29 +311,32 @@ AY-PLE의 capability를 다음 세 단계로 분류한다.
 | Skill + existing App primitive | 기존 ActionInvocation 또는 InteractionCapability가 필요한 판단 UI를 이미 표현한다. | Skill이 기존 typed Interface를 호출 |
 | New App surface | 새로운 request/result 의미, UI lifecycle, auth·transport·runtime primitive가 필수다. | capability contract를 먼저 설계하고 companion Skill을 추가 |
 
-현재 First Assignment workflow는 두 번째 단계의 사례다. Skill은 source reading, proposal, drift
+조사 당시 First Assignment workflow는 두 번째 단계의 사례로 해석했다. Skill은 source reading, proposal, drift
 check, accepted apply와 Git checkpoint 순서를 소유하고 App은 domain-neutral semantic Review의
 typed round trip만 소유한다. 이 책임 분리는
 [AY-originated InteractionCapability 아키텍처](../../architecture/ay-app-interaction-capabilities.md)의
-현재 경계와 맞는다.
+경계와 맞는다는 분석이었다. 현재 product vocabulary와 구현 상태는
+[AY–App Interaction Layer](../../architecture/ay-app-interaction-layer.md)와
+[Codex Chat 구현 지도](../../architecture/codex-chat-implementation-map.md)를 따른다.
 
-### 2. Catalog discovery와 workspace materialization을 분리한다
+### 2. Catalog discovery와 workspace materialization 분리 제안
 
-`hub/skills/`의 직계 Skill directory를 repository-owned authoring catalog로 보고, Bootstrap은
-유효한 complete tree를 generic하게 열거해 SemesterWorkspace `.agents/skills/`로 복사한다.
-Bootstrap과 catalog discovery는 특정 `ay-ple-first-assignment` 하나를 hard-code하지 않아야 한다.
-반면 concrete ActionInvocation definition이 stable `skillId`를 선언적으로 참조하는 것은 의도된
-contract다. 이 mapping은 catalog entry를 resolve해야 하며 directory path, title, description,
-본문 문구를 App logic에 복제해서는 안 된다.
+`hub/skills/`의 직계 Skill directory를 repository-owned authoring catalog로 보고 Bootstrap이
+유효한 complete tree를 generic하게 열거해 SemesterWorkspace `.agents/skills/`로 복사하는 구조를
+추천했다. Bootstrap과 catalog discovery가 특정 `ay-ple-first-assignment` 하나를 hard-code하지 않고,
+concrete ActionInvocation definition만 stable `skillId`를 참조할 수 있다는 구분이다. 현재 채택된
+catalog validation·materialization contract는
+[ADR 0018](../../adr/0018-adopt-user-owned-git-semester-workspaces.md)과
+[ADR 0020](../../adr/0020-bootstrap-semester-workspaces-before-app-startup.md)이 소유한다.
 
 이렇게 하면 새 Skill 추가는 catalog entry 추가로 끝나고 Bootstrap code는 바뀌지 않는다.
 Workspace copy는 실제 native discovery와 Git review의 authority로 남는다. OpenClaw의 multi-root
 precedence나 Hermes의 shared profile SSOT를 그대로 가져올 필요는 없다.
 
-### 3. 개발 중에는 disposable workspace를 fresh materialize한다
+### 3. 개발 중 disposable workspace의 fresh materialization 후보
 
 현재 사용자가 혼자 개발하고 `../fixtures/year-2-semester-1`을 disposable fixture로 쓰는 동안에는
-다음 loop가 가장 단순하다.
+다음 loop가 가장 단순하다는 제안을 도출했다.
 
 1. `hub/skills/`에서 Skill을 수정·추가한다.
 2. 필요한 fixture file을 개발 SemesterWorkspace에 복사한다.
@@ -335,22 +344,21 @@ precedence나 Hermes의 shared profile SSOT를 그대로 가져올 필요는 없
    complete tree를 fresh materialize한다.
 4. Workspace Git diff로 실제 적용된 Skill byte와 fixture 상태를 검토한다.
 
-이는 OpenClaw의 package source + local override 방식보다 현재 AY-PLE의 disposable development
-workspace에 맞고, Hermes의 manifest sync보다 단순하다. Existing workspace에 다른 Skill tree가
-있으면 current no-clobber conflict를 안전장치로 유지하고 refresh·replace·merge·stale prune을
-추가하지 않는다. Git 밖의 sibling fixture path를 tracked utility script에 hard-code할 필요도 없다.
+이는 OpenClaw의 package source + local override 방식보다 당시 AY-PLE의 disposable development
+workspace에 맞고 Hermes의 manifest sync보다 단순하다는 분석이다. Existing workspace conflict와
+update lifecycle에 대한 현재 결정은 [ADR 0018](../../adr/0018-adopt-user-owned-git-semester-workspaces.md),
+current development flow와 후속 adoption gate는
+[개발 백로그](../../product/ay-ple-development-backlog.md)가 소유한다.
 반복 수작업이 실제 병목으로 확인되면 그때 source·destination을 명시적 argument로 받는 local-only
 helper를 추가할 수 있다.
 
-### 4. 이름은 scenario가 아니라 지속되는 workflow capability를 나타낸다
+### 4. Scenario보다 지속되는 workflow capability를 나타내는 이름 제안
 
-`ay-ple-first-assignment`는 fixture와 demo 순서를 identity에 넣는다. Catalog가 늘어날 지금은
+`ay-ple-first-assignment`는 fixture와 demo 순서를 identity에 넣었다. Catalog 확장을 가정하면
 `semester modeling`, `assignment planning`, `source organization`처럼 학기 동안 반복되는 workflow
-단위의 stable slug로 이름을 정하는 편이 낫다. 현재는 외부 배포 전 개발 단계이므로 rename 비용이
-가장 작다. Rename은 source directory와 frontmatter를 함께 바꾸고 disposable workspace를 다시
-만들어 반영한다. Existing workspace의 이전 copy를 migrate하지 않으며, 이후
-title·description·body는 identity 변경 없이 자유롭게 고친다. 이를 이유로 multi-version migration
-engine을 만들 필요는 없다.
+단위의 stable slug가 더 낫다는 제안이었다. 채택된 `SemesterModeling`,
+`ay-ple-semester-modeling`, `model_semester` 구분과 rename 결과는
+[ADR 0021](../../adr/0021-adopt-a-protocol-driven-ay-app-interaction-layer.md)이 소유한다.
 
 이 구분은 두 사례에도 나타난다. OpenClaw은 directory path를 organization으로만 취급하고
 frontmatter `name`을 slash command와 allowlist identity로 사용한다. Hermes도 같은 `name`을 manifest
@@ -359,9 +367,11 @@ logical name은 참조가 걸리는 identity**다.
 ([OpenClaw identity](https://github.com/openclaw/openclaw/blob/206f989069fb7b5b3854fb490fc95e65c486b99b/docs/tools/skills.md#L46-L56),
 [Hermes move recovery](https://github.com/NousResearch/hermes-agent/blob/f228e145ba35cbbf785eded2021ae6682285b91b/tools/skills_sync.py#L756-L772))
 
-### 5. App 확장 gate를 문서화한다
+### 5. App 확장 gate 후보
 
-다음 중 하나가 관찰될 때만 새 App surface를 검토한다.
+다음 조건은 새 App surface를 검토할 때 사용할 수 있는 연구 기반 후보다. 현재 확장 원칙은
+[Product Brief](../../product/ay-ple-product-brief.md#skill-first-capability-expansion),
+작업 순서는 [개발 백로그](../../product/ay-ple-development-backlog.md)를 따른다.
 
 - 기존 InteractionCapability로 표현할 수 없는 새 사용자 결정 의미가 반복된다.
 - native tool 조합만으로는 auth, lifecycle, deterministic validation 또는 binary/streaming 처리를
@@ -369,14 +379,14 @@ logical name은 참조가 걸리는 identity**다.
 - 여러 Skill이 같은 typed operation을 중복 구현하기 시작한다.
 - capability-specific UI가 일반 chat보다 명확한 사용자 가치와 failure semantics를 제공한다.
 
-## 그대로 가져오지 않을 것
+## 조사에서 비교한 비채택 후보
 
-| 사례의 구조 | AY-PLE가 지금 가져오지 않는 이유 |
+| 사례의 구조 | 조사 당시 곧바로 적용할 필요가 낮다고 본 이유 |
 | --- | --- |
 | OpenClaw의 workspace·project·personal·managed·bundled·extra·node multi-root precedence | AY-PLE는 한 SemesterWorkspace의 tracked `.agents/skills/`를 실행 authority로 두면 충분하다. 복수 root는 collision과 “어느 byte를 썼는가”를 흐린다. |
 | OpenClaw ClawHub의 registry version, trust envelope, scan, global install | Public marketplace와 여러 publisher를 운영하지 않는다. |
 | Hermes의 mutable shared `~/.hermes/skills/` SSOT와 agent self-edit | SemesterWorkspace Git review와 repository-owned built-in source 경계를 약화한다. |
-| Hermes `.bundled_manifest` origin-hash merge와 Hub lock | Current development에서는 explicit rematerialization과 Git diff가 같은 문제를 더 단순하게 푼다. |
+| Hermes `.bundled_manifest` origin-hash merge와 Hub lock | Disposable development에서는 explicit rematerialization과 Git diff가 같은 문제를 더 단순하게 풀 수 있다. |
 | Skill metadata에 product domain schema를 넣고 App이 해석하는 방식 | Skill과 App을 다시 이름·field에 coupling한다. App은 typed generic Interface만 알아야 한다. |
 | Skill 추가 수를 feature 완료 수로 계산 | 실제 user outcome, tool availability, review UI와 end-to-end verification이 없으면 catalog entry일 뿐이다. |
 
@@ -386,9 +396,9 @@ OpenClaw와 Hermes는 서로 다른 lifecycle을 쓰지만 같은 architectural 
 catalog는 **기존 primitive 위에 새 agent workflow capability를 얹는 저비용 확장면**이고, Tool·MCP·
 새 Runtime·App Interface는 **새 runtime primitive와 typed interaction을 만드는 고비용 확장면**이다.
 
-AY-PLE는 지금 전자를 적극 활용해야 한다. `hub/skills/`를 generic catalog로 열어 두고, 새 학업
-workflow를 Skill로 추가하며, fixture workspace는 필요할 때 explicit Bootstrap으로 다시 만든다.
-현재 complete-tree digest는 설치 byte 검증과 drift detection에 계속 사용하되 이를 semantic Skill
-version으로 해석하지 않는다. 별도의 release lineage, automatic merge와 migration은 remote
-distribution이나 durable compatibility promise가 생길 때 함께 설계한다. 그 전까지는
-SemesterWorkspace Git history가 실제로 사용한 Skill byte와 변경 시점을 충분히 설명한다.
+따라서 이 조사는 AY-PLE이 전자를 우선 활용하고 `hub/skills/`를 generic catalog 후보로 두며,
+새 학업 workflow를 Skill로 추가하는 방향을 추천했다. 실제로 채택한 catalog·workspace·update
+경계는 [ADR 0018](../../adr/0018-adopt-user-owned-git-semester-workspaces.md)과
+[ADR 0020](../../adr/0020-bootstrap-semester-workspaces-before-app-startup.md), capability 확장 원칙은
+[Product Brief](../../product/ay-ple-product-brief.md#skill-first-capability-expansion), 현재 구현과
+후속 작업은 [개발 백로그](../../product/ay-ple-development-backlog.md)를 기준으로 판단한다.

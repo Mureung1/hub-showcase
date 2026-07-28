@@ -85,9 +85,10 @@ export async function bootstrapSemesterWorkspace(
   readonly baselineCheckpoint: 'created' | 'no-op' | 'not-requested'
 }> {
   const target = await inspectTarget(input.target)
-  const builtInSkills = await assertBuiltSources(
+  const builtInSkills = await discoverBuiltInSkillCatalog(
     options.builtInSkillCatalogRoot ?? defaultBuiltInSkillCatalogRoot,
   )
+  await assertBuiltAdapter()
   const gitMode = await inspectGit(target)
   await assertManagedDirectories(target)
   const plannedFiles = await planManagedFiles(target, input)
@@ -610,17 +611,13 @@ function assertSafeTomlSurface(source: string): void {
   }
 }
 
-async function assertBuiltSources(
-  catalogRoot: string,
-): Promise<readonly BuiltInSkillSource[]> {
-  const skills = await discoverBuiltInSkillCatalog(catalogRoot)
+async function assertBuiltAdapter(): Promise<void> {
   const adapter = await stat(adapterPath).catch(() => undefined)
   if (adapter === undefined || !adapter.isFile()) {
     throw new Error(
       'Built Interaction MCP is missing. Run npm run build -w @ay-ple/interaction-mcp first.',
     )
   }
-  return skills
 }
 
 async function discoverBuiltInSkillCatalog(

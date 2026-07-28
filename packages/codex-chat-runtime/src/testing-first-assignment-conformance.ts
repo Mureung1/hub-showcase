@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto'
 import {
   mkdtemp,
+  readFile,
   realpath,
   rm,
 } from 'node:fs/promises'
@@ -7,8 +9,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 import {
+  firstAssignmentConformanceInputPaths,
   startFirstAssignmentConformanceProvider,
   type FirstAssignmentConformanceProvider,
+  type FirstAssignmentConformanceInputDigests,
   type FirstAssignmentConformanceProviderFunctionCall,
   type FirstAssignmentConformanceProviderFunctionOutput,
   type FirstAssignmentConformanceProviderRequest,
@@ -72,7 +76,9 @@ export async function startCodexFirstAssignmentConformanceTestFixture(options: {
   )
   let provider: FirstAssignmentConformanceProvider
   try {
-    provider = await startFirstAssignmentConformanceProvider()
+    provider = await startFirstAssignmentConformanceProvider({
+      expectedInputDigests: await readExpectedInputDigests(options.workspace),
+    })
   } catch (error) {
     await rm(fixtureRoot, { recursive: true, force: true })
     throw error
@@ -218,6 +224,21 @@ export async function startCodexFirstAssignmentConformanceTestFixture(options: {
       }
     },
   }
+}
+
+async function readExpectedInputDigests(
+  workspace: string,
+): Promise<FirstAssignmentConformanceInputDigests> {
+  return Object.fromEntries(
+    await Promise.all(
+      firstAssignmentConformanceInputPaths.map(async (relativePath) => [
+        relativePath,
+        createHash('sha256')
+          .update(await readFile(path.join(workspace, relativePath)))
+          .digest('hex'),
+      ]),
+    ),
+  ) as FirstAssignmentConformanceInputDigests
 }
 
 function requirePid(child: SpawnedCodexChatRuntime['child']): number {

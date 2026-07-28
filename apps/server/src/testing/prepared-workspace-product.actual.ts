@@ -91,6 +91,22 @@ const initialWorkspaceState = {
     studentContext: {
       campus: '서울',
     },
+    courses: [
+      {
+        title: '문제해결글쓰기',
+        assignments: [
+          {
+            title: '첫 과제',
+            dueAt: {
+              knowledge: 'unknown',
+              explanation: '선택 자료를 확인하기 전입니다.',
+            },
+            submissionMethod: '미정',
+            notes: '학생 메모 보존',
+          },
+        ],
+      },
+    ],
   },
 } as const
 const initialWorkspaceStateBytes =
@@ -638,6 +654,21 @@ async function assertFirstAssignmentConformanceProviderEvidence(
     ),
     'workspace-state.json': sha256(Buffer.from(initialWorkspaceStateBytes)),
   })
+  assert.deepEqual(
+    calls
+      .filter(
+        (call) =>
+          call.name === 'exec_command' &&
+          call.callId.includes('read'),
+      )
+      .map((call) => call.callId),
+    [
+      'call-action-read-selected',
+      'call-action-reread-after-revise',
+      'call-action-reread-before-apply',
+      'call-action-read-rejected',
+    ],
+  )
 
   assert.deepEqual(
     calls
@@ -678,6 +709,8 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   const mutationCommand = String(mutationCall.arguments.cmd)
   assert.match(mutationCommand, /workspace-state\.json/u)
   assert.doesNotMatch(mutationCommand, /assignment\.md/u)
+  assert.match(mutationCommand, /reviewedInputDrift/u)
+  assert.match(mutationCommand, /hashlib\.sha256/u)
   assert.match(mutationCommand, /git[^&]+commit/u)
   for (const unrelated of [
     'dirty-sentinel.txt',
@@ -1402,6 +1435,11 @@ async function applyAcceptedChange(workspaceRoot: string): Promise<void> {
     isRecord(matchingCourse) && Array.isArray(matchingCourse.assignments)
       ? matchingCourse.assignments
       : []
+  const matchingAssignment = currentAssignments.find(
+    (assignment) =>
+      isRecord(assignment) &&
+      assignment.title === modeledFirstAssignment.title,
+  )
   const updatedCourse = {
     ...(isRecord(matchingCourse) ? matchingCourse : {}),
     title: modeledCourseTitle,
@@ -1411,7 +1449,10 @@ async function applyAcceptedChange(workspaceRoot: string): Promise<void> {
           !isRecord(assignment) ||
           assignment.title !== modeledFirstAssignment.title,
       ),
-      modeledFirstAssignment,
+      {
+        ...(isRecord(matchingAssignment) ? matchingAssignment : {}),
+        ...modeledFirstAssignment,
+      },
     ],
   }
   const updatedState = {
@@ -1460,7 +1501,12 @@ async function assertAcceptedCheckpoint(fixture: WorkspaceFixture): Promise<void
         courses: [
           {
             title: modeledCourseTitle,
-            assignments: [modeledFirstAssignment],
+            assignments: [
+              {
+                ...modeledFirstAssignment,
+                notes: '학생 메모 보존',
+              },
+            ],
           },
         ],
       },

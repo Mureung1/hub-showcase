@@ -8,6 +8,13 @@ const selectedFirstAssignmentSourcePaths = [
   'materials/lms-outline-notice.txt',
   'materials/problem-solving-syllabus.txt',
 ] as const
+export const firstAssignmentConformanceInputPaths = [
+  ...selectedFirstAssignmentSourcePaths,
+  'workspace-state.json',
+] as const
+export type FirstAssignmentConformanceInputDigests = Readonly<
+  Record<(typeof firstAssignmentConformanceInputPaths)[number], string>
+>
 const modeledFirstAssignment = {
   title: '첫 과제',
   dueAt: {
@@ -50,10 +57,12 @@ export interface FirstAssignmentConformanceProvider {
   dispose(): Promise<void>
 }
 
-export async function startFirstAssignmentConformanceProvider(): Promise<
-  FirstAssignmentConformanceProvider
-> {
-  const responses = firstAssignmentConformanceResponses()
+export async function startFirstAssignmentConformanceProvider(options: {
+  readonly expectedInputDigests: FirstAssignmentConformanceInputDigests
+}): Promise<FirstAssignmentConformanceProvider> {
+  const responses = firstAssignmentConformanceResponses(
+    options.expectedInputDigests,
+  )
   const requests: FirstAssignmentConformanceProviderRequest[] = []
   const sockets = new Set<Socket>()
   let responseIndex = 0
@@ -302,7 +311,9 @@ function journalToolNames(body: Record<string, unknown>): string[] {
     .filter((name): name is string => typeof name === 'string')
 }
 
-function firstAssignmentConformanceResponses(): string[] {
+function firstAssignmentConformanceResponses(
+  expectedInputDigests: FirstAssignmentConformanceInputDigests,
+): string[] {
   const readArguments = {
     cmd: selectedReadCommand(),
     login: false,
@@ -330,6 +341,12 @@ function firstAssignmentConformanceResponses(): string[] {
       'action-review-initial-guardian-message',
     ),
     responseWithCall(
+      'action-reread-after-revise-response',
+      'call-action-reread-after-revise',
+      'exec_command',
+      readArguments,
+    ),
+    responseWithCall(
       'action-review-revised-response',
       'call-action-review-revised',
       'propose_state_patch',
@@ -344,11 +361,17 @@ function firstAssignmentConformanceResponses(): string[] {
       'action-review-revised-guardian-message',
     ),
     responseWithCall(
+      'action-reread-before-apply-response',
+      'call-action-reread-before-apply',
+      'exec_command',
+      readArguments,
+    ),
+    responseWithCall(
       'action-apply-response',
       'call-action-apply-checkpoint',
       'exec_command',
       {
-        cmd: acceptedCheckpointCommand(),
+        cmd: acceptedCheckpointCommand(expectedInputDigests),
         justification: 'Record the accepted SemesterWorkspace checkpoint.',
         login: false,
         sandbox_permissions: 'require_escalated',
@@ -403,16 +426,23 @@ function selectedReadCommand(): string {
     '/usr/bin/python3',
     '-c',
     shellQuote(source),
-    ...selectedFirstAssignmentSourcePaths.map(shellQuote),
-    'workspace-state.json',
+    ...firstAssignmentConformanceInputPaths.map(shellQuote),
   ].join(' ')
 }
 
-function acceptedCheckpointCommand(): string {
+function acceptedCheckpointCommand(
+  expectedInputDigests: FirstAssignmentConformanceInputDigests,
+): string {
   const source = [
     'from pathlib import Path',
-    'import json,sys',
+    'import hashlib,json,sys',
     'state_path=Path(sys.argv[1])',
+    'expected=json.loads(sys.argv[4])',
+    'current={value:hashlib.sha256(Path(value).read_bytes()).hexdigest() for value in expected}',
+    'drift={value:{"expected":expected[value],"actual":current[value]} for value in expected if current[value]!=expected[value]}',
+    'if drift:',
+    ' print(json.dumps({"reviewedInputDrift":drift},separators=(",",":"),sort_keys=True))',
+    ' raise SystemExit("Reviewed inputs drifted; refusing to apply accepted change")',
     'state=json.loads(state_path.read_text(encoding="utf-8"))',
     'assignment=json.loads(sys.argv[2])',
     'course_title=sys.argv[3]',
@@ -420,7 +450,9 @@ function acceptedCheckpointCommand(): string {
     'courses=list(snapshot.get("courses") or [])',
     'matched=next((course for course in courses if isinstance(course,dict) and course.get("title")==course_title),{})',
     'assignments=list(matched.get("assignments") or [])',
-    'updated_course={**matched,"title":course_title,"assignments":[item for item in assignments if not (isinstance(item,dict) and item.get("title")==assignment["title"])]+[assignment]}',
+    'matched_assignment=next((item for item in assignments if isinstance(item,dict) and item.get("title")==assignment["title"]),{})',
+    'updated_assignment={**matched_assignment,**assignment}',
+    'updated_course={**matched,"title":course_title,"assignments":[item for item in assignments if not (isinstance(item,dict) and item.get("title")==assignment["title"])]+[updated_assignment]}',
     'snapshot["courses"]=[course for course in courses if not (isinstance(course,dict) and course.get("title")==course_title)]+[updated_course]',
     'state["snapshot"]=snapshot',
     'state_path.write_text(json.dumps(state,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")',
@@ -433,6 +465,7 @@ function acceptedCheckpointCommand(): string {
     'workspace-state.json',
     shellQuote(JSON.stringify(modeledFirstAssignment)),
     shellQuote(modeledCourseTitle),
+    shellQuote(JSON.stringify(expectedInputDigests)),
   ].join(' ')
   return [
     writeCommand,

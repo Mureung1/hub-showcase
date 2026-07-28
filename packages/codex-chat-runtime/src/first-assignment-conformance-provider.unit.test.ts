@@ -8,7 +8,13 @@ import {
 import { withinDuration } from './local-provider-test-support.js'
 
 test('force closes an incomplete First Assignment conformance provider connection during cleanup', async () => {
-  const provider = await startFirstAssignmentConformanceProvider()
+  const provider = await startFirstAssignmentConformanceProvider({
+    expectedInputDigests: {
+      'materials/lms-outline-notice.txt': '0'.repeat(64),
+      'materials/problem-solving-syllabus.txt': '0'.repeat(64),
+      'workspace-state.json': '0'.repeat(64),
+    },
+  })
   const url = new URL(provider.url)
   const socket = connect({
     host: url.hostname,
