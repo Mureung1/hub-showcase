@@ -16,6 +16,8 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [password, setPassword] = useState("");
+  const isGuest = !email;
 
   async function handlePhotoChange(e) {
     const file = e.target.files?.[0];
@@ -52,6 +54,10 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
       setError("성별을 선택해주세요.");
       return;
     }
+    if (password && password.length < 6) {
+      setError("비밀번호는 6자 이상이어야 해요.");
+      return;
+    }
     setSaving(true);
     setError(null);
 
@@ -72,6 +78,16 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
       setError("저장하지 못했어요. 다시 시도해주세요.");
       setSaving(false);
       return;
+    }
+
+    if (password) {
+      const { error: pwError } = await supabase.auth.updateUser({ password });
+      if (pwError) {
+        setError("프로필은 저장됐지만 비밀번호 설정에는 실패했어요.");
+        setSaving(false);
+        return;
+      }
+      setPassword("");
     }
 
     onSaved({ name, college, gender, hide_gender: hideGender, avatar_url: avatarUrl });
@@ -188,6 +204,21 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
           ))}
         </div>
       </div>
+
+      {!isGuest && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>
+            비밀번호 설정 (선택)
+          </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="다음부터 이메일 인증 없이 빠르게 로그인해요"
+            style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(36,21,18,0.12)", fontSize: 14, boxSizing: "border-box" }}
+          />
+        </div>
+      )}
 
       <div
         style={{

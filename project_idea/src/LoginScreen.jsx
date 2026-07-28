@@ -7,6 +7,23 @@ function LoginScreen() {
   const [sent, setSent] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [guestLoading, setGuestLoading] = useState(false);
+  const [mode, setMode] = useState("otp"); // "otp" | "password"
+  const [password, setPassword] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+
+  async function handlePasswordLogin() {
+    setPwLoading(true);
+    setSendError(null);
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      console.error("signInWithPassword error:", error);
+      setSendError("이메일 또는 비밀번호가 올바르지 않아요.");
+      setPwLoading(false);
+    }
+    // 성공하면 App.jsx의 onAuthStateChange가 세션을 감지해서 자동으로 화면을 넘겨줌
+  }
 
   async function handleSendEmail() {
     setSending(true);
@@ -87,7 +104,7 @@ function LoginScreen() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            handleSendEmail();
+            mode === "password" ? handlePasswordLogin() : handleSendEmail();
           }}
         >
       <p style={{ fontSize: 13, color: "#8A7A76", lineHeight: 1.5 }}>
@@ -135,13 +152,37 @@ function LoginScreen() {
         </div>
       </div>
 
+      {mode === "password" && (
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid rgba(36,21,18,0.08)",
+            borderRadius: 16,
+            padding: 16,
+            textAlign: "left",
+            margin: "0 0 14px",
+          }}
+        >
+          <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
+            비밀번호
+          </div>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: "100%", fontSize: 15, fontWeight: 600, border: "none", outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
+      )}
+
       {sendError && (
         <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 8px" }}>{sendError}</p>
       )}
 
       <button
         type="submit"
-        disabled={sending}
+        disabled={sending || pwLoading}
         className="btn-primary"
         style={{
           width: "100%",
@@ -152,11 +193,19 @@ function LoginScreen() {
           borderRadius: 999,
           fontSize: 15,
           fontWeight: 700,
-          cursor: sending ? "default" : "pointer",
-          opacity: sending ? 0.7 : 1,
+          cursor: sending || pwLoading ? "default" : "pointer",
+          opacity: sending || pwLoading ? 0.7 : 1,
         }}
       >
-        {sending ? "보내는 중..." : "인증 메일 받기"}
+        {mode === "password" ? (pwLoading ? "로그인 중..." : "로그인") : sending ? "보내는 중..." : "인증 메일 받기"}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setMode(mode === "otp" ? "password" : "otp")}
+        style={{ border: "none", background: "none", color: "#8A7A76", fontSize: 12, padding: "10px 0 0", cursor: "pointer", textDecoration: "underline" }}
+      >
+        {mode === "otp" ? "비밀번호로 로그인" : "이메일 인증으로 로그인"}
       </button>
         </form>
       )}
