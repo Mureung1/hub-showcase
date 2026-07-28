@@ -15,6 +15,7 @@ function ctxWith(
   const weather = { condition, isPrecipitating, sourceCount } as EnsembleWeather;
   const diagnosis: Diagnosis = {
     baselineRevenue: 840000,
+    normalRevenue: 893117,
     rainImpactPct: -0.22,
     estimated: false,
     sampleDays: 29,

@@ -25,9 +25,15 @@ describe("diagnose", () => {
     expect(d.estimated).toBe(false);
     expect(d.rainImpactPct).toBe(-0.2);
     expect(d.sampleDays).toBe(12);
+    // 기준선은 전체 평균(933,333)이 아니라 무강수 평균(1,000,000)
+    expect(d.normalRevenue).toBe(1_000_000);
+    expect(d.baselineRevenue).toBe(933_333);
     // byCondition은 편차 오름차순(가장 나쁜 날씨 먼저)
     expect(d.byCondition[0].condition).toBe("rain");
-    expect(d.byCondition[0].deltaPct).toBeLessThan(0);
+    // deltaPct도 rainImpactPct와 같은 기준(normalRevenue) → 둘이 일치해야 한다.
+    // 전체 평균 기준이던 시절엔 -0.14로 나와 IMPACT_THRESHOLD(-0.2)를 못 넘었다.
+    expect(d.byCondition[0].deltaPct).toBe(-0.2);
+    expect(d.byCondition[0].deltaPct).toBe(d.rainImpactPct);
   });
 
   it("콜드스타트: 표본이 적으면 업종 기본 계수로 추정한다", () => {
@@ -58,6 +64,8 @@ describe("diagnose", () => {
     expect(d.sampleDays).toBe(12); // 날씨 있는 행만
     // baseline은 13개 전체 평균이라 100만보다 낮음
     expect(d.baselineRevenue).toBeLessThan(1_000_000);
+    // normalRevenue는 날씨가 확인된 무강수 8일만 → 날씨 없는 행에 오염되지 않는다
+    expect(d.normalRevenue).toBe(1_000_000);
   });
 
   it("알 수 없는 업종은 default 계수를 쓴다", () => {
@@ -69,18 +77,19 @@ describe("diagnose", () => {
 describe("expectedImpactPct", () => {
   const diagnosis: Diagnosis = {
     baselineRevenue: 840000,
+    normalRevenue: 893117,
     rainImpactPct: -0.22,
     estimated: false,
     sampleDays: 29,
     byCondition: [
-      { condition: "rain", avgRevenue: 687400, deltaPct: -0.18, days: 5 },
-      { condition: "clear", avgRevenue: 948667, deltaPct: 0.13, days: 12 },
+      { condition: "rain", avgRevenue: 687400, deltaPct: -0.23, days: 5 },
+      { condition: "clear", avgRevenue: 948667, deltaPct: 0.06, days: 12 },
     ],
   };
 
   it("오늘 상태가 byCondition에 있으면 그 편차를 쓴다", () => {
-    expect(expectedImpactPct(diagnosis, { condition: "rain", isPrecipitating: true })).toBe(-0.18);
-    expect(expectedImpactPct(diagnosis, { condition: "clear", isPrecipitating: false })).toBe(0.13);
+    expect(expectedImpactPct(diagnosis, { condition: "rain", isPrecipitating: true })).toBe(-0.23);
+    expect(expectedImpactPct(diagnosis, { condition: "clear", isPrecipitating: false })).toBe(0.06);
   });
 
   it("매칭이 없고 비 오면 rainImpactPct로 폴백한다", () => {

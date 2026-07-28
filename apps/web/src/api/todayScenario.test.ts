@@ -37,6 +37,7 @@ function makeWeather(over: Partial<EnsembleWeather> = {}): EnsembleWeather {
 function makeDiagnosis(over: Partial<Diagnosis> = {}): Diagnosis {
   return {
     baselineRevenue: 800000,
+    normalRevenue: 800000, // 매출 타일은 전체 평균이 아니라 평상시(무강수) 평균 기준
     rainImpactPct: -0.22,
     estimated: false,
     sampleDays: 30,
@@ -307,9 +308,10 @@ describe("D. 빈 값·결측", () => {
     expect(s.promo).toBe("할인");
   });
 
-  it("D6: baselineRevenue 0 → 매출 타일 전부 0, NaN 미발생", () => {
+  it("D6: normalRevenue 0 → 매출 타일 전부 0, NaN 미발생", () => {
     const diagnosis = makeDiagnosis({
       baselineRevenue: 0,
+      normalRevenue: 0,
       byCondition: [impact("clear", -0.18)],
     });
 
