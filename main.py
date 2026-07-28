@@ -342,17 +342,37 @@ def get_agent_stats():
     total_fb = stats.get("total_feedbacks", 0)
     sum_rating = stats.get("sum_rating", 0)
     
-    accuracy = int((sum_rating / (total_fb * 5)) * 100) if total_fb > 0 else 70
-    speed = 95 
+    # 1. 정확도: 무조건 70을 깔지 않고, 순수 누적된 별점의 평균 (데이터가 없으면 0%)
+    accuracy = int((sum_rating / (total_fb * 5)) * 100) if total_fb > 0 else 0
+    
+    # 2. 신속성: 서버 스펙 기준 (고정 88%)
+    speed = 88 
     
     references = weights.get("references", {})
     law_scores = [v.get("direct_score", 0) for k, v in references.items() if "법령" in k]
     prec_scores = [v.get("direct_score", 0) for k, v in references.items() if "판례" in k]
     
-    statute_reliability = min(100, max(50, 70 + sum(law_scores)))
-    precedent_match = min(100, max(50, 70 + sum(prec_scores)))
-    resolution_power = min(100, 50 + (total_fb * 3))
-    evolution_index = min(100, 40 + len(references) * 2 + total_fb * 2)
+    law_sum = sum(law_scores)
+    prec_sum = sum(prec_scores)
+    
+    # 3 & 4. 법령 신뢰도 / 판례 적합성: 
+    # 기본 50점에서 시작. 피드백 가중치 총합에 따라 천천히 증감 (삭제 시 감점 반영)
+    statute_reliability = min(100, max(0, 50 + int(law_sum * 1.5)))
+    precedent_match = min(100, max(0, 50 + int(prec_sum * 1.5)))
+    
+    # 5. 문제 해결력: 실제 DB에 저장된 '생성된 문서(사건)' 개수에 비례 (기본 20점)
+    cases_count = 0
+    if os.path.exists(CASES_FILE):
+        try:
+            with open(CASES_FILE, "r", encoding="utf-8") as f:
+                cases_count = len(json.load(f))
+        except:
+            pass
+    resolution_power = min(100, 20 + (cases_count * 5))
+    
+    # 6. 진화 지수: 문서 피드백 횟수 + 카드 투표 횟수를 종합하여 성장
+    total_card_votes = sum(v.get("picked_count", 0) for v in references.values())
+    evolution_index = min(100, (total_fb + total_card_votes) * 3)
 
     return {
         "accuracy": accuracy,

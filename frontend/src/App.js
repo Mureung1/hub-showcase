@@ -21,7 +21,7 @@ function App() {
   const [chatLog, setChatLog] = useState([]);
   
   const [checklist, setChecklist] = useState([]);
-  const [institutions, setInstitutions] = useState([]); // 🚀 [추가] 관할 기관 상태
+  const [institutions, setInstitutions] = useState([]); // 관할 기관 상태
   
   const [extractedData, setExtractedData] = useState(null);
   const [relatedLaws, setRelatedLaws] = useState([]); // 추천 법령/판례
@@ -198,7 +198,6 @@ function App() {
         setChecklist(response.data.strategy_guide_list.map(text => ({ text: text, checked: false })));
       }
 
-      // 🚀 백엔드에서 넘어온 기관 데이터 세팅
       if (response.data.institutions) {
         setInstitutions(response.data.institutions);
       }
@@ -340,6 +339,19 @@ function App() {
     ? Math.round((checklist.filter(c => c.checked).length / checklist.length) * 100) 
     : 0;
 
+  // 🚀 [추가] 생성일 기준 7일 후 D-Day 자동 계산 헬퍼 함수
+  const calculateDDay = (timestamp) => {
+    const createdDate = new Date(timestamp);
+    const deadlineDate = new Date(createdDate.setDate(createdDate.getDate() + 7)); // 7일 기한 설정
+    const today = new Date();
+    const diffTime = deadlineDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 0) return { text: `답변 기한 D-${diffDays}`, color: colors.danger, bg: colors.dangerSubtle };
+    if (diffDays === 0) return { text: '기한 만료일 (D-Day)', color: colors.danger, bg: colors.dangerSubtle };
+    return { text: '답변 기한 만료 (후속 조치 필요)', color: colors.textMuted, bg: colors.bgInput };
+  };
+
   return (
     <div className="AppMainContainer" style={{ backgroundColor: colors.bgMain, color: colors.textMain, minHeight: '100vh', padding: '50px 20px', fontFamily: "'Pretendard', sans-serif", position: 'relative', overflowX: 'hidden' }}>
       
@@ -432,7 +444,7 @@ function App() {
                       </div>
                     )}
 
-                    {/* 🚀 [추가] 추천 관할 기관 및 상담소 UI (가장 하단에 배치) */}
+                    {/* 추천 관할 기관 및 상담소 UI */}
                     {institutions && institutions.length > 0 && (
                       <div style={{ marginTop: '25px', backgroundColor: colors.bgMain, padding: '20px', borderRadius: '10px', border: `1px solid ${colors.border}` }}>
                         <h4 style={{ color: colors.white, marginTop: 0, marginBottom: '15px', fontSize: '1rem' }}>📍 추천 관할 기관 및 오프라인 상담소</h4>
@@ -524,6 +536,14 @@ function App() {
 
                       return (
                         <div key={idx} onClick={() => setSelectedLaw(law)} style={{ backgroundColor: colors.bgMain, padding: '15px', borderRadius: '10px', border: `1px solid ${colors.border}`, cursor: 'pointer', transition: designSystem.transitions.default, position: 'relative' }}>
+                          
+                          {/* 🚀 [추가] 실제 피드백 덕분에 기본 검색 점수보다 가중치가 올라간 판례에만 배지 노출 */}
+                          {law.similarity > law.base_sim_debug && (
+                            <div style={{ position: 'absolute', top: '-10px', right: '-10px', backgroundColor: colors.danger, color: colors.white, fontSize: '11px', fontWeight: 'bold', padding: '4px 10px', borderRadius: '20px', boxShadow: '0 4px 10px rgba(239,68,68,0.4)', zIndex: 2 }}>
+                                🔥 유저 피드백 진화 판례
+                            </div>
+                          )}
+
                           <h4 style={{ margin: '0 0 10px 0', color: colors.white, fontSize: '14px', lineHeight: '1.4' }}>{law.title}</h4>
                           
                           <div style={{ margin: '8px 0', fontSize: '12px', color: colors.success, backgroundColor: colors.successSubtle, padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
@@ -583,7 +603,21 @@ function App() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                       <div>
                         <h3 style={{ margin: '0 0 5px 0', color: colors.white, fontSize: '1.1rem' }}>{c.extracted_data?.title || "제목 없음"}</h3>
-                        <div style={{ fontSize: '13px', color: colors.primary }}>종류: {c.doc_type} | 생성일: {new Date(c.timestamp).toLocaleDateString()}</div>
+                        <div style={{ fontSize: '13px', color: colors.primary, marginBottom: '8px' }}>
+                          종류: {c.doc_type} | 생성일: {new Date(c.timestamp).toLocaleDateString()}
+                        </div>
+                        {/* 🚀 [추가] D-Day 경고 자동화 배지 렌더링 */}
+                        {c.doc_type !== "briefing" && (
+                          <span style={{ 
+                            display: 'inline-block', padding: '4px 8px', borderRadius: '4px', 
+                            fontSize: '12px', fontWeight: 'bold', 
+                            backgroundColor: calculateDDay(c.timestamp).bg, 
+                            color: calculateDDay(c.timestamp).color,
+                            border: `1px solid ${calculateDDay(c.timestamp).color}`
+                          }}>
+                            ⏱️ {calculateDDay(c.timestamp).text}
+                          </span>
+                        )}
                       </div>
                       <button onClick={() => handleDeleteCase(c.id)} style={{ padding: '5px 10px', fontSize: '12px', backgroundColor: 'transparent', color: colors.danger, border: `1px solid ${colors.danger}`, borderRadius: '6px', cursor: 'pointer' }}>삭제</button>
                     </div>
