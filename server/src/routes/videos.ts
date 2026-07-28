@@ -8,6 +8,7 @@ import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { buildPublicUrl, storageClient, STORAGE_BUCKET } from '../lib/storage.js'
 import { upsertDailyDiary } from '../lib/dodo.js'
+import { awardPointsOnce, REACTION_POINTS } from '../lib/points.js'
 
 export const videosRouter = Router()
 videosRouter.use(requireAuth)
@@ -241,4 +242,77 @@ videosRouter.delete('/:id/comments/:commentId', asyncHandler(async (req, res) =>
 
   await prisma.comment.delete({ where: { id: comment.id } })
   res.status(204).end()
+}))
+
+const REACTION_KINDS = ['sparkle', 'heart', 'fire', 'tear', 'wow', 'sleepy'] as const
+type ReactionKindValue = (typeof REACTION_KINDS)[number]
+
+function isReactionKind(value: unknown): value is ReactionKindValue {
+  return typeof value === 'string' && (REACTION_KINDS as readonly string[]).includes(value)
+}
+
+async function buildReactionSummary(videoPostId: string, userId: string) {
+  const reactions = await prisma.reaction.findMany({ where: { videoPostId } })
+  const counts = Object.fromEntries(REACTION_KINDS.map((kind) => [kind, 0])) as Record<ReactionKindValue, number>
+  let myReaction: ReactionKindValue | null = null
+  for (const reaction of reactions) {
+    counts[reaction.kind as ReactionKindValue] += 1
+    if (reaction.fromUserId === userId) myReaction = reaction.kind as ReactionKindValue
+  }
+  return { counts, myReaction }
+}
+
+videosRouter.get('/:id/reactions', asyncHandler(async (req, res) => {
+  const video = await prisma.videoPost.findUnique({ where: { id: req.params.id } })
+  if (!video || video.deletedAt) {
+    res.status(404).json({ error: '존재하지 않는 영상입니다.' })
+    return
+  }
+
+  res.json(await buildReactionSummary(video.id, req.userId!))
+}))
+
+videosRouter.put('/:id/reactions', asyncHandler(async (req, res) => {
+  const video = await prisma.videoPost.findUnique({ where: { id: req.params.id } })
+  if (!video || video.deletedAt) {
+    res.status(404).json({ error: '존재하지 않는 영상입니다.' })
+    return
+  }
+
+  const { kind } = req.body as Record<string, unknown>
+  if (!isReactionKind(kind)) {
+    res.status(400).json({ error: `kind는 ${REACTION_KINDS.join('/')} 중 하나여야 합니다.` })
+    return
+  }
+
+  const existing = await prisma.reaction.findUnique({
+    where: { videoPostId_fromUserId: { videoPostId: video.id, fromUserId: req.userId! } },
+  })
+
+  if (existing) {
+    if (existing.kind !== kind) {
+      await prisma.reaction.update({ where: { id: existing.id }, data: { kind } })
+    }
+  } else {
+    await prisma.reaction.create({ data: { videoPostId: video.id, fromUserId: req.userId!, kind } })
+
+    // 이 영상에 이 친구가 처음 반응을 남기는 순간에만 영상 주인에게 포인트를 지급한다. refId에
+    // 반응자 id를 함께 넣어서, 같은 영상이라도 반응한 친구마다 별도로 지급되게 한다(자기 영상엔 지급 안 함).
+    if (video.userId !== req.userId) {
+      await awardPointsOnce(video.userId, 'REACTION', `${video.id}:${req.userId}`, REACTION_POINTS, '친구 반응')
+    }
+  }
+
+  res.json(await buildReactionSummary(video.id, req.userId!))
+}))
+
+videosRouter.delete('/:id/reactions', asyncHandler(async (req, res) => {
+  const video = await prisma.videoPost.findUnique({ where: { id: req.params.id } })
+  if (!video || video.deletedAt) {
+    res.status(404).json({ error: '존재하지 않는 영상입니다.' })
+    return
+  }
+
+  await prisma.reaction.deleteMany({ where: { videoPostId: video.id, fromUserId: req.userId! } })
+  res.json(await buildReactionSummary(video.id, req.userId!))
 }))
