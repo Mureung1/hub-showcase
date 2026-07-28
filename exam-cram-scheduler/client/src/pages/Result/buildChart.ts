@@ -30,6 +30,11 @@ export interface ChartGeometry {
   examMarkers: { x: number; y: number; label: string }[];
   /** 가로축 요일 눈금 */
   dayTicks: { x: number; label: string }[];
+  /**
+   * #41 — 현재 시각(KST)의 세로선 x좌표. 지금이 그래프 기간 밖(시험이 다 끝난 뒤 등)이면
+   * null이라 선을 그리지 않는다. 저장한 스케줄을 며칠 뒤에 열면 자연히 null이 된다.
+   */
+  nowX: number | null;
 }
 
 /** 값이 없을 때 그려도 안전한 빈 결과 */
@@ -41,6 +46,7 @@ const EMPTY: ChartGeometry = {
   caffeineMarkers: [],
   examMarkers: [],
   dayTicks: [],
+  nowX: null,
 };
 
 export function buildChartGeometry(
@@ -131,5 +137,9 @@ export function buildChartGeometry(
     }
   });
 
-  return { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks };
+  // #41 — 지금 사용자가 곡선의 어디쯤 있는지. 기간 안일 때만 x를 주고, 밖이면 null.
+  const 지금 = Date.now();
+  const nowX = 지금 >= 시작 && 지금 <= 끝 ? toX(지금) : null;
+
+  return { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks, nowX };
 }
