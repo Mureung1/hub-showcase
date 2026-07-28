@@ -24,8 +24,8 @@
 }
 
 .subscription-dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
@@ -41,10 +41,10 @@
 .subscription-detail-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   background: var(--color-card);
   border-radius: var(--radius-lg);
-  padding: 16px 18px;
+  padding: var(--space-card-padding);
   box-shadow: var(--shadow-card);
 }
 
@@ -91,7 +91,7 @@
 }
 
 .copy-link-btn {
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: var(--radius-pill);
   border: none;
   background: var(--color-card-suggest);
@@ -102,7 +102,7 @@
 }
 
 .kakao-share-btn {
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: var(--radius-pill);
   border: none;
   background: var(--color-accent-kakao);
@@ -123,7 +123,7 @@
   font-weight: 700;
   color: var(--color-primary);
   text-decoration: none;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-primary);
   background: none;
@@ -145,7 +145,7 @@
   background: var(--color-primary);
   border: none;
   border-radius: var(--radius-pill);
-  padding: 6px 12px;
+  padding: 6px 14px;
   cursor: pointer;
 }
 
@@ -157,7 +157,7 @@
 .settlement-current {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: var(--space-inline-gap);
 }
 
@@ -170,7 +170,7 @@
   display: block;
   width: 100%;
   text-align: center;
-  padding: 14px;
+  padding: 16px;
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   font-weight: 700;
@@ -181,7 +181,7 @@
 
 .settlement-current-actions .toss-transfer-btn {
   flex: 3;
-  padding: 10px;
+  padding: 12px;
 }
 
 .settlement-current-actions .settlement-transfer-pending-message {
@@ -198,7 +198,7 @@
   gap: var(--space-inline-gap);
   background: var(--color-card);
   border-radius: var(--radius-lg);
-  padding: 16px 18px;
+  padding: var(--space-card-padding);
   box-shadow: var(--shadow-card);
 }
 
@@ -211,8 +211,8 @@
 
 .toss-transfer-qr {
   display: block;
-  width: 160px;
-  height: 160px;
+  width: 176px;
+  height: 176px;
   border-radius: var(--radius-md);
 }
 
@@ -226,7 +226,7 @@
 
 .confirm-request-btn {
   flex: 2;
-  padding: 10px 8px;
+  padding: 12px 8px;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-primary);
   background: var(--color-on-primary);
@@ -247,7 +247,7 @@
   margin: 0;
   padding: 0;
   border-top: 1px solid var(--color-border);
-  max-height: 216px;
+  max-height: 238px;
   overflow-y: auto;
 }
 
@@ -256,7 +256,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-inline-gap);
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--color-border);
   text-decoration: none;
   color: inherit;
@@ -277,7 +277,7 @@
 .member-status {
   font-size: var(--font-size-caption);
   font-weight: 600;
-  padding: 2px 10px;
+  padding: 2px 12px;
   border-radius: var(--radius-pill);
 }
 
@@ -303,7 +303,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-inline-gap);
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -333,7 +333,7 @@
   background: var(--color-card-suggest);
   border: none;
   border-radius: var(--radius-pill);
-  padding: 6px 10px;
+  padding: 6px 12px;
   cursor: pointer;
 }
 
@@ -344,7 +344,7 @@
 }
 
 .subscription-detail-message {
-  padding: var(--space-section-gap) 4px;
+  padding: var(--space-section-gap) var(--space-xs);
   color: var(--color-text-muted);
   font-size: var(--font-size-body);
   text-align: center;

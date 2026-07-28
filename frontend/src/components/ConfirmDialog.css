@@ -11,11 +11,11 @@
 
 .confirm-dialog-card {
   width: 100%;
-  max-width: 360px;
+  max-width: 396px;
   background: var(--color-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-frame);
-  padding: 20px 18px;
+  padding: 22px 20px;
   display: flex;
   flex-direction: column;
   gap: var(--space-inline-gap);
@@ -45,5 +45,5 @@
 .confirm-dialog-actions .btn-primary {
   width: auto;
   flex: 1;
-  padding: 12px;
+  padding: 14px;
 }
