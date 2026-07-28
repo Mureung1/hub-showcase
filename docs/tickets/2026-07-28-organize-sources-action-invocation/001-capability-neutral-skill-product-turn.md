@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -34,22 +34,35 @@
 
 ## Acceptance Criteria
 
-- [ ] `StartProductTurnInput`이 exact optional Skill shape를 받고 malformed key roster, empty/oversized name과 unsafe path를 native mutation 전에 거절한다.
-- [ ] Valid workspace-contained real non-symlink `SKILL.md`가 private bridge에 name·path pair로 전달되고 Python은 `[SkillInput, TextInput]` 순서를 사용한다.
-- [ ] Normal Chat과 모든 no-Skill caller는 기존 `[TextInput]` behavior, settings, permission, activity와 terminal semantics를 유지한다.
-- [ ] Python protocol test가 no-Skill/Skill field roster, partial pair, extra field와 bound를 고정한다.
-- [ ] Deterministic Runtime journal은 optional Skill의 caller mutation에 영향받지 않으며 새 public activity를 만들지 않는다.
-- [ ] Exact local-provider trace에서 provider input에 Skill name·path·body와 representative workspace-relative file-ref text가 나타나고 `MentionInput`은 나타나지 않는다.
-- [ ] Production Runtime이 첫 asynchronous validation 전에 Skill·settings·text를 snapshot하고 이후 caller mutation이 native command나 deterministic journal을 바꾸지 않는다.
-- [ ] Invalid Skill input, bridge process loss와 cleanup ambiguity가 existing bounded failure·unknown-outcome semantics로 수렴한다.
-- [ ] Production Runtime manifest와 ignored bundle이 새 tracked bridge source에 일치하고 실행 전후 verification이 green이다.
-- [ ] Official SDK patch roster와 source manifests의 digest는 변경되지 않는다.
+- [x] `StartProductTurnInput`이 exact optional Skill shape를 받고 malformed key roster, empty/oversized name과 unsafe path를 native mutation 전에 거절한다.
+- [x] Valid workspace-contained real non-symlink `SKILL.md`가 private bridge에 name·path pair로 전달되고 Python은 `[SkillInput, TextInput]` 순서를 사용한다.
+- [x] Normal Chat과 모든 no-Skill caller는 기존 `[TextInput]` behavior, settings, permission, activity와 terminal semantics를 유지한다.
+- [x] Python protocol test가 no-Skill/Skill field roster, partial pair, extra field와 bound를 고정한다.
+- [x] Deterministic Runtime journal은 optional Skill의 caller mutation에 영향받지 않으며 새 public activity를 만들지 않는다.
+- [x] Exact local-provider trace에서 provider input에 Skill name·path·body와 representative workspace-relative file-ref text가 나타나고 `MentionInput`은 나타나지 않는다.
+- [x] Production Runtime이 첫 asynchronous validation 전에 Skill·settings·text를 snapshot하고 이후 caller mutation이 native command나 deterministic journal을 바꾸지 않는다.
+- [x] Invalid Skill input, bridge process loss와 cleanup ambiguity가 existing bounded failure·unknown-outcome semantics로 수렴한다.
+- [x] Production Runtime manifest와 ignored bundle이 새 tracked bridge source에 일치하고 실행 전후 verification이 green이다.
+- [x] Official SDK patch roster와 source manifests의 digest는 변경되지 않는다.
 
 ## Verification
 
-- Targeted test or command: Bundle-independent `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime`, `npm run test:node-unit -w @ay-ple/codex-chat-runtime`
-- Repository checks: 먼저 `npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime -- --write-manifest`; 그 뒤 순서대로 `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run test:runtime-local-provider`, `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`, `npm test -w @ay-ple/codex-chat-runtime`, `npm run typecheck`, `npm run build`
-- Manual or live smoke: Ambient credential이나 live provider는 필요하지 않다. Bundle-backed `test:bridge`, local-provider와 `validate:*`는 materialization 뒤에만 실행하고 materialization과 Runtime actual gate를 병렬 실행하지 않으며 pre/post bundle non-mutation을 확인한다.
+- Targeted test or command:
+  - `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime`: 8/8 passed
+  - `npm run test:node-unit -w @ay-ple/codex-chat-runtime`: 147/147 passed
+- Repository checks:
+  - `npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime -- --write-manifest`: 두 clean materialization이 bundle roster SHA-256 `f387600fe960173a36b29bde6b96dfa5500faebdced243afee64d27599cf2799`로 수렴했다.
+  - `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`: production bundle 25개, full bridge 24개 test와 pre/post verify, Ruff check/format이 통과했다.
+  - `npm run test:runtime-local-provider`: exact local-provider 4/4 passed
+  - `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`: Node actual 99개, native-context actual 23개, exact local-provider 4개와 pre/post bundle verify가 통과했다.
+  - `npm test -w @ay-ple/codex-chat-runtime`와 `npm test`: passed
+  - `npm run verify:exact-sdk -w @ay-ple/codex-chat-runtime`: ordered 7-patch source가 두 deterministic generation에서 동일한 wheel과 source manifest로 검증됐다.
+  - `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`: passed
+- Manual or live smoke: Ambient credential과 live provider는 사용하지 않았다. Materialization 뒤 exact local-provider가 Skill name·path·body, representative relative file reference와 `MentionInput` 부재를 관찰했고, bundle-backed gate 전후 verify가 같은 ignored Runtime tree를 확인했다.
+- Review:
+  - Fixed point `1507a06e3666406c46993fe6d6257b885bcb831d` 이후 diff를 Standards와 Spec 두 축으로 병렬 검토했다.
+  - Standards의 Data Clumps judgement call을 decoded `ProductSkillInput` atomic value로 수정하고, Spec의 README manifest SHA finding을 actual manifest digest `84f79a9b0e7d25f6b4a1d00dd930761ea988e270d8d67410f941ffe34d932c95`로 교정했다.
+  - 최종 follow-up은 Standards 0건, Spec 0건이다.
 
 ## Blocked By
 
@@ -71,3 +84,11 @@ None — can start immediately.
 - `packages/codex-chat-runtime/manifests/production-runtime-darwin-arm64.json`
 - `packages/codex-chat-runtime/type-tests/workspace-runtime-contract.ts`
 - `packages/codex-chat-runtime/README.md`
+
+## Result
+
+- `StartProductTurnInput`에 capability-neutral optional `CodexProductSkillInput`을 추가하고, Node Runtime이 first asynchronous validation 전에 Skill·settings·text를 defensive snapshot한다. Skill path는 configured exact workspace 안의 normalized absolute real non-symlink `SKILL.md`만 native mutation 전에 허용한다.
+- Private Node→Python wire는 `skillName`·`skillPath`의 exact pair를 유지하고, decode 뒤에는 atomic optional `ProductSkillInput`으로 partial state를 제거했다. Python bridge는 Skill이 있으면 official SDK `[SkillInput, TextInput]`, 없으면 기존 `[TextInput]`을 전달한다.
+- Deterministic journal, actual-child matrix와 exact local-provider가 caller mutation, invalid path, no-Skill compatibility, provider-visible Skill body·relative reference와 `MentionInput` 부재를 검증한다. 새 Browser-safe activity, action-specific 의미, Skill discovery policy나 private MCP override는 추가하지 않았다.
+- Tracked bridge byte에 맞춰 production manifest와 ignored bundle을 다시 materialize했다. Official SDK source, ordered seven-patch stack, `unpatched.json`과 `patched-source.json`은 변경하지 않았다.
+- 구현 커밋: `58df332c4`, `07fbd2b81`, `736f73894`, `383484d84`
