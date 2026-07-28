@@ -5,7 +5,7 @@ import { usePayrollSummary } from "../features/payroll";
 import {
   getHoursLabel,
   getMonthlyScheduleSummary,
-  sortMonthlySchedules,
+  getUpcomingSchedules,
   useSchedules
 } from "../features/schedule";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
@@ -34,10 +34,7 @@ export function MyWorkPage() {
   const schedules = schedulesQuery.data?.schedules ?? [];
   const currentUserId = me?.profile.id;
   const { myMonthHours, myMonthSchedules } = getMonthlyScheduleSummary(schedules, currentMonth, currentUserId);
-  const todayKey = format(new Date(), "yyyy-MM-dd");
-  const upcomingSchedules = sortMonthlySchedules(
-    myMonthSchedules.filter((schedule) => schedule.workDate >= todayKey)
-  ).slice(0, 4);
+  const upcomingSchedules = getUpcomingSchedules(myMonthSchedules).slice(0, 4);
 
   if (isMeLoading) {
     return (

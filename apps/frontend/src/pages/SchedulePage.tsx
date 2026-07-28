@@ -15,11 +15,11 @@ import {
   getDayTone,
   getHoursLabel,
   getMonthlyScheduleSummary,
+  getUpcomingSchedules,
   getScheduleDuration,
   groupSchedulesByDate,
   parseMonthParam,
   Schedule,
-  sortMonthlySchedules,
   useSchedules
 } from "../features/schedule";
 import { useWorkers } from "../features/worker";
@@ -110,11 +110,8 @@ export function SchedulePage() {
     currentUserId
   );
   const totalMonthHours = currentMonthSchedules.reduce((total, schedule) => total + getScheduleDuration(schedule), 0);
-  const todayKey = format(new Date(), "yyyy-MM-dd");
   const sideSourceSchedules = isOwner ? currentMonthSchedules : myMonthSchedules;
-  const upcomingSchedules = sortMonthlySchedules(sideSourceSchedules.filter((schedule) => schedule.workDate >= todayKey));
-  const sideSchedules =
-    upcomingSchedules.length > 0 ? upcomingSchedules.slice(0, 4) : sortMonthlySchedules(sideSourceSchedules).slice(0, 4);
+  const sideSchedules = getUpcomingSchedules(sideSourceSchedules).slice(0, 4);
   const sideScheduleTitle = isOwner ? "다가오는 매장 근무" : "다가오는 내 근무";
   const sideSummaryLabel = isOwner ? "STORE SUMMARY" : "MY SUMMARY";
   const sideSummaryTitle = isOwner

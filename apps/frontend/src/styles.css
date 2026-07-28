@@ -788,6 +788,87 @@ p {
   min-height: 36px;
 }
 
+.notifications-panel {
+  max-width: 900px;
+}
+
+.notification-list {
+  display: grid;
+  gap: 10px;
+}
+
+.notification-card {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 14px;
+  width: 100%;
+  padding: 15px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+  color: var(--color-text-main);
+  cursor: pointer;
+  text-align: left;
+}
+
+.notification-card.unread {
+  border-color: var(--color-primary-deep);
+  background: var(--color-green-surface);
+}
+
+.notification-card:focus-visible {
+  outline: 3px solid rgba(217, 255, 95, 0.42);
+  outline-offset: 2px;
+}
+
+.notification-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+.notification-card.unread .notification-dot {
+  background: var(--color-primary-deep);
+}
+
+.notification-card strong {
+  display: block;
+  font-size: 15px;
+}
+
+.notification-card p {
+  margin: 6px 0 0;
+  color: var(--color-text-sub);
+  font-size: 13px;
+}
+
+.notification-card div span {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.notification-card em {
+  align-self: start;
+  padding: 5px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.notification-card.unread em {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
 .badge {
   height: 30px;
   padding: 0 11px;
