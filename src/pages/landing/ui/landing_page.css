@@ -133,10 +133,9 @@
 
 .feature-showcase {
   display: grid;
-  min-height: 100svh;
   align-content: center;
   gap: var(--spacing-8);
-  padding: var(--layout-section-gap-mobile) 0;
+  padding: calc(var(--layout-section-gap-mobile) + var(--spacing-4)) 0;
   border-top: 1px solid var(--color-ash);
 }
 
@@ -652,7 +651,7 @@
   }
 
   .feature-showcase {
-    padding: var(--layout-section-gap-tablet) 0;
+    padding: calc(var(--layout-section-gap-tablet) + var(--spacing-4)) 0;
   }
 
   .feature-scene__action-row {
@@ -672,7 +671,7 @@
 
 @media (min-width: 1200px) {
   .feature-showcase {
-    padding: var(--layout-section-gap-desktop) 0;
+    padding: calc(var(--layout-section-gap-desktop) + var(--spacing-4)) 0;
   }
 }
 
