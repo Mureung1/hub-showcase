@@ -1,10 +1,11 @@
+import { apiUrl } from "./apiBase";
 import { getDaysUntil } from "./daysUntil";
 import { calculatePriorityScore, WEIGHT_PRESETS } from "./priorityCalculator";
 
 // 서버에 우선순위 계산을 요청한다. 서버가 응답하지 않으면 로컬 계산으로 대체한다.
 export async function fetchPriorityScores(subjects, weightKey) {
   try {
-    const response = await fetch("/api/priority", {
+    const response = await fetch(apiUrl("/api/priority"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subjects, weightKey }),
