@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import TaskCard from "./TaskCard";
 import EmptyState from "./EmptyState";
+import JourneyHero from "./JourneyHero";
 import FocusMode from "./FocusMode";
 import NudgeModal from "./NudgeModal";
 import { apiFetch, ApiError } from "../lib/api";
-import { ACTIVATION_POLL_MS, getDemoNudgeDelayMs } from "../lib/nudgeConfig";
+import { ACTIVATION_POLL_MS, getNudgeDelayMs } from "../lib/nudgeConfig";
 import { pickCheckpointLevel } from "../lib/reasonCheckpoint";
+import { calculateHomeStats } from "../lib/homeStats";
 import {
   createFocusSession,
   getRestorableFocusSession,
@@ -14,27 +17,8 @@ import {
 } from "../lib/focusSession";
 import "./HomePage.css";
 
-// content-as-data: 칩 하나 = 라벨 + 계산 방식
-const STAT_DEFS = [
-  {
-    key: "active",
-    label: "진행 중",
-    calc: (tasks) =>
-      tasks.filter((t) => t.status === "waiting" || t.status === "active")
-        .length,
-  },
-  {
-    key: "done",
-    label: "완료",
-    calc: (tasks) => tasks.filter((t) => t.status === "done").length,
-  },
-  {
-    key: "streak",
-    label: "스트릭",
-    calc: (_tasks, streak) => streak,
-    format: (value) => `🔥 ${value}`,
-  },
-];
+const TASK_STATUSES = new Set(["waiting", "active", "done"]);
+const DEFAULT_DONE_TASK_COUNT = 3;
 
 function normalizeReasonText(value) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : null;
@@ -50,30 +34,113 @@ function didReasonChange(previousTask, savedReason) {
   );
 }
 
-function StatsRow({ tasks, streak }) {
+function StatsRow({ stats, historyStatus }) {
+  const cards = [
+    { key: "active", label: "진행 중", value: `${stats.activeCount}개` },
+    {
+      key: "urgent",
+      label: "마감 임박",
+      value: `${stats.urgentCount}개`,
+      note: "기한 초과 포함",
+    },
+    {
+      key: "today",
+      label: "오늘 완료",
+      value:
+        historyStatus === "ready"
+          ? `${stats.todayCompletedCount}개`
+          : "—",
+    },
+    { key: "streak", label: "연속 완료", value: `${stats.streak}일` },
+  ];
+
   return (
     <div className="stats-row">
-      {STAT_DEFS.map((def) => {
-        const value = def.calc(tasks, streak);
-        return (
-          <div className="stat-chip" key={def.key}>
-            {def.label}
-            <strong>{def.format ? def.format(value) : value}</strong>
-          </div>
-        );
-      })}
+      {cards.map((card) => (
+        <div
+          className={
+            card.key === "urgent" && stats.urgentCount > 0
+              ? "stat-chip stat-chip-urgent"
+              : "stat-chip"
+          }
+          key={card.key}
+        >
+          <span className="stat-label">{card.label}</span>
+          <strong>{card.value}</strong>
+          {card.note ? <span className="stat-note">{card.note}</span> : null}
+        </div>
+      ))}
     </div>
+  );
+}
+
+function TaskSection({
+  id,
+  title,
+  tasks,
+  count = tasks.length,
+  emptyMessage,
+  onStart,
+  onDelete,
+  now,
+  action = null,
+  modalTaskId = null,
+  focusedTaskId = null,
+  nextNudgeAtByTaskId = null,
+}) {
+  const headingId = `${id}-heading`;
+
+  return (
+    <section className="task-section" aria-labelledby={headingId}>
+      <div className="task-section-header">
+        <div className="task-section-title-row">
+          <h2 className="task-section-title" id={headingId}>
+            {title}
+          </h2>
+          <span className="task-section-count" aria-label={`${title} ${count}개`}>
+            {count}
+          </span>
+        </div>
+        {action}
+      </div>
+      <div className="task-section-divider" aria-hidden="true" />
+      {tasks.length > 0 ? (
+        <div className="task-grid" id={`${id}-list`}>
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onClick={() => onStart(task)}
+              onDelete={() => onDelete(task.id)}
+              now={now}
+              isNudgeModalOpen={modalTaskId !== null}
+              isThisTaskModalTarget={task.id === modalTaskId}
+              isFocused={task.id === focusedTaskId}
+              nextNudgeAt={nextNudgeAtByTaskId?.get(task.id) ?? null}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="task-section-empty">{emptyMessage}</p>
+      )}
+    </section>
   );
 }
 
 function HomePage() {
   const [tasks, setTasks] = useState([]);
+  const [history, setHistory] = useState([]);
   const [streak, setStreak] = useState(0);
+  const [historyStatus, setHistoryStatus] = useState("loading");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
   const [focusSession, setFocusSession] = useState(null); // 시작 방식과 개입 action을 보존하는 Focus 세션 v2
   const [modalTaskId, setModalTaskId] = useState(null); // 자동으로 뜬 넛지 모달 대상
   const [modalCheckpointLevel, setModalCheckpointLevel] = useState(null); // 이번 모달에 회피이유 재확인을 띄울 레벨(1|3|null)
+  // Lv2에서 실제 표시된 행동을 Hero에 반영하기 위한 현재 HomePage 수명 전용 상태.
+  // 저장소에는 기록하지 않으며 새로고침하면 비워지는 참고 정보다.
+  const [heroActionsByTask, setHeroActionsByTask] = useState(() => new Map());
+  const [showAllDoneTasks, setShowAllDoneTasks] = useState(false);
 
   // 인터벌/폴링 콜백은 stale closure를 잡으므로, 항상 최신 값은 ref로 읽는다.
   const stateRef = useRef({ tasks: [], selectedTaskId: null });
@@ -93,20 +160,47 @@ function HomePage() {
   // 서버/DB 스키마를 늘리지 않는 현재 MVP의 같은 HomePage 세션 전용 스냅샷이다.
   const lv2ActionByTaskRef = useRef(new Map());
   const lv3ReasonChangedByTaskRef = useRef(new Map());
+  // taskId -> 다음 알림 예정 시각(ms epoch). 서버에는 없는 클라이언트 전용 추정값 —
+  // scheduleTaskTimer가 setTimeout을 걸 때 "그 순간 + delayMs"로만 기록한다(새로고침
+  // 시 복구되지 않고, 레벨/마감 기준으로 항상 새로 계산됨 — 남은 구조적 한계로 보고).
+  const [nextNudgeAtByTaskId, setNextNudgeAtByTaskId] = useState(() => new Map());
+
+  const setNextNudgeAt = useCallback((taskId, timestamp) => {
+    setNextNudgeAtByTaskId((prev) => {
+      const next = new Map(prev);
+      if (timestamp === null) next.delete(taskId);
+      else next.set(taskId, timestamp);
+      return next;
+    });
+  }, []);
 
   const loadTasks = useCallback(({ restoreFocus = false } = {}) => {
-    return apiFetch("/api/tasks").then(({ data, streak: nextStreak }) => {
-      if (restoreFocus) {
-        const restored = getRestorableFocusSession(data);
-        if (restored) {
-          setFocusSession(restored.session);
-          setSelectedTaskId(restored.task.id);
+    setHistoryStatus("loading");
+    const historyRequest = apiFetch("/api/history")
+      .then(({ data }) => {
+        setHistory(Array.isArray(data) ? data : []);
+        setHistoryStatus("ready");
+      })
+      .catch((error) => {
+        console.error("히스토리 통계를 불러오지 못했습니다.", error);
+        setHistoryStatus("error");
+      });
+
+    const tasksRequest = apiFetch("/api/tasks").then(
+      ({ data, streak: nextStreak }) => {
+        if (restoreFocus) {
+          const restored = getRestorableFocusSession(data);
+          if (restored) {
+            setFocusSession(restored.session);
+            setSelectedTaskId(restored.task.id);
+          }
         }
-      }
-      setTasks(data);
-      setStreak(nextStreak ?? 0);
-      setIsLoading(false);
-    });
+        setTasks(data);
+        setStreak(nextStreak);
+        setIsLoading(false);
+      },
+    );
+    return Promise.all([tasksRequest, historyRequest]);
   }, []);
 
   useEffect(() => {
@@ -133,13 +227,15 @@ function HomePage() {
       return;
     }
 
-    const delayMs = getDemoNudgeDelayMs(task.level, task.deadline);
+    const delayMs = getNudgeDelayMs(task.level, task.deadline);
+    setNextNudgeAt(task.id, Date.now() + delayMs);
     const timeoutId = setTimeout(() => {
       timersRef.current.delete(task.id);
+      setNextNudgeAt(task.id, null);
       runTickRef.current?.(task.id);
     }, delayMs);
     timersRef.current.set(task.id, timeoutId);
-  }, []);
+  }, [setNextNudgeAt]);
 
   const scheduleActiveTaskTimers = useCallback(
     (excludedTaskId = null) => {
@@ -271,9 +367,10 @@ function HomePage() {
       if (!pollable.has(id)) {
         clearTimeout(timeoutId);
         timersRef.current.delete(id);
+        setNextNudgeAt(id, null);
       }
     }
-  }, [tasks, selectedTaskId, scheduleTaskTimer]);
+  }, [tasks, selectedTaskId, scheduleTaskTimer, setNextNudgeAt]);
 
   // 언마운트 시 모든 tick 타이머 정리
   useEffect(() => {
@@ -377,7 +474,13 @@ function HomePage() {
     ) {
       return;
     }
-    lv2ActionByTaskRef.current.set(taskId, microTask.trim());
+    const resolvedMicroTask = microTask.trim();
+    lv2ActionByTaskRef.current.set(taskId, resolvedMicroTask);
+    setHeroActionsByTask((previous) => {
+      const next = new Map(previous);
+      next.set(taskId, resolvedMicroTask);
+      return next;
+    });
   }, []);
 
   // 회피 이유 재확인에서 이유를 고른 경우, avoidance_reasons에 새 행으로 저장한다.
@@ -424,6 +527,11 @@ function HomePage() {
       await apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
       setTasks((prev) => prev.filter((t) => t.id !== id));
       lv2ActionByTaskRef.current.delete(id);
+      setHeroActionsByTask((previous) => {
+        const next = new Map(previous);
+        next.delete(id);
+        return next;
+      });
       lv3ReasonChangedByTaskRef.current.delete(id);
       reasonCheckedRef.current.delete(id);
       if (selectedTaskId === id) setSelectedTaskId(null);
@@ -437,8 +545,24 @@ function HomePage() {
   const modalTask = tasks.find(
     (t) => t.id === modalTaskId && t.status === "active",
   );
+  const waitingTasks = tasks.filter((task) => task.status === "waiting");
+  const activeTasks = tasks.filter((task) => task.status === "active");
+  const doneTasks = tasks.filter((task) => task.status === "done");
+  const otherTasks = tasks.filter((task) => !TASK_STATUSES.has(task.status));
   // Lv3 기억 기반 개입이 참조할 세션 내 완료 이력(같은 회피 이유로 성공한 사례 탐색용).
-  const completedTasks = tasks.filter((t) => t.status === "done");
+  const completedTasks = doneTasks;
+  const heroTask = activeTasks[0] ?? null;
+  const visibleDoneTasks = showAllDoneTasks
+    ? doneTasks
+    : doneTasks.slice(0, DEFAULT_DONE_TASK_COUNT);
+  const renderNow = new Date();
+  const homeStats = calculateHomeStats(tasks, history, streak, renderNow);
+
+  useEffect(() => {
+    if (doneTasks.length <= DEFAULT_DONE_TASK_COUNT && showAllDoneTasks) {
+      setShowAllDoneTasks(false);
+    }
+  }, [doneTasks.length, showAllDoneTasks]);
 
   if (isLoading) {
     return (
@@ -460,6 +584,7 @@ function HomePage() {
             등록된 할일이 여기 모여요. 미룰수록 압력 게이지가 차오릅니다.
           </p>
         </div>
+        <JourneyHero />
         <EmptyState
           message="아직 등록된 할일이 없어요."
           actionLabel="할일 등록하러 가기"
@@ -471,19 +596,83 @@ function HomePage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">홈</h1>
-        <p className="page-sub">등록된 할일과 지금 상태예요.</p>
+        <div>
+          <h1 className="page-title">홈</h1>
+          <p className="page-sub">등록된 할일과 지금 상태예요.</p>
+        </div>
+        <Link className="task-create-link" to="/register">
+          + 새 할 일
+        </Link>
       </div>
-      <StatsRow tasks={tasks} streak={streak} />
-      <div className="task-grid">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onClick={() => startFocus(task)}
-            onDelete={() => handleDeleteTask(task.id)}
+      <StatsRow stats={homeStats} historyStatus={historyStatus} />
+      <JourneyHero
+        task={heroTask}
+        microTask={
+          heroTask ? (heroActionsByTask.get(heroTask.id) ?? null) : null
+        }
+        onStart={heroTask ? () => startFocus(heroTask) : null}
+      />
+      <div className="task-sections">
+        <TaskSection
+          id="active-tasks"
+          title="진행 중인 할 일"
+          tasks={activeTasks}
+          emptyMessage="지금 진행 중인 할 일이 없어요."
+          onStart={startFocus}
+          onDelete={handleDeleteTask}
+          now={renderNow}
+          modalTaskId={modalTaskId}
+          focusedTaskId={selectedTaskId}
+          nextNudgeAtByTaskId={nextNudgeAtByTaskId}
+        />
+        {waitingTasks.length > 0 && (
+          <TaskSection
+            id="waiting-tasks"
+            title="시작 예정"
+            tasks={waitingTasks}
+            onStart={startFocus}
+            onDelete={handleDeleteTask}
+            now={renderNow}
           />
-        ))}
+        )}
+        {otherTasks.length > 0 && (
+          <TaskSection
+            id="other-tasks"
+            title="기타 상태"
+            tasks={otherTasks}
+            onStart={startFocus}
+            onDelete={handleDeleteTask}
+            now={renderNow}
+            modalTaskId={modalTaskId}
+            focusedTaskId={selectedTaskId}
+            nextNudgeAtByTaskId={nextNudgeAtByTaskId}
+          />
+        )}
+        <TaskSection
+          id="done-tasks"
+          title="완료한 할 일"
+          tasks={visibleDoneTasks}
+          count={doneTasks.length}
+          emptyMessage="완료한 할 일이 아직 없어요."
+          onStart={startFocus}
+          onDelete={handleDeleteTask}
+          now={renderNow}
+          action={
+            doneTasks.length > DEFAULT_DONE_TASK_COUNT ? (
+              <button
+                type="button"
+                className="task-section-toggle"
+                aria-expanded={showAllDoneTasks}
+                aria-controls="done-tasks-list"
+                onClick={() => setShowAllDoneTasks((current) => !current)}
+              >
+                {showAllDoneTasks
+                  ? "완료 목록 접기"
+                  : "완료한 할 일 모두 보기"}
+              </button>
+            ) : null
+          }
+        />
       </div>
       {selectedTask && (
         <div className="focus-overlay">

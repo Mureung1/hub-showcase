@@ -5,6 +5,11 @@
 }
 
 .page-header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 20px;
 }
 
@@ -23,34 +28,218 @@
 
 /* prototype.html 잠정 반영, 추후 확정판 기준으로 재검토 필요 (SKILL.md엔 아직 "추후 결정"으로 남아있음) */
 .stats-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  margin-bottom: 24px;
 }
 
 .stat-chip {
+  display: flex;
+  min-height: 100px;
+  flex-direction: column;
+  min-width: 0;
   background: var(--panel-bg);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px 16px;
+  padding: 12px 14px;
   font-size: 13px;
   color: var(--ink-soft);
-  flex: 1;
-  min-width: 140px;
+}
+
+.stat-label,
+.stat-note {
+  display: block;
 }
 
 .stat-chip strong {
   display: block;
+  margin-top: 4px;
   font-size: 20px;
+  line-height: 1.25;
   color: var(--ink);
   font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.stat-note {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.stat-chip-urgent {
+  border-color: color-mix(in srgb, var(--gauge4) 42%, var(--line));
+  background: color-mix(in srgb, var(--gauge4) 6%, var(--panel-bg));
+}
+
+.stat-chip-urgent strong {
+  color: var(--gauge4);
 }
 
 .task-grid {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.task-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.task-create-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 13px;
+  background: var(--panel-bg);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.task-create-link:hover {
+  border-color: var(--accent);
+}
+
+.task-create-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.task-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.task-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.task-section-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.task-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-bg);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.task-section-divider {
+  height: 1px;
+  margin: 8px 0 14px;
+  background: var(--line);
+}
+
+.task-section-empty {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.task-section-toggle {
+  min-height: 40px;
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.task-section-toggle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.task-section-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (max-width: 620px) {
+  .task-sections {
+    gap: 24px;
+  }
+
+  .task-section-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .task-section-toggle {
+    min-height: 44px;
+    margin: -6px 0;
+  }
+
+  .task-create-link {
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 24px 16px 64px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stats-row {
+    gap: 8px;
+  }
+
+  .stat-chip {
+    min-height: 92px;
+    padding: 10px 11px;
+  }
+
+  .stat-chip strong {
+    font-size: 18px;
+  }
 }
 
 /* 포커스 화면 오버레이 — 개입 팝업과 동일하게 딤은 레벨과 무관하게 항상 같은 톤 */
