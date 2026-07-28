@@ -118,6 +118,16 @@ describe('LoginPage', () => {
 
 `src/app/app.test.tsx`의 로그인 관련 세 테스트를 다음 내용으로 교체한다. 일반 로그인 시작 실패는 제목과 본문을 합친 alert 전체 문구를 확인해 중복을 검출한다.
 
+같은 파일의 `presents the core feature tabs before login` 테스트에 남아 있는 이전 기능 소개 제목은 현재 온보딩 명세와 화면에 맞춰 다음 기대값으로 갱신한다.
+
+```tsx
+expect(
+  screen.getByRole('heading', {
+    name: '발견한 링크가 필요한 순간 다시 쓰이도록, 아맞다가 저장부터 꺼내보기까지 이어드려요.',
+  })
+).not.toBeNull();
+```
+
 ```tsx
 it('enters the workspace only after a signed-in session arrives', async () => {
   const user = userEvent.setup();
