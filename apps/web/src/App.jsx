@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect } from 'react'
-import { startSession, turn, done, fetchSpaces } from './api.js'
+import { startSession, turn, done, fetchSpaces, fetchHistory } from './api.js'
 import './design/global.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -409,6 +409,128 @@ function Toast({ toast, onClose }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// 날짜 유틸
+// ═══════════════════════════════════════════════════════════════════════════
+function formatDateKey(dateStr) {
+  const date = new Date(dateStr)
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+}
+
+function formatDateLabel(dateStr) {
+  const date = new Date(dateStr)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  const isToday = date.toDateString() === today.toDateString()
+  const isYesterday = date.toDateString() === yesterday.toDateString()
+
+  if (isToday) return '오늘'
+  if (isYesterday) return '어제'
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`
+}
+
+function groupSessionsByDate(sessions) {
+  const groups = {}
+  for (const session of sessions) {
+    const key = formatDateKey(session.created_at)
+    if (!groups[key]) {
+      groups[key] = { date: session.created_at, sessions: [] }
+    }
+    groups[key].sessions.push(session)
+  }
+  // 최신순 정렬된 배열로 반환
+  return Object.values(groups).sort((a, b) => new Date(b.date) - new Date(a.date))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HistoryDeckCard — 과거 세션 카드 (날짜 없이, 그룹 내 하위 카드)
+// ═══════════════════════════════════════════════════════════════════════════
+function HistoryDeckCard({ session }) {
+  return (
+    <div style={{
+      background: 'var(--color-tile)',
+      borderRadius: 'var(--radius-md)',
+      padding: 'var(--space-4)',
+      borderLeft: '3px solid var(--color-mint)',
+    }}>
+      {/* 원인명 */}
+      <h4 style={{
+        font: 'var(--font-title)',
+        color: 'var(--color-ink)',
+        marginBottom: 'var(--space-2)',
+      }}>
+        {session.final_label}
+      </h4>
+
+      {/* 해결법 */}
+      <p style={{
+        font: 'var(--font-body)',
+        color: 'var(--color-ink-soft)',
+        lineHeight: 1.5,
+        fontSize: 13,
+      }}>
+        {session.solution}
+      </p>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DateGroup — 날짜별 그룹 (헤더 + 하위 카드들)
+// ═══════════════════════════════════════════════════════════════════════════
+function DateGroup({ date, sessions }) {
+  return (
+    <div style={{ marginBottom: 'var(--space-6)' }}>
+      {/* 날짜 헤더 */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-3)',
+        marginBottom: 'var(--space-3)',
+      }}>
+        <div style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: 'var(--color-mint)',
+        }} />
+        <span style={{
+          font: 'var(--font-caption)',
+          color: 'var(--color-ink)',
+          fontWeight: 700,
+        }}>
+          {formatDateLabel(date)}
+        </span>
+        <span style={{
+          font: 'var(--font-caption)',
+          color: 'var(--color-ink-muted)',
+        }}>
+          {sessions.length}건
+        </span>
+        <div style={{
+          flex: 1,
+          height: 1,
+          background: 'var(--color-border-light)',
+        }} />
+      </div>
+
+      {/* 하위 카드들 */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-2)',
+        marginLeft: 'var(--space-5)',
+      }}>
+        {sessions.map((session) => (
+          <HistoryDeckCard key={session.session_id} session={session} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // App — 메인 컴포넌트
 // ═══════════════════════════════════════════════════════════════════════════
 function App() {
@@ -420,6 +542,8 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState(null)
   const [toast, setToast] = useState(null)
+  const [showHistoryDeck, setShowHistoryDeck] = useState(false)
+  const [pastSessions, setPastSessions] = useState([])
 
   // 공간 목록 로드
   useEffect(() => {
@@ -483,6 +607,23 @@ function App() {
     setSessionId(null)
   }
 
+  const handleShowHistory = async () => {
+    setLoading(true)
+    try {
+      const sessions = await fetchHistory(selectedSpace)
+      setPastSessions(sessions)
+      setShowHistoryDeck(true)
+    } catch {
+      setToast({ variant: 'error', message: '이력을 불러오지 못했어요.' })
+    }
+    setLoading(false)
+  }
+
+  const handleBackFromHistory = () => {
+    setShowHistoryDeck(false)
+    setPastSessions([])
+  }
+
   // 현재 공간 정보
   const currentSpace = spaces.find(s => s.id === selectedSpace) || spaces[0]
 
@@ -499,9 +640,73 @@ function App() {
         padding: 'var(--space-8) var(--space-4)',
       }}>
         {/* ─────────────────────────────────────────────────────────────────
+            이력덱 화면
+            ───────────────────────────────────────────────────────────────── */}
+      {showHistoryDeck && (
+        <div style={{ width: '100%', maxWidth: 'var(--width-content)' }}>
+          <Eyebrow>이전 기록</Eyebrow>
+
+          {/* 뒤로가기 버튼 */}
+          <button
+            onClick={handleBackFromHistory}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              padding: 'var(--space-2) 0',
+              marginBottom: 'var(--space-5)',
+              background: 'none',
+              border: 'none',
+              font: 'var(--font-caption)',
+              color: 'var(--color-ink-soft)',
+              cursor: 'pointer',
+            }}
+          >
+            ← 돌아가기
+          </button>
+
+          <h2 style={{
+            font: 'var(--font-display)',
+            color: 'var(--color-ink)',
+            marginBottom: 'var(--space-5)',
+          }}>
+            {currentSpace?.icon} {currentSpace?.name} 진단 기록
+          </h2>
+
+          {/* 카드 목록 또는 빈 상태 */}
+          {pastSessions.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: 'var(--space-10) var(--space-4)',
+              background: 'var(--color-tile)',
+              borderRadius: 'var(--radius-lg)',
+            }}>
+              <span style={{ fontSize: 48, marginBottom: 'var(--space-4)', display: 'block' }}>📋</span>
+              <p style={{
+                font: 'var(--font-body)',
+                color: 'var(--color-ink-soft)',
+              }}>
+                아직 기록이 없어요
+              </p>
+            </div>
+          ) : (
+            <div>
+              {groupSessionsByDate(pastSessions).map((group) => (
+                <DateGroup
+                  key={formatDateKey(group.date)}
+                  date={group.date}
+                  sessions={group.sessions}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+        {/* ─────────────────────────────────────────────────────────────────
             시작 화면
             ───────────────────────────────────────────────────────────────── */}
-      {response === null && (
+      {response === null && !showHistoryDeck && (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -538,9 +743,14 @@ function App() {
             몇 가지 질문에 답하면 냄새의 원인을 찾아드려요
           </p>
 
-          <ActionButton onClick={handleStart} disabled={loading}>
-            {loading ? '준비 중...' : '진단 시작하기'}
-          </ActionButton>
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <ActionButton onClick={handleStart} disabled={loading}>
+              {loading ? '준비 중...' : '진단 시작하기'}
+            </ActionButton>
+            <ActionButton variant="secondary" onClick={handleShowHistory} disabled={loading}>
+              이전 기록
+            </ActionButton>
+          </div>
 
           {/* 공간 선택 */}
           <div style={{

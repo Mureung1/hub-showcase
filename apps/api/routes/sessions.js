@@ -9,6 +9,7 @@ import { toResponse, toHypothesesResponse } from '../lib/label.js';
 // 엔진 함수 import
 import { bayes } from '../../../packages/kb/engine/core.js';
 import { decide, initState } from '../../../packages/kb/engine/policy.js';
+import { buildPrior } from '../../../packages/kb/engine/prior.js';
 
 const router = Router();
 
@@ -36,8 +37,23 @@ router.post('/', async (req, res) => {
     // KB 로드
     const kb = await loadKB(domain);
 
-    // 초기 상태 생성
-    const state = initState(kb);
+    // ─────────────────────────────────────────────────────────────
+    // 세션 간 기억: 같은 space의 과거 final_cause 조회
+    // ─────────────────────────────────────────────────────────────
+    const { data: pastSessions } = await supabase
+      .from('sessions')
+      .select('final_cause')
+      .eq('space_id', spaceId)
+      .not('final_cause', 'is', null);
+
+    const history = (pastSessions || []).map(s => s.final_cause);
+
+    // 조정된 KB 생성 (history 반영)
+    const adjustedHypotheses = buildPrior(kb, history);
+    const adjustedKb = { ...kb, hypotheses: adjustedHypotheses };
+
+    // 초기 상태 생성 (조정된 prior 사용)
+    const state = initState(adjustedKb);
 
     // 세션 생성
     const sessionId = generateSessionId();
@@ -70,11 +86,11 @@ router.post('/', async (req, res) => {
       return res.status(500).json({ error: turnError.message });
     }
 
-    // 첫 결정 얻기
-    const decision = decide(kb, state);
+    // 첫 결정 얻기 (조정된 KB 사용)
+    const decision = decide(adjustedKb, state);
 
     // 응답 반환 (숫자 없음)
-    const response = toResponse(sessionId, decision, state, kb);
+    const response = toResponse(sessionId, decision, state, adjustedKb);
     res.status(201).json(response);
 
   } catch (err) {
@@ -245,6 +261,51 @@ router.post('/:id/turns', async (req, res) => {
     // 응답 반환
     const response = toResponse(sessionId, decision, state, kb);
     res.json(response);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/sessions/history — 과거 이력 조회
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/history', async (req, res) => {
+  const { space } = req.query;
+
+  if (!space) {
+    return res.status(400).json({ error: 'space query parameter is required' });
+  }
+
+  try {
+    // KB 로드 (label, solution 조회용)
+    const kb = await loadKB('kitchen_odor');
+
+    // 같은 space의 종료된 세션 조회 (final_cause가 있는 것만)
+    const { data: sessions, error } = await supabase
+      .from('sessions')
+      .select('id, created_at, final_cause')
+      .eq('space_id', space)
+      .not('final_cause', 'is', null)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    // KB에서 label, solution 조회하여 병합
+    const history = (sessions || []).map(s => {
+      const hypothesis = kb.hypotheses[s.final_cause];
+      return {
+        session_id: s.id,
+        created_at: s.created_at,
+        final_cause: s.final_cause,
+        final_label: hypothesis?.label || s.final_cause,
+        solution: hypothesis?.solution || null,
+      };
+    });
+
+    res.json(history);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
