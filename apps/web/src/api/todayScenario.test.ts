@@ -41,6 +41,8 @@ function makeDiagnosis(over: Partial<Diagnosis> = {}): Diagnosis {
     rainImpactPct: -0.22,
     estimated: false,
     sampleDays: 30,
+    campaignDays: 0,
+    baselineExcludesCampaigns: false,
     byCondition: [],
     ...over,
   };

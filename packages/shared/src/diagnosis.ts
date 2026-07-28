@@ -26,8 +26,15 @@ export interface Diagnosis {
   rainImpactPct: number;
   /** 실측 표본이 부족해 업종 기본 계수로 추정했는지 여부. */
   estimated: boolean;
-  /** 날씨 스냅샷이 있는 표본 일수. */
+  /** 편차 계산에 실제로 쓴 표본 일수 (개입일을 뺐으면 뺀 뒤 기준). */
   sampleDays: number;
+  /** 캠페인을 발송한 날(개입일) 수. 방어 효과 측정의 대상이 되는 날들. */
+  campaignDays: number;
+  /**
+   * 개입일을 기준선에서 실제로 뺐는지.
+   * false면 빼고 나니 표본이 모자라 되돌린 상태 — 진단이 캠페인 효과에 오염돼 있다는 뜻이다.
+   */
+  baselineExcludesCampaigns: boolean;
   /** 상태별 영향 (실측일 때만 채워짐). */
   byCondition: ConditionImpact[];
 }

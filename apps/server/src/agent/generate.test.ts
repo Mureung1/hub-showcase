@@ -25,6 +25,8 @@ const diagnosis: Diagnosis = {
   rainImpactPct: -0.22,
   estimated: false,
   sampleDays: 29,
+  campaignDays: 0,
+  baselineExcludesCampaigns: false,
   byCondition: [],
 };
 

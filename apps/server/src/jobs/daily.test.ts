@@ -19,6 +19,8 @@ function ctxWith(
     rainImpactPct: -0.22,
     estimated: false,
     sampleDays: 29,
+    campaignDays: 0,
+    baselineExcludesCampaigns: false,
     byCondition: [{ condition, avgRevenue: 700000, deltaPct, days: 5 }],
   };
   return { store, weather, diagnosis };
