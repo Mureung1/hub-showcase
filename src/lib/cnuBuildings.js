@@ -4,12 +4,15 @@
 // 두고, 두 파일 상단 주석으로 서로를 가리키게 해 드리프트를 눈에 띄게 한다.
 import { get, set } from './storage.js'
 
+// mapSearchName: 5주차 §2(식비 위치 지도)의 "네이버 지도에서 길찾기" 링크·마커 정보창에 쓰는 정식
+// 명칭. cnu4는 지도 서비스에 "제4학생회관"이라는 POI가 없어(cnuCafeteriaLocations.js 참고) 같은
+// 건물인 "상록회관"으로 검색해야 실제로 길찾기가 된다.
 export const CNU_BUILDINGS = [
-  { key: 'cnu1', label: '1학' },
-  { key: 'cnu2', label: '2학' },
-  { key: 'cnu3', label: '3학' },
-  { key: 'cnu4', label: '4학' },
-  { key: 'cnuLife', label: '생과대' },
+  { key: 'cnu1', label: '1학', mapSearchName: '충남대학교 제1학생회관' },
+  { key: 'cnu2', label: '2학', mapSearchName: '충남대학교 제2학생회관' },
+  { key: 'cnu3', label: '3학', mapSearchName: '충남대학교 제3학생회관' },
+  { key: 'cnu4', label: '4학', mapSearchName: '충남대학교 상록회관' },
+  { key: 'cnuLife', label: '생과대', mapSearchName: '충남대학교 생활과학대학' },
 ]
 
 export const DEFAULT_CNU_BUILDING = 'cnu1'

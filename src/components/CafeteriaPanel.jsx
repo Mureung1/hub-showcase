@@ -7,6 +7,7 @@ import { useUser } from '../context/UserContext.jsx'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
+import CnuCafeteriaLocationCard from './CnuCafeteriaLocationCard.jsx'
 import MealCard from './MealCard.jsx'
 import Skeleton from './Skeleton.jsx'
 import { MILAIZE_ALLERGENS } from '../lib/allergyRules.js'
@@ -382,8 +383,7 @@ function UnivDayMeals({ meals, track, source, updatedAt }) {
   )
 }
 
-function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectDay }) {
-  const [building, setBuilding] = useState(() => getSelectedCnuBuilding())
+function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectDay, building, onSelectBuilding }) {
   const [track, setTrack] = useState('student')
   const [weekResult, setWeekResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -412,17 +412,12 @@ function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectD
     }
   }, [univCode])
 
-  function handleSelectBuilding(key) {
-    setBuilding(key)
-    setSelectedCnuBuilding(key)
-  }
-
   const selectedDay = weekResult?.days?.find((d) => `${d.date.slice(0, 4)}-${d.date.slice(4, 6)}-${d.date.slice(6, 8)}` === selectedKey)
   const cafeteria = selectedDay?.cafeterias?.[building]
 
   return (
     <>
-      <CnuBuildingSelector selected={building} onSelect={handleSelectBuilding} />
+      <CnuBuildingSelector selected={building} onSelect={onSelectBuilding} />
       <WeekTabs weekDates={weekDates} selectedKey={selectedKey} todayKey={todayKey} onSelect={onSelectDay} />
 
       {loading && <Skeleton height={140} radius={radius.lg} />}
@@ -459,6 +454,15 @@ export default function CafeteriaPanel() {
   const todayKey = toDateKey(anchorDate)
   const [selectedKey, setSelectedKey] = useState(todayKey)
 
+  // 식비 선택은 대학 학식에서만 의미가 있지만, 위치 카드(CnuCafeteriaLocationCard)가 건물 선택 버튼
+  // (UnivMealSection 안)과는 형제 컴포넌트라 같은 선택값을 공유하려면 여기 최상위로 끌어올려야 한다.
+  const [building, setBuilding] = useState(() => getSelectedCnuBuilding())
+
+  function handleSelectBuilding(key) {
+    setBuilding(key)
+    setSelectedCnuBuilding(key)
+  }
+
   if (!school) {
     return <NoSchoolCard />
   }
@@ -481,9 +485,12 @@ export default function CafeteriaPanel() {
           selectedKey={selectedKey}
           todayKey={todayKey}
           onSelectDay={setSelectedKey}
+          building={building}
+          onSelectBuilding={handleSelectBuilding}
         />
       )}
       <AllergyCodeSheet />
+      {school.type === 'university' && <CnuCafeteriaLocationCard selectedBuilding={building} />}
     </>
   )
 }
