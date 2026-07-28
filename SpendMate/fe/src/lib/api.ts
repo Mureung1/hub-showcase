@@ -198,6 +198,54 @@ export async function getPrediction(): Promise<Prediction> {
   return res.json()
 }
 
+export interface RecentExpense {
+  id: number
+  name: string
+  category: string
+  amount: number
+  spentAt: string
+}
+
+export async function getRecentExpenses(limit = 20): Promise<RecentExpense[]> {
+  const res = await fetch(`/api/expenses/recent?limit=${limit}`)
+  if (!res.ok) {
+    throw new Error('최근 지출을 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
+export interface DailySpend {
+  day: number
+  amount: number
+}
+
+export async function getDailyCalendar(): Promise<DailySpend[]> {
+  const res = await fetch('/api/expenses/daily-calendar')
+  if (!res.ok) {
+    throw new Error('캘린더 데이터를 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
+export interface Context {
+  deliveryIncreaseRate: number | null
+  budgetUsageRate: number | null
+  longTermSignal: {
+    qualityNotice: string | null
+    composition: { category: string; percent: number }[]
+    trend: { category: string; trend: 'UP' | 'DOWN' | 'FLAT' }[]
+    subscriptionStatus: { count: number; totalAmount: number }
+  }
+}
+
+export async function getContext(): Promise<Context> {
+  const res = await fetch('/api/context')
+  if (!res.ok) {
+    throw new Error('소비 신호를 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
 export interface AgentChatResponse {
   message: string
 }
@@ -258,6 +306,52 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   const res = await fetch('/api/auth/me')
   if (!res.ok) {
     return null
+  }
+  return res.json()
+}
+
+export async function updateProfile(email: string, nickname: string): Promise<AuthUser> {
+  const res = await fetch('/api/auth/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, nickname }),
+  })
+  if (!res.ok) {
+    throw new Error(await authErrorMessage(res, '프로필 저장에 실패했어요.'))
+  }
+  return res.json()
+}
+
+export interface SavingsMission {
+  category: string
+  suggestion: string
+  estimatedSaving: number
+}
+
+export interface SavingsMissionResponse {
+  missions: SavingsMission[]
+  totalEstimatedSaving: number
+}
+
+export async function getSavingsMissions(): Promise<SavingsMissionResponse> {
+  const res = await fetch('/api/expenses/savings-missions')
+  if (!res.ok) {
+    throw new Error('절약 미션을 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
+export interface CategoryChange {
+  category: string
+  thisMonthAmount: number
+  lastMonthAmount: number
+  changePercent: number
+}
+
+export async function getCategoryChanges(): Promise<CategoryChange[]> {
+  const res = await fetch('/api/expenses/category-changes')
+  if (!res.ok) {
+    throw new Error('카테고리 변화를 불러오지 못했어요.')
   }
   return res.json()
 }
