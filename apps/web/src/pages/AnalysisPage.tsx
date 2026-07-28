@@ -8,6 +8,8 @@ import { AnalysisResult, ReportSteps } from "../features/repository-analysis/Ana
 import { ReflectionWorkspace } from "../features/reflection/ReflectionWorkspace";
 import type { ReflectionDraft } from "../features/reflection/reflection";
 import { saveReflectionDraftToApi } from "../features/reflection/reflectionApi";
+import { useAuth } from "../features/auth/useAuth";
+import { savePortfolioProject } from "../features/portfolio-library/portfolioLibraryApi";
 
 type AnalysisPageProps = {
   result: RepositoryAnalysisResult;
@@ -17,6 +19,7 @@ type AnalysisPageProps = {
 };
 
 export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBackToWorkspace }: AnalysisPageProps) {
+  const { user } = useAuth();
   const [currentReflectionAnalysis, setCurrentReflectionAnalysis] = useState(reflectionAnalysis);
   // 후보 선택은 이 결과 화면에서 직접 시작한다. 분석 중 초안이나 이전
   // Repository별 저장값을 초기 선택으로 사용하지 않는다.
@@ -169,8 +172,18 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
                     response.reflectionAnalysis?.suggestedChallenges ?? [],
                   ),
                 );
+                return response;
               })
             }
+            onPortfolioDraftCreated={async (analysis, draft) => {
+              if (!user) return;
+              await savePortfolioProject({
+                userId: user.id,
+                result,
+                reflectionDraft: draft,
+                reflectionAnalysis: analysis,
+              });
+            }}
           />
         </section>
       )}

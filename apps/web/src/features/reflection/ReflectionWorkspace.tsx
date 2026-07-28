@@ -7,7 +7,10 @@ import type {
   TechnicalChallengeEvidenceReference,
 } from "@ptop/contracts";
 import { saveReflectionDraft, type ReflectionDraft } from "./reflection";
-import { loadReflectionDraftFromApi } from "./reflectionApi";
+import {
+  loadReflectionDraftFromApi,
+  type ReflectionDraftSaveResponse,
+} from "./reflectionApi";
 import {
   getPortfolioDraftLoadingSteps,
   getPortfolioPdfFileName,
@@ -18,7 +21,11 @@ type ReflectionWorkspaceProps = {
   result: RepositoryAnalysisResult;
   initialDraft: ReflectionDraft;
   reflectionAnalysis?: ReflectionAnalysis | null;
-  onSave?: (draft: ReflectionDraft) => Promise<void>;
+  onSave?: (draft: ReflectionDraft) => Promise<ReflectionDraftSaveResponse | void>;
+  onPortfolioDraftCreated?: (
+    analysis: ReflectionAnalysis,
+    draft: ReflectionDraft,
+  ) => Promise<void>;
 };
 
 const reflectionQuestion =
@@ -29,6 +36,7 @@ export function ReflectionWorkspace({
   initialDraft,
   reflectionAnalysis,
   onSave,
+  onPortfolioDraftCreated,
 }: ReflectionWorkspaceProps) {
   const [draft, setDraft] = useState(initialDraft);
   const [loadedReflectionAnalysis, setLoadedReflectionAnalysis] =
@@ -106,13 +114,29 @@ export function ReflectionWorkspace({
     );
 
     try {
+      let portfolioSaveFailed = false;
       if (onSave) {
-        await onSave(nextDraft);
+        const response = await onSave(nextDraft);
+        const resolvedAnalysis = response?.reflectionAnalysis ?? generatedAnalysis;
+        if (resolvedAnalysis?.portfolioDraft && onPortfolioDraftCreated) {
+          try {
+            await onPortfolioDraftCreated(resolvedAnalysis, nextDraft);
+          } catch (error) {
+            portfolioSaveFailed = true;
+            setSaveMessage(
+              error instanceof Error
+                ? `회고는 저장되었지만 ${error.message}`
+                : "회고는 저장되었지만 작업실 저장에 실패했습니다.",
+            );
+          }
+        }
       }
       setSaveStatus("saved");
-      setSaveMessage(
-        "회고가 저장되었습니다. 아래에서 AI가 다듬은 초안을 확인해보세요.",
-      );
+      if (!portfolioSaveFailed) {
+        setSaveMessage(
+          "회고가 저장되었습니다. 아래에서 AI가 다듬은 초안을 확인해보세요.",
+        );
+      }
     } catch (error) {
       setSaveStatus("error");
       setSaveMessage(
@@ -329,7 +353,7 @@ function SelectedChallenges({ titles }: { titles: string[] }) {
   );
 }
 
-function PortfolioDraftPreview({
+export function PortfolioDraftPreview({
   draft,
   evidence,
   pdfFileName,

@@ -6,6 +6,8 @@ import type {
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
 
+export type { ReflectionDraftSaveResponse } from "@ptop/contracts";
+
 export class ReflectionSaveApiError extends Error {
   constructor(
     message: string,
