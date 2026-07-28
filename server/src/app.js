@@ -127,6 +127,39 @@ io.on('connection', (socket) => {
   });
 });
 
+// ===== 인증 미들웨어 (authenticateToken) =====
+// Bearer 토큰을 검증하여 req.user에 인증된 유저 정보를 주입합니다.
+const authenticateToken = async (req, res, next) => {
+  // Mock 모드: 테스트용 유저로 자동 통과
+  if (isMock) {
+    req.user = mockDb.profiles.length > 0
+      ? mockDb.profiles[0]
+      : { id: 'mock-user-id', username: 'mock-user' };
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: '인증 토큰이 필요합니다' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: '유효하지 않은 토큰입니다' });
+    }
+
+    // 프로필 정보도 함께 조회하여 req.user에 주입
+    const { data: profile } = await (supabaseAdmin || supabase).from('profiles').select('*').eq('id', user.id).maybeSingle();
+    req.user = profile || { id: user.id, email: user.email };
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: '토큰 검증 중 오류가 발생했습니다' });
+  }
+};
+
 // ===== Auth API =====
 
 // POST /api/auth/signup - 회원가입 (Supabase Auth 유저 생성 + profiles 저장)
@@ -381,9 +414,9 @@ app.get('/api/posts', async (req, res) => {
   }
 });
 
-// POST /api/posts - Create a new post
-app.post('/api/posts', async (req, res) => {
-  const { title, content, tags, reward, author_grade, author_major, grade_tag, major_tag, author_id, author_name } = req.body;
+// POST /api/posts - Create a new post (인증 필수)
+app.post('/api/posts', authenticateToken, async (req, res) => {
+  const { title, content, tags, reward, author_grade, author_major, grade_tag, major_tag, author_name } = req.body;
 
   if (!title || !content) {
     return res.status(400).json({ error: 'Title and content are required' });
@@ -392,6 +425,7 @@ app.post('/api/posts', async (req, res) => {
   const finalGrade = grade_tag || author_grade || '1학년';
   const finalMajor = major_tag || author_major || '일반학과';
 
+  // 서버에서 인증된 유저의 ID를 강제 설정 (클라이언트 조작 방지)
   const newPost = {
     title,
     content,
@@ -399,8 +433,8 @@ app.post('/api/posts', async (req, res) => {
     reward: reward || '없음',
     author_grade: finalGrade,
     author_major: finalMajor,
-    author_id,
-    author_name,
+    author_id: req.user.id,
+    author_name: author_name || req.user.username,
     created_at: new Date().toISOString()
   };
 
@@ -464,19 +498,29 @@ app.get('/api/posts/:id/requests', async (req, res) => {
   }
 });
 
-// POST /api/posts/:id/requests - 1:1 채팅 신청 (요청)
-app.post('/api/posts/:id/requests', async (req, res) => {
+// POST /api/posts/:id/requests - 1:1 채팅 신청 (인증 필수 + 본인 글 자가 신청 방지)
+app.post('/api/posts/:id/requests', authenticateToken, async (req, res) => {
   const postId = req.params.id;
-  const { helper_id, helper_name, message } = req.body;
+  const { message } = req.body;
   
-  if (!helper_id || !helper_name || !message) {
-    return res.status(400).json({ error: '필수 정보가 누락되었습니다' });
+  if (!message) {
+    return res.status(400).json({ error: '신청 메시지가 누락되었습니다' });
   }
 
+  // 본인 글에 본인이 신청하는 것 방지
+  if (!isMock) {
+    const db = supabaseAdmin || supabase;
+    const { data: post } = await db.from('posts').select('author_id').eq('id', postId).maybeSingle();
+    if (post && String(post.author_id) === String(req.user.id)) {
+      return res.status(400).json({ error: '본인의 게시글에는 신청할 수 없습니다' });
+    }
+  }
+
+  // 서버에서 인증된 유저 정보를 강제 설정 (클라이언트 조작 방지)
   const newRequest = {
     post_id: postId,
-    helper_id,
-    helper_name,
+    helper_id: req.user.id,
+    helper_name: req.user.username || req.user.email,
     message,
     status: 'pending',
     created_at: new Date().toISOString()
@@ -498,8 +542,8 @@ app.post('/api/posts/:id/requests', async (req, res) => {
   }
 });
 
-// POST /api/posts/:id/requests/:reqId/accept - 신청 수락 및 방 생성
-app.post('/api/posts/:id/requests/:reqId/accept', async (req, res) => {
+// POST /api/posts/:id/requests/:reqId/accept - 신청 수락 및 방 생성 (인증 필수 + 글 작성자 본인 검증)
+app.post('/api/posts/:id/requests/:reqId/accept', authenticateToken, async (req, res) => {
   const { id: postId, reqId } = req.params;
   
   try {
@@ -515,14 +559,23 @@ app.post('/api/posts/:id/requests/:reqId/accept', async (req, res) => {
       request = data;
     }
 
-    const { host_id, host_name, post_title, partner_grade } = req.body; 
+    // 글 작성자 본인만 수락 가능 (서버측 검증)
+    if (!isMock) {
+      const { data: post } = await db.from('posts').select('author_id').eq('id', postId).maybeSingle();
+      if (!post) throw new Error('게시글을 찾을 수 없습니다.');
+      if (String(post.author_id) !== String(req.user.id)) {
+        return res.status(403).json({ error: '본인의 게시글에 대한 신청만 수락할 수 있습니다' });
+      }
+    }
+
+    const { post_title, partner_grade } = req.body; 
     const newChatId = Math.random().toString(36).substr(2, 9);
     const newChat = {
       ...(newChatId ? { id: newChatId } : {}),
       post_id: postId,
       post_title: post_title || '무제',
-      host_id: host_id,
-      host_name: host_name || '방장',
+      host_id: req.user.id,
+      host_name: req.user.username || req.user.email || '방장',
       helper_id: request.helper_id,
       helper_name: request.helper_name,
       partner_grade: partner_grade || '미상',
@@ -561,8 +614,8 @@ app.post('/api/posts/:id/requests/:reqId/accept', async (req, res) => {
   }
 });
 
-// PUT /api/posts/:id - 게시글 수정
-app.put('/api/posts/:id', async (req, res) => {
+// PUT /api/posts/:id - 게시글 수정 (인증 필수 + 작성자 본인 검증)
+app.put('/api/posts/:id', authenticateToken, async (req, res) => {
   const postId = req.params.id;
   const { title, content, tags, reward, author_grade, author_major, grade_tag, major_tag } = req.body;
 
@@ -581,6 +634,14 @@ app.put('/api/posts/:id', async (req, res) => {
 
   try {
     const db = supabaseAdmin || supabase;
+
+    // 작성자 본인 검증
+    const { data: existingPost } = await db.from('posts').select('author_id').eq('id', postId).maybeSingle();
+    if (!existingPost) return res.status(404).json({ error: '게시글을 찾을 수 없습니다' });
+    if (String(existingPost.author_id) !== String(req.user.id)) {
+      return res.status(403).json({ error: '본인의 게시글만 수정할 수 있습니다' });
+    }
+
     const { data, error } = await db
       .from('posts')
       .update(updateData)
@@ -594,8 +655,8 @@ app.put('/api/posts/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/posts/:id - 게시글 삭제
-app.delete('/api/posts/:id', async (req, res) => {
+// DELETE /api/posts/:id - 게시글 삭제 (인증 필수 + 작성자 본인 검증)
+app.delete('/api/posts/:id', authenticateToken, async (req, res) => {
   const postId = req.params.id;
   
   if (isMock) {
@@ -605,6 +666,14 @@ app.delete('/api/posts/:id', async (req, res) => {
 
   try {
     const db = supabaseAdmin || supabase;
+
+    // 작성자 본인 검증
+    const { data: existingPost } = await db.from('posts').select('author_id').eq('id', postId).maybeSingle();
+    if (!existingPost) return res.status(404).json({ error: '게시글을 찾을 수 없습니다' });
+    if (String(existingPost.author_id) !== String(req.user.id)) {
+      return res.status(403).json({ error: '본인의 게시글만 삭제할 수 있습니다' });
+    }
+
     const { error } = await db.from('posts').delete().eq('id', postId);
     if (error) throw error;
     res.json({ success: true });
