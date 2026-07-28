@@ -229,6 +229,59 @@ function addCategoryDecals(parent: THREE.Group, texture: THREE.Texture) {
   }
 }
 
+export function createStorefrontCategoryMarker(variant: StorefrontVariant) {
+  const marker = new THREE.Group();
+  marker.name = `storefront-category-marker-${variant.categoryCode}`;
+
+  const trim = standardMaterial(variant.trim, 0.72);
+  const accent = standardMaterial(variant.accent, 0.68);
+  const detail = standardMaterial(variant.flower, 0.75);
+  const dark = standardMaterial(0x33443b, 0.65);
+
+  const pedestal = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.92, 1.08, 0.18, 24),
+    new THREE.MeshStandardMaterial({
+      color: variant.accent,
+      roughness: 0.62,
+      metalness: 0.04,
+      emissive: variant.accent,
+      emissiveIntensity: 0.12,
+    }),
+  );
+  pedestal.name = "category-marker-pedestal";
+  pedestal.position.y = 0.09;
+  pedestal.castShadow = true;
+  marker.add(pedestal);
+
+  if (variant.attachment === "flower") {
+    const attachment = new THREE.Group();
+    attachment.name = "category-attachment";
+    for (const [index, x] of [-0.48, 0, 0.48].entries()) {
+      addFlower(attachment, [x, 0.56 + (index % 2) * 0.12, 0], 1.8, accent, detail);
+    }
+    marker.add(attachment);
+  } else {
+    addCategoryAttachment(marker, variant, trim, accent, detail, dark);
+    const attachment = marker.getObjectByName("category-attachment");
+    if (attachment) attachment.position.y = 0.32;
+  }
+
+  if (!marker.getObjectByName("category-attachment")) {
+    const attachment = new THREE.Group();
+    attachment.name = "category-attachment";
+    addBox(attachment, "service-marker-sign", [1.25, 1.15, 0.34], [0, 0.82, 0], trim);
+    addBox(attachment, "service-marker-band", [1.32, 0.2, 0.4], [0, 0.84, 0.01], accent);
+    marker.add(attachment);
+  }
+
+  marker.userData = {
+    categoryCode: variant.categoryCode,
+    label: variant.label,
+    assetStrategy: "procedural-rooftop-category-marker",
+  };
+  return marker;
+}
+
 export function createStorefront(variant: StorefrontVariant, assets?: StorefrontAssetInstance) {
   const storefront = new THREE.Group();
   storefront.name = `storefront-${variant.categoryCode}`;
