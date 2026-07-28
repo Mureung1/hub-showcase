@@ -75,6 +75,10 @@ type ProductSkillPathIdentity = {
   readonly device: number
   readonly inode: number
 }
+type ValidatedWorkspace = {
+  readonly path: string
+  readonly identity: ProductSkillPathIdentity
+}
 type ProductSkillValidationTestHook = (input: {
   readonly phase: 'before_open'
   readonly skillPath: string
@@ -290,7 +294,8 @@ export async function startVerifiedCodexChatRuntime(
   const childEnvironment = normalizeChildEnvironment(
     options.childEnvironment,
   )
-  const workspace = await validateWorkspace(options.workspace)
+  const validatedWorkspace = await validateWorkspace(options.workspace)
+  const workspace = validatedWorkspace.path
   const environment = await validateEnvironment(options.environment)
   requireDisjointRuntimeRoots(workspace, environment)
   const application = validateApplicationIdentity(
@@ -347,6 +352,7 @@ export async function startVerifiedCodexChatRuntime(
   const runtime = new NodeCodexChatRuntime(
     child,
     workspace,
+    validatedWorkspace.identity,
     budgets,
     deadlines,
     options.signalProcessGroupOverride ?? signalDetachedProcessGroup,
@@ -378,6 +384,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
 
   private readonly child: ChildProcessWithoutNullStreams
   private readonly workspace: string
+  private readonly workspaceIdentity: ProductSkillPathIdentity
   private readonly budgets: NodeRuntimeBudgets
   private readonly aggregateQueueBudget: AggregateOperationQueueBudget
   private readonly stderrCapture: BoundedStderrCapture
@@ -417,6 +424,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
   constructor(
     child: ChildProcessWithoutNullStreams,
     workspace: string,
+    workspaceIdentity: ProductSkillPathIdentity,
     budgets: NodeRuntimeBudgets,
     deadlines: NodeRuntimeDeadlines,
     processGroupSignaler: (
@@ -428,6 +436,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
   ) {
     this.child = child
     this.workspace = workspace
+    this.workspaceIdentity = workspaceIdentity
     this.budgets = budgets
     this.deadlines = deadlines
     this.processGroupSignaler = processGroupSignaler
@@ -681,6 +690,7 @@ class NodeCodexChatRuntime implements CodexWorkspaceRuntime {
       await validateProductSkillFile(
         input.skill.path,
         this.workspace,
+        this.workspaceIdentity,
         this.productSkillValidationTestHook,
       )
     }
@@ -1482,11 +1492,14 @@ function observeReadableEnd(
   })
 }
 
-async function validateWorkspace(workspace: string): Promise<string> {
+async function validateWorkspace(
+  workspace: string,
+): Promise<ValidatedWorkspace> {
   if (!path.isAbsolute(workspace)) {
     throw new TypeError('Codex workspace must be absolute')
   }
   let canonicalWorkspace: string
+  let identity: ProductSkillPathIdentity
   try {
     const stats = await lstat(workspace)
     if (!stats.isDirectory() || stats.isSymbolicLink()) {
@@ -1494,6 +1507,12 @@ async function validateWorkspace(workspace: string): Promise<string> {
     }
     await access(workspace, fsConstants.R_OK | fsConstants.X_OK)
     canonicalWorkspace = await realpath(workspace)
+    identity = {
+      path: canonicalWorkspace,
+      kind: 'directory',
+      device: stats.dev,
+      inode: stats.ino,
+    }
   } catch (error) {
     if (error instanceof TypeError) throw error
     throw new TypeError('Codex workspace could not be validated')
@@ -1502,7 +1521,29 @@ async function validateWorkspace(workspace: string): Promise<string> {
     throw new TypeError('Codex workspace must be canonical')
   }
   await validateExactGitRoot(canonicalWorkspace)
-  return canonicalWorkspace
+  try {
+    const current = await lstat(canonicalWorkspace)
+    if (
+      current.isSymbolicLink() ||
+      !current.isDirectory() ||
+      !sameProductSkillPathIdentity(identity, {
+        path: canonicalWorkspace,
+        kind: 'directory',
+        device: current.dev,
+        inode: current.ino,
+      }) ||
+      (await realpath(canonicalWorkspace)) !== canonicalWorkspace
+    ) {
+      throw new TypeError('Codex workspace changed during validation')
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError('Codex workspace could not be validated')
+  }
+  return {
+    path: canonicalWorkspace,
+    identity,
+  }
 }
 
 async function validateExactGitRoot(workspace: string): Promise<void> {
@@ -1913,6 +1954,7 @@ function requireExactInputKeys(
 async function validateProductSkillFile(
   skillPath: string,
   workspace: string,
+  workspaceIdentity: ProductSkillPathIdentity,
   testHook: ProductSkillValidationTestHook | undefined,
 ): Promise<void> {
   const relative = path.relative(workspace, skillPath)
@@ -1929,7 +1971,16 @@ async function validateProductSkillFile(
       skillPath,
       workspace,
     )
+    const beforeRoot = before.at(0)
     const beforeLeaf = before.at(-1)
+    if (
+      !beforeRoot ||
+      !sameProductSkillPathIdentity(workspaceIdentity, beforeRoot)
+    ) {
+      throw new TypeError(
+        'Product Skill workspace changed after Runtime startup',
+      )
+    }
     if (!beforeLeaf || beforeLeaf.kind !== 'file') {
       throw new TypeError(
         'Product Skill path must reference a regular non-symlink file',
@@ -1955,9 +2006,12 @@ async function validateProductSkillFile(
         skillPath,
         workspace,
       )
+      const afterRoot = after.at(0)
       const afterLeaf = after.at(-1)
       if (
         !sameProductSkillPathIdentities(before, after) ||
+        !afterRoot ||
+        !sameProductSkillPathIdentity(workspaceIdentity, afterRoot) ||
         !afterLeaf ||
         afterLeaf.kind !== 'file' ||
         opened.dev !== afterLeaf.device ||
@@ -2031,6 +2085,18 @@ async function readProductSkillPathIdentities(
   return identities
 }
 
+function sameProductSkillPathIdentity(
+  expected: ProductSkillPathIdentity,
+  actual: ProductSkillPathIdentity,
+): boolean {
+  return (
+    actual.path === expected.path &&
+    actual.kind === expected.kind &&
+    actual.device === expected.device &&
+    actual.inode === expected.inode
+  )
+}
+
 function sameProductSkillPathIdentities(
   before: readonly ProductSkillPathIdentity[],
   after: readonly ProductSkillPathIdentity[],
@@ -2040,10 +2106,8 @@ function sameProductSkillPathIdentities(
     before.every((identity, index) => {
       const current = after[index]
       return (
-        current?.path === identity.path &&
-        current.kind === identity.kind &&
-        current.device === identity.device &&
-        current.inode === identity.inode
+        current !== undefined &&
+        sameProductSkillPathIdentity(identity, current)
       )
     })
   )
