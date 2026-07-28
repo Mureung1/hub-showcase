@@ -205,16 +205,16 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
         </div>
       </div>
 
-      {!isGuest && (
+      {!isGuest && isEdit && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>
-            비밀번호 설정 (선택)
+            비밀번호 변경 (선택)
           </div>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="다음부터 이메일 인증 없이 빠르게 로그인해요"
+            placeholder="바꾸고 싶을 때만 입력하세요"
             style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(36,21,18,0.12)", fontSize: 14, boxSizing: "border-box" }}
           />
         </div>
