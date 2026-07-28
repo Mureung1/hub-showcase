@@ -26,6 +26,10 @@ export function validateGapAnalysisRequest({ filters, spec }) {
   if (typeof spec.major !== 'string' || spec.major.trim() === '') {
     throw invalid('spec.major는 비어있지 않은 문자열이어야 합니다.')
   }
+  // 부전공은 선택 항목 — 없으면 빈 문자열('없음')로 보낼 수 있으므로 major와 달리 비어있음을 허용한다.
+  if (spec.minor_major !== undefined && typeof spec.minor_major !== 'string') {
+    throw invalid('spec.minor_major는 문자열이어야 합니다.')
+  }
   if (spec.career_months !== undefined && !isNonNegativeNumber(spec.career_months)) {
     throw invalid('spec.career_months는 0 이상의 숫자여야 합니다.')
   }
@@ -35,17 +39,23 @@ export function validateGapAnalysisRequest({ filters, spec }) {
   ) {
     throw invalid('spec.certificates는 문자열 배열이어야 합니다.')
   }
-  if (spec.foreign_lang_test !== undefined && typeof spec.foreign_lang_test !== 'string') {
-    throw invalid('spec.foreign_lang_test는 문자열이어야 합니다.')
-  }
+  // 여러 시험 성적을 동시에 보유할 수 있어 배열이다 — 항목별로 { test, score } 형태를 검증한다.
   // OPIc은 숫자 점수가 아니라 등급(NL~AL)이라 다른 시험과 검증 규칙이 다르다.
-  if (spec.foreign_lang_score !== undefined) {
-    if (spec.foreign_lang_test === 'OPIc') {
-      if (!(spec.foreign_lang_score in OPIC_RANK)) {
-        throw invalid(`spec.foreign_lang_score(OPIc 등급) 값이 올바르지 않습니다: ${spec.foreign_lang_score}`)
+  if (spec.foreign_languages !== undefined) {
+    if (!Array.isArray(spec.foreign_languages)) {
+      throw invalid('spec.foreign_languages는 배열이어야 합니다.')
+    }
+    for (const item of spec.foreign_languages) {
+      if (!isPlainObject(item) || typeof item.test !== 'string' || item.test.trim() === '') {
+        throw invalid('spec.foreign_languages의 각 항목은 test(문자열)를 포함해야 합니다.')
       }
-    } else if (!isNonNegativeNumber(spec.foreign_lang_score)) {
-      throw invalid('spec.foreign_lang_score는 0 이상의 숫자여야 합니다.')
+      if (item.test === 'OPIc') {
+        if (!(item.score in OPIC_RANK)) {
+          throw invalid(`spec.foreign_languages의 OPIc 등급 값이 올바르지 않습니다: ${item.score}`)
+        }
+      } else if (!isNonNegativeNumber(item.score)) {
+        throw invalid(`spec.foreign_languages(${item.test})의 score는 0 이상의 숫자여야 합니다.`)
+      }
     }
   }
   if (spec.has_computer_skill !== undefined && typeof spec.has_computer_skill !== 'boolean') {

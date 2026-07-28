@@ -1,16 +1,25 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   EDUCATION_OPTIONS,
   MAJOR_OPTIONS,
+  MINOR_MAJOR_OPTIONS,
   CERT_OPTIONS,
   FOREIGN_LANG_TEST_OPTIONS,
   OPIC_GRADE_OPTIONS,
 } from '../constants/specOptions'
 import { useAppState } from '../context/AppStateContext'
 
+function formatForeignScore(test, score) {
+  return test === 'OPIc' ? `${score} 등급` : `${score}점`
+}
+
 function SpecPage() {
   const navigate = useNavigate()
   const { spec, setSpec: patchSpec } = useAppState()
+  // 방금 추가할 시험/점수는 목록에 반영되기 전까지 spec에 넣지 않고 폼 로컬 상태로만 들고 있는다.
+  const [draftTest, setDraftTest] = useState('')
+  const [draftScore, setDraftScore] = useState('')
 
   function toggleCertificate(cert) {
     patchSpec({
@@ -18,6 +27,20 @@ function SpecPage() {
         ? spec.certificates.filter((c) => c !== cert)
         : [...spec.certificates, cert],
     })
+  }
+
+  function addForeignLanguage() {
+    if (!draftTest || !draftScore) return
+    const score = draftTest === 'OPIc' ? draftScore : Number(draftScore)
+    // 같은 시험을 다시 추가하면 새 점수로 덮어쓴다(중복 추가 방지, 점수 갱신은 허용).
+    const rest = spec.foreign_languages.filter((item) => item.test !== draftTest)
+    patchSpec({ foreign_languages: [...rest, { test: draftTest, score }] })
+    setDraftTest('')
+    setDraftScore('')
+  }
+
+  function removeForeignLanguage(test) {
+    patchSpec({ foreign_languages: spec.foreign_languages.filter((item) => item.test !== test) })
   }
 
   function handleSubmit(event) {
@@ -90,32 +113,56 @@ function SpecPage() {
           </label>
 
           <label className="field">
-            <span className="field-label">외국어 성적</span>
+            <span className="field-label">부전공 (선택)</span>
+            <select
+              value={spec.minor_major}
+              onChange={(e) => patchSpec({ minor_major: e.target.value })}
+            >
+              <option value="">없음</option>
+              {MINOR_MAJOR_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="field field-full">
+            <span className="field-label">외국어 성적 (복수 입력 가능)</span>
+            {spec.foreign_languages.length > 0 && (
+              <div className="chip-row" style={{ marginBottom: 10 }}>
+                {spec.foreign_languages.map((item) => (
+                  <span className="lang-tag" key={item.test}>
+                    {item.test} {formatForeignScore(item.test, item.score)}
+                    <button
+                      type="button"
+                      className="lang-tag-remove"
+                      onClick={() => removeForeignLanguage(item.test)}
+                      aria-label={`${item.test} 삭제`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="row">
               <select
-                value={spec.foreign_lang_test}
+                value={draftTest}
                 onChange={(e) => {
-                  const nextTest = e.target.value
-                  // 시험 종류가 바뀌면 이전 시험 기준 점수/등급이 그대로 남아있으면 안 되므로 초기화한다 —
-                  // OPIc은 등급 문자열, 나머지는 숫자 점수라 형식 자체가 다르다.
-                  patchSpec({
-                    foreign_lang_test: nextTest,
-                    foreign_lang_score: nextTest === 'OPIc' ? '' : 0,
-                  })
+                  setDraftTest(e.target.value)
+                  setDraftScore('')
                 }}
               >
-                <option value="">없음</option>
+                <option value="">시험 선택</option>
                 {FOREIGN_LANG_TEST_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
                   </option>
                 ))}
               </select>
-              {spec.foreign_lang_test === 'OPIc' ? (
-                <select
-                  value={spec.foreign_lang_score || ''}
-                  onChange={(e) => patchSpec({ foreign_lang_score: e.target.value })}
-                >
+              {draftTest === 'OPIc' ? (
+                <select value={draftScore} onChange={(e) => setDraftScore(e.target.value)}>
                   <option value="">등급 선택</option>
                   {OPIC_GRADE_OPTIONS.map((grade) => (
                     <option key={grade} value={grade}>
@@ -124,21 +171,28 @@ function SpecPage() {
                   ))}
                 </select>
               ) : (
-                spec.foreign_lang_test && (
+                draftTest && (
                   <input
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     placeholder="점수"
-                    value={spec.foreign_lang_score || ''}
-                    onChange={(e) =>
-                      patchSpec({ foreign_lang_score: Number(e.target.value.replace(/\D/g, '')) || 0 })
-                    }
+                    value={draftScore}
+                    onChange={(e) => setDraftScore(e.target.value.replace(/\D/g, ''))}
                   />
                 )
               )}
+              <button
+                type="button"
+                className="btn-add-small"
+                onClick={addForeignLanguage}
+                disabled={!draftTest || !draftScore}
+              >
+                추가
+              </button>
             </div>
-          </label>
+            <p className="field-hint">시험/점수를 고른 뒤 "추가" 버튼을 눌러야 입력돼요.</p>
+          </div>
 
           <div className="field field-full">
             <span className="field-label">보유 자격증/면허</span>

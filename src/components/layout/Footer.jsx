@@ -7,8 +7,12 @@ function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <div className="footer-logo">
-              <span className="logo-mark small">S</span>
-              <span className="logo-text">SpecFit</span>
+              <span className="logo-wordmark">
+                <span className="logo-spec">Spec</span>
+                <span className="logo-fit">
+                  F<span className="logo-i">i<span className="logo-dot" /></span>t
+                </span>
+              </span>
             </div>
             <p className="footer-desc">
               JOB-ALIO 채용정보 데이터를 활용한 스펙 자가진단 서비스입니다. 내 스펙으로 지금 지원 가능한 공고를 빠르게 확인해보세요.

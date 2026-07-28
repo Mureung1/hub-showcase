@@ -28,16 +28,18 @@ SpecFit 백엔드(`server/`)가 제공하는 REST API 정리. Base URL은 배포
   "spec": {
     "education": "학사",
     "major": "컴퓨터공학과",
+    "minor_major": "경영학과",
     "career_months": 6,
     "certificates": ["정보처리기사"],
-    "foreign_lang_test": "TOEIC",
-    "foreign_lang_score": 800,
+    "foreign_languages": [{ "test": "TOEIC", "score": 800 }, { "test": "OPIc", "score": "IM2" }],
     "has_computer_skill": true
   }
 }
 ```
 - `filters`는 선택(생략/`null` 가능) — 두 필드 모두 선택.
-- `spec.education`은 `학력무관`/`고졸`/`전문학사`/`학사`/`석사`/`박사` 중 하나(필수). `major`는 빈 문자열이 아닌 문자열(필수). 나머지 필드는 선택이며, 값을 보낼 경우 타입이 맞아야 함(`career_months`/`foreign_lang_score`는 0 이상 숫자, `certificates`는 문자열 배열, `has_computer_skill`은 boolean).
+- `spec.education`은 `학력무관`/`고졸`/`전문학사`/`학사`/`석사`/`박사` 중 하나(필수). `major`는 빈 문자열이 아닌 문자열(필수). 나머지 필드는 선택이며, 값을 보낼 경우 타입이 맞아야 함(`career_months`는 0 이상 숫자, `certificates`는 문자열 배열, `has_computer_skill`은 boolean).
+- `spec.foreign_languages`는 여러 시험 성적을 동시에 보유할 수 있어 `{ test, score }` 객체 배열이다. `test`가 `OPIc`이면 `score`는 등급 문자열(`NL`~`AL`), 그 외 시험이면 0 이상의 숫자여야 함. 공고는 하나의 요구 시험만 가지므로, 배열 안에 그 시험과 일치하는 항목이 있고 점수가 충족되면 통과로 판정된다.
+- `spec.minor_major`는 복수전공(부전공) 보유자를 위한 선택 필드(문자열, 없으면 빈 문자열 또는 생략). 공고가 요구하는 전공이 `major`/`minor_major` 둘 중 하나와만 일치해도 전공 항목은 충족으로 판정된다.
 - 검증 실패 시 **400** `{ "error": "spec.education 값이 올바르지 않습니다: ..." }` 형태.
 
 **응답 201**

@@ -9,6 +9,8 @@ import SpecPage from './pages/SpecPage'
 import ResultPage from './pages/ResultPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import BookmarksPage from './pages/BookmarksPage'
 import GuidePage from './pages/GuidePage'
 import './styles/tokens.css'
@@ -29,6 +31,8 @@ function App() {
             <Route path="/result" element={<ResultPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
             <Route path="/guide" element={<GuidePage />} />
           </Routes>

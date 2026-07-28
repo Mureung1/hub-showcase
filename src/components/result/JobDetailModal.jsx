@@ -1,15 +1,18 @@
 import { JOB_CATEGORY_STYLE, DEFAULT_CATEGORY_STYLE, STATUS_STYLE } from '../../constants/resultDisplay'
 import { describeComputerSkill } from '../../lib/gapAnalysis'
 import { getReferenceLink, getReferenceCaption } from '../../constants/referenceLinks'
+import { useModalA11y } from '../../hooks/useModalA11y'
+import BookmarkIcon from '../icons/BookmarkIcon'
 
 function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
+  const boxRef = useModalA11y(Boolean(job), onClose)
   if (!job) return null
   const categoryStyle = JOB_CATEGORY_STYLE[job.job_category] || DEFAULT_CATEGORY_STYLE
   const statusStyle = STATUS_STYLE[job.status] || STATUS_STYLE.match
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-box" ref={boxRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
           <span
             className="job-type-badge"
@@ -28,7 +31,7 @@ function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
               aria-label={bookmarked ? '북마크 해제' : '북마크 추가'}
               title={bookmarked ? '북마크 해제' : '북마크 추가'}
             >
-              {bookmarked ? '★' : '☆'}
+              <BookmarkIcon filled={bookmarked} />
             </button>
           )}
         </div>

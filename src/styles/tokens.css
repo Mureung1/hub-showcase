@@ -31,7 +31,8 @@
   --accent-contrast: #2b3480;
   --accent-bg: #fbeef4;
   --accent-text: #2b3480;
-  --logo-color: #2b3480;
+  --logo-spec-color: #2b3480;
+  --logo-fit-color: #db2777;
 
   --chip-active: #2b3480;
   --chip-active-dark: #1c2464;
@@ -91,7 +92,8 @@
   --accent-contrast: #f472b6;
   --accent-bg: #3a2030;
   --accent-text: #f0a8c4;
-  --logo-color: #db2777;
+  --logo-spec-color: #fbf5f8;
+  --logo-fit-color: #db2777;
 
   --chip-active: #db2777;
   --chip-active-dark: #be185d;

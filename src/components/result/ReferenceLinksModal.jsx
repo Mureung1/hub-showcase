@@ -1,14 +1,16 @@
 import { collectJobReferenceLinks } from '../../constants/referenceLinks'
+import { useModalA11y } from '../../hooks/useModalA11y'
 
 // 북마크 페이지 전용: 공고 하나에 필요한 참고링크를 전부 모아서 보여주는 팝업 — 상세 모달을 열지 않고도
 // 바로 확인할 수 있게, 카드에서 한 번에 접근하는 용도(#25 후속).
 function ReferenceLinksModal({ job, onClose }) {
+  const boxRef = useModalA11y(Boolean(job), onClose)
   if (!job) return null
   const links = collectJobReferenceLinks(job.checklist)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box reflinks-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-box reflinks-modal" ref={boxRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <p className="job-title" style={{ marginBottom: 2 }}>
           {job.title}
         </p>

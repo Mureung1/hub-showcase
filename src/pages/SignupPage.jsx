@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { isValidEmail } from '../lib/validateEmail'
 
 function SignupPage() {
   const navigate = useNavigate()
@@ -15,6 +16,11 @@ function SignupPage() {
 
   async function handleSubmit(event) {
     event.preventDefault()
+    // 네트워크 왕복 없이 바로 걸러낸다 — <input type="email">의 네이티브 검증은 최상위도메인 없이도 통과시킨다.
+    if (!isValidEmail(email)) {
+      setError('올바른 이메일 형식이 아닙니다.')
+      return
+    }
     setSubmitting(true)
     setError(null)
     const { error: signUpError } = await signUp({ email, password })

@@ -83,9 +83,13 @@ function Header() {
     <header className="site-header">
       <div className="site-header-inner">
         <div className="logo-group">
-          <Link className="logo" to="/">
-            <span className="logo-mark">S</span>
-            <span className="logo-text">SpecFit</span>
+          <Link className="logo" to="/" aria-label="SpecFit">
+            <span className="logo-wordmark" aria-hidden="true">
+              <span className="logo-spec">Spec</span>
+              <span className="logo-fit">
+                F<span className="logo-i">i<span className="logo-dot" /></span>t
+              </span>
+            </span>
           </Link>
           <button
             type="button"
@@ -126,14 +130,9 @@ function Header() {
                 </button>
               </>
             ) : (
-              <>
-                <Link className="nav-link" to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>
-                  로그인
-                </Link>
-                <Link className="nav-link pill" to={`/signup?redirect=${encodeURIComponent(location.pathname)}`}>
-                  회원가입
-                </Link>
-              </>
+              <Link className="nav-link" to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>
+                로그인
+              </Link>
             )
           )}
         </nav>

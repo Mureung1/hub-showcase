@@ -11,10 +11,26 @@ export const DEFAULT_SPEC = {
   isExperienced: false,
   career_months: 0,
   major: MAJOR_OPTIONS[0],
+  minor_major: '',
   certificates: [],
-  foreign_lang_test: '',
-  foreign_lang_score: 0,
+  foreign_languages: [],
   has_computer_skill: false,
+}
+
+// DEFAULT_FILTERS/DEFAULT_SPEC에 있는 키만 골라 병합한다 — 스펙/필터 필드 구조가 나중에 바뀌면
+// (예: foreign_lang_test/foreign_lang_score → foreign_languages), 예전 필드 이름으로 저장된
+// localStorage나 백엔드 analysis_results(#9 복원)가 여전히 남아있는 경우 그 낡은 키가 그냥
+// `{...defaults, ...persisted}`로는 계속 살아남는다. 그러면 getResumeStep의 JSON.stringify 비교가
+// "아무것도 안 건드렸는데도" 항상 다르다고 판단해 이어하기 버튼이 사라지지 않는 버그가 생긴다
+// (초기화를 눌러도 setSpec은 병합이라 낡은 키를 지우지 못함). 여기서 알려진 키만 골라 병합하면
+// 낡은 키가 애초에 state에 들어오지 않는다.
+function pickKnownKeys(defaults, persisted) {
+  const result = { ...defaults }
+  if (!persisted) return result
+  for (const key of Object.keys(defaults)) {
+    if (key in persisted) result[key] = persisted[key]
+  }
+  return result
 }
 
 // filters/spec은 FilterPage/SpecPage가 그대로 그릴 수 있는 "폼 모양"으로 Context에 들어있다
@@ -42,7 +58,7 @@ export function apiSpecFromForm(spec) {
 }
 
 export function formSpecFromApi(apiSpec) {
-  return { ...DEFAULT_SPEC, ...apiSpec, isExperienced: (apiSpec?.career_months ?? 0) > 0 }
+  return { ...pickKnownKeys(DEFAULT_SPEC, apiSpec), isExperienced: (apiSpec?.career_months ?? 0) > 0 }
 }
 
 // 저장된 진행 상태를 보고 "필터만 선택함"/"스펙까지 입력함"/"결과까지 있음" 3단계를 판정한다 (#21).
@@ -74,8 +90,8 @@ export function AppStateProvider({ children }) {
   // loadPersisted()는 이 useState의 최초 렌더 1회만 실행되고, 아래 두 useState의 지연 초기화 함수가
   // 같은 값을 재사용한다 — 매 렌더마다 localStorage를 다시 읽지 않기 위해서다.
   const [persisted] = useState(loadPersisted)
-  const [filters, setFiltersState] = useState(() => ({ ...DEFAULT_FILTERS, ...persisted?.filters }))
-  const [spec, setSpecState] = useState(() => ({ ...DEFAULT_SPEC, ...persisted?.spec }))
+  const [filters, setFiltersState] = useState(() => pickKnownKeys(DEFAULT_FILTERS, persisted?.filters))
+  const [spec, setSpecState] = useState(() => pickKnownKeys(DEFAULT_SPEC, persisted?.spec))
   const [result, setResult] = useState(() => persisted?.result ?? null)
 
   useEffect(() => {

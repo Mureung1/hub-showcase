@@ -17,8 +17,7 @@ const baseSpec = {
   career_months: 12,
   certificates: ['정보처리기사', 'SQLD'],
   major: '컴퓨터공학과',
-  foreign_lang_test: 'TOEIC',
-  foreign_lang_score: 700,
+  foreign_languages: [{ test: 'TOEIC', score: 700 }],
 }
 
 describe('evaluateJob', () => {
@@ -104,48 +103,96 @@ describe('evaluateJob', () => {
         expect(evaluateJob(job, { ...baseSpec, major: '경영학과' }).checks.major).toBe(true)
       },
     )
+
+    it('주전공이 불일치해도 부전공이 요구 전공과 일치하면 통과', () => {
+      const job = { ...baseJob, major: '심리학과' }
+      const spec = { ...baseSpec, major: '경영학과', minor_major: '심리학과' }
+      expect(evaluateJob(job, spec).checks.major).toBe(true)
+    })
+
+    it('부전공을 입력하지 않으면(빈 문자열) 주전공만으로 판정한다', () => {
+      const job = { ...baseJob, major: '심리학과' }
+      const spec = { ...baseSpec, major: '경영학과', minor_major: '' }
+      expect(evaluateJob(job, spec).checks.major).toBe(false)
+    })
+
+    it('주전공/부전공 둘 다 요구 전공과 다르면 미충족', () => {
+      const job = { ...baseJob, major: '심리학과' }
+      const spec = { ...baseSpec, major: '경영학과', minor_major: '회계학과' }
+      expect(evaluateJob(job, spec).checks.major).toBe(false)
+    })
   })
 
   describe('외국어', () => {
     it('요구 외국어 성적이 없으면 항상 통과', () => {
       const job = { ...baseJob, foreign_lang_test: null, foreign_lang_score: null }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: undefined, foreign_lang_score: undefined }).checks.foreignLanguage).toBe(true)
+      expect(evaluateJob(job, { ...baseSpec, foreign_languages: [] }).checks.foreignLanguage).toBe(true)
     })
 
-    it('시험 종류가 다르면 미충족', () => {
+    it('요구 시험을 보유하고 있지 않으면 미충족(다른 시험만 있어도 마찬가지)', () => {
       const job = { ...baseJob, foreign_lang_test: 'TOEIC', foreign_lang_score: 700 }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 900 }).checks.foreignLanguage).toBe(false)
+      expect(
+        evaluateJob(job, { ...baseSpec, foreign_languages: [{ test: 'OPIc', score: 'AL' }] }).checks
+          .foreignLanguage,
+      ).toBe(false)
     })
 
-    it('외국어 성적을 입력하지 않으면 미충족', () => {
+    it('외국어 성적을 하나도 입력하지 않으면 미충족', () => {
       const job = { ...baseJob, foreign_lang_test: 'TOEIC', foreign_lang_score: 700 }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: undefined, foreign_lang_score: undefined }).checks.foreignLanguage).toBe(false)
+      expect(evaluateJob(job, { ...baseSpec, foreign_languages: [] }).checks.foreignLanguage).toBe(false)
     })
 
     it('같은 시험이고 점수가 미달이면 미충족', () => {
       const job = { ...baseJob, foreign_lang_test: 'TOEIC', foreign_lang_score: 700 }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'TOEIC', foreign_lang_score: 650 }).checks.foreignLanguage).toBe(false)
+      expect(
+        evaluateJob(job, { ...baseSpec, foreign_languages: [{ test: 'TOEIC', score: 650 }] }).checks
+          .foreignLanguage,
+      ).toBe(false)
     })
 
     it('같은 시험이고 점수가 기준 이상이면 통과', () => {
       const job = { ...baseJob, foreign_lang_test: 'TOEIC', foreign_lang_score: 700 }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'TOEIC', foreign_lang_score: 700 }).checks.foreignLanguage).toBe(true)
+      expect(
+        evaluateJob(job, { ...baseSpec, foreign_languages: [{ test: 'TOEIC', score: 700 }] }).checks
+          .foreignLanguage,
+      ).toBe(true)
+    })
+
+    it('여러 시험 성적을 동시에 보유해도 그중 요구 시험과 일치하는 항목만으로 판정한다', () => {
+      const job = { ...baseJob, foreign_lang_test: 'TOEFL', foreign_lang_score: 90 }
+      const spec = {
+        ...baseSpec,
+        foreign_languages: [
+          { test: 'TOEIC', score: 500 }, // 요구 시험이 아니므로 무관 (기준 미달이어도 영향 없음)
+          { test: 'TOEFL', score: 95 },
+        ],
+      }
+      expect(evaluateJob(job, spec).checks.foreignLanguage).toBe(true)
     })
 
     // OPIc은 숫자 점수가 아니라 등급(NL~AL)이라 EDUCATION_RANK처럼 순서 비교가 필요하다.
     it('OPIc은 등급 순서로 비교한다 — 미달 등급이면 미충족', () => {
       const job = { ...baseJob, foreign_lang_test: 'OPIc', foreign_lang_score: 'IH' }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM2' }).checks.foreignLanguage).toBe(false)
+      expect(
+        evaluateJob(job, { ...baseSpec, foreign_languages: [{ test: 'OPIc', score: 'IM2' }] }).checks
+          .foreignLanguage,
+      ).toBe(false)
     })
 
     it('OPIc은 등급 순서로 비교한다 — 기준 이상 등급이면 통과', () => {
       const job = { ...baseJob, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM2' }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IH' }).checks.foreignLanguage).toBe(true)
+      expect(
+        evaluateJob(job, { ...baseSpec, foreign_languages: [{ test: 'OPIc', score: 'IH' }] }).checks
+          .foreignLanguage,
+      ).toBe(true)
     })
 
     it('OPIc은 정확히 같은 등급이면 통과', () => {
       const job = { ...baseJob, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM3' }
-      expect(evaluateJob(job, { ...baseSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM3' }).checks.foreignLanguage).toBe(true)
+      expect(
+        evaluateJob(job, { ...baseSpec, foreign_languages: [{ test: 'OPIc', score: 'IM3' }] }).checks
+          .foreignLanguage,
+      ).toBe(true)
     })
   })
 

@@ -6,8 +6,7 @@ const validSpec = {
   career_months: 12,
   certificates: ['정보처리기사'],
   major: '컴퓨터공학과',
-  foreign_lang_test: 'TOEIC',
-  foreign_lang_score: 700,
+  foreign_languages: [{ test: 'TOEIC', score: 700 }],
   has_computer_skill: true,
 }
 
@@ -44,6 +43,18 @@ describe('validateGapAnalysisRequest', () => {
     ).toThrow(expect.objectContaining({ status: 400 }))
   })
 
+  it('minor_major가 빈 문자열("부전공 없음")이어도 통과한다', () => {
+    expect(() =>
+      validateGapAnalysisRequest({ filters: undefined, spec: { ...validSpec, minor_major: '' } }),
+    ).not.toThrow()
+  })
+
+  it('minor_major가 문자열이 아니면 던진다', () => {
+    expect(() =>
+      validateGapAnalysisRequest({ filters: undefined, spec: { ...validSpec, minor_major: 123 } }),
+    ).toThrow(expect.objectContaining({ status: 400 }))
+  })
+
   it('career_months가 음수면 던진다', () => {
     expect(() =>
       validateGapAnalysisRequest({ filters: undefined, spec: { ...validSpec, career_months: -1 } }),
@@ -56,22 +67,51 @@ describe('validateGapAnalysisRequest', () => {
     ).toThrow(expect.objectContaining({ status: 400 }))
   })
 
-  it('foreign_lang_score가 숫자가 아니면 던진다', () => {
+  it('foreign_languages가 배열이 아니면 던진다', () => {
     expect(() =>
       validateGapAnalysisRequest({
         filters: undefined,
-        spec: { ...validSpec, foreign_lang_score: '700' },
+        spec: { ...validSpec, foreign_languages: { test: 'TOEIC', score: 700 } },
       }),
     ).toThrow(expect.objectContaining({ status: 400 }))
   })
 
-  it('OPIc은 등급 문자열이면 통과한다', () => {
-    const spec = { ...validSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 'IM2' }
+  it('foreign_languages 항목의 score가 숫자가 아니면 던진다', () => {
+    expect(() =>
+      validateGapAnalysisRequest({
+        filters: undefined,
+        spec: { ...validSpec, foreign_languages: [{ test: 'TOEIC', score: '700' }] },
+      }),
+    ).toThrow(expect.objectContaining({ status: 400 }))
+  })
+
+  it('foreign_languages 항목에 test가 없으면 던진다', () => {
+    expect(() =>
+      validateGapAnalysisRequest({
+        filters: undefined,
+        spec: { ...validSpec, foreign_languages: [{ score: 700 }] },
+      }),
+    ).toThrow(expect.objectContaining({ status: 400 }))
+  })
+
+  it('여러 시험 성적을 동시에 담아도 통과한다', () => {
+    const spec = {
+      ...validSpec,
+      foreign_languages: [
+        { test: 'TOEIC', score: 700 },
+        { test: 'OPIc', score: 'IM2' },
+      ],
+    }
     expect(() => validateGapAnalysisRequest({ filters: undefined, spec })).not.toThrow()
   })
 
-  it('OPIc인데 foreign_lang_score가 등급 문자열이 아니면 던진다', () => {
-    const spec = { ...validSpec, foreign_lang_test: 'OPIc', foreign_lang_score: 700 }
+  it('OPIc은 등급 문자열이면 통과한다', () => {
+    const spec = { ...validSpec, foreign_languages: [{ test: 'OPIc', score: 'IM2' }] }
+    expect(() => validateGapAnalysisRequest({ filters: undefined, spec })).not.toThrow()
+  })
+
+  it('OPIc인데 score가 등급 문자열이 아니면 던진다', () => {
+    const spec = { ...validSpec, foreign_languages: [{ test: 'OPIc', score: 700 }] }
     expect(() => validateGapAnalysisRequest({ filters: undefined, spec })).toThrow(
       expect.objectContaining({ status: 400 }),
     )

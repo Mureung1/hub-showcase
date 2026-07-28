@@ -26,6 +26,9 @@ export const MAJOR_OPTIONS = [
   '사회복지학과',
 ]
 
+// 부전공 선택지 — MAJOR_OPTIONS 앞 3개(전공무관 계열 placeholder)는 "부전공 없음"과 의미가 겹쳐 제외한다.
+export const MINOR_MAJOR_OPTIONS = MAJOR_OPTIONS.slice(3)
+
 export const CERT_OPTIONS = [
   '간호사',
   '물리치료사',
