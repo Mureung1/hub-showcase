@@ -79,6 +79,8 @@ react-day-picker의 키보드 탐색이 사실상 동작하지 않고, 향후 �
 
 ### 7. `deadline` 기능이 완전히 죽어 있음
 
+- [ ] Skip
+
 - `client/src/pages/NewAppointmentPage.tsx:60-68`에서 입력받아 DB(`appointments.deadline`)에 저장하지만,
 - 서버 어디에서도 검증하지 않고(`responses.ts`는 `closedAt`만 봄),
 - `AppointmentDetailResponse`(`shared/src/appointments.ts:39-48`)에 필드 자체가 없어 FE가 되읽을 수도 없다.
