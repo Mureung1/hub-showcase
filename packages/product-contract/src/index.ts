@@ -49,9 +49,12 @@ export type {
 } from './semantic-review.js'
 
 export {
+  decodeTargetProductActionInvocationRequest,
   decodeTargetProductChatRequest,
 } from './target-request.js'
 export type {
+  ProductWorkspaceFileRef,
+  TargetProductActionInvocationRequest,
   TargetProductChatRequest,
 } from './target-request.js'
 

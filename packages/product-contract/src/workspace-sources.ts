@@ -48,7 +48,7 @@ export function decodeProductWorkspaceSourceList(
   for (const source of value.sources) {
     if (
       !isExactObject(source, ['previewKind', 'relativePath', 'size']) ||
-      !isWorkspaceRelativePath(source.relativePath) ||
+      !isProductWorkspaceRelativePath(source.relativePath) ||
       !Number.isSafeInteger(source.size) ||
       Number(source.size) < 0 ||
       !isPreviewKind(source.previewKind) ||
@@ -72,7 +72,7 @@ export function decodeProductWorkspaceTextPreview(
       'text',
       'truncated',
     ]) ||
-    !isWorkspaceRelativePath(value.relativePath) ||
+    !isProductWorkspaceRelativePath(value.relativePath) ||
     typeof value.digest !== 'string' ||
     !/^[0-9a-f]{64}$/.test(value.digest) ||
     typeof value.text !== 'string' ||
@@ -95,7 +95,9 @@ function isPreviewKind(
   return value === 'text' || value === 'pdf' || value === 'unsupported'
 }
 
-function isWorkspaceRelativePath(value: unknown): value is string {
+export function isProductWorkspaceRelativePath(
+  value: unknown,
+): value is string {
   if (
     typeof value !== 'string' ||
     value.length === 0 ||
