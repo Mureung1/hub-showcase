@@ -19,6 +19,10 @@ function App() {
   const [activeTab, setActiveTab] = useState("create");
   const [query, setQuery] = useState("");
   const [chatLog, setChatLog] = useState([]);
+  
+  const [checklist, setChecklist] = useState([]);
+  const [institutions, setInstitutions] = useState([]); // 🚀 [추가] 관할 기관 상태
+  
   const [extractedData, setExtractedData] = useState(null);
   const [relatedLaws, setRelatedLaws] = useState([]); // 추천 법령/판례
   const [docResult, setDocResult] = useState("");
@@ -80,149 +84,62 @@ function App() {
 
   // --- 밤하늘 별/별자리 효과 설정 ---
   const particlesOptions = useMemo(() => ({
-    background: {
-      color: {
-        value: "transparent", 
-      },
-    },
+    background: { color: { value: "transparent" } },
     fpsLimit: 60, 
     interactivity: {
       events: {
-        onHover: {
-          enable: true,
-          mode: "grab", 
-        },
+        onHover: { enable: true, mode: "grab" },
       },
-      modes: {
-        grab: {
-          distance: 180, 
-          links: {
-            opacity: 0.35 
-          }
-        },
-      },
+      modes: { grab: { distance: 180, links: { opacity: 0.35 } } },
     },
     particles: {
-      color: {
-        value: "#ffffff", 
-      },
-      links: {
-        color: "#ffffff",
-        distance: 150,
-        enable: true, 
-        opacity: 0.15, 
-        width: 1,
-      },
-      move: {
-        enable: true,
-        speed: 0.15, 
-        direction: "none",
-        random: true,
-        straight: false,
-        outModes: {
-          default: "out",
-        },
-      },
-      number: {
-        density: {
-          enable: true,
-          area: 900, 
-        },
-        value: 160, 
-      },
-      opacity: {
-        value: { min: 0.1, max: 0.8 }, 
-        animation: {
-          enable: true,
-          speed: 1.5, 
-          sync: false, 
-        },
-      },
-      size: {
-        value: { min: 0.5, max: 2.5 }, 
-        animation: {
-          enable: true, 
-          speed: 2,
-          minimumValue: 0.5,
-          sync: false,
-        },
-      },
-      shape: {
-        type: "circle", 
-      },
+      color: { value: "#ffffff" },
+      links: { color: "#ffffff", distance: 150, enable: true, opacity: 0.15, width: 1 },
+      move: { enable: true, speed: 0.15, direction: "none", random: true, straight: false, outModes: { default: "out" } },
+      number: { density: { enable: true, area: 900 }, value: 160 },
+      opacity: { value: { min: 0.1, max: 0.8 }, animation: { enable: true, speed: 1.5, sync: false } },
+      size: { value: { min: 0.5, max: 2.5 }, animation: { enable: true, speed: 2, minimumValue: 0.5, sync: false } },
+      shape: { type: "circle" },
     },
     detectRetina: true,
   }), []);
 
   // ---------------- 공통 스타일 ----------------
   const cardStyle = {
-    backgroundColor: colors.bgCard,
-    border: `1px solid ${colors.border}`,
-    borderRadius: '16px', 
-    padding: '28px', 
-    boxShadow: designSystem.shadows.card,
-    marginBottom: '30px',
-    backdropFilter: 'blur(8px)', 
-    WebkitBackdropFilter: 'blur(8px)', 
-    width: '100%',
-    boxSizing: 'border-box'
+    backgroundColor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: '16px', 
+    padding: '28px', boxShadow: designSystem.shadows.card, marginBottom: '30px',
+    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', width: '100%', boxSizing: 'border-box'
   };
 
   const inputStyle = { 
-    padding: '14px 18px', 
-    backgroundColor: colors.bgInput,
-    border: `1px solid ${colors.border}`, 
-    borderRadius: '10px', 
-    fontSize: '15px', 
-    width: '100%', 
-    boxSizing: 'border-box', 
-    outline: 'none', 
-    color: colors.textMain,
-    transition: designSystem.transitions.default,
+    padding: '14px 18px', backgroundColor: colors.bgInput, border: `1px solid ${colors.border}`, 
+    borderRadius: '10px', fontSize: '15px', width: '100%', boxSizing: 'border-box', 
+    outline: 'none', color: colors.textMain, transition: designSystem.transitions.default,
   };
 
   const mainButtonStyle = {
-    padding: '16px 20px', 
-    backgroundColor: colors.success, 
-    color: colors.white, 
-    border: 'none', 
-    borderRadius: '10px', 
-    cursor: 'pointer', 
-    fontWeight: '700', 
-    fontSize: '16px', 
-    transition: designSystem.transitions.default,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px'
+    padding: '16px 20px', backgroundColor: colors.success, color: colors.white, 
+    border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', 
+    fontSize: '16px', transition: designSystem.transitions.default, textTransform: 'uppercase', letterSpacing: '0.5px'
   };
 
   const h2Style = { 
-    color: colors.primary, 
-    fontSize: '1.5rem', 
-    marginBottom: '25px', 
-    fontWeight: '800', 
-    marginTop: 0,
-    borderLeft: `5px solid ${colors.primary}`, 
-    paddingLeft: '15px'
+    color: colors.primary, fontSize: '1.5rem', marginBottom: '25px', fontWeight: '800', 
+    marginTop: 0, borderLeft: `5px solid ${colors.primary}`, paddingLeft: '15px'
   };
 
   // ---------------- 로직 구현 ----------------
-  
   const fetchCasesAndStats = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/cases`);
       setCases(res.data.reverse());
-      
       const statsRes = await axios.get(`${API_BASE_URL}/api/agent-stats`);
       setAgentStats(statsRes.data);
-    } catch (e) {
-      console.error("데이터 로드 실패:", e);
-    }
+    } catch (e) { console.error("데이터 로드 실패:", e); }
   };
 
   useEffect(() => {
-    if (activeTab === "history") {
-      fetchCasesAndStats();
-    }
+    if (activeTab === "history") fetchCasesAndStats();
   }, [activeTab]);
 
   const handleQueryChange = (e) => {
@@ -264,8 +181,10 @@ function App() {
     setDocResult("");
     setFeedbackSubmitted(false);
     setCurrentCaseId(null);
-    setRelatedLaws([]); // 신규 질문 시 추천 초기화
-    setVotedCards({}); // 투표 상태 초기화
+    setRelatedLaws([]);
+    setVotedCards({});
+    setChecklist([]); 
+    setInstitutions([]); // 🚀 새 질문 시 기관 정보 초기화
 
     try {
       const payload = { query: query, case_type: manualForm.title || "" };
@@ -275,11 +194,26 @@ function App() {
       if (response.data.extracted_data) setExtractedData(response.data.extracted_data);
       if (response.data.related_laws) setRelatedLaws(response.data.related_laws);
       
+      if (response.data.strategy_guide_list && response.data.strategy_guide_list.length > 0) {
+        setChecklist(response.data.strategy_guide_list.map(text => ({ text: text, checked: false })));
+      }
+
+      // 🚀 백엔드에서 넘어온 기관 데이터 세팅
+      if (response.data.institutions) {
+        setInstitutions(response.data.institutions);
+      }
+      
     } catch (error) {
       console.error(error);
       setChatLog([...newChat, { sender: 'ai', text: "서버 에러가 발생했습니다. 잠시 후 다시 시도해주세요." }]);
     }
     setIsLoading(false);
+  };
+
+  const handleToggleCheck = (index) => {
+    const newList = [...checklist];
+    newList[index].checked = !newList[index].checked;
+    setChecklist(newList);
   };
 
   const handleGenerateDoc = async () => {
@@ -292,7 +226,7 @@ function App() {
         ...extractedData, 
         doc_type: selectedDocType,
         related_laws: relatedLaws, 
-        strategy_guide: chatLog.filter(m => m.sender === 'ai').map(m => m.text).join('\n\n')
+        strategy_guide: checklist.map(c => c.text).join('\n')
       };
       
       const response = await axios.post(`${API_BASE_URL}/api/generate-document`, payload);
@@ -317,36 +251,21 @@ function App() {
   const handleSubmitFeedback = async (caseId, ratingVal, commentVal) => {
     if (!caseId) return;
     try {
-      await axios.post(`${API_BASE_URL}/api/feedback`, {
-        case_id: caseId, rating: ratingVal, comment: commentVal
-      });
-      if (activeTab === "create") {
-        setFeedbackSubmitted(true);
-      } else {
-        setEditingFeedbackId(null);
-        fetchCasesAndStats();
-      }
+      await axios.post(`${API_BASE_URL}/api/feedback`, { case_id: caseId, rating: ratingVal, comment: commentVal });
+      if (activeTab === "create") setFeedbackSubmitted(true);
+      else { setEditingFeedbackId(null); fetchCasesAndStats(); }
     } catch (error) { alert("피드백 전송 실패"); }
   };
 
-  // 추천 카드 👍/👎 피드백 핸들러
   const handleCardFeedback = async (lawTitle, isUseful, e) => {
     e.stopPropagation(); 
-    
     const existingVote = votedCards[lawTitle];
-
     if (existingVote) {
         const wasUseful = existingVote.voteType === 'up';
         if(wasUseful === isUseful) {
             try {
-                await axios.post(`${API_BASE_URL}/api/card-feedback`, {
-                    law_title: lawTitle, is_useful: isUseful, is_cancel: true
-                });
-                setVotedCards(prev => {
-                    const newVotes = { ...prev };
-                    delete newVotes[lawTitle];
-                    return newVotes;
-                });
+                await axios.post(`${API_BASE_URL}/api/card-feedback`, { law_title: lawTitle, is_useful: isUseful, is_cancel: true });
+                setVotedCards(prev => { const newVotes = { ...prev }; delete newVotes[lawTitle]; return newVotes; });
             } catch (error) { console.error("취소 실패"); }
             return;
         } else {
@@ -354,22 +273,13 @@ function App() {
             return;
         }
     }
-
     try {
-      await axios.post(`${API_BASE_URL}/api/card-feedback`, {
-        law_title: lawTitle, is_useful: isUseful, is_cancel: false
-      });
-      
+      await axios.post(`${API_BASE_URL}/api/card-feedback`, { law_title: lawTitle, is_useful: isUseful, is_cancel: false });
       setVotedCards(prev => ({ 
         ...prev, 
-        [lawTitle]: { 
-          voteType: isUseful ? 'up' : 'down',
-          message: isUseful ? '📈 AI가 이 법령을 더 중요하게 학습합니다!' : '📉 연관성이 낮음을 학습합니다.'
-        } 
+        [lawTitle]: { voteType: isUseful ? 'up' : 'down', message: isUseful ? '📈 AI가 이 법령을 더 중요하게 학습합니다!' : '📉 연관성이 낮음을 학습합니다.' } 
       }));
-    } catch (error) { 
-      console.error("피드백 전송 실패"); 
-    }
+    } catch (error) { console.error("피드백 전송 실패"); }
   };
 
   const handleDeleteCase = async (caseId) => {
@@ -381,12 +291,7 @@ function App() {
   };
 
   const handleDownloadWord = (content, title) => {
-    const htmlContent = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><meta charset='utf-8'><title>${title}</title></head>
-      <body><div style="white-space: pre-wrap; font-family: 'Malgun Gothic', serif; font-size: 11pt;">${content}</div></body>
-      </html>
-    `;
+    const htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${title}</title></head><body><div style="white-space: pre-wrap; font-family: 'Malgun Gothic', serif; font-size: 11pt;">${content}</div></body></html>`;
     const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -397,95 +302,50 @@ function App() {
   };
 
   const submitManualForm = () => setExtractedData(manualForm);
-
   const isAgentReplied = chatLog.length > 0 && chatLog[chatLog.length - 1].sender === 'ai';
 
   const statBars = agentStats ? [
-    { subject: '정확도', val: agentStats.accuracy },
-    { subject: '신속성', val: agentStats.speed },
-    { subject: '판례 적합성', val: agentStats.precedent_match },
-    { subject: '법령 신뢰도', val: agentStats.statute_reliability },
-    { subject: '문제 해결력', val: agentStats.resolution_power },
-    { subject: '진화 지수', val: agentStats.evolution_index },
+    { subject: '정확도', val: agentStats.accuracy }, { subject: '신속성', val: agentStats.speed },
+    { subject: '판례 적합성', val: agentStats.precedent_match }, { subject: '법령 신뢰도', val: agentStats.statute_reliability },
+    { subject: '문제 해결력', val: agentStats.resolution_power }, { subject: '진화 지수', val: agentStats.evolution_index },
   ] : [];
 
   const tabButtonStyle = (isActive) => ({
-    padding: '14px 30px', 
-    cursor: 'pointer', 
-    border: 'none', 
-    borderRadius: '10px', 
-    fontSize: '16px', 
-    fontWeight: '700', 
-    backgroundColor: isActive ? colors.primary : colors.bgInput, 
-    color: isActive ? colors.white : colors.textMuted, 
-    transition: designSystem.transitions.default,
-    boxShadow: isActive ? '0 4px 15px rgba(59, 130, 246, 0.4)' : 'none', 
+    padding: '14px 30px', cursor: 'pointer', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '700', 
+    backgroundColor: isActive ? colors.primary : colors.bgInput, color: isActive ? colors.white : colors.textMuted, 
+    transition: designSystem.transitions.default, boxShadow: isActive ? '0 4px 15px rgba(59, 130, 246, 0.4)' : 'none', 
   });
 
   const ratingButtonStyle = (num) => ({
-    padding: '10px 20px', 
-    backgroundColor: rating === num ? colors.success : colors.bgInput, 
-    color: rating === num ? colors.white : colors.textMain, 
-    border: `1px solid ${rating === num ? colors.success : colors.border}`, 
-    borderRadius: '8px', 
-    cursor: 'pointer', 
-    fontWeight: '600', 
-    fontSize: '15px',
-    transition: designSystem.transitions.default,
+    padding: '10px 20px', backgroundColor: rating === num ? colors.success : colors.bgInput, color: rating === num ? colors.white : colors.textMain, 
+    border: `1px solid ${rating === num ? colors.success : colors.border}`, borderRadius: '8px', cursor: 'pointer', fontWeight: '600', 
+    fontSize: '15px', transition: designSystem.transitions.default,
   });
 
   const voteButtonStyle = (type, isActive, isVoted) => {
     let baseColor = type === 'up' ? colors.success : colors.danger;
-    let bgColor = 'transparent'; 
-    let textColor = baseColor;
-    let borderColor = baseColor;
-
+    let bgColor = 'transparent'; let textColor = baseColor; let borderColor = baseColor;
     if (isVoted) {
-        if (isActive) {
-            bgColor = baseColor;
-            textColor = colors.white;
-        } else {
-            bgColor = 'transparent';
-            borderColor = colors.border;
-            textColor = colors.border; 
-        }
+        if (isActive) { bgColor = baseColor; textColor = colors.white; } 
+        else { bgColor = 'transparent'; borderColor = colors.border; textColor = colors.border; }
     }
-    
     return { 
-      flex: 1, 
-      padding: '12px', 
-      fontSize: '14px', 
-      fontWeight: 'bold', 
-      borderRadius: '8px', 
-      cursor: 'pointer', 
-      transition: designSystem.transitions.default,
-      backgroundColor: bgColor,
-      color: textColor,
-      border: `1px solid ${borderColor}`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '6px'
+      flex: 1, padding: '12px', fontSize: '14px', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer', 
+      transition: designSystem.transitions.default, backgroundColor: bgColor, color: textColor, border: `1px solid ${borderColor}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
     };
   };
+
+  const checklistProgress = checklist.length > 0 
+    ? Math.round((checklist.filter(c => c.checked).length / checklist.length) * 100) 
+    : 0;
 
   return (
     <div className="AppMainContainer" style={{ backgroundColor: colors.bgMain, color: colors.textMain, minHeight: '100vh', padding: '50px 20px', fontFamily: "'Pretendard', sans-serif", position: 'relative', overflowX: 'hidden' }}>
       
       {Particles && typeof particlesInit === 'function' && (
-        <Particles
-          id="tsparticles"
-          init={particlesInit} 
-          options={particlesOptions}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 0, 
-          }}
-        />
+        <Particles id="tsparticles" init={particlesInit} options={particlesOptions}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }} />
       )}
 
       <div style={{ maxWidth: '1240px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
@@ -495,18 +355,14 @@ function App() {
             <div style={{ ...cardStyle, maxWidth: '700px', width: '90%', maxHeight: '85vh', overflowY: 'auto', position: 'relative', margin: 0, backgroundColor: 'rgba(11, 21, 41, 0.95)', border: `1px solid ${colors.primary}` }} onClick={e => e.stopPropagation()}>
               <button onClick={() => setSelectedLaw(null)} style={{ position: 'absolute', top: '20px', right: '20px', border: 'none', background: 'transparent', fontSize: '24px', cursor: 'pointer', color: colors.textMuted }}>&times;</button>
               <h2 style={{ ...h2Style, borderLeft: 'none', paddingLeft: 0, borderBottom: `2px solid ${colors.border}`, paddingBottom: '15px' }}>{selectedLaw.title}</h2>
-              <div style={{ lineHeight: '1.8', fontSize: '15px', whiteSpace: 'pre-wrap', marginTop: '20px', color: colors.textMain }}>
-                {selectedLaw.full_content || selectedLaw.content || "상세 내용이 제공되지 않았습니다."}
-              </div>
+              <div style={{ lineHeight: '1.8', fontSize: '15px', whiteSpace: 'pre-wrap', marginTop: '20px', color: colors.textMain }}>{selectedLaw.full_content || selectedLaw.content || "상세 내용이 제공되지 않았습니다."}</div>
             </div>
           </div>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', borderBottom: `2px solid ${colors.border}`, paddingBottom: '25px', marginBottom: '40px' }}>
           <span style={{ fontSize: '36px' }}>⚖️</span>
-          <h1 style={{ color: colors.white, margin: 0, fontWeight: '900', fontSize: '2.2rem', letterSpacing: '-1px' }}>
-            진화형 법률 AI 에이전트
-          </h1>
+          <h1 style={{ color: colors.white, margin: 0, fontWeight: '900', fontSize: '2.2rem', letterSpacing: '-1px' }}>진화형 법률 AI 에이전트</h1>
         </div>
 
         <div style={{ marginBottom: '40px', display: 'flex', gap: '10px' }}>
@@ -548,6 +404,59 @@ function App() {
                     {chatLog.filter(msg => msg.sender === 'ai').map((msg, idx) => (
                       <div key={idx} style={{ padding: '15px', backgroundColor: colors.successSubtle, borderRadius: '8px', borderLeft: `4px solid ${colors.success}`, whiteSpace: 'pre-wrap', lineHeight: '1.7', fontSize: '14px', color: colors.textMain }}>{msg.text}</div>
                     ))}
+                    
+                    {checklist.length > 0 && (
+                      <div style={{ marginTop: '25px', backgroundColor: colors.bgCard, padding: '20px', borderRadius: '10px', border: `1px solid ${colors.primary}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                          <h4 style={{ color: colors.white, margin: 0, fontSize: '1rem' }}>📋 지금 당장 실천할 행동 지침</h4>
+                          <span style={{ color: colors.primary, fontWeight: 'bold' }}>진행률: {checklistProgress}%</span>
+                        </div>
+                        
+                        <div style={{ width: '100%', backgroundColor: colors.bgInput, height: '8px', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
+                          <div style={{ width: `${checklistProgress}%`, height: '100%', backgroundColor: colors.primary, transition: 'width 0.4s ease-out' }}></div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {checklist.map((item, idx) => (
+                            <label key={idx} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '12px', backgroundColor: item.checked ? colors.successSubtle : colors.bgInput, border: `1px solid ${item.checked ? colors.success : colors.border}`, borderRadius: '8px', transition: 'all 0.2s' }}>
+                              <input 
+                                type="checkbox" checked={item.checked} onChange={() => handleToggleCheck(idx)}
+                                style={{ width: '20px', height: '20px', marginRight: '15px', accentColor: colors.success, cursor: 'pointer' }}
+                              />
+                              <span style={{ fontSize: '15px', color: item.checked ? colors.textMuted : colors.textMain, textDecoration: item.checked ? 'line-through' : 'none' }}>
+                                {item.text}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 🚀 [추가] 추천 관할 기관 및 상담소 UI (가장 하단에 배치) */}
+                    {institutions && institutions.length > 0 && (
+                      <div style={{ marginTop: '25px', backgroundColor: colors.bgMain, padding: '20px', borderRadius: '10px', border: `1px solid ${colors.border}` }}>
+                        <h4 style={{ color: colors.white, marginTop: 0, marginBottom: '15px', fontSize: '1rem' }}>📍 추천 관할 기관 및 오프라인 상담소</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          {institutions.map((inst, idx) => (
+                            <div key={idx} style={{ backgroundColor: colors.bgCard, padding: '18px', borderRadius: '10px', border: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <h5 style={{ margin: '0 0 5px 0', color: colors.primary, fontSize: '15px' }}>{inst.name}</h5>
+                                <p style={{ margin: '0 0 8px 0', color: colors.textMuted, fontSize: '13px' }}>{inst.type}</p>
+                                <div style={{ fontSize: '14px', color: colors.textMain }}>
+                                  📞 {inst.phone} <br/>
+                                  {inst.search_info && <span style={{fontSize: '12px', color: colors.textMuted}}>ℹ️ 참고: {inst.search_info}</span>}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '10px' }}>
+                                <a href={`tel:${inst.phone.replace(/[^0-9]/g, '')}`} style={{ padding: '8px 12px', backgroundColor: colors.successSubtle, color: colors.success, border: `1px solid ${colors.success}`, borderRadius: '6px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>전화걸기</a>
+                                <a href={`https://map.naver.com/v5/search/${inst.name}`} target="_blank" rel="noreferrer" style={{ padding: '8px 12px', backgroundColor: colors.bgInput, color: colors.white, border: `1px solid ${colors.border}`, borderRadius: '6px', textDecoration: 'none', fontSize: '13px' }}>지도보기</a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   </div>
                 )}
               </div>
@@ -626,19 +535,8 @@ function App() {
                           </p>
                           
                           <div style={{ display: 'flex', gap: '8px', marginTop: '15px', borderTop: `1px solid ${colors.border}`, paddingTop: '10px' }}>
-                            <button 
-                              onClick={(e) => handleCardFeedback(law.title, true, e)}
-                              style={voteButtonStyle('up', voteData?.voteType === 'up', isVoted)}
-                            >
-                              👍 유용함
-                            </button>
-                            
-                            <button 
-                              onClick={(e) => handleCardFeedback(law.title, false, e)}
-                              style={voteButtonStyle('down', voteData?.voteType === 'down', isVoted)}
-                            >
-                              👎 무관함
-                            </button>
+                            <button onClick={(e) => handleCardFeedback(law.title, true, e)} style={voteButtonStyle('up', voteData?.voteType === 'up', isVoted)}>👍 유용함</button>
+                            <button onClick={(e) => handleCardFeedback(law.title, false, e)} style={voteButtonStyle('down', voteData?.voteType === 'down', isVoted)}>👎 무관함</button>
                           </div>
 
                           {isVoted && (
