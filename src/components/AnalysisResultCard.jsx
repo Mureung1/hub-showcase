@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
@@ -6,7 +6,8 @@ import MealTypePicker from './MealTypePicker.jsx'
 import { NutrientBars } from './NutritionCard.jsx'
 import SourceBadge from './SourceBadge.jsx'
 import Spinner from './Spinner.jsx'
-import { formatNutrient } from '../lib/nutrition.js'
+import { requestFoodServing } from '../lib/foodServing.js'
+import { formatNutrient, scaleMealAnalysisByServings, SERVINGS_MAX, SERVINGS_MIN, SERVINGS_STEP } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 홈 탭 분석 영역의 RESULT 상태 카드. 촬영 카드가 있던 **같은 자리**를 그대로 차지한다 —
@@ -50,6 +51,63 @@ function titleOf(items) {
   return items.length === 1 ? items[0].name : `${items[0].name} 외 ${items.length - 1}개`
 }
 
+function formatServings(n) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+}
+
+const STEPPER_BUTTON_STYLE = {
+  minWidth: 44,
+  minHeight: 44,
+  padding: `0 ${spacing.sm}px`,
+  borderRadius: radius.sm,
+  border: `1px solid ${colors.border}`,
+  background: colors.surface,
+  color: colors.textStrong,
+  fontSize: font.size.xs,
+  fontWeight: 700,
+}
+
+// 6주차 §2 — 인분 수 조절. gramHint: servingGram이 매칭된 음식일 때만 "1인분 · 약 300g" 텍스트를
+// 보여준다(미매칭이면 표기 생략 — 추측 금지). 음식이 여러 개(한 끼 세트)면 어느 음식 기준인지
+// 애매해지므로 호출부가 gramHint를 아예 안 넘긴다.
+function ServingsStepper({ servings, onChange, gramHint }) {
+  const atMin = servings <= SERVINGS_MIN
+  const atMax = servings >= SERVINGS_MAX
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: spacing.md }}>
+      <button
+        type="button"
+        className="tds-press"
+        onClick={() => onChange(Math.max(SERVINGS_MIN, servings - SERVINGS_STEP))}
+        disabled={atMin}
+        aria-label="0.5인분 줄이기"
+        style={{ ...STEPPER_BUTTON_STYLE, opacity: atMin ? 0.4 : 1, cursor: atMin ? 'not-allowed' : 'pointer' }}
+      >
+        −0.5인분
+      </button>
+      <div style={{ textAlign: 'center', minWidth: 64 }}>
+        <div style={{ fontSize: font.size.md, fontWeight: 700, color: colors.textStrong }}>{formatServings(servings)}인분</div>
+        {gramHint != null && (
+          <div style={{ fontSize: font.size.xs, color: colors.textSub, marginTop: 2, whiteSpace: 'nowrap' }}>
+            1인분 · 약 {gramHint}g
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        className="tds-press"
+        onClick={() => onChange(Math.min(SERVINGS_MAX, servings + SERVINGS_STEP))}
+        disabled={atMax}
+        aria-label="0.5인분 늘리기"
+        style={{ ...STEPPER_BUTTON_STYLE, opacity: atMax ? 0.4 : 1, cursor: atMax ? 'not-allowed' : 'pointer' }}
+      >
+        +0.5인분
+      </button>
+    </div>
+  )
+}
+
 // 펼쳤을 때 보여주는 음식 하나. 식단 탭의 MealItemRow와 같은 생김새를 쓰되, 여기서는 저장 전에
 // "이 음식이 이렇게 잡혔구나"를 확인하는 자리라 한 줄 요약이 아니라 영양소 막대까지 펼쳐 보여준다.
 function ItemDetailRow({ item }) {
@@ -82,14 +140,38 @@ export default function AnalysisResultCard({
   // 썼는지, 전부 AI 추정인지 구분해준다.
   titleOverride,
   sourceNote,
+  // 6주차 §2 — 인분 수 조절(둘 다 생략하면 1인분 고정으로 기존과 동일하게 동작).
+  // analysis는 항상 1인분(baseNutrients) 기준 그대로 두고, 화면 표시만 servings배로 계산한다 —
+  // "원본을 덮어쓰지 않는다"는 PRD 규칙의 핵심이라 여기(표시 전용 파생값)에서만 배율을 곱한다.
+  servings = 1,
+  onServingsChange,
 }) {
-  const { items, total } = analysis
+  const { items } = analysis
+  const displayAnalysis = scaleMealAnalysisByServings(analysis, servings)
   const title = titleOverride || titleOf(items)
   // 음식이 2개 이상일 때만 펼치기를 준다 — 1개면 위의 합계 막대가 곧 그 음식의 막대라 똑같은 내용이
   // 두 번 나온다. 기본은 접힘: 결과 카드가 촬영 카드 자리를 대신하는 만큼, 처음엔 합계만 보여 한눈에
   // 들어오게 하고 필요한 사람만 펼치게 한다.
   const [expanded, setExpanded] = useState(false)
   const canExpand = items.length > 1
+
+  // 음식이 1개일 때만 그 음식의 1인분 기준량을 물어본다 — 여러 개면 어느 음식 기준인지 애매하다.
+  // 결과가 바뀔 때(다시 찍기 등)마다 다시 조회하고, 매칭 안 되면(null) 힌트를 아예 숨긴다.
+  const [gramHint, setGramHint] = useState(null)
+  useEffect(() => {
+    setGramHint(null)
+    if (items.length !== 1 || !onServingsChange) return
+    let cancelled = false
+    requestFoodServing(items[0].name)
+      .then((res) => {
+        if (!cancelled && res.matched && res.servingGram) setGramHint(res.servingGram)
+      })
+      .catch(() => {}) // 힌트는 부가 정보라 실패해도 조용히 생략(카드 자체는 정상 동작)
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items[0]?.name, items.length])
 
   return (
     <Card className="tds-card-swap">
@@ -127,11 +209,18 @@ export default function AnalysisResultCard({
             {title}
           </h3>
           <p style={{ margin: 0, fontSize: font.size.sm, color: colors.textSub }}>
-            총 <strong style={{ color: colors.textStrong }}>{formatNutrient(total.calories)}</strong> kcal
+            총 <strong style={{ color: colors.textStrong }}>{formatNutrient(displayAnalysis.total.calories)}</strong> kcal
           </p>
           {sourceNote && <p style={{ margin: '2px 0 0', fontSize: font.size.xs, color: colors.muted }}>{sourceNote}</p>}
         </div>
       </div>
+
+      {/* a-2. 인분 수 조절(6주차 §2) — onServingsChange가 있을 때만(생략하면 기존과 동일하게 숨김) */}
+      {onServingsChange && (
+        <div style={{ marginTop: spacing.lg }}>
+          <ServingsStepper servings={servings} onChange={onServingsChange} gramHint={gramHint} />
+        </div>
+      )}
 
       {/* b. 영양소 막대 — 음식이 여러 개면 통합(합계) 기준. 하단에 따로 있던 카드와 같은 컴포넌트 재사용 */}
       <div style={{ marginTop: spacing.xl }}>
@@ -140,7 +229,7 @@ export default function AnalysisResultCard({
             {items.length}가지 음식을 합친 값이에요
           </p>
         )}
-        <NutrientBars nutrients={total} />
+        <NutrientBars nutrients={displayAnalysis.total} />
       </div>
 
       {/* b-2. 음식별 상세 — 여러 개일 때만. 기본 접힘, "자세한 식사"로 펼친다. */}
@@ -165,7 +254,7 @@ export default function AnalysisResultCard({
 
           {expanded && (
             <div className="tds-card-swap">
-              {items.map((item, i) => (
+              {displayAnalysis.items.map((item, i) => (
                 <ItemDetailRow key={item.id ?? `${item.name}-${i}`} item={item} />
               ))}
             </div>

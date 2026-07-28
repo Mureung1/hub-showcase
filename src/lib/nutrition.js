@@ -61,6 +61,33 @@ export function isMealAnalysis(value) {
   )
 }
 
+// 6주차 §2 — 인분 수 조절. 0.5 스텝, 최대 10인분까지 허용한다(그 이상은 개인 섭취량 기록 취지에서
+// 벗어남).
+export const SERVINGS_MIN = 0.5
+export const SERVINGS_MAX = 10
+export const SERVINGS_STEP = 0.5
+
+function scaleNutrientSet(nutrients, servings) {
+  const scaled = {}
+  for (const key of NUTRIENT_KEYS) {
+    const v = nutrients?.[key]
+    // 반올림은 표시 시점(formatNutrient) 1회만 — 여기서 미리 반올림하면 인분을 오가며(예: 2인분 →
+    // 1인분 → 2인분) 원래 값과 미세하게 어긋나는 오차가 누적된다.
+    scaled[key] = typeof v === 'number' ? v * servings : null
+  }
+  return scaled
+}
+
+// analysis: { items, total } — baseNutrients(1인분 기준, servings=1일 때 값)를 그대로 두고 표시용으로만
+// 배율을 곱한 새 객체를 반환한다. 원본(analysis)은 절대 변형하지 않는다 — baseNutrients 불변 규칙
+// (PRD 6주차 §2)의 핵심으로, 이걸 어기면 인분을 여러 번 오갈 때마다 부동소수점 오차가 쌓인다.
+export function scaleMealAnalysisByServings(analysis, servings) {
+  return {
+    items: analysis.items.map((item) => ({ ...item, nutrients: scaleNutrientSet(item.nutrients, servings) })),
+    total: scaleNutrientSet(analysis.total, servings),
+  }
+}
+
 // 음식 항목의 영양수치 출처. DB(가공)은 식약처 가공식품DB(편의점/포장/프랜차이즈 제품) 매칭을 뜻한다.
 // LABEL은 영양성분표 사진에서 그대로 읽어낸 값(추정이 아니라 추출)이라 ESTIMATED와 구분한다.
 export const NUTRITION_SOURCE = {

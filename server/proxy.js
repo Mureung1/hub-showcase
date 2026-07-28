@@ -9,6 +9,7 @@ import { mapNeisAllergy } from '../src/lib/allergyRules.js'
 import { resolveCnuWeekResult } from '../src/lib/cnuWeekFallback.js'
 import { isSupportedUniversity } from '../src/lib/universities.js'
 import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
+import { lookupFood } from './nutrition/foodLookup.js'
 import { analyzeTray } from './nutrition/precisionEngine.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -401,6 +402,22 @@ app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
   } catch (err) {
     respondToProxyError(res, err, '/api/precision-analyze')
   }
+})
+
+// GET /api/food-serving?name=◯◯ - 6주차 §2 인분 수 조절용 1인분 그램 조회. server/nutrition/foodLookup.js
+// (foodDB.json, 6주차 §0)를 그대로 재사용한다 — 새 데이터소스를 만들지 않는다.
+app.get('/api/food-serving', (req, res) => {
+  const name = (req.query.name || '').toString().trim()
+  if (!name) {
+    return res.status(400).json({ error: 'name is required' })
+  }
+  res.set('Cache-Control', 'no-store')
+
+  const result = lookupFood(name)
+  if (!result) {
+    return res.json({ servingGram: null, matched: false, matchType: null })
+  }
+  res.json({ servingGram: result.item.servingGram ?? null, matched: true, matchType: result.matchType })
 })
 
 // POST /api/places - 카카오 키워드 장소 검색 프록시 (KAKAO_REST_API_KEY는 서버에서만 사용)

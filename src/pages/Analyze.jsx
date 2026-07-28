@@ -26,6 +26,7 @@ import {
   isNutrientSetOrNull,
   NUTRITION_SOURCE,
   resolveConsumedGrams,
+  scaleMealAnalysisByServings,
   scaleNutrients,
 } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -505,9 +506,11 @@ export default function Analyze() {
   const [menuName, setMenuName] = useState('')
   const [brand, setBrand] = useState('')
   const [error, setError] = useState('')
-  // 분석은 끝났지만 아직 저장 전인 결과(식사 시간대 확정 대기).
+  // 분석은 끝났지만 아직 저장 전인 결과(식사 시간대 확정 대기). 항상 1인분(baseNutrients) 기준값을
+  // 담는다 — 인분 조절(6주차 §2)은 이 값을 바꾸지 않고 표시/저장 시점에만 servings를 곱한다.
   const [pendingAnalysis, setPendingAnalysis] = useState(null)
   const [mealType, setMealType] = useState(() => getRecommendedMealType())
+  const [servings, setServings] = useState(1)
   const [saving, setSaving] = useState(false)
   // PhotoUpload는 미리보기를 내부 state로 들고 있어서 부모가 직접 지울 수 없다. "다시 찍기"에서 이 값을
   // 올려 컴포넌트를 새로 마운트시키는 방식으로 초기화한다.
@@ -551,6 +554,7 @@ export default function Analyze() {
     setResultPhotoUrl(null)
     setResultMeta({ titleOverride: trayPrefill.titleOverride, sourceNote: trayPrefill.sourceNote })
     setMealType(trayPrefill.mealType || getRecommendedMealType())
+    setServings(1)
     setStatus(STATUS.RESULT)
     navigate(location.pathname, { replace: true, state: {} })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -567,6 +571,7 @@ export default function Analyze() {
     setBrand('')
     setError('')
     setMealType(getRecommendedMealType())
+    setServings(1)
     setPhotoResetKey((k) => k + 1)
   }
 
@@ -616,6 +621,7 @@ export default function Analyze() {
       setResultPhotoUrl(photo?.dataUrl ?? null)
       // 결과를 보여주는 시점에 시간대 추천을 다시 계산한다(카드를 띄워둔 채 시간이 흐른 경우 대비).
       setMealType(getRecommendedMealType())
+      setServings(1)
       setStatus(STATUS.RESULT)
     } catch (err) {
       console.error('meal analysis failed:', err)
@@ -635,6 +641,7 @@ export default function Analyze() {
       setPendingAnalysis(parsed)
       setResultPhotoUrl(scanPhoto?.dataUrl ?? null)
       setMealType(getRecommendedMealType())
+      setServings(1)
       setStatus(STATUS.RESULT)
     } catch (err) {
       setStatus(STATUS.IDLE)
@@ -645,9 +652,17 @@ export default function Analyze() {
   async function handleConfirmSave() {
     if (!pendingAnalysis || saving) return
 
-    // 이번 식사의 모든 음식에 같은 시간대(mealType)를 붙인다. 합계(total)는 그대로 두어 mealType이 영향을 주지 않는다.
-    const items = pendingAnalysis.items.map((item) => ({ ...item, mealType }))
-    const parsed = { items, total: pendingAnalysis.total }
+    // 이번 식사의 모든 음식에 같은 시간대(mealType)를 붙인다. 저장되는 nutrients는 servings를 반영한
+    // 최종값이고, baseNutrients(1인분 기준 원본)·servings를 함께 남겨 이 기록을 다시 열었을 때 몇
+    // 인분이었는지 알 수 있게 한다(6주차 §2) — 기존 기록(이 두 필드가 없는)은 읽는 쪽이 1인분으로 해석.
+    const scaled = scaleMealAnalysisByServings(pendingAnalysis, servings)
+    const items = scaled.items.map((item, i) => ({
+      ...item,
+      mealType,
+      baseNutrients: pendingAnalysis.items[i].nutrients,
+      servings,
+    }))
+    const parsed = { items, total: scaled.total }
 
     setSaving(true)
     try {
@@ -688,6 +703,8 @@ export default function Analyze() {
           saving={saving}
           titleOverride={resultMeta.titleOverride}
           sourceNote={resultMeta.sourceNote}
+          servings={servings}
+          onServingsChange={setServings}
         />
       ) : mode === 'food' ? (
         // key={status}: IDLE과 ANALYZING이 같은 <Card>라 React가 DOM 노드를 재사용하는데, 그러면

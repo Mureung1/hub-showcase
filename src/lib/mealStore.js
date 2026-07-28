@@ -74,6 +74,10 @@ export function addMealRecord(userId, dateKey, { items, mealType } = {}) {
       brand: item.brand,
       nutrients: item.nutrients,
       source: item.source ?? (item.brand ? '공식' : '추정'),
+      // 6주차 §2 인분 조절 — 없으면(구버전 기록) undefined로 저장되고, 읽는 쪽(재열람 UI)이 1인분으로
+      // 해석한다. 마이그레이션은 하지 않는다(PRD 규칙).
+      baseNutrients: item.baseNutrients,
+      servings: item.servings,
     })),
   }
 

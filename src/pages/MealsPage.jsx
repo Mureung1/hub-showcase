@@ -115,6 +115,13 @@ function NutrientSummaryLine({ nutrients }) {
   )
 }
 
+// 저장 시점의 인분 수(6주차 §2) — 1인분이면 굳이 표시하지 않는다. 구버전 기록(servings 없음)은
+// undefined라 그냥 표시를 생략(= 1인분 취급, 마이그레이션 없음).
+function servingsSuffix(servings) {
+  if (typeof servings !== 'number' || servings === 1) return ''
+  return ` · ${Number.isInteger(servings) ? servings : servings.toFixed(1)}인분`
+}
+
 // 한 끼 세트를 펼쳤을 때 보여주는 개별 음식 한 줄. 삭제는 끼니 단위로만 가능해서 개별 삭제 버튼은 없다.
 function MealItemRow({ item }) {
   return (
@@ -125,6 +132,7 @@ function MealItemRow({ item }) {
       <h4 style={{ fontSize: font.size.sm, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>
         {item.name}
         {item.brand ? ` (${item.brand})` : ''}
+        {servingsSuffix(item.servings)}
       </h4>
       <NutrientSummaryLine nutrients={item.nutrients} />
     </div>
@@ -146,6 +154,7 @@ function SingleMealCard({ record, expanded, onToggleDetail, onRemove, removing }
           <h3 style={{ fontSize: font.size.md, margin: `${spacing.sm}px 0 ${spacing.xs}px`, color: colors.textStrong }}>
             {item.name}
             {item.brand ? ` (${item.brand})` : ''}
+            {servingsSuffix(item.servings)}
           </h3>
           <NutrientSummaryLine nutrients={item.nutrients} />
         </div>

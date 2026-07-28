@@ -7,6 +7,9 @@ import {
   DEFICIENCY_TARGET_KEYS,
   isSodiumExceeded,
   RECORD_ONLY_KEYS,
+  scaleMealAnalysisByServings,
+  SERVINGS_MAX,
+  SERVINGS_MIN,
 } from './nutrition.js'
 
 // 표준 성인 남성 가정값 수준의 권장량(값 자체는 테스트 안에서만 의미)
@@ -84,5 +87,43 @@ describe('분류 상수', () => {
     expect([...DEFICIENCY_TARGET_KEYS, ...RECORD_ONLY_KEYS].sort()).toEqual(
       ['calories', 'carbs', 'fat', 'fiber', 'protein', 'sodium'],
     )
+  })
+})
+
+// 6주차 §2 — 인분 수 조절. baseNutrients(analysis 원본) 불변 + 표시값만 servings배로 계산하는지 검증.
+describe('scaleMealAnalysisByServings', () => {
+  const baseAnalysis = {
+    items: [{ name: '김치찌개', nutrients: { calories: 400, protein: 20, carbs: 30, fat: 10, fiber: 4, sodium: 1600 } }],
+    total: { calories: 400, protein: 20, carbs: 30, fat: 10, fiber: 4, sodium: 1600 },
+  }
+
+  it('1.5배 계산: 모든 항목·합계가 정확히 1.5배가 된다', () => {
+    const scaled = scaleMealAnalysisByServings(baseAnalysis, 1.5)
+    expect(scaled.total).toEqual({ calories: 600, protein: 30, carbs: 45, fat: 15, fiber: 6, sodium: 2400 })
+    expect(scaled.items[0].nutrients.calories).toBe(600)
+  })
+
+  it('원본(analysis)은 절대 변형되지 않는다 — baseNutrients 불변 규칙', () => {
+    scaleMealAnalysisByServings(baseAnalysis, 2)
+    expect(baseAnalysis.total.calories).toBe(400)
+    expect(baseAnalysis.items[0].nutrients.calories).toBe(400)
+  })
+
+  it('인분을 왔다갔다 바꿔도(2배 → 1배) 원본 기준 오차가 0이다', () => {
+    const doubled = scaleMealAnalysisByServings(baseAnalysis, 2)
+    const backToOne = scaleMealAnalysisByServings(baseAnalysis, 1)
+    expect(backToOne.total.calories).toBe(baseAnalysis.total.calories)
+    expect(doubled.total.calories).toBe(baseAnalysis.total.calories * 2)
+  })
+
+  it('null 영양값은 스케일해도 null 그대로 유지된다(라벨 스캔의 미확인 항목 등)', () => {
+    const withNull = { items: [{ name: 'x', nutrients: { ...baseAnalysis.total, fiber: null } }], total: baseAnalysis.total }
+    const scaled = scaleMealAnalysisByServings(withNull, 3)
+    expect(scaled.items[0].nutrients.fiber).toBeNull()
+  })
+
+  it('경계값 상수: 최소 0.5, 최대 10', () => {
+    expect(SERVINGS_MIN).toBe(0.5)
+    expect(SERVINGS_MAX).toBe(10)
   })
 })

@@ -104,12 +104,16 @@ function mealRowToApp(row) {
 }
 
 // mealStore.addMealRecord와 동일한 필드만 남기고(브라우저가 보낸 임시 필드는 버리고) 저장한다.
+// baseNutrients/servings(6주차 §2)는 items가 JSONB 컬럼이라 스키마 변경 없이 그대로 저장된다 —
+// 없으면(구버전 기록) null로, 읽는 쪽이 1인분으로 해석한다.
 function normalizeItem(item) {
   return {
     name: item.name,
     brand: item.brand ?? null,
     nutrients: item.nutrients,
     source: item.source ?? (item.brand ? '공식' : '추정'),
+    baseNutrients: item.baseNutrients ?? null,
+    servings: item.servings ?? null,
   }
 }
 
