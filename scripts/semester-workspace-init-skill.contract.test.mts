@@ -261,6 +261,34 @@ test('managed-resource conflicts preserve original bytes and Git history', async
         error: /workspace-state\.json conflicts[\s\S]*--- existing[\s\S]*--- requested/,
       },
       {
+        name: 'symlinked identity',
+        async arrange(target, outside) {
+          await writeFile(
+            outside,
+            `${JSON.stringify(
+              {
+                kind: 'ay-ple.semester-workspace',
+                formatVersion: 4,
+                workspaceId:
+                  'workspace_0123456789abcdef0123456789abcdef',
+                semester: {
+                  yearLevel: 2,
+                  term: {
+                    key: 'fall',
+                    displayName: '가을 학기',
+                  },
+                },
+                snapshot: {},
+              },
+              null,
+              2,
+            )}\n`,
+          )
+          await symlink(outside, path.join(target, 'workspace-state.json'))
+        },
+        error: /workspace-state\.json must be a non-symlink regular file/,
+      },
+      {
         name: 'divergent built-in Skill',
         async arrange(target) {
           const destination = path.join(
@@ -271,6 +299,24 @@ test('managed-resource conflicts preserve original bytes and Git history', async
           await writeFile(path.join(destination, 'SKILL.md'), 'user version\n')
         },
         error: /Built-in Skill conflict[\s\S]*diff --git/,
+      },
+      {
+        name: 'symlinked built-in Skill root',
+        async arrange(target) {
+          const destination = path.join(
+            target,
+            '.agents/skills/ay-ple-first-assignment',
+          )
+          await mkdir(path.dirname(destination), { recursive: true })
+          await symlink(
+            path.join(
+              repositoryRoot,
+              'skills/ay-ple-first-assignment',
+            ),
+            destination,
+          )
+        },
+        error: /Built-in Skill root must be a non-symlink directory/,
       },
       {
         name: 'unmanaged Interaction table',

@@ -247,6 +247,7 @@ async function planManagedFiles(
   const files: PlannedFile[] = []
   const statePath = path.join(target.canonicalRoot, 'workspace-state.json')
   if (await pathExists(statePath)) {
+    await assertRegularFile(statePath, 'workspace-state.json')
     const bytes = await readFile(statePath)
     const classification = classifySemesterWorkspaceRootStateBytes(bytes)
     if (
@@ -292,6 +293,15 @@ async function planManagedFiles(
     builtInSkillName,
   )
   if (await pathExists(skillDestination)) {
+    const skillDestinationStat = await lstat(skillDestination)
+    if (
+      !skillDestinationStat.isDirectory() ||
+      skillDestinationStat.isSymbolicLink()
+    ) {
+      throw new Error(
+        'Built-in Skill root must be a non-symlink directory.',
+      )
+    }
     const difference = await firstTreeDifference(
       builtInSkillSource,
       skillDestination,

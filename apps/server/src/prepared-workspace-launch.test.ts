@@ -170,6 +170,103 @@ test('invalid explicit roots fail before reading or changing the registry', asyn
   }
 })
 
+test('Git metadata indirection is not a prepared workspace root', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'prepared-launch-test-'))
+  const appDataRoot = path.join(root, 'app-data')
+  const sourceRoot = path.join(root, 'worktree-source')
+  const linkedRoot = path.join(root, 'linked-worktree')
+  const separateRoot = path.join(root, 'separate-worktree')
+  const separateGitDirectory = path.join(root, 'separate-git-directory')
+  const symlinkedGitRoot = path.join(root, 'symlinked-git-root')
+  const symlinkedGitDirectory = path.join(root, 'symlinked-git-directory')
+  try {
+    await Promise.all([
+      mkdir(appDataRoot),
+      mkdir(sourceRoot),
+      mkdir(separateRoot),
+    ])
+    await execFileAsync('git', ['init', '--quiet', sourceRoot])
+    await execFileAsync(
+      'git',
+      [
+        '-C',
+        sourceRoot,
+        '-c',
+        'user.name=Fixture Author',
+        '-c',
+        'user.email=fixture@example.com',
+        'commit',
+        '--quiet',
+        '--allow-empty',
+        '-m',
+        'initial fixture',
+      ],
+    )
+    await execFileAsync(
+      'git',
+      ['-C', sourceRoot, 'worktree', 'add', '--quiet', linkedRoot],
+    )
+    await execFileAsync(
+      'git',
+      [
+        'init',
+        '--quiet',
+        '--separate-git-dir',
+        separateGitDirectory,
+        separateRoot,
+      ],
+    )
+    await prepareWorkspace(
+      symlinkedGitRoot,
+      firstWorkspaceId,
+      semester('fall', '2학기'),
+    )
+    await rename(
+      path.join(symlinkedGitRoot, '.git'),
+      symlinkedGitDirectory,
+    )
+    await symlink(
+      symlinkedGitDirectory,
+      path.join(symlinkedGitRoot, '.git'),
+    )
+
+    for (const [workspaceRoot, workspaceId] of [
+      [linkedRoot, firstWorkspaceId],
+      [separateRoot, secondWorkspaceId],
+    ] as const) {
+      await writeFile(
+        path.join(workspaceRoot, 'workspace-state.json'),
+        encodeSemesterWorkspaceStateV4(
+          createInitialSemesterWorkspaceStateV4({
+            workspaceId,
+            semester: semester('fall', '2학기'),
+          }),
+        ),
+      )
+    }
+
+    for (const explicitWorkspaceRoot of [
+      linkedRoot,
+      separateRoot,
+      symlinkedGitRoot,
+    ]) {
+      assert.deepEqual(
+        await resolvePreparedWorkspaceLaunch({
+          appDataRoot,
+          explicitWorkspaceRoot: await realpath(explicitWorkspaceRoot),
+        }),
+        {
+          status: 'failure',
+          code: 'prepared_workspace_invalid',
+          reason: 'git_root_mismatch',
+        },
+      )
+    }
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
 test('legacy, malformed, and future workspace bytes fail without mutation', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'prepared-launch-test-'))
   const appDataRoot = path.join(root, 'app-data')

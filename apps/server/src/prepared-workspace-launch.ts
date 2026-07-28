@@ -16,6 +16,8 @@ import {
 } from './workspace-registry.js'
 
 const execFileAsync = promisify(execFile)
+const gitRootProbeMaxBytes = 8 * 1024
+const gitRootProbeTimeoutMs = 5_000
 
 export type PreparedWorkspaceLaunchSelection = {
   readonly status: 'selected'
@@ -175,16 +177,7 @@ async function validatePreparedWorkspace(
   if (canonicalRoot !== configuredRoot) {
     return { status: 'invalid', reason: 'root_not_canonical' }
   }
-  try {
-    const { stdout } = await execFileAsync(
-      'git',
-      ['-C', canonicalRoot, 'rev-parse', '--show-toplevel'],
-      { encoding: 'utf8' },
-    )
-    if (stdout.trim() !== canonicalRoot) {
-      return { status: 'invalid', reason: 'git_root_mismatch' }
-    }
-  } catch {
+  if (!(await isExactGitRoot(canonicalRoot))) {
     return { status: 'invalid', reason: 'git_root_mismatch' }
   }
 
@@ -212,6 +205,40 @@ async function validatePreparedWorkspace(
     return { status: 'invalid', reason: 'identity_incompatible' }
   } finally {
     await handle?.close()
+  }
+}
+
+async function isExactGitRoot(canonicalRoot: string): Promise<boolean> {
+  const gitMarker = path.join(canonicalRoot, '.git')
+  try {
+    const markerStats = await lstat(gitMarker)
+    if (!markerStats.isDirectory() || markerStats.isSymbolicLink()) {
+      return false
+    }
+    const { stdout } = await execFileAsync(
+      'git',
+      [
+        '-C',
+        canonicalRoot,
+        'rev-parse',
+        '--show-toplevel',
+        '--absolute-git-dir',
+      ],
+      {
+        encoding: 'utf8',
+        maxBuffer: gitRootProbeMaxBytes,
+        timeout: gitRootProbeTimeoutMs,
+        windowsHide: true,
+      },
+    )
+    const paths = stdout.trimEnd().split(/\r?\n/u)
+    if (paths.length !== 2) return false
+    const [topLevel, gitDirectory] = await Promise.all(
+      paths.map((candidate) => realpath(candidate)),
+    )
+    return topLevel === canonicalRoot && gitDirectory === gitMarker
+  } catch {
+    return false
   }
 }
 
