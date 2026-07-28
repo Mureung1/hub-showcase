@@ -2,6 +2,7 @@ package com.chasewar.parking.service;
 
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.infra.opendata.SeoulParkingLotClient;
+import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
 import com.chasewar.parking.repository.ParkingLotJdbcRepository;
 import java.util.ArrayList;
@@ -26,19 +27,18 @@ public class ParkingLotLoadService {
     @Scheduled(cron = DAILY_CRON_4AM)
     @Transactional
     public void load() {
-        int totalCount = seoulParkingLotClient.fetchPage(1, PAGE_SIZE)
-                .getParkInfo()
-                .listTotalCount();
-        log.info("[주차장 적재] 전체 {}행 예상", totalCount);
+        SeoulParkingLotResponse firstPage = seoulParkingLotClient.fetchPage(1, PAGE_SIZE);
+        int totalCount = firstPage.getParkInfo().listTotalCount();
+        log.info("[서울 주차장 적재] 전체 {}행 예상", totalCount);
 
-        List<Row> rows = new ArrayList<>();
-        for (int start = 1; start <= totalCount; start += PAGE_SIZE) {
+        List<Row> rows = new ArrayList<>(firstPage.getParkInfo().rows());
+        for (int start = PAGE_SIZE + 1; start <= totalCount; start += PAGE_SIZE) {
             int end = start + PAGE_SIZE - 1;
             rows.addAll(seoulParkingLotClient.fetchPage(start, end).getParkInfo().rows());
         }
 
         List<ParkingLot> parkingLots = Row.toParkingLots(rows);
-        log.info("[주차장 적재] {}행 -> {}개 주차장 집계", rows.size(), parkingLots.size());
+        log.info("[서울 주차장 적재] {}행 -> {}개 주차장 집계", rows.size(), parkingLots.size());
 
         parkingLotJdbcRepository.upsertAll(parkingLots);
     }

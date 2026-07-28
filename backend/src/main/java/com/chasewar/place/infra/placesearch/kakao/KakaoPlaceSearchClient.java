@@ -4,35 +4,40 @@ import com.chasewar.place.domain.Place;
 import com.chasewar.place.infra.placesearch.PlaceSearchClient;
 import com.chasewar.place.infra.placesearch.kakao.dto.KakaoKeywordResponse;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
+import lombok.RequiredArgsConstructor;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 @Component
+@RequiredArgsConstructor
 public class KakaoPlaceSearchClient implements PlaceSearchClient {
 
-    private static final String BASE_URL = "https://dapi.kakao.com";
-    private static final String AUTH_PREFIX = "KakaoAK ";
     private static final int RESULT_SIZE = 10;
 
-    private final RestClient restClient;
+    private final RestClient kakaoRestClient;
 
-    public KakaoPlaceSearchClient(@Value("${kakao.api.key}") String apiKey) {
-        this.restClient = RestClient.builder()
-                .baseUrl(BASE_URL)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, AUTH_PREFIX + apiKey)
-                .build();
-    }
 
+    @Retryable(
+            retryFor = {
+                    ResourceAccessException.class,
+                    HttpServerErrorException.class
+            },
+            maxAttempts = 2,
+            backoff = @Backoff(delay = 200)
+    )
     @Override
     public List<Place> searchByKeyword(String keyword) {
-        KakaoKeywordResponse response = restClient.get()
+        KakaoKeywordResponse response = kakaoRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/v2/local/search/keyword.json")
                         .queryParam("query", keyword)
                         .queryParam("size", RESULT_SIZE)
-                        .build())
+                        .build()
+                )
                 .retrieve()
                 .body(KakaoKeywordResponse.class);
 
