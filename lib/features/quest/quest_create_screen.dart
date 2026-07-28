@@ -7,6 +7,8 @@ import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_segmented_button.dart';
+import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/reward_chip.dart';
 import '../../models/analytics_event.dart';
 import '../../models/difficulty.dart';
@@ -25,8 +27,13 @@ import '../../providers/providers.dart';
 /// 않는다(목표명이 비면 등록 불가). 기존 goalId-null 낱개 데이터·그룹("직접 등록한
 /// 퀘스트")은 하위호환으로 그대로 두되, 새 등록은 항상 폴더로 묶인다.
 ///
+/// **이 화면은 Figma 정본에 없다.** 디자이너가 그리지 않았으므로 새 시각 언어를
+/// 만들지 않고 정본 컴포넌트를 조립한다 — 입력 필드+카운터는 AI 분해 화면
+/// (`_AiChallengeSection`)과 같은 형태, 난이도는 정본 `SegmentedButton`(`40:250`)
+/// = [AppSegmentedButton], 주 버튼은 [GradientButton]이다.
+///
 /// 색 규칙(one-step-design):
-/// - 주요 행동("등록하기") = 그린(`FilledButton` 기본 = `colorScheme.primary`).
+/// - 주요 행동("등록하기") = 🟢 그린 그라디언트([GradientButtonStyle.growth]).
 /// - 노랑은 직접 쓰지 않는다. 예상 보상은 [RewardChip](allowlist)이 전담한다.
 class QuestCreateScreen extends ConsumerStatefulWidget {
   const QuestCreateScreen({super.key});
@@ -44,7 +51,7 @@ class _QuestRow {
   final String localId;
   final TextEditingController controller;
 
-  /// 기본값 보통. 행 생성 후 SegmentedButton으로 바뀐다.
+  /// 기본값 보통. 행 생성 후 [AppSegmentedButton]으로 바뀐다.
   Difficulty difficulty = Difficulty.normal;
 }
 
@@ -215,6 +222,12 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
             AppSpacing.gapMd,
 
             // 목표명(폴더). 비면 등록 불가.
+            //
+            // 라벨 없이 **힌트 + 앞 아이콘 20**만 두는 것은 AI 분해 화면의 입력
+            // 필드와 같은 형태다(정본에 없는 화면이라 정본 컴포넌트를 그대로
+            // 빌려 온다). 무엇을 적는 자리인지는 바로 위 제목이 말해 준다.
+            // 카운터(`0 / 60`)는 Flutter가 필드 아래 우측에 직접 그리고, 서체는
+            // `inputDecorationTheme.counterStyle`이 이미 수치용(Sora)으로 잡아 뒀다.
             TextField(
               controller: _goalController,
               autofocus: true,
@@ -222,9 +235,8 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
               enabled: !_submitting,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
-                labelText: '목표',
                 hintText: '예: 교내 공모전 지원하기',
-                prefixIcon: Icon(Symbols.target),
+                prefixIcon: Icon(Symbols.target, size: _inputIconSize),
               ),
             ),
             AppSpacing.gapMd,
@@ -242,7 +254,7 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
                 onChangeDifficulty: (d) => _changeDifficulty(_rows[i], d),
                 onRemove: () => _removeRow(_rows[i]),
               ),
-              AppSpacing.gapSm,
+              AppSpacing.gapSmd,
             ],
 
             // 퀘스트 추가 — 보조 행동이라 아웃라인. AI 재요청이 아니므로 블루로 칠하지
@@ -259,11 +271,16 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
   }
 }
 
+/// 입력 필드 앞 아이콘 크기(Figma 실측 20 — AI 분해 화면과 같은 값).
+const double _inputIconSize = 20;
+
 /// 하단 등록 바 — 항상 보이는 전폭 그린 "등록하기" 버튼.
 ///
-/// 확정 등록은 **주요 행동**이라 그린(`FilledButton` 기본 = `colorScheme.primary`)이다.
+/// 확정 등록은 **주요 행동**이라 🟢 그린 그라디언트([GradientButtonStyle.growth])다.
+/// AI 분해 결과 화면의 「등록하기」와 같은 위젯·같은 변형이라, 어느 경로로 들어와도
+/// 마지막 확정 버튼의 생김새가 같다.
 /// [onSubmit]이 null이면(목표명·제목 미입력 등) 비활성이고, [submitting] 중이면
-/// 스피너 + 비활성으로 중복 탭 방지를 시각화한다(요청은 한 번만 나간다).
+/// 스피너 + 잠금으로 중복 탭 방지를 시각화한다(요청은 한 번만 나간다).
 /// SafeArea로 홈 인디케이터 영역을 피하고 화면 좌우 여백과 같은 리듬을 준다.
 class _SubmitBar extends StatelessWidget {
   const _SubmitBar({required this.submitting, required this.onSubmit});
@@ -280,25 +297,30 @@ class _SubmitBar extends StatelessWidget {
         AppSpacing.screenH,
         AppSpacing.md,
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          // 목표명·제목이 비거나 제출 중이면 눌리지 않는다.
-          onPressed: submitting ? null : onSubmit,
-          child: submitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('등록하기'),
-        ),
+      // **`Column(mainAxisSize.min)`으로 감싼 이유**: `bottomNavigationBar` 슬롯은
+      // 자식에게 "화면 높이까지"라는 **경계 있는** 높이를 준다. [GradientButton]은
+      // 안쪽이 `Center`라 높이가 경계 있으면 그만큼 늘어나 버려(= 화면 전체를 차지)
+      // 본문 ListView의 높이가 0이 된다. 세로로 오므리는 부모를 하나 끼워 버튼이
+      // 자기 내용만큼만 높아지게 한다(배율이 커지면 그만큼 자란다).
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: GradientButton(
+              // 목표명·제목이 비거나 제출 중이면 눌리지 않는다.
+              onPressed: submitting ? null : onSubmit,
+              label: '등록하기',
+              busy: submitting,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// 하위 퀘스트 한 행 카드 — 제목 TextField + 난이도 SegmentedButton + 예상 보상 칩 + 삭제.
+/// 하위 퀘스트 한 행 카드 — 제목 TextField + 난이도 세그먼트 + 예상 보상 칩 + 삭제.
 ///
 /// [QuestDraftCard]는 "표시 + 다이얼로그/팝업 편집" 모델이라 저장된 초안을 검토하는
 /// 데 맞지만, 직접 등록은 사용자가 제목을 **처음부터 타이핑**하므로 인라인 TextField가
@@ -375,18 +397,19 @@ class _QuestRowCard extends StatelessWidget {
               hintText: '예: 공모전 공고 3개 찾아보기',
             ),
           ),
-          AppSpacing.gapSm,
-          SegmentedButton<Difficulty>(
+          AppSpacing.gapSmd,
+          // 정본 `SegmentedButton`(`40:250`) 형태 — 선택 칸만 🟢 그린 그라디언트다.
+          // 이 그린은 "지금 고른 칸"을 뜻할 뿐, **난이도 색이 아니다.** 난이도 자체의
+          // 색(쉬움 그린 / 보통 노랑 / 어려움 빨강)은 [DifficultyPill]만 쓴다.
+          AppSegmentedButton<Difficulty>(
             segments: [
               for (final d in Difficulty.values)
-                ButtonSegment(value: d, label: Text(d.label)),
+                AppSegment(value: d, label: d.label),
             ],
-            selected: {row.difficulty},
-            onSelectionChanged: enabled
-                ? (selection) => onChangeDifficulty(selection.first)
-                : null,
+            selected: row.difficulty,
+            onChanged: enabled ? onChangeDifficulty : null,
           ),
-          AppSpacing.gapSm,
+          AppSpacing.gapSmd,
           // 난이도를 바꾸면 예상 보상도 함께 바뀐다(난이도에서 파생).
           //
           // **`Row(spaceBetween)`이 아니라 `Wrap(spaceBetween)`이다.** 라벨도 칩도

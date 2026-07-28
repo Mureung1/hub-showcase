@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
+import 'package:one_step/core/widgets/app_segmented_button.dart';
+import 'package:one_step/core/widgets/gradient_button.dart';
 import 'package:one_step/features/quest/quest_create_screen.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/quest_source.dart';
@@ -22,7 +24,9 @@ import '../helpers/pump_app.dart';
 void main() {
   const uid = 'test-uid';
 
-  Finder submitButton() => find.widgetWithText(FilledButton, '등록하기');
+  // 주 버튼은 그린 그라디언트 버튼(GradientButton)이다 — AI 분해 결과 화면의
+  // 「등록하기」와 같은 위젯이다.
+  Finder submitButton() => find.widgetWithText(GradientButton, '등록하기');
   Finder goalField() => find.byType(TextField).first;
   Finder questField(int i) => find.byType(TextField).at(i + 1);
 
@@ -40,7 +44,7 @@ void main() {
     await pumpScreen(tester, const QuestCreateScreen());
     await tester.pumpAndSettle();
 
-    final button = tester.widget<FilledButton>(submitButton());
+    final button = tester.widget<GradientButton>(submitButton());
     expect(button.onPressed, isNull);
   });
 
@@ -52,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 퀘스트 제목이 비어 있으므로 아직 등록할 수 없다.
-    final button = tester.widget<FilledButton>(submitButton());
+    final button = tester.widget<GradientButton>(submitButton());
     expect(button.onPressed, isNull);
   });
 
@@ -63,7 +67,7 @@ void main() {
     await tester.enterText(questField(0), '공고 3개 찾기');
     await tester.pumpAndSettle();
 
-    final button = tester.widget<FilledButton>(submitButton());
+    final button = tester.widget<GradientButton>(submitButton());
     expect(button.onPressed, isNull);
   });
 
@@ -75,7 +79,7 @@ void main() {
     await tester.enterText(questField(0), '공고 3개 찾기');
     await tester.pumpAndSettle();
 
-    final button = tester.widget<FilledButton>(submitButton());
+    final button = tester.widget<GradientButton>(submitButton());
     expect(button.onPressed, isNotNull);
   });
 
@@ -87,7 +91,7 @@ void main() {
     await tester.enterText(questField(0), '공고 3개 찾기');
     await tester.pumpAndSettle();
 
-    final button = tester.widget<FilledButton>(submitButton());
+    final button = tester.widget<GradientButton>(submitButton());
     expect(button.onPressed, isNull);
   });
 
@@ -95,10 +99,10 @@ void main() {
     await pumpScreen(tester, const QuestCreateScreen());
     await tester.pumpAndSettle();
 
-    final segmented = tester.widget<SegmentedButton<Difficulty>>(
-      find.byType(SegmentedButton<Difficulty>),
+    final segmented = tester.widget<AppSegmentedButton<Difficulty>>(
+      find.byType(AppSegmentedButton<Difficulty>),
     );
-    expect(segmented.selected, {Difficulty.normal});
+    expect(segmented.selected, Difficulty.normal);
 
     expect(find.text('+5'), findsOneWidget);
     expect(find.text('XP +10'), findsOneWidget);
@@ -123,7 +127,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 초기 1개.
-    expect(find.byType(SegmentedButton<Difficulty>), findsOneWidget);
+    expect(find.byType(AppSegmentedButton<Difficulty>), findsOneWidget);
 
     // 삭제 버튼은 행이 1개뿐일 땐 숨겨진다.
     expect(find.byTooltip('삭제'), findsNothing);
@@ -134,14 +138,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // 이제 3개 행.
-    expect(find.byType(SegmentedButton<Difficulty>), findsNWidgets(3));
+    expect(find.byType(AppSegmentedButton<Difficulty>), findsNWidgets(3));
     // 삭제 버튼은 행마다 하나씩.
     expect(find.byTooltip('삭제'), findsNWidgets(3));
 
     // 하나 삭제 → 2개.
     await tester.tap(find.byTooltip('삭제').first);
     await tester.pumpAndSettle();
-    expect(find.byType(SegmentedButton<Difficulty>), findsNWidgets(2));
+    expect(find.byType(AppSegmentedButton<Difficulty>), findsNWidgets(2));
   });
 
   testWidgets('여러 퀘스트를 등록하면 목표가 생기고 모두 같은 goalId로 묶인다', (tester) async {

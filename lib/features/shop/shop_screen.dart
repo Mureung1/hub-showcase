@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/coin_pill.dart';
+import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/pixel_art.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
@@ -149,7 +150,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                   CoinPill(amount: user.coin),
                 ],
               ),
-              AppSpacing.gapXs,
+              // 정본 Content의 위 패딩 8 — 헤더와 리드 텍스트 사이 간격이다.
+              AppSpacing.gapSm,
               Text(
                 '모은 코인으로 배경과 오라를 꾸며 보세요.',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -159,7 +161,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
             ],
           ),
         ),
-        AppSpacing.gapMd,
+        // 정본 Content의 요소 간 세로 간격 20(리드 텍스트 ↔ 아이템 격자).
+        AppSpacing.gapBlock,
         Expanded(
           child: kShopItems.isEmpty
               // 방어적 빈 상태 — 카탈로그가 비는 일은 없지만 구조로 보장한다.
@@ -169,18 +172,21 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                   emoji: '🛍️',
                   asset: EmptyArt.shop,
                 )
+              // 2열 고정 격자. **홀수 개면 마지막 칸은 빈 칸으로 둔다** — 남은 카드를
+              // 폭 두 칸으로 늘리지 않는다(정본이 그 자리에 Spacer를 둔다).
               : GridView.builder(
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.screenH,
-                    AppSpacing.sm,
+                    0,
                     AppSpacing.screenH,
                     AppSpacing.xl,
                   ),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    mainAxisSpacing: AppSpacing.md,
-                    crossAxisSpacing: AppSpacing.md,
+                    // 정본 실측 — 가로·세로 모두 12.
+                    mainAxisSpacing: AppSpacing.smd,
+                    crossAxisSpacing: AppSpacing.smd,
                     mainAxisExtent: _cardExtent(context),
                   ),
                   itemCount: kShopItems.length,
@@ -208,11 +214,20 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 
 /// 기본 배율(1.0)에서의 상품 카드 높이. 그리드 셀은 고정 높이라 카드가 이 안에
 /// 들어가야 한다.
-const double _kCardExtent = 236;
+///
+/// 정본 실측의 합이다: 카드 패딩 12×2 + 프리뷰 86 + 12 + 상품명 24 + 2 + 종류 16
+/// + 12 + 가격 20 + 12 + 버튼(글자 16 + 상하 패딩 10×2).
+const double _kCardExtent = 244;
 
-/// 그 높이 중 **글꼴 배율을 타는 부분**(상품명 · 상태 줄 · 버튼 글자).
-/// 미리보기 이미지(72)와 패딩·간격은 배율과 무관하게 고정이다.
-const double _kCardTextExtent = 60;
+/// 그 높이 중 **글꼴 배율을 타는 부분**(상품명 24 · 종류 16 · 가격/상태 20 ·
+/// 버튼 글자 16). 미리보기 이미지(86)와 패딩·간격은 배율과 무관하게 고정이다.
+const double _kCardTextExtent = 76;
+
+/// 상품명 ↔ 종류 사이의 간격(정본 실측 2). 8px 리듬 밖의 값이라 토큰이 없다.
+const double _kNameToSlotGap = 2;
+
+/// 카드 액션 버튼의 상하 패딩(정본 실측 10). 8·12 어느 토큰과도 다르다.
+const double _kActionPaddingV = 10;
 
 /// 상품 카드 한 칸의 높이.
 ///
@@ -258,11 +273,15 @@ class _ShopItemCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      // 정본 실측 — 카드 패딩 12 · 라운드 12 · 내부 세로 간격 12.
+      padding: const EdgeInsets.all(AppSpacing.smd),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: AppRadius.lgAll,
+        borderRadius: AppRadius.mdAll,
         border: Border.all(
+          // 정본의 카드 보더는 outlineVariant 하나뿐이지만, 장착 중인 카드만은
+          // 그린 테두리를 유지한다 — 격자를 훑을 때 "지금 내가 쓰고 있는 것"을
+          // 버튼 문구까지 읽지 않고도 찾게 해 주는 앱 고유 표시다.
           color: equipped
               ? AppColors.primary
               : theme.colorScheme.outlineVariant,
@@ -273,17 +292,24 @@ class _ShopItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _Preview(item: item, equipped: equipped),
-          AppSpacing.gapSm,
+          AppSpacing.gapSmd,
           Text(
             item.name,
             style: theme.textTheme.titleMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          AppSpacing.gapXs,
+          const SizedBox(height: _kNameToSlotGap),
+          Text(
+            _slotLabel(item.slot),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          AppSpacing.gapSmd,
           _statusLine(theme),
           const Spacer(),
-          SizedBox(width: double.infinity, child: _button(theme)),
+          SizedBox(width: double.infinity, child: _button()),
         ],
       ),
     );
@@ -292,10 +318,11 @@ class _ShopItemCard extends StatelessWidget {
   /// 가격 또는 보유 상태 한 줄.
   Widget _statusLine(ThemeData theme) {
     if (!owned) {
-      // 가격 — 노랑 코인(CoinPill).
+      // 가격 — 코인 아이콘만 노랑이고 숫자는 어두운 갈색이다(대비 확보).
+      // 노랑에 닿는 유일한 통로가 [CoinPrice]라 이 파일은 노랑을 모른다.
       return Align(
         alignment: Alignment.centerLeft,
-        child: CoinPill(amount: item.price, compact: true),
+        child: CoinPrice(amount: item.price),
       );
     }
     final label = equipped ? '장착 중' : '보유 중';
@@ -324,58 +351,154 @@ class _ShopItemCard extends StatelessWidget {
   }
 
   /// 5상태 버튼:
-  /// 1. 처리 중 → 스피너
-  /// 2. 미보유 + 충분 → 구매(그린)
+  /// 1. 처리 중 → 스피너 (모양은 그 상태의 버튼 그대로)
+  /// 2. 미보유 + 충분 → 구매(🟢 그린 그라디언트)
   /// 3. 미보유 + 부족 → 비활성 "코인이 부족해요"
-  /// 4. 보유 + 미장착 → 장착
-  /// 5. 보유 + 장착 중 → 해제
-  Widget _button(ThemeData theme) {
-    if (busy) {
-      return const FilledButton(
-        onPressed: null,
-        child: SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
+  /// 4. 보유 + 미장착 → 장착(🔵 블루 그라디언트 — 보조 행동)
+  /// 5. 보유 + 장착 중 → 해제(아웃라인)
+  ///
+  /// 정본이 정의한 세 모양(구매 그린 / 장착 블루 / 장착 중 아웃라인)에 앱의 두
+  /// 상태(처리 중 · 코인 부족)를 얹었다. **문구는 앱 현재 것을 그대로 둔다.**
+  Widget _button() {
     if (!owned) {
-      if (!affordable) {
-        return const FilledButton(
-          onPressed: null,
-          child: Text('코인이 부족해요'),
-        );
-      }
-      return FilledButton(
-        onPressed: locked ? null : onBuy,
-        child: const Text('구매'),
+      return _ActionButton(
+        label: affordable ? '구매' : '코인이 부족해요',
+        style: GradientButtonStyle.growth,
+        // 코인이 부족하면 눌리지 않는다(문구로 이유를 말한다).
+        onPressed: (affordable && !locked) ? onBuy : null,
+        busy: busy,
       );
     }
     if (equipped) {
-      return OutlinedButton(
+      return _ActionButton(
+        label: '해제',
         onPressed: locked ? null : onUnequip,
-        child: const Text('해제'),
+        busy: busy,
       );
     }
-    return FilledButton(
+    return _ActionButton(
+      label: '장착',
+      style: GradientButtonStyle.ai,
       onPressed: locked ? null : onEquip,
-      child: const Text('장착'),
+      busy: busy,
     );
   }
 }
 
+/// 아이템 슬롯의 한글 이름 — 카드 두 번째 줄("배경" / "오라").
+String _slotLabel(ItemSlot slot) => switch (slot) {
+  ItemSlot.background => '배경',
+  ItemSlot.aura => '오라',
+};
+
+/// 상품 카드 안의 액션 버튼.
+///
+/// [GradientButton]을 쓰지 않는 이유: 저쪽은 화면 하단을 채우는 **주 버튼**이라
+/// 높이 56 · 라운드 12 · 14/700이다. 2열 격자에 들어가는 이 버튼은 정본 실측이
+/// 라운드 8 · 패딩 12/10 · 12/500으로 한 단 작다. 대신 **색은
+/// [GradientButtonStyle]에서 가져와** 그린·블루 쌍의 정의를 한곳에 둔다.
+///
+/// [style]이 null이면 아웃라인 모양(장착 중 → 「해제」)이다. 정본의 "장착 중"
+/// 상태와 같은 값(보더 1.5 · secondary)이라 `outlinedButtonTheme`과도 어긋나지 않는다.
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.onPressed,
+    this.style,
+    this.busy = false,
+  });
+
+  final String label;
+
+  /// null이면 비활성 — 눌리지 않고 흐려진다.
+  final VoidCallback? onPressed;
+
+  /// null이면 아웃라인(보조) 모양.
+  final GradientButtonStyle? style;
+
+  /// 이 카드가 시작한 요청이 아직 날아가 있는가. true면 라벨 자리에 스피너가 돈다.
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final enabled = onPressed != null && !busy;
+    final foreground = style?.foreground ?? scheme.secondary;
+
+    return Opacity(
+      // 비활성 표현은 [GradientButton]과 같은 규칙이다 — 변형마다 비활성 팔레트를
+      // 따로 만들지 않고 같은 색을 흐리게 둔다.
+      opacity: enabled ? 1 : 0.4,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: style == null
+              ? null
+              : LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [style!.from, style!.to],
+                ),
+          border: style == null
+              ? Border.all(color: scheme.secondary, width: 1.5)
+              : null,
+          borderRadius: AppRadius.smAll,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? onPressed : null,
+            borderRadius: AppRadius.smAll,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.smd,
+                vertical: _kActionPaddingV,
+              ),
+              child: Center(
+                child: busy
+                    ? SizedBox(
+                        width: _kSpinnerSize,
+                        height: _kSpinnerSize,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: foreground,
+                        ),
+                      )
+                    : Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: foreground,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 진행 스피너 지름 — 라벨 한 줄(12/16)과 같은 높이.
+const double _kSpinnerSize = 16;
+
 /// 아이템 미리보기 — 배경은 풍경 도트아트, 오라는 스프라이트.
 ///
-/// 카드 그리드의 높이 계산(`_cardExtent`)이 이 72px에 걸려 있어 **고정 높이를
-/// 유지한다.** 자산을 못 읽으면 배경은 원래의 색 스와치로, 오라는 이모지로 떨어진다.
+/// 카드 그리드의 높이 계산(`_cardExtent`)이 이 86px(정본 실측)에 걸려 있어 **고정
+/// 높이를 유지한다.** 자산을 못 읽으면 배경은 원래의 색 스와치로, 오라는 이모지로
+/// 떨어진다.
 class _Preview extends StatelessWidget {
   const _Preview({required this.item, required this.equipped});
 
   final ShopItem item;
   final bool equipped;
 
-  static const double _height = 72;
+  /// 정본 실측 프리뷰 높이.
+  static const double _height = 86;
+
+  /// 자산을 못 읽었을 때 뜨는 폴백 이모지 크기(정본 실측 44).
+  static const double _emojiSize = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -388,11 +511,15 @@ class _Preview extends StatelessWidget {
           height: _height,
           width: double.infinity,
           decoration: BoxDecoration(
+            // 정본 프리뷰 폴백 배경은 surfaceContainerLow(`#eff4ff`)다. 배경 상품만
+            // 예외로 스와치 틴트를 깔아 둔다 — 자산이 그 위를 완전히 덮으므로
+            // 평소 모습은 같고, **로드 실패 시에만** 예전 색 미리보기로 떨어진다.
             color: isBackground
-                ? (item.tint ?? theme.colorScheme.surfaceContainerHigh)
+                ? (item.tint ?? theme.colorScheme.surfaceContainerLow)
                       .withValues(alpha: 0.85)
-                : theme.colorScheme.surfaceContainerHigh,
-            borderRadius: AppRadius.mdAll,
+                : theme.colorScheme.surfaceContainerLow,
+            // 정본 실측 — 프리뷰 라운드 8(카드 12보다 한 단 작다).
+            borderRadius: AppRadius.smAll,
           ),
           clipBehavior: Clip.antiAlias,
           alignment: Alignment.center,
@@ -417,7 +544,7 @@ class _Preview extends StatelessWidget {
               : PixelArt.emoji(
                   asset: shopItemAsset(item),
                   emoji: item.emoji ?? '',
-                  size: 34,
+                  size: _emojiSize,
                   semanticLabel: item.name,
                 ),
         ),
@@ -449,6 +576,8 @@ class _ShopSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 자리표시자도 실제 격자와 같은 치수를 쓴다 — 로딩에서 데이터로 넘어갈 때
+    // 카드가 크기를 바꾸며 튀지 않게.
     return ListView(
       padding: AppSpacing.screenPadding,
       children: const [
@@ -456,9 +585,13 @@ class _ShopSkeleton extends StatelessWidget {
         AppSpacing.gapLg,
         Row(
           children: [
-            Expanded(child: SkeletonBox(height: 220, radius: AppRadius.lg)),
-            AppSpacing.gapWMd,
-            Expanded(child: SkeletonBox(height: 220, radius: AppRadius.lg)),
+            Expanded(
+              child: SkeletonBox(height: _kCardExtent, radius: AppRadius.md),
+            ),
+            AppSpacing.gapWSmd,
+            Expanded(
+              child: SkeletonBox(height: _kCardExtent, radius: AppRadius.md),
+            ),
           ],
         ),
       ],

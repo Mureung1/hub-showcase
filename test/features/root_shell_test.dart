@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/core/widgets/gradient_button.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/features/quest/quest_create_screen.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
@@ -168,7 +169,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, '공모전 지원 준비');
     await tester.enterText(find.byType(TextField).at(1), '지원서 초안 쓰기');
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '등록하기'));
     await tester.pumpAndSettle();
 
     // 화면이 닫히고 목록으로 돌아왔다.
