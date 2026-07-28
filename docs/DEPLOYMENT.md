@@ -7,6 +7,25 @@
 - Supabase: 재료와 추천 캐시 데이터
 - Gemini: Render 서버에서만 호출
 
+## 현재 프로덕션
+
+| 구분 | URL |
+|---|---|
+| 프런트엔드 | `https://todays-fridge-n091.vercel.app` |
+| API 헬스 체크 | `https://todays-fridge-api-n091.onrender.com/api/health` |
+
+### 2026-07-28 배포 검증
+
+- Vercel 공개 URL 접속과 정적 자산 로딩 성공
+- Render API를 통한 Supabase 재료 23개 조회 성공
+- `소비기한부터 챙길래요` 조건으로 Gemini 추천 생성 성공
+- `소고기 채소 볶음밥` 추천 결과와 레시피 상세 화면 로딩 성공
+- 브라우저 콘솔 오류 없음
+- 로컬 회귀 검증: 테스트 111개, lint, production build 통과
+
+재료 등록·수정·삭제와 장애·재시도 UI의 공개 환경 검증은 배포 이슈 `#57`의
+잔여 작업으로 유지한다.
+
 비밀 키는 GitHub나 Vercel 프런트엔드에 저장하지 않는다. `SUPABASE_SECRET_KEY`와
 `GEMINI_API_KEY`는 Render 환경변수에만 입력한다.
 
