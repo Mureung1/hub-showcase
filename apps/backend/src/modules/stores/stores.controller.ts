@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
 import { z } from "zod";
+import {
+  getStringParam,
+  sendBadRequest,
+  sendValidationError
+} from "../../common/validation/requestValidation";
 import { createStore, editStore, getStore, listStores } from "./stores.service";
 
 const createStoreSchema = z.object({
@@ -28,16 +33,6 @@ function normalizeAddress(address: string | null | undefined) {
   return address;
 }
 
-function getStoreIdParam(req: Request) {
-  const storeId = req.params.storeId;
-
-  if (!storeId || Array.isArray(storeId)) {
-    return null;
-  }
-
-  return storeId;
-}
-
 export async function createStoreController(req: Request, res: Response) {
   if (!req.authUser) {
     res.status(401).json({
@@ -49,9 +44,7 @@ export async function createStoreController(req: Request, res: Response) {
   const result = createStoreSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      message: result.error.issues[0]?.message ?? "입력값을 확인해주세요."
-    });
+    sendValidationError(res, result.error, "입력값을 확인해주세요.");
     return;
   }
 
@@ -92,12 +85,10 @@ export async function listStoresController(req: Request, res: Response) {
 }
 
 export async function getStoreController(req: Request, res: Response) {
-  const storeId = getStoreIdParam(req);
+  const storeId = getStringParam(req.params.storeId);
 
   if (!storeId) {
-    res.status(400).json({
-      message: "매장 ID가 필요합니다."
-    });
+    sendBadRequest(res, "매장 ID가 필요합니다.", "STORE_ID_REQUIRED");
     return;
   }
 
@@ -117,21 +108,17 @@ export async function getStoreController(req: Request, res: Response) {
 }
 
 export async function updateStoreController(req: Request, res: Response) {
-  const storeId = getStoreIdParam(req);
+  const storeId = getStringParam(req.params.storeId);
 
   if (!storeId) {
-    res.status(400).json({
-      message: "매장 ID가 필요합니다."
-    });
+    sendBadRequest(res, "매장 ID가 필요합니다.", "STORE_ID_REQUIRED");
     return;
   }
 
   const result = updateStoreSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      message: result.error.issues[0]?.message ?? "입력값을 확인해주세요."
-    });
+    sendValidationError(res, result.error, "입력값을 확인해주세요.");
     return;
   }
 

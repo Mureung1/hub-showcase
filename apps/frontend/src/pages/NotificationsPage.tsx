@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { useMarkNotificationAsRead, useNotifications } from "../features/notification";
+import { StatusNotice } from "../shared/components";
 
 function getNotificationTimeLabel(createdAt: string) {
   return format(new Date(createdAt), "M월 d일 HH:mm");
@@ -41,17 +42,21 @@ export function NotificationsPage() {
         </div>
 
         {isLoading ? (
-          <div className="empty-state schedule-message">
-            <strong>알림을 불러오는 중입니다.</strong>
-            <span>대타 요청과 근무 변경 알림을 확인하고 있습니다.</span>
-          </div>
+          <StatusNotice
+            className="schedule-message"
+            description="대타 요청과 근무 변경 알림을 확인하고 있습니다."
+            title="알림을 불러오는 중입니다."
+            variant="loading"
+          />
         ) : null}
 
         {error ? (
-          <div className="empty-state schedule-message">
-            <strong>알림을 불러오지 못했습니다.</strong>
-            <span>{error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}</span>
-          </div>
+          <StatusNotice
+            className="schedule-message"
+            description={error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}
+            title="알림을 불러오지 못했습니다."
+            variant="error"
+          />
         ) : null}
 
         {markNotificationAsReadMutation.error ? (
@@ -63,10 +68,10 @@ export function NotificationsPage() {
         ) : null}
 
         {!isLoading && !error && notifications.length === 0 ? (
-          <div className="empty-state">
-            <strong>아직 알림이 없습니다.</strong>
-            <span>대타 요청, 신청, 승인, 거절이 발생하면 이곳에 표시됩니다.</span>
-          </div>
+          <StatusNotice
+            description="대타 요청, 신청, 승인, 거절이 발생하면 이곳에 표시됩니다."
+            title="아직 알림이 없습니다."
+          />
         ) : null}
 
         {notifications.length > 0 ? (

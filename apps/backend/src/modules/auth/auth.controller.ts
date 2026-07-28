@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
+import { sendValidationError } from "../../common/validation/requestValidation";
 import { ensureProfile, getCurrentUser } from "./auth.service";
 
 const createProfileSchema = z.object({
@@ -17,9 +18,7 @@ export async function createProfileController(req: Request, res: Response) {
   const result = createProfileSchema.safeParse(req.body);
 
   if (!result.success) {
-    res.status(400).json({
-      message: result.error.issues[0]?.message ?? "입력값을 확인해주세요."
-    });
+    sendValidationError(res, result.error, "입력값을 확인해주세요.");
     return;
   }
 

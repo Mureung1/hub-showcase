@@ -5,6 +5,7 @@ import { useMe } from "../features/auth";
 import { getHoursLabel, getScheduleDuration, sortMonthlySchedules, useSchedules } from "../features/schedule";
 import { Schedule } from "../features/schedule";
 import { useCreateSubstituteRequest } from "../features/substitute";
+import { StatusNotice } from "../shared/components";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
@@ -97,10 +98,11 @@ export function NewSubstituteRequestPage() {
         <section className="page-panel">
           <p className="label">SUBSTITUTE</p>
           <h1>알바생만 요청을 등록할 수 있습니다.</h1>
-          <div className="empty-state">
-            <strong>대타 요청은 본인 근무를 다른 알바생에게 공개하는 기능입니다.</strong>
-            <span>사장님은 대타 요청 목록과 승인 화면에서 요청을 관리합니다.</span>
-          </div>
+          <StatusNotice
+            description="사장님은 대타 요청 목록과 승인 화면에서 요청을 관리합니다."
+            title="대타 요청은 본인 근무를 다른 알바생에게 공개하는 기능입니다."
+            variant="info"
+          />
           <div className="auth-actions-row">
             <Link className="secondary-button" to={ROUTES.substituteRequests}>
               요청 목록
@@ -137,24 +139,28 @@ export function NewSubstituteRequestPage() {
           </div>
 
           {isLoading ? (
-            <div className="empty-state schedule-message">
-              <strong>근무표 조회 중</strong>
-              <span>대타 요청을 등록할 수 있는 내 근무를 확인하고 있습니다.</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description="대타 요청을 등록할 수 있는 내 근무를 확인하고 있습니다."
+              title="근무표 조회 중"
+              variant="loading"
+            />
           ) : null}
 
           {error ? (
-            <div className="empty-state schedule-message">
-              <strong>근무표를 불러오지 못했습니다</strong>
-              <span>{error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description={error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}
+              title="근무표를 불러오지 못했습니다"
+              variant="error"
+            />
           ) : null}
 
           {!isLoading && !error && candidateSchedules.length === 0 ? (
-            <div className="empty-state">
-              <strong>요청 가능한 내 근무 없음</strong>
-              <span>오늘 이후 등록된 내 근무가 있을 때 대타 요청을 등록할 수 있습니다.</span>
-            </div>
+            <StatusNotice
+              description="오늘 이후 등록된 내 근무가 있을 때 대타 요청을 등록할 수 있습니다."
+              title="요청 가능한 내 근무 없음"
+            />
           ) : null}
 
           {candidateSchedules.length > 0 ? (

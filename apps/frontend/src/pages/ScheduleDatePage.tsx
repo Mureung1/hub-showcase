@@ -10,6 +10,7 @@ import {
   useUpdateSchedule
 } from "../features/schedule";
 import { useWorkers } from "../features/worker";
+import { StatusNotice } from "../shared/components";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
@@ -263,10 +264,11 @@ export function ScheduleDatePage() {
         <section className="page-panel">
           <p className="label">DAILY SCHEDULE</p>
           <h1>잘못된 날짜</h1>
-          <div className="empty-state">
-            <strong>날짜를 확인해주세요</strong>
-            <span>일간 근무표 주소는 YYYY-MM-DD 형식이어야 합니다.</span>
-          </div>
+          <StatusNotice
+            description="일간 근무표 주소는 YYYY-MM-DD 형식이어야 합니다."
+            title="날짜를 확인해주세요"
+            variant="error"
+          />
           <div className="auth-actions-row">
             <Link className="secondary-button" to={ROUTES.schedule}>
               월간 근무표
@@ -301,24 +303,25 @@ export function ScheduleDatePage() {
           </div>
 
           {isLoading ? (
-            <div className="empty-state schedule-message">
-              <strong>근무표 조회 중</strong>
-              <span>{format(selectedDate, "M월 d일")} 일정을 확인하고 있습니다.</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description={`${format(selectedDate, "M월 d일")} 일정을 확인하고 있습니다.`}
+              title="근무표 조회 중"
+              variant="loading"
+            />
           ) : null}
 
           {error ? (
-            <div className="empty-state schedule-message">
-              <strong>근무표를 불러오지 못했습니다</strong>
-              <span>{error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}</span>
-            </div>
+            <StatusNotice
+              className="schedule-message"
+              description={error instanceof Error ? error.message : "잠시 후 다시 시도해주세요."}
+              title="근무표를 불러오지 못했습니다"
+              variant="error"
+            />
           ) : null}
 
           {!isLoading && !error && schedules.length === 0 ? (
-            <div className="empty-state">
-              <strong>등록된 근무 없음</strong>
-              <span>이 날짜의 근무 일정이 없습니다.</span>
-            </div>
+            <StatusNotice description="이 날짜의 근무 일정이 없습니다." title="등록된 근무 없음" />
           ) : null}
 
           {schedules.length > 0 ? (
@@ -552,27 +555,31 @@ export function ScheduleDatePage() {
               </div>
 
               {isWorkersLoading ? (
-                <div className="empty-state">
-                  <strong>알바생 조회 중</strong>
-                  <span>등록 가능한 알바생을 확인하고 있습니다.</span>
-                </div>
+                <StatusNotice
+                  description="등록 가능한 알바생을 확인하고 있습니다."
+                  title="알바생 조회 중"
+                  variant="loading"
+                />
               ) : null}
 
               {workersError ? (
-                <div className="empty-state">
-                  <strong>알바생을 불러오지 못했습니다</strong>
-                  <span>{workersError instanceof Error ? workersError.message : "잠시 후 다시 시도해주세요."}</span>
-                </div>
+                <StatusNotice
+                  description={workersError instanceof Error ? workersError.message : "잠시 후 다시 시도해주세요."}
+                  title="알바생을 불러오지 못했습니다"
+                  variant="error"
+                />
               ) : null}
 
               {!isWorkersLoading && !workersError && workers.length === 0 ? (
-                <div className="empty-state">
-                  <strong>등록할 알바생이 없습니다</strong>
-                  <span>알바생 관리에서 매장 알바생을 먼저 연결해주세요.</span>
-                  <Link className="secondary-button inline-empty-link" to={ROUTES.workers}>
-                    알바생 관리
-                  </Link>
-                </div>
+                <StatusNotice
+                  action={
+                    <Link className="secondary-button inline-empty-link" to={ROUTES.workers}>
+                      알바생 관리
+                    </Link>
+                  }
+                  description="알바생 관리에서 매장 알바생을 먼저 연결해주세요."
+                  title="등록할 알바생이 없습니다"
+                />
               ) : null}
 
               {workers.length > 0 ? (
