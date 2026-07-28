@@ -15,6 +15,7 @@ const createHttpError = (message, statusCode, details) => {
 
 const publicUserFields = (user) => ({
   id: user.id,
+  firebaseUid: user.firebaseUid,
   email: user.email,
   username: user.username,
   name: user.name,
@@ -23,6 +24,21 @@ const publicUserFields = (user) => ({
   emailVerified: user.emailVerified,
   verifiedAt: user.verifiedAt,
 });
+
+export const assertRegistrationAvailable = async ({ email, username }) => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedUsername = String(username || "").trim();
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: normalizedEmail }, { username: normalizedUsername }],
+    },
+  });
+
+  if (existingUser) {
+    throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);
+  }
+};
 
 export const registerUser = async ({
   email,
@@ -76,6 +92,125 @@ export const registerUser = async ({
   return publicUserFields(user);
 };
 
+export const syncFirebaseUser = async ({
+  firebaseUid,
+  email,
+  emailVerified,
+  username,
+  name,
+  school,
+  major,
+}) => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedUsername = String(username || "").trim();
+  const existingByFirebaseUid = await prisma.user.findUnique({
+    where: { firebaseUid },
+  });
+
+  if (existingByFirebaseUid) {
+    const updatedUser = await prisma.user.update({
+      where: { id: existingByFirebaseUid.id },
+      data: {
+        email: normalizedEmail || existingByFirebaseUid.email,
+        name: String(name || existingByFirebaseUid.name).trim(),
+        school: String(school || existingByFirebaseUid.school || "").trim() || null,
+        major: String(major || existingByFirebaseUid.major || "").trim() || null,
+        emailVerified: Boolean(emailVerified),
+        verifiedAt: emailVerified
+          ? existingByFirebaseUid.verifiedAt || new Date()
+          : existingByFirebaseUid.verifiedAt,
+      },
+    });
+
+    return publicUserFields(updatedUser);
+  }
+
+  const existingByEmail = normalizedEmail
+    ? await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    : null;
+  const existingByUsername = normalizedUsername
+    ? await prisma.user.findUnique({ where: { username: normalizedUsername } })
+    : null;
+
+  const existingUser = existingByEmail || existingByUsername;
+
+  if (
+    existingByUsername &&
+    existingByEmail &&
+    existingByUsername.id !== existingByEmail.id
+  ) {
+    throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);
+  }
+
+  if (existingByUsername && !existingByEmail) {
+    throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);
+  }
+
+  if (existingUser?.email === normalizedEmail) {
+    existingUser.firebaseUid = firebaseUid;
+  }
+
+  if (existingUser && existingUser.firebaseUid && existingUser.firebaseUid !== firebaseUid) {
+    throw createHttpError("이미 사용 중인 이메일 또는 아이디입니다.", 409);
+  }
+
+  if (existingUser) {
+    const updatedUser = await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        firebaseUid,
+        emailVerified: Boolean(emailVerified),
+        verifiedAt: emailVerified ? existingUser.verifiedAt || new Date() : existingUser.verifiedAt,
+        name: String(name || existingUser.name).trim(),
+        school: String(school || existingUser.school || "").trim() || null,
+        major: String(major || existingUser.major || "").trim() || null,
+      },
+    });
+
+    return publicUserFields(updatedUser);
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      firebaseUid,
+      email: normalizedEmail,
+      username: normalizedUsername,
+      name: String(name || "").trim(),
+      passwordHash: "",
+      school: String(school || "").trim() || null,
+      major: String(major || "").trim() || null,
+      emailVerified: Boolean(emailVerified),
+      verifiedAt: emailVerified ? new Date() : null,
+    },
+  });
+
+  return publicUserFields(user);
+};
+
+export const resolveFirebaseLoginEmail = async (account) => {
+  const trimmedAccount = String(account || "").trim();
+  const normalizedAccount = trimmedAccount.toLowerCase();
+
+  if (!trimmedAccount) {
+    throw createHttpError("로그인 계정을 입력해 주세요.", 400);
+  }
+
+  if (normalizedAccount.includes("@")) {
+    return normalizedAccount;
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { username: trimmedAccount },
+    select: { email: true },
+  });
+
+  if (!user) {
+    throw createHttpError("가입된 계정을 찾을 수 없습니다.", 404);
+  }
+
+  return user.email;
+};
+
 export const verifyEmailToken = async (token) => {
   const user = await prisma.user.findUnique({
     where: { verificationToken: token.trim() },
@@ -126,6 +261,14 @@ export const loginUser = async ({ account, password }) => {
 export const getUserById = async (id) => {
   const user = await prisma.user.findUnique({
     where: { id },
+  });
+
+  return user ? publicUserFields(user) : null;
+};
+
+export const getUserByFirebaseUid = async (firebaseUid) => {
+  const user = await prisma.user.findUnique({
+    where: { firebaseUid },
   });
 
   return user ? publicUserFields(user) : null;

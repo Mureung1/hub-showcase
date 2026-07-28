@@ -1,4 +1,14 @@
 import { clearSession, getAuthToken, getSession, saveSession } from "./authStorage";
+import {
+  createUserWithEmailAndPassword,
+  deleteUser,
+  getIdToken,
+  sendEmailVerification,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+
+import { assertFirebaseConfigured, firebaseAuth } from "./firebaseClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
@@ -25,7 +35,8 @@ const requestJson = async (path, options = {}) => {
 };
 
 export const requestAuthJson = async (path, options = {}) => {
-  const token = getAuthToken();
+  const firebaseUser = firebaseAuth?.currentUser;
+  const token = firebaseUser ? await getIdToken(firebaseUser) : getAuthToken();
 
   return requestJson(path, {
     ...options,
@@ -47,32 +58,106 @@ export const getCurrentSession = () => {
 };
 
 export const registerUser = async (user) => {
-  const data = await requestJson("/api/auth/register", {
+  assertFirebaseConfigured();
+
+  await requestJson("/api/auth/firebase-registration-check", {
     method: "POST",
     body: JSON.stringify({
-      name: user.name,
-      username: user.username,
       email: user.email,
-      password: user.password,
-      school: user.school,
-      major: user.major,
-      verificationOrigin: window.location.origin,
+      username: user.username,
     }),
   });
 
+  const credential = await createUserWithEmailAndPassword(
+    firebaseAuth,
+    user.email,
+    user.password
+  );
+
+  await sendEmailVerification(credential.user, {
+    url: `${window.location.origin}/login`,
+  });
+
+  const idToken = await getIdToken(credential.user, true);
+
+  try {
+    await requestJson("/api/auth/firebase-profile", {
+      method: "POST",
+      body: JSON.stringify({
+        idToken,
+        username: user.username,
+        name: user.name,
+        school: user.school,
+        major: user.major,
+      }),
+    });
+  } catch (error) {
+    await deleteUser(credential.user).catch(() => {});
+    await signOut(firebaseAuth).catch(() => {});
+    throw error;
+  }
+
+  saveSession({
+    id: "",
+    email: user.email,
+    username: user.username,
+    name: user.name,
+    school: user.school,
+    major: user.major,
+    emailVerified: false,
+    token: "",
+  });
+
+  await signOut(firebaseAuth);
+
   return {
     ok: true,
-    user: data.user,
+    user: {
+      email: user.email,
+      name: user.name,
+    },
   };
 };
 
 export const loginUser = async ({ account, password }) => {
-  const data = await requestJson("/api/auth/login", {
+  assertFirebaseConfigured();
+
+  const loginEmail = account.includes("@")
+    ? account.trim().toLowerCase()
+    : (await requestJson("/api/auth/firebase-login-email", {
+        method: "POST",
+        body: JSON.stringify({ account }),
+      })).email;
+
+  const credential = await signInWithEmailAndPassword(firebaseAuth, loginEmail, password);
+  await credential.user.reload();
+
+  if (!credential.user.emailVerified) {
+    await sendEmailVerification(credential.user, {
+      url: `${window.location.origin}/login`,
+    });
+    await signOut(firebaseAuth);
+    throw new Error("이메일 인증을 완료해 주세요. 인증 메일을 다시 발송했습니다.");
+  }
+
+  const idToken = await getIdToken(credential.user, true);
+  const profile = getSession();
+  const profileMatchesLogin =
+    profile?.email?.toLowerCase?.() === credential.user.email?.toLowerCase();
+  const data = await requestJson("/api/auth/firebase-session", {
     method: "POST",
-    body: JSON.stringify({ account, password }),
+    body: JSON.stringify({
+      idToken,
+      username: profileMatchesLogin ? profile.username : "",
+      name: profileMatchesLogin
+        ? profile.name
+        : credential.user.displayName || credential.user.email?.split("@")[0],
+      school: profileMatchesLogin ? profile.school : "",
+      major: profileMatchesLogin ? profile.major : "",
+    }),
   });
 
-  saveSession({ ...data.user, token: data.token });
+  saveSession({ ...data.user, token: idToken });
 
   return {
     ok: true,
@@ -107,5 +192,8 @@ export const updateCurrentUser = async (profile) => {
 };
 
 export const logoutUser = () => {
+  if (firebaseAuth?.currentUser) {
+    signOut(firebaseAuth).catch(() => {});
+  }
   clearSession();
 };

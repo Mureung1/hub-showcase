@@ -1,0 +1,58 @@
+services:
+  - type: web
+    name: career-mission-ai-api
+    runtime: node
+    rootDir: AI_agent/backend
+    buildCommand: npm ci && npm run db:generate && npx prisma migrate deploy
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    plan: free
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.4-nano
+      - key: OPENAI_FEEDBACK_ENABLED
+        value: "true"
+      - key: OPENAI_FILE_FEEDBACK_ENABLED
+        value: "true"
+      - key: SUBMISSION_FILE_MAX_BYTES
+        value: "5242880"
+      - key: CAREER_NET_API_KEY
+        sync: false
+      - key: PUBLIC_DATA_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
