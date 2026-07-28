@@ -1,62 +1,86 @@
 {
   "schemaVersion": 1,
   "title": "상권 스캐너",
-  "summary": "가게 이름을 검색하면 주변 경쟁업체를 찾아 리뷰를 AI로 분석하고 전략을 제안하는 소상공인용 서비스",
-  "githubUser": "donghine",
+  "summary": "가게 이름을 검색하면 주변 가게를 찾아 리뷰를 AI로 분석하고 전략을 제안하는 소상공인용 서비스입니다.",
+  "githubUser": "donghine(박동휘)",
   "demoUrl": "",
-  "thumbnail": "showcase/thumbnail.png",
+  "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "showcase/screenshots/search.png",
-    "showcase/screenshots/candidates.png",
-    "showcase/screenshots/list.png",
-    "showcase/screenshots/detail.png"
+    "screenshots/home.webp",
+    "screenshots/list.webp",
+    "screenshots/detail.webp"
   ],
-  "problem": "소상공인은 매장 운영만으로 바빠 경쟁 가게의 리뷰를 일일이 읽고 분석할 시간이 없고, 읽더라도 이를 실질적인 전략으로 바꾸기 어렵습니다.",
+  "problem": "소상공인은 매장 운영만으로 바빠 주변 가게의 리뷰를 일일이 읽고 분석할 시간이 없고, 읽더라도 실질적인 전략으로 바꾸기 어렵습니다.",
   "targetUsers": [
     "카페, 음식점 등을 운영하는 소상공인",
-    "주변 상권 경쟁 현황을 파악하고 싶은 예비 창업자"
+    "주변 상권 현황을 파악하고 싶은 예비 창업자"
   ],
   "features": [
-    "가게 이름 검색 후 동명 업체가 여러 곳이면 주소로 구분해 선택",
-    "선택한 가게 기준 주변 반경 내 같은 업종 경쟁업체 검색 (Haversine 거리 계산)",
-    "경쟁업체 리뷰의 긍정/부정 감성 분석 및 핵심 키워드 추출",
-    "분석 결과를 바탕으로 한 AI 전략 컨설팅 리포트 자동 생성",
-    "동일 매장 재조회 시 캐싱으로 불필요한 AI 재호출 방지"
+    "가게 이름 검색 후 동명 업체가 여러 곳일 경우 주소로 구분해 선택합니다.",
+    "검색 결과가 너무 많으면 지역을 추가로 입력받아 좁혀나갑니다.",
+    "선택한 가게 기준 주변 반경 내 비슷한 업종 가게를 거리순으로 확인합니다.",
+    "가게별 리뷰의 긍정/부정 감성과 핵심 키워드, AI 전략 리포트를 확인합니다."
   ],
   "featureTags": [
-    "리뷰 감성 분석",
     "위치 기반 검색",
-    "AI 리포트",
-    "데이터 캐싱"
+    "리뷰 감성 분석",
+    "AI 리포트"
   ],
   "techStack": [
     "React",
     "FastAPI",
     "Supabase (PostgreSQL)",
-    "SQLite",
     "Docker",
     "Google Gemini",
     "LangChain",
-    "SQLAlchemy"
+    "Kakao Local API"
   ],
   "techHighlights": [
-    "네이버 플레이스 크롤링 대신 네이버 공식 검색 API로 데이터 수집하여 이용약관 준수",
-    "두 지점 간 거리를 계산하는 Haversine 공식을 TDD로 직접 구현 (테스트 7개 작성 및 통과)",
-    "LLM 출력을 Pydantic 스키마로 강제해 감성 분석 결과가 항상 정해진 형식으로 반환되도록 설계",
-    "SQLite(로컬)와 Supabase/MySQL(배포)을 환경변수 하나로 전환 가능한 구조",
-    "Docker Compose로 서버와 화면을 한 번에 실행 가능하도록 컨테이너화"
+    "카카오 로컬 API의 좌표+반경 검색으로 정확한 주변 가게 탐색을 구현했습니다.",
+    "두 지점 간 거리를 계산하는 Haversine 공식을 TDD로 직접 구현했습니다.",
+    "지역명을 좌표로 변환할 때 API 응답이 불안정할 수 있음을 발견하고, 구조화된 지역 필드로 정확히 매칭하도록 개선했습니다."
   ],
-  "developmentWithAI": "기획 단계부터 Claude와 함께 요구사항을 작업 단위로 나누고 우선순위를 정했습니다. 매 기능 개발 전 계획을 먼저 세우고, AI가 제안한 계획을 그대로 받지 않고 작업 크기와 순서를 직접 검토해 다듬은 뒤 진행했습니다. 디자인 톤을 문서화한 Skill, 계획을 나누는 Agent, 기능이 요구사항대로 동작하는지 점검하는 검증 Agent를 직접 만들어 개발 전 과정에서 활용했습니다.",
+  "developmentWithAI": "저는 서비스 주제와 핵심 시나리오를 정하고, 개발 중 막히는 문제(DB 저장 오류, API 신뢰성 문제, 배포 환경 전환 등)를 직접 부딪히며 해결했습니다. AI는 요구사항을 작업 단위로 나누고 계획을 제안했으며, 저는 그 계획이 적절한 범위와 순서인지 검토하고 다듬은 뒤 진행했습니다. 코드 변경 후에는 항상 서버와 화면을 직접 실행해 눈으로 확인하는 과정을 거쳤습니다.",
   "agent": {
-    "summary": "계획 수립과 기능 검증을 돕는 두 개의 전용 Agent를 만들어 개발에 실제로 사용했습니다.",
+    "summary": "계획 수립과 기능 검증을 돕는 전용 Agent 2개와 Skill 2개를 만들어 개발 전 과정에서 사용했습니다.",
     "agentTools": [
-      "Claude Code",
-      "Claude (계획/설계 논의)"
+      {
+        "type": "agent",
+        "name": "feature-slice (계획 수립 Agent)",
+        "purpose": "새 기능 요구사항을 작업 단위로 나누고 우선순위를 매깁니다."
+      },
+      {
+        "type": "agent",
+        "name": "feature-check (기능 검증 Agent)",
+        "purpose": "개발한 기능이 요구사항대로 동작하는지 테스트 결과와 함께 점검합니다."
+      },
+      {
+        "type": "skill",
+        "name": "design-skill (디자인 Skill)",
+        "purpose": "화면의 색상·간격·컴포넌트 규칙을 문서화해 새 화면도 톤을 통일합니다."
+      }
     ],
     "workflows": [
-      "feature-slice: 새 기능 요구사항을 받아 작업 단위로 나누고 우선순위를 매기는 계획 수립 Agent. 매주 계획을 세울 때 이 Agent로 검증",
-      "feature-check: 개발한 기능이 요구사항대로 동작하는지 테스트 실행 결과와 함께 점검하는 검증 Agent",
-      "TDD 워크플로우: 테스트를 먼저 작성해 실패를 확인한 뒤, 그 테스트를 통과시키는 코드를 구현"
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "주간 계획 수립",
+          "GitHub Issue로 작업 분할",
+          "feature-slice Agent로 계획 검토",
+          "테스트 먼저 작성 (TDD)",
+          "코드 구현 및 실행 확인",
+          "feature-check Agent로 검증"
+        ]
+      },
+      {
+        "name": "API 신뢰성 개선 Workflow",
+        "steps": [
+          "실제 API 응답을 반복 호출해 재현 테스트",
+          "불안정한 원인 특정",
+          "구조화된 응답 필드 기반으로 로직 개선",
+          "여러 시나리오 재검증 후 회귀 테스트"
+        ]
+      }
     ]
   }
 }
