@@ -15,7 +15,7 @@ import {
   Wheat,
   type LucideIcon,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState, type RefObject } from "react";
+import { lazy, Suspense, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
 
 import { categoryClass, isTestEnvironment } from "../market/model";
@@ -60,6 +60,10 @@ function readMapBounds(map: {
     east: bounds.getEast(),
     north: bounds.getNorth(),
   };
+}
+
+function storefrontReadinessKey(store: SelectedStorefront) {
+  return `${store.id}:${store.categoryCode}:${store.building?.id ?? "unplaced"}`;
 }
 
 type MarketMapCanvasProps = {
@@ -243,10 +247,7 @@ export function MarketMapCanvas({
   const profile = getMapPresentationProfile(presentationMode);
   const visibleStorefronts = profile.storefrontsVisible ? storefrontBuildings3d : [];
   const [zoom, setZoom] = useState(15.4);
-  const [readyStorefrontIds, setReadyStorefrontIds] = useState<Set<string>>(() => new Set());
-  const storefrontKey = `${presentationMode}:${visibleStorefronts
-    .map((store) => `${store.id}:${store.categoryCode}:${store.building?.id ?? "unplaced"}`)
-    .join(",")}`;
+  const [readyStorefrontKeys, setReadyStorefrontKeys] = useState<Set<string>>(() => new Set());
   const densityStores = useMemo(
     () =>
       mapStores.filter(
@@ -255,9 +256,14 @@ export function MarketMapCanvas({
       ),
     [mapStores, selectedCategoryName],
   );
+  const readinessKeyByStoreId = useMemo(
+    () => new Map(visibleStorefronts.map((store) => [store.id, storefrontReadinessKey(store)])),
+    [visibleStorefronts],
+  );
   const readyStorefronts = useMemo(
-    () => visibleStorefronts.filter((store) => readyStorefrontIds.has(store.id)),
-    [readyStorefrontIds, visibleStorefronts],
+    () =>
+      visibleStorefronts.filter((store) => readyStorefrontKeys.has(storefrontReadinessKey(store))),
+    [readyStorefrontKeys, visibleStorefronts],
   );
   const markerGroups = useMemo(
     () => groupStoreMarkers(mapStores, zoom, selected?.name ?? null),
@@ -271,10 +277,6 @@ export function MarketMapCanvas({
     () => replacementBuildingHeightExpression(readyStorefronts),
     [readyStorefronts],
   );
-
-  useEffect(() => {
-    setReadyStorefrontIds(new Set());
-  }, [storefrontKey]);
 
   const hiddenOverlayBuildingIds = readyStorefronts.flatMap((store) =>
     store.building ? [store.building.id] : [],
@@ -343,11 +345,13 @@ export function MarketMapCanvas({
             <StorefrontBuildingLayers
               stores={visibleStorefronts}
               onUnavailable={onStorefrontUnavailable}
-              onReady={(storeId) =>
-                setReadyStorefrontIds((current) =>
-                  current.has(storeId) ? current : new Set(current).add(storeId),
-                )
-              }
+              onReady={(storeId) => {
+                const key = readinessKeyByStoreId.get(storeId);
+                if (!key) return;
+                setReadyStorefrontKeys((current) =>
+                  current.has(key) ? current : new Set(current).add(key),
+                );
+              }}
             />
           </Suspense>
         )}
