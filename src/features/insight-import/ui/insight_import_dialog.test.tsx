@@ -1,5 +1,12 @@
 /* @vitest-environment jsdom */
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -54,6 +61,39 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('InsightImportDialog', () => {
+  it('가져올 위치를 하나의 선택 그룹으로 제공한다', async () => {
+    const user = userEvent.setup();
+    renderDialog({ service: createService() });
+
+    const sourceGroup = screen.getByRole('group', { name: '가져올 위치' });
+    const fileButton = within(sourceGroup).getByRole('button', {
+      name: '파일에서 가져오기',
+    });
+    const notionButton = within(sourceGroup).getByRole('button', {
+      name: 'Notion에서 가져오기',
+    });
+    const pasteButton = within(sourceGroup).getByRole('button', {
+      name: '링크 붙여넣기',
+    });
+
+    expect(
+      within(fileButton).getByText('파일').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(
+      within(notionButton).getByText('Notion').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(
+      within(pasteButton).getByText('링크').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(fileButton.getAttribute('aria-pressed')).toBe('false');
+
+    await user.click(fileButton);
+
+    expect(fileButton.getAttribute('aria-pressed')).toBe('true');
+    expect(notionButton.getAttribute('aria-pressed')).toBe('false');
+    expect(pasteButton.getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('원본 파일을 업로드하지 않고 자동 감지한 후보만 준비 요청한다', async () => {
     const user = userEvent.setup();
     const service = createService();
@@ -132,10 +172,16 @@ describe('InsightImportDialog', () => {
     const textarea = screen.getByRole('textbox', { name: '가져올 링크' });
     const analyzeButton = screen.getByRole('button', { name: '분석하기' });
 
+    expect(analyzeButton.closest('.ui-modal__footer')).toBeTruthy();
+
     await user.type(textarea, 'https://example.com/a\nhttps://example.com/b');
     sourceButton.focus();
     await user.tab();
     expect(document.activeElement).toBe(textarea);
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: '취소' })
+    );
     await user.tab();
     expect(document.activeElement).toBe(analyzeButton);
 
@@ -160,6 +206,12 @@ describe('InsightImportDialog', () => {
       '연구'
     );
 
+    expect(
+      screen
+        .getByRole('button', { name: '가져오기' })
+        .closest('.ui-modal__footer')
+    ).toBeTruthy();
+
     await user.click(screen.getByRole('button', { name: '가져오기' }));
 
     expect(service.commit).toHaveBeenCalledTimes(1);
@@ -179,6 +231,9 @@ describe('InsightImportDialog', () => {
         .getByRole('status', { name: '가져오기를 완료했어요' })
         .getAttribute('aria-live')
     ).toBe('polite');
+    expect(
+      screen.getByRole('button', { name: '완료' }).closest('.ui-modal__footer')
+    ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '가져오기 되돌리기' }));
     expect(
@@ -215,12 +270,41 @@ describe('InsightImportDialog', () => {
       ).disabled
     ).toBe(true);
 
+    const sourceGroup = screen.getByRole('group', { name: '가져올 위치' });
+    const sourceButtons = within(sourceGroup).getAllByRole('button');
+
+    expect(
+      sourceButtons.every((button) => (button as HTMLButtonElement).disabled)
+    ).toBe(true);
+
     deferred.resolve({ ok: false, reason: 'write-failed' });
 
-    const alert = await screen.findByRole('alert', {
+    const pastePanel = screen.getByRole('region', {
+      name: '링크 붙여넣기',
+    });
+    const alert = await within(pastePanel).findByRole('alert', {
       name: '가져오기를 진행하지 못했어요',
     });
     expect(alert.textContent).not.toContain('https://example.com');
+
+    await user.click(
+      within(sourceGroup).getByRole('button', {
+        name: '파일에서 가져오기',
+      })
+    );
+
+    expect(
+      screen.queryByRole('alert', {
+        name: '가져오기를 진행하지 못했어요',
+      })
+    ).toBeNull();
+
+    await user.click(
+      within(sourceGroup).getByRole('button', {
+        name: '링크 붙여넣기',
+      })
+    );
+
     expect(
       (
         screen.getByRole('textbox', {
@@ -306,9 +390,7 @@ describe('InsightImportDialog', () => {
       render(
         <DesignSystemProvider>
           <ImportHistory
-            entries={[
-              { ...createHistoryEntry(), undoRemainingMs: 1_000 },
-            ]}
+            entries={[{ ...createHistoryEntry(), undoRemainingMs: 1_000 }]}
             errorMessage={null}
             loading={false}
             onDelete={vi.fn()}
