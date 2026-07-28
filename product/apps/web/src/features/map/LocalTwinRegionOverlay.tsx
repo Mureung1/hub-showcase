@@ -1,27 +1,33 @@
-import type { FilterSpecification } from "maplibre-gl";
 import { Layer, Source } from "react-map-gl/maplibre";
 
+import {
+  selectedMarketBuildingFilter,
+  type MarketBoundaryGeometry,
+} from "./marketBoundaryGeometry";
 import { regionLayerId, regionSourceId } from "./regionLayerIds";
 import type { ReadyOverlayRegion } from "./supportedRegions";
 
 type LocalTwinRegionOverlayProps = {
   region: ReadyOverlayRegion;
   buildingsVisible: boolean;
+  buildingAppearance: "analysis" | "storefront3d";
+  marketBoundaryGeometry: MarketBoundaryGeometry | null;
   hiddenBuildingIds?: string[];
 };
 
 export function LocalTwinRegionOverlay({
   region,
   buildingsVisible,
+  buildingAppearance,
+  marketBoundaryGeometry,
   hiddenBuildingIds = [],
 }: LocalTwinRegionOverlayProps) {
-  const buildingFilter: FilterSpecification = hiddenBuildingIds.length
-    ? [
-        "all",
-        ["==", ["get", "layer"], "building"],
-        ["!", ["in", ["get", "osm_id"], ["literal", hiddenBuildingIds]]],
-      ] as FilterSpecification
-    : ["==", ["get", "layer"], "building"];
+  const buildingFilter = selectedMarketBuildingFilter(
+    marketBoundaryGeometry,
+    hiddenBuildingIds,
+  );
+  const buildingColor = buildingAppearance === "storefront3d" ? "#d8d5cf" : "#cdd9cf";
+
   return (
     <Source
       id={regionSourceId(region.id)}
@@ -109,24 +115,15 @@ export function LocalTwinRegionOverlay({
         type="fill-extrusion"
         minzoom={13}
         filter={buildingFilter}
-        layout={{ visibility: buildingsVisible ? "visible" : "none" }}
+        layout={{
+          visibility:
+            buildingsVisible && marketBoundaryGeometry ? "visible" : "none",
+        }}
         paint={{
           "fill-extrusion-base": ["to-number", ["get", "min_height"], 0],
           "fill-extrusion-height": ["to-number", ["get", "height"], 6.4],
-          "fill-extrusion-color": [
-            "match",
-            ["get", "palette"],
-            0,
-            "#f1d6a5",
-            1,
-            "#b9d8c1",
-            2,
-            "#a9cfdf",
-            3,
-            "#e9b9ad",
-            "#d5c3e2",
-          ],
-          "fill-extrusion-opacity": 0.96,
+          "fill-extrusion-color": buildingColor,
+          "fill-extrusion-opacity": buildingAppearance === "storefront3d" ? 0.88 : 0.82,
           "fill-extrusion-vertical-gradient": true,
         }}
       />
