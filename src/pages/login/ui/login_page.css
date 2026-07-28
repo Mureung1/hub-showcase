@@ -6,16 +6,77 @@
 }
 
 .login-brand {
+  --login-brand-inline-padding: clamp(var(--spacing-8), 5vw, var(--spacing-20));
+
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-rows: auto 1fr;
   gap: var(--spacing-12);
   min-width: 0;
-  padding: clamp(var(--spacing-8), 5vw, var(--spacing-20));
+  padding: var(--login-brand-inline-padding);
   overflow: hidden;
   background: var(--color-paper);
 }
 
+.login-brand::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--login-brand-inline-padding) - var(--spacing-3));
+  z-index: 1;
+  width: 1px;
+  background: var(--color-coral);
+  content: '';
+  pointer-events: none;
+}
+
+.login-note-tabs {
+  position: absolute;
+  top: var(--login-brand-inline-padding);
+  right: 0;
+  z-index: 3;
+  display: grid;
+  gap: var(--spacing-2);
+  pointer-events: none;
+}
+
+.login-note-tab {
+  width: var(--spacing-8);
+  height: var(--spacing-3);
+  border-radius: var(--radius-button) 0 0 var(--radius-button);
+}
+
+.login-note-tab-blue {
+  background: var(--color-electric-blue);
+}
+
+.login-note-tab-amber {
+  background: var(--color-amber);
+}
+
+.login-note-tab-coral {
+  background: var(--color-coral);
+}
+
+.login-note-rules {
+  position: absolute;
+  inset: calc(var(--login-brand-inline-padding) + var(--spacing-12)) 0
+    var(--spacing-6);
+  z-index: 1;
+  display: grid;
+  align-content: space-around;
+  pointer-events: none;
+}
+
+.login-note-rule {
+  height: 1px;
+  background: var(--color-ash);
+}
+
 .login-brand-lockup {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
@@ -35,6 +96,8 @@
 }
 
 .login-brand-message {
+  position: relative;
+  z-index: 2;
   display: grid;
   align-content: center;
   align-self: center;
@@ -128,7 +191,9 @@
   }
 
   .login-brand {
-    padding: var(--spacing-8);
+    --login-brand-inline-padding: var(--spacing-8);
+
+    padding: var(--login-brand-inline-padding);
   }
 
   .login-brand-message {
@@ -147,9 +212,33 @@
   }
 
   .login-brand {
+    --login-brand-inline-padding: var(--spacing-5);
+
     min-height: min(38svh, 320px);
     gap: var(--spacing-10);
-    padding: var(--spacing-6) var(--spacing-5) var(--spacing-8);
+    padding: var(--spacing-6) var(--login-brand-inline-padding) var(--spacing-8);
+  }
+
+  .login-note-tabs {
+    top: var(--spacing-6);
+    gap: var(--spacing-1);
+  }
+
+  .login-note-tab {
+    width: var(--spacing-6);
+    height: var(--spacing-2);
+  }
+
+  .login-note-tab-coral {
+    display: none;
+  }
+
+  .login-note-rules {
+    inset: calc(var(--spacing-6) + var(--spacing-10)) 0 var(--spacing-6);
+  }
+
+  .login-note-rule:nth-child(n + 3) {
+    display: none;
   }
 
   .login-brand-logo {

@@ -18,6 +18,19 @@ export function LoginPage({
   return (
     <main className="login-shell" aria-labelledby="login-title">
       <div className="login-brand">
+        <div className="login-note-tabs" aria-hidden="true">
+          <span className="login-note-tab login-note-tab-blue" />
+          <span className="login-note-tab login-note-tab-amber" />
+          <span className="login-note-tab login-note-tab-coral" />
+        </div>
+
+        <div className="login-note-rules" aria-hidden="true">
+          <span className="login-note-rule" />
+          <span className="login-note-rule" />
+          <span className="login-note-rule" />
+          <span className="login-note-rule" />
+        </div>
+
         <div className="login-brand-lockup">
           <BrandLogo className="login-brand-logo" />
           <span className="login-brand-name">아맞다</span>
