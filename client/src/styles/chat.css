@@ -108,6 +108,7 @@
 .chat-message-mine {
   align-self: flex-end;
   align-items: flex-end;
+  margin-left: auto;
 }
 
 .chat-message-sender {

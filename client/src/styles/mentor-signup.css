@@ -25,7 +25,7 @@
   padding: clamp(24px, 5vw, 40px);
 }
 
-.mentor-profile-section {
+.mentor-signup-section-accent {
   border-top: 4px solid var(--color-primary);
 }
 

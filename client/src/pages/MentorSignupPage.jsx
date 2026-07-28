@@ -38,7 +38,7 @@ function MentorSignupPage() {
         </section>
 
         <form className="mentor-signup-form" onSubmit={handleNext}>
-          <section className="card mentor-signup-section" aria-labelledby="mentor-account-title">
+          <section className="card mentor-signup-section mentor-signup-section-accent" aria-labelledby="mentor-account-title">
             <div className="mentor-section-heading">
               <div className="mentor-section-title-row">
                 <span className="mentor-section-number" aria-hidden="true">01</span>
