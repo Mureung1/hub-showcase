@@ -1,0 +1,81 @@
+.dashboard {
+  padding: var(--space-section-gap) 0;
+}
+
+.dashboard-message {
+  padding: var(--space-section-gap) var(--space-xs);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  text-align: center;
+}
+
+.dashboard-label {
+  margin: 0 0 6px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+}
+
+.dashboard-label-chart {
+  margin-top: var(--space-section-gap);
+}
+
+.dashboard-amount {
+  margin: 0 0 4px;
+  font-size: var(--font-size-display);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dashboard-amount-unit {
+  font-size: var(--font-size-body-lg);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.dashboard-note {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+  line-height: 1.5;
+}
+
+.dashboard-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-inline-gap);
+  height: 130px;
+  margin: 14px 0 6px;
+}
+
+.dashboard-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.dashboard-bar-value {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.dashboard-bar {
+  width: 100%;
+  max-width: 32px;
+  border-radius: var(--radius-xs) var(--radius-xs) 2px 2px;
+  background: var(--color-primary-light);
+}
+
+.dashboard-bar-current {
+  background: var(--color-primary);
+}
+
+.dashboard-bar-month {
+  margin-top: 6px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+}
