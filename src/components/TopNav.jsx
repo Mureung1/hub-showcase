@@ -33,8 +33,9 @@ function TopNav() {
           </Link>
         ))}
       </div>
-      <div className="ml-auto rounded-full border-2 border-border bg-bg-page px-4 py-2 text-sm text-text-secondary">
-        🔍 레시피 검색
+      <div className="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-bg-page text-sm text-text-secondary sm:h-auto sm:w-auto sm:px-4 sm:py-2">
+        <span className="sm:hidden">🔍</span>
+        <span className="hidden sm:inline">🔍 레시피 검색</span>
       </div>
     </div>
   )
