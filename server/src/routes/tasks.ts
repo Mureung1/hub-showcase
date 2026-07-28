@@ -16,6 +16,7 @@ import {
   type MemoryEvidenceSnapshot,
 } from "../lib/completionSnapshot.js";
 import { normalizeStoredMicroTask } from "../lib/lv3MemoryCandidate.js";
+import { calculateDateStreak } from "../lib/dateStreak.js";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ function withReason(
 
 router.get("/", async (_req, res) => {
   try {
-    const [tasks, appState] = await Promise.all([
+    const [tasks, doneEvents] = await Promise.all([
       prisma.task.findMany({
         orderBy: { createdAt: "desc" }, // 최신 등록된 task가 맨 위에 오도록
         include: {
@@ -45,12 +46,19 @@ router.get("/", async (_req, res) => {
           avoidanceReasons: { orderBy: { createdAt: "desc" }, take: 1 },
         },
       }),
-      prisma.appState.findUnique({ where: { id: "singleton" } }),
+      prisma.taskEvent.findMany({
+        where: { eventType: "done" },
+        select: { occurredAt: true },
+      }),
     ]);
     const data = tasks.map(({ avoidanceReasons, ...task }) =>
       withReason(task, avoidanceReasons[0] ?? null),
     );
-    res.json({ data, streak: appState?.streak ?? 0 });
+    const streak = calculateDateStreak(
+      doneEvents.map((event) => event.occurredAt),
+      new Date(),
+    );
+    res.json({ data, streak });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -174,7 +182,7 @@ router.post("/:id/events", async (req, res) => {
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id } });
 
       if (eventType === "done") {
-        // status 전환을 먼저 선점한 요청만 완료 이벤트와 streak를 기록한다.
+        // status 전환을 먼저 선점한 요청만 완료 이벤트를 기록한다.
         // 동시 요청은 행 잠금 뒤 조건을 다시 평가하므로 한 요청만 count=1을 얻는다.
         const claimed = await tx.task.updateMany({
           where: { id, status: { not: "done" } },
@@ -182,7 +190,7 @@ router.post("/:id/events", async (req, res) => {
         });
 
         // 이미 완료된 요청은 첫 완료 결과를 그대로 성공으로 반환한다.
-        // 새 이벤트를 만들거나 기존 완료 스냅샷/streak를 덮어쓰지 않는다.
+        // 새 이벤트를 만들거나 기존 완료 스냅샷을 덮어쓰지 않는다.
         if (claimed.count === 0) {
           return tx.task.findUniqueOrThrow({ where: { id } });
         }
@@ -242,14 +250,8 @@ router.post("/:id/events", async (req, res) => {
           },
         });
 
-        // 개입(무응답/skipCount)을 거쳐 완료하는 것도 이 서비스의 정상 흐름이므로,
-        // 스트릭은 개입 여부와 무관하게 완료할 때마다 오른다. "멈추기"만 리셋한다.
-        await tx.appState.upsert({
-          where: { id: "singleton" },
-          create: { id: "singleton", streak: 1 },
-          update: { streak: { increment: 1 } },
-        });
-
+        // 날짜 기반 streak는 done 이벤트의 occurredAt으로 조회 시 계산한다.
+        // 개입 여부나 같은 날의 완료 개수는 이 완료 트랜잭션에 영향을 주지 않는다.
         return tx.task.findUniqueOrThrow({ where: { id } });
       }
 
@@ -270,13 +272,7 @@ router.post("/:id/events", async (req, res) => {
           stoppedDurationSeconds,
         );
 
-        // "멈추기"는 완료 시도를 중단한 것이므로 스트릭을 리셋한다.
-        await tx.appState.upsert({
-          where: { id: "singleton" },
-          create: { id: "singleton", streak: 0 },
-          update: { streak: 0 },
-        });
-
+        // stopped는 Focus 완화 정책만 적용하고 날짜 기반 streak에는 영향을 주지 않는다.
         return tx.task.update({
           where: { id },
           data: { skipCount: relief.skipCount, level: relief.level },
