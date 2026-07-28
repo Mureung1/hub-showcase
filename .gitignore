@@ -8,3 +8,4 @@ server/.env
 .DS_Store
 public/sw.js
 public/workbox-*.js
+.vercel

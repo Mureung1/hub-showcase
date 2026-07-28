@@ -24,6 +24,12 @@ const itemColumns =
 const configuredOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
+const vercelOrigins = [
+  process.env.VERCEL_URL,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
+]
+  .filter((hostname): hostname is string => !!hostname)
+  .map((hostname) => `https://${hostname}`);
 const geminiClassifier = createConfiguredGeminiClassifier();
 const storageBucket = process.env.SUPABASE_STORAGE_BUCKET?.trim();
 
@@ -35,7 +41,12 @@ app.use(
         !!origin &&
         /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 
-      if (!origin || configuredOrigins.includes(origin) || isLocalDevelopmentOrigin) {
+      if (
+        !origin ||
+        configuredOrigins.includes(origin) ||
+        vercelOrigins.includes(origin) ||
+        isLocalDevelopmentOrigin
+      ) {
         callback(null, true);
         return;
       }
@@ -116,9 +127,12 @@ app.get("/", (_request, response) => {
   });
 });
 
-app.get("/health", (_request, response) => {
+function handleHealth(_request: express.Request, response: express.Response) {
   response.json({ status: "ok" });
-});
+}
+
+app.get("/health", handleHealth);
+app.get("/api/health", handleHealth);
 
 app.get("/api/items", async (request, response) => {
   const archivedQuery = request.query.archived;
@@ -365,7 +379,7 @@ app.delete("/api/items/:id", async (request, response) => {
   }
 });
 
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test" && !process.env.VERCEL) {
   app.listen(port, () => {
     console.log(`Express server listening on http://localhost:${port}`);
   });

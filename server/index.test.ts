@@ -112,6 +112,16 @@ beforeEach(() => {
 });
 
 describe("items API", () => {
+  it("로컬 및 Vercel API 경로에서 health 상태를 반환한다", async () => {
+    const localHealth = await request(app).get("/health");
+    const vercelHealth = await request(app).get("/api/health");
+
+    expect(localHealth.status).toBe(200);
+    expect(localHealth.body).toEqual({ status: "ok" });
+    expect(vercelHealth.status).toBe(200);
+    expect(vercelHealth.body).toEqual({ status: "ok" });
+  });
+
   it("이미지 없는 기존 URL JSON 요청을 저장한다", async () => {
     const response = await request(app)
       .post("/api/items")
