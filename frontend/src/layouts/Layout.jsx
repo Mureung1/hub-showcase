@@ -24,6 +24,9 @@ const Layout = () => {
             SUBZIP
         </Link>
         <div className="gnb-actions">
+          <Link to="/about" className="gnb-nav-link">
+            소개
+          </Link>
           {!isSubscriptionFormPage && (
             <Link to="/subscriptions/new" className="gnb-cta">
               + 구독 서비스 등록

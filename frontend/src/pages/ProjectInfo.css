@@ -55,6 +55,7 @@
   color: var(--color-text);
   line-height: 1.7;
   word-break: keep-all;
+  text-align: center;
 }
 
 .hook-quote strong {

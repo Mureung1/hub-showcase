@@ -39,6 +39,14 @@
   white-space: nowrap;
 }
 
+.gnb-nav-link {
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  padding: 5px 10px;
+}
+
 .gnb-cta {
   font-size: var(--font-size-caption);
   font-weight: 700;
