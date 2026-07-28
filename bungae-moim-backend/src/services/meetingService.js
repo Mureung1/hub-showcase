@@ -525,16 +525,21 @@ async function cancelMeeting(meetingId, hostId) {
   }
 
   await withTransaction(async (client) => {
-    // UPDATE는 거절·취소 이력까지 전원을 cancelled로 바꾼다. 그래서 알림 대상은
-    // 반드시 UPDATE **전에** 잡아둔다 — 순서를 바꾸면 이미 거절당한 사람에게도
-    // "모임이 취소됐어요"가 가서 노이즈가 된다.
+    // UPDATE meetings를 먼저 실행해 그 행에 배타 락을 건다. F1(신청)은 meetings 행을
+    // FOR UPDATE로 잠그고 들어오므로, 활성 참여자 SELECT를 이 UPDATE **뒤**에 두면
+    // "SELECT가 F1보다 먼저 통과하고, F1이 커밋된 뒤에야 UPDATE meetings의 락이 풀려
+    // 방금 들어온 신청이 알림 없이 cancelled되는" 동시성 창이 닫힌다(F1과 직렬화됨).
+    // 다만 UPDATE meeting_participants는 거절·취소 이력까지 전원을 cancelled로 바꾸므로,
+    // 알림 대상(활성 참여자)은 반드시 그 UPDATE **전에** 잡아야 한다 — 순서를 바꾸면
+    // 이미 거절당한 사람에게도 "모임이 취소됐어요"가 가서 노이즈가 된다.
+    await client.query("UPDATE meetings SET status = 'cancelled' WHERE id = $1", [meetingId]);
+
     const activeRes = await client.query(
       `SELECT user_id FROM meeting_participants
         WHERE meeting_id = $1 AND status IN ('pending','confirmed','approved')`,
       [meetingId]
     );
 
-    await client.query("UPDATE meetings SET status = 'cancelled' WHERE id = $1", [meetingId]);
     await client.query(
       "UPDATE meeting_participants SET status = 'cancelled' WHERE meeting_id = $1",
       [meetingId]
