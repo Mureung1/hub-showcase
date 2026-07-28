@@ -29,22 +29,27 @@
 ## Day 12 — 코드 생성 / 리팩토링 Agent + 파일 단위 구조화 출력
 
 > 7~8단계는 문서 하나가 아니라 **여러 파일**이 나와야 하므로, 다른 Agent와 출력 형식 자체가 다르다.
+>
+> **v4 변경**: diff는 Agent가 만들지 않는다. GitHub Contents API로 커밋하려면 패치가 아니라 파일 전체 내용이 필요한데, LLM이 만든 diff 텍스트는 실제 파일의 줄 번호·문맥과 어긋나 그대로 적용하면 실패하거나 엉뚱한 곳에 적용될 위험이 있다. 그래서 Agent는 diff 대신 **파일의 새 전체 내용(`newContent`)**을 출력하고, diff는 서버가 (기존 내용 vs 새 내용)을 직접 계산해서 만든다.
 
 ### Code Generation Agent (7단계)
-- 입력: 클래스 설계, 프로젝트 구조 설계, ScriptableObject 설계 문서 3개
+- **수정 대상이 되는 기존 파일이 있다면, Agent를 부르기 전에 그 파일의 현재 전체 내용을 GitHub API로 먼저 읽어와 프롬프트 입력에 포함** (신규 파일은 해당 없음)
+- 입력: 클래스 설계, 프로젝트 구조 설계, ScriptableObject 설계 문서 3개 + (수정 대상이 있다면) 그 파일들의 현재 전체 내용
 - 출력을 자유 텍스트가 아니라 **구조화된 JSON 배열**로 강제:
-  `[{ path, changeType: "new", diff, suggestedCommitMessage }]`
-- 프롬프트에 "파일별로 분리해서 응답하라"는 지시와 함께, 응답을 파싱 가능한 형식(JSON)으로 강제하는 방법 확정 (예: 함수 호출/구조화 출력 기능이 있다면 활용, 없다면 파싱 실패 시 재시도 로직 추가)
+  `[{ path, changeType: "new", newContent, suggestedCommitMessage }]`
+  — `diff` 필드가 아니라 파일의 새 전체 내용을 그대로 담는 `newContent` 필드로 받는다
+- 프롬프트에 "파일별로 분리해서 응답하라", "수정이 필요 없는 부분은 원본 그대로 유지하라"는 지시와 함께, 응답을 파싱 가능한 형식(JSON)으로 강제하는 방법 확정 (Gemini의 구조화 출력 기능이 있다면 활용, 없다면 파싱 실패 시 재시도 로직 추가)
 
 ### Refactoring Agent (8단계)
-- 입력: Day 6~7에서 만든 분석 리포트(God Class 목록, 중복 코드 블록) + 7단계에서 생성된 코드
-- 동일한 구조화 JSON 포맷으로 리팩토링 제안 출력 (`changeType: "modified" | "deleted"` 포함)
+- 입력: Day 6~7에서 만든 분석 리포트(God Class 목록, 중복 코드 블록) + 7단계에서 생성된 코드의 **현재 전체 내용**
+- 동일한 구조화 JSON 포맷(`newContent` 필드 포함)으로 리팩토링 제안 출력 (`changeType: "modified" | "deleted"` 포함)
 
 ### 백엔드
-- `GET /api/steps/{id}/file-changes` 구현 — 위 구조화 데이터 저장(`documents/{step_id}.json`에 준하는 구조, 혹은 별도 `file-changes/{step_id}.json`) 및 조회
+- 서버에서 `oldContent`(수정 대상 파일의 원래 내용, 신규 파일은 빈 문자열)와 Agent가 준 `newContent`를 diff 라이브러리(`diff` npm 패키지 등)로 비교해 unified diff를 계산하고 저장
+- `GET /api/steps/{id}/file-changes` 구현 — 파일 목록 + 서버가 계산한 diff + newContent 저장(`documents/{step_id}.json`에 준하는 구조, 혹은 별도 `file-changes/{step_id}.json`) 및 조회
 - 7~8단계의 `progress_pct` 계산 방식을 "승인된 파일 수 / 전체 제안 파일 수"로 분기 처리 (제작계획 4.6절 설계 그대로)
 
-**Day 12 완료 기준**: 7단계에 진입해 Code Generation Agent와 대화하면, 파일 경로/변경 유형/diff/커밋 메시지가 담긴 구조화된 응답이 실제로 생성되고 API로 조회된다.
+**Day 12 완료 기준**: 7단계에 진입해 Code Generation Agent와 대화하면, 파일 경로/변경 유형/새 전체 내용(`newContent`)/커밋 메시지가 담긴 구조화된 응답이 실제로 생성되고, 서버가 계산한 diff와 함께 API로 조회된다.
 
 ---
 
@@ -54,17 +59,17 @@
 
 ### 프론트엔드 — 커밋 리뷰 화면 (프로토타입의 mock을 실제 데이터로 교체)
 - `FileChangeList` — Day 12의 `GET /api/steps/{id}/file-changes` 결과로 렌더링
-- `DiffViewer` — 실제 diff 텍스트 표시
+- `DiffViewer` — **서버가 계산한 diff**를 표시 (Agent가 만든 diff가 아님)
 - 체크박스 선택 상태에 따라 "선택된 N개 파일 → N개의 커밋" 카운트 실시간 갱신 (프로토타입 로직 그대로 이식)
 - 커밋 메시지 인라인 편집 반영
 
 ### 백엔드 — 실제 GitHub 커밋 연동
-- `POST /api/repo/{id}/commit-batch` 구현 — 선택된 파일들을 **파일 단위로 순차 커밋** (GitHub Contents API: 파일 생성/수정은 `PUT /repos/{owner}/{repo}/contents/{path}`, 삭제는 `DELETE`)
+- `POST /api/repo/{id}/commit-batch` 구현 — 선택된 파일들의 **`newContent`를 그대로 GitHub Contents API로 PUT** (패치 적용이 아니라 파일 전체 교체 — 삭제는 `DELETE /repos/{owner}/{repo}/contents/{path}`), 파일 단위로 순차 커밋
 - OAuth 세션의 access token으로 인증
 - 체크 해제되어 이번에 커밋되지 않은 파일은 `pending_changes` 상태로 남아 다음 라운드에 다시 노출
-- 문서형 Agent(1~6, 9단계)의 Approve도 이제 로컬 상태 전환에 그치지 않고 **실제로 `docs/{path}` 커밋까지 연결** (Day 10까지 미뤄뒀던 부분)
+- 문서형 Agent(1~6, 9단계)의 Approve도 이제 로컬 상태 전환에 그치지 않고 **실제로 `docs/{path}` 커밋까지 연결** (Day 10까지 미뤄뒀던 부분) — 문서는 항상 완성된 전체 텍스트이므로 이 경우는 diff 계산 없이 바로 PUT하면 됨
 
-**Day 13 완료 기준**: 코드 생성 단계에서 커밋 리뷰 화면의 파일을 선택하고 "선택 항목 커밋"을 누르면, 실제 GitHub 저장소에 파일 단위로 여러 커밋이 생성된다. 문서 단계 Approve도 실제 저장소에 `docs/` 파일로 커밋된다.
+**Day 13 완료 기준**: 코드 생성 단계에서 커밋 리뷰 화면의 파일을 선택하고 "선택 항목 커밋"을 누르면, 실제 GitHub 저장소에 파일 단위로 여러 커밋이 생성되고, 커밋된 파일 내용이 화면에서 봤던 diff와 실제로 일치한다. 문서 단계 Approve도 실제 저장소에 `docs/` 파일로 커밋된다.
 
 ---
 
