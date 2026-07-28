@@ -209,6 +209,14 @@ const BUSINESS_YEARS_MIN: Record<string, number> = {
 type ScoringProfile = Pick<OnboardingProfile, 'region' | 'industry'> &
   Partial<Pick<OnboardingProfile, 'employees' | 'revenue' | 'businessYears'>>
 
+/**
+ * 이슈 #90: subsidy.supportRealm/supportRealmDetail(지원분야 대/중분류, 실측 결측 0%)은
+ * 아직 여기서 스코어링에 안 쓴다 — OnboardingProfile에 대응 프로필 필드가 없어서다.
+ * 온보딩 지원분야 질문 추가 여부는 [#91]에서 결정하고, hard filter/soft score 배선은
+ * 결정 이후 [#92]에서 진행한다.
+ * [#91]: https://github.com/syd348/hub/issues/91
+ * [#92]: https://github.com/syd348/hub/issues/92
+ */
 function scoreForProfile(subsidy: Subsidy, profile: ScoringProfile): number {
   let score = subsidy.match
 

@@ -183,5 +183,7 @@ export function mapAnnouncementToSubsidy(
     contact: item.refrncNm || FALLBACK_CONTACT,
     region: extractRegions(item.hashtags),
     industry: extractIndustry(item.bsnsSumryCn, item.trgetNm),
+    supportRealm: item.pldirSportRealmLclasCodeNm,
+    supportRealmDetail: item.pldirSportRealmMlsfcCodeNm,
   }
 }

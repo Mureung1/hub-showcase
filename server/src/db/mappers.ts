@@ -25,6 +25,8 @@ export interface SubsidyRow {
   business_years: string | null
   business_years_max: number | null
   atch_file_id: string | null
+  support_realm: string
+  support_realm_detail: string | null
   created_at?: string
 }
 
@@ -54,6 +56,8 @@ export function rowToSubsidy(row: SubsidyRow): Subsidy {
     businessYears: row.business_years ?? undefined,
     businessYearsMax: row.business_years_max ?? undefined,
     atchFileId: row.atch_file_id ?? undefined,
+    supportRealm: row.support_realm,
+    supportRealmDetail: row.support_realm_detail ?? undefined,
   }
 }
 
@@ -83,6 +87,8 @@ export function subsidyToRow(subsidy: Subsidy): Omit<SubsidyRow, 'created_at'> {
     business_years: subsidy.businessYears ?? null,
     business_years_max: subsidy.businessYearsMax ?? null,
     atch_file_id: subsidy.atchFileId ?? null,
+    support_realm: subsidy.supportRealm,
+    support_realm_detail: subsidy.supportRealmDetail ?? null,
   }
 }
 

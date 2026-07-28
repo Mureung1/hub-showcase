@@ -235,7 +235,17 @@ describe('mapAnnouncementToSubsidy', () => {
       contact: '울주군청 경제교통과 052-229-8353',
       region: [],
       industry: [],
+      supportRealm: '경영',
+      supportRealmDetail: undefined,
     })
+  })
+
+  it('pldirSportRealmMlsfcCodeNm이 있으면 supportRealmDetail이 채워진다', () => {
+    const result = mapAnnouncementToSubsidy(
+      { ...baseAnnouncement, pldirSportRealmMlsfcCodeNm: '컨설팅' },
+      NOW,
+    )
+    expect(result.supportRealmDetail).toBe('컨설팅')
   })
 
   it('hashtags가 있으면 region이 채워진다', () => {
