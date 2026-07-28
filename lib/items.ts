@@ -42,8 +42,11 @@ export function matchesItemSearch(item: Item, query: string) {
   });
 }
 
+const defaultApiBaseUrl =
+  process.env.NODE_ENV === "production" ? "" : "http://localhost:4000";
+
 export const apiBaseUrl = (
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? defaultApiBaseUrl
 ).replace(/\/$/, "");
 
 export async function readApiError(
