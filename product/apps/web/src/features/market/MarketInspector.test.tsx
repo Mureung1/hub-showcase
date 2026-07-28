@@ -77,6 +77,9 @@ function renderInspector(
   analysis: MarketAnalysis | null = null,
   topic: "population" | "competition" | "stores" | "flow" = "population",
   analysisState: "loading" | "ready" | "error" = analysis ? "ready" : "loading",
+  flowState: "loading" | "ready" | "partial" | "unavailable" | "error" = analysis
+    ? "ready"
+    : "loading",
   onAnalysisRetry = vi.fn(),
   marketValue: Market = market,
 ) {
@@ -98,6 +101,7 @@ function renderInspector(
       background={value}
       backgroundState={state}
       analysisState={analysisState}
+      flowState={flowState}
       analysisScope="market"
       topic={topic}
       onAnalysisRetry={onAnalysisRetry}
@@ -113,7 +117,7 @@ function renderInspector(
 describe("MarketInspector population evidence", () => {
   it("shows an API error without static analysis values and retries explicitly", () => {
     const retry = vi.fn();
-    renderInspector(null, "error", null, "competition", "error", retry);
+    renderInspector(null, "error", null, "competition", "error", "error", retry);
 
     expect(screen.getByRole("alert")).toHaveTextContent("상권 분석 데이터를 불러오지 못했습니다.");
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
@@ -167,6 +171,14 @@ describe("MarketInspector population evidence", () => {
 
     expect(screen.getByText("배후 인구 통계를 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.queryByText("0명")).not.toBeInTheDocument();
+  });
+
+  it("explains when the selected quarter has no time-of-day footfall data", () => {
+    renderInspector(null, "ready", null, "flow", "ready", "unavailable");
+
+    expect(screen.getByText("시간대별 활동성")).toBeInTheDocument();
+    expect(screen.getByText(/선택한 분기에는 시간대별 유동인구 자료가 없습니다/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /유동인구 상대값/ })).not.toBeInTheDocument();
   });
 
   it("switches ranking peer groups without mixing their denominators", () => {
@@ -268,12 +280,13 @@ describe("MarketInspector population evidence", () => {
       analysis,
       "flow",
       "ready",
+      "partial",
       vi.fn(),
       marketWithSourceBuckets,
     );
 
     expect(
-      screen.getByText(/서울 길단위인구가 제공하는 선택 분기 집계입니다/),
+      screen.getByText(/서울 길단위인구의 선택 분기 집계입니다/),
     ).toBeInTheDocument();
     expect(screen.getByText("1명/분기")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /유동인구 상대값|데이터 없음/ })).toHaveLength(6);

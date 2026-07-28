@@ -13,7 +13,7 @@ import {
   InspectorTurnoverAndSales,
 } from "./MarketInspectorSections";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
-import type { AnalysisState } from "./useMarketAnalysis";
+import type { AnalysisState, FlowState } from "./useMarketAnalysis";
 
 type MarketInspectorProps = {
   market: Market;
@@ -29,6 +29,7 @@ type MarketInspectorProps = {
   background: AdminAreaBackground | null;
   backgroundState: "loading" | "ready" | "unavailable" | "error";
   analysisState: AnalysisState;
+  flowState: FlowState;
   analysisScope: AnalysisScope;
   topic: AnalysisTopic;
   onAnalysisRetry: () => void;
@@ -53,6 +54,7 @@ export function MarketInspector({
   background,
   backgroundState,
   analysisState,
+  flowState,
   analysisScope,
   topic,
   onAnalysisRetry,
@@ -107,6 +109,7 @@ export function MarketInspector({
         market={market}
         categorySelection={categorySelection}
         analysis={analysis}
+        flowState={flowState}
         topic={topic}
         activeHour={activeHour}
         onActiveHourChange={onActiveHourChange}

@@ -65,6 +65,7 @@ describe("App", () => {
       "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md",
     );
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
+    expect(screen.getByRole("toolbar", { name: "분석 도구" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("");
@@ -94,6 +95,7 @@ describe("App", () => {
     fireEvent.click(trigger);
 
     expect(await screen.findByRole("dialog", { name: "데이터 산정 근거" })).toBeInTheDocument();
+    expect(screen.getByLabelText("데이터 산정 근거 내용")).toHaveAttribute("tabindex", "0");
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "데이터 산정 근거 닫기" })).toHaveFocus(),
     );
