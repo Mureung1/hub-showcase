@@ -237,6 +237,7 @@ export function Assign() {
           height: '100vh',
           alignSelf: 'flex-start',
           zIndex: 5,
+          pointerEvents: 'none',
         }}
       />
 

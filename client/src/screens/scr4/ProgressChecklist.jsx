@@ -216,6 +216,7 @@ export function ProgressChecklist() {
           height: '100vh',
           alignSelf: 'flex-start',
           zIndex: 5,
+          pointerEvents: 'none',
         }}
       />
 
