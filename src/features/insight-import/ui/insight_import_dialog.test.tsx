@@ -1,5 +1,12 @@
 /* @vitest-environment jsdom */
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -54,6 +61,39 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('InsightImportDialog', () => {
+  it('가져올 위치를 하나의 선택 그룹으로 제공한다', async () => {
+    const user = userEvent.setup();
+    renderDialog({ service: createService() });
+
+    const sourceGroup = screen.getByRole('group', { name: '가져올 위치' });
+    const fileButton = within(sourceGroup).getByRole('button', {
+      name: '파일에서 가져오기',
+    });
+    const notionButton = within(sourceGroup).getByRole('button', {
+      name: 'Notion에서 가져오기',
+    });
+    const pasteButton = within(sourceGroup).getByRole('button', {
+      name: '링크 붙여넣기',
+    });
+
+    expect(
+      within(fileButton).getByText('파일').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(
+      within(notionButton).getByText('Notion').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(
+      within(pasteButton).getByText('링크').getAttribute('aria-hidden')
+    ).toBe('true');
+    expect(fileButton.getAttribute('aria-pressed')).toBe('false');
+
+    await user.click(fileButton);
+
+    expect(fileButton.getAttribute('aria-pressed')).toBe('true');
+    expect(notionButton.getAttribute('aria-pressed')).toBe('false');
+    expect(pasteButton.getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('원본 파일을 업로드하지 않고 자동 감지한 후보만 준비 요청한다', async () => {
     const user = userEvent.setup();
     const service = createService();

@@ -32,6 +32,10 @@ import { zipFileAdapter } from '../model/zip_file_adapter';
 import { ImportFieldMappingForm } from './import_field_mapping';
 import { ImportHistory } from './import_history';
 import { ImportIssueDetails, ImportPreview } from './import_preview';
+import {
+  InsightImportSourceSelector,
+  type InsightImportSource,
+} from './insight_import_source_selector';
 
 import './insight_import_dialog.css';
 
@@ -101,9 +105,10 @@ export function InsightImportDialog({
     onPrepared: controller.loadPrepared,
     openWeb: notionOpenWeb,
   });
-  const [sourceSelected, setSourceSelected] = useState<
-    'file' | 'notion' | 'paste' | null
-  >(initialNotionConnectionId || initialNotionError ? 'notion' : null);
+  const [sourceSelected, setSourceSelected] =
+    useState<InsightImportSource | null>(
+      initialNotionConnectionId || initialNotionError ? 'notion' : null
+    );
   const [includeNotionPageUrls, setIncludeNotionPageUrls] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [undoConfirming, setUndoConfirming] = useState(false);
@@ -203,30 +208,11 @@ export function InsightImportDialog({
 
       {isSourceStage ? (
         <div className="insight-import-dialog__source">
-          <Button
-            aria-pressed={sourceSelected === 'file'}
-            hierarchy={sourceSelected === 'file' ? 'primary' : 'secondary'}
-            onClick={() => setSourceSelected('file')}
-            type="button"
-          >
-            파일에서 가져오기
-          </Button>
-          <Button
-            aria-pressed={sourceSelected === 'notion'}
-            hierarchy={sourceSelected === 'notion' ? 'primary' : 'secondary'}
-            onClick={() => setSourceSelected('notion')}
-            type="button"
-          >
-            Notion에서 가져오기
-          </Button>
-          <Button
-            aria-pressed={sourceSelected === 'paste'}
-            hierarchy={sourceSelected === 'paste' ? 'primary' : 'secondary'}
-            onClick={() => setSourceSelected('paste')}
-            type="button"
-          >
-            링크 붙여넣기
-          </Button>
+          <InsightImportSourceSelector
+            disabled={false}
+            onSelect={setSourceSelected}
+            selected={sourceSelected}
+          />
 
           {sourceSelected === 'file' ? (
             <div className="insight-import-dialog__file">
