@@ -188,9 +188,11 @@ export function formatExpectedIntake(expected) {
 // - 칼로리는 다른 영양소의 합산 결과라 "칼로리가 부족해요"는 실질적 조언이 못 되고,
 // - 나트륨은 상한형이라 "부족" 개념 자체가 성립하지 않는다.
 // 이 둘은 화면 표시(섭취량 기록)와 초과 경고에서만 쓴다. 단, 달력의 하루 상태 판정
-// (calcDayStatus)과 리더보드 점수(nutritionScore.js + supabase SQL)는 기존 6개 기준을
-// 의도적으로 유지한다 — 바꾸면 과거 기록의 상태가 소급해서 달라지고, SQL 채점 공식과
-// 어긋난다(CLAUDE.md의 "채점 공식은 반드시 동일하게 유지" 규칙).
+// (calcDayStatus)은 기존 6개 기준을 의도적으로 유지한다 — 바꾸면 과거 기록의 상태가
+// 소급해서 달라진다. 리더보드/오늘의 점수(nutritionScore.js + supabase SQL)는 5주차부터
+// 5개 기준(식이섬유 제외, 배점표는 nutritionScore.js 헤더 참고)으로 별도 운영 — 두 판정은
+// 원래도 서로 다른 목적(과거 소급 안정성 vs 오늘 하루 점수)이라 같은 기준일 필요가 없다.
+// SQL 채점 공식은 여전히 nutritionScore.js와 반드시 동일하게 유지해야 한다(CLAUDE.md).
 export const DEFICIENCY_TARGET_KEYS = ['carbs', 'protein', 'fat', 'fiber']
 export const RECORD_ONLY_KEYS = ['calories', 'sodium']
 export const UPPER_LIMIT_KEYS = ['sodium']
