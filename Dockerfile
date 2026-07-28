@@ -18,8 +18,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY server ./server
-COPY src/constants ./src/constants
-COPY src/utils ./src/utils
+COPY src ./src
 
 EXPOSE 3001
 CMD ["npm", "start"]
