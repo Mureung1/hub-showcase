@@ -19,6 +19,10 @@ abstract final class AppSpacing {
   /// 카드 내부 패딩.
   static const EdgeInsets cardPadding = EdgeInsets.all(md);
 
+  /// 큰 카드(라운드 24) 내부 패딩 — 화면 좌우 여백과 같은 20.
+  /// 라운드가 클수록 모서리가 콘텐츠를 잠식하므로 16보다 한 단 넓다.
+  static const EdgeInsets cardPaddingLg = EdgeInsets.all(screenH);
+
   /// 화면 본문 패딩 (하단은 탭바를 피해 넉넉히).
   static const EdgeInsets screenPadding = EdgeInsets.fromLTRB(
     screenH,

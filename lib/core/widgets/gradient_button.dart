@@ -38,6 +38,18 @@ class GradientButtonStyle {
     foreground: AppColors.onPrimary,
     shadow: AppColors.primaryButtonShadow,
   );
+
+  /// 🔵 블루 — **AI 진입점 전용.** 퀘스트 목록 상단 프로모의 「분해하기」,
+  /// AI 분해 화면의 「분해하기」가 이 변형이다.
+  ///
+  /// [growth]와 나란히 놓여도 역할이 갈린다: 그린은 "내가 해낸다"(완료·등록),
+  /// 블루는 "AI에게 맡긴다"(분해). 같은 화면에 둘 다 있어도 색만 보고 고를 수 있다.
+  static const ai = GradientButtonStyle(
+    from: AppColors.secondary,
+    to: AppColors.secondaryContainer,
+    foreground: AppColors.onSecondary,
+    shadow: AppColors.secondaryButtonShadow,
+  );
 }
 
 /// 그라디언트 + 드롭섀도 주 버튼.
@@ -55,6 +67,7 @@ class GradientButton extends StatelessWidget {
     required this.label,
     this.icon,
     this.style = GradientButtonStyle.growth,
+    this.busy = false,
   });
 
   /// null이면 비활성 — 눌리지 않고 그림자도 걷힌다.
@@ -64,33 +77,51 @@ class GradientButton extends StatelessWidget {
   final IconData? icon;
   final GradientButtonStyle style;
 
+  /// 이 버튼이 시작한 요청이 **아직 날아가 있는가.** true면 라벨 자리에 스피너가
+  /// 돌고 버튼이 잠긴다(중복 실행 방지의 시각화).
+  ///
+  /// [onPressed]를 null로 주는 것만으로는 부족하다 — 비활성은 "지금은 누를 수 없다"만
+  /// 말할 뿐, "네 탭이 이미 처리 중"이라는 사실은 말해 주지 않는다.
+  final bool busy;
+
   /// Figma 실측 높이(최소값).
   static const double minHeight = 56;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final enabled = onPressed != null;
+    final enabled = onPressed != null && !busy;
 
-    final content = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 20, color: style.foreground),
-          AppSpacing.gapWSm,
-        ],
-        // 긴 라벨·큰 배율에서 가로로 넘치지 않도록 유연하게 둔다.
-        Flexible(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelMedium?.copyWith(
+    final content = busy
+        // 진행 중: 아이콘·라벨을 치우고 스피너만. 크기를 라벨 높이에 맞춰 고정해
+        // 버튼이 들썩이지 않게 한다.
+        ? SizedBox(
+            width: _spinnerSize,
+            height: _spinnerSize,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
               color: style.foreground,
             ),
-          ),
-        ),
-      ],
-    );
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: style.foreground),
+                AppSpacing.gapWSm,
+              ],
+              // 긴 라벨·큰 배율에서 가로로 넘치지 않도록 유연하게 둔다.
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: style.foreground,
+                  ),
+                ),
+              ),
+            ],
+          );
 
     return Opacity(
       // 비활성은 색을 따로 만들지 않고 같은 그라디언트를 흐리게 둔다 — 변형이
@@ -109,7 +140,7 @@ class GradientButton extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onPressed,
+            onTap: enabled ? onPressed : null,
             borderRadius: AppRadius.mdAll,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: minHeight),
@@ -127,3 +158,6 @@ class GradientButton extends StatelessWidget {
     );
   }
 }
+
+/// 진행 스피너 지름 — 라벨 한 줄과 같은 높이.
+const double _spinnerSize = 20;

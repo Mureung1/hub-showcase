@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/core/widgets/gradient_button.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/home/widgets/level_up_dialog.dart';
@@ -136,20 +137,33 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// 「등록하기」를 누른다.
+  ///
+  /// 등록 버튼은 하단 고정 바가 아니라 **결과 목록 아래**에 있다(Figma 리디자인).
+  /// 초안 5장이면 화면 밖으로 밀리므로 먼저 뷰포트로 올린 뒤 누른다.
+  /// 버튼은 그린 그라디언트([GradientButton])다.
+  Future<void> tapRegister(WidgetTester tester) async {
+    final button = find.widgetWithText(GradientButton, '등록하기');
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
+  }
+
   /// 목표 입력 → 분해 → (편집) → 결과를 만든 상태로 만든다.
   /// 분해 화면까지 진입해 분해하기까지 눌러 결과 카드를 띄운다.
   Future<void> enterSplitAndDecompose(WidgetTester tester, String goal) async {
     await tapTab(tester, '퀘스트');
     expect(find.byType(QuestListScreen), findsOneWidget);
 
-    // 진입 버튼은 FilledButton.icon(하위 타입)이라 byType으로 안 잡힌다 — 라벨을 탭한다.
-    await tester.tap(find.text('AI로 목표 나누기'));
+    // 진입점은 목록 맨 위 AI 프로모 카드의 「분해하기」다.
+    await tester.tap(find.text('분해하기'));
     await tester.pumpAndSettle();
     expect(find.byType(QuestSplitScreen), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), goal);
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    // 분해 버튼은 블루 그라디언트 버튼(GradientButton)이다.
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
   }
 
@@ -166,18 +180,18 @@ void main() {
     expect(find.byType(EmptyView), findsOneWidget);
 
     // AI 분해 진입 → 목표 입력 → 분해(success).
-    // 진입 버튼은 FilledButton.icon(하위 타입)이라 byType으로 안 잡힌다 — 라벨을 탭한다.
-    await tester.tap(find.text('AI로 목표 나누기'));
+    // 진입점은 목록 맨 위 AI 프로모 카드의 「분해하기」다.
+    await tester.tap(find.text('분해하기'));
     await tester.pumpAndSettle();
     expect(find.byType(QuestSplitScreen), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.tap(find.widgetWithText(GradientButton, '분해하기'));
     await tester.pumpAndSettle();
 
     // AI 성공 결과(공모전 템플릿 5개)가 뜬다.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('분해 결과'), findsOneWidget);
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
 
     // ── 수정(1회): 첫 항목(easy) 제목을 편집한다. 난이도는 그대로라 보상 등급이
@@ -196,7 +210,7 @@ void main() {
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsNothing);
 
     // ── 등록.
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     // 분해 화면이 닫히고 목록으로 복귀한다.
@@ -274,10 +288,10 @@ void main() {
     );
     expect(find.textContaining('추천 퀘스트로 준비했어요'), findsOneWidget);
     // 폴백이어도 퀘스트는 나온다(등록 바가 뜬다).
-    expect(find.widgetWithText(FilledButton, '등록하기'), findsOneWidget);
+    expect(find.widgetWithText(GradientButton, '등록하기'), findsOneWidget);
 
     // 폴백 결과도 그대로 등록으로 이어진다.
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
 
     expect(find.byType(QuestSplitScreen), findsNothing);
@@ -308,7 +322,7 @@ void main() {
 
     // AI 분해 → 등록(정상 경로).
     await enterSplitAndDecompose(tester, '공모전 지원하기');
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
     expect(find.byType(QuestListScreen), findsOneWidget);
 
@@ -342,7 +356,7 @@ void main() {
 
     // AI 분해 → 등록으로 퀘스트를 5개 심는다.
     await enterSplitAndDecompose(tester, '공모전 지원하기');
-    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tapRegister(tester);
     await tester.pumpAndSettle();
     expect(find.byType(QuestListScreen), findsOneWidget);
 

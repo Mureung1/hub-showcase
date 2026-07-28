@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
+import 'package:one_step/core/widgets/stat_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/quest/widgets/goal_group_section.dart';
 import 'package:one_step/features/storage/storage_screen.dart';
@@ -69,8 +70,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // 라벨은 **stat 카드 안에서** 센다. 목표 폴더 헤더도 진행 표시로 '완료'를
+      // 쓰기 때문에(`2/2 완료`) 화면 전체를 대상으로 하면 stat과 헤더가 섞인다.
+      // 검증 의도(완료 stat 라벨이 정확히 하나)는 그대로다.
       expect(find.text('$count'), findsOneWidget);
-      expect(find.text('완료'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(StatCard), matching: find.text('완료')),
+        findsOneWidget,
+      );
       expect(find.text('$streak'), findsOneWidget);
       expect(find.text('연속 일수'), findsOneWidget);
     });
