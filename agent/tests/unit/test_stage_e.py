@@ -17,6 +17,7 @@ import sys
 from datetime import date
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -45,6 +46,16 @@ DATASET_VERSION = "ds_backend_2026_07"
 ANALYSIS_VERSION = "an_stage_e"
 PERIOD = "y2026"
 
+ACTIVE_TAXONOMY = "tx_backend_v3"
+"""저장소가 정한 활성 분류체계 버전.
+
+Phase 10 이 승격이 있을 때마다 새 버전을 발행하므로 실행 중인 저장소의 활성 버전은
+시드 직후의 값과 다르다.
+"""
+
+SEEDED_TAXONOMY = "tx_backend_v1"
+"""`0002_seed_reference.sql` 이 만든 첫 버전. 옛 선언을 흉내 내는 데만 쓴다."""
+
 
 def _load() -> ModuleType:
     """스크립트를 모듈로 불러온다.
@@ -61,6 +72,21 @@ def _load() -> ModuleType:
 
 
 stage = _load()
+
+_ORIGINAL_ENSURE_ENVELOPE = stage.ensure_envelope
+"""봉투를 만드는 함수. 대역으로 바꾼 뒤 되돌리는 자리다."""
+
+
+def _session(taxonomy_version_id: str = ACTIVE_TAXONOMY) -> Any:
+    """봉투 판정만 검사하는 세션. 저장소에 붙지 않는다."""
+    return stage.Session(
+        manifest=stage.SourceManifest.load(stage.DEFAULT_MANIFEST),
+        job_role_id=JOB_ROLE_ID,
+        limit=None,
+        analysis_version=None,
+        workload=stage.Workload(),
+        taxonomy_version_id=taxonomy_version_id,
+    )
 
 
 def _envelope(period_id: str = PERIOD) -> Envelope:
@@ -174,17 +200,85 @@ def test_schema_is_current_needs_the_same_revision() -> None:
 # ============================================================ 분석 버전
 def test_planned_analysis_version_matches_the_envelope() -> None:
     """세기만 하는 실행이 봉투를 만들지 않고도 같은 버전을 가리킨다."""
-    planned = stage.planned_analysis_version(JOB_ROLE_ID, DATASET_VERSION)
+    planned = stage.planned_analysis_version(
+        JOB_ROLE_ID, DATASET_VERSION, ACTIVE_TAXONOMY
+    )
     assert planned == analysis_version_identifier(
         job_role_id=JOB_ROLE_ID,
         dataset_version=DATASET_VERSION,
-        taxonomy_version_id=stage.TAXONOMY_VERSION_ID,
+        taxonomy_version_id=ACTIVE_TAXONOMY,
         model_version=stage.MODEL_VERSION,
         prompt_version=stage.PROMPT_VERSION,
         retrieval_policy_version=stage.RETRIEVAL_POLICY_VERSION,
         metric_policy_version=stage.METRIC_POLICY_VERSION,
     )
     assert planned.startswith("an_")
+
+
+def test_a_new_taxonomy_version_makes_a_new_analysis_version() -> None:
+    """실행 로그의 결함이다. 분류체계를 상수로 고정하면 두 버전이 같은 봉투를 쓴다.
+
+    같은 식별자를 쓰면 v3 의 할당으로 센 수치가 v1 을 선언한 행에 들어가고, 그 선언
+    으로 다시 세는 13-4 가 할당을 하나도 찾지 못해 전 행이 위반이 된다.
+    """
+    seeded = stage.planned_analysis_version(
+        JOB_ROLE_ID, DATASET_VERSION, SEEDED_TAXONOMY
+    )
+    active = stage.planned_analysis_version(
+        JOB_ROLE_ID, DATASET_VERSION, ACTIVE_TAXONOMY
+    )
+
+    assert seeded != active
+
+
+def test_the_envelope_declares_the_active_taxonomy() -> None:
+    """봉투가 받는 분류체계 버전은 세션이 저장소에서 읽은 활성 버전이다."""
+    session = _session(taxonomy_version_id=ACTIVE_TAXONOMY)
+    passed: dict[str, str] = {}
+
+    def _ensure(**kwargs: str) -> Any:
+        passed.update(kwargs)
+        return stage.RunEnvelope(
+            analysis_version=ANALYSIS_VERSION,
+            agent_run_id="run_x",
+            created_version=True,
+        )
+
+    stage.ensure_envelope = _ensure
+    try:
+        envelope = session.envelope("13-1")
+    finally:
+        stage.ensure_envelope = _ORIGINAL_ENSURE_ENVELOPE
+
+    assert passed["taxonomy_version_id"] == ACTIVE_TAXONOMY
+    assert envelope.analysis_version == ANALYSIS_VERSION
+
+
+def test_the_run_context_carries_the_taxonomy_version() -> None:
+    """비워 두면 각 실행 클래스의 버전 일치 검사가 건너뛰어진다."""
+    session = _session(taxonomy_version_id=ACTIVE_TAXONOMY)
+    session.envelope = lambda step: stage.RunEnvelope(  # type: ignore[method-assign]
+        analysis_version=ANALYSIS_VERSION,
+        agent_run_id="run_x",
+        created_version=True,
+    )
+
+    assert session.context("13-1").taxonomy_version_id == ACTIVE_TAXONOMY
+
+
+def test_a_stale_envelope_stops_the_run() -> None:
+    """봉투가 활성 버전과 어긋나면 한 줄도 저장하지 않고 멈춘다."""
+    session = _session(taxonomy_version_id=SEEDED_TAXONOMY)
+
+    def _ensure(**kwargs: str) -> Any:
+        raise ValueError("봉투에 넘긴 분류체계 버전이 활성 버전과 다르다")
+
+    stage.ensure_envelope = _ensure
+    try:
+        with pytest.raises(SystemExit):
+            session.envelope("13-1")
+    finally:
+        stage.ensure_envelope = _ORIGINAL_ENSURE_ENVELOPE
 
 
 # ============================================================ 조합 수
@@ -645,3 +739,201 @@ def test_verification_stop_reason_reports_violations() -> None:
         stage.verification_stop_reason([_check_result(CheckVerdict.PASS)])
         is StopReason.SLOTS_FILLED
     )
+
+
+def _partial_result(scanned: int, remaining: int) -> CheckResult:
+    """한도에 걸려 일부만 대조한 판정."""
+    return CheckResult(
+        check=CheckName.NUMERICAL,
+        target_type=stage.TARGET_AGGREGATION,
+        target_id=ANALYSIS_VERSION,
+        verdict=CheckVerdict.SKIP,
+        severity=Severity.INFO,
+        reason_code=stage.REASON_PARTIAL_SCAN,
+        detail={"fact_count": scanned, "remaining_count": remaining},
+    )
+
+
+def test_partial_scan_is_not_read_as_nothing_to_check() -> None:
+    """한도로 자른 실행을 '검사할 대상이 없음'으로 적지 않는다."""
+    assert (
+        stage.verification_stop_reason([_partial_result(500, 21176)])
+        is StopReason.SLOTS_FILLED
+    )
+
+
+def test_verification_scan_reports_what_is_left() -> None:
+    assert stage.verification_scan([_partial_result(500, 21176)]) == (500, 21176)
+    assert stage.verification_scan([_check_result(CheckVerdict.PASS)]) == (0, 0)
+
+
+def test_verification_report_marks_a_partial_scan(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """전수가 아닌 실행이 통과로 읽히지 않게 화면에 남긴다."""
+    report = CheckRunReport(
+        target_type=stage.TARGET_AGGREGATION,
+        target_id=ANALYSIS_VERSION,
+        analysis_version=ANALYSIS_VERSION,
+        results=(_partial_result(500, 21176),),
+    )
+    stage.report_verification(report)
+    printed = capsys.readouterr().out
+
+    assert "검사 행      500개" in printed
+    assert "21176개" in printed
+    assert "전수 검증이 아니다" in printed
+
+
+def _violation(
+    fact_id: str,
+    metric_family: str,
+    measure: str,
+    stored: tuple[int | None, int | None, float | None],
+    recounted: tuple[int | None, int | None, float | None],
+) -> dict[str, object]:
+    """`audit_fact` 가 남기는 위반 한 건의 모양."""
+    names = ("numerator", "denominator", "value")
+    return {
+        "reason_code": "METRIC_RECOUNT_MISMATCH",
+        "check": "recount",
+        "fact_id": fact_id,
+        "metric_family": metric_family,
+        "measure": measure,
+        "stored": dict(zip(names, stored, strict=True)),
+        "recounted": dict(zip(names, recounted, strict=True)),
+    }
+
+
+def _breakdown_result(violations: list[dict[str, object]]) -> CheckResult:
+    """family 별·사유별 건수를 담은 13-4 판정."""
+    return CheckResult(
+        check=CheckName.NUMERICAL,
+        target_type=stage.TARGET_AGGREGATION,
+        target_id=ANALYSIS_VERSION,
+        verdict=CheckVerdict.FAIL,
+        severity=Severity.BLOCKING,
+        reason_code="METRIC_RECOUNT_MISMATCH",
+        detail={
+            "fact_count": 21676,
+            "remaining_count": 0,
+            "violation_count": 13806,
+            "violated_fact_count": 9004,
+            "by_family": {"depth_distribution": 7896, "cooccurrence": 5910},
+            "by_reason": {
+                "METRIC_RECOUNT_MISMATCH": 9004,
+                "METRIC_DENOMINATOR_MISMATCH": 4802,
+            },
+            "by_check": {"recount": 9004, "denominator": 4802},
+            "violations": violations,
+        },
+    )
+
+
+def _report_of(result: CheckResult) -> CheckRunReport:
+    return CheckRunReport(
+        target_type=stage.TARGET_AGGREGATION,
+        target_id=ANALYSIS_VERSION,
+        analysis_version=ANALYSIS_VERSION,
+        results=(result,),
+    )
+
+
+def test_verification_report_counts_violations_by_family_and_reason(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """어느 family 가 몇 건인지 한 줄로는 알 수 없다. 표로 갈라 찍는다."""
+    stage.report_verification(_report_of(_breakdown_result([])))
+    printed = capsys.readouterr().out
+
+    assert "family 별 위반" in printed
+    assert "7896건  depth_distribution" in printed
+    assert "5910건  cooccurrence" in printed
+    assert "사유별 위반" in printed
+    assert "4802건  METRIC_DENOMINATOR_MISMATCH" in printed
+    assert "행 9004개" in printed
+
+
+def test_verification_report_shows_stored_and_recounted_side_by_side(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """예시는 저장값과 재계산값을 나란히 담는다. 건수만으로는 어느 쪽이 큰지 모른다."""
+    violations = [
+        _violation(
+            "fact_ab12", "depth_distribution", "tradeoff", (7, 12, 0.583333), (5, 12, 0.416667)
+        ),
+        _violation("fact_cd34", "cooccurrence", "count", (3, None, 3.0), (2, None, 2.0)),
+    ]
+    stage.report_verification(_report_of(_breakdown_result(violations)))
+    printed = capsys.readouterr().out
+
+    assert "fact_ab12  depth_distribution.tradeoff" in printed
+    assert "저장 7/12/0.583333  재계산 5/12/0.416667" in printed
+    assert "저장 3/-/3  재계산 2/-/2" in printed
+
+
+def test_verification_report_caps_the_number_of_examples(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """예시가 화면을 덮지 않는다. 원인을 좁히는 것은 그 위의 표다."""
+    violations = [
+        _violation(f"fact_{index}", "cooccurrence", "jaccard", (index, 10, 0.1), (0, 10, 0.0))
+        for index in range(stage.VIOLATION_EXAMPLES + 7)
+    ]
+    stage.report_verification(_report_of(_breakdown_result(violations)))
+    printed = capsys.readouterr().out
+
+    shown = [line for line in printed.splitlines() if "  cooccurrence.jaccard" in line]
+    assert len(shown) == stage.VIOLATION_EXAMPLES
+    assert f"위반 예시({stage.VIOLATION_EXAMPLES}건)" in printed
+
+
+def test_progress_prints_at_the_interval(capsys: pytest.CaptureFixture[str]) -> None:
+    """천 건마다 한 줄, 끝났을 때 한 줄이다."""
+    for done in (500, 1000, 1500, 21676):
+        stage.report_progress("13-4", "검증", done, 21676)
+    printed = capsys.readouterr().out.splitlines()
+
+    assert printed == ["13-4  검증 1000 / 21676", "13-4  검증 21676 / 21676"]
+
+
+def test_progress_is_quiet_for_a_small_target(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """몇 초 만에 끝나는 실행에는 진행 표시가 결과를 가릴 뿐이다."""
+    stage.report_progress("13-4", "검증", 12, 12)
+
+    assert capsys.readouterr().out == ""
+
+
+def test_progress_without_a_total_prints_the_count(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """대상 수를 모르는 단계는 분모를 지어내지 않는다."""
+    stage.report_progress("13-2", "델타 저장", 999)
+    stage.report_progress("13-2", "델타 저장", 1000)
+
+    assert capsys.readouterr().out == "13-2  델타 저장 1000개\n"
+
+
+def test_limit_warning_covers_the_verification_unit() -> None:
+    """`--limit` 안내가 13-4 를 뺀 채로 남지 않는다."""
+    assert "13-4" in stage.LIMIT_WARNING
+
+
+def test_the_long_running_units_pass_a_progress_callback() -> None:
+    """조합이 만 단위인 두 단계가 진행 상황을 찍는다.
+
+    13-1 은 조합 만 개를, 13-5 는 역량 × 봉투를 돈다. 끝날 때까지 화면이 비면 멈춘
+    실행과 구분되지 않으므로 실행에 진행 콜백을 넘긴다. 간격은 `report_progress` 가
+    정한다.
+    """
+    import inspect
+
+    from careersignal.metrics.depth_profile import CapabilityDepthProfiles
+    from careersignal.metrics.runner import MetricAggregation
+
+    assert "progress" in inspect.signature(MetricAggregation.run).parameters
+    assert "progress" in inspect.signature(CapabilityDepthProfiles.run).parameters
+    assert "report_progress" in inspect.getsource(stage.run_unit_1)
+    assert "report_progress" in inspect.getsource(stage.run_unit_5)

@@ -477,6 +477,33 @@ def test_count_measure_without_a_value_is_not_computable() -> None:
     assert outcome.reason == REASON_MISSING_VALUE
 
 
+def test_undefined_lift_is_not_replaced_by_the_ratio() -> None:
+    """`association_lift` 가 정의되지 않는 자리에 교집합 비율을 넣지 않는다.
+
+    두 집합 가운데 하나라도 비면 lift 가 정의되지 않는다(docs/metric-spec.md 3.5).
+    그 자리의 `numerator`·`denominator` 는 교집합 수와 모집단 수이므로, 값을 분자÷분모로
+    메우면 lift 자리에 전혀 다른 수가 들어간다.
+    """
+    outcome = evaluate(
+        POLICY_COOCCURRENCE,
+        measure="association_lift",
+        numerator=0,
+        denominator=32,
+        sample_size=32,
+        value=None,
+    )
+    assert outcome.value is None
+    assert outcome.sample_status is SampleStatus.NOT_COMPUTABLE
+    assert outcome.reason == REASON_MISSING_VALUE
+
+
+def test_ratio_measures_still_fall_back_to_the_counts() -> None:
+    """값이 분자÷분모인 measure 는 그대로 메운다."""
+    outcome = evaluate(POLICY_V1, measure=RATIO, numerator=3, denominator=12)
+
+    assert outcome.value == pytest.approx(0.25)
+
+
 def test_other_measures_still_treat_a_missing_denominator_as_not_computable() -> None:
     """분모가 없는 measure 는 `count` 하나다. 나머지는 계산하지 못한 것이다."""
     outcome = evaluate(

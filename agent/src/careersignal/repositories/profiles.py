@@ -30,6 +30,17 @@ def _jsonb(value: Any) -> Jsonb | None:
     return None if value is None else Jsonb(value)
 
 
+def _profile_values(values: dict[str, Any]) -> dict[str, Any]:
+    """프로파일 한 줄을 넣을 수 있는 모양으로 손질한다.
+
+    한 줄씩 넣는 경로와 묶어 넣는 경로가 같은 손질을 쓰게 한자리에 둔다.
+    """
+    row = dict(values)
+    row["depth_distribution"] = _jsonb(row.get("depth_distribution"))
+    row["evidence_support"] = _jsonb(row.get("evidence_support"))
+    return row
+
+
 class DepthProfileRepository(Repository):
     """`capability_depth_profiles` 의 저장소.
 
@@ -171,10 +182,18 @@ class DepthProfileRepository(Repository):
 
         `depth_distribution` 과 `evidence_support` 는 jsonb 이므로 래퍼를 씌운다.
         """
-        row = dict(values)
-        row["depth_distribution"] = _jsonb(row.get("depth_distribution"))
-        row["evidence_support"] = _jsonb(row.get("evidence_support"))
-        self.unit.insert("capability_depth_profiles", row)
+        self.unit.insert("capability_depth_profiles", _profile_values(values))
+
+    def add_profiles(self, rows: Sequence[dict[str, Any]]) -> None:
+        """프로파일 여러 줄을 `VALUES` 목록 하나로 넣는다.
+
+        손질은 `add_profile` 과 같은 함수가 한다. 묶음 저장이 실패하면 같은 행을 한 줄씩
+        다시 넣으므로(`repositories/base.py` 의 `insert_in_batches`) 두 경로의 손질이
+        갈리면 다시 넣은 행만 jsonb 가 text 로 추론된다.
+        """
+        self.unit.insert_many(
+            "capability_depth_profiles", [_profile_values(row) for row in rows]
+        )
 
     def profile_count(self, analysis_version: str) -> int:
         return self.unit.fetch_value(

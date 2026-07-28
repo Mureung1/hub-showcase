@@ -21,13 +21,19 @@
 역량이 하나도 없는 상태를 정상으로 취급한다. `capabilities` 는 D3b 가 채우는 표이고
 집계는 읽기만 하므로, 역량이 없으면 만들 프로파일이 없다는 결과로 끝난다. 이때 어떤
 지표 조회도 실행하지 않는다.
+
+입력은 이미 한 조회로 읽는다(`repositories/profiles.py` 의 `_DEPTH_FACTS`). 저장은
+`INSERT_BATCH_SIZE` 행씩 묶어 보낸다. 왕복 하나가 수십 밀리초인 원격 저장소에서
+프로파일마다 문장을 보내면 그 왕복이 실행 시간의 거의 전부가 되고, 프로파일 수는
+역량 × 봉투로 늘어난다. 묶음이 실패하면 그 묶음만 한 줄씩 다시 넣으므로 저장되는
+프로파일 집합은 하나씩 넣던 것과 같다.
 """
 
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping, Sequence
-from typing import Any
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -35,7 +41,7 @@ from careersignal.contracts.run_context import RunContext, StopReason
 from careersignal.domain.depth import DepthLevel, rank
 from careersignal.metrics import policy as metric_policy
 from careersignal.metrics.expansion import Envelope, MetricFamily
-from careersignal.repositories.base import item_savepoint, transaction_is_dead
+from careersignal.repositories.base import INSERT_BATCH_SIZE, insert_in_batches
 from careersignal.repositories.profiles import DepthProfileRepository
 
 TRANSACTION_LOST = "거래가 죽어 남은 프로파일을 저장하지 못한다"
@@ -106,6 +112,26 @@ NO_DEPTH_FACT = "봉투에 depth_distribution 결과가 없다"
 
 INCOMPLETE_DEPTH_FACT = "등급 세 measure 가 모두 있지 않다"
 """한 차원의 measure 가 빠졌다. 세 분자의 합이 분모와 같아야 한다(docs/metric-spec.md 3.3)."""
+
+ProgressReport = Callable[[int, int], None]
+"""진행 상황을 받는 쪽. `(만든 프로파일 수, 전개할 프로파일 수)` 를 받는다.
+
+간격을 정하고 줄을 찍는 것은 받는 쪽의 몫이다(`scripts/stage_e.py` 의
+`report_progress`). 실행이 출력 형식을 정하면 같은 실행을 다른 화면에 붙일 수 없다.
+"""
+
+
+class _PendingProfile(NamedTuple):
+    """저장을 기다리는 프로파일 한 행.
+
+    행만 모으지 않고 실패를 적을 이름과 증분 판정에 쓸 키를 함께 나른다. 묶음 저장은
+    어느 행이 실패했는지를 번호로 돌려주므로, 번호에서 이름과 키로 되짚을 자리가 있어야
+    한다.
+    """
+
+    label: str
+    key: tuple[str, str, str, str, str]
+    row: dict[str, Any]
 
 
 class DimensionDepth(BaseModel):
@@ -359,6 +385,7 @@ class CapabilityDepthProfiles:
         context: RunContext,
         period_ids: Sequence[str] | None = None,
         limit: int | None = None,
+        progress: ProgressReport | None = None,
     ) -> DepthProfileOutcome:
         """증분 실행. 이 분석 버전에 아직 없는 프로파일만 만든다.
 
@@ -367,6 +394,9 @@ class CapabilityDepthProfiles:
         `limit` 은 이번 실행이 만들 프로파일 수의 상한이다. 이미 있는 프로파일을 먼저 뺀
         뒤 남은 것을 앞에서부터 집는다. 봉투와 역량의 차례가 결정적이므로 어디까지
         집었는지를 따로 적어 두지 않아도 이어 돌리는 실행이 앞으로 나아간다.
+
+        `progress` 는 역량 × 봉투 하나를 처리할 때마다 `(처리한 수, 돌 수)` 를 받는다.
+        돌 수는 봉투 수 × 역량 수이며 지표 행을 읽은 뒤에 정해진다.
         """
         active = self._repository.active_taxonomy_version(context.job_role_id)
         if active is None:
@@ -379,7 +409,7 @@ class CapabilityDepthProfiles:
         ):
             return self._halted(context, TAXONOMY_MISMATCH, taxonomy_version_id)
 
-        state = _State(context, taxonomy_version_id, limit)
+        state = _State(context, taxonomy_version_id, limit, progress)
         capabilities = [
             str(row["capability_id"])
             for row in self._repository.capabilities(context.job_role_id)
@@ -404,11 +434,13 @@ class CapabilityDepthProfiles:
             context.analysis_version
         )
 
+        state.plan(len(facts) * len(capabilities))
         for envelope in sorted(facts, key=lambda item: item.sort_key):
             for capability_id in capabilities:
                 if state.transaction_lost:
                     # 거래가 죽었다. 남은 프로파일은 시도하지 않는다.
                     return state.outcome()
+                state.advance()
                 self._build(
                     capability_id,
                     links.get(capability_id, ()),
@@ -417,6 +449,7 @@ class CapabilityDepthProfiles:
                     policy,
                     state,
                 )
+        self._flush(state)
         return state.outcome()
 
     # ------------------------------------------------------------ 프로파일 하나
@@ -441,7 +474,7 @@ class CapabilityDepthProfiles:
 
         state.expanded += 1
         key = profile_key(capability_id, envelope)
-        if key in state.existing:
+        if key in state.existing or key in state.queued:
             state.skipped += 1
             return
 
@@ -484,21 +517,48 @@ class CapabilityDepthProfiles:
             "confidence": confidence_of(merged, level),
             "analysis_version": state.context.analysis_version,
         }
-        # 프로파일 하나가 저장의 단위다. 되돌림 지점이 실패한 행만 되돌리고 거래를
-        # 살려 두므로 한 행의 실패가 뒤 행의 저장을 막지 않는다.
-        try:
-            with item_savepoint(self._repository):
-                self._repository.add_profile(row)
-        except Exception as exc:
-            state.errors.append((_label(capability_id, envelope), _failure(exc)))
-            if transaction_is_dead(exc):
-                state.errors.append(
-                    (_label(capability_id, envelope), TRANSACTION_LOST)
-                )
-                state.transaction_lost = True
+        # 여기서 넣지 않고 모아 둔다. 저장은 `_flush` 가 묶어 보낸다.
+        state.queued.add(key)
+        state.pending.append(
+            _PendingProfile(
+                label=_label(capability_id, envelope), key=key, row=row
+            )
+        )
+        if len(state.pending) >= INSERT_BATCH_SIZE:
+            self._flush(state)
+
+    def _flush(self, state: _State) -> None:
+        """모아 둔 프로파일을 묶어 저장한다.
+
+        세이브포인트의 단위가 묶음이고, 되돌아간 묶음은 한 줄씩 다시 넣어 나쁜 행만
+        골라낸다(`repositories/base.py` 의 `insert_in_batches`). 저장되는 프로파일
+        집합이 하나씩 넣던 것과 같다. 실패한 프로파일은 자국이 없으므로 다음 실행이
+        다시 만든다.
+        """
+        if state.transaction_lost:
+            # 죽은 거래에 남은 행을 더 보내면 같은 사유의 실패 줄만 쌓인다.
+            state.pending = []
             return
-        state.existing.add(key)
-        state.stored += 1
+        pending = state.pending
+        if not pending:
+            return
+        state.pending = []
+        written = insert_in_batches(
+            self._repository,
+            self._repository.add_profiles,
+            self._repository.add_profile,
+            [item.row for item in pending],
+        )
+        for index in written.stored:
+            state.existing.add(pending[index].key)
+            state.stored += 1
+        for index, exc in written.failed:
+            state.errors.append((pending[index].label, _failure(exc)))
+        if written.fatal is not None:
+            state.errors.append(
+                (pending[written.failed[-1][0]].label, TRANSACTION_LOST)
+            )
+            state.transaction_lost = True
 
     # ------------------------------------------------------------ 입력
     def _links(
@@ -581,6 +641,7 @@ class _State:
         context: RunContext,
         taxonomy_version_id: str,
         limit: int | None = None,
+        progress: ProgressReport | None = None,
     ) -> None:
         self.context = context
         self.taxonomy_version_id = taxonomy_version_id
@@ -597,16 +658,42 @@ class _State:
         self.suppressed = 0
 
         self.existing: set[tuple[str, ...]] = set()
+        self.pending: list[_PendingProfile] = []
+        self.queued: set[tuple[str, ...]] = set()
+        """저장을 기다리는 프로파일과 그 키.
+
+        키를 따로 두는 이유는 `existing` 이 저장에 성공한 행만 담기 때문이다. 아직 넣지
+        않은 행을 `existing` 에 미리 담으면 저장이 실패한 프로파일이 만들어진 것으로
+        읽힌다.
+        """
+
         self.missing_input: list[tuple[str, str]] = []
         self.errors: list[tuple[str, str]] = []
+
+        self.planned = 0
+        self.processed = 0
+        self.report = progress
+
+    # ------------------------------------------------------------ 진행
+    def plan(self, count: int) -> None:
+        self.planned += count
+
+    def advance(self) -> None:
+        self.processed += 1
+        if self.report is not None:
+            self.report(self.processed, self.planned)
 
     def reached_limit(self) -> bool:
         """이번 실행의 한도를 다 썼는가. 닿은 사실을 결과에 남긴다.
 
         건너뛴 프로파일은 세지 않는다. 한도는 만들 프로파일의 수이며, 이미 있는 것을
         세면 이어 돌리는 실행이 앞으로 나아가지 못한다.
+
+        아직 넣지 않고 모아 둔 것도 센다. 저장을 묶어 미루면서 `stored` 만 보면 한도가
+        묶음 크기만큼 늦게 걸려 한도를 넘겨 만든다.
         """
-        if self.limit is None or self.stored + self.suppressed < self.limit:
+        made = self.stored + len(self.pending) + self.suppressed
+        if self.limit is None or made < self.limit:
             return False
         self.limit_reached = True
         return True
@@ -673,6 +760,7 @@ __all__ = [
     "CapabilityDepthProfiles",
     "DepthProfileOutcome",
     "DimensionDepth",
+    "ProgressReport",
     "confidence_of",
     "evidence_support",
     "expected_depth",

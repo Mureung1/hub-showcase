@@ -86,6 +86,24 @@ FAMILIES_WITHOUT_UNCERTAINTY: frozenset[str] = frozenset(
 정하기 때문이다.
 """
 
+# ------------------------------------------------------------ 값이 비율이 아닌 measure
+MEASURES_WITH_DERIVED_VALUE: frozenset[str] = frozenset(
+    {"association_lift", "prevalence_difference", "prevalence_ratio"}
+)
+"""`value` 가 저장된 분자÷분모가 아닌 measure.
+
+`association_lift` 는 비율의 비율이고 `numerator`·`denominator` 에는 교집합 수와 모집단
+수를 담는다(docs/metric-spec.md 3.5). `cluster_contrast` 의 두 measure 는 기업군 비율과
+직무 전체 비율에서 파생하며 두 컬럼에는 기업군 범위의 원본 카운트를 담는다(같은 문서
+3.4). 세 measure 모두 분자를 분모로 나눈 수가 값이 아니다.
+
+이 목록이 필요한 이유는 `evaluate` 가 `value` 를 받지 못했을 때 분자÷분모로 메우기
+때문이다. 값을 산출하는 쪽이 "정의되지 않아 비웠다" 로 넘긴 None 을 그 대체값이
+덮으면, 성립하지 않는 자리에 수가 들어간다. `families.cooccurrence` 가 두 집합 중
+하나라도 비면 lift 를 비우는 자리가 여기에 해당하며, 그때 저장되던 값은 lift 가 아니라
+교집합 수 ÷ 모집단 수였다.
+"""
+
 # ------------------------------------------------------------ 분모 없는 measure
 MEASURES_WITHOUT_DENOMINATOR: frozenset[str] = frozenset({"count"})
 """정의상 분모를 갖지 않는 measure. docs/metric-spec.md 3.5 의 `count` 하나다.
@@ -431,7 +449,12 @@ def evaluate(
             reason=REASON_ZERO_COMPARISON_DENOMINATOR,
         )
 
-    computed = value if value is not None else _ratio(numerator, denominator)
+    # 값을 주지 않은 자리만 분자÷분모로 메운다. 값이 비율에서 파생하는 measure 는
+    # 메우지 않는다(docs/metric-spec.md 3.4·3.5). 그 자리의 None 은 "안 넘겼다" 가
+    # 아니라 "정의되지 않는다" 이며, 메우면 lift 자리에 교집합 비율이 들어간다.
+    computed = value
+    if computed is None and measure not in MEASURES_WITH_DERIVED_VALUE:
+        computed = _ratio(numerator, denominator)
     if computed is None:
         return SampleVerdict(
             sample_status=SampleStatus.NOT_COMPUTABLE,
@@ -568,6 +591,7 @@ __all__ = [
     "FAMILIES_WITHOUT_UNCERTAINTY",
     "MEASURES_WITHOUT_DENOMINATOR",
     "MEASURES_WITHOUT_UNCERTAINTY",
+    "MEASURES_WITH_DERIVED_VALUE",
     "REASON_HIDDEN",
     "REASON_MISSING_DENOMINATOR",
     "REASON_MISSING_VALUE",

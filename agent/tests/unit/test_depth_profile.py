@@ -8,6 +8,7 @@ docs/erd.md 10.6 에서 온다. 저장소를 대역으로 대체하고 합치는
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
@@ -33,6 +34,7 @@ from careersignal.metrics.depth_profile import (
     tail_share,
 )
 from careersignal.metrics.expansion import Envelope
+from careersignal.repositories.base import INSERT_BATCH_SIZE
 from careersignal.repositories.profiles import DepthProfileRepository
 
 JOB_ROLE_ID = "backend"
@@ -159,6 +161,8 @@ class FakeProfiles:
         self._active = ACTIVE_TAXONOMY if active is _UNSET else active
         self.rows: list[dict[str, Any]] = []
         self.queried_periods: list[Any] = []
+        self.inserts: list[int] = []
+        """저장 문장 하나가 실은 행 수. 길이가 곧 저장에 든 왕복 수다."""
 
     # -------------------------------------------------------- 읽기
     def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
@@ -196,16 +200,34 @@ class FakeProfiles:
 
     # -------------------------------------------------------- 쓰기
     def add_profile(self, values: dict[str, Any]) -> None:
-        key = (
-            values["capability_id"],
-            values["scope_level"],
-            values["scope_id"],
-            values["entry_segment"],
-            values["period_id"],
-        )
+        self.inserts.append(1)
+        key = _profile_key_of(values)
         if key in self.existing_profile_keys(values["analysis_version"]):
             raise AssertionError(f"같은 프로파일을 두 번 넣었다: {key}")
         self.rows.append(dict(values))
+
+    def add_profiles(self, rows: Sequence[dict[str, Any]]) -> None:
+        """묶음 하나가 문장 하나다. 한 행이 걸리면 묶음 전체가 남지 않는다."""
+        self.inserts.append(len(rows))
+        staged = list(self.rows)
+        seen = self.existing_profile_keys(rows[0]["analysis_version"])
+        for values in rows:
+            key = _profile_key_of(values)
+            if key in seen:
+                raise AssertionError(f"같은 프로파일을 두 번 넣었다: {key}")
+            seen.add(key)
+            staged.append(dict(values))
+        self.rows = staged
+
+
+def _profile_key_of(values: dict[str, Any]) -> tuple[str, ...]:
+    return (
+        values["capability_id"],
+        values["scope_level"],
+        values["scope_id"],
+        values["entry_segment"],
+        values["period_id"],
+    )
 
 
 def _run(fake: FakeProfiles, context: RunContext | None = None) -> Any:
@@ -605,3 +627,101 @@ def test_limited_profile_runs_move_forward_each_time() -> None:
 def test_a_profile_run_without_a_limit_reports_no_limit() -> None:
     outcome = _run(FakeProfiles())
     assert not outcome.limit_reached
+
+
+# ============================================================ 왕복 수
+CAPABILITY_SCALE = 30
+PROFILE_ENVELOPE_SCALE = 56
+"""검사가 보는 규모.
+
+봉투 56개는 13-1 이 찍은 수와 같다. 역량 수는 프로파일 수가 묶음 크기를 여러 번 넘도록
+잡는다. 30 × 56 이면 1,680개이며 하나씩 넣던 때에는 왕복이 1,680번이었다.
+"""
+
+
+def _scaled_profiles() -> FakeProfiles:
+    """역량 30개 × 봉투 56개의 대역."""
+    capabilities = [
+        {"capability_id": f"cap_{index:02d}", "canonical_label": f"역량{index}"}
+        for index in range(CAPABILITY_SCALE)
+    ]
+    links = [
+        {"capability_id": row["capability_id"], "dimension_id": "dim_a"}
+        for row in capabilities
+    ]
+    facts: list[dict[str, Any]] = []
+    for scope_level, scope_id in (
+        (ScopeLevel.OVERALL, JOB_ROLE_ID),
+        *((ScopeLevel.CLUSTER, f"cluster_{index}") for index in range(6)),
+    ):
+        for segment in EntrySegment:
+            for period_id in ("y2025", "y2026"):
+                facts.extend(
+                    _facts(
+                        "dim_a",
+                        (30, 20, 10),
+                        entry_segment=segment,
+                        scope_level=scope_level,
+                        scope_id=scope_id,
+                        period_id=period_id,
+                    )
+                )
+    return FakeProfiles(capabilities=capabilities, links=links, facts=facts)
+
+
+def test_profiles_are_stored_in_batches() -> None:
+    """프로파일마다 INSERT 하나가 아니라 묶음마다 하나다.
+
+    회귀를 막는 자리다. 하나씩 넣는 코드가 다시 들어오면 문장 수가 프로파일 수로 튄다.
+    """
+    fake = _scaled_profiles()
+    outcome = CapabilityDepthProfiles(fake).run(_context())  # type: ignore[arg-type]
+
+    assert outcome.envelope_count == PROFILE_ENVELOPE_SCALE
+    assert outcome.stored_profiles == CAPABILITY_SCALE * PROFILE_ENVELOPE_SCALE
+    assert not outcome.errors
+    assert sum(fake.inserts) == outcome.stored_profiles
+    assert max(fake.inserts) <= INSERT_BATCH_SIZE
+    lower_bound = -(-outcome.stored_profiles // INSERT_BATCH_SIZE)
+    assert lower_bound <= len(fake.inserts) <= lower_bound + 1
+    assert len(fake.inserts) * 100 < outcome.stored_profiles
+
+
+def test_depth_facts_are_read_in_one_query() -> None:
+    """입력은 한 조회로 읽는다. 봉투마다 다시 읽지 않는다."""
+    fake = _scaled_profiles()
+    CapabilityDepthProfiles(fake).run(_context())  # type: ignore[arg-type]
+    assert len(fake.queried_periods) == 1
+
+
+def test_batched_profiles_keep_the_same_values() -> None:
+    """묶어 저장해도 프로파일의 분포·표본·기대 깊이가 같다."""
+    fake = _scaled_profiles()
+    CapabilityDepthProfiles(fake).run(_context())  # type: ignore[arg-type]
+
+    merged = merge_dimensions(
+        [DimensionDepth(
+            dimension_id="dim_a",
+            counts=dict(zip(DEPTH_MEASURES, (30, 20, 10))),
+            denominator=60,
+        )]
+    )
+    assert merged is not None
+    level = expected_depth(merged)
+    for row in fake.rows:
+        assert row["depth_distribution"] == merged.distribution
+        assert row["sample_size"] == merged.sample_size
+        assert row["expected_depth"] == str(level)
+
+
+# ============================================================ 진행 표시
+def test_progress_reports_every_capability_and_envelope() -> None:
+    """역량 × 봉투 하나마다 알린다. 간격을 정하는 것은 받는 쪽의 몫이다."""
+    fake = _scaled_profiles()
+    seen: list[tuple[int, int]] = []
+    CapabilityDepthProfiles(fake).run(  # type: ignore[arg-type]
+        _context(), progress=lambda done, total: seen.append((done, total))
+    )
+    assert len(seen) == CAPABILITY_SCALE * PROFILE_ENVELOPE_SCALE
+    assert seen[0] == (1, len(seen))
+    assert seen[-1] == (len(seen), len(seen))

@@ -47,6 +47,16 @@ def _jsonb(value: Any) -> Jsonb | None:
     return None if value is None else Jsonb(value)
 
 
+def _fact_values(values: dict[str, Any]) -> dict[str, Any]:
+    """`statistics_facts` 한 줄을 넣을 수 있는 모양으로 손질한다.
+
+    한 줄씩 넣는 경로와 묶어 넣는 경로가 같은 손질을 쓰게 한자리에 둔다.
+    """
+    row = dict(values)
+    row["uncertainty"] = _jsonb(row.get("uncertainty"))
+    return row
+
+
 def _statement(*parts: str) -> str:
     """`WITH` 절과 `SELECT` 를 한 문장으로 세운다.
 
@@ -370,31 +380,60 @@ class MetricRepository(Repository):
         }
 
     # ------------------------------------------------------------ 집계
-    _PREVALENCE = _statement(
-        families.POPULATION_CTE, families.ASSIGNED_CTE, families.PREVALENCE_SELECT
-    )
-    """`posting_prevalence` 의 카운트. 정의는 docs/metric-spec.md 3.1 이다."""
+    # 차원 축을 갖는 네 문장은 봉투 하나에 한 번만 보낸다. 조합마다 보내면 조회 수가
+    # `지표 × 차원 × 범위 × 대상군 × 기간` 이 되고, 왕복 하나가 수십 밀리초인 원격
+    # 저장소에서는 그 왕복이 집계 시간의 거의 전부가 된다. 묶는 축은 `dimension_id` 이며
+    # 조인·중복 제거·모집단 조건은 `metrics/families.py` 의 조각 그대로다.
 
-    _REQUIREDNESS = _statement(
-        families.POPULATION_CTE, families.ASSIGNED_CTE, families.REQUIREDNESS_SELECT
-    )
-    """`requiredness_ratio` 의 카운트. 정의는 docs/metric-spec.md 3.2 다."""
-
-    _DEPTH = _statement(
+    _PREVALENCE_BY_DIMENSION = _statement(
         families.POPULATION_CTE,
         families.ASSIGNED_CTE,
-        families.DEPTH_RANK_CTE,
-        families.DEPTH_SELECT,
+        families.DIMENSION_LIST_CTE,
+        families.PREVALENCE_GROUPED_SELECT,
     )
-    """`depth_distribution` 의 카운트. 정의는 docs/metric-spec.md 3.3 이다."""
+    """봉투 하나의 `posting_prevalence` 카운트 전량. 정의는 docs/metric-spec.md 3.1 이다.
 
-    _COOCCURRENCE = _statement(
+    차원마다 한 행이며 할당이 없는 차원도 분자 0 으로 나온다. 분모는 모집단 크기라
+    차원과 무관하므로 행마다 같은 값이다.
+    """
+
+    _REQUIREDNESS_BY_DIMENSION = _statement(
         families.POPULATION_CTE,
         families.ASSIGNED_CTE,
-        families.COOCCURRENCE_SETS_CTE,
-        families.COOCCURRENCE_SELECT,
+        families.DIMENSION_LIST_CTE,
+        families.REQUIREDNESS_GROUPED_SELECT,
     )
-    """`cooccurrence` 의 카운트. 정의는 docs/metric-spec.md 3.5 다."""
+    """봉투 하나의 `requiredness_ratio` 카운트 전량. 정의는 docs/metric-spec.md 3.2 다."""
+
+    _DEPTH_BY_DIMENSION = _statement(
+        families.POPULATION_CTE,
+        families.ASSIGNED_CTE,
+        families.DIMENSION_LIST_CTE,
+        families.DEPTH_RANK_GROUPED_CTE,
+        families.DEPTH_GROUPED_SELECT,
+    )
+    """봉투 하나의 `depth_distribution` 카운트 전량. 정의는 docs/metric-spec.md 3.3 이다.
+
+    대표 등급을 고르는 `ranked` 를 차원까지 묶어 세운다. 차원을 묶음에 넣지 않으면 서로
+    다른 차원의 깊이가 한 공고에서 섞인다.
+    """
+
+    _COOCCURRENCE_PAIRS = _statement(
+        families.POPULATION_CTE,
+        families.ASSIGNED_CTE,
+        families.DIMENSION_LIST_CTE,
+        families.COOCCURRENCE_PAIR_MEMBERS_CTE,
+        families.COOCCURRENCE_PAIR_SELECT,
+    )
+    """봉투 하나의 `cooccurrence` 쌍별 교집합 크기. 정의는 docs/metric-spec.md 3.5 다.
+
+    쌍마다 문장을 보내지 않는다. 쌍은 차원 수의 제곱으로 늘어 상한이 만 단위이므로
+    이쪽이 조합 수로는 가장 큰 축이다. 대상 차원의 소속을 한 번 세운 뒤 자기 자신과 이어
+    쌍 전부를 한 문장으로 센다.
+
+    교집합이 0 인 쌍은 행이 없다. `n_a`·`n_b`·`n_total` 은 같은 봉투의
+    `_PREVALENCE_BY_DIMENSION` 결과가 이미 갖고 있으므로 여기서 세지 않는다.
+    """
 
     _SCOPE_EXPANSION = _statement(
         families.POPULATION_CTE,
@@ -410,17 +449,27 @@ class MetricRepository(Repository):
     )
     """`entry_label_advanced_signal_rate` 의 카운트. 정의는 docs/metric-spec.md 3.7 이다."""
 
-    def prevalence_counts(self, params: dict[str, Any]) -> dict[str, Any]:
-        return self.unit.fetch_one(self._PREVALENCE, params) or {}
+    def prevalence_counts_by_dimension(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """`dimension_ids` 마다 한 행. 차례는 차원 식별자 순서다."""
+        return self.unit.fetch_all(self._PREVALENCE_BY_DIMENSION, params)
 
-    def requiredness_counts(self, params: dict[str, Any]) -> dict[str, Any]:
-        return self.unit.fetch_one(self._REQUIREDNESS, params) or {}
+    def requiredness_counts_by_dimension(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        return self.unit.fetch_all(self._REQUIREDNESS_BY_DIMENSION, params)
 
-    def depth_counts(self, params: dict[str, Any]) -> dict[str, Any]:
-        return self.unit.fetch_one(self._DEPTH, params) or {}
+    def depth_counts_by_dimension(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        return self.unit.fetch_all(self._DEPTH_BY_DIMENSION, params)
 
-    def cooccurrence_counts(self, params: dict[str, Any]) -> dict[str, Any]:
-        return self.unit.fetch_one(self._COOCCURRENCE, params) or {}
+    def cooccurrence_pair_counts(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """교집합이 있는 쌍만 돌려준다. 없는 쌍의 `n_ab` 는 0 이다."""
+        return self.unit.fetch_all(self._COOCCURRENCE_PAIRS, params)
 
     def scope_expansion_counts(self, params: dict[str, Any]) -> dict[str, Any]:
         return self.unit.fetch_one(self._SCOPE_EXPANSION, params) or {}
@@ -436,9 +485,18 @@ class MetricRepository(Repository):
         `count` 와 `difference` 를 산출하는 measure 가 여기에 해당한다
         (docs/metric-spec.md 2.5).
         """
-        row = dict(values)
-        row["uncertainty"] = _jsonb(row.get("uncertainty"))
-        self.unit.insert("statistics_facts", row)
+        self.unit.insert("statistics_facts", _fact_values(values))
+
+    def add_facts(self, rows: Sequence[dict[str, Any]]) -> None:
+        """지표 여러 줄을 `VALUES` 목록 하나로 넣는다.
+
+        손질은 `add_fact` 와 같은 함수가 한다. 묶음 저장이 실패하면 같은 행을 한 줄씩
+        다시 넣으므로(`repositories/base.py` 의 `insert_in_batches`) 두 경로의 손질이
+        갈리면 다시 넣은 행만 jsonb 가 text 로 추론된다.
+        """
+        self.unit.insert_many(
+            "statistics_facts", [_fact_values(row) for row in rows]
+        )
 
     def fact_count(self, analysis_version: str) -> int:
         return self.unit.fetch_value(
@@ -489,6 +547,37 @@ class StatisticsAuditRepository(Repository):
         기억한 값과 다시 읽은 값이 다를 수 없다.
         """
 
+        self._versions: dict[str, dict[str, Any] | None] = {}
+        self._periods: dict[str, dict[str, Any] | None] = {}
+        self._policies: dict[str, dict[str, Any] | None] = {}
+        """행마다 같은 값이 나오는 기준 행을 식별자로 기억한다.
+
+        분석 버전은 산출물 전체가 하나를 공유하고, 기간은 몇 개이며, 정책은 지표
+        family 수만큼이다. 행마다 다시 읽으면 조회 수가 행 수의 세 배가 된다.
+
+        거래 하나 안에서 값이 바뀌지 않는다. `analysis_versions`·`periods`·
+        `metric_policy_versions` 는 검증 역할이 쓰지 못하는 표이고
+        (docs/permission-matrix.md 3장·4장), 앞의 두 표는 실행 봉투가 이미 고정한
+        행이며 정책 표는 운영자만 마이그레이션으로 바꾼다(`OPERATOR_ONLY_TABLES`).
+        따라서 기억한 값과 다시 읽은 값이 다를 수 없다. 저장소 인스턴스가 거래
+        하나보다 오래 살지 않으므로 캐시의 수명도 거래를 넘지 않는다.
+
+        찾지 못한 식별자도 `None` 으로 기억한다. 없는 것을 되묻는 것도 왕복이다.
+        """
+
+        self._baselines: dict[
+            str, dict[tuple[str, str, str], tuple[int | None, int | None]]
+        ] = {}
+        self._delta_index: dict[
+            str, dict[tuple[str, ...], list[tuple[Any, str, StoredFact]]]
+        ] = {}
+        """`cluster_contrast` 기준선과 `temporal_delta` 입력의 색인.
+
+        분석 버전 하나를 한 번에 읽어 두고 행마다 사전에서 찾는다. 둘 다 저장된 행을
+        읽는 것이 정의이므로 색인이 재계산의 재사용이 되지 않는다. 해당 family 의 행이
+        나올 때까지 만들지 않는다.
+        """
+
     # ------------------------------------------------------------ 대상
     _FACT_IDS = """
         SELECT fact_id
@@ -506,13 +595,54 @@ class StatisticsAuditRepository(Repository):
             )
         ]
 
-    _FACT = """
-        SELECT fact_id, analysis_version, metric_family, measure,
-               metric_policy_version, scope_level, scope_id, entry_segment,
-               period_id, dimension_id, secondary_dimension_id,
-               numerator, denominator, value, sample_size, sample_status
+    _FACT_COUNT = """
+        SELECT count(*) AS fact_count
+        FROM statistics_facts
+        WHERE analysis_version = %(analysis_version)s
+    """
+    """검사 대상 행 수. 검사한 수와 남은 수를 판정에 적기 위해 먼저 센다."""
+
+    def fact_count(self, analysis_version: str) -> int:
+        """분석 버전의 지표 행 수. 한도를 건 실행이 남은 수를 적을 수 있게 한다."""
+        row = self.unit.fetch_one(
+            self._FACT_COUNT, {"analysis_version": analysis_version}
+        )
+        return 0 if row is None else int(row["fact_count"])
+
+    _FACT_COLUMNS = """
+        fact_id, analysis_version, metric_family, measure,
+        metric_policy_version, scope_level, scope_id, entry_segment,
+        period_id, dimension_id, secondary_dimension_id,
+        numerator, denominator, value, sample_size, sample_status
+    """
+    """대조에 쓰는 컬럼. 한 행을 읽는 문장과 묶어 읽는 문장이 같은 목록을 쓴다."""
+
+    _FACT_COLUMNS_QUALIFIED = ",\n        ".join(
+        f"f.{column.strip()}" for column in _FACT_COLUMNS.split(",")
+    )
+    """같은 목록에 별칭을 붙인 것. `periods` 와 조인하면 `period_id` 가 겹친다."""
+
+    _FACT = f"""
+        SELECT {_FACT_COLUMNS}
         FROM statistics_facts
         WHERE fact_id = %(fact_id)s
+    """
+
+    _FACT_PAGE = f"""
+        SELECT {_FACT_COLUMNS}
+        FROM statistics_facts
+        WHERE analysis_version = %(analysis_version)s
+          AND fact_id > %(after)s
+        ORDER BY fact_id
+        LIMIT %(size)s
+    """
+    """묶음 하나. 앞 묶음의 마지막 식별자보다 큰 행을 식별자 순서로 집는다.
+
+    `OFFSET` 을 쓰지 않는다. 뒷 묶음일수록 건너뛰는 행이 늘어 같은 표를 되풀이해
+    훑는다. `fact_id` 가 기본 키이므로 마지막 값 다음부터 집으면 묶음마다 같은 비용이다.
+
+    `fact_ids` 로 식별자를 모은 뒤 행을 하나씩 읽지 않는다. 행 하나마다 왕복이 하나
+    붙어 원격 저장소에서는 그 왕복이 검증 시간의 거의 전부가 된다.
     """
 
     _ANALYSIS_VERSION = """
@@ -630,54 +760,50 @@ class StatisticsAuditRepository(Repository):
         WHERE taxonomy_version_id = %(taxonomy_version_id)s
     """
 
-    _BASELINE_PREVALENCE = """
-        SELECT numerator, denominator
+    _BASELINE_PREVALENCES = """
+        SELECT entry_segment, period_id, dimension_id, numerator, denominator
         FROM statistics_facts
         WHERE analysis_version = %(analysis_version)s
           AND metric_family = 'posting_prevalence'
           AND measure = 'ratio'
           AND scope_level = 'overall'
-          AND entry_segment = %(entry_segment)s
-          AND period_id = %(period_id)s
-          AND dimension_id = %(dimension_id)s
+          AND dimension_id IS NOT NULL
     """
     """`cluster_contrast` 가 견주는 직무 전체 값(docs/metric-spec.md 3.4).
 
     직무 전체 값은 같은 분석 버전의 `posting_prevalence` 행에서 조회한다고 명세가
     정한다. 저장된 행을 읽는 것이 정의이므로 이 조회는 재계산의 재사용이 아니다.
+
+    행마다 하나씩 찾지 않고 분석 버전의 기준선 전체를 한 번에 읽는다. 기준선 수는
+    (대상군 × 기간 × 차원) 이라 `cluster_contrast` 행 수보다 기업군 수만큼 적다.
     """
 
-    _BASE_FACT_FOR_DELTA = """
-        SELECT f.fact_id, f.analysis_version, f.metric_family, f.measure,
-               f.metric_policy_version, f.scope_level, f.scope_id,
-               f.entry_segment, f.period_id, f.dimension_id,
-               f.secondary_dimension_id, f.numerator, f.denominator, f.value,
-               f.sample_size, f.sample_status
+    _BASE_FACTS_FOR_DELTA = f"""
+        SELECT {_FACT_COLUMNS_QUALIFIED}, pd.starts_on
         FROM statistics_facts f
         JOIN periods pd ON pd.period_id = f.period_id
         WHERE f.analysis_version = %(analysis_version)s
-          AND f.metric_family = %(metric_family)s
-          AND f.measure = %(measure)s
-          AND f.scope_level = %(scope_level)s
-          AND f.scope_id = %(scope_id)s
-          AND f.entry_segment = %(entry_segment)s
-          AND COALESCE(f.dimension_id, '') = %(dimension_id)s
-          AND COALESCE(f.secondary_dimension_id, '') = %(secondary_dimension_id)s
-          AND pd.starts_on <= (
-                SELECT b.starts_on FROM periods b
-                WHERE b.period_id = %(period_id)s
-          )
-        ORDER BY pd.starts_on DESC, f.period_id DESC
-        LIMIT 2
+          AND f.metric_family <> 'temporal_delta'
+        ORDER BY f.metric_family, f.measure, f.scope_level, f.scope_id,
+                 f.entry_segment, COALESCE(f.dimension_id, ''),
+                 COALESCE(f.secondary_dimension_id, ''),
+                 pd.starts_on, f.period_id
     """
-    """`temporal_delta` 가 뺀 두 기준값.
+    """`temporal_delta` 가 뺀 두 기준값의 재료.
 
     델타 행은 나중 기간에 달리고 앞 기간을 컬럼으로 담지 않는다(docs/erd.md 10.5).
     앞 기간은 같은 정체성의 기준 지표 행 가운데 나중 기간 바로 앞의 것으로 정한다.
     `metrics/temporal.py` 가 기간의 앞뒤를 `starts_on` 으로 정하는 것과 같은 축이며,
     실행도 잇닿은 기간끼리만 델타를 만든다.
 
+    델타 행마다 두 줄을 찾아 읽지 않고 기준 지표 행 전체를 한 번에 읽어 정체성별로
+    묶는다. 정렬을 `starts_on` 오름차순으로 두므로 어느 기간의 바로 앞 행은 그 기간
+    이하의 마지막 두 항목이다. 앞선 문장이 `starts_on DESC, period_id DESC` 로 두
+    줄을 집던 것과 같은 차례다.
+
     `COALESCE` 로 NULL 을 접는 것은 `idx_statistics_facts_unique` 와 같은 방식이다.
+    `temporal_delta` 는 기준 지표가 될 수 없어 뺀다. `measure` 가
+    `<base_metric>__<measure>` 이므로 델타의 기준 family 는 언제나 델타가 아니다.
     """
 
     # ------------------------------------------------------------ 대조 재료
@@ -690,15 +816,34 @@ class StatisticsAuditRepository(Repository):
         row = self.unit.fetch_one(self._FACT, {"fact_id": fact_id})
         if row is None:
             return None
-        fact = _stored_fact(row)
+        return self._audit(_stored_fact(row))
 
-        version = self.unit.fetch_one(
-            self._ANALYSIS_VERSION, {"analysis_version": fact.analysis_version}
+    def fact_audit_page(
+        self, analysis_version: str, after: str, size: int
+    ) -> list[tuple[str, FactAudit | None]]:
+        """식별자 `after` 다음의 지표 행을 `size` 개까지 읽어 재료로 옮긴다.
+
+        돌려주는 항목은 `(fact_id, 재료)` 이고 차례는 식별자 순서다. 기준 행을 찾지
+        못한 행은 재료 자리를 비워 둔다. 그 사실을 검사가 판정으로 옮기며, 저장소가
+        조용히 빼면 검사하지 않은 행이 통과로 읽힌다.
+
+        받은 항목 수가 `size` 보다 적으면 그 묶음이 마지막이다.
+        """
+        rows = self.unit.fetch_all(
+            self._FACT_PAGE,
+            {"analysis_version": analysis_version, "after": after, "size": size},
         )
-        period = self.unit.fetch_one(self._PERIOD, {"period_id": fact.period_id})
-        policy_row = self.unit.fetch_one(
-            self._POLICY, {"metric_policy_version": fact.metric_policy_version}
-        )
+        page: list[tuple[str, FactAudit | None]] = []
+        for row in rows:
+            fact = _stored_fact(row)
+            page.append((fact.fact_id, self._audit(fact)))
+        return page
+
+    def _audit(self, fact: StoredFact) -> FactAudit | None:
+        """읽어 온 지표 행 하나를 대조 재료로 옮긴다. 기준 행이 없으면 비운다."""
+        version = self._version_row(fact.analysis_version)
+        period = self._period_row(fact.period_id)
+        policy_row = self._policy_row(fact.metric_policy_version)
         if version is None or period is None or policy_row is None:
             return None
 
@@ -752,6 +897,30 @@ class StatisticsAuditRepository(Repository):
             ),
             temporal_inputs=self._temporal_inputs(fact),
         )
+
+    def _version_row(self, analysis_version: str) -> dict[str, Any] | None:
+        """실행이 고정한 버전 행. 산출물 전체가 같은 값을 본다."""
+        if analysis_version not in self._versions:
+            self._versions[analysis_version] = self.unit.fetch_one(
+                self._ANALYSIS_VERSION, {"analysis_version": analysis_version}
+            )
+        return self._versions[analysis_version]
+
+    def _period_row(self, period_id: str) -> dict[str, Any] | None:
+        """기간 행. 기간 수만큼만 읽는다."""
+        if period_id not in self._periods:
+            self._periods[period_id] = self.unit.fetch_one(
+                self._PERIOD, {"period_id": period_id}
+            )
+        return self._periods[period_id]
+
+    def _policy_row(self, metric_policy_version: str) -> dict[str, Any] | None:
+        """정책 행. 지표 family 수만큼만 읽는다."""
+        if metric_policy_version not in self._policies:
+            self._policies[metric_policy_version] = self.unit.fetch_one(
+                self._POLICY, {"metric_policy_version": metric_policy_version}
+            )
+        return self._policies[metric_policy_version]
 
     def _expected_policy_version(
         self, fact: StoredFact, as_of_date: date
@@ -854,23 +1023,32 @@ class StatisticsAuditRepository(Repository):
         """`cluster_contrast` 의 직무 전체 분자·분모. 다른 지표는 둘 다 비운다."""
         if fact.metric_family != "cluster_contrast" or fact.dimension_id is None:
             return None, None
-        row = self.unit.fetch_one(
-            self._BASELINE_PREVALENCE,
-            {
-                "analysis_version": fact.analysis_version,
-                "entry_segment": str(fact.entry_segment),
-                "period_id": fact.period_id,
-                "dimension_id": fact.dimension_id,
-            },
+        index = self._baseline_index(fact.analysis_version)
+        return index.get(
+            (str(fact.entry_segment), fact.period_id, fact.dimension_id),
+            (None, None),
         )
-        if row is None:
-            return None, None
-        numerator = row["numerator"]
-        denominator = row["denominator"]
-        return (
-            None if numerator is None else int(numerator),
-            None if denominator is None else int(denominator),
-        )
+
+    def _baseline_index(
+        self, analysis_version: str
+    ) -> dict[tuple[str, str, str], tuple[int | None, int | None]]:
+        """분석 버전의 기준선 전부. `cluster_contrast` 행이 나올 때 한 번 만든다."""
+        if analysis_version not in self._baselines:
+            self._baselines[analysis_version] = {
+                (
+                    str(row["entry_segment"]),
+                    str(row["period_id"]),
+                    str(row["dimension_id"]),
+                ): (
+                    None if row["numerator"] is None else int(row["numerator"]),
+                    None if row["denominator"] is None else int(row["denominator"]),
+                )
+                for row in self.unit.fetch_all(
+                    self._BASELINE_PREVALENCES,
+                    {"analysis_version": analysis_version},
+                )
+            }
+        return self._baselines[analysis_version]
 
     def _temporal_inputs(
         self, fact: StoredFact
@@ -881,24 +1059,58 @@ class StatisticsAuditRepository(Repository):
         base_family, separator, base_measure = fact.measure.partition("__")
         if not separator:
             return None
-        rows = self.unit.fetch_all(
-            self._BASE_FACT_FOR_DELTA,
-            {
-                "analysis_version": fact.analysis_version,
-                "metric_family": base_family,
-                "measure": base_measure,
-                "scope_level": str(fact.scope_level),
-                "scope_id": fact.scope_id,
-                "entry_segment": str(fact.entry_segment),
-                "dimension_id": fact.dimension_id or "",
-                "secondary_dimension_id": fact.secondary_dimension_id or "",
-                "period_id": fact.period_id,
-            },
-        )
-        if len(rows) < 2:
+        period = self._period_row(fact.period_id)
+        if period is None:
             return None
-        latest, prior = rows[0], rows[1]
-        return _stored_fact(prior), _stored_fact(latest)
+        entries = self._delta_entries(fact.analysis_version).get(
+            (
+                base_family,
+                base_measure,
+                str(fact.scope_level),
+                fact.scope_id,
+                str(fact.entry_segment),
+                fact.dimension_id or "",
+                fact.secondary_dimension_id or "",
+            ),
+            [],
+        )
+        earlier = [
+            entry for entry in entries if entry[0] <= period["starts_on"]
+        ]
+        if len(earlier) < 2:
+            return None
+        return earlier[-2][2], earlier[-1][2]
+
+    def _delta_entries(
+        self, analysis_version: str
+    ) -> dict[tuple[str, ...], list[tuple[Any, str, StoredFact]]]:
+        """정체성별 기준 지표 행. `temporal_delta` 행이 나올 때 한 번 만든다.
+
+        항목은 `(starts_on, period_id, 저장값)` 이고 문장의 정렬이 오름차순이라 그대로
+        담으면 기간 순서가 된다.
+        """
+        if analysis_version not in self._delta_index:
+            index: dict[tuple[str, ...], list[tuple[Any, str, StoredFact]]] = {}
+            for row in self.unit.fetch_all(
+                self._BASE_FACTS_FOR_DELTA, {"analysis_version": analysis_version}
+            ):
+                stored = _stored_fact(row)
+                key = (
+                    stored.metric_family,
+                    stored.measure,
+                    str(stored.scope_level),
+                    stored.scope_id,
+                    str(stored.entry_segment),
+                    stored.dimension_id or "",
+                    stored.secondary_dimension_id or "",
+                )
+                index.setdefault(key, []).append(
+                    (row["starts_on"], stored.period_id, stored)
+                )
+            for entries in index.values():
+                entries.sort(key=lambda entry: (entry[0], entry[1]))
+            self._delta_index[analysis_version] = index
+        return self._delta_index[analysis_version]
 
 
 def _stored_fact(row: dict[str, Any]) -> StoredFact:

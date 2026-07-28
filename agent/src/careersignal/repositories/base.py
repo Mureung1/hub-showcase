@@ -12,6 +12,11 @@
 실패하며 같은 사유가 항목 수만큼 반복된다. 세이브포인트는 실패한 항목만 되돌리고
 거래를 살려 둔다.
 
+행이 만 단위인 자리는 항목마다 왕복을 하나 쓰면 저장이 실행 시간의 거의 전부가 된다.
+`insert_in_batches` 가 묶음 하나를 세이브포인트로 감싸 한 문장으로 넣고, 묶음이
+실패하면 그 묶음만 한 줄씩 다시 시도한다. 묶어도 나쁜 행 하나만 빠지므로 항목마다
+세이브포인트를 잡던 것과 결과가 같다.
+
 세이브포인트로도 살릴 수 없는 실패가 있다. 연결이 끊겼거나 거래가 이미 죽은 뒤라면
 되돌리기 자체가 실패한다. `transaction_is_dead` 가 그것을 가르고, 부르는 쪽은 참이면
 남은 항목을 시도하지 않고 멈춘다.
@@ -20,7 +25,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
@@ -77,6 +82,20 @@ TRANSACTION_FATAL_MARKERS: tuple[str, ...] = (
 
 클래스 이름만으로 가를 수 없는 자리가 있다. 드라이버가 예외를 감싸면 이름이 바뀌어도
 이 문장은 남는다. 대조는 소문자로 접은 뒤 부분 문자열로 한다.
+"""
+
+
+MAX_STATEMENT_PARAMETERS = 60_000
+"""문장 하나가 실을 수 있는 매개변수 수.
+
+PostgreSQL 의 확장 질의 프로토콜은 매개변수 수를 16비트로 나르므로 한 문장에
+65,535개까지다. 여유를 두고 그 아래에서 자른다. 넘기면 드라이버가 문장을 통째로
+거절하며, 그 실패는 값이 아니라 묶음 크기 때문이라 어느 행이 나쁜지를 찾아도 나오지
+않는다.
+
+부르는 쪽이 큰 목록을 넘겨도 `insert_many` 가 이 수에 맞춰 문장을 나눈다. 왕복 수는
+행 수가 아니라 컬럼 수로 정해진 몫이며, `INSERT_BATCH_SIZE` 로 묶어 넣는 경로에서는
+문장이 나뉘지 않는다.
 """
 
 
@@ -143,15 +162,42 @@ class Unit:
             )
 
     def insert_many(self, table: str, rows: Sequence[dict[str, Any]]) -> None:
+        """여러 행을 `VALUES` 목록 하나로 넣는다. 왕복이 행 수가 아니라 한 번이다.
+
+        `executemany` 를 쓰지 않는다. psycopg3 는 그것을 파이프라인으로 보내 왕복을
+        줄이지만 서버가 문장을 행 수만큼 실행하는 것은 그대로이고, 파이프라인이 닫힐
+        때 결과를 모아 받으므로 왕복이 완전히 사라지지도 않는다. 여러 행 `VALUES` 는
+        구문 분석과 계획이 한 번이고 왕복도 한 번이다.
+
+        컬럼 목록은 첫 행에서 정한다. 뒤 행에 그 키가 없으면 `KeyError` 로 그 자리에서
+        멈춘다. 행마다 컬럼이 다르면 어떤 행은 기본값이 들어가고 어떤 행은 값이 들어가
+        같은 표에 모양이 다른 행이 쌓이므로, 조용히 넘기지 않는다.
+
+        자리표시자 이름에 행 번호를 붙인다. 같은 컬럼이 행마다 다른 값을 가지므로 이름
+        하나에 값 하나라는 규칙을 지키려면 이름이 행마다 달라야 한다. 값은 여전히
+        자리표시자로만 들어가며 문자열로 이어 붙이지 않는다.
+        """
         require_write(self.component, table)
         if not rows:
             return
-        columns = ", ".join(rows[0])
-        placeholders = ", ".join(f"%({k})s" for k in rows[0])
+        names = list(rows[0])
+        columns = ", ".join(names)
+        span = max(1, MAX_STATEMENT_PARAMETERS // max(1, len(names)))
         with self._conn.cursor() as cur:
-            cur.executemany(
-                f"INSERT INTO {table} ({columns}) VALUES ({placeholders})", rows
-            )
+            for start in range(0, len(rows), span):
+                chunk = rows[start : start + span]
+                tuples = ", ".join(
+                    "(" + ", ".join(f"%(r{index}_{name})s" for name in names) + ")"
+                    for index in range(len(chunk))
+                )
+                params = {
+                    f"r{index}_{name}": row[name]
+                    for index, row in enumerate(chunk)
+                    for name in names
+                }
+                cur.execute(
+                    f"INSERT INTO {table} ({columns}) VALUES {tuples}", params
+                )
 
     def update(
         self, table: str, values: dict[str, Any], where: str, params: dict[str, Any]
@@ -233,6 +279,103 @@ def item_savepoint(repository: Any) -> Iterator[None]:
         return
     with savepoint():
         yield
+
+
+# ================================================================ 묶음 저장
+INSERT_BATCH_SIZE = 500
+"""한 `INSERT` 문장에 싣는 행 수.
+
+왕복 하나가 수십 밀리초인 원격 저장소에서는 묶음이 클수록 좋지만 무한정 키우지
+않는다. 세 가지가 크기를 위에서 누른다.
+
+- 되돌림의 단위가 묶음이다. 묶음이 실패하면 그 묶음을 한 줄씩 다시 시도하므로,
+  묶음이 크면 나쁜 행 하나를 골라내는 데 드는 재시도가 그만큼 길어진다.
+- PostgreSQL 의 확장 질의 프로토콜은 한 문장의 매개변수를 65,535개로 제한한다.
+  `statistics_facts` 는 컬럼이 17개이므로(docs/erd.md 10.5) 500행이면 8,500개로
+  한계의 여덟 분의 일이다. 컬럼이 서른 개인 표가 와도 한계에 닿지 않는다.
+- 문장 하나의 매개변수를 전부 메모리에 세운다. 500행이면 수백 킬로바이트다.
+
+21,676행이면 44묶음이다. 행마다 한 번이던 왕복이 그 수로 줄어든다.
+"""
+
+
+class BatchWrite:
+    """묶음 저장 한 번의 결과.
+
+    `stored` 는 저장에 성공한 행의 번호, `failed` 는 `(행 번호, 예외)` 다. 번호는 넘긴
+    목록의 색인이므로 부르는 쪽이 어느 항목이 어떻게 됐는지 되짚을 수 있다.
+
+    `fatal` 이 차 있으면 거래가 죽어 남은 행을 시도하지 않고 멈췄다는 뜻이다. 그 뒤의
+    행은 `stored` 에도 `failed` 에도 없다. 저장되지 않았고 실패로 셀 수도 없는 상태이며,
+    자국이 없으므로 다음 실행이 다시 만든다.
+    """
+
+    def __init__(self) -> None:
+        self.stored: list[int] = []
+        self.failed: list[tuple[int, BaseException]] = []
+        self.fatal: BaseException | None = None
+
+
+def insert_in_batches(
+    repository: Any,
+    insert_many: Callable[[Sequence[dict[str, Any]]], None],
+    insert_one: Callable[[dict[str, Any]], None],
+    rows: Sequence[dict[str, Any]],
+    batch_size: int = INSERT_BATCH_SIZE,
+) -> BatchWrite:
+    """행 여럿을 묶어 넣되 실패한 묶음만 한 줄씩 다시 시도한다.
+
+    세이브포인트의 단위가 묶음이다. 한 행이 제약을 어기면 그 묶음 전체가 되돌아가므로
+    묶음만으로는 항목마다 세이브포인트를 잡던 것과 결과가 달라진다. 되돌아간 묶음을 한
+    줄씩 다시 넣어 나쁜 행만 골라내면 저장되는 행 집합이 같아진다. 되풀이하는 것은
+    실패한 묶음뿐이므로 정상 경로의 왕복 수는 묶음 수 그대로다.
+
+    거래를 죽이는 실패는 다시 시도하지 않는다. PostgreSQL 은 거래 안에서 오류가 나면
+    남은 명령을 전부 거부하므로, 죽은 거래에 한 줄씩 넣으면 같은 사유의 실패 줄이 묶음
+    크기만큼 쌓이고 무엇이 진짜 원인이었는지 묻힌다. 판정은 `transaction_is_dead` 다.
+
+    `insert_many` 와 `insert_one` 을 함께 받는다. jsonb 래퍼처럼 저장소마다 다른 손질이
+    두 경로에 똑같이 걸려야 하므로 저장소의 메서드를 그대로 받아 쓴다.
+    """
+    result = BatchWrite()
+    for start in range(0, len(rows), batch_size):
+        chunk = rows[start : start + batch_size]
+        try:
+            with item_savepoint(repository):
+                insert_many(chunk)
+        except Exception as exc:  # noqa: BLE001 - 드라이버 예외 종류를 가리지 않는다
+            if transaction_is_dead(exc):
+                result.fatal = exc
+                result.failed.append((start, exc))
+                return result
+            if _retry_one_by_one(repository, insert_one, chunk, start, result):
+                return result
+            continue
+        result.stored.extend(range(start, start + len(chunk)))
+    return result
+
+
+def _retry_one_by_one(
+    repository: Any,
+    insert_one: Callable[[dict[str, Any]], None],
+    chunk: Sequence[dict[str, Any]],
+    start: int,
+    result: BatchWrite,
+) -> bool:
+    """되돌아간 묶음을 한 줄씩 다시 넣는다. 거래가 죽으면 참을 돌려준다."""
+    for offset, row in enumerate(chunk):
+        index = start + offset
+        try:
+            with item_savepoint(repository):
+                insert_one(row)
+        except Exception as exc:  # noqa: BLE001 - 드라이버 예외 종류를 가리지 않는다
+            result.failed.append((index, exc))
+            if transaction_is_dead(exc):
+                result.fatal = exc
+                return True
+            continue
+        result.stored.append(index)
+    return False
 
 
 class Repository:

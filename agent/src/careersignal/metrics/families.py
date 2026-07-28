@@ -230,95 +230,165 @@ mention 이 `posting_version_id` 를 가지므로(docs/erd.md 6.1·7.13) 이 경
 이 CTE 에 두 행이 남고, 그 갈림을 `requiredness_ratio` 가 쓴다.
 """
 
-PREVALENCE_SELECT = """
-        SELECT
-            (SELECT count(DISTINCT posting_version_id) FROM assigned
-              WHERE dimension_id = %(dimension_id)s) AS numerator,
-            (SELECT count(*) FROM population)         AS denominator"""
-"""`posting_prevalence` 의 분자·분모(docs/metric-spec.md 3.1).
+DIMENSION_LIST_CTE = """
+        wanted AS (
+            SELECT DISTINCT d.dimension_id
+            FROM unnest(%(dimension_ids)s::text[]) AS d(dimension_id)
+        )"""
+"""이번 조회가 값을 받아야 할 차원 목록.
 
-분자는 해당 차원 할당이 있는 `posting_version` 수, 분모는 범위·대상군·기간의
-`posting_version` 수다. 분모가 모집단 전체이므로 `population` 을 그대로 센다.
+차원 하나마다 집계 문장을 보내지 않고 봉투 하나에 한 문장을 보낸다
+(docs/statistics-model.md 5.1 의 집계 파이프라인은 조합을 세는 순서를 정하지 않는다).
+차원 47개·봉투 56개면 조회가 47배로 늘고, 왕복 하나가 수십 밀리초인 원격 저장소에서는
+그 왕복이 집계 시간의 거의 전부가 된다.
+
+목록을 배열 매개변수로 받아 왼쪽 표로 세운다. `GROUP BY dimension_id` 만 하면 할당이
+하나도 없는 차원이 결과에서 빠지는데, 그 차원의 정답은 "행이 없음" 이 아니라 분자 0 이다
+(docs/metric-spec.md 2.4). 왼쪽 바깥 조인이 빠진 차원을 0 으로 채워, 차원마다 문장을
+보내던 것과 같은 행 수·같은 값을 준다.
 """
 
-REQUIREDNESS_SELECT = """
-        SELECT
-            (SELECT count(DISTINCT posting_version_id) FROM assigned
-              WHERE dimension_id = %(dimension_id)s
-                AND requiredness = 'required')  AS numerator,
-            (SELECT count(DISTINCT posting_version_id) FROM assigned
-              WHERE dimension_id = %(dimension_id)s) AS denominator"""
-"""`requiredness_ratio` 의 분자·분모(docs/metric-spec.md 3.2).
+PREVALENCE_GROUPED_SELECT = """
+        SELECT w.dimension_id,
+               COALESCE(c.numerator, 0)          AS numerator,
+               (SELECT count(*) FROM population) AS denominator
+        FROM wanted w
+        LEFT JOIN (
+            SELECT dimension_id,
+                   count(DISTINCT posting_version_id) AS numerator
+            FROM assigned
+            GROUP BY dimension_id
+        ) c ON c.dimension_id = w.dimension_id
+        ORDER BY w.dimension_id"""
+"""`posting_prevalence` 의 차원별 분자와 공통 분모(docs/metric-spec.md 3.1).
+
+분자는 해당 차원 할당이 있는 `posting_version` 수, 분모는 범위·대상군·기간의
+`posting_version` 수다. 분모가 모집단 전체이므로 차원과 무관하며, 봉투 하나에 한 번만
+세어 모든 행이 같은 값을 쓴다. 차원마다 따로 세면 같은 수를 47번 세는 것이 된다.
+
+분자는 `count(DISTINCT posting_version_id)` 를 `GROUP BY dimension_id` 로 나눈 것이며,
+차원 하나로 좁혀 세던 것과 값이 같다. 중복 제거 단위는 그대로 `posting_version_id` 다
+(같은 문서 2.2).
+"""
+
+REQUIREDNESS_GROUPED_SELECT = """
+        SELECT w.dimension_id,
+               COALESCE(c.numerator, 0)   AS numerator,
+               COALESCE(c.denominator, 0) AS denominator
+        FROM wanted w
+        LEFT JOIN (
+            SELECT dimension_id,
+                   count(DISTINCT posting_version_id)
+                     FILTER (WHERE requiredness = 'required') AS numerator,
+                   count(DISTINCT posting_version_id)         AS denominator
+            FROM assigned
+            GROUP BY dimension_id
+        ) c ON c.dimension_id = w.dimension_id
+        ORDER BY w.dimension_id"""
+"""`requiredness_ratio` 의 차원별 분자·분모(docs/metric-spec.md 3.2).
 
 분모가 모집단 전체가 아니라 `posting_prevalence` 의 분자와 같다. 해당 차원이 나타난
 공고 중 필수로 표기한 비율이므로 나타나지 않은 공고는 분모에 들지 않는다.
 
 한 공고에 같은 차원의 `required` 할당과 `preferred` 할당이 함께 있으면 `required` 로
 센다. `count(DISTINCT posting_version_id)` 가 `required` 행 하나만 있어도 그 공고를 한
-번 세므로 이 규칙이 조건 하나로 성립한다.
+번 세므로 이 규칙이 조건 하나로 성립한다. `FILTER` 는 그 조건을 같은 묶음 안에서
+분자에만 거는 것이며, 조건을 건 문장을 따로 보내던 것과 값이 같다.
 """
 
-DEPTH_RANK_CTE = """
+DEPTH_RANK_GROUPED_CTE = """
         ranked AS (
-            SELECT posting_version_id,
+            SELECT dimension_id,
+                   posting_version_id,
                    max(CASE depth_level
                          WHEN 'tradeoff'    THEN 3
                          WHEN 'application' THEN 2
                          ELSE 1 END) AS depth_rank
             FROM assigned
-            WHERE dimension_id = %(dimension_id)s
-            GROUP BY posting_version_id
+            GROUP BY dimension_id, posting_version_id
         )"""
 """대표 등급 규칙(docs/metric-spec.md 3.3).
 
 한 공고 버전이 같은 차원에 여러 깊이의 할당을 가지면 가장 깊은 등급 하나만 센다.
-순서는 `foundation < application < tradeoff` 다. `max` 와 `GROUP BY` 가 공고 버전마다
-한 행을 남기므로 세 measure 의 분자 합이 분모와 정확히 일치하고, 백분율로 읽어도
-100%를 넘지 않는다.
+순서는 `foundation < application < tradeoff` 다. `max` 와 `GROUP BY` 가 차원마다·공고
+버전마다 한 행을 남기므로 세 measure 의 분자 합이 분모와 정확히 일치하고, 백분율로
+읽어도 100%를 넘지 않는다.
+
+묶음 축인 `dimension_id` 를 `GROUP BY` 에 더한다. 대표 등급은 차원 하나 안에서 고르는
+값이므로(같은 문서 3.3) 차원을 묶음에 넣지 않으면 서로 다른 차원의 깊이가 한 공고에서
+섞여 가장 깊은 하나로 접힌다.
 
 준비 기준으로도 이 규칙이 맞다. 가장 깊은 요구에 맞추면 아래 등급은 따라온다.
 """
 
-DEPTH_SELECT = """
-        SELECT
-            count(*) FILTER (WHERE depth_rank = 1) AS foundation,
-            count(*) FILTER (WHERE depth_rank = 2) AS application,
-            count(*) FILTER (WHERE depth_rank = 3) AS tradeoff,
-            count(*)                               AS denominator
-        FROM ranked"""
-"""`depth_distribution` 의 등급별 분자와 분모(docs/metric-spec.md 3.3).
+DEPTH_GROUPED_SELECT = """
+        SELECT w.dimension_id,
+               COALESCE(c.foundation, 0)  AS foundation,
+               COALESCE(c.application, 0) AS application,
+               COALESCE(c.tradeoff, 0)    AS tradeoff,
+               COALESCE(c.denominator, 0) AS denominator
+        FROM wanted w
+        LEFT JOIN (
+            SELECT dimension_id,
+                   count(*) FILTER (WHERE depth_rank = 1) AS foundation,
+                   count(*) FILTER (WHERE depth_rank = 2) AS application,
+                   count(*) FILTER (WHERE depth_rank = 3) AS tradeoff,
+                   count(*)                               AS denominator
+            FROM ranked
+            GROUP BY dimension_id
+        ) c ON c.dimension_id = w.dimension_id
+        ORDER BY w.dimension_id"""
+"""`depth_distribution` 의 차원별 등급 분자와 분모(docs/metric-spec.md 3.3).
 
-분모는 해당 차원 할당이 있는 `posting_version` 수이며 `ranked` 의 행 수와 같다.
-`ranked` 가 공고 버전마다 한 행이므로 따로 중복을 제거하지 않는다.
+분모는 해당 차원 할당이 있는 `posting_version` 수이며 그 차원의 `ranked` 행 수와 같다.
+`ranked` 가 차원마다·공고 버전마다 한 행이므로 따로 중복을 제거하지 않는다.
+
+할당이 없는 차원은 네 값이 모두 0 이다. 세 분자의 합이 분모와 같다는 규약이 그 자리에서도
+지켜지므로 `depth_distribution` 의 합 검사가 통과한다.
 """
 
-COOCCURRENCE_SETS_CTE = """
-        set_a AS (
-            SELECT DISTINCT posting_version_id FROM assigned
-            WHERE dimension_id = %(dimension_id)s
-        ),
-        set_b AS (
-            SELECT DISTINCT posting_version_id FROM assigned
-            WHERE dimension_id = %(secondary_dimension_id)s
+COOCCURRENCE_PAIR_MEMBERS_CTE = """
+        pair_members AS (
+            SELECT DISTINCT a.dimension_id, a.posting_version_id
+            FROM assigned a
+            JOIN wanted w ON w.dimension_id = a.dimension_id
         )"""
-"""두 차원이 나타난 공고 버전 집합(docs/metric-spec.md 3.5).
+"""쌍을 만들 차원이 나타난 공고 버전 집합(docs/metric-spec.md 3.5).
 
-집합 연산으로 다섯 measure 를 모두 만든다. `DISTINCT` 가 집합의 정의를 그대로
-표현하므로 교집합·합집합의 크기가 `posting_version_id` 단위다.
+`DISTINCT` 가 집합의 정의를 그대로 표현하므로 교집합의 크기가 `posting_version_id`
+단위다. 차원 두 개짜리 집합을 쌍마다 두 번 세우지 않고 대상 차원 전체의 소속을 한 번
+세운 뒤 자기 자신과 잇는다.
+
+`wanted` 로 좁히는 것이 비용의 상한이다. 쌍은 차원 수의 제곱으로 늘고 차원 47개면 쌍이
+1,081개인데, 실제로 전개하는 쌍은 `posting_prevalence` 가 `minimum_n` 이상인 차원끼리로
+잘린다(같은 문서 5장). 잘린 목록을 그대로 넘겨 세지 않을 쌍을 세지 않는다.
 """
 
-COOCCURRENCE_SELECT = """
-        SELECT
-            (SELECT count(*) FROM set_a a
-              JOIN set_b b USING (posting_version_id)) AS n_ab,
-            (SELECT count(*) FROM set_a)               AS n_a,
-            (SELECT count(*) FROM set_b)               AS n_b,
-            (SELECT count(*) FROM population)          AS n_total"""
-"""`cooccurrence` 의 네 카운트(docs/metric-spec.md 3.5).
+COOCCURRENCE_PAIR_SELECT = """
+        SELECT l.dimension_id AS dimension_id,
+               r.dimension_id AS secondary_dimension_id,
+               count(*)       AS n_ab
+        FROM pair_members l
+        JOIN pair_members r
+          ON r.posting_version_id = l.posting_version_id
+         AND r.dimension_id > l.dimension_id
+        GROUP BY l.dimension_id, r.dimension_id
+        ORDER BY l.dimension_id, r.dimension_id"""
+"""`cooccurrence` 의 쌍별 교집합 크기(docs/metric-spec.md 3.5).
 
-합집합 크기는 따로 세지 않고 `n_a + n_b - n_ab` 로 얻는다. 세 값이 이미 같은 기준으로
-세어졌으므로 한 번 더 조회할 이유가 없고, 포함배제로 얻은 값이 조회 결과와 어긋날 수도
-없다.
+`pair_members` 가 (차원, 공고 버전) 하나마다 한 행이므로 두 벌을 공고 버전으로 이으면
+행 하나가 교집합의 원소 하나다. 쌍마다 두 집합을 세워 잇던 것과 값이 같다.
+
+`r.dimension_id > l.dimension_id` 가 한 쌍을 한 번만 남긴다. 저장도 한 쌍당 한 행이고
+방향이 있는 두 조건부 확률은 measure 로 구분하므로(같은 문서 3.5), 뒤집은 쌍을 함께
+세면 같은 수치가 두 벌 생긴다. 정규화 방향은 `expansion.dimension_pairs` 와 같다.
+
+교집합이 0 인 쌍은 행이 나오지 않는다. 그 쌍의 정답은 `n_ab = 0` 이며 부르는 쪽이
+0 으로 채운다. 없는 쌍까지 행으로 만들면 쌍 상한만큼 행이 오간다.
+
+`n_a`·`n_b`·`n_total` 은 여기서 세지 않는다. 셋은 각각 `posting_prevalence` 의 차원별
+분자와 분모이며 같은 봉투에서 이미 세어져 있다. 다시 세면 같은 수를 두 번 세는 것이고,
+두 값이 갈리면 `jaccard` 의 분모가 분자보다 작아질 수 있다.
 """
 
 SCOPE_EXPANSION_SELECT = """
@@ -555,18 +625,19 @@ __all__ = [
     "COOCCURRENCE_COUNT",
     "COOCCURRENCE_JACCARD",
     "COOCCURRENCE_LIFT",
-    "COOCCURRENCE_SELECT",
-    "COOCCURRENCE_SETS_CTE",
+    "COOCCURRENCE_PAIR_MEMBERS_CTE",
+    "COOCCURRENCE_PAIR_SELECT",
+    "DEPTH_GROUPED_SELECT",
     "DEPTH_MEASURES",
-    "DEPTH_RANK_CTE",
-    "DEPTH_SELECT",
+    "DEPTH_RANK_GROUPED_CTE",
+    "DIMENSION_LIST_CTE",
     "MEASURES",
     "POPULATION_CTE",
     "PREVALENCE_DIFFERENCE",
+    "PREVALENCE_GROUPED_SELECT",
     "PREVALENCE_RATIO",
-    "PREVALENCE_SELECT",
     "RATIO",
-    "REQUIREDNESS_SELECT",
+    "REQUIREDNESS_GROUPED_SELECT",
     "REQUIRED_MEASURES",
     "SCOPE_EXPANSION_SELECT",
     "WILSON_MEASURES",

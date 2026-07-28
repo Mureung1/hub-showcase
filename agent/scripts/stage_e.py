@@ -12,8 +12,9 @@ r"""Stage E(Phase 13)를 순서대로 한 번에 돌린다.
     python scripts/stage_e.py --from 1 --to 2 --limit 500
 
 `--from` 과 `--to` 는 13-1 부터 13-6 까지의 단위 번호다. `--limit` 은 이미 저장된
-것을 뺀 뒤 남은 것을 앞에서부터 자르며 13-1·13-2·13-5 에 걸린다. 한 실행이 전량을
-끝내지 않으므로 남은 것이 없을 때까지 같은 명령을 다시 돌린다.
+것을 뺀 뒤 남은 것을 앞에서부터 자르며 13-1·13-2·13-4·13-5 에 걸린다. 한 실행이
+전량을 끝내지 않으므로 남은 것이 없을 때까지 같은 명령을 다시 돌린다. 13-4 를 잘라
+돌린 실행은 위반이 없어도 통과가 아니라 부분 검사로 남는다.
 
 이 스크립트가 남긴 것을 되돌리는 명령은 `python scripts/reset_stage_e.py --execute` 다.
 
@@ -25,7 +26,7 @@ r"""Stage E(Phase 13)를 순서대로 한 번에 돌린다.
 
 실행 순서는 13-1 → 13-2 → 13-5 → 13-6 → 13-4 이고 번호 순서가 아니다. 뒤 단계가 앞
 단계의 저장된 행을 입력으로 쓰기 때문이다. 13-2 는 지표 행 두 기간을 견주고, 13-5 는
-저장된 `depth_distribution` 을 합치며, 13-4 는 저장된 행 전부를 대조한다. 13-3(표본
+저장된 `depth_distribution` 을 합치며, 13-4 는 저장된 행을 대조한다. 13-3(표본
 판정과 억제)은 별도 단계가 아니라 13-1 과 13-2 의 저장 경로에 붙어 있다. 표본 상태와
 불확실성을 정하지 않고는 어떤 행도 저장할 수 없기 때문이다.
 
@@ -61,6 +62,13 @@ r"""Stage E(Phase 13)를 순서대로 한 번에 돌린다.
 migration 을 적용하지 않은 스키마 위에서 돌면 psycopg 의 `UndefinedColumn` 이 실행
 중간에 튀어나와 앞 단계의 산출물만 남는다. 어긋나면 `alembic upgrade head` 를
 안내하고 종료 코드 2로 멈춘다. `--skip-schema-check` 로 건너뛴다.
+
+분류체계 버전도 실행 앞에서 본다. 봉투가 쓸 버전은 상수가 아니라 저장소의 활성
+버전이며, 분석 버전 식별자가 그 버전을 재료로 삼으므로 활성 버전이 바뀌면 분석 버전도
+바뀐다. 활성 버전이 없거나, `--analysis-version` 이 가리킨 분석 버전이 선언한 버전과
+활성 버전이 다르면 한 단계도 돌리지 않고 종료 코드 1로 멈춘다. 갈린 채로 돌면 13-1 은
+활성 버전의 할당으로 세고 13-4 는 분석 버전이 선언한 버전으로 다시 세어, 저장된 행
+전부가 위반으로 남는다.
 """
 
 from __future__ import annotations
@@ -133,12 +141,13 @@ from careersignal.orchestration.envelope import (  # noqa: E402
     MODEL_VERSION,
     PROMPT_VERSION,
     RETRIEVAL_POLICY_VERSION,
-    TAXONOMY_VERSION_ID,
 )
 from careersignal.orchestration.envelope import Envelope as RunEnvelope  # noqa: E402
 from careersignal.orchestration.envelope import (  # noqa: E402
     OrchestratorStore,
+    active_taxonomy_version_id,
     analysis_version_identifier,
+    declared_taxonomy_mismatch,
     ensure_envelope,
     start_agent_run,
 )
@@ -153,6 +162,7 @@ from careersignal.repositories.verification import (  # noqa: E402
     VerificationRepository,
 )
 from careersignal.verification.checks.statistics import (  # noqa: E402
+    REASON_PARTIAL_SCAN,
     TARGET_AGGREGATION,
     numerical_consistency_check,
 )
@@ -250,16 +260,48 @@ PRECONDITION_REASONS: frozenset[str] = frozenset(
 """
 
 LIMIT_WARNING = (
-    "              --limit 은 남은 것을 앞에서부터 자른다. 13-1·13-2·13-5 에 걸리며"
-    "\n              13-4 는 전수 검사라 자르지 않는다"
+    "              --limit 은 남은 것을 앞에서부터 자른다. 13-1·13-2·13-4·13-5 에"
+    "\n              걸리며 13-4 는 자른 실행을 통과로 남기지 않는다"
 )
 """`--limit` 의 뜻.
 
 13-1 과 13-5 는 이미 저장된 조합·프로파일을 먼저 뺀 뒤 남은 것을 세고, 13-2 는 이미
 저장된 델타 행을 건너뛴 뒤 센다. 그래서 같은 값으로 이어 돌리면 실행마다 앞으로
-나아간다. 13-4 는 산출물 전체를 대조하는 검사이므로 자르면 검사하지 않은 행이 통과로
-읽힌다.
+나아간다.
+
+13-4 는 산출물 전체를 식별자 순서로 대조하며 한도가 그 앞부분을 자른다. 자른 실행은
+위반이 없어도 `STATISTICS_PARTIAL_SCAN` 으로 남아 통과와 구분되고, 검사한 행 수와
+남은 행 수를 함께 적는다. 그 구분이 없으면 검사하지 않은 행이 통과로 읽힌다.
 """
+
+PROGRESS_EVERY = 1000
+"""진행 상황을 찍는 간격.
+
+행 수가 만 단위인 단계는 끝날 때까지 화면이 비어 멈춘 실행과 구분되지 않는다. 간격을
+너무 좁히면 출력이 결과를 덮으므로 천 건마다 한 줄만 남긴다.
+"""
+
+
+def report_progress(
+    step: str, label: str, done: int, total: int | None = None
+) -> None:
+    """오래 걸리는 단계의 진행 상황. 간격에 닿았을 때와 끝났을 때만 찍는다.
+
+    대상 수를 아는 단계는 `total` 을 준다. 대상이 간격보다 적으면 찍지 않는다. 몇 초
+    만에 끝나는 실행에는 진행 표시가 결과를 가릴 뿐이다.
+
+    13-2 처럼 만들기 전에는 대상 수를 알 수 없는 단계는 `total` 없이 부른다. 지어낸
+    분모를 찍으면 남은 양을 잘못 알린다.
+    """
+    if total is None:
+        if done and done % PROGRESS_EVERY == 0:
+            print(f"{step}  {label} {done}개")
+        return
+    if total <= PROGRESS_EVERY:
+        return
+    if done % PROGRESS_EVERY and done < total:
+        return
+    print(f"{step}  {label} {done} / {total}")
 
 NO_MODEL_CALLS = "Phase 13 은 생성 모델과 임베딩을 호출하지 않는다"
 """집계는 결정적으로 수행한다(docs/statistics-model.md 5.1)."""
@@ -360,17 +402,23 @@ def schema_is_current(applied: str | None, head: str) -> bool:
     return applied is not None and applied == head
 
 
-def planned_analysis_version(job_role_id: str, dataset_version: str) -> str:
+def planned_analysis_version(
+    job_role_id: str, dataset_version: str, taxonomy_version_id: str
+) -> str:
     """이번 실행이 쓸 분석 버전. 저장소에 쓰지 않고 계산한다.
 
     `ensure_envelope` 가 같은 재료로 같은 식별자를 만든다. `--dry-run` 이 이미 저장된
     조합을 빼려면 버전을 알아야 하는데, 그것을 알려고 봉투를 만들면 세기만 하는 실행이
     행을 남긴다.
+
+    분류체계 버전을 인자로 받는다. 활성 버전이 바뀌면 식별자도 바뀌며 그것이 옳다.
+    다른 분류체계로 계산한 수치는 다른 분석 버전이고, 그래야 옛 분류체계로 낸 결과가
+    새 계산에 덮이지 않는다(docs/architecture.md 8장·docs/erd.md 11.1).
     """
     return analysis_version_identifier(
         job_role_id=job_role_id,
         dataset_version=dataset_version,
-        taxonomy_version_id=TAXONOMY_VERSION_ID,
+        taxonomy_version_id=taxonomy_version_id,
         model_version=MODEL_VERSION,
         prompt_version=PROMPT_VERSION,
         retrieval_policy_version=RETRIEVAL_POLICY_VERSION,
@@ -431,11 +479,28 @@ def verification_stop_reason(results: Sequence[Any]) -> StopReason:
     """
     if any(result.verdict is CheckVerdict.FAIL for result in results):
         return StopReason.EXPLICIT_FAILURE
+    if any(result.reason_code == REASON_PARTIAL_SCAN for result in results):
+        return StopReason.SLOTS_FILLED
     if not results or all(
         result.verdict is CheckVerdict.SKIP for result in results
     ):
         return StopReason.FRONTIER_EXHAUSTED
     return StopReason.SLOTS_FILLED
+
+
+def verification_scan(results: Sequence[Any]) -> tuple[int, int]:
+    """검사한 행 수와 남지 않은 행 수. 판정이 `detail` 에 적어 둔 값을 모은다.
+
+    한도를 건 실행은 남은 수가 0 이 아니다. 두 수를 함께 봐야 이번 실행이 전수였는지
+    알 수 있다.
+    """
+    scanned = 0
+    remaining = 0
+    for result in results:
+        detail = result.detail or {}
+        scanned += int(detail.get("fact_count") or 0)
+        remaining += int(detail.get("remaining_count") or 0)
+    return scanned, remaining
 
 
 def delta_fact_key(row: dict[str, Any]) -> tuple[str, ...]:
@@ -653,6 +718,23 @@ def applied_revision() -> str | None:
 SKIP_HINT = "  확인을 건너뛰려면 --skip-schema-check 를 붙인다"
 UPGRADE_HINT = "  alembic upgrade head 를 먼저 돌린다"
 
+ENVELOPE_NO_TAXONOMY = "활성 분류체계 버전이 없다. 봉투가 선언할 버전이 없다"
+PUBLISH_HINT = (
+    "  migrations/sql/0002_seed_reference.sql 이 첫 버전을 만든다."
+    " alembic upgrade head 를 먼저 돌린다"
+)
+MISMATCH_HINT = (
+    "  --analysis-version 을 빼고 돌리면 활성 분류체계로 새 분석 버전을 만든다\n"
+    "  옛 분석 버전의 행은 python scripts/reset_stage_e.py --analysis-version <옛 버전>"
+    " --execute 로 지운다"
+)
+"""선언한 분류체계 버전과 활성 버전이 어긋났을 때의 안내.
+
+두 버전이 갈린 채로 돌면 13-1 은 활성 버전의 할당으로 세고 13-4 는 선언한 버전으로
+다시 세므로, 분자가 전부 0 이 되어 저장된 행 전부가 위반으로 남는다. 실행을 시작하지
+않는 편이 그 결과를 만들고 지우는 것보다 싸다.
+"""
+
 
 def schema_problem(versions_dir: Path = MIGRATION_VERSIONS) -> str | None:
     """스키마가 최신이 아니면 사유와 안내를, 최신이면 비운다.
@@ -766,9 +848,82 @@ def report_saturation(outcome: Any) -> None:
     print(f"  종료 사유    {outcome.stop_reason}")
 
 
+VIOLATION_EXAMPLES = 5
+"""위반 예시로 찍는 행 수.
+
+전부 찍지 않는다. 위반이 만 단위면 예시가 화면을 덮어 그 위의 family 별·사유별 표가
+스크롤 밖으로 밀린다. 원인을 좁히는 것은 표이고 예시는 그 표가 가리킨 자리가 실제로
+어떤 수인지 확인하는 용도이므로, 한 화면에 표와 예시가 함께 남는 수면 된다. 다섯 줄이
+`_report_reasons` 의 다섯 줄과 같은 폭이라 두 블록이 같은 높이로 읽힌다. 더 보려면
+`verification_results.detail.violations` 에 스무 건이 남아 있다.
+"""
+
+VIOLATION_FIELDS: tuple[str, ...] = ("numerator", "denominator", "value")
+"""예시가 나란히 찍는 자리. 저장값과 재계산값이 같은 차례로 나온다."""
+
+
+def _cell(value: Any) -> str:
+    """예시 한 칸. 비어 있는 자리를 `-` 로 적어 0 과 구분한다.
+
+    소수는 여섯째 자리까지 적고 남는 0 을 지운다. `statistics_facts.value` 가
+    `numeric(12,6)` 이라 그 자리까지가 저장된 전부이고, 유효숫자로 자르면
+    `1.333333` 이 `1.33333` 으로 보여 두 수가 다른지 눈으로 가릴 수 없다.
+    """
+    if value is None:
+        return "-"
+    if isinstance(value, float):
+        return f"{value:.6f}".rstrip("0").rstrip(".") or "0"
+    return str(value)
+
+
+def _side_by_side(detail: dict[str, Any]) -> str:
+    """저장값과 재계산값을 `분자/분모/값` 차례로 나란히 적는다.
+
+    재계산이 없는 위반(버전 불일치·적용 가능성)은 견줄 짝이 없으므로 빈 값이다.
+    """
+    stored = detail.get("stored")
+    recounted = detail.get("recounted")
+    if not isinstance(stored, dict) or not isinstance(recounted, dict):
+        return ""
+    left = "/".join(_cell(stored.get(name)) for name in VIOLATION_FIELDS)
+    right = "/".join(_cell(recounted.get(name)) for name in VIOLATION_FIELDS)
+    return f"저장 {left}  재계산 {right}"
+
+
+def report_violation_examples(detail: dict[str, Any]) -> None:
+    """위반 몇 건을 저장값과 재계산값을 나란히 놓아 찍는다.
+
+    어느 행이 어떻게 어긋났는지를 눈으로 보는 자리다. 건수만으로는 저장값이 큰지
+    재계산값이 큰지, 값만 다른지 분자까지 다른지 가릴 수 없다.
+    """
+    violations = detail.get("violations")
+    if not isinstance(violations, list) or not violations:
+        return
+    print(f"    위반 예시({min(len(violations), VIOLATION_EXAMPLES)}건)")
+    for violation in violations[:VIOLATION_EXAMPLES]:
+        if not isinstance(violation, dict):
+            continue
+        head = (
+            f"      {violation.get('fact_id', '')}  "
+            f"{violation.get('metric_family', '')}."
+            f"{violation.get('measure', '')}  "
+            f"{violation.get('reason_code', '')}"
+        )
+        print(head)
+        pair = _side_by_side(violation)
+        if pair:
+            print(f"        {pair}")
+
+
 def report_verification(report: Any) -> None:
+    scanned, remaining = verification_scan(report.results)
     print("\n13-4  수치 검증")
     print(f"  대상         {report.target_type} {report.target_id}")
+    print(f"  검사 행      {scanned}개")
+    print(
+        f"  남은 행      {remaining}개"
+        f"{'  한도에 닿아 전수 검증이 아니다' if remaining else ''}"
+    )
     print(f"  실행 검사    {len(report.executed)}종")
     print(f"  실패         {len(report.failed)}건")
     print(f"  공개 차단    {len(report.blocking)}건")
@@ -777,10 +932,22 @@ def report_verification(report: Any) -> None:
             continue
         detail = result.detail or {}
         count = detail.get("violation_count")
+        rows = detail.get("violated_fact_count")
         print(
-            f"    {result.check:<20}{result.verdict:<6}{result.reason_code or ''}"
+            f"    {result.check:<22}{result.verdict:<6}{result.reason_code or ''}"
             f"{'' if count is None else f'  위반 {count}건'}"
+            f"{'' if rows is None else f'  행 {rows}개'}"
         )
+        _report_reasons(
+            "    family 별 위반", _counted(detail.get("by_family") or {}), indent=6
+        )
+        _report_reasons(
+            "    사유별 위반", _counted(detail.get("by_reason") or {}), indent=6
+        )
+        _report_reasons(
+            "    검사별 위반", _counted(detail.get("by_check") or {}), indent=6
+        )
+        report_violation_examples(detail)
     print(f"  기록         {len(report.results)}건 가운데 실행한 검사만 남긴다")
 
 
@@ -796,15 +963,22 @@ def _counted(counts: dict[str, int]) -> list[tuple[str, int]]:
     return sorted(counts.items(), key=lambda item: (-item[1], item[0]))
 
 
-def _report_reasons(title: str, grouped: Sequence[tuple[str, int]]) -> None:
-    """사유별 건수를 찍는다. 많은 것부터 다섯 줄까지다."""
+def _report_reasons(
+    title: str, grouped: Sequence[tuple[str, int]], indent: int = 4
+) -> None:
+    """사유별 건수를 찍는다. 많은 것부터 다섯 줄까지다.
+
+    `indent` 는 항목의 들여쓰기다. 13-4 는 검사 한 줄 아래에 표를 여럿 매달므로 제목이
+    한 단 더 들어가고 항목도 따라 들어가야 어느 제목의 항목인지 읽힌다.
+    """
     if not grouped:
         return
     print(title)
+    pad = " " * indent
     for reason, count in grouped[:5]:
-        print(f"    {count}건  {reason}")
+        print(f"{pad}{count}건  {reason}")
     if len(grouped) > 5:
-        print(f"    (사유 {len(grouped) - 5}가지 더 있다)")
+        print(f"{pad}(사유 {len(grouped) - 5}가지 더 있다)")
 
 
 def _spread(counts: dict[str, int]) -> str:
@@ -866,6 +1040,14 @@ class Session:
     limit: int | None
     analysis_version: str | None
     workload: Workload
+    taxonomy_version_id: str = ""
+    """이번 실행이 쓸 활성 분류체계 버전.
+
+    실행 앞에서 한 번 읽어 여섯 단계가 같은 값을 쓴다. Phase 13 은 분류체계 버전을
+    발행하지 않으므로 실행 도중 바뀔 자리가 없고, 그래도 바뀌었다면 각 실행 클래스가
+    `TAXONOMY_MISMATCH` 로 멈춘다.
+    """
+
     results: list[UnitResult] = field(default_factory=list)
 
     def envelope(self, step: str) -> RunEnvelope:
@@ -873,14 +1055,21 @@ class Session:
 
         `--analysis-version` 을 주면 그 버전에 실행 행만 매단다. 없는 버전을 주면
         멈춘다. 봉투가 서지 않으면 어떤 단계도 한 줄도 저장하지 못한다.
+
+        봉투에 넘기는 분류체계 버전은 저장소가 정한 활성 버전이다. 봉투는 같은 거래
+        안에서 그 값이 아직 활성인지 다시 보고, 어긋나면 사유를 적고 멈춘다.
         """
         agent_name = AGENT_NAME[step]
         if self.analysis_version is None:
-            return ensure_envelope(
-                job_role_id=self.job_role_id,
-                dataset_version=self.manifest.dataset_version,
-                agent_name=agent_name,
-            )
+            try:
+                return ensure_envelope(
+                    job_role_id=self.job_role_id,
+                    dataset_version=self.manifest.dataset_version,
+                    agent_name=agent_name,
+                    taxonomy_version_id=self.taxonomy_version_id,
+                )
+            except ValueError as error:
+                raise SystemExit(f"봉투를 세우지 못했다: {error}") from error
         with unit_of_work(Component.ORCHESTRATOR) as unit:
             store = OrchestratorStore(unit)
             if store.find_analysis_version(self.analysis_version) is None:
@@ -899,13 +1088,17 @@ class Session:
 
         예산의 도구 호출 한도를 1 로 둔다. Phase 13 은 외부를 부르지 않으므로 봉투의
         한도에 걸릴 자리가 없다. 집계량은 `--limit` 이 정한다.
+
+        분류체계 버전을 봉투에 넣는다. 비워 두면 각 실행 클래스의 버전 일치 검사가
+        건너뛰어져, 실행 도중 다른 실행이 새 버전을 발행해도 아무 데서도 걸리지 않고
+        분석 버전이 선언한 것과 다른 분류체계로 계산한 수치가 저장된다.
         """
         envelope = self.envelope(step)
         return RunContext(
             agent_run_id=envelope.agent_run_id,
             analysis_version=envelope.analysis_version,
             dataset_version=self.manifest.dataset_version,
-            taxonomy_version_id=None,
+            taxonomy_version_id=self.taxonomy_version_id,
             job_role_id=self.job_role_id,
             scope_level=ScopeLevel.OVERALL,
             as_of_date=self.manifest.as_of_date,
@@ -947,7 +1140,13 @@ def run_unit_1(session: Session) -> bool:
     with unit_of_work(Component.PIPE_AGGREGATE) as unit:
         outcome = MetricAggregation(
             MetricRepository(unit), PolicySampler()
-        ).run(context, limit=session.limit)
+        ).run(
+            context,
+            limit=session.limit,
+            progress=lambda done, total: report_progress(
+                "13-1", "집계", done, total
+            ),
+        )
     report_aggregation(outcome)
     return session.record(
         "13-1",
@@ -1078,6 +1277,7 @@ def _deltas_for_template(
                 continue
             existing.add(key)
             summary.stored += 1
+            report_progress("13-2", "델타 저장", summary.stored)
 
 
 def run_unit_5(session: Session) -> bool:
@@ -1089,7 +1289,11 @@ def run_unit_5(session: Session) -> bool:
     context = session.context("13-5")
     with unit_of_work(Component.PIPE_AGGREGATE) as unit:
         outcome = CapabilityDepthProfiles(DepthProfileRepository(unit)).run(
-            context, limit=session.limit
+            context,
+            limit=session.limit,
+            progress=lambda done, total: report_progress(
+                "13-5", "프로파일", done, total
+            ),
         )
     report_profiles(outcome)
     return session.record(
@@ -1132,12 +1336,22 @@ def run_unit_4(session: Session) -> bool:
 
     검사 결과는 실행마다 한 벌이다. 같은 판정을 두 번 남기는 것이 곧 두 번 검사했다는
     기록이며, 지표 행이 늘어난 뒤의 판정은 앞선 판정과 다를 수 있다.
+
+    `--limit` 이 이 단계에도 걸린다. 검증을 나눠 돌릴 수 있어야 하기 때문이며, 자른
+    실행은 위반이 없어도 통과가 아니라 부분 검사로 남는다.
     """
     context = session.context("13-4")
     registry = CheckRegistry()
     with unit_of_work(Component.PIPE_VERIFY) as unit:
         reader = StatisticsAuditRepository(unit, session.manifest.as_of_date)
-        registry.register(CheckName.NUMERICAL, numerical_consistency_check(reader))
+        registry.register(
+            CheckName.NUMERICAL,
+            numerical_consistency_check(
+                reader,
+                session.limit,
+                lambda done, total: report_progress("13-4", "검증", done, total),
+            ),
+        )
         report = CheckRunner(registry).run(
             CheckContext(
                 run=context,
@@ -1157,12 +1371,18 @@ def run_unit_4(session: Session) -> bool:
 
     failed = [result for result in executed if result.verdict is CheckVerdict.FAIL]
     stop_reason = verification_stop_reason(executed)
+    scanned, remaining = verification_scan(executed)
+    incomplete = ""
+    if failed:
+        incomplete = f"검증이 위반 {len(failed)}건을 찾았다"
+    elif remaining:
+        incomplete = f"한도에 닿아 대조하지 않은 행이 {remaining}개 있다"
     return session.record(
         "13-4",
         stop_reason,
-        f"검사 {len(executed)}종 · 실패 {len(failed)}건",
+        f"검사 {len(executed)}종 · 행 {scanned}개 · 실패 {len(failed)}건",
         (),
-        f"검증이 위반 {len(failed)}건을 찾았다" if failed else "",
+        incomplete,
     )
 
 
@@ -1213,7 +1433,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--limit",
         type=int,
         default=None,
-        help="13-1·13-2·13-5 가 이번 실행에 집을 최대 건수",
+        help="13-1·13-2·13-5 가 집을, 13-4 가 대조할 최대 건수",
     )
     parser.add_argument(
         "--from",
@@ -1269,13 +1489,27 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     manifest = SourceManifest.load(args.manifest)
     job_role_id = args.job_role or manifest.job_role_id
+
+    # 분석 버전을 계산하기 전에 활성 분류체계 버전을 읽는다. 봉투가 선언할 버전이
+    # 곧 식별자의 재료이므로, 이것을 상수로 두면 발행 한 번 뒤부터 선언과 계산이
+    # 갈린다.
+    taxonomy_version_id = active_taxonomy_version_id(job_role_id)
+    if taxonomy_version_id is None:
+        print(f"{ENVELOPE_NO_TAXONOMY}\n{PUBLISH_HINT}")
+        return EXIT_FAILED
+
     analysis_version = args.analysis_version or planned_analysis_version(
-        job_role_id, manifest.dataset_version
+        job_role_id, manifest.dataset_version, taxonomy_version_id
     )
+    mismatch = declared_taxonomy_mismatch(analysis_version, taxonomy_version_id)
+    if mismatch is not None:
+        print(f"{mismatch}\n{MISMATCH_HINT}")
+        return EXIT_FAILED
 
     print(f"직무          {job_role_id}")
     print(f"데이터셋      {manifest.dataset_version}  기준일 {manifest.as_of_date}")
     print(f"분석 버전     {analysis_version}")
+    print(f"활성 분류체계 {taxonomy_version_id}")
     print(f"구간          13-{args.from_unit} ~ 13-{args.to_unit}")
     print(f"돌릴 단계     {' '.join(f'13-{unit}' for unit in units)}")
     print(f"건수 제한     {args.limit if args.limit else '없음'}")
@@ -1283,7 +1517,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(LIMIT_WARNING)
 
     workload = gather_workload(manifest, job_role_id, analysis_version)
-    print(f"활성 분류체계 {workload.taxonomy_version_id or '없음'}")
     print(f"저장된 지표   {workload.stored_facts}행")
     report_estimate(build_estimates(units, workload))
 
@@ -1297,6 +1530,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         limit=args.limit,
         analysis_version=args.analysis_version,
         workload=workload,
+        taxonomy_version_id=taxonomy_version_id,
     )
 
     for unit in units:

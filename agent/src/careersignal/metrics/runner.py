@@ -8,6 +8,13 @@ docs/metric-spec.md 3장, 저장 자리는 docs/erd.md 10.5 다.
 카운트를 measure 행으로 옮겨 저장하는 세 단계다. 앞의 둘은 순수 함수와 저장소가 나눠
 갖고 이 모듈은 순서를 정한다.
 
+조회와 저장을 모두 묶는다. 원격 저장소에서는 왕복 하나가 수십 밀리초이므로 조합마다
+질의 하나·행마다 삽입 하나면 왕복 수가 실행 시간을 정한다. 집계 질의는 봉투 하나에 한
+번씩 보내 `GROUP BY dimension_id` 로 차원 전부를 한 번에 세고(`metrics/families.py` 의
+묶음 조각), 저장은 `INSERT_BATCH_SIZE` 행씩 한 문장으로 보낸다. 결과는 묶기 전과 같다.
+차원별 카운트는 왼쪽 바깥 조인이 빈 차원을 0 으로 채우고, 저장은 묶음이 실패하면 그
+묶음만 한 줄씩 다시 시도해 나쁜 행만 골라낸다.
+
 단계를 셋으로 나눈다. 앞선 family 의 결과를 뒤가 입력으로 쓰기 때문이다.
 
 1. `posting_prevalence`·`requiredness_ratio`·`depth_distribution`·`scope_expansion`·
@@ -18,7 +25,9 @@ docs/metric-spec.md 3장, 저장 자리는 docs/erd.md 10.5 다.
    (같은 문서 3.4).
 
 뒤 두 단계의 입력은 메모리가 아니라 저장된 행에서 읽는다. 증분 재실행이
-`posting_prevalence` 를 건너뛰어도 쌍의 대상과 기준선이 같아야 하기 때문이다.
+`posting_prevalence` 를 건너뛰어도 쌍의 대상과 기준선이 같아야 하기 때문이다. 그래서
+단계가 끝날 때마다 모아 둔 행을 먼저 저장한다. 저장을 실행 끝까지 미루면 뒤 두 단계가
+같은 거래에서 방금 만든 `posting_prevalence` 를 찾지 못한다.
 
 `sample_status` 와 `uncertainty` 는 이 모듈이 정하지 않는다. 최소 표본과 억제 정책,
 불확실성 방법은 `metric_policy_versions` 가 정하는 값이며 코드 상수가 아니다
@@ -33,8 +42,8 @@ docs/metric-spec.md 3장, 저장 자리는 docs/erd.md 10.5 다.
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Protocol
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -54,7 +63,7 @@ from careersignal.metrics.expansion import (
     envelopes,
     expand,
 )
-from careersignal.repositories.base import item_savepoint, transaction_is_dead
+from careersignal.repositories.base import INSERT_BATCH_SIZE, insert_in_batches
 
 if TYPE_CHECKING:  # pragma: no cover - 형 검사에서만 필요하다
     from careersignal.repositories.metrics import MetricRepository
@@ -90,6 +99,37 @@ NO_POLICY = "이 family 의 지표 정책 버전이 없다"
 
 NO_BASELINE = "견줄 posting_prevalence 행이 없다"
 """`cluster_contrast` 의 기업군 값이나 직무 전체 값이 저장되지 않았다."""
+
+MISSING_DIMENSION_COUNT = "묶음 조회가 이 차원의 카운트를 돌려주지 않았다"
+"""봉투의 묶음 결과에 조합의 차원이 없다.
+
+차원 목록을 배열로 넘기고 왼쪽 바깥 조인으로 채우므로(`metrics/families.py` 의
+`DIMENSION_LIST_CTE`) 정상 경로에서는 없다. 없는 것을 0 으로 읽지 않는다. 분자 0 은
+그 차원이 한 공고에도 나타나지 않았다는 자료이고, 행이 빠진 것은 조회가 목록을 지키지
+않았다는 뜻이라 둘을 같게 두면 조회의 결함이 수치로 굳는다.
+"""
+
+ProgressReport = Callable[[int, int], None]
+"""진행 상황을 받는 쪽. `(처리한 조합 수, 전개한 조합 수)` 를 받는다.
+
+간격을 정하고 줄을 찍는 것은 받는 쪽의 몫이다. 실행이 출력 형식을 정하면 같은 실행을
+다른 화면에 붙일 수 없다.
+"""
+
+
+class _PendingFact(NamedTuple):
+    """저장을 기다리는 지표 행 하나.
+
+    행만 모으지 않고 실패를 적을 이름과 증분 판정에 쓸 키를 함께 나른다. 묶음 저장은
+    어느 행이 실패했는지를 번호로 돌려주므로, 번호에서 이름과 키로 되짚을 자리가 있어야
+    한다.
+    """
+
+    label: str
+    key: tuple[str, ...]
+    metric_family: str
+    row: dict[str, Any]
+
 
 ALL_SEGMENTS: tuple[EntrySegment, ...] = (PRIMARY_SEGMENT, *SEGMENTED)
 """전개할 대상군 네 값(docs/metric-spec.md 2.7).
@@ -278,6 +318,7 @@ class MetricAggregation:
         context: RunContext,
         period_ids: Sequence[str] | None = None,
         limit: int | None = None,
+        progress: ProgressReport | None = None,
     ) -> MetricOutcome:
         """증분 실행. 이 분석 버전에 아직 없는 조합만 계산한다.
 
@@ -289,6 +330,14 @@ class MetricAggregation:
         한도에 닿으면 `limit_reached` 가 참이 되고 남은 조합은 다음 실행이 집는다.
         전개 순서가 결정적이므로(`metrics/expansion.py`) 어디까지 집었는지를 따로 적어
         둘 필요가 없다.
+
+        `progress` 는 조합 하나를 처리할 때마다 `(처리한 수, 전개한 수)` 를 받는다.
+        조합이 만 단위라 끝날 때까지 화면이 비면 멈춘 실행과 구분되지 않는다. 간격을
+        정하고 줄을 찍는 것은 받는 쪽의 몫이다(`scripts/stage_e.py` 의
+        `report_progress`). 두 번째 수는 단계가 시작될 때마다 그 단계의 전개 수만큼
+        늘어난다. 차원 쌍의 수가 `posting_prevalence` 의 결과에 달려 있어
+        (docs/metric-spec.md 5장) 첫 단계 전에는 전량을 알 수 없기 때문이며, 알지 못하는
+        수를 지어내 찍지 않는다.
         """
         active = self._repository.active_taxonomy_version(context.job_role_id)
         if active is None:
@@ -301,7 +350,7 @@ class MetricAggregation:
         ):
             return self._halted(context, TAXONOMY_MISMATCH, taxonomy_version_id)
 
-        state = _State(context, taxonomy_version_id, limit)
+        state = _State(context, taxonomy_version_id, limit, progress)
         state.policies = {
             str(row["metric_family"]): dict(row)
             for row in self._repository.effective_policies(context.as_of_date)
@@ -322,6 +371,9 @@ class MetricAggregation:
         state.dimension_count = len(dimensions)
         if not dimensions:
             return state.outcome()
+        state.dimension_ids = tuple(
+            sorted({dimension.dimension_id for dimension in dimensions})
+        )
 
         applicability = Applicability.from_rows(
             self._repository.applicability(taxonomy_version_id)
@@ -358,10 +410,11 @@ class MetricAggregation:
                 str(MetricFamily.CLUSTER_CONTRAST),
             }
         ]
-        for combination in expand(
-            subset, dimensions, scope_envelopes, applicability
-        ):
+        combinations = expand(subset, dimensions, scope_envelopes, applicability)
+        state.plan(len(combinations))
+        for combination in combinations:
             self._compute(combination, state)
+        self._flush(state)
 
     def _stage_pairs(
         self,
@@ -400,10 +453,17 @@ class MetricAggregation:
             ]
             for envelope in scope_envelopes
         }
-        for combination in expand(
+        state.eligible = {
+            envelope: tuple(dimension_ids)
+            for envelope, dimension_ids in eligible.items()
+        }
+        combinations = expand(
             subset, dimensions, scope_envelopes, applicability, eligible
-        ):
+        )
+        state.plan(len(combinations))
+        for combination in combinations:
             self._compute(combination, state)
+        self._flush(state)
 
     def _stage_contrast(
         self,
@@ -430,15 +490,17 @@ class MetricAggregation:
         ]
         if not subset:
             return
-        for combination in expand(
-            subset, dimensions, scope_envelopes, applicability
-        ):
+        combinations = expand(subset, dimensions, scope_envelopes, applicability)
+        state.plan(len(combinations))
+        for combination in combinations:
             self._contrast(combination, state)
+        self._flush(state)
 
     # ------------------------------------------------------------ 조합 하나
     def _compute(self, combination: MetricCombination, state: _State) -> None:
-        """집계 문장을 돌려 measure 를 만들고 저장한다."""
+        """집계 문장을 돌려 measure 를 만들고 저장할 행에 담는다."""
         state.expanded += 1
+        state.advance()
         family = MetricFamily(combination.metric_family)
         policy = state.policies.get(combination.metric_family)
         if policy is None:
@@ -450,9 +512,8 @@ class MetricAggregation:
         if state.reached_limit():
             return
 
-        params = self._params(combination, state)
         try:
-            results = self._measures(family, params)
+            results = self._measures(family, combination, state)
         except Exception as exc:
             state.errors.append((_label(combination), _failure(exc)))
             return
@@ -462,6 +523,7 @@ class MetricAggregation:
     def _contrast(self, combination: MetricCombination, state: _State) -> None:
         """`cluster_contrast` 조합 하나(docs/metric-spec.md 3.4)."""
         state.expanded += 1
+        state.advance()
         family = MetricFamily.CLUSTER_CONTRAST
         policy = state.policies.get(str(family))
         if policy is None:
@@ -498,26 +560,34 @@ class MetricAggregation:
         self._store(combination, results, policy, state)
 
     def _measures(
-        self, family: MetricFamily, params: dict[str, Any]
+        self,
+        family: MetricFamily,
+        combination: MetricCombination,
+        state: _State,
     ) -> tuple[families.MeasureResult, ...]:
-        """family 마다 카운트를 조회해 measure 로 옮긴다.
+        """family 마다 카운트를 얻어 measure 로 옮긴다.
 
         분자·분모의 정의는 `metrics/families.py` 가 갖는다. 이 자리는 어느 조회를 어느
         판정 함수에 잇는지만 정한다.
+
+        차원 축을 갖는 네 family 는 봉투 하나의 결과를 통째로 받아 그 안에서 이 조합의
+        차원을 찾는다. 차원을 받지 않는 두 family 는 봉투마다 조합이 하나뿐이라 묶을
+        축이 없으므로 그대로 조회한다.
         """
+        envelope = combination.envelope
         match family:
             case MetricFamily.POSTING_PREVALENCE:
-                row = self._repository.prevalence_counts(params)
+                row = self._dimension_row(family, combination, state)
                 return families.prevalence(
                     int(row["numerator"]), int(row["denominator"])
                 )
             case MetricFamily.REQUIREDNESS_RATIO:
-                row = self._repository.requiredness_counts(params)
+                row = self._dimension_row(family, combination, state)
                 return families.requiredness(
                     int(row["numerator"]), int(row["denominator"])
                 )
             case MetricFamily.DEPTH_DISTRIBUTION:
-                row = self._repository.depth_counts(params)
+                row = self._dimension_row(family, combination, state)
                 return families.depth_distribution(
                     int(row["foundation"]),
                     int(row["application"]),
@@ -525,24 +595,116 @@ class MetricAggregation:
                     int(row["denominator"]),
                 )
             case MetricFamily.COOCCURRENCE:
-                row = self._repository.cooccurrence_counts(params)
-                return families.cooccurrence(
-                    int(row["n_ab"]),
-                    int(row["n_a"]),
-                    int(row["n_b"]),
-                    int(row["n_total"]),
-                )
+                return self._pair_measures(combination, state)
             case MetricFamily.SCOPE_EXPANSION:
-                row = self._repository.scope_expansion_counts(params)
+                row = self._repository.scope_expansion_counts(
+                    self._params(envelope, state)
+                )
                 return families.scope_expansion(
                     int(row["numerator"]), int(row["denominator"])
                 )
             case MetricFamily.ENTRY_LABEL_ADVANCED_SIGNAL_RATE:
-                row = self._repository.advanced_signal_counts(params)
+                row = self._repository.advanced_signal_counts(
+                    self._params(envelope, state)
+                )
                 return families.advanced_signal_rate(
                     int(row["numerator"]), int(row["denominator"])
                 )
         raise ValueError(f"집계 문장이 없는 지표: {family}")
+
+    def _pair_measures(
+        self, combination: MetricCombination, state: _State
+    ) -> tuple[families.MeasureResult, ...]:
+        """차원 쌍 하나의 네 카운트(docs/metric-spec.md 3.5).
+
+        `n_ab` 만 쌍 조회에서 온다. `n_a`·`n_b` 는 두 차원의 `posting_prevalence` 분자,
+        `n_total` 은 그 분모이며 같은 봉투에서 이미 세어져 있다. 같은 수를 두 번 세지
+        않으므로 `jaccard` 의 분모가 분자보다 작아질 수 없다.
+
+        쌍 조회에 없는 쌍은 교집합이 0 이다. 두 차원이 한 공고에서도 함께 나타나지
+        않았다는 뜻이며, 쌍마다 문장을 보내던 때에도 `n_ab` 가 0 이었다.
+        """
+        envelope = combination.envelope
+        left = str(combination.dimension_id)
+        right = str(combination.secondary_dimension_id)
+        pairs = self._pair_counts(envelope, state)
+        singles = self._counts(MetricFamily.POSTING_PREVALENCE, envelope, state)
+        return families.cooccurrence(
+            pairs.get((left, right), 0),
+            int(_dimension_of(singles, left, envelope)["numerator"]),
+            int(_dimension_of(singles, right, envelope)["numerator"]),
+            int(_dimension_of(singles, left, envelope)["denominator"]),
+        )
+
+    # ------------------------------------------------------------ 묶음 조회
+    def _dimension_row(
+        self,
+        family: MetricFamily,
+        combination: MetricCombination,
+        state: _State,
+    ) -> dict[str, Any]:
+        """이 조합의 차원 한 줄. 봉투의 묶음 결과에서 찾는다."""
+        envelope = combination.envelope
+        counts = self._counts(family, envelope, state)
+        return _dimension_of(counts, str(combination.dimension_id), envelope)
+
+    def _counts(
+        self, family: MetricFamily, envelope: Envelope, state: _State
+    ) -> dict[str, dict[str, Any]]:
+        """봉투 하나의 차원별 카운트. 실행 안에서 봉투마다 한 번만 조회한다.
+
+        `cooccurrence` 가 `posting_prevalence` 의 결과를 다시 쓰므로 기억해 둔다. 같은
+        거래 안에서 원천 표가 바뀌지 않으니 기억한 값과 다시 읽은 값이 다를 수 없다.
+
+        조회를 미뤄 두는 것이 증분 재실행의 전제다. 이미 저장된 조합은 `_compute` 가
+        문장에 닿기 전에 건너뛰므로, 봉투의 조합이 전부 저장돼 있으면 그 봉투의 문장은
+        한 번도 나가지 않는다.
+        """
+        key = (str(family), envelope)
+        cached = state.counts.get(key)
+        if cached is None:
+            rows = self._count_rows(
+                family, self._params(envelope, state, state.dimension_ids)
+            )
+            cached = {str(row["dimension_id"]): dict(row) for row in rows}
+            state.counts[key] = cached
+        return cached
+
+    def _count_rows(
+        self, family: MetricFamily, params: dict[str, Any]
+    ) -> Sequence[dict[str, Any]]:
+        """차원 축을 갖는 세 family 의 묶음 조회."""
+        match family:
+            case MetricFamily.POSTING_PREVALENCE:
+                return self._repository.prevalence_counts_by_dimension(params)
+            case MetricFamily.REQUIREDNESS_RATIO:
+                return self._repository.requiredness_counts_by_dimension(params)
+            case MetricFamily.DEPTH_DISTRIBUTION:
+                return self._repository.depth_counts_by_dimension(params)
+        raise ValueError(f"차원별 집계 문장이 없는 지표: {family}")
+
+    def _pair_counts(
+        self, envelope: Envelope, state: _State
+    ) -> dict[tuple[str, str], int]:
+        """봉투 하나의 쌍별 교집합 크기. 봉투마다 한 번만 조회한다.
+
+        대상은 그 봉투에서 쌍을 만들 수 있는 차원뿐이다(docs/metric-spec.md 5장). 쌍은
+        차원 수의 제곱으로 늘므로 자르지 않은 목록을 넘기면 세지 않을 쌍까지 센다.
+        """
+        cached = state.pairs.get(envelope)
+        if cached is None:
+            eligible = state.eligible.get(envelope, ())
+            cached = {
+                (
+                    str(row["dimension_id"]),
+                    str(row["secondary_dimension_id"]),
+                ): int(row["n_ab"])
+                for row in self._repository.cooccurrence_pair_counts(
+                    self._params(envelope, state, eligible)
+                )
+            }
+            state.pairs[envelope] = cached
+        return cached
 
     # ------------------------------------------------------------ 저장
     def _store(
@@ -552,12 +714,17 @@ class MetricAggregation:
         policy: dict[str, Any],
         state: _State,
     ) -> None:
-        """measure 마다 한 행. 이미 있는 measure 는 다시 넣지 않는다."""
+        """measure 마다 한 행. 이미 있는 measure 는 다시 넣지 않는다.
+
+        여기서 넣지 않고 모아 둔다. 저장은 `_flush` 가 묶어 보내며 단계가 끝날 때마다
+        불린다. 행마다 문장을 보내면 왕복이 저장 행 수만큼이고, 21,676행이면 그 왕복이
+        실행 시간의 거의 전부가 된다.
+        """
         family = MetricFamily(combination.metric_family)
         wilson = families.WILSON_MEASURES[family]
         for result in results:
             key = combination.fact_key(result.measure)
-            if key in state.existing:
+            if key in state.existing or key in state.queued:
                 continue
             point = MeasurePoint(
                 metric_family=combination.metric_family,
@@ -582,25 +749,64 @@ class MetricAggregation:
                 return
             if verdict.suppressed:
                 state.suppressed += 1
-            # measure 하나가 저장의 단위다. 되돌림 지점이 실패한 행만 되돌리고 거래를
-            # 살려 두므로 한 행의 실패가 뒤 행의 저장을 막지 않는다.
-            try:
-                with item_savepoint(self._repository):
-                    self._repository.add_fact(
-                        _fact_row(state.context, combination, point, verdict)
-                    )
-            except Exception as exc:
-                state.errors.append((_label(combination), _failure(exc)))
-                if transaction_is_dead(exc):
-                    state.errors.append((_label(combination), TRANSACTION_LOST))
-                    state.transaction_lost = True
-                    return
-                continue
-            state.existing.add(key)
-            state.stored += 1
-            state.by_family[combination.metric_family] = (
-                state.by_family.get(combination.metric_family, 0) + 1
+            state.queued.add(key)
+            state.pending.append(
+                _PendingFact(
+                    label=_label(combination),
+                    key=key,
+                    metric_family=combination.metric_family,
+                    row=_fact_row(state.context, combination, point, verdict),
+                )
             )
+        if len(state.pending) >= INSERT_BATCH_SIZE:
+            self._flush(state, final=False)
+
+    def _flush(self, state: _State, final: bool = True) -> None:
+        """모아 둔 지표 행을 묶어 저장한다.
+
+        세이브포인트의 단위가 묶음이고, 되돌아간 묶음은 한 줄씩 다시 넣어 나쁜 행만
+        골라낸다(`repositories/base.py` 의 `insert_in_batches`). 그래서 저장되는 행
+        집합이 행마다 세이브포인트를 잡던 것과 같다. 실패한 행은 `existing` 에 들지 않아
+        자국이 없고 다음 실행이 다시 계산한다.
+
+        거래가 죽으면 그 자리에서 멈춘다. 죽은 거래에 계속 넣으면 같은 사유의 실패 줄이
+        행 수만큼 쌓이고 무엇이 진짜 원인이었는지 묻힌다.
+
+        `final` 이 거짓이면 꽉 찬 묶음만 보내고 나머지를 남긴다. 조합 하나가 measure
+        다섯 줄을 낳으므로 모아 둔 수가 묶음 크기를 조금씩 넘고, 넘긴 채로 보내면 묶음
+        하나가 꽉 찬 것과 몇 줄짜리 꼬리로 갈려 문장 수가 두 배가 된다. 단계가 끝날 때만
+        꼬리까지 보낸다. 뒤 단계가 그 행을 읽어야 하기 때문이다.
+        """
+        if state.transaction_lost:
+            # 죽은 거래에 남은 행을 더 보내면 같은 사유의 실패 줄만 쌓인다.
+            state.pending = []
+            return
+        pending = state.pending
+        size = (
+            len(pending) if final else len(pending) - len(pending) % INSERT_BATCH_SIZE
+        )
+        if not size:
+            return
+        pending, state.pending = pending[:size], pending[size:]
+        written = insert_in_batches(
+            self._repository,
+            self._repository.add_facts,
+            self._repository.add_fact,
+            [item.row for item in pending],
+        )
+        for index in written.stored:
+            item = pending[index]
+            state.existing.add(item.key)
+            state.stored += 1
+            state.by_family[item.metric_family] = (
+                state.by_family.get(item.metric_family, 0) + 1
+            )
+        for index, exc in written.failed:
+            state.errors.append((pending[index].label, _failure(exc)))
+        if written.fatal is not None:
+            last = pending[written.failed[-1][0]]
+            state.errors.append((last.label, TRANSACTION_LOST))
+            state.transaction_lost = True
 
     # ------------------------------------------------------------ 입력
     def _templates(self) -> list[MetricTemplate]:
@@ -664,15 +870,21 @@ class MetricAggregation:
         return cached
 
     def _params(
-        self, combination: MetricCombination, state: _State
+        self,
+        envelope: Envelope,
+        state: _State,
+        dimension_ids: Sequence[str] = (),
     ) -> dict[str, Any]:
-        """집계 문장의 자리표시자.
+        """집계 문장의 자리표시자. 조합이 아니라 봉투가 단위다.
 
         `entry_labels` 는 대상군을 `entry_label` 목록으로 편 것이며 `all` 이면 NULL 이다
         (docs/metric-spec.md 2.7). `as_of_date` 는 기업군 소속을 해석하는 시점이다
         (docs/statistics-model.md 5.2).
+
+        `dimension_ids` 는 이번 문장이 값을 받아야 할 차원 목록이다. 차원 축이 없는
+        문장은 비운다. 차원 하나를 자리표시자로 넘기던 자리를 목록으로 바꾼 것이며,
+        그래서 봉투 하나에 문장 하나면 그 봉투의 차원 전부가 채워진다.
         """
-        envelope = combination.envelope
         labels = families.segment_labels(envelope.entry_segment)
         return {
             "job_role_id": state.context.job_role_id,
@@ -683,8 +895,7 @@ class MetricAggregation:
             "scope_id": envelope.scope_id,
             "as_of_date": state.context.as_of_date,
             "entry_labels": list(labels) if labels is not None else None,
-            "dimension_id": combination.dimension_id,
-            "secondary_dimension_id": combination.secondary_dimension_id,
+            "dimension_ids": list(dimension_ids),
         }
 
     # ------------------------------------------------------------ 실패
@@ -712,6 +923,7 @@ class _State:
         context: RunContext,
         taxonomy_version_id: str,
         limit: int | None = None,
+        progress: ProgressReport | None = None,
     ) -> None:
         self.context = context
         self.taxonomy_version_id = taxonomy_version_id
@@ -732,11 +944,45 @@ class _State:
         self.existing: set[tuple[str, ...]] = set()
         self.prevalence: dict[Envelope, dict[str, tuple[int, int]]] = {}
 
+        self.dimension_ids: tuple[str, ...] = ()
+        """집계에 넣을 활성 차원 전부. 차원별 묶음 조회의 배열 매개변수다."""
+
+        self.eligible: dict[Envelope, tuple[str, ...]] = {}
+        """봉투마다 차원 쌍을 만들 수 있는 차원(docs/metric-spec.md 5장)."""
+
+        self.counts: dict[tuple[str, Envelope], dict[str, dict[str, Any]]] = {}
+        self.pairs: dict[Envelope, dict[tuple[str, str], int]] = {}
+        """봉투 하나에 한 번씩만 조회하도록 기억해 둔 묶음 결과."""
+
+        self.pending: list[_PendingFact] = []
+        self.queued: set[tuple[str, ...]] = set()
+        """저장을 기다리는 행과 그 키.
+
+        키를 따로 두는 이유는 `existing` 이 저장에 성공한 행만 담기 때문이다. 아직 넣지
+        않은 행을 `existing` 에 미리 담으면 저장이 실패한 행이 저장된 것으로 읽힌다.
+        """
+
         self.by_family: dict[str, int] = {}
         self.missing_input: list[tuple[str, str]] = []
         self.errors: list[tuple[str, str]] = []
         self.transaction_lost = False
         """거래가 죽었는가. 참이면 남은 조합을 계산하지도 저장하지도 않는다."""
+
+        self.planned = 0
+        self.processed = 0
+        self.report = progress
+        """진행 상황을 받는 쪽. 없으면 아무것도 알리지 않는다."""
+
+    # ------------------------------------------------------------ 진행
+    def plan(self, count: int) -> None:
+        """이 단계가 전개한 조합 수를 알린 총량에 더한다."""
+        self.planned += count
+
+    def advance(self) -> None:
+        """조합 하나를 처리했다. 간격을 정하는 것은 받는 쪽의 몫이다."""
+        self.processed += 1
+        if self.report is not None:
+            self.report(self.processed, self.planned)
 
     def reached_limit(self) -> bool:
         """이번 실행의 한도를 다 썼거나 거래가 죽었는가. 사실을 결과에 남긴다.
@@ -824,6 +1070,19 @@ def _fact_row(
     }
 
 
+def _dimension_of(
+    counts: dict[str, dict[str, Any]], dimension_id: str, envelope: Envelope
+) -> dict[str, Any]:
+    """묶음 결과에서 차원 하나의 줄을 꺼낸다. 없으면 계산하지 않고 실패로 남긴다."""
+    row = counts.get(dimension_id)
+    if row is None:
+        raise ValueError(
+            f"{MISSING_DIMENSION_COUNT}: {dimension_id} "
+            f"({':'.join(envelope.sort_key)})"
+        )
+    return row
+
+
 def _label(combination: MetricCombination) -> str:
     """실패 목록에 적을 조합 이름. 사유별로 묶어 읽을 수 있게 짧게 둔다."""
     return ":".join(combination.fact_key(""))
@@ -852,6 +1111,7 @@ def _stop_reason(expanded: int, stored: int, errors: bool) -> StopReason:
 
 __all__ = [
     "ALL_SEGMENTS",
+    "MISSING_DIMENSION_COUNT",
     "NO_ACTIVE_TAXONOMY",
     "NO_BASELINE",
     "NO_POLICY",
@@ -861,6 +1121,7 @@ __all__ = [
     "MetricAggregation",
     "MetricOutcome",
     "PolicySampler",
+    "ProgressReport",
     "SamplePolicy",
     "SampleVerdict",
     "fact_identifier",
