@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MistakeNote } from '../../mistake-notes/model/useMistakeNoteStore'
-import { formatTestResultLabel, findTopWeakConcept, getTrackStatus } from './trackStats'
+import { formatTestResultLabel, findTopWeakConcept, getGitLabTrackProgress, getTrackStatus } from './trackStats'
 
 function createMistakeNote(overrides: Partial<MistakeNote>): MistakeNote {
   return {
@@ -44,5 +44,16 @@ describe('trackStats', () => {
 
   it('returns null when there are no open mistake notes', () => {
     expect(findTopWeakConcept([createMistakeNote({ status: 'resolved' })])).toBeNull()
+  })
+
+  it('calculates Git Lab completion from unique passed server attempts', () => {
+    const progress = getGitLabTrackProgress([
+      { id: 'a1', lessonId: '1-1', command: 'git init', result: 'passed', reason: '', createdAt: 'now' },
+      { id: 'a2', lessonId: '1-1', command: 'git init', result: 'passed', reason: '', createdAt: 'now' },
+      { id: 'a3', lessonId: '1-2', command: 'git add', result: 'failed', reason: 'failed', createdAt: 'now' },
+    ])
+
+    expect(progress.clearedCount).toBe(1)
+    expect(progress.percent).toBeGreaterThan(0)
   })
 })

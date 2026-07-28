@@ -1,10 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TodayLearningHub } from './TodayLearningHub'
 
 describe('TodayLearningHub', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('keeps the dashboard focused on the primary learning workflow', () => {
+    vi.stubEnv('VITE_ICU_API_MODE', 'mock')
     const markup = renderToStaticMarkup(
       <MemoryRouter>
         <TodayLearningHub />
@@ -24,5 +27,17 @@ describe('TodayLearningHub', () => {
     expect(markup).toContain('href="/curriculum/history"')
     expect(markup).toContain('Step 0 /')
     expect(markup).not.toContain('calendar-title')
+  })
+
+  it('shows a curriculum creation action instead of mock learning data in server mode', () => {
+    vi.stubEnv('VITE_ICU_API_MODE', 'server')
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <TodayLearningHub />
+      </MemoryRouter>,
+    )
+
+    expect(markup).toContain('커리큘럼을 먼저 생성해 주세요')
+    expect(markup).toContain('href="/today/goal"')
   })
 })

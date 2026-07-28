@@ -19,7 +19,8 @@ function createLocalStorage(initialEntries: Record<string, string> = {}) {
   } as Storage
 }
 
-async function importStore(localStorage: Storage) {
+async function importStore(localStorage: Storage, mode: 'mock' | 'server' = 'mock') {
+  vi.stubEnv('VITE_ICU_API_MODE', mode)
   vi.stubGlobal('window', { localStorage })
   const module = await import('./useGeneratedCurriculumStore')
 
@@ -30,6 +31,7 @@ describe('useGeneratedCurriculumStore', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
     vi.useRealTimers()
   })
 
@@ -97,6 +99,20 @@ describe('useGeneratedCurriculumStore', () => {
     const { useGeneratedCurriculumStore } = await importStore(localStorage)
 
     expect(useGeneratedCurriculumStore.getState().generatedCurriculum).toBeNull()
+  })
+
+  it('ignores and does not persist local curriculum data in server mode', async () => {
+    const plan = generateMockCurriculum('React 배우기')
+    const snapshot = { id: plan.id, goal: plan.goal, plan, generatedAt: '2026-07-28T00:00:00.000Z' }
+    const localStorage = createLocalStorage({ [storageKey]: JSON.stringify(snapshot) })
+    const { useGeneratedCurriculumStore } = await importStore(localStorage, 'server')
+
+    expect(useGeneratedCurriculumStore.getState().generatedCurriculum).toBeNull()
+    expect(localStorage.getItem).not.toHaveBeenCalled()
+
+    useGeneratedCurriculumStore.getState().hydrateGeneratedCurriculum(snapshot)
+    expect(useGeneratedCurriculumStore.getState().generatedCurriculum).toEqual(snapshot)
+    expect(localStorage.setItem).not.toHaveBeenCalled()
   })
 
   it('resolves the saved generated plan before the fallback plan', async () => {

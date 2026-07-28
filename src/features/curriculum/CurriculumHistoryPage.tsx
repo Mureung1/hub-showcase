@@ -4,6 +4,7 @@ import { shouldUseServerApi } from '../../app/icuApiMode'
 import {
   deleteCurriculumHistoryItemApi,
   getCurriculumHistory,
+  saveGeneratedCurriculumApi,
 } from './api/curriculumClient'
 import { CurriculumDetailModal } from './components/CurriculumDetailModal'
 import {
@@ -17,6 +18,9 @@ export function CurriculumHistoryPage() {
   const activeCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const history = useGeneratedCurriculumStore((state) => state.history)
   const hydrateHistory = useGeneratedCurriculumStore((state) => state.hydrateHistory)
+  const hydrateGeneratedCurriculum = useGeneratedCurriculumStore(
+    (state) => state.hydrateGeneratedCurriculum,
+  )
   const activateCurriculumSnapshot = useGeneratedCurriculumStore(
     (state) => state.activateCurriculumSnapshot,
   )
@@ -25,6 +29,7 @@ export function CurriculumHistoryPage() {
   )
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [serverError, setServerError] = useState('')
   const [detailState, setDetailState] = useState<{
     snapshot: GeneratedCurriculumSnapshot
     rect: DOMRect | null
@@ -36,12 +41,12 @@ export function CurriculumHistoryPage() {
     if (shouldUseServerApi()) {
       void getCurriculumHistory({ mode: 'server' })
         .then(({ curriculums }) => {
-          if (!cancelled && curriculums.length > 0) {
+          if (!cancelled) {
             hydrateHistory(curriculums)
           }
         })
         .catch(() => {
-          // Keep local store fallback
+          if (!cancelled) setServerError('커리큘럼 이력을 불러오지 못했습니다. 다시 열어 주세요.')
         })
     }
 
@@ -79,24 +84,41 @@ export function CurriculumHistoryPage() {
     return duplicates
   }, [history])
 
-  function handleActivate(snapshot: GeneratedCurriculumSnapshot) {
+  async function handleActivate(snapshot: GeneratedCurriculumSnapshot) {
     const targetId = snapshot.id || `${snapshot.goal}-curriculum-plan`
-    activateCurriculumSnapshot(targetId)
-    void navigate('/today')
-  }
+    setServerError('')
 
-  function handleDelete(snapshot: GeneratedCurriculumSnapshot) {
-    const targetId = snapshot.id || `${snapshot.goal}-curriculum-plan`
-    deleteCurriculumSnapshot(targetId)
-
-    if (shouldUseServerApi()) {
-      void deleteCurriculumHistoryItemApi(targetId, { mode: 'server' }).catch(() => {})
+    try {
+      if (shouldUseServerApi()) {
+        const { generatedCurriculum } = await saveGeneratedCurriculumApi(snapshot, { mode: 'server' })
+        hydrateGeneratedCurriculum(generatedCurriculum)
+      } else {
+        activateCurriculumSnapshot(targetId)
+      }
+      void navigate('/today')
+    } catch {
+      setServerError('선택한 커리큘럼을 활성화하지 못했습니다. 다시 시도해 주세요.')
     }
   }
 
-  function handleCleanDuplicates() {
+  async function handleDelete(snapshot: GeneratedCurriculumSnapshot) {
+    const targetId = snapshot.id || `${snapshot.goal}-curriculum-plan`
+    setServerError('')
+
+    try {
+      if (shouldUseServerApi()) {
+        await deleteCurriculumHistoryItemApi(targetId, { mode: 'server' })
+      }
+      deleteCurriculumSnapshot(targetId)
+    } catch {
+      setServerError('커리큘럼을 삭제하지 못했습니다. 다시 시도해 주세요.')
+    }
+  }
+
+  async function handleCleanDuplicates() {
     const seenGoals = new Set<string>()
     const cleaned: GeneratedCurriculumSnapshot[] = []
+    const duplicateIds: string[] = []
 
     for (const item of history) {
       const normalizedGoal = item.goal.trim().toLowerCase()
@@ -105,13 +127,16 @@ export function CurriculumHistoryPage() {
         cleaned.push(item)
       } else {
         const idToDelete = item.id || `${item.goal}-curriculum-plan`
-        if (shouldUseServerApi()) {
-          void deleteCurriculumHistoryItemApi(idToDelete, { mode: 'server' }).catch(() => {})
-        }
+        if (shouldUseServerApi()) duplicateIds.push(idToDelete)
       }
     }
 
-    hydrateHistory(cleaned)
+    try {
+      await Promise.all(duplicateIds.map((id) => deleteCurriculumHistoryItemApi(id, { mode: 'server' })))
+      hydrateHistory(cleaned)
+    } catch {
+      setServerError('중복 커리큘럼을 정리하지 못했습니다. 다시 시도해 주세요.')
+    }
   }
 
   const activeId = activeCurriculum?.id || (activeCurriculum ? `${activeCurriculum.goal}-curriculum-plan` : '')
@@ -138,6 +163,8 @@ export function CurriculumHistoryPage() {
           </Link>
         </div>
       </header>
+
+      {serverError ? <p className={styles.errorMessage} role="alert">{serverError}</p> : null}
 
       <div className={styles.filterRow}>
         <input

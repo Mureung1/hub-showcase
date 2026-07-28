@@ -12,6 +12,7 @@ import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
+import { persistGeneratedCurriculum } from '../curriculum/model/persistGeneratedCurriculum'
 import { CurriculumLoading } from './CurriculumLoading'
 import styles from './TodayLearningHub.module.css'
 
@@ -45,6 +46,7 @@ export function TodayLearningGoalPage() {
   const { profile } = useLearningProfileStore()
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const saveGeneratedCurriculum = useGeneratedCurriculumStore((state) => state.saveGeneratedCurriculum)
+  const hydrateGeneratedCurriculum = useGeneratedCurriculumStore((state) => state.hydrateGeneratedCurriculum)
   const resetGeneratedCurriculum = useGeneratedCurriculumStore((state) => state.resetGeneratedCurriculum)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const fallbackGeneratedPlan = useMemo(() => createFallbackCurriculumPlan(profileGoal), [profileGoal])
@@ -80,15 +82,19 @@ export function TodayLearningGoalPage() {
       { goal: trimmedGoal, followUpInstruction: trimmedFollowUp || undefined, previousPlan: generatedCurriculum?.plan },
       { mode: shouldUseServerApi() ? 'server' : 'mock' },
     )
-      .then(({ plan }) => {
+      .then(async ({ plan }) => {
         setCareerGoal(trimmedGoal)
-        saveGeneratedCurriculum(trimmedGoal, plan)
-        if (shouldUseServerApi()) {
-          void saveGeneratedCurriculumApi(
+        await persistGeneratedCurriculum({
+          goal: trimmedGoal,
+          plan,
+          serverMode: shouldUseServerApi(),
+          saveServer: () => saveGeneratedCurriculumApi(
             { goal: trimmedGoal, plan, generatedAt: new Date().toISOString() },
             { mode: 'server' },
-          ).catch(() => {})
-        }
+          ),
+          saveLocal: saveGeneratedCurriculum,
+          hydrate: hydrateGeneratedCurriculum,
+        })
         setGenerationStatus('ready')
       })
       .catch(() => {
@@ -109,14 +115,18 @@ export function TodayLearningGoalPage() {
     setFollowUpText('')
   }
 
-  function handleResetGeneratedCurriculum() {
-    resetGeneratedCurriculum()
-    if (shouldUseServerApi()) {
-      void resetGeneratedCurriculumApi({ mode: 'server' }).catch(() => {})
+  async function handleResetGeneratedCurriculum() {
+    try {
+      if (shouldUseServerApi()) {
+        await resetGeneratedCurriculumApi({ mode: 'server' })
+      }
+      resetGeneratedCurriculum()
+      setCareerGoal(profileGoal)
+      setGoalError('')
+      setGenerationStatus('ready')
+    } catch {
+      setGoalError('커리큘럼을 초기화하지 못했습니다. 다시 시도해 주세요.')
     }
-    setCareerGoal(profileGoal)
-    setGoalError('')
-    setGenerationStatus('ready')
   }
 
   return (

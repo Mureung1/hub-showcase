@@ -22,7 +22,12 @@ import {
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
 import { getTodayProgress } from '../learning-progress/api/learningProgressClient'
+import { getMistakeNotes } from '../mistake-notes/api/mistakeNoteClient'
 import { useMistakeNoteStore } from '../mistake-notes/model/useMistakeNoteStore'
+import {
+  listGitLabAttempts,
+  type GitLabAttempt,
+} from '../git-lab/api/gitLabAttemptClient'
 import {
   createActiveMissionPresentation,
   createWorkspaceEditorFiles,
@@ -109,7 +114,8 @@ function getCompletionPercent(queue: TodayQueueItem[]) {
 }
 
 export function TodayLearningHub() {
-  const { profile } = useLearningProfileStore()
+  const serverMode = shouldUseServerApi()
+  const { profile, loadProfile } = useLearningProfileStore()
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const hydrateGeneratedCurriculum = useGeneratedCurriculumStore(
     (state) => state.hydrateGeneratedCurriculum,
@@ -117,6 +123,10 @@ export function TodayLearningHub() {
   const missionProgress = useLearningProgressStore((state) => state.missions)
   const hydrateMissionProgress = useLearningProgressStore((state) => state.hydrateMissionProgress)
   const mistakeNotes = useMistakeNoteStore((state) => state.notes)
+  const hydrateMistakeNotes = useMistakeNoteStore((state) => state.hydrateMistakeNotes)
+  const [gitLabAttempts, setGitLabAttempts] = useState<GitLabAttempt[]>([])
+  const [serverDataStatus, setServerDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [reloadKey, setReloadKey] = useState(0)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const fallbackGeneratedPlan = useMemo(
     () => createFallbackCurriculumPlan(profileGoal),
@@ -131,32 +141,40 @@ export function TodayLearningHub() {
   useEffect(() => {
     let cancelled = false
 
-    if (shouldUseServerApi()) {
-      void getTodayProgress()
-        .then(({ missions }) => {
-          if (!cancelled) {
-            hydrateMissionProgress(missions)
-          }
-        })
-        .catch(() => {
-          // Keep the mock/local screen usable when the backend is not running.
-        })
+    if (!serverMode) return () => undefined
 
-      void getGeneratedCurriculum({ mode: 'server' })
-        .then(({ generatedCurriculum: serverSnapshot }) => {
-          if (!cancelled && serverSnapshot) {
-            hydrateGeneratedCurriculum(serverSnapshot)
-          }
-        })
-        .catch(() => {
-          // Keep local state available when server is offline.
-        })
-    }
+    setServerDataStatus('loading')
+    void Promise.all([
+      loadProfile(),
+      getTodayProgress(),
+      getGeneratedCurriculum({ mode: 'server' }),
+      getMistakeNotes(),
+      listGitLabAttempts(),
+    ])
+      .then(([, progressResponse, curriculumResponse, mistakeResponse, gitLabResponse]) => {
+        if (cancelled) return
+
+        hydrateMissionProgress(progressResponse.missions)
+        hydrateGeneratedCurriculum(curriculumResponse.generatedCurriculum)
+        hydrateMistakeNotes(mistakeResponse.notes)
+        setGitLabAttempts(gitLabResponse.attempts)
+        setServerDataStatus('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setServerDataStatus('error')
+      })
 
     return () => {
       cancelled = true
     }
-  }, [hydrateMissionProgress, hydrateGeneratedCurriculum])
+  }, [
+    hydrateGeneratedCurriculum,
+    hydrateMissionProgress,
+    hydrateMistakeNotes,
+    loadProfile,
+    reloadKey,
+    serverMode,
+  ])
 
   const now = useMemo(() => new Date(), [])
   const todayLabel = useMemo(
@@ -222,8 +240,8 @@ export function TodayLearningHub() {
             title: note.lessonTitle,
             detail: `${note.command} · ${note.reason}`,
           }))
-        : recentMistakes,
-    [recentOpenMistakes],
+        : serverMode ? [] : recentMistakes,
+    [recentOpenMistakes, serverMode],
   )
   const activeMissionId =
     displayQueue.find((item) => item.status === 'current')?.id ?? 'generated-first-mission'
@@ -255,7 +273,10 @@ export function TodayLearningHub() {
   const [selectedPreviewFileName, setSelectedPreviewFileName] = useState<string | null>(null)
   const selectedPreviewFile =
     previewFiles.find((file) => file.name === selectedPreviewFileName) ?? previewFiles[0]
-  const gitLabProgress = useMemo(() => getGitLabTrackProgress(), [])
+  const gitLabProgress = useMemo(
+    () => getGitLabTrackProgress(serverMode ? gitLabAttempts : undefined),
+    [gitLabAttempts, serverMode],
+  )
   const trackRows = useMemo(
     () => [
       {
@@ -298,6 +319,53 @@ export function TodayLearningHub() {
       stepTotal,
     ],
   )
+
+  if (serverMode && serverDataStatus === 'loading') {
+    return (
+      <main className={styles.page}>
+        <section className={styles.content}>
+          <section className={styles.emptyState} role="status">
+            <div>
+              <strong>오늘 학습 데이터를 불러오는 중입니다.</strong>
+              <p>프로필과 진행 상태를 서버에서 확인하고 있어요.</p>
+            </div>
+          </section>
+        </section>
+      </main>
+    )
+  }
+
+  if (serverMode && serverDataStatus === 'error') {
+    return (
+      <main className={styles.page}>
+        <section className={styles.content}>
+          <section className={styles.emptyState} role="alert">
+            <div>
+              <strong>오늘 학습 데이터를 불러오지 못했습니다.</strong>
+              <p>서버 연결을 확인한 뒤 다시 시도해 주세요.</p>
+            </div>
+            <button type="button" onClick={() => setReloadKey((value) => value + 1)}>다시 시도</button>
+          </section>
+        </section>
+      </main>
+    )
+  }
+
+  if (serverMode && !generatedCurriculum) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.content}>
+          <section className={styles.emptyState} aria-label="커리큘럼 없음">
+            <div>
+              <strong>커리큘럼을 먼저 생성해 주세요.</strong>
+              <p>학습 목표를 입력하면 실제 서버에 저장되는 오늘의 계획을 만들 수 있습니다.</p>
+            </div>
+            <Link to="/today/goal">커리큘럼 만들기</Link>
+          </section>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className={styles.page} aria-labelledby="today-title">
@@ -422,7 +490,7 @@ export function TodayLearningHub() {
               <Link to="/mistake-notes">전체보기</Link>
             </div>
             <ul>
-              {[...reviewSummaryItems, ...reviewMistakeItems].map((item) => (
+              {[...(serverMode ? [] : reviewSummaryItems), ...reviewMistakeItems].map((item) => (
                 <li key={item.id}>
                   <strong>{item.title}</strong>
                   <p>{item.detail}</p>

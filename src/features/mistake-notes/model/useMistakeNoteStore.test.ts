@@ -18,7 +18,8 @@ function createLocalStorage(initialEntries: Record<string, string> = {}) {
   } as Storage
 }
 
-async function importStore(localStorage: Storage) {
+async function importStore(localStorage: Storage, mode: 'mock' | 'server' = 'mock') {
+  vi.stubEnv('VITE_ICU_API_MODE', mode)
   vi.stubGlobal('window', { localStorage })
   const module = await import('./useMistakeNoteStore')
 
@@ -42,6 +43,7 @@ describe('useMistakeNoteStore', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
   })
 
   it('restores mistake notes from localStorage', async () => {
@@ -88,6 +90,20 @@ describe('useMistakeNoteStore', () => {
       storageKey,
       JSON.stringify({ notes: [savedMistake] }),
     )
+  })
+
+  it('ignores and does not persist local mistake notes in server mode', async () => {
+    const localStorage = createLocalStorage({
+      [storageKey]: JSON.stringify({ notes: [savedMistake] }),
+    })
+    const useMistakeNoteStore = await importStore(localStorage, 'server')
+
+    expect(useMistakeNoteStore.getState().notes).toEqual([])
+    expect(localStorage.getItem).not.toHaveBeenCalled()
+
+    useMistakeNoteStore.getState().hydrateMistakeNotes([savedMistake])
+    expect(useMistakeNoteStore.getState().notes).toEqual([savedMistake])
+    expect(localStorage.setItem).not.toHaveBeenCalled()
   })
 
   it('upserts a mistake note from a server response', async () => {

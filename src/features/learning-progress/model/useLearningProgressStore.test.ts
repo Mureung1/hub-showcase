@@ -18,7 +18,8 @@ function createLocalStorage(initialEntries: Record<string, string> = {}) {
   } as Storage
 }
 
-async function importStore(localStorage: Storage) {
+async function importStore(localStorage: Storage, mode: 'mock' | 'server' = 'mock') {
+  vi.stubEnv('VITE_ICU_API_MODE', mode)
   vi.stubGlobal('window', { localStorage })
   const module = await import('./useLearningProgressStore')
 
@@ -43,6 +44,7 @@ describe('useLearningProgressStore', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
   })
 
   it('restores mission progress from localStorage', async () => {
@@ -72,6 +74,20 @@ describe('useLearningProgressStore', () => {
       storageKey,
       JSON.stringify({ missions: { [savedMission.missionId]: savedMission } }),
     )
+  })
+
+  it('ignores and does not persist local progress in server mode', async () => {
+    const localStorage = createLocalStorage({
+      [storageKey]: JSON.stringify({ missions: { [savedMission.missionId]: savedMission } }),
+    })
+    const useLearningProgressStore = await importStore(localStorage, 'server')
+
+    expect(useLearningProgressStore.getState().missions).toEqual({})
+    expect(localStorage.getItem).not.toHaveBeenCalled()
+
+    useLearningProgressStore.getState().hydrateMissionProgress({ [savedMission.missionId]: savedMission })
+    expect(useLearningProgressStore.getState().missions).toEqual({ [savedMission.missionId]: savedMission })
+    expect(localStorage.setItem).not.toHaveBeenCalled()
   })
 
   it('upserts one mission progress item from a server response', async () => {

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { shouldUseServerApi } from '../../../app/icuApiMode'
 
 export const mistakeNoteSources = ['git-lab', 'workspace', 'algorithm', 'api-practice'] as const
 
@@ -46,6 +47,7 @@ type MistakeNoteStore = {
 }
 
 const storageKey = 'icu.mistakeNotes'
+const serverMode = shouldUseServerApi()
 
 function createMistakeNote(input: MistakeNoteInput): MistakeNote {
   const now = new Date().toISOString()
@@ -121,7 +123,7 @@ function readStoredMistakeNotes(): MistakeNote[] {
 }
 
 function persistMistakeNotes(notes: MistakeNote[]) {
-  if (typeof window === 'undefined') {
+  if (serverMode || typeof window === 'undefined') {
     return
   }
 
@@ -154,7 +156,7 @@ function isOpenDuplicate(
 }
 
 export const useMistakeNoteStore = create<MistakeNoteStore>((set, get) => ({
-  notes: readStoredMistakeNotes(),
+  notes: serverMode ? [] : readStoredMistakeNotes(),
   hydrateMistakeNotes: (notes) => {
     const nextNotes = normalizeMistakeNotes(notes)
     persistMistakeNotes(nextNotes)
@@ -227,7 +229,7 @@ export const useMistakeNoteStore = create<MistakeNoteStore>((set, get) => ({
     })
   },
   resetMistakeNotes: () => {
-    if (typeof window !== 'undefined') {
+    if (!serverMode && typeof window !== 'undefined') {
       window.localStorage.removeItem(storageKey)
     }
 

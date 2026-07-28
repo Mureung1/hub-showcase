@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { shouldUseServerApi } from '../../../app/icuApiMode'
 
 export type LearningRunState = 'idle' | 'failed' | 'passed'
 
@@ -64,6 +65,7 @@ type LearningProgressState = {
 }
 
 const storageKey = 'icu.learningProgress'
+const serverMode = shouldUseServerApi()
 
 function createMissionProgress(
   missionId: string,
@@ -129,7 +131,7 @@ function readStoredProgress(): Record<string, LearningMissionProgress> {
 }
 
 function persistProgress(missions: Record<string, LearningMissionProgress>) {
-  if (typeof window === 'undefined') {
+  if (serverMode || typeof window === 'undefined') {
     return
   }
 
@@ -137,7 +139,7 @@ function persistProgress(missions: Record<string, LearningMissionProgress>) {
 }
 
 export const useLearningProgressStore = create<LearningProgressState>((set, get) => ({
-  missions: readStoredProgress(),
+  missions: serverMode ? {} : readStoredProgress(),
   getMissionProgress: (missionId) => get().missions[missionId],
   hydrateMissionProgress: (missions) => {
     const nextMissions = normalizeMissions(missions)
@@ -231,7 +233,7 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
     })
   },
   resetAllProgress: () => {
-    if (typeof window !== 'undefined') {
+    if (!serverMode && typeof window !== 'undefined') {
       window.localStorage.removeItem(storageKey)
     }
 

@@ -74,6 +74,17 @@
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
+.errorMessage {
+  margin: 0;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff7f7;
+  color: #9f1239;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .searchInput {
   flex: 1;
   min-width: 260px;
