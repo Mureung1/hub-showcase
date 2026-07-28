@@ -47,10 +47,10 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
  */
 export async function getSubsidy(
   id: string,
-  profile?: Pick<OnboardingProfile, 'region' | 'industry'>,
+  profile?: Pick<OnboardingProfile, 'region' | 'supportRealm'>,
 ): Promise<Subsidy | undefined> {
   const query = profile
-    ? `?${new URLSearchParams({ region: profile.region, industry: profile.industry })}`
+    ? `?${new URLSearchParams({ region: profile.region, supportRealm: profile.supportRealm.join(',') })}`
     : ''
   try {
     return await fetchJson<Subsidy>(`/api/subsidies/${encodeURIComponent(id)}${query}`)

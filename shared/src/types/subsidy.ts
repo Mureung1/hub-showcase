@@ -1,6 +1,11 @@
 /** 온보딩 4스텝에서 수집하는 사용자 프로필 */
 export interface OnboardingProfile {
-  industry: string
+  /**
+   * 지원분야 복수선택(이슈 #91/#92) — 예전 업종(industry) 질문을 완전히 대체함.
+   * `Subsidy.supportRealm`과 hard filter로 매칭(region과 동일 방식): 여기 담긴 값 중 하나와
+   * subsidy.supportRealm이 일치해야 결과에 남는다.
+   */
+  supportRealm: string[]
   region: string
   district: string
   employees: string
