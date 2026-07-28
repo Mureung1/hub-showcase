@@ -12,8 +12,11 @@ import pytest
 
 from careersignal.agents.collector import (
     CollectionTarget,
+    ManifestEntry,
+    ManifestPosition,
     PreparedFetcher,
     SourceCollector,
+    SourceManifest,
     SourceType,
     UnavailableFetcher,
 )
@@ -270,3 +273,114 @@ def test_prepared_fetcher_reports_absence_instead_of_inventing() -> None:
 def test_unavailable_fetcher_refuses_success_states() -> None:
     with pytest.raises(ValueError):
         UnavailableFetcher(status=FetchStatus.OK)
+
+
+# ============================================================ 매니페스트 집계
+def _manifest(*entries: ManifestEntry) -> SourceManifest:
+    return SourceManifest(
+        job_role_id="backend",
+        dataset_version="ds_manifest_test",
+        as_of_date=date(2026, 7, 27),
+        entries=entries,
+    )
+
+
+def _entry(source_id: str, source_type: SourceType, **kw: Any) -> ManifestEntry:
+    return ManifestEntry(
+        source_id=source_id,
+        url=f"https://example.test/{source_id}",
+        source_type=source_type,
+        tier="A" if source_type is SourceType.JOB_POSTING else "C",
+        allowed_uses=("statistics",)
+        if source_type is SourceType.JOB_POSTING
+        else ("wiki_definition",),
+        **kw,
+    )
+
+
+def test_a_source_without_positions_makes_one_posting() -> None:
+    manifest = _manifest(_entry("src_one", SourceType.JOB_POSTING))
+
+    assert manifest.posting_count() == 1
+
+
+def test_positions_split_one_source_into_several_postings() -> None:
+    """모집분야마다 요구사항 본문이 갈리면 공고가 나뉜다. docs/metric-spec.md 2.8."""
+    manifest = _manifest(
+        _entry(
+            "src_multi",
+            SourceType.JOB_POSTING,
+            positions=(
+                ManifestPosition(position_name="Application Architect"),
+                ManifestPosition(position_name="Software Engineer"),
+            ),
+        )
+    )
+
+    assert manifest.posting_count() == 2
+
+
+def test_sources_that_are_not_postings_make_no_posting() -> None:
+    """공공 표준과 회사 공식 자료는 모집단에 들어가지 않는다."""
+    manifest = _manifest(
+        _entry("src_posting", SourceType.JOB_POSTING),
+        _entry("src_standard", SourceType.PUBLIC_STANDARD),
+        _entry("src_company", SourceType.COMPANY_OFFICIAL),
+    )
+
+    assert len(manifest.entries) == 3
+    assert manifest.posting_count() == 1
+
+
+def test_segment_counts_ignore_sources_without_a_label() -> None:
+    manifest = _manifest(
+        _entry("src_exp", SourceType.JOB_POSTING, entry_label="experienced"),
+        _entry("src_new", SourceType.JOB_POSTING, entry_label="entry"),
+        _entry("src_standard", SourceType.PUBLIC_STANDARD),
+    )
+
+    assert manifest.segment_counts() == {"experienced": 1, "entry_junior": 1}
+
+
+def test_author_reaches_the_source_row() -> None:
+    """D 계층은 작성자를 확인한 자료만 담는다. 그 값이 저장소까지 간다."""
+    store = Store()
+    collector = SourceCollector(
+        PreparedFetcher({"src_expert": POSTING}),
+        SourceIngestPipeline(store),
+        store,
+    )
+
+    collector.collect(
+        _context(),
+        (
+            CollectionTarget(
+                source_id="src_expert",
+                url="https://example.test/expert",
+                source_type=SourceType.EXTERNAL_EXPERT,
+                publisher="Martin Kleppmann",
+                author="Martin Kleppmann",
+            ),
+        ),
+    )
+
+    assert store.sources["src_expert"]["author"] == "Martin Kleppmann"
+
+
+def test_manifest_entry_carries_the_author_to_the_target() -> None:
+    entry = _entry(
+        "src_expert", SourceType.EXTERNAL_EXPERT, author="Peter Bailis"
+    )
+
+    assert entry.to_target().author == "Peter Bailis"
+
+
+def test_reliability_score_is_optional_and_bounded() -> None:
+    """제3자 자료의 편입은 내용 판정으로 결정하고 결과를 신뢰도로 남긴다."""
+    scored = _entry(
+        "src_expert", SourceType.EXTERNAL_EXPERT, reliability_score=0.72
+    )
+    plain = _entry("src_posting", SourceType.JOB_POSTING)
+
+    assert scored.reliability_score == 0.72
+    assert plain.reliability_score is None

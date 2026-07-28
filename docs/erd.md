@@ -38,6 +38,7 @@
 | `mention_` | `requirement_mentions` |
 | `assign_` | `posting_requirement_assignments` |
 | `dim_` | `requirement_dimensions` |
+| `cand_` | `requirement_candidates` |
 | `cap_` | `capabilities` |
 | `node_` / `edge_` | `knowledge_nodes` / `knowledge_edges` |
 | `fact_` | `statistics_facts` |
@@ -497,13 +498,26 @@ CHECK (src_dimension_id <> dst_dimension_id)
 
 | 컬럼 | 타입 | 제약 |
 | --- | --- | --- |
-| `candidate_id` | `text` | PK |
+| `candidate_id` | `text` | PK. `cand_` 접두사 |
 | `taxonomy_id` | `text` | NOT NULL, FK → `requirement_taxonomies` |
 | `proposed_label` | `text` | NOT NULL |
 | `lifecycle_status` | `text` | NOT NULL. 7.4와 같은 값 집합 |
 | `nearest_dimension_id` | `text` | FK → `requirement_dimensions` |
 | `relation_judgment` | `text` | `CHECK IN ('synonym','broader','narrower','related','none')` |
+| `proposed_dimension_kind` | `text` | `CHECK IN ('technology','practice','domain','collaboration','tooling')` |
+| `judged_against_taxonomy_version_id` | `text` | FK → `requirement_taxonomy_versions` |
+| `judgment_rationale` | `text` | 판정을 고른 이유 한 문장 |
 | `discovered_in_run_id` | `text` | NOT NULL, FK → `agent_runs` |
+
+```sql
+CREATE INDEX ON requirement_candidates (taxonomy_id, judged_against_taxonomy_version_id);
+```
+
+`relation_judgment`는 판정에 건 기존 차원 목록에 상대적이며 그 목록은 분류체계 버전의 활성 어휘에서 나온다. `judged_against_taxonomy_version_id`가 그 버전을 가리키고, 승격 심사는 판정이 가리킨 차원이 활성 버전에 있는지 확인한다. 근거는 [ADR 0011](adr/0011-candidate-judgment-context.md)에 있다.
+
+세 컬럼은 NULL을 허용한다. 이 컬럼이 생기기 전에 만들어진 후보 행은 값을 갖지 않는다.
+
+`proposed_dimension_kind`는 후보를 명명한 판정이 함께 낸 차원 종류이며 값 집합은 7.3의 `dimension_kind`와 같다. 승격이 이 값을 새 차원에 옮기고, 값이 없으면 `practice`로 떨어뜨린다. 이 컬럼이 없으면 승격이 만드는 차원이 모두 `practice`가 되어 `Technology` 그래프 노드가 하나도 생기지 않는다.
 
 ### 7.8 `requirement_candidate_mentions`
 
@@ -826,7 +840,7 @@ PRIMARY KEY (taxonomy_version_id, dimension_id, metric_family)
 | `metric_policy_version` | `text` | NOT NULL, FK → `metric_policy_versions` |
 | `scope_level` | `text` | NOT NULL. `CHECK IN ('overall','cluster','posting')` |
 | `scope_id` | `text` | NOT NULL |
-| `entry_segment` | `text` | NOT NULL. `CHECK IN ('entry_junior','experienced','unspecified')` |
+| `entry_segment` | `text` | NOT NULL. `CHECK IN ('all','entry_junior','experienced','unspecified')` |
 | `period_id` | `text` | NOT NULL, FK → `periods` |
 | `dimension_id` | `text` | FK → `requirement_dimensions` |
 | `secondary_dimension_id` | `text` | FK → `requirement_dimensions` |
@@ -851,7 +865,7 @@ CREATE INDEX ON statistics_facts
 CREATE INDEX ON statistics_facts (dimension_id);
 ```
 
-`entry_segment`는 지표의 대상군 축이다. 정의와 `entry_label` 대응은 [지표 명세](metric-spec.md) 2.7에 있다. 마지막 `CHECK`는 분모에 이미 대상군이 반영된 지표가 다른 대상군으로 저장되는 것을 막는다.
+`entry_segment`는 지표의 대상군 축이다. `all`은 대상군으로 제한하지 않은 모집단 전체이며 화면의 기준선이다. 정의와 `entry_label` 대응은 [지표 명세](metric-spec.md) 2.7에 있다. 마지막 `CHECK`는 분모에 이미 대상군이 반영된 지표가 다른 대상군으로 저장되는 것을 막는다.
 
 `numerator`와 `denominator`는 정수 카운트만 담는다. `cluster_contrast`처럼 비율에서 파생하는 지표는 `measure`를 나눠 저장하고 `numerator`·`denominator`에는 원본 카운트를 담는다. 수식은 [지표 명세](metric-spec.md)에 있다.
 
@@ -866,7 +880,7 @@ CREATE INDEX ON statistics_facts (dimension_id);
 | `taxonomy_version_id` | `text` | NOT NULL, FK → `requirement_taxonomy_versions` |
 | `scope_level` | `text` | NOT NULL. `CHECK IN ('overall','cluster','posting')` |
 | `scope_id` | `text` | NOT NULL |
-| `entry_segment` | `text` | NOT NULL. `CHECK IN ('entry_junior','experienced','unspecified')` |
+| `entry_segment` | `text` | NOT NULL. `CHECK IN ('all','entry_junior','experienced','unspecified')` |
 | `period_id` | `text` | NOT NULL, FK → `periods` |
 | `depth_distribution` | `jsonb` | NOT NULL. 등급별 비율 |
 | `expected_depth` | `text` | NOT NULL. `CHECK IN ('foundation','application','tradeoff')` |

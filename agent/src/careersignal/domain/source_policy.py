@@ -81,6 +81,7 @@ TIER_ALLOWED_USES: dict[SourceTier, frozenset[AllowedUse]] = {
     ),
     SourceTier.VERIFIED_EXTERNAL: frozenset(
         {
+            AllowedUse.INTERPRETATION_CONTEXT,
             AllowedUse.STRATEGY,
             AllowedUse.ROADMAP,
             AllowedUse.WIKI_DEPTH_CRITERIA,
@@ -91,6 +92,14 @@ TIER_ALLOWED_USES: dict[SourceTier, frozenset[AllowedUse]] = {
     ),
     SourceTier.UNVERIFIED: frozenset(),
 }
+"""계층별 허용 용도.
+
+D 계층의 `interpretation_context` 는 추론 요구의 보강 근거다. 추론의 출발점은
+공고 표현이며 D 계층 근거만으로 추론 요구를 세우지 않는다. 근거는
+docs/adr/0010-third-party-interpretation-scope.md 이고 표는
+docs/data-strategy.md 3장이다. 통계 집계의 경계는 이 변경과 무관하며 A 계층만
+분자와 분모에 들어간다.
+"""
 
 
 class RequirementKind(StrEnum):

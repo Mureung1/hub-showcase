@@ -24,6 +24,7 @@ class Component(StrEnum):
     PIPE_LINEAGE = "pipe_lineage"
     PIPE_VERIFY = "pipe_verify"
     SERVING = "serving"
+    EVAL_RUNNER = "eval_runner"
 
 
 DB_ROLE: dict[Component, str] = {
@@ -40,6 +41,7 @@ DB_ROLE: dict[Component, str] = {
     Component.PIPE_LINEAGE: "cs_pipe_lineage",
     Component.PIPE_VERIFY: "cs_pipe_verify",
     Component.SERVING: "cs_serving",
+    Component.EVAL_RUNNER: "cs_eval_runner",
 }
 
 TELEMETRY_TABLES: frozenset[str] = frozenset(
@@ -159,6 +161,16 @@ _WRITE_SCOPE: dict[Component, frozenset[str]] = {
         {"verification_results", "repair_orders", "research_requests"}
     ),
     Component.SERVING: frozenset(),
+    Component.EVAL_RUNNER: frozenset(
+        {
+            "evaluation_sets",
+            "evaluation_cases",
+            "evaluation_expected_items",
+            "evaluation_runs",
+            "evaluation_metrics",
+            "evaluation_failures",
+        }
+    ),
 }
 
 PRODUCED_BY_AGENT: dict[Component, str] = {

@@ -9,6 +9,7 @@ import pytest
 
 from careersignal.domain.segment import (
     PRIMARY_SEGMENT,
+    SEGMENTED,
     SEGMENT_ONLY_FAMILIES,
     EntryLabel,
     EntrySegment,
@@ -51,9 +52,20 @@ def test_experienced_is_its_own_segment() -> None:
     assert segment_of(EntryLabel.EXPERIENCED) is EntrySegment.EXPERIENCED
 
 
-def test_primary_segment_is_entry_junior() -> None:
-    """제품이 기준선으로 삼는 대상군."""
-    assert PRIMARY_SEGMENT is EntrySegment.ENTRY_JUNIOR
+def test_primary_segment_is_all() -> None:
+    """화면과 해석 이후 단계가 기준선으로 삼는 대상군."""
+    assert PRIMARY_SEGMENT is EntrySegment.ALL
+
+
+def test_all_is_not_produced_by_folding_a_label() -> None:
+    """`all` 은 표기에서 접히지 않는다. 분모를 제한하지 않은 별개의 행이다."""
+    for label in EntryLabel:
+        assert segment_of(label) is not EntrySegment.ALL
+
+
+def test_segmented_excludes_all() -> None:
+    assert EntrySegment.ALL not in SEGMENTED
+    assert set(SEGMENTED) == set(EntrySegment) - {EntrySegment.ALL}
 
 
 # ============================================================ 적용 가능성
@@ -71,6 +83,7 @@ def test_signal_rate_applies_only_to_entry_junior() -> None:
     assert not applicable(
         "entry_label_advanced_signal_rate", EntrySegment.UNSPECIFIED
     )
+    assert not applicable("entry_label_advanced_signal_rate", EntrySegment.ALL)
 
 
 def test_segment_only_families_are_declared() -> None:

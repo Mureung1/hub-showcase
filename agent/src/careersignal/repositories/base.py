@@ -135,3 +135,32 @@ class Repository:
                 f"현재 거래는 {unit.component} 다"
             )
         self.unit = unit
+
+    # ------------------------------------------------------------ 활성 분류체계
+    _ACTIVE_TAXONOMY = """
+        SELECT tv.taxonomy_version_id, tv.taxonomy_id, tv.version_number,
+               tv.taxonomy_policy_version
+        FROM requirement_taxonomy_versions tv
+        JOIN requirement_taxonomies t ON t.taxonomy_id = tv.taxonomy_id
+        WHERE t.job_role_id = %(job_role_id)s
+          AND tv.published_at IS NOT NULL
+          AND tv.superseded_at IS NULL
+    """
+    """직무의 활성 분류체계 버전.
+
+    조건을 `requirement_taxonomy_versions` 의 부분 유니크 인덱스와 같게 둔다
+    (docs/erd.md 7.2). 인덱스가 `published_at IS NOT NULL AND superseded_at IS NULL`
+    인 행을 분류체계마다 하나로 강제하고, `requirement_taxonomies.job_role_id` 가
+    UNIQUE 이므로 이 조회는 많아야 한 행이다. 애플리케이션이 최신 버전을 고르는
+    규칙을 따로 두면 인덱스와 어긋날 수 있다.
+
+    자리가 저장소 공통 기반이다. 통계·승격·할당·그래프가 모두 같은 직무의 같은 활성
+    버전을 봐야 하는데, 같은 조회를 저장소마다 베껴 두면 한쪽만 고쳐졌을 때 두
+    구성요소가 서로 다른 버전을 보고도 아무 데서도 걸리지 않는다. 조회는 읽기이고
+    모든 구성요소 role 이 SELECT 를 갖고 있으므로(`0004_component_grants.sql`) 기반에
+    두어도 쓰기 범위가 넓어지지 않는다.
+    """
+
+    def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
+        """활성 분류체계 버전 한 행. 발행된 버전이 없으면 비운다."""
+        return self.unit.fetch_one(self._ACTIVE_TAXONOMY, {"job_role_id": job_role_id})

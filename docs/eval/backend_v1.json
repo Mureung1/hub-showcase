@@ -1,0 +1,1013 @@
+{
+  "eval_set_id": "eval_backend_v1",
+  "job_role_id": "backend",
+  "source_file": "docs/eval/backend_v1.json",
+  "dataset_version": "ds_backend_2026_07",
+  "content_root": "agent/data/sources/backend/",
+  "status": "draft",
+  "note": "사람이 확정하기 전의 초안",
+  "cases": [
+    {
+      "case_id": "case_daangn_identity",
+      "case_type": "mention_extraction",
+      "posting_id": null,
+      "source_id": "src_daangn_be_identity",
+      "content_file": "daangn_backend_identity.txt",
+      "expected_entry_label": "unspecified",
+      "expected_job_role_id": "backend",
+      "expected_items": [
+        {
+          "expected_id": "exp_daangn_identity_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "대규모 인증 트래픽을 안정적으로 수용하기 위해 고가용성 아키텍처를 설계하고 운영",
+            "stated_requiredness": "이런 일을 해요",
+            "requiredness": "responsibility",
+            "section": "### 이런 일을 해요",
+            "evidence_quote": "2,100만 MAU 규모의 대규모 인증 트래픽을 안정적으로 수용하기 위해 고가용성 아키텍처를 설계하고 운영해요."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "가입, 로그인, 인증 플로우를 설계하고 개선",
+            "stated_requiredness": "이런 일을 해요",
+            "requiredness": "responsibility",
+            "section": "### 이런 일을 해요",
+            "evidence_quote": "가입, 로그인, 인증 플로우를 설계하고 개선하여 안정적이고 매끄러운 사용자 경험을 제공해요."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "당근의 모든 서비스가 공통으로 활용하는 유저 플랫폼을 설계하여 전사적인 확장성을 책임져요",
+            "stated_requiredness": "이런 일을 해요",
+            "requiredness": "responsibility",
+            "section": "### 이런 일을 해요",
+            "evidence_quote": "당근의 모든 서비스가 공통으로 활용하는 유저 플랫폼을 설계하여 전사적인 확장성을 책임져요."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "OAuth 2.0, OpenID Connect(OIDC) 과 같은 표준 인증 프로토콜을 활용해 인증 서버를 구축",
+            "stated_requiredness": "이런 일을 해요",
+            "requiredness": "responsibility",
+            "section": "### 이런 일을 해요",
+            "evidence_quote": "OAuth 2.0, OpenID Connect(OIDC) 과 같은 표준 인증 프로토콜을 활용해 인증 서버를 구축해요."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "개인정보 보호와 보안을 최우선으로 고려한 계정, 인증, 권한 관리 시스템을 설계하고 개선",
+            "stated_requiredness": "이런 일을 해요",
+            "requiredness": "responsibility",
+            "section": "### 이런 일을 해요",
+            "evidence_quote": "개인정보 보호와 보안을 최우선으로 고려한 계정, 인증, 권한 관리 시스템을 설계하고 개선해요."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "하나 이상의 프로그래밍 언어와 백엔드 프레임워크에 능숙하신 분",
+            "stated_requiredness": "이런 분과 함께하고 싶어요",
+            "requiredness": "required",
+            "section": "### 이런 분과 함께하고 싶어요",
+            "evidence_quote": "하나 이상의 프로그래밍 언어와 백엔드 프레임워크에 능숙하신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "RESTful API, gRPC 등의 통신 모델을 이해하고 확장성 있는 인터페이스를 설계 및 개발할 수 있는 분",
+            "stated_requiredness": "이런 분과 함께하고 싶어요",
+            "requiredness": "required",
+            "section": "### 이런 분과 함께하고 싶어요",
+            "evidence_quote": "RESTful API, gRPC 등의 통신 모델을 이해하고 확장성 있는 인터페이스를 설계 및 개발할 수 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "분산 처리 시스템 또는 마이크로서비스 아키텍처에 대한 이해도가 높으신 분",
+            "stated_requiredness": "이런 분과 함께하고 싶어요",
+            "requiredness": "required",
+            "section": "### 이런 분과 함께하고 싶어요",
+            "evidence_quote": "분산 처리 시스템 또는 마이크로서비스 아키텍처에 대한 이해도가 높으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_09",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "문제를 정의하고 해결책을 찾아가는 과정을 즐거워하며 기술적인 성장을 갈구하는 마음을 가진 분",
+            "stated_requiredness": "이런 분과 함께하고 싶어요",
+            "requiredness": "required",
+            "section": "### 이런 분과 함께하고 싶어요",
+            "evidence_quote": "문제를 정의하고 해결책을 찾아가는 과정을 즐거워하며 기술적인 성장을 갈구하는 마음을 가진 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_10",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "자기주도적이고 커뮤니케이션이 원활하며, 빠른 실행력이 있는 분",
+            "stated_requiredness": "이런 분과 함께하고 싶어요",
+            "requiredness": "required",
+            "section": "### 이런 분과 함께하고 싶어요",
+            "evidence_quote": "자기주도적이고 커뮤니케이션이 원활하며, 빠른 실행력이 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_11",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "3년 이상의 백엔드 개발 경험 또는 그에 준하는 엔지니어링 역량을 가지신 분",
+            "stated_requiredness": "이런 분이면 더 좋아요",
+            "requiredness": "preferred",
+            "section": "### 이런 분이면 더 좋아요",
+            "evidence_quote": "3년 이상의 백엔드 개발 경험 또는 그에 준하는 엔지니어링 역량을 가지신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_12",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Golang을 활용한 프로덕션 서비스 개발 및 운영 경험이 있으신 분",
+            "stated_requiredness": "이런 분이면 더 좋아요",
+            "requiredness": "preferred",
+            "section": "### 이런 분이면 더 좋아요",
+            "evidence_quote": "Golang을 활용한 프로덕션 서비스 개발 및 운영 경험이 있으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_13",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "대용량 데이터를 위한 스토리지에 대한 경험이 있으신 분",
+            "stated_requiredness": "이런 분이면 더 좋아요",
+            "requiredness": "preferred",
+            "section": "### 이런 분이면 더 좋아요",
+            "evidence_quote": "대용량 데이터를 위한 스토리지에 대한 경험이 있으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_daangn_identity_14",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "사용자 경험, 서비스 백오피스 운영 도구의 중요성에 대한 이해가 있으신 분",
+            "stated_requiredness": "이런 분이면 더 좋아요",
+            "requiredness": "preferred",
+            "section": "### 이런 분이면 더 좋아요",
+            "evidence_quote": "사용자 경험, 서비스 백오피스 운영 도구의 중요성에 대한 이해가 있으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        }
+      ]
+    },
+    {
+      "case_id": "case_woowahan_dispatch",
+      "case_type": "mention_extraction",
+      "posting_id": null,
+      "source_id": "src_woowahan_be_dispatch",
+      "content_file": "woowahan_be_dispatch.txt",
+      "expected_entry_label": "experienced",
+      "expected_job_role_id": "backend",
+      "expected_items": [
+        {
+          "expected_id": "exp_woowahan_dispatch_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "딜리버리 서비스 내 배차·배달 예상 시간 시스템 개발 및 유지보수",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "[업무내용]",
+            "evidence_quote": "딜리버리 서비스 내 배차·배달 예상 시간 시스템 개발 및 유지보수"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "실시간 최적 배차를 위한 시스템 아키텍처 설계 및 개선",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "[업무내용]",
+            "evidence_quote": "실시간 최적 배차를 위한 시스템 아키텍처 설계 및 개선"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "안정적인 배달 예상 시간 제공을 위한 대용량 트래픽 처리 시스템 설계 및 고도화",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "[업무내용]",
+            "evidence_quote": "안정적인 배달 예상 시간 제공을 위한 대용량 트래픽 처리 시스템 설계 및 고도화"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "온·오프라인 ML 모델 연동 및 추론 파이프라인 개발·운영",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "[업무내용]",
+            "evidence_quote": "온·오프라인 ML 모델 연동 및 추론 파이프라인 개발·운영"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "다양한 소스의 데이터 적재·가공 및 AI 모델링을 위한 데이터 파이프라인 구축",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "[업무내용]",
+            "evidence_quote": "다양한 소스의 데이터 적재·가공 및 AI 모델링을 위한 데이터 파이프라인 구축"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "AWS 클라우드 환경에서 시스템을 구축·운영한 경험이 있는 분",
+            "stated_requiredness": "지원자격",
+            "requiredness": "required",
+            "section": "[지원자격]",
+            "evidence_quote": "AWS 클라우드 환경에서 시스템을 구축·운영한 경험이 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Java 및 Spring Framework 기반 개발 경험이 있는 분",
+            "stated_requiredness": "지원자격",
+            "requiredness": "required",
+            "section": "[지원자격]",
+            "evidence_quote": "Java 및 Spring Framework 기반 개발 경험이 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "다양한 직군의 이해관계자와 원활하게 소통하고 협업하는 역량을 갖춘 분",
+            "stated_requiredness": "지원자격",
+            "requiredness": "required",
+            "section": "[지원자격]",
+            "evidence_quote": "다양한 직군의 이해관계자와 원활하게 소통하고 협업하는 역량을 갖춘 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_09",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "대용량·실시간 트래픽 처리를 위한 애플리케이션 및 시스템 아키텍처 설계 경험이 있는 분",
+            "stated_requiredness": "우대사항",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "대용량·실시간 트래픽 처리를 위한 애플리케이션 및 시스템 아키텍처 설계 경험이 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_10",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "프로덕션 환경에서 ML 모델을 연동·서빙(Serving)하여 서비스를 운영한 경험이 있는 분",
+            "stated_requiredness": "우대사항",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "프로덕션 환경에서 ML 모델을 연동·서빙(Serving)하여 서비스를 운영한 경험이 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_11",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "데이터 과학자(DS)·분석가와 긴밀히 협업해 데이터 기반의 문제를 해결하고 모델을 고도화한 경험이 있는 분",
+            "stated_requiredness": "우대사항",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "데이터 과학자(DS)·분석가와 긴밀히 협업해 데이터 기반의 문제를 해결하고 모델을 고도화한 경험이 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_woowahan_dispatch_12",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "배차·물류·시간 예측(TES) 등 이동·최적화 도메인 서비스 개발 경험이 있는 분",
+            "stated_requiredness": "우대사항",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "배차·물류·시간 예측(TES) 등 이동·최적화 도메인 서비스 개발 경험이 있는 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        }
+      ]
+    },
+    {
+      "case_id": "case_kakaopay_payment",
+      "case_type": "mention_extraction",
+      "posting_id": null,
+      "source_id": "src_kakaopay_be_payment",
+      "content_file": "kakaopay_be_payment.txt",
+      "expected_entry_label": "experienced",
+      "expected_job_role_id": "backend",
+      "expected_items": [
+        {
+          "expected_id": "exp_kakaopay_payment_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "결제 승인, 취소, 매입 등 핵심 프로세스를 처리하는 서버를 개발",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "업무내용",
+            "evidence_quote": "Java/Kotlin 및 Spring Boot를 기반으로 결제 승인, 취소, 매입 등 핵심 프로세스를 처리하는 서버를 개발합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "트랜잭션 관리와 동시성 제어 로직을 정교하게 구현",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "업무내용",
+            "evidence_quote": "데이터 처리의 정확성을 최우선으로 하며, 트랜잭션 관리와 동시성 제어 로직을 정교하게 구현합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "고가용성(High Availability) 아키텍처를 설계하고 구현",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "업무내용",
+            "evidence_quote": "트래픽 집중 상황에서도 안정적인 서비스가 가능하도록 고가용성(High Availability) 아키텍처를 설계하고 구현합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "MSA 환경에서 서비스 간의 유연한 통신을 구현하고, 시스템 확장성을 확보",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "업무내용",
+            "evidence_quote": "MSA 환경에서 서비스 간의 유연한 통신을 구현하고, 시스템 확장성을 확보합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "데이터 불일치를 탐지/보정하는 대사 로직을 구현하여 데이터 정합성을 확보",
+            "stated_requiredness": "업무내용",
+            "requiredness": "responsibility",
+            "section": "업무내용",
+            "evidence_quote": "데이터 불일치를 탐지/보정하는 대사 로직을 구현하여 데이터 정합성을 확보합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Java 또는 Kotlin 언어와 Spring Framework(Spring Boot) 활용 능력",
+            "stated_requiredness": "필요 역량/경험",
+            "requiredness": "required",
+            "section": "필요 역량/경험",
+            "evidence_quote": "Java 또는 Kotlin 언어와 Spring Framework(Spring Boot) 활용 능력"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "MySQL 등 RDBMS 이해 기반의 대용량 데이터 모델링 및 쿼리 최적화 경험",
+            "stated_requiredness": "필요 역량/경험",
+            "requiredness": "required",
+            "section": "필요 역량/경험",
+            "evidence_quote": "MySQL 등 RDBMS 이해 기반의 대용량 데이터 모델링 및 쿼리 최적화 경험"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "컴퓨터 공학 기초 지식(자료구조, 알고리즘, 네트워크, OS 등) 기반의 문제 해결 능력",
+            "stated_requiredness": "필요 역량/경험",
+            "requiredness": "required",
+            "section": "필요 역량/경험",
+            "evidence_quote": "컴퓨터 공학 기초 지식(자료구조, 알고리즘, 네트워크, OS 등) 기반의 문제 해결 능력"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_09",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "복잡한 비즈니스 로직 구현 및 동시성 이슈, 분산 트랜잭션 처리에 대한 높은 이해도",
+            "stated_requiredness": "필요 역량/경험",
+            "requiredness": "required",
+            "section": "필요 역량/경험",
+            "evidence_quote": "복잡한 비즈니스 로직 구현 및 동시성 이슈, 분산 트랜잭션 처리에 대한 높은 이해도"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_10",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "코드 리뷰를 통한 동료와의 동반 성장 및 능동적인 소통 태도",
+            "stated_requiredness": "필요 역량/경험",
+            "requiredness": "required",
+            "section": "필요 역량/경험",
+            "evidence_quote": "코드 리뷰를 통한 동료와의 동반 성장 및 능동적인 소통 태도"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_11",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "결제, 정산, 금융 도메인 시스템 직접 설계 및 개발 경험",
+            "stated_requiredness": "선호 역량/경험",
+            "requiredness": "preferred",
+            "section": "선호 역량/경험",
+            "evidence_quote": "결제, 정산, 금융 도메인 시스템 직접 설계 및 개발 경험"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_12",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "대규모 트래픽 처리를 위한 분산 시스템 설계 및 Kafka, RabbitMQ 활용 비동기 처리 경험",
+            "stated_requiredness": "선호 역량/경험",
+            "requiredness": "preferred",
+            "section": "선호 역량/경험",
+            "evidence_quote": "대규모 트래픽 처리를 위한 분산 시스템 설계 및 Kafka, RabbitMQ 활용 비동기 처리 경험"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_13",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "테스트 주도 개발(TDD) 및 단위/통합 테스트 작성을 통한 안정성 확보 경험",
+            "stated_requiredness": "선호 역량/경험",
+            "requiredness": "preferred",
+            "section": "선호 역량/경험",
+            "evidence_quote": "테스트 주도 개발(TDD) 및 단위/통합 테스트 작성을 통한 안정성 확보 경험"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_14",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "클라우드 환경(AWS 등) 및 컨테이너 기술(Docker, Kubernetes) 활용 능력",
+            "stated_requiredness": "선호 역량/경험",
+            "requiredness": "preferred",
+            "section": "선호 역량/경험",
+            "evidence_quote": "클라우드 환경(AWS 등) 및 컨테이너 기술(Docker, Kubernetes) 활용 능력"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_kakaopay_payment_15",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "신규 시스템의 초기 설계부터 구축, 런칭까지의 전체 사이클 경험",
+            "stated_requiredness": "선호 역량/경험",
+            "requiredness": "preferred",
+            "section": "선호 역량/경험",
+            "evidence_quote": "신규 시스템의 초기 설계부터 구축, 런칭까지의 전체 사이클 경험"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        }
+      ]
+    },
+    {
+      "case_id": "case_channeltalk_se",
+      "case_type": "mention_extraction",
+      "posting_id": null,
+      "source_id": "src_channeltalk_se",
+      "content_file": "channeltalk_se.txt",
+      "expected_entry_label": "junior",
+      "expected_job_role_id": "backend",
+      "expected_items": [
+        {
+          "expected_id": "exp_channeltalk_se_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Java, Dropwizard를 이용해 만들어진 메인 API 서버를 개발",
+            "stated_requiredness": "어떤 업무를 담당하나요?",
+            "requiredness": "responsibility",
+            "section": "[Backend Engineer]",
+            "evidence_quote": "Java, Dropwizard를 이용해 만들어진 메인 API 서버를 개발합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "기존에 구축된 시스템을 리뷰하고 좀 더 스케일하도록 재설계",
+            "stated_requiredness": "어떤 업무를 담당하나요?",
+            "requiredness": "responsibility",
+            "section": "[Backend Engineer]",
+            "evidence_quote": "가파르게 늘어나는 사용량에 처리하기 위해 기존에 구축된 시스템을 리뷰하고 좀 더 스케일하도록 재설계 합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "서버 장애를 감지하고 알림을 주는 시스템을 개발하고 장애를 처리",
+            "stated_requiredness": "어떤 업무를 담당하나요?",
+            "requiredness": "responsibility",
+            "section": "[Backend Engineer]",
+            "evidence_quote": "서버 장애를 감지하고 알림을 주는 시스템을 개발하고 장애를 처리합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "AWS Lambda, Serverless와 nodejs, python, golang 등의 언어로 마이크로 서비스를 개발",
+            "stated_requiredness": "어떤 업무를 담당하나요?",
+            "requiredness": "responsibility",
+            "section": "[Backend Engineer]",
+            "evidence_quote": "AWS Lambda, Serverless와 nodejs, python, golang 등의 언어로 마이크로 서비스를 개발 합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "ECS, Docker 및 k8s(EKS)인프라를 이용해 빌드, 디플로이, 메인터넌스를 담당",
+            "stated_requiredness": "어떤 업무를 담당하나요?",
+            "requiredness": "responsibility",
+            "section": "[Backend Engineer]",
+            "evidence_quote": "AWS 환경안에서 ECS, Docker 및 k8s(EKS)인프라를 이용해 빌드, 디플로이, 메인터넌스를 담당합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "컴퓨터 공학 또는 관련 학과 전공",
+            "stated_requiredness": "어떤 경력과 역량이 필요한가요?",
+            "requiredness": "required",
+            "section": "어떤 경력과 역량이 필요한가요?",
+            "evidence_quote": "컴퓨터 공학 또는 관련 학과 전공"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "자료구조, 알고리즘과 관련한 지식이 깊은 분",
+            "stated_requiredness": "어떤 경력과 역량이 필요한가요?",
+            "requiredness": "required",
+            "section": "어떤 경력과 역량이 필요한가요?",
+            "evidence_quote": "자료구조, 알고리즘과 관련한 지식이 깊은 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "팀 워크 및 커뮤니케이션 역량",
+            "stated_requiredness": "어떤 경력과 역량이 필요한가요?",
+            "requiredness": "required",
+            "section": "어떤 경력과 역량이 필요한가요?",
+            "evidence_quote": "팀 워크 및 커뮤니케이션 역량"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_09",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "새로운 것을 빠르게 배우고 적용시킬 수 있는 역량",
+            "stated_requiredness": "어떤 경력과 역량이 필요한가요?",
+            "requiredness": "required",
+            "section": "어떤 경력과 역량이 필요한가요?",
+            "evidence_quote": "새로운 것을 빠르게 배우고 적용시킬 수 있는 역량"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_10",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "문제가 생겼을 때 빠르게 디버깅 및 수정할 수 있는 역량",
+            "stated_requiredness": "어떤 경력과 역량이 필요한가요?",
+            "requiredness": "required",
+            "section": "어떤 경력과 역량이 필요한가요?",
+            "evidence_quote": "문제가 생겼을 때 빠르게 디버깅 및 수정할 수 있는 역량"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_channeltalk_se_11",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "컴퓨터 공학 또는 관련 기술 분야에서 석사 학위 또는 박사 학위",
+            "stated_requiredness": "이런 점이 있으면 더 좋아요",
+            "requiredness": "preferred",
+            "section": "이런 점이 있으면 더 좋아요",
+            "evidence_quote": "컴퓨터 공학 또는 관련 기술 분야에서 석사 학위 또는 박사 학위"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        }
+      ]
+    },
+    {
+      "case_id": "case_neople_dnf",
+      "case_type": "mention_extraction",
+      "posting_id": null,
+      "source_id": "src_neople_be_dnf",
+      "content_file": "neople_be_dnf.txt",
+      "expected_entry_label": "unspecified",
+      "expected_job_role_id": "backend",
+      "expected_items": [
+        {
+          "expected_id": "exp_neople_dnf_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "서버 생태계를 구축하고 유지 관리하는 업무를 진행",
+            "stated_requiredness": "합류하면 하게 될 업무를 소개해 드려요",
+            "requiredness": "responsibility",
+            "section": "[합류하면 하게 될 업무를 소개해 드려요]",
+            "evidence_quote": "서버 생태계를 구축하고 유지 관리하는 업무를 진행합니다."
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "콘텐츠, 시스템, 이벤트, 유료화 개발",
+            "stated_requiredness": "합류하면 하게 될 업무를 소개해 드려요",
+            "requiredness": "responsibility",
+            "section": "[합류하면 하게 될 업무를 소개해 드려요]",
+            "evidence_quote": "콘텐츠, 시스템, 이벤트, 유료화 개발"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "보안 및 라이브 이슈 대응",
+            "stated_requiredness": "합류하면 하게 될 업무를 소개해 드려요",
+            "requiredness": "responsibility",
+            "section": "[합류하면 하게 될 업무를 소개해 드려요]",
+            "evidence_quote": "보안 및 라이브 이슈 대응"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "서버 최적화 와 리팩토링, 각종 툴 개발",
+            "stated_requiredness": "합류하면 하게 될 업무를 소개해 드려요",
+            "requiredness": "responsibility",
+            "section": "[합류하면 하게 될 업무를 소개해 드려요]",
+            "evidence_quote": "서버 최적화 와 리팩토링, 각종 툴 개발"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "C/C++, 자료구조, 알고리즘에 대한 이해가 높으신 분",
+            "stated_requiredness": "지원 전 확인해 주셔야 할 자격 요건이에요",
+            "requiredness": "required",
+            "section": "[지원 전 확인해 주셔야 할 자격 요건이에요]",
+            "evidence_quote": "C/C++, 자료구조, 알고리즘에 대한 이해가 높으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "비동기 프로그래밍, 네트워크 프로그래밍에 대한 이해 및 소켓 프로그래밍 가능하신 분",
+            "stated_requiredness": "지원 전 확인해 주셔야 할 자격 요건이에요",
+            "requiredness": "required",
+            "section": "[지원 전 확인해 주셔야 할 자격 요건이에요]",
+            "evidence_quote": "비동기 프로그래밍, 네트워크 프로그래밍에 대한 이해 및 소켓 프로그래밍 가능하신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "MySQL 사용 가능하며 SQL에 대한 전반적이 이해가 있으신 분",
+            "stated_requiredness": "지원 전 확인해 주셔야 할 자격 요건이에요",
+            "requiredness": "required",
+            "section": "[지원 전 확인해 주셔야 할 자격 요건이에요]",
+            "evidence_quote": "MySQL 사용 가능하며 SQL에 대한 전반적이 이해가 있으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "디버깅과 이슈 추적 능력을 갖추신 분",
+            "stated_requiredness": "지원 전 확인해 주셔야 할 자격 요건이에요",
+            "requiredness": "required",
+            "section": "[지원 전 확인해 주셔야 할 자격 요건이에요]",
+            "evidence_quote": "디버깅과 이슈 추적 능력을 갖추신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_09",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "고객 신뢰를 바탕으로 한 기본적인 직업 윤리 의식을 가지신 분",
+            "stated_requiredness": "지원 전 확인해 주셔야 할 자격 요건이에요",
+            "requiredness": "required",
+            "section": "[지원 전 확인해 주셔야 할 자격 요건이에요]",
+            "evidence_quote": "고객 신뢰를 바탕으로 한 기본적인 직업 윤리 의식을 가지신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_10",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "신규 게임 상용화 경험이 있거나 또는 온라인 게임 라이브 서비스를 오랫동안 개발한 경험이 있으신 분",
+            "stated_requiredness": "이런 경험이 있으시면 더욱 좋아요",
+            "requiredness": "preferred",
+            "section": "[이런 경험이 있으시면 더욱 좋아요]",
+            "evidence_quote": "신규 게임 상용화 경험이 있거나 또는 온라인 게임 라이브 서비스를 오랫동안 개발한 경험이 있으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_11",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "분산 네트워크 환경에서 발생하는 OS, Network, DB 문제에 대해 분석하고 개선한 경험이 있으신 분",
+            "stated_requiredness": "이런 경험이 있으시면 더욱 좋아요",
+            "requiredness": "preferred",
+            "section": "[이런 경험이 있으시면 더욱 좋아요]",
+            "evidence_quote": "분산 네트워크 환경에서 발생하는 OS, Network, DB 문제에 대해 분석하고 개선한 경험이 있으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_12",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "라이브 서비스 중에 대규모 코드 리팩토링 및 최적화 경험이 있으신 분",
+            "stated_requiredness": "이런 경험이 있으시면 더욱 좋아요",
+            "requiredness": "preferred",
+            "section": "[이런 경험이 있으시면 더욱 좋아요]",
+            "evidence_quote": "라이브 서비스 중에 대규모 코드 리팩토링 및 최적화 경험이 있으신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_neople_dnf_13",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "중국어/일본어/영어 가능하신 분",
+            "stated_requiredness": "이런 경험이 있으시면 더욱 좋아요",
+            "requiredness": "preferred",
+            "section": "[이런 경험이 있으시면 더욱 좋아요]",
+            "evidence_quote": "중국어/일본어/영어 가능하신 분"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        }
+      ]
+    },
+    {
+      "case_id": "case_lgcns_mes_dev",
+      "case_type": "mention_extraction",
+      "posting_id": null,
+      "source_id": "src_lgcns_be_mes_dev",
+      "content_file": "lgcns_be_mes_dev.txt",
+      "expected_entry_label": "experienced",
+      "expected_job_role_id": "backend",
+      "expected_items": [
+        {
+          "expected_id": "exp_lgcns_mes_dev_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "배터리 제조 공정을 지원하는 MES 시스템을 설계 및 개발",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES개발자]",
+            "evidence_quote": "배터리 제조 공정을 지원하는 MES 시스템을 설계 및 개발"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "생산/품질/설비 데이터 흐름을 반영한 기능을 구현",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES개발자]",
+            "evidence_quote": "생산/품질/설비 데이터 흐름을 반영한 기능을 구현"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "대규모 제조 데이터를 처리하고 안정적인 시스템을 구축",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES개발자]",
+            "evidence_quote": "대규모 제조 데이터를 처리하고 안정적인 시스템을 구축"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "MES와 AI/데이터 플랫폼 간 연계를 위한 인터페이스를 개발",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES개발자]",
+            "evidence_quote": "MES와 AI/데이터 플랫폼 간 연계를 위한 인터페이스를 개발"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "시스템 성능 개선 및 운영 안정화를 위한 기술적 문제를 해결",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES개발자]",
+            "evidence_quote": "시스템 성능 개선 및 운영 안정화를 위한 기술적 문제를 해결"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "요구사항 분석을 기반으로 시스템 구조 및 아키텍처를 설계",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES PL/개발자]",
+            "evidence_quote": "요구사항 분석을 기반으로 시스템 구조 및 아키텍처를 설계"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "개발 표준, 형상관리, 배포 프로세스를 수립하고 품질을 관리",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES PL/개발자]",
+            "evidence_quote": "개발 표준, 형상관리, 배포 프로세스를 수립하고 품질을 관리"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "개발 인력(팀원)을 리딩하고 일정 및 산출물을 관리",
+            "stated_requiredness": "이런 일을 하시게 될거에요",
+            "requiredness": "responsibility",
+            "section": "[MES PL/개발자]",
+            "evidence_quote": "개발 인력(팀원)을 리딩하고 일정 및 산출물을 관리"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_09",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "스마트팩토리/MES 구축 및 운영",
+            "stated_requiredness": "필수사항",
+            "requiredness": "required",
+            "section": "[MES 프로젝트 개발 수행]",
+            "evidence_quote": "스마트팩토리/MES 구축 및 운영"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_10",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "제조 도메인 기반 시스템 설계 및 개발",
+            "stated_requiredness": "필수사항",
+            "requiredness": "required",
+            "section": "[MES 프로젝트 개발 수행]",
+            "evidence_quote": "제조 도메인 기반 시스템 설계 및 개발"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_11",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Java, C#, DB(Oracle, MSSQL) 경험",
+            "stated_requiredness": "우대사항",
+            "requiredness": "preferred",
+            "section": "[MES 구축 경험] (5년이상)",
+            "evidence_quote": "Java, C#, DB(Oracle, MSSQL) 경험"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_12",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "베터리 제조 공정 이해 및 프로젝트 경험",
+            "stated_requiredness": "우대사항",
+            "requiredness": "preferred",
+            "section": "[MES 구축 경험] (5년이상)",
+            "evidence_quote": "베터리 제조 공정 이해 및 프로젝트 경험"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        },
+        {
+          "expected_id": "exp_lgcns_mes_dev_13",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "스마트팩토리/설비 자동화 경험 우대",
+            "stated_requiredness": "우대사항",
+            "requiredness": "preferred",
+            "section": "[MES 구축 경험] (5년이상)",
+            "evidence_quote": "스마트팩토리/설비 자동화 경험 우대"
+          },
+          "rubric": "raw_expression 이 원문의 부분 문자열과 일치하고 requiredness 가 같으면 정답으로 센다. 표기 차이는 evidence_quote 로 대조한다."
+        }
+      ]
+    }
+  ]
+}

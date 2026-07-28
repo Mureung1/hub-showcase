@@ -128,7 +128,8 @@
       "entry_label_raw": "백엔드 시스템 개발 및 운영 경력이 7년 이상이신 분",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaomobility_be_autonomous.txt"
     },
     {
       "source_id": "src_kakaomobility_be_parking",
@@ -153,7 +154,8 @@
       "entry_label_raw": "3년 이상의 백엔드 개발 혹은 그에 준하는 경험 및 역량을 갖추신 분",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaomobility_be_parking.txt"
     },
     {
       "source_id": "src_kakaomobility_be_logistics",
@@ -178,7 +180,8 @@
       "entry_label_raw": "백엔드 서버 개발 경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaomobility_be_logistics.txt"
     },
     {
       "source_id": "src_woowahan_be_dispatch",
@@ -203,7 +206,8 @@
       "entry_label_raw": "경력",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow sign-in/**, mypage/**, /w1/**",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "woowahan_be_dispatch.txt"
     },
     {
       "source_id": "src_kakaopay_be_stablecoin",
@@ -228,7 +232,8 @@
       "entry_label_raw": "실제 상용 서비스의 백엔드 시스템 설계, 개발 및 운영 경험 (최소 10년 이상)",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaopay_be_stablecoin.txt"
     },
     {
       "source_id": "src_kakaopay_be_payment",
@@ -250,10 +255,12 @@
       ],
       "title": "서버 개발자 - 결제 서비스",
       "job_role_raw": "제목: 서버 개발자",
-      "entry_label_raw": "지원자격에 연차 하한 표기 없음. Java 또는 Kotlin 언어와 Spring Framework 활용 능력",
-      "entry_label": "unspecified",
+      "entry_label_raw": "경력사항: 경력 3년 이상",
+      "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kakaopay_be_payment.txt",
+      "note": "구조화 필드 경력사항이 대상군 표기다. 지원자격 본문에는 연차 하한이 없다. 판정은 표기가 요구하는 대상을 따른다. docs/metric-spec.md 2.6"
     },
     {
       "source_id": "src_supercent_be_adtech_mid",
@@ -278,7 +285,8 @@
       "entry_label_raw": "경력 4년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "supercent_be_adtech_mid.txt"
     },
     {
       "source_id": "src_supercent_be_adtech_senior",
@@ -303,7 +311,8 @@
       "entry_label_raw": "경력 8년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "supercent_be_adtech_senior.txt"
     },
     {
       "source_id": "src_nexon_be_lastparadise",
@@ -328,7 +337,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "nexon_be_lastparadise.txt"
     },
     {
       "source_id": "src_nexon_be_ua",
@@ -353,7 +363,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "nexon_be_ua.txt"
     },
     {
       "source_id": "src_neople_be_projectdl",
@@ -378,7 +389,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "neople_be_projectdl.txt"
     },
     {
       "source_id": "src_neople_be_overkill",
@@ -403,7 +415,8 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "neople_be_overkill.txt"
     },
     {
       "source_id": "src_neople_be_dnf",
@@ -428,7 +441,8 @@
       "entry_label_raw": "지원 구분: 경력무관",
       "entry_label": "unspecified",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "neople_be_dnf.txt"
     },
     {
       "source_id": "src_mintrocket_be_godzilla",
@@ -453,7 +467,9 @@
       "entry_label_raw": "지원 구분: 경력",
       "entry_label": "experienced",
       "robots_policy": "allow /recruit/*; disallow /recruit?",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "mintrocket_be_godzilla.txt",
+      "note": "본문이 텍스트가 아니라 이미지 한 장으로 게시되어 있다. https://careers.nexon.com/files/job-post/6753504c-3157-49e2-adc8-386c21b3b8a2.png 를 읽어 옮긴 글을 원문 자리에 담았다. 옮긴 구간은 스튜디오 소개, 채용 포지션, 담당 업무, 자격조건, 우대사항, 전형 절차다. 다시 수집할 때도 페이지 텍스트에서는 요구를 얻을 수 없다"
     },
     {
       "source_id": "src_autoever_be_smartfactory",
@@ -478,7 +494,8 @@
       "entry_label_raw": "경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "autoever_be_smartfactory.txt"
     },
     {
       "source_id": "src_channeltalk_se_senior",
@@ -503,7 +520,8 @@
       "entry_label_raw": "시니어/정규직",
       "entry_label": "experienced",
       "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "channeltalk_se_senior.txt"
     },
     {
       "source_id": "src_channeltalk_se",
@@ -529,6 +547,7 @@
       "entry_label": "junior",
       "robots_policy": "allow /kr/careers/*; disallow /app, /touch, /@*, /ko/blog/p/",
       "collected_on": "2026-07-27",
+      "content_file": "channeltalk_se.txt",
       "note": "목록 표기가 주니어를 하한으로 둔다. 백엔드·프론트엔드·모바일을 함께 모집하는지 본문에서 확인한다. 지표 명세 2.8은 여러 직무를 함께 모집하는 공고를 모집단에서 뺀다"
     },
     {
@@ -554,7 +573,8 @@
       "entry_label_raw": "경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "cashwalk_be.txt"
     },
     {
       "source_id": "src_bucketplace_be_commerce",
@@ -579,7 +599,8 @@
       "entry_label_raw": "경력 13년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "bucketplace_be_commerce.txt"
     },
     {
       "source_id": "src_linepay_be_server",
@@ -604,7 +625,8 @@
       "entry_label_raw": "3년 이상의 서버 개발 경험 또는 이에 준하는 역량을 갖추신 분",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /ko/2021_1st, /en/2021_1st",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "linepay_be_server.txt"
     },
     {
       "source_id": "src_zimssa_be_senior",
@@ -629,7 +651,8 @@
       "entry_label_raw": "경력 10년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "zimssa_be_senior.txt"
     },
     {
       "source_id": "src_estsecurity_be_linux",
@@ -654,7 +677,8 @@
       "entry_label_raw": "경력 5년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "estsecurity_be_linux.txt"
     },
     {
       "source_id": "src_estgames_be_rts",
@@ -679,7 +703,8 @@
       "entry_label_raw": "경력 무관",
       "entry_label": "unspecified",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "estgames_be_rts.txt"
     },
     {
       "source_id": "src_kurly_be_commerce_core",
@@ -704,7 +729,8 @@
       "entry_label_raw": "경력 5~12년",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_commerce_core.txt"
     },
     {
       "source_id": "src_kurly_be_commerce_ad",
@@ -729,7 +755,8 @@
       "entry_label_raw": "경력 8~15년",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_commerce_ad.txt"
     },
     {
       "source_id": "src_kurly_be_commerce_home",
@@ -754,7 +781,8 @@
       "entry_label_raw": "경력 5~15년",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_commerce_home.txt"
     },
     {
       "source_id": "src_kurly_be_fulfillment",
@@ -779,7 +807,8 @@
       "entry_label_raw": "경력 5년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "kurly_be_fulfillment.txt"
     },
     {
       "source_id": "src_kurly_be_payment",
@@ -805,6 +834,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "kurly_be_payment.txt",
       "note": "회사가 컬리이므로 기업군은 회사 단위로 빅테크·플랫폼이다. 제목의 핀테크는 담당 도메인이다"
     },
     {
@@ -831,6 +861,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "miridih_be_senior.txt",
       "note": "greetinghr 호스팅이며 커스텀 도메인 www.miridih.com 으로 서비스한다"
     },
     {
@@ -856,7 +887,8 @@
       "entry_label_raw": "경력 10년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "travelwallet_be_lead.txt"
     },
     {
       "source_id": "src_autoever_be_smarttag",
@@ -882,6 +914,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "autoever_be_smarttag.txt",
       "note": "직군 필드가 직무를 가리키지 않아 지표 명세 2.8의 세 번째 입력으로 판정했다"
     },
     {
@@ -909,6 +942,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "autoever_be_salesforce.txt",
       "note": "패키지 플랫폼 위의 서버 로직 개발이다. 지표 명세 2.8에 따라 모집단에 넣고 platform_bound 로 표시한다"
     },
     {
@@ -935,6 +969,7 @@
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
+      "content_file": "gowid_be.txt",
       "note": "법인 지출관리 구독형 소프트웨어를 제공하므로 기업군을 B2B SaaS 로 둔다"
     },
     {
@@ -960,7 +995,8 @@
       "entry_label_raw": "경력 3년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "qmit_be_mid.txt"
     },
     {
       "source_id": "src_qmit_be_senior",
@@ -985,7 +1021,8 @@
       "entry_label_raw": "경력 5년 이상",
       "entry_label": "experienced",
       "robots_policy": "allow /; disallow /*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
-      "collected_on": "2026-07-27"
+      "collected_on": "2026-07-27",
+      "content_file": "qmit_be_senior.txt"
     },
     {
       "source_id": "src_lgcns_be_app_architect",
@@ -1008,7 +1045,8 @@
       "title": "[LG CNS] 어플리케이션 아키텍트/AI 아키텍트 모집(경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
-      "note": "모집분야가 Application Architect 와 AI Architect 둘이며 요구사항 본문이 분리된다. AI Architect 는 ai_engineer 라 이 매니페스트에 담지 않는다. robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "content_file": "lgcns_be_app_architect.txt",
+      "note": "모집분야가 Application Architect 와 AI Architect 둘이며 요구사항 본문이 분리된다. AI Architect 는 ai_engineer 라 이 매니페스트에 담지 않는다. robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
           "position_name": "Application Architect",
@@ -1042,7 +1080,8 @@
       "title": "[LG CNS] MES 영역 전문가 모집 (경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
-      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "content_file": "lgcns_be_mes_ops.txt",
+      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
           "position_name": "Software Engineer",
@@ -1076,7 +1115,8 @@
       "title": "[LG CNS] MES개발자 분야 모집(경력)",
       "robots_policy": "allow /; Content-Signal search=yes, ai-train=no; use 미선언; User-agent ClaudeBot disallow /",
       "collected_on": "2026-07-27",
-      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 목록과 메타데이터만 기록했고 본문 수집 가부는 정하지 않았다",
+      "content_file": "lgcns_be_mes_dev.txt",
+      "note": "robots 가 ai-train=no 만 선언하고 use 를 선언하지 않았다. 데이터 전략 8.1에 따라 use=reference 와 같이 다룬다",
       "positions": [
         {
           "position_name": "Software Engineer",
@@ -1088,6 +1128,1324 @@
           "entry_label": "experienced"
         }
       ]
+    },
+    {
+      "source_id": "src_enki_be_offen",
+      "url": "https://enki.career.greetinghr.com/ko/o/226454",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 엔키화이트햇",
+      "company_id": "co_enkiwhitehat",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "제품개발팀 : OFFen Backend 개발자(경력)",
+      "job_role_raw": "직군: 연구원 / 직무: 개발 / 담당업무: 보안 플랫폼 백엔드 설계 및 개발, REST API 설계, Neo4j·PostgreSQL 데이터 모델링",
+      "entry_label_raw": "경력사항: 경력 3년 이상",
+      "entry_label": "experienced",
+      "robots_policy": "allow /; disallow /o/*/apply, /ko/o/*/apply, /en/o/*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "content_file": "enki_be_offen.txt",
+      "note": "robots 가 ClaudeBot 을 Disallow 하지만 Content-Signal 에 use=reference 가 있다. 데이터 전략 8.1 의 세 조건을 지켜 수집한다"
+    },
+    {
+      "source_id": "src_enki_be_offen_open",
+      "url": "https://enki.career.greetinghr.com/ko/o/226461",
+      "source_type": "job_posting",
+      "tier": "A",
+      "allowed_uses": [
+        "statistics",
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required"
+      ],
+      "publisher": "주식회사 엔키화이트햇",
+      "company_id": "co_enkiwhitehat",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "제품개발팀 : OFFen Backend 개발자(경력무관)",
+      "job_role_raw": "직군: 연구원 / 직무: 개발 / 담당업무: 보안 플랫폼 백엔드 설계 및 개발, REST API 설계, Neo4j·PostgreSQL 데이터 모델링",
+      "entry_label_raw": "경력사항: 경력 무관",
+      "entry_label": "unspecified",
+      "robots_policy": "allow /; disallow /o/*/apply, /ko/o/*/apply, /en/o/*/apply, /m/*, /a/*; Content-Signal search=yes, ai-train=no, use=reference; User-agent ClaudeBot disallow /",
+      "collected_on": "2026-07-27",
+      "content_file": "enki_be_offen_open.txt",
+      "note": "같은 팀의 같은 제품을 대상군을 나눠 두 공고로 모집한다. 담당업무와 사용 기술은 src_enki_be_offen 과 같고 필요역량과 우대사항이 다르다. robots 처리는 src_enki_be_offen 과 같다"
+    },
+    {
+      "source_id": "src_ncs_appsw_engineering",
+      "url": "https://www.ncs.go.kr/unity/th03/ncsSearchMain.do",
+      "source_type": "public_standard",
+      "tier": "C",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_definition",
+        "wiki_prerequisites"
+      ],
+      "publisher": "한국산업인력공단",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "NCS 세분류 20010202 응용SW엔지니어링",
+      "robots_policy": "robots.txt 없음. Disallow 와 Content-Signal 모두 선언되지 않았다",
+      "license_note": "공공누리 제1유형: 출처표시. 학습모듈은 제2유형이라 담지 않는다",
+      "collected_on": "2026-07-27",
+      "content_file": "ncs_appsw_engineering.txt",
+      "note": "상세 화면이 같은 주소로의 POST 로 열려 주소가 바뀌지 않는다. 딥링크가 없으므로 URL 만으로는 재현되지 않는다. 도달 경로는 access_notes 에 있다. 능력단위 27건의 분류번호와 수준을 담았고 능력단위 정의는 화면에 없다"
+    },
+    {
+      "source_id": "src_onet_software_developers",
+      "url": "https://www.onetonline.org/link/summary/15-1252.00",
+      "source_type": "public_standard",
+      "tier": "C",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_definition",
+        "wiki_prerequisites"
+      ],
+      "publisher": "U.S. Department of Labor, Employment and Training Administration",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "O*NET-SOC 15-1252.00 Software Developers",
+      "robots_policy": "allow /link/summary/*; disallow /link/jobinfo, /link/localjobs/, /share/, /follow/, /exit; User-agent Jobrapido disallow /",
+      "license_note": "CC BY 4.0. 출처를 표시하면 사용과 변형이 허용된다",
+      "collected_on": "2026-07-27",
+      "content_file": "onet_software_developers.txt",
+      "note": "Tasks, Work Activities, Technology Skills, Knowledge, Skills, Abilities 를 담았다. Technology Skills 각 행 끝의 more 링크는 행마다 별도 요청이라 펼치지 않았고 몇 건이 더 있는지는 원문 표기로 남아 있다. 임금과 고용전망은 직무 내용이 아니라 담지 않았다"
+    },
+    {
+      "source_id": "src_blog_woowahan_dispatch",
+      "url": "https://techblog.woowahan.com/22396/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "배차 정확도를 높이는 실거리 시스템 구축하기: OSRM, Kafka, 그리고 Redis",
+      "posted_at": "2025-06-26",
+      "robots_policy": "allow /; disallow /wp-admin/ (allow /wp-admin/admin-ajax.php). Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_woowahan_dispatch_real_distance.txt"
+    },
+    {
+      "source_id": "src_blog_woowahan_kafka_throttling",
+      "url": "https://techblog.woowahan.com/20156/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "카프카 컨슈머에 동적 쓰로틀링 적용하기",
+      "posted_at": "2025-01-09",
+      "robots_policy": "allow /; disallow /wp-admin/ (allow /wp-admin/admin-ajax.php). Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_woowahan_kafka_consumer_throttling.txt"
+    },
+    {
+      "source_id": "src_blog_woowahan_delivery_infra",
+      "url": "https://techblog.woowahan.com/18254/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "실시간 배달 상황이 궁금해! 배달 인프라 레벨 구축 경험담",
+      "posted_at": "2024-07-09",
+      "robots_policy": "allow /; disallow /wp-admin/ (allow /wp-admin/admin-ajax.php). Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_woowahan_delivery_infra_level.txt"
+    },
+    {
+      "source_id": "src_blog_bucketplace_settlement",
+      "url": "https://www.bucketplace.com/post/2022-05-20-광고-정산-시스템에-kafka-streams-도입하기/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 버킷플레이스",
+      "company_id": "co_bucketplace",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "광고 정산 시스템에 Kafka Streams 도입하기",
+      "posted_at": "2022-05-20",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_bucketplace_ads_settlement_kafka_streams.txt"
+    },
+    {
+      "source_id": "src_blog_bucketplace_msa",
+      "url": "https://www.bucketplace.com/post/2022-01-14-오늘의집-msa-phase-1-백엔드-분리작업/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 버킷플레이스",
+      "company_id": "co_bucketplace",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "오늘의집 MSA Phase 1. 백엔드 분리작업",
+      "posted_at": "2022-01-14",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_bucketplace_msa_backend_separation.txt"
+    },
+    {
+      "source_id": "src_blog_daangn_adserver",
+      "url": "https://careers.daangn.com/blog/post/당근-광고실-개발자-서버-엔지니어-dsp/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 당근마켓",
+      "company_id": "co_daangn",
+      "cluster_id": "startup",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "사용자를 위한 최적의 광고를 찾아서, AdServer",
+      "posted_at": "2024-12-12",
+      "robots_policy": "allow /; disallow /preview, /jobs/completed, /jobs/role/*/apply. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_daangn_adserver_architecture.txt"
+    },
+    {
+      "source_id": "src_blog_linepay_vitess",
+      "url": "https://techblog.lycorp.co.jp/ko/migrate-payment-system-db-to-vitess-1",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "LY Corporation",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "일 평균 30억 건을 처리하는 결제 시스템의 DB를 Vitess로 교체하기 - 1. 솔루션 선정기",
+      "posted_at": "2025-06-18",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_linepay_payment_db_vitess.txt",
+      "note": "발행 주체는 LY Corporation 의 그룹 기술 블로그이며 라인페이플러스 단독 블로그가 아니다. 글을 쓴 조직은 LINE Billing Platform 팀과 LINE Plus 다. 결제 도메인이 공고와 맞아 co_linepayplus 의 회사 맥락으로 연결한다"
+    },
+    {
+      "source_id": "src_blog_linepay_thundering_herd",
+      "url": "https://techblog.lycorp.co.jp/ko/req-saver-for-thundering-herd-problem-in-cache",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "LY Corporation",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "req-shield로 캐시의 골칫거리 'Thundering Herd 문제' 쉽게 풀기!",
+      "posted_at": "2024-05-25",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_linepay_cache_thundering_herd.txt",
+      "note": "발행 주체는 LY Corporation 의 그룹 기술 블로그이며 라인페이플러스 단독 블로그가 아니다. 글을 쓴 조직은 LINE Billing Platform 팀과 LINE Plus 다. 결제 도메인이 공고와 맞아 co_linepayplus 의 회사 맥락으로 연결한다"
+    },
+    {
+      "source_id": "src_blog_linepay_spring_boot3",
+      "url": "https://techblog.lycorp.co.jp/ko/how-to-migrate-to-spring-boot-3",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "LY Corporation",
+      "company_id": "co_linepayplus",
+      "cluster_id": "fintech_finance",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "실전! Spring Boot 3 마이그레이션",
+      "posted_at": "2023-11-08",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_linepay_spring_boot3_migration.txt",
+      "note": "발행 주체는 LY Corporation 의 그룹 기술 블로그이며 라인페이플러스 단독 블로그가 아니다. 글을 쓴 조직은 LINE Billing Platform 팀과 LINE Plus 다. 결제 도메인이 공고와 맞아 co_linepayplus 의 회사 맥락으로 연결한다"
+    },
+    {
+      "source_id": "src_blog_channeltalk_spike",
+      "url": "https://tech.channel.io/kr/articles/235661b0",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "급증하는 트래픽 안정적으로 처리하기, 구현편",
+      "posted_at": "2025-03-21",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_channeltalk_spike_traffic.txt"
+    },
+    {
+      "source_id": "src_blog_channeltalk_hot_partition",
+      "url": "https://tech.channel.io/kr/articles/89224b1f",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "DynamoDB 핫 파티션을 해결하는 3가지 방법 (2): 인덱스 테이블로 GSI 떼어내기 구현편",
+      "posted_at": "2026-07-03",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_channeltalk_dynamodb_hot_partition.txt"
+    },
+    {
+      "source_id": "src_blog_channeltalk_modernization",
+      "url": "https://tech.channel.io/kr/articles/686ae8aa",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 채널코퍼레이션",
+      "company_id": "co_channelcorp",
+      "cluster_id": "b2b_saas",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "DynamoDB와 함께한 아키텍처 현대화 여정(1)",
+      "posted_at": "2024-11-14",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_channeltalk_dynamodb_modernization.txt"
+    },
+    {
+      "source_id": "src_blog_nexon_throttling",
+      "url": "https://www.intelligencelabs.tech/310dadb5-6b2f-81fa-943a-faa008a0ec85",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "ATCS : 게임 서버로 유입되는 폭발적 API 트래픽 대응을 위한 큐 기반 Throttling 전략",
+      "posted_at": "2024-01-03",
+      "robots_policy": "allow /; disallow /_private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_nexon_game_server_throttling.txt",
+      "note": "넥슨코리아 플랫폼본부 테크블로그다. nexon_be_ua 공고 본문이 이 블로그를 직접 링크한다"
+    },
+    {
+      "source_id": "src_blog_nexon_redis_spar",
+      "url": "https://www.intelligencelabs.tech/310dadb5-6b2f-81f2-bdde-cc0970ee7428",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Redis SPAR: 스트림 파티션 리밸런서 개발기 (ATCS 사례)",
+      "posted_at": "2024-10-28",
+      "robots_policy": "allow /; disallow /_private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_nexon_redis_stream_partition.txt"
+    },
+    {
+      "source_id": "src_blog_nexon_msa_automation",
+      "url": "https://www.intelligencelabs.tech/310dadb5-6b2f-811e-9e46-f4b1ddfe6b93",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_why_required",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "넥슨코리아",
+      "company_id": "co_nexonkorea",
+      "cluster_id": "game",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "보호모드 프로세스의 자동화 도입을 통한 넥슨 계정 보안 프로세스 개선기",
+      "posted_at": "2023-12-01",
+      "robots_policy": "allow /; disallow /_private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_nexon_msa_ops_automation.txt"
+    },
+    {
+      "source_id": "src_blog_skcc_was",
+      "url": "https://engineering-skcc.github.io/cloud/tomcat/apache/java/빈번한-JSP-Compile에-의한-성능저하-WAS-Troubleshooting-사례(1)/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "SK주식회사 C&C",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "빈번한 JSP 변경여부 체크에 의한 성능저하 - WAS Troubleshooting 사례(1)",
+      "posted_at": "2022-06-28",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_skcc_was_tomcat_troubleshooting.txt",
+      "note": "이 회사의 채용공고는 데이터셋에 없다. 회사 맥락이 아니라 SI 도메인에서 이 기술이 어느 깊이로 쓰이는지 보이는 근거로만 쓴다. 그래서 허용 용도에서 interpretation_context 를 뺐다. 근거는 docs/knowledge-schema.md 8.5다"
+    },
+    {
+      "source_id": "src_blog_skcc_oracle_tuning",
+      "url": "https://engineering-skcc.github.io/oracle%20tuning/펑션을_이용한_튜닝사례/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "SK주식회사 C&C",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "펑션을 이용한 튜닝사례",
+      "posted_at": "2020-04-08",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_skcc_oracle_sql_function_tuning.txt",
+      "note": "이 회사의 채용공고는 데이터셋에 없다. 회사 맥락이 아니라 SI 도메인에서 이 기술이 어느 깊이로 쓰이는지 보이는 근거로만 쓴다. 그래서 허용 용도에서 interpretation_context 를 뺐다. 근거는 docs/knowledge-schema.md 8.5다"
+    },
+    {
+      "source_id": "src_blog_skcc_msa_outer",
+      "url": "https://engineering-skcc.github.io/microservice%20outer%20achitecture/outer-architecture-1/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "SK주식회사 C&C",
+      "cluster_id": "si_enterprise",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "마이크로서비스 외부 아키텍처1 - 클라우드 인프라 패턴",
+      "posted_at": "2020-02-12",
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "blog_skcc_msa_outer_architecture_cloud_infra.txt",
+      "note": "이 회사의 채용공고는 데이터셋에 없다. 회사 맥락이 아니라 SI 도메인에서 이 기술이 어느 깊이로 쓰이는지 보이는 근거로만 쓴다. 그래서 허용 용도에서 interpretation_context 를 뺐다. 근거는 docs/knowledge-schema.md 8.5다"
+    },
+    {
+      "source_id": "src_docs_kotlin_basic_syntax",
+      "url": "https://kotlinlang.org/docs/basic-syntax.html",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "JetBrains / Kotlin Foundation",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Basic syntax overview",
+      "robots_policy": "Disallow 없음. Content-Signal 미선언",
+      "license_note": "Apache License 2.0. Kotlin is protected under the Kotlin Foundation",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_kotlin_basic_syntax.txt"
+    },
+    {
+      "source_id": "src_docs_spring_ioc",
+      "url": "https://docs.spring.io/spring-framework/reference/core/beans/basics.html",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "Broadcom / Spring",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Container Overview",
+      "robots_policy": "crawl-delay 1; disallow /autorepo/. Content-Signal 미선언",
+      "license_note": "Apache License 2.0",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_spring_ioc_container_overview.txt"
+    },
+    {
+      "source_id": "src_docs_postgresql_isolation",
+      "url": "https://www.postgresql.org/docs/current/transaction-iso.html",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "The PostgreSQL Global Development Group",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "13.2. Transaction Isolation",
+      "robots_policy": "disallow /admin/, /account/, /docs/devel/, /list/, /search/. /docs/current/ 는 허용",
+      "license_note": "PostgreSQL License. 사용·복제·수정·배포가 저작권 표시를 조건으로 허용된다",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_postgresql_transaction_isolation.txt"
+    },
+    {
+      "source_id": "src_docs_kafka_intro",
+      "url": "https://kafka.apache.org/intro",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "The Apache Software Foundation",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Introduction",
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "license_note": "Apache License v2",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_kafka_introduction.txt"
+    },
+    {
+      "source_id": "src_docs_kubernetes_overview",
+      "url": "https://kubernetes.io/docs/concepts/overview/",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "The Kubernetes Authors / CNCF",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Overview",
+      "robots_policy": "disallow /legacy/, /v1.0/, /v1.1/, /404/. Content-Signal 미선언",
+      "license_note": "CC BY 4.0",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_kubernetes_overview.txt"
+    },
+    {
+      "source_id": "src_docs_redis_data_types",
+      "url": "https://redis.io/docs/latest/develop/data-types/",
+      "source_type": "learning_material",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria",
+        "wiki_learning_sequence"
+      ],
+      "publisher": "Redis Ltd.",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Redis data types",
+      "robots_policy": "Content-Signal search=yes, ai-input=yes, ai-train=no; allow /; disallow /docs/staging/, /search/",
+      "license_note": "CC BY-NC-SA 4.0. 비영리 이용만 허용하고 파생물에 같은 조건이 붙는다. 상업적 성격을 띠면 교체한다",
+      "collected_on": "2026-07-27",
+      "content_file": "docs_redis_data_types.txt"
+    },
+    {
+      "source_id": "src_expert_yegge_google_interview",
+      "url": "https://steve-yegge.blogspot.com/2008/03/get-that-job-at-google.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "publisher": "Steve Yegge",
+      "author": "Steve Yegge",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Get that job at Google",
+      "posted_at": "2008-03-12",
+      "robots_policy": "allow /; disallow /search, /share-widget. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_yegge_get_that_job_at_google.txt",
+      "note": "본문에서 본인이 면접관이었음을 밝힌다. 자료구조·알고리즘·운영체제를 면접이 어떻게 확인하는지 다룬다"
+    },
+    {
+      "source_id": "src_expert_kaplanmoss_question_types",
+      "url": "https://jacobian.org/2021/mar/1/types-of-interview-questions/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "publisher": "Jacob Kaplan-Moss",
+      "author": "Jacob Kaplan-Moss",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Types of Interview Questions",
+      "posted_at": "2021-03-01",
+      "robots_policy": "robots.txt 가 비어 있다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kaplanmoss_types_of_interview_questions.txt",
+      "note": "Django 를 만든 세 사람 중 하나임을 본문에서 밝힌다"
+    },
+    {
+      "source_id": "src_expert_kaplanmoss_explain_topic",
+      "url": "https://jacobian.org/2021/feb/8/interview-questions-explain-a-topic/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "publisher": "Jacob Kaplan-Moss",
+      "author": "Jacob Kaplan-Moss",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Explain a Topic At Multiple Levels",
+      "posted_at": "2021-02-08",
+      "robots_policy": "robots.txt 가 비어 있다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kaplanmoss_explain_topic_multiple_levels.txt"
+    },
+    {
+      "source_id": "src_expert_kleppmann_locking",
+      "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "publisher": "Martin Kleppmann",
+      "author": "Martin Kleppmann",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "How to do distributed locking",
+      "posted_at": "2016-02-08",
+      "robots_policy": "주석만 있고 지시어 줄이 없다. use 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kleppmann_distributed_locking.txt",
+      "note": "Designing Data-Intensive Applications 저자다. Redis 분산 락을 정합성 보장으로 오해하는 문제를 다룬다"
+    },
+    {
+      "source_id": "src_expert_bailis_acid",
+      "url": "https://www.bailis.org/blog/when-is-acid-acid-rarely/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "publisher": "Peter Bailis",
+      "author": "Peter Bailis",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "When is \"ACID\" ACID? Rarely.",
+      "posted_at": "2013-01-22",
+      "robots_policy": "allow /, /blog/; disallow /private/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_bailis_acid_isolation_rarely.txt",
+      "note": "스탠퍼드 전산학 조교수를 지냈고 DAWN 프로젝트를 만들었다"
+    },
+    {
+      "source_id": "src_expert_brooker_snapshot_isolation",
+      "url": "https://brooker.co.za/blog/2024/12/17/occ-and-isolation.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "publisher": "Marc Brooker",
+      "author": "Marc Brooker",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Snapshot Isolation vs Serializability",
+      "posted_at": "2024-12-17",
+      "robots_policy": "robots.txt 가 404 다. 지시어 없음",
+      "license_note": "CC BY 4.0",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_brooker_snapshot_isolation_vs_serializability.txt",
+      "note": "AWS 엔지니어이며 EC2, EBS, Aurora DSQL 작업 이력을 프로필에 밝힌다"
+    },
+    {
+      "source_id": "src_expert_hodges_distributed",
+      "url": "https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "Jeff Hodges",
+      "author": "Jeff Hodges",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Notes on Distributed Systems for Young Bloods",
+      "posted_at": "2013-01-14",
+      "robots_policy": "robots.txt 가 404 다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_hodges_distributed_systems_young_bloods.txt",
+      "note": "Twitter 성장기에 분산 시스템 엔지니어로 일했고 Let's Encrypt 출시에 참여했다"
+    },
+    {
+      "source_id": "src_expert_norvig_ten_years",
+      "url": "https://norvig.com/21-days.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "Peter Norvig",
+      "author": "Peter Norvig",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Teach Yourself Programming in Ten Years",
+      "robots_policy": "disallow /logs/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_norvig_teach_yourself_programming_ten_years.txt",
+      "note": "구글 연구 책임자이며 Artificial Intelligence: A Modern Approach 공저자다. 게시일이 2001~2014 범위로만 표기된다"
+    },
+    {
+      "source_id": "src_expert_brooker_scalability",
+      "url": "https://brooker.co.za/blog/2024/01/18/scalability.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "Marc Brooker",
+      "author": "Marc Brooker",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "What is Scalability Anyway?",
+      "posted_at": "2024-01-18",
+      "robots_policy": "robots.txt 가 404 다. 지시어 없음",
+      "license_note": "CC BY 4.0",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_brooker_what_is_scalability_anyway.txt"
+    },
+    {
+      "source_id": "src_kr_interview_kakaobank",
+      "url": "https://velog.io/@profoundsea25/주니어-백엔드-개발자-카카오뱅크-합격-회고",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "author": "profoundsea25",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "주니어 백엔드 개발자 카카오뱅크 이직 회고",
+      "posted_at": "2023-08-17",
+      "reliability_score": 0.8,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_interview_kakaobank_junior_retrospective.txt"
+    },
+    {
+      "source_id": "src_kr_interview_question_list",
+      "url": "https://velog.io/@yukina1418/최근-면접을-다니면서-받았던-질문들",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "author": "뮤",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "신입 백엔드 면접 질문 Ver. 2.0.7",
+      "posted_at": "2022-06-29",
+      "reliability_score": 0.75,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_interview_newgrad_backend_question_list.txt"
+    },
+    {
+      "source_id": "src_kr_interview_3year_jobchange",
+      "url": "https://velog.io/@juveloper/3년차-개발자의-첫-이직-후기",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "author": "Juwon Seo",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 개발자 면접 질문 정리",
+      "posted_at": "2022-01-11",
+      "reliability_score": 0.75,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_interview_3year_java_spring_jobchange.txt"
+    },
+    {
+      "source_id": "src_kr_interview_database",
+      "url": "https://velog.io/@min9288/백엔드-기술-면접-질문데이터베이스",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "author": "Minu Jeong",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 기술 면접 질문(데이터베이스)",
+      "posted_at": "2022-08-14",
+      "reliability_score": 0.7,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_interview_database_rdbms_transaction.txt"
+    },
+    {
+      "source_id": "src_kr_interview_question_bank",
+      "url": "https://github.com/ksundong/backend-interview-question",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "author": "ksundong",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Backend-Interview-Question",
+      "reliability_score": 0.7,
+      "robots_policy": "disallow /*/tree/, /*/raw/, /*/archive/, /search$ 등. 저장소 루트 경로는 허용",
+      "license_note": "CC BY-NC-SA. 저작자 표시가 필요하고 상업적 이용이 제한된다",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_interview_backend_question_bank_cs.txt",
+      "note": "지속 갱신되는 저장소라 게시일이 하나로 정해지지 않는다"
+    },
+    {
+      "source_id": "src_kr_interview_spring_jpa",
+      "url": "https://imbf.github.io/interview/2021/03/06/NAVER-Practical-Interview-Preparation-8.html",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_interview_verification"
+      ],
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Spring Framework",
+      "posted_at": "2021-03-06",
+      "reliability_score": 0.6,
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_interview_spring_jpa_practical_prep.txt",
+      "note": "작성자가 확인되지 않는다. IoC 컨테이너와 영속성 컨텍스트 동작을 API 이름 수준까지 짚어 편입했다"
+    },
+    {
+      "source_id": "src_kr_misconcept_connection_pool",
+      "url": "https://jaehun2841.github.io/2020/01/27/2020-01-27-hikaricp-maximum-pool-size-tuning/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "author": "정재훈",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "HikariCP Maximum Pool Size 설정 시, 고려해야할 부분",
+      "posted_at": "2020-01-27",
+      "reliability_score": 0.88,
+      "robots_policy": "robots.txt 가 비어 있다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_misconcept_connection_pool.txt"
+    },
+    {
+      "source_id": "src_kr_misconcept_repeatable_read",
+      "url": "https://parkmuhyeun.github.io/woowacourse/2023-11-28-Repeatable-Read/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "author": "parkmuhyeun",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "과연 MySQL의 REPEATBLE READ에서는 PHANTOM READ 현상이 일어나지 않을까?",
+      "posted_at": "2023-11-28",
+      "reliability_score": 0.75,
+      "robots_policy": "Sitemap 줄만 있다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_misconcept_repeatable_read_phantom.txt"
+    },
+    {
+      "source_id": "src_kr_misconcept_cache",
+      "url": "https://madplay.github.io/post/redis-cache-strategy-and-eviction",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_common_misconceptions"
+      ],
+      "author": "MadPlay",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "Redis에 캐시를 얹기 전에 결정할 네 가지",
+      "posted_at": "2024-05-12",
+      "reliability_score": 0.7,
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_misconcept_cache_invalidation.txt",
+      "note": "본문에 문맥과 무관한 링크 문구가 섞여 있으나 원문을 바꾸지 않았다"
+    },
+    {
+      "source_id": "src_kr_depth_deep_dive",
+      "url": "https://hudi.blog/how-to-deep-dive/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "author": "Hudi",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "문제 해결 능력을 위한 깊이 있는 학습 방법에 대해",
+      "posted_at": "2022-09-09",
+      "reliability_score": 0.8,
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_depth_why_two_levels.txt"
+    },
+    {
+      "source_id": "src_kr_depth_learning_growth",
+      "url": "https://kciter.so/posts/developers-learning-and-growth/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "author": "이선협",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "개발자의 학습과 성장",
+      "posted_at": "2023-12-24",
+      "reliability_score": 0.85,
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_depth_learning_and_growth.txt"
+    },
+    {
+      "source_id": "src_kr_depth_junior_senior_levels",
+      "url": "https://community.programmers.co.kr/post/10304",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "주니어와 시니어 개발자를 나누는 기준",
+      "reliability_score": 0.6,
+      "robots_policy": "robots.txt 가 404 다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_depth_junior_senior_levels.txt",
+      "note": "프로그래머스가 편집한 인터뷰이며 인터뷰이가 익명이고 게시일이 상대 표기다"
+    },
+    {
+      "source_id": "src_kr_learning_roadmap_steps",
+      "url": "https://velog.io/@kjy0302014/백엔드-로드맵",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_learning_sequence"
+      ],
+      "author": "Jaeyoung",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 로드맵",
+      "posted_at": "2024-12-09",
+      "reliability_score": 0.8,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_learning_backend_roadmap_steps.txt"
+    },
+    {
+      "source_id": "src_kr_learning_java_study_order",
+      "url": "https://velog.io/@dgh06175/Java-백엔드-공부-로드맵",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_learning_sequence"
+      ],
+      "author": "이상현",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "[Java] 백엔드 공부 로드맵",
+      "posted_at": "2023-12-08",
+      "reliability_score": 0.75,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_learning_java_backend_study_order.txt"
+    },
+    {
+      "source_id": "src_kr_learning_from_jobposts",
+      "url": "https://shcde.github.io/post/backend-roadmap/",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_learning_sequence"
+      ],
+      "author": "shcDE",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "신입을 위한 백엔드 로드맵",
+      "reliability_score": 0.55,
+      "robots_policy": "allow /. Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_learning_newbie_backend_roadmap_from_jobposts.txt",
+      "note": "여러 채용공고에서 필수 기술을 추려 만들었다고 본문에 밝힌다"
+    },
+    {
+      "source_id": "src_kr_learning_study_priority",
+      "url": "https://velog.io/@frankle97/backend-study-collection",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_learning_sequence"
+      ],
+      "author": "Frankle",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 개발자 학습 자료 정리",
+      "posted_at": "2022-01-26",
+      "reliability_score": 0.6,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_learning_backend_study_priority_books.txt"
+    },
+    {
+      "source_id": "src_kr_portfolio_which_project",
+      "url": "https://velog.io/@c-on/어떤-프로젝트를-해야할까",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap"
+      ],
+      "author": "C:on",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "어떤 프로젝트를 해야할까?",
+      "posted_at": "2021-08-08",
+      "reliability_score": 0.7,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_portfolio_which_project_to_build.txt"
+    },
+    {
+      "source_id": "src_kr_portfolio_tips",
+      "url": "https://velog.io/@oh_yunseong/신입개발자-포트폴리오-TIP-정리",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap"
+      ],
+      "author": "Dev-O",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "신입개발자 포트폴리오 TIP 정리",
+      "posted_at": "2021-10-28",
+      "reliability_score": 0.65,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_portfolio_newbie_portfolio_tips.txt"
+    },
+    {
+      "source_id": "src_kr_portfolio_writing_method",
+      "url": "https://velog.io/@yoosion030/신입개발자포트폴리오작성법",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap"
+      ],
+      "author": "유시온",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "신입 개발자의 포트폴리오 작성법",
+      "posted_at": "2023-12-21",
+      "reliability_score": 0.6,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_portfolio_newbie_portfolio_writing_method.txt"
+    },
+    {
+      "source_id": "src_kr_portfolio_backend_writing",
+      "url": "https://velog.io/@ffwang/백엔드-개발자-포트폴리오",
+      "source_type": "external_expert",
+      "tier": "D",
+      "allowed_uses": [
+        "strategy",
+        "roadmap"
+      ],
+      "author": "황은하",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "백엔드 개발자 포트폴리오",
+      "posted_at": "2024-01-10",
+      "reliability_score": 0.55,
+      "robots_policy": "User-agent * 만 있고 Disallow 없음. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_portfolio_backend_portfolio_writing.txt",
+      "note": "본인 경력이 아니라 강연을 듣고 정리한 노트다"
+    },
+    {
+      "source_id": "src_blog_woowahan_senior_criteria",
+      "url": "https://techblog.woowahan.com/2525/",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "interpretation_context",
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "주식회사 우아한형제들",
+      "company_id": "co_woowahan",
+      "cluster_id": "bigtech_platform",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "우리가 부르는 시니어 개발자는 누구인가?",
+      "posted_at": "2017-07-03",
+      "reliability_score": 0.82,
+      "robots_policy": "allow /; disallow /wp-admin/. Content-Signal 미선언",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_depth_senior_criteria.txt",
+      "note": "회사 공식 기술 블로그이므로 개인 자료가 아니라 B 계층이다"
+    },
+    {
+      "source_id": "src_blog_trenbe_n_plus_one",
+      "url": "https://tech.trenbe.com/2022/02/23/야!-너도-할-수-있어,-N+1해결.html",
+      "source_type": "company_official",
+      "tier": "B",
+      "allowed_uses": [
+        "strategy",
+        "roadmap",
+        "wiki_depth_criteria"
+      ],
+      "publisher": "트렌비",
+      "job_role_ids": [
+        "backend"
+      ],
+      "title": "야! 너도 할 수 있어, N+1 해결",
+      "posted_at": "2022-02-23",
+      "reliability_score": 0.8,
+      "robots_policy": "Sitemap 줄만 있다. 지시어 없음",
+      "collected_on": "2026-07-27",
+      "content_file": "expert_kr_misconcept_jpa_n_plus_one.txt",
+      "note": "회사 공식 기술 블로그다. 이 회사의 채용공고는 데이터셋에 없어 회사 맥락으로 쓰지 않는다. 그래서 허용 용도에서 interpretation_context 를 뺐다"
     }
   ],
   "unreachable": [
@@ -1270,6 +2628,106 @@
     {
       "source": "careers.lg.com/apply/detail?id=1001946",
       "reason": "MS Active Directory 이행·운영이라 인프라다"
+    },
+    {
+      "source": "www.work24.go.kr 직업정보",
+      "reason": "공공누리 제4유형이라 비상업적 이용만 가능하고 2차적 저작물 작성이 금지된다. 요구 차원에 연결하는 가공이 이용 조건과 부딪혀 담지 않는다"
+    },
+    {
+      "source": "sfia-online.org",
+      "reason": "개인용 라이선스가 등록을 요구하고 다른 사람과 조직의 이용과 상업적 이용을 금지한다"
+    },
+    {
+      "source": "esco.ec.europa.eu",
+      "reason": "이용 조건 문서 경로가 404 를 반환해 라이선스를 확인하지 못했다"
+    },
+    {
+      "source": "medium.com",
+      "reason": "robots 의 ClaudeBot 그룹이 Disallow / 이고 글 경로가 Allow 목록에 없다. 당근과 미리디의 공식 기술 블로그가 여기 있어 대신 자체 도메인에서 가져왔다"
+    },
+    {
+      "source": "tech.kakaopay.com",
+      "reason": "브라우저 도구의 차단 도메인. 우회하지 않는다"
+    },
+    {
+      "source": "developers.kakaomobility.com",
+      "reason": "브라우저 도구의 차단 도메인. 우회하지 않는다"
+    },
+    {
+      "source": "blog.naver.com",
+      "reason": "브라우저 도구의 차단 도메인. 현대오토에버 기술 글의 본문이 여기 있다"
+    },
+    {
+      "source": "www.lgcns.com 인사이트",
+      "reason": "본문 하단에 사전 동의 없이 2차 가공 및 영리적인 이용을 금한다는 문구가 있다"
+    },
+    {
+      "source": "www.hyundai-autoever.com 솔루션 문서",
+      "reason": "법적고지가 사전 승낙 없는 복사와 복제를 금한다"
+    },
+    {
+      "source": "travel-wallet.career.greetinghr.com/ko/tech",
+      "reason": "발표 제목 목록만 있고 본문이 없다"
+    },
+    {
+      "source": "www.samsungsds.com 리서치 블로그",
+      "reason": "robots 는 ClaudeBot 을 Allow 하지만 이용약관 4.2 가 가공·복제·영리 이용을 금하고 4.6 이 웹 크롤러를 통한 이용을 금한다. 약관이 robots 보다 넓은 금지다"
+    },
+    {
+      "source": "devinn.dev",
+      "reason": "CJ올리브네트웍스의 기술 블로그 도메인이 사라졌다"
+    },
+    {
+      "source": "chamomile.lotteinnovate.com",
+      "reason": "롯데이노베이트의 자사 프레임워크 릴리스 노트만 있고 엔지니어링 글이 없다"
+    },
+    {
+      "source": "engineering-skcc.github.io",
+      "reason": "SK주식회사 C&C 의 기술 블로그다. 이용 조건은 걸리지 않으나 2022년 11월 이후 글이 없고 이 회사의 백엔드 공고가 열려 있지 않아 회사 맥락을 연결할 공고가 없다"
+    },
+    {
+      "source": "careers.skplanet.com",
+      "reason": "robots 가 User-agent * 에 Disallow / 로 전면 차단한다"
+    },
+    {
+      "source": "si_enterprise 기업군의 B 계층",
+      "reason": "LG CNS 와 현대오토에버가 엔지니어링 기술 블로그를 운영하지 않는다. 대체 후보로 삼성SDS, SK주식회사 C&C, CJ올리브네트웍스, 롯데이노베이트, SK플래닛, G마켓, 11번가, 포스코DX, 신세계아이앤씨를 확인했으나 기술 블로그와 백엔드 공고를 함께 갖춘 곳이 없다. B 계층은 통계에 집계하지 않으므로 기업군을 균등하게 채우는 것이 목표가 아니다"
+    },
+    {
+      "source": "docs.oracle.com / dev.java",
+      "reason": "Oracle Web Sites Terms of Use 가 자료의 개인적·비상업적 이용만 허용하고 재배포와 자동화 수단 접근을 금한다. Java 가 25건으로 요구 1위지만 공식 문서를 담지 않는다"
+    },
+    {
+      "source": "dev.mysql.com 레퍼런스 매뉴얼",
+      "reason": "Use of This Documentation 이 개인 열람용 인쇄만 허용하고 다른 출판물에서의 이용에 사전 서면 동의를 요구한다"
+    },
+    {
+      "source": "use-the-index-luke.com",
+      "reason": "robots 가 GPTBot, ChatGPT-User, CCBot, Google-Extended 를 전면 차단한다. ClaudeBot 그룹은 없으나 AI 크롤러를 지목해 막는 의도가 명확하다"
+    },
+    {
+      "source": "www.youngju.dev",
+      "reason": "37일 동안 한국어 글 263편에 네 언어 자동 생성으로 URL 9967개이며 본문에 AI 보존 생성 고지가 있다. 생성물을 근거로 삼으면 근거가 되지 않는다"
+    },
+    {
+      "source": "D 계층의 국내 필자",
+      "reason": "작성자와 전문성과 게시일 셋을 모두 확인할 수 있으면서 면접 검증·흔한 오해·깊이 기준에 맞는 국내 개인 글을 찾지 못했다. 국내 전문가 블로그는 검색 경로가 robots 로 막혀 있고 검색 상위는 작성자 불명의 요약 모음이다. URL 을 지정해 받는 방식이 필요하다"
+    },
+    {
+      "source": "engineering.linecorp.com",
+      "reason": "robots.txt 요청이 403 을 반환해 지시어를 확인하지 못했다"
+    },
+    {
+      "source": "d2.naver.com",
+      "reason": "robots.txt 요청이 403 을 반환해 지시어를 확인하지 못했다"
+    },
+    {
+      "source": "brunch.co.kr",
+      "reason": "robots 의 ClaudeBot 그룹이 Disallow / 다"
+    },
+    {
+      "source": "강의 판매와 학원 홍보 글",
+      "reason": "인프런 로드맵, 코드스테이츠, 제로베이스, 내일배움캠프, f-lab 은 내용이 아니라 광고다. 준비 전략의 근거로 삼지 않는다"
     }
   ],
   "access_notes": [
@@ -1332,6 +2790,34 @@
     {
       "source": "api.careers.lg.com/rmk/job/retrieveJobNoticesDetail",
       "method": "채용 페이지가 호출하는 공개 엔드포인트. jobNoticeId 를 POST 하면 data.jobNoticesDetail.recList 에 모집분야별 jobGroupName, requiredItem, detailContext 가 들어 있다. 목록의 식별자는 목록 화면의 jobNoticeList 에 있다"
+    },
+    {
+      "source": "2단계 본문 수집 절차",
+      "method": "매니페스트의 url 을 브라우저로 열어 본문 전문을 agent/data/sources/backend/ 아래 content_file 이름으로 저장한다. greetinghr 계열은 같은 출처 fetch 로 여러 건을 한 번에 받는다. 저장한 뒤 FileFetcher 와 SourceCollector 로 적재 파이프라인에 태운다"
+    },
+    {
+      "source": "모집분야를 여럿 담은 출처의 본문",
+      "method": "positions 가 있는 항목은 해당 모집분야의 요구사항 구간만 담는다. careers.lg.com 은 api.careers.lg.com/rmk/job/retrieveJobNoticesDetail 의 recList 에서 jobGroupName 이 일치하는 원소의 requiredItem 과 detailContext 를 쓴다"
+    },
+    {
+      "source": "www.ncs.go.kr",
+      "method": "분류 트리를 눌러 들어간다. 대분류 20 정보통신 → 중분류 01 정보기술 → 소분류 02 정보기술개발 → 세분류 02 응용SW엔지니어링. 상세가 POST 로 열려 주소가 바뀌지 않고 GET 파라미터를 무시한다. 능력단위 상세는 PDF 로만 제공된다"
+    },
+    {
+      "source": "www.onetonline.org",
+      "method": "정적 렌더링. 직업 코드로 /link/summary/<코드> 를 바로 연다. 접힌 목록은 화면에서 펼쳐 읽는다"
+    },
+    {
+      "source": "공공데이터포털 NCS 오픈API",
+      "method": "c.q-net.or.kr/openapi/Ncs1info/ncsinfo.do 가 능력단위 코드·이름·수준·정의를 JSON 으로 준다. 이용허락범위 제한 없음. data.go.kr 인증키가 필요하다"
+    },
+    {
+      "source": "회사 기술 블로그 선정",
+      "method": "그 회사 백엔드 공고의 자격요건과 우대사항에서 기술과 문제 영역을 먼저 뽑고, 겹치는 글만 고른다. 채용 후기와 행사 소식은 요구 근거가 되지 않는다"
+    },
+    {
+      "source": "D 계층 신뢰도 판정",
+      "method": "0.85~0.95 작성자와 경력이 확인되고 구체적 경험에서 나온 글. 0.7~0.85 작성자만 확인되거나 확인은 안 되나 내용이 매우 구체적이다. 0.5~0.7 작성자 불명이나 기술 내용이 검증 가능하다. 0.3~0.5 작성자 불명이고 일반론에 가깝다. 0.3 미만은 담지 않는다. 근거는 docs/adr/0009-third-party-reliability.md 다"
     }
   ]
 }

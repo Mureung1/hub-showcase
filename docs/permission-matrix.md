@@ -24,6 +24,7 @@
 | 검증 파이프라인 | Helper Pipeline | A0 + A1 | `cs_pipe_verify` |
 | 서빙 파이프라인 | Helper Pipeline | A0 | `cs_serving` |
 | Express | 사용자 런타임 | A0 | `cs_serving` |
+| 평가 실행기 | 평가 | A0 | `cs_eval_runner` |
 
 Express와 서빙 파이프라인은 같은 role을 쓴다. 둘 다 활성 버전 조회만 수행한다.
 
@@ -43,11 +44,12 @@ Express와 서빙 파이프라인은 같은 role을 쓴다. 둘 다 활성 버�
 | 집계 | `statistics_facts`, `capability_depth_profiles`, `knowledge_edges.weight`(UPDATE만) |
 | 계보 기록 | `knowledge_nodes`·`knowledge_edges`의 Provenance 묶음과 사후 semantic 묶음, `graph_paths` |
 | 검증 | `verification_results`, `repair_orders`, `research_requests`(INSERT) |
+| 평가 실행기 | `evaluation_sets`, `evaluation_cases`, `evaluation_expected_items`, `evaluation_runs`, `evaluation_metrics`, `evaluation_failures` |
 | 서빙·Express | 없음 |
 
 기준 테이블 `job_roles`, `companies`, `company_clusters`, `company_cluster_memberships`, `periods`, `standards`와 정책 테이블 `metric_templates`, `metric_template_parameters`, `metric_policy_versions`, `ontology_versions`, `dimension_metric_applicability`는 운영자가 마이그레이션과 시드로 관리한다. 어떤 에이전트도 쓰지 않는다.
 
-평가 테이블 `evaluation_*`는 평가 실행기가 쓴다. 분석 실행 경로에서 접근하지 않는다.
+평가 테이블 `evaluation_*`는 평가 실행기가 쓴다. 넣기만 하고 갱신하지 않는다. 분석 실행 경로에서 접근하지 않는다.
 
 ### 3.1 전 구성요소 공통
 
@@ -157,7 +159,7 @@ Supabase의 service role은 행 수준 정책을 우회한다. 따라서 에이�
 
 #### role 전환 방식
 
-구성요소마다 접속 문자열을 따로 두지 않는다. 하나의 사용자로 접속하고 거래를 열 때마다 `SET LOCAL ROLE`로 전환한다. 접속 문자열이 열세 개로 늘어나면 관리와 커넥션 풀 운영이 나빠지고, Supabase는 접속 사용자 생성을 제한한다.
+구성요소마다 접속 문자열을 따로 두지 않는다. 하나의 사용자로 접속하고 거래를 열 때마다 `SET LOCAL ROLE`로 전환한다. 접속 문자열이 열네 개로 늘어나면 관리와 커넥션 풀 운영이 나빠지고, Supabase는 접속 사용자 생성을 제한한다.
 
 ```sql
 BEGIN;
@@ -211,7 +213,7 @@ append-only 테이블은 트리거로 `UPDATE`·`DELETE`를 차단한다. 권한
 
 | 테스트 | 기대 |
 | --- | --- |
-| 접속 사용자가 열세 role 전부로 전환 | 성공 |
+| 접속 사용자가 열네 role 전부로 전환 | 성공 |
 | 해석 role이 `statistics_facts`에 INSERT | 권한 오류 |
 | 통계 role이 `analysis_claims`에 INSERT | 권한 오류 |
 | 전략 role이 `output_type = 'roadmap'`으로 INSERT | `CHECK` 위반 |

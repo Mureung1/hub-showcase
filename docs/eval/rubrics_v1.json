@@ -1,0 +1,467 @@
+{
+  "rubric_set_id": "rubrics_v1",
+  "source_file": "docs/eval/rubrics_v1.json",
+  "status": "draft",
+  "note": "사람이 확정하기 전의 초안. evaluation_expected_items.rubric 이 rubric_id 로 참조한다",
+  "rubrics": [
+    {
+      "rubric_id": "rb_dimension_assignment",
+      "group": "dimension_assignment",
+      "applies_to": "dimension_assignment",
+      "title": "차원 라벨과 깊이 등급 일치",
+      "decision": "기대 항목 하나를 차원 라벨 집합과 깊이 등급 두 축으로 각각 센다. 두 축의 분모는 모두 기대 항목 수다.",
+      "pass_when": [
+        "관측 할당의 차원 라벨 집합이 expected_value.dimension_labels 와 같은 집합이면 라벨 축에서 정답으로 센다",
+        "관측 할당의 대표 깊이 등급이 expected_value.depth_level 과 같으면 깊이 축에서 정답으로 센다",
+        "관측 할당이 dimension_id 로 표현되면 그 시점 분류체계 버전의 display_label 과 별칭을 모두 대조 후보로 삼는다"
+      ],
+      "fail_when": [
+        "기대 라벨 하나를 빠뜨리거나 기대에 없는 라벨을 더하면 라벨 축에서 오답으로 센다",
+        "한 mention 이 같은 차원에 여러 깊이로 할당되면 대표 등급 규칙으로 하나를 고른 뒤 대조하고, 규칙을 적용하지 않은 관측은 오답으로 센다"
+      ],
+      "reference": [
+        "docs/data-strategy.md 9장",
+        "docs/erd.md 13장",
+        "docs/metric-spec.md 3.3 대표 등급 규칙"
+      ],
+      "related_rubrics": [
+        "rb_depth_level_grade"
+      ]
+    },
+    {
+      "rubric_id": "rb_depth_level_grade",
+      "group": "dimension_assignment",
+      "applies_to": "dimension_assignment",
+      "title": "깊이 등급 판정",
+      "decision": "깊이 등급은 foundation, application, tradeoff 세 값이다. 요구 표현이 드러내는 신호로 등급을 정하고, 신호가 여럿이면 가장 깊은 등급을 택한다.",
+      "pass_when": [
+        "표현이 개념·지식·이해만 요구하면 foundation 이다",
+        "표현이 자격·연차·태도·학위·어학을 요구하면 foundation 이다",
+        "표현이 언어·도구·프레임워크의 사용이나 구현·운영 경험을 요구하면 application 이다",
+        "표현이 규모를 명시하면 tradeoff 다. 대용량, 대규모, 실시간, 고가용성이 규모 신호다",
+        "표현이 동시성이나 데이터 정합성을 명시하면 tradeoff 다",
+        "표현이 장애 감지·대응이나 운영 안정화를 명시하면 tradeoff 다",
+        "표현이 시스템 구조의 선택이나 재설계를 명시하면 tradeoff 다"
+      ],
+      "fail_when": [
+        "기능 흐름의 설계를 구조 선택으로 읽어 tradeoff 를 부여하면 오답이다",
+        "규모·동시성·장애 신호가 원문에 없는데 직무 통념으로 tradeoff 를 부여하면 오답이다"
+      ],
+      "reference": [
+        "docs/knowledge-schema.md 8.2",
+        "docs/erd.md 13장 posting_requirement_assignments.depth_level",
+        "docs/statistics-model.md 5.7 심화 신호"
+      ],
+      "signal_map": {
+        "knowledge_only": "foundation",
+        "attribute": "foundation",
+        "applied_experience": "application",
+        "scale": "tradeoff",
+        "concurrency": "tradeoff",
+        "failure_operation": "tradeoff",
+        "design_choice": "tradeoff"
+      }
+    },
+    {
+      "rubric_id": "rb_interp_explicit",
+      "group": "interpretation",
+      "applies_to": "interpretation",
+      "title": "explicit_requirement 판정",
+      "decision": "공고 원문에 적힌 요구만 explicit_requirement 다.",
+      "pass_when": [
+        "요구의 근거가 해당 공고 원문의 문장이고 위치가 원문과 일치한다",
+        "근거가 하나여도 충분하다",
+        "통계, 직무 기준선, 필수 체크리스트에 반영한다"
+      ],
+      "fail_when": [
+        "근거 문장이 다른 공고나 회사 자료에서 왔다",
+        "근거의 위치가 원문과 어긋난다",
+        "원문에 없는 기술 이름을 요구로 적었다"
+      ],
+      "reference": [
+        "docs/agent-design.md 7.4",
+        "docs/agent-design.md 8장 개별 공고 명시 사실",
+        "docs/data-strategy.md 4장"
+      ]
+    },
+    {
+      "rubric_id": "rb_interp_inferred",
+      "group": "interpretation",
+      "applies_to": "interpretation",
+      "title": "inferred_requirement 판정",
+      "decision": "공고 표현을 출발점으로 삼고 A·B·C 계층 근거로 보강한 요구가 inferred_requirement 다.",
+      "pass_when": [
+        "공고 원문의 표현을 근거로 지목하고, 보강 근거가 A·B·C 계층이다",
+        "추론 요구임을 표시하고 통계와 직무 기준선에 반영하지 않는다",
+        "필수 체크리스트에는 조건부로만 반영하고 그 조건을 함께 표시한다"
+      ],
+      "fail_when": [
+        "출발점이 되는 공고 표현이 없다",
+        "한 공고의 표현에서 직무 전체나 기업군 전체의 요구를 끌어낸다",
+        "추론 요구를 명시 요구와 같은 자리에 표시한다",
+        "보강 근거가 E 계층이다"
+      ],
+      "reference": [
+        "docs/agent-design.md 7.4",
+        "docs/agent-design.md 8장 추론 요구",
+        "docs/data-strategy.md 3장",
+        "docs/adr/0010-third-party-interpretation-scope.md"
+      ]
+    },
+    {
+      "rubric_id": "rb_interp_context_signal",
+      "group": "interpretation",
+      "applies_to": "interpretation",
+      "title": "company_context_signal 판정",
+      "decision": "회사 공식 자료에 반복되고 해당 공고에는 없는 주제가 company_context_signal 이다.",
+      "pass_when": [
+        "근거가 B 계층 자료이고 서로 다른 자료에서 반복해 관찰된다",
+        "해당 공고의 명시 요구사항이 아님을 함께 표시한다",
+        "포트폴리오 강조 순서와 면접 준비 후보에만 반영한다"
+      ],
+      "fail_when": [
+        "같은 주제가 공고 원문에도 있다. 그 경우는 explicit_requirement 다",
+        "통계, 직무 기준선, 필수 체크리스트에 반영한다",
+        "요구 차원에 직접 연결한다. 연결 자리는 분석 주장의 지지 근거다"
+      ],
+      "reference": [
+        "docs/agent-design.md 7.4",
+        "docs/agent-design.md 8장 회사 맥락 신호",
+        "docs/data-strategy.md 4장"
+      ]
+    },
+    {
+      "rubric_id": "rb_claim_statistic",
+      "group": "interpretation",
+      "applies_to": "interpretation",
+      "title": "통계 수치 주장 판정",
+      "decision": "수치 주장은 분자, 분모, 중복 제거 단위, 재계산 일치를 모두 갖춘 경우에만 지지된다.",
+      "pass_when": [
+        "분자와 분모를 함께 제시하고 모집단 조건이 범위·기간 정의와 일치한다",
+        "중복 제거 단위가 posting_version_id 다",
+        "독립 재계산 결과가 저장값과 일치한다",
+        "taxonomy_version_id 와 metric_policy_version 이 실행 컨텍스트와 일치한다"
+      ],
+      "fail_when": [
+        "분모를 밝히지 않은 비율을 제시한다",
+        "A 계층이 아닌 근거가 분자나 분모에 들어간다",
+        "표본이 정책 버전의 임계값에 미달하는데 표본 수를 함께 표시하지 않는다"
+      ],
+      "reference": [
+        "docs/agent-design.md 8장 통계 수치",
+        "docs/metric-spec.md 7장",
+        "docs/statistics-model.md 6장"
+      ]
+    },
+    {
+      "rubric_id": "rb_claim_cluster_generalization",
+      "group": "interpretation",
+      "applies_to": "interpretation",
+      "title": "기업군 일반화 주장 판정",
+      "decision": "기업군 일반화는 독립 공고 수와 독립 회사 수, 기업 분포, 범위 충족도를 함께 제시할 때 지지된다.",
+      "pass_when": [
+        "근거가 서로 다른 회사의 공고에서 왔고 회사 수를 함께 제시한다",
+        "기업군 분모와 직무 전체 분모가 모두 비교 임계값 이상이다"
+      ],
+      "fail_when": [
+        "한 회사의 공고에서만 관찰된 표현으로 기업군을 설명한다",
+        "비교 불가로 표시된 값끼리 비교한다"
+      ],
+      "reference": [
+        "docs/agent-design.md 8장 기업군 일반화",
+        "docs/statistics-model.md 3.4",
+        "docs/metric-spec.md 3.4"
+      ]
+    },
+    {
+      "rubric_id": "rb_claim_strategy",
+      "group": "interpretation",
+      "applies_to": "strategy_linkage",
+      "title": "합격 전략 주장 판정",
+      "decision": "전략 주장은 연결된 요구와 허용된 전략 자료 근거를 함께 가질 때 지지된다.",
+      "pass_when": [
+        "주장이 특정 요구 차원이나 mention 에 연결된다",
+        "근거 출처의 allowed_uses 가 strategy 또는 roadmap 토큰을 담는다"
+      ],
+      "fail_when": [
+        "연결된 요구 없이 준비 방법만 제시한다",
+        "전략 자료의 주장을 기업의 요구 빈도나 인재상 근거로 승격한다"
+      ],
+      "reference": [
+        "docs/agent-design.md 8장 합격 전략",
+        "docs/data-strategy.md 3장",
+        "docs/data-strategy.md 3.1"
+      ]
+    },
+    {
+      "rubric_id": "rb_claim_no_deviation",
+      "group": "interpretation",
+      "applies_to": "coverage",
+      "title": "편차 없음 주장 판정",
+      "decision": "편차 없음은 닫힌 대상 집합을 전수 검사하고 0건을 확인한 경우에만 출력한다.",
+      "pass_when": [
+        "coverage_assertions 의 coverage_complete 가 참이다",
+        "검사한 대상 집합의 범위를 함께 제시한다"
+      ],
+      "fail_when": [
+        "coverage_complete 가 거짓인데 편차 없음을 출력한다. 이 경우의 정답은 판단 근거 부족이다",
+        "근거를 찾지 못한 것을 부재를 확인한 것으로 적는다"
+      ],
+      "reference": [
+        "docs/agent-design.md 7.4",
+        "docs/agent-design.md 8장 편차 없음"
+      ]
+    },
+    {
+      "rubric_id": "rb_mapping_exact",
+      "group": "standard_mapping",
+      "applies_to": null,
+      "title": "standard_mapping_status = exact",
+      "decision": "차원이 가리키는 범위와 표준 항목이 가리키는 범위가 같으면 exact 다.",
+      "pass_when": [
+        "차원에 속하는 mention 이 모두 표준 항목의 설명 범위 안에 들고, 표준 항목이 설명하는 범위에 차원 밖의 요구가 없다",
+        "standard_id 와 mapping_evidence 를 함께 기록한다"
+      ],
+      "fail_when": [
+        "표기가 비슷하다는 이유로 exact 를 부여한다",
+        "시장 어휘를 표준 용어로 치환해 저장한다"
+      ],
+      "reference": [
+        "docs/statistics-model.md 4장",
+        "docs/knowledge-schema.md 6.2"
+      ]
+    },
+    {
+      "rubric_id": "rb_mapping_broader",
+      "group": "standard_mapping",
+      "applies_to": null,
+      "title": "standard_mapping_status = broader",
+      "decision": "차원이 표준 항목을 포함하고 그 밖의 요구까지 담으면 broader 다.",
+      "pass_when": [
+        "표준 항목이 설명하지 못하는 mention 이 차원 안에 남는다",
+        "표준 항목의 범위가 차원 범위의 진부분집합이다"
+      ],
+      "fail_when": [
+        "포함 방향을 반대로 기록한다. 그 경우는 narrower 다"
+      ],
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
+    },
+    {
+      "rubric_id": "rb_mapping_narrower",
+      "group": "standard_mapping",
+      "applies_to": null,
+      "title": "standard_mapping_status = narrower",
+      "decision": "표준 항목이 차원을 포함하고 그 밖의 요구까지 담으면 narrower 다.",
+      "pass_when": [
+        "차원의 모든 mention 이 표준 항목 범위 안에 들고, 표준 항목이 차원 밖의 요구까지 설명한다"
+      ],
+      "fail_when": [
+        "포함 방향을 반대로 기록한다. 그 경우는 broader 다"
+      ],
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
+    },
+    {
+      "rubric_id": "rb_mapping_related",
+      "group": "standard_mapping",
+      "applies_to": null,
+      "title": "standard_mapping_status = related",
+      "decision": "차원과 표준 항목이 인접하나 어느 쪽도 다른 쪽을 포함하지 않으면 related 다.",
+      "pass_when": [
+        "두 범위가 겹치는 mention 을 가지면서 각자 상대가 설명하지 못하는 mention 을 남긴다"
+      ],
+      "fail_when": [
+        "판정이 어렵다는 이유로 related 를 기본값처럼 부여한다. 대응 항목을 찾지 못했으면 unmapped 다"
+      ],
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
+    },
+    {
+      "rubric_id": "rb_mapping_unmapped",
+      "group": "standard_mapping",
+      "applies_to": null,
+      "title": "standard_mapping_status = unmapped",
+      "decision": "대응하는 표준 항목이 없으면 unmapped 다. unmapped 는 정상 상태이며 결함이 아니다.",
+      "pass_when": [
+        "표준 자료를 검색하고도 겹치는 범위의 항목을 찾지 못했다",
+        "standard_id 를 비우고 검색 범위를 mapping_evidence 에 남긴다"
+      ],
+      "fail_when": [
+        "unmapped 를 피하려고 인접하지 않은 표준 항목에 related 를 부여한다",
+        "unmapped 차원을 통계와 화면에서 제외한다"
+      ],
+      "reference": [
+        "docs/statistics-model.md 4장"
+      ]
+    },
+    {
+      "rubric_id": "rb_evidence_tier_scope",
+      "group": "evidence_scope",
+      "applies_to": null,
+      "title": "주장 유형별 근거 계층 허용 범위",
+      "decision": "주장 하나가 인용한 근거의 자료 계층이 표에서 지지로 표시된 칸에 들 때만 지지된 주장으로 센다. 미지지 칸의 근거만 가진 주장은 미지원 주장으로 센다.",
+      "pass_when": [
+        "주장 유형과 근거 계층의 교차 칸이 지지다",
+        "보강 칸의 근거는 지지 칸의 근거가 함께 있을 때만 센다"
+      ],
+      "fail_when": [
+        "미지지 칸의 근거로 주장을 지지한다",
+        "보강 칸의 근거만으로 주장을 세운다",
+        "근거 계층을 기록하지 않는다"
+      ],
+      "matrix": {
+        "columns": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "column_meanings": {
+          "A": "기업 공식 채용공고",
+          "B": "회사 공식 채용·기술·문화 자료",
+          "C": "공공·직무 표준",
+          "D": "직무 요구와 이어지는 제3자 자료",
+          "E": "원문을 확인할 수 없거나 직무 요구와 이어지지 않는 자료"
+        },
+        "cell_values": {
+          "지지": "이 계층의 근거 하나로 주장이 지지된다",
+          "보강": "지지 근거가 따로 있을 때만 함께 센다",
+          "용어 연결만": "차원과 표준 항목의 연결에만 쓰고 수치의 분자·분모에 넣지 않는다",
+          "후보 탐색만": "다음에 확인할 자료를 찾는 데만 쓰고 근거로 인용하지 않는다",
+          "미지지": "이 주장 유형의 근거로 쓰지 않는다"
+        },
+        "rows": [
+          {
+            "claim_type": "개별 공고 명시 사실",
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
+            "note": "근거는 해당 공고 원문의 직접 문장과 위치다"
+          },
+          {
+            "claim_type": "통계 수치",
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "용어 연결만",
+              "D": "미지지",
+              "E": "미지지"
+            },
+            "note": "집계는 실제 채용공고에서 직접 관찰한 요구만 센다"
+          },
+          {
+            "claim_type": "기업군 일반화",
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
+            "note": "독립 회사 수가 근거의 일부다"
+          },
+          {
+            "claim_type": "추론 요구",
+            "cells": {
+              "A": "지지",
+              "B": "보강",
+              "C": "보강",
+              "D": "보강",
+              "E": "미지지"
+            },
+            "note": "출발점은 공고 표현이고 B·C·D 는 보강 자리다"
+          },
+          {
+            "claim_type": "회사 맥락 신호",
+            "cells": {
+              "A": "미지지",
+              "B": "지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
+            "note": "공고에 없음이 성립 조건이므로 A 는 부재 확인에만 쓴다"
+          },
+          {
+            "claim_type": "합격 전략",
+            "cells": {
+              "A": "지지",
+              "B": "지지",
+              "C": "지지",
+              "D": "지지",
+              "E": "후보 탐색만"
+            },
+            "note": "D 계층 근거는 전략과 로드맵 밖으로 나가지 않는다"
+          },
+          {
+            "claim_type": "편차 없음",
+            "cells": {
+              "A": "지지",
+              "B": "미지지",
+              "C": "미지지",
+              "D": "미지지",
+              "E": "미지지"
+            },
+            "note": "닫힌 공고 집합의 전수 검사가 근거다"
+          }
+        ]
+      },
+      "reference": [
+        "docs/data-strategy.md 3장",
+        "docs/data-strategy.md 4장",
+        "docs/agent-design.md 8장",
+        "docs/adr/0010-third-party-interpretation-scope.md"
+      ],
+      "related_rubrics": [
+        "rb_evidence_allowed_use_token",
+        "rb_evidence_wiki_field_scope"
+      ]
+    },
+    {
+      "rubric_id": "rb_evidence_allowed_use_token",
+      "group": "evidence_scope",
+      "applies_to": null,
+      "title": "허용 용도 토큰 일치",
+      "decision": "근거 청크의 출처가 가진 source_assessments.allowed_uses 가 그 근거를 쓰는 용도의 토큰을 담을 때만 지지된 주장으로 센다.",
+      "pass_when": [
+        "용도와 토큰이 일대일로 대응한다",
+        "Wiki 근거는 필드별 토큰을 대조한다"
+      ],
+      "fail_when": [
+        "토큰이 없는 용도로 근거를 인용한다",
+        "허용 용도 검사를 사람 점검으로 대체한다"
+      ],
+      "reference": [
+        "docs/data-strategy.md 3.1",
+        "docs/knowledge-schema.md 8.5"
+      ]
+    },
+    {
+      "rubric_id": "rb_evidence_wiki_field_scope",
+      "group": "evidence_scope",
+      "applies_to": null,
+      "title": "Wiki 필드별 근거 계층",
+      "decision": "Wiki 필드는 각 필드에 허용된 계층의 근거만 가진다. 필드와 계층의 대응은 지식·저장 구조 8.5와 데이터 전략 6.1이 정한다.",
+      "pass_when": [
+        "필드마다 wiki_evidence 에 근거가 있고 source_tier 가 그 필드에 허용된 계층이다"
+      ],
+      "fail_when": [
+        "근거가 없는 필드를 저장한다",
+        "D 계층 근거로 definition 이나 why_required 를 채운다"
+      ],
+      "reference": [
+        "docs/knowledge-schema.md 8.5",
+        "docs/data-strategy.md 6.1"
+      ]
+    }
+  ]
+}
