@@ -43,6 +43,7 @@ describe('가져오기 대화상자 계약', () => {
     expect(css).toMatch(/\.ui-modal__content\s*\{[^}]*height:\s*100%/isu);
     expect(css).toContain('border: 1px solid var(--color-ash)');
     expect(css).toContain('border-radius: var(--radius-card)');
+    expect(css).not.toMatch(/^\s*clip\s*:/gmu);
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/iu);
     expect(css).not.toMatch(/box-shadow|gradient|animation/iu);
   });
