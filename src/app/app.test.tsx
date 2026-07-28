@@ -117,7 +117,7 @@ describe('App onboarding flow', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '발견한 링크를 인사이트로 저장하고 필요한 순간 다시 꺼내 보세요.',
+        name: '발견한 링크가 필요한 순간 다시 쓰이도록, 아맞다가 저장부터 꺼내보기까지 이어드려요.',
       })
     ).not.toBeNull();
     expect(screen.getAllByRole('tab')).toHaveLength(3);
@@ -153,13 +153,15 @@ describe('App onboarding flow', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: '아맞다에 오신 걸 환영해요' })
+      screen.getByRole('heading', { name: '내 보관함으로 들어가기' })
     ).not.toBeNull();
     expect(
-      screen.getByRole('button', { name: 'Google로 시작하기' })
+      screen.getByRole('button', { name: 'Google로 로그인하기' })
     ).not.toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Google로 로그인하기' })
+    );
 
     expect(app.service.signInWithGoogle).toHaveBeenCalledWith(
       window.location.origin
@@ -193,13 +195,17 @@ describe('App onboarding flow', () => {
     await user.click(
       screen.getAllByRole('button', { name: '아맞다 시작하기' })[0]
     );
-    await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
-
-    expect(screen.getByRole('alert').textContent).toContain(
-      'Google 로그인에 실패했어요. 다시 시도해 주세요.'
+    await user.click(
+      screen.getByRole('button', { name: 'Google로 로그인하기' })
     );
 
-    await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
+    expect(screen.getByRole('alert').textContent).toBe(
+      '로그인하지 못했어요다시 시도해 주세요.'
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Google로 로그인하기' })
+    );
 
     expect(app.service.signInWithGoogle).toHaveBeenCalledTimes(2);
   });
@@ -215,13 +221,13 @@ describe('App onboarding flow', () => {
     app.emit(null);
 
     expect(
-      screen.getByRole('heading', { name: '아맞다에 오신 걸 환영해요' })
+      screen.getByRole('heading', { name: '내 보관함으로 들어가기' })
     ).not.toBeNull();
     expect(screen.getByRole('alert').textContent).toContain(
       'Google 로그인을 취소했어요.'
     );
     expect(
-      screen.getByRole('button', { name: 'Google로 시작하기' })
+      screen.getByRole('button', { name: 'Google로 로그인하기' })
     ).not.toBeNull();
   });
 

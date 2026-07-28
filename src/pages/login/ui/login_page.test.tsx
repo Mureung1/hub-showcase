@@ -42,11 +42,16 @@ describe('LoginPage', () => {
       </DesignSystemProvider>
     );
 
+    expect(
+      screen.getByRole('heading', { name: '내 보관함으로 들어가기' })
+    ).not.toBeNull();
     expect(screen.getByRole('alert').textContent).toContain(
       'Google 공급자 연결 실패'
     );
 
-    await user.click(screen.getByRole('button', { name: 'Google로 시작하기' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Google로 로그인하기' })
+    );
 
     expect(onLogin).toHaveBeenCalledOnce();
   });
@@ -59,7 +64,7 @@ describe('LoginPage', () => {
     );
 
     const button = screen.getByRole('button', {
-      name: 'Google에 연결하고 있어요',
+      name: 'Google에 연결하고 있어요.',
     }) as HTMLButtonElement;
 
     expect(button.disabled).toBe(true);
