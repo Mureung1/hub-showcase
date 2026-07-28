@@ -73,6 +73,22 @@ export function saveSchedule(
   }
 }
 
+/**
+ * #40 — 저장된 기록 하나를 id로 지우고, 지운 뒤의 전체 목록을 돌려준다.
+ * 저장과 마찬가지로 실패해도 예외를 던지지 않는다(홈 화면이 멈추면 안 되므로).
+ * 지울 대상이 없어도 남은 목록을 그대로 돌려준다.
+ */
+export function deleteSchedule(id: string): SavedSchedule[] {
+  const records = loadSavedSchedules().filter((record) => record.id !== id);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  } catch {
+    // 저장에 실패하면 localStorage에는 옛 목록이 남지만, 화면에는 지운 목록을 돌려줘
+    // 최소한 이번 세션에서는 사라진 것처럼 보이게 한다.
+  }
+  return records;
+}
+
 /** 가장 최근에 저장한 기록. 없으면 null */
 export function loadLatestSchedule(): SavedSchedule | null {
   return loadSavedSchedules()[0] ?? null;
