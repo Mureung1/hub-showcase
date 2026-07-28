@@ -1,5 +1,7 @@
 import { CircleHelp, FileText, MapPinned } from "lucide-react";
 
+import { PanelTextSizeControl } from "./PanelTextSizeControl";
+import type { PanelTextSize } from "./usePanelTextSize";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 
 function PeriodSelect({
@@ -46,7 +48,17 @@ function PeriodSelect({
   );
 }
 
-export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
+type WorkspaceHeaderProps = {
+  model: ProductWorkspaceModel;
+  panelTextSize: PanelTextSize;
+  onPanelTextSizeChange: (size: PanelTextSize) => void;
+};
+
+export function WorkspaceHeader({
+  model,
+  panelTextSize,
+  onPanelTextSizeChange,
+}: WorkspaceHeaderProps) {
   const { marketKey, period, setPeriod } = model.selection;
   const { availablePeriods, periodAvailability, analysisSource, analysisState, retryAnalysis } =
     model.marketData.marketAnalysis;
@@ -85,15 +97,24 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           </button>
         </div>
         <div className="header-actions">
-          <a
-            className="header-control header-docs"
-            href={
-              import.meta.env.VITE_DOCS_URL ??
-              "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md"
-            }
-          >
-            <FileText size={16} /> Docs
-          </a>
+          <div className="header-view-controls">
+            <div className="header-text-size-control">
+              <span className="header-text-size-label">글자 크기</span>
+              <PanelTextSizeControl
+                value={panelTextSize}
+                onChange={onPanelTextSizeChange}
+              />
+            </div>
+            <a
+              className="header-control header-docs"
+              href={
+                import.meta.env.VITE_DOCS_URL ??
+                "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md"
+              }
+            >
+              <FileText size={16} /> Docs
+            </a>
+          </div>
           <button className="header-control" type="button" onClick={() => setFiltersOpen(true)}>
             <MapPinned size={16} /> 상권 선택: {marketKey}
           </button>
