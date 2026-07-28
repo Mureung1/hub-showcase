@@ -1,6 +1,6 @@
 {
-  "id": "5924d58f-6c12-4c5e-a708-fbfdbcb22418",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "f7b9771c-2c03-4643-915a-5c055ccda0ed",
+  "prevId": "5924d58f-6c12-4c5e-a708-fbfdbcb22418",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -280,7 +280,7 @@
         },
         "kind_deposit_consistency": {
           "name": "kind_deposit_consistency",
-          "value": "\n    (\"challenges\".\"kind\" = 'official' AND \"challenges\".\"deposit_kind\" = 'cash')\n    OR (\"challenges\".\"kind\" = 'user' AND \"challenges\".\"deposit_kind\" = 'point' AND \"challenges\".\"host_id\" IS NOT NULL)"
+          "value": "\n    (\"challenges\".\"kind\" = 'official' AND \"challenges\".\"deposit_kind\" = 'point' AND \"challenges\".\"host_id\" IS NULL)\n    OR (\"challenges\".\"kind\" = 'user' AND \"challenges\".\"deposit_kind\" = 'point' AND \"challenges\".\"host_id\" IS NOT NULL)"
         }
       },
       "isRLSEnabled": false

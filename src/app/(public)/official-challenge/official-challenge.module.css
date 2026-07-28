@@ -207,7 +207,7 @@
 
 .primaryCta,
 .secondaryCta,
-.checkoutAction {
+.joinAction {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -741,7 +741,7 @@
 .joinSpecs span { color: rgba(255, 255, 255, 0.4); font-size: 0.6rem; }
 .joinSpecs strong { margin-top: 7px; font-size: 0.84rem; }
 
-.checkoutCard {
+.joinCard {
   position: relative;
   z-index: 3;
   width: min(100%, 470px);
@@ -754,29 +754,27 @@
   box-shadow: 0 35px 90px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(18px);
 }
-.checkoutTop { display: flex; justify-content: space-between; color: #746b7e; font-size: 0.58rem; font-weight: 850; letter-spacing: 0.12em; }
-.checkoutTop span:last-child { color: #18745d; }
-.checkoutCard > p { margin: 48px 0 8px; color: #5f5768; }
-.checkoutPrice { display: block; font-size: 3.5rem; line-height: 1; letter-spacing: -0.07em; }
-.checkoutCard > ul { display: grid; gap: 10px; list-style: none; margin: 32px 0; padding: 20px 0; border-top: 1px solid var(--challenge-line); border-bottom: 1px solid var(--challenge-line); color: #5e5668; font-size: 0.84rem; }
-.checkoutCard > ul li::before { content: '✓'; margin-right: 10px; color: var(--challenge-purple-deep); font-weight: 850; }
-.checkoutDeadline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; font-size: 0.72rem; }
-.checkoutDeadline span { color: #7b7284; }
-.checkoutDeadline :global([role='timer']) { color: var(--challenge-purple-deep); font-weight: 850; }
-.checkoutCard :global(form) { display: grid; }
-.checkoutCard :global(.field) { gap: 8px; margin: 0 0 12px; color: #665e70; font-size: 0.72rem; }
-.checkoutCard :global(.field input) { min-height: 48px; padding: 12px 14px; border: 1px solid rgba(20, 17, 25, 0.15); border-radius: 12px; color: #18121f; background: #fff; }
-.checkoutCard :global(.button.button-primary) {
+.joinCardTop { display: flex; justify-content: space-between; color: #746b7e; font-size: 0.58rem; font-weight: 850; letter-spacing: 0.12em; }
+.joinCardTop span:last-child { color: #18745d; }
+.joinCard > p { margin: 48px 0 8px; color: #5f5768; }
+.joinPoints { display: block; font-size: 3.5rem; line-height: 1; letter-spacing: -0.07em; }
+.joinCard > ul { display: grid; gap: 10px; list-style: none; margin: 32px 0; padding: 20px 0; border-top: 1px solid var(--challenge-line); border-bottom: 1px solid var(--challenge-line); color: #5e5668; font-size: 0.84rem; }
+.joinCard > ul li::before { content: '✓'; margin-right: 10px; color: var(--challenge-purple-deep); font-weight: 850; }
+.joinDeadline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; font-size: 0.72rem; }
+.joinDeadline span { color: #7b7284; }
+.joinDeadline :global([role='timer']) { color: var(--challenge-purple-deep); font-weight: 850; }
+.joinCard :global(form) { display: grid; }
+.joinCard :global(.button.button-primary) {
   width: 100%;
   min-height: 56px;
   border-radius: 999px;
   color: #fff;
   background: #17121e;
 }
-.checkoutCard :global(.button.button-primary)::after { content: '↗'; display: grid; width: 34px; height: 34px; margin-left: auto; place-items: center; border-radius: 50%; color: #17121e; background: var(--challenge-lilac); }
-.checkoutCard > small { display: block; margin-top: 16px; color: #857d8d; line-height: 1.5; }
-.checkoutAction { min-height: 56px; padding: 10px 12px 10px 20px; border-radius: 999px; color: #fff; background: #17121e; }
-.checkoutAction span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: #17121e; background: var(--challenge-lilac); }
+.joinCard :global(.button.button-primary)::after { content: '↗'; display: grid; width: 34px; height: 34px; margin-left: auto; place-items: center; border-radius: 50%; color: #17121e; background: var(--challenge-lilac); }
+.joinCard > small { display: block; margin-top: 16px; color: #857d8d; line-height: 1.5; }
+.joinAction { min-height: 56px; padding: 10px 12px 10px 20px; border-radius: 999px; color: #fff; background: #17121e; }
+.joinAction span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: #17121e; background: var(--challenge-lilac); }
 .closedMessage { padding: 16px; border-radius: 12px; color: #8f2633 !important; background: #fff0f2; }
 
 @media (prefers-reduced-motion: reduce) {

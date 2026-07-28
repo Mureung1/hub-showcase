@@ -373,7 +373,7 @@ export async function createUserChallenge(
 }
 
 /**
- * Join a User_Challenge by depositing points (Requirement 5).
+ * Shared atomic point-registration flow for user and official challenges.
  *
  * Everything below runs inside ONE `db.transaction(...)` so the point deposit,
  * the participation row, the recruitment count bump, and the reward-pool update
@@ -386,8 +386,9 @@ export async function createUserChallenge(
  *   2. Lock the `challenges` row `FOR UPDATE` — serializes concurrent joins to
  *      the same challenge so the recruitment-count check/increment and the
  *      duplicate check are race-free (Property 12).
- *   3. Guard: this is the point/User_Challenge path only (`kind = 'user'`), the
- *      challenge must still be `recruiting`, the user must not already be a
+ *   3. Guard: the challenge kind must match the public entry point, its deposit
+ *      kind must be `point`, it must still be `recruiting`, and the user must
+ *      not already be a
  *      Participant (Requirement 5.4), and there must be room (Requirement 5.3).
  *   4. Deposit the entry points via {@link debitPoints} (locks the wallet
  *      `FOR UPDATE`, rejects insufficient balance with `INSUFFICIENT_POINTS`) —
@@ -403,18 +404,19 @@ export async function createUserChallenge(
  *
  * @param db          injected Drizzle client (production `db`, or a test client)
  * @param userId      authenticated participant's user id
- * @param challengeId the User_Challenge to join
+ * @param challengeId the challenge to join
  * @returns the new participation's id
  * @throws {DomainErr} `UNAUTHENTICATED` (no user id / no wallet),
- *   `INVALID_CONFIG` (challenge missing or not a User_Challenge),
+ *   `INVALID_CONFIG` (challenge missing, wrong kind, or not point-based),
  *   `CAPACITY_FULL` (recruitment closed or full — Req 5.3),
  *   `DUPLICATE_PARTICIPATION` (already joined — Req 5.4),
  *   `INSUFFICIENT_POINTS` (balance below entry points — Req 5.2).
  */
-export async function joinUserChallenge(
+async function joinPointChallenge(
   db: Database,
   userId: string,
   challengeId: string,
+  expectedKind: 'user' | 'official',
 ): Promise<ParticipationId> {
   // Req 1.5: an authenticated user is required (Server Action verifies session).
   if (!userId) throw new DomainErr('UNAUTHENTICATED');
@@ -433,10 +435,13 @@ export async function joinUserChallenge(
     if (!ch) {
       throw new DomainErr('INVALID_CONFIG', `Challenge not found: ${challengeId}`);
     }
-    // This path is for point-based User_Challenges only; Official_Challenges
-    // join via joinOfficialChallenge (Task 4.3).
-    if (ch.kind !== 'user') {
-      throw new DomainErr('INVALID_CONFIG', 'Not a User_Challenge');
+    // Both user and official challenges use points. Keep separate public entry
+    // points so a caller cannot accidentally join the wrong challenge kind.
+    if (ch.kind !== expectedKind || ch.depositKind !== 'point') {
+      throw new DomainErr(
+        'INVALID_CONFIG',
+        `Not a point-based ${expectedKind} challenge`,
+      );
     }
     // Req 5.3: recruitment must be open.
     if (ch.status !== 'recruiting') throw new DomainErr('CAPACITY_FULL');
@@ -461,13 +466,21 @@ export async function joinUserChallenge(
     // throws INSUFFICIENT_POINTS on a shortfall → rollback). A free (0-point)
     // challenge moves no points, so skip the debit (debitPoints rejects 0).
     const depositPoints = Number(ch.entryAmount);
+    if (!Number.isSafeInteger(depositPoints) || depositPoints < 0) {
+      throw new DomainErr(
+        'INVALID_CONFIG',
+        'Point entry amount must be a non-negative safe integer',
+      );
+    }
     if (depositPoints > 0) {
       await debitPoints(
         tx,
         userId,
         depositPoints,
         'challenge_join',
-        'User_Challenge 참가 예치',
+        expectedKind === 'official'
+          ? '공식 챌린지 참가 포인트'
+          : '사용자 챌린지 참가 포인트',
         challengeId,
       );
     }
@@ -487,7 +500,7 @@ export async function joinUserChallenge(
 
     if (!part) {
       // Unreachable: a successful INSERT ... RETURNING always yields one row.
-      throw new Error('joinUserChallenge: participation INSERT returned no row');
+      throw new Error('joinPointChallenge: participation INSERT returned no row');
     }
 
     // Bump the recruitment count (valid_capacity CHECK guarantees the cap).
@@ -496,8 +509,8 @@ export async function joinUserChallenge(
       .set({ participantCount: sql`${challenges.participantCount} + 1` })
       .where(eq(challenges.id, challengeId));
 
-    // Fold the deposit into the challenge's reward pool total. createUserChallenge
-    // (Task 4.1) initializes the row; onConflictDoUpdate keeps this idempotent.
+    // Fold the deposit into the challenge's reward pool total. Challenge
+    // creation normally initializes the row; onConflictDoUpdate is a backstop.
     await tx
       .insert(rewardPools)
       .values({
@@ -514,4 +527,22 @@ export async function joinUserChallenge(
 
     return part.id;
   });
+}
+
+/** Join a user-created challenge by depositing its point entry amount. */
+export function joinUserChallenge(
+  db: Database,
+  userId: string,
+  challengeId: string,
+): Promise<ParticipationId> {
+  return joinPointChallenge(db, userId, challengeId, 'user');
+}
+
+/** Join an official challenge by depositing its point entry amount. */
+export function joinOfficialChallenge(
+  db: Database,
+  userId: string,
+  challengeId: string,
+): Promise<ParticipationId> {
+  return joinPointChallenge(db, userId, challengeId, 'official');
 }

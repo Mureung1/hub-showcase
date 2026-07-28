@@ -22,7 +22,7 @@ import { pointWallets, profiles } from '../src/db/schema';
  *   - Property 11 (중복 참가 불변): `uq_participation` rejects a re-insert of the
  *     same (challenge_id, user_id).                                (Req 3.3, 5.4)
  *   - Property 13 (챌린지 종류-예치 정합성): `kind_deposit_consistency` rejects
- *     invalid kind/deposit_kind combinations, accepts official→cash.   (Req 4.4)
+ *     invalid kind/deposit_kind combinations, accepts official→point.  (Req 4.4)
  *   - `wallet_non_negative`: a negative wallet balance is rejected.     (Req 14.2)
  *   - `balance_after_non_negative`: a negative ledger balance_after is
  *     rejected.                                                        (Req 14.2)
@@ -162,7 +162,7 @@ describe.skipIf(!dbReachable)(
       ).rejects.toThrow(/uq_participation/);
     });
 
-    it('Property 13: kind_deposit_consistency rejects invalid kind/deposit combinations and accepts official→cash (Req 4.4)', async () => {
+    it('Property 13: kind_deposit_consistency rejects cash deposits and accepts official→point (Req 4.4)', async () => {
       const { client } = harness;
 
       /** Raw INSERT of a challenge with the given kind/deposit_kind/host. */
@@ -187,8 +187,8 @@ describe.skipIf(!dbReachable)(
       await expect(insertRaw('user', 'cash', hostUserId)).rejects.toThrow(
         /kind_deposit_consistency/,
       );
-      // official + point → invalid (Official_Challenge must be cash-based).
-      await expect(insertRaw('official', 'point', null)).rejects.toThrow(
+      // official + cash → invalid (Official_Challenge must be point-based).
+      await expect(insertRaw('official', 'cash', null)).rejects.toThrow(
         /kind_deposit_consistency/,
       );
       // user + point but NO host → invalid (User_Challenge requires a Host).
@@ -196,8 +196,13 @@ describe.skipIf(!dbReachable)(
         /kind_deposit_consistency/,
       );
 
-      // Control: a consistent official → cash row IS accepted.
-      const rows = await insertRaw('official', 'cash', null);
+      // Official challenges do not have a user host.
+      await expect(insertRaw('official', 'point', hostUserId)).rejects.toThrow(
+        /kind_deposit_consistency/,
+      );
+
+      // Control: a consistent official → point row IS accepted.
+      const rows = await insertRaw('official', 'point', null);
       const officialId = rows[0]?.id as string | undefined;
       expect(officialId).toBeTruthy();
       if (officialId) {

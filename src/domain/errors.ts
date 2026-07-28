@@ -28,7 +28,6 @@ export type DomainError =
   | 'UNAUTHENTICATED' // Req 1.5
   | 'DUPLICATE_EMAIL' // Req 1.2
   | 'INSUFFICIENT_POINTS' // Req 5.2, 12.2
-  | 'PAYMENT_DECLINED' // Req 3.2
   | 'DUPLICATE_PARTICIPATION' // Req 3.3, 5.4
   | 'CAPACITY_FULL' // Req 3.4, 5.3
   | 'STUDY_TIME_NOT_MET' // Req 7.2

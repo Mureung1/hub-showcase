@@ -1,3 +1,0 @@
-export interface OfficialCheckoutQuoteDto { readonly challengeId: string; readonly externalReference: string; readonly status: 'recruiting' | 'closed'; readonly amountMinor: number; readonly currency: string; readonly pointDiscount: number }
-export interface PaymentStatusDto { readonly status: 'processing' | 'approved' | 'failed' | 'duplicate' | 'closed'; readonly challengeId: string; readonly participationId?: string; readonly message: string }
-export interface NormalizedPaymentEvent { readonly provider: string; readonly externalReference: string; readonly status: 'approved' | 'failed'; readonly userId: string; readonly challengeId: string; readonly amountMinor: number; readonly currency: string; readonly occurredAt: string }

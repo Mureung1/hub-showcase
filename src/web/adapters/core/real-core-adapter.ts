@@ -31,9 +31,14 @@ export class RealCoreAdapter implements CoreAdapter {
       return { participationId, balanceAfter };
     });
   }
-  async getOfficialCheckoutQuote() { return adapterError('NOT_IMPLEMENTED'); }
-  async getOfficialPaymentReturnStatus() { return adapterError('NOT_IMPLEMENTED'); }
-  async handlePaymentEvent() { return adapterError('NOT_IMPLEMENTED'); }
+  async joinOfficialChallenge(ctx: Parameters<CoreAdapter['joinOfficialChallenge']>[0], input: Parameters<CoreAdapter['joinOfficialChallenge']>[1]) {
+    return runCore(async () => {
+      const [{ db }, challenges, points] = await Promise.all([import('../../../db/index'), import('../../../domain/challenges'), import('../../../domain/points')]);
+      const participationId = await challenges.joinOfficialChallenge(db, ctx.sessionUserId, input.challengeId);
+      const balanceAfter = await points.getWalletBalance(db, ctx.sessionUserId);
+      return { participationId, balanceAfter };
+    });
+  }
   async getStudyWorkspace() { return adapterError('NOT_IMPLEMENTED'); }
   async authorizeEvidenceUpload() { return adapterError('NOT_IMPLEMENTED'); }
   async submitDailyGoal() { return adapterError('NOT_IMPLEMENTED'); }

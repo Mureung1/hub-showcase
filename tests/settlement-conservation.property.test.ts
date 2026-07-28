@@ -37,11 +37,10 @@ import { settleChallenge } from '../src/domain/settlement';
  * after the fact: it reads back every `settlements` row (refund + reward per
  * finisher) and the retained `reward_pools.service_fee`, then asserts
  *   round(Σrefund) + round(Σreward) + round(service_fee) == round(Σdeposit)
- * to the exact minor unit (cents for cash, whole points for point challenges).
+ * to the exact whole-point unit.
  *
  * Coverage across the generated composition:
- *   - point challenges (kind='user'): refunds + rewards flow through creditPoints;
- *   - cash challenges (kind='official'): refunds queue payment_transactions;
+ *   - all challenge refunds + rewards flow through creditPoints;
  *   - arbitrary finisher/eliminated split, arbitrary deposits, arbitrary
  *     service-fee rate (incl. 0 and 100%), dust folded into the fee;
  *   - the no-finisher case (all eliminated) under BOTH no_winner_policy values
@@ -56,13 +55,13 @@ const MAX_PARTICIPANTS = 5;
 /** One generated participant: a finisher or an eliminee, plus an integer deposit. */
 interface GenParticipant {
   isFinisher: boolean;
-  /** Deposit in MINOR units — whole points, or cents for cash. */
+  /** Deposit in whole points. */
   depositMinor: number;
 }
 
 /** A generated challenge composition to settle. */
 interface Composition {
-  depositKind: 'point' | 'cash';
+  depositKind: 'point';
   /** Service-fee rate in basis points (0..10000 == 0%..100%). */
   feeRateBps: number;
   noWinnerPolicy: 'forfeit' | 'refund';
@@ -75,7 +74,7 @@ const arbParticipant: fc.Arbitrary<GenParticipant> = fc.record({
 });
 
 const arbComposition: fc.Arbitrary<Composition> = fc.record({
-  depositKind: fc.constantFrom('point' as const, 'cash' as const),
+  depositKind: fc.constant('point' as const),
   feeRateBps: fc.integer({ min: 0, max: 10_000 }),
   noWinnerPolicy: fc.constantFrom('forfeit' as const, 'refund' as const),
   participants: fc.array(arbParticipant, {
@@ -86,8 +85,8 @@ const arbComposition: fc.Arbitrary<Composition> = fc.record({
 
 /**
  * Explicit corner cases, always run in addition to the random search, so the
- * hard-to-hit branches (all-eliminated under each policy, dust folding, cash
- * refund queue, zero pool) are deterministically covered every run.
+ * hard-to-hit branches (all-eliminated under each policy, dust folding and a
+ * zero pool) are deterministically covered every run.
  */
 const compositionExamples: [Composition][] = [
   // No finishers + forfeit: whole pool retained as service fee.
@@ -127,10 +126,10 @@ const compositionExamples: [Composition][] = [
       ],
     },
   ],
-  // All finishers (cash): pool 0, fee 0, refunds == own deposits.
+  // All finishers: pool 0, fee 0, refunds == own deposits.
   [
     {
-      depositKind: 'cash',
+      depositKind: 'point',
       feeRateBps: 1000,
       noWinnerPolicy: 'forfeit',
       participants: [
@@ -139,10 +138,10 @@ const compositionExamples: [Composition][] = [
       ],
     },
   ],
-  // Cash, finishers + one eliminee: exercises the payment_transactions refund queue.
+  // Finishers + one eliminee: exercises point reward distribution.
   [
     {
-      depositKind: 'cash',
+      depositKind: 'point',
       feeRateBps: 2500,
       noWinnerPolicy: 'forfeit',
       participants: [
@@ -278,12 +277,9 @@ describe.skipIf(!dbReachable)(
 
         await fc.assert(
           fc.asyncProperty(arbComposition, async (comp) => {
-            const isCash = comp.depositKind === 'cash';
-            // Minor-unit helpers mirroring settleChallenge's own conventions.
-            const toMinor = (v: string): number =>
-              isCash ? Math.round(Number(v) * 100) : Math.round(Number(v));
-            const depositStr = (m: number): string =>
-              isCash ? (m / 100).toFixed(2) : String(m);
+            // Point-unit helpers mirroring settleChallenge's convention.
+            const toMinor = (v: string): number => Math.round(Number(v));
+            const depositStr = (m: number): string => String(m);
 
             const n = comp.participants.length;
             const finisherCount = comp.participants.filter(
@@ -296,14 +292,13 @@ describe.skipIf(!dbReachable)(
             );
 
             // --- Arrange: a fresh challenge reflecting the composition -------
-            // point → kind='user' + host (kind_deposit_consistency); cash →
-            // kind='official' with no host. status='ended' (settleable).
+            // Point challenge with a host. status='ended' (settleable).
             const [{ id: cid }] = await db
               .insert(challenges)
               .values({
-                kind: isCash ? 'official' : 'user',
+                kind: 'user',
                 title: 'PBT settlement conservation',
-                hostId: isCash ? null : hostId,
+                hostId,
                 status: 'ended',
                 startDate: '2025-01-01',
                 endDate: '2025-01-31',

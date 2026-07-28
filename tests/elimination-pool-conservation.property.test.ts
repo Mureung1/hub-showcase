@@ -157,7 +157,7 @@ describe.skipIf(!dbReachable)(
               // deadline is already past relative to RUN_TIME ----------------
               await db.insert(challenges).values({
                 id: challengeId,
-                kind: 'official', // official + cash needs no host row
+                kind: 'official',
                 title: `PBT elim-pool ${challengeId}`,
                 status: 'in_progress',
                 startDate: TARGET_DATE,
@@ -166,7 +166,7 @@ describe.skipIf(!dbReachable)(
                 verificationDeadlineTime: DEADLINE_TIME,
                 timezone: TZ,
                 capacity: 100,
-                depositKind: 'cash',
+                depositKind: 'point',
                 entryAmount: '0',
               });
 
@@ -174,7 +174,7 @@ describe.skipIf(!dbReachable)(
               // tests an INCREASE, not an overwrite.
               await db.insert(rewardPools).values({
                 challengeId,
-                depositKind: 'cash',
+                depositKind: 'point',
                 totalDeposit: '0',
                 poolAmount: centsToNumeric(initialPoolCents),
                 serviceFee: '0',
@@ -186,7 +186,7 @@ describe.skipIf(!dbReachable)(
                 challengeId,
                 userId: userIds[i],
                 survivalStatus: 'alive' as const,
-                depositKind: 'cash' as const,
+                depositKind: 'point' as const,
                 depositAmount: centsToNumeric(s.depositCents),
               }));
               await db.insert(participations).values(partRows);
