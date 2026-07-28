@@ -35,7 +35,12 @@ describe('가져오기 대화상자 계약', () => {
     expect(css).toContain('width: 100vw');
     expect(css).toContain('max-width: 100vw');
     expect(css).toContain('height: 100dvh');
+    expect(css).toMatch(
+      /div\.ui-modal\.insight-import-dialog\[role='dialog'\]\s*\{[^}]*flex-shrink:\s*0/isu
+    );
     expect(css).toContain('env(safe-area-inset-bottom)');
+    expect(css).toContain(':has(> div > .ui-modal__footer)');
+    expect(css).toMatch(/\.ui-modal__content\s*\{[^}]*height:\s*100%/isu);
     expect(css).toContain('border: 1px solid var(--color-ash)');
     expect(css).toContain('border-radius: var(--radius-card)');
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/iu);

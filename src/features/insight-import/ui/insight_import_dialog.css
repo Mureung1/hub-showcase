@@ -3,8 +3,21 @@ div.insight-import-dialog[role='dialog'] {
   color: var(--color-ink);
 }
 
+div.insight-import-dialog :has(> div > .ui-modal__footer) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+div.insight-import-dialog :has(> .ui-modal__content),
+div.insight-import-dialog :has(> .ui-modal__footer) {
+  min-height: 0;
+  overflow: hidden;
+}
+
 div.insight-import-dialog .ui-modal__content {
   display: flex;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   flex: 1;
@@ -350,6 +363,7 @@ div.insight-import-dialog .ui-modal__footer {
     height: 100dvh;
     max-height: 100dvh;
     border-radius: 0;
+    flex-shrink: 0;
   }
 
   .insight-import-dialog__stage--source {
