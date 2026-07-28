@@ -16,20 +16,20 @@
 - [x] FE/BE 폴더 구조 확인 (같은 package.json 공유 — 기준 폴더 별도 설정 불필요)
 - [x] 필요한 환경변수 목록: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `GROQ_API_KEY`, `PORT`
 - [x] `.env`가 git에 안 올라간 것 확인
-- [ ] Vercel 가입 + 포크 저장소 연결 확인 (본인 작업)
-- [ ] Render 가입 + 포크 저장소 연결 확인 (본인 작업)
+- [x] Vercel 가입 + 포크 저장소 연결 확인
+- [x] Render 가입 + 포크 저장소 연결 확인
 
 ## 실제 배포 (화)
-- [ ] React → Vercel 배포
-- [ ] Express → Render 배포 (배포 환경이 제공하는 포트 사용)
-- [ ] 배포 환경 환경변수 설정 (Supabase, Groq 키)
-- [ ] FE가 배포된 BE 주소를 환경변수로 읽도록 수정
+- [x] Express → Render 배포 (배포 환경이 제공하는 포트 사용) → https://tidenote-api.onrender.com
+- [x] React → Vercel 배포 → https://hub-murex-mu.vercel.app
+- [x] 배포 환경 환경변수 설정 (Supabase, Groq 키, `FRONTEND_URL` CORS 제한)
+- [x] FE가 배포된 BE 주소를 환경변수(`VITE_API_BASE_URL`)로 읽도록 수정 — 어제 미리 준비해둔 `src/apiBase.js` 그대로 사용
 
 ## 배포 검증 (화)
-- [ ] FE 주소 외부에서 열리는지 확인
-- [ ] BE `/api/health` 응답 확인
-- [ ] 배포 환경에서 실제 채팅 1회 성공 (화면→서버→DB)
-- [ ] 실패 시 로그 읽고 원인 기록
+- [x] FE 주소 외부에서 열리는지 확인
+- [x] BE `/api/health` 응답 확인
+- [x] 배포 환경에서 실제 채팅 1회 성공 (화면→Render→Supabase 저장·조회, Groq 응답까지)
+- [x] 막힌 지점 기록 — Render/Vercel이 처음에 원본(업스트림) 저장소에 연결돼서 `work` 브랜치가 안 보였음. 계정 전환으로 fork(`snael0510-coder/hub`)를 선택해서 해결. Vercel도 처음 배포는 `main`(오래된 브랜치)으로 잡혀서 실패 → Production Branch를 `work`로 변경 후 재배포로 해결
 
 ## 영상 제출 (수, 밤 10시까지)
 - [ ] 5분 미만 데모 영상 제작 (서비스 설명 + 시연 + 기술 특징 + Agent 활용)

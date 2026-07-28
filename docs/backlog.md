@@ -34,9 +34,9 @@ P0 6개(테스트 인프라, TDD 기능, 에러 처리, 아키텍처 다이어�
 | # | Task | 설명 | 우선순위 | 요일 | 상태 | 이슈 |
 |---|---|---|:---:|:---:|:---:|:---:|
 | 1 | 실제 채팅 완성 | Groq API 연동, messages 테이블, 잠김/열람 로직(D_gen vs D_recall) | P0 | 월 | 완료 | [#13](https://github.com/snael0510-coder/hub/issues/13) |
-| 2 | 배포 준비 | 로컬 빌드 확인, 환경변수 정리, 시크릿 미노출 확인, Vercel/Render 계정 준비 | P0 | 월 | 진행중 | [#14](https://github.com/snael0510-coder/hub/issues/14) |
-| 3 | 실제 배포 | React → Vercel, Express → Render, 환경변수 설정 | P0 | 화 | 대기 | — |
-| 4 | 배포 환경 검증 | 외부에서 FE 접속, BE 상태 확인 API, 화면→서버→DB 왕복 확인 | P0 | 화 | 대기 | — |
+| 2 | 배포 준비 | 로컬 빌드 확인, 환경변수 정리, 시크릿 미노출 확인, Vercel/Render 계정 준비 | P0 | 월 | 완료 | [#14](https://github.com/snael0510-coder/hub/issues/14) |
+| 3 | 실제 배포 | React → Vercel, Express → Render, 환경변수 설정 | P0 | 화 | 완료 | — |
+| 4 | 배포 환경 검증 | 외부에서 FE 접속, BE 상태 확인 API, 화면→서버→DB 왕복 확인 | P0 | 화 | 완료 | — |
 | 5 | 영상 제출 | 5분 미만 데모 영상, showcase.json에 demoVideoUrl 추가 | P0 | 수 | 대기 | — |
 | 6 | Agent/Skill 종합 정리 | 4주간 쓴 Agent·Skill·규칙 문서 관계를 그림으로 | P1 | 목 | 대기 | — |
 | 7 | 워크플로우 문서 최종화 | 캠프 이후에도 쓸 수 있는 형태로 다듬기 | P1 | 금 | 대기 | — |
@@ -53,13 +53,17 @@ P0 6개(테스트 인프라, TDD 기능, 에러 처리, 아키텍처 다이어�
 
 ## 5. 구현 상태
 
-Tide Check(상태 체크인)와 실제 채팅(Groq API + 잠김/열람) 둘 다 화면-서버-DB로
-연결된 상태. 아직 안 되는 것:
+**배포 완료.**
+- FE(Vercel): https://hub-murex-mu.vercel.app
+- BE(Render): https://tidenote-api.onrender.com
+
+Tide Check(상태 체크인)와 실제 채팅(Groq API + 잠김/열람) 둘 다 배포 환경에서
+화면-서버-DB까지 연결 확인됨 (Vercel 화면에서 실제 채팅 → Render → Supabase
+저장·조회, Groq 응답까지 전부 동작). 아직 안 되는 것:
 - Episode 분리 — 지금은 메시지 하나하나가 개별적으로 잠김 판정을 받는다.
   원래 기획은 "대화 구간(episode)" 단위로 묶어서 판정하는 것.
 - Episodes 사이드바(History/Recent)는 여전히 `mockEpisodes.js` — 실제
   messages 테이블과 연결 안 됨.
-- 배포 전(로컬에서만 확인됨).
 
 ## 6. 운영 원칙
 
