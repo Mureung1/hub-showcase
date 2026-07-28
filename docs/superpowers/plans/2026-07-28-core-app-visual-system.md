@@ -34,8 +34,12 @@ PR 본문은 “토큰을 추가했다”가 아니라 “순백색 면적을 �
 | `src/shared/config/design-system/apply_design_tokens.test.ts`   | CSS 변수 변환 계약                                 |
 | `src/app/authenticated_workspace.tsx`                           | 상단바 안의 단일 내비게이션 배치                   |
 | `src/app/styles/authenticated_workspace.css`                    | 인증 후 화면에만 적용되는 배경색과 공통 셸         |
+| `src/shared/ui/navigation-bar/navigation_bar.tsx`               | 반응형 배치를 선택하는 공용 내비게이션 계약        |
+| `src/shared/ui/navigation-bar/navigation_bar.css`               | WDS 내부 DOM과 반응형 상·하단 배치 보정            |
+| `src/shared/ui/navigation-bar/navigation_bar.test.tsx`          | 반응형 public class와 기존 선택 동작               |
+| `src/shared/ui/navigation-bar/navigation_bar_contract.test.ts`  | 반응형 어댑터 CSS와 타입 계약                      |
 | `src/widgets/app-navigation/ui/app_navigation.tsx`              | 현재 화면에 맞는 대표 색상 클래스                  |
-| `src/widgets/app-navigation/ui/app_navigation.css`              | `768px` 기준 상단·하단 내비게이션 배치             |
+| `src/widgets/app-navigation/ui/app_navigation.css`              | 화면별 대표 색상 변수                              |
 | `src/widgets/app-navigation/ui/app_navigation.test.tsx`         | 현재 화면 클래스와 기존 탭 이동 동작               |
 | `src/widgets/app-navigation/ui/app_navigation_contract.test.ts` | 반응형 내비게이션 CSS 계약                         |
 | `src/app/authenticated_workspace.test.tsx`                      | 내비게이션 단일 렌더링과 상단바 배치               |
@@ -209,7 +213,11 @@ git commit -m "feat: 인증 후 화면 색상 토큰 추가"
 
 - Modify: `src/widgets/app-navigation/ui/app_navigation.test.tsx`
 - Modify: `src/widgets/app-navigation/ui/app_navigation_contract.test.ts`
+- Modify: `src/shared/ui/navigation-bar/navigation_bar.test.tsx`
+- Modify: `src/shared/ui/navigation-bar/navigation_bar_contract.test.ts`
 - Modify: `src/app/authenticated_workspace.test.tsx`
+- Modify: `src/shared/ui/navigation-bar/navigation_bar.tsx`
+- Modify: `src/shared/ui/navigation-bar/navigation_bar.css`
 - Modify: `src/widgets/app-navigation/ui/app_navigation.tsx`
 - Modify: `src/widgets/app-navigation/ui/app_navigation.css`
 - Modify: `src/app/authenticated_workspace.tsx`
@@ -225,16 +233,53 @@ const navigation = screen.getByRole('navigation', { name: '주요 화면' });
 expect(navigation.classList.contains('app-navigation--home')).toBe(true);
 ```
 
-`app_navigation_contract.test.ts`의 기존 고정 너비 테스트를 다음 계약으로 교체한다.
+`navigation_bar.test.tsx`의 첫 렌더링에 `responsive`를 전달하고 public class를 확인한다.
+
+```tsx
+<NavigationBar
+  items={items}
+  onValueChange={onValueChange}
+  responsive
+  value="home"
+/>
+```
 
 ```ts
+expect(navigation.classList.contains('navigation-bar--responsive')).toBe(true);
+```
+
+`navigation_bar_contract.test.ts`에서 `navigation_bar.css`를 읽고 다음 반응형 어댑터 계약을 추가한다.
+
+```ts
+const navigationBarStyles = readFileSync(
+  new URL('./navigation_bar.css', import.meta.url),
+  'utf8'
+);
+
 it('uses the header flow from 768px and a fixed bottom bar below it', () => {
-  expect(appNavigationStyles).toMatch(
-    /@media \(min-width:\s*768px\)\s*\{[\s\S]*?div\.app-navigation[\s\S]*?position:\s*static;[\s\S]*?width:\s*auto;/
+  expect(navigationBarStyles).toMatch(
+    /@media \(min-width:\s*768px\)\s*\{[\s\S]*?div\.navigation-bar--responsive[\s\S]*?position:\s*static;[\s\S]*?width:\s*auto;/
   );
-  expect(appNavigationStyles).toMatch(
-    /@media \(max-width:\s*767px\)\s*\{[\s\S]*?div\.app-navigation[\s\S]*?position:\s*fixed;[\s\S]*?bottom:\s*max\(var\(--spacing-3\),\s*env\(safe-area-inset-bottom,\s*0px\)\);/
+  expect(navigationBarStyles).toMatch(
+    /@media \(max-width:\s*767px\)\s*\{[\s\S]*?div\.navigation-bar--responsive[\s\S]*?position:\s*fixed;[\s\S]*?bottom:\s*max\(var\(--spacing-3\),\s*env\(safe-area-inset-bottom,\s*0px\)\);/
   );
+});
+```
+
+`app_navigation_contract.test.ts`의 기존 고정 너비 테스트는 화면별 변수만 소유하고 WDS 내부 선택자를 사용하지 않는 계약으로 교체한다.
+
+```ts
+it('provides screen colors without reaching into vendor DOM', () => {
+  expect(appNavigationStyles).toContain(
+    '--navigation-active-color: var(--color-retrieve-blue);'
+  );
+  expect(appNavigationStyles).toContain(
+    '--navigation-active-color: var(--color-library-coral);'
+  );
+  expect(appNavigationStyles).toContain(
+    '--navigation-active-color: var(--color-save-green);'
+  );
+  expect(appNavigationStyles).not.toContain('wds-component');
 });
 ```
 
@@ -252,20 +297,74 @@ expect(navigations[0].closest('.workspace-header')).not.toBeNull();
 Run:
 
 ```powershell
-npm test -- src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx -t "renders the workspace tabs|uses the header flow|moves between the home"
+npm test -- src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/navigation-bar/navigation_bar_contract.test.ts src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx -t "활성 항목을 표시|uses the header flow|provides screen colors|renders the workspace tabs|moves between the home"
 ```
 
 Expected: 현재 내비게이션이 `workspace-header` 밖에 있고 데스크톱 CSS가 없어서 FAIL.
 
 - [ ] **Step 3: 현재 화면 클래스를 내비게이션에 전달한다**
 
-`app_navigation.tsx`에서 `NavigationBar`의 `className`을 다음과 같이 바꾼다.
+`navigation_bar.tsx`의 props에 `responsive?: boolean`을 추가하고 public class로 변환한다.
+
+```ts
+export type NavigationBarProps<
+  TItems extends readonly NavigationItem<string>[],
+> = {
+  className?: string;
+  items: TItems;
+  onValueChange: (value: NoInfer<NavigationValue<TItems>>) => void;
+  responsive?: boolean;
+  value: NoInfer<NavigationValue<TItems>>;
+};
+```
+
+```tsx
+export function NavigationBar<
+  const TItems extends readonly NavigationItem<string>[],
+>({
+  className,
+  items,
+  onValueChange,
+  responsive = false,
+  value,
+}: NavigationBarProps<TItems>) {
+  return (
+    <BottomNavigation
+      aria-label="주요 화면"
+      className={clsx(
+        'navigation-bar',
+        responsive && 'navigation-bar--responsive',
+        className
+      )}
+      onValueChange={(nextValue) =>
+        onValueChange(nextValue as NavigationValue<TItems>)
+      }
+      role="navigation"
+      value={value}
+    >
+      {items.map((item) => (
+        <BottomNavigationItem
+          className="navigation-bar__item"
+          icon={item.icon}
+          key={item.value}
+          label={item.label}
+          type="button"
+          value={item.value}
+        />
+      ))}
+    </BottomNavigation>
+  );
+}
+```
+
+`app_navigation.tsx`에서는 현재 화면 클래스와 `responsive`만 전달한다.
 
 ```tsx
 <NavigationBar
   className={`app-navigation app-navigation--${tab}`}
   items={NAVIGATION_ITEMS}
   onValueChange={onTabChange}
+  responsive
   value={tab}
 />
 ```
@@ -372,23 +471,27 @@ Expected: 현재 내비게이션이 `workspace-header` 밖에 있고 데스크�
 
 - [ ] **Step 6: 넓은 화면과 모바일 내비게이션 CSS를 구현한다**
 
-`app_navigation.css`를 다음 내용으로 교체한다.
+`app_navigation.css`는 화면별 변수만 남긴다.
 
 ```css
-div.app-navigation.app-navigation--home {
-  --app-navigation-active-color: var(--color-retrieve-blue);
+.app-navigation--home {
+  --navigation-active-color: var(--color-retrieve-blue);
 }
 
-div.app-navigation.app-navigation--library {
-  --app-navigation-active-color: var(--color-library-coral);
+.app-navigation--library {
+  --navigation-active-color: var(--color-library-coral);
 }
 
-div.app-navigation.app-navigation--save {
-  --app-navigation-active-color: var(--color-save-green);
+.app-navigation--save {
+  --navigation-active-color: var(--color-save-green);
 }
+```
 
+WDS 내부 DOM을 보정할 수 있는 `navigation_bar.css`에 다음 responsive variant를 추가한다.
+
+```css
 @media (min-width: 768px) {
-  div.app-navigation.navigation-bar[wds-component='bottom-navigation'] {
+  div.navigation-bar--responsive[wds-component='bottom-navigation'] {
     position: static;
     width: auto;
     min-width: 280px;
@@ -398,7 +501,7 @@ div.app-navigation.app-navigation--save {
     background: transparent;
   }
 
-  div.app-navigation.navigation-bar[wds-component='bottom-navigation']
+  div.navigation-bar--responsive[wds-component='bottom-navigation']
     button.navigation-bar__item[wds-component='bottom-navigation-item'] {
     min-width: 72px;
     min-height: 44px;
@@ -406,21 +509,21 @@ div.app-navigation.app-navigation--save {
     border-radius: 0;
   }
 
-  div.app-navigation.navigation-bar[wds-component='bottom-navigation']
+  div.navigation-bar--responsive[wds-component='bottom-navigation']
     button.navigation-bar__item[wds-component='bottom-navigation-item']
     svg {
     display: none;
   }
 
-  div.app-navigation.navigation-bar[wds-component='bottom-navigation']
+  div.navigation-bar--responsive[wds-component='bottom-navigation']
     button.navigation-bar__item[wds-component='bottom-navigation-item'][aria-current='page'] {
     background: transparent;
-    box-shadow: inset 0 -2px 0 var(--app-navigation-active-color);
+    box-shadow: inset 0 -2px 0 var(--navigation-active-color);
   }
 }
 
 @media (max-width: 767px) {
-  div.app-navigation.navigation-bar[wds-component='bottom-navigation'] {
+  div.navigation-bar--responsive[wds-component='bottom-navigation'] {
     position: fixed;
     z-index: 10;
     right: 50%;
@@ -429,9 +532,9 @@ div.app-navigation.app-navigation--save {
     transform: translateX(50%);
   }
 
-  div.app-navigation.navigation-bar[wds-component='bottom-navigation']
+  div.navigation-bar--responsive[wds-component='bottom-navigation']
     button.navigation-bar__item[wds-component='bottom-navigation-item'][aria-current='page'] {
-    color: var(--app-navigation-active-color);
+    color: var(--navigation-active-color);
   }
 }
 ```
@@ -441,7 +544,7 @@ div.app-navigation.app-navigation--save {
 Run:
 
 ```powershell
-npm test -- src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx -t "renders the workspace tabs|uses the header flow|moves between the home"
+npm test -- src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/navigation-bar/navigation_bar_contract.test.ts src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx -t "활성 항목을 표시|uses the header flow|provides screen colors|renders the workspace tabs|moves between the home"
 ```
 
 Expected: 선택한 세 계약이 PASS.
@@ -449,7 +552,7 @@ Expected: 선택한 세 계약이 PASS.
 - [ ] **Step 8: 공통 셸 변경을 커밋한다**
 
 ```powershell
-git add src/app/authenticated_workspace.tsx src/app/styles/authenticated_workspace.css src/app/authenticated_workspace.test.tsx src/widgets/app-navigation/ui/app_navigation.tsx src/widgets/app-navigation/ui/app_navigation.css src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts
+git add src/app/authenticated_workspace.tsx src/app/styles/authenticated_workspace.css src/app/authenticated_workspace.test.tsx src/shared/ui/navigation-bar/navigation_bar.tsx src/shared/ui/navigation-bar/navigation_bar.css src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/navigation-bar/navigation_bar_contract.test.ts src/widgets/app-navigation/ui/app_navigation.tsx src/widgets/app-navigation/ui/app_navigation.css src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts
 git commit -m "feat: 반응형 내비게이션과 공통 셸 개편"
 ```
 
@@ -1171,8 +1274,8 @@ GitHub 이슈와 PR 본문은 `Paper`, `Surface`, 토큰명 같은 구현 내부
 Run:
 
 ```powershell
-npx prettier --check src/shared/config/design-system/tokens.ts src/shared/config/design-system/tokens.test.ts src/shared/config/design-system/apply_design_tokens.test.ts src/app/authenticated_workspace.tsx src/app/styles/authenticated_workspace.css src/widgets/app-navigation/ui/app_navigation.tsx src/widgets/app-navigation/ui/app_navigation.css src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx src/pages/home/ui/retrieve_search_panel.tsx src/pages/home/ui/home_page.tsx src/pages/home/ui/home_page.css src/pages/home/ui/home_page.test.tsx src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.css src/pages/library/ui/library_page.test.tsx src/pages/save/ui/save_page.tsx src/pages/save/ui/save_page.css src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_contract.test.ts DESIGN.md
-npx eslint src/shared/config/design-system/tokens.ts src/shared/config/design-system/tokens.test.ts src/shared/config/design-system/apply_design_tokens.test.ts src/app/authenticated_workspace.tsx src/widgets/app-navigation/ui/app_navigation.tsx src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx src/pages/home/ui/retrieve_search_panel.tsx src/pages/home/ui/home_page.tsx src/pages/home/ui/home_page.test.tsx src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.test.tsx src/pages/save/ui/save_page.tsx src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_contract.test.ts
+npx prettier --check src/shared/config/design-system/tokens.ts src/shared/config/design-system/tokens.test.ts src/shared/config/design-system/apply_design_tokens.test.ts src/app/authenticated_workspace.tsx src/app/styles/authenticated_workspace.css src/shared/ui/navigation-bar/navigation_bar.tsx src/shared/ui/navigation-bar/navigation_bar.css src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/navigation-bar/navigation_bar_contract.test.ts src/widgets/app-navigation/ui/app_navigation.tsx src/widgets/app-navigation/ui/app_navigation.css src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx src/pages/home/ui/retrieve_search_panel.tsx src/pages/home/ui/home_page.tsx src/pages/home/ui/home_page.css src/pages/home/ui/home_page.test.tsx src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.css src/pages/library/ui/library_page.test.tsx src/pages/save/ui/save_page.tsx src/pages/save/ui/save_page.css src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_contract.test.ts DESIGN.md
+npx eslint src/shared/config/design-system/tokens.ts src/shared/config/design-system/tokens.test.ts src/shared/config/design-system/apply_design_tokens.test.ts src/app/authenticated_workspace.tsx src/shared/ui/navigation-bar/navigation_bar.tsx src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/navigation-bar/navigation_bar_contract.test.ts src/widgets/app-navigation/ui/app_navigation.tsx src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx src/pages/home/ui/retrieve_search_panel.tsx src/pages/home/ui/home_page.tsx src/pages/home/ui/home_page.test.tsx src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.test.tsx src/pages/save/ui/save_page.tsx src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_contract.test.ts
 ```
 
 Expected: 두 명령 모두 exit code `0`.
@@ -1183,7 +1286,7 @@ Run:
 
 ```powershell
 npm test -- src/shared/config/design-system/tokens.test.ts src/shared/config/design-system/apply_design_tokens.test.ts
-npm test -- src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx -t "renders the workspace tabs|uses the header flow|moves between the home"
+npm test -- src/shared/ui/navigation-bar/navigation_bar.test.tsx src/shared/ui/navigation-bar/navigation_bar_contract.test.ts src/widgets/app-navigation/ui/app_navigation.test.tsx src/widgets/app-navigation/ui/app_navigation_contract.test.ts src/app/authenticated_workspace.test.tsx -t "활성 항목을 표시|uses the header flow|provides screen colors|renders the workspace tabs|moves between the home"
 npm test -- src/pages/home/ui/home_page.test.tsx -t "defines a centered retrieval axis|keeps survey situations|reports situation selection"
 npm test -- src/pages/library/ui/library_page.test.tsx -t "centers the library header|keeps a no-result query|distinguishes a category-only|기존 보관함"
 npm test -- src/pages/save/ui/save_page.test.tsx src/pages/save/ui/save_page_contract.test.ts -t "asks for optional personal context|reports URL changes|클립보드 보조 버튼|keeps the clipboard"
