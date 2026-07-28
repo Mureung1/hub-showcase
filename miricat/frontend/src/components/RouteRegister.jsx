@@ -55,7 +55,7 @@ export default function RouteRegister({ onSaved }) {
     });
     const data = await res.json();
     if (res.ok) {
-      setSaved(data.route);
+      setSaved({ ...data.route, check: data.check });   // check = 즉시 첫 점검 결과
       onSaved?.();   // 저장 성공 → 부모에게 알려 목록 자동 갱신
       // 다음 등록을 위해 폼 초기화 (저장됨 메시지는 남긴다)
       setOrigin(null); setDest(null); setDepartTime(""); setCandidates(null);
@@ -108,7 +108,27 @@ export default function RouteRegister({ onSaved }) {
 
       {saved && (saved.error
         ? <p style={{ color: "#E4572E" }}>⚠️ {saved.error}</p>
-        : <p style={{ color: "#5B8A5A" }}>✅ 저장됨: {saved.name}</p>)}
+        : (
+          <div style={{ marginTop: 10, fontSize: 14 }}>
+            <p style={{ color: "#5B8A5A" }}>✅ 저장됨: {saved.name}</p>
+            {/* 즉시 첫 점검 결과 — 경보 / 이상 없음 / 관할 밖 3분기 */}
+            {saved.check?.alertCount > 0 && (
+              <p style={{ color: "#E4572E", fontWeight: 600 }}>
+                🚨 지금 영향 주는 공지를 찾았어요 — 디스코드로 첫 경보를 보냈어요!
+              </p>
+            )}
+            {saved.check && saved.check.alertCount === 0 && saved.check.covered && (
+              <p style={{ color: "#8B7863" }}>
+                🔎 모아둔 공지 {saved.check.checked}건과 대조 — 영향 없음. 디스코드로 첫 보고를 보냈어요.
+              </p>
+            )}
+            {saved.check && !saved.check.covered && (
+              <p style={{ color: "#C98A00" }}>
+                📍 이 지역은 아직 감시 범위 밖이에요 — 지금은 대전·세종·경기 게시판을 확인하고 있어요.
+              </p>
+            )}
+          </div>
+        ))}
     </div>
   );
 }

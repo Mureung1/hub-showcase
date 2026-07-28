@@ -5,6 +5,7 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const { matchNotice } = require('./matching');
 
 const app = express();
 app.use(cors());
@@ -22,7 +23,62 @@ app.get('/api/health', async (req, res) => {
   res.json({ ok: !error, data: data ?? null, error: error?.message ?? null });
 });
 
-// 경로 등록 저장: 화면 입력을 routes 테이블에 insert.
+// ── 즉시 첫 점검 ─────────────────────────────────────────────
+// 보초를 세우는 순간, 모아둔 공지들과 바로 대조해서 첫 보고를 보낸다.
+// (크롤링·추출은 매일 아침 보초 몫 — 여기선 저장된 공지와의 결정론적 매칭만. LLM 없음 = 즉답)
+
+// 감시 관할 — 수집 소스가 있는 지역의 대략적 좌표 상자. 경로가 하나도 안 걸치면 "관할 밖"을 정직하게 알린다.
+const COVERAGE = [
+  { name: '대전·세종권', minX: 127.15, maxX: 127.65, minY: 36.10, maxY: 36.75 },
+  { name: '경기권', minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
+];
+const inCoverage = (points) =>
+  !points?.length ||   // 좌표 없는 옛 경로는 보수적으로 관할 취급
+  points.some((p) => COVERAGE.some((b) => p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY));
+
+async function instantCheck(route) {
+  const { data: notices } = await supabase
+    .from('notices')
+    .select('id, title, source_url, extraction')
+    .order('collected_at', { ascending: false })
+    .limit(30);
+  const alerts = [];
+  for (const n of notices ?? []) {
+    const hits = matchNotice(n, route);
+    if (hits.size) alerts.push({ notice: n, hits: [...hits] });
+  }
+  return { covered: inCoverage(route.path), checked: (notices ?? []).length, alerts };
+}
+
+async function sendFirstReport(route, check) {
+  const webhook = process.env.DISCORD_WEBHOOK_URL;
+  if (!webhook) return;
+  const reportBase = process.env.REPORT_BASE_URL ?? 'https://hub-pi-lime.vercel.app';
+  const apiBase = process.env.API_BASE_URL ?? 'https://miricat-api.onrender.com';
+  let payload;
+  if (check.alerts.length) {
+    const a = check.alerts[0];                       // 첫 점검은 가장 최근 영향 공지 하나만 무겁게
+    payload = { embeds: [{
+      title: `🚨 첫 점검 경보 — ${route.name}에 영향 공지`,
+      url: `${reportBase}/report/${a.notice.id}?route=${route.id}`,
+      color: 0xE4572E,
+      description: (a.notice.title ?? '').trim(),
+      fields: [
+        { name: '겹친 것', value: a.hits.join(', ') },
+        { name: '원문 공지', value: a.notice.source_url },
+      ],
+      image: { url: `${apiBase}/api/routes/${route.id}/map.png?hits=${encodeURIComponent(a.hits.join(','))}` },
+      footer: { text: '보초를 세우자마자 모아둔 공지와 대조한 결과예요' },
+    }] };
+  } else if (check.covered) {
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 모아둔 공지 ${check.checked}건과 대조했고, 지금 영향 주는 공지는 없어요.` };
+  } else {
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 대전·세종·경기 게시판을 확인하고 있어요.` };
+  }
+  await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+}
+
+// 경로 등록 저장: 화면 입력을 routes 테이블에 insert + 즉시 첫 점검.
 app.post('/api/routes', async (req, res) => {
   const { origin_name, dest_name, depart_time, lines, stops, roads, path } = req.body ?? {};
   if (!origin_name || !dest_name) {
@@ -35,7 +91,19 @@ app.post('/api/routes', async (req, res) => {
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json({ route: data });
+
+  // 즉시 첫 점검 — 실패해도 등록 자체는 성공으로 (점검은 부가 서비스)
+  let check = null;
+  try {
+    check = await instantCheck(data);
+    await sendFirstReport(data, check);
+  } catch (e) {
+    console.error('즉시 점검 실패:', e.message);
+  }
+  res.status(201).json({
+    route: data,
+    check: check && { covered: check.covered, checked: check.checked, alertCount: check.alerts.length },
+  });
 });
 
 // 등록된 경로 목록 (최신순) — 저장 확인·화면 표시용.
