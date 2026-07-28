@@ -75,7 +75,7 @@ type GeneratedCurriculumPlan = {
 
 ## 구현 위치
 
-브라우저 mock 화면용 deterministic 구현은 `src/features/curriculum/model/curriculumGenerator.ts`에 둡니다. Today Hub와 Workspace는 `src/features/curriculum/api/curriculumClient.ts` adapter를 통해 fallback plan 또는 서버 plan을 받습니다. Today Hub에서 생성한 결과는 `icu.generatedCurriculum` snapshot으로 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
+기본 server mode에서 `/today/goal`은 `src/features/curriculum/api/curriculumClient.ts`를 통해 `/api/curriculum/recommend`를 호출합니다. 응답 plan은 generated-curriculum repository에 저장되고 Today Hub와 Workspace store에 반영됩니다. `src/features/curriculum/model/curriculumGenerator.ts`의 deterministic generator는 mock mode fallback입니다.
 
 실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
 
@@ -110,19 +110,20 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 
 - API key는 React/Vite 클라이언트 코드에서 읽지 않습니다.
 - `.env`, `src/.env`는 커밋하지 않습니다.
-- 브라우저 화면은 아직 `curriculumClient`의 mock mode를 사용합니다. 서버 연결 시 adapter 호출 옵션만 바꿉니다.
-- Gemini CLI agent는 이후 Node.js 서버 API와 Electron Main Process로 옮길 수 있는 실행 검증용입니다.
+- 브라우저는 Core API만 호출하고 Gemini API key를 읽지 않습니다.
+- mock mode는 API 없이 화면을 확인할 때만 명시적으로 사용합니다.
+- Gemini CLI agent는 서버 core와 같은 계약을 독립적으로 검증하는 도구입니다.
 
 ## 실제 호출 위치 결정
 
-React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않습니다. 실제 agent 호출은 데스크톱 앱 전환 전에 서버 경계에서 먼저 붙입니다. API contract는 [Curriculum Agent API](./curriculum-agent-api.md)를 기준으로 합니다.
+현재 브라우저는 Gemini API를 직접 호출하지 않고 Core API를 사용합니다. API contract는 [Curriculum Agent API](./curriculum-agent-api.md)를 기준으로 합니다.
 
-1. 1차 실제 연결: Node.js backend
+1. 현재 연결: Node.js backend
    - React는 `/api/curriculum/recommend` 같은 서버 API만 호출합니다.
    - Node API route가 `backend/modules/curriculum`의 core 로직과 secret env를 소유합니다.
    - API key, provider, model 설정은 서버 환경 변수에서만 읽습니다.
    - 프론트 contract는 `GeneratedCurriculumPlan` 또는 그에 대응하는 정규화 JSON으로 유지합니다.
-   - Supabase Edge Function은 빠른 배포가 필요할 때의 대안으로만 남기고, 기본 구현 계획에는 넣지 않습니다.
+   - 생성된 plan은 configured repository(in-memory, SQLite, Supabase)에 저장합니다.
 
 2. 데스크톱 앱 전환 후: Electron Main Process
    - Renderer는 IPC로 `curriculum:generate`를 요청합니다.
@@ -142,7 +143,7 @@ React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않
 - RAG 기반 공식 문서 검색
 - 사용자 레벨 테스트 기반 시작 레벨 계산
 - 오답노트 기반 개인화 추천
-- Supabase 저장
+- 인증 기반 사용자별 추천 이력 분리
 - multi-agent orchestration
 
 ## 검증 기준

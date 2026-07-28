@@ -2,7 +2,7 @@
 
 ## 목적
 
-Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 때 오늘 무엇을 이어서 공부해야 하는지, 어떤 복습이 남았는지, 전체 학습 트랙이 어떤 상태인지 바로 이해하게 합니다.
+Today Learning Hub는 Intro와 Profile Setup 이후 진입하는 ICU의 중심 학습 화면입니다. 사용자가 오늘 무엇을 이어서 공부해야 하는지, 어떤 복습이 남았는지, 전체 학습 트랙이 어떤 상태인지 바로 이해하게 합니다.
 
 이 화면은 채팅보다 먼저 나옵니다. AI 튜터와 코드 에디터는 사용자가 학습을 시작하거나 이어서 진행할 때 Learning Workspace IDE에서 중심 역할을 합니다.
 
@@ -65,7 +65,7 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 - 기본 CTA인 `학습 시작`과 `워크스페이스로 이동`은 `/workspace?mission=generated-first-mission`으로 이동합니다.
 - Today Queue의 각 단계는 `/workspace?mission=<todayQueue item id>` 형식으로 이동합니다.
 - `ai-review`는 복습과 코드 리뷰 미션으로 사용합니다.
-- Workspace는 전달받은 `mission` 값으로 현재 미션, 파일명, 커리큘럼 단계, 테스트 케이스 mock 상태를 결정합니다.
+- Workspace는 전달받은 `mission` 값과 서버에서 불러온 생성 커리큘럼·진도 상태로 현재 미션, 파일명, 단계, 실행 상태를 결정합니다.
 
 ## 빈 상태
 
@@ -92,37 +92,46 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 
 Today Hub는 오답을 관리하는 전체 화면이 아니라, 최근 상태를 빠르게 보여주는 대시보드형 요약 진입점입니다. 사용자가 더 많은 오답을 확인하거나 상태를 관리하려면 `전체보기`로 `/mistake-notes`에 진입합니다.
 
-- `복습과 오답` 카드는 `icu.mistakeNotes` localStorage에 저장된 최근 미해결 오답을 우선 표시합니다.
+- `복습과 오답` 카드는 server mode에서 API로 불러온 최근 미해결 오답을 우선 표시합니다.
 - 저장된 오답이 있으면 최신 미해결 오답을 최대 3개 보여줍니다.
-- 저장된 오답이 없으면 기존 mock `recentMistakes`를 fallback으로 보여줍니다.
+- mock mode에서는 저장된 오답이 없을 때 정적 `recentMistakes`를 fallback으로 보여줍니다.
 - 카드의 주요 CTA는 `전체보기`이며 `/mistake-notes`로 이동합니다.
 - 개별 오답의 다시 풀기 액션은 오답노트 화면에서 제공합니다.
 
-## 구현 우선순위
+## 현재 데이터 로딩
 
-1. 정적 mock 데이터 기반 Today Hub 화면을 구현합니다.
-2. 이어서 학습하기와 학습 큐 항목 클릭 시 `mission` 쿼리를 포함해 Learning Workspace IDE로 전환합니다.
-3. 학습 목록과 복습 항목은 mock 데이터를 기반으로 보여주되, 복습 시작은 `ai-review` 미션으로 연결합니다.
-4. 실제 저장소, DB, AI 호출은 후속 단계에서 연결합니다.
+Today Hub는 server mode 진입 시 다음 데이터를 병렬로 불러옵니다.
+
+- 학습 프로필
+- 최신 생성 커리큘럼과 보관 이력
+- 오늘의 mission progress
+- 오답노트
+- Git Lab attempts
+
+각 API 응답은 대응하는 Zustand store를 hydrate합니다. 일부 요청이 실패해도 전체 화면을 비우지 않고 해당 영역의 오류 안내와 재시도 동작을 제공합니다.
+
 ## 테마 기준
 
 - 라이트모드와 다크모드를 모두 지원합니다.
+
 <!-- Previous Today Hub brand direction kept for audit:
 - 오늘 학습 허브는 Workday 이미지처럼 오렌지, 시안, 딥블루가 조화되는 브랜드 색감을 사용할 수 있습니다.
 - 오렌지는 강조/완료/환영 상태에 제한적으로 사용하고, 주요 CTA와 선택 상태는 시안 또는 딥블루 계열을 우선합니다.
 -->
+
 - 오늘 학습 허브는 흰색 네비게이터를 유지하고, 본문 배경은 #ffecd2 warm corner와 #e8f1fa to #d7e8fb blue-gray gradient를 사용합니다.
 - 학습 목록, 복습 리스트, 워크스페이스 미리보기는 흰색 카드 표면과 #d5deea 경계를 사용해 반복 사용 화면의 대비를 우선합니다.
 - 현재 학습 행과 선택 상태는 #e8f2ff, 주요 CTA는 강한 blue 계열을 사용합니다.
-## Mock 진행 상태 저장
 
-React mock 화면 단계에서는 실제 DB 대신 `icu.learningProgress` localStorage 값을 사용합니다.
+## 진행 상태 저장
+
+기본 server mode에서는 `/api/progress/today`와 mission progress API를 사용합니다. configured repository는 in-memory, SQLite, Supabase 중 하나입니다.
 
 - Today Queue는 기본 mock data를 먼저 만들고, mission별 저장 상태가 있으면 화면 표시 상태를 덮어씁니다.
 - 저장된 mission이 `passed`이거나 `completedAt`이 있으면 해당 항목을 완료로 표시합니다.
 - 저장된 mission이 실패 또는 진행 중이면 해당 항목을 현재 학습으로 표시합니다.
 - 완료율 stat은 Today Queue의 완료 항목 비율로 계산합니다.
-- 이 저장 상태는 브라우저 새로고침과 `/today` ↔ `/workspace` 이동 사이에서만 유지되는 mock persistence입니다.
+- mock mode에서만 `icu.learningProgress` localStorage 값을 fallback으로 사용합니다.
 
 ## 반복 사용 화면 기준
 

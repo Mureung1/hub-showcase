@@ -4,11 +4,11 @@
 
 오답노트는 ICU에서 사용자가 틀린 명령, 실습 실패, 헷갈린 개념을 저장하고 다시 풀 수 있게 하는 학습 회고 기능입니다. Git Lab은 첫 연결 대상일 뿐이며, 이후 Learning Workspace, 알고리즘 실습, API 실습 같은 다른 학습 모듈도 같은 방식으로 오답을 남기고 원래 레슨으로 돌아갈 수 있어야 합니다.
 
-React mock 단계에서는 실제 DB, RAG, Notion 연동 없이 브라우저 localStorage에 저장합니다. 목표는 학습 흐름을 `실패 -> 기록 -> 전체보기 -> 출처 레슨 다시 풀기 -> 해결 처리`까지 끊기지 않게 만드는 것입니다.
+기본 server mode에서는 Express API와 configured repository를 사용합니다. mock mode에서만 브라우저 localStorage를 fallback으로 사용합니다. 목표는 학습 흐름을 `실패 -> 기록 -> 전체보기 -> 출처 레슨 다시 풀기 -> 해결 처리`까지 끊기지 않게 만드는 것입니다.
 
 - 라우트: `/mistake-notes`, `/mistake-notes/new` (수동 작성)
 - Navigator 메뉴명: `오답노트`
-- 저장 키: `icu.mistakeNotes`
+- mock mode 저장 키: `icu.mistakeNotes`
 
 ## 주요 사용자 액션
 
@@ -167,20 +167,18 @@ Git Lab 터미널은 실패 로그에서 오답노트 자동 기록 여부를 �
 Today Hub의 `복습과 오답` 카드에는 오답노트 store의 최근 오답을 우선 표시합니다.
 
 - 저장된 오답이 있으면 최신 미해결 오답을 최대 3개 보여줍니다.
-- 저장된 오답이 없으면 기존 mock `recentMistakes`를 fallback으로 보여줍니다.
+- server mode에서는 API로 불러온 오답을 표시하고, mock mode에서만 정적 `recentMistakes`를 fallback으로 사용합니다.
 - Today Hub 카드의 `전체보기` 링크는 `/mistake-notes`로 이동합니다.
 - 각 오답 항목은 상세 화면 없이 오답노트 전체 화면에서 다시 풀기 액션을 제공합니다.
 
 ## 저장 방식
 
-React mock 단계에서는 Zustand store와 localStorage를 사용합니다.
+Zustand store는 화면 상호작용 상태를 소유합니다. 저장 방식은 실행 mode에 따라 달라집니다.
 
 - store 이름: `useMistakeNoteStore`
-- 저장 키: `icu.mistakeNotes`
-- 저장 형태: `{ notes: MistakeNote[] }`
-- 깨진 JSON 또는 형식이 맞지 않는 값은 빈 목록으로 복구합니다.
-
-Electron/SQLite 단계에서는 같은 필드를 유지하되 저장소만 로컬 DB로 교체합니다.
+- server mode: Core API 응답으로 hydrate/upsert
+- repository mode: in-memory, SQLite, Supabase
+- mock mode: `icu.mistakeNotes` localStorage fallback
 
 ## 구현 우선순위
 
@@ -221,7 +219,7 @@ Electron/SQLite 단계에서는 같은 필드를 유지하되 저장소만 로�
 - AI 자동 해설 생성
 - RAG 기반 개인화 복습 추천
 - Notion 동기화
-- Electron/SQLite 저장
+- Electron packaging
 - 전체 학습 트랙별 통합 오답 분석
 - 코드 실행 실패 자동 수집
 
@@ -232,7 +230,10 @@ Implemented in this task:
 - Server routes: `backend/http/mistakeNoteRoutes.mjs`
 - Application service: `backend/modules/mistake-notes/application/mistakeNoteService.mjs`
 - Domain rules: `backend/modules/mistake-notes/domain/mistakeNote.mjs`
-- In-memory adapter: `backend/modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs`
+- Repository adapters:
+  - `backend/modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs`
+  - `backend/modules/mistake-notes/adapters/sqliteMistakeNoteRepository.mjs`
+  - `backend/modules/mistake-notes/adapters/supabaseMistakeNoteRepository.mjs`
 - Frontend client adapter: `src/features/mistake-notes/api/mistakeNoteClient.ts`
 
 Supported routes:
@@ -252,4 +253,4 @@ DELETE /api/mistake-notes
 
 내용 수정은 기존 note를 조회한 뒤 여섯 필드만 정규화해 저장하므로 식별자와 생성·복습 시각, 해결 상태를 보존합니다. 필드 검증 실패는 `400 invalid_mistake_note`, 없는 note는 `404 mistake_note_not_found`입니다. 서버 모드의 React 화면은 성공 응답으로 받은 note만 store에 upsert하고, 실패하면 기존 note와 편집 draft를 유지합니다.
 
-The React store still owns mock-screen interaction state. The API adapter gives the same feature a server boundary so the storage can later move from in-memory data to SQLite/Supabase/PostgreSQL without changing the page-level flow first.
+The React store owns screen interaction state. In server mode, API success responses hydrate or upsert the store while the selected repository owns persistence.
