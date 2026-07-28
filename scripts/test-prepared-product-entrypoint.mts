@@ -289,7 +289,9 @@ async function verifyBrowser(): Promise<void> {
     assert.equal(await page.getByText('현재 과목', { exact: true }).count(), 0)
     assert.equal(await page.getByText('학기 자료', { exact: true }).count(), 0)
     assert.equal(
-      await page.getByRole('button', { name: /첫 과제|다시 시도/u }).count(),
+      await page
+        .getByRole('button', { name: /학기 정보 정리|다시 시도/u })
+        .count(),
       0,
     )
   } finally {

@@ -300,18 +300,18 @@ class ProtocolUnitTests(unittest.TestCase):
 
         skilled = {
             **product,
-            "skillName": "ay-ple-first-assignment",
-            "skillPath": ("/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md"),
+            "skillName": "ay-ple-semester-modeling",
+            "skillPath": ("/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md"),
         }
         command = decode_command_line(
             json.dumps(skilled, separators=(",", ":")).encode() + b"\n"
         )
         self.assertIsNotNone(command.skill)
         assert command.skill is not None
-        self.assertEqual(command.skill.name, "ay-ple-first-assignment")
+        self.assertEqual(command.skill.name, "ay-ple-semester-modeling")
         self.assertEqual(
             command.skill.path,
-            "/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md",
+            "/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md",
         )
 
         configured_skilled = {
@@ -325,7 +325,7 @@ class ProtocolUnitTests(unittest.TestCase):
         self.assertEqual(command.model, "gpt-current")
         self.assertIsNotNone(command.skill)
         assert command.skill is not None
-        self.assertEqual(command.skill.name, "ay-ple-first-assignment")
+        self.assertEqual(command.skill.name, "ay-ple-semester-modeling")
 
         catalog = decode_command_line(
             b'{"bridgeRequestId":"models","command":"read_model_catalog"}\n'
@@ -736,7 +736,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
         ) as temp:
             root = Path(temp).resolve()
             skill_path = (
-                root / ".agents" / "skills" / "ay-ple-first-assignment" / "SKILL.md"
+                root / ".agents" / "skills" / "ay-ple-semester-modeling" / "SKILL.md"
             )
             skill_path.parent.mkdir(parents=True)
             skill_path.write_text("# Test Skill\n", encoding="utf-8")
@@ -750,7 +750,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                         "command": "start_product_turn",
                         "threadId": "thread-1",
                         "permissionProfile": "workspace_write",
-                        "skillName": "ay-ple-first-assignment",
+                        "skillName": "ay-ple-semester-modeling",
                         "skillPath": str(skill_path),
                         "text": "Continue the product conversation.",
                     }
@@ -821,7 +821,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     [
                         {
                             "type": "skill",
-                            "name": "ay-ple-first-assignment",
+                            "name": "ay-ple-semester-modeling",
                             "path": str(skill_path),
                         },
                         {

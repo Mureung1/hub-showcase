@@ -221,7 +221,7 @@ export function usePreparedProductChat(options: {
     )
   }
 
-  async function invokeOrganizeSources(
+  async function invokeModelSemester(
     relativePaths: readonly string[],
   ): Promise<void> {
     if (
@@ -240,7 +240,7 @@ export function usePreparedProductChat(options: {
       {
         kind: 'action',
         id: crypto.randomUUID(),
-        label: '선택한 자료 정리하기',
+        label: '선택한 자료로 학기 정보 정리하기',
         relativePaths: frozenPaths,
       },
       (onFrame, signal) =>
@@ -456,7 +456,7 @@ export function usePreparedProductChat(options: {
     selectReasoningEffort,
     toggleFastMode,
     submitMessage,
-    invokeOrganizeSources,
+    invokeModelSemester,
     settleReview,
     answerClarification,
     cancelClarification,

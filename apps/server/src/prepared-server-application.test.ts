@@ -205,7 +205,7 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
     const busyAction = await postJson(
       `${baseUrl}/api/product/actions`,
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'assignment.txt' }],
       },
     )
@@ -294,9 +294,9 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
   }
 })
 
-test('public organize_sources starts one Skill-backed Product operation with ordered current files', async () => {
-  const fixture = await createOrganizeSourcesServerFixture(
-    'prepared-organize-sources-',
+test('public model_semester starts one Skill-backed Product operation with ordered current files', async () => {
+  const fixture = await createModelSemesterServerFixture(
+    'prepared-model-semester-',
   )
   const {
     baseUrl,
@@ -322,7 +322,7 @@ test('public organize_sources starts one Skill-backed Product operation with ord
     const response = await postJson(
       `${baseUrl}/api/product/actions`,
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [
           { relativePath: '자료/둘째 강의.pdf' },
           { relativePath: '자료/첫째 ](안내).pptx' },
@@ -352,11 +352,11 @@ test('public organize_sources starts one Skill-backed Product operation with ord
           serviceTier: 'default',
         },
         skill: {
-          name: 'ay-ple-first-assignment',
+          name: 'ay-ple-semester-modeling',
           path: path.join(skillRoot, 'SKILL.md'),
         },
         text: [
-          'ActionInvocation: organize_sources',
+          'ActionInvocation: model_semester',
           'Selected SemesterWorkspace file references:',
           '- [둘째 강의.pdf](자료/둘째 강의.pdf)',
           '- [첫째 \\]\\(안내).pptx](자료/첫째 ](안내\\).pptx)',
@@ -433,7 +433,7 @@ test('public organize_sources starts one Skill-backed Product operation with ord
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request: {
-          summary: '자료 정리 결과',
+          summary: '학기 정보 정리 결과',
           question: '정리 결과를 반영할까요?',
           changes: [
             {
@@ -473,7 +473,7 @@ test('public organize_sources starts one Skill-backed Product operation with ord
     const disconnectedAction = await postJson(
       `${baseUrl}/api/product/actions`,
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: '자료/둘째 강의.pdf' }],
       },
     )
@@ -493,16 +493,16 @@ test('public organize_sources starts one Skill-backed Product operation with ord
   }
 })
 
-test('public organize_sources fails before streaming or Turn start with exact safe errors', async () => {
-  const fixture = await createOrganizeSourcesServerFixture(
-    'prepared-organize-failures-',
+test('public model_semester fails before streaming or Turn start with exact safe errors', async () => {
+  const fixture = await createModelSemesterServerFixture(
+    'prepared-model-semester-failures-',
   )
   const { baseUrl, runtime, skillRoot, workspaceRoot } = fixture
   const skillPath = path.join(skillRoot, 'SKILL.md')
   try {
     const url = `${baseUrl}/api/product/actions`
     const request = (relativePath = 'valid.md') => ({
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [{ relativePath }],
     })
     const expectFailure = async (
@@ -540,7 +540,7 @@ test('public organize_sources fails before streaming or Turn start with exact sa
     await expectFailure(request(), 409, 'action_unavailable')
     runtime.effectiveSkills = [
       {
-        name: 'ay-ple-first-assignment',
+        name: 'ay-ple-semester-modeling',
         enabled: false,
         sourceRoot: skillRoot,
       },
@@ -548,7 +548,7 @@ test('public organize_sources fails before streaming or Turn start with exact sa
     await expectFailure(request(), 409, 'action_unavailable')
     runtime.effectiveSkills = [
       {
-        name: 'ay-ple-first-assignment',
+        name: 'ay-ple-semester-modeling',
         enabled: true,
         sourceRoot: path.join(workspaceRoot, 'other-skill'),
       },
@@ -557,7 +557,7 @@ test('public organize_sources fails before streaming or Turn start with exact sa
 
     runtime.effectiveSkills = [
       {
-        name: 'ay-ple-first-assignment',
+        name: 'ay-ple-semester-modeling',
         enabled: true,
         sourceRoot: skillRoot,
       },
@@ -601,7 +601,7 @@ test('public organize_sources fails before streaming or Turn start with exact sa
     runtime.accountReadiness = { state: 'ready' }
 
     await expectFailure(
-      { action: 'organize_sources', files: [], skillPath },
+      { action: 'model_semester', files: [], skillPath },
       400,
       'invalid_request',
     )
@@ -617,15 +617,15 @@ test('public organize_sources fails before streaming or Turn start with exact sa
   }
 })
 
-test('organize_sources preflight rechecks disconnect and aborts on shutdown before Turn start', async () => {
-  const fixture = await createOrganizeSourcesServerFixture(
-    'prepared-organize-continuity-',
+test('model_semester preflight rechecks disconnect and aborts on shutdown before Turn start', async () => {
+  const fixture = await createModelSemesterServerFixture(
+    'prepared-model-semester-continuity-',
   )
   const { baseUrl, runtime, target } = fixture
   try {
     const actionUrl = `${baseUrl}/api/product/actions`
     const body = JSON.stringify({
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [{ relativePath: 'valid.md' }],
     })
 
@@ -677,8 +677,8 @@ test('organize_sources preflight rechecks disconnect and aborts on shutdown befo
 })
 
 test('a local Product Turn start rejection leaves the Interaction Broker available for a fresh action', async () => {
-  const fixture = await createOrganizeSourcesServerFixture(
-    'prepared-organize-local-rejection-',
+  const fixture = await createModelSemesterServerFixture(
+    'prepared-model-semester-local-rejection-',
   )
   const { baseUrl, runtime, target } = fixture
   const headers = {
@@ -712,7 +712,7 @@ test('a local Product Turn start rejection leaves the Interaction Broker availab
     const rejected = await postJson(
       `${baseUrl}/api/product/actions`,
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'valid.md' }],
       },
     )
@@ -733,7 +733,7 @@ test('a local Product Turn start rejection leaves the Interaction Broker availab
     const retry = await postJson(
       `${baseUrl}/api/product/actions`,
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'valid.md' }],
       },
     )
@@ -1118,7 +1118,7 @@ test('Codex settings fail closed without starting Runtime while the workspace is
   }
 })
 
-async function createOrganizeSourcesServerFixture(prefix: string) {
+async function createModelSemesterServerFixture(prefix: string) {
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(tmpdir(), prefix)),
   )
@@ -1127,14 +1127,14 @@ async function createOrganizeSourcesServerFixture(prefix: string) {
     workspaceRoot,
     '.agents',
     'skills',
-    'ay-ple-first-assignment',
+    'ay-ple-semester-modeling',
   )
   await mkdir(skillRoot, { recursive: true })
   await writeFile(path.join(skillRoot, 'SKILL.md'), '# First Assignment')
   await writeFile(path.join(workspaceRoot, 'valid.md'), 'valid')
   runtime.effectiveSkills = [
     {
-      name: 'ay-ple-first-assignment',
+      name: 'ay-ple-semester-modeling',
       enabled: true,
       sourceRoot: skillRoot,
     },
@@ -1291,7 +1291,7 @@ class PreparedRuntime implements CodexWorkspaceRuntime {
             questions: [
               {
                 id: 'native-question',
-                header: '자료 정리',
+                header: '학기 정보 정리',
                 question: '자료를 어떤 기준으로 정리할까요?',
                 options: null,
                 acceptsFreeform: true,

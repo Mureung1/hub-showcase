@@ -12,18 +12,18 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
-  OrganizeSourcesActionError,
-  createOrganizeSourcesAction,
-  renderOrganizeSourcesActionText,
-} from './organize-sources-action.js'
+  ModelSemesterActionError,
+  createModelSemesterAction,
+  renderModelSemesterActionText,
+} from './model-semester-action.js'
 import { createWorkspaceFileAccess } from './workspace-file-access.js'
 import {
   createWorkspaceSourceProjection,
   type WorkspaceSourceProjection,
 } from './workspace-source-projection.js'
 
-test('organize_sources renderer preserves ordered Codex file references without a trailing newline', () => {
-  const text = renderOrganizeSourcesActionText([
+test('model_semester renderer preserves ordered Codex file references without a trailing newline', () => {
+  const text = renderModelSemesterActionText([
     { relativePath: '자료/둘째 강의.pdf' },
     { relativePath: '자료/첫째 ](안내).md' },
   ])
@@ -31,7 +31,7 @@ test('organize_sources renderer preserves ordered Codex file references without 
   assert.equal(
     text,
     [
-      'ActionInvocation: organize_sources',
+      'ActionInvocation: model_semester',
       'Selected SemesterWorkspace file references:',
       '- [둘째 강의.pdf](자료/둘째 강의.pdf)',
       '- [첫째 \\]\\(안내).md](자료/첫째 ](안내\\).md)',
@@ -40,21 +40,21 @@ test('organize_sources renderer preserves ordered Codex file references without 
   assert.equal(text.endsWith('\n'), false)
 })
 
-test('organize_sources renderer rejects text beyond its UTF-8 bound', () => {
+test('model_semester renderer rejects text beyond its UTF-8 bound', () => {
   assert.throws(
     () =>
-      renderOrganizeSourcesActionText(
+      renderModelSemesterActionText(
         Array.from({ length: 16 }, (_, index) => ({
           relativePath: `${index}-${'가'.repeat(1_000)}.md`,
         })),
       ),
     (error: unknown) =>
-      error instanceof OrganizeSourcesActionError &&
+      error instanceof ModelSemesterActionError &&
       error.code === 'action_context_invalid',
   )
 })
 
-test('organize_sources rejects a user-shaped source projection without shared workspace file access', async () => {
+test('model_semester rejects a user-shaped source projection without shared workspace file access', async () => {
   const sources = {
     async list() {
       return { sources: [] }
@@ -71,16 +71,16 @@ test('organize_sources rejects a user-shaped source projection without shared wo
   } satisfies WorkspaceSourceProjection
 
   await assert.rejects(
-    createOrganizeSourcesAction({ sources }),
+    createModelSemesterAction({ sources }),
     (error: unknown) =>
-      error instanceof OrganizeSourcesActionError &&
+      error instanceof ModelSemesterActionError &&
       error.code === 'product_unavailable',
   )
 })
 
-test('organize_sources prepare rejects a selected ref that is unsafe at the initial gate', async () => {
+test('model_semester prepare rejects a selected ref that is unsafe at the initial gate', async () => {
   const fixture = await createActionFixture(
-    'organize-sources-initial-file-gate-',
+    'model-semester-initial-file-gate-',
   )
   try {
     await rm(fixture.selectedPath)
@@ -89,7 +89,7 @@ test('organize_sources prepare rejects a selected ref that is unsafe at the init
     await assert.rejects(
       fixture.action.prepare(
         {
-          action: 'organize_sources',
+          action: 'model_semester',
           files: [{ relativePath: 'selected.md' }],
         },
         {
@@ -98,7 +98,7 @@ test('organize_sources prepare rejects a selected ref that is unsafe at the init
         },
       ),
       (error: unknown) =>
-        error instanceof OrganizeSourcesActionError &&
+        error instanceof ModelSemesterActionError &&
         error.code === 'action_context_stale',
     )
   } finally {
@@ -106,12 +106,12 @@ test('organize_sources prepare rejects a selected ref that is unsafe at the init
   }
 })
 
-test('organize_sources dispatch rejects a selected ref that is unsafe at the final gate', async () => {
+test('model_semester dispatch rejects a selected ref that is unsafe at the final gate', async () => {
   const fixture = await createActionFixture(
-    'organize-sources-dispatch-file-race-',
+    'model-semester-dispatch-file-race-',
   )
   const input = {
-    action: 'organize_sources',
+    action: 'model_semester',
     files: [{ relativePath: 'selected.md' }],
   } as const
   try {
@@ -119,7 +119,7 @@ test('organize_sources dispatch rejects a selected ref that is unsafe at the fin
       signal: new AbortController().signal,
       listEffectiveSkills: async () => [
         {
-          name: 'ay-ple-first-assignment',
+          name: 'ay-ple-semester-modeling',
           enabled: true,
           sourceRoot: fixture.skillRoot,
         },
@@ -134,14 +134,14 @@ test('organize_sources dispatch rejects a selected ref that is unsafe at the fin
         signal: new AbortController().signal,
         listEffectiveSkills: async () => [
           {
-            name: 'ay-ple-first-assignment',
+            name: 'ay-ple-semester-modeling',
             enabled: true,
             sourceRoot: fixture.skillRoot,
           },
         ],
       }),
       (error: unknown) =>
-        error instanceof OrganizeSourcesActionError &&
+        error instanceof ModelSemesterActionError &&
         error.code === 'action_context_stale',
     )
   } finally {
@@ -149,12 +149,12 @@ test('organize_sources dispatch rejects a selected ref that is unsafe at the fin
   }
 })
 
-test('organize_sources dispatch rejects an unavailable expected Skill at the final gate', async () => {
+test('model_semester dispatch rejects an unavailable expected Skill at the final gate', async () => {
   const fixture = await createActionFixture(
-    'organize-sources-dispatch-skill-race-',
+    'model-semester-dispatch-skill-race-',
   )
   const input = {
-    action: 'organize_sources',
+    action: 'model_semester',
     files: [{ relativePath: 'selected.md' }],
   } as const
   try {
@@ -162,7 +162,7 @@ test('organize_sources dispatch rejects an unavailable expected Skill at the fin
       signal: new AbortController().signal,
       listEffectiveSkills: async () => [
         {
-          name: 'ay-ple-first-assignment',
+          name: 'ay-ple-semester-modeling',
           enabled: true,
           sourceRoot: fixture.skillRoot,
         },
@@ -175,7 +175,7 @@ test('organize_sources dispatch rejects an unavailable expected Skill at the fin
         listEffectiveSkills: async () => [],
       }),
       (error: unknown) =>
-        error instanceof OrganizeSourcesActionError &&
+        error instanceof ModelSemesterActionError &&
         error.code === 'action_unavailable',
     )
   } finally {
@@ -183,14 +183,14 @@ test('organize_sources dispatch rejects an unavailable expected Skill at the fin
   }
 })
 
-test('organize_sources prepare leaves validated settings composition to the operation coordinator', async () => {
+test('model_semester prepare leaves validated settings composition to the operation coordinator', async () => {
   const fixture = await createActionFixture(
-    'organize-sources-settings-owner-',
+    'model-semester-settings-owner-',
   )
   try {
     const prepared = await fixture.action.prepare(
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'selected.md' }],
         codexSettings: {
           model: 'gpt-current',
@@ -202,7 +202,7 @@ test('organize_sources prepare leaves validated settings composition to the oper
         signal: new AbortController().signal,
         listEffectiveSkills: async () => [
           {
-            name: 'ay-ple-first-assignment',
+            name: 'ay-ple-semester-modeling',
             enabled: true,
             sourceRoot: fixture.skillRoot,
           },
@@ -213,11 +213,11 @@ test('organize_sources prepare leaves validated settings composition to the oper
     assert.deepEqual(prepared, {
       permissionProfile: 'workspace_write',
       skill: {
-        name: 'ay-ple-first-assignment',
+        name: 'ay-ple-semester-modeling',
         path: path.join(fixture.skillRoot, 'SKILL.md'),
       },
       text: [
-        'ActionInvocation: organize_sources',
+        'ActionInvocation: model_semester',
         'Selected SemesterWorkspace file references:',
         '- [selected.md](selected.md)',
       ].join('\n'),
@@ -229,7 +229,7 @@ test('organize_sources prepare leaves validated settings composition to the oper
 
 async function createActionFixture(prefix: string): Promise<{
   readonly action: Awaited<
-    ReturnType<typeof createOrganizeSourcesAction>
+    ReturnType<typeof createModelSemesterAction>
   >
   readonly outsidePath: string
   readonly selectedPath: string
@@ -245,7 +245,7 @@ async function createActionFixture(prefix: string): Promise<{
     workspaceRoot,
     '.agents',
     'skills',
-    'ay-ple-first-assignment',
+    'ay-ple-semester-modeling',
   )
   await Promise.all([
     mkdir(skillRoot, { recursive: true }),
@@ -261,7 +261,7 @@ async function createActionFixture(prefix: string): Promise<{
   const fileAccess =
     await createWorkspaceFileAccess(workspaceRoot)
   const sources = await createWorkspaceSourceProjection({ fileAccess })
-  const action = await createOrganizeSourcesAction({
+  const action = await createModelSemesterAction({
     sources,
   })
   return {

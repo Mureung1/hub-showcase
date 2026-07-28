@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import {
   mkdtemp,
+  lstat,
   mkdir,
   readdir,
   readFile,
@@ -13,7 +14,7 @@ import {
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -113,18 +114,11 @@ test('fresh target becomes a reviewable independent SemesterWorkspace', async ()
       await readFile(path.join(target, '.gitignore'), 'utf8'),
       '.env\nlegacy-cache/\n/.ay-ple/\n',
     )
-    assert.equal(
-      await readFile(
-        path.join(
-          target,
-          '.agents/skills/ay-ple-first-assignment/SKILL.md',
-        ),
-        'utf8',
-      ),
-      await readFile(
-        path.join(repositoryRoot, 'skills/ay-ple-first-assignment/SKILL.md'),
-        'utf8',
-      ),
+    const catalogRoot = path.join(repositoryRoot, 'skills')
+    const installedCatalogRoot = path.join(target, '.agents/skills')
+    assert.deepEqual(
+      await snapshotDirectory(installedCatalogRoot),
+      await snapshotDirectory(catalogRoot),
     )
 
     const config = await readFile(
@@ -151,18 +145,206 @@ test('fresh target becomes a reviewable independent SemesterWorkspace', async ()
       .filter(Boolean)
       .sort()
     assert.deepEqual(committedPaths, [
-      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+      ...(await listFiles(catalogRoot)).map(
+        (relativePath) => `.agents/skills/${relativePath}`,
+      ),
       '.codex/config.toml',
       '.gitignore',
       'AGENTS.md',
       'workspace-state.json',
-    ])
+    ].sort())
     assert.equal((await git(target, ['status', '--short'])).trim(), '?? notes.md')
     assert.equal(await git(target, ['check-ignore', '.env']), '.env')
     assert.equal(
       await git(target, ['check-ignore', 'legacy-cache/data']),
       'legacy-cache/data',
     )
+  })
+})
+
+test('Bootstrap installs every valid Skill as an opaque complete tree', async () => {
+  await withFixture(async (fixtureRoot) => {
+    const catalogRoot = path.join(fixtureRoot, 'catalog')
+    await mkdir(catalogRoot)
+    await writeSkill(catalogRoot, 'ay-ple-zeta')
+    await writeSkill(catalogRoot, 'ay-ple-alpha')
+    await mkdir(
+      path.join(catalogRoot, 'ay-ple-alpha', 'arbitrary', 'nested'),
+      { recursive: true },
+    )
+    await writeFile(
+      path.join(
+        catalogRoot,
+        'ay-ple-alpha',
+        'arbitrary',
+        'nested',
+        'fixture.bin',
+      ),
+      Buffer.from([0, 255, 13, 10]),
+    )
+
+    const target = path.join(fixtureRoot, 'workspace')
+    await mkdir(target)
+    await git(target, ['init', '--quiet'])
+    await git(target, ['config', 'user.name', 'Catalog Fixture'])
+    await git(target, ['config', 'user.email', 'catalog@example.invalid'])
+
+    const result = await runBootstrapWithCatalog(target, catalogRoot)
+
+    assert.equal(result.scaffoldCheckpoint, 'updated')
+    assert.deepEqual(
+      await snapshotDirectory(path.join(target, '.agents/skills')),
+      await snapshotDirectory(catalogRoot),
+    )
+    assert.deepEqual(
+      (await git(target, [
+        'show',
+        '--pretty=format:',
+        '--name-only',
+        'HEAD',
+      ]))
+        .split('\n')
+        .filter(Boolean)
+        .sort(),
+      [
+        '.agents/skills/ay-ple-alpha/SKILL.md',
+        '.agents/skills/ay-ple-alpha/arbitrary/nested/fixture.bin',
+        '.agents/skills/ay-ple-zeta/SKILL.md',
+        '.codex/config.toml',
+        'AGENTS.md',
+        'workspace-state.json',
+      ],
+    )
+  })
+})
+
+test('one invalid Skill root fails the complete catalog before target mutation', async () => {
+  await withFixture(async (fixtureRoot) => {
+    const scenarios: readonly {
+      readonly name: string
+      readonly arrange: (catalogRoot: string) => Promise<void>
+      readonly error: RegExp
+    }[] = [
+      {
+        name: 'direct regular file',
+        arrange: (catalogRoot) =>
+          writeFile(path.join(catalogRoot, 'ay-ple-file'), 'not a directory\n'),
+        error: /catalog entry.*non-symlink directory/i,
+      },
+      {
+        name: 'direct symlink',
+        async arrange(catalogRoot) {
+          const outside = path.join(path.dirname(catalogRoot), 'outside-skill')
+          await writeSkill(path.dirname(outside), path.basename(outside))
+          await symlink(outside, path.join(catalogRoot, 'ay-ple-linked'))
+        },
+        error: /catalog entry.*non-symlink directory/i,
+      },
+      {
+        name: 'unreserved name',
+        async arrange(catalogRoot) {
+          await writeSkill(catalogRoot, 'custom-skill')
+        },
+        error: /reserved ay-ple-\* namespace/i,
+      },
+      {
+        name: 'missing descriptor',
+        async arrange(catalogRoot) {
+          await mkdir(path.join(catalogRoot, 'ay-ple-missing'))
+        },
+        error: /root SKILL\.md.*non-symlink regular file/i,
+      },
+      {
+        name: 'malformed frontmatter',
+        async arrange(catalogRoot) {
+          const root = await writeSkill(catalogRoot, 'ay-ple-malformed')
+          await writeFile(
+            path.join(root, 'SKILL.md'),
+            '---\nname: ay-ple-malformed\ndescription: [\n---\n',
+          )
+        },
+        error: /frontmatter.*valid YAML/i,
+      },
+      {
+        name: 'identity mismatch',
+        async arrange(catalogRoot) {
+          const root = await writeSkill(catalogRoot, 'ay-ple-expected')
+          await writeFile(
+            path.join(root, 'SKILL.md'),
+            skillSource('ay-ple-different'),
+          )
+        },
+        error: /frontmatter name.*directory name/i,
+      },
+      {
+        name: 'descendant symlink',
+        async arrange(catalogRoot) {
+          const root = await writeSkill(catalogRoot, 'ay-ple-symlinked')
+          const outside = path.join(path.dirname(catalogRoot), 'outside.txt')
+          await writeFile(outside, 'outside\n')
+          await symlink(outside, path.join(root, 'linked.txt'))
+        },
+        error: /contains symlink/i,
+      },
+      {
+        name: 'descendant special file',
+        async arrange(catalogRoot) {
+          const root = await writeSkill(catalogRoot, 'ay-ple-special')
+          await execFileAsync('mkfifo', [path.join(root, 'named-pipe')])
+        },
+        error: /contains unsafe entry/i,
+      },
+    ]
+
+    for (const [index, scenario] of scenarios.entries()) {
+      const catalogRoot = path.join(fixtureRoot, `invalid-catalog-${index}`)
+      await mkdir(catalogRoot)
+      await writeSkill(catalogRoot, 'ay-ple-valid')
+      await scenario.arrange(catalogRoot)
+      const target = path.join(fixtureRoot, `uncreated-target-${index}`)
+
+      await assert.rejects(
+        runBootstrapWithCatalog(target, catalogRoot),
+        scenario.error,
+        scenario.name,
+      )
+      await assert.rejects(lstat(target), { code: 'ENOENT' })
+    }
+  })
+})
+
+test('Bootstrap plans every destination before copying a valid subset', async () => {
+  await withFixture(async (fixtureRoot) => {
+    const catalogRoot = path.join(fixtureRoot, 'catalog')
+    await mkdir(catalogRoot)
+    await writeSkill(catalogRoot, 'ay-ple-alpha')
+    await writeSkill(catalogRoot, 'ay-ple-zeta')
+
+    const target = path.join(fixtureRoot, 'workspace')
+    const conflictRoot = path.join(
+      target,
+      '.agents/skills/ay-ple-zeta',
+    )
+    await mkdir(conflictRoot, { recursive: true })
+    await writeFile(path.join(conflictRoot, 'SKILL.md'), 'user bytes\n')
+    await git(target, ['init', '--quiet'])
+    const before = await snapshotRepository(target)
+    const beforeStatus = await git(target, ['status', '--short'])
+
+    await assert.rejects(
+      runBootstrapWithCatalog(target, catalogRoot),
+      /Built-in Skill ay-ple-zeta conflict/,
+    )
+
+    assert.deepEqual(await snapshotRepository(target), before)
+    assert.equal(await git(target, ['status', '--short']), beforeStatus)
+    await assert.rejects(
+      lstat(path.join(target, '.agents/skills/ay-ple-alpha')),
+      { code: 'ENOENT' },
+    )
+    await assert.rejects(lstat(path.join(target, 'workspace-state.json')), {
+      code: 'ENOENT',
+    })
   })
 })
 
@@ -293,30 +475,30 @@ test('managed-resource conflicts preserve original bytes and Git history', async
         async arrange(target) {
           const destination = path.join(
             target,
-            '.agents/skills/ay-ple-first-assignment',
+            '.agents/skills/ay-ple-semester-modeling',
           )
           await mkdir(destination, { recursive: true })
           await writeFile(path.join(destination, 'SKILL.md'), 'user version\n')
         },
-        error: /Built-in Skill conflict[\s\S]*diff --git/,
+        error: /Built-in Skill .* conflict[\s\S]*diff --git/,
       },
       {
         name: 'symlinked built-in Skill root',
         async arrange(target) {
           const destination = path.join(
             target,
-            '.agents/skills/ay-ple-first-assignment',
+            '.agents/skills/ay-ple-semester-modeling',
           )
           await mkdir(path.dirname(destination), { recursive: true })
           await symlink(
             path.join(
               repositoryRoot,
-              'skills/ay-ple-first-assignment',
+              'skills/ay-ple-semester-modeling',
             ),
             destination,
           )
         },
-        error: /Built-in Skill root must be a non-symlink directory/,
+        error: /Built-in Skill .* root must be a non-symlink directory/,
       },
       {
         name: 'unmanaged Interaction table',
@@ -632,6 +814,64 @@ async function runBootstrap(arguments_: readonly string[]): Promise<{
   )
 }
 
+async function runBootstrapWithCatalog(
+  target: string,
+  builtInSkillCatalogRoot: string,
+): Promise<{
+  readonly canonicalRoot: string
+  readonly scaffoldCheckpoint: 'created' | 'updated' | 'no-op'
+  readonly baselineCheckpoint: 'created' | 'no-op' | 'not-requested'
+}> {
+  const module = (await import(pathToFileURL(bootstrapScript).href)) as {
+    bootstrapSemesterWorkspace(
+      input: {
+        readonly target: string
+        readonly yearLevel: number
+        readonly termKey: string
+        readonly termDisplayName: string
+        readonly baselinePaths: readonly string[]
+      },
+      options?: {
+        readonly builtInSkillCatalogRoot?: string
+      },
+    ): Promise<{
+      readonly canonicalRoot: string
+      readonly scaffoldCheckpoint: 'created' | 'updated' | 'no-op'
+      readonly baselineCheckpoint: 'created' | 'no-op' | 'not-requested'
+    }>
+  }
+  return module.bootstrapSemesterWorkspace(
+    {
+      target,
+      yearLevel: 2,
+      termKey: 'fall',
+      termDisplayName: '가을 학기',
+      baselinePaths: [],
+    },
+    { builtInSkillCatalogRoot },
+  )
+}
+
+async function writeSkill(
+  catalogRoot: string,
+  name: string,
+): Promise<string> {
+  const root = path.join(catalogRoot, name)
+  await mkdir(root)
+  await writeFile(path.join(root, 'SKILL.md'), skillSource(name))
+  return root
+}
+
+function skillSource(name: string): string {
+  return `---
+name: ${name}
+description: Exercise the fixture catalog contract.
+---
+
+# Fixture
+`
+}
+
 async function git(
   cwd: string,
   arguments_: readonly string[],
@@ -658,11 +898,24 @@ async function readManagedBytes(
       [
         'workspace-state.json',
         'AGENTS.md',
-        '.agents/skills/ay-ple-first-assignment/SKILL.md',
+        '.agents/skills/ay-ple-semester-modeling/SKILL.md',
         '.codex/config.toml',
       ].map(async (relativePath) => [
         relativePath,
         await readFile(path.join(target, relativePath), 'utf8'),
+      ]),
+    ),
+  )
+}
+
+async function snapshotDirectory(
+  root: string,
+): Promise<Readonly<Record<string, string>>> {
+  return Object.fromEntries(
+    await Promise.all(
+      (await listFiles(root)).map(async (relativePath) => [
+        relativePath,
+        (await readFile(path.join(root, relativePath))).toString('base64'),
       ]),
     ),
   )

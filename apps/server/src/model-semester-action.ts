@@ -17,34 +17,34 @@ import {
 } from './workspace-source-projection.js'
 
 const actionTextMaxBytes = 32 * 1024
-const skillName = 'ay-ple-first-assignment'
+const skillName = 'ay-ple-semester-modeling'
 
-export type PreparedOrganizeSourcesAction = {
+export type PreparedModelSemesterAction = {
   readonly permissionProfile: 'workspace_write'
   readonly skill: CodexProductSkillInput
   readonly text: string
 }
 
-type OrganizeSourcesActionContext = {
+type ModelSemesterActionContext = {
   readonly signal: AbortSignal
   readonly listEffectiveSkills: (
     signal: AbortSignal,
   ) => Promise<readonly CodexEffectiveSkill[]>
 }
 
-export type OrganizeSourcesAction = {
+export type ModelSemesterAction = {
   prepare(
     input: TargetProductActionInvocationRequest,
-    context: OrganizeSourcesActionContext,
-  ): Promise<PreparedOrganizeSourcesAction>
+    context: ModelSemesterActionContext,
+  ): Promise<PreparedModelSemesterAction>
   revalidateForDispatch(
     input: TargetProductActionInvocationRequest,
-    prepared: PreparedOrganizeSourcesAction,
-    context: OrganizeSourcesActionContext,
+    prepared: PreparedModelSemesterAction,
+    context: ModelSemesterActionContext,
   ): Promise<void>
 }
 
-export class OrganizeSourcesActionError extends Error {
+export class ModelSemesterActionError extends Error {
   constructor(
     readonly code:
       | 'action_context_stale'
@@ -53,13 +53,13 @@ export class OrganizeSourcesActionError extends Error {
       | 'product_unavailable',
   ) {
     super(code)
-    this.name = 'OrganizeSourcesActionError'
+    this.name = 'ModelSemesterActionError'
   }
 }
 
-export async function createOrganizeSourcesAction(options: {
+export async function createModelSemesterAction(options: {
   readonly sources: WorkspaceSourceProjection
-}): Promise<OrganizeSourcesAction> {
+}): Promise<ModelSemesterAction> {
   let fileAccess: WorkspaceFileAccess
   let expectedSkillRoot: string
   try {
@@ -71,7 +71,7 @@ export async function createOrganizeSourcesAction(options: {
       skillName,
     ])
   } catch {
-    throw new OrganizeSourcesActionError('product_unavailable')
+    throw new ModelSemesterActionError('product_unavailable')
   }
 
   return {
@@ -89,7 +89,7 @@ export async function createOrganizeSourcesAction(options: {
       try {
         skills = await context.listEffectiveSkills(context.signal)
       } catch {
-        throw new OrganizeSourcesActionError('product_unavailable')
+        throw new ModelSemesterActionError('product_unavailable')
       }
       context.signal.throwIfAborted()
 
@@ -105,7 +105,7 @@ export async function createOrganizeSourcesAction(options: {
       }
       context.signal.throwIfAborted()
 
-      const text = renderOrganizeSourcesActionText(files)
+      const text = renderModelSemesterActionText(files)
       return {
         permissionProfile: 'workspace_write',
         skill,
@@ -119,7 +119,7 @@ export async function createOrganizeSourcesAction(options: {
       try {
         skills = await context.listEffectiveSkills(context.signal)
       } catch {
-        throw new OrganizeSourcesActionError('product_unavailable')
+        throw new ModelSemesterActionError('product_unavailable')
       }
       assertDispatchActive(context.signal)
 
@@ -147,9 +147,9 @@ export async function createOrganizeSourcesAction(options: {
         prepared.permissionProfile !== 'workspace_write' ||
         prepared.skill.name !== skill.name ||
         prepared.skill.path !== skill.path ||
-        prepared.text !== renderOrganizeSourcesActionText(files)
+        prepared.text !== renderModelSemesterActionText(files)
       ) {
-        throw new OrganizeSourcesActionError('action_context_stale')
+        throw new ModelSemesterActionError('action_context_stale')
       }
     },
   }
@@ -157,15 +157,15 @@ export async function createOrganizeSourcesAction(options: {
 
 function assertDispatchActive(signal: AbortSignal): void {
   if (signal.aborted) {
-    throw new OrganizeSourcesActionError('product_unavailable')
+    throw new ModelSemesterActionError('product_unavailable')
   }
 }
 
-export function renderOrganizeSourcesActionText(
+export function renderModelSemesterActionText(
   files: readonly ProductWorkspaceFileRef[],
 ): string {
   const text = [
-    'ActionInvocation: organize_sources',
+    'ActionInvocation: model_semester',
     'Selected SemesterWorkspace file references:',
     ...files.map(
       ({ relativePath }) =>
@@ -173,7 +173,7 @@ export function renderOrganizeSourcesActionText(
     ),
   ].join('\n')
   if (Buffer.byteLength(text) > actionTextMaxBytes) {
-    throw new OrganizeSourcesActionError('action_context_invalid')
+    throw new ModelSemesterActionError('action_context_invalid')
   }
   return text
 }
@@ -213,7 +213,7 @@ async function resolveExpectedSkill(
       skill.sourceRoot === options.expectedSkillRoot,
   )
   if (matches.length !== 1) {
-    throw new OrganizeSourcesActionError('action_unavailable')
+    throw new ModelSemesterActionError('action_unavailable')
   }
 
   try {
@@ -227,26 +227,26 @@ async function resolveExpectedSkill(
     await options.fileAccess.assertRegularFile(skillSegments)
     return { name: skillName, path: skillPath }
   } catch (error) {
-    if (error instanceof OrganizeSourcesActionError) throw error
-    throw new OrganizeSourcesActionError('action_unavailable')
+    if (error instanceof ModelSemesterActionError) throw error
+    throw new ModelSemesterActionError('action_unavailable')
   }
 }
 
-function mapSourceError(error: unknown): OrganizeSourcesActionError {
+function mapSourceError(error: unknown): ModelSemesterActionError {
   if (!(error instanceof WorkspaceSourceProjectionError)) {
-    return new OrganizeSourcesActionError('product_unavailable')
+    return new ModelSemesterActionError('product_unavailable')
   }
   switch (error.code) {
     case 'unsupported_type':
     case 'unsupported_encoding':
     case 'invalid_pdf':
     case 'source_too_large':
-      return new OrganizeSourcesActionError('action_context_invalid')
+      return new ModelSemesterActionError('action_context_invalid')
     case 'invalid_path':
     case 'source_not_found':
     case 'source_unavailable':
     case 'scan_limit_exceeded':
-      return new OrganizeSourcesActionError('action_context_stale')
+      return new ModelSemesterActionError('action_context_stale')
   }
 }
 
@@ -256,7 +256,7 @@ async function assertCurrentActionWorkspace(
   try {
     await fileAccess.assertPinnedWorkspaceCurrent()
   } catch (error) {
-    if (error instanceof OrganizeSourcesActionError) throw error
-    throw new OrganizeSourcesActionError('action_context_stale')
+    if (error instanceof ModelSemesterActionError) throw error
+    throw new ModelSemesterActionError('action_context_stale')
   }
 }

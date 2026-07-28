@@ -350,11 +350,11 @@ function SourceExplorer({
             action.onInvoke([...controller.selectedActionPaths])
           }
         >
-          선택한 자료 정리하기 · {controller.selectedActionPaths.length}개
+          선택한 자료로 학기 정보 정리하기 · {controller.selectedActionPaths.length}개
         </button>
         <p id="source-action-status">
           {controller.selectedActionPaths.length === 0
-            ? '자료를 선택하면 AY에게 정리 작업을 맡길 수 있습니다.'
+            ? '자료를 선택하면 AY에게 학기 정보 정리를 맡길 수 있습니다.'
             : action.invocationEnabled
               ? '선택한 actual file만 명시적인 AY 작업에 전달합니다.'
               : '현재 AY 작업을 시작할 수 없어 선택만 유지합니다.'}
@@ -786,8 +786,8 @@ function actionSelectionLabel(
     selectionLocked,
   )
   return reason
-    ? `${source.relativePath} 정리 작업 선택 불가: ${reason}`
-    : `${source.relativePath} 정리 작업 선택`
+    ? `${source.relativePath} 학기 정보 정리 자료 선택 불가: ${reason}`
+    : `${source.relativePath} 학기 정보 정리 자료 선택`
 }
 
 function actionSelectionDisabledReason(

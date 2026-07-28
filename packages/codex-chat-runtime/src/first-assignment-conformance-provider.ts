@@ -8,13 +8,15 @@ const selectedFirstAssignmentSourcePaths = [
   'materials/lms-outline-notice.txt',
   'materials/problem-solving-syllabus.txt',
 ] as const
-const acceptedAssignment = [
-  '# 첫 과제',
-  '',
-  '마감: 2026-08-03 23:59',
-  '제출: LMS 과제함',
-  '',
-].join('\n')
+const modeledFirstAssignment = {
+  title: '첫 과제',
+  dueAt: {
+    knowledge: 'known',
+    value: '2026-08-03 23:59',
+  },
+  submissionMethod: 'LMS 과제함',
+} as const
+const modeledCourseTitle = '문제해결글쓰기'
 const maxRequestBytes = 4 * 1024 * 1024
 
 export type FirstAssignmentConformanceProviderFunctionCall = {
@@ -395,13 +397,14 @@ function selectedReadCommand(): string {
     'from pathlib import Path',
     'import hashlib,json,sys',
     'values={value:hashlib.sha256(Path(value).read_bytes()).hexdigest() for value in sys.argv[1:]}',
-    "print(json.dumps({'selectedFileDigests':values},separators=(',',':'),sort_keys=True))",
+    "print(json.dumps({'inputFileDigests':values},separators=(',',':'),sort_keys=True))",
   ].join(';')
   return [
     '/usr/bin/python3',
     '-c',
     shellQuote(source),
     ...selectedFirstAssignmentSourcePaths.map(shellQuote),
+    'workspace-state.json',
   ].join(' ')
 }
 
@@ -409,20 +412,32 @@ function acceptedCheckpointCommand(): string {
   const source = [
     'from pathlib import Path',
     'import json,sys',
-    "Path(sys.argv[1]).write_text(sys.argv[2],encoding='utf-8')",
+    'state_path=Path(sys.argv[1])',
+    'state=json.loads(state_path.read_text(encoding="utf-8"))',
+    'assignment=json.loads(sys.argv[2])',
+    'course_title=sys.argv[3]',
+    'snapshot=dict(state.get("snapshot") or {})',
+    'courses=list(snapshot.get("courses") or [])',
+    'matched=next((course for course in courses if isinstance(course,dict) and course.get("title")==course_title),{})',
+    'assignments=list(matched.get("assignments") or [])',
+    'updated_course={**matched,"title":course_title,"assignments":[item for item in assignments if not (isinstance(item,dict) and item.get("title")==assignment["title"])]+[assignment]}',
+    'snapshot["courses"]=[course for course in courses if not (isinstance(course,dict) and course.get("title")==course_title)]+[updated_course]',
+    'state["snapshot"]=snapshot',
+    'state_path.write_text(json.dumps(state,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")',
     "print(json.dumps({'intendedMutation':sys.argv[1]},separators=(',',':'),sort_keys=True))",
-  ].join(';')
+  ].join('\n')
   const writeCommand = [
     '/usr/bin/python3',
     '-c',
     shellQuote(source),
-    'assignment.md',
-    shellQuote(acceptedAssignment),
+    'workspace-state.json',
+    shellQuote(JSON.stringify(modeledFirstAssignment)),
+    shellQuote(modeledCourseTitle),
   ].join(' ')
   return [
     writeCommand,
-    '/usr/bin/git add -- assignment.md',
-    "/usr/bin/git commit --quiet --only -m 'feat: record accepted first assignment' -- assignment.md",
+    '/usr/bin/git add -- workspace-state.json',
+    "/usr/bin/git commit --quiet --only -m 'feat: model accepted first assignment' -- workspace-state.json",
   ].join(' && ')
 }
 
@@ -443,7 +458,7 @@ function firstAssignmentReview(
         label: '첫 과제 정보',
       },
     ],
-    question: '이 변경을 실제 과제 파일에 반영할까요?',
+    question: '이 변경을 학기 정보에 반영할까요?',
     summary,
   }
 }

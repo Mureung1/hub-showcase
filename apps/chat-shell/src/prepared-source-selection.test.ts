@@ -70,7 +70,7 @@ test('prepared source display and frozen action request preserve one mixed sourc
   const displayedEntries = expectedPaths.map((relativePath) => ({
     relativePath,
     position: markup.indexOf(
-      `aria-label="${relativePath} 정리 작업 선택`,
+      `aria-label="${relativePath} 학기 정보 정리 자료 선택`,
     ),
   }))
   assert.ok(displayedEntries.every(({ position }) => position >= 0))

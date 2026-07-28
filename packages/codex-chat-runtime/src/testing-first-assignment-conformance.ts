@@ -67,7 +67,7 @@ export async function startCodexFirstAssignmentConformanceTestFixture(options: {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
   const fixtureRoot = await realpath(
     await mkdtemp(
-      path.join(tmpdir(), 'ay-ple-first-assignment-conformance-'),
+      path.join(tmpdir(), 'ay-ple-semester-modeling-conformance-'),
     ),
   )
   let provider: FirstAssignmentConformanceProvider

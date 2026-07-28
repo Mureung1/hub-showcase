@@ -38,7 +38,7 @@ import { codexChatIdentity } from '../../server/src/testing/codex-chat-test-supp
 
 const chatShellRoot = fileURLToPath(new URL('../', import.meta.url))
 
-test('prepared Browser invokes organize_sources beside AY Chat and settles inline Semantic Review', async ({
+test('prepared Browser invokes model_semester beside AY Chat and settles inline Semantic Review', async ({
   page,
 }) => {
   const browserPort = await availablePort()
@@ -61,7 +61,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
   await writeFile(path.join(workspaceRoot, 'assignment.txt'), evidenceText)
   await writeFile(
     path.join(workspaceRoot, 'syllabus.txt'),
-    '자료 정리 순서를 확인합니다.',
+    '학기 정보 정리 순서를 확인합니다.',
   )
   const limitPaths = Array.from(
     { length: 15 },
@@ -82,7 +82,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     workspaceRoot,
     '.agents',
     'skills',
-    'ay-ple-first-assignment',
+    'ay-ple-semester-modeling',
   )
   await mkdir(skillRoot, { recursive: true })
   await writeFile(
@@ -155,16 +155,16 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
       page.getByRole('main', { name: '자료 미리보기' }),
     ).toBeVisible()
     await expectThreePaneLayout(page)
-    const organizeSources = sources.getByRole('button', {
-      name: '선택한 자료 정리하기 · 0개',
+    const modelSemester = sources.getByRole('button', {
+      name: '선택한 자료로 학기 정보 정리하기 · 0개',
     })
     const assignmentSelection = sources.getByRole('checkbox', {
-      name: 'assignment.txt 정리 작업 선택',
+      name: 'assignment.txt 학기 정보 정리 자료 선택',
     })
     const syllabusSelection = sources.getByRole('checkbox', {
-      name: 'syllabus.txt 정리 작업 선택',
+      name: 'syllabus.txt 학기 정보 정리 자료 선택',
     })
-    await expect(organizeSources).toBeDisabled()
+    await expect(modelSemester).toBeDisabled()
     await expect(assignmentSelection).not.toBeChecked()
     await sources
       .getByRole('button', { name: 'assignment.txt 미리보기' })
@@ -182,26 +182,26 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     await expect(syllabusSelection).toBeChecked()
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 2개',
+        name: '선택한 자료로 학기 정보 정리하기 · 2개',
       }),
     ).toBeEnabled()
     for (const relativePath of limitPaths.slice(0, 14)) {
       await sources
         .getByRole('checkbox', {
-          name: `${relativePath} 정리 작업 선택`,
+          name: `${relativePath} 학기 정보 정리 자료 선택`,
         })
         .check()
     }
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 16개',
+        name: '선택한 자료로 학기 정보 정리하기 · 16개',
       }),
     ).toBeEnabled()
     await expect(assignmentSelection).toBeEnabled()
     await expect(
       sources.getByRole('checkbox', {
         name:
-          `${limitPaths[14]} 정리 작업 선택 불가: ` +
+          `${limitPaths[14]} 학기 정보 정리 자료 선택 불가: ` +
           '자료는 최대 16개까지 선택할 수 있습니다.',
       }),
     ).toBeDisabled()
@@ -209,20 +209,20 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     for (const relativePath of limitPaths.slice(0, 14)) {
       await sources
         .getByRole('checkbox', {
-          name: `${relativePath} 정리 작업 선택`,
+          name: `${relativePath} 학기 정보 정리 자료 선택`,
         })
         .uncheck()
     }
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 2개',
+        name: '선택한 자료로 학기 정보 정리하기 · 2개',
       }),
     ).toBeEnabled()
     const lectureSelection = sources.getByRole('checkbox', {
-      name: 'lecture.pdf 정리 작업 선택',
+      name: 'lecture.pdf 학기 정보 정리 자료 선택',
     })
     const slidesSelection = sources.getByRole('checkbox', {
-      name: 'slides.pptx 정리 작업 선택',
+      name: 'slides.pptx 학기 정보 정리 자료 선택',
     })
     await expect(lectureSelection).toBeEnabled()
     await expect(slidesSelection).toBeEnabled()
@@ -230,7 +230,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     await slidesSelection.check()
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 4개',
+        name: '선택한 자료로 학기 정보 정리하기 · 4개',
       }),
     ).toBeEnabled()
     await expect(page.locator('.paper-preview')).not.toHaveAttribute(
@@ -335,14 +335,14 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     })
     await sources
       .getByRole('button', {
-        name: '선택한 자료 정리하기 · 4개',
+        name: '선택한 자료로 학기 정보 정리하기 · 4개',
       })
       .click()
     await expect(
       page.getByRole('complementary', { name: 'AY Chat' }),
     ).toBeVisible()
     expect((await actionRequest).postDataJSON()).toEqual({
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [
         { relativePath: 'assignment.txt' },
         { relativePath: 'lecture.pdf' },
@@ -357,7 +357,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     })
     expect(actionRequestCount).toBe(1)
     const actionEntry = page.locator('.product-transcript-row.is-action')
-    await expect(actionEntry).toContainText('선택한 자료 정리하기')
+    await expect(actionEntry).toContainText('선택한 자료로 학기 정보 정리하기')
     await expect(actionEntry).toContainText('assignment.txt')
     await expect(actionEntry).toContainText('lecture.pdf')
     await expect(actionEntry).toContainText('slides.pptx')
@@ -373,7 +373,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     })
     expect(runtime.productInputs[0]?.text).toBe(
       [
-        'ActionInvocation: organize_sources',
+        'ActionInvocation: model_semester',
         'Selected SemesterWorkspace file references:',
         '- [assignment.txt](assignment.txt)',
         '- [lecture.pdf](lecture.pdf)',
@@ -382,25 +382,25 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
       ].join('\n'),
     )
     expect(runtime.productInputs[0]?.skill).toEqual({
-      name: 'ay-ple-first-assignment',
+      name: 'ay-ple-semester-modeling',
       path: path.join(
         workspaceRoot,
         '.agents',
         'skills',
-        'ay-ple-first-assignment',
+        'ay-ple-semester-modeling',
         'SKILL.md',
       ),
     })
     await expect(
       sources.getByRole('checkbox', {
         name:
-          'assignment.txt 정리 작업 선택 불가: ' +
+          'assignment.txt 학기 정보 정리 자료 선택 불가: ' +
           'AY 작업 중에는 선택을 바꿀 수 없습니다.',
       }),
     ).toBeDisabled()
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 4개',
+        name: '선택한 자료로 학기 정보 정리하기 · 4개',
       }),
     ).toBeDisabled()
     await expect(
@@ -423,7 +423,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     await selectedReload
     await expect(
       sources.getByRole('button', {
-        name: '선택한 자료 정리하기 · 3개',
+        name: '선택한 자료로 학기 정보 정리하기 · 3개',
       }),
     ).toBeDisabled()
     await expect(
@@ -768,7 +768,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     )
     expect(runtime.interrupts).toHaveLength(1)
     const retainedAction = sources.getByRole('button', {
-      name: '선택한 자료 정리하기 · 3개',
+      name: '선택한 자료로 학기 정보 정리하기 · 3개',
     })
     await expect(retainedAction).toBeEnabled()
     await expect(assignmentSelection).toBeChecked()
@@ -804,7 +804,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
     })
     await retainedAction.click()
     expect((await retryActionRequest).postDataJSON()).toEqual({
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [
         { relativePath: 'assignment.txt' },
         { relativePath: 'lecture.pdf' },
@@ -816,7 +816,7 @@ test('prepared Browser invokes organize_sources beside AY Chat and settles inlin
         serviceTier: 'fast',
       },
     })
-    await expect(page.getByText('재실행한 자료 정리를 완료하지 못했습니다.')).toBeVisible()
+    await expect(page.getByText('재실행한 학기 정보 정리를 완료하지 못했습니다.')).toBeVisible()
     await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
       'data-product-operation-phase',
       'failed',
@@ -969,7 +969,7 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
             turnId: 'turn-prepared-browser-retry',
             willRetry: false,
             code: 'turn_error',
-            displayMessage: '재실행한 자료 정리를 완료하지 못했습니다.',
+            displayMessage: '재실행한 학기 정보 정리를 완료하지 못했습니다.',
           }
           yield {
             type: 'turn.completed',
@@ -978,7 +978,7 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
             status: 'failed',
             failure: {
               code: 'turn_error',
-              displayMessage: '재실행한 자료 정리를 완료하지 못했습니다.',
+              displayMessage: '재실행한 학기 정보 정리를 완료하지 못했습니다.',
             },
           }
         })(),
@@ -1075,7 +1075,7 @@ class PreparedBrowserRuntime implements CodexWorkspaceRuntime {
   listEffectiveSkills() {
     return Promise.resolve([
       {
-        name: 'ay-ple-first-assignment',
+        name: 'ay-ple-semester-modeling',
         enabled: true,
         sourceRoot: this.skillRoot,
       },

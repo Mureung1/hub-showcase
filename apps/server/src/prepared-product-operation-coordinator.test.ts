@@ -13,9 +13,9 @@ import {
   createCodexChatComposition,
 } from './codex-chat.js'
 import {
-  OrganizeSourcesActionError,
-  type OrganizeSourcesAction,
-} from './organize-sources-action.js'
+  ModelSemesterActionError,
+  type ModelSemesterAction,
+} from './model-semester-action.js'
 import {
   createPreparedProductOperationCoordinator,
 } from './prepared-product-operation-coordinator.js'
@@ -57,8 +57,8 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
           permissionProfile: 'workspace_write',
           settings: validatedSettings,
           skill: {
-            name: 'ay-ple-first-assignment',
-            path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+            name: 'ay-ple-semester-modeling',
+            path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
           },
           text: 'prepared action input',
         },
@@ -92,8 +92,8 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
           serviceTier: 'fast',
         },
         skill: {
-          name: 'ay-ple-first-assignment',
-          path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+          name: 'ay-ple-semester-modeling',
+          path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
         },
         text: 'prepared action input',
       }
@@ -101,20 +101,20 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
     async revalidateForDispatch() {},
     // Deliberately model a stale/rogue callback shape: executor-owned settings
     // must never be recovered from an action result after validation.
-  } as unknown as OrganizeSourcesAction
+  } as unknown as ModelSemesterAction
   const frames: Array<
     TargetProductOperationFrame | ProductReviewFrame
   > = []
   const operations = createPreparedProductOperationCoordinator({
     service: composition.service,
-    organizeSourcesAction: action,
+    modelSemesterAction: action,
     assertWorkspaceActive: () => undefined,
   })
 
   try {
     await operations.invokeAction(
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'materials/notice.md' }],
         codexSettings: validatedSettings,
       },
@@ -141,8 +141,8 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
           permissionProfile: 'workspace_write',
           settings: validatedSettings,
           skill: {
-            name: 'ay-ple-first-assignment',
-            path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+            name: 'ay-ple-semester-modeling',
+            path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
           },
           text: 'prepared action input',
         },
@@ -195,20 +195,20 @@ test('the Product executor revalidates a prepared action after preparing and bef
       return {
         permissionProfile: 'workspace_write',
         skill: {
-          name: 'ay-ple-first-assignment',
-          path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+          name: 'ay-ple-semester-modeling',
+          path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
         },
         text: 'prepared action input',
       }
     },
     async revalidateForDispatch() {
       revalidationCalls += 1
-      throw new OrganizeSourcesActionError('action_context_stale')
+      throw new ModelSemesterActionError('action_context_stale')
     },
-  } satisfies OrganizeSourcesAction
+  } satisfies ModelSemesterAction
   const operations = createPreparedProductOperationCoordinator({
     service: composition.service,
-    organizeSourcesAction: action,
+    modelSemesterAction: action,
     assertWorkspaceActive: () => undefined,
     interactionRuntimeTerminal: async () => {
       runtimeTerminalCalls += 1
@@ -218,7 +218,7 @@ test('the Product executor revalidates a prepared action after preparing and bef
   try {
     const invocation = operations.invokeAction(
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'materials/notice.md' }],
       },
       {

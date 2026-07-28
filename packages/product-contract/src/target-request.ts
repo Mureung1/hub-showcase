@@ -22,7 +22,7 @@ export type ProductWorkspaceFileRef = {
 }
 
 export type TargetProductActionInvocationRequest = {
-  readonly action: 'organize_sources'
+  readonly action: 'model_semester'
   readonly files: readonly ProductWorkspaceFileRef[]
   readonly codexSettings?: ProductCodexTurnSettings
 }
@@ -39,7 +39,7 @@ export function decodeTargetProductActionInvocationRequest(
   ]
   if (
     !isExactObject(value, fields) ||
-    value.action !== 'organize_sources' ||
+    value.action !== 'model_semester' ||
     !Array.isArray(value.files) ||
     value.files.length < 1 ||
     value.files.length > PRODUCT_ACTION_FILE_REF_MAX_ENTRIES ||

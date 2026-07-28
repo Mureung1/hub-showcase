@@ -5,13 +5,54 @@ import path from 'node:path'
 import test from 'node:test'
 
 const skillUrl = new URL(
-  '../skills/ay-ple-first-assignment/SKILL.md',
+  '../skills/ay-ple-semester-modeling/SKILL.md',
   import.meta.url,
 )
 
-test('First Assignment Skill defines the AY-owned Review contract', async () => {
+const initialState = {
+  kind: 'ay-ple.semester-workspace',
+  formatVersion: 4,
+  workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+  semester: {
+    yearLevel: 2,
+    term: { key: 'fall', displayName: '2학기' },
+  },
+  snapshot: {
+    studentContext: {
+      campus: '서울',
+    },
+  },
+} as const
+
+function proposedState(submissionMethod: string) {
+  return {
+    ...initialState,
+    snapshot: {
+      ...initialState.snapshot,
+      courses: [
+        {
+          title: '문제해결글쓰기',
+          assignments: [
+            {
+              title: '첫 과제',
+              dueAt: {
+                knowledge: 'known',
+                value: '2026-08-03 23:59',
+              },
+              submissionMethod,
+            },
+          ],
+        },
+      ],
+    },
+  }
+}
+
+test('SemesterModeling Skill defines the incremental Review harness', async () => {
   const skill = await readFile(skillUrl, 'utf8')
 
+  assert.match(skill, /^name: ay-ple-semester-modeling$/m)
+  assert.match(skill, /^description: .*SemesterModel.*Review/m)
   assertInstructionOrder(skill)
   assert.deepEqual(parseInstructionContract(skill), {
     outcomes: {
@@ -24,6 +65,26 @@ test('First Assignment Skill defines the AY-owned Review contract', async () => 
     permissionBeforeWrite: true,
     checkpointOnlyWhenMeaningful: true,
   })
+  for (const phrase of [
+    '`workspace-state.json`',
+    '`snapshot`',
+    '`kind`',
+    '`formatVersion`',
+    '`workspaceId`',
+    '`semester`',
+    'incrementally reconcile',
+    '`known`',
+    '`unknown`',
+    '`ambiguous`',
+    'Course',
+    'Assignment',
+    'Exam',
+    'ScheduleEvent',
+    'evidence digests',
+    'If a reviewed input drifted',
+  ]) {
+    assert.match(skill, new RegExp(escapeRegex(phrase)))
+  }
   for (const field of [
     'relativePath',
     'contentDigest',
@@ -32,27 +93,45 @@ test('First Assignment Skill defines the AY-owned Review contract', async () => 
   ]) {
     assert.match(skill, new RegExp(`\\\`${field}\\\``))
   }
+  assert.match(
+    skill,
+    /Preserve facts\s+outside the current scope[\s\S]*full rebuild only when the user\s+explicitly requests that scope/,
+  )
+  assert.match(
+    skill,
+    /explicit file\s+references[\s\S]*conversation and\s+SemesterWorkspace context/i,
+  )
+  assert.match(
+    skill,
+    /Do not attach a fact to a Course[\s\S]*unless the sources or conversation establish it/,
+  )
   assert.doesNotMatch(
     skill,
-    /requestKey|workspaceId|workspace ID|courseId|Course ID|baseRevision|RawMaterial|StatePatch|UserConfirmation|request_user_input|scratch|revision-bound/i,
+    /ActionInvocation:\s*model_semester|require(?:d)? file (?:argument|path)|if (?:no|there (?:is|are) no) file.*(?:stop|ask)|request_user_input/i,
+  )
+  assert.doesNotMatch(
+    skill,
+    /courseId|baseRevision|RawMaterial|StatePatch|UserConfirmation|ModelingRun|revision-bound/i,
   )
 })
 
-test('accept applies the reviewed bytes through native authority after Review', async () => {
-  await withActualFile(async (actualPath) => {
-    const fixture = createFixture(actualPath, [{ outcome: 'accept' }])
+test('accept updates only the reviewed SemesterModel snapshot after Review', async () => {
+  await withWorkspaceState(async (statePath) => {
+    const fixture = createFixture(statePath, [{ outcome: 'accept' }])
+    const proposal = encodeState(proposedState('LMS 과제함'))
 
     const result = await executeInstructions({
       contract: await loadInstructionContract(),
-      initialProposal: 'reviewed assignment',
+      initialProposal: proposal,
       meaningfulCheckpoint: true,
+      reviseProposal: () => proposal,
       ports: fixture.ports,
     })
 
     assert.equal(result.outcome, 'accept')
-    assert.equal(await readFile(actualPath, 'utf8'), 'reviewed assignment')
+    assert.deepEqual(JSON.parse(await readFile(statePath, 'utf8')), proposedState('LMS 과제함'))
     assert.deepEqual(fixture.observation.proposalFileBytes, [
-      'original assignment',
+      encodeState(initialState),
     ])
     assert.deepEqual(fixture.observation.reviewIds, ['review_1'])
     assert.deepEqual(fixture.observation.app, {
@@ -66,38 +145,34 @@ test('accept applies the reviewed bytes through native authority after Review', 
   })
 })
 
-test('revise keeps bytes unchanged until a fresh proposal and card settle', async () => {
-  await withActualFile(async (actualPath) => {
-    const fixture = createFixture(actualPath, [
-      { outcome: 'revise', feedback: 'include the submission method' },
+test('revise preserves the envelope until a fresh proposal settles', async () => {
+  await withWorkspaceState(async (statePath) => {
+    const fixture = createFixture(statePath, [
+      { outcome: 'revise', feedback: '제출 위치를 더 구체적으로 적어 주세요.' },
       { outcome: 'accept' },
     ])
+    const firstProposal = encodeState(proposedState('LMS'))
+    const revisedProposal = encodeState(proposedState('LMS 과제함'))
 
     const result = await executeInstructions({
       contract: await loadInstructionContract(),
-      initialProposal: 'first proposal',
+      initialProposal: firstProposal,
       meaningfulCheckpoint: false,
+      reviseProposal: () => revisedProposal,
       ports: fixture.ports,
     })
 
     assert.equal(result.outcome, 'accept')
     assert.deepEqual(fixture.observation.proposalFileBytes, [
-      'original assignment',
-      'original assignment',
+      encodeState(initialState),
+      encodeState(initialState),
     ])
     assert.deepEqual(fixture.observation.reviewIds, ['review_1', 'review_2'])
     assert.deepEqual(fixture.observation.proposals, [
-      'first proposal',
-      'first proposal\nRevision feedback: include the submission method',
+      firstProposal,
+      revisedProposal,
     ])
-    assert.equal(
-      await readFile(actualPath, 'utf8'),
-      'first proposal\nRevision feedback: include the submission method',
-    )
-    assert.deepEqual(fixture.observation.app, {
-      fileWrites: 0,
-      gitCommands: 0,
-    })
+    assert.deepEqual(JSON.parse(await readFile(statePath, 'utf8')), proposedState('LMS 과제함'))
     assert.deepEqual(fixture.observation.native, {
       fileWrites: 1,
       gitCommands: 0,
@@ -105,23 +180,20 @@ test('revise keeps bytes unchanged until a fresh proposal and card settle', asyn
   })
 })
 
-test('reject leaves the actual file and Git history unchanged', async () => {
-  await withActualFile(async (actualPath) => {
-    const fixture = createFixture(actualPath, [{ outcome: 'reject' }])
+test('reject leaves SemesterModel and Git history unchanged', async () => {
+  await withWorkspaceState(async (statePath) => {
+    const fixture = createFixture(statePath, [{ outcome: 'reject' }])
 
     const result = await executeInstructions({
       contract: await loadInstructionContract(),
-      initialProposal: 'rejected proposal',
+      initialProposal: encodeState(proposedState('LMS 과제함')),
       meaningfulCheckpoint: true,
+      reviseProposal: (proposal) => proposal,
       ports: fixture.ports,
     })
 
     assert.equal(result.outcome, 'reject')
-    assert.equal(await readFile(actualPath, 'utf8'), 'original assignment')
-    assert.deepEqual(fixture.observation.app, {
-      fileWrites: 0,
-      gitCommands: 0,
-    })
+    assert.deepEqual(JSON.parse(await readFile(statePath, 'utf8')), initialState)
     assert.deepEqual(fixture.observation.native, {
       fileWrites: 0,
       gitCommands: 0,
@@ -129,24 +201,21 @@ test('reject leaves the actual file and Git history unchanged', async () => {
   })
 })
 
-test('accept cannot substitute for native file permission', async () => {
-  await withActualFile(async (actualPath) => {
-    const fixture = createFixture(actualPath, [{ outcome: 'accept' }], false)
+test('Review acceptance cannot substitute for native file permission', async () => {
+  await withWorkspaceState(async (statePath) => {
+    const fixture = createFixture(statePath, [{ outcome: 'accept' }], false)
 
     await assert.rejects(
       executeInstructions({
         contract: await loadInstructionContract(),
-        initialProposal: 'reviewed assignment',
+        initialProposal: encodeState(proposedState('LMS 과제함')),
         meaningfulCheckpoint: true,
+        reviseProposal: (proposal) => proposal,
         ports: fixture.ports,
       }),
       /native permission required/,
     )
-    assert.equal(await readFile(actualPath, 'utf8'), 'original assignment')
-    assert.deepEqual(fixture.observation.app, {
-      fileWrites: 0,
-      gitCommands: 0,
-    })
+    assert.deepEqual(JSON.parse(await readFile(statePath, 'utf8')), initialState)
     assert.deepEqual(fixture.observation.native, {
       fileWrites: 0,
       gitCommands: 0,
@@ -175,7 +244,7 @@ function parseInstructionContract(skill: string): InstructionContract {
   const bodies = Object.fromEntries(
     [
       ...skill.matchAll(
-        /- On `(accept|revise|reject)`,([\s\S]*?)(?=\n   - On|\n5\.)/g,
+        /- On `(accept|revise|reject)`,([\s\S]*?)(?=\n   - On|\n7\.)/g,
       ),
     ].map(([, outcome, body]) => [outcome, body]),
   ) as Partial<Record<Outcome, string>>
@@ -186,11 +255,12 @@ function parseInstructionContract(skill: string): InstructionContract {
       revise: inferOutcomeRule('revise', bodies.revise),
       reject: inferOutcomeRule('reject', bodies.reject),
     },
-    fileAuthority: /apply only the reviewed changes with native file tools/.test(
-      bodies.accept ?? '',
-    )
-      ? 'native'
-      : 'app',
+    fileAuthority:
+      /apply only the reviewed snapshot\s+changes with native file tools/.test(
+        bodies.accept ?? '',
+      )
+        ? 'native'
+        : 'app',
     gitAuthority:
       /never ask or expect it to edit\s+a SemesterWorkspace file or run Git/.test(
         skill,
@@ -213,31 +283,29 @@ function inferOutcomeRule(
   assert.ok(body, `Skill must define an explicit ${outcome} instruction`)
   const file = /apply only the reviewed/.test(body)
     ? 'apply'
-    : /keep the actual file unchanged/.test(body)
+    : /keep `workspace-state\.json` unchanged/.test(body)
       ? 'unchanged'
       : undefined
   assert.ok(file, `${outcome} must define its actual-file authority`)
 
-  const next = /fresh `propose_state_patch` call/.test(body)
+  const next = /fresh\s+`propose_state_patch` call/.test(body)
     ? 'fresh-call'
     : /verify the resulting file|stop applying this/.test(body)
       ? 'stop'
       : undefined
   assert.ok(next, `${outcome} must define fresh-call or stop behavior`)
 
-  return {
-    file,
-    next,
-  }
+  return { file, next }
 }
 
 function assertInstructionOrder(skill: string): void {
   const orderedInstructions = [
-    'Read the actual target file',
-    'Draft the proposed final content',
-    'before changing any actual file',
+    'Establish the current scope',
+    'Read `workspace-state.json`',
+    'Draft the proposed snapshot change',
+    'Before changing `workspace-state.json`',
     'Treat the structured result',
-    'After an accepted file change',
+    'After an accepted snapshot change',
   ]
   let previousIndex = -1
   for (const instruction of orderedInstructions) {
@@ -324,6 +392,7 @@ async function executeInstructions(input: {
   readonly contract: InstructionContract
   readonly initialProposal: string
   readonly meaningfulCheckpoint: boolean
+  readonly reviseProposal: (proposal: string, feedback: string) => string
   readonly ports: FixturePorts
 }): Promise<{ readonly outcome: 'accept' | 'reject' }> {
   let proposal = input.initialProposal
@@ -345,7 +414,7 @@ async function executeInstructions(input: {
     }
     if (rule.next === 'fresh-call') {
       assert.equal(result.outcome, 'revise')
-      proposal = `${proposal}\nRevision feedback: ${result.feedback}`
+      proposal = input.reviseProposal(proposal, result.feedback)
       continue
     }
     if (result.outcome === 'revise') {
@@ -355,17 +424,25 @@ async function executeInstructions(input: {
   }
 }
 
-async function withActualFile(
-  operation: (actualPath: string) => Promise<void>,
+async function withWorkspaceState(
+  operation: (statePath: string) => Promise<void>,
 ): Promise<void> {
   const root = await mkdtemp(
-    path.join(tmpdir(), 'ay-ple-first-assignment-contract-'),
+    path.join(tmpdir(), 'ay-ple-semester-modeling-contract-'),
   )
-  const actualPath = path.join(root, 'assignment.md')
-  await writeFile(actualPath, 'original assignment')
+  const statePath = path.join(root, 'workspace-state.json')
+  await writeFile(statePath, encodeState(initialState))
   try {
-    await operation(actualPath)
+    await operation(statePath)
   } finally {
     await rm(root, { force: true, recursive: true })
   }
+}
+
+function encodeState(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

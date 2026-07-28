@@ -31,7 +31,7 @@ import {
 import express from 'express'
 
 import type { PreparedServerApplication } from '../prepared-server-application.js'
-import { renderOrganizeSourcesActionText } from '../organize-sources-action.js'
+import { renderModelSemesterActionText } from '../model-semester-action.js'
 import { createPreparedServerApplication } from '../prepared-server-application.js'
 import {
   createInteractionBroker,
@@ -79,13 +79,31 @@ const initialAssignment = [
   '제출: 미정',
   '',
 ].join('\n')
-const acceptedAssignment = [
-  '# 첫 과제',
-  '',
-  '마감: 2026-08-03 23:59',
-  '제출: LMS 과제함',
-  '',
-].join('\n')
+const initialWorkspaceState = {
+  kind: 'ay-ple.semester-workspace',
+  formatVersion: 4,
+  workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+  semester: {
+    yearLevel: 2,
+    term: { key: 'fall', displayName: '2학기' },
+  },
+  snapshot: {
+    studentContext: {
+      campus: '서울',
+    },
+  },
+} as const
+const initialWorkspaceStateBytes =
+  `${JSON.stringify(initialWorkspaceState, null, 2)}\n`
+const modeledFirstAssignment = {
+  title: '첫 과제',
+  dueAt: {
+    knowledge: 'known',
+    value: '2026-08-03 23:59',
+  },
+  submissionMethod: 'LMS 과제함',
+} as const
+const modeledCourseTitle = '문제해결글쓰기'
 const syllabus = [
   '# 문제해결글쓰기',
   '',
@@ -95,7 +113,7 @@ const syllabus = [
 ].join('\n')
 
 test(
-  'invokes public organize_sources through exact Runtime, same-Turn Review, and AY-owned checkpoint',
+  'invokes public model_semester through exact Runtime, same-Turn Review, and AY-owned checkpoint',
   { timeout: 120_000 },
   async () => {
     const fixture = await prepareWorkspace()
@@ -144,7 +162,7 @@ test(
       const baseUrl = `http://127.0.0.1:${listener.port}`
       const original = await mutationSnapshot(fixture.workspaceRoot)
 
-      const acceptedTrace = await invokePublicOrganizeSources(baseUrl)
+      const acceptedTrace = await invokePublicModelSemester(baseUrl)
       const acceptedOperation = await acceptedTrace.until(
         (frame) => frame.type === 'operation.accepted',
       )
@@ -184,7 +202,7 @@ test(
       await assertAcceptedCheckpoint(fixture)
       const accepted = await mutationSnapshot(fixture.workspaceRoot)
 
-      const rejectedTrace = await invokePublicOrganizeSources(baseUrl)
+      const rejectedTrace = await invokePublicModelSemester(baseUrl)
       const rejectedReview = await rejectedTrace.until(
         (frame) => frame.type === 'review.requested',
       )
@@ -386,6 +404,10 @@ async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
   await git(workspaceRoot, ['config', 'user.email', 'trace@ay-ple.invalid'])
   await Promise.all([
     writeFile(path.join(workspaceRoot, 'assignment.md'), initialAssignment),
+    writeFile(
+      path.join(workspaceRoot, 'workspace-state.json'),
+      initialWorkspaceStateBytes,
+    ),
     writeFile(path.join(workspaceRoot, 'syllabus.txt'), syllabus),
     writeFile(path.join(workspaceRoot, 'dirty-sentinel.txt'), 'tracked\n'),
     writeFile(
@@ -412,6 +434,7 @@ async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
     'add',
     '--',
     'assignment.md',
+    'workspace-state.json',
     'syllabus.txt',
     'dirty-sentinel.txt',
     ...selectedActionPaths,
@@ -447,7 +470,7 @@ async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
     await gitText(workspaceRoot, ['rev-parse', 'HEAD']),
     initialScaffoldHead,
   )
-  await assertInstalledFirstAssignmentSkillContract(workspaceRoot)
+  await assertInstalledSemesterModelingSkillContract(workspaceRoot)
   return {
     root,
     workspaceRoot,
@@ -506,14 +529,14 @@ async function readActiveLifecycle(workspaceRoot: string) {
   }
 }
 
-async function invokePublicOrganizeSources(
+async function invokePublicModelSemester(
   baseUrl: string,
 ): Promise<NdjsonTrace> {
   const response = await fetch(`${baseUrl}/api/product/actions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      action: 'organize_sources',
+      action: 'model_semester',
       files: selectedActionPaths.map((relativePath) => ({ relativePath })),
     }),
   })
@@ -549,12 +572,12 @@ async function assertFirstAssignmentConformanceProviderEvidence(
 ): Promise<void> {
   const firstRequest = journal.requests[0]
   assert.ok(firstRequest)
-  const actionText = renderOrganizeSourcesActionText(
+  const actionText = renderModelSemesterActionText(
     selectedActionPaths.map((relativePath) => ({ relativePath })),
   )
   const skillPath = path.join(
     fixture.workspaceRoot,
-    '.agents/skills/ay-ple-first-assignment/SKILL.md',
+    '.agents/skills/ay-ple-semester-modeling/SKILL.md',
   )
   const skillBody = await readFile(skillPath, 'utf8')
   const skillIndex = firstRequest.userTexts.findIndex((text) =>
@@ -565,7 +588,7 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   assert.notEqual(textIndex, -1)
   const skillBlock = firstRequest.userTexts[skillIndex] as string
   assert.equal(skillIndex, textIndex + 1)
-  assert.match(skillBlock, /<name>ay-ple-first-assignment<\/name>/u)
+  assert.match(skillBlock, /<name>ay-ple-semester-modeling<\/name>/u)
   assert.equal(skillBlock.includes(`<path>${skillPath}</path>`), true)
   assert.equal(skillBlock.includes(skillBody), true)
   assert.equal(
@@ -575,7 +598,7 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   const expectedRuntimeInput = [
     {
       type: 'skill',
-      name: 'ay-ple-first-assignment',
+      name: 'ay-ple-semester-modeling',
       path: skillPath,
     },
     { type: 'text', text: actionText },
@@ -597,21 +620,23 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   for (const selected of selectedActionPaths) {
     assert.equal(readCommand.includes(selected), true)
   }
+  assert.match(readCommand, /workspace-state\.json/u)
   assert.equal(readCommand.includes(unselectedActionPath), false)
 
   const readEvidence = parseJsonObjectOutput(
     journal.requests.flatMap((request) =>
       request.functionOutputs.map(({ output }) => output),
     ),
-    'selectedFileDigests',
+    'inputFileDigests',
   )
-  assert.deepEqual(readEvidence.selectedFileDigests, {
+  assert.deepEqual(readEvidence.inputFileDigests, {
     [selectedActionPaths[0]]: sha256(
       await readFile(path.join(fixture.workspaceRoot, selectedActionPaths[0])),
     ),
     [selectedActionPaths[1]]: sha256(
       await readFile(path.join(fixture.workspaceRoot, selectedActionPaths[1])),
     ),
+    'workspace-state.json': sha256(Buffer.from(initialWorkspaceStateBytes)),
   })
 
   assert.deepEqual(
@@ -651,7 +676,8 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   assert.ok(mutationCall)
   assert.equal(mutationCall.name, 'exec_command')
   const mutationCommand = String(mutationCall.arguments.cmd)
-  assert.match(mutationCommand, /assignment\.md/u)
+  assert.match(mutationCommand, /workspace-state\.json/u)
+  assert.doesNotMatch(mutationCommand, /assignment\.md/u)
   assert.match(mutationCommand, /git[^&]+commit/u)
   for (const unrelated of [
     'dirty-sentinel.txt',
@@ -792,7 +818,7 @@ async function assertPublicFramesSafe(
     fixture.workspaceRoot,
     path.join(
       fixture.workspaceRoot,
-      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+      '.agents/skills/ay-ple-semester-modeling/SKILL.md',
     ),
   ]) {
     assert.equal(serialized.includes(privateValue), false)
@@ -845,11 +871,11 @@ async function assertBootstrapOutput(fixture: WorkspaceFixture): Promise<void> {
     await readFile(
       path.join(
         fixture.workspaceRoot,
-        '.agents/skills/ay-ple-first-assignment/SKILL.md',
+        '.agents/skills/ay-ple-semester-modeling/SKILL.md',
       ),
     ),
     await readFile(
-      path.join(repositoryRoot, 'skills/ay-ple-first-assignment/SKILL.md'),
+      path.join(repositoryRoot, 'skills/ay-ple-semester-modeling/SKILL.md'),
     ),
   )
   assert.match(
@@ -867,29 +893,28 @@ async function assertBootstrapOutput(fixture: WorkspaceFixture): Promise<void> {
       .filter(Boolean)
       .sort(),
     [
-      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+      '.agents/skills/ay-ple-semester-modeling/SKILL.md',
       '.codex/config.toml',
       'AGENTS.md',
-      'workspace-state.json',
     ],
   )
 }
 
-async function assertInstalledFirstAssignmentSkillContract(
+async function assertInstalledSemesterModelingSkillContract(
   workspaceRoot: string,
 ): Promise<void> {
   const source = await readFile(
     path.join(
       workspaceRoot,
-      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+      '.agents/skills/ay-ple-semester-modeling/SKILL.md',
     ),
     'utf8',
   )
   for (const requiredInstruction of [
-    'call\n   `propose_state_patch` before changing any actual file',
-    'On `accept`',
-    'On `revise`, keep the actual file unchanged',
-    'On `reject`, keep the actual file unchanged',
+    'Before changing `workspace-state.json`, call `propose_state_patch`',
+    'On `accept`, obtain any required native file permission',
+    'On `revise`, keep `workspace-state.json` unchanged',
+    'On `reject`, keep `workspace-state.json` unchanged',
     'commit only the intended paths',
     'never ask or expect it to edit\na SemesterWorkspace file or run Git for AY',
   ]) {
@@ -922,7 +947,7 @@ function createFirstAssignmentSkillDriver(): FirstAssignmentSkillDriver {
 function reviewRequest(contentDigest: string): ProposeStatePatchRequest {
   return {
     summary: '첫 과제 정보를 정리합니다.',
-    question: '이 변경을 실제 과제 파일에 반영할까요?',
+    question: '이 변경을 학기 정보에 반영할까요?',
     changes: [
       {
         label: '마감',
@@ -1361,23 +1386,85 @@ async function assertUnchanged(
 }
 
 async function applyAcceptedChange(workspaceRoot: string): Promise<void> {
-  await writeFile(path.join(workspaceRoot, 'assignment.md'), acceptedAssignment)
-  await git(workspaceRoot, ['add', '--', 'assignment.md'])
+  const statePath = path.join(workspaceRoot, 'workspace-state.json')
+  const currentState = JSON.parse(await readFile(statePath, 'utf8')) as {
+    readonly snapshot: Readonly<Record<string, unknown>>
+  }
+  const currentCourses = Array.isArray(currentState.snapshot.courses)
+    ? currentState.snapshot.courses
+    : []
+  const matchingCourse = currentCourses.find(
+    (course) =>
+      isRecord(course) &&
+      course.title === modeledCourseTitle,
+  )
+  const currentAssignments =
+    isRecord(matchingCourse) && Array.isArray(matchingCourse.assignments)
+      ? matchingCourse.assignments
+      : []
+  const updatedCourse = {
+    ...(isRecord(matchingCourse) ? matchingCourse : {}),
+    title: modeledCourseTitle,
+    assignments: [
+      ...currentAssignments.filter(
+        (assignment) =>
+          !isRecord(assignment) ||
+          assignment.title !== modeledFirstAssignment.title,
+      ),
+      modeledFirstAssignment,
+    ],
+  }
+  const updatedState = {
+    ...currentState,
+    snapshot: {
+      ...currentState.snapshot,
+      courses: [
+        ...currentCourses.filter(
+          (course) =>
+            !isRecord(course) ||
+            course.title !== modeledCourseTitle,
+        ),
+        updatedCourse,
+      ],
+    },
+  }
+  await writeFile(statePath, `${JSON.stringify(updatedState, null, 2)}\n`)
+  await git(workspaceRoot, ['add', '--', 'workspace-state.json'])
   await git(workspaceRoot, [
     'commit',
     '--quiet',
     '--only',
     '-m',
-    'feat: record accepted first assignment',
+    'feat: model accepted first assignment',
     '--',
-    'assignment.md',
+    'workspace-state.json',
   ])
 }
 
 async function assertAcceptedCheckpoint(fixture: WorkspaceFixture): Promise<void> {
   assert.equal(
     await readFile(path.join(fixture.workspaceRoot, 'assignment.md'), 'utf8'),
-    acceptedAssignment,
+    initialAssignment,
+  )
+  assert.deepEqual(
+    JSON.parse(
+      await readFile(
+        path.join(fixture.workspaceRoot, 'workspace-state.json'),
+        'utf8',
+      ),
+    ),
+    {
+      ...initialWorkspaceState,
+      snapshot: {
+        ...initialWorkspaceState.snapshot,
+        courses: [
+          {
+            title: modeledCourseTitle,
+            assignments: [modeledFirstAssignment],
+          },
+        ],
+      },
+    },
   )
   assert.equal(
     await gitText(fixture.workspaceRoot, [
@@ -1386,11 +1473,11 @@ async function assertAcceptedCheckpoint(fixture: WorkspaceFixture): Promise<void
       '--name-only',
       'HEAD',
     ]),
-    'assignment.md',
+    'workspace-state.json',
   )
   assert.equal(
     await gitText(fixture.workspaceRoot, ['log', '-1', '--pretty=%s']),
-    'feat: record accepted first assignment',
+    'feat: model accepted first assignment',
   )
   assert.equal(
     await readFile(
@@ -1637,6 +1724,10 @@ async function gitText(root: string, args: readonly string[]): Promise<string> {
 
 function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex')
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function escapeRegex(value: string): string {

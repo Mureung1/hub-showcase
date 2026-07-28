@@ -61,12 +61,12 @@ test('runs the production bridge against exact Codex and the official local prov
       canonicalWorkspace,
       '.agents',
       'skills',
-      'ay-ple-first-assignment',
+      'ay-ple-semester-modeling',
       'SKILL.md',
     )
     const skillBody = 'EXACT_SKILL_BODY_SENTINEL'
     const actionText = [
-      'ActionInvocation: organize_sources',
+      'ActionInvocation: model_semester',
       'Selected SemesterWorkspace file references:',
       '- [assignment-notice.md](materials/assignment-notice.md)',
     ].join('\n')
@@ -79,7 +79,7 @@ test('runs the production bridge against exact Codex and the official local prov
         skillPath,
         [
           '---',
-          'name: ay-ple-first-assignment',
+          'name: ay-ple-semester-modeling',
           'description: Exact local-provider test Skill.',
           '---',
           '',
@@ -179,7 +179,7 @@ test('runs the production bridge against exact Codex and the official local prov
         threadId: thread.threadId,
         permissionProfile: 'workspace_write',
         skill: {
-          name: 'ay-ple-first-assignment',
+          name: 'ay-ple-semester-modeling',
           path: skillPath,
         },
         text: actionText,
@@ -231,7 +231,7 @@ test('runs the production bridge against exact Codex and the official local prov
     const skillBlock = actionRequest.userTexts[skillIndex] as string
     assert.match(
       skillBlock,
-      /<name>ay-ple-first-assignment<\/name>/u,
+      /<name>ay-ple-semester-modeling<\/name>/u,
     )
     assert.equal(skillBlock.includes(`<path>${skillPath}</path>`), true)
     assert.equal(skillBlock.includes(skillBody), true)

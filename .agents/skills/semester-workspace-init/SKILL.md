@@ -1,6 +1,6 @@
 ---
 name: semester-workspace-init
-description: Prepare or update a user-owned Git SemesterWorkspace before AY-PLE starts, including its v4 identity, minimal instructions, built-in Skill, required Interaction MCP declaration, and reviewable checkpoints. Use from a native Codex client opened at the AY-PLE hub when a user creates, adopts, or refreshes a semester workspace.
+description: Prepare a user-owned Git SemesterWorkspace before AY-PLE starts, including its v4 identity, minimal instructions, complete built-in Skill catalog, required Interaction MCP declaration, and reviewable checkpoints. Use from a native Codex client opened at the AY-PLE hub when a user creates or adopts a semester workspace.
 ---
 
 # Semester Workspace Init
@@ -50,7 +50,8 @@ Obtain these values from the user before running the bootstrap:
    by the script. Do not start the App unless the user separately asks, and do
    not claim that final text changed the WorkspaceRegistry.
 
-Treat a rerun of the same command as an update check. Leave exact managed
-resources unchanged and do not create an empty commit. Refresh only an
-otherwise exact managed MCP block whose root-relative adapter command became
-stale. Require explicit resolution for every other managed-byte difference.
+Treat a rerun of the same command as an idempotence and safety check. Leave
+exact managed resources unchanged and do not create an empty commit. Correct
+only an otherwise exact managed MCP block whose root-relative adapter command
+became stale. Require explicit resolution for every other managed-byte
+difference.
