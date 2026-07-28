@@ -1,20 +1,33 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
+import { encrypt, decrypt } from '../lib/crypto.js'
 
 const router = Router()
+
+const SERVICE_NAME_MAX_LENGTH = 50
+const BANK_NAME_MAX_LENGTH = 30
+const ACCOUNT_HOLDER_NAME_MAX_LENGTH = 30
+const ACCOUNT_NUMBER_MAX_LENGTH = 30
+const ACCOUNT_NUMBER_PATTERN = /^[0-9-]+$/
 
 function validateSubscriptionInput(body) {
   const errors = []
   const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = body
 
   if (!serviceName || typeof serviceName !== 'string') errors.push('serviceName은 필수 문자열입니다.')
+  else if (serviceName.length > SERVICE_NAME_MAX_LENGTH) errors.push(`serviceName은 ${SERVICE_NAME_MAX_LENGTH}자 이하여야 합니다.`)
   if (!Number.isInteger(subAmount) || subAmount <= 0) errors.push('subAmount는 양의 정수여야 합니다.')
   if (!Number.isInteger(billingDay) || billingDay < 1 || billingDay > 31) errors.push('billingDay는 1~31 사이의 정수여야 합니다.')
   if (!Number.isInteger(memberCount) || memberCount <= 0) errors.push('memberCount는 양의 정수여야 합니다.')
   if (!bankName || typeof bankName !== 'string') errors.push('bankName은 필수 문자열입니다.')
+  else if (bankName.length > BANK_NAME_MAX_LENGTH) errors.push(`bankName은 ${BANK_NAME_MAX_LENGTH}자 이하여야 합니다.`)
   if (!accountNumber || typeof accountNumber !== 'string') errors.push('accountNumber는 필수 문자열입니다.')
+  else if (accountNumber.length > ACCOUNT_NUMBER_MAX_LENGTH || !ACCOUNT_NUMBER_PATTERN.test(accountNumber)) {
+    errors.push(`accountNumber는 ${ACCOUNT_NUMBER_MAX_LENGTH}자 이하의 숫자/하이픈 조합이어야 합니다.`)
+  }
   if (!accountHolderName || typeof accountHolderName !== 'string') errors.push('accountHolderName은 필수 문자열입니다.')
+  else if (accountHolderName.length > ACCOUNT_HOLDER_NAME_MAX_LENGTH) errors.push(`accountHolderName은 ${ACCOUNT_HOLDER_NAME_MAX_LENGTH}자 이하여야 합니다.`)
 
   return errors
 }
@@ -23,8 +36,9 @@ function validatePartialSubscriptionInput(body) {
   const errors = []
   const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = body
 
-  if (serviceName !== undefined && (!serviceName || typeof serviceName !== 'string')) {
-    errors.push('serviceName은 필수 문자열입니다.')
+  if (serviceName !== undefined) {
+    if (!serviceName || typeof serviceName !== 'string') errors.push('serviceName은 필수 문자열입니다.')
+    else if (serviceName.length > SERVICE_NAME_MAX_LENGTH) errors.push(`serviceName은 ${SERVICE_NAME_MAX_LENGTH}자 이하여야 합니다.`)
   }
   if (subAmount !== undefined && (!Number.isInteger(subAmount) || subAmount <= 0)) {
     errors.push('subAmount는 양의 정수여야 합니다.')
@@ -35,14 +49,19 @@ function validatePartialSubscriptionInput(body) {
   if (memberCount !== undefined && (!Number.isInteger(memberCount) || memberCount <= 0)) {
     errors.push('memberCount는 양의 정수여야 합니다.')
   }
-  if (bankName !== undefined && (!bankName || typeof bankName !== 'string')) {
-    errors.push('bankName은 필수 문자열입니다.')
+  if (bankName !== undefined) {
+    if (!bankName || typeof bankName !== 'string') errors.push('bankName은 필수 문자열입니다.')
+    else if (bankName.length > BANK_NAME_MAX_LENGTH) errors.push(`bankName은 ${BANK_NAME_MAX_LENGTH}자 이하여야 합니다.`)
   }
-  if (accountNumber !== undefined && (!accountNumber || typeof accountNumber !== 'string')) {
-    errors.push('accountNumber는 필수 문자열입니다.')
+  if (accountNumber !== undefined) {
+    if (!accountNumber || typeof accountNumber !== 'string') errors.push('accountNumber는 필수 문자열입니다.')
+    else if (accountNumber.length > ACCOUNT_NUMBER_MAX_LENGTH || !ACCOUNT_NUMBER_PATTERN.test(accountNumber)) {
+      errors.push(`accountNumber는 ${ACCOUNT_NUMBER_MAX_LENGTH}자 이하의 숫자/하이픈 조합이어야 합니다.`)
+    }
   }
-  if (accountHolderName !== undefined && (!accountHolderName || typeof accountHolderName !== 'string')) {
-    errors.push('accountHolderName은 필수 문자열입니다.')
+  if (accountHolderName !== undefined) {
+    if (!accountHolderName || typeof accountHolderName !== 'string') errors.push('accountHolderName은 필수 문자열입니다.')
+    else if (accountHolderName.length > ACCOUNT_HOLDER_NAME_MAX_LENGTH) errors.push(`accountHolderName은 ${ACCOUNT_HOLDER_NAME_MAX_LENGTH}자 이하여야 합니다.`)
   }
 
   return errors
@@ -66,8 +85,8 @@ router.post('/', requireAuth, async (req, res, next) => {
         billingDay,
         memberCount,
         bankName,
-        accountNumber,
-        accountHolderName,
+        accountNumber: encrypt(accountNumber),
+        accountHolderName: encrypt(accountHolderName),
         ownerId: req.user.id,
       },
     })
@@ -83,8 +102,8 @@ router.post('/', requireAuth, async (req, res, next) => {
       joinUrl: `${process.env.FRONTEND_URL}/join/${subscription.id}`,
       bankAccount: {
         bankName: subscription.bankName,
-        accountNumber: subscription.accountNumber,
-        accountHolderName: subscription.accountHolderName,
+        accountNumber,
+        accountHolderName,
       },
       createdAt: subscription.createdAt,
     })
@@ -207,8 +226,8 @@ router.get('/:id', requireAuth, async (req, res, next) => {
       response.joinUrl = `${process.env.FRONTEND_URL}/join/${subscription.id}`
       response.bankAccount = {
         bankName: subscription.bankName,
-        accountNumber: subscription.accountNumber,
-        accountHolderName: subscription.accountHolderName,
+        accountNumber: decrypt(subscription.accountNumber),
+        accountHolderName: decrypt(subscription.accountHolderName),
       }
     }
 
@@ -250,8 +269,8 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     if (billingDay !== undefined) data.billingDay = billingDay
     if (memberCount !== undefined) data.memberCount = memberCount
     if (bankName !== undefined) data.bankName = bankName
-    if (accountNumber !== undefined) data.accountNumber = accountNumber
-    if (accountHolderName !== undefined) data.accountHolderName = accountHolderName
+    if (accountNumber !== undefined) data.accountNumber = encrypt(accountNumber)
+    if (accountHolderName !== undefined) data.accountHolderName = encrypt(accountHolderName)
 
     const updated = await prisma.subscription.update({
       where: { id: subscription.id },
@@ -269,8 +288,8 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       joinUrl: `${process.env.FRONTEND_URL}/join/${updated.id}`,
       bankAccount: {
         bankName: updated.bankName,
-        accountNumber: updated.accountNumber,
-        accountHolderName: updated.accountHolderName,
+        accountNumber: decrypt(updated.accountNumber),
+        accountHolderName: decrypt(updated.accountHolderName),
       },
       createdAt: updated.createdAt,
     })

@@ -1,6 +1,12 @@
 import { Router } from 'express'
+import { Prisma } from '@prisma/client'
 import { requireAuth } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
+import { decrypt } from '../lib/crypto.js'
+
+function isUniqueConstraintError(error) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+}
 
 const router = Router()
 
@@ -54,20 +60,30 @@ router.post('/:id/settlements', requireAuth, async (req, res, next) => {
 
     const amount = Math.round(subscription.subAmount / subscription.memberCount)
 
-    const settlement = await prisma.settlement.create({
-      data: {
-        subscriptionId: subscription.id,
-        billingMonth,
-        members: {
-          create: partyMembers.map((partyMember) => ({
-            userId: partyMember.userId,
-            name: partyMember.user.username,
-            amount,
-          })),
+    let settlement
+    try {
+      settlement = await prisma.settlement.create({
+        data: {
+          subscriptionId: subscription.id,
+          billingMonth,
+          members: {
+            create: partyMembers.map((partyMember) => ({
+              userId: partyMember.userId,
+              name: partyMember.user.username,
+              amount,
+            })),
+          },
         },
-      },
-      include: { members: true },
-    })
+        include: { members: true },
+      })
+    } catch (e) {
+      if (isUniqueConstraintError(e)) {
+        const err = new Error('이번 달 정산이 이미 존재합니다.')
+        err.status = 409
+        return next(err)
+      }
+      throw e
+    }
 
     res.status(201).json({
       id: settlement.id,
@@ -84,7 +100,7 @@ router.post('/:id/settlements', requireAuth, async (req, res, next) => {
         transferLink: buildTransferLink({
           amount: member.amount,
           bankName: subscription.bankName,
-          accountNumber: subscription.accountNumber,
+          accountNumber: decrypt(subscription.accountNumber),
         }),
       })),
       createdAt: settlement.createdAt,
@@ -158,7 +174,7 @@ router.get('/:id/settlements', requireAuth, async (req, res, next) => {
         myTransferLink: buildTransferLink({
           amount: settlement.members[0].amount,
           bankName: subscription.bankName,
-          accountNumber: subscription.accountNumber,
+          accountNumber: decrypt(subscription.accountNumber),
         }),
         createdAt: settlement.createdAt,
       })),
@@ -246,7 +262,7 @@ router.get('/:id/settlements/:settlementId', requireAuth, async (req, res, next)
           transferLink: buildTransferLink({
             amount: myMember.amount,
             bankName: subscription.bankName,
-            accountNumber: subscription.accountNumber,
+            accountNumber: decrypt(subscription.accountNumber),
           }),
         },
       ],
