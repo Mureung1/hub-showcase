@@ -1,5 +1,6 @@
 import { prisma } from '../config/prismaClient.js'
 import { getReceivedTeamInvites } from './teamInviteService.js'
+import { getReceivedMatchRequests } from './matchRequestService.js'
 
 // 로그인 유저 기준으로 안읽은 메시지가 있는 채팅방 목록 + 대기중인 팀 초대 목록을 함께 조회한다.
 // 헤더 알림 벨에서 사용할 데이터로, 안읽은 메시지가 1개 이상인 채팅방만 결과에 포함한다
@@ -55,9 +56,12 @@ export async function getNotificationSummary(userId) {
     createdAt: invite.createdAt,
   }))
 
-  // 4. totalCount = 모든 안읽은 메시지 개수 합 + 대기 초대 개수
-  const unreadMessageTotal = unreadChats.reduce((sum, chat) => sum + chat.unreadCount, 0)
-  const totalCount = unreadMessageTotal + pendingInvites.length
+  // 4. 내가 리더인 팀이 받은 대기중인 매칭 신청("관심 보내기") 목록도 기존 함수를 그대로 재사용
+  const pendingMatchRequests = await getReceivedMatchRequests(userId)
 
-  return { totalCount, unreadChats, pendingInvites }
+  // 5. totalCount = 모든 안읽은 메시지 개수 합 + 대기 초대 개수 + 대기 매칭 신청 개수
+  const unreadMessageTotal = unreadChats.reduce((sum, chat) => sum + chat.unreadCount, 0)
+  const totalCount = unreadMessageTotal + pendingInvites.length + pendingMatchRequests.length
+
+  return { totalCount, unreadChats, pendingInvites, pendingMatchRequests }
 }

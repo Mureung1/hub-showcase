@@ -1,0 +1,157 @@
+.team-match-detail-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-cream);
+  padding: 48px 40px;
+}
+
+.team-match-detail-back-link {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-bottom: 24px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-warm-gray);
+  cursor: pointer;
+}
+
+.team-match-detail-status {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-warm-gray);
+  text-align: center;
+  margin: 40px 0;
+}
+
+.team-match-detail-status-error {
+  color: var(--coral-primary);
+}
+
+.team-match-detail-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin: 0 0 40px;
+}
+
+.team-match-detail-member-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  width: 100%;
+  max-width: 880px;
+  margin-bottom: 40px;
+}
+
+.team-match-detail-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 200px;
+  text-align: center;
+}
+
+.team-match-detail-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  margin-bottom: 14px;
+}
+
+.team-match-detail-avatar-mint { background: #a8dfc3; }
+.team-match-detail-avatar-peach { background: #f0b49a; }
+.team-match-detail-avatar-pink { background: #f3aec8; }
+.team-match-detail-avatar-blue { background: #a9c8ef; }
+.team-match-detail-avatar-yellow { background: #f5c86a; }
+
+.team-match-detail-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin-bottom: 6px;
+}
+
+.team-match-detail-line1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-brown-dark);
+  margin-bottom: 4px;
+}
+
+.team-match-detail-line2 {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.65;
+}
+
+.team-match-detail-hobby-text {
+  color: var(--coral-primary);
+}
+
+.team-match-detail-ideal-text {
+  color: var(--dating-pink);
+}
+
+.team-match-detail-percent {
+  font-size: 22px;
+  font-weight: 800;
+  color: #c15d82;
+  margin-bottom: 32px;
+}
+
+.team-match-detail-interest-button {
+  width: 100%;
+  max-width: 420px;
+  padding: 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--coral-primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.team-match-detail-interest-button:hover {
+  background: #e37e56;
+}
+
+.team-match-detail-interest-button:disabled {
+  background: var(--coral-primary);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.team-match-detail-interest-button:disabled:hover {
+  background: var(--coral-primary);
+}
+
+@media (max-width: 720px) {
+  .team-match-detail-page {
+    padding: 24px 16px;
+  }
+
+  .team-match-detail-member-row {
+    gap: 24px;
+  }
+
+  .team-match-detail-member {
+    width: 140px;
+  }
+
+  .team-match-detail-avatar {
+    width: 68px;
+    height: 68px;
+  }
+}
