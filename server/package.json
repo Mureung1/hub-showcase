@@ -6,7 +6,8 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
@@ -16,5 +17,8 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
   }
 }

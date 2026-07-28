@@ -83,6 +83,14 @@ h2 {
   color: var(--brand-blue);
 }
 
+.reader-back-nav {
+  margin-top: var(--space-xl);
+}
+
+.reader-back-nav .back-link {
+  margin-bottom: 0;
+}
+
 .page-subtitle {
   color: var(--text-secondary);
   font-size: 14px;
@@ -317,6 +325,10 @@ h2 {
   align-items: center;
   gap: var(--space-sm);
   margin-bottom: var(--space-sm);
+}
+
+.card-source .badge {
+  margin-left: auto;
 }
 
 .source-logo {
@@ -590,6 +602,12 @@ h2 {
   font-weight: 600;
 }
 
+.bottom-sheet-compare-loading {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 .bottom-sheet-insight {
   border-left: 4px solid var(--brand-blue);
   background: var(--surface-bg);
@@ -611,6 +629,36 @@ h2 {
   color: var(--text-primary);
 }
 
+.bottom-sheet-memo {
+  margin-bottom: var(--space-md);
+}
+
+.bottom-sheet-memo-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  cursor: pointer;
+}
+
+.bottom-sheet-memo-input {
+  width: 100%;
+  min-height: 60px;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  resize: vertical;
+}
+
 .bottom-sheet-close {
   display: block;
   width: 100%;
@@ -627,7 +675,7 @@ h2 {
 }
 
 /* ---------- Decision Buttons ---------- */
-/* 2026-07-15: sticky 하단 고정 → 기사 최하단 정적 배치로 전환(docs/checklist.md
+/* 2026-07-15: sticky 하단 고정 → 기사 최하단 정적 배치로 전환(docs/plan.md
    "기능③ 완독 후 투자심리 인터랙션"). 문서 흐름을 따르는 정적 배치라 스크롤 중
    본문과 겹칠 일이 없어 sticky용 배경/여백 보정이 필요 없다. */
 .decision-panel {
@@ -640,6 +688,14 @@ h2 {
   color: var(--text-secondary);
   margin-bottom: var(--space-sm);
   text-align: center;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+}
+
+.decision-prompt:focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
 }
 
 .decision-buttons {
@@ -690,7 +746,7 @@ h2 {
 
 /* ---------- Save Toast (저장 완료 피드백, 화면4) ---------- */
 /* 화면 상단에 배치: 하단은 투자 판단 버튼이 문서 흐름상 정적 배치돼 있어
-   (docs/checklist.md 기능③) 바텀시트가 닫힌 직후에는 그 버튼들이 뷰포트
+   (docs/plan.md 기능③) 바텀시트가 닫힌 직후에는 그 버튼들이 뷰포트
    하단에 있는 경우가 많다. 토스트를 하단에 띄우면 방금 누른 버튼과 겹치므로
    상단에 띄운다. */
 .save-toast {
@@ -733,105 +789,304 @@ h2 {
   margin-bottom: var(--space-md);
 }
 
-/* ---------- History List (인사이트 노트, 2026-07-15 카드형 아코디언 재설계) ---------- */
-/* 기본 상태는 나의 판단 vs marketSentiment만 심플 노출하고, summaryBullets/insight/
-   원문 링크는 "AI 관점 해설 보기" 아코디언 안에 숨긴다(docs/checklist.md 화면5).
-   문장 아코디언과 동일하게 네이티브 <details>/<summary>를 그대로 쓴다. */
-.history-list {
+/* ---------- Insight Note master-detail (3분할 재설계, 2026-07-28) ---------- */
+/* 에버노트류 마스터-디테일: 마스터(30%, 검색+날짜 필터+리스트/캘린더 토글)
+   + 상세(70%, 선택 노트 상시 노출). 뷰포트 높이로 고정해 마스터/상세 각각
+   내부 스크롤되게 한다(전역 Sidebar는 app-shell의 align-items:stretch로
+   같은 높이를 따라가므로 손대지 않는다). */
+.insight-note-layout {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
+  height: 100vh;
+  overflow: hidden;
 }
 
-.history-date {
+.insight-master {
+  width: 30%;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.insight-master-header {
+  flex-shrink: 0;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.insight-search {
+  width: 100%;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font: inherit;
+  font-size: 14px;
+}
+
+.insight-date-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.insight-date-filter input[type="date"] {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  font: inherit;
   font-size: 13px;
-  line-height: 20px;
+  color: var(--text-primary);
+}
+
+.insight-view-toggle {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.insight-view-toggle button {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  background: var(--surface-bg);
   color: var(--text-secondary);
+}
+
+.insight-view-toggle button.active {
+  background: var(--brand-blue-light);
+  color: var(--brand-blue);
+}
+
+.insight-master-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.insight-master-empty {
+  padding: var(--space-md);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.insight-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+}
+
+.insight-card:hover {
+  background: var(--surface-bg);
+}
+
+.insight-card.active {
+  background: var(--brand-blue-light);
+}
+
+.insight-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   margin-bottom: var(--space-xs);
 }
 
-.history-card {
-  background: var(--surface-card);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
+.insight-card-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: var(--space-xs);
 }
 
-.history-title {
+.insight-card-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.insight-detail {
+  width: 70%;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+  background: var(--surface-bg);
+}
+
+.insight-detail-empty {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.insight-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.insight-detail-link {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--brand-blue);
+  text-decoration: none;
+}
+
+.insight-detail-link:hover,
+.insight-detail-link:focus-visible {
+  text-decoration: underline;
+}
+
+.insight-context {
+  background: var(--brand-blue-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin: var(--space-lg) 0;
+}
+
+.insight-summary-list {
+  padding-left: var(--space-lg);
   margin-bottom: var(--space-md);
 }
 
-.history-compare {
-  display: flex;
-  gap: var(--space-xl);
-  margin-bottom: var(--space-sm);
+.insight-summary-list li {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
 }
 
-.history-compare-item {
+.insight-summary-list li:last-child {
+  margin-bottom: 0;
+}
+
+.insight-highlight {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.insight-analysis {
+  display: flex;
+  gap: var(--space-xl);
+  margin: var(--space-lg) 0;
+}
+
+.insight-analysis-col {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-xs);
 }
 
-.history-compare-label {
+.insight-analysis-label {
   font-size: 13px;
   line-height: 20px;
   color: var(--text-secondary);
 }
 
-.history-detail summary {
+.insight-memo {
+  margin-bottom: var(--space-sm);
+}
+
+.insight-memo-display {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface-card);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
   cursor: pointer;
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 600;
-  color: var(--brand-blue);
-  list-style: none;
-  margin-top: var(--space-sm);
 }
 
-.history-detail summary::-webkit-details-marker {
-  display: none;
-}
-
-.history-detail[open] summary {
-  margin-bottom: var(--space-md);
-}
-
-.history-summary {
-  padding-left: var(--space-lg);
-  margin-bottom: var(--space-md);
-}
-
-.history-summary li {
+.insight-memo-input {
+  width: 100%;
+  min-height: 60px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font: inherit;
   font-size: 14px;
   line-height: 22px;
-  color: var(--text-primary);
   margin-bottom: var(--space-xs);
+  resize: vertical;
 }
 
-.history-summary li:last-child {
-  margin-bottom: 0;
+.insight-memo-actions {
+  display: flex;
+  gap: var(--space-sm);
 }
 
-.history-insight {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--text-primary);
-  margin-bottom: var(--space-md);
-}
-
-.history-source-link {
-  display: inline-block;
+.insight-memo-actions button {
   font-size: 13px;
-  line-height: 20px;
   font-weight: 600;
-  color: var(--brand-blue);
-  text-decoration: none;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  background: var(--brand-blue);
+  color: var(--text-inverse);
 }
 
-.history-source-link:hover,
-.history-source-link:focus-visible {
-  text-decoration: underline;
+.insight-memo-actions button:last-child {
+  background: var(--surface-card);
+  color: var(--text-secondary);
+}
+
+.insight-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-xs);
+}
+
+.insight-calendar-weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: var(--space-sm);
+}
+
+.insight-calendar-day {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-primary);
+  padding: var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.insight-calendar-day.empty {
+  border-color: transparent;
 }
 
 /* ---------- Vocabulary ---------- */
@@ -842,9 +1097,40 @@ h2 {
 }
 
 .vocabulary-card {
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.vocabulary-card:focus-visible .vocabulary-card-face {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+
+.vocabulary-card-inner {
+  position: relative;
+  min-height: 120px;
+  transition: transform 0.4s;
+  transform-style: preserve-3d;
+}
+
+.vocabulary-card.flipped .vocabulary-card-inner {
+  transform: rotateY(180deg);
+}
+
+.vocabulary-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
   background: var(--surface-card);
   border-radius: var(--radius-lg);
   padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vocabulary-card-back {
+  transform: rotateY(180deg);
 }
 
 .vocabulary-term {
@@ -855,25 +1141,20 @@ h2 {
   font-size: 14px;
   line-height: 22px;
   color: var(--text-primary);
-  margin-bottom: var(--space-sm);
 }
 
-.vocabulary-source {
-  display: inline-block;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
+.vocabulary-excerpt {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  font-style: italic;
+  margin-bottom: var(--space-xs);
+}
+
+.vocabulary-excerpt-translation {
   font-size: 13px;
   line-height: 20px;
   color: var(--text-secondary);
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.vocabulary-source:hover,
-.vocabulary-source:focus-visible {
-  color: var(--brand-blue);
 }
 
 /* ---------- Badge ---------- */
@@ -900,4 +1181,19 @@ h2 {
 .badge.sell {
   background: var(--action-sell-bg);
   color: var(--action-sell-text);
+}
+
+.badge.easy {
+  background: var(--difficulty-easy-bg);
+  color: var(--difficulty-easy-text);
+}
+
+.badge.medium {
+  background: var(--difficulty-medium-bg);
+  color: var(--difficulty-medium-text);
+}
+
+.badge.hard {
+  background: var(--difficulty-hard-bg);
+  color: var(--difficulty-hard-text);
 }

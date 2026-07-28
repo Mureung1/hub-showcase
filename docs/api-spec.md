@@ -22,6 +22,19 @@
 > **2026-07-21 변경**: `POST /api/article-reads` 신규 추가(GitHub #16, 완독/판단
 > 분리 로깅). `decisionStore.js`는 이미 Supabase로 전환됐다(위 changelog의
 > "`decisions`는 아직 JSON 파일 저장소 그대로다"는 stale — GitHub #12로 완료됨).
+>
+> **2026-07-26 변경**: `GET /api/dashboard` 응답 카드에 `readabilityScore`
+> 필드 추가(기사 난이도 뱃지). 대시보드 큐레이션 3단계(LLM 평가)에서 이미
+> 계산되던 값을 카드 응답까지 노출한 것 — 통과 임계값 때문에 카드에 실리는
+> 값은 항상 3~5 범위다.
+>
+> **2026-07-27 변경**: 리더뷰 로딩 지연 개선을 위해 `POST /api/article/analyze`
+> 하나(5개 필드 단일 응답)를 fast lane(`sentences`+`summaryBullets`)과 slow
+> lane(`terms`+`insight`+`marketSentiment`, 신규 `POST /api/article/analyze/details`)
+> 두 엔드포인트로 분리. 클라이언트는 parse 성공 직후 둘을 병렬로 호출하고,
+> fast lane 응답만으로 인터랙티브 리더뷰(원문+아코디언+요약+판단버튼)를 먼저
+> 렌더링한다 — insight/marketSentiment는 원래도 판단 전까지 블라인드 처리되는
+> 값이고 terms는 단어장 자동저장 부수효과일 뿐이라 늦게 도착해도 무방하다.
 
 ## 1. GET /api/dashboard — 오늘의 핵심 외신 3개
 
@@ -37,16 +50,19 @@
         "headline": "Fed Signals Rate Path as Inflation Guidance Shifts",
         "translation": "연준, 인플레이션 가이던스 변화에 따라 금리 방향 시사",
         "tickers": ["$SPX", "$TLT"],
-        "url": "https://www.nytimes.com/2026/07/12/business/fed-rate-path-guidance.html"
+        "url": "https://www.nytimes.com/2026/07/12/business/fed-rate-path-guidance.html",
+        "readabilityScore": 5
       }
     ]
   }
 }
 ```
 
-현재 `server/src/routes/dashboard.js`의 고정 픽스처 3건을 그대로 반환한다
-(실제 외신 수집·선별 로직은 아직 없음 — 부록 Tier 1 "경제 캘린더(비UI)"가
-이 로직의 신호로 검토 중).
+`readabilityScore`(1~5, 값이 높을수록 학습자가 읽기 쉬움)는
+`dashboardCurationService.js`의 RSS 자동 수집·선별 파이프라인 3단계(LLM
+평가)에서 매겨지며, 통과 임계값(`MIN_READABILITY_SCORE = 3`) 때문에 카드에
+실리는 값은 항상 3~5다. 클라이언트는 이 점수를 쉬움(5)/보통(4)/어려움(3)
+3단계 뱃지로 표시한다(`client/src/constants/difficulty.js`).
 
 ## 2. POST /api/article/parse — 외신 URL 파싱
 
@@ -79,7 +95,12 @@
 프론트엔드가 구분할 방법은 현재 없다. `url` 필드가 누락된 요청일 때만
 라우트 자체에서 `500 { success: false, error: "url is required" }`를 반환한다.
 
-## 3. POST /api/article/analyze — 문장 번역·요약·인사이트·심리·단어 생성
+## 3. POST /api/article/analyze — 문장 번역·요약 생성 (fast lane)
+
+리더뷰가 인터랙티브 뷰(원문+아코디언+요약+판단버튼)로 전환하는 데 즉시
+필요한 두 필드만 반환한다. `terms`/`insight`/`marketSentiment`는
+`3-1. POST /api/article/analyze/details`(slow lane)로 분리됐다(2026-07-27,
+리더뷰 로딩 지연 개선).
 
 ```json
 // 요청
@@ -101,16 +122,51 @@
         "reason": "긴 주어(discrepancy between A and B)와 조동사구(will likely dictate)가 겹쳐 구조 파악이 어려운 문장"
       }
     ],
-    "terms": [
-      {
-        "term": "bear market",
-        "definition": "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다."
-      }
-    ],
     "summaryBullets": [
       "기술주 전반이 급락하며 베어마켓 우려가 커지고 있습니다.",
       "GlobalTech Corp(GTC)의 약한 실적 가이던스가 하락을 가속시켰습니다.",
       "전문가들은 단기 변동성은 있어도 장기 매수 기회로 보는 시각도 있다고 분석합니다."
+    ]
+  }
+}
+```
+
+- `title`, `url`: 이 엔드포인트에서는 프롬프트 컨텍스트(제목)에만 쓰이고
+  별도 부수효과는 없다(단어장 저장은 slow lane 담당).
+- `sentences`: 전체 문장이 아니라, LLM이 구조상 어렵다고 판단한 문장만 선별
+  (보통 기사 1건당 2~4개). 리더뷰에서 해당 문장을 탭하면 이 데이터를
+  아코디언으로 펼쳐 보여준다. **팝업이 아닌 인라인 펼침(아코디언) 방식** —
+  긴 번역 텍스트가 원문 문장을 가리지 않도록 하기 위함.
+- `paragraphs`가 빈 배열이거나 배열이 아니면
+  `500 { success: false, error: "paragraphs is required" }`를 반환한다.
+- **인증**: 필요 없음(단어장 저장 부수효과가 없어 `attachUser`를 붙이지 않는다).
+
+## 3-1. POST /api/article/analyze/details — 인사이트·심리·단어 생성 (slow lane, 신규 2026-07-27)
+
+판단 전까지 블라인드 처리되는 `insight`/`marketSentiment`와, 단어장 자동
+적재용 `terms`를 반환한다. 클라이언트는 `3. POST /api/article/analyze`와
+**병렬로**(parse 성공 직후 동시에) 호출해, 사용자가 기사를 읽는 동안
+백그라운드에서 준비해둔다.
+
+```json
+// 요청 (3번과 동일한 형태)
+{
+  "paragraphs": ["Shares of major technology companies fell sharply...", "..."],
+  "title": "Tech Stocks Slide as Investors Brace for Bear Market",
+  "url": "https://finance.yahoo.com/news/..."
+}
+
+// 응답
+{
+  "success": true,
+  "data": {
+    "terms": [
+      {
+        "term": "bear market",
+        "definition": "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다.",
+        "excerpt": "Shares of major technology companies fell sharply on Friday as investors grew increasingly worried that the market is entering a bear market.",
+        "excerptTranslation": "금요일 주요 기술주들이 급락했는데, 투자자들이 시장이 약세장에 진입하고 있다는 우려를 점점 더 키웠기 때문입니다."
+      }
     ],
     "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
     "marketSentiment": "bearish"
@@ -120,14 +176,14 @@
 
 - `title`, `url`: 응답에는 나타나지 않으며, 분석된 `terms`를 출처와 함께
   단어장에 자동 저장하는 부수 효과(side effect)에만 사용된다.
-- `sentences`: 전체 문장이 아니라, LLM이 구조상 어렵다고 판단한 문장만 선별
-  (보통 기사 1건당 2~4개). 리더뷰에서 해당 문장을 탭하면 이 데이터를
-  아코디언으로 펼쳐 보여준다. **팝업이 아닌 인라인 펼침(아코디언) 방식** —
-  긴 번역 텍스트가 원문 문장을 가리지 않도록 하기 위함.
-- `terms`: 기존 `{ term, metaphor, definition }`에서 **`metaphor` 필드를
-  삭제**하고 `{ term, definition }`만 남김. 기사당 핵심 용어 3~5개를
-  AI가 자동 선별하며, 사용자의 탭 여부와 무관하게 `4. GET /api/vocabulary`
-  저장소에 자동 적재된다(리더뷰 화면에는 더 이상 노출되지 않음).
+- `terms`: `{ term, definition, excerpt, excerptTranslation }`로 구성. 기사당
+  핵심 용어 3~5개를 AI가 자동 선별하며, 사용자의 탭 여부와 무관하게
+  `4. GET /api/vocabulary` 저장소에 자동 적재된다(리더뷰 화면에는 노출되지
+  않음). `excerpt`는 해당 term이 등장한 원문 문장(verbatim)으로, 단어장
+  플래시카드 뒷면에 노출된다. LLM이 낸 값이 원문에서 검증되지 않으면
+  `null`로 폴백한다. `excerptTranslation`은 그 excerpt의 한국어 번역으로,
+  `excerpt` 검증에 실패하면(즉 `excerpt`가 `null`이면) 함께 `null`로
+  폴백한다(원문 없는 번역만 단독으로 노출하지 않기 위함).
 - `marketSentiment`: `"bullish" | "bearish" | "neutral"` 중 하나. 기사의
   객관적 톤을 AI가 판별한 값으로, 인사이트 노트에서 사용자의 판단과 비교하는 데 쓰인다.
 - `paragraphs`가 빈 배열이거나 배열이 아니면
@@ -139,6 +195,8 @@
 > **UI 정책 (2026-07-15)**: `insight`와 `marketSentiment`는 이 응답에 항상 포함되지만,
 > 프론트엔드는 리더뷰에서 사용자가 Bullish/Neutral/Bearish 판단을 내리기 전까지 두 값을
 > 화면에 렌더링하지 않는다(블라인드 처리). 판단 후 열리는 바텀시트에서 두 값을 함께 공개한다.
+> 이 호출이 fast lane보다 늦게 끝나 바텀시트가 열린 시점에 아직 도착하지 않았다면,
+> 화면은 "AI가 비교 결과를 분석하고 있습니다..." 로딩 문구를 보여주다가 값이 오면 전환한다.
 
 ## 4. GET /api/vocabulary — 단어장 조회 (신규)
 
@@ -150,6 +208,8 @@
       {
         "term": "bear market",
         "definition": "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다.",
+        "excerpt": "Shares of major technology companies fell sharply on Friday as investors grew increasingly worried that the market is entering a bear market.",
+        "excerptTranslation": "금요일 주요 기술주들이 급락했는데, 투자자들이 시장이 약세장에 진입하고 있다는 우려를 점점 더 키웠기 때문입니다.",
         "articleTitle": "Tech Stocks Slide as Investors Brace for Bear Market",
         "articleUrl": "https://finance.yahoo.com/news/...",
         "addedAt": "2026-07-13T10:00:00+09:00"
@@ -179,7 +239,8 @@
   "summaryBullets": ["...", "...", "..."],
   "decision": "buy",
   "marketSentiment": "bearish",
-  "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다."
+  "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
+  "memo": "과매도 국면이라 판단해 매수"
 }
 
 // 응답
@@ -193,6 +254,7 @@
     "decision": "buy",
     "marketSentiment": "bearish",
     "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
+    "memo": "과매도 국면이라 판단해 매수",
     "createdAt": "2026-07-13T10:00:00+09:00"
   }
 }
@@ -212,6 +274,12 @@
 > (`buy`→Bullish, `hold`→Neutral, `sell`→Bearish). `summaryBullets`/`marketSentiment`는
 > 계속 선택값이다.
 
+> **2026-07-26 변경**: `memo`(선택, nullable) 필드를 추가했다. 바텀시트의
+> "내 생각 남기기"에 입력한 판단 근거 한 줄을 함께 저장한다. 이후 메모만
+> 수정할 때는 이 엔드포인트를 다시 호출하지 않고 `8. PATCH
+> /api/decisions/:id`를 쓴다(재판단 insert와 메모 수정을 분리해 인사이트
+> 노트 카드가 중복 생성되지 않게 하기 위함).
+
 ## 6. GET /api/decisions — 히스토리 조회
 
 ```json
@@ -227,6 +295,7 @@
         "decision": "buy",
         "marketSentiment": "bearish",
         "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
+        "memo": "과매도 국면이라 판단해 매수",
         "createdAt": "2026-07-13T10:00:00+09:00"
       }
     ]
@@ -281,3 +350,33 @@ Supabase가 발급하는 uuid다). 인사이트 노트의 히스토리 카드는
   자체를 건너뜀).
 - 조회용 `GET /api/article-reads`는 아직 없다(현재 요구사항인 "분리 로깅 +
   FK 연결"에는 불필요 — 집계/조회 화면이 필요해지면 별도 Task).
+
+## 8. PATCH /api/decisions/:id — 판단 근거 메모 수정 (신규, 2026-07-26)
+
+```json
+// 요청
+PATCH /api/decisions/3f2a1c9e-...-uuid
+{ "memo": "실적 가이던스는 나빴지만 과매도라 판단해 매수" }
+
+// 응답 (본인 소유 + 존재)
+{
+  "success": true,
+  "data": { "id": "3f2a1c9e-...-uuid", "memo": "실적 가이던스는 나빴지만 과매도라 판단해 매수" }
+}
+
+// 응답 (없거나 타 사용자 소유)
+{ "success": false, "error": "decision not found" }  // 404
+```
+
+- 인사이트 노트 카드에서 이미 저장된 판단의 메모만 고쳐 쓸 때 쓴다. `memo`
+  필드만 갱신하며, `decision`/`marketSentiment`/`insight` 등 다른 필드나
+  row 자체는 건드리지 않는다 — 즉 이 엔드포인트는 새 row를 만들지 않으므로
+  인사이트 노트에 카드가 중복 생성될 일이 없다.
+- `memo`에 `null`을 보내면 메모를 지울 수 있다. 빈 문자열은 클라이언트가
+  trim 후 `null`로 정규화해서 보낸다.
+- 소유권 검증: 서버는 `SUPABASE_SERVICE_ROLE_KEY`로 접속해 RLS를 우회하므로,
+  `decisionStore.js`의 `updateDecisionMemo`가 `user_id` 조건을 애플리케이션
+  레벨에서 직접 검사한다 — 존재하지 않거나 본인 소유가 아니면 `404`를
+  반환한다.
+- **인증(필수)**: `Authorization: Bearer <access_token>` 헤더가 없거나
+  유효하지 않으면 `401`을 반환한다.

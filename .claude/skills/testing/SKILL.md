@@ -46,8 +46,7 @@ import { targetFn } from "./targetFile.js"
   sector)`, `labels(result)`.
 - 목이 필요하면 `vi.spyOn(...)`으로 그 자리에서 걸고, 최상위 `describe`
   안에 `afterEach(() => vi.restoreAllMocks())`를 둬서 정리한다.
-- 실행: `server/` 디렉토리에서 `npx vitest run` (package.json에 `test`
-  스크립트가 아직 없다 — 스크립트 추가는 이 가이드의 스코프 밖).
+- 실행: `server/` 디렉토리에서 `npm test` ( = `vitest run`).
 
 ## 2. 클라이언트(컴포넌트) 테스트 — `Badge.test.jsx` 패턴
 
@@ -81,5 +80,5 @@ import Target from "./Target"
    정리한다.
 7. 컴포넌트 테스트라면 `render`/`screen` + jest-dom 매처를 쓰고, 별도
    셋업은 필요 없다(`setupTests.js`가 이미 연결돼 있음).
-8. 서버는 `npx vitest run`, 클라이언트는 `npm run test`로 실행해 통과를
-   확인한 뒤 `test: <설명>`으로 커밋한다.
+8. 서버/클라이언트 모두 `npm test`로 실행해 통과를 확인한 뒤
+   `test: <설명>`으로 커밋한다.

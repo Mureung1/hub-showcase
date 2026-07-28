@@ -1,12 +1,19 @@
 import "dotenv/config"
 import { FALLBACK_ARTICLE } from "../src/services/articleParser.js"
-import { buildAnalysisPrompt, callClaudeWithMetrics, parseAnalysisResponse } from "../src/services/llmService.js"
+import {
+  buildFastAnalysisPrompt,
+  buildSlowAnalysisPrompt,
+  callClaudeWithMetrics,
+  parseFastAnalysisResponse,
+  parseSlowAnalysisResponse,
+} from "../src/services/llmService.js"
 
-// analyzeArticle 배선(#14) 완료 후에도, buildAnalysisPrompt가 실제 Claude
-// 응답에서 기대한 JSON 형식(문장 verbatim 매칭/summaryBullets 3개/
-// marketSentiment enum)을 안정적으로 만족하는지 여러 샘플 기사로 반복
-// 확인할 때 재사용하는 회귀 검증 스크립트.
-// 응답 지연시간(TTFT/총 생성시간)과 토큰 사용량도 함께 기록한다.
+// fast/slow analyze 분리(리더뷰 로딩 지연 개선) 후에도, 두 프롬프트가 실제
+// Claude 응답에서 기대한 JSON 형식(문장/excerpt verbatim 매칭, summaryBullets
+// 3개, marketSentiment enum)을 안정적으로 만족하는지 여러 샘플 기사로 반복
+// 확인할 때 재사용하는 회귀 검증 스크립트. fast/slow 각각의 응답 지연시간
+// (TTFT/총 생성시간)과 토큰 사용량을 따로 기록해, 분리가 실제로 체감 지연을
+// 줄이는지 수치로 확인할 수 있게 한다.
 // 실행: MOCK_LLM=false node scripts/validateAnalysisPrompt.js (server/ 안에서)
 
 if (process.env.MOCK_LLM === "true") {
@@ -69,40 +76,50 @@ function formatSentenceCheck(sentences, paragraphs) {
     .join("\n")
 }
 
+async function runFastLane(sample) {
+  const prompt = buildFastAnalysisPrompt(sample.paragraphs, sample.title)
+  const { response, ttftMs, totalMs } = await callClaudeWithMetrics(prompt, { maxTokens: 2048 })
+  const analysis = parseFastAnalysisResponse(response, sample.paragraphs)
+
+  console.log(`\n[FAST LANE] sentences ${analysis.sentences.length}개 (verbatim 매칭 결과)`)
+  console.log(formatSentenceCheck(analysis.sentences, sample.paragraphs))
+
+  console.log(`\n[FAST LANE] summaryBullets ${analysis.summaryBullets.length}개 (기대: 3) ${analysis.summaryBullets.length === 3 ? "OK" : "MISMATCH"}`)
+  analysis.summaryBullets.forEach((b, i) => console.log(`    ${i + 1}. ${b}`))
+
+  console.log(`\n[FAST LANE latency] TTFT: ${ttftMs}ms / 총 생성시간: ${totalMs}ms`)
+  console.log(`[FAST LANE tokens] 입력: ${response.usage.input_tokens} / 출력: ${response.usage.output_tokens}`)
+
+  return { analysis, ttftMs, totalMs, usage: response.usage }
+}
+
+async function runSlowLane(sample) {
+  const prompt = buildSlowAnalysisPrompt(sample.paragraphs, sample.title)
+  const { response, ttftMs, totalMs } = await callClaudeWithMetrics(prompt, { maxTokens: 2048 })
+  const analysis = parseSlowAnalysisResponse(response, sample.paragraphs)
+
+  console.log(`\n[SLOW LANE] terms ${analysis.terms.length}개`)
+  analysis.terms.forEach((t) => console.log(`    - ${t.term}: ${t.definition}`))
+
+  console.log(`\n[SLOW LANE] insight: ${analysis.insight}`)
+  console.log(`[SLOW LANE] marketSentiment: ${analysis.marketSentiment}`)
+
+  console.log(`\n[SLOW LANE latency] TTFT: ${ttftMs}ms / 총 생성시간: ${totalMs}ms`)
+  console.log(`[SLOW LANE tokens] 입력: ${response.usage.input_tokens} / 출력: ${response.usage.output_tokens}`)
+
+  return { analysis, ttftMs, totalMs, usage: response.usage }
+}
+
 async function runSample(sample) {
   console.log(`\n${"=".repeat(70)}`)
   console.log(`샘플: ${sample.label}`)
   console.log(`제목: ${sample.title}`)
   console.log("=".repeat(70))
 
-  const prompt = buildAnalysisPrompt(sample.paragraphs, sample.title)
-  const { response, ttftMs, totalMs } = await callClaudeWithMetrics(prompt, { maxTokens: 3072 })
+  const fast = await runFastLane(sample)
+  const slow = await runSlowLane(sample)
 
-  let analysis
-  try {
-    analysis = parseAnalysisResponse(response, sample.paragraphs)
-  } catch (err) {
-    console.error(`\n[PARSE FAILED] ${err.message}`)
-    console.error(`[raw response text]\n${response.content?.[0]?.text ?? "(no text)"}`)
-    throw err
-  }
-
-  console.log(`\n[sentences] 선별 ${analysis.sentences.length}개 (verbatim 매칭 결과)`)
-  console.log(formatSentenceCheck(analysis.sentences, sample.paragraphs))
-
-  console.log(`\n[terms] ${analysis.terms.length}개`)
-  analysis.terms.forEach((t) => console.log(`    - ${t.term}: ${t.definition}`))
-
-  console.log(`\n[summaryBullets] ${analysis.summaryBullets.length}개 (기대: 3) ${analysis.summaryBullets.length === 3 ? "OK" : "MISMATCH"}`)
-  analysis.summaryBullets.forEach((b, i) => console.log(`    ${i + 1}. ${b}`))
-
-  console.log(`\n[insight] ${analysis.insight}`)
-  console.log(`[marketSentiment] ${analysis.marketSentiment}`)
-
-  console.log(`\n[latency] TTFT: ${ttftMs}ms / 총 생성시간: ${totalMs}ms`)
-  console.log(`[tokens] 입력: ${response.usage.input_tokens} / 출력: ${response.usage.output_tokens}`)
-
-  return { label: sample.label, ok: true, analysis, ttftMs, totalMs, usage: response.usage }
+  return { label: sample.label, ok: true, fast, slow }
 }
 
 async function main() {
@@ -129,8 +146,10 @@ async function main() {
       return
     }
     console.log(
-      `  - [OK] ${r.label} | TTFT ${r.ttftMs}ms, 총 ${r.totalMs}ms, ` +
-        `입력 ${r.usage.input_tokens}tok, 출력 ${r.usage.output_tokens}tok`,
+      `  - [OK] ${r.label} | fast TTFT ${r.fast.ttftMs}ms/총 ${r.fast.totalMs}ms ` +
+        `(입력 ${r.fast.usage.input_tokens}tok/출력 ${r.fast.usage.output_tokens}tok) | ` +
+        `slow TTFT ${r.slow.ttftMs}ms/총 ${r.slow.totalMs}ms ` +
+        `(입력 ${r.slow.usage.input_tokens}tok/출력 ${r.slow.usage.output_tokens}tok)`,
     )
   })
 

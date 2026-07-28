@@ -1,8 +1,9 @@
 # 데이터 모델 설계 (`docs/data-model.md`)
 
 > Supabase(Postgres) 전환을 위한 스키마 설계. 실제 DDL은
-> `supabase/migrations/20260717000000_init_schema.sql`에 있다. 이 문서는 그
-> 설계 배경과 테이블 구조를 정리한 것이며, **서버 코드
+> `supabase/migrations/20260717000000_init_schema.sql`(초기 스키마)과 이후
+> 증분 마이그레이션 파일들(예: `20260726000000_add_vocabulary_excerpt.sql`)에
+> 있다. 이 문서는 그 설계 배경과 테이블 구조를 정리한 것이며, **서버 코드
 > (`decisionStore.js`/`vocabularyStore.js`)를 Supabase 클라이언트 호출로
 > 바꾸는 백엔드 전환은 아직 포함하지 않는다** — 별도 backlog Task로 남겨둔다.
 
@@ -67,6 +68,8 @@
 | article_id | uuid | `references articles(id) on delete cascade, not null` |
 | term | text | `not null` |
 | definition | text | `not null` |
+| excerpt | text | nullable, 플래시카드 뒷면에 노출할 원문 발췌 문장(2026-07-26 추가) |
+| excerpt_translation | text | nullable, 위 excerpt의 한국어 번역(2026-07-26 추가) |
 | added_at | timestamptz | `default now()` |
 
 `unique (user_id, lower(term))` — 기존 전역 중복 방지 로직을 사용자별로
@@ -83,10 +86,12 @@
 | decision | text | `check (decision in ('buy','hold','sell')) not null` |
 | market_sentiment | text | `check (market_sentiment in ('bullish','neutral','bearish'))`, nullable |
 | insight | text | nullable |
+| memo | text | nullable, 판단 근거 한 줄 메모(2026-07-26 추가). `POST /api/decisions`로 최초 저장, `PATCH /api/decisions/:id`로 이 필드만 수정(카드 중복 생성 방지) |
 | created_at | timestamptz | `default now()` |
 
 동일 기사에 대한 재판단은 제약 없이 허용(현재 앱 동작과 동일하게 unique
-제약을 걸지 않음).
+제약을 걸지 않음). 이 정책은 `memo` 추가 이후에도 그대로 유지되며, 메모
+수정은 재판단(insert)과 별개인 update 전용 경로로만 이뤄진다.
 
 ### `article_reads`
 
@@ -135,11 +140,13 @@ Primary 지표(완독 수) = `count(*)`. Secondary 지표(판단수행률) =
   의도대로 동작하는지(잘못된 `decision` 값 insert 시 거부되는지 등) 수동
   확인
 
-## 스코프 밖
+## 스코프 밖 (설계 당시 기준, 이후 완료됨)
 
-- 서버 코드(`decisionStore.js`/`vocabularyStore.js`)를 Supabase 클라이언트
-  호출로 바꾸는 백엔드 전환
-- Supabase 프로젝트 생성/CLI 연결
-- `server/.env`에 `SUPABASE_URL`/`SUPABASE_ANON_KEY`(또는 서비스 키) 추가
+이 문서 작성 시점(2026-07-17)에는 아래 항목을 스코프 밖으로 두고 별도
+backlog Task로 미뤘으나, 모두 완료됐다(`docs/backlog.md` 참고).
 
-→ 이후 별도 backlog Task로 진행한다.
+- 서버 코드를 Supabase 클라이언트 호출로 바꾸는 백엔드 전환 —
+  `vocabularyStore.js`는 2026-07-17, `decisionStore.js`는 2026-07-21
+  전환 완료(GitHub #12)
+- Supabase 프로젝트 생성/CLI 연결 — 완료
+- `server/.env`에 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` 추가 — 완료

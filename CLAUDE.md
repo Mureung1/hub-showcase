@@ -14,10 +14,10 @@
 > 분리, 바텀시트 추가, "마이페이지"→"인사이트 노트" 개명. `client/`,
 > `server/`는 재구성 완료.
 
-상세 문서: 기획/시나리오 `docs/plan.md`, API 스펙 `docs/api-spec.md`, 체크리스트
-`docs/checklist.md`, 로드맵 `docs/backlog.md`, 디자인 시스템(확정본)
-`.claude/skills/design/SKILL.md`. `stitch-reference/`는 첫 피벗 이전 원본이라
-SKILL.md가 우선.
+상세 문서: 기획/시나리오 `docs/plan.md`, API 스펙 `docs/api-spec.md`, 로드맵
+`docs/backlog.md`, 디자인 시스템(확정본) `.claude/skills/design/SKILL.md`.
+(`docs/checklist.md`는 `backlog.md`와 역할이 중복되고 갱신도 stale해 2026-07-26
+삭제됨 — 요구사항 추적은 `backlog.md` 단일 문서로 일원화)
 
 ### 핵심 기능 (MVP 4개, 우선순위순)
 
@@ -30,8 +30,11 @@ SKILL.md가 우선.
 3. **투자심리 인터랙션 + 바텀시트** — 기사 최하단 정적 배치(sticky 아님)
    버튼 클릭 → 바텀시트에서 "나의 선택 vs marketSentiment" 비교 + `insight`
    공개. 바텀시트 닫는 시점에 `POST /api/decisions` 저장.
-4. **데일리 단어장** — 기사 분석 시 핵심 용어 3~5개를 탭 여부와 무관하게
-   자동 적재, 최신순 정렬, 출처 클릭 시 원문 기사로 이동.
+4. **데일리 단어장(플래시카드 복습 모드)** — 기사 분석 시 핵심 용어 3~5개를
+   탭 여부와 무관하게 자동 적재, 최신순 정렬. 카드 앞면 = 단어+뜻, 탭하면
+   뒤집혀 뒷면에 원문 발췌 문장(`excerpt`)과 그 한국어 번역
+   (`excerptTranslation`) 노출(2026-07-26: 기사 원문 이동 링크 제거, 기간
+   필터 칩 연동은 범위 제외).
 
 증권사 API 연동 매매는 스코프 밖(모의 투자 훈련 도구로 한정).
 
@@ -42,15 +45,12 @@ SKILL.md가 우선.
 
 | 화면 | 컴포넌트 | 비고 |
 |---|---|---|
-| 사이드바 | `components/Sidebar.jsx` | Primary 버튼 + Menu(대시보드/단어장)·History(인사이트 노트), 카운트 뱃지 |
+| 사이드바 | `components/Sidebar.jsx` | Primary 버튼 + Menu 단일 그룹(대시보드·인사이트 노트·단어장), 카운트 뱃지 |
 | 대시보드 | `pages/Dashboard.jsx` | 오늘의 핵심 외신 3개 카드 |
 | 리더뷰 | `pages/Reader.jsx` | 문장 아코디언 번역, AI 요약, 판단 버튼. `< 뒤로가기`로 복귀 |
 | 바텀시트 | `components/BottomSheet.jsx` | 판단 vs marketSentiment 비교 + insight 공개, 닫으면 저장 |
 | 인사이트 노트 | `pages/InsightNote.jsx` | 히스토리 카드(기본: 판단 vs marketSentiment) + "AI 관점 해설 보기" 아코디언 |
-| 단어장 | `pages/Vocabulary.jsx` | 자동 적재된 용어 최신순, 출처 클릭 시 리더뷰 이동 |
-
-`prototype/`은 첫 피벗 이전 버전(용어 팝업 등) 포함 — 삭제 금지, 참고용.
-실제 동작 사양은 `docs/plan.md`/`api-spec.md`/`SKILL.md`가 우선.
+| 단어장 | `pages/Vocabulary.jsx` | 자동 적재된 용어 최신순, 플래시카드(탭하면 뒤집혀 원문 발췌 노출) |
 
 React 구현 메모:
 - 문장 번역/AI 요약 → 네이티브 `<details><summary>`
@@ -58,16 +58,32 @@ React 구현 메모:
 - 블라인드 처리 → `analysis`는 state에 항상 보관, `{pendingDecision && <BottomSheet/>}`로만 조건부 렌더링
 - `marketSentiment` 라벨/톤 매핑은 `constants/sentiment.js`의 `SENTIMENT_META`로 공용화
 
-### 구현 상태 (2주차 대부분 완료, 3주차 예정)
+### 구현 상태 (3주차 진행 중, 2026-07-23 기준)
 
 - **동작함:** 전체 라우팅/API 흐름, `articleParser.js` 스크래핑+fallback,
   `vocabularyStore.js`(Supabase 전환, 2026-07-17), `decisionStore.js`(Supabase
   전환, 2026-07-21), Supabase Auth 로그인/회원가입(`Login.jsx`,
   `AuthContext.jsx`), 단어장 자동 적재, 인사이트 노트 아코디언, 사이드바
   카운트 뱃지.
-- **더미:** `llmService.js`의 `analyzeArticle` — 고정 용어/문장 매칭 + 고정
-  요약·insight·marketSentiment 반환. 실제 Claude 프롬프트는 3주차 작업.
-- 대시보드 3개 기사도 고정 픽스처, 실제 수집 로직 없음.
+- **완료(07-22):** `llmService.js`의 `analyzeArticle` 실제 Claude 연결
+  (GitHub #14) — `buildAnalysisPrompt`/`parseAnalysisResponse`로 sentences
+  (verbatim 매칭 검증 포함)/terms/summaryBullets/insight/marketSentiment을
+  한 번의 호출로 받는다. `MOCK_LLM=true`(로컬 기본값)면 고정 더미 응답으로
+  대체되며, 이때만 `FAIL_TEST` 문자열로 의도적 실패를 트리거할 수 있다.
+- **완료(07-19~20):** 대시보드 "오늘의 핵심 외신 3개"도 고정 픽스처가 아니라
+  실제 RSS 자동 수집·선별 파이프라인(`dashboardCurationService.js`,
+  `rssFeedService.js`, `articleQualityFilter.js`) — CNBC RSS 메타데이터
+  필터→본문 분량 필터→`evaluateAndSelectArticles`(LLM 점수+섹터 다양화)
+  3단계 직렬 구조. KST 06:30 경계로 하루 1회만 돌고 프로세스 메모리에
+  캐시. 파이프라인 어느 단계든 실패하면 `FALLBACK_ARTICLES`(고정 3건,
+  캐시하지 않음)로 폴백 — 이 폴백은 `console.warn`만 남기고 별도
+  모니터링/알림은 없다(운영 전환 시 보강 필요).
+- **완료(07-23):** client(Vitest+Testing Library)/server(Vitest) 단위 테스트
+  환경 구성. 컨벤션은 `.claude/skills/testing/SKILL.md` 참고. 같은 날
+  `.github/workflows/test.yml` CI를 신설해 PR/main 푸시마다 lint +
+  client/server 테스트를 게이트로 건다(`auto-merge.yml`은 리뷰 라벨/충돌
+  여부만 보는 별도 워크플로). `server/package.json`에도 `test`
+  스크립트(`vitest run`)가 추가돼 `server/` 안에서 `npm test`로 실행한다.
 - **완료(07-21):** 완독/판단수행률 분리 집계 로깅(GitHub #16) —
   `article_reads` 테이블에 완독 이벤트를 기록하고 판단 시 `decision_id`로
   FK 연결(`server/src/services/articleReadStore.js`,
@@ -93,9 +109,7 @@ hub/
 │   ├── src/services/   # articleParser.js, llmService.js, decisionStore.js, vocabularyStore.js, articleStore.js, supabaseClient.js
 │   └── data/           # decisions.json/vocabulary.json 모두 Supabase로 이전, 미사용
 ├── supabase/migrations/ # 20260717000000_init_schema.sql (articles/vocabulary/decisions/article_reads + RLS)
-├── docs/               # plan.md, api-spec.md, checklist.md, backlog.md, data-model.md
-├── prototype/          # 정적 프로토타입 — 삭제 금지
-├── stitch-reference/    # 디자인 원본(참고용, SKILL.md 하위)
+├── docs/               # plan.md, api-spec.md, backlog.md, data-model.md, workflow.md
 ├── .claude/skills/design/SKILL.md
 └── CLAUDE.md
 ```
@@ -119,9 +133,15 @@ hub/
 - **API 엔드포인트** (상세는 `docs/api-spec.md`):
   - `GET /api/dashboard` — 오늘의 핵심 외신 3개
   - `POST /api/article/parse` — 원문 스크래핑 (`{ url }`)
-  - `POST /api/article/analyze` — `{ paragraphs, title, url }` →
-    `sentences`/`terms`/`summaryBullets`/`insight`/`marketSentiment`.
-    `title`/`url`은 응답에 없고 단어장 자동 저장 부수효과에만 사용
+  - `POST /api/article/analyze` — fast lane. `{ paragraphs, title, url }` →
+    `sentences`/`summaryBullets`만 반환(리더뷰 즉시 렌더링에 필요한 최소
+    데이터). 인증 불필요
+  - `POST /api/article/analyze/details` — slow lane(신규 2026-07-27). 위와
+    동일한 요청으로 `terms`/`insight`/`marketSentiment` 반환. `title`/`url`은
+    응답에 없고 단어장 자동 저장 부수효과에만 사용. 클라이언트는 parse 성공
+    직후 fast lane과 병렬 호출해 백그라운드로 준비해둔다(리더뷰 로딩 지연
+    개선 — `insight`/`marketSentiment`는 원래도 판단 전까지 블라인드 처리라
+    늦게 도착해도 무방, `terms`는 화면에 직접 안 쓰이는 부수효과)
   - `GET /api/vocabulary` — 단어장 조회(최신순)
   - `POST /api/decisions` — `{ url, title, summaryBullets, decision, marketSentiment, insight }`
   - `GET /api/decisions` — 히스토리 조회
@@ -132,13 +152,15 @@ hub/
   `server/src/services/supabaseClient.js`)로 전환됨. `articles` 테이블
   upsert-by-url 로직은 `articleStore.js`의 `ensureArticle`로 공용화해 두
   스토어가 함께 쓴다 — 스키마는 `docs/data-model.md`/`supabase/migrations/` 참고
-- **환경변수**: `ANTHROPIC_API_KEY`는 `server/.env`(gitignore). 현재
-  `analyzeArticle`이 더미라 키 없이도 서버 동작. Supabase 연동에는
+- **환경변수**: `ANTHROPIC_API_KEY`는 `server/.env`(gitignore). `MOCK_LLM`이
+  기본값 `true`(`.env.example`)라 키 없이도 서버 동작 — `false`로 바꾸고 키를
+  채워야 `analyzeArticle`/`evaluateAndSelectArticles`가 실제 Claude를
+  호출한다. Supabase 연동에는
   `server/.env`의 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`(서버 전용,
   절대 프론트 노출 금지)와 `client/.env`의 `VITE_SUPABASE_URL`/
   `VITE_SUPABASE_ANON_KEY`가 필요(각 `.env.example` 참고)
 - **린트/포맷**: `npm run lint`/`npm run format` (client/server src만 대상,
-  `docs/`·`prototype/`·`stitch-reference/`·`.claude/` 등 제외)
+  `docs/`·`.claude/` 등 제외)
 
 ## 구현 유의사항
 
@@ -174,8 +196,9 @@ cd server && npm run dev   # :4000
 cd client && npm run dev   # :5173
 ```
 
-`server/.env`에 `.env.example` 복사 후 `ANTHROPIC_API_KEY` 채우면 `callClaude`
-실 호출 가능(현재 `analyzeArticle`은 더미 응답 상태).
+`server/.env`에 `.env.example` 복사 후 `ANTHROPIC_API_KEY` 채우고
+`MOCK_LLM=false`로 바꾸면 `analyzeArticle`/`evaluateAndSelectArticles`가
+실제 Claude를 호출한다(기본값 `MOCK_LLM=true`는 더미 응답).
 
 단어장(Supabase)을 쓰려면 추가로:
 1. Supabase 프로젝트 생성 후 SQL Editor에서 `supabase/migrations/20260717000000_init_schema.sql` 실행

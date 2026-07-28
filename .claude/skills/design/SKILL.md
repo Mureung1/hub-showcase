@@ -1,11 +1,11 @@
 ---
 name: design
-description: 브리플리(Briefly) 서비스의 디자인 시스템. 색상, 타이포그래피, 컴포넌트 스타일, 인터랙션 규칙을 정의. 새 화면/컴포넌트를 만들거나 기존 화면 디자인을 수정할 때 사용.
+description: Articles 서비스의 디자인 시스템. 색상, 타이포그래피, 컴포넌트 스타일, 인터랙션 규칙을 정의. 새 화면/컴포넌트를 만들거나 기존 화면 디자인을 수정할 때 사용.
 ---
 
-# 브리플리 디자인 시스템
+# Articles 디자인 시스템
 
-브리플리(Briefly)는 영문 뉴스 기반 해외 주식 모의 투자 학습 서비스다. 실제
+Articles는 영문 뉴스 기반 해외 주식 모의 투자 학습 서비스다. 실제
 구현은 `prototype/style.css`의 `:root` 토큰과 3개 화면(`01_dashboard.html`,
 `02_reader.html`, `03_mypage.html`)에 있다. 새 화면/컴포넌트를 만들거나 기존
 화면을 고칠 때는 아래 규칙을 그대로 따르고, 새 hex 값이나 임의의 px 값을
@@ -59,6 +59,14 @@ description: 브리플리(Briefly) 서비스의 디자인 시스템. 색상, 타
   --alert-bg: #FFFBEB;
   --alert-border: #FBBF24;
   --alert-text: #92400E;
+
+  /* Color - Difficulty (기사 난이도 뱃지, 쉬움→어려움 파스텔 그라데이션) */
+  --difficulty-easy-bg: #DDF3E4;
+  --difficulty-easy-text: #146C2E;
+  --difficulty-medium-bg: #FDECC8;
+  --difficulty-medium-text: #8A5A00;
+  --difficulty-hard-bg: #FCE1D2;
+  --difficulty-hard-text: #9A3B12;
 
   /* Color - Border (옅은 구분선/힌트용, 형광펜·색상 대신 조용히 존재하는 톤) */
   --border-subtle: #D6D9E0;
@@ -152,7 +160,10 @@ jsdelivr CDN으로 Pretendard 웹폰트를 각각 `<link>` 태그로 로드한�
 - **`.badge`** — 마이페이지 투자 판단 뱃지. `border-radius: var(--radius-full)`,
   `padding: var(--space-xs) var(--space-sm)`, 폰트는 label-lg 스케일을
   재사용한다. `.badge.buy`/`.badge.hold`/`.badge.sell` 수식자로
-  `--action-buy/hold/sell-bg`·`-text` 토큰을 매핑한다.
+  `--action-buy/hold/sell-bg`·`-text` 토큰을 매핑한다. 대시보드 카드의 난이도
+  칩도 같은 `.badge` 베이스를 재사용하며 `.badge.easy`/`.badge.medium`/
+  `.badge.hard` 수식자로 `--difficulty-easy/medium/hard-bg`·`-text`를
+  매핑한다(기사 난이도 뱃지, 2026-07-26).
 
 ## 4. 인터랙션 원칙 — 자바스크립트 절대 금지
 
@@ -200,11 +211,11 @@ jsdelivr CDN으로 Pretendard 웹폰트를 각각 `<link>` 태그로 로드한�
 그 원칙은 리더뷰 안 프로토타입 인터랙션(용어 툴팁, 아코디언, 투자 판단
 버튼)에 한정된다.
 
-- **상단 Primary 액션 버튼 + 그룹 라벨(Menu/History)로 메뉴 구분.**
+- **상단 Primary 액션 버튼 + 단일 Menu 그룹.**
   `.sidebar-primary-btn`은 `--brand-blue` 배경 + `--text-inverse` 텍스트로
   눈에 띄게 배치하고 대시보드('/')로 이동한다. 그 아래 `.sidebar-group-label`
-  ("Menu", "History")로 대시보드·단어장(Menu)과 인사이트 노트(History)를
-  시각적으로 분리한다.
+  ("Menu") 하나에 대시보드·인사이트 노트·단어장을 모두 나열한다(2026-07-26
+  이전엔 History 그룹으로 분리돼 있었으나 화면 구조가 단순해 통합).
 - **메뉴 항목에 카운트 뱃지 표시.** 단어장·인사이트 노트 옆
   `.sidebar-badge`에 각각 `GET /api/vocabulary`, `GET /api/decisions` 응답
   배열의 length를 실시간으로 표시한다. 옅은 배경(`--surface-bg`) + 작은

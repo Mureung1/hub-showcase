@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { readDecisions, appendDecision } from "../services/decisionStore.js"
+import { readDecisions, appendDecision, updateDecisionMemo } from "../services/decisionStore.js"
 import { requireAuth } from "../middleware/auth.js"
 
 const router = Router()
@@ -17,7 +17,7 @@ router.get("/", requireAuth, async (req, res) => {
 // POST /api/decisions — 투자 판단 저장(기능③)
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const { url, title, summaryBullets, decision, marketSentiment, insight } = req.body
+    const { url, title, summaryBullets, decision, marketSentiment, insight, memo } = req.body
     if (!url || !title || !decision) {
       throw new Error("url, title, decision are required")
     }
@@ -28,8 +28,28 @@ router.post("/", requireAuth, async (req, res) => {
       decision,
       marketSentiment,
       insight,
+      memo: memo ?? null,
     })
     res.json({ success: true, data: saved })
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// PATCH /api/decisions/:id — 판단 근거 한 줄 메모만 수정(재판단 insert와는
+// 별개 경로). 카드 중복 생성 없이 기존 row의 memo 필드만 갱신한다.
+router.patch("/:id", requireAuth, async (req, res) => {
+  try {
+    const { memo } = req.body
+    if (memo !== null && memo !== undefined && typeof memo !== "string") {
+      throw new Error("memo must be a string or null")
+    }
+    const updated = await updateDecisionMemo(req.userId, req.params.id, memo ?? null)
+    if (!updated) {
+      res.status(404).json({ success: false, error: "decision not found" })
+      return
+    }
+    res.json({ success: true, data: updated })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
   }

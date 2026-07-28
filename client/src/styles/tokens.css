@@ -1,5 +1,5 @@
 /*
- * Briefly design tokens.
+ * Articles design tokens.
  * Source of truth: .claude/skills/design/SKILL.md (mirrors prototype/style.css :root).
  * Keep all three in sync when a token value changes.
  */
@@ -34,6 +34,14 @@
   --alert-bg: #fffbeb;
   --alert-border: #fbbf24;
   --alert-text: #92400e;
+
+  /* Color - Difficulty (기사 난이도 뱃지, 쉬움→어려움 파스텔 그라데이션) */
+  --difficulty-easy-bg: #ddf3e4;
+  --difficulty-easy-text: #146c2e;
+  --difficulty-medium-bg: #fdecc8;
+  --difficulty-medium-text: #8a5a00;
+  --difficulty-hard-bg: #fce1d2;
+  --difficulty-hard-text: #9a3b12;
 
   /* Color - Border (옅은 구분선/힌트용, 문장 탭 밑줄 등) */
   --border-subtle: #d6d9e0;

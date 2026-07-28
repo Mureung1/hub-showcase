@@ -15,6 +15,7 @@ const FALLBACK_ARTICLES = [
     translation: "연준, 인플레이션 가이던스 변화에 따라 금리 방향 시사",
     tickers: ["$SPX", "$TLT"],
     url: "https://www.nytimes.com/2026/07/12/business/fed-rate-path-guidance.html",
+    readabilityScore: 4,
   },
   {
     id: "bear-market",
@@ -24,6 +25,7 @@ const FALLBACK_ARTICLES = [
     translation: "기술주 하락, 투자자들 베어마켓 우려에 대비",
     tickers: ["$GTC", "$QQQ"],
     url: "https://www.bloomberg.com/news/articles/2026-07-12/tech-stocks-bear-market",
+    readabilityScore: 5,
   },
   {
     id: "ev-ticker",
@@ -33,6 +35,7 @@ const FALLBACK_ARTICLES = [
     translation: "전기차 업체, 강한 인도량 실적에 티커 8% 급등",
     tickers: ["$EVCO"],
     url: "https://www.reuters.com/business/autos/ev-maker-ticker-jumps-2026-07-12",
+    readabilityScore: 3,
   },
 ]
 
