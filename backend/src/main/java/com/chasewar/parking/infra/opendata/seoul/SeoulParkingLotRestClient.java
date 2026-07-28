@@ -5,30 +5,41 @@ import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.UnknownContentTypeException;
 
 @Slf4j
 @Component
 public class SeoulParkingLotRestClient implements SeoulParkingLotClient {
 
-    private static final String BASE_URL = "http://openapi.seoul.go.kr:8088";
     private static final String SUCCESS_CODE = "INFO-000";
 
-    private final RestClient restClient;
+    private final RestClient seoulRestClient;
     private final String apiKey;
 
-    public SeoulParkingLotRestClient(@Value("${seoul.api.key}") String apiKey) {
+    public SeoulParkingLotRestClient(RestClient seoulRestClient, @Value("${seoul.api.key}") String apiKey) {
+        this.seoulRestClient = seoulRestClient;
         this.apiKey = apiKey;
-        this.restClient = RestClient.builder()
-                .baseUrl(BASE_URL)
-                .build();
     }
 
+    @Retryable(
+            retryFor = {
+                    ResourceAccessException.class,
+                    HttpServerErrorException.class,
+                    UnknownContentTypeException.class
+            },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 200, multiplier = 2)
+    )
     @Override
     public SeoulParkingLotResponse fetchPage(int startIndex, int endIndex) {
 
-        SeoulParkingLotResponse response = restClient.get()
+        SeoulParkingLotResponse response = seoulRestClient.get()
                 .uri("/{key}/json/GetParkInfo/{start}/{end}/", apiKey, startIndex, endIndex)
                 .retrieve()
                 .body(SeoulParkingLotResponse.class);

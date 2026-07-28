@@ -3,15 +3,14 @@ package com.chasewar.parking.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.chasewar.parking.infra.opendata.SeoulParkingLotClient;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Result;
 import com.chasewar.parking.infra.opendata.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
-import com.chasewar.parking.infra.opendata.SeoulParkingLotClient;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.IntegrationTest;
 import java.util.List;
@@ -76,7 +75,8 @@ class ParkingLotLoadServiceIntegrationTest extends IntegrationTest {
             parkingLotLoadService.load();
 
             // then
-            verify(seoulParkingLotClient, times(2)).fetchPage(1, 1000);
+            // 첫 페이지 응답을 재사용하므로 페이지당 한 번만 호출
+            verify(seoulParkingLotClient).fetchPage(1, 1000);
             verify(seoulParkingLotClient).fetchPage(1001, 2000);
             verify(seoulParkingLotClient).fetchPage(2001, 3000);
             verifyNoMoreInteractions(seoulParkingLotClient);

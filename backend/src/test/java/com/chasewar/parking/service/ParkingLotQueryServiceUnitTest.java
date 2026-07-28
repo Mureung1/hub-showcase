@@ -17,13 +17,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ParkingLotServiceUnitTest {
+class ParkingLotQueryServiceUnitTest {
 
     @Mock
     private ParkingLotRepository parkingLotRepository;
 
     @InjectMocks
-    private ParkingLotService parkingLotService;
+    private ParkingLotQueryService parkingLotQueryService;
 
     @DisplayName("주차장을 상세 조회할 때")
     @Nested
@@ -37,7 +37,7 @@ class ParkingLotServiceUnitTest {
                     .willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> parkingLotService.getDetail(12345L, null))
+            assertThatThrownBy(() -> parkingLotQueryService.findDetailById(12345L))
                     .isInstanceOf(ChasewarException.class)
                     .hasMessage(NotFoundErrorCode.NOT_FOUND_PARKING_LOT.name());
         }

@@ -4,10 +4,13 @@ import com.chasewar.global.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.WalkingRoute;
 import com.chasewar.parking.infra.walkingroute.WalkingRouteClient;
 import com.chasewar.parking.infra.walkingroute.tmap.dto.TmapPedestrianResponse;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -15,27 +18,20 @@ import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class TmapWalkingRouteClient implements WalkingRouteClient {
 
-    private static final String BASE_URL = "https://apis.openapi.sk.com";
-    private static final String APP_KEY_HEADER = "appKey";
     private static final String VERSION = "1";
     private static final String START_NAME = "출발지";
     private static final String END_NAME = "도착지";
 
-    private final RestClient restClient;
-
-    public TmapWalkingRouteClient(@Value("${tmap.api.key}") String appKey) {
-        this.restClient = RestClient.builder()
-                .baseUrl(BASE_URL)
-                .defaultHeader(APP_KEY_HEADER, appKey)
-                .build();
-    }
+    private final RestClient tmapRestClient;
+    private final Executor walkingRouteExecutor;
 
     @Override
     public Optional<WalkingRoute> findRoute(Coordinates origin, Coordinates destination) {
         try {
-            TmapPedestrianResponse response = restClient.post()
+            TmapPedestrianResponse response = tmapRestClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/tmap/routes/pedestrian")
                             .queryParam("version", VERSION)
@@ -57,6 +53,22 @@ public class TmapWalkingRouteClient implements WalkingRouteClient {
 
             return Optional.empty();
         }
+    }
+
+    @Override
+    public Map<Long, WalkingRoute> findRoutes(Map<Long, Coordinates> originById, Coordinates destination) {
+        Map<Long, CompletableFuture<Optional<WalkingRoute>>> futures = new HashMap<>();
+        originById.forEach((key, origin) ->
+                futures.put(key, CompletableFuture.supplyAsync(
+                        () -> findRoute(origin, destination), walkingRouteExecutor))
+                );
+
+        Map<Long, WalkingRoute> routeById = new HashMap<>();
+        futures.forEach((key, future) ->
+                future.join().ifPresent(route -> routeById.put(key, route))
+                );
+
+        return routeById;
     }
 
     private Map<String, String> toRequestBody(Coordinates origin, Coordinates destination) {
