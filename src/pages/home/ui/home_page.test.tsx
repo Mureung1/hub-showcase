@@ -68,7 +68,9 @@ describe('HomePage', () => {
       join(process.cwd(), 'src/pages/home/ui/home_page.css'),
       'utf8'
     );
+    const stageRule = getCssRule(styles, '.home-page__stage');
     const heroRule = getCssRule(styles, '.home-page__hero');
+    const bodyRule = getCssRule(styles, '.home-page__body');
     const suggestionsRule = getCssRule(styles, '.home-page__suggestions');
     const tabletStyles = styles.slice(
       styles.indexOf('@media (max-width: 1199px)')
@@ -77,9 +79,12 @@ describe('HomePage', () => {
       styles.indexOf('@media (max-width: 767px)')
     );
 
+    expect(stageRule).toContain('background: var(--color-retrieve-blue);');
     expect(heroRule).toContain('width: min(820px, 100%);');
     expect(heroRule).toContain('margin-inline: auto;');
-    expect(heroRule).toContain('text-align: center;');
+    expect(bodyRule).toContain(
+      'width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));'
+    );
     expect(suggestionsRule).toContain(
       'grid-template-columns: repeat(3, minmax(0, 1fr));'
     );
@@ -209,6 +214,16 @@ describe('HomePage', () => {
     expect(
       screen.getByRole('button', { name: '저장해둔 영상 골라보기' })
     ).not.toBeNull();
+    const queryInput = screen.getByRole('textbox', {
+      name: '지금 꺼내 보고 싶은 상황',
+    });
+    const suggestion = screen.getByRole('button', {
+      name: '과제 참고자료 다시 찾기',
+    });
+
+    expect(queryInput.closest('.home-page__stage')).not.toBeNull();
+    expect(suggestion.closest('.home-page__body')).not.toBeNull();
+    expect(suggestion.closest('.home-page__stage')).toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
   });
 

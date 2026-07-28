@@ -1,6 +1,11 @@
 .home-page {
-  display: grid;
-  gap: var(--spacing-10);
+  min-width: 0;
+  background: var(--color-paper);
+}
+
+.home-page__stage {
+  padding: var(--spacing-12) var(--spacing-4);
+  background: var(--color-retrieve-blue);
 }
 
 .home-page__hero {
@@ -13,7 +18,7 @@
 }
 
 .home-page__kicker {
-  color: var(--color-graphite);
+  color: var(--color-surface);
   font-size: var(--typography-label-size);
   font-weight: 700;
   line-height: var(--typography-label-line-height);
@@ -21,7 +26,7 @@
 
 .home-page__hero h2 {
   max-width: 760px;
-  color: var(--color-ink);
+  color: var(--color-surface);
   font-size: var(--typography-screen-title-size);
   font-weight: 700;
   line-height: var(--typography-screen-title-line-height);
@@ -35,6 +40,21 @@
   line-height: var(--typography-body-line-height);
 }
 
+.home-page__body {
+  display: grid;
+  width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));
+  margin-inline: auto;
+  padding: var(--spacing-8) 0 var(--spacing-20);
+  gap: var(--spacing-10);
+}
+
+.home-page__suggestion-panel {
+  display: grid;
+  width: min(820px, 100%);
+  margin-inline: auto;
+  gap: var(--spacing-3);
+}
+
 .home-page__search {
   display: grid;
   width: 100%;
@@ -44,7 +64,7 @@
 }
 
 .home-page__search label {
-  color: var(--color-ink);
+  color: var(--color-surface);
   font-size: var(--typography-label-size);
   font-weight: 700;
   line-height: var(--typography-label-line-height);
@@ -121,7 +141,13 @@ button.home-page__search-action {
 }
 
 @media (max-width: 767px) {
-  .home-page {
+  .home-page__stage {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .home-page__body {
+    width: min(calc(100% - var(--spacing-6)), var(--layout-content-width));
+    padding-top: var(--spacing-6);
     gap: var(--spacing-8);
   }
 
