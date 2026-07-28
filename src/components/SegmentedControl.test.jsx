@@ -59,4 +59,41 @@ describe('SegmentedControl', () => {
 
     expect(screen.getByText('추천')).toBeInTheDocument()
   })
+
+  it('radius를 주면(학생/직원 토글의 pill) 기본 radius.sm 대신 그 값을 쓴다', () => {
+    render(<SegmentedControl options={OPTIONS} value="a" onChange={() => {}} radius="999px" />)
+
+    expect(screen.getByRole('radio', { name: 'A' })).toHaveStyle({ borderRadius: '999px' })
+  })
+
+  it('옵션별 ring이 있으면(급식 요일 탭의 "오늘") 비활성 상태에서만 테두리가 생기고 선택되면 사라진다', () => {
+    const options = [
+      { key: 'a', label: 'A', ring: true },
+      { key: 'b', label: 'B' },
+    ]
+    const { rerender } = render(<SegmentedControl options={options} value="b" onChange={() => {}} />)
+
+    expect(screen.getByRole('radio', { name: 'A' })).toHaveStyle({ border: '1px solid #059669' })
+    expect(screen.getByRole('radio', { name: 'B' })).toHaveStyle({ borderStyle: 'none' })
+
+    rerender(<SegmentedControl options={options} value="a" onChange={() => {}} />)
+    expect(screen.getByRole('radio', { name: 'A' })).toHaveStyle({ borderStyle: 'none' })
+  })
+
+  it('inactiveBg/inactiveBorder를 주면 비활성 옵션의 배경·테두리가 그 값을 쓴다', () => {
+    render(
+      <SegmentedControl
+        options={OPTIONS}
+        value="a"
+        onChange={() => {}}
+        inactiveBg="transparent"
+        inactiveBorder="1px solid #E5E8EB"
+      />,
+    )
+
+    expect(screen.getByRole('radio', { name: 'B' })).toHaveStyle({
+      background: 'transparent',
+      border: '1px solid #E5E8EB',
+    })
+  })
 })

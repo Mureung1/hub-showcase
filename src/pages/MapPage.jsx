@@ -6,6 +6,7 @@ import Card from '../components/Card.jsx'
 import FoodCategoryChips from '../components/FoodCategoryChips.jsx'
 import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
 import PlaceList from '../components/PlaceList.jsx'
+import SegmentedControl from '../components/SegmentedControl.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
@@ -29,6 +30,11 @@ import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 위치 권한 거부/실패 시 지도를 띄울 기본 위치(대전 유성구 충남대학교 인근)
 const DEFAULT_POSITION = { lat: 36.3665, lng: 127.3448 }
+
+const MAP_VIEW_OPTIONS = [
+  { key: 'nearby', label: '주변 식당' },
+  { key: 'cafeteria', label: '학식·급식' },
+]
 
 // AI 키워드 생성이 실패했을 때 쓰는 부족 영양소별 기본 식당 유형(서로 다른 유형으로 분산).
 // 칼로리·나트륨은 더 이상 부족 판정 대상이 아니라서(nutrition.js DEFICIENCY_TARGET_KEYS) 키가 없다.
@@ -577,34 +583,15 @@ export default function MapPage() {
     <div style={styles.page}>
       {/* 화면 제목("지도")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주므로
           중복이고, 지도를 위로 올려 한 화면에 더 넓게 보여준다. */}
-      <div style={{ display: 'flex', gap: spacing.sm, marginBottom: spacing.md }}>
-        {[
-          { key: 'nearby', label: '주변 식당' },
-          { key: 'cafeteria', label: '학식·급식' },
-        ].map((tab) => {
-          const active = view === tab.key
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              className="tds-press"
-              onClick={() => setView(tab.key)}
-              style={{
-                flex: 1,
-                padding: `${spacing.sm}px 0`,
-                borderRadius: radius.sm,
-                border: 'none',
-                background: active ? colors.primary : colors.bg,
-                color: active ? '#fff' : colors.textStrong,
-                fontWeight: 700,
-                fontSize: font.size.sm,
-                cursor: 'pointer',
-              }}
-            >
-              {tab.label}
-            </button>
-          )
-        })}
+      <div style={{ marginBottom: spacing.md }}>
+        <SegmentedControl
+          options={MAP_VIEW_OPTIONS}
+          value={view}
+          onChange={setView}
+          padding={`${spacing.sm}px 0`}
+          fontSize={font.size.sm}
+          inactiveTextColor={colors.textStrong}
+        />
       </div>
 
       {view === 'cafeteria' && <CafeteriaPanel />}

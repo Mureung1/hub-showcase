@@ -9,8 +9,9 @@ import { colors, font, radius, spacing } from '../styles/theme.js'
 // 옮기는 데 필요한 값만) — fill/gap/padding/fontSize/fontWeight/minHeight/accentColor/
 // inactiveTextColor 모두 기존 화면 중 하나가 실제로 쓰던 값이다.
 //
-// options: [{ key, label, activeColor? }] — activeColor는 옵션마다 강조색이 달라야 할 때만
-// (달력의 좋음/보통/나쁨) 개별로 주고, 없으면 accentColor 하나를 공유한다(나머지 전부).
+// options: [{ key, label, activeColor?, ring? }] — activeColor는 옵션마다 강조색이 달라야 할 때만
+// (달력의 좋음/보통/나쁨) 개별로 주고, 없으면 accentColor 하나를 공유한다(나머지 전부). ring은 활성
+// 상태와 별개로 특정 옵션 하나를 테두리로 강조할 때만(급식 요일 탭의 "오늘" 표시).
 // renderCaption: (option) => ReactNode | null — 세그먼트 아래 보조 문구가 필요할 때만(식사 시간대의
 // "추천" 표시). 생략한 호출부는 원래 레이아웃 그대로다.
 export default function SegmentedControl({
@@ -23,9 +24,14 @@ export default function SegmentedControl({
   padding = `${spacing.md}px 0`,
   fontSize = font.size.md,
   fontWeight = 700,
+  lineHeight,
   minHeight,
+  radius: radiusProp = radius.sm,
   accentColor = colors.primary,
   inactiveTextColor = colors.textSub,
+  inactiveBg = colors.bg,
+  inactiveBorder = 'none',
+  ringColor,
   renderCaption,
   style,
 }) {
@@ -33,6 +39,7 @@ export default function SegmentedControl({
     <div role="radiogroup" style={{ display: 'flex', gap, ...style }}>
       {options.map((opt) => {
         const active = opt.key === value
+        const ring = opt.ring && !active
         return (
           <div key={opt.key} style={fill ? { flex: 1, textAlign: 'center' } : undefined}>
             <button
@@ -47,12 +54,13 @@ export default function SegmentedControl({
                 minHeight,
                 boxSizing: 'border-box',
                 padding,
-                borderRadius: radius.sm,
-                border: 'none',
-                background: active ? (opt.activeColor ?? accentColor) : colors.bg,
+                borderRadius: radiusProp,
+                border: active ? 'none' : ring ? `1px solid ${ringColor ?? accentColor}` : inactiveBorder,
+                background: active ? (opt.activeColor ?? accentColor) : inactiveBg,
                 color: active ? '#fff' : inactiveTextColor,
                 fontWeight,
                 fontSize,
+                lineHeight,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 opacity: disabled && !active ? 0.5 : 1,
               }}

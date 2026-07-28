@@ -9,6 +9,7 @@ import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
 import CnuCafeteriaLocationCard from './CnuCafeteriaLocationCard.jsx'
 import MealCard from './MealCard.jsx'
+import SegmentedControl from './SegmentedControl.jsx'
 import Skeleton from './Skeleton.jsx'
 import { MILAIZE_ALLERGENS } from '../lib/allergyRules.js'
 import { CNU1_EXTERNAL_LINK, CNU_BUILDINGS, getSelectedCnuBuilding, setSelectedCnuBuilding } from '../lib/cnuBuildings.js'
@@ -241,39 +242,34 @@ function NoSchoolCard() {
 }
 
 function WeekTabs({ weekDates, selectedKey, todayKey, onSelect }) {
+  const options = weekDates.map((d) => {
+    const key = toDateKey(d)
+    return {
+      key,
+      ring: key === todayKey,
+      label: (
+        <>
+          {WEEKDAY_LABEL[d.getDay()]}
+          <br />
+          {d.getDate()}
+        </>
+      ),
+    }
+  })
   return (
     <Card style={{ padding: spacing.md }}>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {weekDates.map((d) => {
-          const key = toDateKey(d)
-          const active = key === selectedKey
-          const isToday = key === todayKey
-          return (
-            <button
-              key={key}
-              type="button"
-              className="tds-press"
-              onClick={() => onSelect(key)}
-              style={{
-                flex: 1,
-                padding: `${spacing.sm}px 0`,
-                borderRadius: radius.sm,
-                border: isToday && !active ? `1px solid ${colors.primary}` : 'none',
-                background: active ? colors.primary : 'transparent',
-                color: active ? '#fff' : colors.textStrong,
-                fontSize: font.size.xs,
-                fontWeight: 600,
-                cursor: 'pointer',
-                lineHeight: 1.5,
-              }}
-            >
-              {WEEKDAY_LABEL[d.getDay()]}
-              <br />
-              {d.getDate()}
-            </button>
-          )
-        })}
-      </div>
+      <SegmentedControl
+        options={options}
+        value={selectedKey}
+        onChange={onSelect}
+        gap={4}
+        padding={`${spacing.sm}px 0`}
+        fontSize={font.size.xs}
+        fontWeight={600}
+        lineHeight={1.5}
+        inactiveBg="transparent"
+        inactiveTextColor={colors.textStrong}
+      />
     </Card>
   )
 }
@@ -375,32 +371,15 @@ function formatFallbackNotice(updatedAt) {
 function CnuBuildingSelector({ selected, onSelect }) {
   return (
     <Card style={{ padding: spacing.md }}>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {CNU_BUILDINGS.map((b) => {
-          const active = b.key === selected
-          return (
-            <button
-              key={b.key}
-              type="button"
-              className="tds-press"
-              onClick={() => onSelect(b.key)}
-              style={{
-                flex: 1,
-                padding: `${spacing.sm}px 2px`,
-                borderRadius: radius.sm,
-                border: 'none',
-                background: active ? colors.primary : colors.bg,
-                color: active ? '#fff' : colors.textStrong,
-                fontWeight: 700,
-                fontSize: font.size.xs,
-                cursor: 'pointer',
-              }}
-            >
-              {b.label}
-            </button>
-          )
-        })}
-      </div>
+      <SegmentedControl
+        options={CNU_BUILDINGS}
+        value={selected}
+        onChange={onSelect}
+        gap={4}
+        padding={`${spacing.sm}px 2px`}
+        fontSize={font.size.xs}
+        inactiveTextColor={colors.textStrong}
+      />
     </Card>
   )
 }
@@ -412,31 +391,19 @@ const TRACK_OPTIONS = [
 
 function TrackToggle({ track, onChange }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: spacing.sm, margin: `0 0 ${spacing.sm}px` }}>
-      {TRACK_OPTIONS.map((opt) => {
-        const active = track === opt.key
-        return (
-          <button
-            key={opt.key}
-            type="button"
-            className="tds-press"
-            onClick={() => onChange(opt.key)}
-            style={{
-              padding: `4px ${spacing.md}px`,
-              borderRadius: radius.pill,
-              border: active ? 'none' : `1px solid ${colors.border}`,
-              background: active ? colors.primary : 'transparent',
-              color: active ? '#fff' : colors.textSub,
-              fontWeight: 600,
-              fontSize: font.size.xs,
-              cursor: 'pointer',
-            }}
-          >
-            {opt.label}
-          </button>
-        )
-      })}
-    </div>
+    <SegmentedControl
+      options={TRACK_OPTIONS}
+      value={track}
+      onChange={onChange}
+      fill={false}
+      radius={radius.pill}
+      padding={`4px ${spacing.md}px`}
+      fontSize={font.size.xs}
+      fontWeight={600}
+      inactiveBg="transparent"
+      inactiveBorder={`1px solid ${colors.border}`}
+      style={{ justifyContent: 'center', margin: `0 0 ${spacing.sm}px` }}
+    />
   )
 }
 
