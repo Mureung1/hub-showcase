@@ -6,6 +6,9 @@ interface UserListProps {
   accessToken: string;
   apiBaseUrl: string;
   onFollowChange?: () => void;
+  onOpenProfile?: (nickname: string) => void;
+  searchValue?: string;
+  onSearchValueChange?: (value: string) => void;
 }
 
 function UserAvatar({ user }: { user: SwimUser }) {
@@ -20,16 +23,29 @@ function UserAvatar({ user }: { user: SwimUser }) {
   );
 }
 
-export function UserList({ accessToken, apiBaseUrl, onFollowChange }: UserListProps) {
+export function UserList({
+  accessToken,
+  apiBaseUrl,
+  onFollowChange,
+  onOpenProfile,
+  searchValue,
+  onSearchValueChange,
+}: UserListProps) {
   const [users, setUsers] = useState<SwimUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [retryKey, setRetryKey] = useState(0);
-  const [searchInput, setSearchInput] = useState("");
+  const [localSearchInput, setLocalSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState<string | null>("");
   const [pendingNickname, setPendingNickname] = useState<string | null>(null);
   const [followError, setFollowError] = useState<{ nickname: string; message: string } | null>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
+  const searchInput = searchValue ?? localSearchInput;
+
+  const updateSearchInput = (value: string) => {
+    setLocalSearchInput(value);
+    onSearchValueChange?.(value);
+  };
 
   const retry = useCallback(() => setRetryKey((current) => current + 1), []);
 
@@ -131,7 +147,7 @@ export function UserList({ accessToken, apiBaseUrl, onFollowChange }: UserListPr
           type="search"
           maxLength={20}
           value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
+          onChange={(event) => updateSearchInput(event.target.value)}
           aria-invalid={isSearchTooShort}
           aria-describedby="people-search-help"
           placeholder="함께 음악을 나눌 사람을 찾아보세요"
@@ -171,11 +187,13 @@ export function UserList({ accessToken, apiBaseUrl, onFollowChange }: UserListPr
         <ul className="user-list">
           {users.map((user) => (
             <li className="user-card" key={user.nickname}>
-              <UserAvatar user={user} />
-              <div>
-                <strong>{user.nickname}</strong>
-                <p>{user.bio || "음악으로 하루를 기록하고 있어요."}</p>
-              </div>
+              <button className="user-profile-link" type="button" onClick={() => onOpenProfile?.(user.nickname)}>
+                <UserAvatar user={user} />
+                <span className="user-profile-copy">
+                  <strong>{user.nickname}</strong>
+                  <p>{user.bio || "음악으로 하루를 기록하고 있어요."}</p>
+                </span>
+              </button>
               <div className="follow-action">
                 <button
                   className={user.isFollowing ? "follow-button is-following" : "follow-button"}

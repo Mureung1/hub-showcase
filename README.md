@@ -30,7 +30,7 @@ SWIM은 **음악을 중심으로 하루를 기록하는 새로운 방식의 SNS*
 - 팔로잉 음악 피드
 - 사용자별 좋아요·좋아요 취소
 
-현재 버전은 위 사용자 흐름을 포트폴리오로 시연하기 위한 MVP입니다. 댓글, 알림, DM, Recap, 플레이리스트 생성은 포함하지 않습니다.
+현재 버전은 위 사용자 흐름과 Monthly Recap 화면까지 포트폴리오로 시연할 수 있습니다. 댓글, 알림, DM과 Spotify 플레이리스트 생성은 포함하지 않습니다.
 
 ---
 
@@ -183,6 +183,8 @@ Authorization: Bearer <supabase-access-token>
 | 기능 | Method | URL |
 |------|--------|-----|
 | 다른 사용자 목록·닉네임 검색 | GET | `/api/users?q={nickname}` |
+| 공개 프로필 조회 | GET | `/api/users/{nickname}` |
+| 공개 음악 다이어리 조회 | GET | `/api/users/{nickname}/music-records?cursor=` |
 | 팔로우 | POST | `/api/follows` |
 | 언팔로우 | DELETE | `/api/follows/{followingNickname}` |
 | 팔로잉 음악 피드 | GET | `/api/feed` |
@@ -190,7 +192,21 @@ Authorization: Bearer <supabase-access-token>
 | 음악 기록 좋아요 취소 | DELETE | `/api/music-records/{recordId}/likes` |
 | 함께 기억한 사용자 조회 | GET | `/api/music-records/{recordId}/likes?cursor=` |
 
-위 API는 모두 Supabase access token이 필요합니다. 팔로우 요청 본문은 다음과 같습니다.
+위 API는 모두 Supabase access token이 필요합니다. 공개 프로필 응답은 닉네임, 소개, 아바타, 본인 여부와 현재 사용자의 팔로우 상태만 포함하며 Auth UUID와 이메일은 반환하지 않습니다. 팔로우 요청 본문은 다음과 같습니다.
+
+공개 음악 다이어리는 오늘의 기록과 지난 기록을 분리하고 지난 기록을 20건씩 반환합니다. 다음 페이지 커서는 마지막 기록의 날짜·생성 시각·기록 ID를 기준으로 하므로 조회 도중 새 기록이 추가되어도 기존 페이지 경계를 유지합니다. 로그인 사용자는 팔로우 여부와 관계없이 공개 다이어리를 읽을 수 있지만, 음악 기록 생성은 계속 자신의 사용자 ID로만 허용됩니다. 응답에는 작성자의 공개 닉네임과 아바타만 포함되며 Auth UUID와 이메일은 반환하지 않습니다.
+
+검색 결과와 팔로잉 피드에서 작성자의 닉네임·아바타를 선택하면 URL에 `?profile={nickname}`이 반영됩니다. 이 URL은 직접 접근과 새로고침을 지원하며 브라우저 뒤로 가기와 화면의 돌아가기 버튼이 프로필 상태를 함께 갱신합니다. 공개 프로필에서도 팔로우·언팔로우와 음악 기록 좋아요·취소를 사용할 수 있으며 서버가 확정한 상태와 인원수만 화면에 반영합니다.
+
+SWIM은 하루 한 곡을 기록하므로 `(user_id, record_date)` 조합은 중복될 수 없습니다. 같은 날 두 번째 기록을 생성하면 `409 MUSIC_RECORD_ALREADY_EXISTS`를 반환합니다. `music_records.sql` 적용 전에는 아래 조회로 기존 중복 데이터를 확인해야 하며, SQL은 중복 데이터를 자동 삭제하거나 변경하지 않습니다.
+
+```sql
+select user_id, record_date, count(*)
+from public.music_records
+where user_id is not null
+group by user_id, record_date
+having count(*) > 1;
+```
 
 ```json
 {
@@ -213,7 +229,7 @@ Authorization: Bearer <supabase-access-token>
 
 `GET /api/feed`는 현재 사용자가 팔로우한 사람들의 음악 기록만 최신순으로 반환합니다. 공개 응답에는 Auth UUID를 포함하지 않으며 작성자의 닉네임과 아바타만 제공합니다. `meta.followingCount`로 팔로우한 사람이 없는 상태와 팔로우한 사람에게 아직 기록이 없는 상태를 구분할 수 있습니다.
 
-음악 기록과 피드 응답의 `liked`는 현재 인증 사용자의 좋아요 상태만 나타내며 `likeCount`는 기록을 기억한 전체 인원수입니다. 원본 좋아요 관계는 반환하지 않습니다. 제한된 DB 집계 함수가 본인 또는 팔로잉 기록의 숫자만 제공하며, `likes` SELECT RLS는 사용자가 자신의 좋아요 행만 직접 읽도록 제한합니다. `(user_id, record_id)` 복합 기본 키는 중복 관계를 막습니다.
+음악 기록과 피드 응답의 `liked`는 현재 인증 사용자의 좋아요 상태만 나타내며 `likeCount`는 기록을 기억한 전체 인원수입니다. 원본 좋아요 관계는 반환하지 않습니다. 제한된 DB 집계 함수는 인증 사용자가 읽는 공개 음악 기록의 숫자만 제공하며, `likes` SELECT RLS는 사용자가 자신의 좋아요 행만 직접 읽도록 제한합니다. `(user_id, record_id)` 복합 기본 키는 중복 관계를 막습니다.
 
 좋아요 생성과 취소는 요청 본문에서 사용자 ID를 받지 않고 검증된 access token의 사용자만 사용합니다. 생성은 멱등 UPSERT로 처리하며 같은 요청을 반복해도 관계는 한 건만 유지됩니다. 존재하지 않거나 현재 사용자가 읽을 수 없는 기록은 `404 MUSIC_RECORD_NOT_FOUND`로 응답합니다.
 
@@ -273,6 +289,70 @@ Authorization: Bearer <supabase-access-token>
 ```
 
 ---
+
+## Monthly Recap API
+
+| 기능 | Method | URL |
+|------|--------|-----|
+| 로그인 사용자의 월간 기록 집계 | GET | `/api/recaps/monthly?year={YYYY}&month={1-12}` |
+
+Supabase access token이 필요합니다. `year`는 네 자리 연도, `month`는 1부터 12까지의 정수 문자열로 전달합니다. 응답은 해당 사용자의 기록만 사용하며 사용자 ID와 이메일은 포함하지 않습니다. `topArtists`는 기록 횟수 내림차순으로 최대 세 명을 반환하고, 동률은 아티스트 이름 순으로 정렬합니다.
+
+```json
+{
+  "data": {
+    "year": 2026,
+    "month": 7,
+    "recordCount": 3,
+    "recordDays": 3,
+    "topArtists": [
+      {
+        "artistName": "NewJeans",
+        "recordCount": 2
+      }
+    ],
+    "firstRecord": {
+      "id": 1,
+      "spotifyTrackId": "spotify-track-id",
+      "songTitle": "Ditto",
+      "artistName": "NewJeans",
+      "albumName": "OMG",
+      "albumImageUrl": "https://example.com/album.jpg",
+      "externalUrl": "https://open.spotify.com/track/spotify-track-id",
+      "emotionText": "조용히 시작한 달",
+      "recordDate": "2026-07-01"
+    },
+    "lastRecord": {
+      "id": 3,
+      "spotifyTrackId": "spotify-track-id-3",
+      "songTitle": "밤편지",
+      "artistName": "아이유",
+      "albumName": "Palette",
+      "albumImageUrl": null,
+      "externalUrl": null,
+      "emotionText": "한 달을 천천히 닫는 마음",
+      "recordDate": "2026-07-31"
+    },
+    "tracks": [
+      {
+        "id": 1,
+        "spotifyTrackId": "spotify-track-id",
+        "songTitle": "Ditto",
+        "artistName": "NewJeans",
+        "albumName": "OMG",
+        "albumImageUrl": "https://example.com/album.jpg",
+        "externalUrl": "https://open.spotify.com/track/spotify-track-id",
+        "emotionText": "조용히 시작한 달",
+        "recordDate": "2026-07-01"
+      }
+    ]
+  }
+}
+```
+
+기록이 없는 달은 `recordCount`, `recordDays`가 0이고 `topArtists`, `tracks`가 빈 배열이며 첫 기록과 마지막 기록은 `null`입니다. 잘못된 연·월은 `400 INVALID_RECAP_MONTH`로 처리합니다.
+
+로그인 홈의 `한 달의 음악 일기`에서 월을 선택하면 대표 앨범 이미지, 기록 일수, 자주 함께한 아티스트, 첫 음악과 마지막 음악, 날짜순 음악 타임라인을 확인할 수 있습니다. 월 변경 중 이전 요청은 취소하며 로딩, 빈 달, 실패와 재시도 상태를 구분합니다.
 
 ## Spotify API
 

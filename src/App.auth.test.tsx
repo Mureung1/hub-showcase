@@ -37,6 +37,7 @@ describe("app authentication flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMocks.subscribeToAuthChanges.mockReturnValue(vi.fn());
+    window.history.replaceState({}, "", "/");
   });
 
   afterEach(() => {
@@ -191,5 +192,114 @@ describe("app authentication flow", () => {
         headers: { Authorization: "Bearer valid-access-token" },
       },
     );
+  });
+
+  it("restores the nickname search after returning from a public profile", async () => {
+    authMocks.getCurrentSession.mockResolvedValue(session);
+    authMocks.getProfile.mockResolvedValue({
+      id: "user-1",
+      nickname: "고요한수영",
+      bio: "",
+      avatarUrl: null,
+    });
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/api/feed")) {
+        return Promise.resolve(response({ data: [], meta: { followingCount: 0 } }));
+      }
+      if (url.includes("/api/users?q=blue")) {
+        return Promise.resolve(response({
+          data: [{
+            nickname: "BlueWave",
+            bio: "밤의 음악",
+            avatarUrl: null,
+            isFollowing: false,
+          }],
+        }));
+      }
+      if (url.endsWith("/api/users/BlueWave")) {
+        return Promise.resolve(response({
+          data: {
+            nickname: "BlueWave",
+            bio: "밤의 음악",
+            avatarUrl: null,
+            isMe: false,
+            isFollowing: false,
+          },
+        }));
+      }
+      if (url.endsWith("/api/users")) {
+        return Promise.resolve(response({ data: [] }));
+      }
+      return Promise.resolve(response({ data: [] }));
+    }));
+
+    render(<App initialRecords={[]} />);
+    const searchInput = await screen.findByLabelText("닉네임으로 찾기");
+    fireEvent.change(searchInput, { target: { value: "blue" } });
+    fireEvent.click(await screen.findByRole("button", { name: /BlueWave/ }));
+    expect(await screen.findByRole("heading", { name: "BlueWave" })).toBeInTheDocument();
+    expect(new URLSearchParams(window.location.search).get("profile")).toBe("BlueWave");
+
+    fireEvent.click(screen.getByRole("button", { name: "← 음악 피드로 돌아가기" }));
+
+    expect(new URLSearchParams(window.location.search).has("profile")).toBe(false);
+    expect(await screen.findByLabelText("닉네임으로 찾기")).toHaveValue("blue");
+    expect(await screen.findByRole("button", { name: /BlueWave/ })).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:3000/api/users?q=blue",
+      {
+        headers: { Authorization: "Bearer valid-access-token" },
+        signal: expect.any(AbortSignal),
+      },
+    );
+  });
+
+  it("restores a directly addressed profile and follows popstate navigation", async () => {
+    window.history.replaceState({}, "", "/?profile=BlueWave");
+    authMocks.getCurrentSession.mockResolvedValue(session);
+    authMocks.getProfile.mockResolvedValue({
+      id: "user-1",
+      nickname: "고요한수영",
+      bio: "",
+      avatarUrl: null,
+    });
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/api/users/BlueWave")) {
+        return Promise.resolve(response({
+          data: {
+            nickname: "BlueWave",
+            bio: "밤의 음악",
+            avatarUrl: null,
+            isMe: false,
+            isFollowing: false,
+          },
+        }));
+      }
+      if (url.endsWith("/api/users/BlueWave/music-records")) {
+        return Promise.resolve(response({
+          data: { todayRecord: null, records: [], nextCursor: null },
+        }));
+      }
+      if (url.endsWith("/api/feed")) {
+        return Promise.resolve(response({ data: [], meta: { followingCount: 0 } }));
+      }
+      if (url.endsWith("/api/users")) {
+        return Promise.resolve(response({ data: [] }));
+      }
+      return Promise.resolve(response({ data: [] }));
+    }));
+
+    render(<App initialRecords={[]} />);
+    expect(await screen.findByRole("heading", { name: "BlueWave" })).toBeInTheDocument();
+
+    window.history.pushState({}, "", "/");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(await screen.findByRole("heading", { name: "Create Record" })).toBeInTheDocument();
+
+    window.history.pushState({}, "", "/?profile=BlueWave");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(await screen.findByRole("heading", { name: "BlueWave" })).toBeInTheDocument();
   });
 });

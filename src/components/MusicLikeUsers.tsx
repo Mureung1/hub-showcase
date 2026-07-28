@@ -10,6 +10,7 @@ interface MusicLikeUsersProps {
   apiBaseUrl: string;
   accessToken: string;
   onLikeCountChange?: (id: string | number, likeCount: number) => void;
+  onOpenProfile?: (nickname: string) => void;
 }
 
 function LikeUserAvatar({ user }: { user: PublicLikeUser }) {
@@ -30,6 +31,7 @@ export function MusicLikeUsers({
   apiBaseUrl,
   accessToken,
   onLikeCountChange,
+  onOpenProfile,
 }: MusicLikeUsersProps) {
   const regionId = useId();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -133,8 +135,21 @@ export function MusicLikeUsers({
               <ul className="like-user-list">
                 {users?.map((user) => (
                   <li key={user.nickname}>
-                    <LikeUserAvatar user={user} />
-                    <span>{user.nickname}</span>
+                    {onOpenProfile ? (
+                      <button
+                        className="like-user-profile-button"
+                        type="button"
+                        onClick={() => onOpenProfile(user.nickname)}
+                      >
+                        <LikeUserAvatar user={user} />
+                        <span>{user.nickname}</span>
+                      </button>
+                    ) : (
+                      <>
+                        <LikeUserAvatar user={user} />
+                        <span>{user.nickname}</span>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -1,5 +1,12 @@
 import { getAuthenticatedSupabaseClient } from "../lib/supabase.js";
-import { listUsers } from "../services/usersService.js";
+import {
+  getUserProfile,
+  listUserMusicRecords,
+  listUsers,
+  UserDiaryCursorError,
+  UserProfileNotFoundError,
+} from "../services/usersService.js";
+import { getCurrentDate } from "../services/musicRecordsService.js";
 
 const MIN_SEARCH_LENGTH = 2;
 
@@ -26,8 +33,68 @@ export function normalizeUserSearchQuery(value) {
 
 export function createUsersController(
   getAuthenticatedSupabase = getAuthenticatedSupabaseClient,
+  getToday = getCurrentDate,
 ) {
   return {
+    async musicRecords(request, response) {
+      const nickname = request.params.nickname?.trim();
+      if (!nickname || nickname.length < 2 || nickname.length > 20) {
+        return response.status(400).json({
+          error: { code: "INVALID_NICKNAME", message: "닉네임을 확인해 주세요." },
+        });
+      }
+
+      try {
+        const supabase = getAuthenticatedSupabase(request.auth.accessToken);
+        const page = await listUserMusicRecords(
+          supabase,
+          request.auth.user.id,
+          nickname,
+          request.query.cursor,
+          getToday,
+        );
+        return response.status(200).json({ data: page });
+      } catch (error) {
+        if (error instanceof UserProfileNotFoundError) {
+          return response.status(404).json({
+            error: { code: "USER_NOT_FOUND", message: "사용자를 찾을 수 없습니다." },
+          });
+        }
+        if (error instanceof UserDiaryCursorError) {
+          return response.status(400).json({
+            error: { code: "INVALID_CURSOR", message: "페이지 정보를 확인해 주세요." },
+          });
+        }
+        console.error("Failed to fetch user music records:", error instanceof Error ? error.message : error);
+        return response.status(500).json({
+          error: { code: "INTERNAL_SERVER_ERROR", message: "음악 다이어리 조회 중 오류가 발생했습니다." },
+        });
+      }
+    },
+    async detail(request, response) {
+      const nickname = request.params.nickname?.trim();
+      if (!nickname || nickname.length < 2 || nickname.length > 20) {
+        return response.status(400).json({
+          error: { code: "INVALID_NICKNAME", message: "닉네임을 확인해 주세요." },
+        });
+      }
+
+      try {
+        const supabase = getAuthenticatedSupabase(request.auth.accessToken);
+        const profile = await getUserProfile(supabase, request.auth.user.id, nickname);
+        return response.status(200).json({ data: profile });
+      } catch (error) {
+        if (error instanceof UserProfileNotFoundError) {
+          return response.status(404).json({
+            error: { code: "USER_NOT_FOUND", message: "사용자를 찾을 수 없습니다." },
+          });
+        }
+        console.error("Failed to fetch user profile:", error instanceof Error ? error.message : error);
+        return response.status(500).json({
+          error: { code: "INTERNAL_SERVER_ERROR", message: "프로필 조회 중 오류가 발생했습니다." },
+        });
+      }
+    },
     async list(request, response) {
       try {
         const searchQuery = normalizeUserSearchQuery(request.query.q);

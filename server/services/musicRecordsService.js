@@ -16,6 +16,7 @@ export const recordColumns = [
 ].join(", ");
 
 export class MusicRecordValidationError extends Error {}
+export class MusicRecordDateConflictError extends Error {}
 
 export function mapMusicRecord(record, liked = false, likeCount = 0) {
   return {
@@ -112,6 +113,9 @@ export async function createMusicRecord(supabase, userId, body, getToday = getCu
     .select(recordColumns)
     .single();
 
+  if (error?.code === "23505") {
+    throw new MusicRecordDateConflictError();
+  }
   if (error) throw error;
   return mapMusicRecord(data, false, 0);
 }

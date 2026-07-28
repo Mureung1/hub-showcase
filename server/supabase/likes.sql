@@ -57,15 +57,7 @@ as $$
   left join public.likes
     on likes.record_id = music_records.id
   where music_records.id = any(p_record_ids)
-    and (
-      music_records.user_id = (select auth.uid())
-      or exists (
-        select 1
-        from public.follows
-        where follows.follower_id = (select auth.uid())
-          and follows.following_id = music_records.user_id
-      )
-    )
+    and (select auth.uid()) is not null
   group by music_records.id;
 $$;
 
@@ -98,15 +90,7 @@ as $$
       select 1
       from public.music_records
       where music_records.id = p_record_id
-        and (
-          music_records.user_id = (select auth.uid())
-          or exists (
-            select 1
-            from public.follows
-            where follows.follower_id = (select auth.uid())
-              and follows.following_id = music_records.user_id
-          )
-        )
+        and (select auth.uid()) is not null
     )
     and (
       p_cursor_nickname is null

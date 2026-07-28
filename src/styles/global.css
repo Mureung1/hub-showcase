@@ -463,6 +463,300 @@ textarea[aria-invalid="true"] {
   gap: var(--space-4);
 }
 
+.recap-section {
+  margin-top: 72px;
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.recap-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.recap-heading .section-heading {
+  max-width: 620px;
+  margin-bottom: 0;
+}
+
+.recap-heading .section-heading p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.recap-month-picker {
+  display: grid;
+  flex: 0 0 180px;
+  gap: var(--space-2);
+}
+
+.recap-month-picker span,
+.recap-label {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recap-month-picker input {
+  background: var(--color-surface);
+  color-scheme: light;
+}
+
+.recap-state {
+  display: grid;
+  min-height: 260px;
+  place-content: center;
+  justify-items: center;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+  text-align: center;
+}
+
+.recap-state p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.recap-empty > span {
+  margin-bottom: var(--space-3);
+  color: var(--color-signature);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.recap-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: var(--space-5);
+}
+
+.recap-hero,
+.recap-artists,
+.recap-bookend,
+.recap-timeline {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.recap-hero {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.75fr) minmax(0, 1.25fr);
+  gap: var(--space-6);
+  align-items: center;
+  padding: var(--space-6);
+}
+
+.recap-hero-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.recap-cover-fallback {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-surface-soft);
+  color: var(--color-signature);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.recap-hero-copy {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.recap-hero-copy p,
+.recap-hero-copy span {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.recap-hero-copy strong {
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.recap-hero-copy span {
+  line-height: 1.6;
+}
+
+.recap-artists {
+  padding: var(--space-6);
+}
+
+.recap-artists > p {
+  margin: 0 0 var(--space-4);
+}
+
+.recap-artists ol,
+.recap-timeline ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recap-artists li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.recap-artists li:last-child {
+  border-bottom: 0;
+}
+
+.recap-artists li strong {
+  font-size: 18px;
+}
+
+.recap-artists li span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.recap-bookends {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.recap-bookend {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-4);
+}
+
+.recap-bookend-cover {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.recap-bookend div {
+  min-width: 0;
+}
+
+.recap-bookend span,
+.recap-bookend strong,
+.recap-bookend p,
+.recap-bookend small {
+  display: block;
+}
+
+.recap-bookend span {
+  margin-bottom: var(--space-2);
+  color: var(--color-signature);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.recap-bookend strong {
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recap-bookend p,
+.recap-bookend small {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.recap-timeline {
+  grid-column: 1 / -1;
+  padding: var(--space-6);
+}
+
+.recap-timeline > div {
+  margin-bottom: var(--space-5);
+}
+
+.recap-timeline h3 {
+  margin: var(--space-2) 0 0;
+  font-size: 24px;
+}
+
+.recap-timeline > ol {
+  display: grid;
+}
+
+.recap-timeline li {
+  display: grid;
+  grid-template-columns: 72px 56px minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.recap-timeline time {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.recap-timeline-cover {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.recap-timeline li > div:not(.recap-cover-fallback) {
+  min-width: 0;
+}
+
+.recap-timeline strong,
+.recap-timeline span {
+  display: block;
+}
+
+.recap-timeline span,
+.recap-timeline p {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.recap-timeline p {
+  margin: var(--space-1) 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recap-timeline a {
+  color: var(--color-signature);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .people-section {
   margin-top: 72px;
   padding-top: var(--space-7);
@@ -549,7 +843,7 @@ textarea[aria-invalid="true"] {
 
 .user-card {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-4);
@@ -577,6 +871,109 @@ textarea[aria-invalid="true"] {
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.user-profile-link {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-profile-copy {
+  min-width: 0;
+}
+
+.public-profile {
+  padding: var(--space-7) 0;
+}
+
+.profile-back-button {
+  margin-bottom: var(--space-6);
+  border: 0;
+  background: transparent;
+  color: var(--color-signature);
+  cursor: pointer;
+}
+
+.public-profile-header {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.public-profile-header .user-avatar {
+  width: 72px;
+  height: 72px;
+}
+
+.public-diary {
+  display: grid;
+  gap: var(--space-7);
+  margin-top: var(--space-7);
+}
+
+.public-diary-today {
+  max-width: 720px;
+}
+
+.public-diary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.public-diary-more {
+  justify-self: center;
+}
+
+.public-profile-header h1,
+.public-profile-header p {
+  margin: 0;
+}
+
+.music-card-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.music-card-author img,
+.music-card-author-fallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.music-card-author img {
+  object-fit: cover;
+}
+
+.music-card-author-fallback {
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-signature-soft);
+  color: var(--color-signature);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .follow-button {
@@ -776,6 +1173,23 @@ textarea[aria-invalid="true"] {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+.like-user-profile-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.like-user-profile-button:hover,
+.like-user-profile-button:focus-visible {
+  color: var(--color-signature);
 }
 
 .like-user-avatar {
@@ -1026,6 +1440,14 @@ textarea[aria-invalid="true"] {
     grid-template-columns: 1fr;
   }
 
+  .recap-content {
+    grid-template-columns: 1fr;
+  }
+
+  .recap-artists {
+    grid-column: 1;
+  }
+
   .selected-track-card {
     grid-template-columns: 60px minmax(0, 1fr);
   }
@@ -1037,7 +1459,52 @@ textarea[aria-invalid="true"] {
 
 @media (max-width: 520px) {
   .user-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .user-profile-link {
     grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .public-diary-list {
+    grid-template-columns: 1fr;
+  }
+
+  .recap-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recap-month-picker {
+    flex-basis: auto;
+  }
+
+  .recap-hero {
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .recap-bookends {
+    grid-template-columns: 1fr;
+  }
+
+  .recap-timeline {
+    padding: var(--space-4);
+  }
+
+  .recap-timeline li {
+    grid-template-columns: 52px 48px minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .recap-timeline-cover {
+    width: 48px;
+    height: 48px;
+  }
+
+  .recap-timeline a {
+    grid-column: 3;
   }
 
   .user-avatar {
