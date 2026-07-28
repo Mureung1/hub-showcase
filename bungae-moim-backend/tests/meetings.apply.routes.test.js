@@ -195,4 +195,141 @@ describe('POST /api/meetings/:id/apply', () => {
     );
     expect(rows[0].c).toBe(1);
   });
+
+  it('질문이 있는 소모임은 답변 없이 신청하면 400 VALIDATION_ERROR', async () => {
+    const host = await createUser('ans-h1');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent } = await loginAgent('ans-u1');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('답변을 보내면 저장된다', async () => {
+    const host = await createUser('ans-h2');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent, userId } = await loginAgent('ans-u2');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '책을 좋아해서요' });
+    expect(res.status).toBe(201);
+    const { rows } = await pool.query(
+      'SELECT apply_answer FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows[0].apply_answer).toBe('책을 좋아해서요');
+  });
+
+  it('질문이 없는 모임에 답변을 보내면 무시하고 null로 저장한다', async () => {
+    const host = await createUser('ans-h3');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    const { agent, userId } = await loginAgent('ans-u3');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '무시돼야 한다' });
+    expect(res.status).toBe(201);
+    const { rows } = await pool.query(
+      'SELECT apply_answer FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows[0].apply_answer).toBeNull();
+  });
+
+  it('취소 후 재신청하면 답변이 새 값으로 갱신된다', async () => {
+    const host = await createUser('ans-h4');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent, userId } = await loginAgent('ans-u4');
+
+    await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '첫 번째 답변' });
+    await agent.delete(`/api/meetings/${meetingId}/apply`);
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '두 번째 답변' });
+
+    expect(res.status).toBe(201);
+    const { rows } = await pool.query(
+      'SELECT apply_answer FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows[0].apply_answer).toBe('두 번째 답변');
+  });
+
+  it('공백만 있는 답변은 400 VALIDATION_ERROR(trim 후 빈 문자열)', async () => {
+    const host = await createUser('ans-h5');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent } = await loginAgent('ans-u5');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({ answer: '   ' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('신청 자격이 없으면(거절됨) 답변 검증보다 거절 사유가 먼저 나온다', async () => {
+    const host = await createUser('ans-h6');
+    const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['왜 참여하나요', meetingId]);
+    const { agent, userId } = await loginAgent('ans-u6');
+    await insertParticipant(meetingId, userId, 'rejected');
+
+    // 답변을 아예 보내지 않는다 — "답변이 필요합니다"가 아니라 "신청이 거절된 모임입니다"가 나와야 한다.
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.message).toBe('신청이 거절된 모임입니다');
+  });
+});
+
+describe('신청 알림(C)', () => {
+  async function countNotifications(userId, type) {
+    const { rows } = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM notifications WHERE user_id = $1 AND type = $2',
+      [userId, type]
+    );
+    return rows[0].n;
+  }
+
+  it('소모임에 신청하면 모임장에게 new_application 알림이 간다', async () => {
+    const hostId = await createUser('n-f1-h1');
+    const meetingId = await insertMeeting(hostId, { type: 'small', capacity: null });
+    const { agent, userId } = await loginAgent('n-f1-u1');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`);
+    expect(res.status).toBe(201);
+
+    expect(await countNotifications(hostId, 'new_application')).toBe(1);
+    // 신청자 본인에게는 알림이 없다.
+    expect(await countNotifications(userId, 'new_application')).toBe(0);
+
+    const { rows } = await pool.query(
+      'SELECT meeting_id, is_read FROM notifications WHERE user_id = $1',
+      [hostId]
+    );
+    expect(Number(rows[0].meeting_id)).toBe(meetingId);
+    expect(rows[0].is_read).toBe(false);
+  });
+
+  it('번개모임은 즉시 확정이라 알림을 만들지 않는다', async () => {
+    const hostId = await createUser('n-f1-h2');
+    const meetingId = await insertMeeting(hostId, { type: 'flash', capacity: 5 });
+    const { agent } = await loginAgent('n-f1-u2');
+
+    const res = await agent.post(`/api/meetings/${meetingId}/apply`);
+    expect(res.status).toBe(201);
+
+    const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM notifications');
+    expect(rows[0].n).toBe(0);
+  });
+
+  it('신청이 거절되면(중복 신청) 알림도 늘지 않는다', async () => {
+    const hostId = await createUser('n-f1-h3');
+    const meetingId = await insertMeeting(hostId, { type: 'small', capacity: null });
+    const { agent } = await loginAgent('n-f1-u3');
+
+    await agent.post(`/api/meetings/${meetingId}/apply`);
+    const second = await agent.post(`/api/meetings/${meetingId}/apply`);
+    expect(second.status).toBeGreaterThanOrEqual(400);
+
+    expect(await countNotifications(hostId, 'new_application')).toBe(1);
+  });
 });

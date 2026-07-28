@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAppState } from '../context/AppStateContext.jsx'
+import NotificationBell from './NotificationBell.jsx'
 import TrustBadge from './TrustBadge.jsx'
 
 // minimal: 생년월일 게이트에서 쓴다. 어차피 이동할 수 없는 상태라 가운데 nav를 숨긴다.
@@ -40,11 +41,12 @@ export default function SiteHeader({ minimal = false }) {
 
           {!authLoading && isLoggedIn && (
             <>
+              <NotificationBell />
               <span className="site-user">
                 <span className="site-user-name">{currentUser.nickname}</span>
                 {/* MyPage:70과 같은 방식으로 그대로 넘긴다. 서버의 normalizeUser가
                     trust_score를 Number()로 변환해 내려주고, 비로그인 GUEST_USER도
-                    trustScore: 0이라 TrustBadge의 toFixed(1)이 안전하다. */}
+                    trustScore: 0이라 TrustBadge의 Math.round(Number(score) || 0)이 안전하다. */}
                 <TrustBadge score={currentUser.trustScore} />
               </span>
               <span className="site-header-divider" aria-hidden="true" />

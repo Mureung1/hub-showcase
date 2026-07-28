@@ -13,6 +13,8 @@ erDiagram
     MEETINGS ||--o{ MEETING_PARTICIPANTS : "포함(meeting_id)"
     USERS ||--o{ REPORTS : "신고자(reporter_id)"
     MEETINGS ||--o{ REPORTS : "신고 대상(meeting_id)"
+    USERS ||--o{ NOTIFICATIONS : "수신(user_id)"
+    MEETINGS ||--o{ NOTIFICATIONS : "발생(meeting_id)"
 
     USERS {
         bigint id PK
@@ -39,6 +41,7 @@ erDiagram
         int capacity
         boolean adult_only
         text open_chat_url
+        text apply_question
         varchar status
         timestamp created_at
     }
@@ -49,6 +52,7 @@ erDiagram
         varchar status
         timestamp applied_at
         timestamp responded_at
+        text apply_answer
     }
     REPORTS {
         bigint id PK
@@ -59,9 +63,17 @@ erDiagram
         varchar status
         timestamp created_at
     }
+    NOTIFICATIONS {
+        bigint id PK
+        bigint user_id FK
+        varchar type
+        bigint meeting_id FK
+        boolean is_read
+        timestamp created_at
+    }
 ```
 
-테이블 4개(`users`, `meetings`, `meeting_participants`, `reports`)로 MVP 범위(6.1)를 전부 커버합니다. 차단 기능(2차 개발)은 8번에 별도로 정리했습니다.
+테이블 5개(`users`, `meetings`, `meeting_participants`, `reports`, `notifications`)로 MVP 범위(6.1)를 전부 커버합니다. 차단 기능(2차 개발)은 9번에 별도로 정리했습니다.
 
 ---
 
@@ -102,6 +114,7 @@ erDiagram
 | capacity | int | NULL 허용 | 번개모임은 필수, 소모임은 NULL(무제한) — 기획서 6.1 |
 | adult_only | boolean | NOT NULL, DEFAULT false | "성인만 참여 가능" 옵션 |
 | open_chat_url | text | NOT NULL | 등록 시 `open.kakao.com` 패턴만 형식 검증 (기획서 11번) |
+| apply_question | text | NULL 허용 | 신청 시 한마디(B) 가입 질문. **소모임만** 의미가 있고 번개모임은 항상 NULL. 길이 상한(200자)은 앱(`validators.js`)에서만 강제 |
 | status | varchar(15) | NOT NULL, DEFAULT 'recruiting' | `recruiting`(모집중) \| `closed`(마감) \| `finished`(종료) \| `cancelled`(취소) |
 | created_at | timestamp | NOT NULL, DEFAULT now() | |
 
@@ -122,6 +135,7 @@ erDiagram
 | status | varchar(15) | NOT NULL | `confirmed`(확정) \| `pending`(대기) \| `approved`(승인) \| `rejected`(거절) \| `cancelled`(취소) |
 | applied_at | timestamp | NOT NULL, DEFAULT now() | |
 | responded_at | timestamp | NULL 허용 | 모임장이 승인/거절한 시각 |
+| apply_answer | text | NULL 허용 | 신청 시 한마디(B) 답변. `meetings.apply_question`이 설정된 모임에서만 값이 들어가며, 질문이 없으면 NULL. 길이 상한(500자)은 앱에서만 강제 |
 
 - **UNIQUE (meeting_id, user_id)** — 같은 모임에 중복 신청 방지. (서로 다른 모임에 동시 신청하는 건 기획서 11번 "중복 신청" 결정대로 허용하므로 이 제약에 안 걸림)
 - 번개모임 신청: `status = 'confirmed'`로 즉시 insert (기획서 5번 참여 방식)
@@ -148,7 +162,26 @@ erDiagram
 
 ---
 
-## 6. 계정 정지 처리 방식 (별도 테이블 없음)
+## 6. notifications (알림)
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| id | bigserial | PK | |
+| user_id | bigint | FK → users.id, NOT NULL | 수신자 |
+| type | varchar(30) | NOT NULL | `new_application`(소모임 새 신청) \| `application_approved`(승인) \| `application_rejected`(거절) \| `meeting_cancelled`(모임 취소). 값 목록은 앱(`notificationService.js`)에서만 관리 |
+| meeting_id | bigint | FK → meetings.id, NOT NULL | 알림이 발생한 모임 |
+| is_read | boolean | NOT NULL, DEFAULT false | |
+| created_at | timestamp | NOT NULL, DEFAULT now() | |
+
+- **INDEX (user_id, created_at)** — 조회가 항상 "내 알림을 최신순으로"라서 이 순서의 복합 인덱스 하나면 됩니다.
+- 수신자 1명당 1행입니다. 같은 알림을 여러 명에게 보낼 때(E5 모임 취소 시 활성 참여자 전원)도 각자 별도 행으로 insert합니다.
+- 모임 제목·문구는 이 테이블에 저장하지 않습니다. `meeting_id`로만 가리키고, 조회 시 `meetings`를 JOIN해 제목을 가져옵니다 — 모임 제목이 나중에 바뀌면 과거 알림도 최신 제목으로 보입니다.
+- **알림 INSERT는 항상 원인이 된 행위(신청 생성·승인/거절·모임 취소)와 같은 트랜잭션 안에서 이루어집니다.** 행위는 커밋됐는데 알림만 유실되면 사용자가 승인·거절·취소를 영영 모르게 되기 때문입니다.
+- 항목별 읽음 처리는 없습니다. `is_read`는 목록을 여는 시점에 그 사용자의 미읽음 전체를 한 번에 갱신합니다.
+
+---
+
+## 7. 계정 정지 처리 방식 (별도 테이블 없음)
 
 미성년자 위법행위 적발 시 "일정 기간 계정 정지, 재범 시 영구정지"(기획서 11번)를 위해 `users`에 컬럼 2개만 추가하는 걸 권장합니다:
 
@@ -161,7 +194,7 @@ erDiagram
 
 ---
 
-## 7. 인덱스 권장
+## 8. 인덱스 권장
 
 | 테이블 | 인덱스 | 목적 |
 |---|---|---|
@@ -170,10 +203,11 @@ erDiagram
 | meeting_participants | (meeting_id) | 모임 상세에서 참가자 목록 조회 |
 | meeting_participants | (user_id) | 마이페이지 "참여한 모임" 조회 |
 | reports | (status) | 개발자가 미검토 신고만 조회 |
+| notifications | (user_id, created_at) | 내 알림을 최신순으로 조회 (6번에서 이미 생성됨) |
 
 ---
 
-## 8. 2차 개발 예정 테이블 (참고용, 지금 구현 안 함)
+## 9. 2차 개발 예정 테이블 (참고용, 지금 구현 안 함)
 
 ```
 blocks
@@ -188,7 +222,7 @@ blocks
 
 ---
 
-## 9. 설계하면서 판단한 사항
+## 10. 설계하면서 판단한 사항
 
 - ~~`trust_score` 초기값~~ → **50.0으로 확정**.
 - ~~모임 상태 명칭~~ → **`recruiting/closed/finished/cancelled` 4단계로 확정**.

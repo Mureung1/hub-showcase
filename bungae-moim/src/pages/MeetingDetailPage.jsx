@@ -43,13 +43,21 @@ export default function MeetingDetailPage() {
   // 승인 응답을 기다리는 동안 그 사람의 버튼 두 개를 모두 잠근다. 승인 직후 거절이 눌리면
   // 두 번째 요청이 "이미 처리된 신청입니다"로 실패해 사용자에게 혼란스러운 에러가 뜬다.
   const [respondingUserId, setRespondingUserId] = useState(null)
+  const [applyAnswer, setApplyAnswer] = useState('')
 
   // 신청/취소는 서버에 반영한 뒤 reloadKey를 올려 상세를 재조회한다. 번개모임은 신청 즉시
   // confirmed가 되어 openChatUrl이 새로 내려오므로 재조회가 필수다.
   async function handleApply() {
     setActionError(null)
+    // 질문이 있으면 답변 없이 보내지 않는다. 서버도 400으로 막지만, 여기서 막아야
+    // 사용자가 왕복 없이 바로 안다.
+    if (meeting.applyQuestion && applyAnswer.trim() === '') {
+      setActionError('가입 질문에 답변해주세요.')
+      return
+    }
     try {
-      await applyToMeeting(id)
+      await applyToMeeting(id, applyAnswer)
+      setApplyAnswer('')
       setReloadKey((k) => k + 1)
     } catch (err) {
       setActionError(err.message)
@@ -227,9 +235,7 @@ export default function MeetingDetailPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--ink-mute)' }}>
               <span>🗓 {formatMeetingSchedule(meeting)}</span>
-              <span>
-                📍 {meeting.regionSigungu} {meeting.regionEupmyeondong ?? ''}
-              </span>
+              <span>📍 {meeting.regionSigungu}</span>
               <span>
                 👥 {meeting.type === 'flash' ? `${confirmedCount}/${meeting.capacity}명 확정` : `${confirmedCount}명 참여중 (정원 없음)`}
               </span>
@@ -244,6 +250,12 @@ export default function MeetingDetailPage() {
               <span style={{ fontSize: 14, fontWeight: 700 }}>
                 신청자 {countActiveApplicants(participants)}명 · 대기중 {pendingApplicants.length}명
               </span>
+
+              {meeting.applyQuestion && (
+                <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>
+                  질문: “{meeting.applyQuestion}”
+                </span>
+              )}
 
               {participantsError && (
                 <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>
@@ -274,6 +286,9 @@ export default function MeetingDetailPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <span style={{ fontSize: 13.5, fontWeight: 700 }}>{p.nickname}</span>
                       <TrustBadge score={p.trustScore} />
+                      {p.applyAnswer && ['pending', 'approved', 'confirmed'].includes(p.status) && (
+                        <span style={{ fontSize: 13, color: 'var(--ink-mute)' }}>“{p.applyAnswer}”</span>
+                      )}
                     </div>
                     {p.status === 'pending' ? (
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -419,10 +434,26 @@ export default function MeetingDetailPage() {
                   )}
                 </>
               ) : meeting.canApply ? (
-                // 신청 가능: 버튼. 서버가 canApply로 판정했으므로 FE는 그대로 따른다.
-                <PillButton variant="accent" block onClick={handleApply}>
-                  {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
-                </PillButton>
+                // 신청 가능: 질문이 있으면 답변을 먼저 받는다. 서버가 canApply로 판정했으므로
+                // 신청 가능 여부 자체는 FE가 다시 따지지 않는다.
+                <>
+                  {meeting.applyQuestion && (
+                    <div className="field">
+                      <label htmlFor="applyAnswer">{meeting.applyQuestion}</label>
+                      <textarea
+                        id="applyAnswer"
+                        className="field-textarea"
+                        value={applyAnswer}
+                        onChange={(e) => setApplyAnswer(e.target.value)}
+                        placeholder="모임장에게 전할 답변을 적어주세요"
+                        maxLength={500}
+                      />
+                    </div>
+                  )}
+                  <PillButton variant="accent" block onClick={handleApply}>
+                    {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
+                  </PillButton>
+                </>
               ) : (
                 // 신청 불가: 서버 blockReason에 맞는 안내 문구.
                 <p style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>

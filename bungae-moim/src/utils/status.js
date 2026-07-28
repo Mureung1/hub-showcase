@@ -44,3 +44,11 @@ export function blockReasonLabel(reason) {
 export function isMeetingEnded(meeting) {
   return meeting.status === 'finished' || meeting.status === 'cancelled' || meeting.isPast
 }
+
+// 마이페이지 목록(hosted/joined) 항목이 종료됐는지. 상세 응답과 달리 목록에는 서버가 계산한
+// isPast가 없어서 여기서만 클라이언트 시계로 판단한다 — 표시 분류용이라 초 단위 오차는 무해하다.
+// 기준은 서버 목록 필터(COALESCE(end_at, start_at))와 같다: 종료 일시가 있으면 그것을, 없으면 시작 일시를.
+export function isScheduleEnded(item) {
+  const end = item.endAt ?? item.startAt
+  return end != null && new Date(end).getTime() < Date.now()
+}

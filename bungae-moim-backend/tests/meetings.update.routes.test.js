@@ -275,4 +275,63 @@ describe('PATCH /api/meetings/:id', () => {
     const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ adultOnly: true }));
     expect(res.status).toBe(200);
   });
+
+  it('applyQuestion 키가 없으면 기존 질문이 유지된다(full-replace 예외)', async () => {
+    const { agent, userId } = await loginAgent('u-aq1');
+    const meetingId = await insertMeeting(userId);
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['원래 질문', meetingId]);
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody());
+    expect(res.status).toBe(200);
+    expect(res.body.data.applyQuestion).toBe('원래 질문');
+  });
+
+  it('applyQuestion을 null로 명시하면 삭제된다', async () => {
+    const { agent, userId } = await loginAgent('u-aq2');
+    const meetingId = await insertMeeting(userId);
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['원래 질문', meetingId]);
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ applyQuestion: null }));
+    expect(res.status).toBe(200);
+    expect(res.body.data.applyQuestion).toBeNull();
+  });
+
+  it('활성 신청자가 있으면 질문을 바꿀 수 없다(400)', async () => {
+    const { agent, userId } = await loginAgent('u-aq3');
+    const applicant = await createUser('u-aq3-a');
+    const meetingId = await insertMeeting(userId);
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['원래 질문', meetingId]);
+    await insertParticipant(meetingId, applicant, 'pending');
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ applyQuestion: '바뀐 질문' }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('활성 신청자가 있어도 질문이 그대로면 수정할 수 있다', async () => {
+    const { agent, userId } = await loginAgent('u-aq4');
+    const applicant = await createUser('u-aq4-a');
+    const meetingId = await insertMeeting(userId);
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['원래 질문', meetingId]);
+    await insertParticipant(meetingId, applicant, 'approved');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}`)
+      .send(smallBody({ title: '제목만 수정', applyQuestion: '원래 질문' }));
+    expect(res.status).toBe(200);
+    expect(res.body.data.title).toBe('제목만 수정');
+    expect(res.body.data.applyQuestion).toBe('원래 질문');
+  });
+
+  it('취소·거절된 신청만 있으면 질문을 바꿀 수 있다', async () => {
+    const { agent, userId } = await loginAgent('u-aq5');
+    const gone = await createUser('u-aq5-a');
+    const meetingId = await insertMeeting(userId);
+    await pool.query('UPDATE meetings SET apply_question = $1 WHERE id = $2', ['원래 질문', meetingId]);
+    await insertParticipant(meetingId, gone, 'rejected');
+
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ applyQuestion: '바뀐 질문' }));
+    expect(res.status).toBe(200);
+    expect(res.body.data.applyQuestion).toBe('바뀐 질문');
+  });
 });

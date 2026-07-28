@@ -131,11 +131,16 @@
   "endAt": null,
   "capacity": 4,
   "adultOnly": false,
-  "openChatUrl": "https://open.kakao.com/o/xxxxxxx"
+  "openChatUrl": "https://open.kakao.com/o/xxxxxxx",
+  "applyQuestion": "왜 참여하고 싶으신가요?"
 }
 ```
 - `type: "small"`이면 `capacity`는 무시(또는 null 강제), `endAt` 필수.
 - `openChatUrl`은 `open.kakao.com` 패턴 검증만 수행 (기획서 11번 "오픈채팅 링크 오류" 행 — 그 이상 검증 없음).
+- `category`는 `운동`·`스터디`·`취미`·`식사`만 허용합니다. `전체`는 목록 필터 전용 값이라 등록에는 쓸 수 없고, 그 외 값과 함께 `VALIDATION_ERROR`(400)입니다.
+- `regionSido`/`regionSigungu`는 공용 지역 데이터(`shared/regions.json`, 17개 시/도·229개 시/군/구)에 있는 **조합**만 허용합니다. `regionSido`가 목록에 없거나 `regionSigungu`가 그 시/도 하위가 아니면 `VALIDATION_ERROR`(400)입니다. 세종특별자치시는 하위 구분이 없어 `regionSigungu`도 `세종특별자치시`로 보냅니다.
+- `applyQuestion`(선택): 신청자에게 보여줄 가입 질문입니다. **소모임(`small`)에서만 의미가 있습니다** — `type: "flash"`에서는 값을 보내도 무시하고 `null`로 저장합니다(`capacity`/`endAt`을 type별로 무시하는 것과 같은 방식). 최대 200자(코드포인트 기준, 이모지 1자 = 1자). 빈 문자열/공백만 보내면 `null`(질문 없음)로 저장됩니다.
+- 이 두 검증은 `PATCH /api/meetings/:id`(모임 수정, 모임장만)에도 동일하게 적용됩니다. 모임 수정은 부분 수정이 아니라 이 섹션과 같은 본문 전체를 다시 검증하는 **전체 교체(full-replace)**이며(`type`만 기존 값과 같아야 함), 같은 검증 함수를 재사용합니다. **단, `applyQuestion`은 예외입니다** — body에 이 키 자체가 없으면(`undefined`) 기존 질문을 그대로 유지하고, 키가 있으면(값이 `null`이어도) 그 값으로 교체합니다. 또한 **활성 신청자(`pending`/`confirmed`/`approved`)가 1명이라도 있는 상태에서 질문을 기존과 다른 값으로 바꾸려 하면** `VALIDATION_ERROR`(400) — 이미 받은 답변이 엉뚱한 질문에 붙는 것을 막기 위해서입니다. 같은 값을 다시 보내는 것은 변경이 아니므로 허용됩니다.
 
 ### GET /api/meetings/:id
 
@@ -147,12 +152,14 @@
     "host": { "id": 5, "nickname": "A", "trustScore": 52.0 },
     "capacity": 4, "confirmedCount": 2,
     "openChatUrl": "https://open.kakao.com/o/xxxxxxx",
+    "applyQuestion": "왜 참여하고 싶으신가요?",
     "myParticipation": { "status": "confirmed" },
     "canApply": false, "blockReason": "ALREADY_APPLIED"
   }
 }
 ```
 - `openChatUrl`은 아직 참여 확정 전인 사용자에게는 내려주지 않습니다 (소모임은 승인 전, 번개모임은 신청 전) — 기획서 8번 화면 구성 원칙. **값을 `null`로 주는 것이 아니라 키 자체를 응답에서 제외**하므로, 프론트는 이 키의 존재 여부만으로 노출을 판단하면 됩니다.
+- `applyQuestion`은 항상 포함됩니다. 질문이 없으면 `null`입니다.
 - `myParticipation`은 비로그인이거나 신청 이력이 없으면 `null`.
 - `confirmedCount`는 `confirmed`와 `approved` 상태만 셉니다(`pending`·`cancelled` 제외).
 - `canApply`(boolean)·`blockReason`(string|null): 지금 이 사용자가 참여 신청을 할 수 있는지와, 할 수 없다면 그 이유. `blockReason`은 `LOGIN_REQUIRED`·`HOST`·`ALREADY_APPLIED`·`REJECTED`·`CANCELLED_MEETING`·`ENDED`·`FULL`·`BIRTHDATE_REQUIRED`·`ADULT_ONLY` 중 하나이며, `canApply`가 `true`면 `null`입니다.
@@ -187,9 +194,14 @@
 
 ### POST /api/meetings/:id/apply
 
+**요청** (선택)
+```json
+{ "answer": "책을 좋아해서요" }
+```
 - `type: "flash"` 모임: 정원 여유 있으면 즉시 `status: "confirmed"`로 생성됩니다. 이 신청으로 마지막 자리가 차면 모임이 `closed` 상태로 전환됩니다.
 - `type: "small"` 모임: `status: "pending"`으로 생성됩니다.
 - 내가 취소(`cancelled`)했던 모임에는 재신청할 수 있지만, 모임장이 거절(`rejected`)한 모임에는 재신청할 수 없습니다.
+- `answer`: 모임에 `applyQuestion`(가입 질문)이 설정돼 있으면 **필수**입니다 — 비어 있거나(공백만 포함) 보내지 않으면 `VALIDATION_ERROR`(400) "가입 질문에 답변해야 신청할 수 있습니다". 질문이 없는 모임에서는 `answer`를 보내도 무시되고 `null`로 저장됩니다. 최대 500자(코드포인트 기준). 신청 자격 자체가 없는 경우(자기 모임, 거절 이력 등)에는 답변 검증보다 자격 판정이 먼저 이뤄지므로 그쪽 사유가 우선 반환됩니다.
 
 **응답**
 ```json
@@ -229,7 +241,8 @@
       {
         "userId": 7, "nickname": "홍길동", "trustScore": 50,
         "status": "pending",
-        "appliedAt": "2026-07-22T01:00:00.000Z", "respondedAt": null
+        "appliedAt": "2026-07-22T01:00:00.000Z", "respondedAt": null,
+        "applyAnswer": "책을 좋아해서요"
       }
     ]
   }
@@ -237,6 +250,7 @@
 ```
 
 - `pending`·`approved`·`rejected`·`cancelled`를 **전부** 포함합니다. 승인·거절 결과가 목록에 남아야 모임장이 자기 처리 결과를 확인할 수 있기 때문입니다. 화면의 "신청자 N명" 집계에서 취소·거절을 뺄지는 프론트가 정합니다.
+- `applyAnswer`: 신청 시 답변입니다(없으면 `null`). **이 모임장 전용 엔드포인트에만 실립니다** — 상세 조회(`GET /api/meetings/:id`) 응답에는 포함되지 않습니다.
 - 정렬은 `appliedAt` 오름차순이며, 같은 시각이면 `userId` 오름차순입니다(Postgres는 동률 행의 순서를 보장하지 않습니다).
 - 신청자가 없으면 `items`는 빈 배열입니다.
 - `appliedAt`·`respondedAt`은 `timestamp`(타임존 없음) 컬럼이라 서버 로컬 시각(KST)으로 해석돼 UTC 문자열로 직렬화됩니다. 예시의 `01:00Z`는 KST `10:00`입니다.
@@ -330,6 +344,58 @@
 
 ## 6. 엔드포인트에 없는 것 (의도적으로 제외)
 
-- **알림 관련 API** — 알림 기능 자체를 두지 않기로 했으므로 (기획서 6.3) 없음.
 - **관리자(어드민) API** — 1차는 개발자가 DB에 직접 접근 (기획서 12.1). 신고 목록 조회 API조차 필요 없고, DB 클라이언트로 `reports` 테이블을 직접 봅니다.
 - **차단 API** — 2차 개발 범위. 필요해지면 `POST/DELETE /api/users/:id/block` 형태로 추가하면 됩니다.
+- **알림 실시간 푸시·이메일 발송** — 헤더 뱃지 + 목록(아래 7번)까지만 하기로 했습니다. 브라우저 권한·서비스워커·HTTPS·발송 서비스가 따라붙어 범위가 급증하기 때문입니다. 알림 자체는 있습니다 — 7번을 보세요.
+
+---
+
+## 7. 알림
+
+| Method | Path | 설명 | 인증 |
+|---|---|---|---|
+| GET | `/api/notifications` | 최근 알림 목록 + 미읽음 수 조회 | 필요 |
+| POST | `/api/notifications/read` | 내 미읽음 알림 전체 읽음 처리 | 필요 |
+
+### GET /api/notifications
+
+**응답**
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": 12, "type": "application_approved", "meetingId": 3,
+        "meetingTitle": "등산 번개", "isRead": false,
+        "createdAt": "2026-07-28T01:00:00.000Z"
+      }
+    ],
+    "unreadCount": 2
+  }
+}
+```
+- 최근 **20건**만 반환합니다. 정렬은 `createdAt` 내림차순이며, 같은 시각이면 `id` 내림차순입니다(Postgres가 동시각 행의 순서를 보장하지 않아 tiebreak가 필요합니다 — 참여 신청자 목록 정렬과 같은 이유, 3절 참고).
+- `unreadCount`는 20건 상한과 무관하게 **전체 미읽음 수**입니다.
+- `meetingTitle`은 알림 발생 시점이 아니라 **조회 시점**의 모임 제목입니다(제목을 알림에 복사 저장하지 않고 매번 조회 시 `meetings`와 조인) — 모임 제목이 나중에 바뀌면 과거 알림도 최신 제목으로 보입니다.
+- 비로그인 → `UNAUTHENTICATED`(401).
+
+**`type` 값 4종**
+
+| type | 의미 | 생성 시점 | 수신자 |
+|---|---|---|---|
+| `new_application` | 내 소모임에 새 신청이 들어옴 | 참여 신청(3절)에서 소모임 신청이 `pending`으로 생성될 때. 번개모임은 즉시 `confirmed`라 알림이 생기지 않습니다 | 모임장 |
+| `application_approved` | 내 신청이 승인됨 | 승인/거절(3절 `PATCH .../participants/:userId`)에서 모임장이 승인할 때 | 신청자 |
+| `application_rejected` | 내 신청이 거절됨 | 위와 같은 엔드포인트에서 모임장이 거절할 때 | 신청자 |
+| `meeting_cancelled` | 참여 중이던 모임이 취소됨 | 모임 취소(2절 `DELETE /api/meetings/:id`)에서 모임장이 취소할 때. **취소 직전 활성 참여자(`pending`/`confirmed`/`approved`)에게만** 갑니다 — 이미 거절·취소된 신청자는 받지 않습니다 | 활성 참여자(여러 명) |
+
+알림 INSERT는 항상 그 알림을 낳은 행위(신청 생성·승인/거절·모임 취소)와 **같은 트랜잭션 안**에서 일어납니다 — 행위는 커밋됐는데 알림만 유실되는 상황을 막기 위해서입니다. 승인/거절 엔드포인트는 원래 트랜잭션 없이 조건부 `UPDATE` 한 문장(CAS)으로 처리했으나, 알림을 같은 트랜잭션에 묶기 위해 트랜잭션을 새로 감쌌습니다.
+
+### POST /api/notifications/read
+
+바디 없음. 내 미읽음 알림을 전부 읽음 처리합니다(항목별 읽음 처리는 없습니다).
+
+**응답**
+```json
+{ "data": { "unreadCount": 0 } }
+```
+비로그인 → `UNAUTHENTICATED`(401).

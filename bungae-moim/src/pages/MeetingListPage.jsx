@@ -37,7 +37,7 @@ export default function MeetingListPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const sigunguOptions = sido === '전체' ? [] : Object.keys(REGIONS[sido] ?? {})
+  const sigunguOptions = sido === '전체' ? [] : (REGIONS[sido] ?? [])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedKeyword(keyword), 300)

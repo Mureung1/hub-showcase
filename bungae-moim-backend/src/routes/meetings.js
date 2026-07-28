@@ -83,10 +83,11 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/meetings/:id/apply — 참여 신청(F1, 로그인 필요)
+// body의 answer는 선택이다. 가입 질문이 설정된 모임에서만 필수로 검사한다(서비스가 판단).
 router.post('/:id/apply', requireAuth, async (req, res, next) => {
   try {
     const id = parseIdParam(req.params.id);
-    const result = await applyToMeeting(id, req.session.userId);
+    const result = await applyToMeeting(id, req.session.userId, req.body?.answer);
     res.status(201).json({ data: result });
   } catch (err) {
     next(err);

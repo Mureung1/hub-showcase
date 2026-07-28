@@ -149,6 +149,21 @@ describe('GET /api/meetings/:id/participants', () => {
     expect(res.body.data.items).toHaveLength(1);
     expect(res.body.data.items[0].status).toBe('confirmed');
   });
+
+  it('신청자 목록에 applyAnswer가 포함된다', async () => {
+    const { agent, userId: hostId } = await loginAgent('pa-ans-h');
+    const applicant = await createUser('pa-ans-a');
+    const meetingId = await insertMeeting(hostId, { type: 'small', capacity: null, endAt: '2030-01-01T12:00:00+09:00' });
+    await insertParticipant(meetingId, applicant, 'pending');
+    await pool.query(
+      'UPDATE meeting_participants SET apply_answer = $1 WHERE meeting_id = $2 AND user_id = $3',
+      ['책을 좋아해서요', meetingId, applicant]
+    );
+
+    const res = await agent.get(`/api/meetings/${meetingId}/participants`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.items[0].applyAnswer).toBe('책을 좋아해서요');
+  });
 });
 
 describe('PATCH /api/meetings/:id/participants/:userId', () => {
@@ -355,5 +370,84 @@ describe('PATCH의 meeting_id 스코프 격리', () => {
     expect(list2.body.data.items).toHaveLength(1);
     expect(list2.body.data.items[0].userId).toBe(a);
     expect(list2.body.data.items[0].status).toBe('pending');
+  });
+});
+
+describe('승인/거절 알림(C)', () => {
+  async function notificationsOf(userId) {
+    const { rows } = await pool.query(
+      'SELECT type, meeting_id FROM notifications WHERE user_id = $1 ORDER BY id',
+      [userId]
+    );
+    return rows.map((r) => ({ type: r.type, meetingId: Number(r.meeting_id) }));
+  }
+
+  it('승인하면 신청자에게 application_approved 알림이 간다', async () => {
+    const { agent, userId: hostId } = await loginAgent('n-f4-h1', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const applicant = await createUser('n-f4-a1', '신청자');
+    await insertParticipant(meetingId, applicant, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${applicant}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(200);
+
+    expect(await notificationsOf(applicant)).toEqual([
+      { type: 'application_approved', meetingId },
+    ]);
+    // 모임장 자신에게는 알림이 없다.
+    expect(await notificationsOf(hostId)).toEqual([]);
+  });
+
+  it('거절하면 신청자에게 application_rejected 알림이 간다', async () => {
+    const { agent, userId: hostId } = await loginAgent('n-f4-h2', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const applicant = await createUser('n-f4-a2', '신청자');
+    await insertParticipant(meetingId, applicant, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${applicant}`)
+      .send({ status: 'rejected' });
+    expect(res.status).toBe(200);
+
+    expect(await notificationsOf(applicant)).toEqual([
+      { type: 'application_rejected', meetingId },
+    ]);
+  });
+
+  it('이미 처리된 신청을 다시 처리하면 알림이 늘지 않는다', async () => {
+    const { agent, userId: hostId } = await loginAgent('n-f4-h3', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const applicant = await createUser('n-f4-a3', '신청자');
+    await insertParticipant(meetingId, applicant, 'pending');
+
+    await agent
+      .patch(`/api/meetings/${meetingId}/participants/${applicant}`)
+      .send({ status: 'approved' });
+    const second = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${applicant}`)
+      .send({ status: 'rejected' });
+    expect(second.status).toBe(400);
+
+    expect(await notificationsOf(applicant)).toEqual([
+      { type: 'application_approved', meetingId },
+    ]);
+  });
+
+  it('남의 모임을 처리하려다 403이면 알림이 생기지 않는다', async () => {
+    const hostId = await createUser('n-f4-h4', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const applicant = await createUser('n-f4-a4', '신청자');
+    await insertParticipant(meetingId, applicant, 'pending');
+    const { agent } = await loginAgent('n-f4-x4', '남');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${applicant}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(403);
+
+    const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM notifications');
+    expect(rows[0].n).toBe(0);
   });
 });

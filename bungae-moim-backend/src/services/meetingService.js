@@ -2,8 +2,9 @@ const pool = require('../config/db');
 const ApiError = require('../utils/apiError');
 const withTransaction = require('../utils/withTransaction');
 const { evaluateApplicability } = require('../utils/participation');
-const { validateUpdateMeeting } = require('../utils/validators');
+const { validateUpdateMeeting, validateApplyAnswer } = require('../utils/validators');
 const { isAdult } = require('../utils/age');
+const { createNotification, createNotifications, NOTIFICATION_TYPES } = require('./notificationService');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
@@ -37,6 +38,7 @@ function normalizeMeeting(row) {
     capacity: row.capacity === null ? null : Number(row.capacity),
     adultOnly: row.adult_only,
     openChatUrl: row.open_chat_url,
+    applyQuestion: row.apply_question ?? null,
     status: row.status,
     createdAt: row.created_at,
   };
@@ -55,8 +57,8 @@ async function createMeeting(hostId, fields) {
     `INSERT INTO meetings
        (host_id, type, title, category, description,
         region_sido, region_sigungu, region_eupmyeondong,
-        start_at, end_at, capacity, adult_only, open_chat_url)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        start_at, end_at, capacity, adult_only, open_chat_url, apply_question)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      RETURNING *`,
     [
       hostId,
@@ -72,6 +74,8 @@ async function createMeeting(hostId, fields) {
       fields.capacity,
       fields.adultOnly,
       fields.openChatUrl,
+      // 등록에서는 "미제공(undefined)"과 "빈 값"을 구분할 이유가 없다 — 둘 다 질문 없음.
+      fields.applyQuestion ?? null,
     ]
   );
 
@@ -261,7 +265,7 @@ function blockReasonToError(blockReason) {
 // 모임 행을 FOR UPDATE로 잠가 같은 모임 동시 신청을 직렬화한다. flash는 즉시 confirmed,
 // 마지막 자리를 채우면 모임을 closed로. small은 pending. 내가 취소했던(cancelled) row는
 // 되살리는 UPDATE로 재신청(낡은 타임스탬프는 리셋).
-async function applyToMeeting(meetingId, userId) {
+async function applyToMeeting(meetingId, userId, rawAnswer) {
   return withTransaction(async (client) => {
     const meetingRes = await client.query(
       `SELECT *, COALESCE(end_at, start_at) < now() AS is_past
@@ -299,20 +303,36 @@ async function applyToMeeting(meetingId, userId) {
     });
     if (!canApply) throw blockReasonToError(blockReason);
 
+    // 신청 자격을 먼저 판정한 뒤에 답변을 본다 — 애초에 신청할 수 없는 사람에게
+    // "답변이 필요합니다"를 돌려주면 진짜 이유를 가린다.
+    const applyAnswer = validateApplyAnswer(row.apply_question, rawAnswer);
+
     const newStatus = meeting.type === 'flash' ? 'confirmed' : 'pending';
 
     if (existingStatus === 'cancelled') {
+      // 재신청은 기존 행을 되살린다. apply_answer도 반드시 새 값으로 덮어써야 한다 —
+      // 안 그러면 지난번 답변이 그대로 남아 모임장이 낡은 답을 보게 된다.
       await client.query(
         `UPDATE meeting_participants
-            SET status = $3, applied_at = now(), responded_at = NULL
+            SET status = $3, applied_at = now(), responded_at = NULL, apply_answer = $4
           WHERE meeting_id = $1 AND user_id = $2`,
-        [meetingId, userId, newStatus]
+        [meetingId, userId, newStatus, applyAnswer]
       );
     } else {
       await client.query(
-        'INSERT INTO meeting_participants (meeting_id, user_id, status) VALUES ($1, $2, $3)',
-        [meetingId, userId, newStatus]
+        'INSERT INTO meeting_participants (meeting_id, user_id, status, apply_answer) VALUES ($1, $2, $3, $4)',
+        [meetingId, userId, newStatus, applyAnswer]
       );
+    }
+
+    // 소모임 pending 신청만 모임장에게 알린다. flash는 즉시 confirmed라 모임장이 처리할 게 없다.
+    // 같은 트랜잭션 안이라 신청이 롤백되면 알림도 함께 사라진다.
+    if (newStatus === 'pending') {
+      await createNotification(client, {
+        userId: Number(row.host_id),
+        type: NOTIFICATION_TYPES.NEW_APPLICATION,
+        meetingId,
+      });
     }
 
     // flash 정원이 이 신청으로 차면 모임을 마감한다.
@@ -402,7 +422,7 @@ async function listParticipants(meetingId, viewerId) {
   // applied_at 동률에서 Postgres는 순서를 보장하지 않는다. user_id tiebreak가 없으면
   // 같은 요청이 매번 다른 순서를 줄 수 있고, 나중에 페이징을 붙이면 경계에서 행이 새거나 겹친다.
   const { rows } = await pool.query(
-    `SELECT p.user_id, u.nickname, u.trust_score, p.status, p.applied_at, p.responded_at
+    `SELECT p.user_id, u.nickname, u.trust_score, p.status, p.applied_at, p.responded_at, p.apply_answer
        FROM meeting_participants p
        JOIN users u ON u.id = p.user_id
       WHERE p.meeting_id = $1
@@ -419,6 +439,7 @@ async function listParticipants(meetingId, viewerId) {
       status: row.status,
       appliedAt: row.applied_at,
       respondedAt: row.responded_at,
+      applyAnswer: row.apply_answer,
     })),
   };
 }
@@ -440,34 +461,48 @@ async function respondToApplicant(meetingId, hostId, targetUserId, status) {
     throw new ApiError('VALIDATION_ERROR', '소모임에서만 승인/거절할 수 있습니다');
   }
 
-  // 상태 확인과 갱신을 한 문장에 담는다. 그래서 F1/F2와 달리 트랜잭션·FOR UPDATE가 필요 없다 —
-  // 같은 신청을 동시에 두 번 처리해도 두 번째 UPDATE는 0 rows가 되어 아래 분기로 떨어진다.
+  // 상태 확인과 갱신은 여전히 한 문장(CAS)이다 — 같은 신청을 동시에 두 번 처리해도
+  // 두 번째 UPDATE는 0 rows가 되어 아래 분기로 떨어진다. 트랜잭션을 새로 감싼 이유는
+  // 오직 알림 INSERT를 이 UPDATE와 원자적으로 묶기 위해서다(행위는 커밋됐는데 알림만
+  // 유실되면 신청자가 승인·거절을 영영 모른다). 조건을 SELECT로 쪼개면 안 된다.
   //
   // WHERE status = 'pending' 때문에 승인 철회(approved → rejected)는 불가능하다. 이걸 열려면
   // 확정 참여자를 강제로 내보내는 셈이므로, 먼저 신뢰도 감점 여부(F2는 본인 취소에 -3)와
   // flash 재오픈 대상인지를 정해야 한다. 조건만 넓히면 정책 없이 동작이 생긴다.
-  const updated = await pool.query(
-    `UPDATE meeting_participants
-        SET status = $3, responded_at = now()
-      WHERE meeting_id = $1 AND user_id = $2 AND status = 'pending'
-     RETURNING status`,
-    [meetingId, targetUserId, status]
-  );
-
-  if (updated.rowCount === 0) {
-    // 0 rows인 이유가 "신청이 없어서"인지 "이미 처리돼서"인지를 여기서만 구분한다.
-    // 이 조회는 에러 메시지를 고르기 위한 것이라, 그 사이 상태가 또 바뀌어도 데이터는 이미 안전하다.
-    const existing = await pool.query(
-      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
-      [meetingId, targetUserId]
+  return withTransaction(async (client) => {
+    const updated = await client.query(
+      `UPDATE meeting_participants
+          SET status = $3, responded_at = now()
+        WHERE meeting_id = $1 AND user_id = $2 AND status = 'pending'
+       RETURNING status`,
+      [meetingId, targetUserId, status]
     );
-    if (existing.rows.length === 0) {
-      throw new ApiError('NOT_FOUND', '신청을 찾을 수 없습니다');
-    }
-    throw new ApiError('VALIDATION_ERROR', '이미 처리된 신청입니다');
-  }
 
-  return { userId: targetUserId, status: updated.rows[0].status };
+    if (updated.rowCount === 0) {
+      // 0 rows인 이유가 "신청이 없어서"인지 "이미 처리돼서"인지를 여기서만 구분한다.
+      // 이 조회는 에러 메시지를 고르기 위한 것이라, 그 사이 상태가 또 바뀌어도 데이터는 이미 안전하다.
+      const existing = await client.query(
+        'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+        [meetingId, targetUserId]
+      );
+      if (existing.rows.length === 0) {
+        throw new ApiError('NOT_FOUND', '신청을 찾을 수 없습니다');
+      }
+      throw new ApiError('VALIDATION_ERROR', '이미 처리된 신청입니다');
+    }
+
+    // rowCount > 0 = 이번 호출이 실제로 처리한 경우에만 알린다.
+    await createNotification(client, {
+      userId: targetUserId,
+      type:
+        status === 'approved'
+          ? NOTIFICATION_TYPES.APPLICATION_APPROVED
+          : NOTIFICATION_TYPES.APPLICATION_REJECTED,
+      meetingId,
+    });
+
+    return { userId: targetUserId, status: updated.rows[0].status };
+  });
 }
 
 // DELETE /api/meetings/:id — 모임 취소(E5). 모임장만.
@@ -490,11 +525,32 @@ async function cancelMeeting(meetingId, hostId) {
   }
 
   await withTransaction(async (client) => {
+    // UPDATE meetings를 먼저 실행해 그 행에 배타 락을 건다. F1(신청)은 meetings 행을
+    // FOR UPDATE로 잠그고 들어오므로, 활성 참여자 SELECT를 이 UPDATE **뒤**에 두면
+    // "SELECT가 F1보다 먼저 통과하고, F1이 커밋된 뒤에야 UPDATE meetings의 락이 풀려
+    // 방금 들어온 신청이 알림 없이 cancelled되는" 동시성 창이 닫힌다(F1과 직렬화됨).
+    // 다만 UPDATE meeting_participants는 거절·취소 이력까지 전원을 cancelled로 바꾸므로,
+    // 알림 대상(활성 참여자)은 반드시 그 UPDATE **전에** 잡아야 한다 — 순서를 바꾸면
+    // 이미 거절당한 사람에게도 "모임이 취소됐어요"가 가서 노이즈가 된다.
     await client.query("UPDATE meetings SET status = 'cancelled' WHERE id = $1", [meetingId]);
+
+    const activeRes = await client.query(
+      `SELECT user_id FROM meeting_participants
+        WHERE meeting_id = $1 AND status IN ('pending','confirmed','approved')`,
+      [meetingId]
+    );
+
     await client.query(
       "UPDATE meeting_participants SET status = 'cancelled' WHERE meeting_id = $1",
       [meetingId]
     );
+
+    await createNotifications(client, {
+      // user_id는 bigint라 문자열로 온다.
+      userIds: activeRes.rows.map((r) => Number(r.user_id)),
+      type: NOTIFICATION_TYPES.MEETING_CANCELLED,
+      meetingId,
+    });
   });
 
   return { status: 'cancelled' };
@@ -505,7 +561,7 @@ async function cancelMeeting(meetingId, hostId) {
 // 전체 교체(validateCreateMeeting 재사용)까지만 한다.
 async function updateMeeting(meetingId, hostId, body) {
   const meetingRes = await pool.query(
-    `SELECT id, host_id, status, type, adult_only, capacity,
+    `SELECT id, host_id, status, type, adult_only, capacity, apply_question,
             COALESCE(end_at, start_at) < now() AS is_past
        FROM meetings WHERE id = $1`,
     [meetingId]
@@ -565,17 +621,35 @@ async function updateMeeting(meetingId, hostId, body) {
   const nextStatus =
     row.type === 'flash' ? (confirmedCount >= fields.capacity ? 'closed' : 'recruiting') : row.status;
 
+  // 가입 질문은 full-replace의 예외다. 키가 없으면(undefined) 기존 값을 유지한다 — 폼이 값을
+  // 실어 보내지 않는 순간 조용히 지워지는 사고를 서버에서 막는다(읍/면/동에서 실제로 겪었다).
+  const nextApplyQuestion =
+    fields.applyQuestion === undefined ? row.apply_question : fields.applyQuestion;
+
+  // 활성 신청자가 있으면 질문을 바꿀 수 없다. 이미 받은 답변이 엉뚱한 질문에 붙는 것을 막는다.
+  // 같은 값을 다시 보내는 건 변경이 아니므로 통과시킨다(폼이 프리필 값을 그대로 보낸다).
+  if (nextApplyQuestion !== row.apply_question) {
+    const activeRes = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM meeting_participants
+        WHERE meeting_id = $1 AND status IN ('pending','confirmed','approved')`,
+      [meetingId]
+    );
+    if (activeRes.rows[0].n > 0) {
+      throw new ApiError('VALIDATION_ERROR', '신청자가 있어 가입 질문을 변경할 수 없습니다');
+    }
+  }
+
   const { rows } = await pool.query(
     `UPDATE meetings SET
        title=$2, category=$3, description=$4,
        region_sido=$5, region_sigungu=$6, region_eupmyeondong=$7,
        start_at=$8, end_at=$9, capacity=$10, adult_only=$11, open_chat_url=$12,
-       status=$13
+       status=$13, apply_question=$14
      WHERE id=$1 RETURNING *`,
     [meetingId, fields.title, fields.category, fields.description,
      fields.regionSido, fields.regionSigungu, fields.regionEupmyeondong,
      fields.startAt, fields.endAt, fields.capacity, fields.adultOnly, fields.openChatUrl,
-     nextStatus]
+     nextStatus, nextApplyQuestion]
   );
   return normalizeMeeting(rows[0]);
 }

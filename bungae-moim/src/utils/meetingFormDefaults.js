@@ -14,7 +14,7 @@ export function defaultFormValues() {
     title: '',
     category: CATEGORIES[1],
     sido: Object.keys(REGIONS)[0],
-    sigungu: Object.keys(REGIONS[Object.keys(REGIONS)[0]])[0],
+    sigungu: REGIONS[Object.keys(REGIONS)[0]][0],
     eupmyeondong: '',
     date: futureDateStr(1),
     time: '19:00',
@@ -23,5 +23,6 @@ export function defaultFormValues() {
     adultOnly: false,
     openChatUrl: '',
     description: '',
+    applyQuestion: '',
   }
 }

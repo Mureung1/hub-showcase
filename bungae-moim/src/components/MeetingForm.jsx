@@ -17,7 +17,6 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
   const [category, setCategory] = useState(initialValues.category)
   const [sido, setSido] = useState(initialValues.sido)
   const [sigungu, setSigungu] = useState(initialValues.sigungu)
-  const [eupmyeondong, setEupmyeondong] = useState(initialValues.eupmyeondong)
   const [date, setDate] = useState(initialValues.date)
   const [time, setTime] = useState(initialValues.time)
   const [endDate, setEndDate] = useState(initialValues.endDate)
@@ -25,11 +24,11 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
   const [adultOnly, setAdultOnly] = useState(initialValues.adultOnly)
   const [openChatUrl, setOpenChatUrl] = useState(initialValues.openChatUrl)
   const [description, setDescription] = useState(initialValues.description)
+  const [applyQuestion, setApplyQuestion] = useState(initialValues.applyQuestion ?? '')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const sigunguOptions = Object.keys(REGIONS[sido] ?? {})
-  const eupmyeondongOptions = REGIONS[sido]?.[sigungu] ?? []
+  const sigunguOptions = REGIONS[sido] ?? []
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -48,12 +47,15 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
         description: description.trim(),
         regionSido: sido,
         regionSigungu: sigungu,
-        regionEupmyeondong: eupmyeondong || null,
+        regionEupmyeondong: null,
         startAt: type === 'flash' ? `${date}T${time}:00+09:00` : `${date}T00:00:00+09:00`,
         endAt: type === 'small' ? `${endDate}T00:00:00+09:00` : null,
         capacity: type === 'flash' ? Number(capacity) : null,
         adultOnly,
         openChatUrl,
+        // 소모임만 질문을 지원한다. 서버는 키가 없으면 기존 값을 유지하므로, 폼은 항상
+        // 현재 값을 실어 보낸다(빈 문자열이면 null = 질문 없음).
+        applyQuestion: type === 'small' ? applyQuestion.trim() || null : null,
       })
       // 성공 시 상위가 네비게이션한다. 실패하면 아래 catch가 에러를 표시.
     } catch (err) {
@@ -106,16 +108,15 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
 
         <div className="field">
           <label>지역</label>
-          <div className="field-row field-row--three">
+          <div className="field-row">
             <select
               className="field-select"
               value={sido}
               onChange={(e) => {
                 const nextSido = e.target.value
                 setSido(nextSido)
-                const firstSigungu = Object.keys(REGIONS[nextSido])[0]
+                const firstSigungu = REGIONS[nextSido][0]
                 setSigungu(firstSigungu)
-                setEupmyeondong('')
               }}
               aria-label="시/도"
             >
@@ -128,26 +129,10 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
             <select
               className="field-select"
               value={sigungu}
-              onChange={(e) => {
-                setSigungu(e.target.value)
-                setEupmyeondong('')
-              }}
+              onChange={(e) => setSigungu(e.target.value)}
               aria-label="시/군/구"
             >
               {sigunguOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <select
-              className="field-select"
-              value={eupmyeondong}
-              onChange={(e) => setEupmyeondong(e.target.value)}
-              aria-label="읍/면/동 (선택)"
-            >
-              <option value="">읍/면/동</option>
-              {eupmyeondongOptions.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -224,6 +209,23 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
             placeholder="모임에 대해 자세히 설명해주세요"
           />
         </div>
+
+        {type === 'small' && (
+          <div className="field">
+            <label htmlFor="applyQuestion">신청 시 질문 (선택)</label>
+            <input
+              id="applyQuestion"
+              className="field-input"
+              value={applyQuestion}
+              onChange={(e) => setApplyQuestion(e.target.value)}
+              placeholder="예: 참여하고 싶은 이유를 알려주세요"
+              maxLength={200}
+            />
+            <span className="field-hint">
+              질문을 적으면 신청자가 답변해야 신청할 수 있어요. 신청자가 생긴 뒤에는 바꿀 수 없어요.
+            </span>
+          </div>
+        )}
 
         <label className="field-check">
           <input type="checkbox" checked={adultOnly} onChange={(e) => setAdultOnly(e.target.checked)} />

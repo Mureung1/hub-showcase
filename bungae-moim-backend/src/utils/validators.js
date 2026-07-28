@@ -1,7 +1,16 @@
 const ApiError = require('./apiError');
+const { isValidRegion } = require('./regions');
 
 // 카카오 오픈채팅 링크 패턴만 검증한다 (기획서 11번 — 그 이상 유효성은 확인하지 않음).
 const OPEN_CHAT_URL_PATTERN = /^https?:\/\/open\.kakao\.com\//;
+
+// 카테고리 화이트리스트. '전체'는 목록 필터 전용 값이므로 등록 허용값이 아니다.
+const ALLOWED_CATEGORIES = ['운동', '스터디', '취미', '식사'];
+
+// 가입 질문/답변 길이 상한. DB는 text라 제한이 없으므로 앱에서만 건다.
+// 이모지가 2로 세이지 않도록 [...str].length(코드포인트)로 센다 — varchar 검증과 같은 이유.
+const MAX_APPLY_QUESTION = 200;
+const MAX_APPLY_ANSWER = 500;
 
 // 마이그레이션의 varchar 한도와 같은 값을 앱에서도 강제한다. 앱이 먼저 막지 않으면
 // Postgres가 거절하면서 500 + DB 에러 원문("character varying(100) 자료형에 너무 긴
@@ -43,12 +52,44 @@ function validateCreateMeeting(body = {}) {
 
   const title = requireString(body.title, 'title');
   const category = requireString(body.category, 'category');
+  if (!ALLOWED_CATEGORIES.includes(category)) {
+    throw new ApiError('VALIDATION_ERROR', 'category는 허용된 값이 아닙니다');
+  }
   const regionSido = requireString(body.regionSido, 'regionSido');
   const regionSigungu = requireString(body.regionSigungu, 'regionSigungu');
+  if (!isValidRegion(regionSido, regionSigungu)) {
+    throw new ApiError('VALIDATION_ERROR', 'regionSido/regionSigungu가 유효한 지역이 아닙니다');
+  }
   const openChatUrl = requireString(body.openChatUrl, 'openChatUrl');
 
   if (!OPEN_CHAT_URL_PATTERN.test(openChatUrl)) {
     throw new ApiError('VALIDATION_ERROR', 'openChatUrl은 카카오 오픈채팅 링크여야 합니다');
+  }
+
+  // 가입 질문(B). 소모임만 지원한다 — flash는 신청 즉시 확정이라 모임장이 판단할 여지가 없다.
+  // 값이 와도 무시하고 null로 저장한다(capacity/endAt을 type별로 무시하는 것과 같은 방식).
+  //
+  // 반환값 undefined는 "요청에 이 키가 없었다"는 신호다. E4(updateMeeting)가 이걸 보고 기존
+  // 값을 유지한다 — full-replace가 새 필드를 조용히 지우는 사고(읍/면/동, 2026-07-27)를 막는다.
+  // null은 "명시적으로 지워라"라서 undefined와 구분해야 한다.
+  let applyQuestion;
+  if (type !== 'small') {
+    applyQuestion = null;
+  } else if (body.applyQuestion === undefined) {
+    applyQuestion = undefined;
+  } else if (body.applyQuestion === null) {
+    applyQuestion = null;
+  } else if (typeof body.applyQuestion !== 'string') {
+    throw new ApiError('VALIDATION_ERROR', 'applyQuestion은 문자열이어야 합니다');
+  } else {
+    const trimmed = body.applyQuestion.trim();
+    if (trimmed === '') {
+      applyQuestion = null;
+    } else if ([...trimmed].length > MAX_APPLY_QUESTION) {
+      throw new ApiError('VALIDATION_ERROR', `applyQuestion은 ${MAX_APPLY_QUESTION}자를 넘을 수 없습니다`);
+    } else {
+      applyQuestion = trimmed;
+    }
   }
 
   const startAt = body.startAt ? new Date(body.startAt) : null;
@@ -92,6 +133,7 @@ function validateCreateMeeting(body = {}) {
     capacity,
     adultOnly: body.adultOnly === true,
     openChatUrl,
+    applyQuestion,
   };
 }
 
@@ -102,6 +144,21 @@ function validateUpdateMeeting(body = {}, existingType) {
     throw new ApiError('VALIDATION_ERROR', '모임 유형은 변경할 수 없습니다');
   }
   return validateCreateMeeting(body);
+}
+
+// 신청 시 한마디 답변(F1). 모임에 질문이 설정돼 있을 때만 필수다.
+// 질문이 없으면 클라이언트가 뭘 보내든 무시하고 null을 돌려준다 — 질문 없는 모임에
+// 답변만 남는 상태를 만들지 않는다.
+function validateApplyAnswer(applyQuestion, rawAnswer) {
+  if (applyQuestion === null || applyQuestion === undefined) return null;
+  if (typeof rawAnswer !== 'string' || rawAnswer.trim() === '') {
+    throw new ApiError('VALIDATION_ERROR', '가입 질문에 답변해야 신청할 수 있습니다');
+  }
+  const trimmed = rawAnswer.trim();
+  if ([...trimmed].length > MAX_APPLY_ANSWER) {
+    throw new ApiError('VALIDATION_ERROR', `답변은 ${MAX_APPLY_ANSWER}자를 넘을 수 없습니다`);
+  }
+  return trimmed;
 }
 
 // PATCH /api/users/me 의 birthDate 검증. 형식 + 실제 달력 날짜 + 미래 아님.
@@ -146,5 +203,6 @@ module.exports = {
   validateUpdateMeeting,
   validateBirthDate,
   validateRespondStatus,
+  validateApplyAnswer,
   OPEN_CHAT_URL_PATTERN,
 };
