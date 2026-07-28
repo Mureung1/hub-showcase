@@ -85,7 +85,7 @@ describe("A. 정상 케이스", () => {
     expect(s.todayDown).toBe(true);
     expect(s.diagText).toBe("비 평균 −18%");
     expect(s.impHead).toBe("이 가게 데이터 기준 −18% 예상");
-    expect(s.impDetail).toContain("최근 30일"); // 실측(estimated=false) 분기
+    expect(s.impDetail).toContain("캠페인 없던 30일"); // 실측(estimated=false) 분기
     expect(s.emoji).toBe("🌧️");
   });
 

@@ -112,7 +112,10 @@ export function scenarioFromApi(
     : `이 가게 데이터 기준 ${signedPct(delta)} ${down ? "예상" : "기대"}`;
   const impDetail = diagnosis.estimated
     ? `아직 매출 데이터가 적어 업종 평균으로 추정했어요. ${meta.label}인 날은 보통 ${signedPct(delta)} 수준입니다. 데이터가 쌓이면 더 정확해집니다.`
-    : `최근 ${diagnosis.sampleDays}일 매출에서 ${meta.label}인 날이 비 안 오는 날 대비 ${signedPct(delta)}였어요. 방어 마케팅으로 하락을 줄일 수 있습니다.`;
+    // "최근 N일"이라고 하면 연속 구간처럼 읽히는데, 실제로는 캠페인을 보낸 날을 뺀 표본이라
+    // 비연속이다. 그 날들을 왜 뺐는지(= 캠페인 효과가 날씨 진단에 섞이면 안 됨)까지 한 줄에
+    // 넣으면 길어져서, 근거가 되는 표본이 무엇인지만 밝힌다.
+    : `캠페인 없던 ${diagnosis.sampleDays}일 기준, ${meta.label}인 날은 비 안 오는 날 대비 ${signedPct(delta)}였어요. 방어 마케팅으로 하락을 줄일 수 있습니다.`;
 
   return {
     ...base,
