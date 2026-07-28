@@ -5,7 +5,9 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",
