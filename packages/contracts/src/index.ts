@@ -19,6 +19,7 @@ export type {
   ReflectionDraft,
   ReflectionAlignment,
   ReflectionAnalysis,
+  PortfolioDraft,
   ReflectionDraftSaveRequest,
   ReflectionDraftSaveResponse,
 } from "./reflection";

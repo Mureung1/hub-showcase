@@ -1,4 +1,7 @@
-import type { TechnicalChallengeEvidenceReference } from "./repository-analysis";
+import type {
+  TechnicalChallengeCandidate,
+  TechnicalChallengeEvidenceReference,
+} from "./repository-analysis";
 
 export type ReflectionChallengeAnswers = {
   context: string;
@@ -18,13 +21,31 @@ export type ReflectionAnalysis = {
   matchedChallengeEvidence: TechnicalChallengeEvidenceReference[];
   message: string;
   portfolioSummary: string | null;
+  portfolioDraft: PortfolioDraft | null;
   requiresUserConfirmation: boolean;
+  /** Repository 근거와 초기 회고를 다시 대조해 만든 보완 후보입니다. */
+  suggestedChallenges?: TechnicalChallengeCandidate[];
+};
+
+export type PortfolioDraft = {
+  title: string;
+  technicalChallenge?: string;
+  background: string;
+  problem: string;
+  solution: string;
+  contribution: string;
+  keyDecisions?: string[];
+  result?: string;
+  learnings?: string[];
+  evidenceSummary: string;
+  requiresUserReview: boolean;
 };
 
 export type ReflectionDraft = {
   motivation: string;
   role: string;
   memorableProblem: string;
+  postAnalysisReflection: string;
   attempts: string;
   improvement: string;
   customChallengeTitle: string;

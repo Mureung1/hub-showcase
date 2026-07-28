@@ -9,6 +9,8 @@ export type RepositoryAnalysisErrorCode =
   | "REPOSITORY_NOT_FOUND"
   | "GITHUB_RATE_LIMITED"
   | "EXTERNAL_SERVICE_ERROR"
+  | "AI_ANALYSIS_UNAVAILABLE"
+  | "ANALYSIS_PERSISTENCE_FAILED"
   | "REFLECTION_LOAD_FAILED"
   | "REFLECTION_SAVE_FAILED"
   | "INTERNAL_SERVER_ERROR";
@@ -47,6 +49,8 @@ export type RepositoryAnalysisEvidenceType =
   | "commit"
   | "pull_request"
   | "issue"
+  | "discussion"
+  | "project"
   | "file"
   | "config"
   | "release";
@@ -70,6 +74,8 @@ export type TechnicalChallengeEvidenceReference = {
   title: string;
   url: string | null;
   filePath: string | null;
+  /** PR 본문에 직접 첨부된 이미지 URL. 다른 출처의 이미지는 포함하지 않습니다. */
+  imageUrls?: string[];
 };
 
 export type TechnicalChallengeCandidate = {
