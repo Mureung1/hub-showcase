@@ -45,6 +45,19 @@
 ```
 `birthDateRequired: true`면 프론트에서 생년월일 입력 화면으로 보냅니다 (기획서 6.1).
 
+### GET /api/users/me
+
+**응답**
+```json
+{
+  "data": {
+    "id": 1, "nickname": "홍길동", "email": "...",
+    "birthDate": "2001-05-20", "trustScore": 50.0, "evaluationCount": 2
+  }
+}
+```
+- `evaluationCount`: 신뢰도 점수에 **실제로 반영된**(진술 대조를 통과한) 평가 수입니다(8절). 진술이 엇갈려 무효 처리된 평가는 세지 않습니다 — "이 점수가 얼마나 많은 근거 위에 있는가"를 보여주는 게 목적이라, 무효표를 포함하면 그 목적을 배신하기 때문입니다. 평가·취소가 재계산을 트리거할 때만 갱신됩니다(8절 "재계산 시점" 참고).
+
 ### PATCH /api/users/me
 
 **요청**
@@ -219,8 +232,8 @@
 ### DELETE /api/meetings/:id/apply
 
 참여/신청 취소.
-- `confirmed`·`approved` 상태였던 신청을 취소하면 신청자의 신뢰도가 3점 깎입니다(0 미만으로는 내려가지 않음). 이 취소로 자리가 빈 flash 모임이 `closed` 상태였다면 다시 `recruiting`으로 재오픈됩니다.
-- `pending` 상태였던 신청을 취소하면 감점은 없습니다.
+- **취소는 신뢰도를 즉시 깎지 않습니다.** `confirmed`·`approved` 상태였던 신청을 취소하면 `participation_cancellations`에 이력만 남고(8절 참고), 같은 요청 안에서 신뢰도가 그 이력을 포함해 재계산됩니다 — 모임 시작 **24시간 이내**의 확정 취소만 감점(−1.5 상당)으로 반영되고, 그보다 이른 취소나 `pending` 상태였던 취소는 감점이 없습니다. "확정 후 취소 = −3"이던 옛 규칙은 2026-07-29에 폐기됐습니다(`docs/superpowers/specs/2026-07-22-신뢰도-알고리즘-design.md` 7장). 이 취소로 자리가 빈 flash 모임이 `closed` 상태였다면 다시 `recruiting`으로 재오픈됩니다.
+- `pending` 상태였던 신청을 취소해도 이력은 남지만(`was_confirmed=false`) 감점은 없습니다.
 
 **응답**
 ```json
@@ -379,7 +392,7 @@
 - `meetingTitle`은 알림 발생 시점이 아니라 **조회 시점**의 모임 제목입니다(제목을 알림에 복사 저장하지 않고 매번 조회 시 `meetings`와 조인) — 모임 제목이 나중에 바뀌면 과거 알림도 최신 제목으로 보입니다.
 - 비로그인 → `UNAUTHENTICATED`(401).
 
-**`type` 값 4종**
+**`type` 값 5종**
 
 | type | 의미 | 생성 시점 | 수신자 |
 |---|---|---|---|
@@ -387,8 +400,9 @@
 | `application_approved` | 내 신청이 승인됨 | 승인/거절(3절 `PATCH .../participants/:userId`)에서 모임장이 승인할 때 | 신청자 |
 | `application_rejected` | 내 신청이 거절됨 | 위와 같은 엔드포인트에서 모임장이 거절할 때 | 신청자 |
 | `meeting_cancelled` | 참여 중이던 모임이 취소됨 | 모임 취소(2절 `DELETE /api/meetings/:id`)에서 모임장이 취소할 때. **취소 직전 활성 참여자(`pending`/`confirmed`/`approved`)에게만** 갑니다 — 이미 거절·취소된 신청자는 받지 않습니다 | 활성 참여자(여러 명) |
+| `evaluation_requested` | 평가할 모임이 생김 | 앞의 4종과 달리 **행위 시점에 생성되지 않습니다.** 크론이 없어 "모임이 방금 끝났다"를 감지할 수단이 없기 때문에, **`GET /api/notifications` 조회 시점에** 호출자 본인에 대해서만 `listPendingEvaluations`(8절)를 돌려 대상 모임을 lazy 생성합니다. 멱등성은 `(user_id, meeting_id) WHERE type='evaluation_requested'` 부분 유니크 인덱스 + `ON CONFLICT DO NOTHING`이 보장합니다. 이 lazy 생성이 실패해도 격리돼 있어 알림 목록 조회 자체는 200으로 정상 응답합니다(로그만 남김) | 모임장·확정 참여자 |
 
-알림 INSERT는 항상 그 알림을 낳은 행위(신청 생성·승인/거절·모임 취소)와 **같은 트랜잭션 안**에서 일어납니다 — 행위는 커밋됐는데 알림만 유실되는 상황을 막기 위해서입니다. 승인/거절 엔드포인트는 원래 트랜잭션 없이 조건부 `UPDATE` 한 문장(CAS)으로 처리했으나, 알림을 같은 트랜잭션에 묶기 위해 트랜잭션을 새로 감쌌습니다.
+알림 INSERT는 원인 행위(신청 생성·승인/거절·모임 취소)와 **같은 트랜잭션 안**에서 일어나는 것이 원칙입니다 — 행위는 커밋됐는데 알림만 유실되는 상황을 막기 위해서입니다. 승인/거절 엔드포인트는 원래 트랜잭션 없이 조건부 `UPDATE` 한 문장(CAS)으로 처리했으나, 알림을 같은 트랜잭션에 묶기 위해 트랜잭션을 새로 감쌌습니다. **`evaluation_requested`만 예외**입니다 — "행위"가 아니라 조회 시점의 최선 노력형(best-effort) 보강이라 별도 트랜잭션 없이 생성되고, 실패해도 원래 요청(알림 목록 조회)을 막지 않습니다.
 
 ### POST /api/notifications/read
 
@@ -399,3 +413,81 @@
 { "data": { "unreadCount": 0 } }
 ```
 비로그인 → `UNAUTHENTICATED`(401).
+
+---
+
+## 8. 신뢰도 평가
+
+모임 후 모임장↔확정 참여자 상호 평가(3단계, 2026-07-29 구현). `users.trust_score`는 이제 이 평가·취소 이력에서 계산되는 **파생값**입니다 — 설계는 `docs/superpowers/specs/2026-07-22-신뢰도-알고리즘-design.md`, 산식·진술 대조 규칙이 전부 그 문서에 있습니다. 이 절은 API 계약만 다룹니다.
+
+| Method | Path | 설명 | 인증 |
+|---|---|---|---|
+| GET | `/api/evaluations/pending` | 내가 아직 평가하지 않은 모임 목록 | 필요 |
+| POST | `/api/meetings/:id/evaluations` | 그 모임에 대한 평가 제출(모임장은 여러 명 일괄, 참여자는 모임장 한 명) | 필요 |
+
+### GET /api/evaluations/pending
+
+**응답**
+```json
+{
+  "data": {
+    "items": [
+      {
+        "meeting": { "id": 10, "title": "등산 번개", "type": "small",
+                     "startAt": "2026-07-01T01:00:00.000Z", "endAt": "2026-07-01T03:00:00.000Z" },
+        "role": "host",
+        "targets": [ { "userId": 7, "nickname": "홍길동" }, { "userId": 8, "nickname": "김철수" } ]
+      }
+    ],
+    "count": 1
+  }
+}
+```
+- **평가 창**: 모임 종료(`COALESCE(end_at, start_at) < now()`) 후 **14일간**만 열립니다. `status = 'cancelled'`인 모임은 열리지 않습니다.
+- **자격**: 확정이었던 사람만(`meeting_participants.status IN ('confirmed','approved')`) 대상입니다. `role: "host"`면 그 모임에서 내가 확정 참여자 전원(`targets`, 여러 명)을 평가해야 하고, `role: "participant"`면 모임장 한 명(`targets`에 1건)을 평가해야 합니다.
+- 이미 평가를 제출한 대상은 `targets`에서 빠집니다. 모임의 대상을 전부 평가하면 그 모임 자체가 `items`에서 사라집니다.
+- `count`는 **모임 수**입니다(대상 인원 수 합이 아님) — 헤더 뱃지·마이페이지 섹션 제목("평가할 모임 (N)")에 그대로 씁니다.
+- 비로그인 → `UNAUTHENTICATED`(401).
+
+### POST /api/meetings/:id/evaluations
+
+**요청**
+```json
+{
+  "evaluations": [
+    { "rateeId": 7, "attended": true, "tags": ["punctual", "friendly"] },
+    { "rateeId": 8, "attended": false, "tags": [] }
+  ]
+}
+```
+- `evaluations`: 평가 항목 배열, **필수**. 비어 있으면 `VALIDATION_ERROR`(400).
+- `rateeId`: 평가 대상 사용자 id(양의 정수), 필수.
+- `attended`: 출석 여부(boolean), 필수. 소모임은 "성실히 참여했나요", 번개모임은 "오셨나요"로 화면 문구만 다르고 데이터 구조는 동일합니다.
+- `tags`: 선택. 알려진 태그 코드만 허용하고, 중복 불가, **긍정·부정 각각 최대 3개**까지만 반영됩니다(그 이상이면 400).
+
+**태그 코드 7종** — `punctual`(시간 약속을 잘 지켜요) · `friendly`(분위기를 좋게 만들어요) · `good_talk`(대화가 즐거웠어요) · `again`(또 만나고 싶어요) / `late`(시간 약속을 안 지켰어요) · `rude`(예의가 부족했어요) · `different`(공지와 달랐어요). 모임장→참여자와 참여자→모임장이 같은 목록을 씁니다.
+
+**응답**
+```json
+{ "data": { "submitted": 2 } }
+```
+
+**동작**
+- **모임장**은 `evaluations`에 확정 참여자 여러 명을 한 번에 담아 보낼 수 있습니다. **참여자**는 모임장 한 명만 평가할 수 있습니다(대상이 아니면 400).
+- 제출·수정과 **rater·모든 ratee의 신뢰도 재계산이 한 트랜잭션 안**에서 일어납니다. 내 제출이 상대의 판정을 뒤집을 수 있기 때문에(아래 진술 대조), 나뿐 아니라 이번에 평가한 상대들도 함께 재계산됩니다.
+- **진술 대조**: 같은 모임에서 두 사람 사이의 평가가 양쪽 다 제출되면, 둘 다 `attended: true`일 때만 유효합니다. 한쪽만 제출했으면 그 한쪽이 그대로 유효(노쇼 포함). 엇갈리면(예: 한쪽은 왔다, 한쪽은 안 왔다) **양쪽 다 무효**가 되어 점수에 반영되지 않습니다. 상대가 나중에 반대 진술을 제출하면 이미 반영된 판정도 실시간으로 뒤집힙니다.
+- **수정**: 처음 제출 후 **24시간 이내 1회**만 수정할 수 있습니다. 두 번째 수정 시도는 `VALIDATION_ERROR`(400) "평가는 한 번만 수정할 수 있습니다", 24시간이 지난 뒤의 첫 수정 시도는 "평가 수정 시간(24시간)이 지났습니다".
+
+**실패**
+- 비로그인 → `UNAUTHENTICATED`(401)
+- 없는 모임 → `NOT_FOUND`(404)
+- 내가 모임장도 확정 참여자도 아님 → `FORBIDDEN`(403) "이 모임을 평가할 수 없습니다" — 거절당한 신청자의 보복 평가도 여기서 막힙니다
+- 취소된 모임 → `VALIDATION_ERROR`(400) "취소된 모임은 평가할 수 없습니다"
+- 아직 끝나지 않은 모임 → `VALIDATION_ERROR`(400) "아직 끝나지 않은 모임입니다"
+- 종료 후 14일 초과 → `VALIDATION_ERROR`(400) "평가 기간이 지났습니다"
+- 평가 대상 자격 없음(모임장이 비확정 참여자를 지정 / 참여자가 모임장이 아닌 사람을 지정) → `VALIDATION_ERROR`(400) "평가할 수 없는 대상입니다"
+- `evaluations` 누락·빈 배열, `rateeId`가 유효한 정수가 아님, `attended`가 boolean이 아님, `tags`에 알 수 없는 코드·중복·부호당 4개 이상 → `VALIDATION_ERROR`(400)
+
+### `evaluationCount`와 `trustScore`
+
+`GET /api/users/me`(1절)의 `evaluationCount`는 이 절에서 유효로 판정된 평가 수만 셉니다. `trustScore`(1절·2절 `host.trustScore`·3절 `participants[].trustScore`)는 소수 1자리로 반올림된 캐시값이며, 평가·취소가 재계산을 트리거할 때만 갱신됩니다 — 조회할 때마다 다시 계산하지 않습니다(설계 5.5, 읽기가 쓰기를 유발하지 않기 위해서입니다).
