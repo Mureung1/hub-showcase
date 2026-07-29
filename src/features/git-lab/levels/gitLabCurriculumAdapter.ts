@@ -385,6 +385,20 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
     }
   }
 
+  if (level.goal?.type === 'stashState') {
+    const condition = level.goal.condition ?? ''
+    const stashLengthMatch = /stash\.length === (\d+)/.exec(condition)
+    const fileMatch = /files\['([^']+)'\]\.status === '([^']+)'/.exec(condition)
+
+    return {
+      type: 'stashState',
+      expectedStashLength: stashLengthMatch ? Number(stashLengthMatch[1]) : undefined,
+      fileName: fileMatch?.[1],
+      fileStatus: isGitFileStatus(fileMatch?.[2]) ? fileMatch[2] : undefined,
+      description,
+    }
+  }
+
   return undefined
 }
 

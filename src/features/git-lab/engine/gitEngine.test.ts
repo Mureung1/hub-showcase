@@ -126,6 +126,11 @@ describe('gitEngine', () => {
       from: 'master',
       to: 'experiment',
     })
+    expect(parseGitCommand('git stash')).toEqual({ type: 'stashPush' })
+    expect(parseGitCommand('git stash push')).toEqual({ type: 'stashPush' })
+    expect(parseGitCommand('git stash pop')).toEqual({ type: 'stashPop' })
+    expect(parseGitCommand('git stash apply')).toEqual({ type: 'stashApply' })
+    expect(parseGitCommand('git stash list')).toEqual({ type: 'stashList' })
   })
 
   it('handles boundary cases and normalizes input', () => {

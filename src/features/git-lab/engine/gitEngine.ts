@@ -7,6 +7,7 @@ import {
 } from './remoteCommands'
 import { logTags, tag } from './tagCommands'
 import { logRange, show } from './revisionCommands'
+import { stashApply, stashList, stashPop, stashPush } from './stashCommands'
 
 export type GitCommit = {
   id: string
@@ -110,6 +111,10 @@ export type GitCommand =
   | { type: 'logTags' }
   | { type: 'show'; ref: string }
   | { type: 'logRange'; from: string; to: string }
+  | { type: 'stashPush' }
+  | { type: 'stashPop' }
+  | { type: 'stashApply' }
+  | { type: 'stashList' }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -318,6 +323,22 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'tag', name: tokens[2], annotated: false }
   }
 
+  if (tokens[1] === 'stash' && (tokens.length === 2 || (tokens[2] === 'push' && tokens.length === 3))) {
+    return { type: 'stashPush' }
+  }
+
+  if (tokens[1] === 'stash' && tokens[2] === 'pop' && tokens.length === 3) {
+    return { type: 'stashPop' }
+  }
+
+  if (tokens[1] === 'stash' && tokens[2] === 'apply' && tokens.length === 3) {
+    return { type: 'stashApply' }
+  }
+
+  if (tokens[1] === 'stash' && tokens[2] === 'list' && tokens.length === 3) {
+    return { type: 'stashList' }
+  }
+
   throw new Error(`Unsupported git command: ${input}`)
 }
 
@@ -388,6 +409,14 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return show(state, command.ref)
     case 'logRange':
       return logRange(state, command.from, command.to)
+    case 'stashPush':
+      return stashPush(state)
+    case 'stashPop':
+      return stashPop(state)
+    case 'stashApply':
+      return stashApply(state)
+    case 'stashList':
+      return stashList(state)
   }
 }
 
