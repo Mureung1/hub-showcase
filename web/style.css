@@ -188,15 +188,43 @@ body[data-state="error"] .starter {
   display: none;
 }
 
-/* ------------------------------------------------------- ③ 완료 헤더 자리 */
-/* 내용은 Week 4에서 채운다. 자리와 고정 동작만 미리 정의해 둔다. */
+/* ------------------------------------------------------------ ③ 완료 헤더 */
+/*
+ * 트렌드를 타임라인 맨 아래에 둔 결정(9-1)의 반쪽이다. 결론이 아래에 있어도
+ * 위로 올라간 사용자가 언제든 여기서 결과에 닿는다. 그래서 sticky는 장식이 아니다.
+ */
 .run-header {
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  /* 좌우 여백을 .page의 콘텐츠 시작선에 맞춘다 — 헤더만 튀어나오면 고정이 어색해진다. */
+  padding: 0.7rem max(1.25rem, calc((100% - var(--page-width)) / 2 + 1.25rem));
   border-bottom: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(6px);
+}
+
+.run-header__title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* 통계는 근거지 자랑이 아니다. 제목보다 한 단계 물러나게 둔다. */
+.run-header__detail {
+  margin: 0.05rem 0 0;
+  color: var(--ink-3);
+  font-size: 0.8rem;
+}
+
+.run-header__restart {
+  flex-shrink: 0;
 }
 
 /* ---------------------------------------------------------------- 타임라인 */

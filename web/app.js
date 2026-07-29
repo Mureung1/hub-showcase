@@ -24,6 +24,7 @@
   const fatalMessage = document.getElementById("fatal-message");
   const fatalMeta = document.getElementById("fatal-meta");
   const fatalRestart = document.getElementById("fatal-restart");
+  const runHeader = document.getElementById("run-header");
 
   // ---------------------------------------------------------------- state
   /** 현재 열려 있는 이벤트 소스. 한 번에 하나만 돈다. */
@@ -504,33 +505,92 @@
   }
 
   /**
+   * 초 단위 실수를 사람이 읽는 시간으로. `134.2` → `2분 14초`, `54.0` → `54초`.
+   *
+   * 계약의 `elapsed`는 초 단위 실수라 그대로 노출하면 "134.2초"가 된다.
+   * 이 서비스에서 소요시간은 정밀도가 아니라 **얼마나 오래 일했는가**를 말하는 값이다.
+   */
+  function formatElapsed(seconds) {
+    const total = Math.max(0, Math.round(Number(seconds) || 0));
+    if (total < 60) return `${total}초`;
+
+    const minutes = Math.floor(total / 60);
+    const rest = total % 60;
+    return rest === 0 ? `${minutes}분` : `${minutes}분 ${rest}초`;
+  }
+
+  /**
+   * 완료 헤더 — 화면 상단에 **고정**된다(`position: sticky`, style.css).
+   *
+   * 트렌드를 타임라인 맨 아래에 둔 결정(9-1)이 성립하려면 이게 필요하다.
+   * 위로 올라가 카드를 읽던 사용자도, 나중에 화면을 본 사용자도 여기서 결론에 닿는다.
+   *
+   * **`done`에서만 띄운다.** `empty`(선별 0편 포함)와 `error`는 부르지 않는다 —
+   * "0편 검토 · 0편 선별"은 아무 의미도 없고 사용자는 고장난 것으로 읽는다.
+   */
+  function showRunHeader(stats, elapsed) {
+    const { scanned, selected, succeeded, failed } = stats;
+
+    const title = document.createElement("p");
+    title.className = "run-header__title";
+
+    // 부분 실패는 에러가 아니라 정상적인 결말이다. 숨기지도, 경고로 만들지도 않는다.
+    // 다만 몇 편을 건졌는지는 분명히 말한다 — "완료"만 띄우면 거짓말이 된다.
+    title.textContent = failed > 0 ? `브리핑 완료 · ${succeeded}/${selected}편` : "브리핑 완료";
+
+    const detail = document.createElement("p");
+    detail.className = "run-header__detail";
+    detail.textContent =
+      `${scanned}편 검토 · ${selected}편 선별 · ` +
+      `${formatElapsed(elapsed)} · LLM 호출 ${stats.llm_calls}회`;
+
+    const restart = document.createElement("button");
+    restart.className = "button run-header__restart";
+    restart.type = "button";
+    restart.textContent = "다시 브리핑";
+    restart.addEventListener("click", resetToIdle);
+
+    const text = document.createElement("div");
+    text.append(title, detail);
+
+    runHeader.replaceChildren(text, restart);
+    runHeader.hidden = false;
+  }
+
+  /**
+   * 헤더를 치운다. 새 실행을 시작할 때 반드시 부른다 —
+   * 직전 브리핑의 통계가 남아 있으면 사용자는 그걸 이번 실행의 숫자로 읽는다.
+   */
+  function hideRunHeader() {
+    runHeader.hidden = true;
+    runHeader.replaceChildren();
+  }
+
+  /**
    * `done` — 정상 종결.
    *
    * **진행 로그를 지우거나 초기화하지 않는다.** 로그는 감사 기록이라 완료 후에도 남는다.
-   * 트렌드 블록을 붙인 뒤 종결 로그로 끝낸다. 상단 완료 헤더는 9-3 범위다.
+   * 다만 완료 **통계**는 로그가 아니라 헤더의 몫이다 — 타임라인은 트렌드로 끝난다.
    *
    * @returns {string} 화면에 실제로 그린 것에 맞는 상태 이름
    */
   function appendDone(event) {
-    const { scanned, selected, succeeded, failed } = event.stats;
+    const { scanned, selected, succeeded } = event.stats;
 
     // 선별 0편이면 성공도 실패도 아닌 "결과 없음"이다 (#79).
     // '0/0편 완료'는 아무 의미도 아니고, 사용자는 고장난 줄 안다.
     //
     // 이때 상태도 done이 아니라 empty로 둔다. 화면에 결과가 없는데 상태만
-    // done이면, 이 상태를 보고 그리는 Week 4의 완료 헤더가 "0/0편"을 띄우게 된다.
+    // done이면, 헤더가 "0편 검토 · 0편 선별"을 띄우게 된다 — 여기서 걸러 그 길을 막는다.
     if (selected === 0) {
       appendNoResult(scanned, []);
       return "empty";
     }
 
-    // 트렌드가 먼저, 종결 로그가 마지막이다. 트렌드는 `done`이 실어 온 결과물이고
-    // 종결 로그는 "여기서 끝났다"는 표시라, 순서가 뒤집히면 끝난 뒤에 결과가 나온다.
+    // 타임라인은 트렌드로 끝난다. 완료 통계를 로그로 한 줄 더 붙이면 헤더와 중복이고,
+    // 결론(트렌드) 뒤에 사무적인 마감 줄이 붙어 읽는 순서도 흐려진다.
     appendTrend(event.trend, succeeded);
-
-    const parts = [`브리핑 완료 · ${succeeded}/${selected}편`];
-    if (failed > 0) parts.push(`${failed}편은 요약하지 못했습니다`);
-    appendLog(parts[0], parts[1]);
+    showRunHeader(event.stats, event.elapsed);
     return "done";
   }
 
@@ -584,7 +644,9 @@
     timeline.replaceChildren();
     readInfo.clear();
     fatal.hidden = true;
+    hideRunHeader();
     body.dataset.state = "idle";
+    window.scrollTo({ top: 0 });
     input.focus();
   }
 
@@ -713,6 +775,7 @@
     timeline.replaceChildren();
     readInfo.clear();
     fatal.hidden = true;
+    hideRunHeader();
     body.dataset.state = "running";
 
     source = createSource(topic);
