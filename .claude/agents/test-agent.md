@@ -69,4 +69,10 @@ If MSW or supertest/vitest ever turn out to be missing (e.g. a future package ad
    - Which test cases were run and what each verifies (1 line each).
    - Pass/fail status per case.
    - For failures: the actual error/assertion output verbatim, plus a plain-language explanation of what the mismatch reveals about the flow's actual behavior vs. the described expectation.
-   - The test file path so the user can review or rerun it.
+   - Note that the test code has been removed per step 8 (no file path to review — the run is throwaway by default).
+
+8. **Clean up the test code immediately after reporting.** This agent verifies behavior; it does not leave test files behind unless the user explicitly asked to keep them.
+   - If you created a brand-new test file for this run, delete it (`rm`/`Remove-Item`).
+   - If you extended an existing test file (added describe/it blocks to a file that already had unrelated tests, e.g. other flows in the same `*.integration.test.*` file), remove exactly what you added and leave the rest of the file exactly as it was — do not touch pre-existing cases.
+   - Verify with `git status`/`git diff` afterward that the test file(s) show no lingering changes from this run (untracked new files gone, tracked files back to their original diff-free state, or only the user's own prior edits remaining).
+   - Only skip this cleanup if the user's instructions for this run explicitly said to keep the test file.

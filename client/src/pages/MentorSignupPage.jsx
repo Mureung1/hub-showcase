@@ -1,14 +1,92 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { routePaths } from "../routes/routePaths";
+import supabaseClient from "../api/supabaseClient";
+import { setAccessToken } from "../utils/authStorage";
+import { SCHOOL_EMAIL_HINT, SCHOOL_EMAIL_PATTERN } from "../constants/schoolEmail";
 
 function MentorSignupPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const savedAccount = location.state?.account ?? null;
 
+  const [email, setEmail] = useState(savedAccount?.email ?? "");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState("idle");
+  const [verificationError, setVerificationError] = useState("");
+  const isEmailVerified = verificationStatus === "verified";
+  const emailInputRef = useRef(null);
+
+  useEffect(() => {
+    emailInputRef.current?.setCustomValidity(
+      isEmailVerified ? "" : "이메일 인증을 완료해 주세요."
+    );
+  }, [isEmailVerified]);
+
+  const handleSendVerificationCode = async () => {
+    setVerificationError("");
+
+    const trimmedEmail = email.trim();
+    if (!SCHOOL_EMAIL_PATTERN.test(trimmedEmail)) {
+      setVerificationError(SCHOOL_EMAIL_HINT);
+      return;
+    }
+    if (!supabaseClient) {
+      setVerificationError("이메일 인증 기능을 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+
+    setVerificationStatus("sending");
+
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email: trimmedEmail,
+      options: { shouldCreateUser: true },
+    });
+
+    if (error) {
+      setVerificationError(error.message);
+      setVerificationStatus("idle");
+      return;
+    }
+
+    setVerificationStatus("sent");
+  };
+
+  const handleVerifyCode = async () => {
+    setVerificationError("");
+
+    if (!verificationCode.trim()) {
+      setVerificationError("인증 코드를 입력해 주세요.");
+      return;
+    }
+
+    setVerificationStatus("verifying");
+
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      email: email.trim(),
+      token: verificationCode.trim(),
+      type: "email",
+    });
+
+    if (error || !data?.session) {
+      setVerificationError(error?.message || "인증 코드가 올바르지 않습니다.");
+      setVerificationStatus("sent");
+      return;
+    }
+
+    setAccessToken(data.session.access_token);
+    setVerificationStatus("verified");
+  };
+
   const handleNext = (event) => {
     event.preventDefault();
+
+    if (!isEmailVerified) {
+      setVerificationError("이메일 인증을 완료해 주세요.");
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
 
     navigate(routePaths.mentorSignupProfile, {
@@ -17,7 +95,7 @@ function MentorSignupPage() {
           name: formData.get("name"),
           nickname: formData.get("nickname"),
           password: formData.get("password"),
-          email: formData.get("email"),
+          email,
         },
       },
     });
@@ -93,19 +171,55 @@ function MentorSignupPage() {
 
               <div className="mentor-field-group">
                 <label className="mentor-field-label" htmlFor="mentor-email">이메일 주소 <span aria-hidden="true">*</span></label>
+                <small className="mentor-field-hint">{SCHOOL_EMAIL_HINT}</small>
                 <div className="mentor-email-row">
                   <input
                     autoComplete="email"
                     className="field"
-                    defaultValue={savedAccount?.email ?? ""}
                     id="mentor-email"
                     name="email"
-                    placeholder="example@email.com"
+                    placeholder="example@school.ac.kr"
+                    ref={emailInputRef}
                     required
                     type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    readOnly={isEmailVerified}
                   />
-                  <button className="button button-soft mentor-email-button" type="button">인증</button>
+                  <button
+                    className="button button-soft mentor-email-button"
+                    type="button"
+                    onClick={handleSendVerificationCode}
+                    disabled={isEmailVerified || verificationStatus === "sending"}
+                  >
+                    {isEmailVerified ? "인증 완료" : verificationStatus === "sending" ? "발송 중..." : "인증"}
+                  </button>
                 </div>
+
+                {(verificationStatus === "sent" || verificationStatus === "verifying") && (
+                  <div className="mentor-email-row">
+                    <input
+                      className="field"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="인증 코드 8자리"
+                      value={verificationCode}
+                      onChange={(event) => setVerificationCode(event.target.value)}
+                    />
+                    <button
+                      className="button button-soft mentor-email-button"
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={verificationStatus === "verifying"}
+                    >
+                      {verificationStatus === "verifying" ? "확인 중..." : "확인"}
+                    </button>
+                  </div>
+                )}
+
+                {verificationError && (
+                  <p className="signup-error" role="alert">{verificationError}</p>
+                )}
               </div>
             </div>
           </section>

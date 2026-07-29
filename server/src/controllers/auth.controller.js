@@ -18,7 +18,7 @@ const handleError = (res, err) => {
 
 const signupMentee = async (req, res) => {
   try {
-    const user = await authService.signupMentee(req.body);
+    const user = await authService.signupMentee(req.verifiedUser, req.body);
     return res.status(201).json({ data: { user } });
   } catch (err) {
     return handleError(res, err);
@@ -27,7 +27,7 @@ const signupMentee = async (req, res) => {
 
 const signupMentor = async (req, res) => {
   try {
-    const user = await authService.signupMentor(req.body);
+    const user = await authService.signupMentor(req.verifiedUser, req.body);
     return res.status(201).json({ data: { user } });
   } catch (err) {
     return handleError(res, err);

@@ -12,29 +12,30 @@ const {
 
 class AuthError extends Error {}
 
-const createAuthUser = async (email, password) => {
-  const { data, error } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
+const ensureProfileNotExists = async (userId) => {
+  const { data: existingProfile, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle();
 
-  if (error) {
-    if (error.code === 'email_exists' || error.status === 422) {
-      throw new ConflictError('이미 가입된 이메일입니다.');
-    }
-    throw error;
+  if (error) throw error;
+  if (existingProfile) {
+    throw new ConflictError('이미 가입된 이메일입니다.');
   }
-
-  return data.user;
 };
 
-const rollbackAuthUser = async (userId) => {
-  await supabase.auth.admin.deleteUser(userId);
+const setAccountPassword = async (userId, password) => {
+  const { error } = await supabase.auth.admin.updateUserById(userId, { password });
+  if (error) throw error;
 };
 
-const signupMentee = async (payload) => {
-  const email = requireEmail(payload?.email);
+const rollbackProfile = async (userId) => {
+  await supabase.from('profiles').delete().eq('id', userId);
+};
+
+const signupMentee = async (verifiedUser, payload) => {
+  const email = verifiedUser.email;
   const password = requirePassword(payload?.password);
   const name = requireString(payload?.name, 'name');
   const nickname = requireString(payload?.nickname, 'nickname');
@@ -53,11 +54,12 @@ const signupMentee = async (payload) => {
     );
   }
 
-  const authUser = await createAuthUser(email, password);
+  await ensureProfileNotExists(verifiedUser.id);
+  await setAccountPassword(verifiedUser.id, password);
 
   try {
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: authUser.id,
+      id: verifiedUser.id,
       role: 'mentee',
       name,
       nickname,
@@ -65,7 +67,7 @@ const signupMentee = async (payload) => {
     if (profileError) throw profileError;
 
     const { error: menteeError } = await supabase.from('mentee_profiles').insert({
-      user_id: authUser.id,
+      user_id: verifiedUser.id,
       school,
       major,
       grade,
@@ -73,12 +75,12 @@ const signupMentee = async (payload) => {
     });
     if (menteeError) throw menteeError;
   } catch (err) {
-    await rollbackAuthUser(authUser.id);
+    await rollbackProfile(verifiedUser.id);
     throw err;
   }
 
   return {
-    id: authUser.id,
+    id: verifiedUser.id,
     email,
     role: 'mentee',
     name,
@@ -86,8 +88,8 @@ const signupMentee = async (payload) => {
   };
 };
 
-const signupMentor = async (payload) => {
-  const email = requireEmail(payload?.email);
+const signupMentor = async (verifiedUser, payload) => {
+  const email = verifiedUser.email;
   const password = requirePassword(payload?.password);
   const name = requireString(payload?.name, 'name');
   const nickname = requireString(payload?.nickname, 'nickname');
@@ -125,11 +127,12 @@ const signupMentor = async (payload) => {
     { min: 1, max: 5 },
   );
 
-  const authUser = await createAuthUser(email, password);
+  await ensureProfileNotExists(verifiedUser.id);
+  await setAccountPassword(verifiedUser.id, password);
 
   try {
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: authUser.id,
+      id: verifiedUser.id,
       role: 'mentor',
       name,
       nickname,
@@ -137,7 +140,7 @@ const signupMentor = async (payload) => {
     if (profileError) throw profileError;
 
     const { error: mentorError } = await supabase.from('mentor_profiles').insert({
-      user_id: authUser.id,
+      user_id: verifiedUser.id,
       school,
       major,
       academic_status: academicStatus,
@@ -153,12 +156,12 @@ const signupMentor = async (payload) => {
     });
     if (mentorError) throw mentorError;
   } catch (err) {
-    await rollbackAuthUser(authUser.id);
+    await rollbackProfile(verifiedUser.id);
     throw err;
   }
 
   return {
-    id: authUser.id,
+    id: verifiedUser.id,
     email,
     role: 'mentor',
     name,

@@ -3,7 +3,9 @@
   "title": "MentorING",
   "summary": "멘토(대학원생)와 멘티(학부생)를 연결해주는 플랫폼입니다.",
   "githubUser": "meatbest9(백승주)",
-  "demoUrl": "https://meatbest9.github.io/prototype/",
+  "demoUrl": "https://mentoring-sigma.vercel.app/",
+  "demoVideoUrl": "https://www.youtube.com/watch?v=example-video-id",
+  "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
     "screenshots/menteehome.webp",
@@ -17,12 +19,12 @@
   ],
   "features": [
     "멘티와 멘토를 매칭해줍니다.",
-    "쌓인 포인트를 바탕으로 멘토가 상점을 이용할 수 있습니다(추가 예정).",
+    "쌓인 포인트를 바탕으로 멘토가 상점을 이용할 수 있습니다(추가 예정)."
 
   ],
   "featureTags": [
     "멘토링 매칭",
-    "포인트 관리",
+    "포인트 관리"
     
   ],
   "techStack": [
@@ -66,7 +68,7 @@
           "핵심 기능 정의",
           "Agent에게 구현 계획 요청",
           "계획 검토한 뒤 Agent로 코드 구현",
-          " Test Agent로 테스트 실행",
+          " Test Agent로 테스트 실행"
         
         ]
       },

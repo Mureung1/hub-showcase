@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets, routePaths } from "../routes/routePaths";
-import { signupMentor } from "../api/auth";
+import { login, signupMentor } from "../api/auth";
 import { LAB_NAME_HINT, LAB_NAME_PATTERN } from "../constants/labName";
 
 const academicStatusLabels = {
@@ -205,6 +205,7 @@ function MentorSignupProfilePage() {
           internationalActivities.length,
         ),
       });
+      await login({ email: accountInfo.email, password: accountInfo.password });
       setIsSignupComplete(true);
     } catch (error) {
       setSubmissionError(error.message);

@@ -368,6 +368,270 @@ describe('PATCH /api/applications/:applicationId/accept (integration)', () => {
   });
 });
 
+describe('PATCH /api/applications/:applicationId/complete (integration)', () => {
+  let applicationsQueries;
+  let applicationMentorsQuery;
+  let meetingsQuery;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthenticatedMentor();
+    applicationsQueries = [];
+    applicationMentorsQuery = null;
+    meetingsQuery = null;
+  });
+
+  // completeApplication은 accept/reject와 달리 application_mentors에서 권한용 링크를 먼저
+  // 조회하지 않고, applications row의 accepted_mentor_id를 직접 요청 멘토와 비교한다.
+  // 따라서 'applications' 테이블만 두 번(조회 → 업데이트) 걸리고, application_mentors/meetings는
+  // 통과 후 업데이트 한 번씩만 걸린다.
+  const setupCompleteMocks = ({
+    applicationStatus = 'confirmed',
+    acceptedMentorId = 'mentor-1',
+    applicationExists = true,
+  } = {}) => {
+    let applicationsCallCount = 0;
+
+    mockSupabase.from.mockImplementation((table) => {
+      if (table === 'profiles') return mockProfilesTableForMentor();
+
+      if (table === 'applications') {
+        applicationsCallCount += 1;
+        const query = buildThenableQuery(
+          applicationsCallCount === 1
+            ? applicationExists
+              ? {
+                  data: {
+                    id: 'application-1',
+                    status: applicationStatus,
+                    accepted_mentor_id: acceptedMentorId,
+                    mentee_id: 'mentee-1',
+                  },
+                  error: null,
+                }
+              : { data: null, error: { message: 'no rows found' } }
+            : {
+                data: {
+                  id: 'application-1',
+                  status: 'completed',
+                  accepted_mentor_id: acceptedMentorId,
+                  updated_at: '2026-07-23T00:00:00.000Z',
+                },
+                error: null,
+              },
+        );
+        applicationsQueries.push(query);
+        return query;
+      }
+
+      if (table === 'application_mentors') {
+        applicationMentorsQuery = buildThenableQuery({ error: null });
+        return applicationMentorsQuery;
+      }
+
+      if (table === 'meetings') {
+        meetingsQuery = buildThenableQuery({ error: null });
+        return meetingsQuery;
+      }
+
+      throw new Error(`예상치 못한 테이블 조회: ${table}`);
+    });
+  };
+
+  it('confirmed 상태이고 요청 멘토가 accepted_mentor_id와 일치하면 200과 함께 completed 결과를 반환하고, applications/application_mentors/meetings를 각각 올바르게 업데이트한다', async () => {
+    setupCompleteMocks();
+
+    const res = await request(app)
+      .patch('/api/applications/application-1/complete')
+      .set('Authorization', MENTOR_TOKEN);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      data: {
+        id: 'application-1',
+        status: 'completed',
+        acceptedMentorId: 'mentor-1',
+        updatedAt: '2026-07-23T00:00:00.000Z',
+      },
+    });
+
+    // applications를 completed로 업데이트했는지 (두 번째 from('applications') 호출)
+    expect(applicationsQueries[1].update).toHaveBeenCalledWith({ status: 'completed' });
+
+    // 이 멘토의 application_mentors 링크를 completed로 업데이트하고 mentor_id로 필터했는지
+    expect(applicationMentorsQuery.update).toHaveBeenCalledWith({ status: 'completed' });
+    expect(applicationMentorsQuery.eq).toHaveBeenCalledWith('mentor_id', 'mentor-1');
+
+    // meetings를 completed_at(ISO 문자열)으로 업데이트하고 application_id로 필터했는지
+    expect(meetingsQuery.update).toHaveBeenCalledWith({
+      completed_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
+    });
+    expect(meetingsQuery.eq).toHaveBeenCalledWith('application_id', 'application-1');
+  });
+
+  it('존재하지 않는 신청 id를 완료 처리하려 하면 404 APPLICATION_NOT_FOUND를 반환한다', async () => {
+    setupCompleteMocks({ applicationExists: false });
+
+    const res = await request(app)
+      .patch('/api/applications/non-existent-application/complete')
+      .set('Authorization', MENTOR_TOKEN);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('APPLICATION_NOT_FOUND');
+  });
+
+  it('confirmed가 아닌(pending) 신청을 완료 처리하려 하면 409 APPLICATION_NOT_CONFIRMED를 반환하고 업데이트는 호출되지 않는다', async () => {
+    setupCompleteMocks({ applicationStatus: 'pending' });
+
+    const res = await request(app)
+      .patch('/api/applications/application-1/complete')
+      .set('Authorization', MENTOR_TOKEN);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('APPLICATION_NOT_CONFIRMED');
+    expect(applicationsQueries[1]).toBeUndefined();
+    expect(applicationMentorsQuery).toBeNull();
+    expect(meetingsQuery).toBeNull();
+  });
+
+  it('이미 completed 상태인 신청을 다시 완료 처리하려 하면 409 APPLICATION_ALREADY_COMPLETED를 반환한다', async () => {
+    setupCompleteMocks({ applicationStatus: 'completed' });
+
+    const res = await request(app)
+      .patch('/api/applications/application-1/complete')
+      .set('Authorization', MENTOR_TOKEN);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('APPLICATION_ALREADY_COMPLETED');
+    expect(applicationsQueries[1]).toBeUndefined();
+    expect(applicationMentorsQuery).toBeNull();
+    expect(meetingsQuery).toBeNull();
+  });
+
+  it('confirmed 상태이지만 요청 멘토가 accepted_mentor_id와 다르면 403 FORBIDDEN을 반환한다', async () => {
+    setupCompleteMocks({ acceptedMentorId: 'other-mentor' });
+
+    const res = await request(app)
+      .patch('/api/applications/application-1/complete')
+      .set('Authorization', MENTOR_TOKEN);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.body.error.message).toBe('이 면담 신청을 완료 처리할 권한이 없습니다.');
+    expect(applicationsQueries[1]).toBeUndefined();
+  });
+
+  it('멘티 role 토큰으로 호출하면 403 FORBIDDEN을 반환하고 서비스 계층(applications 조회)까지 도달하지 않는다', async () => {
+    mockAuthenticatedMentee();
+    mockSupabase.from.mockImplementation((table) => {
+      if (table === 'profiles') return mockProfilesTable();
+      throw new Error(`예상치 못한 테이블 조회: ${table}`);
+    });
+
+    const res = await request(app)
+      .patch('/api/applications/application-1/complete')
+      .set('Authorization', MENTEE_TOKEN);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.body.error.message).toBe('멘토만 면담을 완료 처리할 수 있습니다.');
+  });
+
+  describe('GET /api/applications - completed 상태 표시 (회귀 확인)', () => {
+    it('멘티로 조회하면 completed 신청의 최상위 status가 completed로 내려온다', async () => {
+      mockAuthenticatedMentee();
+      mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
+      const applicationsQuery = buildThenableQuery({
+        data: [
+          {
+            id: 'application-1',
+            status: 'completed',
+            accepted_mentor_id: 'mentor-1',
+            application_mentors: [
+              {
+                mentor_id: 'mentor-1',
+                status: 'completed',
+                mentor_profiles: {
+                  school: '서울대학교',
+                  major: '컴퓨터공학',
+                  academic_status: '박사과정',
+                  profiles: { name: '김민준' },
+                },
+              },
+            ],
+            meetings: [],
+            introduction: '자기소개',
+            concern: '고민',
+            goal: '목표',
+            preferred_time: '평일 저녁',
+            created_at: '2026-07-20T00:00:00.000Z',
+            updated_at: '2026-07-23T00:00:00.000Z',
+          },
+        ],
+        error: null,
+      });
+      mockSupabase.from.mockImplementation((table) => {
+        if (table === 'profiles') return mockProfilesTable();
+        if (table === 'applications') return applicationsQuery;
+        throw new Error(`예상치 못한 테이블 조회: ${table}`);
+      });
+
+      const res = await request(app).get('/api/applications').set('Authorization', MENTEE_TOKEN);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data[0].status).toBe('completed');
+      expect(res.body.data[0]).not.toHaveProperty('applicationStatus');
+      expect(res.body.data[0]).not.toHaveProperty('mentorStatus');
+    });
+
+    it('멘토로 조회하면 completed 신청이 applicationStatus/mentorStatus 둘 다 completed로 내려온다', async () => {
+      mockAuthenticatedMentor();
+      mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
+      const applicationMentorsQuery = buildThenableQuery({
+        data: [
+          {
+            mentor_id: 'mentor-1',
+            status: 'completed',
+            applications: {
+              id: 'application-1',
+              mentee_id: 'mentee-1',
+              status: 'completed',
+              accepted_mentor_id: 'mentor-1',
+              introduction: '자기소개',
+              concern: '고민',
+              goal: '목표',
+              preferred_time: '평일 저녁',
+              created_at: '2026-07-20T00:00:00.000Z',
+              updated_at: '2026-07-23T00:00:00.000Z',
+              mentee_profiles: {
+                school: '서울대학교',
+                major: '컴퓨터공학',
+                grade: '2',
+                enrollment_status: 'enrolled',
+                profiles: { name: '홍길동' },
+              },
+              meetings: [],
+            },
+          },
+        ],
+        error: null,
+      });
+      mockSupabase.from.mockImplementation((table) => {
+        if (table === 'profiles') return mockProfilesTableForMentor();
+        if (table === 'application_mentors') return applicationMentorsQuery;
+        throw new Error(`예상치 못한 테이블 조회: ${table}`);
+      });
+
+      const res = await request(app).get('/api/applications').set('Authorization', MENTOR_TOKEN);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data[0].applicationStatus).toBe('completed');
+      expect(res.body.data[0].mentorStatus).toBe('completed');
+      expect(res.body.data[0]).not.toHaveProperty('status');
+    });
+  });
+});
+
 describe('PATCH /api/applications/:applicationId/reject - 전원 거절 (integration)', () => {
   // application_mentors 3개 row(mentor-a/b/c)와 applications 1개 row를 흉내내는
   // 공유 mutable 상태. 실제 reject 흐름처럼 "이 멘토의 링크를 rejected로 업데이트 → 전체
