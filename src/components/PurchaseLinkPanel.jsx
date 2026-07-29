@@ -90,7 +90,7 @@ function PurchaseLinkPanel({ ingredient, pickedLink = null, onTogglePick }) {
                   className="flex flex-1 flex-col gap-1 transition hover:bg-bg-muted"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="truncate font-semibold text-text-primary">{product.title}</span>
+                    <span className="min-w-0 flex-1 truncate font-semibold text-text-primary">{product.title}</span>
                     <span className="shrink-0 font-bold text-primary-text">
                       {product.price.toLocaleString()}원
                       {product.unitPrice && (
