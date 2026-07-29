@@ -15,7 +15,7 @@
   padding: 4px 0 0;
   overflow: clip;
   color: var(--challenge-ink);
-  background: var(--challenge-bg);
+  background: transparent;
 }
 
 .page :global(.anchor-nav) {
