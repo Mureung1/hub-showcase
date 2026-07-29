@@ -53,7 +53,7 @@ middlewares/   → e.g. errorHandler
 - No semicolons, single quotes, 2-space indent (Vite template default).
 - Filenames: components/classes `PascalCase.tsx`; everything else `camelCase.ts`.
 - Import order: external libraries → internal paths → types. No unused imports.
-- Commit messages: [Conventional Commits](https://www.conventionalcommits.org/) format with a Korean subject: `<type>(<scope>): <한글 설명>` (types: feat/fix/docs/style/refactor/test/chore/perf; scope e.g. `frontend`/`backend`/`ui`/`api`/`db`). One logical change per commit.
-- Branches: work happens on personal branches (e.g. `N144_인민에이`) with PRs into `main`; new branches follow `기능/설명`.
+- Commit messages: [Conventional Commits](https://www.conventionalcommits.org/) format with a Korean subject: `<type>(<scope>): <한글 설명>` (types: feat/fix/docs/style/refactor/test/chore/perf; scope e.g. `frontend`/`backend`/`ui`/`api`/`db`). One logical change per commit. But do not commit by yourself. Always tell me for each commit.
+- Branches: work happens on personal branches (e.g. `N144_인민에이`) with PRs into `main`; new branches follow `기능/설명` in English.
 - PR title format: `[루카스아이디_실명] - 작업 요약`. PR body must fill in the template sections (주요 작업 리스트 / 내가 설명할 수 있는 부분 / 아직 이해 못 한 부분 / 새로 알게 된 것) per `.github/pull_request_template.md`.
 - A scheduled workflow (`.github/workflows/auto-merge.yml`, daily) auto-merges open PRs unless they target `main`, carry a `review` label, have changes-requested reviews, or conflict (conflicting ones get auto-closed).
