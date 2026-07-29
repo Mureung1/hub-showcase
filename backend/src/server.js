@@ -39,13 +39,24 @@ function checkEnvironmentVariables() {
 
 checkEnvironmentVariables();
 
-// CORS 설정 (모든 origin 허용 - 프로덕션에서는 제한 권장)
-app.use(cors({
-  origin: '*',
+// CORS 설정 (가장 강력한 버전)
+const corsOptions = {
+  origin: function (origin, callback) {
+    // 모든 origin 허용
+    callback(null, true);
+  },
   credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+};
+
+app.use(cors(corsOptions));
+
+// Preflight 요청 명시적 처리
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 app.use(express.static('uploads')); // 업로드된 파일 정적 서빙
 app.use('/ai-output', express.static('ai-pipeline/output')); // AI 생성 파일 정적 서빙

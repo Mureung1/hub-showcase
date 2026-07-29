@@ -4,6 +4,9 @@
   "description": "ShortsGen AI-powered short-form content generation backend",
   "main": "src/server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
@@ -21,6 +24,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "multer": "^2.2.0"
+    "multer": "^2.2.0",
+    "sharp": "^0.32.0"
   }
 }

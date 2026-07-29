@@ -97,6 +97,11 @@ router.post('/', upload.single('image'), async (req, res) => {
     const fileUrl = `/uploads/${req.file.filename}`;
     const filePath = req.file.path;
 
+    // 파일 저장 확인
+    console.log('[POST /api/upload] 파일 저장 경로:', filePath);
+    console.log('[POST /api/upload] 파일 존재 여부:', fs.existsSync(filePath));
+    console.log('[POST /api/upload] 파일 크기:', fs.statSync(filePath).size, 'bytes');
+
     // Supabase에 업로드 정보 저장
     const { data, error } = await supabase
       .from('uploaded_images')

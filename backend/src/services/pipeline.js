@@ -1,6 +1,8 @@
 import { getSupabaseClient } from '../db/supabaseClient.js';
+import { cropImageToVertical } from './cropService.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import path from 'path';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +21,7 @@ export async function runPipeline(jobId) {
   try {
     console.log(`\n[Pipeline 시작] job_id: ${jobId}\n`);
 
-    // Step 1: YOLOv8
+    // Step 1: Sharp 엔트로피 기반 크롭
     await runStep1(jobId);
 
     // Step 2: KoBERT
@@ -44,28 +46,38 @@ export async function runPipeline(jobId) {
     console.log(`[✅ Pipeline 완료] job_id: ${jobId}\n`);
 
   } catch (error) {
-    console.error(`[❌ Pipeline 실패] job_id: ${jobId}`, error);
+    console.error(`[❌ Pipeline 실패] job_id: ${jobId}`, error.message);
+    console.error('[❌ Error Stack]', error.stack);
 
-    await supabase
-      .from('generation_jobs')
-      .update({
-        status: 'failed',
-        error_message: error.message
-      })
-      .eq('job_id', jobId);
+    // DB에 에러 즉시 업데이트
+    try {
+      await supabase
+        .from('generation_jobs')
+        .update({
+          status: 'FAILED',
+          error: error.message,
+          error_message: error.message,
+          failed_at: new Date().toISOString()
+        })
+        .eq('job_id', jobId);
+
+      console.log(`[✅ DB 에러 업데이트 완료] job_id: ${jobId}`);
+    } catch (dbError) {
+      console.error(`[❌ DB 에러 업데이트 실패] job_id: ${jobId}`, dbError.message);
+    }
   }
 }
 
 /**
- * Step 1: YOLOv8 스마트 크롭
- * 상품 영역 자동 감지 및 크롭
+ * Step 1: Sharp 스마트 크롭 (YOLOv8 대체)
+ * Entropy 기반 중앙 크롭으로 1080x1920 (9:16) 형식 생성
  */
 async function runStep1(jobId) {
   const supabase = getSupabaseClient();
   const startTime = Date.now();
 
   try {
-    console.log('[Step 1] YOLOv8 스마트 크롭 실행 중...');
+    console.log('[Step 1] Sharp 엔트로피 기반 크롭 실행 중...');
 
     // 1. Job에서 이미지 URL 조회
     const { data: job, error: jobError } = await supabase
@@ -78,122 +90,32 @@ async function runStep1(jobId) {
       throw new Error('Job 정보를 찾을 수 없습니다');
     }
 
-    // 2. Python 스크립트 실행
-    const { execFile } = await import('child_process');
-    const { promisify } = await import('util');
-    const path = await import('path');
-    const execFileAsync = promisify(execFile);
-
     let imagePath = job.original_image_url;
 
     // 로컬 경로를 절대경로로 변환
     if (!imagePath.startsWith('http')) {
-      // /uploads/... 형태 또는 uploads/... 형태를 절대경로로
       const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-      // backend 폴더를 기준으로 절대경로 생성
       imagePath = path.resolve(__dirname, `../../${cleanPath}`);
     }
 
-    let result;
-    try {
-      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/yolov8_crop.py');
-      console.log('[Step 1] YOLOv8 스크립트 경로:', pythonScriptPath);
-      console.log('[Step 1] 이미지 경로:', imagePath);
+    console.log('[Step 1] 이미지 경로:', imagePath);
+    console.log('[Step 1] 파일 존재:', fs.existsSync(imagePath));
 
-      // 파일 존재 확인 (중요!)
-      const fileExists = fs.existsSync(imagePath);
-      console.log('[Step 1] 파일 존재 여부:', fileExists);
-      console.log('[Step 1] fs.existsSync():', fileExists);
-
-      if (!fileExists) {
-        // uploads 폴더 존재 확인
-        const uploadsDir = path.resolve(__dirname, '../../uploads');
-        console.log('[Step 1] uploads 폴더:', uploadsDir);
-        console.log('[Step 1] uploads 폴더 존재:', fs.existsSync(uploadsDir));
-
-        if (fs.existsSync(uploadsDir)) {
-          const files = fs.readdirSync(uploadsDir);
-          console.log('[Step 1] uploads 폴더 내 파일들:', files);
-        }
-
-        throw new Error(`파일을 찾을 수 없습니다: ${imagePath}`);
-      }
-
-      const { stdout, stderr } = await execFileAsync('python', [
-        pythonScriptPath,
-        imagePath
-      ]);
-
-      if (stderr) {
-        console.log('[Step 1] Python stderr:', stderr);
-      }
-
-      result = JSON.parse(stdout);
-      console.log('[Step 1] YOLOv8 결과:', result);
-    } catch (pythonError) {
-      console.error('[Step 1] YOLOv8 실행 에러:', {
-        message: pythonError.message,
-        stderr: pythonError.stderr,
-        stdout: pythonError.stdout,
-        code: pythonError.code
-      });
-      throw new Error(`YOLOv8 실행 실패: ${pythonError.message}`);
-    }
+    // 2. Sharp를 사용한 크롭 실행
+    const outputDir = path.resolve(__dirname, '../../ai-pipeline/output');
+    const result = await cropImageToVertical(imagePath, outputDir);
 
     if (result.status !== 'success') {
-      throw new Error(result.message || 'YOLOv8 처리 실패');
+      throw new Error(result.message || 'Sharp 크롭 처리 실패');
     }
 
-    // 3. 크롭된 이미지 경로 처리
-    let croppedImageUrl = result.cropped_image_path;
+    console.log('[Step 1] Sharp 크롭 결과:', result);
 
-    if (!croppedImageUrl.startsWith('http')) {
-      // 로컬 상대경로를 절대경로로 변환
-      let cleanPath = croppedImageUrl;
+    // 3. 크롭된 이미지 URL 처리
+    const filename = path.basename(result.cropped_image_path);
+    const croppedImageUrl = `/ai-output/${filename}`;
 
-      // /로 시작하면 제거
-      if (cleanPath.startsWith('/')) {
-        cleanPath = cleanPath.slice(1);
-      }
-
-      // backend/로 시작하면 제거 (중복 방지)
-      if (cleanPath.startsWith('backend/')) {
-        cleanPath = cleanPath.slice('backend/'.length);
-      }
-
-      croppedImageUrl = path.resolve(process.cwd(), cleanPath);
-
-      // 파일명만 추출해서 URL로 변환
-      const filename = path.basename(croppedImageUrl);
-      croppedImageUrl = `/ai-output/${filename}`;
-
-      console.log('[Step 1] 크롭 이미지 URL:', croppedImageUrl);
-
-      // Storage 업로드는 시도만 함 (실패해도 로컬 경로 유지)
-      try {
-        const fs = await import('fs');
-        if (fs.existsSync(croppedImageUrl)) {
-          const fileBuffer = fs.readFileSync(croppedImageUrl);
-          const storagePath = `cropped/${jobId}_${Date.now()}.jpg`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('uploads')
-            .upload(storagePath, fileBuffer);
-
-          if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage
-              .from('uploads')
-              .getPublicUrl(storagePath);
-            croppedImageUrl = publicUrl;
-            console.log('[Step 1] Storage 업로드 성공:', croppedImageUrl);
-          } else {
-            console.warn('[Step 1] Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
-          }
-        }
-      } catch (uploadErr) {
-        console.warn('[Step 1] 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
-      }
-    }
+    console.log('[Step 1] 크롭 이미지 URL:', croppedImageUrl);
 
     // 4. DB 업데이트
     const duration = Date.now() - startTime;
@@ -201,8 +123,8 @@ async function runStep1(jobId) {
       .from('generation_jobs')
       .update({
         step1_cropped_image_url: croppedImageUrl,
-        step1_confidence: result.confidence || 0.95,
-        step1_product_label: result.product_label || '상품',
+        step1_confidence: 0.95,  // Sharp는 신뢰도 개념이 없으므로 기본값
+        step1_product_label: '중앙 크롭됨',
         progress: 25,
         current_step: 1
       })
@@ -218,7 +140,7 @@ async function runStep1(jobId) {
       .eq('job_id', jobId)
       .eq('step_number', 1);
 
-    console.log(`[✅ Step 1 완료] YOLOv8 스마트 크롭 (${duration}ms)\n`);
+    console.log(`[✅ Step 1 완료] Sharp 엔트로피 크롭 (${duration}ms)\n`);
 
   } catch (error) {
     console.error('[❌ Step 1 실패]', error);
@@ -227,20 +149,21 @@ async function runStep1(jobId) {
 }
 
 /**
- * Step 2: KoBERT 트렌드 매칭
- * 트렌드 해시태그와 상품 정보를 분석하여 최적화된 자막 생성
+ * Step 2: OpenAI API를 사용한 숏폼 자막 생성
+ * KoBERT 대신 gpt-4o-mini를 사용하여 트렌드에 맞는 자막 생성
+ * (경량화: PyTorch/transformers 제거)
  */
 async function runStep2(jobId) {
   const supabase = getSupabaseClient();
   const startTime = Date.now();
 
   try {
-    console.log('[Step 2] KoBERT 트렌드 매칭 실행 중...');
+    console.log('[Step 2] OpenAI API를 사용한 자막 생성 실행 중...');
 
-    // 1. Job 정보 조회 (트렌드, 상품명, 카테고리)
+    // 1. Job 정보 조회
     const { data: job, error: jobError } = await supabase
       .from('generation_jobs')
-      .select('trend_hashtag, step1_product_label, store_id')
+      .select('trend_hashtag, step1_product_label, store_id, purpose, mood')
       .eq('job_id', jobId)
       .single();
 
@@ -251,67 +174,114 @@ async function runStep2(jobId) {
     // 가게 정보 조회
     const { data: store, error: storeError } = await supabase
       .from('store_info')
-      .select('category')
+      .select('category, signature_menu')
       .eq('store_id', job.store_id)
       .single();
 
     const trendHashtag = job.trend_hashtag || '#유행해시태그';
     const productLabel = job.step1_product_label || '상품';
-    const storeCategory = store?.category || '기본';
+    const storeCategory = store?.category || '기본 카테고리';
+    const signatureMenu = store?.signature_menu || '시그니처 메뉴';
+    const purpose = job.purpose || '상품 홍보';
+    const mood = job.mood || 'bright';
 
-    // 2. KoBERT Python 스크립트 실행
-    const { execFile } = await import('child_process');
-    const { promisify } = await import('util');
-    const path = await import('path');
-    const execFileAsync = promisify(execFile);
+    // 2. OpenAI API 호출
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY 환경변수가 설정되지 않았습니다');
+    }
 
+    const prompt = `당신은 소상공인을 위한 숏폼 콘텐츠 전문가입니다.
+
+다음 정보를 바탕으로 15초 숏폼 영상을 위한 한국어 자막을 작성해주세요:
+- 업체 카테고리: ${storeCategory}
+- 대표 메뉴: ${signatureMenu}
+- 상품/객체: ${productLabel}
+- 트렌드 해시태그: ${trendHashtag}
+- 영상 목적: ${purpose}
+- 영상 분위기: ${mood}
+
+요구사항:
+1. 한국어로 작성 (이모지 포함 가능)
+2. 15초 분량 (약 40-60글자)
+3. 트렌드 해시태그를 자연스럽게 포함
+4. 행동 촉구 포함 (클릭, 방문, 주문 등)
+5. SNS 친화적이고 감정적 호소력 있게
+
+다음 JSON 형식으로 응답해주세요 (마크다운 없이):
+{
+  "primary_caption": "메인 자막",
+  "caption_options": [
+    {"text": "옵션1", "similarity": 0.95},
+    {"text": "옵션2", "similarity": 0.90},
+    {"text": "옵션3", "similarity": 0.85}
+  ],
+  "hashtags": "#해시태그1 #해시태그2 #해시태그3",
+  "similarity_score": 0.92
+}`;
+
+    console.log('[Step 2] OpenAI 프롬프트:', {
+      model: 'gpt-4o-mini',
+      promptLength: prompt.length,
+      inputs: { trendHashtag, productLabel, storeCategory, mood }
+    });
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenAI API 오류 (${response.status}): ${errorData.error?.message || '알 수 없는 오류'}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('OpenAI API에서 응답 콘텐츠가 없습니다');
+    }
+
+    // JSON 파싱
     let result;
     try {
-      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/kobert_caption.py');
-      console.log('[Step 2] KoBERT 스크립트 경로:', pythonScriptPath);
-      console.log('[Step 2] 입력값:', { trendHashtag, productLabel, storeCategory });
-
-      const { stdout, stderr } = await execFileAsync('python', [
-        pythonScriptPath,
-        trendHashtag,
-        productLabel,
-        storeCategory
-      ]);
-
-      if (stderr) {
-        console.log('[Step 2] Python stderr:', stderr);
-      }
-
-      result = JSON.parse(stdout);
-      console.log('[Step 2] KoBERT 결과:', result);
-    } catch (pythonError) {
-      console.error('[Step 2] KoBERT 실행 에러:', {
-        message: pythonError.message,
-        stderr: pythonError.stderr,
-        stdout: pythonError.stdout,
-        code: pythonError.code
-      });
-      throw new Error(`KoBERT 실행 실패: ${pythonError.message}`);
+      result = JSON.parse(content);
+    } catch (parseError) {
+      console.error('[Step 2] JSON 파싱 실패:', content);
+      throw new Error(`OpenAI 응답 파싱 실패: ${parseError.message}`);
     }
 
-    if (result.status !== 'success') {
-      throw new Error(result.message || 'KoBERT 처리 실패');
-    }
+    console.log('[Step 2] OpenAI 생성 결과:', result);
 
-    // 3. DB 업데이트 (primary + options 모두 저장)
+    // 3. DB 업데이트
     const duration = Date.now() - startTime;
     const captionOptions = result.caption_options || [];
 
     console.log(`[Step 2] 생성된 자막 옵션: ${captionOptions.length}개`);
     captionOptions.forEach((opt, i) => {
-      console.log(`  ${i+1}. [${opt.similarity}] ${opt.text}`);
+      console.log(`  ${i+1}. [유사도: ${opt.similarity}] ${opt.text}`);
     });
 
     await supabase
       .from('generation_jobs')
       .update({
-        step2_caption: result.primary_caption || result.caption,  // primary 자막
-        step2_caption_options: JSON.stringify(captionOptions),  // 모든 옵션 저장
+        step2_caption: result.primary_caption,
+        step2_caption_options: JSON.stringify(captionOptions),
         step2_hashtags: result.hashtags,
         step2_similarity_score: result.similarity_score || 0.85,
         progress: 50,
@@ -329,10 +299,11 @@ async function runStep2(jobId) {
       .eq('job_id', jobId)
       .eq('step_number', 2);
 
-    console.log(`[✅ Step 2 완료] KoBERT 트렌드 매칭 (${duration}ms)\n`);
+    console.log(`[✅ Step 2 완료] OpenAI 자막 생성 (${duration}ms)\n`);
 
   } catch (error) {
-    console.error('[❌ Step 2 실패]', error);
+    console.error('[❌ Step 2 실패]', error.message);
+    console.error('[Error Stack]', error.stack);
     throw error;
   }
 }
