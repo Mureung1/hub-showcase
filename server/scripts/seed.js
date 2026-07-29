@@ -75,6 +75,8 @@ const STORES = [
 ]
 
 // 활성 딜 5개. '조각 케이크'는 남은 수량 1 — 선착순 경합 데모용
+// 픽업 마감은 8시간. 시연 도중 딜이 만료돼 목록이 비는 것을 막기 위한 값이다
+// (마감이 지나면 T-14 만료 처리가 목록에서 제외한다 — docs/시연준비.md 참고)
 const DEALS = [
   {
     store: '한입 베이커리',
@@ -84,7 +86,7 @@ const DEALS = [
     salePrice: 2000,
     totalQty: 5,
     remainingQty: 5,
-    deadlineHours: 3,
+    deadlineHours: 8,
   },
   {
     store: '한입 베이커리',
@@ -94,7 +96,7 @@ const DEALS = [
     salePrice: 1500,
     totalQty: 4,
     remainingQty: 4,
-    deadlineHours: 3,
+    deadlineHours: 8,
   },
   {
     store: '달콤 디저트랩',
@@ -104,7 +106,7 @@ const DEALS = [
     salePrice: 3000,
     totalQty: 3,
     remainingQty: 1,
-    deadlineHours: 4,
+    deadlineHours: 8,
   },
   {
     store: '달콤 디저트랩',
@@ -114,7 +116,7 @@ const DEALS = [
     salePrice: 6000,
     totalQty: 2,
     remainingQty: 2,
-    deadlineHours: 4,
+    deadlineHours: 8,
   },
   {
     store: '엄마손 반찬',
@@ -124,7 +126,7 @@ const DEALS = [
     salePrice: 4500,
     totalQty: 6,
     remainingQty: 6,
-    deadlineHours: 2,
+    deadlineHours: 8,
   },
 ]
 
