@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { listPendingEvaluations } = require('./evaluationService');
 
 // 알림 종류. DB에는 varchar로 저장하고 문구는 FE가 고른다.
 const NOTIFICATION_TYPES = {
@@ -6,6 +7,7 @@ const NOTIFICATION_TYPES = {
   APPLICATION_APPROVED: 'application_approved',
   APPLICATION_REJECTED: 'application_rejected',
   MEETING_CANCELLED: 'meeting_cancelled',
+  EVALUATION_REQUESTED: 'evaluation_requested',
 };
 
 // 드롭다운에 담는 최근 건수. 미읽음 수는 이 상한과 무관하게 전체를 센다.
@@ -28,6 +30,24 @@ async function createNotifications(client, { userIds, type, meetingId }) {
     `INSERT INTO notifications (user_id, type, meeting_id)
      SELECT unnest($1::bigint[]), $2, $3`,
     [userIds, type, meetingId]
+  );
+}
+
+// 이 프로젝트엔 크론·배치가 없어 "모임이 끝났다"를 감지할 수단이 없다. 그래서 알림을
+// 조회하는 시점에 본인 것만 만들어 넣는다("모임당 평가할 게 남아 있는가"는 Task 5의
+// listPendingEvaluations가 이미 정확히 계산해 두므로 창·자격 로직을 여기서 다시 베끼지
+// 않는다). 중복은 부분 유니크 인덱스(user_id, meeting_id) WHERE type='evaluation_requested'
+// (마이그레이션 1785283754872)가 막으므로 ON CONFLICT로 조용히 넘긴다.
+async function ensureEvaluationNotifications(userId) {
+  const { items } = await listPendingEvaluations(userId);
+  if (items.length === 0) return;
+
+  const meetingIds = items.map((item) => item.meeting.id);
+  await pool.query(
+    `INSERT INTO notifications (user_id, type, meeting_id)
+     SELECT $1, $2, unnest($3::bigint[])
+     ON CONFLICT DO NOTHING`,
+    [userId, NOTIFICATION_TYPES.EVALUATION_REQUESTED, meetingIds]
   );
 }
 
@@ -76,6 +96,7 @@ module.exports = {
   NOTIFICATION_TYPES,
   createNotification,
   createNotifications,
+  ensureEvaluationNotifications,
   listNotifications,
   markAllRead,
   LIST_LIMIT,
