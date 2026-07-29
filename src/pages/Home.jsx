@@ -22,8 +22,7 @@ import LoadingIndicator from '../components/LoadingIndicator'
 import PromoBanner from '../components/PromoBanner'
 import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
-// 임시 목업 일러스트 — 최종본 아님, 나중에 교체 예정 (checklist.md 참고)
-import kkinniCharacter from '../assets/끼니캐릭터.png'
+import kkinniCharacter from '../assets/마스코트-끼니.png'
 
 const SORT_OPTIONS = [
   { id: 'price-asc', label: '가격 낮은순' },
@@ -187,15 +186,23 @@ function Home() {
               <div>
                 <p className="font-display text-lg font-bold text-text-primary">어라, 딱 맞는 요리를 못 찾았더랑!</p>
                 <p className="mt-1 font-display text-sm text-text-secondary">
-                  조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면 끼니가 딱 맞는 요리를 찾아드릴게요.
+                  재료가 부족행. 재료를 다시 고르거나 구매해랑
                 </p>
               </div>
-              <Link
-                to="/"
-                className="mt-1 rounded-full bg-primary px-5 py-2 font-display text-base font-bold text-text-primary transition hover:brightness-95"
-              >
-                재료 고르러 가기
-              </Link>
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+                <Link
+                  to="/"
+                  className="rounded-full bg-primary px-5 py-2 font-display text-base font-bold text-text-primary transition hover:brightness-95"
+                >
+                  재료 고르기
+                </Link>
+                <Link
+                  to="/shop"
+                  className="rounded-full border-2 border-ink bg-bg-surface px-5 py-2 font-display text-base font-bold text-text-primary transition hover:brightness-95"
+                >
+                  재료 구매
+                </Link>
+              </div>
             </div>
 
             {quickRecipes.length > 0 && (
