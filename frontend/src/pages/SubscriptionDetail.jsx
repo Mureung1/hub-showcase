@@ -382,7 +382,7 @@ const SubscriptionDetail = () => {
       {content}
       {showDeleteConfirm && (
         <ConfirmDialog
-          message={'정말 삭제할까요?\n가입한 파티원 정보도 함께 삭제됩니다.'}
+          message={'정말 삭제할까요?\n파티원 정보도 함께 사라져요.'}
           confirmLabel="삭제"
           errorMessage={deleteErrorMessage}
           onConfirm={handleDelete}

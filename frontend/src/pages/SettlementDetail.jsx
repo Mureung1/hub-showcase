@@ -268,7 +268,7 @@ const SettlementDetail = () => {
       )}
       {showDoneBlockedInfo && (
         <ConfirmDialog
-          message="이미 정산이 완료된 파티원이 있어 삭제할 수 없어요."
+          message="정산이 완료된 파티원이 있어 삭제할 수 없어요."
           confirmLabel="확인"
           hideCancel
           onConfirm={() => setShowDoneBlockedInfo(false)}
