@@ -21,6 +21,52 @@
   border-color: var(--color-fog);
 }
 
+.insight-card--selection {
+  position: relative;
+}
+
+.insight-card__selection-button {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.insight-card__selection-mark {
+  position: absolute;
+  top: var(--spacing-3);
+  left: var(--spacing-3);
+  display: grid;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-ash);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-surface);
+  place-items: center;
+}
+
+.insight-card--selected {
+  border-color: var(--color-electric-blue);
+  box-shadow: inset 0 0 0 1px var(--color-electric-blue);
+}
+
+.insight-card--selected .insight-card__selection-mark {
+  border-color: var(--color-electric-blue);
+  background: var(--color-electric-blue);
+}
+
+.insight-card__selection-button:focus-visible {
+  border-radius: var(--radius-card);
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: -4px;
+}
+
 .insight-card__body {
   display: grid;
   min-width: 0;
