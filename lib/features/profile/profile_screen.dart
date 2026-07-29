@@ -260,13 +260,6 @@ class _StatsContent extends StatelessWidget {
   }
 }
 
-/// 가입일을 KST 벽시계 기준 `yyyy년 M월 d일`로. `completedAt` 포맷과 같은 판단
-/// (저장값은 UTC 순간이라 그대로 읽으면 자정 근처가 하루 어긋난다). [kKstOffset] 인용.
-String _formatKstDate(DateTime instant) {
-  final kst = instant.toUtc().add(kKstOffset);
-  return '${kst.year}년 ${kst.month}월 ${kst.day}일';
-}
-
 /// 캐릭터 블록 로딩 스켈레톤 — 실제 블록과 같은 실루엣(그림 → 이름 → pill → 표식).
 class _CharacterSkeleton extends StatelessWidget {
   const _CharacterSkeleton();
@@ -337,7 +330,7 @@ class _SettingsSection extends StatelessWidget {
           _SettingsTile(
             title: '가입일',
             subtitle: 'One-Step과 함께한 날',
-            value: _formatKstDate(joinedAt!),
+            value: kstDateLabel(joinedAt!),
           ),
         ],
       ],

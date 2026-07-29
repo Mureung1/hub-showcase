@@ -58,7 +58,6 @@ abstract final class AppColors {
   static const onErrorContainer = Color(0xFF93000A);
 
   // 표면 · 중립 (라이트)
-  static const background = Color(0xFFF8F9FF);
   static const surface = Color(0xFFF8F9FF);
   static const surfaceContainerLowest = Color(0xFFFFFFFF);
   static const surfaceContainerLow = Color(0xFFEFF4FF);

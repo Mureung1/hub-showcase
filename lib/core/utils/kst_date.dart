@@ -34,6 +34,20 @@ String kstDateKey(DateTime instant) {
   return '${kst.year.toString().padLeft(4, '0')}-$month-$day';
 }
 
+/// KST 기준 **사람이 읽는 날짜** `yyyy년 M월 d일`. 가입일·완료일 표시에 쓴다.
+///
+/// [kstDateKey]와 나눈 이유: 저쪽은 저장·비교용 기계 키(`yyyy-MM-dd`, 0 패딩)고
+/// 이쪽은 화면 문구다. 두 포맷은 목적이 달라 함께 움직이지 않는다.
+///
+/// 한 곳에 둔 이유: 프로필 가입일과 보관함 완료일이 각자 같은 두 줄을 복제하고
+/// 있었다. 표시 포맷이 갈리면 같은 앱 안에서 날짜가 다르게 보인다.
+///
+/// ⚠️ 출력 문자열은 회귀 테스트가 그대로 단언한다. 한 글자도 바꾸지 않는다.
+String kstDateLabel(DateTime instant) {
+  final kst = _kstWallClock(instant);
+  return '${kst.year}년 ${kst.month}월 ${kst.day}일';
+}
+
 /// 1970-01-01을 0으로 하는 **일련 일수**. 두 날짜의 간격(연속 출석 판정)에 쓴다.
 ///
 /// 날짜 문자열을 빼서 비교할 수는 없고(`'2026-03-01' - '2026-02-28'`),

@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../firebase_options.dart';
@@ -10,8 +9,6 @@ import '../../firebase_options.dart';
 /// Firebase 초기화 결과. **[FirebaseBootstrap.initialize]는 절대 throw하지 않는다.**
 sealed class BootstrapResult {
   const BootstrapResult();
-
-  bool get isOk => this is BootstrapOk;
 }
 
 class BootstrapOk extends BootstrapResult {
@@ -59,7 +56,7 @@ abstract final class FirebaseBootstrap {
     }
   }
 
-  /// Auth · Firestore · FCM · Storage 4개 서비스를 실제로 붙인다.
+  /// Auth · Firestore · FCM 3개 서비스를 실제로 붙인다.
   ///
   /// FCM 토큰 조회는 **await하지 않는다.** 첫 프레임을 막으면 안 되고,
   /// APNs 키가 없는 개발 환경에서 실패하는 것이 정상이기 때문이다.
@@ -71,7 +68,6 @@ abstract final class FirebaseBootstrap {
   static void _warmUpServices() {
     FirebaseAuth.instance;
     FirebaseFirestore.instance;
-    FirebaseStorage.instance;
 
     final messaging = FirebaseMessaging.instance;
     () async {

@@ -139,16 +139,10 @@ class EmptyView extends StatelessWidget {
 
 /// 무언가 실패한 상태. 빈 상태와 **시각적으로 명확히 다르다**(에러 색 + 경고 아이콘 + 재시도).
 class ErrorView extends StatelessWidget {
-  const ErrorView({
-    super.key,
-    required this.message,
-    this.onRetry,
-    this.retryLabel = '다시 시도',
-  });
+  const ErrorView({super.key, required this.message, this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;
-  final String retryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -178,27 +172,11 @@ class ErrorView extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Symbols.refresh),
-                label: Text(retryLabel),
+                label: const Text('다시 시도'),
               ),
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// 화면 중앙 스피너. 스켈레톤을 그리기 애매한 짧은 로딩에 쓴다.
-class LoadingView extends StatelessWidget {
-  const LoadingView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: SizedBox(
-        width: 32,
-        height: 32,
-        child: CircularProgressIndicator(strokeWidth: 3),
       ),
     );
   }

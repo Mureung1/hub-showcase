@@ -49,10 +49,9 @@
       > 알림 **권한 요청**은 부트스트랩에서 뺐다. 앱을 켜자마자 맥락 없이 푸시 권한을 물으면 거절률만 올라간다. 필요한 시점에 `requestNotificationPermission()`을 부른다.
 - [ ] **Storage** 서비스가 콘솔에 연결되어 있다. → **N/A — 미사용 확정**(보류 아님. 2026-07-27 결정)
       → **원래 사유**: Storage는 Blaze(종량제) 요금제가 필요한데 사용자가 결정을 미뤘고, 버킷이 프로비저닝되지 않았다.
-      `FirebaseStorage.instance`는 lazy 게터라 버킷이 없어도 예외를 던지지 않는다 — **즉 초기화 코드가 도는 것은 Storage 연결의 증거가 아니다.**
+      (당시 워밍업 코드가 있었지만 `FirebaseStorage.instance`는 lazy 게터라 버킷이 없어도 예외를 던지지 않는다 — **즉 초기화 코드가 도는 것은 Storage 연결의 증거가 아니었다.**)
       → **재판단은 이미 끝났다(E-4 문서 감사 C-2)**: "3주차 사진 첨부 시점에 재판단한다"는 미래형으로 남아 있었으나, 그 재판단의 결론은 아래 「사진 첨부 기능」에 이미 기록돼 있다 — **Firestore base64 우회 채택**. 따라서 이 항목은 "보류"가 아니라 **"N/A — 미사용 확정"**이다.
-      → **코드 확인**: `firebase_storage`를 **읽기·쓰기에 쓰는 곳이 `lib` 전체에 0곳**이다. 남은 것은 `lib/core/firebase/firebase_bootstrap.dart:74`의 `FirebaseStorage.instance;` 워밍업 한 줄(+ `:5` import)과 `pubspec.yaml:58`의 `firebase_storage: ^13.0.0` 의존성뿐 — **dead dependency + dead warm-up**이다. `storage.rules`도 작성만 돼 있고 미배포다.
-      → **사용자 결정(2026-07-27): 의존성은 제거하지 않고 그대로 둔다.** 한글 경로 빌드가 예민한 프로젝트라(→ CLAUDE.md의 `overridePathCheck` 주의) 지금 걷어내면 빌드 설정이 흔들릴 위험이 있고 얻는 이득이 없다. **데모 후 정리 대상으로 기록만 남긴다.**
+      → **정리 완료(2026-07-30)**: `firebase_storage` 의존성과 부트스트랩 워밍업 한 줄을 제거했다. 읽기·쓰기 사용처가 `lib` 전체에 0곳이었으므로 동작 변화는 없고, **네이티브 플러그인이라 Android AAR이 빠져 APK가 실제로 줄어든다**(Dart tree-shaking으로는 안 빠지던 부분). 다른 firebase 패키지 버전은 `pubspec.lock` diff로 무변동을 확인했다. `storage.rules`는 미배포 상태로 남겨 둔다(Blaze 도입 시 재사용).
       → 인증 보너스는 메모만으로도 성립하고(plan.md: "사진 **또는** 메모"), 사진도 base64 우회로 성립하므로 **기능 공백은 없다.**
 - [x] 네트워크가 없는 상태에서 초기화가 앱을 크래시시키지 않고 오류를 처리한다.
       → 3중 방어: ① 초기화 실패 시 오류 화면 ② Firestore 로컬 캐시(`persistenceEnabled`) ③ 캐시된 세션이 있으면 로그인이 네트워크를 건드리지 않음.
@@ -377,7 +376,7 @@
 - [x] 인증 사진은 목록에서 미리 읽지 않고 상세를 열 때만 조회한다.
       → `fetchProof(uid, questId)` 신설(인터페이스 `lib/repositories/quest_repository.dart` + Firestore·InMemory 2구현). 사진 base64가 `proofDoc/{questId}`에 있어 목록에서 N번 읽으면 비싸다(3주차 문서 분리 이유). 상세 시트가 `loadProof` 클로저로 lazy 조회한다(시트는 저장소·provider를 모름). 없으면 null(에러 아님), 저장소 실패 시 AppFailure, 깨진 base64는 "사진 없음"으로 폴백해 시트가 죽지 않는다. 테스트: `test/repositories/in_memory_quest_repository_test.dart`(fetchProof). ⚠️ Firestore `fetchProof`(특히 깨진 문서 분기)는 `fake_cloud_firestore` 미도입으로 자동 테스트 N/A — InMemory와 같은 계약으로 검증.
 - [x] 완료 날짜가 KST 기준으로 표시되고, 사진 로딩·없음·실패가 각각 처리된다.
-      → `_formatKstDate`가 `kKstOffset`(단일 정의처)를 인용해 UTC를 KST 벽시계로 변환한다(자정 근처 완료의 하루 어긋남 방지). 사진은 **로딩(스피너)·있음(썸네일)·없음/실패("사진 없음" 플레이스홀더) 3경로**를 각각 그리고, 조회 실패에도 시트가 생존한다. 테스트: `test/features/achievement_detail_sheet_test.dart`(KST 날짜·사진 3경로·깨진 base64 방어).
+      → `kstDateLabel`(`lib/core/utils/kst_date.dart` 단일 정의처)이 `kKstOffset`을 써서 UTC를 KST 벽시계로 변환한다(자정 근처 완료의 하루 어긋남 방지). 사진은 **로딩(스피너)·있음(썸네일)·없음/실패("사진 없음" 플레이스홀더) 3경로**를 각각 그리고, 조회 실패에도 시트가 생존한다. 테스트: `test/features/achievement_detail_sheet_test.dart`(KST 날짜·사진 3경로·깨진 base64 방어).
       > **근거 문장 갱신(E-4 문서 감사 C-1)**: 예전 근거는 "`_ProofPhoto`의 `FutureBuilder`가 3경로를 그린다"였으나 **코드 현실과 달랐다** — `lib/features/storage/widgets/achievement_detail_sheet.dart`에 `_ProofPhoto`도 `FutureBuilder`도 **없다**. 3단계-b 편집 모드 작업에서 `initState` + `_photoLoading` 상태(`:84,121,128`) + `_photoView()`(`:311-322`) / `_PhotoFrame`(`:520`) / `_PhotoPlaceholder`(`:535`) / `_LoadingSpinner`(`:572`) 구조로 리팩터링됐다(편집 모드가 사진을 교체·제거하므로 `Future` 한 번 물고 끝나는 `FutureBuilder`로는 갱신을 반영할 수 없다). **동작(3경로 방어)은 그대로라 `[x]` 자체는 유효하므로 체크는 유지하고 근거 문장만 현행 구조로 고쳤다.**
 - [x] 보관함 상세 시트에서 완료 기록의 메모·사진을 수정할 수 있다. (3단계-b)
       → 보기 전용 시트(3-a)에 "수정" 버튼 → 편집 모드(메모 `TextField` + 사진 교체/제거 + 저장/취소). 같은 시트 안에서 보기↔편집 전환. `lib/features/storage/widgets/achievement_detail_sheet.dart` 확장(`_editing`/`_saving` 상태). 시트는 저장소·uid·image_picker를 직접 모르고 화면(`storage_screen._openDetail`)이 콜백 클로저(`onSaveMemo`/`onSavePhoto`/`pickImage`)로 주입한다(3-a `loadProof`와 같은 경계). 테스트: `test/features/achievement_detail_sheet_test.dart`.

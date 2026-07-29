@@ -518,7 +518,7 @@ class _CompletedDate extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Text(
-      '${_formatKstDate(completedAt)} 완료',
+      '${kstDateLabel(completedAt)} 완료',
       style: theme.textTheme.labelSmall?.copyWith(
         color: scheme.onSurfaceVariant,
       ),
@@ -585,15 +585,6 @@ class _LoadingSpinner extends StatelessWidget {
       child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
-}
-
-/// 완료 날짜를 KST 벽시계 기준 `yyyy년 M월 d일`로 표시한다.
-///
-/// 저장된 `completedAt`은 UTC 순간이라 그대로 읽으면 자정 근처 완료가 하루 어긋난다.
-/// 앱의 하루 경계가 KST인 것과 맞춘다([kKstOffset] 단일 정의처를 인용).
-String _formatKstDate(DateTime instant) {
-  final kst = instant.toUtc().add(kKstOffset);
-  return '${kst.year}년 ${kst.month}월 ${kst.day}일';
 }
 
 /// 보관함 카드 상세 시트를 띄운다.
