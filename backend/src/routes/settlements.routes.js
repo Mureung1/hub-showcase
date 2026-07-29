@@ -58,6 +58,12 @@ router.post('/:id/settlements', requireAuth, async (req, res, next) => {
       include: { user: true },
     })
 
+    if (partyMembers.length === 0) {
+      const err = new Error('정산할 파티원이 없습니다.')
+      err.status = 400
+      return next(err)
+    }
+
     const amount = Math.round(subscription.subAmount / subscription.memberCount)
 
     let settlement
