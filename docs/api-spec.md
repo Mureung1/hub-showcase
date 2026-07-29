@@ -205,7 +205,7 @@ blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는
 | --- | --- | --- |
 | POST | `/posts/promotion/interview` | 홍보글 작성 인터뷰 진행 (질문-답변 반복) |
 | POST | `/posts/promotion` | 인터뷰 결과로 홍보글 초안 생성 → `Post` 반환 |
-| POST | `/posts/:id/images` | 사진 업로드 (multipart/form-data) → 배치 추천 포함 응답 (이후 과제로 이월, 아직 미구현) |
+| POST | `/posts/:id/images` | 사진 업로드 (multipart/form-data, 필드명 `image`) → Supabase Storage(`post-images` 버킷)에 저장, `thumbnailUrl`/`images`에 반영된 `Post` 반환. 사진을 분석해 배치를 추천하는 AI 기능은 비전 모델이 필요해 범위 밖(이후 과제로 유지) |
 
 인터뷰는 홍보 목적(`purpose`: `new-menu` / `event` / `general`)에 따라 이후 질문이 갈라진다
 (`my-app/src/pages/PromotionInterview.jsx`의 `STEPS_BY_PURPOSE`와 서버
@@ -286,6 +286,8 @@ blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는
 | GET | `/posts/:id/detect-published` | 연동된 블로그 RSS에서 이 글과 비슷한 최근 글 자동 탐지 |
 | POST | `/posts/:id/schedule` | (현재 프론트에서는 미사용) 예약 발행 시간 확정 `{ "scheduledAt": "..." }` — 실제 예약 실행은 네이버 자체 기능에 맡기므로 지금은 호출하는 화면이 없음 |
 | DELETE | `/posts/:id/schedule` | 위 예약 취소 |
+| DELETE | `/posts/:id` | 게시글 기록 삭제. 네이버에 이미 올라간 글 자체는 지우지 않고 우리 쪽 기록만 지움 |
+| GET | `/posts/:id/check-deleted` | 저장된 `publishedUrl`을 서버가 직접 요청해서 네이버에서 삭제됐는지 확인. `{ "result": "exists" \| "deleted" \| "unknown" \| "no_url" }` — 404/410이거나 응답 본문에 "삭제된 게시물" 류 문구가 있으면 `deleted`, 그 외 정상 응답이면 `exists`, 네트워크 오류 등으로 판별 불가하면 `unknown`. 확정적인 판별이 아닌 휴리스틱이라 프론트가 결과를 그대로 믿지 않고 사용자 확인을 거쳐야 함 |
 
 **반자동 발행 흐름 (2026-07-27 결정, 2026-07-28 게시 완료 확인 방식 보강)**: 네이버 블로그 포스팅 공식 API가 폐지되어 완전 자동 발행(Playwright 등) 대신 반자동 방식을 쓴다. 서버가 대신 발행하지 않고, 프론트에서 아래 순서로 처리한다.
 
