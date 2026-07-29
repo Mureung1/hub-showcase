@@ -1,6 +1,6 @@
 ---
 name: pr-draft
-description: 업스트림 저장소(connect-AIAgentChallenge-26-1/hub)에 PR을 올리기 전, .github/pull_request_template.md 형식에 맞춰 PR 제목·본문 초안을 작성할 때 사용. 현재 브랜치의 dev 대비 커밋·diff를 분석해 작업 리스트·기술 설명 초안을 만든다. "PR 올리자", "PR 초안 써줘" 등의 요청 시 사용.
+description: 업스트림 저장소(connect-AIAgentChallenge-26-1/hub)에 PR을 올리기 전, .github/pull_request_template.md 형식에 맞춰 PR 제목·본문 초안을 작성할 때 사용. 마지막으로 머지된 이 브랜치의 PR 이후 커밋·diff를 분석해 작업 리스트·기술 설명 초안을 만들고, GitHub 웹 UI에 그대로 붙여넣을 수 있는 일반 텍스트로 제시한다(gh CLI 명령어 형태 아님). "PR 올리자", "PR 초안 써줘" 등의 요청 시 사용.
 ---
 
 # PR 초안 작성 스킬
@@ -10,9 +10,17 @@ description: 업스트림 저장소(connect-AIAgentChallenge-26-1/hub)에 PR을 
 ## 절차
 
 ### 1. 컨텍스트 수집
+로컬 `dev` 브랜치는 갱신이 느려서 `dev..HEAD`로 범위를 잡으면 이미 머지된 옛날 커밋까지 다 딸려온다. 대신 **업스트림에 마지막으로 머지된 이 브랜치의 PR**을 기준으로 잡는다.
+
 ```bash
-git log --oneline dev..HEAD          # 이 브랜치에서 dev 대비 쌓인 커밋
-git diff dev --stat                   # 변경 파일 요약
+gh pr list --repo connect-AIAgentChallenge-26-1/hub --search "N034_김선호" --state merged --json number,title,mergedAt --limit 1
+gh pr view <가장 최근 번호> --repo connect-AIAgentChallenge-26-1/hub --json mergeCommit,mergedAt
+```
+반환된 `mergeCommit.oid`가 로컬에 없으면(포크라 다른 히스토리라 흔함), `mergedAt` 시각 직후에 커밋된 로컬 커밋을 `git log --oneline --format="%h %ad %s" --date=format:"%Y-%m-%d %H:%M"`으로 찾아 그 직전 커밋을 경계로 삼는다.
+
+```bash
+git log <경계커밋>..HEAD --oneline
+git diff <경계커밋> --stat
 ```
 오늘 세션에서 `docs/decisions.md`·`docs/log.md`에 새로 추가된 항목이 있다면 함께 확인한다 — 설계 결정과 그 이유가 이미 정리돼 있어 "내가 설명할 수 있는 부분"의 재료가 된다.
 
@@ -35,29 +43,37 @@ diff에서 기술적으로 흥미로운 지점(설계를 바꾼 이유, 트레�
 오늘 세션에서 실제로 논의된 새 개념·결정을 후보로 제시한다(예: 레포 우선 검색으로 전환한 이유, GraphQL alias 배치, rate limit 판정 우선순위 등). 마찬가지로 확정하지 말고 후보로 제시해 사용자가 고르게 한다.
 
 ### 4. 출력 형식
-`gh pr create`에 바로 쓸 수 있는 형태로 제시한다:
-```bash
-gh pr create --repo connect-AIAgentChallenge-26-1/hub \
-  --title "[N034_김선호] - ..." \
-  --body "$(cat <<'EOF'
+PR은 사용자가 GitHub 웹 UI에서 직접 입력한다 — `gh pr create` 명령어 형태가 아니라, **제목과 본문을 그대로 복붙할 수 있는 일반 텍스트**로 따로따로 제시한다.
+
+**제목 (Title 칸에 붙여넣기)**
+```
+[N034_김선호] - <이번 작업을 한 문장으로 요약>
+```
+
+**본문 (Description 칸에 붙여넣기)**
+```markdown
 ## 주요 작업 리스트
 - ...
 
+(필요하면 여기에 스크린샷 첨부 안내)
+
 ## 내가 설명할 수 있는 부분
+(초안 — 반드시 본인 말로 다시 확인·수정한 뒤 제출하세요)
 ...
 
 ## 아직 이해 못 한 부분
+(diff를 보면서 본인이 실제로 헷갈렸던 부분을 채워주세요)
 ...
 
 ## 새로 알게 된 것
+(후보 — 실제로 새로 알게 된 것만 남겨주세요)
 ...
-EOF
-)"
 ```
-라벨(예: BE/FE/docs)은 과거 PR 이력(`gh pr list --repo connect-AIAgentChallenge-26-1/hub`)의 라벨 패턴을 참고해 후보를 제시한다.
+
+마지막에 **base/head 브랜치**(보통 `N034_김선호` → `N034_김선호`, 과거 PR과 동일 패턴인지 확인)와 **라벨** 후보를 별도로 안내한다. 라벨은 `gh label list --repo connect-AIAgentChallenge-26-1/hub`로 실제 존재하는 라벨 목록을 확인하고, 이번 PR 성격과 맞는 것만 후보로 제시한다 — 없는 라벨을 지어내지 않는다.
 
 ### 5. 실행 확인
-초안을 보여주고 **사용자 확인 없이 `gh pr create`를 바로 실행하지 않는다** — PR 생성은 외부에 공개되는 행위이므로 반드시 승인 후 실행한다.
+`gh pr create`를 대신 실행하지 않는다 — 이 프로젝트는 웹 UI로 직접 PR을 올리는 흐름이라, 스킬의 산출물은 여기까지다. (CLI로 직접 만들고 싶다고 사용자가 명시적으로 요청하면 그때만 4번 형식을 `gh pr create --title ... --body "$(cat <<'EOF' ... EOF)"` 형태로 바꿔 제시하고, 실행은 승인 후에 한다.)
 
 ## 하지 말 것
 - "아직 이해 못 한 부분"을 그럴듯하게 지어내기 (템플릿의 취지 자체가 훼손됨)
