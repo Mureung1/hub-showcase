@@ -8,6 +8,7 @@ import { fetchRecommendedGyms } from '../../services/gymsApi';
 import { fetchMeals } from '../../services/mealsApi';
 import { todayString } from '../../utils/date';
 import { summarizeTodayMeals, type TodayMealSummary } from '../../utils/todayMealSummary';
+import HomeRoutineCard from './home/HomeRoutineCard';
 import HomeCourseCard from './home/HomeCourseCard';
 import HomeDietCard from './home/HomeDietCard';
 import HomeGreeting from './home/HomeGreeting';
@@ -79,6 +80,7 @@ export default function HomePage() {
   return (
     <div className="user-page user-home">
       <HomeGreeting />
+      <HomeRoutineCard course={recommended} loading={loading} />
       <HomeDietCard summary={dietSummary} isAuthenticated={isAuthenticated} />
       <HomeCourseCard course={recommended} loading={loading} />
       <HomeGymMatchCard gym={topGym} totalNearby={nearbyGyms} loading={loading} />

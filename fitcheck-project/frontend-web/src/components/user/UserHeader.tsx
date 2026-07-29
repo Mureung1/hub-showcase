@@ -1,14 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
+import { USER_NAV_ITEMS } from '../../constants/userNav';
 import { useAuth } from '../../hooks/useAuth';
 import './UserHeader.css';
 
-const TABS = [
-  { to: '/user', label: '홈', end: true },
-  { to: '/user/courses', label: '강좌', end: false },
-  { to: '/user/meals', label: '식단', end: false },
-  { to: '/user/map', label: '지도', end: false },
-] as const;
+const TABS = USER_NAV_ITEMS;
 
 function displayName(name: string | null | undefined, email: string | undefined): string {
   if (name?.trim()) return name.trim();

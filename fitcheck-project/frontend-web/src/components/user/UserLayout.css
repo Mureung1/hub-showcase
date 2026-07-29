@@ -2,11 +2,13 @@
   --user-pad-x: clamp(1rem, 2.5vw, 2rem);
   --user-pad-y: clamp(1rem, 1.8vw, 1.75rem);
   --user-gap: clamp(1.125rem, 1.6vw, 1.5rem);
+  --user-sidebar-width: 220px;
 
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: #0a0a0c;
+  background: var(--bg-base);
+  color: var(--text-primary);
 }
 
 .user-main {
@@ -19,8 +21,24 @@
   box-sizing: border-box;
 }
 
+/* 모바일 앱 / 좁은 브라우저 — 기존 480px 중심 레이아웃 */
+.user-layout--mobile .user-main {
+  padding-bottom: calc(var(--bottom-nav-height) + var(--user-pad-y));
+}
+
 @media (min-width: 768px) {
-  .user-main {
+  .user-layout--mobile .user-main {
     padding-bottom: calc(var(--user-pad-y) + 0.5rem);
   }
+}
+
+/* 데스크톱 브라우저 — 좌측 사이드바 + 넓은 콘텐츠 */
+.user-layout--desktop {
+  flex-direction: row;
+}
+
+.user-layout--desktop .user-main {
+  margin-left: var(--user-sidebar-width);
+  padding: clamp(1.5rem, 2.5vw, 2.5rem) clamp(1.5rem, 3vw, 3rem);
+  max-width: calc(100% - var(--user-sidebar-width));
 }

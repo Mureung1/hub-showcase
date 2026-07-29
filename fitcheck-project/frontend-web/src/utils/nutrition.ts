@@ -19,7 +19,7 @@ export interface MacroSharePoint {
 
 export const MACRO_COLORS = {
   carbs: '#f5a524',
-  protein: '#e50914',
+  protein: '#ff6b4a',
   fat: '#34c759',
 } as const;
 

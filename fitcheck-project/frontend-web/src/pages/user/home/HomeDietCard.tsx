@@ -76,11 +76,19 @@ function MacroBar({
   );
 }
 
+function latestAiFeedback(summary: TodayMealSummary | null): string | null {
+  if (!summary?.meals.length) return null;
+  const withFeedback = [...summary.meals]
+    .filter((m) => m.aiFeedback?.trim())
+    .sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''));
+  return withFeedback[0]?.aiFeedback?.trim() ?? null;
+}
+
 export default function HomeDietCard({ summary, isAuthenticated }: HomeDietCardProps) {
   if (!isAuthenticated) {
     return (
       <section className="showcase-card home-diet-card">
-        <h2 className="showcase-section-title">오늘 식단 기록</h2>
+        <h2 className="showcase-section-title">오늘 식단</h2>
         <p className="home-empty-copy">
           로그인 후 식단을 기록하면 칼로리·탄단지 요약이 여기에 표시됩니다.
         </p>
@@ -94,11 +102,12 @@ export default function HomeDietCard({ summary, isAuthenticated }: HomeDietCardP
   const totals = summary?.totals ?? { kcal: 0, carb: 0, protein: 0, fat: 0 };
   const goals = summary?.goals;
   const meals = summary?.meals ?? [];
+  const aiTip = latestAiFeedback(summary);
 
   return (
     <section className="showcase-card home-diet-card">
       <div className="home-diet-header">
-        <h2 className="showcase-section-title">오늘 식단 기록</h2>
+        <h2 className="showcase-section-title">오늘 식단</h2>
         <Link to="/user/meals" className="home-section-link">
           기록하기
         </Link>
@@ -127,23 +136,25 @@ export default function HomeDietCard({ summary, isAuthenticated }: HomeDietCardP
               label="탄수화물"
               current={totals.carb}
               goal={goals?.carb ?? 250}
-              color="#f5a524"
+              color="var(--macro-carb)"
             />
             <MacroBar
               label="단백질"
               current={totals.protein}
               goal={goals?.protein ?? 120}
-              color="var(--accent)"
+              color="var(--macro-protein)"
             />
             <MacroBar
               label="지방"
               current={totals.fat}
               goal={goals?.fat ?? 70}
-              color="#34c759"
+              color="var(--macro-fat)"
             />
           </div>
         </div>
       </div>
+
+      {aiTip ? <p className="home-diet-ai-tip">{aiTip}</p> : null}
     </section>
   );
 }
