@@ -157,13 +157,13 @@ select extensions.results_eq(
   $$
     select insight_id
     from public.match_insight_embeddings(
-      '00000000-0000-4000-8000-000000000031',
+      '00000000-0000-4000-8000-000000000031'::uuid,
       (
         array[1::real] || array_fill(0::real, array[767])
       )::extensions.vector,
-      0.59,
-      'gemini-embedding-2',
-      1
+      0.59::real,
+      'gemini-embedding-2'::text,
+      1::smallint
     )
   $$,
   $$
