@@ -26,7 +26,7 @@
 
 ## Decisions so far
 
-없음.
+- [현재 실행 그래프와 우연한 의존성을 고정했다](tickets/001-current-execution-graph.md) — Exact transport Runtime과 달리 effective AY work environment는 fixed parent environment, Codex login shell, macOS·Homebrew와 global `CODEX_HOME`의 합성이며, 조사 시점의 Runtime drift는 admission에서 fail-closed한다.
 
 ## Not yet specified
 
