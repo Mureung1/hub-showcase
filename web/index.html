@@ -21,7 +21,10 @@
     전이는 app.js가 SSE 이벤트를 받아 일으킨다. 페이지 이동은 없다.
   -->
   <body data-state="idle">
-    <!-- ③ 완료 헤더가 고정될 자리. 내용 채우기는 Week 4 범위라 지금은 비어 있다. -->
+    <!--
+      ③ 완료 헤더. done에서만 app.js가 채우고 hidden을 푼다.
+      트렌드가 타임라인 맨 아래에 있어도 위로 올라간 사용자가 결론에 닿게 하는 장치다.
+    -->
     <header id="run-header" class="run-header" hidden></header>
 
     <main class="page">

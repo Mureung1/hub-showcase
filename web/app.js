@@ -24,6 +24,7 @@
   const fatalMessage = document.getElementById("fatal-message");
   const fatalMeta = document.getElementById("fatal-meta");
   const fatalRestart = document.getElementById("fatal-restart");
+  const runHeader = document.getElementById("run-header");
 
   // ---------------------------------------------------------------- state
   /** 현재 열려 있는 이벤트 소스. 한 번에 하나만 돈다. */
@@ -347,29 +348,249 @@
   }
 
   /**
+   * 논문 카드로 이동하고, **도착한 곳을 눈에 띄게** 한다.
+   *
+   * 스크롤만 하면 화면이 순간이동한 것처럼 보여 사용자가 어디에 왔는지 모른다.
+   * 강조색은 칩과 같은 것(`--fail`)을 써서 "저기서 여기로 왔다"가 색으로 이어지게 한다.
+   *
+   * @param {number} index - `paper_done`의 index
+   */
+  function revealCard(index) {
+    const card = document.getElementById(`paper-${index}`);
+    if (card === null) return; // 칩을 만든 뒤에 사라졌을 수도 있으니 다시 확인한다
+
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+
+    // 같은 칩을 연달아 누르면 클래스가 이미 붙어 있어 애니메이션이 다시 돌지 않는다.
+    // 뺐다가 다시 넣되, 사이에 리플로를 강제해 브라우저가 두 변경을 하나로 묶지 않게 한다.
+    card.classList.remove("entry--flash");
+    void card.offsetWidth;
+
+    // 정리를 타이머가 아니라 애니메이션 자신에게 맡긴다 — 지속시간을 CSS에서만 바꿔도
+    // 어긋나지 않고, 클래스가 남아 다음 강조를 막는 일도 없다.
+    card.addEventListener("animationend", () => card.classList.remove("entry--flash"), {
+      once: true,
+    });
+    card.classList.add("entry--flash");
+  }
+
+  /**
+   * 흐름의 근거 논문들을 칩으로 만든다. **이 서비스에서 주장과 근거를 잇는 지점이다.**
+   *
+   * 칩은 의미상 진짜 링크(문서 안 앵커로 이동)라 `<a href="#paper-N">`으로 만든다.
+   * 버튼으로 흉내 내면 JS가 죽었을 때 아무 일도 일어나지 않고, 스크린리더에도
+   * "이동한다"는 뜻이 전달되지 않는다. JS는 부드러운 스크롤과 강조만 얹는다.
+   *
+   * **카드가 없는 index는 칩을 만들지 않는다.** `agent.py`의 `trend()`는 성공한
+   * 요약만 넘겨받으므로 실패한 논문이 여기 들어올 일은 없지만, 프론트가 그걸
+   * 신뢰하지 않는다 — 존재 확인이 곧 이동 대상 확인이라 따로 드는 비용도 없다.
+   *
+   * @param {Array<number>} papers - `flows[].papers`
+   * @returns {?HTMLDivElement} 만들 칩이 하나도 없으면 null
+   */
+  function buildChips(papers) {
+    const indexes = Array.isArray(papers) ? papers : [];
+    const chips = document.createElement("div");
+    chips.className = "trend__chips";
+
+    for (const index of indexes) {
+      if (document.getElementById(`paper-${index}`) === null) continue;
+
+      // 번호만 쓰면 무엇으로 이동하는지 몰라 클릭할 이유가 없다. 제목은 read에서 받아뒀다.
+      const info = readInfo.get(index);
+      const label = info !== undefined && info.title ? info.title : `논문 ${index}`;
+
+      const chip = document.createElement("a");
+      chip.className = "trend__chip";
+      chip.href = `#paper-${index}`;
+      chip.textContent = `↑ ${label}`;
+      chip.title = label; // 제목이 길면 CSS가 자르므로 전문은 여기 남긴다
+
+      // 클로저가 잡는 것은 숫자 하나다. 카드 노드를 캡처하면 그 노드가 DOM에서
+      // 빠진 뒤에도 핸들러가 살아 있는 한 힙에 남는다.
+      chip.addEventListener("click", (event) => {
+        event.preventDefault();
+        revealCard(index);
+      });
+
+      chips.appendChild(chip);
+    }
+
+    return chips.childElementCount > 0 ? chips : null;
+  }
+
+  /**
+   * 흐름 하나(제목 + 본문)를 만든다. `gap`도 같은 모양을 쓴다.
+   *
+   * gap을 따로 떼지 않는 이유: 떼면 부록처럼 보인다. 연구자에게 트렌드의 가치는
+   * 무엇이 유행인가보다 **무엇이 비어 있는가**라서, 흐름들과 같은 번호를 달고
+   * 같은 목록에 들어가야 한다 (wireframe_done.svg의 `3 · 아직 비어 있는 곳`).
+   *
+   * 번호는 `<ol>`이 매긴다 — JS로 문자열에 박으면 항목이 빠질 때 번호가 어긋난다.
+   */
+  function buildFlow(title, bodyText, modifier) {
+    const item = document.createElement("li");
+    item.className = modifier === undefined ? "trend__flow" : `trend__flow ${modifier}`;
+
+    const heading = document.createElement("p");
+    heading.className = "trend__flow-title";
+    heading.textContent = title;
+
+    const paragraph = document.createElement("p");
+    paragraph.className = "trend__flow-body";
+    paragraph.textContent = bodyText;
+
+    item.append(heading, paragraph);
+    return item;
+  }
+
+  /**
+   * `done.trend` — 5단계(트렌드 추론)의 결과물. **타임라인의 마지막에 붙는다.**
+   *
+   * 맨 위로 올리지 않는다. 작업을 지켜본 사용자의 스크롤은 이미 맨 아래에 있고,
+   * 트렌드가 거기 도착하는 것이 시간순이라는 사실도 지킨다(wireframe_done.svg 주석).
+   * 위로 올라갔거나 나중에 들어온 사용자를 위해서는 대신 **상단 헤더를 고정한다**(9-3).
+   * 둘은 한 쌍이라, 트렌드를 아래에 두는 결정은 헤더 없이는 성립하지 않는다.
+   *
+   * 과정 로그("논문 간 연결점을 종합하는 중")는 덮지도 지우지도 않는다 — 감사 기록이다.
+   *
+   * 논문 칩(`flows[].papers`)은 9-2에서 붙인다. 여기서는 읽지 않는다.
+   *
+   * @param {{flows: Array<object>, gap: ?string}} trend - `done.trend`
+   * @param {number} succeeded - 카드가 그려진 논문 수. 헤딩의 "N편"이 된다
+   */
+  function appendTrend(trend, succeeded) {
+    // 계약상 `gap`은 null일 수 있고, fallback으로 `flows`가 빈 배열일 수도 있다.
+    // 서버가 보낸 모양을 그대로 믿지 않고 여기서 한 번 좁힌다.
+    const payload = trend === null || trend === undefined ? {} : trend;
+    const flows = Array.isArray(payload.flows) ? payload.flows : [];
+    const gap = typeof payload.gap === "string" ? payload.gap.trim() : "";
+
+    // 흐름도 gap도 없으면 **블록 자체를 만들지 않는다.**
+    // `agent.py`의 fallback이 `{"flows": [], "gap": None}`이라 실제로 도달하는 경로다.
+    // 제목만 덩그러니 남으면 사용자는 에이전트가 고장난 것으로 읽는다.
+    // 시도했다는 기록은 과정 로그에 이미 남아 있으므로 여기서 침묵해도 잃는 것이 없다.
+    if (flows.length === 0 && gap === "") return;
+
+    const item = appendEntry("entry--trend");
+
+    const heading = document.createElement("p");
+    heading.className = "trend__heading";
+    heading.textContent = `${succeeded}편을 관통하는 흐름`;
+
+    const subheading = document.createElement("p");
+    subheading.className = "trend__subheading";
+    subheading.textContent = "에이전트가 논문들을 서로 연결해 정리했습니다";
+
+    const list = document.createElement("ol");
+    list.className = "trend__flows";
+
+    for (const flow of flows) {
+      const flowItem = buildFlow(flow.title, flow.body);
+
+      // 근거가 없는 흐름은 칩 없이 주장만 남는다. 블록은 깨지지 않는다 —
+      // 프롬프트(trend.md)가 근거 없는 흐름을 애초에 못 만들게 하고 있지만,
+      // 그 약속이 지켜지지 않아도 화면은 살아 있어야 한다.
+      const chips = buildChips(flow.papers);
+      if (chips !== null) flowItem.appendChild(chips);
+
+      list.appendChild(flowItem);
+    }
+
+    if (gap !== "") {
+      list.appendChild(buildFlow("아직 비어 있는 곳", gap, "trend__flow--gap"));
+    }
+
+    item.append(heading, subheading, list);
+  }
+
+  /**
+   * 초 단위 실수를 사람이 읽는 시간으로. `134.2` → `2분 14초`, `54.0` → `54초`.
+   *
+   * 계약의 `elapsed`는 초 단위 실수라 그대로 노출하면 "134.2초"가 된다.
+   * 이 서비스에서 소요시간은 정밀도가 아니라 **얼마나 오래 일했는가**를 말하는 값이다.
+   */
+  function formatElapsed(seconds) {
+    const total = Math.max(0, Math.round(Number(seconds) || 0));
+    if (total < 60) return `${total}초`;
+
+    const minutes = Math.floor(total / 60);
+    const rest = total % 60;
+    return rest === 0 ? `${minutes}분` : `${minutes}분 ${rest}초`;
+  }
+
+  /**
+   * 완료 헤더 — 화면 상단에 **고정**된다(`position: sticky`, style.css).
+   *
+   * 트렌드를 타임라인 맨 아래에 둔 결정(9-1)이 성립하려면 이게 필요하다.
+   * 위로 올라가 카드를 읽던 사용자도, 나중에 화면을 본 사용자도 여기서 결론에 닿는다.
+   *
+   * **`done`에서만 띄운다.** `empty`(선별 0편 포함)와 `error`는 부르지 않는다 —
+   * "0편 검토 · 0편 선별"은 아무 의미도 없고 사용자는 고장난 것으로 읽는다.
+   */
+  function showRunHeader(stats, elapsed) {
+    const { scanned, selected, succeeded, failed } = stats;
+
+    const title = document.createElement("p");
+    title.className = "run-header__title";
+
+    // 부분 실패는 에러가 아니라 정상적인 결말이다. 숨기지도, 경고로 만들지도 않는다.
+    // 다만 몇 편을 건졌는지는 분명히 말한다 — "완료"만 띄우면 거짓말이 된다.
+    title.textContent = failed > 0 ? `브리핑 완료 · ${succeeded}/${selected}편` : "브리핑 완료";
+
+    const detail = document.createElement("p");
+    detail.className = "run-header__detail";
+    detail.textContent =
+      `${scanned}편 검토 · ${selected}편 선별 · ` +
+      `${formatElapsed(elapsed)} · LLM 호출 ${stats.llm_calls}회`;
+
+    const restart = document.createElement("button");
+    restart.className = "button run-header__restart";
+    restart.type = "button";
+    restart.textContent = "다시 브리핑";
+    restart.addEventListener("click", resetToIdle);
+
+    const text = document.createElement("div");
+    text.append(title, detail);
+
+    runHeader.replaceChildren(text, restart);
+    runHeader.hidden = false;
+  }
+
+  /**
+   * 헤더를 치운다. 새 실행을 시작할 때 반드시 부른다 —
+   * 직전 브리핑의 통계가 남아 있으면 사용자는 그걸 이번 실행의 숫자로 읽는다.
+   */
+  function hideRunHeader() {
+    runHeader.hidden = true;
+    runHeader.replaceChildren();
+  }
+
+  /**
    * `done` — 정상 종결.
    *
    * **진행 로그를 지우거나 초기화하지 않는다.** 로그는 감사 기록이라 완료 후에도 남는다.
-   * 트렌드 블록과 상단 완료 헤더는 Week 4 범위이므로 여기서는 종결 표시까지만 한다.
+   * 다만 완료 **통계**는 로그가 아니라 헤더의 몫이다 — 타임라인은 트렌드로 끝난다.
    *
    * @returns {string} 화면에 실제로 그린 것에 맞는 상태 이름
    */
   function appendDone(event) {
-    const { scanned, selected, succeeded, failed } = event.stats;
+    const { scanned, selected, succeeded } = event.stats;
 
     // 선별 0편이면 성공도 실패도 아닌 "결과 없음"이다 (#79).
     // '0/0편 완료'는 아무 의미도 아니고, 사용자는 고장난 줄 안다.
     //
     // 이때 상태도 done이 아니라 empty로 둔다. 화면에 결과가 없는데 상태만
-    // done이면, 이 상태를 보고 그리는 Week 4의 완료 헤더가 "0/0편"을 띄우게 된다.
+    // done이면, 헤더가 "0편 검토 · 0편 선별"을 띄우게 된다 — 여기서 걸러 그 길을 막는다.
     if (selected === 0) {
       appendNoResult(scanned, []);
       return "empty";
     }
 
-    const parts = [`브리핑 완료 · ${succeeded}/${selected}편`];
-    if (failed > 0) parts.push(`${failed}편은 요약하지 못했습니다`);
-    appendLog(parts[0], parts[1]);
+    // 타임라인은 트렌드로 끝난다. 완료 통계를 로그로 한 줄 더 붙이면 헤더와 중복이고,
+    // 결론(트렌드) 뒤에 사무적인 마감 줄이 붙어 읽는 순서도 흐려진다.
+    appendTrend(event.trend, succeeded);
+    showRunHeader(event.stats, event.elapsed);
     return "done";
   }
 
@@ -423,7 +644,9 @@
     timeline.replaceChildren();
     readInfo.clear();
     fatal.hidden = true;
+    hideRunHeader();
     body.dataset.state = "idle";
+    window.scrollTo({ top: 0 });
     input.focus();
   }
 
@@ -552,6 +775,7 @@
     timeline.replaceChildren();
     readInfo.clear();
     fatal.hidden = true;
+    hideRunHeader();
     body.dataset.state = "running";
 
     source = createSource(topic);
