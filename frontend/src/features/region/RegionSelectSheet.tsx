@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLanguage } from '../../i18n/LanguageContext'
+import { isMergedJeonnamGwangju, mergedProvinceOptionLabel } from './mergedRegion'
 import { useDistricts, useProvinces, useZoneOptions } from './useRegionOptions'
 import type { SelectedRegion } from './useSelectedRegion'
 
@@ -61,7 +62,7 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
           <option value="">{t('region.provincePlaceholder')}</option>
           {provinces.map((province) => (
             <option key={province.name} value={province.name}>
-              {displayName(province)}
+              {isMergedJeonnamGwangju(province.name) ? mergedProvinceOptionLabel(lang) : displayName(province)}
             </option>
           ))}
         </select>

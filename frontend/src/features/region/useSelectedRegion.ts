@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Lang } from '../../i18n/LanguageContext'
+import { isMergedJeonnamGwangju, resolveMergedProvinceDisplayName } from './mergedRegion'
 
 export interface SelectedRegion {
   ctpvNm: string
@@ -26,7 +27,11 @@ function readStoredRegion(): SelectedRegion | null {
 // 영어 모드일 때 선택 시점에 저장해둔 ctpvNmEn/sggNmEn을 쓰고, 아직 없으면(과거에 선택해 저장된
 // 지역이라 영어 이름이 없는 경우) 한국어 이름으로 자연스럽게 폴백한다.
 export function formatSelectedRegionLabel(region: SelectedRegion, lang: Lang): string {
-  const ctpv = lang === 'en' && region.ctpvNmEn ? region.ctpvNmEn : region.ctpvNm
+  const ctpv = isMergedJeonnamGwangju(region.ctpvNm)
+    ? resolveMergedProvinceDisplayName(region.sggNm, lang)
+    : lang === 'en' && region.ctpvNmEn
+      ? region.ctpvNmEn
+      : region.ctpvNm
   const sgg = lang === 'en' && region.sggNmEn ? region.sggNmEn : region.sggNm
   return `${ctpv} / ${sgg}`
 }

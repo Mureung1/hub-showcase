@@ -15,7 +15,8 @@
     "sync:item-names-en": "tsx scripts/syncItemNamesEn.ts",
     "sync:region-names-en": "tsx scripts/syncRegionNamesEn.ts",
     "sync:bulky-waste-fees": "tsx scripts/syncBulkyWasteFees.ts",
-    "seed:bulky-waste-report-sites": "tsx scripts/seedBulkyWasteReportSites.ts"
+    "seed:bulky-waste-report-sites": "tsx scripts/seedBulkyWasteReportSites.ts",
+    "seed:collection-points": "tsx scripts/seedCollectionPoints.ts"
   },
   "keywords": [],
   "author": "",

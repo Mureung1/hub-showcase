@@ -96,4 +96,17 @@ export const ko = {
   'bulky.noReportSiteContactPrefix': '이 지역은 아직 등록된 공식 신고 사이트 정보가 없어요. 문의: ',
   'bulky.sourcePrefix': '출처: 환경부 전국대형폐기물수거수수료정보표준데이터 (기준일자 ',
   'bulky.sourceSuffix': ')',
+
+  'points.title': '주변 수거함',
+  'points.loading': '수거함 정보를 불러오는 중...',
+  'points.error': '수거함 정보를 불러오지 못했어요.',
+  'points.empty': '이 카테고리에 등록된 수거함이 아직 없어요.',
+  'points.selectRegionFirst': '지역을 먼저 선택해 주세요.',
+  'points.category.건전지': '건전지',
+  'points.category.형광등': '형광등',
+  'points.category.소형가전': '소형가전',
+  'points.category.종이팩': '종이팩',
+  'points.category.폐의약품': '폐의약품',
+  'points.category.의류': '의류',
+  'points.category.재활용센터': '재활용센터',
 } as const
