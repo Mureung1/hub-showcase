@@ -88,7 +88,7 @@ flowchart TD
     %% 1. 프론트엔드 레이어 (Top)
     subgraph Frontend ["Frontend (React)"]
         Auth[("Supabase Auth\n(JWT Session)")]
-        Store{"Global Store\n(Zustand / Context)"}
+        Store{"Global State\n(Context API & State Lifting)"}
         CW["Curation Workspace"]
         ML["My Library"]
 
@@ -105,26 +105,26 @@ flowchart TD
 
     %% 3. 인프라 및 외부망 레이어 (Bottom)
     subgraph External ["External Services"]
+        AcadDB["Academic DBs\n(arXiv, IEEE, etc.)"]
         Gemini["Google Gemini\n(AI Agent Brain)"]
-        AcadDB["Academic DBs\n(arXiv, IEEE)"]
     end
 
     subgraph Database ["Database"]
-        DB[("saved_papers\n(Composite PK)")]
+        DB[("saved_papers\n(Supabase PostgreSQL)")]
     end
 
-    %% 코어 큐레이션 흐름 (Agentic Flow)
+    %% 코어 큐레이션 흐름 (2-Phase RAG Flow)
     CW ==>|"1. Context & Query"| API_Cur
-    API_Cur -->|"2. Delegate Task"| Gemini
-    Gemini -.->|"3. Tool Call (Search)"| AcadDB
-    AcadDB -.->|"4. Candidates"| Gemini
-    Gemini -.->|"5. Curate & Summarize"| API_Cur
+    API_Cur -->|"2. Phase 1: Retrieval (Search)"| AcadDB
+    AcadDB -.->|"3. Raw Candidates"| API_Cur
+    API_Cur -->|"4. Phase 2: RAG Prompting (Docs + Query)"| Gemini
+    Gemini -.->|"5. Curated JSON (Score, Summary)"| API_Cur
     API_Cur -.->|"6. Final Result"| CW
 
-    %% 서재 관리 흐름
-    CW -->|"7. Save"| API_Lib
-    ML -->|"8. View/Delete"| API_Lib
-    API_Lib ==>|"9. Query"| DB
+    %% 서재 관리 흐름 (양방향으로 수정)
+    CW <-->|"7. Save & Sync"| API_Lib
+    ML <-->|"8. Fetch/Delete"| API_Lib
+    API_Lib <==>|"9. Query & Result"| DB
 ```
 
 학습 지침의 웹 서비스 3대 부품(FE, BE, DB) 작동 원리에 의거하여, Scholar-Sync AI 서비스의 기술 지도 및 핵심 기능 아키텍처 흐름을 아래와 같이 정의합니다.
