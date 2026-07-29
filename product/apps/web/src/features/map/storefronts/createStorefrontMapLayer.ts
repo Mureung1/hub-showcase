@@ -202,16 +202,14 @@ function createSelectedStoreFocus(categoryCode: string) {
 }
 
 function selectedFocusMatrix(input: StorefrontMapLayerInput, focus: THREE.Group) {
-  const roofHeightMeters = Math.max(2.8, Math.min(60, input.building?.heightMeters ?? 5.5));
   const origin = MercatorCoordinate.fromLngLat(
     [input.longitude, input.latitude],
-    roofHeightMeters + 0.35,
+    0.15,
   );
   const unitScale = origin.meterInMercatorCoordinateUnits();
   const dimensions = modelDimensions(focus);
   const localFootprint = Math.max(dimensions.x, dimensions.z, 0.001);
-  const plotSizeMeters = input.building?.plotSizeMeters ?? 8;
-  const targetFootprintMeters = Math.max(7.2, Math.min(10.4, plotSizeMeters * 0.95));
+  const targetFootprintMeters = 9.6;
   const uniformScale = targetFootprintMeters / localFootprint;
 
   return new THREE.Matrix4()
