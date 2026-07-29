@@ -64,6 +64,8 @@ flowchart TD
 | 관련 | 자주 함께 나오지만 별개 개념 | `requirement_dimension_relations`에 `related` |
 | 해당 없음 | 기존 차원으로 설명되지 않음 | 신규 차원 후보 |
 
+관계 판정은 그 실행의 활성 분류체계 어휘를 선택지로 삼으므로 버전에 상대적이다. 판정에 쓴 분류체계 버전을 후보에 함께 기록하고, 그 값이 활성 버전과 달라진 후보는 새 어휘를 걸어 다시 판정한다. 종료 상태의 후보와 이미 차원이 된 후보는 다시 판정하지 않는다. 첫 실행은 어휘가 비어 있어 모든 후보가 해당 없음으로 판정되며, 그 판정을 그대로 두면 이미 차원이 된 개념의 다른 표기가 별개의 신규 후보로 남는다.
+
 의미가 가까운 표현을 동의어로 합치면 서로 다른 요구가 하나의 숫자로 뭉개진다. 메시지 큐, 비동기 처리, 이벤트 기반 아키텍처, 대용량 트래픽은 함께 나타나지만 각각 다른 준비를 요구한다. 관련 관계로 연결하고 별도 차원으로 유지한다.
 
 ### 3.3 차원 생명주기
@@ -107,6 +109,20 @@ taxonomy_policy_version
 ```
 
 한 회사에서만 나타나는 표현은 차원이 아니라 그 회사의 특징이며 편차 해석이 다룬다.
+
+심사의 단위는 같은 라벨로 묶인 후보 묶음이다. 독립 공고 수와 독립 회사 수를 묶음 전체에서 한 번 세고 묶음의 후보가 모두 그 수를 읽는다. 표기가 갈린 후보마다 따로 세면 같은 개념의 근거가 나뉘어 어느 쪽도 임계값을 채우지 못한다. 결정 행은 후보마다 하나씩 남는다.
+
+승격 심사는 판정 차례를 갖는다. 근거가 더 쌓여 결론이 바뀔 수 있으면 보류하고, 쌓여도 그대로면 기각한다. 임계값 미달은 보류이고, 관계 판정과 상대 차원이 짝을 이루지 못하는 후보는 기각이다.
+
+| 차례 | 판정 |
+| --- | --- |
+| 1 | 라벨이 비었거나 관계 판정과 상대 차원의 짝이 맞지 않으면 기각 |
+| 2 | 판정이 가리킨 차원이 활성 버전에 없으면 보류 |
+| 3 | 평가 세트가 별개 차원으로 두는 이름을 동의어로 접으려 하면 보류 |
+| 4 | 대표 문장이 없으면 보류 |
+| 5 | 독립 공고 수가 임계값에 못 미치면 보류 |
+| 6 | 독립 회사 수가 임계값에 못 미치면 보류 |
+| 7 | 동의어는 별칭으로, 상하위·관련·해당 없음은 신규 차원으로 승격 |
 
 승격 임계값은 `taxonomy_policy_version`이 정한다. 정책 버전 `tp_v1`의 임계값은 독립 공고 2건, 독립 회사 2곳이다. 임계값을 바꿀 때는 새 정책 버전을 등록하고 새 분류체계 버전이 그 버전을 적는다. 결정 기록이 심사에 사용한 정책 버전을 담으므로 이전 결정의 임계값 근거가 보존된다.
 
@@ -152,17 +168,19 @@ flowchart LR
 
 ### 5.2 지표 family
 
-| family | 입력 | 분자 | 분모 |
-| --- | --- | --- | --- |
-| `posting_prevalence` | 차원, 범위, 대상군, 기간 | 해당 차원 할당이 있는 `posting_version` 수 | 범위·대상군·기간의 `posting_version` 수 |
-| `requiredness_ratio` | 차원, 범위, 대상군, 기간 | 필수 표현으로 나타난 `posting_version` 수 | 해당 차원이 나타난 `posting_version` 수 |
-| `depth_distribution` | 차원, 범위, 대상군, 기간 | 깊이 등급별 `posting_version` 수 | 해당 차원이 나타난 `posting_version` 수 |
-| `cluster_contrast` | 차원, 기업군, 대상군, 기간 | 기업군 `posting_prevalence` | 직무 전체 `posting_prevalence` |
-| `cooccurrence` | 차원 두 개, 범위, 대상군, 기간 | measure별로 정의 | measure별로 정의 |
-| `scope_expansion` | 범위, 대상군, 기간 | 역할 경계 범주 할당이 있는 `posting_version` 수 | 범위·대상군·기간의 `posting_version` 수 |
-| `entry_label_advanced_signal_rate` | 범위, 기간 | 신입·주니어 표시 공고 중 심화 신호를 포함한 `posting_version` 수 | 신입·주니어 표시 `posting_version` 수 |
+지표 family는 일곱 종이다. 분자·분모·measure·불확실성은 [지표 명세](metric-spec.md) 3.1~3.7이 소유한다.
 
-모든 지표의 중복 제거 단위는 `posting_version_id`다. 한 공고에서 같은 차원이 여러 번 나타나도 한 번으로 센다.
+| family | 무엇을 재는가 |
+| --- | --- |
+| `posting_prevalence` | 한 차원이 범위·기간의 공고 중 몇 %에 나타나는가 |
+| `requiredness_ratio` | 그 차원이 나타난 공고 중 필수로 표기한 비율 |
+| `depth_distribution` | 그 차원이 나타난 공고의 깊이 등급 분포 |
+| `cluster_contrast` | 기업군이 직무 전체와 얼마나 다른가 |
+| `cooccurrence` | 두 차원이 함께 요구되는 정도 |
+| `scope_expansion` | 역할 경계를 넘어선 요구가 얼마나 나타나는가 |
+| `entry_label_advanced_signal_rate` | 신입·주니어 표기 공고 중 심화 신호를 포함한 비율 |
+
+모든 지표의 중복 제거 단위는 `posting_version_id`다. 정의는 [지표 명세](metric-spec.md) 2.2에 있다.
 
 기업군 범위의 모집단은 `company_cluster_memberships`를 실행 봉투의 `as_of_date` 기준으로 해석해 확정한다. 공고 버전은 기업군을 속성으로 갖지 않는다.
 
@@ -182,70 +200,33 @@ flowchart LR
 
 ### 5.4 `cluster_contrast`
 
-차이와 비율을 모두 저장한다.
-
-```text
-prevalence_difference = cluster_prevalence - baseline_prevalence
-prevalence_ratio      = cluster_prevalence / baseline_prevalence
-```
-
-`baseline_prevalence`가 0이면 `prevalence_ratio`를 저장하지 않고 `prevalence_difference`만 저장한다. 비율만 저장하면 작은 분모에서 과장된 값이 나오고, 차이만 저장하면 상대적 강조도가 사라진다.
+기업군이 직무 전체와 얼마나 다른가를 잰다. 명세는 [지표 명세](metric-spec.md) 3.4에 있다. 화면에서는 7장의 `cluster_axes` 블록이 쓴다.
 
 ### 5.5 `cooccurrence`
 
-measure를 구분해 각각 저장한다.
-
-| measure | 정의 |
-| --- | --- |
-| `count` | 두 차원이 함께 나타난 `posting_version` 수 |
-| `jaccard` | 교집합 / 합집합 |
-| `conditional_a_given_b` | 교집합 / B가 나타난 공고 수 |
-| `conditional_b_given_a` | 교집합 / A가 나타난 공고 수 |
-| `association_lift` | 관측 동시 출현 비율 / 독립 가정 기대 비율 |
+두 차원이 함께 요구되는 정도를 잰다. 명세는 [지표 명세](metric-spec.md) 3.5에 있다. 화면에서는 7장의 `combos` 블록이 쓴다.
 
 ### 5.6 `scope_expansion`
 
-역할 경계를 넘어선 요구에만 적용한다. 백엔드 공고의 프론트엔드 요구, 개발 공고의 데이터 분석 요구, 구현 직무의 운영·인프라 요구가 해당한다.
-
-적용 대상은 `requirement_dimension_versions.role_boundary_eligible`이 참인 차원으로 제한한다.
+역할 경계를 넘어선 요구가 얼마나 나타나는가를 잰다. 명세는 [지표 명세](metric-spec.md) 3.6에 있다. 화면에서는 7장의 `scope_expansion` 블록이 쓴다.
 
 ### 5.7 `entry_label_advanced_signal_rate`
 
-신입·주니어 라벨을 붙인 공고 중 심화 신호를 포함한 공고의 비율이다. 심화 신호의 정의는 대용량, 동시성, 장애 대응 등 `depth_level`이 `tradeoff`인 할당의 존재로 판정한다.
-
-이 지표는 관측값이며 기대값과의 차이가 아니다. 차이를 계산하려면 라벨별 기대 심화 신호 비율을 먼저 정의해야 한다.
+신입·주니어 표기 공고 중 심화 신호를 포함한 비율을 잰다. 명세는 [지표 명세](metric-spec.md) 3.7에 있다. 화면에서는 7장의 `advanced`·`labels`·`reality` 블록이 쓴다.
 
 ### 5.8 시간 연산자
 
-`temporal_delta`는 독립 지표가 아니라 다른 지표에 적용하는 연산자다.
-
-```text
-temporal_delta(
-  base_metric,
-  scope,
-  period_a,
-  period_b
-)
-```
-
-어떤 지표의 변화인지를 `measure`에 함께 저장한다. `sample_size`는 두 기간 분모 중 작은 값을 담는다. 저장 항목은 [지표 명세](metric-spec.md) 4장에 있다.
+`temporal_delta`는 독립 지표가 아니라 다른 지표에 적용하는 연산자다. 어떤 지표의 변화인지를 `measure`에 함께 저장하며, `temporal_delta` 단독으로는 해석할 수 없다. 저장 항목은 [지표 명세](metric-spec.md) 4장에 있다.
 
 ### 5.9 지표 정책 버전
 
-최소 표본, 억제 정책, 불확실성 계산 방법, 수식 버전은 상수가 아니라 `metric_policy_versions`로 관리한다. 테이블 정의는 [지식·저장 구조](knowledge-schema.md) 10장에 있다.
+최소 표본, 억제 정책, 불확실성 계산 방법, 수식 버전은 상수가 아니라 `metric_policy_versions`로 관리한다. 테이블 정의는 [지식·저장 구조](knowledge-schema.md) 10장, 정책 v1의 값은 [지표 명세](metric-spec.md) 6장에 있다.
 
 정책이 바뀌면 새 버전을 발행하고 이전 결과를 보존한다. 서로 다른 정책 버전의 수치를 비교하지 않는다.
 
 ### 5.10 표본 상태
 
-표본이 적은 결과를 일괄로 숨기지 않고 사용 가능 범위를 구분한다.
-
-| `sample_status` | 의미 |
-| --- | --- |
-| `not_computable` | 분모가 0이거나 계산할 수 없다 |
-| `low_confidence` | 노출 가능하며 낮은 신뢰도를 표시한다 |
-| `not_comparable` | 노출 가능하나 기간·기업군 비교에 사용하지 않는다 |
-| `analysis_ready` | 해석·전략·로드맵의 근거로 사용한다 |
+표본이 적은 결과를 일괄로 숨기지 않고 사용 가능 범위를 구분한다. `sample_status` 네 값의 의미와 판정 임계는 [지표 명세](metric-spec.md) 2.4에 있다.
 
 모든 `statistics_facts` 행은 `sample_size`, 기간, 범위, `uncertainty`를 함께 저장한다.
 
@@ -269,38 +250,56 @@ temporal_delta(
 
 ## 7. 화면 블록 연결
 
-통계 화면의 블록은 지표 결과를 조합해 표시하는 계층이다. 블록과 지표는 일대일 대응이 아니다. 연결은 `screen_block_metric_bindings`에 기록한다.
+통계 화면의 블록은 지표 결과를 조합해 표시하는 계층이다. 블록과 지표는 일대일 대응이 아니다.
+
+블록은 활성 분석 버전의 `analysis_outputs.payload` 최상위 키로 서빙된다. 키의 목록과 필드 구성은 [데모 시드 계약](../agent/data/demo_seed/CONTRACT.md) 5장 A가 소유한다.
 
 블록의 구성은 직무와 무관하게 유지하고 블록이 표시하는 차원은 활성 분류체계에서 결정한다.
 
-| 블록 | 사용하는 지표 |
-| --- | --- |
-| 지표 카드 | 모집단 수, `posting_prevalence` 상위 |
-| 직무 외 요구 범위 | `scope_expansion` |
-| 필수 인플레이션 | `temporal_delta(requiredness_ratio)` |
-| 숨은 난이도 | `entry_label_advanced_signal_rate`, `depth_distribution` |
-| 요구 빈도 | `posting_prevalence`, `requiredness_ratio` |
-| 조합과 구현 수준 | `cooccurrence`, `depth_distribution` |
-| 증가·유지·감소 추이 | `temporal_delta(posting_prevalence)` |
-| 라벨과 현실 | `requiredness_ratio`, `entry_label_advanced_signal_rate` |
-| 기업군 성향 | `cluster_contrast` |
-| 요구 항목 전체표 | 전 지표 |
+| payload 키 | 블록 | 사용하는 지표 |
+| --- | --- | --- |
+| `kpi` | 지표 카드 | 모집단 수, `posting_prevalence` 상위 |
+| `scope_expansion` | 직무 외 요구 범위 | `scope_expansion` |
+| `inflation` | 필수 인플레이션 | `temporal_delta(requiredness_ratio)` |
+| `advanced` | 숨은 난이도 | `entry_label_advanced_signal_rate`, `depth_distribution` |
+| `tech_freq` | 요구 빈도 | `posting_prevalence`, `requiredness_ratio` |
+| `combos` | 조합과 구현 수준 | `cooccurrence`, `depth_distribution` |
+| `trend3` | 증가·유지·감소 추이 | `temporal_delta(posting_prevalence)` |
+| `labels`, `reality` | 라벨과 현실 | `requiredness_ratio`, `entry_label_advanced_signal_rate` |
+| `cluster_axes` | 기업군 성향 | `cluster_contrast` |
+| `items` | 요구 항목 전체표 | 전 지표 |
 
 ## 8. 표본 수렴
 
-공고를 추가할 때 새로 등장하는 차원 후보의 증가량을 `saturation_observations`에 기록한다. 공고 누적 수, 신규 후보 수, 누적 차원 수, 한계 증가량을 담는다.
+공고를 추가할 때 새로 등장하는 차원 후보의 증가량을 `saturation_observations`에 기록한다. 관측 시점마다 한 행이며 공고 누적 수, 신규 후보 수, 누적 차원 수, 한계 증가량을 담는다. 한계 증가량은 공고 하나가 늘 때의 신규 후보 수다.
 
-이 기록은 데이터셋 충분성의 진단 자료이며 수집이나 분석 실행의 단독 종료 사유가 아니다. 증가 곡선과 기업군별 확보 범위를 함께 검토해 표본의 충분성을 판단한다.
+한계 증가량이 비는 자리가 둘이다. 첫 관측은 견줄 앞선 관측이 없고, 공고 누적 수가 그대로인 관측은 분모가 0이다. 두 자리 모두 행은 남기고 증가량만 비운다. 0으로 채우면 후보가 더 나오지 않은 상태와 구분되지 않는다.
+
+누적 값이 앞선 관측보다 작은 관측은 남기지 않는다. 실행 봉투의 분류체계 버전이 활성 버전과 다르면 두 버전의 차원 수를 섞지 않고 관측을 남기지 않는다.
+
+이 기록은 데이터셋 충분성의 진단 자료이며 수집이나 분석 실행의 단독 종료 사유가 아니다. 한계 증가량이 0이어도 다음 실행을 막지 않는다. 증가 곡선과 기업군별 확보 범위를 함께 검토해 표본의 충분성을 판단한다.
 
 ## 9. 깊이 프로파일
 
 `depth_distribution`에서 역량별 기대 깊이를 도출해 `capability_depth_profiles`에 저장한다. 테이블 정의는 [지식·저장 구조](knowledge-schema.md) 8장에 있다.
 
+프로파일은 역량 하나에 봉투 하나마다 한 행이다. 한 역량에 차원이 여럿 붙으면 `capability_dimension_links`가 잇는 차원들의 분포를 표본 가중으로 합친다.
+
+```text
+p(등급) = Σ_차원 분자(차원, 등급) / Σ_차원 분모(차원)
+```
+
+표본 수는 차원별 분모의 합이 아니라 최댓값이다. 한 공고가 같은 역량의 두 차원을 함께 말하면 합은 그 공고를 두 번 세는데, 중복 제거 단위는 `posting_version_id`다. 저장된 카운트만으로는 두 차원의 공고 집합이 풀리지 않으므로 합집합의 하한인 최댓값을 쓴다.
+
+기대 깊이는 가장 깊은 등급부터 아래로 누적한 비율이 0.5에 처음 도달하는 등급이다. 곧 순서 있는 세 등급의 중앙값이며, 절반 이상의 공고가 그 등급 이상을 요구한다는 뜻이다. 가장 깊은 등급을 그대로 쓰면 공고 한 건의 `tradeoff` 표기가 기대 깊이를 올리고, 최빈 등급을 쓰면 등급이 순서를 갖는 값인데도 빈도만 보게 되어 준비 기준이 실제보다 낮아진다.
+
+표본 판정은 `depth_distribution`의 정책 행을 따르며 대상군마다 따로 한다. 정책 행이 없으면 임계값을 지어내지 않고 프로파일을 만들지 않는다.
+
 깊이 등급의 의미는 Wiki가 정의하고, 어느 등급이 기대되는지는 이 산출물이 정의한다. 기대 깊이는 직무, 대상군, 기업군, 기간, 표본에 따라 달라지므로 개념 문서의 고정 속성으로 두지 않는다.
 
 ## 10. 검증
 
-통계 산출물의 검사 목록은 [지표 명세](metric-spec.md) 7장에 있다. 검사 절차와 판정 형식은 [에이전트 설계](agent-design.md) 9장을 따른다.
+통계 산출물의 여섯 검사 목록은 [지표 명세](metric-spec.md) 7장에 있다. 검사 절차와 판정 형식은 [에이전트 설계](agent-design.md) 9장을 따른다.
 
 ## 11. 관련 문서
 

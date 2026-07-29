@@ -64,7 +64,16 @@ python scripts\build_demo_seed.py --check
 python scripts\load_demo_seed.py --dry-run
 ```
 
-### 4. 적재 (실행 폴더 `hub\agent`)
+### 4. 적재 전 점검 (실행 폴더 `hub\agent`)
+
+접속해서 읽기만 한다. 실 데이터와 부딪히는 기본키·유일 제약을 미리 찾고,
+채택으로 풀리는 것과 적재를 막는 충돌을 갈라 보여 준다.
+
+```powershell
+python scripts\load_demo_seed.py --preflight
+```
+
+### 5. 적재 (실행 폴더 `hub\agent`)
 
 접속 한 번, 거래 하나로 표마다 `COPY` 를 한 번씩 실행한다.
 접속 문자열은 `agent\.env` 의 `SUPABASE_DB_URL` 에서만 읽는다.
@@ -73,7 +82,7 @@ python scripts\load_demo_seed.py --dry-run
 python scripts\load_demo_seed.py
 ```
 
-### 5. 되돌리기 (실행 폴더 `hub\agent`)
+### 6. 되돌리기 (실행 폴더 `hub\agent`)
 
 `dataset_version = 'ds_demo_v1'` 이거나 `analysis_version LIKE 'an_demo_%'` 인 행만
 적재의 역순으로 지운다. 확인 문자열로 `ds_demo_v1` 을 그대로 입력해야 진행한다.

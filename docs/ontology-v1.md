@@ -22,7 +22,7 @@
 | `Capability` | `capabilities` | D3a |
 | `Technology` | `requirement_dimensions` 중 `dimension_kind = 'technology'` | D3a |
 | `Standard` | `standards` | D3a |
-| `ProofArtifact` | `checklist_items` 중 `kind = 'project'` | D5 이후 |
+| `ProofArtifact` | `checklist_items` 중 개념의 `kind = 'project'` | D5 이후 |
 | `Channel` | 고정 목록 `essay`·`portfolio`·`interview` | D5 이후 |
 | `LearningResource` | `study_tracks` | D5 이후 |
 | `Project` | `roadmap_items` | D5 이후 |
@@ -139,6 +139,7 @@
 | --- | --- |
 | 유형 등록 | `node_type`과 `edge_type`이 해당 층의 등록 목록에 있다 |
 | 연결 허용 | 출발·도착 노드 유형 조합이 `allowed_connections`에 있다 |
+| 자기 참조 | 출발과 도착이 같은 노드인 엣지가 `PREREQUISITE_OF`뿐이다 |
 | 근거 존재 | `required_evidence_by_edge_type`이 요구하는 `evidence_id`가 채워져 있다 |
 | 근거 실재 | `evidence_id`가 가리키는 행이 존재한다 |
 | 버전 일치 | 분류체계 의존 엣지가 실행 컨텍스트와 같은 `taxonomy_version_id`를 갖는다 |
@@ -158,7 +159,24 @@
 
 온톨로지 버전 발행은 해당 직무의 그래프 재구축을 요구한다. 재실행 범위는 [아키텍처](architecture.md) 7.1에 있다.
 
-## 9. 관련 문서
+## 9. 식별자
+
+노드와 엣지의 식별자는 재료를 이어 붙여 해시한 값이다. 재실행이 같은 원소에 같은 값을 주므로, 저장 전에 이미 있는 식별자와 대조하는 것만으로 중복을 막고 순서가 흔들려도 결과가 같다. 접두사와 자릿수는 [ERD](erd.md) 2.2가 소유한다.
+
+| 원소 | 재료 |
+| --- | --- |
+| 노드 | `graph_layer`, `node_type`, `ref_table`, `ref_id`, `ontology_version` |
+| 엣지 | `graph_layer`, `edge_type`, 출발 노드, 도착 노드, `ontology_version`, `taxonomy_version_id` |
+
+노드의 재료는 `knowledge_nodes`의 유일 제약 다섯 컬럼과 같다. 유일 제약이 막는 것과 식별자가 같다고 보는 것이 어긋나면 재실행이 제약 위반으로 끝난다.
+
+엣지에는 유일 제약이 없으므로 식별자가 엣지의 정체성을 정한다. 분류체계에 의존하지 않는 엣지는 `taxonomy_version_id` 자리가 비고, 의존 엣지는 분류체계 버전이 바뀌면 다른 엣지가 된다.
+
+`evidence_id`는 재료에 넣지 않는다. 한 공고에서 같은 차원을 가리키는 할당이 여럿이어도 정규화된 요구는 하나이며, 근거를 재료에 넣으면 같은 의미 관계가 엣지 여럿으로 갈린다. 저장하는 `evidence_id`는 정렬된 원천 행의 첫 값이다.
+
+분석 버전은 어느 재료에도 넣지 않는다. 노드의 유일 제약이 분석 버전을 포함하지 않아 노드가 분석 버전을 넘어 재사용되므로, 엣지만 분석 버전마다 갈리면 두 표의 정체성 기준이 어긋난다. 재구축의 기준은 분류체계 버전과 온톨로지 버전이다([ADR 0007](adr/0007-knowledge-layer-after-aggregation.md)).
+
+## 10. 관련 문서
 
 - [지식·저장 구조](knowledge-schema.md)
 - [ERD](erd.md)

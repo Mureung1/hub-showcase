@@ -6,14 +6,16 @@ CareerSignal은 여러 채용공고의 반복 요구를 통계로 정리하고, 
 
 ## 데모
 
-- [정적 프로토타입](https://careersignal-prototype.vercel.app/)
-- 프로토타입은 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치이며 실제 수집·분석 결과가 아닙니다.
+- [서비스](https://careersignal-iota.vercel.app): React 화면은 Vercel, Express API는 Render, 저장소는 Supabase에 둡니다.
+- [정적 프로토타입](https://careersignal-prototype.vercel.app/): 화면 구성만 담은 HTML/CSS 배포입니다.
+- 목표 직무는 아홉 종이며, 백엔드 직무는 실제 채용공고 44건으로 파이프라인을 검증한 범위입니다. 나머지 여덟 직무의 분석 데이터는 `dataset_version = ds_demo_v1`로 구분한 생성 데이터입니다.
 
 ## 핵심 구조
 
 - 화면: 직무 선택, 통계 분석, 채용공고 해석, 합격 전략, 준비 로드맵
-- 분석 범위: 직무 전체, 기업군, 개별 공고
+- 분석 범위: 직무 전체, 기업군, 개별 공고, 사용자가 직접 입력한 공고
 - 실행 계층: 오케스트레이터, 여섯 도메인 에이전트, 결정적 helper 파이프라인
+- 오케스트레이션: `careersignal.orchestration`이 실행 순서·상태 공유·재시도를 직접 정의([ADR 0016](docs/adr/0016-no-orchestration-framework.md))
 - 실행 방식: 데이터 갱신 시 에이전트가 분석 결과를 생성하고 검증을 통과한 버전만 활성화
 - 요구 분류: 직무별 요구 차원을 자료에서 발견하고 검증·승격한 뒤 결정적으로 집계
 - 일반 조회: React가 Express를 통해 활성 분석 버전을 조회
@@ -29,22 +31,29 @@ CareerSignal은 여러 채용공고의 반복 요구를 통계로 정리하고, 
 hub/
   prototype/       HTML/CSS 정적 프로토타입
   project-intro/   프로젝트 소개용 독립 React 앱
-  product/         실제 서비스 React 앱
+  product/         실제 서비스 React 앱(다섯 화면과 공고 직접 분석 패널)
   server/          product 전용 Express API
-  agent/           FastAPI·LangGraph 에이전트 서비스
+  agent/           Python·FastAPI 에이전트 서비스와 데이터베이스 마이그레이션
   docs/            기획·아키텍처·데이터·에이전트·디자인 문서
   showcase/        챌린지 쇼케이스 메타데이터
 ```
+
+`agent/src/careersignal/`는 API·계약·도메인·오케스트레이션·도메인 에이전트 여섯 종·파이프라인·검색·검증·분류체계·그래프·Wiki·지표·저장소·모델 제공자·평가·계측으로 나뉩니다. 내부 구조와 경계는 [AGENTS.md](AGENTS.md)에 있습니다.
 
 각 디렉터리는 독립 실행 환경이며 코드와 `node_modules`를 공유하지 않습니다.
 
 ## 기술 스택
 
 - Frontend: React, Vite
-- Backend: Express
-- Agent: Python, FastAPI, LangChain, LangGraph
+- Backend: Express, Supabase JS 클라이언트
+- Agent: Python, FastAPI, Uvicorn, Pydantic, SQLAlchemy, Alembic, httpx
 - Database: Supabase Postgres, pgvector
-- LLM: OpenAI API(생성·임베딩·웹 검색), 공개 영상 보강용 Gemini API, 평가 교차검증용 NVIDIA Build API
+- LLM: OpenAI API(생성·임베딩), 교차 모델 검사용 NVIDIA Build API
+- 배포: Vercel(React), Render(Express), Supabase(저장소)
+
+FastAPI 서비스 정의는 `server/render.yaml`에 있습니다. 화면 조회와 체크 상태 재조합, 캐시가
+적중하는 공고 입력은 Express만으로 끝나며, FastAPI는 캐시가 없는 공고의 온디맨드 분석과
+`/api/extract`에 쓰입니다. 경로별 의존은 [server/README.md](server/README.md)에 있습니다.
 
 ## 로컬 실행
 
@@ -94,14 +103,14 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Express의 통계 집계 규칙은 vitest로 검증합니다.
+Express의 조회·정규화·재조합 규칙은 vitest로 검증합니다. 시험은 데이터베이스에 접속하지 않습니다.
 
 ```powershell
 cd server
 npm.cmd test
 ```
 
-Express의 통계 집계는 `server/data/backend-postings.sample.json`을 Supabase에 적재한 뒤 `/api/stats?job=backend`에서 확인합니다.
+`GET /api/stats?job=backend`는 활성 분석 버전에 저장된 `statistics` payload를 돌려줍니다. 화면 조회 경로가 저장된 산출물을 읽는 근거는 [ADR 0013](docs/adr/0013-serving-stored-analysis-outputs.md)에 있습니다.
 
 ## 문서
 
@@ -110,17 +119,28 @@ Express의 통계 집계는 `server/data/backend-postings.sample.json`을 Supaba
 - [기획서](docs/plan.md): 문제·사용자·핵심 기능·화면 흐름
 - [아키텍처](docs/architecture.md): 실행 계층·구성요소 경계·버전 활성화·계측
 - [에이전트 설계](docs/agent-design.md): 공통 루프·도구·검증·신뢰도·종료
-- [지식·저장 구조](docs/knowledge-schema.md): 데이터 계층·테이블·지식 그래프·Wiki·권한
-- [통계 모델](docs/statistics-model.md): 요구 차원 발견과 승격·지표 정의·표본 정책
+- [지식·저장 구조](docs/knowledge-schema.md): 데이터 계층·테이블·지식 그래프·Wiki
+- [ERD](docs/erd.md): 컬럼 타입·기본키·외래키·인덱스·제약
+- [온톨로지](docs/ontology-v1.md): 그래프 노드·엣지 유형·엣지별 필수 근거
+- [통계 모델](docs/statistics-model.md): 요구 차원 발견과 승격·화면 블록 연결
+- [지표 명세](docs/metric-spec.md): 지표 수식·결측 처리·불확실성·정책 버전
+- [권한 매트릭스](docs/permission-matrix.md): 구성요소별 읽기·쓰기 범위와 강제 수단
 - [데이터 전략](docs/data-strategy.md): 자료 계층·출처·허용 용도·평가 세트
 - [디자인 컨셉](docs/design-concept.md): 화면 구조와 정보 위계
 - [디자인 토큰](docs/design-tokens.md): 색상·레이아웃·컴포넌트 규칙
 - [개발 백로그](docs/backlog.md): 개발 순서·이니셔티브·완료 조건
 - [검증 체크리스트](docs/checklist.md): 활성화·배포·최종 결과물 수용 기준
 - [결정 기록](docs/adr/): 주요 설계 결정의 맥락과 근거
+- [평가 세트](docs/eval/): 파일 목록·정답 구조·루브릭 정책
 - [GitHub Projects](https://github.com/users/joo-hyun/projects/2): Issue 실행 상태와 일정
 - [Wiki](https://github.com/joo-hyun/hub/wiki)
 
+구성요소별 문서는 각 디렉터리에 있습니다.
+
+- [server/README.md](server/README.md): `/api/*` 경로별 FastAPI 의존, 재조합, 배포·교차 출처 설정
+- [product/README.md](product/README.md): 화면 파일 구성과 API 주소·배포 설정
+- [agent/data/demo_seed/CONTRACT.md](agent/data/demo_seed/CONTRACT.md): 생성 데이터의 식별자·테이블·응답 형태 규약
+
 ## 개발 범위
 
-백엔드 직무는 최초 검증 범위입니다. 데이터·화면·에이전트 계약은 다른 디지털·기술 직무를 같은 구조로 추가할 수 있도록 직무 식별자를 입력으로 사용합니다. 세부 진행 상태와 3·4주차 범위는 [개발 백로그](docs/backlog.md)를 따릅니다.
+목표 직무는 아홉 종(backend, frontend, fullstack, mobile, data_engineer, ai_engineer, devops, security, game_client)입니다. 백엔드 직무는 실제 채용공고로 파이프라인을 검증한 범위이며, 데이터·화면·에이전트 계약은 직무 식별자를 입력으로 사용해 나머지 직무를 같은 구조로 다룹니다. 세부 진행 상태는 [개발 백로그](docs/backlog.md)를 따릅니다.

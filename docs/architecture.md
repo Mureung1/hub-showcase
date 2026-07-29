@@ -13,6 +13,8 @@
 | 전체 시스템 구조 | 이 문서 3장 |
 | 분석 실행 순서 | 이 문서 7장 |
 | 분석 버전 생성과 활성화 | 이 문서 8장 |
+| 사용자 요청 흐름 | 이 문서 9장 |
+| 사용자 공고 직접 입력 | 이 문서 11장 |
 | 데이터 계층과 계보 | [지식·저장 구조](knowledge-schema.md) 2장 |
 | 분류체계 발견과 승격 | [통계 모델](statistics-model.md) 3장 |
 | 에이전트 공통 루프 | [에이전트 설계](agent-design.md) 5장 |
@@ -161,6 +163,7 @@ flowchart TB
 | React UI | 범위 선택, 분석 결과와 체크 상태 표시 | 미사용 | 사용자 요청 | `product/` |
 | Express API | 활성 결과 조회, 응답 조립, 체크 상태 반영, 오류 처리 | A0 | 사용자 요청 | `server/` |
 | 준비 현황·로드맵 조합기 | 체크 상태에 따른 집계와 순서 재조합 | A0 | 사용자 요청 | `server/` |
+| 사용자 공고 입력 처리 | 길이·빈도 제한, 원문 정규화와 해시, `user_postings`·`user_posting_analyses` 캐시 조회 | A0 | 사용자 요청 | `server/` |
 | 분석 오케스트레이터 | 영향 범위 계산, 실행 순서 제어, 조사 요청 정책 검사, 버전 활성화 | A0 | 데이터 변경 | `agent/` |
 | 데이터 수집 에이전트 | 자료 발견·수집·평가, 원본과 출처 평가 저장 | A3 | 데이터 변경, 조사 요청 | `agent/` |
 | 지식 구축 에이전트 | 지식 그래프와 Wiki 구축 | A2 | 데이터 변경 | `agent/` |
@@ -173,7 +176,7 @@ flowchart TB
 | 집계 파이프라인 | 지표 실행, 표본 판정, 불확실성 계산, 깊이 프로파일 산출 | A0 | 할당 직후 | `agent/` |
 | 계보 기록 파이프라인 | Provenance 엣지와 사후 semantic 엣지 기록, 경로 캐시 갱신 | A0 | 각 산출물 저장 직후 | `agent/` |
 | 검증 파이프라인 | 규칙·의미 검증, 판정 기록 | A0 + A1 | 각 산출물 직후 | `agent/` |
-| 서빙 파이프라인 | 활성 버전 조회 계약 | A0 | 사용자 요청 | `agent/`, `server/` |
+| 서빙 파이프라인 | 활성 분석 버전 조회, 저장된 payload 반환, 범위 폴백 | A0 | 사용자 요청 | `agent/`, `server/` |
 
 ## 5. 블랙보드와 실행 봉투
 
@@ -375,7 +378,14 @@ sequenceDiagram
     API-->>UI: 조정된 로드맵·학습 전략
 ```
 
-화면 조회는 에이전트를 호출하지 않는다.
+화면 조회는 에이전트를 호출하지 않는다. 조회는 두 걸음이다.
+
+1. `active_analysis_versions`에서 직무의 활성 분석 버전을 찾는다.
+2. `analysis_outputs`를 `(analysis_version, scope_level, scope_id, output_type)`으로 읽고 `payload`를 그대로 반환한다.
+
+`analysis_outputs` 한 행이 화면 한 벌이며 조회 계층은 payload를 만들지 않는다. 직무별 라벨은 payload 안에 있다.
+
+공고 범위의 `strategy`와 `roadmap`은 저장하지 않으므로, 그 공고가 속한 기업군, 다시 직무 전체 순으로 한 칸씩 넓히고 payload의 `scope`를 실제로 읽은 범위로 바꾼다. 활성 버전에 요청한 산출물이 없으면 빈 값 대신 `NO_ACTIVE_ANALYSIS` 오류를 낸다. 결정 근거는 [ADR 0013](adr/0013-serving-stored-analysis-outputs.md)에 있다.
 
 ### 9.1 체크 상태 영향 범위
 
@@ -388,11 +398,11 @@ sequenceDiagram
 
 체크 상태는 `(job_role_id, scope_level, scope_id, checklist_concept_id)` 단위로 구분한다. 개념 식별자에 연결하므로 분석 버전이 바뀌어 문구가 달라져도 체크가 유지된다.
 
-비로그인 구간에서 체크 상태는 브라우저에 저장하고 서버는 저장하지 않는다. 로드맵 조합을 요청할 때 클라이언트가 체크 맵을 요청 본문에 실어 보낸다. FastAPI의 `RoadmapRequest.checks`가 이 계약이며 키는 `checklist_concept_id`다. 로그인과 사용자별 영구 저장은 같은 키 구조를 사용자별 저장소에 적용한다.
+비로그인 구간에서 체크 상태는 브라우저에 저장하고 서버는 저장하지 않는다. 로드맵 조합을 요청할 때 클라이언트가 체크 맵을 요청 본문의 `checks`에 실어 보낸다. 키는 `checklist_concept_id`이고 값은 보유 여부다. 로그인과 사용자별 영구 저장은 같은 키 구조를 사용자별 저장소에 적용한다.
 
 ## 10. API와 데이터 계약
 
-프론트는 Express만 호출한다. FastAPI 엔드포인트는 배치 실행과 사용자 공고 직접 입력에 사용한다.
+브라우저는 Express만 호출한다. Express는 활성 분석 버전을 저장소에서 직접 조회하고, 요구 추출과 사용자 공고 개별 분석에서만 FastAPI를 내부 HTTP로 호출한다.
 
 ### 10.1 공통 분석 식별자
 
@@ -415,18 +425,44 @@ generated_at
 
 ### 10.2 화면 API
 
-| API | 책임 |
+| 메서드·경로 | 책임 |
 | --- | --- |
-| 통계 조회 | 활성 버전의 범위별 지표 반환 |
-| 채용공고 해석 조회 | 활성 버전의 기준선·편차·회사 맥락 신호 반환 |
-| 합격 전략 조회 | 체크리스트와 활용처별 전략 반환 |
-| 로드맵 조회·조합 | 기본 로드맵을 읽고 체크 상태를 적용한 순서 반환 |
+| GET `/api/health` | 상태 확인 |
+| GET `/api/jobs` | 직무 목록과 직무별 활성 분석 버전 보유 여부 |
+| GET `/api/stats?job=` | 활성 버전의 직무 전체 `statistics` payload |
+| GET `/api/postings?job=` | 개별 해석이 있는 공고 목록과 각 공고의 기업군 |
+| POST `/api/reverse` | 범위별 `interpretation` payload |
+| POST `/api/conditions` | 범위별 `strategy` payload |
+| POST `/api/roadmap` | 범위별 `roadmap` payload. 체크 맵이 있으면 순서와 우선순위를 재조합한다 |
+| POST `/api/postings/analyze` | 사용자 공고 한 건의 개별 분석. 흐름은 11장 |
+| POST `/api/extract` | 원문의 요구 표현 추출. FastAPI로 중계한다 |
+
+POST 본문의 범위는 `job`과 `scope`(`level`·`cluster_tag`·`posting_id`)다. 오류는 `error.code`와 `error.message`로 낸다. 경로별 FastAPI 의존과 배포 설정은 `server/README.md`가 소유한다.
+
+### 10.3 에이전트 API
+
+| 메서드·경로 | 책임 |
+| --- | --- |
+| GET `/health` | 상태 확인 |
+| POST `/reverse` | 활성 버전의 `interpretation` payload |
+| POST `/conditions` | 활성 버전의 `strategy` payload |
+| POST `/roadmap` | 저장된 `roadmap` payload에 체크 상태를 적용한 순서 |
+| POST `/extract` | 원문의 요구 표현 추출 |
+| POST `/postings/analyze` | 사용자 공고 한 건의 개별 분석 |
+
+Express가 부르는 것은 `/extract`와 `/postings/analyze` 둘이다. 브라우저는 이 주소를 부르지 않는다.
 
 수직 슬라이스의 JSON 키는 화면 계약으로 유지하고, 범위 식별자와 버전 메타데이터를 추가한다. 에이전트는 이전 HTTP 응답 전체를 전달받지 않고 공통 식별자로 저장소를 조회한다.
 
 ## 11. 사용자 공고 직접 입력
 
-사용자가 입력한 공고는 통계와 직무 기준선에 포함하지 않는다. Express는 입력 길이와 요청 빈도를 제한하고 개인정보 패턴을 제거한 뒤 원문 해시와 버전 조합으로 동일 분석 캐시를 조회한다. 캐시가 없으면 FastAPI의 온디맨드 분석을 호출한다.
+사용자가 입력한 공고는 통계와 직무 기준선에 포함하지 않는다.
+
+Express는 입력 길이와 요청 빈도를 제한하고 원문을 정규화한다. 정규화는 개인정보 패턴 제거를 포함하며, 규칙 본문은 [데모 시드 계약](../agent/data/demo_seed/CONTRACT.md) 6.2가 소유한다. Express와 FastAPI가 같은 규칙을 쓰므로 같은 원문이 양쪽에서 같은 SHA-256을 낸다.
+
+캐시 조회는 Express가 저장소에서 직접 수행한다. 정규화한 원문의 해시로 `user_postings`를 찾고, 그 공고의 `user_posting_analyses` 가운데 활성 분석 버전과 맞는 세 종을 고른다. 세 종이 갖춰지면 그것을 반환하고, 갖춰지지 않으면 FastAPI의 온디맨드 분석을 호출한다.
+
+FastAPI는 받은 정규화 결과를 다시 계산해 요청의 해시와 대조한다. 해시는 캐시의 열쇠이므로 요청이 보낸 값을 그대로 열쇠로 쓰지 않는다.
 
 ```mermaid
 sequenceDiagram
@@ -438,18 +474,21 @@ sequenceDiagram
 
     User->>UI: 공고 원문 입력
     UI->>API: 개별 분석 요청
-    API->>API: 길이·빈도 제한, 개인정보 패턴 제거
-    API->>DB: 원문 해시·버전으로 캐시 조회
-    alt 캐시 있음
-        DB-->>API: 저장된 개별 분석 결과
-    else 캐시 없음
-        API->>Agent: 추출·해석·전략·로드맵 실행
+    API->>API: 길이·빈도 제한, 원문 정규화와 해시
+    API->>DB: user_postings·user_posting_analyses 조회
+    alt 캐시 적중
+        DB-->>API: 활성 버전의 개별 분석 결과 세 종
+    else 캐시 미적중
+        API->>Agent: 정규화 원문·해시·직무 전달
+        Agent->>Agent: 정규화와 해시 재계산 후 대조
         Agent->>DB: 활성 버전의 통계와 지식 자산 조회
         Agent->>DB: 개별 분석 결과 저장
         Agent-->>API: 개별 분석 결과
     end
     API-->>UI: 해석·전략·로드맵
 ```
+
+온디맨드 체인을 열 수 없으면 그 직무의 활성 버전 직무 전체 결과를 함께 실어 보낸다. 화면은 개별 해석이 아니라 직무 일반 결과를 보고 있음을 표시한다.
 
 ## 12. 저장소
 
@@ -459,7 +498,7 @@ sequenceDiagram
 
 ## 13. 접근 권한
 
-구성요소별 읽기·쓰기 범위와 강제 수단은 [지식·저장 구조](knowledge-schema.md) 13장에 있다. 설계 선언, repository 경계, 데이터베이스 role, 통합 테스트의 네 층으로 강제한다.
+구성요소별 읽기·쓰기 범위와 강제 수단은 [권한 매트릭스](permission-matrix.md)에 있다.
 
 ## 14. 검증과 계측
 
@@ -483,15 +522,36 @@ sequenceDiagram
 | `claim_coverage` | 허용된 근거가 연결된 주장의 비율 |
 | `marginal_utility` | 특정 근거나 검색 전략을 제거했을 때의 결과 변화 |
 
-앞의 세 지표는 계측 테이블의 조인으로 계산한다. `marginal_utility`는 평가 세트 표본에서 제거 실험으로 측정한다.
+검색 실행과 질의, 그리고 검색이 만난 후보 전부를 `retrieval_runs`·`retrieval_queries`·`retrieval_candidates`에 기록한다. 고른 근거 묶음은 `evidence_sets`·`evidence_set_members`에, 근거의 사용 목적은 `evidence_usages`에 기록한다. 이 순서가 외래키의 순서다.
 
-검색 결과는 최종 인용 외에도 반례 검사, 용어 정규화, 다음 검색 계획, 부재 확인에 기여한다. 인용 여부만으로 검색의 가치를 판정하지 않는다.
+앞의 세 지표는 이 테이블들의 조인으로 계산한다. 세는 단위는 지표마다 다르다. `citation_utilization`은 후보 단위, `citation_precision`은 `(후보, 주장)` 쌍 단위, `claim_coverage`는 주장 단위다. `claim_coverage`의 허용 판정은 근거의 자료 계층과 용도로 하며, 근거 집합을 고를 때 쓴 계층 표를 그대로 쓴다.
+
+지표는 비율과 함께 분모를 보고한다. 비율만 남기면 표본이 작아 흔들린 값을 알아볼 수 없다. 분모가 0이면 값을 비운다. 0으로 두면 아직 재지 않은 것과 재었더니 0인 것을 구분할 수 없다.
+
+`marginal_utility`는 평가 세트 표본에서 제거 실험으로 측정한다. 근거 하나를 뺀 실행을 다시 돌려야 결과 변화가 나오므로 계측 테이블의 조인으로는 계산하지 않는다.
+
+검색 결과는 최종 인용 외에도 반례 검사, 용어 정규화, 다음 검색 계획, 부재 확인에 기여한다. 인용 여부만으로 검색의 가치를 판정하지 않는다. `unused`도 기록한다. 쓰지 않았다는 사실이 없으면 검색이 만났으나 쓰이지 않은 후보와 아직 판정하지 않은 후보를 구분할 수 없다.
 
 ### 14.3 실행 기록
 
 각 실행은 입력 데이터 버전, 분류체계 버전, 모델·프롬프트·검색 정책·지표 정책 버전, 도구 호출, 검색 출처, 토큰과 비용, 재시도, 종료 사유, 검증 결과를 기록한다.
 
-## 15. 관련 문서
+## 15. 배포
+
+| 구성요소 | 실행 위치 | 정의 |
+| --- | --- | --- |
+| React 화면 | Vercel | `product/`를 Root Directory로 쓰는 Vercel 프로젝트 |
+| Express API | Render | `server/render.yaml`의 `careersignal-server` |
+| FastAPI 에이전트 서비스 | Render | `server/render.yaml`의 `careersignal-agent` |
+| 저장소 | Supabase | Postgres + pgvector |
+
+Blueprint 하나가 Express와 FastAPI 두 서비스를 정의한다. 브라우저가 부르는 주소는 Express뿐이며, FastAPI는 요구 추출과 사용자 공고 온디맨드 분석 경로에서 Express가 내부 HTTP로 호출한다.
+
+키는 서비스별로 분리한다. Express는 저장소 접속과 에이전트 주소를, FastAPI는 저장소 접속과 생성 모델 키를 갖는다. Express는 생성 모델 키를 보유하지 않는다.
+
+배포 설정의 기준 문서는 `server/README.md`와 `product/README.md`다.
+
+## 16. 관련 문서
 
 - [기획서](plan.md)
 - [지식·저장 구조](knowledge-schema.md)

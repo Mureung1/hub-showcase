@@ -70,13 +70,13 @@ Postgres의 기본 텍스트 순위 함수는 문서 길이 정규화와 용어 
 
 ```mermaid
 flowchart LR
-    C["1 Objective Contract<br/>필수 근거 슬롯 선언"] --> P["2 Plan<br/>하위 질문 분해"]
+    C{{"1 Objective Contract<br/>필수 근거 슬롯 선언"}} --> P{{"2 Plan<br/>하위 질문 분해"}}
     P --> R["3 Router<br/>전략 선택"]
     R --> G["4 Candidate Retrieval"]
-    G --> F["5 Fusion Rerank"]
-    F --> E["6 Evidence Set Optimization"]
+    G --> F{{"5 Fusion Rerank"}}
+    F --> E{{"6 Evidence Set Optimization"}}
     E --> M["7 Grounded Context"]
-    M --> D["8 Structured Draft"]
+    M --> D{{"8 Structured Draft"}}
     D --> V{"9 Verification"}
     V -->|"수리 가능"| X["10 Repair Order"]
     X --> R
@@ -84,6 +84,14 @@ flowchart LR
     V -->|"통과"| S[("버전별 저장")]
     V -->|"충족 불가"| Z(["실패 기록·기존 활성 버전 유지"])
 ```
+
+| 도형 | 의미 |
+| --- | --- |
+| 육각형 | 판단하거나 생성 모델을 쓰는 단계 |
+| 사각형 | 결정적 단계 |
+| 마름모 | 분기와 판정 |
+| 원통 | 저장소 |
+| 스타디움 | 종료 상태 |
 
 | 단계 | 자율성 |
 | --- | --- |
@@ -100,24 +108,34 @@ flowchart LR
 
 ### 5.1 Objective Contract
 
-검색 이전에 완료 조건을 선언한다.
+검색 이전에 완료 조건을 선언한다. `ObjectiveContract`가 한 실행의 종료 조건을 정하는 값이며, 슬롯 하나는 `EvidenceSlot`이다.
 
 ```json
 {
-  "objective_id": "obj_...",
-  "objective": "핀테크 기업군의 트랜잭션 편차 해석",
+  "objective_id": "obj_intp_backend_cluster_fintech",
+  "objective": "backend cluster 범위의 기준선과 편차 해석",
   "required_evidence_slots": [
-    { "slot": "overall_baseline", "type": "statistic_fact", "minimum": 1 },
-    { "slot": "cluster_support", "type": "posting_evidence", "minimum_independent_companies": 3 },
-    { "slot": "official_context", "source_tiers": ["A", "B"], "minimum": 1, "required": false }
+    { "slot": "overall_baseline", "support_type": "statistic_fact", "minimum": 1 },
+    { "slot": "cluster_support", "support_type": "chunk", "minimum": 1,
+      "minimum_independent_companies": 2, "allowed_tiers": ["A"] },
+    { "slot": "official_context", "support_type": "wiki_revision", "minimum": 1,
+      "allowed_tiers": ["B", "C"], "required": false }
   ],
-  "forbidden_source_uses": ["external_expert:company_requirement"],
+  "forbidden_source_uses": [
+    ["E", "interpretation_context"],
+    ["D", "statistics"]
+  ],
+  "allowed_tools": ["statistics_facts", "chunk_search", "graph_paths"],
   "max_retrieval_rounds": 2,
   "max_repair_rounds": 2
 }
 ```
 
-필수 슬롯이 모두 채워지면 조사를 종료한다. 선택 슬롯이 비어 있으면 주장은 성립하되 신뢰도가 낮아진다.
+`support_type`은 `analysis_claim_evidence.support_type`의 값이고, `allowed_tiers`는 자료 계층 부호다. `forbidden_source_uses`는 자료 계층과 허용 용도의 쌍이다. 계층 하나를 통째로 막지 않고 그 계층을 어떤 용도로 쓰는 것을 막는지 적는다. 계층 부호와 허용 용도의 정의는 [데이터 전략](data-strategy.md)에 있다.
+
+필수 슬롯이 모두 채워지면 조사를 종료한다. 계약은 채워진 슬롯 수를 받아 미충족 필수 슬롯의 이름을 돌려주고, 그 목록이 비면 실행이 완료된다. 미충족 슬롯이 남으면 판정은 `insufficient_evidence`다. 선택 슬롯이 비어 있으면 주장은 성립하되 신뢰도가 낮아진다.
+
+슬롯 구성은 범위에 따라 달라진다. 직무 전체는 기준선 통계만으로 성립하고, 기업군과 공고 범위는 그 위에 공고 근거를 더 요구한다. 기업군 일반화는 독립 회사 수의 최솟값을 함께 갖는다.
 
 ### 5.2 Plan
 
@@ -145,32 +163,24 @@ flowchart LR
 
 ### 5.4 근거 사용 기록
 
-검색 결과의 사용 목적을 `evidence_usages.usage_type`에 기록한다.
-
-```text
-supports_claim
-contradicts_claim
-verification_only
-normalization
-planning
-coverage_check
-unused
-```
-
-인용되지 않은 자료도 반례 검사, 용어 정규화, 다음 검색 계획, 부재 확인에 기여한다.
+에이전트는 검색 결과를 인용했는지와 무관하게 반복마다 그 결과의 사용 목적을 `evidence_usages.usage_type`에 기록한다. 값의 목록과 계측에서의 쓰임은 [아키텍처](architecture.md) 14.2에 있다.
 
 ## 6. 에이전트 비교
 
-| 에이전트 | 자율성 | 주 입력 | 주 출력 | 필수 근거 슬롯 | 종료 조건 |
-| --- | --- | --- | --- | --- | --- |
-| 데이터 수집 | A3 | 조사 요청, 출처 정책, 기존 해시 | 스냅샷·관찰·평가 | 요청된 근거 유형 | 요청 슬롯 충족, 허용 출처 전수 조사, 탐색 경계 소진, 명시적 실패 |
-| 지식 구축 | A2 | 청크, 할당, 통계 우선순위 | 그래프 노드·엣지, Wiki | Wiki 필수 필드별 근거 | 필수 필드 근거 충족 |
-| 통계 분석 | A2 | 청크, 활성 분류체계, 평가 세트 | mention, 후보, 승격 결정, 할당 | 후보별 독립 공고·회사 근거 | 승격 심사 완료, 할당 검증 통과 |
-| 채용공고 해석 | A2 | 지표, 청크, 그래프, 회사 공식 자료 | 기준선, 편차, 회사 맥락 신호, 범위 확인 | 기준선 통계, 기업군 근거, 공식 맥락 | 필수 슬롯 충족, 주장 근거 연결률 통과 |
-| 합격 전략 | A2 | 해석 주장, 지표, Wiki, 전략 자료 | 체크리스트 개념·항목, 활용처 전략 | 요구 연결, 증명 방법 근거 | 항목 연결 완전성 통과 |
-| 준비 로드맵 | A2 | 전략 결과, 선수 관계, 깊이 프로파일, 학습 자료 | 로드맵 항목, 학습 트랙, 충족 연결 | 선수 관계, 학습 자료 근거 | 순환 없음, 미충족 항목 없음 |
+| 에이전트 | 자율성 | 주 입력 | 주 출력 | 도구 | 필수 근거 슬롯 | 종료 조건 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 데이터 수집 | A3 | 조사 요청, 출처 정책, 기존 해시 | `source_snapshots`, `source_observations`, `source_assessments` | `fetch_source` | 요청된 근거 유형 | 요청 슬롯 충족, 허용 출처 전수 조사, 탐색 경계 소진, 명시적 실패 |
+| 지식 구축 | A2 | 역량, 차원 연결, 지표 우선순위, 깊이 프로파일, 필드별 근거 청크 | `knowledge_nodes`, `knowledge_edges`, `wiki_pages`, `wiki_revisions`, `wiki_evidence` | `search_sql`, `search_vector`, `traverse_graph` | Wiki 필수 필드별 근거 | 필수 필드 근거 충족 |
+| 통계 분석 | A2 | 청크, 활성 분류체계, 평가 세트 | `requirement_mentions`, `requirement_candidates`, 승격 결정, `posting_requirement_assignments` | `search_sql`, `search_keyword`, `search_vector` | 후보별 독립 공고·회사 근거 | 승격 심사 완료, 할당 검증 통과 |
+| 채용공고 해석 | A2 | `statistics_facts`, 공고 근거 청크, 그래프 경로, 회사 공식 자료 | `analysis_outputs(interpretation)`, `analysis_claims`, `analysis_claim_evidence`, `coverage_assertions` | `search_sql`, `search_keyword`, `search_vector`, `traverse_graph` | `overall_baseline`, `cluster_support`, `official_context`(선택) | 필수 슬롯 충족, 주장 근거 연결률 통과 |
+| 합격 전략 | A2 | 해석 산출물, 지표, Wiki, 전략 자료 | `checklist_concepts`, `checklist_items`, `analysis_outputs(strategy)` | `search_sql`, `traverse_graph` | 요구 연결, 증명 방법 근거 | 항목 연결 완전성 통과 |
+| 준비 로드맵 | A2 | 체크리스트 개념, 역량과 선수 관계, 깊이 프로파일 | `roadmap_items`, `roadmap_item_fills`, `study_tracks`, `analysis_outputs(roadmap)` | `search_sql`, `traverse_graph` | 선수 관계, 학습 자료 근거 | 순환 없음, 미충족 항목 없음 |
 
 통계 분석 에이전트는 차원 발견과 할당까지 담당한다. 지표 집계는 A0 집계 파이프라인이 수행하며 에이전트가 수치를 저장하지 않는다. 발견과 승격 절차는 [통계 모델](statistics-model.md)에 있다.
+
+각 에이전트는 저장소를 `Protocol`로만 안다. 실행 골격은 저장소 구현을 import하지 않고, 쓰기는 주 출력 열의 테이블로 한정된다. 체크리스트는 합격 전략이 소유하므로 준비 로드맵은 읽기만 한다.
+
+종료 사유는 실행마다 하나로 접어 `agent_runs.stop_reason`에 기록한다. 판정 순서는 예산 소진, 명시적 실패, 탐색 경계 소진, 슬롯 충족, 신규 근거 없음이다. 예산이 끝나 대상을 남긴 실행과 검사에 걸린 항목이 있는 실행은 완결이 아니므로 앞의 둘이 먼저다.
 
 ## 7. 에이전트별 산출 규칙
 
@@ -248,7 +258,7 @@ flowchart LR
     C3 --> C4["4 Numerical Consistency · A0"]
     C4 --> C5{{"5 Claim Evidence Entailment · A1"}}
     C5 --> C6{{"6 Cross model Sample Audit · A1"}}
-    C6 --> C7["7 Contradiction Detector"]
+    C6 --> C7{{"7 Contradiction Detector · A0 + A1"}}
     C7 --> C8["8 Typed Verdict · A0"]
     C8 --> R[("검사별 판정 기록")]
     R --> D{"차단 판정 존재"}
@@ -256,7 +266,14 @@ flowchart LR
     D -->|"없음"| P(["공개 후보"])
 ```
 
-육각형은 생성 모델을 사용하는 검사다. 나머지는 규칙으로 판정한다.
+| 도형 | 의미 |
+| --- | --- |
+| 평행사변형 | 검사 대상으로 들어오는 산출물 |
+| 육각형 | 생성 모델을 쓰는 검사 |
+| 사각형 | 규칙으로 판정하는 단계 |
+| 마름모 | 분기와 판정 |
+| 원통 | 저장소 |
+| 스타디움 | 종료 상태 |
 
 | 검사 | 내용 | 자율성 |
 | --- | --- | --- |
@@ -269,7 +286,21 @@ flowchart LR
 | 7 Contradiction Detector | 상충 근거와 부재 확인 | A0 + A1 |
 | 8 Typed Verdict | 판정 집계와 상태 전이 | A0 |
 
-검사 5와 6은 생성 모델을 사용한다. 검사 6은 전건이 아니라 위험 기반 표본에 적용한다.
+검사 5·6·7은 생성 모델을 판정자로 받는다. 검사 7은 상충 근거를 규칙으로 보고 부재 확인만 판정자에 맡기므로 A0과 A1이 함께 있다. 검사 6은 전건이 아니라 위험 기반 표본에 적용한다.
+
+검사마다 적용 대상 타입이 다르다.
+
+| 검사 | 대상 타입 |
+| --- | --- |
+| 1 Schema | `analysis_claim` |
+| 2 Source policy | `analysis_claim`, `wiki_revision` |
+| 3 Citation span | `analysis_claim`, `requirement_mention` |
+| 4 Numerical | `statistic_fact`, `statistics_aggregation` |
+| 5 Entailment | `analysis_claim` |
+| 6 Cross model | `analysis_claim` |
+| 7 Contradiction | `analysis_claim` |
+
+대상 타입이 아닌 산출물에는 검사가 `skip`과 `CHECK_NOT_APPLICABLE`로 기록된다. 검사 6은 대상 타입이라도 9.1의 위험 조건에 걸리지 않으면 같은 값으로 기록한다. 검사 5는 근거 연결이 없으면 함의를 따질 것이 없어 같은 값으로 기록한다. 어떤 검사가 적용되는지는 산출물의 성질만 보는 순수 함수가 실행 이전에 답한다. 계층화 판정을 검사 밖에 두므로 검사를 돌리지 않고도 그 판정을 검증할 수 있다.
 
 검사 1은 데이터베이스가 강제하는 컬럼 제약을 다시 확인하지 않는다. 컬럼 타입, `NOT NULL`, `CHECK`는 저장 시점에 이미 막히므로, 이 검사는 데이터베이스가 볼 수 없는 `jsonb` 필드의 내부 구조를 대상으로 한다. 구조의 정의는 각 필드의 기준 문서를 재사용하고 이 검사가 다시 선언하지 않는다. 선언되지 않은 키는 거부한다.
 
@@ -314,15 +345,17 @@ flowchart LR
 
 ```json
 {
-  "check": "source_policy",
+  "check": "source_policy_validator",
   "target_type": "analysis_claim",
   "target_id": "claim_42",
   "verdict": "fail",
   "severity": "blocking",
-  "reason_code": "EXTERNAL_TIER_USED_FOR_COMPANY_REQUIREMENT",
+  "reason_code": "POLICY_DISALLOWED_USE",
   "repair_action": "drop_claim"
 }
 ```
+
+`judge_model`과 `detail`을 함께 담는다. 생성 모델이 판정한 검사는 어느 모델이 판정했는지가 남고, 실패는 어긋난 값이 `detail`에 남는다.
 
 검사별 `verdict`는 세 값을 갖는다.
 
@@ -332,7 +365,7 @@ flowchart LR
 | `fail` | 검사를 실행하고 위반을 찾았다 |
 | `skip` | 검사를 실행하지 않았다 |
 
-`skip`은 실행하지 않은 사실을 남겨 누락된 검사와 적용 대상이 아닌 검사를 구분한다. 사유는 `reason_code`가 구분하며 9.3에 정의한다. 검사 6은 9.1의 위험 조건에 해당하지 않는 산출물에 `skip`으로 기록한다.
+`skip`은 실행하지 않은 사실을 남겨 누락된 검사와 적용 대상이 아닌 검사를 구분한다. 사유는 `reason_code`가 구분하며 9.3에 정의한다.
 
 경고 수준은 `verdict`가 아니라 `severity`가 담는다. `severity`가 `blocking`인 `fail`만 공개를 차단하고, `warning`인 `fail`은 판정을 `verified_with_warning`으로 만든다.
 
@@ -353,6 +386,10 @@ flowchart LR
 | 검사가 예외로 끝났다 | `fail` | `CHECK_ERROR` | `blocking` |
 
 `CHECK_ERROR`는 `repair_action`을 갖지 않는다. 검사기의 결함은 에이전트가 수리할 대상이 아니다.
+
+검사 5·6·7은 판정자를 주입하지 않아도 등록된다. 판정자가 없으면 `skip`과 `CHECK_NOT_APPLICABLE`이 나오며 이것이 정식 동작이다. 이 값이라야 구현이 없는 상태(`CHECK_NOT_REGISTERED`)와 구분되어, 생성 모델을 부르지 않고도 검사 1~4의 결과만으로 판정에 이른다. 판정자를 주면 조회도 함께 준다. 한쪽만 주면 무엇을 재판정했는지 알 수 없는 판정이 남는다.
+
+검사 2·3·4는 조회가 없으면 등록하지 않는다. 이 셋은 조회 없이 아무것도 판정할 수 없으므로, 등록해 두면 무엇을 검사했는지 모르는 통과가 생긴다. 등록되지 않은 사실은 실행기가 기록한다.
 
 실행 결과는 검사별 판정과 함께 선언된 검사가 모두 실행되었는지를 보고한다. 실행되지 않은 검사가 남아 있으면 검증이 끝난 것이 아니다.
 
@@ -404,11 +441,15 @@ schema_invalid > policy_violation > contradicted > needs_research > insufficient
 
 선언된 검사가 모두 실행되지 않았으면 판정하지 않는다. 일곱 판정은 검증이 끝난 산출물의 결과를 나타내는 값이므로, 끝나지 않은 것에 이름을 붙이지 않는다.
 
-판정이 없는 산출물은 공개하지 않는다. 분석 버전은 `validating`에서 `failed`로 간다. 이 경로는 검사가 모두 구현된 뒤에도 남는다. 배포에서 검사 하나가 등록되지 않는 상황을 `verified`로 통과시키지 않기 위해서다.
+판정이 없는 산출물은 공개하지 않는다. 분석 버전은 `validating`에서 `failed`로 간다. 이 경로는 배포에서 검사 하나가 등록되지 않는 상황을 `verified`로 통과시키지 않기 위해 있다.
 
 ### 9.5 통합 검증
 
 통합 Verifier는 분석 버전의 모든 필수 산출물에 대한 검사 결과를 집계하고 활성화 가능 여부를 반환한다. 오케스트레이터가 모든 단계 뒤에 호출한다.
+
+산출물 하나라도 공개할 수 없으면 분석 버전 전체가 `failed`다. 한 화면만 새 버전인 상태를 허용하지 않기 때문이다. 검사한 산출물이 하나도 없어도 `failed`다. 검증하지 않은 버전을 수용 평가로 넘기지 않는다.
+
+여기서 말하는 활성화 가능은 `gated` 도달을 뜻한다. `gated`에서 `active`로 가려면 수용 평가가 남으므로 통합 Verifier는 활성화를 수행하지 않고 그 전제가 성립하는지만 돌려준다. 상태 전이는 [아키텍처](architecture.md) 8장을 따른다.
 
 ## 10. 수리
 
@@ -511,6 +552,31 @@ explicit_failure
 모델 식별자는 환경변수로 관리한다. 동일 작업은 개발·평가·배치 실행에서 같은 모델과 프롬프트 버전을 사용한다. 모델 변경은 평가 세트 비교와 새 분석 버전을 거쳐 반영한다.
 
 모든 산출물은 모델, 프롬프트, 검색 정책, 지표 정책, 데이터 버전, 분류체계 버전을 기록한다.
+
+### 13.1 모델 어댑터
+
+생성 모델을 부르는 자리는 세 벌로 나눈다.
+
+| 벌 | 책임 |
+| --- | --- |
+| `Protocol` | 그 자리가 받는 입력과 돌려주는 값의 모양 |
+| `OpenAI*` | 제공자 API를 부르는 구현 |
+| `Stub*` | 같은 모양을 규칙으로 채우는 대역 |
+
+실행 골격은 `Protocol`만 안다. 제공자 라이브러리를 import하지 않으므로 어느 벌을 넣는지가 골격 밖의 결정이다.
+
+| 자리 | `Protocol` | 위치 |
+| --- | --- | --- |
+| 요구 표현 추출 | `MentionExtractor` | `agents/statistics/extractor.py` |
+| 차원 배정 | `DimensionAssigner` | `agents/statistics/assigner.py` |
+| 관계 판정 | `RelationJudge` | `agents/statistics/judge.py` |
+| Wiki 필드 작성 | `WikiWriter` | `agents/knowledge/` |
+| 편차 서술 | `DeviationInterpreter` | `agents/interpretation/` |
+| 체크리스트 문구 | `StrategyWriter` | `agents/strategy/` |
+| 단계 서술 | `StepNarrator` | `agents/roadmap/` |
+| 청크 임베딩 | `EmbeddingClient` | `providers/embeddings.py` |
+
+이 구조가 생성 모델 호출 없이 검사를 돌게 한다. 대역을 넣으면 순서·기간·깊이·근거 연결처럼 규칙이 정하는 값은 그대로 나오고 문장만 고정 문구가 된다. 검증의 판정자 자리도 같은 규약을 쓰며, 판정자를 비우면 9.3의 `CHECK_NOT_APPLICABLE`이 된다.
 
 ## 14. 관련 문서
 
