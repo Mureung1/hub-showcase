@@ -216,7 +216,6 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             onDeletePost={deleteMyPost}
             onViewFriendCalendar={goToFriendCalendar}
             onVisitFriendHome={goToFriendHome}
-            onPointsEarned={() => { profileManager.refreshProfile(); dodoManager.refreshDodoState() }}
           />
         )}
         {activeTab === 'profile' && (

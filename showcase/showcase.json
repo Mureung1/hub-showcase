@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "title": "We should do..",
+  "summary": "할 일에 동기부여를 해주는 소셜 스케줄러 어플입니다.",
+  "githubUser": "95x8x9(금소현)",
+  "demoUrl": "https://hub-gilt-three.vercel.app/",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/friends.webp"
+  ],
+  "problem": "할 일을 하지 않고 미루는 이유는 동기가 즉각적이지 못하기 때문입니다.",
+  "targetUsers": [
+    "할 일을 자주 미루는 대학생",
+    "매일 정해진 공부 계획을 수행하는 수험생"
+  ],
+  "features": [
+    "친구들과 일정을 공유합니다.",
+    "일정 완료 시 인증 영상을 촬영합니다. 인증마다 포인트를 획득합니다.",
+    "친구들의 반응을 얻어 추가 포인트를 획득합니다.",
+    "포인트로 두두를 꾸미거나 두두에게 간식을 줍니다.",
+    "일정의 공개 범위를 자유롭게 설정할 수 있습니다."
+  ],
+  "featureTags": [
+    "캘린더",
+    "마이홈",
+    "친구",
+    "꾸미기"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Express",
+    "PostgreSQL",
+    "커스텀 JWT",
+    "AWS S3 SDK"
+  ],
+  "techHighlights": [
+    "React 커스텀 훅으로 일정·포인트·마이홈 상태를 관리해 완료 체크·구매 결과를 화면에 즉시 반영합니다.",
+    "Express API와 PostgreSQL(Prisma)을 연결해 사용자별 일정·친구·마이홈 아이템 데이터를 조회·저장합니다.",
+    "Agent 2개와 Skill 2개를 Workflow로 연결해 기획 원칙 수립부터 PR 협업까지 처리합니다."
+  ],
+  "developmentWithAI": "대전제를 중심으로 분야를 기준으로 문서를 나눴습니다. 모든 문서는 시행착오를 거쳐 업데이트됩니다.",
+  "agent": {
+    "summary": "기획, 구현, 디자인 직군으로 Agent를 나누고 각 분야의 대전제를 Skill 문서로 관리했습니다.",
+    "agentTools": [
+      {
+        "type": "plan",
+        "name": "기획 Agent",
+        "purpose": "프로젝트의 기본 원칙과 대전제를 설정합니다. 계획 단계에서 사용됩니다."
+      },
+      {
+        "type": "verify",
+        "name": "코드 검증 agent",
+        "purpose": "작성한 코드가 적절한지 검증합니다."
+      },
+      {
+        "type": "design",
+        "name": "디자인 Skill",
+        "purpose": "디자인 컨셉과 대전제, 레퍼런스를 참고 사항을 담고 있습니다."
+      },
+      {
+        "type": "dev-planning",
+        "name": "개발.기획 Skill",
+        "purpose": "실 개발에 필요한 기획 내용과 코드 작성시 규칙을 포함합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "기능 명세",
+          "코드 작성 규칙",
+          "기획 원칙",
+          "개인정보 및 보안",
+          "인프라 및 보안",
+          "하지 말아야 할 것"
+        ]
+      },
+      {
+        "name": "PR 협업 Workflow",
+        "steps": [
+          "PR 작성 양식",
+          "개별 코드 브랜치 만들기",
+          "GitHub Issue 등록",
+          "백로그 문서 업데이트"
+        ]
+      }
+    ]
+  }
+}
