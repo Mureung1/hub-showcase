@@ -1,6 +1,7 @@
 // 오늘의 미션 선택/판정(트랙 1 §2) — 순수 함수만 있고 저장소가 없다. 미션 완료 여부는 매 렌더마다
 // todayMealsTotal에서 다시 계산되는 파생값이라, 이력을 저장할 테이블이나 스키마 변경이 필요 없다.
 import { INFO_ONLY_TRIGGERS, MISSIONS } from '../data/missions.js'
+import { hashString } from './hashString.js'
 import { isMet } from './nutrientCriteria.js'
 import { buildDeficiencyRows, isSodiumExceeded, NUTRIENT_SATISFY_RATIO } from './nutrition.js'
 
@@ -8,17 +9,6 @@ const MISSIONS_BY_TRIGGER = MISSIONS.reduce((map, mission) => {
   ;(map[mission.trigger] ??= []).push(mission)
   return map
 }, {})
-
-// 문자열 -> 32bit 정수 해시. (userId, dateKey) 조합마다 다른 값이 나오되, 같은 조합이면 항상 같은
-// 값이 나온다(렌더마다 미션이 바뀌면 안 되므로 Math.random 대신 이 방식을 쓴다 — adRecommendation.js의
-// 날짜 기반 순환과 같은 이유).
-function hashString(str) {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
-  }
-  return hash
-}
 
 // trigger 하나에 등록된 미션 중 (userId, dateKey) 기준으로 결정적으로 하나를 고른다.
 function selectMission(trigger, dateKey, userId) {
@@ -32,10 +22,11 @@ function selectMission(trigger, dateKey, userId) {
 // 기록 없음). dateKey: 'YYYY-MM-DD'(records.js의 toDateKey). userId: effectiveUserId — 게스트도
 // dataStore.GUEST_ID로 항상 값이 있어 게스트에서도 동작한다.
 //
-// 우선순위: ①오늘 기록이 아예 없으면 첫 기록 유도 ②권장량 자체가 없으면(신체정보 미입력) 마찬가지로
-// 첫 기록 유도 문구로 폴백 ③4대 목표 영양소 중 가장 부족한 것 ④나트륨 상한 초과 ⑤전부 충족(정보성).
-// recommended가 아예 없으면(성별조차 안 고른 게스트) null을 반환한다 — 그 경우는 호출부가 미션 카드
-// 대신 SexPromptCard로 유도해야 하므로 여기서 억지로 미션을 만들지 않는다.
+// 우선순위: ①recommended 자체가 없으면(성별조차 안 고른 게스트) null — 호출부가 미션 카드 대신
+// SexPromptCard로 유도해야 하므로 여기서 억지로 미션을 만들지 않는다 ②오늘 기록이 아예 없으면 첫
+// 기록 유도 ③4대 목표 영양소 중 가장 부족한 것 ④나트륨 상한 초과 ⑤전부 충족(정보성).
+// (안정성 점검(Phase B) — 예전엔 이 주석이 "권장량이 없어도 첫 기록 유도 문구로 폴백한다"고 썼지만
+// 실제 코드는 그 경우 null을 반환한다. 코드가 아니라 이 주석이 낡아 있던 것이라 실제 동작에 맞게 고쳤다.)
 export function pickDailyMission(recommended, todayTotal, { dateKey, userId = 'guest', mealCount = 0 } = {}) {
   if (!recommended) return null
   if (mealCount === 0 || !todayTotal) return selectMission('no-record', dateKey, userId)
