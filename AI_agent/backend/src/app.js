@@ -12,12 +12,38 @@ import { portfolioRouter } from "./routes/portfolioRoutes.js";
 import { specRouter } from "./routes/specRoutes.js";
 import { submissionRouter } from "./routes/submissionRoutes.js";
 
+const isAllowedPreviewOrigin = (origin) => {
+  if (!origin) return true;
+
+  try {
+    const url = new URL(origin);
+    return (
+      url.protocol === "https:" &&
+      url.hostname.endsWith(".vercel.app") &&
+      url.hostname.startsWith("career-mission-")
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isAllowedOrigin = (origin) => {
+  return !origin || env.frontendOrigins.includes(origin) || isAllowedPreviewOrigin(origin);
+};
+
 export const createApp = () => {
   const app = express();
 
   app.use(
     cors({
-      origin: env.frontendOrigin,
+      origin(origin, callback) {
+        if (isAllowedOrigin(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error(`CORS origin is not allowed: ${origin}`));
+      },
     })
   );
   app.use(express.json({ limit: "3mb" }));

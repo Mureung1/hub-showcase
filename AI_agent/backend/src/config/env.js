@@ -1,8 +1,17 @@
 import "dotenv/config";
 
+const parseOrigins = (value) =>
+  (value || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
 export const env = {
   port: Number(process.env.PORT || 4000),
   frontendOrigin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+  frontendOrigins: parseOrigins(
+    process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || "http://localhost:5173"
+  ),
   databaseUrl: process.env.DATABASE_URL || "",
   jwtSecret: process.env.JWT_SECRET || "career-mission-ai-local-jwt-secret",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
