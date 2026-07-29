@@ -19,7 +19,7 @@
         display: flex;
         align-items: center;
         gap: 7mm;
-        margin: 0 0 5mm;
+        margin: 0 0 13mm;
         font-size: 3.7mm;
         font-weight: 600;
         color: var(--sub);
@@ -90,6 +90,10 @@
       .foot {
         align-items: flex-start;
       }
+      /* QR 하나뿐이라 지면 오른쪽 끝에 붙으면 허전하다 — 안쪽으로 들인다 */
+      .foot .qr {
+        margin-right: 16mm;
+      }
       .note {
         margin: 0;
         font-size: 3.5mm;
@@ -143,7 +147,7 @@
           왼쪽 = 외부 API 입력 / 가운데 = 에이전트 본선 / 오른쪽 = 분기 결과
           x=196 = 재생성 고리 레인, x=268 = 학습 고리 레인 (다른 상자와 안 겹치게 비워둠)
         -->
-        <svg class="chart" viewBox="0 0 273 278" xmlns="http://www.w3.org/2000/svg">
+        <svg class="chart" viewBox="0 0 273 269" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
               markerHeight="5" orient="auto-start-reverse">
