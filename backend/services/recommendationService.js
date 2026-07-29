@@ -66,8 +66,26 @@ async function generateValidRecipes({ geminiClient, request, ingredientContext }
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       const result = await geminiClient.generate({ request, ingredientContext, policyFeedback });
-      const recipes = validateGeneratedRecipes(result.generated, request, ingredientContext);
-      return { recipes, metadata: result.metadata, attempt };
+      const recipes = validateGeneratedRecipes(
+        result.generated,
+        request,
+        ingredientContext,
+        { allowPartial: attempt === 2 },
+      );
+      return {
+        recipes,
+        generationSummary: {
+          requestedCount: 3,
+          returnedCount: recipes.length,
+          stopReason: recipes.length === 3
+            ? "targetMet"
+            : recipes.length === 0
+              ? "noSuitableRecipe"
+              : "qualityLimit",
+        },
+        metadata: result.metadata,
+        attempt,
+      };
     } catch (error) {
       lastError = error;
       const retryPolicyError = error instanceof RecommendationPolicyError && attempt === 1;
@@ -126,6 +144,12 @@ export function createRecommendationService({ supabaseClient, geminiClient, cach
             batchNumber: cached.batch_number,
             maxBatches: 5,
             maxRecipes: 15,
+            returnedCount: cached.recipes.length,
+            stopReason: cached.recipes.length === 3
+              ? "targetMet"
+              : cached.recipes.length === 0
+                ? "noSuitableRecipe"
+                : "qualityLimit",
             generatedAt: cached.generated_at,
             expiresAt: cached.expires_at,
           },
@@ -166,6 +190,8 @@ export function createRecommendationService({ supabaseClient, geminiClient, cach
           batchNumber,
           maxBatches: 5,
           maxRecipes: 15,
+          returnedCount: generated.generationSummary.returnedCount,
+          stopReason: generated.generationSummary.stopReason,
           generatedAt: savedCache?.generated_at ?? fallbackGeneratedAt,
           expiresAt: savedCache?.expires_at ?? fallbackExpiresAt,
         },

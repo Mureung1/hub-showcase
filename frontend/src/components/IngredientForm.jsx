@@ -3,8 +3,15 @@ import { INGREDIENT_CATEGORIES } from "../data/ingredientDefaults";
 import { getAllowedStorageOptions, getSuggestedShelfLifeDays, getSuggestedUseByDate, isCheckDateCategory } from "../data/shelfLifeRules";
 import { getTodayDateString } from "../utils/expiration";
 import { INGREDIENT_TAG_LABELS, INGREDIENT_TAGS } from "../../../shared/ingredientTags";
+import { STANDARD_QUANTITY_UNITS } from "../../../shared/quantityUnits";
 
 const categoryOptions = Object.entries(INGREDIENT_CATEGORIES);
+
+function getQuantityInputRules(unit) {
+  return unit === "개"
+    ? { min: 1, step: 1, inputMode: "numeric" }
+    : { min: 0.001, step: "any", inputMode: "decimal" };
+}
 
 export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onTagToggle, onApplySuggestedDate, onSubmit, onCancel }) {
   const nameRef = useRef(null);
@@ -15,6 +22,17 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
   const suggestedDate = getSuggestedUseByDate(formValues.category, formValues.storage);
   const isSuggestedValue = formValues.expirySource === "suggested" && formValues.expirationDate === suggestedDate;
   const recommendationLabel = isCheckDateCategory(formValues.category) ? "보유 상태 확인일" : "권장 사용 날짜";
+  const quantityRules = getQuantityInputRules(formValues.unit);
+  const changeQuantityBy = (amount) => {
+    const currentQuantity = Number(formValues.quantity);
+    const nextQuantity = (Number.isFinite(currentQuantity) ? currentQuantity : 0) + amount;
+    onChange({
+      target: {
+        name: "quantity",
+        value: String(Math.max(quantityRules.min, nextQuantity)),
+      },
+    });
+  };
 
   useEffect(() => {
     const focusTargets = { name: nameRef, quantity: quantityRef, expirationDate: expiryRef };
@@ -41,17 +59,29 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
 
       <div className="field-group">
         <label htmlFor="ingredient-quantity">수량</label>
-        <input
-          ref={quantityRef}
-          id="ingredient-quantity"
-          name="quantity"
-          value={formValues.quantity}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="예: 1모"
-          aria-invalid={Boolean(errors.quantity)}
-          aria-describedby={errors.quantity ? "quantity-error" : undefined}
-        />
+        <div className="quantity-input-row">
+          <button type="button" aria-label="수량 1 감소" onClick={() => changeQuantityBy(-1)}>−</button>
+          <input
+            ref={quantityRef}
+            id="ingredient-quantity"
+            name="quantity"
+            type="number"
+            min={quantityRules.min}
+            step={quantityRules.step}
+            inputMode={quantityRules.inputMode}
+            value={formValues.quantity}
+            onChange={onChange}
+            onBlur={onBlur}
+            placeholder="예: 2"
+            aria-invalid={Boolean(errors.quantity)}
+            aria-describedby={errors.quantity ? "quantity-error" : "quantity-hint"}
+          />
+          <button type="button" aria-label="수량 1 증가" onClick={() => changeQuantityBy(1)}>＋</button>
+          <select name="unit" aria-label="수량 단위" value={formValues.unit} onChange={onChange}>
+            {STANDARD_QUANTITY_UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+          </select>
+        </div>
+        <p className="field-hint" id="quantity-hint">낱개와 포장된 재료는 ‘개’, 무게는 ‘g’으로 입력해 주세요.</p>
         {errors.quantity && <p className="field-error" id="quantity-error">{errors.quantity}</p>}
       </div>
 

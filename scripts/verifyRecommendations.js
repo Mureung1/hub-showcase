@@ -14,6 +14,7 @@ try {
       mode: "quick",
       maxMissingIngredients: 1,
       batchSize: 3,
+      batchNumber: 1,
       excludedRecipeFingerprints: [],
       allergens: [],
       excludedIngredients: [],

@@ -6,7 +6,7 @@ Parent: #43
 
 ## 목표
 
-Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이용해, 현재 조리 가능한 레시피 3개를 구조화된 JSON으로 제공한다. 프런트는 mock 레시피 없이 이 API 결과를 사용한다.
+Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이용해, 현재 조리 가능한 레시피를 구조화된 JSON으로 제공한다. 목표는 3개지만 품질 기준을 통과한 결과가 부족하면 0~2개만 반환할 수 있다. 프런트는 mock 레시피 없이 이 API 결과를 사용한다.
 
 엔드포인트: `POST /api/recommendations`
 
@@ -44,9 +44,10 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
 
 ```json
 {
-  "mode": "noFire | quick | balanced",
+  "mode": "expiryFirst | quick | balanced",
   "maxMissingIngredients": 0,
   "batchSize": 3,
+  "batchNumber": 1,
   "excludedRecipeFingerprints": [],
   "allergens": [],
   "excludedIngredients": [],
@@ -54,7 +55,11 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
 }
 ```
 
-- 기본 양념(소금, 후추, 식용유, 고춧가루, 간장, 설탕, 식초, 다진 마늘)은 항상 보유한 것으로 가정한다.
+- 물, 조리된 밥과 기본 양념(소금, 후추, 식용유, 고춧가루, 간장, 설탕, 식초, 다진 마늘)은 항상 보유한 것으로 가정한다.
+- `maxMissingIngredients`는 0~2 중 하나다.
+- `batchNumber`는 최초 요청 1부터 추가 추천 5까지 사용한다.
+- `expiryFirst`는 소비기한이 가까운 재료를 먼저 고려하되 맛과 조합의 자연스러움을 우선한다.
+- `quick`은 불 사용 여부를 제한하지 않고 익숙하고 조합이 자연스러운 무난한 한 끼를 우선한다. 지나치게 단순한 조합과 낯선 퓨전 메뉴는 피한다.
 - `allergens`, `excludedIngredients`, `dietaryPreferences`는 향후 확장을 위한 선택 필드이며 현재 UI에서는 빈 배열을 전달한다.
 
 ## 출력 규격
@@ -67,6 +72,10 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
       "fingerprint": "sha256-fingerprint",
       "name": "삼겹살 대파 볶음",
       "servings": 1,
+      "servingStyle": "singleDish | mealSet",
+      "cookingTechnique": "noCook | mix | microwave | panFry | stirFry | boil | stew | grill | other",
+      "primaryIngredients": ["삼겹살"],
+      "components": [],
       "requiredIngredients": [
         { "name": "삼겹살", "amount": 200, "unit": "g" }
       ],
@@ -76,7 +85,7 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
       "cookingTime": 20,
       "difficulty": "easy | normal",
       "cookingMethod": "noFire | fire",
-      "dishType": "stirFry | riceBowl | soup | stew | noodle | salad | sandwich | other",
+      "dishType": "stirFry | riceBowl | soup | stew | noodle | salad | sandwich | sideDish | mealSet | other",
       "effortLevel": "low | medium",
       "recommendationReasons": ["소비 우선순위가 높은 삼겹살을 사용할 수 있어요"],
       "nutritionTags": ["nutrition:protein", "nutrition:vegetable"],
@@ -92,23 +101,29 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
     "batchNumber": 1,
     "maxBatches": 5,
     "maxRecipes": 15,
+    "returnedCount": 1,
+    "stopReason": "targetMet | qualityLimit | noSuitableRecipe",
     "generatedAt": "2026-07-22T07:15:19.911Z",
     "expiresAt": "2026-07-22T15:00:00.000Z"
   }
 }
 ```
 
-- 한 번에 현재 선택 상태에 맞는 레시피 3개만 반환한다.
+- 한 번에 레시피 3개 생성을 목표로 하되 품질 기준을 통과한 0~3개만 반환한다.
+- 자연스럽게 한 요리로 만들 수 있으면 `singleDish`, 밥·반찬·후식처럼 분리하는 편이 자연스러우면 `mealSet`을 사용한다.
+- `mealSet`은 두 개 이상의 `components`로 구성하고, 모든 재료를 억지로 한 요리에 섞지 않는다.
 - 숫자형 열량·탄수화물·단백질·지방 추정치는 제공하지 않는다.
 - 재료는 이름·사용량·단위를 가진 객체로 반환한다.
 
 ## 추천·검증 정책
 
-- 부족 재료는 요청 설정에 따라 0개 또는 최대 1개까지 허용한다.
-- 소비기한 임박 재료는 점수 가중치만 적용하며 특정 개수의 레시피에 강제 포함하지 않는다.
-- 소비기한이 지난 재료는 추천에서 제외하고 D-day 0 재료는 경고와 함께 허용한다.
-- 서로 다른 레시피명과 `dishType`을 반환한다.
+- 부족 재료는 요청 설정에 따라 레시피당 0~2개까지 허용한다.
+- 보유량과 단위가 명확한 경우 필요한 양이 보유량을 넘으면 해당 재료도 부족 재료로 계산한다.
+- 가장 높은 우선순위의 사용 가능한 재료는 추천 중 최소 하나에 자연스럽게 포함한다.
+- 소비기한이 지난 재료는 추천에서 제외하고 D-day 0 재료는 상태 확인 안내와 함께 허용한다.
+- 추천끼리 조리 형태·핵심 조리 기법·주재료 중 두 가지 이상이 달라야 한다.
 - 동일 재료, 주재료, 재료 조합의 반복은 허용한다.
+- 조합이 어색하면 `mealSet`으로 분리하고, 샐러드 같은 이름으로 부자연스러운 조합을 정당화하지 않는다.
 - 서버가 재료 별칭과 공백을 정규화한다. 일치하지 않는 재료는 부족 재료로 계산한다.
 - 중복은 정규화한 레시피명 + 핵심 재료 조합 + `dishType` fingerprint로 판정한다.
 - Gemini의 JSON은 Zod 스키마와 서버 정책을 모두 통과해야 한다.
@@ -116,8 +131,8 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
 
 ## 추가 추천·캐시
 
-- 최초 3개를 반환한다.
-- `다른 추천 보기` 요청마다 기존 fingerprint를 제외하고 3개를 추가 생성한다.
+- 최초 요청과 추가 요청 모두 3개 생성을 목표로 하되 품질 기준을 통과한 결과만 반환한다.
+- `다른 추천 보기` 요청은 `batchNumber`와 기존 fingerprint를 함께 전달한다.
 - 동일 조건에서 최대 5회, 총 15개까지 제공한다.
 - 재료, 추천 상태, 부족 재료 설정이 같으면 Supabase 캐시를 재사용한다.
 - 재료 등록·수정·삭제 또는 추천 조건 변경 시 기존 캐시를 무효화한다.
@@ -170,9 +185,11 @@ Supabase의 실제 보유 재료와 사용자가 선택한 추천 상태를 이�
 
 ## 완료 기준
 
-- 실제 Supabase 보유 재료로 현재 상태에 맞는 레시피 3개가 반환된다.
+- 실제 Supabase 보유 재료로 현재 상태에 맞는 레시피가 최대 3개 반환된다.
+- 품질이 낮으면 개수를 강제로 채우지 않고 `qualityLimit` 또는 `noSuitableRecipe`을 반환한다.
 - 응답은 Zod 스키마를 통과하고 허용된 부족 재료 개수를 넘지 않는다.
 - 소비기한이 지난 재료가 추천에 포함되지 않는다.
+- 재료 조합이 어색하면 단일 요리가 아니라 한 상 구성으로 분리할 수 있다.
 - 추가 추천은 기존 fingerprint와 중복되지 않으며 최대 15개까지 제공된다.
 - 같은 재료와 조건에서는 유효한 Supabase 캐시를 재사용한다.
 - 한국 시간 기준 날짜가 바뀌면 같은 재료와 조건이어도 기존 캐시를 사용하지 않는다.

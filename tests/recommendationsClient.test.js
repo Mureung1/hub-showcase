@@ -14,9 +14,10 @@ test("fetchRecommendations sends the fixed API contract", async () => {
     assert.equal(url, "/api/recommendations");
     assert.equal(options.method, "POST");
     assert.deepEqual(JSON.parse(options.body), {
-      mode: "noFire",
+      mode: "expiryFirst",
       maxMissingIngredients: 1,
       batchSize: 3,
+      batchNumber: 2,
       excludedRecipeFingerprints: ["a".repeat(64)],
       allergens: [],
       excludedIngredients: [],
@@ -26,8 +27,9 @@ test("fetchRecommendations sends the fixed API contract", async () => {
   };
 
   const result = await fetchRecommendations({
-    mode: "noFire",
+    mode: "expiryFirst",
     maxMissingIngredients: 1,
+    batchNumber: 2,
     excludedRecipeFingerprints: ["a".repeat(64)],
   });
 

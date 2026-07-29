@@ -1,4 +1,5 @@
 import { createApiUrl } from "../config/api";
+import { convertQuantityToStandard } from "../../../shared/quantityUnits";
 
 const INGREDIENTS_API_URL = createApiUrl("/api/ingredients");
 
@@ -13,14 +14,17 @@ async function parseResponse(response, fallbackMessage) {
 }
 
 export function convertIngredientFromApi(row) {
+  const standardQuantity = row.quantity_mode === "exact"
+    ? convertQuantityToStandard(row.quantity, row.unit)
+    : null;
   return {
     id: row.id,
     name: row.name,
     category: row.category,
     subcategory: row.subcategory ?? null,
     tags: row.tags ?? [],
-    quantity: row.quantity,
-    unit: row.unit,
+    quantity: standardQuantity?.quantity ?? row.quantity,
+    unit: standardQuantity?.unit ?? row.unit,
     quantityMode: row.quantity_mode,
     storage: row.storage,
     expirationType: row.expiration_type,
@@ -92,4 +96,14 @@ export async function deleteIngredient(id) {
   if (!response.ok) {
     await parseResponse(response, "재료 삭제에 실패했습니다. 다시 시도해 주세요.");
   }
+}
+
+export async function consumeIngredients(items) {
+  const response = await fetch(`${INGREDIENTS_API_URL}/consume`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+
+  return parseResponse(response, "재료 차감에 실패했습니다. 냉장고 수량을 다시 확인해 주세요.");
 }

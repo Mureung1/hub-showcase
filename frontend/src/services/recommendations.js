@@ -14,6 +14,7 @@ export class RecommendationRequestError extends Error {
 export async function fetchRecommendations({
   mode = "quick",
   maxMissingIngredients = 0,
+  batchNumber = 1,
   excludedRecipeFingerprints = [],
   signal,
 } = {}) {
@@ -24,6 +25,7 @@ export async function fetchRecommendations({
       mode,
       maxMissingIngredients,
       batchSize: 3,
+      batchNumber,
       excludedRecipeFingerprints,
       allergens: [],
       excludedIngredients: [],

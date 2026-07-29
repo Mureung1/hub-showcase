@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 
-import { parseQuantityInput } from "../frontend/src/utils/ingredientUtils.js";
+import {
+  buildIngredientFromForm,
+  parseQuantityInput,
+} from "../frontend/src/utils/ingredientUtils.js";
 
 const NOT_TRACKED = {
   quantity: null,
@@ -64,4 +67,20 @@ describe("parseQuantityInput", () => {
       expect(() => parseQuantityInput(input)).toThrow(TypeError);
     });
   });
+});
+
+test("분리 입력한 수량과 단위를 재료 데이터로 합친다", () => {
+  const ingredient = buildIngredientFromForm({
+    name: "계란",
+    category: "egg",
+    tags: ["nutrition:protein"],
+    quantity: "10",
+    unit: "개",
+    storage: "fridge",
+    expirationDate: "2026-07-30",
+  });
+
+  expect(ingredient.quantity).toBe(10);
+  expect(ingredient.unit).toBe("개");
+  expect(ingredient.quantityMode).toBe("exact");
 });

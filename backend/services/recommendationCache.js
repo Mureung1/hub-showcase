@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { getKstDateString, getNextKstMidnight } from "./recommendationPolicy.js";
 
 const CACHE_TABLE = "recipe_recommendation_cache";
+const RECOMMENDATION_POLICY_VERSION = "processing-balance-v1";
 
 function sortStrings(values) {
   return [...values].sort((left, right) => left.localeCompare(right, "ko"));
@@ -10,11 +11,13 @@ function sortStrings(values) {
 
 export function createRecommendationCacheKey({ inventorySignature, request, now = new Date() }) {
   const keySource = {
+    policyVersion: RECOMMENDATION_POLICY_VERSION,
     kstDate: getKstDateString(now),
     inventorySignature,
     mode: request.mode,
     maxMissingIngredients: request.maxMissingIngredients,
     batchSize: request.batchSize,
+    batchNumber: request.batchNumber,
     excludedRecipeFingerprints: sortStrings(request.excludedRecipeFingerprints),
     allergens: sortStrings(request.allergens),
     excludedIngredients: sortStrings(request.excludedIngredients),
@@ -24,7 +27,7 @@ export function createRecommendationCacheKey({ inventorySignature, request, now 
 }
 
 export function getRecommendationBatchNumber(request) {
-  return request.excludedRecipeFingerprints.length / request.batchSize + 1;
+  return request.batchNumber;
 }
 
 export function createRecommendationCacheStore({ supabaseClient, now = () => new Date() }) {

@@ -5,6 +5,11 @@ import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { INGREDIENT_TAGS } from "../../shared/ingredientTags.js";
 import { SHELF_LIFE_RULES } from "../../shared/shelfLifeRules.js";
+import {
+  convertQuantityToStandard,
+  convertStandardQuantityToUnit,
+  STANDARD_QUANTITY_UNITS,
+} from "../../shared/quantityUnits.js";
 
 export const ingredientsRouter = Router();
 
@@ -15,7 +20,7 @@ const ingredientInputSchema = z.object({
   subcategory: z.string().trim().max(50).nullable().default(null),
   tags: z.array(z.enum(INGREDIENT_TAGS)).max(INGREDIENT_TAGS.length).default([]),
   quantity: z.number().nonnegative().nullable(),
-  unit: z.string().trim().max(30).nullable(),
+  unit: z.enum(STANDARD_QUANTITY_UNITS).nullable(),
   quantity_mode: z.enum(["exact", "notTracked"]),
   storage: z.enum(["fridge", "freezer", "room"]),
   expiration_type: z.enum(["relative", "absolute", "longTerm"]),
@@ -35,12 +40,45 @@ const ingredientInputSchema = z.object({
       message: "정확한 수량을 관리할 때는 수량이 필요합니다.",
     });
   }
+  if (ingredient.quantity_mode === "exact" && ingredient.unit === null) {
+    context.addIssue({
+      code: "custom",
+      path: ["unit"],
+      message: "정확한 수량을 관리할 때는 개 또는 g 단위가 필요합니다.",
+    });
+  }
+  if (ingredient.quantity_mode === "exact"
+    && ingredient.unit === "개"
+    && Number.isFinite(ingredient.quantity)
+    && !Number.isInteger(ingredient.quantity)) {
+    context.addIssue({
+      code: "custom",
+      path: ["quantity"],
+      message: "개 단위 수량은 정수여야 합니다.",
+    });
+  }
   const storageRule = SHELF_LIFE_RULES[ingredient.category];
   if (storageRule && !Number.isInteger(storageRule[ingredient.storage])) {
     context.addIssue({
       code: "custom",
       path: ["storage"],
       message: "이 재료 분류에서 지원하지 않는 보관 방법입니다.",
+    });
+  }
+});
+
+const ingredientConsumptionSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    amount: z.number().positive().max(100_000),
+    unit: z.enum(STANDARD_QUANTITY_UNITS),
+  }).strict()).min(1).max(15),
+}).strict().superRefine(({ items }, context) => {
+  if (new Set(items.map(({ id }) => id)).size !== items.length) {
+    context.addIssue({
+      code: "custom",
+      path: ["items"],
+      message: "같은 재료를 중복 차감할 수 없습니다.",
     });
   }
 });
@@ -60,9 +98,11 @@ function getDueDate(ingredient) {
 }
 
 function hasSameInventoryIdentity(candidate, ingredient) {
+  const candidateUnit = convertQuantityToStandard(0, candidate.unit)?.unit ?? candidate.unit ?? null;
+  const ingredientUnit = convertQuantityToStandard(0, ingredient.unit)?.unit ?? ingredient.unit ?? null;
   return candidate.name === ingredient.name
     && candidate.storage === ingredient.storage
-    && (candidate.unit ?? null) === (ingredient.unit || null)
+    && candidateUnit === ingredientUnit
     && getDueDate(candidate) === getDueDate(ingredient);
 }
 
@@ -107,6 +147,135 @@ ingredientsRouter.get("/", async (req, res, next) => {
   }
 });
 
+ingredientsRouter.post("/consume", async (req, res, next) => {
+  try {
+    const parsed = ingredientConsumptionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: {
+          code: "INVALID_CONSUMPTION",
+          message: "차감할 재료와 수량을 확인해 주세요.",
+        },
+      });
+    }
+
+    const requestedById = new Map(parsed.data.items.map((item) => [item.id, item]));
+    const { data: ingredients, error: findError } = await supabase
+      .from("ingredients")
+      .select("*")
+      .in("id", [...requestedById.keys()]);
+
+    if (findError) throw findError;
+    if (ingredients.length !== requestedById.size) {
+      return res.status(409).json({
+        error: {
+          code: "INGREDIENT_CONSUMPTION_CONFLICT",
+          message: "일부 재료를 찾을 수 없습니다. 냉장고를 새로고침해 주세요.",
+        },
+      });
+    }
+
+    for (const ingredient of ingredients) {
+      const requested = requestedById.get(ingredient.id);
+      if (ingredient.quantity_mode !== "exact" || !Number.isFinite(ingredient.quantity)) {
+        return res.status(409).json({
+          error: {
+            code: "INGREDIENT_QUANTITY_NOT_TRACKED",
+            message: `${ingredient.name}은(는) 정확한 수량을 관리하지 않아 차감할 수 없습니다.`,
+          },
+        });
+      }
+      const ownedQuantity = convertQuantityToStandard(ingredient.quantity, ingredient.unit);
+      const requestedQuantity = convertQuantityToStandard(requested.amount, requested.unit);
+      if (!ownedQuantity || !requestedQuantity || ownedQuantity.unit !== requestedQuantity.unit) {
+        return res.status(409).json({
+          error: {
+            code: "INGREDIENT_UNIT_MISMATCH",
+            message: `${ingredient.name}의 보유 단위와 레시피 단위가 다릅니다.`,
+          },
+        });
+      }
+      if (ownedQuantity.quantity < requestedQuantity.quantity) {
+        return res.status(409).json({
+          error: {
+            code: "INGREDIENT_QUANTITY_INSUFFICIENT",
+            message: `${ingredient.name}의 보유 수량이 부족합니다.`,
+          },
+        });
+      }
+    }
+
+    const processedSnapshots = [];
+    const consumed = [];
+    try {
+      for (const ingredient of ingredients) {
+        const requested = requestedById.get(ingredient.id);
+        const ownedQuantity = convertQuantityToStandard(ingredient.quantity, ingredient.unit);
+        const requestedQuantity = convertQuantityToStandard(requested.amount, requested.unit);
+        const remainingStandardQuantity = ownedQuantity.quantity - requestedQuantity.quantity;
+        const remainingQuantity = convertStandardQuantityToUnit(remainingStandardQuantity, ingredient.unit);
+        let result;
+        if (remainingStandardQuantity <= Number.EPSILON) {
+          result = await supabase
+            .from("ingredients")
+            .delete()
+            .eq("id", ingredient.id)
+            .eq("quantity", ingredient.quantity)
+            .select("*")
+            .maybeSingle();
+        } else {
+          result = await supabase
+            .from("ingredients")
+            .update({ quantity: remainingQuantity })
+            .eq("id", ingredient.id)
+            .eq("quantity", ingredient.quantity)
+            .select("*")
+            .maybeSingle();
+        }
+        if (result.error) throw result.error;
+        if (!result.data) {
+          const conflict = new Error("Ingredient quantity changed during consumption");
+          conflict.code = "INGREDIENT_CONSUMPTION_CONFLICT";
+          throw conflict;
+        }
+        processedSnapshots.push(ingredient);
+        consumed.push({
+          id: ingredient.id,
+          name: ingredient.name,
+          amount: requested.amount,
+          unit: requestedQuantity.unit,
+          remainingQuantity: remainingStandardQuantity <= Number.EPSILON ? 0 : remainingStandardQuantity,
+          removed: remainingStandardQuantity <= Number.EPSILON,
+        });
+      }
+    } catch (error) {
+      for (const snapshot of processedSnapshots.reverse()) {
+        const rollbackRow = { id: snapshot.id, ...getWritableIngredient(snapshot) };
+        const { error: rollbackError } = await supabase
+          .from("ingredients")
+          .upsert(rollbackRow, { onConflict: "id" });
+        if (rollbackError) {
+          req.log.error({ err: rollbackError, ingredientId: snapshot.id }, "Ingredient consumption rollback failed");
+        }
+      }
+      if (error.code === "INGREDIENT_CONSUMPTION_CONFLICT") {
+        return res.status(409).json({
+          error: {
+            code: error.code,
+            message: "재료 수량이 변경되었습니다. 냉장고를 새로고침한 뒤 다시 시도해 주세요.",
+          },
+        });
+      }
+      throw error;
+    }
+
+    req.log.info({ consumedCount: consumed.length }, "Recipe ingredients consumed");
+    return res.status(200).json({ consumed });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 ingredientsRouter.post("/", async (req, res, next) => {
   try {
     const parsed = ingredientInputSchema.safeParse(req.body);
@@ -135,9 +304,16 @@ ingredientsRouter.post("/", async (req, res, next) => {
       const matchingIngredient = candidates.find((candidate) => hasSameInventoryIdentity(candidate, ingredient));
 
       if (matchingIngredient) {
+        const matchingQuantity = convertQuantityToStandard(
+          matchingIngredient.quantity,
+          matchingIngredient.unit,
+        );
         const { data, error } = await supabase
           .from("ingredients")
-          .update({ quantity: matchingIngredient.quantity + ingredient.quantity })
+          .update({
+            quantity: matchingQuantity.quantity + ingredient.quantity,
+            unit: matchingQuantity.unit,
+          })
           .eq("id", matchingIngredient.id)
           .select("*")
           .single();
@@ -202,9 +378,13 @@ ingredientsRouter.patch("/:id", async (req, res, next) => {
       const matchingIngredient = candidates.find((candidate) => hasSameInventoryIdentity(candidate, ingredient));
 
       if (matchingIngredient) {
+        const matchingQuantity = convertQuantityToStandard(
+          matchingIngredient.quantity,
+          matchingIngredient.unit,
+        );
         const mergedIngredient = {
           ...ingredient,
-          quantity: matchingIngredient.quantity + ingredient.quantity,
+          quantity: matchingQuantity.quantity + ingredient.quantity,
         };
         const { data, error: mergeError } = await supabase
           .from("ingredients")

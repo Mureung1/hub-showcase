@@ -11,6 +11,7 @@ const request = {
   mode: "quick",
   maxMissingIngredients: 0,
   batchSize: 3,
+  batchNumber: 1,
   excludedRecipeFingerprints: [],
   allergens: [],
   excludedIngredients: [],
@@ -62,6 +63,7 @@ test("제외 fingerprint 개수로 1~5회차를 계산한다", () => {
   assert.equal(getRecommendationBatchNumber(request), 1);
   assert.equal(getRecommendationBatchNumber({
     ...request,
+    batchNumber: 5,
     excludedRecipeFingerprints: Array.from({ length: 12 }, (_, index) => String(index).padStart(64, "0")),
   }), 5);
 });
