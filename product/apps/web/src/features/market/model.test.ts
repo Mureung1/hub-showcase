@@ -15,7 +15,7 @@ describe("category marker classes", () => {
     expect(categoryClass("편의점")).toBe("navy");
     expect(categoryClass("꽃집")).toBe("yellow");
     expect(categoryClass("미용실")).toBe("pink");
-    expect(categoryClass("체육시설")).toBe("red");
+    expect(categoryClass("체육시설")).toBe("teal");
   });
 });
 
