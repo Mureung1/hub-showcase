@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
+import AchievementRing from '../components/AchievementRing.jsx'
 import AdCard from '../components/AdCard.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
@@ -66,43 +67,6 @@ function isMenuRecommendationList(value) {
   )
 }
 
-function AchievementRing({ percent, size = 160, strokeWidth = 14 }) {
-  const r = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * r
-  const offset = circumference * (1 - percent / 100)
-
-  return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} stroke={colors.track} strokeWidth={strokeWidth} fill="none" />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={colors.primary}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.6s ease-out' }}
-        />
-      </svg>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <span style={{ fontSize: 30, fontWeight: 800, color: colors.title }}>{percent}%</span>
-      </div>
-    </div>
-  )
-}
-
 export default function Result() {
   useDocumentTitle('영양 진단')
   const {
@@ -165,6 +129,9 @@ export default function Result() {
   const triedRef = useRef(false)
 
   async function fetchRecommendations() {
+    // 안정성 점검(Phase B) — "다시 시도" 버튼에 disabled 가드가 없어 연타하면 유료 Gemini 호출이
+    // 중복으로 나가고(공유 리미터 낭비), 먼저 끝난 응답이 나중 응답에 덮어써지는 경쟁이 생겼다.
+    if (recLoading) return
     setRecLoading(true)
     setRecError('')
     try {
@@ -345,7 +312,12 @@ export default function Result() {
       {recError && (
         <Card>
           <p style={{ ...styles.errorText, margin: 0 }}>{recError}</p>
-          <AppButton variant="secondary" onClick={fetchRecommendations} style={{ marginTop: spacing.sm }}>
+          <AppButton
+            variant="secondary"
+            onClick={fetchRecommendations}
+            disabled={recLoading}
+            style={{ marginTop: spacing.sm }}
+          >
             다시 시도
           </AppButton>
         </Card>
