@@ -324,7 +324,7 @@ export function CoordinateConfirm() {
                   </div>
                 ) : null}
 
-                <Button variant="primary" block disabled={!canConfirm || saveStatus === 'saving'} onClick={confirm}>
+                <Button variant="primary" block disabled={!canConfirm || saveStatus === 'saving'} soundType="finish" onClick={confirm}>
                   {saveStatus === 'saving' ? '확정하는 중…' : '확정하기'}
                 </Button>
 

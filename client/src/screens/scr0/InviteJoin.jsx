@@ -199,7 +199,7 @@ export function InviteJoin() {
               </div>
             </div>
 
-            <Button variant="primary" block disabled={submitDisabled} onClick={submit}>
+            <Button variant="primary" block disabled={submitDisabled} soundType="finish" onClick={submit}>
               {phase === 'sending' ? '보내는 중…' : '참가 정보 보내기'}
             </Button>
 

@@ -306,7 +306,7 @@ export function Assign() {
                   </InfoCard>
                 ))}
 
-                <Button variant="primary" block onClick={() => navigate(`/scr3/confirm${token ? `?token=${token}` : ''}`)}>
+                <Button variant="primary" block soundType="finish" onClick={() => navigate(`/scr3/confirm${token ? `?token=${token}` : ''}`)}>
                   확정하러 가기
                 </Button>
               </>

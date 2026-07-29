@@ -266,7 +266,13 @@ export function ProgressChecklist() {
                 {tasks.map((task) => (
                   <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 0', borderBottom: '1px dashed var(--line)' }}>
                     <div style={{ flex: 1 }}>
-                      <Checkbox checked={task.done} onChange={() => toggleTask(task)} label={task.label} style={{ fontSize: '16px', color: NEAR_WHITE }} />
+                      <Checkbox
+                        checked={task.done}
+                        onChange={() => toggleTask(task)}
+                        label={task.label}
+                        soundType={!task.done && doneCount + 1 === total ? 'finish' : 'click'}
+                        style={{ fontSize: '16px', color: NEAR_WHITE }}
+                      />
                     </div>
                     {tasks.length > 1 ? (
                       <button

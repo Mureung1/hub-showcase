@@ -238,7 +238,7 @@ export function InviteCompose() {
               </div>
             </div>
 
-            <Button variant="primary" block disabled={sendDisabled} onClick={send}>
+            <Button variant="primary" block disabled={sendDisabled} soundType="finish" onClick={send}>
               ✉ 보내기
             </Button>
 
