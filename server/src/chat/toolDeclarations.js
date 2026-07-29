@@ -20,14 +20,17 @@ const toolDeclarations = [
   {
     name: 'simulate_plan',
     description:
-      '사용자가 미래 학기에 추가로 수강할 과목 목록을 입력하면, 누적 학점 기준 ' +
-      '졸업 가능 여부와 남은 학기 수를 계산한다. "몇 학점 들으면 졸업해?" 같은 ' +
-      '시뮬레이션 질문에 이 도구를 호출한다.',
+      '남은 학기 수를 기준으로 학기당 필요한 이수 학점(페이스)을 계산한다. ' +
+      '"한 학기에 몇 학점씩 들을 수 있어?", "학기당 몇 학점 들어야 해?" 같이 ' +
+      '추가 과목 언급이 없는 페이스 질문에는 additionalCourses 없이(빈 배열로) 호출한다. ' +
+      '"OO 과목까지 들으면/15학점만 들어도 졸업할 수 있어?"처럼 사용자가 특정 과목이나 ' +
+      '학점 수를 추가로 언급하면 additionalCourses에 그 내용을 담아 호출한다.',
     parameters: {
       type: 'OBJECT',
       properties: {
         additionalCourses: {
           type: 'ARRAY',
+          description: '사용자가 언급한, 아직 계획에 없는 추가 수강 과목. 언급이 없으면 빈 배열.',
           items: {
             type: 'OBJECT',
             properties: {
@@ -37,7 +40,6 @@ const toolDeclarations = [
           },
         },
       },
-      required: ['additionalCourses'],
     },
   },
   {
