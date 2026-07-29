@@ -212,13 +212,36 @@ headless Chrome ─ CDP 로 배포된 앱 조작 ─ Page.startScreencast 프레
 
 ---
 
+## 5-0. 표지 (선택) — 0:00–0:06
+
+Apple 판에 붙일 수 있는 6초 오프닝. 본편과 **별도로 렌더해서 이어붙인다**(재녹화 불필요).
+
+| 구간 | 화면 |
+|---|---|
+| 0.0–1.4s | 실재하는 공부법 **30개**가 순차로 흩뿌려진다 — 크기 16~38px, 그레이 5단계, weight 400/600 |
+| 0.0–4.2s | 전체가 아주 느리게 흐른다(글자가 클수록 많이 흐르는 패럴랙스) |
+| 3.35–4.35s | 필드가 `opacity .12` + `blur(3px)` 로 물러난다 |
+| 3.85–4.75s | M 마크 + **MBTI 공부·회복 루틴** + "공부법은 이미 충분히 많습니다. 문제는 어떤 게 나에게 맞는가입니다." 가 수렴 |
+| 4.75–6.0s | 홀드 |
+
+단어는 웹에서 실제로 통용되는 이름만 썼다 — 뽀모도로 기법 · 파인만 학습법 · 코넬 노트법 · 백지 복습법 · 액티브 리콜 · 인터리빙 · 분산 학습 · SQ3R 독서법 · 마인드맵 · 회독법 · 간격 반복 · 자기설명 · 교차 학습 등 30개. 배치는 시드 고정 의사난수라 **몇 번을 다시 찍어도 같은 그림**이 나온다.
+
+```bash
+node record-cover.mjs                       # 6.4초 프레임 수집 (히어로 수렴 여부 자체 검증)
+ffmpeg … -f concat -i cover-concat.txt …    # cover.mp4
+ffmpeg -i cover.mp4 -t 6.0 …                # 정확히 6.0초로 트림
+ffmpeg -f concat -i join.txt -c copy …      # 본편과 무손실 결합 (인코딩 파라미터 동일)
+```
+
+표지를 붙이면 자막이 6초 밀리므로, 업로드용 외부 자막이 필요하면 [subtitles/demo-with-cover.srt](./subtitles/demo-with-cover.srt) 를 쓴다(같은 35큐, 전부 +6.0초).
+
 ## 5-1. 비주얼 변형 두 가지
 
 큐시트·자막·타이밍은 **완전히 동일**하고 `slides.html`·`overlay.mjs` 의 CSS 만 다르다. 영상의 픽셀은 전부 HTML/CSS 에서 나오므로, 스타일 교체는 mp4 를 손대는 게 아니라 CSS 를 바꾸고 다시 렌더하는 일이다(스크립트 한 번, 약 5분).
 
 | | 빈티지 에디토리얼 | Apple |
 |---|---|---|
-| 파일 | `~/Downloads/hub-demo.mp4` | `~/Downloads/hub-demo-apple.mp4` |
+| 파일 | `~/Downloads/hub-demo.mp4` (4:50.6) | `~/Downloads/hub-demo-apple.mp4` (4:50.6)<br>`~/Downloads/hub-demo-apple-cover.mp4` (**4:56.6**, 표지 포함) |
 | 배경 | 크림 `#f2ede1` 단일 | `#f5f5f7` ↔ `#000000` 이분법 |
 | 악센트 | 잉크블루 `#3d5a99` + 레드·골드 | **Apple Blue 하나만** (`#0071e3` / `#2997ff`) |
 | 헤드라인 | weight 800, 40px | **weight 600**, 54px (히어로 62px) |
