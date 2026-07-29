@@ -3,7 +3,7 @@
   "title": "Articles — 영문 뉴스로 배우는 해외주식 모의투자",
   "summary": "초보자가 영문 경제 뉴스를 번역기 없이 완독하고, 스스로 투자 판단을 내린 뒤 AI의 해석과 비교하며 배우는 웹 서비스입니다.",
   "githubUser": "JeongHun_s(김정훈)",
-  "demoUrl": "",
+  "demoUrl": "https://articles-client-nine.vercel.app",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/dashboard.webp",
