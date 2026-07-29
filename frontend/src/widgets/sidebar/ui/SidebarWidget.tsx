@@ -3,7 +3,7 @@ import { Search, Settings, TriangleAlert } from 'lucide-react'
 import { Input } from '@/shared/ui/Input'
 
 import { NAV_SECTIONS } from '../model/navItems'
-import { WATCHLIST_MOCK } from '../model/watchlistMock'
+import { WATCHLIST_ITEMS } from '../model/watchlistData'
 import { SidebarNavSection } from './SidebarNavSection'
 import { SidebarWatchlistRow } from './SidebarWatchlistRow'
 import {
@@ -34,7 +34,7 @@ export const SidebarWidget = () => (
 
       <WatchlistSection>
         <SectionTitle>관심 종목</SectionTitle>
-        {WATCHLIST_MOCK.map((item) => (
+        {WATCHLIST_ITEMS.map((item) => (
           <SidebarWatchlistRow key={item.id} item={item} />
         ))}
       </WatchlistSection>
