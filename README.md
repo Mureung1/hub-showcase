@@ -12,6 +12,11 @@ TODO 앱과 캘린더는 이미 많습니다. 하지만 정작 어려운 것은 
 
 <p>
     <img src="https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white">
+    <img src="https://img.shields.io/badge/React-black?style=for-the-badge&logo=react&logoColor=61DAFB">
+    <img src="https://img.shields.io/badge/Vercel%20AI%20SDK-black?style=for-the-badge&logo=vercel&logoColor=white">
+    <img src="https://img.shields.io/badge/Solar%20(Upstage)-black?style=for-the-badge">
+    <img src="https://img.shields.io/badge/Notion%20API-black?style=for-the-badge&logo=notion&logoColor=white">
+    <img src="https://img.shields.io/badge/Zod-black?style=for-the-badge&logo=zod&logoColor=3E67B1">
 </p>
 
 ## 🔗 배포 링크
