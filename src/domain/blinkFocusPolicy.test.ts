@@ -14,6 +14,14 @@ describe("blink focus policy", () => {
     expect(resolveBlinkFocusEffect("service_exit")).toEqual({ mode: "end_day", reducedMotion: "full" });
   });
 
+  it("plays outside transition blink focus when the journal opens", () => {
+    expect(resolveBlinkFocusEffect("journal_opened")).toEqual({ mode: "outside_transition", reducedMotion: "full" });
+  });
+
+  it("plays outside transition blink focus when the journal closes", () => {
+    expect(resolveBlinkFocusEffect("journal_closed")).toEqual({ mode: "outside_transition", reducedMotion: "full" });
+  });
+
   it("uses fade only when reduced motion is enabled", () => {
     expect(resolveBlinkFocusEffect("service_exit", true)).toEqual({ mode: "end_day", reducedMotion: "fade" });
   });

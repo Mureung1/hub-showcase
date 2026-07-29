@@ -104,11 +104,11 @@
 
 | ID | 우선순위 | 상태 | Task | 완료 기준 | 연결 문서 |
 |---|---|---|---|---|---|
-| T-721 | P2 | Backlog | 현실 픽셀화 TV prototype | 로컬 이미지 또는 권한 허용 웹캠 프레임이 canvas에서 픽셀화되어 TV 안에 표시된다 | future-expansion-plan.md |
+| T-721 | P2 | Review | 현실 픽셀화 TV prototype | 로컬 이미지 또는 권한 허용 웹캠 프레임이 canvas에서 픽셀화되어 TV 안에 표시된다 | future-expansion-plan.md |
 | T-722 | P2 | Backlog | 공개 퀘스트 탐색 read-only prototype | `anonymous_public` Quest Event를 공개 탐색 오브젝트로 표시하고 기본 비공개를 유지한다 | future-expansion-plan.md |
 | T-723 | P2 | Backlog | 웹캠 손 제스처 탐색 prototype | 손 제스처가 공개 탐색 화면의 보조 입력으로 동작하고 마우스/터치 fallback이 유지된다 | future-expansion-plan.md |
 | T-724 | P2 | Review | Single-plane Pepper projection mode 설계 | Pixel TV 우클릭 속성 창에서 projection 연결 변환/원복이 가능하고, 변환된 TV 아이콘 실행 시 hidden route `?projection=pepper`로 연결된다 | dynamic-asset-requirements.md |
-| T-725 | P2 | Backlog | Pixel TV photo capture 설계 | TV에 나온 사용자 화면과 전자 매니저 projection 장면을 함께 캡처하는 screenshot flow, 권한 안내, 저장/공유 범위가 정의된다 | future-expansion-plan.md |
+| T-725 | P2 | In Progress | Pixel TV photo capture 설계 | TV에 나온 사용자 화면과 전자 매니저 projection 장면을 함께 캡처하는 screenshot flow, 권한 안내, 저장/공유 범위가 정의된다 | future-expansion-plan.md |
 | T-726 | P2 | Backlog | 음악창 desktop player 구현 | 음악창 desktop icon을 클릭하면 재생 패널이 열리고, 미리 지정한 wav playlist를 재생/일시정지/다음곡으로 조작하며 마지막 곡 다음은 첫 곡으로 순환한다 | dynamic-asset-requirements.md |
 | T-727 | P2 | Backlog | XP/매니저 효과음 set 구현 | 클릭음, 전자매니저 웃음/실망/격려 효과음을 muted 기본값과 함께 UI action 및 manager mood에 연결한다 | dynamic-asset-requirements.md |
 

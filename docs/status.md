@@ -1,6 +1,6 @@
 ﻿# 현재 진행 상황
 
-마지막 갱신: 2026-07-28
+마지막 갱신: 2026-07-29
 
 ## 완료
 
@@ -86,6 +86,18 @@
 - 2026-07-27 Persona 범위 재정의: 현재 sprite motion 수가 제한적이므로 Persona의 핵심은 응원 문구, 피드백 방식, 퀘스트 제안 성향으로 두고, animation은 공통 motion set에 약한 behavior bias만 주는 구조로 정리
 - 2026-07-28 `T-712/T-703/T-713` 2순위 연결: Quest Event metadata에 stat delta, reward 후보, stage 해금, sound hint를 추가하고, 기록 노트 chip과 시작 메뉴의 설정 창 stage 선택/사운드 toggle로 확인할 수 있게 연결. 실제 cyber-purr 음원은 아직 placeholder/fallback 상태로 유지
 - 2026-07-28 LLM-style 퀘스트 능력치 평가 경계 추가: 난이도별 stat budget을 `easy=3`, `normal=7`, `hard=15`로 두고, LLM이 제안한 능력치 분배는 총합/주요 능력치 비율/단일 능력치 최대치 검증을 통과해야 저장되는 구조로 정리. 현재 runtime은 같은 계약의 `rule_fallback` 평가를 사용
+- 2026-07-29 P0 flow 정돈: 기록 노트 열기/닫기 모두 blink outside transition을 재생하도록 `blinkFocusPolicy`와 React 연결을 정리하고, 시작 메뉴의 종료/다시 시작 성격을 `매니저 바꾸기`로 바꿔 profile, level, exp, logs, quest/window state를 유지한 채 manager sprite만 교체하도록 연결
+- 2026-07-29 P1 XP window consistency 정돈: 창 id, label, title icon, 초기 위치/크기, desktop/window icon asset, workflow 여부를 `src/data/windowRegistry.ts` 단일 registry로 모으고 `App.tsx`의 분산 Record 상수를 제거
+- 2026-07-29 P1 render boundary 정돈: `App.tsx`의 전역 1초 `now` state를 제거하고 QuestRunner countdown과 system tray clock이 각각 필요한 컴포넌트 내부에서만 갱신되도록 분리
+- 2026-07-29 P1 App responsibility/fallback 정돈: Pixel TV mode를 `usePixelTvMode` hook과 `pixelTvMode` domain policy로 분리하고, 기록 노트 서버 fetch sync를 `useQuestLogSync` hook으로 이동했으며, runtime fallback/placeholder 요소를 `src/data/runtimeFallbacks.ts`에 명시적으로 추적
+- 2026-07-29 P1/P2 App 책임 분리 추가 정돈: `useWindowManager`를 `src/hooks/useWindowManager.ts`로 이동하고 window chrome handler 생성을 hook 내부 `useCallback`/`useMemo` 경계로 묶었으며, window pet placement localStorage read를 `useWindowPetPlacementDrafts` hook으로 분리
+- 2026-07-29 P1/P2 outside pet runtime 분리: 창 밖 Lumi의 field bounds, attachment position, rendered climbing position, direction/mirror 계산을 `src/domain/outsidePetRuntime.ts`로 이동하고 App은 상태 전이 effect와 렌더 연결만 유지
+- 2026-07-29 P1 quest flow policy 분리: quest status별 workflow window 결정, 완료 결과 success/recovery 구분, draft patch 시 unit/reward 재계산을 `src/domain/questFlowPolicy.ts`로 이동해 App의 quest 조건문과 reward 계산 책임을 축소
+- 2026-07-29 P1/P2 runtime hook 마무리: outside pet phase/timer/effect 묶음을 `useOutsidePetRuntime`으로 이동하고, quest 열기/수락/완료/실패/복구/edit handler 묶음을 `useQuestFlow`로 이동해 App은 상태 보관, 주요 hook 연결, 렌더 조립 중심으로 축소
+- 2026-07-29 시작 메뉴 flow 정정: `서비스 종료`는 `매니저 바꾸기`로 유지하고, `다시 시작`은 별도 버튼으로 복구해 profile/manager/log flow를 초기화한 뒤 설치 마법사부터 다시 진행하도록 정리. 사다리 오브젝트 창 기본 폭을 104px로 넓혀 아이콘 잘림을 완화
+- 2026-07-29 restart/server hydration 불일치 완화: `다시 시작` 시 lifecycle reset timestamp를 localStorage에 저장하고, 이후 desktop 서버 기록 hydration은 해당 시각 이후 로그만 반영하며 restart 이전 server-derived manager context가 새 로컬 manager 상태를 덮지 않도록 제한. 사다리 오브젝트 창 titlebar 텍스트는 숨겨 좁은 창에서 잘리지 않도록 정리
+- 2026-07-29 다시 시작 초기화 범위 보강: profile, manager level/exp, local logs, quest/status, opened/minimized/focused windows, window positions/sizes/measurements, Pixel TV mode/context menu, outside pet, blink, sync notice를 기본값으로 되돌리도록 정리
+- 2026-07-29 P2 Pixel TV 현실 픽셀화 prototype 1차 연결: Pixel TV 기본 실행은 권한 허용 웹캠 프레임을 고정 TV 프레임에서 실시간 픽셀화해 재생하는 창으로 열리고, 사진 버튼은 현재 TV frame과 전자 매니저를 함께 photo card로 남긴다. 파일 입력은 카메라 fallback으로 유지하며, 우클릭 속성의 Projection 변환 flow는 기존처럼 분리 유지
 - 2026-07-24 창 밖 `returning` phase 추가: Lumi가 free roam 이후 가까운 화면 끝으로 걸어가며 `hiding`을 연출하고 manager window 상태로 복귀할 수 있게 했으며, reduced-motion 설정은 behavior animation mapping에 반영
 - 2026-07-24 매니저 선택 flow 추가: 첫 실행 시 `Manager.exe 선택` 창에서 pink-manager/glass-frog/planaria를 고른 뒤 설치 마법사로 이어지고, 시작 메뉴의 `다시 시작`으로 profile/manager/log flow를 초기화해 다시 선택할 수 있음
 - 2026-07-27 핑크 매니저 baby Stage 1 idle-only 후보를 생성하고 manifest/review set에 연결: `public/assets/lumi/pink-manager-stage-1-production-candidates/pink-manager-stage-1-idle-sheet-v1.png`. Stage 1은 사다리 등 상호작용 motion을 잠그는 단계로 두고, idle 외 요청은 Stage 2 asset fallback을 사용한다
@@ -134,6 +146,19 @@
 - 2026-07-27 핑크 매니저 Stage 1 idle sheet 규격 확인 통과: `256x64`, `64x64 x 4 frames`, RGBA. `npm.cmd run verify:sprites`, `npm.cmd run typecheck` 통과
 - 2026-07-28 2순위 성장/보상/사운드 연결 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 2026-07-28 LLM-style stat evaluation TDD 검증 통과: `npm.cmd test -- src/domain/statGrowth.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 기록 노트 blink와 manager sprite-only selection 검증 통과: `npm.cmd test -- src/domain/blinkFocusPolicy.test.ts src/domain/managerSpriteSelection.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 XP window registry 검증 통과: `npm.cmd test -- src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 시간 포맷/카운트다운 분리 검증 통과: `npm.cmd test -- src/domain/timeFormatting.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 P1 책임 분리와 fallback 추적 검증 통과: `npm.cmd test -- src/hooks/useQuestLogSync.test.ts src/data/runtimeFallbacks.test.ts src/domain/pixelTvMode.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 P1/P2 window manager와 placement read 분리 검증 통과: `npm.cmd run typecheck`, `npm.cmd test` 24 files / 94 tests
+- 2026-07-29 outside pet runtime 도메인 분리 검증 통과: `npm.cmd test -- src/domain/outsidePetRuntime.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 25 files / 96 tests
+- 2026-07-29 quest flow policy 분리 검증 통과: `npm.cmd test -- src/domain/questFlowPolicy.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 26 files / 99 tests
+- 2026-07-29 세션 전용 P1/P2 hook 분리 최종 회귀 검증 통과: `npm.cmd run typecheck`, `npm.cmd test` 26 files / 99 tests
+- 2026-07-29 P1 전체 회귀 검증 통과: `npm.cmd test` 23 files / 88 tests, `npm.cmd run typecheck`
+- 2026-07-29 시작 메뉴 restart/manager change 분리와 사다리 폭 검증 통과: `npm.cmd test -- src/domain/appLifecyclePolicy.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 restart 서버 hydration cutoff와 사다리 title 숨김 검증 통과: `npm.cmd test -- src/hooks/useQuestLogSync.test.ts src/domain/appLifecyclePolicy.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 다시 시작 초기화 범위 보강 검증 통과: `npm.cmd test` 24 files / 92 tests, `npm.cmd run typecheck`
+- 2026-07-29 P2 Pixel TV 현실 픽셀화 prototype 1차 검증 통과: `npm.cmd test -- src/domain/pixelizer.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 24 files / 94 tests
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
@@ -143,8 +168,8 @@
 - 최종 목표 2순위: `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반. metadata/기록 노트/stage 선택/sound toggle 1차 연결은 완료했고, 브라우저 Network 수동 확인과 실제 cyber-purr 음원 제작/검수가 남았다.
 - 최종 목표 3순위: `T-721`, `T-724`, `T-725` Pixel TV 묶음. 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 flow로 정리한다.
 - 최종 목표 4순위: `T-708`, `T-726`, `T-727` 하루의 흐름/사운드 분위기. 현실 시간 기반 해/달 asset, 빛의 강도/색상, XP desktop 배경 상태를 연결하고, 음악창 wav playlist와 클릭/전자매니저 웃음·실망·격려 효과음을 muted 기본값으로 연결한다.
-- 공통 flow 정돈: 첫 진입, 매니저 선택, 퀘스트 실행, 기록 노트, Pixel TV, 시작 메뉴 재시작 흐름이 자연스럽게 이어지는지 계속 수동 검수한다.
-- React 화면은 이미 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 중심으로 분리되어 있고, 다음 분리는 UI 파일 추가보다 `useQuestFlow`, `useQuestLogSync`, `usePixelTvMode` 같은 상태 hook 단위가 우선
+- 공통 flow 정돈: 첫 진입, 매니저 선택, 퀘스트 실행, 기록 노트, Pixel TV, 시작 메뉴의 매니저 바꾸기 흐름이 자연스럽게 이어지는지 계속 수동 검수한다.
+- React 화면은 `windowRegistry`, `useQuestLogSync`, `usePixelTvMode`, time formatting domain으로 P1 책임 분리 1차를 마쳤고, 다음 분리는 `useQuestFlow`와 `useOutsidePetRuntime`처럼 더 큰 flow hook을 브라우저 수동 검수와 함께 진행하는 것이 안전하다.
 - 기록 노트 API 로딩/빈 상태/실패 상태 polish
 - 정적 HTML 기준으로 남은 UI 시각 차이 수동 점검 및 우선순위화
 - 다음 에셋 제작 세션에서 `docs/dynamic-asset-requirements.md` 기준으로 sprite, icon, theme, reward, sound asset을 생성
