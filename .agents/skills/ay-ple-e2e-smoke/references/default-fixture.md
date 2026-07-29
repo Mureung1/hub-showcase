@@ -12,6 +12,12 @@ Resolve this sibling fixture from the AY-PLE hub:
 
 Do not recreate, bootstrap, clean, or commit it during the smoke.
 
+The workspace is prepared from the synthetic, non-personal source fixture at
+`../fixtures/year-2-semester-1`. The source files intentionally cover known,
+unknown, superseded, and low-confidence academic facts. Judge proposals
+semantically against the contracts below rather than requiring a fixed
+SemesterModel serialization.
+
 ## Browser shell and Chat
 
 Expect the active semester label `2학년 1학기`.
@@ -37,10 +43,73 @@ liberal-arts/indian-mythology-and-philosophy/기말고사 시험범위.pdf
 Both must appear once, be selectable, and render as PDF previews.
 
 The SemesterModeling proposal should reconcile the selected midterm and
-final-exam scope facts into the current SemesterModel snapshot. Judge it against
-the source contents and existing `workspace-state.json`; do not prescribe an
-exact serialization shape.
+final-exam facts into the current SemesterModel snapshot:
+
+- The midterm is on `2026-04-21`. Its time is explicitly pending a later LMS
+  notice and must remain unknown rather than being invented.
+- The midterm covers chapters 2 through 6, pages 21 through 137.
+- The final is on `2026-06-16` from `10:30` through `11:20` in room `B201`.
+- The final covers weeks 9 through 14.
+
+The fixture does not state course grading weights. A proposal must not infer
+them. Judge the Review against the source contents and existing
+`workspace-state.json`; do not prescribe an exact serialization shape.
 
 In the default `review-only` run, reject the proposal. PASS requires that the
 Review resolves, the App remains usable, and the original
 `workspace-state.json`, `HEAD`, and complete Git status are preserved.
+
+## Additional named scenarios
+
+Use these focused scenarios when broader SemesterModeling coverage is useful.
+They are not required in every representative smoke.
+
+### `assignment-correction`
+
+Select:
+
+```text
+major/data-structures/과제-2-안내.md
+major/data-structures/과제-2-정정.md
+```
+
+Both sources describe the same `과제 2: 이진 탐색 트리 구현`. The later
+notice supersedes only its deadline: reconcile one Assignment whose current
+deadline is `2026-05-10 18:00`, while preserving the original notice as
+evidence instead of creating two assignments.
+
+### `project-follow-up`
+
+Select:
+
+```text
+liberal-arts/problem-solving-writing/기말-프로젝트-안내.md
+liberal-arts/problem-solving-writing/LMS-공지-기말-프로젝트.md
+```
+
+The first notice leaves the deadline unknown. The later authoritative LMS
+notice resolves it to `2026-06-12 17:00`. Reconcile one project Assignment and
+do not preserve the earlier unknown deadline as a conflicting current value.
+
+### `unsupported-preview`
+
+Select:
+
+```text
+major/computer-systems/07주차-강의자료.pptx
+```
+
+The source must remain selectable even when the shell cannot render an inline
+document preview.
+
+### `low-confidence-note`
+
+Select:
+
+```text
+inbox/메모.txt
+```
+
+The note is hearsay and explicitly says its deadline is unverified. AY should
+surface that ambiguity or decline to replace a more authoritative fact; it must
+not silently treat the note as a confirmed deadline.
