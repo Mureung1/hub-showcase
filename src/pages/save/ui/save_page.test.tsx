@@ -162,6 +162,7 @@ describe('SavePage', () => {
     const titleInput = screen.getByRole('textbox', {
       name: '공유 제목 (선택)',
     });
+    expect(screen.getByText('저장')).not.toBeNull();
     expect(screen.queryByText('URL을 입력하면 바로 저장해요')).toBeNull();
     expect((titleInput as HTMLInputElement).value).toBe('공유한 기사');
 

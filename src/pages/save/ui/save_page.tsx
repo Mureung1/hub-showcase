@@ -81,9 +81,7 @@ export function SavePage({
       <div className="save-page__stage">
         <div className="save-page__primary">
           <header className="save-page__header">
-            {!isSharedSave ? (
-              <p className="save-page__kicker">URL을 입력하면 바로 저장해요</p>
-            ) : null}
+            <p className="save-page__kicker">저장</p>
             <h2 id="save-title">
               {isSharedSave
                 ? '공유한 링크를 저장할까요?'
