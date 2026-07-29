@@ -7,7 +7,7 @@
 ## 개발 진행 체크리스트
 
 > **이 프로젝트의 살아있는 진행 현황.** 새 세션·개발 시작 시 여기부터 확인한다.
-> 완료 `[x]` · 미완 `[ ]` · 스테이지 상태 ✅완료 / 🔄일부 / ⬜예정. (최종 갱신: 2026-07-21)
+> 완료 `[x]` · 미완 `[ ]` · 스테이지 상태 ✅완료 / 🔄일부 / ⬜예정. (최종 갱신: 2026-07-27)
 
 ### 스테이지 요약
 
@@ -17,7 +17,7 @@
 | ② | 백엔드 기초 (Express·Supabase·스키마 13테이블) | ✅ |
 | ③ | 목업 시드 + 3탭 콘텐츠 (실 DB 조회) | ✅ |
 | ③.5 | 프로젝트 생성~배정 플로우 화면 5종 (목업) | ✅ |
-| ④ | API·인증·에이전트 연결 (실데이터 전환) | 🔄 인증만 완료 |
+| ④ | API·인증·에이전트 연결 (실데이터 전환) | ✅ 생성~배정·설명·맞교환·태스크(담당자 자동배정+상태 변경)·링크/파일 업로드·관리 탭 쓰기·인앱 알림 완료 |
 | ⑤ | 검증 에이전트 + 결함 수정 | ⬜ |
 
 ### 인증 — ✅ 실데이터 동작
@@ -34,32 +34,40 @@
 - [x] 대시보드 조회 — `DashboardTab.jsx` ↔ `/api/me/dashboard`
 - [x] 프로젝트 진행 조회 — `ProgressTab.jsx` ↔ `/api/me/progress`
 - [x] 프로젝트 관리 조회 — `ProjectsTab.jsx` ↔ `/api/me/projects`
-- [ ] 태스크 상태 변경 (할 일 / 진행 중 / 완료)
-- [ ] 파일·링크 업로드 + 코멘트(100자)
-- [ ] 프로젝트 삭제 / 완료 처리 / 메인 지정 / 순서 변경
+- [x] 태스크 상태 변경 (할 일 / 진행 중 / 완료) — `POST /api/me/tasks/:taskId/status` (자기 태스크만), `ProgressTab.jsx` 상태 버튼 3개
+- [x] 링크 업로드 + 코멘트(100자) — `POST /api/me/tasks/:taskId/uploads` · `DELETE /api/me/uploads/:uploadId` (자기 태스크·본인 자료만), `ProgressTab.jsx` UploadForm/✕, `activity_log 'upload'` → 잔디·최근활동
+- [x] 파일 업로드 (multer + Storage 비공개 버킷 + 서명 URL 다운로드) — `POST /api/me/tasks/:taskId/uploads/file`(화이트리스트·4MB·태스크당 5개) · `GET /api/me/uploads/:id/download`(팀원, 1시간 서명 URL 302), 삭제 시 Storage 객체 정리, `ProgressTab.jsx` 📁 파일/다운로드 링크
+- [x] 프로젝트 삭제 / 완료(취소) / 메인 지정 / 순서 변경 — `DELETE /api/projects/:id`·`POST /:id/complete`·`/:id/main`(생성자/팀원 권한 구분) + `POST /api/me/projects/reorder`, `ProjectsTab.jsx` 액션 4종
 
 ### 프로젝트 생성 ~ 배정 플로우 — ⬜ 화면만 완성, BE/DB 미연결
 - [x] 화면 5종 UI (계획검토·초대·join·설문·배정결과)
 - [x] 배정 점수 로직 `src/logic/assignRoles.js` (조장도 실무 맡도록 수정 완료)
-- [ ] 프로젝트 생성 API (위저드 제출 → `projects`, 첨부 → Storage)
-- [ ] 플래너 에이전트 `server/services/planner.js` (주제·내용·첨부 → 역할·마일스톤·태스크)
-- [ ] 계획 조회/수정/재생성(3회 제한)/확정 → 초대 토큰 발급
-- [ ] join API (초대 토큰 + 닉네임, 정원·중복 검사)
-- [ ] 설문 제출 / 마감 API (정원 미달 하향)
-- [ ] 배정 실행 (`assignRoles` 서버 이식) + 설명자 에이전트 `server/services/explainer.js`
-- [ ] 배정 결과 공개 + 10분 내 1회 역할 맞교환
+- [x] 프로젝트 생성 API (위저드 제출 → `projects`·멤버·기피날짜·계획 저장) — `server/routes/projects.js`. 파일 첨부 → Storage는 후속
+- [x] 플래너 에이전트 `server/services/planner.js` (주제·유형·마감일 → 역할·마일스톤·태스크, Claude 구조화 출력 + 템플릿 폴백)
+- [x] 계획 조회 API `GET /api/projects/:id/plan` (생성자 전용) — `PlanReview.jsx` 실데이터 연결
+- [x] 계획 인라인 수정 저장 / 재생성(3회 제한) / 확정 → 초대 토큰 발급 — `POST /:id/regenerate`·`/confirm`·`GET /:id/invite`, `InviteLink.jsx` 실 링크
+- [x] join API (초대 토큰 + 닉네임, 정원·중복 검사) — `server/routes/join.js`, `Join.jsx` 실연동. 가입+합류+자동 로그인
+- [x] 설문 제출 API + 화면 (프로젝트 실제 역할 기반) — `Survey.jsx` 실연동, surveys upsert
+- [x] 설문 마감(생성자 수동) + 배정 실행 (`assignRoles` 서버 이식·조장 isLeader 판정·**다역 저장**) — `POST /api/projects/:id/assign`
+- [x] 배정 결과 공개·조회 (규칙 요약) — `GET /api/projects/:id/result`, `AssignmentResult.jsx` 실연동
+- [x] 플래닝 에이전트의 배정 설명 `server/services/explainer.js` (Claude 팀 단위 설명·타협안 → `assignment_summary`, 실패 시 규칙 요약 폴백)
+- [x] 배정 공개 후 10분 내 1회 역할 맞교환 — `POST /api/projects/:id/swap` (생성자·서버시각 창·실무 역할 교차 저장), `AssignmentResult.jsx` 맞교환 UI
+- [x] 태스크 담당자 자동배정 — 배정/맞교환 직후 역할 보유자에게 라운드로빈 연결 (`assignTasksToRoleHolders`, projects.js)
+- [ ] 전원 제출 시 자동 마감
 
 ### 공통 · 인프라
 - [x] Express 단일 게이트웨이 + Supabase Secret key 서버 전용 — `server/db/supabase.js`
 - [x] 스키마 13테이블 + RLS 활성화 — `server/db/schema.sql`
 - [x] 목업 시드 — `server/db/seed.js` (계정 minji/junho/seoyeon, 비번 teamplease1)
 - [ ] 화면 폴링 동기화 (단계 전환·알림 반영)
-- [ ] 인앱 알림 (합류·마감·공개·교환·업로드)
+- [x] 인앱 알림 (합류·공개·교환·업로드) — `notifyProjectMembers`(server/lib/notify.js) 이벤트 팬아웃 + `GET /api/me/notifications`·`POST …/read-all`, 헤더 `NotificationBell`(안 읽음 배지·드롭다운·45s 폴링). *마감은 배정(reveal)에 통합*
 - [ ] 진행률 주간 스냅샷 자동화 (KST)
 - [ ] 검증 에이전트 `.claude/agents/verifier.md` + 결함 수정
-
+- [~] 배포 설정 (Vercel 한 프로젝트 · 같은 오리진) — 정적 프론트 + Express serverless: `api/index.js`(=export app)·`vercel.json`(`/api`→함수, SPA 폴백) / FE 상대경로 `/api`·`credentials:'same-origin'` / BE `auth.js` SameSite=Lax(CORS 없음) / 업로드 4MB. **실제 배포(Vercel 연결+환경변수+Deploy)는 사용자 수행**
+- [x] 모집~대기 UX 4종 — 초대링크 재접근(`ProjectsTab` recruiting 카드 🔗 버튼) · 알림 클릭 이동(`NotificationBell` + `/api/me/notifications`에 `projectId`) · 설문 제출 후 대기현황(`Survey` 합류/제출 + "모두 제출하면 배정 시작" 안내) · 대기 프로젝트 리마인더(벨 핀 섹션, `pending`=생성자 planning/recruiting)
 ### 알려진 후속 과제
-- **조장 DB 정합**: 조장이 "조장+실무" 2역이 되면 `assignments`의 `unique(project_id, member_id)`와 충돌 → 배정 API 때 조장 표식 저장 위치 결정 (예: `project_members.is_leader` + 실무는 `assignments` 1행)
+- **초대 합류 중복(같은 사람 2좌석)**: 합류는 signup 전용이라 다른 아이디+다른 닉네임이면 통과 → 향후 "기존 계정으로 합류"(로그인) 경로로 `unique(project_id,user_id)` 활용해 근본 차단, 또는 안내·메시지 개선
+- ~~**조장 DB 정합**: 조장이 "조장+실무" 2역이 되면 `assignments`의 `unique(project_id, member_id)`와 충돌~~ → **해결**: unique를 `(project_id, member_id, role_id)`로 변경해 한 사람이 여러 역할(조장 표식 + 실무)을 각각 1행으로 저장. me.js가 member별 역할을 묶어 표시
 - `shell-quote`(concurrently 하위 의존성) high 취약점 — 개발 도구라 배포 영향 없음, 추후 정리
 
 ---
@@ -118,7 +126,7 @@
 4. 생성자가 **"이대로 확정"** → 초대 링크 발급 (확정 후에는 재생성 잠금)
 5. 나머지 팀원들이 링크 접속 → 해당 페이지에서 즉시 회원가입 + 본인 닉네임 입력(정원·닉네임 중복 검사) → 설문 응답
 6. **설문 제출 수가 정원과 같아지면 자동으로 배정 진행**. 제출 수가 정원에 미달하면 마감되지 않으며, 생성자가 수동 마감을 시도하면 **"현재 n명 중 m명이 설문에 참여하였습니다. 전체 참여 인원을 m명으로 수정할까요?"** 확인 UI 표시 — 수락 시 정원을 제출 인원으로 하향하고 배정 진행(역할 min/max는 새 인원 기준으로 재검증·자동 조정, 가입했지만 미제출인 팀원은 배정에서 제외). 대기 화면에 "m/n명 제출" 현황 표시
-7. 점수 로직이 역할을 배정하고, 역할 배정 에이전트가 **팀 단위 서술**로 이유를 설명. 생성자가 결과 확인 후 **"프로젝트 생성 완료"** = 팀 전체에 결과 공개
+7. 점수 로직이 역할을 배정하고, 플래닝 에이전트가 **팀 단위 서술**로 이유를 설명. 생성자가 결과 확인 후 **"프로젝트 생성 완료"** = 팀 전체에 결과 공개
 8. 공개 후 **10분 내 1회**, 생성자가 두 팀원의 역할을 맞교환할 수 있음 (교환 사실은 팀원 화면에 표시)
 9. 프로젝트 진행: 각 팀원이 태스크 상태(할 일/진행 중/완료)를 변경하고, 파일 또는 링크를 업로드하며 코멘트(100자)를 남김. 활동은 참여 잔디 캘린더에 기록되고, 대시보드에서 팀 전체 현황을 확인. 팀 이벤트는 알림으로 전달
 10. 프로젝트가 끝나면 생성자가 **"프로젝트 완료"** 버튼으로 완료 처리 → 프로젝트 관리의 "완료된 프로젝트" 섹션으로 이동
@@ -181,7 +189,7 @@
 |---|------|------|-----------|-----------|
 | 1 | 홈 (랜딩) | `images/홈화면.png` | 상단 네비(로고·메뉴·로그인·시작하기), 히어로, Smart Agents 카드 2(역할 배정·플래닝), 사용 가이드 8단계, CTA 배너, 푸터 | 가입/로그인 진입, "데모 보기"는 가이드 섹션으로 스크롤 |
 | 2 | 로그인·회원가입 | `images/로그인.png`, `images/회원가입.png` | 로그인: 아이디·비밀번호(보기 토글)·"로그인 상태 유지"·아이디/비밀번호 찾기 링크(기능은 향후 확장). 회원가입: 이름, 아이디+[중복확인]("사용중인 아이디입니다"), 이메일(선택), 비밀번호(8자 이상 영문/숫자 조합), 비밀번호 확인, 약관 안내 | 계정 정보 입력·중복확인 |
-| 3 | 프로젝트 생성 위저드 (구현 완료) | 시안 없음 — Soft Mint 통일 | 3스텝: ① 유형 힌트 카드 → 제목 → 주제 설명(200자)·파일 드롭존(png/jpg/pdf, 10MB) 2열 ② 마감일 DatePicker + 기피 날짜 캘린더(마감일 빨강·기피 회색·범위 밖 비활성) + 마감일·D-day·진행 가능 기간 표시 ③ 팀원 수 스테퍼(3~8) | 제목·주제·마감일·인원 필수, 유형·첨부·기피 날짜 선택 |
+| 3 | 프로젝트 생성 위저드 (구현 완료) | 시안 없음 — Soft Mint 통일 | 3스텝: ① 유형 힌트 카드 → 제목 → 주제 설명(200자)·파일 드롭존(png/jpg/pdf, 4MB) 2열 ② 마감일 DatePicker + 기피 날짜 캘린더(마감일 빨강·기피 회색·범위 밖 비활성) + 마감일·D-day·진행 가능 기간 표시 ③ 팀원 수 스테퍼(3~8) | 제목·주제·마감일·인원 필수, 유형·첨부·기피 날짜 선택 |
 | 4 | AI 계획 검토 (생성자 전용) | — | 마일스톤 타임라인, 태스크 목록, 역할 정의 | 인라인 수정(태스크·역할), "다시 제안받기"(3회 카운터), "이대로 확정"(=초대 링크 발급) |
 | 5 | 초대 (join) | — | 프로젝트 미리보기(팀 이름·참여 현황) | 즉시 회원가입 + 닉네임 |
 | 6 | 팀원 설문 | — | 역할 카드, "m/n명 제출" 현황 | 순위·기피·경험·리더 의향 제출. (생성자) 수동 마감 — 정원 미달 시 "전체 참여 인원을 m명으로 수정할까요?" 확인 후 진행 |
@@ -227,7 +235,7 @@
 | 재생성 남용(비용) | "다시 제안받기" 프로젝트당 3회, 확정 후 잠금 — 서버에서 강제 |
 | 아이디 중복 | 실시간 검사 API + DB unique 제약 이중화(가입 시점 레이스 대비), 동일 문구("사용중인 아이디입니다") 처리 |
 | 초대 정원 초과·동시 가입 | 정원·닉네임 중복 검사를 트랜잭션으로 묶어 레이스 방지, 링크 유출 시 정원 제한이 방어선 |
-| 파일 남용 | 형식 화이트리스트(png/jpg/pdf/docx/pptx/xlsx/zip), 파일당 10MB, 태스크당 5개(재업로드는 교체), 비공개 버킷+서명 URL |
+| 파일 남용 | 형식 화이트리스트(png/jpg/pdf/docx/pptx/xlsx/zip), 파일당 4MB(Vercel serverless 요청 본문 4.5MB 한계 대응), 태스크당 5개, 비공개 버킷+서명 URL |
 | 잔디·스냅샷 날짜 어긋남 | 활동 날짜와 주간 진행률 스냅샷은 서버에서 KST 기준으로 확정 (배포 서버 UTC 문제 방지). 첫 주는 "지난주 대비" 미표시 |
 | 알림 누락·중복 | 알림은 서버 이벤트 발생 시점에 1회 생성, 읽음 상태를 사용자별로 저장 |
 | Supabase 무료 티어 | 7일 미사용 시 일시정지 — 시연 전 접속으로 깨우기 체크리스트화 |
@@ -250,6 +258,136 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-29 · 모집~배정 대기 구간 UX 4종
+- **왜**: 배포 후 실사용에서 "모집~역할배정 대기" 구간에 **현황을 볼 입구/화면이 없다**는 문제 4가지. 데이터·화면은 대부분 이미 있어 **연결만** 붙였다.
+- **방식**:
+  - **공통 서버**(`server/routes/me.js` `/api/me/notifications` 1곳): 알림 select에 `project_id` 추가 → item에 `projectId`. 응답에 `pending`(생성자의 `planning`/`recruiting` 프로젝트) 추가. — 이 하나로 ②④가 열림.
+  - **① 초대 링크 재접근**(`ProjectsTab.jsx`): `isCreator && status==='recruiting'` 카드에 "🔗 초대 링크" 버튼 → `/projects/:id/invite`(기존 화면·엔드포인트 재사용, 생성자 전용이라 403 없음).
+  - **② 알림 클릭 이동**(`NotificationBell.jsx`+css): 항목을 버튼으로. 종류별 목적지 — `join`→`/app/projects`(수신자 누구나 팀원·진행률 확인), `upload`→`/app/progress`, `reveal`/`swap`→`/projects/:id/result`. 초대 화면은 생성자 전용이라 join은 공용 화면으로 보냄.
+  - **③ 설문 대기현황**(`Survey.jsx`+css): `mySubmitted`면 상단에 대기 패널(합류 `memberCount/headcount` + 제출 `submittedCount/memberCount` + "모두 제출하면 배정 시작"), "역할 설문" 타이틀은 그 패널로 스크롤. 30초 폴링으로 타 팀원 반영. 데이터는 이미 있던 것.
+  - **④ 대기 프로젝트 리마인더**(`NotificationBell.jsx`): 드롭다운 상단 핀 섹션 "대기중 프로젝트"(=`pending`) → 상태별 `planning`→`/plan`, `recruiting`→`/invite`. 숫자 배지는 안읽은 이벤트 전용, pending은 점(dot)으로 표시(상시 점등 방지).
+- **검증**: `oxlint`(exit 0)·`build`(dist) 통과. 서버 스크립트 **5/5 통과** — `items[].projectId` 값 일치 · `pending`에 recruiting 포함/active 제외 · `pending` 항목 `title/status` 정확(로컬 서버 3010, 시드 삽입 후 실호출). 화면 상호작용(카드 버튼·알림 클릭·설문 패널)은 배포본에서 사용자 확인 권장.
+
+### 2026-07-29 · Vercel-only 배포로 복귀 (분리 배포 → 같은 오리진)
+- **왜**: 배포 방식을 다시 **Vercel 한 프로젝트**(정적 프론트 + Express serverless, **같은 오리진**)로 통일. 같은 오리진이면 분리 배포용 추가물이 불필요할 뿐 아니라 일부는 **보안이 느슨** — CORS `origin:true+credentials`는 아무 사이트나 인증요청 반영, 쿠키 `SameSite=None`은 CSRF 방어를 약화. 전부 되돌려 더 단순·안전하게.
+- **방식**:
+  - **FE `client.js`**: `API_BASE`/`VITE_API_BASE_URL`·`fileUrl` 제거, 상대경로 `/api` + `credentials:'same-origin'` 복귀. `ProgressTab` 다운로드 앵커도 상대경로로.
+  - **BE**: `server/app.js`에서 `cors` 제거(같은 오리진이라 불필요). `server/lib/auth.js` 쿠키를 항상 `sameSite:'lax'`(+prod에선 `secure`) — Lax면 같은 오리진에 충분하고 크로스사이트 요청엔 쿠키가 안 실려 CSRF 방어. `npm uninstall cors`.
+  - **Vercel serverless**: `api/index.js`(=`export default app`) 재생성, `vercel.json`은 `/api/(.*)`→함수 + `/(.*)`→SPA 폴백. `render.yaml` 삭제. `.env.example`의 분리 배포 섹션 제거 + Vercel 대시보드 env 안내(NODE_ENV는 Vercel이 자동).
+  - **업로드 10MB→4MB 복원**: Vercel serverless 요청 본문 4.5MB 한계(초과 시 413) 대응. `me.js` 상수·에러 문구·정책표 갱신.
+  - **배포 절차**(사용자 수행): 커밋/푸시 → Vercel Import(Vite 자동) → env 5개(SUPABASE_URL·SUPABASE_SECRET_KEY·JWT_SECRET·ANTHROPIC_API_KEY·CLAUDE_MODEL) → Deploy → `/api/health` 확인 → 전 플로우 확인.
+- **검증(로컬)**: `oxlint`(exit 0)·`build`(dist) 통과. 스크립트 **8/8 통과** — 쿠키 로직(프로덕션 Lax+Secure / 로컬 Lax·비Secure, **None 아님**) · 프로덕션 서버 실제 `Set-Cookie: …HttpOnly; Secure; SameSite=Lax`(포트 3010) · 쿠키로 `/api/auth/me` 200 · **CORS 헤더 없음**(ACAO=null) · 업로드 4MB 경계(초과 400 "4MB"/이하 통과). 실 Vercel 라우팅은 배포 후 사용자가 확인.
+
+### 2026-07-28 · 분리 배포 대응 (FE Vercel + BE Render) — ⚠️ 2026-07-29 vercel-only로 되돌림(위 참조)
+- **왜**: 배포를 **FE=Vercel / BE=Render 분리**로 변경(오리진이 갈림). 브라우저 same-origin 정책 때문에 코드 수정이 "선택"이 아니라 **필수** — (1) FE가 BE 절대주소를 알아야 하고, (2) BE가 그 FE 오리진을 CORS로 허용하고, (3) 로그인 쿠키가 크로스사이트로 나가야(SameSite=None) 함. all-Vercel용 산출물(`api/index.js`·`vercel.json` 함수 rewrite·업로드 4MB)은 되돌림.
+- **방식**:
+  - **FE `client.js`**: 모든 fetch에 `API_BASE = VITE_API_BASE_URL`(Render 절대주소) 접두 + `credentials:'include'`. 다운로드 앵커용 `fileUrl()` export(ProgressTab 적용). 로컬은 env 비우면 상대경로+Vite 프록시 그대로.
+  - **BE**: `server/app.js`에 `cors({ origin: FRONTEND_ORIGIN||true, credentials:true })`(라우트 앞). `server/lib/auth.js` 쿠키를 프로덕션에서 `sameSite:'none'+secure:true`, 로컬은 `lax`로 분기 — **Render에 `NODE_ENV=production` 없으면 크로스사이트 로그인 실패**(핵심 함정).
+  - **Render**: `package.json`에 `start:"node server/index.js"`(상시 서버, `PORT` 주입). `render.yaml` 블루프린트(비밀 env는 `sync:false`). serverless 4.5MB 한계가 없어 **업로드 10MB 복원**.
+  - **Vercel=정적 전용**: `api/index.js` 제거, `vercel.json`은 SPA 폴백만. `.env.example`에 `NODE_ENV`·`FRONTEND_ORIGIN`(BE)·`VITE_API_BASE_URL`(FE) 위치 명시. `npm i cors`.
+  - **배포 절차**(사용자 수행): BE→Render(env+NODE_ENV=production, `/api/health` 확인) → FE→Vercel(VITE_API_BASE_URL=Render주소) → Render에 FRONTEND_ORIGIN=Vercel주소 넣고 재배포 → DevTools·Render 로그·Supabase로 확인.
+- **검증(로컬)**: `oxlint`(exit 0)·`build` 통과. 스크립트 **9/9 통과** — 쿠키 로직(프로덕션 None+Secure / 로컬 Lax) · 프로덕션 서버 실제 `Set-Cookie: …SameSite=None; Secure` · 쿠키로 `/api/auth/me` 200 · CORS 응답(ACAO=지정 오리진, credentials true)·프리플라이트 204 · 업로드 10MB 경계(초과 400/이하 통과). 실제 크로스오리진은 배포 후 사용자가 확인.
+
+### 2026-07-28 · Vercel 배포 준비 (전부 Vercel · 같은 오리진) — ✅ 2026-07-29 이 방식으로 복귀(최상단 참조)
+- **왜**: 핵심 기능이 끝나 배포 베이스라인 확보. 같은 오리진 배포면 현재 httpOnly 쿠키 인증(`credentials:'same-origin'`, `secure` 이미 prod 대응)이 CORS 없이 그대로 동작. Vercel은 상시 Express를 못 돌리므로 **serverless로 래핑**해야 한다.
+- **방식**:
+  - **앱 분리**: `server/app.js`(미들웨어·라우트·`/api/health` + `export default app`, listen 없음) ↔ `server/index.js`(로컬 dev용 `app.listen`) / `api/index.js`(Vercel 진입점, `export default app`). `npm run dev`는 그대로.
+  - `vercel.json`: `framework:vite`·`outputDirectory:dist`·`functions.maxDuration:60`(플래너 Claude 호출 대비) + rewrites(`/api/(.*)`→`/api` 함수, `/(.*)`→`/` SPA 폴백). `package.json engines.node:"22.x"`.
+  - **업로드 10MB→4MB**: Vercel serverless 요청 본문 4.5MB 한계(초과 시 413 FUNCTION_PAYLOAD_TOO_LARGE)와 충돌 → 상한을 4MB로. (10MB 유지는 브라우저→Storage 서명 업로드 필요, 후속.) `me.js` 상수·에러 문구·정책표 갱신.
+  - `README`에 배포 절차(GitHub push → Vercel Import → 환경변수 4개 → Deploy) + 4MB·버킷 주의. 프론트는 상대경로 `/api`만 써서 그대로 동작, `.env`는 이미 gitignore.
+  - **실제 배포는 사용자 수행**(내 계정으로 배포 불가) — 커밋/푸시와 동일 원칙.
+- **검증(로컬)**: `oxlint`(exit 0)·`build`(dist) 통과. 분리 스모크 스크립트 **5/5 통과** — `api/index.js` default export가 호출가능 함수(Express app) · 분리 후 `/api/health` 200+env 로드 · 가입→`/api/auth/me` 200(라우트 무결) · **4MB 초과 400**(LIMIT_FILE_SIZE, multer가 auth보다 먼저) · 4MB 이하는 크기 통과(401=미인증). 실 Vercel 라우팅은 배포 시 확인(선택 `vercel dev`).
+
+### 2026-07-28 · 인앱 알림 (팀 이벤트 → 개인 알림 + 헤더 벨) — phase ④ 완료
+- **왜**: 팀 이벤트가 `activity_log`(프로젝트 피드)에만 남고 **각 팀원 개인에게 도달하는 알림이 없었다**. `notifications` 테이블은 있는데 `AppLayout`의 🔔은 목업이었다. 합류·공개·교환·업로드 시 팀원에게 알림을 쌓고 헤더 벨로 확인·읽음 처리 → phase ④ 마무리.
+- **방식**:
+  - `server/lib/notify.js` — `notifyProjectMembers(projectId, { type, payload, exceptUserId })`: 팀원 `user_id` 조회 → 행위자 제외 → `notifications` 벌크 insert. **best-effort**(자체 try/catch — 알림 실패가 본 작업을 안 깨뜨림). `activity_log`가 프로젝트 단위 1행인 것과 달리 알림은 **수신자별 1행 + 읽음 상태**.
+  - 이벤트 배선(각 1줄): `join.js` 합류(기존 팀원에게, 본인 제외) · `projects.js` `assign`→`reveal`·`swap`→`swap`(둘 다 생성자 제외) · `me.js` 링크/파일 업로드→`upload`(payload `{task, by:nickname}`, 업로더 제외; `loadOwnTask`가 nickname도 반환하도록 확장). "설문 마감"은 배정이 마감+공개를 한 번에 처리하므로 **reveal로 통합**.
+  - `me.js` — `GET /api/me/notifications`(최근 20건 + `unreadCount`, `projects(title)` 조인, camelCase) · `POST …/read-all`(내 안 읽음만 `is_read=true`).
+  - `NotificationBell.jsx`(신규) — 마운트+45s 폴링으로 배지, 클릭 시 드롭다운 + **열 때 read-all**(배지 낙관적 0), `notifText`(대시보드 `activityText` 미러), 바깥 클릭 닫기. `AppLayout` 헤더 목업 벨을 교체. `NotificationBell.css`(Soft Mint 토큰). 마이그레이션·새 의존성 없음.
+- **검증**: 풀플로우 Node 스크립트(c1 생성 + m2·m3 합류) — 합류(기존 팀원만·본인 제외, 프로젝트명 포함)·배정 reveal(m2·m3, 생성자 제외)·맞교환 swap·업로드(생성자·m3에 `{task,by}`, 업로더 제외) 각 **수신자/발신자 제외** 정확 · m3 알림 구성(reveal·swap·upload=3, join 0) · `read-all` 후 unread 0·`is_read` 반영 · 미로그인 401 — **16/16 통과**, 데이터 정리. `oxlint`(exit 0)·`build`(103 모듈) 통과. 헤더 벨+배지+열린 드롭다운(업로드/교환/공개 unread + 합류 read) 헤드리스 스크린샷(실 CSS) 확인.
+
+### 2026-07-28 · 태스크 파일 업로드 (Supabase Storage + 서명 URL)
+- **왜**: 링크 업로드는 됐지만 실제 파일은 못 올렸다(`uploads.file_path` 항상 빈 값). 팀 산출물(문서·이미지)을 **비공개 버킷에 저장하고 서명 URL로 내려받는** 흐름을 완성해 협업을 마무리한다. **게이트웨이 유지** — 브라우저는 `/api`로만 multipart를 보내고 **서버가 Secret key로 Storage에 업로드**(브라우저가 Storage에 직접 접근하지 않음).
+- **방식**:
+  - `npm i multer`(2.x). `me.js`에 정책 상수(화이트리스트 png·jpg·pdf·docx·pptx·xlsx·zip / 10MB / 태스크당 5개)와 `multer.memoryStorage`(용량 limit + 확장자 fileFilter). `POST /api/me/tasks/:taskId/uploads/file` — multer를 **라우트 안에서 호출**해 용량·형식 에러를 기존 try/catch·`fail`로 처리(에러 미들웨어 불필요). `loadOwnTask` 재사용, 파일 5개 초과 400, 저장 키 `${projectId}/${taskId}/${uuid}${ext}`(원본명은 DB에만)로 `storage.upload` → `uploads`(kind='file') insert → `activity_log 'upload'`. insert 실패 시 방금 올린 객체 롤백.
+  - `GET /api/me/uploads/:uploadId/download`(팀원) — `createSignedUrl(path, 3600, { download: fileName })` → `res.redirect`. `DELETE`에 `kind==='file'`이면 `storage.remove`로 객체 정리(고아 방지).
+  - `client.js` `apiUpload`(FormData, Content-Type 미지정). `ProgressTab.jsx` `UploadForm`에 `📁 파일`(hidden `input[type=file]` + accept) → 선택 즉시 `apiUpload`; 파일 자료는 **다운로드 링크**(`/api/me/uploads/:id/download`)로 표시. `tabs.css` `.file-attach` 최소 스타일.
+  - **사전(수동)**: Supabase 비공개 버킷 `uploads`(README 4번). 검증 스크립트가 없으면 생성(멱등).
+- **검증**: 풀플로우 Node 스크립트(`FormData`/`Blob` 내장) — 파일 업로드 201·progress에 `kind:file`·fileName 표시·잔디 · 다운로드 **200 + `/storage/v1/object/sign/uploads/…token=` 경유 + 바이트 일치** · 확장자(.exe) 400·10MB 초과 400·남의 태스크 403·링크에 다운로드 400·비팀원 다운로드 403·**태스크당 5개 제한(6번째 400)** · 삭제 200 → 다운로드 404 + **Storage 객체도 제거(Object not found)** — **16/16 통과**, 데이터·객체 정리. `oxlint`(exit 0)·`build` 통과. 진행 중 카드 `🔗 링크`/`📁 파일` + 파일 다운로드 링크 헤드리스 스크린샷(실 `tabs.css`) 확인.
+
+### 2026-07-28 · 프로젝트 관리 탭 쓰기 (삭제·완료·메인·순서)
+- **왜**: 관리 탭이 읽기만 가능했고 `🗑 삭제`는 목업, 완료/메인/순서 버튼은 아예 없었다. 체크리스트의 "삭제/완료/메인/순서"를 실동작시켜 관리 탭 쓰기를 연다. 권한은 **데이터 모델이 규정** — 삭제·완료는 프로젝트 전역이라 생성자만, 메인·순서는 `project_members`의 개인별 설정(`is_main`/`sort_order`)이라 각 팀원이 자기 것만.
+- **방식**:
+  - `projects.js` — 기존 `loadCreatorProject`/`loadMember` 재사용. `DELETE /api/projects/:id`(생성자, `projects` 한 행 삭제로 자식 전부 **cascade** 정리). `POST /:id/complete { completed }`(생성자, `assigned`/`active` ↔ `completed` 토글, 그 외 409 — 실수 방지 위해 되돌리기 포함). `POST /:id/main`(팀원, 완료 프로젝트면 409, 내 멤버십 전체 `is_main=false` 후 이 프로젝트만 true → 1인 1메인).
+  - `me.js` — `POST /api/me/projects/reorder { projectIds }`: 전부 내 멤버십인지 검증(아니면 400) 후 `sort_order = index` 일괄 갱신. 조회는 이미 `isMain desc, sortOrder asc` 정렬이라 무변경.
+  - `ProjectsTab.jsx` — 목업 제거, `run()` 래퍼(버튼 잠금·reload·에러 notice)로 삭제(`window.confirm` 유지)·완료/취소·메인·↑↓ 연결. `apiDelete` 재사용. **메인은 최상단 고정**이라 순서 화살표는 비메인 카드에만, 양 끝(첫 비메인 위/마지막) 비활성. `tabs.css`에 `.proj-actions`(세로 flex)·`.proj-reorder`/`.reorder-btn` 추가(토큰만). 마이그레이션·새 의존성 없음.
+- **검증**: 풀플로우 Node 스크립트(생성자·A메인/B/C 3개) — 순서 `[A,C,B]`→`[A,B,C]` 반영 · 메인 B로 이동 후 A 복귀 · **planning 완료 409** · C를 배정까지 끌어 완료 처리→완료 섹션 이동·**완료 프로젝트 메인 409**·완료 취소→진행중 복귀 · **B 삭제 + roles/tasks 0건(cascade)** · 팀원 m2의 삭제 403·완료 403·본인 메인 200 · 비멤버 삭제 403 — **18/18 통과**, 테스트 데이터 정리. `oxlint`(exit 0)·`build` 통과. 관리 탭 액션(메인/비메인/완료 카드) 헤드리스 스크린샷(실 `tabs.css`) 확인.
+
+### 2026-07-28 · 태스크 자료 링크 업로드 (URL + 100자 코멘트)
+- **왜**: 진행 탭 태스크 카드의 `📎 업로드`는 목업이었고(클릭 시 안내만), `GET /api/me/progress`는 이미 `uploads`를 내려주지만 **쓰기 API가 없고** 응답이 raw snake_case(`task_id`/`link_url`)라 프론트의 camelCase(`u.taskId`/`u.linkUrl`) 기대와 어긋난 **잠복 버그**가 있었다(실 업로드가 없어 안 드러남). 링크+코멘트 업로드를 실동작시켜 "산출물 공유 + 잔디 기록"을 연다. **파일(Storage) 업로드는 분리** — multer 의존성·비공개 버킷 수동 생성이 필요해 다음 슬라이스로.
+- **방식**:
+  - `me.js` — 소유권 가드 `loadOwnTask(user, taskId)` 추출(404/403 판정) 후 **status 엔드포인트도 이 헬퍼로 리팩터**(중복 제거). `POST /api/me/tasks/:taskId/uploads`(내 태스크만): `new URL()`로 http/https만 허용(아니면 400)·코멘트 100자 초과 400 → `uploads`(kind='link') insert + `activity_log 'upload'`(payload `{task}`) 1행 → 대시보드 최근활동·참여 잔디에 반영. `DELETE /api/me/uploads/:uploadId`(올린 본인만, 아니면 403). progress 응답 uploads를 **camelCase로 매핑**해 잠복 버그 해소.
+  - `client.js` — `apiDelete = (path) => apiSend(path, 'DELETE')`(apiPost와 대칭).
+  - `ProgressTab.jsx` — `UploadForm` 자식 컴포넌트(URL 필수 + 코멘트 선택, 자체 busy/err), 진행 중 카드 목업 교체, 자료 표시에 `✕` 삭제 버튼. `tabs.css`에 `.task-input-row` 줄바꿈 + `.upload-del`/`.upload-err`(Soft Mint 토큰만). 마이그레이션·새 의존성 없음.
+  - **범위(의도)**: 자료 추가/표시/삭제는 **진행 중 카드**에서 관리(요약의 진행 전/완료 항목은 상태 버튼만). 업로드 자체는 status와 무관하게 내 태스크면 API로 가능.
+- **검증**: 풀플로우 Node 스크립트 — 배정 후 내 태스크에 업로드 201 · progress에 **camelCase로 표시**(linkUrl·comment·kind) · 대시보드 최근활동 `upload` 기록 · **참여 잔디에 오늘 포함** · 남의 태스크 업로드 403 · 잘못된 URL 400 · 코멘트 101자 400 · 남의 자료 삭제 403 · 내 자료 삭제 200 후 목록에서 사라짐 — **18/18 통과**, 테스트 데이터 정리. `oxlint`(exit 0)·`build` 통과. 진행 중 카드 업로드 폼+링크(코멘트/✕)+URL 에러 헤드리스 스크린샷(실 `tabs.css`) 확인.
+
+### 2026-07-27 · 태스크 담당자 자동배정 + 진행 탭 상태 변경
+- **왜**: 배정까지 끝나도 태스크는 **역할(role_id)에만 연결**돼 사람(assignee)에 미지정 → 진행 탭 "내 태스크"가 비고 상태 변경이 목업이었다. 배정 결과를 태스크에 연결하고 상태 변경(할일/진행중/완료)을 실동작시켜 **협업(진행 관리) 단계**를 연다. 상태가 바뀌면 진행률(이미 태스크 status로 계산)이 자연히 움직인다.
+- **방식**:
+  - `assignTasksToRoleHolders(projectId)` (projects.js) — `assignments`(member↔role)로 각 태스크를 **역할 보유자에게 라운드로빈** 분배(같은 역할 여러 명이면 태스크 고르게 나눔, `role_id` null 태스크는 미배정). `POST /assign` 배정 저장 직후 + `POST /swap` 역할 교차 저장 직후 호출 → 맞교환으로 바뀐 역할의 태스크도 담당자가 따라감.
+  - `POST /api/me/tasks/:taskId/status` (me.js) — 태스크가 요청자의 `project_members`에 배정됐는지 확인해 **내 태스크만** 변경(아니면 403), 잘못된 status 400. 실제로 바뀌면 `activity_log` `task_status` 1행 → 대시보드 최근 활동. 진행 탭 조회는 이미 `assignee_member_id`로 "내 태스크"를 뽑으므로 담당자만 채우면 자동 표시(조회 무변경).
+  - `ProgressTab.jsx` — 진행 중 카드·요약 항목마다 상태 버튼 3개(현재 상태만 색+링 강조), 클릭 시 `apiPost` → `reload()`로 그룹 이동·진행률 갱신. `tabs.css`에 `.status-btns`/`.status-btn`(Soft Mint 토큰만). 마이그레이션 불필요(`assignee_member_id`·`status` 기존 컬럼).
+- **검증**: 풀플로우 Node 스크립트(생성→확정→3명 합류→설문→배정) — 배정 후 태스크에 **담당자 채워짐**(생성자 9/팀원A 2/팀원B 3개) · 내 태스크 상태 todo→doing→done 200·진행률 0→50%·done 0→1 · 활동로그 `task_status` 기록 · **남의 태스크 변경 403**·잘못된 status 400 · **맞교환 후 태스크가 새 역할 따라 재배정**(팀원A 2→3개) — **18/18 통과**, 테스트 데이터 정리. `oxlint`(exit 0)·`build` 통과. 진행 탭 상태 버튼 헤드리스 스크린샷(실 `tabs.css`) 확인.
+- **참고**: 조장은 "조장 표식 + 실무 역할" 2행이라 태스크는 실무 역할 기준으로만 배정됨(조장 표식 역할엔 태스크 없음). '조장 DB 정합' 후속과제는 이 다역 저장 구조로 해결됨.
+
+### 2026-07-27 · 배정 결과 10분 내 1회 역할 맞교환
+- **왜**: 배정 불복 대비 공정 절차 — 공개 후 10분 내 생성자가 두 팀원 역할을 1회 맞교환(무한 재배정 방지). "사람은 결과보다 절차가 공정할 때 납득".
+- **방식**: `POST /api/projects/:id/swap`(생성자·`status=assigned`·`!swap_used`·`now−revealed_at≤10분` 가드) → 두 팀원의 **실무 역할만 교차 저장**(조장 표식 유지, `unique(project,member,role)` 무충돌) → `swap_used=true` + 활동로그 `swap`. `GET /result`에 뷰어 `isCreator`·`swapUsed`·member `id` 추가. `AssignmentResult.jsx`는 지난 배정 슬라이스에서 뺐던 맞교환 UI(카운트다운·2명 선택)를 서버 연동으로 복원. `revealed_at`·`swap_used` 컬럼 기존 재사용(마이그레이션 없음).
+- **검증**: curl — 맞교환 전/후 두 팀원 실무 역할 **뒤바뀜**(조장 유지)·`swapUsed` false→true → 2회차 409 · 비생성자 403 · 만료(revealed_at 11분 전 조정) 409 · 진행 탭 역할 반영. `oxlint`·`build` 통과. 테스트 데이터 정리.
+- **참고(단순화)**: 맞교환 후 `assignment_stats`/AI 설명은 재계산하지 않음(원래 알고리즘 배정 설명 유지, 카드의 실제 역할만 갱신).
+
+### 2026-07-27 · 배정 설명자 (플래닝 에이전트가 배정 이유 설명)
+- **왜**: 결과 화면이 규칙 요약만 보여줬다. 리브랜딩한 "플래닝 에이전트가 배정 결과를 설명"을 실제 AI로 완성. AI는 배정을 하지 않고 **이유만** 설명(공정 규칙과 역할 분리).
+- **방식**: `server/services/explainer.js` 신규 — `explainAssignment({stats, roleNames})`가 Claude로 팀 단위 설명(선호·경험 반영·조장 처리·타협안)을 생성, `planner.js`와 동일 SDK/모델 패턴(짧은 산문이라 구조화 출력 없이 `effort:low`). **★ 공정성: 개인 설문·개인 배정은 절대 입력하지 않고 집계값(stats)·역할명만** 전달 → 역추론 불가. 키 없음/오류/거부 시 `null`(→ 화면이 규칙 요약 폴백), try/catch로 **배정 자체는 절대 실패하지 않게**. `POST /assign`이 stats 계산 뒤 호출해 `assignment_summary` 저장. 프론트는 이미 summary-우선 렌더라 변경 없음.
+- **검증**: explainer 단독 실행 — 정상 케이스(팀 단위·개인 언급 없음)·기피 역할 케이스(로테이션·업무 경감 **타협안** 생성)·키 없음(null) 확인. `oxlint`·`build` 통과. 서버 curl 전 흐름 → `POST /assign` 200 → `GET /result`의 `summary`가 **AI 설명 문자열로 채워짐** 확인. 테스트 데이터 정리.
+
+### 2026-07-27 · 역할 배정 실행 + 결과 공개 (규칙 요약)
+- **왜**: 이 프로젝트의 **핵심 차별점** — 생성자가 설문을 마감하면 **AI가 아니라 결정적 점수 규칙**이 역할을 배정하고(재현성·공정성), 결과를 공개한다.
+- **방식**: `src/logic/assignRoles.js`를 서버에서 그대로 import(planner가 templates.js 쓰는 방식) — 단, 실 역할은 UUID라 조장 판정을 `r.id==='leader'` → **`r.isLeader`**로 수정. `POST /api/projects/:id/assign`(생성자·모집중): 설문 제출자만 참여자로 `assignRoles` 실행 → 기존 배정 삭제 후 **member×role 다역 저장** → `computeTeamStats`를 `projects.assignment_stats`에 저장 → status `assigned`·`revealed_at`. `GET /:id/result`가 팀원별 역할·조장·규칙 통계 반환. `AssignmentResult.jsx`는 실데이터로(맞교환·공개 단계 제외), `Survey.jsx`에 생성자 "마감하고 배정" + 팀원 "결과 보기". **DB 정합**: 한 사람이 조장+실무/1인 다역이라 `assignments`의 `unique(project_id,member_id)`를 `(…,role_id)`로 교체(마이그레이션). `me.js`는 다역을 배열로 묶어 표시(대시보드·진행 회귀 방지).
+- **검증**: `assignRoles`를 UUID 역할로 **단독 실행** — 조장 정확히 1명(리더 yes인 멤버)·전원 실무 보유·통계 정상 확인(조장 isLeader 판정 수정 검증). `oxlint`·`build` 통과. 서버 curl은 생성→확정→합류→전원 설문→배정 계산까지 정상, **배정 저장은 마이그레이션 대기**로 확인(아래 조치).
+- **필요 조치(사용자)**: Supabase SQL Editor에서 1회 실행 —
+  ```sql
+  alter table assignments drop constraint if exists assignments_project_id_member_id_key;
+  create unique index if not exists assignments_pmr_key on assignments(project_id, member_id, role_id);
+  alter table projects add column if not exists assignment_stats jsonb;
+  ```
+  (schema.sql에도 반영.) **마이그레이션 적용 후 curl로 배정→결과→3탭 end-to-end 최종 확인 완료** — 조장 정확히 1명·조장+실무 **다역 저장**·비생성자 403·3탭 다역 표시 회귀 없음.
+
+### 2026-07-27 · 설문 제출 (성향 설문 실데이터)
+- **왜**: join으로 착지한 `/survey`가 목업(템플릿 역할)이었다. 배정 점수의 입력값을 **프로젝트의 실제 역할(planner가 만든 UUID)** 기준으로 받아 `surveys`에 저장해야 다음 배정 슬라이스가 동작한다.
+- **방식**: `projects.js`에 팀원 확인 헬퍼 `loadMember` + `GET /api/projects/:id/survey`(실제 역할·제출 현황) + `POST /api/projects/:id/survey`(선호·기피·경험·리더의향 검증 → `surveys` **upsert**, 재제출 시 덮어씀, 모집 중만). `Survey.jsx`는 `useApi`로 역할·현황을 받고 `apiPost`로 제출(목업·템플릿 역할 제거). 답변의 roleId는 **역할 UUID**. 생성자도 배정 대상이라 `InviteLink.jsx`에 "내 설문 작성" 진입점 추가. 마감→배정은 다음 슬라이스.
+- **검증**: curl 전 흐름 — 생성자 제출(submitted 1) → 팀원 2명 합류(memberCount 3) → 각자 제출(2, 3) → **잘못된 roleId 400 · 잘못된 leader 400 · 비멤버 403 · 재제출 시 중복 안 늘어남(upsert)**. `oxlint`·`build` 통과. 테스트 데이터 정리. (헤드리스 스크린샷은 인증 쿠키 주입 이슈로 생략 — 서버 계약 curl 전수 + 검증된 `useApi`/`apiPost` 패턴 재사용.)
+- **다음 슬라이스 주의**: `assignRoles.js` 서버 이식 시 점수 매트릭스의 조장 판정을 `r.id==='leader'` → `r.isLeader`로 바꿔야 함(실 역할은 UUID).
+
+### 2026-07-24 · 초대 링크로 팀원 합류 (join)
+- **왜**: 확정 시 발급된 초대 토큰의 "입구" — 팀원이 링크로 가입·합류해 설문 단계로 넘어가는 경로. 배정 플로우의 다음 전제.
+- **방식**: `server/routes/join.js`에 **공개(로그인 불필요) 엔드포인트 2개** — `GET /api/join/:token`(모집 중 프로젝트 미리보기·참여 현황), `POST /api/join/:token`(가입+합류). 회원가입 로직은 `auth.js`에서 **`createUser` 헬퍼로 추출**해 signup·join이 공유(재사용). 합류 순서: 정원 검사 → **닉네임 선검사(계정 orphan 방지)** → `createUser` → `project_members` 등록(신규 계정이라 메인) → 활동 로그 → 자동 로그인 쿠키. `Join.jsx`는 `useApi` 미리보기 + `apiPost` 합류 + 중복확인(`check-username` 재사용)으로 실연동, `flowMock` 제거.
+- **검증**: curl 전 흐름 — 미리보기 1/3 → 정상 합류 201(3/3) → **닉네임 중복 409 · 아이디 중복 409 · 정원 초과 409 · 잘못된 토큰 404** → isFull true → **회원가입 여전히 201(auth 리팩터 회귀 없음)**. `oxlint`·`build` 통과. 테스트 프로젝트·계정 정리(cascade + 계정 삭제). (헤드리스 스크린샷은 서버 계약을 curl로 전수 검증 + 프론트가 검증된 `useApi`/`apiPost` 패턴 재사용이라 생략.)
+- **알려진 한계**: 정원/닉네임 동시 가입 레이스는 DB `unique` 제약이 방어선(트랜잭션 미적용). 합류는 **신규 가입만** 지원(기존 계정 로그인-후-합류는 후속).
+
+### 2026-07-24 · 계획 확정·재생성·초대 링크 발급 (생성자 플로우 마무리)
+- **왜**: 계획 검토 화면의 "다시 제안받기"·"이대로 확정" 버튼이 목업이었다. 생성자 계획 흐름을 끝까지 실데이터로 닫아 다음 단계(join)의 전제(실 초대 토큰)를 만든다.
+- **방식**: `projects.js`에 3개 엔드포인트 추가 — `POST /:id/regenerate`(생성자·planning·regen<3 가드 → 플래너 재호출 → tasks·milestones·roles 삭제 후 재저장 → regen_count+1), `POST /:id/confirm`(인라인 수정 이름/제목 저장 → `node:crypto` 초대 토큰 발급 → status=recruiting, 이미 확정 시 같은 토큰 반환하는 **멱등**), `GET /:id/invite`(토큰·참여 현황). 생성·재생성이 공유하도록 계획 저장 로직을 **`savePlan` 헬퍼로 추출**하고, 생성자 확인은 `loadCreatorProject` 헬퍼로 통일. 프론트는 `PlanReview`가 재생성(reload)·확정(수정 동봉)·남은 횟수 표시, `InviteLink`가 `useApi`로 실 링크·현황 조회(`flowMock` 의존 제거).
+- **검증**: curl로 전 흐름 — 생성 201 → 재생성 regenCount 0→1(계획 교체) → regen_count=3에서 재생성 400 → 확정 시 역할명 수정 반영 확인 + 토큰 발급 + status=recruiting → 확정 재호출 **같은 토큰(멱등)** → `GET /invite` 토큰·joinedCount 1·생성자 표시 → 비생성자 403·미로그인 401. `oxlint`·`build` 통과. 테스트 프로젝트 cascade 삭제로 정리. (브라우저 헤드리스 워크스루는 서버 계약을 curl로 전수 검증·프론트는 기존 검증된 useApi/apiPost 패턴 재사용이라 생략 — 필요 시 실행 가능.)
+
+### 2026-07-24 · 프로젝트 생성 API + 플래너 에이전트
+- **왜**: 목업(위저드 2.2초 setTimeout·PlanReview 템플릿 계획)을 실 서버 + Claude로 교체하는 첫 세로 슬라이스. 위저드 제출 → DB 저장 → 계획 검토를 실데이터로.
+- **방식**: `server/services/planner.js`가 Claude(구조화 출력 `output_config.format`, 기본 모델 `claude-opus-4-8`, 어댑티브 씽킹)로 역할·마일스톤·태스크를 생성하고, **키 없음·API 오류·검증 실패 시 `templates.js` 템플릿으로 폴백**한다 → 키 유무와 무관하게 항상 유효한 계획. `server/routes/projects.js`의 `POST /api/projects`가 projects·project_members(첫 프로젝트면 메인)·avoid_dates·roles·milestones·tasks를 저장(역할/마일스톤 **slug→uuid 매핑**으로 태스크 연결), `GET /api/projects/:id/plan`은 생성자 전용 조회. 프론트는 `apiPost`(위저드)·`useApi`(PlanReview)로 연결. **계획 수정 저장·재생성(3회)·확정→초대토큰·파일 첨부는 다음 슬라이스로 분리** — 이번엔 목 경로 제거에 집중.
+- **검증**: planner를 격리 실행해 **폴백·Claude 경로 각각** 유효 계획 생성 확인(역할 4~5개·조장 정확히 1개·모든 태스크 roleId 정합·마일스톤 날짜 범위). 서버 부팅·`/api/health` OK, 미로그인 `POST /api/projects` → 401. 인증 POST는 projects·멤버·기피날짜까지 저장 성공(컬럼명 일치 확인). `npx oxlint`·`npm run build` 통과. 임시 검증 프로젝트는 삭제(cascade)로 정리.
+- **필요 조치(사용자)**: `roles` 테이블에 emoji 컬럼 추가 — Supabase SQL Editor에서 **`alter table roles add column if not exists emoji text;`** 1회 실행. (schema.sql에도 반영해 둠.) 이후 생성→계획 저장·조회가 end-to-end로 동작한다. 컬럼 반영 후 브라우저에서 위저드→계획 검토 실데이터 표시 최종 확인 예정.
 
 ### 2026-07-22 · 인증 마무리 (라우트 가드·사용자 표시·로그아웃)
 - **왜**: 로그인은 되지만 미로그인으로 `/app`에 접속 가능, 사이드바 "게스트" 고정, 로그아웃 부재 — 인증을 제대로 닫아 이후 기능을 로그인 상태로 테스트할 토대.

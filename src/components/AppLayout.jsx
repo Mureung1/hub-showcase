@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router'
 import logo from '../assets/logo.png'
 import { useApi, apiPost } from '../api/client'
+import NotificationBell from './NotificationBell'
 import './AppLayout.css'
 
 const MENU = [
@@ -61,15 +62,6 @@ export default function AppLayout() {
         <div className="sidebar-bottom">
           <Link to="/projects/new" className="btn btn-dark sidebar-new">＋ 새 프로젝트 만들기</Link>
 
-          <div className="sidebar-utils">
-            <button type="button" className="sidebar-link">
-              <span className="sidebar-icon" aria-hidden="true">🔔</span>알림
-            </button>
-            <button type="button" className="sidebar-link">
-              <span className="sidebar-icon" aria-hidden="true">❓</span>도움말
-            </button>
-          </div>
-
           <div className="sidebar-profile">
             <span className="avatar" aria-hidden="true">👤</span>
             <div className="sidebar-profile-info">
@@ -100,7 +92,7 @@ export default function AppLayout() {
             ☰
           </button>
           <div className="app-header-actions">
-            <button type="button" className="icon-btn" aria-label="알림">🔔</button>
+            <NotificationBell />
             <button type="button" className="icon-btn" aria-label="프로필">👤</button>
           </div>
         </header>

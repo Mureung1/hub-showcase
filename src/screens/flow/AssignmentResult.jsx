@@ -1,78 +1,74 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
-import { getRolesForType } from '../../data/templates'
-import { assignRoles, computeTeamStats } from '../../logic/assignRoles'
-import { fallbackProject, makeMembers, makeMockSurveys } from './flowMock'
+import { useApi, apiPost } from '../../api/client'
 import './flow.css'
 
-/* 배정 결과 — 점수 로직(assignRoles.js)의 결과를 보여준다.
-   설명문은 4단계에서 Claude 배정 설명 에이전트가 생성하고, 여기 문구는 폴백으로 남는다. */
+/* 배정 결과 — 서버(GET /api/projects/:id/result)의 배정을 보여준다.
+   공개 후 10분 내 생성자가 두 팀원의 실무 역할을 1회 맞교환할 수 있다(POST /swap). */
 
 const SWAP_WINDOW_SEC = 600 // 공개 후 10분
 
 export default function AssignmentResult() {
-  const navigate = useNavigate()
-  const { state } = useLocation()
+  const { id } = useParams()
+  const { loading, error, data, reload } = useApi(`/api/projects/${id}/result`)
 
-  const project = useMemo(() => ({ ...fallbackProject(), ...(state ?? {}) }), [state])
-  const roles = useMemo(() => getRolesForType(project.typeHint), [project.typeHint])
-  const members = useMemo(() => makeMembers(project.headcount), [project.headcount])
+  const [picked, setPicked] = useState([]) // 맞교환 대상 member id 2개
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [now, setNow] = useState(Date.now())
 
-  // 설문 응답: 나(1번)는 실제 제출값, 나머지는 목업. 4단계에서 전부 DB 조회로 교체
-  const surveys = useMemo(() => {
-    const mock = makeMockSurveys(members, roles)
-    if (project.mySurvey && members[1]) mock[members[1].id] = project.mySurvey
-    return mock
-  }, [members, roles, project.mySurvey])
-
-  // 배정은 결정적이므로 같은 입력이면 항상 같은 결과가 나온다
-  const result = useMemo(() => assignRoles(members, surveys, roles), [members, surveys, roles])
-  const stats = useMemo(
-    () => computeTeamStats(members, surveys, roles, result),
-    [members, surveys, roles, result],
-  )
-
-  const [published, setPublished] = useState(false)
-  const [swaps, setSwaps] = useState({}) // memberId → 실무 roleId 배열 (맞교환 후 덮어쓴 실무 역할)
-  const [swapUsed, setSwapUsed] = useState(false)
-  const [picked, setPicked] = useState([])
-  const [remainSec, setRemainSec] = useState(SWAP_WINDOW_SEC)
-
+  // 카운트다운 갱신
   useEffect(() => {
-    if (!published || swapUsed || remainSec <= 0) return
-    const timer = setInterval(() => setRemainSec((s) => Math.max(s - 1, 0)), 1000)
-    return () => clearInterval(timer)
-  }, [published, swapUsed, remainSec])
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
-  // 조장은 실무 역할 위에 얹는 표식 — 실무 역할과 분리해 표시하고, 맞교환 대상에서도 제외한다
-  const leaderRoleIds = new Set(roles.filter((r) => r.isLeader).map((r) => r.id))
-  const leaderRole = roles.find((r) => r.isLeader)
-  const workRolesOf = (memberId) =>
-    swaps[memberId] ?? (result.byMember[memberId] ?? []).filter((rId) => !leaderRoleIds.has(rId))
-  const isLeaderOf = (memberId) =>
-    (result.byMember[memberId] ?? []).some((rId) => leaderRoleIds.has(rId))
-  const roleInfo = (roleId) => roles.find((r) => r.id === roleId)
-  const swapOpen = published && !swapUsed && remainSec > 0
-
-  function togglePick(memberId) {
-    if (!swapOpen) return
-    setPicked((p) =>
-      p.includes(memberId) ? p.filter((id) => id !== memberId) : [...p, memberId].slice(-2),
+  if (loading) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center"><h2>배정 결과를 불러오는 중…</h2></div>
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>배정 결과를 열 수 없습니다</h2>
+          <p className="flow-muted">{error}</p>
+          <button type="button" className="btn btn-ghost" onClick={reload}>다시 시도</button>
+        </div>
+      </div>
     )
   }
 
-  function handleSwap() {
-    if (picked.length !== 2) return
-    const [a, b] = picked
-    // 두 팀원의 실무 역할을 통째로 교환 (조장 표식은 각자 유지)
-    const [workA, workB] = [workRolesOf(a), workRolesOf(b)]
-    setSwaps({ [a]: workB, [b]: workA })
-    setSwapUsed(true)
-    setPicked([])
+  const { members, leaderRole, stats, summary, isCreator, swapUsed, project } = data
+  const revealedMs = project.revealedAt ? new Date(project.revealedAt).getTime() : 0
+  const remainSec = revealedMs ? Math.max(Math.floor((revealedMs + SWAP_WINDOW_SEC * 1000 - now) / 1000), 0) : 0
+  const swapOpen = isCreator && !swapUsed && remainSec > 0
+  const mmss = `${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`
+
+  function togglePick(memberId) {
+    if (!swapOpen) return
+    setNotice('')
+    setPicked((p) => (p.includes(memberId) ? p.filter((x) => x !== memberId) : [...p, memberId].slice(-2)))
   }
 
-  const mmss = `${String(Math.floor(remainSec / 60)).padStart(2, '0')}:${String(remainSec % 60).padStart(2, '0')}`
+  async function handleSwap() {
+    if (picked.length !== 2) return
+    setNotice('')
+    setBusy(true)
+    try {
+      await apiPost(`/api/projects/${id}/swap`, { memberA: picked[0], memberB: picked[1] })
+      setPicked([])
+      reload() // 바뀐 역할·swapUsed 반영
+    } catch (err) {
+      setNotice(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="flow-page">
@@ -89,20 +85,25 @@ export default function AssignmentResult() {
 
         <div className="explain-box">
           <strong>배정 요약</strong>
-          <p>
-            팀원 {stats.total}명 중 <strong>{stats.matchedPref}명</strong>이 선호한 역할을 받았고,{' '}
-            <strong>{stats.expMatched}명</strong>은 경험이 있는 역할에 배정되었습니다.
-            {stats.leaderVolunteer
-              ? ' 조장은 직접 지원한 팀원이 맡았습니다.'
-              : ' 조장 지원자가 없어 설문 점수가 가장 높은 팀원이 맡았습니다.'}
-          </p>
-          {stats.forcedCount > 0 && (
+          {summary ? (
+            <p>{summary}</p>
+          ) : stats ? (
+            <p>
+              팀원 {stats.total}명 중 <strong>{stats.matchedPref}명</strong>이 선호한 역할을 받았고,{' '}
+              <strong>{stats.expMatched}명</strong>은 경험이 있는 역할에 배정되었습니다.
+              {stats.leaderVolunteer
+                ? ' 조장은 직접 지원한 팀원이 맡았습니다.'
+                : ' 조장 지원자가 없어 설문 점수가 가장 높은 팀원이 맡았습니다.'}
+            </p>
+          ) : (
+            <p className="flow-muted">요약을 준비 중입니다.</p>
+          )}
+          {stats?.forcedCount > 0 && (
             <p className="explain-warn">
               ⚠ {stats.forcedNames.join('·')} 역할은 지원자가 부족해 기피 응답에도 배정되었습니다.
-              부담이 크면 아래 맞교환 기능을 활용해 주세요.
             </p>
           )}
-          {stats.fullyAvoidedNames.length > 0 && (
+          {(stats?.fullyAvoidedNames?.length ?? 0) > 0 && (
             <p className="explain-warn">
               ⚠ {stats.fullyAvoidedNames.join('·')} 역할은 팀 전원이 기피했습니다. 업무를 나눠 맡는 것을 권장합니다.
             </p>
@@ -116,9 +117,7 @@ export default function AssignmentResult() {
           </div>
           <div className="assign-grid">
             {members.map((m) => {
-              const workRoles = workRolesOf(m.id).map(roleInfo).filter(Boolean)
               const isPicked = picked.includes(m.id)
-              const isSwapped = swaps[m.id] !== undefined
               return (
                 <button
                   key={m.id}
@@ -128,22 +127,19 @@ export default function AssignmentResult() {
                   disabled={!swapOpen}
                   aria-pressed={isPicked}
                 >
-                  <span className="assign-avatar" aria-hidden="true">{m.name.slice(0, 1)}</span>
+                  <span className="assign-avatar" aria-hidden="true">{m.nickname.slice(0, 1)}</span>
                   <span className="assign-meta">
                     <strong>
-                      {m.name}
+                      {m.nickname}
                       {m.isCreator && <em className="assign-tag">생성자</em>}
-                      {isLeaderOf(m.id) && (
-                        <em className="assign-tag leader">
-                          {leaderRole?.emoji} {leaderRole?.name ?? '조장'}
-                        </em>
+                      {m.isLeader && leaderRole && (
+                        <em className="assign-tag leader">{leaderRole.emoji} {leaderRole.name}</em>
                       )}
                     </strong>
                     <span className="assign-role">
-                      {workRoles.length > 0
-                        ? workRoles.map((r) => `${r.emoji} ${r.name}`).join(' + ')
+                      {m.roles.length > 0
+                        ? m.roles.map((r) => `${r.emoji} ${r.name}`).join(' + ')
                         : '미배정'}
-                      {isSwapped && <em className="assign-tag swapped">교환됨</em>}
                     </span>
                   </span>
                 </button>
@@ -152,7 +148,7 @@ export default function AssignmentResult() {
           </div>
         </section>
 
-        {published && (
+        {isCreator && (
           <div className="flow-notice">
             {swapUsed
               ? '역할 맞교환을 사용했습니다. 이후에는 변경할 수 없습니다.'
@@ -161,37 +157,22 @@ export default function AssignmentResult() {
                 : '맞교환 가능 시간(10분)이 지났습니다. 역할이 확정되었습니다.'}
           </div>
         )}
+        {notice && <p className="join-error">{notice}</p>}
 
         <div className="flow-actions">
-          {!published ? (
-            <>
-              <span className="flow-muted">
-                확인 후 공개하면 팀원 전체가 결과를 볼 수 있습니다.
-              </span>
-              {/* 생성자에게만 보이는 버튼 — 4단계에서 생성자 여부로 조건부 렌더링 */}
-              <button type="button" className="btn btn-dark" onClick={() => setPublished(true)}>
-                프로젝트 생성 완료
-              </button>
-            </>
+          {swapOpen ? (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleSwap}
+              disabled={picked.length !== 2 || busy}
+            >
+              {busy ? '교환 중…' : '선택한 2명 역할 맞교환'}
+            </button>
           ) : (
-            <>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={handleSwap}
-                disabled={!swapOpen || picked.length !== 2}
-              >
-                선택한 2명 역할 맞교환
-              </button>
-              <button
-                type="button"
-                className="btn btn-dark"
-                onClick={() => navigate('/app/dashboard')}
-              >
-                프로젝트 시작하기
-              </button>
-            </>
+            <span className="flow-muted">역할이 확정되었습니다.</span>
           )}
+          <Link to="/app/dashboard" className="btn btn-dark">프로젝트 시작하기</Link>
         </div>
       </div>
     </div>

@@ -14,10 +14,12 @@ function secret() {
 }
 
 function cookieOptions(maxAgeSec) {
+  const isProd = process.env.NODE_ENV === 'production'
   return {
     httpOnly: true,
+    // 같은 오리진 배포라 Lax면 충분 — 크로스사이트 요청엔 쿠키가 안 실려 CSRF를 막는다.
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production', // 배포(https)에서만 secure
+    secure: isProd, // 배포(https)에서만 secure — 로컬 http는 false
     maxAge: maxAgeSec * 1000, // res.cookie의 maxAge는 밀리초
     path: '/',
   }
@@ -37,7 +39,9 @@ export function setAuthCookie(res, token, remember = false) {
 
 // 로그아웃 — 쿠키 제거
 export function clearAuthCookie(res) {
-  res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/' })
+  const isProd = process.env.NODE_ENV === 'production'
+  // 지울 때도 발급 때와 같은 속성이어야 브라우저가 해당 쿠키를 매칭해 제거한다.
+  res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax', secure: isProd, path: '/' })
 }
 
 // 요청 쿠키의 JWT에서 userId를 꺼낸다. 없거나 무효/만료면 null.

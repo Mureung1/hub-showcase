@@ -1,41 +1,62 @@
-import { useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
 import { formatKorean } from '../../utils/dates'
-import {
-  DEMO_PROJECT_ID,
-  MAX_REGENERATE,
-  buildPlan,
-  fallbackProject,
-  typeLabelOf,
-} from './flowMock'
+import { getTypeById } from '../../data/templates'
+import { useApi, apiPost } from '../../api/client'
 import './flow.css'
 
-/* AI 계획 검토 — 생성자 전용. 위저드 제출 직후 착지해 확정 전에 계획을 손보는 화면.
-   지금은 templates.js의 목 계획을 쓰고, 4단계에서 플래너 에이전트 응답으로 교체된다. */
+const MAX_REGENERATE = 3 // DB projects.regen_count check (0~3)와 동일
+
+/* AI 계획 검토 — 생성자 전용. 위저드 제출 직후 착지해 확정 전에 계획을 살펴보는 화면.
+   서버(GET /api/projects/:id/plan)가 만든 실 계획을 조회해 표시한다.
+   인라인 수정은 로컬 상태로만 반영되며 저장·재생성·확정 저장은 다음 슬라이스에서 붙인다. */
 export default function PlanReview() {
   const navigate = useNavigate()
-  const { state } = useLocation()
+  const { id } = useParams()
+  const { loading, error, data, reload } = useApi(`/api/projects/${id}/plan`)
 
-  // 위저드에서 넘어온 입력이 없으면(주소창 직접 진입·새로고침) 기본값으로 렌더링
-  const project = useMemo(() => ({ ...fallbackProject(), ...(state ?? {}) }), [state])
-
-  const [regenCount, setRegenCount] = useState(0)
-  const [plan, setPlan] = useState(() => buildPlan(project.typeHint, 0, project.deadline))
+  // 편집용 로컬 상태 — 서버 계획이 도착하면 시드한다
+  const [plan, setPlan] = useState({ roles: [], milestones: [] })
+  const [notice, setNotice] = useState('')
   const [edited, setEdited] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const roleName = (roleId) => plan.roles.find((r) => r.id === roleId)?.name ?? '미지정'
-  const remaining = MAX_REGENERATE - regenCount
-  const taskTotal = plan.milestones.reduce((sum, m) => sum + m.tasks.length, 0)
+  useEffect(() => {
+    if (data) {
+      setPlan({ roles: data.roles, milestones: data.milestones })
+      setEdited(false)
+    }
+  }, [data])
 
-  function handleRegenerate() {
-    if (remaining <= 0) return
-    if (edited && !window.confirm('직접 수정한 내용이 사라집니다. 다시 제안받을까요?')) return
-    const next = regenCount + 1
-    setRegenCount(next)
-    setPlan(buildPlan(project.typeHint, next, project.deadline))
-    setEdited(false)
+  if (loading) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>계획을 불러오는 중…</h2>
+          <p className="flow-muted">역할과 일정을 준비하고 있어요.</p>
+        </div>
+      </div>
+    )
   }
+
+  if (error) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>계획을 불러오지 못했습니다</h2>
+          <p className="flow-muted">{error}</p>
+          <button type="button" className="btn btn-ghost" onClick={reload}>다시 시도</button>
+        </div>
+      </div>
+    )
+  }
+
+  const project = data.project
+  const remaining = MAX_REGENERATE - project.regenCount
+  const typeLabel = getTypeById(project.typeHint)?.label ?? '선택 안 함'
+  const roleName = (roleId) => plan.roles.find((r) => r.id === roleId)?.name ?? '미지정'
+  const taskTotal = plan.milestones.reduce((sum, m) => sum + m.tasks.length, 0)
 
   function editRole(roleId, name) {
     setEdited(true)
@@ -65,9 +86,36 @@ export default function PlanReview() {
     }))
   }
 
-  function handleConfirm() {
-    // 4단계: 여기서 계획을 저장하고 서버가 초대 토큰을 발급한다
-    navigate(`/projects/${DEMO_PROJECT_ID}/invite`, { state: project })
+  async function handleRegenerate() {
+    if (remaining <= 0) return
+    if (edited && !window.confirm('직접 수정한 내용이 사라집니다. 다시 제안받을까요?')) return
+    setNotice('')
+    setBusy(true)
+    try {
+      await apiPost(`/api/projects/${id}/regenerate`)
+      reload() // 새 계획으로 다시 조회 (편집 상태 초기화)
+    } catch (err) {
+      setNotice(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleConfirm() {
+    setNotice('')
+    setBusy(true)
+    try {
+      // 인라인 수정(이름/제목)을 확정과 함께 저장한 뒤 초대 토큰 발급
+      await apiPost(`/api/projects/${id}/confirm`, {
+        roles: plan.roles.map((r) => ({ id: r.id, name: r.name })),
+        milestones: plan.milestones.map((m) => ({ id: m.id, title: m.title })),
+        tasks: plan.milestones.flatMap((m) => m.tasks).map((t) => ({ id: t.id, title: t.title })),
+      })
+      navigate(`/projects/${id}/invite`)
+    } catch (err) {
+      setNotice(err.message)
+      setBusy(false)
+    }
   }
 
   return (
@@ -81,7 +129,7 @@ export default function PlanReview() {
         <h1>{project.title}</h1>
         <p className="flow-muted">{project.topic}</p>
         <div className="flow-meta">
-          <span className="flow-chip">{typeLabelOf(project.typeHint)}</span>
+          <span className="flow-chip">{typeLabel}</span>
           <span className="flow-chip">마감 {formatKorean(project.deadline)}</span>
           <span className="flow-chip">{project.headcount}명</span>
           <span className="flow-chip">마일스톤 {plan.milestones.length} · 태스크 {taskTotal}</span>
@@ -89,7 +137,7 @@ export default function PlanReview() {
 
         <p className="flow-notice">
           AI가 제안한 계획입니다. 역할 이름·마일스톤·태스크를 직접 눌러 수정할 수 있어요.
-          확정하면 팀원 초대 링크가 발급되고 계획은 더 이상 다시 제안받을 수 없습니다.
+          확정하면 팀원 초대 링크가 발급됩니다.
         </p>
 
         <section className="flow-section">
@@ -152,13 +200,15 @@ export default function PlanReview() {
           </ol>
         </section>
 
+        {notice && <p className="flow-notice">{notice}</p>}
+
         <div className="flow-actions">
           <div className="regen-row">
             <button
               type="button"
               className="btn btn-ghost"
               onClick={handleRegenerate}
-              disabled={remaining <= 0}
+              disabled={busy || remaining <= 0}
             >
               다시 제안받기
             </button>
@@ -169,8 +219,8 @@ export default function PlanReview() {
             </span>
           </div>
 
-          <button type="button" className="btn btn-dark" onClick={handleConfirm}>
-            이대로 확정
+          <button type="button" className="btn btn-dark" onClick={handleConfirm} disabled={busy}>
+            {busy ? '처리 중…' : '이대로 확정'}
           </button>
         </div>
       </div>

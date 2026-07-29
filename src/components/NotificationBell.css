@@ -1,0 +1,100 @@
+/* 헤더 알림 벨 — 안 읽음 배지 + 드롭다운 (Soft Mint 토큰, 그림자 없음) */
+.notif-wrap { position: relative; }
+
+.bell-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* 대기 프로젝트만 있고 안 읽은 이벤트가 없을 때: 숫자 대신 점으로 알림 */
+.bell-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  pointer-events: none;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  max-width: 86vw;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  z-index: 50;
+}
+
+.notif-head {
+  padding: var(--space-3) var(--space-4);
+  font-weight: 700;
+  font-size: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.notif-empty {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.notif-list { list-style: none; }
+
+.notif-item { border-bottom: 1px solid var(--color-border); }
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: var(--color-primary-light); }
+
+/* 클릭 가능한 알림·대기 항목 — 행 전체가 버튼 */
+.notif-item-btn,
+.notif-pending-item {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.notif-item-btn:hover { background: var(--color-primary-light); }
+
+/* 대기중 프로젝트 — 드롭다운 최상단 핀 섹션 (mint 강조) */
+.notif-pending { background: var(--color-primary-light); border-bottom: 1px solid var(--color-border); }
+.notif-pending-head {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--color-text);
+}
+.notif-pending-list { list-style: none; }
+.notif-pending-item:hover { background: var(--color-surface); }
+
+.notif-icon { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
+
+.notif-body { min-width: 0; }
+
+.notif-text { font-size: 13px; color: var(--color-text); overflow-wrap: anywhere; }
+
+.notif-meta { margin-top: 2px; font-size: 11px; color: var(--color-text-muted); }

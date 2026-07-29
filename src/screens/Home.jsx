@@ -51,26 +51,26 @@ export default function Home() {
         </section>
 
         <section className="agents" id="agents">
-          <h2>팀 프로젝트를 도와주는 두개의 에이전트</h2>
+          <h2>팀 프로젝트를 도와주는 플래닝 에이전트</h2>
           <p className="section-sub">
-            역할 배정 에이전트와 플래닝 에이전트가 여러분의 팀 프로젝트를 도와줍니다.
+            플래닝 에이전트가 계획을 세우고 배정 결과까지 설명합니다. 역할 배정 자체는 공정한 규칙이 맡습니다.
           </p>
           <div className="agent-cards">
-            <article className="agent-card">
-              <span className="agent-icon" aria-hidden="true">👥</span>
-              <h3>역할 배정 에이전트</h3>
-              <p>
-                팀원들의 설문 응답을 기반으로 가장 적합한 역할을 자동으로 배정해주는 지능형
-                에이전트입니다. 개개인의 강점과 선호도를 분석하여 최적의 팀 구성을 제안합니다.
-              </p>
-              <a href="#guide" className="agent-more">Learn more →</a>
-            </article>
             <article className="agent-card">
               <span className="agent-icon" aria-hidden="true">📋</span>
               <h3>플래닝 에이전트</h3>
               <p>
-                프로젝트 주제와 기피 날짜를 고려하여 최적의 마일스톤과 상세 태스크를 설계해주는
-                기획 에이전트입니다. 마감 기한을 준수하면서도 팀원들의 여유를 고려한 스케줄링을 지원합니다.
+                주제·마감일·기피 날짜를 받아 역할 정의와 마일스톤, 상세 태스크를 설계합니다.
+                설문이 끝나면 역할 배정 결과의 이유를 팀 단위로 설명해 팀원 모두가 납득하도록 돕습니다.
+              </p>
+              <a href="#guide" className="agent-more">Learn more →</a>
+            </article>
+            <article className="agent-card">
+              <span className="agent-icon" aria-hidden="true">⚖️</span>
+              <h3>공정한 역할 배정</h3>
+              <p>
+                역할 배정은 AI가 아니라 정해진 점수 규칙이 맡습니다. 같은 설문 응답이면 항상 같은 결과가
+                나오고(재현성), 개인 응답은 공개되지 않아 공정하게 배정됩니다.
               </p>
               <a href="#guide" className="agent-more">Learn more →</a>
             </article>

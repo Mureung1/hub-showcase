@@ -500,6 +500,15 @@ textarea.wz-input:focus {
   cursor: default;
 }
 
+.wizard-error {
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-input);
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
 /* 로딩·완료 */
 .spinner {
   width: 36px;

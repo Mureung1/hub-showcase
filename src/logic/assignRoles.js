@@ -21,7 +21,8 @@ export function buildScoreMatrix(members, surveys, roles) {
       else if (rank === 2) v += 1;
       if (s.experience.includes(r.id)) v += 1;
       if (s.avoid === r.id) v -= 10;
-      if (r.id === 'leader') {
+      if (r.isLeader) {
+        // 조장 역할 한정: 리더 의향 반영 (실 역할은 UUID라 id 비교 대신 isLeader로 판정)
         if (s.leader === 'yes') v += 2;
         else if (s.leader === 'no') v -= 10;
       }

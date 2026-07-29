@@ -393,6 +393,52 @@
   background: var(--color-bg);
 }
 
+/* 설문 제출 후 대기 현황 패널 (합류·제출 현황 + 다음 단계 안내) */
+.survey-wait {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-input);
+  background: var(--color-primary-light);
+  text-align: left;
+}
+
+.survey-wait-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-primary-dark);
+}
+
+.survey-wait-rows {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.wait-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.wait-row span { color: var(--color-text-muted); }
+.wait-row strong { font-weight: 700; }
+.survey-wait .btn { margin-top: var(--space-3); }
+
+/* 제출 후 상단 "역할 설문" 타이틀 — 대기 현황으로 스크롤하는 링크 버튼 */
+.flow-top-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .chip-grid {
   display: flex;
   flex-wrap: wrap;

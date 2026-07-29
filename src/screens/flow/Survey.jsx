@@ -1,19 +1,16 @@
-import { useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
-import { getRolesForType } from '../../data/templates'
-import { DEMO_PROJECT_ID, fallbackProject, makeMembers } from './flowMock'
+import { useApi, apiPost } from '../../api/client'
 import './flow.css'
 
 /* 팀원 설문 — 배정 점수의 입력값을 모은다. 응답은 비공개(팀원끼리 서로 못 봄).
-   4단계에서 제출은 surveys 테이블 INSERT로, 제출 현황은 폴링으로 교체된다. */
+   프로젝트의 실제 역할(GET /api/projects/:id/survey)로 설문을 받아 surveys에 저장한다.
+   설문 마감→배정은 다음 슬라이스. */
 export default function Survey() {
+  const { id } = useParams()
   const navigate = useNavigate()
-  const { state } = useLocation()
-
-  const project = useMemo(() => ({ ...fallbackProject(), ...(state ?? {}) }), [state])
-  const roles = useMemo(() => getRolesForType(project.typeHint), [project.typeHint])
-  const members = useMemo(() => makeMembers(project.headcount), [project.headcount])
+  const { loading, error, data, reload } = useApi(`/api/projects/${id}/survey`)
 
   const [answer, setAnswer] = useState({
     preferences: [], // 순서가 곧 1·2·3순위
@@ -21,16 +18,57 @@ export default function Survey() {
     experience: [],
     leader: 'any',
   })
-  const [submitted, setSubmitted] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
-  /* 나를 제외한 팀원 중 1명은 아직 미제출 — 정원 미달 마감 상황을 확인하기 위한 목업 */
-  const othersSubmitted = Math.max(project.headcount - 2, 0)
-  const submittedCount = othersSubmitted + (submitted ? 1 : 0)
+  // 제출 후엔 다른 팀원의 합류·제출 현황이 갱신되도록 30초마다 새로고침
+  const hasSubmitted = data?.mySubmitted
+  useEffect(() => {
+    if (!hasSubmitted) return
+    const timer = setInterval(reload, 30000)
+    return () => clearInterval(timer)
+  }, [hasSubmitted, reload])
+
+  if (loading) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center"><h2>설문을 불러오는 중…</h2></div>
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <h2>설문을 열 수 없습니다</h2>
+          <p className="flow-muted">{error}</p>
+          <button type="button" className="btn btn-ghost" onClick={reload}>다시 시도</button>
+        </div>
+      </div>
+    )
+  }
+
+  const { project, roles, memberCount, submittedCount, mySubmitted, isCreator } = data
+
+  // 이미 배정됐으면(팀원이 배정 후 들어온 경우 등) 설문 대신 결과로 안내
+  if (['assigned', 'active', 'completed'].includes(project.status)) {
+    return (
+      <div className="flow-page">
+        <div className="flow-card flow-center">
+          <span className="invite-icon" aria-hidden="true">✓</span>
+          <h1>역할 배정이 완료되었습니다</h1>
+          <p className="flow-muted">팀의 역할 배정 결과를 확인하세요.</p>
+          <Link to={`/projects/${id}/result`} className="btn btn-dark">배정 결과 보기</Link>
+        </div>
+      </div>
+    )
+  }
 
   function togglePreference(roleId) {
+    setSubmitError('')
     setAnswer((a) => {
       if (a.preferences.includes(roleId)) {
-        return { ...a, preferences: a.preferences.filter((id) => id !== roleId) }
+        return { ...a, preferences: a.preferences.filter((rid) => rid !== roleId) }
       }
       if (a.preferences.length >= 3) return a // 3순위까지만
       return { ...a, preferences: [...a.preferences, roleId] }
@@ -41,7 +79,7 @@ export default function Survey() {
     setAnswer((a) => ({
       ...a,
       experience: a.experience.includes(roleId)
-        ? a.experience.filter((id) => id !== roleId)
+        ? a.experience.filter((rid) => rid !== roleId)
         : [...a.experience, roleId],
     }))
   }
@@ -51,31 +89,65 @@ export default function Survey() {
       ...a,
       avoid: a.avoid === roleId ? null : roleId,
       // 기피로 고른 역할은 선호에서 자동 제외 (모순 방지)
-      preferences: a.preferences.filter((id) => id !== roleId),
+      preferences: a.preferences.filter((rid) => rid !== roleId),
     }))
   }
 
-  function handleClose() {
-    // 생성자 수동 마감 — 정원 미달이면 인원을 줄일지 확인받는다
+  const rankOf = (roleId) => answer.preferences.indexOf(roleId) + 1
+  const canSubmit = answer.preferences.length > 0 && !busy
+
+  async function handleSubmit() {
+    if (answer.preferences.length === 0) {
+      setSubmitError('맡고 싶은 역할을 1개 이상 골라주세요.')
+      return
+    }
+    setSubmitError('')
+    setBusy(true)
+    try {
+      await apiPost(`/api/projects/${id}/survey`, answer)
+      reload() // 제출 현황·내 제출 여부 갱신
+    } catch (err) {
+      setSubmitError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // 생성자 전용: 설문을 마감하고 역할 배정을 실행한다 (정원 미달이면 확인)
+  async function handleAssign() {
     if (submittedCount < project.headcount) {
       const ok = window.confirm(
-        `현재 ${project.headcount}명 중 ${submittedCount}명이 설문에 참여하였습니다. ` +
-        `전체 참여 인원을 ${submittedCount}명으로 수정할까요?`,
+        `현재 정원 ${project.headcount}명 중 ${submittedCount}명이 설문에 참여했습니다. ` +
+        `참여한 ${submittedCount}명으로 배정을 진행할까요?`,
       )
       if (!ok) return
     }
-    navigate(`/projects/${DEMO_PROJECT_ID}/result`, {
-      state: { ...project, headcount: submittedCount, mySurvey: answer },
-    })
+    setSubmitError('')
+    setBusy(true)
+    try {
+      await apiPost(`/api/projects/${id}/assign`)
+      navigate(`/projects/${id}/result`)
+    } catch (err) {
+      setSubmitError(err.message)
+      setBusy(false)
+    }
   }
-
-  const rankOf = (roleId) => answer.preferences.indexOf(roleId) + 1
 
   return (
     <div className="flow-page">
       <header className="flow-top">
         <img src={logo} alt="" />
-        <span>역할 설문</span>
+        {mySubmitted ? (
+          <button
+            type="button"
+            className="flow-top-link"
+            onClick={() => document.getElementById('survey-wait')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          >
+            역할 설문
+          </button>
+        ) : (
+          <span>역할 설문</span>
+        )}
       </header>
 
       <div className="flow-card">
@@ -85,14 +157,26 @@ export default function Survey() {
           배정 결과에는 팀 전체 통계만 표시됩니다.
         </p>
 
+        {mySubmitted && (
+          <div id="survey-wait" className="survey-wait">
+            <p className="survey-wait-title">✓ 설문을 제출했어요</p>
+            <div className="survey-wait-rows">
+              <div className="wait-row"><span>합류 현황</span><strong>{memberCount} / {project.headcount}명</strong></div>
+              <div className="wait-row"><span>제출 현황</span><strong>{submittedCount} / {memberCount}명</strong></div>
+            </div>
+            <p className="flow-muted">모든 팀원이 설문을 제출하면 역할 배정이 시작됩니다.</p>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={reload}>현황 새로고침</button>
+          </div>
+        )}
+
         <div className="survey-status">
           <div className="join-status-head">
             <strong>제출 현황</strong>
-            <span>{submittedCount} / {project.headcount}명</span>
+            <span>{submittedCount} / {memberCount}명</span>
           </div>
           <div className="slot-list">
-            {members.map((m, i) => (
-              <span key={m.id} className={`slot${i < submittedCount ? ' filled' : ''}`}>
+            {Array.from({ length: memberCount }, (_, i) => (
+              <span key={i} className={`slot${i < submittedCount ? ' filled' : ''}`}>
                 {i < submittedCount ? '제출 완료' : '대기 중'}
               </span>
             ))}
@@ -191,25 +275,24 @@ export default function Survey() {
           </div>
         </section>
 
-        <div className="flow-actions">
-          {submitted ? (
-            <span className="flow-muted">제출했습니다. 전원이 제출하면 역할이 배정됩니다.</span>
-          ) : (
-            <span className="flow-muted">
-              선호 역할을 1개 이상 골라주세요. 응답하지 않으면 중립으로 처리됩니다.
-            </span>
-          )}
+        {submitError && <p className="join-error">{submitError}</p>}
 
+        <div className="flow-actions">
+          <span className="flow-muted">
+            {mySubmitted
+              ? '제출 완료. 다시 제출하면 이전 응답을 덮어씁니다.'
+              : '선호 역할을 1개 이상 골라 제출하세요. 응답하지 않으면 배정에서 중립으로 처리됩니다.'}
+            {isCreator && ' 전원이 제출하면 "마감하고 배정"으로 역할을 배정하세요.'}
+          </span>
           <div className="regen-row">
-            {!submitted && (
-              <button type="button" className="btn btn-dark" onClick={() => setSubmitted(true)}>
-                설문 제출
+            <button type="button" className="btn btn-dark" onClick={handleSubmit} disabled={!canSubmit}>
+              {busy ? '제출 중…' : mySubmitted ? '다시 제출' : '설문 제출'}
+            </button>
+            {isCreator && (
+              <button type="button" className="btn btn-ghost" onClick={handleAssign} disabled={busy}>
+                설문 마감하고 배정하기
               </button>
             )}
-            {/* 생성자에게만 보이는 버튼 — 4단계에서 생성자 여부로 조건부 렌더링 */}
-            <button type="button" className="btn btn-ghost" onClick={handleClose}>
-              설문 마감하고 배정하기
-            </button>
           </div>
         </div>
       </div>
