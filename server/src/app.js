@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
       is_read: isRead,
       created_at: new Date().toISOString()
     };
-    
+
     if (isMock) {
       mockDb.messages.push(dbMsg);
       const chat = mockDb.chats.find(c => c.id === data.roomId);
@@ -213,7 +213,7 @@ app.post('/api/auth/signup', async (req, res) => {
         password,
         email_confirm: true
       });
-      
+
       if (authError) {
         if (authError.message.includes('already') || authError.message.includes('exists')) {
           return res.status(400).json({ error: '이미 가입된 이메일입니다. 로그인해 주세요.' });
@@ -340,17 +340,17 @@ app.get('/api/posts', async (req, res) => {
 
   if (isMock) {
     let filtered = [...mockDb.posts];
-    
+
     if (status === 'recruiting') {
       filtered = filtered.filter(p => p.status === 'recruiting' || p.status === '모집중');
     } else if (status === 'completed') {
       filtered = filtered.filter(p => p.status === 'completed' || p.status === '모집완료');
     }
-    
+
     if (reward) {
       filtered = filtered.filter(p => p.reward === reward);
     }
-    
+
     if (category && category !== '전체') {
       filtered = filtered.filter(p => (p.tags && p.tags.includes(category)) || p.major_tag === category);
     }
@@ -361,8 +361,8 @@ app.get('/api/posts', async (req, res) => {
         const titleMatch = p.title && p.title.toLowerCase().includes(keyword);
         const contentMatch = p.content && p.content.toLowerCase().includes(keyword);
         const tagMatch = p.tags && Array.isArray(p.tags) && p.tags.some(t => t.toLowerCase().includes(keyword));
-        const majorMatch = (p.author_major && p.author_major.toLowerCase().includes(keyword)) || 
-                           (p.major_tag && p.major_tag.toLowerCase().includes(keyword));
+        const majorMatch = (p.author_major && p.author_major.toLowerCase().includes(keyword)) ||
+          (p.major_tag && p.major_tag.toLowerCase().includes(keyword));
         return titleMatch || contentMatch || tagMatch || majorMatch;
       });
     }
@@ -381,13 +381,13 @@ app.get('/api/posts', async (req, res) => {
     } else if (status === 'completed') {
       query = query.eq('status', '모집완료');
     }
-    
+
     if (reward) {
       query = query.eq('reward', reward);
     }
-    
+
     if (category && category !== '전체') {
-      query = query.contains('tags', [category]); 
+      query = query.contains('tags', [category]);
     }
 
     let { data, error } = await query.order('created_at', { ascending: false });
@@ -401,8 +401,8 @@ app.get('/api/posts', async (req, res) => {
         const titleMatch = p.title && p.title.toLowerCase().includes(keyword);
         const contentMatch = p.content && p.content.toLowerCase().includes(keyword);
         const tagMatch = p.tags && (Array.isArray(p.tags) ? p.tags.some(t => String(t).toLowerCase().includes(keyword)) : String(p.tags).toLowerCase().includes(keyword));
-        const majorMatch = (p.author_major && p.author_major.toLowerCase().includes(keyword)) || 
-                           (p.major_tag && p.major_tag.toLowerCase().includes(keyword));
+        const majorMatch = (p.author_major && p.author_major.toLowerCase().includes(keyword)) ||
+          (p.major_tag && p.major_tag.toLowerCase().includes(keyword));
         return titleMatch || contentMatch || tagMatch || majorMatch;
       });
     }
@@ -435,6 +435,7 @@ app.post('/api/posts', authenticateToken, async (req, res) => {
     author_major: finalMajor,
     author_id: req.user.id,
     author_name: author_name || req.user.username,
+    status: '모집중',
     created_at: new Date().toISOString()
   };
 
@@ -473,7 +474,7 @@ app.get('/api/posts/:id/has-chats', async (req, res) => {
       .from('chats')
       .select('*', { count: 'exact', head: true })
       .eq('post_id', postId);
-      
+
     if (error) throw error;
     res.json({ hasChats: count > 0 });
   } catch (err) {
@@ -502,7 +503,7 @@ app.get('/api/posts/:id/requests', async (req, res) => {
 app.post('/api/posts/:id/requests', authenticateToken, async (req, res) => {
   const postId = req.params.id;
   const { message } = req.body;
-  
+
   if (!message) {
     return res.status(400).json({ error: '신청 메시지가 누락되었습니다' });
   }
@@ -545,7 +546,7 @@ app.post('/api/posts/:id/requests', authenticateToken, async (req, res) => {
 // POST /api/posts/:id/requests/:reqId/accept - 신청 수락 및 방 생성 (인증 필수 + 글 작성자 본인 검증)
 app.post('/api/posts/:id/requests/:reqId/accept', authenticateToken, async (req, res) => {
   const { id: postId, reqId } = req.params;
-  
+
   try {
     const db = supabaseAdmin || supabase;
     let request;
@@ -568,7 +569,7 @@ app.post('/api/posts/:id/requests/:reqId/accept', authenticateToken, async (req,
       }
     }
 
-    const { post_title, partner_grade } = req.body; 
+    const { post_title, partner_grade } = req.body;
     const newChatId = Math.random().toString(36).substr(2, 9);
     const newChat = {
       ...(newChatId ? { id: newChatId } : {}),
@@ -580,7 +581,7 @@ app.post('/api/posts/:id/requests/:reqId/accept', authenticateToken, async (req,
       helper_name: request.helper_name,
       partner_grade: partner_grade || '미상',
       last_message: request.message,
-      last_time: new Date().toISOString()
+      last_time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     };
 
     let createdChat;
@@ -595,19 +596,26 @@ app.post('/api/posts/:id/requests/:reqId/accept', authenticateToken, async (req,
       mockDb.messages.push({
         id: 'mock-msg-' + Date.now(), room_id: newChat.id, sender: 'helper', text: request.message, time: newChat.last_time, is_read: false
       });
+      // 채팅 수락 시 게시글 상태를 자동으로 '모집완료'로 변경
+      const mockPost = mockDb.posts.find(p => String(p.id) === String(postId));
+      if (mockPost) mockPost.status = '모집완료';
     } else {
       const { data: chatData, error: chatError } = await db.from('chats').insert([newChat]).select();
       if (chatError) throw chatError;
       createdChat = chatData[0];
 
-      await db.from('messages').insert([{
+      const { error: msgError } = await db.from('messages').insert([{
+        id: Date.now().toString(),
         room_id: createdChat.id, sender: 'helper', text: request.message, time: createdChat.last_time, is_read: false
       }]);
+      if (msgError) console.error("Initial message insert error:", msgError);
 
       await db.from('chat_requests').update({ status: 'rejected' }).eq('post_id', postId).neq('id', reqId);
       await db.from('chat_requests').update({ status: 'accepted' }).eq('id', reqId);
+      // 채팅 수락 시 게시글 상태를 자동으로 '모집완료'로 변경
+      await db.from('posts').update({ status: '모집완료' }).eq('id', postId);
     }
-    
+
     res.json(createdChat);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -658,7 +666,7 @@ app.put('/api/posts/:id', authenticateToken, async (req, res) => {
 // DELETE /api/posts/:id - 게시글 삭제 (인증 필수 + 작성자 본인 검증)
 app.delete('/api/posts/:id', authenticateToken, async (req, res) => {
   const postId = req.params.id;
-  
+
   if (isMock) {
     mockDb.posts = mockDb.posts.filter(p => String(p.id) !== String(postId));
     return res.json({ success: true });
@@ -703,10 +711,10 @@ app.get('/api/chats', async (req, res) => {
 // POST /api/chats - Create a chat room
 app.post('/api/chats', async (req, res) => {
   const { id, postId, postTitle, host_name, partnerName, partnerGrade, lastMessage, lastTime, initialMsgs, host_id, helper_id } = req.body;
-  
+
   const newChat = {
-    id: String(id), post_id: postId, post_title: postTitle, host_name: host_name, helper_name: partnerName, 
-    partner_grade: partnerGrade, last_message: lastMessage, last_time: lastTime, 
+    id: String(id), post_id: postId, post_title: postTitle, host_name: host_name, helper_name: partnerName,
+    partner_grade: partnerGrade, last_message: lastMessage, last_time: lastTime,
     host_id, helper_id, created_at: new Date().toISOString()
   };
 

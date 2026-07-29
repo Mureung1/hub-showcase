@@ -204,7 +204,7 @@ const ChatRoom = ({ room, onBack }) => {
           </svg>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>익명 ({room?.partnerGrade || '학년'})</h2>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>익명</h2>
           <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>
             {room?.postTitle || '채팅방'}
           </div>

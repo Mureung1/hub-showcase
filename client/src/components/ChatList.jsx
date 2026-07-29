@@ -75,9 +75,6 @@ const ChatList = ({ onSelectChat }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '16px' }}>익명</span>
-                    <span style={{ fontSize: '12px', color: 'var(--color-primary-cta)', backgroundColor: '#fff', border: '1px solid var(--color-primary-cta)', padding: '2px 6px', borderRadius: '8px' }}>
-                      {room.partnerGrade || '학년'}
-                    </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
                     <span style={{ fontSize: '12px', color: '#999' }}>{room.lastTime || ''}</span>
