@@ -29,7 +29,7 @@ function readBodyLimit(value) {
     : SERVER_DEFAULTS.jsonBodyLimit;
 }
 
-function readAllowedOrigins(value) {
+function readAllowedOrigins(value, { includeLocalOrigins = true } = {}) {
   const configuredOrigins =
     typeof value === "string"
       ? value
@@ -49,19 +49,27 @@ function readAllowedOrigins(value) {
           .filter(Boolean)
       : [];
 
-  return [...new Set([...DEFAULT_ALLOWED_ORIGINS, ...configuredOrigins])];
+  return [
+    ...new Set([
+      ...(includeLocalOrigins ? DEFAULT_ALLOWED_ORIGINS : []),
+      ...configuredOrigins
+    ])
+  ];
 }
 
 export function createServerConfig(environment = {}) {
+  const isProduction = environment.NODE_ENV === "production";
   const productionTrustProxy =
-    environment.NODE_ENV === "production" ? 1 : SERVER_DEFAULTS.trustProxy;
+    isProduction ? 1 : SERVER_DEFAULTS.trustProxy;
 
   return {
     port: readPositiveInteger(
       environment.PORT ?? environment.SERVER_PORT,
       SERVER_DEFAULTS.port
     ),
-    allowedOrigins: readAllowedOrigins(environment.CLIENT_URL),
+    allowedOrigins: readAllowedOrigins(environment.CLIENT_URL, {
+      includeLocalOrigins: !isProduction
+    }),
     rateLimitWindowMs: readPositiveInteger(
       environment.API_RATE_LIMIT_WINDOW_MS,
       SERVER_DEFAULTS.rateLimitWindowMs

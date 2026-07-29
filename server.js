@@ -86,9 +86,14 @@ export function createApp({
       checks.databaseConfigured === true &&
       checks.guestSessionsConfigured === true;
 
-    response
-      .status(ready ? 200 : 503)
-      .json({ status: ready ? "ok" : "not_ready", checks });
+    response.status(ready ? 200 : 503).json({
+      status: ready ? "ok" : "not_ready"
+    });
+  });
+  app.use("/api", (request, response, next) => {
+    response.set("Cache-Control", "no-store");
+    response.set("Pragma", "no-cache");
+    next();
   });
   app.use(
   "/api",
