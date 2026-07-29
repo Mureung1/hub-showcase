@@ -249,6 +249,8 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
         aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
       >
+        <div className="consult-sheet-handle" aria-hidden="true" />
+
         <div className="consult-sheet-head">
           <div>
             <p className="consult-sheet-eyebrow">식단 기록</p>
@@ -363,6 +365,9 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
           <button type="submit" className="btn btn-primary consult-submit" disabled={submitting}>
             {submitLabel}
           </button>
+          <p className="consult-trust-copy">
+            사진과 기록은 AI 분석 후 암호화되어 저장됩니다.
+          </p>
         </form>
       </div>
     </div>,

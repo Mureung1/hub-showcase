@@ -42,8 +42,11 @@ export default function HomeGymMatchCard({
             {gym.matchReasons?.[0] && (
               <p className="home-gym-match-reason">{gym.matchReasons[0]}</p>
             )}
-            <Link to={`/user/gym/${gym.id}`} className="btn btn-ghost home-gym-cta">
-              상세보기
+            <p className="home-gym-bridge-copy">
+              비대면 운동·식단 기록을 오프라인 상담으로 자연스럽게 연결해 드려요.
+            </p>
+            <Link to={`/user/gym/${gym.id}`} className="btn btn-primary home-gym-cta">
+              상담 신청하기
             </Link>
           </div>
         </div>

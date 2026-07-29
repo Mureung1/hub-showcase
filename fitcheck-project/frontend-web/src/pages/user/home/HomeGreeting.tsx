@@ -15,8 +15,8 @@ export default function HomeGreeting() {
   return (
     <header className="home-greeting">
       <div className="home-greeting-text">
-        <p className="home-greeting-hello">안녕하세요, {name}님!</p>
-        <p className="home-greeting-sub">오늘도 건강한 하루 보내세요 💪</p>
+        <p className="home-greeting-hello">안녕하세요, {name}님</p>
+        <p className="home-greeting-sub">오늘도 가볍게 시작해 볼까요?</p>
       </div>
       <div className="home-greeting-actions">
         <button type="button" className="home-icon-btn" aria-label="알림">

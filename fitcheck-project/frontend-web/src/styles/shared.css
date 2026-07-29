@@ -140,6 +140,8 @@
   background: var(--accent);
   color: #fff;
   box-shadow: 0 2px 12px var(--accent-glow);
+  border-radius: var(--radius-btn, var(--radius-sm));
+  min-height: 44px;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -236,7 +238,7 @@
 .avatar-accent {
   background: var(--accent-dim);
   color: var(--accent);
-  border-color: rgba(229, 9, 20, 0.35);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 /* Empty state */
