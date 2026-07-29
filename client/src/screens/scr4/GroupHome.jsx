@@ -1,51 +1,61 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Avatar } from '../../components/identity/Avatar.jsx'
 import { Icon } from '../../components/decor/Icon.jsx'
-import { LeafRating } from '../../components/feedback/LeafRating.jsx'
-import { Input } from '../../components/forms/Input.jsx'
+import { InfoCard } from '../../components/cards/InfoCard.jsx'
+import { Chip } from '../../components/forms/Chip.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
-import { getLetterByToken, createHarvestReview } from '../../lib/api.js'
+import { getLetterByToken, getResponses } from '../../lib/api.js'
 import bgVineWash from '../../assets/bg-vine-wash.jpg'
 import laceDoily from '../../assets/vintage-lace-doily.png'
 import laceTrimStrip from '../../assets/vintage-lace-trim-strip.png'
 
-// SCR5 · 4-1 결산 평가 화면(HarvestReview) — docs/design 「Letter&Co Design System.zip」
-// templates/harvest-review/HarvestReview.dc.html 이식. 원본은 리프 평점형/태그 선택형 두 입력
-// 모드를 토글하지만, 태그 선택은 숫자 평점으로 변환하는 규칙이 정의돼 있지 않아(데모용 장식) 여기서는
-// docs/plan.md가 명시한 리프 평점(1~5) 입력만 구현한다.
-// 참여자 식별: 로그인이 없으므로 InviteJoin.jsx와 동일하게 localStorage에 저장된 이름을 프리필한다.
-const ACTIVE_NAV_KEY = 'harvest'
-const submissionKey = (token) => `letterco:invite-join:${token}`
+// SCR4 · 그룹홈(GroupHome) — docs/design 「Letter&Co Design System.zip」
+// templates/group-home/GroupHome.dc.html 이식. 원본의 은쟁반·레이스 리넨 프레임·명찰 장식
+// 에셋(vintage-silver-tray.png 등)은 지난 "장식 단순화" 커밋(2325b210e)에서 이미 영구
+// 삭제됐다(InviteShare의 은쟁반과 동일한 케이스) — 복구하지 않고 다른 재구현 화면들과
+// 통일된 단순 카드 스타일로 대체한다.
+// 신규 참여자의 첫 진입 화면이 아니라(그건 여전히 /scr0/join), 이미 참여 중인 모임에
+// 돌아왔을 때 보는 허브 화면 — CLAUDE.md 라우트 표에 SCR4(Bloom) 소속으로 이미 정의돼 있다.
+// "지난 모임" 이력은 Profile.jsx와 동일하게 로그인 없는 구조라 localStorage 기반으로 집계한다.
+const ACTIVE_NAV_KEY = 'home'
+const STORAGE_PREFIX = 'letterco:invite-join:'
 
-function readStoredName(token) {
-  if (!token) return ''
+function readAllJoinedTokens() {
+  const entries = []
   try {
-    const raw = localStorage.getItem(submissionKey(token))
-    return raw ? JSON.parse(raw)?.name ?? '' : ''
+    for (const key of Object.keys(localStorage)) {
+      if (!key.startsWith(STORAGE_PREFIX)) continue
+      const token = key.slice(STORAGE_PREFIX.length)
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key))
+        if (parsed?.name) entries.push({ token, name: parsed.name })
+      } catch {
+        // 손상된 항목은 무시
+      }
+    }
   } catch {
-    return ''
+    // localStorage 접근 불가 환경 — 빈 이력으로 처리
   }
+  return entries
 }
 
-export function HarvestReview() {
-  const navigate = useNavigate()
+function formatDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function GroupHome() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
 
   const [loadStatus, setLoadStatus] = useState('loading') // loading | error | ready
   const [errorMsg, setErrorMsg] = useState('')
   const [letter, setLetter] = useState(null)
-
-  const [name, setName] = useState(() => readStoredName(token))
-  const [timeRating, setTimeRating] = useState(4)
-  const [placeRating, setPlaceRating] = useState(4)
-  const [roleRating, setRoleRating] = useState(4)
-  const [comment, setComment] = useState('')
-
-  const [saveStatus, setSaveStatus] = useState('idle') // idle | saving | error
-  const [saveErrorMsg, setSaveErrorMsg] = useState('')
+  const [participants, setParticipants] = useState([])
+  const [history, setHistory] = useState([]) // [{ token, title, date }]
 
   useEffect(() => {
     let cancelled = false
@@ -54,41 +64,44 @@ export function HarvestReview() {
       setErrorMsg('모임 링크가 올바르지 않아요')
       return
     }
-    getLetterByToken(token).then((result) => {
+
+    const historyTokens = readAllJoinedTokens()
+      .map((e) => e.token)
+      .filter((t) => t !== token)
+
+    Promise.all([
+      getLetterByToken(token),
+      getResponses(token),
+      Promise.all(historyTokens.map((t) => getLetterByToken(t).then((r) => ({ token: t, result: r })))),
+    ]).then(([letterResult, responsesResult, historyResults]) => {
       if (cancelled) return
-      if (result.error) {
+      if (letterResult.error) {
         setLoadStatus('error')
-        setErrorMsg(result.error)
+        setErrorMsg(letterResult.error)
         return
       }
-      setLetter(result.data)
+      if (responsesResult.error) {
+        setLoadStatus('error')
+        setErrorMsg(responsesResult.error)
+        return
+      }
+      setLetter(letterResult.data)
+      setParticipants(responsesResult.data ?? [])
+      setHistory(
+        historyResults
+          .filter((r) => !r.result.error)
+          .map((r) => ({ token: r.token, title: r.result.data.title, date: formatDate(r.result.data.confirmed_at || r.result.data.created_at) }))
+      )
       setLoadStatus('ready')
     })
+
     return () => {
       cancelled = true
     }
   }, [token])
 
-  const submitDisabled = name.trim().length === 0 || saveStatus === 'saving'
-
-  async function submit() {
-    if (submitDisabled) return
-    setSaveStatus('saving')
-    setSaveErrorMsg('')
-    const result = await createHarvestReview(token, {
-      participant_name: name.trim(),
-      time_rating: timeRating,
-      place_rating: placeRating,
-      role_rating: roleRating,
-      comment: comment.trim() || null,
-    })
-    if (result.error) {
-      setSaveStatus('error')
-      setSaveErrorMsg(result.error)
-      return
-    }
-    navigate(`/scr5/summary${token ? `?token=${token}` : ''}`)
-  }
+  const confirmed = Boolean(letter?.confirmed_at)
+  const continueHref = confirmed ? `/scr4/workspace?token=${token}` : `/scr3/confirm?token=${token}`
 
   return (
     <div
@@ -208,11 +221,8 @@ export function HarvestReview() {
         }}
       />
 
-      <main style={{ flex: 1, padding: '40px', boxSizing: 'border-box', maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-script)', fontWeight: 700, fontSize: 'var(--text-script-lg)', color: 'oklch(0.995 0.006 165)', lineHeight: 1.2 }}>Harvest</div>
-          <h2 style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-h2)', color: 'var(--ink)', margin: '4px 0 0', fontWeight: 700 }}>이번 모임, 어땠나요</h2>
-        </div>
+      <main style={{ flex: 1, padding: '56px 48px', boxSizing: 'border-box', maxWidth: '820px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+        <div style={{ fontFamily: "'Whispering Signature', var(--font-script)", fontWeight: 400, fontSize: '88px', lineHeight: 0.85, color: 'oklch(0.995 0.006 165)' }}>Home</div>
 
         {loadStatus === 'loading' ? (
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-size)', color: 'var(--text-caption)' }}>불러오는 중…</div>
@@ -235,57 +245,52 @@ export function HarvestReview() {
           </div>
         ) : null}
 
-        {loadStatus === 'ready' && !letter.confirmed_at ? (
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>
-            {'아직 확정되지 않았어요 — '}
-            <Link to={`/scr3/confirm${token ? `?token=${token}` : ''}`} style={{ color: 'var(--wedgwood-deep)' }}>
-              조율 화면에서 먼저 확정해주세요
-            </Link>
-          </div>
-        ) : null}
-
-        {loadStatus === 'ready' && letter.confirmed_at ? (
+        {loadStatus === 'ready' ? (
           <>
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                background: 'var(--cream)',
-                border: '1px solid var(--line)',
-                borderRadius: '10px',
-                padding: '20px',
-                boxSizing: 'border-box',
-              }}
-            >
-              <Input variant="underline" label="이름" placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
-              <LeafRating label="시간 적합도" value={timeRating} max={5} onChange={setTimeRating} />
-              <LeafRating label="장소 적합도" value={placeRating} max={5} onChange={setPlaceRating} />
-              <LeafRating label="역할 분배" value={roleRating} max={5} onChange={setRoleRating} />
-            </div>
+            <InfoCard style={{ maxWidth: '480px', alignSelf: 'center', width: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '20px', fontWeight: 600, color: 'var(--ink)' }}>{letter.title}</div>
+                <Chip tone="wedgwood">{confirmed ? '확정됨' : '조율 중'}</Chip>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {participants.map((p, i) => (
+                    <Avatar key={p.id} name={p.name} index={i} size={24} />
+                  ))}
+                </div>
+                <Link to={continueHref} style={{ textDecoration: 'none' }}>
+                  <Button variant="primary" size="sm">조율 이어하기</Button>
+                </Link>
+              </div>
+            </InfoCard>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>한마디 남기기 (선택)</div>
-              <Input variant="underline" placeholder="다음 모임을 위한 메모" value={comment} onChange={(e) => setComment(e.target.value)} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '12px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>지난 모임</div>
+              {history.length === 0 ? (
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>아직 다른 모임에 참여한 적이 없어요</div>
+              ) : (
+                history.map((h) => (
+                  <InfoCard key={h.token}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '15px', color: 'var(--ink)', fontWeight: 600 }}>{h.title}</div>
+                        <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', color: 'var(--ink-soft)', marginTop: '2px' }}>{h.date}</div>
+                      </div>
+                      <Link to={`/scr4/home?token=${h.token}`} style={{ textDecoration: 'none' }}>
+                        <Button variant="accent" size="sm">다시 열기</Button>
+                      </Link>
+                    </div>
+                  </InfoCard>
+                ))
+              )}
             </div>
 
             <div style={{ alignSelf: 'flex-start' }}>
-              <Button variant="primary" disabled={submitDisabled} soundType="finish" onClick={submit}>
-                {saveStatus === 'saving' ? '제출하는 중…' : '평가 제출하기'}
-              </Button>
+              <Link to="/scr0/compose" style={{ textDecoration: 'none' }}>
+                <Button variant="primary">✉ 새 모임 초대장 쓰기</Button>
+              </Link>
             </div>
-
-            {saveStatus === 'error' ? (
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{saveErrorMsg}</div>
-            ) : null}
           </>
         ) : null}
       </main>
-
-      <div style={{ position: 'fixed', right: '14px', bottom: '14px', fontFamily: "'Signatie', var(--font-script)", fontSize: '13px', color: 'var(--wedgwood-deep)', opacity: 0.5, pointerEvents: 'none', zIndex: 50 }}>
-        l
-      </div>
     </div>
   )
 }

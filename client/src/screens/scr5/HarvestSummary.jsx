@@ -146,21 +146,23 @@ export function HarvestSummary() {
               </>
             )
             const href =
-              item.key === 'participants'
+              item.key === 'home'
                 ? `${item.href}${token ? `?token=${token}` : ''}`
-                : item.key === 'coordinate'
-                  ? `/scr2/roles${token ? `?token=${token}` : ''}`
-                  : item.key === 'progress'
-                    ? `/scr4/workspace${token ? `?token=${token}` : ''}`
-                    : item.key === 'harvest'
-                      ? `/scr5/review${token ? `?token=${token}` : ''}`
-                      : item.key === 'settlement'
-                        ? `/scr5/settlement${token ? `?token=${token}` : ''}`
-                        : item.key === 'notifications'
-                          ? `/notifications${token ? `?token=${token}` : ''}`
-                          : item.key === 'profile'
-                            ? `/profile${token ? `?token=${token}` : ''}`
-                            : null
+                : item.key === 'participants'
+                  ? `${item.href}${token ? `?token=${token}` : ''}`
+                  : item.key === 'coordinate'
+                    ? `/scr2/roles${token ? `?token=${token}` : ''}`
+                    : item.key === 'progress'
+                      ? `/scr4/workspace${token ? `?token=${token}` : ''}`
+                      : item.key === 'harvest'
+                        ? `/scr5/review${token ? `?token=${token}` : ''}`
+                        : item.key === 'settlement'
+                          ? `/scr5/settlement${token ? `?token=${token}` : ''}`
+                          : item.key === 'notifications'
+                            ? `/notifications${token ? `?token=${token}` : ''}`
+                            : item.key === 'profile'
+                              ? `/profile${token ? `?token=${token}` : ''}`
+                              : null
             return href ? (
               <Link key={item.key} to={href} style={itemStyle}>
                 {content}
@@ -255,7 +257,7 @@ export function HarvestSummary() {
                 </Link>
               </div>
               <div style={{ flex: 1 }}>
-                <Link to={`/scr0/status${token ? `?token=${token}` : ''}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <Link to={`/scr4/home${token ? `?token=${token}` : ''}`} style={{ textDecoration: 'none', display: 'block' }}>
                   <Button variant="primary" block>그룹 홈으로</Button>
                 </Link>
               </div>

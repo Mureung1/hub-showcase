@@ -9,6 +9,7 @@ import { Assign } from './screens/scr2/Assign.jsx'
 import { CoordinateConfirm } from './screens/scr3/CoordinateConfirm.jsx'
 import { ProgressWorkspace } from './screens/scr4/ProgressWorkspace.jsx'
 import { ProgressChecklist } from './screens/scr4/ProgressChecklist.jsx'
+import { GroupHome } from './screens/scr4/GroupHome.jsx'
 import { HarvestReview } from './screens/scr5/HarvestReview.jsx'
 import { HarvestSummary } from './screens/scr5/HarvestSummary.jsx'
 import { Settlement } from './screens/scr5/Settlement.jsx'
@@ -45,6 +46,7 @@ function App() {
         <Route path="/scr3/confirm" element={<CoordinateConfirm />} />
         <Route path="/scr4/workspace" element={<ProgressWorkspace />} />
         <Route path="/scr4/checklist" element={<ProgressChecklist />} />
+        <Route path="/scr4/home" element={<GroupHome />} />
         <Route path="/scr5/review" element={<HarvestReview />} />
         <Route path="/scr5/summary" element={<HarvestSummary />} />
         <Route path="/scr5/settlement" element={<Settlement />} />

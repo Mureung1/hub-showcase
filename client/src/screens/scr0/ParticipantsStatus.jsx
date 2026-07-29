@@ -150,21 +150,23 @@ export function ParticipantsStatus() {
             // NAV_ITEMS의 coordinate.href는 아직 없는 SCR1 스케줄 화면(/scr1/schedule)을 가리키므로,
             // 여기서는 SCR2 역할 배정 화면(/scr2/roles)으로 직접 연결한다(SCR2가 SCR3보다 앞선 단계).
             const href =
-              item.key === 'participants'
+              item.key === 'home'
                 ? `${item.href}${token ? `?token=${token}` : ''}`
-                : item.key === 'coordinate'
-                  ? `/scr2/roles${token ? `?token=${token}` : ''}`
-                  : item.key === 'progress'
-                    ? `/scr4/workspace${token ? `?token=${token}` : ''}`
-                    : item.key === 'harvest'
-                      ? `/scr5/review${token ? `?token=${token}` : ''}`
-                      : item.key === 'settlement'
-                        ? `/scr5/settlement${token ? `?token=${token}` : ''}`
-                        : item.key === 'notifications'
-                          ? `/notifications${token ? `?token=${token}` : ''}`
-                          : item.key === 'profile'
-                            ? `/profile${token ? `?token=${token}` : ''}`
-                            : null
+                : item.key === 'participants'
+                  ? `${item.href}${token ? `?token=${token}` : ''}`
+                  : item.key === 'coordinate'
+                    ? `/scr2/roles${token ? `?token=${token}` : ''}`
+                    : item.key === 'progress'
+                      ? `/scr4/workspace${token ? `?token=${token}` : ''}`
+                      : item.key === 'harvest'
+                        ? `/scr5/review${token ? `?token=${token}` : ''}`
+                        : item.key === 'settlement'
+                          ? `/scr5/settlement${token ? `?token=${token}` : ''}`
+                          : item.key === 'notifications'
+                            ? `/notifications${token ? `?token=${token}` : ''}`
+                            : item.key === 'profile'
+                              ? `/profile${token ? `?token=${token}` : ''}`
+                              : null
             return href ? (
               <Link key={item.key} to={href} style={itemStyle}>
                 {content}
