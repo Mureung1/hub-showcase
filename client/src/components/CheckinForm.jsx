@@ -42,21 +42,15 @@ function CheckinForm({
         <span>{rawText.length} / 2000</span>
       </div>
       <PhotoUpload file={photoFile} onChange={onPhotoChange} />
-      <div className="guest-storage-note">
-        <span aria-hidden="true">{isGuest ? '🔒' : '☁️'}</span>
-        <div>
-          <strong>
-            {isGuest
-              ? '기록과 사진은 이 기기에만 저장돼요.'
-              : '기록은 내 Supabase 계정에 저장돼요.'}
-          </strong>
-          <span>
-            {isGuest
-              ? '브라우저 데이터를 삭제하면 기록도 함께 사라질 수 있어요.'
-              : '사진은 내 사용자 폴더의 Supabase Storage에 저장돼요.'}
-          </span>
+      {isGuest && (
+        <div className="guest-storage-note">
+          <span aria-hidden="true">🔒</span>
+          <div>
+            <strong>기록과 사진은 이 기기에만 저장돼요.</strong>
+            <span>브라우저 데이터를 삭제하면 기록도 함께 사라질 수 있어요.</span>
+          </div>
         </div>
-      </div>
+      )}
       <button
         className="button button-secondary save-without-ai"
         type="button"
