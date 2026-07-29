@@ -34,6 +34,22 @@ export async function searchWithFavorite({ userId, keyword }, db = pool) {
   return rows.map((row) => ({ ...toStore(row), isFavorite: row.is_favorite }))
 }
 
+/*
+ * M1 — 내가 즐겨찾기한 가게만. 검색 결과(searchWithFavorite)와 화면에서 영역을 나누기 위함이다.
+ * 전체 목록에 새 가게가 섞여 나오면 "관심 가게에 자동 등록됐다"고 읽히기 쉬웠다.
+ */
+export async function listFavorites(userId, db = pool) {
+  const { rows } = await db.query(
+    `SELECT s.*
+     FROM favorites f
+     JOIN stores s ON s.id = f.store_id
+     WHERE f.user_id = $1
+     ORDER BY s.name`,
+    [userId],
+  )
+  return rows.map((row) => ({ ...toStore(row), isFavorite: true }))
+}
+
 export async function findById(id, db = pool) {
   const { rows } = await db.query('SELECT * FROM stores WHERE id = $1', [id])
   return rows.length ? toStore(rows[0]) : null
