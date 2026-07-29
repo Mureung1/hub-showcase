@@ -92,3 +92,5 @@ function ProductWorkspace({
     </main>
   );
 }
+
+export default App;
