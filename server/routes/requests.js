@@ -197,10 +197,11 @@ router.get('/', async (req, res) => {
     destination_hub_name: hubNameById[r.destination_hub_id] ?? null,
   }))
 
-  // 같은 group_id끼리는 "이미 모인 방" 하나로 묶는다. group_id가 없는 요청은 자기 혼자만의 방 취급.
+  // 같은 group_id끼리는 "이미 모인 방"으로 묶는다. group_id가 없는 요청은 아직 방을 안 만든 상태라 후보로 안 보여줌.
   const roomsByKey = new Map()
   for (const row of withHubNames) {
-    const key = row.group_id ?? row.id
+    if (!row.group_id) continue
+    const key = row.group_id
     if (!roomsByKey.has(key)) {
       roomsByKey.set(key, { representative: row, memberIds: [] })
     }
