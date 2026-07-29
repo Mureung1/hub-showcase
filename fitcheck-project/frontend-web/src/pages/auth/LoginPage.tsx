@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getSupabaseClient } from '../../services/supabaseClient';
+import { getAuthRedirectUrl } from '../../utils/authRedirect';
 import './auth.css';
 
 function GoogleIcon() {
@@ -93,7 +94,7 @@ export default function LoginPage() {
 
     setSubmitting(true);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      const redirectTo = getAuthRedirectUrl();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

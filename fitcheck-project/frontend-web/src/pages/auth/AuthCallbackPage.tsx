@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getSupabaseClient } from '../../services/supabaseClient';
+import { getAuthRedirectUrl, getSiteOrigin } from '../../utils/authRedirect';
 import './auth.css';
 
 export default function AuthCallbackPage() {
@@ -45,6 +46,19 @@ export default function AuthCallbackPage() {
         }
       }
 
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      if (accessToken && refreshToken) {
+        const { error: sessionSetError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionSetError && !cancelled) {
+          setError(sessionSetError.message);
+          return;
+        }
+      }
+
       const { data, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         if (!cancelled) setError(sessionError.message);
@@ -78,9 +92,14 @@ export default function AuthCallbackPage() {
           <h2>로그인 실패</h2>
           <p className="auth-message">{error}</p>
           <p className="auth-sub">
-            Google OAuth 설정이 Supabase에 등록되어 있는지, Redirect URL에{' '}
-            <code>{window.location.origin}/auth/callback</code> 이 포함되어 있는지
-            확인해 주세요.
+            Supabase Dashboard → Authentication → URL Configuration에서 아래를 확인해 주세요.
+            <br />
+            <strong>Site URL:</strong> <code>{getSiteOrigin()}</code>
+            <br />
+            <strong>Redirect URLs:</strong>{' '}
+            <code>{getAuthRedirectUrl()}</code>
+            <br />
+            (로컬 개발 시 <code>http://localhost:5173/auth/callback</code> 도 추가)
           </p>
           <Link to="/login" className="btn btn-primary">
             로그인으로 돌아가기
