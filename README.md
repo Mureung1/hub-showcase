@@ -258,3 +258,5 @@
 - 개발 Task 백로그: [hankki-bakkum/docs/tasks.md](./hankki-bakkum/docs/tasks.md)
 
 - [2주차 주간 계획](https://app.notion.com/p/2-7-13-17-39cdee17209c80039749e0925cf77e54?source=copy_link)
+
+- [4주차 데모 발표 영상](https://drive.google.com/file/d/17qPFRrJEe_l-zMISsZ5GeoWBUZyztZTO/view?usp=sharing)
