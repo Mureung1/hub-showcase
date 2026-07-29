@@ -346,7 +346,10 @@ grant execute on function public.match_insight_embeddings(
   smallint
 ) to service_role;
 
-create function public.reserve_embedding_usage(requested_tokens bigint)
+create function public.reserve_embedding_usage(
+  requested_tokens bigint,
+  requested_ttl interval default interval '15 minutes'
+)
 returns uuid
 language plpgsql
 security definer
@@ -366,6 +369,13 @@ begin
     raise exception using
       errcode = '22023',
       message = '예약할 토큰 수는 1 이상이어야 합니다.';
+  end if;
+
+  if requested_ttl < interval '1 minute'
+    or requested_ttl > interval '7 days' then
+    raise exception using
+      errcode = '22023',
+      message = '토큰 예약 기간은 1분 이상 7일 이하여야 합니다.';
   end if;
 
   insert into public.embedding_usage_months (month_start)
@@ -415,7 +425,7 @@ begin
   ) values (
     current_month,
     requested_tokens,
-    now() + interval '15 minutes'
+    now() + requested_ttl
   )
   returning id into reservation_id;
 
@@ -423,9 +433,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.reserve_embedding_usage(bigint)
+revoke execute on function public.reserve_embedding_usage(bigint, interval)
 from public, anon, authenticated;
-grant execute on function public.reserve_embedding_usage(bigint)
+grant execute on function public.reserve_embedding_usage(bigint, interval)
 to service_role;
 
 create function public.reconcile_embedding_usage(

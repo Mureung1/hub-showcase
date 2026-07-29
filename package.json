@@ -16,7 +16,9 @@
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"server/**/*.ts\" \"api/**/*.ts\" \"extension/**/*.{ts,css,html,md}\" \"scripts/**/*.ts\" \"*.{js,ts,json,html}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"server/**/*.ts\" \"api/**/*.ts\" \"extension/**/*.{ts,css,html,md}\" \"scripts/**/*.ts\" \"*.{js,ts,json,html}\"",
-    "package:extension": "npm run build:extension && tsx scripts/package_chrome_extension.ts"
+    "package:extension": "npm run build:extension && tsx scripts/package_chrome_extension.ts",
+    "retrieve:backfill:submit": "tsx --env-file-if-exists=.env.local scripts/retrieve_backfill/submit.ts",
+    "retrieve:backfill:apply": "tsx --env-file-if-exists=.env.local scripts/retrieve_backfill/apply.ts"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",

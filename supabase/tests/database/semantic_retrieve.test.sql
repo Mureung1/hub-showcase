@@ -186,7 +186,7 @@ select extensions.ok(
       'public.list_pending_insight_embeddings(uuid,text,smallint,integer)'::regprocedure::oid,
       'public.complete_insight_embedding_job(uuid,uuid,extensions.vector,text,smallint,text)'::regprocedure::oid,
       'public.match_insight_embeddings(uuid,extensions.vector,real,text,smallint)'::regprocedure::oid,
-      'public.reserve_embedding_usage(bigint)'::regprocedure::oid,
+      'public.reserve_embedding_usage(bigint,interval)'::regprocedure::oid,
       'public.reconcile_embedding_usage(uuid,text,bigint)'::regprocedure::oid
     ]) as function_oid
   ),
