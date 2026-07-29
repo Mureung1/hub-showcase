@@ -42,6 +42,17 @@ SOURCES = [
                 "시정 보도자료 위주라 title_filter 필수 (교통 공지 밀도 낮음, 0건인 날 많음).",
     },
     {
+        "id": "busan_bims",
+        "name": "부산 BIMS 버스 공지",
+        "active": True,                     # 2026-07-29 검증 완료 (표준 HTML, GET 상세 동작)
+        "list_url": "https://bus.busan.go.kr/busanBIMS/bus_info/notice_list.asp",
+        "list_pattern": r'go_post\((\d+)\)[^>]*>\s*([^<]{5,60})',
+        "view_url": "https://bus.busan.go.kr/busanBIMS/bus_info/notice_view.asp?seq={id}",
+        "body_selector": ".content",        # 넓게 잡히지만(메뉴 포함) 추출기가 사실만 뽑음
+        "note": "부산시 버스정보관리시스템 공지 — 결행·노선조정·시간표 전용 게시판이라 필터 불필요. "
+                "상세는 원래 POST(go_post)지만 GET ?seq= 도 동작 확인.",
+    },
+    {
         "id": "seoul_topis",
         "name": "서울 TOPIS 교통소식",
         "active": True,                     # 2026-07-28 검증 완료 (JSON 목록+본문 동봉·원문 링크 렌더)

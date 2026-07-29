@@ -30,7 +30,8 @@ app.get('/api/health', async (req, res) => {
 // 감시 관할 — 수집 소스가 있는 지역의 대략적 좌표 상자. 경로가 하나도 안 걸치면 "관할 밖"을 정직하게 알린다.
 const COVERAGE = [
   { name: '대전·세종권', minX: 127.15, maxX: 127.65, minY: 36.10, maxY: 36.75 },
-  { name: '경기권', minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
+  { name: '수도권', minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
+  { name: '부산권', minX: 128.60, maxX: 129.40, minY: 34.95, maxY: 35.50 },
 ];
 const inCoverage = (points) =>
   !points?.length ||   // 좌표 없는 옛 경로는 보수적으로 관할 취급
@@ -73,7 +74,7 @@ async function sendFirstReport(route, check) {
   } else if (check.covered) {
     payload = { content: `🐾 새 보초 — **${route.name}** 등록. 모아둔 공지 ${check.checked}건과 대조했고, 지금 영향 주는 공지는 없어요.` };
   } else {
-    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 서울·경기·대전·세종 게시판을 확인하고 있어요.` };
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 서울·경기·대전·세종·부산 게시판을 확인하고 있어요.` };
   }
   const r = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   return r.ok;   // 화면이 "보냈어요"를 사실일 때만 말하게
