@@ -33,7 +33,7 @@ const PostCard = ({ post, onClick }) => {
   };
 
   return (
-    <div className="feed-card" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+    <div className={`feed-card ${post.status === 'completed' || post.status === '모집완료' ? 'completed' : ''}`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
       {/* 카드 상단: 태그 배지 + 보상 배지 */}
       <div className="feed-card-header">
         <div className="category-badges">
@@ -57,7 +57,7 @@ const PostCard = ({ post, onClick }) => {
 
       {/* 카드 제목 */}
       <div className="feed-card-title">
-        <span className="bullet-point">●</span>
+        <span className="bullet-icon"></span>
         <span>{post.title || '제목 없음'}</span>
       </div>
 
@@ -69,7 +69,7 @@ const PostCard = ({ post, onClick }) => {
       {/* 카드 하단: 작성자 정보 + 메타 */}
       <div className="feed-card-footer">
         <span className="author-info">
-          익명 ({post.grade_tag || post.authorGrade || '학년'})
+          익명
         </span>
         <div className="card-meta-right">
           <span className="meta-item">
