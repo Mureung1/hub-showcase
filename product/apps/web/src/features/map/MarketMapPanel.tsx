@@ -4,6 +4,7 @@ import LiquidGlass from "liquid-glass-react";
 import {
   BarChart3,
   Building2,
+  CircleHelp,
   Layers3,
   LocateFixed,
   MapPinned,
@@ -185,13 +186,19 @@ export function MarketMapPanel({
       )}
 
       <div className="map-legend">
-        <p>
-          {layer === "density"
-            ? "선택 업종 점포가 상대적으로 모인 정도"
-            : flowState === "unavailable"
-              ? "선택 분기의 시간대별 유동인구 자료 없음"
-              : "선택 시간대의 상대 유동 수요"}
-        </p>
+        <div className="map-legend-heading">
+          <b>{layer === "density" ? "점포 밀도를 읽는 법" : "시간대 수요를 읽는 법"}</b>
+          {layer === "density" && (
+            <button
+              type="button"
+              className="map-legend-help"
+              aria-label="점포 밀도 설명"
+              title="선택 업종 점포가 상대적으로 모인 정도"
+            >
+              <CircleHelp size={12} aria-hidden="true" />
+            </button>
+          )}
+        </div>
         {layer === "density" ? (
           <>
             <span><i className="density-low" /> 낮음</span>
@@ -201,8 +208,8 @@ export function MarketMapPanel({
         ) : (
           <span className="demand-legend-note">
             {flowState === "unavailable"
-              ? "자료가 적재된 분기로 바꾸면 시간대별 분포를 볼 수 있습니다."
-              : "사람 아이콘이 많을수록 수요가 높습니다."}
+              ? "선택 분기의 시간대별 유동인구 자료가 없습니다."
+              : "사람 아이콘이 많을수록 상대 수요가 높습니다."}
           </span>
         )}
       </div>
