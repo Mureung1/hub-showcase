@@ -192,7 +192,7 @@ async function runStep2(jobId) {
     }
 
     // Google Generative AI 클라이언트 초기화
-    const { GoogleGenerativeAI } = await import('@google/generativeai');
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const client = new GoogleGenerativeAI(apiKey);
     const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
