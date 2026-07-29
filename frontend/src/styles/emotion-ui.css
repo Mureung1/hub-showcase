@@ -542,6 +542,46 @@ body {
   filter: blur(30px);
 }
 
+.emotion-orb__canvas {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 86%;
+  height: 86%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+  transition: opacity 700ms ease;
+  filter: drop-shadow(0 25px 28px rgba(var(--orb-primary), 0.23));
+}
+
+.emotion-orb__canvas[data-ready="true"] {
+  opacity: 1;
+}
+
+.emotion-orb__canvas:active {
+  cursor: grabbing;
+}
+
+.emotion-orb__fallback-sphere {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 82%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.95), transparent 4%),
+    radial-gradient(circle at 62% 68%, rgba(var(--orb-secondary), 0.72), transparent 35%),
+    linear-gradient(145deg, rgba(var(--orb-primary), 0.98), rgba(78, 83, 199, 0.92));
+  box-shadow:
+    inset -28px -24px 42px rgba(24, 31, 114, 0.3),
+    0 25px 55px rgba(var(--orb-primary), 0.3);
+}
+
 .emotion-orb__sphere {
   position: relative;
   width: 82%;
@@ -630,16 +670,6 @@ body {
   border-radius: 50%;
   background: rgba(42, 46, 102, 0.18);
   filter: blur(13px);
-}
-
-.emotion-orb--loading .emotion-orb__sphere {
-  animation: emotion-orb-turn 7s linear infinite;
-}
-
-@keyframes emotion-orb-turn {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .possible-states {
@@ -836,8 +866,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .emotion-orb--loading .emotion-orb__sphere {
-    animation: none;
+  .emotion-orb__canvas {
+    transition: none;
   }
 }
 

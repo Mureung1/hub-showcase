@@ -3,6 +3,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
+vi.mock("cobe", () => ({
+  default: () => ({
+    update: vi.fn(),
+    destroy: vi.fn()
+  })
+}));
+
 const guestAccess = {
   mode: "anonymous",
   guestKey: "",
