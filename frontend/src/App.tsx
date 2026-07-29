@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, useSearchParams, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import StatementSection from './components/StatementSection';
@@ -47,8 +48,6 @@ interface ToastMessage {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'released' | 'ranking'>('upcoming');
-  const [activeCategory, setActiveCategory] = useState<string>('all');
   const [drops, setDrops] = useState<Drop[]>([]);
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
   const [rankingPeriod, setRankingPeriod] = useState<'current' | 'last'>('current');
@@ -60,6 +59,12 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const activeCategory = searchParams.get('category') || 'all';
 
   const API_BASE = (import.meta as any).env?.VITE_API_URL || 'https://dropcast1.onrender.com/api';
 
@@ -161,12 +166,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'upcoming' && activeCategory === 'all') {
+    const isUpcomingPage = location.pathname === '/' || location.pathname === '/upcoming';
+    if (isUpcomingPage && activeCategory === 'all') {
       document.body.classList.remove('hide-editorial');
     } else {
       document.body.classList.add('hide-editorial');
     }
-  }, [activeTab, activeCategory]);
+  }, [location.pathname, activeCategory]);
 
   const showToast = (message: string) => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
@@ -224,53 +230,106 @@ export default function App() {
     }
   };
 
-  const currentSelectedDrop = drops.find((d) => d.id === selectedDropId);
-
-  const filteredDrops = drops.filter((d) => {
-    if (activeTab === 'upcoming' && d.status !== 'upcoming') return false;
-    if (activeTab === 'released' && d.status !== 'released') return false;
-    if (activeCategory !== 'all' && d.category !== activeCategory) return false;
-    return true;
-  });
+  // Match /drop/:id route or state
+  const matchDropRoute = location.pathname.match(/^\/drop\/(.+)$/);
+  const activeDropId = selectedDropId || (matchDropRoute ? matchDropRoute[1] : null);
+  const currentSelectedDrop = drops.find((d) => d.id === activeDropId);
 
   return (
     <>
       <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        setActiveCategory={setActiveCategory}
         userSession={userSession}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
       />
 
-      {activeTab === 'upcoming' && activeCategory === 'all' && (
-        <>
-          <HeroSection />
-          <StatementSection />
-          <ProcessSection />
-        </>
-      )}
-
-      <DropsGrid
-        activeTab={activeTab}
-        activeCategory={activeCategory}
-        setActiveCategory={setActiveCategory}
-        filteredDrops={filteredDrops}
-        setSelectedDropId={setSelectedDropId}
-        castVote={castVote}
-      />
-
-      <Leaderboard
-        activeTab={activeTab}
-        rankingPeriod={rankingPeriod}
-        setRankingPeriod={setRankingPeriod}
-        showToast={showToast}
-      />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              {activeCategory === 'all' && (
+                <>
+                  <HeroSection />
+                  <StatementSection />
+                  <ProcessSection />
+                </>
+              )}
+              <DropsGrid
+                statusFilter="upcoming"
+                drops={drops}
+                setSelectedDropId={setSelectedDropId}
+                castVote={castVote}
+              />
+            </>
+          }
+        />
+        <Route
+          path="/upcoming"
+          element={
+            <>
+              {activeCategory === 'all' && (
+                <>
+                  <HeroSection />
+                  <StatementSection />
+                  <ProcessSection />
+                </>
+              )}
+              <DropsGrid
+                statusFilter="upcoming"
+                drops={drops}
+                setSelectedDropId={setSelectedDropId}
+                castVote={castVote}
+              />
+            </>
+          }
+        />
+        <Route
+          path="/released"
+          element={
+            <DropsGrid
+              statusFilter="released"
+              drops={drops}
+              setSelectedDropId={setSelectedDropId}
+              castVote={castVote}
+            />
+          }
+        />
+        <Route
+          path="/ranking"
+          element={
+            <Leaderboard
+              activeTab="ranking"
+              rankingPeriod={rankingPeriod}
+              setRankingPeriod={setRankingPeriod}
+              showToast={showToast}
+            />
+          }
+        />
+        <Route
+          path="/drop/:id"
+          element={
+            <DropsGrid
+              statusFilter="upcoming"
+              drops={drops}
+              setSelectedDropId={setSelectedDropId}
+              castVote={castVote}
+            />
+          }
+        />
+        <Route path="*" element={<Navigate to="/upcoming" replace />} />
+      </Routes>
 
       <DetailOverlay
-        selectedDropId={selectedDropId}
-        setSelectedDropId={setSelectedDropId}
+        selectedDropId={activeDropId}
+        setSelectedDropId={(id) => {
+          setSelectedDropId(id);
+          if (!id) {
+            if (matchDropRoute) {
+              navigate(-1);
+            }
+          }
+        }}
         currentSelectedDrop={currentSelectedDrop}
         castVote={castVote}
         userPoints={userSession?.points || 0}
@@ -288,3 +347,4 @@ export default function App() {
     </>
   );
 }
+
