@@ -90,6 +90,25 @@ describe('useQuestBoard', () => {
     expect(claimQuestsAndCelebrate).not.toHaveBeenCalled()
   })
 
+  it('조회 중 던지면 board는 null로 남고 error가 true로 바뀐다(loading이 영원히 안 풀리는 문제의 신호)', async () => {
+    getMealsByDateRange.mockRejectedValue(new Error('network'))
+    mockUser()
+
+    const { result } = renderHook(() => useQuestBoard())
+
+    await waitFor(() => expect(result.current.error).toBe(true))
+    expect(result.current.board).toBeNull()
+    expect(result.current.loading).toBe(true) // 기존 소비자(MyQuestsPage 등) 동작은 그대로 유지
+  })
+
+  it('성공한 조회는 error가 false다', async () => {
+    mockUser()
+    const { result } = renderHook(() => useQuestBoard())
+
+    await waitFor(() => expect(result.current.board).not.toBeNull())
+    expect(result.current.error).toBe(false)
+  })
+
   it('dailyCount/weeklyCount를 selectDailyQuests/selectWeeklyQuests·getQuestBoard에 그대로 전달한다', async () => {
     mockUser()
     renderHook(() => useQuestBoard({ dailyCount: 3, weeklyCount: 5 }))

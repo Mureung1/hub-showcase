@@ -346,6 +346,22 @@ export async function getQuestClaimStats() {
   return { totalCount: (data ?? []).length, countsByQuestId }
 }
 
+// MY 탭 개편 — "오늘/이번 주 획득 XP" 요약용. quest_claims에 이미 date/xp_awarded 컬럼과 본인만
+// select 가능한 RLS가 있어 새 SQL·마이그레이션 없이 클라이언트 합산만으로 충분하다.
+export async function getXpEarnedInRange(startDateKey, endDateKey) {
+  const userId = await getCurrentUserId()
+  if (!userId) return 0
+
+  const { data, error } = await supabase
+    .from('quest_claims')
+    .select('xp_awarded')
+    .eq('user_id', userId)
+    .gte('date', startDateKey)
+    .lte('date', endDateKey)
+  if (error) await throwFriendly(error)
+  return (data ?? []).reduce((sum, row) => sum + row.xp_awarded, 0)
+}
+
 export async function getUnlockedBadgeIds() {
   const userId = await getCurrentUserId()
   if (!userId) return []

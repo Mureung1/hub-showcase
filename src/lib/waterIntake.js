@@ -25,17 +25,42 @@ function storageKey(userId, dateKey) {
 }
 
 // 레거시 {glasses} 레코드도 읽을 수 있도록, 저장된 값에 mlConsumed가 없으면 glasses*200으로 환산한다.
+// entries(MY 탭 개편 — 물 기록 화면의 "오늘 기록" 목록·삭제용 개별 기록)는 예전 레코드엔 없으므로
+// 없으면 빈 배열로 채운다(마이그레이션 불필요 — 그 날짜 이전 기록은 그냥 "몇 시에 마셨는지"가 없을 뿐
+// mlConsumed 합계는 그대로 유효하다).
 export function getWaterIntake(userId, dateKey) {
   const raw = get(storageKey(userId, dateKey), null)
-  if (!raw) return { mlConsumed: 0, supplementTaken: false }
-  if (typeof raw.mlConsumed === 'number') return { mlConsumed: raw.mlConsumed, supplementTaken: Boolean(raw.supplementTaken) }
-  return { mlConsumed: Math.round((raw.glasses ?? 0) * WATER_CUP_ML), supplementTaken: Boolean(raw.supplementTaken) }
+  if (!raw) return { mlConsumed: 0, supplementTaken: false, entries: [] }
+  if (typeof raw.mlConsumed === 'number') {
+    return { mlConsumed: raw.mlConsumed, supplementTaken: Boolean(raw.supplementTaken), entries: raw.entries ?? [] }
+  }
+  return { mlConsumed: Math.round((raw.glasses ?? 0) * WATER_CUP_ML), supplementTaken: Boolean(raw.supplementTaken), entries: raw.entries ?? [] }
 }
 
+// deltaMl이 목표 상한에 걸려 일부만 반영되면(예: 남은 양이 120ml인데 +200ml 시도) entries에는 실제로
+// 반영된 양만 기록한다 — entries 합계가 항상 mlConsumed와 일치해야 "오늘 기록" 목록 삭제 시 정확히
+// 그만큼만 차감할 수 있다. 반영된 양이 0이면(이미 목표 달성) 빈 기록을 남기지 않는다.
 export function addMl(userId, dateKey, deltaMl, targetMl) {
   const current = getWaterIntake(userId, dateKey)
   const clamped = Math.max(0, Math.min(targetMl, Math.round(current.mlConsumed + deltaMl)))
-  const next = { ...current, mlConsumed: clamped }
+  const appliedMl = clamped - current.mlConsumed
+  const entries =
+    appliedMl > 0
+      ? [...current.entries, { id: `${Date.now()}-${current.entries.length}`, ml: appliedMl, at: Date.now() }]
+      : current.entries
+  const next = { ...current, mlConsumed: clamped, entries }
+  set(storageKey(userId, dateKey), next)
+  return next
+}
+
+// 물 기록 화면 "오늘 기록" 목록의 삭제 버튼용 — 해당 entry만 지우고 mlConsumed를 그만큼 차감한다.
+export function removeEntry(userId, dateKey, entryId) {
+  const current = getWaterIntake(userId, dateKey)
+  const target = current.entries.find((e) => e.id === entryId)
+  if (!target) return current
+  const entries = current.entries.filter((e) => e.id !== entryId)
+  const mlConsumed = Math.max(0, current.mlConsumed - target.ml)
+  const next = { ...current, mlConsumed, entries }
   set(storageKey(userId, dateKey), next)
   return next
 }

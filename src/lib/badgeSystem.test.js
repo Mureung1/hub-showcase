@@ -62,4 +62,20 @@ describe('getBadgeDex', () => {
     const dex = getBadgeDex()
     expect(dex.every((b) => b.unlocked === false)).toBe(true)
   })
+
+  it('잠긴 뱃지에는 ctx 기반 progress({current,target})를 붙인다(MY 탭 배지 도감 화면용)', () => {
+    const dex = getBadgeDex([], ctx({ streakCurrent: 3, totalClaimedQuestCount: 25 }))
+    expect(dex.find((b) => b.id === 'streak-7').progress).toEqual({ current: 3, target: 7 })
+    expect(dex.find((b) => b.id === 'quest-50').progress).toEqual({ current: 25, target: 50 })
+  })
+
+  it('current가 target을 넘지 않게 클램프한다', () => {
+    const dex = getBadgeDex([], ctx({ streakCurrent: 999 }))
+    expect(dex.find((b) => b.id === 'streak-3').progress).toEqual({ current: 3, target: 3 })
+  })
+
+  it('해제된 뱃지는 progress가 null이다(재계산 불필요)', () => {
+    const dex = getBadgeDex(['streak-3'], ctx({ streakCurrent: 3 }))
+    expect(dex.find((b) => b.id === 'streak-3').progress).toBeNull()
+  })
 })

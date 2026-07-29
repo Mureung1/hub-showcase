@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildWeekDays, dateKeyToDayNumber, weekDateKeys } from './questWeekContext.js'
+import { buildWeekDays, dateKeyToDayNumber, getWeekQuizStreak, getWeekWaterHistory, mondayKeyOf, weekDateKeys } from './questWeekContext.js'
 import { getClaimedQuestIds } from './dataStore.js'
+import { addMl } from './waterIntake.js'
 
 // useQuestBoard.js(MY 탭/홈 화면)와 Analyze.jsx(끼니 저장 직후)가 공유하는 주간 집계 함수.
 // 예전엔 두 파일이 이 로직을 각자 복제해 갖고 있었고, 그중 한 쪽에만 새 필드가 추가되며 드리프트
@@ -24,6 +25,25 @@ describe('weekDateKeys', () => {
       '2026-08-01',
       '2026-08-02',
     ])
+  })
+})
+
+describe('mondayKeyOf', () => {
+  it('평일이면 그 주의 월요일을 돌려준다', () => {
+    expect(mondayKeyOf('2026-07-29')).toBe('2026-07-27') // 수요일 -> 같은 주 월요일
+  })
+
+  it('월요일 자신을 넣으면 그대로 돌려준다', () => {
+    expect(mondayKeyOf('2026-07-27')).toBe('2026-07-27')
+  })
+
+  it('일요일은 그 주(하루 전 월요일이 아니라)의 월요일로 되돌아간다', () => {
+    expect(mondayKeyOf('2026-08-02')).toBe('2026-07-27') // 일요일 -> 6일 전 월요일
+  })
+
+  it('월 경계를 걸치는 주도 올바르게 역산한다', () => {
+    // 2026-08-01(토)이 속한 주의 월요일은 7월로 넘어간다.
+    expect(mondayKeyOf('2026-08-01')).toBe('2026-07-27')
   })
 })
 
@@ -114,5 +134,61 @@ describe('buildWeekDays', () => {
     expect(day1.usedComboBuilder).toBe(true)
     expect(day1.usedMapDuel).toBe(true)
     expect(day2.usedComboBuilder).toBe(false)
+  })
+})
+
+describe('getWeekQuizStreak', () => {
+  beforeEach(() => {
+    getClaimedQuestIds.mockReset()
+  })
+
+  it('오늘 이후 요일은 isFuture:true로 표시하고 클레임을 조회하지 않는다', async () => {
+    getClaimedQuestIds.mockResolvedValue([])
+    // weekKey 2026-07-27(월) ~ 2026-08-02(일), 오늘은 2026-07-29(수) — 목/금/토/일은 미래.
+    const { days } = await getWeekQuizStreak('2026-07-27', '2026-07-29')
+    expect(days.map((d) => d.isFuture)).toEqual([false, false, false, true, true, true, true])
+    expect(getClaimedQuestIds).toHaveBeenCalledTimes(3) // 월/화/수만
+  })
+
+  it('월~수 정답이면 success가 true, 나머지는 false다', async () => {
+    getClaimedQuestIds.mockImplementation(async (dateKey) => (dateKey <= '2026-07-29' ? ['special-quiz'] : []))
+    const { days } = await getWeekQuizStreak('2026-07-27', '2026-07-29')
+    expect(days.map((d) => d.success)).toEqual([true, true, true, false, false, false, false])
+  })
+
+  it('streak는 오늘(미래 제외)에서 거슬러 끊기지 않은 연속 정답 일수다', async () => {
+    // 월/화만 정답, 수요일(오늘)은 실패 -> 오늘에서부터 거슬러 올라가면 즉시 끊김(streak=0).
+    getClaimedQuestIds.mockImplementation(async (dateKey) => (dateKey <= '2026-07-28' ? ['special-quiz'] : []))
+    const result = await getWeekQuizStreak('2026-07-27', '2026-07-29')
+    expect(result.streak).toBe(0)
+  })
+
+  it('오늘까지 전부 정답이면 미래 요일을 건너뛰고 지난 요일 수만큼 streak가 잡힌다', async () => {
+    getClaimedQuestIds.mockResolvedValue(['special-quiz'])
+    const result = await getWeekQuizStreak('2026-07-27', '2026-07-29')
+    expect(result.streak).toBe(3) // 월/화/수
+  })
+
+  it('중간에 실패한 날이 있으면 거기서 멈춘다', async () => {
+    // 월 성공, 화 실패, 수(오늘) 성공 -> 오늘에서 거슬러 올라가면 수만 세고 화에서 끊김.
+    getClaimedQuestIds.mockImplementation(async (dateKey) => (dateKey === '2026-07-28' ? [] : ['special-quiz']))
+    const result = await getWeekQuizStreak('2026-07-27', '2026-07-29')
+    expect(result.streak).toBe(1)
+  })
+})
+
+describe('getWeekWaterHistory', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('그 주 7일치 mlConsumed를 dateKey와 함께 반환한다', () => {
+    addMl('u1', '2026-07-27', 400, 2000)
+    addMl('u1', '2026-07-29', 900, 2000)
+    const history = getWeekWaterHistory('u1', '2026-07-27')
+    expect(history).toHaveLength(7)
+    expect(history[0]).toEqual({ dateKey: '2026-07-27', mlConsumed: 400 })
+    expect(history[2]).toEqual({ dateKey: '2026-07-29', mlConsumed: 900 })
+    expect(history[1].mlConsumed).toBe(0)
   })
 })

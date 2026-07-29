@@ -190,12 +190,34 @@ export async function claimQuest({ dateKey, questId, xpAwarded }) {
       return { alreadyClaimed: true, totalXp }
     }
     set(`questClaims:${dateKey}`, [...claimed, questId])
+    // MY 탭 개편 — "오늘/이번 주 획득 XP" 합산용으로 퀘스트별 지급액도 같이 남긴다(questClaims:는
+    // quest_id 목록뿐이라 금액을 모른다). 기존 questClaims: 형식·이걸 읽는 모든 .includes(id) 소비처는
+    // 그대로 두고 순수 추가만 한다.
+    const claimedXp = get(`questClaimXp:${dateKey}`, {})
+    set(`questClaimXp:${dateKey}`, { ...claimedXp, [questId]: xpAwarded })
     const { totalXp: currentXp } = await getLevelState()
     const totalXp = currentXp + xpAwarded
     await saveLevelState({ totalXp })
     return { alreadyClaimed: false, totalXp }
   }
   return db.claimQuest(dateKey, questId, xpAwarded)
+}
+
+// MY 탭 개편(요약 카드 "오늘 획득 XP"/퀘스트 화면 "이번 주 획득 XP") — startDateKey~endDateKey(포함)
+// 사이에 지급된 XP 총합. 게스트는 questClaimXp: 접두 키를 날짜 범위로 걸러 합산, 로그인은 db.js가
+// quest_claims.xp_awarded를 직접 합산한다(새 SQL 불필요 — 기존 컬럼·RLS로 충분).
+export async function getXpEarnedInRange(startDateKey, endDateKey) {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    let total = 0
+    for (const dateKey of keysWithPrefix('questClaimXp:')) {
+      if (dateKey < startDateKey || dateKey > endDateKey) continue
+      const claimedXp = get(`questClaimXp:${dateKey}`, {})
+      total += Object.values(claimedXp).reduce((sum, xp) => sum + xp, 0)
+    }
+    return total
+  }
+  return db.getXpEarnedInRange(startDateKey, endDateKey)
 }
 
 // 게스트: `questClaims:` 접두 키를 전부 순회해 집계한다(getAllMealsByDate와 같은 방식).

@@ -37,6 +37,13 @@ export function useQuestBoard({ dailyCount = 3, weeklyCount = 5, autoClaim = tru
   const { authLoading, effectiveUserId, todayMeals, todayMealsTotal, effectiveRecommended, profile, claimQuestsAndCelebrate } =
     useUser()
   const [board, setBoard] = useState(null)
+  // board===null은 예전엔 "아직 첫 조회 중"과 "조회가 실패해 영원히 못 채움"을 구분하지 못했다 —
+  // loading이 board===null에서 그대로 유도되다 보니, refresh()가 실패하면 loading이 영원히 true로
+  // 남아 HomeQuestCard 같은 소비자가 스켈레톤을 영원히 보여주는 버그였다(리뷰에서 발견). 새로 조회를
+  // 시작할 때마다 초기화되는 별도 플래그로 "지금 board가 null인 게 로딩 중이라 그런지, 에러라 그런지"를
+  // 구분할 수 있게 한다 — loading 자체의 계산식은 그대로 둬 이 필드를 안 쓰는 기존 소비자(MyQuestsPage,
+  // Profile.jsx)의 동작은 전혀 안 바뀐다.
+  const [error, setError] = useState(false)
 
   const buildContext = useCallback(async () => {
     const now = new Date()
@@ -78,6 +85,7 @@ export function useQuestBoard({ dailyCount = 3, weeklyCount = 5, autoClaim = tru
   const refresh = useCallback(async () => {
     // 세션 복원(authLoading)이 끝나기 전이면 effectiveUserId가 곧 바뀔 수 있으니 계산 자체를 미룬다.
     if (authLoading) return
+    setError(false)
     try {
       const { ctx, dateKey, weekKey, streak } = await buildContext()
       const dailyClaimedIds = await getClaimedQuestIds(dateKey)
@@ -122,8 +130,10 @@ export function useQuestBoard({ dailyCount = 3, weeklyCount = 5, autoClaim = tru
           weeklyCount,
         }),
       )
-    } catch {
+    } catch (err) {
+      console.error('quest board refresh failed:', err)
       setBoard(null)
+      setError(true)
     }
   }, [authLoading, buildContext, effectiveUserId, autoClaim, dailyCount, weeklyCount, claimQuestsAndCelebrate])
 
@@ -131,5 +141,5 @@ export function useQuestBoard({ dailyCount = 3, weeklyCount = 5, autoClaim = tru
     refresh()
   }, [refresh])
 
-  return { board, refresh, loading: authLoading || board === null }
+  return { board, refresh, loading: authLoading || board === null, error }
 }

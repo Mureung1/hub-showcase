@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Card from './Card.jsx'
 import Skeleton from './Skeleton.jsx'
 import { useQuestBoard } from '../lib/useQuestBoard.js'
@@ -42,7 +43,8 @@ function QuestCheckMark({ completed }) {
 // 퀘스트는 순환 목록에서 아예 제외한다. 남은 미완료 퀘스트가 없으면(dailyAllClear) 순환 대신 축하
 // 카드 하나만 보여준다 — 카드가 아무 설명 없이 사라지면 버그처럼 보이기 때문.
 export default function HomeQuestCard() {
-  const { board, loading } = useQuestBoard({ autoClaim: false })
+  const navigate = useNavigate()
+  const { board, loading, error } = useQuestBoard({ autoClaim: false })
   const [index, setIndex] = useState(0)
   const quests = (board?.daily ?? []).filter((q) => !q.claimed)
 
@@ -57,6 +59,11 @@ export default function HomeQuestCard() {
     return () => clearInterval(timer)
   }, [quests.length])
 
+  // StreakBadge.jsx와 같은 규칙 — 장식용 홈 화면 위젯이라 조회 실패 시 에러 카드를 띄우는 대신 조용히
+  // 아무 것도 안 그린다(리뷰에서 발견: 예전엔 이 경우 useQuestBoard의 board가 계속 null이라 loading도
+  // 계속 true로 남아, 아래 스켈레톤이 영원히 떠 있는 채로 굳어버렸다).
+  if (error) return null
+
   if (loading) {
     return (
       <Card>
@@ -67,12 +74,23 @@ export default function HomeQuestCard() {
   }
 
   if (board?.dailyAllClear) {
+    // 리텐션 강화 v7 — 예전엔 정적 텍스트뿐이었다(XP 합계도 안 보여주고 클릭도 안 됨). MY 탭
+    // MyDailyQuestWidget과 동일하게 "claimed 항목의 xp 합"으로 오늘 번 XP를 보여주고, 카드 전체를
+    // /profile/quests로 이동하는 배너로 만든다(같은 Card onClick 패턴 재사용).
+    const earnedXp = board.daily.filter((q) => q.claimed).reduce((sum, q) => sum + q.xp, 0)
     return (
-      <Card>
-        <p style={{ margin: 0, fontSize: font.size.xs, fontWeight: 700, color: colors.primary }}>오늘의 퀘스트</p>
-        <h3 style={{ margin: '2px 0 0', fontSize: font.size.md, fontWeight: 700, color: colors.textStrong }}>
-          🎉 오늘의 퀘스트를 모두 완료했어요!
-        </h3>
+      <Card onClick={() => navigate('/profile/quests')}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: font.size.xs, fontWeight: 700, color: colors.primary }}>오늘의 퀘스트</p>
+            <h3 style={{ margin: '2px 0 0', fontSize: font.size.md, fontWeight: 700, color: colors.textStrong }}>
+              🎉 오늘의 퀘스트를 모두 완료했어요
+            </h3>
+          </div>
+          <span style={{ flexShrink: 0, fontSize: font.size.sm, fontWeight: 700, color: colors.primary, whiteSpace: 'nowrap' }}>
+            +{earnedXp}XP ›
+          </span>
+        </div>
       </Card>
     )
   }

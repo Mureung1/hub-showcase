@@ -17,30 +17,31 @@ export const BADGES = [
   { id: 'nutrition-master', title: '영양 관리왕', description: '단백질·나트륨 관리 퀘스트를 20회 완료했어요.', icon: '🥗' },
 ]
 
+// 뱃지 하나당 "판정에 쓰는 값(metric)"과 "그 값의 목표치(target)"를 한 곳에만 적는다 — 잠금 조건
+// (evaluateBadge: metric >= target)과 진행률(progressOf: {current: min(metric,target), target})이
+// 예전엔 badgeId별 switch문 두 벌로 따로 있어서, 한쪽만 임계값을 바꾸면(예: streak-7을 5로 완화)
+// 잠금은 5에서 걸리는데 진행률 바는 여전히 "5/7"로 보이는 드리프트가 날 수 있었다(questWeekContext.js
+// 헤더 주석에 적힌 것과 같은 버그 클래스). 이제 값을 두 번 적을 데가 없다.
+const BADGE_RULES = {
+  'streak-3': { metric: (ctx) => ctx.streakCurrent ?? 0, target: 3 },
+  'streak-7': { metric: (ctx) => ctx.streakCurrent ?? 0, target: 7 },
+  'streak-30': { metric: (ctx) => ctx.streakCurrent ?? 0, target: 30 },
+  'level-10': { metric: (ctx) => ctx.level ?? 0, target: 10 },
+  'level-30': { metric: (ctx) => ctx.level ?? 0, target: 30 },
+  'level-100': { metric: (ctx) => ctx.level ?? 0, target: 100 },
+  'quest-10': { metric: (ctx) => ctx.totalClaimedQuestCount ?? 0, target: 10 },
+  'quest-50': { metric: (ctx) => ctx.totalClaimedQuestCount ?? 0, target: 50 },
+  'nutrition-master': {
+    metric: (ctx) => (ctx.countsByQuestId?.['protein-80'] ?? 0) + (ctx.countsByQuestId?.['sodium-in-limit'] ?? 0),
+    target: 20,
+  },
+}
+
 // ctx: { streakCurrent, level, totalClaimedQuestCount, countsByQuestId: Record<string, number> }
 function evaluateBadge(badgeId, ctx) {
-  switch (badgeId) {
-    case 'streak-3':
-      return (ctx.streakCurrent ?? 0) >= 3
-    case 'streak-7':
-      return (ctx.streakCurrent ?? 0) >= 7
-    case 'streak-30':
-      return (ctx.streakCurrent ?? 0) >= 30
-    case 'level-10':
-      return (ctx.level ?? 0) >= 10
-    case 'level-30':
-      return (ctx.level ?? 0) >= 30
-    case 'level-100':
-      return (ctx.level ?? 0) >= 100
-    case 'quest-10':
-      return (ctx.totalClaimedQuestCount ?? 0) >= 10
-    case 'quest-50':
-      return (ctx.totalClaimedQuestCount ?? 0) >= 50
-    case 'nutrition-master':
-      return (ctx.countsByQuestId?.['protein-80'] ?? 0) + (ctx.countsByQuestId?.['sodium-in-limit'] ?? 0) >= 20
-    default:
-      return false
-  }
+  const rule = BADGE_RULES[badgeId]
+  if (!rule) return false
+  return rule.metric(ctx) >= rule.target
 }
 
 // 아직 unlockedIds에 없는데 조건을 만족한 뱃지들만 — 이번에 새로 딴 뱃지 목록(호출부가 dataStore.unlockBadge
@@ -49,7 +50,19 @@ export function evaluateBadges(ctx, unlockedIds = []) {
   return BADGES.filter((badge) => !unlockedIds.includes(badge.id) && evaluateBadge(badge.id, ctx))
 }
 
-// 도감 화면용 — 조건 재평가 없이 저장된 unlockedIds만 신뢰한다.
-export function getBadgeDex(unlockedIds = []) {
-  return BADGES.map((badge) => ({ ...badge, unlocked: unlockedIds.includes(badge.id) }))
+// MY 탭 개편(배지 도감 화면 "3/7일" 진행률) — BADGE_RULES의 같은 metric/target에서 그대로 유도한다
+// (evaluateBadge와 임계값이 어긋날 수 없다). target을 넘는 current는 클램프해 진행 바가 100%를 넘지 않게 한다.
+function progressOf(badgeId, ctx) {
+  const rule = BADGE_RULES[badgeId]
+  if (!rule) return { current: 0, target: 1 }
+  return { current: Math.min(rule.metric(ctx), rule.target), target: rule.target }
+}
+
+// 도감 화면용 — 조건 재평가 없이 저장된 unlockedIds만 신뢰한다. 잠긴 뱃지에는 progress({current,target})를
+// 붙여 "3/7일" 같은 진행률을 보여줄 수 있게 한다(해제된 뱃지는 굳이 재계산할 필요 없어 null).
+export function getBadgeDex(unlockedIds = [], ctx = {}) {
+  return BADGES.map((badge) => {
+    const unlocked = unlockedIds.includes(badge.id)
+    return { ...badge, unlocked, progress: unlocked ? null : progressOf(badge.id, ctx) }
+  })
 }

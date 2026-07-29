@@ -31,6 +31,17 @@ export function weekDateKeys(weekKey) {
   })
 }
 
+// 달력 개편(리텐션 강화 v7) — 주간 스트립이 "임의로 선택된 날짜가 속한 주"를 보여줘야 해서, weekDateKeys가
+// 받는 "그 주의 월요일"을 임의 날짜로부터 역산한다. getDay()는 일요일이 0이라 일요일만 -6, 나머지는 1-day.
+export function mondayKeyOf(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day = date.getDay() // 0=일요일
+  const diffToMonday = day === 0 ? -6 : 1 - day
+  date.setDate(date.getDate() + diffToMonday)
+  return toDateKey(date)
+}
+
 function isRangeMet(actual, recommended, lowRatio, highRatio) {
   if (!(recommended > 0)) return false
   return actual >= recommended * lowRatio && actual <= recommended * highRatio
@@ -70,4 +81,36 @@ export async function buildWeekDays({ weekKey, todayCalendarKey, mealsForDate, e
     })
   }
   return days
+}
+
+// MY 탭 개편(오늘의 식단 퀴즈 화면 "이번 주 참여" 월~일 점) — buildWeekDays 전체(끼니/물 등)를 다시
+// 계산할 필요 없이 퀴즈 성공 여부만 가볍게 뽑는 전용 함수. 아직 오지 않은 요일(예: 오늘이 금요일이면
+// 토/일)은 isFuture로 표시해 "실패"와 구분한다. streak는 오늘(또는 이번 주 마지막 지난 요일)에서
+// 거슬러 올라가며 끊기지 않은 연속 정답 일수 — 미래 요일은 건너뛰고, 과거/오늘 중 실패(미참여 포함)를
+// 만나면 멈춘다.
+export async function getWeekQuizStreak(weekKey, todayCalendarKey) {
+  const days = []
+  for (const dateKey of weekDateKeys(weekKey)) {
+    const isFuture = dateKey > todayCalendarKey
+    // eslint-disable-next-line no-await-in-loop
+    const claimed = isFuture ? [] : await getClaimedQuestIds(dateKey)
+    days.push({ dateKey, isFuture, success: claimed.includes('special-quiz') })
+  }
+
+  let streak = 0
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (days[i].isFuture) continue
+    if (!days[i].success) break
+    streak++
+  }
+
+  return { days, streak }
+}
+
+// MY 탭 개편(물 기록 화면 "이번 주" 막대그래프) — 여기 두는 이유: waterIntake.js가 이 파일의
+// weekDateKeys를 쓰면 이 파일도 waterIntake.js의 getWaterIntake를 쓰는 순환 import가 되므로, 이미
+// getWaterIntake를 가져다 쓰는 이 파일에 둔다. 하루치 mlConsumed만 필요해 buildWeekDays 전체를
+// 다시 계산하지 않는다.
+export function getWeekWaterHistory(userId, weekKey) {
+  return weekDateKeys(weekKey).map((dateKey) => ({ dateKey, mlConsumed: getWaterIntake(userId, dateKey).mlConsumed }))
 }

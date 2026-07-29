@@ -10,6 +10,13 @@ import ForgotPassword from './pages/ForgotPassword.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Profile from './pages/Profile.jsx'
+import MyQuestsPage from './pages/MyQuestsPage.jsx'
+import MyLeaderboardPage from './pages/MyLeaderboardPage.jsx'
+import MyBadgesPage from './pages/MyBadgesPage.jsx'
+import MyQuizPage from './pages/MyQuizPage.jsx'
+import MyWaterPage from './pages/MyWaterPage.jsx'
+import MyRecommendedPage from './pages/MyRecommendedPage.jsx'
+import MyCardSettingsPage from './pages/MyCardSettingsPage.jsx'
 import Analyze from './pages/Analyze.jsx'
 import Result from './pages/Result.jsx'
 import Calendar from './pages/Calendar.jsx'
@@ -98,6 +105,16 @@ export default function AppRouter() {
           <Route path="/" element={<RootRedirect />} />
           <Route element={<LoadGate />}>
             <Route path="/profile" element={<Profile />} />
+            {/* MY 탭 개편(리텐션 강화 v6) — 그리드 아이콘/위젯이 여는 하위 화면들. /profile과 같은
+                레이아웃(AppShell/LoadGate) 아래에 둬서 탭바가 계속 보이고 MY 탭이 활성 상태로 남는다
+                (tabs.js의 TABS가 my를 p.startsWith('/profile')로 매칭). */}
+            <Route path="/profile/quests" element={<MyQuestsPage />} />
+            <Route path="/profile/leaderboard" element={<MyLeaderboardPage />} />
+            <Route path="/profile/badges" element={<MyBadgesPage />} />
+            <Route path="/profile/quiz" element={<MyQuizPage />} />
+            <Route path="/profile/water" element={<MyWaterPage />} />
+            <Route path="/profile/recommended" element={<MyRecommendedPage />} />
+            <Route path="/profile/card-settings" element={<MyCardSettingsPage />} />
             <Route path="/analyze" element={<Analyze />} />
             <Route path="/result" element={<Result />} />
             <Route path="/meals" element={<MealsPage />} />

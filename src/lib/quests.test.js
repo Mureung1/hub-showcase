@@ -11,6 +11,7 @@ import {
   evaluateQuest,
   findNewlyCompletedAutoQuests,
   getQuestBoard,
+  progressOf,
   resolveAllClearBonuses,
   selectDailyQuests,
   selectWeeklyQuests,
@@ -255,6 +256,31 @@ describe('getQuestBoard', () => {
     const dailyIds = selectDailyQuests(opts.dateKey, opts.userId, 3).map((q) => q.id)
     const board = getQuestBoard(ctx(), { ...opts, dailyClaimedIds: dailyIds })
     expect(board.dailyAllClear).toBe(true)
+  })
+
+  it('weekly 항목마다 progress({current,target})를 붙인다(MY 탭 퀘스트 화면 진행률 바용)', () => {
+    const board = getQuestBoard(ctx({ weekWaterMetDays: 2, weekLoggedDays: 7 }), opts)
+    expect(board.weekly.every((q) => q.progress === null || (typeof q.progress.current === 'number' && typeof q.progress.target === 'number'))).toBe(true)
+  })
+})
+
+describe('progressOf', () => {
+  it('metricKey/target이 있는 퀘스트는 ctx 값을 target으로 클램프해 current로 준다', () => {
+    const quest = WEEKLY_QUEST_POOL.find((q) => q.id === 'week-water-3')
+    expect(progressOf(quest, ctx({ weekWaterMetDays: 1 }))).toEqual({ current: 1, target: 3 })
+    expect(progressOf(quest, ctx({ weekWaterMetDays: 3 }))).toEqual({ current: 3, target: 3 })
+    expect(progressOf(quest, ctx({ weekWaterMetDays: 9 }))).toEqual({ current: 3, target: 3 }) // target 초과는 클램프
+  })
+
+  it('progress(ctx)를 직접 정의한 퀘스트(week-try-both)는 그 함수를 우선한다', () => {
+    const quest = WEEKLY_QUEST_POOL.find((q) => q.id === 'week-try-both')
+    expect(progressOf(quest, ctx({ weekComboBuilderDays: 1, weekMapDuelDays: 0 }))).toEqual({ current: 1, target: 2 })
+    expect(progressOf(quest, ctx({ weekComboBuilderDays: 1, weekMapDuelDays: 1 }))).toEqual({ current: 2, target: 2 })
+  })
+
+  it('metricKey도 progress도 없는 daily 퀘스트는 null을 반환한다', () => {
+    const quest = DAILY_QUEST_POOL.find((q) => q.id === 'first-meal-today')
+    expect(progressOf(quest, ctx())).toBeNull()
   })
 })
 
