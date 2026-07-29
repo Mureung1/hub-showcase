@@ -97,15 +97,16 @@ router.post('/', upload.single('image'), async (req, res) => {
     const localFilePath = req.file.path;
     const filename = req.file.filename;
 
-    console.log('[POST /api/upload] 로컬 파일 저장 경로:', localFilePath);
+    // 파일 저장 확인
+    console.log('[POST /api/upload] 파일 저장 경로:', localFilePath);
     console.log('[POST /api/upload] 파일 존재 여부:', fs.existsSync(localFilePath));
     console.log('[POST /api/upload] 파일 크기:', fs.statSync(localFilePath).size, 'bytes');
 
-    // Supabase Storage에 업로드
+    // Supabase Storage에 업로드 (이미 service role key 설정됨)
     let fileUrl = `/uploads/${filename}`;
     try {
       const fileBuffer = fs.readFileSync(localFilePath);
-      const storagePath = `uploads/${storeId}/${filename}`;
+      const storagePath = `uploads/${filename}`;
 
       console.log('[POST /api/upload] Supabase Storage 업로드 시도:', storagePath);
 
@@ -113,7 +114,7 @@ router.post('/', upload.single('image'), async (req, res) => {
         .from('uploads')
         .upload(storagePath, fileBuffer, {
           contentType: req.file.mimetype,
-          upsert: false
+          upsert: true
         });
 
       if (!uploadError) {
@@ -124,11 +125,11 @@ router.post('/', upload.single('image'), async (req, res) => {
         console.log('[POST /api/upload] Supabase Storage 업로드 성공:', fileUrl);
       } else {
         console.warn('[POST /api/upload] Supabase Storage 업로드 실패:', uploadError.message);
-        console.log('[POST /api/upload] 로컬 경로 사용:', fileUrl);
+        console.log('[POST /api/upload] 로컬 경로 폴백:', fileUrl);
       }
     } catch (storageErr) {
       console.warn('[POST /api/upload] Storage 업로드 중 에러:', storageErr.message);
-      console.log('[POST /api/upload] 로컬 경로 사용:', fileUrl);
+      console.log('[POST /api/upload] 로컬 경로 폴백:', fileUrl);
     }
 
     // Supabase에 업로드 정보 저장
@@ -159,12 +160,12 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     console.log(`[POST /api/upload] 이미지 업로드 완료: store_id=${storeId}, image_id=${imageRecord.image_id}, url=${fileUrl}`);
 
-    // 로컬 파일 삭제 (Storage에 저장된 후)
+    // 로컬 파일 삭제
     try {
       fs.unlinkSync(localFilePath);
       console.log('[POST /api/upload] 로컬 임시 파일 삭제 완료');
     } catch (unlinkErr) {
-      console.warn('[POST /api/upload] 로컬 파일 삭제 실패 (무시):', unlinkErr.message);
+      console.warn('[POST /api/upload] 로컬 파일 삭제 실패:', unlinkErr.message);
     }
 
     res.status(201).json({
