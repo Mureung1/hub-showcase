@@ -220,13 +220,18 @@ router.get('/', async (req, res) => {
   const { myRequestId } = req.query
   const me = myRequestId ? data.find((r) => r.id === myRequestId) : null
 
-  // 각 방 대표자의 프로필(이름/단과대/사진)과 성별을 users 테이블에서 한 번에 조회
-  const userIds = [...new Set([me?.user_id, ...rooms.map((r) => r.user_id)].filter(Boolean))]
+  // 요청 id로 user_id를 찾기 위한 매핑 (방 대표자뿐 아니라 방 전체 멤버의 평점을 평균낼 때 씀)
+  const userIdByRequestId = Object.fromEntries(data.map((r) => [r.id, r.user_id]))
+
+  // 각 방 대표자의 프로필(이름/단과대/사진)과 성별, 그리고 방 전체 멤버의 평점을 users 테이블에서 한 번에 조회
+  const allMemberUserIds = rooms.flatMap((r) => r.memberIds.map((id) => userIdByRequestId[id]))
+  const userIds = [...new Set([me?.user_id, ...rooms.map((r) => r.user_id), ...allMemberUserIds].filter(Boolean))]
   const { data: userRows } = await supabase
     .from('users')
     .select('id, gender, name, nickname, college, avatar_url, rating, noshow_count')
     .in('id', userIds.length ? userIds : [''])
   const genderById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.gender]))
+  const ratingById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.rating]))
   const profileById = Object.fromEntries(
     (userRows ?? []).map((u) => [
       u.id,
@@ -240,11 +245,21 @@ router.get('/', async (req, res) => {
     ])
   )
 
-  const withExtras = (room) => ({
-    ...room,
-    activity: describeActivity(room.last_seen_at),
-    profile: profileById[room.user_id] ?? null,
-  })
+  const withExtras = (room) => {
+    const profile = profileById[room.user_id] ?? null
+    const memberRatings = room.memberIds
+      .map((id) => ratingById[userIdByRequestId[id]])
+      .filter((r) => typeof r === 'number')
+    const groupRatingAvg = memberRatings.length
+      ? Math.round((memberRatings.reduce((a, b) => a + b, 0) / memberRatings.length) * 10) / 10
+      : null
+
+    return {
+      ...room,
+      activity: describeActivity(room.last_seen_at),
+      profile: profile ? { ...profile, rating: groupRatingAvg ?? profile.rating } : null,
+    }
+  }
 
   if (!me) {
     return res.json(rooms.map(withExtras))
