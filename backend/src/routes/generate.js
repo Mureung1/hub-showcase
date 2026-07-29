@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -58,7 +57,7 @@ const upload = multer({
  *   "estimated_time": 45
  * }
  */
-router.post('/', cors(), express.json(), async (req, res) => {
+router.post('/', express.json(), async (req, res) => {
   try {
     const { store_id, image_url, trend_hashtag, purpose, mood } = req.body;
 
@@ -175,7 +174,7 @@ router.post('/', cors(), express.json(), async (req, res) => {
  *   "error": null
  * }
  */
-router.get('/:job_id', cors(), async (req, res) => {
+router.get('/:job_id', async (req, res) => {
   try {
     const { job_id } = req.params;
 

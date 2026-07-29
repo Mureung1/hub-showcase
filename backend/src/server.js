@@ -41,21 +41,17 @@ checkEnvironmentVariables();
 
 // CORS 설정 (가장 강력한 버전)
 const corsOptions = {
-  origin: function (origin, callback) {
-    // 모든 origin 허용
-    callback(null, true);
-  },
-  credentials: false,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200,
-  preflightContinue: false
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: false
 };
 
+// 모든 요청에 CORS 적용
 app.use(cors(corsOptions));
 
 // Preflight 요청 명시적 처리
-app.options('*', cors(corsOptions));
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.static('uploads')); // 업로드된 파일 정적 서빙
@@ -163,6 +159,7 @@ app.post('/api/admin/seed', async (req, res) => {
   }
 });
 
+// 라우트 등록 (CORS는 전체 app.use()에서 처리됨)
 app.use('/api/store', storeRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/upload', uploadRoutes);
