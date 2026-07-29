@@ -13,9 +13,10 @@
 ## 구현 전에 확인할 것
 
 - 기준 설계: `docs/superpowers/specs/2026-07-24-retrieve-semantic-search-design.md`
-- 연결 이슈: [GitHub #23](https://github.com/ppre1ude/hub/issues/23)
+- 제품 이슈: [GitHub #23](https://github.com/ppre1ude/hub/issues/23)
+- 구현 이슈: [GitHub #105](https://github.com/ppre1ude/hub/issues/105)
 - 별도 이슈: 카테고리 생성·이름·색상·삭제 문제는 [GitHub #71](https://github.com/ppre1ude/hub/issues/71)에서 처리한다.
-- 설계 문서 브랜치를 `main`에 병합한 뒤 최신 `main`에서 `feat/23-retrieve-semantic-search`를 만든다.
+- 구현은 최신 `main`에서 만든 `feat/105-retrieve-semantic-search` 브랜치에서 진행한다.
 - 실제 Gemini 호출, 운영 Supabase 마이그레이션, 기존 데이터 일괄 변환은 비용과 운영 데이터에 영향을 주므로 실행 직전에 사용자 승인을 받는다.
 - `.env.local`에는 따옴표 유무와 관계없이 다음 서버 전용 값을 둔다. 값 자체는 커밋하지 않는다.
 
@@ -1075,6 +1076,10 @@ Expected: 대상 테스트 PASS, 6개 제한 없이 서버 ID 순서 표시.
 
 **Files:**
 
+- Modify: `.gitignore`
+- Modify: `supabase/migrations/20260729010000_add_semantic_retrieve.sql`
+- Modify: `supabase/tests/database/semantic_retrieve.test.sql`
+- Create: `scripts/retrieve_backfill/shared.ts`
 - Create: `scripts/retrieve_backfill/submit.ts`
 - Create: `scripts/retrieve_backfill/apply.ts`
 - Modify: `package.json`
@@ -1101,28 +1106,22 @@ Expected output:
 
 - [ ] **Step 2: Batch 제출 명령을 구현한다**
 
-사용자 승인 뒤 `--confirm`이 있을 때만 실행한다. 인라인 요청의 metadata에는 `insightId`, `sourceHash`, `modelId`, `projectionVersion`만 넣고, 문서 본문은 Task 1의 `createDocumentEmbeddingText`로 만든다.
+사용자 승인 뒤 `--confirm`이 있을 때만 실행한다. 현재 JavaScript SDK는 임베딩 Batch 인라인 요청에 요청별 metadata를 넣을 수 없지만 결과 순서를 보존한다. 따라서 Batch에는 Task 1의 `createDocumentEmbeddingText`로 만든 원문만 보내고, 결과 연결에 필요한 `insightId`, `userId`, `sourceHash`, `modelId`, `projectionVersion`은 Git에서 제외한 로컬 제출 기록에 순서대로 저장한다. 제목·메모와 API 키는 로컬 제출 기록에 넣지 않는다.
 
 ```ts
 const batch = await ai.batches.createEmbeddings({
   config: { displayName: `retrieve-backfill-${new Date().toISOString()}` },
   model: RETRIEVE_EMBEDDING_MODEL,
   src: {
-    inlinedRequests: documents.map((document) => ({
+    inlinedRequests: {
       config: { outputDimensionality: RETRIEVE_EMBEDDING_DIMENSIONS },
-      contents: [{ parts: [{ text: createDocumentEmbeddingText(document) }] }],
-      metadata: {
-        insightId: document.insightId,
-        modelId: RETRIEVE_EMBEDDING_MODEL,
-        projectionVersion: String(RETRIEVE_PROJECTION_VERSION),
-        sourceHash: document.sourceHash,
-      },
-    })),
+      contents: documents.map(createDocumentEmbeddingText),
+    },
   },
 });
 ```
 
-명령은 batch 이름과 대상 건수만 출력한다. 원문과 API 키는 출력하지 않는다.
+명령은 Batch 이름과 대상 건수만 출력한다. 원문과 API 키는 출력하지 않는다. Batch가 최대 48시간 처리될 수 있으므로 비용 예약은 최대 7일 동안 유지한다.
 
 - [ ] **Step 3: Batch 결과 반영 명령을 구현한다**
 
@@ -1130,31 +1129,24 @@ const batch = await ai.batches.createEmbeddings({
 npm run retrieve:backfill:apply -- --batch batches/실제-배치-ID --dry-run
 ```
 
-dry-run은 상태, 성공 수, 실패 수만 보여준다. 사용자 승인 뒤 `--confirm`을 붙이면 성공 응답의 768차원 벡터와 metadata를 검증하고 `complete_insight_embedding_job`으로 저장한다. 실패 응답의 작업은 대기열에 남긴다. 배치 입력 토큰은 `usageMetadata.promptTokenCount`를 합산해 월 사용량에 반영한다.
+dry-run은 상태, 성공 수, 실패 수만 보여준다. 사용자 승인 뒤 `--confirm`을 붙이면 성공 응답의 768차원 벡터와 로컬 제출 기록을 검증하고 `complete_insight_embedding_job`으로 저장한다. 실패 응답과 제출 뒤 원문이 바뀐 작업은 대기열에 남긴다. 배치 입력 토큰은 응답의 `tokenCount`를 합산해 월 사용량에 반영하고, 사용량이 없는 응답이 하나라도 있으면 예약 최대값으로 정산한다.
 
 - [ ] **Step 4: 비용 없는 검증을 실행한다**
 
-Run:
-
-```powershell
-npm run retrieve:backfill:submit -- --dry-run
-npx tsc -p tsconfig.node.json --noEmit
-```
-
-Expected: 대상 건수만 출력, 타입 검사 PASS. 이 단계에서는 Gemini Batch 작업을 만들지 않는다.
+새 스크립트만 대상으로 ESLint와 TypeScript 검사를 실행하고 CLI 확인 조건을 짧게 확인한다. 마이그레이션 적용 전에는 운영 Supabase를 읽는 dry-run도 실행하지 않는다. 이 단계에서는 Gemini Batch 작업이나 운영 DB 변경을 만들지 않는다.
 
 - [ ] **Step 5: 스크립트를 커밋한다**
 
 Run:
 
 ```powershell
-git add package.json package-lock.json scripts/retrieve_backfill
-git commit -m "feat: 꺼내보기 기존 데이터 변환 도구"
+git add .gitignore package.json supabase/migrations/20260729010000_add_semantic_retrieve.sql supabase/tests/database/semantic_retrieve.test.sql scripts/retrieve_backfill
+git commit -m "feat: 기존 인사이트 의미 검색 배치 변환 도구 추가"
 ```
 
 Expected: 커밋 생성. 실제 Batch 제출과 운영 DB 반영은 커밋 후 별도 승인 단계에서 실행.
 
-### Task 9: 운영 문서와 전체 검증
+### Task 9: 운영 문서와 대상 검증
 
 **Files:**
 
@@ -1195,29 +1187,25 @@ Expected: 커밋 생성. 실제 Batch 제출과 운영 DB 반영은 커밋 후 �
 
 - [ ] **Step 3: 백로그와 체크리스트를 구현 상태에 맞춘다**
 
-- #23의 구현 항목과 배포 전 승인 항목을 구분한다.
+- #105의 구현 항목과 배포 전 승인 항목을 구분한다.
 - 카테고리 관리는 #71 링크만 남기고 이번 검색 구현 완료로 표시하지 않는다.
 - 브라우저 E5, RRF, 생성형 LLM이 운영 경로에 들어가지 않았음을 기록한다.
 
-- [ ] **Step 4: 좁은 검증부터 전체 검증까지 실행한다**
+- [ ] **Step 4: 변경한 검색 경계만 검증한다**
 
 Run:
 
 ```powershell
 npx vitest run server/retrieve src/features/retrieve src/app/authenticated_workspace.test.tsx src/pages/home/ui/home_page.test.tsx server/app.test.ts server/operating_app.test.ts server/vercel_app.test.ts
-npm run test
-npm run lint
-npm run format:check
-npm run build:web
-supabase test db
+npx eslint server/retrieve src/features/retrieve scripts/retrieve_backfill
 git status --short
 ```
 
 Expected:
 
-- 새 검색 경계와 기존 전체 Vitest PASS
-- lint, format, web build PASS
-- 기존 RLS와 의미 검색 pgTAP PASS
+- 새 검색 경계의 대상 Vitest PASS
+- 변경한 TypeScript 파일의 ESLint PASS
+- 로컬 Supabase가 준비된 환경에서만 의미 검색 pgTAP PASS
 - 의도한 파일 외 변경 없음
 - `.env.local`, API 키, service role key가 추적 파일과 `dist`에 없음
 
@@ -1227,7 +1215,7 @@ Run:
 
 ```powershell
 git add docs/development-architecture.md docs/retrieve.md docs/deployment.md docs/backlog.md docs/checklist.md
-git commit -m "docs: 꺼내보기 의미 검색 운영 흐름"
+git commit -m "docs: 꺼내보기 의미 검색 운영 절차 추가"
 ```
 
 Expected: 작업 트리에 사용자 소유의 기존 untracked 파일만 남음.
