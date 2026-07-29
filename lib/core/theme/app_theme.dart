@@ -147,6 +147,42 @@ abstract final class AppTheme {
         ),
       ),
 
+      // 정본 `03 · 다이얼로그`(Redesign `121:601`)의 다이얼로그 10종은 **전부 흰
+      // 면**(`surfaceContainerLowest`)이다. 테마에 `dialogTheme`이 없으면 Material 3
+      // 기본값 `surfaceContainerHigh`로 그려지는데, 이 앱의 그 슬롯은 `#DCE9FF`
+      // **연파랑**이라 정본과 면색이 통째로 다르다.
+      //
+      // 개별 다이얼로그에 색을 박지 않고 여기 한 곳에서 정한다 — 지금 앱의 다이얼로그
+      // 10개는 모두 `Dialog(...)`에 배경색을 주지 않으므로 이 값이 그대로 내려간다.
+      //
+      // 다크는 슬롯을 참조해 자동으로 따라온다(`#13263D`). 정본에 다크 사양이 없어
+      // 값을 지어내지 않는다. 부수 효과로 다크 다이얼로그가 `cardTheme`과 같은 단
+      // (Lowest)에 서서, 카드와 다이얼로그가 서로 다른 높이에 있던 어긋남이 사라진다.
+      //
+      // `surfaceTintColor`를 끄는 이유는 AppBar와 같다 — M3의 엘리베이션 틴트가
+      // 얹히면 흰 면이 primary 그린 쪽으로 물든다.
+      dialogTheme: DialogThemeData(
+        backgroundColor: scheme.surfaceContainerLowest,
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      // 바텀시트도 같은 처리다. 정본 실측으로 확인했다 — 인증 메모 시트(`124:629`)와
+      // 성취 상세 시트(`124:655`) 둘 다 면이 `surfaceContainerLowest`(`#ffffff`)이고,
+      // 그 안의 입력 필드·메모/사진 플레이스홀더만 `surfaceContainerLow`(`#eff4ff`)로
+      // 한 단 올라와 있다. M3 기본값은 시트 자체가 `surfaceContainerLow`라, 지금은
+      // **시트 면과 그 안의 박스가 같은 색이 되어** 입력 필드가 보더로만 겨우 읽혔다.
+      //
+      // `modalBackgroundColor`를 함께 지정한다. `showModalBottomSheet`는 이 값이
+      // 있으면 그쪽을 먼저 보므로, 하나만 두면 나중에 누가 다른 쪽을 건드릴 때
+      // 모달·인라인 시트의 색이 갈라진다.
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surfaceContainerLowest,
+        modalBackgroundColor: scheme.surfaceContainerLowest,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalElevation: 0,
+      ),
+
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
