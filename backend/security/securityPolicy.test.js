@@ -9,6 +9,9 @@ const { createServerConfig } = await import("../config/serverConfig.js");
 const { consumeGuestAiQuota } = await import(
   "../repositories/guestSessionRepository.js"
 );
+const { createGeminiChatGenerator } = await import(
+  "../features/ai-chat/aiChatService.js"
+);
 
 async function withServer(app, verify) {
   const server = app.listen(0, "127.0.0.1");
@@ -121,6 +124,33 @@ test("AI quota consumption uses the shared database function", async () => {
       }
     }
   ]);
+});
+
+test("Gemini authentication rejection has a safe diagnostic code", async () => {
+  const generate = createGeminiChatGenerator({
+    apiKey: "test-only-key",
+    fetchImpl: async () => new Response(null, { status: 403 })
+  });
+
+  await assert.rejects(
+    () => generate({ message: "안녕하세요" }),
+    (error) =>
+      error.code === "AI_PROVIDER_AUTH_FAILED" &&
+      error.status === 503 &&
+      !error.message.includes("test-only-key")
+  );
+});
+
+test("missing Gemini model is distinguished from provider outages", async () => {
+  const generate = createGeminiChatGenerator({
+    apiKey: "test-only-key",
+    fetchImpl: async () => new Response(null, { status: 404 })
+  });
+
+  await assert.rejects(
+    () => generate({ message: "안녕하세요" }),
+    (error) => error.code === "AI_MODEL_NOT_FOUND" && error.status === 503
+  );
 });
 
 test("quota migration is atomic and not executable by browser roles", async () => {

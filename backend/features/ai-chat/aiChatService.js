@@ -75,6 +75,46 @@ function readGeneratedText(payload) {
     .trim();
 }
 
+function mapProviderRejection(status) {
+  if (status === 429) {
+    return {
+      code: "AI_RATE_LIMITED",
+      message: "The generative AI provider rate limit has been reached.",
+      status: 429
+    };
+  }
+
+  if (status === 401 || status === 403) {
+    return {
+      code: "AI_PROVIDER_AUTH_FAILED",
+      message: "The generative AI provider credentials were rejected.",
+      status: 503
+    };
+  }
+
+  if (status === 404) {
+    return {
+      code: "AI_MODEL_NOT_FOUND",
+      message: "The configured generative AI model is unavailable.",
+      status: 503
+    };
+  }
+
+  if (status === 400) {
+    return {
+      code: "AI_PROVIDER_REQUEST_INVALID",
+      message: "The generative AI provider rejected the request format.",
+      status: 502
+    };
+  }
+
+  return {
+    code: "AI_PROVIDER_ERROR",
+    message: "The generative AI provider rejected the request.",
+    status: 502
+  };
+}
+
 export function createGeminiChatGenerator({
   apiKey = process.env.GEMINI_API_KEY,
   model = process.env.GEMINI_MODEL || DEFAULT_MODEL,
@@ -125,10 +165,11 @@ export function createGeminiChatGenerator({
       );
 
       if (!response.ok) {
+        const rejection = mapProviderRejection(response.status);
         throw new AiGenerationError(
-          response.status === 429 ? "AI_RATE_LIMITED" : "AI_PROVIDER_ERROR",
-          "The generative AI provider rejected the request.",
-          { status: response.status === 429 ? 429 : 502 }
+          rejection.code,
+          rejection.message,
+          { status: rejection.status }
         );
       }
 
@@ -163,4 +204,3 @@ export function createGeminiChatGenerator({
     }
   };
 }
-
