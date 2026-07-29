@@ -21,6 +21,16 @@ abstract final class RewardColors {
   /// 보통(Normal) 난이도 pill의 텍스트. 노랑 틴트 배경 위에서 읽히는 갈색.
   static const onCoinTint = Color(0xFF855300);
 
+  /// 코인 pill의 배경. Figma 정본 `tint/coinbg`.
+  ///
+  /// ⚠️ **라이트 전용 불투명값이다.** 예전에는 `coinGlow`의 알파 0.22 파생값을
+  /// 썼는데, 알파는 뒤에 깔린 배경색에 따라 합성 결과가 흔들린다. 정본이 불투명
+  /// 값을 못 박아 뒀으므로 그대로 가져온다.
+  ///
+  /// 다크에는 대응하는 정본이 없다. 값을 지어내지 않고 [RewardTheme.dark]가
+  /// 기존 알파 파생 경로를 유지한다 — 파생값은 어두운 표면 위에서 알아서 어두워진다.
+  static const coinSurface = Color(0xFFFDF3E0);
+
   // 다크 테마: 배경이 어두우므로 더 밝은 노랑을 쓴다.
   static const darkCoin = Color(0xFFFFB95F);
   static const darkOnCoin = Color(0xFF5C3800);
@@ -38,6 +48,7 @@ class RewardTheme extends ThemeExtension<RewardTheme> {
     required this.coinGlow,
     required this.onCoin,
     required this.onCoinTint,
+    required this.coinSurface,
   });
 
   /// 코인 아이콘 · 보상 수치의 색.
@@ -52,19 +63,30 @@ class RewardTheme extends ThemeExtension<RewardTheme> {
   /// 노랑 틴트 배경 위의 텍스트.
   final Color onCoinTint;
 
+  /// 코인 pill의 배경. 라이트는 정본 불투명값, 다크는 알파 파생값이다.
+  final Color coinSurface;
+
   static const light = RewardTheme(
     coin: RewardColors.coin,
     coinGlow: RewardColors.coinGlow,
     onCoin: RewardColors.onCoin,
     onCoinTint: RewardColors.onCoinTint,
+    coinSurface: RewardColors.coinSurface,
   );
 
-  static const dark = RewardTheme(
+  /// `const`가 아닌 이유: [coinSurface]의 다크 값이 **알파 파생**이라
+  /// (`withValues`는 const가 아니다) 컴파일 타임에 접을 수 없다. 정본에 다크
+  /// 사양이 없어 불투명 값을 지어내는 대신 기존 파생 경로를 그대로 남긴 결과다.
+  static final dark = RewardTheme(
     coin: RewardColors.darkCoin,
     coinGlow: RewardColors.coinGlow,
     onCoin: RewardColors.darkOnCoin,
     onCoinTint: RewardColors.darkOnCoin,
+    coinSurface: RewardColors.coinGlow.withValues(alpha: _darkCoinSurfaceAlpha),
   );
+
+  /// 어두운 표면 위에서 알아서 어두워지는 코인 틴트의 불투명도.
+  static const double _darkCoinSurfaceAlpha = 0.22;
 
   @override
   RewardTheme copyWith({
@@ -72,12 +94,14 @@ class RewardTheme extends ThemeExtension<RewardTheme> {
     Color? coinGlow,
     Color? onCoin,
     Color? onCoinTint,
+    Color? coinSurface,
   }) {
     return RewardTheme(
       coin: coin ?? this.coin,
       coinGlow: coinGlow ?? this.coinGlow,
       onCoin: onCoin ?? this.onCoin,
       onCoinTint: onCoinTint ?? this.onCoinTint,
+      coinSurface: coinSurface ?? this.coinSurface,
     );
   }
 
@@ -89,6 +113,7 @@ class RewardTheme extends ThemeExtension<RewardTheme> {
       coinGlow: Color.lerp(coinGlow, other.coinGlow, t)!,
       onCoin: Color.lerp(onCoin, other.onCoin, t)!,
       onCoinTint: Color.lerp(onCoinTint, other.onCoinTint, t)!,
+      coinSurface: Color.lerp(coinSurface, other.coinSurface, t)!,
     );
   }
 }

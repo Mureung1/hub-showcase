@@ -220,10 +220,8 @@ abstract final class AppTheme {
         // 곧 반지름이라 양 끝이 완전한 반원인 알약이다. `tokens.md`도 "상태 pill·
         // 칩·진행바 캡은 full"이라 같은 편에 선다.
         //
-        // ⚠️ `components.md:13`은 "활성 탭: 라운드(12px)"라고 적혀 있어 정본과
-        //    어긋난다. 그 문단은 리디자인 이전 스펙이다(같은 문단의 `primary-
-        //    container` 배경 · 흰 라벨도 지금 코드·정본과 다르다). Redesign 페이지를
-        //    따른다.
+        // (`components.md`가 리디자인 이전 스펙인 "라운드 12px · 흰 라벨"을
+        //  적고 있었으나 2026-07-29에 정본에 맞춰 바로잡았다.)
         indicatorShape: const StadiumBorder(),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {

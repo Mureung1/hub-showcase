@@ -10,7 +10,7 @@ import '../theme/reward_colors.dart';
 ///
 /// 정본 `CoinPill`(Redesign `11:36`, 인스턴스 `65:423` 홈 · `66:446` 퀘스트 목록 ·
 /// `43:253` 상점). 실측 71×24: 패딩 **좌 8 · 우 12 · 상하 4**, full radius, 채움
-/// `tint/coinbg`(#fdf3e0), 아이콘 `Symbols.monetization_on` 16, 숫자
+/// `tint/coinbg`(= [RewardTheme.coinSurface]), 아이콘 `Symbols.monetization_on` 16, 숫자
 /// `Sora SemiBold 12/16`(= [AppTypography.numericLabelSmallStrong]), 글자
 /// `reward/cointext` #855300(= [RewardTheme.onCoinTint]).
 ///
@@ -51,12 +51,11 @@ class CoinPill extends StatelessWidget {
     return Container(
       padding: _padding,
       decoration: BoxDecoration(
-        // 정본 실측은 불투명 `#fdf3e0`이고, 이 알파 파생값은 라이트 표면(#f8f9ff)
-        // 위에서 `#f9ebdc`로 합성돼 육안으로 구분되지 않는다. 이 pill이 놓이는
-        // 자리는 셋 다 `surface` AppBar라 배경에 따라 흔들릴 여지도 없어,
-        // 새 노랑 토큰을 늘리는 대신 파생값을 유지하고 실측을 여기 적어 둔다.
-        // (다크는 정본에 없다 — 알파 파생이 다크 표면 위에서 알아서 어두워진다.)
-        color: reward.coinGlow.withValues(alpha: 0.22),
+        // 라이트는 정본 실측 그대로 **불투명** `#fdf3e0`이다. 예전에는
+        // `coinGlow`의 알파 파생값을 썼는데, 알파는 뒤에 깔린 배경색에 따라 합성
+        // 결과가 흔들려 정본과 같다는 보장이 없다.
+        // (다크는 정본에 없어 [RewardTheme.dark]가 기존 파생 경로를 유지한다.)
+        color: reward.coinSurface,
         borderRadius: AppRadius.fullAll,
       ),
       // 아이콘과 숫자는 **한 묶음**이라 줄을 나누지 않는다. 예전에 `Wrap`이었던
