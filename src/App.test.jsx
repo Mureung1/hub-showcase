@@ -138,7 +138,20 @@ describe('App authentication flow', () => {
     expect(screen.getByRole('heading', { name: '학습 계획' })).toBeInTheDocument()
   })
 
-  test('restores a session and shows the planner with the user email', async () => {
+  test('restores a session and shows the planner with the nickname', async () => {
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'learner@example.com', user_metadata: { nickname: '계획러' } } } },
+      error: null,
+    })
+
+    render(<App />)
+
+    expect(await screen.findByText('계획러님')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '로그아웃' })).toBeInTheDocument()
+    expect(screen.getByText('선택 시험: 선택 전')).toBeInTheDocument()
+  })
+
+  test('falls back to the email prefix when the user has no nickname', async () => {
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { user: { id: 'user-1', email: 'learner@example.com' } } },
       error: null,
@@ -146,7 +159,7 @@ describe('App authentication flow', () => {
 
     render(<App />)
 
-    expect(await screen.findByText('learner@example.com')).toBeInTheDocument()
+    expect(await screen.findByText('learner님')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '로그아웃' })).toBeInTheDocument()
     expect(screen.getByText('선택 시험: 선택 전')).toBeInTheDocument()
   })
@@ -169,7 +182,7 @@ describe('App authentication flow', () => {
     })
   })
 
-  test('calls Supabase sign up with email and password', async () => {
+  test('calls Supabase sign up with email, password, and nickname metadata', async () => {
     const user = userEvent.setup()
     supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null })
     supabase.auth.signUp.mockResolvedValue({ error: null })
@@ -177,6 +190,8 @@ describe('App authentication flow', () => {
     render(<App />)
 
     await user.click(await screen.findByRole('button', { name: '회원가입' }))
+    expect(screen.getByLabelText('닉네임')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('닉네임'), '  새친구  ')
     await user.type(await screen.findByLabelText('이메일'), 'new@example.com')
     await user.type(screen.getByLabelText('비밀번호'), 'secret123')
     await user.click(screen.getByRole('button', { name: '회원가입' }))
@@ -184,7 +199,23 @@ describe('App authentication flow', () => {
     expect(supabase.auth.signUp).toHaveBeenCalledWith({
       email: 'new@example.com',
       password: 'secret123',
+      options: {
+        data: {
+          nickname: '새친구',
+        },
+      },
     })
+  })
+
+  test('does not show nickname input in sign in mode', async () => {
+    const user = userEvent.setup()
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null })
+
+    render(<App />)
+
+    await user.click(await screen.findByRole('button', { name: '로그인' }))
+
+    expect(screen.queryByLabelText('닉네임')).not.toBeInTheDocument()
   })
 
   test('does not call Supabase when auth fields are empty', async () => {
@@ -197,6 +228,22 @@ describe('App authentication flow', () => {
     await user.click(screen.getByRole('button', { name: '회원가입' }))
 
     expect(await screen.findByText('이메일을 입력해 주세요.')).toBeInTheDocument()
+    expect(supabase.auth.signUp).not.toHaveBeenCalled()
+  })
+
+  test('does not call Supabase when the sign up nickname is blank', async () => {
+    const user = userEvent.setup()
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null })
+
+    render(<App />)
+
+    await user.click(await screen.findByRole('button', { name: '회원가입' }))
+    await user.type(screen.getByLabelText('닉네임'), '   ')
+    await user.type(screen.getByLabelText('이메일'), 'new@example.com')
+    await user.type(screen.getByLabelText('비밀번호'), 'secret123')
+    await user.click(screen.getByRole('button', { name: '회원가입' }))
+
+    expect(await screen.findByText('닉네임을 입력해 주세요.')).toBeInTheDocument()
     expect(supabase.auth.signUp).not.toHaveBeenCalled()
   })
 
@@ -265,11 +312,12 @@ describe('App authentication flow', () => {
     render(<App />)
 
     await user.click(await screen.findByRole('button', { name: '회원가입' }))
+    await user.type(screen.getByLabelText('닉네임'), '새친구')
     await user.type(screen.getByLabelText('이메일'), 'new@example.com')
     await user.type(screen.getByLabelText('비밀번호'), 'secret123')
     await user.click(screen.getByRole('button', { name: '회원가입' }))
 
-    expect(await screen.findByText('new@example.com')).toBeInTheDocument()
+    expect(await screen.findByText('new님')).toBeInTheDocument()
     expect(screen.getByText('선택 시험: 선택 전')).toBeInTheDocument()
   })
 
@@ -284,6 +332,7 @@ describe('App authentication flow', () => {
     render(<App />)
 
     await user.click(await screen.findByRole('button', { name: '회원가입' }))
+    await user.type(screen.getByLabelText('닉네임'), '새친구')
     await user.type(screen.getByLabelText('이메일'), 'new@example.com')
     await user.type(screen.getByLabelText('비밀번호'), 'secret123')
     await user.click(screen.getByRole('button', { name: '회원가입' }))
@@ -303,6 +352,7 @@ describe('App authentication flow', () => {
     render(<App />)
 
     await user.click(await screen.findByRole('button', { name: '회원가입' }))
+    await user.type(screen.getByLabelText('닉네임'), '새친구')
     await user.type(screen.getByLabelText('이메일'), 'new@example.com')
     await user.type(screen.getByLabelText('비밀번호'), 'secret123')
     await user.click(screen.getByRole('button', { name: '회원가입' }))

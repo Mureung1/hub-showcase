@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 function AuthScreen({ errorMessage, isLoading, mode, successMessage, onBack, onSelectMode, onSignIn, onSignUp, onStartGuest }) {
+  const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
@@ -12,7 +13,7 @@ function AuthScreen({ errorMessage, isLoading, mode, successMessage, onBack, onS
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const authPayload = { email, password }
+    const authPayload = { email, password, nickname }
 
     if (isSignUp) {
       await onSignUp(authPayload)
@@ -68,6 +69,19 @@ function AuthScreen({ errorMessage, isLoading, mode, successMessage, onBack, onS
         </div>
 
         <form className="auth-form" noValidate onSubmit={handleSubmit}>
+          {isSignUp && (
+            <label className="input-field">
+              <span>닉네임</span>
+              <input
+                autoComplete="nickname"
+                type="text"
+                value={nickname}
+                onChange={(event) => setNickname(event.target.value)}
+                required
+              />
+            </label>
+          )}
+
           <label className="input-field">
             <span>이메일</span>
             <input

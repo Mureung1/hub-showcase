@@ -14,7 +14,7 @@ function App() {
   const [authMode, setAuthMode] = useState('')
   const [isGuestPlannerOpen, setIsGuestPlannerOpen] = useState(false)
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false)
-  const userEmail = session?.user?.email || ''
+  const userDisplayName = getUserDisplayName(session?.user)
   const accessToken = session?.access_token || ''
 
   useEffect(() => {
@@ -76,7 +76,7 @@ function App() {
     setIsAuthLoading(false)
   }
 
-  async function handleSignUp({ email, password }) {
+  async function handleSignUp({ email, password, nickname }) {
     const validationMessage = validateAuthInput({ email, password })
 
     if (validationMessage) {
@@ -85,11 +85,27 @@ function App() {
       return
     }
 
+    const trimmedNickname = (nickname || '').trim()
+
+    if (!trimmedNickname) {
+      setAuthErrorMessage('닉네임을 입력해 주세요.')
+      setAuthSuccessMessage('')
+      return
+    }
+
     setIsAuthLoading(true)
     setAuthErrorMessage('')
     setAuthSuccessMessage('')
 
-    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          nickname: trimmedNickname,
+        },
+      },
+    })
 
     if (error) {
       setAuthErrorMessage(getFriendlyAuthErrorMessage(error.message))
@@ -137,7 +153,7 @@ function App() {
       {session || isGuestPlannerOpen ? (
         <>
           <header className="auth-status-bar">
-            <span>{session ? userEmail : '비로그인 체험 중'}</span>
+            <span>{session ? userDisplayName : '비로그인 체험 중'}</span>
             {session ? (
               <button className="secondary-action" type="button" disabled={isAuthLoading} onClick={handleSignOut}>
                 {isAuthLoading ? '처리 중...' : '로그아웃'}
@@ -251,6 +267,22 @@ function validateAuthInput({ email, password }) {
   }
 
   return ''
+}
+
+function getUserDisplayName(user) {
+  const nickname = user?.user_metadata?.nickname?.trim()
+
+  if (nickname) {
+    return `${nickname}님`
+  }
+
+  const emailPrefix = user?.email?.split('@')[0]?.trim()
+
+  if (emailPrefix) {
+    return `${emailPrefix}님`
+  }
+
+  return '사용자님'
 }
 
 function getFriendlyAuthErrorMessage(message = '') {
