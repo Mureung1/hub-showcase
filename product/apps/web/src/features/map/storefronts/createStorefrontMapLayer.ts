@@ -165,25 +165,27 @@ function createSelectedStoreFocus(categoryCode: string) {
   target.add(innerRing);
   focus.add(target);
 
+  const beamHeight = 5.8;
   const beam = new THREE.Mesh(
-    new THREE.ConeGeometry(1.25, 5.4, 40, 1, true),
-    focusMaterial(0xffe46a, 0.24, THREE.DoubleSide),
+    new THREE.ConeGeometry(1.62, beamHeight, 48, 1, true),
+    focusMaterial(0xffe46a, 0.22, THREE.DoubleSide),
   );
   beam.name = "selected-store-spotlight-beam";
-  beam.position.y = 2.7;
+  beam.position.y = beamHeight / 2;
+  beam.rotation.z = Math.PI;
   focus.add(beam);
 
   const lightStem = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.045, 0.045, 4.4, 14),
-    focusMaterial(0xffef8c, 0.82),
+    new THREE.CylinderGeometry(0.045, 0.045, 4.8, 14),
+    focusMaterial(0xffef8c, 0.76),
   );
   lightStem.name = "selected-store-light-stem";
-  lightStem.position.y = 2.2;
+  lightStem.position.y = 2.4;
   focus.add(lightStem);
 
   const markerPivot = new THREE.Group();
   markerPivot.name = "selected-store-marker-pivot";
-  markerPivot.position.y = 6.05;
+  markerPivot.position.y = 6.25;
   const marker = createStorefrontCategoryMarker(variant);
   marker.name = "selected-store-category-object";
   marker.scale.setScalar(1.24);
@@ -349,7 +351,7 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Storef
         if (beam) {
           const material = (beam as THREE.Mesh).material;
           if (material instanceof THREE.MeshBasicMaterial) {
-            material.opacity = 0.19 + (Math.sin(elapsed * 1.8) + 1) * 0.035;
+            material.opacity = 0.17 + (Math.sin(elapsed * 1.8) + 1) * 0.035;
           }
         }
         mapInstance?.triggerRepaint();
