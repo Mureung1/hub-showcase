@@ -199,6 +199,14 @@ function validateRespondStatus(body) {
   return status;
 }
 
+// 한 요청에 담을 수 있는 평가 대상 수 상한. 실제 대상은 한 모임의 확정 참여자(모임장이
+// 평가할 때) 또는 모임장 1명(참여자가 평가할 때)뿐이라 50이면 넉넉하다. express.json()의
+// 100kb 바디 한도 안에 rateeId 하나만 반복해도 수천 개가 들어갈 수 있는데, submitEvaluations는
+// 각 항목마다 SELECT+INSERT/UPDATE를 하나씩 실행하고 그 전부를 meetings 행의 FOR UPDATE
+// 잠금 안에서 한다 — 대상 자격 검사(allowed.has)는 통과하는 값을 얼마든 반복해도 막지 않으므로,
+// 입력 단계에서 개수를 잘라야 한다.
+const MAX_EVALUATION_ENTRIES = 50;
+
 // POST /api/meetings/:id/evaluations 요청 본문. rateeId·attended는 필수, tags는 선택이다.
 // 태그 개수 상한을 여기서 막는 이유: 산식은 초과분을 조용히 버리므로(slice), 사용자가
 // 4개를 골랐는데 3개만 반영되면 화면과 결과가 어긋난다. 입력 단계에서 거절하는 게 정직하다.
@@ -206,6 +214,22 @@ function validateEvaluationSubmission(body) {
   const list = body && body.evaluations;
   if (!Array.isArray(list) || list.length === 0) {
     throw new ApiError('VALIDATION_ERROR', '평가할 대상이 없습니다');
+  }
+  if (list.length > MAX_EVALUATION_ENTRIES) {
+    throw new ApiError('VALIDATION_ERROR', `한 번에 평가할 수 있는 대상은 ${MAX_EVALUATION_ENTRIES}명까지입니다`);
+  }
+
+  // 같은 rateeId를 두 번 이상 담으면 안 된다. submitEvaluations는 이후 이 배열을 그대로
+  // 순회해 각각 SELECT+INSERT/UPDATE를 하나씩 실행하므로(진짜 중복 쿼리 비용), 그리고
+  // submitted: entries.length가 실제 반영된 행 수와 어긋나므로(마지막 값이 이기는 UPSERT라
+  // 중복분은 덮어써질 뿐 추가로 반영되지 않는다) 여기서 미리 막는다.
+  const seenRateeIds = new Set();
+  for (const entry of list) {
+    const id = Number(entry?.rateeId);
+    if (seenRateeIds.has(id)) {
+      throw new ApiError('VALIDATION_ERROR', '같은 대상을 여러 번 평가할 수 없습니다');
+    }
+    seenRateeIds.add(id);
   }
 
   return list.map((entry) => {

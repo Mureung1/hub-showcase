@@ -328,4 +328,57 @@ describe('POST /api/meetings/:id/evaluations', () => {
       .send({ evaluations: [{ rateeId: a, attended: 'yes', tags: [] }] });
     expect(res.status).toBe(400);
   });
+
+  // 같은 rateeId를 두 번 담으면 각 항목마다 SELECT+INSERT/UPDATE가 반복 실행되고
+  // submitted 카운트도 실제 반영 행 수와 어긋난다(마지막 값이 이기는 UPSERT라 중복분은
+  // 그냥 덮어써질 뿐). 입력 단계에서 막는다.
+  it('같은 rateeId를 두 번 담으면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h20');
+    const meetingId = await createMeeting(hostId);
+    const a = await createUser('s-a20');
+    await addParticipant(meetingId, a, 'approved');
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({
+        evaluations: [
+          { rateeId: a, attended: true, tags: [] },
+          { rateeId: a, attended: false, tags: [] },
+        ],
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+
+    // 거절됐으니 아무 것도 반영되지 않아야 한다.
+    const { rows } = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM meeting_evaluations WHERE meeting_id = $1',
+      [meetingId]
+    );
+    expect(rows[0].n).toBe(0);
+  });
+
+  // 대상은 한 모임의 확정 참여자(모임장이 평가할 때) 또는 모임장 1명(참여자가 평가할 때)뿐이라
+  // 50명이면 넉넉하다. 이 이상은 express.json() 100kb 한도 안에서도 반복 rateeId로 채울 수
+  // 있고, submitEvaluations는 meetings 행을 FOR UPDATE로 잠근 채 항목마다 쿼리를 실행한다.
+  it('51개 이상의 평가 대상은 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h21');
+    const meetingId = await createMeeting(hostId);
+
+    const evaluations = Array.from({ length: 51 }, (_, i) => ({
+      rateeId: 1000000 + i, // 실제 존재하지 않아도 개수 검증이 먼저 걸려야 한다.
+      attended: true,
+      tags: [],
+    }));
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    // 개수 상한에서 걸린 것인지(50명까지) 확인한다 — 대상 자격 검사(다른 400 사유)와
+    // 구분하기 위해 메시지까지 본다. rateeId가 전부 존재하지 않는 사용자라 상한이 없으면
+    // "평가할 수 없는 대상입니다"로도 400이 나서, 상태 코드만으로는 이 검증이 실제로
+    // 상한에서 걸렸는지 알 수 없다.
+    expect(res.body.error.message).toContain('50명');
+  });
 });

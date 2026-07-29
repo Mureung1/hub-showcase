@@ -281,7 +281,12 @@ async function submitEvaluations(meetingId, raterId, entries) {
 
     // 재계산 대상이 한 명이 아니다. 내 제출이 상대의 판정을 뒤집을 수 있으므로
     // rater와 모든 ratee를 함께 갱신한다(설계 6.2). 한쪽만 갱신하면 상대 점수가 낡은 판정에 머문다.
-    const targets = new Set([Number(raterId), ...entries.map((e) => e.rateeId)]);
+    // 순서는 반드시 고정해야 한다: recalculateTrustScore는 users 행을 UPDATE로 잠근다.
+    // 정렬 없이 삽입 순서(rater 먼저)로 돌면, 거울 모임(H가 한쪽 모임장·다른 모임 참여자,
+    // A와 짝) 두 건이 동시에 제출될 때 한쪽 트랜잭션은 H→A 순으로, 다른 쪽은 A→H 순으로
+    // users 행을 잠가 잠금 순서가 엇갈릴 수 있다 — 교착(40P01)이 나 500이 된다.
+    // 오름차순으로 고정하면 모든 트랜잭션이 같은 순서로만 잠그므로 교착이 원천적으로 없다.
+    const targets = [...new Set([Number(raterId), ...entries.map((e) => e.rateeId)])].sort((a, b) => a - b);
     for (const userId of targets) {
       await recalculateTrustScore(client, userId);
     }
