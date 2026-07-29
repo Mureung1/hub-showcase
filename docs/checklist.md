@@ -26,10 +26,11 @@
 
 - [x] 꺼내보기 서버 API, 사용자별 벡터 저장과 브라우저 연결
 - [x] 기존 인사이트 Batch 변환 도구와 명시적 실행 확인값
-- [ ] Supabase 의미 검색 마이그레이션 적용
-- [ ] Vercel `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` 확인
-- [ ] Batch 제출 전 dry-run 건수 확인과 담당자 승인
-- [ ] Batch 결과 반영 전 dry-run 상태 확인과 담당자 승인
-- [ ] 변환 대기 0건과 대표 의미 검색 결과 확인
+- [x] Supabase 의미 검색 마이그레이션 적용
+- [x] Vercel `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` 확인
+- [x] Batch 제출 전 dry-run 14건 확인과 담당자 승인
+- [x] Batch 결과 14건 성공 확인과 담당자 승인 후 반영
+- [x] 기존 인사이트 변환 대기 0건 확인
+- [ ] Preview에서 표현이 다른 대표 상황의 의미 검색 결과 확인
 
 실제 Batch 제출과 운영 DB 반영은 구현 커밋에 포함하지 않으며, [운영 배포](./deployment.md)의 순서대로 별도 실행한다.
