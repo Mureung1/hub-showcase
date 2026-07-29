@@ -1,16 +1,68 @@
-# React + Vite
+# Naver Boost Camp
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# 🚀 AI Portfolio Agent 기획안
 
-Currently, two official plugins are available:
+## 📌 1. 프로젝트 개요
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **프로젝트명:** AI Portfolio Agent
+- **한 줄 소개**
+    - 개발자의 GitHub 레포지토리와 채용공고(JD)를 분석하여 지원 기업에 맞춘 **포트폴리오를 자동 생성**해 주는 웹 서비스
+- **핵심 가치**
+    - 사용자의 실제 코드와 프로젝트 산출물을 기반으로 한 **사실적인 포트폴리오 구성**
+    - 지원하는 기업의 JD 우대사항에 맞춰 프로젝트 배치 순서와 강조 포인트를 자동으로 최적화
 
-## React Compiler
+## 🎯 2. 해결하려는 문제 & 목표
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+> **"기업마다 기술 스택이 다 다른데, 언제 포트폴리오를 일일이 다 수정하지?"** 라는 고민에서 시작되었습니다.
+> 
+- **기존의 문제점**
+    - ❌ 지원하는 기업마다 프로젝트 소개, 기술 스택, 강조 포인트를 매번 수정하느라 시간 낭비가 심함
+    - ❌ 일반 AI 툴은 내 프로젝트를 완전히 이해하지 못해 거짓 경험(Hallucination)을 지어내거나 어색한 문장을 만들어냄
+- **나의 목표**
+    - 1️⃣ 개발자의 실제 GitHub 데이터를 정확히 분석하여 신뢰할 수 있는 내용만 생성
+    - 2️⃣ 채용공고와 가장 매칭률이 높은 프로젝트를 AI가 알아서 추천 및 정렬
+    - 3️⃣ 수작업 대비 포트폴리오 준비 시간 단축
 
-## Expanding the ESLint configuration
+## 👥 3. 대상 사용자
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **주 사용자 :** 신입·주니어 개발자, 부트캠프 수료생, 이직 준비 개발자 (개발 직군에 한함)
+- **추후 확장:** 기획자, 데이터 분석가, AI 엔지니어 등 타 직군
+
+## 🛠️ 4. 핵심 기능
+
+- 복잡한 기능을 제외하고 '분석 ➡️ 매칭 ➡️ 생성'의 핵심 흐름에만 집중합니다.
+    - **회원가입 & 로그인:** 간편 소셜 로그인 및 대시보드 제공
+    - **GitHub 연동 (Project Library):**
+        - 사용자의 GitHub 레포지토리 연동 (또는 URL 입력)
+        - AI가 README, 디렉토리 구조, 주요 코드를 분석해 나만의 '프로젝트 라이브러리' 구축 (최초 1회 빌드 후 재사용)
+    - **이력서 및 채용공고(JD) 분석:**
+        - 기존 이력서(PDF/Word) 업로드 시 기술 및 성과 추출
+        - 지원하려는 기업의 채용공고 텍스트를 입력하면 필수/우대 역량 키워드 추출
+    - **프로젝트 매칭 & 포트폴리오 생성:**
+        - JD 역량과 내 프로젝트 라이브러리를 비교하여 매칭 점수 계산 및 최적의 프로젝트 조합 추천
+        - 추천된 프로젝트를 바탕으로 [소개 - 핵심 기능 - 기술 스택 - 문제 해결 - 성과]가 포함된 맞춤형 포트폴리오 초안 생성
+    - **미리보기 및 편집/다운로드:**
+        - 생성된 결과물 미리보기 및 웹상에서 간단한 텍스트 수정 기능
+        - 최종 완성본 PDF 다운로드 기능
+    
+    복잡한 기능을 제외하고 '분석 ➡️ 매칭 ➡️ 생성'의 핵심 흐름에만 집중합니다.
+    
+
+## 🔄 5. User Flow
+
+- 사용자는 아주 직관적인 5단계 프로세스로 서비스를 이용하게 됩니다.
+    1. **로그인 및 GitHub 연동:** 내 프로젝트들을 불러와 '나만의 라이브러리'를 만듭니다. (최초 1회)
+    2. **이력서 & JD 입력:** 지원할 기업의 채용공고와 내 기본 이력서를 넣습니다.
+    3. **AI 분석 및 추천:** AI가 매칭률이 높은 프로젝트와 선정 이유를 제안합니다. (유저가 직접 변경 가능)
+    4. **포트폴리오 생성 및 편집:** 맞춤형 포트폴리오 초안이 생성되면, 웹에서 가볍게 내용을 검토하고 수정합니다.
+    5. **다운로드:** PDF 파일로 내보내어 지원서에 첨부합니다.
+
+## 📈 7. 성공 지표 (Success Metrics)
+
+- **기능**
+    
+    [GitHub 분석 ➡️ JD 매칭 ➡️ 포트폴리오 생성 ➡️ PDF 다운로드] 프로세스가 끊김 없이 정상 작동하는가?
+    
+- **사용자 경험**
+    
+    사용자가 서비스 접속 후 **5분 이내**에 제출 가능한 수준의 맞춤형 포트폴리오 초안을 얻을 수 있는가?
