@@ -1,8 +1,9 @@
-// import { commands } from '../data/commands';
-// import { compareByRelevance } from '../utils/commandSort';
+// commandsService.js와 동일한 이유로 환경변수 오버라이드 지원 (배포 시 BE 주소가 localhost가 아님)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
-// const MOCK_DELAY_MS = 300;
-const API_BASE_URL = 'http://localhost:4000';
+// 경로 문자열을 호출부에 흩어놓지 않고 한 곳에 모아둔다 — BE 라우트가 바뀌어도
+// 이 한 줄만 고치면 되게 하기 위함(피드백 시간에 나온 지적).
+const SEARCH_PATH = '/api/search';
 
 // 지금은 로컬 배열을 필터링하지만, 나중엔 이 안을 fetch(Meilisearch 엔드포인트)로 교체한다.
 // 호출부(searchCommands(category, query) → Promise<Command[]>)는 그대로 유지된다.
@@ -43,7 +44,7 @@ export async function searchCommands(category, query) {
     // fetch 자체가 실패한 경우(요청이 서버에 도달조차 못한 경우)엔 아래 catch로 빠진다.
     let response;
     try {
-        response = await fetch(`${API_BASE_URL}/api/search?${params}`);
+        response = await fetch(`${API_BASE_URL}${SEARCH_PATH}?${params}`);
     } catch {
         // 이 catch로 들어온다는 건 fetch가 응답 자체를 못 받았다는 뜻 —
         // 서버가 꺼져있거나, CORS가 막혔거나, 네트워크가 끊긴 경우. "서버가 뭐라고 답했는지"와는

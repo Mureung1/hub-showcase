@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CATEGORY_LABELS } from '../data/commands';
-// import CommandCard from '../components/CommandCard';
-// import { compareByRelevance } from '../utils/commandSort';
+import { isMeaningfulQuery } from '../utils/isMeaningfulQuery';
 import { searchCommands } from '../services/searchService';
+import { fetchCommands } from '../services/commandsService';
 import SearchBar from '../components/SearchBar';
 import SearchResultList from '../components/SearchResultList';
+import CommandBrowseList from '../components/CommandBrowseList';
 
 // 전체 흐름: 사용자가 SearchBar에 타이핑 → query state 변경 → normalizedQuery 재계산
 // → useEffect가 (category, normalizedQuery) 변경을 감지 → BE(/api/search)에 실제 요청
@@ -18,10 +18,17 @@ function CommandListPage() {
     const [isLoading, setIsLoading] = useState(false); // 요청이 진행 중인 동안만 true
     const [error, setError] = useState(null); // 요청 실패 시 사용자에게 보여줄 메시지, 성공하면 다시 null
 
-    /*const categoryCommands = useMemo(
-        () => commands.filter((command) => command.category === category),
-        [category]
-    );*/
+    // 검색어가 없을 때(#36 알파벳 인덱스 브라우징용) 카테고리 전체 목록. 검색 state와는
+    // 목적이 달라 따로 둔다 — searchCommands는 검색어가 있을 때만 호출되는 반면, 이건
+    // category가 바뀔 때 한 번만 전체를 받아오면 되는 별개의 데이터 흐름이다.
+    const [allCommands, setAllCommands] = useState([]);
+    const [isLoadingAll, setIsLoadingAll] = useState(true);
+    const [errorAll, setErrorAll] = useState(null);
+
+    // URL의 category가 실제 DB(categories 테이블)에 있는 값인지, 있다면 한글 라벨이 뭔지.
+    // allCommands와 같은 fetch 결과에서 같이 채워진다 — fetch가 끝나기 전엔 존재 여부조차
+    // 판단할 수 없으므로 null로 시작한다(그동안은 아래 렌더링에서 로딩 화면만 보여줌).
+    const [categoryLabel, setCategoryLabel] = useState(null);
 
     // query를 매 렌더링마다 trim+소문자 변환한 파생값. state로 따로 안 두는 이유:
     // query가 바뀔 때마다 자동으로 다시 계산되면 되는 값이라, 별도 state로 관리하면
@@ -33,20 +40,37 @@ function CommandListPage() {
     // 아직 선언되지 않은 변수를 참조하게 돼서 "Cannot access before initialization" 에러가 남.
     const normalizedQuery = query.trim().toLowerCase();
 
+    // 검색어가 비어있거나(""), 기호/숫자만 있어 의미 있는 문자(영문/한글)가 하나도 없으면
+    // "검색어 없음"과 동일하게 취급한다. 이 판단은 FE에서만 하고 BE(server/src/routes/search.js)엔
+    // 중복시키지 않음 — 지금은 이 API를 부르는 클라이언트가 이 FE 하나뿐이라 실익이 없고,
+    // 나중에 다른 클라이언트가 이 API를 직접 호출하게 되면 그때 BE에도 같은 검증을 추가할 것
+    // (server/src/routes/search.js에 같은 취지의 주석을 남겨둠).
+    const hasMeaningfulQuery = normalizedQuery !== '' && isMeaningfulQuery(normalizedQuery);
+
+    // 검색어를 입력하긴 했는데(빈 문자열이 아님) 기호/숫자뿐이라 무시된 경우만 true.
+    // 이 경우에만 아래에서 힌트 메시지를 보여준다 — 애초에 아무것도 입력 안 한 상태(normalizedQuery === '')와
+    // 구분하기 위함(그때는 힌트를 보여줄 이유가 없다).
+    const isSymbolsOnlyQuery = normalizedQuery !== '' && !hasMeaningfulQuery;
+
     // 이 컴포넌트의 핵심 루틴: category나 검색어가 바뀔 때마다 BE에 검색을 새로 요청한다.
     useEffect(() => {
-        // 1단계: 검색어가 비어있는 경우엔 아무 요청도 보내지 않고 바로 끝내고,
-        // 비어있지 않은 경우에만 아래 2~5단계(로딩→요청→응답 처리)로 이어진다.
-        if (normalizedQuery === '') {
+        // 1단계: 검색어가 없거나(빈 문자열/기호만) 의미가 없으면 아무 요청도 보내지 않고 바로 끝내고,
+        // 의미 있는 검색어일 때만 아래 2~5단계(로딩→요청→응답 처리)로 이어진다.
+        if (!hasMeaningfulQuery) {
             // results/isLoading/error를 여기서 굳이 초기화하지 않는 이유:
-            // 아래 return문의 SearchResultList에 hasQuery={normalizedQuery !== ''}를 넘기고 있어서,
-            // 검색어가 빈 상태에서는 그쪽 컴포넌트가 애초에 이 세 값을 참조하지 않는다.
-            // 즉 값이 남아있어도 화면에는 영향이 없어서, 굳이 리렌더를 유발할 필요가 없다.
+            // 검색어가 빈 상태에서는 아래 return문이 SearchResultList 대신 CommandBrowseList를
+            // 렌더링해서 이 세 값을 애초에 참조하지 않는다. 즉 값이 남아있어도 화면에는
+            // 영향이 없어서, 굳이 리렌더를 유발할 필요가 없다.
             // setResults([]);
             // setIsLoading(false);
             // setError(null);
             return;
         }
+
+        // 경쟁 상태(race condition) 방지: 이 effect가 다시 실행되거나(검색어가 더 바뀜) 컴포넌트가
+        // unmount되면 cleanup에서 ignore를 true로 바꾼다. 느린 이전 요청이 나중에 응답으로 와도
+        // ignore가 true면 그 결과를 state에 반영하지 않아, 최신 검색어의 결과를 옛 응답이 덮어쓰는 걸 막는다.
+        let ignore = false;
 
         // 2단계: 검색어가 있으면 로딩 상태로 전환하고, 혹시 이전 요청에서 남아있을 에러를 지운다.
         // 이 두 setState는 실제 요청(fetch)을 시작하기 "직전"에, effect 본문에서 곧바로 실행돼야
@@ -60,34 +84,71 @@ function CommandListPage() {
         // 3단계: 실제 검색 요청. category/normalizedQuery는 위쪽 클로저에서 그대로 캡처해서 씀.
         searchCommands(category, normalizedQuery)
             // 4-a단계(성공): BE가 돌려준 배열을 그대로 results에 반영 → SearchResultList가 다시 그려짐
-            .then((data) => setResults(data))
+            .then((data) => { if (!ignore) setResults(data); })
             // 4-b단계(실패): err.message를 그대로 노출 — searchService.js가 "서버에 연결할 수
             // 없습니다"(네트워크 자체가 안 됨)와 "서버에서 오류가 발생했습니다"(응답은 왔지만 실패)를
             // 서로 다른 Error로 던지므로, 여기서 하나의 문구로 뭉뚱그리지 않고 그 메시지를 그대로 씀
-            .catch((err) => setError(err.message))
+            .catch((err) => { if (!ignore) setError(err.message); })
             // 5단계: 성공하든 실패하든 로딩 상태는 끝났으니 항상 꺼준다
-            .finally(() => setIsLoading(false));
-    }, [category, normalizedQuery]);
+            .finally(() => { if (!ignore) setIsLoading(false); });
 
-    /*const result = useMemo(() => {
-        if (!normalizedQuery) return [];
-        if (!/[a-z가-힣]/i.test(normalizedQuery)) return [];
+        return () => {
+            ignore = true;
+        };
+    }, [category, normalizedQuery, hasMeaningfulQuery]);
 
-        return categoryCommands
-            .filter(
-                (command) =>
-                    command.name.toLowerCase().includes(normalizedQuery) ||
-                    command.summary.toLowerCase().includes(normalizedQuery)
-            )
-            .sort((a, b) => compareByRelevance(a, b, normalizedQuery));
-    }, [categoryCommands, normalizedQuery]);*/
+    // 검색어와 무관하게, category가 바뀔 때마다 전체 목록을 한 번 받아온다(#36 알파벳 인덱스용).
+    // 검색 useEffect와 분리해둔 이유: 저건 매 검색어 변경마다 재요청해야 하고, 이건 category
+    // 하나에 한 번만 요청하면 되는 서로 다른 트리거를 가진 별개의 데이터 흐름이기 때문.
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsLoadingAll(true);
+        setErrorAll(null);
 
-    // URL의 category가 CATEGORY_LABELS에 있는 값('unix'/'git')인 경우 그 한글 라벨이 들어오고,
-    // 없는 값(오타난 URL 등)인 경우 undefined가 되어 아래 조건문으로 빠진다.
-    const categoryLabel = CATEGORY_LABELS[category];
+        fetchCommands()
+            .then((data) => {
+                setAllCommands(data.filter((command) => command.category === category));
+                // 필터링 전 전체 데이터에서 찾는다 — allCommands는 이 category로 걸러진 결과라
+                // 존재하지 않는 카테고리든 "존재는 하지만 명령어가 0개"든 똑같이 빈 배열이 되어
+                // 구분이 안 되지만, 이건 전체 목록 기준으로 실제 존재 여부를 판단하므로 정확하다.
+                setCategoryLabel(data.find((command) => command.category === category)?.category_label ?? null);
+            })
+            .catch((err) => setErrorAll(err.message))
+            .finally(() => setIsLoadingAll(false));
+    }, [category]);
 
-    // categoryLabel이 없는 경우(=존재하지 않는 카테고리) 여기서 에러 화면만 보여주고 끝내고,
-    // 있는 경우에만 아래로 내려가 실제 검색 화면(SearchBar/SearchResultList)을 그린다.
+    // categoryLabel은 allCommands와 같은 fetch(위 useEffect)에서 채워지므로, 그 fetch가
+    // 끝나기 전까지는 이 category가 실제로 존재하는지조차 판단할 수 없다. 그래서 판단을
+    // 뒤로 미루고 로딩 → 조회 실패 → 존재하지 않음 순서로 하나씩 걸러낸 뒤에만 실제 화면을 그린다.
+    if (isLoadingAll) {
+        return (
+            <div className="app-shell">
+                <Link to="/" className="back-link">
+                    ← 카테고리 선택으로
+                </Link>
+                <p className="terminal-hint">불러오는 중입니다...</p>
+            </div>
+        );
+    }
+
+    // 카테고리 존재 여부 자체를 확인하지 못한 경우(네트워크/서버 오류) — "존재하지 않는
+    // 카테고리"(아래)와는 원인이 다르므로 메시지를 구분한다. 이건 확인이 실패한 것이지
+    // 확인 결과 없다고 판명된 게 아니다.
+    if (errorAll) {
+        return (
+            <div className="app-shell">
+                <Link to="/" className="back-link">
+                    ← 카테고리 선택으로
+                </Link>
+                <div className="detail-container not-found">
+                    <p className="terminal-error">-bash: cd: {category}: 에러: {errorAll}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // URL의 category가 실제 DB(categories 테이블)에 있는 값('unix'/'git')이면 categoryLabel이
+    // 채워져 있고, 없는 값(오타난 URL 등)이면 null로 남아 여기 걸린다.
     if (!categoryLabel) {
         return (
             <div className="app-shell">
@@ -117,13 +178,21 @@ function CommandListPage() {
 
             <SearchBar category={category} value={query} onChange={setQuery} />
 
-            <SearchResultList
-                hasQuery={normalizedQuery !== ''}
-                query={query}
-                isLoading={isLoading}
-                error={error}
-                results={results}
-            />
+            {!hasMeaningfulQuery ? (
+                <>
+                    {isSymbolsOnlyQuery && (
+                        <p className="terminal-error">-bash: {query}: 에러: 검색어에 문자(영문)를 포함해주세요</p>
+                    )}
+                    <CommandBrowseList commands={allCommands} isLoading={isLoadingAll} error={errorAll} />
+                </>
+            ) : (
+                <SearchResultList
+                    query={query}
+                    isLoading={isLoading}
+                    error={error}
+                    results={results}
+                />
+            )}
         </div>
     );
 }

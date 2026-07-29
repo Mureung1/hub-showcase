@@ -3,28 +3,41 @@
   "title": "유닉스 & Git 명령어 사전",
   "summary": "CS 실습생을 위한 Unix/Git 명령어 사전 웹앱입니다.",
   "githubUser": "ParkSeong-min",
-  "demoUrl": "",
+  "demoUrl": "https://c-dict.vercel.app",
+  "demoVideoUrl" : "https://drive.google.com/file/d/1oeWlIk5HfCXvdG8A6K_mB5vbXs7oWWo8/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp"
   ],
   "problem": "방대한 매뉴얼을 뒤지는 대신, 실습에 진짜 필요한 명령어만 빠르게 찾아볼 수 있는 사전이 필요했습니다.",
-  "targetUsers": [],
+  "targetUsers": ["CS 실습생", "Unix/Git 명령어가 아직 익숙하지 않은 학습자"],
   "features": [
     "Unix/Git 명령어 검색",
     "명령어 상세 설명 및 예시 확인",
-    "예시 명령어 클립보드 복사"
+    "예시 명령어 클립보드 복사",
+    "상황별 명령어 묶음 추천",
+    "알파벳 인덱스로 명령어 브라우징"
   ],
   "featureTags": [
     "명령어 검색",
-    "실습 사전"
+    "실습 사전",
+    "상황별 추천"
   ],
   "techStack": ["React", "Vite", "Express", "Supabase", "Meilisearch"],
-  "techHighlights": [],
+  "techHighlights": [
+    "Meilisearch 기반 오타 허용 검색",
+    "Supabase(PostgreSQL) 연동 데이터 저장/조회",
+    "환경변수 기반 배포 설정(Vercel/Render)"
+  ],
   "developmentWithAI": "저는 기능 방향과 우선순위를 정하고 최종 판단을 내렸습니다. AI는 요구사항을 구현 단위로 나누고 코드 초안을 작성했습니다. 저는 실행 결과를 직접 확인하고 필요한 부분을 수정했습니다.",
   "agent": {
-    "summary": "",
-    "agentTools": [],
+    "summary": "(초안) 기능 단위 계획 수립부터 검증까지 전용 Agent/Skill을 만들어 반복 사용했습니다. Claude Code와 Plan mode로 단계별 승인을 거치며 작업했습니다.",
+    "agentTools": [
+      { "type": "skill", "name": "feature-slice", "purpose": "요구사항을 작업 단위로 나누고 우선순위/구현 순서를 정합니다." },
+      { "type": "skill", "name": "feature-verify", "purpose": "완성된 기능이 요구사항대로 동작하는지 점검합니다." },
+      { "type": "skill", "name": "design-check", "purpose": "화면이 디자인 시스템 규칙(색상/폰트 등)을 따르는지 검증합니다." },
+      { "type": "skill", "name": "test-writer", "purpose": "코드 변경에 맞는 테스트 코드 초안을 작성합니다." }
+    ],
     "workflows": []
   }
 }
