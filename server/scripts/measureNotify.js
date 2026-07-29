@@ -30,6 +30,10 @@ const RADIUS_KM = 2.0
 // 위도 1도 ≈ 111.32km. 자오선을 따라 북쪽으로 옮기면 원하는 거리를 정확히 만들 수 있다
 const KM_PER_DEG_LAT = 111.32
 
+// 구체(JS)와 타원체(PostGIS)의 차이는 한국 위도에서 약 0.15%다.
+// 여유를 두어 반경의 1% 이내에 있는 점은 판정 유보로 처리한다(2km이면 ±20m).
+const AMBIGUOUS_RATIO = 0.01
+
 function arg(name, fallback) {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
   if (!hit) return fallback
@@ -38,7 +42,16 @@ function arg(name, fallback) {
   return v
 }
 
-// SQL의 haversineKm과 같은 공식을 JS로 재구현 (교차 검증용)
+/*
+ * 교차 검증용 거리 계산 (JS, 구체 Haversine).
+ *
+ * SQL은 PostGIS geography(WGS84 회전타원체)를 쓰므로 이 값과 정확히 같지 않다.
+ * 한국 위도에서 차이는 약 0.15%다 — 2km 반경이면 약 3m.
+ *
+ * 그래도 JS로 따로 계산하는 이유는 "SQL이 맞는지"를 SQL과 무관한 수단으로 보기 위함이다.
+ * 대신 경계에서 두 방식이 갈릴 수 있으므로, 경계 근처(AMBIGUOUS_RATIO)는
+ * 판정 유보로 빼고 나머지만 엄격히 비교한다.
+ */
 function haversineKm(aLat, aLng, bLat, bLng) {
   const R = 6371
   const r = (d) => (d * Math.PI) / 180
@@ -129,15 +142,21 @@ async function main() {
     `소비자 ${users}명 배치 · 각자 반경 설정 ${RADIUS_KM}km · 관심 카테고리 ${CATEGORY}\n`,
   )
 
-  // 기대값: JS에서 독립 계산
-  const expected = placed.filter((p) => p.km <= RADIUS_KM).map((p) => p.userId)
+  // 기대값: JS에서 독립 계산. 경계 ±1%는 계산 방식 차이로 갈릴 수 있어 유보한다.
+  const band = RADIUS_KM * AMBIGUOUS_RATIO
+  const isAmbiguous = (p) => Math.abs(p.km - RADIUS_KM) <= band
+  const decided = placed.filter((p) => !isAmbiguous(p))
+  const ambiguous = placed.filter(isAmbiguous)
+  const expected = decided.filter((p) => p.km < RADIUS_KM).map((p) => p.userId)
 
-  console.log('배치된 소비자')
-  for (const p of placed) {
-    const inside = p.km <= RADIUS_KM
-    console.log(
-      `  #${p.userId}  ${p.km.toFixed(2).padStart(5)} km  ${inside ? '반경 안' : '반경 밖'}`,
-    )
+  if (users <= 20) {
+    console.log('배치된 소비자')
+    for (const p of placed) {
+      const mark = isAmbiguous(p) ? '판정 유보' : p.km < RADIUS_KM ? '반경 안' : '반경 밖'
+      console.log(`  #${p.userId}  ${p.km.toFixed(2).padStart(5)} km  ${mark}`)
+    }
+  } else {
+    console.log(`배치: ${users}명 (0.2~4.0km 균등) — 목록 출력은 20명 이하일 때만`)
   }
 
   // 측정: findTargets 반복 호출
@@ -151,20 +170,25 @@ async function main() {
   times.sort((a, b) => a - b)
 
   // 시딩 소비자(consumer1 등)도 조건에 맞으면 포함되므로, 측정용 사용자만 비교한다
-  const actual = targets
-    .map((t) => Number(t.userId))
-    .filter((id) => placed.some((p) => p.userId === id))
-  const missing = expected.filter((id) => !actual.includes(id))
-  const extra = actual.filter((id) => !expected.includes(id))
+  const placedIds = new Set(placed.map((p) => p.userId))
+  const ambiguousIds = new Set(ambiguous.map((p) => p.userId))
+  const actual = targets.map((t) => Number(t.userId)).filter((id) => placedIds.has(id))
+  const actualDecided = actual.filter((id) => !ambiguousIds.has(id))
+
+  const missing = expected.filter((id) => !actualDecided.includes(id))
+  const extra = actualDecided.filter((id) => !expected.includes(id))
   const ok = missing.length === 0 && extra.length === 0
+
+  const fmt = (a) => (a.length ? a.slice(0, 10).join(', ') + (a.length > 10 ? ' …' : '') : '없음')
 
   console.log(`\n판정 결과`)
   console.log(`  전체 대상      : ${targets.length}명 (시딩 사용자 포함)`)
   console.log(`  측정용 중 대상 : ${actual.length}명`)
-  console.log(`  기대           : ${expected.length}명 (반경 ${RADIUS_KM}km 이내)`)
-  console.log(`  누락           : ${missing.length ? missing.join(', ') : '없음'}`)
-  console.log(`  과다           : ${extra.length ? extra.join(', ') : '없음'}`)
-  console.log(`  정확성         : ${ok ? '일치 (SQL과 JS 독립 계산이 같음)' : '불일치'}`)
+  console.log(`  기대           : ${expected.length}명 (반경 ${RADIUS_KM}km 이내, 경계 유보 제외)`)
+  console.log(`  판정 유보      : ${ambiguous.length}명 (경계 ±${(band * 1000).toFixed(0)}m)`)
+  console.log(`  누락           : ${fmt(missing)}`)
+  console.log(`  과다           : ${fmt(extra)}`)
+  console.log(`  정확성         : ${ok ? '일치 (SQL=PostGIS, 기대=JS 독립 계산)' : '불일치'}`)
 
   console.log(`\n소요 시간 (findTargets, ${runs}회)`)
   console.log(`  중앙값 : ${times[Math.floor(times.length / 2)].toFixed(2)} ms`)

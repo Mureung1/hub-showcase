@@ -1,12 +1,13 @@
 import 'dotenv/config'
 import { pool } from '../src/db/pool.js'
-import { haversineKm } from '../src/repositories/sql.js'
+import { FIND_NEARBY_SQL } from '../src/repositories/dealRepository.js'
+import { FIND_TARGETS_SQL } from '../src/repositories/notificationRepository.js'
 
 /*
  * 위치 쿼리 실행 계획·소요 측정 (최적화.md §6).
  *
- * 쿼리 문자열을 복붙하지 않고 repositories/sql.js의 haversineKm을 그대로 import해,
- * 측정 대상이 애플리케이션이 실제로 실행하는 쿼리와 동일함을 보장한다.
+ * 저장소가 내보낸 쿼리 상수를 그대로 import해 EXPLAIN 한다.
+ * 쿼리를 여기에 복붙하면 저장소가 바뀔 때 조용히 어긋나므로 정의는 한 곳에만 둔다.
  *
  *   npm run explain:geo -w server
  *   npm run explain:geo -w server -- --radius=2 --runs=5
@@ -22,42 +23,6 @@ function arg(name, fallback) {
 // 네이버 1784 기준 (데모 시딩의 소비자 기준 주소와 동일)
 const BASE_LAT = 37.3595
 const BASE_LNG = 127.1052
-
-// dealRepository.findNearby 와 동일
-const NEARBY_SQL = `SELECT * FROM (
-   SELECT d.*, s.name AS store_name,
-          ${haversineKm('$1', '$2', 's.lat', 's.lng')} AS distance_km
-   FROM deals d
-   JOIN stores s ON s.id = d.store_id
-   WHERE d.status = 'active' AND d.pickup_deadline_at > now() AND d.remaining_qty > 0
- ) nearby
- WHERE distance_km <= $3
- ORDER BY distance_km ASC`
-
-// notificationRepository.findTargets 와 동일
-const DISTANCE = haversineKm('u.base_lat', 'u.base_lng', 'deal.lat', 'deal.lng')
-const TARGETS_SQL = `WITH deal AS (
-   SELECT d.id, d.category, d.store_id, s.lat, s.lng
-   FROM deals d JOIN stores s ON s.id = d.store_id
-   WHERE d.id = $1
- )
- SELECT u.id, u.nickname,
-        (ic.user_id IS NOT NULL) AS by_category,
-        (f.user_id IS NOT NULL) AS by_favorite,
-        CASE WHEN u.base_lat IS NULL OR u.base_lng IS NULL THEN NULL
-             ELSE ${DISTANCE} END AS distance_km
- FROM users u
- CROSS JOIN deal
- LEFT JOIN user_interest_categories ic
-        ON ic.user_id = u.id AND ic.category = deal.category
- LEFT JOIN favorites f
-        ON f.user_id = u.id AND f.store_id = deal.store_id
- WHERE u.role = 'consumer'
-   AND (ic.user_id IS NOT NULL OR f.user_id IS NOT NULL)
-   AND (
-     u.noti_location_mode = 'always'
-     OR (u.base_lat IS NOT NULL AND u.base_lng IS NOT NULL AND ${DISTANCE} <= u.noti_radius_km)
-   )`
 
 async function measure(label, sql, params, runs) {
   const times = []
@@ -113,12 +78,12 @@ async function main() {
   results.push(
     await measure(
       'findNearby — 반경 내 활성 딜 조회',
-      NEARBY_SQL,
+      FIND_NEARBY_SQL,
       [BASE_LAT, BASE_LNG, radius],
       runs,
     ),
   )
-  results.push(await measure('findTargets — 알림 대상 판정', TARGETS_SQL, [dealId], runs))
+  results.push(await measure('findTargets — 알림 대상 판정', FIND_TARGETS_SQL, [dealId], runs))
 
   console.log(`\n${'='.repeat(70)}\n요약\n${'='.repeat(70)}`)
   for (const r of results) {

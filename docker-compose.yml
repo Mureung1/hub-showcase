@@ -1,9 +1,12 @@
 services:
   db:
-    image: postgres:16-alpine
+    # PostGIS가 필요하다(마이그레이션 003). 공식 postgres 이미지에는 들어있지 않다.
+    # postgis/postgis는 공식 postgres 위에 확장을 얹은 것이라 같은 메이저 버전이면
+    # 기존 pgdata 볼륨을 그대로 쓸 수 있다.
+    image: postgis/postgis:16-3.4-alpine
     container_name: hub-db
     environment:
-      POSTGRES_USER: rbgus    
+      POSTGRES_USER: rbgus
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: hub
     ports:

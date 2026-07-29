@@ -1,5 +1,5 @@
 import { pool } from '../db/pool.js'
-import { haversineKm } from './sql.js'
+import { geogPoint, distanceKm, withinMeters } from './sql.js'
 
 function toDeal(row) {
   return {
@@ -58,20 +58,27 @@ export async function findByStoreIdWithCounts(storeId, db = pool) {
   }))
 }
 
-// M2 — 기준 위치 반경 내 활성 딜을 거리순으로. 거리는 서브쿼리에서 1회 계산 후 재사용.
+/*
+ * M2 — 기준 위치 반경 내 활성 딜을 거리순으로.
+ *
+ * ST_DWithin이 stores의 GiST 인덱스로 후보를 먼저 좁히므로,
+ * 예전처럼 전체 딜에 거리 계산을 돌린 뒤 거르지 않는다.
+ * 반경이 상수(파라미터)라 인덱스를 그대로 탄다.
+ */
+const NEARBY_REF = geogPoint('$2', '$1')
+
+// 측정 스크립트(scripts/explainGeo.js)가 그대로 EXPLAIN 할 수 있도록 내보낸다.
+// 쿼리를 복붙하면 실제 실행문과 어긋나므로 한 곳에서만 정의한다.
+export const FIND_NEARBY_SQL = `SELECT d.*, s.name AS store_name,
+        ${distanceKm('s.geog', NEARBY_REF)} AS distance_km
+ FROM deals d
+ JOIN stores s ON s.id = d.store_id
+ WHERE d.status = 'active' AND d.pickup_deadline_at > now() AND d.remaining_qty > 0
+   AND ${withinMeters('s.geog', NEARBY_REF, '$3::double precision * 1000')}
+ ORDER BY distance_km ASC`
+
 export async function findNearby({ lat, lng, radiusKm }, db = pool) {
-  const { rows } = await db.query(
-    `SELECT * FROM (
-       SELECT d.*, s.name AS store_name,
-              ${haversineKm('$1', '$2', 's.lat', 's.lng')} AS distance_km
-       FROM deals d
-       JOIN stores s ON s.id = d.store_id
-       WHERE d.status = 'active' AND d.pickup_deadline_at > now() AND d.remaining_qty > 0
-     ) nearby
-     WHERE distance_km <= $3
-     ORDER BY distance_km ASC`,
-    [lat, lng, radiusKm],
-  )
+  const { rows } = await db.query(FIND_NEARBY_SQL, [lat, lng, radiusKm])
   return rows.map((row) => ({
     ...toDeal(row),
     storeName: row.store_name,
@@ -84,7 +91,7 @@ export async function findByIdWithStore(dealId, { lat, lng } = {}, db = pool) {
   const hasBase = lat != null && lng != null
   const { rows } = await db.query(
     `SELECT d.*, s.name AS store_name,
-            ${hasBase ? haversineKm('$1', '$2', 's.lat', 's.lng') : 'NULL'} AS distance_km
+            ${hasBase ? distanceKm('s.geog', geogPoint('$2', '$1')) : 'NULL'} AS distance_km
      FROM deals d
      JOIN stores s ON s.id = d.store_id
      WHERE d.id = $3`,
