@@ -1,4 +1,5 @@
 import { api } from "../lib/api";
+import { addMyRoute } from "../lib/myRoutes";
 import { useState } from "react";
 import Field from "./Field";
 import StationPicker from "./StationPicker";
@@ -11,6 +12,7 @@ export default function RouteRegister({ onSaved }) {
   const [origin, setOrigin] = useState(null);         // 정류장 객체 {name,x,y,region}
   const [dest, setDest] = useState(null);
   const [departTime, setDepartTime] = useState("");
+  const [webhook, setWebhook] = useState("");         // 내 디스코드 웹훅 (선택) — 알림 받을 채널
   const [candidates, setCandidates] = useState(null); // null=조회 전
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [finding, setFinding] = useState(false);
@@ -51,10 +53,12 @@ export default function RouteRegister({ onSaved }) {
         stops: chosen.stops.join(", "),          // 매칭 2층 재료 (대중교통)
         roads: (chosen.roads ?? []).join(", "),  // 매칭 3층 재료 (자가용)
         path: chosen.points ?? null,             // 좌표열 — 리포트 실지도용
+        webhook_url: webhook.trim() || null,     // 개인 알림 채널 (선택)
       }),
     });
     const data = await res.json();
     if (res.ok) {
+      addMyRoute(data.route.id);   // 이 브라우저의 "내 경로"로 기억
       setSaved({ ...data.route, check: data.check });   // check = 즉시 첫 점검 결과
       onSaved?.();   // 저장 성공 → 부모에게 알려 목록 자동 갱신
       // 다음 등록을 위해 폼 초기화 (저장됨 메시지는 남긴다)
@@ -78,6 +82,12 @@ export default function RouteRegister({ onSaved }) {
       <StationPicker key={`o${formKey}`} label={`출발 ${stationLabel}`} station={origin} onSelect={pickOrigin} />
       <StationPicker key={`d${formKey}`} label={`도착 ${stationLabel}`} station={dest} onSelect={pickDest} />
       <Field label="시간대" value={departTime} onChange={(e) => setDepartTime(e.target.value)} placeholder="예: 08:00" />
+      <Field
+        label="내 디스코드로 알림 받기 (선택)"
+        value={webhook}
+        onChange={(e) => setWebhook(e.target.value)}
+        placeholder="디스코드 채널 설정 → 연동 → 웹훅 URL 붙여넣기"
+      />
 
       {origin && dest && candidates === null && (
         <button className="btn-primary" onClick={findCandidates}>

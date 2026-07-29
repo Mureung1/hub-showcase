@@ -19,8 +19,8 @@ const supabase = createClient(
 // 헬스체크: Express 살아있음 + Supabase 왕복 확인.
 // routes 테이블 한 줄을 실제로 꺼내와 연결이 되는지 검증한다.
 app.get('/api/health', async (req, res) => {
-  const { data, error } = await supabase.from('routes').select('*').limit(1);
-  res.json({ ok: !error, data: data ?? null, error: error?.message ?? null });
+  const { error } = await supabase.from('routes').select('id').limit(1);
+  res.json({ ok: !error, error: error?.message ?? null });
 });
 
 // ── 즉시 첫 점검 ─────────────────────────────────────────────
@@ -52,7 +52,8 @@ async function instantCheck(route) {
 }
 
 async function sendFirstReport(route, check) {
-  const webhook = process.env.DISCORD_WEBHOOK_URL;
+  // 경로에 개인 웹훅이 연결돼 있으면 그리로, 없으면 기본(데모) 채널로
+  const webhook = route.webhook_url || process.env.DISCORD_WEBHOOK_URL;
   if (!webhook) return false;
   const reportBase = process.env.REPORT_BASE_URL ?? 'https://hub-pi-lime.vercel.app';
   const apiBase = process.env.API_BASE_URL ?? 'https://miricat-api.onrender.com';
@@ -82,14 +83,18 @@ async function sendFirstReport(route, check) {
 
 // 경로 등록 저장: 화면 입력을 routes 테이블에 insert + 즉시 첫 점검.
 app.post('/api/routes', async (req, res) => {
-  const { origin_name, dest_name, depart_time, lines, stops, roads, path } = req.body ?? {};
+  const { origin_name, dest_name, depart_time, lines, stops, roads, path, webhook_url } = req.body ?? {};
   if (!origin_name || !dest_name) {
     return res.status(400).json({ error: 'origin_name과 dest_name은 필수입니다.' });
+  }
+  // 개인 웹훅(선택): 이 경로의 알림을 받을 디스코드 채널. 형식만 검증.
+  if (webhook_url && !webhook_url.startsWith('https://discord.com/api/webhooks/')) {
+    return res.status(400).json({ error: '디스코드 웹훅 URL 형식이 아니에요 (https://discord.com/api/webhooks/... )' });
   }
   const name = `${origin_name} → ${dest_name}`;
   const { data, error } = await supabase
     .from('routes')
-    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null, lines: lines ?? null, stops: stops ?? null, roads: roads ?? null, path: path ?? null })
+    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null, lines: lines ?? null, stops: stops ?? null, roads: roads ?? null, path: path ?? null, webhook_url: webhook_url ?? null })
     .select()
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -109,12 +114,14 @@ app.post('/api/routes', async (req, res) => {
   });
 });
 
-// 등록된 경로 목록 (최신순) — 저장 확인·화면 표시용.
+// 등록된 경로 목록 (최신순). ?ids=a,b,c 를 주면 그 경로들만(= 브라우저의 "내 경로").
+// ⚠️ webhook_url은 민감값(아는 사람이 스팸 가능) — 응답에 절대 포함하지 않는다.
+const ROUTE_PUBLIC_COLUMNS = 'id, name, origin_name, dest_name, depart_time, lines, stops, roads, path, created_at';
 app.get('/api/routes', async (req, res) => {
-  const { data, error } = await supabase
-    .from('routes')
-    .select('*')
-    .order('created_at', { ascending: false });
+  let q = supabase.from('routes').select(ROUTE_PUBLIC_COLUMNS).order('created_at', { ascending: false });
+  const ids = (req.query.ids ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (ids.length) q = q.in('id', ids);
+  const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
   res.json({ routes: data });
 });
@@ -331,6 +338,21 @@ app.get('/api/routes/:id/map.png', async (req, res) => {
   res.set('Content-Type', 'image/png');
   res.set('Cache-Control', 'public, max-age=3600');
   res.send(Buffer.from(await r.arrayBuffer()));
+});
+
+// ITS 돌발상황 중계 — 국가 API(openapi.its.go.kr)가 일부 해외 IP(GitHub 러너)를 막아서,
+// 클라우드 보초는 이 엔드포인트를 경유한다. (Render에서 ITS가 닿는지의 시험대이기도 함)
+app.get('/api/its-incidents', async (req, res) => {
+  const key = process.env.ITS_API_KEY;
+  if (!key) return res.status(500).json({ error: 'ITS_API_KEY 미설정' });
+  try {
+    const url = `https://openapi.its.go.kr:9443/eventInfo?apiKey=${encodeURIComponent(key)}`
+      + `&type=all&eventType=all&getType=json&minX=124&maxX=132&minY=33&maxY=39`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    res.json(await r.json());   // 원본 그대로 중계 — 가공은 워커(its.py)가 담당
+  } catch (e) {
+    res.status(502).json({ error: `ITS 접속 실패: ${e.name}` });
+  }
 });
 
 // 진단용: 이 서버가 바깥으로 나갈 때 쓰는 공인 IP (ODsay IP 등록 대조용)

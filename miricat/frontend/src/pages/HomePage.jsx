@@ -4,6 +4,7 @@ import RouteRegister from "../components/RouteRegister";
 import SavedRoutes from "../components/SavedRoutes";
 import NoticesPanel from "../components/NoticesPanel";
 import SentryStatus from "../components/SentryStatus";
+import { myRouteIds } from "../lib/myRoutes";
 
 // 홈 화면: 경로 등록 → 등록 목록 → 공지 대조. (원래 App.jsx 본문이 통째로 이사 왔다)
 export default function HomePage() {
@@ -11,7 +12,10 @@ export default function HomePage() {
   const [routes, setRoutes] = useState([]);
 
   async function loadRoutes() {
-    const res = await fetch(api("/api/routes"));
+    // 이 브라우저에서 등록한 "내 경로"만 조회 (계정 없는 개인화 — 보초는 서버에서 전체를 감시)
+    const ids = myRouteIds();
+    if (!ids.length) { setRoutes([]); return; }
+    const res = await fetch(api(`/api/routes?ids=${ids.join(",")}`));
     const data = await res.json();
     setRoutes(data.routes ?? []);
   }

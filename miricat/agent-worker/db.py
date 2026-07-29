@@ -32,7 +32,7 @@ def find_notice(source_url):
 
 def get_routes():
     """등록된 경로 전부 — 매일 판정의 기준."""
-    res = _sb.table("routes").select("id, name, lines, stops, roads, path").execute()
+    res = _sb.table("routes").select("id, name, lines, stops, roads, path, webhook_url").execute()
     return res.data or []
 
 def get_notices():

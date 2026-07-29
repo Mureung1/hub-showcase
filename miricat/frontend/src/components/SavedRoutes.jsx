@@ -1,9 +1,11 @@
 import { api } from "../lib/api";
+import { removeMyRoute } from "../lib/myRoutes";
 // 저장된 경로 목록 화면 — 부모(App)가 준 routes를 렌더만 한다 (presentational).
 export default function SavedRoutes({ routes, onRefresh }) {
-  // 🗑️ 클릭 시: 해당 id 경로를 DELETE 하고 목록 갱신.
+  // 🗑️ 클릭 시: 해당 id 경로를 DELETE 하고 내 경로 목록에서도 제거.
   async function handleDelete(id) {
     await fetch(api(`/api/routes/${id}`), { method: "DELETE" });
+    removeMyRoute(id);
     onRefresh();
   }
 

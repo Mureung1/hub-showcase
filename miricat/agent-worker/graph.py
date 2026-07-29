@@ -114,9 +114,10 @@ def reporter_node(state: State) -> dict:
     if not analysis or not analysis.get("affected"):
         return {}                        # 영향 없음 → 아무것도 안 보냄 (알림 남발 금지)
 
-    webhook = os.environ.get("DISCORD_WEBHOOK_URL")
+    # 경로에 개인 웹훅이 연결돼 있으면 그리로, 없으면 기본(데모) 채널로
+    webhook = (state.get("route") or {}).get("webhook_url") or os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook:
-        return {"report": {"sent": False, "error": "DISCORD_WEBHOOK_URL 없음"}}
+        return {"report": {"sent": False, "error": "웹훅 없음"}}
 
     # 메시지 재료: 원문 URL + 내 경로와 겹친 사건들
     source_url = state["source"]["view_url"].format(id=state["seq"])

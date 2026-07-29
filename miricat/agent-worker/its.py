@@ -20,16 +20,28 @@ def _fmt_date(s):
     return f"{s[:4]}-{s[4:6]}-{s[6:8]}" if s and len(s) >= 8 else ""
 
 
+def _fetch_raw():
+    """ITS 원본 JSON. 직접 호출이 막히면(해외 IP 차단 — GitHub 러너) 우리 백엔드 중계로 폴백."""
+    key = os.environ.get("ITS_API_KEY")
+    try:
+        if not key:
+            raise RuntimeError("ITS_API_KEY 없음 — 중계로")
+        r = requests.get(API_URL, timeout=15, params={
+            "apiKey": key, "type": "all", "eventType": "all", "getType": "json",
+            "minX": "124", "maxX": "132", "minY": "33", "maxY": "39",
+        })
+        return r.json()
+    except Exception as e:
+        print(f"[ITS] 직접 호출 실패({type(e).__name__}) → 백엔드 중계로 재시도")
+        api_base = os.environ.get("API_BASE_URL", "https://miricat-api.onrender.com")
+        r = requests.get(f"{api_base}/api/its-incidents", timeout=25)
+        r.raise_for_status()
+        return r.json()
+
+
 def fetch_incidents():
     """전국 돌발상황 → notices 저장용 (source_url, title, extraction) 리스트."""
-    key = os.environ.get("ITS_API_KEY")
-    if not key:
-        raise RuntimeError("ITS_API_KEY 없음")
-    r = requests.get(API_URL, timeout=15, params={
-        "apiKey": key, "type": "all", "eventType": "all", "getType": "json",
-        "minX": "124", "maxX": "132", "minY": "33", "maxY": "39",
-    })
-    items = (r.json().get("body") or {}).get("items", [])
+    items = (_fetch_raw().get("body") or {}).get("items", [])
 
     out = []
     for it in items:
