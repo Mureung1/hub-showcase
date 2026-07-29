@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "title": "자격증 취득 경로 플래너",
+  "summary": "실제 채용공고 데이터를 근거로 목표 직무에 필요한 자격증을 걸러주고, 최적의 취득 순서를 계산해주는 서비스입니다.",
+  "githubUser": "punchman340(조민훈)",
+  "demoUrl": "",
+  "demoVideoUrl": "https://youtu.be/l2JOsT6L2wU",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/ranking.webp",
+    "screenshots/path.webp",
+    "screenshots/progress.webp"
+  ],
+  "problem": "커뮤니티에 떠도는 취업 정보는 개인 경험담 중심이라 과장되거나 실제 채용 시장과 다른 경우가 많습니다. 예를 들어 컴퓨터활용능력은 흔히 추천되지만, 실제 전산직 채용공고 기준으로는 언급 빈도가 낮습니다.",
+  "targetUsers": [
+    "자격증·스펙을 준비하는 취업준비생",
+    "특정 직무를 목표로 하는 대학생"
+  ],
+  "features": [
+    "목표 직무를 입력하면 실제 채용공고 데이터를 기반으로 자격증 언급 빈도와 근거를 보여줍니다.",
+    "자격증 간 선수조건을 그래프로 모델링해 최적 취득 순서를 계산합니다.",
+    "취득 경로에 추가한 자격증의 진행 상황(준비중/완료/예정)을 추적합니다."
+  ],
+  "featureTags": [
+    "채용공고 기반 자격증 분석",
+    "취득 경로 최적화",
+    "진행 상황 추적"
+  ],
+  "techStack": [
+    "Java 17",
+    "Spring Boot",
+    "PostgreSQL",
+    "JPA",
+    "QueryDsl",
+    "MyBatis",
+    "Kafka",
+    "Feign",
+    "React (Vite)"
+  ],
+  "techHighlights": [
+    "QueryDsl fetch join으로 N+1 쿼리를 방지하고, MyBatis로 자격증 언급 빈도·강조도를 집계합니다.",
+    "Kafka로 채용공고 수집→정규화 파이프라인을 비동기 분리하고, 명시적 재시도 정책으로 일시 오류를 방어합니다.",
+    "선수조건 그래프를 Kahn's algorithm으로 위상 정렬해 취득 순서를 계산하고, 순환 참조를 자동 탐지합니다."
+  ],
+  "developmentWithAI": "저는 문제 정의, 데이터 소스 선택, 설계 판단(예: 강조도 분류 기준)을 결정했습니다. AI는 요구사항을 이슈 단위로 나누고 코드를 작성했으며, 실제 API 응답을 실측 검증해 문서 스펙과 다른 부분을 여러 차례 발견해 수정했습니다. 저는 결과를 검토하고 방향을 조정했습니다.",
+  "agent": {
+    "summary": "기획부터 구현, 검증, 문서화까지 계획 전용 Agent와 검증 전용 Agent를 분리해서 매 단계 확인하며 진행했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "planner",
+        "purpose": "요구사항을 이슈 단위로 나누고 우선순위를 정합니다. 코드는 작성하지 않습니다."
+      },
+      {
+        "type": "agent",
+        "name": "verifier",
+        "purpose": "구현된 기능을 실제로 재현·재실행해서 요구사항 충족 여부를 검증합니다. 코드는 수정하지 않고 보고만 합니다."
+      },
+      {
+        "type": "skill",
+        "name": "design-tone",
+        "purpose": "프로젝트의 색상·폰트·컴포넌트 톤 규칙을 담아 새 화면 제작 시 일관성을 유지합니다."
+      },
+      {
+        "type": "skill",
+        "name": "tdd-workflow",
+        "purpose": "스펙 정의→Red→Green→Refactor 순서로 규칙이 명확한 함수를 구현합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "Plan Mode로 계획 검토",
+          "이슈 단위 작업 승인",
+          "구현",
+          "verifier로 실제 재현 검증",
+          "커밋"
+        ]
+      },
+      {
+        "name": "버그 디버깅 Workflow",
+        "steps": [
+          "실제 요청/응답을 문서 스펙과 실측 비교",
+          "원인 후보를 하나씩 순차 검증",
+          "재현 테스트로 수정 확인"
+        ]
+      }
+    ]
+  }
+}
