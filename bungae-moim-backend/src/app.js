@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const meetingsRoutes = require('./routes/meetings');
 const notificationsRoutes = require('./routes/notifications');
+const evaluationsRoutes = require('./routes/evaluations');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/meetings', meetingsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/evaluations', evaluationsRoutes);
 
 app.get('/health', async (req, res) => {
   try {

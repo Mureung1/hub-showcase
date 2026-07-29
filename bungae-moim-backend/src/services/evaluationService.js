@@ -1,5 +1,87 @@
+const pool = require('../config/db');
 const { computeTrustScore } = require('../utils/trustScore');
 const { resolveEvaluations } = require('../utils/evaluationMatching');
+
+// 평가 창은 종료 후 14일(설계 4.1). 오래된 모임의 기억은 부정확하고, 무한정 열어두면
+// "언제든 하지" 하고 안 한다.
+const EVALUATION_WINDOW_DAYS = 14;
+
+// 종료 판정은 목록·상세와 똑같이 SQL now()로 한다. JS Date로 다시 비교하면 어긋난다.
+const IN_WINDOW = `
+  m.status <> 'cancelled'
+  AND COALESCE(m.end_at, m.start_at) < now()
+  AND COALESCE(m.end_at, m.start_at) > now() - interval '${EVALUATION_WINDOW_DAYS} days'
+`;
+
+// 내가 평가해야 할 모임 목록(설계 4.1~4.2). 모임장은 확정 참여자 전원을,
+// 확정 참여자는 모임장을 평가한다. 이미 제출한 평가 대상은 빠진다.
+async function listPendingEvaluations(userId) {
+  // 모임장으로서 평가할 것: 확정 참여자 중 내가 아직 평가하지 않은 사람.
+  const hostRes = await pool.query(
+    `SELECT m.id, m.title, m.type, m.start_at, m.end_at,
+            p.user_id AS target_id, u.nickname AS target_nickname
+       FROM meetings m
+       JOIN meeting_participants p ON p.meeting_id = m.id
+       JOIN users u ON u.id = p.user_id
+      WHERE m.host_id = $1
+        AND p.status IN ('confirmed','approved')
+        AND ${IN_WINDOW}
+        AND NOT EXISTS (
+          SELECT 1 FROM meeting_evaluations e
+           WHERE e.meeting_id = m.id AND e.rater_id = $1 AND e.ratee_id = p.user_id
+        )
+      ORDER BY COALESCE(m.end_at, m.start_at) DESC, m.id DESC, p.user_id ASC`,
+    [userId]
+  );
+
+  // 참여자로서 평가할 것: 내가 확정이었던 모임의 모임장.
+  const participantRes = await pool.query(
+    `SELECT m.id, m.title, m.type, m.start_at, m.end_at,
+            m.host_id AS target_id, u.nickname AS target_nickname
+       FROM meeting_participants p
+       JOIN meetings m ON m.id = p.meeting_id
+       JOIN users u ON u.id = m.host_id
+      WHERE p.user_id = $1
+        AND p.status IN ('confirmed','approved')
+        AND ${IN_WINDOW}
+        AND NOT EXISTS (
+          SELECT 1 FROM meeting_evaluations e
+           WHERE e.meeting_id = m.id AND e.rater_id = $1 AND e.ratee_id = m.host_id
+        )
+      ORDER BY COALESCE(m.end_at, m.start_at) DESC, m.id DESC`,
+    [userId]
+  );
+
+  const byMeeting = new Map();
+  const collect = (rows, role) => {
+    for (const row of rows) {
+      const id = Number(row.id);
+      if (!byMeeting.has(id)) {
+        byMeeting.set(id, {
+          meeting: {
+            id,
+            title: row.title,
+            type: row.type,
+            startAt: row.start_at,
+            endAt: row.end_at,
+          },
+          role,
+          targets: [],
+        });
+      }
+      byMeeting.get(id).targets.push({
+        userId: Number(row.target_id),
+        nickname: row.target_nickname,
+      });
+    }
+  };
+
+  collect(hostRes.rows, 'host');
+  collect(participantRes.rows, 'participant');
+
+  const items = [...byMeeting.values()];
+  return { items, count: items.length };
+}
 
 // 이 사람이 **받은** 평가와, 각 평가의 대조 상대(같은 모임의 반대 방향 평가)를 함께 읽는다.
 // 상대 평가가 없으면 반박이 없다는 뜻이라 그대로 유효하다(설계 6장).
@@ -92,4 +174,4 @@ async function recalculateTrustScore(client, userId) {
   return { score: rounded, evaluationCount: mine.length };
 }
 
-module.exports = { recalculateTrustScore };
+module.exports = { recalculateTrustScore, listPendingEvaluations, EVALUATION_WINDOW_DAYS };
