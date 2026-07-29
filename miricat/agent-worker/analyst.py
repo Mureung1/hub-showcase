@@ -88,6 +88,7 @@ def analyze(route, extraction):
     """
     mine = [*(route.get("lines") or []), *(route.get("stops") or [])]
     roads = route.get("roads") or []
+    path = route.get("path") or []
     matched = []
     for ev in (extraction or {}).get("events", []):
         targets = [*(ev.get("affected_lines") or []), *(ev.get("affected_stops") or [])]
@@ -95,9 +96,24 @@ def analyze(route, extraction):
         # 3층: 도로명 — 공지의 위치 문구(location·사건명)에 내 경유 도로가 등장하는가 (자가용)
         hay = _norm(f"{ev.get('location') or ''} {ev.get('event_name') or ''}")
         hits |= {r for r in roads if _norm(r) and _norm(r) in hay}
+        # 4층: 반경 — 사건 좌표(ITS 돌발 등)가 내 경로에서 300m 이내인가
+        if ev.get("x") and ev.get("y") and path and _near_route(ev["x"], ev["y"], path):
+            hits.add(ev.get("event_name") or "경로 인근 사건")
         if hits and _is_current(ev.get("period")):
             matched.append({"event_name": ev.get("event_name"), "matched": sorted(hits)})
     return {"affected": len(matched) > 0, "matched": matched}
+
+
+def _near_route(x, y, path, radius_m=300):
+    """사건 좌표가 경로 좌표열의 어느 점에서든 radius_m 안이면 True (등장방형 근사 거리)."""
+    import math
+    cos_lat = math.cos(math.radians(y))
+    for p in path:
+        dx = (x - p.get("x", 0)) * 111320 * cos_lat
+        dy = (y - p.get("y", 0)) * 110540
+        if dx * dx + dy * dy <= radius_m * radius_m:
+            return True
+    return False
 
 
 if __name__ == "__main__":

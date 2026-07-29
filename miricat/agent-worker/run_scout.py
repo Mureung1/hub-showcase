@@ -12,6 +12,7 @@ import requests
 
 from scout import fetch_list
 from sources import SOURCES
+from its import fetch_incidents
 from graph import run, reporter_node
 from analyst import analyze, same_region
 from db import save_notice, get_routes, get_notices, mark_alerted
@@ -44,6 +45,16 @@ def collect():
         except Exception as e:
             print(f"[{source['name']}] 소스 접속 실패: {type(e).__name__}: {e}")
             counts[source["name"]] = None   # 보고에 "접속 실패"로 표시
+
+    # 전국 도로 돌발 (ITS) — 이미 구조화된 API라 그래프(LLM) 없이 바로 저장
+    try:
+        incidents = fetch_incidents()
+        for inc in incidents:
+            save_notice(source="its_incident", **inc)
+        counts["국가 ITS 도로돌발"] = len(incidents)
+    except Exception as e:
+        print(f"[ITS] 접속 실패: {type(e).__name__}: {e}")
+        counts["국가 ITS 도로돌발"] = None
     return counts
 
 

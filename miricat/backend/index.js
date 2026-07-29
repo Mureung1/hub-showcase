@@ -42,7 +42,7 @@ async function instantCheck(route) {
     .from('notices')
     .select('id, source, title, source_url, extraction')   // source = 지역 게이팅용
     .order('collected_at', { ascending: false })
-    .limit(30);
+    .limit(150);                                           // ITS 돌발(수십 건)까지 포함해도 버스 공지가 밀리지 않게
   const alerts = [];
   for (const n of notices ?? []) {
     const hits = matchNotice(n, route);
@@ -74,7 +74,7 @@ async function sendFirstReport(route, check) {
   } else if (check.covered) {
     payload = { content: `🐾 새 보초 — **${route.name}** 등록. 모아둔 공지 ${check.checked}건과 대조했고, 지금 영향 주는 공지는 없어요.` };
   } else {
-    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 다만 이 지역은 아직 감시 범위 밖이에요 — 지금은 서울·경기·대전·세종·부산 게시판을 확인하고 있어요.` };
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 도로 돌발상황은 전국을 확인하지만, 이 지역 버스 게시판은 아직 감시 전이에요 (현재 서울·경기·대전·세종·부산).` };
   }
   const r = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   return r.ok;   // 화면이 "보냈어요"를 사실일 때만 말하게
@@ -157,6 +157,7 @@ app.get('/api/notices', async (req, res) => {
   const { data, error } = await supabase
     .from('notices')
     .select('id, source, source_url, title, extraction, collected_at')
+    .neq('source', 'its_incident')   // 도로 돌발(수십 건)은 목록에서 제외 — 경보·리포트로만 드러남
     .order('collected_at', { ascending: false })
     .limit(20);
   if (error) return res.status(500).json({ error: error.message });

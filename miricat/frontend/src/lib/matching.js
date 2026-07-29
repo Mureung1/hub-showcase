@@ -7,6 +7,10 @@ export const SOURCE_LABEL = {
   daejeon_bus: "대전 버스조합",
   daejeon_city: "대전광역시",
   sejong_sctc: "세종교통공사",
+  seoul_topis: "서울 TOPIS",
+  gbis_route: "경기버스정보",
+  busan_bims: "부산 BIMS",
+  its_incident: "국가교통정보센터",
 };
 
 export function fmtDate(iso) {
@@ -102,6 +106,20 @@ export function matchNotice(notice, route) {
       const nr = norm(r);
       if (nr && hay.includes(nr)) hits.add(r);
     }
+    // 4층: 반경 — 사건 좌표(ITS 돌발 등)가 내 경로에서 300m 이내인가
+    if (ev.x && ev.y && route?.path?.length && nearRoute(ev.x, ev.y, route.path)) {
+      hits.add(ev.event_name || "경로 인근 사건");
+    }
   }
   return hits; // 비었으면 영향 없음
+}
+
+// 사건 좌표가 경로 좌표열의 어느 점에서든 radius_m 안이면 true (등장방형 근사 거리)
+function nearRoute(x, y, path, radiusM = 300) {
+  const cosLat = Math.cos((y * Math.PI) / 180);
+  return path.some((p) => {
+    const dx = (x - p.x) * 111320 * cosLat;
+    const dy = (y - p.y) * 110540;
+    return dx * dx + dy * dy <= radiusM * radiusM;
+  });
 }
