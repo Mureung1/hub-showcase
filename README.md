@@ -1,17 +1,3 @@
-## 이번 주 개발 계획 (Week 3)
-
-실데이터를 기반으로 데이터 모델을 구축하고, 해당 DB를 서버와 연결하여 화면에 나타냅니다. 학과에 맞게 졸업요건을 조정하고, 남은 학기 시간표를 시뮬레이션 해볼 수 있는 서비스를 구현합니다.
-
-👉 [작업 목록 확인(GitHub Issues)](https://github.com/zlnzzaro/hub/issues)
-
-### 주요 작업
-1. Express 서버 기본 세팅
-2. Supabase user_records 테이블 설계 및 생성
-3. React 이수내역 입력 폼 (mock)
-4. POST /api/records 구현
-5. GET /api/records/:userId 구현
-6. React-Express 연결 (수직 슬라이스 완성)
-
 # ConGraduation
 
 ConGraduation은 복잡한 졸업요건을 가진 대학생이 자신의 졸업 가능 여부를 쉽게 확인하고, 남은 학기 동안의 수강 계획을 세울 수 있도록 돕는 AI 기반 졸업 플래닝 서비스입니다.
@@ -45,13 +31,27 @@ ConGraduation은 복잡한 졸업요건을 가진 대학생이 자신의 졸업 
 - 수강신청 전 안정적인 학업 계획 수립
 - 졸업 직전 요건 미충족 위험 감소
 
-# 📄 문서 모음
+## 개발 계획
+
+실데이터를 기반으로 데이터 모델을 구축하고, 해당 DB를 서버와 연결하여 화면에 나타냅니다. 학과에 맞게 졸업요건을 조정하고, 남은 학기 시간표를 시뮬레이션 해볼 수 있는 서비스를 구현합니다.
+
+👉 [작업 목록 확인(GitHub Issues)](https://github.com/zlnzzaro/hub/issues)
+
+### Main Tasks
+1. Express 서버 기본 세팅
+2. Supabase user_records 테이블 설계 및 생성
+3. React 이수내역 입력 폼 (mock)
+4. POST /api/records 구현
+5. GET /api/records/:userId 구현
+6. React-Express 연결 (수직 슬라이스 완성)
+
+# 📄 Docs
 - 📘 [프로젝트 기획서 (Wiki)](https://github.com/zlnzzaro/hub/wiki/AI-%EA%B8%B0%EB%B0%98-%EC%A1%B8%EC%97%85-%ED%94%8C%EB%9E%98%EB%84%88-%EA%B8%B0%ED%9A%8D%EC%84%9C)
 - 🎨 [Figma로 디자인한 기획서](https://www.figma.com/make/1NPfTNkS2et79zArWZtfEp/Modern-Presentation-Landing-Page?code-node-id=0-9&p=f&t=b8ilbpssH4uMvK8p-0&fullscreen=1)
 
-## 아키텍처
+# Architecture
 
-client(React) / server(Express) / Supabase 사이의 전체 데이터 흐름이다. 점선 화살표(`-.->`)와 옅은 스타일로 표시된 노드는 **코드는 존재하지만 실제로는 연결되어 있지 않은 부분**이다.
+client(React) / server(Express) / Supabase 사이의 전체 데이터 흐름을 mermaid 방식으로 나타냈습니다. 점선 화살표(`-.->`)와 옅은 스타일로 표시된 노드는 **코드는 존재하지만 실제로는 연결되어 있지 않은 부분**입니다.
 
 ```mermaid
 flowchart TD
@@ -148,9 +148,3 @@ flowchart TD
     classDef db fill:#E8F3FF,stroke:#3182F6,color:#1B3A66;
     class T_basket db;
 ```
-
-**아직 실제로 연결되지 않은 부분 (옅게 표시된 노드 + 점선 화살표)**
-- `GET /api/basket` — 컨트롤러 구현은 있지만 클라이언트 어디서도 호출하지 않는다. `POST /api/basket`으로 담은 과목이 Supabase에는 저장되지만, 새로고침해도 다시 불러오지 않아 `selectedIds`는 매번 초기화된다.
-- `server/src/utils/gradRequirements.js` — `client/src/utils/gradRequirements.js`와 동일한 로직의 서버 사본이지만, 어떤 라우트/컨트롤러에서도 import되지 않는다(자체 Jest 테스트에서만 실행됨). 실제 요건 판정은 전부 클라이언트에서 `completedCourses`를 계산해 클라이언트 로직으로만 처리된다 — 서버 왕복이 없다.
-
-> `RecordForm.jsx`(로그인 없는 localStorage 방식으로 대체되어 미사용)와 서버의 `POST/GET /api/records`, `recordController.js`, `recordRoutes.js`는 삭제했다. Supabase의 `user_records` 테이블 자체는 남아있지만 더 이상 어떤 코드에서도 쓰지 않는다.
