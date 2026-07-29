@@ -7,7 +7,7 @@ const statusLabels = {
   speaking: "말하는 중"
 };
 
-export default function ServiceHeader({ status = "waiting" }) {
+export default function ServiceHeader({ status = "waiting", onHome }) {
   return (
     <header className="ai-card">
       <div className="ai-avatar" aria-hidden="true" />
@@ -17,6 +17,11 @@ export default function ServiceHeader({ status = "waiting" }) {
           {statusLabels[status] || status}
         </div>
       </div>
+      {onHome && (
+        <button type="button" className="ai-card__home" onClick={onHome}>
+          처음으로
+        </button>
+      )}
     </header>
   );
 }

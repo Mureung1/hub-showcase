@@ -65,7 +65,7 @@ export default function App() {
 
       {appView === "conversation" && (
       <section className="conversation-column" aria-label="카메라를 사용하는 대화">
-        <ServiceHeader status={aiStatus} />
+        <ServiceHeader status={aiStatus} onHome={() => setAppView("access")} />
         <div className="column-heading">
           <span>PRIVATE CONVERSATION</span>
           <h2>지금의 마음을 이야기해 주세요</h2>
@@ -93,7 +93,7 @@ export default function App() {
 
       {appView === "result" && (
       <aside className="signals-column">
-        <ServiceHeader status={aiStatus} />
+        <ServiceHeader status={aiStatus} onHome={() => setAppView("access")} />
         <AnalysisStatus status={analysisStatus} error={analysisError} />
         <EmotionResult
           result={emotionResult}

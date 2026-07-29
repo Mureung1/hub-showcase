@@ -170,6 +170,23 @@ body {
   letter-spacing: 0.03em;
 }
 
+.ai-card__home {
+  margin-left: 3px;
+  padding: 6px 9px;
+  border: 1px solid rgba(91, 99, 216, 0.2);
+  border-radius: 999px;
+  background: rgba(91, 99, 216, 0.06);
+  color: var(--emotion-primary);
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.ai-card__home:hover {
+  border-color: rgba(91, 99, 216, 0.4);
+  background: rgba(91, 99, 216, 0.11);
+}
+
 .guest-access {
   z-index: 1;
   display: flex;

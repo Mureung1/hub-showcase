@@ -73,12 +73,20 @@ describe("App view flow", () => {
 
     expect(screen.getByLabelText("카메라를 사용하는 대화")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "감정 신호 참고값" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "처음으로" }));
+    expect(screen.getByRole("heading", { name: "대화를 시작할까요?" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "익명으로 시작" }));
 
     fireEvent.click(screen.getByRole("button", { name: "감정 신호 보기" }));
 
     expect(screen.getByRole("heading", { name: "감정 신호 참고값" })).toBeInTheDocument();
     expect(screen.queryByLabelText("카메라를 사용하는 대화")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "처음으로" }));
+    expect(screen.getByRole("heading", { name: "대화를 시작할까요?" })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "익명으로 시작" }));
+    fireEvent.click(screen.getByRole("button", { name: "감정 신호 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "다시 대화하기" }));
     expect(screen.getByLabelText("카메라를 사용하는 대화")).toBeInTheDocument();
   });
