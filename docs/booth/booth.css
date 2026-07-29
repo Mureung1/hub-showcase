@@ -7,11 +7,38 @@
  *
  * 단위는 전부 mm — 인쇄 좌표를 손으로 잡아야 A3에서 여백이 안 뜬다.
  *
- * ⚠️ 폰트에서 Pretendard를 뺐다. 이 PC에 설치된 Pretendard가 가변 폰트라
- *    Chrome이 PDF로 뽑을 때 서브셋 임베드를 못 하고 Type3(글리프를 그림으로 그리는 방식)로
- *    떨어졌고, 그게 뷰어에서 깨져 보이는 원인이었다. 맑은 고딕은 정적 TrueType이라
- *    정상적으로 FontFile2 서브셋으로 임베드된다.
+ * ⚠️ 폰트를 시스템에 기대지 않고 woff2를 직접 들고 있다. 이유:
+ *    PC에 설치된 Pretendard는 .otf(CFF 아웃라인)라 Chrome이 PDF로 뽑을 때 서브셋 임베드를
+ *    못 하고 Type3(글자를 그림으로 그리는 방식)로 떨어뜨렸다 — 그게 뷰어에서 깨져 보인 원인.
+ *    fonts/ 의 woff2는 Pretendard의 TrueType(glyf) 빌드라 FontFile2로 정상 임베드된다.
+ *    (`npm pack pretendard` → dist/web/static/woff2-subset, OFL-1.1)
+ *    이렇게 두면 다른 PC에서 열어도 인쇄물이 똑같이 나온다.
  */
+
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: block;
+}
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-ExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-display: block;
+}
 
 @page {
   size: A3 portrait;
@@ -37,7 +64,7 @@
   --up-text: #2f9464;
   --up-bg: #e8f7f0;
 
-  --font: "맑은 고딕", "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+  --font: "PretendardBooth", "맑은 고딕", "Malgun Gothic", "Segoe UI", sans-serif;
   --mono: "Consolas", "D2Coding", "Courier New", monospace;
 }
 
