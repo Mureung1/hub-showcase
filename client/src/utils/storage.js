@@ -1,4 +1,5 @@
 const CURRENT_MEMBER_KEY = 'teamplan_currentMemberId';
+const CURRENT_TEAM_KEY = 'teamplan_currentTeamId';
 const NOTIFIED_KEY_PREFIX = 'teamplan_notified_';
 
 // 일부 브라우저는 file:// 페이지에서 localStorage 접근을 막고 예외를 던지기도 해서,
@@ -14,6 +15,22 @@ export function safeGetStoredMemberId() {
 export function safeSetStoredMemberId(id) {
   try {
     localStorage.setItem(CURRENT_MEMBER_KEY, String(id));
+  } catch (e) {
+    // 저장 실패해도 화면 동작에는 지장 없음 (새로고침 유지만 안 될 뿐)
+  }
+}
+
+export function safeGetStoredTeamId() {
+  try {
+    return Number(localStorage.getItem(CURRENT_TEAM_KEY));
+  } catch (e) {
+    return NaN;
+  }
+}
+
+export function safeSetStoredTeamId(id) {
+  try {
+    localStorage.setItem(CURRENT_TEAM_KEY, String(id));
   } catch (e) {
     // 저장 실패해도 화면 동작에는 지장 없음 (새로고침 유지만 안 될 뿐)
   }

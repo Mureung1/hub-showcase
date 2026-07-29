@@ -83,9 +83,12 @@
 - 기한이 지나면 자동 삭제하지 않고 **보관(archive) 상태**로 전환.
 - 실제 삭제는 방장이 직접 삭제 버튼을 눌렀을 때만.
 
-### 초대코드
-- 팀 생성 시 시스템이 고유 코드 자동 생성.
-- 방장은 재발급 가능. **재발급 시 이전 코드는 즉시 무효화.**
+### 초대코드 / 멀티팀 진입
+- 팀 생성 시 시스템이 고유 코드 자동 생성. (원안 — 코드 자동 생성·재발급 로직은 아직 미구현)
+- 방장은 재발급 가능. **재발급 시 이전 코드는 즉시 무효화.** (미구현)
+- **확정·구현(3주차)**: `teams.invite_code` 컬럼 추가 완료(team 1 = `'TEAM01'`으로 수동 테스트 중). 흐름은 "초대코드 입력 → `GET /api/teams/by-code?code=XXXX`로 조회 → 있으면 그 팀 id를 `localStorage`(`teamplan_currentTeamId`)에 저장, `currentMemberId`와 동일한 방식 → 이후 모든 요청에 이 team_id를 실어 보냄"으로 확정.
+  - 서버 쪽 조회 API(`teamModel.getTeamByInviteCode`, `GET /api/teams/by-code`)까지는 구현 완료.
+  - **초대코드를 입력받는 화면 자체는 아직 미구현(예정)** — 지금은 `client/src/App.jsx`의 `currentTeamId`가 `1`로 임시 고정돼 있고, 여러 팀을 넘나드는 것도 아직 안 됨.
 
 ### 팀 나가기 / 삭제
 - 팀원이 나가도 **활동 기록·완료한 태스크는 유지** ("나간 멤버"로 표시).
@@ -97,7 +100,9 @@
 - "초대코드 진입 → 이름 선택 → 4자리 핀" 흐름은 아직 미구현 — 다중 팀(초대코드) 기능이 없어서 뒤로 미뤄짐.
 - 3주차 현재는 헤더 우측 `UserSelect`(아바타+이름 드롭다운) 컴포넌트로 React 전환 완료. 선택한 사람은 `localStorage`(`teamplan_currentMemberId`)에 저장되고, 새로고침해도 그 사람이 실제로 지금 팀원 목록에 있는지 검증한 뒤 유지 — 2주차 `tasks.html`의 이름 선택 로직을 그대로 React state로 옮긴 것.
 
-> **3주차 착수 전 확인**: `server/src/currentTeamId.js`에 팀 id가 `1`로 하드코딩되어 있고, `taskController`·`memberController`·`activityLogController` 4곳이 이 값을 그대로 가져다 쓴다. 다중 팀(초대코드) 기능을 붙일 때 이 4곳을 "현재 사용자가 속한 팀"으로 바꿔야 한다.
+> **3주차에 해결함**: `server/src/currentTeamId.js`에 팀 id가 `1`로 하드코딩되어 여러 컨트롤러가 그대로 가져다 쓰던 문제를 해결하려고 "현재 팀을 요청에서 어떻게 알아낼지"를 먼저 결정 — **team_id를 요청 파라미터로 전달**하는 방식(GET은 쿼리, POST/PATCH/DELETE는 body)으로 통일했다. `availabilityController.js`가 이미 쓰던 방식을 나머지로 넓힌 것이고, 로그인 없이 memberId를 그대로 신뢰하는 것과 같은 철학이다(세션/쿠키는 도입 안 함 — 프론트/백엔드가 배포 시 다른 도메인이 될 수 있어 쿠키 설정 부담을 피함).
+> `taskController`·`memberController`·`activityLogController`는 `CURRENT_TEAM_ID` import를 제거하고 `req.query.team_id`/`req.body.team_id`를 읽도록 바뀌었다(없거나 정수가 아니면 400). `server/src/currentTeamId.js`는 아직 안 지웠고, `teamController.js`의 `getCurrentTeam`만 여전히 이 값을 쓴다 — 초대코드 입장 화면이 붙으면 마지막으로 정리할 곳.
+> client도 `api/tasks.js`·`members.js`·`activityLogs.js`가 전부 teamId를 받아 실어 보내도록 수정 완료(`App.jsx`의 `currentTeamId` state, 지금은 1로 임시 고정). 남은 건 이 값을 진짜 초대코드 입력으로 채우는 화면(위 "초대코드 / 멀티팀 진입" 섹션 참고, 아직 예정).
 
 ### 태스크
 - 담당자는 태스크당 **1명**. 둘이 같이 할 일은 각자 항목을 따로 추가.
@@ -105,6 +110,7 @@
 - 상태 변경(대기·진행·완료)과 **삭제**는 담당자가 있으면 **담당자 본인만** 가능, 담당자 없는 태스크는 아무나 가능.
   - 계획서 원안은 "완료 처리만 담당자 제한"이었으나, 상태 변경 전체(대기·진행·완료)와 삭제까지로 넓혀서 구현함.
   - 로그인이 없으므로 memberId를 매 요청 body/param으로 실어 보내고 서버는 그대로 신뢰 (2주차에 구현 완료)
+  - **멀티팀 대비 IDOR 방지(3주차 확정·구현)**: 상태 변경·삭제·복원·제목·담당자·마감일 수정 6개 API 전부, 요청의 `team_id`와 태스크의 실제 소속 팀이 다르면 **404**로 막고(담당자 검증 403과는 다른, "존재 자체를 숨기는" 응답), 그다음에 담당자 검증(403)을 한다. 순서는 항상 팀 검증(404) → 담당자 검증(403). 다른 팀 소속인 걸 알려주면 안 된다는 OWASP IDOR 가이드를 따른 것.
 - 완료↔미완료 **되돌리기는 허용**하되, 모든 변경을 활동 로그에 기록.
   - 이유: 금지하면 실수 복구 불가. 투명성(기록)으로 조작을 억제하는 게 낫다.
 - 마감일은 목록에서 텍스트를 클릭하면 바로 수정/삭제(지우기)할 수 있다. 계획서 원안엔 없었지만 2주차에 추가로 구현함. 권한 규칙은 상태 변경/삭제와 동일(담당자 본인만, 없으면 누구나).
@@ -320,7 +326,7 @@ teamplan/
 │   │   ├── controllers/       # 요청 처리 로직 (판단)
 │   │   ├── models/            # DB 다루는 코드, pg Pool 기반 (DB)
 │   │   ├── utils/              # permission.js(권한 체크) + permission.test.js
-│   │   ├── currentTeamId.js    # 팀 id 하드코딩(=1), 다중 팀 붙이면 손볼 곳
+│   │   ├── currentTeamId.js    # 팀 id 하드코딩(=1). teamController.getCurrentTeam만 아직 이 값을 씀(나머지 컨트롤러는 req의 team_id로 전환 완료) — 초대코드 화면 붙으면 정리 예정
 │   │   ├── db.js               # pg Pool 생성 (Supabase 연결)
 │   │   ├── init-db.js          # (레거시) SQLite 시절 테이블 생성 스크립트, 지금은 안 씀 — 아래 "서버 실행 순서" 참고
 │   │   ├── app.js              # 서버 시작점
@@ -376,7 +382,7 @@ better-sqlite3 설치 실패 시 대응
 API 주소: 앞에 /api 붙이기
 
 /api/tasks — 태스크. GET(목록) · GET /archived(삭제된 태스크 목록) · POST(추가) · PATCH /:id(상태 변경) · PATCH /:id/due-date(마감일만 수정) · PATCH /:id/title(제목 수정) · PATCH /:id/assignee(담당자 수정) · PATCH /:id/restore(복원) · DELETE /:id(soft delete)
-/api/teams — 팀 (아직 미구현)
+/api/teams — 팀. GET /current(현재 팀, 아직 `currentTeamId.js`의 하드코딩된 team 1 기준) · GET /by-code?code=XXXX(초대코드로 팀 조회, 3주차 신규 — `{id, name}` 반환, 코드 없으면 400/못 찾으면 404)
 /api/members — 팀원 이름 목록 (이름 선택용, 로그인 아님)
 /api/activity-logs — 활동 로그 조회 (태스크 제목·담당자 이름까지 JOIN해서 반환)
 
