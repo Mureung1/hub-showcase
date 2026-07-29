@@ -637,6 +637,11 @@ async function runStep4(jobId) {
     let videoUrl = result.video_path;
     let thumbnailUrl = result.thumbnail_path;
 
+    console.log("[Step 4] Storage 업로드 시작");
+    console.log("[Step 4] 로컬 비디오 경로:", videoUrl);
+    console.log("[Step 4] 로컬 썸네일 경로:", thumbnailUrl);
+
+    // ===== 비디오 업로드 =====
     if (!videoUrl.startsWith("http")) {
       let cleanPath = videoUrl;
       if (cleanPath.startsWith("/")) cleanPath = cleanPath.slice(1);
@@ -644,33 +649,57 @@ async function runStep4(jobId) {
         cleanPath = cleanPath.slice("backend/".length);
 
       const localVideoPath = path.resolve(process.cwd(), cleanPath);
-      const videoFilename = path.basename(localVideoPath);
+      console.log("[Step 4] 절대 경로 (비디오):", localVideoPath);
+      console.log("[Step 4] 파일 존재 여부:", fs.existsSync(localVideoPath));
 
       if (fs.existsSync(localVideoPath)) {
         try {
           const fileBuffer = fs.readFileSync(localVideoPath);
-          const storagePath = `videos/${jobId}_${Date.now()}.mp4`;
+          console.log("[Step 4] 비디오 파일 크기:", fileBuffer.length, "bytes");
+
+          const storagePath = `shorts/${jobId}/video.mp4`;
+          console.log("[Step 4] Supabase Storage 업로드 중:", storagePath);
 
           const { error: uploadError } = await supabase.storage
             .from("uploads")
-            .upload(storagePath, fileBuffer);
+            .upload(storagePath, fileBuffer, {
+              contentType: "video/mp4",
+              upsert: true
+            });
 
-          if (!uploadError) {
-            const {
-              data: { publicUrl },
-            } = supabase.storage.from("uploads").getPublicUrl(storagePath);
-            videoUrl = publicUrl;
-          } else {
-            videoUrl = `/ai-output/${videoFilename}`;
+          if (uploadError) {
+            console.error("[Step 4] Storage 업로드 실패:", uploadError.message);
+            throw new Error(`비디오 업로드 실패: ${uploadError.message}`);
           }
-        } catch {
-          videoUrl = `/ai-output/${videoFilename}`;
+
+          console.log("[✅ Step 4] 비디오 Storage 업로드 성공!");
+
+          // publicUrl 획득
+          const publicUrlData = supabase.storage
+            .from("uploads")
+            .getPublicUrl(storagePath);
+
+          if (!publicUrlData || !publicUrlData.data || !publicUrlData.data.publicUrl) {
+            throw new Error("PublicUrl 획득 실패");
+          }
+
+          videoUrl = publicUrlData.data.publicUrl;
+
+          if (!videoUrl.startsWith("https://")) {
+            throw new Error(`Invalid URL format: ${videoUrl}`);
+          }
+
+          console.log("[✅ Step 4] 비디오 Storage URL (확인):", videoUrl);
+        } catch (videoUploadError) {
+          console.error("[Step 4] 비디오 업로드 중 오류:", videoUploadError.message);
+          throw videoUploadError;
         }
       } else {
-        videoUrl = `/ai-output/${videoFilename}`;
+        throw new Error(`비디오 파일이 존재하지 않음: ${localVideoPath}`);
       }
     }
 
+    // ===== 썸네일 업로드 =====
     if (!thumbnailUrl.startsWith("http")) {
       let cleanPath = thumbnailUrl;
       if (cleanPath.startsWith("/")) cleanPath = cleanPath.slice(1);
@@ -678,43 +707,93 @@ async function runStep4(jobId) {
         cleanPath = cleanPath.slice("backend/".length);
 
       const localThumbnailPath = path.resolve(process.cwd(), cleanPath);
-      const thumbnailFilename = path.basename(localThumbnailPath);
+      console.log("[Step 4] 절대 경로 (썸네일):", localThumbnailPath);
+      console.log("[Step 4] 파일 존재 여부:", fs.existsSync(localThumbnailPath));
 
       if (fs.existsSync(localThumbnailPath)) {
         try {
           const fileBuffer = fs.readFileSync(localThumbnailPath);
-          const storagePath = `thumbnails/${jobId}_${Date.now()}.jpg`;
+          console.log("[Step 4] 썸네일 파일 크기:", fileBuffer.length, "bytes");
+
+          const storagePath = `shorts/${jobId}/thumbnail.jpg`;
+          console.log("[Step 4] Supabase Storage 업로드 중:", storagePath);
 
           const { error: uploadError } = await supabase.storage
             .from("uploads")
-            .upload(storagePath, fileBuffer);
+            .upload(storagePath, fileBuffer, {
+              contentType: "image/jpeg",
+              upsert: true
+            });
 
-          if (!uploadError) {
-            const {
-              data: { publicUrl },
-            } = supabase.storage.from("uploads").getPublicUrl(storagePath);
-            thumbnailUrl = publicUrl;
-          } else {
-            thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+          if (uploadError) {
+            console.error("[Step 4] Storage 업로드 실패:", uploadError.message);
+            throw new Error(`썸네일 업로드 실패: ${uploadError.message}`);
           }
-        } catch {
-          thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+
+          console.log("[✅ Step 4] 썸네일 Storage 업로드 성공!");
+
+          // publicUrl 획득
+          const publicUrlData = supabase.storage
+            .from("uploads")
+            .getPublicUrl(storagePath);
+
+          if (!publicUrlData || !publicUrlData.data || !publicUrlData.data.publicUrl) {
+            throw new Error("PublicUrl 획득 실패");
+          }
+
+          thumbnailUrl = publicUrlData.data.publicUrl;
+
+          if (!thumbnailUrl.startsWith("https://")) {
+            throw new Error(`Invalid URL format: ${thumbnailUrl}`);
+          }
+
+          console.log("[✅ Step 4] 썸네일 Storage URL (확인):", thumbnailUrl);
+        } catch (thumbnailUploadError) {
+          console.error("[Step 4] 썸네일 업로드 중 오류:", thumbnailUploadError.message);
+          throw thumbnailUploadError;
         }
       } else {
-        thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+        throw new Error(`썸네일 파일이 존재하지 않음: ${localThumbnailPath}`);
       }
     }
 
     const duration = Date.now() - startTime;
-    await supabase
+
+    console.log("[Step 4] DB 저장 전 확인:");
+    console.log("  - videoUrl:", videoUrl);
+    console.log("  - thumbnailUrl:", thumbnailUrl);
+    console.log("  - 비디오 URL 유효성:", videoUrl?.startsWith("https://"));
+    console.log("  - 썸네일 URL 유효성:", thumbnailUrl?.startsWith("https://"));
+
+    const { error: updateError } = await supabase
       .from("generation_jobs")
       .update({
+        step4_video_id: jobId,
         step4_video_url: videoUrl,
         step4_thumbnail_url: thumbnailUrl,
         progress: 100,
         current_step: 4,
       })
       .eq("job_id", jobId);
+
+    if (updateError) {
+      throw new Error(`DB 업데이트 실패: ${updateError.message}`);
+    }
+
+    console.log("[✅ Step 4] DB 저장 완료");
+
+    // DB 저장 확인 (검증)
+    const { data: savedJob, error: fetchError } = await supabase
+      .from("generation_jobs")
+      .select("step4_video_url, step4_thumbnail_url")
+      .eq("job_id", jobId)
+      .single();
+
+    if (!fetchError && savedJob) {
+      console.log("[✅ Step 4] DB 저장 확인:");
+      console.log("  - 저장된 videoUrl:", savedJob.step4_video_url);
+      console.log("  - 저장된 thumbnailUrl:", savedJob.step4_thumbnail_url);
+    }
 
     await supabase
       .from("generation_steps")
