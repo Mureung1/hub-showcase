@@ -1455,6 +1455,16 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.queryByRole('status', { name: '인사이트 정보를 저장했어요' })
     ).toBeNull();
+    expect(
+      (
+        screen.getByRole('button', {
+          name: '인사이트 정보 저장하기',
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(false);
+    expect(
+      screen.getByRole('button', { name: '지금은 건너뛰기' })
+    ).not.toBeNull();
     await user.click(
       screen.getByRole('button', { name: '인사이트 정보 저장하기' })
     );
