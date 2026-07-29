@@ -629,7 +629,7 @@ function ReviewWritePage({ place, user, onBack }) {
     if (!draftKey) return "";
     try { return JSON.parse(sessionStorage.getItem(draftKey))?.content || ""; } catch { return ""; }
   });
-  const [, setReceiptFile] = useState(null);
+  const [receiptFile, setReceiptFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(null);
@@ -643,7 +643,8 @@ function ReviewWritePage({ place, user, onBack }) {
     const file = event.target.files?.[0];
     setError(""); setSaved(false);
     if (!file) return;
-    if (!file.type.startsWith("image/")) { setError("영수증은 이미지 파일로 선택해 주세요."); event.target.value = ""; return; }
+    const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+    if (!acceptedTypes.includes(file.type.toLowerCase())) { setError("영수증은 JPG, PNG, WEBP, HEIC 이미지로 선택해 주세요."); event.target.value = ""; return; }
     if (file.size > 10 * 1024 * 1024) { setError("영수증 이미지는 10MB 이하만 사용할 수 있습니다."); event.target.value = ""; return; }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setReceiptFile(file);
@@ -681,11 +682,11 @@ function ReviewWritePage({ place, user, onBack }) {
       <header className="review-write-header"><button onClick={onBack} type="button">← 업체 상세</button><strong>영수증 리뷰 작성</strong><span aria-hidden="true" /></header>
       <form className="review-write-card" onSubmit={saveDraft}>
         <div className="review-write-intro"><Badge>방문 인증</Badge><h1>{place.title}</h1><p>영수증으로 실제 방문을 확인한 뒤 리뷰가 등록됩니다.</p></div>
-        <section className="receipt-step"><div><span className="step-number">1</span><div><h2>영수증 이미지</h2><p>상호명과 결제일이 잘 보이도록 촬영해 주세요.</p></div></div><label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input accept="image/*" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "영수증 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label></section>
+        <section className="receipt-step"><div><span className="step-number">1</span><div><h2>영수증 이미지</h2><p>상호명과 결제일이 잘 보이도록 촬영해 주세요.</p></div></div><label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "영수증 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label><div className={`receipt-readiness is-${receiptFile ? "ready" : "waiting"}`} aria-live="polite"><div><strong>{receiptFile ? "이미지 사전 확인 완료" : "영수증 인증 준비"}</strong><Badge>{receiptFile ? "OCR 연결 대기" : "업로드 필요"}</Badge></div><p>{receiptFile ? `${receiptFile.name} · ${(receiptFile.size / 1024 / 1024).toFixed(1)}MB` : "JPG, PNG, WEBP, HEIC · 최대 10MB"}</p><ul><li className={receiptFile ? "is-complete" : ""}>이미지 형식과 용량 확인</li><li>OCR로 상호명·결제일 추출</li><li>업체 일치·30일 이내·중복 영수증 검증</li></ul>{receiptFile && <small>외부 OCR API가 연결되면 이 단계에서 자동 인증을 시작합니다.</small>}</div></section>
         <section className="review-text-step"><div><span className="step-number">2</span><div><h2>방문 경험</h2><p>메뉴, 서비스, 분위기처럼 직접 경험한 내용을 알려주세요.</p></div></div><label><span className="sr-only">리뷰 내용</span><textarea maxLength="1000" onChange={(event) => { setContent(event.target.value); setSaved(false); }} placeholder="이 장소에서 어떤 경험을 하셨나요?" value={content} /></label><small>{content.length}/1000자 · 최소 10자</small></section>
         {error && <p className="review-form-message is-error" role="alert">{error}</p>}
         {saved && <p className="review-form-message is-saved" role="status">텍스트 분석 완료: <strong>{SENTIMENT_LABELS[saved.bucket]}</strong> ({Math.round(saved.confidence * 100)}%). 테스트 그래프에 반영했습니다.</p>}
-        <div className="review-write-actions"><button onClick={onBack} type="button">{saved ? "그래프 보러 가기" : "취소"}</button><Button disabled={submitting} type="submit">{submitting ? "AI 분석 중..." : "텍스트 테스트 분석"}</Button></div>
+        <div className="review-write-actions"><button onClick={onBack} type="button">{saved ? "그래프 보러 가기" : "취소"}</button><Button disabled={submitting} type="submit">{submitting ? "AI 분석 중..." : "OCR 연결 전 테스트 분석"}</Button></div>
       </form>
     </main>
   );

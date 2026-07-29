@@ -103,9 +103,11 @@ test("로그인 사용자는 별점 없이 영수증 리뷰 작성 화면을 이
   expect(await screen.findByRole("heading", { name: "테스트 카페" })).toBeInTheDocument();
   expect(screen.getByLabelText("리뷰 내용")).toBeInTheDocument();
   expect(screen.queryByLabelText(/별점/)).not.toBeInTheDocument();
+  expect(screen.getByText("영수증 인증 준비")).toBeInTheDocument();
+  expect(screen.getByText("OCR로 상호명·결제일 추출")).toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText("리뷰 내용"), { target: { value: "음식이 정말 맛있고 다음에도 다시 방문하고 싶어요." } });
-  fireEvent.click(screen.getByRole("button", { name: "텍스트 테스트 분석" }));
+  fireEvent.click(screen.getByRole("button", { name: "OCR 연결 전 테스트 분석" }));
   expect(await screen.findByRole("status")).toHaveTextContent("매우 좋음");
 
   global.fetch = originalFetch;

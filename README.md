@@ -83,7 +83,7 @@ flowchart LR
 
 ## 현재 개발 상태
 
-현재 저장소는 Create React App 기반 React 화면, Express API, Supabase Auth/Postgres, Kakao 지도·장소 검색, OpenAI 리뷰 분석이 연결된 MVP입니다. 영수증 OCR과 인증 리뷰의 DB 최종 저장은 다음 구현 범위입니다.
+현재 저장소는 Create React App 기반 React 화면, Express API, Supabase Auth/Postgres, Kakao 지도·장소 검색, OpenAI 리뷰 분석이 연결된 MVP입니다. 영수증 이미지 사전검사, 인증 상태 UI, OCR 결과 검증 규칙, 비공개 Storage 마이그레이션까지 준비했으며 외부 OCR API 호출과 인증 리뷰의 DB 최종 저장은 다음 구현 범위입니다. 자세한 연결 순서는 [영수증 OCR 연결 준비](docs/ocr-integration.md)에서 확인할 수 있습니다.
 
 ## 실행
 
