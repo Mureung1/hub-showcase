@@ -5,10 +5,10 @@
   "githubUser": "seonghazel-c",
   "demoUrl": "https://moang.vercel.app/login",
   "demoVideoUrl": "https://youtu.be/XguVQGk3SzU",
-  "thumbnail": "showcase/screenshots/screen-1.png",
+  "thumbnail": "screenshots/screen-1.png",
   "screenshots": [
-    "showcase/screenshots/screen-1.png",
-    "showcase/screenshots/screen-2.jpg"
+    "screenshots/screen-1.png",
+    "screenshots/screen-2.jpg"
   ],
   "problem": "개인 카페 손님은 종이 쿠폰이나 여러 매장의 스탬프를 따로 관리해야 해서 적립 현황을 놓치기 쉽고, 사장님은 손님 정보를 빠르게 확인해 스탬프를 적립하는 간단한 도구가 필요합니다.",
   "targetUsers": [
