@@ -90,7 +90,7 @@
       - DoD: 조건 바꿔 재추천 동작, 알려진 버그 정리 ✅ 2026-07-28 (코드 추적·E2E로 조건 변경 재추천 정상 동작 재확인, 잔존 버그 없음. filterbar는 plan.md상 표시 전용이 원래 설계)
       - 참고: plan §7 재조회/필터링
 - [x] **[FE] 프론트 배포** (github.io 등) — 프로토타입 데모 포함
-      - DoD: 공개 URL 접속 가능 ✅ `kimsunho2000.github.io/hub/` (`npm run deploy`)
+      - DoD: 공개 URL 접속 가능 ✅ `https://kimsunho2000.github.io/hub/#/` (`npm run deploy`)
 - [x] **[BE] 백엔드 배포** — API 서버 + 환경변수(GitHub 토큰) 설정
       - DoD: 배포된 API로 프론트 연동 성공 ✅ 2026-07-27 Render(`https://firstpr-backend.onrender.com`) 배포, `VITE_API_BASE_URL`로 프론트 연결 후 재배포 완료. `render.yaml` buildCommand에 `npm test` 게이트 추가
 - [x] **[공통] architecture.md 최종 확정** — 폴더구조/API/DB/배포/데이터흐름 기록
