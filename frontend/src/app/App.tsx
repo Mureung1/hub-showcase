@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import InterestSelect from '../features/onboarding/InterestSelect'
 import ContentLoadingScreen from '../shared/ui/ContentLoadingScreen/ContentLoadingScreen'
+import ErrorAlertModal from '../shared/ui/ErrorAlertModal/ErrorAlertModal'
 import { api } from '../api/client'
 import { ensureAnonymousSession } from '../auth/supabase'
 import type { Interest } from '../api/types'
@@ -14,6 +15,7 @@ type AppState =
 
 function App() {
   const [appState, setAppState] = useState<AppState>({ status: 'loading' })
+  const [initializationAttempt, setInitializationAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -41,14 +43,19 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [initializationAttempt])
+
+  function retryInitialization() {
+    setAppState({ status: 'loading' })
+    setInitializationAttempt((attempt) => attempt + 1)
+  }
 
   if (appState.status === 'loading') {
     return <ContentLoadingScreen message="깸을 준비하고 있어요" description="잠시만요, 곧 준비돼요" />
   }
 
   if (appState.status === 'error') {
-    return <p role="alert">불러오지 못했어요. 새로고침해 주세요.</p>
+    return <ErrorAlertModal onRetry={retryInitialization} />
   }
 
   if (appState.status === 'onboarding') {

@@ -34,6 +34,8 @@ vi.mock('../api/client', () => {
 })
 
 import { api } from '../api/client'
+import { ensureAnonymousSession } from '../auth/supabase'
+import type { Session } from '@supabase/supabase-js'
 
 const ARTICLE_A: TodayArticle = {
   id: '40000000-0000-0000-0000-000000000001',
@@ -98,10 +100,28 @@ const ARTICLE_A_DETAIL: ArticleDetail = {
   ],
 }
 
+const SESSION: Session = {
+  access_token: 'token',
+  refresh_token: 'refresh-token',
+  expires_in: 3600,
+  token_type: 'bearer',
+  user: {
+    id: 'user-1',
+    aud: 'authenticated',
+    role: 'authenticated',
+    app_metadata: {},
+    user_metadata: {},
+    created_at: '2026-07-29T00:00:00Z',
+    is_anonymous: true,
+  },
+}
+
 describe('App startup', () => {
   beforeEach(() => {
     vi.mocked(api.getUserInterests).mockReset()
     vi.mocked(api.getInterests).mockReset()
+    vi.mocked(ensureAnonymousSession).mockReset()
+    vi.mocked(ensureAnonymousSession).mockResolvedValue(SESSION)
   })
 
   it('shows the common loading screen while initializing', async () => {
@@ -147,11 +167,45 @@ describe('App startup', () => {
     expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
   })
 
-  it('shows an error without infinite loading when initialization fails', async () => {
+  it('shows the project error alert when initialization fails', async () => {
     vi.mocked(api.getUserInterests).mockRejectedValue(new Error('boom'))
+
     render(<App />)
-    expect(await screen.findByRole('alert')).toBeInTheDocument()
+
+    expect(
+      await screen.findByRole('alertdialog', { name: '잠시 문제가 생겼어요' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('retries anonymous sign-in and initial API requests without reloading the page', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.getUserInterests)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({
+        hasCompletedOnboarding: false,
+        interests: [],
+      })
+    vi.mocked(api.getInterests).mockResolvedValue([
+      {
+        id: 'interest-1',
+        name: 'IT·개발',
+        displayOrder: 1,
+        launchStatus: 'active',
+        riskLevel: 'low',
+        emptyStateMessage: null,
+      },
+    ])
+
+    render(<App />)
+    await user.click(
+      await screen.findByRole('button', { name: '다시 시도' }),
+    )
+
+    expect(await screen.findByRole('button', { name: 'IT·개발' })).toBeInTheDocument()
+    expect(ensureAnonymousSession).toHaveBeenCalledTimes(2)
+    expect(api.getUserInterests).toHaveBeenCalledTimes(2)
   })
 })
 
