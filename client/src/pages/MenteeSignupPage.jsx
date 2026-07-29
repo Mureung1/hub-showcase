@@ -187,7 +187,7 @@ function MenteeSignupPage() {
                     className="field"
                     type="text"
                     inputMode="numeric"
-                    placeholder="인증 코드 6자리"
+                    placeholder="인증 코드 8자리"
                     value={verificationCode}
                     onChange={(event) => setVerificationCode(event.target.value)}
                   />
