@@ -75,28 +75,6 @@ export default function App() {
           flexDirection: 'column',
         }}
       >
-        {/* Status Bar */}
-        <div
-          style={{
-            height: 50,
-            background: 'var(--background)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingLeft: 28,
-            paddingRight: 24,
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--foreground)' }}>9:41</span>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <div style={{ width: 18, height: 12, border: '1.5px solid var(--foreground)', borderRadius: 3, position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 2, left: 2, right: 3, bottom: 2, background: 'var(--foreground)', borderRadius: 1 }} />
-              <div style={{ position: 'absolute', top: 3, right: -4, width: 2, height: 6, background: 'var(--foreground)', borderRadius: 1 }} />
-            </div>
-          </div>
-        </div>
-
         {/* Screen Content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} className="no-scrollbar">
           {checkingSession ? (
