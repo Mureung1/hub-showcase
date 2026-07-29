@@ -1,6 +1,15 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { CLASSIFICATION_PROMPT_PREFIX, emptyBuckets, bucketsFromClassifications } from './prompt.js';
+import { buildCodeQuestionPrompt } from './questionPrompt.js';
 import { GEMINI_MODEL } from '../../config.js';
+
+const CODE_QUESTION_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    question: { type: Type.STRING },
+  },
+  required: ['question'],
+};
 
 const GEMINI_RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -46,5 +55,25 @@ export async function classify(names) {
   } catch (error) {
     console.error('[geminiProvider] classify 실패:', error.message);
     return emptyBuckets();
+  }
+}
+
+export async function generateCodeQuestion({ file_path, score_reason, chunk }) {
+  try {
+    const client = getClient();
+    const response = await client.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: buildCodeQuestionPrompt({ file_path, score_reason, chunk }),
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: CODE_QUESTION_RESPONSE_SCHEMA,
+      },
+    });
+
+    const parsed = JSON.parse(response.text);
+    return parsed.question ? { question: parsed.question } : null;
+  } catch (error) {
+    console.error('[geminiProvider] generateCodeQuestion 실패:', error.message);
+    return null;
   }
 }
