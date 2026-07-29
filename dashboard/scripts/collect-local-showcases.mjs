@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { validateShowcase } from './validate-showcase.mjs';
 
 const IMAGE_PATTERN = /\.(webp|png|jpg|jpeg)$/i;
+const GIT_FILE_MAX_BUFFER = 10 * 1024 * 1024;
 
 export function safeBranchName(branch) {
   if (
@@ -344,6 +345,7 @@ export function readGitBranchFile(repoDir, branch, filePath) {
       return execFileSync('git', ['-C', repoDir, 'show', `${ref}:${filePath}`], {
         encoding: 'buffer',
         stdio: ['ignore', 'pipe', 'ignore'],
+        maxBuffer: GIT_FILE_MAX_BUFFER,
       });
     } catch {
       // 다음 참조 형식으로 다시 시도합니다.

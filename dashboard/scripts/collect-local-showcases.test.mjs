@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { collectLocalShowcases, safeBranchName } from './collect-local-showcases.mjs';
+import {
+  collectLocalShowcases,
+  readGitBranchFile,
+  safeBranchName,
+} from './collect-local-showcases.mjs';
 
 const showcase = {
   schemaVersion: 1,
@@ -30,6 +35,33 @@ const showcase = {
 
 test('한글이 포함된 학생 브랜치 이름을 허용한다', () => {
   assert.equal(safeBranchName('N001_강민구'), 'N001_강민구');
+});
+
+test('1MB가 넘는 브랜치 이미지를 읽는다', async (context) => {
+  const repoDir = await mkdtemp(path.join(os.tmpdir(), 'showcase-large-image-'));
+  context.after(() => rm(repoDir, { recursive: true, force: true }));
+
+  const image = Buffer.alloc(2 * 1024 * 1024, 1);
+  await mkdir(path.join(repoDir, 'showcase'));
+  await writeFile(path.join(repoDir, 'showcase/thumbnail.png'), image);
+
+  execFileSync('git', ['-C', repoDir, 'init', '--quiet']);
+  execFileSync('git', ['-C', repoDir, 'add', 'showcase/thumbnail.png']);
+  execFileSync('git', [
+    '-C',
+    repoDir,
+    '-c',
+    'user.name=Showcase Test',
+    '-c',
+    'user.email=showcase@example.com',
+    'commit',
+    '--quiet',
+    '-m',
+    '시험 이미지 추가',
+  ]);
+
+  const result = readGitBranchFile(repoDir, 'HEAD', 'showcase/thumbnail.png');
+  assert.equal(result?.length, image.length);
 });
 
 test('유효한 브랜치의 JSON과 이미지만 공개 자료로 만든다', async (context) => {
