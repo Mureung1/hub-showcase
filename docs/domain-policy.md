@@ -309,6 +309,18 @@ recheck_requested
 → reanswered
 ```
 
+재검토 호출이 실패하면 상태를 되돌리지 않고 `recheck_requested`를 유지한다. 이 상태에서 사용자는 네 가지 중 하나를 선택할 수 있다 (SPEC-AI-002 결정 10·11).
+
+```text
+recheck_requested
+├── 다시 시도 → recheck_requested 유지
+├── 기존 AI 내용 채택 → passed
+├── 사용자 채택 내용 직접 입력 → passed
+└── 제외 → rejected
+```
+
+`recheck_requested`에서 채택·제외로 빠져나간 경우에는 재검토 결과를 본 적이 없으므로 `resolution_reason`에 `_after_recheck` 접미사를 붙이지 않는다.
+
 재검토 결과 확인 후:
 
 ```text
@@ -326,10 +338,12 @@ reanswered
 
 Agenda별 재검토는 최대 1회만 허용한다.
 
-- 프론트엔드는 `conflicted` 상태에서만 재검토 버튼을 표시한다.
-- Express Service는 현재 상태가 `conflicted`일 때만 재검토 요청을 허용한다.
-- `recheck_requested`, `reanswered`, `passed`, `rejected` 상태에서는 추가 재검토를 거절한다.
-- 중복 재검토 요청은 `409 Conflict`로 처리할 수 있다.
+**1회 제한은 사용자의 요청 횟수가 아니라 성공한 재검토 횟수로 센다** (SPEC-AI-002 결정 10).
+
+- 프론트엔드는 `conflicted` 상태에서 재검토 버튼을, `recheck_requested` 상태에서 [다시 시도] 버튼을 표시한다.
+- Express Service는 `conflicted`에서 새 재검토 요청을, `recheck_requested`에서 실패한 호출의 재시도를 허용한다.
+- **성공한 재검토가 한 번 끝난 뒤**(`reanswered`) 또는 최종 상태(`passed`·`rejected`)에서는 재검토를 거절한다.
+- 거절은 `409 Conflict`로 처리할 수 있다.
 
 ### 4.4 Resolution Reason
 
@@ -338,6 +352,7 @@ Agenda 상태는 한 축으로 유지하되, 최종 상태가 된 이유를 `res
 | 값 | 의미 |
 |---|---|
 | `auto_consensus` | Manager AI가 Consensus로 판단하여 자동 Passed 처리 |
+| `auto_single_source` | 하나의 Provider만 언급한 쟁점이라 비교 없이 자동 Passed 처리. **합의가 아니므로 `auto_consensus`를 쓰지 않는다** |
 | `user_accepted` | Conflict 상태에서 사용자가 채택 |
 | `user_accepted_after_recheck` | 재검토 결과 또는 기존 AI 내용을 사용자가 채택 |
 | `user_composed` | Conflict 상태에서 사용자가 채택 내용을 직접 입력 |
@@ -428,7 +443,7 @@ generation_mode = single_source_fallback
 
 두 개 이상의 Provider가 성공한 경우에는 `multi_source`로 생성한다. `single_source_fallback`은 정확히 하나의 Provider만 성공한 경우에만 사용한다.
 
-단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason`은 Manager AI Spec에서 구체화한다.
+단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason`은 **SPEC-AI-002에서 확정되었다**: 각 Section을 그대로 Agenda로 만들고 `resolution_reason = auto_single_source`로 자동 통과시킨다. 합의한 적이 없으므로 `auto_consensus`를 쓰지 않으며, 화면에서도 '합의'·'Consensus' 표현을 쓰지 않는다.
 
 ### 5.4 재생성 금지
 

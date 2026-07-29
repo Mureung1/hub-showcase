@@ -1030,7 +1030,18 @@ const isGrounded = (quote: string, sections: Section[]) =>
 
 이유: 단계 6이 병렬이라 쟁점마다 완료 시점이 다르다. 목록을 먼저 확정해두면 **중간에 서버가 죽어도 쟁점 자체는 남고**, SSE로 보낸 것과 DB 상태가 어긋나지 않는다. `draft`는 `domain-policy` §4.1의 정상 상태다.
 
-**Question 상태 전이**: 모든 Agenda 저장이 끝난 뒤 `conflict`가 하나 이상이면 서버가 Question을 `review_required`로 전이한다. 전부 `passed`면 그대로 둔다 — FinalAnswer·DecisionNote는 아직 브라우저 Mock이므로 `completed` 전이는 web이 기존 `PATCH` 엔드포인트(SPEC-DB-001 §5)로 수행한다.
+**Question 상태 전이**
+
+```text
+conflict 쟁점 >= 1  -> review_required (사용자 판단 대기)
+conflict 쟁점 = 0   -> review_required를 거치지 않는다 (판단할 것이 없다)
+```
+
+**충돌 0건 경로를 반드시 뚫어놓아야 한다.** 모든 쟁점이 `auto_consensus`·`auto_single_source`로 자동 통과하면 사용자가 누를 것이 없고, 따라서 **사용자 행동이 FinalAnswer 생성의 트리거가 될 수 없다.** 이 경로가 없으면 Question이 `review_required`에 갇혀 영원히 완료되지 않는다.
+
+이 경로는 예외가 아니라 정상이며 오히려 바람직한 결과다 — 3사가 완전히 일치했다는 뜻이기 때문이다. 성공 SourceAnswer가 1개일 때(§3.4)도 항상 이 경로를 탄다.
+
+FinalAnswer·DecisionNote는 아직 브라우저 Mock이므로 이번 범위에서 `completed` 전이는 web이 기존 `PATCH` 엔드포인트(SPEC-DB-001 §5)로 수행한다. **web은 Agenda 집합이 갱신될 때마다 "전부 `passed`/`rejected`인가"를 확인해 트리거해야 하며, 사용자 행동에만 매달아서는 안 된다.** (T-019.1 브라우저 회귀에서 실제로 발견된 결함이다.)
 
 ### 12.2 SSE 이어붙이기
 
@@ -1102,6 +1113,14 @@ PATCH /api/chats/:chatId/questions/:questionId/agendas/:agendaId
 ### 12.5 web 재배선
 
 - `buildMockAgendas`·Mock Agenda 템플릿 제거. 서버 Agenda를 소비한다
+- **자동 통과 Agenda를 "사용자 판단" 그룹에 넣지 않는다.** 완료 뷰의 분류와 DecisionNote bullet 표기는 `resolutionReason`을 기준으로 나눈다.
+
+  | `resolutionReason` | 분류 | bullet 표기 |
+  |---|---|---|
+  | `auto_consensus` · `auto_single_source` | 자동 통과 | "내 결정 반영" 등 사용자 판단을 뜻하는 문구 금지 |
+  | `user_accepted*` · `user_composed*` · `user_rejected*` | 사용자 판단 | 사용자 판단 문구 사용 |
+
+  DecisionNote는 이 제품의 핵심 산출물이고 "왜 이렇게 결정했는지"를 남기는 것이 목적이다. 사용자가 판단한 적 없는 항목에 "내 결정 반영"이라고 적으면 **노트가 사실과 달라진다.** 표현 정교화가 아니라 정확성 문제로 다룬다.
 - **UI 전용 파생 타입을 계약으로 대체한다** — `features/chat/types.ts`의 `AgendaStance`·`AgendaSourceRef`를 제거하고 shared의 `AgendaStanceSchema`·`SourceRefSchema`를 import한다. `Agenda = AgendaEntity & { stances }` 교차 타입도 계약이 `stances`를 갖게 되므로 불필요해진다. 두 타입에 달린 "SPEC-AI-002에서 승격 예정" 주석도 함께 지운다
 - `useChatWorkspace.ts`의 Mock 경로 정리 — `stances[0]?.text`를 `selectedContent`로 쓰던 곳(301행 부근)은 서버가 채우므로 제거한다
 - SSE 파서 수정 — `apps/web/src/lib/apiClient.ts`의 `parsed.data.type === "done"` 판정(267행 부근)을 §12.2의 종료 규칙으로 교체한다
@@ -1410,4 +1429,5 @@ Manager 프롬프트에 들어가는 **신뢰할 수 없는 입력은 세 가지
 | 일자 | 내용 |
 |---|---|
 | 2026-07-29 | 최초 작성. 설계안(`SPEC-AI-002-manager-design.md`)을 기준 문서와 대조 검토해 11건 확정(1장 표). Pivot 방식 + 2-pass, 5유형 분류 + 코드 매핑, `quote` 배열 grounding, 쟁점 상한 제거, `kind` 저장, SSE 이벤트 개명(`source_answer.done`), 저장·SSE 배선(12장)·보안(16장)·품질 지표(14.2) 신설 |
+| 2026-07-29 | **T-019.1 구현 회귀 반영.** ① 충돌 0건 Question이 `review_required`에 갇히는 결함을 §12.1에 명시하고, web 트리거 조건을 "Agenda 집합이 갱신될 때마다 전부 passed/rejected 확인"으로 고정 ② 자동 통과 Agenda를 '사용자 판단' 그룹·노트 bullet에서 분리하는 규칙을 §12.5에 추가 |
 | 2026-07-29 | **실물 코드·마이그레이션 대조 검토 반영.** ① `stances`·`AgendaSourceRef`가 계약에 없고 web UI 전용 타입이었음을 확인 → 13.1을 "변경"에서 "승격·신설"로 정정 ② `agendas_selected_source_ref_ck` 원문을 확인해 고칠 두 지점(`auto_consensus` 제거 / `auto_single_source` 명시 추가)을 13.2에 인용 ③ `title`·`summary`가 `NOT NULL`이고 Manager가 주지 않는 경로가 있어 §7.4 신설 ④ 정렬 필드 부재로 표시 순서가 흔들리는 문제 → `display_order` 제안(§7.5) ⑤ web 타입 정리·SSE 파서 위치·`agendas` 모듈 신설을 12.5에 명시 |
