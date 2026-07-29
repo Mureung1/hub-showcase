@@ -263,13 +263,16 @@ router.get('/', async (req, res) => {
     }
   }
 
+  // 대표자의 계정이 이미 삭제된(고아) 요청은 후보 목록에서 제외
+  const validRooms = rooms.filter((room) => profileById[room.user_id])
+
   if (!me) {
-    return res.json(rooms.map(withExtras))
+    return res.json(validRooms.map(withExtras))
   }
 
   const myGenderInfo = { gender: genderById[me.user_id] ?? 'unknown', genderOnly: me.gender_only }
 
-  const filteredRooms = rooms.filter((room) => {
+  const filteredRooms = validRooms.filter((room) => {
     const candidateGenderInfo = { gender: genderById[room.user_id] ?? 'unknown', genderOnly: room.gender_only }
     return passesGenderFilter(myGenderInfo, candidateGenderInfo)
   })
