@@ -4,6 +4,7 @@
   "summary": "내 조건에 맞는 대외활동·공모전·장학만 골라주고, 문장으로 물어보면 AI가 딱 맞는 걸 추천하는 서비스입니다.",
   "githubUser": "jaeho9338-code(이재호)",
   "demoUrl": "https://activity-curation.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/1atgNhEZ5tp2yyPSmaPisHUA-wvPANZBR/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/ai-recommend.webp",
