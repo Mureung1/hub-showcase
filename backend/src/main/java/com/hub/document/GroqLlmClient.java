@@ -42,6 +42,7 @@ public class GroqLlmClient implements LlmClient {
         Map<String, Object> body = Map.of(
                 "model", props.model(),
                 "max_tokens", props.maxTokens(),
+                "temperature", 0.3,   // 기본값 1.0 은 한글 생성 중 한자·가나 이탈이 잦아 낮춤
                 "messages", List.of(Map.of("role", "user", "content", prompt)));
 
         long startedAt = System.currentTimeMillis();
