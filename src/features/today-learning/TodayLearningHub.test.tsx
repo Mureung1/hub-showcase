@@ -24,6 +24,8 @@ describe('TodayLearningHub', () => {
     expect(markup).toContain('현재 단계')
     expect(markup).toContain('최근 학습')
     expect(markup).toContain('다음 학습')
+    expect(markup).not.toContain('레벨 이어하기')
+    expect(markup.match(/>이어하기<\/a>/g)?.length).toBeGreaterThanOrEqual(2)
     expect(markup).toContain('href="/curriculum/history"')
     expect(markup).toContain('Step 0 /')
     expect(markup).not.toContain('calendar-title')

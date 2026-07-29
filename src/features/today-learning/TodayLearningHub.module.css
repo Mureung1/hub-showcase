@@ -646,13 +646,18 @@
 }
 
 .trackIcon[data-track='git-lab'] {
-  background: #eef2ff;
-  color: #003b8f;
+  background: #fff0ec;
+  color: #f05032;
+}
+
+.trackIcon[data-track='react-practice'] {
+  background: #e9faff;
+  color: #149eca;
 }
 
 .trackIcon[data-track='docker-practice'] {
-  background: #f8fafc;
-  color: #667085;
+  background: #eaf4ff;
+  color: #2496ed;
 }
 
 .trackTableStatus {
@@ -663,6 +668,7 @@
   color: #0057d9;
   font-size: 11px;
   font-weight: 950;
+  white-space: nowrap;
 }
 
 .trackTableStatus[data-status='completed'] {
@@ -1851,15 +1857,15 @@
 
 .trackTableHeader,
 .trackTableRow {
-  min-width: 500px;
+  min-width: 560px;
   grid-template-columns:
-    minmax(112px, 1.35fr)
-    minmax(70px, 0.8fr)
-    minmax(78px, 0.8fr)
-    minmax(54px, 0.6fr)
-    minmax(82px, 1fr)
-    52px;
-  gap: 8px;
+    minmax(120px, 1.35fr)
+    minmax(84px, 0.75fr)
+    minmax(92px, 0.85fr)
+    minmax(64px, 0.65fr)
+    minmax(76px, 0.85fr)
+    62px;
+  gap: 10px;
   padding-right: 4px;
   padding-left: 4px;
 }
@@ -1897,9 +1903,9 @@
 
 .trackProgressCell {
   display: grid;
-  grid-template-columns: auto minmax(48px, 1fr);
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: 5px;
 }
 
 .trackProgressCell strong {

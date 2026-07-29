@@ -290,7 +290,7 @@ export function TodayLearningHub() {
         stepLabel: `Step ${Math.min(gitLabProgress.clearedCount + 1, gitLabProgress.totalCount)} / ${gitLabProgress.totalCount}`,
         recentLearningLabel:
           gitLabProgress.clearedCount > 0 ? `${gitLabProgress.clearedCount}개 완료` : '—',
-        nextLearningLabel: '레벨 이어하기',
+        nextLearningLabel: '이어하기',
         actionHref: '/git-lab',
       },
       {
@@ -299,7 +299,7 @@ export function TodayLearningHub() {
         percent: completionPercent,
         stepLabel: `Step ${stepPosition} / ${stepTotal}`,
         recentLearningLabel: '오늘',
-        nextLearningLabel: previewActiveMission.stepLabel,
+        nextLearningLabel: '이어하기',
         actionHref: createWorkspaceMissionHref(activeMissionId),
       },
       {
@@ -318,7 +318,6 @@ export function TodayLearningHub() {
       gitLabProgress.clearedCount,
       gitLabProgress.percent,
       gitLabProgress.totalCount,
-      previewActiveMission.stepLabel,
       stepPosition,
       stepTotal,
     ],
