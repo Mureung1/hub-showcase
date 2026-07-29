@@ -2,7 +2,27 @@
 
 피트니스 입문자와 골목 헬스장(소상공인)을 잇는 스마트 피트니스 플랫폼입니다.
 
-> 프로젝트 기획·소개는 [루트 README](../README.md)를 참고하세요.
+## 현재 진행도 (2026-07)
+
+회원 경로(MVP)는 **백엔드 ↔ 프론트 연동 완료**, 트레이너 모드는 **로컬 Mock** 단계입니다.
+
+| 영역 | 상태 | 요약 |
+|------|------|------|
+| **Backend API** | ✅ MVP | 강좌·헬스장·상담(PII)·식단(AI)·매칭 점수 — [backend/docs/README.md](../backend/docs/README.md) |
+| **Frontend 회원 `/user`** | ✅ | Auth, 홈·강좌·지도·상담·식단 API 연동 — [frontend-web/README.md](../frontend-web/README.md) |
+| **Frontend 트레이너 `/trainer`** | 🟡 Mock | localStorage 기반, 백엔드 미연동 |
+| **Mobile App** | 🟡 WebView | frontend-web 래퍼 — [mobile-app/README.md](../mobile-app/README.md) |
+
+**범례:** ✅ 동작 · 🟡 부분/Mock · ❌ 미구현
+
+### 배포
+
+| 서비스 | 플랫폼 | URL |
+|--------|--------|-----|
+| **웹 (frontend-web)** | Vercel | https://hub-tan-pi.vercel.app |
+| **API (backend)** | Render | https://fitcheck-server-wvj4.onrender.com |
+
+---
 
 ## 프로젝트 구조
 
@@ -168,7 +188,16 @@ npm install
 npm start
 ```
 
-`EXPO_PUBLIC_WEB_APP_URL`을 frontend-web 주소로 맞춥니다 (실기기는 LAN IP).
+`EXPO_PUBLIC_WEB_APP_URL`을 frontend-web 주소로 맞춥니다 (실기기는 LAN IP, 배포본은 Vercel URL).
+
+### 4. 프로덕션 (배포)
+
+| 서비스 | 플랫폼 | 비고 |
+|--------|--------|------|
+| frontend-web | **Vercel** | SPA 라우팅 — `frontend-web/vercel.json` |
+| backend | **Render** | https://fitcheck-server-wvj4.onrender.com |
+
+Vercel 환경 변수: `VITE_API_BASE_URL=https://fitcheck-server-wvj4.onrender.com`, `VITE_SUPABASE_*`, `VITE_SITE_URL`, `VITE_NAVER_MAP_CLIENT_ID`
 
 ## 요구 사항
 
