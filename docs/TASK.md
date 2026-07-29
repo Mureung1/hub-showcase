@@ -15,7 +15,7 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
 ### Day 1 (7/13 월) — P0: vertical slice 착수 (mock FE + Supabase/DB 세팅)
 - [ ] **FE** `SearchPage`를 mock 데이터(하드코딩 배열)로 먼저 구현 — 검색창 state + 결과 리스트 렌더링까지 화면 흐름만 우선 확인 (아직 API 연결 없음)
 - [ ] **FE** `react-router-dom` 라우팅 스켈레톤: `/`, `/search`, `/result`, `/rules`, `/bulky`, `/confirm`, `/points` — `/search` 외 나머지는 여전히 빈 스텁
-- [ ] **FE** 공통 레이아웃/네비게이션 컴포넌트 (`.claude/skills/ecobot-design-system/SKILL.md` 디자인 시스템 토큰 사용)
+- [ ] **FE** 공통 레이아웃/네비게이션 컴포넌트 (`.claude/skills/confisort-design-system/SKILL.md` 디자인 시스템 토큰 사용)
 - [ ] **BE** Supabase 프로젝트 생성 (무료 티어) → Postgres 연결 문자열 발급
 - [ ] **BE** Prisma 초기화 (`prisma init`), `backend/.env`의 `DATABASE_URL`을 Supabase Postgres 연결 문자열로 설정 후 연결 확인 (ORM은 Prisma 유지, DB 호스팅만 Supabase — `@prisma/client`를 dependencies에 추가 필요)
 - [ ] **BE** `schema.prisma`에 `Item`(표준 품목) 모델 하나만 우선 정의 — vertical slice 범위를 한 테이블로 제한, `DisposalRule`/`RegionRule`은 각 기능이 필요해질 때 추가

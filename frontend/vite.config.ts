@@ -12,7 +12,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: {
         name: 'AI 분리배출 도우미',
-        short_name: 'EcoBot',
+        short_name: 'confiSort',
         theme_color: '#279160',
         background_color: '#f3f6f2',
         display: 'standalone',

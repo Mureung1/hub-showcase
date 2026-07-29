@@ -55,7 +55,7 @@
       },
       {
         "type": "skill",
-        "name": "ecobot-design-system Skill",
+        "name": "confisort-design-system Skill",
         "purpose": "컬러 토큰·타이포그래피·간격 등 디자인 시스템 규칙을 참고해 새 화면이 기존 프로토타입과 시각적으로 일치하도록 만듭니다."
       }
     ],

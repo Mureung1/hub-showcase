@@ -50,7 +50,7 @@ PR 타이틀/본문 규칙은 `.github/pull_request_template.md`를 따른다 (`
 - 화면 단위 컴포넌트는 `pages/`, 여러 화면에서 쓰는 UI는 `components/`, 도메인 로직(인식/지역/대형폐기물/포인트)은 `features/<도메인>/`에 둔다.
 - 컴포넌트는 `export default function ComponentName() {}` 형태의 named function으로 작성한다 (익명 화살표 함수 export 지양).
 - 서버 상태는 반드시 `@tanstack/react-query`를 통해 가져온다 — `useEffect` + `fetch` 직접 호출 금지.
-- 스타일은 Tailwind 유틸리티 + `src/styles/index.css`에 정의된 디자인 토큰(`--green-600` 등)만 사용한다. 새 색상/그림자/radius를 임의로 추가하지 않는다 — 자세한 규칙은 `.claude/skills/ecobot-design-system/SKILL.md` 참고.
+- 스타일은 Tailwind 유틸리티 + `src/styles/index.css`에 정의된 디자인 토큰(`--green-600` 등)만 사용한다. 새 색상/그림자/radius를 임의로 추가하지 않는다 — 자세한 규칙은 `.claude/skills/confisort-design-system/SKILL.md` 참고.
 - 린트: `npm run lint -w frontend` (oxlint).
 
 ### Backend (`backend/src`)

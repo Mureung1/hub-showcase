@@ -19,7 +19,6 @@ export const en = {
   'home.uploadSheetTitle': 'Check an item',
   'home.takePhoto': 'Take a photo',
   'home.uploadFromGallery': 'Upload from gallery',
-  'home.profileAlt': 'My profile',
 
   'quickLink.bulky': 'Bulky Waste',
   'quickLink.points': 'Nearby Bins',

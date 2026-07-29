@@ -13,7 +13,7 @@ npm workspaces monorepo: `frontend/` (React) + `backend/` (Express), managed fro
 - `frontend/` — React 19 + TypeScript + Vite + Tailwind CSS v4 + TanStack Query + react-router-dom + axios + zod. PWA via `vite-plugin-pwa`.
 - `backend/` — Express 5 + TypeScript + Prisma (PostgreSQL). Currently scaffolded (routes/controllers/services/middlewares/config/types folders + tsconfig + deps) but **has no entry point yet** — `src/server.ts` / `src/app.ts` don't exist, so `npm run dev -w backend` will fail until they're created.
 - `prototype/` — static HTML/CSS mockups (`home.html`, `search.html`, `result.html`, `rules.html`, `bulky.html`, `confirm.html`, `points.html`) sharing `prototype/style.css`. These are the visual source of truth the React screens in `frontend/src/pages/` should match.
-- `.claude/skills/ecobot-design-system/SKILL.md` — the "ecobot-design-system" skill: color tokens, typography, radius, spacing, and component rules for the green EcoBot visual identity. It auto-loads when styling EcoBot screens; also reuse `prototype/style.css` classes / `frontend/src/styles/index.css` tokens — don't invent new colors/shadows/radii.
+- `.claude/skills/confisort-design-system/SKILL.md` — the "confisort-design-system" skill: color tokens, typography, radius, spacing, and component rules for the green confiSort visual identity. It auto-loads when styling confiSort screens; also reuse `prototype/style.css` classes / `frontend/src/styles/index.css` tokens — don't invent new colors/shadows/radii.
 
 ## Commands
 

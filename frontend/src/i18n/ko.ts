@@ -18,7 +18,6 @@ export const ko = {
   'home.uploadSheetTitle': '물건 확인하기',
   'home.takePhoto': '사진 촬영',
   'home.uploadFromGallery': '갤러리에서 업로드',
-  'home.profileAlt': '내 정보',
 
   'quickLink.bulky': '대형폐기물',
   'quickLink.points': '주변 수거함',

@@ -12,7 +12,7 @@ export interface SelectedRegion {
 }
 
 // 로그인/사용자 계정이 아직 없어 지역 선택은 브라우저에만 저장 — 계정 도입 시 서버 저장으로 옮길 것.
-const STORAGE_KEY = 'ecobot:selectedRegion'
+const STORAGE_KEY = 'confisort:selectedRegion'
 
 function readStoredRegion(): SelectedRegion | null {
   const raw = localStorage.getItem(STORAGE_KEY)

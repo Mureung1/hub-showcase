@@ -41,15 +41,7 @@ export default function HomePage() {
         title={
           <span className="flex items-center gap-2 font-display text-xl font-bold text-green-900">
             <span className="inline-block h-6 w-6 rounded-[65%_35%_55%_45%] bg-green-600" aria-hidden />
-            EcoBot
-          </span>
-        }
-        action={
-          <span
-            aria-label={t('home.profileAlt')}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card text-sm"
-          >
-            👤
+            confiSort
           </span>
         }
       />
