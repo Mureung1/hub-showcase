@@ -17,6 +17,15 @@ describe('gitGraphAdapter', () => {
       indexCommitId: 'C0',
       workingTreeCommitId: 'C0',
       nextCommitIndex: 1,
+      remotes: [],
+      remoteBranches: {},
+      tags: [],
+      stash: [],
+      bisect: null,
+      conflict: null,
+      pendingMerge: null,
+      lastResolvedRef: null,
+      lastLogRangeResult: null,
     }
 
     expect(createGraphSnapshotFromEngineState(state).branches).toEqual([
@@ -35,6 +44,15 @@ describe('gitGraphAdapter', () => {
       indexCommitId: 'C0',
       workingTreeCommitId: 'C0',
       nextCommitIndex: 1,
+      remotes: [],
+      remoteBranches: {},
+      tags: [],
+      stash: [],
+      bisect: null,
+      conflict: null,
+      pendingMerge: null,
+      lastResolvedRef: null,
+      lastLogRangeResult: null,
     }
 
     expect(createGraphSnapshotFromEngineState(state).currentBranch).toBe('main')

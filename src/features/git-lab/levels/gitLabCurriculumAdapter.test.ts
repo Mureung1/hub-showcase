@@ -7,8 +7,8 @@ describe('gitLabCurriculumAdapter', () => {
     const levels = createPlayableLevels(levelsData)
     const curriculumLevels = levels.filter((level) => /^\d+-\d+$/.test(level.id))
 
-    expect(levels).toHaveLength(23)
-    expect(curriculumLevels).toHaveLength(19)
+    expect(levels).toHaveLength(32)
+    expect(curriculumLevels).toHaveLength(28)
   })
 
   it('groups all imported curriculum levels by module with locked reasons for unsupported goals', () => {
@@ -17,10 +17,10 @@ describe('gitLabCurriculumAdapter', () => {
 
     expect(modules).toHaveLength(3)
     expect(items).toHaveLength(28)
-    expect(items.filter((item) => item.status === 'playable')).toHaveLength(19)
+    expect(items.filter((item) => item.status === 'playable')).toHaveLength(28)
     expect(items.find((item) => item.id === '1-2')?.playableLevel?.goalKind).toBe('fileStatus')
     expect(items.find((item) => item.id === '3-9')?.playableLevel?.goalKind).toBe('resetState')
-    expect(items.find((item) => item.id === '1-6')?.reason).toContain('remoteState')
+    expect(items.find((item) => item.id === '1-6')?.playableLevel?.goalKind).toBe('remoteState')
   })
 
   it('converts curriculum branch commitId values into graph snapshot head values', () => {
@@ -92,5 +92,46 @@ describe('gitLabCurriculumAdapter', () => {
     const level = levels.find((candidate) => candidate.id === '2-3')
 
     expect(level?.initialEngineState?.nextCommitIndex).toBe(5)
+  })
+
+  it('carries remotes, tags, stash, and bugState through to engine state', () => {
+    const [level] = createPlayableLevels({
+      levels: [],
+      curriculumModules: [
+        {
+          moduleId: 'm1',
+          moduleTitle: 'Module 1',
+          bookRef: 'ref',
+          levels: [
+            {
+              id: 'test-1',
+              title: 'test',
+              bookRef: 'ref',
+              description: 'desc',
+              allowedCommands: ['git tag'],
+              initialState: {
+                repoExists: true,
+                commits: [{ id: 'C0', parents: [], bugState: 'good' }],
+                branches: [{ name: 'master', commitId: 'C0' }],
+                tags: [{ name: 'v0.9', commitId: 'C0' }],
+                remotes: [{ name: 'origin', url: 'https://example.com/repo.git' }],
+                stash: [{ id: 'stash@{0}', files: { 'index.html': 'wip' } }],
+                HEAD: { type: 'branch', name: 'master' },
+              },
+              goal: { type: 'tagState', condition: "t.name === 'v1.0'" },
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(level.initialEngineState?.tags).toEqual([{ name: 'v0.9', commitId: 'C0' }])
+    expect(level.initialEngineState?.remotes).toEqual([
+      { name: 'origin', url: 'https://example.com/repo.git' },
+    ])
+    expect(level.initialEngineState?.stash).toEqual([
+      { id: 'stash@{0}', files: { 'index.html': 'wip' } },
+    ])
+    expect(level.initialEngineState?.commits[0].bugState).toBe('good')
   })
 })

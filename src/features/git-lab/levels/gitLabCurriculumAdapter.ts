@@ -1,7 +1,18 @@
 import { createEmptyConfig, type GitEngineState, type GitFileStatus } from '../engine/gitEngine'
 import type { GraphSnapshot } from '../engine/gitGraphAdapter'
 
-export type GitLabGoalKind = 'graph' | 'configState' | 'repoState' | 'fileStatus' | 'resetState'
+export type GitLabGoalKind =
+  | 'graph'
+  | 'configState'
+  | 'repoState'
+  | 'fileStatus'
+  | 'resetState'
+  | 'remoteState'
+  | 'tagState'
+  | 'conflictResolved'
+  | 'commandOutput'
+  | 'stashState'
+  | 'bisectResult'
 
 export type GitLabGoalCheck =
   | { type: 'configState'; description: string }
@@ -14,6 +25,23 @@ export type GitLabGoalCheck =
       workingTreeCommitId: string | null
       description: string
     }
+  | { type: 'remoteState'; requiredRemoteName?: string; requiredRemoteBranch?: string; description: string }
+  | { type: 'tagState'; tagName: string; commitId: string; description: string }
+  | { type: 'conflictResolved'; filePath: string; description: string }
+  | {
+      type: 'commandOutput'
+      expectedResolvedRef?: string
+      expectedLogResult?: string[]
+      description: string
+    }
+  | {
+      type: 'stashState'
+      expectedStashLength?: number
+      fileName?: string
+      fileStatus?: GitFileStatus
+      description: string
+    }
+  | { type: 'bisectResult'; commitId: string; description: string }
 
 export type PlayableGitLabLevel = {
   id: string
@@ -85,11 +113,17 @@ type CurriculumLevel = {
 type CurriculumState = {
   repoExists?: boolean
   config?: Partial<Record<keyof ReturnType<typeof createEmptyConfig>, string | null>>
-  files?: Record<string, { content?: string; status?: GitFileStatus }>
+  files?: Record<
+    string,
+    { content?: string; workingContent?: string; status?: GitFileStatus; versions?: Record<string, string> }
+  >
   index?: string
   workingDir?: string
   commits?: CurriculumCommit[]
   branches?: CurriculumBranch[]
+  remotes?: { name: string; url: string }[]
+  tags?: { name: string; commitId: string; message?: string }[]
+  stash?: { id: string; files: Record<string, string> }[]
   HEAD?: { type?: string; name?: string; commitId?: string | null } | null
 }
 
@@ -110,6 +144,7 @@ type CurriculumCommit = {
   parents?: string[]
   branch?: string
   message?: string
+  bugState?: 'good' | 'bad'
 }
 
 type CurriculumBranch = {
@@ -237,8 +272,9 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
       Object.entries(state.files ?? {}).map(([fileName, file]) => [
         fileName,
         {
-          content: file.content ?? '',
+          content: file.workingContent ?? file.content ?? '',
           status: file.status ?? 'committed',
+          ...(file.versions ? { versions: file.versions } : {}),
         },
       ]),
     ),
@@ -246,6 +282,7 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
       id: commit.id,
       parents: commit.parents ?? [],
       ...(commit.message ? { message: commit.message } : {}),
+      ...(commit.bugState ? { bugState: commit.bugState } : {}),
     })),
     branches,
     head: currentBranch
@@ -254,6 +291,15 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
     indexCommitId: parseTreeCommitId(state.index, headCommitId),
     workingTreeCommitId: parseTreeCommitId(state.workingDir, headCommitId),
     nextCommitIndex: getNextCommitIndex(state.commits ?? []),
+    remotes: state.remotes ?? [],
+    remoteBranches: {},
+    tags: state.tags ?? [],
+    stash: state.stash ?? [],
+    bisect: null,
+    conflict: null,
+    pendingMerge: null,
+    lastResolvedRef: null,
+    lastLogRangeResult: null,
   }
 }
 
@@ -425,6 +471,18 @@ function getVisualMode(goalKind: GitLabGoalKind) {
       return 'file-status'
     case 'resetState':
       return 'reset-state'
+    case 'remoteState':
+      return 'remote-state'
+    case 'tagState':
+      return 'tag-state'
+    case 'conflictResolved':
+      return 'conflict-resolved'
+    case 'commandOutput':
+      return 'command-output'
+    case 'stashState':
+      return 'stash-state'
+    case 'bisectResult':
+      return 'bisect-result'
     case 'graph':
       return 'curriculum-graph'
   }
@@ -436,7 +494,13 @@ function isSupportedGoalType(goalType: string | undefined): goalType is GitLabGo
     goalType === 'configState' ||
     goalType === 'repoState' ||
     goalType === 'fileStatus' ||
-    goalType === 'resetState'
+    goalType === 'resetState' ||
+    goalType === 'remoteState' ||
+    goalType === 'tagState' ||
+    goalType === 'conflictResolved' ||
+    goalType === 'commandOutput' ||
+    goalType === 'stashState' ||
+    goalType === 'bisectResult'
   )
 }
 

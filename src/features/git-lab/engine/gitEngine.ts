@@ -2,6 +2,31 @@ export type GitCommit = {
   id: string
   parents: string[]
   message?: string
+  bugState?: 'good' | 'bad'
+}
+
+export type GitRemote = {
+  name: string
+  url: string
+}
+
+export type GitTag = {
+  name: string
+  commitId: string
+  message?: string
+}
+
+export type GitStashEntry = {
+  id: string
+  files: Record<string, string>
+}
+
+export type GitBisectState = {
+  goodCommitId: string | null
+  badCommitId: string | null
+  candidateCommitIds: string[]
+  currentCommitId: string | null
+  foundCommitId: string | null
 }
 
 export type GitBranch = {
@@ -12,11 +37,12 @@ export type GitBranch = {
 export type GitHead =
   { type: 'branch'; branchName: string } | { type: 'detached'; commitId: string | null }
 
-export type GitFileStatus = 'untracked' | 'modified' | 'staged' | 'committed'
+export type GitFileStatus = 'untracked' | 'modified' | 'staged' | 'committed' | 'conflicted'
 
 export type GitFile = {
   content: string
   status: GitFileStatus
+  versions?: Record<string, string>
 }
 
 export type GitResetMode = 'soft' | 'mixed' | 'hard'
@@ -36,6 +62,15 @@ export type GitEngineState = {
   indexCommitId: string | null
   workingTreeCommitId: string | null
   nextCommitIndex: number
+  remotes: GitRemote[]
+  remoteBranches: Record<string, string>
+  tags: GitTag[]
+  stash: GitStashEntry[]
+  bisect: GitBisectState | null
+  conflict: { filePath: string } | null
+  pendingMerge: { parents: string[] } | null
+  lastResolvedRef: string | null
+  lastLogRangeResult: string[] | null
 }
 
 export type GitCommand =
@@ -79,6 +114,15 @@ export function createInitialGitState(
     indexCommitId: latestCommit,
     workingTreeCommitId: latestCommit,
     nextCommitIndex: commits.length,
+    remotes: [],
+    remoteBranches: {},
+    tags: [],
+    stash: [],
+    bisect: null,
+    conflict: null,
+    pendingMerge: null,
+    lastResolvedRef: null,
+    lastLogRangeResult: null,
   }
 }
 
@@ -796,7 +840,7 @@ function log(state: GitEngineState, oneline: boolean): GitCommandResult {
   }
 }
 
-function getHeadCommitId(state: GitEngineState) {
+export function getHeadCommitId(state: GitEngineState) {
   if (state.head.type === 'detached') {
     return state.head.commitId
   }
@@ -806,7 +850,7 @@ function getHeadCommitId(state: GitEngineState) {
   return state.branches.find((branchItem) => branchItem.name === headBranchName)?.commitId ?? null
 }
 
-function failure(state: GitEngineState, message: string): GitCommandResult {
+export function failure(state: GitEngineState, message: string): GitCommandResult {
   return {
     state,
     ok: false,
@@ -894,7 +938,7 @@ function isAncestor(state: GitEngineState, ancestorId: string, commitId: string)
   return commit.parents.some((parentId) => isAncestor(state, ancestorId, parentId))
 }
 
-function getCommitById(state: GitEngineState, commitId: string | null) {
+export function getCommitById(state: GitEngineState, commitId: string | null) {
   return state.commits.find((commit) => commit.id === commitId)
 }
 

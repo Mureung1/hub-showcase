@@ -416,4 +416,18 @@ describe('gitEngine', () => {
     expect(result.state).toBe(state)
     expect(result.logs).toEqual(['C0 <- root'])
   })
+
+  it('initializes new engine state fields for remote/tag/stash/bisect', () => {
+    const state = createInitialGitState()
+
+    expect(state.remotes).toEqual([])
+    expect(state.remoteBranches).toEqual({})
+    expect(state.tags).toEqual([])
+    expect(state.stash).toEqual([])
+    expect(state.bisect).toBeNull()
+    expect(state.conflict).toBeNull()
+    expect(state.pendingMerge).toBeNull()
+    expect(state.lastResolvedRef).toBeNull()
+    expect(state.lastLogRangeResult).toBeNull()
+  })
 })
