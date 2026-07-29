@@ -191,4 +191,16 @@ describe('gitLabCurriculumAdapter', () => {
       requiredRemoteBranch: 'origin/iss53',
     })
   })
+
+  it('wires the real 2-6 conflict lesson data end to end (adapter -> engine -> compareGitLabGoal)', () => {
+    const levels = createPlayableLevels(levelsData as never)
+    const level = levels.find((candidate) => candidate.id === '2-6')
+
+    expect(level).toBeDefined()
+    expect(level?.goalKind).toBe('conflictResolved')
+    expect(level?.initialEngineState?.files['index.html'].versions).toMatchObject({
+      C4: expect.any(String),
+      C3: expect.any(String),
+    })
+  })
 })

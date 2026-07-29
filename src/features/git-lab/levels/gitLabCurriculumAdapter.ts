@@ -405,6 +405,17 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
     return { type: 'bisectResult', commitId: match?.[1] ?? '', description }
   }
 
+  if (level.goal?.type === 'conflictResolved') {
+    const match = /files\['([^']+)'\]/.exec(level.goal.condition ?? '')
+    const filePath = match?.[1] ?? Object.keys(level.initialState?.files ?? {})[0]
+
+    if (!filePath) {
+      return undefined
+    }
+
+    return { type: 'conflictResolved', filePath, description }
+  }
+
   return undefined
 }
 

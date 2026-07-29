@@ -480,3 +480,66 @@ describe('gitEngine', () => {
     expect(state.lastLogRangeResult).toBeNull()
   })
 })
+
+describe('gitEngine merge conflicts', () => {
+  function buildConflictState(): GitEngineState {
+    const base = createInitialGitState('master', [
+      { id: 'C0', parents: [] },
+      { id: 'C1', parents: ['C0'] },
+      { id: 'C4', parents: ['C1'] },
+      { id: 'C3', parents: ['C1'] },
+    ])
+
+    return {
+      ...base,
+      branches: [
+        { name: 'master', commitId: 'C4' },
+        { name: 'iss53', commitId: 'C3' },
+      ],
+      indexCommitId: 'C4',
+      workingTreeCommitId: 'C4',
+      files: {
+        'index.html': {
+          content: '<div id="footer">contact : email.support@github.com</div>\n',
+          status: 'committed',
+          versions: {
+            C4: '<div id="footer">contact : email.support@github.com</div>\n',
+            C3: '<div id="footer">\n  please contact us at support@github.com\n</div>\n',
+          },
+        },
+      },
+    }
+  }
+
+  it('detects a conflict instead of auto-merging when both branches changed the same file differently', () => {
+    const state = buildConflictState()
+
+    const result = runGitCommand(state, 'git merge iss53')
+
+    expect(result.ok).toBe(false)
+    expect(result.logs.some((line) => line.includes('CONFLICT'))).toBe(true)
+    expect(result.state.conflict).toEqual({ filePath: 'index.html' })
+    expect(result.state.files['index.html'].status).toBe('conflicted')
+    expect(result.state.files['index.html'].content).toContain('<<<<<<<')
+  })
+
+  it('resolves the conflict via editFile and creates a two-parent merge commit on add + commit', () => {
+    const state = buildConflictState()
+
+    const conflicted = runGitCommand(state, 'git merge iss53').state
+    const edited = runGitCommand(conflicted, 'editFile index.html')
+
+    expect(edited.ok).toBe(true)
+    expect(edited.state.conflict).toBeNull()
+    expect(edited.state.files['index.html'].content).not.toContain('<<<<<<<')
+    expect(edited.state.files['index.html'].status).toBe('modified')
+
+    const added = runGitCommand(edited.state, 'git add index.html')
+    const committed = runGitCommand(added.state, 'git commit -m "Merge branch \'iss53\'"')
+
+    expect(committed.ok).toBe(true)
+    const newCommit = committed.state.commits.at(-1)
+    expect(newCommit?.parents).toEqual(['C4', 'C3'])
+    expect(committed.state.pendingMerge).toBeNull()
+  })
+})

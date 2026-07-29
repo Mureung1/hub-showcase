@@ -120,6 +120,7 @@ export type GitCommand =
   | { type: 'bisectBad'; ref: string | null }
   | { type: 'bisectGood'; ref: string | null }
   | { type: 'bisectReset' }
+  | { type: 'editFile'; path: string }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -164,6 +165,10 @@ export function createEmptyConfig(): GitConfig {
 
 export function parseGitCommand(input: string): GitCommand {
   const tokens = tokenizeCommand(input.trim().replace(/^\$\s*/, ''))
+
+  if (tokens[0] === 'editFile' && tokens.length === 2) {
+    return { type: 'editFile', path: tokens[1] }
+  }
 
   if (tokens[0] !== 'git') {
     throw new Error('Command must start with git.')
@@ -446,6 +451,8 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return bisectGood(state, command.ref)
     case 'bisectReset':
       return bisectReset(state)
+    case 'editFile':
+      return editFile(state, command.path)
   }
 }
 
@@ -707,11 +714,12 @@ export function commit(state: GitEngineState, message?: string): GitCommandResul
   }
 
   const parentCommitId = getHeadCommitId(state)
+  const parents = state.pendingMerge ? state.pendingMerge.parents : parentCommitId ? [parentCommitId] : []
   const nextCommitId = `C${state.nextCommitIndex}`
   const headBranchName = state.head.type === 'branch' ? state.head.branchName : null
   const nextCommit: GitCommit = {
     id: nextCommitId,
-    parents: parentCommitId ? [parentCommitId] : [],
+    parents,
     ...(message ? { message } : {}),
   }
   const nextFiles = Object.fromEntries(
@@ -735,6 +743,7 @@ export function commit(state: GitEngineState, message?: string): GitCommandResul
       : state.branches,
     head: headBranchName ? state.head : { type: 'detached', commitId: nextCommitId },
     nextCommitIndex: state.nextCommitIndex + 1,
+    pendingMerge: null,
   }
 
   return {
@@ -942,6 +951,12 @@ function merge(state: GitEngineState, name: string): GitCommandResult {
     }
   }
 
+  const conflictingFilePath = findConflictingFile(state, currentBranch.commitId, sourceBranch.commitId)
+
+  if (conflictingFilePath) {
+    return createMergeConflict(state, conflictingFilePath, currentBranch.commitId, sourceBranch.commitId, name)
+  }
+
   const nextCommitId = `C${state.nextCommitIndex}`
   const nextCommit = {
     id: nextCommitId,
@@ -1123,4 +1138,86 @@ function tokenizeCommand(input: string) {
 
 function uniqueCommitIds(commitIds: string[]) {
   return [...new Set(commitIds)]
+}
+
+function findConflictingFile(
+  state: GitEngineState,
+  currentCommitId: string,
+  sourceCommitId: string,
+): string | null {
+  const entry = Object.entries(state.files).find(([, file]) => {
+    const versions = file.versions
+
+    if (!versions) {
+      return false
+    }
+
+    const currentVersion = versions[currentCommitId]
+    const sourceVersion = versions[sourceCommitId]
+
+    return currentVersion !== undefined && sourceVersion !== undefined && currentVersion !== sourceVersion
+  })
+
+  return entry ? entry[0] : null
+}
+
+function createMergeConflict(
+  state: GitEngineState,
+  filePath: string,
+  currentCommitId: string,
+  sourceCommitId: string,
+  sourceBranchName: string,
+): GitCommandResult {
+  const file = state.files[filePath]
+  const headContent = file.versions?.[currentCommitId] ?? ''
+  const mergeContent = file.versions?.[sourceCommitId] ?? ''
+  const conflictContent = `<<<<<<< HEAD\n${headContent}=======\n${mergeContent}>>>>>>> ${sourceBranchName}\n`
+
+  const nextState: GitEngineState = {
+    ...state,
+    files: {
+      ...state.files,
+      [filePath]: { ...file, content: conflictContent, status: 'conflicted' },
+    },
+    conflict: { filePath },
+    pendingMerge: { parents: [currentCommitId, sourceCommitId] },
+  }
+
+  return {
+    state: nextState,
+    ok: false,
+    logs: [
+      `Auto-merging ${filePath}`,
+      `CONFLICT (content): Merge conflict in ${filePath}`,
+      'Automatic merge failed; fix conflicts and then commit the result.',
+      ...formatGitStateForConsole(nextState),
+    ],
+  }
+}
+
+function editFile(state: GitEngineState, path: string): GitCommandResult {
+  if (!state.conflict || state.conflict.filePath !== path) {
+    return failure(state, `${path} has no unresolved conflict to edit`)
+  }
+
+  const file = state.files[path]
+  const versions = file.versions ?? {}
+  const headContent = state.pendingMerge ? (versions[state.pendingMerge.parents[0]] ?? '') : ''
+  const mergeContent = state.pendingMerge ? (versions[state.pendingMerge.parents[1]] ?? '') : ''
+  const resolvedContent = `${headContent}${mergeContent}`.trim()
+
+  const nextState: GitEngineState = {
+    ...state,
+    files: {
+      ...state.files,
+      [path]: { ...file, content: resolvedContent, status: 'modified' },
+    },
+    conflict: null,
+  }
+
+  return {
+    state: nextState,
+    ok: true,
+    logs: [`resolved conflict markers in ${path}`, ...formatGitStateForConsole(nextState)],
+  }
 }
