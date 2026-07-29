@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { getDashboardSummary, getSubscriptions } from '../lib/subscriptions'
-import LoginRequired from './LoginRequired'
 import './Dashboard.css'
 
 const MONTHS_TO_SHOW = 5
@@ -46,16 +45,12 @@ const Dashboard = () => {
       })
       .catch((error) => {
         setErrorMessage(error.message)
-        setStatus(error.status === 401 ? 'unauthorized' : 'error')
+        setStatus('error')
       })
   }, [])
 
   if (status === 'loading') {
     return <p className="dashboard-message">대시보드를 불러오는 중...</p>
-  }
-
-  if (status === 'unauthorized') {
-    return <LoginRequired message="로그인 후 구독 서비스 지출 대시보드를 확인할 수 있어요." />
   }
 
   if (status === 'error') {

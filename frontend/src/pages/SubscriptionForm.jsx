@@ -96,7 +96,7 @@ const SubscriptionForm = () => {
     return (
       <div className="subscription-form-page">
         <Link to="/" className="back-link">← 메인으로</Link>
-        <LoginRequired message="로그인 후 구독 서비스를 등록하거나 초대받은 파티에 참여할 수 있어요." />
+        <LoginRequired message="로그인하고 구독 서비스를 등록하거나 초대받은 파티에 참여해보세요!" />
       </div>
     )
   }

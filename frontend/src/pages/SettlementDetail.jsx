@@ -118,7 +118,7 @@ const SettlementDetail = () => {
   } else if (status === 'unauthorized') {
     content = (
       <LoginRequired
-        message="로그인 후 정산 내역을 확인할 수 있어요."
+        message="로그인하고 정산 내역을 확인해보세요!"
         state={`/subscriptions/${id}/settlements/${settlementId}`}
       />
     )
