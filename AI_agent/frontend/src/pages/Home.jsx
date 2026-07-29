@@ -1,6 +1,7 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
 import { homeFeatures } from "../data/homeFeatures";
+import { isAuthenticated } from "../features/auth/authService";
 import { getSession, getUser } from "../features/auth/authStorage";
 import {
   getCareerAnalysis,
@@ -101,7 +102,8 @@ function Home() {
   const [displayReadiness, setDisplayReadiness] = useState(78);
   const session = getSession();
   const user = getUser();
-  const currentUser = session && user?.id === session.id ? user : null;
+  const isLoggedIn = isAuthenticated();
+  const currentUser = isLoggedIn ? user || session : null;
   const spec = getCareerSpec(currentUser?.id);
   const analysis = getCareerAnalysis(currentUser?.id);
   const hasCompleteSpec = isCareerSpecComplete(spec);
@@ -134,12 +136,25 @@ function Home() {
         ["번아웃 위험도", "학습/활동 정보 등록 후 분석"],
       ];
 
+  const handleSignupStart = () => {
+    navigate(routes.signup);
+  };
+
+  const handleSpecStart = () => {
+    navigate(routes.specs);
+  };
+
   const handlePrimaryAction = () => {
-    navigate(currentUser ? routes.specs : routes.signup);
+    if (isLoggedIn) {
+      handleSpecStart();
+      return;
+    }
+
+    handleSignupStart();
   };
 
   const handleSecondaryAction = () => {
-    if (!currentUser) {
+    if (!isLoggedIn) {
       navigate(routes.login);
       return;
     }
@@ -227,7 +242,7 @@ function Home() {
                 style={styles.ctaButton}
                 onClick={handlePrimaryAction}
               >
-                {currentUser ? "스펙 등록 시작하기" : "무료로 시작하기"}
+                {currentUser ? "스펙 등록 시작하기" : "회원가입하고 시작하기"}
               </button>
               <button
                 type="button"
