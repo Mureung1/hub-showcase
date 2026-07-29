@@ -5,6 +5,7 @@ import { Icon } from '../../components/decor/Icon.jsx'
 import { InfoCard } from '../../components/cards/InfoCard.jsx'
 import { Chip } from '../../components/forms/Chip.jsx'
 import { Button } from '../../components/forms/Button.jsx'
+import { Input } from '../../components/forms/Input.jsx'
 import { EmptyState } from '../../components/feedback/EmptyState.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
 import { getLetterByToken, getResponses, getRoles, createRole, updateRole, getSuggestions, createRoleTasks } from '../../lib/api.js'
@@ -32,6 +33,10 @@ export function Assign() {
 
   const [suggestStatus, setSuggestStatus] = useState('idle') // idle | loading | fallback | error
   const [suggestNote, setSuggestNote] = useState('')
+
+  const [manualRoleName, setManualRoleName] = useState('')
+  const [manualRoleStatus, setManualRoleStatus] = useState('idle') // idle | saving | error
+  const [manualRoleErrorMsg, setManualRoleErrorMsg] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -129,6 +134,24 @@ export function Assign() {
         })
       }
     })
+  }
+
+  // AI 역할 추천이 실패하거나(fallback/error) 참여자가 직접 역할을 추가하고 싶을 때의 수동 입력 경로.
+  // AI 생성 역할과 동일하게 roles 테이블에 저장되므로(source만 'manual') 이후 화면들이 구분 없이 읽는다.
+  async function addManualRole() {
+    const name = manualRoleName.trim()
+    if (!name || manualRoleStatus === 'saving') return
+    setManualRoleStatus('saving')
+    setManualRoleErrorMsg('')
+    const result = await createRole(token, { name, source: 'manual', position: roles.length })
+    if (result.error) {
+      setManualRoleStatus('error')
+      setManualRoleErrorMsg(result.error)
+      return
+    }
+    setRoles((prev) => [...prev, result.data])
+    setManualRoleName('')
+    setManualRoleStatus('idle')
   }
 
   return (
@@ -285,7 +308,16 @@ export function Assign() {
                   {suggestStatus === 'loading' ? '추천을 준비하고 있어요…' : 'AI 역할 추천 받기'}
                 </Button>
                 {suggestStatus === 'error' || suggestStatus === 'fallback' ? (
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)', textAlign: 'center' }}>{suggestNote}</div>
+                  <>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)', textAlign: 'center' }}>{suggestNote} — 직접 추가해볼까요?</div>
+                    <ManualRoleForm
+                      value={manualRoleName}
+                      onChange={setManualRoleName}
+                      onSubmit={addManualRole}
+                      status={manualRoleStatus}
+                      errorMsg={manualRoleErrorMsg}
+                    />
+                  </>
                 ) : null}
               </div>
             ) : (
@@ -306,6 +338,14 @@ export function Assign() {
                   </InfoCard>
                 ))}
 
+                <ManualRoleForm
+                  value={manualRoleName}
+                  onChange={setManualRoleName}
+                  onSubmit={addManualRole}
+                  status={manualRoleStatus}
+                  errorMsg={manualRoleErrorMsg}
+                />
+
                 <Button variant="primary" block soundType="finish" onClick={() => navigate(`/scr3/confirm${token ? `?token=${token}` : ''}`)}>
                   확정하러 가기
                 </Button>
@@ -318,6 +358,30 @@ export function Assign() {
       <div style={{ position: 'fixed', right: '14px', bottom: '14px', fontFamily: "'Signatie', var(--font-script)", fontSize: '13px', color: 'var(--wedgwood-deep)', opacity: 0.5, pointerEvents: 'none', zIndex: 50 }}>
         l
       </div>
+    </div>
+  )
+}
+
+// 역할 이름 직접 추가 폼 — AI 추천이 실패했을 때의 폴백이자, 역할이 이미 있을 때도 상시 노출되는 추가 입력구.
+function ManualRoleForm({ value, onChange, onSubmit, status, errorMsg }) {
+  return (
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ width: '100%', display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+        <div style={{ flex: 1 }}>
+          <Input
+            variant="underline"
+            placeholder="역할 이름을 직접 입력하세요"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </div>
+        <Button size="sm" variant="accent" disabled={!value.trim() || status === 'saving'} onClick={onSubmit}>
+          {status === 'saving' ? '추가하는 중…' : '역할 추가'}
+        </Button>
+      </div>
+      {status === 'error' ? (
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{errorMsg}</div>
+      ) : null}
     </div>
   )
 }
