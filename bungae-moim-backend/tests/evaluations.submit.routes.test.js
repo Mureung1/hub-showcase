@@ -225,4 +225,107 @@ describe('POST /api/meetings/:id/evaluations', () => {
       .send({ evaluations: [{ rateeId: outsider, attended: true, tags: [] }] });
     expect(res.status).toBe(400);
   });
+
+  it('참여자가 다른 참여자를 지목하면 400(모임장만 평가 대상)', async () => {
+    const host = await createUser('s-h12');
+    const meetingId = await createMeeting(host);
+    const { agent, userId: p1 } = await loginAgent('s-p12a', '참여자1');
+    const p2 = await createUser('s-p12b', '참여자2');
+    await addParticipant(meetingId, p1, 'approved');
+    await addParticipant(meetingId, p2, 'approved');
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [{ rateeId: p2, attended: true, tags: [] }] });
+    expect(res.status).toBe(400);
+  });
+
+  it('모임장이 거절된 신청자를 평가하면 400(확정 참여자만 대상)', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h13');
+    const meetingId = await createMeeting(hostId);
+    const rejected = await createUser('s-r13');
+    await addParticipant(meetingId, rejected, 'rejected');
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [{ rateeId: rejected, attended: true, tags: [] }] });
+    expect(res.status).toBe(400);
+  });
+
+  it('제출 후 24시간이 지나면 수정할 수 없다', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h14');
+    const meetingId = await createMeeting(hostId);
+    const a = await createUser('s-a14');
+    await addParticipant(meetingId, a, 'approved');
+
+    await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [{ rateeId: a, attended: true, tags: [] }] });
+
+    await pool.query(
+      `UPDATE meeting_evaluations
+          SET created_at = now() - interval '25 hours', updated_at = now() - interval '25 hours'
+        WHERE meeting_id = $1 AND rater_id = $2 AND ratee_id = $3`,
+      [meetingId, hostId, a]
+    );
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [{ rateeId: a, attended: false, tags: [] }] });
+    expect(res.status).toBe(400);
+  });
+
+  it('evaluations가 배열이 아니면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h15');
+    const meetingId = await createMeeting(hostId);
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: 'nope' });
+    expect(res.status).toBe(400);
+  });
+
+  it('evaluations가 빈 배열이면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h16');
+    const meetingId = await createMeeting(hostId);
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [] });
+    expect(res.status).toBe(400);
+  });
+
+  it('rateeId가 숫자가 아니면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h17');
+    const meetingId = await createMeeting(hostId);
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [{ rateeId: 'abc', attended: true, tags: [] }] });
+    expect(res.status).toBe(400);
+  });
+
+  it('attended가 없으면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h18');
+    const meetingId = await createMeeting(hostId);
+    const a = await createUser('s-a18');
+    await addParticipant(meetingId, a, 'approved');
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [{ rateeId: a, tags: [] }] });
+    expect(res.status).toBe(400);
+  });
+
+  it('attended가 boolean이 아니면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('s-h19');
+    const meetingId = await createMeeting(hostId);
+    const a = await createUser('s-a19');
+    await addParticipant(meetingId, a, 'approved');
+
+    const res = await agent
+      .post(`/api/meetings/${meetingId}/evaluations`)
+      .send({ evaluations: [{ rateeId: a, attended: 'yes', tags: [] }] });
+    expect(res.status).toBe(400);
+  });
 });

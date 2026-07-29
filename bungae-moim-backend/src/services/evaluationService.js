@@ -182,13 +182,21 @@ async function recalculateTrustScore(client, userId) {
 
 // 평가 제출(4.2, 4.5, 6.2). 모임장은 확정 참여자 여러 명을, 참여자는 모임장 한 명을
 // 평가한다. INSERT/UPDATE와 재계산이 한 트랜잭션 안에서 일어나야 한쪽만 반영되는 사고가 없다.
+//
+// 모임 행을 FOR UPDATE로 잠가 같은 모임에 대한 동시 제출을 직렬화한다(applyToMeeting과 동일
+// 패턴, meetingService.js:272). 이게 없으면 두 가지가 새는데 — (1) 호스트↔참여자가 동시에
+// 서로에 대해 제출하면 둘 다 상대의 미커밋 진술을 못 보고 대조 없이 재계산해, 나중에 커밋되는
+// 쪽이 상대 진술을 반영 못 한 낡은 점수로 덮어쓴다(설계 6.2가 막으려는 상황이 그대로 샌다).
+// (2) 같은 (meeting_id, rater_id, ratee_id) 쌍의 첫 제출이 동시에 두 번 오면 둘 다
+// existing.rows.length===0으로 보고 INSERT를 시도해, 진 쪽이 유니크 제약 위반(23505, 미분류
+// pg 에러)으로 500이 난다. 잠금이 두 요청을 순차화하므로 둘 다 해결된다.
 async function submitEvaluations(meetingId, raterId, entries) {
   return withTransaction(async (client) => {
     const meetingRes = await client.query(
       `SELECT host_id, status,
               COALESCE(end_at, start_at) < now() AS is_past,
               COALESCE(end_at, start_at) > now() - interval '${EVALUATION_WINDOW_DAYS} days' AS in_window
-         FROM meetings WHERE id = $1`,
+         FROM meetings WHERE id = $1 FOR UPDATE`,
       [meetingId]
     );
     if (meetingRes.rows.length === 0) {
