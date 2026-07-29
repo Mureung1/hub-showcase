@@ -29,10 +29,13 @@ export class ApiClientError extends Error {
 export function createApiClient(
   getToken: () => Promise<string>,
   fetcher: typeof fetch = fetch,
+  apiBaseUrl = '',
 ) {
+  const normalizedApiBaseUrl = apiBaseUrl.replace(/\/+$/, '')
+
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const token = await getToken()
-    const response = await fetcher(`/api${path}`, {
+    const response = await fetcher(`${normalizedApiBaseUrl}/api${path}`, {
       ...init,
       headers: {
         'Content-Type': 'application/json',
@@ -70,4 +73,8 @@ export function createApiClient(
   }
 }
 
-export const api = createApiClient(getAccessToken)
+export const api = createApiClient(
+  getAccessToken,
+  fetch,
+  import.meta.env.VITE_API_BASE_URL,
+)
