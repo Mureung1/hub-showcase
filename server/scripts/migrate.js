@@ -2,9 +2,9 @@ import 'dotenv/config'
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { pool } from './pool.js'
+import { pool } from '../src/db/pool.js'
 
-const migrationsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations')
+const migrationsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../migrations')
 
 // 적용된 파일명을 기록해두고, 새 파일만 순서대로 실행한다
 async function migrate() {

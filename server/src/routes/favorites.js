@@ -1,9 +1,18 @@
 import { Router } from 'express'
 import { asyncHandler } from '../lib/asyncHandler.js'
 import { requireUser } from '../middlewares/requireUser.js'
-import { addFavorite, removeFavorite } from '../services/userService.js'
+import { addFavorite, removeFavorite, listMyFavorites } from '../services/userService.js'
 
 const router = Router()
+
+// GET /api/favorites — 내 관심 가게 목록 (M1)
+router.get(
+  '/',
+  requireUser,
+  asyncHandler(async (req, res) => {
+    res.json(await listMyFavorites(req.userId))
+  }),
+)
 
 // POST /api/favorites — 즐겨찾기 추가 (M1)
 router.post(

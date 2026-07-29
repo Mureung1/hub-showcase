@@ -1,14 +1,18 @@
 import 'dotenv/config'
-import { pool } from './pool.js'
-import { withTransaction } from './withTransaction.js'
+import { pool } from '../src/db/pool.js'
+import { withTransaction } from '../src/db/withTransaction.js'
+import { printTarget } from './targetInfo.js'
 
 /*
- * 데모 시딩 (T-02) — 대학가(신촌) 클러스터 기준
+ * 데모 시딩 (T-02) — 분당 정자동 클러스터 기준 (기준점: 네이버 1784, 정자일로 95)
  * 멱등: TRUNCATE ... RESTART IDENTITY CASCADE 후 재삽입하므로 반복 실행해도 결과가 같다.
  */
 
 // 로그인 미구현 단계의 자리표시자. 회원가입(Backlog) 구현 시 bcrypt 해시로 대체한다.
 const PASSWORD_HASH = 'seed-password-hash(temp)'
+
+// 기획서 §3.1 — client/src/lib/constants.js, storeService.CATEGORIES와 동일하게 유지
+const CATEGORIES = ['베이커리', '디저트', '신선식품', '반찬', '음료']
 
 const USERS = [
   // 사장님 3명 (가게당 1명 — stores.owner_id UNIQUE)
@@ -20,9 +24,9 @@ const USERS = [
     email: 'consumer1@hub.test',
     nickname: '규현',
     role: 'consumer',
-    baseAddress: '서울 서대문구 신촌로 83',
-    baseLat: 37.558,
-    baseLng: 126.936,
+    baseAddress: '경기 성남시 분당구 정자일로 95',
+    baseLat: 37.3595,
+    baseLng: 127.1052,
     notiLocationMode: 'radius',
     notiRadiusKm: 2.0,
     interests: ['베이커리', '디저트'],
@@ -31,9 +35,10 @@ const USERS = [
     email: 'consumer2@hub.test',
     nickname: '소진',
     role: 'consumer',
-    baseAddress: '서울 마포구 백범로 35',
-    baseLat: 37.565,
-    baseLng: 126.95,
+    // 반경(2km) 밖에 두어 'always' 모드가 거리와 무관함을 시연한다 (1784에서 약 4km)
+    baseAddress: '경기 성남시 분당구 판교역로 166',
+    baseLat: 37.3948,
+    baseLng: 127.1112,
     notiLocationMode: 'always',
     notiRadiusKm: 2.0,
     interests: ['반찬'],
@@ -47,29 +52,32 @@ const STORES = [
     ownerEmail: 'owner1@hub.test',
     name: '한입 베이커리',
     category: '베이커리',
-    address: '서울 서대문구 연세로 12',
-    lat: 37.5585,
-    lng: 126.9368,
+    address: '경기 성남시 분당구 정자일로 135',
+    lat: 37.367,
+    lng: 127.108,
   },
   {
     ownerEmail: 'owner2@hub.test',
     name: '달콤 디저트랩',
     category: '디저트',
-    address: '서울 서대문구 명물길 24',
-    lat: 37.5571,
-    lng: 126.9345,
+    address: '경기 성남시 분당구 정자동 178',
+    lat: 37.3648,
+    lng: 127.1065,
   },
   {
     ownerEmail: 'owner3@hub.test',
     name: '엄마손 반찬',
     category: '반찬',
-    address: '서울 서대문구 신촌역로 41',
-    lat: 37.5602,
-    lng: 126.9422,
+    address: '경기 성남시 분당구 미금로 55',
+    lat: 37.3502,
+    lng: 127.1085,
   },
 ]
 
 // 활성 딜 5개. '조각 케이크'는 남은 수량 1 — 선착순 경합 데모용
+// 픽업 마감은 6~8시간. 시연 도중 만료로 목록이 비지 않게 하되,
+// 마감 카운트다운이 딜마다 다르게 보이도록 시간을 흩어 놓았다
+// (마감이 지나면 T-14 만료 처리가 목록에서 제외한다 — docs/시연준비.md 참고)
 const DEALS = [
   {
     store: '한입 베이커리',
@@ -79,7 +87,7 @@ const DEALS = [
     salePrice: 2000,
     totalQty: 5,
     remainingQty: 5,
-    deadlineHours: 3,
+    deadlineHours: 6,
   },
   {
     store: '한입 베이커리',
@@ -89,7 +97,7 @@ const DEALS = [
     salePrice: 1500,
     totalQty: 4,
     remainingQty: 4,
-    deadlineHours: 3,
+    deadlineHours: 7,
   },
   {
     store: '달콤 디저트랩',
@@ -99,7 +107,7 @@ const DEALS = [
     salePrice: 3000,
     totalQty: 3,
     remainingQty: 1,
-    deadlineHours: 4,
+    deadlineHours: 8,
   },
   {
     store: '달콤 디저트랩',
@@ -109,7 +117,7 @@ const DEALS = [
     salePrice: 6000,
     totalQty: 2,
     remainingQty: 2,
-    deadlineHours: 4,
+    deadlineHours: 7,
   },
   {
     store: '엄마손 반찬',
@@ -119,7 +127,7 @@ const DEALS = [
     salePrice: 4500,
     totalQty: 6,
     remainingQty: 6,
-    deadlineHours: 2,
+    deadlineHours: 6,
   },
 ]
 
@@ -128,11 +136,26 @@ const FAVORITES = [
   { userEmail: 'consumer2@hub.test', store: '엄마손 반찬' },
 ]
 
+/*
+ * 시연용 소비자 풀 (로그인 미구현 단계의 임시 장치).
+ * 부스 방문자가 QR로 들어올 때 한 명씩 배정받아 서로의 예약·알림이 섞이지 않게 한다.
+ * 기준 위치는 전원 시연 장소(네이버 1784) — 방문자가 그 자리에 있다는 전제.
+ */
+const DEMO_POOL_SIZE = 40
+const POOL_BASE = {
+  address: '경기 성남시 분당구 정자일로 95',
+  lat: 37.3595,
+  lng: 127.1052,
+  radiusKm: 2.0,
+}
+
 async function seed() {
+  printTarget()
+
   const counts = await withTransaction(async (client) => {
     await client.query(`
       TRUNCATE users, stores, user_interest_categories, favorites,
-               deals, reservations, device_tokens, notifications
+               deals, reservations, device_tokens, notifications, demo_pool
       RESTART IDENTITY CASCADE
     `)
 
@@ -202,8 +225,43 @@ async function seed() {
       ])
     }
 
+    // 시연용 소비자 풀 — 관심 카테고리를 고루 섞어 알림 대상 판정이 다양하게 걸리도록 한다
+    for (let i = 1; i <= DEMO_POOL_SIZE; i++) {
+      const { rows } = await client.query(
+        `INSERT INTO users
+           (email, password_hash, nickname, role,
+            base_address, base_lat, base_lng, noti_location_mode, noti_radius_km)
+         VALUES ($1, $2, $3, 'consumer', $4, $5, $6, 'radius', $7)
+         RETURNING id`,
+        [
+          `demo${i}@hub.test`,
+          PASSWORD_HASH,
+          `방문자${i}`,
+          POOL_BASE.address,
+          POOL_BASE.lat,
+          POOL_BASE.lng,
+          POOL_BASE.radiusKm,
+        ],
+      )
+      const poolUserId = rows[0].id
+
+      const category = CATEGORIES[i % CATEGORIES.length]
+      await client.query(
+        'INSERT INTO user_interest_categories (user_id, category) VALUES ($1, $2)',
+        [poolUserId, category],
+      )
+      await client.query('INSERT INTO demo_pool (user_id) VALUES ($1)', [poolUserId])
+    }
+
     const result = {}
-    for (const table of ['users', 'stores', 'deals', 'favorites', 'user_interest_categories']) {
+    for (const table of [
+      'users',
+      'stores',
+      'deals',
+      'favorites',
+      'user_interest_categories',
+      'demo_pool',
+    ]) {
       const { rows } = await client.query(`SELECT count(*)::int AS n FROM ${table}`)
       result[table] = rows[0].n
     }

@@ -60,6 +60,11 @@ export async function searchStores(userId, keyword) {
   return storeRepo.searchWithFavorite({ userId, keyword: keyword?.trim() })
 }
 
+// M1 — 내가 등록한 관심 가게만
+export async function listMyFavorites(userId) {
+  return storeRepo.listFavorites(userId)
+}
+
 // M1 — 즐겨찾기 추가/삭제
 export async function addFavorite(userId, storeId) {
   const id = Number(storeId)

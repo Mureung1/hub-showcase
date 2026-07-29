@@ -37,18 +37,23 @@ hub/
 │     ├─ hooks/       # 커스텀 훅 (필요 시 생성)
 │     └─ styles/      # 전역 스타일 + 디자인 토큰(CSS 변수)
 ├─ server/            # Express 백엔드 (ESM)
-│  └─ src/
-│     ├─ routes/        # URL → 서비스 연결, 요청/응답 처리
-│     ├─ services/      # 도메인 로직: 검증·에러 판단·오케스트레이션 (SQL 금지)
-│     ├─ repositories/  # 데이터 접근: SQL + snake_case→camelCase 매핑
-│     ├─ middlewares/   # requireUser 등
-│     ├─ lib/           # httpError, asyncHandler
-│     ├─ db/            # pg Pool, 트랜잭션 헬퍼, 마이그레이션·시딩
-│     ├─ app.js         # 미들웨어·라우터 조립 (supertest 대상)
-│     └─ index.js       # 서버 기동 진입점
+│  ├─ src/              # 서버가 실행 중에 쓰는 코드만 둔다
+│  │  ├─ routes/        # URL → 서비스 연결, 요청/응답 처리
+│  │  ├─ services/      # 도메인 로직: 검증·에러 판단·오케스트레이션 (SQL 금지)
+│  │  ├─ repositories/  # 데이터 접근: SQL + snake_case→camelCase 매핑
+│  │  ├─ middlewares/   # requireUser 등
+│  │  ├─ lib/           # httpError, asyncHandler
+│  │  ├─ db/            # pg Pool, 트랜잭션 헬퍼 (런타임 전용)
+│  │  ├─ app.js         # 미들웨어·라우터 조립 (supertest 대상)
+│  │  └─ index.js       # 서버 기동 진입점
+│  ├─ scripts/          # 사람이 CLI로 돌리는 것 — 마이그레이션·시딩·측정·검증
+│  └─ migrations/       # 스키마 SQL (scripts/migrate.js가 순서대로 적용)
+├─ load/              # k6 부하·지연 측정 스크립트
 ├─ prototype/         # [동결] 기획 검증용 프로토타입 — 실제 개발에서 사용·수정하지 않는다
 └─ docs/              # 기획 문서 (빌드 대상 아님)
 ```
+
+**`src/` vs `scripts/` 구분 기준**: 서버 프로세스가 import 하면 `src/`, 사람이 `npm run`으로 실행하면 `scripts/`. 측정·검증 스크립트가 런타임 코드에 섞이지 않게 한다.
 
 `prototype/`은 기획 단계에서 핵심 루프를 시연한 일회성 산출물이다. 참고는 가능하나(`npm run dev:proto`) 실제 기능 코드를 여기서 가져오거나 여기에 추가하지 않는다.
 

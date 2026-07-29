@@ -2,8 +2,9 @@ import 'dotenv/config'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pool } from './pool.js'
-import { withTransaction } from './withTransaction.js'
+import { pool } from '../src/db/pool.js'
+import { withTransaction } from '../src/db/withTransaction.js'
+import { printTarget } from './targetInfo.js'
 
 /*
  * 부하 테스트 픽스처 (T-15).
@@ -32,6 +33,8 @@ function arg(name, fallback) {
 }
 
 async function seedLoad() {
+  printTarget()
+
   const stock = arg('stock', 5)
   const users = arg('users', 50)
 
@@ -48,7 +51,7 @@ async function seedLoad() {
       await client.query(
         `INSERT INTO users (email, password_hash, nickname, role,
                             base_address, base_lat, base_lng, noti_location_mode, noti_radius_km)
-         VALUES ($1, $2, $3, 'consumer', '서울 서대문구 신촌로 83', 37.558, 126.936, 'radius', 2.0)
+         VALUES ($1, $2, $3, 'consumer', '경기 성남시 분당구 정자일로 95', 37.3595, 127.1052, 'radius', 2.0)
          ON CONFLICT (email) DO NOTHING`,
         [`${LOAD_EMAIL_PREFIX}${i}@hub.test`, PASSWORD_HASH, `부하${i}`],
       )
@@ -91,7 +94,7 @@ async function seedLoad() {
   })
 
   // k6가 init 컨텍스트에서 open()으로 읽는다 (레포 루트 기준 load/fixture.json)
-  const fixturePath = resolve(dirname(fileURLToPath(import.meta.url)), '../../../load/fixture.json')
+  const fixturePath = resolve(dirname(fileURLToPath(import.meta.url)), '../../load/fixture.json')
   mkdirSync(dirname(fixturePath), { recursive: true })
   writeFileSync(fixturePath, JSON.stringify(result, null, 2))
 

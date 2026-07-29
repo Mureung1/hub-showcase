@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { pool } from './pool.js'
+import { pool } from '../src/db/pool.js'
 
 /*
  * 부하 테스트 결과 검증 (T-15).
@@ -10,7 +10,7 @@ import { pool } from './pool.js'
  * k6의 성공 응답 수를 세는 것만으로는 부족하다. 오버셀은 "성공 응답이 정상적으로 왔는데
  * 실제로는 재고보다 많이 팔린" 상태이므로, 판정 근거는 반드시 DB여야 한다.
  *
- *   node src/db/verifyLoad.js
+ *   npm run verify:load -w server
  */
 
 const LOAD_DEAL_NAME = '[부하테스트] 선착순 상품'

@@ -25,6 +25,25 @@
   margin: 0 0 18px;
 }
 
+/* ── 영역 분리 (내 관심 가게 / 가게 찾기) ── */
+.fav__section {
+  margin-top: 28px;
+}
+
+.fav__heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.fav__count {
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
 .fav__search {
   display: flex;
   gap: 8px;
