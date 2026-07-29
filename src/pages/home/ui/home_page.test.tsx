@@ -63,7 +63,7 @@ function renderHomePage(props: Partial<HomePageProps> = {}) {
 }
 
 describe('HomePage', () => {
-  it('defines a centered retrieval axis with responsive suggestion columns', () => {
+  it('defines a centered retrieval width with left-aligned content and responsive suggestion columns', () => {
     const styles = readFileSync(
       join(process.cwd(), 'src/pages/home/ui/home_page.css'),
       'utf8'
@@ -82,6 +82,8 @@ describe('HomePage', () => {
     expect(stageRule).toContain('background: var(--color-retrieve-blue);');
     expect(heroRule).toContain('width: min(820px, 100%);');
     expect(heroRule).toContain('margin-inline: auto;');
+    expect(heroRule).toContain('justify-items: start;');
+    expect(heroRule).toContain('text-align: left;');
     expect(bodyRule).toContain(
       'width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));'
     );
