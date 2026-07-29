@@ -18,3 +18,20 @@ export const DEFAULT_CLUSTER = CLUSTERS[0]
 
 // 범위(scope) 초기값. 직무를 바꾸면 공고 선택이 무의미해지므로 이 값으로 되돌린다.
 export const defaultScope = () => ({ level: 'cluster', cluster_tag: DEFAULT_CLUSTER, posting_id: null })
+
+// 서버로 나가는 범위 한 벌.
+//
+// 화면의 scope 에는 요청 계약(CONTRACT 5장 B)에 없는 값이 하나 더 있다. `level: 'mine'` 은
+// 사용자가 붙여넣은 공고의 payload 를 그대로 그린다는 화면 전용 표시라서 요청으로 나가면
+// 안 된다. 그 범위에서는 화면이 아예 요청을 하지 않지만, 이 함수가 한 번 더 걸러 두면
+// 실수로 나간 요청도 400 이 아니라 기업군 결과를 받는다.
+//
+// posting 범위인데 공고를 고르지 않은 상태도 같은 이유로 기업군으로 내린다.
+export function apiScope(scope) {
+  const cluster = scope.cluster_tag || DEFAULT_CLUSTER
+  if (scope.level === 'overall') return { level: 'overall', cluster_tag: null, posting_id: null }
+  if (scope.level === 'posting' && scope.posting_id) {
+    return { level: 'posting', cluster_tag: cluster, posting_id: scope.posting_id }
+  }
+  return { level: 'cluster', cluster_tag: cluster, posting_id: null }
+}

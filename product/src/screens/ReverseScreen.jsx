@@ -2,16 +2,21 @@ import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
 import AnalysisNotice from '../components/AnalysisNotice'
 import PostingAnalyzePanel, { ConfBadge, PostingInterpretation } from '../components/PostingAnalyzePanel'
+import ScopeSwitch from '../components/ScopeSwitch'
+import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
+import { jumpToSection } from '../hooks/sectionJump'
 import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
-import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
+import { DEFAULT_CLUSTER } from '../data/clusters'
 
 // 03 채용공고 해석 화면.
 // 네 섹션(전체 baseline / 기업군 편차 / 개별 공고 / 내 공고 직접 분석)을 항상 표시한다.
 // 데이터는 POST /api/reverse 실통신(저장된 활성 결과 + DB 공고 목록)으로 받는다.
 // 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
+// 범위를 고르는 자리는 맨 위 ScopeSwitch 하나뿐이다 — 기업군 칩과 공고 목록도 그 안에 있다.
 
 const NAV_IDS = ['baseline', 'cluster', 'posting', 'my-posting']
+const NAV_ITEMS = [['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석'], ['my-posting', '내 공고 직접 분석']]
 
 function fetchReverse(jobRoleId, scope, signal) {
   return fetchJson('/api/reverse', {
@@ -22,14 +27,14 @@ function fetchReverse(jobRoleId, scope, signal) {
   })
 }
 
-function ReverseScreen({ go, scope, setScope, job }) {
+function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
   const jobRoleId = job.job_role_id
   const jobLabel = job.display_name
   const cluster = scope.cluster_tag || DEFAULT_CLUSTER
   const postingId = scope.level === 'posting' ? scope.posting_id : null
   const [data, setData] = useState(null)          // cluster 범위 응답
   const [detail, setDetail] = useState(null)      // posting 범위 응답
-  const [search, setSearch] = useState('')
+  const [detailScope, setDetailScope] = useState(null) // 그 응답이 실제로 쓴 범위
   const [status, setStatus] = useState('loading') // loading | ready | error | notready
   const [detailStatus, setDetailStatus] = useState(postingId ? 'loading' : 'idle')
   const activeSection = useScrollSpy(NAV_IDS)
@@ -50,30 +55,26 @@ function ReverseScreen({ go, scope, setScope, job }) {
     if (!postingId) return undefined
     const controller = new AbortController()
     fetchReverse(jobRoleId, { level: 'posting', cluster_tag: cluster, posting_id: postingId }, controller.signal)
-      .then((json) => { setDetail(json.posting); setDetailStatus('ready') })
+      .then((json) => { setDetail(json.posting); setDetailScope(json.scope || null); setDetailStatus('ready') })
       .catch((error) => { if (error.name !== 'AbortError') setDetailStatus('error') })
     return () => controller.abort()
   }, [jobRoleId, cluster, postingId])
 
-  const selectPosting = (nextPostingId) => {
-    if (nextPostingId === postingId) {
-      // 같은 공고를 다시 누르면 접는다
-      setDetail(null)
-      setDetailStatus('idle')
-      setScope({ level: 'cluster', cluster_tag: cluster, posting_id: null })
-      return
-    }
+  // 범위 전환. ScopeSwitch 가 만든 다음 범위 한 벌을 그대로 받는다.
+  // 스크롤은 건드리지 않는다 — 범위를 바꾼 자리에 그대로 있어야 무엇이 바뀌었는지 보인다.
+  const changeScope = (next) => {
+    const nextCluster = next.cluster_tag || DEFAULT_CLUSTER
+    const nextPostingId = next.level === 'posting' ? next.posting_id : null
+    // 기업군이 바뀌면 지금 그리고 있는 편차·공고 목록은 다른 기업군의 것이 된다.
+    if (nextCluster !== cluster) setStatus('loading')
     setDetail(null)
-    setDetailStatus('loading')
-    setScope({ level: 'posting', cluster_tag: cluster, posting_id: nextPostingId })
+    setDetailScope(null)
+    setDetailStatus(nextPostingId ? 'loading' : 'idle')
+    setScope(next)
   }
 
-  const selectCluster = (nextCluster) => {
-    setStatus('loading')
-    setDetail(null)
-    setDetailStatus('idle')
-    setScope({ level: 'cluster', cluster_tag: nextCluster, posting_id: null })
-  }
+  // 붙여넣은 공고 범위로 다음 화면을 연다. 기업군 선택은 되돌아올 때를 위해 남겨 둔다.
+  const openMine = (target) => go(target, { scope: { level: 'mine', cluster_tag: cluster, posting_id: null } })
 
   if (status === 'notready') {
     return (
@@ -98,10 +99,8 @@ function ReverseScreen({ go, scope, setScope, job }) {
     )
   }
 
-  const allPostings = data?.postings_in_cluster || []
-  const filtered = search
-    ? allPostings.filter((p) => (p.company + p.title).toLowerCase().includes(search.toLowerCase()))
-    : allPostings
+  // 공고 목록은 화면이 그리지 않고 ScopeSwitch 의 3단으로 넘긴다.
+  const postings = data?.postings_in_cluster || []
 
   return (
     <>
@@ -113,6 +112,17 @@ function ReverseScreen({ go, scope, setScope, job }) {
             <h1>공고가 반복하는 문장 뒤에서, 이 회사·기업군이 유독 원하는 지점을 되짚습니다.</h1>
             <p>전체는 직군 공통 기대치(baseline)를, 기업군·개별 공고는 그 기준 위에서 더 높거나 추가로 요구되는 편차를 근거·신뢰도와 함께 보여 줍니다.</p>
           </header>
+
+          <ScopeSwitch
+            scope={scope}
+            jobLabel={jobLabel}
+            postings={postings}
+            postingsLoading={status === 'loading'}
+            myPosting={myPosting}
+            payloadScope={detailScope}
+            hint={scope.level === 'mine' ? '내가 입력한 공고의 해석은 아래 「내 공고 직접 분석」 섹션에 있습니다.' : null}
+            onSelect={changeScope}
+          />
 
           {status === 'loading' && <p className="status-panel">채용공고를 해석하는 중입니다…</p>}
 
@@ -143,15 +153,8 @@ function ReverseScreen({ go, scope, setScope, job }) {
               {/* 섹션 2 · 기업군 편차 */}
               <section className="section-block" id="cluster">
                 <div className="section-title">
-                  <h2>기업군이 baseline 위에서 더 요구하는 것</h2>
-                  <span className="hint">기업군을 고르면 이 섹션과 아래 개별 공고가 바뀝니다</span>
-                </div>
-                <div className="cluster-chips">
-                  {CLUSTERS.map((c) => (
-                    <button key={c} type="button" className={`scope-chip${c === cluster ? ' scope-chip--on' : ''}`} onClick={() => selectCluster(c)}>
-                      {c}
-                    </button>
-                  ))}
+                  <h2>{cluster} 기업군이 baseline 위에서 더 요구하는 것</h2>
+                  <span className="hint">맨 위 범위 선택에서 기업군을 바꾸면 이 섹션이 바뀝니다</span>
                 </div>
                 <div className="dev-grid">
                   {data.deviations.map((d) => (
@@ -192,31 +195,11 @@ function ReverseScreen({ go, scope, setScope, job }) {
                   <h2>개별 공고 — 원문과 해석을 나란히</h2>
                   <span className="hint">하이라이트 = baseline보다 높거나 baseline에 없는 요구 문장</span>
                 </div>
-                <input
-                  className="posting-search"
-                  type="text"
-                  placeholder="회사·공고명 검색"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <p className="posting-count">
-                  {cluster} 공고 전체 {allPostings.length}건{search && ` · 검색 결과 ${filtered.length}건`}
-                </p>
-                <div className="posting-list">
-                  {filtered.length === 0 && <p className="posting-empty">조건에 맞는 공고가 없습니다.</p>}
-                  {filtered.map((p) => (
-                    <button
-                      key={p.posting_id}
-                      type="button"
-                      className={`posting-row${p.posting_id === postingId ? ' posting-row--on' : ''}`}
-                      onClick={() => selectPosting(p.posting_id)}
-                    >
-                      <span className="co">{p.company}</span>
-                      <span className="ti">{p.title}</span>
-                      <span className="dt">{p.posted_at}</span>
-                    </button>
-                  ))}
-                </div>
+                {!postingId && (
+                  <p className="fold-note">
+                    맨 위 범위 선택에서 <b>개별 공고</b>를 고르고 목록에서 공고를 누르면 이 자리에 원문과 해석이 나란히 열립니다.
+                  </p>
+                )}
 
                 {detailStatus === 'loading' && <p className="status-panel">공고를 해석하는 중입니다…</p>}
                 {detailStatus === 'error' && <p className="status-panel status-panel--error">선택한 공고 해석을 불러오지 못했습니다.</p>}
@@ -226,7 +209,7 @@ function ReverseScreen({ go, scope, setScope, job }) {
                     key={detail.posting_id}
                     posting={detail}
                     jobLabel={jobLabel}
-                    footer={<div className="posting-input-note"><b>공고 직접 입력</b> — 아래 <a href="#my-posting">내 공고 직접 분석</a>에 원문을 붙여넣으면 같은 방식으로 해석합니다.</div>}
+                    footer={<div className="posting-input-note"><b>공고 직접 입력</b> — 아래 <a href="#my-posting" onClick={(event) => jumpToSection(event, 'my-posting')}>내 공고 직접 분석</a>에 원문을 붙여넣으면 같은 방식으로 해석합니다.</div>}
                   />
                 )}
               </section>
@@ -241,7 +224,9 @@ function ReverseScreen({ go, scope, setScope, job }) {
                   job={jobRoleId}
                   jobLabel={jobLabel}
                   fallback={{ baseline: data.baseline, deviations: data.deviations }}
-                  go={go}
+                  myPosting={myPosting}
+                  setMyPosting={setMyPosting}
+                  onOpenMine={openMine}
                 />
               </section>
 
@@ -253,12 +238,7 @@ function ReverseScreen({ go, scope, setScope, job }) {
           )}
         </article>
 
-        <aside className="floating-nav" aria-label="채용공고 해석 목차">
-          <p className="floating-nav__label">공고 해석</p>
-          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석'], ['my-posting', '내 공고 직접 분석']].map(([id, label]) => (
-            <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
-          ))}
-        </aside>
+        <SectionNav label="공고 해석" ariaLabel="채용공고 해석 목차" items={NAV_ITEMS} active={activeSection} />
       </main>
     </>
   )
