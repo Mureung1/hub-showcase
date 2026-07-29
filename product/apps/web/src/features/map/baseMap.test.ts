@@ -25,15 +25,18 @@ describe("addMissingStyleImageFallback", () => {
 });
 
 describe("hideExternalBuildingLayers", () => {
-  it("hides the building extrusion provided by the external map style", () => {
+  it("hides both external building footprints and extrusions", () => {
     const setLayoutProperty = vi.fn();
     const map = {
-      getLayer: vi.fn((layerId: string) => (layerId === "building-3d" ? { id: layerId } : undefined)),
+      getLayer: vi.fn((layerId: string) =>
+        ["building", "building-3d"].includes(layerId) ? { id: layerId } : undefined,
+      ),
       setLayoutProperty,
     };
 
     hideExternalBuildingLayers(map as never);
 
+    expect(setLayoutProperty).toHaveBeenCalledWith("building", "visibility", "none");
     expect(setLayoutProperty).toHaveBeenCalledWith("building-3d", "visibility", "none");
   });
 

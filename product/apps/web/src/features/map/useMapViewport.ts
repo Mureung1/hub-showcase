@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 
 import type { AnalysisMoveMode } from "../analysis/types";
@@ -23,12 +23,15 @@ export function useMapViewport(
     initialPresentationMode,
   );
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
+  const [marketTransitionActive, setMarketTransitionActive] = useState(false);
   const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialCenter);
   const [draftCenter, setDraftCenter] = useState<[number, number] | null>(null);
   const [analysisMoveMode, setAnalysisMoveMode] = useState<AnalysisMoveMode>("idle");
   const [visibleMapCenter, setVisibleMapCenter] = useState<[number, number]>(initialCenter);
   const [visibleMapBounds, setVisibleMapBounds] = useState<MapBounds | null>(null);
   const mapRef = useRef<MapRef>(null);
+  const marketTransitionFrameRef = useRef<number | null>(null);
+  const marketTransitionCleanupRef = useRef<(() => void) | null>(null);
   const profile = getMapPresentationProfile(presentationMode);
   const mapMode: MapMode = presentationMode === "flat" ? "original" : "localtwin";
   const prefabMode = presentationMode === "storefront3d";
@@ -40,6 +43,75 @@ export function useMapViewport(
     () => (draftCenter ? findReadyOverlayRegion(draftCenter) : undefined),
     [draftCenter],
   );
+
+  useEffect(
+    () => () => {
+      if (marketTransitionFrameRef.current !== null) {
+        cancelAnimationFrame(marketTransitionFrameRef.current);
+      }
+      marketTransitionCleanupRef.current?.();
+    },
+    [],
+  );
+
+  function queueMarketTransition(center: [number, number], commitMarket: () => void) {
+    if (marketTransitionFrameRef.current !== null) {
+      cancelAnimationFrame(marketTransitionFrameRef.current);
+    }
+    marketTransitionCleanupRef.current?.();
+    setMarketTransitionActive(true);
+
+    marketTransitionFrameRef.current = requestAnimationFrame(() => {
+      marketTransitionFrameRef.current = null;
+      const map = mapRef.current?.getMap();
+      if (!map) {
+        commitMarket();
+        setCommittedCenter(center);
+        setMarketTransitionActive(false);
+        return;
+      }
+
+      let active = true;
+      const finish = () => {
+        if (!active) return;
+        marketTransitionCleanupRef.current = null;
+        setMarketTransitionActive(false);
+      };
+      const restoreCamera = () => {
+        if (!active) return;
+        if (profile.camera.pitch === 0 && profile.camera.bearing === 0) {
+          finish();
+          return;
+        }
+        map.once("moveend", finish);
+        map.easeTo({
+          ...profile.camera,
+          duration: 260,
+          essential: true,
+        });
+      };
+
+      marketTransitionCleanupRef.current = () => {
+        active = false;
+        map.off("moveend", restoreCamera);
+        map.off("moveend", finish);
+        map.stop();
+      };
+
+      map.stop();
+      commitMarket();
+      setCommittedCenter(center);
+      map.once("moveend", restoreCamera);
+      map.easeTo({
+        center,
+        zoom: 15.4,
+        pitch: 0,
+        bearing: 0,
+        duration: 720,
+        essential: true,
+      });
+    });
+  }
 
   function moveCamera(mode: MapPresentationMode, duration = 500) {
     const camera = getMapPresentationProfile(mode).camera;
@@ -78,18 +150,28 @@ export function useMapViewport(
     setMapMode,
     prefabMode,
     setPrefabMode,
+    marketTransitionActive,
     storefront3dUnavailable,
     setStorefront3dUnavailable,
     baseBuildingsVisible: profile.selectedMarketBuildingsVisible,
     setBaseBuildingsVisible: () => undefined,
     baseBuildingsRendered: profile.fallbackBuildingsVisible,
     committedCenter,
+    transitionToMarket: (center: [number, number], commitMarket: () => void) => {
+      queueMarketTransition(center, commitMarket);
+    },
     focusCenter: (center: [number, number], store: boolean) => {
       if (store) setStorefront3dUnavailable(false);
+
+      if (!store) {
+        queueMarketTransition(center, () => undefined);
+        return;
+      }
+
       setCommittedCenter(center);
       mapRef.current?.flyTo({
         center,
-        zoom: store ? 16.8 : 15.4,
+        zoom: 16.8,
         ...profile.camera,
         duration: 900,
         essential: true,

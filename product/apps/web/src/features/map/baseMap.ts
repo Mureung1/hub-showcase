@@ -3,7 +3,7 @@ import type { Map as MapLibreMap } from "maplibre-gl";
 export const BASE_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 export const BASE_BUILDING_LAYER_ID = "localtwin-base-building-3d";
 
-const EXTERNAL_BUILDING_LAYER_IDS = ["building-3d"] as const;
+const EXTERNAL_BUILDING_LAYER_IDS = ["building", "building-3d"] as const;
 const FALLBACK_ICON_SIZE = 12;
 
 export type MissingStyleImageEvent = {
