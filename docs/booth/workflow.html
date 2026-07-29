@@ -147,7 +147,11 @@
           왼쪽 = 외부 API 입력 / 가운데 = 에이전트 본선 / 오른쪽 = 분기 결과
           x=196 = 재생성 고리 레인, x=268 = 학습 고리 레인 (다른 상자와 안 겹치게 비워둠)
         -->
-        <svg class="chart" viewBox="0 0 273 269" xmlns="http://www.w3.org/2000/svg">
+        <!--
+          minY를 -1로 둔다: 첫 박스가 y=0이라 테두리(굵기 0.6)의 위쪽 절반이 뷰박스 밖으로
+          잘려 그 변만 얇게 보였다. 위로 1 넓혀 선이 온전히 들어오게 한다.
+        -->
+        <svg class="chart" viewBox="0 -1 273 270" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
               markerHeight="5" orient="auto-start-reverse">
@@ -269,10 +273,11 @@
           <text class="t br" x="136" y="147.6">예</text>
 
           <path class="ln-o" marker-end="url(#ao)" d="M187,132 L196,132 L196,106 L188,106" />
-          <text class="t br" x="199" y="124" style="fill: #a9791c">위반이면</text>
-          <text class="t br" x="199" y="128.6" style="fill: #a9791c">1회 재생성</text>
-          <text class="t s" x="199" y="134.5">2회 실패하면</text>
-          <text class="t s" x="199" y="139">템플릿으로 폴백</text>
+          <!-- 되돌아가는 세로 화살표(y 106~132)의 한가운데에 맞춰 올린다 -->
+          <text class="t br" x="199" y="111.5" style="fill: #a9791c">위반이면</text>
+          <text class="t br" x="199" y="116.1" style="fill: #a9791c">1회 재생성</text>
+          <text class="t s" x="199" y="122">2회 실패하면</text>
+          <text class="t s" x="199" y="126.5">템플릿으로 폴백</text>
 
           <!-- ===== L6 사람 ===== -->
           <rect x="78" y="150" width="109" height="18" rx="3" fill="url(#human)"
