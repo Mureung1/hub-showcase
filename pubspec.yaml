@@ -95,7 +95,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # 도트아트 자산 25장. 디렉터리 단위로 선언하므로 파일이 늘어도 여기는 안 고친다.
+  # 도트아트 자산. 디렉터리 단위로 선언하므로 파일이 늘어도 여기는 안 고친다
+  # (디렉터리가 새로 생길 때만 한 줄 추가한다 — 이 줄이 없으면 파일이 디스크에
+  #  있어도 번들에 안 실려 앱에서는 못 읽는다).
   # 경로 오타·선언 누락은 test/core/pixel_asset_test.dart 가 두 층으로 잡는다
   # (File.existsSync = 디스크 대조 · rootBundle.load = 이 선언 자체의 검증).
   assets:
@@ -104,6 +106,7 @@ flutter:
     - assets/auras/
     - assets/empty/
     - assets/dialogs/
+    - assets/frame/
 
   fonts:
     # 두 가변 폰트를 역할로 나눠 번들한다. 역할 분리의 정본은 AppTypography다.

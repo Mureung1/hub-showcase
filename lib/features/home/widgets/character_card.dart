@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/growth_rules.dart';
+import '../../../core/constants/rebirth_frame.dart';
 import '../../../core/constants/shop_items.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -307,6 +308,16 @@ class CharacterHero extends StatelessWidget {
   /// 라운드 24 모서리 안쪽에서 잘리지 않는 거리다.
   static const double _overlayInset = AppSpacing.md;
 
+  /// 환생 액자를 히어로 가장자리에서 얼마나 들여 그릴지.
+  ///
+  /// 액자 자산의 아래 두 모서리는 **직각**이라 라운드 24 클립과 모양이 다르다.
+  /// 8dp 들여 그리면 그 어긋남이 클립 밖 투명 영역에서만 일어난다: 자산 안에서
+  /// 그림이 실제로 칠해지는 가장 바깥 픽셀이 캔버스 가장자리에서 16px(= 이 렌더
+  /// 배율로 4dp) 안쪽이라, 좌하단 최외곽 점은 히어로 좌하단에서 (12, 16.25)dp에
+  /// 놓인다. 반지름 24 원(중심 (24, 24))의 안쪽이므로 클립이 잘라내는 것은
+  /// 투명 픽셀뿐이다. 자산을 다시 그려 라운드를 넣으면 이 인셋은 0으로 갈 수 있다.
+  static const double _frameInset = AppSpacing.sm;
+
   /// 백드롭 사각형을 좌표 테스트에서 집기 위한 키.
   ///
   /// 예전에는 백드롭을 감싸던 `ClipRRect`로 찾았지만, full-bleed가 되면서 라운드는
@@ -346,6 +357,22 @@ class CharacterHero extends StatelessWidget {
             ),
             // 오라 — 캐릭터 주변에 흩뿌린다(장착했을 때만).
             if (aura != null) ..._auras(aura!),
+            // ── 환생 액자. **배경·오라 위, 캐릭터·오버레이 아래**다.
+            //
+            //    위: 액자는 풍경을 담는 테두리라 백드롭과 오라보다 앞에 와야
+            //    테두리로 읽힌다. 아래: 캐릭터 도트아트와 두 오버레이(훈장·이름표)를
+            //    가리면 안 된다 — 훈장은 좌상단, 액자 모서리 장식도 좌상단이라
+            //    폭이 좁은 단말에서 겹치는데, 그때 살아남아야 하는 쪽은 정보다.
+            //
+            //    탭을 먹지 않게 IgnorePointer로 감싼다. 히어로를 통째로 덮는
+            //    사각형이라 나중에 히어로에 제스처가 붙으면 조용히 가로챌 수 있다.
+            Positioned.fill(
+              left: _frameInset,
+              top: _frameInset,
+              right: _frameInset,
+              bottom: _frameInset,
+              child: IgnorePointer(child: _RebirthFrame(rebirth: rebirth)),
+            ),
             // 캐릭터는 가운데가 아니라 **바닥 기준**으로 세운다. 원본이 하단 정렬
             // 그림이라 발밑이 그림의 아래 끝이고, 그 끝을 지평선 아래로 내려야
             // 잔디를 밟은 것처럼 보인다.
@@ -414,6 +441,67 @@ class CharacterHero extends StatelessWidget {
       Positioned(top: characterTop + 23, right: 48, child: sprite(20)),
       Positioned(bottom: groundInset + 2, right: 60, child: sprite(24)),
     ];
+  }
+}
+
+/// 환생 등급 액자 — 히어로 테두리에 두르는 **9-slice 도트아트**.
+///
+/// 등급 구간(0~2 / 3~5 / 6+)은 [rebirthFrameAsset]이 정한다. 여기서는 "어떻게
+/// 그리는가"만 다룬다.
+///
+/// **왜 9-slice인가**: 자산은 1024×1024 정사각인데 히어로는 폭 320~430 × 높이
+/// 270의 가로로 긴 사각형이다. 통째로 늘리면(`BoxFit.fill`) 모서리 장식이 가로로
+/// 찌그러지고, `contain`은 히어로를 다 두르지 못한다. 9-slice는 **모서리를 그대로
+/// 두고 변만 늘린다** — 변 중앙(원본 256~767)이 완전히 균일한 단색 막대라
+/// 세로 0.25배로 눌려도 뭉개질 무늬가 없다(자산 계약은 [RebirthFrame] 참조).
+///
+/// **[_scale]이 이 위젯의 핵심이다.** 9-slice는 모서리를 늘리지 않고 원본 크기로
+/// 찍으므로, 배율 없이 그리면 256px 모서리가 **256dp**로 나와 히어로(270dp)를
+/// 통째로 뒤덮는다. 4로 나눠 모서리를 64dp로 만든다.
+///
+/// [FilterQuality.none](최근접)이라 픽셀 격자가 산다. [PixelArt]의 기본값이
+/// 그대로 맞아 따로 지정하지 않는다.
+class _RebirthFrame extends StatelessWidget {
+  const _RebirthFrame({required this.rebirth});
+
+  final int rebirth;
+
+  /// 자산 한 변(원본 픽셀). 3종 모두 1024×1024다.
+  static const double _sourcePx = 1024;
+
+  /// 모서리 블록 한 변(원본 픽셀). 자산 제작 시 16블록(16×16px)으로 고정했다.
+  static const double _cornerPx = 256;
+
+  /// 논리 배율 — 원본 1024px을 256dp로 읽는다.
+  static const double _scale = 4;
+
+  /// 논리 좌표계에서의 자산 크기(256dp)와 모서리 크기(64dp).
+  static const double _sourceDp = _sourcePx / _scale;
+  static const double _cornerDp = _cornerPx / _scale;
+
+  /// 늘어나도 되는 중앙 영역. **원본 픽셀이 아니라 논리 좌표**다(→ [PixelArt.centerSlice]).
+  /// 원본 (256,256,768,768)을 [_scale]로 나눈 값이다.
+  static const Rect _centerSlice = Rect.fromLTRB(
+    _cornerDp,
+    _cornerDp,
+    _sourceDp - _cornerDp,
+    _sourceDp - _cornerDp,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return PixelArt(
+      asset: rebirthFrameAsset(rebirth),
+      // 액자를 못 읽으면 **아무것도 그리지 않는다.** 장식이라 이모지로 떨어지면
+      // 히어로 한복판에 정체불명의 글자가 뜨고, 틴트로 떨어지면 풍경을 덮는다.
+      // 없는 채로 히어로가 멀쩡한 것이 가장 나은 실패다.
+      fallback: const SizedBox.shrink(),
+      scale: _scale,
+      centerSlice: _centerSlice,
+      // 9-slice는 그림 전체가 보이는 fit에서만 성립한다(cover·none 금지).
+      fit: BoxFit.fill,
+      // 장식이므로 스크린 리더가 읽을 것이 없다 — 등급은 좌상단 훈장이 말한다.
+    );
   }
 }
 

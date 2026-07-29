@@ -20,7 +20,16 @@ class PixelArt extends StatelessWidget {
     this.fit = BoxFit.contain,
     this.filterQuality = FilterQuality.none,
     this.semanticLabel,
-  });
+    this.scale,
+    this.centerSlice,
+  }) : assert(
+         centerSlice == null || scale != null,
+         'centerSlice는 논리 좌표라 scale 없이는 의미가 정해지지 않는다',
+       ),
+       assert(
+         centerSlice == null || (fit != BoxFit.none && fit != BoxFit.cover),
+         'centerSlice는 그림 전체가 보이는 fit에서만 성립한다 (BoxFit.fill을 쓸 것)',
+       );
 
   /// 이모지로 떨어지는 정사각 배치 — 캐릭터·오라·빈 화면용 축약.
   ///
@@ -73,6 +82,24 @@ class PixelArt extends StatelessWidget {
 
   final String? semanticLabel;
 
+  /// 자산의 **논리 배율** — 원본 픽셀 ÷ 이 값 = 논리 크기(dp).
+  ///
+  /// null이면 번들 배율(1.0)이라 원본 1px = 1dp다. 자산이 실제로 그릴 크기보다
+  /// 훨씬 큰 캔버스로 그려졌을 때만 준다. [centerSlice]와 짝이다 — 9-slice는
+  /// 모서리를 **늘리지 않고 원본 크기 그대로** 찍으므로, 배율이 없으면 1024px
+  /// 자산의 256px 모서리가 256dp로 그려져 화면을 통째로 뒤덮는다.
+  final double? scale;
+
+  /// 9-slice(나인패치) 중앙 영역. 주면 이 사각형 **안쪽만** 늘어나고 네 모서리는
+  /// 원본 비율을 지킨다 — 테두리 장식이 늘어나 뭉개지는 것을 막는다.
+  ///
+  /// ⚠️ **좌표는 원본 픽셀이 아니라 논리 좌표(원본 픽셀 ÷ [scale])다.**
+  /// Flutter는 `sliceBorder = inputSize / scale - centerSlice.size`로 테두리를
+  /// 계산한 뒤 그릴 때만 `centerSlice * scale`로 되돌린다
+  /// (`painting/decoration_image.dart`의 `paintImage`). 원본 픽셀 좌표를 그대로
+  /// 넣으면 sliceBorder가 음수가 되어 소스 사각형이 이미지 밖을 가리킨다.
+  final Rect? centerSlice;
+
   @override
   Widget build(BuildContext context) {
     return Image.asset(
@@ -82,6 +109,8 @@ class PixelArt extends StatelessWidget {
       fit: fit,
       filterQuality: filterQuality,
       semanticLabel: semanticLabel,
+      scale: scale,
+      centerSlice: centerSlice,
       // errorBuilder를 주는 순간 Image는 로드 예외를 다시 던지지 않는다. 이게
       // 없으면 자산 하나가 빠졌을 때 화면 전체가 붉은 오류 박스로 죽는다.
       errorBuilder: (_, _, _) => fallback,
