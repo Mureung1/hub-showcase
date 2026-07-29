@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "install-ffmpeg": "apt-get update && apt-get install -y ffmpeg python3 python3-pip"
   },
   "keywords": [
     "shortsgen",

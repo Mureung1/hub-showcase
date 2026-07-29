@@ -643,12 +643,18 @@ async function runStep4(jobId) {
 
     // ===== 비디오 업로드 =====
     if (!videoUrl.startsWith("http")) {
-      let cleanPath = videoUrl;
-      if (cleanPath.startsWith("/")) cleanPath = cleanPath.slice(1);
-      if (cleanPath.startsWith("backend/"))
-        cleanPath = cleanPath.slice("backend/".length);
+      // videoUrl은 이미 절대 경로이거나 /ai-pipeline/output/로 시작함
+      let localVideoPath = videoUrl;
 
-      const localVideoPath = path.resolve(process.cwd(), cleanPath);
+      // 절대 경로가 아니면 변환
+      if (!path.isAbsolute(localVideoPath)) {
+        if (localVideoPath.startsWith("/ai-pipeline/"))
+          localVideoPath = path.resolve(process.cwd(), "../../" + localVideoPath.slice(1));
+        else if (localVideoPath.startsWith("/"))
+          localVideoPath = path.resolve("/", localVideoPath.slice(1));
+      }
+
+      console.log("[Step 4] 원본 경로:", videoUrl);
       console.log("[Step 4] 절대 경로 (비디오):", localVideoPath);
       console.log("[Step 4] 파일 존재 여부:", fs.existsSync(localVideoPath));
 
@@ -701,12 +707,18 @@ async function runStep4(jobId) {
 
     // ===== 썸네일 업로드 =====
     if (!thumbnailUrl.startsWith("http")) {
-      let cleanPath = thumbnailUrl;
-      if (cleanPath.startsWith("/")) cleanPath = cleanPath.slice(1);
-      if (cleanPath.startsWith("backend/"))
-        cleanPath = cleanPath.slice("backend/".length);
+      // thumbnailUrl은 이미 절대 경로이거나 /ai-pipeline/output/로 시작함
+      let localThumbnailPath = thumbnailUrl;
 
-      const localThumbnailPath = path.resolve(process.cwd(), cleanPath);
+      // 절대 경로가 아니면 변환
+      if (!path.isAbsolute(localThumbnailPath)) {
+        if (localThumbnailPath.startsWith("/ai-pipeline/"))
+          localThumbnailPath = path.resolve(process.cwd(), "../../" + localThumbnailPath.slice(1));
+        else if (localThumbnailPath.startsWith("/"))
+          localThumbnailPath = path.resolve("/", localThumbnailPath.slice(1));
+      }
+
+      console.log("[Step 4] 원본 경로:", thumbnailUrl);
       console.log("[Step 4] 절대 경로 (썸네일):", localThumbnailPath);
       console.log("[Step 4] 파일 존재 여부:", fs.existsSync(localThumbnailPath));
 

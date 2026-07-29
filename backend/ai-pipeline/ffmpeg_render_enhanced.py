@@ -102,13 +102,30 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
         ]
 
         print(f"[DEBUG] FFmpeg 명령어 실행 중...", file=sys.stderr)
+        print(f"[DEBUG] FFmpeg CMD: {' '.join(ffmpeg_cmd)}", file=sys.stderr)
+
         result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
 
-        if result.returncode != 0:
-            print(f"[DEBUG] FFmpeg stderr: {result.stderr}", file=sys.stderr)
-            raise Exception(f"FFmpeg error: {result.stderr}")
+        print(f"[DEBUG] FFmpeg returncode: {result.returncode}", file=sys.stderr)
+        if result.stderr:
+            print(f"[DEBUG] FFmpeg stderr: {result.stderr[:500]}", file=sys.stderr)
+        if result.stdout:
+            print(f"[DEBUG] FFmpeg stdout: {result.stdout[:500]}", file=sys.stderr)
 
+        if result.returncode != 0:
+            raise Exception(f"FFmpeg error (code {result.returncode}): {result.stderr}")
+
+        # 파일 생성 확인 (생성 전!)
+        print(f"[DEBUG] 영상 파일 존재 확인 중: {video_path}", file=sys.stderr)
+        if not os.path.exists(video_path):
+            raise Exception(f"FFmpeg failed to create video: {video_path} not found")
+
+        video_size = os.path.getsize(video_path)
         print(f"[DEBUG] 영상 파일 생성됨: {video_path}", file=sys.stderr)
+        print(f"[DEBUG] 영상 파일 크기: {video_size} bytes", file=sys.stderr)
+
+        if video_size == 0:
+            raise Exception(f"FFmpeg created empty file (0 bytes)")
 
         # 썸네일 생성 (첫 프레임)
         thumbnail_cmd = [
@@ -126,14 +143,12 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
         if result.returncode != 0:
             raise Exception(f"Thumbnail generation failed: {result.stderr}")
 
-        # 파일 존재 확인
-        if not os.path.exists(video_path):
-            raise Exception(f"Video file was not created: {video_path}")
+        # 썸네일 파일 존재 확인
         if not os.path.exists(thumbnail_path):
             raise Exception(f"Thumbnail file was not created: {thumbnail_path}")
 
-        video_size = os.path.getsize(video_path)
-        print(f"[DEBUG] 영상 파일 크기: {video_size} bytes", file=sys.stderr)
+        thumbnail_size = os.path.getsize(thumbnail_path)
+        print(f"[DEBUG] 썸네일 파일 크기: {thumbnail_size} bytes", file=sys.stderr)
 
         result = {
             "status": "success",
