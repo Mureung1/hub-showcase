@@ -315,7 +315,6 @@ export function ProgressChecklist() {
                         checked={task.done}
                         onChange={() => toggleTask(task)}
                         label={task.label}
-                        soundType={!task.done && doneCount + 1 === total ? 'finish' : 'click'}
                         style={{ fontSize: '16px', color: NEAR_WHITE }}
                       />
                     </div>
