@@ -227,7 +227,7 @@ function classifySchema(
             topicRestated: {
               type: "string",
               description:
-                "이 섹션이 논하는 주제를 한 문장으로. 주장의 방향(찬성/반대)은 쓰지 말 것.",
+                "이 섹션이 논하는 주제를 40자 이내 한 구절로. 주장의 방향(찬성/반대)은 쓰지 말 것.",
             },
             agendaIds: {
               type: "array",
@@ -239,10 +239,12 @@ function classifySchema(
             secondAgendaReason: {
               type: "string",
               description:
-                "agendaIds가 2개일 때만 작성. 두 번째 쟁점에서 이 섹션이 별도로 논하는 내용. 1개면 빈 문자열.",
+                "agendaIds가 2개일 때만 작성. 두 번째 쟁점에서 이 섹션이 별도로 논하는 내용. 1개면 생략.",
             },
           },
-          required: ["sectionId", "topicRestated", "agendaIds", "secondAgendaReason"],
+          // 스키마 다이어트(§5.5.2 B-2): secondAgendaReason을 required에서 제외해 optional 시도.
+          // OpenRouter·Qwen이 strict에서 optional을 거부하면 실측으로 드러나고, 그때 되돌린다.
+          required: ["sectionId", "topicRestated", "agendaIds"],
         },
       },
     },

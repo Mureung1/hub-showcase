@@ -17,6 +17,7 @@ import type {
 } from "./ports/agendaClassifier.port.js";
 import { fnv1a, pickPivot } from "./pipeline/pickPivot.js";
 import { seededShuffle } from "./pipeline/shuffle.js";
+import { mapWithConcurrency } from "./pipeline/concurrency.js";
 import { agendaLabel, isSuspiciousTitle } from "./pipeline/suspiciousTitle.js";
 import { finalizeDrafts, firstSentence } from "./pipeline/postProcess.js";
 
@@ -109,6 +110,7 @@ export async function buildAgendaDrafts(
     reassignments: [],
     newAgendaIds: [],
     titleRevisions: [],
+    stage3Calls: [],
     stage3bInvoked: false,
     stage3Failed: false,
     stage4Ran: false,
@@ -198,50 +200,123 @@ export async function buildAgendaDrafts(
     }
   };
 
-  const stage3Start = performance.now();
-  try {
-    const shuffledAgendas = seededShuffle<AgendaRef>(
-      candidates.map(toAgendaRef),
-      shuffleSeed,
-    );
-    const shuffledSections = seededShuffle<ClassifiableSection>(
-      nonPivotSections.map(toClassifiableSection),
-      shuffleSeed,
-    );
-    const result = await classifier.classifySections({
-      agendas: shuffledAgendas,
-      sections: shuffledSections,
-    });
-    metrics.stage3OutputTokens = result.outputTokens;
-    applyAssignments(result.output.assignments);
+  // 쟁점 목록은 모든 provider 호출에 동일하게 넣는다(§5.1). 셔플은 한 번만(재현성).
+  const shuffledAgendas = seededShuffle<AgendaRef>(
+    candidates.map(toAgendaRef),
+    shuffleSeed,
+  );
+  // provider를 알파벳순으로 고정 — 병합 순서를 결정론적으로(AC1).
+  const nonPivotProviders = [
+    ...new Set(nonPivotSections.map((s) => s.provider)),
+  ].sort();
 
-    // 단계 3b: 누락분 확인 → 필요 시 2차 호출 (최대 1회, §5.6)
-    const missing = nonPivotSections.filter(
-      (s) => !receivedIds.has(s.sectionId),
-    );
-    if (missing.length > 0) {
-      trace.stage3bInvoked = true;
-      try {
-        const retry = await classifier.classifySections({
-          agendas: shuffledAgendas,
-          sections: seededShuffle<ClassifiableSection>(
-            missing.map(toClassifiableSection),
-            shuffleSeed,
-          ),
-        });
-        applyAssignments(retry.output.assignments);
-      } catch {
-        // 2차도 실패 → 누락 섹션은 leftover (§5.6)
-      }
-    }
-  } catch (error) {
-    // §B: 구조화 출력 거부는 단계와 무관하게 즉시 보고한다(강등 금지).
-    if (error instanceof ManagerCallError && error.structuredOutputUnsupported) {
-      throw error;
-    }
-    stage3Failed = true; // §2.5: 단계 3 실패 → 비-pivot 전 섹션을 leftover로
+  interface ProviderStage3Result {
+    provider: AiProvider;
+    ok: boolean;
+    tokens: number | null;
+    durationMs: number;
+    retried: boolean;
+    assignments: { sectionId: string; agendaIds: string[] }[];
   }
+
+  // provider 하나에 대한 단계 3 호출(+ 단계 3b). 공유 상태를 건드리지 않고 자기 배정만 모은다.
+  const runProvider = async (
+    provider: AiProvider,
+  ): Promise<ProviderStage3Result> => {
+    const secs = nonPivotSections.filter((s) => s.provider === provider);
+    const callStart = performance.now();
+    try {
+      const first = await classifier.classifySections({
+        agendas: shuffledAgendas,
+        sections: seededShuffle<ClassifiableSection>(
+          secs.map(toClassifiableSection),
+          shuffleSeed,
+        ),
+      });
+      let assignments = first.output.assignments;
+      let tokens = first.outputTokens;
+      let retried = false;
+
+      // 단계 3b: 이 provider의 누락 섹션만 1회 재호출 (§5.6, provider 단위)
+      const received = new Set(assignments.map((a) => a.sectionId));
+      const missing = secs.filter((s) => !received.has(s.sectionId));
+      if (missing.length > 0) {
+        retried = true;
+        try {
+          const second = await classifier.classifySections({
+            agendas: shuffledAgendas,
+            sections: seededShuffle<ClassifiableSection>(
+              missing.map(toClassifiableSection),
+              shuffleSeed,
+            ),
+          });
+          assignments = [...assignments, ...second.output.assignments];
+          if (second.outputTokens !== null) {
+            tokens = (tokens ?? 0) + second.outputTokens;
+          }
+        } catch {
+          // 2차도 실패 → 이 provider의 누락 섹션은 leftover (§5.6)
+        }
+      }
+      return {
+        provider,
+        ok: true,
+        tokens,
+        durationMs: Math.round(performance.now() - callStart),
+        retried,
+        assignments,
+      };
+    } catch (error) {
+      // §B: 구조화 출력 거부는 즉시 보고(강등 금지).
+      if (
+        error instanceof ManagerCallError &&
+        error.structuredOutputUnsupported
+      ) {
+        throw error;
+      }
+      // §2.5: 이 provider 호출 실패 → 그 섹션만 leftover, 다른 provider는 살린다.
+      return {
+        provider,
+        ok: false,
+        tokens: null,
+        durationMs: Math.round(performance.now() - callStart),
+        retried: false,
+        assignments: [],
+      };
+    }
+  };
+
+  // 병렬 실행(동시성 MANAGER_CONCURRENCY). 결과는 입력(정렬) 순서를 보존한다.
+  const stage3Start = performance.now();
+  const stage3Results = await mapWithConcurrency(
+    nonPivotProviders,
+    env.MANAGER_CONCURRENCY,
+    runProvider,
+  );
+  // 병렬이므로 wall-clock ≈ 가장 느린 호출. (호출당 지연은 trace.stage3Calls에 있다.)
   metrics.stageDurationsMs.stage3 = Math.round(performance.now() - stage3Start);
+
+  // 병합은 provider 정렬 순서대로 — 완료 순서와 무관하게 결정론적(AC1, 요구 4).
+  let stage3TotalTokens = 0;
+  for (const r of stage3Results) {
+    trace.stage3Calls.push({
+      provider: r.provider,
+      ok: r.ok,
+      tokens: r.tokens,
+      durationMs: r.durationMs,
+      retried: r.retried,
+    });
+    if (r.retried) trace.stage3bInvoked = true;
+    if (r.tokens !== null) stage3TotalTokens += r.tokens;
+    if (r.ok) applyAssignments(r.assignments);
+  }
+  // 합계는 §5.5의 800 가정과 비교하는 용도. 호출당 경고(1,500)는 스크립트가 stage3Calls로 본다.
+  metrics.stage3OutputTokens = stage3Results.some((r) => r.ok)
+    ? stage3TotalTokens
+    : null;
+  // §2.5: 모든 provider 호출이 실패했을 때만 완전 실패(전 섹션 leftover).
+  stage3Failed =
+    stage3Results.length > 0 && stage3Results.every((r) => !r.ok);
 
   // 단계 3에서 배정되지 못한 섹션 = leftover (빈 배정 + 누락 + 단계 3 전면 실패)
   const leftoverSections = nonPivotSections.filter(

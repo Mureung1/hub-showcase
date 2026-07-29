@@ -107,14 +107,38 @@ function report(
     console.log(`  [${tr.agendaId}] "${tr.before}" → "${tr.after}"`);
   }
 
+  console.log("\n--- 단계 3 호출 (provider별 분할, §5.1) ----");
+  const calls = trace.stage3Calls;
+  for (const c of calls) {
+    const warn = c.tokens !== null && c.tokens > 1500 ? " ⚠️>1500" : "";
+    const status = c.ok ? "OK" : "❌FAIL";
+    console.log(
+      `  ${c.provider}: ${status} tokens=${c.tokens ?? "n/a"}${warn} ${c.durationMs}ms${c.retried ? " (3b 재호출)" : ""}`,
+    );
+  }
+  if (calls.length === 0) console.log("  (호출 없음 — 성공 1개 특수 경로)");
+  const okTokens = calls.filter((c) => c.tokens !== null).map((c) => c.tokens ?? 0);
+  const totalTokens = okTokens.reduce((a, b) => a + b, 0);
+  const maxCallTokens = okTokens.length > 0 ? Math.max(...okTokens) : 0;
+  const durations = calls.map((c) => c.durationMs);
+  const slowest = durations.length > 0 ? Math.max(...durations) : 0;
+  const sumDur = durations.reduce((a, b) => a + b, 0);
+  const failCount = calls.filter((c) => !c.ok).length;
+  console.log(
+    `  → 호출당 최대 토큰=${maxCallTokens}(경고 1,500 기준) / 합계=${totalTokens}(§5.5 800 가정 대비)`,
+  );
+  console.log(
+    `  → 지연: 가장 느린 호출=${slowest}ms / 합계=${sumDur}ms / 실패 호출=${failCount}건`,
+  );
+
   console.log("\n--- 지표 (§14.1) --------------------------");
   console.log(`  leftoverRate:      ${pct(m.leftoverRate)}`);
   console.log(`  multiAssignRate:   ${pct(m.multiAssignRate)}`);
   console.log(`  reassignmentRate:  ${pct(m.reassignmentRate)}`);
   console.log(`  titleRevisionRate: ${pct(m.titleRevisionRate)}`);
-  console.log(`  stage3OutputTokens: ${m.stage3OutputTokens ?? "n/a"}`);
+  console.log(`  stage3OutputTokens(합계): ${m.stage3OutputTokens ?? "n/a"}`);
   console.log(
-    `  단계별 소요(ms): 단계3=${m.stageDurationsMs.stage3 ?? "n/a"} 단계4=${
+    `  단계별 소요(ms, 병렬): 단계3=${m.stageDurationsMs.stage3 ?? "n/a"}(wall-clock≈가장느린호출) 단계4=${
       m.stageDurationsMs.stage4 ?? "n/a"
     } 합계=${m.stageDurationsMs.total}`,
   );

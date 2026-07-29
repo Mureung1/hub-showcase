@@ -131,11 +131,27 @@ export interface ManagerMeta {
  * 관측용 추적 정보 (검증 스크립트 출력 전용). 저장 계약(T-019.3)에는 실리지 않는다 —
  * leftover 처리·제목 중립화 전후처럼 초안에는 남지 않는 파이프라인 내부를 드러낸다.
  */
+/**
+ * 단계 3의 provider별 호출 결과(§5.1 분할). 호출 성공/실패를 명시적으로 남겨,
+ * "모델이 배정 안 함"과 "호출이 실패해서 leftover"를 구분한다(§6.3 실패 모드 오진 방지).
+ */
+export interface Stage3CallInfo {
+  provider: AiProvider;
+  ok: boolean;
+  /** 이 호출의 출력 토큰(§14.1 경고 1,500은 호출당에 적용). 실패·미상이면 null. */
+  tokens: number | null;
+  durationMs: number;
+  /** 단계 3b(누락 재호출) 여부. */
+  retried: boolean;
+}
+
 export interface PipelineTrace {
   leftoverSectionIds: string[];
   reassignments: { sectionId: string; agendaId: string }[];
   newAgendaIds: string[];
   titleRevisions: { agendaId: string; before: string; after: string }[];
+  /** provider별 단계 3 호출 결과(성공/실패·토큰·지연). */
+  stage3Calls: Stage3CallInfo[];
   stage3bInvoked: boolean;
   stage3Failed: boolean;
   stage4Ran: boolean;
@@ -158,7 +174,8 @@ export const ClassifyAssignmentSchema = z.object({
   sectionId: z.string(),
   topicRestated: z.string(),
   agendaIds: z.array(z.string()).max(2),
-  secondAgendaReason: z.string(),
+  // 스키마 다이어트(§5.5.2 B-2)로 optional화 시도 — 파이프라인에서 읽지 않는 필드다.
+  secondAgendaReason: z.string().optional(),
 });
 export const ClassifyOutputSchema = z.object({
   assignments: z.array(ClassifyAssignmentSchema),
