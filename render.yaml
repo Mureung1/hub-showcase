@@ -5,7 +5,7 @@ services:
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
-    autoDeploy: false
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,4 +16,6 @@ services:
       - key: TRUST_PROXY
         value: "true"
       - key: ANALYZE_RATE_LIMIT_ENABLED
+        value: "true"
+      - key: HTML_FETCH_RATE_LIMIT_ENABLED
         value: "true"

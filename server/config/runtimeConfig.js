@@ -37,6 +37,12 @@ export function getRuntimeConfig() {
       process.env.ANALYZE_RATE_LIMIT_WINDOW_MS,
       60_000,
     ),
+    htmlFetchRateLimitEnabled: parseBoolean(process.env.HTML_FETCH_RATE_LIMIT_ENABLED, isProduction),
+    htmlFetchRateLimitMax: parsePositiveInteger(process.env.HTML_FETCH_RATE_LIMIT_MAX, 20),
+    htmlFetchRateLimitWindowMs: parsePositiveInteger(
+      process.env.HTML_FETCH_RATE_LIMIT_WINDOW_MS,
+      60_000,
+    ),
     host: (process.env.HOST || "127.0.0.1").trim(),
     isProduction,
     nodeEnv,

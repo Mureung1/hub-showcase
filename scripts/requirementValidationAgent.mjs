@@ -77,6 +77,7 @@ const requirementGroups = [
       "tests/runtimeInfrastructure.test.js",
       "tests/apiBaseUrl.test.js",
       "tests/dockerRuntimeFiles.test.js",
+      "tests/requireScanAccess.test.js",
     ],
   },
   {

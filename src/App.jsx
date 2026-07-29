@@ -1968,6 +1968,7 @@ function OpportunityAgentWorkbench() {
     const currentKnownLinks = noticeHistoryStore.readNoticeHistory(source.targetUrl, fallbackUrls);
     const previousScanLinks = noticeHistoryStore.readScanSnapshot(source.targetUrl);
     const result = await runNoticeLinkScan({
+      accessToken: isAuthConfigured ? session?.access_token : undefined,
       html: source.html ?? "",
       knownUrls: currentKnownLinks,
       linkSelector: source.linkSelector,

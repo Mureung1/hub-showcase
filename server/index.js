@@ -35,6 +35,7 @@ import {
 import { createFixedWindowRateLimit } from "./middleware/rateLimit.js";
 import { createRequireAuth } from "./middleware/requireAuth.js";
 import { createRequireLocalDemoMode } from "./middleware/requireLocalDemoMode.js";
+import { createRequireScanAccess } from "./middleware/requireScanAccess.js";
 import { createSupabaseAuthService } from "./services/supabaseAuth.js";
 import { createProfileRepository } from "./services/profileRepository.js";
 import { profileRequestSchema } from "./schemas/profileSchemas.js";
@@ -63,9 +64,20 @@ const discoverRateLimit = createFixedWindowRateLimit({
   windowMs: 60_000,
   message: "공지 탐색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
 });
+const htmlFetchRateLimit = createFixedWindowRateLimit({
+  enabled: runtimeConfig.htmlFetchRateLimitEnabled,
+  maxRequests: runtimeConfig.htmlFetchRateLimitMax,
+  windowMs: runtimeConfig.htmlFetchRateLimitWindowMs,
+  message: "웹사이트 스캔 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+});
 const opportunityStorage = createOpportunityStorage();
 const authService = createSupabaseAuthService();
 const requireAuth = createRequireAuth(authService);
+const requireScanAccess = createRequireScanAccess({
+  authConfigured: authService.configured,
+  isProduction: runtimeConfig.isProduction,
+  requireAuth,
+});
 const requireLocalDemoMode = createRequireLocalDemoMode({
   authConfigured: authService.configured,
   isProduction: runtimeConfig.isProduction,
@@ -411,7 +423,7 @@ app.get("/api/discover", discoverRateLimit, async (request, response) => {
   }
 });
 
-app.get("/api/fetch-html", async (request, response) => {
+app.get("/api/fetch-html", htmlFetchRateLimit, requireScanAccess, async (request, response) => {
   const targetUrl = request.query.url;
 
   try {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createProxyRequestUrls } from "../src/agents/noticeLinkAgent.js";
+import { createProxyRequestHeaders, createProxyRequestUrls } from "../src/agents/noticeLinkAgent.js";
 import { buildApiUrl, getConfiguredApiBaseUrl } from "../src/config/apiBaseUrl.js";
 
 test("VITE_API_BASE_URL이 없으면 개발 프록시용 상대 API 경로를 사용한다", () => {
@@ -17,4 +17,13 @@ test("배포 API URL은 중복 슬래시 없이 모든 API 경로 앞에 붙는�
     createProxyRequestUrls("https://example.com/notices/1", apiBaseUrl),
     ["https://uniradar-api.onrender.com/api/fetch-html?url=https%3A%2F%2Fexample.com%2Fnotices%2F1"],
   );
+});
+test("공지 HTML 프록시 요청은 로그인 토큰이 있을 때만 Bearer 헤더를 넣는다", () => {
+  assert.deepEqual(createProxyRequestHeaders(), {
+    Accept: "text/html,application/xhtml+xml",
+  });
+  assert.deepEqual(createProxyRequestHeaders("session-token"), {
+    Accept: "text/html,application/xhtml+xml",
+    Authorization: "Bearer session-token",
+  });
 });
