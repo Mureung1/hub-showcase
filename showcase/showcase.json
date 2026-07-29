@@ -1,21 +1,144 @@
 {
   "schemaVersion": 1,
-  "title": "",
-  "summary": "",
-  "githubUser": "",
-  "demoUrl": "",
-  "thumbnail": "",
-  "screenshots": [],
-  "problem": "",
-  "targetUsers": [],
-  "features": [],
-  "featureTags": [],
-  "techStack": [],
-  "techHighlights": [],
-  "developmentWithAI": "",
+  "title": "OpenSeed(SeedRank) — 아이디어의 가능성을 함께 검증하고 성장시키는 플랫폼",
+  "summary": "예비 창업자가 초기 사업 아이디어를 AI로 구체화하고, 피드백·기여·기업 관심·Seed Unit 참여 데이터를 통해 시장 반응과 사업화 가능성을 검증하는 서비스입니다.",
+  "githubUser": "pado0711(MINA JIN)",
+  "demoUrl": "https://openseed-fe.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/file/d/1SvxDRqPyWa62cZHnYaQBre45Z3WRvRAP/view?usp=sharing",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": ["screenshots/openseed_main_page.webp","screenshots/idea_detail_page.webp","screenshots/openseed_mypage.webp"],
+  "problem": "예비 창업자는 실제 제품을 만들거나 큰 비용을 투입하기 전에 아이디어의 시장성과 고객 문제를 검증하기 어렵습니다. 단순 좋아요나 주변의 단편적인 반응만으로는 사업화 판단에 필요한 근거가 부족하고, 유용한 피드백이 있어도 누가 아이디어 발전에 기여했는지 체계적으로 남기기 어렵습니다. 기업 역시 완성된 사업이 되기 전의 유망한 아이디어를 발견하고 게시자와 연결될 접점이 부족합니다.",
+  "targetUsers": [
+    "사업 아이디어를 구체화하고 시장 반응을 확인하려는 예비 창업자",
+    "구조화된 피드백을 남기고 기여 이력을 쌓으려는 사용자",
+    "Seed Point와 Seed Unit으로 유망 아이디어의 검증에 참여하려는 사용자",
+    "초기 아이디어 단계에서 새로운 사업 기회를 탐색하려는 기업 사용자"
+  ],
+  "features": [
+    "사업화 키워드와 문제의식을 입력하면 AI가 서로 다른 사업 아이디어 후보 5개를 생성하고, 사용자가 하나를 선택해 수정하거나 수동으로 작성할 수 있습니다.",
+    "아이디어를 공개형, 반공개형, 매칭형 공개 중 하나로 게시하고 공개 범위에 따라 조회 가능한 내용을 구분합니다.",
+    "유형과 구체적인 의견, 선택적 근거를 포함한 구조화 피드백을 작성하고 게시자가 유용한 피드백을 채택할 수 있습니다.",
+    "채택된 피드백을 Contribution과 성장 타임라인에 기록해 아이디어 발전에 기여한 사용자를 보여줍니다.",
+    "가입, 일일 첫 접속, 아이디어 게시, 피드백 작성과 채택 활동에 Seed Point를 지급하고 원장으로 이력을 관리합니다.",
+    "사용자는 Point로 다른 사람의 아이디어에 Seed Unit을 구매하고 24시간 후 Lot 단위로 회수할 수 있습니다.",
+    "참여 Point, 참여자 다양성, 기업 관심, 피드백, 좋아요, 조회와 최근 성장 데이터를 합산해 1시간 단위 랭킹을 제공합니다.",
+    "회사 이메일 인증을 마친 기업은 아이디어에 관심을 표시하고 게시자에게 비동기 1:1 텍스트 문의를 보낼 수 있습니다.",
+    "Seed Point와 Seed Unit은 현금, 지분, 배당이나 수익권이 없는 서비스 내부의 검증 참여 지표로 운영합니다."
+  ],
+  "featureTags": [
+    "AI 아이디어 구체화",
+    "구조화 피드백",
+    "기여 기록",
+    "Seed Point",
+    "Seed Unit",
+    "아이디어 랭킹",
+    "기업 관심",
+    "1:1 문의"
+  ],
+  "techStack": [
+    "Java 21",
+    "Spring Boot 4.1",
+    "Spring Data JPA",
+    "PostgreSQL",
+    "Flyway",
+    "Gradle",
+    "Testcontainers",
+    "JUnit 5",
+    "Spring Boot Actuator",
+    "OpenAPI",
+    "GitHub Actions",
+    "Codex Custom Agents",
+    "Codex Skills"
+  ],
+  "techHighlights": [
+    "Spring Boot의 기능별 수직 슬라이스 구조로 Controller, Service, Repository, Migration, OpenAPI와 통합 테스트를 하나의 작업 단위로 구현했습니다.",
+    "AI 후보 생성을 비동기 Job, Worker lease, 재시도, 구조화 응답 검증과 결과 선택 단계로 분리해 중복 처리와 Provider 실패를 제어했습니다.",
+    "공개형·반공개형·매칭형 공개의 필드 노출 정책을 API와 통합 테스트에서 강제해 숨겨진 아이디어 내용이 노출되지 않도록 했습니다.",
+    "PostgreSQL 트랜잭션, 멱등키, 잠금과 Append-only 원장으로 Point 지갑, Unit 구매·회수와 동시성 정합성을 보호했습니다.",
+    "Testcontainers로 실제 PostgreSQL Migration과 JPA 스키마 검증을 수행하고 GitHub Actions에서 최종 코드의 전체 회귀 테스트를 실행했습니다.",
+    "Coordinator Agent 1개, Worker Agent 1종과 Vertical Slice Skill을 Workflow로 연결해 백로그 선택부터 TDD 구현, 리뷰 반영과 보호된 Merge까지 처리했습니다."
+  ],
+  "developmentWithAI": "저는 서비스의 문제, 대상 사용자, 핵심 기능과 MVP 정책을 정했습니다. Codex는 승인된 기획서와 기능 명세를 바탕으로 요구사항을 수직 슬라이스 백로그로 나누고, 각 작업의 구현 계획과 테스트를 작성했습니다. Worker Agent가 실패 테스트부터 최소 구현, 리팩터링, 문서와 PR 작성까지 수행하면 저는 생성된 PR과 실제 동작을 검토했습니다. 수정이 필요할 때는 리뷰 의견을 남겼고, Agent는 회귀 테스트를 먼저 추가한 뒤 같은 PR에 수정 사항을 반영했습니다. 최종 코드는 최신 main과 필수 검사를 확인한 후 제가 /merge-approved 댓글을 남긴 경우에만 병합되도록 구성했습니다.",
   "agent": {
-    "summary": "",
-    "agentTools": [],
-    "workflows": []
+    "summary": "백로그와 GitHub 상태를 관리하는 Coordinator Agent와 작업 하나를 TDD로 구현하는 Worker Agent를 Vertical Slice Skill 및 GitHub Actions와 연결해 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Vertical Slice Coordinator Agent",
+        "purpose": "GitHub의 PR·CI·리뷰·Merge 상태를 확인하고, 선행 작업과 Resource Lock을 기준으로 다음 작업을 최대 3개까지 선택합니다."
+      },
+      {
+        "type": "agent",
+        "name": "Vertical Slice Worker Agent",
+        "purpose": "할당된 백로그 작업 하나를 독립 Worktree에서 계획하고 테스트 우선으로 구현한 뒤 문서, Commit과 PR까지 완성합니다."
+      },
+      {
+        "type": "skill",
+        "name": "Vertical Slice Skill",
+        "purpose": "계획, Red·Green·Refactor, 검증, 리뷰 수정, 실패 복구와 Merge 준비 절차를 일관되게 적용합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "수직 슬라이스 기능 개발 Workflow",
+        "steps": [
+          "승인된 기획서와 기능 명세 확인",
+          "backlog.yml에서 선행 조건과 Resource Lock 확인",
+          "최신 origin/main 기반 독립 Worktree와 작업 브랜치 생성",
+          "사용자 가치, 범위, 인수 조건과 테스트 목록 작성",
+          "실패 테스트 작성과 Red 결과 확인",
+          "최소 코드 구현과 Green 결과 확인",
+          "리팩터링과 집중 테스트 실행",
+          "필요한 OpenAPI, ERD와 Flyway Migration 갱신",
+          "변경 범위와 비밀값 점검",
+          "Commit, Push와 Draft PR 작성"
+        ]
+      },
+      {
+        "name": "병렬 작업 조정 Workflow",
+        "steps": [
+          "GitHub에서 실제로 Merge된 선행 작업 확인",
+          "열린 PR이 보유한 Resource Lock 확인",
+          "서로 잠금이 겹치지 않는 Ready 작업 계산",
+          "Ready 작업을 최대 3개의 Worker에 하나씩 배정",
+          "각 Worker를 별도 Worktree와 브랜치에서 실행",
+          "Worker가 반환한 테스트, 문서와 PR 증거 검토"
+        ]
+      },
+      {
+        "name": "PR 리뷰 반영 Workflow",
+        "steps": [
+          "일반 댓글, 제출된 리뷰와 미해결 인라인 Thread 확인",
+          "실행 가능한 지적마다 회귀 테스트 먼저 작성",
+          "코드와 문서를 같은 PR에서 수정",
+          "집중 테스트 실행 후 Commit과 Push",
+          "처리 결과와 검증 증거를 리뷰에 답변",
+          "변경된 PR Head의 필수 검사 다시 확인"
+        ]
+      },
+      {
+        "name": "보호된 Merge Workflow",
+        "steps": [
+          "PR 브랜치를 최신 main으로 갱신",
+          "현재 Head의 Build and Test 성공 확인",
+          "Vertical Slice Merge Guard 성공 확인",
+          "미해결 리뷰와 충돌이 없는지 확인",
+          "사용자가 현재 코드에 남긴 /merge-approved 확인",
+          "보호된 Auto-merge 실행",
+          "GitHub의 실제 Merge 확인 후 선행 조건과 Resource Lock 해제"
+        ]
+      },
+      {
+        "name": "실패 복구 Workflow",
+        "steps": [
+          "실패한 작업의 진행을 중단하고 증거 기록",
+          "실패 원인 진단",
+          "결정적 실패를 최대 3회 자동 복구",
+          "반복 원인을 회귀 테스트나 검증 규칙으로 추가",
+          "복구되지 않으면 해당 작업만 BLOCKED 처리",
+          "독립적인 다른 작업은 계속 진행"
+        ]
+      }
+    ]
   }
 }
