@@ -11,6 +11,7 @@
     "test": "vitest run src --exclude \"src/**/*.integration.test.ts\"",
     "test:integration": "vitest run .integration.test.ts",
     "db:seed:development": "tsx src/scripts/seedDevelopment.ts",
+    "db:seed:guest": "tsx src/scripts/seedGuestPatient.ts",
     "start": "node dist/index.js"
   },
   "dependencies": {

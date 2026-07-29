@@ -256,6 +256,13 @@ npm run db:reset
 npm run db:seed:development -w @baro-jinryo/api
 ```
 
+전시용 게스트 환자 계정은 `DEVELOPMENT_GUEST_PASSWORD`를 설정한 뒤 다음
+명령으로 별도 생성합니다. 이 명령은 기존 병원과 대기열을 변경하지 않습니다.
+
+```bash
+npm run db:seed:guest -w @baro-jinryo/api
+```
+
 플랫폼 관리자 웹은 Supabase Auth 로그인과 `platform_admin` 권한 검사를 적용하며,
 입점 문의와 병원 정보 변경 요청을 검토할 수 있습니다. 승인 병원의 이용 중지·복구
 같은 전체 운영 기능은 P2 범위입니다. Seoul 개발용 Supabase 프로젝트 연결과 실제
