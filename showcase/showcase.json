@@ -4,6 +4,7 @@
   "summary": "AI가 학교 공지와 안내문을 자동으로 분석하여 마감일과 일정을 추출하고, 웹 캘린더에 등록해주는 서비스입니다. 대학생이 중요한 일정을 놓치지 않도록 도와줍니다.",
   "githubUser": "codms8369(박채은)",
   "demoUrl": "https://calme-frontend.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/1U_t_j6QlnRvV3D1E9VH4mmuEyz8jYhUG/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/dashboard.webp",
