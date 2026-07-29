@@ -40,14 +40,15 @@
 
 ### 화면 구조
 
-좌측 **사이드바**(전역 내비게이션, 리더뷰에서만 숨김) + 대시보드 + 리더뷰
-(+바텀시트) + 인사이트 노트(舊 마이페이지) + 단어장.
+좌측 **사이드바**(전역 내비게이션, 항상 노출) + 대시보드 + 리더뷰
+(마스터-디테일 3분할 +바텀시트) + 인사이트 노트(舊 마이페이지, 마스터-디테일
+3분할) + 단어장(마스터-디테일 3분할).
 
 | 화면 | 컴포넌트 | 비고 |
 |---|---|---|
-| 사이드바 | `components/Sidebar.jsx` | Primary 버튼 + Menu 단일 그룹(대시보드·인사이트 노트·단어장), 카운트 뱃지 |
-| 대시보드 | `pages/Dashboard.jsx` | 오늘의 핵심 외신 3개 카드 |
-| 리더뷰 | `pages/Reader.jsx` | 문장 아코디언 번역, AI 요약, 판단 버튼. `< 뒤로가기`로 복귀 |
+| 사이드바 | `components/Sidebar.jsx` | Primary 버튼 + Menu 단일 그룹(대시보드·리더뷰·인사이트 노트·단어장), 카운트 뱃지 |
+| 대시보드 | `pages/Dashboard.jsx` | 오늘의 핵심 외신 3개 카드(풀사이즈, 탐색용) |
+| 리더뷰 | `pages/Reader.jsx` + `components/ReaderDetail.jsx` | 마스터(30%, 오늘의 핵심 외신 3개 압축 리스트) + 상세(70%, 문장 아코디언 번역·AI 요약·판단 버튼). `< 뒤로가기` 제거(마스터 리스트로 대체) |
 | 바텀시트 | `components/BottomSheet.jsx` | 판단 vs marketSentiment 비교 + insight 공개, 닫으면 저장 |
 | 인사이트 노트 | `pages/InsightNote.jsx` | 히스토리 카드(기본: 판단 vs marketSentiment) + "AI 관점 해설 보기" 아코디언 |
 | 단어장 | `pages/Vocabulary.jsx` | 자동 적재된 용어 최신순, 플래시카드(탭하면 뒤집혀 원문 발췌 노출) |
@@ -97,7 +98,7 @@ React 구현 메모:
 hub/
 ├── client/src/
 │   ├── pages/        # Dashboard.jsx, Reader.jsx, InsightNote.jsx, Vocabulary.jsx, Login.jsx
-│   ├── components/   # Sidebar.jsx, NewsCard.jsx, SentenceAccordion.jsx, AiSummary.jsx, DecisionButtons.jsx, BottomSheet.jsx, Badge.jsx
+│   ├── components/   # Sidebar.jsx, NewsCard.jsx, ReaderDetail.jsx, SentenceAccordion.jsx, AiSummary.jsx, DecisionButtons.jsx, BottomSheet.jsx, Badge.jsx
 │   ├── context/      # AuthContext.jsx (Supabase Auth 세션)
 │   ├── constants/    # sentiment.js
 │   ├── styles/       # tokens.css, global.css

@@ -69,28 +69,6 @@ h2 {
   margin-bottom: var(--space-lg);
 }
 
-.back-link {
-  display: inline-block;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  margin-bottom: var(--space-md);
-}
-
-.back-link:hover,
-.back-link:focus-visible {
-  color: var(--brand-blue);
-}
-
-.reader-back-nav {
-  margin-top: var(--space-xl);
-}
-
-.reader-back-nav .back-link {
-  margin-bottom: 0;
-}
-
 .page-subtitle {
   color: var(--text-secondary);
   font-size: 14px;
@@ -1087,6 +1065,99 @@ h2 {
 
 .insight-calendar-day.empty {
   border-color: transparent;
+}
+
+/* ---------- Reader master-detail (3분할 재설계) ---------- */
+/* 인사이트 노트/단어장과 동일한 마스터(30%)+상세(70%) 레이아웃. 마스터는
+   오늘의 핵심 외신 3개(Dashboard와 동일 소스), 상세는 기존 리더뷰
+   본문(ReaderDetail.jsx)을 그대로 노출한다. */
+.reader-note-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.reader-master {
+  width: 30%;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.reader-master-header {
+  flex-shrink: 0;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.reader-master-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.reader-master-empty {
+  padding: var(--space-md);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.reader-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+}
+
+.reader-card:hover {
+  background: var(--surface-bg);
+}
+
+.reader-card.active {
+  background: var(--brand-blue-light);
+}
+
+.reader-card-headline {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.reader-card-translation {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-detail {
+  width: 70%;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--surface-bg);
+}
+
+.reader-detail-empty {
+  padding: var(--space-xl);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.reader-detail-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
 }
 
 /* ---------- Vocabulary master-detail (3분할, 2026-07-29) ---------- */

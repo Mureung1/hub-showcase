@@ -1,14 +1,9 @@
-import { Link } from "react-router-dom"
-
 const PARAGRAPH_LINE_COUNTS = [4, 4, 3]
 
 export default function ReaderSkeleton({ article }) {
   return (
-    <div className="app-container">
+    <div className="reader-detail-content">
       <header className="app-header">
-        <Link className="back-link" to="/">
-          ← Back to Today’s Top News
-        </Link>
         <div className="card-source">
           {article ? (
             <>
