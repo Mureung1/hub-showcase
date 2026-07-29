@@ -4,6 +4,7 @@
   "summary": "날씨 데이터로 소상공인의 매출을 지키는 자율 마케팅 에이전트입니다. AI가 날씨·매출을 분석해 마케팅 문구·쿠폰을 미리 만들어 두고, 사장님은 검토·승인만 합니다.",
   "githubUser": "shyang0319(양서형)",
   "demoUrl": "https://weatherpilot-web.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/1r4RuD_JG0EDgkzNKjcjVuv_YxTFA8rTn/view?usp=drive_link",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
@@ -42,9 +43,9 @@
   "techHighlights": [
     "기상청·OpenWeatherMap 이중 소스를 가중 평균으로 병합하고 장애 시 자동 폴백하는 날씨 앙상블 파이프라인을 구현했습니다.",
     "정보통신망법 요건(수신동의·(광고) 표기·야간 발송 차단→예약 전환)과 LLM 가드레일(할인율 상한·금지어)을 UI가 아닌 서버에서 강제해 자율 에이전트가 우회할 수 없게 했습니다.",
-    "npm workspaces 모노레포의 공용 타입(packages/shared)으로 FE·BE API 계약을 컴파일 타임에 맞추고, 서버 테스트 100개(Vitest)와 GitHub Actions CI로 회귀를 자동 검증합니다."
+    "npm workspaces 모노레포의 공용 타입(packages/shared)으로 FE·BE API 계약을 컴파일 타임에 맞추고, 서버 테스트 183건(Vitest)으로 가드레일·법적 필터·LLM 출력 회귀를 자동 검증합니다."
   ],
-  "developmentWithAI": "저는 무엇을 안 만들지(실연동 / 대체 구현 / 모의) 스코프를 먼저 정하고, 작업마다 '할인율 21% 입력 시 서버가 400을 반환한다' 수준의 완료 기준(DoD)을 썼습니다. AI(Claude Code)는 그 기준에 맞춰 코드 대부분을 작성했고, 저는 테스트 100개·배포 환경 실측·하루 3번 스크럼으로 결과를 검증하며 실물에 맞춰 계획을 고쳐 썼습니다.",
+  "developmentWithAI": "저는 무엇을 안 만들지(실연동 / 대체 구현 / 모의) 스코프를 먼저 정하고, 작업마다 '할인율 21% 입력 시 서버가 400을 반환한다' 수준의 완료 기준(DoD)을 썼습니다. AI(Claude Code)는 그 기준에 맞춰 코드 대부분을 작성했고, 저는 테스트 183건·배포 환경 실측·하루 3번 스크럼으로 결과를 검증하며 실물에 맞춰 계획을 고쳐 썼습니다.",
   "agent": {
     "summary": "Claude Code를 개발 파트너로 두고, CLAUDE.md 프로젝트 규칙과 커스텀 Skill, 자동화 Workflow로 기획부터 구현·테스트·커밋까지 진행했습니다.",
     "agentTools": [
