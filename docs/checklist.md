@@ -6,31 +6,33 @@
 - [x] 최근 저장 리스트 (카드형, 카테고리 뱃지)
 - [x] 하단 네비게이션 (홈/카테고리/아카이브/설정)
 - [x] 기획서(plan.md) / 작업 체크리스트(checklist.md) 작성
-- [ ] Supabase 프로젝트 연결 (URL/키 설정)
-- [ ] items, category 테이블 스키마 생성
-- [ ] 저장 버튼 → Supabase insert 연결 (실제 저장 동작)
+- [x] Supabase 프로젝트 연결 코드 및 URL/키 환경변수 구성
+- [x] items 테이블 및 Storage migration 작성
+- [x] 저장 버튼 → Express → Supabase insert 연결
 
 ## 2주차 - 자동 분류 & 카테고리 뷰
-- [ ] 도메인 기반 분류 규칙 테이블 설계 (예: smartstore.naver.com → 쇼핑)
-- [ ] 키워드 기반 분류 규칙 (텍스트 콘텐츠 대상)
-- [ ] 저장 시 자동 분류 로직 연결 (API route 또는 Supabase Edge Function)
-- [ ] 카테고리 트리 뷰 페이지 (대분류 > 소분류, 카운트 표시)
-- [ ] 카테고리별 필터링된 카드 리스트
-- [ ] 카드 클릭 → 원본 링크로 이동
+- [x] 도메인 기반 분류 규칙 설계
+- [x] 키워드 기반 분류 규칙
+- [x] 저장 시 Gemini + 규칙 fallback 자동 분류 연결
+- [x] 카테고리 트리 뷰 페이지 (대분류 > 소분류, 카운트 표시)
+- [x] 카테고리별 필터링된 카드 리스트
+- [x] 카드 클릭 → 원본 링크로 이동
 
 ## 3주차 - 완료 처리 & 리마인더 & 이미지
-- [ ] 스와이프/버튼 완료 처리 → 아카이브 이동
-- [ ] 아카이브 페이지
+- [x] 버튼 완료 처리 → 아카이브 이동
+- [x] 아카이브 페이지
 - [ ] Firebase Cloud Messaging 설정 (푸시 알림)
 - [ ] 저장 후 N일 경과 시 리마인더 알림 로직
-- [ ] 이미지 업로드 → OCR API(Clova/Vision) 연동
-- [ ] OCR 결과 기반 자동 분류
+- [x] 이미지 업로드 → Supabase Storage 및 Gemini Vision 연동
+- [x] 이미지 기반 자동 분류
 
 ## 4주차 - 마무리 & iOS 실사용 & 발표 준비
 - [x] 제목·요약·원문·카테고리 통합 검색
 - [ ] Apple 단축어(Shortcuts) 제작 - 공유 시트 → API POST
-- [ ] PWA 아이콘/스플래시 확정, 배포 (Vercel)
-- [ ] 전체 플로우 QA (저장 → 분류 → 확인 → 완료 처리)
+- [x] PWA 아이콘/manifest 확정
+- [ ] Vercel Frontend 및 Render Backend production 배포
+- [ ] 배포 전체 플로우 QA (저장 → 분류 → 확인 → 완료 처리)
 - [ ] 버그 수정 및 UI 다듬기
-- [ ] 데모 시나리오 정리 및 발표 자료 준비
-- [ ] README 최종 정리 (기획서/체크리스트 링크 포함)
+- [x] 데모 시나리오 및 Agent 관계도 문서 작성
+- [x] README 개발·배포 문서 링크 정리
+- [ ] 5분 미만 영상 업로드 및 showcase `demoVideoUrl` 추가

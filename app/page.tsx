@@ -6,6 +6,7 @@ import {
   apiBaseUrl,
   getRequestErrorMessage,
   readApiError,
+  type Item,
 } from "../lib/items";
 import { getImageValidationError } from "../lib/image";
 
@@ -16,6 +17,7 @@ export default function Home() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [savedItem, setSavedItem] = useState<Item | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function Home() {
     if (!input.trim() && !selectedImage) return;
     setSaving(true);
     setError(null);
+    setSavedItem(null);
 
     try {
       const response = selectedImage
@@ -50,13 +53,15 @@ export default function Home() {
             body: JSON.stringify({ content: input.trim() }),
           });
       if (!response.ok) throw new Error(await readApiError(response));
-      await response.json();
+      setSavedItem(await response.json());
       setInput("");
       setSelectedImage(null);
       setImageError(null);
       if (imageInputRef.current) imageInputRef.current.value = "";
     } catch (requestError) {
-      setError(getRequestErrorMessage(requestError, "항목을 저장하지 못했습니다."));
+      setError(
+        getRequestErrorMessage(requestError, "항목을 저장하지 못했습니다."),
+      );
     } finally {
       setSaving(false);
     }
@@ -106,7 +111,8 @@ export default function Home() {
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                 e.preventDefault();
-                if (!saving && (input.trim() || selectedImage)) void handleSave();
+                if (!saving && (input.trim() || selectedImage))
+                  void handleSave();
               }
             }}
             placeholder="링크나 텍스트를 붙여넣으세요"
@@ -121,7 +127,9 @@ export default function Home() {
                 className="max-h-48 w-full rounded-lg object-cover"
               />
               <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="truncate text-xs text-muted">{selectedImage.name}</span>
+                <span className="truncate text-xs text-muted">
+                  {selectedImage.name}
+                </span>
                 <button
                   type="button"
                   onClick={removeImage}
@@ -132,7 +140,9 @@ export default function Home() {
               </div>
             </div>
           )}
-          {imageError && <p className="mt-2 text-xs text-red-600">{imageError}</p>}
+          {imageError && (
+            <p className="mt-2 text-xs text-red-600">{imageError}</p>
+          )}
           <div className="flex items-center justify-between mt-2">
             <input
               ref={imageInputRef}
@@ -163,6 +173,26 @@ export default function Home() {
       </section>
 
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+      {savedItem && (
+        <section
+          role="status"
+          className="mb-4 rounded-xl border border-accent/30 bg-white px-4 py-3"
+        >
+          <p className="text-sm font-medium text-ink">
+            &lsquo;{savedItem.title ?? "저장한 항목"}&rsquo;을 저장했어요.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            {savedItem.category_main ?? "미분류"}
+            {savedItem.category_sub ? ` · ${savedItem.category_sub}` : ""}
+          </p>
+          <Link
+            href="/categories"
+            className="mt-2 inline-block text-sm font-medium text-accentDark"
+          >
+            분류 결과 확인하기 →
+          </Link>
+        </section>
+      )}
 
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-creamDeep">
