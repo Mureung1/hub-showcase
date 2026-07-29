@@ -138,6 +138,15 @@ export async function getPostById(id) {
   return fromRow(data);
 }
 
+export async function deletePost(id) {
+  const existing = await getPostById(id);
+  if (!existing) return false;
+
+  const { error } = await supabase.from("posts").delete().eq("id", id);
+  if (error) throw new ApiError(500, "DB_ERROR", error.message);
+  return true;
+}
+
 export async function updatePost(id, patch) {
   const existing = await getPostById(id);
   if (!existing) return null;

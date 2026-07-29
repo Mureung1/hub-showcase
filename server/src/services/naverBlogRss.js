@@ -95,3 +95,29 @@ export async function findRecentMatchingPost(blogId, targetTitle) {
   }
   return null;
 }
+
+// 네이버 블로그 글 자체(RSS 아님)에 "존재하지 않는" 계열 문구가 뜨는 경우를
+// 보고 있는 휴리스틱 문구 목록 — 네이버가 삭제된 글도 200을 주는 경우가 많아서
+// 상태 코드만으로는 판별이 안 된다. 실제 네이버 페이지로 검증해본 게 아니라
+// 추정이라, 호출부가 결과를 최종 신뢰 소스로 쓰지 않고 항상 사용자 확인을
+// 거치게 한다.
+const DELETED_PAGE_HINTS = ["존재하지 않는", "삭제되었거나", "삭제된 게시물", "요청하신 페이지를 찾을 수 없습니다"];
+
+// publishedUrl이 아직 살아있는지 서버에서 직접 확인한다. RSS는 최근 항목
+// 몇 개만 보여줘서 "글이 안 보임"이 "삭제됨"인지 "그냥 오래돼서 밀려남"인지
+// 구분할 수 없어서, 저장해둔 게시물 URL을 직접 요청해보는 방식을 쓴다.
+// 반환값: true(존재 확인) / false(삭제된 것으로 보임) / null(확인 불가 — 네트워크
+// 오류 등).
+export async function checkPostStillPublished(url) {
+  try {
+    const res = await fetch(url, { redirect: "follow" });
+    if (res.status === 404 || res.status === 410) return false;
+    if (!res.ok) return null;
+
+    const html = await res.text();
+    if (DELETED_PAGE_HINTS.some((hint) => html.includes(hint))) return false;
+    return true;
+  } catch {
+    return null;
+  }
+}
