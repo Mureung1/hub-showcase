@@ -4,6 +4,7 @@
   "summary": "가게 이름을 검색하면 주변 가게를 찾아 리뷰를 AI로 분석하고 전략을 제안하는 소상공인용 서비스입니다.",
   "githubUser": "donghine(박동휘)",
   "demoUrl": "https://hub-lyart-three.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/file/d/1_VcbDGC9c6qXJXbbgK8G_gAJRESuXK01/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
