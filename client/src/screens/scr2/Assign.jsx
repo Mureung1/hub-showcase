@@ -270,7 +270,7 @@ export function Assign() {
             Assign
           </div>
           {letter ? (
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-size)', color: 'var(--text-caption)', marginTop: '4px' }}>{letter.title}</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-size)', color: 'var(--text-caption)', marginTop: '24px' }}>{letter.title}</div>
           ) : null}
         </div>
 
