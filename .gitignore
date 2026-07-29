@@ -30,3 +30,6 @@ dist-ssr
 
 # 임시 정리용 폴더
 _to_delete/
+
+# Claude Code 로컬 권한 설정 (개인 환경)
+.claude/settings.local.json
