@@ -1,3 +1,4 @@
+import { css } from '@emotion/react'
 import styled from '@emotion/styled'
 
 export const ListRoot = styled.div`
@@ -10,16 +11,36 @@ export const ListRoot = styled.div`
   overflow: hidden;
 `
 
-export const ItemRow = styled.div`
+export const ItemRow = styled.button<{ isSelected?: boolean }>`
   display: flex;
   align-items: flex-start;
   gap: ${({ theme }) => theme.space[3]};
   width: 100%;
   padding: ${({ theme }) => theme.space[4]} ${({ theme }) => theme.space[5]};
+  border: none;
   border-top: 1px solid ${({ theme }) => theme.components.listRow.divider};
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+
+  ${({ theme, isSelected }) =>
+    isSelected &&
+    css`
+      background: ${theme.colors.fill.brandWeak};
+    `}
 
   &:first-of-type {
     border-top: none;
+  }
+
+  &:hover {
+    background: ${({ theme, isSelected }) =>
+      isSelected ? theme.colors.fill.brandWeak : theme.colors.fill.neutralHover};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.border.focus};
+    outline-offset: -2px;
   }
 `
 

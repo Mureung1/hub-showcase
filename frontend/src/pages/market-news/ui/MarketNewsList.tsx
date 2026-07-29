@@ -3,10 +3,19 @@ import { ImpactBadge } from '@/shared/ui/ImpactBadge'
 import { Tag } from '@/shared/ui/Tag'
 
 import type { ImpactLevel, MarketNewsItem } from '../model/types'
-import { ItemDescription, ItemRow, ItemTitle, ListRoot, TagRow, TitleRow } from './MarketNewsList.styles'
+import {
+  ItemDescription,
+  ItemRow,
+  ItemTitle,
+  ListRoot,
+  TagRow,
+  TitleRow,
+} from './MarketNewsList.styles'
 
 interface MarketNewsListProps {
   items: MarketNewsItem[]
+  selectedItemId?: string
+  onSelectItem: (item: MarketNewsItem) => void
 }
 
 const IMPACT_LABEL: Record<ImpactLevel, string> = {
@@ -15,10 +24,15 @@ const IMPACT_LABEL: Record<ImpactLevel, string> = {
   low: '영향도 낮음',
 }
 
-export const MarketNewsList = ({ items }: MarketNewsListProps) => (
+export const MarketNewsList = ({ items, selectedItemId, onSelectItem }: MarketNewsListProps) => (
   <ListRoot>
     {items.map((item) => (
-      <ItemRow key={item.id}>
+      <ItemRow
+        key={item.id}
+        type="button"
+        isSelected={item.id === selectedItemId}
+        onClick={() => onSelectItem(item)}
+      >
         <TitleRow>
           <ItemTitle>{item.title}</ItemTitle>
           <ImpactBadge impact={item.impact}>{IMPACT_LABEL[item.impact]}</ImpactBadge>
