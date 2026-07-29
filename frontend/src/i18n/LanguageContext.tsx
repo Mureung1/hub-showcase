@@ -6,7 +6,7 @@ export type Lang = 'ko' | 'en'
 export type TranslationKey = keyof typeof ko
 
 const DICTIONARIES: Record<Lang, Record<TranslationKey, string>> = { ko, en }
-const STORAGE_KEY = 'ecobot-lang'
+const STORAGE_KEY = 'confisort-lang'
 
 interface LanguageContextValue {
   lang: Lang

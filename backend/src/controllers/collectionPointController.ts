@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express'
 import { z } from 'zod'
 import { getCollectionPoints } from '../services/collectionPointService'
 
-const CATEGORIES = ['건전지', '형광등', '소형가전', '종이팩', '폐의약품', '의류'] as const
+const CATEGORIES = ['건전지', '형광등', '소형가전', '종이팩', '폐의약품', '의류', '재활용센터'] as const
 
 const collectionPointsQuerySchema = z.object({
   category: z.enum(CATEGORIES),

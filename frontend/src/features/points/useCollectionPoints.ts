@@ -2,7 +2,15 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../lib/apiClient'
 import type { SelectedRegion } from '../region/useSelectedRegion'
 
-export const COLLECTION_POINT_CATEGORIES = ['건전지', '형광등', '소형가전', '종이팩', '폐의약품', '의류'] as const
+export const COLLECTION_POINT_CATEGORIES = [
+  '건전지',
+  '형광등',
+  '소형가전',
+  '종이팩',
+  '폐의약품',
+  '의류',
+  '재활용센터',
+] as const
 export type CollectionPointCategory = (typeof COLLECTION_POINT_CATEGORIES)[number]
 
 export interface CollectionPoint {

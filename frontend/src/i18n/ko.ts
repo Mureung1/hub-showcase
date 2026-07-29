@@ -18,7 +18,6 @@ export const ko = {
   'home.uploadSheetTitle': '물건 확인하기',
   'home.takePhoto': '사진 촬영',
   'home.uploadFromGallery': '갤러리에서 업로드',
-  'home.profileAlt': '내 정보',
 
   'quickLink.bulky': '대형폐기물',
   'quickLink.points': '주변 수거함',
@@ -108,4 +107,5 @@ export const ko = {
   'points.category.종이팩': '종이팩',
   'points.category.폐의약품': '폐의약품',
   'points.category.의류': '의류',
+  'points.category.재활용센터': '재활용센터',
 } as const

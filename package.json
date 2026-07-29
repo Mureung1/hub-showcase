@@ -1,5 +1,5 @@
 {
-  "name": "ecobot",
+  "name": "confisort",
   "private": true,
   "workspaces": [
     "frontend",

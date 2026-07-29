@@ -88,5 +88,6 @@ async function fetchAllRowsNationwide<T>(
 const LAMP_BATTERY_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_waste_lamp_battery_collection_box_api'
 const MEDICINE_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_lung_medicine_api'
 const CLOTHING_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_clothing_collect_bins_api'
+const RECYCLING_CENTER_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_ruse_cnter_api'
 
-export { fetchAllRowsNationwide, LAMP_BATTERY_URL, MEDICINE_URL, CLOTHING_URL }
+export { fetchAllRowsNationwide, LAMP_BATTERY_URL, MEDICINE_URL, CLOTHING_URL, RECYCLING_CENTER_URL }

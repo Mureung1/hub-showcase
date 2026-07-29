@@ -96,9 +96,11 @@ export default function BulkyPage() {
               <p className="mt-4 text-sm text-sub">{t('bulky.noReportSite')}</p>
             )}
 
-            <div className="mt-4 rounded-[16px] bg-green-50 p-[17px] text-[13px] leading-relaxed text-green-900">
-              {feeResult.reportSite ? t('bulky.reportSiteInfo') : null}
-            </div>
+            {feeResult.reportSite ? (
+              <div className="mt-4 rounded-[16px] bg-green-50 p-[17px] text-[13px] leading-relaxed text-green-900">
+                {t('bulky.reportSiteInfo')}
+              </div>
+            ) : null}
 
             <div className="mt-4 rounded-[16px] bg-green-50 p-[17px] text-[13px] leading-relaxed text-green-900">
               {t('bulky.sourcePrefix')}

@@ -1,9 +1,9 @@
 ---
-name: ecobot-design-system
-description: Use this skill whenever creating or editing HTML/CSS pages, components, or mockups for the EcoBot (분리수거 도우미) project, or any related prototype that should match its established visual identity. Covers color palette, typography, spacing, border-radius, and card/component styling rules. Trigger on requests like "EcoBot 페이지 만들어줘", "이 프로젝트 스타일로 화면 추가해줘", or any new screen for the recycling-assistant app.
+name: confisort-design-system
+description: Use this skill whenever creating or editing HTML/CSS pages, components, or mockups for the confiSort (분리수거 도우미) project, or any related prototype that should match its established visual identity. Covers color palette, typography, spacing, border-radius, and card/component styling rules. Trigger on requests like "confiSort 페이지 만들어줘", "이 프로젝트 스타일로 화면 추가해줘", or any new screen for the recycling-assistant app.
 ---
 
-# EcoBot Design System
+# confiSort Design System
 
 A green, editorial-leaning design language for the 분리수거 도우미 (recycling assistant) app. Built mobile-first inside a 420px "phone" frame.
 
