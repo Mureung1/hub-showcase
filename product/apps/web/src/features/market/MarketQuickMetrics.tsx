@@ -29,18 +29,21 @@ export function MarketQuickMetrics({
   categorySelection,
   analysis,
   analysisState,
+  sameCategoryCount = null,
 }: {
   market: Market;
   categorySelection: CategorySelection;
   analysis: MarketAnalysis | null;
   analysisState: AnalysisState;
+  sameCategoryCount?: number | null;
 }) {
   const netTurnover =
     analysis === null || analysis.raw.opening_count === null || analysis.raw.closure_count === null
       ? null
       : analysis.raw.opening_count - analysis.raw.closure_count;
   const flow = formatCompactPeople(analysis?.raw.total_flow ?? null);
-  const categoryStoreCount = formatCount(analysis?.raw.category_store_count ?? null, "곳");
+  const resolvedStoreCount = analysis?.raw.category_store_count ?? sameCategoryCount;
+  const categoryStoreCount = formatCount(resolvedStoreCount, "곳");
 
   return (
     <section className="market-quick-metrics" aria-label="이 지역 한눈에 보기">
@@ -49,9 +52,11 @@ export function MarketQuickMetrics({
         <small>
           {analysis
             ? `${analysis.period.slice(0, 4)}년 ${analysis.period.slice(4)}분기 기준`
-            : analysisState === "loading"
-              ? "분석 자료 불러오는 중"
-              : "분석 자료 확인 필요"}
+            : sameCategoryCount !== null
+              ? "현재 상권 점포 기준"
+              : analysisState === "loading"
+                ? "분석 자료 불러오는 중"
+                : "분석 자료 확인 필요"}
         </small>
       </div>
       <div className="quick-metrics-list">
@@ -69,11 +74,11 @@ export function MarketQuickMetrics({
           <span className="quick-metric-icon coral"><Target size={17} /></span>
           <span>경쟁 강도</span>
           <b>
-            {analysis
-              ? analysis.raw.category_store_count >= 20
+            {resolvedStoreCount === null
+              ? metricValue(null, analysisState)
+              : resolvedStoreCount >= 20
                 ? "높음"
-                : "보통"
-              : metricValue(null, analysisState)}
+                : "보통"}
           </b>
         </div>
         <div>
