@@ -86,6 +86,14 @@ function IngredientShopPage() {
     })
   }
 
+  const pickedLinks = Object.values(pickedProducts).map((product) => product.link)
+
+  // 체크해둔 상품이 있으면 그 링크들을 한 번에 새 탭으로 연다. 클릭 핸들러 안에서 동기적으로
+  // window.open을 반복 호출해야 브라우저 팝업 차단에 안 걸린다(RecipeDetailPage.handleBuyClick과 동일한 이유).
+  function handleBuyClick() {
+    pickedLinks.forEach((link) => window.open(link, '_blank', 'noopener,noreferrer'))
+  }
+
   return (
     <>
       <TopNav />
@@ -131,6 +139,20 @@ function IngredientShopPage() {
                 pickedLink={selectedIngredient ? pickedProducts[selectedIngredient.id]?.link : null}
                 onTogglePick={(product) => handleTogglePick(selectedIngredient.id, product)}
               />
+              {pickedLinks.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleBuyClick}
+                    className="mt-3 w-full rounded-full border-[3.6px] border-ink bg-primary px-5 py-3 font-display text-sm font-bold text-text-primary transition hover:brightness-95"
+                  >
+                    🛒 선택한 {pickedLinks.length}개 구매하기
+                  </button>
+                  <p className="mt-2 text-center font-display text-xs text-text-secondary">
+                    재료마다 새 탭이 열려요. 안 열리면 브라우저 팝업 차단을 해제해주세요.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
