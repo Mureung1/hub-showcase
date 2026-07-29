@@ -12,6 +12,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/coin_pill.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/quest_card.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/stat_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
@@ -101,17 +102,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: userAsync.when(
           loading: () => const _HomeSkeleton(),
           error: (error, _) => ErrorView(
-            message: error is AppFailure
-                ? error.message
-                : '화면을 불러오지 못했어요.',
+            message: error is AppFailure ? error.message : '화면을 불러오지 못했어요.',
             onRetry: () => ref.invalidate(sessionProvider),
           ),
           // 문서가 없는 신규 사용자도 저장소가 AppUser.initial을 흘리므로
           // 특수 분기 없이 이 경로로 Lv.1 / XP 0 / 코인 0이 렌더된다.
-          data: (user) => _HomeContent(
-            user: user,
-            scrollController: scrollController,
-          ),
+          data: (user) =>
+              _HomeContent(user: user, scrollController: scrollController),
         ),
       ),
     );
@@ -196,8 +193,6 @@ class _HomeAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenH,
@@ -207,11 +202,11 @@ class _HomeAppBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 인사말이 길어지거나 배율이 커져도 코인 pill을 밀어내지 않게 접는다.
-          Flexible(
-            child: Text('오늘도 한 걸음.', style: theme.textTheme.titleLarge),
-          ),
+          // 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
+          // `leadingMark`는 5탭에만 켠다(하위 화면은 뒤로가기 버튼이 앞자리를 쓴다).
+          const Flexible(child: ScreenTitle('오늘도 한 걸음.', leadingMark: true)),
           AppSpacing.gapWSm,
-          CoinPill(amount: coin, compact: true),
+          CoinPill(amount: coin),
         ],
       ),
     );
@@ -272,9 +267,7 @@ class _PendingSectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Flexible(
-          child: Text('진행 중인 퀘스트', style: theme.textTheme.titleLarge),
-        ),
+        Flexible(child: Text('진행 중인 퀘스트', style: theme.textTheme.titleLarge)),
         // 홈은 미리보기 3개뿐이다. 전체 목록은 퀘스트 탭에 있다는 걸 알려 주는
         // 링크 — 「오늘의 퀘스트」 버튼과 같은 목적지다.
         TextButton(
@@ -291,12 +284,15 @@ class _PendingSectionHeader extends StatelessWidget {
 
 /// 환생 버튼 + 실행 흐름.
 ///
-/// 주 버튼과 달리 **평평한 중립 버튼**이다(Figma: 비활성 상태 bg `surfaceContainer`
-/// · 글자 `outline`). 보조 행동이라 그라디언트를 주지 않는다.
+/// **잠김과 열림이 서로 다른 버튼이다.**
+/// - **잠김(Lv.50 미만)**: 정본(Figma `65:455`) 그대로 평평한 중립 버튼 —
+///   배경 `surfaceContainer` · 글자 `outline` · ↻ 아이콘 · 「환생 (Lv.50 도달 시)」.
+/// - **열림(Lv.50 도달)**: 🔵 **블루 그라디언트**([GradientButtonStyle.rebirth]).
+///   정본에는 비활성 상태만 그려져 있어 활성 형태는 사용자 결정(2026-07-29)이다.
+///   같은 화면의 그린 「오늘의 퀘스트」(주요 행동)와 색으로 갈리고, 잠겨 있던 회색
+///   판이 색을 얻는 것 자체가 "이제 누를 수 있다"는 신호가 된다.
 ///
 /// 상태(중복 방지 잠금)를 들어야 해서 별도 `ConsumerStatefulWidget`으로 뺐다.
-/// - **비활성**: `canRebirth`가 아니거나(Lv.50 미만) 이미 실행 중일 때. 라벨과
-///   툴팁 둘 다로 "Lv.50에 도달하면 열린다"를 정직하게 알린다.
 /// - **탭**: 확인 다이얼로그 → `rebirth()` → 성공 시 환생 연출. 각 단계 사이에
 ///   `mounted`를 확인하고, `_busy`로 중복 실행을 막는다(완료 흐름과 같은 패턴).
 class _RebirthButton extends ConsumerStatefulWidget {
@@ -342,50 +338,58 @@ class _RebirthButtonState extends ConsumerState<_RebirthButton> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final user = widget.user;
-    final enabled = user.canRebirth && !_busy;
+    final unlocked = widget.user.canRebirth;
 
     return Tooltip(
-      message: user.canRebirth
-          ? '환생해서 새로 시작해요'
-          : 'Lv.$kMaxLevel에 도달하면 환생할 수 있어요',
-      // `FilledButton.icon`이 아니라 **평범한 `FilledButton` + 직접 짠 Row**다.
-      // `.icon` 팩토리는 비공개 하위 타입(`_FilledButtonWithIcon`)을 돌려주는데,
-      // `find.byType`은 정확한 런타임 타입만 보므로 테스트에서 집히지 않는다.
-      child: FilledButton(
-        onPressed: enabled ? _onPressed : null,
-        style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(GradientButton.minHeight),
-          backgroundColor: scheme.surfaceContainer,
-          // 열렸을 때만 그린으로 살아난다 — 색이 곧 "이제 누를 수 있다"는 신호다.
-          foregroundColor: scheme.primary,
-          disabledBackgroundColor: scheme.surfaceContainer,
-          disabledForegroundColor: scheme.outline,
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_busy)
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              const Icon(Symbols.refresh, size: 20),
-            AppSpacing.gapWSm,
-            // 잠겨 있을 때 **현재 레벨**을 되뇌는 대신 열리는 조건을 말한다.
-            // 긴 라벨·큰 배율에서 넘치지 않게 접을 수 있게 둔다.
-            Flexible(
-              child: Text(
-                user.canRebirth ? '환생' : '환생 (Lv.$kMaxLevel 도달 시)',
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
+      message: unlocked ? '환생해서 새로 시작해요' : 'Lv.$kMaxLevel에 도달하면 환생할 수 있어요',
+      child: unlocked ? _unlocked() : const _RebirthLockedButton(),
+    );
+  }
+
+  /// 열린 환생 — 블루 그라디언트. 진행 중 표시(스피너)와 중복 탭 차단은
+  /// [GradientButton.busy]가 맡는다(주 버튼과 같은 처리라 따로 짜지 않는다).
+  Widget _unlocked() => GradientButton(
+    onPressed: _onPressed,
+    icon: Symbols.refresh,
+    label: '환생',
+    style: GradientButtonStyle.rebirth,
+    busy: _busy,
+  );
+}
+
+/// 잠긴 환생 — 정본 `65:455`의 Disabled 상태 그대로.
+///
+/// `FilledButton.icon`이 아니라 **평범한 `FilledButton` + 직접 짠 Row**다.
+/// `.icon` 팩토리는 비공개 하위 타입(`_FilledButtonWithIcon`)을 돌려주는데,
+/// `find.byType`은 정확한 런타임 타입만 보므로 테스트에서 집히지 않는다.
+class _RebirthLockedButton extends StatelessWidget {
+  const _RebirthLockedButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return FilledButton(
+      // 항상 잠겨 있다 — 열리는 순간 위 [_RebirthButtonState]가 그라디언트 버튼으로
+      // 갈아 끼우므로, 이 위젯이 눌리는 경우는 없다.
+      onPressed: null,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(GradientButton.minHeight),
+        disabledBackgroundColor: scheme.surfaceContainer,
+        disabledForegroundColor: scheme.outline,
+        elevation: 0,
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Symbols.refresh, size: 20),
+          AppSpacing.gapWSm,
+          // **현재 레벨**을 되뇌는 대신 열리는 조건을 말한다.
+          // 긴 라벨·큰 배율에서 넘치지 않게 접을 수 있게 둔다.
+          Flexible(
+            child: Text('환생 (Lv.$kMaxLevel 도달 시)', textAlign: TextAlign.center),
+          ),
+        ],
       ),
     );
   }
@@ -436,10 +440,7 @@ class _PendingQuests extends StatelessWidget {
               // 홈 미리보기 카드는 완료 토글 없이 보기 전용이다. 탭하면 개별 상세가
               // 아니라 **오늘의 퀘스트 탭**으로 전환한다 — 전체 목록에서 완료·관리한다
               // ("오늘의 퀘스트" 버튼과 같은 목적지).
-              QuestCard(
-                quest: preview[i],
-                onTap: () => context.go('/quest'),
-              ),
+              QuestCard(quest: preview[i], onTap: () => context.go('/quest')),
             ],
           ],
         );

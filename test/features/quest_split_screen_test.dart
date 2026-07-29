@@ -394,7 +394,7 @@ void main() {
     // 다이얼로그 TextField에 새 제목 입력.
     await tester.enterText(find.byType(TextField).last, '새로 고친 제목');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.tap(find.widgetWithText(GradientButton, '저장'));
     await tester.pumpAndSettle();
 
     expect(find.text('새로 고친 제목'), findsOneWidget);
@@ -412,8 +412,8 @@ void main() {
     await tester.enterText(find.byType(TextField).last, '   ');
     await tester.pump();
 
-    final saveButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, '저장'),
+    final saveButton = tester.widget<GradientButton>(
+      find.widgetWithText(GradientButton, '저장'),
     );
     expect(saveButton.onPressed, isNull);
   });

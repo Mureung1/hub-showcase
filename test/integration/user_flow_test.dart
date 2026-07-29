@@ -202,7 +202,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, '공고 확인하고 자격 체크');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.tap(find.widgetWithText(GradientButton, '저장'));
     await tester.pumpAndSettle();
 
     // 편집이 화면에 반영된다(상태 전이 단언).

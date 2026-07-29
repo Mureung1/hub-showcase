@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "title": "One-Step",
+  "summary": "큰 목표를 AI가 오늘 시작할 수 있는 작은 퀘스트로 쪼개 주고, 완료할 때마다 캐릭터가 자라는 도전 앱입니다.",
+  "githubUser": "jinwooky(N152_전진욱)",
+  "demoUrl": "",
+  "demoVideoUrl": "https://www.youtube.com/watch?v=qz8y6KjJp18",
+  "thumbnail": "one_step_thumbnail.webp",
+  "screenshots": [
+    "screenshots/quest-list.png",
+    "screenshots/shop.png",
+    "screenshots/storage.png",
+    "screenshots/rebirth-1-lv14.png",
+    "screenshots/rebirth-3-lv14.png",
+    "screenshots/rebirth-6-lv30.png"
+  ],
+  "problem": "대외활동과 공모전에 도전하고 싶은 대학생이 시작조차 못 하는 이유는 목표가 너무 커서 오늘 무엇을 해야 할지 보이지 않기 때문입니다. 첫 걸음이 막연하면 실패가 두려워지고, 결국 지원 자체를 미루게 됩니다.",
+  "targetUsers": [
+    "대외활동·공모전에 도전하고 싶은 대학생",
+    "목표는 세웠지만 첫 걸음을 못 떼는 사람"
+  ],
+  "features": [
+    "큰 목표를 입력하면 AI가 오늘 시작할 수 있는 작은 퀘스트로 나눠 줍니다.",
+    "나눠진 퀘스트를 수정·삭제하거나 더 작게 다시 나눌 수 있습니다.",
+    "퀘스트를 완료하면 난이도에 따라 코인과 경험치를 받습니다.",
+    "모은 경험치로 캐릭터가 진화하고, 코인으로 배경과 오라를 꾸밉니다.",
+    "완료한 도전은 메모·사진과 함께 보관함에 기록됩니다."
+  ],
+  "featureTags": [
+    "AI 도전 분해",
+    "퀘스트 실행 루프",
+    "캐릭터 육성",
+    "보상 상점",
+    "성취 보관함"
+  ],
+  "techStack": [
+    "Flutter",
+    "Dart",
+    "Riverpod",
+    "go_router",
+    "Firebase Auth",
+    "Cloud Firestore",
+    "Gemini API"
+  ],
+  "techHighlights": [
+    "AI 응답을 JSON 스키마로 강제하고, 실패하면 템플릿으로 폴백해 화면이 비지 않게 했습니다.",
+    "코인·경험치 지급을 Firestore 트랜잭션으로 묶고 지급 기록 가드로 중복 지급을 막았습니다.",
+    "화면이 Firebase를 모르도록 저장소를 인터페이스로 분리해 Firestore·InMemory 두 구현을 갈아끼웁니다.",
+    "노랑은 코인·보상 전용이라는 색 역할 규칙을 테스트로 강제해 디자인 계약이 코드에서 지켜지게 했습니다."
+  ],
+  "developmentWithAI": "저는 문제 정의와 기능 우선순위를 정하고, 구현은 역할별 에이전트에 위임했습니다. 화면 작업은 Figma 정본에서 실측을 뽑아 디자인 토큰으로 옮기는 방식으로 진행했습니다. 배포 직전 검증 에이전트가 다이얼로그 8종에서 본문 스크롤이 빠진 것을 찾아냈습니다. 테스트는 통과하고 있었지만 그 테스트가 다이얼로그를 실제 경로로 띄우지 않아 결함을 못 보고 있었고, 큰 글꼴 배율에서 확인 버튼이 잘려 삭제·수정을 실행할 수 없는 상태였습니다.",
+  "agent": {
+    "summary": "기획 판단·구현·진행 기록·품질 검증을 각각 다른 에이전트에 맡기고, 디자인 규칙은 Skill로 분리해 필요한 문서만 열도록 했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "planning-agent",
+        "purpose": "기능 스코프와 우선순위를 기획서 기준으로 판단합니다. 코드는 쓰지 않습니다."
+      },
+      {
+        "type": "agent",
+        "name": "development-agent",
+        "purpose": "Flutter·Firebase 화면과 로직을 구현합니다. Figma 정본에서 실측을 직접 읽습니다."
+      },
+      {
+        "type": "agent",
+        "name": "checklist-agent",
+        "purpose": "진행 상황을 코드 근거로만 기록하고 다음 할 일을 정합니다."
+      },
+      {
+        "type": "agent",
+        "name": "verification-agent",
+        "purpose": "테스트를 실행하고 증거를 근거로 기능별 PASS/FAIL을 판정합니다."
+      },
+      {
+        "type": "skill",
+        "name": "one-step-design",
+        "purpose": "색·타이포·간격·컴포넌트 규칙의 진입점입니다. 작업에 필요한 문서만 열게 합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 구현 Workflow",
+        "steps": [
+          "planning-agent에 지금 할 일인지 판단 요청",
+          "development-agent에 구현 위임",
+          "checklist-agent로 진행 기록 갱신",
+          "verification-agent로 PASS/FAIL 판정",
+          "FAIL이면 근거와 함께 development-agent로 회귀"
+        ]
+      },
+      {
+        "name": "Figma 정합 Workflow",
+        "steps": [
+          "Figma MCP로 정본 노드의 실측값 추출",
+          "실측을 디자인 토큰으로 변환",
+          "화면 단위로 묶어 구현",
+          "에뮬레이터에서 육안 확인",
+          "기능 단위로 커밋"
+        ]
+      }
+    ]
+  }
+}

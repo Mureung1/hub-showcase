@@ -39,12 +39,33 @@ class GradientButtonStyle {
     shadow: AppColors.primaryButtonShadow,
   );
 
-  /// 🔵 블루 — **AI 진입점 전용.** 퀘스트 목록 상단 프로모의 「분해하기」,
+  /// 🔵 블루 — **AI 진입점.** 퀘스트 목록 상단 프로모의 「분해하기」,
   /// AI 분해 화면의 「분해하기」가 이 변형이다.
   ///
   /// [growth]와 나란히 놓여도 역할이 갈린다: 그린은 "내가 해낸다"(완료·등록),
   /// 블루는 "AI에게 맡긴다"(분해). 같은 화면에 둘 다 있어도 색만 보고 고를 수 있다.
+  ///
+  /// ⚠️ **"블루 = AI"는 아니다.** 색 역할 규칙에서 블루는 *AI · 정보 · 링크 ·
+  /// 보조 행동*을 함께 맡는다. 그래서 같은 팔레트를 쓰는 [rebirth]가 따로 있다 —
+  /// 이 상수는 **AI 진입점 호출부에서만** 고르고, AI가 아닌 자리는 자기 이름의
+  /// 상수를 쓴다. 값이 같아도 이름이 갈려 있어야 나중에 AI 블루만 조정할 때
+  /// 어디를 건드릴지가 코드에 남는다.
   static const ai = GradientButtonStyle(
+    from: AppColors.secondary,
+    to: AppColors.secondaryContainer,
+    foreground: AppColors.onSecondary,
+    shadow: AppColors.secondaryButtonShadow,
+  );
+
+  /// 🔵 블루 — **환생 버튼의 활성 상태 전용**(홈, Lv.50 도달 시).
+  ///
+  /// 정본(Figma `65:455`)은 환생을 **비활성 상태로만** 그려 뒀다. 활성 형태는
+  /// 사용자 결정(2026-07-29)으로 블루 그라디언트다 — 환생은 색 역할상 *보조 행동*
+  /// 이라 그린(주요 행동, 「오늘의 퀘스트」)과 같은 화면에서 색으로 갈린다.
+  ///
+  /// [ai]와 값은 같지만 이름을 나눈 이유는 [ai] 주석에 적었다. 환생은 AI 기능이
+  /// 아니므로 "AI 진입점" 상수를 빌려 쓰면 그 주석이 거짓이 된다.
+  static const rebirth = GradientButtonStyle(
     from: AppColors.secondary,
     to: AppColors.secondaryContainer,
     foreground: AppColors.onSecondary,

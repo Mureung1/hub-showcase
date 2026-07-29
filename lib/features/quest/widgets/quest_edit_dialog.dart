@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/reward_rules.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_dialog_shell.dart';
+import '../../../core/widgets/app_segmented_button.dart';
+import '../../../core/widgets/difficulty_pill.dart';
 import '../../../core/widgets/reward_chip.dart';
 import '../../../models/difficulty.dart';
 import '../../../models/quest.dart';
@@ -22,11 +24,12 @@ class QuestEditResult {
 /// 등록된 퀘스트의 **제목·난이도 수정** 다이얼로그 (4주차 B-5b).
 ///
 /// 입력 규칙은 `QuestCreateScreen`을 그대로 따른다: 제목 60자 상한 + 빈 제목 거부
-/// (저장 버튼 비활성 + validator), 난이도 SegmentedButton, 난이도를 바꾸면 예상
+/// (저장 버튼 비활성 + validator), 난이도 [AppSegmentedButton], 난이도를 바꾸면 예상
 /// 보상 미리보기가 함께 갱신된다.
 ///
-/// 색 규칙(one-step-design): 노랑(코인)은 [RewardChip]이 전담한다. 이 파일은
-/// 노랑에 직접 접근하지 않는다. 강조·주요 행동은 그린을 쓴다.
+/// 색 규칙(one-step-design): 노랑(코인)은 [RewardChip]이, 보통 난이도의 노랑은
+/// [difficultyFill]이 전담한다. 이 파일은 노랑에 직접 접근하지 않는다. 강조·주요
+/// 행동은 그린을 쓴다.
 class QuestEditDialog extends StatefulWidget {
   const QuestEditDialog({super.key, required this.quest});
 
@@ -75,99 +78,121 @@ class _QuestEditDialogState extends State<QuestEditDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // 프로젝트 다이얼로그 관례(`Dialog` + 직접 레이아웃)를 따른다. AlertDialog의
+    // 프로젝트 다이얼로그 관례([AppDialogShell])를 따른다. AlertDialog의
     // actions(OverflowBar)는 폭이 좁으면 버튼을 세로로 쌓아 취소가 저장 위로
     // 올라가므로, 하단 Row + Expanded 2개로 항상 가로 배치를 보장한다.
-    return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    //
+    // [Form]은 셸 **바깥**에 둔다. 폼은 그리는 것이 없고 아래 필드가 조상에서
+    // 찾아 쓰는 스코프일 뿐이라, 셸 안쪽에 넣어 스크롤 구조를 갈라 놓을 이유가 없다.
+    return Form(
+      key: _formKey,
+      child: AppDialogShell(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 정본 `123:655` — 24/700. 아래 세 필드 라벨(12/500)과 두 단 벌어져
+          // "제목 하나 · 필드 셋"이라는 위계가 한눈에 잡힌다.
+          Text('퀘스트 수정', style: theme.textTheme.headlineMedium),
+          AppSpacing.gapMd,
+
+          // 라벨을 입력칸 **밖**에 세운다(정본 `123:656`). InputDecoration의
+          // floating label은 포커스 여부에 따라 크기·위치가 달라져 아래 '난이도'·
+          // '예상 보상' 라벨과 줄이 맞지 않는다 — 세 라벨을 같은 스타일로 통일한다.
+          const _FieldLabel('제목'),
+          AppSpacing.gapSm,
+          TextFormField(
+            controller: _titleController,
+            autofocus: true,
+            maxLength: 60,
+            textInputAction: TextInputAction.done,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '제목을 입력해 주세요.';
+              }
+              return null;
+            },
+            onFieldSubmitted: (_) {
+              if (_canSave) _save();
+            },
+          ),
+          AppSpacing.gapSm,
+
+          const _FieldLabel('난이도'),
+          AppSpacing.gapSm,
+          // 등록 화면과 **같은 위젯**([AppSegmentedButton])이다. 예전엔 M3
+          // [SegmentedButton]이라 선택색이 M3 기본 `secondaryContainer`(🔵 블루)로
+          // 나왔다 — 블루는 AI·정보 전용이라 색 역할이 어긋나고, 무엇보다 한 앱에서
+          // 난이도를 고르는 UI가 두 벌로 갈려 있었다.
+          //
+          // `expand: true`로 정본(`123:660`, 272폭 균등 3분할)처럼 가로를 채운다.
+          AppSegmentedButton<Difficulty>(
+            expand: true,
+            segments: [
+              for (final d in Difficulty.values)
+                AppSegment(
+                  value: d,
+                  label: d.label,
+                  // 선택 칸은 그 칸의 난이도 색으로 채운다(등록 화면과 동일).
+                  selectedColor: difficultyFill(context, d).background,
+                  selectedForeground: difficultyFill(context, d).foreground,
+                ),
+            ],
+            selected: _difficulty,
+            onChanged: (d) => setState(() => _difficulty = d),
+          ),
+          AppSpacing.gapMd,
+
+          // 난이도를 바꾸면 예상 보상도 함께 바뀐다.
+          //
+          // 정본 `123:667`+`123:668`은 라벨 아래에 칩만 놓는다 — 틴트 상자도,
+          // 같은 줄 `spaceBetween`도 없다. 위 두 필드와 같은 「라벨 → 값」 리듬이
+          // 되고, 큰 글꼴 배율에서 라벨과 칩이 한 줄을 다투던 문제도 사라진다.
+          const _FieldLabel('예상 보상'),
+          AppSpacing.gapSm,
+          RewardChip(reward: rewardFor(_difficulty)),
+          AppSpacing.gapLg,
+
+          // 취소·저장을 가로로 나란히. Expanded 2개라 폭이 좁아도 세로로 쌓이지
+          // 않는다(수정·삭제 다이얼로그가 동일 배치를 공유한다).
+          Row(
             children: [
-              Text('퀘스트 수정', style: theme.textTheme.titleLarge),
-              AppSpacing.gapMd,
-
-              TextFormField(
-                controller: _titleController,
-                autofocus: true,
-                maxLength: 60,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(labelText: '제목'),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return '제목을 입력해 주세요.';
-                  }
-                  return null;
-                },
-                onFieldSubmitted: (_) {
-                  if (_canSave) _save();
-                },
-              ),
-              AppSpacing.gapSm,
-
-              Text('난이도', style: theme.textTheme.titleMedium),
-              AppSpacing.gapSm,
-              // 좁은 다이얼로그 폭에서 왼쪽 쏠림 없이 가로를 꽉 채운다 — 세그먼트가
-              // 폭을 균등 분할해 등록 화면과 시각적으로 일관된다.
-              SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<Difficulty>(
-                  segments: [
-                    for (final d in Difficulty.values)
-                      ButtonSegment(value: d, label: Text(d.label)),
-                  ],
-                  selected: {_difficulty},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _difficulty = selection.first),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('취소'),
                 ),
               ),
-              AppSpacing.gapMd,
-
-              // 난이도를 바꾸면 예상 보상도 함께 바뀐다(등록 화면과 같은 미리보기).
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: AppRadius.mdAll,
+              AppSpacing.gapWSm,
+              Expanded(
+                child: FilledButton(
+                  // 제목이 비어 있으면 눌리지 않는다.
+                  onPressed: _canSave ? _save : null,
+                  child: const Text('저장'),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('예상 보상', style: theme.textTheme.labelMedium),
-                    RewardChip(reward: rewardFor(_difficulty)),
-                  ],
-                ),
-              ),
-              AppSpacing.gapLg,
-
-              // 취소·저장을 가로로 나란히. Expanded 2개라 폭이 좁아도 세로로 쌓이지
-              // 않는다(수정·삭제 다이얼로그가 동일 배치를 공유한다).
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('취소'),
-                    ),
-                  ),
-                  AppSpacing.gapWSm,
-                  Expanded(
-                    child: FilledButton(
-                      // 제목이 비어 있으면 눌리지 않는다.
-                      onPressed: _canSave ? _save : null,
-                      child: const Text('저장'),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 입력 항목 라벨 — 정본 `123:656`·`123:659`·`123:667`(12/500, `onSurfaceVariant`).
+///
+/// 세 자리가 같은 스타일이어야 「제목 / 난이도 / 예상 보상」이 한 덩어리의 폼으로
+/// 읽힌다. 하나만 다르게 두면 그 항목이 별개 섹션처럼 튄다.
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
       ),
     );
   }

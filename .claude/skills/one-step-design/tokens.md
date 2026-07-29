@@ -81,3 +81,4 @@
 
 - **Material Symbols Outlined** (weight/fill 가변). 24px 기본.
 - 하단 탭: `home / assignment / storefront / inventory_2 / person`.
+  - **이 목록이 정본이다.** Figma 목업의 탭 아이콘은 따르지 않는다 — 퀘스트 탭이 `subdirectory_arrow_right`(꺾이는 화살표)로 그려져 있어 세트가 큐레이션되지 않은 임시값으로 판단했다.

@@ -166,9 +166,27 @@ class FirestoreUserRepository implements UserRepository {
     });
   }
 
+  /// 장착 슬롯 맵을 **통째로 교체**한다(장착·해제 공용).
+  ///
+  /// ⚠️ **`SetOptions(merge: true)`를 쓰면 안 된다.** merge는 맵 필드를 **깊게 병합**
+  /// 하므로 새 맵에 없는 키를 서버에서 지우지 않는다. 상점의 「해제」는 로컬 맵에서
+  /// 슬롯 키를 **빼고** 이 메서드를 부르는데, merge:true에서는 그 삭제가 서버에
+  /// 도달하지 못한다 — 앱을 다시 켜면 벗은 아이템이 그대로 장착돼 있었다(키를
+  /// **더하는** 장착만 우연히 동작했다).
+  ///
+  /// `mergeFields: ['equipped']`는 그 필드 하나만 **통째로 덮어쓰고** `coin`·`level`·
+  /// `streak` 등 문서의 나머지 필드는 건드리지 않는다. "merge가 더 안전해 보인다"며
+  /// 되돌리지 말 것 — 되돌리는 순간 해제가 다시 서버에 반영되지 않는다.
+  ///
+  /// 이 결함은 `InMemoryUserRepository`로는 재현되지 않는다(저쪽은
+  /// `copyWith(equipped:)`로 통째 교체라 정상 동작한다). **저장소 구현 간 의미 차이**다.
   @override
   Future<void> updateEquipped(String uid, Map<String, String> equipped) {
-    return guard(() => _doc(uid).set({'equipped': equipped}, SetOptions(merge: true)));
+    return guard(
+      () => _doc(
+        uid,
+      ).set({'equipped': equipped}, SetOptions(mergeFields: ['equipped'])),
+    );
   }
 
   @override

@@ -7,69 +7,79 @@ import '../theme/app_typography.dart';
 import '../theme/reward_colors.dart';
 
 /// 코인 잔액 pill. 🟡 노랑 사용 허용 위젯(코인 = 보상).
+///
+/// 정본 `CoinPill`(Redesign `11:36`, 인스턴스 `65:423` 홈 · `66:446` 퀘스트 목록 ·
+/// `43:253` 상점). 실측 71×24: 패딩 **좌 8 · 우 12 · 상하 4**, full radius, 채움
+/// `tint/coinbg`(= [RewardTheme.coinSurface]), 아이콘 `Symbols.monetization_on` 16, 숫자
+/// `Sora SemiBold 12/16`(= [AppTypography.numericLabelSmallStrong]), 글자
+/// `reward/cointext` #855300(= [RewardTheme.onCoinTint]).
+///
+/// **크기 변형(compact)이 없다.** 예전에는 헤더용 축소본과 '코인' 라벨이 붙은 큰
+/// 본을 나눠 상점만 큰 쪽을 썼는데, 정본은 세 화면(홈·퀘스트 목록·상점)이 **같은
+/// 71×24 하나**를 쓴다. 변형을 두면 같은 정보가 화면마다 다른 무게로 읽힌다.
+/// 라벨('코인')도 정본에 없다 — 아이콘이 이미 단위를 말한다.
+///
+/// 좌우 패딩이 비대칭인 것은 오타가 아니다. 아이콘 쪽은 글리프 자체에 여백이
+/// 있어 8이면 충분하고, 숫자 쪽은 12를 줘야 시각적으로 같은 간격으로 보인다.
 class CoinPill extends StatelessWidget {
-  const CoinPill({super.key, required this.amount, this.compact = false});
+  const CoinPill({super.key, required this.amount});
 
   final int amount;
 
-  /// 헤더용 축소 버전.
-  final bool compact;
+  /// 정본 실측 패딩(좌 8 · 우 12 · 상하 4).
+  static const EdgeInsets _padding = EdgeInsets.fromLTRB(
+    AppSpacing.sm,
+    AppSpacing.xs,
+    AppSpacing.smd,
+    AppSpacing.xs,
+  );
+
+  /// 정본 실측 아이콘 크기. [CoinPrice]의 14와 다르다 — 저쪽은 카드 본문 한 줄이다.
+  static const double _iconSize = 16;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final reward = theme.reward;
+    // 흰 배경 위 노랑 틴트에서 대비를 확보하려고 정본이 숫자만 갈색으로 내렸다.
+    // 다크 카드 위에서는 그 갈색이 읽히지 않으므로 [CoinPrice]와 같은 처방으로
+    // 이미 밝혀 둔 [RewardTheme.coin]을 쓴다(새 색을 만들지 않는다).
+    final numberColor = theme.brightness == Brightness.dark
+        ? reward.coin
+        : reward.onCoinTint;
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? AppSpacing.sm : AppSpacing.md,
-        vertical: compact ? AppSpacing.xs : AppSpacing.sm,
-      ),
+      padding: _padding,
       decoration: BoxDecoration(
-        color: reward.coinGlow.withValues(alpha: 0.22),
+        // 라이트는 정본 실측 그대로 **불투명** `#fdf3e0`이다. 예전에는
+        // `coinGlow`의 알파 파생값을 썼는데, 알파는 뒤에 깔린 배경색에 따라 합성
+        // 결과가 흔들려 정본과 같다는 보장이 없다.
+        // (다크는 정본에 없어 [RewardTheme.dark]가 기존 파생 경로를 유지한다.)
+        color: reward.coinSurface,
         borderRadius: AppRadius.fullAll,
       ),
-      // **`Row`가 아니라 `Wrap`이다.** 고정폭 `Row`였을 때는 큰 잔액(1,234)과 큰
-      // 글꼴 배율이 겹치면 pill이 부모 폭을 넘었다(E-4 D-6: 배율 2.0 · 폭 320dp의
-      // 홈 코인 배너에서 20px). 폭이 모자라면 "코인" 단위를 다음 줄로 내려보낸다.
-      // [RewardChip]이 코인·XP 묶음을 접는 것과 같은 처방이다.
-      child: Wrap(
-        // 예전 Row의 gapWXs와 같은 값 — 배율 1.0에서 생김새가 바뀌지 않는다.
-        spacing: AppSpacing.xs,
-        runSpacing: AppSpacing.xs,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      // 아이콘과 숫자는 **한 묶음**이라 줄을 나누지 않는다. 예전에 `Wrap`이었던
+      // 것은 '코인' 라벨을 다음 줄로 내려보내기 위해서였는데(E-4 D-6: 배율 2.0 ·
+      // 폭 320dp에서 20px 초과), 그 라벨이 사라지면서 접을 것도 없어졌다.
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 아이콘과 숫자는 **한 묶음**이다. 둘이 다른 줄로 갈라지면 "🪙"와
-          // "1,234"가 남남처럼 읽힌다. 줄바꿈은 바깥 Wrap에만 맡긴다.
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Symbols.monetization_on,
-                size: compact ? 16 : 20,
-                fill: 1,
-                color: reward.coin,
-              ),
-              AppSpacing.gapWXs,
-              // 잔액은 숫자·쉼표뿐이라 **수치 서체(Sora)** 를 쓴다.
-              // 아래 '코인' 라벨은 한글이므로 기본 서체(Pretendard)다.
-              Text(
-                _format(amount),
-                style:
-                    (compact
-                            ? AppTypography.numericLabelSmall
-                            : AppTypography.numericLabelMedium)
-                        .copyWith(color: reward.onCoin),
-              ),
-            ],
+          Icon(
+            Symbols.monetization_on,
+            size: _iconSize,
+            fill: 1,
+            color: reward.coin,
           ),
-          if (!compact)
-            Text(
-              '코인',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: reward.onCoin.withValues(alpha: 0.75),
-              ),
+          // 정본 실측 간격은 2다. 8px 리듬에 없는 값이고 2dp 차이는 육안으로
+          // 구분되지 않아 토큰(4)을 유지한다.
+          AppSpacing.gapWXs,
+          // 잔액은 숫자·쉼표뿐이라 **수치 서체(Sora)** 를 쓴다.
+          Text(
+            _format(amount),
+            style: AppTypography.numericLabelSmallStrong.copyWith(
+              color: numberColor,
             ),
+          ),
         ],
       ),
     );

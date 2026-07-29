@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/growth_rules.dart';
+import '../../../core/constants/rebirth_frame.dart';
 import '../../../core/constants/shop_items.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/level_pill.dart';
 import '../../../core/widgets/pixel_art.dart';
+import '../../../core/widgets/rebirth_badge.dart';
 import '../../../models/app_user.dart';
 
 /// 홈 캐릭터 블록 — full-bleed 히어로 + XP.
@@ -79,12 +81,13 @@ class CharacterCard extends StatelessWidget {
 /// 이름표와 오른쪽 끝이 스친다 — 폭이 좁을수록 겹침이 준다. 글자도 24 →
 /// [AppTypography.heroName](16)으로 줄였다. 겹치더라도 이름표는 캐릭터 **발치**에
 /// 놓여 얼굴을 가리지 않는다.
+///
+/// ⚠️ **이 오버레이는 Figma 정본에 없다.** 정본(Redesign `65:428`)은 단계명과
+/// 레벨 pill을 캐릭터 **아래에 세로로** 쌓는다. 히어로 안 오버레이는 그 뒤의 사용자
+/// 결정이라, 아래 세 처방(베이스라인 정렬·판 패딩·축소)은 정본 실측이 아니라 이
+/// 배치에서만 생기는 결함을 푼 것이다.
 class _HeroNamePlate extends StatelessWidget {
-  const _HeroNamePlate({
-    super.key,
-    required this.stage,
-    required this.level,
-  });
+  const _HeroNamePlate({super.key, required this.stage, required this.level});
 
   final CharacterStage stage;
   final int level;
@@ -93,63 +96,69 @@ class _HeroNamePlate extends StatelessWidget {
   /// 잔디 위에서 글자 대비가 무너진다.
   static const double _plateOpacity = 0.88;
 
+  /// 판 내부 패딩.
+  ///
+  /// 예전 값(좌우 8 · 상하 4)은 안에 든 레벨 pill(높이 28)이 판 가장자리에 거의
+  /// 닿아, 흰 원통이 글자를 **감싼** 것이 아니라 글자에 **끼인** 것처럼 보였다.
+  /// 상하 8이면 pill 위아래로 8씩 남아 원통이 배경 역할을 되찾고, 좌우 12는 pill
+  /// 자신의 좌우 패딩(12, [LevelPill])과 같은 리듬이다.
+  ///
+  /// 판이 36 → 44로 높아지지만 [CharacterHero]의 오버레이는 **아래에 붙어**
+  /// 있으므로(`bottom: _overlayInset`) 캐릭터 접지 좌표는 건드리지 않는다.
+  /// 판 윗변만 8dp 올라가고, 그래도 캐릭터 박스 중심보다 아래(=발치)에 머문다.
+  static const EdgeInsets _platePadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.smd,
+    vertical: AppSpacing.sm,
+  );
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
+      padding: _platePadding,
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest.withValues(alpha: _plateOpacity),
         borderRadius: AppRadius.fullAll,
         boxShadow: AppColors.softShadow,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 단계명은 한글('참새'·'성룡')이라 기본 서체(Pretendard)다.
-          // 긴 단계명('이펙트 독수리')과 큰 글꼴 배율이 겹쳐도 레벨 pill을
-          // 밀어내지 않게 접는다 — 히어로는 높이가 고정이라 줄을 늘릴 수 없다.
-          Flexible(
-            child: Text(
+      // **폭이 모자라면 통째로 줄인다 — 잘라내지 않는다.**
+      //
+      // 예전에는 단계명만 `Flexible` + `ellipsis`였다. 그러면 좁은 폭·큰 배율에서
+      // 「이펙트 독수리」가 「이펙트…」로 잘려 **어느 단계인지 못 읽는다**(AppBar 긴
+      // 제목에 쓴 처방과 같은 이유로 말줄임을 버렸다 — `ScreenTitle.appBar`).
+      //
+      // 축소 대상이 이름 하나가 아니라 `Row` **전체**인 것이 핵심이다. 이름만
+      // `FittedBox`로 감싸면 `RenderFittedBox`가 축소 배율을 baseline 값에 반영하지
+      // 않아, 줄어든 이름과 pill의 밑선이 도로 어긋난다. 한 덩어리로 줄이면 두
+      // 글자의 상대 위치가 그대로 보존된다.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          // **박스 중심이 아니라 글자 밑선을 맞춘다.**
+          //
+          // 기본 정렬(center)은 이름 박스(Pretendard 16/24)와 pill 박스(Sora
+          // 14/20 + 상하 패딩 4 = 28)의 **중심**을 맞춘다. 두 서체는 캡 높이와
+          // 베이스라인 위치가 달라, 박스 중심을 맞추면 글자가 서로 어긋나 한 줄이
+          // 삐뚤어져 보인다. baseline 정렬은 `Container`가 자식 baseline을 자기
+          // 패딩만큼 밀어 전달하므로 pill 안 `Lv.12`와 단계명의 밑선이 실제로 맞는다.
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            // 단계명은 한글('참새'·'성룡')이라 기본 서체(Pretendard)다.
+            // 축소는 바깥 `FittedBox`가 맡으므로 여기서는 줄바꿈만 막는다.
+            Text(
               stage.name,
               style: AppTypography.heroName.copyWith(color: scheme.onSurface),
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
-          ),
-          AppSpacing.gapWSm,
-          _LevelPill(level: level),
-        ],
-      ),
-    );
-  }
-}
-
-/// `Lv.12` — 그린 틴트 pill. 숫자와 라틴 문자뿐이라 수치 서체(Sora)를 쓴다.
-class _LevelPill extends StatelessWidget {
-  const _LevelPill({required this.level});
-
-  final int level;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.smd,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.primarySurface,
-        borderRadius: AppRadius.fullAll,
-      ),
-      child: Text(
-        'Lv.$level',
-        style: AppTypography.numericLabelMedium.copyWith(
-          color: AppColors.primary,
+            AppSpacing.gapWSm,
+            // MY 캐릭터 블록과 **같은** pill(`core/widgets/level_pill.dart`).
+            LevelPill(level: level),
+          ],
         ),
       ),
     );
@@ -204,63 +213,6 @@ class _XpBlock extends StatelessWidget {
         AppSpacing.gapXs,
         _XpBar(progress: user.levelProgress),
       ],
-    );
-  }
-}
-
-/// 환생 표식 — ★ N · {등급}. 환생 횟수와 등급 타이틀을 함께 보여 준다.
-///
-/// 🟡 노랑 금지 위젯이다. 표식은 코인·보상이 아니라 **성장의 훈장**이라 그린 계열
-/// (`primaryContainer`) 틴트를 쓴다.
-///
-/// **히어로 좌상단 오버레이라 풍경 위에 얹힌다.** 채움이 불투명(`#22c55e`)이라
-/// 글자 대비는 배경과 무관하게 `onPrimaryContainer`(#00391a) 대 5.6:1로 고정이다
-/// (WCAG AA 통과). 다만 밝은 하늘 위에서는 **판의 경계**가 흐려질 수 있어
-/// 소프트 섀도로 풍경에서 한 겹 띄운다.
-class _RebirthBadge extends StatelessWidget {
-  const _RebirthBadge({super.key, required this.rebirth});
-
-  final int rebirth;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: AppRadius.fullAll,
-        boxShadow: AppColors.softShadow,
-      ),
-      // `mainAxisSize.min`만으로는 넘침을 못 막는다 — 등급 타이틀이 길면
-      // ('환생 3 · Master Scholar') 고유 폭이 부모 폭을 넘어 폭 375dp에서 24px가
-      // 잘렸다(E-4에서 쓸어담은 고정폭 Row 결함과 같은 계열이고, 환생 1회
-      // 이상에서만 렌더돼 그때 표본에 안 걸렸다). 글자 쪽을 접을 수 있게 둔다.
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Symbols.star,
-            fill: 1,
-            size: 16,
-            color: scheme.onPrimaryContainer,
-          ),
-          AppSpacing.gapWXs,
-          Flexible(
-            child: Text(
-              '환생 $rebirth · ${rebirthTitle(rebirth)}',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onPrimaryContainer,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -356,6 +308,16 @@ class CharacterHero extends StatelessWidget {
   /// 라운드 24 모서리 안쪽에서 잘리지 않는 거리다.
   static const double _overlayInset = AppSpacing.md;
 
+  /// 환생 액자를 히어로 가장자리에서 얼마나 들여 그릴지.
+  ///
+  /// 액자 자산의 아래 두 모서리는 **직각**이라 라운드 24 클립과 모양이 다르다.
+  /// 8dp 들여 그리면 그 어긋남이 클립 밖 투명 영역에서만 일어난다: 자산 안에서
+  /// 그림이 실제로 칠해지는 가장 바깥 픽셀이 캔버스 가장자리에서 16px(= 이 렌더
+  /// 배율로 4dp) 안쪽이라, 좌하단 최외곽 점은 히어로 좌하단에서 (12, 16.25)dp에
+  /// 놓인다. 반지름 24 원(중심 (24, 24))의 안쪽이므로 클립이 잘라내는 것은
+  /// 투명 픽셀뿐이다. 자산을 다시 그려 라운드를 넣으면 이 인셋은 0으로 갈 수 있다.
+  static const double _frameInset = AppSpacing.sm;
+
   /// 백드롭 사각형을 좌표 테스트에서 집기 위한 키.
   ///
   /// 예전에는 백드롭을 감싸던 `ClipRRect`로 찾았지만, full-bleed가 되면서 라운드는
@@ -395,6 +357,22 @@ class CharacterHero extends StatelessWidget {
             ),
             // 오라 — 캐릭터 주변에 흩뿌린다(장착했을 때만).
             if (aura != null) ..._auras(aura!),
+            // ── 환생 액자. **배경·오라 위, 캐릭터·오버레이 아래**다.
+            //
+            //    위: 액자는 풍경을 담는 테두리라 백드롭과 오라보다 앞에 와야
+            //    테두리로 읽힌다. 아래: 캐릭터 도트아트와 두 오버레이(훈장·이름표)를
+            //    가리면 안 된다 — 훈장은 좌상단, 액자 모서리 장식도 좌상단이라
+            //    폭이 좁은 단말에서 겹치는데, 그때 살아남아야 하는 쪽은 정보다.
+            //
+            //    탭을 먹지 않게 IgnorePointer로 감싼다. 히어로를 통째로 덮는
+            //    사각형이라 나중에 히어로에 제스처가 붙으면 조용히 가로챌 수 있다.
+            Positioned.fill(
+              left: _frameInset,
+              top: _frameInset,
+              right: _frameInset,
+              bottom: _frameInset,
+              child: IgnorePointer(child: _RebirthFrame(rebirth: rebirth)),
+            ),
             // 캐릭터는 가운데가 아니라 **바닥 기준**으로 세운다. 원본이 하단 정렬
             // 그림이라 발밑이 그림의 아래 끝이고, 그 끝을 지평선 아래로 내려야
             // 잔디를 밟은 것처럼 보인다.
@@ -421,7 +399,7 @@ class CharacterHero extends StatelessWidget {
                 right: _overlayInset,
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: _RebirthBadge(key: rebirthBadgeKey, rebirth: rebirth),
+                  child: RebirthBadge(key: rebirthBadgeKey, rebirth: rebirth),
                 ),
               ),
             Positioned(
@@ -463,6 +441,67 @@ class CharacterHero extends StatelessWidget {
       Positioned(top: characterTop + 23, right: 48, child: sprite(20)),
       Positioned(bottom: groundInset + 2, right: 60, child: sprite(24)),
     ];
+  }
+}
+
+/// 환생 등급 액자 — 히어로 테두리에 두르는 **9-slice 도트아트**.
+///
+/// 등급 구간(0~2 / 3~5 / 6+)은 [rebirthFrameAsset]이 정한다. 여기서는 "어떻게
+/// 그리는가"만 다룬다.
+///
+/// **왜 9-slice인가**: 자산은 1024×1024 정사각인데 히어로는 폭 320~430 × 높이
+/// 270의 가로로 긴 사각형이다. 통째로 늘리면(`BoxFit.fill`) 모서리 장식이 가로로
+/// 찌그러지고, `contain`은 히어로를 다 두르지 못한다. 9-slice는 **모서리를 그대로
+/// 두고 변만 늘린다** — 변 중앙(원본 256~767)이 완전히 균일한 단색 막대라
+/// 세로 0.25배로 눌려도 뭉개질 무늬가 없다(자산 계약은 [RebirthFrame] 참조).
+///
+/// **[_scale]이 이 위젯의 핵심이다.** 9-slice는 모서리를 늘리지 않고 원본 크기로
+/// 찍으므로, 배율 없이 그리면 256px 모서리가 **256dp**로 나와 히어로(270dp)를
+/// 통째로 뒤덮는다. 4로 나눠 모서리를 64dp로 만든다.
+///
+/// [FilterQuality.none](최근접)이라 픽셀 격자가 산다. [PixelArt]의 기본값이
+/// 그대로 맞아 따로 지정하지 않는다.
+class _RebirthFrame extends StatelessWidget {
+  const _RebirthFrame({required this.rebirth});
+
+  final int rebirth;
+
+  /// 자산 한 변(원본 픽셀). 3종 모두 1024×1024다.
+  static const double _sourcePx = 1024;
+
+  /// 모서리 블록 한 변(원본 픽셀). 자산 제작 시 16블록(16×16px)으로 고정했다.
+  static const double _cornerPx = 256;
+
+  /// 논리 배율 — 원본 1024px을 256dp로 읽는다.
+  static const double _scale = 4;
+
+  /// 논리 좌표계에서의 자산 크기(256dp)와 모서리 크기(64dp).
+  static const double _sourceDp = _sourcePx / _scale;
+  static const double _cornerDp = _cornerPx / _scale;
+
+  /// 늘어나도 되는 중앙 영역. **원본 픽셀이 아니라 논리 좌표**다(→ [PixelArt.centerSlice]).
+  /// 원본 (256,256,768,768)을 [_scale]로 나눈 값이다.
+  static const Rect _centerSlice = Rect.fromLTRB(
+    _cornerDp,
+    _cornerDp,
+    _sourceDp - _cornerDp,
+    _sourceDp - _cornerDp,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return PixelArt(
+      asset: rebirthFrameAsset(rebirth),
+      // 액자를 못 읽으면 **아무것도 그리지 않는다.** 장식이라 이모지로 떨어지면
+      // 히어로 한복판에 정체불명의 글자가 뜨고, 틴트로 떨어지면 풍경을 덮는다.
+      // 없는 채로 히어로가 멀쩡한 것이 가장 나은 실패다.
+      fallback: const SizedBox.shrink(),
+      scale: _scale,
+      centerSlice: _centerSlice,
+      // 9-slice는 그림 전체가 보이는 fit에서만 성립한다(cover·none 금지).
+      fit: BoxFit.fill,
+      // 장식이므로 스크린 리더가 읽을 것이 없다 — 등급은 좌상단 훈장이 말한다.
+    );
   }
 }
 

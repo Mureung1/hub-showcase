@@ -28,9 +28,18 @@ class GoalGroupSection extends StatelessWidget {
     required this.expanded,
     required this.onToggleExpanded,
     required this.questBuilder,
+    this.showProgress = true,
   });
 
   final QuestGroup group;
+
+  /// 헤더 아래 진행바를 그릴지.
+  ///
+  /// 정본이 화면마다 갈린다. 오늘의 퀘스트(`24:162`)에는 `Progress` 프레임이 있고,
+  /// **보관함(`45:347`·`45:376`)에는 없다** — 보관함 그룹은 전부 100%라 꽉 찬 그린
+  /// 막대가 아무 정보도 주지 못하고 카드 높이만 먹는다. 접힌 카드 높이(정본 실측
+  /// 74 = 패딩 16 + 헤더 42 + 패딩 16)도 진행바가 없어야 맞는다.
+  final bool showProgress;
 
   /// 지금 펼쳐져 있는가. 상태는 화면이 들고 있고 이 위젯은 그리기만 한다
   /// (스트림이 갱신될 때마다 접힘 상태가 초기화되면 안 된다).
@@ -55,6 +64,10 @@ class GoalGroupSection extends StatelessWidget {
     final progressColor = group.doneCount > 0
         ? scheme.primary
         : scheme.onSurfaceVariant;
+
+    // 헤더 **아래**에 실제로 그려지는 것들. 비어 있으면(진행바 없음 + 접힘) 헤더만
+    // 남은 카드라, 헤더가 아래 패딩까지 직접 품어 정본 실측 74에 맞춘다.
+    final bodyChildren = _bodyChildren(context, progressColor, scheme);
 
     return Container(
       decoration: BoxDecoration(
@@ -82,7 +95,9 @@ class GoalGroupSection extends StatelessWidget {
                 // 카드 상단 패딩까지 탭 영역에 포함시킨다 — 헤더 글자 높이만으로는
                 // 접기/펼치기 탭 영역이 최소 터치 크기에 못 미친다.
                 child: Padding(
-                  padding: _headerPadding,
+                  padding: bodyChildren.isEmpty
+                      ? _headerOnlyPadding
+                      : _headerPadding,
                   child: Row(
                     children: [
                       // Figma 실측 22 — 본문 아이콘(24)보다 한 단 작아 목표명이 먼저 읽힌다.
@@ -142,44 +157,58 @@ class GoalGroupSection extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: _bodyPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ClipRRect(
-                  borderRadius: AppRadius.fullAll,
-                  child: LinearProgressIndicator(
-                    value: group.progress,
-                    minHeight: _progressHeight,
-                    // 트랙은 `surfaceContainer`. 흰 카드 안이라 더 옅은 값을 쓰면
-                    // 트랙이 배경에 묻혀 진행바가 채운 만큼만 떠 보인다.
-                    backgroundColor: scheme.surfaceContainer,
-                    // Figma 실측 채움은 `#005322`지만 토큰 `primary`(`#006e2f`)를
-                    // 유지한다 — 육안으로 구분되지 않는데 값을 새로 박으면
-                    // tokens.md와 이중 진실원이 된다.
-                    valueColor: AlwaysStoppedAnimation(scheme.primary),
-                  ),
-                ),
-                // 접혀 있거나 자식이 없으면 헤더+진행바만 남은 작은 카드가 된다(정상).
-                if (expanded && group.nodes.isNotEmpty)
-                  // 재분해 자식은 부모 바로 뒤에 들여쓰기해서 그린다. 순서·깊이
-                  // 규칙은 위젯이 아니라 [arrangeQuestTree](순수 함수)가 정한다.
-                  for (var i = 0; i < group.nodes.length; i++) ...[
-                    AppSpacing.gapSmd,
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: group.nodes[i].depth * _indentPerDepth,
-                      ),
-                      child: questBuilder(context, group.nodes[i]),
-                    ),
-                  ],
-              ],
+          if (bodyChildren.isNotEmpty)
+            Padding(
+              padding: _bodyPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: bodyChildren,
+              ),
             ),
-          ),
         ],
       ),
     );
+  }
+
+  /// 헤더 아래 본문(진행바 · 자식 퀘스트)을 만든다.
+  ///
+  /// 항목 사이 간격은 정본 실측 12([AppSpacing.smd])로 일정하고, **첫 항목 위**
+  /// 간격은 헤더 패딩이 이미 벌려 놨으므로 넣지 않는다.
+  List<Widget> _bodyChildren(
+    BuildContext context,
+    Color progressColor,
+    ColorScheme scheme,
+  ) {
+    return [
+      if (showProgress)
+        ClipRRect(
+          borderRadius: AppRadius.fullAll,
+          child: LinearProgressIndicator(
+            value: group.progress,
+            minHeight: _progressHeight,
+            // 트랙은 `surfaceContainer`. 흰 카드 안이라 더 옅은 값을 쓰면
+            // 트랙이 배경에 묻혀 진행바가 채운 만큼만 떠 보인다.
+            backgroundColor: scheme.surfaceContainer,
+            // Figma 실측 채움은 `#005322`지만 토큰 `primary`(`#006e2f`)를
+            // 유지한다 — 육안으로 구분되지 않는데 값을 새로 박으면
+            // tokens.md와 이중 진실원이 된다.
+            valueColor: AlwaysStoppedAnimation(scheme.primary),
+          ),
+        ),
+      // 접혀 있거나 자식이 없으면 헤더(+진행바)만 남은 작은 카드가 된다(정상).
+      if (expanded && group.nodes.isNotEmpty)
+        // 재분해 자식은 부모 바로 뒤에 들여쓰기해서 그린다. 순서·깊이
+        // 규칙은 위젯이 아니라 [arrangeQuestTree](순수 함수)가 정한다.
+        for (var i = 0; i < group.nodes.length; i++) ...[
+          if (showProgress || i > 0) AppSpacing.gapSmd,
+          Padding(
+            padding: EdgeInsets.only(
+              left: group.nodes[i].depth * _indentPerDepth,
+            ),
+            child: questBuilder(context, group.nodes[i]),
+          ),
+        ],
+    ];
   }
 }
 
@@ -192,6 +221,10 @@ const EdgeInsets _headerPadding = EdgeInsets.fromLTRB(
   AppSpacing.md,
   AppSpacing.smd,
 );
+
+/// 헤더 **아래에 아무것도 없을 때**의 여백 — 아래도 카드 패딩 16이다.
+/// 보관함의 접힌 그룹(정본 `45:376`, 실측 높이 74 = 16 + 42 + 16)이 이 경우다.
+const EdgeInsets _headerOnlyPadding = EdgeInsets.all(AppSpacing.md);
 
 /// 진행바·자식 퀘스트 영역 여백. 위쪽은 [_headerPadding]이 이미 벌려 놨다.
 const EdgeInsets _bodyPadding = EdgeInsets.fromLTRB(

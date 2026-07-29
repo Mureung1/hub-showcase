@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/theme/app_theme.dart';
+import 'package:one_step/core/widgets/gradient_button.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/features/quest/decompose_notifier.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
@@ -403,7 +404,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, '딱 5분만 앉아 있기');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.tap(find.widgetWithText(GradientButton, '저장'));
     await tester.pumpAndSettle();
     expect(find.text('딱 5분만 앉아 있기'), findsOneWidget);
 

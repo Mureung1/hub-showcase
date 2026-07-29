@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:one_step/core/constants/dialog_art.dart';
 import 'package:one_step/core/constants/empty_art.dart';
 import 'package:one_step/core/constants/growth_rules.dart';
+import 'package:one_step/core/constants/rebirth_frame.dart';
 import 'package:one_step/core/constants/shop_items.dart';
 
 /// 도트아트 자산 경로 계약 — **두 층으로 검증한다.**
@@ -108,6 +110,45 @@ void main() {
           .toSet();
 
       expect(onDisk, kEmptyArt.toSet());
+    });
+  });
+
+  group('다이얼로그 배지 도트아트 5종', () {
+    // 빈 화면 일러스트와 같은 처방 — 리터럴을 다시 적지 않고 **화면이 실제로
+    // 넘기는 상수**를 검증한다(경로 오타는 이모지 폴백에 조용히 덮인다).
+    for (final asset in kDialogArt) {
+      test(asset, () async => expectUsable(asset));
+    }
+
+    test('kDialogArt가 assets/dialogs 디렉터리와 정확히 일치한다', () {
+      final onDisk = Directory('assets/dialogs')
+          .listSync()
+          .whereType<File>()
+          .map((f) => 'assets/dialogs/${f.uri.pathSegments.last}')
+          .where((p) => p.endsWith('.png'))
+          .toSet();
+
+      expect(onDisk, kDialogArt.toSet());
+    });
+  });
+
+  group('환생 액자 3종', () {
+    // 같은 처방 — 리터럴을 다시 적지 않고 **화면이 실제로 넘기는 상수**를 본다.
+    // 액자의 폴백은 이모지도 아닌 **빈 위젯**이라, 경로가 틀리면 아무 흔적 없이
+    // 사라진다. 여기서 못 잡으면 잡을 곳이 없다.
+    for (final asset in kRebirthFrames) {
+      test(asset, () async => expectUsable(asset));
+    }
+
+    test('kRebirthFrames가 assets/frame 디렉터리와 정확히 일치한다', () {
+      final onDisk = Directory('assets/frame')
+          .listSync()
+          .whereType<File>()
+          .map((f) => 'assets/frame/${f.uri.pathSegments.last}')
+          .where((p) => p.endsWith('.png'))
+          .toSet();
+
+      expect(onDisk, kRebirthFrames.toSet());
     });
   });
 }

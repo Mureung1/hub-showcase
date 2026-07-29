@@ -43,6 +43,47 @@ class DifficultyPill extends StatelessWidget {
 Color difficultyAccent(BuildContext context, Difficulty difficulty) =>
     _colorsFor(context, difficulty).accent;
 
+/// 난이도 색으로 **꽉 채운 면**의 배경·전경 쌍.
+class DifficultyFill {
+  const DifficultyFill({required this.background, required this.foreground});
+
+  /// 면을 채우는 난이도 색. [difficultyAccent]와 같은 값이다.
+  final Color background;
+
+  /// 그 위에 얹는 글자 색. **대비를 계산해 칸마다 따로 골랐다**(아래 참고).
+  final Color foreground;
+}
+
+/// 난이도 세그먼트의 **선택된 칸**이 쓰는 색 쌍 (사용자 결정 2026-07-29 —
+/// "선택 칸을 해당 난이도 색으로 꽉 채운다").
+///
+/// 배경은 [difficultyAccent]와 **같은 색**이고, 전경만 따로 고른다. 요청은 "글자는
+/// 흰색"이었지만 실제 accent 값에 흰 글자를 얹으면 두 칸이 WCAG AA(4.5:1)에
+/// 못 미친다(라이트 기준 실측):
+///
+/// | 난이도 | 배경 | 흰 글자 대비 | 채택한 전경 | 대비 |
+/// |--------|------|--------------|-------------|------|
+/// | 쉬움 | `#22C55E` | **2.28:1** ✗ | `onPrimaryContainer` `#00391A` | 5.8:1 ✓ |
+/// | 보통 | `#FFB95F` | **1.70:1** ✗ | `onCoin` `#5C3800` | 6.1:1 ✓ |
+/// | 어려움 | `#BA1A1A` | 6.54:1 ✓ | `onError` 흰색 | 6.5:1 ✓ |
+///
+/// 그래서 **쉬움·보통 두 칸만 어두운 글자**로 두고 어려움은 요청대로 흰 글자다.
+/// 선택 여부는 "칠해졌는가"로 이미 읽히므로 글자색이 갈려도 신호는 흐려지지 않는다.
+/// (전경을 밝히려고 배경을 더 어둡게 바꾸지는 않았다 — 그러면 세그먼트의 노랑·그린이
+/// [DifficultyPill]·퀘스트 카드 accent와 달라져 "난이도 색"이 두 벌이 된다.)
+DifficultyFill difficultyFill(BuildContext context, Difficulty difficulty) {
+  final colors = _colorsFor(context, difficulty);
+
+  return DifficultyFill(
+    background: colors.accent,
+    foreground: switch (difficulty) {
+      Difficulty.easy => AppColors.onPrimaryContainer,
+      Difficulty.normal => Theme.of(context).reward.onCoin,
+      Difficulty.hard => AppColors.onError,
+    },
+  );
+}
+
 class _PillColors {
   const _PillColors({
     required this.background,

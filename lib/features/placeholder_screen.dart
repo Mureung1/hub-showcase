@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_spacing.dart';
+import '../core/widgets/screen_title.dart';
 import '../core/widgets/state_views.dart';
 
 /// 아직 구현하지 않은 탭. 상점(4주차) · 보관함(3주차) · MY.
@@ -20,8 +21,6 @@ class PlaceholderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -34,10 +33,15 @@ class PlaceholderScreen extends StatelessWidget {
                 AppSpacing.screenH,
                 0,
               ),
-              child: Text(title, style: theme.textTheme.headlineLarge),
+              // 다른 화면 제목과 같은 크기([ScreenTitle]).
+              child: ScreenTitle(title),
             ),
             Expanded(
-              child: EmptyView(title: '준비 중이에요', message: message, emoji: emoji),
+              child: EmptyView(
+                title: '준비 중이에요',
+                message: message,
+                emoji: emoji,
+              ),
             ),
           ],
         ),

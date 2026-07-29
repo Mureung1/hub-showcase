@@ -80,6 +80,14 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # 런처 아이콘 코드젠. 빌드 전에 1회 돌려 android/ios 아이콘 리소스를 굽는
+  # 도구라 런타임 의존이 아니다(그래서 dev_dependencies).
+  # 캐럿(^) 대신 정확한 버전으로 고정하는 이유: 이 패키지의 산출물은 레포에
+  # 커밋되는 바이너리(mipmap PNG · AppIcon.appiconset)다. 도구 버전이 조용히
+  # 올라가면 같은 원본에서 다른 픽셀이 구워지고, 그 사실이 이미지 diff로만
+  # 드러난다. 설정 블록은 파일 맨 아래 `flutter_launcher_icons:` 에 있다.
+  flutter_launcher_icons: 0.14.4
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -87,7 +95,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # 도트아트 자산 25장. 디렉터리 단위로 선언하므로 파일이 늘어도 여기는 안 고친다.
+  # 도트아트 자산. 디렉터리 단위로 선언하므로 파일이 늘어도 여기는 안 고친다
+  # (디렉터리가 새로 생길 때만 한 줄 추가한다 — 이 줄이 없으면 파일이 디스크에
+  #  있어도 번들에 안 실려 앱에서는 못 읽는다).
   # 경로 오타·선언 누락은 test/core/pixel_asset_test.dart 가 두 층으로 잡는다
   # (File.existsSync = 디스크 대조 · rootBundle.load = 이 선언 자체의 검증).
   assets:
@@ -96,6 +106,7 @@ flutter:
     - assets/auras/
     - assets/empty/
     - assets/dialogs/
+    - assets/frame/
 
   fonts:
     # 두 가변 폰트를 역할로 나눠 번들한다. 역할 분리의 정본은 AppTypography다.
@@ -113,3 +124,31 @@ flutter:
     - family: Sora
       fonts:
         - asset: assets/fonts/Sora-Variable.ttf
+
+# 런처 아이콘 코드젠 설정 (`dart run flutter_launcher_icons`).
+#
+# 원본 `assets/icon/app_icon.png`는 **위 `flutter:` → `assets:` 목록에 넣지 않는다.**
+# 런타임에 `Image.asset`으로 그리는 자산이 아니라 빌드 시 codegen의 입력일 뿐이라,
+# 선언하면 앱 번들에 쓰이지 않는 이미지가 한 장 더 실린다.
+flutter_launcher_icons:
+  image_path: assets/icon/app_icon.png
+  android: true
+  ios: true
+
+  # Android 8+ 어댑티브 아이콘. 런처가 원형·스쿼클·물방울 등 제조사 마스크를
+  # 씌우므로, 단일 정사각 PNG만 주면 모서리가 잘려 나간다. 전경/배경을 나눠
+  # 주면 마스크 밖 영역을 배경색이 채워 어떤 모양에서도 잘림이 안 보인다.
+  #
+  # ⚠️ 전경은 108dp 캔버스 중 **중앙 66dp만 안전 영역**이다(바깥은 마스크·시차
+  # 애니메이션에 먹힌다). 원본 PNG는 캐릭터가 캔버스의 대략 2/3 안에 들어오도록
+  # 여백을 두고 만들어야 한다.
+  adaptive_icon_foreground: assets/icon/app_icon.png
+  # AppColors.primary(#006E2F) — 그린. 새 HEX가 아니라 팔레트의 브랜드 주색이다.
+  # 노랑은 코인·보상 전용이고 블루는 AI·정보 전용이라 앱 정체성을 대표할 수 없다.
+  # (YAML은 Dart 토큰을 못 읽으므로 값이 여기 한 번 복제된다. 그린을 바꾸면
+  #  lib/core/theme/app_colors.dart 의 primary 와 함께 고칠 것.)
+  adaptive_icon_background: "#006E2F"
+
+  # iOS 아이콘에 알파 채널이 있으면 App Store Connect가 업로드를 거부한다.
+  # 투명 픽셀을 흰색으로 합성해 평평하게 만든다.
+  remove_alpha_ios: true

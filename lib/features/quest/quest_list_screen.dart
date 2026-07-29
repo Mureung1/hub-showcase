@@ -12,6 +12,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/coin_pill.dart';
 import '../../core/widgets/quest_actions_menu.dart';
 import '../../core/widgets/quest_card.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/analytics_event.dart';
 import '../../models/quest.dart';
@@ -136,7 +137,10 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
         if (result != null) {
           ref.logEvent(
             uid,
-            AnalyticsEvent.questCompleted(at: DateTime.now(), questId: quest.id),
+            AnalyticsEvent.questCompleted(
+              at: DateTime.now(),
+              questId: quest.id,
+            ),
           );
         }
 
@@ -401,9 +405,10 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     try {
       final uid = await ref.read(sessionProvider.future);
       // 대상 + 계보를 한 번에. deleteQuests가 원자성·1회 방출을 보장한다.
-      await ref
-          .read(questRepositoryProvider)
-          .deleteQuests(uid, [quest.id, ...childIds]);
+      await ref.read(questRepositoryProvider).deleteQuests(uid, [
+        quest.id,
+        ...childIds,
+      ]);
     } on AppFailure catch (failure) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -422,7 +427,8 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     // 목표 텍스트는 폴더 라벨에서 가져온다. 목표 문서를 못 찾은 그룹의 폴백 라벨
     // ('목표')이나 직접 등록 그룹 라벨은 맥락이 아니므로 넘기지 않는다 —
     // 그런 경우 퀘스트 제목 자체가 맥락이 된다(RedecomposeTarget.contextText).
-    final hasGoalText = group.goalId != null && group.label != kUnknownGoalLabel;
+    final hasGoalText =
+        group.goalId != null && group.label != kUnknownGoalLabel;
 
     context.go(
       '/quest/split',
@@ -446,8 +452,15 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       // 제목 + 코인 잔액. 화면 제목을 본문 첫 줄이 아니라 AppBar로 올린 이유는
       // 목록이 스크롤돼도 "여기가 어디인지"와 잔액이 함께 남아야 해서다(Figma 리디자인).
       appBar: AppBar(
-        title: const Text('오늘의 퀘스트'),
-        actions: const [_HeaderCoin(), AppSpacing.gapWMd],
+        // 제목 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
+        // 툴바 높이도 그 크기에 맞춰 키운다(기본 56이면 제목이 바를 거의 채운다).
+        toolbarHeight: ScreenTitle.appBarHeight,
+        // `leadingMark`는 5탭에만 켠다. 5탭 중 AppBar를 쓰는 건 여기뿐이고,
+        // 같은 `.appBar`를 쓰는 하위 화면 둘(도전 분해·퀘스트 등록)은 끈 채다.
+        title: const ScreenTitle.appBar('오늘의 퀘스트', leadingMark: true),
+        // 정본 `66:444`의 코인 pill은 오른쪽 끝에서 20(= 화면 좌우 여백)이다.
+        // `AppBar`는 actions 뒤에 여백을 주지 않으므로 직접 붙인다.
+        actions: const [_HeaderCoin(), AppSpacing.gapWBlock],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/quest/new'),
@@ -593,7 +606,7 @@ class _HeaderCoin extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
     if (user == null) return const SizedBox.shrink();
-    return CoinPill(amount: user.coin, compact: true);
+    return CoinPill(amount: user.coin);
   }
 }
 

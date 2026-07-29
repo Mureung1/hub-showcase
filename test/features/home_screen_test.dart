@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
+import 'package:one_step/core/theme/app_colors.dart';
 import 'package:one_step/core/widgets/coin_pill.dart';
+import 'package:one_step/core/widgets/gradient_button.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/stat_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
@@ -116,9 +118,12 @@ void main() {
   });
 
   group('환생 버튼', () {
-    // 리디자인 뒤 평평한 중립 `FilledButton`이다(주 버튼만 그라디언트를 갖는다).
-    // 홈의 유일한 FilledButton이라 타입으로 집힌다.
-    Finder rebirthButton() => find.byType(FilledButton);
+    // 잠김과 열림이 **서로 다른 버튼**이다.
+    // - 잠김: 정본 그대로 평평한 중립 `FilledButton`. 홈의 유일한 FilledButton.
+    // - 열림: 블루 그라디언트 `GradientButton`(사용자 결정). 홈에는 그라디언트
+    //   버튼이 「오늘의 퀘스트」와 둘이라 라벨로 가른다.
+    Finder lockedButton() => find.byType(FilledButton);
+    Finder rebirthButton() => find.widgetWithText(GradientButton, '환생');
 
     testWidgets('Lv.50 미만이면 비활성이고 열리는 조건을 말한다', (tester) async {
       useTallViewport(tester);
@@ -131,8 +136,13 @@ void main() {
 
       // 현재 레벨을 되뇌는 대신 **언제 열리는지**를 알린다.
       expect(find.text('환생 (Lv.$kMaxLevel 도달 시)'), findsOneWidget);
-      final button = tester.widget<FilledButton>(rebirthButton());
+      final button = tester.widget<FilledButton>(lockedButton());
       expect(button.onPressed, isNull, reason: 'Lv.50 미만은 눌리면 안 된다');
+      expect(
+        rebirthButton(),
+        findsNothing,
+        reason: '잠겨 있으면 블루 그라디언트가 아니다',
+      );
     });
 
     testWidgets('Lv.50이면 활성이다', (tester) async {
@@ -146,8 +156,14 @@ void main() {
 
       // 열리면 조건 안내가 사라지고 행동만 남는다.
       expect(find.text('환생'), findsOneWidget);
-      final button = tester.widget<FilledButton>(rebirthButton());
+      final button = tester.widget<GradientButton>(rebirthButton());
       expect(button.onPressed, isNotNull, reason: 'Lv.50이면 눌려야 한다');
+      // 🔵 블루 그라디언트(사용자 결정). 그린(주요 행동)과 색으로 갈린다.
+      // `GradientButtonStyle.rebirth`와 `.ai`는 값이 같아 const 정규화로 동일
+      // 인스턴스가 된다 — 이름이 아니라 **색**을 못 박아야 의미가 있다.
+      expect(button.style.from, AppColors.secondary);
+      expect(button.style.to, AppColors.secondaryContainer);
+      expect(lockedButton(), findsNothing, reason: '열리면 회색 판이 남지 않는다');
     });
 
     testWidgets('탭 → 확인 다이얼로그 → 환생 실행 → 연출, 레벨이 1로 리셋된다', (tester) async {
@@ -187,7 +203,7 @@ void main() {
 
       await tester.tap(rebirthButton());
       await tester.pumpAndSettle();
-      await tester.tap(find.text('아직요'));
+      await tester.tap(find.text('아니요'));
       await tester.pumpAndSettle();
 
       expect(find.text('환생했어요!'), findsNothing);

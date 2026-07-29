@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../core/constants/dialog_art.dart';
 import '../../../core/constants/reward_rules.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_dialog_shell.dart';
+import '../../../core/widgets/celebration_badge.dart';
 import '../../../core/widgets/reward_showcase.dart';
 
 /// 연속 출석 보너스 연출.
@@ -53,80 +55,65 @@ class StreakBonusDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+    return AppDialogShell(
+      // 축하 연출은 보상 카드가 가로로 길어 Material 기본 여백(좌우 40)이 곧
+      // 오버플로가 된다(E-4 D-3). 완료 연출과 **같은 값**을 쓴다.
       insetPadding: kCelebrationDialogInset,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      children: [
+        // 불꽃 배지 — 완료 연출의 트로피 배지와 **같은 규격**([CelebrationBadge]).
+        // 폴백 🔥는 정본이 이 자리에 세워 둔 `Symbols.local_fire_department`와
+        // 같은 뜻이다.
+        const CelebrationBadge(
+          asset: DialogArt.streak,
+          fallbackEmoji: '🔥',
+          semanticLabel: '연속 출석',
+        ),
+        AppSpacing.gapMd,
+        Text(
+          '$streak일 연속!',
+          style: theme.textTheme.headlineLarge?.copyWith(color: scheme.primary),
+          textAlign: TextAlign.center,
+        ),
+        AppSpacing.gapSm,
+        Text(
+          '$_periodLabel 동안 하루도 빠지지 않았어요.\n'
+          '연속 출석 보너스를 받았어요.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        AppSpacing.gapMd,
+        // 보상 표시 카드 — 완료 연출과 **같은 카드**를 쓴다(screens.md).
+        RewardShowcase(reward: bonus),
+        AppSpacing.gapSm,
+        // 하루 코인 상한과 무관하다는 사실을 밝힌다(reward_rules.dart).
+        // 상한을 이미 채운 날에도 전액이 들어오는데, 그걸 말해 주지 않으면
+        // 사용자는 잔액을 보고 "덜 받은 것 아닌가"를 의심한다.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 불꽃 원형 — 그린 배경 위 흰 아이콘(완료 연출의 트로피 원형과 동일 규격).
-            // 다크/라이트 모두 primary ↔ onPrimary 쌍이라 대비가 테마에서 보장된다.
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: scheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Symbols.local_fire_department,
-                fill: 1,
-                size: 44,
-                color: scheme.onPrimary,
-              ),
-            ),
-            AppSpacing.gapMd,
-            Text(
-              '$streak일 연속!',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                color: scheme.primary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            AppSpacing.gapSm,
-            Text(
-              '$_periodLabel 동안 하루도 빠지지 않았어요.\n'
-              '연속 출석 보너스를 받았어요.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            AppSpacing.gapMd,
-            // 보상 표시 카드 — 완료 연출과 **같은 카드**를 쓴다(screens.md).
-            RewardShowcase(reward: bonus),
-            AppSpacing.gapSm,
-            // 하루 코인 상한과 무관하다는 사실을 밝힌다(reward_rules.dart).
-            // 상한을 이미 채운 날에도 전액이 들어오는데, 그걸 말해 주지 않으면
-            // 사용자는 잔액을 보고 "덜 받은 것 아닌가"를 의심한다.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Symbols.info, size: 16, fill: 1, color: scheme.secondary),
-                AppSpacing.gapWXs,
-                Flexible(
-                  child: Text(
-                    '연속 출석 보너스는 하루 코인 상한과 상관없이 전액 지급돼요.',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: scheme.secondary,
-                    ),
-                  ),
+            Icon(Symbols.info, size: 16, fill: 1, color: scheme.secondary),
+            AppSpacing.gapWXs,
+            Flexible(
+              child: Text(
+                '연속 출석 보너스는 하루 코인 상한과 상관없이 전액 지급돼요.',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.secondary,
                 ),
-              ],
-            ),
-            AppSpacing.gapLg,
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('좋아요'),
               ),
             ),
           ],
         ),
-      ),
+        AppSpacing.gapLg,
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('좋아요'),
+          ),
+        ),
+      ],
     );
   }
 }

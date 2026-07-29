@@ -78,7 +78,8 @@ void main() {
         find.descendant(of: find.byType(StatCard), matching: find.text('완료')),
         findsOneWidget,
       );
-      expect(find.text('$streak'), findsOneWidget);
+      // 스트릭 값은 단위까지 붙어 `7일`로 그려진다(정본 실측 · 홈·MY와 같다).
+      expect(find.text('$streak일'), findsOneWidget);
       expect(find.text('연속 일수'), findsOneWidget);
     });
   }

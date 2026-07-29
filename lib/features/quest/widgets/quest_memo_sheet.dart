@@ -153,7 +153,10 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('오늘 어땠나요?', style: theme.textTheme.headlineLarge),
+              // 정본 `124:632` — 24/700. 화면 제목(32)이 아니라 시트 제목이라 한 단
+              // 낮다. 32로 두면 아래 안내·입력이 전부 밀려 작은 화면에서 버튼이
+              // 접힌다(시트는 높이가 제한적이다).
+              Text('오늘 어땠나요?', style: theme.textTheme.headlineMedium),
               AppSpacing.gapXs,
               Text(
                 widget.questTitle,
@@ -196,16 +199,10 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
               ),
               AppSpacing.gapMd,
 
-              // 사진 인증 — 첨부 전엔 그린 아웃라인 버튼, 첨부 후엔 썸네일 미리보기.
-              // 색 규칙: 사진 UI는 그린(주요 행동)·중립만 쓴다. 노랑은 위 RewardChip 전담.
-              _PhotoAttach(
-                bytes: _photoBytes,
-                picking: _picking,
-                onAttach: _attachPhoto,
-                onRemove: _removePhoto,
-              ),
-              AppSpacing.gapMd,
-
+              // 정본 순서(`124:629`): 안내 → **메모** → 사진 첨부 → 버튼.
+              // 메모가 먼저인 이유는 시트 제목이 묻는 것("오늘 어땠나요?")의 답이
+              // 메모이기 때문이다 — 사진을 앞에 두면 질문과 답 사이에 갤러리 왕복이
+              // 끼어든다.
               TextField(
                 controller: _controller,
                 // autofocus를 쓰지 않는다. 시트가 열리자마자 키보드가 올라오면
@@ -224,6 +221,16 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
                 onChanged: (_) => setState(() {}),
               ),
               AppSpacing.gapSm,
+
+              // 사진 인증 — 첨부 전엔 아웃라인 버튼, 첨부 후엔 썸네일 미리보기.
+              // 색 규칙: 사진 UI는 노랑을 쓰지 않는다(노랑은 위 RewardChip 전담).
+              _PhotoAttach(
+                bytes: _photoBytes,
+                picking: _picking,
+                onAttach: _attachPhoto,
+                onRemove: _removePhoto,
+              ),
+              AppSpacing.gapMd,
 
               Row(
                 children: [
@@ -256,10 +263,12 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
   }
 }
 
-/// 사진 첨부 영역. 첨부 전에는 그린 아웃라인 버튼, 첨부 후에는 썸네일 + 제거(×).
+/// 사진 첨부 영역. 첨부 전에는 아웃라인 버튼, 첨부 후에는 썸네일 + 제거(×).
 ///
 /// 색 규칙(one-step-design): 사진은 코인·보상이 아니므로 노랑을 쓰지 않는다.
-/// 버튼은 그린(주요 행동), 미리보기·제거는 중립 색이다.
+/// 버튼은 정본 `124:641`대로 **블루 아웃라인(보조 행동)** 이다 — 그린 채움은 아래
+/// [완료하기]가 쓰는 주요 행동 자리라, 첨부까지 그린으로 두면 둘이 같은 무게로
+/// 읽힌다. (테마의 `OutlinedButton`이 이미 `secondary`를 준다.)
 class _PhotoAttach extends StatelessWidget {
   const _PhotoAttach({
     required this.bytes,

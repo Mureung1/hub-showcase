@@ -10,9 +10,11 @@ import '../../core/error/app_failure.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_segmented_button.dart';
 import '../../core/widgets/coin_pill.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/pixel_art.dart';
+import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
 import '../../providers/providers.dart';
@@ -35,6 +37,13 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
     with TabScrollRegistration {
   @override
   int get tabIndex => 2;
+
+  /// 지금 고른 종류 필터. null = 「전체」.
+  ///
+  /// **화면 로컬 상태다** — 저장하지 않는다. 상점을 다시 열면 전체로 돌아오는 편이
+  /// "지난번에 오라만 보고 있었다"를 기억하는 것보다 예측 가능하다. 구매·장착 결과는
+  /// 저장소가 들고 있으므로 필터를 바꿔도 데이터는 그대로다.
+  ItemSlot? _slotFilter;
 
   /// 지금 처리 중인 아이템 ID. **중복 실행 방지의 핵심.**
   ///
@@ -127,6 +136,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 
   Widget _content(AppUser user, Set<String> inventory) {
     final theme = Theme.of(context);
+    // 필터는 카탈로그를 거르기만 한다 — 카드의 상태(보유·장착·잔액) 판정은 그대로다.
+    final items = _slotFilter == null ? kShopItems : itemsForSlot(_slotFilter!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,10 +154,11 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: Text('상점', style: theme.textTheme.headlineLarge),
-                  ),
-                  // 코인 잔액 — 노랑 허용 위젯(CoinPill).
+                  // 5탭 공통 제목([ScreenTitle]) — 다른 화면이 이 크기에 맞췄다.
+                  // `leadingMark`는 5탭에만 켠다(→ `ScreenTitle.leadingMark`).
+                  const Expanded(child: ScreenTitle('상점', leadingMark: true)),
+                  // 코인 잔액 — 노랑 허용 위젯(CoinPill). 정본 `43:253`은 홈·퀘스트
+                  // 목록과 **같은 71×24 pill**이라 상점만 큰 변형을 쓰지 않는다.
                   CoinPill(amount: user.coin),
                 ],
               ),
@@ -158,20 +170,51 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              // 정본 Content 실측: 리드 텍스트 y8~32 · 세그먼트 y52 → 사이 간격 20.
+              AppSpacing.gapBlock,
+              // 종류 필터(전체 / 배경 / 오라). 정본 `43:259` — 가로를 꽉 채운 3분할.
+              //
+              // 정본 컴포넌트 설명에는 "실제 상점에는 탭이 없다"고 적혀 있지만
+              // **사용자 결정(2026-07-29)이 우선**해 넣는다. 선택색은 기본 그린이다
+              // — 여기서 고르는 건 난이도가 아니라 "지금 보고 있는 종류"라 색을
+              // 주입하지 않는다.
+              AppSegmentedButton<ItemSlot?>(
+                expand: true,
+                segments: const [
+                  AppSegment(value: null, label: '전체'),
+                  AppSegment(value: ItemSlot.background, label: '배경'),
+                  AppSegment(value: ItemSlot.aura, label: '오라'),
+                ],
+                selected: _slotFilter,
+                // 처리 중에는 잠근다 — 요청이 날아가 있는 사이에 목록이 갈리면
+                // 어느 카드가 스피너를 돌리는지 흐려진다(카드 잠금과 같은 규칙).
+                onChanged: _busyItemId != null
+                    ? null
+                    : (slot) => setState(() => _slotFilter = slot),
+              ),
             ],
           ),
         ),
-        // 정본 Content의 요소 간 세로 간격 20(리드 텍스트 ↔ 아이템 격자).
+        // 정본 Content 실측: 세그먼트 y52~92 · 격자 y112 → 사이 간격 20.
         AppSpacing.gapBlock,
         Expanded(
-          child: kShopItems.isEmpty
-              // 방어적 빈 상태 — 카탈로그가 비는 일은 없지만 구조로 보장한다.
-              ? const EmptyView(
-                  title: '아직 판매 중인 아이템이 없어요',
-                  message: '곧 새로운 아이템을 준비할게요.',
-                  emoji: '🛍️',
-                  asset: EmptyArt.shop,
-                )
+          child: items.isEmpty
+              // 빈 상태가 두 갈래다. 필터를 걸어 0개가 된 것과 카탈로그 자체가 빈
+              // 것은 사용자가 할 수 있는 일이 다르다(필터를 풀어라 / 기다려라).
+              ? (_slotFilter != null
+                    ? const EmptyView(
+                        title: '이 종류는 아직 없어요',
+                        message: '「전체」를 눌러 다른 아이템을 둘러보세요.',
+                        emoji: '🔎',
+                        asset: EmptyArt.shop,
+                      )
+                    // 방어적 빈 상태 — 카탈로그가 비는 일은 없지만 구조로 보장한다.
+                    : const EmptyView(
+                        title: '아직 판매 중인 아이템이 없어요',
+                        message: '곧 새로운 아이템을 준비할게요.',
+                        emoji: '🛍️',
+                        asset: EmptyArt.shop,
+                      ))
               // 2열 고정 격자. **홀수 개면 마지막 칸은 빈 칸으로 둔다** — 남은 카드를
               // 폭 두 칸으로 늘리지 않는다(정본이 그 자리에 Spacer를 둔다).
               : GridView.builder(
@@ -189,9 +232,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                     crossAxisSpacing: AppSpacing.smd,
                     mainAxisExtent: _cardExtent(context),
                   ),
-                  itemCount: kShopItems.length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final item = kShopItems[index];
+                    final item = items[index];
                     return _ShopItemCard(
                       item: item,
                       owned: inventory.contains(item.id),
@@ -216,8 +259,15 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 /// 들어가야 한다.
 ///
 /// 정본 실측의 합이다: 카드 패딩 12×2 + 프리뷰 86 + 12 + 상품명 24 + 2 + 종류 16
-/// + 12 + 가격 20 + 12 + 버튼(글자 16 + 상하 패딩 10×2).
-const double _kCardExtent = 244;
+/// + 12 + 가격 20 + 12 + 버튼(글자 16 + 상하 패딩 10×2) = 244.
+///
+/// **+4는 액션 버튼의 터치 여백 몫이다**([_kActionTapSlack]). 가격 줄과 버튼 사이의
+/// 마지막 12는 원래 `Spacer`가 남기던 여백인데, 실서체(Pretendard)로 재면 그 자리가
+/// 실제로는 약 10이다(정본 합이 2px 낙관적이다 — 배율 1.0~2.0 전 구간에서 같은
+/// 2.0~2.2px). 터치 여백 12를 그 자리에 넣으면 2px이 모자라 카드가 넘치므로, 칸을
+/// 4px만 키워 여백 12와 `Spacer`의 잔여 여유를 함께 남긴다. 보이는 간격은 10 → 12로
+/// 2px 늘어난다(카드 높이 244 → 248).
+const double _kCardExtent = 248;
 
 /// 그 높이 중 **글꼴 배율을 타는 부분**(상품명 24 · 종류 16 · 가격/상태 20 ·
 /// 버튼 글자 16). 미리보기 이미지(86)와 패딩·간격은 배율과 무관하게 고정이다.
@@ -228,6 +278,22 @@ const double _kNameToSlotGap = 2;
 
 /// 카드 액션 버튼의 상하 패딩(정본 실측 10). 8·12 어느 토큰과도 다르다.
 const double _kActionPaddingV = 10;
+
+/// 액션 버튼 **위쪽에 붙는 투명 터치 여백.**
+///
+/// 정본 실측 버튼은 글자 16 + 상하 패딩 10×2 = **36** 높이다. 그런데 36은 Material의
+/// 48dp는 물론 **Apple HIG의 44pt에도 미달**한다 — 앱에서 두 기준을 동시에 밑도는
+/// 유일한 탭 타깃이었다. 하필 여기가 **코인을 실제로 소비하는 자리**고 2열 격자라
+/// 인접 카드의 버튼이 가까워, 오탭 비용이 가장 크다.
+/// (퀘스트 카드 42·세그먼트 40은 기준 미달이라도 오탭 비용이 낮아 그대로 둔다.)
+///
+/// **시각 높이 36은 건드리지 않는다.** 그림은 정본 실측 그대로 두고 그 위에 투명
+/// 여백을 얹어 **터치 영역만 48**로 만든다(36 + 12). 여백을 **위쪽에만** 두는 이유는
+/// 카드 안 가격 줄과 버튼 사이에 이미 있던 여백(`Spacer`가 남기던 자리)을 그대로
+/// 넘겨받기 위해서다 — 아래로 넓히면 버튼이 카드 바닥 패딩을 파고들어 그림이 움직인다.
+/// 위쪽에 있는 것은 가격/보유 상태 텍스트라 탭을 다투는 요소도 없다.
+/// (칸 높이는 이 여백 몫으로 4px만 커진다 — [_kCardExtent] 주석 참고.)
+const double _kActionTapSlack = 12;
 
 /// 상품 카드 한 칸의 높이.
 ///
@@ -426,7 +492,7 @@ class _ActionButton extends StatelessWidget {
     final enabled = onPressed != null && !busy;
     final foreground = style?.foreground ?? scheme.secondary;
 
-    return Opacity(
+    final button = Opacity(
       // 비활성 표현은 [GradientButton]과 같은 규칙이다 — 변형마다 비활성 팔레트를
       // 따로 만들지 않고 같은 색을 흐리게 둔다.
       opacity: enabled ? 1 : 0.4,
@@ -475,6 +541,20 @@ class _ActionButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+
+    // 터치 영역만 48로 넓힌다([_kActionTapSlack]). 잉크 물결은 위 [InkWell]이
+    // 그대로 맡으므로 **눈에 보이는 반응은 버튼 안에서만** 일어난다 —
+    // `MaterialTapTargetSize.padded`가 하는 일과 같다(그쪽도 여백에는 물결이 없다).
+    // 여백을 탭했을 때 이 제스처가 받고, 버튼 자체를 탭하면 더 깊은 InkWell이
+    // 제스처 아레나에서 먼저 이겨 콜백은 **한 번만** 불린다.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: enabled ? onPressed : null,
+      child: Padding(
+        padding: const EdgeInsets.only(top: _kActionTapSlack),
+        child: button,
       ),
     );
   }

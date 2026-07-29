@@ -43,6 +43,10 @@ class QuestCard extends StatelessWidget {
     final theme = Theme.of(context);
     final accent = difficultyAccent(context, quest.difficulty);
 
+    // 오른쪽 컨트롤이 하나라도 서는가. 보기 전용(홈 미리보기·보관함)이면 둘 다 없다.
+    // 있을 때만 오른쪽 패딩을 박스 여백만큼 덜어 낸다(→ [_padding]).
+    final hasTrailing = menuActions.isNotEmpty || onToggleDone != null;
+
     return Material(
       color: theme.colorScheme.surfaceContainerLowest,
       borderRadius: AppRadius.mdAll,
@@ -59,22 +63,22 @@ class QuestCard extends StatelessWidget {
               stops: const [0, 0.012, 0.012],
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.sm,
-            AppSpacing.md,
-          ),
-          child: Row(
+          padding: hasTrailing ? _padding : _paddingViewOnly,
+          // 정본(24:171) 3단 구조 — TopRow(칩 … `⋮`) / MiddleRow(제목 … 완료 토글)
+          // / RewardChip. `⋮`와 완료 토글을 오른쪽 한 열에 쌓지 않는다: 쌓으면
+          // 완료 토글이 제목 옆이 아니라 윗줄로 딸려 올라가 위쪽으로 쏠려 보인다.
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 난이도 + 출처. 긴 제목·좁은 폭에서도 넘치지 않도록 Wrap을
-                    // 쓴다(Row였다면 폭이 모자랄 때 오버플로 줄무늬가 뜬다).
-                    Wrap(
+              // ── TopRow: 칩 묶음 … `⋮` 더보기 ──
+              Row(
+                children: [
+                  // 난이도 + 출처. 긴 제목·좁은 폭에서도 넘치지 않도록 Wrap을
+                  // 쓴다(Row였다면 폭이 모자랄 때 오버플로 줄무늬가 뜬다).
+                  // Expanded라 `⋮`가 없어도(보기 전용) 자리가 무너지지 않는다.
+                  Expanded(
+                    child: Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.xs,
                       children: [
@@ -84,8 +88,21 @@ class QuestCard extends StatelessWidget {
                         QuestStatusPill(status: quest.status),
                       ],
                     ),
-                    AppSpacing.gapSm,
-                    Text(
+                  ),
+                  // 칩과의 간격을 따로 두지 않는다 — `⋮` 박스가 이미 좌우
+                  // [AppSpacing.sm]씩 자체 여백을 갖는다. 비면 SizedBox.shrink다.
+                  QuestActionsMenu(
+                    actions: menuActions,
+                    tooltip: '${quest.title} 더보기',
+                  ),
+                ],
+              ),
+              AppSpacing.gapSm,
+              // ── MiddleRow: 제목 … 완료 토글(세로 중앙) ──
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
                       quest.title,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         decoration: quest.done
@@ -96,28 +113,20 @@ class QuestCard extends StatelessWidget {
                             : theme.colorScheme.onSurface,
                       ),
                     ),
-                    AppSpacing.gapSm,
-                    RewardChip(reward: quest.reward),
-                  ],
-                ),
-              ),
-              // 우측 세로 스택: 위가 `⋮` 더보기(components.md), 아래가 완료 토글.
-              // 주요 행동(완료)이 아래에 오지만 크기·색으로 위계가 이미 갈린다.
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  QuestActionsMenu(
-                    actions: menuActions,
-                    tooltip: '${quest.title} 더보기',
                   ),
-                  if (onToggleDone != null)
+                  // 제목↔토글 정본 간격 12 = 여기 4 + 토글 박스 자체 여백 8.
+                  if (onToggleDone != null) ...[
+                    AppSpacing.gapWXs,
                     _DoneButton(
                       done: quest.done,
                       isCompleting: isCompleting,
                       onPressed: () => onToggleDone!(!quest.done),
                     ),
+                  ],
                 ],
               ),
+              AppSpacing.gapSm,
+              RewardChip(reward: quest.reward),
             ],
           ),
         ),
@@ -125,6 +134,38 @@ class QuestCard extends StatelessWidget {
     );
   }
 }
+
+/// 오른쪽 컨트롤(`⋮` · 완료 토글)이 공유하는 박스 한 변.
+///
+/// 정본(Figma `24:171`) 실측: 완료 토글 글리프는 **26 정사각**이고, 오른쪽 끝이
+/// 본문 패딩 16에 맞물리며, 윗줄 `⋮`와 **같은 세로축**에 선다. 여기서는 그 글리프
+/// 26에 좌우 [AppSpacing.sm]씩 여백을 더해 42 박스로 만든다(초안 카드
+/// `_actionButtonSize`와 같은 방식). 덕분에 남는 값이 전부 토큰으로 떨어진다.
+///
+/// - 카드 오른쪽 패딩 [AppSpacing.sm](8) + 박스 여백 8 = **글리프가 16 안쪽** ✔
+/// - 제목↔토글 [AppSpacing.xs](4) + 박스 여백 8 = **시각 간격 12** ✔
+///
+/// Figma는 **탭 영역을 그리지 않는다.** 26을 그대로 박스로 쓰면 터치 면적이 26밖에
+/// 안 되므로, 눈에 보이는 위치는 정본 그대로 두고 누르는 면적만 42로 넓혔다
+/// (권장치 48보다는 작다 — 48로 키우면 보정값이 토큰에서 벗어나고, 한 줄 제목에서
+/// 카드가 통째로 20 더 높아진다).
+const double kQuestCardTrailingBox = _trailingIcon + AppSpacing.sm * 2;
+
+/// 완료 토글 글리프 크기. 정본 실측 26(기존 28에서 정정).
+const double _trailingIcon = 26;
+
+/// 정본 패딩은 사방 16이다. 오른쪽만 [AppSpacing.sm](8)인 이유는
+/// [kQuestCardTrailingBox]에 적었다 — 박스 자체 여백 8과 합쳐 16이 된다.
+const EdgeInsets _padding = EdgeInsets.fromLTRB(
+  AppSpacing.md,
+  AppSpacing.md,
+  AppSpacing.sm,
+  AppSpacing.md,
+);
+
+/// 보기 전용 카드(홈 미리보기·보관함)에는 오른쪽 컨트롤이 없어 보정할 여백도 없다.
+/// 그대로 8을 쓰면 제목이 오른쪽만 8 안쪽에서 접혀 좌우가 어긋나 보인다.
+const EdgeInsets _paddingViewOnly = AppSpacing.cardPadding;
 
 class _DoneButton extends StatelessWidget {
   const _DoneButton({
@@ -140,14 +181,15 @@ class _DoneButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isCompleting) {
-      // IconButton(size 28 + 기본 패딩 8)과 같은 자리를 차지하도록 크기를 맞춘다.
-      // 자리가 흔들리면 처리 중에 카드 레이아웃이 튄다.
-      return const Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
-        child: SizedBox(
-          width: 28,
-          height: 28,
-          child: CircularProgressIndicator(strokeWidth: 2),
+      // 아래 IconButton과 **같은 크기 박스**에 같은 크기 글리프를 그린다. 자리가
+      // 1px이라도 움직이면 처리 중에 제목 줄이 들썩여 옆 것을 잘못 누른다.
+      return const SizedBox.square(
+        dimension: kQuestCardTrailingBox,
+        child: Center(
+          child: SizedBox.square(
+            dimension: _trailingIcon,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
         ),
       );
     }
@@ -155,13 +197,21 @@ class _DoneButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       tooltip: done ? '완료 취소' : '완료',
+      iconSize: _trailingIcon,
+      // 박스를 명시하지 않으면 테마 기본 `MaterialTapTargetSize.padded`가 레이아웃
+      // 박스를 48로 부풀린다 — 그러면 위 스피너(42)와 크기가 달라 완료를 누르는
+      // 순간 제목 줄 높이가 튄다.
+      style: IconButton.styleFrom(
+        minimumSize: const Size.square(kQuestCardTrailingBox),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       icon: Icon(
         done ? Symbols.check_circle : Symbols.circle,
         fill: done ? 1 : 0,
         color: done
             ? AppColors.primary
             : Theme.of(context).colorScheme.outlineVariant,
-        size: 28,
       ),
     );
   }
