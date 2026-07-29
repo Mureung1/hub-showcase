@@ -110,6 +110,13 @@ function App() {
 
     try {
       await saveDraft(selectedJob.id, profileId, answers);
+      setSelectedJob({
+        ...selectedJob,
+        essayQuestions: selectedJob.essayQuestions.map((question, index) => ({
+          ...question,
+          draft: answers[index],
+        })),
+      });
       setIsDraftSaved(true);
     } catch (error) {
       setSaveDraftError(error.message);
