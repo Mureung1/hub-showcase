@@ -1,4 +1,4 @@
-import { CircleHelp, FileText, MapPinned } from "lucide-react";
+import { CircleHelp, FileText, MapPinned, Sparkles } from "lucide-react";
 
 import { PanelTextSizeControl } from "./PanelTextSizeControl";
 import type { PanelTextSize } from "./usePanelTextSize";
@@ -52,12 +52,14 @@ type WorkspaceHeaderProps = {
   model: ProductWorkspaceModel;
   panelTextSize: PanelTextSize;
   onPanelTextSizeChange: (size: PanelTextSize) => void;
+  onSceneExperimentOpen: () => void;
 };
 
 export function WorkspaceHeader({
   model,
   panelTextSize,
   onPanelTextSizeChange,
+  onSceneExperimentOpen,
 }: WorkspaceHeaderProps) {
   const { marketKey, period, setPeriod } = model.selection;
   const { availablePeriods, periodAvailability, analysisSource, analysisState, retryAnalysis } =
@@ -98,6 +100,16 @@ export function WorkspaceHeader({
         </div>
         <div className="header-actions">
           <div className="header-view-controls">
+            <button
+              className="header-control scene-experiment-trigger"
+              type="button"
+              aria-label="3DGS 실험 열기"
+              onClick={onSceneExperimentOpen}
+            >
+              <Sparkles size={15} />
+              <span className="scene-experiment-label">3DGS 실험</span>
+              <small>BETA</small>
+            </button>
             <div className="header-text-size-control">
               <span className="header-text-size-label">글자 크기</span>
               <PanelTextSizeControl

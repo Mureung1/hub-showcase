@@ -1,5 +1,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { lazy, Suspense, useState } from "react";
+
 import { useProductCatalog } from "./features/market/useProductCatalog";
 import { useApiReadiness } from "./features/system/useApiReadiness";
 import { WorkspaceDialogs } from "./features/workspace/WorkspaceDialogs";
@@ -13,6 +15,12 @@ import "./styles/suitFont.css";
 import "./styles/mapOverlays.css";
 import "./styles/panelAccessibility.css";
 import "./styles/categorySemantics.css";
+
+const SceneWorkspace = lazy(() =>
+  import("./components/SceneWorkspace").then(({ SceneWorkspace: Component }) => ({
+    default: Component,
+  })),
+);
 
 export function App({ useDemoData = false }: { useDemoData?: boolean }) {
   const apiReadiness = useApiReadiness(!useDemoData);
@@ -69,6 +77,7 @@ function ProductWorkspace({
 }) {
   const model = useProductWorkspaceModel(catalog, useDemoData, apiReadiness);
   const panelText = usePanelTextSize();
+  const [sceneExperimentOpen, setSceneExperimentOpen] = useState(false);
   const storefrontState = model.viewport.storefront3dUnavailable
     ? "fallback"
     : model.storefronts.selectedStorefront3d
@@ -81,6 +90,7 @@ function ProductWorkspace({
         model={model}
         panelTextSize={panelText.size}
         onPanelTextSizeChange={panelText.setSize}
+        onSceneExperimentOpen={() => setSceneExperimentOpen(true)}
       />
       <WorkspaceLayout
         model={model}
@@ -89,6 +99,14 @@ function ProductWorkspace({
         panelTextSize={panelText.size}
       />
       <WorkspaceDialogs model={model} />
+      {sceneExperimentOpen && (
+        <Suspense fallback={<div className="scene-loading">3DGS 실험실을 준비하는 중입니다.</div>}>
+          <SceneWorkspace
+            onClose={() => setSceneExperimentOpen(false)}
+            restoreFocusExternally={false}
+          />
+        </Suspense>
+      )}
     </main>
   );
 }
