@@ -1,19 +1,20 @@
 import { useState } from 'react'
 import * as commentsApi from './commentsApi'
 import type { CommentDto } from './commentsApi'
-import { friendPosts, friends, reactionMeta } from './data'
+import { reactionMeta } from './data'
 import * as pointsApi from './pointsApi'
-import { PixelAvatar } from './shared'
+import { PixelAvatar, getAvatarProps } from './shared'
 import type { FriendPost, ReactionKind } from './types'
 
 type FriendFeedProps = {
   myPosts: FriendPost[]
+  friendPosts: FriendPost[]
   currentUserId: string
   onDeletePost: (postId: string) => void
   onPointsEarned: () => void
 }
 
-export function FriendFeed({ myPosts, currentUserId, onDeletePost, onPointsEarned }: FriendFeedProps) {
+export function FriendFeed({ myPosts, friendPosts, currentUserId, onDeletePost, onPointsEarned }: FriendFeedProps) {
   const [myReactions, setMyReactions] = useState<Record<string, ReactionKind | null>>({})
   const [comments, setComments] = useState<Record<string, CommentDto[]>>({})
   const [openCommentsFor, setOpenCommentsFor] = useState<string | null>(null)
@@ -71,7 +72,6 @@ export function FriendFeed({ myPosts, currentUserId, onDeletePost, onPointsEarne
 
       {posts.map((post) => {
         const isMine = post.friendId === 'me'
-        const friend = friends.find((item) => item.id === post.friendId)
         const myReaction = myReactions[post.id] ?? null
 
         return (
@@ -90,9 +90,9 @@ export function FriendFeed({ myPosts, currentUserId, onDeletePost, onPointsEarne
 
             <div className="feed-post-body">
               <header className="feed-post-head">
-                {isMine ? <PixelAvatar color="#f2a58d" eyes={2} /> : friend && <PixelAvatar color={friend.color} eyes={friend.eyes} />}
+                {isMine ? <PixelAvatar color="#f2a58d" eyes={2} /> : <PixelAvatar {...getAvatarProps(post.friendId)} />}
                 <div>
-                  <strong>{isMine ? '나' : friend?.name ?? '친구'}</strong>
+                  <strong>{isMine ? '나' : post.friendName ?? '친구'}</strong>
                   <span>{post.categoryName} · {post.timeAgo}</span>
                 </div>
                 {isMine && (

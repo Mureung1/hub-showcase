@@ -491,6 +491,7 @@ function InventorySection({
 type FriendsViewProps = {
   manager: FriendsManager
   myPosts: FriendPost[]
+  friendPosts: FriendPost[]
   currentUserId: string
   onDeletePost: (postId: string) => void
   onViewFriendCalendar: (friendId: string) => void
@@ -498,7 +499,7 @@ type FriendsViewProps = {
   onPointsEarned: () => void
 }
 
-export function FriendsView({ manager, myPosts, currentUserId, onDeletePost, onViewFriendCalendar, onVisitFriendHome, onPointsEarned }: FriendsViewProps) {
+export function FriendsView({ manager, myPosts, friendPosts, currentUserId, onDeletePost, onViewFriendCalendar, onVisitFriendHome, onPointsEarned }: FriendsViewProps) {
   const [requestPanelOpen, setRequestPanelOpen] = useState(false)
   const [requestIdentifier, setRequestIdentifier] = useState('')
 
@@ -517,7 +518,7 @@ export function FriendsView({ manager, myPosts, currentUserId, onDeletePost, onV
           <div className="tab-page-heading">
             <div><span>ACTIVITY</span><h2>친구 인증 피드</h2></div>
           </div>
-          <FriendFeed myPosts={myPosts} currentUserId={currentUserId} onDeletePost={onDeletePost} onPointsEarned={onPointsEarned} />
+          <FriendFeed myPosts={myPosts} friendPosts={friendPosts} currentUserId={currentUserId} onDeletePost={onDeletePost} onPointsEarned={onPointsEarned} />
         </div>
 
         <div className="friends-list-col">

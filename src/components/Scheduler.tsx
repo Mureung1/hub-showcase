@@ -31,6 +31,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [dodoMessage, setDodoMessage] = useState('오늘 일정 하나만 더 하면 같이 놀 수 있어!')
   const [selectedOwner, setSelectedOwner] = useState('me')
   const [myPosts, setMyPosts] = useState<FriendPost[]>([])
+  const [friendPosts, setFriendPosts] = useState<FriendPost[]>([])
   const [showGroupManager, setShowGroupManager] = useState(false)
   const [showDiary, setShowDiary] = useState(false)
   const [showDodoCustomize, setShowDodoCustomize] = useState(false)
@@ -56,6 +57,22 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
         setMyPosts(videos.map((video) => ({
           id: video.id,
           friendId: 'me',
+          categoryName: video.categoryName,
+          tone: video.tone,
+          caption: video.caption ?? '',
+          timeAgo: formatTimeAgo(video.createdAt),
+          videoUrl: video.url,
+          reactions: { sparkle: 0, heart: 0, fire: 0, tear: 0, wow: 0, sleepy: 0 },
+        })))
+      })
+      .catch(() => {})
+    videosApi.fetchFriendVideoPosts()
+      .then((videos) => {
+        if (cancelled) return
+        setFriendPosts(videos.map((video) => ({
+          id: video.id,
+          friendId: video.friendId,
+          friendName: video.friendName,
           categoryName: video.categoryName,
           tone: video.tone,
           caption: video.caption ?? '',
@@ -194,6 +211,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
           <FriendsView
             manager={friendsManager}
             myPosts={myPosts}
+            friendPosts={friendPosts}
             currentUserId={user.id}
             onDeletePost={deleteMyPost}
             onViewFriendCalendar={goToFriendCalendar}
