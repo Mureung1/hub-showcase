@@ -106,8 +106,8 @@ export const windowRegistry: Record<WindowId, WindowSpec> = {
   pixelTv: {
     label: "Pixel TV",
     titleIcon: "TV",
-    initialPosition: { x: 420, y: 205 },
-    initialSize: { width: 372, height: 332 },
+    initialPosition: { x: 40, y: 24 },
+    initialSize: { width: 780, height: 780 },
     desktopIconAssetId: "pixel-tv",
     windowIconAssetId: "pixel-tv",
   },
@@ -128,7 +128,7 @@ export const windowRegistry: Record<WindowId, WindowSpec> = {
     label: "평지",
     titleIcon: "_",
     initialPosition: { x: 735, y: 350 },
-    initialSize: { width: 280, height: 124 },
+    initialSize: { width: 280, height: 440 },
   },
 };
 

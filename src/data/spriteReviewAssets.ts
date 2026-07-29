@@ -149,7 +149,7 @@ export const spriteReviewSets = [
     stage: "stage-1",
     path: pinkManagerStage1CandidatePath,
     states: ["idle"],
-    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet-v1.png`,
+    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet-v4.png`,
   },
   {
     id: "pink-manager-stage-2-canonical",

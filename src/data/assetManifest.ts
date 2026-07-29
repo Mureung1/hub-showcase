@@ -186,7 +186,7 @@ export const defaultLumiPetId = "pink-manager" as const satisfies PetId;
 export const fallbackLumiStage = "stage-2" as const satisfies PetStageId;
 export const petStageUnlockLevels: Record<PetStageId, number> = {
   "stage-1": 1,
-  "stage-2": 3,
+  "stage-2": 2,
   "stage-3": 6,
   "stage-4": 10,
 };
@@ -313,7 +313,7 @@ const pinkManagerStage1IdleAnimation: SpriteAnimationAsset = {
   id: "pink-manager-stage-1-idle",
   petId: "pink-manager",
   stage: "stage-1",
-  src: `${pinkManagerStage1CandidatePath}/pink-manager-stage-1-idle-sheet-v1.png`,
+  src: `${pinkManagerStage1CandidatePath}/pink-manager-stage-1-idle-sheet-v4.png`,
   sheetWidth: 256,
   sheetHeight: 64,
   frameWidth: 64,
@@ -551,6 +551,10 @@ export const lumiMoodToSpriteState: Record<LumiMood, LumiSpriteState> = {
   recovering: "recovering",
 };
 
+export function resolveDesktopPetSpriteState(_mood: LumiMood, hovered: boolean): LumiSpriteState {
+  return hovered ? "happy" : "idle";
+}
+
 const twoStateIcon = (id: DesktopIconId): DesktopIconAsset => ({
   id,
   idleSrc: `/assets/icons/${id}-idle-pixel-v2.png`,
@@ -638,17 +642,11 @@ export const interactionObjectAssets: InteractionObjectAsset[] = [
     },
   },
   {
-    id: "platform-object-tiles-v1",
+    id: "platform-object-base-v1",
     type: "platform",
-    src: "/assets/interaction-objects/platform/platform-tiles.png",
+    src: "/assets/interaction-objects/platform/base.png",
     resizeAxis: "horizontal",
     anchorPoints: ["left", "right", "center"],
-    tileMode: "horizontal-3part",
-    tiles: {
-      left: "/assets/interaction-objects/platform/platform-left.png",
-      centerRepeat: "/assets/interaction-objects/platform/platform-center-repeat.png",
-      right: "/assets/interaction-objects/platform/platform-right.png",
-    },
     metrics: {
       tileWidth: 32,
       tileHeight: 24,

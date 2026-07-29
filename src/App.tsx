@@ -1,5 +1,5 @@
 ﻿import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { AnimationEvent, ChangeEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent, ReactNode } from "react";
+import type { AnimationEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 import { CanvasSpriteAnimator } from "./components/CanvasSpriteAnimator";
 import { useCallback } from "react";
 import {
@@ -14,6 +14,7 @@ import {
   soundAssets,
   defaultLumiPetId,
   lumiMoodToSpriteState,
+  resolveDesktopPetSpriteState,
   resolvePetStageFromLevel,
   resolveSupportedPetAnimationState,
   type DesktopIconId,
@@ -26,6 +27,8 @@ import {
 import { prependQuestLog, questLogMarks, questLogResultLabels } from "./data/questLogs";
 import type { QuestLog } from "./data/questLogs";
 import {
+  resolveWindowPetLayerZIndex,
+  resolveWindowPetPlacementForSlot,
   resolveWindowPetPosition,
   runtimeWindowPetSlots,
 } from "./data/windowPetPlacements";
@@ -53,12 +56,13 @@ import {
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
 import { usePixelTvMode } from "./hooks/usePixelTvMode";
 import { questLogSyncMessages, useQuestLogSync, type QuestLogSyncState } from "./hooks/useQuestLogSync";
-import { useWindowManager, type WindowRect } from "./hooks/useWindowManager";
-import { useWindowPetPlacementDrafts } from "./hooks/useWindowPetPlacementDrafts";
+import { useWindowManager, type WindowChromeProps, type WindowRect } from "./hooks/useWindowManager";
+import { useWindowPetPlacementProfile } from "./hooks/useWindowPetPlacementDrafts";
 import { useOutsidePetRuntime } from "./hooks/useOutsidePetRuntime";
 import { useQuestFlow } from "./hooks/useQuestFlow";
 import { getRestartServiceTarget } from "./domain/appLifecyclePolicy";
 import type { ManagerState, ManagerTone, QuestOutcomeStreak, QuestSize, UserProfile } from "./domain/appState";
+import { resolveManagerWindowInteraction, type ManagerWindowInteractionState } from "./domain/managerRuntimePriority";
 import { resolveBlinkFocusEffect, type BlinkEntryReason, type BlinkFocusMode } from "./domain/blinkFocusPolicy";
 import { getClimbPosition, type InteractionObject, type ResizeAxis } from "./domain/interactionObjects";
 import { applyManagerSpriteSelection } from "./domain/managerSpriteSelection";
@@ -71,12 +75,24 @@ import {
   outsidePetInitialState,
   outsidePetSpriteSize,
   resolveRenderedOutsidePet,
+  resolveOutsidePetLayerZIndex,
   shouldMirrorOutsidePet,
+  shouldUseImmediateOutsidePetPosition,
   type InteractionSpritePosition,
   type OutsidePetSide,
   type OutsidePetState,
 } from "./domain/outsidePetRuntime";
-import { canPixelizeSource, createPixelizerPlan, getPixelizerPreviewSize, type PixelizerPlan } from "./domain/pixelizer";
+import {
+  canPixelizeSource,
+  createPixelTvPhotoFileName,
+  createPixelTvPhotoCapturePlan,
+  createPixelizerPlanForStream,
+  getPixelizerCoverSize,
+  resolvePixelTvStreamSettings,
+  transformPixelTvSamplePixels,
+  type PixelizerPlan,
+  type PixelTvPhotoCaptureRect,
+} from "./domain/pixelizer";
 import {
   calculateQuestReward,
   type QuestStatus,
@@ -91,7 +107,6 @@ import "./styles.css";
 type AppScreen = "manager-select" | "wizard" | "manager-created" | "desktop";
 type OutsidePetPhase = "inside" | "blink" | "peek_from_edge" | "walk_in" | "free_roam" | "returning";
 type ManagerRuntimeLocation = "manager_window" | "window_edge" | "outside" | "transition";
-type ManagerWindowInteractionState = "none" | "quest_hanging" | "recovery_hiding";
 
 interface BlinkFocusState {
   id: number;
@@ -119,6 +134,7 @@ interface ManagerRuntimeStateInput {
   manager: ManagerState;
   displayStage: PetStageId;
   outsidePet: OutsidePetState;
+  showPixelTvWatching: boolean;
   showQuestHangingPet: boolean;
   showRecoveryHidingPet: boolean;
   showOutsidePet: boolean;
@@ -140,11 +156,6 @@ interface DesktopContextMenuProps {
 interface PixelTvPropertiesWindowProps {
   connected: boolean;
   onToggle: () => void;
-}
-
-interface PixelTvSourceState {
-  url: string;
-  name: string;
 }
 
 interface PixelTvSourceSize {
@@ -266,13 +277,22 @@ interface OutsidePetLayerProps {
   pet: OutsidePetState;
   petId: PetId;
   stage: PetStageId;
+  objectZIndexes: Partial<Record<string, number>>;
 }
 
 interface WindowPetInteractionProps {
-  state: Extract<LumiSpriteState, "hanging" | "hiding">;
+  state: Extract<LumiSpriteState, "hanging" | "hiding" | "focused">;
   petId: PetId;
   stage: PetStageId;
   placement: "below-quest" | "beside-recovery";
+  position: WindowPosition;
+  measuredRect?: WindowRect;
+  zIndex: number;
+}
+
+interface PixelTvWatchingPetProps {
+  petId: PetId;
+  stage: PetStageId;
   position: WindowPosition;
   measuredRect?: WindowRect;
   zIndex: number;
@@ -374,12 +394,12 @@ const defaultProfile: UserProfile = {
 const defaultManager: ManagerState = {
   name: "루미",
   petId: defaultLumiPetId,
-  level: 1,
+  level: 2,
   exp: 0,
   mood: "waiting",
   line: toneLines.calm,
   behaviorStyle: "balanced",
-  unlockedStages: ["stage-1"],
+  unlockedStages: ["stage-1", "stage-2"],
   selectedStage: null,
   soundEnabled: false,
 };
@@ -809,7 +829,7 @@ export default function App() {
   useEffect(() => {
     managerLlmStateRef.current = { profile, manager, quest, questStatus, previousQuestTitle, selectedFailureReason, logs };
   }, [logs, manager, previousQuestTitle, profile, quest, questStatus, selectedFailureReason]);
-  const refreshManagerBehaviorIntent = useCallback(async (context: ManagerContext) => {
+  const refreshManagerBehaviorIntent = useCallback(async (context: ManagerContext, options: { includeBehaviorIntent: boolean }) => {
     const snapshot = managerLlmStateRef.current;
     try {
       const lineOutput = await requestManagerLineViaApi(createManagerLlmRequest("managerLine", {
@@ -826,6 +846,8 @@ export default function App() {
     } catch {
       // Rule fallback already updated the visible manager line.
     }
+
+    if (!options.includeBehaviorIntent) return;
 
     try {
       const behaviorOutput = await requestManagerBehaviorIntentViaApi(createManagerLlmRequest("behaviorIntent", {
@@ -848,15 +870,18 @@ export default function App() {
       // Rule fallback already updated the visible manager behavior state.
     }
   }, []);
-  const applyManagerContext = useCallback((context: ManagerContext) => {
+  const applyManagerContext = useCallback((context: ManagerContext, options: { includeBehaviorIntent?: boolean } = {}) => {
     setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context, getManagerPersona(current, profile)) }));
-    void refreshManagerBehaviorIntent(context);
+    void refreshManagerBehaviorIntent(context, { includeBehaviorIntent: options.includeBehaviorIntent === true });
   }, [profile, refreshManagerBehaviorIntent]);
+  const loadManagerContextWithBehaviorIntent = useCallback((context: ManagerContext) => {
+    applyManagerContext(context, { includeBehaviorIntent: true });
+  }, [applyManagerContext]);
   const { logSync, setLogSync } = useQuestLogSync({
     enabled: screen === "desktop",
     ignoreLogsBefore: serverLogCutoffIso,
     onLogsLoaded: setLogs,
-    onManagerContextLoaded: applyManagerContext,
+    onManagerContextLoaded: loadManagerContextWithBehaviorIntent,
   });
 
   useEffect(() => { if (screen === "desktop" || screen === "manager-created") writeStorage(profileKey, profile); }, [profile, screen]);
@@ -873,12 +898,17 @@ export default function App() {
       ),
     [manager, managerDisplayStage, profile.managerTone, questOutcomeStreak, reducedMotion],
   );
+  const isOutsidePetAnimationSupported = useCallback(
+    (animation: PetAnimationState) => hasPetAnimationAsset(manager.petId, managerDisplayStage, animation),
+    [manager.petId, managerDisplayStage],
+  );
   useOutsidePetRuntime({
     outsidePet,
     setOutsidePet,
     interactionObjects,
     openWindows,
     getNextRoamAnimation,
+    isAnimationSupported: isOutsidePetAnimationSupported,
   });
 
   const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
@@ -1192,6 +1222,7 @@ export default function App() {
 
   const showRecoveryHidingPet = questStatus === "recovery" && isWindowVisible("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
   const showQuestHangingPet = questStatus === "draft" && isWindowVisible("quest") && questOutcomeStreak.result === "success" && questOutcomeStreak.count >= 2;
+  const showPixelTvWatching = isWindowVisible("pixelTv");
   const showOutsidePet = outsidePet.phase !== "inside" && outsidePet.phase !== "blink";
   const renderedOutsidePet = useMemo(
     () => resolveRenderedOutsidePet(outsidePet, interactionObjects),
@@ -1201,10 +1232,20 @@ export default function App() {
     manager,
     displayStage: managerDisplayStage,
     outsidePet: renderedOutsidePet,
+    showPixelTvWatching,
     showQuestHangingPet,
     showRecoveryHidingPet,
     showOutsidePet,
   });
+  const questWindowChrome = windowChrome("quest");
+  const recoveryWindowChrome = windowChrome("recovery");
+  const pixelTvWindowChrome = windowChrome("pixelTv");
+  const ladderWindowChrome = windowChrome("ladderObject");
+  const platformWindowChrome = windowChrome("platformObject");
+  const outsidePetObjectZIndexes = {
+    "ladder-1": ladderWindowChrome.zIndex,
+    "platform-1": platformWindowChrome.zIndex,
+  };
 
   if (screen === "manager-select") return <main className="xp-boot-screen"><ManagerSelectWindow selectedPetId={selectedPetId} onSelect={setSelectedPetId} onContinue={continueWithSelectedManager} /></main>;
   if (screen === "wizard") return <main className="xp-boot-screen"><ProfileSetupWizard draft={wizardDraft} needsClarify={needsClarify} onChange={setWizardDraft} onSubmit={submitWizard} /></main>;
@@ -1238,24 +1279,26 @@ export default function App() {
           pet={managerRuntimeState.outside}
           petId={manager.petId}
           stage={managerRuntimeState.stage}
+          objectZIndexes={outsidePetObjectZIndexes}
         />
       )}
 
-      {isWindowVisible("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
-      {managerRuntimeState.windowInteraction === "quest_hanging" && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerRuntimeState.stage} placement="below-quest" position={windowPositions.quest} measuredRect={windowRects.quest} zIndex={10 + openWindows.indexOf("quest")} />}
+      {isWindowVisible("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...questWindowChrome}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
+      {managerRuntimeState.windowInteraction === "quest_hanging" && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerRuntimeState.stage} placement="below-quest" position={windowPositions.quest} measuredRect={windowRects.quest} zIndex={questWindowChrome.zIndex} />}
+      {managerRuntimeState.windowInteraction === "pixel_tv_watching" && <PixelTvWatchingPet petId={manager.petId} stage={managerRuntimeState.stage} position={windowPositions.pixelTv} measuredRect={windowRects.pixelTv} zIndex={pixelTvWindowChrome.zIndex} />}
       {isWindowVisible("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
       {isWindowVisible("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
-      {isWindowVisible("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
-      {managerRuntimeState.windowInteraction === "recovery_hiding" && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerRuntimeState.stage} placement="beside-recovery" position={windowPositions.recovery} measuredRect={windowRects.recovery} zIndex={10 + openWindows.indexOf("recovery")} />}
+      {isWindowVisible("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...recoveryWindowChrome}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
+      {managerRuntimeState.windowInteraction === "recovery_hiding" && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerRuntimeState.stage} placement="beside-recovery" position={windowPositions.recovery} measuredRect={windowRects.recovery} zIndex={recoveryWindowChrome.zIndex} />}
       {isWindowVisible("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={managerRuntimeState.petAwayFromManagerWindow} /></XpWindow>}
       {isWindowVisible("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
       {isWindowVisible("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")} onClose={() => closeAppWindow("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
       {isWindowVisible("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}
       {isWindowVisible("settings") && <XpWindow className="settings-window" title="설정" {...windowChrome("settings")}><SettingsWindow manager={manager} onSelectStage={selectManagerStage} onToggleSound={toggleManagerSound} /></XpWindow>}
       {isWindowVisible("pixelTv") && (
-        <XpWindow className="pixel-tv-window" title="Pixel TV" {...windowChrome("pixelTv")}>
+        <PixelTvObjectWindow chrome={pixelTvWindowChrome}>
           <PixelTvWindow manager={manager} stage={managerRuntimeState.stage} />
-        </XpWindow>
+        </PixelTvObjectWindow>
       )}
       {isWindowVisible("pixelTvProperties") && (
         <XpWindow className="pixel-tv-properties-window" title="Pixel TV 속성" {...windowChrome("pixelTvProperties")}>
@@ -1263,12 +1306,12 @@ export default function App() {
         </XpWindow>
       )}
       {isWindowVisible("ladderObject") && (
-        <XpWindow className="interaction-object-window ladder-object-window" title="" resizeAxis="vertical" {...windowChrome("ladderObject")}>
+        <XpWindow className="interaction-object-window ladder-object-window" title="" resizeAxis="vertical" {...ladderWindowChrome}>
           <LadderObjectWindow />
         </XpWindow>
       )}
       {isWindowVisible("platformObject") && (
-        <XpWindow className="interaction-object-window platform-object-window" title="평지" resizeAxis="horizontal" {...windowChrome("platformObject")}>
+        <XpWindow className="interaction-object-window platform-object-window" title="평지" resizeAxis="horizontal" {...platformWindowChrome}>
           <PlatformObjectWindow />
         </XpWindow>
       )}
@@ -1356,20 +1399,107 @@ function DesktopContextMenu({ x, y, onOpenProperties }: DesktopContextMenuProps)
   );
 }
 
-const pixelTvPreviewFrame = { width: 320, height: 180 };
+const pixelTvPreviewFrame = { width: 354, height: 249 };
+
+function PixelTvObjectWindow({ chrome, children }: { chrome: WindowChromeProps; children: ReactNode }) {
+  const objectRef = useRef<HTMLElement | null>(null);
+  const [dragOffset, setDragOffset] = useState<WindowPosition | null>(null);
+  const objectStyle = {
+    left: `${chrome.position.x}px`,
+    top: `${chrome.position.y}px`,
+    width: chrome.size ? `${chrome.size.width}px` : undefined,
+    height: chrome.size ? `${chrome.size.height}px` : undefined,
+    zIndex: chrome.zIndex,
+  } as CSSProperties;
+
+  useLayoutEffect(() => {
+    const element = objectRef.current;
+    if (!element) return undefined;
+
+    const measure = () => {
+      const rect = element.getBoundingClientRect();
+      chrome.onMeasure({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", measure);
+    }
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [chrome.position.x, chrome.position.y, chrome.size?.height, chrome.size?.width]);
+
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    const rect = objectRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setDragOffset({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    chrome.onFocus();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function dragWindow(event: PointerEvent<HTMLDivElement>) {
+    if (!dragOffset) return;
+
+    const maxX = Math.max(0, window.innerWidth - 180);
+    const maxY = Math.max(0, window.innerHeight - 78);
+    chrome.onMove({
+      x: Math.min(Math.max(event.clientX - dragOffset.x, 0), maxX),
+      y: Math.min(Math.max(event.clientY - dragOffset.y, 0), maxY),
+    });
+  }
+
+  function stopDrag(event: PointerEvent<HTMLDivElement>) {
+    if (!dragOffset) return;
+
+    setDragOffset(null);
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  return (
+    <section
+      ref={objectRef}
+      className={`pixel-tv-object-window ${chrome.isActive ? "active" : ""}`}
+      style={objectStyle}
+      onPointerDown={chrome.onFocus}
+    >
+      {children}
+      <div
+        className="pixel-tv-frame-drag-layer"
+        aria-label="Pixel TV 이동"
+        role="button"
+        tabIndex={0}
+        onPointerDown={startDrag}
+        onPointerMove={dragWindow}
+        onPointerUp={stopDrag}
+        onPointerCancel={stopDrag}
+      />
+      <button className="pixel-tv-exit-button" type="button" aria-label="Pixel TV 닫기" onClick={chrome.onClose}>
+        <span>닫기</span>
+      </button>
+    </section>
+  );
+}
 
 function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef<number | null>(null);
-  const [source, setSource] = useState<PixelTvSourceState | null>(null);
   const [sourceSize, setSourceSize] = useState<PixelTvSourceSize | null>(null);
   const [cameraState, setCameraState] = useState<PixelTvCameraState>("idle");
-  const [captureSrc, setCaptureSrc] = useState<string | null>(null);
-  const [pixelScale, setPixelScale] = useState(8);
 
   useEffect(() => {
+    void startCamera();
+
     return () => {
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -1377,21 +1507,22 @@ function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (source) URL.revokeObjectURL(source.url);
-    };
-  }, [source]);
-
-  useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
     if (!canvas || !video || cameraState !== "live") return undefined;
 
-    const drawFrame = () => {
+    let lastDrawAt = 0;
+
+    const drawFrame = (timestamp: number) => {
       if (canPixelizeSource(video.videoWidth, video.videoHeight)) {
-        const plan = createPixelizerPlan(video.videoWidth, video.videoHeight, { scale: pixelScale });
-        setSourceSize((current) => current?.width === plan.sourceWidth && current.height === plan.sourceHeight ? current : { width: plan.sourceWidth, height: plan.sourceHeight });
-        renderPixelizedSource(video, canvas, plan);
+        const streamSettings = resolvePixelTvStreamSettings(video.videoWidth, video.videoHeight);
+        const frameInterval = 1000 / streamSettings.targetFps;
+        if (timestamp - lastDrawAt >= frameInterval) {
+          const plan = createPixelizerPlanForStream(video.videoWidth, video.videoHeight, streamSettings);
+          setSourceSize((current) => current?.width === plan.sourceWidth && current.height === plan.sourceHeight ? current : { width: plan.sourceWidth, height: plan.sourceHeight });
+          renderPixelizedSource(video, canvas, plan);
+          lastDrawAt = timestamp;
+        }
       }
 
       frameRef.current = window.requestAnimationFrame(drawFrame);
@@ -1402,33 +1533,7 @@ function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     };
-  }, [cameraState, pixelScale]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !source || cameraState === "live") {
-      if (cameraState !== "live") setSourceSize(null);
-      return;
-    }
-
-    let disposed = false;
-    const image = new Image();
-    image.onload = () => {
-      if (disposed) return;
-
-      const plan = createPixelizerPlan(image.naturalWidth, image.naturalHeight, { scale: pixelScale });
-      setSourceSize({ width: plan.sourceWidth, height: plan.sourceHeight });
-      renderPixelizedSource(image, canvas, plan);
-    };
-    image.onerror = () => {
-      if (!disposed) setSourceSize(null);
-    };
-    image.src = source.url;
-
-    return () => {
-      disposed = true;
-    };
-  }, [cameraState, pixelScale, source]);
+  }, [cameraState]);
 
   async function startCamera() {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -1438,100 +1543,57 @@ function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
 
     setCameraState("requesting");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: "user",
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 24, max: 30 },
+        },
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      setSource(null);
       setCameraState("live");
     } catch {
       setCameraState("error");
     }
   }
 
-  function stopCamera() {
-    if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
-    frameRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setCameraState("idle");
-    setSourceSize(null);
-  }
-
-  function handleSourceChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    stopCamera();
-    setSource({ url: URL.createObjectURL(file), name: file.name });
-    event.target.value = "";
-  }
-
-  function capturePhoto() {
+  async function capturePhoto() {
     const canvas = canvasRef.current;
     if (!canvas || canvas.width === 0 || canvas.height === 0) return;
-    setCaptureSrc(canvas.toDataURL("image/png"));
+
+    try {
+      const animation = getLumiAnimationAsset("happy", manager.petId, stage);
+      const captureCanvas = await createPixelTvPhotoCapture(canvas, animation.src, manager.name);
+      downloadPixelTvPhoto(captureCanvas, createPixelTvPhotoFileName(new Date()));
+    } catch {
+      downloadPixelTvPhoto(canvas, createPixelTvPhotoFileName(new Date()));
+    }
   }
 
-  const signalLabel = cameraState === "live" ? "CAM LIVE" : source ? "FILE INPUT" : cameraState === "requesting" ? "REQUESTING" : cameraState === "error" ? "CAM BLOCKED" : "NO SIGNAL";
+  const signalLabel = cameraState === "live" ? "CAM LIVE" : cameraState === "requesting" ? "REQUESTING" : cameraState === "error" ? "CAM BLOCKED" : "NO SIGNAL";
 
   return (
     <section className="pixel-tv-panel">
       <video ref={videoRef} className="pixel-tv-video-source" playsInline muted />
       <div className="pixel-tv-screen">
         <canvas ref={canvasRef} className="pixel-tv-canvas" aria-label="픽셀화 미리보기" />
-        {cameraState !== "live" && !source && <span>{signalLabel}</span>}
+        {cameraState !== "live" && <span>{signalLabel}</span>}
       </div>
-      <div className="pixel-tv-controls">
-        {cameraState === "live" ? (
-          <button className="xp-button" type="button" onClick={stopCamera}>정지</button>
-        ) : (
-          <button className="xp-button primary" type="button" onClick={startCamera} disabled={cameraState === "requesting"}>
-            카메라
-          </button>
-        )}
-        <button className="xp-button" type="button" onClick={capturePhoto} disabled={!sourceSize}>사진</button>
-        <label className="xp-button pixel-tv-file-button">
-          <span>파일</span>
-          <input type="file" accept="image/*" onChange={handleSourceChange} />
-        </label>
-        <label className="pixel-tv-scale-control">
-          <span>픽셀</span>
-          <input
-            type="range"
-            min="2"
-            max="24"
-            step="1"
-            value={pixelScale}
-            onChange={(event) => setPixelScale(Number(event.target.value))}
-          />
-          <strong>{pixelScale}</strong>
-        </label>
-      </div>
-      <div className="pixel-tv-status">
-        <span>{cameraState === "live" ? "WEBCAM" : source?.name ?? signalLabel}</span>
-        <strong>{sourceSize ? `${sourceSize.width}x${sourceSize.height}` : "--"}</strong>
-      </div>
-      <div className="pixel-tv-photo-slot">
-        {captureSrc ? (
-          <div className="pixel-tv-photo-card">
-            <img src={captureSrc} alt="" />
-            <DesktopPet mood={manager.mood} petId={manager.petId} stage={stage} />
-            <span>{manager.name} + Pixel TV</span>
-          </div>
-        ) : (
-          <span>PHOTO EMPTY</span>
-        )}
-      </div>
+      <button className="pixel-tv-capture-button" type="button" onClick={() => { void capturePhoto(); }} disabled={!sourceSize} aria-label="사진 저장">
+        <span>사진</span>
+      </button>
     </section>
   );
 }
 
 function renderPixelizedSource(source: CanvasImageSource, canvas: HTMLCanvasElement, plan: PixelizerPlan) {
-  const previewSize = getPixelizerPreviewSize(plan, pixelTvPreviewFrame);
+  const previewSize = getPixelizerCoverSize(plan, pixelTvPreviewFrame);
   const sampleCanvas = document.createElement("canvas");
   sampleCanvas.width = plan.sampleWidth;
   sampleCanvas.height = plan.sampleHeight;
@@ -1541,12 +1603,110 @@ function renderPixelizedSource(source: CanvasImageSource, canvas: HTMLCanvasElem
 
   canvas.width = previewSize.width;
   canvas.height = previewSize.height;
-  sampleContext.imageSmoothingEnabled = true;
+  sampleContext.imageSmoothingEnabled = false;
   sampleContext.clearRect(0, 0, plan.sampleWidth, plan.sampleHeight);
   sampleContext.drawImage(source, 0, 0, plan.sampleWidth, plan.sampleHeight);
+  const sampleImage = sampleContext.getImageData(0, 0, plan.sampleWidth, plan.sampleHeight);
+  sampleImage.data.set(transformPixelTvSamplePixels(sampleImage.data, plan.sampleWidth, plan.sampleHeight));
+  sampleContext.putImageData(sampleImage, 0, 0);
   previewContext.imageSmoothingEnabled = plan.smoothing;
   previewContext.clearRect(0, 0, previewSize.width, previewSize.height);
   previewContext.drawImage(sampleCanvas, 0, 0, previewSize.width, previewSize.height);
+}
+
+async function createPixelTvPhotoCapture(tvCanvas: HTMLCanvasElement, managerSpriteSrc: string, managerName: string) {
+  const plan = createPixelTvPhotoCapturePlan();
+  const captureCanvas = document.createElement("canvas");
+  captureCanvas.width = plan.width;
+  captureCanvas.height = plan.height;
+  const context = captureCanvas.getContext("2d");
+  if (!context) return captureCanvas;
+
+  context.imageSmoothingEnabled = plan.smoothing;
+  drawPixelTvPhotoBackdrop(context, plan.width, plan.height);
+  drawPixelTvFrame(context, plan.tvFrame);
+  drawPixelTvScreen(context, tvCanvas, plan.tvScreen);
+  await drawManagerCaptureSprite(context, managerSpriteSrc, plan.managerSprite);
+  drawPixelTvPhotoCaption(context, plan.caption, managerName);
+
+  return captureCanvas;
+}
+
+function downloadPixelTvPhoto(canvas: HTMLCanvasElement, fileName: string) {
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = fileName;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function drawPixelTvPhotoBackdrop(context: CanvasRenderingContext2D, width: number, height: number) {
+  const sky = context.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, "#5eb7f3");
+  sky.addColorStop(0.58, "#bdeaff");
+  sky.addColorStop(0.59, "#78b957");
+  sky.addColorStop(1, "#3b8f3f");
+  context.fillStyle = sky;
+  context.fillRect(0, 0, width, height);
+
+  context.fillStyle = "rgba(255, 255, 255, 0.82)";
+  context.fillRect(58, 42, 58, 14);
+  context.fillRect(78, 30, 42, 18);
+  context.fillRect(116, 44, 70, 12);
+}
+
+function drawPixelTvFrame(context: CanvasRenderingContext2D, rect: PixelTvPhotoCaptureRect) {
+  context.fillStyle = "#5b4b3d";
+  context.fillRect(rect.x, rect.y, rect.width, rect.height);
+  context.fillStyle = "#d8c8a4";
+  context.fillRect(rect.x + 8, rect.y + 8, rect.width - 16, rect.height - 16);
+  context.fillStyle = "#2b2722";
+  context.fillRect(rect.x + 22, rect.y + 22, rect.width - 48, rect.height - 50);
+  context.fillStyle = "#5a4634";
+  context.fillRect(rect.x + rect.width - 54, rect.y + rect.height - 36, 34, 12);
+  context.fillRect(rect.x + 48, rect.y + rect.height - 16, 36, 10);
+  context.fillRect(rect.x + rect.width - 94, rect.y + rect.height - 16, 36, 10);
+}
+
+function drawPixelTvScreen(context: CanvasRenderingContext2D, tvCanvas: HTMLCanvasElement, rect: PixelTvPhotoCaptureRect) {
+  context.fillStyle = "#101414";
+  context.fillRect(rect.x, rect.y, rect.width, rect.height);
+  context.drawImage(tvCanvas, rect.x, rect.y, rect.width, rect.height);
+  context.fillStyle = "rgba(255, 255, 255, 0.08)";
+  for (let y = rect.y; y < rect.y + rect.height; y += 6) {
+    context.fillRect(rect.x, y, rect.width, 2);
+  }
+}
+
+async function drawManagerCaptureSprite(context: CanvasRenderingContext2D, spriteSrc: string, rect: PixelTvPhotoCaptureRect) {
+  const sprite = await loadCanvasImage(spriteSrc);
+  context.fillStyle = "rgba(255, 253, 246, 0.86)";
+  context.fillRect(rect.x + 18, rect.y + 28, rect.width - 28, rect.height - 34);
+  context.shadowColor = "rgba(83, 188, 255, 0.55)";
+  context.shadowBlur = 16;
+  context.drawImage(sprite, 0, 0, 64, 64, rect.x, rect.y, rect.width, rect.height);
+  context.shadowBlur = 0;
+}
+
+function drawPixelTvPhotoCaption(context: CanvasRenderingContext2D, rect: PixelTvPhotoCaptureRect, managerName: string) {
+  context.fillStyle = "#fffdf6";
+  context.fillRect(rect.x, rect.y, rect.width, rect.height);
+  context.strokeStyle = "#8f897c";
+  context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+  context.fillStyle = "#1f1f1f";
+  context.font = "700 14px Tahoma, sans-serif";
+  context.fillText(`${managerName} + Pixel TV`, rect.x + 10, rect.y + 17);
+}
+
+function loadCanvasImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Unable to load image: ${src}`));
+    image.src = src;
+  });
 }
 
 function PixelTvPropertiesWindow({ connected, onToggle }: PixelTvPropertiesWindowProps) {
@@ -2039,25 +2199,30 @@ function PlatformObjectWindow() {
 
   return (
     <section className="object-window-content platform-object-content" aria-label="평지 오브젝트">
-      <div className="platform-tile-strip" aria-hidden="true">
-        <img className="platform-tile-cap" src={asset.tiles?.left ?? asset.src} alt="" draggable={false} />
-        <span className="platform-tile-repeat" style={{ backgroundImage: `url(${asset.tiles?.centerRepeat ?? asset.src})` }} />
-        <img className="platform-tile-cap" src={asset.tiles?.right ?? asset.src} alt="" draggable={false} />
+      <div className="platform-base-viewport" aria-hidden="true">
+        <img className="platform-base-image" src={asset.src} alt="" draggable={false} />
       </div>
     </section>
   );
 }
 
-function OutsidePetLayer({ pet, petId, stage }: OutsidePetLayerProps) {
+function OutsidePetLayer({ pet, petId, stage, objectZIndexes }: OutsidePetLayerProps) {
   const renderableStage = getRenderablePetStage(petId, stage);
   const animation = getInteractionPrototypeAnimation(petId, renderableStage, pet.animation);
+  const immediatePosition = shouldUseImmediateOutsidePetPosition(pet);
   const petStyle = {
     left: `${pet.position.x}px`,
     top: `${pet.position.y}px`,
+    zIndex: resolveOutsidePetLayerZIndex(pet, objectZIndexes),
   } as CSSProperties;
 
   return (
-    <div className={`outside-pet-layer ${pet.phase} ${pet.animation}`} data-pet-stage={renderableStage} style={petStyle} aria-hidden="true">
+    <div
+      className={`outside-pet-layer ${pet.phase} ${pet.animation} ${pet.behavior ?? "no-behavior"} ${immediatePosition ? "attached" : ""}`}
+      data-pet-stage={renderableStage}
+      style={petStyle}
+      aria-hidden="true"
+    >
       <CanvasSpriteAnimator
         animation={animation}
         ariaLabel={`${pet.animation} 핑크 매니저`}
@@ -2071,9 +2236,9 @@ function OutsidePetLayer({ pet, petId, stage }: OutsidePetLayerProps) {
 function WindowPetInteraction({ state, petId, stage, placement, position, measuredRect, zIndex }: WindowPetInteractionProps) {
   const animation = getLumiAnimationAsset(state, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
-  const placementDrafts = useWindowPetPlacementDrafts();
+  const placementProfile = useWindowPetPlacementProfile(petId, stage);
   const runtimeSlot = runtimeWindowPetSlots[placement];
-  const selectedPlacement = placementDrafts[runtimeSlot.motion][runtimeSlot.edge];
+  const selectedPlacement = resolveWindowPetPlacementForSlot(placementProfile, runtimeSlot);
   const targetPosition = measuredRect ? { x: measuredRect.x, y: measuredRect.y } : position;
   const targetSize = measuredRect ? { width: measuredRect.width, height: measuredRect.height } : runtimeSlot.windowSize;
   const resolvedPosition = resolveWindowPetPosition({
@@ -2089,12 +2254,34 @@ function WindowPetInteraction({ state, petId, stage, placement, position, measur
     top: `${resolvedPosition.top}px`,
     width: `${resolvedPosition.size}px`,
     height: `${resolvedPosition.size}px`,
-    zIndex: resolvedPosition.layer === "behind-window" ? Math.max(1, zIndex - 1) : zIndex + 1,
+    zIndex: resolveWindowPetLayerZIndex(zIndex, resolvedPosition.layer),
   } as CSSProperties;
 
   return (
     <div className={`window-pet-interaction ${placement} ${state} ${resolvedPosition.layer}`} data-pet-stage={renderableStage} style={interactionStyle} aria-hidden="true">
       <CanvasSpriteAnimator animation={animation} ariaLabel={`${state} 핑크 매니저`} mirrorX={selectedPlacement.mirrorX} />
+    </div>
+  );
+}
+
+function PixelTvWatchingPet({ petId, stage, position, measuredRect, zIndex }: PixelTvWatchingPetProps) {
+  const animation = getLumiAnimationAsset("focused", petId, stage);
+  const renderableStage = getRenderablePetStage(petId, stage);
+  const targetPosition = measuredRect ? { x: measuredRect.x, y: measuredRect.y } : position;
+  const targetSize = measuredRect
+    ? { width: measuredRect.width, height: measuredRect.height }
+    : initialWindowSizes.pixelTv ?? { width: 372, height: 332 };
+  const watchingStyle = {
+    left: `${targetPosition.x + targetSize.width + 12}px`,
+    top: `${targetPosition.y + targetSize.height / 2 - 48}px`,
+    width: "96px",
+    height: "96px",
+    zIndex: zIndex + 1,
+  } as CSSProperties;
+
+  return (
+    <div className="window-pet-interaction pixel-tv-watching front" data-pet-stage={renderableStage} style={watchingStyle} aria-hidden="true">
+      <CanvasSpriteAnimator animation={animation} ariaLabel="Pixel TV를 보는 전자 매니저" />
     </div>
   );
 }
@@ -2110,6 +2297,20 @@ function getInteractionObjectAsset(type: InteractionObjectAsset["type"]): Intera
 }
 
 function createManagerRuntimeState(input: ManagerRuntimeStateInput): ManagerRuntimeState {
+  const windowInteraction = resolveManagerWindowInteraction(input);
+  if (windowInteraction === "pixel_tv_watching") {
+    return {
+      location: "window_edge",
+      mood: input.manager.mood,
+      stage: input.displayStage,
+      animation: "focused",
+      windowInteraction,
+      outside: input.outsidePet,
+      petAwayFromManagerWindow: true,
+      showOutsidePet: false,
+    };
+  }
+
   if (input.showOutsidePet) {
     return {
       location: "outside",
@@ -2136,26 +2337,26 @@ function createManagerRuntimeState(input: ManagerRuntimeStateInput): ManagerRunt
     };
   }
 
-  if (input.showQuestHangingPet) {
+  if (windowInteraction === "quest_hanging") {
     return {
       location: "window_edge",
       mood: input.manager.mood,
       stage: input.displayStage,
       animation: "hanging",
-      windowInteraction: "quest_hanging",
+      windowInteraction,
       outside: input.outsidePet,
       petAwayFromManagerWindow: true,
       showOutsidePet: false,
     };
   }
 
-  if (input.showRecoveryHidingPet) {
+  if (windowInteraction === "recovery_hiding") {
     return {
       location: "window_edge",
       mood: input.manager.mood,
       stage: input.displayStage,
       animation: "hiding",
-      windowInteraction: "recovery_hiding",
+      windowInteraction,
       outside: input.outsidePet,
       petAwayFromManagerWindow: true,
       showOutsidePet: false,
@@ -2181,7 +2382,7 @@ function createInteractionObjectsFromWindows(
   const ladderPosition = positions.ladderObject;
   const ladderSize = sizes.ladderObject ?? initialWindowSizes.ladderObject ?? { width: 86, height: 184 };
   const platformPosition = positions.platformObject;
-  const platformSize = sizes.platformObject ?? initialWindowSizes.platformObject ?? { width: 280, height: 124 };
+  const platformSize = sizes.platformObject ?? initialWindowSizes.platformObject ?? { width: 280, height: 440 };
 
   return [
     {
@@ -2200,10 +2401,10 @@ function createInteractionObjectsFromWindows(
       type: "platform",
       resizeAxis: "horizontal",
       rect: {
-        x: platformPosition.x + 18,
-        y: platformPosition.y + Math.max(48, platformSize.height - 53),
-        width: Math.max(96, platformSize.width - 36),
-        height: 22,
+        x: platformPosition.x + 12,
+        y: platformPosition.y + Math.max(96, Math.round(platformSize.width * 0.62)),
+        width: Math.max(96, platformSize.width - 24),
+        height: 18,
       },
     },
     {
@@ -2255,7 +2456,7 @@ function getRecentBehaviorEvent(streak: QuestOutcomeStreak): PetBehaviorRecentEv
 
 function DesktopPet({ mood, petId, stage, large = false }: DesktopPetProps) {
   const [hovered, setHovered] = useState(false);
-  const spriteState = hovered ? "hover" : lumiMoodToSpriteState[mood];
+  const spriteState = resolveDesktopPetSpriteState(mood, hovered);
   const animation = getLumiAnimationAsset(spriteState, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
 

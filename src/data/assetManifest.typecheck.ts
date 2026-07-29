@@ -81,7 +81,7 @@ for (const state of ["idle", "focused", "happy", "recovering", "resting", "hover
   }
 }
 
-if (resolvePetStageFromLevel(3) !== "stage-2" || !getUnlockedPetStages(6).includes("stage-3")) {
+if (resolvePetStageFromLevel(2) !== "stage-2" || !getUnlockedPetStages(6).includes("stage-3")) {
   throw new Error("Pet stage unlock rules must follow level thresholds");
 }
 

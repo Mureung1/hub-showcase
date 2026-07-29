@@ -1349,8 +1349,8 @@ label {
 
 .created-card {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 14px;
   align-items: center;
 }
 
@@ -1360,6 +1360,10 @@ label {
   transform: translateY(-12px);
 }
 
+.created-card > div {
+  min-width: 0;
+}
+
 .created-card strong {
   display: block;
   margin-bottom: 4px;
@@ -1367,7 +1371,14 @@ label {
   font-size: 15px;
 }
 
+.created-card span {
+  display: block;
+  line-height: 1.35;
+}
+
 .created-card small {
+  display: block;
+  margin-top: 4px;
   color: #55514a;
   line-height: 1.45;
 }
@@ -1496,9 +1507,13 @@ label {
 
 .interaction-object-window {
   min-width: 76px;
-  min-height: 76px;
+  min-height: 96px;
   background: transparent;
   box-shadow: none;
+}
+
+.platform-object-window {
+  min-height: 392px;
 }
 
 .interaction-object-window.active {
@@ -1552,45 +1567,27 @@ label {
 
 .platform-object-content {
   background: transparent;
+  overflow: hidden;
 }
 
-.platform-tile-strip {
+.platform-base-viewport {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 18px;
-  display: grid;
-  grid-template-columns: 48px 1fr 48px;
-  height: 48px;
+  inset: 0;
+  overflow: hidden;
   image-rendering: pixelated;
-  filter: drop-shadow(0 4px 0 rgba(34, 64, 23, 0.34));
-}
-
-.platform-tile-strip::before {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: -10px;
-  height: 6px;
-  background: repeating-linear-gradient(90deg, #ecff90 0 7px, #72d15c 7px 13px);
   pointer-events: none;
-  image-rendering: pixelated;
 }
 
-.platform-tile-cap {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
+.platform-base-image {
+  position: absolute;
+  left: 50%;
+  top: -88px;
+  width: 270%;
+  max-width: none;
+  height: auto;
+  transform: translateX(-50%);
   image-rendering: pixelated;
   user-select: none;
-}
-
-.platform-tile-repeat {
-  min-width: 64px;
-  background-position: left top;
-  background-repeat: repeat-x;
-  background-size: 64px 48px;
 }
 
 .outside-pet-layer {
@@ -1601,6 +1598,10 @@ label {
   pointer-events: none;
   transition: left 360ms steps(8), top 240ms steps(5);
   filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.22));
+}
+
+.outside-pet-layer.attached {
+  transition: none;
 }
 
 .outside-pet-layer::before {
@@ -2355,154 +2356,145 @@ label {
   width: 360px;
 }
 
-.pixel-tv-window {
-  width: 372px;
+.pixel-tv-object-window {
+  position: fixed;
+  width: 780px;
+  height: 780px;
+  overflow: visible;
+  background: transparent;
 }
 
 .pixel-tv-panel {
-  display: grid;
-  gap: 8px;
+  position: relative;
+  width: 780px;
+  height: 780px;
+  overflow: visible;
+  background: transparent;
+  image-rendering: pixelated;
+}
+
+.pixel-tv-frame-drag-layer {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  padding: 0;
+  background: url("/assets/icons/TV frame.png") center / contain no-repeat;
+  border: 0;
+  cursor: move;
+  image-rendering: pixelated;
 }
 
 .pixel-tv-screen {
-  width: 320px;
-  height: 180px;
-  display: grid;
+  position: absolute;
+  z-index: 1;
+  top: 255px;
+  left: 288px;
+  width: 354px;
+  height: 249px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   place-items: center;
   overflow: hidden;
   color: #89ffba;
   font-family: "Courier New", monospace;
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 0;
-  background:
-    linear-gradient(rgb(255 255 255 / 6%) 50%, rgb(0 0 0 / 0%) 50%),
-    #111414;
+  background: #101414;
   background-size: 100% 4px;
-  border: 3px solid #403b35;
-  box-shadow:
-    inset 2px 2px 0 #050606,
-    inset -2px -2px 0 #6f665d,
-    1px 1px 0 #ffffff;
+  border: 0;
+  box-shadow: inset 3px 3px 0 #050606;
+}
+
+.pixel-tv-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 52% 46%, rgb(255 222 164 / 8%), transparent 54%),
+    linear-gradient(rgb(255 238 206 / 6%) 50%, rgb(0 0 0 / 0%) 50%);
+  background-size: 100% 4px;
+}
+
+.pixel-tv-screen span {
+  position: relative;
+  z-index: 1;
 }
 
 .pixel-tv-canvas {
   display: block;
+  flex: 0 0 auto;
   image-rendering: pixelated;
+  filter: contrast(1.12) saturate(0.9);
 }
 
-.pixel-tv-controls {
-  display: grid;
-  grid-template-columns: 64px 54px 54px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
+.pixel-tv-capture-button {
+  position: absolute;
+  z-index: 4;
+  right: 126px;
+  bottom: 163px;
+  width: 84px;
+  height: 70px;
+  padding: 0;
+  color: transparent;
+  background: url("/assets/icons/TV-Button.png") center / 230px 154px no-repeat;
+  border: 0;
+  image-rendering: pixelated;
+  cursor: pointer;
+}
+
+.pixel-tv-exit-button {
+  position: absolute;
+  z-index: 5;
+  right: 218px;
+  bottom: 171px;
+  width: 52px;
+  height: 48px;
+  padding: 0;
+  color: transparent;
+  background: url("/assets/icons/Tv-Exit.png") center / 150px 100px no-repeat;
+  border: 0;
+  image-rendering: pixelated;
+  cursor: pointer;
+}
+
+.pixel-tv-exit-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.pixel-tv-exit-button span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.pixel-tv-capture-button:disabled {
+  cursor: default;
+  filter: grayscale(1) brightness(0.72);
+}
+
+.pixel-tv-capture-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.pixel-tv-capture-button span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .pixel-tv-video-source {
   display: none;
-}
-
-.pixel-tv-file-button {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 25px;
-  overflow: hidden;
-}
-
-.pixel-tv-file-button input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.pixel-tv-scale-control {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 24px;
-  gap: 6px;
-  align-items: center;
-  min-width: 0;
-  color: #1f1f1f;
-  font-size: 12px;
-}
-
-.pixel-tv-scale-control input {
-  width: 100%;
-}
-
-.pixel-tv-scale-control strong {
-  text-align: right;
-}
-
-.pixel-tv-status {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  padding: 4px 6px;
-  color: #55514a;
-  font-size: 11px;
-  background: #f8f6ee;
-  border: 1px solid #aca899;
-  box-shadow: inset 1px 1px 0 #ffffff;
-}
-
-.pixel-tv-status span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pixel-tv-photo-slot {
-  min-height: 76px;
-  display: grid;
-  place-items: center;
-  padding: 6px;
-  color: #55514a;
-  font-family: "Courier New", monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
-  background: #dfdccf;
-  border: 1px solid #aca899;
-  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #b6b0a4;
-}
-
-.pixel-tv-photo-card {
-  width: 188px;
-  display: grid;
-  grid-template-columns: 92px 64px;
-  grid-template-rows: 58px auto;
-  align-items: end;
-  justify-content: center;
-  gap: 3px 8px;
-  padding: 6px;
-  color: #1f1f1f;
-  background: #fffdf6;
-  border: 1px solid #8f897c;
-  box-shadow: 1px 1px 0 #ffffff, 2px 2px 0 rgb(0 0 0 / 18%);
-}
-
-.pixel-tv-photo-card img {
-  width: 92px;
-  height: 52px;
-  object-fit: contain;
-  image-rendering: pixelated;
-  background: #111414;
-  border: 1px solid #403b35;
-}
-
-.pixel-tv-photo-card .desktop-pet {
-  width: 64px;
-  height: 58px;
-}
-
-.pixel-tv-photo-card > span {
-  grid-column: 1 / -1;
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .pixel-tv-properties-panel {

@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { workflowWindowIds, type WindowId, type WindowPosition, type WindowSize } from "../data/windowRegistry";
+import { resolveOpenWindowsAfterOpen, resolveOpenWindowsAfterOpenMany } from "../domain/windowCompatibilityPolicy";
 
 export interface WindowRect extends WindowPosition, WindowSize {}
 
@@ -42,7 +43,7 @@ export function useWindowManager(
   const activeWindow = focusedWindow && visibleWindows.includes(focusedWindow) ? focusedWindow : visibleWindows[visibleWindows.length - 1];
 
   const openWindow = useCallback((id: WindowId) => {
-    setOpenWindows((current) => (current.includes(id) ? current : [...current, id]));
+    setOpenWindows((current) => resolveOpenWindowsAfterOpen(current, id));
     setMinimizedWindows((current) => current.filter((windowId) => windowId !== id));
     setFocusedWindow(id);
   }, []);
@@ -93,8 +94,9 @@ export function useWindowManager(
   const setWorkflowWindows = useCallback((nextWindows: WindowId[]) => {
     setOpenWindows((current) => {
       const nextOpenWindows = replaceWorkflowWindows(current, nextWindows);
-      setMinimizedWindows((minimized) => minimized.filter((windowId) => nextOpenWindows.includes(windowId) && !nextWindows.includes(windowId)));
-      return nextOpenWindows;
+      const compatibleOpenWindows = resolveOpenWindowsAfterOpenMany(nextOpenWindows, nextWindows);
+      setMinimizedWindows((minimized) => minimized.filter((windowId) => compatibleOpenWindows.includes(windowId) && !nextWindows.includes(windowId)));
+      return compatibleOpenWindows;
     });
     setFocusedWindow(nextWindows[nextWindows.length - 1] ?? null);
   }, []);

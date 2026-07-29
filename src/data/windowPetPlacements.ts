@@ -1,3 +1,5 @@
+import type { PetId, PetStageId } from "./assetManifest";
+
 export type WindowPetAttachSide = "bottom" | "left" | "right" | "top";
 export type WindowPetMotion = "hanging" | "hiding" | "climbing" | "jump";
 export type WindowPetLayer = "front" | "behind-window";
@@ -30,6 +32,18 @@ export interface WindowPetPositionInput {
 }
 
 export type WindowPetPlacementDraftsByMotion = Record<WindowPetMotion, Record<WindowPetAttachSide, WindowPetPlacementDraft>>;
+export type WindowPetActiveEdgesByMotion = Record<WindowPetMotion, WindowPetAttachSide>;
+export type WindowPetPlacementProfileId = `runtime:${PetId}:${PetStageId}:canonical` | `review:${string}`;
+
+export interface WindowPetPlacementProfile {
+  activeEdges: WindowPetActiveEdgesByMotion;
+  drafts: WindowPetPlacementDraftsByMotion;
+}
+
+export interface WindowPetPlacementProfileStore {
+  version: 2;
+  profiles: Record<string, WindowPetPlacementProfile>;
+}
 
 export interface WindowPetRuntimeSlot {
   motion: WindowPetMotion;
@@ -41,6 +55,7 @@ export interface WindowPetRuntimeSlot {
 }
 
 export const windowPetPlacementStorageKey = "manager-xp.window-pet-placement.v1";
+export const windowPetPlacementStorageKeyV2 = "manager-xp.window-pet-placement.v2";
 
 export const defaultWindowPetPlacementDrafts: WindowPetPlacementDraftsByMotion = {
   hanging: {
@@ -67,6 +82,18 @@ export const defaultWindowPetPlacementDrafts: WindowPetPlacementDraftsByMotion =
     right: placement("right", 10, -8, 1, true),
     top: placement("top", 0, 12),
   },
+};
+
+export const defaultWindowPetActiveEdges: WindowPetActiveEdgesByMotion = {
+  hanging: "top",
+  hiding: "left",
+  climbing: "top",
+  jump: "bottom",
+};
+
+export const defaultWindowPetPlacementProfile: WindowPetPlacementProfile = {
+  activeEdges: defaultWindowPetActiveEdges,
+  drafts: defaultWindowPetPlacementDrafts,
 };
 
 export const runtimeWindowPetSlots = {
@@ -96,15 +123,139 @@ export function resolveWindowPetPosition(input: WindowPetPositionInput) {
   };
 }
 
-export function readWindowPetPlacementDrafts(getItem: (key: string) => string | null): WindowPetPlacementDraftsByMotion {
+export function getRuntimeWindowPetPlacementProfileId(petId: PetId, stage: PetStageId): WindowPetPlacementProfileId {
+  return `runtime:${petId}:${stage}:canonical`;
+}
+
+export function getReviewWindowPetPlacementProfileId(reviewSetId: string): WindowPetPlacementProfileId {
+  return `review:${reviewSetId}`;
+}
+
+export function readWindowPetPlacementDrafts(
+  getItem: (key: string) => string | null,
+  profileId?: WindowPetPlacementProfileId,
+): WindowPetPlacementDraftsByMotion {
+  return readWindowPetPlacementProfile(getItem, profileId).drafts;
+}
+
+export function readWindowPetPlacementProfile(
+  getItem: (key: string) => string | null,
+  profileId?: WindowPetPlacementProfileId,
+): WindowPetPlacementProfile {
+  if (profileId) {
+    const v2Value = getItem(windowPetPlacementStorageKeyV2);
+    const store = readPlacementProfileStore(v2Value);
+    const profile = store?.profiles[profileId];
+    if (profile) return profile;
+  }
+
   const rawValue = getItem(windowPetPlacementStorageKey);
-  if (!rawValue) return defaultWindowPetPlacementDrafts;
+  if (!rawValue) return defaultWindowPetPlacementProfile;
 
   try {
-    return normalizePlacementDrafts(JSON.parse(rawValue));
+    return {
+      activeEdges: defaultWindowPetActiveEdges,
+      drafts: normalizePlacementDrafts(JSON.parse(rawValue)),
+    };
   } catch {
-    return defaultWindowPetPlacementDrafts;
+    return defaultWindowPetPlacementProfile;
   }
+}
+
+export function writeWindowPetPlacementDrafts(
+  getItem: (key: string) => string | null,
+  setItem: (key: string, value: string) => void,
+  profileId: WindowPetPlacementProfileId,
+  drafts: WindowPetPlacementDraftsByMotion,
+) {
+  const currentProfile = readWindowPetPlacementProfile(getItem, profileId);
+  writeWindowPetPlacementProfile(getItem, setItem, profileId, {
+    activeEdges: currentProfile.activeEdges,
+    drafts,
+  });
+}
+
+export function writeWindowPetPlacementProfile(
+  getItem: (key: string) => string | null,
+  setItem: (key: string, value: string) => void,
+  profileId: WindowPetPlacementProfileId,
+  profile: WindowPetPlacementProfile,
+) {
+  const store = readPlacementProfileStore(getItem(windowPetPlacementStorageKeyV2)) ?? {
+    version: 2,
+    profiles: {},
+  };
+  const nextStore: WindowPetPlacementProfileStore = {
+    version: 2,
+    profiles: {
+      ...store.profiles,
+      [profileId]: normalizePlacementProfile(profile),
+    },
+  };
+
+  setItem(windowPetPlacementStorageKeyV2, JSON.stringify(nextStore));
+}
+
+export function resolveWindowPetPlacementForSlot(
+  profile: WindowPetPlacementProfile,
+  slot: WindowPetRuntimeSlot,
+): WindowPetPlacementDraft {
+  const activeEdge = profile.activeEdges[slot.motion] ?? slot.edge;
+  return profile.drafts[slot.motion][activeEdge] ?? profile.drafts[slot.motion][slot.edge];
+}
+
+export function resolveWindowPetLayerZIndex(windowZIndex: number, layer: WindowPetLayer) {
+  if (layer === "behind-window") return Math.max(1, windowZIndex - 1);
+  return windowZIndex + 1;
+}
+
+function readPlacementProfileStore(rawValue: string | null): WindowPetPlacementProfileStore | null {
+  if (!rawValue) return null;
+
+  try {
+    return normalizePlacementProfileStore(JSON.parse(rawValue));
+  } catch {
+    return null;
+  }
+}
+
+function normalizePlacementProfileStore(value: unknown): WindowPetPlacementProfileStore | null {
+  if (!isRecord(value) || value.version !== 2 || !isRecord(value.profiles)) return null;
+
+  return {
+    version: 2,
+    profiles: Object.fromEntries(
+      Object.entries(value.profiles).map(([profileId, profileValue]) => [
+        profileId,
+        normalizePlacementProfile(profileValue),
+      ]),
+    ),
+  };
+}
+
+function normalizePlacementProfile(value: unknown): WindowPetPlacementProfile {
+  if (isRecord(value) && isRecord(value.drafts)) {
+    return {
+      activeEdges: normalizeActiveEdges(value.activeEdges),
+      drafts: normalizePlacementDrafts(value.drafts),
+    };
+  }
+
+  return {
+    activeEdges: defaultWindowPetActiveEdges,
+    drafts: normalizePlacementDrafts(value),
+  };
+}
+
+function normalizeActiveEdges(value: unknown): WindowPetActiveEdgesByMotion {
+  if (!isRecord(value)) return defaultWindowPetActiveEdges;
+
+  return {
+    hanging: isAttachSide(value.hanging) ? value.hanging : defaultWindowPetActiveEdges.hanging,
+    hiding: isAttachSide(value.hiding) ? value.hiding : defaultWindowPetActiveEdges.hiding,
+    climbing: isAttachSide(value.climbing) ? value.climbing : defaultWindowPetActiveEdges.climbing,
+    jump: isAttachSide(value.jump) ? value.jump : defaultWindowPetActiveEdges.jump,
+  };
 }
 
 export function normalizePlacementDrafts(value: unknown): WindowPetPlacementDraftsByMotion {

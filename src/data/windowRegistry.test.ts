@@ -22,4 +22,8 @@ describe("window registry", () => {
   it("keeps the ladder object window wide enough for its icon content", () => {
     expect(windowRegistry.ladderObject.initialSize?.width).toBeGreaterThanOrEqual(104);
   });
+
+  it("sizes Pixel TV as a world object instead of a tall control panel", () => {
+    expect(windowRegistry.pixelTv.initialSize).toEqual({ width: 780, height: 780 });
+  });
 });

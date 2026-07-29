@@ -12,6 +12,7 @@ import {
   resolveOutsidePetAttachmentPosition,
   resolveOutsidePetHorizontalMove,
   resolveOutsidePetRoamPosition,
+  resolveStoppedInteractionAnimation,
   resolveReturningOutsidePetStep,
   startOutsidePetBehavior,
   type OutsidePetState,
@@ -24,6 +25,7 @@ export interface UseOutsidePetRuntimeInput {
   interactionObjects: InteractionObject[];
   openWindows: WindowId[];
   getNextRoamAnimation: (pet: OutsidePetState, objects: InteractionObject[]) => PetAnimationState;
+  isAnimationSupported: (animation: PetAnimationState) => boolean;
 }
 
 export function useOutsidePetRuntime({
@@ -32,6 +34,7 @@ export function useOutsidePetRuntime({
   interactionObjects,
   openWindows,
   getNextRoamAnimation,
+  isAnimationSupported,
 }: UseOutsidePetRuntimeInput) {
   useEffect(() => {
     if (outsidePet.phase !== "peek_from_edge") return undefined;
@@ -111,6 +114,15 @@ export function useOutsidePetRuntime({
         const nextAnimation = getNextRoamAnimation(current, interactionObjects);
         const speed = resolveOutsidePetAnimationSpeed(nextAnimation);
         const horizontalMove = resolveOutsidePetHorizontalMove(current, interactionObjects, speed);
+        if (horizontalMove.stoppedForTarget) {
+          const targetAnimation = resolveStoppedInteractionAnimation(current, interactionObjects);
+          if (targetAnimation && isAnimationSupported(targetAnimation)) {
+            const startedTargetBehavior = startOutsidePetBehavior(current, interactionObjects, targetAnimation);
+            if (startedTargetBehavior.behavior !== current.behavior || startedTargetBehavior.animation !== current.animation) {
+              return { ...startedTargetBehavior, roamTicks: nextRoamTicks };
+            }
+          }
+        }
         const clampedX = horizontalMove.x;
         const resolvedAnimation = horizontalMove.stoppedForTarget && (nextAnimation === "walk" || nextAnimation === "run") ? "idle" : nextAnimation;
         if (resolvedAnimation === "climbing") {
@@ -143,7 +155,7 @@ export function useOutsidePetRuntime({
     }, 1100);
 
     return () => window.clearInterval(timer);
-  }, [getNextRoamAnimation, interactionObjects, outsidePet.phase, setOutsidePet]);
+  }, [getNextRoamAnimation, interactionObjects, isAnimationSupported, outsidePet.phase, setOutsidePet]);
 
   useEffect(() => {
     if (outsidePet.phase !== "free_roam" || outsidePet.animation !== "climbing" || !outsidePet.attachedObjectId) return;
@@ -151,13 +163,13 @@ export function useOutsidePetRuntime({
     const attachedObject = interactionObjects.find((object) => object.id === outsidePet.attachedObjectId);
     if (!attachedObject || attachedObject.type !== "ladder") return;
 
-    const nextPosition = resolveOutsidePetAttachmentPosition(attachedObject, "climbing");
+    const nextPosition = resolveOutsidePetAttachmentPosition(attachedObject, "climbing", outsidePet.climbProgress ?? 0.48);
     setOutsidePet((current) => {
       if (current.phase !== "free_roam" || current.animation !== "climbing" || current.attachedObjectId !== attachedObject.id) return current;
       if (current.position.x === nextPosition.x && current.position.y === nextPosition.y) return current;
       return { ...current, position: nextPosition };
     });
-  }, [interactionObjects, outsidePet.phase, outsidePet.animation, outsidePet.attachedObjectId, setOutsidePet]);
+  }, [interactionObjects, outsidePet.phase, outsidePet.animation, outsidePet.attachedObjectId, outsidePet.climbProgress, setOutsidePet]);
 
   useEffect(() => {
     if (outsidePet.phase !== "free_roam" || openWindows.includes("journal")) return;
