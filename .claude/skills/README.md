@@ -10,7 +10,7 @@
 | [`backend-testing`](backend-testing/SKILL.md) | 새 서비스 함수·라우트 추가 또는 회귀 테스트가 필요할 때 (유닛/통합테스트 작성) | [docs/testing.md](../../docs/testing.md) |
 | [`firstpr-ui`](firstpr-ui/SKILL.md) | 랜딩·화면·컴포넌트 등 UI를 만들거나 정리할 때 | [docs/design.md](../../docs/design.md) |
 | [`api-smoke-test`](api-smoke-test/SKILL.md) | 새 API 라우트 구현·수정 후 실제 기동·요청으로 검증할 때 | [docs/openapi.yaml](../../docs/openapi.yaml) |
-| [`pr-draft`](pr-draft/SKILL.md) | 업스트림(connect-AIAgentChallenge-26-1/hub)에 PR 올리기 전 초안 작성 | `.github/pull_request_template.md` |
+| [`pr-draft`](pr-draft/SKILL.md) | 업스트림(connect-AIAgentChallenge-26-1/hub)에 PR 올리기 전 초안 작성(웹 UI 붙여넣기용 텍스트) | `.github/pull_request_template.md` |
 | [`commit-message`](commit-message/SKILL.md) | 커밋 메시지를 작성할 때 (`<type>: <한글 설명>` 컨벤션) | — |
 | [`explain-work`](explain-work/SKILL.md) | 작업 내용을 "자세히"·"하나하나" 설명해달라는 요청 | — |
 | [`submission-check`](submission-check/SKILL.md) | 대회 제출/데모 직전 라이브 URL·문서 정합성·테스트·커밋 상태 최종 점검 | `README.md`, `showcase/showcase.json` |
