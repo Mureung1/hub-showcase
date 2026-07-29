@@ -152,6 +152,125 @@
   color: var(--color-text-secondary);
 }
 
+/* 좁은 화면에서는 옆 순위판이 감춰진다. 담자마자 뭐가 1순위인지는 알려준다. */
+.top-hint {
+  margin: 0 0 var(--space-md);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.top-hint strong {
+  color: var(--color-text-primary);
+}
+
+/* 넓은 화면에는 옆에 순위판이 통째로 붙으므로 이 한 줄은 군더더기다. */
+@media (min-width: 1024px) {
+  .top-hint {
+    display: none;
+  }
+}
+
+/* 방금 한 일을 알리고 되돌릴 기회를 주는 알림.
+   목록이 길어도 보이도록 화면 아래에 고정한다. */
+.notice {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-md);
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: calc(100% - var(--space-card));
+  max-width: 520px;
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background-color: var(--color-text-primary);
+  color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.notice-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--font-label);
+}
+
+.notice-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* 어두운 배경 위라 Primary 인디고는 대비가 모자란다. 흰 글씨에 밑줄로 누를 것임을 알린다. */
+.notice-undo {
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  border: none;
+  background: none;
+  font-size: var(--font-label);
+  font-weight: 600;
+  color: var(--color-surface);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.notice-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  font-size: var(--font-label);
+  color: var(--color-surface);
+  cursor: pointer;
+}
+
+/* 빈 상태에서 예시로 둘러보기까지 한 덩어리로 묶는다. */
+.empty-state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+/* 완료한 과목 목록 */
+.done-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.done-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.done-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.done-name {
+  font-size: var(--font-body);
+  font-weight: 500;
+}
+
+.done-meta {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 /* 서버 없이 도는 중이라는 알림. 고장은 아니라서 danger 로 겁주지 않고,
    그렇다고 흘려보내면 안 되니 배경을 깔아 눈에는 걸리게 둔다. */
 .server-note {

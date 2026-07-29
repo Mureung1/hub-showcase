@@ -21,6 +21,8 @@ function ResultScreen({
   onChangePlanHours,
   onUpdateSubject,
   onCompleteSubject,
+  doneCount,
+  onOpenDone,
   onBack,
 }) {
   const [sortKey, setSortKey] = useState("score");
@@ -208,9 +210,17 @@ function ResultScreen({
         <p className="empty-hint">이번 주에 시험이 있는 과목이 없어요.</p>
       )}
 
-      <button type="button" className="button button-secondary" onClick={onBack}>
-        ← 과목 다시 담기
-      </button>
+      <div className="form-actions">
+        <button type="button" className="button button-secondary" onClick={onBack}>
+          ← 과목 다시 담기
+        </button>
+        {/* 끝낸 과목이 어디로 갔는지 볼 수 있어야 실수로 누른 것도 되돌릴 수 있다. */}
+        {doneCount > 0 && (
+          <button type="button" className="button button-ghost" onClick={onOpenDone}>
+            공부 끝낸 과목 {doneCount}개
+          </button>
+        )}
+      </div>
     </section>
   );
 }
