@@ -1,0 +1,88 @@
+<svg viewBox="0 0 880 800" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <marker id="c-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#B4451F"/>
+    </marker>
+  </defs>
+
+  <rect width="880" height="800" fill="#FAFAFA"/>
+
+  <!-- ===== STICKY 완료 헤더 ===== -->
+  <rect x="0" y="0" width="880" height="84" fill="#FFFFFF"/>
+  <line x1="0" y1="84" x2="880" y2="84" stroke="#E3E7EB" stroke-width="1"/>
+
+  <circle cx="52" cy="34" r="6" fill="#2E7D5B"/>
+  <text x="68" y="38" font-size="13" font-weight="700" fill="#16202B">브리핑 완료</text>
+  <text x="152" y="38" font-size="11.5" fill="#5A6B7C">12편 검토 · 4편 선별 · 2분 14초 · LLM 호출 23회</text>
+
+  <rect x="596" y="20" width="104" height="28" rx="6" fill="#F3F5F7" stroke="#DDE3E9" stroke-width="1"/>
+  <text x="648" y="38" font-size="11" fill="#4A5966" text-anchor="middle">결과만 보기</text>
+  <rect x="712" y="20" width="116" height="28" rx="6" fill="#16202B"/>
+  <text x="770" y="38" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">다시 브리핑</text>
+
+  <text x="52" y="68" font-size="10.5" fill="#98A3AE">'LLM agent의 최근 planning 연구'</text>
+  <text x="264" y="68" font-size="10.5" fill="#2563A8">↑ 판단 근거 · 논문 4편 · 작업 기록으로</text>
+
+  <!-- ===== 스크롤 위 영역 암시 ===== -->
+  <rect x="40" y="104" width="800" height="48" rx="7" fill="#FFFFFF" stroke="#DDE3E9" stroke-width="1.2" stroke-dasharray="5 4"/>
+  <text x="440" y="126" font-size="11" fill="#98A3AE" text-anchor="middle">↑  위쪽 — 중요도 판단 근거 · 논문 카드 4장 · 재시도 기록 (그대로 남아 있음)</text>
+  <text x="440" y="143" font-size="10" fill="#C1CAD3" text-anchor="middle">완료됐다고 과정을 지우지 않습니다. 되짚을 수 없으면 신뢰할 수 없습니다.</text>
+
+  <!-- ===== TIMELINE RAIL ===== -->
+  <line x1="62" y1="170" x2="62" y2="640" stroke="#DDE3E9" stroke-width="1.5"/>
+
+  <!-- ===== 트렌드 종합 블록 ===== -->
+  <circle cx="62" cy="196" r="6" fill="#2E7D5B"/>
+  <rect x="86" y="170" width="754" height="428" rx="8" fill="#FFFFFF" stroke="#2E7D5B" stroke-width="1.6"/>
+  <rect x="86" y="170" width="4" height="428" rx="2" fill="#2E7D5B"/>
+
+  <text x="110" y="200" font-size="15" font-weight="700" fill="#16202B">4편을 관통하는 흐름</text>
+  <text x="270" y="200" font-size="10.5" fill="#98A3AE">에이전트가 논문들을 서로 연결해 정리했습니다</text>
+
+  <line x1="110" y1="216" x2="816" y2="216" stroke="#EDF1F4" stroke-width="1"/>
+
+  <!-- 흐름 1 -->
+  <text x="110" y="248" font-size="13" font-weight="700" fill="#16202B">1 · 계획을 한 번에 세우지 않는다</text>
+  <text x="110" y="272" font-size="11.5" fill="#4A5966">네 편 중 세 편이 공통적으로 계획을 '분해'합니다. 상위 목표를 하위 작업으로 쪼개고,</text>
+  <text x="110" y="292" font-size="11.5" fill="#4A5966">실패하면 상위로 되돌아가 다시 계획합니다. 단일 프롬프트로 전체 계획을 뽑던</text>
+  <text x="110" y="312" font-size="11.5" fill="#4A5966">2024년 방식과 뚜렷이 갈라지는 지점입니다.</text>
+
+  <rect x="110" y="326" width="146" height="22" rx="11" fill="#F1F6FB" stroke="#C3D7EA" stroke-width="1"/>
+  <text x="183" y="341" font-size="10" fill="#2563A8" text-anchor="middle">↑ Tree-of-Agents</text>
+  <rect x="264" y="326" width="130" height="22" rx="11" fill="#F1F6FB" stroke="#C3D7EA" stroke-width="1"/>
+  <text x="329" y="341" font-size="10" fill="#2563A8" text-anchor="middle">↑ Self-Refine</text>
+  <rect x="402" y="326" width="146" height="22" rx="11" fill="#F1F6FB" stroke="#C3D7EA" stroke-width="1"/>
+  <text x="475" y="341" font-size="10" fill="#2563A8" text-anchor="middle">↑ Memory-Augmented</text>
+
+  <!-- 주석: 근거 연결 -->
+  <path d="M 862 300 L 862 340 L 566 340" fill="none" stroke="#B4451F" stroke-width="1.2" marker-end="url(#c-arr)"/>
+  <text x="868" y="238" font-size="9.5" font-weight="700" fill="#B4451F" transform="rotate(90 868 238)">클릭 → 위 카드로 이동. 주장에는 근거가 붙어야 합니다</text>
+
+  <!-- 흐름 2 -->
+  <text x="110" y="386" font-size="13" font-weight="700" fill="#16202B">2 · 검증자를 따로 둔다</text>
+  <text x="110" y="410" font-size="11.5" fill="#4A5966">두 편이 계획을 실행하기 전에 별도 모델로 검증합니다. 에이전트 자신이 스스로를</text>
+  <text x="110" y="430" font-size="11.5" fill="#4A5966">평가하던 self-reflection에서, 독립된 verifier로 역할을 분리하는 흐름이 보입니다.</text>
+
+  <rect x="110" y="444" width="130" height="22" rx="11" fill="#F1F6FB" stroke="#C3D7EA" stroke-width="1"/>
+  <text x="175" y="459" font-size="10" fill="#2563A8" text-anchor="middle">↑ Self-Refine</text>
+  <rect x="248" y="444" width="120" height="22" rx="11" fill="#F1F6FB" stroke="#C3D7EA" stroke-width="1"/>
+  <text x="308" y="459" font-size="10" fill="#2563A8" text-anchor="middle">↑ VerifyFirst</text>
+
+  <!-- 흐름 3 — 공백 -->
+  <line x1="110" y1="488" x2="816" y2="488" stroke="#EDF1F4" stroke-width="1"/>
+  <text x="110" y="518" font-size="13" font-weight="700" fill="#B07A18">3 · 아직 비어 있는 곳</text>
+  <text x="110" y="542" font-size="11.5" fill="#4A5966">네 편 모두 성공률을 올리는 데 집중하고, 비용을 다루는 논문은 없습니다.</text>
+  <text x="110" y="562" font-size="11.5" fill="#4A5966">Tree-of-Agents는 성능이 18%p 올랐지만 비용이 2.3배라고 스스로 밝히면서도,</text>
+  <text x="110" y="582" font-size="11.5" fill="#4A5966">그 트레이드오프 자체를 다루지는 않습니다.</text>
+
+  <!-- ===== 하단 액션 ===== -->
+  <circle cx="62" cy="634" r="4" fill="#C1CAD3"/>
+  <text x="86" y="638" font-size="11" fill="#8A96A2">2026-06-22 14:32 · 이 브리핑 링크 복사 · 마크다운으로 내보내기</text>
+
+  <!-- ===== FOOTER ===== -->
+  <line x1="40" y1="690" x2="840" y2="690" stroke="#E3E7EB" stroke-width="1"/>
+  <text x="40" y="714" font-size="11.5" font-weight="700" fill="#16202B">왜 트렌드를 맨 위로 올리지 않았나</text>
+  <text x="40" y="734" font-size="11" fill="#5A6B7C">작업을 지켜본 사용자의 스크롤은 이미 맨 아래에 있습니다. 트렌드가 거기 도착하는 것이 자연스럽고, 시간순이라는 사실도 지켜집니다.</text>
+  <text x="40" y="752" font-size="11" fill="#5A6B7C">대신 상단 헤더를 고정해, 나중에 들어오거나 위로 올라간 사용자가 언제든 결론에 다시 닿을 수 있게 했습니다.</text>
+  <text x="40" y="778" font-size="11" fill="#8A96A2">'3 · 아직 비어 있는 곳'은 야심찬 항목입니다. 연구자에게 트렌드의 진짜 가치는 무엇이 유행인가보다 <tspan font-weight="700" fill="#16202B">무엇이 비어 있는가</tspan>입니다. 여유가 되면 시도하세요.</text>
+</svg>

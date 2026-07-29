@@ -1,0 +1,835 @@
+<title>hub — 발표 자료</title>
+<style>
+  :root {
+    --sans: Pretendard, -apple-system, BlinkMacSystemFont, "Malgun Gothic",
+            "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    --mono: "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+
+    --bg: #EEF1F4;
+    --panel: #FFFFFF;
+    --card: #F5F8FB;
+    --ink: #16202B;
+    --muted: #5A6B7C;
+    --faint: #8A96A2;
+    --border: #C9D2DA;
+    --hair: #E1E7EC;
+
+    --blue: #2563A8;
+    --amber: #B07A18;
+    --green: #2E7D5B;
+    --slate: #5A6B7C;
+
+    --plate: #FCFCFD;
+    --plate-border: #D3DCE4;
+
+    --accent: var(--blue);
+    --shadow: 0 24px 60px -28px rgba(22,32,43,.45), 0 2px 8px -3px rgba(22,32,43,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B1116;
+      --panel: #141C25;
+      --card: #1A2530;
+      --ink: #E9EEF3;
+      --muted: #9DABB8;
+      --faint: #6C7C8A;
+      --border: #2C3A46;
+      --hair: #212D37;
+      --blue: #62A0DC;
+      --amber: #E0AC4E;
+      --green: #57B994;
+      --slate: #8595A3;
+      --plate: #F7F9FB;
+      --plate-border: #C9D2DA;
+      --shadow: 0 28px 70px -30px rgba(0,0,0,.7), 0 2px 10px -3px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #EEF1F4; --panel: #FFFFFF; --card: #F5F8FB; --ink: #16202B;
+    --muted: #5A6B7C; --faint: #8A96A2; --border: #C9D2DA; --hair: #E1E7EC;
+    --blue: #2563A8; --amber: #B07A18; --green: #2E7D5B; --slate: #5A6B7C;
+    --plate: #FCFCFD; --plate-border: #D3DCE4;
+    --shadow: 0 24px 60px -28px rgba(22,32,43,.45), 0 2px 8px -3px rgba(22,32,43,.18);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1116; --panel: #141C25; --card: #1A2530; --ink: #E9EEF3;
+    --muted: #9DABB8; --faint: #6C7C8A; --border: #2C3A46; --hair: #212D37;
+    --blue: #62A0DC; --amber: #E0AC4E; --green: #57B994; --slate: #8595A3;
+    --plate: #F7F9FB; --plate-border: #C9D2DA;
+    --shadow: 0 28px 70px -30px rgba(0,0,0,.7), 0 2px 10px -3px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* ---- viewport scaler ---- */
+  #deck { position: fixed; inset: 0; }
+  #stage {
+    position: absolute; top: 50%; left: 50%;
+    width: 1200px; height: 675px;
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: center center;
+    background: var(--panel);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  /* ---- top rail ---- */
+  #rail {
+    position: absolute; top: 0; left: 0; right: 0; height: 5px;
+    background: var(--accent);
+    transition: background .45s ease;
+    z-index: 5;
+  }
+
+  /* ---- slides ---- */
+  .slide {
+    position: absolute; inset: 0;
+    padding: 60px 68px 62px;
+    display: none;
+    flex-direction: column;
+  }
+  .slide.active { display: flex; animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .slide.active { animation: none; }
+    #rail { transition: none; }
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .eyebrow::before {
+    content: ""; width: 26px; height: 2px; background: var(--accent); display: inline-block;
+  }
+
+  h1 { font-size: 128px; font-weight: 800; letter-spacing: -.03em; line-height: .95; margin: 0; }
+  h2 { font-size: 44px; font-weight: 800; letter-spacing: -.02em; line-height: 1.08;
+       margin: 0; text-wrap: balance; }
+  h2 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 21px; line-height: 1.5; color: var(--muted); margin: 0; max-width: 62ch; }
+  .lead strong { color: var(--ink); font-weight: 700; }
+  strong.hl { color: var(--accent); font-weight: 700; }
+
+  code, .mono { font-family: var(--mono); font-size: .88em;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent); padding: .08em .4em; border-radius: 5px; }
+
+  /* ---- title slide ---- */
+  .title-wrap { justify-content: center; gap: 26px; }
+  .title-tag { font-size: 24px; color: var(--muted); font-weight: 500; max-width: 30ch; line-height: 1.45; }
+  .thesis {
+    border-left: 3px solid var(--amber);
+    padding: 4px 0 4px 20px; margin-top: 8px;
+    font-size: 20px; color: var(--ink); font-weight: 600;
+  }
+  .thesis span { color: var(--faint); font-weight: 400; font-family: var(--mono);
+    font-size: 14px; display: block; margin-top: 6px; letter-spacing: .04em; }
+  .meta-row {
+    position: absolute; left: 68px; bottom: 56px; right: 68px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 14px; color: var(--faint);
+    border-top: 1px solid var(--hair); padding-top: 18px;
+  }
+
+  /* ---- generic content ---- */
+  .head-block { display: flex; flex-direction: column; gap: 16px; }
+  .body-block { margin-top: 28px; display: flex; flex-direction: column; gap: 20px; flex: 1; min-height: 0; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px 24px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .card .k { font-family: var(--mono); font-size: 12.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--faint); }
+  .card .t { font-size: 19px; font-weight: 700; line-height: 1.3; }
+  .card .d { font-size: 15px; color: var(--muted); line-height: 1.5; }
+  .card.bad { border-color: color-mix(in srgb, var(--slate) 55%, var(--border)); }
+
+  .pull {
+    margin-top: auto; font-size: 24px; font-weight: 700; line-height: 1.35;
+    letter-spacing: -.01em; text-wrap: balance;
+  }
+  .pull b { color: var(--accent); }
+
+  .chips { display: flex; gap: 12px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 999px; padding: 9px 16px 9px 13px;
+    font-size: 14.5px; color: var(--ink); font-weight: 500;
+  }
+  .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+
+  /* ---- diagram plate ---- */
+  .plate {
+    background: var(--plate); border: 1px solid var(--plate-border);
+    border-radius: 12px; padding: 14px 18px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .plate svg { display: block; max-width: 100%; height: auto; }
+  .caption { font-family: var(--mono); font-size: 13px; color: var(--faint);
+    letter-spacing: .03em; text-align: center; }
+
+  /* ---- slide 3: two columns ---- */
+  .split { display: grid; grid-template-columns: 0.82fr 1.18fr; gap: 30px; flex: 1; min-height: 0; }
+  .split .col-txt { display: flex; flex-direction: column; gap: 16px; align-self: center; }
+  .split .plate { height: 100%; }
+  .split .plate svg { height: 100%; width: auto; max-height: 100%; }
+  .factlist { display: flex; flex-direction: column; gap: 15px; margin: 4px 0 0; padding: 0; list-style: none; }
+  .factlist li { position: relative; padding-left: 26px; font-size: 15.5px; line-height: 1.5; color: var(--muted); }
+  .factlist li b { color: var(--ink); font-weight: 700; }
+  .factlist li::before {
+    content: ""; position: absolute; left: 0; top: .16em;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: var(--accent); opacity: .16;
+  }
+  .factlist li::after {
+    content: ""; position: absolute; left: 5px; top: calc(.16em + 5px);
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  }
+
+  /* ---- slide 4: placeholder ---- */
+  .placeholder {
+    flex: 1; margin-top: 28px;
+    border: 2px dashed var(--border); border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; text-align: center; color: var(--faint);
+    background: repeating-linear-gradient(-45deg,
+      transparent, transparent 14px,
+      color-mix(in srgb, var(--faint) 6%, transparent) 14px,
+      color-mix(in srgb, var(--faint) 6%, transparent) 15px);
+  }
+  .placeholder .big { font-size: 26px; font-weight: 700; color: var(--muted); letter-spacing: -.01em; }
+  .placeholder .sub { font-family: var(--mono); font-size: 14px; letter-spacing: .04em; }
+  .placeholder .tag { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; color: var(--faint); }
+
+  /* ---- slide 5: progress ---- */
+  .flow-intro { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 15px; color: var(--muted); }
+  .flow-intro .step { font-family: var(--mono); font-size: 13px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 9px; color: var(--ink); }
+  .flow-intro .arrow { color: var(--faint); }
+
+  .stepper { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 4px; }
+  .step-cell {
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 12px 14px;
+    background: var(--card); display: flex; flex-direction: column; gap: 6px; position: relative;
+  }
+  .step-cell .num { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--faint); }
+  .step-cell .nm { font-size: 14.5px; font-weight: 700; line-height: 1.2; }
+  .step-cell .st { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; }
+  .step-cell.done { border-color: color-mix(in srgb, var(--green) 45%, var(--border)); }
+  .step-cell.done .st { color: var(--green); }
+  .step-cell.next {
+    border-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--card));
+    box-shadow: 0 0 0 1px var(--amber);
+  }
+  .step-cell.next .st { color: var(--amber); }
+  .step-cell.next .nm { color: var(--ink); }
+  .step-cell.todo { opacity: .82; }
+  .step-cell.todo .st { color: var(--faint); }
+
+  .later { display: flex; gap: 12px; margin-top: 4px; }
+  .later .lz {
+    flex: 1; border: 1px dashed var(--border); border-radius: 10px; padding: 12px 16px;
+    display: flex; flex-direction: column; gap: 4px; background: transparent;
+  }
+  .later .lz .nm { font-size: 14.5px; font-weight: 700; }
+  .later .lz .d { font-size: 12.5px; color: var(--muted); font-family: var(--mono); letter-spacing: .02em; }
+  .later .lz.goal { border-style: solid; border-color: color-mix(in srgb, var(--blue) 45%, var(--border)); }
+  .later .lz.goal .nm { color: var(--accent); }
+
+  /* ---- slide 5: dev tooling cards ---- */
+  .devtools { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .devtool {
+    border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px;
+    background: var(--card); display: flex; flex-direction: column; gap: 8px; position: relative;
+  }
+  .devtool::before {
+    content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 3px;
+    border-radius: 3px; background: var(--accent);
+  }
+  .devtool .kind { font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); }
+  .devtool .nm { font-size: 18px; font-weight: 800; letter-spacing: -.01em; }
+  .devtool .nm code { font-size: .82em; }
+  .devtool .d { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .devtool .d b { color: var(--ink); font-weight: 700; }
+  .sub-label { font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); display: flex; align-items: center; gap: 10px; }
+  .sub-label::after { content: ""; flex: 1; height: 1px; background: var(--hair); }
+
+  /* ---- chrome: nav / dots / counter ---- */
+  #chrome {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 44px;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    padding: 0 22px; z-index: 6; pointer-events: none;
+  }
+  #dots { display: flex; gap: 9px; pointer-events: auto; }
+  #dots button {
+    width: 9px; height: 9px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+    background: var(--border); transition: transform .2s, background .2s;
+  }
+  #dots button:hover { background: var(--faint); }
+  #dots button[aria-current="true"] { background: var(--accent); transform: scale(1.35); }
+  #dots button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .navbtn {
+    position: absolute; bottom: 8px; width: 34px; height: 30px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+    font-size: 16px; cursor: pointer; pointer-events: auto; z-index: 7;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .navbtn:hover { color: var(--ink); border-color: var(--faint); }
+  .navbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #prev { right: 112px; }
+  #next { right: 70px; }
+  #counter {
+    position: absolute; bottom: 8px; left: 68px;
+    font-family: var(--mono); font-size: 13px; color: var(--faint);
+    letter-spacing: .08em; pointer-events: none;
+  }
+  #counter b { color: var(--ink); }
+  #theme-toggle {
+    position: absolute; bottom: 8px; right: 20px; width: 34px; height: 30px;
+    border-radius: 8px; border: 1px solid var(--border); background: var(--panel);
+    color: var(--muted); cursor: pointer; pointer-events: auto; z-index: 7; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #theme-toggle:hover { color: var(--ink); }
+  #theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div id="deck">
+  <div id="stage" role="group" aria-label="hub 발표 슬라이드">
+    <div id="rail"></div>
+
+    <!-- 0 · Title -->
+    <section class="slide title-wrap active" data-accent="blue">
+      <div class="eyebrow">Naver Connect · AI Agent Challenge 2026</div>
+      <h1>hub</h1>
+      <p class="title-tag">arXiv 논문을 <strong style="color:var(--ink);font-weight:700">스스로 판단해</strong>
+        골라 읽고 요약하는 LLM 에이전트 웹 서비스</p>
+      <div class="thesis">
+        과정은 로딩 화면이 아니라 감사 기록(audit trail)이다.
+        <span>연구자는 검증할 수 없는 것을 믿지 않는다.</span>
+      </div>
+      <div class="meta-row">
+        <span>이관학 · N121</span>
+        <span>single-agent 루프 · SSE 스트리밍 · 2026.07</span>
+      </div>
+    </section>
+
+    <!-- 1 · 문제 -->
+    <section class="slide" data-accent="slate">
+      <div class="head-block">
+        <div class="eyebrow">01 — 문제 인식 및 배경</div>
+        <h2>진짜 비용은 읽는 게 아니라,<br><em>무엇을 읽을지 고르는 것</em></h2>
+        <p class="lead">LLM 분야 논문의 생산 속도가 개인이 따라잡을 한계를 넘었다.
+          arXiv에는 하루에도 수십 편이 올라온다.</p>
+      </div>
+      <div class="body-block">
+        <div class="cards">
+          <div class="card bad">
+            <div class="k">기존 요약 서비스 · 한계 ①</div>
+            <div class="t">전부 요약해서 쏟아낸다</div>
+            <div class="d">목록만 길어질 뿐, "무엇을 읽을지 고르는" 문제를 그대로 사용자에게 되돌려준다.</div>
+          </div>
+          <div class="card bad">
+            <div class="k">기존 요약 서비스 · 한계 ②</div>
+            <div class="t">선별하지만 근거가 없다</div>
+            <div class="d">왜 골랐는지 말해주지 않으면 연구자는 믿지 않는다 — 놓친 게 없다는 걸 확인할 방법이 없기 때문이다.</div>
+          </div>
+        </div>
+        <p class="pull">선별을 하더라도, <b>왜 골랐고 무엇을 버렸는지</b>를 보여주지 못하면
+          연구자는 결국 arXiv를 직접 다시 뒤진다.</p>
+      </div>
+    </section>
+
+    <!-- 2 · 아이디어 개요 -->
+    <section class="slide" data-accent="blue">
+      <div class="head-block">
+        <div class="eyebrow">02 — 아이디어 개요</div>
+        <h2>고른 이유와 <em>버린 이유를 함께</em> 보여주는 에이전트</h2>
+        <p class="lead">차별점은 요약 품질이 아니다 — 요약은 어느 LLM이든 어느 정도 한다.
+          차별점은 <strong>에이전트의 판단 과정 전체가 사용자에게 열려 있다는 것</strong>이다.</p>
+      </div>
+      <div class="body-block">
+        <div class="chips">
+          <span class="chip"><i></i>12편 중 4편을 골랐고, 8편은 이 이유로 뺐다</span>
+          <span class="chip"><i></i>이 논문은 초록으로 충분, 저 논문은 본문까지</span>
+          <span class="chip"><i></i>한 번에 안 나와 스스로 다시 썼다</span>
+        </div>
+        <div class="plate" style="flex:1">
+          <!-- agent-flow.svg (inline) -->
+          <svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+            <defs>
+              <marker id="f-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#16202B"/>
+              </marker>
+              <marker id="f-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#B07A18"/>
+              </marker>
+            </defs>
+            <rect width="900" height="260" fill="#FCFCFD"/>
+            <rect x="16" y="52" width="96" height="86" rx="7" fill="#FFFFFF" stroke="#C9D2DA" stroke-width="1.4"/>
+            <text x="64" y="88" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">주제 입력</text>
+            <text x="64" y="110" font-size="9.5" fill="#8A96A2" text-anchor="middle">사용자</text>
+            <line x1="112" y1="95" x2="123" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+            <rect x="125" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+            <text x="140" y="74" font-size="10" font-weight="700" fill="#2563A8">1</text>
+            <text x="185" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">판단</text>
+            <text x="185" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">12편 중 4편</text>
+            <text x="185" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">고른 이유 · 버린 이유</text>
+            <line x1="245" y1="95" x2="249" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+            <rect x="251" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+            <text x="266" y="74" font-size="10" font-weight="700" fill="#2563A8">2</text>
+            <text x="311" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">도구 선택</text>
+            <text x="311" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">초록으로 충분한가</text>
+            <text x="311" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">본문까지 읽을까</text>
+            <line x1="371" y1="95" x2="375" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+            <rect x="377" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+            <text x="392" y="74" font-size="10" font-weight="700" fill="#2563A8">3</text>
+            <text x="437" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">요약</text>
+            <text x="437" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">기여 · 방법 · 결과</text>
+            <line x1="497" y1="95" x2="501" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+            <rect x="503" y="52" width="120" height="86" rx="7" fill="#FDF7EC" stroke="#B07A18" stroke-width="1.5"/>
+            <text x="518" y="74" font-size="10" font-weight="700" fill="#B07A18">4</text>
+            <text x="563" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">자기 검증</text>
+            <text x="563" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">스스로 평가하고</text>
+            <text x="563" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">부실하면 되돌린다</text>
+            <line x1="623" y1="95" x2="627" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+            <path d="M 563 138 L 563 176 L 437 176 L 437 140" fill="none" stroke="#B07A18" stroke-width="1.5" marker-end="url(#f-amber)"/>
+            <text x="500" y="192" font-size="9.5" font-weight="600" fill="#B07A18" text-anchor="middle">재시도 (최대 2회)</text>
+            <rect x="629" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+            <text x="644" y="74" font-size="10" font-weight="700" fill="#2563A8">5</text>
+            <text x="689" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">트렌드 추론</text>
+            <text x="689" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">논문 사이의</text>
+            <text x="689" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">연결점을 찾는다</text>
+            <line x1="749" y1="95" x2="761" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+            <rect x="763" y="52" width="120" height="86" rx="7" fill="#FFFFFF" stroke="#2E7D5B" stroke-width="1.5"/>
+            <text x="823" y="76" font-size="12" font-weight="700" fill="#2E7D5B" text-anchor="middle">결과</text>
+            <text x="823" y="98" font-size="9.5" fill="#5A6B7C" text-anchor="middle">요약 · 판단 근거</text>
+            <text x="823" y="114" font-size="9.5" fill="#5A6B7C" text-anchor="middle">· 흐름</text>
+            <line x1="125" y1="36" x2="749" y2="36" stroke="#DDE3E9" stroke-width="1"/>
+            <text x="437" y="28" font-size="10.5" font-weight="600" fill="#8A96A2" text-anchor="middle">에이전트가 요청받은 그 순간 실행 — 각 단계의 판단이 사용자에게 실시간으로 열린다</text>
+            <text x="16" y="228" font-size="10.5" fill="#8A96A2">1~5단계 전부가 화면에 흐른다. <tspan font-weight="700" fill="#16202B">과정은 로딩 화면이 아니라 감사 기록이다</tspan> — 연구자는 검증할 수 없는 것을 믿지 않는다.</text>
+            <text x="16" y="248" font-size="10.5" fill="#8A96A2">특히 1단계의 <tspan font-weight="700" fill="#16202B">버린 이유</tspan>와 4단계의 <tspan font-weight="700" fill="#16202B">재시도 기록</tspan>. 이 둘이 이 서비스를 요약 사이트와 구분한다.</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · 시스템 아키텍처 -->
+    <section class="slide" data-accent="green">
+      <div class="head-block">
+        <div class="eyebrow">03 — 시스템 아키텍처</div>
+        <h2>요청한 <em>그 순간</em> 실행되는 백엔드</h2>
+      </div>
+      <div class="split">
+        <div class="col-txt">
+          <ul class="factlist">
+            <li><span><b>프론트(바닐라 HTML/JS)</b> → FastAPI → 에이전트 루프 5단계 ↔ 도구</span></li>
+            <li><b>SSE</b>로 과정을 실시간 스트리밍. 다 끝나고 한 번에 주는 방식이 아니다.</li>
+            <li>도구는 <b>LLM(Gemini Flash)·arXiv·본문 수집·저장</b> — 독립된 Python 함수.</li>
+            <li>정적 사이트 + cron 배치가 아니라 <b>요청 순간 실행</b>. 그래서 상시 서버가 필요하다.</li>
+          </ul>
+        </div>
+        <div class="plate">
+          <!-- agent_web_service_architecture.svg (inline) -->
+          <svg viewBox="0 0 940 830" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+            <defs>
+              <marker id="ah-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#16202B"/>
+              </marker>
+              <marker id="ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563A8"/>
+              </marker>
+              <marker id="ah-slate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A6B7C"/>
+              </marker>
+              <marker id="ah-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#B07A18"/>
+              </marker>
+            </defs>
+            <rect width="940" height="830" fill="#FCFCFD"/>
+            <rect x="60" y="26" width="820" height="88" rx="10" fill="#FFFFFF" stroke="#B9CBDD" stroke-width="1.5"/>
+            <text x="82" y="54" font-size="15" font-weight="700" fill="#16202B">① 프론트엔드 · 브라우저</text>
+            <text x="82" y="78" font-size="12.5" fill="#5A6B7C">사용자가 관심 주제·키워드를 입력하고, 에이전트가 정리한 결과를 확인합니다.</text>
+            <text x="82" y="98" font-size="11.5" fill="#8494A3">HTML + JavaScript (또는 React)</text>
+            <line x1="240" y1="114" x2="240" y2="164" stroke="#16202B" stroke-width="1.8" marker-end="url(#ah-ink)"/>
+            <text x="252" y="136" font-size="11.5" font-weight="600" fill="#16202B">요청</text>
+            <text x="252" y="152" font-size="10.5" fill="#5A6B7C">"LLM planning 최신 논문 브리핑해줘"</text>
+            <line x1="770" y1="164" x2="770" y2="114" stroke="#2E7D5B" stroke-width="1.8" marker-end="url(#ah-ink)"/>
+            <text x="640" y="136" font-size="11.5" font-weight="600" fill="#2E7D5B" text-anchor="end">응답</text>
+            <text x="640" y="152" font-size="10.5" fill="#5A6B7C" text-anchor="end">요약 · 중요도 · 트렌드 정리</text>
+            <rect x="60" y="164" width="820" height="608" rx="10" fill="#F4F7FA" stroke="#B9CBDD" stroke-width="1.5"/>
+            <text x="82" y="192" font-size="15" font-weight="700" fill="#16202B">② 백엔드 서버 · FastAPI</text>
+            <text x="292" y="192" font-size="11.5" fill="#5A6B7C">요청을 받은 그 순간 에이전트를 실행합니다 (배치 아님)</text>
+            <rect x="88" y="208" width="462" height="546" rx="8" fill="#EDF3F9" stroke="#2563A8" stroke-width="1.8"/>
+            <text x="110" y="236" font-size="14" font-weight="700" fill="#2563A8">③ 에이전트 루프</text>
+            <text x="228" y="236" font-size="11" fill="#5A6B7C">한 에이전트가 순차적으로 수행 (single-agent)</text>
+            <rect x="138" y="252" width="392" height="64" rx="6" fill="#FFFFFF" stroke="#B9CBDD" stroke-width="1.2"/>
+            <text x="154" y="277" font-size="13" font-weight="700" fill="#16202B">1. 판단 — 무엇이 중요한가</text>
+            <text x="154" y="299" font-size="11.5" fill="#5A6B7C">수집된 논문 목록을 보고 중요도·우선순위를 스스로 매김</text>
+            <line x1="334" y1="316" x2="334" y2="342" stroke="#2563A8" stroke-width="1.6" marker-end="url(#ah-blue)"/>
+            <rect x="138" y="342" width="392" height="64" rx="6" fill="#FFFFFF" stroke="#B9CBDD" stroke-width="1.2"/>
+            <text x="154" y="367" font-size="13" font-weight="700" fill="#16202B">2. 도구 선택 — 무엇을 더 읽을까</text>
+            <text x="154" y="389" font-size="11.5" fill="#5A6B7C">"초록으로 충분한가, 본문까지 필요한가"를 판단해 도구 호출</text>
+            <line x1="334" y1="406" x2="334" y2="432" stroke="#2563A8" stroke-width="1.6" marker-end="url(#ah-blue)"/>
+            <rect x="138" y="432" width="392" height="64" rx="6" fill="#FFFFFF" stroke="#B9CBDD" stroke-width="1.2"/>
+            <text x="154" y="457" font-size="13" font-weight="700" fill="#16202B">3. 요약 생성</text>
+            <text x="154" y="479" font-size="11.5" fill="#5A6B7C">핵심 기여 · 방법 · 결과를 구조화해 한국어로 정리</text>
+            <line x1="334" y1="496" x2="334" y2="522" stroke="#2563A8" stroke-width="1.6" marker-end="url(#ah-blue)"/>
+            <rect x="138" y="522" width="392" height="64" rx="6" fill="#FFFFFF" stroke="#B07A18" stroke-width="1.5"/>
+            <text x="154" y="547" font-size="13" font-weight="700" fill="#16202B">4. 자기 검증 — Reflexion</text>
+            <text x="154" y="569" font-size="11.5" fill="#5A6B7C">스스로 요약 품질을 평가. 부실하면 3단계로 되돌림 (최대 2회)</text>
+            <path d="M 138 554 L 112 554 L 112 464 L 136 464" fill="none" stroke="#B07A18" stroke-width="1.6" marker-end="url(#ah-amber)"/>
+            <text x="106" y="509" font-size="10" font-weight="600" fill="#B07A18" text-anchor="middle" transform="rotate(-90 106 509)">재시도</text>
+            <line x1="334" y1="586" x2="334" y2="622" stroke="#2563A8" stroke-width="1.6" marker-end="url(#ah-blue)"/>
+            <text x="344" y="608" font-size="10.5" fill="#5A6B7C">통과</text>
+            <rect x="138" y="622" width="392" height="64" rx="6" fill="#FFFFFF" stroke="#B9CBDD" stroke-width="1.2"/>
+            <text x="154" y="647" font-size="13" font-weight="700" fill="#16202B">5. 트렌드 추론</text>
+            <text x="154" y="669" font-size="11.5" fill="#5A6B7C">논문들 사이의 공통 주제·연결점을 찾아 흐름으로 종합</text>
+            <text x="138" y="716" font-size="11" fill="#8494A3">에이전트의 "판단"은 마법이 아닙니다 —</text>
+            <text x="138" y="734" font-size="11" fill="#8494A3">LLM에게 묻고, 그 답(JSON)에 따라 코드가 분기하는 것입니다.</text>
+            <rect x="590" y="208" width="262" height="546" rx="8" fill="#FFFFFF" stroke="#2E7D5B" stroke-width="1.5"/>
+            <text x="612" y="236" font-size="14" font-weight="700" fill="#2E7D5B">④ 도구 (Tools)</text>
+            <rect x="610" y="252" width="222" height="98" rx="6" fill="#F6F3FB" stroke="#7C5CBF" stroke-width="1.3"/>
+            <text x="626" y="277" font-size="13" font-weight="700" fill="#16202B">LLM API</text>
+            <text x="626" y="298" font-size="11.5" fill="#5A6B7C">Gemini Flash 무료 티어</text>
+            <text x="626" y="316" font-size="11.5" fill="#5A6B7C">(또는 Ollama 로컬 모델)</text>
+            <text x="626" y="338" font-size="11" font-weight="600" fill="#7C5CBF">← 1 · 3 · 4 · 5 단계가 사용</text>
+            <rect x="610" y="368" width="222" height="80" rx="6" fill="#F1F8F4" stroke="#2E7D5B" stroke-width="1.3"/>
+            <text x="626" y="393" font-size="13" font-weight="700" fill="#16202B">arXiv API</text>
+            <text x="626" y="414" font-size="11.5" fill="#5A6B7C">cs.CL · cs.AI · cs.LG 검색, 초록 수집</text>
+            <text x="626" y="436" font-size="11" font-weight="600" fill="#2E7D5B">← 1 · 2 단계가 사용</text>
+            <rect x="610" y="466" width="222" height="80" rx="6" fill="#F1F8F4" stroke="#2E7D5B" stroke-width="1.3"/>
+            <text x="626" y="491" font-size="13" font-weight="700" fill="#16202B">본문 수집기</text>
+            <text x="626" y="512" font-size="11.5" fill="#5A6B7C">PDF · 전문 텍스트 추출</text>
+            <text x="626" y="534" font-size="11" font-weight="600" fill="#2E7D5B">← 2 단계가 "필요"라 판단할 때만</text>
+            <rect x="610" y="564" width="222" height="80" rx="6" fill="#F7F8F9" stroke="#B9CBDD" stroke-width="1.3"/>
+            <text x="626" y="589" font-size="13" font-weight="700" fill="#16202B">결과 저장</text>
+            <text x="626" y="610" font-size="11.5" fill="#5A6B7C">JSON 또는 DB (캐시·재사용)</text>
+            <text x="626" y="632" font-size="11" font-weight="600" fill="#8494A3">← 5 단계 완료 후</text>
+            <text x="610" y="676" font-size="11" fill="#8494A3">도구 = 0단계에서 만들어 둔</text>
+            <text x="610" y="694" font-size="11" fill="#8494A3">독립된 Python 함수들.</text>
+            <text x="610" y="712" font-size="11" fill="#8494A3">에이전트가 상황에 따라 골라 씁니다.</text>
+            <line x1="552" y1="470" x2="588" y2="470" stroke="#5A6B7C" stroke-width="1.8" marker-start="url(#ah-slate)" marker-end="url(#ah-slate)"/>
+            <text x="570" y="452" font-size="10.5" font-weight="600" fill="#5A6B7C" text-anchor="middle">도구 호출</text>
+            <text x="570" y="494" font-size="10.5" font-weight="600" fill="#5A6B7C" text-anchor="middle">결과 반환</text>
+            <line x1="60" y1="788" x2="880" y2="788" stroke="#D8DFE6" stroke-width="1"/>
+            <text x="60" y="812" font-size="11.5" fill="#5A6B7C">기존 기획(정적 사이트 + cron)과의 차이 — 에이전트가 <tspan font-weight="700" fill="#16202B">미리 정해진 시각에</tspan> 도는 것이 아니라, <tspan font-weight="700" fill="#16202B">사용자가 요청한 그 순간</tspan> 실행됩니다. 그래서 백엔드 서버가 필요합니다.</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · agent 사용 방법 (서비스 속 에이전트) -->
+    <section class="slide" data-accent="blue">
+      <div class="head-block">
+        <div class="eyebrow">04 — agent 사용 방법 · 서비스</div>
+        <h2>사용자가 <em>부려 쓰는</em> 서비스 속 에이전트</h2>
+      </div>
+      <div class="split">
+        <div class="col-txt">
+          <p class="lead" style="font-size:16px">주제를 입력하면 에이전트가 그 순간 실행되고,
+            판단 과정이 <strong>단일 세로 타임라인</strong>에 SSE로 실시간으로 흐른다.</p>
+          <ul class="factlist">
+            <li><b>판단(judge)</b> — 12편 중 4편을 선별하고, "제외된 8편 보기"로 <b>버린 이유</b>까지 연다.</li>
+            <li><b>카드 배지</b> — "본문까지 읽음 / 초록으로 충분". 도구 선택이 눈에 보이는 유일한 곳.</li>
+            <li><b>재시도 로그</b> — 스스로 검증해 요약을 보완한 기록을 감추지 않는다.</li>
+            <li>위계는 레이아웃이 아니라 스타일로 — <b>과정은 작고 흐리게, 결과는 크고 선명하게.</b></li>
+          </ul>
+        </div>
+        <div class="plate">
+          <!-- frontend_timeline_wireframe.svg (inline) -->
+          <svg viewBox="0 0 880 900" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif">
+            <rect width="880" height="900" fill="#FAFAFA"/>
+            <rect x="0" y="0" width="880" height="104" fill="#FFFFFF"/>
+            <line x1="0" y1="104" x2="880" y2="104" stroke="#E3E7EB" stroke-width="1"/>
+            <text x="40" y="36" font-size="14" font-weight="700" fill="#16202B">논문 브리핑</text>
+            <text x="124" y="36" font-size="11" fill="#98A3AE">arXiv를 읽고 스스로 판단하는 에이전트</text>
+            <rect x="40" y="54" width="600" height="34" rx="6" fill="#FFFFFF" stroke="#C9D2DA" stroke-width="1.3"/>
+            <text x="54" y="76" font-size="12" fill="#16202B">LLM agent의 최근 planning 연구</text>
+            <rect x="652" y="54" width="88" height="34" rx="6" fill="#16202B"/>
+            <text x="696" y="76" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle">브리핑</text>
+            <line x1="62" y1="140" x2="62" y2="836" stroke="#DDE3E9" stroke-width="1.5"/>
+            <circle cx="62" cy="150" r="4" fill="#C1CAD3"/>
+            <text x="86" y="154" font-size="11" fill="#8A96A2">arXiv 검색 · cs.CL · cs.AI · cs.LG</text>
+            <circle cx="62" cy="182" r="4" fill="#C1CAD3"/>
+            <text x="86" y="186" font-size="11" fill="#8A96A2">12편 발견</text>
+            <circle cx="62" cy="226" r="5.5" fill="#2563A8"/>
+            <rect x="86" y="210" width="714" height="150" rx="7" fill="#F1F6FB" stroke="#C3D7EA" stroke-width="1.2"/>
+            <rect x="86" y="210" width="4" height="150" rx="2" fill="#2563A8"/>
+            <text x="108" y="236" font-size="12" font-weight="700" fill="#2563A8">중요도 판단</text>
+            <text x="184" y="236" font-size="12" fill="#16202B">12편 중 4편 선별 · 8편 제외</text>
+            <circle cx="114" cy="262" r="3" fill="#2E7D5B"/>
+            <text x="126" y="266" font-size="11" fill="#4A5966">Tree-of-Agents: Hierarchical Planning</text>
+            <text x="126" y="284" font-size="10" fill="#8A96A2">planning에 계층 구조를 도입한 새 방법론. 핵심 주제와 직결.</text>
+            <circle cx="114" cy="308" r="3" fill="#2E7D5B"/>
+            <text x="126" y="312" font-size="11" fill="#4A5966">Self-Refine Planning with Verifier Feedback</text>
+            <text x="126" y="330" font-size="10" fill="#8A96A2">검증 피드백 기반 계획 수정. planning과 reflexion의 교차점.</text>
+            <text x="108" y="352" font-size="10" fill="#B4451F">제외된 8편 보기 — 제외 사유 포함</text>
+            <line x1="108" y1="356" x2="268" y2="356" stroke="#B4451F" stroke-width="0.8" stroke-dasharray="2 2"/>
+            <line x1="806" y1="285" x2="820" y2="285" stroke="#B4451F" stroke-width="1.2"/>
+            <text x="826" y="278" font-size="9" font-weight="700" fill="#B4451F">신뢰의 근거</text>
+            <text x="826" y="292" font-size="9" fill="#B4451F">지우지 마세요</text>
+            <circle cx="62" cy="396" r="4" fill="#2E7D5B"/>
+            <rect x="86" y="380" width="714" height="150" rx="7" fill="#FFFFFF" stroke="#DDE3E9" stroke-width="1.3"/>
+            <rect x="108" y="398" width="84" height="20" rx="10" fill="#EDF6F1"/>
+            <text x="150" y="412" font-size="9" font-weight="600" fill="#2E7D5B" text-anchor="middle">본문까지 읽음</text>
+            <text x="204" y="412" font-size="9" fill="#98A3AE">arXiv 2506.14231 · 2026-06-18</text>
+            <text x="778" y="412" font-size="9.5" fill="#2563A8" text-anchor="end">원문 초록 펼치기 · arXiv</text>
+            <text x="108" y="444" font-size="13.5" font-weight="700" fill="#16202B">Tree-of-Agents: Hierarchical Planning for LLM Agents</text>
+            <text x="108" y="472" font-size="11" fill="#4A5966">기여 · 긴 작업을 상위 계획과 하위 실행으로 나누는 계층 구조를 제안.</text>
+            <text x="108" y="492" font-size="11" fill="#4A5966">방법 · 상위 플래너가 목표를 분해하고, 실패 시 상위로 되돌려 재계획.</text>
+            <text x="108" y="512" font-size="11" fill="#4A5966">결과 · WebArena 성공률 18%p 상승. 다만 비용은 2.3배.</text>
+            <line x1="806" y1="412" x2="820" y2="412" stroke="#B4451F" stroke-width="1.2"/>
+            <text x="826" y="409" font-size="9" font-weight="700" fill="#B4451F">도구 선택이</text>
+            <text x="826" y="422" font-size="9" fill="#B4451F">보이는 유일한 곳</text>
+            <circle cx="62" cy="568" r="4.5" fill="#B07A18"/>
+            <rect x="86" y="550" width="714" height="36" rx="6" fill="#FDF7EC" stroke="#E8D5A8" stroke-width="1.1"/>
+            <text x="108" y="572" font-size="10.5" font-weight="600" fill="#B07A18">요약 보완 중 (1회)</text>
+            <text x="204" y="572" font-size="10.5" fill="#8A7440">스스로 검증한 결과 — 실험 설정 설명이 누락됨</text>
+            <line x1="806" y1="568" x2="820" y2="568" stroke="#B4451F" stroke-width="1.2"/>
+            <text x="826" y="565" font-size="9" font-weight="700" fill="#B4451F">스스로 점검한</text>
+            <text x="826" y="578" font-size="9" fill="#B4451F">증거. 감추지 말 것</text>
+            <circle cx="62" cy="622" r="4" fill="#2E7D5B"/>
+            <rect x="86" y="606" width="714" height="130" rx="7" fill="#FFFFFF" stroke="#DDE3E9" stroke-width="1.3"/>
+            <rect x="108" y="624" width="88" height="20" rx="10" fill="#F3F5F7"/>
+            <text x="152" y="638" font-size="9" font-weight="600" fill="#7A8896" text-anchor="middle">초록으로 충분</text>
+            <text x="208" y="638" font-size="9" fill="#98A3AE">arXiv 2506.11907 · 2026-06-15</text>
+            <text x="778" y="638" font-size="9.5" fill="#2563A8" text-anchor="end">원문 초록 펼치기 · arXiv</text>
+            <text x="108" y="670" font-size="13.5" font-weight="700" fill="#16202B">Self-Refine Planning with Verifier Feedback</text>
+            <text x="108" y="698" font-size="11" fill="#4A5966">기여 · 계획 단계에 검증자를 붙여, 실행 전에 계획을 수정하는 구조.</text>
+            <text x="108" y="718" font-size="11" fill="#4A5966">방법 · 별도 verifier가 계획의 실행 가능성을 평가하고 피드백을 반환.</text>
+            <circle cx="62" cy="776" r="7" fill="none" stroke="#2563A8" stroke-width="2"/>
+            <circle cx="62" cy="776" r="3.5" fill="#2563A8"/>
+            <text x="86" y="772" font-size="12" font-weight="600" fill="#2563A8">논문 3 / 4 읽는 중</text>
+            <text x="86" y="790" font-size="10" fill="#8A96A2">Memory-Augmented Planning — 본문까지 읽는 중</text>
+            <circle cx="62" cy="828" r="4" fill="#FFFFFF" stroke="#DDE3E9" stroke-width="1.5"/>
+            <text x="86" y="832" font-size="10.5" fill="#C1CAD3">트렌드 종합 — 4편을 관통하는 흐름 정리</text>
+            <line x1="40" y1="858" x2="840" y2="858" stroke="#E3E7EB" stroke-width="1"/>
+            <text x="40" y="878" font-size="10.5" fill="#8A96A2">시각적 위계가 레이아웃을 대신합니다. 과정은 작고 흐리게, 결과는 크고 선명하게.</text>
+            <text x="40" y="894" font-size="10.5" fill="#8A96A2">작업이 끝나도 이 기록은 남습니다. 되짚을 수 없으면 신뢰할 수 없습니다.</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · 구현 과정 · 직접 만든 개발 도구 -->
+    <section class="slide" data-accent="blue">
+      <div class="head-block">
+        <div class="eyebrow">05 — 구현 과정 · 직접 만든 개발 도구</div>
+        <h2>개발과 동시에 <em>학습</em>하도록, 도구를 직접 만들어 쓴다</h2>
+      </div>
+      <div class="body-block" style="gap:14px">
+        <div class="devtools">
+          <div class="devtool">
+            <span class="kind">Claude Code Skill</span>
+            <span class="nm"><code>sub-issue-workflow</code></span>
+            <span class="d">서브이슈 1개를 구현하는 <b>고정 사이클을 캡슐화</b>한 Skill.
+              코드보다 전략을 먼저 둬, "됐다고 느끼는 것"과 "실제로 끝난 것"의 괴리를 막는다.</span>
+          </div>
+          <div class="devtool">
+            <span class="kind">Custom Sub-agent</span>
+            <span class="nm"><code>hub-learner-persona</code></span>
+            <span class="d">학습자 본인을 모델링한 서브에이전트. 전략을 주면
+              <b>예상 질문을 자동 추론</b>하고(직접 답 안 함), 내가 답하며 개발과 동시에 학습한다.</span>
+          </div>
+        </div>
+        <div class="plate" style="flex:1; min-height:0">
+          <!-- dev-loop visualization (직접 만든 도구가 맞물리는 방식) -->
+          <svg viewBox="0 0 1000 240" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;max-height:100%" font-family="Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+            <defs>
+              <marker id="dl-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#16202B"/>
+              </marker>
+              <marker id="dl-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#B07A18"/>
+              </marker>
+              <marker id="dl-slate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A6B7C"/>
+              </marker>
+            </defs>
+            <rect width="1000" height="240" fill="#FCFCFD"/>
+
+            <!-- Skill grouping -->
+            <rect x="34" y="120" width="932" height="108" rx="10" fill="#F7FAFD" stroke="#B9CFE6" stroke-width="1.2" stroke-dasharray="5 4"/>
+            <text x="48" y="112" font-size="11" font-weight="700" fill="#2563A8">sub-issue-workflow · Skill — 서브이슈 1개 = 이 사이클 1회전</text>
+
+            <!-- persona sub-agent -->
+            <rect x="161" y="24" width="232" height="54" rx="8" fill="#F6F3FB" stroke="#7C5CBF" stroke-width="1.4"/>
+            <text x="277" y="47" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">hub-learner-persona</text>
+            <text x="277" y="65" font-size="9.5" fill="#6B5A93" text-anchor="middle">카테고리별 예상 질문 추론 · Sub-agent</text>
+
+            <!-- persona <-> step2 -->
+            <line x1="252" y1="78" x2="252" y2="146" stroke="#B07A18" stroke-width="1.4" marker-end="url(#dl-amber)"/>
+            <line x1="300" y1="146" x2="300" y2="78" stroke="#B07A18" stroke-width="1.4" marker-end="url(#dl-amber)"/>
+            <text x="244" y="116" font-size="9" fill="#B07A18" text-anchor="end">질문</text>
+            <text x="308" y="116" font-size="9" fill="#B07A18">내가 답</text>
+
+            <!-- 6-step spine -->
+            <!-- step 1 -->
+            <rect x="52" y="146" width="116" height="54" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.4"/>
+            <text x="66" y="164" font-size="9" font-weight="700" fill="#2563A8">1</text>
+            <text x="110" y="176" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">이슈 확인</text>
+            <text x="110" y="191" font-size="8.5" fill="#5A6B7C" text-anchor="middle">완료 기준 원문</text>
+            <line x1="168" y1="173" x2="207" y2="173" stroke="#16202B" stroke-width="1.4" marker-end="url(#dl-ink)"/>
+            <!-- step 2 -->
+            <rect x="208" y="146" width="116" height="54" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.4"/>
+            <text x="222" y="164" font-size="9" font-weight="700" fill="#2563A8">2</text>
+            <text x="266" y="176" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">전략 제시</text>
+            <text x="266" y="191" font-size="8.5" fill="#5A6B7C" text-anchor="middle">코드 금지</text>
+            <line x1="324" y1="173" x2="363" y2="173" stroke="#16202B" stroke-width="1.4" marker-end="url(#dl-ink)"/>
+            <!-- step 3 -->
+            <rect x="364" y="146" width="116" height="54" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.4"/>
+            <text x="378" y="164" font-size="9" font-weight="700" fill="#2563A8">3</text>
+            <text x="422" y="176" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">승인</text>
+            <text x="422" y="191" font-size="8.5" fill="#5A6B7C" text-anchor="middle">명시적 신호</text>
+            <line x1="480" y1="173" x2="519" y2="173" stroke="#16202B" stroke-width="1.4" marker-end="url(#dl-ink)"/>
+            <!-- step 4 -->
+            <rect x="520" y="146" width="116" height="54" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.4"/>
+            <text x="534" y="164" font-size="9" font-weight="700" fill="#2563A8">4</text>
+            <text x="578" y="176" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">구현</text>
+            <text x="578" y="191" font-size="8.5" fill="#5A6B7C" text-anchor="middle">계획대로</text>
+            <line x1="636" y1="173" x2="675" y2="173" stroke="#16202B" stroke-width="1.4" marker-end="url(#dl-ink)"/>
+            <!-- step 5 -->
+            <rect x="676" y="146" width="116" height="54" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.4"/>
+            <text x="690" y="164" font-size="9" font-weight="700" fill="#2563A8">5</text>
+            <text x="734" y="176" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">검증</text>
+            <text x="734" y="191" font-size="8.5" fill="#5A6B7C" text-anchor="middle">완료 기준 그대로</text>
+            <line x1="792" y1="173" x2="831" y2="173" stroke="#16202B" stroke-width="1.4" marker-end="url(#dl-ink)"/>
+            <!-- step 6 -->
+            <rect x="832" y="146" width="116" height="54" rx="7" fill="#EDF3F9" stroke="#2563A8" stroke-width="1.6"/>
+            <text x="846" y="164" font-size="9" font-weight="700" fill="#2563A8">6</text>
+            <text x="890" y="176" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">커밋</text>
+            <text x="890" y="191" font-size="8.5" fill="#5A6B7C" text-anchor="middle">서브이슈당 1개</text>
+
+            <!-- loop back -->
+            <path d="M 890 200 L 890 214 L 110 214 L 110 201" fill="none" stroke="#5A6B7C" stroke-width="1.4" marker-end="url(#dl-slate)"/>
+            <rect x="446" y="206" width="108" height="16" rx="8" fill="#FCFCFD"/>
+            <text x="500" y="217" font-size="9.5" fill="#5A6B7C" text-anchor="middle">↻ 다음 서브이슈</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 · 작업 진척도 -->
+    <section class="slide" data-accent="amber">
+      <div class="head-block">
+        <div class="eyebrow">06 — 작업 진척도</div>
+        <h2>Task 단위로 완주 — 다음은 <em>자기 검증(verify)</em></h2>
+      </div>
+      <div class="body-block" style="gap:18px">
+        <div class="stepper">
+          <div class="step-cell done"><span class="num">TASK 0</span><span class="nm">도구 준비</span><span class="st">✓ 완료</span></div>
+          <div class="step-cell done"><span class="num">TASK 1</span><span class="nm">판단 judge</span><span class="st">✓ 완료</span></div>
+          <div class="step-cell done"><span class="num">TASK 2</span><span class="nm">도구 선택</span><span class="st">✓ 완료</span></div>
+          <div class="step-cell done"><span class="num">TASK 3</span><span class="nm">요약 summarize</span><span class="st">✓ PR #54</span></div>
+          <div class="step-cell next"><span class="num">TASK 4</span><span class="nm">자기 검증 verify</span><span class="st">▶ 다음</span></div>
+          <div class="step-cell todo"><span class="num">TASK 5</span><span class="nm">트렌드 추론</span><span class="st">· 대기</span></div>
+          <div class="step-cell todo"><span class="num">TASK 6</span><span class="nm">run_agent 조립</span><span class="st">· 대기</span></div>
+        </div>
+        <div class="later">
+          <div class="lz"><span class="nm">웹 · SSE 서버 + 바닐라 프론트</span><span class="d">FastAPI GET 스트림 → EventSource</span></div>
+          <div class="lz"><span class="nm">배포</span><span class="d">Render / Railway / HF Spaces</span></div>
+          <div class="lz goal"><span class="nm">multi-agent · 정식 목표</span><span class="d">1~6 완주 후 착수 · plan §10-7</span></div>
+        </div>
+        <p class="lead" style="font-size:15.5px;margin-top:2px">
+          도구부터 요약까지 <strong>4개 Task를 <code>agent-service</code> 브랜치에 병합</strong>(PR #51~#54).
+          다음은 <strong style="color:var(--amber)">자기 검증(verify)</strong> — 요약을 스스로 평가해 부실하면 되돌리는 Reflexion 루프.
+        </p>
+      </div>
+    </section>
+
+    <!-- chrome -->
+    <div id="counter"><b>01</b> / 06</div>
+    <div id="chrome"><div id="dots"></div></div>
+    <button id="prev" class="navbtn" aria-label="이전 슬라이드">‹</button>
+    <button id="next" class="navbtn" aria-label="다음 슬라이드">›</button>
+    <button id="theme-toggle" aria-label="라이트/다크 전환" title="라이트/다크 전환">◐</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var stage = document.getElementById("stage");
+    var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+    var rail = document.getElementById("rail");
+    var dotsWrap = document.getElementById("dots");
+    var counter = document.getElementById("counter");
+    var accentMap = { blue: "var(--blue)", amber: "var(--amber)", green: "var(--green)", slate: "var(--slate)" };
+    var i = 0;
+
+    // dots
+    slides.forEach(function (s, idx) {
+      var b = document.createElement("button");
+      b.setAttribute("aria-label", "슬라이드 " + (idx + 1));
+      b.addEventListener("click", function () { go(idx); });
+      dotsWrap.appendChild(b);
+    });
+    var dots = Array.prototype.slice.call(dotsWrap.children);
+
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+    function render() {
+      slides.forEach(function (s, idx) { s.classList.toggle("active", idx === i); });
+      dots.forEach(function (d, idx) { d.setAttribute("aria-current", idx === i ? "true" : "false"); });
+      var acc = accentMap[slides[i].dataset.accent] || "var(--blue)";
+      stage.style.setProperty("--accent", acc);
+      rail.style.background = acc;
+      counter.innerHTML = "<b>" + pad(i + 1) + "</b> / " + pad(slides.length);
+    }
+    function go(n) { i = Math.max(0, Math.min(slides.length - 1, n)); render(); }
+    function next() { go(i + 1); }
+    function prev() { go(i - 1); }
+
+    document.getElementById("next").addEventListener("click", next);
+    document.getElementById("prev").addEventListener("click", prev);
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); next(); }
+      else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); prev(); }
+      else if (e.key === "Home") { go(0); }
+      else if (e.key === "End") { go(slides.length - 1); }
+    });
+
+    // theme toggle
+    document.getElementById("theme-toggle").addEventListener("click", function () {
+      var root = document.documentElement;
+      var cur = root.getAttribute("data-theme");
+      if (!cur) {
+        cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      root.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+    });
+
+    // fit to viewport
+    function fit() {
+      var s = Math.min(window.innerWidth / 1200, window.innerHeight / 675) * 0.94;
+      stage.style.transform = "translate(-50%, -50%) scale(" + s + ")";
+    }
+    window.addEventListener("resize", fit);
+    fit();
+    render();
+  })();
+</script>
