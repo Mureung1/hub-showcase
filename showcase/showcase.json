@@ -4,9 +4,12 @@
   "summary": "본 프로젝트는 변호사 조력을 극대화하는 '사전 법률 가이드 프레임워크'입니다. 사용자의 흩어진 사건 정보를 '변호사 상담용 브리핑 페이퍼'로 구조화하고 소송 승소 전략 가이드를 제시합니다.",
   "githubUser": "dntfndjnh",
   "demoUrl": "",
+  "demoVideoUrl": "https://drive.google.com/file/d/1JFXsN0rTEf6RpEikRTFNyoQLEIcSttLw/view",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/home.webp", "screenshots/pic2.webp","screenshots/pic3.webp"
+    "screenshots/home.webp",
+    "screenshots/pic2.webp",
+    "screenshots/pic3.webp"
   ],
   "problem": "일반인이 소송 및 법적 분쟁 발생 시 모호한 정보로 인해 변호사 상담 효율이 떨어지고, 방대한 판례와 법령 속에서 승소 실익을 사전 판단하기 어려운 문제 해결",
   "targetUsers": [

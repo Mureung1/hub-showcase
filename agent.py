@@ -16,7 +16,7 @@ except ImportError:
     ddg_available = False
     print("⚠️ duckduckgo_search 모듈이 임포트되지 않았습니다. 'pip install duckduckgo-search'를 실행하세요.")
 
-#load_dotenv()  #이거 활성화 해야 open ai api호출
+load_dotenv()  #이거 활성화 해야 open ai api호출
 
 class BriefingOutputSchema(BaseModel):
     win_probability: str = Field(description="마크다운 리스트와 굵은 글씨를 활용하여 작성한 상세한 승소 가능성 및 법적 쟁점 분석")

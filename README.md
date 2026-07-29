@@ -35,3 +35,10 @@ python main.py
 cd frontend
 npm install
 npm start
+
+<img width="916" height="856" alt="home" src="https://github.com/user-attachments/assets/de68fbc9-7043-40f4-b735-38e61cd1f899" />
+
+<img width="547" height="874" alt="pic2" src="https://github.com/user-attachments/assets/63fc149a-5500-4f55-b4c2-b933d5cbeb16" />
+
+<img width="922" height="382" alt="pic3" src="https://github.com/user-attachments/assets/91e7ea87-200a-473f-83fd-8fb1ef7334aa" />
+
