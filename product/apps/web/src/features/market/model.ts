@@ -1,4 +1,5 @@
 import type { MarketAnalysis } from "../../services/marketAnalysis";
+import { categoryTone } from "./categorySemantics";
 import type { Category } from "./types";
 
 export const FLOW_TIME_BUCKET_LABELS = [
@@ -18,23 +19,7 @@ export const CLUSTER_LABELS: Record<string, string> = {
 };
 
 export function categoryClass(category: string) {
-  return category.includes("카페") || category.includes("커피")
-    ? "green"
-    : category.includes("음식점") || category.includes("한식") || category.includes("중식") || category.includes("일식") || category.includes("분식") || category.includes("주점")
-      ? "orange"
-      : category.includes("베이커리") || category.includes("제과") || category.includes("빵") || category.includes("도넛")
-        ? "blue"
-        : category.includes("미용") || category.includes("헤어") || category.includes("네일") || category.includes("피부관리")
-          ? "pink"
-          : category.includes("의류") || category.includes("의복") || category.includes("패션") || category.includes("신발")
-            ? "violet"
-            : category.includes("학원") || category.includes("교습") || category.includes("교육원")
-              ? "cyan"
-              : category.includes("숙박") || category.includes("호텔") || category.includes("모텔") || category.includes("여관")
-                ? "plum"
-                : category.includes("체육") || category.includes("헬스") || category.includes("피트니스") || category.includes("스포츠") || category.includes("요가") || category.includes("필라테스")
-                  ? "red"
-                  : "gray";
+  return categoryTone(category);
 }
 
 export function formatMarketScore(score: number, category: Category, radius: number) {
@@ -44,11 +29,32 @@ export function formatMarketScore(score: number, category: Category, radius: num
   return Math.max(0, Math.min(100, score + categoryShift + radiusShift));
 }
 
+export function flowBucketDurationHours(label: string) {
+  const match = /^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/.exec(label);
+  if (!match) return 1;
+  const startMinutes = Number(match[1]) * 60 + Number(match[2]);
+  const endMinutes = Number(match[3]) * 60 + Number(match[4]);
+  const durationHours = (endMinutes - startMinutes) / 60;
+  return durationHours > 0 ? durationHours : 1;
+}
+
+export function flowBucketHourlyAverage(
+  bucket: MarketAnalysis["raw"]["flow_time_buckets"][number] | undefined,
+) {
+  if (!bucket || bucket.value === null) return null;
+  return bucket.value / flowBucketDurationHours(bucket.label);
+}
+
+export function hourlyAverageFlow(flow: MarketAnalysis["raw"]["flow_time_buckets"]) {
+  return flow.map((bucket) => flowBucketHourlyAverage(bucket));
+}
+
 export function demandFromFlow(flow: MarketAnalysis["raw"]["flow_time_buckets"]) {
-  const availableValues = flow.flatMap((bucket) => (bucket.value === null ? [] : [bucket.value]));
+  const hourlyValues = hourlyAverageFlow(flow);
+  const availableValues = hourlyValues.flatMap((value) => (value === null ? [] : [value]));
   const maximum = Math.max(...availableValues, 0);
-  return flow.map((bucket) =>
-    bucket.value === null || maximum <= 0 ? null : Math.round((bucket.value / maximum) * 100),
+  return hourlyValues.map((value) =>
+    value === null || maximum <= 0 ? null : Math.round((value / maximum) * 100),
   );
 }
 

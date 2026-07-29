@@ -1,18 +1,8 @@
-import {
-  BedDouble,
-  Building2,
-  Coffee,
-  Dumbbell,
-  GraduationCap,
-  MapPinned,
-  Scissors,
-  Shirt,
-  Store,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 
 import { MapLayerControls } from "./MapLayerControls";
 import { NearbyStoreList } from "./NearbyStoreList";
+import { resolveCategoryPresentation } from "./categoryPresentation";
 import { TermHelp } from "./TermHelp";
 import type { ProductCategory } from "../../services/productCatalog";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
@@ -25,26 +15,6 @@ import type {
   MarketKey,
   MarketStore,
 } from "./types";
-
-const categoryPresentation: Record<
-  string,
-  {
-    icon: typeof Coffee;
-    tone: string;
-  }
-> = {
-  카페: { icon: Coffee, tone: "green" },
-  음식점: { icon: Store, tone: "orange" },
-  베이커리: { icon: Building2, tone: "blue" },
-  편의점: { icon: MapPinned, tone: "gray" },
-  미용: { icon: Scissors, tone: "pink" },
-  의류: { icon: Shirt, tone: "violet" },
-  학원: { icon: GraduationCap, tone: "blue" },
-  숙박: { icon: BedDouble, tone: "violet" },
-  체육: { icon: Dumbbell, tone: "orange" },
-};
-const fallbackCategoryPresentation = { icon: Store, tone: "gray" };
-const fullySupportedCategories = new Set(["카페", "음식점", "베이커리", "편의점"]);
 
 const analysisTopics: Array<{
   value: AnalysisTopic;
@@ -61,20 +31,52 @@ const analysisTopics: Array<{
   { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
 ];
 
+function selectedMarketCount(
+  category: ProductCategory,
+  marketKey: MarketKey,
+  selected: Category | null,
+  selectedCategoryCount: number | null,
+) {
+  const catalogCount = category.store_counts_by_market?.[marketKey];
+  if (category.name === selected && selectedCategoryCount !== null) {
+    return selectedCategoryCount;
+  }
+  return catalogCount;
+}
+
 function CategoryOptions({
   categories,
+  marketKey,
+  marketName,
+  showMarketCounts,
   selected,
+  selectedCategoryCount,
   onChange,
 }: {
   categories: ProductCategory[];
+  marketKey: MarketKey;
+  marketName: string;
+  showMarketCounts: boolean;
   selected: Category | null;
+  selectedCategoryCount: number | null;
   onChange: (category: Category) => void;
 }) {
-  return categories.map((category, index) => {
-    const { name, rank, store_count: storeCount } = category;
-    const { icon: Icon, tone } = categoryPresentation[name] ?? fallbackCategoryPresentation;
-    const fullSupport = category.coverage ? category.coverage === "full" : fullySupportedCategories.has(name);
-    const displayRank = rank ?? index + 1;
+  const orderedCategories = showMarketCounts
+    ? [...categories].sort((left, right) => {
+        const leftCount = selectedMarketCount(left, marketKey, selected, selectedCategoryCount);
+        const rightCount = selectedMarketCount(right, marketKey, selected, selectedCategoryCount);
+        const countDifference = (rightCount ?? -1) - (leftCount ?? -1);
+        return countDifference || left.name.localeCompare(right.name, "ko-KR");
+      })
+    : categories;
+
+  return orderedCategories.map((category, index) => {
+    const { name, rank } = category;
+    const { icon: Icon, tone } = resolveCategoryPresentation(name);
+    const displayRank = showMarketCounts ? index + 1 : (rank ?? index + 1);
+    const marketStoreCount = showMarketCounts
+      ? selectedMarketCount(category, marketKey, selected, selectedCategoryCount)
+      : undefined;
     return (
       <button
         key={name}
@@ -82,7 +84,7 @@ function CategoryOptions({
         className={`category-option ${selected === name ? "is-selected" : ""}`}
         aria-label={name}
         aria-pressed={selected === name}
-        title={`${displayRank}위 · ${fullSupport ? "전체 지원" : "부분 지원"}`}
+        title={`${displayRank}위${marketStoreCount === undefined ? " · 상권 점포 수 확인 중" : ` · ${marketName} ${marketStoreCount.toLocaleString("ko-KR")}곳`}`}
         onClick={() => onChange(name)}
       >
         <span className="category-rank" aria-hidden="true">
@@ -93,17 +95,46 @@ function CategoryOptions({
         </span>
         <span className="category-option-main">
           <span className="category-option-name">{name}</span>
-          {storeCount !== null && storeCount !== undefined && (
-            <small>{storeCount.toLocaleString("ko-KR")}곳</small>
-          )}
         </span>
-        {!fullSupport && <small className="category-support-badge">일부</small>}
+        {showMarketCounts && (
+          <strong className="category-market-count">
+            {marketStoreCount === undefined ? "—" : `${marketStoreCount.toLocaleString("ko-KR")}곳`}
+          </strong>
+        )}
         <span className="check" aria-hidden="true">
           {selected === name ? "✓" : ""}
         </span>
       </button>
     );
   });
+}
+
+function CategoryLoadingState({ selected }: { selected: Category }) {
+  const { icon: Icon, tone } = resolveCategoryPresentation(selected);
+  return (
+    <div className="category-loading-state" role="status" aria-label="업종 순위를 불러오는 중">
+      <div className="category-option is-selected is-loading-selection">
+        <span className="category-rank" aria-hidden="true">
+          —
+        </span>
+        <span className={`category-icon ${tone}`}>
+          <Icon size={15} />
+        </span>
+        <span className="category-option-main">
+          <span className="category-option-name">{selected}</span>
+          <small>선택 상태 유지 중</small>
+        </span>
+        <span className="check" aria-hidden="true">
+          ✓
+        </span>
+      </div>
+      <div className="category-loading-skeleton" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <span key={index} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 type MarketFiltersProps = {
@@ -114,13 +145,13 @@ type MarketFiltersProps = {
   onCatalogRetry: () => void;
   category: Category | null;
   categorySelection: CategorySelection;
-  categoryCoverageReason: string;
   layer: LayerMode;
   topic: AnalysisTopic;
   boundaryVisible: boolean;
   storesVisible: boolean;
   visibleStores: MarketStore[];
   selectedStoreName: string | null;
+  sameCategoryCount?: number | null;
   nearbyState: NearbyStoreState;
   onNearbyRetry: () => void;
   onClose: () => void;
@@ -131,7 +162,7 @@ type MarketFiltersProps = {
   onTopicChange: (topic: AnalysisTopic) => void;
   onBoundaryVisibleChange: (visible: boolean) => void;
   onStoresVisibleChange: (visible: boolean) => void;
-  onStoreChange: (storeName: string) => void;
+  onStoreChange: (storeKey: string) => void;
 };
 
 export function MarketFilters({
@@ -142,13 +173,13 @@ export function MarketFilters({
   onCatalogRetry,
   category,
   categorySelection,
-  categoryCoverageReason,
   layer,
   topic,
   boundaryVisible,
   storesVisible,
   visibleStores,
   selectedStoreName,
+  sameCategoryCount = null,
   nearbyState,
   onNearbyRetry,
   onClose,
@@ -161,6 +192,15 @@ export function MarketFilters({
   onStoresVisibleChange,
   onStoreChange,
 }: MarketFiltersProps) {
+  const catalogLabel =
+    catalogState === "ranked"
+      ? "최신 점포 위치"
+      : catalogState === "connecting"
+        ? "불러오는 중"
+        : "기본 목록";
+  const resolvedSelectedCategoryCount =
+    nearbyState === "ready" || nearbyState === "empty" ? sameCategoryCount : null;
+
   return (
     <aside className="filter-panel">
       <div className="panel-heading">
@@ -204,7 +244,10 @@ export function MarketFilters({
           <div>
             <p className="filter-label">
               분석 기준
-              <TermHelp term="분석 기준" description="현재 화면의 숫자를 어떤 범위와 자료를 기준으로 계산했는지 알려주는 설명입니다." />
+              <TermHelp
+                term="분석 기준"
+                description="현재 화면의 숫자를 어떤 범위와 자료를 기준으로 계산했는지 알려주는 설명입니다."
+              />
             </p>
             <small>서울시 공식 상권 경계로 집계</small>
           </div>
@@ -217,14 +260,20 @@ export function MarketFilters({
         <div className="category-heading-row">
           <p className="filter-label">
             어떤 가게인가요?
-            <TermHelp term="업종" description="카페, 음식점처럼 가게가 제공하는 상품이나 서비스의 종류입니다." />
+            <TermHelp
+              term="업종"
+              description="카페, 음식점처럼 가게가 제공하는 상품이나 서비스의 종류입니다."
+            />
           </p>
-          <span>{catalogState === "ranked" ? "데이터 기준" : "기본 목록"}</span>
+          <span>{catalogLabel}</span>
         </div>
         <div className={`catalog-status is-${catalogState}`} role="status">
-          {catalogState === "ranked" && "세 상권의 고유 점포 수가 많은 업종입니다."}
-          {catalogState === "connecting" && "기본 업종 4개를 먼저 보여드리며 데이터 연결을 기다리고 있습니다."}
-          {catalogState === "bootstrap" && "기본 업종 목록입니다. 실제 순위 데이터는 아직 준비되지 않았습니다."}
+          {catalogState === "ranked" &&
+            `${markets[marketKey].name} 안의 최신 점포 위치 수가 많은 순서입니다.`}
+          {catalogState === "connecting" &&
+            "선택한 업종을 유지한 채 현재 상권의 업종 순위를 불러오고 있습니다."}
+          {catalogState === "bootstrap" &&
+            "기본 업종 목록입니다. 현재 상권 점포 수는 데이터 연결 후 표시됩니다."}
           {catalogState === "error" && (
             <>
               <span>기본 업종 목록을 보여드리고 있습니다. 순위 데이터를 불러오지 못했습니다.</span>
@@ -234,25 +283,24 @@ export function MarketFilters({
             </>
           )}
         </div>
-        <div className="category-list" aria-label="분석 업종 선택">
-          <CategoryOptions
-            categories={supportedCategories}
-            selected={category}
-            onChange={onCategoryChange}
-          />
-        </div>
-        <div className={`category-coverage is-${categorySelection.coverage}`} role="status">
-          <div>
-            <b>{categorySelection.name}</b>
-            <span>
-              {categorySelection.coverage === "full"
-                ? "전체 지원"
-                : categorySelection.coverage === "partial"
-                  ? "부분 지원"
-                  : "이 상권에 점포 없음"}
-            </span>
-          </div>
-          <p>{categoryCoverageReason}</p>
+        <div
+          className="category-list"
+          aria-label="분석 업종 선택"
+          aria-busy={catalogState === "connecting"}
+        >
+          {catalogState === "connecting" ? (
+            <CategoryLoadingState selected={categorySelection.name} />
+          ) : (
+            <CategoryOptions
+              categories={supportedCategories}
+              marketKey={marketKey}
+              marketName={markets[marketKey].name}
+              showMarketCounts={catalogState === "ranked"}
+              selected={category}
+              selectedCategoryCount={resolvedSelectedCategoryCount}
+              onChange={onCategoryChange}
+            />
+          )}
         </div>
       </div>
       <div className="filter-group filter-section">
@@ -289,6 +337,7 @@ export function MarketFilters({
         onStoresVisibleChange={onStoresVisibleChange}
       />
       <NearbyStoreList
+        categoryName={categorySelection.name}
         stores={visibleStores}
         selectedStoreName={selectedStoreName}
         state={nearbyState}

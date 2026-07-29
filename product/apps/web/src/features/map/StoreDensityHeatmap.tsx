@@ -47,9 +47,23 @@ export function StoreDensityHeatmap({ stores, visible }: StoreDensityHeatmapProp
         maxzoom={18}
         paint={{
           "heatmap-weight": 1,
-          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 0.75, 17, 1.35],
-          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 13, 20, 17, 42],
-          "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0.58, 18, 0.82],
+          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 0.75, 17, 1.15],
+          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 13, 20, 17, 38],
+          "heatmap-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            13,
+            0.58,
+            15.7,
+            0.68,
+            16.2,
+            0.36,
+            17.2,
+            0.08,
+            18,
+            0,
+          ],
           "heatmap-color": DENSITY_HEATMAP_COLOR,
         }}
       />

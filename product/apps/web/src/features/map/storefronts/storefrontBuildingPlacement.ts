@@ -150,11 +150,10 @@ export function findStorefrontBuilding(
 ): Omit<StorefrontBuildingPlacement, "storeCountInBuilding"> | null {
   for (const feature of overlay.features ?? []) {
     if (feature.properties?.layer !== "building" || !feature.properties.osm_id) continue;
-    const rings = polygonRings(feature);
-    const outerRing = rings[0];
-    if (!outerRing || !pointInRing(coordinate, outerRing)) continue;
-    const center = polygonCenter(outerRing, coordinate);
-    const plotSizeMeters = squarePlotSizeMeters(center, outerRing);
+    const containingRing = polygonRings(feature).find((ring) => pointInRing(coordinate, ring));
+    if (!containingRing) continue;
+    const center = polygonCenter(containingRing, coordinate);
+    const plotSizeMeters = squarePlotSizeMeters(center, containingRing);
     if (plotSizeMeters === null) continue;
     return {
       buildingId: feature.properties.osm_id,

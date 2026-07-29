@@ -1,14 +1,26 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { lazy, Suspense, useState } from "react";
+
 import { useProductCatalog } from "./features/market/useProductCatalog";
 import { useApiReadiness } from "./features/system/useApiReadiness";
 import { WorkspaceDialogs } from "./features/workspace/WorkspaceDialogs";
 import { WorkspaceHeader } from "./features/workspace/WorkspaceHeader";
 import { WorkspaceLayout } from "./features/workspace/WorkspaceLayout";
+import { usePanelTextSize } from "./features/workspace/usePanelTextSize";
 import { useProductWorkspaceModel } from "./features/workspace/useProductWorkspaceModel";
 import { PRODUCT_CATALOG_BOOTSTRAP } from "./services/productCatalog";
 import "./styles/global.css";
+import "./styles/suitFont.css";
 import "./styles/mapOverlays.css";
+import "./styles/panelAccessibility.css";
+import "./styles/categorySemantics.css";
+
+const SceneWorkspace = lazy(() =>
+  import("./components/SceneWorkspace").then(({ SceneWorkspace: Component }) => ({
+    default: Component,
+  })),
+);
 
 export function App({ useDemoData = false }: { useDemoData?: boolean }) {
   const apiReadiness = useApiReadiness(!useDemoData);
@@ -64,6 +76,8 @@ function ProductWorkspace({
   onCatalogRetry: () => void;
 }) {
   const model = useProductWorkspaceModel(catalog, useDemoData, apiReadiness);
+  const panelText = usePanelTextSize();
+  const [sceneExperimentOpen, setSceneExperimentOpen] = useState(false);
   const storefrontState = model.viewport.storefront3dUnavailable
     ? "fallback"
     : model.storefronts.selectedStorefront3d
@@ -72,13 +86,27 @@ function ProductWorkspace({
 
   return (
     <main className="app-shell" data-storefront-3d-state={storefrontState}>
-      <WorkspaceHeader model={model} />
+      <WorkspaceHeader
+        model={model}
+        panelTextSize={panelText.size}
+        onPanelTextSizeChange={panelText.setSize}
+        onSceneExperimentOpen={() => setSceneExperimentOpen(true)}
+      />
       <WorkspaceLayout
         model={model}
         catalogDisplayState={catalogState}
         onCatalogRetry={onCatalogRetry}
+        panelTextSize={panelText.size}
       />
       <WorkspaceDialogs model={model} />
+      {sceneExperimentOpen && (
+        <Suspense fallback={<div className="scene-loading">3DGS 실험실을 준비하는 중입니다.</div>}>
+          <SceneWorkspace
+            onClose={() => setSceneExperimentOpen(false)}
+            restoreFocusExternally={false}
+          />
+        </Suspense>
+      )}
     </main>
   );
 }

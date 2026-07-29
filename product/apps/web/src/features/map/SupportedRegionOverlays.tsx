@@ -1,21 +1,11 @@
 import { LocalTwinRegionOverlay } from "./LocalTwinRegionOverlay";
-import { READY_OVERLAY_REGIONS } from "./supportedRegions";
+import type { ReadyOverlayRegion } from "./supportedRegions";
 
 type SupportedRegionOverlaysProps = {
-  buildingsVisible: boolean;
-  hiddenBuildingIds?: string[];
+  region: ReadyOverlayRegion | undefined;
 };
 
-export function SupportedRegionOverlays({
-  buildingsVisible,
-  hiddenBuildingIds = [],
-}: SupportedRegionOverlaysProps) {
-  return READY_OVERLAY_REGIONS.map((region) => (
-    <LocalTwinRegionOverlay
-      key={region.id}
-      region={region}
-      buildingsVisible={buildingsVisible}
-      hiddenBuildingIds={hiddenBuildingIds}
-    />
-  ));
+export function SupportedRegionOverlays({ region }: SupportedRegionOverlaysProps) {
+  if (!region) return null;
+  return <LocalTwinRegionOverlay region={region} />;
 }

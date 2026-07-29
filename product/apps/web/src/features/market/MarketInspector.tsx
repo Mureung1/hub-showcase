@@ -1,8 +1,9 @@
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
+import { EvidenceCoverageSummary } from "./EvidenceCoverageSummary";
+import { InspectorFlow } from "./InspectorFlow";
 import {
   InspectorFootfall,
-  InspectorFlow,
   InspectorHeader,
   InspectorDecisionSummary,
   InspectorPopulation,
@@ -14,6 +15,7 @@ import {
 } from "./MarketInspectorSections";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
 import type { AnalysisState, FlowState } from "./useMarketAnalysis";
+import "./MarketInspector.css";
 
 type MarketInspectorProps = {
   market: Market;
@@ -39,6 +41,45 @@ type MarketInspectorProps = {
   onReportOpen: () => void;
   onActiveHourChange: (hour: number) => void;
 };
+
+function PartialCompetitionSummary({
+  categorySelection,
+  sameCategoryCount,
+  topic,
+}: {
+  categorySelection: CategorySelection;
+  sameCategoryCount: number;
+  topic: AnalysisTopic;
+}) {
+  if (
+    categorySelection.coverage !== "partial" ||
+    (topic !== "overview" && topic !== "competition")
+  ) {
+    return null;
+  }
+
+  return (
+    <section className="metric-section partial-competition-summary" aria-label="경쟁 현황">
+      <div className="section-title">
+        <span>경쟁 현황</span>
+        <small>최신 점포 위치 기준</small>
+      </div>
+      <div className="competition-chart">
+        <div className="competition-stat">
+          <span>같은 업종 점포</span>
+          <b>{sameCategoryCount.toLocaleString("ko-KR")}곳</b>
+          <small>{categorySelection.name} 최신 점포 위치 집계</small>
+        </div>
+        <div className="legend-list">
+          <span>
+            <i className="green" /> {categorySelection.name} <b>{sameCategoryCount}</b>
+          </span>
+          <small>선택한 상권 안에서 같은 세부 업종으로 확인된 점포입니다.</small>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function MarketInspector({
   market,
@@ -77,6 +118,12 @@ export function MarketInspector({
         onClosePanel={onClosePanel}
         onClearSelection={onClearSelection}
       />
+      <PartialCompetitionSummary
+        categorySelection={categorySelection}
+        sameCategoryCount={sameCategoryCount}
+        topic={topic}
+      />
+      <EvidenceCoverageSummary categorySelection={categorySelection} analysis={analysis} />
       <InspectorScoreAndCompetition
         market={market}
         categorySelection={categorySelection}

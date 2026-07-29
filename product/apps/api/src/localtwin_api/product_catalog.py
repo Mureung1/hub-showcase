@@ -3,7 +3,7 @@
 from collections import defaultdict
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,7 @@ CATEGORY_NAME_TERMS: dict[AnalysisCategory, tuple[str, ...]] = {
 
 # User-facing groups considered for the data-driven Top 7. The order is also
 # the classification priority, so one store is counted in exactly one group.
+# Specific user intent such as Pilates must precede a generic word like academy.
 # Broad food terms stay last to avoid swallowing cafe and bakery stores.
 CATEGORY_FILTER_TERMS: dict[str, tuple[str, ...]] = {
     "카페": CATEGORY_NAME_TERMS["카페"],
@@ -46,12 +47,12 @@ CATEGORY_FILTER_TERMS: dict[str, tuple[str, ...]] = {
     "편의점": CATEGORY_NAME_TERMS["편의점"],
     "미용": ("미용", "헤어", "네일", "피부관리", "이발"),
     "의류": ("의류", "의복", "패션", "옷", "신발"),
+    "체육": ("체육", "헬스", "피트니스", "스포츠", "요가", "필라테스"),
     "학원": ("학원", "교습", "교육원"),
     "숙박": ("숙박", "호텔", "모텔", "여관", "게스트하우스"),
     "부동산": ("부동산", "공인중개"),
     "약국": ("약국",),
     "병원": ("병원", "의원", "치과", "한의원"),
-    "체육": ("체육", "헬스", "피트니스", "스포츠", "요가", "필라테스"),
     "세탁": ("세탁", "수선"),
     "생활용품": ("생활용품", "잡화", "문구"),
     "음식점": CATEGORY_NAME_TERMS["음식점"],
@@ -104,6 +105,7 @@ class ProductCategory(BaseModel):
     rank: int | None = None
     store_count: int | None = None
     market_count: int | None = None
+    store_counts_by_market: dict[str, int] = Field(default_factory=dict)
 
 
 BOOTSTRAP_CATEGORIES = tuple(
@@ -143,7 +145,7 @@ def classify_category_group(store: StorePoint) -> str | None:
 
 
 def rank_product_categories(session: Session, limit: int = 7) -> tuple[ProductCategory, ...]:
-    """Rank category groups in supported markets using unique linked stores."""
+    """Rank groups globally and retain unique-store counts for each market."""
 
     rows = session.execute(
         select(StorePoint, StoreMarketLink.market_code)
@@ -153,12 +155,16 @@ def rank_product_categories(session: Session, limit: int = 7) -> tuple[ProductCa
     ).all()
     stores_by_group: dict[str, set[str]] = defaultdict(set)
     markets_by_group: dict[str, set[str]] = defaultdict(set)
+    stores_by_group_and_market: dict[str, dict[str, set[str]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
     for store, market_code in rows:
         group = classify_category_group(store)
         if group is None:
             continue
         stores_by_group[group].add(store.store_id)
         markets_by_group[group].add(market_code)
+        stores_by_group_and_market[group][market_code].add(store.store_id)
 
     ranked_names = sorted(
         stores_by_group,
@@ -173,6 +179,11 @@ def rank_product_categories(session: Session, limit: int = 7) -> tuple[ProductCa
             rank=index,
             store_count=len(stores_by_group[name]),
             market_count=len(markets_by_group[name]),
+            store_counts_by_market={
+                MARKET_BY_ID[market_code].key: len(store_ids)
+                for market_code, store_ids in stores_by_group_and_market[name].items()
+                if market_code in MARKET_BY_ID
+            },
         )
         for index, name in enumerate(ranked_names, start=1)
     )

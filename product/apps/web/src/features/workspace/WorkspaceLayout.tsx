@@ -5,15 +5,19 @@ import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
+import type { PanelTextSize } from "./usePanelTextSize";
+import { useWorkspaceUrlPersistence } from "./useWorkspaceUrlPersistence";
 
 export function WorkspaceLayout({
   model,
   catalogDisplayState,
   onCatalogRetry,
+  panelTextSize,
 }: {
   model: ProductWorkspaceModel;
   catalogDisplayState: "ranked" | "connecting" | "bootstrap" | "error";
   onCatalogRetry: () => void;
+  panelTextSize: PanelTextSize;
 }) {
   const {
     catalog,
@@ -27,11 +31,26 @@ export function WorkspaceLayout({
     apiReadiness,
   } = model;
   const { market, nearby, marketAnalysis } = marketData;
+  useWorkspaceUrlPersistence(model);
+
+  const selectedStore = storefronts.storeSelection.selected;
+
+  function selectAndFocusStore(storeKey: string) {
+    const store = storefronts.visibleStores.find(
+      (candidate) => (candidate.id ?? candidate.name) === storeKey || candidate.name === storeKey,
+    );
+    if (!store) return;
+    viewport.setStorefront3dUnavailable(false);
+    storefronts.storeSelection.selectListedStore(store.id ?? store.name);
+    panels.setInspectorOpen(true);
+    viewport.focusCenter([store.longitude, store.latitude], true);
+  }
 
   return (
     <section
       id="analysis"
       className={`analysis-layout ${panels.filtersOpen ? "" : "is-filter-closed"} ${panels.inspectorOpen ? "" : "is-inspector-closed"}`}
+      data-panel-text-size={panelTextSize}
       aria-label="상권 분석 작업 공간"
     >
       {panels.filtersOpen && (
@@ -43,19 +62,25 @@ export function WorkspaceLayout({
           onCatalogRetry={onCatalogRetry}
           category={selection.categorySelection.name}
           categorySelection={selection.categorySelection}
-          categoryCoverageReason={storefronts.categoryCoverageReason}
           layer={selection.layer}
           topic={selection.analysisTopic}
           boundaryVisible={selection.boundaryVisible}
           storesVisible={selection.storesVisible}
           visibleStores={storefronts.listedStores}
-          selectedStoreName={storefronts.storeSelection.selected?.name ?? null}
+          selectedStoreName={selectedStore?.name ?? null}
+          sameCategoryCount={storefronts.sameCategoryCount}
           nearbyState={nearby.state}
           onNearbyRetry={nearby.retry}
           onClose={() => panels.setFiltersOpen(false)}
           onReset={actions.resetAnalysis}
-          onMarketChange={actions.chooseMarket}
-          onCategoryChange={actions.chooseCategory}
+          onMarketChange={(nextMarket) => {
+            viewport.setStorefront3dUnavailable(false);
+            actions.chooseMarket(nextMarket);
+          }}
+          onCategoryChange={(nextCategory) => {
+            viewport.setStorefront3dUnavailable(false);
+            actions.chooseCategory(nextCategory);
+          }}
           onLayerChange={actions.chooseLayer}
           onTopicChange={(topic) => {
             selection.chooseTopic(topic);
@@ -66,24 +91,29 @@ export function WorkspaceLayout({
           onStoresVisibleChange={(visible) => {
             selection.setStoresVisible(visible);
           }}
-          onStoreChange={actions.chooseListedStore}
+          onStoreChange={selectAndFocusStore}
         />
       )}
       <MarketMapPanel
         toolbarStart={
           <MarketSearch
             apiReady={apiReadiness.state === "ready"}
-            onSelect={actions.chooseSearchResult}
+            onSelect={(result) => {
+              viewport.setStorefront3dUnavailable(false);
+              actions.chooseSearchResult(result);
+            }}
           />
         }
         mapBody={
           <MarketMapCanvas
             market={market}
+            marketKey={selection.marketKey}
             marketId={catalogState.marketIdByKey[selection.marketKey]}
             mapRef={viewport.mapRef}
             onVisibleCenterChange={viewport.updateVisibleCenter}
             onVisibleBoundsChange={viewport.updateVisibleBounds}
             presentationMode={viewport.presentationMode}
+            marketTransitionActive={viewport.marketTransitionActive}
             baseBuildingsRendered={viewport.baseBuildingsRendered}
             layer={selection.layer}
             selectedCategoryName={selection.categorySelection.name}
@@ -95,10 +125,9 @@ export function WorkspaceLayout({
             activeHour={selection.activeHour}
             activeDemandLabel={storefronts.activeDemandLabel}
             mapStores={storefronts.mapStores}
-            selected={storefronts.storeSelection.selected}
+            selected={selectedStore}
             score={storefronts.score}
-            sameCategoryCount={storefronts.sameCategoryCount}
-            onSelectStore={actions.chooseListedStore}
+            onSelectStore={selectAndFocusStore}
             visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
             onEvidenceOpen={() => panels.setEvidenceOpen(true)}
           />
@@ -109,11 +138,19 @@ export function WorkspaceLayout({
             categorySelection={selection.categorySelection}
             analysis={marketAnalysis.analysis}
             analysisState={marketAnalysis.analysisState}
+            sameCategoryCount={
+              nearby.state === "ready" || nearby.state === "empty"
+                ? storefronts.sameCategoryCount
+                : null
+            }
           />
         }
         market={market}
         presentationMode={viewport.presentationMode}
-        onPresentationModeChange={viewport.setPresentationMode}
+        onPresentationModeChange={(mode) => {
+          if (mode === "storefront3d") viewport.setStorefront3dUnavailable(false);
+          viewport.setPresentationMode(mode);
+        }}
         layer={selection.layer}
         onLayerChange={actions.chooseLayer}
         densityLabel={storefronts.densityLabel}
@@ -133,7 +170,7 @@ export function WorkspaceLayout({
       {panels.inspectorOpen && (
         <MarketInspector
           market={market}
-          selected={storefronts.storeSelection.selected}
+          selected={selectedStore}
           score={storefronts.score}
           categorySelection={selection.categorySelection}
           categoryCoverageReason={storefronts.categoryCoverageReason}

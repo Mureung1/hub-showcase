@@ -142,4 +142,31 @@ describe("useNearbyStores", () => {
     expect(result.current.data?.center.longitude).toBe(newCenter[0]);
     expect(result.current.data?.total_count).toBe(3);
   });
+
+  it("hides the previous category response as soon as the filter changes", async () => {
+    const center: [number, number] = [126.9228, 37.5635];
+    const pendingResponse = new Promise<ReturnType<typeof okResponse>>(() => undefined);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(okResponse(payload(center, 4)))
+      .mockReturnValueOnce(pendingResponse);
+    vi.stubGlobal("fetch", fetchMock);
+    const { result, rerender } = renderHook(
+      ({ category }) =>
+        useNearbyStores({
+          center,
+          radius: 300,
+          category,
+          scope: "market",
+          marketId: "3110562",
+        }),
+      { initialProps: { category: "카페" } },
+    );
+
+    await waitFor(() => expect(result.current.data?.same_category_count).toBe(4));
+    rerender({ category: "미용" });
+
+    expect(result.current.state).toBe("loading");
+    expect(result.current.data).toBeNull();
+  });
 });

@@ -66,4 +66,19 @@ describe("selectMapStores", () => {
       }).map(({ name }) => name),
     ).toEqual(["선택", "후보1", "후보2"]);
   });
+
+  it("uses the stable store id when multiple stores have the same name", () => {
+    const first = { ...store("첫 점포", 126.92), id: "same-name-1", name: "동명이점" };
+    const second = { ...store("둘째 점포", 126.921), id: "same-name-2", name: "동명이점" };
+
+    expect(
+      selectMapStores([first, second], {
+        selectedId: second.id,
+        selectedName: second.name,
+        focus: null,
+        limit: 1,
+        minimumDistanceMeters: 40,
+      }),
+    ).toEqual([second]);
+  });
 });

@@ -2,17 +2,13 @@ import { useEffect, useMemo } from "react";
 
 import { useAnalysisUrlCleanup } from "../analysis/useAnalysisUrlCleanup";
 import { useNearbyStores } from "../analysis/useNearbyStores";
-import { categoryMatchesSelection, storeCategorySelection } from "../market/categorySelection";
+import { topCategorySelectionForStore } from "../market/categorySelection";
 import { demandFromFlow } from "../market/model";
 import type { Category, LayerMode, Market, MarketKey, MarketStore } from "../market/types";
 import { useAnalysisSelection } from "../analysis/useAnalysisSelection";
 import { useMarketAnalysis } from "../market/useMarketAnalysis";
 import { useStoreSelection } from "../market/useStoreSelection";
-import { findReadyOverlayRegion } from "../map/supportedRegions";
-import type { SelectedStorefront } from "../map/storefronts/SelectedStorefrontLayer";
-import { hasStorefrontVariant } from "../map/storefronts/storefrontRegistry";
-import { selectMapStores } from "../map/storefronts/storefrontSelection";
-import { useStorefrontBuildingPlacements } from "../map/storefronts/useStorefrontBuildingPlacement";
+import { buildStorefrontObjectField } from "../map/storefronts/storefrontObjectField";
 import { useCompactMap } from "../map/useCompactMap";
 import { useMapViewport } from "../map/useMapViewport";
 import { useWorkspacePanels } from "./useWorkspacePanels";
@@ -207,103 +203,7 @@ function useWorkspaceMarketData(
   return { marketAnalysis, nearby, market };
 }
 
-function useStorefrontCandidates(
-  compactMap: boolean,
-  selection: SelectionState,
-  viewport: ViewportState,
-  visibleStores: MarketStore[],
-  selectedStore: MarketStore | null,
-) {
-  const selectedStorefrontCandidate = useMemo<SelectedStorefront | null>(() => {
-    const categoryCode = selectedStore?.categoryCode ?? null;
-    if (
-      !viewport.prefabMode ||
-      viewport.storefront3dUnavailable ||
-      viewport.mapMode !== "localtwin" ||
-      !selectedStore ||
-      !selectedStore.id ||
-      !hasStorefrontVariant(categoryCode) ||
-      !findReadyOverlayRegion([selectedStore.longitude, selectedStore.latitude])
-    ) {
-      return null;
-    }
-    return {
-      id: selectedStore.id,
-      longitude: selectedStore.longitude,
-      latitude: selectedStore.latitude,
-      categoryCode,
-    };
-  }, [selectedStore, viewport.mapMode, viewport.prefabMode, viewport.storefront3dUnavailable]);
-  const candidateMapStores = useMemo(
-    () =>
-      selectMapStores(visibleStores, {
-        selectedName: selectedStore?.name ?? null,
-        focus: selectedStorefrontCandidate
-          ? [selectedStorefrontCandidate.longitude, selectedStorefrontCandidate.latitude]
-          : null,
-        limit: compactMap ? 6 : 12,
-        bounds: viewport.visibleMapBounds,
-        minimumDistanceMeters: selectedStorefrontCandidate
-          ? compactMap
-            ? 125
-            : 105
-          : compactMap
-            ? 55
-            : 40,
-      }),
-    [
-      compactMap,
-      selectedStore?.name,
-      selectedStorefrontCandidate,
-      viewport.visibleMapBounds,
-      visibleStores,
-    ],
-  );
-  const storefrontCandidates = useMemo(() => {
-    if (
-      !viewport.prefabMode ||
-      viewport.storefront3dUnavailable ||
-      viewport.mapMode !== "localtwin"
-    ) {
-      return [];
-    }
-    const mapCandidates = candidateMapStores.flatMap((store) => {
-      if (
-        !store.id ||
-        !store.categoryCode ||
-        !categoryMatchesSelection(store.category, selection.categorySelection) ||
-        !hasStorefrontVariant(store.categoryCode)
-      ) {
-        return [];
-      }
-      return [
-        {
-          id: store.id,
-          longitude: store.longitude,
-          latitude: store.latitude,
-          categoryCode: store.categoryCode,
-        },
-      ];
-    });
-    const candidates = [selectedStorefrontCandidate, ...mapCandidates].filter(
-      (store): store is SelectedStorefront => store !== null,
-    );
-    return candidates.filter(
-      (store, index) => candidates.findIndex((candidate) => candidate.id === store.id) === index,
-    );
-  }, [
-    candidateMapStores,
-    selectedStorefrontCandidate,
-    selection.categorySelection,
-    viewport.mapMode,
-    viewport.prefabMode,
-    viewport.storefront3dUnavailable,
-  ]);
-  return { selectedStorefrontCandidate, candidateMapStores, storefrontCandidates };
-}
-
 function useWorkspaceStorefronts(
-  compactMap: boolean,
   catalogState: WorkspaceCatalog,
   selection: SelectionState,
   viewport: ViewportState,
@@ -333,7 +233,7 @@ function useWorkspaceStorefronts(
   });
   const visibleStores = useMemo(() => {
     const sourceStores = nearbyMarketStores;
-    const stores = storeSelection.selectedSearchStore
+    return storeSelection.selectedSearchStore
       ? [
           storeSelection.selectedSearchStore,
           ...sourceStores.filter(
@@ -343,81 +243,31 @@ function useWorkspaceStorefronts(
           ),
         ]
       : sourceStores;
-    const orderedStores = [
-      ...stores.filter((store) =>
-        categoryMatchesSelection(store.category, selection.categorySelection),
-      ),
-      ...stores.filter(
-        (store) => !categoryMatchesSelection(store.category, selection.categorySelection),
-      ),
-    ];
-    return orderedStores;
-  }, [
-    nearbyMarketStores,
-    selection.categorySelection,
-    storeSelection.selectedSearchStore,
-  ]);
-  const listedStores = useMemo(
+  }, [nearbyMarketStores, storeSelection.selectedSearchStore]);
+  const listedStores = visibleStores;
+  const selectedCategoryStores = visibleStores;
+  const storefrontBuildings3d = useMemo(
     () =>
-      visibleStores.filter(
-        (store) =>
-          (store.id ?? store.name) !== (storeSelection.selected?.id ?? storeSelection.selected?.name) &&
-          categoryMatchesSelection(store.category, selection.categorySelection),
-      ),
-    [selection.categorySelection, storeSelection.selected?.id, storeSelection.selected?.name, visibleStores],
-  );
-  const { selectedStorefrontCandidate, storefrontCandidates } = useStorefrontCandidates(
-    compactMap,
-    selection,
-    viewport,
-    visibleStores,
-    storeSelection.selected,
-  );
-  const buildingPlacements = useStorefrontBuildingPlacements(storefrontCandidates, visibleStores);
-  const storefrontBuildings3d = useMemo<SelectedStorefront[]>(() => {
-    const placementByStoreId = new Map(
-      buildingPlacements
-        .filter((placement) => placement.building.storeCountInBuilding <= 1)
-        .map((placement) => [placement.storeId, placement.building]),
-    );
-    return storefrontCandidates.flatMap((store) => {
-      const building = placementByStoreId.get(store.id);
-      return building
-        ? [
-            {
-              ...store,
-              building: {
-                id: building.buildingId,
-                center: building.center,
-                plotSizeMeters: building.plotSizeMeters,
-                heightMeters: building.heightMeters,
-                storeCountInBuilding: building.storeCountInBuilding,
-              },
-            },
-          ]
-        : [];
-    });
-  }, [buildingPlacements, storefrontCandidates]);
-  const replacementStoreIds = useMemo(
-    () => new Set(storefrontBuildings3d.map((store) => store.id)),
-    [storefrontBuildings3d],
+      viewport.presentationMode === "storefront3d" && !viewport.storefront3dUnavailable
+        ? buildStorefrontObjectField({
+            stores: selectedCategoryStores,
+            selected: storeSelection.selected,
+            bounds: viewport.visibleMapBounds,
+          })
+        : [],
+    [
+      selectedCategoryStores,
+      storeSelection.selected,
+      viewport.presentationMode,
+      viewport.storefront3dUnavailable,
+      viewport.visibleMapBounds,
+    ],
   );
   const mapStores = useMemo(
-    () =>
-      visibleStores.filter(
-        (store) =>
-          categoryMatchesSelection(store.category, selection.categorySelection) &&
-          !replacementStoreIds.has(store.id ?? store.name),
-      ),
-    [replacementStoreIds, selection.categorySelection, visibleStores],
+    () => selectedCategoryStores,
+    [selectedCategoryStores],
   );
-  const selectedStorefront3d = useMemo(
-    () =>
-      storefrontBuildings3d.find((store) => store.id === selectedStorefrontCandidate?.id) ??
-      selectedStorefrontCandidate ??
-      null,
-    [selectedStorefrontCandidate, storefrontBuildings3d],
-  );
+  const selectedStorefront3d = storefrontBuildings3d[0] ?? null;
   const sameCategoryCount = nearby.data?.same_category_count ?? 0;
   const categoryCoverageReason =
     nearby.data?.category_coverage.requested_category === selection.categorySelection.name
@@ -445,13 +295,13 @@ function useWorkspaceStorefronts(
       activeDemand === null
         ? []
         : Array.from(
-        { length: Math.max(3, Math.min(11, Math.round(activeDemand / 9))) },
-        (_, index) => ({
-          longitude: market.center[0] + (((index * 19) % 11) - 5) * 0.00018,
-          latitude: market.center[1] + (((index * 13) % 9) - 4) * 0.00013,
-          delay: index * -0.36,
-        }),
-      ),
+            { length: Math.max(3, Math.min(11, Math.round(activeDemand / 9))) },
+            (_, index) => ({
+              longitude: market.center[0] + (((index * 19) % 11) - 5) * 0.00018,
+              latitude: market.center[1] + (((index * 13) % 9) - 4) * 0.00013,
+              delay: index * -0.36,
+            }),
+          ),
     [activeDemand, market.center],
   );
 
@@ -482,8 +332,9 @@ function useWorkspaceActions(
 ) {
   function chooseMarket(nextMarket: MarketKey) {
     storefronts.storeSelection.clearSelection();
-    selection.setMarketKey(nextMarket);
-    viewport.focusCenter(catalogState.markets[nextMarket].center, false);
+    viewport.transitionToMarket(catalogState.markets[nextMarket].center, () => {
+      selection.setMarketKey(nextMarket);
+    });
   }
   function chooseCategory(nextCategory: Category) {
     storefronts.storeSelection.clearSelection();
@@ -494,7 +345,9 @@ function useWorkspaceActions(
     storefronts.storeSelection.selectListedStore(storeName);
     panels.setInspectorOpen(true);
     if (store)
-      selection.applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
+      selection.applyCategorySelection(
+        topCategorySelectionForStore(store.category, store.categoryCode),
+      );
   }
   function chooseSearchResult(result: MarketSearchResult) {
     const nextMarket = catalogState.marketKeyById[result.market_id];
@@ -505,7 +358,7 @@ function useWorkspaceActions(
     viewport.focusCenter([result.longitude, result.latitude], result.result_type === "store");
     if (result.result_type === "store")
       selection.applyCategorySelection(
-        storeCategorySelection(result.category_name, result.category_code),
+        topCategorySelectionForStore(result.category_name, result.category_code),
       );
   }
   function resetAnalysis() {
@@ -557,13 +410,7 @@ export function useProductWorkspaceModel(
     useDemoData,
     useDemoData || apiReadiness.state === "ready",
   );
-  const storefronts = useWorkspaceStorefronts(
-    compactMap,
-    catalogState,
-    selection,
-    viewport,
-    marketData,
-  );
+  const storefronts = useWorkspaceStorefronts(catalogState, selection, viewport, marketData);
   const actions = useWorkspaceActions(
     catalogState,
     selection,
