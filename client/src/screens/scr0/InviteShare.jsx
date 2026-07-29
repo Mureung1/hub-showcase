@@ -53,15 +53,7 @@ export function InviteShare() {
           </Button>
         </div>
 
-        <div style={{ width: '100%', display: 'flex', gap: '8px' }}>
-          <div style={{ flex: 1 }}>
-            {/* TODO: 이미지로 저장 기능 (별도 작업) */}
-            <Button variant="accent" block>⬇ 이미지로 저장</Button>
-          </div>
-          <div style={{ flex: 1 }}>
-            <Button variant="primary" block onClick={() => navigate(`/scr0/status?token=${token}`)}>현황 보기</Button>
-          </div>
-        </div>
+        <Button variant="primary" block onClick={() => navigate(`/scr0/status?token=${token}`)}>현황 보기</Button>
 
         {copied ? (
           <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)' }}>
