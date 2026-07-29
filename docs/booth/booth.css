@@ -1,0 +1,257 @@
+/*
+ * 데모데이 부스 A3 전시물 공용 스타일 (297 × 420mm 세로).
+ *
+ * 규칙 (CLAUDE.md): 외부 스타일 라이브러리 금지 — 순수 CSS만.
+ * 색은 apps/web/src/styles/tokens.ts 값을 그대로 옮겼다. 인쇄물과 라이브 데모 화면이
+ * 같은 브랜드로 보여야 부스에서 "같은 제품"으로 읽힌다.
+ *
+ * 단위는 전부 mm — 인쇄 좌표를 손으로 잡아야 A3에서 여백이 안 뜬다.
+ * 폰트는 Windows 기본 맑은 고딕이 반드시 잡히게 스택을 짜서 인쇄소 폰트 깨짐을 막는다.
+ */
+
+@page {
+  size: A3 portrait;
+  margin: 0;
+}
+
+:root {
+  /* tokens.ts 원본 */
+  --brand: #4a90e2;
+  --brand-lt: #62a8f5;
+  --brand-dk: #3b7dd8;
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --surface-alt: #f4f7fa;
+  --line: #e4eaf1;
+  --ink: #253449;
+  --sub: #8b95a5;
+  --muted: #b0b8c4;
+  --down: #ff7a45;
+  --down-text: #e0704f;
+  --down-bg: #fcede6;
+  --up: #2fb37a;
+  --up-text: #3fa772;
+  --up-bg: #e8f7f0;
+
+  /* 레인 색 — docs/아키텍처.md mermaid 관례 유지 */
+  --fe: #2563eb;
+  --fe-bg: #dbeafe;
+  --be: #d97706;
+  --be-bg: #fef3c7;
+  --db: #16a34a;
+  --db-bg: #dcfce7;
+  --ext: #9333ea;
+  --ext-bg: #f3e8ff;
+
+  --font: "Pretendard", "맑은 고딕", "Malgun Gothic", "Apple SD Gothic Neo",
+    "Segoe UI", sans-serif;
+  --mono: "D2Coding", "Consolas", "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  /* 배경색이 인쇄에서 빠지면 도식이 전부 흰 상자가 된다 */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  /* 한글은 어절 단위로 끊어야 한다 — 기본값이면 "우회해"가 "우/회해"로 쪼개진다 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  background: #cfd8e3; /* 화면 미리보기용 — 인쇄 시 지면 밖이라 안 나옴 */
+}
+
+.page {
+  position: relative;
+  width: 297mm;
+  height: 420mm;
+  padding: 11mm 12mm 7mm;
+  margin: 0 auto;
+  background: var(--surface);
+  overflow: hidden; /* 넘치면 2페이지가 되므로 잘라내고 육안 검수로 잡는다 */
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+}
+
+@media screen {
+  body {
+    padding: 10mm 0;
+  }
+  .page {
+    box-shadow: 0 4mm 12mm rgba(37, 52, 73, 0.25);
+  }
+}
+
+/* ============================ 헤더 ============================ */
+
+.head {
+  position: relative;
+  background: linear-gradient(135deg, var(--brand-lt) 0%, var(--brand-dk) 100%);
+  color: #fff;
+  border-radius: 4mm;
+  padding: 6mm 8mm;
+  display: flex;
+  align-items: center;
+  gap: 7mm;
+  flex: 0 0 auto;
+}
+
+.head-mark {
+  font-size: 15mm;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.head-body {
+  flex: 1 1 auto;
+}
+
+.head h1 {
+  margin: 0 0 1.6mm;
+  font-size: 11mm;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
+.head h1 .thin {
+  font-weight: 300;
+  opacity: 0.82;
+}
+
+.head p {
+  margin: 0;
+  font-size: 4.1mm;
+  line-height: 1.42;
+  opacity: 0.96;
+}
+
+.head-tag {
+  flex: 0 0 auto;
+  text-align: right;
+  font-size: 3.3mm;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.head-tag b {
+  display: block;
+  font-size: 4.4mm;
+  letter-spacing: 0.02em;
+}
+
+/* ============================ 공통 조각 ============================ */
+
+.sec {
+  flex: 0 0 auto;
+}
+
+.sec-title {
+  display: flex;
+  align-items: baseline;
+  gap: 2.5mm;
+  margin: 0 0 2.5mm;
+}
+
+.sec-title b {
+  font-size: 5mm;
+  letter-spacing: -0.02em;
+}
+
+.sec-title span {
+  font-size: 3.2mm;
+  color: var(--sub);
+}
+
+.sec-title::before {
+  content: "";
+  width: 1.4mm;
+  height: 5mm;
+  background: var(--brand);
+  border-radius: 1mm;
+  transform: translateY(0.5mm);
+}
+
+.card {
+  background: var(--surface);
+  border: 0.35mm solid var(--line);
+  border-radius: 3mm;
+  padding: 4mm 4.5mm;
+}
+
+.card-alt {
+  background: var(--surface-alt);
+}
+
+.big {
+  font-size: 15mm;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 2.6mm;
+  letter-spacing: -0.02em;
+  color: var(--sub);
+}
+
+.cap {
+  font-size: 2.8mm;
+  line-height: 1.4;
+  color: var(--sub);
+}
+
+/* ============================ 하단 바 ============================ */
+
+.foot {
+  margin-top: auto;
+  flex: 0 0 auto;
+  border-top: 0.5mm solid var(--line);
+  padding-top: 3.5mm;
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+}
+
+.foot-note {
+  font-size: 2.9mm;
+  line-height: 1.5;
+  color: var(--sub);
+}
+
+.qr {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.qr img {
+  display: block;
+  width: 22mm;
+  height: 22mm;
+  border: 0.35mm solid var(--line);
+  border-radius: 1.5mm;
+  padding: 0.8mm;
+  background: #fff;
+}
+
+.qr b {
+  display: block;
+  margin-top: 1.2mm;
+  font-size: 2.7mm;
+  color: var(--ink);
+}
+
+.qr span {
+  display: block;
+  font-size: 2.4mm;
+  color: var(--muted);
+}

@@ -59,9 +59,11 @@ flowchart TB
     rweather["GET /weather/today"]
     rproposal["/proposal<br/>GET today · POST generate"]
     rcampaign["/campaigns/:id<br/>PATCH · send · tracking"]
-    cron["크론 06:30 KST<br/>하락 −20%↑만 발동"]
+    cron["크론 06:30 KST · 원설계<br/>하락 −20%↑만 발동 + 사장님 알림"]
+    boot["서버 기동 잡 · 실운영 경로<br/>무료 플랜은 06:30에 절전 · 임계 없음"]
     pipe["agent 파이프라인<br/>날씨 앙상블 → 진단 → LLM"]
-    guard["guardrails<br/>할인 ≤20% · 금지어"]
+    quality["품질검사 — 생성 시<br/>가드레일 + 한국어 · 내부정보"]
+    guard["가드레일 — 발송 시<br/>할인 ≤20% · 금지어"]
     legal["legal/filter — 서버 강제<br/>동의 · (광고) · 야간 차단"]
     rsales["/sales · /sales/csv<br/>일매출 입력 · CSV 업로드"]
     rredeem["POST /coupons/:code/redeem<br/>(매장 단말 모의)"]
@@ -90,8 +92,10 @@ flowchart TB
   rweather --> pipe
   rproposal --> pipe
   cron --> pipe
-  pipe -.-> guard
-  rcampaign -. "발송 전 재검증" .-> guard
+  boot --> pipe
+  pipe -- "채택 판정" --> quality
+  quality -. "위반 시 1회 재생성 → 재실패면 템플릿 폴백" .-> pipe
+  rcampaign -. "발송 전 재검증(사람 편집물이라 더 느슨)" .-> guard
   rcampaign -- "광고 판정" --> legal
 
   pipe -- "매장 조회" --> stores
@@ -102,6 +106,8 @@ flowchart TB
   rcampaign -- "쿠폰 발급 · 사용 집계" --> coupons
   rsales -- "일매출 upsert" --> salesT
   rredeem -- "사용·주문액 기록" --> coupons
+
+  campaigns -. "발송한 날(status=sent)은 다음 진단의 기준선에서 제외" .-> pipe
 
   pipe -- "예보" --> kma
   pipe --> owm
@@ -123,7 +129,7 @@ flowchart TB
   classDef db fill:#dcfce7,stroke:#16a34a,color:#052e16;
   classDef ext fill:#f3e8ff,stroke:#9333ea,color:#2e1065;
   class dash,edit,sent,client fe;
-  class rweather,rproposal,rcampaign,rsales,rredeem,cron,pipe,guard,legal be;
+  class rweather,rproposal,rcampaign,rsales,rredeem,cron,boot,pipe,quality,guard,legal be;
   class stores,salesT,campaigns,customers,coupons db;
   class kma,owm,groq,solapi,ig ext;
 ```

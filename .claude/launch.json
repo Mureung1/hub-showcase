@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--workspace", "apps/server"],
       "port": 4000
+    },
+    {
+      "name": "booth",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", ".", "-p", "4321", "-c-1"],
+      "port": 4321
     }
   ]
 }
