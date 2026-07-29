@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-function PhotoQuestion({ onChange }) {
+function PhotoQuestion({ onChange, onFileSelect }) {
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -9,6 +9,7 @@ function PhotoQuestion({ onChange }) {
     if (!file) return;
     setPreviewUrl(URL.createObjectURL(file));
     onChange(file.name);
+    onFileSelect?.(file);
   };
 
   return (

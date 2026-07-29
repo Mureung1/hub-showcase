@@ -112,15 +112,15 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 
 ```ts
 {
-  connected: boolean
-  postingCycle: string          // 게시글 작성 주기
-  tone: string                  // 문체
-  commonPhrases: string[]       // 자주 사용하는 표현
-  contentTypes: string[]        // 콘텐츠 유형
-  postingPattern: string        // 게시 패턴
+  connected: boolean            // blogId 연동 + RSS 조회 성공 여부
+  postCount: number             // RSS 피드에 실린 최근 게시물 수 (전체 게시물 수 아님 — 네이버 RSS가 최근 항목만 제공)
+  latestPostDate: string | null // 최근 게시물의 ISO 날짜, 게시물 없으면 null
+  postingCycle: string | null   // "주 2~3회" 등 pubDate 간격 기반 추정 문구, 계산 불가 시 null
   analyzedAt: string
 }
 ```
+
+`tone`/`commonPhrases`/`contentTypes`/`postingPattern`(문체·자주 쓰는 표현·콘텐츠 유형 등 내용 기반 분석)은 RSS(title/link/pubDate만 제공)만으로는 계산할 수 없어 스키마에서 제외했다 — LLM 연동 시 별도로 추가 예정 ([8. 이후 과제](#8-이후-과제-범위-밖-다음-발전-방향) 참고).
 
 ### Insight (2-7)
 
@@ -197,7 +197,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 6. 프론트: `sessionStorage`에서 1단계 입력값을 복원하고, `candidateExists=true`면 "blog.naver.com/{후보} 맞나요?" 확인 카드를, 아니면(또는 "아니요" 선택 시) blogId 직접 입력 폴백을 보여준다
 7. 최종 확정된 `naverId`/`blogId`/`blogIdConfirmed`는 온보딩 3단계의 `POST /brand-profile` 호출에 함께 실려 저장된다 (이 단계 전까지는 서버에 저장하지 않음)
 
-blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는 블로그입니다" 문구 유무로 추정하는 휴리스틱이다 — 그래서 항상 사용자 확인을 거치게 하고 최종 신뢰 소스로 쓰지 않는다. `GET /blog/analysis`(게시물 개수 등)는 여전히 고정 mock — Day 17에서 RSS/검색API로 교체 예정.
+blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는 블로그입니다" 문구 유무로 추정하는 휴리스틱이다 — 그래서 항상 사용자 확인을 거치게 하고 최종 신뢰 소스로 쓰지 않는다. `GET /blog/analysis`는 blogId가 연동돼 있으면 RSS(`rss.blog.naver.com/{blogId}.xml`)를 조회해 게시물 수/최근 게시일/게시 주기를 계산한다 — blogId가 없거나 RSS 조회에 실패하면(비공개 블로그 등) `connected: false`와 빈 값을 반환한다.
 
 ### 2-4. AI 홍보글 작성
 
@@ -205,7 +205,7 @@ blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는
 | --- | --- | --- |
 | POST | `/posts/promotion/interview` | 홍보글 작성 인터뷰 진행 (질문-답변 반복) |
 | POST | `/posts/promotion` | 인터뷰 결과로 홍보글 초안 생성 → `Post` 반환 |
-| POST | `/posts/:id/images` | 사진 업로드 (multipart/form-data) → 배치 추천 포함 응답 (이후 과제로 이월, 아직 미구현) |
+| POST | `/posts/:id/images` | 사진 업로드 (multipart/form-data, 필드명 `image`) → Supabase Storage(`post-images` 버킷)에 저장, `thumbnailUrl`/`images`에 반영된 `Post` 반환. 사진을 분석해 배치를 추천하는 AI 기능은 비전 모델이 필요해 범위 밖(이후 과제로 유지) |
 
 인터뷰는 홍보 목적(`purpose`: `new-menu` / `event` / `general`)에 따라 이후 질문이 갈라진다
 (`my-app/src/pages/PromotionInterview.jsx`의 `STEPS_BY_PURPOSE`와 서버
@@ -286,6 +286,8 @@ blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는
 | GET | `/posts/:id/detect-published` | 연동된 블로그 RSS에서 이 글과 비슷한 최근 글 자동 탐지 |
 | POST | `/posts/:id/schedule` | (현재 프론트에서는 미사용) 예약 발행 시간 확정 `{ "scheduledAt": "..." }` — 실제 예약 실행은 네이버 자체 기능에 맡기므로 지금은 호출하는 화면이 없음 |
 | DELETE | `/posts/:id/schedule` | 위 예약 취소 |
+| DELETE | `/posts/:id` | 게시글 기록 삭제. 네이버에 이미 올라간 글 자체는 지우지 않고 우리 쪽 기록만 지움 |
+| GET | `/posts/:id/check-deleted` | 저장된 `publishedUrl`을 서버가 직접 요청해서 네이버에서 삭제됐는지 확인. `{ "result": "exists" \| "deleted" \| "unknown" \| "no_url" }` — 404/410이거나 응답 본문에 "삭제된 게시물" 류 문구가 있으면 `deleted`, 그 외 정상 응답이면 `exists`, 네트워크 오류 등으로 판별 불가하면 `unknown`. 확정적인 판별이 아닌 휴리스틱이라 프론트가 결과를 그대로 믿지 않고 사용자 확인을 거쳐야 함 |
 
 **반자동 발행 흐름 (2026-07-27 결정, 2026-07-28 게시 완료 확인 방식 보강)**: 네이버 블로그 포스팅 공식 API가 폐지되어 완전 자동 발행(Playwright 등) 대신 반자동 방식을 쓴다. 서버가 대신 발행하지 않고, 프론트에서 아래 순서로 처리한다.
 

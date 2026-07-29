@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageTopBar from "../components/PageTopBar";
 import HeroTimeCard from "../components/schedule-publish/HeroTimeCard";
 import AIHelperCard from "../components/schedule-publish/AIHelperCard";
@@ -7,12 +7,14 @@ import ScheduleSummaryCard from "../components/schedule-publish/ScheduleSummaryC
 import PreviewCard from "../components/schedule-publish/PreviewCard";
 import ScheduleActions from "../components/schedule-publish/ScheduleActions";
 import PublishConfirmCard from "../components/schedule-publish/PublishConfirmCard";
+import PublishExceptionBanner from "../components/schedule-publish/PublishExceptionBanner";
+import PhotoCopyCard from "../components/schedule-publish/PhotoCopyCard";
 import { useSchedulePublish } from "../hooks/useSchedulePublish";
 import { usePostResult } from "../hooks/usePostResult";
 import { apiClient } from "../api/client";
+import { NAVER_BLOG_WRITE_URL, publishToNaver } from "../lib/naverPublish";
 
 const TARGET = "네이버 블로그";
-const NAVER_BLOG_WRITE_URL = "https://blog.naver.com/GoBlogWrite.naver";
 
 // <input type="datetime-local">가 기대하는 "YYYY-MM-DDTHH:mm"(로컬 시간) 포맷으로 변환.
 function toDateTimeLocalValue(isoString) {
@@ -32,12 +34,24 @@ function formatDisplay(dateTimeLocalValue) {
 function SchedulePublish() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const photoFile = location.state?.photoFile ?? null;
   const { data: suggested, error } = useSchedulePublish(id);
   const { data: post, error: postError } = usePostResult(id);
   const [selected, setSelected] = useState(null);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [isPublishSubmitting, setIsPublishSubmitting] = useState(false);
   const [publishError, setPublishError] = useState(null);
+  const [clipboardFailed, setClipboardFailed] = useState(false);
+  const [popupBlocked, setPopupBlocked] = useState(false);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (!photoFile) return undefined;
+    const url = URL.createObjectURL(photoFile);
+    setPhotoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photoFile]);
 
   useEffect(() => {
     if (!suggested || selected !== null) return;
@@ -67,13 +81,11 @@ function SchedulePublish() {
   // 네이버 블로그 글쓰기 페이지를 새 탭으로 열어준다. 실제 게시(또는 네이버 자체
   // 예약 발행)는 사용자가 그 탭에서 직접 한다.
   const handlePublishNow = async () => {
-    const text = `${post.title}\n\n${post.content}`;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // 클립보드 접근이 막혀도 새 탭은 계속 열어준다 — 사용자가 직접 복사하면 됨
-    }
-    window.open(NAVER_BLOG_WRITE_URL, "_blank", "noopener,noreferrer");
+    const { clipboardFailed: copyFailed, popupBlocked: blocked } = await publishToNaver(
+      `${post.title}\n\n${post.content}`
+    );
+    setClipboardFailed(copyFailed);
+    setPopupBlocked(blocked);
     setPublishError(null);
     setShowPublishConfirm(true);
   };
@@ -127,13 +139,28 @@ function SchedulePublish() {
             </div>
           </div>
 
-          <PreviewCard target={TARGET} />
+          <PreviewCard target={TARGET} title={post.title} content={post.content} imageUrl={photoPreviewUrl} />
+
+          {showPublishConfirm && (
+            <PublishExceptionBanner
+              clipboardFailed={clipboardFailed}
+              popupBlocked={popupBlocked}
+              publishText={`${post.title}\n\n${post.content}`}
+              writeUrl={NAVER_BLOG_WRITE_URL}
+            />
+          )}
+
+          {showPublishConfirm && <PhotoCopyCard photoFile={photoFile} />}
 
           {showPublishConfirm && (
             <PublishConfirmCard
               onDetect={handleDetectPublished}
               onConfirm={handleConfirmPublish}
-              onCancel={() => setShowPublishConfirm(false)}
+              onCancel={() => {
+                setShowPublishConfirm(false);
+                setClipboardFailed(false);
+                setPopupBlocked(false);
+              }}
               isSubmitting={isPublishSubmitting}
               error={publishError}
             />

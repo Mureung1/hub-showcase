@@ -1,12 +1,22 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PageTopBar from "../components/PageTopBar";
 import NoticeEditor from "../components/notice-result/NoticeEditor";
+import PublishConfirmCard from "../components/schedule-publish/PublishConfirmCard";
+import PublishExceptionBanner from "../components/schedule-publish/PublishExceptionBanner";
 import { useNoticeResult } from "../hooks/useNoticeResult";
+import { apiClient } from "../api/client";
+import { NAVER_BLOG_WRITE_URL, publishToNaver } from "../lib/naverPublish";
 
 function NoticeResult() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { data: result, error } = useNoticeResult(id);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [isPublishSubmitting, setIsPublishSubmitting] = useState(false);
+  const [publishError, setPublishError] = useState(null);
+  const [clipboardFailed, setClipboardFailed] = useState(false);
+  const [popupBlocked, setPopupBlocked] = useState(false);
 
   if (error) {
     return (
@@ -23,6 +33,37 @@ function NoticeResult() {
       </div>
     );
   }
+
+  // 반자동 발행: 제목+본문을 클립보드에 복사하고 네이버 블로그 글쓰기 페이지를
+  // 새 탭으로 연다. 공지사항은 예약 없이 바로 게시하는 흐름이라 홍보글의
+  // "예약 발행" 화면(SchedulePublish)을 거치지 않고 이 화면에서 바로 처리한다.
+  const handlePublishNow = async () => {
+    const { clipboardFailed: copyFailed, popupBlocked: blocked } = await publishToNaver(
+      `${result.title}\n\n${result.content}`
+    );
+    setClipboardFailed(copyFailed);
+    setPopupBlocked(blocked);
+    setPublishError(null);
+    setShowPublishConfirm(true);
+  };
+
+  const handleDetectPublished = () => apiClient.get(`/posts/${id}/detect-published`);
+
+  const handleConfirmPublish = async (url) => {
+    setIsPublishSubmitting(true);
+    setPublishError(null);
+    try {
+      await apiClient.patch(`/posts/${id}`, {
+        status: "published",
+        publishedAt: new Date().toISOString(),
+        publishedUrl: url.trim(),
+      });
+      navigate("/");
+    } catch (err) {
+      setPublishError(err.message);
+      setIsPublishSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -57,8 +98,30 @@ function NoticeResult() {
           title={result.title}
           content={result.content}
           keywords={result.seoKeywords}
-          onPublish={() => navigate("/")}
+          onPublish={handlePublishNow}
         />
+
+        {showPublishConfirm && (
+          <div className="max-w-[750px] w-full flex flex-col gap-lg mt-lg">
+            <PublishExceptionBanner
+              clipboardFailed={clipboardFailed}
+              popupBlocked={popupBlocked}
+              publishText={`${result.title}\n\n${result.content}`}
+              writeUrl={NAVER_BLOG_WRITE_URL}
+            />
+            <PublishConfirmCard
+              onDetect={handleDetectPublished}
+              onConfirm={handleConfirmPublish}
+              onCancel={() => {
+                setShowPublishConfirm(false);
+                setClipboardFailed(false);
+                setPopupBlocked(false);
+              }}
+              isSubmitting={isPublishSubmitting}
+              error={publishError}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
