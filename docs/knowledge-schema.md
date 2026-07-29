@@ -10,14 +10,14 @@
 
 ## 2. 데이터 성숙도
 
-데이터는 원본에서 사용자 제공 결과까지 일곱 단계를 거친다. 각 단계는 앞 단계에 대한 계보를 가진다.
+데이터는 원본에서 사용자 제공 결과까지 D0부터 D6까지 일곱 계층을 거친다. D3은 생성 순서가 다른 두 묶음으로 갈린다. 각 계층은 앞 계층에 대한 계보를 가진다.
 
 | 계층 | 데이터 | 버전 축 | 생산 |
 | --- | --- | --- | --- |
 | D0 | 변경하지 않는 source snapshot | `dataset_version` | 데이터 수집 에이전트 |
 | D1 | source chunk와 구조적 위치, 검색 인덱스 | `dataset_version` | 인덱싱 파이프라인 |
 | D2 | 원문에 근거한 mention과 observation | `dataset_version` | 통계 분석 에이전트 |
-| D3a | 분류체계, 정규화 할당, 지식 그래프 | `taxonomy_version`, `knowledge_version` | 통계 분석·지식 구축 에이전트 |
+| D3a | 분류체계, 정규화 할당, 지식 그래프 | `taxonomy_version_id`, `knowledge_version` | 통계 분석·지식 구축 에이전트 |
 | D4 | 집계 통계, 패턴, 깊이 프로파일 | `analysis_version` | 집계 파이프라인 |
 | D3b | Wiki | `knowledge_version` | 지식 구축 에이전트 |
 | D5 | 해석·전략·로드맵 주장 | `analysis_version` | 해석·전략·로드맵 에이전트 |
@@ -28,6 +28,10 @@ D3a와 D3b는 지식을 정규화하는 같은 성격의 계층이나 생성 순
 지식 그래프는 할당만 있으면 구축할 수 있으므로 D3a에 둔다. 엣지의 `weight`는 통계에서 계산하는 후행 값이며 D4 이후에 채운다. `weight`가 비어 있는 동안 경로 탐색은 가능하고 순위만 정해지지 않는다.
 
 사용자의 체크 상태와 그에 따른 재조합 결과는 데이터 성숙도 계층에 속하지 않는다. 이는 Express가 요청 시점에 계산하는 런타임 결과다.
+
+사용자가 직접 입력한 공고(`user_postings`)와 그 공고 하나에 대한 분석 결과(`user_posting_analyses`)도 어느 계층에도 속하지 않는다. 두 표는 통계 테이블과 외래키로 잇지 않으며 지표의 모집단 밖에 있다. 사용자 입력이 모집단에 섞이면 지표의 분모가 오염된다. 컬럼은 [ERD](erd.md) 11.8, 흐름은 [아키텍처](architecture.md) 11장에 있다.
+
+`legacy_posting_samples`는 서빙 폴백이며 지식 계층에 속하지 않는다. 공고 하나의 화면 표시값을 한 행에 펼친 평면 표이고 Express의 폴백 조회만 읽는다. 분석의 모집단은 `posting_versions`가 세고 이 표는 세지 않는다. 컬럼은 [ERD](erd.md) 4.7, 결정 근거는 [ADR 0014](adr/0014-legacy-posting-samples.md)에 있다.
 
 ```mermaid
 flowchart TD
@@ -59,6 +63,11 @@ flowchart TD
     D2 -.->|"계보 역추적"| D1
     D1 -.->|"계보 역추적"| D0
 ```
+
+| 도형 | 의미 |
+| --- | --- |
+| 원통 | 저장소와 데이터 계층 |
+| 스타디움 | 사용자 접점과 종료 상태 |
 
 D0은 변경하지 않는 증거 snapshot이며 시스템 산출물의 최종 계보 기준이다. 출처의 내용이 사실임을 보장하지는 않는다. 출처의 신뢰도와 허용 용도는 별도의 평가로 관리한다.
 
@@ -146,7 +155,7 @@ postings
 
 posting_versions
   posting_version_id, posting_id, snapshot_id
-  title, career_label, edu_label, entry_label
+  title, career_label_raw, edu_label_raw, entry_label_raw, entry_label
   posted_at, closed_at, dataset_version
 ```
 
@@ -182,6 +191,14 @@ flowchart LR
     M --> N[("source_chunks chunk_embeddings")]
 ```
 
+| 도형 | 의미 |
+| --- | --- |
+| 평행사변형 | 외부 자료와 입력 이벤트 |
+| 사각형 | 단일 처리 단계 |
+| 마름모 | 분기와 판정 |
+| 육각형 | 생성 모델을 쓰는 단계 |
+| 원통 | 저장소와 데이터 계층 |
+
 ### 4.1 `source_chunks`
 
 ```text
@@ -192,7 +209,7 @@ ordinal
 text
 context
 embedding_text
-tsvector
+tsv
 token_count
 dataset_version
 ```
@@ -209,7 +226,6 @@ embedding_model
 embedding_dimension
 embedding
 embedding_version
-created_at
 ```
 
 임베딩을 별도 테이블에 두어 모델을 교체할 때 청크를 다시 만들지 않는다. 여러 임베딩 모델의 비교 평가도 같은 구조로 수행한다.
@@ -237,6 +253,17 @@ requirement_mentions
 `stated_requiredness`는 공고가 사용한 표현을 그대로 담는다. 필수·우대·주요업무의 판정은 원문 라벨을 따르고 해석하지 않는다.
 
 `raw_expression`은 원문 문장의 부분 문자열이며 `evidence_span_start`와 `evidence_span_end`로 위치를 고정한다. 위치가 원문과 일치하지 않는 mention은 검증에서 폐기한다.
+
+```text
+chunk_extractions
+  chunk_id
+  dataset_version
+  extraction_run_id
+  mention_count
+  extracted_at
+```
+
+추출을 마친 청크를 표현이 나왔는지와 무관하게 기록한다. `mention_count = 0`은 정상값이다. 회사 소개·복리후생·전형 절차 청크에는 요구 표현이 없으므로, `requirement_mentions`의 행을 처리 여부의 근거로 삼으면 그 청크가 매 실행마다 다시 대상이 된다. 증분 재실행의 대상 조회가 이 표를 읽는다.
 
 ## 6. D3a 분류체계와 할당
 
@@ -303,46 +330,13 @@ role_boundary_eligible
 
 #### 7.1.1 사전 semantic
 
-D3a에서 지식 구축 에이전트가 생성한다. 해석·전략·로드맵 에이전트의 탐색 입력이다.
-
-| 노드 유형 | 참조 |
-| --- | --- |
-| `JobRole` | `job_roles` |
-| `Posting` | `postings` |
-| `Company` | `companies` |
-| `CompanyCluster` | `company_clusters` |
-| `RequirementDimension` | `requirement_dimensions` |
-| `Capability` | `capabilities` |
-| `Technology` | `requirement_dimensions` 중 기술 유형 |
-| `Standard` | `standards` |
-
-| 엣지 유형 | 방향 |
-| --- | --- |
-| `POSTED_BY` | Posting → Company |
-| `BELONGS_TO_CLUSTER` | Company → CompanyCluster |
-| `REQUIRES` | Posting → RequirementDimension |
-| `REQUIRES_CAPABILITY` | RequirementDimension → Capability |
-| `MAPS_TO_STANDARD` | Capability → Standard |
-| `PREREQUISITE_OF` | Capability → Capability |
+D3a에서 지식 구축 에이전트가 생성한다. 해석·전략·로드맵 에이전트의 탐색 입력이다. 이 묶음의 노드·엣지 유형과 허용 연결은 [온톨로지 v1](ontology-v1.md) 2장에 있다.
 
 `BELONGS_TO_CLUSTER`는 `company_cluster_memberships`에서 파생한 투영이다. 엣지의 `valid_from`과 `valid_to`는 membership의 값을 그대로 옮긴다.
 
 #### 7.1.2 사후 semantic
 
-D5 산출물이 저장될 때 계보 기록 파이프라인이 생성한다.
-
-| 노드 유형 | 참조 |
-| --- | --- |
-| `ProofArtifact` | `checklist_items` 중 증명 산출물 유형 |
-| `Channel` | 포트폴리오·자소서·면접의 고정 목록 |
-| `LearningResource` | `study_tracks` |
-| `Project` | `roadmap_items` |
-
-| 엣지 유형 | 방향 |
-| --- | --- |
-| `PROVEN_BY` | Capability → ProofArtifact |
-| `USED_IN_CHANNEL` | ProofArtifact → Channel |
-| `TEACHES` | LearningResource → Capability |
+D5 산출물이 저장될 때 계보 기록 파이프라인이 생성한다. 유형 목록은 [온톨로지 v1](ontology-v1.md) 2장에서 생성 시점이 `D5 이후`인 항목이다.
 
 사후 semantic은 이를 생성한 에이전트의 같은 실행 안에서는 사용할 수 없다. 전략 에이전트는 `ProofArtifact`를 만드는 주체이므로 `PROVEN_BY`를 탐색 입력으로 받지 않는다. 이 묶음은 화면의 근거 경로 표시와 다음 분석 버전의 탐색에 사용한다.
 
@@ -352,30 +346,7 @@ D5 산출물이 저장될 때 계보 기록 파이프라인이 생성한다.
 
 이 층의 엣지는 관계형 테이블에서 빌드한 파생 표현이다. 주장과 근거의 원천은 `analysis_claim_evidence`이며 `SUPPORTED_BY`와 `CONTRADICTED_BY`는 이 테이블에서 만든다. 검증의 근거 위치 검사와 근거 함의 검사는 엣지가 아니라 테이블을 검사한다. 엣지에서 테이블로 향하는 역방향 갱신은 없다. `graph_paths`가 `knowledge_edges`에 대해 갖는 지위와 같다.
 
-| 노드 유형 | 참조 |
-| --- | --- |
-| `SourceSnapshot` | `source_snapshots` |
-| `Chunk` | `source_chunks` |
-| `RequirementMention` | `requirement_mentions` |
-| `Assignment` | `posting_requirement_assignments` |
-| `StatisticFact` | `statistics_facts` |
-| `AnalysisClaim` | `analysis_claims` |
-| `ChecklistItem` | `checklist_items` |
-| `RoadmapItem` | `roadmap_items` |
-| `AnalysisOutput` | `analysis_outputs` |
-| `AgentRun` | `agent_runs` |
-
-| 엣지 유형 | 방향 |
-| --- | --- |
-| `PART_OF` | Chunk → SourceSnapshot |
-| `EVIDENCED_BY` | RequirementMention → Chunk |
-| `ASSIGNED_TO` | RequirementMention → RequirementDimension |
-| `COMPUTED_FROM` | StatisticFact → Assignment |
-| `SUPPORTED_BY` | AnalysisClaim → Chunk 또는 StatisticFact |
-| `CONTRADICTED_BY` | AnalysisClaim → Chunk |
-| `DERIVED_FROM` | ChecklistItem → AnalysisClaim |
-| `FILLS` | RoadmapItem → ChecklistItem |
-| `PRODUCED_BY` | AnalysisOutput → AgentRun |
+이 층의 노드·엣지 유형과 허용 연결은 [온톨로지 v1](ontology-v1.md) 3장에 있다.
 
 원문 표현에서 차원으로 이어지는 정규화는 계보이므로 `ASSIGNED_TO`로 Provenance 층에 기록한다. Semantic 층에는 정규화가 끝난 관계만 넣는다.
 
@@ -394,12 +365,12 @@ Provenance 엣지와 사후 semantic 엣지는 정규 테이블의 외래키를 
 ```text
 knowledge_nodes
   node_id, graph_layer, node_type, ref_table, ref_id, label
-  ontology_version, dataset_version, taxonomy_version, analysis_version
+  ontology_version, dataset_version, taxonomy_version_id, analysis_version
 
 knowledge_edges
   edge_id, graph_layer, edge_type, src_node_id, dst_node_id
   weight, evidence_id, produced_by_run_id, verification_status
-  ontology_version, dataset_version, taxonomy_version, analysis_version
+  ontology_version, dataset_version, taxonomy_version_id, analysis_version
   valid_from, valid_to
 ```
 
@@ -414,12 +385,7 @@ ontology_versions
 
 `knowledge_nodes`와 `knowledge_edges`는 `(ontology_version, graph_layer)` 두 컬럼으로 이 표를 참조한다.
 
-`taxonomy_version`은 nullable이다. 분류체계에 의존하는 노드·엣지만 채우고 나머지는 null로 둔다.
-
-| 구분 | 노드 | 엣지 |
-| --- | --- | --- |
-| 의존 | `RequirementDimension`, `Technology` | `REQUIRES`, `REQUIRES_CAPABILITY`, `ASSIGNED_TO` |
-| 독립 | 그 외 전부 | `POSTED_BY`, `BELONGS_TO_CLUSTER`, `MAPS_TO_STANDARD`, `PREREQUISITE_OF`, `PROVEN_BY`, `USED_IN_CHANNEL`, `TEACHES`, `PART_OF`, `EVIDENCED_BY`, `COMPUTED_FROM`, `SUPPORTED_BY`, `CONTRADICTED_BY`, `DERIVED_FROM`, `FILLS`, `PRODUCED_BY` |
+`taxonomy_version_id`는 nullable이다. 분류체계에 의존하는 노드·엣지만 채우고 나머지는 null로 둔다. 의존하는 노드 유형은 `RequirementDimension`과 `Technology` 둘이다. 엣지의 의존 여부는 [온톨로지 v1](ontology-v1.md) 2.2·3.2의 `taxonomy_version_id` 열이 정한다.
 
 분류체계 버전을 발행하면 의존 노드·엣지를 재구축한다. 이 규칙이 있어야 `graph_paths`의 네 버전 캐시 키가 실제 의존 관계와 일치한다.
 
@@ -430,7 +396,7 @@ ontology_versions
 ```text
 graph_paths
   path_id, path_type, node_sequence, edge_sequence
-  taxonomy_version, knowledge_version, analysis_version, graph_policy_version
+  taxonomy_version_id, knowledge_version, analysis_version, graph_policy_version
   computed_at
 ```
 
@@ -480,7 +446,7 @@ wiki_revisions
   definition, why_required
   depth_criteria, prerequisites
   common_misconceptions, interview_verification, learning_sequence
-  created_at, produced_by_run_id
+  produced_by_run_id
 
 wiki_evidence
   revision_id, field_name, chunk_id, source_tier
@@ -495,6 +461,8 @@ wiki_evidence
 AND 필수 필드의 근거 충족
 AND (통계적 우선순위 상위 OR research_request 존재)
 ```
+
+필수 필드는 `definition`, `why_required`, `depth_criteria` 셋이다. 정의가 없으면 무엇에 대한 기준인지, 요구 이유가 없으면 그 기준을 왜 두는지 말할 수 없고, 깊이 기준은 8.1의 책임 자체다. 나머지 네 필드는 근거가 있으면 담고 없으면 비운다.
 
 모든 역량에 대해 Wiki를 만들지 않는다. 생성 조건은 통계 결과와 조사 요청으로 판정하며 하위 산출물의 참조 여부를 조건으로 사용하지 않는다.
 
@@ -522,7 +490,7 @@ capability_depth_profiles
   scope_level, scope_id, entry_segment, period_id
   depth_distribution, expected_depth
   sample_size, evidence_support, confidence
-  analysis_version_id
+  analysis_version
 ```
 
 Wiki는 각 깊이 등급이 무엇을 의미하는지를 저장하고, `capability_depth_profiles`는 어느 등급이 기대되는지를 저장한다.
@@ -532,7 +500,7 @@ Wiki는 각 깊이 등급이 무엇을 의미하는지를 저장하고, `capabil
 ```text
 analysis_versions
   analysis_version, job_role_id, dataset_version
-  taxonomy_version, knowledge_version
+  taxonomy_version_id, knowledge_version
   model_version, prompt_version, retrieval_policy_version, metric_policy_version
   scope_spec, status, tokens, cost, started_at, ended_at
 
@@ -542,11 +510,11 @@ active_analysis_versions
 analysis_outputs
   output_id, analysis_version, job_role_id
   scope_level, scope_id, output_type, payload
-  verification_status, generated_at
+  produced_by_agent, verification_status, generated_at
 
 statistics_facts
   fact_id, analysis_version, metric_family, metric_policy_version
-  scope_level, scope_id, period_id
+  scope_level, scope_id, entry_segment, period_id
   dimension_id, secondary_dimension_id
   measure, numerator, denominator, value
   sample_size, sample_status, uncertainty
@@ -579,7 +547,7 @@ checklist_concepts
 checklist_items
   item_id, concept_id, analysis_version
   scope_level, scope_id, title, subtitle
-  reason, evidence_needed, channels, required
+  reason, evidence_needed, channels, required, is_deviation
 
 checklist_item_mappings
   from_item_id, to_item_id, relation, analysis_version
@@ -599,7 +567,7 @@ study_tracks
 
 사용자의 체크 상태는 `checklist_concept_id`에 연결한다. 분석 버전이 바뀌어 문구가 달라져도 개념 식별자가 유지되므로 체크 상태가 잘못된 항목에 붙지 않는다. 개념의 분리·통합은 `checklist_item_mappings`로 표현한다.
 
-## 10. 지표와 화면 정책
+## 10. 지표 정책
 
 ```text
 metric_templates
@@ -614,15 +582,9 @@ metric_policy_versions
 
 dimension_metric_applicability
   taxonomy_version_id, dimension_id, metric_family, applicable, reason
-
-screen_block_templates
-  block_id, block_name, block_order, job_role_agnostic
-
-screen_block_metric_bindings
-  block_id, metric_family, measure, presentation_role
 ```
 
-지표 family의 수식, 적용 대상, 표본 상태 판정은 [통계 모델](statistics-model.md)에서 정의한다.
+지표 family의 수식, 적용 대상, 표본 상태 판정은 [통계 모델](statistics-model.md)에서 정의한다. 화면 블록과 지표의 연결도 같은 문서가 다룬다.
 
 ## 11. 계측
 
@@ -662,7 +624,7 @@ tool_calls
 research_requests
   request_id, requested_by_run_id, analysis_version
   goal, needed_evidence_type, scope_level, scope_id
-  status, priority, fulfilled_by_snapshot_ids, created_at, resolved_at
+  status, priority, fulfilled_by_snapshot_ids, resolved_at
 
 verification_results
   result_id, analysis_version, target_type, target_id
@@ -679,19 +641,7 @@ saturation_observations
   marginal_gain, observed_at
 ```
 
-`evidence_usages.usage_type`은 다음 값을 가진다.
-
-```text
-supports_claim
-contradicts_claim
-verification_only
-normalization
-planning
-coverage_check
-unused
-```
-
-검색된 자료는 최종 인용 외에도 반례 검사, 용어 정규화, 다음 검색 계획, 부재 확인에 기여한다. 사용 목적을 구분해 기록해야 검색 전략별 기여도를 계산할 수 있다.
+`evidence_usages.usage_type`의 값 목록과 계측에서의 쓰임은 [아키텍처](architecture.md) 14.2에 있다.
 
 `used_claim_id`는 nullable이다. `usage_type`이 `planning`, `normalization`, `coverage_check`, `verification_only`, `unused`인 경우 대상 주장이 없다.
 
@@ -723,55 +673,13 @@ evaluation_failures
 
 ## 13. 접근 권한
 
-### 13.1 에이전트별 쓰기 범위
+구성요소별 읽기·쓰기 범위와 강제 수단 네 층은 [권한 매트릭스](permission-matrix.md)가 소유한다. 계층별 산출물을 어느 구성요소가 쓰는지, 표를 공유하는 구성요소를 무엇으로 가르는지도 같은 문서에 있다.
 
-| 구성요소 | 쓰기 가능 테이블 |
-| --- | --- |
-| 데이터 수집 에이전트 | `sources`, `source_snapshots`, `source_observations`, `source_assessments` |
-| 지식 구축 에이전트 | `knowledge_nodes`·`knowledge_edges`의 사전 semantic 묶음, `wiki_pages`, `wiki_revisions`, `wiki_evidence` |
-| 통계 분석 에이전트 | `requirement_mentions`, `requirement_candidates`, `requirement_candidate_mentions`, `requirement_candidate_decisions`, `posting_requirement_assignments`, `saturation_observations` |
-| 채용공고 해석 에이전트 | `analysis_claims`, `analysis_claim_evidence`, `coverage_assertions`, `analysis_outputs` |
-| 합격 전략 에이전트 | `checklist_concepts`, `checklist_items`, `checklist_item_mappings`, `analysis_outputs` |
-| 준비 로드맵 에이전트 | `roadmap_items`, `roadmap_item_fills`, `study_tracks`, `analysis_outputs` |
-| 오케스트레이터 | `analysis_versions`, `active_analysis_versions`, `research_requests` |
-| 인덱싱 파이프라인 | `source_chunks`, `chunk_embeddings` |
-| 집계 파이프라인 | `statistics_facts`, `capability_depth_profiles` |
-| 계보 기록 파이프라인 | `knowledge_nodes`·`knowledge_edges`의 Provenance 묶음과 사후 semantic 묶음, `graph_paths` |
-| 검증 파이프라인 | `verification_results`, `repair_orders` |
-| 전 구성요소 | `retrieval_runs`, `retrieval_queries`, `retrieval_candidates`, `evidence_sets`, `evidence_set_members`, `evidence_usages`, `agent_runs`, `agent_run_steps`, `tool_calls` |
-
-수치를 저장하는 경로는 집계 파이프라인 하나다. 통계 분석 에이전트는 mention 추출, 차원 발견과 승격, 할당까지 담당하고 `statistics_facts`에 쓰지 않는다.
-
-`research_requests`는 해석·전략·로드맵 에이전트와 검증 파이프라인이 `INSERT`하고 오케스트레이터가 상태를 갱신한다. 검증 파이프라인의 `needs_research` 판정도 같은 경로로 요청을 발행한다.
-
-`analysis_outputs`는 세 에이전트가 공유하므로 테이블 단위 `GRANT`로 분리하지 못한다. `output_type`과 실행 주체의 일치는 repository 인터페이스와 행 수준 제약으로 강제한다.
-
-`knowledge_nodes`와 `knowledge_edges`도 두 구성요소가 공유하므로 `graph_layer`와 유형 목록으로 쓰기 범위를 나눈다. 강제 수단은 13.2를 따른다.
-
-### 13.2 강제 수단
-
-| 층 | 수단 |
-| --- | --- |
-| 설계 | 13.1의 권한 범위 |
-| 코드 | 구성요소별 repository 인터페이스. 다른 데이터베이스 접근 경로를 두지 않는다 |
-| 데이터베이스 | 구성요소별 role과 `GRANT`, 또는 허용된 저장 프로시저만 노출 |
-| 검증 | 통합 테스트에서 허용 범위 밖 쓰기가 실패한다 |
-
-Express가 사용하는 service role은 행 수준 정책을 우회하므로 권한은 repository 경계와 데이터베이스 role로 강제한다.
-
-### 13.3 스키마 소유권
-
-데이터베이스 스키마의 기준은 `agent/migrations/`다. 공유 데이터베이스의 스키마를 두 서비스가 각각 정의하지 않는다. Express는 조회 계약만 따른다.
+데이터베이스 스키마의 기준은 `agent/migrations/`다. 공유 데이터베이스의 스키마를 두 서비스가 각각 정의하지 않는다. Express는 조회 계약만 따른다. 근거는 [ADR 0006](adr/0006-migration-ownership.md)에 있다.
 
 ## 14. 2차·3차 자료의 사용 범위
 
-| 계층 | 자료 | 통계 집계 | 해석 | 전략·로드맵 | Wiki |
-| --- | --- | --- | --- | --- | --- |
-| A | 기업 공식 채용공고 | 사용 | 사용 | 사용 | `why_required` |
-| B | 회사 공식 채용·기술 자료 | 미사용 | 회사 맥락으로 사용 | 사용 | `why_required`, `depth_criteria` |
-| C | 공공·직무 표준 | 용어 연결에만 | 사용 | 사용 | `definition`, `prerequisites` |
-| D | 직무 요구와 이어지는 제3자 자료 | 미사용 | 보강 근거로 사용 | 사용 | `depth_criteria`, `common_misconceptions`, `interview_verification`, `learning_sequence` |
-| E | 원문을 확인할 수 없거나 직무 요구와 이어지지 않는 자료 | 미사용 | 미사용 | 후보 탐색에만 | 없음 |
+자료 계층별 허용 용도는 [데이터 전략](data-strategy.md) 3장에 있다.
 
 회사 공식 자료에서 반복되는 주제는 그 회사의 맥락 신호이며 해당 공고의 명시 요구사항과 구분한다. 구분의 정의는 [데이터 전략](data-strategy.md)을 따른다.
 

@@ -156,8 +156,16 @@ _WRITE_SCOPE: dict[Component, frozenset[str]] = {
         {"postings", "posting_versions", "source_snapshots", "source_observations"}
     ),
     Component.PIPE_INDEX: frozenset({"source_chunks", "chunk_embeddings"}),
+    # `analysis_outputs` 는 네 주체가 나눠 쓴다. 집계가 `statistics` 산출물을 쓰며
+    # `0001_initial_schema.sql` 의 CHECK 가 `output_type` 과 실행 주체의 짝을 강제한다.
+    # 권한은 `0004_component_grants.sql` 의 GRANT 와 같다.
     Component.PIPE_AGGREGATE: frozenset(
-        {"statistics_facts", "capability_depth_profiles", "knowledge_edges"}
+        {
+            "statistics_facts",
+            "capability_depth_profiles",
+            "analysis_outputs",
+            "knowledge_edges",
+        }
     ),
     Component.PIPE_LINEAGE: frozenset(
         {"knowledge_nodes", "knowledge_edges", "graph_paths"}

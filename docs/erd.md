@@ -21,12 +21,12 @@
 | 시각 | `timestamptz` |
 | 날짜 | `date` |
 | 구조화 값 | `jsonb` |
-| 임베딩 | `vector(N)` |
+| 임베딩 | `vector(1536)` |
 | 키워드 인덱스 | `tsvector` |
 
 식별자는 `uuid`가 아니라 `text`를 쓴다. 실행 봉투와 로그에 `run_...`, `an_...` 같은 접두사가 붙은 값이 그대로 나타나며, 사람이 읽고 추적하는 것이 디버깅에 필요하다.
 
-`vector(N)`의 `N`은 P2-2 스모크 테스트에서 확인한 임베딩 차원으로 확정한다. 그 전까지 migration을 작성하지 않는다.
+임베딩 차원은 1536이다.
 
 ### 2.2 식별자 접두사
 
@@ -46,6 +46,8 @@
 | `out_` | `analysis_outputs` |
 | `run_` | `agent_runs` |
 | `an_` | `analysis_versions` |
+| `up_` | `user_postings` |
+| `ua_` | `user_posting_analyses` |
 | `ds_` | 데이터셋 버전 |
 | `tx_` | 분류체계 버전 |
 | `kn_` | 지식 버전 |
@@ -87,7 +89,7 @@
 
 이 표는 목표 직무 아홉 종을 담는다. `backend`, `frontend`, `ai_engineer`, `data_engineer`, `fullstack`, `devops`, `mobile`, `security`, `game_client`다. 직무 판정이 아홉 중 하나를 고르는 문제이므로 후보 전량을 기준 데이터로 둔다. 판정 규칙은 [지표 명세](metric-spec.md) 2.8에 있다.
 
-`backend` 외의 여덟 종은 `is_active`가 거짓이다.
+아홉 직무 전부 `is_active`가 참이다.
 
 ### 3.2 `companies`
 
@@ -98,6 +100,8 @@
 | `official_site_url` | `text` | |
 | `careers_url` | `text` | |
 
+카탈로그는 아홉 직무 데이터셋이 참조하는 법인 42개를 담는다. 같은 채용 호스트를 쓰더라도 법인이 다르면 별도 행이다. 기업군 성향 지표의 분모가 법인 단위이기 때문이다.
+
 ### 3.3 `company_clusters`
 
 | 컬럼 | 타입 | 제약 |
@@ -107,7 +111,7 @@
 | `definition` | `text` | NOT NULL. 이 군에 넣는 기준 |
 | `sort_order` | `integer` | NOT NULL |
 
-초기 6종은 `bigtech_platform`, `startup`, `b2b_saas`, `fintech_finance`, `si_enterprise`, `game`이다. 기업군은 사람이 정한 태그이며 자동 분류는 `EXT-05`에서 다룬다.
+초기 6종은 `bigtech_platform`, `startup`, `b2b_saas`, `fintech_finance`, `si_enterprise`, `game`이다. 기업군은 사람이 정한 태그이며 자동 분류는 [개발 백로그](backlog.md)의 `EXT-05`에서 다룬다.
 
 ### 3.4 `company_cluster_memberships`
 
@@ -228,15 +232,15 @@ CREATE INDEX ON source_snapshots (source_id, fetched_at DESC);
 `raw_content`의 변경과 삭제를 트리거로 차단한다.
 
 ```sql
-CREATE FUNCTION block_snapshot_mutation() RETURNS trigger AS $$
+CREATE FUNCTION block_append_only_mutation() RETURNS trigger AS $$
 BEGIN
-  RAISE EXCEPTION 'source_snapshots is append-only';
+  RAISE EXCEPTION '% is append-only', TG_TABLE_NAME;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_snapshot_no_update
+CREATE TRIGGER trg_snapshots_append_only
   BEFORE UPDATE OR DELETE ON source_snapshots
-  FOR EACH ROW EXECUTE FUNCTION block_snapshot_mutation();
+  FOR EACH ROW EXECUTE FUNCTION block_append_only_mutation();
 ```
 
 정정은 새 행 삽입과 `supersedes_snapshot_id` 연결로만 표현한다.
@@ -274,10 +278,11 @@ append-only다. `UPDATE`와 `DELETE`를 트리거로 차단한다.
 
 ```sql
 UNIQUE (snapshot_id, assessment_version)
+CHECK (allowed_uses <@ ARRAY[...11종...]::text[])
 CREATE INDEX ON source_assessments USING gin (allowed_uses);
 ```
 
-`allowed_uses`의 허용 값은 [데이터 전략](data-strategy.md) 3.1의 11종이다. 자료 계층별 기본 조합은 같은 문서 3장의 표를 따른다.
+`allowed_uses`의 허용 값은 [데이터 전략](data-strategy.md) 3.1의 11종이며 `CHECK`가 그 목록 밖의 값을 막는다. 자료 계층별 기본 조합은 같은 문서 3장의 표를 따른다.
 
 ### 4.5 `postings`
 
@@ -322,6 +327,38 @@ CREATE INDEX ON posting_versions (entry_label);
 
 `*_raw` 컬럼은 공고 문구를 해석하지 않고 그대로 담는다. `entry_label`은 집계용 정규화 값이며 정규화 규칙은 [지표 명세](metric-spec.md)에 있다. 기업군은 이 표의 컬럼이 아니다. `company_cluster_memberships`를 `as_of_date`로 해석한다.
 
+### 4.7 `legacy_posting_samples`
+
+Express의 폴백 조회가 읽는 평면 표다. 이 표를 따로 둔 이유는 [지식·저장 구조](knowledge-schema.md) 2장, 결정 근거는 [ADR 0014](adr/0014-legacy-posting-samples.md)에 있다.
+
+| 컬럼 | 타입 | 제약 |
+| --- | --- | --- |
+| `posting_id` | `text` | PK |
+| `title` | `text` | NOT NULL |
+| `company` | `text` | NOT NULL. 회사명 문자열 |
+| `cluster_tag` | `text` | NOT NULL. 기업군 6종 |
+| `snapshot` | `text` | NOT NULL. `CHECK IN ('recent','prev')` |
+| `posted_at` | `date` | |
+| `source` | `jsonb` | NOT NULL DEFAULT `'{}'` |
+| `raw_text` | `text` | 공고 원문 |
+| `entry_label` | `text` | |
+| `edu_label` | `text` | |
+| `career_label` | `text` | |
+| `skills` | `jsonb` | NOT NULL DEFAULT `'[]'` |
+| `out_of_role_tags` | `jsonb` | NOT NULL DEFAULT `'[]'` |
+| `advanced_spans` | `jsonb` | NOT NULL DEFAULT `'[]'` |
+| `impl_level_signals` | `jsonb` | NOT NULL DEFAULT `'[]'` |
+| `axis_mentions` | `jsonb` | NOT NULL DEFAULT `'[]'` |
+| `reality_tags` | `jsonb` | NOT NULL DEFAULT `'[]'` |
+| `job_role_id` | `text` | NOT NULL DEFAULT `'backend'` |
+
+```sql
+CREATE INDEX ON legacy_posting_samples (job_role_id, snapshot);
+CREATE INDEX ON legacy_posting_samples (cluster_tag);
+```
+
+`company`와 `cluster_tag`는 문자열이며 `companies`·`company_clusters`를 참조하지 않는다. `job_role_id`도 `job_roles`로 가는 외래키를 두지 않는다. 이 표는 분석 모집단이 아니므로 기준 테이블의 계보에 들어가지 않는다.
+
 ## 5. D1 검색 표현
 
 ### 5.1 `source_chunks`
@@ -335,7 +372,7 @@ CREATE INDEX ON posting_versions (entry_label);
 | `text` | `text` | NOT NULL |
 | `context` | `jsonb` | NOT NULL. 회사·기업군·문서유형·섹션·직무·게시시점 |
 | `embedding_text` | `text` | NOT NULL |
-| `tsv` | `tsvector` | 생성 컬럼 |
+| `tsv` | `tsvector` | 생성 컬럼. `to_tsvector('simple', embedding_text)` |
 | `token_count` | `integer` | NOT NULL |
 | `dataset_version` | `text` | NOT NULL, FK → `dataset_versions` |
 
@@ -355,7 +392,7 @@ CREATE INDEX ON source_chunks USING gin (context jsonb_path_ops);
 | `chunk_id` | `text` | NOT NULL, FK → `source_chunks` |
 | `embedding_model` | `text` | NOT NULL |
 | `embedding_dimension` | `integer` | NOT NULL |
-| `embedding` | `vector(N)` | NOT NULL |
+| `embedding` | `vector(1536)` | NOT NULL |
 | `embedding_version` | `text` | NOT NULL |
 
 ```sql
@@ -389,11 +426,14 @@ CHECK (evidence_span_start < evidence_span_end)
 CREATE INDEX ON requirement_mentions (posting_version_id);
 CREATE INDEX ON requirement_mentions (chunk_id);
 CREATE INDEX ON requirement_mentions (dataset_version);
+CREATE INDEX ON requirement_mentions (chunk_id, dataset_version);
 ```
 
 `stated_requiredness`는 열거값이 아니다. 공고가 쓴 표현을 그대로 담고 해석하지 않는다. 필수·우대의 판정은 할당 단계에서 수행한다.
 
 `evidence_span_*`은 `source_chunks.text` 기준 오프셋이다. 검증의 근거 위치 검사가 이 구간을 원문과 대조한다.
+
+`(chunk_id, dataset_version)` 인덱스는 증분 재실행의 `NOT EXISTS` 조회가 두 컬럼을 인덱스만으로 판정하게 한다.
 
 ### 6.2 `chunk_extractions`
 
@@ -410,15 +450,13 @@ PRIMARY KEY (chunk_id, dataset_version)
 CREATE INDEX ON chunk_extractions (dataset_version);
 ```
 
-추출을 마친 청크를 표현이 나왔는지와 무관하게 기록한다. `mention_count = 0`은 정상값이며 0을 담는 것이 이 테이블의 존재 이유다. 회사 소개·복리후생·전형 절차 청크는 요구 표현이 하나도 없는 것이 정상이므로, `requirement_mentions`의 행을 처리 여부의 근거로 삼으면 그 청크가 매 실행마다 다시 대상이 된다.
+이 테이블을 둔 이유는 [지식·저장 구조](knowledge-schema.md) 5장에 있다.
 
 증분 재실행의 대상 조회가 이 테이블을 `NOT EXISTS`로 읽는다. 조회 위치는 `LIMIT` 앞이다(6.1과 같은 규칙).
 
 복합 기본키가 "한 데이터셋 버전에서 한 청크는 한 번 처리한다"를 강제한다. 청크는 스냅샷에서 결정적으로 나오고 스냅샷은 변경되지 않으므로 같은 데이터셋 버전 안에서 다시 뽑을 이유가 없다. 데이터셋 버전이 다르면 다시 뽑는다. 식별자 컬럼이 없으므로 2.2의 접두사 규약은 이 테이블에 적용되지 않는다.
 
 기록은 mention 저장과 같은 트랜잭션에서 이루어진다. 트랜잭션이 되돌아가면 표현과 기록이 함께 사라지므로 "표현은 없는데 처리됨으로 남는" 상태가 생기지 않는다. 모델 호출이 예외로 끝난 청크는 기록하지 않는다. 답하지 못한 것을 표현 없음으로 굳히면 다시 시도할 수 없다.
-
-`mention_count = 0`의 비율은 추출 프롬프트의 품질 지표로 읽을 수 있다. 비율이 갑자기 오르면 프롬프트나 모델이 요구 표현을 놓치기 시작했다는 신호다.
 
 ## 7. D3a 분류체계
 
@@ -540,7 +578,7 @@ CREATE INDEX ON requirement_candidates (taxonomy_id, judged_against_taxonomy_ver
 
 `relation_judgment`는 판정에 건 기존 차원 목록에 상대적이며 그 목록은 분류체계 버전의 활성 어휘에서 나온다. `judged_against_taxonomy_version_id`가 그 버전을 가리키고, 승격 심사는 판정이 가리킨 차원이 활성 버전에 있는지 확인한다. 근거는 [ADR 0011](adr/0011-candidate-judgment-context.md)에 있다.
 
-세 컬럼은 NULL을 허용한다. 이 컬럼이 생기기 전에 만들어진 후보 행은 값을 갖지 않는다.
+세 컬럼은 NULL을 허용한다.
 
 `proposed_dimension_kind`는 후보를 명명한 판정이 함께 낸 차원 종류이며 값 집합은 7.3의 `dimension_kind`와 같다. 승격이 이 값을 새 차원에 옮기고, 값이 없으면 `practice`로 떨어뜨린다. 이 컬럼이 없으면 승격이 만드는 차원이 모두 `practice`가 되어 `Technology` 그래프 노드가 하나도 생기지 않는다.
 
@@ -553,7 +591,10 @@ CREATE INDEX ON requirement_candidates (taxonomy_id, judged_against_taxonomy_ver
 
 ```sql
 PRIMARY KEY (candidate_id, mention_id)
+CREATE INDEX ON requirement_candidate_mentions (mention_id);
 ```
+
+기본키의 선두 컬럼이 `candidate_id`이므로, `mention_id` 하나로 판정하는 발견의 `NOT EXISTS` 조회가 별도 인덱스를 쓴다.
 
 ### 7.9 `requirement_candidate_decisions`
 
@@ -579,6 +620,8 @@ CHECK (decision <> 'promote' OR promoted_to_version_id IS NOT NULL)
 ```
 
 결정 행은 후보와 심사가 기준 삼은 분류체계 버전으로 식별한다. 후보 하나가 버전마다 결정 행 하나를 갖는다. `hold`는 종결이 아니므로 새 버전이 발행되면 그 후보는 새 어휘로 다시 심사되고 결정 행이 하나 더 쌓인다.
+
+### 7.10 `capabilities`
 
 | 컬럼 | 타입 | 제약 |
 | --- | --- | --- |
@@ -716,7 +759,7 @@ CREATE INDEX ON knowledge_edges (dst_node_id, edge_type);
 CREATE INDEX ON knowledge_edges (graph_layer, analysis_version);
 ```
 
-`weight`가 nullable인 이유는 그래프가 집계보다 먼저 구축되기 때문이다. `weight`가 비어 있는 동안 경로 탐색은 동작하고 순위만 정해지지 않는다.
+`weight`가 nullable인 이유는 [지식·저장 구조](knowledge-schema.md) 2장에 있다.
 
 `taxonomy_version_id`는 `REQUIRES`, `REQUIRES_CAPABILITY`, `ASSIGNED_TO`만 채운다.
 
@@ -843,7 +886,7 @@ CHECK (minimum_n <= minimum_n_comparison)
 
 `analysis_versions.metric_policy_version`(11.1)은 실행 하나가 선 정책 세대를 가리키는 단일 값이다. `statistics_facts.metric_policy_version`(10.5)은 그 행의 지표 family에 해당하는 정책 행을 가리킨다. 표본 판정과 억제는 family별 정책 행의 값으로 수행한다.
 
-v1 값은 `minimum_n = 5`, `minimum_n_comparison = 10`, `uncertainty_method = 'wilson_95'`다. 실공고를 적재한 뒤 P13에서 재검토한다.
+v1 세대는 family 일곱 행이며 모두 `minimum_n = 5`, `minimum_n_comparison = 10`이다. `uncertainty_method`는 `cluster_contrast`가 `none`이고 나머지 여섯은 `wilson_95`다. `cluster_contrast`는 서로 다른 두 모집단의 비율에서 파생해 한 이항 분포의 구간으로 표현되지 않는다. 어떤 `measure`에 구간이 성립하는지는 [지표 명세](metric-spec.md)가 정한다.
 
 ### 10.4 `dimension_metric_applicability`
 
@@ -882,8 +925,10 @@ PRIMARY KEY (taxonomy_version_id, dimension_id, metric_family)
 | `uncertainty` | `jsonb` | 하한·상한·방법 |
 
 ```sql
-UNIQUE (analysis_version, metric_family, measure, scope_level, scope_id,
-        entry_segment, period_id, dimension_id, secondary_dimension_id)
+CREATE UNIQUE INDEX ON statistics_facts (
+  analysis_version, metric_family, measure, scope_level, scope_id, period_id,
+  entry_segment,
+  COALESCE(dimension_id, ''), COALESCE(secondary_dimension_id, ''));
 CHECK (denominator IS NULL OR denominator >= 0)
 CHECK (numerator IS NULL OR denominator IS NULL OR numerator <= denominator)
 CHECK (sample_status <> 'not_computable' OR value IS NULL)
@@ -893,6 +938,8 @@ CREATE INDEX ON statistics_facts
   (analysis_version, scope_level, scope_id, entry_segment, period_id, metric_family);
 CREATE INDEX ON statistics_facts (dimension_id);
 ```
+
+유일 인덱스가 두 차원 컬럼을 `COALESCE`로 감싼다. NULL은 서로 같지 않으므로, 감싸지 않으면 차원을 갖지 않는 지표가 같은 키로 여러 행 저장된다.
 
 `scope_id`는 `scope_level`이 가리키는 대상의 식별자다.
 
@@ -1080,12 +1127,12 @@ CHECK (coverage_complete = (checked_n = population_n))
 ```text
 checklist_concepts
   concept_id PK, job_role_id FK NOT NULL, canonical_title NOT NULL
-  kind CHECK IN ('project','story','study')
+  kind NOT NULL CHECK IN ('project','story','study')
   UNIQUE (job_role_id, canonical_title)
 
 checklist_items
   item_id PK, concept_id FK NOT NULL, analysis_version FK NOT NULL
-  scope_level, scope_id, title NOT NULL, subtitle
+  scope_level NOT NULL, scope_id NOT NULL, title NOT NULL, subtitle
   reason NOT NULL, evidence_needed NOT NULL
   channels text[] NOT NULL, required boolean NOT NULL
   is_deviation boolean NOT NULL DEFAULT false
@@ -1093,31 +1140,76 @@ checklist_items
   CHECK (channels <@ ARRAY['essay','portfolio','interview'])
 
 checklist_item_mappings
-  from_item_id FK, to_item_id FK, analysis_version FK
-  relation CHECK IN ('split_into','merged_from','renamed_to')
+  from_item_id FK, to_item_id FK, analysis_version FK NOT NULL
+  relation NOT NULL CHECK IN ('split_into','merged_from','renamed_to')
   PRIMARY KEY (from_item_id, to_item_id, relation)
 
 roadmap_items
   roadmap_item_id PK, analysis_version FK NOT NULL
-  scope_level, scope_id, step_order integer NOT NULL
+  scope_level NOT NULL, scope_id NOT NULL, step_order integer NOT NULL
   phase_label, weeks integer, priority CHECK IN ('vhigh','high','mid')
   title NOT NULL, body, deliverable, reason, tags text[]
   UNIQUE (analysis_version, scope_level, scope_id, step_order)
 
 roadmap_item_fills
   roadmap_item_id FK, concept_id FK
-  fill_kind CHECK IN ('dev','normal','study')
+  fill_kind NOT NULL CHECK IN ('dev','normal','study')
   PRIMARY KEY (roadmap_item_id, concept_id)
 
 study_tracks
   track_id PK, analysis_version FK NOT NULL
-  scope_level, scope_id, capability_id FK NOT NULL
+  scope_level NOT NULL, scope_id NOT NULL, capability_id FK NOT NULL
   phase_label, priority CHECK IN ('vhigh','high','mid','track')
   depth_reference CHECK IN ('foundation','application','tradeoff')
   UNIQUE (analysis_version, scope_level, scope_id, capability_id)
 ```
 
 사용자 체크 상태를 담는 테이블은 없다. 비로그인 구간에서 체크 상태는 브라우저에 두고 요청 본문으로 전달한다. 키는 `checklist_concepts.concept_id`다.
+
+### 11.8 사용자 입력 공고
+
+사용자가 직접 넣은 공고 원문과 그 공고 하나에 대한 분석 결과를 담는다. 흐름은 [아키텍처](architecture.md) 11장에 있다.
+
+#### `user_postings`
+
+| 컬럼 | 타입 | 제약 |
+| --- | --- | --- |
+| `user_posting_id` | `text` | PK. `up_` 접두사 |
+| `content_hash` | `text` | NOT NULL, UNIQUE. SHA-256 hex 64자 |
+| `normalized_text` | `text` | NOT NULL |
+| `char_length` | `integer` | NOT NULL |
+| `job_role_id` | `text` | NOT NULL. 외래키 없음 |
+| `detected_by` | `text` | NOT NULL. `CHECK IN ('user_selected','rule','model')` |
+| `first_seen_at` | `timestamptz` | NOT NULL DEFAULT `now()` |
+
+```sql
+UNIQUE (content_hash)
+CHECK (char_length(content_hash) = 64)
+```
+
+`content_hash`의 유일 제약이 캐시 키다. 같은 원문이 다시 들어오면 행을 새로 만들지 않는다.
+
+#### `user_posting_analyses`
+
+| 컬럼 | 타입 | 제약 |
+| --- | --- | --- |
+| `user_analysis_id` | `text` | PK. `ua_` 접두사 |
+| `user_posting_id` | `text` | NOT NULL, FK → `user_postings` |
+| `analysis_version` | `text` | NOT NULL. 외래키 없음 |
+| `taxonomy_version_id` | `text` | NOT NULL. 외래키 없음 |
+| `output_type` | `text` | NOT NULL. `CHECK IN ('interpretation','strategy','roadmap')` |
+| `payload` | `jsonb` | NOT NULL |
+| `produced_by` | `text` | NOT NULL. `CHECK IN ('agent','seed')` |
+| `generated_at` | `timestamptz` | NOT NULL DEFAULT `now()` |
+
+```sql
+UNIQUE (user_posting_id, analysis_version, output_type)
+CREATE INDEX ON user_posting_analyses (user_posting_id, output_type);
+```
+
+두 표는 통계 테이블과 외래키로 연결하지 않는다. 사용자 입력이 모집단에 섞이면 모든 지표의 분모가 오염되기 때문이다.
+
+`job_role_id`·`analysis_version`·`taxonomy_version_id`는 값만 담는다. 어느 활성 버전을 기준 삼아 만든 결과인지 기록하되 버전 표를 향한 외래키를 두지 않아, 사용자 입력이 분석 버전의 계보에 들어가지 않는다.
 
 ## 12. 계측
 
@@ -1129,12 +1221,12 @@ retrieval_runs
 retrieval_queries
   query_id PK, retrieval_run_id FK NOT NULL
   subquery_type NOT NULL, query_text NOT NULL
-  strategy CHECK IN ('keyword','vector','graph','sql')
+  strategy NOT NULL CHECK IN ('keyword','vector','graph','sql')
   filters jsonb NOT NULL
 
 retrieval_candidates
   candidate_id PK, query_id FK NOT NULL
-  target_type CHECK IN ('chunk','statistic_fact','graph_path','wiki_revision')
+  target_type NOT NULL CHECK IN ('chunk','statistic_fact','graph_path','wiki_revision')
   target_id NOT NULL, strategy NOT NULL, strategy_rank integer NOT NULL
   lexical_score, vector_score, graph_score, fusion_score, rerank_score numeric(12,6)
   selected boolean NOT NULL, rejection_reason
@@ -1176,10 +1268,10 @@ tool_calls
 
 research_requests
   request_id PK, requested_by_run_id FK, analysis_version FK NOT NULL
-  goal NOT NULL, needed_evidence_type NOT NULL, scope_level, scope_id
-  status CHECK IN ('open','scheduled','fulfilled','rejected','expired')
+  goal NOT NULL, needed_evidence_type NOT NULL, scope_level NOT NULL, scope_id
+  status NOT NULL CHECK IN ('open','scheduled','fulfilled','rejected','expired')
   priority integer NOT NULL, fulfilled_by_snapshot_ids text[]
-  created_at, resolved_at
+  resolved_at
   INDEX (status, priority DESC)
 
 verification_results
@@ -1194,7 +1286,7 @@ verification_results
 repair_orders
   order_id PK, agent_run_id FK NOT NULL, target_claim_id FK
   failed_check NOT NULL, reason NOT NULL
-  action CHECK IN ('requery','add_counterevidence','swap_evidence','drop_claim',
+  action NOT NULL CHECK IN ('requery','add_counterevidence','swap_evidence','drop_claim',
     'narrow_scope','lower_confidence','recompute_stat','fix_identifier',
     'request_research')
   missing_evidence jsonb, requery_hint, round integer NOT NULL
@@ -1212,7 +1304,7 @@ evaluation_sets
 
 evaluation_cases
   case_id PK, eval_set_id FK NOT NULL, posting_id FK
-  case_type CHECK IN ('mention_extraction','dimension_assignment',
+  case_type NOT NULL CHECK IN ('mention_extraction','dimension_assignment',
     'interpretation','strategy_linkage','coverage')
 
 evaluation_expected_items

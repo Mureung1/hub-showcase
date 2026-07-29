@@ -4,8 +4,8 @@ CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업
 
 네이버 AI Agent Challenge에서 진행하는 개인 프로젝트다.
 
-- 정적 프로토타입 데모: https://careersignal-prototype.vercel.app/
-- 프로토타입 데이터는 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치다.
+- 서비스: https://careersignal-iota.vercel.app
+- 정적 프로토타입 데모: https://careersignal-prototype.vercel.app/ — 백엔드 공고 30건을 가정한 mock 데이터로 화면 구성만 담는다.
 
 ## 기술 스택과 영역
 
@@ -14,7 +14,7 @@ CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업
 - `product/`: 실제 서비스 React 코드. 마찬가지로 자체 `package.json`·`vite.config.js`를 갖는 독립 실행 환경이다.
 - `server/`: product 전용 Express 백엔드. 역시 별도의 실행 환경·`package.json`을 유지한다.
 - `prototype/`, `project-intro/`, `product/`, `server/`는 서로 다른 실행 환경이라 코드를 공유하지 않는다. 두 개 이상에서 실제 재사용이 필요해지면 그때 공유 방법(예: 워크스페이스, 패키지 추출)을 별도로 검토한다.
-- `agent/`: AI 에이전트용 Python·FastAPI 서비스. LangChain·LangGraph로 오케스트레이션하며, Express가 내부 HTTP로 호출한다.
+- `agent/`: AI 에이전트용 Python·FastAPI 서비스. 실행 순서·상태 공유·재시도는 `orchestration/`이 직접 정의하고(docs/adr/0016-no-orchestration-framework.md), Express가 내부 HTTP로 호출한다.
 - DB: Supabase(Postgres + pgvector). 일반 화면은 사전 생성된 활성 분석 결과를 조회하고, 에이전트는 데이터 갱신과 사용자 공고 직접 입력 때 실행한다. `server/data/`의 JSON 파일은 샘플 데이터의 원본 fixture다.
 
 ### `agent/` 내부 구조
@@ -22,16 +22,21 @@ CareerSignal은 채용공고의 기준선과 편차를 해석해, 직무·기업
 ```text
 agent/
 ├─ pyproject.toml
+├─ requirements.txt
 ├─ alembic.ini
+├─ main.py                         `careersignal.api`의 app 을 노출한다
 ├─ migrations/                     데이터베이스 스키마의 기준
-├─ data/manifest/                  수집 대상 목록. 원문은 두지 않는다
-├─ scripts/smoke.py                외부 API 연결 점검
+├─ data/manifest/                  수집 대상 목록
+├─ data/sources/                   내려받은 원문. 저장소에 두지 않는다
+├─ data/demo_seed/                 생성 데이터 CSV 와 그 규약(CONTRACT.md)
+├─ scripts/                        연결 점검, 수집·색인 실행, 생성 데이터 적재
 ├─ src/careersignal/
-│  ├─ api/                         FastAPI 라우트
+│  ├─ api/                         FastAPI 라우트. 분석 네 경로와 사용자 공고 분석
 │  ├─ contracts/                   Pydantic 공통 실행 계약
 │  ├─ domain/                      순수 개념. 저장소·모델을 import하지 않는다
 │  ├─ orchestration/               Control Plane. 영향 범위·실행 순서·활성화
-│  ├─ agents/                      도메인 에이전트 여섯 종
+│  ├─ agents/                      collector · statistics · interpretation ·
+│  │                               strategy · roadmap · knowledge
 │  ├─ pipelines/                   결정적 helper. 에이전트를 호출하지 않는다
 │  ├─ retrieval/                   라우터·검색·융합·재정렬·근거 집합
 │  ├─ verification/                검사 여덟 종과 통합 검증
@@ -54,10 +59,13 @@ agent/
 
 계층의 정의는 docs/architecture.md 2장에 있다.
 
-## 프로토타입 배포
+## 배포
 
-- Vercel 프로젝트는 `prototype/`을 Root Directory로 사용한다.
-- 프로토타입 수정은 `day/YYMMDD` 작업 브랜치에 커밋하고 `origin`에 push한 뒤 배포 결과를 확인한다.
+- Vercel 프로젝트는 둘이다. 하나는 `prototype/`을, 하나는 `product/`를 Root Directory로 사용한다. 서비스 주소는 https://careersignal-iota.vercel.app 다.
+- Render의 Blueprint(`server/render.yaml`)가 Express와 FastAPI 두 서비스를 띄운다. 브라우저가 부르는 주소는 Express뿐이다.
+- 저장소는 Supabase(Postgres + pgvector)다.
+- 배포 설정의 기준 문서는 `server/README.md`와 `product/README.md`다.
+- 수정은 `day/YYMMDD` 작업 브랜치에 커밋하고 `origin`에 push한 뒤 배포 결과를 확인한다.
 - 각 프로젝트는 실행과 배포에서 서로 의존하지 않는다.
 
 ## 컨벤션
@@ -140,6 +148,9 @@ git status --short --branch
 | 개발 순서와 상태 | `docs/backlog.md` |
 | 수용 기준 | `docs/checklist.md` |
 | 설계 결정의 맥락과 근거 | `docs/adr/` |
+| `/api/*` 경로별 FastAPI 의존·Express 배포 설정 | `server/README.md` |
+| 화면 파일 구성·API 주소 설정·Vercel 배포 | `product/README.md` |
+| 생성 데이터의 식별자·테이블·응답 형태 규약 | `agent/data/demo_seed/CONTRACT.md` |
 
 다이어그램에도 소유권 규칙을 적용한다. 하나의 흐름은 한 문서에만 그리고 다른 문서는 링크한다. 같은 구조를 여러 문서에 그리면 수정이 어긋난다.
 
@@ -183,13 +194,17 @@ Mermaid flowchart의 도형은 구성요소의 성격을 나타낸다. 모든 �
 - 아키텍처: docs/architecture.md
 - 에이전트 설계: docs/agent-design.md
 - 지식·저장 구조: docs/knowledge-schema.md
+- ERD: docs/erd.md
+- 온톨로지: docs/ontology-v1.md
 - 통계 모델: docs/statistics-model.md
+- 지표 명세: docs/metric-spec.md
+- 권한 매트릭스: docs/permission-matrix.md
 - 데이터 전략: docs/data-strategy.md
 - 디자인 컨셉: docs/design-concept.md
 - 디자인 토큰: docs/design-tokens.md
 - 개발 백로그: docs/backlog.md
 - 검증 체크리스트: docs/checklist.md
-- 결정 기록: docs/adr/
+- 결정 기록: docs/adr/ (0001~0016)
 - 평가 세트: docs/eval/
 
 새 작업을 시작할 때는 `AGENTS.md`와 함께 `docs/knowledge-schema.md`, `docs/statistics-model.md`, `docs/architecture.md`, `docs/agent-design.md`를 읽는다.

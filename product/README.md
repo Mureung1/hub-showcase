@@ -29,7 +29,7 @@ Rewrite는 Vercel이 `/api/...` 요청을 브라우저 밖에서 Express로 넘�
 { "source": "/api/:path*", "destination": "https://careersignal-server.onrender.com/api/:path*" }
 ```
 
-이어지는 catch-all은 `api/`를 제외한다. 순서가 바뀌거나 제외가 빠지면 API 요청이 `index.html`로 떨어져 화면이 JSON 대신 HTML을 받는다.
+이어지는 catch-all은 `assets/`와 `api/`를 제외한다. 순서가 바뀌거나 제외가 빠지면 API 요청이 `index.html`로 떨어져 화면이 JSON 대신 HTML을 받는다.
 
 서버 주소가 바뀌면 이 파일을 고치고 다시 배포한다.
 

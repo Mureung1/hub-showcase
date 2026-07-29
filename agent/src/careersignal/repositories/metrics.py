@@ -2,7 +2,7 @@
 
 집계 파이프라인이 사용한다. 쓰기 범위는 docs/permission-matrix.md 3장이며 컬럼은
 docs/erd.md 10.5 다. 수치를 저장하는 경로는 이 구성요소 하나다
-(docs/knowledge-schema.md 13.1).
+(docs/permission-matrix.md 3장).
 
 읽는 표는 D3a 할당, 기준 표, 정책 표다(docs/permission-matrix.md 4장).
 `metric_templates`·`metric_policy_versions`·`dimension_metric_applicability` 는
