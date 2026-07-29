@@ -491,6 +491,7 @@ function InventorySection({
 type FriendsViewProps = {
   manager: FriendsManager
   myPosts: FriendPost[]
+  friendPosts: FriendPost[]
   currentUserId: string
   onDeletePost: (postId: string) => void
   onViewFriendCalendar: (friendId: string) => void

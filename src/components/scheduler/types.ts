@@ -20,13 +20,6 @@ export type Schedule = {
   completed: boolean
 }
 
-export type Friend = {
-  id: string
-  name: string
-  color: string
-  eyes: 1 | 2
-}
-
 export type ReactionKind = 'sparkle' | 'heart' | 'fire' | 'tear' | 'wow' | 'sleepy'
 
 export type ReactionMeta = {
@@ -198,6 +191,7 @@ export type RoomLayoutEntry = {
 export type FriendPost = {
   id: string
   friendId: string
+  friendName?: string
   categoryName: string
   tone: GroupTone
   caption: string

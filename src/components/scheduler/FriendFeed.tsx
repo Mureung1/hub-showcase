@@ -9,6 +9,7 @@ import type { FriendPost, ReactionKind } from './types'
 
 type FriendFeedProps = {
   myPosts: FriendPost[]
+  friendPosts: FriendPost[]
   currentUserId: string
   onDeletePost: (postId: string) => void
 }
@@ -106,9 +107,9 @@ export function FriendFeed({ myPosts, currentUserId, onDeletePost }: FriendFeedP
 
             <div className="feed-post-body">
               <header className="feed-post-head">
-                {isMine ? <PixelAvatar color="#f2a58d" eyes={2} /> : friend && <PixelAvatar color={friend.color} eyes={friend.eyes} />}
+                {isMine ? <PixelAvatar color="#f2a58d" eyes={2} /> : <PixelAvatar {...getAvatarProps(post.friendId)} />}
                 <div>
-                  <strong>{isMine ? '나' : friend?.name ?? '친구'}</strong>
+                  <strong>{isMine ? '나' : post.friendName ?? '친구'}</strong>
                   <span>{post.categoryName} · {post.timeAgo}</span>
                 </div>
                 {isMine && (

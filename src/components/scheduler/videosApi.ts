@@ -14,6 +14,20 @@ export type VideoPostDto = {
   createdAt: string
 }
 
+export type FriendVideoPostDto = {
+  id: string
+  friendId: string
+  friendName: string
+  url: string
+  contentType: string
+  sizeBytes: number
+  durationSeconds: number
+  caption: string | null
+  categoryName: string
+  tone: GroupTone
+  createdAt: string
+}
+
 export function presignVideoUpload(scheduleId: string, contentType: string) {
   return request<{ uploadUrl: string; storageKey: string }>('/api/videos/presign', {
     method: 'POST',
@@ -37,6 +51,10 @@ export function createVideoPost(input: {
 
 export function fetchMyVideoPosts() {
   return request<VideoPostDto[]>('/api/videos/mine')
+}
+
+export function fetchFriendVideoPosts() {
+  return request<FriendVideoPostDto[]>('/api/videos/feed')
 }
 
 export function deleteVideoPost(id: string) {

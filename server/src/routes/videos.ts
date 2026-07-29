@@ -57,6 +57,68 @@ videosRouter.get('/mine', asyncHandler(async (req, res) => {
   res.json(videos.map(toResponse))
 }))
 
+// 친구 피드 — 카테고리 공개 그룹 로직은 GET /api/friends/:friendId/schedules와 동일한 규칙을 따른다:
+// 내가 그 친구의 공유 그룹 멤버로 속한 그룹 → 그 그룹에 공개된 그 친구의 카테고리 → 그 카테고리의 영상만 노출.
+videosRouter.get('/feed', asyncHandler(async (req, res) => {
+  const friendships = await prisma.friendship.findMany({
+    where: { userId: req.userId! },
+    select: { friendId: true },
+  })
+  const friendIds = friendships.map((friendship) => friendship.friendId)
+  if (friendIds.length === 0) {
+    res.json([])
+    return
+  }
+
+  const memberships = await prisma.shareGroupMember.findMany({
+    where: { friendUserId: req.userId!, group: { ownerId: { in: friendIds } } },
+    select: { groupId: true },
+  })
+  const groupIds = memberships.map((membership) => membership.groupId)
+  if (groupIds.length === 0) {
+    res.json([])
+    return
+  }
+
+  const visibilities = await prisma.categoryVisibility.findMany({
+    where: { shareGroupId: { in: groupIds }, category: { userId: { in: friendIds } } },
+    select: { categoryId: true },
+  })
+  const categoryIds = [...new Set(visibilities.map((entry) => entry.categoryId))]
+  if (categoryIds.length === 0) {
+    res.json([])
+    return
+  }
+
+  const videos = await prisma.videoPost.findMany({
+    where: {
+      deletedAt: null,
+      userId: { in: friendIds },
+      schedule: { categoryId: { in: categoryIds } },
+    },
+    include: {
+      schedule: { include: { category: true } },
+      user: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  })
+
+  res.json(videos.map((video) => ({
+    id: video.id,
+    friendId: video.user.id,
+    friendName: video.user.name,
+    url: buildPublicUrl(video.storageKey),
+    contentType: video.contentType,
+    sizeBytes: video.sizeBytes,
+    durationSeconds: video.durationSeconds,
+    caption: video.caption,
+    categoryName: video.schedule.category.name,
+    tone: video.schedule.category.tone,
+    createdAt: video.createdAt.toISOString(),
+  })))
+}))
+
 videosRouter.post('/presign', asyncHandler(async (req, res) => {
   const body: unknown = req.body
   if (typeof body !== 'object' || body === null) {
