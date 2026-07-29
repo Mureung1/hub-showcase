@@ -13,16 +13,17 @@ import { SoundToggle } from './components/forms/SoundToggle.jsx'
 import { startBgm } from './lib/sound.js'
 
 function App() {
-  // BGM은 로드 시 바로 재생을 시도하되, 브라우저 자동재생 정책으로 막히면
-  // 조용히 실패하고 첫 사용자 상호작용 시점에 재시도한다 (음소거 상태면 재생하지 않음).
+  // 브라우저는 사용자 제스처 이전의 재생을 막을 뿐 아니라, Howler의 HTML5 오디오
+  // 언락 풀도 document capture 단계의 click/keydown에서만 채워진다. 그보다 먼저(또는
+  // capture 단계에서) BGM을 재생 시도하면 풀이 비어 잠긴 오디오 노드를 받게 되므로,
+  // window의 bubble 단계 click/keydown에서만 첫 재생을 시도한다 (음소거 상태면 재생 안 함).
   useEffect(() => {
-    startBgm()
     const onFirstInteraction = () => startBgm()
-    window.addEventListener('pointerdown', onFirstInteraction, { once: true, capture: true })
-    window.addEventListener('keydown', onFirstInteraction, { once: true, capture: true })
+    window.addEventListener('click', onFirstInteraction, { once: true })
+    window.addEventListener('keydown', onFirstInteraction, { once: true })
     return () => {
-      window.removeEventListener('pointerdown', onFirstInteraction, { capture: true })
-      window.removeEventListener('keydown', onFirstInteraction, { capture: true })
+      window.removeEventListener('click', onFirstInteraction)
+      window.removeEventListener('keydown', onFirstInteraction)
     }
   }, [])
 
