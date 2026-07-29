@@ -53,7 +53,8 @@ function App() {
       const groupRes = await fetch(`${API_BASE}/api/requests/group/${data.group_id}`);
       const members = await groupRes.json();
       const me = Array.isArray(members) ? members.find((m) => m.id === data.id) : null;
-      const groupCount = Array.isArray(members) ? members.filter((m) => m.status === "matched").length : 1;
+      // matched 인원이 0명이면 아직 아무도 안 들어온 "방장 혼자인 방"이라는 뜻이므로 1명으로 보정
+      const groupCount = Array.isArray(members) ? members.filter((m) => m.status === "matched").length || 1 : 1;
 
       setJoinedCandidate({
         groupId: data.group_id,
