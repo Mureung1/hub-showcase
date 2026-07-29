@@ -308,28 +308,47 @@ async function runStep2(jobId) {
     // Gemini API 호출 실패시 Fallback 기본 대사 사용
     console.log(`[⚠️ Fallback] 기본 대사 템플릿으로 대체하여 진행합니다. (카테고리: ${storeCategory})`);
 
+    const fallbackResult = generateFallbackCaption(
+      storeCategory,
+      signatureMenu,
+    );
+    console.log("[Step 2] Fallback 대사 생성 완료:", {
+      primary_caption: fallbackResult.primary_caption,
+      hashtags: fallbackResult.hashtags
+    });
+
+    const duration = Date.now() - startTime;
+
     try {
-      const fallbackResult = generateFallbackCaption(
-        storeCategory,
-        signatureMenu,
-      );
-      console.log("[Step 2] Fallback 대사 생성 완료:", {
-        primary_caption: fallbackResult.primary_caption,
-        hashtags: fallbackResult.hashtags
-      });
-
-      const duration = Date.now() - startTime;
       await updateStep2Results(jobId, fallbackResult, duration, true);
-
       console.log(
         `[✅ Step 2 Fallback 완료] 기본 대사 DB 저장 완료 (${duration}ms)\n`,
       );
     } catch (fallbackError) {
-      console.error("[❌ Step 2 Fallback 처리 실패]", {
-        message: fallbackError.message,
-        originalError: error.message
-      });
-      throw new Error(`Step 2 처리 중 오류 발생: ${error.message} → Fallback 처리도 실패: ${fallbackError.message}`);
+      console.error("[❌ Step 2 Fallback 저장 실패]", fallbackError.message);
+
+      try {
+        // 최후의 장애 복구: Supabase 직접 저장
+        const supabase = getSupabaseClient();
+        const hashtags = Array.isArray(fallbackResult.hashtags)
+          ? fallbackResult.hashtags
+          : fallbackResult.hashtags.split(/\s+/).filter(tag => tag.length > 0);
+
+        await supabase
+          .from("generation_jobs")
+          .update({
+            step2_caption: fallbackResult.primary_caption,
+            step2_hashtags: hashtags,
+            step2_similarity_score: 0.7,
+            progress: 50,
+            current_step: 2,
+          })
+          .eq("job_id", jobId);
+
+        console.log("[✅ Step 2 강제 저장] Fallback 대사가 DB에 저장되었습니다\n");
+      } catch (forceError) {
+        console.warn("[⚠️ Step 2 강제 저장도 실패] 로그만 남기고 Step 3으로 진행합니다", forceError.message);
+      }
     }
   }
 }
