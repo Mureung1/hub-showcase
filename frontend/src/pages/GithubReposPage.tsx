@@ -29,10 +29,8 @@ export default function GithubReposPage({ setCurrentPage }: GithubReposPageProps
   const loadProfile = async () => {
     try {
       const response = await profileApi.fetch()
-      if (response?.id || response?.userId) {
+      if (response?.userId) {
         setProfile(response)
-      } else if (response?.data) {
-        setProfile(response.data)
       }
     } catch (err: any) {
       console.error('❌ 프로필 로드 실패:', err)

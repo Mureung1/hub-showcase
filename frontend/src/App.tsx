@@ -60,12 +60,10 @@ function App() {
       if (response?.hasProfile) {
         // 저장된 페이지가 있으면 복원, 없으면 대시보드로
         const savedPage = getSavedPage()
-        const targetPage = (savedPage !== 'auth' && savedPage !== 'profile') ? savedPage : 'dashboard'
-
-        setCurrentPage(targetPage)
-
-        // 대시보드 또는 로그인 페이지 진입 시 푸시 알림 초기화
-        if (targetPage !== 'auth' && targetPage !== 'profile') {
+        if (savedPage === 'auth' || savedPage === 'profile') {
+          setCurrentPage('dashboard')
+        } else {
+          setCurrentPage(savedPage)
           setTimeout(() => {
             initializePushNotifications().catch(err =>
               console.error('푸시 알림 초기화 실패:', err)

@@ -79,12 +79,9 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
       console.log('📋 프로필 API 응답:', response)
 
       // 백엔드가 직접 profile 객체를 반환 (ApiResponse 래핑 안 함)
-      if (response?.id || response?.userId) {
+      if (response?.userId) {
         console.log('✅ 프로필 데이터:', response)
         setProfile(response)
-      } else if (response?.data?.id || response?.data?.userId) {
-        console.log('✅ 프로필 데이터 (ApiResponse):', response.data)
-        setProfile(response.data)
       } else {
         console.warn('⚠️ 프로필 응답 형식 오류:', response)
       }
@@ -190,7 +187,14 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
       // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
       if (!isPast) {
         try {
-          await postingsApi.syncCalendar(posting.id)
+          const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:3000/api'
+          const { tokenManager } = await import('../utils/apiClient')
+          const token = tokenManager.getAccessToken()
+          await fetch(`${API_BASE}/calendar/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ postingId: posting.id })
+          })
           console.log('✅ Google Calendar 동기화 완료')
         } catch (syncError) {
           console.warn('⚠️ Google Calendar 동기화 실패 (로컬 저장은 완료):', syncError)

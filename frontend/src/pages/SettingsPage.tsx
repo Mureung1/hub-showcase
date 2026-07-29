@@ -94,10 +94,8 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
       setIsLoading(true)
       const response = await profileApi.fetch()
 
-      // 응답이 직접 프로필 객체 또는 ApiResponse 형태
-      const profileData = response?.data || response
-
-      if (profileData) {
+      if (response) {
+        const profileData = response
         setProfile({
           nickname: profileData.nickname || '',
           major: profileData.major || '',
