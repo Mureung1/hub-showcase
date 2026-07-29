@@ -1,16 +1,16 @@
 import { test, expect } from 'vitest'
 import { describeCost, describeCostByAmount, baseFareForHub, estimateCost, fareTiersFor } from './describeCost.js'
 
-test('1인이면 황제 값이다', () => {
-  expect(describeCost(1)).toEqual({ icon: '👑', label: '황제 값' })
+test('1인이면 치킨 한 마리 값이다', () => {
+  expect(describeCost(1)).toEqual({ icon: '🍗', label: '치킨 한 마리 값' })
 })
 
-test('2인이면 부자 값이다', () => {
-  expect(describeCost(2)).toEqual({ icon: '💰', label: '부자 값' })
+test('2인이면 햄버거 한 개 값이다', () => {
+  expect(describeCost(2)).toEqual({ icon: '🍔', label: '햄버거 한 개 값' })
 })
 
-test('3인이면 햄버거 한 개 값이다', () => {
-  expect(describeCost(3)).toEqual({ icon: '🍔', label: '햄버거 한 개 값' })
+test('3인이면 커피 한 잔 값이다', () => {
+  expect(describeCost(3)).toEqual({ icon: '☕', label: '커피 한 잔 값' })
 })
 
 test('4인이면 음료 한 잔 값이다', () => {
@@ -83,9 +83,9 @@ test('4인이면 4분의 1이다', () => {
 
 test('거점별 1~4인 요금표를 만든다', () => {
   expect(fareTiersFor('대구공항')).toEqual([
-    { headcount: 1, won: 6000, icon: '👑', label: '황제 값' },
-    { headcount: 2, won: 3000, icon: '💰', label: '부자 값' },
-    { headcount: 3, won: 2000, icon: '🍔', label: '햄버거 한 개 값' },
+    { headcount: 1, won: 6000, icon: '🍗', label: '치킨 한 마리 값' },
+    { headcount: 2, won: 3000, icon: '🍔', label: '햄버거 한 개 값' },
+    { headcount: 3, won: 2000, icon: '☕', label: '커피 한 잔 값' },
     { headcount: 4, won: 1500, icon: '🥤', label: '음료 한 잔 값' },
   ])
 })

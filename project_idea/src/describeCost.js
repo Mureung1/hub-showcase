@@ -15,9 +15,9 @@ export function baseFareForHub(hubName) {
 }
 
 export function describeCost(headcount) {
-  if (headcount === 1) return { icon: '👑', label: '황제 값' }
-  if (headcount === 2) return { icon: '💰', label: '부자 값' }
-  if (headcount === 3) return { icon: '🍔', label: '햄버거 한 개 값' }
+  if (headcount === 1) return { icon: '🍗', label: '치킨 한 마리 값' }
+  if (headcount === 2) return { icon: '🍔', label: '햄버거 한 개 값' }
+  if (headcount === 3) return { icon: '☕', label: '커피 한 잔 값' }
   return { icon: '🥤', label: '음료 한 잔 값' }
 }
 
