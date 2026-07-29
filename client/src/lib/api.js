@@ -87,3 +87,13 @@ export function confirmLetter(token, payload) {
 export function getSuggestions(token) {
   return request(`/api/letters/${token}/suggest`, { method: 'POST' })
 }
+
+// POST /api/letters/:token/harvest-reviews — 결산 평가 제출(재제출 시 갱신)
+export function createHarvestReview(token, payload) {
+  return request(`/api/letters/${token}/harvest-reviews`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+// GET /api/letters/:token/harvest-reviews — 결산 평가 목록 조회
+export function getHarvestReviews(token) {
+  return request(`/api/letters/${token}/harvest-reviews`)
+}
