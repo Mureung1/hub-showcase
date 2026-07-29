@@ -52,12 +52,15 @@ describe("createEmotionAnalysisSubmission", () => {
       analysisResult,
       { recentMessages }
     );
-    expect(saveAnalysis).toHaveBeenCalledWith({
-      sessionId: "session-id",
-      ...analysisInput,
-      analysisResult,
-      aiResponse: "테스트 응답"
-    });
+    expect(saveAnalysis).toHaveBeenCalledWith(
+      {
+        sessionId: "session-id",
+        ...analysisInput,
+        analysisResult,
+        aiResponse: "테스트 응답"
+      },
+      { signal: controller.signal }
+    );
   });
 
   it("keeps the camera compatibility signal inside the client", async () => {
@@ -85,7 +88,8 @@ describe("createEmotionAnalysisSubmission", () => {
       expect.objectContaining({
         faceSignal: null,
         faceSignalSource: "camera"
-      })
+      }),
+      { signal: undefined }
     );
   });
 });

@@ -44,11 +44,14 @@ describe("createEmotionAnalysisApi", () => {
       fetchImpl
     });
 
-    await api.listEmotionAnalyses("session-id");
+    await api.listEmotionAnalyses({ guestKey: "guest-key" });
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      "http://test.local/api/emotion-analyses?sessionId=session-id&limit=20",
-      { signal: undefined }
+      "http://test.local/api/emotion-analyses?limit=20",
+      {
+        headers: { "X-Guest-Key": "guest-key" },
+        signal: undefined
+      }
     );
   });
 });

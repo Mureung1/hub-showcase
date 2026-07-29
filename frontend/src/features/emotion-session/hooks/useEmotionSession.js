@@ -18,6 +18,7 @@ import useEmotionHistory from "./useEmotionHistory";
 import {
   createEmotionAnalysisSubmission
 } from "../services/createEmotionAnalysisSubmission";
+import { createEmotionAnalysis } from "../api/emotionAnalysisApi";
 import { SESSION_ERROR_MESSAGES } from "../constants/sessionMessages";
 import {
   createInitialWorkflowState,
@@ -34,7 +35,7 @@ function createInitialResult() {
   });
 }
 
-export default function useEmotionSession() {
+export default function useEmotionSession({ guestKey = "" } = {}) {
   const [sessionId] = useState(getOrCreateBrowserSessionId);
   const [messages, setMessages] = useState(mockMessages);
   const [selectedScenario, setSelectedScenario] = useState(defaultScenario);
@@ -65,7 +66,7 @@ export default function useEmotionSession() {
     records: restoredRecords,
     isLoading: isHistoryLoading,
     error: historyError
-  } = useEmotionHistory(sessionId);
+  } = useEmotionHistory(guestKey);
   const lastAnalysisInputRef = useRef({
     situationText: "",
     faceSignal: defaultScenario.faceSignal,
@@ -102,6 +103,8 @@ export default function useEmotionSession() {
         voiceSignal: latestRecord.voiceSignal,
         selectedScenario: latestRecord.selectedScenario
       };
+    } else if (Array.isArray(restoredRecords)) {
+      setMessages(mockMessages);
     }
   }, [historyError, restoredRecords]);
 
@@ -198,7 +201,14 @@ export default function useEmotionSession() {
         analysisInput,
         analysisResult: nextResult,
         recentMessages: messages,
-        signal: controller.signal
+        signal: controller.signal,
+        saveAnalysis: guestKey
+          ? (record, options) =>
+              createEmotionAnalysis(record, {
+                ...options,
+                guestKey
+              })
+          : undefined
       });
 
       if (!isMounted()) return false;

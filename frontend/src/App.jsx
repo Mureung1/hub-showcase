@@ -7,8 +7,10 @@ import { useEmotionSession } from "./features/emotion-session";
 import { ObservationStatus } from "./features/observation-status";
 import { ScenarioSelector } from "./features/scenario-simulation";
 import ServiceHeader from "./shared/components/ServiceHeader";
+import { GuestAccessPanel, useGuestAccess } from "./features/guest-access";
 
 export default function App() {
+  const guestAccess = useGuestAccess();
   const {
     messages,
     aiStatus,
@@ -23,10 +25,19 @@ export default function App() {
     handleAnalyze,
     handleAnalyzeAgain,
     handleLiveFaceSignalChange
-  } = useEmotionSession();
+  } = useEmotionSession({ guestKey: guestAccess.guestKey });
 
   return (
     <div className="app-root">
+      <GuestAccessPanel
+        mode={guestAccess.mode}
+        issuedKey={guestAccess.issuedKey}
+        status={guestAccess.status}
+        error={guestAccess.error}
+        onCreate={guestAccess.createGuest}
+        onRecover={guestAccess.recoverGuest}
+        onUseAnonymous={guestAccess.useAnonymous}
+      />
       <aside className="sidebar">
         <ServiceHeader status={aiStatus} />
         <ObservationStatus observation={observation} />

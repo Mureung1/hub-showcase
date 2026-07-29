@@ -22,13 +22,16 @@ export async function createEmotionAnalysisSubmission({
     analysisInput.faceSignalSource === "camera"
       ? null
       : analysisInput.faceSignal;
-  const createdRecord = saveAnalysis({
-    sessionId,
-    ...analysisInput,
-    faceSignal,
-    analysisResult,
-    aiResponse
-  });
+  const createdRecord = await saveAnalysis(
+    {
+      sessionId,
+      ...analysisInput,
+      faceSignal,
+      analysisResult,
+      aiResponse
+    },
+    { signal }
+  );
 
   return {
     aiResponse,
