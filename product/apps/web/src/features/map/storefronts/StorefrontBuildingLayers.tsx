@@ -1,9 +1,11 @@
+import { useEffect } from "react";
+import { useMap } from "react-map-gl/maplibre";
+
 import {
   SELECTED_STOREFRONT_LAYER_ID,
   StorefrontLayer,
   type SelectedStorefront,
 } from "./SelectedStorefrontLayer";
-import { storefrontLayerId } from "./storefrontLayerId";
 
 type StorefrontBuildingLayersProps = {
   stores: SelectedStorefront[];
@@ -16,20 +18,37 @@ export function StorefrontBuildingLayers({
   onUnavailable,
   onReady,
 }: StorefrontBuildingLayersProps) {
+  const { current: mapRef } = useMap();
   const selectedFocus = stores.find((store) => store.placementMode === "selected-focus") ?? null;
-  const buildingStores = stores.filter((store) => store.placementMode !== "selected-focus");
+
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    let legacyLayerIds: string[] = [];
+    try {
+      legacyLayerIds =
+        map
+          .getStyle()
+          ?.layers.filter(
+            (layer) =>
+              layer.id.startsWith("localtwin-storefront-") &&
+              layer.id !== SELECTED_STOREFRONT_LAYER_ID,
+          )
+          .map((layer) => layer.id) ?? [];
+    } catch {
+      return;
+    }
+    for (const layerId of legacyLayerIds) {
+      try {
+        map.removeLayer(layerId);
+      } catch {
+        // A concurrent category transition may already have removed the legacy layer.
+      }
+    }
+  }, [mapRef, stores]);
 
   return (
     <>
-      {buildingStores.map((store) => (
-        <StorefrontLayer
-          key={store.id}
-          layerId={storefrontLayerId(store.id)}
-          store={store}
-          onUnavailable={onUnavailable}
-          onReady={onReady}
-        />
-      ))}
       {selectedFocus && (
         <StorefrontLayer
           key={SELECTED_STOREFRONT_LAYER_ID}

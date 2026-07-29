@@ -1,3 +1,9 @@
+import {
+  getStorefrontDesign,
+  type StorefrontDesignId,
+  type StorefrontDesignSpec,
+} from "./storefrontDesignCatalog";
+
 export type StorefrontVariant = {
   categoryCode: string;
   label: string;
@@ -159,7 +165,7 @@ export const storefrontRegistry: Record<string, StorefrontVariant> = {
   G20905: { categoryCode: "G20905", ...apparelVariant },
   S20601: { categoryCode: "S20601", ...apparelVariant },
   P10501: { categoryCode: "P10501", ...academyVariant },
-  P10603: { categoryCode: "P10603", ...academyVariant },
+  P10603: { categoryCode: "P10603", ...sportsVariant },
   P10611: { categoryCode: "P10611", ...academyVariant },
   P10625: { categoryCode: "P10625", ...academyVariant },
   I10103: { categoryCode: "I10103", ...lodgingVariant },
@@ -181,5 +187,30 @@ export function getStorefrontVariant(categoryCode: string) {
 }
 
 export function hasStorefrontVariant(categoryCode: string | null): categoryCode is string {
-  return Boolean(categoryCode?.trim());
+  if (!categoryCode?.trim()) return false;
+  return getStorefrontVariant(categoryCode).attachment !== "none";
+}
+
+export function storefrontVisualStatus(categoryCode: string | null) {
+  return hasStorefrontVariant(categoryCode) ? "mapped" : "generic";
+}
+
+const designIdByAttachment: Partial<Record<StorefrontVariant["attachment"], StorefrontDesignId>> = {
+  flower: "flower",
+  coffee: "cafe",
+  meal: "restaurant",
+  bakery: "bakery",
+  convenience: "convenience",
+  beauty: "beauty",
+  apparel: "apparel",
+  academy: "academy",
+  lodging: "lodging",
+  sports: "sports",
+};
+
+export function getStorefrontDesignForVariant(
+  variant: StorefrontVariant,
+): StorefrontDesignSpec | null {
+  const designId = designIdByAttachment[variant.attachment];
+  return designId ? getStorefrontDesign(designId) : null;
 }

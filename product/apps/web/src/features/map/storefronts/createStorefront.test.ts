@@ -6,7 +6,11 @@ import {
   createStorefrontCategoryMarker,
   disposeStorefront,
 } from "./createStorefront";
-import { getStorefrontVariant, hasStorefrontVariant } from "./storefrontRegistry";
+import {
+  getStorefrontVariant,
+  hasStorefrontVariant,
+  storefrontVisualStatus,
+} from "./storefrontRegistry";
 
 describe("storefront prototype", () => {
   it("builds a flower shop from the category registry", () => {
@@ -16,22 +20,24 @@ describe("storefront prototype", () => {
     expect(storefront.userData.label).toBe("LocalTwin Flower");
     expect(storefront.getObjectByName("shop-body")).toBeDefined();
     expect(storefront.getObjectByName("storefront-sign")).toBeDefined();
-    expect(storefront.getObjectsByProperty("name", "flower-attachment")).toHaveLength(7);
+    expect(storefront.getObjectByName("design-marker-flower")).toBeDefined();
+    expect(storefront.getObjectByName("design-flower")).toBeDefined();
 
     disposeStorefront(storefront);
   });
 
   it.each([
-    ["I21201", "LocalTwin Cafe", "coffee-cup"],
-    ["I20101", "LocalTwin Restaurant", "meal-bowl"],
-    ["I21001", "LocalTwin Bakery", "bakery-loaf"],
-    ["G20405", "LocalTwin Convenience", "convenience-sign"],
-    ["S20701", "LocalTwin Beauty", "beauty-mirror"],
-    ["G20901", "LocalTwin Apparel", "apparel-rack-bar"],
-    ["P10501", "LocalTwin Academy", "academy-book"],
-    ["I10103", "LocalTwin Lodging", "lodging-bed-base"],
-    ["S20801", "LocalTwin Sports", "sports-dumbbell-handle"],
-  ])("builds a direction-neutral %s category attachment", (code, label, objectName) => {
+    ["I21201", "LocalTwin Cafe", "design-marker-cafe"],
+    ["I20101", "LocalTwin Restaurant", "design-marker-restaurant"],
+    ["I21001", "LocalTwin Bakery", "design-marker-bakery"],
+    ["G20405", "LocalTwin Convenience", "design-marker-convenience"],
+    ["S20701", "LocalTwin Beauty", "design-marker-beauty"],
+    ["G20901", "LocalTwin Apparel", "design-marker-apparel"],
+    ["P10501", "LocalTwin Academy", "design-marker-academy"],
+    ["I10103", "LocalTwin Lodging", "design-marker-lodging"],
+    ["S20801", "LocalTwin Sports", "design-marker-sports"],
+    ["P10603", "LocalTwin Sports", "design-marker-sports"],
+  ])("builds the reviewed %s category attachment", (code, label, objectName) => {
     const storefront = createStorefront(getStorefrontVariant(code));
 
     expect(storefront.userData.categoryCode).toBe(code);
@@ -42,31 +48,32 @@ describe("storefront prototype", () => {
   });
 
   it.each([
-    ["I21201", "coffee-cup"],
-    ["I20101", "meal-bowl"],
-    ["I21001", "bakery-loaf"],
-    ["G20405", "convenience-sign"],
-    ["S20801", "sports-dumbbell-handle"],
+    ["I21201", "design-marker-cafe"],
+    ["I20101", "design-marker-restaurant"],
+    ["I21001", "design-marker-bakery"],
+    ["G20405", "design-marker-convenience"],
+    ["S20701", "design-marker-beauty"],
+    ["S20801", "design-marker-sports"],
   ])("builds a standalone rooftop marker for %s", (code, objectName) => {
     const marker = createStorefrontCategoryMarker(getStorefrontVariant(code));
 
     expect(marker.name).toBe(`storefront-category-marker-${code}`);
-    expect(marker.userData.assetStrategy).toBe("procedural-rooftop-category-marker");
+    expect(marker.userData.assetStrategy).toBe("reviewed-storefront-model");
     expect(marker.getObjectByName("shop-body")).toBeUndefined();
-    expect(marker.getObjectByName("category-marker-pedestal")).toBeDefined();
+    expect(marker.getObjectByName("storefront-square-plot")).toBeDefined();
     expect(marker.getObjectByName(objectName)).toBeDefined();
     disposeStorefront(marker);
   });
 
-  it("creates visible rooftop markers for flower and generic service categories", () => {
+  it("uses the reviewed flower marker and no legacy generic service object", () => {
     const flowerMarker = createStorefrontCategoryMarker(getStorefrontVariant("G21901"));
     const serviceMarker = createStorefrontCategoryMarker(
       getStorefrontVariant("unknown-category-code"),
     );
 
-    expect(flowerMarker.getObjectByName("category-attachment")).toBeDefined();
-    expect(flowerMarker.getObjectsByProperty("name", "flower-attachment")).toHaveLength(3);
-    expect(serviceMarker.getObjectByName("service-marker-sign")).toBeDefined();
+    expect(flowerMarker.getObjectByName("design-marker-flower")).toBeDefined();
+    expect(serviceMarker.getObjectByName("category-attachment")).toBeUndefined();
+    expect(serviceMarker.getObjectByName("service-marker-sign")).toBeUndefined();
     disposeStorefront(flowerMarker);
     disposeStorefront(serviceMarker);
   });
@@ -76,7 +83,7 @@ describe("storefront prototype", () => {
     expect(hasStorefrontVariant("I21201")).toBe(true);
     expect(hasStorefrontVariant("I20107")).toBe(true);
     expect(hasStorefrontVariant("S20701")).toBe(true);
-    expect(hasStorefrontVariant("unknown-category-code")).toBe(true);
+    expect(hasStorefrontVariant("unknown-category-code")).toBe(false);
   });
 
   it("creates a neutral service storefront for an unmapped category", () => {
@@ -85,6 +92,11 @@ describe("storefront prototype", () => {
     expect(storefront.userData.categoryCode).toBe("unknown-category-code");
     expect(storefront.getObjectsByProperty("name", "flower-attachment")).toHaveLength(0);
     disposeStorefront(storefront);
+  });
+
+  it("keeps unreviewed commercial codes on the original gray building", () => {
+    expect(storefrontVisualStatus("Q10101")).toBe("generic");
+    expect(storefrontVisualStatus("I20107")).toBe("mapped");
   });
 
   it("combines a shared GLB body with four direction-neutral atlas decals", () => {

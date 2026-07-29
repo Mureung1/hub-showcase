@@ -1,7 +1,9 @@
 import * as THREE from "three";
 
 import type { StorefrontAssetInstance } from "./storefrontAssets";
-import type { StorefrontVariant } from "./storefrontRegistry";
+import { addStorefrontDesignAttachment } from "./storefrontDesignAttachments";
+import { instantiateStorefrontPrefab } from "./storefrontPrefabLibrary";
+import { getStorefrontDesignForVariant, type StorefrontVariant } from "./storefrontRegistry";
 
 function standardMaterial(color: number, roughness = 0.82) {
   return new THREE.MeshStandardMaterial({ color, roughness, metalness: 0 });
@@ -23,158 +25,14 @@ function addBox(
   return mesh;
 }
 
-function addFlower(
-  parent: THREE.Object3D,
-  position: [number, number, number],
-  scale: number,
-  petalMaterial: THREE.Material,
-  centerMaterial: THREE.Material,
-) {
-  const flower = new THREE.Group();
-  flower.name = "flower-attachment";
-  flower.position.set(...position);
-  flower.scale.setScalar(scale);
-
-  for (let index = 0; index < 6; index += 1) {
-    const angle = (index / 6) * Math.PI * 2;
-    const petal = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), petalMaterial);
-    petal.scale.set(1, 0.65, 0.4);
-    petal.position.set(Math.cos(angle) * 0.16, Math.sin(angle) * 0.16, 0);
-    flower.add(petal);
-  }
-
-  const center = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), centerMaterial);
-  center.position.z = 0.05;
-  flower.add(center);
-  parent.add(flower);
-}
-
-function addCategoryAttachment(
-  parent: THREE.Object3D,
-  variant: StorefrontVariant,
-  trim: THREE.Material,
-  accent: THREE.Material,
-  detail: THREE.Material,
-  dark: THREE.Material,
-) {
-  if (variant.attachment === "none" || variant.attachment === "flower") return;
-
+function addCategoryAttachment(parent: THREE.Group, variant: StorefrontVariant, roofTop: number) {
+  const design = getStorefrontDesignForVariant(variant);
+  if (!design) return null;
   const attachment = new THREE.Group();
   attachment.name = "category-attachment";
-  attachment.position.y = 3.25;
-
-  if (variant.attachment === "coffee") {
-    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.4, 0.62, 18), trim);
-    cup.name = "coffee-cup";
-    cup.position.y = 0.33;
-    attachment.add(cup);
-
-    const coffee = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.04, 18), dark);
-    coffee.name = "coffee-surface";
-    coffee.position.y = 0.65;
-    attachment.add(coffee);
-
-    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.09, 8, 18), accent);
-    handle.name = "coffee-handle";
-    handle.position.set(0.43, 0.36, 0);
-    handle.rotation.y = Math.PI / 2;
-    attachment.add(handle);
-  }
-
-  if (variant.attachment === "meal") {
-    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.4, 0.38, 18), trim);
-    bowl.name = "meal-bowl";
-    bowl.position.y = 0.2;
-    attachment.add(bowl);
-    for (const rotation of [-0.42, 0.42]) {
-      const chopstick = addBox(
-        attachment,
-        "meal-chopstick",
-        [0.1, 0.1, 1.65],
-        [rotation * 0.35, 0.68, 0],
-        accent,
-      );
-      chopstick.rotation.y = rotation;
-      chopstick.rotation.z = rotation * 0.35;
-    }
-  }
-
-  if (variant.attachment === "bakery") {
-    for (const [index, z] of [-0.48, 0, 0.48].entries()) {
-      const loaf = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.72, 4, 10), detail);
-      loaf.name = "bakery-loaf";
-      loaf.position.set((index - 1) * 0.22, 0.32, z);
-      loaf.rotation.z = Math.PI / 2;
-      loaf.rotation.y = (index - 1) * 0.16;
-      attachment.add(loaf);
-    }
-  }
-
-  if (variant.attachment === "convenience") {
-    addBox(attachment, "convenience-sign", [1.15, 0.7, 1.15], [0, 0.38, 0], trim);
-    addBox(attachment, "convenience-band-blue", [1.2, 0.16, 1.2], [0, 0.5, 0], accent);
-    addBox(attachment, "convenience-band-orange", [1.22, 0.14, 1.22], [0, 0.24, 0], detail);
-  }
-
-  if (variant.attachment === "beauty") {
-    const mirror = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.08, 20), trim);
-    mirror.name = "beauty-mirror";
-    mirror.rotation.x = Math.PI / 2;
-    mirror.position.y = 0.58;
-    attachment.add(mirror);
-    addBox(attachment, "beauty-mirror-stand", [0.14, 0.58, 0.14], [0, 0.24, 0], accent);
-    addBox(attachment, "beauty-mirror-base", [0.82, 0.12, 0.32], [0, -0.03, 0], detail);
-  }
-
-  if (variant.attachment === "apparel") {
-    addBox(attachment, "apparel-rack-bar", [1.45, 0.1, 0.1], [0, 0.7, 0], trim);
-    addBox(attachment, "apparel-rack-left", [0.1, 1.28, 0.1], [-0.62, 0.1, 0], accent);
-    addBox(attachment, "apparel-rack-right", [0.1, 1.28, 0.1], [0.62, 0.1, 0], accent);
-    for (const x of [-0.35, 0, 0.35]) {
-      const garment = new THREE.Mesh(new THREE.ConeGeometry(0.23, 0.52, 4), detail);
-      garment.name = "apparel-garment";
-      garment.position.set(x, 0.37, 0);
-      garment.rotation.y = Math.PI / 4;
-      attachment.add(garment);
-    }
-  }
-
-  if (variant.attachment === "academy") {
-    for (const [index, height] of [0.76, 0.96, 0.66].entries()) {
-      addBox(
-        attachment,
-        "academy-book",
-        [0.26, height, 0.38],
-        [(index - 1) * 0.3, height / 2 - 0.04, 0],
-        index === 1 ? accent : detail,
-      );
-    }
-    addBox(attachment, "academy-book-base", [1.2, 0.12, 0.52], [0, -0.05, 0], trim);
-  }
-
-  if (variant.attachment === "lodging") {
-    addBox(attachment, "lodging-bed-base", [1.45, 0.36, 0.92], [0, 0.12, 0], dark);
-    addBox(attachment, "lodging-mattress", [1.36, 0.28, 0.84], [0, 0.44, 0], trim);
-    addBox(attachment, "lodging-pillow", [0.48, 0.14, 0.68], [-0.34, 0.64, 0], detail);
-    addBox(attachment, "lodging-headboard", [0.14, 0.88, 0.95], [0.69, 0.48, 0], accent);
-  }
-
-  if (variant.attachment === "sports") {
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.05, 12), dark);
-    handle.name = "sports-dumbbell-handle";
-    handle.rotation.z = Math.PI / 2;
-    handle.position.y = 0.48;
-    attachment.add(handle);
-    for (const x of [-0.58, 0.58]) {
-      const weight = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.18, 12), accent);
-      weight.name = "sports-dumbbell-weight";
-      weight.rotation.z = Math.PI / 2;
-      weight.position.set(x, 0.48, 0);
-      attachment.add(weight);
-    }
-  }
-
+  addStorefrontDesignAttachment(attachment, design, roofTop);
   parent.add(attachment);
+  return attachment;
 }
 
 function addLoadedBody(
@@ -232,52 +90,13 @@ function addCategoryDecals(parent: THREE.Group, texture: THREE.Texture) {
 export function createStorefrontCategoryMarker(variant: StorefrontVariant) {
   const marker = new THREE.Group();
   marker.name = `storefront-category-marker-${variant.categoryCode}`;
-
-  const trim = standardMaterial(variant.trim, 0.72);
-  const accent = standardMaterial(variant.accent, 0.68);
-  const detail = standardMaterial(variant.flower, 0.75);
-  const dark = standardMaterial(0x33443b, 0.65);
-
-  const pedestal = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.92, 1.08, 0.18, 24),
-    new THREE.MeshStandardMaterial({
-      color: variant.accent,
-      roughness: 0.62,
-      metalness: 0.04,
-      emissive: variant.accent,
-      emissiveIntensity: 0.12,
-    }),
-  );
-  pedestal.name = "category-marker-pedestal";
-  pedestal.position.y = 0.09;
-  pedestal.castShadow = true;
-  marker.add(pedestal);
-
-  if (variant.attachment === "flower") {
-    const attachment = new THREE.Group();
-    attachment.name = "category-attachment";
-    for (const [index, x] of [-0.48, 0, 0.48].entries()) {
-      addFlower(attachment, [x, 0.56 + (index % 2) * 0.12, 0], 1.8, accent, detail);
-    }
-    marker.add(attachment);
-  } else {
-    addCategoryAttachment(marker, variant, trim, accent, detail, dark);
-    const attachment = marker.getObjectByName("category-attachment");
-    if (attachment) attachment.position.y = 0.32;
-  }
-
-  if (!marker.getObjectByName("category-attachment")) {
-    const attachment = new THREE.Group();
-    attachment.name = "category-attachment";
-    addBox(attachment, "service-marker-sign", [1.25, 1.15, 0.34], [0, 0.82, 0], trim);
-    addBox(attachment, "service-marker-band", [1.32, 0.2, 0.4], [0, 0.84, 0.01], accent);
-    marker.add(attachment);
-  }
+  const reviewedStorefront = instantiateStorefrontPrefab(variant);
+  if (reviewedStorefront) marker.add(reviewedStorefront);
 
   marker.userData = {
     categoryCode: variant.categoryCode,
     label: variant.label,
-    assetStrategy: "procedural-rooftop-category-marker",
+    assetStrategy: "reviewed-storefront-model",
   };
   return marker;
 }
@@ -297,9 +116,6 @@ export function createStorefront(variant: StorefrontVariant, assets?: Storefront
     transparent: true,
     opacity: 0.82,
   });
-  const dark = standardMaterial(0x33443b, 0.65);
-  const flower = standardMaterial(variant.flower, 0.75);
-  const soil = standardMaterial(0x694c3b);
 
   if (assets) {
     addLoadedBody(storefront, assets.body, { wall, roof, accent, glass, trim });
@@ -328,28 +144,7 @@ export function createStorefront(variant: StorefrontVariant, assets?: Storefront
     }
   }
 
-  if (variant.attachment === "flower") {
-    for (let index = -2; index <= 2; index += 1) {
-      addFlower(
-        storefront,
-        [index * 0.42, 2.36 + (Math.abs(index) % 2) * 0.03, 1.51],
-        0.72,
-        accent,
-        flower,
-      );
-    }
-
-    for (const x of [-1.72, 1.72]) {
-      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.42, 12), soil);
-      pot.name = "flower-pot";
-      pot.position.set(x, 0.24, 1.58);
-      pot.castShadow = true;
-      storefront.add(pot);
-      addFlower(storefront, [x, 0.64, 1.58], 1.15, flower, accent);
-    }
-  }
-
-  addCategoryAttachment(storefront, variant, trim, accent, flower, dark);
+  addCategoryAttachment(storefront, variant, 3.25);
 
   const ground = new THREE.Mesh(new THREE.BoxGeometry(4.7, 0.22, 4.7), standardMaterial(0xc8d8c3));
   ground.name = "square-storefront-plot";
@@ -369,9 +164,16 @@ export function disposeStorefront(storefront: THREE.Object3D) {
   const materials = new Set<THREE.Material>();
   storefront.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
-    if (!object.userData.sharedGeometry) object.geometry.dispose();
+    if (
+      !object.userData.sharedGeometry &&
+      !object.geometry.userData.localTwinPrefabShared
+    ) {
+      object.geometry.dispose();
+    }
     const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
-    objectMaterials.forEach((material) => materials.add(material));
+    objectMaterials.forEach((material) => {
+      if (!material.userData.localTwinPrefabShared) materials.add(material);
+    });
   });
   materials.forEach((material) => {
     const texture = (material as THREE.Material & { map?: THREE.Texture | null }).map;
