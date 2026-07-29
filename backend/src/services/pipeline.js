@@ -157,6 +157,10 @@ async function runStep2(jobId) {
   const supabase = getSupabaseClient();
   const startTime = Date.now();
 
+  // Fallback 처리에서도 사용하기 위해 try 블록 외부에서 선언
+  let storeCategory = '음식점';
+  let signatureMenu = '시그니처 메뉴';
+
   try {
     console.log('[Step 2] Google Gemini API를 사용한 자막 생성 실행 중...');
 
@@ -178,10 +182,11 @@ async function runStep2(jobId) {
       .eq('store_id', job.store_id)
       .single();
 
+    // 변수 안전하게 추출
     const trendHashtag = job.trend_hashtag || '#유행해시태그';
     const productLabel = job.step1_product_label || '상품';
-    const storeCategory = store?.category || '기본 카테고리';
-    const signatureMenu = store?.signature_menu || '시그니처 메뉴';
+    storeCategory = store?.category || '기본 카테고리';
+    signatureMenu = store?.signature_menu || '시그니처 메뉴';
     const purpose = job.purpose || '상품 홍보';
     const mood = job.mood || 'bright';
 
@@ -194,7 +199,10 @@ async function runStep2(jobId) {
     // Google Generative AI 클라이언트 초기화
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const client = new GoogleGenerativeAI(apiKey);
-    const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    // 사용할 Gemini 모델 선택 (환경변수 또는 기본값)
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    const model = client.getGenerativeModel({ model: geminiModel });
 
     const prompt = `당신은 소상공인을 위한 숏폼 콘텐츠 전문가입니다.
 
@@ -226,7 +234,7 @@ async function runStep2(jobId) {
 }`;
 
     console.log('[Step 2] Gemini 요청:', {
-      model: 'gemini-1.5-flash',
+      model: geminiModel,
       promptLength: prompt.length,
       inputs: { trendHashtag, productLabel, storeCategory, mood }
     });
@@ -422,6 +430,7 @@ async function runStep3(jobId) {
 
     // 3. 음성 파일 경로 처리
     let audioUrl = result.audio_path;
+    let localAudioPath = audioUrl;
 
     console.log('[Step 3] 결과:', {
       status: result.status,
@@ -443,19 +452,17 @@ async function runStep3(jobId) {
         cleanPath = cleanPath.slice('backend/'.length);
       }
 
-      audioUrl = path.resolve(process.cwd(), cleanPath);
+      localAudioPath = path.resolve(process.cwd(), cleanPath);
+      const filename = path.basename(localAudioPath);
 
-      // 파일명만 추출해서 URL로 변환
-      const filename = path.basename(audioUrl);
-      audioUrl = `/ai-output/${filename}`;
+      console.log('[Step 3] 로컬 절대 경로:', localAudioPath);
+      console.log('[Step 3] 파일 존재:', fs.existsSync(localAudioPath));
 
-      console.log('[Step 3] 로컬 경로 URL:', audioUrl);
-
-      // Storage 업로드는 시도만 함 (실패해도 로컬 경로 유지)
-      try {
-        const fs = await import('fs');
-        if (fs.existsSync(audioUrl)) {
-          const fileBuffer = fs.readFileSync(audioUrl);
+      // Storage 업로드 시도
+      const fs = await import('fs');
+      if (fs.existsSync(localAudioPath)) {
+        try {
+          const fileBuffer = fs.readFileSync(localAudioPath);
           const storagePath = `audio/${jobId}_${Date.now()}.mp3`;
 
           console.log('[Step 3] Storage 업로드 시도:', storagePath);
@@ -471,11 +478,19 @@ async function runStep3(jobId) {
             audioUrl = publicUrl;
             console.log('[Step 3] Storage 업로드 성공:', audioUrl);
           } else {
-            console.warn('[Step 3] Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
+            // 업로드 실패 시 Web URL 사용
+            audioUrl = `/ai-output/${filename}`;
+            console.warn('[Step 3] Storage 업로드 실패 → Web URL 사용:', audioUrl);
           }
+        } catch (uploadErr) {
+          // 파일 읽기/업로드 실패 시 Web URL 사용
+          audioUrl = `/ai-output/${filename}`;
+          console.warn('[Step 3] 파일 읽기/업로드 실패 → Web URL 사용:', audioUrl, uploadErr.message);
         }
-      } catch (uploadErr) {
-        console.warn('[Step 3] 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
+      } else {
+        // 파일 없음 → Web URL 사용
+        audioUrl = `/ai-output/${filename}`;
+        console.warn('[Step 3] 로컬 파일 없음 → Web URL 사용:', audioUrl);
       }
     }
 
@@ -543,7 +558,17 @@ async function runStep4(jobId) {
     let imageUrl = job.step1_cropped_image_url;
     let audioUrl = job.step3_audio_url;
     const caption = job.step2_caption || '멋진 영상';
-    const hashtags = job.step2_hashtags || ['#트렌드'];
+
+    // hashtags 데이터 타입 안전화 (문자열 or 배열)
+    let hashtags = job.step2_hashtags || '#트렌드';
+    if (typeof hashtags === 'string') {
+      hashtags = hashtags.split(' ').filter(Boolean);
+    } else if (Array.isArray(hashtags)) {
+      // 이미 배열이므로 그대로 사용
+    } else {
+      hashtags = ['#트렌드'];
+    }
+    console.log('[Step 4] 해시태그 변환 완료:', hashtags);
 
     // URL 경로를 절대 파일 경로로 변환
     const { execFile } = await import('child_process');
@@ -605,6 +630,7 @@ async function runStep4(jobId) {
     // 3. 영상 파일 경로 처리
     let videoUrl = result.video_path;
     let thumbnailUrl = result.thumbnail_path;
+    const fs = await import('fs');
 
     // 비디오 경로 절대경로 변환
     if (!videoUrl.startsWith('http')) {
@@ -618,20 +644,19 @@ async function runStep4(jobId) {
         cleanPath = cleanPath.slice('backend/'.length);
       }
 
-      videoUrl = path.resolve(process.cwd(), cleanPath);
+      const localVideoPath = path.resolve(process.cwd(), cleanPath);
+      const videoFilename = path.basename(localVideoPath);
 
-      // 파일명만 추출해서 URL로 변환
-      const videoFilename = path.basename(videoUrl);
-      videoUrl = `/ai-output/${videoFilename}`;
+      console.log('[Step 4] 비디오 로컬 절대 경로:', localVideoPath);
+      console.log('[Step 4] 비디오 파일 존재:', fs.existsSync(localVideoPath));
 
-      console.log('[Step 4] 비디오 URL:', videoUrl);
-
-      // Storage 업로드 시도 (실패해도 로컬 경로 유지)
-      try {
-        const fs = await import('fs');
-        if (fs.existsSync(videoUrl)) {
-          const fileBuffer = fs.readFileSync(videoUrl);
+      // Storage 업로드 시도
+      if (fs.existsSync(localVideoPath)) {
+        try {
+          const fileBuffer = fs.readFileSync(localVideoPath);
           const storagePath = `videos/${jobId}_${Date.now()}.mp4`;
+
+          console.log('[Step 4] 비디오 Storage 업로드 시도:', storagePath);
 
           const { error: uploadError } = await supabase.storage
             .from('uploads')
@@ -644,11 +669,19 @@ async function runStep4(jobId) {
             videoUrl = publicUrl;
             console.log('[Step 4] 비디오 Storage 업로드 성공:', videoUrl);
           } else {
-            console.warn('[Step 4] 비디오 Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
+            // 업로드 실패 시 Web URL 사용
+            videoUrl = `/ai-output/${videoFilename}`;
+            console.warn('[Step 4] 비디오 Storage 업로드 실패 → Web URL 사용:', videoUrl, uploadError.message);
           }
+        } catch (uploadErr) {
+          // 파일 읽기/업로드 실패 시 Web URL 사용
+          videoUrl = `/ai-output/${videoFilename}`;
+          console.warn('[Step 4] 비디오 파일 읽기/업로드 실패 → Web URL 사용:', videoUrl, uploadErr.message);
         }
-      } catch (uploadErr) {
-        console.warn('[Step 4] 비디오 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
+      } else {
+        // 파일 없음 → Web URL 사용
+        videoUrl = `/ai-output/${videoFilename}`;
+        console.warn('[Step 4] 비디오 로컬 파일 없음 → Web URL 사용:', videoUrl);
       }
     }
 
@@ -664,20 +697,19 @@ async function runStep4(jobId) {
         cleanPath = cleanPath.slice('backend/'.length);
       }
 
-      thumbnailUrl = path.resolve(process.cwd(), cleanPath);
+      const localThumbnailPath = path.resolve(process.cwd(), cleanPath);
+      const thumbnailFilename = path.basename(localThumbnailPath);
 
-      // 파일명만 추출해서 URL로 변환
-      const thumbnailFilename = path.basename(thumbnailUrl);
-      thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+      console.log('[Step 4] 썸네일 로컬 절대 경로:', localThumbnailPath);
+      console.log('[Step 4] 썸네일 파일 존재:', fs.existsSync(localThumbnailPath));
 
-      console.log('[Step 4] 썸네일 URL:', thumbnailUrl);
-
-      // Storage 업로드 시도 (실패해도 로컬 경로 유지)
-      try {
-        const fs = await import('fs');
-        if (fs.existsSync(thumbnailUrl)) {
-          const fileBuffer = fs.readFileSync(thumbnailUrl);
+      // Storage 업로드 시도
+      if (fs.existsSync(localThumbnailPath)) {
+        try {
+          const fileBuffer = fs.readFileSync(localThumbnailPath);
           const storagePath = `thumbnails/${jobId}_${Date.now()}.jpg`;
+
+          console.log('[Step 4] 썸네일 Storage 업로드 시도:', storagePath);
 
           const { error: uploadError } = await supabase.storage
             .from('uploads')
@@ -690,11 +722,19 @@ async function runStep4(jobId) {
             thumbnailUrl = publicUrl;
             console.log('[Step 4] 썸네일 Storage 업로드 성공:', thumbnailUrl);
           } else {
-            console.warn('[Step 4] 썸네일 Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
+            // 업로드 실패 시 Web URL 사용
+            thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+            console.warn('[Step 4] 썸네일 Storage 업로드 실패 → Web URL 사용:', thumbnailUrl, uploadError.message);
           }
+        } catch (uploadErr) {
+          // 파일 읽기/업로드 실패 시 Web URL 사용
+          thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+          console.warn('[Step 4] 썸네일 파일 읽기/업로드 실패 → Web URL 사용:', thumbnailUrl, uploadErr.message);
         }
-      } catch (uploadErr) {
-        console.warn('[Step 4] 썸네일 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
+      } else {
+        // 파일 없음 → Web URL 사용
+        thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+        console.warn('[Step 4] 썸네일 로컬 파일 없음 → Web URL 사용:', thumbnailUrl);
       }
     }
 
