@@ -6,6 +6,8 @@
 RootLayout (app/layout.js)
 └── Home (app/page.js)  — step: "input" | "preview" | "focus" | "timer" | "timer-confirm"
                           | "complete" | "reason" | "proposal" | "rest"
+    ├── [onboarding]    OnboardingGuide  (app/components/OnboardingGuide.js) — T18, step 상태와
+    │                   무관하게 notionReady===false면 다른 화면보다 먼저 렌더링됨
     ├── [input]         BrainDumpInput   (app/components/BrainDumpInput.js)
     ├── [preview]       TaskPreview      (app/components/TaskPreview.js)
     ├── [focus]         OneFocusView     (app/components/OneFocusView.js)
@@ -41,6 +43,11 @@ input → preview → focus ─┬─ (집중 시작) → timer → timer-confir
 | `ReasonChips` | — | `onSelect(chip)` → `proposal` |
 | `ProposalCard` | `proposedTool`, `reason`, `isLoading`, `isFinal` | `onAccept()`/`onReject()` → tool별 분기 또는 재판단 |
 | `RestSuggestion` | — | `onBackHome()` → `input` |
+| `OnboardingGuide` | `isChecking`, `checkMessage` | `onRecheck()` → `/api/notion-health` 재확인, 통과하면 `notionReady=true`가 되어 다음 렌더에서 정상 흐름(주로 `input`)으로 전환 |
+
+## Notion 연동 확인(T18)
+
+`Home`은 마운트 시 한 번 `/api/notion-health`(T01에서 만든 헬스체크 엔드포인트)를 호출해 `notionReady` state를 채운다. `notionReady === false`면 `step`이 무엇이든 상관없이 `OnboardingGuide`를 렌더링해 노션 템플릿 복제 → Integration 연결 → `.env.local` 설정 순서를 안내한다. "확인했어요" 버튼을 누르면 재확인하고, 통과하면 원래 `step`(대개 `input`)으로 넘어간다.
 
 ## 새로고침 내구성(T04)
 

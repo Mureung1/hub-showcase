@@ -25,9 +25,10 @@
 | T15 | 타이머 종료 시 완료 확인 + Agent 판단 연장 | 3 | T04 | C15 | S6 | 완료 |
 | T16 | Brain Dump 음성 입력 | 2 | — | C16 | — | 대기 |
 | T17 | 마이크로스텝 검토·삭제 화면 | 3 | T02 | C17 | — | 대기 |
-| T18 | Zero-Input 온보딩 화면 | 2 | T01 | C18 | — | 대기 |
+| T18 | Zero-Input 온보딩 화면 | 2 | T01 | C18 | — | 완료 |
 | T19 | 오늘 마감까지 남은 시간 표시 + 연장 버튼 (이슈 #41) | 4 | T03 | C19 | — | 완료 |
 | T20 | 타이머 일시정지 + 재개 사유 기록 (이슈 #49) | 3 | T04 | C20 | S7 | 완료 |
+| T21 | Notion Public Integration + OAuth 연결 | 2 | T18 | — | — | 대기 |
 
 ## Task 상세
 
@@ -139,3 +140,15 @@
 - 스텝 완료 시 그동안의 일시정지 횟수·이유가 Notion Steps DB에 기록되어 다시 조회해도 유지된다(S7).
 - 선행: T04(Timer 지속성 — `stepStartedAt`을 페이지 레벨에서 들고 있는 구조가 먼저 있어야 함).
 - 종료: C20. 계약 S7.
+
+### T21 — Notion Public Integration + OAuth 연결
+- T18(온보딩 화면)이 요구하는 "템플릿 복제 → Integration 생성 → 토큰/DB ID 붙여넣기"를 사람이 손으로 하는 대신, "Notion으로 연결하기" 버튼 한 번으로 끝내는 진짜 원터치 온보딩.
+- 사용자 준비물(본인이 직접): 지금 쓰는 Internal Integration을 Notion 개발자 설정에서 Public으로 전환, redirect URI 등록, Client Secret 발급 후 `.env.local`/Vercel에 등록.
+- 구현 범위(큼 — 앱 전체 데이터 연결 구조 변경):
+  - `/api/auth/notion`, `/api/auth/notion/callback` OAuth 라우트 신설
+  - "누가 로그인했는지" 구분하는 세션/쿠키 저장 방식 신설 (지금은 사용자 개념 자체가 없음)
+  - `app/lib/notion.js` 및 이를 쓰는 모든 API(brain-dump, steps/*, struggle, timer-extend, agent-log)가 전역 `.env` 토큰 대신 로그인한 사용자의 토큰을 쓰도록 전면 수정
+  - (선택) OAuth 승인 시 Notion이 템플릿을 자동 복제해주는 `duplicated_template_id` 활용 검토
+- 선행: T18(현재 방식이 먼저 동작 중이어야 대체 비교가 가능함).
+- 종료: 아직 미정 (착수 시 C21·S 계약 정의).
+- 260729 결정: 데모 영상 촬영을 앞두고 있어 지금 착수하지 않음. 영상 제출 이후 여유 있을 때 진행.
