@@ -29,6 +29,12 @@ export function createApp({
   authenticateGuest,
   guestAuthenticationOptions,
   guestSessionOptions,
+  healthStatus = () => ({
+    databaseConfigured: isSupabaseConfigured(),
+    guestSessionsConfigured:
+      typeof process.env.GUEST_KEY_PEPPER === "string" &&
+      process.env.GUEST_KEY_PEPPER.length >= 32
+  }),
   rateLimitOptions = {}
 } = {}) {
   const app = express();
@@ -52,6 +58,16 @@ export function createApp({
   app.disable("x-powered-by");
   app.use(helmet());
   app.use(express.json({ limit: serverConfig.jsonBodyLimit }));
+  app.get("/health", (request, response) => {
+    const checks = healthStatus();
+    const ready =
+      checks.databaseConfigured === true &&
+      checks.guestSessionsConfigured === true;
+
+    response
+      .status(ready ? 200 : 503)
+      .json({ status: ready ? "ok" : "not_ready", checks });
+  });
   app.use(
   "/api",
   cors({
@@ -181,12 +197,22 @@ export function createApp({
 const app = createApp();
 
 if (process.env.NODE_ENV !== "test") {
-  app.listen(serverConfig.port, () => {
+  const server = app.listen(serverConfig.port, () => {
     console.log(`Express server listening on http://localhost:${serverConfig.port}`);
     console.log(
       `Supabase configuration: ${isSupabaseConfigured() ? "ready" : "not configured"}`
     );
   });
+
+  const shutdown = (signal) => {
+    console.log(`${signal} received; stopping the HTTP server.`);
+    server.close((error) => {
+      process.exitCode = error ? 1 : 0;
+    });
+  };
+
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
 }
 
 export default app;
