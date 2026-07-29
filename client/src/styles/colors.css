@@ -29,8 +29,9 @@
   --text-on-deep: #FFFFFF;
   --border-card: var(--line);
   --border-postcard: var(--wedgwood-mid);
-  --btn-primary: var(--wedgwood-deep);
-  --btn-accent: var(--lemon-deep);
+  --btn-primary: #DDE7ED;
+  --btn-accent: #DDE7ED;
+  --btn-text: #574452;       /* 버튼 글씨 — #DDE7ED 위 7.11:1 (WCAG AAA) */
   --btn-disabled-bg: #EDE7D8;
   --btn-disabled-text: #B4AB97;
   --chip-lemon-bg: var(--lemon-pale);

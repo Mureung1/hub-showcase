@@ -19,7 +19,7 @@ export function Button({ variant = 'primary', size = 'md', disabled = false, blo
     : variant === 'accent'
       ? 'var(--btn-accent)'
       : 'var(--btn-primary)';
-  const fg = disabled ? 'var(--btn-disabled-text)' : 'var(--text-on-deep)';
+  const fg = disabled ? 'var(--btn-disabled-text)' : 'var(--btn-text)';
 
   const active = pressed && !disabled;
   const hover = hovered && !disabled && !active;
