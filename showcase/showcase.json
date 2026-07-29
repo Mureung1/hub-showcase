@@ -3,7 +3,8 @@
   "title": "SpecFit (스펙핏)",
   "summary": "취업 준비생이 자신의 스펙과 채용공고를 비교해 지금 지원 가능한 공고 비율과 부족한 역량을 확인하는 갭 분석 서비스입니다.",
   "githubUser": "minnnnju(김민주)",
-  "demoUrl": "",
+  "demoUrl": "https://specfit-six.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/file/d/12VF1C-7FXEn6A7kWfhpnpy-GQxdyyRrJ/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/filter.webp",
