@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { routePaths } from "../routes/routePaths";
@@ -16,6 +16,13 @@ function MentorSignupPage() {
   const [verificationStatus, setVerificationStatus] = useState("idle");
   const [verificationError, setVerificationError] = useState("");
   const isEmailVerified = verificationStatus === "verified";
+  const emailInputRef = useRef(null);
+
+  useEffect(() => {
+    emailInputRef.current?.setCustomValidity(
+      isEmailVerified ? "" : "이메일 인증을 완료해 주세요."
+    );
+  }, [isEmailVerified]);
 
   const handleSendVerificationCode = async () => {
     setVerificationError("");
@@ -172,6 +179,7 @@ function MentorSignupPage() {
                     id="mentor-email"
                     name="email"
                     placeholder="example@school.ac.kr"
+                    ref={emailInputRef}
                     required
                     type="email"
                     value={email}
@@ -218,7 +226,7 @@ function MentorSignupPage() {
 
           <div className="mentor-signup-actions">
             <Link className="button button-neutral" to="/signup">이전</Link>
-            <button className="button button-primary" disabled={!isEmailVerified} type="submit">다음</button>
+            <button className="button button-primary" type="submit">다음</button>
           </div>
         </form>
       </main>

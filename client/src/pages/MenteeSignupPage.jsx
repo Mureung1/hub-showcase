@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets } from "../routes/routePaths";
@@ -17,6 +17,13 @@ function MenteeSignupPage() {
   const [verificationStatus, setVerificationStatus] = useState("idle");
   const [verificationError, setVerificationError] = useState("");
   const isEmailVerified = verificationStatus === "verified";
+  const emailInputRef = useRef(null);
+
+  useEffect(() => {
+    emailInputRef.current?.setCustomValidity(
+      isEmailVerified ? "" : "이메일 인증을 완료해 주세요."
+    );
+  }, [isEmailVerified]);
 
   useEffect(() => {
     if (!isSignupComplete) return undefined;
@@ -166,6 +173,7 @@ function MenteeSignupPage() {
                   name="email"
                   autoComplete="email"
                   placeholder="example@school.ac.kr"
+                  ref={emailInputRef}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   readOnly={isEmailVerified}
@@ -253,7 +261,7 @@ function MenteeSignupPage() {
 
           <div className="mentee-signup-actions">
             <Link className="button button-neutral" to="/signup">이전</Link>
-            <button className="button button-primary" disabled={isSubmitting || !isEmailVerified} type="submit">
+            <button className="button button-primary" disabled={isSubmitting} type="submit">
               {isSubmitting ? "가입 처리 중..." : "가입하기"}
             </button>
           </div>
