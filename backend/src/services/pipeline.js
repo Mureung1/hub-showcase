@@ -150,7 +150,7 @@ async function runStep1(jobId) {
 
 /**
  * Step 2: Google Gemini API를 사용한 숏폼 자막 생성
- * 100% 무료 Google Gemini API(gemini-2.0-flash)로 트렌드에 맞는 자막 생성
+ * 100% 무료 Google Gemini API(gemini-1.5-flash)로 트렌드에 맞는 자막 생성
  * (경량화: PyTorch/transformers 제거, OpenAI 비용 절감)
  */
 async function runStep2(jobId) {
@@ -194,7 +194,7 @@ async function runStep2(jobId) {
     // Google Generative AI 클라이언트 초기화
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const client = new GoogleGenerativeAI(apiKey);
-    const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `당신은 소상공인을 위한 숏폼 콘텐츠 전문가입니다.
 
@@ -226,7 +226,7 @@ async function runStep2(jobId) {
 }`;
 
     console.log('[Step 2] Gemini 요청:', {
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       promptLength: prompt.length,
       inputs: { trendHashtag, productLabel, storeCategory, mood }
     });
@@ -269,35 +269,93 @@ async function runStep2(jobId) {
       console.log(`  ${i+1}. [유사도: ${opt.similarity}] ${opt.text}`);
     });
 
-    await supabase
-      .from('generation_jobs')
-      .update({
-        step2_caption: result.primary_caption,
-        step2_caption_options: JSON.stringify(captionOptions),
-        step2_hashtags: result.hashtags,
-        step2_similarity_score: result.similarity_score || 0.85,
-        progress: 50,
-        current_step: 2
-      })
-      .eq('job_id', jobId);
-
-    await supabase
-      .from('generation_steps')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        duration_ms: duration
-      })
-      .eq('job_id', jobId)
-      .eq('step_number', 2);
+    // DB 업데이트 (정상 응답)
+    await updateStep2Results(jobId, result, duration);
 
     console.log(`[✅ Step 2 완료] Gemini 자막 생성 (${duration}ms)\n`);
 
   } catch (error) {
     console.error('[❌ Step 2 실패]', error.message);
     console.error('[Error Stack]', error.stack);
-    throw error;
+
+    // Gemini API 실패 시 Fallback 대사 사용
+    console.log('[⚠️  Fallback] Gemini API 호출 실패 - 기본 대사 템플릿 사용');
+    const fallbackResult = generateFallbackCaption(storeCategory, signatureMenu);
+    const duration = Date.now() - startTime;
+
+    try {
+      await updateStep2Results(jobId, fallbackResult, duration, true);
+      console.log(`[✅ Step 2 Fallback] 기본 대사로 진행 (${duration}ms)\n`);
+    } catch (dbError) {
+      console.error('[❌ Step 2 DB 업데이트 실패]', dbError.message);
+      throw new Error(`Step 2 처리 중 오류 발생: ${error.message}`);
+    }
   }
+}
+
+/**
+ * Step 2 DB 업데이트 헬퍼 함수
+ */
+async function updateStep2Results(jobId, result, duration, isFallback = false) {
+  const supabase = getSupabaseClient();
+  const captionOptions = result.caption_options || [];
+
+  if (!isFallback) {
+    console.log(`[Step 2] 생성된 자막 옵션: ${captionOptions.length}개`);
+    captionOptions.forEach((opt, i) => {
+      console.log(`  ${i+1}. [유사도: ${opt.similarity}] ${opt.text}`);
+    });
+  }
+
+  await supabase
+    .from('generation_jobs')
+    .update({
+      step2_caption: result.primary_caption,
+      step2_caption_options: JSON.stringify(captionOptions),
+      step2_hashtags: result.hashtags,
+      step2_similarity_score: result.similarity_score || 0.70,
+      progress: 50,
+      current_step: 2
+    })
+    .eq('job_id', jobId);
+
+  await supabase
+    .from('generation_steps')
+    .update({
+      status: isFallback ? 'completed_fallback' : 'completed',
+      completed_at: new Date().toISOString(),
+      duration_ms: duration,
+      notes: isFallback ? 'Gemini API 실패 - 기본 대사 사용' : null
+    })
+    .eq('job_id', jobId)
+    .eq('step_number', 2);
+}
+
+/**
+ * Gemini API 실패 시 Fallback 대사 생성
+ */
+function generateFallbackCaption(storeCategory, signatureMenu) {
+  const fallbackCaptions = {
+    '카페': '☕ 이 커피를 놓치지 마세요! 지금 방문해보세요 👉',
+    '음식점': '🍜 맛있는 맛집! 꼭 와서 먹어봐야 해요 👉',
+    '한식': '🥢 우리 한식의 참맛! 지금 주문하세요 👉',
+    '양식': '🍝 정성 가득한 양식! 오늘 저녁은 여기로 👉',
+    '중식': '🥡 대박 맛! 이 맛 어디서 먹어봤어? 👉',
+    '카테고리': `✨ ${signatureMenu || '시그니처 메뉴'}를 지금 즐겨보세요! 👉`,
+  };
+
+  const primaryCaption = fallbackCaptions[storeCategory] || fallbackCaptions['카테고리'];
+
+  return {
+    primary_caption: primaryCaption,
+    caption_options: [
+      { text: '지금 바로 방문해보세요! 🎉', similarity: 0.75 },
+      { text: '이 맛을 놓칠 수 없어요! 💯', similarity: 0.70 },
+      { text: '최고의 선택! 추천합니다 ⭐', similarity: 0.68 }
+    ],
+    hashtags: '#맛집 #추천 #꼭와봐야해',
+    similarity_score: 0.70
+  };
 }
 
 /**
