@@ -4,7 +4,7 @@
   "summary": "시험 기간에 과목별 우선순위를 계산해 오늘 먼저 공부할 과목을 추천하는 서비스입니다.",
   "githubUser": "pkyungho(박경호)",
   "demoUrl": "https://exam-priority-calculator.vercel.app",
-  "demoVideoUrl": "https://youtu.be/d9OS0-sSTUQ",
+  "demoVideoUrl": "https://youtu.be/rFA_218SjNY",
   "thumbnail": "thumbnail.webp",
   "screenshots": ["screenshots/input.webp", "screenshots/result.webp"],
   "problem": "여러 과목을 동시에 준비해야 하는 대학생이 시험기간에 과목별 우선순위를 판단하기 어려워 제한된 공부 시간을 비효율적으로 쓰게 됩니다.",
