@@ -247,7 +247,7 @@ router.get('/:job_id', async (req, res) => {
     // Step 4 완료 시 비디오 및 썸네일 URL 추가
     if (job.status === 'completed' && job.step4_video_url) {
       responseData.video = {
-        video_id: job.step4_video_id,
+        video_id: job.job_id,  // job_id를 video_id로 사용
         video_url: job.step4_video_url,
         thumbnail_url: job.step4_thumbnail_url,
         duration: 15,
@@ -342,7 +342,7 @@ router.get('/:job_id/result', async (req, res) => {
       job_id: job.job_id,
       status: job.status,
       video: {
-        video_id: job.step4_video_id,
+        video_id: job.job_id,  // job_id를 video_id로 사용
         video_url: job.step4_video_url,
         thumbnail: job.step4_thumbnail_url,
         duration: 15,

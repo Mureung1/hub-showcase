@@ -780,7 +780,6 @@ async function runStep4(jobId) {
     const { error: updateError } = await supabase
       .from("generation_jobs")
       .update({
-        step4_video_id: jobId,
         step4_video_url: videoUrl,
         step4_thumbnail_url: thumbnailUrl,
         progress: 100,
