@@ -40,6 +40,7 @@ P0 6개(테스트 인프라, TDD 기능, 에러 처리, 아키텍처 다이어�
 | 5 | 영상 제출 | 5분 미만 데모 영상, showcase.json에 demoVideoUrl 추가 | P0 | 수 | 대기 | — |
 | 6 | Agent/Skill 종합 정리 | 4주간 쓴 Agent·Skill·규칙 문서 관계를 그림으로 | P1 | 목 | 대기 | — |
 | 7 | 워크플로우 문서 최종화 | 캠프 이후에도 쓸 수 있는 형태로 다듬기 | P1 | 금 | 대기 | — |
+| 8 | Episodes 사이드바 실데이터 연결 | mockEpisodes.js 제거, 실제 messages를 TDD로 만든 `groupMessagesIntoEpisodes`로 묶어서 표시 | P0 | 수 | 완료 | — |
 
 ## 4. 요일별 계획
 
@@ -59,11 +60,12 @@ P0 6개(테스트 인프라, TDD 기능, 에러 처리, 아키텍처 다이어�
 
 Tide Check(상태 체크인)와 실제 채팅(Groq API + 잠김/열람) 둘 다 배포 환경에서
 화면-서버-DB까지 연결 확인됨 (Vercel 화면에서 실제 채팅 → Render → Supabase
-저장·조회, Groq 응답까지 전부 동작). 아직 안 되는 것:
-- Episode 분리 — 지금은 메시지 하나하나가 개별적으로 잠김 판정을 받는다.
-  원래 기획은 "대화 구간(episode)" 단위로 묶어서 판정하는 것.
-- Episodes 사이드바(History/Recent)는 여전히 `mockEpisodes.js` — 실제
-  messages 테이블과 연결 안 됨.
+저장·조회, Groq 응답까지 전부 동작). Episodes 사이드바(History/Recent)도
+오늘부터 실제 `messages`를 시간 간격 기준으로 묶어서 보여준다 — 더는 mock
+데이터가 아니다. 아직 안 되는 것:
+- 격차 판정이 "episode(대화 구간) 단위"가 아니라 여전히 "메시지 단위"다 —
+  묶어서 보여주긴 하지만, 잠김 여부는 메시지 하나하나에 매겨진 값을 그대로
+  쓴다(그룹 안에 하나라도 잠기면 카드 전체를 잠그는 방식으로 근사).
 
 ## 6. 운영 원칙
 

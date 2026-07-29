@@ -74,6 +74,7 @@
 }
 
 .ep-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.ep-empty { font-size: 13px; color: #b5b8c0; padding: 12px 4px; }
 
 .ep-card {
   background: #f4f5f8;
