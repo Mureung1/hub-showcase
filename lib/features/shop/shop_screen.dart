@@ -155,7 +155,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
               Row(
                 children: [
                   // 5탭 공통 제목([ScreenTitle]) — 다른 화면이 이 크기에 맞췄다.
-                  const Expanded(child: ScreenTitle('상점')),
+                  // `leadingMark`는 5탭에만 켠다(→ `ScreenTitle.leadingMark`).
+                  const Expanded(child: ScreenTitle('상점', leadingMark: true)),
                   // 코인 잔액 — 노랑 허용 위젯(CoinPill). 정본 `43:253`은 홈·퀘스트
                   // 목록과 **같은 71×24 pill**이라 상점만 큰 변형을 쓰지 않는다.
                   CoinPill(amount: user.coin),

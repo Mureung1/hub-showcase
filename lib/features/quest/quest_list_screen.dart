@@ -455,7 +455,9 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
         // 제목 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
         // 툴바 높이도 그 크기에 맞춰 키운다(기본 56이면 제목이 바를 거의 채운다).
         toolbarHeight: ScreenTitle.appBarHeight,
-        title: const ScreenTitle.appBar('오늘의 퀘스트'),
+        // `leadingMark`는 5탭에만 켠다. 5탭 중 AppBar를 쓰는 건 여기뿐이고,
+        // 같은 `.appBar`를 쓰는 하위 화면 둘(도전 분해·퀘스트 등록)은 끈 채다.
+        title: const ScreenTitle.appBar('오늘의 퀘스트', leadingMark: true),
         // 정본 `66:444`의 코인 pill은 오른쪽 끝에서 20(= 화면 좌우 여백)이다.
         // `AppBar`는 actions 뒤에 여백을 주지 않으므로 직접 붙인다.
         actions: const [_HeaderCoin(), AppSpacing.gapWBlock],

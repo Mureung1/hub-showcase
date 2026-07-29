@@ -63,7 +63,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           children: [
             // 정본 AppBar(`47:406`)에도 코인 pill이 없다(보관함과 같다).
             // 제목 크기는 5탭 공통([ScreenTitle]) — 사용자 결정이라 정본 실측(20)과 다르다.
-            const ScreenTitle('MY'),
+            // `leadingMark`는 5탭에만 켠다(→ `ScreenTitle.leadingMark`).
+            const ScreenTitle('MY', leadingMark: true),
             // 정본 실측: AppBar 아래 패딩 8 + Content 위 패딩 8 = 16.
             AppSpacing.gapMd,
             Text(

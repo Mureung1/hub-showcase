@@ -203,7 +203,8 @@ class _HomeAppBar extends StatelessWidget {
         children: [
           // 인사말이 길어지거나 배율이 커져도 코인 pill을 밀어내지 않게 접는다.
           // 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
-          const Flexible(child: ScreenTitle('오늘도 한 걸음.')),
+          // `leadingMark`는 5탭에만 켠다(하위 화면은 뒤로가기 버튼이 앞자리를 쓴다).
+          const Flexible(child: ScreenTitle('오늘도 한 걸음.', leadingMark: true)),
           AppSpacing.gapWSm,
           CoinPill(amount: coin),
         ],

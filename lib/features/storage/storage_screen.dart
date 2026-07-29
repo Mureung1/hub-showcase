@@ -155,7 +155,8 @@ class _StorageScreenState extends ConsumerState<StorageScreen>
               // 목록과 다르다. 보관함에서 할 수 있는 일이 "보기"뿐이라 잔액이
               // 판단에 쓰이지 않는다. 지금 코드도 이미 그렇다(변경 없음).
               // 제목 크기는 5탭 공통([ScreenTitle]) — 상점에 맞춘 사용자 결정이다.
-              const ScreenTitle('보관함'),
+              // `leadingMark`는 5탭에만 켠다(→ `ScreenTitle.leadingMark`).
+              const ScreenTitle('보관함', leadingMark: true),
               // 정본 실측: AppBar 아래 패딩 8 + Content 위 패딩 8 = 16.
               AppSpacing.gapMd,
               Text(
