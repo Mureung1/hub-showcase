@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 
-import { type RetrievedInsight } from '@/entities/insight';
+import type { Insight } from '@/entities/insight';
 import { ChoiceChip, EmptyState, LoadingState } from '@/shared/ui';
 
 import {
@@ -25,8 +25,10 @@ export type HomePageProps = {
   onRetrieve: (event: FormEvent<HTMLFormElement>) => void;
   onRetryLoad: () => void;
   onSituationClick: (situation: SuggestedSituation) => void;
+  pendingCount?: number;
   query: string;
-  results: RetrievedInsight[];
+  results: Insight[];
+  retrieveErrorMessage?: string;
   selectedSituation: string;
   situations: SuggestedSituation[];
   submittedQuery: string;
@@ -42,8 +44,10 @@ export function HomePage({
   onRetrieve,
   onRetryLoad,
   onSituationClick,
+  pendingCount = 0,
   query,
   results,
+  retrieveErrorMessage,
   selectedSituation,
   situations,
   submittedQuery,
@@ -109,7 +113,9 @@ export function HomePage({
           </div>
         ) : (
           <RetrieveResults
+            errorMessage={retrieveErrorMessage}
             onOpenLibrary={onOpenLibrary}
+            pendingCount={pendingCount}
             results={results}
             submittedQuery={submittedQuery}
           />

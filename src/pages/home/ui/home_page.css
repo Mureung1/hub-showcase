@@ -97,6 +97,12 @@ button.home-page__search-action {
   gap: var(--spacing-4);
 }
 
+.home-page__pending {
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  line-height: var(--typography-label-line-height);
+}
+
 .home-page__results-heading {
   display: flex;
   align-items: baseline;
