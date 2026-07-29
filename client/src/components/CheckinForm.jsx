@@ -41,7 +41,7 @@ function CheckinForm({
         <span>한두 문장이어도 충분해요.</span>
         <span>{rawText.length} / 2000</span>
       </div>
-      {isGuest && <PhotoUpload file={photoFile} onChange={onPhotoChange} />}
+      <PhotoUpload file={photoFile} onChange={onPhotoChange} />
       <div className="guest-storage-note">
         <span aria-hidden="true">{isGuest ? '🔒' : '☁️'}</span>
         <div>
@@ -53,7 +53,7 @@ function CheckinForm({
           <span>
             {isGuest
               ? '브라우저 데이터를 삭제하면 기록도 함께 사라질 수 있어요.'
-              : '사진 클라우드 동기화는 준비 중이라 지금은 첨부할 수 없어요.'}
+              : '사진은 내 사용자 폴더의 Supabase Storage에 저장돼요.'}
           </span>
         </div>
       </div>

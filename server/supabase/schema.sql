@@ -58,3 +58,41 @@ begin
 exception
   when duplicate_object then null;
 end $$;
+
+-- 로그인 사용자의 사진은 UID를 첫 번째 폴더로 사용해 서로 분리한다.
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+values (
+  'checkin-photos',
+  'checkin-photos',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Users can upload own checkin photos" on storage.objects;
+create policy "Users can upload own checkin photos"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'checkin-photos'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
+
+drop policy if exists "Users can delete own checkin photos" on storage.objects;
+create policy "Users can delete own checkin photos"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'checkin-photos'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );

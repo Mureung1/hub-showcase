@@ -83,4 +83,61 @@ describe('Supabase 체크인 저장소', () => {
       { onConflict: 'user_id,client_record_id' },
     )
   })
+
+  test('로그인 사용자의 사진을 UID 폴더에 올리고 URL을 기록에 저장한다', async () => {
+    const savedRow = {
+      id: 'record-with-photo',
+      user_id: USER_ID,
+      raw_text: '사진이 있는 클라우드 기록',
+      emotion: '',
+      cause: '',
+      action: '',
+      mood: '🙂',
+      image_url: 'https://example.supabase.co/storage/v1/object/public/checkin-photos/photo.png',
+      created_at: '2026-07-29T01:00:00.000Z',
+      updated_at: '2026-07-29T01:00:00.000Z',
+    }
+    const query = {
+      insert: vi.fn(),
+      select: vi.fn(),
+      single: vi.fn(),
+    }
+    query.insert.mockReturnValue(query)
+    query.select.mockReturnValue(query)
+    query.single.mockResolvedValue({ data: savedRow, error: null })
+    const bucket = {
+      upload: vi.fn().mockResolvedValue({ error: null }),
+      getPublicUrl: vi.fn().mockReturnValue({
+        data: { publicUrl: savedRow.image_url },
+      }),
+      remove: vi.fn().mockResolvedValue({ error: null }),
+    }
+    const supabaseClient = {
+      auth: authMock(),
+      from: vi.fn().mockReturnValue(query),
+      storage: {
+        from: vi.fn().mockReturnValue(bucket),
+      },
+    }
+    const photo = new File(['photo'], 'photo.png', { type: 'image/png' })
+
+    const saved = await createSupabaseCheckinRepository(supabaseClient)
+      .createCheckin({
+        rawText: '사진이 있는 클라우드 기록',
+        mood: '🙂',
+      }, photo)
+
+    const uploadedPath = bucket.upload.mock.calls[0][0]
+    expect(uploadedPath).toMatch(
+      new RegExp(`^${USER_ID}/[0-9]+-[0-9a-f-]+\\.png$`),
+    )
+    expect(query.insert).toHaveBeenCalledWith(expect.objectContaining({
+      user_id: USER_ID,
+      image_url: savedRow.image_url,
+    }))
+    expect(saved).toMatchObject({
+      id: 'record-with-photo',
+      imageUrl: savedRow.image_url,
+    })
+  })
 })
