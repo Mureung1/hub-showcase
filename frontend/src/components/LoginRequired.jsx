@@ -3,7 +3,7 @@ import './LoginRequired.css'
 
 const LoginRequired = ({ message, state }) => {
   const loginHref = state
-    ? `${API_BASE}/api/auth/google?state=${state}`
+    ? `${API_BASE}/api/auth/google?state=${encodeURIComponent(state)}`
     : `${API_BASE}/api/auth/google`
 
   return (

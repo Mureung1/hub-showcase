@@ -149,6 +149,23 @@ export async function reportSettlementMember(id, settlementId, settlementMemberI
   return data
 }
 
+export async function deleteSettlement(id, settlementId) {
+  const token = getToken()
+  const res = await fetch(`${API_BASE}/api/subscriptions/${id}/settlements/${settlementId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!res.ok) {
+    const data = await res.json()
+    const error = new Error(data.error || '정산 삭제에 실패했습니다.')
+    error.status = res.status
+    throw error
+  }
+}
+
 export async function updateSettlementMemberStatus(id, settlementId, settlementMemberId, status) {
   const token = getToken()
   const res = await fetch(`${API_BASE}/api/subscriptions/${id}/settlements/${settlementId}/members/${settlementMemberId}`, {
