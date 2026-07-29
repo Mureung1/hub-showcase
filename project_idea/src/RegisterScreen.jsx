@@ -136,10 +136,10 @@ function RegisterScreen({ userId, existingRegistration, onContinue, onSubmit }) 
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>이동 방향</div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ ...chipStyle(direction === "from_school"), flex: 1 }} onClick={() => switchDirection("from_school")}>
+          <button type="button" aria-pressed={direction === "from_school"} style={{ ...chipStyle(direction === "from_school"), flex: 1 }} onClick={() => switchDirection("from_school")}>
             학교 → 거점
           </button>
-          <button style={{ ...chipStyle(direction === "to_school"), flex: 1 }} onClick={() => switchDirection("to_school")}>
+          <button type="button" aria-pressed={direction === "to_school"} style={{ ...chipStyle(direction === "to_school"), flex: 1 }} onClick={() => switchDirection("to_school")}>
             거점 → 학교
           </button>
         </div>
@@ -149,7 +149,7 @@ function RegisterScreen({ userId, existingRegistration, onContinue, onSubmit }) 
         <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>출발 · {departureHub}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {departureOptions.map((hub) => (
-            <button key={hub} style={chipStyle(departureHub === hub)} onClick={() => setDepartureHub(hub)}>
+            <button key={hub} type="button" aria-pressed={departureHub === hub} style={chipStyle(departureHub === hub)} onClick={() => setDepartureHub(hub)}>
               {hub}
             </button>
           ))}
@@ -160,7 +160,7 @@ function RegisterScreen({ userId, existingRegistration, onContinue, onSubmit }) 
         <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>목적지 · {destHub}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {destOptions.map((hub) => (
-            <button key={hub} style={chipStyle(destHub === hub)} onClick={() => setDestHub(hub)}>
+            <button key={hub} type="button" aria-pressed={destHub === hub} style={chipStyle(destHub === hub)} onClick={() => setDestHub(hub)}>
               {hub}
             </button>
           ))}
@@ -194,7 +194,7 @@ function RegisterScreen({ userId, existingRegistration, onContinue, onSubmit }) 
         <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>도착 소요시간</div>
         <div style={{ display: "flex", gap: 8 }}>
           {ARRIVAL_OPTIONS.map((a) => (
-            <button key={a} style={chipStyle(arrival === a)} onClick={() => setArrival(a)}>
+            <button key={a} type="button" aria-pressed={arrival === a} style={chipStyle(arrival === a)} onClick={() => setArrival(a)}>
               {a}
             </button>
           ))}
@@ -213,8 +213,12 @@ function RegisterScreen({ userId, existingRegistration, onContinue, onSubmit }) 
           marginBottom: 20,
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600 }}>동성끼리만 매칭</span>
+        <span style={{ fontSize: 13, fontWeight: 600 }} id="gender-only-label">동성끼리만 매칭</span>
         <button
+          type="button"
+          role="switch"
+          aria-checked={genderOnly}
+          aria-labelledby="gender-only-label"
           onClick={() => setGenderOnly(!genderOnly)}
           style={{
             width: 40,

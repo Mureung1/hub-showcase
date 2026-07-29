@@ -232,7 +232,7 @@ router.get('/', async (req, res) => {
   const userIds = [...new Set([me?.user_id, ...rooms.map((r) => r.user_id), ...allMemberUserIds].filter(Boolean))]
   const { data: userRows } = await supabase
     .from('users')
-    .select('id, gender, name, nickname, college, avatar_url, rating, rating_count, noshow_count')
+    .select('id, gender, name, nickname, college, avatar_url, rating, rating_count, noshow_count, hide_gender')
     .in('id', userIds.length ? userIds : [''])
   const genderById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.gender]))
   const userById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u]))
@@ -246,6 +246,8 @@ router.get('/', async (req, res) => {
         rating: u.rating,
         ratingCount: u.rating_count,
         noshow_count: u.noshow_count,
+        // 성별 비공개 설정을 했으면 후보 목록에도 성별을 안 보여줌
+        gender: u.hide_gender ? null : u.gender,
       },
     ])
   )
