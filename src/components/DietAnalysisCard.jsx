@@ -71,7 +71,10 @@ function FindingRow({ finding }) {
   )
 }
 
-export default function DietAnalysisCard() {
+// bare: 달력 탭 개편(리텐션 강화 v7)에서 이 컴포넌트를 날짜 상세 카드의 "AI 분석" 탭 안에 넣으면서
+// 추가했다 — 탭 콘텐츠가 이미 Card 안에 있어 Card를 한 번 더 감싸면 카드 안에 카드가 중첩돼 보인다.
+// true면 바깥 Card 대신 평범한 div로 감싼다(내부 로직·상태는 전혀 안 건드림).
+export default function DietAnalysisCard({ bare = false }) {
   const { effectiveUserId, effectiveRecommended } = useUser()
   const [periodDays, setPeriodDays] = useState(7)
   // undefined=집계 확인 중, null=기록 부족(2일 미만), object=분석 가능한 집계 요약
@@ -80,6 +83,13 @@ export default function DietAnalysisCard() {
   const [rawFallback, setRawFallback] = useState('') // findings 파싱에 끝내 실패했을 때만 채워지는 원문
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
+  // summary===undefined는 예전엔 "집계 확인 중"과 "집계 조회 실패"를 구분 못 해, 조회가 실패하면
+  // (getMealsByDateRange .catch) summary가 영원히 undefined로 남아 그 값으로 조건을 걸던 스켈레톤이
+  // 영원히 떠 있으면서 그 아래 에러 문구까지 같이 보이는 버그가 있었다(리뷰에서 발견, 재시도 수단도
+  // 없었음). 이제 "로딩 중"은 이 별도 플래그로만 판단한다.
+  const [summaryLoading, setSummaryLoading] = useState(true)
+  // 재시도 버튼이 누르는 트리거 — 기간/날짜/사용자가 안 바뀌어도 같은 조회를 다시 돌게 한다.
+  const [summaryReloadTick, setSummaryReloadTick] = useState(0)
 
   const todayKey = useMemo(() => toDateKey(new Date()), [])
 
@@ -89,6 +99,7 @@ export default function DietAnalysisCard() {
   useEffect(() => {
     let cancelled = false
     setSummary(undefined)
+    setSummaryLoading(true)
     setError('')
     setRawFallback('')
     setAnalysis(getTodayDietAnalysis(effectiveUserId, periodDays, todayKey))
@@ -101,11 +112,14 @@ export default function DietAnalysisCard() {
       .catch((err) => {
         if (!cancelled) setError(err.message || '기록을 불러오지 못했어요.')
       })
+      .finally(() => {
+        if (!cancelled) setSummaryLoading(false)
+      })
 
     return () => {
       cancelled = true
     }
-  }, [effectiveUserId, periodDays, todayKey, effectiveRecommended])
+  }, [effectiveUserId, periodDays, todayKey, effectiveRecommended, summaryReloadTick])
 
   async function runAnalysis() {
     if (!summary || analyzing) return
@@ -159,8 +173,10 @@ export default function DietAnalysisCard() {
     }
   }
 
+  const Wrapper = bare ? 'div' : Card
+
   return (
-    <Card>
+    <Wrapper>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
         <h3 style={{ margin: 0, fontSize: font.size.md, fontWeight: 700, color: colors.textStrong }}>AI 식습관 분석</h3>
         <SegmentedControl
@@ -204,7 +220,16 @@ export default function DietAnalysisCard() {
         </p>
       )}
 
-      {!analyzing && !analysis && !rawFallback && summary === undefined && <Skeleton height={60} radius={radius.md} />}
+      {!analyzing && !analysis && !rawFallback && summaryLoading && <Skeleton height={60} radius={radius.md} />}
+
+      {!analyzing && !analysis && !rawFallback && !summaryLoading && summary === undefined && (
+        <div style={{ textAlign: 'center', padding: `${spacing.md}px 0` }}>
+          <p style={{ ...styles.errorText, margin: `0 0 ${spacing.md}px` }}>{error || '기록을 불러오지 못했어요.'}</p>
+          <AppButton variant="secondary" onClick={() => setSummaryReloadTick((t) => t + 1)}>
+            다시 시도
+          </AppButton>
+        </div>
+      )}
 
       {!analyzing && !analysis && !rawFallback && summary === null && (
         <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.sm, textAlign: 'center', padding: `${spacing.md}px 0` }}>
@@ -214,11 +239,14 @@ export default function DietAnalysisCard() {
 
       {!analyzing && !analysis && !rawFallback && summary && <AppButton onClick={runAnalysis}>분석하기</AppButton>}
 
-      {error && <p style={styles.errorText}>{error}</p>}
+      {/* summary===undefined(집계 조회 실패)일 때의 에러는 위 재시도 블록이 이미 보여준다 — 여기서는
+          집계는 성공했지만 분석 실행(runAnalysis) 자체가 실패한 경우만 보여준다(그때는 summary가
+          이미 값을 가지고 있어 위 블록과 겹치지 않는다). */}
+      {error && summary !== undefined && <p style={styles.errorText}>{error}</p>}
 
       <p style={{ margin: `${spacing.md}px 0 0`, color: colors.muted, fontSize: font.size.xs, textAlign: 'center' }}>
         이 분석은 참고용이며 의학적 조언이 아닙니다.
       </p>
-    </Card>
+    </Wrapper>
   )
 }

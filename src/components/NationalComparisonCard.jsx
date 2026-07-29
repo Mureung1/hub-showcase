@@ -47,6 +47,8 @@ function ComparisonRow({ row }) {
 
 // 오늘 내 섭취를 한국 성별·연령대별 평균(국민건강영양조사 수준)과 비교한다. 로그인 여부와 무관하게 쓸 수
 // 있어(게스트도 신체정보만 있으면 됨) 표본이 적은 초기에도 의미 있는 비교를 제공한다. 어디까지나 참고용.
+// 식단 탭 "평균 비교" 탭 안에서 쓰이지만(MealsPage.jsx), 그 탭 콘텐츠 자체가 Card로 감싸여 있지 않아
+// 이 컴포넌트가 그리는 Card가 그대로 유일한 카드다 — 별도 bare 모드는 필요 없다.
 export default function NationalComparisonCard() {
   const { profile, todayMealsTotal } = useUser()
   const average = getKoreanAverageIntake(profile?.sex, profile?.age)
@@ -78,9 +80,12 @@ export default function NationalComparisonCard() {
     return (
       <Card>
         <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.sm}px`, color: colors.textStrong }}>한국 평균과 비교</h2>
-        <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.sm }}>
+        <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
           오늘 식사를 기록하면 같은 또래 한국 평균과 비교해볼 수 있어요.
         </p>
+        <Link to="/analyze" className="tds-press" style={{ ...styles.buttonSecondary, display: 'inline-block', textDecoration: 'none' }}>
+          음식 촬영하러 가기
+        </Link>
       </Card>
     )
   }

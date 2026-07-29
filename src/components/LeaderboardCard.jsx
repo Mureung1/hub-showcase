@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
+import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
 import Spinner from './Spinner.jsx'
 import { getDailyLeaderboard } from '../lib/leaderboard.js'
-import { calcScore, getScoreBreakdown } from '../lib/nutritionScore.js'
+import { getScoreBreakdown } from '../lib/nutritionScore.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 const STATUS_META = {
@@ -61,13 +63,20 @@ function ScoreBreakdownPanel({ actual, target }) {
 }
 
 // 게스트는 기기 하나에 묶인 임시 식별자뿐이라 다른 사람과 비교할 고정된 신원이 없다 — 그래서 순위 비교는
-// 로그인 계정끼리만 하고, 게스트에게는 "오늘의 점수"(자기 자신의 점수)만 보여주며 로그인을 안내한다.
+// 로그인 계정끼리만 한다. 예전엔 게스트에게 이 카드가 "오늘의 점수"(자기 자신의 점수)를 큰 숫자로 한
+// 번 더 보여줬는데, 식단 탭 개편(리텐션 강화 v7)으로 화면 맨 위 TodayScoreSummary가 이미 같은
+// calcScore 값을 링으로 보여주므로 여기서는 로그인 유도만 하고 점수 중복 표시는 뺐다(판단 근거는
+// 통합 PRD 3절 참고).
 export default function LeaderboardCard() {
   const { authMode, todayMealsTotal, effectiveRecommended } = useUser()
   const [rows, setRows] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [breakdownOpen, setBreakdownOpen] = useState(false)
+  // 조회 실패 시 재시도 버튼이 누르는 트리거 — 끼니 변화 없이도 같은 조회를 다시 돌게 한다
+  // (Calendar.jsx의 monthReloadTick/retryMonth와 동일한 패턴, 리뷰에서 발견: 예전엔 재시도 수단이
+  // 없어 사용자가 복구하려면 끼니를 추가/삭제해 todayMealsTotal을 바꾸는 우회밖에 없었다).
+  const [reloadTick, setReloadTick] = useState(0)
 
   // authMode뿐 아니라 오늘 섭취 합계(todayMealsTotal)가 바뀔 때도 다시 불러온다 — 같은 식단 탭에서 끼니를
   // 추가/삭제하면 내 점수·순위가 바뀌는데, authMode만 의존하면 탭을 다시 열기 전까지 옛 순위가 남는다.
@@ -89,56 +98,18 @@ export default function LeaderboardCard() {
     return () => {
       cancelled = true
     }
-  }, [authMode, todayMealsTotal])
-
-  const myScore = calcScore(todayMealsTotal, effectiveRecommended)
+  }, [authMode, todayMealsTotal, reloadTick])
 
   if (authMode !== 'user') {
     return (
-      <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <button
-          type="button"
-          className="tds-press"
-          onClick={() => myScore !== null && setBreakdownOpen((v) => !v)}
-          aria-expanded={breakdownOpen}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: spacing.md,
-            background: 'none',
-            border: 'none',
-            padding: spacing.xl,
-            paddingBottom: myScore === null ? spacing.md : spacing.xl,
-            cursor: myScore === null ? 'default' : 'pointer',
-            textAlign: 'left',
-          }}
-        >
-          <div>
-            <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.sm}px`, color: colors.textStrong }}>오늘의 점수</h2>
-            {myScore === null ? (
-              <p style={{ color: colors.textSub, fontSize: font.size.sm, margin: 0 }}>
-                신체정보를 입력하고 식사를 기록하면 오늘의 점수를 볼 수 있어요.
-              </p>
-            ) : (
-              <p style={{ fontSize: 32, fontWeight: 800, color: colors.primary, margin: 0 }}>{myScore}점</p>
-            )}
-          </div>
-          {myScore !== null && (
-            <span style={{ color: colors.muted, flexShrink: 0 }}>
-              <ChevronIcon open={breakdownOpen} />
-            </span>
-          )}
-        </button>
-        {breakdownOpen && myScore !== null && (
-          <div style={{ padding: `0 ${spacing.xl}px ${spacing.md}px` }}>
-            <ScoreBreakdownPanel actual={todayMealsTotal} target={effectiveRecommended} />
-          </div>
-        )}
-        <p style={{ color: colors.muted, fontSize: font.size.xs, margin: `0 ${spacing.xl}px`, paddingBottom: spacing.xl }}>
+      <Card>
+        <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.sm}px`, color: colors.textStrong }}>다른 사용자와 비교</h2>
+        <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
           로그인하면 다른 사용자와 오늘의 순위를 비교할 수 있어요.
         </p>
+        <Link to="/login" className="tds-press" style={{ ...styles.buttonSecondary, display: 'inline-block', textDecoration: 'none' }}>
+          로그인 / 회원가입
+        </Link>
       </Card>
     )
   }
@@ -149,7 +120,12 @@ export default function LeaderboardCard() {
       {loading ? (
         <Spinner size={20} />
       ) : error ? (
-        <p style={styles.errorText}>{error}</p>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ ...styles.errorText, margin: `0 0 ${spacing.md}px` }}>{error}</p>
+          <AppButton variant="secondary" onClick={() => setReloadTick((t) => t + 1)}>
+            다시 시도
+          </AppButton>
+        </div>
       ) : !rows || rows.length === 0 ? (
         <p style={{ color: colors.textSub, fontSize: font.size.sm }}>아직 오늘 기록한 사용자가 없어요.</p>
       ) : (
