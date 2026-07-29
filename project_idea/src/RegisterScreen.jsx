@@ -43,7 +43,7 @@ function chipStyle(selected) {
   };
 }
 
-function RegisterScreen({ userId, onBack, onSubmit }) {
+function RegisterScreen({ userId, existingRegistration, onContinue, onSubmit }) {
   const saved = loadSavedRoute();
   const [direction, setDirection] = useState(saved?.direction ?? "from_school");
   const [departureHub, setDepartureHub] = useState(saved?.departureHub ?? "정문");
@@ -94,16 +94,39 @@ function RegisterScreen({ userId, onBack, onSubmit }) {
 
   return (
     <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
-      {onBack && (
-        <button
-          onClick={onBack}
-          style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0", cursor: "pointer" }}
+      {existingRegistration && onContinue && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "#FCE4E2",
+            borderRadius: 14,
+            padding: "12px 16px",
+            margin: "14px 0 0",
+          }}
         >
-          ‹ 이전
-        </button>
+          <span style={{ fontSize: 12, color: "#8C0E22", fontWeight: 600 }}>이미 등록한 이동이 있어요</span>
+          <button
+            onClick={onContinue}
+            className="btn-primary"
+            style={{
+              padding: "6px 14px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 700,
+              border: "none",
+              background: "#C8102E",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            다음
+          </button>
+        </div>
       )}
 
-      <h1 style={{ fontSize: 20, fontWeight: 800, margin: onBack ? "14px 0 4px" : "40px 0 4px" }}>오늘의 이동을 등록해요</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 800, margin: existingRegistration ? "14px 0 4px" : "40px 0 4px" }}>오늘의 이동을 등록해요</h1>
       <p style={{ fontSize: 13, color: "#8A7A76", margin: "0 0 20px", lineHeight: 1.5 }}>
         비슷한 시간, 비슷한 방향으로 가는
         <br />

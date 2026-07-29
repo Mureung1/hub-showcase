@@ -173,6 +173,8 @@ function App() {
       {step === 1 && (
         <RegisterScreen
           userId={session?.user?.id}
+          existingRegistration={registration}
+          onContinue={() => setStep(2)}
           onSubmit={(data) => {
             setRegistration(data);
             setStep(2);
