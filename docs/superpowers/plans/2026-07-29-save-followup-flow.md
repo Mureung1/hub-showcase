@@ -10,9 +10,10 @@
 
 ---
 
-### Task 1: 완료 상태 회귀 테스트 추가
+## Task 1: 완료 상태 회귀 테스트 추가
 
 **Files:**
+
 - Modify: `src/app/authenticated_workspace.test.tsx:1400-1480`
 
 - [ ] **Step 1: 기존 선택 정보 저장 테스트에 완료 상태 기대값 추가**
@@ -48,9 +49,10 @@ npx vitest run src/app/authenticated_workspace.test.tsx -t "saves optional perso
 
 Expected: `지금은 건너뛰기`가 남아 있거나 변경 저장 버튼이 활성화되어 실패한다.
 
-### Task 2: 완료 상태 행동과 재진입 초기화 구현
+## Task 2: 완료 상태 행동과 재진입 초기화 구현
 
 **Files:**
+
 - Modify: `src/pages/save/ui/save_page.tsx:260-288`
 - Modify: `src/app/authenticated_workspace.tsx:386-458`
 - Modify: `src/app/authenticated_workspace.tsx:492-588`
