@@ -295,7 +295,7 @@ function RelationshipForm({
   );
 }
 
-function TransferInvitationPage({ isDialog = false }) {
+function TransferInvitationPage({ isDialog = false, onRecipeSaved }) {
   const { linkToken } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -434,6 +434,7 @@ function TransferInvitationPage({ isDialog = false }) {
         },
       );
 
+      onRecipeSaved?.();
       navigate(`/recipes/${result.recipeId}`, {
         replace: true,
         state: { receivedRecipeSaved: true },
