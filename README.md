@@ -35,6 +35,73 @@ Noa AI는 사용자가 현재 상황을 이야기하고 선택적으로 카메�
 - 기본 보관 기간은 30일입니다.
 - 게스트에서 나가면 현재 탭의 키만 제거되고 서버 기록은 유지됩니다.
 
+## 전체 데이터 흐름
+
+```mermaid
+flowchart LR
+    U[사용자] --> W[React 웹사이트]
+
+    W -->|익명 모드| S[브라우저 sessionStorage]
+    W -->|게스트 API 요청| V[Vercel /api 프록시]
+    V --> R[Render Express API]
+
+    R -->|복구 키 해시 확인| G[(Supabase guest_sessions)]
+    R -->|분석 기록 저장·조회| E[(Supabase emotion_analyses)]
+    R -->|필요한 순간에만 생성 요청| A[Gemini API]
+    A -->|생성 답변| R
+    R -->|JSON 응답| V
+    V --> W
+
+    C[사용자 카메라] --> M[브라우저 MediaPipe]
+    M -->|제한된 얼굴 움직임 참고값| W
+    M -. 영상·프레임은 전송하지 않음 .-> C
+```
+
+- 익명 데이터는 브라우저 탭 안에서만 처리합니다.
+- 게스트 데이터는 복구 키 인증을 거쳐 해당 게스트 기록만 서버에서 처리합니다.
+- 카메라 원본은 브라우저 밖으로 보내지 않습니다.
+- Gemini는 게스트가 글을 전송할 때만 호출합니다.
+
+## 사용자가 글을 작성할 때의 데이터 흐름
+
+```mermaid
+sequenceDiagram
+    actor U as 사용자
+    participant W as React 웹사이트
+    participant L as 브라우저 저장소
+    participant R as Render API
+    participant D as Supabase
+    participant A as Gemini
+
+    U->>W: 글 작성 후 전송
+    W->>W: 입력 검증 및 규칙 기반 감정 점수 계산
+    W->>W: 로컬 대체 답변 준비
+
+    alt 익명 모드
+        W->>L: 입력·분석·대체 답변 저장
+        L-->>W: 현재 탭 기록 반환
+    else 게스트 모드
+        W->>R: 최근 대화와 분석 요약 전송
+        R->>D: 복구 키 해시로 게스트 인증
+        alt 위기 표현
+            R-->>W: 고정 안전 응답
+        else 일반 입력
+            R->>A: 생성 요청 1회
+            A-->>R: Noa 답변
+            R-->>W: 생성 답변
+        end
+        W->>R: 입력·감정 참고값·표시할 답변 저장 요청
+        R->>D: 인증된 게스트 기록으로 저장
+        D-->>R: 저장 결과
+        R-->>W: 저장된 분석 결과
+    end
+
+    W-->>U: Noa 답변과 감정 참고값 표시
+```
+
+생성형 AI가 실패하면 준비해 둔 로컬 대체 답변을 사용합니다. 사용량 한도에 도달한
+경우에는 `Noa는 자고 있어요.`를 표시합니다.
+
 ## AI와 감정 분석
 
 감정 점수는 브라우저의 규칙 기반 분석으로 계산합니다. 게스트 대화에서는 사용자가
@@ -121,7 +188,6 @@ Vercel은 `/api/:path*`를 Render로 먼저 전달하고 나머지 경로를 SPA
 - Generative AI: Gemini Developer API
 - Camera analysis: MediaPipe Face Landmarker
 - Globe: COBE 2
-- Tests: Vitest, Testing Library
 - Deployment: Vercel, Render
 
 ## 로컬 실행
@@ -199,32 +265,11 @@ same-origin `/api` rewrite를 사용하므로 이 값이 필요하지 않습니�
 
 모든 테이블은 RLS를 활성화하고 브라우저 역할의 직접 접근을 막습니다.
 
-## 테스트
+## 빌드 확인
 
 ```bash
-npm run test:run
-npm run test:e2e
-npm run test:analysis
 npm run build
 ```
-
-실제 외부 서비스가 필요한 검증:
-
-```bash
-npm run test:supabase
-npm run test:api
-```
-
-`test:api`는 실제 Supabase에 검증 레코드를 만들 수 있으므로 의도한 환경에서만
-실행합니다.
-
-2026-07-29 기준 최근 검증:
-
-- Vitest: 38개 파일, 112개 테스트 통과
-- Vite 프로덕션 빌드 통과
-- Vercel 프로덕션 HTTP 200
-- Vercel `/api/ai-chat/responses`가 Render 최신 라우트로 전달됨
-- Render `/health` HTTP 200
 
 ## 현재 제한
 
@@ -234,14 +279,3 @@ npm run test:api
 - 무료 Render는 첫 요청에 콜드 스타트 지연이 생길 수 있습니다.
 - 무료 Gemini 할당량과 데이터 사용 정책은 제공자 정책의 영향을 받습니다.
 - 서버 기록 삭제 API는 있으나 현재 UI에는 별도 삭제 확인 화면이 없습니다.
-- `showcase/screenshots` 이미지는 현재 순차 화면 UI로 다시 촬영해야 합니다.
-
-## 관련 문서
-
-- [배포 체크리스트](docs/deployment-checklist.md)
-- [감정 분석 API](docs/emotion-analysis-api.md)
-- [생성형 AI 설정](docs/generative-ai-setup.md)
-- [Supabase 설정](docs/supabase-setup.md)
-- [테스트 계획](docs/test-plan.md)
-- [프로젝트 기획 이력](docs/project-history.md)
-
