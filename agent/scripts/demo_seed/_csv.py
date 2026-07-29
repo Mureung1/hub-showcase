@@ -22,6 +22,27 @@ TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
     "dataset_versions": (
         "dataset_version", "job_role_id", "as_of_date", "note", "sealed_at",
     ),
+    # 실행 봉투가 원본보다 먼저 온다.
+    # source_assessments.assessed_by_run_id 가 agent_runs 를 참조하므로
+    # 분석 버전과 실행 행이 원본 적재보다 앞에 있어야 외래키가 성립한다.
+    "requirement_taxonomies": ("taxonomy_id", "job_role_id"),
+    "requirement_taxonomy_versions": (
+        "taxonomy_version_id", "taxonomy_id", "version_number",
+        "taxonomy_policy_version", "published_at", "superseded_at",
+    ),
+    "knowledge_versions": (
+        "knowledge_version", "job_role_id", "taxonomy_version_id", "published_at",
+    ),
+    "analysis_versions": (
+        "analysis_version", "job_role_id", "dataset_version", "taxonomy_version_id",
+        "knowledge_version", "model_version", "prompt_version",
+        "retrieval_policy_version", "metric_policy_version", "scope_spec", "status",
+        "tokens", "cost", "started_at", "ended_at",
+    ),
+    "agent_runs": (
+        "agent_run_id", "analysis_version", "agent_name", "objective_id", "iteration",
+        "stop_reason", "tokens", "cost", "started_at", "ended_at",
+    ),
     "sources": (
         "source_id", "source_type", "url", "publisher", "author", "robots_policy",
         "license_note", "job_role_ids", "company_id", "first_seen_at",
@@ -49,21 +70,6 @@ TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
     "source_chunks": (
         "chunk_id", "snapshot_id", "section", "ordinal", "text", "context",
         "embedding_text", "token_count", "dataset_version",
-    ),
-    "requirement_taxonomies": ("taxonomy_id", "job_role_id"),
-    "requirement_taxonomy_versions": (
-        "taxonomy_version_id", "taxonomy_id", "version_number",
-        "taxonomy_policy_version", "published_at", "superseded_at",
-    ),
-    "analysis_versions": (
-        "analysis_version", "job_role_id", "dataset_version", "taxonomy_version_id",
-        "knowledge_version", "model_version", "prompt_version",
-        "retrieval_policy_version", "metric_policy_version", "scope_spec", "status",
-        "tokens", "cost", "started_at", "ended_at",
-    ),
-    "agent_runs": (
-        "agent_run_id", "analysis_version", "agent_name", "objective_id", "iteration",
-        "stop_reason", "tokens", "cost", "started_at", "ended_at",
     ),
     "requirement_dimensions": ("dimension_id", "taxonomy_id", "dimension_kind"),
     "requirement_dimension_versions": (
@@ -98,9 +104,6 @@ TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
         "assignment_id", "mention_id", "taxonomy_version_id", "dimension_id",
         "normalized_label", "requiredness", "depth_level", "assignment_confidence",
         "assignment_method", "verifier_status",
-    ),
-    "knowledge_versions": (
-        "knowledge_version", "job_role_id", "taxonomy_version_id", "published_at",
     ),
     "dimension_metric_applicability": (
         "taxonomy_version_id", "dimension_id", "metric_family", "applicable", "reason",

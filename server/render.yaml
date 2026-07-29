@@ -39,6 +39,13 @@ services:
       # host 만 주므로 Express 의 `fetch(`${AGENT_URL}/reverse`)` 가 실패한다.
       - key: AGENT_URL
         sync: false
+      # 교차 출처 요청을 허용할 화면 주소. 쉼표로 구분한 목록이며 scheme 을 포함한다
+      # (예: https://careersignal.vercel.app). Vercel 의 Production 주소를 넣고,
+      # Preview 배포에서도 확인하려면 그 주소를 쉼표로 이어 붙인다. 비우면 개발
+      # 기본값(localhost:5173)만 열려 배포된 화면이 응답을 읽지 못한다.
+      # 규칙은 server/src/cors.js 에 있다.
+      - key: ALLOWED_ORIGINS
+        sync: false
       # Express 는 생성 모델 키를 보유하지 않는다. AGENTS.md 의 키 분리 규칙이다.
 
   # ---------------------------------------------------------- FastAPI

@@ -159,6 +159,42 @@ async function getPostingsInCluster(jobRoleId, clusterId) {
     .sort((a, b) => (String(a.posted_at) < String(b.posted_at) ? 1 : -1))
 }
 
+// --- 사용자 입력 공고 캐시 (CONTRACT 6.1·6.3) ------------------------------
+//
+// 캐시 조회는 Express 소관이다(docs/architecture.md 11장). 원문 해시로 공고를 찾고
+// 그 공고의 분석 결과 세 종을 읽는다. 두 표는 통계 표와 외래키로 잇지 않으므로
+// 사용자 입력이 직무 기준선에 섞이지 않는다.
+
+// 원문 해시로 찾는다. `content_hash` 가 UNIQUE 이므로 많아야 한 행이다.
+// 없다는 사실은 오류가 아니다. 미적중이면 라우트가 FastAPI 온디맨드로 넘긴다.
+async function getUserPostingByHash(contentHash) {
+  const { data, error } = await supabase()
+    .from('user_postings')
+    .select('user_posting_id, content_hash, char_length, job_role_id, detected_by, first_seen_at')
+    .eq('content_hash', contentHash)
+    .maybeSingle()
+  if (error) throw unavailable('user_postings', error)
+  return data || null
+}
+
+// 공고 하나의 분석 결과 전량. 최신 생성 순이다.
+//
+// 분석 버전으로 좁히지 않고 다 읽는다. 캐시의 열쇠는 해시와 버전의 조합이지만,
+// 활성 버전이 바뀐 뒤에도 이전 버전의 결과 한 벌이 온전히 남아 있으면 화면을 비우는
+// 것보다 그것을 보여 주는 편이 낫다. 어느 벌을 고를지는 부르는 쪽이 정한다.
+// 행 수가 공고당 세 종뿐이라 다 읽어도 싸다.
+async function getUserPostingAnalyses(userPostingId) {
+  const { data, error } = await supabase()
+    .from('user_posting_analyses')
+    .select('user_posting_id, analysis_version, taxonomy_version_id, output_type, payload, produced_by, generated_at')
+    .eq('user_posting_id', userPostingId)
+    .in('output_type', ['interpretation', 'strategy', 'roadmap'])
+    .order('generated_at', { ascending: false })
+    .order('output_type')
+  if (error) throw unavailable('user_posting_analyses', error)
+  return data || []
+}
+
 // 폴백 전용. 수직 슬라이스가 쓰던 평면 표이며 분석 모집단이 아니다.
 // 정규화 `postings` 와 이름이 겹쳐 마이그레이션 0025 가 이 이름으로 옮겼다.
 async function getLegacyPostingSamples(jobRoleId = 'backend') {
@@ -176,5 +212,7 @@ module.exports = {
   getJobRoles,
   getClusters,
   getPostingsInCluster,
+  getUserPostingByHash,
+  getUserPostingAnalyses,
   getLegacyPostingSamples,
 }

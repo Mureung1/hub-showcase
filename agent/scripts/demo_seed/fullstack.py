@@ -728,7 +728,8 @@ def build_statistics_facts() -> list[dict[str, Any]]:
 
     def add(family: str, measure: str, scope_level: str, scope_id: str, period: str,
             numerator: int, denominator: int, dimension_id: str | None = None,
-            secondary_dimension_id: str | None = None) -> None:
+            secondary_dimension_id: str | None = None,
+            entry_segment: str = "all") -> None:
         seq = len(facts) + 1
         status = "analysis_ready" if scope_level == "overall" else "low_confidence"
         value = None if denominator == 0 else round(numerator / denominator, 6)
@@ -739,7 +740,7 @@ def build_statistics_facts() -> list[dict[str, Any]]:
             "metric_policy_version": METRIC_POLICY[family],
             "scope_level": scope_level,
             "scope_id": scope_id,
-            "entry_segment": "all",
+            "entry_segment": entry_segment,
             "period_id": period,
             "dimension_id": dimension_id,
             "secondary_dimension_id": secondary_dimension_id,
@@ -779,10 +780,13 @@ def build_statistics_facts() -> list[dict[str, Any]]:
         add("scope_expansion", f"scope_expansion_{tag}", "overall", JOB_ROLE_ID, RECENT_PERIOD,
             hits, len(RECENT))
 
+    # 이 지표는 분모에 이미 대상군이 반영돼 있다. `statistics_facts` 의
+    # `entry_signal_rate_segment` CHECK 가 `entry_junior` 외의 대상군을 막는다.
     entry_group = [p for p in RECENT if p["entry_label"] == "entry_junior"]
     add("entry_label_advanced_signal_rate", "entry_advanced_signal_share", "overall",
         JOB_ROLE_ID, RECENT_PERIOD,
-        sum(1 for p in entry_group if p["advanced"]), len(entry_group))
+        sum(1 for p in entry_group if p["advanced"]), len(entry_group),
+        entry_segment="entry_junior")
     return facts
 
 
