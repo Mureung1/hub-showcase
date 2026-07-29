@@ -1,5 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PRODUCT_CATALOG_BOOTSTRAP, type ProductCategory } from "../../services/productCatalog";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
@@ -100,6 +100,8 @@ const rankedCategories: ProductCategory[] = [
     store_counts_by_market: { 연남: 64, 홍대: 43, 합정: 94 },
   },
 ];
+
+afterEach(cleanup);
 
 describe("MarketFilters catalog state", () => {
   it("keeps the restored category visible without rendering bootstrap choices", () => {

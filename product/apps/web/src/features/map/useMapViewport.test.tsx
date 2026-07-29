@@ -24,12 +24,12 @@ describe("useMapViewport", () => {
     expect(result.current.analysisMoveMode).toBe("idle");
   });
 
-  it("restores the presentation mode recorded in the URL", () => {
+  it("always starts in analysis mode even when an old URL requests storefront mode", () => {
     window.history.replaceState({}, "", "/?view=storefront3d");
     const { result } = renderHook(() => useMapViewport([126.923, 37.56]));
 
-    expect(result.current.presentationMode).toBe("storefront3d");
-    expect(result.current.prefabMode).toBe(true);
+    expect(result.current.presentationMode).toBe("analysis");
+    expect(result.current.prefabMode).toBe(false);
   });
 
   it("restores the analysis presentation during reset", () => {

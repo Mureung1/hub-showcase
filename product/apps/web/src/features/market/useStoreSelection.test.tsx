@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import type { MarketStore } from "./types";
 import { useStoreSelection } from "./useStoreSelection";
@@ -23,7 +23,17 @@ function options(nearbyStores: MarketStore[]) {
   };
 }
 
+afterEach(() => window.history.replaceState({}, "", "/"));
+
 describe("useStoreSelection", () => {
+  it("does not restore a store from an old product URL", () => {
+    window.history.replaceState({}, "", "/home?store=store-1&storeName=테스트%20카페");
+
+    const { result } = renderHook(() => useStoreSelection(options([store])));
+
+    expect(result.current.selected).toBeNull();
+  });
+
   it("clears a selected nearby store when it leaves the current result set", () => {
     const { result, rerender } = renderHook(({ stores }) => useStoreSelection(options(stores)), {
       initialProps: { stores: [store] },
