@@ -1,12 +1,11 @@
 ---
 name: ay-ple-e2e-smoke
-description: Run a short, comprehensive AY-PLE product smoke through an actual prepared SemesterWorkspace and the in-app Browser. Use when checking a development build, reproducing a live product failure, or verifying source browsing, Chat, SemesterModeling, Review, and workspace safety together.
+description: Run a short, comprehensive AY-PLE product smoke across source browsing, Chat, SemesterModeling, Review, and workspace safety in the in-app Browser.
 ---
 
 # AY-PLE E2E Smoke
 
-Run this Skill only on explicit request. It uses the configured provider and
-performs real model work.
+This smoke uses the configured provider and performs real model work.
 
 Default to `review-only`: exercise state-changing intent through Review, then
 reject it and prove that the SemesterWorkspace stayed unchanged. Use `apply`
