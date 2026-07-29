@@ -13,6 +13,10 @@ import {
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
 import { persistGeneratedCurriculum } from '../curriculum/model/persistGeneratedCurriculum'
+import {
+  createGeneratedMissionId,
+  createWorkspaceMissionHref,
+} from '../learning-workspace/workspaceInteraction'
 import { CurriculumLoading } from './CurriculumLoading'
 import styles from './TodayLearningHub.module.css'
 
@@ -344,7 +348,11 @@ export function TodayLearningGoalPage() {
                     <button
                       type="button"
                       className={styles.generatedStartLink}
-                      onClick={() => navigate('/today')}
+                      onClick={() =>
+                        navigate(
+                          createWorkspaceMissionHref(createGeneratedMissionId(generatedPlan.id)),
+                        )
+                      }
                     >
                       이 커리큘럼으로 시작
                     </button>

@@ -3,7 +3,7 @@ import {
   clampStepOffset,
   createStepState,
   createWorkspaceTestCases,
-  generatedMissionId,
+  isGeneratedMissionId,
   type RunState,
   type StepState,
   type TestCase,
@@ -151,7 +151,7 @@ export function createSteps(
   selectedMissionId: string,
   activeStepOffset: number,
 ): CurriculumStep[] {
-  if (selectedMissionId !== generatedMissionId) {
+  if (!isGeneratedMissionId(selectedMissionId)) {
     return ['개념 확인', '현재 미션', '테스트 실행', 'AI 코드 리뷰'].map((title, index) => ({
       title,
       detail: '선택한 오늘 학습 항목을 완료하기 위한 기본 단계입니다.',
@@ -170,9 +170,9 @@ export function resolveWorkspaceMission(
   selectedMissionId: string,
   generatedPlan: GeneratedCurriculumPlan,
 ): WorkspaceMission {
-  if (selectedMissionId === generatedMissionId) {
+  if (isGeneratedMissionId(selectedMissionId)) {
     return {
-      id: generatedMissionId,
+      id: selectedMissionId,
       title: generatedPlan.todayMission.title,
       detail: generatedPlan.todayMission.detail,
       durationMinutes: generatedPlan.todayMission.durationMinutes,
@@ -392,7 +392,7 @@ export function createWorkspaceEditorFiles(mission: WorkspaceMission): Workspace
 
 export function createTestCases(mission: WorkspaceMission, runState: RunState): TestCase[] {
   return createWorkspaceTestCases({
-    isGeneratedMission: mission.id === generatedMissionId,
+    isGeneratedMission: isGeneratedMissionId(mission.id),
     runState,
   })
 }
@@ -421,7 +421,7 @@ export function createActiveMissionPresentation(
   activeGeneratedStep: GeneratedCurriculumStep | null,
   exercises: Record<string, ModuleExercise> = frontendModuleExercises,
 ): WorkspaceMission {
-  if (!activeGeneratedStep || mission.id !== generatedMissionId) {
+  if (!activeGeneratedStep || !isGeneratedMissionId(mission.id)) {
     return mission
   }
 

@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   clampStepOffset,
+  createGeneratedMissionId,
   createStepState,
+  createWorkspaceMissionHref,
   createWorkspaceTestCases,
   generatedMissionId,
   getInitialStepOffset,
   getNextRunState,
   getResultMessage,
+  isGeneratedMissionId,
   isFinalStep,
 } from './workspaceInteraction'
 
@@ -19,7 +22,19 @@ describe('workspaceInteraction', () => {
 
   it('starts generated missions at the first step and queued missions at the mission step', () => {
     expect(getInitialStepOffset(generatedMissionId)).toBe(0)
+    expect(getInitialStepOffset(createGeneratedMissionId('devops-plan-1'))).toBe(0)
     expect(getInitialStepOffset('run-tests')).toBe(1)
+  })
+
+  it('creates a distinct mission id and URL for each generated curriculum plan', () => {
+    const firstMissionId = createGeneratedMissionId('devops-plan-1')
+    const secondMissionId = createGeneratedMissionId('devops-plan-2')
+
+    expect(firstMissionId).not.toBe(secondMissionId)
+    expect(isGeneratedMissionId(firstMissionId)).toBe(true)
+    expect(createWorkspaceMissionHref(firstMissionId)).toBe(
+      '/workspace?mission=generated-mission-devops-plan-1',
+    )
   })
 
   it('clamps active step offsets to the playable range', () => {

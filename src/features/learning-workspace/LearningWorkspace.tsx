@@ -36,14 +36,19 @@ import {
 import { useLearningProfileStore } from '../profile/model/useLearningProfileStore'
 import { createMistakeNote as createMistakeNoteApi } from '../mistake-notes/api/mistakeNoteClient'
 import { useMistakeNoteStore } from '../mistake-notes/model/useMistakeNoteStore'
-import { buildTutorMistakeNoteInput, hasCompletedTutorExchange, type TutorMessage } from './tutorConversation'
+import {
+  buildTutorMistakeNoteInput,
+  hasCompletedTutorExchange,
+  type TutorMessage,
+} from './tutorConversation'
 import { loadWorkspaceServerState } from './loadWorkspaceServerState'
 import { saveWorkspaceProgress } from './saveWorkspaceProgress'
 import styles from './LearningWorkspace.module.css'
 import {
-  generatedMissionId,
+  createGeneratedMissionId,
   getInitialStepOffset,
   getResultMessage,
+  isGeneratedMissionId,
   isFinalStep,
   toLearningRunState,
   type RunState,
@@ -71,6 +76,14 @@ type LearningWorkspaceViewProps = {
   mission: WorkspaceMission
 }
 
+type WorkspaceMobileTab = 'tutor' | 'code' | 'results'
+
+const workspaceMobileTabs: Array<{ id: WorkspaceMobileTab; label: string }> = [
+  { id: 'tutor', label: '튜터' },
+  { id: 'code', label: '코드' },
+  { id: 'results', label: '결과' },
+]
+
 export default function LearningWorkspace() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -80,9 +93,7 @@ export default function LearningWorkspace() {
   const hydrateGeneratedCurriculum = useGeneratedCurriculumStore(
     (state) => state.hydrateGeneratedCurriculum,
   )
-  const hydrateMissionProgress = useLearningProgressStore(
-    (state) => state.hydrateMissionProgress,
-  )
+  const hydrateMissionProgress = useLearningProgressStore((state) => state.hydrateMissionProgress)
   const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>(
     serverMode ? 'loading' : 'ready',
   )
@@ -109,16 +120,9 @@ export default function LearningWorkspace() {
     return () => {
       cancelled = true
     }
-  }, [
-    hydrateGeneratedCurriculum,
-    hydrateMissionProgress,
-    loadProfile,
-    reloadKey,
-    serverMode,
-  ])
+  }, [hydrateGeneratedCurriculum, hydrateMissionProgress, loadProfile, reloadKey, serverMode])
 
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
-  const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
   const fallbackGeneratedPlan = useMemo(
     () => createFallbackCurriculumPlan(profileGoal),
     [profileGoal],
@@ -127,6 +131,8 @@ export default function LearningWorkspace() {
     () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
     [fallbackGeneratedPlan, generatedCurriculum],
   )
+  const selectedMissionId =
+    searchParams.get('mission') ?? createGeneratedMissionId(generatedPlan.id)
   const planKey = generatedCurriculum?.generatedAt ?? profileGoal
   const mission = useMemo(
     () => resolveWorkspaceMission(selectedMissionId, generatedPlan),
@@ -198,7 +204,7 @@ function LearningWorkspaceView({
   const [missionCompleted, setMissionCompleted] = useState(() => {
     const initialStepOffset = savedProgress?.activeStepOffset ?? getInitialStepOffset(mission.id)
     const initialTotalSteps = Math.max(
-      mission.id === generatedMissionId ? generatedPlan.steps.length : 4,
+      isGeneratedMissionId(mission.id) ? generatedPlan.steps.length : 4,
       1,
     )
 
@@ -213,7 +219,10 @@ function LearningWorkspaceView({
   const [tutorMessages, setTutorMessages] = useState<TutorMessage[]>([])
   const [tutorQuestion, setTutorQuestion] = useState('')
   const [isAskingTutor, setIsAskingTutor] = useState(false)
-  const [persistenceStatus, setPersistenceStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [mobileTab, setMobileTab] = useState<WorkspaceMobileTab>('code')
+  const [persistenceStatus, setPersistenceStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'idle',
+  )
   const [pendingProgress, setPendingProgress] = useState<{
     missionId: string
     request: SaveLearningProgressRequest
@@ -309,7 +318,6 @@ function LearningWorkspaceView({
     [activeMission.fileName, activeMission.mode, runnableFile?.name],
   )
 
-
   const consoleLines =
     runPreview.logs.length > 0
       ? runPreview.logs
@@ -324,7 +332,6 @@ function LearningWorkspaceView({
       cancelPreview()
     }
   }, [cancelPreview])
-
 
   function createActivity(title: string, detail: string) {
     return {
@@ -362,6 +369,7 @@ function LearningWorkspaceView({
     const controller = new AbortController()
     tutorAbortControllerRef.current = controller
 
+    setMobileTab('tutor')
     setTutorMessages((current) => [...current, { role: 'user', text: question }])
     setTutorQuestion('')
     setIsAskingTutor(true)
@@ -482,6 +490,7 @@ function LearningWorkspaceView({
     const initialState: RunState = usesReactPreview ? 'compiling' : 'running'
     runAbortControllerRef.current = abortController
 
+    setMobileTab('code')
     setRunState(initialState)
     setRunPreview({
       status: initialState,
@@ -541,6 +550,7 @@ function LearningWorkspaceView({
       })
       setRunAttemptCount(nextAttemptCount)
       setActivityLog(resultLog)
+      setMobileTab('results')
 
       const nextTestCases = createTestCases(mission, nextState)
       const testResult = {
@@ -585,6 +595,7 @@ function LearningWorkspaceView({
         preview: latestPreview,
       })
       setRunState(nextState)
+      setMobileTab('results')
 
       const resultLog = prependActivity(
         runLog,
@@ -633,6 +644,7 @@ function LearningWorkspaceView({
   }
 
   function handleShowHint() {
+    setMobileTab('tutor')
     setTutorMessages((current) => [
       ...current,
       {
@@ -659,6 +671,7 @@ function LearningWorkspaceView({
   }
 
   function handleShowReview() {
+    setMobileTab('tutor')
     const reviewText =
       runState === 'passed'
         ? '코드 리뷰: 좋은 흐름입니다. 필수 요구사항을 만족했습니다. 다음에는 상태가 바뀌는 이유를 짧은 주석이나 설명으로 정리해보세요.'
@@ -729,6 +742,7 @@ function LearningWorkspaceView({
     setIsAskingTutor(false)
     setActiveStepOffset(nextStepOffset)
     setRunState('idle')
+    setMobileTab('code')
     setRunAttemptCount(0)
     setEditorFiles(nextFiles)
     setActiveFilePath(nextFiles[0]?.path ?? '')
@@ -784,54 +798,93 @@ function LearningWorkspaceView({
           <span>
             {persistenceStatus === 'saving' ? '학습 진행 상태를 저장하는 중입니다.' : null}
             {persistenceStatus === 'saved' ? '학습 진행 상태가 서버에 저장되었습니다.' : null}
-            {persistenceStatus === 'error' ? '실행 결과는 유지했지만 진행 상태를 저장하지 못했습니다.' : null}
+            {persistenceStatus === 'error'
+              ? '실행 결과는 유지했지만 진행 상태를 저장하지 못했습니다.'
+              : null}
           </span>
           {persistenceStatus === 'error' ? (
-            <button type="button" onClick={retryPendingProgress}>저장 다시 시도</button>
+            <button type="button" onClick={retryPendingProgress}>
+              저장 다시 시도
+            </button>
           ) : null}
         </div>
       ) : null}
 
-      <div className={styles.workspaceGrid}>
-        <WorkspaceGuidePanel
-          tutorMessages={tutorMessages}
-          tutorQuestion={tutorQuestion}
-          isAskingTutor={isAskingTutor}
-          onTutorQuestionChange={setTutorQuestion}
-          onSubmitTutorQuestion={handleSubmitTutorQuestion}
-        />
+      <div className={styles.mobileWorkspaceTabs} role="tablist" aria-label="학습 작업 영역">
+        {workspaceMobileTabs.map((tab) => (
+          <button
+            type="button"
+            role="tab"
+            aria-controls={`workspace-mobile-panel-${tab.id}`}
+            aria-selected={mobileTab === tab.id}
+            className={styles.mobileWorkspaceTab}
+            data-active={mobileTab === tab.id}
+            key={tab.id}
+            onClick={() => setMobileTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <WorkspaceEditorPanel
-          mission={activeMission}
-          editorFiles={editorFiles}
-          activeFile={activeFile}
-          isRunning={isRunning}
-          runState={runState}
-          executionPanel={executionPanel}
-          runPreview={runPreview}
-          consoleLines={consoleLines}
-          iframeRef={iframeRef}
-          previewUrl={previewUrl}
-          runButtonRef={runButtonRef}
-          onSelectFile={setActiveFilePath}
-          onRun={handleRun}
-          onChangeActiveFile={updateActiveFile}
-          onResetActiveFile={resetActiveFile}
+      <div className={styles.workspaceGrid}>
+        <div
+          className={styles.workspacePanelSlot}
+          data-mobile-active={mobileTab === 'tutor'}
+          id="workspace-mobile-panel-tutor"
+        >
+          <WorkspaceGuidePanel
+            tutorMessages={tutorMessages}
+            tutorQuestion={tutorQuestion}
+            isAskingTutor={isAskingTutor}
+            onTutorQuestionChange={setTutorQuestion}
+            onSubmitTutorQuestion={handleSubmitTutorQuestion}
+          />
+        </div>
+
+        <div
+          className={styles.workspacePanelSlot}
+          data-mobile-active={mobileTab === 'code'}
+          id="workspace-mobile-panel-code"
+        >
+          <WorkspaceEditorPanel
+            mission={activeMission}
+            editorFiles={editorFiles}
+            activeFile={activeFile}
+            isRunning={isRunning}
+            runState={runState}
+            executionPanel={executionPanel}
+            runPreview={runPreview}
+            consoleLines={consoleLines}
+            iframeRef={iframeRef}
+            previewUrl={previewUrl}
+            runButtonRef={runButtonRef}
+            onSelectFile={setActiveFilePath}
+            onRun={handleRun}
+            onChangeActiveFile={updateActiveFile}
+            onResetActiveFile={resetActiveFile}
+          />
+        </div>
+      </div>
+      <div
+        className={styles.resultsPanelSlot}
+        data-mobile-active={mobileTab === 'results'}
+        id="workspace-mobile-panel-results"
+      >
+        <WorkspaceResultsPanel
+          activityLog={activityLog}
+          canAdvance={canAdvance}
+          failedCount={failedCount}
+          nextStepButtonLabel={nextStepButtonLabel}
+          onAdvanceStep={handleAdvanceStep}
+          onShowHint={handleShowHint}
+          onShowReview={handleShowReview}
+          passedCount={passedCount}
+          pendingCount={pendingCount}
+          resultMessage={resultMessage}
+          testCases={testCases}
         />
       </div>
-      <WorkspaceResultsPanel
-        activityLog={activityLog}
-        canAdvance={canAdvance}
-        failedCount={failedCount}
-        nextStepButtonLabel={nextStepButtonLabel}
-        onAdvanceStep={handleAdvanceStep}
-        onShowHint={handleShowHint}
-        onShowReview={handleShowReview}
-        passedCount={passedCount}
-        pendingCount={pendingCount}
-        resultMessage={resultMessage}
-        testCases={testCases}
-      />
     </section>
   )
 }

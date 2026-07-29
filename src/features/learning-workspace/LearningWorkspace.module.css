@@ -3,7 +3,7 @@
   height: 100vh;
   overflow-y: auto;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(472px, 1fr) auto;
   gap: 16px;
   padding: 18px 20px 22px;
   background: var(--icu-page-background);
@@ -111,6 +111,21 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
+}
+
+.workspacePanelSlot,
+.resultsPanelSlot {
+  min-width: 0;
+  min-height: 0;
+}
+
+.workspacePanelSlot > .guidePanel,
+.workspacePanelSlot > .editorPanel {
+  height: 100%;
+}
+
+.mobileWorkspaceTabs {
+  display: none;
 }
 
 .persistenceBanner {
@@ -1116,4 +1131,169 @@
 
 .summaryBarStepIndex {
   display: none;
+}
+
+@media (max-width: 760px) {
+  .page {
+    min-height: 100vh;
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
+
+  .summaryBar,
+  .persistenceBanner,
+  .mobileWorkspaceTabs,
+  .workspaceGrid {
+    margin-bottom: 14px;
+  }
+
+  .mobileWorkspaceTabs {
+    position: sticky;
+    z-index: 20;
+    top: 65px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    border: 1px solid #cfd9e8;
+    border-radius: 8px;
+    padding: 4px;
+    background: rgb(255 255 255 / 96%);
+    box-shadow: 0 10px 24px rgb(17 43 95 / 10%);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobileWorkspaceTab {
+    min-height: 44px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #526173;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .mobileWorkspaceTab[data-active='true'] {
+    background: #07003d;
+    color: #ffffff;
+  }
+
+  .mobileWorkspaceTab:focus-visible {
+    outline: 3px solid rgb(53 200 244 / 36%);
+    outline-offset: 2px;
+  }
+
+  .workspaceGrid {
+    display: block;
+  }
+
+  .workspacePanelSlot,
+  .resultsPanelSlot {
+    display: none;
+  }
+
+  .workspacePanelSlot[data-mobile-active='true'],
+  .resultsPanelSlot[data-mobile-active='true'] {
+    display: block;
+    max-height: clamp(360px, calc(100dvh - 150px), 720px);
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .workspacePanelSlot > .guidePanel {
+    min-height: 460px;
+    height: auto;
+  }
+
+  .workspacePanelSlot > .editorPanel {
+    height: auto;
+  }
+
+  .editorPanel {
+    grid-column: auto;
+    grid-row: auto;
+    grid-template-rows: auto auto;
+  }
+
+  .editorBody {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .codeBlock {
+    height: 380px;
+    min-height: 380px;
+  }
+
+  .previewPanel {
+    min-height: 360px;
+    grid-template-rows: auto minmax(200px, 1fr) auto;
+    border-top: 1px solid #dbe3ee;
+    border-left: 0;
+  }
+
+  .previewViewport {
+    min-height: 200px;
+    padding: 24px 18px;
+  }
+
+  .previewConsole {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .resultPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .testTable {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .helpPanel ol {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .summaryBarTopRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+  }
+
+  .summaryBarTitle {
+    grid-column: 1 / -1;
+  }
+
+  .summaryBarActions {
+    flex-wrap: wrap;
+  }
+
+  .summaryBarProgress {
+    min-width: 0;
+    justify-self: end;
+  }
+
+  .planToggle {
+    grid-column: 1 / -1;
+  }
+
+  .stepperRow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .stepperPill {
+    flex: 0 0 auto;
+    max-width: 190px;
+  }
+
+  .conceptRow {
+    grid-template-columns: 1fr;
+  }
 }

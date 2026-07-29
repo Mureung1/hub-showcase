@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { generatedMissionId } from './workspaceInteraction'
+import { createGeneratedMissionId, generatedMissionId } from './workspaceInteraction'
 import {
   createActiveMissionPresentation,
   createWorkspaceEditorFiles,
@@ -19,6 +19,14 @@ describe('workspace mission presentation helpers', () => {
     expect(mission.id).toBe(generatedMissionId)
     expect(activeMission.title).toBe(activeStep?.title)
     expect(files[0].value.length).toBeGreaterThan(0)
+  })
+
+  it('preserves a curriculum-specific generated mission id', () => {
+    const plan = generateMockCurriculum('DevOps 엔지니어가 되고 싶어')
+    const missionId = createGeneratedMissionId(plan.id)
+    const mission = resolveWorkspaceMission(missionId, plan)
+
+    expect(mission.id).toBe(missionId)
   })
 
   it('resolves a today-queue mission by id', () => {

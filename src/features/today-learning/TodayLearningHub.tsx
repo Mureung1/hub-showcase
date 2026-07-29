@@ -34,7 +34,11 @@ import {
   resolveActiveGeneratedStep,
   resolveWorkspaceMission,
 } from '../learning-workspace/workspaceMission'
-import { getInitialStepOffset } from '../learning-workspace/workspaceInteraction'
+import {
+  createGeneratedMissionId,
+  createWorkspaceMissionHref,
+  getInitialStepOffset,
+} from '../learning-workspace/workspaceInteraction'
 import { ProgressBar } from './ProgressBar'
 import { TrackIcon } from './TrackIcon'
 import {
@@ -189,7 +193,7 @@ export function TodayLearningHub() {
   const generatedQueue = useMemo<TodayQueueItem[]>(
     () => [
       {
-        id: 'generated-first-mission',
+        id: createGeneratedMissionId(generatedPlan.id),
         title: generatedPlan.todayMission.title,
         detail: generatedPlan.todayMission.detail,
         durationMinutes: generatedPlan.todayMission.durationMinutes,
@@ -243,7 +247,8 @@ export function TodayLearningHub() {
     [recentOpenMistakes, serverMode],
   )
   const activeMissionId =
-    displayQueue.find((item) => item.status === 'current')?.id ?? 'generated-first-mission'
+    displayQueue.find((item) => item.status === 'current')?.id ??
+    createGeneratedMissionId(generatedPlan.id)
   const activeMissionTestResult = missionProgress[activeMissionId]?.lastTestResult ?? null
   const activeStepOffset =
     missionProgress[activeMissionId]?.activeStepOffset ?? getInitialStepOffset(activeMissionId)
@@ -295,7 +300,7 @@ export function TodayLearningHub() {
         stepLabel: `Step ${stepPosition} / ${stepTotal}`,
         recentLearningLabel: '오늘',
         nextLearningLabel: previewActiveMission.stepLabel,
-        actionHref: `/workspace?mission=${activeMissionId}`,
+        actionHref: createWorkspaceMissionHref(activeMissionId),
       },
       {
         id: 'docker-practice',
@@ -419,7 +424,7 @@ export function TodayLearningHub() {
               </span>
               <Link
                 className={styles.primaryCta}
-                to={`/workspace?mission=${previewActiveMission.id}`}
+                to={createWorkspaceMissionHref(previewActiveMission.id)}
               >
                 이어서 학습하기
               </Link>
@@ -473,14 +478,14 @@ export function TodayLearningHub() {
                   {item.status === 'current' ? (
                     <Link
                       className={styles.queueContinueButton}
-                      to={'/workspace?mission=' + item.id}
+                      to={createWorkspaceMissionHref(item.id)}
                     >
                       계속하기
                     </Link>
                   ) : (
                     <Link
                       className={styles.queueMoreLink}
-                      to={'/workspace?mission=' + item.id}
+                      to={createWorkspaceMissionHref(item.id)}
                       aria-label={`${item.title} 열기`}
                     >
                       ···
@@ -589,7 +594,7 @@ export function TodayLearningHub() {
             >
               <div className={styles.panelTitleRow}>
                 <h2 id="workspace-preview-title">작업 공간 미리보기</h2>
-                <Link to={`/workspace?mission=${activeMissionId}`}>워크스페이스로 이동</Link>
+                <Link to={createWorkspaceMissionHref(activeMissionId)}>워크스페이스로 이동</Link>
               </div>
               {previewFiles.length > 1 ? (
                 <select

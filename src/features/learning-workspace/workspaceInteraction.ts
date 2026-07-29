@@ -1,4 +1,19 @@
 export const generatedMissionId = 'generated-first-mission'
+const generatedMissionIdPrefix = 'generated-mission-'
+
+export function createGeneratedMissionId(planId?: string) {
+  const normalizedPlanId = planId?.trim()
+
+  return normalizedPlanId ? `${generatedMissionIdPrefix}${normalizedPlanId}` : generatedMissionId
+}
+
+export function isGeneratedMissionId(missionId: string) {
+  return missionId === generatedMissionId || missionId.startsWith(generatedMissionIdPrefix)
+}
+
+export function createWorkspaceMissionHref(missionId: string) {
+  return `/workspace?mission=${encodeURIComponent(missionId)}`
+}
 
 export type StepState = 'done' | 'current' | 'waiting'
 export type TestState = 'passed' | 'failed' | 'pending'
@@ -27,7 +42,7 @@ export function createStepState(index: number, activeStepOffset: number): StepSt
 }
 
 export function getInitialStepOffset(missionId: string) {
-  return missionId === generatedMissionId ? 0 : 1
+  return isGeneratedMissionId(missionId) ? 0 : 1
 }
 
 export function clampStepOffset(activeStepOffset: number, totalSteps: number) {
