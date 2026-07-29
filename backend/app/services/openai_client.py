@@ -94,6 +94,6 @@ def generate_content(
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
-        max_completion_tokens=500,
+        max_completion_tokens=1500,
     )
     return response.choices[0].message.content
