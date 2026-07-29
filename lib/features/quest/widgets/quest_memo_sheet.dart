@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/proof_rules.dart';
 import '../../../core/constants/reward_rules.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/proof_image_picker.dart';
@@ -171,7 +172,9 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerLow,
+                  // 좌측 accent만 있고 나머지 세 변은 보더가 없다 — 다크에서
+                  // 시트 면과 붙지 않도록 채움을 한 단 올린다.
+                  color: scheme.insetSurface,
                   borderRadius: AppRadius.mdAll,
                   border: Border(
                     left: BorderSide(color: scheme.primary, width: 3),

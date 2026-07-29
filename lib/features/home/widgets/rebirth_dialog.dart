@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/dialog_art.dart';
 import '../../../core/constants/growth_rules.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_dialog_shell.dart';
@@ -42,7 +43,10 @@ Future<bool?> showRebirthConfirmDialog(BuildContext context) {
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.smd),
             decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
+              // 보더 없는 박스라 채움만으로 다이얼로그 면과 갈라져야 한다.
+              // 다크는 `surfaceContainerLow`가 면과 L* 차 2.8뿐이라 붙어 버린다
+              // ([AppSurfaceRoles.insetSurface]가 다크에서만 한 단 올린다).
+              color: scheme.insetSurface,
               borderRadius: AppRadius.mdAll,
             ),
             child: Text(

@@ -59,8 +59,17 @@ abstract final class AppTheme {
       primaryContainer: AppColors.primary,
       onPrimaryContainer: AppColors.onPrimary,
       inversePrimary: AppColors.primary,
-      secondary: AppColors.secondaryContainer,
-      onSecondary: AppColors.onSecondary,
+      // 🔵 블루도 그린([inversePrimary])처럼 **밝은 쪽으로 뒤집는다.**
+      // 예전에는 `secondaryContainer`(#2170e4)를 그대로 얹었는데, 다크의 어떤 면
+      // 위에서도 AA에 못 미쳐(카드 3.28:1) 아웃라인·텍스트 버튼 전경과 AI 라벨이
+      // 전역으로 읽히지 않았다. 자세한 근거는 [AppColors.darkSecondary].
+      //
+      // `secondaryContainer`는 **어두운 블루 그대로 둔다**(#0058be). 이 앱에서 블루
+      // 컨테이너는 "채운 배지"(AI 아이콘 배지 · 출처 칩 · 알림 홀더) 자리이고,
+      // 그 위에는 흰 글자가 얹혀야 한다 — 컨테이너까지 밝히면 그 배지들이 전부
+      // 뒤집혀야 한다.
+      secondary: AppColors.darkSecondary,
+      onSecondary: AppColors.darkOnSecondary,
       secondaryContainer: AppColors.secondary,
       onSecondaryContainer: AppColors.onSecondary,
       tertiary: AppColors.secondaryContainer,

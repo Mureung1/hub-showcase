@@ -260,10 +260,13 @@ class _RedecomposeCard extends StatelessWidget {
                   color: scheme.secondaryContainer,
                   borderRadius: AppRadius.mdAll,
                 ),
+                // 채움이 `secondaryContainer`이므로 글리프는 짝인
+                // `onSecondaryContainer`다(다크 `onSecondary`는 밝은 블루의
+                // 짝으로 뒤집혀 이 자리에 쓰면 어두운 글리프가 된다).
                 child: Icon(
                   Symbols.alt_route,
                   fill: 1,
-                  color: scheme.onSecondary,
+                  color: scheme.onSecondaryContainer,
                 ),
               ),
               AppSpacing.gapWMd,
@@ -302,25 +305,29 @@ class _RedecomposeCard extends StatelessWidget {
                 AppSpacing.gapXs,
                 Text(target.questTitle, style: theme.textTheme.bodyLarge),
                 // 원본 목표(Figma 「ORIGINAL GOAL」 자리). AI 맥락 라벨이라 블루인데,
-                // 실측값은 `secondary`(#0058be)가 아니라 한 단 밝은
-                // [AppColors.secondaryContainer](#2170e4)다. 다크에서는
-                // `scheme.secondary`가 마침 같은 값이라 이 상수를 그대로 써도 지금 화면이
-                // 바뀌지 않는다(다크 사양을 새로 추정하지 않는다).
+                // 라이트 실측값은 `secondary`(#0058be)가 아니라 한 단 밝은
+                // [AppColors.secondaryContainer](#2170e4)다.
+                //
+                // ⚠️ **다크는 그 상수를 쓸 수 없다.** 이 줄이 얹히는 면이 다크에서
+                // `surfaceContainerHigh`(#213A5B)라 #2170e4의 대비가 2.47:1까지
+                // 떨어진다(라이트 면 #DCE9FF 위에서는 4.68:1). 다크는 스킴의 밝은
+                // 블루([AppColors.darkSecondary])로 받는다 — 6.79:1이고 색 역할은
+                // 그대로 블루다.
                 if (goalText != null) ...[
                   AppSpacing.gapSm,
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Symbols.target,
                         size: _contextIconSize,
-                        color: AppColors.secondaryContainer,
+                        color: _goalTextColor(theme),
                       ),
                       AppSpacing.gapWXs,
                       Expanded(
                         child: Text(
                           goalText,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.secondaryContainer,
+                            color: _goalTextColor(theme),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -340,6 +347,13 @@ class _RedecomposeCard extends StatelessWidget {
 
 /// bodySmall과 눈높이를 맞춘 맥락 아이콘 크기.
 const double _contextIconSize = 14;
+
+/// 「나눌 퀘스트」 박스 안 원본 목표 줄의 색. 라이트는 정본 실측 상수, 다크는
+/// 스킴의 밝은 블루다(사유는 사용처 주석).
+Color _goalTextColor(ThemeData theme) =>
+    theme.brightness == Brightness.dark
+    ? theme.colorScheme.secondary
+    : AppColors.secondaryContainer;
 
 /// 입력 카드 — 정본 Redesign 페이지 `103:470` AIChallengeSection.
 /// 블루 AI 배지 + 제목 + 설명 + 입력 필드(+카운터) + 블루 그라디언트 분해 버튼.
@@ -394,10 +408,12 @@ class _AiChallengeSection extends StatelessWidget {
                   color: scheme.secondaryContainer,
                   borderRadius: AppRadius.mdAll,
                 ),
+                // 위 배지와 같은 규칙 — 채움 `secondaryContainer`의 짝은
+                // `onSecondaryContainer`다.
                 child: Icon(
                   Symbols.auto_awesome,
                   fill: 1,
-                  color: scheme.onSecondary,
+                  color: scheme.onSecondaryContainer,
                 ),
               ),
               AppSpacing.gapWMd,

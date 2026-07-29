@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../constants/reward_rules.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../theme/reward_colors.dart';
@@ -60,7 +59,9 @@ class RewardChip extends StatelessWidget {
           icon: Symbols.star,
           label: 'XP +${reward.xp}',
           // XP는 성장이라 그린. 노랑은 코인 쪽만 쓴다.
-          color: AppColors.primary,
+          // 상수가 아니라 **스킴**을 쓴다 — 다크는 이 슬롯이 밝은 그린(`#4ae176`)으로
+          // 뒤집혀 있어 어두운 카드 위에서 읽힌다(상수 `#006e2f`는 2.38:1).
+          color: theme.colorScheme.primary,
           iconSize: iconSize,
           textStyle: textStyle,
         ),

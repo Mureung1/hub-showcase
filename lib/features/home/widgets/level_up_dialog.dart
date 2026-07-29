@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/dialog_art.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_dialog_shell.dart';
@@ -102,7 +103,9 @@ class _LevelUpDialogState extends State<LevelUpDialog>
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow,
+            // 보더 없는 강조 박스 — 다크에서 다이얼로그 면과 붙지 않도록
+            // [AppSurfaceRoles.insetSurface]가 한 단 올려 준다(라이트는 그대로).
+            color: scheme.insetSurface,
             borderRadius: AppRadius.mdAll,
           ),
           // **`Row`가 아니라 `Wrap`이다.** 이 줄은 앱에서 유일하게 **가로**로

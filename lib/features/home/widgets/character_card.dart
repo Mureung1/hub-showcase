@@ -540,13 +540,18 @@ class _XpBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return ClipRRect(
       borderRadius: AppRadius.fullAll,
       child: LinearProgressIndicator(
         value: progress,
         minHeight: 12,
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-        valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+        backgroundColor: scheme.surfaceContainer,
+        // 채움은 상수가 아니라 스킴이다. 상수 `#006e2f`는 다크 트랙(`#1C3350`) 위
+        // 대비가 1.68:1이라 **막대가 어디까지 찼는지 보이지 않는다**(스킴 7.52:1).
+        // 라이트에서는 두 값이 같다.
+        valueColor: AlwaysStoppedAnimation(scheme.primary),
       ),
     );
   }

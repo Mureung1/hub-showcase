@@ -25,19 +25,31 @@ class LevelPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // ⚠️ **다크에는 정본이 없다.** 라이트의 "옅은 그린 틴트 + 진한 그린 글자"를
+    // 다크에 그대로 쓰면 어두운 이름표 판 위에 흰 알약이 뜬다(pill 자체 대비는
+    // 5.89:1로 멀쩡하지만 주변과 완전히 갈라진다).
+    //
+    // [QuestSourceChip]이 이미 쓰는 처방을 그대로 가져온다 — 옅은 틴트 + 진한 글자를
+    // **채운 컨테이너 + 밝은 전경**으로 뒤집는다. 그린 계열의 그 쌍이 다크 스킴의
+    // `primaryContainer`(`#006e2f`) / `onPrimaryContainer`(`#ffffff`)다(6.42:1).
+    // 라이트 렌더는 바뀌지 않는다.
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.smd,
         vertical: AppSpacing.xs,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.primarySurface,
+      decoration: BoxDecoration(
+        color: isDark ? scheme.primaryContainer : AppColors.primarySurface,
         borderRadius: AppRadius.fullAll,
       ),
       child: Text(
         'Lv.$level',
         style: AppTypography.numericLabelMedium.copyWith(
-          color: AppColors.primary,
+          color: isDark ? scheme.onPrimaryContainer : AppColors.primary,
         ),
       ),
     );

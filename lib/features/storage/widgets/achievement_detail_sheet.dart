@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/proof_rules.dart';
 import '../../../core/error/app_failure.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/kst_date.dart';
@@ -420,7 +421,8 @@ class _MemoBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        // 보더 없는 박스 — 다크에서 시트 면과 붙지 않도록 한 단 올린다.
+        color: scheme.insetSurface,
         borderRadius: AppRadius.mdAll,
       ),
       child: Text(memo, style: theme.textTheme.bodyMedium),
@@ -557,7 +559,8 @@ class _PhotoPlaceholder extends StatelessWidget {
       height: 120,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        // 보더 없는 플레이스홀더 — 다크에서 시트 면과 붙지 않도록 한 단 올린다.
+        color: scheme.insetSurface,
         borderRadius: AppRadius.mdAll,
       ),
       child: Text(

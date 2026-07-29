@@ -348,8 +348,11 @@ class _ShopItemCard extends StatelessWidget {
           // 정본의 카드 보더는 outlineVariant 하나뿐이지만, 장착 중인 카드만은
           // 그린 테두리를 유지한다 — 격자를 훑을 때 "지금 내가 쓰고 있는 것"을
           // 버튼 문구까지 읽지 않고도 찾게 해 주는 앱 고유 표시다.
+          //
+          // 상수가 아니라 스킴을 쓴다: 상수 `#006e2f` 테두리는 다크 카드
+          // (`#13263D`) 위 2.38:1이라 **장착 표시가 사라진다**(스킴 8.98:1).
           color: equipped
-              ? AppColors.primary
+              ? theme.colorScheme.primary
               : theme.colorScheme.outlineVariant,
         ),
         boxShadow: AppColors.softShadow,
@@ -395,12 +398,14 @@ class _ShopItemCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // 장착 표시(아이콘·라벨)도 스킴 그린이다 — 상수는 다크에서 2.38:1이라
+        // "장착 중" 한 줄이 카드 면에 묻힌다.
         Icon(
           equipped ? Symbols.check_circle : Symbols.inventory_2,
           size: 16,
           fill: 1,
           color: equipped
-              ? AppColors.primary
+              ? theme.colorScheme.primary
               : theme.colorScheme.onSurfaceVariant,
         ),
         AppSpacing.gapWXs,
@@ -408,7 +413,7 @@ class _ShopItemCard extends StatelessWidget {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: equipped
-                ? AppColors.primary
+                ? theme.colorScheme.primary
                 : theme.colorScheme.onSurfaceVariant,
           ),
         ),
@@ -594,10 +599,14 @@ class _Preview extends StatelessWidget {
             // 정본 프리뷰 폴백 배경은 surfaceContainerLow(`#eff4ff`)다. 배경 상품만
             // 예외로 스와치 틴트를 깔아 둔다 — 자산이 그 위를 완전히 덮으므로
             // 평소 모습은 같고, **로드 실패 시에만** 예전 색 미리보기로 떨어진다.
+            // 다크에서는 한 단 더 올라간다([AppSurfaceRoles.insetSurface]) —
+            // `surfaceContainerLow`는 다크 카드 면과 L* 차가 2.8뿐이라 프리뷰
+            // 영역의 경계가 사라진다.
             color: isBackground
-                ? (item.tint ?? theme.colorScheme.surfaceContainerLow)
-                      .withValues(alpha: 0.85)
-                : theme.colorScheme.surfaceContainerLow,
+                ? (item.tint ?? theme.colorScheme.insetSurface).withValues(
+                    alpha: 0.85,
+                  )
+                : theme.colorScheme.insetSurface,
             // 정본 실측 — 프리뷰 라운드 8(카드 12보다 한 단 작다).
             borderRadius: AppRadius.smAll,
           ),
@@ -634,15 +643,18 @@ class _Preview extends StatelessWidget {
             right: AppSpacing.xs,
             child: Container(
               padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              // 채움·전경이 **한 쌍**이라 둘 다 스킴에서 가져온다. 다크는
+              // 밝은 그린 원 + 진한 그린 글리프로 뒤집히고(7.70:1), 라이트는
+              // 지금과 같은 진한 그린 원 + 흰 글리프다(6.42:1).
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Symbols.check,
                 size: 14,
                 fill: 1,
-                color: AppColors.onPrimary,
+                color: theme.colorScheme.onPrimary,
               ),
             ),
           ),

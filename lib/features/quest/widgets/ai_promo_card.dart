@@ -33,8 +33,11 @@ class AiPromoCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: AppSpacing.cardPaddingLg,
-      decoration: const BoxDecoration(
-        color: AppColors.secondarySurface,
+      decoration: BoxDecoration(
+        // 라이트는 정본 `tint/aiSurface`([AppColors.secondarySurface]) 그대로,
+        // 다크만 중립 램프로 받는다 — 라이트 전용 옅은 틴트를 다크에 그대로 쓰면
+        // 어두운 화면에 흰 판이 뜨고 본문이 1.01:1로 사라진다.
+        color: scheme.tintPanelSurface,
         borderRadius: AppRadius.lgAll,
       ),
       child: Column(
@@ -46,6 +49,9 @@ class AiPromoCard extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // 라벨은 라이트·다크 모두 `secondary`다(테마 분기 없음). 다크 스킴의
+              // 이 슬롯이 밝은 블루 [AppColors.darkSecondary]로 뒤집혀 있어
+              // 어두운 패널 위에서도 6.79:1로 읽힌다.
               Icon(
                 Symbols.auto_awesome,
                 size: _labelIconSize,

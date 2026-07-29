@@ -76,19 +76,32 @@ class StatCard extends StatelessWidget {
     final scheme = theme.colorScheme;
     final reward = theme.reward;
 
+    final isDark = theme.brightness == Brightness.dark;
     final isReward = accent == StatAccent.reward;
-    // 아이콘 칩은 **배경·전경이 한 쌍**이라 둘 다 테마와 무관한 고정색을 쓴다.
-    // 칩 배경만 고정해 두고 아이콘을 `scheme.primary`로 가져오면 다크 테마에서
-    // 밝은 그린이 밝은 칩 위에 얹혀 읽히지 않는다.
-    final iconColor = isReward ? reward.coin : AppColors.primary;
-    // 노랑 쪽은 [CoinPill]과 같은 틴트 규칙을 써서 나란히 놓였을 때 두 위젯의
-    // 노랑이 갈라져 보이지 않게 한다.
+    // 아이콘 칩은 **배경·전경이 한 쌍**이라 항상 둘을 같이 고른다. 한쪽만 테마를
+    // 따라가면 밝은 그린이 밝은 칩 위에 얹혀 읽히지 않는다.
+    //
+    // 전경은 스킴을 쓴다 — 라이트는 [AppColors.primary]와 같은 값이고, 다크는
+    // 밝은 그린(`#4ae176`)으로 이미 뒤집혀 있다.
+    final iconColor = isReward ? reward.coin : scheme.primary;
+    // 칩 배경. 노랑 쪽은 [CoinPill]과 같은 틴트 규칙을 써서 나란히 놓였을 때 두
+    // 위젯의 노랑이 갈라져 보이지 않게 한다(알파 파생이라 다크에서 알아서 어두워진다).
+    // 그린 쪽 [AppColors.primarySurface](`#e9f9ef`)는 **라이트 전용 옅은 틴트**라
+    // 다크 카드 위에 밝은 판이 뜬다 — 다크는 중립 램프의 높은 단으로 받는다
+    // (밝은 그린 아이콘 대비 6.77:1).
     final chipColor = isReward
         ? reward.coinGlow.withValues(alpha: 0.22)
-        : AppColors.primarySurface;
-    // 수치 색. 노랑 원색(#EF9900)은 흰 배경에서 본문 대비를 못 내므로, 코인 pill이
-    // 쓰는 진한 노랑 계열(onCoin)을 그대로 쓴다 — 색 역할은 유지하고 가독성만 챙긴다.
-    final valueColor = isReward ? reward.onCoin : scheme.primary;
+        : (isDark ? scheme.surfaceContainerHigh : AppColors.primarySurface);
+    // 수치 색. 노랑 원색(#EF9900)은 흰 배경에서 본문 대비를 못 내므로, 라이트는
+    // 코인 pill이 쓰는 진한 갈색(onCoin `#5c3800`)을 그대로 쓴다.
+    //
+    // ⚠️ 다크에서 그 갈색은 카드(`#13263D`) 위 **1.47:1**이라 읽히지 않는다.
+    // `onCoin`은 "밝은 코인색 **위에** 얹는 글자"라 다크에서도 그 값이 맞고
+    // (`#ffb95f` 위 6.12:1), 틀린 것은 여기서 그것을 **면 위 글자**로 쓴 쪽이다.
+    // [CoinPill]·[CoinPrice]가 쓰는 처방을 그대로 따라 밝은 코인색을 쓴다(9.00:1).
+    final valueColor = isReward
+        ? (isDark ? reward.coin : reward.onCoin)
+        : scheme.primary;
 
     final valueStyle = numeric
         ? AppTypography.numericTitleLarge
