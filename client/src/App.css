@@ -936,6 +936,7 @@ h1 {
   cursor: pointer;
   z-index: 200;
   transition: transform 0.15s ease;
+  touch-action: none; /* 모바일 드래그가 화면 스크롤과 충돌하지 않도록 */
 }
 .chat-fab:hover {
   transform: scale(1.05);
@@ -946,6 +947,19 @@ h1 {
   object-fit: cover;
   /* 캐릭터 얼굴이 이미지 상단 쪽에 있어 세로 위치를 위로 당겨서 크롭 */
   object-position: center 22%;
+  display: block;
+  pointer-events: none; /* 이미지가 버튼의 클릭/드래그 이벤트를 가로채지 않도록 */
+}
+
+.chat-page-avatar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.chat-page-avatar img {
+  width: 100%;
+  max-width: 25%;
+  height: auto;
   display: block;
 }
 
