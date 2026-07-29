@@ -10,6 +10,8 @@ import { teamInviteRouter } from './teamInviteRoutes.js'
 import { notificationRouter } from './notificationRoutes.js'
 import { datingTeamRouter } from './datingTeamRoutes.js'
 import { matchRequestRouter } from './matchRequestRoutes.js'
+import { teamMatchChatRouter } from './teamMatchChatRoutes.js'
+import { chatListRouter } from './chatListRoutes.js'
 
 export const router = Router()
 
@@ -24,6 +26,8 @@ router.use('/team-invites', teamInviteRouter)
 router.use('/notifications', notificationRouter)
 router.use('/dating-teams', datingTeamRouter)
 router.use('/match-requests', matchRequestRouter)
+router.use('/team-match-chat-rooms', teamMatchChatRouter)
+router.use('/chat-rooms', chatListRouter)
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok' })

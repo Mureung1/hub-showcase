@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import NotificationBell from '../components/NotificationBell'
+import ChatListButton from '../components/ChatListButton'
 import './DatingOppositeResultsPage.css'
 
 // finalScore(0~1)를 반올림한 궁합 % 라벨로 변환한다
@@ -81,6 +82,7 @@ export default function DatingOppositeResultsPage() {
   return (
     <div className="dating-opposite-results-page">
       <div className="dating-opposite-results-notification-bell">
+        <ChatListButton />
         <NotificationBell />
       </div>
 

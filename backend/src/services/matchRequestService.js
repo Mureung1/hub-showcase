@@ -205,3 +205,191 @@ export async function getReceivedMatchRequests(userId) {
     createdAt: request.createdAt,
   }))
 }
+
+// 매칭 신청을 받은 팀의 리더가 신청을 수락한다.
+// 신청 상태 변경, 관련된 다른 신청 정리, 두 팀 상태 확정, 그룹 채팅방 생성까지
+// 하나의 prisma.$transaction 안에서 원자적으로 처리한다 (중간에 실패하면 전체 롤백).
+// 검증 순서: 신청 존재 확인 -> 이미 처리된 신청인지 확인 -> 로그인 유저가 toTeam(신청받은 팀) 리더인지 확인
+export async function acceptMatchRequest(requestId, currentUserId) {
+  let parsedRequestId
+  try {
+    parsedRequestId = BigInt(requestId)
+  } catch {
+    const err = new Error('유효하지 않은 신청 ID입니다.')
+    err.status = 400
+    throw err
+  }
+
+  const userId = BigInt(currentUserId)
+
+  return prisma.$transaction(async (tx) => {
+    // 1. 신청 존재 확인
+    const matchRequest = await tx.matchRequest.findUnique({
+      where: { requestId: parsedRequestId },
+    })
+
+    if (!matchRequest) {
+      const err = new Error('존재하지 않는 신청입니다.')
+      err.status = 404
+      throw err
+    }
+
+    // 2. 이미 처리된(accepted/rejected) 신청은 재처리 불가
+    if (matchRequest.status !== 'pending') {
+      const err = new Error('이미 처리된 신청입니다.')
+      err.status = 409
+      throw err
+    }
+
+    const { fromTeamId, toTeamId } = matchRequest
+
+    // 3. 신청을 받은 팀(toTeam)의 리더만 수락할 수 있음
+    const toTeam = await tx.datingTeam.findUnique({ where: { teamId: toTeamId } })
+
+    if (!toTeam) {
+      const err = new Error('존재하지 않는 팀입니다.')
+      err.status = 404
+      throw err
+    }
+
+    if (toTeam.leaderId !== userId) {
+      const err = new Error('해당 팀의 리더만 수락할 수 있습니다.')
+      err.status = 403
+      throw err
+    }
+
+    // 4. 이 신청을 accepted로 변경
+    await tx.matchRequest.update({
+      where: { requestId: parsedRequestId },
+      data: { status: 'accepted' },
+    })
+
+    // 5. 반대 방향(toTeam -> fromTeam)으로 걸려있던 pending 신청이 있으면 취소 처리 (양방향 신청 정리)
+    await tx.matchRequest.updateMany({
+      where: { fromTeamId: toTeamId, toTeamId: fromTeamId, status: 'pending' },
+      data: { status: 'rejected' },
+    })
+
+    // 6. 이번에 수락된 신청을 제외하고, 두 팀 중 하나라도 관련된 다른 pending 신청은 모두 정리한다
+    //    (두 팀이 매칭 확정되면 각자 걸려있던 다른 신청은 더 이상 유효하지 않으므로 거절 처리)
+    await tx.matchRequest.updateMany({
+      where: {
+        requestId: { not: parsedRequestId },
+        status: 'pending',
+        OR: [
+          { fromTeamId: { in: [fromTeamId, toTeamId] } },
+          { toTeamId: { in: [fromTeamId, toTeamId] } },
+        ],
+      },
+      data: { status: 'rejected' },
+    })
+
+    // 7. 두 팀의 상태를 matched -> confirmed로 확정 (이성 매칭 후보 리스트에서 더 이상 노출되지 않도록)
+    await tx.datingTeam.updateMany({
+      where: { teamId: { in: [fromTeamId, toTeamId] }, status: 'matched' },
+      data: { status: 'confirmed' },
+    })
+
+    // 8. 이 신청 하나당 그룹 채팅방 하나를 생성
+    const chatRoom = await tx.teamMatchChatRoom.create({
+      data: { matchRequestId: parsedRequestId },
+    })
+
+    // 9. 두 팀 전체 팀원을 채팅방 참여자로 등록 (lastReadAt은 아직 아무도 읽지 않았으므로 null)
+    const teamMembers = await tx.datingTeamMember.findMany({
+      where: { teamId: { in: [fromTeamId, toTeamId] } },
+      select: { userId: true },
+    })
+
+    await tx.teamMatchChatRoomMember.createMany({
+      data: teamMembers.map((member) => ({
+        chatRoomId: chatRoom.id,
+        userId: member.userId,
+        lastReadAt: null,
+      })),
+    })
+
+    return {
+      requestId: parsedRequestId.toString(),
+      status: 'accepted',
+      chatRoomId: chatRoom.id.toString(),
+      memberCount: teamMembers.length,
+    }
+  })
+}
+
+// 매칭 신청을 받은 팀의 리더가 신청을 거절한다.
+// 이 신청을 rejected로 바꾸는 것과, 반대 방향(toTeam -> fromTeam)으로 걸려있던 pending 신청을
+// 함께 rejected 처리하는 것을 하나의 prisma.$transaction으로 묶어 원자적으로 처리한다.
+// (양쪽이 서로에게 신청을 보낸 상태에서 한쪽만 거절되고 반대 방향이 남아있으면,
+//  그 반대 방향이 나중에 수락되어 이미 거절된 매칭이 성사되는 모순이 생기기 때문 —
+//  acceptMatchRequest의 반대 방향 정리 로직과 동일한 이유, 동일한 방식)
+// 검증 순서: 신청 존재 확인 -> 이미 처리된 신청인지 확인 -> 로그인 유저가 toTeam(신청받은 팀) 리더인지 확인
+// (acceptMatchRequest와 동일한 검증 패턴)
+export async function rejectMatchRequest(requestId, currentUserId) {
+  let parsedRequestId
+  try {
+    parsedRequestId = BigInt(requestId)
+  } catch {
+    const err = new Error('유효하지 않은 신청 ID입니다.')
+    err.status = 400
+    throw err
+  }
+
+  const userId = BigInt(currentUserId)
+
+  return prisma.$transaction(async (tx) => {
+    // 1. 신청 존재 확인
+    const matchRequest = await tx.matchRequest.findUnique({
+      where: { requestId: parsedRequestId },
+    })
+
+    if (!matchRequest) {
+      const err = new Error('존재하지 않는 신청입니다.')
+      err.status = 404
+      throw err
+    }
+
+    // 2. 이미 처리된(accepted/rejected) 신청은 재처리 불가
+    if (matchRequest.status !== 'pending') {
+      const err = new Error('이미 처리된 신청입니다.')
+      err.status = 409
+      throw err
+    }
+
+    const { fromTeamId, toTeamId } = matchRequest
+
+    // 3. 신청을 받은 팀(toTeam)의 리더만 거절할 수 있음
+    const toTeam = await tx.datingTeam.findUnique({ where: { teamId: toTeamId } })
+
+    if (!toTeam) {
+      const err = new Error('존재하지 않는 팀입니다.')
+      err.status = 404
+      throw err
+    }
+
+    if (toTeam.leaderId !== userId) {
+      const err = new Error('해당 팀의 리더만 거절할 수 있습니다.')
+      err.status = 403
+      throw err
+    }
+
+    // 4. 이 신청을 rejected로 변경
+    const updatedRequest = await tx.matchRequest.update({
+      where: { requestId: parsedRequestId },
+      data: { status: 'rejected' },
+    })
+
+    // 5. 반대 방향(toTeam -> fromTeam)으로 걸려있던 pending 신청이 있으면 함께 취소 처리
+    //    (없으면 0건 업데이트로 조용히 지나간다 — 단방향 신청은 기존과 동일하게 동작)
+    await tx.matchRequest.updateMany({
+      where: { fromTeamId: toTeamId, toTeamId: fromTeamId, status: 'pending' },
+      data: { status: 'rejected' },
+    })
+
+    return {
+      requestId: updatedRequest.requestId.toString(),
+      status: updatedRequest.status,
+    }
+  })
+}
