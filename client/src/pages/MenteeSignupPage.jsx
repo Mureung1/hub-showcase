@@ -2,13 +2,21 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets } from "../routes/routePaths";
-import { signupMentee } from "../api/auth";
+import { login, signupMentee } from "../api/auth";
+import supabaseClient from "../api/supabaseClient";
+import { setAccessToken } from "../utils/authStorage";
+import { SCHOOL_EMAIL_HINT, SCHOOL_EMAIL_PATTERN } from "../constants/schoolEmail";
 
 function MenteeSignupPage() {
   const navigate = useNavigate();
   const [isSignupComplete, setIsSignupComplete] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [email, setEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState("idle");
+  const [verificationError, setVerificationError] = useState("");
+  const isEmailVerified = verificationStatus === "verified";
 
   useEffect(() => {
     if (!isSignupComplete) return undefined;
@@ -20,19 +28,79 @@ function MenteeSignupPage() {
     return () => window.clearTimeout(redirectTimer);
   }, [isSignupComplete, navigate]);
 
+  const handleSendVerificationCode = async () => {
+    setVerificationError("");
+
+    const trimmedEmail = email.trim();
+    if (!SCHOOL_EMAIL_PATTERN.test(trimmedEmail)) {
+      setVerificationError(SCHOOL_EMAIL_HINT);
+      return;
+    }
+    if (!supabaseClient) {
+      setVerificationError("이메일 인증 기능을 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+
+    setVerificationStatus("sending");
+
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email: trimmedEmail,
+      options: { shouldCreateUser: true },
+    });
+
+    if (error) {
+      setVerificationError(error.message);
+      setVerificationStatus("idle");
+      return;
+    }
+
+    setVerificationStatus("sent");
+  };
+
+  const handleVerifyCode = async () => {
+    setVerificationError("");
+
+    if (!verificationCode.trim()) {
+      setVerificationError("인증 코드를 입력해 주세요.");
+      return;
+    }
+
+    setVerificationStatus("verifying");
+
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      email: email.trim(),
+      token: verificationCode.trim(),
+      type: "email",
+    });
+
+    if (error || !data?.session) {
+      setVerificationError(error?.message || "인증 코드가 올바르지 않습니다.");
+      setVerificationStatus("sent");
+      return;
+    }
+
+    setAccessToken(data.session.access_token);
+    setVerificationStatus("verified");
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmissionError("");
 
+    if (!isEmailVerified) {
+      setSubmissionError("이메일 인증을 완료해 주세요.");
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
-    const email = formData.get("email");
+    const password = formData.get("password");
 
     setIsSubmitting(true);
 
     try {
       await signupMentee({
         email,
-        password: formData.get("password"),
+        password,
         name: formData.get("name"),
         nickname: formData.get("nickname"),
         school: formData.get("school"),
@@ -40,6 +108,7 @@ function MenteeSignupPage() {
         grade: formData.get("grade"),
         enrollmentStatus: formData.get("enrollmentStatus"),
       });
+      await login({ email, password });
       setIsSignupComplete(true);
     } catch (error) {
       setSubmissionError(error.message);
@@ -88,10 +157,54 @@ function MenteeSignupPage() {
 
             <div className="signup-field-group">
               <label className="signup-field-label" htmlFor="mentee-email">이메일 주소 <span aria-hidden="true">*</span></label>
+              <small className="signup-field-hint">{SCHOOL_EMAIL_HINT}</small>
               <div className="email-field-row">
-                <input className="field" id="mentee-email" type="email" name="email" autoComplete="email" placeholder="example@email.com" required />
-                <button className="button button-soft email-verify-button" type="button">인증</button>
+                <input
+                  className="field"
+                  id="mentee-email"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  placeholder="example@school.ac.kr"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  readOnly={isEmailVerified}
+                  required
+                />
+                <button
+                  className="button button-soft email-verify-button"
+                  type="button"
+                  onClick={handleSendVerificationCode}
+                  disabled={isEmailVerified || verificationStatus === "sending"}
+                >
+                  {isEmailVerified ? "인증 완료" : verificationStatus === "sending" ? "발송 중..." : "인증"}
+                </button>
               </div>
+
+              {(verificationStatus === "sent" || verificationStatus === "verifying") && (
+                <div className="email-field-row">
+                  <input
+                    className="field"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="인증 코드 6자리"
+                    value={verificationCode}
+                    onChange={(event) => setVerificationCode(event.target.value)}
+                  />
+                  <button
+                    className="button button-soft email-verify-button"
+                    type="button"
+                    onClick={handleVerifyCode}
+                    disabled={verificationStatus === "verifying"}
+                  >
+                    {verificationStatus === "verifying" ? "확인 중..." : "확인"}
+                  </button>
+                </div>
+              )}
+
+              {verificationError && (
+                <p className="signup-error" role="alert">{verificationError}</p>
+              )}
             </div>
 
             <label className="signup-field-group">
@@ -140,7 +253,7 @@ function MenteeSignupPage() {
 
           <div className="mentee-signup-actions">
             <Link className="button button-neutral" to="/signup">이전</Link>
-            <button className="button button-primary" disabled={isSubmitting} type="submit">
+            <button className="button button-primary" disabled={isSubmitting || !isEmailVerified} type="submit">
               {isSubmitting ? "가입 처리 중..." : "가입하기"}
             </button>
           </div>
