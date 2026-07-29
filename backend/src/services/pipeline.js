@@ -54,7 +54,7 @@ export async function runPipeline(jobId) {
       await supabase
         .from('generation_jobs')
         .update({
-          status: 'FAILED',
+          status: 'failed',
           error: error.message,
           error_message: error.message,
           failed_at: new Date().toISOString()
