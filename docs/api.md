@@ -13,14 +13,14 @@
 | FE | 냉장고 목록/상세, 영수증 촬영·확인 화면, 레시피 리스트·필터·상세·조리모드, 요리완료 차감 화면 | React (모바일 웹 기준) |
 | BE | 재고 CRUD, 영수증 OCR 결과 파싱·매칭, 레시피-재고 매칭 알고리즘, 조리완료 시 재고 일괄 차감 로직 | Node.js + Express |
 | DB | 재고(`fridge_items`)·레시피(`recipes`) 2개 테이블만 실제로 Supabase에 있음. 재료 마스터·영수증 이력은 DB가 아님(§5 참고) | PostgreSQL (Supabase) |
-| 외부 API | 영수증 OCR(품목명·수량 추출) | Naver Clova OCR(General) — BE가 프록시(`backend/src/ocr/clovaOcr.js`). 크레덴셜 미설정 시 Mock 폴백 |
+| 외부 API | 영수증 OCR(품목명·수량 추출) | Amazon Textract(DetectDocumentText) 1순위 → Naver Clova OCR(General) 대체 — BE가 프록시(`backend/src/ocr/`). 둘 다 미설정 시 Mock 폴백 |
 | 외부 API | 식자재 소매가 시세(`GET /api/prices`) | KAMIS(농산물유통정보) Open API — BE가 프록시(`backend/src/prices/`). 크레덴셜 미설정 또는 조회 실패 시 정적값 폴백 |
 
 **설계 전제**
 - MVP 4개 기능(나만의 냉장고 / 영수증 촬영 인식 / 레시피 리스트&필터 / 요리완료 재고차감)은 요청→응답 흐름표까지 상세 설계.
 - 2차 확장 기능(추천 재료 세트, 유통기한 알림, 식단 루틴, 가격 정보)은 전부 실제로 구현·연동됨(§7) — "API 개요(안)"이 아니라 현재 동작하는 실제 계약.
 - **인증/로그인은 범위 밖** — 단일 사용자 기준. `user_id` 같은 확장 대비 컬럼은 실제로 쓰이지 않음.
-- **외부 연동 2곳**: 영수증 OCR(Naver Clova), 식자재 소매가 시세(`GET /api/prices`, KAMIS). 둘 다 크레덴셜 미설정 시 폴백(Mock/정적값)으로 서비스가 죽지 않게 설계.
+- **외부 연동 2곳**: 영수증 OCR(Amazon Textract 1순위 → Naver Clova 대체), 식자재 소매가 시세(`GET /api/prices`, KAMIS). 둘 다 크레덴셜 미설정 시 폴백(Mock/정적값)으로 서비스가 죽지 않게 설계.
 
 ---
 
@@ -86,7 +86,7 @@
 
 | 화면 동작 | 요청(메서드+경로) | 서버 처리 | DB | 응답 | 화면 변화 |
 |---|---|---|---|---|---|
-| 영수증 촬영 완료(기기 기본 카메라 앱으로 찍은 사진 선택) | `POST /api/receipts` (`multipart/form-data`, 필드명 `photo`) | Naver Clova OCR(General) 호출 → 텍스트 줄 재구성(`lineBreak` 기준) → 재료 마스터와 이름 대조 매칭(`backend/src/ocr/matchReceiptLines.js`). 크레덴셜 미설정 시 랜덤 3종 Mock으로 폴백 | (인메모리 `receipts` — 별도 `receipts`/`receipt_items` 테이블은 아직 없음) | 인식된 품목 리스트(일부 실패 항목엔 `matched:false`, 최대 5개까지만 표시) | 인식 결과 확인 화면으로 이동 |
+| 영수증 촬영 완료(기기 기본 카메라 앱으로 찍은 사진 선택) | `POST /api/receipts` (`multipart/form-data`, 필드명 `photo`) | OCR 호출(`backend/src/ocr/index.js`가 Textract → Clova 순으로 시도) → 텍스트 줄 확보(Textract는 `LINE` 블록이 이미 줄 단위, Clova는 `lineBreak` 기준 재구성) → 재료 마스터와 이름 대조 매칭(`backend/src/ocr/matchReceiptLines.js`). 둘 다 크레덴셜 미설정 시 랜덤 3종 Mock으로 폴백 | (인메모리 `receipts` — 별도 `receipts`/`receipt_items` 테이블은 아직 없음) | 인식된 품목 리스트(일부 실패 항목엔 `matched:false`, 최대 5개까지만 표시) | 인식 결과 확인 화면으로 이동 |
 | 인식 실패/일부만 인식 → 재촬영 | `POST /api/receipts` (재요청) | 위와 동일 | — | 새 인식 결과 | 인식 결과 화면 갱신 |
 | OCR 크레덴셜은 있는데 호출 자체가 실패/타임아웃(15초) | `POST /api/receipts` | 에러를 그대로 던짐(Mock으로 감추지 않음 — 가짜 인식 결과를 진짜로 착각하는 걸 방지) | — | 에러 응답(4xx/5xx, 한국어 메시지) | `alert()`로 에러 표시, 화면은 그대로(재촬영 유도) |
 | 유통기한 확인·보정 후 확정 | `POST /api/receipts/:id/confirm` body `{ expiryOverrides: { [ingredientId]: "YYYY-MM-DD", ... } }` | `matched:true`인 품목만 반영. 신선식품은 재료·구매월 기준 평균 유통기한 자동 계산(`expiryOverrides`에 있으면 그 값 우선), 가공식품은 유통기한 없이 저장 | `fridge_items` INSERT(품목마다, 기존 재료여도 새 구매 배치로 추가 — 수량을 합치지 않음) | 최신 냉장고 전체 뷰(200) | "나만의 냉장고"로 이동, 최신 재고 표시 |

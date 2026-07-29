@@ -9,7 +9,7 @@ import {
   isPantryOrVague, normalizeIngredientKey, calculateRecipeDifficulty, isMeal, isSideDish, CONTINUOUS_UNITS
 } from './logic/fridgeLogic.js';
 import { supabase } from './supabaseClient.js';
-import { recognizeReceiptText } from './ocr/clovaOcr.js';
+import { recognizeReceiptText } from './ocr/index.js';
 import { matchReceiptLines } from './ocr/matchReceiptLines.js';
 import { getPriceSnapshot } from './prices/priceCache.js';
 
