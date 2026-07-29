@@ -66,14 +66,22 @@ Backend
 ```env
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/spotify/callback
+SPOTIFY_TOKEN_ENCRYPTION_KEY=
+APP_FRONTEND_URL=http://localhost:5173
 ```
+
+`SPOTIFY_TOKEN_ENCRYPTION_KEY`는 `openssl rand -base64 32`처럼 생성한 32바이트 base64 값을 사용합니다. 실제 값과 Service Role Key는 서버 환경에만 두며 브라우저의 `VITE_` 환경변수로 만들지 않습니다. 암호화 키를 바꾸면 기존 Spotify 연결 토큰을 복호화할 수 없으므로 사용자의 재연결이 필요합니다.
+
+Spotify Developer Dashboard에도 `SPOTIFY_REDIRECT_URI`와 완전히 같은 callback URL을 등록해야 합니다.
 
 회원가입 전에 Supabase SQL Editor에서 `server/supabase/profiles.sql`을 실행해 `profiles` 테이블과 Auth 사용자 생성 트리거를 적용합니다. 새 사용자의 닉네임은 Auth 메타데이터에서 전달되며, 트리거가 Auth 사용자와 동일한 ID의 프로필을 한 건 생성합니다.
 
-이후 `server/supabase/follows.sql`, `server/supabase/music_records.sql`, `server/supabase/likes.sql` 순서로 실행합니다. `follows` 테이블이 먼저 있어야 음악 기록의 팔로잉 조회 RLS 정책을 적용할 수 있고, `music_records` 테이블이 있어야 좋아요 외래키를 생성할 수 있습니다. `music_records.user_id` 외래키와 인증 RLS 정책은 기존 익명 기록을 삭제하지 않고 `user_id = null`로 보존하며, 사용자별 앱 조회에서는 제외합니다. 소유자를 확인할 수 있을 때만 별도 SQL로 백필해야 합니다.
+이후 `server/supabase/follows.sql`, `server/supabase/music_records.sql`, `server/supabase/likes.sql`, `server/supabase/spotify_connections.sql` 순서로 실행합니다. `follows` 테이블이 먼저 있어야 음악 기록의 팔로잉 조회 RLS 정책을 적용할 수 있고, `music_records` 테이블이 있어야 좋아요 외래키를 생성할 수 있습니다. Spotify 연결 테이블은 RLS와 권한 회수로 브라우저 접근을 차단하고 서버 Service Role에서만 사용합니다.
 
 ## 4. Backend 실행
 
@@ -359,6 +367,19 @@ Supabase access token이 필요합니다. `year`는 네 자리 연도, `month`�
 | 기능 | Method | URL | 설명 |
 |------|--------|-----|------|
 | 노래 검색 | GET | `/api/spotify/search?q={keyword}` | 2자 이상의 Spotify 트랙 검색 |
+
+### Spotify 사용자 계정 연결 API
+
+| 기능 | Method | URL | SWIM 인증 |
+|---|---|---|---|
+| 연결 URL 생성 | GET | `/api/spotify/connect` | 필요 |
+| Spotify callback | GET | `/api/spotify/callback` | 일회용 state |
+| 연결 상태 조회 | GET | `/api/spotify/connection` | 필요 |
+| 연결 해제 | DELETE | `/api/spotify/connection` | 필요 |
+
+`GET /api/spotify/connect`는 `playlist-modify-private` scope만 요청하는 Spotify authorize URL을 반환합니다. callback은 10분 동안 유효한 일회용 state를 소비하고 성공하면 `APP_FRONTEND_URL?spotify=connected`, 취소나 실패 시 `?spotify=error&reason=...`으로 이동합니다.
+
+Access Token과 Refresh Token은 AES-256-GCM으로 암호화되어 서버 전용 테이블에 저장됩니다. 연결 상태 API에는 표시 이름, scope와 만료 시각만 포함되고 Spotify token과 내부 사용자 ID는 반환하지 않습니다. 만료된 access token은 서버에서 refresh token으로 갱신하며 연결 해제는 저장된 token을 삭제합니다.
 
 ### 검색 응답 예시
 

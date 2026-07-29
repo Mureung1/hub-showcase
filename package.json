@@ -8,7 +8,7 @@
     "server": "node server/server.js",
     "build": "tsc -b config/tsconfig.json && vite build --config config/vite.config.ts",
     "typecheck": "tsc -b config/tsconfig.json --pretty false",
-    "test": "vitest run --config config/vite.config.ts && node --test server/routes/feed.test.js server/routes/follows.test.js server/routes/likes.test.js server/routes/musicRecords.test.js server/routes/recaps.test.js server/routes/spotifyRoutes.test.js server/routes/users.test.js server/services/likesService.test.js server/services/spotifyService.test.js server/supabase/likesSql.test.js server/utils/spotifyToken.test.js"
+    "test": "vitest run --config config/vite.config.ts && node --test server/routes/feed.test.js server/routes/follows.test.js server/routes/likes.test.js server/routes/musicRecords.test.js server/routes/recaps.test.js server/routes/spotifyOAuth.test.js server/routes/spotifyRoutes.test.js server/routes/users.test.js server/services/likesService.test.js server/services/spotifyOAuthService.test.js server/services/spotifyService.test.js server/supabase/likesSql.test.js server/supabase/spotifyConnectionsSql.test.js server/utils/spotifyToken.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",

@@ -508,6 +508,103 @@ textarea[aria-invalid="true"] {
   color-scheme: light;
 }
 
+.spotify-connection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+  padding: 22px 24px;
+  border: 1px solid rgba(62, 127, 163, 0.18);
+  border-radius: var(--radius-lg);
+  background: rgba(62, 127, 163, 0.07);
+}
+
+.spotify-connection > div:first-child {
+  max-width: 620px;
+}
+
+.spotify-connection h3,
+.spotify-connection p {
+  margin: 0;
+}
+
+.spotify-connection h3 {
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
+.spotify-connection > div:first-child > p:last-child {
+  margin-top: 7px;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.spotify-connection-action {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--space-3);
+}
+
+.spotify-connect-button,
+.spotify-secondary-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.spotify-connect-button {
+  border: 1px solid var(--color-signature);
+  background: var(--color-signature);
+  color: #fff;
+}
+
+.spotify-secondary-button {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+}
+
+.spotify-connect-button:disabled,
+.spotify-secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.spotify-connected-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-sub);
+  font-size: 0.86rem;
+}
+
+.spotify-connected-name span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-signature);
+}
+
+.spotify-connection-status,
+.spotify-connection-notice,
+.spotify-connection-error {
+  font-size: 0.84rem;
+}
+
+.spotify-connection-notice {
+  color: var(--color-signature-hover);
+}
+
+.spotify-connection-error {
+  color: var(--color-danger);
+}
+
 .recap-state {
   display: grid;
   min-height: 260px;
@@ -1473,6 +1570,22 @@ textarea[aria-invalid="true"] {
   .recap-heading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .spotify-connection {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .spotify-connection-action {
+    align-items: flex-start;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .spotify-connect-button,
+  .spotify-secondary-button {
+    width: 100%;
   }
 
   .recap-month-picker {

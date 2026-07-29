@@ -2,6 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MonthlyRecap } from "./MonthlyRecap";
 
+vi.mock("./SpotifyConnection", () => ({
+  SpotifyConnection: () => <div data-testid="spotify-connection" />,
+}));
+
 function response(body: unknown, ok = true) {
   return { ok, json: async () => body } as Response;
 }

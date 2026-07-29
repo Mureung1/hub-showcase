@@ -2,17 +2,17 @@
 
 ## 실행 정보
 
-- 실행일: 2026-07-28
+- 실행일: 2026-07-29
 - 브랜치: `codex/task-2-user-search`
 - 환경: Windows, Node.js, Vite, Express
-- 대상: 공개 프로필·좋아요 사용자 목록·Monthly Recap 화면을 포함한 작업 1~6 통합 상태
+- 대상: 공개 프로필부터 Spotify 사용자 OAuth 연결까지 작업 1~7 통합 상태
 
 ## 자동 검증
 
 | 명령 | 결과 | 상세 |
 |---|---|---|
 | `npm.cmd run typecheck` | PASS | TypeScript 오류 없음 |
-| `npm.cmd test` | PASS | 프런트엔드 114개, Node 80개 테스트 |
+| `npm.cmd test` | PASS | 프런트엔드 120개, Node 91개 테스트 |
 | `npm.cmd run build` | PASS | Vite 프로덕션 번들 생성 |
 | `git diff --check` | PASS | 공백 오류 없음 |
 | `GET http://127.0.0.1:3000/health` | PASS | 로컬 Express 응답 `{"status":"ok"}` |
@@ -41,6 +41,13 @@
 - 월간 Recap 인증·입력 검증·본인 기록 집계·빈 달·12월 경계·DB 실패
 - Monthly Recap 월 선택·대표 요약·타임라인·빈 달·실패·재시도
 - 잘못된 Monthly Recap 응답을 화면 예외 없이 오류 상태로 처리
+- Spotify OAuth 인증·최소 scope·state 해시·callback·연결 상태·해제
+- 최초 승인·token 갱신의 필수 `playlist-modify-private` scope 검증
+- 만료·재사용·잘못된 OAuth state를 Spotify token 교환 전에 차단
+- Spotify 사용자 token 암호화 저장과 만료 access token 갱신
+- Spotify OAuth 테이블의 브라우저 권한 회수
+- Spotify 연결 UI의 상태 조회·승인 화면 이동·연결 해제·callback 복귀
+- callback 성공 파라미터와 실제 저장된 Spotify 연결 상태의 일치 확인
 - API 실패 시 기존 UI 상태 유지
 - Auth UUID의 사용자 검색·피드 응답 비노출
 

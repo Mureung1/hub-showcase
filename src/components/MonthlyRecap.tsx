@@ -4,6 +4,7 @@ import {
   type MonthlyRecap as MonthlyRecapData,
   type RecapTrack,
 } from "../services/recapsService";
+import { SpotifyConnection } from "./SpotifyConnection";
 
 interface MonthlyRecapProps {
   apiBaseUrl: string;
@@ -115,6 +116,8 @@ export function MonthlyRecap({
           />
         </label>
       </div>
+
+      <SpotifyConnection apiBaseUrl={apiBaseUrl} accessToken={accessToken} />
 
       {isLoading ? (
         <div className="recap-state" role="status">한 달의 음악을 모으는 중...</div>
