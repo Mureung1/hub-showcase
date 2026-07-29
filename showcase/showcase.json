@@ -1,25 +1,38 @@
 {
+  "schemaVersion": 1,
   "title": "어학시험 학습 플래너",
-  "summary": "현재 점수, 목표 점수, 시험일, 하루 학습 시간과 취약 영역을 바탕으로 개인별 학습 계획을 만드는 서비스입니다.",
+  "summary": "현재 점수, 목표 점수, 시험일, 하루 학습 시간과 취약 영역을 바탕으로 개인별 오늘의 학습 계획을 만들고 기록까지 이어갈 수 있는 서비스입니다.",
   "githubUser": "Kate-Kim-S(김승희)",
-  "demoUrl": "",
-  "thumbnail": "",
-  "screenshots": [],
+  "demoUrl": "https://hub-six-lilac.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/file/d/1jOkNO7IfNv5otk-FgKdqksZD_HSLQ657/view?usp=drive_link",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screen-home.png",
+    "screen-signup.png",
+    "screen-study-plan.png",
+    "screen-today-study.png",
+    "screen-study-history.png",
+    "screen-study-history-detail.png"
+  ],
   "problem": "어학시험을 준비하는 학습자가 현재 실력, 목표 점수, 시험일까지 남은 시간, 하루 학습 가능 시간, 취약 영역을 함께 고려해 실행 가능한 학습 계획을 세우기 어렵다는 문제를 해결합니다.",
   "targetUsers": [
     "TOEIC, OPIc, TOEIC Speaking, TOEFL을 준비하는 대학생과 취업 준비생",
     "목표 점수는 있지만 매일 무엇을 얼마나 공부해야 할지 정리하기 어려운 학습자",
-    "취약 영역을 중심으로 학습 시간을 재분배하고 싶은 자기주도 학습자"
+    "취약 영역을 중심으로 학습 시간을 배분하고 꾸준히 자기주도 학습을 이어가고 싶은 학습자"
   ],
-  "mainFeatures": [
-    "시험 유형 선택",
-    "현재 점수 또는 등급, 목표 점수 또는 등급, 시험일, 하루 학습 시간 입력",
+  "features": [
+    "Supabase Auth 기반 이메일 회원가입 및 로그인",
+    "로그인하지 않고 학습 계획 생성을 체험할 수 있는 비로그인 체험",
+    "회원가입 시 닉네임 입력 및 Supabase user_metadata.nickname 저장",
+    "로그인 후 이메일 대신 닉네임님 표시, 기존 가입자는 이메일 @ 앞부분을 표시명으로 사용하는 fallback",
+    "시험 유형, 현재 점수 또는 등급, 목표 점수 또는 등급, 시험일, 하루 학습 시간 입력",
     "시험별 점수 규칙에 맞춘 입력값 검증",
     "취약 영역 선택 및 시험별 영역 목록 제공",
-    "취약 영역이 있으면 학습 시간의 70%를 취약 영역에 우선 배분하는 일일 학습 계획 생성",
-    "Supabase에 학습 계획 저장",
-    "저장된 학습 계획 ID를 localStorage에 보관하고 새로고침 후 복원",
-    "Express API를 통한 학습 계획 생성 및 조회"
+    "시험 유형, 취약 영역, 하루 학습 시간을 반영한 오늘의 학습 생성",
+    "일일 학습 기록 저장 및 이전 기록 조회",
+    "최근 학습 기록을 반영한 학습 배분",
+    "Supabase study_plans와 daily_study_records 기반 사용자별 데이터 저장",
+    "프론트엔드 Vercel 배포와 백엔드 Render 배포"
   ],
   "featureTags": [
     "학습 플래너",
@@ -35,41 +48,77 @@
     "JavaScript",
     "Express",
     "Supabase",
+    "Vercel",
+    "Render",
     "Vitest",
     "Testing Library",
     "jsdom"
   ],
   "techHighlights": [
-    "createDailyStudyPlan 함수로 시험 유형과 취약 영역에 따라 일일 학습 시간을 계산하도록 분리했습니다.",
-    "취약 영역이 일부 선택된 경우 전체 학습 시간의 70%를 취약 영역에, 30%를 일반 영역에 배분합니다.",
-    "취약 영역이 없거나 모든 영역이 취약 영역인 경우 전체 영역에 균등 배분합니다.",
-    "유효하지 않은 시험 유형, 0 이하 학습 시간, 잘못된 취약 영역 입력을 방어적으로 처리합니다.",
-    "Express API에서 학습 계획 입력값을 검증한 뒤 Supabase study_plans 테이블에 저장하고 UUID 기반 조회를 제공합니다.",
-    "프론트엔드는 저장된 studyPlanId를 localStorage에 보관해 새로고침 후에도 기존 학습 계획을 복원합니다."
+    "Supabase Auth로 이메일 회원가입과 로그인을 구현하고, 인증 토큰을 사용해 사용자별 학습 계획과 일일 기록 API를 보호했습니다.",
+    "회원가입 시 닉네임을 user_metadata.nickname에 저장하고, 로그인 후 표시명은 닉네임을 우선 사용하며 기존 가입자는 이메일 @ 앞부분을 fallback으로 사용합니다.",
+    "시험 유형, 취약 영역, 하루 학습 시간을 바탕으로 오늘 수행할 학습 항목과 시간 배분을 생성합니다.",
+    "최근 일일 학습 기록을 조회해 이전 학습 상태를 다음 학습 배분에 반영할 수 있도록 구성했습니다.",
+    "Express API에서 학습 계획과 일일 학습 기록 입력값을 검증한 뒤 Supabase에 저장하고, 인증된 사용자 본인의 데이터만 조회하도록 처리했습니다.",
+    "비로그인 체험에서는 서버 저장 없이 학습 계획 생성 흐름을 사용할 수 있고, 저장이 필요한 시점에는 로그인 안내를 제공합니다.",
+    "프론트엔드는 Vercel, 백엔드는 Render에 배포할 수 있도록 분리된 React + Express 구조로 구성했습니다.",
+    "현재 Vitest와 Testing Library 기반 전체 테스트 116개가 통과하며, npm.cmd run build도 통과했습니다."
   ],
-  "developmentWithAI": [
-    "이번 주에는 작은 기능 단위로 요구사항을 정리하고 테스트를 먼저 작성하는 방식으로 개발했습니다.",
-    "tdd-feature-builder Skill을 사용해 createDailyStudyPlan 구현을 Red → Green 흐름으로 진행했습니다.",
-    "Vitest로 취약 영역 없음, 일부 취약 영역, 모든 취약 영역, 잘못된 입력, 지원하지 않는 시험 유형 등 핵심 케이스를 검증했습니다.",
-    "study-plan-validator Agent를 제작해 구현 결과, 테스트 커버리지, 예외 처리, 요구사항 반영 여부를 검증했습니다.",
-    "AI와 함께 기능 범위를 좁게 유지하고 테스트 결과를 기준으로 다음 작업을 결정하는 개발 워크플로를 문서화했습니다."
-  ],
+  "developmentWithAI": "AI와 함께 요구사항을 작은 기능 단위로 나누고, 관련 파일과 데이터 흐름을 먼저 확인한 뒤 필요한 파일만 수정하는 방식으로 개발했습니다. 회원가입, 로그인, 비로그인 체험, 닉네임 metadata 저장과 표시명 fallback처럼 사용자 흐름이 이어지는 부분은 테스트를 함께 갱신하며 구현했습니다. 오늘의 학습 생성과 일일 기록 저장 흐름은 시험 유형, 취약 영역, 하루 학습 시간, 최근 기록 반영 여부를 기준으로 검증했습니다. 기능 추가 후마다 npm.cmd test -- --run과 npm.cmd run build를 실행해 회귀 여부를 확인했고, 최종 판단은 실제 테스트 결과를 기준으로 했습니다.",
   "agent": {
-    "summary": "AI 에이전트를 요구사항 정리, TDD 진행, 코드 검증, 개발 흐름 문서화에 활용했습니다. 특히 createDailyStudyPlan 기능은 테스트가 먼저 실패하는 상태를 확인한 뒤 최소 구현으로 통과시키는 방식으로 완성했습니다.",
+    "summary": "AI 에이전트를 요구사항 정리, 코드 흐름 분석, 최소 변경 구현, 테스트 보강과 검증 결과 정리에 활용했습니다. 인증, 닉네임 metadata, 비로그인 체험, 일일 기록 기능은 기존 흐름을 유지하면서 필요한 범위만 확장하는 방식으로 진행했습니다.",
     "agentTools": [
-      "tdd-feature-builder Skill",
-      "study-plan-validator Agent",
-      "Vitest",
-      "React Testing Library",
-      "Codex"
+      {
+        "type": "skill",
+        "name": "default-design-rule Skill",
+        "purpose": "기존 디자인 문서와 화면 규칙을 확인하고 UI 변경이 서비스 톤과 맞는지 점검했습니다."
+      },
+      {
+        "type": "skill",
+        "name": "small-feature-planner Skill",
+        "purpose": "작은 기능 요청을 관련 파일, 데이터 흐름, 완료 조건 중심으로 나누는 데 활용했습니다."
+      },
+      {
+        "type": "skill",
+        "name": "test-code-generator Skill",
+        "purpose": "인증과 닉네임 흐름에 필요한 테스트 시나리오를 정리하는 기준으로 활용했습니다."
+      },
+      {
+        "type": "agent",
+        "name": "vertical-slice-validator Skill",
+        "purpose": "학습 계획 저장과 조회로 이어지는 수직 흐름 검증 관점을 참고했습니다."
+      },
+      {
+        "type": "agent",
+        "name": "Codex",
+        "purpose": "코드 탐색, 구현, 테스트 실행, 빌드 검증과 쇼케이스 문서 정리에 활용했습니다."
+      }
     ],
     "workflows": [
-      "요구사항과 완료 조건을 먼저 정리합니다.",
-      "기능 단위를 작게 나누고 관련 코드와 데이터 흐름을 조사합니다.",
-      "Vitest 테스트를 먼저 작성해 Red 상태를 확인합니다.",
-      "최소 구현으로 Green 상태를 만들고 필요한 예외 케이스를 보강합니다.",
-      "study-plan-validator Agent로 변경 범위, 테스트, 요구사항 반영 여부를 검증합니다.",
-      "구현한 기능과 검증 과정을 문서에 남겨 다음 작업의 기준으로 삼습니다."
+      {
+        "name": "요구사항 분석",
+        "steps": [
+          "요구사항과 완료 조건을 먼저 정리합니다.",
+          "관련 코드와 현재 데이터 흐름을 조사합니다.",
+          "수정 범위를 최소화해 필요한 파일만 변경합니다."
+        ]
+      },
+      {
+        "name": "구현과 테스트",
+        "steps": [
+          "기능 흐름에 맞는 테스트를 추가하거나 기존 테스트를 갱신합니다.",
+          "기존 로그인, 로그아웃, 회원가입, 비로그인 체험 흐름을 유지하며 구현합니다.",
+          "npm.cmd test -- --run으로 전체 테스트를 확인합니다."
+        ]
+      },
+      {
+        "name": "검증과 정리",
+        "steps": [
+          "npm.cmd run build로 배포 가능한 상태를 확인합니다.",
+          "변경한 기능과 검증 결과를 쇼케이스 문서에 반영합니다.",
+          "JSON 문법과 제출 형식에 맞는 구조를 확인합니다."
+        ]
+      }
     ]
   }
 }
