@@ -38,11 +38,7 @@ function selectedMarketCount(
   selectedCategoryCount: number | null,
 ) {
   const catalogCount = category.store_counts_by_market?.[marketKey];
-  if (
-    category.name === selected &&
-    selectedCategoryCount !== null &&
-    (catalogCount === undefined || (catalogCount === 0 && selectedCategoryCount > 0))
-  ) {
+  if (category.name === selected && selectedCategoryCount !== null) {
     return selectedCategoryCount;
   }
   return catalogCount;
@@ -77,7 +73,7 @@ function CategoryOptions({
   return orderedCategories.map((category, index) => {
     const { name, rank } = category;
     const { icon: Icon, tone } = resolveCategoryPresentation(name);
-    const displayRank = showMarketCounts ? index + 1 : rank ?? index + 1;
+    const displayRank = showMarketCounts ? index + 1 : (rank ?? index + 1);
     const marketStoreCount = showMarketCounts
       ? selectedMarketCount(category, marketKey, selected, selectedCategoryCount)
       : undefined;
@@ -102,9 +98,7 @@ function CategoryOptions({
         </span>
         {showMarketCounts && (
           <strong className="category-market-count">
-            {marketStoreCount === undefined
-              ? "—"
-              : `${marketStoreCount.toLocaleString("ko-KR")}곳`}
+            {marketStoreCount === undefined ? "—" : `${marketStoreCount.toLocaleString("ko-KR")}곳`}
           </strong>
         )}
         <span className="check" aria-hidden="true">
@@ -200,7 +194,7 @@ export function MarketFilters({
 }: MarketFiltersProps) {
   const catalogLabel =
     catalogState === "ranked"
-      ? "현재 상권 기준"
+      ? "최신 점포 위치"
       : catalogState === "connecting"
         ? "불러오는 중"
         : "기본 목록";
@@ -275,7 +269,7 @@ export function MarketFilters({
         </div>
         <div className={`catalog-status is-${catalogState}`} role="status">
           {catalogState === "ranked" &&
-            `${markets[marketKey].name} 안의 점포 수가 많은 순서입니다.`}
+            `${markets[marketKey].name} 안의 최신 점포 위치 수가 많은 순서입니다.`}
           {catalogState === "connecting" &&
             "선택한 업종을 유지한 채 현재 상권의 업종 순위를 불러오고 있습니다."}
           {catalogState === "bootstrap" &&
@@ -343,6 +337,7 @@ export function MarketFilters({
         onStoresVisibleChange={onStoresVisibleChange}
       />
       <NearbyStoreList
+        categoryName={categorySelection.name}
         stores={visibleStores}
         selectedStoreName={selectedStoreName}
         state={nearbyState}

@@ -26,7 +26,10 @@ const CATEGORY_RULES: ReadonlyArray<{
     terms: ["체육", "헬스", "피트니스", "스포츠", "요가", "필라테스"],
   },
   { group: "academy", terms: ["학원", "교습", "교육원", "훈련"] },
-  { group: "lodging", terms: ["숙박", "호텔", "모텔", "여관", "게스트하우스"] },
+  {
+    group: "lodging",
+    terms: ["숙박", "호텔", "모텔", "여관", "게스트하우스", "펜션"],
+  },
   { group: "food", terms: ["음식점", "한식", "중식", "일식", "분식", "주점"] },
 ];
 
@@ -63,7 +66,7 @@ const FOCUS_CATEGORY_CODES: Record<CategorySemanticGroup, string> = {
   food: "I20101",
   bakery: "I21001",
   convenience: "G20405",
-  flower: "G21301",
+  flower: "G21901",
   beauty: "S20701",
   apparel: "G20901",
   sports: "S20801",

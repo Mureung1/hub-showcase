@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { PRODUCT_CATALOG_BOOTSTRAP, type ProductCategory } from "../../services/productCatalog";
@@ -126,11 +126,12 @@ describe("MarketFilters catalog state", () => {
     expect(screen.queryByText("부분 지원")).not.toBeInTheDocument();
     expect(screen.queryByText("216곳")).not.toBeInTheDocument();
     expect(
-      screen.getByText("연남동 골목상권 안의 점포 수가 많은 순서입니다."),
+      screen.getByText("연남동 골목상권 안의 최신 점포 위치 수가 많은 순서입니다."),
     ).toBeInTheDocument();
 
-    const beauty = screen.getByRole("button", { name: "미용" });
-    const sports = screen.getByRole("button", { name: "체육" });
+    const categories = within(screen.getByLabelText("분석 업종 선택"));
+    const beauty = categories.getByRole("button", { name: "미용" });
+    const sports = categories.getByRole("button", { name: "체육" });
     expect(beauty.compareDocumentPosition(sports) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -144,15 +145,16 @@ describe("MarketFilters catalog state", () => {
     expect(screen.getByText("92곳")).toBeInTheDocument();
     expect(screen.getByText("43곳")).toBeInTheDocument();
     expect(
-      screen.getByText("홍대입구역 상권 안의 점포 수가 많은 순서입니다."),
+      screen.getByText("홍대입구역 상권 안의 최신 점포 위치 수가 많은 순서입니다."),
     ).toBeInTheDocument();
 
-    const sports = screen.getByRole("button", { name: "체육" });
-    const beauty = screen.getByRole("button", { name: "미용" });
+    const categories = within(screen.getByLabelText("분석 업종 선택"));
+    const sports = categories.getByRole("button", { name: "체육" });
+    const beauty = categories.getByRole("button", { name: "미용" });
     expect(sports.compareDocumentPosition(beauty) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("uses the live nearby count when the catalog has no selected-market count", () => {
+  it("uses the live nearby count for the selected category", () => {
     renderFilters({
       catalogState: "ranked",
       nearbyState: "ready",
@@ -164,7 +166,7 @@ describe("MarketFilters catalog state", () => {
           coverage: "partial",
           rank: 1,
           store_count: 216,
-          store_counts_by_market: {},
+          store_counts_by_market: { 연남: 48 },
         },
         {
           name: "미용",
@@ -177,7 +179,7 @@ describe("MarketFilters catalog state", () => {
     });
 
     expect(screen.getByText("7곳")).toBeInTheDocument();
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("분석 업종 선택")).getByText("—")).toBeInTheDocument();
     expect(screen.queryByText("0곳")).not.toBeInTheDocument();
   });
 });

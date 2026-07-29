@@ -20,4 +20,9 @@ describe("category semantics", () => {
     expect(categoryGroupLabel("외국어 학원")).toBe("학원");
     expect(categoryFocusCode("외국어 학원", "P10501")).toBe("P10501");
   });
+
+  it("treats pensions as lodging", () => {
+    expect(resolveCategorySemanticGroup("펜션")).toBe("lodging");
+    expect(categoryFocusCode("펜션", "I10103")).toBe("I10103");
+  });
 });

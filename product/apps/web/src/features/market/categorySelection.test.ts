@@ -4,6 +4,7 @@ import {
   categoryMatchesSelection,
   quickCategorySelection,
   storeCategorySelection,
+  topCategorySelectionForStore,
 } from "./categorySelection";
 
 describe("category selection", () => {
@@ -13,6 +14,21 @@ describe("category selection", () => {
       code: null,
       analysisCategory: "카페",
       coverage: "full",
+    });
+  });
+
+  it("keeps a selected store under its top-level category filter", () => {
+    expect(topCategorySelectionForStore("미용실", "S20701")).toMatchObject({
+      name: "미용",
+      coverage: "partial",
+    });
+    expect(topCategorySelectionForStore("요가·필라테스", "P10603")).toMatchObject({
+      name: "체육",
+      coverage: "partial",
+    });
+    expect(topCategorySelectionForStore("펜션", "I10103")).toMatchObject({
+      name: "숙박",
+      coverage: "partial",
     });
   });
 
@@ -40,5 +56,6 @@ describe("category selection", () => {
   it("keeps top-category aliases returned by the API visible", () => {
     expect(categoryMatchesSelection("네일샵", quickCategorySelection("미용"))).toBe(true);
     expect(categoryMatchesSelection("피트니스센터", quickCategorySelection("체육"))).toBe(true);
+    expect(categoryMatchesSelection("펜션", quickCategorySelection("숙박"), "I10103")).toBe(true);
   });
 });
