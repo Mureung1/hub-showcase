@@ -3,7 +3,8 @@
   "title": "크로스체크 - 가설 기반 인터뷰 분석 도구",
   "summary": "기획자가 수집한 사용자 인터뷰 전사문을 AI로 분석해 가설별 근거를 태깅하고 검증결과 초안을 생성하되, 판단의 근거가 원문까지 되짚어지는 '사슬'로 남아 재현 가능한 리서치 리포트를 만드는 서비스입니다.",
   "githubUser": "naruv0134",
-  "demoUrl": "https://youtu.be/OJJdIaxHGW8",
+  "demoUrl": "https://interviewanalyzingtool.vercel.app/",
+  "demoVideoUrl": "https://youtu.be/OJJdIaxHGW8",
   "thumbnail": "thumbnail.jpeg",
   "screenshots": [
     "screenshots/input_hypothesis_result.png",
