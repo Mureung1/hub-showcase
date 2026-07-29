@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/constants/dialog_art.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_dialog_shell.dart';
 import '../../../core/widgets/celebration_badge.dart';
 
 /// 레벨업 연출 — `Lv.{from} → Lv.{to}`.
@@ -62,91 +63,92 @@ class _LevelUpDialogState extends State<LevelUpDialog>
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 상승 배지 — 완료·스트릭 연출과 **같은 규격**([CelebrationBadge]).
-            // 폴백 📈는 정본이 이 자리에 세워 둔 `Symbols.trending_up`과 같은 뜻이다.
-            AnimatedBuilder(
-              animation: _pop,
-              builder: (context, child) => Opacity(
-                opacity: _pop.value.clamp(0.0, 1.0),
-                child: Transform.scale(scale: _pop.value, child: child),
+    return AppDialogShell(
+      children: [
+        // 상승 배지 — 완료·스트릭 연출과 **같은 규격**([CelebrationBadge]).
+        // 폴백 📈는 정본이 이 자리에 세워 둔 `Symbols.trending_up`과 같은 뜻이다.
+        AnimatedBuilder(
+          animation: _pop,
+          builder: (context, child) => Opacity(
+            opacity: _pop.value.clamp(0.0, 1.0),
+            child: Transform.scale(scale: _pop.value, child: child),
+          ),
+          child: const CelebrationBadge(
+            asset: DialogArt.levelUp,
+            fallbackEmoji: '📈',
+            semanticLabel: '레벨 업',
+          ),
+        ),
+        AppSpacing.gapMd,
+        Text(
+          '레벨 업!',
+          style: theme.textTheme.headlineLarge?.copyWith(color: scheme.primary),
+          textAlign: TextAlign.center,
+        ),
+        AppSpacing.gapSm,
+        Text(
+          '퀘스트를 해내며 한 단계 더 성장했어요.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        AppSpacing.gapMd,
+        // Lv.{from} → Lv.{to}. 이전 레벨은 흐리게, 도달한 레벨은 그린 강조.
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: AppRadius.mdAll,
+          ),
+          // **`Row`가 아니라 `Wrap`이다.** 이 줄은 앱에서 유일하게 **가로**로
+          // 넘치는 축하 연출 자리였다(배율 1.3·320dp에서 23px, 2.0·360dp에서
+          // 60px). 본문 스크롤([AppDialogShell])은 세로만 풀어 주므로 가로는
+          // 이 줄 자체가 접혀야 한다.
+          //
+          // 글자를 줄이는 처방(`FittedBox(scaleDown)`·배율 클램프)은 쓰지 않는다
+          // — 보상 카드에서 같은 처방이 고배율 내부 위계를 뒤집은 전례가 있다
+          // (checklist E-4 「커버 공백」). 좁으면 `Lv.3` / `→` / `Lv.5`가 줄을
+          // 나눠 서고, 크기는 사용자가 고른 배율 그대로다.
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              Text(
+                'Lv.${widget.fromLevel}',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
-              child: const CelebrationBadge(
-                asset: DialogArt.levelUp,
-                fallbackEmoji: '📈',
-                semanticLabel: '레벨 업',
-              ),
-            ),
-            AppSpacing.gapMd,
-            Text(
-              '레벨 업!',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                color: scheme.primary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            AppSpacing.gapSm,
-            Text(
-              '퀘스트를 해내며 한 단계 더 성장했어요.',
-              style: theme.textTheme.bodyMedium?.copyWith(
+              Icon(
+                Symbols.arrow_forward,
+                size: 24,
                 color: scheme.onSurfaceVariant,
               ),
-              textAlign: TextAlign.center,
-            ),
-            AppSpacing.gapMd,
-            // Lv.{from} → Lv.{to}. 이전 레벨은 흐리게, 도달한 레벨은 그린 강조.
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.md,
+              Text(
+                'Lv.${widget.toLevel}',
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  color: scheme.primary,
+                ),
               ),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow,
-                borderRadius: AppRadius.mdAll,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Lv.${widget.fromLevel}',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                  AppSpacing.gapWSm,
-                  Icon(
-                    Symbols.arrow_forward,
-                    size: 24,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  AppSpacing.gapWSm,
-                  Text(
-                    'Lv.${widget.toLevel}',
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      color: scheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            AppSpacing.gapLg,
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('좋아요'),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        AppSpacing.gapLg,
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('좋아요'),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -259,8 +259,15 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 /// 들어가야 한다.
 ///
 /// 정본 실측의 합이다: 카드 패딩 12×2 + 프리뷰 86 + 12 + 상품명 24 + 2 + 종류 16
-/// + 12 + 가격 20 + 12 + 버튼(글자 16 + 상하 패딩 10×2).
-const double _kCardExtent = 244;
+/// + 12 + 가격 20 + 12 + 버튼(글자 16 + 상하 패딩 10×2) = 244.
+///
+/// **+4는 액션 버튼의 터치 여백 몫이다**([_kActionTapSlack]). 가격 줄과 버튼 사이의
+/// 마지막 12는 원래 `Spacer`가 남기던 여백인데, 실서체(Pretendard)로 재면 그 자리가
+/// 실제로는 약 10이다(정본 합이 2px 낙관적이다 — 배율 1.0~2.0 전 구간에서 같은
+/// 2.0~2.2px). 터치 여백 12를 그 자리에 넣으면 2px이 모자라 카드가 넘치므로, 칸을
+/// 4px만 키워 여백 12와 `Spacer`의 잔여 여유를 함께 남긴다. 보이는 간격은 10 → 12로
+/// 2px 늘어난다(카드 높이 244 → 248).
+const double _kCardExtent = 248;
 
 /// 그 높이 중 **글꼴 배율을 타는 부분**(상품명 24 · 종류 16 · 가격/상태 20 ·
 /// 버튼 글자 16). 미리보기 이미지(86)와 패딩·간격은 배율과 무관하게 고정이다.
@@ -271,6 +278,22 @@ const double _kNameToSlotGap = 2;
 
 /// 카드 액션 버튼의 상하 패딩(정본 실측 10). 8·12 어느 토큰과도 다르다.
 const double _kActionPaddingV = 10;
+
+/// 액션 버튼 **위쪽에 붙는 투명 터치 여백.**
+///
+/// 정본 실측 버튼은 글자 16 + 상하 패딩 10×2 = **36** 높이다. 그런데 36은 Material의
+/// 48dp는 물론 **Apple HIG의 44pt에도 미달**한다 — 앱에서 두 기준을 동시에 밑도는
+/// 유일한 탭 타깃이었다. 하필 여기가 **코인을 실제로 소비하는 자리**고 2열 격자라
+/// 인접 카드의 버튼이 가까워, 오탭 비용이 가장 크다.
+/// (퀘스트 카드 42·세그먼트 40은 기준 미달이라도 오탭 비용이 낮아 그대로 둔다.)
+///
+/// **시각 높이 36은 건드리지 않는다.** 그림은 정본 실측 그대로 두고 그 위에 투명
+/// 여백을 얹어 **터치 영역만 48**로 만든다(36 + 12). 여백을 **위쪽에만** 두는 이유는
+/// 카드 안 가격 줄과 버튼 사이에 이미 있던 여백(`Spacer`가 남기던 자리)을 그대로
+/// 넘겨받기 위해서다 — 아래로 넓히면 버튼이 카드 바닥 패딩을 파고들어 그림이 움직인다.
+/// 위쪽에 있는 것은 가격/보유 상태 텍스트라 탭을 다투는 요소도 없다.
+/// (칸 높이는 이 여백 몫으로 4px만 커진다 — [_kCardExtent] 주석 참고.)
+const double _kActionTapSlack = 12;
 
 /// 상품 카드 한 칸의 높이.
 ///
@@ -469,7 +492,7 @@ class _ActionButton extends StatelessWidget {
     final enabled = onPressed != null && !busy;
     final foreground = style?.foreground ?? scheme.secondary;
 
-    return Opacity(
+    final button = Opacity(
       // 비활성 표현은 [GradientButton]과 같은 규칙이다 — 변형마다 비활성 팔레트를
       // 따로 만들지 않고 같은 색을 흐리게 둔다.
       opacity: enabled ? 1 : 0.4,
@@ -518,6 +541,20 @@ class _ActionButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+
+    // 터치 영역만 48로 넓힌다([_kActionTapSlack]). 잉크 물결은 위 [InkWell]이
+    // 그대로 맡으므로 **눈에 보이는 반응은 버튼 안에서만** 일어난다 —
+    // `MaterialTapTargetSize.padded`가 하는 일과 같다(그쪽도 여백에는 물결이 없다).
+    // 여백을 탭했을 때 이 제스처가 받고, 버튼 자체를 탭하면 더 깊은 InkWell이
+    // 제스처 아레나에서 먼저 이겨 콜백은 **한 번만** 불린다.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: enabled ? onPressed : null,
+      child: Padding(
+        padding: const EdgeInsets.only(top: _kActionTapSlack),
+        child: button,
       ),
     );
   }

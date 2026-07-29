@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_dialog_shell.dart';
 
 /// 퀘스트 삭제 확인 다이얼로그 (4주차 B-5b).
 ///
@@ -30,56 +31,51 @@ class QuestDeleteDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    // 프로젝트 다이얼로그 관례(`Dialog` + 직접 레이아웃)를 따른다 — 수정
-    // 다이얼로그와 동일한 하단 Row + Expanded 2개 버튼 배치를 공유한다.
-    return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    // 프로젝트 다이얼로그 관례([AppDialogShell])를 따른다 — 수정 다이얼로그와
+    // 동일한 하단 Row + Expanded 2개 버튼 배치를 공유한다. 셸이 본문을 스크롤로
+    // 감싸므로, 배율을 키운 사용자에게 「삭제」 버튼이 잘려 **삭제할 방법이
+    // 사라지는** 일이 없다.
+    return AppDialogShell(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 정본 `123:631` — 무엇을 지우는지 제목에 밝힌다("삭제할까요?"만으로는
+        // 목록에서 무엇을 눌렀는지 놓친 사용자가 대상을 못 짚는다).
+        Text('퀘스트를 삭제할까요?', style: theme.textTheme.headlineMedium),
+        AppSpacing.gapMd,
+        Text(
+          questTitle,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        AppSpacing.gapMd,
+
+        // 경고를 둥근 박스로 감싸 본문과 구분한다.
+        _WarningBox(childCount: childCount),
+        AppSpacing.gapLg,
+
+        Row(
           children: [
-            // 정본 `123:631` — 무엇을 지우는지 제목에 밝힌다("삭제할까요?"만으로는
-            // 목록에서 무엇을 눌렀는지 놓친 사용자가 대상을 못 짚는다).
-            Text('퀘스트를 삭제할까요?', style: theme.textTheme.headlineMedium),
-            AppSpacing.gapMd,
-            Text(
-              questTitle,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: scheme.onSurfaceVariant,
+            Expanded(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('취소'),
               ),
             ),
-            AppSpacing.gapMd,
-
-            // 경고를 둥근 박스로 감싸 본문과 구분한다.
-            _WarningBox(childCount: childCount),
-            AppSpacing.gapLg,
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('취소'),
-                  ),
+            AppSpacing.gapWSm,
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: scheme.error,
+                  foregroundColor: scheme.onError,
                 ),
-                AppSpacing.gapWSm,
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: scheme.error,
-                      foregroundColor: scheme.onError,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text('삭제'),
-                  ),
-                ),
-              ],
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('삭제'),
+              ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/growth_rules.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_dialog_shell.dart';
 import '../../../core/widgets/pixel_art.dart';
 
 /// 진화 연출 — `{이전 단계} → {새 단계}` 캐릭터 전환.
@@ -80,85 +80,78 @@ class _EvolveDialogState extends State<EvolveDialog>
     final scheme = theme.colorScheme;
     final particle = _ro(widget.toStage.name);
 
-    return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return AppDialogShell(
+      children: [
+        // 이전 단계 → 새 단계. 캐릭터를 크게 세워 전환을 주인공으로.
+        // 이 줄은 캐릭터 그림(44·76)과 아이콘(28)뿐이라 글꼴 배율을 타지 않는다
+        // — 레벨업의 `Lv. → Lv.` 줄과 달리 `Row` 그대로 둔다.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 이전 단계 → 새 단계. 캐릭터를 크게 세워 전환을 주인공으로.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _reveal,
-                  builder: (context, child) => Opacity(
-                    // 이전 캐릭터는 점점 옅어진다(전환 강조).
-                    opacity: (1.0 - _reveal.value * 0.6).clamp(0.0, 1.0),
-                    child: child,
-                  ),
-                  child: PixelArt.emoji(
-                    asset: widget.fromStage.asset,
-                    emoji: widget.fromStage.emoji,
-                    size: 44,
-                    semanticLabel: widget.fromStage.name,
-                  ),
-                ),
-                AppSpacing.gapWSm,
-                Icon(
-                  Symbols.arrow_forward,
-                  size: 28,
-                  color: scheme.onSurfaceVariant,
-                ),
-                AppSpacing.gapWSm,
-                // 새 캐릭터는 튕겨 나온다 — 가장 강한 강조.
-                AnimatedBuilder(
-                  animation: _reveal,
-                  builder: (context, child) => Transform.scale(
-                    scale: _reveal.value.clamp(0.0, 2.0),
-                    child: Opacity(
-                      opacity: _reveal.value.clamp(0.0, 1.0),
-                      child: child,
-                    ),
-                  ),
-                  child: PixelArt.emoji(
-                    asset: widget.toStage.asset,
-                    emoji: widget.toStage.emoji,
-                    size: 76,
-                    semanticLabel: widget.toStage.name,
-                  ),
-                ),
-              ],
-            ),
-            AppSpacing.gapMd,
-            Text(
-              '${widget.toStage.name}$particle 진화했어요!',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                color: scheme.primary,
+            AnimatedBuilder(
+              animation: _reveal,
+              builder: (context, child) => Opacity(
+                // 이전 캐릭터는 점점 옅어진다(전환 강조).
+                opacity: (1.0 - _reveal.value * 0.6).clamp(0.0, 1.0),
+                child: child,
               ),
-              textAlign: TextAlign.center,
-            ),
-            AppSpacing.gapSm,
-            Text(
-              '${widget.fromStage.name}에서 ${widget.toStage.name}$particle,\n'
-              '캐릭터가 한 단계 더 자랐어요.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+              child: PixelArt.emoji(
+                asset: widget.fromStage.asset,
+                emoji: widget.fromStage.emoji,
+                size: 44,
+                semanticLabel: widget.fromStage.name,
               ),
-              textAlign: TextAlign.center,
             ),
-            AppSpacing.gapLg,
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('좋아요'),
+            AppSpacing.gapWSm,
+            Icon(
+              Symbols.arrow_forward,
+              size: 28,
+              color: scheme.onSurfaceVariant,
+            ),
+            AppSpacing.gapWSm,
+            // 새 캐릭터는 튕겨 나온다 — 가장 강한 강조.
+            AnimatedBuilder(
+              animation: _reveal,
+              builder: (context, child) => Transform.scale(
+                scale: _reveal.value.clamp(0.0, 2.0),
+                child: Opacity(
+                  opacity: _reveal.value.clamp(0.0, 1.0),
+                  child: child,
+                ),
+              ),
+              child: PixelArt.emoji(
+                asset: widget.toStage.asset,
+                emoji: widget.toStage.emoji,
+                size: 76,
+                semanticLabel: widget.toStage.name,
               ),
             ),
           ],
         ),
-      ),
+        AppSpacing.gapMd,
+        Text(
+          '${widget.toStage.name}$particle 진화했어요!',
+          style: theme.textTheme.headlineLarge?.copyWith(color: scheme.primary),
+          textAlign: TextAlign.center,
+        ),
+        AppSpacing.gapSm,
+        Text(
+          '${widget.fromStage.name}에서 ${widget.toStage.name}$particle,\n'
+          '캐릭터가 한 단계 더 자랐어요.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        AppSpacing.gapLg,
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('좋아요'),
+          ),
+        ),
+      ],
     );
   }
 }
