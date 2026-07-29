@@ -94,7 +94,8 @@ async function runStep1(jobId) {
 
         const tempPath = path.join(downloadDir, `temp_${Date.now()}.jpg`);
         const response = await fetch(imagePath);
-        const buffer = await response.buffer();
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
         fs.writeFileSync(tempPath, buffer);
 
         imagePath = tempPath;
