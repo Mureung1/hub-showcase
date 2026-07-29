@@ -1,4 +1,3 @@
-import type { FilterSpecification } from "maplibre-gl";
 import { Layer, Source } from "react-map-gl/maplibre";
 
 import { regionLayerId, regionSourceId } from "./regionLayerIds";
@@ -6,22 +5,9 @@ import type { ReadyOverlayRegion } from "./supportedRegions";
 
 type LocalTwinRegionOverlayProps = {
   region: ReadyOverlayRegion;
-  buildingsVisible: boolean;
-  hiddenBuildingIds?: string[];
 };
 
-export function LocalTwinRegionOverlay({
-  region,
-  buildingsVisible,
-  hiddenBuildingIds = [],
-}: LocalTwinRegionOverlayProps) {
-  const buildingFilter: FilterSpecification = hiddenBuildingIds.length
-    ? [
-        "all",
-        ["==", ["get", "layer"], "building"],
-        ["!", ["in", ["get", "osm_id"], ["literal", hiddenBuildingIds]]],
-      ] as FilterSpecification
-    : ["==", ["get", "layer"], "building"];
+export function LocalTwinRegionOverlay({ region }: LocalTwinRegionOverlayProps) {
   return (
     <Source
       id={regionSourceId(region.id)}
@@ -102,32 +88,6 @@ export function LocalTwinRegionOverlay({
             17,
             ["match", ["get", "class"], ["primary", "secondary"], 19, 8],
           ],
-        }}
-      />
-      <Layer
-        id={regionLayerId(region.id, "building-3d")}
-        type="fill-extrusion"
-        minzoom={13}
-        filter={buildingFilter}
-        layout={{ visibility: buildingsVisible ? "visible" : "none" }}
-        paint={{
-          "fill-extrusion-base": ["to-number", ["get", "min_height"], 0],
-          "fill-extrusion-height": ["to-number", ["get", "height"], 6.4],
-          "fill-extrusion-color": [
-            "match",
-            ["get", "palette"],
-            0,
-            "#f1d6a5",
-            1,
-            "#b9d8c1",
-            2,
-            "#a9cfdf",
-            3,
-            "#e9b9ad",
-            "#d5c3e2",
-          ],
-          "fill-extrusion-opacity": 0.96,
-          "fill-extrusion-vertical-gradient": true,
         }}
       />
       <Layer

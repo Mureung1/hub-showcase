@@ -6,8 +6,8 @@ import { useAnalysisUrlCleanup } from "./useAnalysisUrlCleanup";
 afterEach(() => window.history.replaceState({}, "", "/"));
 
 describe("useAnalysisUrlCleanup", () => {
-  it("cleans a legacy analysis URL after the initial state is restored", () => {
-    window.history.replaceState({}, "", "/?market=연남&radius=300");
+  it("keeps a persisted analysis URL after the initial state is restored", () => {
+    window.history.replaceState({}, "", "/?market=연남&selectedCategory=체육&radius=300");
 
     renderHook(() =>
       useAnalysisUrlCleanup({
@@ -19,7 +19,7 @@ describe("useAnalysisUrlCleanup", () => {
       }),
     );
 
-    expect(window.location.search).toBe("");
+    expect(window.location.search).toBe("?market=%EC%97%B0%EB%82%A8&selectedCategory=%EC%B2%B4%EC%9C%A1&radius=300");
   });
 
   it("does not add analysis state to a clean product URL", () => {

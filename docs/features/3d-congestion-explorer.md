@@ -333,7 +333,31 @@ AR
 
 ## 13. 현재 프로토타입 상태
 
-2026-07-26 기준 내부 Scene workspace에서 다음 기능을 조작할 수 있다.
+2026-07-29 기준 상권 workspace 헤더의 `3DGS 실험 BETA`에서 다음 두 흐름을
+분리해 조작할 수 있다.
+
+```text
+샘플 결과 보기:
+Spark 공식 butterfly.spz를 lazy-load해 viewer 조작을 먼저 확인
+LocalTwin 촬영 결과가 아님을 화면에 명시
+샘플을 보는 동안 Scene API와 GPU worker 상태를 요청하지 않음
+
+새 장면 만들기:
+기존 Scene upload/job/worker/privacy 흐름을 사용
+SCENE_API_ENABLED=true와 CUDA worker가 준비된 환경에서만 실제 변환
+```
+
+샘플은 화면과 viewer 검증 전용이며 제품 source나 Vite bundle에 복사하지 않는다.
+실제 생성 PLY의 현재 개발 저장 위치는 다음과 같다.
+
+```text
+product/data/scenes/jobs/<job-id>/asset/scene.ply
+```
+
+이 경로는 로컬 file adapter다. 배포용 Object Storage adapter와 signed asset URL은
+아직 연결하지 않았으므로 현재 UI에도 `서버 저장: 아직 연결 전`으로 표시한다.
+
+내부 Scene workspace에서는 다음 기능을 조작할 수 있다.
 
 ```text
 촬영 대상: 대전 유성구 관평동 한 장소

@@ -18,6 +18,16 @@ import type { Category, MarketKey } from "./types";
 import { DEMO_ANALYSIS_PERIOD, type SupportedMarket } from "../../services/productCatalog";
 
 export type AnalysisState = "loading" | "ready" | "unavailable" | "error";
+export type FlowState = "loading" | "ready" | "partial" | "unavailable" | "error";
+
+function flowStateFor(analysisState: AnalysisState, analysis: MarketAnalysis | null): FlowState {
+  if (analysisState === "loading") return "loading";
+  if (analysisState === "error") return "error";
+  const values = analysis?.raw.flow_time_buckets.map((bucket) => bucket.value) ?? [];
+  const availableCount = values.filter((value) => value !== null).length;
+  if (availableCount === 0) return "unavailable";
+  return availableCount === values.length ? "ready" : "partial";
+}
 
 export function useMarketAnalysis(
   market: SupportedMarket,
@@ -58,7 +68,7 @@ export function useMarketAnalysis(
       return;
     }
     const controller = new AbortController();
-    loadAnalysisPeriods(category, controller.signal)
+    loadAnalysisPeriods(category, controller.signal, market.market_id)
       .then((result) => {
         setAvailablePeriods(result.periods);
         setPeriodAvailability(result.period_availability ?? {});
@@ -71,7 +81,7 @@ export function useMarketAnalysis(
         setDefaultPeriod(null);
       });
     return () => controller.abort();
-  }, [allowDemoSnapshot, apiReady, category]);
+  }, [allowDemoSnapshot, apiReady, category, market.market_id]);
 
   useEffect(() => {
     if (!apiReady) {
@@ -184,6 +194,7 @@ export function useMarketAnalysis(
     defaultPeriod,
     storeTrend,
     storeTrendState,
+    flowState: flowStateFor(analysisState, analysis),
     retryAnalysis: () => setAnalysisRetryToken((current) => current + 1),
   };
 }

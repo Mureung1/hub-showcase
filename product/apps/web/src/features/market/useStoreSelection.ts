@@ -10,6 +10,19 @@ type StoreSelectionOptions = {
   nearbyStores: MarketStore[];
 };
 
+type StoreReference = {
+  id: string | null;
+  name: string | null;
+};
+
+function initialStoreReference(): StoreReference {
+  const parameters = new URLSearchParams(window.location.search);
+  return {
+    id: parameters.get("store")?.trim() || null,
+    name: parameters.get("storeName")?.trim() || null,
+  };
+}
+
 function searchResultStore(
   result: MarketSearchResult | null,
   marketKey: MarketKey,
@@ -30,46 +43,59 @@ function searchResultStore(
   };
 }
 
+function matchesReference(store: MarketStore, reference: StoreReference) {
+  if (reference.id && store.id === reference.id) return true;
+  return Boolean(reference.name && store.name === reference.name);
+}
+
 export function useStoreSelection({
   marketKey,
   marketKeyById,
   score,
   nearbyStores,
 }: StoreSelectionOptions) {
-  const [selectedStoreName, setSelectedStoreName] = useState<string | null>(null);
+  const [selectedReference, setSelectedReference] = useState<StoreReference>(initialStoreReference);
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
   const selectedSearchStore = useMemo(
     () => searchResultStore(selectedSearchResult, marketKey, marketKeyById, score),
     [marketKey, marketKeyById, score, selectedSearchResult],
   );
   const selectedNearbyStore = useMemo(
-    () => nearbyStores.find((store) => store.name === selectedStoreName) ?? null,
-    [nearbyStores, selectedStoreName],
+    () => nearbyStores.find((store) => matchesReference(store, selectedReference)) ?? null,
+    [nearbyStores, selectedReference],
   );
 
   useEffect(() => {
-    if (!selectedStoreName || selectedSearchStore) return;
-    if (!nearbyStores.some((store) => store.name === selectedStoreName)) {
-      setSelectedStoreName(null);
+    if ((!selectedReference.id && !selectedReference.name) || selectedSearchStore) return;
+    if (nearbyStores.length > 0 && !nearbyStores.some((store) => matchesReference(store, selectedReference))) {
+      setSelectedReference({ id: null, name: null });
     }
-  }, [nearbyStores, selectedSearchStore, selectedStoreName]);
+  }, [nearbyStores, selectedReference, selectedSearchStore]);
 
   return {
-    selectedStoreName,
+    selectedStoreName: selectedReference.name,
     selectedSearchResult,
     selectedSearchStore,
+    selectedReference,
     selected: selectedSearchStore ?? selectedNearbyStore,
     clearSelection: () => {
       setSelectedSearchResult(null);
-      setSelectedStoreName(null);
+      setSelectedReference({ id: null, name: null });
     },
-    selectListedStore: (name: string) => {
+    selectListedStore: (storeKey: string) => {
+      const store = nearbyStores.find(
+        (candidate) => (candidate.id ?? candidate.name) === storeKey,
+      );
       setSelectedSearchResult(null);
-      setSelectedStoreName(name);
+      setSelectedReference({ id: store?.id ?? null, name: store?.name ?? storeKey });
     },
     selectSearchResult: (result: MarketSearchResult) => {
       setSelectedSearchResult(result);
-      setSelectedStoreName(result.result_type === "store" ? result.name : null);
+      setSelectedReference(
+        result.result_type === "store"
+          ? { id: result.id, name: result.name }
+          : { id: null, name: null },
+      );
     },
   };
 }

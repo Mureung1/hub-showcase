@@ -20,6 +20,19 @@ const initial: AnalysisUrlState = {
 };
 
 describe("useAnalysisSelection", () => {
+  it("normalizes a deep-linked store category to its top-level filter", () => {
+    const { result } = renderHook(() =>
+      useAnalysisSelection({
+        ...initial,
+        selectedCategoryName: "미용실",
+        selectedCategoryCode: "S20701",
+      }),
+    );
+
+    expect(result.current.category).toBe("미용");
+    expect(result.current.categorySelection.name).toBe("미용");
+  });
+
   it("keeps topic and layer semantics together", () => {
     const { result } = renderHook(() => useAnalysisSelection(initial));
     act(() => result.current.chooseTopic("flow"));
@@ -38,5 +51,21 @@ describe("useAnalysisSelection", () => {
     act(() => result.current.resetSelection());
     expect(result.current.boundaryVisible).toBe(true);
     expect(result.current.storesVisible).toBe(true);
+  });
+
+  it("keeps the top-level category and selected partial category in sync", () => {
+    const { result } = renderHook(() => useAnalysisSelection(initial));
+
+    act(() =>
+      result.current.applyCategorySelection({
+        name: "미용실",
+        code: "S20701",
+        analysisCategory: null,
+        coverage: "partial",
+      }),
+    );
+
+    expect(result.current.category).toBe("미용실");
+    expect(result.current.categorySelection.name).toBe("미용실");
   });
 });

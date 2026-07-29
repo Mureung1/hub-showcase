@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from localtwin_api.config import Settings, get_settings
 from localtwin_api.database import create_database_engine, create_session_factory
-from localtwin_api.routers.catalog import router as catalog_router
+from localtwin_api.routers.catalog import create_catalog_router
 from localtwin_api.routers.market import create_market_router
 from localtwin_api.routers.scenes import create_scene_router
 from localtwin_api.routers.scores import router as scores_router
@@ -36,7 +36,7 @@ def create_app(
             app.state.search_engine = engine
         return resolved_search_factory
 
-    app.include_router(catalog_router)
+    app.include_router(create_catalog_router(get_search_session_factory))
     app.include_router(scores_router)
     app.include_router(create_system_router(get_search_session_factory))
     app.include_router(create_market_router(get_search_session_factory))

@@ -1,16 +1,23 @@
-export type Category = "카페" | "음식점" | "베이커리" | "편의점";
+export type Category = string;
+export type AnalysisCategory = "카페" | "음식점" | "베이커리" | "편의점";
 export type MarketKey = "연남" | "홍대" | "합정";
 export type MapMode = "localtwin" | "original";
 export type LayerMode = "density" | "demand";
 export type AnalysisScope = "market" | "radius" | "admin-area";
 export type AnalysisTopic =
-  "overview" | "stores" | "sales" | "competition" | "flow" | "population" | "amenities";
+  | "overview"
+  | "stores"
+  | "sales"
+  | "competition"
+  | "flow"
+  | "population"
+  | "amenities";
 export type CategoryCoverageStatus = "full" | "partial" | "unavailable";
 
 export type CategorySelection = {
   name: string;
   code: string | null;
-  analysisCategory: Category | null;
+  analysisCategory: AnalysisCategory | null;
   coverage: CategoryCoverageStatus;
 };
 

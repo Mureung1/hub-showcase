@@ -18,10 +18,10 @@ def create_analysis_router(get_session_factory: Callable[[], sessionmaker[Sessio
     router = APIRouter(tags=["analysis"])
 
     @router.get("/api/v1/analysis/periods", response_model=AnalysisPeriodsResponse)
-    def analysis_periods(category: Category) -> AnalysisPeriodsResponse:
+    def analysis_periods(category: Category, market_id: str | None = None) -> AnalysisPeriodsResponse:
         try:
             with get_session_factory()() as session:
-                return MarketAnalysisRepository(session).available_periods(category)
+                return MarketAnalysisRepository(session).available_periods(category, market_id)
         except LookupError:
             raise HTTPException(
                 status_code=404, detail="No complete analysis period is available."

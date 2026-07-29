@@ -6,11 +6,14 @@ import type { StorefrontMapLayer, StorefrontMapLayerInput } from "./createStoref
 
 export const SELECTED_STOREFRONT_LAYER_ID = "localtwin-selected-storefront";
 
+export type StorefrontPlacementMode = "replace-building" | "selected-focus";
+
 export type SelectedStorefront = {
   id: string;
   longitude: number;
   latitude: number;
   categoryCode: string;
+  placementMode?: StorefrontPlacementMode;
   building?: {
     id: string;
     center: [number, number];
@@ -33,6 +36,7 @@ function layerInput(store: SelectedStorefront, layerId: string): StorefrontMapLa
     longitude: store.longitude,
     latitude: store.latitude,
     categoryCode: store.categoryCode,
+    placementMode: store.placementMode ?? "replace-building",
     source: store.building ? "LocalTwin overlay building" : "LocalTwin search API",
     sourceId: store.building?.id ?? store.id,
     building: store.building,
@@ -41,10 +45,7 @@ function layerInput(store: SelectedStorefront, layerId: string): StorefrontMapLa
 
 function removeLayerIfPresent(mapInstance: MapLibreMap, layerId: string) {
   try {
-    const style = mapInstance.getStyle();
-    if (style?.layers.some((layer) => layer.id === layerId)) {
-      mapInstance.removeLayer(layerId);
-    }
+    if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
   } catch {
     // The MapLibre style may already be destroyed during HMR or parent map teardown.
   }
@@ -114,6 +115,7 @@ export function StorefrontLayer({ layerId, store, onUnavailable, onReady }: Stor
   useEffect(() => {
     try {
       layerRef.current?.setStore(layerInput(store, layerId));
+      if (layerRef.current) onReadyRef.current?.(store.id);
     } catch (error) {
       if (import.meta.env.DEV) console.warn("LocalTwin 3D storefront update fallback", error);
       onUnavailableRef.current();

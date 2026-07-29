@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 
 import { loadSceneToolchain, type Toolchain } from "./sceneApi";
 
-export function useSceneToolchain() {
+export function useSceneToolchain(enabled = true) {
   const [toolchain, setToolchain] = useState<Toolchain | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     void loadSceneToolchain(controller.signal)
       .then(setToolchain)
@@ -20,7 +21,7 @@ export function useSceneToolchain() {
         }
       });
     return () => controller.abort();
-  }, []);
+  }, [enabled]);
 
   return { toolchain, error };
 }

@@ -1,0 +1,137 @@
+.live-map .map-marker.is-detailed {
+  width: 44px;
+  height: 44px;
+  border-width: 3px;
+  border-radius: 14px;
+  transform: none;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.82),
+    0 8px 20px rgba(25, 55, 34, 0.26);
+}
+
+.live-map .map-marker.is-detailed > span {
+  display: grid;
+  place-items: center;
+  transform: none;
+}
+
+.live-map .map-marker.is-compact.is-clustered {
+  width: 38px;
+  height: 38px;
+}
+
+.live-map .map-marker.is-storefront-fallback {
+  opacity: 0.84;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.62),
+    0 0 0 3px rgba(39, 139, 86, 0.12),
+    0 4px 11px rgba(25, 55, 34, 0.18);
+  transition:
+    opacity 140ms ease,
+    filter 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.live-map .map-marker.is-storefront-fallback.is-detailed {
+  width: 29px;
+  height: 29px;
+  border-width: 2px;
+  border-radius: 10px;
+}
+
+.live-map .map-marker.is-storefront-fallback.is-compact.is-clustered {
+  width: 28px;
+  height: 28px;
+}
+
+.live-map .map-marker.is-storefront-fallback:hover,
+.live-map .map-marker.is-storefront-fallback:focus-visible,
+.live-map .map-marker.is-storefront-fallback.is-selected {
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.82),
+    0 0 0 5px rgba(39, 139, 86, 0.16),
+    0 7px 16px rgba(25, 55, 34, 0.24);
+}
+
+.live-map .map-marker.is-storefront-fallback.is-deemphasized {
+  opacity: 0.7;
+  filter: saturate(1);
+  transform: scale(0.98);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.58),
+    0 3px 10px rgba(25, 55, 34, 0.16);
+}
+
+.live-map .map-marker.is-storefront-fallback.is-deemphasized:hover,
+.live-map .map-marker.is-storefront-fallback.is-deemphasized:focus-visible {
+  opacity: 1;
+  filter: none;
+  transform: scale(1);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.78),
+    0 0 0 4px rgba(39, 139, 86, 0.12),
+    0 6px 14px rgba(25, 55, 34, 0.2);
+}
+
+.live-map .selected-store-focus-anchor {
+  display: grid;
+}
+
+.storefront-object-hit-target {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.storefront-object-hit-target:focus-visible {
+  outline: 3px solid #1f7540;
+  outline-offset: 3px;
+  background: rgba(226, 249, 233, 0.24);
+}
+
+.live-map .map-marker.navy {
+  background: #416fa8;
+}
+
+.live-map .map-marker.yellow {
+  background: #d99c25;
+}
+
+.store-marker-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  background: #263f30;
+  box-shadow: 0 3px 9px rgba(25, 48, 31, 0.24);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  transform: rotate(45deg);
+}
+
+.live-map .map-marker.is-detailed .store-marker-count {
+  transform: none;
+}
+
+.live-map .map-marker.is-storefront-fallback .store-marker-count {
+  top: -7px;
+  right: -7px;
+  min-width: 19px;
+  height: 19px;
+  border-width: 1px;
+  font-size: 9px;
+}

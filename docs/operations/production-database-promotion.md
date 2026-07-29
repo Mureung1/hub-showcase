@@ -110,6 +110,24 @@ GET /api/v1/stores/nearby?...&radius=300 -> 200
 Scene API -> 404
 ```
 
+시간대별 활동성 원본까지 promotion되었는지 Web 배포 전에 추가로 확인한다. 세 지원 상권 모두에서
+선택 분기와 6개 시간대 값이 실제로 내려와야 한다.
+
+```powershell
+$baseUrl = "https://<render-api-domain>"
+$periods = Invoke-RestMethod "$baseUrl/api/v1/analysis/periods?category=카페&market_id=3110562"
+$periods.period_availability
+
+@("3110562", "3120103", "3120101") | ForEach-Object {
+  $analysis = Invoke-RestMethod "$baseUrl/api/v1/markets/$_?category=카페&period=20254"
+  $analysis.raw.flow_time_buckets | Format-Table label, value
+}
+```
+
+각 요청의 `flow_time_buckets`가 6개이고 값이 모두 `null`이 아니어야 한다. 최신 분기(`20254`)가
+아직 원본에 없으면 canonical DB가 실제로 보유한 최신 flow 분기로 바꿔 확인한다. 이 검증이 실패하면
+Web을 배포하지 말고 current canonical input으로 promotion을 다시 실행한다.
+
 검증이 끝나면 현재 PowerShell process의 `PRODUCTION_DATABASE_URL`을 제거한다.
 
 ```powershell

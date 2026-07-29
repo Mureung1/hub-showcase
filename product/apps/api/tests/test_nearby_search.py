@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,7 +13,7 @@ from localtwin_api.config import Settings
 from localtwin_api.database import create_database_engine, create_session_factory
 from localtwin_api.db_models import DataSource, Market, MarketGeometry, StoreMarketLink, StorePoint
 from localtwin_api.main import create_app
-from localtwin_api.nearby_search import haversine_distance_meters
+from localtwin_api.nearby_search import category_matches, haversine_distance_meters
 
 CENTER_LONGITUDE = 126.9257
 CENTER_LATITUDE = 37.5661
@@ -46,7 +47,7 @@ def nearby_client(tmp_path: Path):
                 source_url="https://example.test/nearby",
                 collected_at="2026-07-16T00:00:00Z",
                 period="202603",
-                row_count=4,
+                row_count=5,
                 sha256="0" * 64,
                 raw_path="data/raw/nearby.csv",
             )
@@ -84,6 +85,7 @@ def nearby_client(tmp_path: Path):
             ("S1", "가까운 카페", "카페", CENTER_LONGITUDE + 0.0005, CENTER_LATITUDE),
             ("S2", "도보 빵집", "빵/도넛", CENTER_LONGITUDE + 0.002, CENTER_LATITUDE),
             ("S3", "먼 점포", "편의점", CENTER_LONGITUDE + 0.006, CENTER_LATITUDE),
+            ("S4", "상권 밖 체육관", "피트니스센터", CENTER_LONGITUDE + 0.0065, CENTER_LATITUDE),
         ):
             session.add(
                 StorePoint(
@@ -198,7 +200,7 @@ def test_market_scope_returns_linked_stores_instead_of_an_empty_list(
     assert response.status_code == 200
     payload = response.json()
     assert payload["aggregation_scope"] == "market"
-    assert payload["total_count"] == 4
+    assert payload["total_count"] == 5
     assert payload["same_category_count"] == 2
     assert [store["id"] for store in payload["stores"]] == ["S0", "S1"]
 
@@ -272,6 +274,29 @@ def test_nearby_query_limits_the_selected_category_after_filtering(
     assert truncated_response.json()["truncated"] is True
 
 
+def test_market_scope_returns_every_matching_store_without_radius_limit(
+    nearby_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(nearby_search, "MAX_RETURNED_STORES", 1)
+
+    response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={
+            "longitude": CENTER_LONGITUDE,
+            "latitude": CENTER_LATITUDE,
+            "radius": 300,
+            "category": "카페",
+            "scope": "market",
+            "market_id": "3110562",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [store["id"] for store in response.json()["stores"]] == ["S0", "S1"]
+    assert response.json()["returned_count"] == 2
+    assert response.json()["truncated"] is False
+
+
 def test_nearby_query_marks_a_specific_store_category_as_partial(
     nearby_client: TestClient,
 ) -> None:
@@ -295,6 +320,67 @@ def test_nearby_query_marks_a_specific_store_category_as_partial(
         "unavailable_metrics": ["market_stores", "sales", "flow", "score"],
         "reason": "해당 세부 업종은 점포 위치와 반경 경쟁 지표만 제공합니다.",
     }
+
+
+def test_market_scope_uses_the_same_top_category_terms_as_catalog_ranking(
+    nearby_client: TestClient,
+) -> None:
+    response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={
+            "longitude": CENTER_LONGITUDE,
+            "latitude": CENTER_LATITUDE,
+            "radius": 300,
+            "category": "체육",
+            "scope": "market",
+            "market_id": "3110562",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["same_category_count"] == 1
+    assert [store["id"] for store in payload["stores"]] == ["S4"]
+    assert payload["category_coverage"]["status"] == "partial"
+
+
+def test_market_scope_counts_match_catalog_counts_for_every_ranked_category(
+    nearby_client: TestClient,
+) -> None:
+    catalog_response = nearby_client.get("/api/v1/catalog")
+
+    assert catalog_response.status_code == 200
+    catalog = catalog_response.json()
+    for category in catalog["categories"]:
+        expected_count = category["store_counts_by_market"].get("연남", 0)
+        nearby_response = nearby_client.get(
+            "/api/v1/stores/nearby",
+            params={
+                "longitude": CENTER_LONGITUDE,
+                "latitude": CENTER_LATITUDE,
+                "radius": 300,
+                "category": category["name"],
+                "scope": "market",
+                "market_id": "3110562",
+            },
+        )
+
+        assert nearby_response.status_code == 200
+        payload = nearby_response.json()
+        assert payload["same_category_count"] == expected_count
+        assert payload["returned_count"] == expected_count
+        assert len(payload["stores"]) == expected_count
+
+
+def test_top_category_match_uses_catalog_classification_priority() -> None:
+    store = SimpleNamespace(
+        category_small_name="독서실/스터디 카페",
+        category_middle_name="기타 예술/스포츠 교육기관",
+        category_large_name="교육",
+    )
+
+    assert category_matches(store, "카페") is True
+    assert category_matches(store, "체육") is False
 
 
 def test_nearby_query_rejects_invalid_radius_and_unsupported_center(

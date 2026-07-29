@@ -1,18 +1,24 @@
 import { useCallback, useState } from "react";
 
-import { quickCategorySelection, storeCategorySelection } from "../market/categorySelection";
+import {
+  quickCategorySelection,
+  topCategorySelectionForStore,
+} from "../market/categorySelection";
 import type { AnalysisTopic, Category, CategorySelection } from "../market/types";
 import type { AnalysisUrlState } from "./analysisUrlState";
 import type { NearbyStoreResponse } from "./types";
 
 export function useAnalysisSelection(initial: AnalysisUrlState) {
-  const [marketKey, setMarketKey] = useState(initial.marketKey);
-  const [category, setCategory] = useState<Category>(initial.category);
-  const [categorySelection, setCategorySelection] = useState<CategorySelection>(() =>
-    storeCategorySelection(initial.selectedCategoryName, initial.selectedCategoryCode),
+  const initialCategorySelection = topCategorySelectionForStore(
+    initial.selectedCategoryName,
+    initial.selectedCategoryCode,
   );
+  const [marketKey, setMarketKey] = useState(initial.marketKey);
+  const [category, setCategory] = useState<Category>(initialCategorySelection.name);
+  const [categorySelection, setCategorySelection] =
+    useState<CategorySelection>(initialCategorySelection);
   const [radius, setRadius] = useState(initial.radius);
-  const [activeHour, setActiveHour] = useState(2);
+  const [activeHour, setActiveHour] = useState(initial.activeHour ?? 2);
   const [layer, setLayer] = useState(initial.layer);
   const analysisScope = "market" as const;
   const [analysisTopic, setAnalysisTopic] = useState(initial.topic);
@@ -39,7 +45,7 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
 
   function applyCategorySelection(next: CategorySelection) {
     setCategorySelection(next);
-    if (next.analysisCategory) setCategory(next.analysisCategory);
+    setCategory(next.name);
     if (next.coverage !== "full") {
       setAnalysisTopic("competition");
       setLayer("density");
@@ -83,6 +89,7 @@ export function useAnalysisSelection(initial: AnalysisUrlState) {
     resetSelection: () => {
       chooseCategory("카페");
       setRadius(300);
+      setActiveHour(2);
       setLayer("density");
       setAnalysisTopic("overview");
       setBoundaryVisible(true);

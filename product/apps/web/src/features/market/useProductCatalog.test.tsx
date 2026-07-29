@@ -54,8 +54,39 @@ describe("useProductCatalog", () => {
 
     const { result } = renderHook(() => useProductCatalog(bootstrapCatalog));
 
-    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.remoteState).toBe("error"));
     expect(result.current.state).toBe("ready");
     expect(result.current.catalog).toBe(bootstrapCatalog);
+  });
+
+  it("retries the catalog automatically when API readiness switches on", async () => {
+    const remoteCatalog: ProductCatalog = {
+      ...bootstrapCatalog,
+      categories: [
+        {
+          name: "카페",
+          codes: ["CS100010"],
+          rank: 1,
+          store_count: 482,
+          coverage: "full",
+        },
+      ],
+      ranking_basis: "supported_market_unique_store_count",
+    };
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => remoteCatalog });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ loadRemote }) => useProductCatalog(bootstrapCatalog, loadRemote),
+      { initialProps: { loadRemote: false } },
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.catalog).toBe(bootstrapCatalog);
+
+    rerender({ loadRemote: true });
+
+    await waitFor(() => expect(result.current.catalog).toEqual(remoteCatalog));
+    expect(result.current.remoteState).toBe("ready");
   });
 });

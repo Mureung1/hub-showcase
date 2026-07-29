@@ -2,8 +2,10 @@ import { act, render, waitFor } from "@testing-library/react";
 import { useMap } from "react-map-gl/maplibre";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SelectedStorefrontLayer } from "./SelectedStorefrontLayer";
-import { storefrontLayerId } from "./storefrontLayerId";
+import {
+  SELECTED_STOREFRONT_LAYER_ID,
+  SelectedStorefrontLayer,
+} from "./SelectedStorefrontLayer";
 
 vi.mock("react-map-gl/maplibre", () => ({ useMap: vi.fn() }));
 vi.mock("./createStorefrontMapLayer", () => ({
@@ -23,6 +25,7 @@ describe("SelectedStorefrontLayer", () => {
     const listeners = new Map<string, () => void>();
     const map = {
       getStyle: vi.fn(() => ({ layers: [] })),
+      getLayer: vi.fn(() => undefined),
       isStyleLoaded: vi.fn(() => styleLoaded),
       on: vi.fn((event: string, listener: () => void) => listeners.set(event, listener)),
       off: vi.fn((event: string) => listeners.delete(event)),
@@ -58,8 +61,43 @@ describe("SelectedStorefrontLayer", () => {
     expect(map.off).toHaveBeenCalledWith("idle", expect.any(Function));
   });
 
-  it("gives every replaced building a stable, separate MapLibre custom-layer id", () => {
-    expect(storefrontLayerId("store/a")).toBe("localtwin-storefront-store-a");
-    expect(storefrontLayerId("store-b")).toBe("localtwin-storefront-store-b");
+  it("reuses one stable custom-layer slot for the selected store", () => {
+    expect(SELECTED_STOREFRONT_LAYER_ID).toBe("localtwin-selected-storefront");
+  });
+
+  it("removes an existing selected layer before installing the next store", async () => {
+    const listeners = new Map<string, () => void>();
+    const map = {
+      getStyle: vi.fn(() => ({ layers: [] })),
+      getLayer: vi.fn(() => ({ id: SELECTED_STOREFRONT_LAYER_ID })),
+      isStyleLoaded: vi.fn(() => true),
+      on: vi.fn((event: string, listener: () => void) => listeners.set(event, listener)),
+      off: vi.fn((event: string) => listeners.delete(event)),
+      addLayer: vi.fn(),
+      removeLayer: vi.fn(),
+      triggerRepaint: vi.fn(),
+    };
+    vi.mocked(useMap).mockReturnValue({
+      current: { getMap: () => map },
+    } as unknown as ReturnType<typeof useMap>);
+
+    const { unmount } = render(
+      <SelectedStorefrontLayer
+        store={{
+          id: "store-2",
+          longitude: 126.924,
+          latitude: 37.563,
+          categoryCode: "S20701",
+        }}
+        onUnavailable={vi.fn()}
+        onReady={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(map.addLayer).toHaveBeenCalledTimes(1));
+    expect(map.removeLayer).toHaveBeenCalledWith(SELECTED_STOREFRONT_LAYER_ID);
+
+    unmount();
+    expect(map.removeLayer).toHaveBeenCalledTimes(2);
   });
 });

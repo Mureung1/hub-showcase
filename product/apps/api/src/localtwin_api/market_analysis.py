@@ -432,6 +432,7 @@ def _evidence(
             source_type=EVIDENCE_SOURCE_TYPES[metric],
         )
         for metric, source_key in source_rows
+        if target[source_key] is not None
     ]
 
 
@@ -551,7 +552,9 @@ class MarketAnalysisRepository:
         }
         return _build_analysis(rows, totals, sources, market_id, category, period)
 
-    def available_periods(self, category: Category) -> AnalysisPeriodsResponse:
+    def available_periods(
+        self, category: Category, market_id: str | None = None
+    ) -> AnalysisPeriodsResponse:
         codes = CATEGORY_CODES[category]
         statement = (
             select(StoreMetric.period)
@@ -567,10 +570,17 @@ class MarketAnalysisRepository:
         complete_periods: list[str] = []
         for period in periods:
             rows = self._category_rows(period, codes)
-            available: list[Literal["stores", "sales", "flow"]] = ["stores"]
-            if any(row["sales_source_id"] is not None for row in rows):
+            scoped_rows = (
+                [row for row in rows if row["market_code"] == market_id] if market_id else rows
+            )
+            available: list[Literal["stores", "sales", "flow"]] = ["stores"] if scoped_rows else []
+            if any(row["sales_source_id"] is not None for row in scoped_rows):
                 available.append("sales")
-            if any(row["flow_source_id"] is not None for row in rows):
+            if any(
+                row["flow_source_id"] is not None
+                and any(row[key] is not None for _, key in FLOW_TIME_BUCKETS)
+                for row in scoped_rows
+            ):
                 available.append("flow")
             availability[period] = available
             if "sales" in available and "flow" in available:

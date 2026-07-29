@@ -63,6 +63,17 @@ describe("MarketSearch", () => {
     expect(screen.getByLabelText("상권 또는 점포 검색")).toHaveValue("연남 테스트 카페");
   });
 
+  it("clears the query and returns focus to the search field", () => {
+    render(<MarketSearch onSelect={vi.fn()} />);
+    const input = screen.getByLabelText("상권 또는 점포 검색");
+
+    fireEvent.change(input, { target: { value: "연남 카페" } });
+    fireEvent.click(screen.getByRole("button", { name: "검색어 지우기" }));
+
+    expect(input).toHaveValue("");
+    expect(input).toHaveFocus();
+  });
+
   it("shows a no-results state separately from an API error", async () => {
     const fetchMock = vi
       .fn()

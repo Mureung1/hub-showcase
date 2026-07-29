@@ -1,4 +1,5 @@
 import type { MarketAnalysis } from "../../services/marketAnalysis";
+import { categoryTone } from "./categorySemantics";
 import type { Category } from "./types";
 
 export const FLOW_TIME_BUCKET_LABELS = [
@@ -18,13 +19,7 @@ export const CLUSTER_LABELS: Record<string, string> = {
 };
 
 export function categoryClass(category: string) {
-  return category === "카페"
-    ? "green"
-    : category === "음식점"
-      ? "orange"
-      : category === "베이커리"
-        ? "blue"
-        : "gray";
+  return categoryTone(category);
 }
 
 export function formatMarketScore(score: number, category: Category, radius: number) {
@@ -34,11 +29,32 @@ export function formatMarketScore(score: number, category: Category, radius: num
   return Math.max(0, Math.min(100, score + categoryShift + radiusShift));
 }
 
+export function flowBucketDurationHours(label: string) {
+  const match = /^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/.exec(label);
+  if (!match) return 1;
+  const startMinutes = Number(match[1]) * 60 + Number(match[2]);
+  const endMinutes = Number(match[3]) * 60 + Number(match[4]);
+  const durationHours = (endMinutes - startMinutes) / 60;
+  return durationHours > 0 ? durationHours : 1;
+}
+
+export function flowBucketHourlyAverage(
+  bucket: MarketAnalysis["raw"]["flow_time_buckets"][number] | undefined,
+) {
+  if (!bucket || bucket.value === null) return null;
+  return bucket.value / flowBucketDurationHours(bucket.label);
+}
+
+export function hourlyAverageFlow(flow: MarketAnalysis["raw"]["flow_time_buckets"]) {
+  return flow.map((bucket) => flowBucketHourlyAverage(bucket));
+}
+
 export function demandFromFlow(flow: MarketAnalysis["raw"]["flow_time_buckets"]) {
-  const availableValues = flow.flatMap((bucket) => (bucket.value === null ? [] : [bucket.value]));
+  const hourlyValues = hourlyAverageFlow(flow);
+  const availableValues = hourlyValues.flatMap((value) => (value === null ? [] : [value]));
   const maximum = Math.max(...availableValues, 0);
-  return flow.map((bucket) =>
-    bucket.value === null || maximum <= 0 ? null : Math.round((bucket.value / maximum) * 100),
+  return hourlyValues.map((value) =>
+    value === null || maximum <= 0 ? null : Math.round((value / maximum) * 100),
   );
 }
 

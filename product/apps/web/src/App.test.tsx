@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("./features/market/useProductCatalog", () => ({
   useProductCatalog: () => ({
     state: "ready",
+    remoteState: "ready",
     retry: vi.fn(),
     catalog: {
       markets: [
@@ -36,12 +37,19 @@ vi.mock("./features/market/useProductCatalog", () => ({
         { name: "편의점", codes: ["CS300002"] },
       ],
       radii: [100, 300, 500],
+      ranking_basis: "supported_market_unique_store_count",
     },
   }),
 }));
 
 vi.mock("./features/system/useApiReadiness", () => ({
   useApiReadiness: () => ({ state: "ready", retry: vi.fn() }),
+}));
+
+vi.mock("./components/SplatViewer", () => ({
+  SplatViewer: ({ assetUrl }: { assetUrl: string }) => (
+    <div aria-label="Gaussian Splat 3D 장면" data-asset-url={assetUrl} />
+  ),
 }));
 
 import { App } from "./App";
@@ -65,6 +73,7 @@ describe("App", () => {
       "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md",
     );
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
+    expect(screen.getByRole("toolbar", { name: "분석 도구" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("");
@@ -75,16 +84,27 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
-    expect(screen.queryByRole("button", { name: /관평동 3D 장소/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "3DGS 실험 열기" })).toBeInTheDocument();
     expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
-  it("starts without an implicit store selection or a generated query string", () => {
+  it("starts without an implicit store selection and persists default workspace state", () => {
     render(<App />);
 
     expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
     expect(screen.getByText("카페 · 상권 분석")).toBeInTheDocument();
-    expect(window.location.search).toBe("");
+
+    const parameters = new URLSearchParams(window.location.search);
+    expect(parameters.get("market")).toBe("연남");
+    expect(parameters.get("category")).toBe("카페");
+    expect(parameters.get("selectedCategory")).toBe("카페");
+    expect(parameters.get("radius")).toBe("300");
+    expect(parameters.get("hour")).toBe("0");
+    expect(parameters.get("layer")).toBe("density");
+    expect(parameters.get("topic")).toBe("overview");
+    expect(parameters.get("view")).toBe("analysis");
+    expect(parameters.has("store")).toBe(false);
+    expect(parameters.has("storeName")).toBe(false);
   });
 
   it("closes evidence with Escape and returns focus to its trigger", async () => {
@@ -94,6 +114,7 @@ describe("App", () => {
     fireEvent.click(trigger);
 
     expect(await screen.findByRole("dialog", { name: "데이터 산정 근거" })).toBeInTheDocument();
+    expect(screen.getByLabelText("데이터 산정 근거 내용")).toHaveAttribute("tabindex", "0");
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "데이터 산정 근거 닫기" })).toHaveFocus(),
     );
@@ -123,6 +144,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByLabelText("상권 선택")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "상권 분석" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "분석 결과 닫기" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "분석 설정 패널 열기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "분석 결과 패널 열기" })).toBeInTheDocument();
@@ -228,6 +250,142 @@ describe("App", () => {
     );
   });
 
+  it("trusts the API category result instead of filtering detailed store names again", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?market=합정&category=음식점&selectedCategory=음식점",
+    );
+    const stores = [
+      ["FOOD-1", "돼지고기집", "I20107", "돼지고기 구이/찜"],
+      ["FOOD-2", "동네 중국집", "I20201", "중국집"],
+      ["FOOD-3", "생맥주집", "I21104", "생맥주 전문"],
+    ].map(([id, name, categoryCode, categoryName], index) => ({
+      id,
+      name,
+      address: `서울 마포구 합정로 ${index + 1}`,
+      category_code: categoryCode,
+      category_name: categoryName,
+      distance_meters: 30 + index,
+      latitude: 37.5492,
+      longitude: 126.9132,
+      source_snapshot_id: "snapshot-food",
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: string) => {
+        if (input.includes("/api/v1/stores/nearby")) {
+          return {
+            ok: true,
+            json: async () => ({
+              center: { longitude: 126.9132, latitude: 37.5492 },
+              radius: 300,
+              market_id: "3120101",
+              market_name: "합정역 상권",
+              total_count: 3,
+              same_category_count: 3,
+              category_counts: { 음식점: 3 },
+              returned_count: 3,
+              truncated: false,
+              stores,
+              evidence: [],
+              category_coverage: {
+                status: "full",
+                requested_category: "음식점",
+                analysis_category: "음식점",
+                available_metrics: ["store_points", "competition"],
+                unavailable_metrics: [],
+                reason: "선택 업종은 현재 상권 분석 지표를 모두 지원합니다.",
+              },
+              aggregation_scope: "market",
+            }),
+          };
+        }
+        return { ok: false, status: 503, json: async () => ({}) };
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText("상권 내 음식점")).toBeInTheDocument();
+    expect(screen.getByText("3개 중 3개 표시")).toBeInTheDocument();
+    expect(document.querySelectorAll(".store-row")).toHaveLength(3);
+    expect(screen.getByText("돼지고기집")).toBeInTheDocument();
+    expect(screen.getByText("동네 중국집")).toBeInTheDocument();
+    expect(screen.getByText("생맥주집")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /돼지고기집/ }));
+
+    expect(document.querySelectorAll(".store-row")).toHaveLength(3);
+    expect(document.querySelectorAll(".store-row.is-selected")).toHaveLength(1);
+    expect(screen.getByText("3개 중 3개 표시")).toBeInTheDocument();
+  });
+
+  it("keeps the selected top category when an API-filtered store has a detailed name", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?market=연남&category=의류&selectedCategory=의류",
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: string) => {
+        if (input.includes("/api/v1/stores/nearby")) {
+          return {
+            ok: true,
+            json: async () => ({
+              center: { longitude: 126.9228, latitude: 37.5635 },
+              radius: 300,
+              market_id: "3110562",
+              market_name: "연남동 골목상권",
+              total_count: 1,
+              same_category_count: 1,
+              category_counts: { 의류: 1 },
+              returned_count: 1,
+              truncated: false,
+              stores: [
+                {
+                  id: "APPAREL-1",
+                  name: "연남 가방점",
+                  address: "서울 마포구 연남로 1",
+                  category_code: "G20911",
+                  category_name: "가방 소매업",
+                  distance_meters: 25,
+                  latitude: 37.5635,
+                  longitude: 126.9228,
+                  source_snapshot_id: "snapshot-apparel",
+                },
+              ],
+              evidence: [],
+              category_coverage: {
+                status: "partial",
+                requested_category: "의류",
+                analysis_category: null,
+                available_metrics: ["store_points", "competition"],
+                unavailable_metrics: ["market_stores", "sales", "flow", "score"],
+                reason: "해당 세부 업종은 점포 위치와 상권 경쟁 지표만 제공합니다.",
+              },
+              aggregation_scope: "market",
+            }),
+          };
+        }
+        return { ok: false, status: 503, json: async () => ({}) };
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /연남 가방점/ }));
+
+    await waitFor(() => {
+      const parameters = new URLSearchParams(window.location.search);
+      expect(parameters.get("category")).toBe("의류");
+      expect(parameters.get("selectedCategory")).toBe("의류");
+    });
+    expect(screen.getByText("상권 내 의류")).toBeInTheDocument();
+    expect(screen.getByText("1개 중 1개 표시")).toBeInTheDocument();
+    expect(document.querySelectorAll(".store-row.is-selected")).toHaveLength(1);
+  });
+
   it("updates analysis conditions and opens the comparison dialog", () => {
     render(<App />);
 
@@ -251,32 +409,49 @@ describe("App", () => {
   it("switches between the map presentation modes", () => {
     render(<App />);
 
-    const densityMode = screen.getByRole("button", { name: /점포 밀도/ });
-    const originalMode = screen.getByRole("button", { name: "실제 지도" });
-    const buildings = screen.getByRole("button", { name: "건물 레이어 표시" });
-    const prefabs = screen.getByRole("button", { name: "3D" });
+    const analysisMode = screen.getByRole("button", { name: "카페 점포 밀도" });
+    const flatMode = screen.getByRole("button", { name: "실제 지도" });
+    const storefront3dMode = screen.getByRole("button", { name: "3D 점포" });
 
-    expect(densityMode).toHaveAttribute("aria-pressed", "true");
-    expect(originalMode).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText(/LocalTwin map data/)).toBeInTheDocument();
+    expect(analysisMode).toHaveAttribute("aria-pressed", "true");
+    expect(flatMode).toHaveAttribute("aria-pressed", "false");
+    expect(storefront3dMode).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("OpenFreeMap · LocalTwin")).toBeInTheDocument();
 
-    fireEvent.click(originalMode);
-    expect(densityMode).toHaveAttribute("aria-pressed", "false");
-    expect(originalMode).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/OpenFreeMap/)).toBeInTheDocument();
+    fireEvent.click(flatMode);
+    expect(analysisMode).toHaveAttribute("aria-pressed", "false");
+    expect(flatMode).toHaveAttribute("aria-pressed", "true");
+    expect(storefront3dMode).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("OpenFreeMap")).toBeInTheDocument();
 
-    fireEvent.click(buildings);
-    fireEvent.click(prefabs);
-    expect(buildings).toHaveAttribute("aria-pressed", "false");
-    expect(prefabs).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(storefront3dMode);
+    expect(analysisMode).toHaveAttribute("aria-pressed", "false");
+    expect(flatMode).toHaveAttribute("aria-pressed", "false");
+    expect(storefront3dMode).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("does not expose the scene upload pipeline in the public market workspace", () => {
+  it("opens the 3DGS experiment on a clearly labeled sample before showing creation tools", async () => {
     render(<App />);
 
-    expect(screen.queryByRole("option", { name: /관평동/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /관평동 3D 장소/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: "관평동 3D 장소 생성" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "3DGS 실험 열기" }));
+
+    expect(await screen.findByRole("dialog", { name: "3DGS 실험실" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "샘플 결과 보기" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tab", { name: "새 장면 만들기" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Gaussian Splat 3D 장면")).toHaveAttribute(
+      "data-asset-url",
+      "https://sparkjs.dev/assets/splats/butterfly.spz",
+    );
+    expect(
+      screen.getByText("Spark 공식 SPZ 샘플 · LocalTwin 촬영 결과가 아닙니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("product/data/scenes/jobs/<job-id>/asset/scene.ply"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "자동 변환 시작" })).not.toBeInTheDocument();
   });
 
   it("connects a real search result to the map and analysis selection", async () => {
@@ -311,10 +486,19 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "검색" }));
     fireEvent.click(await screen.findByRole("button", { name: /연남 테스트 카페/ }));
 
-    expect(screen.getByText("연남 테스트 카페")).toBeInTheDocument();
+    expect(screen.getAllByText("연남 테스트 카페").length).toBeGreaterThan(0);
     expect(screen.getByText("카페 · 서울 마포구 동교로 1")).toBeInTheDocument();
     expect(screen.queryByText(/분석 지표는 현재 지원 업종인/)).not.toBeInTheDocument();
-    expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "selected");
+    expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");
+
+    fireEvent.click(screen.getByRole("button", { name: "3D 점포" }));
+
+    await waitFor(() =>
+      expect(document.querySelector("main")).toHaveAttribute(
+        "data-storefront-3d-state",
+        "selected",
+      ),
+    );
   });
 
   it("keeps a detailed store category and never substitutes cafe analysis", async () => {
@@ -390,10 +574,14 @@ describe("App", () => {
         expect.any(Object),
       ),
     );
-    expect(window.location.search).toBe("");
 
-    expect(document.querySelector(".selected-location")).toBeNull();
+    const parameters = new URLSearchParams(window.location.search);
+    expect(parameters.get("selectedCategory")).toBe("꽃집");
+    expect(parameters.get("categoryCode")).toBe("G21501");
+    expect(parameters.get("store")).toBe("FLOWER-1");
+    expect(parameters.get("storeName")).toBe("연남 꽃 작업실");
+
+    expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
     expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");
-    expect(window.location.search).toBe("");
   });
 });

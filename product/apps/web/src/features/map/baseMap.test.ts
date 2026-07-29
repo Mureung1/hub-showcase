@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { addMissingStyleImageFallback } from "./baseMap";
+import { addMissingStyleImageFallback, hideExternalBuildingLayers } from "./baseMap";
 
 describe("addMissingStyleImageFallback", () => {
   it("adds a neutral fallback once for a missing external sprite", () => {
@@ -21,5 +21,31 @@ describe("addMissingStyleImageFallback", () => {
       target: { hasImage: vi.fn().mockReturnValue(true), addImage },
     });
     expect(addImage).not.toHaveBeenCalled();
+  });
+});
+
+describe("hideExternalBuildingLayers", () => {
+  it("hides both external building footprints and extrusions", () => {
+    const setLayoutProperty = vi.fn();
+    const map = {
+      getLayer: vi.fn((layerId: string) =>
+        ["building", "building-3d"].includes(layerId) ? { id: layerId } : undefined,
+      ),
+      setLayoutProperty,
+    };
+
+    hideExternalBuildingLayers(map as never);
+
+    expect(setLayoutProperty).toHaveBeenCalledWith("building", "visibility", "none");
+    expect(setLayoutProperty).toHaveBeenCalledWith("building-3d", "visibility", "none");
+  });
+
+  it("does nothing when the external style has no building extrusion", () => {
+    const setLayoutProperty = vi.fn();
+    const map = { getLayer: vi.fn(() => undefined), setLayoutProperty };
+
+    hideExternalBuildingLayers(map as never);
+
+    expect(setLayoutProperty).not.toHaveBeenCalled();
   });
 });

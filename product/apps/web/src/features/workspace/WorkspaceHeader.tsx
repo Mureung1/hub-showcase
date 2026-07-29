@@ -1,5 +1,7 @@
-import { CircleHelp, FileText, MapPinned } from "lucide-react";
+import { CircleHelp, FileText, MapPinned, Sparkles } from "lucide-react";
 
+import { PanelTextSizeControl } from "./PanelTextSizeControl";
+import type { PanelTextSize } from "./usePanelTextSize";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 
 function PeriodSelect({
@@ -17,9 +19,9 @@ function PeriodSelect({
   const formatPeriod = (period: string) => `${period.slice(0, 4)}년 ${period.slice(4)}분기`;
   const formatAvailability = (period: string) => {
     const available = availability[period] ?? [];
-    return available.includes("sales") && available.includes("flow")
-      ? "전체 분석"
-      : "점포·개폐업";
+    if (available.includes("sales") && available.includes("flow")) return "전체 분석";
+    if (available.includes("flow")) return "점포·유동인구";
+    return "점포 데이터만";
   };
   return (
     <label className="header-control period-control">
@@ -46,7 +48,19 @@ function PeriodSelect({
   );
 }
 
-export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
+type WorkspaceHeaderProps = {
+  model: ProductWorkspaceModel;
+  panelTextSize: PanelTextSize;
+  onPanelTextSizeChange: (size: PanelTextSize) => void;
+  onSceneExperimentOpen: () => void;
+};
+
+export function WorkspaceHeader({
+  model,
+  panelTextSize,
+  onPanelTextSizeChange,
+  onSceneExperimentOpen,
+}: WorkspaceHeaderProps) {
   const { marketKey, period, setPeriod } = model.selection;
   const { availablePeriods, periodAvailability, analysisSource, analysisState, retryAnalysis } =
     model.marketData.marketAnalysis;
@@ -63,10 +77,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           </span>
           <span>LocalTwin</span>
         </a>
-        <nav className="primary-nav" aria-label="주요 메뉴">
-          <button className="nav-item is-active" type="button">
-            상권 분석
-          </button>
+        <div className="primary-nav" role="toolbar" aria-label="분석 도구">
           <button className="nav-item" type="button" onClick={() => setCompareOpen(true)}>
             상권 비교
           </button>
@@ -86,17 +97,36 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           >
             보고서
           </button>
-        </nav>
+        </div>
         <div className="header-actions">
-          <a
-            className="header-control header-docs"
-            href={
-              import.meta.env.VITE_DOCS_URL ??
-              "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md"
-            }
-          >
-            <FileText size={16} /> Docs
-          </a>
+          <div className="header-view-controls">
+            <button
+              className="header-control scene-experiment-trigger"
+              type="button"
+              aria-label="3DGS 실험 열기"
+              onClick={onSceneExperimentOpen}
+            >
+              <Sparkles size={15} />
+              <span className="scene-experiment-label">3DGS 실험</span>
+              <small>BETA</small>
+            </button>
+            <div className="header-text-size-control">
+              <span className="header-text-size-label">글자 크기</span>
+              <PanelTextSizeControl
+                value={panelTextSize}
+                onChange={onPanelTextSizeChange}
+              />
+            </div>
+            <a
+              className="header-control header-docs"
+              href={
+                import.meta.env.VITE_DOCS_URL ??
+                "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md"
+              }
+            >
+              <FileText size={16} /> Docs
+            </a>
+          </div>
           <button className="header-control" type="button" onClick={() => setFiltersOpen(true)}>
             <MapPinned size={16} /> 상권 선택: {marketKey}
           </button>
@@ -109,6 +139,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <button
             className="icon-button"
             type="button"
+            aria-label="데이터 도움말"
             title="데이터 도움말"
             onClick={() => setEvidenceOpen(true)}
           >
