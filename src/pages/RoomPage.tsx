@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { BASE_URL } from '../api/client.ts'
+import { resolveImageUrl } from '../api/client.ts'
 import { getRoomToday } from '../api/rooms.ts'
 import type { RoomToday } from '../api/rooms.ts'
 import Layout from '../components/Layout.tsx'
@@ -69,7 +69,7 @@ function RoomPage() {
                       <img
                         alt={`${member.nickname}의 오늘 기록 사진`}
                         className="h-9 w-9 flex-shrink-0 rounded-[10px] object-cover"
-                        src={`${BASE_URL}${member.imageUrl}`}
+                        src={resolveImageUrl(member.imageUrl)}
                       />
                     )}
                     <span

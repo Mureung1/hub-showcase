@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getTodayChallenge } from '../api/challenges.ts'
-import { BASE_URL, getMe, getToken, login, setToken } from '../api/client.ts'
+import { getMe, getToken, login, resolveImageUrl, setToken } from '../api/client.ts'
 import { getTodayRecord } from '../api/records.ts'
 import type { RecordData } from '../api/records.ts'
 import Layout from '../components/Layout.tsx'
@@ -117,7 +117,7 @@ function HomePage() {
           <img
             alt="오늘의 기록 사진"
             className="mt-3 aspect-square w-full rounded-xl object-cover"
-            src={`${BASE_URL}${record.imageUrl}`}
+            src={resolveImageUrl(record.imageUrl)}
           />
         ) : (
           <div className="mt-3 flex aspect-square w-full items-center justify-center rounded-xl bg-border text-xs text-muted">

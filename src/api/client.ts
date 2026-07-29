@@ -1,4 +1,10 @@
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
+
+/** imageUrl이 이미 완전한 URL(외부 이미지 등)이면 그대로, 서버 업로드 경로면 BASE_URL을 붙여 반환한다. */
+export function resolveImageUrl(imageUrl: string): string {
+  return /^https?:\/\//.test(imageUrl) ? imageUrl : `${BASE_URL}${imageUrl}`
+}
+
 const TOKEN_KEY = 'challengelog_token'
 const CACHE_PREFIX = 'cl_cache_'
 

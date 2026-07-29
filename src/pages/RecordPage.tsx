@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BASE_URL } from '../api/client.ts'
+import { resolveImageUrl } from '../api/client.ts'
 import { createRecord, getTodayRecord } from '../api/records.ts'
 import type { RecordData } from '../api/records.ts'
 import Layout from '../components/Layout.tsx'
@@ -70,7 +70,7 @@ function RecordPage() {
           <img
             alt="오늘의 기록"
             className="w-full rounded-xl border border-border object-cover"
-            src={`${BASE_URL}${existingRecord.imageUrl}`}
+            src={resolveImageUrl(existingRecord.imageUrl)}
           />
           <p className="mt-3 text-sm text-heading">{existingRecord.memo}</p>
         </section>
