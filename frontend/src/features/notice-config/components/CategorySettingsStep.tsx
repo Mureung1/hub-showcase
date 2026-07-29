@@ -44,12 +44,12 @@ export function CategorySettingsStep({
         <p>알림을 보낼 채널과 카테고리별 구독 역할 이름을 설정하세요.</p>
       </header>
 
-      <section className="table-card">
-        <h2>감지된 카테고리 목록</h2>
+      <section className="notification-channel-card">
+        <h2>알림 채널</h2>
         {isLoadingChannels && <p className="table-message">Discord 채널 목록을 불러오는 중입니다.</p>}
         {channelLoadError && <p className="table-message error">{channelLoadError}</p>}
         <div className="notification-channel-field">
-          <label htmlFor="notificationChannel">알림 채널</label>
+          <label htmlFor="notificationChannel">채널 선택</label>
           <select
             id="notificationChannel"
             value={notificationChannelId}
@@ -64,6 +64,10 @@ export function CategorySettingsStep({
             ))}
           </select>
         </div>
+      </section>
+
+      <section className="table-card">
+        <h2>감지된 카테고리 목록</h2>
         <div className="category-table">
           <div className="table-row table-head">
             <span>카테고리</span>

@@ -24,6 +24,16 @@ if (mode === 'dev') {
   })
 
   console.log(`Registered Discord commands for guild ${env.discordDevGuildId}`)
+} else if (mode === 'clear-dev') {
+  if (!env.discordDevGuildId) {
+    throw new Error('DISCORD_DEV_GUILD_ID is required')
+  }
+
+  await rest.put(Routes.applicationGuildCommands(env.discordClientId, env.discordDevGuildId), {
+    body: [],
+  })
+
+  console.log(`Cleared Discord commands for guild ${env.discordDevGuildId}`)
 } else if (mode === 'global') {
   await rest.put(Routes.applicationCommands(env.discordClientId), {
     body: commands,
@@ -31,5 +41,5 @@ if (mode === 'dev') {
 
   console.log('Registered global Discord commands')
 } else {
-  throw new Error('Command register mode must be "dev" or "global"')
+  throw new Error('Command register mode must be "dev", "global", or "clear-dev"')
 }

@@ -43,6 +43,23 @@ export class KeywordRepository {
     })
   }
 
+  deleteUserKeywords(guildId: string, userId: string) {
+    return prisma.keyword.deleteMany({
+      where: {
+        guildId,
+        userId,
+      },
+    })
+  }
+
+  deleteGuildKeywords(guildId: string) {
+    return prisma.keyword.deleteMany({
+      where: {
+        guildId,
+      },
+    })
+  }
+
   findUserKeywords(guildId: string, userId: string) {
     return prisma.keyword.findMany({
       where: {

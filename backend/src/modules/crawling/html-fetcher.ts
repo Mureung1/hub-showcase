@@ -11,6 +11,6 @@ export async function fetchHtml(url: string) {
 
     return cheerio.load(response.data)
   } catch {
-    throw new AppError(400, `Notice site could not be fetched: ${url}`)
+    throw new AppError(400, `공지 사이트에 접속할 수 없습니다: ${url}`)
   }
 }

@@ -116,6 +116,7 @@
 
 .form-section h2,
 .table-card h2,
+.notification-channel-card h2,
 .preview-panel h2,
 .summary-card h2,
 .command-card h2,
@@ -231,6 +232,7 @@
 
 .preview-panel,
 .table-card,
+.notification-channel-card,
 .summary-card,
 .command-card,
 .next-guide-card {
@@ -314,7 +316,7 @@
   border: 1px solid #e5edf8;
   border-radius: 12px;
   padding: 14px 16px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   background: #ffffff;
 }
 

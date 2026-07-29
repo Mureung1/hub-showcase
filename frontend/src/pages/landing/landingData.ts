@@ -20,7 +20,7 @@ export const featureCards: FeatureCard[] = [
   },
   {
     title: '카테고리 알림',
-    description: '카테고리별 Discord 채널과 역할을 연결하고 알림을 받습니다.',
+    description: '관심 카테고리를 구독하고 역할 멘션 알림을 받습니다.',
     icon: 'hash',
   },
   {
@@ -38,13 +38,13 @@ export const featureCards: FeatureCard[] = [
 export const guideCards: GuideCard[] = [
   {
     step: '01',
-    title: '봇 초대하기',
-    description: '랜딩의 Discord 봇 초대하기 버튼으로 IRIS Bot을 서버에 추가합니다.',
+    title: '사전 준비',
+    description: 'Discord에 가입하고 공지 알림을 받을 서버와 채널을 준비합니다.',
   },
   {
     step: '02',
-    title: '권한 승인',
-    description: 'Discord 안내에 따라 서버와 Bot 권한을 확인하고 초대를 완료합니다.',
+    title: '봇 초대하기',
+    description: 'Discord 봇 초대하기 버튼으로 IRIS Bot을 서버에 추가하고 필요한 권한을 승인합니다.',
   },
   {
     step: '03',

@@ -8,7 +8,7 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, nex
   void next
 
   if (error instanceof ZodError) {
-    response.status(400).json(fail(400, 'Invalid request input'))
+    response.status(400).json(fail(400, '요청 입력값이 올바르지 않습니다.'))
     return
   }
 
@@ -21,5 +21,5 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, nex
     error: error instanceof Error ? error.message : String(error),
   })
 
-  response.status(500).json(fail(500, 'Internal server error'))
+  response.status(500).json(fail(500, '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'))
 }

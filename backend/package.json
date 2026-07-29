@@ -15,11 +15,16 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:check": "tsx src/db/check.ts",
-    "discord:login:smoke": "tsx src/modules/discord/discord-login-smoke.ts",
+    "db:check": "node dist/db/check.js",
+    "db:check:dev": "tsx src/db/check.ts",
+    "discord:login:smoke": "node dist/modules/discord/discord-login-smoke.js",
+    "discord:login:smoke:dev": "tsx src/modules/discord/discord-login-smoke.ts",
     "discord:commands:register:dev": "tsx src/modules/discord/register-commands.ts dev",
-    "discord:commands:register:global": "tsx src/modules/discord/register-commands.ts global",
-    "scheduler:notice:run-once": "tsx src/modules/scheduler/run-notice-scheduler-once.ts",
+    "discord:commands:register:global": "node dist/modules/discord/register-commands.js global",
+    "discord:commands:register:global:dev": "tsx src/modules/discord/register-commands.ts global",
+    "discord:commands:clear:dev": "tsx src/modules/discord/register-commands.ts clear-dev",
+    "scheduler:notice:run-once": "node dist/modules/scheduler/run-notice-scheduler-once.js",
+    "scheduler:notice:run-once:dev": "tsx src/modules/scheduler/run-notice-scheduler-once.ts",
     "db:studio": "prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -36,6 +41,7 @@
     "express": "^5.2.1",
     "mariadb": "^3.5.3",
     "node-cron": "^4.6.0",
+    "prisma": "^7.8.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -47,7 +53,6 @@
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.7.0",
     "prettier": "^3.9.5",
-    "prisma": "^7.8.0",
     "tsx": "^4.23.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.63.0"

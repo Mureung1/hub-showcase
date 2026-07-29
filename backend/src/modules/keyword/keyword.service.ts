@@ -11,11 +11,11 @@ function normalizeKeyword(keyword: string) {
 
 function assertValidKeyword(keyword: string) {
   if (!keyword) {
-    throw new AppError(400, 'Keyword is required')
+    throw new AppError(400, '키워드를 입력해주세요.')
   }
 
   if (keyword.length > maxKeywordLength) {
-    throw new AppError(400, `Keyword must be ${maxKeywordLength} characters or fewer`)
+    throw new AppError(400, `키워드는 ${maxKeywordLength}자 이하로 입력해주세요.`)
   }
 }
 
@@ -60,7 +60,7 @@ export class KeywordService {
 
   async removeKeywordById(guildId: string, userId: string, id: number) {
     if (!Number.isInteger(id) || id <= 0) {
-      throw new AppError(400, 'Keyword id is invalid')
+      throw new AppError(400, '유효하지 않은 키워드 ID입니다.')
     }
 
     const result = await keywordRepository.deleteKeywordById(guildId, userId, id)
@@ -74,7 +74,7 @@ export class KeywordService {
     const uniqueIds = Array.from(new Set(ids))
 
     if (uniqueIds.length === 0 || uniqueIds.some((id) => !Number.isInteger(id) || id <= 0)) {
-      throw new AppError(400, 'Keyword ids are invalid')
+      throw new AppError(400, '유효하지 않은 키워드 ID가 포함되어 있습니다.')
     }
 
     const result = await keywordRepository.deleteKeywordsByIds(guildId, userId, uniqueIds)

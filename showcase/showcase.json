@@ -3,7 +3,8 @@
   "title": "대학 공지 알림 서비스 IRIS",
   "summary": "대학 공지를 Discord에서 카테고리, 키워드 별로 받아볼 수 있는 공지 알림 서비스입니다.",
   "githubUser": "codeHyeon(강현서)",
-  "demoUrl": "",
+  "demoUrl": "https://hub-silk-kappa-40.vercel.app",
+  "demoVideoUrl": "https://youtu.be/TX8B7Anzvpw",
   "thumbnail": "thumbnail.webp",
   "screenshots": [],
   "problem": "대학 공지는 언제 올라올지 알기 어려워 사용자가 사이트를 반복해서 확인해야 합니다. 하지만 새 공지를 확인해도 자신에게 필요한 내용이 아닐 때가 많습니다.",
@@ -15,7 +16,7 @@
     "관리자 페이지에서 공지 사이트 등록",
     "관리자 페이지에서 카테고리·채널·역할 설정",
     "Discord 명령어로 카테고리 구독과 키워드 알림 관리",
-    "카테고리별 새 공지를 연결된 Discord 채널로 알림",
+    "카테고리별 역할 멘션으로 Discord 채널에서 알림",
     "등록한 키워드가 포함된 새 공지를 개인 DM으로 알림"
   ],
   "featureTags": [

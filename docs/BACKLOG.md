@@ -27,7 +27,7 @@
 - 공지 사이트 등록
 - 테스트 크롤링
 - 카테고리 설정
-- Discord Role 생성/수정/삭제
+- Discord 역할 생성/수정/삭제
 - 카테고리 구독
 - 키워드 알림
 - 30분 주기 Scheduler
@@ -63,13 +63,13 @@
 - [x] MySQL Docker 개발 환경 구성
 - [x] Prisma schema 및 migration 작성
 - [x] Landing 구현
-- [x] Admin mock flow 구현
+- [x] Admin mock 흐름 구현
 - [x] Backend 공통 구조 작성
 - [x] notice-config 도메인 모듈 생성
 - [x] 테스트 크롤링 API 구현
 - [x] notice-config 저장/조회/삭제 API 구현
 - [x] notice-config 교체/카테고리 수정 API 구현
-- [x] Discord 채널 조회 및 Role 생성/수정/삭제 구현
+- [x] Discord 채널 조회 및 역할 생성/수정/삭제 구현
 - [x] Admin Web 실제 API 연동
 - [x] Admin Web 기존 설정 조회/수정/삭제 흐름 구현
 
@@ -79,9 +79,9 @@
 
 ## 미완료
 
-- [ ] 실패 케이스 점검
-- [ ] 배포 환경 구성
-- [ ] Production smoke test
+- [x] 실패 케이스 점검
+- [x] 배포 환경 구성
+- [x] Production smoke test
 
 ---
 
@@ -130,10 +130,10 @@
 
 - [x] Discord Bot 기본 클라이언트 구성
 - [x] Discord 채널 목록 조회 API 구현
-- [x] 활성 카테고리 Role 생성 구현
-- [x] Role 이름 변경 구현
-- [x] Role 삭제 구현
-- [x] Bot Role hierarchy 에러 처리
+- [x] 활성 카테고리 역할 생성 구현
+- [x] 역할 이름 변경 구현
+- [x] 역할 삭제 구현
+- [x] Bot 역할 계층 에러 처리
 - [x] `guildDelete` 이벤트 DB 정리 구현
 
 ## Phase 4. Admin Web
@@ -152,15 +152,16 @@
 ## Phase 5. Discord Commands
 
 - [x] `/help` 구현
+- [x] `/guide` 권한, 알림, 개인정보 설정 안내 구현
 - [x] `/setup` 관리자 권한 확인 구현
-- [x] `/setup` Admin 바로가기 버튼 ephemeral 응답 구현
+- [x] `/setup` 관리자 바로가기 버튼 Ephemeral 응답 구현
 - [x] `/subscribe` active category 조회 구현
-- [x] `/subscribe` category button interaction 구현
-- [x] 구독 Role 부여/제거 구현
+- [x] `/subscribe` 카테고리 버튼 interaction 구현
+- [x] 구독 역할 부여/제거 구현
 - [x] `/keyword` 키워드 관리 UI 구현
-- [x] `/keyword` 추가 modal 구현
-- [x] `/keyword` 다중 선택 삭제 select menu 구현
-- [x] Discord slash command 정상 응답 Embed 디자인 통일
+- [x] `/keyword` 추가 모달 구현
+- [x] `/keyword` 다중 선택 삭제 메뉴 구현
+- [x] Discord 슬래시 명령어 정상 응답 Embed 디자인 통일
 
 ## Phase 6. Crawling And Notification
 
@@ -171,8 +172,10 @@
 - [x] normalizedLink 생성 구현
 - [x] `hashKey` 중복 검사 구현
 - [x] 활성 카테고리 공지 저장 구현
+- [x] 공지 사이트 설정 저장/교체 직후 초기 수집 구현
+- [x] 초기 수집 시 알림 생략 처리
 - [x] 공통 알림 채널 Discord Embed 알림 구현
-- [x] Role mention 구현
+- [x] 역할 mention 구현
 - [x] 키워드 제목 매칭 구현
 - [x] 키워드 DM 알림 구현
 - [x] `전체` 카테고리 역할 mention 통합
@@ -184,24 +187,27 @@
 
 ## Phase 7. QA And Release Prep
 
-- [ ] 테스트 크롤링 실패 케이스 점검
-- [ ] Role 생성 실패 케이스 점검
-- [ ] Discord 채널 접근 실패 케이스 점검
-- [ ] DM 실패 케이스 점검
-- [ ] 설정 삭제 후 데이터 정리 점검
-- [ ] 모바일/데스크톱 관리자 UI 점검
-- [ ] 배포 환경 변수 점검
-- [ ] Backend Dockerfile 작성
-- [ ] Backend 배포용 Docker Compose 작성
-- [ ] Frontend CI 및 Vercel 배포 workflow 작성
-- [ ] Vercel preview 배포 확인
-- [ ] Frontend preview smoke test
-- [ ] EC2 환경에서 Backend/Discord Bot 실행 확인
-- [ ] Production Backend smoke test
-- [ ] Production Frontend smoke test
-- [ ] Discord Bot production login 확인
-- [ ] Prisma migration 상태 확인
-- [ ] 최종 점검 시나리오 확인
+- [x] 테스트 크롤링 실패 케이스 점검
+- [x] 역할 생성 실패 케이스 점검
+- [x] Discord 채널 접근 실패 케이스 점검
+- [x] DM 실패 케이스 점검
+- [x] 설정 삭제 후 데이터 정리 점검
+- [x] 모바일/데스크톱 관리자 UI 점검
+- [x] 배포 환경 변수 점검
+- [x] Backend Dockerfile 작성
+- [x] Backend 배포용 Docker Compose 작성
+- [x] Frontend Vercel 배포 설정 작성
+- [x] Vercel production 배포 확인
+- [x] Frontend production smoke test
+- [x] EC2 환경에서 Backend/Discord Bot 실행 확인
+- [x] Production Backend smoke test
+- [x] Production Frontend smoke test
+- [x] Discord Bot production login 확인
+- [x] Prisma migration 상태 확인
+- [x] Backend 컨테이너 재생성 상태 추적 로그 추가
+- [x] 키워드 DM 알림 사이트명 제거
+- [x] 공지 사이트 설정 저장/교체 직후 초기 수집 누락 수정
+- [x] 최종 점검 시나리오 확인
 
 ---
 
@@ -217,7 +223,7 @@
 - notice-config 삭제
 - Discord Bot 기본 연결
 - Discord 채널 조회
-- Role 생성
+- 역할 생성
 
 ## P1
 
@@ -264,7 +270,7 @@
 - 서버 환경에서 Discord Bot login 확인
 - `/setup`
 - Discord 채널 조회
-- Role 생성/수정/삭제
+- 역할 생성/수정/삭제
 - `/subscribe`
 - Scheduler와 공지 크롤러
 

@@ -18,7 +18,6 @@ export function CompleteStep({
   onRestart,
 }: CompleteStepProps) {
   const [isCategoryListExpanded, setIsCategoryListExpanded] = useState(false)
-  const activeCategories = categories.filter((category) => category.isActive)
   const channelNameMap = new Map(discordChannels.map((channel) => [channel.id, channel.name]))
   const notificationChannelId = categories.find((category) => category.channelId)?.channelId || ''
   const notificationChannelName = channelNameMap.get(notificationChannelId) || '채널 미확인'
@@ -42,16 +41,8 @@ export function CompleteStep({
             <dd>{siteName}</dd>
           </div>
           <div>
-            <dt>활성 카테고리</dt>
-            <dd>{activeCategories.length}개</dd>
-          </div>
-          <div>
             <dt>알림 채널</dt>
             <dd>{notificationChannelName}</dd>
-          </div>
-          <div>
-            <dt>비활성 카테고리</dt>
-            <dd>{categories.length - activeCategories.length}개</dd>
           </div>
         </dl>
       </section>
@@ -107,6 +98,10 @@ export function CompleteStep({
         <div>
           <span>/keyword</span>
           <p>키워드 등록/관리</p>
+        </div>
+        <div>
+          <span>/guide</span>
+          <p>사용 전 주의사항 보기</p>
         </div>
       </section>
 

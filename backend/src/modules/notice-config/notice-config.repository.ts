@@ -156,13 +156,19 @@ export class NoticeConfigRepository {
     )
   }
 
-  deleteByGuildId(guildId: string) {
+  deleteNoticeConfigByGuildId(guildId: string) {
+    return prisma.noticeSite.delete({
+      where: { guildId },
+    })
+  }
+
+  deleteGuildDataByGuildId(guildId: string) {
     return prisma.$transaction(async (tx) => {
       await tx.keyword.deleteMany({
         where: { guildId },
       })
 
-      return tx.noticeSite.delete({
+      await tx.noticeSite.deleteMany({
         where: { guildId },
       })
     })

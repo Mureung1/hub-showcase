@@ -120,7 +120,7 @@ Category 설정
 
 ⑤ 사용자는 Discord 명령어로 조작한다.
 
-/help, /setup, /subscribe, /keyword 화면은 실제 Discord 사용 흐름을 미리 볼 수 있도록 Dark UI 안에 Bot Card 형태로 표현한다.
+/help, /guide, /setup, /subscribe, /keyword 화면은 실제 Discord 사용 흐름을 미리 볼 수 있도록 Dark UI 안에 Bot Card 형태로 표현한다.
 
 ---
 
@@ -430,12 +430,12 @@ Feature
 
 시작 가이드 카드
 
-1. 봇 초대하기
+1. 사전 준비
    - Step Number: 01
-   - Description: 랜딩의 Discord 봇 초대하기 버튼으로 IRIS Bot을 서버에 추가한다.
-2. 권한 승인
+   - Description: Discord에 가입하고 공지 알림을 받을 서버와 채널을 준비한다.
+2. 봇 초대하기
    - Step Number: 02
-   - Description: Discord 안내에 따라 서버와 Bot 권한을 확인하고 초대를 완료한다.
+   - Description: Discord 봇 초대하기 버튼으로 IRIS Bot을 서버에 추가하고 필요한 권한을 승인한다.
 3. /setup 입력
    - Step Number: 03
    - Description: 봇을 초대한 서버에서 관리자 권한으로 /setup 명령어를 입력한다.
@@ -485,7 +485,7 @@ Main
 입력란은 실제 값이 채워진 상태가 아니라 placeholder 예시로 표시한다.
 
 - 예: 경북대학교 컴퓨터학부
-- 예: https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor
+- 예: https://computer.knu.ac.kr/bbs/board.php?bo_table=sub6_1_a&lang=kor
 
 Selector 설정
 
@@ -528,7 +528,7 @@ Helper 동작
 - 설정 방법 버튼은 selector 설정 방법을 자세히 설명하는 외부 문서를 새 탭으로 연다.
 - 기본 가이드 문서 URL은 `VITE_SELECTOR_GUIDE_URL` 환경 변수로 관리한다.
 - 개발자에게 요청하기 버튼은 작은 modal을 열어 응답받을 이메일, 요청 사이트 제목, 공지 사이트 URL을 입력받는다.
-- 현재 frontend mock flow에서는 요청 접수 성공 상태만 표시하고 실제 전송은 하지 않는다.
+- 현재 frontend mock 흐름에서는 요청 접수 성공 상태만 표시하고 실제 전송은 하지 않는다.
 - 실제 API 연동 후에는 요청 정보가 운영자 메일로 전달되고, 운영자는 입력된 이메일로 답변한다.
 
 Next
@@ -562,7 +562,9 @@ Main 영역만 세로 스크롤되며 Sidebar와 Guide는 화면에 유지된다
 
 Table
 
-알림 채널
+알림 채널은 감지된 카테고리 목록과 분리된 별도 카드로 표시한다.
+
+감지된 카테고리 목록
 
 카테고리
 
@@ -672,6 +674,8 @@ Command List
 
 /keyword
 
+/guide
+
 Button
 
 처음으로 이동
@@ -683,7 +687,8 @@ Next Guide Card
 
 Summary
 
-- 공지 사이트, 활성 카테고리 수, 비활성 카테고리 수를 표시한다.
+- 공지 사이트와 알림 채널을 표시한다.
+- 활성/비활성 카테고리 숫자는 표시하지 않는다.
 - 카테고리 연결 요약에는 카테고리명, 활성 상태, 역할 이름을 표시한다.
 - 카테고리 연결 목록은 5개까지 기본 표시하고, 6개 이상이면 전체 보기/접기 버튼을 제공한다.
 
@@ -715,6 +720,36 @@ Discord Dark Window
 
 /keyword
 
+/guide
+
+---
+
+## S5-1 Discord
+
+/guide
+
+목적
+
+권한, 알림 방식, 개인정보 설정, 설정 삭제, Bot 제거 주의사항을 안내한다.
+
+UI
+
+Discord Dark Window
+
+보라색 Embed Bot Card
+
+안내 항목
+
+권한 설정
+
+알림 설정
+
+개인정보 설정
+
+설정 삭제
+
+Bot 제거
+
 ---
 
 ## S6 Discord
@@ -729,7 +764,7 @@ UI
 
 보라색 Embed Bot Card
 
-카테고리 Button List
+카테고리 버튼 목록
 
 표시 규칙
 
@@ -745,7 +780,7 @@ Embed 내용은 짧은 안내 문구만 표시한다.
 
 토글 후 같은 메시지를 업데이트한다.
 
-구독 시 해당 카테고리 Role을 사용자에게 부여하고, 구독 해제 시 제거한다.
+구독 시 해당 카테고리 역할을 사용자에게 부여하고, 구독 해제 시 제거한다.
 
 ---
 
@@ -761,18 +796,18 @@ UI
 
 보라색 Embed Bot Card
 
-DM으로 저장 Button
+DM으로 저장 버튼
 
-요약 보기 Button
+요약 보기 버튼
 
 표시 규칙
 
 - Embed에는 공지 제목, 카테고리, 공지일, 원본 링크를 표시한다.
 - 역할 mention은 Embed 밖 content 영역에 표시한다.
-- `DM으로 저장`은 Primary Button으로 표시한다.
-- `요약 보기`는 Primary Button으로 표시한다.
+- `DM으로 저장`은 Primary 버튼으로 표시한다.
+- `요약 보기`는 Primary 버튼으로 표시한다.
 - `DM으로 저장` 클릭 시 같은 공지 Embed를 사용자 DM으로 보낸다.
-- DM으로 보낸 공지 알림에는 `요약 보기` Primary Button과 `알림 삭제` Danger Button을 표시한다.
+- DM으로 보낸 공지 알림에는 `요약 보기` Primary 버튼과 `알림 삭제` Danger 버튼을 표시한다.
 - `요약 보기` 클릭 시 MVP에서는 준비 중 안내를 Ephemeral로 표시한다.
 
 ---
@@ -791,9 +826,9 @@ UI
 
 키워드 목록
 
-키워드 추가 Button
+키워드 추가 버튼
 
-키워드 삭제 Button
+키워드 삭제 버튼
 
 동작
 
@@ -808,9 +843,10 @@ DM 알림
 키워드 DM 알림
 
 - 보라색 Embed Bot Card로 표시한다.
-- 공지 제목, 매칭 키워드, 사이트, 카테고리, 공지일을 표시한다.
-- 하단에 `요약 보기` Primary Button과 `알림 삭제` Danger Button을 표시한다.
-- `알림 삭제` 클릭 시 버튼 영역을 `정말 삭제` Danger Button과 `취소` Secondary Button으로 변경한다.
+- 공지 제목, 매칭 키워드, 카테고리, 공지일을 표시한다.
+- MVP는 서버당 공지 사이트 1개 정책이므로 개인 DM 알림에서는 사이트명을 표시하지 않는다.
+- 하단에 `요약 보기` Primary 버튼과 `알림 삭제` Danger 버튼을 표시한다.
+- `알림 삭제` 클릭 시 버튼 영역을 `정말 삭제` Danger 버튼과 `취소` Secondary 버튼으로 변경한다.
 - `정말 삭제` 클릭 시 해당 DM 메시지만 삭제한다.
 - `취소` 클릭 시 원래 `요약 보기`와 `알림 삭제` 버튼으로 돌아간다.
 
@@ -836,7 +872,7 @@ UI
 
 보라색 Embed Bot Card
 
-바로가기 Button
+바로가기 버튼
 
 ↓
 
@@ -859,6 +895,8 @@ UI
 /subscribe
 
 /keyword
+
+/guide
 
 ---
 
@@ -972,7 +1010,7 @@ Discord Dark Theme 유지
 
 Selector 테스트 결과 미리보기 제공
 
-카테고리와 Role 관계를 명확하게 표현
+카테고리와 역할 관계를 명확하게 표현
 
 DON'T
 

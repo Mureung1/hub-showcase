@@ -135,9 +135,9 @@ function AdminPage({ guildId }: AdminPageProps) {
         }
 
         setDiscordChannels(channels)
-      } catch {
+      } catch (error) {
         if (isCurrent) {
-          setChannelLoadError('Discord 채널 목록을 불러오지 못했습니다.')
+          setChannelLoadError(getErrorMessage(error, 'Discord 채널 목록을 불러오지 못했습니다.'))
         }
       } finally {
         if (isCurrent) {
@@ -166,11 +166,6 @@ function AdminPage({ guildId }: AdminPageProps) {
       setHasRetestedSite(true)
       setSaveStatus('dirty')
     } catch (error) {
-      if (error instanceof ApiError && error.status === 400) {
-        setCrawlError('사이트 정보와 Selector를 모두 입력한 뒤 테스트 크롤링을 실행해주세요.')
-        return
-      }
-
       setCrawlError(getErrorMessage(error, '테스트 크롤링에 실패했습니다. 입력값을 확인해주세요.'))
     } finally {
       setIsCrawling(false)

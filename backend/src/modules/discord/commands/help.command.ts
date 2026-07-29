@@ -27,6 +27,10 @@ export async function executeHelpCommand(interaction: ChatInputCommandInteractio
             name: '3. `/keyword`',
             value: '키워드 구독 목록을 보고\n키워드를 추가하거나 삭제합니다.',
           },
+          {
+            name: '4. `/guide`',
+            value: '권한, 알림, 개인정보 설정 안내를 확인합니다.',
+          },
         ),
     ],
     ephemeral: true,

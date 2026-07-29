@@ -101,6 +101,19 @@ export class SubscriptionRepository {
       },
     })
   }
+
+  deleteUserSubscriptionsByGuildId(guildId: string, userId: string) {
+    return prisma.subscription.deleteMany({
+      where: {
+        userId,
+        category: {
+          noticeSite: {
+            guildId,
+          },
+        },
+      },
+    })
+  }
 }
 
 export const subscriptionRepository = new SubscriptionRepository()

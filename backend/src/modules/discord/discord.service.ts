@@ -51,7 +51,7 @@ function getDiscordErrorCode(error: unknown) {
 
 function throwDiscordRoleError(error: unknown): never {
   if (getDiscordErrorCode(error) === discordMissingPermissionsCode) {
-    throw new AppError(400, 'Discord bot cannot manage roles')
+    throw new AppError(400, 'Discord Bot이 역할을 관리할 권한이 없습니다.')
   }
 
   throw error
@@ -67,7 +67,7 @@ export class DiscordService {
     const guild = await client.guilds.fetch(guildId).catch(() => null)
 
     if (!guild) {
-      throw new AppError(404, 'Discord guild not found')
+      throw new AppError(404, 'Discord 서버를 찾을 수 없습니다.')
     }
 
     return guild
@@ -79,7 +79,7 @@ export class DiscordService {
     const botMember = guild.members.me
 
     if (!botMember) {
-      throw new AppError(404, 'Discord bot member not found')
+      throw new AppError(404, 'Discord 서버에서 Bot 정보를 찾을 수 없습니다.')
     }
 
     return {
@@ -109,15 +109,15 @@ export class DiscordService {
     const botMember = guild.members.me
 
     if (!botMember) {
-      throw new AppError(404, 'Discord bot member not found')
+      throw new AppError(404, 'Discord 서버에서 Bot 정보를 찾을 수 없습니다.')
     }
 
     if (!channel || channel.type !== ChannelType.GuildText) {
-      throw new AppError(400, 'Invalid Discord channel')
+      throw new AppError(400, '유효하지 않은 Discord 채널입니다.')
     }
 
     if (!channel.permissionsFor(botMember).has(PermissionFlagsBits.SendMessages)) {
-      throw new AppError(400, 'Discord bot cannot send messages to channel')
+      throw new AppError(400, 'Discord Bot이 해당 채널에 메시지를 보낼 권한이 없습니다.')
     }
   }
 
@@ -168,7 +168,7 @@ export class DiscordService {
     const role = await guild.roles.fetch(roleId)
 
     if (!role) {
-      throw new AppError(404, 'Discord role not found')
+      throw new AppError(404, 'Discord 역할을 찾을 수 없습니다.')
     }
 
     const updatedRole = await role
@@ -204,7 +204,7 @@ export class DiscordService {
     const channel = await guild.channels.fetch(input.channelId).catch(() => null)
 
     if (!channel || channel.type !== ChannelType.GuildText) {
-      throw new AppError(400, 'Invalid Discord notification channel')
+      throw new AppError(400, '유효하지 않은 Discord 알림 채널입니다.')
     }
 
     await channel.send({
@@ -257,11 +257,6 @@ export class DiscordService {
           .setURL(input.link)
           .setDescription(`매칭된 키워드: ${input.matchedKeywords.join(', ')}`)
           .addFields(
-            {
-              name: '사이트',
-              value: input.siteName,
-              inline: true,
-            },
             {
               name: '카테고리',
               value: input.categoryName,

@@ -61,7 +61,7 @@ export function SiteRegistrationStep({
         <input
           id="url"
           value={form.url}
-          placeholder="예: https://cse.knu.ac.kr/bbs/board.php?bo_table=sub5_1&lang=kor"
+          placeholder="예: https://computer.knu.ac.kr/bbs/board.php?bo_table=sub6_1_a&lang=kor"
           onChange={(event) => onFormChange('url', event.target.value)}
         />
       </section>

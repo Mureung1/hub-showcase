@@ -47,6 +47,16 @@ export function registerDiscordEvents(client: Client) {
     })
   })
 
+  client.on('guildMemberRemove', (member) => {
+    void noticeConfigService.cleanupGuildMemberNoticeData(member.guild.id, member.id).catch((error: unknown) => {
+      logger.error('Failed to cleanup guild member notice data after guildMemberRemove', {
+        guildId: member.guild.id,
+        userId: member.id,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    })
+  })
+
   client.on('interactionCreate', (interaction) => {
     if (interaction.isModalSubmit()) {
       if (interaction.customId !== keywordAddModalCustomId) {

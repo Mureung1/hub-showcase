@@ -3,6 +3,9 @@ import { logger } from '../../shared/logger/logger.js'
 import { crawlNotices } from '../crawling/index.js'
 import { toNoticePreview } from '../crawling/notice-normalizer.js'
 import { discordService, getDefaultIrisRoleName } from '../discord/discord.service.js'
+import { keywordRepository } from '../keyword/keyword.repository.js'
+import { collectNoticeSiteNotices } from '../scheduler/notice-scheduler.js'
+import { subscriptionRepository } from '../subscription/subscription.repository.js'
 import { noticeConfigRepository } from './notice-config.repository.js'
 import type {
   SaveNoticeConfigBody,
@@ -22,7 +25,7 @@ function assertActiveCategoriesHaveRoles(categories: PreparedNoticeCategory[]) {
   const invalidCategory = categories.find((category) => category.isActive && !category.roleId)
 
   if (invalidCategory) {
-    throw new AppError(500, `Active category must have a Discord role: ${invalidCategory.name}`)
+    throw new AppError(500, `활성화된 카테고리에 Discord 역할이 없습니다: ${invalidCategory.name}`)
   }
 }
 
@@ -99,18 +102,20 @@ export class NoticeConfigService {
     const existingNoticeSite = await noticeConfigRepository.findByGuildId(guildId)
 
     if (existingNoticeSite) {
-      throw new AppError(409, 'Notice config already exists')
+      throw new AppError(409, '이미 공지 사이트 설정이 존재합니다.')
     }
 
     const { categories, createdRoleIds } = await this.prepareCategoriesWithRoles(guildId, body.categories)
     assertActiveCategoriesHaveRoles(categories)
 
     try {
-      await noticeConfigRepository.createNoticeConfig({
+      const noticeSite = await noticeConfigRepository.createNoticeConfig({
         guildId,
         site: body.site,
         categories,
       })
+
+      await collectNoticeSiteNotices(noticeSite)
     } catch (error) {
       await Promise.allSettled(createdRoleIds.map((roleId) => discordService.deleteRole(guildId, roleId)))
 
@@ -126,7 +131,7 @@ export class NoticeConfigService {
     const noticeSite = await noticeConfigRepository.findByGuildId(guildId)
 
     if (!noticeSite) {
-      throw new AppError(404, 'Notice config not found')
+      throw new AppError(404, '공지 사이트 설정을 찾을 수 없습니다.')
     }
 
     return {
@@ -155,14 +160,14 @@ export class NoticeConfigService {
     const noticeSite = await noticeConfigRepository.findByGuildId(guildId)
 
     if (!noticeSite) {
-      throw new AppError(404, 'Notice config not found')
+      throw new AppError(404, '공지 사이트 설정을 찾을 수 없습니다.')
     }
 
     const categoryIds = body.categories.map((category) => category.categoryId)
     const uniqueCategoryIds = new Set(categoryIds)
 
     if (uniqueCategoryIds.size !== categoryIds.length) {
-      throw new AppError(400, 'Duplicate category id')
+      throw new AppError(400, '중복된 카테고리 ID가 있습니다.')
     }
 
     const existingCategories = await noticeConfigRepository.findCategoriesByNoticeSiteId(
@@ -171,7 +176,7 @@ export class NoticeConfigService {
     )
 
     if (existingCategories.length !== categoryIds.length) {
-      throw new AppError(404, 'Notice category not found')
+      throw new AppError(404, '공지 카테고리를 찾을 수 없습니다.')
     }
 
     const existingCategoryMap = new Map(
@@ -183,7 +188,7 @@ export class NoticeConfigService {
       const existingCategory = existingCategoryMap.get(category.categoryId)
 
       if (!existingCategory) {
-        throw new AppError(404, 'Notice category not found')
+        throw new AppError(404, '공지 카테고리를 찾을 수 없습니다.')
       }
 
       await discordService.validateTextChannel(guildId, category.channelId)
@@ -249,7 +254,7 @@ export class NoticeConfigService {
     const noticeSite = await noticeConfigRepository.findByGuildId(guildId)
 
     if (!noticeSite) {
-      throw new AppError(404, 'Notice config not found')
+      throw new AppError(404, '공지 사이트 설정을 찾을 수 없습니다.')
     }
 
     const oldRoleIds = noticeSite.categories.flatMap((category) => (category.roleId ? [category.roleId] : []))
@@ -257,11 +262,13 @@ export class NoticeConfigService {
     assertActiveCategoriesHaveRoles(categories)
 
     try {
-      await noticeConfigRepository.replaceNoticeConfig({
+      const noticeSite = await noticeConfigRepository.replaceNoticeConfig({
         guildId,
         site: body.site,
         categories,
       })
+
+      await collectNoticeSiteNotices(noticeSite)
     } catch (error) {
       await Promise.allSettled(createdRoleIds.map((roleId) => discordService.deleteRole(guildId, roleId)))
 
@@ -279,14 +286,14 @@ export class NoticeConfigService {
     const noticeSite = await noticeConfigRepository.findByGuildId(guildId)
 
     if (!noticeSite) {
-      throw new AppError(404, 'Notice config not found')
+      throw new AppError(404, '공지 사이트 설정을 찾을 수 없습니다.')
     }
 
     const roleIds = noticeSite.categories.flatMap((category) => (category.roleId ? [category.roleId] : []))
 
     await Promise.all(roleIds.map((roleId) => discordService.deleteRole(guildId, roleId)))
 
-    await noticeConfigRepository.deleteByGuildId(guildId)
+    await noticeConfigRepository.deleteNoticeConfigByGuildId(guildId)
 
     return {
       message: 'IRIS 설정이 삭제되었습니다. 필요한 경우 Discord 서버에서 Bot을 제거할 수 있습니다.',
@@ -294,13 +301,14 @@ export class NoticeConfigService {
   }
 
   async cleanupGuildNoticeConfig(guildId: string) {
-    const noticeSite = await noticeConfigRepository.findByGuildId(guildId)
+    await noticeConfigRepository.deleteGuildDataByGuildId(guildId)
+  }
 
-    if (!noticeSite) {
-      return
-    }
-
-    await noticeConfigRepository.deleteByGuildId(guildId)
+  async cleanupGuildMemberNoticeData(guildId: string, userId: string) {
+    await Promise.all([
+      subscriptionRepository.deleteUserSubscriptionsByGuildId(guildId, userId),
+      keywordRepository.deleteUserKeywords(guildId, userId),
+    ])
   }
 }
 
