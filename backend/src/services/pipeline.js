@@ -231,9 +231,8 @@ async function runStep2(jobId) {
 
     // 지원 가능한 Gemini 모델 후보군 순서대로 시도
     const modelsToTry = [
-      process.env.GEMINI_MODEL || "gemini-2.0-flash",
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-pro",
+      process.env.GEMINI_MODEL || "gemini-1.5-flash",
+      "gemini-2.0-flash",
     ];
 
     let content = null;
@@ -351,7 +350,6 @@ async function updateStep2Results(jobId, result, duration, isFallback = false) {
     .from("generation_jobs")
     .update({
       step2_caption: result.primary_caption,
-      step2_caption_options: JSON.stringify(captionOptions),
       step2_hashtags: result.hashtags,
       step2_similarity_score: result.similarity_score || 0.7,
       progress: 50,
