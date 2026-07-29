@@ -11,6 +11,36 @@
   margin-bottom: 14px;
 }
 
+.live-emotion-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+  padding: 9px 11px;
+  border: 1px solid #bae6d3;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.live-emotion-status > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+  animation: live-emotion-pulse 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes live-emotion-pulse {
+  to {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
 .state-item {
   display: flex;
   justify-content: space-between;
@@ -49,41 +79,6 @@
   border-top: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
 }
-
-.emotion-score-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-  font-size: 13px;
-}
-
-.emotion-score-heading strong {
-  color: #334155;
-}
-
-.emotion-score-track {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e2e8f0;
-}
-
-.emotion-score-fill {
-  display: block;
-  height: 100%;
-  min-width: 2px;
-  border-radius: inherit;
-  background: #64748b;
-  transition: width 0.25s ease;
-}
-
-.emotion-score-anxiety { background: #f59e0b; }
-.emotion-score-sadness { background: #3b82f6; }
-.emotion-score-anger { background: #ef4444; }
-.emotion-score-joy { background: #22c55e; }
-.emotion-score-neutral { background: #64748b; }
 
 .empty-evidence {
   color: #64748b;
@@ -159,5 +154,12 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-emotion-status > span,
+  .status-dot {
+    animation: none;
   }
 }

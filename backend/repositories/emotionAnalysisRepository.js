@@ -5,7 +5,6 @@ import {
 
 const EMOTION_ANALYSIS_COLUMNS = [
   "id",
-  "session_id",
   "situation_text",
   "face_signal",
   "face_signal_source",
@@ -49,11 +48,11 @@ export async function createEmotionAnalysis(record) {
 }
 
 export async function listEmotionAnalysesBySession(
-  sessionId,
+  guestSessionId,
   limit = EMOTION_ANALYSIS_LIMITS.historyLimit
 ) {
-  if (typeof sessionId !== "string" || !sessionId.trim()) {
-    throw new TypeError("sessionId must be a non-empty string.");
+  if (typeof guestSessionId !== "string" || !guestSessionId.trim()) {
+    throw new TypeError("guestSessionId must be a non-empty string.");
   }
 
   if (
@@ -70,7 +69,7 @@ export async function listEmotionAnalysesBySession(
   const { data, error } = await getSupabaseClient()
     .from("emotion_analyses")
     .select(EMOTION_ANALYSIS_COLUMNS)
-    .eq("session_id", sessionId.trim())
+    .eq("guest_session_id", guestSessionId.trim())
     .order("created_at", { ascending: false })
     .limit(limit);
 

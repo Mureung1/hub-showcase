@@ -21,7 +21,8 @@ export default function App() {
     isInputDisabled,
     handleScenarioChange,
     handleAnalyze,
-    handleAnalyzeAgain
+    handleAnalyzeAgain,
+    handleLiveFaceSignalChange
   } = useEmotionSession();
 
   return (
@@ -48,6 +49,7 @@ export default function App() {
           faceSignalMetadata={faceSignalMetadata}
           disabled={isInputDisabled}
           onAnalyze={handleAnalyze}
+          onLiveFaceSignalChange={handleLiveFaceSignalChange}
         />
       </ConversationPanel>
     </div>

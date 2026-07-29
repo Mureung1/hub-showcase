@@ -13,6 +13,10 @@ import {
 } from "./backend/features/emotion-analyses/emotionAnalysisRoutes.js";
 import { RequestValidationError } from "./backend/features/emotion-analyses/emotionAnalysisValidation.js";
 import { SupabaseRepositoryError } from "./backend/repositories/emotionAnalysisRepository.js";
+import {
+  createGuestSessionRouter,
+  mapGuestSessionError
+} from "./backend/features/guest-sessions/guestSessionRoutes.js";
 
 dotenv.config({ quiet: true });
 
@@ -22,6 +26,9 @@ const allowedOrigins = new Set(serverConfig.allowedOrigins);
 export function createApp({
   createAnalysis,
   listAnalyses,
+  authenticateGuest,
+  guestAuthenticationOptions,
+  guestSessionOptions,
   rateLimitOptions = {}
 } = {}) {
   const app = express();
@@ -59,15 +66,25 @@ export function createApp({
       error.status = 403;
       callback(error);
     },
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"]
+    methods: ["GET", "POST", "DELETE"],
+    allowedHeaders: ["Content-Type", "X-Guest-Key"]
   }),
   apiRateLimiter
 );
 
   app.use(
+    "/api/guest-sessions",
+    createGuestSessionRouter(guestSessionOptions)
+  );
+
+  app.use(
     "/api/emotion-analyses",
-    createEmotionAnalysisRouter({ createAnalysis, listAnalyses })
+    createEmotionAnalysisRouter({
+      createAnalysis,
+      listAnalyses,
+      authenticateGuest,
+      guestAuthenticationOptions
+    })
   );
 
   app.use((request, response) => {
@@ -106,6 +123,10 @@ export function createApp({
         details: error.details
       }
     });
+    return;
+  }
+
+  if (mapGuestSessionError(error, response)) {
     return;
   }
 

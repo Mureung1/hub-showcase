@@ -11,7 +11,8 @@ export default function EmotionInputForm({
   scenarioPreset,
   faceSignalMetadata,
   disabled = false,
-  onAnalyze
+  onAnalyze,
+  onLiveFaceSignalChange
 }) {
   const [situationText, setSituationText] = useState("");
   const [faceInputMode, setFaceInputMode] = useState(
@@ -99,6 +100,16 @@ export default function EmotionInputForm({
     if (validationError) setValidationError("");
   };
 
+  const handleFaceInputModeChange = (mode) => {
+    setFaceInputMode(mode);
+    if (mode === "manual") onLiveFaceSignalChange?.(null);
+  };
+
+  const handleCameraSignalChange = (result) => {
+    setDetectedFaceResult(result);
+    onLiveFaceSignalChange?.(result);
+  };
+
   return (
     <form className="input-area" onSubmit={handleSubmit} noValidate>
       <div className="situation-input">
@@ -133,7 +144,7 @@ export default function EmotionInputForm({
                 type="button"
                 className={faceInputMode === "manual" ? "active" : ""}
                 aria-pressed={faceInputMode === "manual"}
-                onClick={() => setFaceInputMode("manual")}
+                onClick={() => handleFaceInputModeChange("manual")}
                 disabled={disabled}
               >
                 수동 선택
@@ -142,7 +153,7 @@ export default function EmotionInputForm({
                 type="button"
                 className={faceInputMode === "camera" ? "active" : ""}
                 aria-pressed={faceInputMode === "camera"}
-                onClick={() => setFaceInputMode("camera")}
+                onClick={() => handleFaceInputModeChange("camera")}
                 disabled={disabled}
               >
                 자동 감지
@@ -161,7 +172,7 @@ export default function EmotionInputForm({
           ) : (
             <>
               <FaceCamera
-                onSignalChange={setDetectedFaceResult}
+                onSignalChange={handleCameraSignalChange}
                 initialResult={detectedFaceResult}
                 disabled={disabled}
               />

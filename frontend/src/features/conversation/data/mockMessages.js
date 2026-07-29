@@ -1,5 +1,7 @@
 export const mockMessages = [
-  { id: 1, role: "ai", content: "안녕. 오늘은 어떻게 지냈어?" },
-  { id: 2, role: "user", content: "오늘 발표가 잘 안됐어." },
-  { id: 3, role: "ai", content: "그런 일이 있었구나. 괜찮아." }
+  {
+    id: "welcome",
+    role: "ai",
+    content: "안녕. 오늘 어떤 이야기를 나누고 싶어? 감정이나 상황을 편하게 말해줘."
+  }
 ];

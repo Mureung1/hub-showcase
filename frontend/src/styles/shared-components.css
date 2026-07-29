@@ -1,0 +1,63 @@
+.progress-bar {
+  display: grid;
+  gap: 6px;
+}
+
+.progress-bar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.progress-bar-heading strong {
+  color: #334155;
+}
+
+.progress-bar-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.progress-bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: #64748b;
+  transition: width 0.25s ease;
+}
+
+.progress-bar-compact {
+  gap: 4px;
+}
+
+.progress-bar-compact .progress-bar-heading {
+  font-size: 0.85rem;
+}
+
+.progress-bar-compact .progress-bar-track {
+  height: 0.45rem;
+  background: rgba(98, 89, 255, 0.14);
+}
+
+.progress-bar-tone-anxiety { background: #f59e0b; }
+.progress-bar-tone-sadness { background: #3b82f6; }
+.progress-bar-tone-anger { background: #ef4444; }
+.progress-bar-tone-joy { background: #22c55e; }
+.progress-bar-tone-neutral,
+.progress-bar-tone-default { background: #64748b; }
+.progress-bar-tone-signal {
+  background: linear-gradient(90deg, #7167ff, #45b9a8);
+  transition-duration: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar-fill {
+    transition: none;
+  }
+}
+

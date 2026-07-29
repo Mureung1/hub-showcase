@@ -39,6 +39,7 @@ export default function useEmotionSession() {
   const [messages, setMessages] = useState(mockMessages);
   const [selectedScenario, setSelectedScenario] = useState(defaultScenario);
   const [emotionResult, setEmotionResult] = useState(createInitialResult);
+  const [liveEmotionResult, setLiveEmotionResult] = useState(null);
   const [faceSignalMetadata, setFaceSignalMetadata] = useState(
     createManualFaceSignalMetadata
   );
@@ -108,6 +109,7 @@ export default function useEmotionSession() {
     analyzeMockContext({
       inputText: input.situationText,
       faceSignal: input.faceSignal,
+      faceFeatures: input.faceFeatures,
       voiceSignal: input.voiceSignal,
       recentMessages,
       selectedScenario: input.selectedScenario
@@ -124,6 +126,7 @@ export default function useEmotionSession() {
       selectedScenario: scenario.value
     };
     setSelectedScenario(nextScenario);
+    setLiveEmotionResult(null);
     setFaceSignalMetadata(createManualFaceSignalMetadata());
     lastAnalysisInputRef.current = nextInput;
 
@@ -167,6 +170,7 @@ export default function useEmotionSession() {
       voiceSignal,
       selectedScenario: selectedScenario.value
     };
+    setLiveEmotionResult(null);
 
     let nextResult;
     try {
@@ -193,6 +197,7 @@ export default function useEmotionSession() {
         sessionId,
         analysisInput,
         analysisResult: nextResult,
+        recentMessages: messages,
         signal: controller.signal
       });
 
@@ -248,12 +253,35 @@ export default function useEmotionSession() {
     }
   };
 
+  const handleLiveFaceSignalChange = (faceResult) => {
+    if (!faceResult?.features?.length) {
+      setLiveEmotionResult(null);
+      return;
+    }
+
+    try {
+      const nextResult = runAnalysis({
+        ...lastAnalysisInputRef.current,
+        faceSignal: faceResult.legacySignal || "neutral",
+        faceFeatures: faceResult.features
+      });
+
+      setLiveEmotionResult({
+        ...nextResult,
+        isLivePreview: true,
+        liveFaceConfidence: faceResult.confidence
+      });
+    } catch {
+      setLiveEmotionResult(null);
+    }
+  };
+
   return {
     messages,
     aiStatus,
     selectedScenario,
     analysisStatus,
-    emotionResult,
+    emotionResult: liveEmotionResult || emotionResult,
     faceSignalMetadata,
     analysisError,
     observation: selectedScenario.observation,
@@ -264,6 +292,7 @@ export default function useEmotionSession() {
       isSaving,
     handleScenarioChange,
     handleAnalyze,
-    handleAnalyzeAgain
+    handleAnalyzeAgain,
+    handleLiveFaceSignalChange
   };
 }

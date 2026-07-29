@@ -11,6 +11,7 @@ import {
 } from "../../../test/fixtures/emotionAnalysisFixtures.js";
 
 const sessionId = "44c96b3d-c657-4a41-876b-a26b53178f59";
+const guestSessionId = "550e8400-e29b-41d4-a716-446655440000";
 const records = [];
 let server;
 let baseUrl;
@@ -29,10 +30,15 @@ function createTestRecord(record) {
 describe("화면 → Express 서버 → DB 저장 경계 E2E", () => {
   beforeAll(async () => {
     const app = createApp({
+      authenticateGuest: async () => ({
+        session: { id: guestSessionId }
+      }),
       createAnalysis: async (record) => createTestRecord(record),
-      listAnalyses: async (requestedSessionId, limit) =>
+      listAnalyses: async (requestedGuestSessionId, limit) =>
         records
-          .filter((record) => record.session_id === requestedSessionId)
+          .filter(
+            (record) => record.guest_session_id === requestedGuestSessionId
+          )
           .slice(0, limit)
     });
 
@@ -89,7 +95,7 @@ describe("화면 → Express 서버 → DB 저장 경계 E2E", () => {
     await waitFor(() => expect(records).toHaveLength(1));
 
     expect(records[0]).toMatchObject({
-      session_id: sessionId,
+      guest_session_id: guestSessionId,
       situation_text: "오늘은 마음이 편안해요.",
       face_signal: "neutral",
       face_signal_source: "manual",
@@ -99,6 +105,7 @@ describe("화면 → Express 서버 → DB 저장 경계 E2E", () => {
       voice_signal: "normal",
       selected_scenario: "normal"
     });
+    expect(records[0]).not.toHaveProperty("session_id");
     expect(records[0]).not.toHaveProperty("image");
     expect(records[0]).not.toHaveProperty("video");
     expect(records[0]).not.toHaveProperty("landmarks");

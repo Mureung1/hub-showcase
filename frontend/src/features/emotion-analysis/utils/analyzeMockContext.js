@@ -8,6 +8,7 @@ export function analyzeMockContext({
   recentMessages = [],
   selectedScenario = "normal",
   faceSignal,
+  faceFeatures,
   voiceSignal
 } = {}) {
   const scenario = scenarioPresets[selectedScenario] || defaultScenario;
@@ -15,6 +16,7 @@ export function analyzeMockContext({
   return analyzeMockEmotion({
     situationText: inputText,
     faceSignal: faceSignal || scenario.faceSignal,
+    faceFeatures,
     voiceSignal: voiceSignal || scenario.voiceSignal,
     recentMessages,
     selectedScenario

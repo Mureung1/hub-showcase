@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import EmotionInputForm from "./EmotionInputForm";
 
@@ -29,6 +29,9 @@ describe("EmotionInputForm", () => {
       faceSignalHeuristicVersion: null,
       voiceSignal: "normal"
     });
+    await waitFor(() => {
+      expect(screen.getByLabelText("지금 겪고 있는 상황")).toHaveValue("");
+    });
   });
 
   it("keeps manual fallback available before camera detection stabilizes", async () => {
@@ -52,5 +55,8 @@ describe("EmotionInputForm", () => {
         faceSignalConfidence: null
       })
     );
+    await waitFor(() => {
+      expect(screen.getByLabelText("지금 겪고 있는 상황")).toHaveValue("");
+    });
   });
 });

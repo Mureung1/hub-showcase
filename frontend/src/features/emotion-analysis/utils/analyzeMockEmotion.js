@@ -1,6 +1,7 @@
 import { emotionDefinitions } from "../../../shared/constants/emotionDefinitions";
 import { faceOptions, voiceOptions } from "../../emotion-input/data/signalOptions";
 import { scenarioAnalysisPresets } from "../data/scenarioAnalysisPresets";
+import { deriveLiveFaceEmotionAdjustments } from "./deriveLiveFaceEmotionAdjustments";
 import { normalizeEmotionScores } from "./normalizeEmotionScores";
 
 const faceScoreAdjustments = {
@@ -37,6 +38,7 @@ function increasePossibleState(possibleStates, pattern, fallback) {
 export function analyzeMockEmotion({
   situationText = "",
   faceSignal = "neutral",
+  faceFeatures = [],
   voiceSignal = "normal",
   recentMessages = [],
   selectedScenario = "normal"
@@ -48,13 +50,23 @@ export function analyzeMockEmotion({
   let responseApproach = preset.responseApproach;
   let needsConfirmation = preset.needsConfirmation;
   const text = situationText.toLowerCase();
+  const hasLiveFaceFeatures =
+    Array.isArray(faceFeatures) && faceFeatures.length > 0;
 
-  addScores(rawScores, faceScoreAdjustments[faceSignal]);
+  if (hasLiveFaceFeatures) {
+    addScores(rawScores, deriveLiveFaceEmotionAdjustments(faceFeatures));
+  } else {
+    addScores(rawScores, faceScoreAdjustments[faceSignal]);
+  }
   addScores(rawScores, voiceScoreAdjustments[voiceSignal]);
 
   const faceLabel = faceOptions.find((option) => option.value === faceSignal)?.label;
   const voiceLabel = voiceOptions.find((option) => option.value === voiceSignal)?.label;
-  if (faceLabel) evidence.push(`선택한 얼굴 신호: ${faceLabel}`);
+  if (hasLiveFaceFeatures) {
+    evidence.push("카메라에서 감지한 얼굴 움직임 강도를 실시간 반영");
+  } else if (faceLabel) {
+    evidence.push(`선택한 얼굴 신호: ${faceLabel}`);
+  }
   if (voiceLabel) evidence.push(`선택한 음성 신호: ${voiceLabel}`);
 
   if (/힘들|실패|망쳤|걱정/.test(text)) {

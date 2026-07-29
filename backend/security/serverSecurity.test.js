@@ -36,12 +36,16 @@ describe("Express security baseline", () => {
 
   it("returns 429 when an API client exceeds the configured limit", async () => {
     const baseUrl = await startServer({
+      authenticateGuest: async () => ({
+        session: { id: "550e8400-e29b-41d4-a716-446655440000" }
+      }),
+      listAnalyses: async () => [],
       rateLimitOptions: { windowMs: 60_000, limit: 2 }
     });
     const url = `${baseUrl}/api/emotion-analyses`;
 
-    expect((await fetch(url)).status).toBe(400);
-    expect((await fetch(url)).status).toBe(400);
+    expect((await fetch(url)).status).toBe(200);
+    expect((await fetch(url)).status).toBe(200);
 
     const blockedResponse = await fetch(url);
     expect(blockedResponse.status).toBe(429);

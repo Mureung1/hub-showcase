@@ -1,7 +1,6 @@
 export function toEmotionAnalysisDto(record) {
   return {
     id: record.id,
-    sessionId: record.session_id,
     situationText: record.situation_text,
     faceSignal: record.face_signal,
     faceSignalSource: record.face_signal_source || "manual",
