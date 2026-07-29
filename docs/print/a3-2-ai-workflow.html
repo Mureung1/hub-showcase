@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>A3 세로-2 AI 에이전트 워크플로우 — 소상공인 정부 지원금 큐레이터</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
+    <link rel="stylesheet" href="print.css" />
+  </head>
+  <body>
+    <div class="hint">
+      인쇄 방법 — Chrome에서 열고 <b>⌘P</b> → 용지 <b>A3</b> / 방향 <b>세로</b> / 배율 <b>100%</b> /
+      여백 <b>없음</b> / <b>배경 그래픽 켜기</b> → PDF로 저장. 이 안내 박스는 인쇄되지 않습니다.
+    </div>
+
+    <div class="poster roomy">
+      <header class="head">
+        <div class="head-main">
+          <div class="kicker">AI AGENT CHALLENGE · 시연 자료 2 / 2 · 개발 방식</div>
+          <h1>AI 에이전트를 어떻게 일하게 했는가</h1>
+          <p class="lede">
+            코드를 맡긴 게 아니라 <b>일하는 순서와 검증 기준</b>을 파일로 고정했다 — 이슈 하나가
+            계획서 한 장, PR 한 개로 끝나는 루프
+          </p>
+        </div>
+        <div class="head-side">
+          <div class="url">이슈 42개 · PR 61개 · 4주</div>
+          <div class="meta">
+            Cursor + Claude Code로 구현 · Gemini는 제품 기능<br />
+            모든 이슈에 agent-work 라벨
+          </div>
+        </div>
+      </header>
+
+      <main class="vstack">
+        <!-- ============ 메인 루프 ============ -->
+        <section class="panel">
+          <h2>
+            <span class="n">1</span>이슈 한 개를 처리하는 7단계<small>이 루프를 42번 반복</small>
+          </h2>
+
+          <div class="row">
+            <div class="box">
+              <div class="t">① 다음 할 일 고르기</div>
+              <div class="s">주차 계획표에서 P0 &gt; P1 &gt; P2 순으로</div>
+            </div>
+            <span class="arr">→</span>
+            <div class="box blue">
+              <div class="t">② 계획 문서 쓰기</div>
+              <div class="s">목표 · 현재 상태 · 범위 · 완료 기준 · 리스크</div>
+            </div>
+            <span class="arr">→</span>
+            <div class="box blue">
+              <div class="t">③ 묶음 단위 승인</div>
+              <div class="s">20~50분 크기로 쪼개 요약 → 승인 → 착수</div>
+            </div>
+            <span class="arr">→</span>
+            <div class="box">
+              <div class="t">④ 구현</div>
+              <div class="s">이슈 번호가 붙은 브랜치에서만 작업</div>
+            </div>
+          </div>
+
+          <div class="row" style="justify-content: flex-end; padding-right: 12mm">
+            <span class="arr">↓</span>
+          </div>
+
+          <div class="row">
+            <div class="box warn">
+              <div class="t">⑤ 검증</div>
+              <div class="s">빌드 · 테스트 · 린트<br />+ 실제 API·DB 재확인</div>
+            </div>
+            <span class="arr">→</span>
+            <div class="box">
+              <div class="t">⑥ 커밋 · PR</div>
+              <div class="s">규칙에 맞는 커밋 메시지<br />본문에 Closes #N</div>
+            </div>
+            <span class="arr">→</span>
+            <div class="box ok">
+              <div class="t">⑦ 정리</div>
+              <div class="s">머지 확인 → 상태 문서 갱신 → 캠퍼스 반영</div>
+            </div>
+            <span class="arr">→</span>
+            <div class="box dash">
+              <div class="t">↺ 다시 ①로</div>
+              <div class="s">다음 이슈</div>
+            </div>
+          </div>
+
+          <p class="cap">
+            <b>계획 문서를 먼저 쓴다</b>는 규칙 하나가 가장 크게 작동했다. 문서에 적힌 가정을 코드로
+            옮기기 전에 다시 검증하게 되고, 범위가 커지면 이슈를 쪼개서 다음으로 넘긴다.
+          </p>
+        </section>
+
+        <!-- ============ 중간 2단 ============ -->
+        <div class="grid c2 growrow">
+          <div class="col spread">
+            <section class="panel fill spread">
+              <h2>
+                <span class="n">2</span>역할 분담과 병렬 처리<small>이슈마다 독립 작업 폴더</small>
+              </h2>
+              <div class="colflow">
+                <div class="box navy">
+                  <div class="t">사람</div>
+                  <div class="s">
+                    문제 정의 · 기능 선정 · 범위 결정<br />묶음 승인 · 실행해보고 판단
+                  </div>
+                </div>
+                <span class="arr v">↕</span>
+                <div class="box blue">
+                  <div class="t">에이전트</div>
+                  <div class="s">
+                    코드 조사 · 계획 초안 · 구현 초안<br />테스트 작성 · 문서 갱신
+                  </div>
+                </div>
+                <div class="fork">
+                  <svg viewBox="0 0 300 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M150 0 V11" vector-effect="non-scaling-stroke" />
+                    <path d="M47 11 H253" vector-effect="non-scaling-stroke" />
+                    <path d="M47 11 V26" vector-effect="non-scaling-stroke" />
+                    <path d="M150 11 V26" vector-effect="non-scaling-stroke" />
+                    <path d="M253 11 V26" vector-effect="non-scaling-stroke" />
+                  </svg>
+                </div>
+                <div class="row">
+                  <div class="box pad-s"><div class="t">이슈 A</div></div>
+                  <div class="box pad-s"><div class="t">이슈 B</div></div>
+                  <div class="box pad-s"><div class="t">이슈 C</div></div>
+                </div>
+              </div>
+              <p class="cap">
+                판단이 필요한 자리와 반복이 필요한 자리를 나눴다. 조사가 여러 파일에 걸치면
+                <b>별도 조사 에이전트에 위임</b>하고, 이슈마다 독립된 작업 폴더(worktree)를 둬서
+                <b>서로의 파일을 건드리지 않고</b> 여러 이슈를 동시에 진행했다.
+              </p>
+            </section>
+
+            <section class="panel fill spread">
+              <h2><span class="n">3</span>검증은 사람이 눈으로 보기 전에</h2>
+              <div class="row">
+                <div class="box ok pad-s"><div class="t">빌드 · 타입</div></div>
+                <div class="box ok pad-s"><div class="t">단위 테스트</div></div>
+                <div class="box ok pad-s"><div class="t">린트</div></div>
+              </div>
+              <div class="row">
+                <div class="box warn pad-s"><div class="t">실제 API 호출</div></div>
+                <div class="box warn pad-s"><div class="t">DB 조회</div></div>
+              </div>
+              <p class="cap">
+                커밋 메시지 형식은 자동 검사로 막고, 삭제 작업은
+                <b>1,554건 중 86건</b>처럼 건수를 먼저 확인한 뒤 실행했다.
+              </p>
+            </section>
+          </div>
+
+          <div class="col spread">
+            <section class="panel">
+              <h2>
+                <span class="n">4</span>규칙을 파일로 고정했다<small>대화로 매번 설명하지 않기</small>
+              </h2>
+              <div class="row top">
+                <div class="box">
+                  <div class="t">작업 규칙</div>
+                  <div class="s">
+                    작업 유형별 참고 문서<br />코딩 · 커밋 · PR 규칙<br />문서 중복 방지 원칙
+                  </div>
+                </div>
+                <div class="box">
+                  <div class="t">이슈 워크플로우</div>
+                  <div class="s">
+                    7단계 절차 · 브랜치 규칙<br />계획서 · PR 서식<br />검증 명령 목록
+                  </div>
+                </div>
+                <div class="box">
+                  <div class="t">디자인 규칙</div>
+                  <div class="s">
+                    색 · 타이포 토큰<br />화면별 구성과 문구<br />와이어프레임 대응
+                  </div>
+                </div>
+              </div>
+              <p class="cap">
+                같은 지시를 반복하지 않으려고 <b>사실 종류마다 문서를 하나만</b> 두는 원칙도 넣었다.
+                진행 상태는 주차 계획표, 제품 범위는 기획서, 구현 세부는 이슈 계획서 — 다른
+                문서에서는 링크만 한다.
+              </p>
+            </section>
+
+            <section class="panel">
+              <h2><span class="n">5</span>제품 안에서 일하는 AI<small>개발 도구와 다른 역할</small></h2>
+              <div class="colflow">
+                <div class="box">
+                  <div class="t">공고 첨부파일</div>
+                  <div class="s">PDF 65% · HWP 23% · HWPX 12%</div>
+                </div>
+                <span class="arr v">↓</span>
+                <div class="box blue">
+                  <div class="t">AI가 조건을 뽑아낸다</div>
+                  <div class="s">직원 수 · 매출 · 업력 · 지원금액 · 필요 서류</div>
+                </div>
+                <span class="arr v">↓</span>
+                <div class="box">
+                  <div class="t">추출 결과 저장</div>
+                  <div class="s">같은 파일은 다시 호출하지 않도록 캐시</div>
+                </div>
+                <span class="arr v">↓</span>
+                <div class="box navy">
+                  <div class="t">매칭 조건으로 사용</div>
+                  <div class="s">글에서 못 찾던 조건을 숫자로 확보</div>
+                </div>
+              </div>
+              <p class="cap">
+                무료 한도가 <b>하루 20건</b>이라, 매일 새로 올라오는 공고(30~55건)에만 쓰도록 범위를
+                좁혔다. 한도가 걸리면 더 가벼운 모델로 자동 전환한다.
+              </p>
+            </section>
+          </div>
+        </div>
+
+        <!-- ============ 하단 : 숫자 + 교훈 ============ -->
+        <section class="panel tint">
+          <h2><span class="n">6</span>실패에서 배운 것</h2>
+          <div class="row top">
+            <div class="box">
+              <div class="t">문서보다 실제 응답</div>
+              <div class="s">
+                검색으로 짐작한 필드명으로 코드를 짰다가 전부 어긋났다 →
+                <b>직접 호출해 응답을 보고</b> 고쳤다
+              </div>
+            </div>
+            <div class="box">
+              <div class="t">AI 한도를 먼저 재본다</div>
+              <div class="s">
+                전체 공고에 AI를 돌릴 계획이었지만 무료 한도를 먼저 측정 →
+                <b>신규 공고만</b>으로 설계 변경
+              </div>
+            </div>
+            <div class="box">
+              <div class="t">지우기 전에 세어본다</div>
+              <div class="s">
+                삭제·정리 작업은 항상 <b>건수만 먼저 출력</b>해 눈으로 확인한 뒤 실행
+              </div>
+            </div>
+          <div class="box">
+              <div class="t">데이터가 없는 축은 버린다</div>
+              <div class="s">
+                업종은 6.2%만 확보 →
+                <b>결측 0%인 지원분야로 온보딩 질문을 교체</b>하고 매칭 축을 옮겼다
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
