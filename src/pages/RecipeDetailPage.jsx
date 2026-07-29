@@ -192,16 +192,16 @@ function RecipeDetailPage() {
         </div>
 
         {/* 영상 + 재료/구매패널 묶음 — 가로 영상은 항상 세로로 쌓임(기존과 동일).
-            세로 영상(쇼츠 등)은 데스크톱(lg 이상)에서만 영상(왼쪽 고정폭)+정보(오른쪽)를 2단으로 배치해
+            세로 영상(쇼츠 등)은 화면이 md 이상으로 넓을 때만 영상(왼쪽 고정폭)+정보(오른쪽)를 2단으로 배치해
             영상 옆의 빈 공간을 활용한다. 모바일에서는 세로 영상도 기존처럼 위/아래로 쌓인다.
             재료가 많아 오른쪽 컬럼이 영상보다 길어지면 영상 아래 왼쪽에 빈 공간이 생기므로,
             데스크톱에서는 영상을 sticky로 고정해 오른쪽을 스크롤해도 계속 따라오게 한다.
             youtubeId가 있으면 재생 버튼을 눌렀을 때만 iframe을 마운트한다 (지연 로딩). */}
-        <div className={`mt-4 flex flex-col gap-6 ${videoAspectRatio < 1 ? 'lg:flex-row lg:items-start' : ''}`}>
+        <div className={`mt-4 flex flex-col gap-6 ${videoAspectRatio < 1 ? 'md:flex-row md:items-start' : ''}`}>
           <div
             className={`relative overflow-hidden rounded-banner border-[3.6px] border-ink ${
               videoAspectRatio < 1
-                ? 'mx-auto w-full max-w-sm shrink-0 aspect-[9/16] lg:sticky lg:top-8 lg:mx-0'
+                ? 'mx-auto w-full max-w-sm shrink-0 aspect-[9/16] md:sticky md:top-8 md:mx-0'
                 : 'w-full aspect-video'
             }`}
           >
