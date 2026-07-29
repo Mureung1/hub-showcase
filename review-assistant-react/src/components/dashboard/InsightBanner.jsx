@@ -26,9 +26,11 @@ function InsightBanner() {
 
   if (loading) {
     return (
-      <div className="insight-banner insight-banner-loading">
-        <span className="spinner" />
-        AI가 리뷰를 살펴보고 있어요...
+      <div className="lp-dash-card lp-dash-guide">
+        <h3 className="lp-dash-guide-title">✨ AI 인사이트</h3>
+        <p className="lp-dash-guide-text">
+          <span className="spinner" /> AI가 리뷰를 살펴보고 있어요...
+        </p>
       </div>
     )
   }
@@ -36,9 +38,9 @@ function InsightBanner() {
   if (!insight) return null
 
   return (
-    <div className="insight-banner">
-      <span className="insight-banner-icon">✨</span>
-      <p className="insight-banner-text">{insight}</p>
+    <div className="lp-dash-card lp-dash-guide">
+      <h3 className="lp-dash-guide-title">✨ AI 인사이트</h3>
+      <p className="lp-dash-guide-text">&quot;{insight}&quot;</p>
     </div>
   )
 }

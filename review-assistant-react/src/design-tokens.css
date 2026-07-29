@@ -104,4 +104,12 @@
   --color-brand-dot-1: #e8a15c;
   --color-brand-dot-2: #c1502b;
   --color-brand-dot-3: #a83a1c;
+
+  /*
+    Landing "인사이트 대시보드" 리디자인 (2026-07-28, Figma 스크린샷 참고 —
+    핸드오프 문서 없이 이미지만 받아서, 아래 값은 기존 토큰 색조를 기준으로
+    추정한 값. 정확한 hex가 필요하면 디자인팀에 재확인 필요).
+    긍정 추이 막대만 새로 추가 — 나머지는 기존 토큰 재사용.
+  */
+  --color-lp-trend-positive: oklch(55% 0.12 150);
 }

@@ -5,6 +5,7 @@ import { analyzeReviews, resetHistory as resetHistoryApi } from '../lib/api.js'
 import ReviewInputForm from '../components/tool/ReviewInputForm.jsx'
 import RecurringIssuePanel from '../components/tool/RecurringIssuePanel.jsx'
 import ReviewResultCard from '../components/tool/ReviewResultCard.jsx'
+import { ToolHero, ToolTips, ToolResultPreview, ToolProcessSteps } from '../components/tool/ToolIntro.jsx'
 
 function ToolPage() {
   const [reviewInput, setReviewInput] = useState('')
@@ -69,14 +70,35 @@ function ToolPage() {
       <Header />
 
       <div className="container" id="tool">
-        <ReviewInputForm
-          value={reviewInput}
-          onChange={setReviewInput}
-          onAnalyze={handleAnalyze}
-          loading={loading}
-          lineCount={lineCount}
-          showTips={results === null}
-        />
+        {results === null ? (
+          <>
+            <ToolHero />
+            <div className="tool-columns">
+              <div className="tool-col-input">
+                <ReviewInputForm
+                  value={reviewInput}
+                  onChange={setReviewInput}
+                  onAnalyze={handleAnalyze}
+                  loading={loading}
+                  lineCount={lineCount}
+                />
+              </div>
+              <div className="tool-col-side">
+                <ToolTips />
+                <ToolResultPreview />
+              </div>
+            </div>
+            <ToolProcessSteps />
+          </>
+        ) : (
+          <ReviewInputForm
+            value={reviewInput}
+            onChange={setReviewInput}
+            onAnalyze={handleAnalyze}
+            loading={loading}
+            lineCount={lineCount}
+          />
+        )}
 
         {loading && (
           <div className="status">

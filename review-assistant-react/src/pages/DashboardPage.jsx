@@ -78,19 +78,6 @@ function DashboardPage() {
 
         {summary && summary.totalReviews > 0 && (
           <>
-            <InsightBanner />
-
-            <div className="stats-row">
-              <div className="stat-item">
-                <div className="stat-number">{summary.totalReviews}개</div>
-                <div className="stat-label">분석한 리뷰</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-number">{summary.averageScore}</div>
-                <div className="stat-label">평균 관심도 점수</div>
-              </div>
-            </div>
-
             <h2 className="section-title">감정 분포</h2>
             <div className="sentiment-breakdown">
               <SentimentTag sentiment="positive">{summary.sentimentBreakdown.positive}</SentimentTag>
@@ -98,25 +85,98 @@ function DashboardPage() {
               <SentimentTag sentiment="neutral">{summary.sentimentBreakdown.neutral}</SentimentTag>
             </div>
 
-            <h2 className="section-title">자주 언급된 키워드</h2>
-            <div className="industry-list">
-              {summary.topKeywords.map((item) => (
-                <span className="industry-chip" key={item.keyword}>
-                  #{item.keyword} {item.count}
-                </span>
-              ))}
-            </div>
-
-            <h2 className="section-title">월별 통계</h2>
-            <div className="monthly-table">
-              {months.map((month) => (
-                <div className="monthly-row" key={month.month}>
-                  <span className="monthly-month">{month.month}</span>
-                  <span>{month.totalReviews}건 분석</span>
-                  <span>평균 {month.averageScore}점</span>
-                  <span>부정 {month.negative}건</span>
+            <div className="lp-dashboard dashboard-grid">
+              <div className="lp-dash-stats">
+                <div className="lp-dash-tile">
+                  <span className="lp-dash-tile-label">분석한 리뷰 수</span>
+                  <strong className="lp-dash-tile-value">{summary.totalReviews}개</strong>
+                  <span className="lp-dash-tile-delta">누적 기준</span>
                 </div>
-              ))}
+                <div className="lp-dash-tile">
+                  <span className="lp-dash-tile-label">평균 관심도 점수</span>
+                  <strong className="lp-dash-tile-value">{summary.averageScore}</strong>
+                  <span className="lp-dash-tile-delta">100점 만점</span>
+                </div>
+                <div className="lp-dash-tile">
+                  <span className="lp-dash-tile-label">긍정 리뷰 비율</span>
+                  <strong className="lp-dash-tile-value">
+                    {Math.round((summary.sentimentBreakdown.positive / summary.totalReviews) * 100)}%
+                  </strong>
+                  <span className="lp-dash-tile-delta">전체 {summary.totalReviews}건 중</span>
+                </div>
+              </div>
+
+              <div className="lp-dash-card lp-dash-keywords">
+                <h3 className="lp-dash-card-title">자주 언급된 키워드</h3>
+                {summary.topKeywords.length === 0 ? (
+                  <p className="lp-dash-guide-text">아직 집계된 키워드가 없어요.</p>
+                ) : (
+                  <div className="lp-dash-keyword-list">
+                    {summary.topKeywords.map((item) => {
+                      const maxCount = summary.topKeywords[0].count
+                      return (
+                        <div className="lp-dash-keyword-row" key={item.keyword}>
+                          <div className="lp-dash-keyword-head">
+                            <span>#{item.keyword}</span>
+                            <span className="lp-dash-keyword-count">{item.count}건</span>
+                          </div>
+                          <div className="lp-bar-track">
+                            <div
+                              className="lp-bar-fill lp-bar-fill--neutral"
+                              style={{ width: `${(item.count / maxCount) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {months.length > 0 && (
+                <div className="lp-dash-card lp-dash-trend">
+                  <div className="lp-dash-card-headrow">
+                    <h3 className="lp-dash-card-title">월별 감정 비중 추이</h3>
+                    <div className="lp-dash-legend">
+                      <span className="lp-dash-legend-item">
+                        <i className="lp-dot lp-dot--positive" />긍정
+                      </span>
+                      <span className="lp-dash-legend-item">
+                        <i className="lp-dot lp-dot--neutral" />중립
+                      </span>
+                      <span className="lp-dash-legend-item">
+                        <i className="lp-dot lp-dot--negative" />부정
+                      </span>
+                    </div>
+                  </div>
+                  <div className="lp-trend-chart">
+                    {months.map((month) => {
+                      const total = month.totalReviews || 1
+                      return (
+                        <div className="lp-trend-col" key={month.month}>
+                          <div className="lp-trend-stack" title={`${month.month} · ${month.totalReviews}건 · 평균 ${month.averageScore}점`}>
+                            <div
+                              className="lp-trend-seg lp-trend-seg--positive"
+                              style={{ height: `${(month.positive / total) * 100}%` }}
+                            />
+                            <div
+                              className="lp-trend-seg lp-trend-seg--neutral"
+                              style={{ height: `${(month.neutral / total) * 100}%` }}
+                            />
+                            <div
+                              className="lp-trend-seg lp-trend-seg--negative"
+                              style={{ height: `${(month.negative / total) * 100}%` }}
+                            />
+                          </div>
+                          <span className="lp-trend-month">{month.month.slice(5)}월</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <InsightBanner />
             </div>
           </>
         )}

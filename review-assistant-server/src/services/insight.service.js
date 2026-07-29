@@ -15,9 +15,17 @@ const INSIGHT_TOOL = {
   },
 }
 
-function isToday(isoString) {
-  const today = new Date().toISOString().slice(0, 10)
-  return isoString.slice(0, 10) === today
+// 캐시 생성 시점 이후로 새로 분석된 리뷰가 있는지 확인한다 — 있으면 통계가 바뀐 것이므로
+// 캐시를 무효화한다. 리뷰 건수가 그대로여도(초기화 후 재분석 등) created_at은 항상 더
+// 나중이 되므로 정확히 감지된다.
+async function hasNewReviewsSince(sessionId, generatedAt) {
+  const { count, error } = await supabase
+    .from('reviews')
+    .select('id', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+    .gt('created_at', generatedAt)
+  if (error) throw new Error(`신규 리뷰 확인 실패: ${error.message}`)
+  return count > 0
 }
 
 function buildPrompt(summary, recurringIssues) {
@@ -37,8 +45,10 @@ function buildPrompt(summary, recurringIssues) {
   ].join('\n')
 }
 
-// session_id당 하루 1건만 생성해서 캐싱한다 — 대시보드를 열 때마다 API를 부르면
-// 느려지고 비용도 쌓이기 때문(기획서.md 참고 없음, 오늘 대화에서 결정).
+// session_id당 캐싱해서 대시보드를 열 때마다 API를 새로 부르지 않는다 — 다만
+// 캐시 생성 이후 새로 분석된 리뷰가 있으면(통계가 바뀐 것이므로) 다시 생성한다.
+// (기존엔 "하루 1건" 기준이었는데, 같은 날 리뷰를 더 분석해도 캐시된 옛 문구가
+// 그대로 나와 화면의 실시간 통계와 안 맞아 보이는 문제가 있어 변경함 — 2026-07-29.)
 export async function getOrGenerateInsight(sessionId) {
   const summary = await getSummary(sessionId)
   if (summary.totalReviews === 0) {
@@ -52,7 +62,7 @@ export async function getOrGenerateInsight(sessionId) {
     .maybeSingle()
   if (findError) throw new Error(`인사이트 캐시 조회 실패: ${findError.message}`)
 
-  if (cached && isToday(cached.generated_at)) {
+  if (cached && !(await hasNewReviewsSince(sessionId, cached.generated_at))) {
     return cached.insight_text
   }
 

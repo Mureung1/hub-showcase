@@ -11,7 +11,6 @@ describe('정상 동작 (Happy Path)', () => {
         onAnalyze={vi.fn()}
         loading={false}
         lineCount={0}
-        showTips={false}
       />
     )
 
