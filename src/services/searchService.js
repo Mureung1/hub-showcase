@@ -1,7 +1,3 @@
-// import { commands } from '../data/commands';
-// import { compareByRelevance } from '../utils/commandSort';
-
-// const MOCK_DELAY_MS = 300;
 // commandsService.js와 동일한 이유로 환경변수 오버라이드 지원 (배포 시 BE 주소가 localhost가 아님)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
