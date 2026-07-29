@@ -24,6 +24,20 @@ const POSTINGS = {
   'backend|startup': [],
 }
 
+// 직무 하나의 공고 전체. 기업군에 매이지 않는 선택지라 줄마다 기업군이 함께 실린다.
+const POSTINGS_FOR_JOB = {
+  backend: [
+    {
+      posting_id: 'dp_backend_02', company: '카카오', title: '백엔드 개발자',
+      posted_at: '2026-01-12T10:00:00+09:00', cluster_id: 'bigtech_platform', cluster_tag: '빅테크·플랫폼',
+    },
+    {
+      posting_id: 'dp_backend_07', company: '토스랩', title: '서버 개발자',
+      posted_at: '2026-01-05T10:00:00+09:00', cluster_id: 'startup', cluster_tag: '스타트업',
+    },
+  ],
+}
+
 // 로드맵 재조합을 볼 수 있는 최소 payload. 규칙 자체의 대조는 recompose.test.js 가 한다.
 const ROADMAP = {
   job: 'backend',
@@ -54,6 +68,7 @@ function makeDb(overrides = {}) {
     getJobRoles: async () => JOB_ROLES,
     getClusters: async () => CLUSTERS,
     getPostingsInCluster: async (job, clusterId) => POSTINGS[`${job}|${clusterId}`] || [],
+    getPostingsForJob: async (job) => POSTINGS_FOR_JOB[job] || [],
     getActiveAnalysis: async (job) => (job === 'security' ? null : `an_demo_${job}`),
     getOutput: async (version, level, scopeId, type) => OUTPUTS[`${version}|${level}|${scopeId}|${type}`] || null,
     // 기본은 캐시 미적중이다. 적중을 보는 시험이 이 둘을 갈아 끼운다.
@@ -129,6 +144,39 @@ describe('조회 라우트', () => {
     const response = await fetch(`${app.base}/api/stats?job=security`)
     expect(response.status).toBe(503)
     expect((await response.json()).error.code).toBe('NO_ACTIVE_ANALYSIS')
+  })
+
+  test('GET /api/postings 는 직무의 공고를 기업군과 함께 낸다', async () => {
+    const response = await fetch(`${app.base}/api/postings?job=backend`)
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body).toEqual(POSTINGS_FOR_JOB.backend)
+    // 기업군이 서로 다른 공고가 한 목록에 함께 나온다 — 기업군을 먼저 고를 필요가 없다.
+    expect(body.map((p) => p.cluster_tag)).toEqual(['빅테크·플랫폼', '스타트업'])
+  })
+
+  test('GET /api/postings 는 목록에 없는 직무를 400 으로 낸다', async () => {
+    const response = await fetch(`${app.base}/api/postings?job=chef`)
+    expect(response.status).toBe(400)
+    expect((await response.json()).error.code).toBe('UNSUPPORTED_JOB')
+  })
+
+  test('GET /api/postings 는 직무가 없으면 400 이다', async () => {
+    const response = await fetch(`${app.base}/api/postings`)
+    expect(response.status).toBe(400)
+    expect((await response.json()).error.code).toBe('UNSUPPORTED_JOB')
+  })
+
+  test('GET /api/postings 는 활성 분석 버전이 없으면 503 이다', async () => {
+    const response = await fetch(`${app.base}/api/postings?job=security`)
+    expect(response.status).toBe(503)
+    expect((await response.json()).error.code).toBe('NO_ACTIVE_ANALYSIS')
+  })
+
+  test('GET /api/postings 는 분석된 공고가 없으면 빈 목록이다', async () => {
+    const response = await fetch(`${app.base}/api/postings?job=frontend`)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual([])
   })
 
   test('POST /api/reverse 는 posting 범위 payload 와 공고 목록을 낸다', async () => {

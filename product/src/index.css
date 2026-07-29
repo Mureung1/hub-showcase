@@ -1990,3 +1990,22 @@ button.view-tab { font-weight: 750; }
   .scope-switch__tier { grid-template-columns: 1fr; gap: 6px; }
   .scope-switch__tier-label { padding-top: 0; }
 }
+
+/* ── 3단 공고 목록 — 기업군에 매이지 않는 선택지 ────────────────────────
+   직무의 공고 전체가 한 목록에 들어오므로 줄마다 어느 기업군인지 배지로 밝힌다.
+   목록은 길어질 수 있어 최대 높이를 두고 그 안에서 스크롤한다.
+   본문 카드와 같은 불투명 흰 면을 그대로 쓴다 — 반투명은 상단바·사이드바 몫이다. */
+.posting-list--scope { max-height: 232px; margin-top: 2px; }
+.posting-row--scope { grid-template-columns: 1fr 1.5fr auto 88px; }
+.posting-cluster {
+  justify-self: start;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+  border-radius: 999px; padding: 2px 8px;
+  background: var(--color-primary-light); color: var(--color-primary-dark);
+}
+.posting-row--on .posting-cluster { background: var(--color-surface); }
+
+@media (max-width: 860px) {
+  .posting-row--scope { grid-template-columns: 1fr; }
+  .posting-cluster { justify-self: start; }
+}

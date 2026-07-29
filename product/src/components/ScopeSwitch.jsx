@@ -8,6 +8,11 @@ import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
 // 않아, 기업군과 개별 공고를 번갈아 눌러도 같은 안내만 본다는 혼란이 나왔다.
 // 그래서 선택은 전부 여기로 모으고 본문에서는 지웠다. 세 화면은 이 블록 하나만 쓴다.
 //
+// 공고 목록은 **기업군에 매이지 않는다**. 예전에는 지금 고른 기업군의 공고만 보여 주어,
+// 공고 하나를 고르려면 기업군을 하나씩 눌러 봐야 했다. 기업군마다 최근 공고가 한 건뿐인
+// 실제 데이터에서는 건수 조건에 걸려 검색칸도 나오지 않았다. 이제 3단은 직무의 공고
+// 전체를 받아 검색칸을 늘 띄우고, 공고를 고르면 그 공고의 기업군까지 함께 올린다.
+//
 // 세 단이 위에서 아래로 좁혀 간다.
 //   1단 범위 종류 — 직무 전체 / 기업군 / 개별 공고 / 내가 입력한 공고(있을 때만)
 //   2단 기업군 여섯 — 1단이 기업군이나 개별 공고일 때만
@@ -17,8 +22,9 @@ import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
 // props
 //   scope           지금 요청한 범위 { level, cluster_tag, posting_id }
 //   jobLabel        직무 표시명 (1단이 직무 전체일 때 문장에 쓴다)
-//   postings        지금 기업군의 공고 목록 — 화면이 받은 payload 의 postings_in_cluster
-//   postingsLoading 그 목록을 아직 받는 중인지 (빈 목록의 이유를 구분해 쓴다)
+//   postings        직무의 공고 전체 — hooks/usePostings 가 받은 목록
+//                   [{ posting_id, company, title, posted_at, cluster_id, cluster_tag }]
+//   postingsStatus  그 목록의 상태 loading | ready | empty | error
 //   myPosting       App 이 들고 있는 내가 입력한 공고 (없으면 1단의 네 번째를 감춘다)
 //   payloadScope    지금 그리고 있는 payload 의 scope — 요청과 다르면 그 사실을 밝힌다
 //   hint            화면이 덧붙이는 한 줄 안내 (없어도 된다)
@@ -30,6 +36,12 @@ const KIND_LABEL = {
   posting: '개별 공고',
   mine: '내가 입력한 공고',
 }
+
+// 2단 기업군 칩의 "전체" 선택지. 3단 목록을 기업군으로 좁히지 않는다는 뜻이다.
+const ALL_CLUSTERS = '전체'
+
+// 분석된 개별 공고가 하나도 없을 때의 안내. 오류를 떠들지 않고 이 한 줄만 낸다.
+const NO_POSTINGS = '분석된 개별 공고가 없습니다'
 
 // 폴백 안내에 쓰는 범위 이름.
 const SCOPE_LEVEL_LABEL = { cluster: '기업군', overall: '전체' }
@@ -59,34 +71,43 @@ function ScopeTier({ label, children }) {
   )
 }
 
-// 1단 — 범위 종류.
-function KindChips({ kind, hasMine, onPick }) {
+// 1단 — 범위 종류. 분석된 개별 공고가 없으면 개별 공고 칩은 누를 수 없다.
+function KindChips({ kind, hasMine, postingDisabled, onPick }) {
   const kinds = hasMine ? ['overall', 'cluster', 'posting', 'mine'] : ['overall', 'cluster', 'posting']
   return (
     <ScopeTier label="범위">
       <div className="scope-switch__chips" role="group" aria-label="범위 종류">
-        {kinds.map((k) => (
-          <button
-            key={k}
-            type="button"
-            className={`scope-chip${k === kind ? ' scope-chip--on' : ''}`}
-            aria-pressed={k === kind}
-            onClick={() => onPick(k)}
-          >
-            {KIND_LABEL[k]}
-          </button>
-        ))}
+        {kinds.map((k) => {
+          const disabled = k === 'posting' && postingDisabled
+          return (
+            <button
+              key={k}
+              type="button"
+              className={`scope-chip${k === kind ? ' scope-chip--on' : ''}`}
+              aria-pressed={k === kind}
+              disabled={disabled}
+              title={disabled ? NO_POSTINGS : undefined}
+              onClick={() => onPick(k)}
+            >
+              {KIND_LABEL[k]}
+            </button>
+          )
+        })}
       </div>
     </ScopeTier>
   )
 }
 
 // 2단 — 기업군 여섯.
-function ClusterChips({ cluster, onPick }) {
+//
+// 1단이 기업군이면 이 칩이 곧 범위 선택이다. 1단이 개별 공고이면 3단 목록을 좁히는
+// 거르개로도 쓰이므로, 좁히기를 풀 수 있게 `전체` 를 앞에 하나 더 둔다.
+function ClusterChips({ cluster, withAll, onPick }) {
+  const options = withAll ? [ALL_CLUSTERS, ...CLUSTERS] : CLUSTERS
   return (
     <ScopeTier label="기업군">
       <div className="scope-switch__chips" role="group" aria-label="기업군">
-        {CLUSTERS.map((c) => (
+        {options.map((c) => (
           <button
             key={c}
             type="button"
@@ -102,47 +123,56 @@ function ClusterChips({ cluster, onPick }) {
   )
 }
 
-// 3단 — 그 기업군의 공고 목록. 검색어는 범위가 아니라 이 목록만의 상태라 여기 둔다.
-// 목록이 짧으면 검색칸이 오히려 방해가 되므로 여덟 건을 넘을 때만 낸다.
-function PostingPicker({ postings, postingId, loading, onPick }) {
+// 3단 — 직무의 공고 목록. 검색어는 범위가 아니라 이 목록만의 상태라 여기 둔다.
+//
+// 검색칸은 건수와 상관없이 늘 낸다. 짧은 목록에서 감췄더니 기업군마다 최근 공고가 한
+// 건뿐인 데이터에서는 영영 나오지 않아 공고를 찾을 길이 사라졌다.
+// 회사명·공고 제목·기업군 표시명 셋으로 걸러진다.
+function PostingPicker({ postings, postingId, clusterFilter, status, onPick }) {
   const [search, setSearch] = useState('')
   const query = search.trim().toLowerCase()
+
+  // 검색 중에는 기업군 거르개를 넘어 전체에서 찾는다. 기업군 칩으로 좁혀 둔 뒤에도
+  // 검색칸 하나로 직무의 공고 전체를 다시 볼 수 있어야 하기 때문이다.
+  const scoped = clusterFilter ? postings.filter((p) => p.cluster_tag === clusterFilter) : postings
   const filtered = query
-    ? postings.filter((p) => `${p.company} ${p.title}`.toLowerCase().includes(query))
-    : postings
+    ? postings.filter((p) => `${p.company} ${p.title} ${p.cluster_tag}`.toLowerCase().includes(query))
+    : scoped
+
+  let empty = null
+  if (status === 'loading') empty = '공고 목록을 불러오는 중입니다…'
+  else if (postings.length === 0) empty = NO_POSTINGS
+  else if (filtered.length === 0) empty = '조건에 맞는 공고가 없습니다.'
 
   return (
     <ScopeTier label="공고">
       <div className="scope-switch__postings">
-        {postings.length > 8 && (
-          <input
-            className="posting-search"
-            type="text"
-            aria-label="회사·공고명 검색"
-            placeholder="회사·공고명 검색"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        )}
+        <input
+          className="posting-search"
+          type="text"
+          aria-label="회사·공고명·기업군 검색"
+          placeholder="회사·공고명·기업군 검색"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
         <p className="posting-count">
-          공고 {postings.length}건{query && ` · 검색 결과 ${filtered.length}건`}
+          {query
+            ? `검색 결과 ${filtered.length}건 · 기업군 구분 없이 전체 ${postings.length}건에서 찾습니다`
+            : `공고 ${filtered.length}건${clusterFilter ? ` · ${clusterFilter} 기업군만` : ''}`}
         </p>
-        <div className="posting-list posting-list--slim">
-          {filtered.length === 0 && (
-            <p className="posting-empty">
-              {loading ? '공고 목록을 불러오는 중입니다…' : '조건에 맞는 공고가 없습니다.'}
-            </p>
-          )}
-          {filtered.map((p) => (
+        <div className="posting-list posting-list--scope">
+          {empty && <p className="posting-empty">{empty}</p>}
+          {!empty && filtered.map((p) => (
             <button
               key={p.posting_id}
               type="button"
-              className={`posting-row${p.posting_id === postingId ? ' posting-row--on' : ''}`}
+              className={`posting-row posting-row--scope${p.posting_id === postingId ? ' posting-row--on' : ''}`}
               aria-pressed={p.posting_id === postingId}
-              onClick={() => onPick(p.posting_id)}
+              onClick={() => onPick(p)}
             >
               <span className="co">{p.company}</span>
               <span className="ti">{p.title}</span>
+              <span className="posting-cluster">{p.cluster_tag}</span>
               <span className="dt">{p.posted_at}</span>
             </button>
           ))}
@@ -152,14 +182,21 @@ function PostingPicker({ postings, postingId, loading, onPick }) {
   )
 }
 
-function ScopeSwitch({ scope, jobLabel, postings = [], postingsLoading = false, myPosting, payloadScope, hint, onSelect }) {
+function ScopeSwitch({ scope, jobLabel, postings = [], postingsStatus = 'loading', myPosting, payloadScope, hint, onSelect }) {
   const kind = kindOf(scope)
+  // 3단 목록을 좁히는 기업군. 범위가 아니라 목록 보기 상태라 여기 둔다.
+  // 처음에는 좁히지 않는다 — 직무의 공고 전체가 바로 보여야 한다.
+  const [clusterFilter, setClusterFilter] = useState(null)
   // 직무 전체·내가 입력한 공고 범위에서도 기업군은 기억해 둔다. 되돌아왔을 때 처음 기업군으로
   // 튀지 않게 하려는 것이다. 요청에는 data/clusters.js 의 apiScope 가 걸러 내보낸다.
   const cluster = scope.cluster_tag || DEFAULT_CLUSTER
   const postingId = kind === 'posting' ? scope.posting_id : null
   const selected = postings.find((p) => p.posting_id === postingId)
   const postingLabel = selected ? `${selected.company} ${selected.title}` : null
+  // 고른 공고의 기업군을 앞세운다. 목록에서 바로 고르면 기업군은 공고가 데려온다.
+  const postingCluster = selected ? selected.cluster_tag : cluster
+  // 목록을 못 받았거나 비었으면 개별 공고 범위 자체를 열지 않는다.
+  const noPostings = postingsStatus === 'empty' || postingsStatus === 'error'
 
   // 개별 공고를 요청했는데 서버가 넓은 범위 결과를 내려 준 경우(CONTRACT 4장의 범위 폴백).
   // 조용히 다른 범위 결과를 보여 주지 않는다.
@@ -177,17 +214,34 @@ function ScopeSwitch({ scope, jobLabel, postings = [], postingsLoading = false, 
     else if (next === 'posting') select({ level: 'posting', cluster_tag: cluster, posting_id: postingId })
     else select({ level: 'cluster', cluster_tag: cluster, posting_id: null })
   }
-  // 기업군을 바꾸면 이전 기업군의 공고 선택은 의미가 없으므로 비운다. 1단은 그대로 둔다.
-  const pickCluster = (next) => select({ level: kind === 'posting' ? 'posting' : 'cluster', cluster_tag: next, posting_id: null })
+  // 기업군 칩. 개별 공고 범위에서는 3단 목록을 좁히는 거르개로도 쓴다.
+  // `전체` 는 좁히기만 풀고 범위는 건드리지 않는다 — 고른 공고를 잃지 않기 위해서다.
+  const pickCluster = (next) => {
+    if (next === ALL_CLUSTERS) {
+      setClusterFilter(null)
+      return
+    }
+    setClusterFilter(next)
+    // 기업군을 바꾸면 이전 기업군의 공고 선택은 의미가 없으므로 비운다. 1단은 그대로 둔다.
+    select({ level: kind === 'posting' ? 'posting' : 'cluster', cluster_tag: next, posting_id: null })
+  }
+  // 공고를 고르면 그 공고의 기업군까지 함께 올린다. 기업군을 먼저 고를 필요가 없다.
   // 고른 공고를 다시 누르면 선택만 푼다. 1단은 개별 공고에 머문다.
-  const pickPosting = (id) => select({ level: 'posting', cluster_tag: cluster, posting_id: id === postingId ? null : id })
+  const pickPosting = (p) => {
+    const off = p.posting_id === postingId
+    select({
+      level: 'posting',
+      cluster_tag: off ? cluster : (p.cluster_tag || cluster),
+      posting_id: off ? null : p.posting_id,
+    })
+  }
 
   let current
   if (kind === 'mine' && myPosting) {
     const title = myPosting.title ? `${myPosting.title} · ` : ''
     current = `내가 입력한 공고 기준 · ${title}${myPosting.submittedAt} 입력`
   } else if (kind === 'posting' && postingLabel) {
-    current = `${cluster} 기업군 · ${postingLabel} 공고 기준`
+    current = `${postingCluster} 기업군 · ${postingLabel} 공고 기준`
   } else if (kind === 'posting') {
     current = `${cluster} 기업군 기준 — 아직 공고를 고르지 않았습니다`
   } else if (kind === 'overall') {
@@ -198,19 +252,30 @@ function ScopeSwitch({ scope, jobLabel, postings = [], postingsLoading = false, 
 
   return (
     <div className="scope-switch" role="group" aria-label="분석 범위 선택">
-      <KindChips kind={kind} hasMine={!!myPosting} onPick={pickKind} />
+      <KindChips kind={kind} hasMine={!!myPosting} postingDisabled={noPostings} onPick={pickKind} />
       {(kind === 'cluster' || kind === 'posting') && (
-        <ClusterChips cluster={cluster} onPick={pickCluster} />
+        <ClusterChips
+          cluster={kind === 'posting' ? (clusterFilter || ALL_CLUSTERS) : cluster}
+          withAll={kind === 'posting'}
+          onPick={pickCluster}
+        />
       )}
       {kind === 'posting' && (
-        <PostingPicker postings={postings} postingId={postingId} loading={postingsLoading} onPick={pickPosting} />
+        <PostingPicker
+          postings={postings}
+          postingId={postingId}
+          clusterFilter={clusterFilter}
+          status={postingsStatus}
+          onPick={pickPosting}
+        />
       )}
 
       <p className="scope-switch__line">
         <span className="scope-switch__now">지금 보고 있는 범위</span>
         <span>{current}</span>
       </p>
-      {kind === 'posting' && !postingId && (
+      {noPostings && <p className="scope-switch__hint">{NO_POSTINGS}</p>}
+      {kind === 'posting' && !postingId && !noPostings && (
         <p className="scope-switch__hint">공고 목록에서 하나를 고르면 그 공고 기준으로 바뀝니다.</p>
       )}
       {hint && <p className="scope-switch__hint">{hint}</p>}
