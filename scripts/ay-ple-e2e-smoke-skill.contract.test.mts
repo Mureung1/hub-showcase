@@ -61,6 +61,11 @@ test('E2E Skill keeps lifecycle policy with Codex and uses a staged handoff', as
   )
   assert.match(skill, /stage[\s\S]*\$semester-workspace-init[\s\S]*activate/i)
   assert.match(skill, /staging-ready[\s\S]*exact `HEAD`/i)
+  assert.match(
+    skill,
+    /Do not edit, archive, delete, or reset[\s\S]*app-data[\s\S]*registry/i,
+  )
+  assert.match(skill, /App[\s\S]*CAS replacement[\s\S]*Product RED/i)
   assert.match(skill, /accept[\s\S]*Review/i)
   assert.match(skill, /retain[\s\S]*(?:workspace|process|Browser)/i)
   assert.match(skill, /arbitrary prepared SemesterWorkspace[\s\S]*review-only/i)
@@ -80,6 +85,16 @@ test('E2E Skill keeps lifecycle policy with Codex and uses a staged handoff', as
   assert.match(fixtureReference, /existing target remains preserved/i)
   assert.match(fixtureReference, /one-time adoption[\s\S]*\sadopt\s/i)
   assert.match(fixtureReference, /staging-ready[\s\S]*exact `HEAD`/i)
+  assert.match(
+    fixtureReference,
+    /must not edit, archive, delete, or reset[\s\S]*registry/i,
+  )
+  assert.match(
+    fixtureReference,
+    /explicit[\s\S]*--workspace[\s\S]*stale same-root binding[\s\S]*CAS/i,
+  )
+  assert.match(fixtureReference, /Without an explicit[\s\S]*fail closed/i)
+  assert.doesNotMatch(fixtureReference, /workspace-registry\.pre-dogfood/i)
   assert.doesNotMatch(fixtureReference, /\/Users\//)
   assert.doesNotMatch(
     `${skill}\n${fixtureReference}\n${openAiSource}`,

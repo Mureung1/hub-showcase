@@ -63,6 +63,11 @@ For repository dogfood:
    `activate` command with that `HEAD`, the prior target fingerprint, and exact
    confirmation. Activation is the only cutover. Inspect the activated target
    again and require `ready` before launching the App.
+6. Do not edit, archive, delete, or reset the normal persistent app-data
+   registry. Launch the exact workspace through explicit `--workspace`; the App
+   owns CAS replacement of a stale same-root binding after readiness. Treat a
+   failed startup or mismatched post-start binding as Product RED and preserve
+   the registry as evidence.
 
 For an arbitrary prepared SemesterWorkspace, resolve its real absolute path,
 confirm that it is an exact prepared Git root, and verify each scenario source

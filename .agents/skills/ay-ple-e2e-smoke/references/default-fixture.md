@@ -10,6 +10,7 @@ Resolve these sibling paths from the AY-PLE hub:
 immutable seed:                    ../fixtures/year-2-semester-1
 generated, observable dogfood SemesterWorkspace:
                                    ../workspace/year-2-semester-1
+normal persistent app data:        ../.ay-ple
 built-in Product Skill catalog:    skills
 ```
 
@@ -111,6 +112,36 @@ the bounded swap. It does not interpret SemesterModel, Product Skill freshness,
 or Bootstrap policy. This is a Codex development harness for one known
 generated target, not a refresh or migration mechanism for user
 SemesterWorkspaces.
+
+## App-data registry expectation
+
+The normal Product registry is
+`../.ay-ple/state/workspace-registry.json`. It is App-owned evidence, not a
+development-harness input. Codex may inspect it before and after the smoke, but
+must not edit, archive, delete, or reset it. Preserve the normal Runtime, cache,
+temporary diagnostics, registry bytes, and backup files.
+
+Always launch this dogfood target with explicit
+`--workspace "<canonical-target-root>"`. After the selected workspace passes
+listener, Broker, Runtime, Interaction MCP, and thread readiness, the App's
+registry transaction must:
+
+- create the exact `workspaceId`–canonical-root binding when the registry is
+  missing;
+- reuse the current exact binding;
+- replace a stale same-root binding through CAS when fresh Bootstrap assigned
+  a new `workspaceId`; and
+- preserve entries for other workspace identities and roots.
+
+Before transaction acceptance, any startup failure must preserve the prior
+registry authority. An incompatible registry must remain byte-for-byte intact
+and fail startup. Without an explicit `--workspace` selection, a stale
+same-root identity is intentionally unavailable and must fail closed rather
+than being guessed or repaired.
+
+After startup, require Product state to contain the target's current exact
+binding. Any failure is Product RED; do not turn it green by mutating app data
+from this Skill.
 
 ## Browser shell and Chat
 
