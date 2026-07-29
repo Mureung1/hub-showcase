@@ -3,6 +3,26 @@ import { createApiClient } from './client'
 import type { CreateMissionRecordRequest } from './types'
 
 describe('api client', () => {
+  it('uses the configured backend origin without duplicating the path separator', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const api = createApiClient(
+      async () => 'token',
+      fetcher,
+      'https://hub-backend-eta.vercel.app/',
+    )
+
+    await api.getInterests()
+
+    expect(fetcher.mock.calls[0][0]).toBe(
+      'https://hub-backend-eta.vercel.app/api/interests',
+    )
+  })
+
   it('reads the latest token for every request', async () => {
     const getToken = vi
       .fn()
