@@ -1,14 +1,8 @@
-# Web Framework & Server
+sentence-transformers
 fastapi
 uvicorn
-
-# HTTP Requests (데이터 수집 및 외부 통신)
 requests
-
-# Template Engine (문서 생성용)
 jinja2
-
-# AI / NLP / Vector DB
 langchain-core
 langchain-community
 langchain-openai
@@ -16,12 +10,8 @@ langchain-huggingface
 faiss-cpu
 scikit-learn
 numpy
-
-# Web Search & Scheduler
 duckduckgo-search
 apscheduler
-
-# Data Validation & Env
 pydantic
 python-dotenv
 tqdm
