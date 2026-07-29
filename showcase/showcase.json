@@ -3,7 +3,8 @@
   "title": "팀플, 이지!",
   "summary": "대학생 팀 프로젝트의 킥오프를 AI 중립 중재자가 대신해, 계획 수립과 역할 분담을 빠르게 끝내주는 웹 서비스입니다.",
   "githubUser": "furio24(소경한)",
-  "demoUrl": "https://youtu.be/_PldTrHoKHs",
+  "demoUrl": "hub-gamma-mocha.vercel.app",
+  "demoVideoUrl": "https://youtu.be/_PldTrHoKHs",
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/ing.png",
