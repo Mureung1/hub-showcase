@@ -11,6 +11,7 @@ export default function EmotionInputForm({
   scenarioPreset,
   faceSignalMetadata,
   disabled = false,
+  usesGenerativeAi = false,
   onAnalyze,
   onLiveFaceSignalChange
 }) {
@@ -133,6 +134,12 @@ export default function EmotionInputForm({
         <span id="situation-input-description" className="sr-only">
           Enter 키로 분석하고 전송하며 Shift와 Enter 키를 함께 누르면 줄을 바꿉니다.
         </span>
+        {usesGenerativeAi && (
+          <p className="ai-data-notice">
+            게스트 대화에서는 입력 문장과 감정 요약을 외부 생성형 AI로 보내 답변을
+            만듭니다. 카메라 영상과 얼굴 좌표는 전송하지 않습니다.
+          </p>
+        )}
       </div>
 
       <div className="signal-grid">

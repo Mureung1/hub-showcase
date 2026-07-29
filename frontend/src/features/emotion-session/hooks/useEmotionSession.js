@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
+  generateAiResponse,
   mockMessages
 } from "../../conversation";
 import { analyzeMockContext } from "../../emotion-analysis";
@@ -202,6 +203,13 @@ export default function useEmotionSession({ guestKey = "" } = {}) {
         analysisResult: nextResult,
         recentMessages: messages,
         signal: controller.signal,
+        generateResponse: guestKey
+          ? (input, options) =>
+              generateAiResponse(input, {
+                ...options,
+                guestKey
+              })
+          : undefined,
         saveAnalysis: guestKey
           ? (record, options) =>
               createEmotionAnalysis(record, {

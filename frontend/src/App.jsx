@@ -59,6 +59,7 @@ export default function App() {
           scenarioPreset={selectedScenario}
           faceSignalMetadata={faceSignalMetadata}
           disabled={isInputDisabled}
+          usesGenerativeAi={Boolean(guestAccess.guestKey)}
           onAnalyze={handleAnalyze}
           onLiveFaceSignalChange={handleLiveFaceSignalChange}
         />

@@ -59,4 +59,29 @@ describe("EmotionInputForm", () => {
       expect(screen.getByLabelText("지금 겪고 있는 상황")).toHaveValue("");
     });
   });
+
+  it("discloses external AI processing only for guest conversations", () => {
+    const { rerender } = render(
+      <EmotionInputForm
+        scenarioPreset={scenarioPreset}
+        usesGenerativeAi
+        onAnalyze={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText(/입력 문장과 감정 요약을 외부 생성형 AI로 보내/)
+    ).toBeInTheDocument();
+
+    rerender(
+      <EmotionInputForm
+        scenarioPreset={scenarioPreset}
+        usesGenerativeAi={false}
+        onAnalyze={vi.fn()}
+      />
+    );
+    expect(
+      screen.queryByText(/입력 문장과 감정 요약을 외부 생성형 AI로 보내/)
+    ).not.toBeInTheDocument();
+  });
 });
