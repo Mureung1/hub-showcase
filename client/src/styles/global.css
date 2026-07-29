@@ -1089,8 +1089,107 @@ h2 {
   border-color: transparent;
 }
 
-/* ---------- Vocabulary ---------- */
-.vocabulary-list {
+/* ---------- Vocabulary master-detail (3분할, 2026-07-29) ---------- */
+/* 인사이트 노트와 동일한 마스터(30%)+상세(70%) 레이아웃이지만, 마스터는
+   판단 1건이 아니라 날짜별 그룹 카드다 — 하루에 여러 단어가 자동 적재되는
+   구조라 날짜를 고르면 그 날 단어 전체가 상세에 플래시카드 그리드로 뜬다. */
+.vocabulary-note-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.vocabulary-master {
+  width: 30%;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.vocabulary-master-header {
+  flex-shrink: 0;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.vocabulary-master-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.vocabulary-master-empty {
+  padding: var(--space-md);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.vocabulary-date-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+}
+
+.vocabulary-date-card:hover {
+  background: var(--surface-bg);
+}
+
+.vocabulary-date-card.active {
+  background: var(--brand-blue-light);
+}
+
+.vocabulary-date-card-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.vocabulary-date-card-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: var(--space-xs);
+}
+
+.vocabulary-date-card-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.vocabulary-detail {
+  width: 70%;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+  background: var(--surface-bg);
+}
+
+.vocabulary-detail-empty {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.vocabulary-detail-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+.vocabulary-detail-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
