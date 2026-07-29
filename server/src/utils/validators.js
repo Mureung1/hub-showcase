@@ -38,6 +38,16 @@ const requireEmail = (value, field = 'email') => {
   return value;
 };
 
+const SCHOOL_EMAIL_PATTERN = /\.ac\.kr$/i;
+
+const requireSchoolEmail = (value, field = 'email') => {
+  requireEmail(value, field);
+  if (!SCHOOL_EMAIL_PATTERN.test(value.trim())) {
+    throw new ValidationError('대학교 이메일(.ac.kr)로만 가입할 수 있습니다.', field);
+  }
+  return value;
+};
+
 const requirePassword = (value, field = 'password') => {
   requireString(value, field);
   if (value.length < MIN_PASSWORD_LENGTH) {
@@ -64,9 +74,11 @@ const requireLabName = (value, field = 'lab') => {
 
 module.exports = {
   ValidationError,
+  SCHOOL_EMAIL_PATTERN,
   requireEmail,
   requireLabName,
   requirePassword,
+  requireSchoolEmail,
   requireString,
   requireStringArray,
 };
