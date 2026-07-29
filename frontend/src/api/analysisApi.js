@@ -1,11 +1,11 @@
 import { getToken } from "../utils/auth";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Vercel Rewrite를 사용하여 /api 요청을 Backend로 전달
 
 export async function analyzeNotice(text) {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/notices/analyze`, {
+  const response = await fetch("/api/notices/analyze", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -26,7 +26,7 @@ export async function analyzeNotice(text) {
 export async function saveEvents(events) {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/events`, {
+  const response = await fetch("/api/events", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -47,7 +47,7 @@ export async function saveEvents(events) {
 export async function getEvents() {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/events`, {
+  const response = await fetch("/api/events", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export async function getEvents() {
 export async function checkDuplicate(events) {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/events/check-duplicate`, {
+  const response = await fetch("/api/events/check-duplicate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -88,7 +88,7 @@ export async function checkDuplicate(events) {
 export async function updateEvent(eventId, eventData) {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
+  const response = await fetch("/api/events/" + eventId, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -109,7 +109,7 @@ export async function updateEvent(eventId, eventData) {
 export async function deleteEvent(eventId) {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
+  const response = await fetch("/api/events/" + eventId, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
