@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "title": "AI 분리배출 도우미",
+  "title": "ConfiSort - AI 분리배출 도우미",
   "summary": "사진 한 장으로 한국의 올바른 분리배출 방법을 공식 데이터와 AI를 통해 쉽고 정확하게 안내하는 서비스입니다.",
   "githubUser": "ymina25 (Yin Min Aye)",
   "demoUrl": "https://app.notion.com/p/AI-ConfiSort-3acd5e0c1add80519fe3f6aaaa0cd919",
-  "thumbnail": "screenshots/thumbnail.png",
+  "thumbnail": "screenshots/thumbnail.webp",
   "screenshots": [
     "screenshots/home.png",
     "screenshots/result.png",
