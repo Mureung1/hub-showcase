@@ -10,7 +10,7 @@ import GithubReposPage from './pages/GithubReposPage'
 import { tokenManager, authApi } from './utils/apiClient'
 import { initializePushNotifications } from './utils/pushNotification'
 
-type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github'
+type AppPage = 'dashboard' | 'calendar' | 'scraps' | 'settings' | 'github' | 'auth' | 'profile'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
