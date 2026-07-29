@@ -3,6 +3,7 @@ import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
 import ConfidenceBadge from './ConfidenceBadge.jsx'
+import MealCardExporter from './MealCardExporter.jsx'
 import MealTypePicker from './MealTypePicker.jsx'
 import NutrientEditForm from './NutrientEditForm.jsx'
 import { NutrientBars } from './NutritionCard.jsx'
@@ -188,6 +189,10 @@ export default function AnalysisResultCard({
   // 음식이 1개일 때만 그 음식의 1인분 기준량을 물어본다 — 여러 개면 어느 음식 기준인지 애매하다.
   // 결과가 바뀔 때(다시 찍기 등)마다 다시 조회하고, 매칭 안 되면(null) 힌트를 아예 숨긴다.
   const [gramHint, setGramHint] = useState(null)
+  // FR-2 — 사진이 있을 때만("메뉴 이름만" 텍스트 분석엔 사진이 없다). AnalysisResultCard는 저장
+  // 성공과 동시에 언마운트되므로(Analyze.jsx의 resetToIdle), "저장 후" 전용 화면을 따로 만들지 않고
+  // 이 카드가 떠 있는 동안 바로 만들 수 있게 한다.
+  const [showExporter, setShowExporter] = useState(false)
   useEffect(() => {
     setGramHint(null)
     if (items.length !== 1 || !onServingsChange) return
@@ -245,8 +250,26 @@ export default function AnalysisResultCard({
             총 <strong style={{ color: colors.textStrong }}>{formatNutrient(displayAnalysis.total.calories)}</strong> kcal
           </p>
           {sourceNote && <p style={{ margin: '2px 0 0', fontSize: font.size.xs, color: colors.muted }}>{sourceNote}</p>}
+          {photoUrl && (
+            <button
+              type="button"
+              className="tds-press"
+              onClick={() => setShowExporter(true)}
+              style={{ ...styles.linkButton, marginTop: spacing.xs, fontSize: font.size.xs }}
+            >
+              인증샷 카드 만들기 📸
+            </button>
+          )}
         </div>
       </div>
+
+      {showExporter && (
+        <MealCardExporter
+          photoUrl={photoUrl}
+          mealTotal={displayAnalysis.total}
+          onClose={() => setShowExporter(false)}
+        />
+      )}
 
       {/* a-2. 인분 수 조절(6주차 §2) — onServingsChange가 있을 때만(생략하면 기존과 동일하게 숨김) */}
       {onServingsChange && (
