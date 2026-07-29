@@ -1,5 +1,10 @@
-const CACHE_NAME = "nagging-bot-static-v1";
-const PRECACHE_URLS = ["/", "/manifest.json", "/icons/icon.svg"];
+const CACHE_NAME = "nagging-bot-static-v2";
+const PRECACHE_URLS = [
+  "/",
+  "/manifest.json",
+  "/icons/nagbot-app-icon-192.png",
+  "/icons/nagbot-app-icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -41,7 +46,7 @@ self.addEventListener("fetch", (event) => {
 // title/body 정도만 기대하고, 그 밖의 필드 검증은 하지 않는다.
 const DEFAULT_NOTIFICATION_TITLE = "잔소리봇";
 const DEFAULT_NOTIFICATION_BODY = "확인할 게 있어요!";
-const NOTIFICATION_ICON = "/icons/icon.svg";
+const NOTIFICATION_ICON = "/icons/nagbot-app-icon-192.png";
 
 // PushMessageData의 json()/text()는 Fetch body와 달리 여러 번 호출해도 안전하다
 // (스펙상 스트림이 아니라 바이트 시퀀스 래퍼) — json() 실패 시 text()로 그대로 폴백한다.
