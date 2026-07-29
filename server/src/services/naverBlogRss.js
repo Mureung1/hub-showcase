@@ -1,5 +1,6 @@
 const RSS_URL = (blogId) => `https://rss.blog.naver.com/${encodeURIComponent(blogId)}.xml`;
 const MATCH_WINDOW_MS = 30 * 60 * 1000; // 30분 이내 올라온 글만 "방금 게시한 글"로 간주
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function extractTag(xml, tag) {
   const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "i"));
@@ -25,6 +26,47 @@ function normalizeTitle(title) {
     .replace(/\s+/g, "")
     .replace(/[^\p{L}\p{N}]/gu, "")
     .toLowerCase();
+}
+
+// pubDate 간격의 평균으로 "주 N회" 같은 대략적인 게시 주기 문구를 만든다.
+// 항목이 2개 미만이면 간격을 계산할 수 없다.
+function describePostingCycle(sortedDates) {
+  if (sortedDates.length < 2) return null;
+
+  const gaps = [];
+  for (let i = 0; i < sortedDates.length - 1; i++) {
+    gaps.push((sortedDates[i] - sortedDates[i + 1]) / DAY_MS);
+  }
+  const avgDays = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
+
+  if (avgDays <= 1.5) return "거의 매일";
+  if (avgDays <= 4.5) return "주 2~3회";
+  if (avgDays <= 9) return "주 1회";
+  if (avgDays <= 20) return "2주에 1회";
+  if (avgDays <= 45) return "월 1회";
+  return "비정기적";
+}
+
+// blogId의 RSS 피드에서 게시물 개수(피드에 실린 최근 항목 기준)/최근 게시일/게시
+// 주기를 계산한다. 네이버 RSS는 최근 항목 일부만 제공해서(전체 게시물 수가 아님)
+// postCount는 "RSS 기준 최근 게시물 수"로 해석해야 한다. 비공개 블로그이거나
+// blogId가 잘못됐으면 fetch가 실패하고, 그 경우 null을 반환한다.
+export async function getBlogStats(blogId) {
+  const res = await fetch(RSS_URL(blogId));
+  if (!res.ok) return null;
+
+  const xml = await res.text();
+  const items = parseItems(xml);
+  const sortedDates = items
+    .map((item) => (item.pubDate ? new Date(item.pubDate) : null))
+    .filter((d) => d && !Number.isNaN(d.getTime()))
+    .sort((a, b) => b - a);
+
+  return {
+    postCount: items.length,
+    latestPostDate: sortedDates[0]?.toISOString() ?? null,
+    postingCycle: describePostingCycle(sortedDates),
+  };
 }
 
 // blogId의 RSS에서 targetTitle과 제목이 비슷하고(정규화 후 포함 관계) 최근에

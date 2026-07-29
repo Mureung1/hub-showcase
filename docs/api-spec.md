@@ -112,15 +112,15 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 
 ```ts
 {
-  connected: boolean
-  postingCycle: string          // 게시글 작성 주기
-  tone: string                  // 문체
-  commonPhrases: string[]       // 자주 사용하는 표현
-  contentTypes: string[]        // 콘텐츠 유형
-  postingPattern: string        // 게시 패턴
+  connected: boolean            // blogId 연동 + RSS 조회 성공 여부
+  postCount: number             // RSS 피드에 실린 최근 게시물 수 (전체 게시물 수 아님 — 네이버 RSS가 최근 항목만 제공)
+  latestPostDate: string | null // 최근 게시물의 ISO 날짜, 게시물 없으면 null
+  postingCycle: string | null   // "주 2~3회" 등 pubDate 간격 기반 추정 문구, 계산 불가 시 null
   analyzedAt: string
 }
 ```
+
+`tone`/`commonPhrases`/`contentTypes`/`postingPattern`(문체·자주 쓰는 표현·콘텐츠 유형 등 내용 기반 분석)은 RSS(title/link/pubDate만 제공)만으로는 계산할 수 없어 스키마에서 제외했다 — LLM 연동 시 별도로 추가 예정 ([8. 이후 과제](#8-이후-과제-범위-밖-다음-발전-방향) 참고).
 
 ### Insight (2-7)
 
@@ -197,7 +197,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 6. 프론트: `sessionStorage`에서 1단계 입력값을 복원하고, `candidateExists=true`면 "blog.naver.com/{후보} 맞나요?" 확인 카드를, 아니면(또는 "아니요" 선택 시) blogId 직접 입력 폴백을 보여준다
 7. 최종 확정된 `naverId`/`blogId`/`blogIdConfirmed`는 온보딩 3단계의 `POST /brand-profile` 호출에 함께 실려 저장된다 (이 단계 전까지는 서버에 저장하지 않음)
 
-blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는 블로그입니다" 문구 유무로 추정하는 휴리스틱이다 — 그래서 항상 사용자 확인을 거치게 하고 최종 신뢰 소스로 쓰지 않는다. `GET /blog/analysis`(게시물 개수 등)는 여전히 고정 mock — Day 17에서 RSS/검색API로 교체 예정.
+blog.naver.com 존재 여부 판별은 정식 API가 없어 "존재하지 않는 블로그입니다" 문구 유무로 추정하는 휴리스틱이다 — 그래서 항상 사용자 확인을 거치게 하고 최종 신뢰 소스로 쓰지 않는다. `GET /blog/analysis`는 blogId가 연동돼 있으면 RSS(`rss.blog.naver.com/{blogId}.xml`)를 조회해 게시물 수/최근 게시일/게시 주기를 계산한다 — blogId가 없거나 RSS 조회에 실패하면(비공개 블로그 등) `connected: false`와 빈 값을 반환한다.
 
 ### 2-4. AI 홍보글 작성
 
