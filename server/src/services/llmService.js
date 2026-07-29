@@ -434,6 +434,12 @@ export async function callClaudeWithMetrics(prompt, options = {}) {
 const MIN_INVESTMENT_SCORE = 4
 const MIN_READABILITY_SCORE = 3
 
+// 엄격 기준 통과 후보가 3개 미만일 때만 쓰는 백필 기준. investmentScore만
+// 완화하고(그날 "시장을 뒤흔들 만큼"은 아니어도 다룰 가치는 있는 기사까지
+// 허용) readabilityScore 기준은 그대로 유지한다 — 학습용으로 읽기 어려운
+// 기사가 억지로 채워지는 걸 막기 위함. GitHub #17 참고.
+const BACKFILL_MIN_INVESTMENT_SCORE = 2
+
 function buildEvaluationPrompt(candidates) {
   const list = candidates
     .map((c, i) => `${i + 1}. [${c.source}] ${c.title}\n${c.bodyText}`)
@@ -494,7 +500,7 @@ export function pickDiversifiedTop3(evaluated) {
   return picked
 }
 
-function parseEvaluationResponse(response, candidates) {
+export function parseEvaluationResponse(response, candidates) {
   const text = response.content?.[0]?.text ?? ""
   const cleaned = text.replace(/```json|```/g, "").trim()
   const evaluations = JSON.parse(cleaned)
@@ -512,11 +518,26 @@ function parseEvaluationResponse(response, candidates) {
   const passed = evaluated.filter(
     (e) => e.investmentScore >= MIN_INVESTMENT_SCORE && e.readabilityScore >= MIN_READABILITY_SCORE,
   )
-  if (passed.length === 0) {
+
+  // 엄격 기준 통과가 3개 미만이면, readability는 유지한 채 investmentScore만
+  // 완화해 부족한 자리를 채운다(GitHub #17 — "1개만 통과해도 그대로 노출"
+  // 버그 수정). pickDiversifiedTop3가 investmentScore 내림차순으로 다시
+  // 정렬하므로 엄격 통과 후보가 항상 백필 후보보다 우선 채택된다.
+  let pool = passed
+  if (passed.length < 3) {
+    const backfill = evaluated
+      .filter((e) => !passed.includes(e))
+      .filter((e) => e.investmentScore >= BACKFILL_MIN_INVESTMENT_SCORE && e.readabilityScore >= MIN_READABILITY_SCORE)
+      .sort((a, b) => b.investmentScore - a.investmentScore)
+      .slice(0, 3 - passed.length)
+    pool = passed.concat(backfill)
+  }
+
+  if (pool.length === 0) {
     throw new Error("evaluateAndSelectArticles: no candidates passed score thresholds")
   }
 
-  return pickDiversifiedTop3(passed).map((e) => toCard(e.candidate, e))
+  return pickDiversifiedTop3(pool).map((e) => toCard(e.candidate, e))
 }
 
 const MOCK_READABILITY_SCORES = [5, 4, 3]
@@ -543,6 +564,8 @@ export async function evaluateAndSelectArticles(candidates) {
   }
 
   const prompt = buildEvaluationPrompt(candidates)
-  const response = await callClaude(prompt, { maxTokens: 2048 })
+  // maxTokens 4096: 후보가 많은 날(보통 10~30건, articleQualityFilter.js
+  // 참고)엔 평가 JSON 배열이 길어져 2048로는 잘려 파싱이 실패할 수 있었다.
+  const response = await callClaude(prompt, { maxTokens: 4096 })
   return parseEvaluationResponse(response, candidates)
 }

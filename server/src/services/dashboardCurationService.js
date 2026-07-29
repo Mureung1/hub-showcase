@@ -43,6 +43,12 @@ const FALLBACK_ARTICLES = [
 // 날짜 비교는 KST 고정(서버 배포 타임존과 무관하게 "오늘"을 일관되게 판단).
 let cache = null // { date: "2026-07-19", articles: [...] }
 
+// 캐시 미스 상태에서 동시에 들어온 요청들이 파이프라인을 각자 재실행하면
+// 서로 다른(운 나쁘면 카드 수가 적은) 결과가 캐시를 덮어쓰는 레이스가
+// 생긴다(GitHub #17). 진행 중인 실행이 있으면 그 Promise를 그대로
+// 공유해서 파이프라인이 항상 한 번만 돈다.
+let inFlight = null
+
 // 캐시 경계를 자정이 아니라 KST 06:30로 둔다(2026-07-20). 미국 정규장
 // 마감(KST 새벽 5~6시)과 애프터마켓 실적 발표가 끝난 직후가 오늘자 기사가
 // 가장 신선하게 갖춰지는 시점이다 — 자정 기준이면 새벽 1~2시에 들어온
@@ -58,21 +64,21 @@ function curationDateKST() {
   return shifted.toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" })
 }
 
-export async function getTodaysArticles() {
-  const today = curationDateKST()
-  if (cache?.date === today) return cache.articles
-
+async function runPipeline(today) {
   try {
     // 1단계: RSS 메타데이터 필터(비용 $0) → 2단계: 본문 스크래핑/분량 필터
     // (비용 $0) → 3단계: LLM 스마트 평가+카드 생성. 앞 단계에서 걸러질수록
     // 뒤 단계의 스크래핑/토큰 비용이 줄어드는 직렬 구조.
     const candidates = await fetchCandidateHeadlines()
+    console.info(`[dashboardCurationService] stage1 RSS candidates: ${candidates.length}`)
     if (candidates.length === 0) throw new Error("no RSS candidates passed stage 1 metadata filter")
 
     const qualityCandidates = await filterByBodyQuality(candidates)
+    console.info(`[dashboardCurationService] stage2 quality-passed candidates: ${qualityCandidates.length}`)
     if (qualityCandidates.length === 0) throw new Error("no candidates passed stage 2 body quality filter")
 
     const articles = await evaluateAndSelectArticles(qualityCandidates)
+    console.info(`[dashboardCurationService] stage3 final articles: ${articles.length}`)
     cache = { date: today, articles }
     return articles
   } catch (err) {
@@ -80,4 +86,15 @@ export async function getTodaysArticles() {
     // 폴백은 캐시하지 않는다 — 다음 요청에서 정상 경로를 다시 시도할 기회를 준다.
     return FALLBACK_ARTICLES
   }
+}
+
+export async function getTodaysArticles() {
+  const today = curationDateKST()
+  if (cache?.date === today) return cache.articles
+  if (inFlight) return inFlight
+
+  inFlight = runPipeline(today).finally(() => {
+    inFlight = null
+  })
+  return inFlight
 }
