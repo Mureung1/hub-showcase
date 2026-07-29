@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from "react";
 
-import { useAnalysisUrlCleanup } from "../analysis/useAnalysisUrlCleanup";
+import { useAnalysisPeriodNormalization } from "../analysis/useAnalysisPeriodNormalization";
+import {
+  restoreAnalysisSessionState,
+  saveAnalysisSessionState,
+} from "../analysis/analysisSessionState";
 import { useNearbyStores } from "../analysis/useNearbyStores";
 import { topCategorySelectionForStore } from "../market/categorySelection";
 import { demandFromFlow } from "../market/model";
@@ -15,7 +19,6 @@ import { useWorkspacePanels } from "./useWorkspacePanels";
 import type { ApiReadinessState } from "../system/useApiReadiness";
 import type { MarketSearchResult } from "../search/searchApi";
 import type { ProductCatalog, SupportedMarket } from "../../services/productCatalog";
-import { readAnalysisUrlState } from "../analysis/analysisUrlState";
 
 type SelectionState = ReturnType<typeof useAnalysisSelection>;
 type PanelState = ReturnType<typeof useWorkspacePanels>;
@@ -26,8 +29,7 @@ type WorkspaceCatalog = {
   marketKeyById: Record<string, MarketKey>;
   marketIdByKey: Record<MarketKey, string>;
   defaultMarket: SupportedMarket;
-  hasInitialUrlState: boolean;
-  initialUrlState: ReturnType<typeof initialAnalysisUrlState>;
+  initialAnalysisState: ReturnType<typeof createInitialAnalysisState>;
 };
 
 function emptyMarket(market: SupportedMarket): Market {
@@ -50,30 +52,24 @@ function emptyMarket(market: SupportedMarket): Market {
   };
 }
 
-function initialAnalysisUrlState(catalog: ProductCatalog) {
+function createInitialAnalysisState(catalog: ProductCatalog) {
   const defaultMarket = catalog.markets[0];
   const defaultCategory = catalog.categories[0]?.name ?? "카페";
-  return readAnalysisUrlState(
-    {
-      marketKey: defaultMarket.key,
-      category: defaultCategory,
-      selectedCategoryName: defaultCategory,
-      selectedCategoryCode: null,
-      radius: catalog.radii.includes(300) ? 300 : catalog.radii[0],
-      layer: "density",
-      scope: "market",
-      topic: "overview",
-      boundaryVisible: true,
-      storesVisible: true,
-      period: "",
-      center: defaultMarket.center,
-    },
-    {
-      marketKeys: catalog.markets.map((market) => market.key),
-      categories: catalog.categories.map((category) => category.name),
-      radii: catalog.radii,
-    },
-  );
+  return {
+    marketKey: defaultMarket.key,
+    category: defaultCategory,
+    selectedCategoryName: defaultCategory,
+    selectedCategoryCode: null,
+    radius: catalog.radii.includes(300) ? 300 : catalog.radii[0],
+    activeHour: 2,
+    layer: "density" as const,
+    scope: "market" as const,
+    topic: "overview" as const,
+    boundaryVisible: true,
+    storesVisible: true,
+    period: "",
+    center: defaultMarket.center,
+  };
 }
 
 function useWorkspaceCatalog(catalog: ProductCatalog): WorkspaceCatalog {
@@ -92,15 +88,14 @@ function useWorkspaceCatalog(catalog: ProductCatalog): WorkspaceCatalog {
     () => Object.fromEntries(catalog.markets.map((market) => [market.key, market.market_id])),
     [catalog.markets],
   ) as Record<MarketKey, string>;
-  const initialUrlState = useMemo(() => initialAnalysisUrlState(catalog), [catalog]);
+  const initialAnalysisState = useMemo(() => createInitialAnalysisState(catalog), [catalog]);
 
   return {
     markets,
     marketKeyById,
     marketIdByKey,
     defaultMarket: catalog.markets[0],
-    hasInitialUrlState: window.location.search.length > 1,
-    initialUrlState,
+    initialAnalysisState,
   };
 }
 
@@ -135,8 +130,7 @@ function useWorkspaceMarketData(
     },
     apiReady,
   );
-  useAnalysisUrlCleanup({
-    hasInitialUrlState: catalogState.hasInitialUrlState,
+  useAnalysisPeriodNormalization({
     period: selection.period,
     availablePeriods: marketAnalysis.availablePeriods,
     defaultPeriod: marketAnalysis.defaultPeriod,
@@ -400,9 +394,13 @@ export function useProductWorkspaceModel(
 ) {
   const compactMap = useCompactMap();
   const catalogState = useWorkspaceCatalog(catalog);
-  const selection = useAnalysisSelection(catalogState.initialUrlState);
+  const initialAnalysisState = useMemo(
+    () => restoreAnalysisSessionState(catalogState.initialAnalysisState, catalog),
+    [catalog, catalogState.initialAnalysisState],
+  );
+  const selection = useAnalysisSelection(initialAnalysisState);
   const panels = useWorkspacePanels(compactMap);
-  const viewport = useMapViewport(catalogState.initialUrlState.center, !useDemoData);
+  const viewport = useMapViewport(initialAnalysisState.center, !useDemoData);
   const marketData = useWorkspaceMarketData(
     catalog,
     catalogState,
@@ -419,6 +417,32 @@ export function useProductWorkspaceModel(
     marketData,
     storefronts,
   );
+
+  useEffect(() => {
+    saveAnalysisSessionState({
+      marketKey: selection.marketKey,
+      selectedCategoryName: selection.categorySelection.name,
+      selectedCategoryCode: selection.categorySelection.code,
+      radius: selection.radius,
+      activeHour: selection.activeHour,
+      layer: selection.layer,
+      topic: selection.analysisTopic,
+      boundaryVisible: selection.boundaryVisible,
+      storesVisible: selection.storesVisible,
+      period: selection.period,
+    });
+  }, [
+    selection.activeHour,
+    selection.analysisTopic,
+    selection.boundaryVisible,
+    selection.categorySelection.code,
+    selection.categorySelection.name,
+    selection.layer,
+    selection.marketKey,
+    selection.period,
+    selection.radius,
+    selection.storesVisible,
+  ]);
 
   return {
     catalog,

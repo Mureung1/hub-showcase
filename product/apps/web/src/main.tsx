@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import App from "./App.tsx";
 import { EnglishApp } from "./localization/EnglishApp.tsx";
+import { normalizeProductRoute } from "./productRoute.ts";
 
 const root = document.getElementById("root");
 
@@ -16,6 +17,8 @@ const showFlowerMapPrototype =
   new URLSearchParams(window.location.search).get("demo") === "flower-map";
 const showEnglishSubmission = window.location.pathname === "/en";
 const reactRoot = createRoot(root);
+
+normalizeProductRoute(window.location, window.history);
 
 function renderApplication(application: ReactNode) {
   reactRoot.render(<StrictMode>{application}</StrictMode>);

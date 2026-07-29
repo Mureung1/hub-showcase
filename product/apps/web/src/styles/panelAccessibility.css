@@ -42,22 +42,22 @@
 }
 
 .scene-experiment-trigger {
-  border-color: #b7ddc2;
-  color: #176f3a;
-  background: linear-gradient(135deg, #f4fbf5, #e8f7ec);
-  box-shadow: 0 3px 10px rgba(36, 128, 70, 0.08);
+  border-color: #9ae6c0;
+  color: #007a4b;
+  background: linear-gradient(135deg, #effcf6, #e1f8ee);
+  box-shadow: 0 3px 10px rgba(0, 158, 96, 0.08);
 }
 
 .scene-experiment-trigger:hover {
-  border-color: #7fbd91;
-  background: #e3f4e7;
+  border-color: #61d9a2;
+  background: #d5f6e5;
 }
 
 .scene-experiment-trigger small {
   padding: 2px 4px;
   border-radius: 4px;
   color: #ffffff;
-  background: #248346;
+  background: #009e60;
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -110,7 +110,7 @@
 }
 
 .panel-text-size-control button.is-selected {
-  color: #176f3a;
+  color: #007a4b;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(27, 54, 35, 0.14);
 }
@@ -323,8 +323,8 @@
 }
 
 .evidence-coverage-summary li.is-available > span {
-  color: #176f3a;
-  background: #e6f4e9;
+  color: #007a4b;
+  background: #def7ea;
 }
 
 .evidence-coverage-summary li.is-missing > span {

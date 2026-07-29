@@ -6,7 +6,6 @@ import { MarketMapPanel } from "../map/MarketMapPanel";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 import type { PanelTextSize } from "./usePanelTextSize";
-import { useWorkspaceUrlPersistence } from "./useWorkspaceUrlPersistence";
 
 export function WorkspaceLayout({
   model,
@@ -31,8 +30,6 @@ export function WorkspaceLayout({
     apiReadiness,
   } = model;
   const { market, nearby, marketAnalysis } = marketData;
-  useWorkspaceUrlPersistence(model);
-
   const selectedStore = storefronts.storeSelection.selected;
 
   function selectAndFocusStore(storeKey: string) {

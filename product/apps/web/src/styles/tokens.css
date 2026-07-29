@@ -13,8 +13,12 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --lt-color-brand: #03c75a;
-  --lt-color-brand-strong: #08703a;
+  /* Clover mint scale: light surfaces stay calm; actions use the vivid K80/K90 end. */
+  --lt-color-brand: #00c878;
+  --lt-color-brand-strong: #008f58;
+  --lt-color-brand-soft: #e1f8ee;
+  --lt-color-brand-subtle: #d5f6e5;
+  --lt-color-brand-border: #91e5c0;
   --lt-color-text: #14211b;
   --lt-color-text-muted: #65766d;
   --lt-color-canvas: #edf3ef;

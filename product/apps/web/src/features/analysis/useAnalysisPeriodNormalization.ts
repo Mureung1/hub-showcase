@@ -1,19 +1,18 @@
 import { useEffect } from "react";
 
-type AnalysisUrlCleanupOptions = {
-  hasInitialUrlState?: boolean;
+type AnalysisPeriodNormalizationOptions = {
   period: string;
   availablePeriods: string[];
   defaultPeriod: string | null;
   onPeriodChange: (period: string) => void;
 };
 
-export function useAnalysisUrlCleanup({
+export function useAnalysisPeriodNormalization({
   period,
   availablePeriods,
   defaultPeriod,
   onPeriodChange,
-}: AnalysisUrlCleanupOptions) {
+}: AnalysisPeriodNormalizationOptions) {
   useEffect(() => {
     if (defaultPeriod && !availablePeriods.includes(period)) onPeriodChange(defaultPeriod);
   }, [availablePeriods, defaultPeriod, onPeriodChange, period]);

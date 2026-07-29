@@ -1,15 +1,15 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { AnalysisUrlState } from "./analysisUrlState";
-import { useAnalysisSelection } from "./useAnalysisSelection";
+import { type AnalysisInitialState, useAnalysisSelection } from "./useAnalysisSelection";
 
-const initial: AnalysisUrlState = {
+const initial: AnalysisInitialState = {
   marketKey: "연남",
   category: "카페",
   selectedCategoryName: "카페",
   selectedCategoryCode: null,
   radius: 300,
+  activeHour: 2,
   layer: "density",
   scope: "market",
   topic: "overview",

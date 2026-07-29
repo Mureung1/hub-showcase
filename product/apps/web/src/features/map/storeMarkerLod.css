@@ -24,7 +24,7 @@
   opacity: 0.84;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.62),
-    0 0 0 3px rgba(39, 139, 86, 0.12),
+    0 0 0 3px rgba(0, 168, 102, 0.12),
     0 4px 11px rgba(25, 55, 34, 0.18);
   transition:
     opacity 140ms ease,
@@ -51,7 +51,7 @@
   opacity: 1;
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.82),
-    0 0 0 5px rgba(39, 139, 86, 0.16),
+    0 0 0 5px rgba(0, 168, 102, 0.16),
     0 7px 16px rgba(25, 55, 34, 0.24);
 }
 
@@ -71,7 +71,7 @@
   transform: scale(1);
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.78),
-    0 0 0 4px rgba(39, 139, 86, 0.12),
+    0 0 0 4px rgba(0, 168, 102, 0.12),
     0 6px 14px rgba(25, 55, 34, 0.2);
 }
 
@@ -90,7 +90,7 @@
 }
 
 .storefront-object-hit-target:focus-visible {
-  outline: 3px solid #1f7540;
+  outline: 3px solid #008f58;
   outline-offset: 3px;
   background: rgba(226, 249, 233, 0.24);
 }
