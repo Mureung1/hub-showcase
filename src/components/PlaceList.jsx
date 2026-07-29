@@ -74,13 +74,16 @@ function ExpectedNutrients({ expected, overageKeys }) {
   )
 }
 
-// MapPage.jsx의 placeIdentity와 같은 규칙(같은 식당을 같은 키로 취급) — 배열 인덱스 대신 이 값을 key로
-// 써서, 향후 검색 결과를 이어붙이거나 순서가 바뀌는 경우에도 React가 각 카드를 잘못된 DOM 노드에 재사용하지 않게 한다.
+// 같은 식당을 같은 키로 취급(배열 인덱스 대신 이 값을 key로 써서, 검색 결과를 이어붙이거나 순서가
+// 바뀌어도 React가 각 카드를 잘못된 DOM 노드에 재사용하지 않게 한다). MapPage.jsx도 동일한 규칙의
+// 로컬 함수를 이미 갖고 있어(FR-18 듀얼 비교 선택 키로 재사용) 여기서는 export하지 않는다.
 function placeIdentity(place) {
   return place.place_url || `${place.place_name}|${place.road_address_name}`
 }
 
-export default function PlaceList({ places, todayTotal, recommended, deficientRows }) {
+// selectable/selectedKeys/onToggleSelect: FR-18 지도 듀얼 비교의 다중 선택 모드. 기본값(selectable
+// 생략)이면 체크박스가 전혀 렌더되지 않아 기존 동작과 100% 동일하다.
+export default function PlaceList({ places, todayTotal, recommended, deficientRows, selectable = false, selectedKeys = [], onToggleSelect }) {
   if (!places || places.length === 0) return null
 
   return (
@@ -90,13 +93,39 @@ export default function PlaceList({ places, todayTotal, recommended, deficientRo
         //  검색 결과에는 더 이상 isAd 항목이 섞이지 않는다.)
         const overageKeys = buildOverageKeys(place.expected, todayTotal, recommended)
         const reason = buildReason(place.expected, deficientRows)
+        const identity = placeIdentity(place)
+        const selected = selectedKeys.includes(identity)
 
         return (
-          <div key={placeIdentity(place)} style={styles.card}>
+          <div key={identity} style={{ ...styles.card, position: 'relative' }}>
+            {selectable && (
+              <label
+                style={{
+                  position: 'absolute',
+                  top: spacing.md,
+                  right: spacing.md,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: spacing.xs,
+                  fontSize: font.size.xs,
+                  color: colors.textSub,
+                  cursor: 'pointer',
+                }}
+              >
+                <input type="checkbox" checked={selected} onChange={() => onToggleSelect(identity)} />
+                비교 선택
+              </label>
+            )}
             <h3>{place.place_name}</h3>
             <p style={{ margin: 0, color: colors.muted, fontSize: font.size.sm }}>{place.road_address_name}</p>
             <p style={{ margin: `${spacing.xs}px 0 0`, color: colors.body, fontSize: font.size.sm }}>
               {lastCategory(place.category_name)} · {place.distance}m
+              {/* FR-4 — 영양 충족도+거리 2요인 추천도. 네이버 응답엔 평점 필드가 없어 평점은 안 넣는다. */}
+              {typeof place.score === 'number' && (
+                <span style={{ marginLeft: spacing.sm, color: colors.primary, fontWeight: 600 }}>
+                  · 추천도 {place.score}점
+                </span>
+              )}
             </p>
 
             {place.representativeMenu && (

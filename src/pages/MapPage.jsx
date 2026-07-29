@@ -5,6 +5,7 @@ import CafeteriaPanel from '../components/CafeteriaPanel.jsx'
 import Card from '../components/Card.jsx'
 import FoodCategoryChips from '../components/FoodCategoryChips.jsx'
 import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
+import PlaceDuelModal from '../components/PlaceDuelModal.jsx'
 import PlaceList from '../components/PlaceList.jsx'
 import SegmentedControl from '../components/SegmentedControl.jsx'
 import Skeleton from '../components/Skeleton.jsx'
@@ -24,6 +25,8 @@ import { clampExpectedForItems, enrichExpectedFromDB } from '../lib/menuNutritio
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { buildDeficiencyRows, isSodiumExceeded } from '../lib/nutrition.js'
 import { getOccupationRecommendation } from '../lib/occupationKeywords.js'
+import { diversifyByCategory } from '../lib/placeDiversity.js'
+import { calcPlaceScore } from '../lib/placeScore.js'
 import { TABS } from '../lib/tabs.js'
 import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -50,17 +53,17 @@ const BALANCED_KEYWORDS = ['백반', '샐러드', '정식']
 // 결과가 한 유형으로만 몰렸을 때 보완 검색에 쓰는 다양화 풀
 const DIVERSITY_POOL = ['샐러드', '고깃집', '비빔밥', '쌈밥', '두부요리']
 // 네이버 지역 검색은 쿼리당 최대 5건만 준다(실측 — proxy.js 참고). 후보 풀은 키워드 수로 늘리므로,
-// 키워드당 결과는 전부(5건) 쓰고 최종 목록만 8곳으로 자른다.
+// 키워드당 결과는 전부(5건) 쓰고 최종 목록은 5곳으로 자른다(네이버 응답 한도에 맞춤).
 const MAX_PER_KEYWORD = 5
-const MAX_TOTAL_PLACES = 8
+const MAX_TOTAL_PLACES = 5
 // 한 번의 검색 라운드에서 병렬로 던질 최대 키워드 수(호출량·지연 상한)
 const MAX_SEARCH_KEYWORDS = 4
 // 네이버 지역 검색은 반경 파라미터가 없어 검색어에 지역명을 섞는 것만으로는 먼 결과가 섞여 들어올 수
 // 있다 — 사용자 좌표(또는 지정 위치) 기준 이 거리(m)를 벗어나는 결과는 아예 후보에서 제외한다.
 const MAX_DISTANCE_METERS = 3000
 
-// category는 foodCategory.js의 항목. 'all'+나트륨 정상이면 예전 프롬프트와 완전히 동일한 문장이
-// 나간다 — 카테고리를 고르지 않은 사용자의 결과가 이번 변경으로 달라지지 않도록.
+// category는 foodCategory.js의 항목. 특정 카테고리를 고르면 그 범주 조건이, '전체'면 계열 다양성
+// 조건이 추가로 붙는다 — 나트륨 정상 + 카테고리 미지정일 때만 조건 없는 기본 프롬프트가 나간다.
 function buildKeywordsPrompt(deficientRows, category, { sodiumExceeded = false } = {}) {
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key}) 약 ${row.deficiency}${row.unit} 부족`).join(', ')
 
@@ -69,6 +72,12 @@ function buildKeywordsPrompt(deficientRows, category, { sodiumExceeded = false }
   if (category.key !== 'all') {
     extraConditions.push(
       `사용자가 "${category.label}"을(를) 먹고 싶어 한다. 모든 키워드는 반드시 ${category.label} 범주 안에서 골라라 — 그 범주 안에서 위 영양소를 가장 잘 채워주는 유형을 고르면 된다.`,
+    )
+  } else {
+    // '전체' 카테고리는 최종 목록을 여러 요리 계열로 분산시키는 게 목표(placeDiversity.js가 결정적으로
+    // 보장) — 이 조건은 그 목표에 맞는 키워드가 애초에 더 자주 나오게 하는 느슨한 1차 유도일 뿐이다.
+    extraConditions.push(
+      '키워드들이 가능하면 서로 다른 나라·계열 음식(한식/중식/일식/양식/분식/아시안/카페·디저트)에서 나오게 골라라 — 한 계열에 몰리지 않게 하되, 부족한 영양소를 채우는 게 항상 더 중요하다.',
     )
   }
   if (sodiumExceeded) {
@@ -96,11 +105,15 @@ function buildKeywordsPrompt(deficientRows, category, { sodiumExceeded = false }
 }`
 }
 
+// 반환: { keywords, targets }. targets는 Map<keyword, 그 키워드가 겨냥한 부족 영양소 키> —
+// placeDiversity.js가 "영양 충족 고정 픽"에 쓴다(부족 영양소 없이 고른 균형 키워드는 특정 영양소를
+// 겨냥한 게 아니므로 targets에 안 들어간다).
 async function fetchSearchKeywords(deficientRows, category, { sodiumExceeded = false } = {}) {
   // 부족 영양소가 없는 경우는 둘: ① 프로필/오늘 기록 미입력(고를 근거 없음) ② 4대 영양소 전부 충족.
   // 어느 쪽이든 "균형 잡힌 식사" 방향의 검색어를 쓴다(카테고리를 골랐으면 그 카테고리 풀).
   if (deficientRows.length === 0) {
-    return category.key === 'all' ? BALANCED_KEYWORDS.slice(0, 3) : category.keywords.slice(0, 3)
+    const keywords = category.key === 'all' ? BALANCED_KEYWORDS.slice(0, 3) : category.keywords.slice(0, 3)
+    return { keywords, targets: new Map() }
   }
 
   try {
@@ -111,20 +124,29 @@ async function fetchSearchKeywords(deficientRows, category, { sodiumExceeded = f
       temperature: GEMINI_TEMPERATURE.keywords,
     })
     const parsed = parseJsonLoose(text)
+    const targets = new Map()
     const keywords = (parsed?.keywords || [])
-      .map((k) => (typeof k === 'string' ? k : k?.keyword))
-      .filter((k) => typeof k === 'string' && k.trim().length > 0)
-      .map((k) => k.trim())
+      .filter((k) => k && typeof k.keyword === 'string' && k.keyword.trim().length > 0)
+      .map((k) => {
+        const keyword = k.keyword.trim()
+        if (typeof k.target === 'string' && k.target.trim()) targets.set(keyword, k.target.trim())
+        return keyword
+      })
     const unique = [...new Set(keywords)].slice(0, 3)
-    if (unique.length > 0) return unique
+    if (unique.length > 0) return { keywords: unique, targets }
   } catch (err) {
     console.error('search keyword generation failed:', err)
   }
 
   // 폴백: 카테고리를 골랐으면 그 카테고리의 검색어 풀, 아니면 부족 영양소별 정적 매핑(유형 분산 유지)
-  if (category.key !== 'all') return category.keywords.slice(0, 3)
-  const mapped = [...new Set(deficientRows.map((row) => KEYWORD_FALLBACKS[row.key] || FALLBACK_SEARCH_KEYWORD))]
-  return mapped.slice(0, 3)
+  if (category.key !== 'all') return { keywords: category.keywords.slice(0, 3), targets: new Map() }
+  const targets = new Map()
+  const mapped = [...new Set(deficientRows.map((row) => {
+    const keyword = KEYWORD_FALLBACKS[row.key] || FALLBACK_SEARCH_KEYWORD
+    if (KEYWORD_FALLBACKS[row.key]) targets.set(keyword, row.key)
+    return keyword
+  }))]
+  return { keywords: mapped.slice(0, 3), targets }
 }
 
 function placeIdentity(place) {
@@ -180,7 +202,8 @@ function toPlaceShape(item, myPos) {
 //
 // categoryKey: 음식 종류 필터를 **키워드당 슬롯 배분 전에** 적용한다 — 필터를 병합 후에 걸면
 // 쿼리당 5건뿐인 슬롯을 다른 종류 식당이 차지해 정작 고른 종류가 밀려나는 낭비가 생긴다.
-// 반환: { places: 필터 통과 병합 결과, rawPool: 필터 전(거리 필터 후) 후보 전체 — 완화 폴백용 }.
+// 반환: { places: 필터 통과 병합 결과, rawPool: 필터 전(거리 필터 후) 후보 전체 — 완화 폴백용,
+// pool: MAX_TOTAL_PLACES로 자르기 전 병합 결과 전체 — placeDiversity.js의 '전체' 카테고리 다양화용 }.
 async function searchAndMerge({ x, y, keywords, regionLabel, categoryKey = 'all', existing = [] }) {
   const merged = [...existing]
   const seen = new Set(existing.map(placeIdentity))
@@ -219,7 +242,7 @@ async function searchAndMerge({ x, y, keywords, regionLabel, categoryKey = 'all'
 
   merged.sort((a, b) => a.distance - b.distance)
   rawPool.sort((a, b) => a.distance - b.distance)
-  return { places: merged.slice(0, MAX_TOTAL_PLACES), rawPool }
+  return { places: merged.slice(0, MAX_TOTAL_PLACES), rawPool, pool: merged }
 }
 
 // 직업 맞춤 추천(FR-2.2) — 부족 영양소 추천과는 별개 축이라 카테고리 필터 없이(categoryKey:'all')
@@ -370,6 +393,30 @@ export default function MapPage() {
   const [myPosition, setMyPosition] = useState(null)
   const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
+
+  // FR-18 — 지도 듀얼 비교. 다중 선택 모드에서 카드 2개를 고르면 "비교하기"가 나타난다.
+  const [duelMode, setDuelMode] = useState(false)
+  const [duelSelectedKeys, setDuelSelectedKeys] = useState([])
+  const [duelPair, setDuelPair] = useState(null) // [placeA, placeB] | null
+
+  function handleToggleDuelMode() {
+    setDuelMode((v) => !v)
+    setDuelSelectedKeys([])
+  }
+
+  function handleToggleDuelSelect(key) {
+    setDuelSelectedKeys((prev) => {
+      if (prev.includes(key)) return prev.filter((k) => k !== key)
+      if (prev.length >= 2) return prev // 이미 2개 선택됨 — 먼저 하나를 해제해야 새로 고를 수 있다.
+      return [...prev, key]
+    })
+  }
+
+  function handleOpenDuel() {
+    if (duelSelectedKeys.length !== 2 || !places) return
+    const [a, b] = duelSelectedKeys.map((key) => places.find((p) => placeIdentity(p) === key))
+    if (a && b) setDuelPair([a, b])
+  }
   const [nearbyError, setNearbyError] = useState('')
   const [locationQuery, setLocationQuery] = useState('')
   // 고른 음식 종류는 기기에 저장돼 다시 방문해도 유지된다(foodCategory.js).
@@ -421,8 +468,10 @@ export default function MapPage() {
   async function searchAroundPosition({ x, y }) {
     const category = getFoodCategory(categoryKey)
 
-    // 1) 부족 영양소(+고른 음식 종류, 나트륨 초과 제약) → 서로 다른 식당 유형 키워드 2~3개
-    const keywords = await fetchSearchKeywords(top3Rows, category, { sodiumExceeded })
+    // 1) 부족 영양소(+고른 음식 종류, 나트륨 초과 제약) → 서로 다른 식당 유형 키워드 2~3개.
+    // targets: 그 키워드가 겨냥한 부족 영양소 키 — '전체' 카테고리 다양화(placeDiversity.js)의
+    // "영양 고정 픽"에 쓴다.
+    const { keywords, targets } = await fetchSearchKeywords(top3Rows, category, { sodiumExceeded })
 
     // 1.2) 후보 풀 확대: 쿼리당 결과가 최대 5건뿐이라(실측, proxy.js) 키워드 수로 풀을 늘린다.
     //  - 카테고리를 골랐으면 카테고리 이름 검색을 첫 배치에 포함한다(예전 5-a 완화 단계가 하던 검색을
@@ -446,7 +495,7 @@ export default function MapPage() {
 
     // 2) 키워드별 병렬 검색 후 병합(중복 제거). 음식 종류 필터는 searchAndMerge 안에서 슬롯 배분
     //    전에 적용된다("한식을 골랐는데 중국집이 나온다"를 막으면서 슬롯 낭비도 없앤다).
-    let { places: results, rawPool } = await searchAndMerge({
+    let { places: results, rawPool, pool } = await searchAndMerge({
       x, y, keywords: searchKeywords, regionLabel, categoryKey: category.key,
     })
 
@@ -462,7 +511,17 @@ export default function MapPage() {
         })
         results = supplement.places
         rawPool = [...rawPool, ...supplement.rawPool]
+        const poolSeen = new Set(pool.map(placeIdentity))
+        pool = [...pool, ...supplement.pool.filter((place) => !poolSeen.has(placeIdentity(place)))]
       }
+    }
+
+    // 3.5) '전체' 카테고리는 최종 목록이 여러 요리 계열에 퍼지게 결정적으로 재선정한다(영양 충족은
+    //    항상 최우선 — placeDiversity.js 참고). 특정 카테고리를 골랐을 땐 이 블록이 실행되지 않아
+    //    results는 기존과 완전히 동일하게 유지된다.
+    if (category.key === 'all') {
+      const withTargets = pool.map((place) => ({ ...place, matchedTarget: targets.get(place.matchedKeyword) ?? null }))
+      results = diversifyByCategory(withTargets, { targetCount: MAX_TOTAL_PLACES })
     }
 
     let filtered = results
@@ -498,7 +557,14 @@ export default function MapPage() {
     const getMenu = (place) => place.representativeMenu
     withExpected = clampExpectedForItems(withExpected, getMenu)
     withExpected = await enrichExpectedFromDB(withExpected, getMenu)
-    return { places: withExpected, categoryNotice }
+
+    // 8) 추천도 점수(FR-4) — 영양 충족도 + 거리 근접도 2요인. 네이버 지역 검색엔 평점 필드가 없어
+    //    3요인(+평점)은 애초에 못 만든다(직접 확인). 렌더링에 쓰이는 다른 필드는 전혀 안 건드린다.
+    const scored = withExpected.map((place) => ({
+      ...place,
+      score: calcPlaceScore({ expected: place.expected, deficientRows: top3Rows, distance: place.distance, maxDistance: MAX_DISTANCE_METERS }),
+    }))
+    return { places: scored, categoryNotice }
   }
 
   // 직업 맞춤 검색(searchOccupationPlaces)은 항상 자체 .catch로 감싸 빈 배열로 떨어뜨린다 — 이 새
@@ -664,10 +730,45 @@ export default function MapPage() {
               <p style={{ margin: 0, color: colors.textStrong, fontSize: font.size.sm }}>{categoryNotice}</p>
             </Card>
           )}
-          <PlaceList places={places} todayTotal={todayTotal} recommended={recommended} deficientRows={top3Rows} />
+
+          {/* FR-18 — 두 곳을 골라 영양/가격을 1:1로 비교한다. */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+            <button type="button" className="tds-press" onClick={handleToggleDuelMode} style={styles.linkButton}>
+              {duelMode ? '비교 모드 끄기' : '두 곳 비교하기'}
+            </button>
+            {duelMode && (
+              <AppButton
+                onClick={handleOpenDuel}
+                disabled={duelSelectedKeys.length !== 2}
+                style={{ width: 'auto', height: 'auto', padding: `${spacing.xs}px ${spacing.md}px`, fontSize: font.size.sm }}
+              >
+                비교하기 ({duelSelectedKeys.length}/2)
+              </AppButton>
+            )}
+          </div>
+
+          <PlaceList
+            places={places}
+            todayTotal={todayTotal}
+            recommended={recommended}
+            deficientRows={top3Rows}
+            selectable={duelMode}
+            selectedKeys={duelSelectedKeys}
+            onToggleSelect={handleToggleDuelSelect}
+          />
         </>
       )}
       </>
+      )}
+
+      {duelPair && (
+        <PlaceDuelModal
+          placeA={duelPair[0]}
+          placeB={duelPair[1]}
+          todayTotal={todayTotal}
+          recommended={recommended}
+          onClose={() => setDuelPair(null)}
+        />
       )}
     </div>
   )
