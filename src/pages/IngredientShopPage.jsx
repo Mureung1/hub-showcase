@@ -97,7 +97,12 @@ function IngredientShopPage() {
           </p>
 
           <div className="mt-6">
-            <FilterChipGroup options={INGREDIENT_CATEGORIES} selectedId={selectedCategoryId} onSelect={setSelectedCategoryId} />
+            <FilterChipGroup
+              options={INGREDIENT_CATEGORIES}
+              selectedId={selectedCategoryId}
+              onSelect={setSelectedCategoryId}
+              justify="center"
+            />
           </div>
 
           <div className="mt-4 flex flex-col gap-6 md:flex-row-reverse md:items-start">
