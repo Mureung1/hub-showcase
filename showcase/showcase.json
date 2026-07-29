@@ -4,6 +4,7 @@
   "summary": "MBTI를 입구로 공부·스트레스 성향을 점검하고, 나에게 맞는 공부법과 회복 루틴을 추천받아 스스로 검증하는 자기조절 학습 도구입니다.",
   "githubUser": "bricepark94(박병관)",
   "demoUrl": "https://hub-theta-brown.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/1fYzly8Se7MIizuO5USljpsr6H9-O9I6j/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/01-result.webp",

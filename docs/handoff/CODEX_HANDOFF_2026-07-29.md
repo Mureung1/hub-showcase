@@ -176,15 +176,25 @@ select id, anon_id, mbti, created_at from research_results order by created_at d
 
 > **XML 함정**: SVG 주석 안에 `--`(CSS 변수명)를 쓰면 XML 이 깨진다. 처음 작성분이 이것 때문에 렌더되지 않아 파서로 잡았다.
 
-> **og:image 는 넣지 않았다** — 1200×630 래스터 이미지를 따로 준비해야 하고 지금 `frontend/public` 에 적당한 자산이 없다. 링크 미리보기에 썸네일이 필요하면 별도 작업.
+### og:image 추가 (같은 날 후속)
+
+같은 세션에서 1200×630 `og:image`를 직접 만들어 넣었다(`frontend/public/og.png`, 205KB). 배포된 앱과 같은 빈티지 에디토리얼 토큰(paper-outer `#EDE3D2`·blue-deep `#203965`·accent-terracotta `#B96842`)으로 그렸고, 새 파비콘 마크와 Yellowtail 스크립트를 그대로 썼다. 웹폰트가 실제 로드된 뒤에만 캡처하도록 확인 로직을 넣었다. `og:image:width/height/alt`까지 명시하고 `twitter:card`를 `summary_large_image`로 올렸다. `main` 배포 후 `/og.png`(HTTP 200 · 205,706 bytes) 실물 확인.
+
+## 4-2. 데모 영상 업로드 반영 (완료)
+
+사용자가 구글 드라이브에 `hub-demo-final-v2.mp4`를 업로드했다. 반영 전에 링크를 실물로 확인했다:
+
+- `curl`로 다운로드 엔드포인트(`https://drive.google.com/uc?export=download&id=…`)를 찔러 `content-type: video/mp4`, `content-length: 17205735` 확인 — **로컬 `hub-demo-final-v2.mp4`와 바이트 단위로 정확히 일치**한다(같은 파일이 그대로 올라갔다는 증거)
+- 로그인 없이도 `<title>`·`og:title`에 실제 파일명(`mbti 공부법 소개영상.mp4`)이 나오고 "액세스 권한이 필요"류 문구가 없어 "링크가 있는 모든 사용자" 공유로 확인됨
+
+`showcase/showcase.json`의 `demoUrl` 바로 아래에 `demoVideoUrl`을 추가했다. JSON 유효성과 스키마 패턴(`^$|^https://`) 통과를 확인했다.
 
 ## 5. 남은 것 / 다음 착수점
 
-1. **영상 업로드 → `showcase.json` 에 `demoVideoUrl` 추가.** 스키마상 `^$|^https://` 라 로컬 경로 불가. 업로드 플랫폼·시점은 사용자 판단
-2. **위 §4 의 데모 레코드 1건** Supabase 대시보드에서 삭제
-3. **가명 ID 잔존 건 결정** — ADR 로 남길 것 (어제부터 이월)
-4. **`docs/prompt-guide.md` 의 Review Prompt** 가 여전히 "외부 AI API 가 들어가지 않았는지 확인"이라고 되어 있다. ADR-008 이후 `/api/mbti-chat` + Gemini 는 정식 허용 기능이다. 07-23·07-27·07-28 에 이어 **오늘도 고치지 않았다** — 다음 세션에서 정정할 것
-5. AI 호출 상한(이슈) · 모바일·접근성 점검 · 파일럿 관찰 요약
+1. **위 §4 의 데모 레코드 1건** Supabase 대시보드에서 삭제
+2. **가명 ID 잔존 건 결정** — ADR 로 남길 것 (어제부터 이월)
+3. **`docs/prompt-guide.md` 의 Review Prompt** 가 여전히 "외부 AI API 가 들어가지 않았는지 확인"이라고 되어 있다. ADR-008 이후 `/api/mbti-chat` + Gemini 는 정식 허용 기능이다. 07-23·07-27·07-28·07-29 에 이어 **또 고치지 않았다** — 다음 세션에서 반드시 정정할 것
+4. AI 호출 상한(이슈) · 모바일·접근성 점검 · 파일럿 관찰 요약
 
 ## 6. 하드룰 (바뀐 것만)
 
