@@ -303,6 +303,55 @@ with inserted_task as (
 insert into ai_status_test_state (key, value)
 select 'stale_task', id from inserted_task;
 
+with inserted_task as (
+  insert into public.tasks (
+    project_id,
+    title,
+    assignee_id,
+    due_date,
+    status,
+    description
+  ) values (
+    'e2000000-0000-4000-8000-000000000001',
+    'Editable AI draft',
+    (select value from ai_status_test_state where key = 'ai_member'),
+    '2026-08-02',
+    'not_started',
+    'No execution history yet.'
+  )
+  returning id
+)
+insert into ai_status_test_state (key, value)
+select 'draft_task', id from inserted_task;
+
+select public.update_task(
+  (select value from ai_status_test_state where key = 'draft_task'),
+  '{"title":"Updated AI draft"}'::jsonb
+);
+
+select pg_temp.assert_true(
+  (
+    select title = 'Updated AI draft'
+      and status = 'not_started'
+    from public.tasks
+    where id = (select value from ai_status_test_state where key = 'draft_task')
+  ),
+  'an AI task with no run history must remain editable while not started'
+);
+
+select public.delete_task(
+  (select value from ai_status_test_state where key = 'draft_task')
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.tasks
+    where id = (select value from ai_status_test_state where key = 'draft_task')
+  ),
+  'an AI task with no run history must remain deletable while not started'
+);
+
 insert into ai_status_test_state (key, value)
 select
   'main_run',
@@ -448,19 +497,25 @@ select pg_temp.assert_true(
   'rejecting AI output must return the task to in_progress'
 );
 
-select public.update_task(
-  (select value from ai_status_test_state where key = 'main_task'),
-  '{"description":"Revised after rejection"}'::jsonb
+select pg_temp.expect_error(
+  format(
+    $sql$
+      select public.update_task(
+        %L,
+        '{"description":"Revised after rejection"}'::jsonb
+      )
+    $sql$,
+    (select value from ai_status_test_state where key = 'main_task')
+  ),
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
 );
 
-select pg_temp.assert_true(
-  (
-    select status = 'in_progress'
-      and description = 'Revised after rejection'
-    from public.tasks
-    where id = (select value from ai_status_test_state where key = 'main_task')
+select pg_temp.expect_error(
+  format(
+    'select public.delete_task(%L)',
+    (select value from ai_status_test_state where key = 'main_task')
   ),
-  'rejected AI work must allow content edits without manual status changes'
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
 );
 
 insert into ai_status_test_state (key, value)
@@ -563,6 +618,27 @@ select pg_temp.assert_true(
   'failed AI output must keep the task in_progress for retry'
 );
 
+select pg_temp.expect_error(
+  format(
+    $sql$
+      select public.update_task(
+        %L,
+        '{"description":"Attempted edit after failure"}'::jsonb
+      )
+    $sql$,
+    (select value from ai_status_test_state where key = 'failed_task')
+  ),
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
+);
+
+select pg_temp.expect_error(
+  format(
+    'select public.delete_task(%L)',
+    (select value from ai_status_test_state where key = 'failed_task')
+  ),
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
+);
+
 insert into ai_status_test_state (key, value)
 select
   'credential_run',
@@ -605,6 +681,34 @@ select pg_temp.assert_true(
     where id = (select value from ai_status_test_state where key = 'credential_task')
   ),
   'credential failures must restore the exact task status captured at start'
+);
+
+select public.update_task(
+  (select value from ai_status_test_state where key = 'credential_task'),
+  '{"description":"Editable after credential failure"}'::jsonb
+);
+
+select pg_temp.assert_true(
+  (
+    select status = 'not_started'
+      and description = 'Editable after credential failure'
+    from public.tasks
+    where id = (select value from ai_status_test_state where key = 'credential_task')
+  ),
+  'a credential failure restored to not_started must remain editable'
+);
+
+select public.delete_task(
+  (select value from ai_status_test_state where key = 'credential_task')
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.tasks
+    where id = (select value from ai_status_test_state where key = 'credential_task')
+  ),
+  'a credential failure restored to not_started must remain deletable'
 );
 
 insert into ai_status_test_state (key, value)
@@ -674,7 +778,7 @@ select pg_temp.expect_error(
     $sql$,
     (select value from ai_status_test_state where key = 'manual_status_task')
   ),
-  'TEAMFLOW_CONFLICT:AI_TASK_STATUS_MANAGED'
+  'TEAMFLOW_CONFLICT:AI_TASK_LOCKED'
 );
 
 select public.complete_ai_run(

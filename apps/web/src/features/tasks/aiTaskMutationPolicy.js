@@ -1,4 +1,4 @@
-import { AI_RUN_STATUS } from '@teamflow/shared'
+import { AI_RUN_STATUS, TASK_STATUS } from '@teamflow/shared'
 
 const ACTIVE_RUN_STATUSES = new Set([
   AI_RUN_STATUS.RUNNING,
@@ -29,6 +29,16 @@ export function getAiTaskMutationPolicy(task, members, aiRuns) {
 
   const assignee = members.find((member) => member.id === task.assigneeId)
   if (assignee?.kind === 'ai' || assignee?.isAi) {
+    if (task.status !== TASK_STATUS.NOT_STARTED) {
+      return {
+        canEdit: false,
+        canDelete: false,
+        canChangeStatus: false,
+        message: '시작된 AI 할 일은 수정하거나 삭제할 수 없습니다.',
+        reason: 'ai_started',
+      }
+    }
+
     return {
       canEdit: true,
       canDelete: true,

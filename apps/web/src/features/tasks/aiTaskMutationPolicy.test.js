@@ -51,8 +51,43 @@ describe('AI task mutation policy', () => {
   test.each([
     AI_RUN_STATUS.REJECTED,
     AI_RUN_STATUS.FAILED,
-  ])('%s 결과는 내용 수정과 삭제를 허용하지만 상태는 자동 관리한다', (status) => {
+  ])('%s 이후 진행 중인 AI 할 일은 수정과 삭제를 잠근다', (status) => {
     expect(getAiTaskMutationPolicy(task, members, [run(status)])).toMatchObject({
+      canEdit: false,
+      canDelete: false,
+      canChangeStatus: false,
+      reason: 'ai_started',
+    })
+  })
+
+  test('실행 이력이 없는 시작 전 AI 할 일만 수정과 삭제를 허용한다', () => {
+    expect(getAiTaskMutationPolicy(
+      { ...task, status: 'not_started' },
+      members,
+      [],
+    )).toMatchObject({
+      canEdit: true,
+      canDelete: true,
+      canChangeStatus: false,
+      reason: 'ai_status_managed',
+    })
+  })
+
+  test('실행 이력이 없어도 이미 시작된 AI 할 일은 수정과 삭제를 잠근다', () => {
+    expect(getAiTaskMutationPolicy(task, members, [])).toMatchObject({
+      canEdit: false,
+      canDelete: false,
+      canChangeStatus: false,
+      reason: 'ai_started',
+    })
+  })
+
+  test('자격 증명 실패로 시작 전 상태가 복원된 AI 할 일은 다시 수정과 삭제가 가능하다', () => {
+    expect(getAiTaskMutationPolicy(
+      { ...task, status: 'not_started' },
+      members,
+      [run(AI_RUN_STATUS.FAILED)],
+    )).toMatchObject({
       canEdit: true,
       canDelete: true,
       canChangeStatus: false,
