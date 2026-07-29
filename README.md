@@ -7,6 +7,8 @@
 
 > AI 시대 역행하는 나의 사고력을 깨우자!
 
+[서비스 바로가기](https://hub-silk-five.vercel.app) · [FastAPI 문서](https://hub-backend-eta.vercel.app/docs)
+
 <br>
 
 #### 목차
