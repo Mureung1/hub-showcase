@@ -4,6 +4,7 @@
   "summary": "상대와 상황에 맞는 말을 3축 기준으로 채점받으며, 대신 써주는 대신 다시 쓰게 하는 훈련 서비스입니다.",
   "githubUser": "zer8m(김아영)",
   "demoUrl": "https://uncoach-pi.vercel.app",
+  "demoVideoUrl": "https://naver.me/FOR54UZW",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/chat-feedback.webp",
