@@ -14,7 +14,7 @@ export const config = {
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || "",
-    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
   },
   supabase: {
     url: (process.env.SUPABASE_URL || "").replace(/\/$/, ""),
