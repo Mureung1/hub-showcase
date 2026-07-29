@@ -419,6 +419,9 @@ function createRepository(): InsightRepository {
     async delete() {
       return { ok: true };
     },
+    async deleteMany(insightIds) {
+      return { deletedIds: [...insightIds], ok: true };
+    },
     async list() {
       return { insights: [], warnings: [] };
     },

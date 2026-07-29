@@ -42,6 +42,10 @@ function createRepository(
   return {
     create: vi.fn(async (insight) => ({ insight, ok: true as const })),
     delete: vi.fn(async () => ({ ok: true as const })),
+    deleteMany: vi.fn(async (insightIds) => ({
+      deletedIds: [...insightIds],
+      ok: true as const,
+    })),
     list: vi.fn(async () => ({ insights: [], warnings: [] })),
     update: vi.fn(async (insight) => ({ insight, ok: true as const })),
     ...overrides,

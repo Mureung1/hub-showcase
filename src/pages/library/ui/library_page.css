@@ -102,6 +102,18 @@
   line-height: var(--typography-label-line-height);
 }
 
+.library-page__result-row {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.library-page__result-row .ui-button {
+  min-height: 44px;
+}
+
 .library-page__import-action {
   min-height: 44px;
 }
@@ -109,6 +121,37 @@
 .library-page__content {
   display: grid;
   gap: var(--spacing-4);
+}
+
+.insight-batch-delete-dialog__content,
+.insight-batch-delete-dialog__confirmation {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.insight-batch-delete-dialog__confirmation > span {
+  color: var(--color-ink);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.insight-batch-delete-dialog__error {
+  color: var(--color-error-ink);
+  font-size: var(--typography-meta-size);
+  line-height: var(--typography-meta-line-height);
+}
+
+.library-page__announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 @media (max-width: 767px) {
@@ -131,5 +174,11 @@
 
   .library-page__filter > .category-filter {
     justify-content: flex-start;
+  }
+
+  .library-page--selection .library-page__body {
+    padding-bottom: calc(
+      var(--spacing-20) + 132px + env(safe-area-inset-bottom, 0px)
+    );
   }
 }

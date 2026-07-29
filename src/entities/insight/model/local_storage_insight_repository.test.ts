@@ -215,6 +215,19 @@ describe('createLocalStorageInsightRepository', () => {
     });
   });
 
+  it('일괄 삭제 대상을 모두 찾지 못하면 저장값을 바꾸지 않는다', async () => {
+    const storage = new MemoryStorage();
+    const repository = insightApi.createLocalStorageInsightRepository(storage);
+    await repository.create(insight);
+
+    await expect(
+      repository.deleteMany([insight.id, 'missing'])
+    ).resolves.toEqual({ ok: false, reason: 'not-found' });
+    await expect(repository.list()).resolves.toMatchObject({
+      insights: [insight],
+    });
+  });
+
   it.each(['update', 'delete'] as const)(
     '존재하지 않는 항목 %s를 not-found로 반환한다',
     async (operation) => {

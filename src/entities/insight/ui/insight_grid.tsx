@@ -10,7 +10,10 @@ export type InsightGridProps = {
   onDeletionFocusFallback?: InsightCardProps['onDeletionFocusFallback'];
   onEditFocusFallback?: InsightCardProps['onEditFocusFallback'];
   onRequestCategoryCreation?: InsightCardProps['onRequestCategoryCreation'];
+  onToggleInsightSelection?: InsightCardProps['onToggleSelection'];
   onUpdateInsight?: InsightCardProps['onUpdateInsight'];
+  selectedInsightIds?: ReadonlySet<string>;
+  selectionMode?: boolean;
 };
 
 export function InsightGrid({
@@ -21,7 +24,10 @@ export function InsightGrid({
   onDeletionFocusFallback,
   onEditFocusFallback,
   onRequestCategoryCreation,
+  onToggleInsightSelection,
   onUpdateInsight,
+  selectedInsightIds = new Set<string>(),
+  selectionMode = false,
 }: InsightGridProps) {
   return (
     <div className="insight-grid">
@@ -30,12 +36,15 @@ export function InsightGrid({
           categories={categories}
           categorySelectionDisabled={categorySelectionDisabled}
           insight={insight}
-          key={insight.id}
+          key={`${insight.id}:${selectionMode ? 'selection' : 'default'}`}
           onDeleteInsight={onDeleteInsight}
           onDeletionFocusFallback={onDeletionFocusFallback}
           onEditFocusFallback={onEditFocusFallback}
           onRequestCategoryCreation={onRequestCategoryCreation}
+          onToggleSelection={onToggleInsightSelection}
           onUpdateInsight={onUpdateInsight}
+          selected={selectedInsightIds.has(insight.id)}
+          selectionMode={selectionMode}
         />
       ))}
     </div>

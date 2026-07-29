@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
 
 import {
   InsightGrid,
@@ -16,6 +17,8 @@ import {
   type CategoryFilterOption,
 } from '@/shared/ui';
 
+import { InsightBatchDeleteDialog } from './insight_batch_delete_dialog';
+import { LibrarySelectionToolbar } from './library_selection_toolbar';
 import './library_page.css';
 
 export type LibraryPageProps = {
@@ -27,6 +30,9 @@ export type LibraryPageProps = {
   loading?: boolean;
   onCategoryChange: (category: string) => void;
   onDeleteInsight: (insightId: string) => Promise<InsightMutationResult>;
+  onDeleteInsights: (
+    insightIds: readonly string[]
+  ) => Promise<InsightMutationResult>;
   onManageCategories?: () => void;
   onOpenImport: () => void;
   onOpenSave: () => void;
@@ -53,6 +59,7 @@ export function LibraryPage({
   loading = false,
   onCategoryChange,
   onDeleteInsight,
+  onDeleteInsights,
   onManageCategories,
   onOpenImport,
   onOpenSave,
@@ -65,8 +72,30 @@ export function LibraryPage({
   unavailable = false,
 }: LibraryPageProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedInsightIds, setSelectedInsightIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(
+    null
+  );
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletionAnnouncement, setDeletionAnnouncement] = useState('');
   const hasQuery = query.trim().length > 0;
   const hasLibraryInsights = totalInsightCount > 0;
+  const visibleInsightIds = insights.map(({ id }) => id);
+  const visibleInsightIdSet = new Set(visibleInsightIds);
+  const visibleSelectedInsightIds = new Set(
+    [...selectedInsightIds].filter((id) => visibleInsightIdSet.has(id))
+  );
+  const selectedCount = visibleSelectedInsightIds.size;
+  const deletesEntireLibrary =
+    activeCategory === 'all' &&
+    !hasQuery &&
+    totalInsightCount > 0 &&
+    selectedCount === totalInsightCount;
   const activeCategoryLabel =
     categoryOptions.find((option) => option.value === activeCategory)?.label ??
     '전체';
@@ -76,19 +105,195 @@ export function LibraryPage({
       ? `인사이트 ${insights.length}개`
       : `${activeCategoryLabel} ${insights.length}개`;
 
+  const endSelection = useCallback((restoreFocus = true) => {
+    setSelectionMode(false);
+    setSelectedInsightIds(new Set());
+    setSelectionAnchorId(null);
+    setDeleteDialogOpen(false);
+    setDeleteFailed(false);
+    setDeleting(false);
+
+    if (restoreFocus) {
+      setTimeout(() => {
+        const selectionTrigger = document
+          .querySelector<HTMLButtonElement>(
+            '[data-library-selection-trigger]'
+          );
+
+        if (selectionTrigger) {
+          selectionTrigger.focus();
+          return;
+        }
+
+        document
+          .querySelector<HTMLButtonElement>('.library-page__content button')
+          ?.focus();
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectionMode || deleteDialogOpen || deleting) {
+      return;
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      event.preventDefault();
+      endSelection();
+    }
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [deleteDialogOpen, deleting, endSelection, selectionMode]);
+
+  function beginSelection() {
+    setDeletionAnnouncement('');
+    setSelectedInsightIds(new Set());
+    setSelectionAnchorId(null);
+    setSelectionMode(true);
+  }
+
+  function handleCategoryChange(category: string) {
+    if (selectionMode) {
+      endSelection(false);
+    }
+
+    onCategoryChange(category);
+  }
+
+  function handleQueryChange(value: string) {
+    if (selectionMode) {
+      endSelection(false);
+    }
+
+    onQueryChange(value);
+  }
+
+  function clearSelectedInsights() {
+    setSelectedInsightIds(new Set());
+    setSelectionAnchorId(null);
+    setDeleteFailed(false);
+  }
+
+  function toggleAllVisibleInsights() {
+    if (selectedCount === insights.length) {
+      clearSelectedInsights();
+      return;
+    }
+
+    setSelectedInsightIds(new Set(visibleInsightIds));
+    setSelectionAnchorId(null);
+    setDeleteFailed(false);
+  }
+
+  function toggleInsightSelection(
+    insightId: string,
+    options: { range: boolean }
+  ) {
+    const nextSelectedIds = new Set(visibleSelectedInsightIds);
+
+    if (options.range && selectionAnchorId) {
+      const anchorIndex = visibleInsightIds.indexOf(selectionAnchorId);
+      const targetIndex = visibleInsightIds.indexOf(insightId);
+
+      if (anchorIndex >= 0 && targetIndex >= 0) {
+        const start = Math.min(anchorIndex, targetIndex);
+        const end = Math.max(anchorIndex, targetIndex);
+
+        visibleInsightIds.slice(start, end + 1).forEach((id) => {
+          nextSelectedIds.add(id);
+        });
+        setDeleteFailed(false);
+        setSelectedInsightIds(nextSelectedIds);
+        return;
+      }
+    }
+
+    if (nextSelectedIds.has(insightId)) {
+      nextSelectedIds.delete(insightId);
+    } else {
+      nextSelectedIds.add(insightId);
+    }
+
+    setSelectionAnchorId(insightId);
+    setDeleteFailed(false);
+    setSelectedInsightIds(nextSelectedIds);
+  }
+
+  function openDeleteDialog() {
+    if (selectedCount === 0) {
+      return;
+    }
+
+    setDeleteFailed(false);
+    setDeleteDialogOpen(true);
+  }
+
+  function closeDeleteDialog() {
+    if (deleting) {
+      return;
+    }
+
+    setDeleteDialogOpen(false);
+    setDeleteFailed(false);
+    setTimeout(() => {
+      document
+        .querySelector<HTMLButtonElement>('[data-library-selection-delete]')
+        ?.focus();
+    });
+  }
+
+  async function confirmBatchDeletion() {
+    if (deleting || selectedCount === 0) {
+      return;
+    }
+
+    const insightIds = visibleInsightIds.filter((id) =>
+      visibleSelectedInsightIds.has(id)
+    );
+    setDeleting(true);
+    let result: InsightMutationResult;
+
+    try {
+      result = await onDeleteInsights(insightIds);
+    } catch {
+      result = { ok: false, reason: 'write-failed' };
+    } finally {
+      setDeleting(false);
+    }
+
+    if (!result.ok) {
+      setDeleteFailed(true);
+      return;
+    }
+
+    setDeletionAnnouncement(`인사이트 ${insightIds.length}개를 삭제했어요.`);
+    endSelection();
+  }
+
   function clearFilters() {
-    onCategoryChange('all');
-    onQueryChange('');
+    handleCategoryChange('all');
+    handleQueryChange('');
     searchInputRef.current?.focus();
   }
 
   function clearQuery() {
-    onQueryChange('');
+    handleQueryChange('');
     searchInputRef.current?.focus();
   }
 
   return (
-    <section className="library-page" aria-labelledby="library-title">
+    <section
+      className={clsx('library-page', {
+        'library-page--selection': selectionMode,
+      })}
+      aria-labelledby="library-title"
+    >
       <div className="library-page__stage">
         <header className="library-page__header">
           <div className="library-page__heading">
@@ -105,8 +310,10 @@ export function LibraryPage({
             <label htmlFor="global-search">보관함 검색</label>
             <SearchField
               id="global-search"
-              onChange={(event) => onQueryChange(event.currentTarget.value)}
-              onReset={() => onQueryChange('')}
+              onChange={(event) =>
+                handleQueryChange(event.currentTarget.value)
+              }
+              onReset={() => handleQueryChange('')}
               placeholder="제목, 메모, 카테고리, 도메인이나 URL 검색"
               ref={searchInputRef}
               size="medium"
@@ -115,7 +322,10 @@ export function LibraryPage({
             />
           </div>
 
-          {hasLibraryInsights && !loading && !unavailable ? (
+          {hasLibraryInsights &&
+          !loading &&
+          !unavailable &&
+          !selectionMode ? (
             <Button
               className="library-page__import-action"
               hierarchy="secondary"
@@ -137,7 +347,7 @@ export function LibraryPage({
               {onManageCategories ? (
                 <Button
                   aria-label="카테고리 관리"
-                  disabled={categoryManagementDisabled}
+                  disabled={categoryManagementDisabled || selectionMode}
                   hierarchy="ghost"
                   onClick={onManageCategories}
                   size="small"
@@ -148,7 +358,7 @@ export function LibraryPage({
               ) : null}
             </div>
             <CategoryFilter
-              onValueChange={onCategoryChange}
+              onValueChange={handleCategoryChange}
               options={categoryOptions}
               value={activeCategory}
             />
@@ -158,9 +368,35 @@ export function LibraryPage({
         {!loading &&
         !(unavailable && totalInsightCount === 0) &&
         hasLibraryInsights ? (
-          <p className="library-page__result-count" role="status">
-            {resultCountLabel}
-          </p>
+          <div className="library-page__result-row">
+            <p className="library-page__result-count" role="status">
+              {resultCountLabel}
+            </p>
+            {insights.length > 0 ? (
+              <Button
+                data-library-selection-trigger
+                hierarchy="secondary"
+                onClick={
+                  selectionMode ? () => endSelection() : beginSelection
+                }
+                size="small"
+                type="button"
+              >
+                {selectionMode ? '선택 끝내기' : '선택'}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {selectionMode && insights.length > 0 ? (
+          <LibrarySelectionToolbar
+            currentResultCount={insights.length}
+            deleting={deleting}
+            onClear={clearSelectedInsights}
+            onDelete={openDeleteDialog}
+            onToggleAll={toggleAllVisibleInsights}
+            selectedCount={selectedCount}
+          />
         ) : null}
 
         <div className="library-page__content">
@@ -191,7 +427,10 @@ export function LibraryPage({
               onDeletionFocusFallback={() => searchInputRef.current?.focus()}
               onEditFocusFallback={() => searchInputRef.current?.focus()}
               onRequestCategoryCreation={onRequestCategoryCreation}
+              onToggleInsightSelection={toggleInsightSelection}
               onUpdateInsight={onUpdateInsight}
+              selectedInsightIds={visibleSelectedInsightIds}
+              selectionMode={selectionMode}
             />
           ) : hasQuery ? (
             <EmptyState
@@ -214,6 +453,24 @@ export function LibraryPage({
           )}
         </div>
       </div>
+
+      {deleteDialogOpen ? (
+        <InsightBatchDeleteDialog
+          deleting={deleting}
+          failed={deleteFailed}
+          libraryWide={deletesEntireLibrary}
+          onClose={closeDeleteDialog}
+          onConfirm={confirmBatchDeletion}
+          open
+          selectedCount={selectedCount}
+        />
+      ) : null}
+
+      {deletionAnnouncement ? (
+        <p className="library-page__announcement" role="status">
+          {deletionAnnouncement}
+        </p>
+      ) : null}
     </section>
   );
 }

@@ -371,6 +371,78 @@ describe('useInsightWorkspace', () => {
     expect(result.current.insights).toEqual([secondInsight]);
   });
 
+  it('일괄 삭제가 성공한 뒤 대상만 제거하고 실패하면 목록을 유지한다', async () => {
+    const firstInsight = createInsight({ id: 'first' });
+    const secondInsight = createInsight({ id: 'second' });
+    const thirdInsight = createInsight({ id: 'third' });
+    const deleteMany = vi
+      .fn<InsightRepository['deleteMany']>()
+      .mockResolvedValueOnce({ ok: false, reason: 'write-failed' })
+      .mockResolvedValueOnce({
+        deletedIds: [firstInsight.id, thirdInsight.id],
+        ok: true,
+      });
+    const repository = createRepository({
+      deleteMany,
+      list: vi.fn().mockResolvedValue({
+        insights: [firstInsight, secondInsight, thirdInsight],
+        warnings: [],
+      }),
+    });
+    const { result } = await renderReadyWorkspace(repository);
+
+    await act(async () => {
+      await expect(
+        result.current.deleteInsights([firstInsight.id, thirdInsight.id])
+      ).resolves.toEqual({ ok: false, reason: 'write-failed' });
+    });
+    expect(result.current.insights).toEqual([
+      firstInsight,
+      secondInsight,
+      thirdInsight,
+    ]);
+
+    await act(async () => {
+      await expect(
+        result.current.deleteInsights([firstInsight.id, thirdInsight.id])
+      ).resolves.toEqual({ ok: true });
+    });
+    expect(result.current.insights).toEqual([secondInsight]);
+  });
+
+  it('일괄 삭제 결과 ID가 요청과 다르면 저장소 목록을 다시 불러온다', async () => {
+    const firstInsight = createInsight({ id: 'first' });
+    const secondInsight = createInsight({ id: 'second' });
+    const thirdInsight = createInsight({ id: 'third' });
+    const list = vi
+      .fn<InsightRepository['list']>()
+      .mockResolvedValueOnce({
+        insights: [firstInsight, secondInsight, thirdInsight],
+        warnings: [],
+      })
+      .mockResolvedValueOnce({
+        insights: [secondInsight],
+        warnings: [],
+      });
+    const repository = createRepository({
+      deleteMany: vi.fn().mockResolvedValue({
+        deletedIds: [firstInsight.id],
+        ok: true,
+      }),
+      list,
+    });
+    const { result } = await renderReadyWorkspace(repository);
+
+    await act(async () => {
+      await expect(
+        result.current.deleteInsights([firstInsight.id, thirdInsight.id])
+      ).resolves.toEqual({ ok: false, reason: 'write-failed' });
+    });
+
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(result.current.insights).toEqual([secondInsight]);
+  });
+
   it('삭제된 카테고리를 참조하던 인사이트를 미분류로 동기화한다', async () => {
     const deletedCategoryId = '10000000-0000-4000-8000-000000000001';
     const repository = createRepository({
@@ -509,6 +581,10 @@ function createRepository(
       ok: true as const,
     })),
     delete: vi.fn(async () => ({ ok: true as const })),
+    deleteMany: vi.fn(async (insightIds) => ({
+      deletedIds: [...insightIds],
+      ok: true as const,
+    })),
     list: vi.fn(async () => ({ insights: [], warnings: [] })),
     update: vi.fn(async (candidate) => ({
       insight: candidate,

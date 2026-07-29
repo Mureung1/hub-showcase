@@ -201,6 +201,7 @@ export function AuthenticatedWorkspace({
   );
   const {
     deleteInsight,
+    deleteInsights,
     detachCategory,
     insights,
     isLoading,
@@ -534,6 +535,7 @@ export function AuthenticatedWorkspace({
             loading={isLoading}
             onCategoryChange={setActiveCategory}
             onDeleteInsight={deleteInsight}
+            onDeleteInsights={deleteInsights}
             onManageCategories={openCategoryManager}
             onOpenImport={() => setImportOpen(true)}
             onOpenSave={() => setActiveTab('save')}
@@ -681,6 +683,9 @@ function createUnavailableInsightRepository(): InsightRepository {
       return { ok: false, reason: 'permission-denied' };
     },
     async delete() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+    async deleteMany() {
       return { ok: false, reason: 'permission-denied' };
     },
     async list() {

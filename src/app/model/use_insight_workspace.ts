@@ -26,6 +26,8 @@ export type UpdateInsightContextResult = InsightMutationResult;
 
 export type DeleteInsightResult = InsightMutationResult;
 
+export type DeleteInsightsResult = InsightMutationResult;
+
 export type UseInsightWorkspaceOptions = {
   captureService: InsightCaptureService;
   now?: () => string;
@@ -232,6 +234,59 @@ export function useInsightWorkspace({
     [repository, runMutation]
   );
 
+  const deleteInsights = useCallback(
+    async (insightIds: readonly string[]): Promise<DeleteInsightsResult> =>
+      runMutation<DeleteInsightsResult>(
+        async () => {
+          const currentState = workspaceStateRef.current;
+          const uniqueInsightIds = [...new Set(insightIds)];
+          const currentInsightIdSet = new Set(
+            currentState.insights.map(({ id }) => id)
+          );
+
+          if (
+            uniqueInsightIds.length === 0 ||
+            uniqueInsightIds.some((id) => !currentInsightIdSet.has(id))
+          ) {
+            return { ok: false, reason: 'not-found' };
+          }
+
+          const deleteResult = await repository.deleteMany(uniqueInsightIds);
+
+          if (!deleteResult.ok) {
+            return {
+              ok: false,
+              reason:
+                deleteResult.reason === 'permission-denied' ||
+                deleteResult.reason === 'not-found'
+                  ? deleteResult.reason
+                  : 'write-failed',
+            };
+          }
+
+          const deletedIdSet = new Set(deleteResult.deletedIds);
+
+          if (
+            deletedIdSet.size !== uniqueInsightIds.length ||
+            uniqueInsightIds.some((id) => !deletedIdSet.has(id))
+          ) {
+            await reloadInsights();
+            return { ok: false, reason: 'write-failed' };
+          }
+
+          updateReadyState(repository, setWorkspaceState, workspaceStateRef, {
+            insights: currentState.insights.filter(
+              ({ id }) => !deletedIdSet.has(id)
+            ),
+            loadWarnings: clearRecoverableWarnings(currentState.loadWarnings),
+          });
+          return { ok: true };
+        },
+        { ok: false, reason: 'write-failed' }
+      ),
+    [reloadInsights, repository, runMutation]
+  );
+
   const detachCategory = useCallback(
     (categoryId: string) => {
       const currentState = workspaceStateRef.current;
@@ -261,6 +316,7 @@ export function useInsightWorkspace({
 
   return {
     deleteInsight,
+    deleteInsights,
     detachCategory,
     insights: isCurrentRepository ? workspaceState.insights : [],
     isLoading: !isCurrentRepository || workspaceState.status === 'loading',

@@ -2315,6 +2315,30 @@ function toAsyncRepository(
 
       return writeResult;
     },
+    async deleteMany(insightIds) {
+      const uniqueInsightIds = [...new Set(insightIds)];
+      const currentInsightIdSet = new Set(
+        currentInsights.map(({ id }) => id)
+      );
+
+      if (uniqueInsightIds.some((id) => !currentInsightIdSet.has(id))) {
+        return { ok: false, reason: 'not-found' };
+      }
+
+      const deletedIdSet = new Set(uniqueInsightIds);
+      const nextInsights = currentInsights.filter(
+        ({ id }) => !deletedIdSet.has(id)
+      );
+      const writeResult = repository.save(nextInsights);
+
+      if (writeResult.ok) {
+        currentInsights = nextInsights;
+      }
+
+      return writeResult.ok
+        ? { deletedIds: uniqueInsightIds, ok: true }
+        : { ok: false, reason: writeResult.reason };
+    },
   };
 }
 

@@ -18,6 +18,7 @@ export {
   isInsightCaptureSource,
 } from './model/insight_capture';
 export type {
+  InsightRepositoryDeleteManyResult,
   InsightRepositoryDeleteResult,
   InsightRepository,
   InsightRepositoryLoadResult,

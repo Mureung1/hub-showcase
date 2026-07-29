@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -439,6 +440,43 @@ describe('InsightGrid', () => {
     expect(screen.getByRole('status').textContent).toContain(
       '안전하지 않은 링크'
     );
+  });
+
+  it('선택 모드에서는 카드 행동을 숨기고 선택과 Shift 의도를 전달한다', () => {
+    const onToggleInsightSelection = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <InsightGrid
+          insights={[
+            createInsight({ id: 'first', title: '첫 카드' }),
+            createInsight({ id: 'second', title: '둘째 카드' }),
+          ]}
+          onDeleteInsight={vi.fn()}
+          onToggleInsightSelection={onToggleInsightSelection}
+          onUpdateInsight={vi.fn()}
+          selectedInsightIds={new Set(['first'])}
+          selectionMode
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen
+        .getByRole('button', { name: '첫 카드 선택 해제' })
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+    expect(screen.queryByRole('link', { name: '원문 열기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '수정' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '삭제' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '둘째 카드 선택' }), {
+      shiftKey: true,
+    });
+
+    expect(onToggleInsightSelection).toHaveBeenCalledWith('second', {
+      range: true,
+    });
   });
 });
 
