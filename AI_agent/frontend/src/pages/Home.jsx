@@ -136,30 +136,16 @@ function Home() {
         ["번아웃 위험도", "학습/활동 정보 등록 후 분석"],
       ];
 
-  const handleSignupStart = () => {
-    navigate(routes.signup);
-  };
+  const primaryRoute = isLoggedIn ? routes.specs : routes.signup;
+  const secondaryRoute = !isLoggedIn
+    ? routes.login
+    : hasCompleteSpec
+      ? routes.analysis
+      : routes.specs;
 
-  const handleSpecStart = () => {
-    navigate(routes.specs);
-  };
-
-  const handlePrimaryAction = () => {
-    if (isLoggedIn) {
-      handleSpecStart();
-      return;
-    }
-
-    handleSignupStart();
-  };
-
-  const handleSecondaryAction = () => {
-    if (!isLoggedIn) {
-      navigate(routes.login);
-      return;
-    }
-
-    navigate(hasCompleteSpec ? routes.analysis : routes.specs);
+  const handleCtaClick = (event, path) => {
+    event.preventDefault();
+    navigate(path);
   };
 
   useEffect(() => {
@@ -236,26 +222,26 @@ function Home() {
             </p>
 
             <div style={styles.ctaRow}>
-              <button
-                type="button"
+              <a
+                href={primaryRoute}
                 className="cm-button cm-button-primary"
                 style={styles.ctaButton}
-                onClick={handlePrimaryAction}
+                onClick={(event) => handleCtaClick(event, primaryRoute)}
               >
                 {currentUser ? "스펙 등록 시작하기" : "회원가입하고 시작하기"}
-              </button>
-              <button
-                type="button"
+              </a>
+              <a
+                href={secondaryRoute}
                 className="cm-button cm-button-secondary"
                 style={styles.ctaButton}
-                onClick={handleSecondaryAction}
+                onClick={(event) => handleCtaClick(event, secondaryRoute)}
               >
                 {currentUser
                   ? hasCompleteSpec
                     ? "AI 분석 보러가기"
                     : "분석 준비하기"
                   : "로그인하고 이어가기"}
-              </button>
+              </a>
             </div>
 
             <div style={styles.toolPanel} aria-label="사용 도구">
@@ -469,9 +455,11 @@ const styles = {
     background: "linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(6, 182, 212, 0.12))",
     filter: "blur(2px)",
     transform: "translateZ(-42px)",
+    pointerEvents: "none",
   },
   copyArea: {
     position: "relative",
+    zIndex: 2,
     minHeight: "100%",
     height: "auto",
     minHeight: "clamp(330px, 39vh, 420px)",
@@ -518,6 +506,8 @@ const styles = {
     margin: "0 0 20px",
   },
   ctaRow: {
+    position: "relative",
+    zIndex: 5,
     display: "flex",
     flexWrap: "wrap",
     gap: "10px",
@@ -525,6 +515,8 @@ const styles = {
   },
   ctaButton: {
     minWidth: "160px",
+    pointerEvents: "auto",
+    textDecoration: "none",
   },
   toolPanel: {
     display: "grid",
@@ -574,6 +566,7 @@ const styles = {
     background: "linear-gradient(145deg, rgba(37, 99, 235, 0.28), rgba(124, 58, 237, 0.2))",
     filter: "blur(1px)",
     transform: "translateZ(-46px)",
+    pointerEvents: "none",
   },
   aiPanel: {
     position: "relative",
