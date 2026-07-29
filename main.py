@@ -88,6 +88,7 @@ app = FastAPI(
     version="3.2"
 )
 
+# 프론트엔드가 어디서 배포되든 접근할 수 있게 CORS 정책 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],            
@@ -384,13 +385,26 @@ def get_agent_stats():
     }
 
 if __name__ == "__main__": 
-    current_ip = get_current_ip()
-    update_react_env(current_ip)
+    # Render 등의 클라우드 환경에서는 PORT 환경변수가 주어집니다. 없으면 8000.
+    port = int(os.environ.get("PORT", 8000))
     
-    print("\n" + "="*60)
-    print("🚀 [System] FastAPI 법률 AI 에이전트 서버 가동!")
-    print(f"🔗 [Local Connection] http://127.0.0.1:8000")
-    print(f"📡 [External/Mobile] http://{current_ip}:8000")
-    print("="*60 + "\n")
+    # 클라우드 환경인지 판별 (RENDER 환경변수 등이 있으면 클라우드로 간주)
+    is_cloud = os.environ.get("RENDER") is not None or os.environ.get("PORT") is not None
     
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    if not is_cloud:
+        # 💻 로컬 개발 환경: 기존처럼 내 IP를 찾고 React .env를 동적으로 수정
+        current_ip = get_current_ip()
+        update_react_env(current_ip, port)
+        
+        print("\n" + "="*60)
+        print("🚀 [System] FastAPI 법률 AI 에이전트 로컬 서버 가동!")
+        print(f"🔗 [Local Connection] http://127.0.0.1:{port}")
+        print(f"📡 [External/Mobile] http://{current_ip}:{port}")
+        print("="*60 + "\n")
+    else:
+        # ☁️ 클라우드 배포 환경: 로컬 파일 수정 등을 건너뜀
+        print("\n" + "="*60)
+        print(f"☁️ [System] 클라우드 배포 환경에서 서버 가동! (Port: {port})")
+        print("="*60 + "\n")
+    
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=not is_cloud)
