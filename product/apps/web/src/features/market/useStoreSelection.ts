@@ -15,14 +15,6 @@ type StoreReference = {
   name: string | null;
 };
 
-function initialStoreReference(): StoreReference {
-  const parameters = new URLSearchParams(window.location.search);
-  return {
-    id: parameters.get("store")?.trim() || null,
-    name: parameters.get("storeName")?.trim() || null,
-  };
-}
-
 function searchResultStore(
   result: MarketSearchResult | null,
   marketKey: MarketKey,
@@ -54,7 +46,7 @@ export function useStoreSelection({
   score,
   nearbyStores,
 }: StoreSelectionOptions) {
-  const [selectedReference, setSelectedReference] = useState<StoreReference>(initialStoreReference);
+  const [selectedReference, setSelectedReference] = useState<StoreReference>({ id: null, name: null });
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
   const selectedSearchStore = useMemo(
     () => searchResultStore(selectedSearchResult, marketKey, marketKeyById, score),
