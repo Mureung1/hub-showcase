@@ -9,7 +9,7 @@ type NearbyStoreListProps = {
   selectedStoreName: string | null;
   state: NearbyStoreState;
   onRetry: () => void;
-  onSelect: (storeName: string) => void;
+  onSelect: (storeKey: string) => void;
 };
 
 export function NearbyStoreList({
@@ -65,7 +65,7 @@ export function NearbyStoreList({
             key={store.id ?? store.name}
             type="button"
             className={selectedStoreName === store.name ? "store-row is-selected" : "store-row"}
-            onClick={() => onSelect(store.name)}
+            onClick={() => onSelect(store.id ?? store.name)}
           >
             <span className={`store-dot ${categoryClass(store.category)}`} />
             <span className="store-row-main">
