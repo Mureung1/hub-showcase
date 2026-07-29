@@ -263,6 +263,18 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     }
 
     const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = req.body
+
+    if (memberCount !== undefined) {
+      const currentMemberCount = await prisma.partyMember.count({
+        where: { subscriptionId: subscription.id },
+      })
+
+      if (memberCount < currentMemberCount + 1) {
+        const err = new Error('가입한 파티원 수보다 적게 설정할 수 없습니다.')
+        err.status = 400
+        return next(err)
+      }
+    }
     const data = {}
     if (serviceName !== undefined) data.serviceName = serviceName
     if (subAmount !== undefined) data.subAmount = subAmount

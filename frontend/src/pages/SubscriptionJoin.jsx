@@ -54,10 +54,10 @@ const SubscriptionJoin = () => {
         <LoginRequired
           message={
             <>
-              <strong className="subscription-join-service-name">{serviceName}</strong> 파티에 초대되었어요. 로그인하고 참여해보세요.
+              <strong className="subscription-join-service-name">{serviceName}</strong> 파티에 초대되었어요. 로그인하고 참여해보세요!
             </>
           }
-          state={id}
+          state={`/join/${id}`}
         />
       </div>
     )

@@ -1,51 +1,54 @@
 {
   "schemaVersion": 1,
-  "title": "SUBZIP · 구독 비용 정산 & AI 만족도 리포트",
+  "title": "SUBZIP - 구독 서비스 관리 플랫폼",
   "summary": "구독 서비스 비용을 간편하게 정산하고, AI 기반 구독 만족도 리포트로 구독 유지 여부 결정을 돕는 웹 플랫폼입니다.",
   "githubUser": "hyunjinch(최현진)",
   "demoUrl": "https://subzip.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/15HcdEq3_fBEsil8jhiaIK-lSKOYCzBYh/view?usp=sharing",
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/home.png",
-    "screenshots/add-subscription.png", 
-    "screenshots/settlement-owner.png", 
+    "screenshots/add-subscription.png",
+    "screenshots/settlement-owner.png",
     "screenshots/settlement-partymember.png"
   ],
-  "problem": "여러 명이 구독 계정을 공유하며 매달 직접 정산·이체를 반복해야 하고, 계정을 공유하는 경우 개인의 만족도와 실제로 부담하는 고정 지출을 파악하기 어렵습니다.",
+  "problem": "여러 개의 구독 서비스를 이용하다 보면, 한 달에 정확히 얼마를 지출하고 있고 계속 유지할 만한 가치가 있는지 파악하기 어렵습니다. 특히 계정을 공유하는 경우 매달 번거로운 정산 과정을 거쳐야 하고, 전체 결제 금액이 파티장 한 명의 소비로만 기록되어 파티원들의 실제 소비 기록은 누락됩니다. 또한 개개인의 서비스 만족도가 구독 연장 등 그룹의 의사결정에 제대로 반영되지 않는 문제도 발생합니다.",
   "targetUsers": [
+    "2개 이상의 구독 서비스를 이용하며 합리적인 소비를 지향하는 청년",
     "구독 서비스 계정을 공유하는 파티장(계정주)",
     "구독 서비스 계정을 공유받아 이용 중인 파티원"
   ],
   "features": [
-    "정산 생성 시 파티장이 카카오톡 공유로 정산 요청을 전달하면 파티원에게 결제 금액과 이체 안내가 함께 노출됩니다. (결제일 기준 이메일·PWA 푸시 자동 알림은 개발 예정입니다.)",
-    "카카오톡 공유로 초대 링크를 전달하면 구글 로그인과 동시에 자동으로 파티원으로 등록됩니다.",
-    "파티원은 토스 딥링크로 연결되어 클릭 한 번으로 이체하며, 앱 연결이 어려운 환경에서는 QR 코드로 대체합니다.",
-    "정산 직후 이모티콘 터치 한 번으로 만족도를 기록하고, 개인/그룹 만족도 리포트로 구독 유지 여부와 대체 서비스를 제안받습니다. (개발 예정)",
-    "총 결제 금액을 파티원 수로 나눈 '내 진짜 몫' 기준 실제 지출을 대시보드로 시각화합니다."
+    "구글 로그인으로 간편하게 SUBZIP에 가입해 구독 서비스를 등록하거나, 카카오톡 초대 링크를 통해 쉽게 파티에 참여할 수 있습니다. 또한, 카카오톡으로 정산 요청 링크를 받으면 토스(Toss) 앱과 바로 연동되어 원클릭 이체가 가능합니다. (결제일 기준 자동 알림 기능 개발 예정)",
+    "정산 또는 이체 직후 이모티콘을 한 번 터치하는 것만으로 간편하게 만족도를 기록할 수 있습니다. 이를 바탕으로 개인과 그룹의 만족도 추이를 분석하여, 구독 유지 여부에 대한 객관적인 판단을 돕고 맞춤형 대체 서비스까지 제안해 주는 AI 만족도 리포트를 제공합니다. (개발 예정)",
+    "구독 서비스를 등록하면 전체 결제 금액이 아닌, 내가 실제로 부담하는 '내 진짜 몫(실제 지출 금액)'을 자동으로 계산해 줍니다. 계정을 공유하지 않는 서비스라도 함께 등록해 두면, 매월 내가 구독 서비스 이용료로 지출하는 총비용을 한눈에 정확하게 파악할 수 있습니다."
   ],
   "featureTags": [
-    "원클릭 정산",
-    "AI 만족도 리포트 (예정)",
-    "지출 대시보드"
+    "간편한 가입 및 원클릭 정산",
+    "AI 기반 구독 만족도 리포트 (예정)",
+    "'내 진짜 몫' 중심의 지출 관리 대시보드"
   ],
   "techStack": [
     "React",
     "Vite",
-    "React Router",
     "Express",
     "Prisma",
     "PostgreSQL",
     "Google OAuth",
-    "JWT"
+    "JWT",
+    "Kakao Share SDK",
+    "Toss Deep Link",
+    "QR Code"
   ],
   "techHighlights": [
-    "React Router 기반 SPA에서 구글 OAuth 콜백과 초대 링크(state 파라미터)를 처리해 로그인과 동시에 그룹 자동 가입을 구현합니다.",
-    "Express + Prisma/PostgreSQL로 REST API를 구성하고, JWT 인증과 공통 에러 핸들링 미들웨어를 전 라우트에 일관되게 적용합니다.",
-    "Agent 1개(api-db-designer)와 Skill 2개(design, feature-workflow)를 연결해 기획 문서 → API 명세/DB 스키마 → BE → FE 순서로 기능을 구현합니다."
+    "React + Vite로 프론트엔드를, Express + Prisma·PostgreSQL로 REST API 백엔드를 구성해 SPA와 API 서버를 분리했습니다.",
+    "Google OAuth와 JWT로 회원가입 절차 없이 초대 링크 클릭만으로 로그인과 동시에 그룹에 자동 가입되는 흐름을 구현했습니다.",
+    "카카오톡 공유 SDK로 파티 초대/정산 요청 메시지를 전송하는 기능을 구현했습니다. 정산 요청 메시지의 이체 버튼은 토스 딥링크로 바로 연결했고, 앱이 열리지 않는 환경에서는 QR 코드로 자동 대체되도록 구현했습니다.",
+    "Agent 1개(api-db-designer)와 Skill 2개(design, feature-workflow)를 연결해 기획 문서 → API 명세·DB 스키마 → BE → FE 순서로 기능을 구현했습니다."
   ],
-  "developmentWithAI": "저는 문제 정의, 핵심 기능, 사용자 시나리오와 디자인 기준을 정하고 CLAUDE.md/문서로 정리했습니다. AI는 이 문서를 기준으로 API 명세와 DB 스키마 초안을 만들고, 정해진 컨벤션에 맞춰 백엔드 라우트와 프론트엔드 페이지 코드를 작성했습니다. 저는 매 단계 결과를 직접 실행·확인하며 세부 결정을 피드백하고 다음 단계 진행 여부를 승인했습니다.",
+  "developmentWithAI": "저는 문제 정의, 핵심 기능, 사용자 시나리오와 디자인 기준을 정하고 CLAUDE.md·문서로 정리했습니다. AI는 이 문서를 기준으로 API 명세와 DB 스키마 초안을 만들고, 정해진 컨벤션에 맞춰 백엔드 라우트와 프론트엔드 페이지 코드를 작성했습니다. 저는 매 단계 결과를 직접 실행·확인하며 세부 결정을 피드백하고 다음 단계 진행 여부를 승인했습니다.",
   "agent": {
-    "summary": "기획 문서를 API 명세/DB 스키마로 옮기는 Agent와, 정해진 컨벤션에 따라 BE→FE를 구현하는 Skill을 연결해 기능을 개발했습니다.",
+    "summary": "기획 문서를 API 명세·DB 스키마로 옮기는 Agent와, 정해진 컨벤션에 따라 BE→FE 순서로 구현하는 Skill을 연결해 기능을 개발했습니다.",
     "agentTools": [
       {
         "type": "agent",
@@ -80,7 +83,7 @@
           "docs/api-spec.md 섹션 상태([확정]/[초안]) 확인",
           "설계·구현 변경 사항을 문서에 함께 반영",
           "docs/checklist.md 완료 항목 체크",
-          "git status/diff 기준 커밋 단위·메시지 제안"
+          "git status·diff 기준 커밋 단위·메시지 제안"
         ]
       }
     ]

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getSubscriptions } from '../lib/subscriptions'
 import SubscriptionListItem from './SubscriptionListItem'
-import LoginRequired from './LoginRequired'
 import './SubscriptionList.css'
 
 const SubscriptionList = () => {
@@ -18,16 +17,12 @@ const SubscriptionList = () => {
       })
       .catch((error) => {
         setErrorMessage(error.message)
-        setStatus(error.status === 401 ? 'unauthorized' : 'error')
+        setStatus('error')
       })
   }, [])
 
   if (status === 'loading') {
     return <p className="subscription-list-message">불러오는 중...</p>
-  }
-
-  if (status === 'unauthorized') {
-    return <LoginRequired message="로그인 후 구독 서비스 목록을 확인할 수 있어요." />
   }
 
   if (status === 'error') {

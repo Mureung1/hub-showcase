@@ -56,6 +56,16 @@ router.post('/:id/join', requireAuth, async (req, res, next) => {
       return next(err)
     }
 
+    const currentMemberCount = await prisma.partyMember.count({
+      where: { subscriptionId: subscription.id },
+    })
+
+    if (currentMemberCount >= subscription.memberCount - 1) {
+      const err = new Error('정원이 가득 찼습니다.')
+      err.status = 403
+      return next(err)
+    }
+
     let member
     try {
       member = await prisma.partyMember.create({
