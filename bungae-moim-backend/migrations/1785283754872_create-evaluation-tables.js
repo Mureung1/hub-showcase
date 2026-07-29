@@ -58,6 +58,14 @@ export const up = (pgm) => {
     where: "type = 'evaluation_requested'",
     name: 'notifications_evaluation_requested_unique',
   });
+
+  // listPendingEvaluations(평가 대상 목록)가 meetings를 host_id로, meeting_participants를
+  // user_id로 조회한다. 이 함수는 GET /api/notifications가 평가 요청 알림을 lazy 생성하려고
+  // "라우트 이동 시마다" 호출하므로(알림 조회는 폴링 없이 매 페이지 전환에서 일어난다),
+  // 두 컬럼 다 인덱스가 없으면 전체 스캔이 가장 흔한 요청 경로에 들어간다.
+  // meetings에는 PK 말고 인덱스가 하나도 없었다(2026-07-22 코드리뷰 백로그 항목).
+  pgm.createIndex('meetings', ['host_id']);
+  pgm.createIndex('meeting_participants', ['user_id']);
 };
 
 /**
@@ -65,6 +73,8 @@ export const up = (pgm) => {
  * @returns {Promise<void> | void}
  */
 export const down = (pgm) => {
+  pgm.dropIndex('meeting_participants', ['user_id']);
+  pgm.dropIndex('meetings', ['host_id']);
   pgm.dropIndex('notifications', ['user_id', 'meeting_id'], {
     name: 'notifications_evaluation_requested_unique',
   });
