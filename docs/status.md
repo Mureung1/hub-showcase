@@ -95,19 +95,22 @@
 - 2026-07-29 React Manager LLM v1 후보 4종 연결 완료: `managerLine`/`behaviorIntent`는 manager context 갱신 시, `questSuggestion`은 새 퀘스트 추천 시, `statEvaluation`은 Quest Event 저장 직전 호출하며, 각 호출은 실패해도 기존 rule fallback request/state를 유지하도록 연결. 서버 rate limit은 output kind별 최소 간격과 daily cap으로 조정
 - 2026-07-29 수락 직전 난이도 재평가 추가: `/api/manager/difficulty-evaluation` route와 strict schema(`easy|normal|hard`, 난이도별 `rewardExp`, `reason`)를 추가하고, 사용자가 편집한 퀘스트를 수락하기 직전에 React가 서버 route를 호출해 난이도/EXP를 갱신하도록 연결. 실패 시 기존 draft 난이도/보상으로 계속 진행
 - 2026-07-29 난이도별 EXP 검증 강화: LLM `difficultyEvaluation`의 `rewardExp`를 `easy=5..15`, `normal=16..35`, `hard=36..60` 범위로 검증하고, 난이도와 보상 범위가 맞지 않으면 `INVALID_LLM_OUTPUT` rule fallback을 사용하도록 서버 계약을 보강
+- 2026-07-29 LLM 호출 폭주 방지 보강: React client에 output kind별 60초 throttle과 마지막 응답 재사용 fallback(`CLIENT_THROTTLED`)을 추가하고, 저장 성공 후 manager context 반영은 `managerLine`만 갱신하도록 조정. 매니저 창 문구는 최대 2줄, 줄당 48자 이내로 제한해 긴 LLM 문구가 UI를 넘치지 않도록 정규화
+- 2026-07-29 LLM 퀘스트 추천 분해 정책 보강: `questSuggestion` prompt가 장기 목표를 오늘 할 수 있는 작은 다음 행동으로 분해하도록 지시하고, 목표명 복붙 title과 난이도별 EXP 범위 밖 보상은 `INVALID_LLM_OUTPUT` fallback으로 돌리도록 계약을 강화
 - 2026-07-29 P1 render boundary 정돈: `App.tsx`의 전역 1초 `now` state를 제거하고 QuestRunner countdown과 system tray clock이 각각 필요한 컴포넌트 내부에서만 갱신되도록 분리
 - 2026-07-29 P1 App responsibility/fallback 정돈: Pixel TV mode를 `usePixelTvMode` hook과 `pixelTvMode` domain policy로 분리하고, 기록 노트 서버 fetch sync를 `useQuestLogSync` hook으로 이동했으며, runtime fallback/placeholder 요소를 `src/data/runtimeFallbacks.ts`에 명시적으로 추적
 - 2026-07-29 P1/P2 App 책임 분리 추가 정돈: `useWindowManager`를 `src/hooks/useWindowManager.ts`로 이동하고 window chrome handler 생성을 hook 내부 `useCallback`/`useMemo` 경계로 묶었으며, window pet placement localStorage read를 `useWindowPetPlacementDrafts` hook으로 분리
 - 2026-07-29 P1/P2 outside pet runtime 분리: 창 밖 Lumi의 field bounds, attachment position, rendered climbing position, direction/mirror 계산을 `src/domain/outsidePetRuntime.ts`로 이동하고 App은 상태 전이 effect와 렌더 연결만 유지
 - 2026-07-29 P1 quest flow policy 분리: quest status별 workflow window 결정, 완료 결과 success/recovery 구분, draft patch 시 unit/reward 재계산을 `src/domain/questFlowPolicy.ts`로 이동해 App의 quest 조건문과 reward 계산 책임을 축소
 - 2026-07-29 P1/P2 runtime hook 마무리: outside pet phase/timer/effect 묶음을 `useOutsidePetRuntime`으로 이동하고, quest 열기/수락/완료/실패/복구/edit handler 묶음을 `useQuestFlow`로 이동해 App은 상태 보관, 주요 hook 연결, 렌더 조립 중심으로 축소
+- 2026-07-29 창 겹침 시 매니저 행동 우선순위 정책 추가: Pixel TV는 기록노트/사다리/플랫폼과 공존하되 `pixel_tv_watching`이 outside interaction보다 우선하며, 퀘스트 실행 계열 창과 Pixel TV는 서로 열릴 때 자동으로 닫히도록 `windowCompatibilityPolicy`와 `managerRuntimePriority`를 추가. watching 전용 motion asset은 아직 없어 runtime에서는 `focused` motion으로 임시 표시
 - 2026-07-29 시작 메뉴 flow 정정: `서비스 종료`는 `매니저 바꾸기`로 유지하고, `다시 시작`은 별도 버튼으로 복구해 profile/manager/log flow를 초기화한 뒤 설치 마법사부터 다시 진행하도록 정리. 사다리 오브젝트 창 기본 폭을 104px로 넓혀 아이콘 잘림을 완화
 - 2026-07-29 restart/server hydration 불일치 완화: `다시 시작` 시 lifecycle reset timestamp를 localStorage에 저장하고, 이후 desktop 서버 기록 hydration은 해당 시각 이후 로그만 반영하며 restart 이전 server-derived manager context가 새 로컬 manager 상태를 덮지 않도록 제한. 사다리 오브젝트 창 titlebar 텍스트는 숨겨 좁은 창에서 잘리지 않도록 정리
 - 2026-07-29 다시 시작 초기화 범위 보강: profile, manager level/exp, local logs, quest/status, opened/minimized/focused windows, window positions/sizes/measurements, Pixel TV mode/context menu, outside pet, blink, sync notice를 기본값으로 되돌리도록 정리
 - 2026-07-29 P2 Pixel TV 현실 픽셀화 prototype 1차 연결: Pixel TV 기본 실행은 권한 허용 웹캠 프레임을 고정 TV 프레임에서 실시간 픽셀화해 재생하는 창으로 열리고, 사진 버튼은 현재 TV frame과 전자 매니저를 함께 photo card로 남긴다. 파일 입력은 카메라 fallback으로 유지하며, 우클릭 속성의 Projection 변환 flow는 기존처럼 분리 유지
 - 2026-07-24 창 밖 `returning` phase 추가: Lumi가 free roam 이후 가까운 화면 끝으로 걸어가며 `hiding`을 연출하고 manager window 상태로 복귀할 수 있게 했으며, reduced-motion 설정은 behavior animation mapping에 반영
 - 2026-07-24 매니저 선택 flow 추가: 첫 실행 시 `Manager.exe 선택` 창에서 pink-manager/glass-frog/planaria를 고른 뒤 설치 마법사로 이어지고, 시작 메뉴의 `다시 시작`으로 profile/manager/log flow를 초기화해 다시 선택할 수 있음
-- 2026-07-27 핑크 매니저 baby Stage 1 idle-only 후보를 생성하고 manifest/review set에 연결: `public/assets/lumi/pink-manager-stage-1-production-candidates/pink-manager-stage-1-idle-sheet-v1.png`. Stage 1은 사다리 등 상호작용 motion을 잠그는 단계로 두고, idle 외 요청은 Stage 2 asset fallback을 사용한다
+- 2026-07-27 핑크 매니저 baby Stage 1 idle-only 후보를 생성하고 manifest/review set에 연결: `public/assets/lumi/pink-manager-stage-1-production-candidates/pink-manager-stage-1-idle-sheet-v4.png`. Stage 1은 사다리 등 상호작용 motion을 잠그는 단계로 두고, idle 외 요청은 Stage 2 asset fallback을 사용한다
 
 ## 검증
 
@@ -156,12 +159,14 @@
 - 2026-07-29 기록 노트 blink와 manager sprite-only selection 검증 통과: `npm.cmd test -- src/domain/blinkFocusPolicy.test.ts src/domain/managerSpriteSelection.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 XP window registry 검증 통과: `npm.cmd test -- src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 Manager LLM API v1 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run typecheck:server`, `npm.cmd run build`
+- 2026-07-29 LLM 퀘스트 추천 분해 정책 검증 통과: `npm.cmd test` 36 files / 167 tests, `npm.cmd run typecheck`, `npm.cmd run typecheck:server`, `npm.cmd run build`
 - 2026-07-29 시간 포맷/카운트다운 분리 검증 통과: `npm.cmd test -- src/domain/timeFormatting.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 P1 책임 분리와 fallback 추적 검증 통과: `npm.cmd test -- src/hooks/useQuestLogSync.test.ts src/data/runtimeFallbacks.test.ts src/domain/pixelTvMode.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 P1/P2 window manager와 placement read 분리 검증 통과: `npm.cmd run typecheck`, `npm.cmd test` 24 files / 94 tests
 - 2026-07-29 outside pet runtime 도메인 분리 검증 통과: `npm.cmd test -- src/domain/outsidePetRuntime.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 25 files / 96 tests
 - 2026-07-29 quest flow policy 분리 검증 통과: `npm.cmd test -- src/domain/questFlowPolicy.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 26 files / 99 tests
 - 2026-07-29 세션 전용 P1/P2 hook 분리 최종 회귀 검증 통과: `npm.cmd run typecheck`, `npm.cmd test` 26 files / 99 tests
+- 2026-07-29 창 호환성/Pixel TV watching 우선순위 검증 통과: `npm.cmd test -- src/domain/windowCompatibilityPolicy.test.ts src/domain/managerRuntimePriority.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 35 files / 163 tests
 - 2026-07-29 P1 전체 회귀 검증 통과: `npm.cmd test` 23 files / 88 tests, `npm.cmd run typecheck`
 - 2026-07-29 시작 메뉴 restart/manager change 분리와 사다리 폭 검증 통과: `npm.cmd test -- src/domain/appLifecyclePolicy.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 restart 서버 hydration cutoff와 사다리 title 숨김 검증 통과: `npm.cmd test -- src/hooks/useQuestLogSync.test.ts src/domain/appLifecyclePolicy.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
@@ -170,6 +175,15 @@
 - 2026-07-29 outside roaming state machine 1차 개선 검증 통과: `npm.cmd test -- src/data/assetManifest.test.ts src/domain/outsidePetRuntime.test.ts`, `npm.cmd test`, `npm.cmd run typecheck`
 - 2026-07-29 outside roaming invariant 보강 검증 통과: `npm.cmd test -- src/data/assetManifest.test.ts src/domain/outsidePetRuntime.test.ts`, `npm.cmd test`, `npm.cmd run typecheck`
 - 2026-07-29 outside roaming walk/run speed 절반 조정 검증 통과: `npm.cmd test -- src/domain/outsidePetRuntime.test.ts`, `npm.cmd run typecheck`, `npm.cmd test`
+- 2026-07-29 sprite/runtime 재감사 후 보강: `scripts/verify-sprite-sheets.mjs`가 PNG alpha 비율, corner opaque/semi, frame bbox 요약을 출력하도록 확장했고, ladder climb render 위치가 `climbProgress`를 보존하도록 `outsidePetRuntime`과 `useOutsidePetRuntime`을 맞춤
+- 2026-07-29 sprite pivot/placement 저장 구조 보강: bbox 기반 추천 anchor/protrusion 계산 유틸을 추가하고 `?review=sprites`에 recommended anchor와 left/right protrusion readout을 연결. window pet placement localStorage는 v2 profile 구조(`runtime:<pet>:<stage>:canonical`, `review:<set-id>`)로 분리해 canonical/candidate/manager별 저장값 혼선을 줄이고 v1 값은 요청 profile fallback으로 읽도록 유지
+- 2026-07-29 sprite pivot/placement v2 보강 검증 통과: `npm.cmd test` 33 files / 138 tests, `npm.cmd run typecheck`, `npm.cmd run verify:sprites`
+- 2026-07-29 window pet placement active edge 저장 보강: v2 profile에 motion별 `activeEdges`를 추가해 `?review=sprites`에서 `hanging` bottom/top, `hiding` left/right 선택이 새로고침 후에도 유지되도록 연결했고, runtime `WindowPetInteraction`도 고정 slot edge보다 저장된 active edge를 우선 사용하도록 변경
+- 2026-07-29 window pet placement active edge 검증 통과: `npm.cmd test -- src/data/windowPetPlacements.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 33 files / 153 tests, `npm.cmd run verify:sprites`
+- 2026-07-29 hanging pet drag layer 버그 수정: 퀘스트 창이 드래그/focus될 때 창은 active z-index(`40 + index`)로 올라가지만 hanging pet은 old slot z-index(`10 + index`)를 기준으로 계산되어 front layer여도 창 뒤로 숨던 문제를 수정. `WindowPetInteraction`이 실제 window chrome z-index를 공유하고 `front/behind-window` 레이어 정책을 `resolveWindowPetLayerZIndex`로 고정
+- 2026-07-29 hanging pet drag layer 검증 통과: `npm.cmd test -- src/data/windowPetPlacements.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 33 files / 155 tests
+- 2026-07-29 platform object pet layer 버그 수정: 평지 플랫폼 창이 focus/drag 상태에 따라 z-index가 바뀌는 동안 outside pet은 CSS 고정 `z-index: 18`을 써서 플랫폼 에셋 앞뒤로 번갈아 보이던 문제를 수정. platform/ladder에 붙은 outside pet은 해당 오브젝트 창의 실제 z-index보다 `+1`을 사용하도록 `resolveOutsidePetLayerZIndex`와 App 연결을 추가
+- 2026-07-29 platform object pet layer 검증 통과: `npm.cmd test -- src/domain/outsidePetRuntime.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 33 files / 157 tests
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
