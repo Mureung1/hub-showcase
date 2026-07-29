@@ -2,9 +2,23 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-// frontend-web URL (실기기에서는 localhost 대신 LAN IP 또는 배포 URL 사용)
-const WEB_APP_URL =
+const BASE_WEB_URL =
   process.env.EXPO_PUBLIC_WEB_APP_URL?.trim() || 'http://localhost:5173';
+
+function resolveWebAppUrl(baseUrl) {
+  const trimmed = baseUrl.replace(/\/$/, '');
+  if (trimmed.endsWith('/user') || trimmed.includes('/user/')) {
+    return trimmed;
+  }
+  return `${trimmed}/user`;
+}
+
+const WEB_APP_URL = resolveWebAppUrl(BASE_WEB_URL);
+
+const INJECT_APP_FLAG = `
+  window.__FITCHECK_APP__ = true;
+  true;
+`;
 
 export default function App() {
   return (
@@ -13,6 +27,8 @@ export default function App() {
       <WebView
         source={{ uri: WEB_APP_URL }}
         style={styles.webview}
+        applicationNameForUserAgent="FitCheckApp/1.0"
+        injectedJavaScriptBeforeContentLoaded={INJECT_APP_FLAG}
         allowsBackForwardNavigationGestures
         geolocationEnabled
         javaScriptEnabled

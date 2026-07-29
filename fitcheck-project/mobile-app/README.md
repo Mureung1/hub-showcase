@@ -38,7 +38,31 @@ Expo Go 또는 시뮬레이터에서 QR 스캔 후 실행합니다.
 |------|-------------------------------|
 | iOS/Android 시뮬레이터 | `http://localhost:5173` |
 | 실기기 (같은 Wi-Fi) | `http://192.168.x.x:5173` |
-| 배포 | `https://hub-tan-pi.vercel.app` |
+| 배포 (Vercel) | `https://hub-tan-pi.vercel.app` |
+
+앱은 URL 뒤에 자동으로 `/user`를 붙여 회원 홈으로 진입합니다.
+
+### Expo Go에서 `404: NOT_FOUND` (Vercel) 가 뜰 때
+
+Vercel 배포본에 **SPA 라우팅 설정**(`frontend-web/vercel.json`)이 반영되기 전이면  
+`https://....vercel.app/user` 경로가 404를 반환합니다.
+
+**로컬에서 바로 테스트 (권장):**
+
+```bash
+# 1) frontend-web — LAN 공개
+cd ../frontend-web
+npm run dev -- --host
+
+# 2) mobile-app/.env 수정 (맥 IP 확인: ipconfig getifaddr en0)
+EXPO_PUBLIC_WEB_APP_URL=http://192.168.0.12:5173
+
+# 3) Expo 재시작 (env 변경 후 반드시)
+cd ../mobile-app
+npm start
+```
+
+**배포 URL 사용 시:** `frontend-web/vercel.json` 포함 후 Vercel **재배포** 필요.
 
 실기기 로컬 테스트:
 

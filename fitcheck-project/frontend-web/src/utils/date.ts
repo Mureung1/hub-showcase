@@ -4,8 +4,11 @@ export function daysAgo(n: number): string {
   return d.toISOString().split('T')[0]!;
 }
 
+/** Local calendar date YYYY-MM-DD (matches meal create form). */
 export function todayString(): string {
-  return new Date().toISOString().split('T')[0]!;
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
 export function getDaysSince(dateStr: string): number {

@@ -72,7 +72,7 @@ export default function GymBottomSheet({
             ? '주변 헬스장 업데이트 중…'
             : expanded
               ? '목록 접기'
-              : `주변 추천 ${gyms.length}곳`}
+              : `취향 매칭 ${gyms.length}곳`}
         </span>
       </button>
 
@@ -104,12 +104,20 @@ export default function GymBottomSheet({
                 </span>
               </div>
               <div className="gym-tags">
+                {selectedGym.matchScore !== undefined && selectedGym.matchScore > 0 && (
+                  <span className="gym-match-badge">
+                    매칭 {selectedGym.matchScore}점
+                  </span>
+                )}
                 {selectedGym.tags.slice(0, 2).map((tag) => (
                   <span key={tag} className="gym-tag">
                     {tag}
                   </span>
                 ))}
               </div>
+              {selectedGym.matchReasons && selectedGym.matchReasons.length > 0 && (
+                <p className="gym-match-reason">{selectedGym.matchReasons[0]}</p>
+              )}
               <div className="gym-summary-actions">
                 <Link
                   to={`/user/gym/${selectedGym.id}`}
@@ -161,7 +169,11 @@ export default function GymBottomSheet({
                         </span>
                       </div>
                       <p>
-                        {gym.type} · ★ {gym.rating.toFixed(1)}
+                        {gym.type}
+                        {gym.matchScore !== undefined && gym.matchScore > 0
+                          ? ` · 매칭 ${gym.matchScore}점`
+                          : ''}
+                        {hasGymRating(gym) ? ` · ★ ${gym.rating.toFixed(1)}` : ''}
                       </p>
                       <span className="gym-sheet-item-address">{gym.address}</span>
                     </div>

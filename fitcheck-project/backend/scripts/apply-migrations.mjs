@@ -27,6 +27,7 @@ const MIGRATION_FILES = [
   '20260720000200_remove_extra_seed_gyms.sql',
   '20260721000000_add_consult_share_history_consent.sql',
   '20260721010000_consult_pii_encryption.sql',
+  '20260723000000_course_views.sql',
 ];
 
 async function markMigrationApplied(client, filename) {

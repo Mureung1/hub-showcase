@@ -144,6 +144,12 @@
 }
 
 /* Bottom sheet */
+.user-layout .gym-sheet {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: var(--border);
+  box-shadow: 0 -8px 28px rgba(26, 26, 30, 0.08);
+}
+
 .gym-sheet {
   position: absolute;
   left: 0;
@@ -288,6 +294,22 @@
   padding: 0.25rem 0.55rem;
 }
 
+.gym-match-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  padding: 0.25rem 0.55rem;
+}
+
+.gym-match-reason {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .gym-sheet-list {
   list-style: none;
   margin: 0;
@@ -429,14 +451,14 @@
 }
 
 .map-marker-gym .map-marker-pin {
-  background: #e50914;
+  background: var(--accent);
 }
 
 .map-marker-gym.is-selected .map-marker-pin {
   width: 18px;
   height: 18px;
-  background: #ff1a25;
-  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.28);
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 4px var(--accent-dim);
 }
 
 .map-marker-user .map-marker-pin {
@@ -458,8 +480,8 @@
 
 .map-marker-gym.is-selected .map-marker-label {
   color: #fff;
-  background: #e50914;
-  border-color: #e50914;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 @media (min-width: 768px) {
