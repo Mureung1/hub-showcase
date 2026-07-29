@@ -22,6 +22,11 @@ For the repository's representative smoke, read
 [`references/default-fixture.md`](references/default-fixture.md). Do not load
 that reference for an unrelated workspace.
 
+For one of the fixture's focused SemesterModeling scenarios, read
+[`references/semester-modeling-scenarios.md`](references/semester-modeling-scenarios.md).
+Do not load that reference for the default representative smoke or an unrelated
+workspace.
+
 ## Workflow
 
 ### 1. Fix the starting point and launch AY-PLE
