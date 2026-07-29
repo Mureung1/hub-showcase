@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
+import AnalysisNotice from '../components/AnalysisNotice'
 import useScrollSpy from '../hooks/useScrollSpy'
-import { SUPPORTED_JOB } from '../data/mock'
+import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
+import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
 
 // 05 준비 로드맵 — 로드맵 슬라이스.
 // 범위(전체/기업군/개별 공고)와 체크 상태를 입력으로 프로젝트/학습 두 트랙을 보여준다.
 // 체크는 즉시 저장되고, 로드맵 재구성은 적용 버튼으로 반영한다.
+// 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
 
-const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
 const PRIO = { vhigh: ['우선순위 매우 높음', 'prio--vhigh'], high: ['우선순위 높음', 'prio--high'], mid: ['우선순위 중간', 'prio--mid'], track: ['전형 대비 · 별도 트랙', 'prio--mid'] }
 const KIND_LABEL = { project: '프로젝트', story: '서사', study: '학습 · 면접' }
 const NAV_IDS = ['overview', 'project', 'study', 'sync']
@@ -15,20 +17,19 @@ const EMPTY_CHECKS = Object.freeze({})
 
 const scopeToKey = (scope) => `${scope.level}:${scope.cluster_tag || ''}:${scope.posting_id || ''}`
 
-async function fetchRoadmap(scope, checks, signal) {
-  const res = await fetch('/api/roadmap', {
+function fetchRoadmap(jobRoleId, scope, checks, signal) {
+  return fetchJson('/api/roadmap', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job: 'backend', scope, checks: checks || {} }),
+    body: JSON.stringify({ job: jobRoleId, scope, checks: checks || {} }),
     signal,
   })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
 }
 
-function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
+function RoadmapScreen({ go, job, checks, setChecks, scope, setScope }) {
+  const jobRoleId = job.job_role_id
   const level = scope.level
-  const cluster = scope.cluster_tag || '핀테크·금융'
+  const cluster = scope.cluster_tag || DEFAULT_CLUSTER
   const postingId = scope.posting_id
   const ck = checks || {}
   const scopeKey = scopeToKey(scope)
@@ -41,6 +42,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
   useEffect(() => {
     const controller = new AbortController()
     fetchRoadmap(
+      jobRoleId,
       { level, cluster_tag: level === 'overall' ? null : cluster, posting_id: level === 'posting' ? postingId : null },
       applied,
       controller.signal
@@ -50,9 +52,13 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
         setChecks((prev) => prev ?? Object.fromEntries(json.check_rows.map((row) => [row.item_id, row.source_step === '보유'])))
         setStatus('ready')
       })
-      .catch((error) => { if (error.name !== 'AbortError') setStatus('error') })
+      .catch((error) => {
+        if (error.name === 'AbortError') return
+        // 활성 분석 결과가 없는 직무는 오류가 아니라 "아직 준비 안 됨"으로 안내한다.
+        setStatus(isJobNotReady(error.code) ? 'notready' : 'error')
+      })
     return () => controller.abort()
-  }, [level, cluster, postingId, applied, setChecks])
+  }, [jobRoleId, level, cluster, postingId, applied, setChecks])
 
   const pendingCount = data
     ? data.check_rows.filter((r) => !!ck[r.item_id] !== !!applied[r.item_id]).length
@@ -70,10 +76,20 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
     setScope(nextScope)
   }
 
+  if (status === 'notready') {
+    return (
+      <>
+        <TopBar step={5} label="준비 로드맵" job={job.display_name} backTo="checklist" backLabel="합격 전략" go={go} />
+        <main className="app-shell reader-layout">
+          <AnalysisNotice jobName={job.display_name} onBack={() => go('select')} />
+        </main>
+      </>
+    )
+  }
   if (status === 'error') {
     return (
       <>
-        <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 전략" go={go} />
+        <TopBar step={5} label="준비 로드맵" job={job.display_name} backTo="checklist" backLabel="합격 전략" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">로드맵 서버에 연결하지 못했습니다. server(4000)와 agent(8000)를 확인해 주세요.</p>
         </main>
@@ -91,7 +107,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
 
   return (
     <>
-      <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 전략" go={go} />
+      <TopBar step={5} label="준비 로드맵" job={job.display_name} backTo="checklist" backLabel="합격 전략" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
@@ -99,7 +115,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
             <h1>막연한 공부 목록이 아니라, 필수부터 채우는 순서표를 드립니다.</h1>
             <p>체크리스트의 미보유 항목을 채우는 프로젝트·학습을 배치했습니다. 각 단계가 끝나면 어떤 합격 전략 항목이 채워지는지 함께 표시합니다.</p>
             <div className="cluster-chips">
-              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => changeScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{SUPPORTED_JOB} 전체 기준</button>
+              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => changeScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{job.display_name} 전체 기준</button>
               {CLUSTERS.map((c) => (
                 <button key={c} type="button"
                   className={`scope-chip${level !== 'overall' && c === cluster ? ' scope-chip--on' : ''}`}

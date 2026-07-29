@@ -187,8 +187,8 @@ def test_broken_chain_is_not_guessed(tmp_path: Path) -> None:
 
 
 def test_repository_migrations_have_one_head() -> None:
-    """0022 를 더한 뒤에도 사슬이 하나다."""
-    assert stage.migration_head().startswith("0022")
+    """마이그레이션을 더해도 사슬의 머리는 하나다."""
+    assert stage.migration_head().startswith("0026")
 
 
 def test_schema_is_current_needs_the_same_revision() -> None:

@@ -1,6 +1,8 @@
-// 샘플 공고 적재 스크립트: server/data/*.sample.json → Supabase postings 테이블
+// 샘플 공고 적재 스크립트: server/data/*.sample.json → Supabase legacy_posting_samples 테이블
 // 실행: server 폴더에서  node scripts/load-samples.js
 // 같은 posting_id 는 덮어쓰므로(upsert) 여러 번 실행해도 안전하다.
+//
+// 대상 표는 폴백 전용 평면 표다. 정규화 `postings` 는 분석 경로의 표이므로 건드리지 않는다.
 
 require('dotenv').config()
 const { createClient } = require('@supabase/supabase-js')
@@ -34,16 +36,17 @@ async function main() {
     impl_level_signals: p.impl_level_signals,
     axis_mentions: p.axis_mentions,
     reality_tags: p.reality_tags,
+    job_role_id: p.job_role_id ?? 'backend',
   }))
 
-  const { error } = await supabase.from('postings').upsert(rows)
+  const { error } = await supabase.from('legacy_posting_samples').upsert(rows)
   if (error) {
     console.error('적재 실패:', error.message)
     process.exit(1)
   }
 
   const { count, error: countError } = await supabase
-    .from('postings')
+    .from('legacy_posting_samples')
     .select('*', { count: 'exact', head: true })
   if (countError) {
     console.error('건수 확인 실패:', countError.message)

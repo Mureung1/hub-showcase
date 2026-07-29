@@ -32,13 +32,13 @@ Express와 서빙 파이프라인은 같은 role을 쓴다. 둘 다 활성 버�
 
 | 구성요소 | 쓰기 가능 테이블 |
 | --- | --- |
-| 오케스트레이터 | `analysis_versions`, `active_analysis_versions`, `dataset_versions`, `knowledge_versions`, `research_requests`(상태 갱신) |
+| 오케스트레이터 | `analysis_versions`, `active_analysis_versions`, `dataset_versions`, `knowledge_versions`, `research_requests`(상태 갱신), `user_postings`(INSERT만) |
 | 데이터 수집 | `sources`, `source_snapshots`(INSERT만), `source_observations`(INSERT만), `source_assessments` |
 | 지식 구축 | `knowledge_nodes`·`knowledge_edges`의 사전 semantic 묶음, `capabilities`, `capability_dimension_links`, `wiki_pages`, `wiki_revisions`, `wiki_evidence` |
 | 통계 분석 | `requirement_mentions`, `chunk_extractions`, `requirement_candidates`, `requirement_candidate_mentions`, `requirement_candidate_decisions`, `requirement_dimensions`, `requirement_dimension_versions`, `requirement_aliases`, `requirement_dimension_relations`, `requirement_taxonomy_versions`, `posting_requirement_assignments`, `saturation_observations`, `research_requests`(INSERT) |
-| 채용공고 해석 | `analysis_claims`, `analysis_claim_evidence`, `coverage_assertions`, `analysis_outputs`, `research_requests`(INSERT) |
-| 합격 전략 | `checklist_concepts`, `checklist_items`, `checklist_item_mappings`, `analysis_outputs`, `research_requests`(INSERT) |
-| 준비 로드맵 | `roadmap_items`, `roadmap_item_fills`, `study_tracks`, `analysis_outputs`, `research_requests`(INSERT) |
+| 채용공고 해석 | `analysis_claims`, `analysis_claim_evidence`, `coverage_assertions`, `analysis_outputs`, `user_posting_analyses`(INSERT만), `research_requests`(INSERT) |
+| 합격 전략 | `checklist_concepts`, `checklist_items`, `checklist_item_mappings`, `analysis_outputs`, `user_posting_analyses`(INSERT만), `research_requests`(INSERT) |
+| 준비 로드맵 | `roadmap_items`, `roadmap_item_fills`, `study_tracks`, `analysis_outputs`, `user_posting_analyses`(INSERT만), `research_requests`(INSERT) |
 | 적재 | `postings`, `posting_versions`, `source_snapshots`(INSERT만), `source_observations`(INSERT만) |
 | 인덱싱 | `source_chunks`, `chunk_embeddings` |
 | 집계 | `statistics_facts`, `capability_depth_profiles`, `knowledge_edges.weight`(UPDATE만) |
@@ -91,7 +91,7 @@ Express는 활성 버전이 아닌 산출물을 조회하지 않는다. 조회 �
 
 ## 5. 테이블을 공유하는 구성요소
 
-테이블 단위 `GRANT`로 분리하지 못하는 경우가 셋이다.
+테이블 단위 `GRANT`로 분리하지 못하는 경우가 넷이다.
 
 ### 5.1 `analysis_outputs`
 
@@ -135,6 +135,22 @@ GRANT UPDATE (status, priority, fulfilled_by_snapshot_ids, resolved_at)
 ```
 
 컬럼 단위 `GRANT`가 요청자는 상태를 바꾸지 못하게 한다.
+
+### 5.4 `user_postings`·`user_posting_analyses`
+
+사용자가 직접 입력한 공고와 그 개별 분석 결과를 담는다. 흐름은 [아키텍처](architecture.md) 11장에 있다.
+
+`user_postings`는 온디맨드 체인을 여는 오케스트레이터가 INSERT한다. 같은 원문은 `content_hash`로 캐시가 적중하므로 갱신하지 않는다.
+
+`user_posting_analyses`는 산출물 종류를 만든 세 에이전트가 각각 INSERT한다. `analysis_outputs`와 같은 배분이다.
+
+```sql
+GRANT INSERT ON user_postings TO cs_orchestrator;
+GRANT INSERT ON user_posting_analyses TO
+  cs_agent_interpret, cs_agent_strategy, cs_agent_roadmap;
+```
+
+읽기는 전 구성요소와 Express에 열려 있다. Express는 조회만 하고 저장은 FastAPI 온디맨드 경로가 한다. 두 표는 통계 테이블과 외래키로 잇지 않는다. 사용자 입력이 모집단에 섞이면 직무 기준선과 지표가 오염된다.
 
 ## 6. 강제 수단 네 층
 

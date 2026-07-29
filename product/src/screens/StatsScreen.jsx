@@ -1,25 +1,50 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
+import AnalysisNotice from '../components/AnalysisNotice'
 import useScrollSpy from '../hooks/useScrollSpy'
-import { SUPPORTED_JOB } from '../data/mock'
+import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
 
 const NAV_IDS = ['summary', 'kpi', 'scope', 'inflation', 'difficulty', 'tech', 'combo', 'trend', 'conditions', 'companies', 'items']
 
 // 02 통계 분석 — 1차 슬라이스.
 // 블록 번호와 순서는 docs/plan.md 9.2의 ①~⑩을 따른다. 데이터 출처는 각 블록 주석에 표기한다.
+// 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다. 직무 이름을 화면에 적지 않는다.
 
-const LOGO = { java: 'java', 'spring-boot': 'spring', mysql: 'mysql', jpa: 'jpa', redis: 'redis', docker: 'docker', git: 'git' }
+// public/logos/ 에 실제로 있는 파일 이름. 여기 없는 slug 는 글자 배지로 떨어진다.
+const LOGO_FILES = new Set([
+  'api', 'aws', 'docker', 'git', 'java', 'javascript', 'jpa', 'kafka', 'kubernetes', 'linux',
+  'mysql', 'node', 'postgresql', 'python', 'react', 'redis', 'spring', 'terraform', 'typescript', 'unity',
+])
+// 파일 이름과 다른 slug 만 적는다. 직무가 늘어도 없는 slug 는 배지로 처리되므로 깨지지 않는다.
+const LOGO_ALIAS = {
+  'spring-boot': 'spring', 'spring-framework': 'spring', 'rest-api': 'api', 'restful-api': 'api',
+  'nodejs': 'node', 'node-js': 'node', 'nextjs': 'react', 'react-native': 'react',
+  'postgres': 'postgresql', 'rdb': 'mysql', 'k8s': 'kubernetes', 'ts': 'typescript', 'js': 'javascript',
+  'pytorch': 'python', 'tensorflow': 'python', 'spark': 'python', 'airflow': 'python',
+  'github-actions': 'git', 'cicd': 'git', 'ci-cd': 'git',
+}
 const BAR_CLS = { java: 'java', 'spring-boot': 'spring', mysql: 'mysql', jpa: 'jpa', git: 'git' }
 const KPI_CAPTION = {
   avg_required_skills: '공고당 평균 요구 역량 수',
-  out_of_role_pct: '직무(서버 개발) 외 작업까지 요구',
+  out_of_role_pct: '해당 직무 밖의 작업까지 요구',
   entry_label_gap_pct: '"신입 가능" 라벨인데 경력급 경험 요구',
   promoted_to_required_cnt: '1년 새 우대→필수로 이동한 항목',
-  advanced_mention_pct: '대용량·동시성 등 심화 키워드 언급',
+  advanced_mention_pct: '심화 수준(대용량·동시성 등) 키워드 언급',
 }
 const TREND_LABEL = { increase: '증가 ↗', decrease: '감소 ↘', stable: '유지 →', unknown: '신규' }
 const CONFIDENCE = { high: '높음', medium: '중간', low: '낮음' }
 const SCOPE_BAR = ['', 'blue', 'green', 'amber', 'rose']
+
+// 기술 마크. 로고 파일이 있으면 SVG 를, 없으면 이름 첫 글자 배지를 보여 준다.
+// 직무마다 등장하는 기술 slug 가 다르므로 없는 slug 에서 이미지가 깨지지 않게 한다.
+function TechMark({ name, slug }) {
+  const file = LOGO_ALIAS[slug] || slug
+  if (LOGO_FILES.has(file)) {
+    return <img className="tech-logo" src={`/logos/${file}.svg`} alt="" />
+  }
+  const initial = (name || slug || '?').trim().charAt(0).toUpperCase()
+  return <span className="tech-logo tech-logo--text" aria-hidden="true">{initial}</span>
+}
 
 // 블록 7(추이)의 기울기 차트 한 열. 이전→최근 % 를 선으로 잇는다.
 function TrendColumn({ tone, title, note, items }) {
@@ -57,30 +82,47 @@ function TrendColumn({ tone, title, note, items }) {
   )
 }
 
-function StatsScreen({ go }) {
+function StatsScreen({ go, job }) {
+  const jobRoleId = job.job_role_id
   const [data, setData] = useState(null)
-  const [status, setStatus] = useState('loading') // loading | ready | error
+  const [status, setStatus] = useState('loading') // loading | ready | error | notready
   const activeSection = useScrollSpy(NAV_IDS)
 
   useEffect(() => {
-    fetch('/api/stats?job=backend')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+    // 직무가 바뀌면 화면이 다시 마운트되므로 status 초기값이 loading 이다. 여기서 다시 세우지 않는다.
+    const controller = new AbortController()
+    fetchJson(`/api/stats?job=${encodeURIComponent(jobRoleId)}`, { signal: controller.signal })
       .then((json) => { setData(json); setStatus('ready') })
-      .catch(() => setStatus('error'))
-  }, [])
+      .catch((error) => {
+        if (error.name === 'AbortError') return
+        // 활성 분석 결과가 없는 직무는 오류가 아니라 "아직 준비 안 됨"으로 안내한다.
+        setStatus(isJobNotReady(error.code) ? 'notready' : 'error')
+      })
+    return () => controller.abort()
+  }, [jobRoleId])
 
   if (status === 'loading') {
     return (
       <>
-        <TopBar step={2} label="통계 분석" job={SUPPORTED_JOB} backTo="select" backLabel="다른 직무" go={go} />
+        <TopBar step={2} label="통계 분석" job={job.display_name} backTo="select" backLabel="다른 직무" go={go} />
         <main className="app-shell reader-layout"><p className="status-panel">공고 통계를 집계하는 중입니다…</p></main>
+      </>
+    )
+  }
+  if (status === 'notready') {
+    return (
+      <>
+        <TopBar step={2} label="통계 분석" job={job.display_name} backTo="select" backLabel="다른 직무" go={go} />
+        <main className="app-shell reader-layout">
+          <AnalysisNotice jobName={job.display_name} onBack={() => go('select')} />
+        </main>
       </>
     )
   }
   if (status === 'error') {
     return (
       <>
-        <TopBar step={2} label="통계 분석" job={SUPPORTED_JOB} backTo="select" backLabel="다른 직무" go={go} />
+        <TopBar step={2} label="통계 분석" job={job.display_name} backTo="select" backLabel="다른 직무" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">
             통계 서버에 연결하지 못했습니다. server 폴더에서 <code>npm start</code>로 서버가 켜져 있는지 확인해 주세요.
@@ -95,11 +137,19 @@ function StatsScreen({ go }) {
 
   return (
     <>
-      <TopBar step={2} label="통계 분석" job={SUPPORTED_JOB} backTo="select" backLabel="다른 직무" go={go} />
+      <TopBar step={2} label="통계 분석" job={job.display_name} backTo="select" backLabel="다른 직무" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
+          {/* 생성 데이터 표시 — payload 의 meta.is_synthetic 이 참일 때만 나온다. 근거를 숨기지 않는다. */}
+          {meta.is_synthetic && (
+            <p className="synthetic-note">
+              <span className="synthetic-badge">생성 데이터</span>
+              {meta.disclaimer || '생성 데이터 기반 결과입니다'}
+              {meta.dataset_version && <span className="synthetic-ver">{meta.dataset_version}</span>}
+            </p>
+          )}
           <header className="report-header" id="summary">
-            <span className="eyebrow">백엔드 공고 {recentN}건 기반 리서치 · 이전 스냅샷 {meta.snapshots.prev.n}건 비교</span>
+            <span className="eyebrow">{job.display_name} 공고 {recentN}건 기반 리서치 · 이전 스냅샷 {meta.snapshots.prev.n}건 비교</span>
             <h1>공고의 절반 이상이 "신입"이라 쓰고 경력급 준비를 요구합니다. 기술 이름이 아니라 요구의 구조를 읽습니다.</h1>
             <p>여러 공고에서 반복되는 요구를 리얼리티 중심으로 집계했습니다. 이 통계는 다음 단계(채용공고 해석)에서 직무 기준선과 편차를 읽는 기준이 됩니다.</p>
             <div className="data-note">
@@ -122,7 +172,7 @@ function StatsScreen({ go }) {
           {/* 블록 2 · 요구 범위 확장 — 실데이터 */}
           <section className="section-block" id="scope">
             <div className="section-title">
-              <h2>백엔드 공고인데 백엔드만 하지 않습니다</h2>
+              <h2>{job.display_name} 공고인데 그 일만 하지 않습니다</h2>
               <span className="hint">직무 외 작업을 요구한 공고 비율 · 최근 {recentN}건</span>
             </div>
             <div className="panel">
@@ -136,7 +186,7 @@ function StatsScreen({ go }) {
                 </div>
               ))}
               <p className="panel-note">
-                "백엔드 개발자" 공고여도 절반 이상이 배포·테스트를 함께 요구합니다. 학습 범위를 서버 코드 안쪽으로만 잡으면 공고 요구와 어긋납니다.
+                "{job.display_name}" 공고여도 상당수가 직무 경계 밖의 작업을 함께 요구합니다. 학습 범위를 직무 이름 안쪽으로만 잡으면 공고 요구와 어긋납니다.
               </p>
             </div>
           </section>
@@ -197,7 +247,7 @@ function StatsScreen({ go }) {
                 {techFreq.slice(0, 8).map((s, i) => (
                   <div className="skill-bar-row" key={s.slug}>
                     <div className="skill-name">
-                      {LOGO[s.slug] && <img className="tech-logo" src={`/logos/${LOGO[s.slug]}.svg`} alt="" />}
+                      <TechMark name={s.name} slug={s.slug} />
                       <span><span className="rank">{i + 1}</span> {s.name}</span>
                     </div>
                     <div className="bar-track">

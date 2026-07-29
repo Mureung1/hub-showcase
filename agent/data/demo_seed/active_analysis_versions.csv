@@ -1,0 +1,10 @@
+job_role_id,analysis_version,activated_at
+backend,an_demo_backend,2026-07-27T09:00:00+09:00
+frontend,an_demo_frontend,2026-07-27T09:00:00+09:00
+ai_engineer,an_demo_ai_engineer,2026-07-27T09:00:00+09:00
+data_engineer,an_demo_data_engineer,2026-07-27T09:00:00+09:00
+fullstack,an_demo_fullstack,2026-07-01T09:00:00+09:00
+devops,an_demo_devops,2026-07-27T09:00:00+09:00
+mobile,an_demo_mobile,2026-07-27T09:00:00+09:00
+security,an_demo_security,2026-07-27T09:00:00+09:00
+game_client,an_demo_game_client,2026-07-27T09:00:00+09:00

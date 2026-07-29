@@ -32,3 +32,4 @@ agent/data/sources/
 __pycache__/
 *.pyc
 .pytest_cache/
+agent/data/demo_seed/parts/

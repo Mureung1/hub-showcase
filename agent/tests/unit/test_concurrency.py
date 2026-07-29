@@ -199,10 +199,13 @@ def test_the_caller_trims_the_items_to_the_budget() -> None:
     work = Recorder()
     budget = 4
 
-    map_ordered(work, list(range(20))[:budget], workers=8)
+    results = map_ordered(work, list(range(20))[:budget], workers=8)
 
     assert len(work.started) == budget
-    assert work.started == [0, 1, 2, 3]
+    # 계약은 결과의 순서만 보장한다. 호출 순서는 스레드 스케줄링이 정하므로 집합으로 본다.
+    assert set(work.started) == set(range(budget))
+    assert [record.item for record in results] == list(range(budget))
+    assert untried(list(range(20))[:budget], results) == 0
 
 
 def test_no_work_is_sent_for_an_empty_list() -> None:

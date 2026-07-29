@@ -88,6 +88,7 @@ _WRITE_SCOPE: dict[Component, frozenset[str]] = {
             "dataset_versions",
             "knowledge_versions",
             "research_requests",
+            "user_postings",
         }
     ),
     Component.AGENT_COLLECT: frozenset(
@@ -127,6 +128,7 @@ _WRITE_SCOPE: dict[Component, frozenset[str]] = {
             "analysis_claim_evidence",
             "coverage_assertions",
             "analysis_outputs",
+            "user_posting_analyses",
             "research_requests",
         }
     ),
@@ -136,6 +138,7 @@ _WRITE_SCOPE: dict[Component, frozenset[str]] = {
             "checklist_items",
             "checklist_item_mappings",
             "analysis_outputs",
+            "user_posting_analyses",
             "research_requests",
         }
     ),
@@ -145,6 +148,7 @@ _WRITE_SCOPE: dict[Component, frozenset[str]] = {
             "roadmap_item_fills",
             "study_tracks",
             "analysis_outputs",
+            "user_posting_analyses",
             "research_requests",
         }
     ),

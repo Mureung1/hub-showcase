@@ -1,0 +1,57 @@
+{
+  "_note": "평면 표 폴백(legacy_posting_samples) 집계에만 쓰는 백엔드 전용 라벨 표입니다. 활성 분석 버전의 statistics payload 는 라벨을 자기 안에 담으므로 이 파일을 쓰지 않습니다.",
+  "out_tags": {
+    "infra_deploy": { "label": "인프라·배포", "desc": "Docker, AWS, CI/CD 운영" },
+    "test": { "label": "테스트", "desc": "단위·통합 테스트 작성" },
+    "data": { "label": "데이터", "desc": "배치, 파이프라인, 로그 분석" },
+    "docs": { "label": "문서화", "desc": "API 명세, 기술 문서, 위키" },
+    "front": { "label": "프론트", "desc": "간단한 어드민·화면 수정" }
+  },
+  "advanced_types": {
+    "traffic": "대용량 트래픽",
+    "concurrency": "동시성·정합성",
+    "incident": "장애 대응·모니터링"
+  },
+  "combos": [
+    {
+      "id": "base",
+      "name": "Java + Spring Boot + JPA + MySQL",
+      "slugs": ["java", "spring-boot", "jpa", "mysql"],
+      "desc": "한 도메인의 CRUD REST API를 DB와 연결하고 트랜잭션·연관관계까지 다루는 기본 조합입니다.",
+      "level": "한 도메인을 배포 가능한 API로 완성"
+    },
+    {
+      "id": "redis",
+      "name": "기본 스택 + Redis",
+      "slugs": ["java", "spring-boot", "redis"],
+      "desc": "조회 성능·세션 관리를 캐시로 개선해 본 경험을 묻는 조합입니다.",
+      "level": "캐시로 조회 개선 + 이유 설명"
+    },
+    {
+      "id": "deploy",
+      "name": "Docker + AWS + CI/CD",
+      "slugs": ["docker", "aws", "cicd"],
+      "desc": "빌드부터 배포까지 파이프라인을 직접 구성해 본 경험을 묻는 조합입니다.",
+      "level": "배포 파이프라인 1회 이상 구성"
+    },
+    {
+      "id": "kafka",
+      "name": "Kafka 이벤트 처리",
+      "slugs": ["kafka"],
+      "desc": "이벤트 기반 아키텍처의 개념 이해를 묻는 우대 조합입니다.",
+      "level": "개념 이해 + 토이 수준 경험(우대)"
+    }
+  ],
+  "reality_labels": {
+    "project_experience": "완성된 프로젝트 경험",
+    "deploy_ops": "배포·운영까지 해 본 경험",
+    "intern_award": "인턴·수상·오픈소스 우대"
+  },
+  "axis_labels": {
+    "performance": "성능·트래픽",
+    "tx_security": "트랜잭션·보안",
+    "api_domain": "API·도메인",
+    "ownership": "오너십·실행",
+    "process_docs": "프로세스·문서"
+  }
+}

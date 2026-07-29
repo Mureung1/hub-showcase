@@ -1,0 +1,62 @@
+assertion_id,analysis_version,scope_level,scope_id,dimension_id,population_n,checked_n,matched_n,assertion,coverage_complete
+cov_demo_backend_overall,an_demo_backend,overall,backend,dim_backend_rest-api-design,9,9,9,REST API 설계 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_backend_bigtech_platform,an_demo_backend,cluster,bigtech_platform,dim_backend_caching-performance,2,2,2,캐시·조회 성능 개선 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_backend_startup,an_demo_backend,cluster,startup,dim_backend_cloud-infra,2,2,2,클라우드 인프라 운영 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_backend_b2b_saas,an_demo_backend,cluster,b2b_saas,dim_backend_rest-api-design,1,1,1,REST API 설계 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_backend_fintech_finance,an_demo_backend,cluster,fintech_finance,dim_backend_transaction-integrity,2,2,2,트랜잭션·데이터 정합성 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_backend_si_enterprise,an_demo_backend,cluster,si_enterprise,dim_backend_tech-documentation,1,1,1,기술 문서화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_backend_game,an_demo_backend,cluster,game,dim_backend_caching-performance,1,1,1,캐시·조회 성능 개선 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_frontend_overall,an_demo_frontend,overall,frontend,dim_frontend_react-component,9,9,9,React 컴포넌트 개발 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_frontend_bigtech_platform,an_demo_frontend,cluster,bigtech_platform,dim_frontend_web-performance,2,2,2,웹 성능 최적화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_frontend_startup,an_demo_frontend,cluster,startup,dim_frontend_bundling-build,1,1,1,번들링·빌드 도구 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_frontend_b2b_saas,an_demo_frontend,cluster,b2b_saas,dim_frontend_state-management,2,2,2,상태 관리 설계 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_frontend_fintech_finance,an_demo_frontend,cluster,fintech_finance,dim_frontend_state-management,2,2,2,상태 관리 설계 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_frontend_si_enterprise,an_demo_frontend,cluster,si_enterprise,dim_frontend_web-accessibility,1,1,1,웹 접근성·웹표준 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_frontend_game,an_demo_frontend,cluster,game,dim_frontend_web-performance,1,1,1,웹 성능 최적화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_ai_engineer_overall,an_demo_ai_engineer,overall,ai_engineer,dim_ai_engineer_python,9,9,9,Python 구현력 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_ai_engineer_bigtech_platform,an_demo_ai_engineer,cluster,bigtech_platform,dim_ai_engineer_data-prep,2,2,2,데이터 전처리·품질 관리 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_ai_engineer_startup,an_demo_ai_engineer,cluster,startup,dim_ai_engineer_llm-app,2,2,2,LLM 응용·RAG 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_ai_engineer_b2b_saas,an_demo_ai_engineer,cluster,b2b_saas,dim_ai_engineer_model-serving,2,2,2,모델 서빙·배포 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_ai_engineer_fintech_finance,an_demo_ai_engineer,cluster,fintech_finance,dim_ai_engineer_data-prep,1,1,1,데이터 전처리·품질 관리 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_ai_engineer_si_enterprise,an_demo_ai_engineer,cluster,si_enterprise,dim_ai_engineer_data-prep,1,1,1,데이터 전처리·품질 관리 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_ai_engineer_game,an_demo_ai_engineer,cluster,game,dim_ai_engineer_dl-framework,1,1,1,딥러닝 프레임워크 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_data_engineer_overall,an_demo_data_engineer,overall,data_engineer,dim_data_engineer_sql-analytics,9,9,9,SQL 집계·쿼리 최적화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_data_engineer_bigtech_platform,an_demo_data_engineer,cluster,bigtech_platform,dim_data_engineer_spark-batch,2,2,2,분산 배치 처리 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_data_engineer_startup,an_demo_data_engineer,cluster,startup,dim_data_engineer_workflow-orchestration,1,1,1,워크플로 오케스트레이션 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_data_engineer_b2b_saas,an_demo_data_engineer,cluster,b2b_saas,dim_data_engineer_data-warehouse,2,2,2,데이터 웨어하우스 모델링 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_data_engineer_fintech_finance,an_demo_data_engineer,cluster,fintech_finance,dim_data_engineer_data-warehouse,2,2,2,데이터 웨어하우스 모델링 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_data_engineer_si_enterprise,an_demo_data_engineer,cluster,si_enterprise,dim_data_engineer_data-warehouse,1,1,1,데이터 웨어하우스 모델링 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_data_engineer_game,an_demo_data_engineer,cluster,game,dim_data_engineer_streaming-ingest,1,1,1,스트리밍 수집·처리 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_fullstack_node-typescript,an_demo_fullstack,overall,fullstack,dim_fullstack_node-typescript,5,5,5,최근 1년 공고 5건을 모두 확인했고 5건에서 Node.js·TypeScript 서버 구현 요구를 찾았다.,true
+cov_demo_fullstack_react-ui,an_demo_fullstack,overall,fullstack,dim_fullstack_react-ui,5,5,5,최근 1년 공고 5건을 모두 확인했고 5건에서 React 화면 구현 요구를 찾았다.,true
+cov_demo_fullstack_rest-api,an_demo_fullstack,overall,fullstack,dim_fullstack_rest-api,5,5,4,최근 1년 공고 5건을 모두 확인했고 4건에서 REST API 설계·연동 요구를 찾았다.,true
+cov_demo_fullstack_rdb-modeling,an_demo_fullstack,overall,fullstack,dim_fullstack_rdb-modeling,5,5,3,최근 1년 공고 5건을 모두 확인했고 3건에서 관계형 데이터베이스 모델링 요구를 찾았다.,true
+cov_demo_fullstack_cloud-deploy,an_demo_fullstack,overall,fullstack,dim_fullstack_cloud-deploy,5,5,4,최근 1년 공고 5건을 모두 확인했고 4건에서 클라우드 배포·운영 요구를 찾았다.,true
+cov_demo_devops_overall,an_demo_devops,overall,devops,dim_devops_kubernetes,9,9,9,Kubernetes 클러스터 운영 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_devops_bigtech_platform,an_demo_devops,cluster,bigtech_platform,dim_devops_observability,2,2,2,관측성·모니터링 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_devops_startup,an_demo_devops,cluster,startup,dim_devops_iac-terraform,2,2,2,인프라 코드화(IaC·Terraform) 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_devops_b2b_saas,an_demo_devops,cluster,b2b_saas,dim_devops_iac-terraform,1,1,1,인프라 코드화(IaC·Terraform) 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_devops_fintech_finance,an_demo_devops,cluster,fintech_finance,dim_devops_cicd-pipeline,2,2,2,CI/CD 파이프라인 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_devops_si_enterprise,an_demo_devops,cluster,si_enterprise,dim_devops_cicd-pipeline,1,1,1,CI/CD 파이프라인 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_devops_game,an_demo_devops,cluster,game,dim_devops_cloud-network,1,1,1,클라우드 네트워크 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_mobile_overall,an_demo_mobile,overall,mobile,dim_mobile_kotlin-android,9,9,6,Kotlin·안드로이드 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_mobile_bigtech_platform,an_demo_mobile,cluster,bigtech_platform,dim_mobile_store-release,2,2,2,스토어 배포·릴리스 운영 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_mobile_startup,an_demo_mobile,cluster,startup,dim_mobile_kotlin-android,2,2,2,Kotlin·안드로이드 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_mobile_b2b_saas,an_demo_mobile,cluster,b2b_saas,dim_mobile_store-release,1,1,1,스토어 배포·릴리스 운영 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_mobile_fintech_finance,an_demo_mobile,cluster,fintech_finance,dim_mobile_network-api,2,2,2,네트워크·API 연동 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_mobile_si_enterprise,an_demo_mobile,cluster,si_enterprise,dim_mobile_app-architecture,1,1,1,앱 아키텍처·상태 관리 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_mobile_game,an_demo_mobile,cluster,game,dim_mobile_kotlin-android,1,1,1,Kotlin·안드로이드 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_security_overall,an_demo_security,overall,security,dim_security_web-vuln-assessment,9,9,8,웹 취약점 진단 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_security_bigtech_platform,an_demo_security,cluster,bigtech_platform,dim_security_soc-siem,2,2,2,보안관제·SIEM 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_security_startup,an_demo_security,cluster,startup,dim_security_privacy-compliance,1,1,1,개인정보·컴플라이언스 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_security_b2b_saas,an_demo_security,cluster,b2b_saas,dim_security_web-vuln-assessment,1,1,1,웹 취약점 진단 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_security_fintech_finance,an_demo_security,cluster,fintech_finance,dim_security_privacy-compliance,2,2,2,개인정보·컴플라이언스 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_security_si_enterprise,an_demo_security,cluster,si_enterprise,dim_security_privacy-compliance,2,2,2,개인정보·컴플라이언스 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_security_game,an_demo_security,cluster,game,dim_security_soc-siem,1,1,1,보안관제·SIEM 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_game_client_overall,an_demo_game_client,overall,game_client,dim_game_client_graphics-opt,9,9,9,그래픽스·렌더링 최적화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_game_client_bigtech_platform,an_demo_game_client,cluster,bigtech_platform,dim_game_client_graphics-opt,1,1,1,그래픽스·렌더링 최적화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_game_client_startup,an_demo_game_client,cluster,startup,dim_game_client_graphics-opt,1,1,1,그래픽스·렌더링 최적화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_game_client_b2b_saas,an_demo_game_client,cluster,b2b_saas,dim_game_client_net-sync,1,1,1,클라이언트 네트워크 동기화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_game_client_fintech_finance,an_demo_game_client,cluster,fintech_finance,dim_game_client_unity-csharp,1,1,1,Unity·C# 클라이언트 구현 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_game_client_si_enterprise,an_demo_game_client,cluster,si_enterprise,dim_game_client_graphics-opt,1,1,1,그래픽스·렌더링 최적화 요구 여부를 모집단 전량에서 확인했다.,true
+cov_demo_game_client_game,an_demo_game_client,cluster,game,dim_game_client_net-sync,4,4,4,클라이언트 네트워크 동기화 요구 여부를 모집단 전량에서 확인했다.,true
