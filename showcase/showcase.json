@@ -5,6 +5,8 @@
   "githubUser": "gguo224(강민구)",
   "thumbnail": "thumbnail.png",
   "screenshots": ["screenshots/pain-report.png"],
+  "demoUrl": "https://hub-ten-orpin.vercel.app",
+  "demoVideoUrl": "https://youtu.be/oIxGRjlBfnk",
   "problem": "저는 통증이나 시간 부족으로 계획한 운동을 못 할 때, 오늘 뭘 해야 할지 판단하는 데 시간을 쓰거나 판단을 미루고 그냥 스킵합니다. 통증이 생기면 어떤 운동을 빼고 무엇으로 대체해야 할지 스스로 판단해야 하고, 시간이 없어 세션을 건너뛰면 이번 주 스케줄을 어떻게 조정할지도 매번 다시 고민해야 합니다.",
   "targetUsers": [
     "통증이나 시간 부족으로 운동 계획을 자주 못 지키는 사람",
