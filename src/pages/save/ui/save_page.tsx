@@ -261,7 +261,7 @@ export function SavePage({
 
               <div className="save-page__context-actions">
                 <Button
-                  disabled={isContextSaving}
+                  disabled={isContextSaving || contextSaveComplete}
                   hierarchy="primary"
                   loading={isContextSaving}
                   size="medium"
@@ -275,15 +275,17 @@ export function SavePage({
                         ? '변경 내용 저장하기'
                         : '인사이트 정보 저장하기'}
                 </Button>
-                <Button
-                  disabled={isContextSaving}
-                  hierarchy="secondary"
-                  onClick={onContextSkip}
-                  size="medium"
-                  type="button"
-                >
-                  지금은 건너뛰기
-                </Button>
+                {contextSaveComplete ? null : (
+                  <Button
+                    disabled={isContextSaving}
+                    hierarchy="secondary"
+                    onClick={onContextSkip}
+                    size="medium"
+                    type="button"
+                  >
+                    지금은 건너뛰기
+                  </Button>
+                )}
               </div>
             </form>
           </div>

@@ -1464,6 +1464,16 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('status', { name: '인사이트 정보를 저장했어요' })
     ).not.toBeNull();
+    expect(
+      screen.queryByRole('button', { name: '지금은 건너뛰기' })
+    ).toBeNull();
+    expect(
+      (
+        screen.getByRole('button', {
+          name: '변경 내용 저장하기',
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(true);
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
 
@@ -1477,6 +1487,17 @@ describe('AuthenticatedWorkspace', () => {
       target: { value: 'Design Systems' },
     });
     expect(screen.getByText('수정한 디자인 패턴')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(
+      (screen.getByRole('textbox', { name: 'URL' }) as HTMLInputElement).value
+    ).toBe('');
+    expect(
+      screen.queryByRole('heading', {
+        name: '언제 다시 쓰고 싶은가요?',
+      })
+    ).toBeNull();
   }, 10_000);
 
   it('keeps the saved URL when personal context is skipped', async () => {

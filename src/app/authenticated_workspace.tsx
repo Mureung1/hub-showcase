@@ -444,6 +444,16 @@ export function AuthenticatedWorkspace({
     setContextSaveFailed(false);
   }
 
+  function handleTabChange(tab: WorkspaceTab) {
+    if (tab === 'save' && activeTab !== 'save' && contextSaveComplete) {
+      saveDraftRevisionRef.current += 1;
+      setSaveDraft({ source: 'web', url: '' });
+      resetSaveFeedback();
+    }
+
+    setActiveTab(tab);
+  }
+
   function handleContextSkip() {
     setSavedInsightId(undefined);
     setContextDraft(EMPTY_CONTEXT_DRAFT);
@@ -499,7 +509,7 @@ export function AuthenticatedWorkspace({
             <span aria-hidden="true" className="workspace-brand__divider" />
             <h1>{getScreenTitle(activeTab)}</h1>
           </div>
-          <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
+          <AppNavigation onTabChange={handleTabChange} tab={activeTab} />
           <div className="workspace-account">{accountControl}</div>
         </div>
       </header>
@@ -562,7 +572,7 @@ export function AuthenticatedWorkspace({
             onDeleteInsights={deleteInsights}
             onManageCategories={openCategoryManager}
             onOpenImport={() => setImportOpen(true)}
-            onOpenSave={() => setActiveTab('save')}
+            onOpenSave={() => handleTabChange('save')}
             onQueryChange={setGlobalQuery}
             onRetryLoad={() => window.location.reload()}
             onRequestCategoryCreation={requestCategoryCreation}
@@ -584,8 +594,8 @@ export function AuthenticatedWorkspace({
                   : 'ready'
             }
             onClearQuery={handleRetrieveClear}
-            onOpenLibrary={() => setActiveTab('library')}
-            onOpenSave={() => setActiveTab('save')}
+            onOpenLibrary={() => handleTabChange('library')}
+            onOpenSave={() => handleTabChange('save')}
             onQueryChange={handleRetrieveQueryChange}
             onRetrieve={handleRetrieve}
             onRetryLoad={() => window.location.reload()}
