@@ -59,7 +59,7 @@ export function Profile() {
     const currentEntry = joined.find((e) => e.token === token)
     const historyEntries = joined.filter((e) => e.token !== token)
 
-    setName(currentEntry?.name ?? joined[0]?.name ?? '')
+    setName(currentEntry?.name ?? '')
 
     const tasks = []
     if (token) tasks.push(getLetterByToken(token).then((r) => ({ kind: 'current', result: r })))
