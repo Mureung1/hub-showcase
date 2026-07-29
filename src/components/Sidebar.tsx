@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react'
-import { NavLink } from 'react-router-dom'
-import { NAVIGATION } from '../data/navigation'
+import { useState, type KeyboardEvent, type ReactNode } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { NAVIGATION, type NavLeaf } from '../data/navigation'
 import { useQnaPanel } from '../features/qna/context/QnaPanelContext'
 
 const iconProps = {
@@ -97,16 +97,41 @@ const icons = {
 
 const iconMap: Record<string, ReactNode> = icons
 
+// 검색 대상 = 실제 라우트가 있는(구현된) 리프만. 준비 중 항목은 눌러도 갈 곳이 없어 제외.
+const SEARCHABLE_LEAVES = NAVIGATION.flatMap((dept) =>
+  dept.groups.flatMap((group) => group.leaves.filter((leaf): leaf is NavLeaf & { to: string } => !!leaf.to)),
+)
+
 export default function Sidebar() {
   const { isOpen, toggle } = useQnaPanel()
+  const navigate = useNavigate()
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
     NAVIGATION.forEach((dept) => dept.groups.forEach((group) => (initial[group.id] = true)))
     return initial
   })
+  const [query, setQuery] = useState('')
 
   const toggleGroup = (groupId: string) => {
     setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }))
+  }
+
+  const trimmedQuery = query.trim().toLowerCase()
+  const matches = trimmedQuery
+    ? SEARCHABLE_LEAVES.filter((leaf) => leaf.label.toLowerCase().includes(trimmedQuery))
+    : []
+
+  function goToLeaf(to: string) {
+    navigate(to)
+    setQuery('')
+  }
+
+  function handleSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' && matches.length > 0) {
+      goToLeaf(matches[0].to)
+    } else if (e.key === 'Escape') {
+      setQuery('')
+    }
   }
 
   return (
@@ -114,22 +139,52 @@ export default function Sidebar() {
       className="flex w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r px-3 py-4"
       style={{ background: 'var(--color-bg-sidebar)', borderColor: 'var(--color-border-card)' }}
     >
-      <div
-        className="flex items-center gap-2 rounded-[9px] border px-2.5 py-2 text-xs"
-        style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-muted)' }}
-        aria-disabled="true"
-      >
-        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round">
-          <circle cx="6.5" cy="6.5" r="4" />
-          <line x1="9.5" y1="9.5" x2="13" y2="13" />
-        </svg>
-        <span>화면 검색</span>
-        <span
-          className="ml-auto rounded-[5px] border px-1.5 py-0.5 text-[10px]"
+      <div className="relative">
+        <div
+          className="flex items-center gap-2 rounded-[9px] border px-2.5 py-2 text-xs"
           style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-muted)' }}
         >
-          준비 중
-        </span>
+          <svg width={14} height={14} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round">
+            <circle cx="6.5" cy="6.5" r="4" />
+            <line x1="9.5" y1="9.5" x2="13" y2="13" />
+          </svg>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="화면 검색"
+            className="w-full bg-transparent text-[13px] outline-none"
+            style={{ color: 'var(--color-text-primary)' }}
+          />
+        </div>
+
+        {trimmedQuery && (
+          <ul
+            className="absolute left-0 right-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-[9px] border py-1"
+            style={{ background: 'var(--color-bg-card)', borderColor: 'var(--color-border-card-strong)' }}
+          >
+            {matches.length > 0 ? (
+              matches.map((leaf) => (
+                <li key={leaf.id}>
+                  <button
+                    type="button"
+                    onClick={() => goToLeaf(leaf.to)}
+                    className="flex w-full items-center gap-2.5 px-2.5 py-1.5 text-left text-[13px]"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    <span style={{ color: 'var(--color-text-muted)' }}>{iconMap[leaf.iconKey]}</span>
+                    {leaf.label}
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="px-2.5 py-1.5 text-[12.5px]" style={{ color: 'var(--color-text-muted)' }}>
+                일치하는 화면이 없어요.
+              </li>
+            )}
+          </ul>
+        )}
       </div>
 
       {NAVIGATION.map((dept) => (

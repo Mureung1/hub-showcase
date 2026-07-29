@@ -82,7 +82,7 @@
 
 ### 3. 컴퓨터공학과 보완점
 
-- [ ] `cs-planner`/`cs-reviewer` 에이전트 생성 (중간) — `chemistry-planner`/`chemistry-reviewer`와 같은 3렌즈 계약을 컴퓨터공학 관점(자료구조/알고리즘/운영체제/DB)으로. 아래 B-트리·CPU 스케줄링 착수 전에 먼저 만들면 그 둘부터 새 파이프라인(플래너 설계→구현→리뷰어 사후검증)으로 진행 가능. 완성되면 `showcase.json`의 `agent.agentTools`에도 추가
+- [x] `cs-planner`/`cs-reviewer` 에이전트 생성 (4주차 완료) — `chemistry-planner`/`chemistry-reviewer`와 같은 3렌즈 계약을 컴퓨터공학 관점(자료구조/알고리즘/운영체제/DB)으로 작성(`.claude/agents/cs-planner.md`, `.claude/agents/cs-reviewer.md`). `CLAUDE.md` 2단계도 두 학과 모두 학과별 플래너+리뷰어 쌍을 쓰는 구조로 갱신. 아래 B-트리·CPU 스케줄링 착수 시 이 파이프라인(플래너 설계→구현→리뷰어 사후검증)으로 진행. `showcase.json`의 `agent.agentTools`에 추가 필요(다음 작업)
 - [ ] 데이터베이스 — B-트리 인덱스 시각화 (중간, 기존 트리 코드 재사용도 높아 먼저 착수)
 - [ ] 운영체제 — CPU 스케줄링 시각화 (중간)
 
