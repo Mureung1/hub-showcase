@@ -3,7 +3,8 @@
   "title": "FirstPR",
   "summary": "GitHub 활동과 선호 조건을 분석해 첫 오픈소스 기여에 적합한 레포지토리와 이슈를 추천하는 서비스입니다.",
   "githubUser": "kimsunho2000(김선호)",
-  "demoUrl": "https://kimsunho2000.github.io/hub/",
+  "demoUrl": "https://kimsunho2000.github.io/hub/#/",
+  "demoVideoUrl": "https://drive.google.com/file/d/1r0BkfXZV6D6r7AxQ7Tp7kwhIf7RZZNim/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/landing.png",
