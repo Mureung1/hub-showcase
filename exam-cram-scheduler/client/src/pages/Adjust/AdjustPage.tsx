@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '../../layouts/AppShell/AppShell';
-import { Card, Row, Button, WarningBanner, Slider, Segmented } from '../../components';
+import { Card, Button, WarningBanner, Slider, Segmented } from '../../components';
 import text from '../../styles/text.module.css';
 import { formatHourValue } from '../../utils/time';
 import { useSchedule } from '../../context/ScheduleContext';
@@ -52,6 +52,8 @@ export function AdjustPage() {
   const [wakeAt, setWakeAt] = useState(5.5);
   const [caffeineMg, setCaffeineMg] = useState(100);
   const [caffeineAt, setCaffeineAt] = useState(6);
+  // ① 이 밤의 최소 수면시간(밤별). 밤별 값이 있으면 그걸, 없으면 전역 minSleepHours, 그것도 없으면 4시간.
+  const [minSleep, setMinSleep] = useState(4);
 
   // 계산 없이 주소로 직접 들어온 경우 — 조정할 추천 스케줄이 없으므로 결과 화면으로 돌려보낸다.
   useEffect(() => {
@@ -71,6 +73,8 @@ export function AdjustPage() {
       setCaffeineMg(dose.amountMg);
       setCaffeineAt(toSliderHour(dose.time, 0));
     }
+    // ① 이 밤의 최소 수면시간 슬라이더도 그 밤 값으로 채운다(밤별 > 전역 > 4시간).
+    setMinSleep(request?.minSleepHoursByNight?.[nightIndex] ?? request?.minSleepHours ?? 4);
     // response가 바뀌어도(재계산 후 다시 조정) 최신 추천값으로 다시 채워야 하므로 함께 본다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nightIndex, response]);
@@ -94,7 +98,14 @@ export function AdjustPage() {
       ...(dose ? { caffeineTime: shiftIso(dose.time, caffeineAt - toSliderHour(dose.time, 0)) } : {}),
     };
 
-    setRequest({ ...request, nightOverrides: [override] });
+    // ① 밤별 최소 수면시간 — 기존 배열(없으면 전역값으로 채운 배열)을 복사해 이 밤만 슬라이더 값으로 바꾼다.
+    // 배열로 들고 다니므로 다른 밤에 걸어둔 값은 그대로 유지된다.
+    const minSleepHoursByNight = nights.map(
+      (_, i) => request.minSleepHoursByNight?.[i] ?? request.minSleepHours ?? 4,
+    );
+    minSleepHoursByNight[nightIndex] = minSleep;
+
+    setRequest({ ...request, minSleepHoursByNight, nightOverrides: [override] });
     navigate('/processing');
   }
 
@@ -183,14 +194,18 @@ export function AdjustPage() {
       <div className={`${text.sectionBlock} ${text.sectionBlockTight}`}>
         <div className={text.sectionHead}>
           <span className={text.label}>최소 수면시간</span>
-          <span className={text.meta}>정보 입력에서 설정</span>
+          <span className={text.meta}>이 날 밤에만 적용</span>
         </div>
         <Card>
-          <Row
-            icon="🌙"
-            iconVariant="sleep"
-            title="최소 수면시간"
-            value={request.minSleepHours ? `${request.minSleepHours}시간` : '설정 안 함'}
+          <Slider
+            name="최소 수면시간"
+            value={minSleep}
+            min={3}
+            max={9}
+            step={0.5}
+            suffix="시간"
+            bounds={['3시간', '9시간']}
+            onChange={setMinSleep}
           />
         </Card>
       </div>
