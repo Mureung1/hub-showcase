@@ -39,7 +39,7 @@ const inCoverage = (points) =>
 async function instantCheck(route) {
   const { data: notices } = await supabase
     .from('notices')
-    .select('id, title, source_url, extraction')
+    .select('id, source, title, source_url, extraction')   // source = 지역 게이팅용
     .order('collected_at', { ascending: false })
     .limit(30);
   const alerts = [];

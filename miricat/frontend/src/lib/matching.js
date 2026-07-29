@@ -21,7 +21,9 @@ export function norm(s) {
 }
 export function hit(value, token) {
   const a = norm(value), b = norm(token);
-  return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+  if (!a || !b) return false;
+  if (/^\d+$/.test(a) && /^\d+$/.test(b)) return a === b;   // 숫자 노선은 정확일치만 ("46"⊂"462" 오탐 방지)
+  return a === b || a.includes(b) || b.includes(a);
 }
 
 // ── 시간 유효성: analyst.py의 _is_current 미러 (끝난 사건은 경보 제외) ──
@@ -65,8 +67,25 @@ export function roadTokens(route) {
   return route.roads.split(",").map((t) => t.trim()).filter(Boolean);
 }
 
+// ── 지역 게이팅: 공지 소스의 관할과 경로 좌표가 겹칠 때만 매칭 (타지역 오탐 방지) ──
+const REGIONS = {
+  daejeon_sejong: { minX: 127.15, maxX: 127.65, minY: 36.10, maxY: 36.75 },
+  sudogwon: { minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
+};
+const SOURCE_REGION = {
+  daejeon_bus: "daejeon_sejong", daejeon_city: "daejeon_sejong", sejong_sctc: "daejeon_sejong",
+  seoul_topis: "sudogwon", gbis_route: "sudogwon",
+};
+export function sameRegion(route, sourceId) {
+  const region = REGIONS[SOURCE_REGION[sourceId]];
+  const points = route?.path ?? [];
+  if (!region || !points.length) return true;   // 좌표 없는 옛 경로·미지정 소스는 보수적으로 통과
+  return points.some((p) => p.x >= region.minX && p.x <= region.maxX && p.y >= region.minY && p.y <= region.maxY);
+}
+
 // 이 공지가 내 경로와 겹치나 + 겹친 값들(강조용). analyst.py analyze와 미러.
 export function matchNotice(notice, route) {
+  if (!sameRegion(route, notice.source)) return new Set();   // 관할 밖 공지는 매칭 자체를 안 함
   const tokens = routeTokens(route);
   const roads = roadTokens(route);
   const hits = new Set();

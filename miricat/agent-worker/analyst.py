@@ -5,8 +5,30 @@
 반경(4)은 경로 좌표열 확보 후 확장 — Tier2(KBO·팝업 등) 대응 지점.
 """
 
-import re 
+import re
 from datetime import date
+
+# ── 지역 게이팅: 공지 소스의 관할 지역과 경로 좌표가 겹칠 때만 매칭 ──
+# (대전 46번 공지가 서울 경로에 걸리는 식의 타지역 오탐 방지)
+REGIONS = {
+    "daejeon_sejong": {"min_x": 127.15, "max_x": 127.65, "min_y": 36.10, "max_y": 36.75},
+    "sudogwon":       {"min_x": 126.35, "max_x": 127.85, "min_y": 36.85, "max_y": 38.35},
+}
+SOURCE_REGION = {
+    "daejeon_bus": "daejeon_sejong", "daejeon_city": "daejeon_sejong", "sejong_sctc": "daejeon_sejong",
+    "seoul_topis": "sudogwon", "gbis_route": "sudogwon",
+}
+
+def same_region(route, source_id):
+    """경로 좌표(path)가 소스의 관할 상자에 걸치는가. 좌표 없는 옛 경로·미지정 소스는 보수적으로 통과."""
+    region = REGIONS.get(SOURCE_REGION.get(source_id))
+    points = route.get("path") or []
+    if not region or not points:
+        return True
+    return any(
+        region["min_x"] <= p.get("x", 0) <= region["max_x"] and region["min_y"] <= p.get("y", 0) <= region["max_y"]
+        for p in points
+    )
 
 def _norm(s):
     # 매칭용 정규화: 소문자 + "노선" 제거 + 공백·"번" 제거. ("705번"↔"705", "B1 노선"↔"b1")
@@ -18,7 +40,9 @@ def _hit(value, token):
     a, b = _norm(value), _norm(token)
     if not a or not b:
         return False
-    return a == b or a in b or b in a   # 양방향 부분일치까지 허용
+    if a.isdigit() and b.isdigit():
+        return a == b                   # 숫자 노선은 정확일치만 — "46" ⊂ "462" 오탐 방지
+    return a == b or a in b or b in a   # 문자 섞인 것(B1·급행2·정류장명)만 부분일치 허용
 
 _DATE_RE = re.compile(r"(\d{4})[.\-]\s*(\d{1,2})[.\-]\s*(\d{1,2})")  # 연도 포함 완전 날짜
 _MD_RE = re.compile(r"(\d{1,2})[.\-]\s*(\d{1,2})")                   # 'M.D' (연도 없음)

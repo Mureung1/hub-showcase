@@ -13,32 +13,37 @@ import requests
 from scout import fetch_list
 from sources import SOURCES
 from graph import run, reporter_node
-from analyst import analyze
+from analyst import analyze, same_region
 from db import save_notice, get_routes, get_notices, mark_alerted
 
 
 def collect():
-    """소스별 게시판을 돌며 공지를 수집·추출·저장. 소스별 확인 건수를 돌려준다."""
+    """소스별 게시판을 돌며 공지를 수집·추출·저장. 소스별 확인 건수를 돌려준다.
+    소스 하나가 죽어도(차단·타임아웃) 나머지 순찰은 계속 — 실패는 None으로 표시해 보고에 드러낸다."""
     counts = {}
     for source in SOURCES:
         if not source["active"]:
             continue
-        items = fetch_list(source)
-        ok = 0
-        for seq, title in items:
-            result = run(source, seq, title=title)
-            if result.get("error"):
-                print(f"[{source['name']}] {seq} 처리 실패:", result["error"])
-                continue
-            save_notice(
-                source=source["id"],
-                source_url=source["view_url"].format(id=seq),
-                title=title,
-                raw_text=result["raw_text"],
-                extraction=result["extraction"],
-            )
-            ok += 1
-        counts[source["name"]] = ok
+        try:
+            items = fetch_list(source)
+            ok = 0
+            for seq, title in items:
+                result = run(source, seq, title=title)
+                if result.get("error"):
+                    print(f"[{source['name']}] {seq} 처리 실패:", result["error"])
+                    continue
+                save_notice(
+                    source=source["id"],
+                    source_url=source["view_url"].format(id=seq),
+                    title=title,
+                    raw_text=result["raw_text"],
+                    extraction=result["extraction"],
+                )
+                ok += 1
+            counts[source["name"]] = ok
+        except Exception as e:
+            print(f"[{source['name']}] 소스 접속 실패: {type(e).__name__}: {e}")
+            counts[source["name"]] = None   # 보고에 "접속 실패"로 표시
     return counts
 
 
@@ -52,6 +57,7 @@ def route_to_dict(route):
         "lines": tokens(route.get("lines")),
         "stops": tokens(route.get("stops")),
         "roads": tokens(route.get("roads")),
+        "path": route.get("path"),           # 좌표열 — 지역 게이팅용
     }
 
 
@@ -74,6 +80,8 @@ def judge_and_alert():
         if notice.get("alerted_at"):
             # 이미 알린 공지 — 재경보 금지(멱등성). 단, 아직 매칭되면 리마인드 대상.
             for route in routes:
+                if not same_region(route, notice.get("source")):
+                    continue
                 analysis = analyze(route, extraction)
                 if analysis.get("affected"):
                     names = {m["event_name"] for m in analysis.get("matched", [])}
@@ -82,6 +90,8 @@ def judge_and_alert():
             continue
         notice_had_alert = False
         for route in routes:
+            if not same_region(route, notice.get("source")):
+                continue                   # 타지역 공지는 이 경로와 매칭하지 않음
             analysis = analyze(route, extraction)
             if not analysis.get("affected"):
                 continue
@@ -109,7 +119,9 @@ def send_daily_report(counts, ongoing):
     webhook = os.environ.get("DISCORD_WEBHOOK_URL")
     if not webhook:
         return
-    checked = " · ".join(f"{name} {n}건" for name, n in counts.items()) or "확인한 소스 없음"
+    checked = " · ".join(
+        f"{name} {'⚠️접속 실패' if n is None else f'{n}건'}" for name, n in counts.items()
+    ) or "확인한 소스 없음"
     now = datetime.now().strftime("%m/%d %H:%M")
     if ongoing:
         base = os.environ.get("REPORT_BASE_URL", "http://localhost:5173")
