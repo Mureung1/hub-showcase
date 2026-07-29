@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { label: '재료픽', to: '/shop', activeOn: ['/shop'] },
 ]
 
-// 상단 고정 네비게이션 — prototype-v2에서 검증한 레이아웃(마스코트 로고 + 링크 + 검색창)을 그대로 포팅
+// 상단 고정 네비게이션 — prototype-v2에서 검증한 레이아웃(마스코트 로고 + 링크)을 그대로 포팅
 function TopNav() {
   const location = useLocation()
 
@@ -31,10 +31,6 @@ function TopNav() {
             {link.label}
           </Link>
         ))}
-      </div>
-      <div className="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-bg-page text-sm text-text-secondary sm:h-auto sm:w-auto sm:px-4 sm:py-2">
-        <span className="sm:hidden">🔍</span>
-        <span className="hidden sm:inline">🔍 레시피 검색</span>
       </div>
     </div>
   )
