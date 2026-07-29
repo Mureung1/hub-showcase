@@ -188,11 +188,11 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
                     flexShrink: 0,
                   }}
                 >
-                  {myProfile?.name ? myProfile.name[0] : "?"}
+                  {myProfile?.nickname ? myProfile.nickname[0] : myProfile?.name ? myProfile.name[0] : "?"}
                 </div>
               )}
               <div style={{ flex: 1, textAlign: "left" }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{myProfile?.name ?? "내 방"}</div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{myProfile?.nickname || myProfile?.name || "내 방"}</div>
                 {myProfile?.college && (
                   <div style={{ fontSize: 12, color: "#8A7A76" }}>{myProfile.college}</div>
                 )}
@@ -276,6 +276,12 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
                 {c.profile?.name ?? "동행 대기 중인 학생"}
                 {c.activity?.isActive && (
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
+                )}
+                {typeof c.profile?.rating === "number" && (
+                  <span style={{ fontSize: 11, color: "#C98A1F", fontWeight: 600 }}>★ {c.profile.rating.toFixed(1)}</span>
+                )}
+                {c.profile?.noshow_count > 0 && (
+                  <span style={{ fontSize: 11, color: "#C8102E", fontWeight: 700 }}>⚠️ 노쇼 {c.profile.noshow_count}회</span>
                 )}
               </div>
               {c.profile?.college && (

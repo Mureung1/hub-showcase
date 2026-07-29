@@ -57,3 +57,20 @@ export function classifyBoarding(desiredTime, referenceDate, boardedAt) {
 
   return { status: 'late', minutesLate: diffMinutes }
 }
+
+const AUTO_RATE_HOURS = 1
+
+// 탑승 후 일정 시간이 지나도록 평가를 안 남기면, 불만이 없었던 것으로 보고 자동 만점 처리하기 위한 판단 함수
+export function isOverdueForAutoRating(boardedAt, now = new Date(), hours = AUTO_RATE_HOURS) {
+  if (!boardedAt) return false
+
+  const diffMs = now - new Date(boardedAt)
+  return diffMs > hours * 60 * 60 * 1000
+}
+
+// 기존 평점/횟수에 새 별점 하나를 더해 누적 평균을 계산 (count가 0이면 기존 평점 무시하고 새 값이 그대로 평균이 됨)
+export function applyRating(currentRating, currentCount, newStars) {
+  const count = (currentCount ?? 0) + 1
+  const rating = ((currentRating ?? 0) * (currentCount ?? 0) + newStars) / count
+  return { rating: Math.round(rating * 10) / 10, count }
+}

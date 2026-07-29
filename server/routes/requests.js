@@ -1,9 +1,96 @@
 import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import { supabase } from '../supabaseClient.js'
-import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding, isRoomStale } from '../matching.js'
+import {
+  passesGenderFilter,
+  sortByArrivalPriority,
+  describeActivity,
+  classifyBoarding,
+  isRoomStale,
+  isOverdueForAutoRating,
+  applyRating,
+} from '../matching.js'
 
 const router = Router()
+
+// 평점을 실제로 기록하고, 같은 그룹의 나머지 멤버들 프로필 평점에 반영
+async function applyRatingSubmission(requestId, stars, noshowReported) {
+  const { data: target, error: fetchError } = await supabase
+    .from('matching_requests')
+    .select('group_id')
+    .eq('id', requestId)
+    .single()
+
+  if (fetchError) {
+    return { error: fetchError.message }
+  }
+
+  // 노쇼 신고면 실제 입력한 별점 대신 1점으로 강제 반영
+  const effectiveStars = noshowReported ? 1 : stars
+
+  const { data: rating, error: insertError } = await supabase
+    .from('ratings')
+    .insert({ request_id: requestId, group_id: target.group_id, stars, noshow_reported: !!noshowReported })
+    .select()
+    .single()
+
+  if (insertError) {
+    return { error: insertError.message }
+  }
+
+  if (target.group_id) {
+    const { data: otherMembers } = await supabase
+      .from('matching_requests')
+      .select('id, user_id')
+      .eq('group_id', target.group_id)
+      .neq('id', requestId)
+
+    for (const member of otherMembers ?? []) {
+      if (!member.user_id) continue
+
+      const { data: user } = await supabase
+        .from('users')
+        .select('rating, rating_count, noshow_count')
+        .eq('id', member.user_id)
+        .single()
+
+      if (!user) continue
+
+      const { rating: newRating, count: newCount } = applyRating(user.rating, user.rating_count, effectiveStars)
+
+      await supabase
+        .from('users')
+        .update({
+          rating: newRating,
+          rating_count: newCount,
+          noshow_count: noshowReported ? (user.noshow_count ?? 0) + 1 : user.noshow_count,
+        })
+        .eq('id', member.user_id)
+    }
+  }
+
+  return { rating }
+}
+
+// 탑승 후 1시간 넘게 평가가 없는 트립은 불만 없음으로 보고 자동 5점 처리
+async function sweepAutoRatings() {
+  const { data: boarded } = await supabase
+    .from('matching_requests')
+    .select('id, boarded_at')
+    .not('boarded_at', 'is', null)
+
+  const overdue = (boarded ?? []).filter((r) => isOverdueForAutoRating(r.boarded_at))
+  if (overdue.length === 0) return
+
+  const ids = overdue.map((r) => r.id)
+  const { data: existingRatings } = await supabase.from('ratings').select('request_id').in('request_id', ids)
+  const ratedIds = new Set((existingRatings ?? []).map((r) => r.request_id))
+
+  for (const row of overdue) {
+    if (ratedIds.has(row.id)) continue
+    await applyRatingSubmission(row.id, 5, false)
+  }
+}
 
 function timeWindow(time, minutes) {
   const [h, m] = time.split(':').map(Number)
@@ -58,6 +145,8 @@ router.post('/', async (req, res) => {
 })
 
 router.get('/', async (req, res) => {
+  await sweepAutoRatings()
+
   const { departureHub, destHub, time } = req.query
 
   let query = supabase
@@ -135,11 +224,20 @@ router.get('/', async (req, res) => {
   const userIds = [...new Set([me?.user_id, ...rooms.map((r) => r.user_id)].filter(Boolean))]
   const { data: userRows } = await supabase
     .from('users')
-    .select('id, gender, name, college, avatar_url')
+    .select('id, gender, name, nickname, college, avatar_url, rating, noshow_count')
     .in('id', userIds.length ? userIds : [''])
   const genderById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.gender]))
   const profileById = Object.fromEntries(
-    (userRows ?? []).map((u) => [u.id, { name: u.name, college: u.college, avatar_url: u.avatar_url }])
+    (userRows ?? []).map((u) => [
+      u.id,
+      {
+        name: u.nickname || u.name,
+        college: u.college,
+        avatar_url: u.avatar_url,
+        rating: u.rating,
+        noshow_count: u.noshow_count,
+      },
+    ])
   )
 
   const withExtras = (room) => ({
@@ -482,27 +580,13 @@ router.post('/:id/rating', async (req, res) => {
     return res.status(400).json({ error: '별점을 선택해주세요' })
   }
 
-  const { data: target, error: fetchError } = await supabase
-    .from('matching_requests')
-    .select('group_id')
-    .eq('id', id)
-    .single()
-
-  if (fetchError) {
-    return res.status(404).json({ error: '요청을 찾을 수 없어요' })
-  }
-
-  const { data, error } = await supabase
-    .from('ratings')
-    .insert({ request_id: id, group_id: target.group_id, stars, noshow_reported: !!noshow })
-    .select()
-    .single()
+  const { rating, error } = await applyRatingSubmission(id, stars, !!noshow)
 
   if (error) {
-    return res.status(500).json({ error: error.message })
+    return res.status(500).json({ error })
   }
 
-  res.status(201).json(data)
+  res.status(201).json(rating)
 })
 
 export default router

@@ -6,18 +6,32 @@ const GENDER_OPTIONS = [
   { value: "female", label: "여" },
 ];
 
-function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
+const NICKNAME_CHANGE_INTERVAL_DAYS = 7;
+
+function daysUntilNicknameChangeAllowed(nicknameUpdatedAt, now = new Date()) {
+  if (!nicknameUpdatedAt) return 0;
+  const elapsedMs = now - new Date(nicknameUpdatedAt);
+  const remainingMs = NICKNAME_CHANGE_INTERVAL_DAYS * 24 * 60 * 60 * 1000 - elapsedMs;
+  return Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+}
+
+function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogout }) {
   const isEdit = !!existingProfile;
   const [name, setName] = useState(existingProfile?.name ?? "");
   const [college, setCollege] = useState(existingProfile?.college ?? "");
   const [gender, setGender] = useState(existingProfile?.gender ?? null);
   const [hideGender, setHideGender] = useState(existingProfile?.hide_gender ?? false);
   const [avatarUrl, setAvatarUrl] = useState(existingProfile?.avatar_url ?? null);
+  const [nickname, setNickname] = useState(existingProfile?.nickname ?? "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [password, setPassword] = useState("");
   const isGuest = !email;
+
+  const daysLeft = daysUntilNicknameChangeAllowed(existingProfile?.nickname_updated_at);
+  const nicknameChanged = nickname.trim() !== (existingProfile?.nickname ?? "");
+  const nicknameLocked = nicknameChanged && !!existingProfile?.nickname && daysLeft > 0;
 
   async function handlePhotoChange(e) {
     const file = e.target.files?.[0];
@@ -58,13 +72,18 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
       setError("비밀번호는 6자 이상이어야 해요.");
       return;
     }
+    if (nicknameLocked) {
+      setError(`닉네임은 일주일에 한 번만 바꿀 수 있어요. ${daysLeft}일 후에 다시 시도해주세요.`);
+      return;
+    }
     setSaving(true);
     setError(null);
 
     // 게스트(익명) 로그인은 이메일이 없어서, users.email의 NOT NULL + UNIQUE 제약을 만족시킬 대체 값을 씀
     const effectiveEmail = email || `guest-${userId}@ridesplit.local`;
+    const trimmedNickname = nickname.trim() || null;
 
-    const { error: saveError } = await supabase.from("users").upsert({
+    const payload = {
       id: userId,
       email: effectiveEmail,
       name,
@@ -72,7 +91,13 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
       gender,
       hide_gender: hideGender,
       avatar_url: avatarUrl,
-    });
+      nickname: trimmedNickname,
+    };
+    if (nicknameChanged) {
+      payload.nickname_updated_at = new Date().toISOString();
+    }
+
+    const { error: saveError } = await supabase.from("users").upsert(payload);
 
     if (saveError) {
       setError("저장하지 못했어요. 다시 시도해주세요.");
@@ -90,7 +115,15 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
       setPassword("");
     }
 
-    onSaved({ name, college, gender, hide_gender: hideGender, avatar_url: avatarUrl });
+    onSaved({
+      name,
+      college,
+      gender,
+      hide_gender: hideGender,
+      avatar_url: avatarUrl,
+      nickname: trimmedNickname,
+      nickname_updated_at: nicknameChanged ? payload.nickname_updated_at : existingProfile?.nickname_updated_at,
+    });
   }
 
   return (
@@ -168,6 +201,23 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
           onChange={(e) => setName(e.target.value)}
           style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(36,21,18,0.12)", fontSize: 14, boxSizing: "border-box" }}
         />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>
+          닉네임 (선택, 후보 목록에 이름 대신 보여요)
+        </div>
+        <input
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          placeholder="예: 아침러너"
+          style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(36,21,18,0.12)", fontSize: 14, boxSizing: "border-box" }}
+        />
+        {nicknameLocked && (
+          <p style={{ fontSize: 11, color: "#C8102E", margin: "6px 0 0" }}>
+            닉네임은 일주일에 한 번만 바꿀 수 있어요. {daysLeft}일 후에 다시 시도해주세요.
+          </p>
+        )}
       </div>
 
       <div style={{ marginBottom: 16 }}>
@@ -281,6 +331,15 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack }) {
       >
         {saving ? "저장 중..." : isEdit ? "저장하기" : "시작하기"}
       </button>
+
+      {isEdit && onLogout && (
+        <button
+          onClick={onLogout}
+          style={{ border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0 0", cursor: "pointer" }}
+        >
+          로그아웃
+        </button>
+      )}
     </div>
   );
 }

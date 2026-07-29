@@ -94,14 +94,16 @@ function RegisterScreen({ userId, onBack, onSubmit }) {
 
   return (
     <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
-      <button
-        onClick={onBack}
-        style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0", cursor: "pointer" }}
-      >
-        ‹ 이전
-      </button>
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0", cursor: "pointer" }}
+        >
+          ‹ 이전
+        </button>
+      )}
 
-      <h1 style={{ fontSize: 20, fontWeight: 800, margin: "14px 0 4px" }}>오늘의 이동을 등록해요</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 800, margin: onBack ? "14px 0 4px" : "40px 0 4px" }}>오늘의 이동을 등록해요</h1>
       <p style={{ fontSize: 13, color: "#8A7A76", margin: "0 0 20px", lineHeight: 1.5 }}>
         비슷한 시간, 비슷한 방향으로 가는
         <br />

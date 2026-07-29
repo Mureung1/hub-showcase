@@ -133,6 +133,7 @@ function App() {
     hasResumedRef.current = false;
     setStep(0);
     setNeedsProfile(false);
+    setViewingProfile(false);
     setRegistration(null);
     setJoinedCandidate(null);
   }
@@ -160,6 +161,7 @@ function App() {
           email={session.user.email}
           existingProfile={myProfile}
           onBack={() => setViewingProfile(false)}
+          onLogout={handleFinish}
           onSaved={(saved) => {
             setMyProfile((prev) => ({ ...prev, ...saved }));
             setViewingProfile(false);
@@ -171,7 +173,6 @@ function App() {
       {step === 1 && (
         <RegisterScreen
           userId={session?.user?.id}
-          onBack={() => setStep(0)}
           onSubmit={(data) => {
             setRegistration(data);
             setStep(2);
