@@ -1,6 +1,6 @@
 import { Tag } from '@/shared/ui/Tag'
 
-import { CATEGORY_FILTERS } from '../model/mockRecentAnalyses'
+import { CATEGORY_FILTERS } from '../model/recentAnalysesData'
 import type { RecentAnalysisItem } from '../model/types'
 import {
   CategoryBadge,

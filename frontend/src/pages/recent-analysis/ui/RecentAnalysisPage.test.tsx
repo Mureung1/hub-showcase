@@ -15,7 +15,7 @@ const renderRecentAnalysisPage = () =>
   )
 
 describe('RecentAnalysisPage', () => {
-  it('renders the heading and every mock analysis by default', () => {
+  it('renders the heading and every analysis by default', () => {
     renderRecentAnalysisPage()
 
     expect(screen.getByText('최근 분석')).toBeInTheDocument()

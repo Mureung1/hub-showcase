@@ -10,7 +10,7 @@ export const CATEGORY_FILTERS: FilterChipOption<AnalysisCategoryFilter>[] = [
   { id: 'term', label: '용어 질문' },
 ]
 
-export const MOCK_RECENT_ANALYSES: RecentAnalysisItem[] = [
+export const RECENT_ANALYSES: RecentAnalysisItem[] = [
   {
     id: 'nvda-entry',
     category: 'stock',
