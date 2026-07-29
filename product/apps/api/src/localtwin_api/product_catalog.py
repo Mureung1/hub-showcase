@@ -3,7 +3,7 @@
 from collections import defaultdict
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -105,7 +105,7 @@ class ProductCategory(BaseModel):
     rank: int | None = None
     store_count: int | None = None
     market_count: int | None = None
-    store_counts_by_market: dict[str, int] = {}
+    store_counts_by_market: dict[str, int] = Field(default_factory=dict)
 
 
 BOOTSTRAP_CATEGORIES = tuple(
