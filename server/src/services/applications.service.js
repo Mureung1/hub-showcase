@@ -7,6 +7,7 @@ const ALLOWED_STATUSES = ['pending', 'confirmed', 'completed', 'rejected'];
 const APPLICATION_MENTOR_SELECT = `
   mentor_id,
   status,
+  auto_rejected,
   applications (
     id,
     mentee_id,
@@ -91,6 +92,7 @@ const toMentorApplicationResponse = (link, unreadCountsByApplicationId) => {
     id: application.id,
     applicationStatus: application.status,
     mentorStatus: link.status,
+    autoRejected: link.auto_rejected,
     acceptedMentorId: application.accepted_mentor_id,
     mentee: {
       id: application.mentee_id,
@@ -295,7 +297,7 @@ const acceptApplication = async (mentorId, applicationId) => {
 
   const { error: rejectOthersError } = await supabase
     .from('application_mentors')
-    .update({ status: 'rejected', responded_at: now })
+    .update({ status: 'rejected', responded_at: now, auto_rejected: true })
     .eq('application_id', applicationId)
     .neq('mentor_id', mentorId)
     .eq('status', 'pending');

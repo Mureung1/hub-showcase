@@ -37,7 +37,7 @@ function MentorApplicationCard({
 }) {
   const { applicationStatus, mentee, mentorStatus, questionnaire } = application;
   const visibleStatus = mentorStatus ?? applicationStatus;
-  const isAutoRejected = visibleStatus === "rejected" && Boolean(application.acceptedMentorId);
+  const isAutoRejected = visibleStatus === "rejected" && Boolean(application.autoRejected);
   const statusLabel = isAutoRejected ? "마감" : statusLabels[visibleStatus];
   const showsMeetingFields = visibleStatus === "confirmed" || visibleStatus === "completed";
   const gradeLabel = mentee.grade ? `${mentee.grade}학년` : "";
