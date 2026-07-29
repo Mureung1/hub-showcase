@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createGuestSession,
+  deleteGuestSession,
   recoverGuestSession
 } from "../api/guestSessionApi";
 
@@ -20,6 +21,8 @@ function storeActiveKey(key) {
 
 export default function useGuestAccess() {
   const [guestKey, setGuestKey] = useState(readActiveKey);
+  const [anonymousAiKey, setAnonymousAiKey] = useState("");
+  const anonymousAiKeyRef = useRef("");
   const [issuedKey, setIssuedKey] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -29,10 +32,41 @@ export default function useGuestAccess() {
     setGuestKey(key);
   };
 
+  const clearAnonymousAiKey = () => {
+    anonymousAiKeyRef.current = "";
+    setAnonymousAiKey("");
+  };
+
+  const deleteAnonymousSession = async ({ keepalive = false } = {}) => {
+    const key = anonymousAiKeyRef.current;
+    clearAnonymousAiKey();
+    if (!key) return;
+
+    try {
+      await deleteGuestSession(key, { keepalive });
+    } catch {
+      // Expiration cleanup remains the server-side fallback.
+    }
+  };
+
+  useEffect(() => {
+    const handlePageHide = (event) => {
+      if (event.persisted) return;
+      const key = anonymousAiKeyRef.current;
+      if (!key) return;
+      clearAnonymousAiKey();
+      void deleteGuestSession(key, { keepalive: true }).catch(() => {});
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, []);
+
   const createGuest = async () => {
     setStatus("loading");
     setError("");
     try {
+      await deleteAnonymousSession();
       const data = await createGuestSession();
       setIssuedKey(data.recoveryKey);
       activate(data.recoveryKey);
@@ -49,6 +83,7 @@ export default function useGuestAccess() {
     setStatus("loading");
     setError("");
     try {
+      await deleteAnonymousSession();
       await recoverGuestSession(key);
       setIssuedKey("");
       activate(key.trim().toUpperCase());
@@ -61,7 +96,28 @@ export default function useGuestAccess() {
     }
   };
 
-  const useAnonymous = () => {
+  const startAnonymous = async () => {
+    setStatus("loading");
+    setError("");
+    window.sessionStorage.removeItem(ACTIVE_GUEST_KEY);
+    setGuestKey("");
+    setIssuedKey("");
+    await deleteAnonymousSession();
+
+    try {
+      const data = await createGuestSession();
+      anonymousAiKeyRef.current = data.recoveryKey;
+      setAnonymousAiKey(data.recoveryKey);
+      setStatus("ready");
+      return true;
+    } catch {
+      setError("익명 AI 대화를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setStatus("error");
+      return false;
+    }
+  };
+
+  const leaveGuest = () => {
     window.sessionStorage.removeItem(ACTIVE_GUEST_KEY);
     setGuestKey("");
     setIssuedKey("");
@@ -69,14 +125,23 @@ export default function useGuestAccess() {
     setStatus("idle");
   };
 
+  const endAnonymous = async () => {
+    await deleteAnonymousSession();
+    setError("");
+    setStatus("idle");
+  };
+
   return {
     mode: guestKey ? "guest" : "anonymous",
     guestKey,
+    aiGuestKey: guestKey || anonymousAiKey,
     issuedKey,
     status,
     error,
     createGuest,
     recoverGuest,
-    useAnonymous
+    startAnonymous,
+    endAnonymous,
+    leaveGuest
   };
 }

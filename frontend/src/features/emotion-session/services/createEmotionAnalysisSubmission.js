@@ -1,5 +1,4 @@
-import { generateMockResponse } from "../../conversation";
-import { createAnonymousEmotionAnalysis } from "../storage/anonymousEmotionStore";
+import { createAnonymousEmotionAnalysis } from "../storage/anonymousEmotionStore.js";
 
 const NOA_SLEEP_RESPONSE = "Noa는 자고 있어요.";
 const AI_LIMIT_ERROR_CODES = new Set([
@@ -20,29 +19,24 @@ export async function createEmotionAnalysisSubmission({
     throw new DOMException("The operation was aborted.", "AbortError");
   }
 
-  const fallbackResponse = generateMockResponse(
-    analysisInput.situationText,
-    analysisResult,
-    { recentMessages }
-  );
-  let aiResponse = fallbackResponse;
+  if (typeof generateResponse !== "function") {
+    throw new TypeError("generateResponse must be configured.");
+  }
 
-  if (typeof generateResponse === "function") {
-    try {
-      aiResponse = await generateResponse(
-        {
-          message: analysisInput.situationText,
-          recentMessages,
-          analysis: analysisResult
-        },
-        { signal }
-      );
-    } catch (error) {
-      if (error?.name === "AbortError") throw error;
-      aiResponse = AI_LIMIT_ERROR_CODES.has(error?.code)
-        ? NOA_SLEEP_RESPONSE
-        : fallbackResponse;
-    }
+  let aiResponse;
+  try {
+    aiResponse = await generateResponse(
+      {
+        message: analysisInput.situationText,
+        recentMessages,
+        analysis: analysisResult
+      },
+      { signal }
+    );
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    if (!AI_LIMIT_ERROR_CODES.has(error?.code)) throw error;
+    aiResponse = NOA_SLEEP_RESPONSE;
   }
   const faceSignal =
     analysisInput.faceSignalSource === "camera"

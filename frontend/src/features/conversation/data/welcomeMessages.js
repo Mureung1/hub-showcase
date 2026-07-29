@@ -1,4 +1,4 @@
-export const mockMessages = [
+export const welcomeMessages = [
   {
     id: "welcome",
     role: "ai",

@@ -35,7 +35,7 @@ function increasePossibleState(possibleStates, pattern, fallback) {
   possibleStates.unshift({ label: fallback.label, confidence: fallback.confidence });
 }
 
-export function analyzeMockEmotion({
+export function analyzeEmotionSignals({
   situationText = "",
   faceSignal = "neutral",
   faceFeatures = [],

@@ -1,9 +1,9 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
   generateAiResponse,
-  mockMessages
+  welcomeMessages
 } from "../../conversation";
-import { analyzeMockContext } from "../../emotion-analysis";
+import { analyzeEmotionContext } from "../../emotion-analysis";
 import { scenarioPresets } from "../../scenario-simulation";
 import {
   buildMessagesFromEmotionAnalyses,
@@ -29,16 +29,19 @@ import {
 const defaultScenario = scenarioPresets.normal;
 
 function createInitialResult() {
-  return analyzeMockContext({
+  return analyzeEmotionContext({
     selectedScenario: defaultScenario.value,
     faceSignal: defaultScenario.faceSignal,
     voiceSignal: defaultScenario.voiceSignal
   });
 }
 
-export default function useEmotionSession({ guestKey = "" } = {}) {
+export default function useEmotionSession({
+  guestKey = "",
+  aiGuestKey = guestKey
+} = {}) {
   const [sessionId] = useState(getOrCreateBrowserSessionId);
-  const [messages, setMessages] = useState(mockMessages);
+  const [messages, setMessages] = useState(welcomeMessages);
   const [selectedScenario, setSelectedScenario] = useState(defaultScenario);
   const [emotionResult, setEmotionResult] = useState(createInitialResult);
   const [liveEmotionResult, setLiveEmotionResult] = useState(null);
@@ -105,12 +108,12 @@ export default function useEmotionSession({ guestKey = "" } = {}) {
         selectedScenario: latestRecord.selectedScenario
       };
     } else if (Array.isArray(restoredRecords)) {
-      setMessages(mockMessages);
+      setMessages(welcomeMessages);
     }
   }, [historyError, restoredRecords]);
 
   const runAnalysis = (input = lastAnalysisInputRef.current, recentMessages = messages) =>
-    analyzeMockContext({
+    analyzeEmotionContext({
       inputText: input.situationText,
       faceSignal: input.faceSignal,
       faceFeatures: input.faceFeatures,
@@ -203,11 +206,11 @@ export default function useEmotionSession({ guestKey = "" } = {}) {
         analysisResult: nextResult,
         recentMessages: messages,
         signal: controller.signal,
-        generateResponse: guestKey
+        generateResponse: aiGuestKey
           ? (input, options) =>
               generateAiResponse(input, {
                 ...options,
-                guestKey
+                guestKey: aiGuestKey
               })
           : undefined,
         saveAnalysis: guestKey
@@ -240,7 +243,10 @@ export default function useEmotionSession({ guestKey = "" } = {}) {
 
       dispatchWorkflow({
         type: "FAILED",
-        error: SESSION_ERROR_MESSAGES.save
+        error:
+          typeof error?.code === "string" && error.code.startsWith("AI_")
+            ? SESSION_ERROR_MESSAGES.ai
+            : SESSION_ERROR_MESSAGES.save
       });
       return false;
     } finally {

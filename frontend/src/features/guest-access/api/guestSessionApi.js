@@ -36,6 +36,20 @@ export function createGuestSessionApi({
           cache: "no-store"
         })
       );
+    },
+    async remove(recoveryKey, { keepalive = false } = {}) {
+      const response = await fetchImpl(`${endpoint}/current`, {
+        method: "DELETE",
+        headers: { "X-Guest-Key": recoveryKey },
+        cache: "no-store",
+        keepalive
+      });
+
+      if (!response.ok) {
+        const error = new Error("임시 게스트 세션을 정리하지 못했습니다.");
+        error.code = "GUEST_SESSION_DELETE_FAILED";
+        throw error;
+      }
     }
   };
 }
@@ -44,3 +58,5 @@ const defaultApi = createGuestSessionApi();
 export const createGuestSession = () => defaultApi.create();
 export const recoverGuestSession = (recoveryKey) =>
   defaultApi.recover(recoveryKey);
+export const deleteGuestSession = (recoveryKey, options) =>
+  defaultApi.remove(recoveryKey, options);

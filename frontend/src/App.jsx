@@ -26,11 +26,14 @@ export default function App() {
     handleAnalyze,
     handleAnalyzeAgain,
     handleLiveFaceSignalChange
-  } = useEmotionSession({ guestKey: guestAccess.guestKey });
+  } = useEmotionSession({
+    guestKey: guestAccess.guestKey,
+    aiGuestKey: guestAccess.aiGuestKey
+  });
 
-  const startAnonymousConversation = () => {
-    guestAccess.useAnonymous();
-    setAppView("conversation");
+  const startAnonymousConversation = async () => {
+    const started = await guestAccess.startAnonymous();
+    if (started) setAppView("conversation");
   };
 
   const recoverGuestConversation = async (key) => {
@@ -40,7 +43,12 @@ export default function App() {
   };
 
   const leaveGuestConversation = () => {
-    guestAccess.useAnonymous();
+    guestAccess.leaveGuest();
+    setAppView("access");
+  };
+
+  const returnHome = async () => {
+    if (!guestAccess.guestKey) await guestAccess.endAnonymous();
     setAppView("access");
   };
 
@@ -65,7 +73,7 @@ export default function App() {
 
       {appView === "conversation" && (
       <section className="conversation-column" aria-label="카메라를 사용하는 대화">
-        <ServiceHeader status={aiStatus} onHome={() => setAppView("access")} />
+        <ServiceHeader status={aiStatus} onHome={returnHome} />
         <div className="column-heading">
           <span>PRIVATE CONVERSATION</span>
           <h2>지금의 마음을 이야기해 주세요</h2>
@@ -76,7 +84,7 @@ export default function App() {
             scenarioPreset={selectedScenario}
             faceSignalMetadata={faceSignalMetadata}
             disabled={isInputDisabled}
-            usesGenerativeAi={Boolean(guestAccess.guestKey)}
+            usesGenerativeAi={Boolean(guestAccess.aiGuestKey)}
             onAnalyze={handleAnalyze}
             onLiveFaceSignalChange={handleLiveFaceSignalChange}
           />
@@ -93,7 +101,7 @@ export default function App() {
 
       {appView === "result" && (
       <aside className="signals-column">
-        <ServiceHeader status={aiStatus} onHome={() => setAppView("access")} />
+        <ServiceHeader status={aiStatus} onHome={returnHome} />
         <AnalysisStatus status={analysisStatus} error={analysisError} />
         <EmotionResult
           result={emotionResult}

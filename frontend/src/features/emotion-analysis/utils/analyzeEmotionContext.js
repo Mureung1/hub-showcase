@@ -1,9 +1,9 @@
 import { scenarioPresets } from "../../scenario-simulation";
-import { analyzeMockEmotion } from "./analyzeMockEmotion";
+import { analyzeEmotionSignals } from "./analyzeEmotionSignals";
 
 const defaultScenario = scenarioPresets.normal;
 
-export function analyzeMockContext({
+export function analyzeEmotionContext({
   inputText = "",
   recentMessages = [],
   selectedScenario = "normal",
@@ -13,7 +13,7 @@ export function analyzeMockContext({
 } = {}) {
   const scenario = scenarioPresets[selectedScenario] || defaultScenario;
 
-  return analyzeMockEmotion({
+  return analyzeEmotionSignals({
     situationText: inputText,
     faceSignal: faceSignal || scenario.faceSignal,
     faceFeatures,

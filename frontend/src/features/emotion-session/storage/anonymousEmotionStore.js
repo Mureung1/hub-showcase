@@ -1,4 +1,4 @@
-import { EMOTION_ANALYSIS_LIMITS } from "../../../../../shared/contracts/emotionAnalysisContract";
+import { EMOTION_ANALYSIS_LIMITS } from "../../../../../shared/contracts/emotionAnalysisContract.js";
 
 const ANONYMOUS_RECORDS_KEY = "anonymous-emotion-analysis-records";
 
