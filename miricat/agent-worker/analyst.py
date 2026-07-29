@@ -71,14 +71,21 @@ def _event_end(period):
 
 
 def _is_current(period):
-    """이 사건이 아직 안 끝났으면 True (진행 중 + 다가오는 것 포함).
-    종료일을 못 정하면(열린 기간·형식 불명) 보수적으로 유지(True) — 놓치지 않게."""
+    """이 사건이 아직 유효한가 (진행 중 + 다가오는 것 포함).
+    - 종료일이 있으면 그날까지 유효.
+    - 종료일 없이 시행일만 있으면("5.13부터~") 시행 후 14일까지만 — 시간표 변경류는
+      그 뒤엔 '새 소식'이 아니라 그냥 현재 상태다 (5월 공지가 7월에 경보 나가는 것 방지).
+    - 날짜를 아예 못 읽으면 보수적으로 유지(True)."""
     if not period:
         return True
     end = _event_end(period)
-    if end is None:
-        return True
-    return end >= date.today()
+    if end is not None:
+        return end >= date.today()
+    m = _DATE_RE.search(period)
+    if m:
+        start = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        return (date.today() - start).days <= 14
+    return True
 
 
 def analyze(route, extraction):

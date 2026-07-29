@@ -31,10 +31,16 @@ function eventEnd(period) {
 
 function isCurrent(period) {
   if (!period) return true;
-  const end = eventEnd(period);
-  if (!end) return true;
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  return end >= today;
+  const end = eventEnd(period);
+  if (end) return end >= today;
+  // 종료일 없이 시행일만("5.13부터~") → 시행 후 14일까지만 '새 소식' (옛 시간표 변경 경보 방지)
+  const m = (period || '').match(DATE_RE);
+  if (m) {
+    const start = new Date(+m[1], +m[2] - 1, +m[3]);
+    return (today - start) / 86400000 <= 14;
+  }
+  return true;
 }
 
 // ── 지역 게이팅: 공지 소스의 관할과 경로 좌표가 겹칠 때만 매칭 (타지역 오탐 방지) ──

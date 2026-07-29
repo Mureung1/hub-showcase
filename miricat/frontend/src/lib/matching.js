@@ -50,10 +50,16 @@ export function eventEnd(period) {
 }
 export function isCurrent(period) {
   if (!period) return true;
-  const end = eventEnd(period);
-  if (!end) return true;                    // 불명·열린 기간 → 보수적 유지
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  return end >= today;                      // 아직 안 끝났으면 유효(다가올 것 포함)
+  const end = eventEnd(period);
+  if (end) return end >= today;             // 종료일이 있으면 그날까지 유효(다가올 것 포함)
+  // 종료일 없이 시행일만("5.13부터~") → 시행 후 14일까지만 '새 소식' (옛 시간표 변경 경보 방지)
+  const m = (period || "").match(DATE_RE);
+  if (m) {
+    const start = new Date(+m[1], +m[2] - 1, +m[3]);
+    return (today - start) / 86400000 <= 14;
+  }
+  return true;                              // 날짜를 아예 못 읽으면 보수적 유지
 }
 
 // 경로 lines/stops/roads("B1, 급행2") → 토큰 배열 (표시·매칭 겸용)
