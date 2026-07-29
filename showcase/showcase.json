@@ -1,21 +1,59 @@
 {
   "schemaVersion": 1,
-  "title": "",
-  "summary": "",
+  "title": "갓생러 플래너 (God-Saeng Planner)",
+  "summary": "현재 컨디션과 일정을 분석해 실행, 집중, 수습, 안전 종료까지의 경로를 최적화하는 상태 적응형 개인 실행 운영체제",
   "githubUser": "",
   "demoUrl": "",
   "thumbnail": "",
   "screenshots": [],
-  "problem": "",
-  "targetUsers": [],
-  "features": [],
-  "featureTags": [],
-  "techStack": [],
-  "techHighlights": [],
-  "developmentWithAI": "",
+  "problem": "계획 수립의 피로감, 컨디션 난조 시 일정 붕괴, 허수 작업으로 인한 시간 낭비, 복잡한 플래너 도구로 인한 실행 마찰",
+  "targetUsers": [
+    "자기계발 및 갓생을 지향하는 직장인 및 취업준비생",
+    "학습 및 과제 일정을 효과적으로 관리하고자 하는 학생",
+    "컨디션과 에너지 수준에 맞춘 유연한 일정 관리가 필요한 개인"
+  ],
+  "features": [
+    "상태 적응형 실행 시스템 (AI 비서, 시작 설계, 집중 실행, 지연 수습, 안전 종료)",
+    "개인 실행 복제본 (Execution Twin) 및 실행 DNA 실측 학습",
+    "생산성 극대화 코치 (성과 우선, 균형 최적화, 회복 방어 경로 제안)",
+    "유한 시간 결제 및 성과 누수 차단 (Outcome Leak Shield)",
+    "1-Click 타임블로킹 및 구글/아웃룩 캘린더 동기화",
+    "네이버 뉴스 연동 개인 맞춤형 프로필 인텔리전스"
+  ],
+  "featureTags": [
+    "Productivity",
+    "AI Agent",
+    "Time Management",
+    "Task Planner",
+    "State Adaptive"
+  ],
+  "techStack": [
+    "HTML5",
+    "CSS3 (Glassmorphism, CSS Grid/Flexbox)",
+    "JavaScript (Vanilla ES6+)",
+    "Node.js / Express",
+    "Google Gemini API / OpenAI API",
+    "Web Speech API"
+  ],
+  "techHighlights": [
+    "프레임워크 없이 바닐라 JS와 CSS Custom Properties로 구현한 고성능 상태 적응형 UI/UX",
+    "문서(OCR/PDF/TXT) 및 음성 지시를 통한 저마찰 Task 자동 추출 엔진",
+    "실제 수행 시간과 목표 달성률을 학습하여 소요 시간을 자동 보정하는 피드백 루프"
+  ],
+  "developmentWithAI": "Gemini 및 OpenAI API를 활용해 음성·텍스트·문서에서 핵심 할 일을 추출하고, 사용자의 컨디션, 캘린더 회의 시간, 지연 발생 여부에 따라 타임블록을 자동 재배치 및 우선순위화하는 알고리즘 구축.",
   "agent": {
-    "summary": "",
-    "agentTools": [],
-    "workflows": []
+    "summary": "사용자의 에너지, 캘린더 일정, 실시간 수행 지연을 종합 분석하여 최단 성과 실행 경로와 최적 종료선을 제안하는 지능형 실행 에이전트",
+    "agentTools": [
+      "멀티모달 문서/음성 파서 (Upload & Voice Parser)",
+      "캘린더 연동 및 1-Click 타임블로킹 자동 배치 엔진",
+      "실시간 지연 감지 및 자동 재정렬 도구",
+      "네이버 뉴스 기반 맞춤형 정보 추천 API"
+    ],
+    "workflows": [
+      "비정형 음성/자료/메모 입력 → Task 자동 추출 및 소단위 우선순위 분해",
+      "캘린더 회의 시간 및 컨디션 분석 → 타임블록 자동 배치 및 1분 데일리 브리핑 제공",
+      "실행 피드백 및 지연 감지 → 실제 수행 시간 보정, 성과 누수 차단 및 최적 종료선 제시"
+    ]
   }
 }
+https://youtu.be/MF4fJ4hC_FY
