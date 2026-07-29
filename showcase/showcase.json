@@ -4,16 +4,17 @@
   "summary": "오늘의 학습 계획 수립부터 맞춤 커리큘럼 추천, Monaco 에디터 실습, 코드 실행 피드백, Git Lab 명령 학습, 오답노트 관리까지 한 흐름으로 제공하는 AI 코딩 학습 플랫폼입니다.",
   "githubUser": "xxrin",
   "demoUrl": "https://icu-app-beta.vercel.app",
-  "thumbnail": "screenshot/온보딩.webp",
+  "thumbnail": "screenshots/thumbnail.webp",
+  "demoVideoUrl": "",
   "screenshots": [
-    "screenshot/온보딩.webp",
-    "screenshot/학습허브.webp",
-    "screenshot/보관함.webp",
-    "screenshot/워크스페이스.webp",
-    "screenshot/깃시뮬레이터.webp",
-    "screenshot/오답리스트.webp",
-    "screenshot/오답추가.webp",
-    "screenshot/프로필설정.webp"
+    "screenshots/thumbnail.webp",
+    "screenshots/학습허브.webp",
+    "screenshots/보관함.webp",
+    "screenshots/워크스페이스.webp",
+    "screenshots/깃시뮬레이터.webp",
+    "screenshots/오답리스트.webp",
+    "screenshots/오답추가.webp",
+    "screenshots/프로필설정.webp"
   ],
   "problem": "개념 문서, 에디터, 실습 환경, 오답 관리가 여러 도구로 파편화되어 있어 초·중급 학습자가 공부 순서를 잡기 어렵고 연속성 있는 학습 흐름을 유지하기 힘듭니다.",
   "targetUsers": [
@@ -45,11 +46,11 @@
   ],
   "techHighlights": [
     "React + Zustand 기반 실시간 학습 상태 관리 및 Monaco Editor 조화로운 IDE 레이아웃 구현",
-    "Express 기반 백엔드 API 서비스와 선택형 SQLite Repository 구조로 이중 모드(Mock/Server) 지원",
+    "Express 기반 백엔드 API 서비스",
     "Git 시뮬레이션 엔진 및 대화식 터미널 로그와 커밋 그래프 연동 개발",
-    "ICU Design Skill 및 한국어 Conventional Commit 적용으로 일관성 있는 디자인 시스템 및 코드 품질 유지"
+    "ICU Design Skill 적용으로 일관성 있는 디자인 시스템 및 코드 품질 유지"
   ],
-  "developmentWithAI": "AI와 함께 개발 목표와 명세를 정리하고, 작업 단위별 구현 및 테스트, 디자인 가이드 준수, 백엔드 API 연동, 오답노트 모달 및 문서화까지 유기적인 pair-programming으로 개발을 완료했습니다.",
+  "developmentWithAI": "Codex Agent와 함께 개발 목표와 명세를 정리하고, 작업 단위별 구현 및 테스트, 디자인 가이드 준수, 백엔드 API 연동, 오답노트, 문서화를 통한 개발을 완료했습니다.",
   "agent": {
     "summary": "저는 개념 학습, 코드 실습, 실행 피드백, 오답 관리가 여러 도구로 흩어진 문제를 정의하고, 오늘의 학습 허브부터 워크스페이스, Git 시뮬레이터, 오답노트로 이어지도록 정했습니다. Codex와는 기존 코드와 문서를 함께 검토하며 구현 방향을 구체화하고, 기능 단위 테스트와 타입 검사, 빌드를 거쳐 코드를 완성했습니다. 운영 배포에서는 메인 앱과 Preview Runtime을 Vercel에, Core API와 Judge를 Render에 분리하는 구조를 설계했습니다. 기능은 브라우저에서 직접 사용하며 확인했고, Deployment Secrets Reviewer와 Documentation Drift Reviewer를 서브 에이전트로 두어 환경변수 노출 위험과 문서·구현의 불일치까지 검증한 뒤 발견한 문제의 원인을 찾으려고 했습니다.",
     "agentTools": [
@@ -66,7 +67,7 @@
       {
         "type": "agent",
         "name": "Documentation Drift Reviewer",
-        "purpose": "README와 공식 문서를 실제 코드, API, 라우트, 환경변수, 배포 설정과 비교해 오래되거나 불일치한 내용을 읽기 전용으로 검증합니다."
+        "purpose": "README와 문서를 실제 코드, API, 라우트, 환경변수, 배포 설정과 비교해 오래되거나 불일치한 내용을 읽기 전용으로 검증합니다."
       },
       {
         "type": "skill",
@@ -110,11 +111,11 @@
         "steps": [
           "RTK로 Git 변경 범위 확인",
           "Deployment Secrets Reviewer로 배포 키와 환경변수 노출 경로 검증",
-          "Documentation Drift Reviewer로 공식 문서와 현재 구현의 정합성 검증",
+          "Documentation Drift Reviewer로 문서와 현재 구현의 정합성 검증",
           "Vitest와 TypeScript typecheck 실행",
           "ESLint와 앱 및 Preview build 검증",
           "커밋 전 변경 파일과 핵심 내용 사전 보고",
-          "한국어 Conventional Commit으로 기능 단위 기록"
+          "Conventional Commit으로 기능 단위 기록"
         ]
       }
     ]
