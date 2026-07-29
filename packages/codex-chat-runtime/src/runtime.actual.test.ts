@@ -774,7 +774,7 @@ test('forwards the fixed project cwd without thread-start overrides and supports
       false,
     )
     assert.deepEqual(turnStarts[1]?.params?.collaborationMode, {
-      mode: 'plan',
+      mode: 'default',
       settings: {
         developer_instructions: null,
         model: 'fake-model',
@@ -1318,7 +1318,7 @@ test('uses native thread settings when the advertised model catalog is ambiguous
         ({ method }) => method === 'turn/start',
       )
       assert.deepEqual(turnStart?.params?.collaborationMode, {
-        mode: 'plan',
+        mode: 'default',
         settings: {
           developer_instructions: null,
           model: 'fake-model',

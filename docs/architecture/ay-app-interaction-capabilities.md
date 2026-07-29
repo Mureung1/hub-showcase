@@ -2,7 +2,7 @@
 
 작성일: 2026-07-27
 
-최근 갱신: 2026-07-28
+최근 갱신: 2026-07-29
 
 분류: 활성
 
@@ -91,7 +91,7 @@ Bootstrap output은 `tool_timeout_sec`을 의도적으로 생략하고 current p
 
 따라서 native config precedence와 user/project MCP가 그대로 작동한다. App은 `--config`, thread-start override 또는 process-wide Skill root로 전체 context를 대체하지 않는다. Project `.codex/config.toml`은 trusted project에서만 load된다. Bootstrap은 global trust를 수정하지 않고, exact Git root와 `workspace-write`를 요청하는 정상 thread start가 current pinned App Server의 native trust write와 same-start config reload를 사용한다. 명시적 `untrusted`는 보존한다.
 
-`required = true`는 단순히 STDIO process가 spawn됐다는 뜻이 아니다. Adapter는 current Broker endpoint·token·Runtime binding을 검증하고 authenticated handshake 직후 persistent `lifecycle_open` request를 연다. Broker가 `lifecycle_accepted` prefix를 쓰고 response를 generation 수명 동안 유지해야 Adapter가 MCP initialize에 성공한다. App은 MCP 없는 degraded mode로 계속하지 않는다.
+`required = true`는 단순히 STDIO process가 spawn됐다는 뜻이 아니다. Adapter는 current Broker endpoint·token·Runtime binding을 검증하고 authenticated handshake 직후 persistent `lifecycle_open` request를 연다. Broker가 `lifecycle_accepted` prefix를 쓰고 response를 generation 수명 동안 유지해야 Adapter가 MCP initialize에 성공한다. Adapter의 private HTTP client는 이 held response에 body timeout을 두지 않으며 explicit abort, Broker EOF 또는 process termination만 lifecycle을 닫는다. App은 MCP 없는 degraded mode로 계속하지 않는다.
 
 Prepared-workspace startup은 정적 declaration honesty와 live Adapter continuity를 서로 다른 authority로 검증한다.
 
@@ -114,7 +114,7 @@ Adapter는 Browser API와 같은 App HTTP listener의 Server-private route로 Br
 | Runtime credential | Workspace Runtime generation마다 fresh high-entropy token과 opaque binding을 만들고 Server memory와 child environment에만 둔다. |
 | Admission | Raw peer가 loopback인지, token이 constant-time exact match인지, binding이 현재 active generation인지 모두 확인한다. Origin이나 route secrecy는 authentication이 아니다. |
 | Startup channel | Listener bind → Broker route·binding 준비 → Workspace Runtime과 exact-root thread start로 authenticated handshake·held `lifecycle_open` 시작 → complete effective declaration과 lifecycle acceptance 확인 → root·identity 확인 → active workspace commit 순서다. |
-| Live Adapter status | Broker는 `adapterStatus { ready, lost, isLost() }`를 소유한다. `lifecycle_accepted`를 response prefix로 쓴 뒤 `ready`를 settle하고, unexpected channel close를 동기적으로 latch한 뒤 `lost`를 settle한다. Expected Broker close·Runtime close·App shutdown은 loss로 보고하지 않는다. |
+| Live Adapter status | Broker는 `adapterStatus { ready, lost, isLost() }`를 소유한다. `lifecycle_accepted`를 response prefix로 쓴 뒤 `ready`를 settle하고, Adapter의 body-timeout 없는 private HTTP reader가 unexpected channel close를 관찰하면 이를 동기적으로 latch한 뒤 `lost`를 settle한다. Expected Broker close·Runtime close·App shutdown은 loss로 보고하지 않는다. |
 | Capability call | MCP call 하나마다 private HTTP POST 하나를 보내고 Broker가 Browser projection을 만든 뒤 terminal result까지 response를 유지한다. 중간 `202`, poll cursor, callback과 separate result fetch를 두지 않는다. |
 | Concurrency | Runtime generation마다 pending slot은 하나다. Slot이 찼을 때의 후속 authenticated request는 Browser projection 없이 즉시 `busy` error로 끝내며 queue·priority·preemption을 만들지 않는다. `busy`를 fresh call로 재시도할지는 AY가 판단한다. |
 | Browser correlation | Browser에는 opaque App interaction identity만 보낸다. Answer는 현재 pending response 하나를 once-only settle하며 MCP caller가 이 identity를 조립하거나 되돌려 보내지 않는다. |
@@ -223,12 +223,12 @@ App은 `accept`를 받은 뒤 `workspace-state.json`을 대신 수정하지 않�
 
 | 상호작용 | 소유자 | InteractionCapability와의 관계 |
 | --- | --- | --- |
-| 일반 clarification | Codex built-in `request_user_input` | Rich AY-PLE UI가 필요 없으면 그대로 사용한다. |
+| 일반 clarification | Normal Chat의 후속 Turn | Canonical Product Turn은 Default collaboration mode를 사용한다. Same-Turn structured clarification이 실제로 필요해질 때 native capability를 별도로 평가한다. |
 | command·file·network approval | Codex Runtime과 client | 실행 권한이다. 학업 Review result와 합치지 않는다. |
 | 대화 입력·steer·interrupt | Codex conversation surface | Turn 제어다. Pending Review 중에는 input·steer를 닫고 전체 Turn interrupt만 유지하며, interrupt를 capability result로 바꾸지 않는다. |
 | AY-PLE rich Review | Interaction MCP Module | Custom MCP 한 번으로 UI round trip과 result 반환을 끝낸다. |
 
-하나의 사용자 결정을 custom MCP와 built-in `request_user_input`에 동시에 걸치지 않는다. 반대로 모든 Codex 질문을 custom MCP로 재구현하지도 않는다.
+하나의 사용자 결정을 custom MCP와 다른 native interaction에 동시에 걸치지 않는다. 반대로 모든 Codex 질문을 custom MCP로 재구현하지도 않는다.
 
 ## 상태 소유권
 

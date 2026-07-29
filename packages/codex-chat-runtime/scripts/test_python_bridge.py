@@ -301,7 +301,9 @@ class ProtocolUnitTests(unittest.TestCase):
         skilled = {
             **product,
             "skillName": "ay-ple-semester-modeling",
-            "skillPath": ("/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md"),
+            "skillPath": (
+                "/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md"
+            ),
         }
         command = decode_command_line(
             json.dumps(skilled, separators=(",", ":")).encode() + b"\n"

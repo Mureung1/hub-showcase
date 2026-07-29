@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { request as sendHttpRequest, type IncomingMessage } from 'node:http'
+
 import {
   INTERACTION_BROKER_BODY_MAX_BYTES,
   INTERACTION_BROKER_PROTOCOL_VERSION,
@@ -99,6 +101,16 @@ type BrokerConfiguration = {
   readonly runtimeBinding: string
 }
 
+type BrokerHttpResponse = {
+  readonly status: number
+  readonly body: BrokerBodyReader
+}
+
+type BrokerBodyReader = {
+  read(): Promise<ReadableStreamReadResult<Uint8Array>>
+  cancel(reason?: unknown): Promise<void>
+}
+
 class BrokerUnavailableError extends Error {
   constructor() {
     super(safeUnavailableMessage)
@@ -110,9 +122,7 @@ const activeCalls = new Map<string, AbortController>()
 let initialized = false
 let startupPromise: Promise<void> | undefined
 let adapterConnectionAbortController: AbortController | undefined
-let lifecycleReader:
-  | ReadableStreamDefaultReader<Uint8Array>
-  | undefined
+let lifecycleReader: BrokerBodyReader | undefined
 let adapterStopped = false
 let inputBuffer = ''
 let discardingOversizedLine = false
@@ -342,11 +352,11 @@ async function openBrokerLifecycle(
       },
       abortController.signal,
     )
-    if (response.status !== 200 || !response.body) {
+    if (response.status !== 200) {
       await readBoundedResponseBody(response).catch(() => undefined)
       throw new BrokerUnavailableError()
     }
-    const reader = response.body.getReader()
+    const reader = response.body
     const accepted = await readLifecyclePrefix(reader)
     if (accepted.kind !== 'lifecycle_accepted') {
       await reader.cancel().catch(() => undefined)
@@ -386,33 +396,47 @@ async function postToBroker(
 async function fetchBroker(
   request: InteractionBrokerRequest,
   signal?: AbortSignal,
-): Promise<Response> {
+): Promise<BrokerHttpResponse> {
   const configuration = readBrokerConfiguration()
   const body = JSON.stringify(request)
   if (Buffer.byteLength(body, 'utf8') > INTERACTION_BROKER_BODY_MAX_BYTES) {
     throw new BrokerUnavailableError()
   }
-  let response: Response
   try {
-    response = await fetch(configuration.url, {
-      method: 'POST',
-      redirect: 'error',
-      headers: {
-        authorization: `Bearer ${configuration.token}`,
-        'content-type': 'application/json',
-        'x-ay-ple-runtime-binding': configuration.runtimeBinding,
-      },
-      body,
-      signal,
+    return await new Promise<BrokerHttpResponse>((resolve, reject) => {
+      let settled = false
+      const httpRequest = sendHttpRequest(
+        configuration.url,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${configuration.token}`,
+            'content-type': 'application/json',
+            'content-length': Buffer.byteLength(body, 'utf8'),
+            'x-ay-ple-runtime-binding': configuration.runtimeBinding,
+          },
+          signal,
+        },
+        (response) => {
+          settled = true
+          resolve({
+            status: response.statusCode ?? 0,
+            body: createBrokerBodyReader(response),
+          })
+        },
+      )
+      httpRequest.once('error', () => {
+        if (!settled) reject(new BrokerUnavailableError())
+      })
+      httpRequest.end(body)
     })
   } catch {
     throw new BrokerUnavailableError()
   }
-  return response
 }
 
 async function readLifecyclePrefix(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
+  reader: BrokerBodyReader,
 ): Promise<InteractionBrokerResponse> {
   const chunks: Buffer[] = []
   let total = 0
@@ -443,7 +467,7 @@ async function readLifecyclePrefix(
 }
 
 async function monitorBrokerLifecycle(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
+  reader: BrokerBodyReader,
 ): Promise<void> {
   try {
     const next = await reader.read()
@@ -464,9 +488,10 @@ async function monitorBrokerLifecycle(
   }
 }
 
-async function readBoundedResponseBody(response: Response): Promise<Uint8Array> {
-  if (!response.body) throw new BrokerUnavailableError()
-  const reader = response.body.getReader()
+async function readBoundedResponseBody(
+  response: BrokerHttpResponse,
+): Promise<Uint8Array> {
+  const reader = response.body
   const chunks: Uint8Array[] = []
   let total = 0
   try {
@@ -490,6 +515,27 @@ async function readBoundedResponseBody(response: Response): Promise<Uint8Array> 
     offset += chunk.byteLength
   }
   return body
+}
+
+function createBrokerBodyReader(response: IncomingMessage): BrokerBodyReader {
+  const iterator = response[Symbol.asyncIterator]()
+  let cancelled = false
+  return {
+    async read() {
+      const next = await iterator.next()
+      return next.done
+        ? { done: true, value: undefined }
+        : { done: false, value: Buffer.from(next.value) }
+    },
+    async cancel(reason) {
+      if (cancelled) return
+      cancelled = true
+      response.destroy(
+        reason instanceof Error ? reason : new Error('Broker body cancelled'),
+      )
+      await iterator.return?.()
+    },
+  }
 }
 
 function readBrokerConfiguration(): BrokerConfiguration {

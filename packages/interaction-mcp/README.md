@@ -21,7 +21,7 @@ Runtime package를 import하지 않으며 Browser production contract도 재노�
 | `AY_PLE_INTERACTION_BROKER_TOKEN` | Runtime generation의 random 32-byte base64url token |
 | `AY_PLE_INTERACTION_RUNTIME_BINDING` | `runtime_[0-9a-f]{32}` binding |
 
-세 값, authenticated handshake, 단일 held lifecycle channel이 유효하기 전에는 MCP initialize가 성공하지 않는다. Adapter는 lifecycle accepted prefix를 받은 뒤에도 해당 HTTP response를 열어 두며, Capability call마다 별도 HTTP POST 하나만 열어 terminal Broker response를 같은 tool call에 반환한다. STDIN EOF·error와 `SIGINT | SIGTERM`은 startup handshake와 lifecycle fetch를 공유하는 AbortController까지 닫아, 늦은 handshake가 새 lifecycle을 열거나 process가 외부 SIGKILL까지 남지 않게 한다.
+세 값, authenticated handshake, 단일 held lifecycle channel이 유효하기 전에는 MCP initialize가 성공하지 않는다. Adapter는 lifecycle accepted prefix를 받은 뒤에도 해당 HTTP response를 Runtime generation 동안 body timeout 없이 열어 두며, explicit abort·Broker EOF·process termination만 이를 닫는다. Capability call마다 별도 HTTP POST 하나만 열어 terminal Broker response를 같은 tool call에 반환한다. 이 private HTTP 수명은 project declaration의 native MCP tool timeout과 별개다. STDIN EOF·error와 `SIGINT | SIGTERM`은 startup handshake와 lifecycle request를 공유하는 AbortController까지 닫아, 늦은 handshake가 새 lifecycle을 열거나 process가 외부 SIGKILL까지 남지 않게 한다.
 
 ## Build와 검증
 
@@ -32,4 +32,4 @@ npm run typecheck -w @ay-ple/interaction-mcp
 npm run verify:package-root -w @ay-ple/interaction-mcp
 ```
 
-Build는 Node shebang을 가진 `dist/stdio.js`를 만들고 executable mode를 설정한다. Test는 real built process와 mock loopback Broker로 handshake → held lifecycle → initialize → tools/list → held call → structured result, handshake·lifecycle 거절, startup 중 STDIN EOF의 즉시 abort, Broker failure, transport loss와 cancellation을 검증한다. Package-root verification은 default-condition export, shebang과 mode를 반복 build 뒤 확인한다.
+Build는 Node shebang을 가진 `dist/stdio.js`를 만들고 executable mode를 설정한다. Test는 real built process와 mock loopback Broker로 handshake → held lifecycle → initialize → tools/list → held call → structured result, synthetic response-body timeout을 넘긴 lifecycle 유지, handshake·lifecycle 거절, startup 중 STDIN EOF의 즉시 abort, Broker failure, transport loss와 cancellation을 검증한다. Package-root verification은 default-condition export, shebang과 mode를 반복 build 뒤 확인한다.

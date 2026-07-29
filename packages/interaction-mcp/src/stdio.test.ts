@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createServer, type Server } from 'node:http'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import type {
   InteractionBrokerRequest,
@@ -159,6 +160,33 @@ test('initialize waits until the Broker accepts one held lifecycle channel', asy
     const initialized = await client.read()
     assert.equal(initialized.id, 1)
     assert.ok(initialized.result)
+  } finally {
+    await client.close()
+    await broker.close()
+  }
+})
+
+test('held lifecycle stays available past an HTTP response body timeout', async () => {
+  const broker = await startBroker(async (request) => {
+    if (request.kind === 'handshake') {
+      return { protocolVersion: 1, kind: 'handshake_accepted' }
+    }
+    return new Promise<InteractionBrokerResponse>(() => undefined)
+  })
+  const client = startAdapter(broker.url, { fetchBodyTimeoutMs: 40 })
+  try {
+    await initialize(client)
+    await new Promise((resolve) => setTimeout(resolve, 120))
+
+    client.send({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'ping',
+      params: {},
+    })
+    const response = await client.read()
+    assert.deepEqual(response.result, {})
+    assert.equal(response.error, undefined)
   } finally {
     await client.close()
     await broker.close()
@@ -455,19 +483,41 @@ type AdapterClient = {
   close(): Promise<void>
 }
 
-function startAdapter(brokerUrl: string): AdapterClient {
-  const child = spawn(process.execPath, ['dist/stdio.js'], {
-    cwd: new URL('..', import.meta.url),
-    env: {
-      ...process.env,
-      AY_PLE_INTERACTION_BROKER_URL: brokerUrl,
-      AY_PLE_INTERACTION_BROKER_TOKEN:
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq',
-      AY_PLE_INTERACTION_RUNTIME_BINDING:
-        `runtime_${'a'.repeat(32)}`,
+function startAdapter(
+  brokerUrl: string,
+  options: { readonly fetchBodyTimeoutMs?: number } = {},
+): AdapterClient {
+  const preload = fileURLToPath(
+    new URL('./testing/fetch-body-timeout.mjs', import.meta.url),
+  )
+  const child = spawn(
+    process.execPath,
+    [
+      ...(options.fetchBodyTimeoutMs === undefined
+        ? []
+        : ['--import', preload]),
+      'dist/stdio.js',
+    ],
+    {
+      cwd: new URL('..', import.meta.url),
+      env: {
+        ...process.env,
+        AY_PLE_INTERACTION_BROKER_URL: brokerUrl,
+        AY_PLE_INTERACTION_BROKER_TOKEN:
+          'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq',
+        AY_PLE_INTERACTION_RUNTIME_BINDING:
+          `runtime_${'a'.repeat(32)}`,
+        ...(options.fetchBodyTimeoutMs === undefined
+          ? {}
+          : {
+              AY_PLE_TEST_FETCH_BODY_TIMEOUT_MS: String(
+                options.fetchBodyTimeoutMs,
+              ),
+            }),
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],
     },
-    stdio: ['pipe', 'pipe', 'pipe'],
-  })
+  )
   const output: JsonRpcResponse[] = []
   const waiters: ((value: JsonRpcResponse) => void)[] = []
   let buffer = ''
